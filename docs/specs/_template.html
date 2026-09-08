@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[Tiêu đề spec] — ClusterNav 2.0</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>[Tiêu đề spec]</h1>
+<p class="muted">Slug: <code>&lt;slug&gt;</code> · Branch <code>&lt;branch&gt;</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,documentation-and-backlog}.md</code>. Nếu dùng thư viện/framework mới → verify version + best-practice qua <b>Context7</b> TRƯỚC khi trình (workflow.md §1.1); ghi kết quả verify vào §Design.</p>
+
+<h2>1. Changelog</h2>
+<p class="muted">Mỗi pass = 1 dòng, mới nhất trên cùng. Ghi ngày <code>YYYY-MM-DD</code> + tóm tắt thay đổi/quyết định.</p>
+<ul>
+<li><b>Pass 0 — YYYY-MM-DD</b>: Khởi tạo spec. [1 câu: vì sao, từ finding/owner nào.]</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>[Vấn đề THẬT là gì? User muốn gì (PO)? Đã có sẵn gì trong code (đọc source, dẫn commit/file:line)? Ràng buộc? Cái gì là cổng/điều kiện tiên quyết?]</p>
+<div class="card"><b>Cổng / phụ thuộc (nếu có):</b> [điều kiện bắt buộc trước khi implement — vd cần V-oncar PASS, cần data thật, cần coding flag… Nếu bị chặn → ghi bằng chứng + điều kiện mở khoá theo <code>trace-den-tan-cung.md</code>.]</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li>R1. [Yêu cầu + acceptance criteria đo được.]</li>
+<li>R2. […]</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. [Thread model / degrade-safe / không đụng feed cụm / testable off-car…]</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện <b>song song</b> với code (không đứng ở "kế hoạch lý tưởng"). Diagram phải là HTML visual.</p>
+<h3>4.1 Luồng dữ liệu / kiến trúc</h3>
+<!-- Ví dụ box-and-arrow (xoá mẫu, thay bằng diagram thật). Có thể dùng inline SVG thay cho .flow. -->
+<div class="flow">
+  <div class="fnode"><b>Nguồn</b><span>input</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Xử lý (:core)</b><span>hàm thuần</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Đầu ra</b><span>cụm / HUD / UI</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+</div>
+<h3>4.2 Quyết định thiết kế + Context7</h3>
+<ul>
+<li>[Approach đã chọn; tái dùng gì / thêm gì / sửa gì.]</li>
+<li><b>Context7</b>: [library@version đã verify + pattern hiện hành; hoặc "chỉ dùng Android SDK / khối đã có → không cần Context7".]</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>[việc + test]</td><td><code>path/to/File.kt(+Test)</code></td></tr>
+<tr><td>T2</td><td>[…]</td><td><code>…</code></td></tr>
+<tr><td>Tn</td><td>Senior review + security scan + build</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: [<code>:core</code>/<code>:app</code> suites xanh; case chính khoá bằng test nào.]</li>
+<li>V-oncar: [nếu cần xe — kịch bản + bằng chứng bắt buộc (reboot nút nguồn vật lý nếu test yêu cầu reboot; <code>adb reboot</code> KHÔNG tương đương).]</li>
+<li>V-lifecycle: [tạo → hiển thị → sửa → lưu → khôi phục → xoá; degrade khi thiếu data.]</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. [câu hỏi cần owner chốt] — <span class="muted">[trạng thái / trả lời]</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>[commit / file:line / spec / diagnostics / ADR liên quan.]</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi <b>NGAY khi code</b> — R2.6 (<code>documentation-and-backlog.md</code>). Đây là chỗ spec <b>phản ánh code THỰC TẾ</b>, kể cả chỗ lệch. Nhật ký đi CÙNG code, append theo thời gian. Nếu là <b>quyết định KIẾN TRÚC xuyên suốt</b> ⇒ mở thêm <b>ADR</b> ở <code>docs/decisions/</code> và link vào đây.</p>
+<p class="muted">Mỗi mục nên nêu: <b>ngày</b> · loại (quyết định / trade-off / sai lệch-spec / bug / spec-không-work) · nội dung · file:line hoặc commit.</p>
+<ul>
+<li><b>Quyết định + lý do</b> — [đã chọn X thay vì Y, vì …].</li>
+<li><b>Trade-off</b> — [đổi A lấy B; cái gì mất, cái gì được].</li>
+<li><b>Sai lệch spec</b> — [spec bảo <b>A</b>, thực tế làm <b>B</b> vì … → đã cập nhật §Requirements/§Design cho khớp].</li>
+<li><b>Bug &amp; cách xử</b> — [triệu chứng → root-cause → cách sửa (file:line) → cách verify].</li>
+<li><b>"Spec không work → đổi X"</b> — [chỗ kế hoạch ban đầu không chạy trên thực tế → đã đổi thành X; bằng chứng vì sao phải đổi].</li>
+</ul>
+<p class="muted"><i>(Trống khi chưa implement. Điền dần trong lúc code — cấm "để sau".)</i></p>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass review thêm 1 mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG overwrite lịch sử. Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

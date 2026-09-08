@@ -1,0 +1,1052 @@
+{
+  "branch": "main",
+  "canonicalization": "UTF-8 JSON; recursively lexicographic object keys; preserve array order; ensure_ascii=false; compact comma/colon separators; no BOM.",
+  "head": "d85b9f2e13c3081287005bee0e90bb482bd6d272",
+  "identityExclusions": {
+    "entries": [
+      {
+        "byteLength": 1263,
+        "path": "docs/_handoff/v1.04-exact-source.json",
+        "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+        "sha256": "c2fc96335cfcb7a59a231006e0dd4dc9e7c20d7f24b11cf8f2ce21a4d5424c7a"
+      },
+      {
+        "path": "docs/_handoff/v1.05-exact-source.json",
+        "reason": "GENERATED_ATTESTATION_SELF_REFERENCE"
+      },
+      {
+        "path": "docs/_handoff/vehicle-candidate.json",
+        "reason": "GENERATED_VEHICLE_CANDIDATE_RECORD"
+      }
+    ],
+    "rule": "Path-only exclusions prevent identity recursion and keep local tooling state, historical APK bytes, every prior attestation and build-generated candidate records out of the build inputs. Predecessor identities stay independently verifiable and unmodified."
+  },
+  "intendedUntracked": [
+    {
+      "byteLength": 8387,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/java/com/byd/clusternav/AmapEmissionArbiter.kt",
+      "sha256": "f8233a3fefca1845bbcc367f5214dba9935dff7cb66b7667f362ec4c326fd65b"
+    },
+    {
+      "byteLength": 3019,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/java/com/byd/clusternav/HudMirrorController.kt",
+      "sha256": "9105bad1697001db5cb1aa707d72d41c06cbbcaa26dc7f3081594114fc6b51c2"
+    },
+    {
+      "byteLength": 7455,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/BubbleSubmenuOverlay.kt",
+      "sha256": "9b4280e6176d11e37451ba31e8a079eb186614971be27594acabd0287e712a74"
+    },
+    {
+      "byteLength": 6003,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastDeepRescueAction.kt",
+      "sha256": "f679eff00bb3105d9c712f4127ccc79db311115f895934948808d034029cae18"
+    },
+    {
+      "byteLength": 4111,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastEnableSwitch.kt",
+      "sha256": "ccd01c8898453a1b349c67dd0e3bfc3ddeb0407930eb4e7cb17c8e3433d3d3cd"
+    },
+    {
+      "byteLength": 688,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/ic_bubble_nav.xml",
+      "sha256": "77cad139590b34f3c587504db52380b4887d674c5dfc5206c22e655006f60837"
+    },
+    {
+      "byteLength": 1323,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/ic_menu_config.xml",
+      "sha256": "6e149eab0f4bed8760ef86d74e46265afb881254f6edd86889a3794e108c4280"
+    },
+    {
+      "byteLength": 386,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/ic_menu_left.xml",
+      "sha256": "e25173dae244217dfb773cbdb002d424a0c0d37f1c228a85cb98321ab6f81716"
+    },
+    {
+      "byteLength": 390,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/ic_menu_right.xml",
+      "sha256": "9a7db49cd57423f24fc530375166750ca5ca63f9033fcf4b7c33c3d148ce2c0e"
+    },
+    {
+      "byteLength": 6050,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/AmapEmissionArbiterTest.kt",
+      "sha256": "4c2d70be08156f9907f70bfedfd8761502edb646e30c2fdcfa4efd5f785167a3"
+    },
+    {
+      "byteLength": 2813,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/AmapFrameBuilderContractTest.kt",
+      "sha256": "01a8bb49c0546983df5b677caf59c78d5aed8e0d87d9c212a322659cc6969fc0"
+    },
+    {
+      "byteLength": 10111,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/CastEnableToggleContractTest.kt",
+      "sha256": "1c27df6b91897ca60b80ba4b1fb7d9d10f3c0744aeb62decc025a3f92419eba5"
+    },
+    {
+      "byteLength": 2274,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/FloatingBubbleFirstLaunchContractTest.kt",
+      "sha256": "77c280c113475ac6b1ba59dfcee47281350286f7e132bc4a4f0be98794861b4a"
+    },
+    {
+      "byteLength": 4521,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/HudOutputHiddenContractTest.kt",
+      "sha256": "95cfa027934f403c835e589607c7cc12d85d95e95208f844c512ad1a8f21b50c"
+    },
+    {
+      "byteLength": 1286,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/HudRoadCapabilityTest.kt",
+      "sha256": "68625e9e7f9bfa51c34c85117bebe277f3565d64272896e571803a0c9b2c888e"
+    },
+    {
+      "byteLength": 3528,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/MainProbeSurfaceAbsenceTest.kt",
+      "sha256": "e139ff14ba4a3aa81d9f5510ffc82093349f2f84542c37ec1670fe50236c3dec"
+    },
+    {
+      "byteLength": 3153,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/NavArrivalClearContractTest.kt",
+      "sha256": "87415c0d6d533255b20f4407cb61d80b3a94b7fa82df55d07167afb104cb2e80"
+    },
+    {
+      "byteLength": 3118,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/NotificationAccessFlowContractTest.kt",
+      "sha256": "63857df8da0cdd1e36768b20856e0605a6d413c6ab95cc3d9f1812cacc58caaf"
+    },
+    {
+      "byteLength": 2482,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/PhysicalHudOwnershipTest.kt",
+      "sha256": "fc90b96897873ee6aab9d0dcb1cf0aa9b3ab8a7367a787f9099be15ba89f99f4"
+    },
+    {
+      "byteLength": 6103,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/SpeedSignSourceLifecycleTest.kt",
+      "sha256": "8e054c943f7cea1b9552f809a6d832cbed816a010c10c526c62003168d8b4a32"
+    },
+    {
+      "byteLength": 9125,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/BubbleGestureContractTest.kt",
+      "sha256": "fac3cc4b9102f0ddcfdd576e41d7e39f365f02538cbd5ebdd1eb794c5a885865"
+    },
+    {
+      "byteLength": 3033,
+      "class": "TEST_SOURCE",
+      "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/CastDeepRescueContractTest.kt",
+      "sha256": "1dc14794b81873d3e6e11de661ea43339480ad161b2c44bbf6b67abf43849a7e"
+    },
+    {
+      "byteLength": 15000,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/testVehicleTest/java/com/byd/clusternav/VehicleTestSurfaceContractTest.kt",
+      "sha256": "404482bf22d7fa0e46e6bca19fb614d046ae52552f1aaa3de6fec2821ecf0b50"
+    },
+    {
+      "byteLength": 729,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/vehicleTest/AndroidManifest.xml",
+      "sha256": "c23dd52f9b450958c87fc538092a8f3f637e73a2fd33a08fa6dc82a35689f9dd"
+    },
+    {
+      "byteLength": 22836,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/vehicleTest/java/com/byd/clusternav/HudSignProbeActivity.kt",
+      "sha256": "3cb25991bec6c719cef585e1880d2be573fc9efc9c1efdf04fc122f0dff369ba"
+    },
+    {
+      "byteLength": 4803,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/vehicleTest/java/com/byd/clusternav/HudSignProbeReceiver.kt",
+      "sha256": "c143e1eac00f088d7074cf5483272598a42e63d0efd28bb59d3a405d56852526"
+    },
+    {
+      "byteLength": 13083,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/DadbVehicleTransport.kt",
+      "sha256": "e02935a22b976f79c13bca57137a7e697f9235246cc1c8c627539e5593b66547"
+    },
+    {
+      "byteLength": 4768,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/HudSignSessionRunner.kt",
+      "sha256": "bab8428d00dc50b64fdd997adc886b50f20697c83b563dc5c4c445861c45ad5c"
+    },
+    {
+      "byteLength": 10327,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/T10LocalAuthorization.kt",
+      "sha256": "db73357aede815a2bfd49d360edc150054a8b728c2c26b371cefd858060cb96a"
+    },
+    {
+      "byteLength": 11208,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/T10ResultStore.kt",
+      "sha256": "19c20882a8c2f8a896abbdd3900d5ce1b7b3f1ec6c2246207226a84a017ddedb"
+    },
+    {
+      "byteLength": 317,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/T10RunnerMain.kt",
+      "sha256": "25689d08d5e54affd6016f76769f6f80b115bbe888f1f86056494a1bcb28f5d8"
+    },
+    {
+      "byteLength": 17864,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "car-integration/src/test/kotlin/com/byd/clusternav/vehicleprobe/DadbVehicleTransportTest.kt",
+      "sha256": "6bf06ecaf9fd2d85a14ec10146115c00a1ad42857e79e511d234adc62969e763"
+    },
+    {
+      "byteLength": 15182,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "car-integration/src/test/kotlin/com/byd/clusternav/vehicleprobe/HudSignSessionRunnerTest.kt",
+      "sha256": "a7ead5554121852d27d16eef8fca667b79e4146fe9de57d823ad715ef13f629c"
+    },
+    {
+      "byteLength": 19469,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/CarExecClusterDiagnosticsCatalog.kt",
+      "sha256": "7b2ee5b214d40cc8c1a4cb751008dcbe8d9834a3a27cbd80713662a9bf8f7a0c"
+    },
+    {
+      "byteLength": 12821,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/CarExecClusterLifecycleCatalog.kt",
+      "sha256": "4f5b660b9b0391e7c923e9a13d2f2b75ccc287c9e244727ba9f1e1420187e4ef"
+    },
+    {
+      "byteLength": 18904,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/CarExecClusterProjectionCatalog.kt",
+      "sha256": "bf182877d3dfdd7504f67e5cb8e8bfe88eba7337c24509bcb4b4a0d8a0aa7472"
+    },
+    {
+      "byteLength": 7493,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/CarExecHudCatalog.kt",
+      "sha256": "112fa03403cbea38b7e79a584b462451e17b321f7e0eda07f1d61982fcadfa8c"
+    },
+    {
+      "byteLength": 5555,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/CarExecModels.kt",
+      "sha256": "43e1f3cb238a4e2caceb2b22d4ade6b68133973f0f29358b57f4aeadeb1f9293"
+    },
+    {
+      "byteLength": 16835,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/CarExecNavigationCatalog.kt",
+      "sha256": "44ea0c96a61271995f7a4cd65b173580901ee11cddc8d504353846e90a1663cd"
+    },
+    {
+      "byteLength": 19684,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/CarExecSpeedSignCatalog.kt",
+      "sha256": "727ef51867876e045991071e278c2e369c8f404ff666f55c79d347e65893b818"
+    },
+    {
+      "byteLength": 3478,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/T10FixedOperationCatalog.kt",
+      "sha256": "a7dec80589f9c10b757cd2c586214bbae11635732c52c36e8c5b3485ddb906ab"
+    },
+    {
+      "byteLength": 12666,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/T10RollbackExecutor.kt",
+      "sha256": "9b0aa34ad6101c8ff0ee611808951d655a9d2883b032305ff5306f6cd26abbd9"
+    },
+    {
+      "byteLength": 17196,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/carexec/T10SessionEngine.kt",
+      "sha256": "ce2ae79fdd2e594f9f099499112a5d4e49fa3ab7f88e29d19c7a3f61525da41b"
+    },
+    {
+      "byteLength": 3806,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/modules/clustercast/simplified/BubbleGesturePlanner.kt",
+      "sha256": "f97634906f2635c838d656e5d995ca96323fb00cb76bc242476bcae3a5b6ea8e"
+    },
+    {
+      "byteLength": 1490,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/modules/clustercast/simplified/BubbleSubmenuAnchor.kt",
+      "sha256": "82013a316077567a4ab7a9f110c2cb4202ef65ecc4abd21189c903438e5d189f"
+    },
+    {
+      "byteLength": 4800,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/navigation/NavArrivalGuard.kt",
+      "sha256": "345ff28dcd9245c2403728e077804a320d87a02ad5bcbec1e8f43479a78977d9"
+    },
+    {
+      "byteLength": 12351,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/navigation/SpeedSignLifecycleCoordinator.kt",
+      "sha256": "84030f3c84bb4dbfd37ee5762a96befce6f18d19778145353986f5c0ebb1f7c9"
+    },
+    {
+      "byteLength": 3071,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/main/kotlin/com/byd/clusternav/navigation/SpeedSignPorts.kt",
+      "sha256": "4ae2162e7746447f6283d9db8f20968ccfac3ed9223b03ed1f1e3ec2568837df"
+    },
+    {
+      "byteLength": 22892,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/carexec/T10SessionSafetyTest.kt",
+      "sha256": "c4751f2a1d184be5c6ca05e8e9d1ed0cae065732c58378e7aa0e4a5937f7e9ef"
+    },
+    {
+      "byteLength": 1869,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/modules/clustercast/simplified/AppMoverLauncherExclusionTest.kt",
+      "sha256": "1fe33b23bbaa9ae2650e8a4240aa9d62bce3db88057d3191ff87b2bea2026864"
+    },
+    {
+      "byteLength": 5929,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/modules/clustercast/simplified/AppMoverReturnFullscreenTest.kt",
+      "sha256": "76ff3d34aef587a5520ee6220819f0090bb6ad78a475d44261c152590aff7694"
+    },
+    {
+      "byteLength": 4982,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/modules/clustercast/simplified/BubbleGesturePlannerTest.kt",
+      "sha256": "c969041e9af7c1a1a8cdab4c73809388067572b4188b0c772f1bc1ac6cb2c4fe"
+    },
+    {
+      "byteLength": 1455,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/modules/clustercast/simplified/BubbleSubmenuAnchorTest.kt",
+      "sha256": "518123afb324a4893f0f0fe7ede5a0df4070cec55a5dfd5a1d183fbc6ca06c9f"
+    },
+    {
+      "byteLength": 10421,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/modules/clustercast/simplified/CastProfileDensityTest.kt",
+      "sha256": "bd1940f5e1229169d42efe7b4bfdb48e32ef4b9f0322478e9b0629e1d1020563"
+    },
+    {
+      "byteLength": 4378,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/modules/clustercast/simplified/CastReturnFullscreenTest.kt",
+      "sha256": "d372663ac81f8ee770ab6b6d82377dec0167c1f48a54e51b728ce6a80dbe0bdd"
+    },
+    {
+      "byteLength": 4537,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/navigation/NavArrivalGuardTest.kt",
+      "sha256": "a851c422c0e1c7d58872620ff4df5bfdf0451733a314e14d55e235103700e947"
+    },
+    {
+      "byteLength": 11261,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "core/src/test/kotlin/com/byd/clusternav/navigation/SpeedSignLifecycleCoordinatorTest.kt",
+      "sha256": "00dc3db3f9ac4cf6567b5d666e29d1fbd5fa65c5e41d4cc113e64acf8683c7d0"
+    },
+    {
+      "byteLength": 9065,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cast-nav-ux-release-v104-execution.md",
+      "sha256": "6594d328aa709d3569a1b83dcc36530c08b38cb76e619f4db7e2a9c4be50d3d0"
+    },
+    {
+      "byteLength": 11065,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cluster-hud-injection-STATE.md",
+      "sha256": "2ef1e94270abc4e4ec71270172a1bc54b490336815908465f9f1c7cb091461d5"
+    },
+    {
+      "byteLength": 6752,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-precommit-scan-1.05.md",
+      "sha256": "0e761b4b7b47b93e482360e7d2b28c4ff64b863e95bca855ffa473ecf9549d3d"
+    },
+    {
+      "byteLength": 9094,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-release-1.05-review.md",
+      "sha256": "487074db76032ea6b65c958dff1568166cb069dd395d1f684f883d307e76fe35"
+    },
+    {
+      "byteLength": 15142,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-release-readiness.md",
+      "sha256": "be2b6494cab65cb15944b8644e38c8306a3cc97d54d02a82bebda0a5360d1988"
+    },
+    {
+      "byteLength": 9891,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-senior-review.md",
+      "sha256": "3c16831fa6fdb83a415e0da4749b870f41447a29228cae3ab47a0febd0292f6a"
+    },
+    {
+      "byteLength": 4736,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-stage-1-done.md",
+      "sha256": "faf0e39e25b921f56ba7d2c9bab86708f5d80fdbddbad8a71c80b4d6e9c6547a"
+    },
+    {
+      "byteLength": 9410,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-stage-2-done.md",
+      "sha256": "d9f5d904238dbc057ff3289b1b58ea0c20b4dd17e90283a07082d347c68f694c"
+    },
+    {
+      "byteLength": 10865,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-stage-3-done.md",
+      "sha256": "1a91817002dd1f966f1b423f12b49328964d66834a3e069d1d15bc4eff93b0df"
+    },
+    {
+      "byteLength": 10455,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/cnux-stage-4-done.md",
+      "sha256": "b33131ffa5cf8ffb2b1d11d4d837a3fdcd983f17de37c3b4be50deb103d78893"
+    },
+    {
+      "byteLength": 68150,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/hud-cluster-injection-findings-2026-08-10.md",
+      "sha256": "1b49abd2046ad7c592f4fbc03aec69329196d114c40126fed800ba0918ff7bb1"
+    },
+    {
+      "byteLength": 13207,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/session-2026-08-06-pm2-firstlaunch-fixes-and-hud-enable.md",
+      "sha256": "a8493be8c810f34b890a7d60b8c878c6e0ebc07c989930b32f7198744415823b"
+    },
+    {
+      "byteLength": 39339,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/session-2026-08-10-hud-sign-t10-preparation.md",
+      "sha256": "79104a75e76a2e80af1d87dd3c0790babc55b45c2d5257735be7601b43bf5ec7"
+    },
+    {
+      "byteLength": 9407,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/session-2026-08-11-v1.05-release-candidate.md",
+      "sha256": "a84811bee5eb56acee4bb78987935075fec78d4b483794eebd223734d7ad1a05"
+    },
+    {
+      "byteLength": 13657,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/README.md",
+      "sha256": "f854683acbda36c69f899a5d3a3bdc326c0df966dc49b24059eb2d94ccb1ee46"
+    },
+    {
+      "byteLength": 5488,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/candidate-report.html",
+      "sha256": "af3c3db29e29b5c4cd4ebd0a0d4ef863de5a7a2d7f60c527bbe989596ce3eb36"
+    },
+    {
+      "byteLength": 25929,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/corpus-completeness.json",
+      "sha256": "87610a0e7a54e7d634dbcad8a423906a494e2add2e6e50b61828e1ee7217db79"
+    },
+    {
+      "byteLength": 237443,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/evidence-index.json",
+      "sha256": "ac3fd27701e6b05c5037594b35d314b49ddadaeb0315d8a64c3a3da0bef980b9"
+    },
+    {
+      "byteLength": 376,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/candidate-diff.json",
+      "sha256": "e9d9b1a607b616b45290996a842f35d229e7ffba9dfeabf27bcb43e868c5e943"
+    },
+    {
+      "byteLength": 5187,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/candidate-expansion-report.html",
+      "sha256": "c52fab41fcd73ab83e17479733b3f0bf0d5c77556615ab03c72e25b461dd5d6b"
+    },
+    {
+      "byteLength": 10878,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/candidate-registry.json",
+      "sha256": "cba3e45b044aa021bbbd28046a2eb99e0580fb20e1e3ed70f1419b7c1b424a7c"
+    },
+    {
+      "byteLength": 55203,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/corpus-coverage.json",
+      "sha256": "d7b99563ee4710c121620904301d50a1f5a0cd479683c6c453715617bde9def4"
+    },
+    {
+      "byteLength": 8395,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/evidence-map.json",
+      "sha256": "290c8972ed47aeeb98b6817795ef73ececfa4ebf92dcc9b12e45edf2883f3a0e"
+    },
+    {
+      "byteLength": 2087,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/legacy-baseline.json",
+      "sha256": "878c609280f469d7da9dc7fc14d72ac72e59abe8e826efbe55d938e34273b1d5"
+    },
+    {
+      "byteLength": 2496,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/pack-manifest.json",
+      "sha256": "9c05c05c43f504e89afd2744723f3d8ba2020aa9333a90dcbc50a70219681185"
+    },
+    {
+      "byteLength": 91407,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/result-ledger.schema.json",
+      "sha256": "cc942e6abf69bf7ca1b1f0c0ee276efb74dd379892f3ad0f758196edd6fa3987"
+    },
+    {
+      "byteLength": 9424,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/traceability.json",
+      "sha256": "8264b0299f60e01d859d4ec55c28ab96d08aa3c8e81c7da6264238ed8494b4ef"
+    },
+    {
+      "byteLength": 11162,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/vehicle-session-checklist.html",
+      "sha256": "b41f284def61dd4092cf8df7ea946d698e27c409096fbe8f44c91d6b5bd5e764"
+    },
+    {
+      "byteLength": 7378,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/vehicle-session-plan.json",
+      "sha256": "51674404c6d93791c44198007d59f0fab05364cb6a0315bcb57d3de8446213b4"
+    },
+    {
+      "byteLength": 6742,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/expansion/vehicle-session-plan.txt",
+      "sha256": "f1a636bb7eec03f0e42acbb4dd324f5afc3ce4632880c02719b4064a5f9df844"
+    },
+    {
+      "byteLength": 1698,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/first-launch-emulator-result.json",
+      "sha256": "e60e63dced72dbc0d742476883930088385c5812b29d176f145f42430540ae39"
+    },
+    {
+      "byteLength": 16272,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/hud-cluster-field-checklist.html",
+      "sha256": "d0fc88f332b63313a99db77a1806dd29cdbfdecf105724dec8807ba577bf6939"
+    },
+    {
+      "byteLength": 11316,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/m1-nav-hud-plan.json",
+      "sha256": "c8eff7210e093fa1b2e32328abeddf37fa51d919d524df851e4ecd634d289bf9"
+    },
+    {
+      "byteLength": 2515,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/m2-hud-road-plan.json",
+      "sha256": "dffb04d3e26beadd9fd7f813870fca6712d5f213f4145787280ddb4718437faf"
+    },
+    {
+      "byteLength": 9952,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/m3-cluster-sign-plan.json",
+      "sha256": "ac2de2631de73ab2ddd2ad4efa2f33e805fae2d8007091e2ae3497c64625fb7e"
+    },
+    {
+      "byteLength": 5537,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/m4-hud-sign-plan.json",
+      "sha256": "51fc71db1050baa816e9df2e1250a196c1d6e608a48df228e5318d6077c910d1"
+    },
+    {
+      "byteLength": 375940,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/native/libbydcluster-diff.json",
+      "sha256": "d2d7f63ee1916905e8ef21ea58242f22f4e2c02a5a1e0b3854766341f77e9464"
+    },
+    {
+      "byteLength": 19481,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/offcar-boundary-revisions.json",
+      "sha256": "537ba8158ae0ce602d380a578741479247c81a6c5cae5564989ec3978488f75b"
+    },
+    {
+      "byteLength": 12310,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/traceability.json",
+      "sha256": "332ae311ed642441c7ec8640fc4c389e1e7865813eafef8b1442645ff3791e60"
+    },
+    {
+      "byteLength": 827,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/hud-sign-re/zero-hit-report.txt",
+      "sha256": "55acd8bf51a0baf9f397b8765162f063fc1686d9544b3fdbc83eaa96955f273f"
+    },
+    {
+      "byteLength": 10730,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "docs/diagnostics/oncar-speedlimit-test-2026-08-11.md",
+      "sha256": "1ef048a048ce8eefb84b06a5a126936fd150d38b29290f5038c223da3a40b5dd"
+    },
+    {
+      "byteLength": 46345,
+      "class": "CANONICAL_SPEC",
+      "path": "docs/specs/cast-enable-toggle.html",
+      "sha256": "e60e2366c29eeea55bb65babb9e3302729e675e385cfd6b088949c48d63edb60"
+    },
+    {
+      "byteLength": 86784,
+      "class": "CANONICAL_SPEC",
+      "path": "docs/specs/cast-nav-ux-release-v104.html",
+      "sha256": "46004b9437705a3a1c5f9614cc90692e700e68345d7f95654d710b6c278170cf"
+    },
+    {
+      "byteLength": 94850,
+      "class": "CANONICAL_SPEC",
+      "path": "docs/specs/seal-hud-sign-candidate-expansion.html",
+      "sha256": "0088c37e98f901c35499ea44b60a5947ceb36071240af9e0e8ec31ca34c2a804"
+    },
+    {
+      "byteLength": 83074,
+      "class": "CANONICAL_SPEC",
+      "path": "docs/specs/seal-hud-sign-vehicle-test-t10.html",
+      "sha256": "482daa161ac374a1fa86925c5bf3c201ca5dcd4b7d18cb55dc4d729f577ac8a4"
+    },
+    {
+      "byteLength": 115548,
+      "class": "CANONICAL_SPEC",
+      "path": "docs/specs/seal-nav-hud-speed-sign-offcar.html",
+      "sha256": "781ff2b47f38d51deec66a47464ab78f37d781970499fdc64b86386423a28f87"
+    },
+    {
+      "byteLength": 86124,
+      "class": "CANONICAL_SPEC",
+      "path": "docs/specs/windshield-hud-enable.html",
+      "sha256": "96f57dcea19650d6096a99844121fbeaad45b91e92a322bf9f0b3f5cffa91899"
+    },
+    {
+      "byteLength": 917,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/build.gradle.kts",
+      "sha256": "a8e1164d9b49cd77837acb57adee155d367b089dfb74a1c5fe01be5c2b4d98a3"
+    },
+    {
+      "byteLength": 22330,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CandidateScenarioGenerator.kt",
+      "sha256": "adddcd651da5ebbdfb96c224cdbe1e7184e975e118cfb810a9025e596f660d9a"
+    },
+    {
+      "byteLength": 2843,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CommandPlan.kt",
+      "sha256": "73e99f2290e4770e1c37913c4bceba92ce3e4023e8fd8edf0d4c7ceb920da8ca"
+    },
+    {
+      "byteLength": 9748,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CommandPlanRenderer.kt",
+      "sha256": "d63d1eac658dac8faaa46b78e7247f5598e9be49e6eb379b73c87e6663938d0b"
+    },
+    {
+      "byteLength": 26358,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/DiscoveryProbe.kt",
+      "sha256": "188c613ae3a05fc3d23c3413d0acdd0370b546b5f01269423f179781e4472b86"
+    },
+    {
+      "byteLength": 61460,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/ExpansionMain.kt",
+      "sha256": "9fb86fa72c4b2a69dbb26c40fe03d9d535579a87254094e50348b19a5068ed64"
+    },
+    {
+      "byteLength": 50330,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/ExpansionPackRenderer.kt",
+      "sha256": "c897e12f4795138eb7c2d17ab3b6f38ebb4a7363d5443d8b224dfef278326597"
+    },
+    {
+      "byteLength": 33029,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/ExpansionRegistry.kt",
+      "sha256": "0bd9a0567b81721d9a9fb95a93f33eb3199f60afc90e42460c778f6fc222ff76"
+    },
+    {
+      "byteLength": 2622,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/FakeVehicleTransport.kt",
+      "sha256": "860a1a3f27c734b6bd147c3c04125351900bcea345091dd479c96523b919aebc"
+    },
+    {
+      "byteLength": 11422,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/FirmwareEvidence.kt",
+      "sha256": "d7482817ce3a98f0d0fcdfeb593f9d18b8d16ac94be5c7afa60c03573cf5ce93"
+    },
+    {
+      "byteLength": 3258,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/OffCarPlannerMain.kt",
+      "sha256": "272964660a7575aacb8d0af6a3ef5fa016381e6d162358c9b4d474e68c9ea462"
+    },
+    {
+      "byteLength": 7911,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/VehicleCandidate.kt",
+      "sha256": "1b49a0b260287bc15d0efe7eb5b3c772a8ab1f905e4ae73f9ff15e58ae54c716"
+    },
+    {
+      "byteLength": 91770,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/main/resources/expansion-contracts.schema.json",
+      "sha256": "e89661b642328cdcbe3ea439c59473adfce486ace48fb52bf5ff3ce8a1d85e0d"
+    },
+    {
+      "byteLength": 14381,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/AdaptivePruningTest.kt",
+      "sha256": "581333450c8d6cfd44d9006b09a351303b231c5ba3fea0d27cb87c6a26248b36"
+    },
+    {
+      "byteLength": 2377,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CandidateSafetyTest.kt",
+      "sha256": "3c4cfb376cee105ee83c224b1c1508b7dead80b1bd509dcfe54da2a98c0656e8"
+    },
+    {
+      "byteLength": 1652,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CapabilityPromotionTest.kt",
+      "sha256": "9a3129fcfe854ee52aa769c5cedce015215e2cec7f6075df6f129f0b8da2e957"
+    },
+    {
+      "byteLength": 2862,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/DependencyBoundaryTest.kt",
+      "sha256": "cc1f1b77801d075fe9964f1c258f9f43aedeb598ba544b319760fce24792fe18"
+    },
+    {
+      "byteLength": 14842,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/DerivationClosureTest.kt",
+      "sha256": "0a3ea6e1dd825ed5df74b6845d076164cb5d1bac197e4384a0f564c7740734b5"
+    },
+    {
+      "byteLength": 30045,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ExpansionDeterminismTest.kt",
+      "sha256": "0b8256e17bfdc939ce30aa219a88941e4ac0875e73d3dd3124b64c8f34f9d5b1"
+    },
+    {
+      "byteLength": 19996,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ExpansionPromotionTest.kt",
+      "sha256": "572837b5b12d45fcd8af562758a6a665f75f3bb26a6bb6a8b126efff5f11e52b"
+    },
+    {
+      "byteLength": 34220,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ExpansionTraceabilityTest.kt",
+      "sha256": "54e720dcf8edacb6400d1abe6989d65836588c9dcf244aa8a6116dee69ed4172"
+    },
+    {
+      "byteLength": 36847,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ExpansionTransportFenceTest.kt",
+      "sha256": "b6c1713fc51416f87535c39b6e7ad3b68667981ff655976dd79022d3b04cc246"
+    },
+    {
+      "byteLength": 3783,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/FirmwareEvidenceGraphTest.kt",
+      "sha256": "b1c9a6ae7e8ac1b5b74e78e0a5d37bb50266b399861ae4195a8c4dbe3079c2cf"
+    },
+    {
+      "byteLength": 27729,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/LegacyBaselineIdentityTest.kt",
+      "sha256": "de84d2139eabb4de2db40713ab3e12d21dc7dc2d94e94c66390c4a864e3161d4"
+    },
+    {
+      "byteLength": 978,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ModernPropertyGatewayContractTest.kt",
+      "sha256": "3608c4a09dd4856bec018c88d8da1040875e584fa7a15a215ff9c4db422bb86a"
+    },
+    {
+      "byteLength": 843,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/NaviInfoSchemaTest.kt",
+      "sha256": "34685f0280b1262c0b73be5a59099000602abdbf5e54bec6b27f29dd562aae08"
+    },
+    {
+      "byteLength": 3069,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/OffCarTransportFenceTest.kt",
+      "sha256": "b81ed1820052584bb6eb2335b11940aa6fafc420b6d5599883eb32393dd61600"
+    },
+    {
+      "byteLength": 4772,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/PropertyCandidateValidatorTest.kt",
+      "sha256": "edca693b96d52829830e2e16d77de1226744899685c208b513323acf859d3680"
+    },
+    {
+      "byteLength": 14541,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/SameSessionQuarantineTest.kt",
+      "sha256": "5e16d8201183812d7de2d05a9feb10654af3901c1de8205a5a0fc8fca254d150"
+    },
+    {
+      "byteLength": 2711,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ScenarioSnapshotTest.kt",
+      "sha256": "b6c2cfc79997521c373e2dab71bf964b22354dc326bcae4b5145112ffe073eb4"
+    },
+    {
+      "byteLength": 3609,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/TraceabilityTest.kt",
+      "sha256": "9f9e3d649ba160e521080a9b6494ce82c2b2ac7799095cec2e287c778445c157"
+    },
+    {
+      "byteLength": 5260,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/build-evidence-graph.py",
+      "sha256": "02d9c1210448f426e7702c1c27626e45fdbefda78f23c991d75fffd1561f4e78"
+    },
+    {
+      "byteLength": 5793,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/decode-java.sh",
+      "sha256": "2782b4bc7a84e6f8e9f8fbb8af38de98a8ae0069def079b9cf6b5664caccc4fe"
+    },
+    {
+      "byteLength": 42556,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/expand-candidate-coverage.py",
+      "sha256": "3478b25a8ab9d80913f3835ac35b3216c60aac9280496f7c09f9ec94fcb22dfe"
+    },
+    {
+      "byteLength": 20447,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/ghidra/ExportRelevantFunctions.java",
+      "sha256": "491b359b609f462a564863f73292c200148640b2a88839b8bc962ab64cb72dc2"
+    },
+    {
+      "byteLength": 4348,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/hash-corpus.py",
+      "sha256": "5b7c99fd4b05aa5145a2d22486103a7190c7864f9075d20c5579f49fc6138f19"
+    },
+    {
+      "byteLength": 11251,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/index-features.py",
+      "sha256": "bd59394faded7670bf4b66bd3d7ce9a7e98793475801a7b546d7116228fb4b6b"
+    },
+    {
+      "byteLength": 4636,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/rcc_extract.py",
+      "sha256": "d478ec3c61e3f597fc4bc02786cd190cf0407be36955b20873c63106ad445e29"
+    },
+    {
+      "byteLength": 29002,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/run-native-analysis.sh",
+      "sha256": "18185cab0b96a02eb68c2a36efefec6d5dd7a9fbd1959447d43d20475a31df0f"
+    },
+    {
+      "byteLength": 2530,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/tests/test_evidence_graph.py",
+      "sha256": "99f62de8d4baeb87c665cf53db0f2bd4b481717b088a903271d0200d0d35a73b"
+    },
+    {
+      "byteLength": 21592,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/tests/test_expand_candidate_coverage.py",
+      "sha256": "c9138f254ac3855d45cce127c5e35a926b65c5c6cf93d248d2c2e532b15ec9fc"
+    },
+    {
+      "byteLength": 3094,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/tests/test_feature_index.py",
+      "sha256": "12719f2313a66562daf9f5874babfc5a2b74bca84d8873f3b48945e3aa17bb34"
+    },
+    {
+      "byteLength": 1344,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/tests/test_hash_corpus.py",
+      "sha256": "dceeb9e84b1c11a07d624b89f63339a9d37d2fa979efe279854f18313b70eb19"
+    },
+    {
+      "byteLength": 5115,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/tests/test_report_sanitizer.py",
+      "sha256": "ea43d495524071ed50912006dc66387205773a4534c021eaebb5bbb94d5d2f45"
+    },
+    {
+      "byteLength": 20646,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/re/verify-reproducibility.py",
+      "sha256": "fc4a381521b88241fa56e988b1a6db151ed0df03de8ef54957f9bcb5370a02fd"
+    },
+    {
+      "byteLength": 15791,
+      "class": "VEHICLE_KIT",
+      "path": "scripts/vehicle/hud-cluster-probe.sh",
+      "sha256": "c3d3ec651634c140e4e49fb3b85fbf7ce010a5ef9d5d75c03d5d6004c4eab727"
+    },
+    {
+      "byteLength": 4623,
+      "class": "VEHICLE_KIT",
+      "path": "scripts/vehicle/hud1-nav-hud.sh",
+      "sha256": "49dd816c44eec1555f08cdba74bc968ea532ca4bb67789f5440143d4ee5e7e82"
+    },
+    {
+      "byteLength": 4044,
+      "class": "VEHICLE_KIT",
+      "path": "scripts/vehicle/hud3-recon.sh",
+      "sha256": "eb7b2b53a11b20f14a52caf784720f46d67e249ef47ad19005d1e97c5797292a"
+    },
+    {
+      "byteLength": 6275,
+      "class": "VEHICLE_KIT",
+      "path": "scripts/vehicle/hud3-speedlimit-v4.sh",
+      "sha256": "e96069a98f3585b60b2a52703fd46c443214d434443a05be4f50952e2f923a14"
+    },
+    {
+      "byteLength": 4197,
+      "class": "VEHICLE_KIT",
+      "path": "scripts/vehicle/hud3-speedlimit.sh",
+      "sha256": "1940c52024851a776e50a5610ff1b4ee7c2b32bc2fe9e8fa62c098b8a95f13eb"
+    },
+    {
+      "byteLength": 1062,
+      "class": "VEHICLE_KIT",
+      "path": "scripts/vehicle/run-seal-hud-sign-matrix.sh",
+      "sha256": "6e64aa3c193d07d2f96c75ed7b4bdf8afe505533fcfbafb5097432f7a0872dc6"
+    },
+    {
+      "byteLength": 25545,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/verify-hud-sign-candidate-expansion.sh",
+      "sha256": "2cfe789d2739919c71cae496cdd6872047198fd4b5194c226b45e4fb28943a59"
+    },
+    {
+      "byteLength": 19642,
+      "class": "EXECUTION_SCRIPT",
+      "path": "scripts/verify-seal-hud-sign-offcar.sh",
+      "sha256": "b23253fa8f934b107c58186ef60fff7959b8e7b3059df1cb4a59d9d7f3a92a1a"
+    },
+    {
+      "byteLength": 4879,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "tools/re/manifest.json",
+      "sha256": "4b685ba2fc2234500094c820daf3b3f29d9e88af9afed4845668219100424418"
+    },
+    {
+      "byteLength": 372,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/build.gradle.kts",
+      "sha256": "9292e5f2da969e3aacf527b6a3451af54bfc67d4fcc59651e66ec294f3aa7495"
+    },
+    {
+      "byteLength": 806,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/contracts/SpeedLimitEnums.kt",
+      "sha256": "0c9d79c21829685b3083792b38d6d65e5c3944a2db865c94161720559f89f673"
+    },
+    {
+      "byteLength": 3415,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/contracts/SpeedLimitFrame.kt",
+      "sha256": "6b79028188211eeea710bc2b926d66ea5ae957960c0e812d48bbe569fa59b050"
+    },
+    {
+      "byteLength": 16817,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Canonical.kt",
+      "sha256": "85184b8b2b62bb5ca4bee7aae46ccd10ca286d1e944cbf63a62792f32fa53c09"
+    },
+    {
+      "byteLength": 13335,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Identity.kt",
+      "sha256": "6b0a18f360ced2007ec336ccf91aa0a485c13f0b9ebe2217a578c25a3941475f"
+    },
+    {
+      "byteLength": 18516,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Ledger.kt",
+      "sha256": "b6241eb76f899b700daf2568e00808abe569a1921a1a03b290140891a30fd05f"
+    },
+    {
+      "byteLength": 28906,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Session.kt",
+      "sha256": "54fcde09cd396e2c6cad65020893a6b439c4bb0564155065141a1aaf1852ca5a"
+    },
+    {
+      "byteLength": 8581,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Transport.kt",
+      "sha256": "efb9bc231120106db37044d8e83d65bf0cceaee7ba2556e864f002d839218846"
+    },
+    {
+      "byteLength": 15514,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/main/resources/t10-contracts.schema.json",
+      "sha256": "63ab429bf516f7723837e70d8bab8aacd93b76076935216513e93f1f994a080c"
+    },
+    {
+      "byteLength": 2531,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/test/kotlin/com/byd/clusternav/contracts/SpeedLimitFrameTest.kt",
+      "sha256": "273bb27ff063e962ecd13cc4078b6cd578b5deb5d63f9b0855aabccb085d7797"
+    },
+    {
+      "byteLength": 24840,
+      "class": "SUPPORTING_DOCUMENT",
+      "path": "vehicle-contracts/src/test/kotlin/com/byd/clusternav/vehicle/t10/T10ContractsTest.kt",
+      "sha256": "da1ad16a4af615036d5a3092a61a1f0ef5b749738418cfc531103d450d0a0c4a"
+    }
+  ],
+  "schema": "clusternav.exact-source/v1",
+  "sourceId": "fd63d1a346cc045beb889654c1e785a67cb641c1abc882a5d4c65bc716e473b9",
+  "trackedDiff": {
+    "byteLength": 333277,
+    "producer": "GIT_OPTIONAL_LOCKS=0 git diff --binary --no-ext-diff HEAD",
+    "sha256": "ecb01d21938eb0105c48caa2e93d8bfe4df04462d591ea86c2f1c4c9db2e652f"
+  },
+  "version": {
+    "label": "1.05",
+    "versionCode": 105,
+    "versionName": "1.05"
+  }
+}

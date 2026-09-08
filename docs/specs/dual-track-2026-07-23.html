@@ -1,0 +1,244 @@
+<meta charset="utf-8">
+<title>ClusterNav — Kế hoạch 2 nhánh: Release chiếu-cụm (v0.60) + Debug máy-dò-nav</title>
+<style>
+  :root{
+    --bg:#fbfbfd; --fg:#1d1d1f; --muted:#6e6e73; --line:#e3e3e8; --card:#fff;
+    --accent:#0071e3; --warn:#b25000; --danger:#c2261a; --ok:#1d7a34; --code-bg:#f5f5f7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000; --fg:#f5f5f7; --muted:#98989d; --line:#2c2c2e; --card:#1c1c1e;
+           --accent:#0a84ff; --warn:#ff9f0a; --danger:#ff6961; --ok:#30d158; --code-bg:#1c1c1e; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:64px 24px 120px}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.022em;margin:0 0 8px;font-weight:700}
+  h2{font-size:26px;letter-spacing:-.02em;margin:56px 0 12px;padding-top:24px;border-top:1px solid var(--line);font-weight:650}
+  h3{font-size:19px;letter-spacing:-.01em;margin:32px 0 8px;font-weight:600}
+  .sub{color:var(--muted);font-size:17px;margin:0 0 8px}
+  .meta{color:var(--muted);font-size:14px;margin:0 0 40px}
+  code,pre{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  code{background:var(--code-bg);padding:.12em .38em;border-radius:5px;font-size:.88em}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:13.5px;line-height:1.55}
+  pre code{background:none;padding:0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:20px;border:1px solid currentColor}
+  .p0{color:var(--danger)} .p1{color:var(--warn)} .p2{color:var(--muted)} .ok{color:var(--ok)}
+  .warnbox{border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0}
+  .diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:20px 0;overflow-x:auto}
+  .diagram svg{display:block;width:100%;height:auto;min-width:560px}
+  .svg-box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+  .svg-box-hi{fill:none;stroke:var(--accent);stroke-width:2}
+  .svg-box-bad{fill:none;stroke:var(--danger);stroke-width:2;stroke-dasharray:5 4}
+  .svg-box-ok{fill:none;stroke:var(--ok);stroke-width:2}
+  .svg-t{fill:var(--fg);font:13px -apple-system,sans-serif}
+  .svg-t-s{fill:var(--muted);font:11px -apple-system,sans-serif}
+  .svg-line{stroke:var(--muted);stroke-width:1.5;fill:none}
+  .svg-line-hi{stroke:var(--accent);stroke-width:2;fill:none}
+  .svg-line-bad{stroke:var(--danger);stroke-width:2;fill:none}
+  ul{padding-left:22px} li{margin:5px 0}
+  .kv{color:var(--muted);font-size:14px}
+</style>
+
+<div class="wrap">
+
+<h1>Kế hoạch 2 nhánh độc lập</h1>
+<p class="sub">Track 1 — Release: hoàn thiện + hardening chức năng <strong>chiếu app lên cụm</strong> (gồm CP/AA) → main → ship. · Track 2 — Debug: bản riêng để <strong>dò tín hiệu dẫn đường</strong> sạch.</p>
+<p class="meta">Owner: Đăng Khôi (dangkhoi) · 2026-07-23 · trạng thái: CHỜ DUYỆT (chưa code) · nguồn: field session 23/07 (docs/diagnostics/carlog-2026-07-23-trace)</p>
+
+<h2>Changelog</h2>
+<table>
+<tr><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>2026-07-23</td><td>Tạo spec. Sau field session (kéo log + trace Vietmap/Waze/AA/CP). Chia 2 nhánh theo yêu cầu chủ dự án.</td></tr>
+</table>
+
+<h2>Context</h2>
+<p>Field session 23/07 trên Seal (DL3): đã kéo toàn bộ log chuẩn bị + trace trực tiếp Vietmap/Waze/AA/CP. Rút ra:</p>
+<div class="warnbox">
+<strong>⚠️ Kết luận nav-signal của phiên trace KHÔNG đáng tin — KHÔNG dùng làm cơ sở implement.</strong>
+Gốc: máy dò (NavProbe) <strong>tái dùng file cũ</strong> — <code>NavProbe.file()</code> trả về <code>K_FILE</code> đã lưu trong prefs nếu file còn tồn tại, nên <code>setOn()</code> hôm nay <em>append</em> vào file navprobe từ 07-22. Digest trộn bản ghi 07-22 (text tiếng Trung) với hôm nay → mọi "delta"/quy kết nguồn (AA? CP? Vietmap?) đều nhiễu. Đây là <strong>bug thật</strong>, và là lý do phải làm Track 2.
+</div>
+<p>Chỉ giữ lại 2 sự thật đo được sạch (không phụ thuộc file navprobe):</p>
+<ul>
+<li><strong>AA &amp; CP là video-surface</strong> — <code>uiautomator dump</code> = "null root"; chỉ có window-state a11y event, không text. Screencap được (pixel).</li>
+<li><strong>Cụm (display 1) hiện sạch</strong> — không orphan (<code>am stack list</code> mọi stack ở display 0; <code>dumpsys window displays</code> display 1 focus=null).</li>
+</ul>
+<p><strong>Chưa kết luận</strong>: app nào phát <code>AUTONAVI_STANDARD_BROADCAST_SEND</code> / kênh nào lấy được nav CP/AA. → để Track 2 dò lại sạch.</p>
+
+<h2>Chiến lược nhánh</h2>
+<div class="diagram">
+<svg viewBox="0 0 860 250" role="img" aria-label="Chiến lược 2 nhánh từ main">
+  <line class="svg-line" x1="40" y1="60" x2="820" y2="60"/>
+  <text class="svg-t" x="40" y="44">main</text>
+  <text class="svg-t-s" x="40" y="80">v0.57</text>
+  <circle cx="120" cy="60" r="6" fill="var(--muted)"/>
+  <circle cx="700" cy="60" r="7" fill="var(--ok)"/>
+  <text class="svg-t-s" x="700" y="44" text-anchor="middle">merge v0.60</text>
+
+  <path class="svg-line-hi" d="M120 60 C 220 60, 240 150, 340 150"/>
+  <line class="svg-line-hi" x1="340" y1="150" x2="620" y2="150"/>
+  <path class="svg-line-hi" d="M620 150 C 660 150, 670 60, 700 60"/>
+  <rect class="svg-box-hi" x="345" y="126" width="270" height="48" rx="10"/>
+  <text class="svg-t" x="480" y="146" text-anchor="middle">TRACK 1 · release/v0.60-cast-hardening</text>
+  <text class="svg-t-s" x="480" y="163" text-anchor="middle">teardown-guard [P0] + hardening → MERGE main → ship</text>
+
+  <path class="svg-line-bad" d="M120 60 C 200 60, 210 220, 300 220"/>
+  <line class="svg-line-bad" x1="300" y1="220" x2="660" y2="220"/>
+  <rect class="svg-box-bad" x="300" y="196" width="360" height="48" rx="10"/>
+  <text class="svg-t" x="480" y="216" text-anchor="middle">TRACK 2 · debug/navprobe-clean</text>
+  <text class="svg-t-s" x="480" y="233" text-anchor="middle">applicationId .debug · KHÔNG merge main · dò nav sạch</text>
+</svg>
+<div class="kv">Xanh = nhập main để release. Đỏ đứt = nhánh debug độc lập, không bao giờ nhập main (cài song song để nghiên cứu).</div>
+</div>
+<p>Nhánh <code>fix/diag-flags-sizecompat</code> (v0.59) hiện tại: <strong>không merge as-is</strong>. Cherry-pick phần TỐT (diag flags v0.58, size-compat-warn) vào Track 1; phần comment R3 sai → sửa; rồi bỏ nhánh.</p>
+
+<!-- ========================= TRACK 1 ========================= -->
+<h2>TRACK 1 — Release: chiếu app lên cụm (gồm CP/AA), hardening → main</h2>
+
+<h3>Requirements</h3>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th><th>P</th></tr>
+<tr><td>RT1.1</td><td>Chiếu app lên cụm (Vietmap/Waze/GMaps/CP/AA) <strong>KHÔNG gây cửa sổ mồ côi → phải reboot xe</strong>. Đây là lỗi hiện trường số 1.</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>RT1.2</td><td><strong>Teardown-guard</strong>: trước mỗi lần huỷ/tái tạo Virtual Display (VD), bê sink chiếu-điện-thoại (CP/AA) ra khỏi VD <em>trước</em>, giữ phiên (không force-stop).</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>RT1.3</td><td><strong>Fail-closed</strong>: nếu sink không composite được trên cụm (freeform chưa sống) → TỪ CHỐI chiếu, không bỏ lại nửa vời.</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>RT1.4</td><td>Post-op divergence check: kiểm mồ côi NGAY SAU mỗi cast/teardown (2-mẫu chống false-positive), tự dọn/cảnh báo.</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>RT1.5</td><td>Sửa comment R3 quy kết sai tại <code>ClusterCast.kt:793–796</code> (không trích log, quy kết force-stop gây reboot).</td><td><span class="tag p2">P2</span></td></tr>
+<tr><td>RT1.6</td><td>Ghi log chiếu ra file (<code>appfiles/cast_log_*.txt</code>) — R1/R2/R3/evict + <code>am stack list</code> trước/sau, để chẩn đoán hiện trường.</td><td><span class="tag p2">P2</span></td></tr>
+<tr><td>RT1.7</td><td>Giữ 162 test pass + thêm test hồi quy orphan (fixture <code>diag-0722-172456/172848</code>). Tách <code>ClusterCast.kt</code> (1261 LOC) nếu kịp.</td><td><span class="tag p2">P2</span></td></tr>
+</table>
+
+<h3>Design</h3>
+<p><strong>Teardown-guard</strong> — chèn vào 3 điểm huỷ/tái tạo VD: cmd16 re-project (<code>:451</code>), teardownSeq (<code>:481/:622</code>), evictVd (<code>:709</code>):</p>
+<div class="diagram">
+<svg viewBox="0 0 860 230" role="img" aria-label="Luồng teardown-guard">
+  <rect class="svg-box" x="10" y="90" width="150" height="50" rx="10"/>
+  <text class="svg-t" x="85" y="112" text-anchor="middle">cần huỷ/tái tạo VD</text>
+  <text class="svg-t-s" x="85" y="128" text-anchor="middle">cmd16 / teardownSeq / evict</text>
+
+  <rect class="svg-box-hi" x="205" y="86" width="180" height="58" rx="10"/>
+  <text class="svg-t" x="295" y="108" text-anchor="middle">quét stack isPhoneProjection</text>
+  <text class="svg-t-s" x="295" y="125" text-anchor="middle">CP/AA đang ở VD?</text>
+
+  <rect class="svg-box-hi" x="430" y="20" width="180" height="58" rx="10"/>
+  <text class="svg-t" x="520" y="42" text-anchor="middle">move-stack &lt;sink&gt; → 0</text>
+  <text class="svg-t-s" x="520" y="59" text-anchor="middle">bê về đầu xe, GIỮ phiên</text>
+
+  <rect class="svg-box-ok" x="660" y="20" width="180" height="58" rx="10"/>
+  <text class="svg-t" x="750" y="36" text-anchor="middle">verify VD sạch</text>
+  <text class="svg-t-s" x="750" y="52" text-anchor="middle">→ MỚI teardown</text>
+  <text class="svg-t-s" x="750" y="67" text-anchor="middle">→ post-op divergence check</text>
+
+  <rect class="svg-box-bad" x="430" y="150" width="410" height="52" rx="10"/>
+  <text class="svg-t" x="635" y="172" text-anchor="middle">move-stack FAIL → KHÔNG teardown (fail-safe)</text>
+  <text class="svg-t-s" x="635" y="189" text-anchor="middle">thà giữ nguyên còn hơn tạo mồ côi phải reboot</text>
+
+  <path class="svg-line" d="M160 115 H205"/>
+  <path class="svg-line-hi" d="M385 105 C 405 105, 410 49, 430 49"/>
+  <path class="svg-line-ok" d="M610 49 H660"/>
+  <path class="svg-line-bad" d="M385 125 C 405 125, 410 176, 430 176"/>
+</svg>
+</div>
+<ul>
+<li>Scope chặt (§4 quy tắc): chỉ stack <code>isPhoneProjection</code> (đã có v0.59), chỉ VD (display ≥ 1), verify <code>am stack list</code> sau move.</li>
+<li>Tận dụng R3-block v0.59: khi R3 chặn cho sink mà R1/R2 hụt → <code>move-stack &lt;sink&gt; 0</code> bê khỏi VD rồi mới bỏ qua.</li>
+<li><strong>Base nhánh</strong>: off <code>main</code> (v0.57 ổn định) + cherry-pick diag-flags/size-compat-warn từ v0.59 + teardown-guard. → tránh mang theo rủi ro chưa rõ của v0.59.</li>
+</ul>
+
+<h3>Tasks (DAG)</h3>
+<ul>
+<li>T1.a — Tạo nhánh <code>release/v0.60-cast-hardening</code> off main; cherry-pick diag flags + size-compat-warn; sửa comment R3.</li>
+<li>T1.b — Implement teardown-guard (3 điểm) + fail-closed + post-op divergence; bump v0.60.</li>
+<li>T1.c — Test hồi quy orphan (fixture 172456/172848) + cast-log-to-file; chạy full test suite.</li>
+<li>T1.d — Senior review + hardening; (optional) tách ClusterCast.kt.</li>
+<li>T1.e — Build release APK → verify trên xe (khi có xe) → merge main → ship (UpdateChecker query <code>main/apk/</code>).</li>
+</ul>
+
+<!-- ========================= TRACK 2 ========================= -->
+<h2>TRACK 2 — Debug: máy dò nav sạch (nhánh riêng, cài song song)</h2>
+
+<h3>Requirements</h3>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th><th>P</th></tr>
+<tr><td>RT2.1</td><td><strong>Mỗi phiên = file MỚI</strong> — KHÔNG tái dùng file cũ. Sửa gốc "log lẫn lộn": file gắn theo (versionName + boot-session-id); khác → tạo file mới. Header ghi session-id + thời điểm + lý do bật.</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>RT2.2</td><td>Mỗi bản ghi kèm <strong>context</strong>: app đang foreground + danh sách nav-app đang chạy tại thời điểm capture → quy kết nguồn đáng tin.</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>RT2.3</td><td>Cố lấy <strong>sender package</strong> của broadcast nav (AUTONAVI/NAVIGATION_STATE) — biết đích xác app nào phát.</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>RT2.4</td><td><strong>Export ra external files dir</strong> (adb-pullable) — bỏ rào file nội bộ (bản debug, không lo PII vì chỉ mình dùng).</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>RT2.5</td><td><strong>Isolation test mode</strong>: nút "đo 1 app" → force-stop nav khác + ghi rõ chỉ-1-nguồn.</td><td><span class="tag p2">P2</span></td></tr>
+<tr><td>RT2.6</td><td>Debug build = <code>applicationId</code> riêng (<code>.debug</code>), label "ClusterNav DEBUG", versionName có hậu tố <code>-debug</code> → cài SONG SONG bản release, log không bao giờ lẫn.</td><td><span class="tag p1">P1</span></td></tr>
+</table>
+
+<h3>Design</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 190" role="img" aria-label="Luồng phiên navprobe sạch">
+  <rect class="svg-box" x="10" y="70" width="140" height="50" rx="10"/>
+  <text class="svg-t" x="80" y="92" text-anchor="middle">bật máy dò</text>
+  <text class="svg-t-s" x="80" y="108" text-anchor="middle">(hoặc nổ máy)</text>
+  <rect class="svg-box-hi" x="195" y="66" width="200" height="58" rx="10"/>
+  <text class="svg-t" x="295" y="88" text-anchor="middle">so session-id hiện tại</text>
+  <text class="svg-t-s" x="295" y="105" text-anchor="middle">version+boot khác file cũ?</text>
+  <rect class="svg-box-ok" x="440" y="20" width="180" height="50" rx="10"/>
+  <text class="svg-t" x="530" y="42" text-anchor="middle">FILE MỚI + header</text>
+  <text class="svg-t-s" x="530" y="58" text-anchor="middle">session-id, ts, lý do</text>
+  <rect class="svg-box" x="440" y="120" width="180" height="46" rx="10"/>
+  <text class="svg-t" x="530" y="147" text-anchor="middle">ghi tiếp file phiên này</text>
+  <rect class="svg-box-hi" x="660" y="66" width="180" height="58" rx="10"/>
+  <text class="svg-t" x="750" y="84" text-anchor="middle">mỗi record +context</text>
+  <text class="svg-t-s" x="750" y="100" text-anchor="middle">foreground + nav-app chạy</text>
+  <text class="svg-t-s" x="750" y="114" text-anchor="middle">+ sender pkg</text>
+  <path class="svg-line" d="M150 95 H195"/>
+  <path class="svg-line-ok" d="M395 88 C 415 88, 420 45, 440 45"/>
+  <path class="svg-line" d="M395 100 C 415 100, 420 143, 440 143"/>
+  <path class="svg-line-hi" d="M620 45 C 645 45, 645 95, 660 95"/>
+  <path class="svg-line" d="M620 143 C 645 143, 645 95, 660 95"/>
+</svg>
+</div>
+<ul>
+<li>Sửa <code>NavProbe.file()</code>: thêm <code>K_SESSION</code> = <code>versionName + ":" + bootId</code> (<code>Settings.Global boot_count</code> hoặc <code>elapsedRealtime</code> mốc). Khác session → <code>newFilePath()</code>, không reuse. → hết trộn cũ/mới.</li>
+<li><code>recordBroadcast/recordNotification/recordNodes</code>: prepend 1 dòng context (<code>fg=&lt;pkg&gt; · nav=[đang chạy]</code>).</li>
+<li>Sender pkg: dùng dynamic receiver + <code>getSentFromPackage()</code> nếu API cho, hoặc log-correlation; best-effort, ghi "?" nếu không lấy được.</li>
+<li>Export: bản debug ghi <code>getExternalFilesDir()/navprobe/</code> (thay <code>filesDir</code>) → <code>adb pull</code> thẳng. Bản release giữ nội bộ (privacy).</li>
+<li>Build variant: <code>debug</code> flavor trong <code>build.gradle.kts</code> — <code>applicationIdSuffix ".debug"</code>, <code>versionNameSuffix "-debug"</code>, label riêng. Ký cùng key nhóm.</li>
+</ul>
+
+<h3>Tasks (DAG)</h3>
+<ul>
+<li>T2.a — Nhánh <code>debug/navprobe-clean</code> off main. Thêm build variant <code>.debug</code> (applicationId riêng, label, versionName suffix).</li>
+<li>T2.b — Sửa <code>NavProbe.file()</code> session-key (fix reuse) + header session-id. Test off-device.</li>
+<li>T2.c — Per-record context + sender pkg + export external (debug flavor).</li>
+<li>T2.d — Isolation test mode (nút đo-1-app). Senior review. Build debug APK.</li>
+<li>T2.e — (khi có xe) cài song song release, dò lại sạch → kết luận nguồn AUTONAVI/nav CP-AA.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Track 1: full unit suite pass (162 + regression orphan mới); teardown-guard chặn được fixture orphan; (trên xe) chiếu CP/AA rồi re-project/stop KHÔNG tạo mồ côi.</li>
+<li>Track 2: file mới mỗi khi đổi version/boot (test off-device bằng fake session-id); debug APK cài song song release (2 icon, 2 applicationId); <code>adb pull</code> lấy được navprobe external; mỗi record có dòng context.</li>
+<li>Cả hai: senior review 0 P0–P1; security scan CLEAN trước commit; SDD/spec này cập nhật khi implement.</li>
+</ul>
+
+<h2>Open Questions — cần chốt trước khi code</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Đề xuất mặc định</th></tr>
+<tr><td>Q1</td><td>Nhánh release base off <code>main</code> (v0.57) hay off nhánh v0.59?</td><td><strong>off main</strong> + cherry-pick phần tốt v0.59 (sạch, ít rủi ro)</td></tr>
+<tr><td>Q2</td><td>Bản debug: applicationId riêng <code>.debug</code> cài song song, hay cùng package khác nhánh?</td><td><strong>applicationId riêng</strong> (cài song song, log không lẫn, dò xe tiện)</td></tr>
+<tr><td>Q3</td><td>"Chiếu CP/AA lên cụm" — mục tiêu là <em>an toàn không reboot</em> hay phải <em>dùng được đầy đủ</em>?</td><td><strong>An toàn (teardown-guard) + best-effort dùng được</strong>; dùng-đầy-đủ để sau</td></tr>
+<tr><td>Q4</td><td>Cờ <code>force_resizable_activities</code> (§6b: một cờ không thắng cả Vietmap-float lẫn CP/AA-fill) — xử sao trong release?</td><td>Giữ mặc định hiện tại (=1) + document; làm auto-heal sau</td></tr>
+<tr><td>Q5</td><td>Ship v0.60 cho anh em: qua UpdateChecker (đặt APK vào <code>main/apk/</code>) đúng không?</td><td>Đúng — merge main + đặt APK release-signed vào <code>apk/</code></td></tr>
+</table>
+
+<h2>References</h2>
+<ul>
+<li>Handoff: <code>docs/review/HANDOFF-2026-07-23.md</code> (§5-A teardown-guard, §5-B/D/E, §6b flag).</li>
+<li>Field logs: <code>docs/diagnostics/carlog-2026-07-23-trace/</code> (README + live/aa-1156 + live/cp-1221 FINDINGS — có banner đính chính).</li>
+<li>Spec feature gốc: <code>docs/specs/cluster-cast-v036.html</code>.</li>
+<li>Code: <code>modules/clustercast/ClusterCast.kt</code> (1261 LOC), <code>modules/navprobe/NavProbe.kt</code> (file-reuse bug).</li>
+</ul>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>

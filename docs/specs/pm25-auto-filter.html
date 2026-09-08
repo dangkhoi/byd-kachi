@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tự lọc bụi mịn (PM2.5) — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Tự lọc bụi mịn (PM2.5)</h1>
+<p class="muted">Slug: <code>pm25-auto-filter</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill ok">Off-car: build xanh + test 0 fail</span> · <span class="pill wait">On-car: chờ xác nhận 4 ẩn số</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,documentation-and-backlog}.md</code>. Không dùng thư viện/framework mới → không cần Context7 (chỉ Android SDK + hạ tầng HAL đã có). Mirror mục "Ghế: làm mát / sưởi" (<code>seat-comfort-auto</code>).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-04</b>: Khởi tạo + implement đầy đủ (core + app + 2 layout + test). RE ở <code>docs/diagnostics/byd-pm25-airclean-RE-2026-09-04.md</code> (device 1008 đọc mức; AC device method GHI reflection). Owner: một công tắc "Tự lọc bụi mịn" mặc định TẮT, ngay dưới card ghế, bật → xe tự lọc liên tục KHÔNG popup, hiện mức bụi hiện tại; đơn giản — không chọn ngưỡng.</li>
+<li><b>Pass 1 — 2026-09-08 (v1.38)</b>: sửa on-car — owner báo bụi lên tới mức xe hiện popup nhắc lọc mà KHÔNG tự lọc ⇒ <code>setAutoCleanAirState(1)</code> một mình KHÔNG chủ động lọc trên trim này (chỉ đặt chế độ). Thêm nút <b>"Lọc ngay"</b> (<code>btn_pm25_clean_now</code>) → <code>setQuickCleanAirState(1)</code> thủ công (bất kể công tắc), và vòng poll TRONG-TIẾN-TRÌNH ~45 s bắn quick-clean khi bụi ≥ HEAVY. R-nf1 ("no polling", Pass 0) bị THAY THẾ (xem Nhật ký 2026-09-08).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Vấn đề / mong muốn (PO):</b> Xe BYD có lọc không khí + cảm biến PM2.5 nhưng mặc định hay hiện popup và không tự chạy liên tục theo ý owner. Owner muốn MỘT công tắc "tự bật lọc, không hiện popup gì hết", tự chạy ~5 s sau khi lên xe (mở app / nổ máy), và hiện mức bụi hiện tại để biết.</p>
+<p><b>Đã có sẵn:</b> hạ tầng HAL reflection <code>BydHal.device(fqn, *ctxs)</code> + <code>bypass()</code>/<code>systemBypassContext()</code>; mẫu applier degrade-safe (<code>SeatComfortApplier</code>); UI dựng-bằng-code + song ngữ <code>Lang.t</code> + pattern detach-listener.</p>
+<div class="card"><b>Nguồn RE (ground truth):</b> ĐỌC <code>BYDAutoPM2p5Device</code> (device 1008) — <code>getPM2p5Level()[0]</code> = mức (INVALID=0..SERIOUS=6, càng cao càng bẩn). GHI <code>BYDAutoAcDevice</code> — <code>enablePurificationFunctionPrompt(int)</code>/<code>setAutoCleanAirState(int)</code>/<code>setQuickCleanAirState(int)</code>, <b>CHỈ có trên ROM xe, KHÔNG trong SDK jar</b> ⇒ gọi bằng REFLECTION. Chi tiết + bảng: <code>docs/diagnostics/byd-pm25-airclean-RE-2026-09-04.md</code>.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li>R1. MỘT công tắc "Tự lọc bụi mịn" (<code>@+id/switch_pm25_filter</code>). Mặc định TẮT.</li>
+<li>R2. Đặt ở cột TRÁI, NGAY DƯỚI card ghế (sau <code>@+id/btn_seat_comfort_apply</code>) ở CẢ hai biến thể layout.</li>
+<li>R3. BẬT → xe tự lọc KHÔNG popup: <code>enablePurificationFunctionPrompt(0)</code> + <code>setAutoCleanAirState(1)</code>; nếu mức hiện ≥ HEAVY(5) thêm <code>setQuickCleanAirState(1)</code>. Áp ~5 s sau start + lúc boot (như ghế).</li>
+<li>R4. Hiện mức PM2.5 hiện tại dạng text (<code>@+id/txt_pm25_level</code>): đọc <code>getPM2p5Level</code> → nhãn VI. Không đọc được (off-car) → "—". ĐƠN GIẢN — KHÔNG chọn ngưỡng, KHÔNG option thừa.</li>
+<li>R5. TẮT → <code>setAutoCleanAirState(0)</code> + <code>enablePurificationFunctionPrompt(1)</code> (khôi phục).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. <s>KHÔNG service foreground polling — xe tự giám sát qua autoClean; app chỉ ĐỌC mức để hiển thị.</s> <b>THAY THẾ 2026-09-08 (v1.38):</b> on-car <code>setAutoCleanAirState(1)</code> KHÔNG chủ động lọc (chỉ đặt chế độ, popup vẫn hiện) ⇒ thêm vòng poll TRONG-TIẾN-TRÌNH (ClusterNav luôn chạy nền, KHÔNG phải foreground service riêng) mỗi ~45 s, bụi ≥ HEAVY → <code>setQuickCleanAirState(1)</code>; + nút "Lọc ngay" thủ công. Xem Nhật ký 2026-09-08.</li>
+<li>R-nf2. Ghi/đọc HAL = reflection, <b>degrade-safe</b> (runCatching mỗi lời gọi; off-car = no-op, không crash). Applier không được ném trên thread của nó.</li>
+<li>R-nf3. Song ngữ đặt lúc chạy qua <code>Lang.t</code> (KHÔNG thêm <code>strings.xml</code> — đang byte-seal).</li>
+<li>R-nf4. Giữ parity <code>@+id</code> hai biến thể layout (LayoutVariantIdParityTest).</li>
+<li>R-nf5. KHÔNG đổi versionCode/versionName.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng dữ liệu</h3>
+<div class="flow">
+  <div class="fnode"><b>UI (MainActivity)</b><span>switch · nhãn mức</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Prefs</b><span>pm25FilterEnabled</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Pm25FilterApplier</b><span>~5s nền · enable/disable · readLevel</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Pm25Filter (:core)</b><span>isDirty · levelLabel</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>BydHal</b><span>device(AC/PM2P5) + reflection</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse: BydHal, Prefs style, Lang.t)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới (Pm25Filter, Pm25FilterApplier, UI)</span>
+</div>
+
+<h3>4.2 Bảng mức PM2.5 (getPM2p5Level()[0]) — càng cao càng bẩn</h3>
+<table>
+<tr><th>Hằng</th><th>Giá trị</th><th>Nhãn VI</th><th>Nhãn EN</th></tr>
+<tr><td><code>INVALID</code></td><td>0</td><td>—</td><td>—</td></tr>
+<tr><td><code>EXCELLENT</code></td><td>1</td><td>Rất tốt</td><td>Excellent</td></tr>
+<tr><td><code>GOOD</code></td><td>2</td><td>Tốt</td><td>Good</td></tr>
+<tr><td><code>LOW_GRADE</code></td><td>3</td><td>Khá</td><td>Low grade</td></tr>
+<tr><td><code>MIDDLE</code></td><td>4</td><td>Trung bình</td><td>Moderate</td></tr>
+<tr><td><code>HEAVY</code></td><td>5</td><td>Nặng</td><td>Heavy</td></tr>
+<tr><td><code>SERIOUS</code></td><td>6</td><td>Nghiêm trọng</td><td>Serious</td></tr>
+</table>
+<p class="muted"><code>Pm25Filter.isDirty(level, threshold=HEAVY)</code> = true khi <code>level in threshold..SERIOUS</code>. <code>DEFAULT_THRESHOLD = HEAVY(5)</code> — ngưỡng "lọc-ngay" lúc bật (hằng chỉnh-được duy nhất, KHÔNG lộ ra UI).</p>
+
+<h3>4.3 API HAL (reflection, degrade-safe)</h3>
+<table>
+<tr><th>Hướng</th><th>Device</th><th>Lời gọi (reflection)</th><th>Nghĩa</th></tr>
+<tr><td>BẬT</td><td>AC</td><td><code>enablePurificationFunctionPrompt(0)</code></td><td>tắt popup nhắc lọc</td></tr>
+<tr><td>BẬT</td><td>AC</td><td><code>setAutoCleanAirState(1)</code></td><td>lọc-liên-tục (xe tự theo dõi)</td></tr>
+<tr><td>BẬT (nếu ≥HEAVY)</td><td>AC</td><td><code>setQuickCleanAirState(1)</code></td><td>lọc-ngay một nhịp</td></tr>
+<tr><td>TẮT</td><td>AC</td><td><code>setAutoCleanAirState(0)</code></td><td>tắt lọc-liên-tục</td></tr>
+<tr><td>TẮT</td><td>AC</td><td><code>enablePurificationFunctionPrompt(1)</code></td><td>khôi phục popup</td></tr>
+<tr><td>ĐỌC</td><td>PM2P5 (1008)</td><td><code>getPM2p5Level()[0]</code></td><td>mức bụi cho hiển thị</td></tr>
+</table>
+<p class="muted">Mỗi lời gọi bọc <code>runCatching</code> RIÊNG (<code>getMethod(name, int).invoke(dev, arg)</code>). ROM thiếu method / device null (off-car) → log rồi bỏ qua, KHÔNG ném. Log tag <code>Pm25Filter</code> in <code>method(arg) rc=…</code> + mức đọc được.</p>
+
+<h3>4.4 Quyết định thiết kế + Context7</h3>
+<ul>
+<li>Model thuần ở <code>:core</code> (<code>Pm25Filter</code>) để unit-test off-device; phần chạm Android (HAL reflection) ở <code>:app</code> (<code>Pm25FilterApplier</code>).</li>
+<li>Dùng LẠI <code>BydHal.device</code>/<code>bypass</code>/<code>systemBypassContext</code>; chỉ thêm 1 hằng FQN <code>BydHal.PM2P5</code>. KHÔNG thêm lời gọi biên dịch cho method ROM-only.</li>
+<li>Áp trên Thread nền + <code>Thread.sleep(5000)</code> (khớp <code>SeatComfortApplier</code>). KHÔNG service polling (R-nf1).</li>
+<li>Nhãn mức đọc trên thread nền rồi <code>Handler.post</code> về TextView (reflection HAL không được chạy ở main).</li>
+<li><b>Context7</b>: không dùng thư viện/framework mới → không cần. Chỉ Android SDK + hạ tầng đã có.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Model thuần + test (level const/isDirty/levelLabel)</td><td><code>core/.../comfort/Pm25Filter.kt (+Test)</code></td></tr>
+<tr><td>T2</td><td>Hằng device PM2P5</td><td><code>app/.../modules/hal/BydHal.kt</code></td></tr>
+<tr><td>T3</td><td>Prefs: pm25FilterEnabled (default false) + setter</td><td><code>app/.../Prefs.kt</code></td></tr>
+<tr><td>T4</td><td>Applier (applyOnStart ~5s · enable · disable · readLevel) reflection degrade-safe</td><td><code>app/.../comfort/Pm25FilterApplier.kt</code></td></tr>
+<tr><td>T5</td><td>UI 2 biến thể (3 id parity)</td><td><code>app/.../res/layout[-w960dp]/activity_main.xml</code></td></tr>
+<tr><td>T6</td><td>Wiring MainActivity (setup + applyOnStart); BootSetupService applyOnStart</td><td><code>MainActivity.kt · BootSetupService.kt</code></td></tr>
+<tr><td>T7</td><td>Seal re-pin (lần 11) + build + full test</td><td><code>offcar-planner/.../ExpansionTransportFenceTest.kt</code></td></tr>
+<tr><td>T8</td><td>Docs (RE + spec) + INDEX</td><td><code>docs/diagnostics/byd-pm25-airclean-RE-2026-09-04.md · docs/specs/pm25-auto-filter.html · docs/README.md</code></td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>Pm25FilterTest</code> (:core) khoá level const (0..6), isDirty boundary (4=false/5=true/6=true/0=false + custom threshold + out-of-range), map nhãn VI/EN (INVALID/unknown → "—"). <code>LayoutVariantIdParityTest</code> (:app) khoá parity 3 id mới.</li>
+<li>V-build: <code>:app:assembleDebug</code> exit 0 (Kotlin + aapt2 link 2 layout). Full suite <code>./gradlew test --rerun-tasks --continue</code> = 0 fail (5 module).</li>
+<li>V-seal: SHA-256 bản dọc <code>activity_main.xml</code> = hằng pin <code>27730837…b6ff</code> (lần 11).</li>
+<li>V-oncar (CHỜ): 4 ẩn số §7 — chốt bằng <code>logcat -s Pm25Filter</code> (in method/arg/rc + mức) trên xe owner.</li>
+<li>V-lifecycle: bật switch → thoát app → mở lại: state khôi phục từ Prefs; ~5s sau mở app tự bật lọc. Off-car: <code>device()</code> null → log rồi return, không crash; nhãn mức = "—".</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. <code>getPM2p5Level()[0]</code> thật là index mức (không phải raw <code>getPM2p5Value</code>)? <span class="muted">CHỜ logcat on-car.</span></li>
+<li>OQ2. <code>setAutoCleanAirState(1)</code> bật lọc mà KHÔNG bung popup? <span class="muted">CHỜ quan sát trên xe.</span></li>
+<li>OQ3. <code>enablePurificationFunctionPrompt(0)</code> dập MỌI popup, hay còn popup khác? <span class="muted">Nếu còn → RE thêm.</span></li>
+<li>OQ4. rc trả về (0 = OK?) trên trim owner. <span class="muted">CHỜ logcat.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>RE: <code>docs/diagnostics/byd-pm25-airclean-RE-2026-09-04.md</code> — device 1008 read API + AC purify method + reflection rationale + on-car unknowns.</li>
+<li><code>app/.../modules/hal/BydHal.kt</code> — <code>device()</code>/<code>bypass()</code>/<code>systemBypassContext()</code> + hằng <code>AC</code>/<code>PM2P5</code>.</li>
+<li><code>docs/specs/seat-comfort-auto.html</code> — mục "Ghế: làm mát / sưởi" (feature mirror: applier ~5s, detach-listener, Lang.t, seal re-pin).</li>
+<li><code>offcar-planner/.../ExpansionTransportFenceTest.kt</code> — T11 seal (KDoc trace "lần N").</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-04 · Quyết định</b> — tách model thuần (<code>:core Pm25Filter</code>) khỏi phần chạm-Android (<code>:app Pm25FilterApplier</code>) để unit-test off-device.</li>
+<li><b>2026-09-04 · Quyết định</b> — KHÔNG service polling (R-nf1): dựa vào <code>setAutoCleanAirState(1)</code> để xe tự giám sát; app chỉ đọc mức lúc mở app + khi đổi công tắc (không đọc mỗi 1 s để khỏi spam HAL).</li>
+<li><b>2026-09-08 · Sửa on-car (v1.38) — THAY THẾ quyết định 2026-09-04</b>: owner báo bụi lên, xe hiện popup nhắc lọc mà KHÔNG tự lọc ⇒ trả lời OQ2: <code>setAutoCleanAirState(1)</code> trên trim này KHÔNG chủ động lọc (chỉ đặt chế độ). Đổi hướng: (1) nút "Lọc ngay" (<code>btn_pm25_clean_now</code>, seal lần 27) → <code>Pm25FilterApplier.cleanNow</code> = <code>setQuickCleanAirState(1)</code> NGAY, bất kể công tắc; (2) <code>startPollLoop</code> — công tắc BẬT thì poll mức mỗi <code>POLL_INTERVAL_MS</code>=45 s, bụi ≥ HEAVY(5) → <code>setQuickCleanAirState(1)</code>. Đây là poll TRONG-TIẾN-TRÌNH (ClusterNav luôn chạy nền — owner "lo gì"), KHÔNG phải foreground service riêng ⇒ chi phí HAL thấp (45 s/nhịp, không phải 1 s). Guard concurrency <code>polling</code>+<code>pollGeneration</code> (token thế hệ chống race enable↔disable tạo 2 vòng). GIỮ <code>setAutoCleanAirState</code>+<code>enablePurificationFunctionPrompt</code> best-effort (trim từ chối tắt popup, biết từ v1.33). Senior review APPROVED (patch [P2] race + [P3] a11y EN). CHỜ xác nhận trên xe: bấm "Lọc ngay" lọc thật? auto khi bụi cao tự lọc?</li>
+<li><b>2026-09-04 · Trade-off</b> — nhãn mức đọc trên thread nền rồi <code>ui.post</code>; INVALID/off-car → "—" (levelLabel tự trả "—" cho mức không rõ nên không cần nhánh riêng).</li>
+<li><b>2026-09-04 · Sai lệch spec (nhỏ)</b> — thêm <code>@+id/txt_pm25_title</code> (đầu bài đã yêu cầu) + prefix "Mức bụi hiện tại: " trước nhãn để rõ nghĩa; không đổi hợp đồng, không vào strings.xml.</li>
+<li><b>2026-09-04 · Seal</b> — sửa bản dọc <code>activity_main.xml</code> ⇒ hash đổi <code>c53e73c2…5c4c</code> → <code>27730837…b6ff</code> (lần 11), cập nhật <code>T11_HASHES</code> + KDoc trace.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li><b>Pass 1 — 2026-09-04</b>: Tự review (implementer). Off-car: <code>:app:assembleDebug</code> exit 0; full suite 5 module 0 fail; SHA bản dọc khớp hằng pin lần 11. Ẩn số on-car ghi §7. Verdict: APPROVED off-car (on-car chờ đo 4 ẩn số).</li>
+</ul>
+
+</div></body>
+</html>

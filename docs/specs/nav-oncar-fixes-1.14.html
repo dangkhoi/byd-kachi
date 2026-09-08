@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav 1.14 — On-car fixes (HUD arrow · marquee · 10m · cluster-mode · autostart)</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--err:#b3261e;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--err-bg:#fce8e6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;
+    --accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--err:#ff453a;--ok-bg:#0e2a16;--warn-bg:#332b00;--err-bg:#3a0f0c;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 120px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:32px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--ok-bg);color:var(--ok)}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  h3{font-size:17px;margin:26px 0 6px;font-weight:650}
+  h4{font-size:14.5px;margin:16px 0 6px;font-weight:650}
+  p{margin:10px 0}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg)}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg)}.callout.warn .lbl{color:var(--warn)}
+  .callout.accent{background:var(--accent-bg)}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;border:1px solid var(--line);color:var(--ink2);margin-left:6px}
+  .tag.off{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+  .tag.on{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:110px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.bad{border-color:var(--err);background:var(--err-bg)}.fnode.good{border-color:var(--ok);background:var(--ok-bg)}
+  .arrow{color:var(--ink2);font-size:18px}
+  .small{font-size:13px;color:var(--ink2)}
+  .toc{columns:2;font-size:14px;gap:24px}@media(max-width:600px){.toc{columns:1}}
+  .toc a{display:block;padding:3px 0;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">ClusterNav · Consolidated Spec</p>
+<h1>On-car fixes from 1.12 test — HUD arrow · marquee · 10m · cluster-mode · autostart</h1>
+<div class="meta">
+  <span><b>Target:</b> 1.14 (versionCode 114)</span>
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-13</span>
+  <span><b>Slug:</b> nav-oncar-fixes-1.14</span>
+</div>
+<div class="meta"><span class="pill">STATUS: APPROVED · IMPLEMENTED — off-car verified (build + JVM suite green); pending senior review + security scan</span></div>
+<div class="callout accent" style="margin-top:16px"><div class="lbl">Approval</div>
+Approved in-chat 2026-08-13 pm — <i>"ok hết rồi, làm off-car, note lại oncar"</i>: I1 apply <code>toHudIcon()</code> directly; I4 do the off-car parts (OFF→clear, apply-on-change re-assert) and note the value-map + reboot-avoidance for on-car; I2/I3/I5 as planned. Bump 1.14.</div>
+
+<div class="card"><b>Contents</b>
+  <nav class="toc" style="margin-top:8px">
+    <a href="#changelog">1 · Changelog</a><a href="#context">2 · Context</a><a href="#req">3 · Requirements</a>
+    <a href="#design">4 · Design</a><a href="#tasks">5 · Tasks</a><a href="#verify">6 · Verification</a>
+    <a href="#oncar">7 · On-car checks (open)</a><a href="#ref">8 · References</a><a href="#rev">9 · Reviewer Log</a>
+  </nav>
+</div>
+
+<h2 id="changelog"><span class="n">1</span>Changelog</h2>
+<table><thead><tr><th>Rev</th><th>Date</th><th>Change</th></tr></thead><tbody>
+<tr><td>v1</td><td>2026-08-13</td><td>Investigated 5 on-car issues from the 1.12 drive; root cause confirmed by source read; approved; implemented off-car; bumped 1.14/114; build + JVM suite green. On-car verification items recorded in §7.</td></tr>
+</tbody></table>
+
+<h2 id="context"><span class="n">2</span>Context</h2>
+<p>Owner tested 1.12 on the BYD Seal (DiLink 3.0, Android 10) and reported 5 issues:</p>
+<table><tbody>
+<tr><td><b>I1</b></td><td>Cluster turn arrows (small + Giữa+ETA) correct vs Google Maps, but the <b>windshield HUD</b> shows them <b>mirrored L↔R</b> (turn-left→right, roundabout direction flipped), 100%.</td></tr>
+<tr><td><b>I2</b></td><td>Road name capped ~8 chars → re-enable marquee scroll (right→left), <b>slow + smooth</b> (the old one was jerky).</td></tr>
+<tr><td><b>I3</b></td><td>Distance interpolation smallest unit is 5m; Google uses 10m → use 10m to reduce visible mismatch.</td></tr>
+<tr><td><b>I4</b></td><td>Cluster-mode selector: "Đơn giản" only applies after reboot; "OFF" doesn't turn off; the other two modes have no effect.</td></tr>
+<tr><td><b>I5</b></td><td>Verify the app auto-starts on car boot (not just the bubble); if Cast is enabled, start app + bubble. Check the app-update path didn't break it.</td></tr>
+</tbody></table>
+
+<h2 id="req"><span class="n">3</span>Requirements</h2>
+<ul>
+  <li><b>I1</b> — HUD turn arrows match the cluster/Google Maps (no L↔R mirror). Cluster stays correct.</li>
+  <li><b>I2</b> — Long road names scroll right→left, evenly and slowly (no jerk); user toggle; default on.</li>
+  <li><b>I3</b> — Interpolated distance &lt;100m steps by 10m (not 5m).</li>
+  <li><b>I4</b> — Mode change applies without a reboot where possible; "OFF" actually removes the center-nav. (Exact value↔menu map confirmed on-car.)</li>
+  <li><b>I5</b> — On <code>BOOT_COMPLETED</code> the app opens; the bubble starts only when Cast is enabled. Update path still relaunches.</li>
+  <li>Build green: full JVM suite + signed <code>assembleRelease</code>, no <code>vehicleTest</code> surface, versionCode 114.</li>
+</ul>
+
+<h2 id="design"><span class="n">4</span>Design</h2>
+
+<h3>I1 — HUD arrow mirror: send the CAN code, not the AMAP code <span class="tag off">off-car fix</span></h3>
+<p>The neutral <code>Maneuver</code> has <b>two</b> encoders by design: <code>toAmapIcon()</code> (cluster lane, via the AUTONAVI broadcast; left=2, right=3) and <code>toHudIcon()</code> (windshield HUD, <code>INSTRUMENT_GUIDE_INFO_SIMPLE_SET</code>, CAN table; left=1, right=2). <code>toHudIcon()</code> was unit-tested but <b>never called in production</b> — the delivery fed the <b>AMAP</b> code (<code>maneuverCode</code>) into the CAN feature. AMAP left=2 read by the HUD as CAN 2=right → exact L↔R mirror. The cluster stays correct because it is driven by the separate broadcast.</p>
+<div class="diagram">
+  <div class="flow">
+    <div class="fnode"><div class="h">Maneuver (neutral)</div><div class="s">e.g. TURN_LEFT</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">Cluster lane</div><div class="s">toAmapIcon()=2 · AUTONAVI broadcast → correct</div></div>
+  </div>
+  <div class="flow" style="margin-top:12px">
+    <div class="fnode"><div class="h">Maneuver TURN_LEFT</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode bad"><div class="h">was: AMAP 2</div><div class="s">→ INSTRUMENT_GUIDE_INFO_SIMPLE_SET → HUD reads CAN 2 = RIGHT ✗</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">now: toHudIcon()=1</div><div class="s">→ HUD reads CAN 1 = LEFT ✓</div></div>
+  </div>
+</div>
+<p><b>Change:</b> <code>NavRepository</code> lane delivery — <code>owner.push(icon = frame.content.maneuver?.toHudIcon() ?: 11, …)</code> (was <code>maneuverCode</code>). Fallback 11 = CAN straight. Locked by <code>HudManeuverEncodingTest</code>.</p>
+<div class="callout warn"><div class="lbl">On-car verify</div>Confirm the cluster centre "Giữa+ETA" stays correct after this change (evidence says centre = broadcast, HUD = INSTRUMENT feature — but if the centre also reads the INSTRUMENT feature it could flip; easy one-line revert).</div>
+
+<h3>I2 — Smooth marquee <span class="tag off">off-car fix</span></h3>
+<p>Root: <code>Prefs.marquee</code> defaulted OFF; when ON, <code>roadWindow(name, scrollTick, 7)</code> advanced by <code>scrollTick</code>, which <code>handleEmission</code> bumps on source-frame + heartbeat + forced-replay → <b>uneven</b> = jerky. <b>Change:</b> default ON + UI toggle (<code>cb_marquee</code>, both layouts); offset is now <b>time-based</b> — <code>tick = (elapsedRealtime − roadShownAtMs) / MARQUEE_STEP_MS</code> (700 ms), <code>roadShownAtMs</code> reset on road change / session-reset / stop → even, slow, restarts from the start of each new name. Firmware re-renders per 400 ms send, so this is the smoothest a fixed char cell allows.</p>
+
+<h3>I3 — 10m smallest step <span class="tag off">off-car fix</span></h3>
+<p><code>NavParse.quantizeDisplay</code> &lt;100m branch <code>(m/5)*5</code> → <code>(m/10)*10</code>. Test updated (<code>quantizeDisplay(47)</code> 45→40).</p>
+
+<h3>I4 — Cluster-mode selector <span class="tag off">off-car: OFF + apply-now</span> <span class="tag on">on-car: value map</span></h3>
+<p>Mode is written per nav-frame (<code>SET_NAVI_SCREEN_STATUS_SET = Prefs.navClusterScreenMode</code>). "Simple only after reboot" ⇒ the OEM applies nav-screen mode at session start, not mid-session; when parked, icon/seg/road are static so the owner's dedup also suppresses re-writes. <b>Off-car changes:</b></p>
+<ul>
+  <li><b>OFF</b> → <code>NavigationHudOwner</code> delivery routes <code>mode==NAV_SCREEN_OFF</code> to <code>clearNavFrame</code> (status=4), not <code>screen=0</code> (which did nothing).</li>
+  <li><b>Apply now</b> → <code>owner.reapply()</code> busts dedup and submits <code>clearFrame</code>(status=4) then re-pushes (status=2 + new mode) = a 4→2 re-assert; the cluster-mode spinner calls <code>NavRepository.reapplyClusterMode</code> on change.</li>
+</ul>
+<div class="callout warn"><div class="lbl">On-car (open)</div>Which value (0..3) maps to Đơn giản/Nhỏ/Toàn/OFF, and whether the 4→2 re-assert makes it render without a reboot (if the OEM only applies at session start, this is best-effort). Sweep via navopen (§7).</div>
+
+<h3>I5 — Autostart on boot <span class="tag off">off-car fix</span></h3>
+<p><code>RebindReceiver</code> handled <code>BOOT_COMPLETED</code> by rebinding the listener + starting the bubble (self-stops if Cast off) but <b>did not launch the app</b>. <b>Change:</b> <code>relaunchAfterUpdate</code> → shared <code>launchHome</code>; called on <code>BOOT_COMPLETED</code> (auto-open the app; background-activity-start allowed via the <code>SYSTEM_ALERT_WINDOW</code> exemption). Bubble now gated on <code>SimpleCastRuntime…castEnabled()</code> (start only when Cast on). <code>MY_PACKAGE_REPLACED</code> still calls <code>launchHome</code>, so the update path relaunches. The 1.13 default-OFF master switch does not remove autostart.</p>
+
+<h2 id="tasks"><span class="n">5</span>Tasks</h2>
+<table><thead><tr><th>#</th><th>Files</th><th>Test</th></tr></thead><tbody>
+<tr><td>I1</td><td><code>NavRepository.kt</code></td><td><code>HudManeuverEncodingTest</code> + <code>ManeuverTest</code> (toHudIcon)</td></tr>
+<tr><td>I2</td><td><code>Prefs.kt</code>, <code>ClusterBroadcaster.kt</code>, <code>activity_main.xml</code>×2, <code>MainActivity.kt</code></td><td><code>NavFormatTest</code> (roadWindow)</td></tr>
+<tr><td>I3</td><td><code>NavParse.kt</code></td><td><code>NavParseTest</code> (updated)</td></tr>
+<tr><td>I4</td><td><code>NavigationHudOwner.kt</code>, <code>NavRepository.kt</code>, <code>MainActivity.kt</code></td><td>build + on-car</td></tr>
+<tr><td>I5</td><td><code>RebindReceiver.kt</code></td><td>build + on-car</td></tr>
+<tr><td>ver</td><td><code>app/build.gradle.kts</code> 114/1.14</td><td>aapt2</td></tr>
+</tbody></table>
+
+<h2 id="verify"><span class="n">6</span>Verification</h2>
+<div class="callout ok"><div class="lbl">Off-car results — 2026-08-13</div>
+<code>./gradlew :core:test :app:testDebugUnitTest :app:assembleRelease</code> → BUILD SUCCESSFUL (updated <code>NavParseTest</code> + new <code>HudManeuverEncodingTest</code> + all existing pass; <code>lintVitalRelease</code> pass). <code>aapt2</code>: <code>com.byd.clusternav</code> versionCode <b>114</b>, versionName <b>1.14</b>, not debuggable, no <code>TEST_*</code> surface. JDK 17.</div>
+<p class="small">Then: senior-review loop + pre-commit security scan.</p>
+
+<h2 id="oncar"><span class="n">7</span>On-car checks (open — recorded for next session)</h2>
+<ul>
+  <li><b>I1</b> — HUD arrows now match Google Maps/cluster; <b>and cluster "Giữa+ETA" still correct</b> (regression check). If centre flips → revert the one-line <code>toHudIcon()</code> change and pursue a separate HUD feature.</li>
+  <li><b>I4</b> — Sweep <code>setraw setting 4C10E015 0..3</code> via navopen + screenshot to map value↔menu (Đơn giản/Nhỏ/Toàn/OFF); confirm whether the 4→2 re-assert applies the mode without a reboot; confirm OFF removes the centre-nav.</li>
+  <li><b>I2</b> — Confirm marquee speed feels smooth/slow enough; tune <code>MARQUEE_STEP_MS</code> if needed.</li>
+  <li><b>I5</b> — Confirm the app opens on car boot; bubble appears only when Cast is enabled; update (OTA) still relaunches.</li>
+</ul>
+
+<h2 id="ref"><span class="n">8</span>References</h2>
+<ul class="small">
+  <li><b>I1:</b> <code>core/.../navigation/Maneuver.kt</code> (toAmapIcon/toHudIcon) · <code>NavRepository.kt</code> · <code>NavigationHudOwner.kt</code> · <code>modules/hal/BydHal.kt</code> (writeNavFrame → INSTRUMENT_GUIDE_INFO_SIMPLE_SET).</li>
+  <li><b>I2:</b> <code>core/.../navigation/NavFormat.kt</code> (roadWindow) · <code>ClusterBroadcaster.kt</code> · <code>Prefs.kt</code>.</li>
+  <li><b>I3:</b> <code>core/.../navigation/NavParse.kt</code> (quantizeDisplay).</li>
+  <li><b>I4:</b> <code>NavigationHudOwner.kt</code> (reapply/OFF) · <code>Prefs.NAV_SCREEN_*</code>.</li>
+  <li><b>I5:</b> <code>RebindReceiver.kt</code> (launchHome, castBootWork).</li>
+  <li>Prior on-car handoff: <code>docs/diagnostics/oncar-handoff-2026-08-13-1.13.md</code> (this cycle appends 1.14 items).</li>
+</ul>
+
+<h2 id="rev"><span class="n">9</span>Reviewer Log</h2>
+<p class="small">Append-only; one <code>Pass N — YYYY-MM-DD</code> per senior-review pass.</p>
+<div class="card">
+  <h3 style="margin-top:0">Pass 1 — 2026-08-13 · Senior architect review</h3>
+  <p class="small" style="margin:0 0 8px">Reviewer: senior Android/Kotlin architect (orchestrated). Verified against source read + JVM suite + signed release on JDK 17. Verdict: <b>APPROVED</b> (off-car scope). On-car items in §7 remain open by design.</p>
+  <h4>Scope checklist</h4>
+  <ul class="small">
+    <li><b>I1</b> ✅ — <code>NavRepository.createCoordinator</code> feeds <code>frame.content.maneuver?.toHudIcon() ?: 11</code> into <code>owner.push(icon=…)</code> → synthetic-frame <code>maneuverCode</code> → worker → <code>BydHal.writeNavFrame</code>. Cluster lane unchanged (still <code>maneuver?.toAmapIcon()</code> in <code>toNavState</code>). Locked by <code>HudManeuverEncodingTest</code> (1) + <code>ManeuverTest</code> (6).</li>
+    <li><b>I2</b> ✅ — <code>Prefs.marquee</code> default <code>true</code>; <code>ClusterBroadcaster</code> uses time-based offset (<code>(elapsedRealtime−roadShownAtMs)/MARQUEE_STEP_MS</code>, 700 ms); <code>roadShownAtMs</code> reset on road-change / SESSION_RESET / STOP; <code>cb_marquee</code> present in BOTH layouts with same id, wired in <code>MainActivity</code>. <code>roadWindow</code> covered by <code>NavFormatTest</code> (25).</li>
+    <li><b>I3</b> ✅ — <code>NavParse.quantizeDisplay</code> &lt;100 m branch = <code>(m/10)*10</code>; <code>NavParseTest</code> (11) asserts <code>quantizeDisplay(47)==40</code>.</li>
+    <li><b>I4</b> ✅ — <code>NavigationHudOwner</code> OFF→<code>clearNavFrame</code>; <code>reapply()</code> busts dedup then FIFO <code>clearFrame(status4)</code>→<code>push(status2)</code> with no lock held across <code>push</code>, no-op when nothing applied; wired via <code>NavRepository.reapplyClusterMode</code> ← cluster-mode spinner. Single-owner invariant intact (<code>PhysicalHudOwnershipTest</code>, 2).</li>
+    <li><b>I5</b> ✅ — <code>RebindReceiver</code> launches Home on <code>BOOT_COMPLETED</code> (best-effort <code>runCatching</code>, FLAG_ACTIVITY_NEW_TASK) and <code>MY_PACKAGE_REPLACED</code>; <code>LOCKED_BOOT_COMPLETED</code> does NOT launch (direct-boot); bubble gated on <code>SimpleCastRuntime…castEnabled()</code>.</li>
+    <li><b>ver</b> ✅ — <code>versionCode 114</code> / <code>versionName 1.14</code>.</li>
+  </ul>
+  <h4>Boundary shape</h4>
+  <ul class="small">
+    <li><code>frame.content.maneuver</code> (nullable Maneuver) → <code>toHudIcon()</code> — OK (safe-call + <code>?: 11</code>).</li>
+    <li><code>cb_marquee</code> id ↔ <code>MainActivity.findViewById&lt;CheckBox&gt;</code> — OK (id present in <code>layout/</code> and <code>layout-w960dp/</code>).</li>
+    <li>spinner_cluster_mode → <code>NavRepository.reapplyClusterMode</code> → <code>owner.reapply()</code> — OK.</li>
+    <li><code>RebindReceiver</code> → <code>SimpleCastRuntime.coordinator(app).prefs.castEnabled()</code> — OK (same shape as MainActivity/NavRepository callers).</li>
+    <li><code>roadShownAtMs</code> producer (SOURCE_FRAME on road-change; reset SESSION_RESET/STOP) ↔ consumer (<code>sendFrame</code>) — OK.</li>
+    <li><code>BydHal.writeNavFrame(ctx,icon,seg,road,mode)</code> ↔ owner call — OK (5-arg match).</li>
+  </ul>
+  <h4>Findings &amp; patches</h4>
+  <ul class="small">
+    <li><b>[P3]</b> Dead <code>scrollTick</code>: after I2 moved the marquee to a time-based offset, <code>scrollTick</code> became write-only and the <code>sendFrame</code> KDoc still claimed "marquee trượt theo scrollTick" (contradicting the body comment "KHÔNG dùng scrollTick"). <b>Patched</b> <code>ClusterBroadcaster.kt</code>: removed the field + its resets/increments in <code>handleEmission</code>, corrected the KDoc. (Explanatory comments that reference the old scrollTick behavior for contrast are kept.)</li>
+    <li>No P0/P1/P2 findings. Pre-existing <code>recycle()</code> deprecation warnings in <code>NavAccessibilityService</code> left untouched (out of scope).</li>
+  </ul>
+  <h4>Tech freshness (Context7)</h4>
+  <p class="small" style="margin:0">Android APIs in the change set — <code>startActivity(Intent)</code> (+FLAG_ACTIVITY_NEW_TASK from receiver), <code>startForegroundService</code>, <code>PendingIntent</code> FLAG_UPDATE_CURRENT|FLAG_IMMUTABLE, <code>NotificationListenerService.requestRebind</code>, <code>SystemClock.elapsedRealtime</code> — all current, none deprecated. Background-activity-start has an optional modern control (<code>ActivityOptionsCompat.setPendingIntentBackgroundActivityStartMode</code>) but it is an enhancement, not a deprecation; the runCatching + SYSTEM_ALERT_WINDOW approach is valid on the A10 target.</p>
+  <h4>Build / test (JDK 17)</h4>
+  <p class="small" style="margin:0"><code>./gradlew :core:test :app:testDebugUnitTest :app:assembleRelease</code> → <b>BUILD SUCCESSFUL</b> after patch. Key tests 0 failures/errors: HudManeuverEncodingTest 1, PhysicalHudOwnershipTest 2, NavParseTest 11, ManeuverTest 6, NavFormatTest 25; 1494 app+core cases total. <code>lintVitalRelease</code> pass; signed release APK produced.</p>
+</div>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

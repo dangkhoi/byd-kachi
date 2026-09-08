@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  popup_bg — DESIGN SYSTEM (Cockpit) dropdown popup panel. Rounded ~12dp @color/surface fill + 1px
+  @color/hairline stroke = the dark panel behind Spinner dropdown rows. Wired via
+  @style/Cockpit.Spinner android:popupBackground, so every framework Spinner's list opens on a dark
+  cockpit panel instead of the default light Material popup. New drawable (allowed).
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/surface" />
+    <corners android:radius="12dp" />
+    <stroke android:width="1dp" android:color="@color/hairline" />
+</shape>

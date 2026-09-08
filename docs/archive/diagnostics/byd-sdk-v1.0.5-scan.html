@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BYD AUTO SDK v1.0.5 — scan report (Mac vs Windows)</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--err:#b3261e;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--err-bg:#fce8e6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;
+    --accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--err:#ff453a;--ok-bg:#0e2a16;--warn-bg:#332b00;--err-bg:#3a0f0c;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 120px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:32px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--ok-bg);color:var(--ok)}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  h3{font-size:17px;margin:26px 0 6px;font-weight:650}
+  p{margin:10px 0}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg)}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg)}.callout.warn .lbl{color:var(--warn)}
+  .callout.err{background:var(--err-bg)}.callout.err .lbl{color:var(--err)}
+  .callout.accent{background:var(--accent-bg)}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .yes{color:var(--ok);font-weight:650}.no{color:var(--err);font-weight:650}.mid{color:var(--warn);font-weight:650}
+  .small{font-size:13px;color:var(--ink2)}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:130px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.good{border-color:var(--ok);background:var(--ok-bg)}.fnode.bad{border-color:var(--err);background:var(--err-bg)}
+  .arrow{color:var(--ink2);font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">ClusterNav · Investigation report</p>
+<h1>BYD AUTO SDK v1.0.5 — what's usable on Mac, and is Windows worth it?</h1>
+<div class="meta">
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-13</span>
+  <span><b>Scanned:</b> <code>&lt;byd-workspace&gt;/sdk</code> (9.7 GB, 50,662 files)</span>
+</div>
+<div class="meta"><span class="pill">VERDICT: STAY ON MAC — nothing here is Windows-only-and-required</span></div>
+
+<div class="callout accent"><div class="lbl">TL;DR</div>
+This is <b>not a Windows-only SDK</b> — it is a <b>Windows-packaged copy of the Android SDK (Tools 26 / API 25, ~2018)</b> with BYD's custom bits added. Every valuable part (BYD's compile-time <code>android.hardware.bydauto.*</code> classes, the HTML Javadoc, two PDF guides, a HelloWorld sample) is <b>plain Java/Android and works on macOS as-is</b>. The only Windows-specific files are the redundant Android CLI tools (<code>.exe/.dll/.bat</code>) you already have (newer) on your Mac. <b>Switching to Windows would gain nothing and cost you your working JDK 17 / compileSdk 37 build.</b> Real payoff is unrelated to OS: harvest BYD's <code>android.jar</code> as a <code>compileOnly</code> stub + use the docs to validate/extend the surface ClusterNav reverse-engineered.</div>
+
+<h2><span class="n">1</span>What the folder actually contains</h2>
+<pre><code>sdk/
+├─ sdk_v1.0.5.zip                         2.2 GB   (outer archive — redundant once extracted)
+└─ sdk_v1.0.5/
+   ├─ SDK_v1.0.5/
+   │  ├─ BYD_AUTO_SDK_v1.0.5.zip          2.1 GB   (inner archive — redundant)
+   │  ├─ byd-auto_sdk_windows/                     (partial copy)
+   │  └─ byd-auto_sdk_windows 2/                   (full Android SDK, Windows build, API 25)
+   │        platforms/android-25/android.jar  34 MB ← ★ BYD custom stubs live here
+   │        tools/ *.exe *.dll *.bat                (Windows Android CLI — redundant on Mac)
+   │        samples/ …                             (stock Google android-25 samples)
+   └─ DOC&SAMPLE_v1.0.5.1/
+      ├─ DOC_v1.0.5/doc/index.html                 ← ★ BYD API Javadoc (android.hardware.bydauto.*)
+      ├─ DOC_v1.0.5/使用BYD-AUTO-API的android示例.pdf   ← ★ "Using the BYD-AUTO API" examples
+      └─ SAMPLE_v1.0.5.1/比亚迪车载应用开发指南/
+            比亚迪车载应用开发指南.pdf                    ← ★ "BYD In-Vehicle App Dev Guide"
+            HelloWorld.zip                          ← ★ sample project</code></pre>
+<p><b>"windows" = the Android SDK build flavour, not a BYD requirement.</b> The <code>.exe/.dll/.bat</code> (55 exe, 113 dll, 129 bat) are <code>emulator.exe</code>, <code>sdkmanager.bat</code>, <code>monitor.exe</code>, ProGuard, etc. — the Windows edition of Google's Android tools. You already run their macOS equivalents (and newer) to build ClusterNav.</p>
+
+<h2><span class="n">2</span>Cross-platform vs Windows-only</h2>
+<table><thead><tr><th>Asset</th><th>Type</th><th>Mac?</th><th>Note</th></tr></thead><tbody>
+<tr><td><code>platforms/android-25/android.jar</code></td><td>Java bytecode</td><td class="yes">✓ yes</td><td>Contains BYD's <code>android.hardware.bydauto.*</code> — the crown jewel, 100% portable</td></tr>
+<tr><td>DOC Javadoc (<code>doc/…</code>)</td><td>HTML</td><td class="yes">✓ yes</td><td>Open <code>index.html</code> in any browser</td></tr>
+<tr><td>2× PDF guides (中文)</td><td>PDF</td><td class="yes">✓ yes</td><td>Dev guide + API examples</td></tr>
+<tr><td><code>HelloWorld.zip</code> sample</td><td>Gradle project</td><td class="yes">✓ yes</td><td>Builds with your Mac toolchain</td></tr>
+<tr><td>Support-lib <code>.aar/.jar</code> (1,890 / 1,769)</td><td>Java/Android</td><td class="yes">✓ yes</td><td>Stock Google support libs — you already get newer via Gradle</td></tr>
+<tr><td>Android CLI: <code>.exe .dll .bat</code></td><td>Win32 native</td><td class="no">✗ no</td><td>Redundant — macOS SDK already installed & newer</td></tr>
+<tr><td>Emulator libs <code>.so</code> (26)</td><td>native</td><td class="mid">n/a</td><td>Emulator internals, not needed here</td></tr>
+</tbody></table>
+<div class="callout ok"><div class="lbl">Bottom line</div>~99% of the <i>useful</i> content is platform-neutral. Nothing BYD-specific requires Windows.</div>
+
+<h2><span class="n">3</span>Does the SDK cover what ClusterNav needs?</h2>
+<p>ClusterNav's <code>BydHal</code> talks to the car <b>entirely by reflection</b> on <code>android.hardware.bydauto.*</code> device classes + a <code>BYDAutoFeatureIds</code> constant table + <code>BYDAutoEventValue</code>. I cross-checked the SDK's shipped classes and Javadoc against that surface:</p>
+<table><thead><tr><th>ClusterNav uses (reflection)</th><th>In SDK v1.0.5?</th><th>Evidence</th></tr></thead><tbody>
+<tr><td><code>BYDAutoSpeedDevice.getCurrentSpeed()</code></td><td class="yes">✓ documented</td><td>class + method in jar & Javadoc</td></tr>
+<tr><td><code>BYDAutoInstrumentDevice</code> (basics)</td><td class="mid">◑ partial</td><td>class present (68 members) — but only units/maintenance/command-result constants</td></tr>
+<tr><td><code>BYDAutoTyre/Energy/Charging/Gearbox/Bodywork/Statistic Device</code></td><td class="yes">✓ present</td><td>all in jar + Javadoc (20 device families total)</td></tr>
+<tr><td><code>BYDAutoSettingDevice</code></td><td class="yes">✓ present</td><td>class present</td></tr>
+<tr><td><code>BYDAutoFeatureIds</code> (the whole feature-id table)</td><td class="no">✗ absent</td><td>class <b>not in</b> <code>android.jar</code></td></tr>
+<tr><td><code>BYDAutoEventValue</code></td><td class="no">✗ absent</td><td>class <b>not in</b> <code>android.jar</code></td></tr>
+<tr><td>Nav-on-cluster: <code>INSTRUMENT_GUIDE_INFO_SIMPLE_SET</code>, <code>SET_NAVI_SCREEN_STATUS_SET</code>, <code>FRONT_CROSSING_DISTANCE</code>, <code>TARGET_NEXT_PATHNAME</code></td><td class="no">✗ absent</td><td><code>grep</code> of the entire DOC tree = 0 hits</td></tr>
+<tr><td><code>BYDAutoSpecialDevice</code> (getWheelSpeed)</td><td class="no">✗ absent</td><td>no <code>special</code> package in SDK</td></tr>
+<tr><td>ADAS / speed-limit write surface</td><td class="no">✗ absent</td><td>not documented</td></tr>
+</tbody></table>
+<div class="callout warn"><div class="lbl">Key caveat — the SDK is old and partial</div>
+SDK v1.0.5 is <b>API 25 / Android 7.1, dated 2018-07-12</b>. Your car runs <b>Android 10</b> with a newer DiLink ROM. The SDK documents the <b>standard read devices</b> well (speed, tyre, energy, charging, gearbox, …) but it does <b>NOT</b> contain the feature-id/event mechanism ClusterNav actually uses on the ROM, and it does <b>NOT</b> document the hard parts (nav-on-cluster, HUD guide info, ADAS). That's exactly why the project reverse-engineered them — they're newer than / absent from this public SDK. So the SDK <b>validates and enriches</b> ~half of ClusterNav's surface; it does not replace the reverse-engineering for the nav/HUD core.</div>
+
+<h2><span class="n">4</span>Mac vs Windows — decision matrix</h2>
+<table><thead><tr><th>Dimension</th><th>Mac (current)</th><th>Windows</th></tr></thead><tbody>
+<tr><td>Use BYD <code>android.jar</code> stubs</td><td class="yes">✓ same jar, <code>compileOnly</code></td><td class="yes">✓ same</td></tr>
+<tr><td>Read Javadoc / PDFs / sample</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+<tr><td>Build ClusterNav (JDK 17, compileSdk 37)</td><td class="yes">✓ already green + signed release</td><td class="mid">would need to re-set up toolchain</td></tr>
+<tr><td>The SDK's bundled Android tools</td><td class="mid">ignore (you have newer)</td><td class="mid">old (2018) — also ignore</td></tr>
+<tr><td>On-car workflow (adb / dadb OTA)</td><td class="yes">✓ working today</td><td class="mid">re-verify USB drivers etc.</td></tr>
+<tr><td>Net gain from switching</td><td colspan="2" class="no">✗ none — no Windows-only BYD tool exists in this package</td></tr>
+</tbody></table>
+<div class="diagram">
+  <div class="flow">
+    <div class="fnode good"><div class="h">android.jar (BYD stubs)</div><div class="s">portable — Mac ✓ / Win ✓</div></div>
+    <div class="arrow">+</div>
+    <div class="fnode good"><div class="h">Javadoc + PDFs + sample</div><div class="s">portable — Mac ✓ / Win ✓</div></div>
+    <div class="arrow">=</div>
+    <div class="fnode good"><div class="h">All value is cross-platform</div><div class="s">stay on your working Mac build</div></div>
+    <div class="arrow">·</div>
+    <div class="fnode bad"><div class="h">.exe/.dll/.bat tools</div><div class="s">Win-only but redundant</div></div>
+  </div>
+</div>
+
+<h2><span class="n">5</span>Recommendation &amp; next steps (OS-independent)</h2>
+<ol>
+  <li><b>Stay on macOS.</b> No reason to switch — the working JDK 17 / compileSdk 37 / dadb-OTA setup already ships releases.</li>
+  <li><b>Harvest a small BYD stub jar</b> from <code>platforms/android-25/android.jar</code> (just the <code>android/hardware/bydauto/**</code> + <code>android/hardware/BYDAutoManager</code> classes) and add it as <code>compileOnly</code> to <code>:app</code>. That lets you replace reflection with typed calls <b>for the standard devices the SDK covers</b> (speed, tyre, energy, charging, gearbox, instrument units) — safer, autocomplete, no <code>Class.forName</code>. <span class="small">Keep <code>compileOnly</code>: the real classes live on the car; do not bundle them.</span></li>
+  <li><b>Keep reflection for the ROM-only surface</b> — <code>BYDAutoFeatureIds</code>, nav-on-cluster / HUD guide, <code>BYDAutoSpecialDevice</code>, ADAS — the SDK doesn't ship these, so they stay reverse-engineered.</li>
+  <li><b>Read the two PDFs + Javadoc</b> as reference to (a) confirm the constants/units ClusterNav already uses and (b) discover unused-but-available devices (radar, panorama, pm2p5, doorlock, light) if future features want them.</li>
+  <li><b>Housekeeping:</b> ~4.3 GB is the two redundant zips (<code>sdk_v1.0.5.zip</code> + <code>BYD_AUTO_SDK_v1.0.5.zip</code>) and there's a duplicate extracted copy (<code>byd-auto_sdk_windows</code> vs <code>…_windows 2</code>). You can reclaim ≈6 GB after extracting the one <code>android.jar</code> + <code>DOC&amp;SAMPLE</code> folder. <b>Do not add this 9.7 GB tree to the ClusterNav git repo</b> — keep it as an external reference; commit only a tiny harvested stub jar if you adopt step 2.</li>
+</ol>
+<div class="callout warn"><div class="lbl">Licensing / provenance note</div>This is a proprietary BYD developer SDK. Treat it as reference + <code>compileOnly</code> stubs; don't redistribute it or commit the full tree publicly. A harvested <code>bydauto</code>-only stub jar (no implementation, API signatures only) is the safe thing to vendor.</div>
+
+<h2><span class="n">6</span>Evidence (commands run)</h2>
+<ul class="small">
+  <li><code>find … | sed 's/.*\\.//' | sort | uniq -c</code> → 55 exe / 113 dll / 129 bat (Win tools) vs 1,769 jar / 1,890 aar / 2,331 java (portable).</li>
+  <li><code>unzip -l android.jar | grep bydauto</code> → 20 device families present (<code>ac, bodywork, charging, doorlock, energy, engine, gearbox, instrument, light, multimedia, panorama, pm2p5, radar, safetybelt, sensor, setting, speed, statistic, time, tyre</code>); <b>no</b> <code>BYDAutoFeatureIds</code> / <code>BYDAutoEventValue</code> / <code>special</code>.</li>
+  <li><code>javap -p BYDAutoInstrumentDevice</code> → units/maintenance/command-result constants only; no nav/guide feature IDs.</li>
+  <li><code>grep -r "INSTRUMENT_GUIDE_INFO_SIMPLE|SET_NAVI_SCREEN_STATUS|FRONT_CROSSING_DISTANCE|TARGET_NEXT_PATHNAME" DOC/</code> → 0 hits.</li>
+  <li>SDK stamp: class files dated <code>2018-07-12</code>, platform <code>android-25</code> (Android 7.1). ClusterNav builds compileSdk 37 / JDK 17.</li>
+</ul>
+
+</div>
+</body>
+</html>

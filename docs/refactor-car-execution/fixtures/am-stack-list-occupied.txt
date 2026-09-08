@@ -1,0 +1,32 @@
+Stack id=26 bounds=[0,0][1920,720] displayId=1 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw360dp w960dp h360dp 320dpi nrml long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 720) mAppBounds=Rect(0, 0 - 1920, 720) mWindowingMode=freeform mDisplayWindowingMode=freeform mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=26: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1920,720] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+Stack id=30 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=30: com.byd.clusternav/com.byd.clusternav.MainActivity bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.clusternav/com.byd.clusternav.modules.clustercast.DiagActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=12: com.android.launcher3/com.android.launcher3.home.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.launcher3/com.android.launcher3.home.MainActivity}
+
+Stack id=13 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=14: com.android.launcher3/com.android.launcher3.Launcher bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.launcher3/com.android.launcher3.Launcher}
+
+Stack id=24 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=recents mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=25: com.android.systemui/com.android.systemui.recents.RecentsActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.systemui/com.android.systemui.recents.RecentsActivity}
+
+Stack id=21 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=22: com.byd.carsettings/com.byd.carsettings.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.carsettings/com.byd.carsettings.MainActivity}
+
+Stack id=14 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=15: com.byd.filemanager/com.byd.filemanager.view.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.filemanager/com.byd.filemanager.view.MainActivity}
+
+Stack id=12 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land night finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.40}
+  taskId=13: com.byd.diLinkAccount/com.byd.diLinkAccount.main.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.diLinkAccount/com.byd.diLinkAccount.main.MainActivity}
+

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  btn_primary — DARK cockpit primary button (L2 Stage 1). Same resource name + selector structure.
+  Default: blue -> indigo horizontal gradient. Pressed: deeper blue -> indigo. Disabled: muted gray.
+  White text (set in layout) stays legible on the gradient. Rounded ~12dp.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/off_gray" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="0"
+                android:startColor="@color/brand_pressed"
+                android:endColor="@color/btn_primary_end" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="0"
+                android:startColor="@color/brand"
+                android:endColor="@color/accent_indigo" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</selector>

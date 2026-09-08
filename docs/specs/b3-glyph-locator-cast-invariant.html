@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B3.27 — Dò glyph mũi tên bất biến với cấu hình cast — ClusterNav 2.0</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>B3.27 — Dò glyph mũi tên bất biến với cấu hình cast</h1>
+<p class="muted">Slug: <code>b3-glyph-locator-cast-invariant</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill ok">Trạng thái: Implemented (spec viết song song, §2 workflow)</span></p>
+<p class="muted">Owner: dangkhoi · Yêu cầu gốc (2026-08-22): <i>"khi lên cụm, user có thể chỉnh DPI, chỉnh size, chỉnh vị trí của app cast lên, có thể cast 1 hoặc 2 app… nên cần phải cover hết các case này"</i>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-08-22</b>: Khởi tạo. Owner chỉ ra rect crop cố định không sống nổi khi người dùng chỉnh cast. Owner chọn "làm cả gói, spec viết song song"; cả ba cấu hình (1 app full · 2 app chia đôi · đổi dpi/size) đều phải phủ.</li>
+<li><b>Pass 1 — 2026-08-23 (B3.47 vòng 3)</b>: GỠ trần <code>MAX_DP</code>, nới <code>MAX_FILL</code> 0.35→0.60, thêm cổng <b>tỉ lệ khung</b> + <b>neo trái</b>. Nguyên nhân: trần dp hiệu chuẩn trên mũi tên Waze giết 60/87 maneuver VietMap và biến chúng thành icon POI bản đồ.</li>
+<li><b>Pass 2 — 2026-08-23 (B3.47 vòng 3b, sau phản biện)</b>: <code>locate(window)</code> KHÔNG còn nhận null; thêm sàn thứ hai <code>MIN_H_WIN_FRAC</code>; đảo lại quyết định Pass-1-cũ về fallback (xem §10). Ba con đường dương-tính-giả nữa được ĐO và đóng.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Kênh mũi tên của B3 crop bằng <b>rect cố định</b> tra theo kích thước màn (<code>CaptureCalibration.TABLE</code>). Hôm 08-21/22 đã hiệu chỉnh được rect cho cụm 1920×720 và màn chính 1920×1080 — nhưng đó chỉ là <b>một cấu hình mặc định</b>.</p>
+<p>Thực tế trên cụm, chính ClusterNav là bên đi cast, và nó cho người dùng chỉnh (xem <code>CastShell.kt</code>):</p>
+<ul>
+<li><code>wm size &lt;w&gt;x&lt;h&gt; -d &lt;vd&gt;</code> — đổi kích thước logic của VD</li>
+<li><code>wm density &lt;dpi&gt; -d &lt;vd&gt;</code> — đổi mật độ (có bù dpi khi phóng)</li>
+<li><code>am task resize &lt;taskId&gt; l t r b</code> — đổi vị trí/kích thước cửa sổ (freeform)</li>
+<li><code>CastSplitRatioButtons</code> — chia đôi, cast <b>hai</b> app</li>
+</ul>
+<p>Thêm một biến nữa <b>không</b> do người dùng điều khiển: Waze tự đổi bố cục banner theo độ dài tên đường — 2 dòng cao 150px ↔ 1 dòng cao 93px (đo ở dpi 240). Nên rect cố định trượt <i>ngay cả khi</i> người dùng không đụng gì.</p>
+<div class="card"><b>Đã có sẵn:</b> <code>CaptureLocationResolver</code> <b>đã parse</b> bounds thật của task từ <code>am stack list</code> nhưng <b>vứt đi</b>, chỉ giữ <code>slotSide</code>/<code>leftPercent</code>. Cùng output đó còn mang sẵn dpi (<code>240dpi</code> trong dòng configuration). Nghĩa là tầng 0 không cần thêm lệnh shell nào.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> — Vùng quét neo vào <b>ô cửa sổ app THẬT</b>, không neo vào display. AC: <code>AppLocation.windowRect</code> khớp bounds dòng task, kể cả khi task nhỏ hơn stack.</li>
+<li><b>R2</b> — Đọc <b>dpi thật</b> của display từ cùng output <code>am stack list</code>. AC: <code>AppLocation.densityDpi</code> = dpi của khối chứa task (không phải khối cuối).</li>
+<li><b>R3</b> — Dò được glyph ở <b>mọi dpi và mọi kích thước</b>. AC: 8 ảnh chụp thật (dpi 160/200/240/320 × 4 kích thước × 2 bố cục banner) đều ra bbox, chiều cao nằm trong dải dp khai báo.</li>
+<li><b>R4</b> — Classify <b>đúng hướng</b> ở mọi cấu hình đó. AC: 8/8 khung ra đúng maneuver; rẽ trái ra AMAP <b>2</b> (không phải 4 = chếch trái).</li>
+<li><b>R5</b> — Tôn trọng ô cửa sổ khi cast 2 app. AC: đưa nửa KHÔNG chứa glyph làm <code>windowRect</code> → trả null, không lấn sang nửa kia.</li>
+<li><b>R6</b> — Không có glyph thì <b>im lặng</b>, tuyệt đối không ra hướng sai.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Locator THUẦN, nằm <code>:core</code>, không Android, test off-car.</li>
+<li><b>R-nf2</b> — Không thêm round-trip shell nào mỗi nhịp (dpi + bounds lấy từ output đã có).</li>
+<li><b>R-nf3</b> — §6 workflow: đường mới xuống <b>cuối</b>; đường rect cố định đã proven giữ nguyên làm chốt cuối, không sửa hành vi.</li>
+<li><b>R-nf4</b> — Degrade-safe: locator ném lỗi → bắt, rơi về đường cũ, không rớt nhịp.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng</h3>
+<div class="flow">
+  <div class="fnode"><b>am stack list</b><span>windowRect + dpi</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>screencap</b><span>khung đầy đủ</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>NavGlyphLocator</b><span>bbox mực (:core)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>classifyWazeInk</b><span>chỉ WazeArrowRegistry</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>NavOutputOwner</b><span>BydHal.pushNavigation</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối có sẵn</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới (locator + đường khớp tách quy ước)</span>
+</div>
+
+<h3>4.2 Ràng buộc nhận ra glyph <span class="pill ok">cập nhật 08-23 vòng 3 + 3b</span></h3>
+<p><b>Điều kiện tiên quyết (vòng 3b)</b>: caller PHẢI đưa <b>ô cửa sổ app</b> (<code>AppLocation.windowRect</code>).
+<code>locate</code> nhận <code>CropRect</code> không-null; <code>handleArrowByGlyph</code> bỏ nhịp khi không có.
+Lý do [ĐO]: khung chia đôi (Waze trái rẽ TRÁI · VietMap phải rẽ PHẢI), hỏi về VietMap mà đoán "cả khung" ⇒ trả
+mũi tên của Waze với Hamming 0 ⇒ <code>publishArrow(pkg=VietMap, amap=2)</code> — cụm vẽ SAI HƯỚNG. Đây là đúng
+hạng lỗi mà §R-BI đã chặn ở đường bounds tier-1 và đường làn.</p>
+<table>
+<tr><th>#</th><th>Ràng buộc</th><th>Vì sao đủ mạnh (số [ĐO] 08-23 vòng 3b)</th></tr>
+<tr><td>1</td><td>Đảo <b>SÁNG</b> (luma &gt; 200)</td><td>Mũi tên vẽ trắng. <b>Giới hạn</b>: đảo màu toàn khung (theme SÁNG) ⇒ trả null — locator KHÔNG phủ app nền sáng.</td></tr>
+<tr><td>2</td><td>Bị bao quanh bởi <b>vùng TỐI</b>, xét <b>TỪNG phía</b> (trung vị &lt; 70)</td><td>⚠ ĐÍNH CHÍNH: bản trước ghi cổng này "gánh phần lớn việc" — SAI. Trên khung VietMap nền tối, POI bản đồ qua sạch nó ở 60/87 khung. Nó chỉ chặn đốm sáng trên bản đồ NGÀY.</td></tr>
+<tr><td>3</td><td><b>SÀN</b> = max( 20&nbsp;dp × dpi/160 , <b>2.5&nbsp;% chiều cao cửa sổ</b> )</td><td>Vế dp: loại icon status bar 9×15 px. Vế cửa-sổ (thêm vòng 3b): vế dp nhân với dpi <i>khai báo</i> từ <code>am stack list</code>; khai ≤124 trên khung vẽ ở 240 ⇒ icon status bar thắng ở <b>87/87</b> maneuver. Vế thứ hai không đi qua dpi. Dư địa 1.96× (glyph) / 1.80× (rác).</td></tr>
+<tr><td>4</td><td><b>Tỉ lệ khung</b> gw/gh ∈ [0.35, 1.45]</td><td>94 glyph được chọn: 0.417–1.171. Rác trải 0.19–7.69.</td></tr>
+<tr><td>5</td><td><b>Tỉ lệ lấp</b> ∈ [0.10, 0.60]</td><td>94 glyph được chọn: 0.2065–0.4968. Trần cũ 0.35 (hiệu chuẩn trên Waze) giết cả họ VietMap.</td></tr>
+<tr><td>6</td><td><b>NEO TRÁI</b> (mnx − win.left) / max(gw,gh) ≤ 2.0</td><td>Cổng đóng đường đảo-mồi. Glyph 0.417–1.358 (ca căng nhất là <b>Waze</b>); rác chỉ bị cổng này chặn: chữ cự ly 2.75 · dải làn 3.16 · POI xe buýt 15.46.</td></tr>
+</table>
+<p>Nhiều đảo thoả → lấy đảo <b>trái nhất</b> (mũi tên luôn đứng trước cự ly và tên đường).</p>
+<p><b>Đã bác bằng số đo</b>: nới <code>MAX_DP</code> 58→65 (chỉ dời chỗ chết sang app thứ ba) · trần theo ROI
+(<code>gh ≤ roiH/2</code> — <code>gh/roiH</code> của CÙNG glyph chạy 0.16→0.49 giữa các fixture) · nâng
+<code>MIN_FILL</code> lên ~0.17 để tự loại POI (họ POI lấp tới <b>0.1676</b> còn glyph thấp nhất
+<b>0.2065</b> — chỉ cách 1.23×, mỗi mép do 1–2 mẫu định ra ⇒ lặp lại đúng cái sai của <code>MAX_DP</code>).</p>
+
+<h3>4.3 Vì sao trả bbox MỰC, không trả "khung vẽ"</h3>
+<p>38 template <code>ManeuverRegistry</code> (mượn nguyên của OpenBYD, trùng 38/38 với <code>z40.java</code>) nằm ở quy ước <b>khung vẽ có lề</b> — chúng sinh từ bounds view a11y <code>&lt;wazePkg&gt;:id/navBarDirection</code> (<code>BydAccessibilityService.java:257</code>). Không suy ngược được khung đó từ bbox mực: đo cả 38 mục thì mực luôn kết thúc ở hàng <b>13/15</b> nhưng hàng bắt đầu biến thiên <b>1..7</b> tuỳ maneuver.</p>
+<p>Đã thử và <b>bác</b> hai hướng:</p>
+<ul>
+<li>Fit MỘT tỉ lệ nới chung cho mọi khung → không tồn tại (dpi thấp không padding nào ra đúng).</li>
+<li>Quét nhiều canvas ứng viên rồi lấy khớp tốt nhất → <b>tệ hơn</b>: 5/9 đúng nhưng <b>4/9 ra SAI hướng</b> (<code>off_ramp_normal_left</code> → AMAP 4 chếch trái thay vì 2 rẽ trái), vì thêm lượt thử = thêm cơ hội cho template sai thắng điểm.</li>
+</ul>
+<p>Nên dùng <b>chính bbox mực làm quy ước của mình</b> + registry riêng. Bằng chứng quy ước này dùng được:</p>
+<table>
+<tr><th>Phép đo</th><th>Hamming</th></tr>
+<tr><td>Nội-lớp — cùng maneuver, 7 khung, dpi 160/200/240/320, 4 kích thước màn</td><td><b>0 – 17</b> (cùng dpi = 0)</td></tr>
+<tr><td>Liên-lớp — rẽ trái vs rẽ phải</td><td><b>62 – 72</b></td></tr>
+</table>
+<p>Ngưỡng khớp sẵn có là 18 → nằm gọn giữa hai biên, cách nhau ~45 bit.</p>
+
+<h3>4.4 Tách quy ước — điểm dễ sai nhất</h3>
+<p><code>classifyWazeInk()</code> khớp <b>CHỈ</b> <code>WazeArrowRegistry</code>, không đụng 38 mục OpenBYD. Trộn hai quy ước chính là nguyên nhân ra sai hướng ở §4.3. Đường notification (large-icon GMaps) giữ nguyên <code>classifyDetailed()</code> như cũ.</p>
+
+<h3>4.5 Context7</h3>
+<p>Không dùng thư viện ngoài — chỉ Android SDK sẵn có (<code>Bitmap</code>) và Kotlin thuần. Không cần verify Context7.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T0a</td><td>Giữ <code>windowRect</code> + <code>densityDpi</code> trong model</td><td><code>CaptureModels.kt</code></td><td>✅</td></tr>
+<tr><td>T0b</td><td>Parse bounds dòng task + dpi; chấp nhận cả <code>Stack id=</code> và <code>RootTask id=</code></td><td><code>CaptureLocationResolver.kt</code></td><td>✅</td></tr>
+<tr><td>T1</td><td>Locator thuần (đảo sáng + vành tối + cỡ dp + trái nhất)</td><td><code>NavGlyphLocator.kt</code></td><td>✅ — cổng đã thay ở T11/T12</td></tr>
+<tr><td>T2</td><td>Đường khớp tách quy ước</td><td><code>ManeuverSignature.classifyWazeInk</code></td><td>✅</td></tr>
+<tr><td>T3</td><td>Thay <code>BUILTIN</code> sang quy ước bbox mực (4 template, 2 maneuver)</td><td><code>WazeArrowRegistry.kt</code></td><td>✅</td></tr>
+<tr><td>T4</td><td>Nối dây: locator chạy trước, rect cố định lùi xuống chốt cuối</td><td><code>ScreenCaptureNavSource.kt</code></td><td>✅</td></tr>
+<tr><td>T5</td><td>Test ma trận 8 ảnh thật + bất biến nội/liên lớp + windowRect</td><td><code>NavGlyphLocatorTest.kt</code></td><td>✅</td></tr>
+<tr><td>T6</td><td>Test tầng 0 (2 dạng đầu khối, chia đôi trái/phải, resize, dpi theo khối)</td><td><code>CaptureLocationWindowRectTest.kt</code></td><td>✅</td></tr>
+<tr><td>T7</td><td>Siết dương-tính-giả: cổng <b>tỉ lệ lấp</b> + <b>độ tối TỪNG PHÍA</b> + trần ROI theo dp</td><td><code>NavGlyphLocator.kt</code></td><td>✅</td></tr>
+<tr><td>T8</td><td>3 fixture ÂM TÍNH thật (status bar không mũi tên · dải làn · bản đồ tối idle)</td><td><code>NavGlyphLocatorTest.kt</code></td><td>✅</td></tr>
+<tr><td>T9</td><td>Vòng thu maneuver tự động (28 đích)</td><td>script off-repo</td><td>✅ chạy — năng suất thấp, xem OQ2</td></tr>
+<tr><td>T11</td><td><b>B3.47 vòng 3</b>: gỡ <code>MAX_DP</code>, nới <code>MAX_FILL</code>→0.60, thêm tỉ lệ khung + neo trái</td><td><code>NavGlyphLocator.kt</code> · <code>VietMapGlyphGateTest.kt</code></td><td>✅</td></tr>
+<tr><td>T12</td><td><b>B3.47 vòng 3b</b>: <code>window</code> không-null · sàn thứ hai <code>MIN_H_WIN_FRAC</code> · bỏ đảo chạm trần <code>MAX_BLOB_PX</code></td><td><code>NavGlyphLocator.kt</code></td><td>✅</td></tr>
+<tr><td>T13</td><td><b>B3.47 vòng 3b</b>: dò được bbox ⇒ tầng glyph SỞ HỮU kênh ARROW (không rơi về rect Waze cố định)</td><td><code>ScreenCaptureNavSource.kt</code> · <code>ScreenCaptureNavSourceContractTest.kt</code></td><td>✅</td></tr>
+<tr><td>T10</td><td>Senior review + security scan + commit</td><td>—</td><td>⏳ chưa</td></tr>
+</table>
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> (đo lại 2026-08-23 vòng 3b, <code>./gradlew test --rerun-tasks --continue</code> đủ 5 module):
+  chạy <b>TÁCH</b> (xem cảnh báo dưới): <code>:app</code> 450+461 · <code>:core</code> <b>841</b> ·
+  <code>:vehicle-contracts</code> <b>22</b> · <code>:car-integration</code> <b>28</b> = <b>1802 test / 0 fail</b>;
+  restore seal rồi <code>:offcar-planner</code> = <b>99 / 5 fail</b> (có sẵn). Tổng <b>1901 / 5</b>, <b>0 fail mới</b>.
+  <br>⚠ <b>Quy trình E6 + đính chính baseline</b>: <code>:offcar-planner:test</code> ghi đè 9 file niêm phong
+  <code>docs/diagnostics/hud-sign-re/</code> <b>ngay trong lượt chạy</b>, nên một lượt <code>./gradlew test</code>
+  gộp cho số fail phụ thuộc <b>thứ tự task</b> — cùng phiên này đo được <b>10</b> rồi <b>25</b>. Với seal sạch lúc
+  chạy, <code>:core</code> T10SessionSafetyTest ×5 <b>XANH</b> ⇒ fail có sẵn THẬT là <b>5</b>, không phải 10.
+  Ma trận khoá bằng <b>8 ảnh chụp THẬT</b> (không dựng tay): dpi 160/200/240/320 × màn 1280×480 / 1600×600 / 1920×720 / 1920×1080 × banner 1 dòng và 2 dòng.</li>
+<li><b>V-emulator (E2E)</b>: log thật —
+  <code>glyph-ink rect=CropRect(72,56,118,109) dpi=240</code> →
+  <code>arrow(glyph) name=maneuver_turn_normal_left amap=2</code> →
+  <code>nav output ACTIVE decided(arrow=true) sink=true</code>.</li>
+<li><b>V-oncar</b> <span class="pill wait">chưa chạy</span>: cụm thật do fission dựng; cần xác nhận (a) locator sống trên ảnh <code>fission_screencap -d 0</code>, (b) ca cast 2 app thật, (c) bản đồ chế độ ĐÊM (nền tối) — ràng buộc "vành tối" yếu đi ở đó, xem OQ1.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — Bản đồ nền TỐI: <span class="pill ok">giảm rủi ro</span> có <b>2 mẫu thật</b> — (a) Waze bản đồ đêm (fixture <code>w1920h720-d240-2line</code>, luma trung bình <b>11.3</b>): dò + classify ĐÚNG; (b) VietMap bản đồ tối đang idle, đầy icon sáng: trả <b>null</b> đúng như mong đợi. Vẫn <b>chưa có</b> mẫu Waze-đêm-đang-rẽ-trái để phủ kín. Ép <code>cmd uimode night yes</code> KHÔNG đổi được map Waze (Waze theo lịch mặt trời riêng).</li>
+<li><b>OQ2</b> — Registry vẫn <b>2 maneuver</b> (trái/phải). Đã chạy vòng thu tự động <b>28 đích</b>: năng suất rất thấp — cùng một điểm xuất phát nên maneuver đầu lặp lại, và Waze chỉ hiện glyph khi GPS nằm ĐÚNG trên tuyến. Thu được 1 glyph trái kiểu khác nhưng ở <code>y=369</code> (ngoài banner) và <b>không tái hiện được ngữ cảnh</b> ⇒ KHÔNG thêm (nhãn chưa xác minh thì thà thiếu còn hơn sai; nhân tiện trần ROI 220dp đã chặn sẵn đúng loại này). <b>Kết luận</b>: đây không phải việc brute-force off-car. Một chuyến lái THẬT với <code>NavLog.verbose</code> bật sẽ tự sinh đủ — dòng <code>glyph-ink</code> in chữ ký ĐÚNG quy ước, chỉ việc dán vào <code>BUILTIN</code> kèm nhãn.</li>
+<li><b>OQ3</b> — VietMap: mở được nhưng <b>chưa dẫn</b> (đặt điểm đến cần mò UI — anti-pattern §15) nên chưa đo được glyph. Đã đo được phần AN TOÀN: màn VietMap idle nền tối không sinh dương tính giả.</li>
+<li><b>OQ4</b> — Ngưỡng <code>BRIGHT</code>/<code>DARK</code> đang là hằng số tuyệt đối; nếu gặp theme lạ có thể cần chuyển sang ngưỡng thích nghi (Otsu).</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/b3-cluster-arrow-e2e-emulator-1920x720-2026-08-21.md</code> — số đo gốc + giới hạn emulator.</li>
+<li><code>jadx-openbyd24/sources/com/sr/openbyd/services/BydAccessibilityService.java:257</code> — nguồn khung vẽ của OpenBYD (<code>navBarDirection</code>).</li>
+<li><code>jadx-openbyd24/sources/defpackage/z40.java:39</code> — bảng 38 template Waze (trùng 38/38 với <code>ManeuverRegistry.RAW</code>).</li>
+<li><code>app/src/main/java/com/byd/clusternav/modules/clustercast/CastShell.kt</code> — nơi người dùng đổi size/dpi/bounds.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+<ul>
+<li><b>2026-08-22</b> — Implement cả gói theo lựa chọn owner. Thứ tự: thu ma trận đo (6 cấu hình dpi×size) → tầng 0 → locator → tách quy ước khớp → template mới → nối dây → test → E2E emulator.</li>
+<li><b>Bắt được lỗi im lặng</b>: regex đầu khối chỉ nhận <code>Stack id=</code> nên trên Android 12+/API 34 (in <code>RootTask id=</code>) resolver rơi hết về nhánh dự phòng ⇒ <code>windowRect</code> luôn null, dpi luôn 0. Pipeline vẫn chạy nên rất dễ lọt. Đã nhận cả hai dạng + test hồi quy.</li>
+<li><b>Hai hướng đã thử và BÁC</b> (giữ lại để đừng ai làm lại): fit một tỉ lệ nới chung; quét nhiều canvas lấy khớp tốt nhất (ra sai hướng 4/9).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-08-22 (tự review trong lúc thu dữ liệu)</h3>
+<ul>
+<li><b>[P1] Dương tính giả</b> — locator vồ phải cụm icon status bar nằm trên banner đen (vành tối bị khối banner kéo trung vị) và vồ phải dải LÀN. Sửa: cổng tỉ lệ lấp [0.10, 0.35] + xét độ tối <b>từng phía</b>. 3 fixture âm tính thật khoá lại.</li>
+<li><b>[P2] Cấp phát mỗi nhịp</b> — ROI theo tỉ lệ 0.40×0.45 của 1920×1080 = ~1.9 MB mảng tạm mỗi nhịp (2–4 Hz) trên đầu xe. Sửa: thêm trần ROI theo dp (520×220dp) lấy min với trần tỉ lệ. Phụ lợi: thu hẹp diện tích quét ⇒ ít dương tính giả hơn (đúng loại glyph ở y=369 nói trên).</li>
+<li><b>[P2] Hụt coverage do tôi tự tạo</b> — <code>handleArrowByGlyph</code> ban đầu trả true cả khi registry chưa có maneuver, làm mất luôn đường rect cố định. Sửa: chỉ trả true khi ĐÃ publish; hai đường dùng quy ước khớp nhau nội bộ nên rơi tiếp là an toàn.</li>
+<li><b>[P2] DRY</b> — <code>matchIn</code>/<code>matchNccIn</code> trùng logic với <code>match</code>/<code>matchNCC</code>. Gộp; nhân đó sửa một lỗi tôi tự tạo lúc refactor: <code>matchNCC</code> phải lấy điểm cao nhất TOÀN CỤC trên 2 registry, không phải registry trả sau.</li>
+<li><b>Chưa làm</b>: security scan (§6) — bắt buộc trước commit, chưa chạy vì chưa commit.</li>
+</ul>
+
+<h3>Pass 2 — 2026-08-23 (B3.47 vòng 3)</h3>
+<ul>
+<li><b>[P1] Trần dp là giả định về APP, không phải về hình dạng</b> — <code>MAX_DP</code> 58dp hiệu chuẩn trên mũi tên Waze (33–42dp); mũi tên VietMap cao 64dp ⇒ <code>turn_right</code> lọt với biên 0 px, cả họ <code>straight</code>/<code>slight</code>/<code>roundabout</code> rớt. [ĐO] 60/87 khung VietMap trả <b>icon POI bản đồ</b> ở (603,78)-(642,117), chỉ 27/87 dò đúng. Sửa: gỡ trần, thay bằng ba <b>tỉ số</b>. Sau: 86 dò đúng · <b>0</b> đảo mồi · 1 null.</li>
+<li>Bằng chứng + bảng đầy đủ: <code>docs/diagnostics/vietmap-glyph-gate-measurement-2026-08-23.md</code>.</li>
+</ul>
+
+<h3>Pass 3 — 2026-08-23 (B3.47 vòng 3b — sau ba lượt phản biện độc lập)</h3>
+<ul>
+<li><b>[P1] Cổng đúng nhưng ĐẦU VÀO của cổng sai</b> — neo trái đo từ <code>win.left</code>, mà <code>locate</code> cho <code>window = null</code> nghĩa "cả khung". [ĐO] khung chia đôi dựng từ hai fixture thật: <code>window=null</code> ⇒ trả mũi tên của app NỬA KIA, Hamming <b>0</b>, publish SAI HƯỚNG. Sửa: <code>window</code> không-null (kiểu Kotlin chặn) + <code>handleArrowByGlyph</code> bỏ nhịp khi <code>windowRect == null</code>.</li>
+<li><b>[P1] Sàn dp sụp khi dpi KHAI sai</b> — [ĐO] dpi khai ≤124 trên khung vẽ ở 240 ⇒ icon status bar 9×15 thắng ở <b>87/87</b> maneuver, mà bộ test cũ (tiêu chí <code>rect.left &lt; 250</code>) vẫn báo "hit 87/87". Sửa: sàn = <code>max</code>(dp, 2.5 % chiều cao cửa sổ) + đổi tiêu chí "dò đúng" thành "rect nằm trọn trong ô canvas glyph đã dán".</li>
+<li><b>[P1] ĐẢO NGƯỢC quyết định của Pass 1</b> ("chỉ trả true khi ĐÃ publish, rơi tiếp là an toàn"). Nay: <b>dò được bbox ⇒ tầng glyph sở hữu kênh ARROW</b>. Lý do [ĐO]: rect ARROW cố định <code>WAZE_ARROW_BANNER_D240</code> tra theo (target,W,H) chứ không theo package nên bị áp lên khung VietMap; trong 48 khung đường glyph không giải được, nó ra mã cho 3 và <b>2 SAI HƯỚNG</b> (<code>depart_right</code>→11 thay vì 3; <code>fork_slight_right</code>→3 thay vì 5), cả 3 qua nhánh NCC mềm. Câu "rơi tiếp là an toàn vì hai quy ước khớp nhau nội bộ" đúng về <i>quy ước</i> nhưng bỏ sót rằng <i>rect</i> cũng là một giả định. Đánh đổi: mất phủ sóng, được im lặng.</li>
+<li><b>[P2] <code>MAX_BLOB_PX</code> cắt giữa chừng</b> — vòng lặp thoát với bbox dở dang rồi vẫn đi qua đủ các cổng. Sửa: chạm trần ⇒ bỏ đảo.</li>
+<li><b>[P2] Fixture Waze là dải TRÊN</b> ⇒ <code>roiH</code> chỉ bằng ~44 % thực tế. Thêm test đắp dải lên nền bản đồ THẬT cho đủ chiều cao màn: 7/8 bbox không đổi, hướng không đổi; ca <code>w1920h720-d240-2line</code> cho (83,73,147,<b>148</b>) — tức <b>144 trong test cũ là artefact của fixture</b>, không phải bbox on-car.</li>
+<li><b>[P2] Số [ĐO] trong KDoc không tái lập được</b> — <code>NavGlyphLocatorTest</code> ghi "12 đảo · neo trái loại 7 (2.07…93.0) · sàn loại 3 · tỉ lệ khung loại 2" cho fixture bản-đồ-tối. Đo lại: <b>11</b> đảo, <b>cả 11 rớt ở SÀN</b>, neo lớn nhất 53.67. Đã sửa.</li>
+<li><b>BÁC</b> (kèm số đo, xem §4.2): nâng <code>MIN_FILL</code> để tự loại POI · trần theo ROI · nới <code>MAX_DP</code>.</li>
+<li><b>Chuyển sang backlog, KHÔNG làm ở vòng này</b>: <b>B3.52</b> (gộp thành phần cho glyph nhiều mảnh — 10 tên đang trả về một mảnh; canary đã dựng) · <b>B3.53</b> (nhánh NCC mềm của đường rect cố định vẫn ra sai hướng — chạm vào là chạm đường Waze/GMaps đã proven ngoài hiện trường, cần spec riêng + on-car).</li>
+</ul>
+</div>
+</body>
+</html>

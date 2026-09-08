@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- F3 (owner 2026-08-24): MỘT DÒNG đã gán trong "Nút vật lý → mở app".
+     Owner: "sau khi chọn nút + chọn app xong → add, thì ra 1 dòng đã binding nút và app… có thể chọn thêm
+     add thêm". Dòng được MainActivity.rebuildVoiceKeyBindingList() bơm vào list_voicekey_bindings.
+     Không thêm chuỗi vào strings.xml (file đó nằm trong danh sách canh chống-sửa-lén T11) — nhãn do
+     MainActivity đặt lúc chạy để còn song ngữ theo Lang.t. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:layout_marginTop="6dp">
+
+    <TextView android:id="@+id/txt_binding_label"
+        android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+        android:textColor="@color/text_primary" android:textSize="13sp"
+        android:text="—" />
+
+    <Button android:id="@+id/btn_binding_remove"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:minWidth="72dp" android:minHeight="@dimen/touch_min"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/btn_warning_outline" android:textAllCaps="false"
+        android:textColor="@color/btn_text" android:textSize="13sp"
+        android:text="Xoá" android:contentDescription="Xoá dòng gán này" />
+</LinearLayout>

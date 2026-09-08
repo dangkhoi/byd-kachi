@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Booster đọc UI GMaps trên màn + capture voice-guidance của nhiều nguồn dẫn đường. Lắng nghe 2 package GMaps
+     (zin + ReVanced) cho ground-truth cự ly, VÀ vn.vietmap.live / com.waze / com.chisadin.wazemod cho
+     ANNOUNCEMENT (chỉ dẫn giọng nói) — nguồn tín hiệu nav DUY NHẤT của 3 app này trên cùng máy (map là
+     SurfaceView, a11y tree rỗng; không post noti nav). Không đụng app ngoài danh sách.
+     canRetrieveWindowContent: bắt buộc để đọc node text.
+     ★ v0.36 BỎ flagRetrieveInteractiveWindows + flagReportViewIds: packageNames CHỈ lọc event được GỬI cho ta, nó
+     KHÔNG thu hẹp phạm vi của cờ interactive-windows — cờ đó bắt system_server theo dõi/ tính lại vị trí MỌI cửa sổ
+     trên MỌI display (Android 10 chạy 1 observer / display → đang chiếu là gấp đôi).
+     ★ B3.13 (2026-08-20) BẬT LẠI flagRetrieveInteractiveWindows: cần getWindows()/getWindowsOnAllDisplays để
+     ĐỌC nav app KHI KHÔNG foreground (như OpenBYD BydAccessibilityService.rootNodeForPackages). Chấp nhận lại
+     cost perf; bù bằng enum THROTTLED (chỉ khi có event nav + tối đa ~1/s) → không quét mỗi frame.
+     windows hay viewId. notificationTimeout 100→500ms: gộp bớt event khi bản đồ vẽ liên tục.
+     ★ 2026-08-22 BẬT LẠI flagReportViewIds: không có cờ này thì findAccessibilityNodeInfosByViewId() KHÔNG
+     hoạt động — mà đó chính là cách OpenBYD đọc nav Waze (BydAccessibilityService: navBarDistance /
+     navBarStreetLine / lblArrivalTime / lblTimeToDestination / lblDistanceToDestination / navBarDirection /
+     laneGuidanceView). Bỏ cờ ở v0.36 vì lý do PERF của interactive-windows, nhưng reportViewIds chỉ làm
+     system_server đính kèm chuỗi resource-id vào node đã tạo — không thêm observer cửa sổ nào.
+     ★ 1.13 (T3) THÊM flagRequestFilterKeyEvents + canRequestFilterKeyEvents: để onKeyEvent nhận PHÍM VẬT LÝ
+     app-wide (nút vật lý → trợ lý giọng nói). Cờ này CHỈ định tuyến key event tới service — KHÔNG bắt theo dõi
+     cửa sổ nên KHÔNG tái diễn chi phí của interactive-windows đã bỏ ở v0.36. Key event không bị packageNames lọc. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged|typeAnnouncement"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRequestFilterKeyEvents|flagRetrieveInteractiveWindows|flagReportViewIds"
+    android:canRequestFilterKeyEvents="true"
+    android:canRetrieveWindowContent="true"
+    android:notificationTimeout="500"
+    android:packageNames="com.google.android.apps.maps,app.revanced.android.apps.maps"
+    android:description="@string/acc_desc" />

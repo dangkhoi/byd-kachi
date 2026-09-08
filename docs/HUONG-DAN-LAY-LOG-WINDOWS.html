@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<title>Hướng dẫn lấy log ClusterNav bằng máy Windows</title>
+<style>
+@page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; color:#1a1a1a; font-size:12.5px; line-height:1.55; margin:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+h1 { font-size:22px; margin:0 0 2px; color:#0b5; }
+h1 span { color:#111; }
+.sub { color:#555; font-size:12px; margin:0 0 14px; }
+h2 { font-size:15.5px; margin:18px 0 6px; padding:6px 10px; background:#eafaf1; border-left:4px solid #0b5; border-radius:4px; page-break-after:avoid; }
+h3 { font-size:13px; margin:12px 0 4px; }
+p, li { margin:4px 0; }
+ol, ul { margin:4px 0 4px 0; padding-left:22px; }
+.step { page-break-inside:avoid; }
+.cmd { background:#f2f2f2; color:#0a0a0a; border:1.5px solid #999; font-family:"Consolas","Courier New",monospace; font-size:12.5px; font-weight:bold; padding:9px 12px; border-radius:6px; margin:6px 0; white-space:pre-wrap; word-break:break-all; }
+.note { background:#fff8e1; border:1px solid #f0d060; border-radius:6px; padding:8px 12px; margin:8px 0; font-size:12px; }
+.warn { background:#fdecea; border:1px solid #f5aaa0; border-radius:6px; padding:8px 12px; margin:8px 0; font-size:12px; }
+.ok { color:#0a7d33; font-weight:bold; }
+b.k { background:#ececec; color:#0a0a0a; border:1px solid #b0b0b0; border-radius:4px; padding:0 4px; font-family:"Consolas","Courier New",monospace; font-weight:bold; }
+table { border-collapse:collapse; width:100%; margin:8px 0; font-size:11.5px; page-break-inside:avoid; }
+th,td { border:1px solid #ccc; padding:6px 8px; text-align:left; vertical-align:top; }
+th { background:#f0f0f0; }
+.big { font-size:13px; font-weight:bold; }
+hr { border:none; border-top:1px solid #ddd; margin:14px 0; }
+.tag { display:inline-block; background:#0b5; color:#fff; border-radius:10px; padding:1px 8px; font-size:11px; font-weight:bold; }
+</style></head><body>
+
+<h1>Hướng dẫn lấy log <span>Cluster Nav 2.0</span> bằng máy tính Windows</h1>
+<p class="sub">Dành cho người KHÔNG rành máy tính · Làm theo từng bước · Bản 2026-08-18</p>
+
+<div class="note"><b>Ý tưởng chung (đọc 20 giây):</b> Máy tính Windows nối cùng WiFi với xe → dùng công cụ tên <b>ADB</b> gõ vài dòng lệnh → xe gửi thư mục log về máy tính → bạn nén lại và gửi đi. Chỉ vậy thôi.</div>
+
+<h2>PHẦN A — Chuẩn bị (cần có gì)</h2>
+<ul>
+<li>1 máy tính chạy <b>Windows</b>.</li>
+<li>Xe đang <b>mở màn hình</b>, đã cài app <b>Cluster Nav 2.0</b> và đã chạy 1 chuyến (để có log).</li>
+<li><b>Máy tính và xe cùng 1 mạng WiFi.</b> Thường là: điện thoại phát WiFi (hotspot) → cả xe và máy tính cùng nối vào WiFi đó.</li>
+</ul>
+<div class="warn"><b>Quan trọng:</b> nếu máy tính và xe KHÁC mạng WiFi thì sẽ không kết nối được. Hãy chắc chắn cả hai nối cùng 1 WiFi/hotspot.</div>
+
+<h2>PHẦN B — Tải công cụ ADB về máy (chỉ làm 1 lần)</h2>
+<ol>
+<li class="step">Mở trình duyệt (Chrome/Edge), vào địa chỉ:
+<div class="cmd">https://developer.android.com/tools/releases/platform-tools</div></li>
+<li class="step">Bấm tải <b>“SDK Platform-Tools for Windows”</b> → được 1 file nén tên đại loại <b class="k">platform-tools-latest-windows.zip</b>.</li>
+<li class="step">Vào thư mục <b>Downloads</b>, <b>chuột phải</b> vào file zip đó → <b>Extract All…</b> (Giải nén) → bấm <b>Extract</b>.</li>
+<li class="step">Bạn sẽ được 1 thư mục tên <b class="k">platform-tools</b>. <b>Kéo thư mục này ra Desktop</b> (màn hình chính) cho dễ tìm.</li>
+</ol>
+<div class="note">Xong bước này bạn có: <b>Desktop\platform-tools</b>. Lần sau lấy log khỏi cần tải lại.</div>
+
+<h2>PHẦN C — Mở “cửa sổ lệnh” ĐÚNG chỗ (bước hay sai nhất)</h2>
+<ol>
+<li class="step">Mở thư mục <b class="k">platform-tools</b> vừa giải nén (bấm đúp vào nó).</li>
+<li class="step">Nhìn lên <b>thanh địa chỉ</b> ở phía trên cửa sổ (chỗ ghi đường dẫn thư mục). <b>Bấm chuột trái 1 lần vào ô trống</b> của thanh địa chỉ đó — chữ trong đó sẽ được bôi xanh.</li>
+<li class="step">Gõ 3 chữ <b class="k">cmd</b> rồi nhấn <b>Enter</b>.</li>
+<li class="step">Một <b>cửa sổ màu đen</b> hiện ra. <span class="ok">Đây là cửa sổ lệnh, và nó đang đứng đúng trong thư mục platform-tools.</span></li>
+</ol>
+<div class="warn"><b>Lưu ý:</b> phải mở cửa sổ đen bằng cách gõ <b class="k">cmd</b> vào thanh địa chỉ như trên. Nếu mở cửa sổ đen kiểu khác, các lệnh bên dưới sẽ báo lỗi <i>“adb is not recognized”</i>.</div>
+
+<h2>PHẦN D — Tìm địa chỉ IP của xe</h2>
+<p>IP là 1 dãy số kiểu <b>192.168.1.50</b>. Cách tìm (chọn 1):</p>
+<ul>
+<li><b>Cách dễ:</b> hỏi người kỹ thuật đã báo IP xe là bao nhiêu, rồi dùng số đó. Hoặc xem IP trong phần Cài đặt WiFi trên màn hình xe.</li>
+<li><b>Cách trên xe:</b> vào Cài đặt WiFi trên màn xe → bấm vào mạng đang nối → xem mục “Địa chỉ IP”.</li>
+</ul>
+<div class="note">Trong hướng dẫn này ví dụ dùng <b class="k">192.168.1.50</b>. <b>Bạn hãy thay bằng IP đúng của xe bạn</b> ở mọi dòng lệnh bên dưới.</div>
+
+<h2>PHẦN E — Kết nối máy tính tới xe</h2>
+<ol>
+<li class="step">Trong cửa sổ đen, gõ dòng này (thay IP nếu khác) rồi Enter:
+<div class="cmd">adb connect 192.168.1.50:5555</div></li>
+<li class="step">Thấy dòng <b class="k">connected to 192.168.1.50:5555</b> là <span class="ok">kết nối OK</span>.</li>
+<li class="step">Kiểm tra lại — gõ:
+<div class="cmd">adb devices</div>
+Thấy dòng có IP kèm chữ <b class="k">device</b> ở cuối là tốt. Nếu thấy chữ <b>offline</b> hoặc <b>unauthorized</b> → xem Phần G (Xử lý lỗi).</li>
+</ol>
+<div class="warn">Nếu màn xe hiện popup hỏi <b>“Allow / Cho phép gỡ lỗi USB?”</b> → nhìn màn xe, bấm <b>Cho phép</b> (tick “luôn cho phép” nếu có).</div>
+
+<h2>PHẦN F — Lấy log về máy tính</h2>
+<ol>
+<li class="step"><b>Copy nguyên dòng dưới</b> (thay IP nếu khác), dán vào cửa sổ đen (chuột phải để dán), rồi Enter:
+<div class="cmd">adb -s 192.168.1.50:5555 pull /sdcard/Android/data/com.byd.clusternav2/files D:\clusternav</div></li>
+<li class="step"><b>Chờ.</b> Log có nhiều ảnh nên có thể mất <b>vài phút</b>. Cứ để yên, đừng tắt cửa sổ.</li>
+<li class="step">Khi thấy dòng kiểu <b class="k">NNNN files pulled</b> (ví dụ “1128 files pulled”) là <span class="ok">XONG</span>.</li>
+<li class="step">Log đã nằm trong <b class="k">D:\clusternav\files</b> (adb tạo thư mục con <b class="k">files</b> bên trong D:\clusternav).</li>
+</ol>
+
+<h2>PHẦN G — Nén lại và gửi đi</h2>
+<ol>
+<li class="step">Vào ổ <b class="k">D:\clusternav</b>, tìm thư mục <b class="k">files</b> (thư mục chứa log).</li>
+<li class="step"><b>Chuột phải</b> vào nó → chọn <b>Send to</b> → <b>Compressed (zipped) folder</b> (Nén). Được 1 file <b class="k">files.zip</b>.</li>
+<li class="step">Gửi file <b>.zip</b> đó lại cho người kỹ thuật (Zalo / Email / Google Drive).</li>
+</ol>
+<div class="note big">🎉 Xong! Lần sau chỉ cần làm lại từ <b>Phần C</b> (mở cửa sổ đen) → E → F → G. Không cần tải ADB lại.</div>
+
+<h2>PHẦN H — Xử lý lỗi thường gặp</h2>
+<table>
+<tr><th>Hiện tượng</th><th>Cách sửa</th></tr>
+<tr><td><b>‘adb’ is not recognized…</b></td><td>Cửa sổ đen mở sai chỗ. Làm lại <b>Phần C</b> (gõ <b class="k">cmd</b> vào thanh địa chỉ của thư mục platform-tools).</td></tr>
+<tr><td><b>failed to connect / timed out</b></td><td>1) Máy tính và xe chưa cùng WiFi → nối lại cùng 1 WiFi. 2) Sai IP → kiểm tra lại IP xe (Phần D). 3) Màn xe đang tắt → bật màn xe lên rồi thử lại.</td></tr>
+<tr><td><b>device offline</b></td><td>Gõ <b class="k">adb disconnect</b> rồi gõ lại <b class="k">adb connect 192.168.1.50:5555</b>. Nếu vẫn vậy: tắt/mở lại WiFi trên xe.</td></tr>
+<tr><td><b>unauthorized</b></td><td>Nhìn màn xe, bấm <b>Cho phép</b> ở popup gỡ lỗi. Không thấy popup → khởi động lại app trên xe rồi thử lại.</td></tr>
+<tr><td><b>Pull chạy mãi / như bị treo</b></td><td>Bình thường — ảnh nặng. Chờ thêm vài phút, đừng tắt cửa sổ. Chỉ khi quá 15 phút không nhúc nhích mới thử lại.</td></tr>
+<tr><td><b>Không tìm thấy thư mục log</b></td><td>Xe chưa chạy chuyến nào nên chưa có log, hoặc app chưa bật. Chạy 1 chuyến rồi lấy lại.</td></tr>
+</table>
+
+<h2>PHẦN I — (Dự phòng) Nối bằng dây cáp USB</h2>
+<p>Nếu WiFi không được, có thể cắm dây USB từ xe sang máy tính, rồi làm y hệt <b>Phần F</b> nhưng <b>bỏ phần</b> <b class="k">-s 192.168.1.50:5555</b> trong lệnh (vì đã cắm dây trực tiếp):</p>
+<div class="cmd">adb devices
+adb pull /sdcard/Android/data/com.byd.clusternav2/files D:\clusternav</div>
+<p>(Cắm USB có thể cần cài driver — nếu rối thì ưu tiên cách WiFi ở trên.)</p>
+
+<hr>
+<p class="sub">Cần hỗ trợ: chụp màn hình cửa sổ đen (chỗ báo lỗi) gửi cho người kỹ thuật là được giúp ngay.</p>
+
+</body></html>

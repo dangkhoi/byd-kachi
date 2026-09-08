@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 2026-07-27: về 1 cột như v0.3x. Ô đầy chiều ngang thì tên app không bị cắt, vùng chạm to hơn
+         (bấm khi đang lái), và mỗi app có chỗ để đặt phần chỉnh khung/DPI ngay dưới nó. -->
+    <integer name="cast_app_columns">1</integer>
+</resources>

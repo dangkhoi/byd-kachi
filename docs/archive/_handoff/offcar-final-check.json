@@ -1,0 +1,31 @@
+{
+  "branch": "release/v0.60-cast-hardening",
+  "canonicalization": "UTF-8 JSON; recursively lexicographic object keys; preserve array order; ensure_ascii=false; compact comma/colon separators; no BOM.",
+  "head": "7793eea160ef90f223dc4590c9b67df800ef21c4",
+  "identityExclusions": {
+    "entries": [
+      {
+        "path": "docs/_handoff/offcar-final-check.json",
+        "reason": "GENERATED_ATTESTATION_SELF_REFERENCE"
+      },
+      {
+        "path": "docs/_handoff/vehicle-candidate.json",
+        "reason": "GENERATED_VEHICLE_CANDIDATE_RECORD"
+      }
+    ],
+    "rule": "Path-only exclusions prevent identity recursion and keep local tooling state, historical APK bytes, every prior attestation and build-generated candidate records out of the build inputs. Predecessor identities stay independently verifiable and unmodified."
+  },
+  "intendedUntracked": [],
+  "schema": "clusternav.exact-source/v1",
+  "sourceId": "9192ab27fbd6222918705d9bb5166fa52ef72705c633d74fa7374c6f49d9903e",
+  "trackedDiff": {
+    "byteLength": 0,
+    "producer": "GIT_OPTIONAL_LOCKS=0 git diff --binary --no-ext-diff HEAD",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "version": {
+    "label": "off-car close-out: R13 wording, geometry behind facade, transport consolidation",
+    "versionCode": 72,
+    "versionName": "0.72"
+  }
+}

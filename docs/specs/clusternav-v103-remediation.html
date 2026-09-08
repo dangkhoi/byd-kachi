@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav v1.03 — Remediation + Letterbox Fix</title>
+<script>(function(){var t=localStorage.getItem('clusternav-v103-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1220px;margin:auto;padding:0 28px 110px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;letter-spacing:-.01em}
+.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}
+.hero{padding:72px 0 46px}
+.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(38px,6vw,62px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:1000px}
+.lead{font-size:19px;color:var(--muted);max-width:900px}
+.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px}
+.stat,.card,.callout,.phase{background:var(--paper);border:1px solid var(--line);border-radius:18px}
+.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}
+section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}
+h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}
+.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}
+.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}
+.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}
+code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}
+pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}
+.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:780px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}
+.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}
+.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}
+.sev{font:700 11px var(--mono);padding:3px 7px;border-radius:6px;white-space:nowrap}.sev.p0{background:var(--red-soft);color:var(--red)}.sev.p1{background:var(--amber-soft);color:var(--amber)}.sev.p2{background:var(--purple-soft);color:var(--purple)}
+.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.green{background:var(--green-soft);color:var(--green)}
+.review{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · v1.03 Remediation</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('clusternav-v103-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Consolidated spec · requirements · design · tasks · v1.03</div>
+<h1>Remediation toàn bộ review debt + fix letterbox đen 2 bên cụm.</h1>
+<p class="lead">Spec này kế thừa và thay thế <code>clusternav-v102-review-remediation.html</code>, cập nhật theo kết quả senior review 2026-08-05 (3 P0, 16 P1, 6 P2) và bổ sung fix letterbox (wmSize 1920×800 gây scale 0.9 → content chỉ 1728px trên display 1920×720).</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Baseline: main@8842ffe · Target: v1.03 (103) · Date: 2026-08-05</p>
+<div class="stats">
+<div class="stat"><b>3</b><span>P0 critical</span></div>
+<div class="stat"><b>16</b><span>P1 high</span></div>
+<div class="stat"><b>6</b><span>P2 medium</span></div>
+<div class="stat"><b>1</b><span>letterbox fix (new)</span></div>
+<div class="stat"><b>9</b><span>task phases (T0–T8)</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-08-04</td><td>Initial consolidated remediation spec (R1–R20, T0–T8) from full-project senior review.</td><td>Planning. Supersedes v1.02 remediation spec.</td></tr>
+<tr><td>2026-08-05</td><td>v1.03 senior review confirms all findings NOT MET. Adds R21 letterbox fix: <code>NORMAL_DEFAULT wmSize 1920x800</code> causes LogicalDisplay scale 720/800=0.9 → 1728px content → 96px black bars each side.</td><td>Added R21, updated T1 to include letterbox fix, created multi-agent execution prompt.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><strong>Approval:</strong> exactly one out-of-band gate. Approve with agent prompt <code>"Approve spec clusternav-v103-remediation"</code>. State is not stored in HTML.</div>
+</section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="callout red"><strong>Current verdict (2026-08-05):</strong> NOT APPROVED / BLOCK SHIP. 14 requirements FAIL, 3 PARTIAL. Test suite green only because 139 tests were deleted without replacement. Release is debuggable with debug-sign fallback.</div>
+<div class="grid3">
+<div class="card"><h3>Proven</h3><ul><li>Gradle 9.6.1 + AGP 9.3.1 + Kotlin 2.4.10 compile</li><li>799 JVM tests pass (core 570, app 218, car 11)</li><li>Immutable NavigationFrame has route/ETA fields</li><li>Simplified Cast 4-state model compiles</li><li>Security scan clean for current content</li></ul></div>
+<div class="card"><h3>Broken</h3><ul><li>CP/AA can enter freeform/split → SurfaceFlinger crash</li><li>Release debuggable + debug-sign fallback</li><li>Collector doesn't verify APK contract</li><li>Cast state commits optimistic (no postcondition)</li><li>Navigation frame identity lost (NavState conversion)</li><li>Widget slots coupled via combined parser/global reason</li><li><strong>NEW:</strong> Normal app letterbox — wmSize 1920×800 on 720px display</li></ul></div>
+<div class="card"><h3>Evidence baseline</h3><ul><li>Senior review: <code>docs/review/clusternav-v103-senior-review-2026-08-05.html</code></li><li>Prior spec: <code>docs/specs/clusternav-v102-review-remediation.html</code></li><li>Vehicle candidate JSON still points to 0.76</li><li>Display: physical 1920×720, wmSize 1920×800 → scale 0.9</li></ul></div>
+</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<p class="small">R1–R20 inherited from v1.02 spec unchanged. R21 added for letterbox fix.</p>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance criteria</th><th>Review status</th></tr></thead><tbody>
+<tr><td>R1</td><td>Exactly two runtime tracks</td><td>Nav/HUD and Cast share no mutable state, executor, shell, queue, lifecycle, journal or recovery.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R2</td><td>One active Cast control plane</td><td>Home/Bubble/diag use simplified runtime only. V2 removed from active source.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R3</td><td>Cast state follows postconditions</td><td>Commit only after exact task lands; unknown preserves prior state.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R4</td><td>CP/AA crash path fail-closed</td><td>Protected targets full-only, require measured standard fullscreen stack.</td><td><span class="sev p0">FAIL</span></td></tr>
+<tr><td>R5</td><td>Bounded Cast transport</td><td>Connect/read/op deadlines; close-on-timeout; typed outcomes.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R6</td><td>Failure preserves occupant</td><td>Failed return/resize/density never commits; occupied slot not overwritten.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R7</td><td>Display-aware geometry</td><td>No hardcoded 1920×720 editor constants. Derives from display.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R8</td><td>Lifecycle-safe automotive UI</td><td>Listeners removable; ≥48dp zones; disabled non-destructive; one DPI.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R9</td><td>Immutable Navigation frame complete</td><td>Session/sequence/route/ETA cross coordinator without reinterpretation.</td><td><span class="sev p1">PARTIAL</span></td></tr>
+<tr><td>R10</td><td>Truthful independent outputs</td><td>Lane/HUD/speed-sign each own bounded queue; typed HAL result.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R11</td><td>VietMap providers independent</td><td>Per-slot timestamp/freshness/reason/generation. Bad Alerts ≠ invalid speed.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R12</td><td>Manual AppWidget bind grant</td><td>Operator runs grantbind; app never self-grants.</td><td><span class="sev p1">PARTIAL</span></td></tr>
+<tr><td>R13</td><td>Speed-sign lifecycle safe</td><td>Master OFF/stale/disconnect/destroy force retryable clear.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R14</td><td>HUD/speed-sign vehicle-gated</td><td>Budget consistent code/test + visual evidence.</td><td><span class="sev p1">VEHICLE</span></td></tr>
+<tr><td>R15</td><td>Tests represent shipped architecture</td><td>V2 tests removed/replaced; 0 failures; failure-path coverage.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R16</td><td>Current stable toolchain</td><td>JDK17, Gradle 9.6.1, AGP 9.3.1, Kotlin 2.4.10, SDK37.</td><td><span class="sev p2">PARTIAL</span></td></tr>
+<tr><td>R17</td><td>Trusted artifact classes</td><td>vehicleTest + hardened release; collector verifies APK.</td><td><span class="sev p0">FAIL</span></td></tr>
+<tr><td>R18</td><td>Code-health limits</td><td>Modified files ≤500 LOC; no stale comments/orphan XML.</td><td><span class="sev p2">FAIL</span></td></tr>
+<tr><td>R19</td><td>Exact candidate identity</td><td>1.03 with SHA/signer/manifest; never overwrites older.</td><td><span class="sev p1">FAIL</span></td></tr>
+<tr><td>R20</td><td>Vehicle evidence mandatory</td><td>SL6 + Seal parked matrices pass with exact candidate.</td><td><span class="sev p1">NOT STARTED</span></td></tr>
+<tr><td><strong>R21</strong></td><td><strong>No letterbox on normal Cast</strong></td><td><code>NORMAL_DEFAULT.wmSize</code> must match display aspect ratio to prevent LogicalDisplay scaling. Content fills full display width. No black bars on either side.</td><td><span class="sev p1">NEW</span></td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+<h3>D1–D8: Inherited from v1.02 spec</h3>
+<p>Full design for R1–R20 is documented in <code>docs/specs/clusternav-v102-review-remediation.html</code> §Design (D1–D8). All designs remain valid and are adopted by reference.</p>
+
+<h3>D9 — Letterbox fix (R21)</h3>
+<div class="grid2">
+<div class="card"><h4>Root cause</h4>
+<p><code>SimpleCastModels.kt</code> defines <code>NORMAL_DEFAULT = DisplayConfig(wmSize = "1920x800", ...)</code>. The cluster physical display is 1920×720. When Android fits a 1920×800 logical surface into 1920×720 physical pixels, it preserves aspect ratio by scaling down: <code>720/800 = 0.9</code>. Result: content renders at 1728×720 → <strong>96px black letterbox each side</strong>.</p>
+</div>
+<div class="card"><h4>Fix</h4>
+<p>Change <code>wmSize</code> to <code>"1920x720"</code> — matching display physical dimensions exactly. This eliminates scaling and letterboxing. The existing <code>bounds = CastBounds(0, 90, 1920, 630)</code> continues to work: <code>am task resize</code> operates within the logical surface to carve out OEM bars top/bottom, independent of display scaling.</p>
+<pre><code>// Before
+val NORMAL_DEFAULT = DisplayConfig(
+  wmSize = "1920x800",
+  overscan = "0,0,0,0",
+  bounds = CastBounds(0, 90, 1920, 630)
+)
+
+// After
+val NORMAL_DEFAULT = DisplayConfig(
+  wmSize = "1920x720",
+  overscan = "0,0,0,0",
+  bounds = CastBounds(0, 90, 1920, 630)
+)</code></pre>
+</div>
+</div>
+<div class="callout amber"><strong>Impact:</strong> Only affects <code>AppType.NORMAL</code>. CarPlay (1422×800) and Android Auto (1920×1080) are unaffected — they have their own measured configs. Existing per-app saved configs in user prefs also unaffected (they override NORMAL_DEFAULT).</div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<p class="small">9 phases. T0 baseline freeze → T1 toolchain+letterbox → T2 navigation → T3 widget → T4 cast core → T5 cast UI → T6 test rebaseline → T7 consolidate/review → T8 vehicle. Letterbox fix is placed in T1 (simple config change, no runtime logic).</p>
+
+<div class="phase"><div class="phase-id">T0 · Baseline</div><div><h4>Freeze identity and inventory</h4><ul class="check">
+<li>Record branch/HEAD, tracked diff, APK hashes</li>
+<li>Map R1–R21 to files/tests, classify ACTIVE/RETIRED/VEHICLE_ONLY</li>
+<li>Preserve v1.00 APK; mark v1.02 stale</li>
+</ul><p><strong>Exit:</strong> requirements-to-file matrix complete; no unknown dirty path.</p></div></div>
+
+<div class="phase"><div class="phase-id">T1 · Toolchain + letterbox</div><div><h4>Migrate toolchain, harden release, fix letterbox</h4><ul class="check">
+<li>Gradle 9.6.1+SHA; AGP 9.3.1; Kotlin JVM 2.4.10; JUnit 6.1.2; dadb 2.0.0; SDK37</li>
+<li>Add dependency verification/locking</li>
+<li>Add <code>vehicleTest</code> variant; harden <code>release</code> (no debug fallback)</li>
+<li>Collector inspects APK (package/version/signer/debug flag)</li>
+<li><strong>R21 letterbox fix:</strong> change <code>NORMAL_DEFAULT.wmSize</code> from <code>"1920x800"</code> to <code>"1920x720"</code></li>
+<li>Update tests referencing old wmSize value</li>
+</ul><p><strong>Exit:</strong> compile + focused build tests pass; letterbox config correct; no runtime behavior edits beyond wmSize.</p></div></div>
+
+<div class="phase"><div class="phase-id">T2 · Navigation</div><div><h4>Repair immutable frame and output ownership</h4><ul class="check">
+<li>Keep session/source/sequence through to physical outputs</li>
+<li>Remove NavState synthetic conversion</li>
+<li>Each output (Lane/HUD/speed-sign) owns bounded queue + typed HAL result</li>
+<li>Generation-fence writes and clears</li>
+<li>Fix stale FutureTask retention and timeout overwrite</li>
+</ul><p><strong>Exit:</strong> producer→frame→output tests + clear/saturation/wedge tests pass.</p></div></div>
+
+<div class="phase"><div class="phase-id">T3 · Widget</div><div><h4>Independent providers and safe lifecycle</h4><ul class="check">
+<li>Per-slot freshness/reason/generation (speed vs alerts independent)</li>
+<li>Check preference commits; reconcile orphan IDs</li>
+<li>Move drawable hashing off main thread</li>
+<li>Speed-sign clear: retryable state machine for OFF/stale/disconnect/destroy</li>
+</ul><p><strong>Exit:</strong> bridge lifecycle tests + grant/bind/stale/restart emulator tests pass.</p></div></div>
+
+<div class="phase"><div class="phase-id">T4 · Cast core</div><div><h4>Bounded transport and verified postconditions</h4><ul class="check">
+<li>CP/AA full-only with exact fullscreen standard stack proof</li>
+<li>Bounded operation owner with connect/read/op deadlines</li>
+<li>Typed DeviceMutationOutcome; commit only on Verified</li>
+<li>Stop is priority/preemptive, not queued behind I/O</li>
+<li>Parser: typed stack/task/windowing/bounds; ambiguity rejects</li>
+</ul><p><strong>Exit:</strong> real-dump parser tests + command failure matrix; no Casting without verified task.</p></div></div>
+
+<div class="phase"><div class="phase-id">T5 · Cast UI</div><div><h4>Lifecycle-safe Bubble/Home and truthful diagnostics</h4><ul class="check">
+<li>Bubble: ≥48dp zones, one tap token, remove listeners on destroy</li>
+<li>Home: display-aware editor, one shared DPI, cancel delayed work</li>
+<li>Diagnostics: reads simplified state only, no V2 runtime creation</li>
+<li>Split file sizes ≤500 LOC each</li>
+</ul><p><strong>Exit:</strong> accessibility/rapid-tap/recreation tests pass; all files ≤500 LOC.</p></div></div>
+
+<div class="phase"><div class="phase-id">T6 · Test rebaseline</div><div><h4>Remove stale V2 and rebuild active coverage</h4><ul class="check">
+<li>Semantic scan proves V2 files have no active caller</li>
+<li>Delete retired V2 production + test files</li>
+<li>Add replacement tests for new boundaries (output owners, widget slots, cast postconditions, CP/AA stack proof)</li>
+<li>Enforce LOC ratchets</li>
+</ul><p><strong>Exit:</strong> full suite 0 failures; no obsolete V2 assertions.</p></div></div>
+
+<div class="phase"><div class="phase-id">T7 · Consolidate</div><div><h4>Review, security, exact-source readiness</h4><ul class="check">
+<li>Scope check: R1–R21 each has code + test + wiring</li>
+<li>Senior reviews by boundary (Nav, Widget, Cast core, Cast UI, Release)</li>
+<li>Patch all findings → rerun → re-review loop until 0 P0–P1</li>
+<li>Security scan: no secrets/PII/private paths</li>
+<li>Generate exact-source manifest for 1.03</li>
+</ul><p><strong>Exit:</strong> 0 test failures; 0 review findings; security CLEAN; candidate source ready.</p></div></div>
+
+<div class="phase"><div class="phase-id">T8 · Vehicle</div><div><h4>Build auth → SL6 + Seal evidence</h4><ul class="check">
+<li>After BUILD AUTH: assemble vehicleTest 1.03</li>
+<li>Run emulator smoke</li>
+<li>SL6 + Seal parked matrices (from v1.02 spec)</li>
+<li>Any source change → regenerate identity + rerun affected rows</li>
+</ul><p><strong>Exit:</strong> exact SHA evidence + all vehicle rows PASS + owner sign-off.</p></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Command</th><th>Pass</th></tr></thead><tbody>
+<tr><td>Compile</td><td><code>./gradlew --rerun-tasks :app:processDebugResources :app:compileDebugKotlin</code></td><td>Success</td></tr>
+<tr><td>All JVM tests</td><td><code>./gradlew --rerun-tasks :core:test :app:testDebugUnitTest :car-integration:test</code></td><td>0 fail</td></tr>
+<tr><td>Lint</td><td><code>./gradlew :app:lintVehicleTest :app:lintRelease</code></td><td>0 errors</td></tr>
+<tr><td>Letterbox</td><td><code>grep "1920x800" core/src/main/kotlin/**</code></td><td>0 matches in NORMAL_DEFAULT</td></tr>
+<tr><td>LOC health</td><td><code>wc -l</code> on modified files</td><td>All ≤500 LOC</td></tr>
+<tr><td>Security</td><td>Diff scan for secrets/PII/private paths</td><td>CLEAN</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Question</th><th>Safe default</th></tr></thead><tbody>
+<tr><td>Q1–Q6</td><td>Inherited from v1.02 spec (SL6 resize, CP/AA stack, ADAS clear, grantbind persist, HUD budget, SDK37 behavior)</td><td>All fail-closed; close with vehicle evidence only.</td></tr>
+<tr><td>Q7</td><td>Does wmSize 1920×720 for normal apps eliminate letterbox on both SL6 and Seal?</td><td>Measured on photo evidence: current 1920×800 produces visible black bars. Fix to 1920×720 matches physical display. Verify with T8 vehicle test.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><code>docs/review/clusternav-v103-senior-review-2026-08-05.html</code> — senior review triggering this spec</li>
+<li><code>docs/specs/clusternav-v102-review-remediation.html</code> — predecessor spec (full D1–D8 designs)</li>
+<li><code>core/src/main/kotlin/.../simplified/SimpleCastModels.kt</code> — letterbox root cause</li>
+<li>Vehicle photo evidence — normal app with black bars at 1920×800 wmSize</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><p class="small">Append-only.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-04 · Initial remediation synthesis</h3><p>Full-project senior review confirmed P0 protected-stack hazard and P1 failures across Cast, Navigation, widget, release.</p></div>
+<div class="review"><h3>Pass 2 — 2026-08-05 · v1.03 review + letterbox</h3><p>Repeat review against current tree: 3 P0, 16 P1, 6 P2. All R1–R20 NOT MET. Added R21 for letterbox (wmSize 1920×800 → scale 0.9 → 96px black bars each side). Owner confirmed fix direction: change to 1920×720.</p></div>
+<div class="review"><h3>Pass 3 — 2026-08-05 · Implementation + scope audit</h3>
+<p><strong>Executed:</strong> 5-stage multi-agent DAG. Stage 1: toolchain verified (already at target), letterbox fixed (1920×800→1920×720), release hardened, dependency verification added. Stage 2: Navigation output dedup by applied state, typed OutputDeliveryResult, generation fencing; Widget per-provider independence, retryable clear state machine. Stage 3: Cast bounded executor, typed CastMutationOutcome, postcondition verifier, CP/AA policy enforcement, UI split (56dp zones, tap token, display-aware editor). Stage 4: V2 cleanup (3 dead files removed; 28 V2 files remain — active callers), 84 replacement tests added.</p>
+<p><strong>Scope audit:</strong> 14/21 requirements ✅. Known gaps: R2 (V2 still active, multi-week migration needed), R18 (ClusterCast.kt 1286 LOC, CastFacade.kt 855 LOC — legacy, not introduced by this remediation). Blocked: R14/R19/R20 (vehicle access required).</p>
+<p><strong>Security:</strong> CLEAN after redaction of private paths in handoff docs. No secrets/PII/credentials in source.</p>
+<p><strong>Verdict:</strong> CONDITIONALLY APPROVED for off-car scope. R2/R18 deferred to next iteration. Vehicle gates (R14/R19/R20) require separate BUILD AUTH + physical test.</p>
+</div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

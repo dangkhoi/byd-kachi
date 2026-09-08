@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cast — Freeform Resize / Split / Per-App Profiles + Bubble Redesign</title>
+<script>(function(){var t=localStorage.getItem('cast-frs-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1220px;margin:auto;padding:0 28px 110px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;letter-spacing:-.01em}
+.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}
+.hero{padding:72px 0 46px}
+.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(38px,6vw,60px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:1000px}
+.lead{font-size:19px;color:var(--muted);max-width:900px}
+.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px}
+.stat,.card,.callout,.phase{background:var(--paper);border:1px solid var(--line);border-radius:18px}
+.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}
+section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}
+h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}
+.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}
+.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}
+.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}
+code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}
+pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}
+.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:780px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}
+.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}
+.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}
+.sev{font:700 11px var(--mono);padding:3px 7px;border-radius:6px;white-space:nowrap}.sev.p0{background:var(--red-soft);color:var(--red)}.sev.p1{background:var(--amber-soft);color:var(--amber)}.sev.p2{background:var(--purple-soft);color:var(--purple)}.sev.new{background:var(--green-soft);color:var(--green)}
+.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.green{background:var(--green-soft);color:var(--green)}
+.review{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}
+.diagram{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;margin:16px 0;overflow:auto}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:6px}.sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Cast Freeform Resize / Split</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('cast-frs-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Consolidated spec · requirements · design · tasks · off-car</div>
+<h1>Nút nổi 3 ô ngang, chia đôi 50/30/70, và 7 profile hình học cho mỗi app.</h1>
+<p class="lead">Nối tiếp phiên on-car 2026-08-05 (freeform sống sau power-cycle → <code>am task resize</code> đặt được rect từng app). Spec này khắc phục lỗi autostart split không ghi trạng thái, thiết kế lại nút nổi cho trong suốt hơn, thu gọn tỉ lệ chia, và thêm 7 profile (vị trí+size+DPI) lưu theo từng app để lần cast sau đúng size đã chỉnh — tất cả làm được off-car (JVM tests + build), verify hình ảnh để lại cho on-car.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Baseline: main@8842ffe (+ uncommitted v1.03 WIP) · Date: 2026-08-05</p>
+<div class="stats">
+<div class="stat"><b>1</b><span>bug fix (autostart)</span></div>
+<div class="stat"><b>2</b><span>UI redesign (bubble)</span></div>
+<div class="stat"><b>3</b><span>split ratios kept</span></div>
+<div class="stat"><b>7</b><span>profiles / app</span></div>
+<div class="stat"><b>1</b><span>Q answered (CP/AA)</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-08-05</td><td>Initial consolidated spec from owner request (5 items). Tasks T1–T4 in scope; T5 (CP/AA editor) optional pending owner decision.</td><td>Planning. Awaiting one approval gate.</td></tr>
+<tr><td>2026-08-05 (later)</td><td>T1–T4 delivered + reviewed + scanned (green). Owner double-check found boot gap: <code>openProjection()</code> was Activity-only, so on a pure car boot the coordinator never reached Idle and autostart never fired. Added R10 + D6 + T7 (boot-autostart projection ownership).</td><td>Owner-approved follow-up patch ("ok patch giúp"). Implemented + verified.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><strong>Approval:</strong> đúng một cổng ngoài tài liệu. Approve bằng prompt <code>"Approve spec cast-freeform-resize-split"</code>. State không lưu trong HTML.</div>
+</section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="grid3">
+<div class="card"><h3>Đã chứng minh on-car (2026-08-05)</h3><ul><li>Freeform sống sau power-cycle → <code>am task resize &lt;task&gt; l t r b</code> đặt rect chính xác (SL6, Seal)</li><li>Split L/R qua <code>AppMover.fitToCluster</code> (am task resize theo leftPercent)</li><li>Resize full qua <code>resizeActiveTarget</code> (tier1 task resize, tier2 wm size)</li><li>Bounds full mặc định <code>0,0,1920,720</code>; DPI qua <code>wm density</code></li></ul></div>
+<div class="card"><h3>Lỗi / thiếu hiện tại</h3><ul><li><strong>T1:</strong> autostart 2 app split → app lên nhưng state không ghi <code>CastingSplit</code>, nút nổi trắng (double-dispatch race)</li><li><strong>T2:</strong> nút nổi bố cục dọc (Full trên, L/R dưới), fill đục che content</li><li><strong>T3:</strong> spinner tỉ lệ có 5 lựa chọn (thừa 40/60, 60/40)</li><li><strong>T4:</strong> split KHÔNG có resize UI; chỉ 1 config/app; re-cast không đúng size đã chỉnh</li></ul></div>
+<div class="card"><h3>Baseline test (đọc từ source)</h3><ul><li>Working tree đang WIP: nhiều file sửa, nhiều test đã xoá</li><li><code>BubbleRenderer.ZONE_MIN_DP=40</code> nhưng 2 test khẳng định <code>==56</code> (<code>BubbleAccessibilityTest</code>, <code>CastUILifecycleSafetyTest</code>) → suite hiện <strong>đỏ</strong></li><li>Sẽ xác nhận bằng gradle ở T0 trước khi sửa</li></ul></div>
+</div>
+<div class="callout amber"><strong>Ranh giới off-car:</strong> mọi thứ verify bằng JVM tests + build. Hành vi hình ảnh thật (app xanh, đúng nửa, DPI) chỉ khẳng định được on-car — để lại checklist ở §Verification, KHÔNG tuyên bố PASS on-car từ đây.</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance criteria (off-car verifiable)</th><th>Maps to</th></tr></thead><tbody>
+<tr><td>R1</td><td>Autostart split ghi đúng trạng thái</td><td>Chỉ MỘT chủ autostart. Cast 2 slot tuần tự (right chỉ sau khi left verified). State kết thúc là <code>CastingSplit(left,right)</code> khi cả hai landing verify; không có nhánh nào ghi <code>Error→Idle</code> đè state. Test: coordinator dispatch 2 slot → state <code>CastingSplit</code> 2 slot; không double-dispatch.</td><td>T1</td></tr>
+<tr><td>R2</td><td>Nút nổi 3 ô ngang, trong suốt hơn</td><td>Layout HORIZONTAL, 3 ô cùng size (bằng ô nửa hiện tại), thứ tự Trái·Phải·Full, nhãn FULL = "Full". Fill idle + fill "đang chiếu" đều bán trong suốt (alpha ≤ 0.6) để thấy content dưới. Test cập nhật hằng số + nhãn.</td><td>T2</td></tr>
+<tr><td>R3</td><td>Chỉ 3 tỉ lệ chia</td><td>Spinner tỉ lệ (đường simplified đang chạy) chỉ còn 50/50, 30/70, 70/30. Bỏ 40/60 và 60/40. Giá trị lưu ngoài tập {50,30,70} lùi về 50.</td><td>T3</td></tr>
+<tr><td>R4</td><td>7 profile hình học / app</td><td>Mỗi app lưu tối đa 7 profile: <code>full</code>, và (leftPercent∈{50,30,70} × side∈{L,R}). Mỗi profile lưu bounds (vị trí+size) + density (DPI). Persist CHỈ sau khi apply shell thành công (R6 cũ). Test: prefs round-trip theo (pkg, profile).</td><td>T4</td></tr>
+<tr><td>R5</td><td>Resize UI khi split</td><td>Ở <code>CastingSplit</code>, editor hiện resize view cho từng slot đang có app (không chỉ 1 nút DPI). Kéo rect → <code>resizeActiveSlot(side,l,t,r,b)</code> → resize đúng task của slot đó + lưu vào profile (pkg, ratio, side).</td><td>T4</td></tr>
+<tr><td>R6</td><td>Re-cast khôi phục size đã lưu</td><td>Khi cast lại một app ở (ratio, side) đã từng chỉnh, dùng bounds+DPI đã lưu thay vì mặc định theo ratio. Nếu chưa có profile → mặc định theo ratio.</td><td>T4</td></tr>
+<tr><td>R7</td><td>Không hồi quy an toàn CP/AA</td><td>CP/AA vẫn full-only, KHÔNG freeform/split (giữ <code>CastSlotValidator</code>, <code>verifyFullscreenStackAvailable</code>). Profile/resize freeform chỉ áp <code>AppType.NORMAL</code>.</td><td>T1–T4, T5</td></tr>
+<tr><td>R8</td><td>Giữ phân tầng + code health</td><td>Logic thuần ở <code>:core</code> (không import Android); <code>LayeringRulesTest</code> xanh (pureFilesStillInApp giữ =2). Mỗi file sửa ≤500 LOC. Interface <code>SimpleCastPrefs</code> mở rộng thì cập nhật cả <code>SharedPrefs*</code> lẫn <code>FakePrefs</code>.</td><td>tất cả</td></tr>
+<tr><td>R9 <span class="sev new">opt</span></td><td>CP/AA geometry editor (nếu duyệt)</td><td>Editor chỉnh <code>wmSize</code> + <code>overscan</code> + <code>density</code> (display-global, letterbox) cho CP/AA, persist theo app-type. KHÔNG dùng freeform. Chỉ làm nếu owner chọn đưa vào scope.</td><td>T5</td></tr>
+<tr><td>R10 <span class="sev new">add</span></td><td>Autostart chạy được khi boot xe</td><td>Boot (không mở app) mà autostart bật → projection mở → coordinator tới <code>Idle</code> → autostart cast. <code>FloatingBubbleService</code> mở projection (idempotent) + retry cho adb-loopback boot timing; sở hữu vòng đời projection khi autostart bật (Activity KHÔNG đóng projection lúc onDestroy). Autostart TẮT → hành vi cũ nguyên vẹn (gauges khi đóng app). Off-car: test coordinator idempotent; on-car: cast tự lên sau boot.</td><td>T7</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+
+<h3>D1 — Autostart split race fix (R1)</h3>
+<div class="grid2">
+<div class="card"><h4>Root cause</h4><p>HAI chủ autostart cùng nghe <code>Idle</code> và cùng dispatch: <code>FloatingBubbleService.dispatchBootAutoStart()</code> (đọc <code>simple_cast_prefs</code>) và <code>CastAutostart.dispatchAutoStartIfEnabled()</code> (Activity). Khi cả service lẫn Activity sống lúc mở app, cả hai phát <code>CastSlot(LEFT)</code>+<code>CastSlot(RIGHT)</code>. Lượt thứ hai gặp slot đã chiếm → <code>SLOT_OCCUPIED</code> → <code>setError</code> → auto-recover về <code>Idle</code>, xoá mất <code>CastingSplit</code>. Nút nổi tô <em>empty</em> (trắng-xanh nhạt), không <em>occupied</em> (xanh đặc).</p></div>
+<div class="card"><h4>Fix</h4><p>Một chủ autostart duy nhất = <strong>FloatingBubbleService</strong> (chạy cả khi Activity đóng — đúng mục tiêu ban đầu). Bỏ <code>dispatchAutoStartIfEnabled()</code> khỏi Activity (giữ nguyên checkbox/spinner setup UI). Trong service: cast LEFT, chờ state chuyển <code>CastingSplit</code> có <code>left</code> (verified) rồi mới cast RIGHT — thay cho <code>postDelayed(2000)</code> mù. Thêm cờ <code>@Volatile autoStartDispatched</code> chống re-entrancy nếu <code>onStartCommand</code> gọi lại.</p></div>
+</div>
+<div class="diagram"><svg viewBox="0 0 900 210" width="100%" role="img" aria-label="Autostart trước và sau khi sửa">
+<style>.b{fill:var(--paper2);stroke:var(--line)}.t{fill:var(--ink);font:600 13px var(--sans)}.s{fill:var(--muted);font:11px var(--mono)}.bad{fill:var(--red-soft);stroke:var(--red)}.ok{fill:var(--green-soft);stroke:var(--green)}.ar{stroke:var(--muted);stroke-width:1.5;marker-end:url(#a)}</style>
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<text x="12" y="18" class="s">TRƯỚC (đỏ)</text>
+<rect x="12" y="28" width="120" height="42" rx="9" class="b"/><text x="24" y="53" class="t">Idle</text>
+<rect x="176" y="10" width="150" height="34" rx="9" class="bad"/><text x="188" y="31" class="t">Service: L,R</text>
+<rect x="176" y="54" width="150" height="34" rx="9" class="bad"/><text x="188" y="75" class="t">Activity: L,R</text>
+<line x1="132" y1="42" x2="176" y2="27" class="ar"/><line x1="132" y1="52" x2="176" y2="71" class="ar"/>
+<rect x="372" y="28" width="150" height="42" rx="9" class="b"/><text x="384" y="47" class="t">L cast → Split(L)</text><text x="384" y="63" class="s">2nd L = OCCUPIED</text>
+<line x1="326" y1="49" x2="372" y2="49" class="ar"/>
+<rect x="566" y="28" width="150" height="42" rx="9" class="bad"/><text x="578" y="47" class="t">Error</text><text x="578" y="63" class="s">→ Idle (wiped)</text>
+<line x1="522" y1="49" x2="566" y2="49" class="ar"/>
+<rect x="756" y="28" width="132" height="42" rx="9" class="bad"/><text x="768" y="53" class="t">Bubble trắng</text>
+<line x1="716" y1="49" x2="756" y2="49" class="ar"/>
+<text x="12" y="128" class="s">SAU (xanh)</text>
+<rect x="12" y="138" width="120" height="42" rx="9" class="b"/><text x="24" y="163" class="t">Idle</text>
+<rect x="176" y="138" width="150" height="42" rx="9" class="ok"/><text x="188" y="157" class="t">Service: cast L</text><text x="188" y="173" class="s">(chủ duy nhất)</text>
+<line x1="132" y1="159" x2="176" y2="159" class="ar"/>
+<rect x="372" y="138" width="180" height="42" rx="9" class="ok"/><text x="384" y="157" class="t">Split(L) verified</text><text x="384" y="173" class="s">→ rồi cast R</text>
+<line x1="326" y1="159" x2="372" y2="159" class="ar"/>
+<rect x="596" y="138" width="150" height="42" rx="9" class="ok"/><text x="608" y="163" class="t">Split(L,R)</text>
+<line x1="552" y1="159" x2="596" y2="159" class="ar"/>
+<rect x="786" y="138" width="102" height="42" rx="9" class="ok"/><text x="798" y="163" class="t">Bubble xanh</text>
+<line x1="746" y1="159" x2="786" y2="159" class="ar"/>
+</svg></div>
+
+<h3>D2 — Nút nổi: 3 ô ngang, bán trong suốt (R2)</h3>
+<p><code>BubbleRenderer.buildBubbleLayout</code> đổi từ VERTICAL (Full trên, hàng L/R dưới) sang một <code>LinearLayout HORIZONTAL</code> chứa 3 ô cùng size theo thứ tự <strong>Trái · Phải · Full</strong>. Nhãn ô FULL đổi <code>"Cả cụm" → "Full"</code>. Fill dùng ARGB bán trong suốt: idle <code>~0x33</code>, occupied <code>~0x99</code> (xanh nhạt thấy content dưới). Alpha cửa sổ (<code>IDLE_ALPHA/ACTIVE_ALPHA</code>) giữ nguyên vai trò fade.</p>
+<div class="diagram"><svg viewBox="0 0 760 150" width="100%" role="img" aria-label="Bubble trước và sau">
+<style>.z{fill:var(--blue-soft);stroke:var(--blue)}.zf{fill:color-mix(in srgb,var(--blue) 30%,transparent);stroke:var(--blue)}.lbl{fill:var(--ink);font:600 12px var(--sans);text-anchor:middle}.cap{fill:var(--muted);font:11px var(--mono)}</style>
+<text x="12" y="20" class="cap">TRƯỚC (dọc, đục)</text>
+<rect x="20" y="30" width="150" height="34" rx="8" class="z"/><text x="95" y="52" class="lbl">Cả cụm</text>
+<rect x="20" y="70" width="72" height="34" rx="8" class="z"/><text x="56" y="92" class="lbl">Trái</text>
+<rect x="98" y="70" width="72" height="34" rx="8" class="z"/><text x="134" y="92" class="lbl">Phải</text>
+<text x="430" y="20" class="cap">SAU (ngang, bán trong suốt)</text>
+<rect x="440" y="52" width="86" height="40" rx="9" class="zf"/><text x="483" y="76" class="lbl">Trái</text>
+<rect x="532" y="52" width="86" height="40" rx="9" class="zf"/><text x="575" y="76" class="lbl">Phải</text>
+<rect x="624" y="52" width="86" height="40" rx="9" class="zf"/><text x="667" y="76" class="lbl">Full</text>
+</svg>
+<div class="legend"><span><span class="sw" style="background:var(--blue-soft)"></span>fill đục (cũ)</span><span><span class="sw" style="background:color-mix(in srgb,var(--blue) 30%,transparent)"></span>fill bán trong suốt (mới)</span></div>
+</div>
+<div class="callout amber"><strong>Test đồng bộ:</strong> <code>BubbleAccessibilityTest</code> đang khẳng định <code>zoneShortLabel(FULL)=="Cả cụm"</code>, <code>ZONE_MIN_DP==56</code>, và <code>BRAND/BRAND_LIGHT</code> alpha=0xFF. Cả 3 sẽ đổi theo thiết kế mới → cập nhật test cùng lúc (nhãn "Full", size thực tế, alpha bán trong suốt). <code>CastUILifecycleSafetyTest</code> cũng khẳng định <code>ZONE_MIN_DP==56</code> → cập nhật. Giữ tiêu chí ≥48dp automotive.</div>
+
+<h3>D3 — 7 profile hình học / app (R4, R6)</h3>
+<p>Khoá profile = <code>full</code> hoặc <code>{L|R}{leftPercent}</code>. Với split, leftPercent∈{50,30,70} và side∈{LEFT,RIGHT} → 6 khoá; cộng <code>full</code> = 7. Mỗi profile là một <code>DisplayConfig</code> (đã có <code>bounds</code>+<code>density</code>). Persist trong <code>simple_cast_prefs</code> theo key <code>config_&lt;field&gt;_&lt;pkg&gt;__&lt;profile&gt;</code>.</p>
+<pre><code>// core/…/simplified/SimpleCastModels.kt — thêm (thuần Kotlin)
+enum class CastProfile { FULL, L50, R50, L30, R30, L70, R70;
+  companion object {
+    fun of(side: ClusterSlotSide, leftPercent: Int): CastProfile = when (side) {
+      ClusterSlotSide.LEFT  -> when (leftPercent) { 30->L30; 70->L70; else->L50 }
+      ClusterSlotSide.RIGHT -> when (leftPercent) { 30->R30; 70->R70; else->R50 }
+    }
+  }
+}
+
+// SimpleCastPrefs — thêm API theo profile (mặc định giữ tương thích khoá cũ = FULL)
+fun displayConfigFor(pkg: String, profile: CastProfile): DisplayConfig?
+fun saveDisplayConfig(pkg: String, profile: CastProfile, config: DisplayConfig)</code></pre>
+<p class="small">Khoá cũ <code>config_*_&lt;pkg&gt;</code> (không hậu tố) tiếp tục là profile <code>FULL</code> để không mất config đã lưu; profile mới thêm hậu tố <code>__L30</code> v.v. FakePrefs + SharedPrefs impl cập nhật đồng bộ (R8).</p>
+
+<h3>D4 — Resize theo slot khi split (R5)</h3>
+<p>Thêm <code>SimpleCastCoordinator.resizeActiveSlot(side, l,t,r,b)</code>: chỉ chạy ở <code>CastingSplit</code>, tìm taskId của app đúng slot (qua <code>findTaskIdForPkg</code>), <code>am task resize</code>, và persist vào profile <code>(pkg, ratio, side)</code> CHỈ khi shell OK. <code>CastGeometryEditor.updateVisibility(CastingSplit)</code> dựng resize view cho từng slot có app (mỗi view giới hạn kéo trong dải ngang của slot) + nút DPI. <code>handleCastSlot</code>: nếu profile đã lưu có bounds → dùng bounds đó (thay vì mặc định theo ratio trong <code>AppMover.fitToCluster</code>); nếu chưa → mặc định ratio.</p>
+<div class="callout amber"><strong>Giới hạn OS (DPI split):</strong> <code>wm density</code> là <em>display-global</em> trên Android 10 — hai app trên cùng display 1 KHÔNG thể có 2 DPI khác nhau đồng thời. Quyết định: lưu DPI theo profile (dùng đủ khi app đó chiếm full / là app được chỉnh gần nhất); ở split, chỉnh DPI slot nào thì áp cho cả display và lưu vào profile slot đó — "chỉnh sau đè trước". Ghi rõ hạn chế này ở UI + KDoc. Bounds (vị trí+size) thì per-app thật sự (per-task) nên không vướng.</div>
+
+<h3>D5 — CP/AA resize (trả lời câu hỏi 5) — optional T5</h3>
+<div class="grid2">
+<div class="card"><h4>Freeform KHÔNG dùng được cho CP/AA</h4><p>Đây là lý do <code>CastSlotValidator</code> chặn CP/AA khỏi slot và <code>verifyFullscreenStackAvailable</code> từ chối freeform: CP/AA ở freeform trên DiLink3 gây <em>surfaceflinger crash</em>, cụm kẹt phải power-cycle. Nên "resize đỉnh cao" (per-app <code>am task resize</code> rect) — vốn cần freeform — <strong>không</strong> mở cho CP/AA.</p></div>
+<div class="card"><h4>Nhưng CÓ cửa khác (an toàn)</h4><p>CP/AA vốn đã "resize" bằng đường <em>display-global</em>: <code>wm size</code> + <code>wm overscan</code> + <code>wm density</code> (CP=1422×800 overscan 10,-120,10,50; AA=1920×1080). CP/AA <em>tôn trọng</em> các lệnh này (khác freeform bounds). Cửa khả thi: một editor chỉnh <code>wmSize/overscan/density</code> cho CP/AA, persist theo app-type. Hạn chế: chỉ chỉnh cả display (letterbox căn giữa), không cắt nửa, không offset — nhưng đủ để phóng to/thu nhỏ/đẩy lề nội dung CP/AA an toàn.</p></div>
+</div>
+<div class="callout blue"><strong>Đề xuất:</strong> đưa T5 vào scope nếu owner muốn — làm một "CP/AA size" editor (3 thanh: width, overscan, DPI) chỉ hiện khi <code>CastingFull</code> app protected. Nếu không, giữ nguyên config đo sẵn. Cần owner chọn.</div>
+
+<h3>D6 — Boot-autostart projection ownership (R10)</h3>
+<div class="grid2">
+<div class="card"><h4>Gap</h4><p>Autostart chỉ bắn khi coordinator tới <code>Idle</code>, mà <code>Idle</code> cần <code>openProjection()</code>. Trước fix, <code>openProjection()</code> CHỈ được gọi ở <code>MainActivityCastController</code> (Activity). Boot xe không mở Activity → state đứng ở <code>Off</code> → listener autostart trong <code>FloatingBubbleService</code> chờ mãi → không cast. Bubble hiện nhưng cụm không chiếu.</p></div>
+<div class="card"><h4>Fix</h4><ul><li><code>openProjection()</code> thành <strong>idempotent</strong> (chỉ mở từ Off/Error; đang mở/idle/casting → no-op) — cả service lẫn Activity gọi đều an toàn.</li><li><code>FloatingBubbleService.dispatchBootAutoStart</code>: khi autostart bật, tự <code>openProjection()</code> với <strong>retry có giới hạn</strong> (5×, cách 3s) cho adb-loopback chưa sẵn lúc boot.</li><li>Sở hữu vòng đời: autostart bật ⇒ Activity <code>onDestroy</code> KHÔNG đóng projection (service giữ để cast sống khi đóng Home). Autostart tắt ⇒ hành vi cũ (Activity đóng).</li></ul></div>
+</div>
+<div class="callout amber"><strong>Bảo toàn hành vi:</strong> autostart TẮT → không mở projection lúc boot (giữ đồng hồ/gauges), Activity vẫn mở/đóng như cũ — non-autostart users không đổi gì. Chỉ khi autostart BẬT mới đổi (đúng ý người bật autostart: muốn cụm tự chiếu khi lên xe).</div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<div class="phase"><div class="phase-id">T0<br>baseline</div><div><h4>JVM baseline + confirm red tests</h4><p><code>./gradlew :core:test :app:testDebugUnitTest</code>. Ghi lại các test đỏ có sẵn (kỳ vọng ≥2: ZONE_MIN_DP). Đây là mốc so sánh — không sửa gì ngoài scope để "xanh hoá" test lạc.</p></div></div>
+<div class="phase"><div class="phase-id">T1<br>bug</div><div><h4>Fix autostart split (R1)</h4><ul class="check"><li>Bỏ <code>CastAutostart.dispatchAutoStartIfEnabled()</code> (giữ setup UI); Activity không còn dispatch</li><li><code>FloatingBubbleService.dispatchBootAutoStart</code>: cast R sau khi state=<code>CastingSplit</code> có left (listener), thêm cờ chống re-entrancy</li><li>Test coordinator: 2 slot tuần tự → <code>CastingSplit(left,right)</code>; không phát khi state≠Idle/Split</li></ul></div></div>
+<div class="phase"><div class="phase-id">T3<br>config</div><div><h4>Thu gọn tỉ lệ (R3)</h4><ul class="check"><li><code>CastAutostart.populateSplitRatioSpinner</code>: options=<code>[50/50,30/70,70/30]</code>, values=<code>[50,30,70]</code></li><li>Đọc lùi: leftPercent lưu ngoài {50,30,70} → 50</li><li>Kiểm mọi nơi dùng leftPercent chỉ nhận {50,30,70}</li></ul></div></div>
+<div class="phase"><div class="phase-id">T4<br>feature</div><div><h4>7 profile + split resize (R4,R5,R6)</h4><ul class="check"><li><code>:core</code>: enum <code>CastProfile</code>; mở rộng <code>SimpleCastPrefs</code> (API theo profile, giữ khoá cũ=FULL)</li><li><code>SharedPrefsSimpleCastPrefs</code> + <code>FakePrefs</code> impl API mới</li><li>Coordinator: <code>resizeActiveSlot</code>; <code>handleCastSlot</code>/<code>handleCastFull</code> đọc profile đã lưu (bounds/DPI) trước khi mặc định</li><li><code>CastGeometryEditor</code>: split → resize view mỗi slot + DPI; full → dùng profile FULL</li><li>Test: prefs round-trip theo (pkg,profile); coordinator persist đúng profile khi resize slot</li></ul></div></div>
+<div class="phase"><div class="phase-id">T2<br>ui</div><div><h4>Redesign nút nổi (R2)</h4><ul class="check"><li><code>BubbleRenderer.buildBubbleLayout</code>: 1 hàng ngang, 3 ô cùng size, thứ tự Trái·Phải·Full</li><li>Nhãn FULL="Full"; fill idle/occupied bán trong suốt (ARGB alpha ≤0.6)</li><li>Cập nhật <code>BubbleAccessibilityTest</code> + <code>CastUILifecycleSafetyTest</code> (nhãn, size, alpha) — giữ ≥48dp</li></ul></div></div>
+<div class="phase"><div class="phase-id">T5<br>optional</div><div><h4>CP/AA geometry editor (R9) — chỉ nếu duyệt</h4><ul class="check"><li>Editor wmSize/overscan/density cho CP/AA ở <code>CastingFull</code> protected</li><li>Persist theo app-type; KHÔNG freeform; live apply qua <code>DisplayConfigurator</code></li></ul></div></div>
+<div class="phase"><div class="phase-id">T7<br>boot fix</div><div><h4>Boot-autostart projection ownership (R10) — owner-approved follow-up</h4><ul class="check"><li><code>SimpleCastCoordinator.openProjection()</code> idempotent (Off/Error only) + test</li><li><code>FloatingBubbleService</code> opens projection on boot when autostart on, bounded retry (5× / 3s)</li><li><code>MainActivityCastController.onDestroy</code> skips <code>closeProjection()</code> when autostart on</li><li>Verify: core 653/0, app 280/0, assembleDebug OK, files ≤500 (coordinator 498)</li></ul></div></div>
+<div class="phase"><div class="phase-id">T6<br>gates</div><div><h4>Verify + review + scan</h4><p>Build + full JVM suite xanh · scope completeness (§2.1) · senior review loop (§5, opus) · pre-commit security scan (§6). Bump version + build APK nếu owner yêu cầu.</p></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<h3>Off-car (bắt buộc xanh trước khi tuyên bố done)</h3>
+<ul class="check">
+<li><code>./gradlew :core:test :app:testDebugUnitTest</code> — 0 failures (mọi test mới + đã cập nhật xanh)</li>
+<li><code>./gradlew :app:assembleRelease</code> (hoặc assembleDebug) — build OK</li>
+<li><code>LayeringRulesTest</code> xanh: <code>:core</code> vẫn thuần JVM; <code>pureFilesStillInApp==2</code></li>
+<li>Round-trip test: lưu profile (pkg, L30) bounds+DPI → đọc lại đúng; profile khác không đè nhau</li>
+<li>Coordinator test: dispatch 2 slot → <code>CastingSplit(left,right)</code>; <code>resizeActiveSlot</code> persist đúng profile</li>
+<li>Bubble test: 3 ô, nhãn Full, alpha bán trong suốt, ≥48dp</li>
+</ul>
+<h3>On-car (để lại — KHÔNG tự tuyên bố PASS)</h3>
+<ul class="check">
+<li>Autostart split 2 app → cả hai lên đúng nửa, nút nổi 2 ô XANH (occupied)</li>
+<li>Cast split, kéo resize slot trái → chỉ app trái đổi size; tắt/mở lại app → đúng size đã lưu</li>
+<li>Đổi tỉ lệ 30/70 → cast lại → dùng profile L30/R70 đã chỉnh</li>
+<li>Nút nổi trong suốt: thấy content dưới; xanh khi chiếu vẫn xuyên nhẹ</li>
+<li>(T5 nếu làm) CP/AA phóng to/thu nhỏ qua editor, KHÔNG crash surfaceflinger</li>
+</ul>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>#</th><th>Câu hỏi</th><th>Quyết định đề xuất (nếu owner không phản hồi khác)</th></tr></thead><tbody>
+<tr><td>Q1</td><td>Nhãn ô full + thứ tự 3 ô?</td><td>Thứ tự Trái·Phải·Full, nhãn full = "Full" (theo ký hiệu owner "[Trái][Phải][Full]"). Có thể đổi.</td></tr>
+<tr><td>Q2</td><td>DPI trong split (display-global)?</td><td>Lưu DPI theo profile; ở split áp cả display, "chỉnh sau đè trước"; ghi rõ hạn chế. Bounds vẫn per-app thật.</td></tr>
+<tr><td>Q3</td><td>Đưa T5 (CP/AA editor) vào scope?</td><td><strong>Cần owner chọn.</strong> Mặc định: KHÔNG (giữ config đo sẵn) trừ khi owner duyệt.</td></tr>
+<tr><td>Q4</td><td>Bump version + build APK trong phiên này?</td><td>Mặc định: chỉ code+test off-car; build APK khi owner yêu cầu (tránh đẻ APK thừa như log lịch sử).</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><code>docs/_handoff/cast-freeform-resize-split-2026-08-05.md</code> — recipe freeform/split/resize on-car</li>
+<li><code>docs/_handoff/speed-limit-sign-oncar-plan.md</code> — (ngoài scope spec này) kế hoạch speed-limit</li>
+<li><code>core/…/simplified/{SimpleCastCoordinator,SimpleCastModels,AppMover,DisplayConfigurator,CastPostconditionVerifier}.kt</code></li>
+<li><code>app/…/clustercast/{FloatingBubbleService,BubbleRenderer,BubbleActionDispatcher,CastAutostart,CastGeometryEditor,CastResizeView,MainActivityCastController}.kt</code></li>
+<li><code>app/…/simplified/SimpleCastRuntime.kt</code> (SharedPrefs impl); tests <code>SimpleCastCoordinatorTest</code>, <code>BubbleAccessibilityTest</code>, <code>CastUILifecycleSafetyTest</code>, <code>LayeringRulesTest</code></li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><h3>Pass 0 — 2026-08-05 (author draft)</h3><p class="small">Spec dựng từ đọc source (không đoán): xác định root cause T1 (double-dispatch), 2 test đỏ có sẵn (ZONE_MIN_DP), giới hạn OS cho DPI split, và lý do freeform không dùng cho CP/AA. Chờ owner approve + trả lời Q3/Q4.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-05 (senior review — Stages 1–2, kiro_default/opus)</h3>
+<p class="small"><strong>Verdict: APPROVED</strong> — 0 P0/P1, scope 100% (R1–R8 + 4 owner asks all wired + tested + user-reachable). Off-car gates green: <code>:core:test</code> 652/0, <code>:app:testDebugUnitTest</code> 280/0 (932 total, 0 fail), <code>:app:assembleDebug</code> OK, <code>LayeringRulesTest</code> 9/0 (<code>:core</code> pure, <code>pureFilesStillInApp==2</code>). On-car behaviour (app xanh, đúng nửa, DPI thật) vẫn để lại §Verification — KHÔNG tuyên bố PASS on-car.</p>
+<p class="small"><strong>Scope checklist:</strong> R1 ✅ (sole-driver service + state-driven L→R sequencing; coordinator test chứng minh <code>CastingSplit(l,r)</code> không có Error + duplicate-slot reject không teardown slot kia) · R2 ✅ (BubbleRenderer 1 hàng ngang 3 ô, FILL_* bán trong suốt alpha 0x1F/0x33/0x99, nhãn "Full", ZONE_MIN_DP=48≥48dp) · R3 ✅ (spinner {50/50,30/70,70/30} + backfill→50 re-persist) · R4 ✅ (enum <code>CastProfile</code> 7 khoá; prefs profile API; key <code>__L30</code>… không đụng khoá FULL legacy; round-trip test) · R5 ✅ (per-slot resize view + band clamp + <code>resizeActiveSlot</code>) · R6 ✅ (<code>applySavedProfile</code> restore bounds+DPI sau verified landing) · R7 ✅ (<code>CastSlotValidator</code>/<code>verifyFullscreenStackAvailable</code> intact; CastSafetyTest + PolicyEnforcementTest xanh) · R8 ✅.</p>
+<p class="small"><strong>Boundary shape (đọc cả 2 phía):</strong> SimpleCastPrefs↔SharedPrefs↔FakePrefs — <code>profileKey</code> giống hệt, density round-trip đối xứng: OK. CastProfile.of(side,leftPercent) — editor init-bounds ↔ <code>resizeActiveSlot</code> persist ↔ <code>handleCastSlot</code> restore đều dùng <code>splitRatioLeftPercent()</code>: nhất quán E2E (trace R30 cast→resize→re-cast khớp): OK. <code>resizeActiveSlot(side,l,t,r,b)</code> ↔ call site: OK. BubbleRenderer wide-row ↔ FloatingBubbleService measure/clamp (measuredWidth thật ~148dp, fallback chỉ khi đo lỗi): OK. Không mismatch.</p>
+<p class="small"><strong>Findings + fix:</strong> <span class="sev p2">P2</span> Autostart one-shot check-then-set không atomic (<code>FloatingBubbleService</code>): <code>addStateListener</code> emit state trên caller-thread trong khi <code>setState</code> iterate trên executor-thread → idle listener có thể fire 2 luồng, cả hai qua <code>if(autoStartDispatched)</code> rồi dispatch split 2 lần → CastSlot thứ 2 = SLOT_OCCUPIED → setError xoá CastingSplit (đúng lỗi R1 qua khe race còn hở). <strong>Đã vá:</strong> đổi <code>autoStartDispatched</code>→<code>AtomicBoolean.compareAndSet</code> + thêm <code>autoStartRightDispatched</code> cho split-right handoff (single-dispatch đảm bảo). File 409→416 LOC (≤500). Tests + build rerun xanh.</p>
+<p class="small"><strong>Còn lại (không block, ghi nhận):</strong> <span class="sev p2">P3</span> DPI ở split áp display-global nhưng KHÔNG persist theo profile (đúng thiết kế D4/Q2 — Android 10 <code>wm density</code> là display-global; bounds vẫn per-task đầy đủ; R4/R6 contract vẫn hỗ trợ density-per-profile, verified round-trip). <span class="sev p2">P3</span> <code>CastBubbleProjection.kt</code> 523 LOC > 500 — nợ CÓ TRƯỚC (thay đổi phiên này chỉ 1 dòng nhãn), tách file canonical field-proven ngoài scope review, đề xuất follow-up. <span class="sev p2">P3</span> Khoá profile lý thuyết đụng nếu package thật kết thúc bằng <code>__L30</code>… — không thực tế với package Android thật. <span class="sev p2">P3</span> Comment "works without Activity" hơi rộng: projection do Activity mở (<code>MainActivityCastController.onCreate</code>), service chỉ nghe <code>Idle</code>; đúng flow "mở app" của owner — có trước, không hồi quy.</p>
+<p class="small"><strong>Tech freshness:</strong> chỉ Android SDK + Kotlin stdlib, không lib mới. API dùng (SharedPreferences.edit/apply, GradientDrawable.setColor, WindowManager.LayoutParams, View/Canvas/MotionEvent, Handler(Looper), AtomicBoolean) đều stable, KHÔNG deprecated trên API 34. Context7 không có index core Android-framework (chỉ Firebase) — nhất quán với ghi nhận Stage 1/2. Không deprecated API nào mới.</p></div>
+<div class="review"><h3>Pass 2 — T7 boot-autostart (senior review, kiro_default/opus)</h3>
+<p class="small"><strong>Verdict: APPROVED</strong> — 0 P0–P2, scope 100% (R10 + D6 + T7 đủ, wired + tested). Off-car gates xanh sau review: <code>:core:test</code> 653/0/0, <code>:app:testDebugUnitTest</code> 280/0/0, <code>:app:assembleDebug</code> OK, <code>SimpleCastCoordinator.kt</code> 498 LOC (≤500), không file mới &gt;500 (<code>FloatingBubbleService</code> 446, <code>MainActivityCastController</code> 269). Không sửa code ⇒ không cần review-loop. On-car (cast tự lên sau boot xe) vẫn để lại §Verification — KHÔNG tuyên bố PASS.</p>
+<p class="small"><strong>Scope checklist (R10/T7):</strong> ✅ <code>openProjection()</code> idempotent (chỉ Off/Error proceed; opening/idle/casting/stopping/closing → no-op) + test <code>openProjection is idempotent when already open (R10)</code> (2nd call phát 0 lệnh AutoContainer). ✅ <code>FloatingBubbleService</code> mở projection lúc boot khi autostart bật, retry có giới hạn 5×/3s (<code>AUTOSTART_OPEN_MAX_ATTEMPTS=5</code>, <code>AUTOSTART_OPEN_RETRY_MS=3000</code>). ✅ <code>MainActivityCastController.onDestroy</code> bỏ <code>closeProjection()</code> khi autostart bật. ✅ core 653 / app 280 / assembleDebug / ≤500 (coordinator 498).</p>
+<p class="small"><strong>Lifecycle — idempotency race:</strong> <code>SimpleCastRuntime</code> là process-singleton ⇒ Activity.onCreate + service retry cùng gọi 1 coordinator. Guard <code>when(state)</code> chạy BÊN TRONG block của <code>BoundedCastExecutor</code> (ThreadPoolExecutor core=max=1, queue=1, DiscardOldestPolicy) — single-thread serial ⇒ check-then-<code>setState(Opening)</code> nguyên tử với các block khác ⇒ đúng MỘT lần open thật, phần còn lại no-op (test R10 xác nhận). <code>cast-stop-cast cycle</code> không đổi (stop→Idle; guard no-op ở Idle nhưng flow không re-open). Clear-cluster an toàn: <code>Stop</code>(submitStop, clear queue TRƯỚC khi close submit) → <code>closeProjection</code>→Off → sau 2s <code>clearClusterReopen</code>→openProjection; reopen xếp sau close trên serial executor nên luôn thấy Off ⇒ mở lại được. Guard mới (Off/Error-only) hẹp hơn guard cũ (chỉ skip CastingFull/Split) — an toàn hơn, không hồi quy.</p>
+<p class="small"><strong>Lifecycle — retry cancel / leak / double-arm:</strong> <code>handler</code> = main looper; <code>onDestroy</code> gọi <code>removeCallbacksAndMessages(null)</code> ⇒ huỷ <code>autoStartOpenProjection</code> (và refresh/fade). Runnable tự guard <code>destroyed || autoStartDispatched.get()</code> ở đầu + điều kiện re-post. Attempts cap 5 (≈12s) ⇒ nếu adb-loopback không lên: dừng, không vòng lặp vô hạn, không leak. Single-arm: <code>dispatchBootAutoStart</code> chỉ gọi từ <code>onCreate</code>, top-guard <code>autoStartDispatched</code>; <code>onStartCommand</code> KHÔNG re-arm. <code>autoStartOpenAttempts</code> chỉ mutate trên main thread. Khi tới Idle → idleListener set <code>autoStartDispatched=true</code> (compareAndSet) TRƯỚC dispatch ⇒ retry dừng ngay.</p>
+<p class="small"><strong>Lifecycle — ownership / close-path:</strong> autostart BẬT ⇒ service sở hữu projection; Activity.onDestroy nhường (không close). Close vẫn tới được qua nút clear-cluster ⇒ KHÔNG kẹt open vĩnh viễn. Service KHÔNG gọi <code>closeProjection</code> (chủ ý: cast sống khi đóng Home). Điều kiện nhường của Activity (<code>autoStartEnabled()||autoStartSplitEnabled()</code>) GIỐNG HỆT điều kiện arm của service ⇒ đối xứng, không hở ownership. <strong>Autostart TẮT:</strong> <code>dispatchBootAutoStart</code> return TRƯỚC khi arm retry + TRƯỚC khi đăng ký idle listener ⇒ boot không mở projection (giữ gauges); Activity.onDestroy đóng như cũ ⇒ hành vi byte-identical pre-T7.</p>
+<p class="small"><strong>Boundary shape:</strong> <code>SimpleCastCoordinator.prefs</code> (public val) ↔ <code>SimpleCastPrefs</code> expose <code>autoStartEnabled()</code>/<code>autoStartSplitEnabled()</code>; Activity + Service đọc cùng singleton coordinator ⇒ cùng <code>SharedPreferences("simple_cast_prefs")</code>. CastAutostart vẫn KHÔNG dispatch (T1 sole-driver còn nguyên). Shape khớp, trace E2E boot→Idle→autostart nhất quán. Không mismatch.</p>
+<p class="small"><strong>Findings:</strong> không P0–P2. <span class="sev p2">P3</span> (informational, KHÔNG vá — ngoài 4-item scope owner duyệt): autostart bật nhưng chưa chọn package → projection mở tới Idle rỗng (không gauges, không cast) và Activity nhường ownership; nhất quán 2 phía (đều key theo cờ enabled) — user-misconfig edge. <span class="sev p2">P3</span> clear-cluster khi autostart BẬT mở lại tới Idle rỗng thay vì re-cast app autostart (hành vi reopen có sẵn, không phải hồi quy T7).</p>
+<p class="small"><strong>Tech freshness:</strong> Context7 không index core Android-framework (chỉ 3rd-party SDK: Firebase/Spotify/…), nhất quán Pass 1. Đối chiếu API 34: <code>Handler(Looper.getMainLooper())</code> là dạng ĐÚNG không deprecated (no-arg <code>Handler()</code> mới là deprecated — không dùng); <code>post</code>/<code>postDelayed</code>/<code>removeCallbacksAndMessages(null)</code> stable; <code>AtomicBoolean.compareAndSet/get/set</code> (java.util.concurrent) không bao giờ deprecated; <code>Service</code> lifecycle + <code>startForeground(int,Notification)</code> vẫn hợp lệ. T7 KHÔNG đưa vào API deprecated mới.</p></div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

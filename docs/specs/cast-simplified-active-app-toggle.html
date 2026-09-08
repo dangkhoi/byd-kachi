@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Cast: chạm nút nổi = chiếu app đang mở</title>
+<script>(function(){var t=localStorage.getItem('csat-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e8f7ec;--amber:#a05a00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7a45bf;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#08080a;--paper:#171719;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:14px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700;letter-spacing:-.01em}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:76px 0 48px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,60px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:900px}.lead{font-size:19px;color:var(--muted);max-width:820px}.meta{font:12px var(--mono);color:var(--muted);margin-top:24px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}.stat,.card,.diagram,.callout,.phase,.review{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:18px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:60px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.card{padding:20px}.card p:last-child,.card ul:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:700px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.diagram{padding:22px;overflow:auto}.diagram svg{display:block;min-width:850px;width:100%;height:auto}.box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}.box.blue{fill:var(--blue-soft);stroke:var(--blue)}.box.green{fill:var(--green-soft);stroke:var(--green)}.box.amber{fill:var(--amber-soft);stroke:var(--amber)}.box.red{fill:var(--red-soft);stroke:var(--red)}.dt{fill:var(--ink);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.5;marker-end:url(#arrow)}.edge.red{stroke:var(--red)}.edge.green{stroke:var(--green)}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--blue);margin-right:6px}.phase{display:grid;grid-template-columns:120px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"◇";position:absolute;left:2px;color:var(--blue)}.review{padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:50px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.diagram,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Cast đơn giản hoá</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('csat-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Consolidated requirements · design · tasks</div>
+<h1>Chạm nút nổi một lần: app đang mở lên cụm. Chạm lần nữa: về màn chính.</h1>
+<p class="lead">Bỏ hẳn nhu cầu chọn app từ danh sách cho thao tác chính — nút nổi tự phát hiện app đang mở trên màn chính và chiếu đúng app đó. Cấu hình riêng từng app (khung/DPI), app mặc định tự chiếu khi mở Cluster Cast, và tự chiếu theo xe khi khởi động vẫn giữ nguyên/đã có sẵn — spec này chỉ làm rõ cái nào tái dùng, cái nào mới.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Date: 2026-07-29 (khuya) · Off-car · Autonomous theo yêu cầu — không dừng lại hỏi thêm, tự quyết theo kiến trúc generic sẵn có</p>
+<div class="stats"><div class="stat"><b>1</b><span>hàm parse mới (core, thuần)</span></div><div class="stat"><b>0</b><span>lệnh shell/adb mới</span></div><div class="stat"><b>3</b><span>yêu cầu đã có sẵn, chỉ xác nhận</span></div><div class="stat"><b>2</b><span>điểm wiring UI thay đổi</span></div></div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-07-29</td><td>Spec khởi tạo theo yêu cầu đơn giản hoá tương tác Cast của user, autonomous, không hỏi lại.</td><td>4 yêu cầu người dùng nêu, đối chiếu với kiến trúc hiện có trước khi viết task — 3/4 đã có sẵn phần lớn hạ tầng, chỉ 1 (phát hiện app đang mở) là năng lực mới.</td></tr>
+<tr><td>2026-07-29 (giữa phiên)</td><td><strong>Pivot lớn</strong>: user gửi yêu cầu chi tiết hơn hẳn giữa lúc đang implement — bỏ hẳn sub-menu bong bóng (chỉ 1 action duy nhất), xoá hẳn màn "Cấu hình" riêng (`ClusterCastActivity`), gộp toàn bộ Cluster Cast (kích thước/vị trí/DPI cho app đang chiếu, auto-start checkbox+dropdown, nút xử lý sự cố) vào panel bên phải Home, bỏ công tắc bật/tắt nút nổi (mặc định luôn bật, tự xin quyền overlay).</td><td>App chỉ còn ĐÚNG 1 màn hình. Đã viết lại toàn bộ theo hướng mới, không giữ lại thiết kế nháp trước đó.</td></tr>
+<tr><td>2026-07-29 (review vòng 2)</td><td>Cú chạm nút nổi ĐỌC LẠI sự thật trước khi rẽ nhánh Dừng/Chiếu (thay vì tin ảnh chụp cũ tới 15s); tự-chiếu-khi-mở-app chạy ở cả <code>onResume</code> và tôn trọng ô tick; các chốt đồng thời của nút nổi được đóng kín. Chi tiết ở Reviewer Log · Pass 2.</td><td>R1/R2/R6 chặt hơn, không đổi bề mặt người dùng thấy ngoài vài thông báo ngắn mới. versionCode 78→79.</td></tr>
+<tr><td>2026-07-30 (review vòng 3)</td><td>Soát tầng <code>:core</code> — chỗ ba bề mặt cùng phát lệnh gặp nhau. <strong>Tự-chiếu-lúc-khởi-động không còn cướp được cụm khỏi app người lái vừa tự đặt lên</strong> (cửa cứng ở <code>CastCoordinator</code>, kết cục ghi là <code>SUPERSEDED/USER_SUPERSEDED</code>); nút nổi KHÔNG còn tạo ra hàng đợi bền mà chính nó không bao giờ rút được; phép ghi cấu hình tự-chiếu được tuần tự hoá. Chi tiết ở Reviewer Log · Pass 3.</td><td>R7 giữ đúng luật "không cướp phiên" mà R6 đã ghi; một cú chạm trúng lúc bận không còn tắt R7 của các lần khởi động sau. versionCode 79→80.</td></tr>
+</tbody></table></div></section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="grid3">
+<div class="card"><h3>Yêu cầu của user (nguyên văn, diễn giải)</h3><ul><li>(1) Mở app bất kỳ trên màn chính → bấm nút nổi → app đó lên cụm. Bấm nút nổi lần nữa → về màn chính.</li><li>(2.1) Cấu hình kích thước/vị trí/DPI riêng từng app; app chưa cấu hình → toàn màn.</li><li>(2.2) Cấu hình 1 app mặc định tự chiếu lên cụm khi mở app Cluster Cast.</li><li>(3) App Cluster Cast cho cấu hình tự-chiếu theo xe (as default per vehicle).</li></ul></div>
+<div class="card"><h3>Đã có sẵn (xác nhận bằng đọc source, không phải đoán)</h3><ul><li>(2.1) <code>CastAppCatalog.clusterDensityDpi()</code> mặc định trả <code>null</code> ("giữ density như profile tạo ra"); rect-scale tương tự — app chưa cấu hình đã tự full-screen. Chỉ cần XÁC NHẬN bằng test, không cần code mới.</li><li>(3) <code>AutomationConfig</code>/<code>BootAutomationRequest</code>/<code>CastAutomationService</code> — toàn bộ máy tự-chiếu-khi-xe-khởi-động đã xây xong từ candidate 0.71, lối vào UI vừa được khôi phục tối nay (spec khác cùng ngày). Không cần code mới, chỉ cần xác nhận UI đã đúng khung "theo xe".</li><li>Bong bóng nổi (<code>FloatingBubbleService</code>) đã có khái niệm "primary" (một nút chiếu nhanh app mặc định) và menu lưới app đã ghim — nhưng CẢ HAI đều dựa trên app ĐÃ CHỌN TRƯỚC, không phải app đang mở.</li></ul></div>
+<div class="card"><h3>Mới hoàn toàn</h3><ul><li>(1) Phát hiện "app nào đang thật sự ở màn hình chính lúc này" — chưa tồn tại. Nhưng dữ liệu để làm việc này ĐÃ có sẵn: <code>RawObservation.amStacks</code> (đầu ra <code>am stack list</code>) đã được fetch ở MỌI observation, và <code>CastAmStackParser</code> đã parse ra <code>visible: Boolean?</code> theo từng task/display. Không cần thêm lệnh shell nào — chỉ cần một hàm parse THUẦN mới đọc dữ liệu đã có, nên KHÔNG vi phạm CLAUDE.md §14 (không phải năng lực mới cần chứng minh qua shell thô, mà là cách đọc mới trên dữ liệu đã được chứng minh).</li><li>(2.2) Kích hoạt tự-chiếu lúc MỞ APP (không phải lúc xe khởi động) — khác trigger, cần một điểm wiring mới trong <code>ClusterCastActivity.onCreate()</code>.</li></ul></div>
+</div>
+<div class="callout blue"><strong>Bằng chứng cho phần mới (theo CLAUDE.md §2/§14):</strong> đã đọc 2 dump <code>am stack list</code> thật (tối nay + <code>docs/diagnostics/carlog-2026-07-23-trace/live/02-am-stack-list.txt</code>) xác nhận: mỗi app trên display 0 là một Stack RIÊNG (không phải nhiều task trong 1 stack), và field <code>visible=</code> đúng MỘT stack là <code>true</code> tại một thời điểm — khớp đúng "app đang thật sự hiện trên màn". Đây là bằng chứng THẬT, không phải suy luận từ tài liệu cũ.</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="callout blue"><strong>Cổng duyệt:</strong> user đã yêu cầu autonomous, không dừng hỏi lại — cổng duyệt là chính spec này, đọc lại được sau khi xong.</div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Yêu cầu</th><th>Tiêu chí chấp nhận</th></tr></thead><tbody>
+<tr><td>R1</td><td><strong>Bấm nút nổi khi cụm đang rảnh (đồng hồ) → chiếu app đang mở trên màn chính.</strong></td><td>Không cần chọn app từ danh sách. Phát hiện generic — không hardcode package nào — qua stack có <code>visible=true</code> trên display chính, loại trừ chính ClusterNav và app launcher (dò bằng <code>Intent.CATEGORY_HOME</code> resolve, không hardcode tên launcher).</td></tr>
+<tr><td>R2</td><td><strong>Bấm nút nổi khi cụm đang chiếu → về màn chính (đồng hồ).</strong></td><td>Tái dùng đúng luồng Stop hiện có (<code>requestStopOnce()</code>/<code>continueStopAfterAcknowledgement</code>) — không viết luồng dừng mới.</td></tr>
+<tr><td>R3</td><td><strong>Không phát hiện được app đang mở → không đoán mò, không chiếu nhầm.</strong></td><td>Không có stack nào <code>visible=true</code> hợp lệ (đã loại launcher/ClusterNav) → CHẠM Y HỆT (không cử chỉ khác) mở menu lưới app cũ để chọn tay, thay vì chiếu bừa.</td></tr>
+<tr><td>R4</td><td><strong>Vẫn giữ đường chọn app cụ thể + cấu hình — KHÔNG dùng cử chỉ ẩn.</strong></td><td><code>CastAccessibilityTest</code> đã khoá <code>assertFalse(bubble.contains("setOnLongClickListener"))</code> — dự án cấm long-press/double-tap ẩn (TalkBack/rotary không phát hiện được). Đường chọn tay = tap y hệt khi không phát hiện được app (R3), không phải một cử chỉ mới. "⚙ Cấu hình" trong menu, thông báo dịch vụ nền (chạm mở <code>ClusterCastActivity</code>), và nút "Cài đặt chiếu" ở Home đều là đường sẵn có, không đổi.</td></tr>
+<tr><td>R5</td><td><strong>App chưa cấu hình khung riêng → mặc định toàn màn cụm.</strong></td><td>Test xác nhận (không cần code mới nếu đã đúng): <code>clusterDensityDpi</code>/rect-scale trả về "mặc định" khi chưa từng set cho package đó.</td></tr>
+<tr><td>R6</td><td><strong>Cấu hình app mặc định tự chiếu khi MỞ app Cluster Cast (không phải lúc xe khởi động).</strong></td><td><code>ClusterCastActivity.onCreate()</code>: nếu <code>automationConfig.defaultPackage</code> có set VÀ cụm đang rảnh (không có <code>activeTarget</code>, không có transaction) VÀ target còn cast-eligible → tự gọi <code>executeCast(defaultPackage)</code> ngay khi mở màn, không cần bấm gì thêm. Không tự chiếu nếu cụm đang bận (tôn trọng trạng thái hiện tại, không cướp phiên).</td></tr>
+<tr><td>R7</td><td><strong>Cấu hình tự-chiếu theo xe khi khởi động (as default) — xác nhận, không xây lại.</strong></td><td>Xác nhận UI App Manager đã khôi phục tối nay hiển thị rõ tuỳ chọn "Bật/Tắt tự động chiếu" gắn với app mặc định, đúng nghĩa "theo xe" (một cấu hình, áp dụng mọi lần khởi động xe). Không cần đổi code core.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+
+<h3>4.1 Luồng chạm nút nổi mới</h3>
+<div class="diagram"><svg viewBox="0 0 860 260" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box" x="20" y="20" width="180" height="55" rx="10"/><text class="dt" x="110" y="43" text-anchor="middle">Chạm nút nổi</text><text class="ds" x="110" y="60" text-anchor="middle">1 lần, không giữ</text>
+<path class="edge" d="M200,47 H260"/>
+<rect class="box amber" x="260" y="20" width="200" height="55" rx="10"/><text class="dt" x="360" y="43" text-anchor="middle">projecting == true?</text><text class="ds" x="360" y="60" text-anchor="middle">từ BubbleProjection có sẵn</text>
+<path class="edge" d="M360,75 V115"/>
+<rect class="box green" x="260" y="115" width="200" height="60" rx="10"/><text class="dt" x="360" y="140" text-anchor="middle">Có → Stop</text><text class="ds" x="360" y="158" text-anchor="middle">requestStopOnce() — CÓ SẴN</text>
+<path class="edge" d="M460,47 H540"/>
+<rect class="box blue" x="540" y="20" width="260" height="70" rx="10"/><text class="dt" x="670" y="45" text-anchor="middle">Không → dò app đang mở</text><text class="ds" x="670" y="62" text-anchor="middle">foregroundPackage(displayId=0)</text><text class="ds" x="670" y="77" text-anchor="middle">MỚI — parse thuần trên amStacks</text>
+<path class="edge" d="M670,90 V130"/>
+<rect class="box" x="540" y="130" width="260" height="60" rx="10"/><text class="dt" x="670" y="155" text-anchor="middle">dispatchTarget(pkg)</text><text class="ds" x="670" y="173" text-anchor="middle">CÓ SẴN — không đổi</text>
+<path class="edge" d="M670,190 V230"/>
+<rect class="box amber" x="540" y="230" width="260" height="0" rx="10"/>
+</svg><div class="legend"><span><span class="dot" style="background:var(--blue)"></span>mới</span><span><span class="dot" style="background:var(--green)"></span>tái dùng nguyên vẹn</span></div></div>
+
+<h3>4.2 Hàm phát hiện app đang mở (core, thuần, có test từ dump thật)</h3>
+<div class="card"><p><code>core/.../v2/CastAmStackParser.kt</code> — thêm hàm mới trong <code>CastAmStackSnapshot</code> hoặc đối tượng đồng hành:</p>
+<pre>fun CastAmStackSnapshot.foregroundPackage(
+    displayId: Int,
+    excluded: Set&lt;String&gt;,
+): String? {
+    val onDisplay = tasks.filter { it.displayId == displayId && it.packageName !in excluded }
+    return onDisplay.firstOrNull { it.visible == true }?.packageName
+}</pre>
+<p><code>excluded</code> luôn gồm <code>context.packageName</code> (ClusterNav chính nó) + package launcher hiện tại (resolve qua <code>PackageManager.resolveActivity(Intent(ACTION_MAIN).addCategory(CATEGORY_HOME), MATCH_DEFAULT_ONLY)</code> ở tầng app — KHÔNG hardcode "com.android.launcher3", vì mỗi đời xe/ROM có thể khác launcher, đúng CLAUDE.md §7.</p>
+<p>Trả <code>null</code> khi không có stack nào <code>visible=true</code> ngoài loại trừ — ánh xạ đúng R3 (không đoán mò).</p>
+</div>
+
+<h3>4.3 Wiring cụ thể</h3>
+<div class="scroll"><table><thead><tr><th>File</th><th>Thay đổi</th></tr></thead><tbody>
+<tr><td><code>core/.../v2/CastAmStackParser.kt</code></td><td>Thêm <code>CastAmStackSnapshot.foregroundPackage()</code> (mục 4.2). Test mới dựng từ 2 dump thật đã đọc ở §Context.</td></tr>
+<tr><td><code>app/.../modules/clustercast/FloatingBubbleService.kt</code></td><td><code>menuButton.setOnClickListener</code>: đổi từ <code>toggleMenu()</code> sang hàm mới <code>onPrimaryTap()</code> — nếu <code>lastProjection?.projecting == true</code> → <code>requestStopOnce()</code>; nếu không → <code>facade.foregroundPackage(0, setOfNotNull(packageName, homePackage()))</code> (mới, qua <code>CastFacade</code>) → có kết quả thì <code>dispatchTarget(pkg)</code>, KHÔNG thì gọi thẳng <code>toggleMenu()</code> (fallback bằng đúng cử chỉ tap, không thêm long-press — R4).</td></tr>
+<tr><td><code>app/.../modules/clustercast/ClusterCastActivity.kt</code></td><td>Trong <code>onCreate()</code>, sau khi <code>refreshReader</code>/facade sẵn sàng: nếu <code>runtime.automation.config().defaultPackage != null</code> và lần đọc envelope đầu tiên cho thấy cụm rảnh (không <code>stableSession.activeTarget</code>, không <code>transaction</code>) → gọi <code>executeCast(defaultPackage)</code> một lần (dùng cờ <code>@Volatile</code> chống gọi lặp qua các lần <code>onCreate</code>/xoay màn).</td></tr>
+<tr><td>ĐÃ ĐỔI Ý (xem 4.4)</td><td>Dòng này (long-press giữ menu cũ, ClusterCastActivity auto-start) bị THAY THẾ hoàn toàn bởi pivot giữa phiên — xem 4.4 cho thiết kế cuối cùng đã ship.</td></tr>
+</tbody></table></div>
+</section>
+
+<h3>4.4 Pivot giữa phiên — màn hình duy nhất (bản cuối đã ship)</h3>
+<div class="callout amber"><strong>User gửi yêu cầu chi tiết hơn giữa lúc đang code T3/T4 ở trên</strong> — bảng dưới đây là thiết kế THẬT đã implement, thay thế hoàn toàn hướng long-press/màn-riêng ở 4.1-4.3.</div>
+<div class="scroll"><table><thead><tr><th>File</th><th>Thay đổi thật đã ship</th></tr></thead><tbody>
+<tr><td><code>FloatingBubbleService.kt</code></td><td>Viết lại toàn bộ: bỏ hẳn menu/grid/stopButton/statusLabel/primaryButton/reloadEntries/openCastControls — CHỈ còn một <code>circle</code> (56dp). Tap: <code>projecting==true</code> → Stop; ngược lại → <code>facade.foregroundPackage(0, excluded)</code>, có kết quả → <code>dispatchTarget</code>, không → toast ngắn (KHÔNG mở gì, không long-press — đúng <code>CastAccessibilityTest</code> đã cấm <code>setOnLongClickListener</code>). Mặc định luôn bật; thiếu quyền overlay thì tự gọi <code>CastBubbleControl.requestOverlay()</code>.</td></tr>
+<tr><td><code>ClusterCastActivity.kt</code>, layouts <code>activity_cluster_cast.xml</code> (3 biến thể)</td><td><strong>XOÁ HẲN.</strong> Không còn màn "Cấu hình" riêng.</td></tr>
+<tr><td><code>CastAppManagerDialog.kt</code>, <code>CastAppManagerBinding.kt</code>, <code>CastAppListView.kt</code>, <code>CastAdjustmentDialog.kt</code></td><td><strong>XOÁ HẲN</strong> (mồ côi sau khi màn Cấu hình bị xoá — không còn ai gọi).</td></tr>
+<tr><td><code>CastAppRows.kt</code></td><td>Viết lại: bỏ tile/chọn app/nút "Chiếu" riêng; chỉ còn panel kích thước (Kích thước 4 nút, Vị trí 4 nút, Cỡ chữ 2 nút, Khôi phục 1 nút) cho ĐÚNG MỘT package đang chiếu (hoặc <code>null</code> → cả panel disabled).</td></tr>
+<tr><td><code>CastRowActions.kt</code></td><td>Rút gọn <code>Actions</code> interface: bỏ <code>chosen/setChosen/cast</code>, chỉ còn <code>scaleOf/setScale/clusterSize/applySoon</code>.</td></tr>
+<tr><td><code>MainActivityCastController.kt</code> (MỚI, ~370 dòng)</td><td>Toàn bộ máy Cast của Home: <code>CastFacade</code>/<code>CastActivityRefreshReader</code>/<code>CastActivityWork</code>/<code>CastOperationStatus</code>/<code>CastActivityStatusTimers</code> — transplant nguyên logic executeCast/executeStop/applyGeometry/retryConnect/recovery dialogs từ ClusterCastActivity cũ, chỉ đổi view target sang panel Home. <code>continueStopAfterAcknowledgement()</code> delegate qua <code>facade.continueStopAfterAcknowledgement{}</code> (dùng chung với bubble, không copy lại 4 dòng plan/execute). Auto-start checkbox+Spinner gọi thẳng <code>runtime.automation.setDefault/accept/revoke</code> — KHÔNG còn hộp thoại xác nhận riêng (tick checkbox = đồng ý).</td></tr>
+<tr><td><code>MainActivity.kt</code>, <code>activity_main.xml</code> (+ w960dp)</td><td>Panel phải: status + <code>cast_geometry_container</code> (FrameLayout, nạp view từ CastAppRows.build) + auto-start checkbox/Spinner + "Khắc phục sự cố" (collapsed, y hệt các nút cũ: Stop/Chẩn đoán/Thử kết nối lại/Hướng dẫn ngắt điện thoại/Thử phục hồi/Hướng dẫn vật lý/Thiết lập hồ sơ). Bỏ 3 nút cũ (Chiếu lên cụm/Hiện nút nổi/Cài đặt chiếu). Tiêu đề hiện version (<code>txt_app_title</code>) — CLAUDE.md §9.</td></tr>
+<tr><td><code>RebindReceiver.kt</code></td><td><code>startOptedInBubble()</code> bỏ check <code>catalog.bubbleEnabled()</code> — luôn thử start, service tự lo quyền overlay.</td></tr>
+<tr><td><code>CastAutomationService.kt</code>, notification <code>PendingIntent</code></td><td>Đổi target từ <code>ClusterCastActivity</code> sang <code>MainActivity</code> (màn duy nhất còn lại).</td></tr>
+<tr><td><code>CastArchitectureRatchetTest.kt</code></td><td>Ratchet giảm 28→14 (cả hai chỉ số) sau khi xoá 5 file UI mồ côi — cập nhật hằng số kèm ghi chú, đúng quy ước "giảm thì hạ số" của chính test.</td></tr>
+<tr><td>~10 test file khác</td><td>Đổi target path từ <code>ClusterCastActivity.kt</code> sang <code>MainActivityCastController.kt</code>, bỏ assertion về menu/selection/CastRetryPrompt đã không còn áp dụng, thêm test mới khoá hành vi 1-action/panel-disabled-khi-rảnh. Review Opus tìm thêm 1 lỗi thật: <code>continueStopAfterAcknowledgement()</code> ở controller bị copy-paste thành bản tự viết lại thay vì delegate — test bắt được, đã sửa.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><strong>Cố ý KHÔNG làm</strong> (nêu rõ để không ai tưởng nhầm là sót): bỏ hẳn UI chọn kiểu cụm (cong/thẳng) — trước nằm trong CastAppManagerDialog đã xoá, không nằm trong 3 nhóm nút user liệt kê (sizing/toạ độ/DPI); <code>CastFacade.openAdjustment/undoAdjustment/restoreAdjustmentEntry/resetAdjustment/finishAdjustment</code> giữ nguyên trong CastFacade dù không còn UI gọi (đã mồ côi từ trước khi bị xoá màn — không mở rộng phạm vi dọn thêm ở facade/core đêm nay).</div>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<div class="phase"><div class="phase-id">T1</div><div><h4>Core: foregroundPackage() + test từ dump thật</h4><ul class="check"><li>✅ Hàm parse thuần</li><li>✅ Test dựng từ 2 dump thật (tối nay + carlog-2026-07-23) + 2 case tổng hợp</li></ul></div></div>
+<div class="phase"><div class="phase-id">T2</div><div><h4>Xác nhận R5/R7 bằng test có sẵn</h4><ul class="check"><li>✅ <code>AppScaleTest.kt</code> đã khoá đúng full-screen default</li><li>✅ Auto-start đã có UI (checkbox+Spinner) thay vì chỉ "xác nhận"</li></ul></div></div>
+<div class="phase"><div class="phase-id">T3-T4 (SIÊU TẦM — bị thay bởi pivot 4.4)</div><div><h4>Toàn bộ redesign 1-màn-hình</h4><ul class="check"><li>✅ Xoá 5 file UI, viết lại 2, viết mới 1 (MainActivityCastController)</li><li>✅ ~15 test file sửa/thêm, 0 failure</li></ul></div></div>
+<div class="phase"><div class="phase-id">T5</div><div><h4>Test toàn bộ + senior review + bump version + APK final</h4><ul class="check"><li>✅ <code>:core:test</code> + <code>:app:testDebugUnitTest</code> xanh (771 test, chạy bằng <code>--rerun-tasks</code>)</li><li>✅ Review Opus vòng 1 và vòng 2 (xem Reviewer Log); vòng 3 theo yêu cầu người dùng</li><li>✅ versionCode 77→78 (vòng 1) →79 (vòng 2), versionName 0.77→0.78→0.79</li><li>✅ <code>clean assembleRelease</code> thành công (APK 0.79)</li></ul></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<div class="card"><ul><li>Off-car: toàn bộ test xanh, dựng từ dump thật cho phần parse mới. ✅ Đã xong.</li><li>Trên xe (mai): mở app bất kỳ → chạm nút nổi → app đó lên cụm không cần chọn gì. Chạm lại → về đồng hồ. Home hiện panel kích thước cho app đang chiếu — chỉnh thử. Tick auto-start + chọn app trong Spinner → mở lại app → tự chiếu. Nút "Khắc phục sự cố" vẫn dùng được khi cần. <strong>Chưa đo trên xe — off-car mới chỉ chứng minh logic.</strong></li></ul></div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="card"><ul>
+<li><strong>Chưa biết:</strong> thứ tự liệt kê Stack trong <code>am stack list</code> trên xe này có luôn đặt stack visible=true lên đầu không, hay chỉ field <code>visible=</code> mới đáng tin? Thiết kế ở 4.2 CHỈ dựa vào <code>visible=true</code>, không dựa thứ tự — an toàn với câu hỏi này dù chưa trả lời được. Từ review vòng 1, nhiều gói khác nhau cùng <code>visible=true</code> ⇒ trả <code>null</code>, nên câu hỏi này không còn ảnh hưởng tới lệnh phát ra.</li>
+<li><strong>Chưa biết (đo trên xe mai):</strong> trên xe thật có bao nhiêu lần <code>foregroundPackage()</code> trả <code>null</code> vì có HAI gói cùng <code>visible=true</code> trên display 0? Hai dump thật chỉ thấy đúng một. Nếu ngoài đời thường xuyên có hai (vd một overlay/AutoContainer luôn visible) thì đường chiếu chính sẽ hay câm và cần một quy tắc chọn khác — nhưng quy tắc đó phải dựng từ dump thật, không đoán trước.</li>
+<li><strong>Chưa biết (đo trên xe mai):</strong> độ trễ của một cú chạm. Từ review vòng 2, cú chạm ĐỌC LẠI sự thật trước khi rẽ nhánh (xem Pass 2), nên nhánh chiếu tốn hai vòng ra xe (<code>observe()</code> rồi <code>inspectRaw()</code>) thay vì một. Đổi lại là không bao giờ làm ngược ý người dùng. Nếu trên xe thấy chậm rõ, hướng tối ưu tiếp theo là rẽ nhánh bằng <code>envelope()</code> (đọc store, không ra xe) và chỉ dùng <code>renderModel()</code> cho nhánh phiên legacy — KHÔNG quay lại quyết định bằng ảnh chụp RAM.</li>
+<li><strong>Hazard tương lai, CỐ Ý chưa xử lý:</strong> <code>CURRENT_AUTOMATION_CONSENT_VERSION</code> hôm nay là 1. Nếu có ngày nâng lên 2 (vì lời công bố đổi), <code>consentCurrent</code> thành false ⇒ <code>armable</code> false, nhưng ô tick vẫn đọc <code>autoCastEnabled == true</code> nên UI báo BẬT trong khi runtime im lặng không arm — và từ vòng 2, tự-chiếu-khi-mở-app cũng tắt theo (nó gate bằng chính <code>armable</code>). Với một hộp thoại thì còn chỗ trình bày lại lời công bố; với ô tick trần thì không. <strong>Lần nâng version PHẢI xử lý việc này</strong> (tối thiểu: ô tick đọc <code>armable</code> thay vì <code>autoCastEnabled</code>, kèm một đường re-consent). Không làm đêm nay — không có triệu chứng sống, và làm trước là đoán trước hình dạng của lời công bố chưa tồn tại.</li>
+</ul></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<div class="card"><ul><li><code>docs/diagnostics/carlog-2026-07-23-trace/live/02-am-stack-list.txt</code> — dump thật dùng làm fixture.</li><li><code>docs/specs/cast-boot-recovery-and-app-manager-entrypoint.html</code> — spec cùng ngày, khôi phục lối vào App Manager mà R6/R7 dựa vào.</li></ul></div>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><p class="small">Append-only. Mỗi pass thêm một mục, không sửa mục cũ.</p></div>
+
+<div class="review">
+<h3>Pass 1 — 2026-07-29 · senior review (Opus) · append-only</h3>
+<p class="small">Phạm vi: toàn bộ §4.4 + mọi file đổi/xoá tối nay. Vòng 1/3.</p>
+
+<div class="callout red"><strong>Phát hiện nghiêm trọng nhất: bộ test KHÔNG xanh như đã báo cáo.</strong>
+<code>:core:test</code> báo <code>UP-TO-DATE</code> vì Gradle chỉ theo dõi input của chính module đó, trong khi
+các test quét-source ở <code>:core</code> lại đọc file trong <code>app/src/…</code> ngay lúc chạy — xoá 5 file UI
+không làm task “bẩn”. Chạy lại với <code>--rerun-tasks</code>: <strong>3 test FAIL thật</strong>
+(<code>CastAccessibilityTest</code> ×2 trỏ vào <code>activity_cluster_cast.xml</code>/<code>ClusterCastActivity.kt</code> đã xoá;
+<code>TwoPipelineStaticBoundaryTest</code> còn giữ nguyên danh sách 4 file UI đã xoá và
+<code>consumers.single { "ClusterCastActivity.kt" }</code>). <em>Bài học vận hành: mọi test quét-source phải được
+verify bằng <code>--rerun-tasks</code>, không bao giờ tin trạng thái cache.</em></div>
+
+<div class="scroll"><table><thead><tr><th>#</th><th>Sev</th><th>Phát hiện</th><th>Đã sửa</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>[P0]</strong></td><td>3 test FAIL (xem trên) — báo cáo “toàn bộ xanh” dựa trên cache.</td><td>Viết lại <code>CastAccessibilityTest</code> theo bề mặt mới (panel Home + vòng tròn 56dp; giữ nguyên điều đang khoá: kích thước chạm, contentDescription, cấm <code>setOnLongClickListener</code>); cập nhật <code>TwoPipelineStaticBoundaryTest</code> — chủ sở hữu mutation chuyển sang <code>MainActivityCastController.kt</code>.</td></tr>
+<tr><td>2</td><td><strong>[P0]</strong></td><td><strong>Tự-chiếu-khi-khởi-động-xe (R7) bị giết mỗi lần mở app.</strong> <code>Spinner</code> bắn <code>onItemSelected</code> một lần cho lựa chọn đặt bằng code (layout đầu sau <code>setAdapter</code>, <code>mOldSelectedPosition == INVALID_POSITION</code>). Handler gọi thẳng <code>setDefault</code>+<code>accept</code>, mà cả hai tăng <code>AutomationConfig.revision</code> VÔ ĐIỀU KIỆN. <code>CastAutomationPolicy.claimAllowed</code> đòi <code>config.revision == request.configRevision</code>, <code>supersessionReason</code> trả <code>CONFIG_CHANGED</code> khi lệch ⇒ chỉ cần mở ClusterNav sau khi nổ máy là yêu cầu tự-chiếu của lần khởi động đó chết lặng.</td><td>Ghi cấu hình trở thành <em>idempotent</em>: bỏ qua khi kết quả y hệt cấu hình đang có (cả nhánh bật lẫn nhánh thu hồi). Khoá bằng test.</td></tr>
+<tr><td>3</td><td><strong>[P1]</strong></td><td><strong>I/O ra xe trên luồng vẽ.</strong> <code>refresh()</code> gọi <code>facade.observedState()</code> ngay trong <code>postUi</code>, và <code>CastRowActions</code> (<code>clusterSize</code>/<code>activeTarget</code>/<code>profileId</code>) cũng chạy trên main thread — trong khi KDoc của façade ghi thẳng “Đây là I/O: đừng gọi trên main thread”. Với tick 1s là 2 vòng dumpsys/giây trên luồng vẽ. Đây đúng lớp lỗi façade sinh ra để chặn.</td><td><code>CastActivityRefreshReader</code> trả thêm ba sự thật nguyên thuỷ (<code>activeTarget</code>/<code>clusterSize</code>/<code>geometryProfileId</code>) lấy từ chính lần quan sát nền; controller giữ ảnh chụp <code>@Volatile</code>; main thread chỉ đọc ảnh chụp. Test tĩnh khoá: không <code>postUi</code> nào được chứa <code>facade.observe*</code>.</td></tr>
+<tr><td>4</td><td><strong>[P1]</strong></td><td><strong>Hàng đợi <code>pendingIntent</code> không còn ai rút.</strong> <code>drainPendingTarget()</code> chết theo <code>ClusterCastActivity</code>. <code>CastManualIntent.run()</code> vẫn xếp hàng target khi có transaction đang chạy; <code>CastSessionStore.initializeForBoot</code> CỐ Ý giữ pendingIntent gốc USER qua mọi lần reboot; <code>CastAutomationSettings</code> từ chối ghi yêu cầu tự-chiếu khi còn nó và <code>CastAutomationService</code> terminalize thành <code>USER_SUPERSEDED</code> ⇒ một cú chạm trúng lúc bận tắt <strong>vĩnh viễn</strong> tự-chiếu-khi-khởi-động.</td><td>Khôi phục <code>drainPendingTarget()</code> ở controller (chạy lúc mở app và sau mỗi lượt chiếu), gọi <code>facade.resumePendingIntent()</code>. Khoá bằng test.</td></tr>
+<tr><td>5</td><td><strong>[P1]</strong></td><td><strong>Panel kích thước bị dựng lại mỗi giây.</strong> <code>refreshGeometryPanel</code> chạy <code>removeAllViews()</code> + dựng 11 nút ở MỌI lần refresh. Một cú chạm 80–150 ms rơi trúng lúc thay panel thì <code>ACTION_DOWN</code>/<code>ACTION_UP</code> không còn cùng View và click không bao giờ nổ — trên xe là “bấm chỉnh khung mà lúc ăn lúc không”.</td><td>Chỉ dựng lại khi app đang chiếu ĐỔI. Khoá bằng test.</td></tr>
+<tr><td>6</td><td><strong>[P1]</strong></td><td><code>CastActivityRefreshReader.read()</code> gọi <code>observe()</code> rồi <code>observedState()</code> — hai vòng quan sát cho cùng một khoảnh khắc, mô hình render từ mẫu này còn <code>ownerPackage</code> từ mẫu kia. Trước đây chỉ chạy khi mở màn Cast; nay tick 1s biến nó thành lưu lượng liên tục.</td><td>Thêm <code>CastFacade.observeBoth()</code> (một lần quan sát, trả cả thô lẫn đã bóc) — kiểu tầng dưới không lọt qua ranh giới nên <code>CastArchitectureRatchetTest</code> vẫn đứng ở 14. Nhánh recovery vẫn lấy mẫu thứ hai ĐỘC LẬP, điều kiện “hai mẫu bằng nhau” không đổi.</td></tr>
+<tr><td>7</td><td><strong>[P1]</strong></td><td>Tick 1s xếp vào executor MỘT luồng không có gộp nhịp — một vòng quan sát chậm hơn 1s làm hàng đợi phình vô hạn.</td><td><code>tick()</code> bỏ nhịp khi lượt trước còn chạy; refresh do người dùng kích vẫn luôn chạy.</td></tr>
+<tr><td>8</td><td><strong>[P2]</strong></td><td><code>foregroundPackage()</code> lấy <code>firstOrNull</code> ⇒ phụ thuộc THỨ TỰ liệt kê của <code>am stack list</code>, đúng thứ mà KDoc của chính nó và §Open Questions nói là không được dựa vào. Hậu quả đoán sai không phải một cú chạm phí mà là app sai lên cụm đồng hồ lúc xe đang chạy.</td><td>Nhiều gói KHÁC NHAU cùng <code>visible=true</code> ⇒ trả <code>null</code> (bề mặt báo ngắn, không phát lệnh) đúng R3 “không đoán mò”. Nhiều task CÙNG một gói vẫn giải ra được. Hai test mới, có ca đảo thứ tự.</td></tr>
+<tr><td>9</td><td><strong>[P2]</strong></td><td><code>CastActivityStatusTimers.scheduleStatusExpiry</code> KHÔNG còn call site nào — bản transplant đánh rơi <code>snapshot.expiresAt?.let { … }</code> trong <code>completeOperation</code>. Đúng lớp lỗi CLAUDE.md §8 canh; tick 1s che hậu quả chứ không chữa.</td><td>Khôi phục hẹn giờ hết hạn (kèm tham số <code>after</code> của <code>runOperation</code> như bản gốc).</td></tr>
+<tr><td>10</td><td><strong>[P2]</strong></td><td>Chấm trạng thái <code>dot_cast</code> của thẻ Cast không còn ai tô sau khi phần đọc V1 bị gỡ — nó đứng im một màu và NÓI SAI trạng thái, ngay cạnh dòng chữ nói đúng.</td><td>Tô lại từ sự thật đo được, dùng đúng vốn từ ba màu của chấm Navigation cạnh nó.</td></tr>
+<tr><td>11</td><td><strong>[P2]</strong></td><td><code>MainActivityCastController.kt</code> chạm ngưỡng 500 LOC sau khi vá (501, test <code>&lt; 501</code> fail).</td><td>Tách ô tick + dropdown tự-chiếu sang <code>CastActivityAutoStart.kt</code> thành <code>CastAutoStartBinding</code> — đúng file đã mang quyết định thuần R6, và nó thành chủ sở hữu DUY NHẤT của danh sách app. Controller còn 441 LOC. <em>Không nới ngưỡng.</em></td></tr>
+<tr><td>12</td><td><strong>[P2]</strong></td><td><code>autoStartOnOpen()</code> và <code>automation.config()</code> đọc store bền ngay trong <code>postUi</code> — file I/O trên luồng vẽ lúc mở app.</td><td>Chuyển cả hai xuống làn nền.</td></tr>
+<tr><td>13</td><td><strong>[P3]</strong></td><td>Tick vào ô tự-chiếu khi chưa nạp được app nào ⇒ ô vẫn tick nhưng cấu hình bị thu hồi (UI nói dối). <code>installedApps</code> ghi từ làn nền, đọc trên luồng vẽ, không <code>@Volatile</code>. <code>postUi</code> thiếu <code>isDestroyed</code>. Regex của test wiring bỏ sót id có chữ số và không quét chính <code>MainActivity.kt</code>.</td><td>Sửa cả bốn.</td></tr>
+</tbody></table></div>
+
+<h4>Scope §4.4 — 11/11 hàng ✅</h4>
+<p class="small">Đã đối chiếu bằng đọc nội dung thật, không dựa vào việc file có tồn tại: bong bóng một vòng tròn (grep xác nhận sạch <code>menuPanel/toggleMenu/appTile/setOnLongClickListener/stopButton/statusLabel/primaryButton</code>); 5 file UI + 3 layout + mục manifest đã xoá, không còn tham chiếu nào trong main source; panel 4+4+2+1 nút; interface <code>Actions</code> rút còn 4 phép; đủ 7 nút khắc phục sự cố được nối VÀ khai báo trong CẢ HAI biến thể layout; 3 nút Home cũ đã bỏ; ratchet 14 giữ nguyên sau vá.</p>
+
+<div class="callout amber"><strong>Rủi ro sản phẩm còn lại (KHÔNG sửa — cần chủ dự án quyết):</strong> khi
+<code>foregroundPackage()</code> trả <code>null</code>, đường chiếu chính không còn đường lui nào — không picker,
+không nút “Chiếu” trên Home, còn “Thử kết nối lại” chỉ dùng lại target CŨ nên vô dụng nếu chưa từng chiếu.
+Đường vòng duy nhất là chọn app trong dropdown tự-chiếu rồi mở lại app; mà <code>MainActivity</code> ở
+<code>launchMode</code> mặc định nên mở lại từ launcher chỉ gọi <code>onResume</code>, KHÔNG <code>onCreate</code> ⇒ tự-chiếu
+không bắn lại. <strong>Chưa đo trên xe</strong> nên chưa biết tần suất; hai dump thật chỉ cho thấy đúng một
+<code>visible=true</code> trên display 0. Đề xuất tối thiểu cho vòng sau: cho <code>autoStartOnOpen</code> chạy cả ở
+<code>onResume</code> khi cụm đang rảnh, để dropdown thật sự là đường lui.</div>
+
+<div class="callout blue"><strong>Consent (câu hỏi f):</strong> <code>accept()</code> mặc định ghi
+<code>consentVersion = CURRENT_AUTOMATION_CONSENT_VERSION</code> nên lối tắt “tick = đồng ý” ghi ĐÚNG version hiện
+tại — không có lỗi sống. Hazard tương lai: nếu version bị nâng lên 2 (vì lời công bố đổi), <code>consentCurrent</code>
+thành false ⇒ <code>armable</code> false, nhưng ô tick vẫn đọc <code>autoCastEnabled == true</code> nên UI báo BẬT trong khi
+runtime im lặng không arm. Với một hộp thoại thì còn chỗ trình bày lại lời công bố; với ô tick trần thì không.
+Ghi lại để lần nâng version phải xử lý, chưa phải việc đêm nay.</div>
+
+<p class="small"><strong>Kết quả:</strong> <code>:core:test</code> + <code>:app:testDebugUnitTest</code> xanh
+(473 + 293, chạy bằng <code>--rerun-tasks</code>), <code>clean assembleRelease</code> thành công. Tech freshness: N/A
+(0 dependency mới). <strong>Verdict: vòng 2 CÓ đáng chạy</strong> — mật độ lỗi vòng 1 cao (2×P0, 5×P1) và
+vòng này tập trung vào tầng UI/controller; chưa soát kỹ <code>FloatingBubbleService</code> ở mức đồng thời
+(<code>dispatchInFlight</code>/<code>stopInFlight</code>/<code>generation</code>) và các đường <code>CastCoordinator</code> mà nút nổi
+chạm tới.</p>
+</div>
+
+<div class="review">
+<h3>Pass 2 — 2026-07-29 · senior review (Opus) · append-only</h3>
+<p class="small">Phạm vi theo đúng brief vòng 1 để lại: (a) soát ĐỒNG THỜI của <code>FloatingBubbleService</code> từng dòng,
+(b) chữa ngõ cụt tự-chiếu-khi-mở-app, (c) soát lại chính phần mã vòng 1 mới viết. Vòng 2/3. Điểm xuất phát:
+<code>--rerun-tasks</code> chạy lại toàn bộ, xanh — không tin cache (bài học vòng 1).</p>
+
+<div class="callout red"><strong>Phát hiện nặng nhất vòng này: cú chạm quyết định bằng CỜ RAM cũ tới 15 giây.</strong>
+<code>onPrimaryTap()</code> rẽ nhánh Dừng-hay-Chiếu bằng <code>lastProjection?.projecting</code>, mà
+<code>lastProjection</code> chỉ được làm mới ở nhịp <code>REFRESH_INTERVAL_MS = 15_000L</code> và ở cuối chính hai
+lượt do nút nổi phát. CLAUDE.md §5 nói thẳng: <em>"Cấm quyết định bằng cờ RAM. Kiểm bằng sự thật. Cờ chỉ để
+hiển thị."</em> Từ v0.72 cụm còn được đổi từ HAI nguồn khác: panel Cast của Home (màn duy nhất còn lại) và
+tự-chiếu-lúc-khởi-động — cả hai đều KHÔNG báo cho nút nổi. Hệ quả không phải một cú chạm phí: cụm đang chiếu
+mà ảnh chụp còn nói "rảnh" thì cú chạm phát một lượt <em>cold-cast mới</em> lên cụm đồng hồ trong lúc xe đang
+lăn bánh — đúng cái ngược lại với thứ người lái vừa nhìn thấy và định làm. Ở bản có menu (trước pivot) cờ này
+chỉ quyết định VẼ; sau pivot một-vòng-tròn nó thành thứ quyết định LỆNH — nguy cơ do chính lần đơn giản hoá
+này sinh ra.</div>
+
+<div class="scroll"><table><thead><tr><th>#</th><th>Sev</th><th>Phát hiện</th><th>Đã sửa</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>[P1]</strong></td><td>Cú chạm quyết định bằng ảnh chụp cũ tới 15s (xem khối đỏ trên).</td><td>Cú chạm tự đọc lại sự thật MỘT lần ngay tại đó (<code>project(token)</code>, cùng đường mà nhịp 15s vẫn chạy) rồi mới rẽ nhánh; <code>project()</code> nay trả về chính bản chiếu vừa dựng và vẫn vẽ lại vòng tròn, nên hình và hành vi luôn cùng một sự thật. Đọc hỏng thì lùi về ảnh chụp. Khoá bằng test tĩnh (đọc TRƯỚC khi rẽ nhánh).</td></tr>
+<tr><td>2</td><td><strong>[P1]</strong></td><td><strong>Bỏ tick "Tự khởi động…" KHÔNG tắt được tự-chiếu.</strong> <code>AutomationConfig.revoking()</code> CỐ Ý giữ lại <code>defaultPackage</code> (bỏ tick không xoá app đã chọn), mà <code>autoStartOnOpen()</code> chỉ đọc <code>defaultPackage</code>. Ô tick đó là điều khiển DUY NHẤT của đúng tính năng ghi trên nhãn nó ("chiếu app này lên cụm khi mở ClusterNav"). Cờ một-lần che mất triệu chứng (mỗi tiến trình chỉ bắn một lần); bỏ cờ theo mục 3 dưới đây thì nó bắn MỌI lần mở app.</td><td><code>autoStartTarget()</code> nhận thêm <code>armed</code> và controller truyền <code>config.armable</code> — đúng vị từ mà tầng tự-chiếu-lúc-khởi-động đã dùng, không phát minh vị từ thứ hai. Test mới khoá "bỏ tick là thật sự tắt, dù app đã chọn vẫn được giữ".</td></tr>
+<tr><td>3</td><td><strong>[P1]</strong></td><td><strong>Ngõ cụt tự-chiếu-khi-mở-app</strong> (vòng 1 nêu, để lại quyết định). Đính chính brief: <code>MainActivity</code> KHÔNG khai <code>launchMode</code> ⇒ <code>standard</code>, chứ không phải <code>singleTop</code> — nên mở lại từ launcher khi task đã tồn tại còn KHÔNG gọi cả <code>onNewIntent</code>, chỉ <code>onResume</code>. Cờ <code>@Volatile autoStartAttempted</code> treo R6 ở <code>onCreate</code> ⇒ sau lần mở đầu tiên của một tiến trình, tự-chiếu chết hẳn — đúng lúc nó là đường lui DUY NHẤT khi nút nổi không dò ra app đang mở.</td><td>Bỏ hẳn cờ một-lần; gọi <code>autoStartOnOpen()</code> ở CẢ <code>onCreate</code> và <code>onResume</code>. Chống trùng (không phải chống vĩnh viễn) bằng hai lớp: chốt <code>autoStartInFlight</code> cho phần đọc store (làn <code>misc</code> là pool 2 luồng, KHÔNG serialize), và cửa cuối <code>work.mutationSnapshot().pending</code> đặt trên LUỒNG VẼ — đúng nơi <code>beginMutation()</code> chạy, nên hai lượt cùng thấy "rảnh" vẫn chỉ phát một lệnh. Tự giới hạn về sau là việc của <code>autoStartTarget</code> (chiếu xong ⇒ <code>activeTarget != null</code>).</td></tr>
+<tr><td>4</td><td><strong>[P2]</strong></td><td><strong>Lượt vẽ lại bị NUỐT.</strong> <code>projectState()</code> return luôn khi <code>compareAndSet</code> thất bại — mà hai chỗ xin quan trọng nhất lại là "vừa chiếu xong" và "vừa dừng xong". Rơi trúng nhịp 15s ⇒ vòng tròn giữ hình cũ tới 15 giây, và cú chạm kế tiếp làm ngược.</td><td>Gộp nhịp thay vì bỏ nhịp: đặt <code>projectionPending</code>, lượt đang chạy xong thì chạy bù đúng một lượt.</td></tr>
+<tr><td>5</td><td><strong>[P2]</strong></td><td><strong>Chạm dồn dập không có chốt nào.</strong> <code>onPrimaryTap()</code> không có guard: mỗi cú chạm là một <code>Thread</code> thô + một vòng I/O ra xe; và cú chạm rơi trúng lúc <code>dispatchInFlight</code>/<code>stopInFlight</code> đang giữ thì bị nuốt IM LẶNG — trên xe là "nút nổi bấm không ăn".</td><td>Chốt <code>tapInFlight</code> (nhả trong <code>finally</code>) + báo ngắn "Đang xử lý…" khi có lượt đang chạy, thay vì im lặng.</td></tr>
+<tr><td>6</td><td><strong>[P2]</strong></td><td><strong>Chốt Stop cục bộ có thể khoá cú chạm kế tiếp.</strong> <code>stopInFlight</code> chỉ được nhả bên trong <code>localAckActive()</code>, mà hàm đó chỉ chạy khi có một lượt <em>projection</em> — nếu lượt đó bị nuốt (mục 4) hoặc ném, chốt sống tới nhịp 15s sau, và <code>requestStopOnce()</code> nuốt mọi cú chạm trong khoảng đó. Nếu lại đem <code>stopInFlight</code> ra làm cổng thì thành đúng thứ CLAUDE.md §3 cấm: gate một đường phục hồi bằng dữ liệu mà chỉ chính đường đó mới làm mới được.</td><td>Tách <code>stopAckPending()</code> — đọc chốt VÀ tự hết hạn theo <code>STOP_ACK_DEADLINE_MS</code> ngay tại chỗ, nên không có cửa nào khoá vĩnh viễn; <code>localAckActive()</code> nay chỉ còn phần "sự thật bền đã nhận" rồi uỷ quyền (DRY). Thêm: ghi <code>stopRequestedAtMs</code> TRƯỚC khi giữ chốt, để làn vẽ không bao giờ thấy cặp (chốt mới, mốc cũ) rồi nhả sớm.</td></tr>
+<tr><td>7</td><td><strong>[P2]</strong></td><td><strong>Kết cục lệnh bị nuốt.</strong> <code>runCatching { facade.runManualIntent(…) }</code> bỏ CẢ kết quả lẫn lỗi: chiếu hỏng thì người lái chỉ thấy "Chiếu X…" rồi cụm không đổi gì, không một dòng log. Đường Stop cũng vứt chuỗi kết cục của <code>continueStopAfterAcknowledgement()</code>. Đúng lớp lỗi CLAUDE.md cấm (nuốt exception ở mã hạ tầng).</td><td>Cả hai nói ra bằng ĐÚNG câu panel Home dùng cho cùng kết cục (<code>statusMessage()</code>, không viết bộ chữ thứ hai) + <code>Log.e</code> khi ném. Riêng Stop: phát lệnh hỏng thì nhả chốt cục bộ NGAY, không giữ nó trong khi cụm vẫn còn app.</td></tr>
+<tr><td>8</td><td><strong>[P3]</strong></td><td><code>Thread{…}.start()</code> thô ở bốn chỗ, ba trong đó chạy NGAY SAU một <code>compareAndSet</code> đã giữ chốt — <code>start()</code> ném là chốt không bao giờ được nhả (nút nổi câm tới khi khởi động lại app). <code>foregroundPackage()</code> ném thì thông báo "Không xác định được app đang mở" nói dối và không có log.</td><td>Một helper <code>background(name, block)</code> trả <code>Boolean</code>; mọi chỗ gọi tự hoàn tác chốt khi <code>false</code>. Luồng có TÊN để đọc log trên xe. Thêm <code>Log.e</code> cho cả ba đường đọc.</td></tr>
+<tr><td>9</td><td><strong>[P3]</strong></td><td><code>lastProjection</code> ghi trên luồng vẽ nhưng (sau mục 1) đọc trên làn nền mà không <code>@Volatile</code>. Tên <code>projecting</code> của <code>AtomicBoolean</code> đứng ngay cạnh <code>projection.projecting</code> — hai nghĩa khác hẳn nhau, một cái bẫy đọc nhầm chờ sẵn.</td><td><code>@Volatile</code>; đổi tên thành <code>projectionInFlight</code>.</td></tr>
+</tbody></table></div>
+
+<h4>Đã soát mà KHÔNG sửa (nêu ra để vòng 3 không mò lại)</h4>
+<ul class="check">
+<li><strong>Vòng đời/generation:</strong> soát từng callback được <code>handler.post</code> — cả 7 đường đều kiểm <code>destroyed</code> (và <code>token != generation.get()</code> ở những đường chạm state). <code>generation</code> chỉ được tăng trong <code>onDestroy</code> nên trên thực tế nó trùng nghĩa với <code>destroyed</code>; giữ nguyên như một lớp phòng thủ, không phải lỗi.</li>
+<li><strong><code>startForegroundService</code> rồi <code>stopSelf()</code> khi thiếu quyền overlay:</strong> không gây <em>"did not call startForeground"</em> vì <code>ActiveServices.bringDownServiceLocked</code> xoá <code>fgRequired</code> và huỷ message timeout. <em>Mức bằng chứng: nhiều khả năng</em> — chưa fetch lại source AOSP vòng này, và đây là hành vi có từ trước, không phải thứ vừa đổi.</li>
+<li><strong><code>project()</code> đọc store HAI lần</strong> (<code>envelope()</code> rồi <code>renderModel()</code> tự <code>storeRead()</code>). Khác với lỗi #6 vòng 1 (đó là hai vòng <em>ra xe</em>); đây là hai lần đọc file, rẻ, và store chỉ đổi khi có mutation. Không sửa — sửa phải nới API façade, không đáng ở đêm trước buổi test xe.</li>
+<li><strong><code>CastRowActions.scaleOf()</code> đọc SharedPreferences trên luồng vẽ</strong> khi vẽ panel. Có từ v0.3x, đã cache trong RAM sau lần đọc đầu. Ghi lại, không sửa.</li>
+<li><strong><code>FloatingBubbleService.kt</code> = 550 dòng</strong> sau vá (chưa có test canh ngưỡng như <code>MainActivityCastController</code> ở 472/&lt;501). Bản trước pivot còn dài hơn. Đề xuất vòng sau: thêm ngưỡng cho file này thay vì để nó tự phình.</li>
+<li><strong>Consent version:</strong> theo chỉ đạo, KHÔNG xây xử lý. Đã chuyển mô tả hazard từ log review vòng 1 sang §Open Questions cho đúng chỗ, kèm điều kiện phải xử lý ở lần nâng version.</li>
+</ul>
+
+<h4>Scope §4.4 — 11/11 hàng vẫn ✅ sau vá</h4>
+<p class="small">Đọc lại từng hàng: bong bóng vẫn ĐÚNG một vòng tròn 56dp, một action, không <code>setOnLongClickListener</code>
+(<code>CastAccessibilityTest</code> + <code>CastFieldParityTest</code> vẫn xanh); các file/layout đã xoá vẫn xoá; panel 4+4+2+1;
+<code>Actions</code> vẫn 4 phép; 7 nút khắc phục sự cố đủ ở cả hai biến thể layout; ratchet vẫn 14/14 (không thêm
+kiểu <code>v2</code> nào qua ranh giới — <code>armable</code> đi qua dưới dạng <code>Boolean</code>, cố ý). Hai vá vòng này chỉ
+làm CHẶT thêm R1/R2/R6, không đổi bề mặt nào người dùng thấy ngoài các thông báo ngắn mới.</p>
+
+<p class="small"><strong>Kết quả:</strong> <code>:core:test</code> + <code>:app:testDebugUnitTest</code> xanh
+<strong>771 test, 0 fail, 0 skip</strong> (chạy bằng <code>--rerun-tasks</code>); <code>clean assembleRelease</code> thành công,
+APK <strong>versionCode 79 / versionName 0.79</strong> (CLAUDE.md §9: vòng 1 đã báo APK 0.78 nên vòng này phải mang số mới).
+Tech freshness: N/A (0 dependency mới). <strong>Verdict: vòng 3 nên chạy nhưng nhiều khả năng thu hoạch mỏng</strong> —
+hai vòng đã quét hết tầng UI/controller (vòng 1) và tầng đồng thời của nút nổi (vòng 2). Vùng CHƯA ai soát kỹ và
+nên là trọng tâm vòng 3: đường <code>CastCoordinator</code>/<code>CastExecutor</code>/<code>CastColdBootstrap</code> ở
+<code>:core</code> mà cả hai bề mặt cùng gọi, và <code>CastAutomationService</code>/<code>CastLifecycleReceiver</code> —
+những chỗ mà một cú chạm nút nổi và một yêu cầu tự-chiếu-lúc-khởi-động có thể gặp nhau.</p>
+</div>
+
+<div class="review">
+<h3>Pass 3 — 2026-07-30 · senior review (Opus) · append-only</h3>
+<p class="small">Phạm vi theo đúng brief vòng 2 để lại: (a) tầng <code>:core</code> nơi BA bề mặt cùng có thể phát một cú
+chiếu — nút nổi (người chạm), panel Home (<code>onCreate</code>/<code>onResume</code> tự chiếu) và
+<code>CastAutomationService</code> (tự-chiếu-lúc-khởi-động); (b) đọc lại bằng mắt mới chính phần mã vòng 2 vừa viết;
+(c) soát lại scope §4.4. Vòng 3/3 — vòng cuối trước khi giao APK cho buổi test xe. Điểm xuất phát:
+<code>--rerun-tasks</code> chạy lại toàn bộ, 771 test xanh (không tin cache — bài học vòng 1).</p>
+
+<div class="callout red"><strong>Phát hiện nặng nhất vòng này: tự-chiếu-lúc-khởi-động có thể CƯỚP cụm khỏi app mà người lái vừa tự đặt lên.</strong>
+Mọi cửa của đường BOOT_AUTO đều so với <em>cấu hình bền</em> — <code>CastAutomationPolicy.claimAllowed</code> so
+<code>revision</code>/<code>consentVersion</code>/<code>defaultPackage</code>, còn <code>CastAutomationService.evaluate</code>
+canh thêm Stop, pendingIntent gốc USER, ngân sách claim, transaction đang chạy và
+<code>RECOVERY_PENDING</code>/<code>MANUAL_REQUIRED</code>. Một cú chiếu tay KHÔNG làm đổi thứ nào trong đó, nên
+<strong>không có cửa nào nhìn vào <code>stableSession.activeTarget</code></strong> — và
+<code>CastManualIntentRunner.executeOrdinary</code> đọc <code>stable.activeTarget != null</code> thành
+<code>CastIntentKind.SWITCH</code>. Kết quả: cụm đồng hồ tự đổi từ app người lái chọn sang app mặc định, không ai bấm gì,
+trong lúc xe đang chạy. Đây KHÔNG phải giả thuyết về thời điểm: nó nằm gọn trong MỘT lần khởi động —
+<code>deferForPriorJournal</code> hẹn lại <code>REVALIDATION_DELAY_MS = 45_000</code> khi lần đánh giá đầu còn một
+journal dở, và 45 giây thừa sức để người lái chạm nút nổi. R6 đã ghi đúng luật ngược lại cho tự-chiếu-khi-mở-app
+("không cướp phiên", <code>autoStartTarget</code> từ chối khi <code>activeTarget != null</code>); R7 chưa từng có luật
+tương đương. <em>Mức bằng chứng: đã chứng minh bằng đọc source (trích được file:line); CHƯA đo trên xe.</em></div>
+
+<div class="scroll"><table><thead><tr><th>#</th><th>Sev</th><th>Phát hiện</th><th>Đã sửa</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>[P1]</strong></td><td>Tự-chiếu-lúc-khởi-động cướp cụm khỏi phiên đang sống (xem khối đỏ trên). Thêm một nửa nữa: lần từ chối đó — khi có — cũng KHÔNG lộ ra đâu cả, vì nhánh <code>Blocked</code> của host quy hết về <code>KNOWN_FAILURE</code>.</td><td>Ba lớp, và lớp giữa là lớp thật sự ràng buộc. (i) Cửa lịch sự ở <code>CastAutomationService.evaluate</code>, ĐẶT TRƯỚC <code>settings.claim()</code> để không tiêu mất ngân sách claim duy nhất của lần khởi động, ghi kết cục <code>SUPERSEDED</code>/<code>USER_SUPERSEDED</code> — "người dùng tới trước", đúng nghĩa, thay vì một thất bại giả. (ii) <strong>Cửa RÀNG BUỘC trong <code>CastManualIntentRunner.executeOrdinary</code>, tức BÊN TRONG mutation lease</strong>, đọc trên chính bản envelope mà kế hoạch được dựng từ đó. <em>Bản vá đầu của chính vòng này chỉ có cửa sớm ở <code>CastCoordinator</code> — tự soát lại thì thấy nó vẫn hở</em>: cửa sớm đọc envelope TRƯỚC khi vào lease, nên một cú chạm nút nổi bắt đầu chiếu ngay sau đó sẽ giữ lease vài giây và khi tự động hoá giành được lease thì <code>activeTarget</code> đã có ⇒ vẫn <code>SWITCH</code>. Giữ cửa sớm làm lối thoát rẻ, thêm cờ <code>automation</code> chạy dọc <code>run → continuePending → executeOrdinary</code> (mặc định <code>false</code>, đường người-bấm không đổi một byte hành vi nào). (iii) <strong>Tự động hoá KHÔNG xếp hàng</strong>: <code>queueLatestTarget</code> ghi <code>pendingIntent</code> gốc <em>USER</em>, mà <code>terminalize</code> chỉ dọn hàng đợi khớp <code>requestId</code> của chính nó ⇒ một lượt tự động hoá bị xếp hàng sẽ HẠ CẤP chỗ đặt của nó thành USER và tự tay tắt tự-chiếu cho mọi lần nổ máy sau (đúng cơ chế mục 2, nhưng do chính automation gây ra). Khoá bằng 3 test hành vi thật ở <code>:core</code> (<code>CastBootAutomationLiveSessionTest</code>: từ chối &amp; KHÔNG phát lệnh nào &amp; KHÔNG mở journal &amp; KHÔNG đụng phiên đang sống · cụm rảnh vẫn đi qua cửa · từ chối xếp hàng và giữ nguyên gốc BOOT_AUTO).</td></tr>
+<tr><td>2</td><td><strong>[P2]</strong></td><td><strong>Nút nổi tạo ra một hàng đợi bền mà chính nó không bao giờ rút được.</strong> Khi có transaction, <code>CastManualIntentRunner.run</code> KHÔNG từ chối — nó xếp hàng, và <code>queueLatestTarget</code> ghi <code>pendingIntent</code> gốc USER (<code>CastModels.withPendingPackage</code> mặc định <code>CastIntentOrigin.USER</code>). <code>CastSessionStore.initializeForBoot</code> CỐ Ý giữ nó qua mọi lần khởi động, và <code>CastAutomationService.evaluate</code> terminalize yêu cầu tự-chiếu thành <code>USER_SUPERSEDED</code> khi thấy nó ⇒ MỘT cú chạm rơi trúng lúc bận tắt R7 của MỌI lần khởi động sau. Vòng 1 đã chữa đúng bệnh này bằng <code>drainPendingTarget()</code> — nhưng chỗ rút đó chạy lúc MỞ màn Home, mà cả điểm của lần đơn giản hoá này là người lái dùng nút nổi chứ không mở Home. Toast còn hứa "sẽ chạy sau stable point", một lời hứa nút nổi không giữ được.</td><td>Nút nổi TỪ CHỐI thay vì xếp hàng: <code>foreignMutationInFlight()</code> đọc sự thật bền (<code>envelope()?.transaction != null</code>, không phải cờ RAM) ngay trong làn nền cú chạm vốn đã dùng, và nói "Đang có thao tác khác chạy — thử lại". Đặt SAU nhánh Dừng (Stop phải luôn tới được — <code>requestStop</code> vốn được thiết kế để chạy trong lúc có transaction). Không thêm đường mutation nào chạy theo hẹn giờ — xem mục "đã soát mà không sửa" vì sao KHÔNG rút hàng đợi từ nhịp 15s. Cửa cứng vẫn ở <code>CastExecutor</code>; khe TOCTOU còn lại vài ms, hậu quả đúng bằng hành vi hôm nay.</td></tr>
+<tr><td>3</td><td><strong>[P3]</strong></td><td><code>CastAutoStartBinding.apply()</code> đọc-sửa-ghi cấu hình tự-chiếu trên <code>CastActivityWork.misc</code> — <code>Executors.newFixedThreadPool(2)</code>, KHÔNG serialize. Tick rồi bỏ tick nhanh tay là hai lượt chạy thật song song, mỗi lượt ghi đè theo ảnh chụp của riêng nó: xen kẽ <code>setDefault</code>+<code>accept</code> với <code>revoke</code> để lại cấu hình bền BẬT trong khi thao tác cuối là TẮT, và ô tick chỉ được đồng bộ lại ở lần <code>bind()</code> sau (lần mở Home kế tiếp). Đúng lớp lỗi vòng 2 vừa sửa một lần — ô tick không điều khiển được thứ ghi trên nhãn nó.</td><td>Tách <code>commitConfig()</code>, toàn bộ đọc-sửa-ghi dưới MỘT khoá. Hai cửa idempotent của vòng 1 chuyển vào nguyên văn (test vòng 1 cập nhật theo nhãn mới, nội dung khoá không đổi). Test mới khoá: không phép ghi <code>automation.*</code> nào được nằm ngoài khoá.</td></tr>
+</tbody></table></div>
+
+<h4>Ba câu hỏi của brief — trả lời bằng đọc source, không đoán</h4>
+<div class="scroll"><table><thead><tr><th>Kịch bản</th><th>Kết luận</th></tr></thead><tbody>
+<tr><td><strong>(a)</strong> Xe nổ máy, tự-chiếu đang giữa chừng, người lái chạm nút nổi trước khi nó xong.</td><td><strong>Không bao giờ mở được transaction CAST thứ hai.</strong> <code>CastExecutor.executeLocked</code> kiểm lại <code>transaction == null</code> + <code>plan.epoch == durableEpoch</code> NGAY TRONG <code>store.locked</code>, nên đây là CAS trên sự thật bền chứ không phải trên ảnh chụp của caller. Điều nó LÀM trước vòng này là xếp hàng — và đó chính là mục 2 ở trên, nay đã từ chối. Chiều ngược lại (tự động hoá gặp một cú chạm đang chạy) cũng từng xếp hàng, và tệ hơn: nó hạ cấp chỗ đặt của chính mình xuống gốc USER — nay cũng từ chối (mục 1, lớp iii).</td></tr>
+<tr><td><strong>(b)</strong> Người lái đã chiếu tay bằng nút nổi, rồi một yêu cầu tự-chiếu đến trễ/hẹn lại.</td><td><strong>KHÔNG</strong> — <code>claimAllowed</code> không chặn được, vì nó chỉ so danh tính cấu hình mà chiếu tay không làm đổi. Và lần chặn (nếu có) cũng không hiện ra ở đâu. Đó là mục 1; nay có cửa cứng ở <code>:core</code> và kết cục ghi là <code>SUPERSEDED/USER_SUPERSEDED</code>, tức <code>CastAutomationPolicy.disposition</code> nói ra được.</td></tr>
+<tr><td><strong>(c)</strong> Ba người ghi (nút nổi · tự-chiếu-khi-mở-app của Home · service khởi động) — tầng CAS có đủ tuần tự hoá cho cả ba, hay chỉ đúng theo từng cặp?</td><td><strong>Đủ cho cả ba, và không phải nhờ test theo cặp.</strong> Cả ba dùng CHUNG một control plane: <code>CastAndroidRuntime.create</code> là singleton <code>@Volatile</code> của tiến trình (không có <code>android:process</code> nào trong manifest), nên chỉ có MỘT <code>CastSessionStore</code> và MỘT <code>ReentrantLock</code> của <code>CastExecutor</code>. Quan trọng hơn: mọi tiền điều kiện được kiểm lại <em>bên trong</em> <code>store.locked</code> đối chiếu với sự thật bền (<code>transaction</code>, <code>durableEpoch</code>, <code>stopRequested</code>, <code>pendingPackage</code>, <code>ordinaryStableStateAllows</code>), KHÔNG đối chiếu với ảnh chụp mà caller cầm — nên một cuộc đua N-bên suy biến thành "một người thắng, còn lại Blocked/Queued", không có đường lost-update nào. Cái tầng đó KHÔNG tuần tự hoá được là <em>ý định</em>: ba bên vẫn có thể lần lượt thắng lease và phát ba lượt đặt liên tiếp. Nút nổi = người chạm (đúng). Home từ chối khi <code>activeTarget != null</code> hoặc <code>transaction != null</code> (đúng). Service khởi động KHÔNG có phép từ chối tương ứng — đó đúng là mục 1, và bài học kèm theo là <strong>một phép từ chối đặt ngoài lease thì chưa phải phép từ chối</strong>: nó phải đọc cùng bản envelope mà kế hoạch dựng từ đó, nếu không nó chỉ thu hẹp cửa sổ chứ không đóng.</td></tr>
+</tbody></table></div>
+
+<h4><code>armed</code> có được nối tới tận tầng khởi động không (câu hỏi riêng của brief)</h4>
+<p class="small">CÓ, và chỉ có đúng MỘT vị từ. <code>AutomationConfig.armable</code> (<code>autoCastEnabled &amp;&amp;
+consentCurrent &amp;&amp; defaultPackage != null</code>) là thứ mà cả ba đường cùng hỏi:
+<code>CastAutomationSettings.recordOrGet</code> (<em>ghi</em> yêu cầu lúc khởi động — <code>if (!config.armable) return null</code>),
+<code>CastAutomationPolicy.claimAllowed</code> (<em>claim</em> lúc khởi động) và <code>autoStartTarget</code> (tự-chiếu-khi-mở-app,
+bản vá vòng 2). Không có vị từ thứ hai, không có bản cũ nào còn sót. <code>revoking()</code> đặt
+<code>autoCastEnabled = false</code> VÀ <code>consentVersion = null</code> nên <code>armable</code> tắt ngay từ nước đi đầu —
+bỏ tick là thật sự tắt cả tự-chiếu-khi-mở-app lẫn tự-chiếu-lúc-khởi-động của lần nổ máy sau. Ô tick vẽ theo
+<code>autoCastEnabled</code> chứ không theo <code>armable</code>: đó là hazard consent-version đã ghi ở §Open Questions,
+CỐ Ý không đụng vào theo chỉ đạo — nó là chuyện <em>hiển thị</em>, không phải một vị từ điều khiển thứ hai.</p>
+
+<h4>Đã soát mà KHÔNG sửa (nêu ra để không ai tưởng là sót)</h4>
+<ul class="check">
+<li><strong>Vì sao KHÔNG cho nút nổi rút hàng đợi trên nhịp 15s</strong> (đường sửa "hiển nhiên" cho mục 2): <code>initializeForBoot</code> giữ pendingIntent gốc USER qua reboot, nên một bộ rút chạy theo hẹn giờ sẽ CHIẾU MỘT APP LÊN CỤM NGAY LÚC NỔ MÁY vì một cú chạm từ chuyến đi hôm trước — người lái không bấm gì lần này. Đó là một cú chiếu bất ngờ, tệ hơn hẳn cái bệnh nó chữa. Home rút được vì "mở app" là một hành động cố ý của người dùng; nút nổi là service sống mãi, không có khoảnh khắc đó. Vậy nên chữa ở phía TẠO RA hàng đợi, không phải phía rút.</li>
+<li><strong>Nút nổi không gọi <code>reconcileAbandoned()</code>/<code>reconcileUnobservableIdleSession()</code></strong> — chỉ <code>CastActivityRefreshReader</code> của Home gọi. Người chỉ dùng nút nổi mà gặp journal kẹt vẫn phải mở Home một lần. Không sửa: cùng lý do trên (mutation trên hẹn giờ), và đây là hành vi có từ trước, không phải thứ vừa đổi.</li>
+<li><strong>Cú chạm và nhịp 15s có thể cùng quan sát một lúc</strong> (bản vá vòng 2 làm cú chạm tự đọc lại sự thật, không giữ <code>projectionInFlight</code>). Soát <code>CastAdbGateway</code>: pool <code>ThreadPoolExecutor(2,2,queue=4)</code> với <code>AbortPolicy</code> được bắt và quy về một <code>failure()</code> bình thường, phiên DADB tạo-và-đóng theo từng lệnh, <code>fenceInFlight</code> chỉ huỷ task <em>mutation</em> nên không cắt nhầm phép đọc. Không tìm thấy rò rỉ hay ngõ cụt.</li>
+<li><strong>Khe lost-wakeup của <code>projectionPending</code></strong> (bản vá vòng 2 mục 4): nếu lượt đang chạy đọc <code>projectionPending</code> đúng trước khi bên xin đặt nó, lượt bù bị mất. Khe rộng vài nano-giây và tự khỏi ở nhịp 15s kế tiếp (lúc đó cờ còn true nên chạy bù thêm một lượt). Ghi lại, không sửa — đổi sang vòng lặp CAS ở đêm trước buổi test xe không đáng.</li>
+<li><strong><code>FloatingBubbleService.kt</code> = 578 dòng</strong> (vòng 2 ghi 550 và đề xuất thêm ngưỡng canh). Vẫn chưa có test ngưỡng cho file này. Không thêm đêm nay — thêm ngưỡng là buộc phải tách file ngay, tức một lần chỉnh sửa lớn ngoài phạm vi ngay trước buổi test.</li>
+<li><strong>Consent version:</strong> theo chỉ đạo, KHÔNG xây xử lý. Vẫn nằm nguyên ở §Open Questions.</li>
+<li><strong><code>isDebuggable = true</code> ở build type release:</strong> theo chỉ đạo, KHÔNG đụng — cờ chẩn đoán tạm có chú thích ghi ngày riêng, theo dõi tách khỏi spec này.</li>
+</ul>
+
+<h4>Scope §4.4 — 11/11 hàng vẫn ✅ (đối chiếu lại từng hàng bằng nội dung thật, không dựa vào file có tồn tại)</h4>
+<p class="small">Bong bóng: grep sạch <code>menuPanel/toggleMenu/appTile/setOnLongClickListener/stopButton/statusLabel/primaryButton/reloadEntries/openCastControls</code>
+(0 khớp), vẫn đúng một vòng tròn 56dp một action. <code>ClusterCastActivity</code> + 3 layout và 4 file UI mồ côi vẫn xoá,
+không còn tham chiếu code nào trong <code>app/src/main</code> (chỉ còn nhắc trong KDoc lịch sử). Panel 4+4+2+1 nút, disabled
+khi <code>packageName == null</code>. <code>Actions</code> vẫn đúng 4 phép (<code>scaleOf/setScale/clusterSize/applySoon</code>).
+<code>MainActivityCastController</code> 472 LOC (&lt; 501). Home: 7 nút khắc phục sự cố + <code>cast_geometry_container</code> +
+<code>cb_autostart</code> + <code>spinner_autostart_app</code> + <code>txt_app_title</code> đủ ở CẢ HAI biến thể layout; 3 nút cũ
+(Chiếu lên cụm/Hiện nút nổi/Cài đặt chiếu) vẫn bỏ (0 khớp). <code>RebindReceiver</code> không còn <code>bubbleEnabled</code>.
+Notification của <code>CastAutomationService</code> trỏ <code>MainActivity</code>. Ratchet vẫn 14/14 — ba bản vá vòng này
+không đưa thêm kiểu <code>v2</code> nào qua ranh giới (<code>transaction</code> đọc qua <code>facade.envelope()</code>,
+<code>AutomationRequestState</code>/<code>AutomationReason</code> đã import sẵn ở host).</p>
+
+<p class="small"><strong>Kết quả:</strong> <code>:core:test</code> + <code>:app:testDebugUnitTest</code>
+<strong>777 test, 0 fail, 0 skip</strong> (771 + 6 test mới, chạy bằng <code>--rerun-tasks</code>);
+<code>clean assembleRelease</code> thành công, APK <strong>versionCode 80 / versionName 0.80</strong>
+(CLAUDE.md §9: 0.79 đã báo cho user nên vòng này phải mang số mới).
+<strong>Tech freshness: N/A</strong> — kiểm bằng <code>git diff</code> trên <code>app/build.gradle.kts</code> và
+<code>gradle/libs.versions.toml</code>: 0 dependency mới qua CẢ BA vòng, thay đổi duy nhất trong file build là số version
+và cờ <code>isDebuggable</code> chẩn đoán đã có từ trước.
+<strong>Verdict: SẴN SÀNG giao làm APK test xe ngày mai.</strong> Mật độ lỗi giảm đều qua ba vòng
+(2×P0+5×P1 → 3×P1+4×P2 → 1×P1+1×P2+1×P3) và vòng này không tìm thêm được lỗi nào ở tầng UI/đồng thời mà hai vòng trước
+đã quét. Điều PHẢI nhớ khi ra xe: cả ba phát hiện vòng này đều ở mức <em>"đã chứng minh bằng source"</em>, CHƯA có
+phép đo nào trên xe thật — mục cần quan sát thêm ngoài §Verification: (1) độ trễ một cú chạm nay có thêm một lần đọc
+store bền, (2) có bao giờ thấy thông báo "Đang có thao tác khác chạy" không, và nếu có thì lúc đó cụm đang làm gì.</p>
+</div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

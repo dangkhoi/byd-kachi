@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav — Nâng cấp diện mạo UI</title>
+<style>
+  :root{
+    --bg:#f2f2f7;--group:#ffffff;--ink:#1c1c1e;--ink2:#8a8a8e;--ink3:#aeaeb2;--line:#e5e5ea;
+    --brand:#0a84ff;--green:#34c759;--amber:#ff9f0a;--red:#ff3b30;--purple:#af52de;--teal:#30b0c7;--pink:#ff2d55;--indigo:#5e5ce6;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 10px 30px rgba(0,0,0,.06);--r:16px}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--group:#1c1c1e;--ink:#fff;--ink2:#98989d;--ink3:#636366;--line:#38383a;--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5)}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Roboto,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.4}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 20px 90px}
+  header.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line);padding:14px 20px;margin-bottom:14px}
+  header.top .wrap{padding:0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  h1{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:0}
+  .sub{color:var(--ink2);font-size:13.5px}
+  h2{font-size:15px;font-weight:600;letter-spacing:-.01em;margin:26px 0 10px}
+  .up{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-top:8px}
+  .up .u{background:var(--group);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:13px;box-shadow:var(--shadow)}
+  .up .u b{display:block;font-size:12px;color:var(--brand);margin-bottom:2px}
+  /* ===== device ===== */
+  .device{background:var(--group);border-radius:22px;box-shadow:var(--shadow);border:1px solid var(--line);padding:16px;margin-top:14px}
+  .hero{display:flex;align-items:center;gap:12px;padding:2px 4px 14px}
+  .hero .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--brand),var(--indigo));display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex:none}
+  .hero .ht{font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .hero .hs{font-size:12px;color:var(--ink2)}
+  .hero .sp{flex:1}
+  .pill{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:5px}
+  .pill .d{width:7px;height:7px;border-radius:50%}
+  .pill.gr{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green)}
+  .pill.rd{background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red)}
+  .pill.am{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}
+  .pill.nt{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink2)}
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.board{grid-template-columns:1fr}}
+  .colv{display:flex;flex-direction:column;gap:20px}
+  .sech{font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;margin:0 0 7px 12px}
+  .group{background:var(--group);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 14px;min-height:52px}
+  .row + .row{border-top:1px solid var(--line)}
+  .ic{width:29px;height:29px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .b-nav{background:var(--brand)}.b-cast{background:var(--purple)}.b-mic{background:var(--green)}.b-badge{background:var(--amber)}.b-bubble{background:var(--teal)}.b-seat{background:var(--pink)}.b-dust{background:var(--indigo)}.b-sys{background:var(--ink3)}.b-adv{background:var(--red)}
+  .tx{flex:1;min-width:0}
+  .tt{font-size:15px;font-weight:500}
+  .ts{font-size:12px;color:var(--ink2);margin-top:1px}
+  .val{font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:5px}
+  .chev{color:var(--ink3);font-size:16px}
+  /* switch */
+  .sw{width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:.2s}
+  .sw.on{background:var(--green)}
+  .sw::after{content:"";position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.2s}
+  .sw.on::after{left:20px}
+  /* segmented */
+  .seg{display:inline-flex;background:color-mix(in srgb,var(--ink) 7%,transparent);border-radius:9px;padding:2px;font-size:12.5px;font-weight:500}
+  .seg span{padding:5px 13px;border-radius:7px;color:var(--ink2)}
+  .seg span.on{background:var(--group);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12);font-weight:600}
+  /* expanded body */
+  .body{padding:2px 14px 14px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--ink) 2%,transparent)}
+  .fld{display:flex;align-items:center;justify-content:space-between;padding:9px 0}
+  .fld + .fld{border-top:1px solid var(--line)}
+  .fld .k{font-size:13.5px}
+  .btn{font-size:13px;font-weight:600;padding:9px 14px;border-radius:11px;text-align:center;display:inline-block}
+  .btn.pri{background:var(--brand);color:#fff}
+  .btn.sec{background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand)}
+  .btn.f{display:block}
+  .zones{display:flex;gap:8px;padding:10px 0 4px}
+  .zone{flex:1;border-radius:11px;padding:12px;text-align:center;font-size:13px;font-weight:600}
+  .zone.p{background:var(--brand);color:#fff}.zone.o{background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand)}
+  .cluster{position:relative;width:100%;aspect-ratio:8/3;background:color-mix(in srgb,var(--ink) 4%,transparent);border-radius:11px;margin-top:8px;overflow:hidden;border:1px solid var(--line)}
+  .zl{position:absolute;top:0;bottom:0;left:0;width:40%;background:color-mix(in srgb,var(--brand) 14%,transparent);border-right:2px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--brand)}
+  .zr{position:absolute;top:0;bottom:0;right:0;width:60%;background:color-mix(in srgb,var(--purple) 14%,transparent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--purple)}
+  .knob{position:absolute;top:50%;left:40%;transform:translate(-50%,-50%);width:14px;height:34px;border-radius:5px;background:var(--group);border:2px solid var(--brand);z-index:2}
+  .cap{font-size:11.5px;color:var(--ink2);margin-top:8px}
+  .badgemark{position:absolute;width:20%;aspect-ratio:1;border-radius:50%;background:#fff;border:3px solid var(--red);right:14%;top:16%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#111}
+  .foot{margin-top:16px;font-size:12.5px;color:var(--ink2)}
+  .hl{background:color-mix(in srgb,var(--brand) 10%,transparent);border:1px solid color-mix(in srgb,var(--brand) 26%,transparent);border-radius:12px;padding:13px 16px;margin-top:16px;font-size:14px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><h1>ClusterNav — Nâng cấp diện mạo</h1><span class="sub">Cùng feature/IA như bản B · nâng ngôn ngữ thị giác</span></div></header>
+<div class="wrap">
+
+  <h2>9 thứ nâng được (vì sao đang rối)</h2>
+  <div class="up">
+    <div class="u"><b>1 · Component đồng bộ</b>Bỏ trộn CheckBox/Switch mặc định → 1 kiểu switch iOS cho mọi bật/tắt.</div>
+    <div class="u"><b>2 · Hàng cài đặt (list-row)</b>Icon + nhãn + giá trị + chevron/switch — thay các khối chữ rời rạc.</div>
+    <div class="u"><b>3 · Icon từng tính năng</b>Ô icon màu → nhận diện nhanh, bớt phụ thuộc chữ.</div>
+    <div class="u"><b>4 · Trạng thái = pill màu</b>“Đang chạy / Mất kết nối / Cần Cast” xanh-đỏ-cam, không phải dòng chữ + chấm.</div>
+    <div class="u"><b>5 · Segmented control</b>Chọn (mát/sưởi · mức · chế độ cụm · tỉ lệ) đồng bộ 1 kiểu.</div>
+    <div class="u"><b>6 · Bậc nút rõ</b>1 primary (đầy màu) · 1 secondary (nhạt) · bỏ nút thừa — không còn “to oạch”.</div>
+    <div class="u"><b>7 · Bớt chữ</b>Nhãn ngắn; giải thích dài thu vào ⓘ / dòng phụ nhỏ.</div>
+    <div class="u"><b>8 · Nhịp khoảng cách 8pt</b>Padding/cỡ chữ theo thang chuẩn → hết so le.</div>
+    <div class="u"><b>9 · Màu &amp; nền hệ thống</b>Nền xám nhạt + card trắng nhóm + hairline divider (kiểu iOS Settings).</div>
+  </div>
+
+  <h2>Diện mạo sau nâng cấp (mockup)</h2>
+  <div class="device">
+    <div class="hero">
+      <div class="logo">◎</div>
+      <div><div class="ht">ClusterNav</div><div class="hs">Cluster Nav 2.0 · v1.32</div></div>
+      <div class="sp"></div>
+      <span class="pill gr"><span class="d" style="background:var(--green)"></span>Đang dẫn</span>
+      <span class="pill gr"><span class="d" style="background:var(--green)"></span>Cast</span>
+      <span class="pill rd"><span class="d" style="background:var(--red)"></span>Phím-thoại</span>
+    </div>
+
+    <div class="board">
+      <!-- LEFT -->
+      <div class="colv">
+        <div>
+          <div class="sech">Dẫn đường</div>
+          <div class="group">
+            <div class="row"><div class="ic b-nav">🧭</div><div class="tx"><div class="tt">Navigation + HUD</div><div class="ts">Cụm: chờ dẫn đường</div></div><div class="sw"></div></div>
+            <div class="row"><div class="ic" style="background:transparent"></div><div class="tx"><div class="tt">Chế độ cụm</div></div><div class="seg"><span class="on">Giữa + ETA</span><span>Tắt</span></div></div>
+            <div class="row"><div class="ic" style="background:transparent"></div><div class="tx"><div class="tt">Chạy chữ tên đường</div></div><div class="sw on"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="sech">Chiếu lên cụm</div>
+          <div class="group">
+            <div class="row"><div class="ic b-cast">📺</div><div class="tx"><div class="tt">Cluster Cast</div><div class="ts">Sẵn sàng</div></div><div class="sw on"></div></div>
+            <div class="body" style="border-top:1px solid var(--line)">
+              <div class="zones"><div class="zone p">Full</div><div class="zone o">Trái</div><div class="zone o">Phải</div></div>
+              <div class="cluster"><div class="zl">App Trái</div><div class="zr">App Phải</div><div class="knob"></div></div>
+              <div class="cap">Kéo góc để chỉnh cỡ từng app · vách chia tỉ lệ 1:9 … 9:1 (40:60)</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="sech">Hệ thống</div>
+          <div class="group">
+            <div class="row"><div class="ic b-sys">⚙</div><div class="tx"><div class="tt">Tự khởi động nền</div><div class="ts">Áp mọi tính năng nền</div></div><div class="sw on"></div></div>
+            <div class="row"><div class="ic" style="background:transparent"></div><div class="tx"><div class="tt">Kiểm tra cập nhật</div></div><span class="val">v1.32 <span class="chev">›</span></span></div>
+            <div class="row"><div class="ic b-adv">🛠</div><div class="tx"><div class="tt">Nâng cao / Khắc phục</div></div><span class="chev">›</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="colv">
+        <div>
+          <div class="sech">Điều khiển giọng nói</div>
+          <div class="group">
+            <div class="row"><div class="ic b-mic">🎙</div><div class="tx"><div class="tt">Nút vật lý → Trợ lý</div><div class="ts">2 nút đã gán</div></div><span class="pill rd" style="margin-right:8px"><span class="d" style="background:var(--red)"></span>Mất</span><div class="sw on"></div></div>
+            <div class="body">
+              <div class="fld"><span class="k">Trạng thái binding</span><span class="btn sec">Kiểm tra / Sửa</span></div>
+              <div class="fld"><span class="k">Xoay màn hình (305)</span><span class="val">Kiki <span class="chev">›</span></span></div>
+              <div class="fld"><span class="k">Mic vô-lăng giữ (328)</span><span class="val">Trợ lý HT <span class="chev">›</span></span></div>
+              <div class="fld"><span class="btn pri f" style="width:100%">＋ Thêm gán</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="sech">Hiển thị trên cụm · cần Cast</div>
+          <div class="group">
+            <div class="row"><div class="ic b-badge">🚦</div><div class="tx"><div class="tt">Biển báo tốc độ</div><div class="ts">Vị trí + cỡ</div></div><div class="sw on"></div></div>
+            <div class="row"><div class="ic b-bubble">🫧</div><div class="tx"><div class="tt">Bóng VietMap</div><div class="ts">Vị trí trên cụm</div></div><div class="sw"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="sech">Tiện nghi xe</div>
+          <div class="group">
+            <div class="row"><div class="ic b-seat">💺</div><div class="tx"><div class="tt">Ghế mát / sưởi</div><div class="ts">Làm mát · lái Mức 1</div></div><div class="seg"><span class="on">Mát</span><span>Sưởi</span></div></div>
+            <div class="body">
+              <div class="fld"><span class="k">Ghế lái</span><div class="seg"><span>Tắt</span><span class="on">M1</span><span>M2</span></div></div>
+              <div class="fld"><span class="k">Ghế phụ</span><div class="seg"><span class="on">Tắt</span><span>M1</span><span>M2</span></div></div>
+            </div>
+            <div class="row"><div class="ic b-dust">🌫</div><div class="tx"><div class="tt">Tự lọc bụi mịn</div><div class="ts">Mức bụi: Tốt</div></div><div class="sw"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hl"><b>Tóm lại:</b> không đổi feature/IA (vẫn như B), chỉ thay <b>ngôn ngữ thị giác</b>: hàng cài đặt kiểu iOS Settings + icon màu + pill trạng thái + segmented + switch đồng bộ + nhịp 8pt. Nhìn gọn &amp; hiện đại hơn hẳn “widget Android mặc định”.</div>
+
+  <p class="foot">Kỹ thuật để đạt look này trong app Android: (a) theme + style dùng chung (Switch/SegmentedButton Material 3, MaterialCardView, dimen 8pt, màu semantic), (b) tự vẽ “list-row” (icon + label + trailing) tái dùng, (c) chuyển các CheckBox → switch/list-row. Giữ nguyên mọi @+id + logic (chỉ đổi style/bố cục con), re-pin seal. Có thể làm từng nhóm để giảm rủi ro.</p>
+
+  <div class="hl" style="background:color-mix(in srgb,var(--green) 10%,transparent);border-color:color-mix(in srgb,var(--green) 30%,transparent)">
+    <b>Chọn:</b> (1) làm <b>full</b> nâng cấp diện mạo như mockup · hay (2) làm <b>từng phần</b> (vd trước: switch đồng bộ + pill trạng thái + icon, sau: list-row + segmented) · hay (3) chỉnh mockup trước khi code. Em nghiêng (2) làm từng phần cho an toàn (không phá feature).
+  </div>
+</div>
+</body>
+</html>

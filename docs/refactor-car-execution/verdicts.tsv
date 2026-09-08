@@ -1,0 +1,37 @@
+recordedAt	feature	step	candidate	verdict	source	endpoint	note
+2026-07-27T07:49:01.689953Z	CLUSTER_CAST	observe	observe.dumpsys	SKIPPED	MEASURED	localhost:5555	test
+2026-07-27T12:21:05.722361Z	CLUSTER_CAST	observe	observe.dumpsys	OK	MEASURED	localhost:5555	
+2026-07-27T12:21:06.451733Z	CLUSTER_CAST	probe-profile	probe.services-and-display	OK	MEASURED	localhost:5555	
+2026-07-27T12:21:07.173326Z	CLUSTER_CAST	teardown	teardown.18-then-0	OK	HUMAN	localhost:5555	
+2026-07-27T12:21:07.539131Z	CLUSTER_CAST	open-projection	open.seal-30-16-35	OK	HUMAN	localhost:5555	
+2026-07-27T12:21:21.671243Z	CLUSTER_CAST	place	place.freeform-then-resize	OK	MEASURED	localhost:5555	
+2026-07-27T12:21:22.035794Z	CLUSTER_CAST	capture-state	capture.full-surface-flinger	OK	MEASURED	localhost:5555	
+2026-07-27T12:21:22.389921Z	CLUSTER_CAST	place	place.movestack	FAIL	MEASURED	localhost:5555	
+2026-07-27T12:23:43.418405Z	CLUSTER_CAST	observe	observe.dumpsys	OK	MEASURED	localhost:5555	
+2026-07-27T12:33:16.930786Z	CLUSTER_CAST	teardown	teardown.18-then-0	OK	HUMAN	localhost:5555	Parcel(0,0);
+2026-07-27T12:33:17.273157Z	CLUSTER_CAST	open-projection	open.seal-30-16-35	OK	HUMAN	localhost:5555	Parcel(0,0);
+2026-07-27T12:34:20.433912Z	CLUSTER_CAST	teardown	teardown.18-then-0	OK	HUMAN	localhost:5555	người xác nhận gauges trở lại là ở phiên SÁNG 27/7, không phải phiên chiều
+2026-07-27T12:35:10.798983Z	CLUSTER_CAST	open-projection	open.seal-30-16-35	OK	HUMAN	localhost:5555	người xác nhận cụm hiện app là ở phiên SÁNG 27/7, không phải phiên chiều
+2026-07-27T12:45:57.215364Z	CLUSTER_CAST	open-projection	open.seal-30-16-35	OK	HUMAN	localhost:5555	chủ xe nhìn cụm xác nhận: vietmap lên ok (19:38, task đã đặt sẵn)
+2026-07-27T12:45:57.666496Z	CLUSTER_CAST	teardown	teardown.18-then-0	OK	HUMAN	localhost:5555	chủ xe nhìn cụm xác nhận: về đồng hồ (19:40) NHUNG task 40 con tren display 1 nen app mo coi
+2026-07-27T12:45:58.146455Z	CLUSTER_CAST	place	place.freeform-then-resize	OK	MEASURED	localhost:5555	task 40 len cum 1920x720, chu xe thay map
+2026-07-29T10:15:21.159893Z	NAVIGATION	nav-render-gate	gate.probe	OK	MEASURED	<vehicle-ip>:5555:5555	navi_protect=1 whitelist=0 change_navi_auth=1 fission_single_os=0 (2026-07-29)
+2026-07-29T10:15:22.074394Z	HUD_SWITCH	hud-probe	hud.config-read	OK	MEASURED	<vehicle-ip>:5555:5555	SET_HUD_CONFIG=1 (W-mode); chu xe xac nhan xe co HUD that
+2026-07-29T10:15:22.537795Z	HUD_SWITCH	hud-probe	hud.switch-feedback-read	OK	MEASURED	<vehicle-ip>:5555:5555	SET_HUD_SWITCH_STATUS_FEEDBACK=1 (dang bat san)
+2026-07-29T10:15:22.994733Z	SPEED_SIGN	sign-inject	sign-inject.sla-state-probe	OK	MEASURED	<vehicle-ip>:5555:5555	ADAS_SLA_STATE=1 (FUSION_MODE)
+2026-07-29T10:15:47.524577Z	CLUSTER_CAST	probe-profile	probe.trafficmonitor-service	OK	MEASURED	<vehicle-ip>:5555:5555	com.byd.trafficmonitor co cai; service list grep traffic khong ra AIDL rieng (dung bindService, dung ServiceManager)
+2026-07-29T10:15:47.945762Z	CLUSTER_CAST	probe-profile	probe.naviserviceapi-service	FAIL	MEASURED	<vehicle-ip>:5555:5555	khong co BydAutoTMap, khong thay NaviService trong dumpsys activity services - goi khong co mat tren xe nay
+2026-07-29T10:15:48.359528Z	CLUSTER_CAST	probe-profile	probe.vehiclesettings-installed	FAIL	MEASURED	<vehicle-ip>:5555:5555	pm list packages grep vehiclesettings rong - package khong tim thay bang ten nay tren ROM nay, nhung HAL BYDAutoSettingDevice van goi duoc thang qua reflection (khong can app nay)
+2026-07-29T10:15:48.792237Z	CLUSTER_CAST	probe-profile	probe.magicwindow-service	OK	MEASURED	<vehicle-ip>:5555:5555	service check magicwindow: found - co tren ca DL3, khong chi DL5
+2026-07-29T10:15:49.204204Z	CLUSTER_CAST	probe-profile	probe.autocontainer-whitelist	OK	MEASURED	<vehicle-ip>:5555:5555	AutoContainer id=25 AutoContainerNative id=206 dang song; whitelist container_comm_cfg.json chi cho com.xdja.clusterdemo
+2026-07-29T10:16:10.358393Z	NAVIGATION	nav-render-gate	gate.baseline-broadcast-only	OK	HUMAN	<vehicle-ip>:5555:5555	BAT NGO: cum HIEN icon+ten duong ngay ca khi navi_protect=1 chua doi gi ca (gia thuyet cu con 'khong doi gi' SAI). Khoang cach rieng ket -1 cho toi khi them 3 field _AUTO (SEG/ROUTE_REMAIN_DIS_AUTO, ROUTE_REMAIN_TIME_AUTO) thi ra dung so that. Khong can M1/M2/M3 de render cum. Xem candidate moi gate.broadcast-full-render.
+2026-07-29T10:16:10.760398Z	HUD_SWITCH	hud-probe	hud.nav-content-toggle-on	FAIL	HUMAN	<vehicle-ip>:5555:5555	setraw setting 4C10E03A 1 rc=0 nhung HUD khong hien gi ca du cum dang render that (icon+444m+Ba Test Le Loi). Co that (thu 2 lan, cum song) nhung HUD van im.
+2026-07-29T10:17:27.371195Z	NAVIGATION	nav-render-gate	gate.broadcast-full-render	OK	HUMAN	<vehicle-ip>:5555:5555	LIVE-CONFIRMED 2026-07-29: cum hien dung icon + 444m (khong phai -1) + Ba Test Le Loi, khong doi setprop gi. Candidate moi them vao catalog cung phien nay.
+2026-07-29T10:32:57.062731Z	HUD_SWITCH	hud-probe	hud.switch-off	OK	HUMAN	<vehicle-ip>:5555:5555	setraw setting 4C10E023 2 -> HUD toi han that su, xac nhan write path co hieu ung vat ly that (khong chi la doc)
+2026-07-29T10:32:57.467310Z	HUD_SWITCH	hud-probe	hud.switch-on	OK	HUMAN	<vehicle-ip>:5555:5555	setraw setting 4C10E023 1 -> HUD sang lai binh thuong sau khi tat, round-trip xac nhan cong tac dieu khien duoc that
+2026-07-29T10:32:57.835766Z	HUD_SWITCH	hud-probe	hud.nav-content-toggle-on	FAIL	HUMAN	<vehicle-ip>:5555:5555	THU LAN 2 qua duong khac: navopen open + frame (ghi thang INSTRUMENT_GUIDE_INFO_SIMPLE_SET/INSTRUMENT_FRONT_CROSSING_DISTANCE_SET, khong qua AmapService broadcast) - van KHONG hien gi tren HUD. Da thu 2 duong doc lap (broadcast AmapService + ghi thang INSTRUMENT), ca hai deu am tinh. HUD khong doc INSTRUMENT_* de hien nav.
+2026-07-29T10:32:58.222326Z	HUD_SWITCH	hud-probe	hud.adas-content-toggle-on	SKIPPED	HUMAN	<vehicle-ip>:5555:5555	KHONG KET LUAN DUOC: HUD von da hien san ADAS content (bang toc do toi da 30 ACC, ICC, canh lech lan, kmh giua) TU TRUOC KHI test - khong doc baseline truoc khi ghi nen khong biet lenh co tac dung gi khong. Bai hoc: phai getraw truoc setraw, giong da lam voi hud-switch.
+2026-07-29T10:47:10.776425Z	CLUSTER_CAST	cluster-overlay-toggles	overlay.adas-window-show	FAIL	HUMAN	<vehicle-ip>:5555:5555	opcode 12 chay rc=Parcel(0,0) nhung khong thay hieu ung gi tren cum
+2026-07-29T10:47:11.145515Z	CLUSTER_CAST	cluster-overlay-toggles	overlay.adas-window-hide	OK	HUMAN	<vehicle-ip>:5555:5555	opcode 13 chay binh thuong (khong co gi de dong vi show khong thay hieu ung)
+2026-07-29T10:47:11.519125Z	CLUSTER_CAST	cluster-overlay-toggles	overlay.warning-lamps-on	OK	HUMAN	<vehicle-ip>:5555:5555	opcode 2 XAC NHAN THAT: sang dong loat vai chuc canh bao tren cum. Bi auto-mode classifier chan lan dau, phai retry.
+2026-07-29T10:47:11.890366Z	CLUSTER_CAST	cluster-overlay-toggles	overlay.warning-lamps-off	FAIL	HUMAN	<vehicle-ip>:5555:5555	SU CO THAT 2026-07-29: opcode 3 gui 2 LAN + opcode 0 (video refresh) 1 LAN deu KHONG dep sach het - con sot ADAS icon + bang duong cam + km/h gioi han nhay sai thanh 60 (HUD van dung 30, lech nhau). CHI tat may xe roi mo lai (power cycle that) moi ve binh thuong hoan toan. KET LUAN: opcode 3 KHONG DAM BAO dep sach nhu ten goi - dung coi la an toan/hoan tac duoc bang phan mem, phai san sang power-cycle that su neu con sot.

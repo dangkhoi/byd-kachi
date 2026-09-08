@@ -1,0 +1,1000 @@
+{
+ "branch": "release/v0.60-cast-hardening",
+ "canonicalization": "UTF-8 JSON; recursively lexicographic object keys; preserve array order; ensure_ascii=false; compact comma/colon separators; no BOM.",
+ "head": "fd4890c1ffabf4b8cb37f5ccbd5cdb93f0343ae6",
+ "identityExclusions": {
+  "entries": [
+   {
+    "byteLength": 4336,
+    "path": ".kiro/settings/lsp.json",
+    "reason": "LOCAL_TOOLING_OR_RUNTIME_PRESERVE",
+    "sha256": "69aaab5b2c07f6f47866c30330cbbbf323f859ca05b039f4afbc9ab72d12de28"
+   },
+   {
+    "byteLength": 4547,
+    "path": ".kiro/steering/RAI.md",
+    "reason": "LOCAL_TOOLING_OR_RUNTIME_PRESERVE",
+    "sha256": "45d371a7cfa1d1b37ef88164c74265836d31e2bb2a833057cd7a24c309f63702"
+   },
+   {
+    "byteLength": 3210,
+    "path": ".kiro/steering/execution-reliability.md",
+    "reason": "LOCAL_TOOLING_OR_RUNTIME_PRESERVE",
+    "sha256": "3e1346b142294f0fbf0a1c2f82318d0d4b3d08e5b3b4c28081500e4c70c4703c"
+   },
+   {
+    "byteLength": 386,
+    "path": ".kiro/steering/identity.md",
+    "reason": "LOCAL_TOOLING_OR_RUNTIME_PRESERVE",
+    "sha256": "41b6c3b7c261b329d4534c9dd0f1c4e66c07d58e526d202c78ae2cdbd8494815"
+   },
+   {
+    "byteLength": 2832233,
+    "path": "apk/ClusterNav-0.63-release.apk",
+    "reason": "HISTORICAL_APK_IMMUTABLE",
+    "sha256": "80cc9bbac957a617d47be35e3730307333c56529132bf2ce66ff56be9395cb1d"
+   },
+   {
+    "byteLength": 2833121,
+    "path": "apk/ClusterNav-0.64-release.apk",
+    "reason": "HISTORICAL_APK_IMMUTABLE",
+    "sha256": "b38f4c7ce2151bf1eed48ea31bc054b6e3d4b7bad878409af433c805c21f6d04"
+   },
+   {
+    "byteLength": 2833641,
+    "path": "apk/ClusterNav-0.65-release.apk",
+    "reason": "HISTORICAL_APK_IMMUTABLE",
+    "sha256": "99491860ebc9b7a16e5eea8ecdfdaab3788f25253d1899c25f2d54c3ee132ea3"
+   },
+   {
+    "byteLength": 2837569,
+    "path": "apk/ClusterNav-0.66-release.apk",
+    "reason": "HISTORICAL_APK_IMMUTABLE",
+    "sha256": "789ccbc066fc4f84066a266649f6a8adba25ca5e25ca2a3cd2a71ded450da0b6"
+   },
+   {
+    "byteLength": 2837357,
+    "path": "apk/ClusterNav-0.67-release.apk",
+    "reason": "HISTORICAL_APK_IMMUTABLE",
+    "sha256": "8f5901c2c15cf513b5e64609258726ddaac11ab49a21ff66fc099d33e213f002"
+   },
+   {
+    "byteLength": 3095497,
+    "path": "apk/ClusterNav-0.67-vehicle-test-d808db00313c-release.apk",
+    "reason": "HISTORICAL_APK_IMMUTABLE",
+    "sha256": "1b9c016273296454c9fd0ac88bb51dd8c7447b8b7d60b113d689eb7eb9d6b184"
+   },
+   {
+    "byteLength": 26571,
+    "path": "docs/_handoff/cluster-cast-v070-manual-cold-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "92e972b9154e0520209a9b4d482160f1ed31d85b512cbbdabf29e1e794b5cee0"
+   },
+   {
+    "byteLength": 26848,
+    "path": "docs/_handoff/cluster-cast-v070-manual-cold-r2-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "43efd3c96a43c2fda4f1c6c93b696cbe1fd07bc8241d3968dc113217216a8f64"
+   },
+   {
+    "byteLength": 34782,
+    "path": "docs/_handoff/cluster-cast-v071-product-completion-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "65f1ca725f2db77532aae36f0752e7cf63add052a12ee0ae09f3073d8e2c1b55"
+   },
+   {
+    "byteLength": 35328,
+    "path": "docs/_handoff/cluster-cast-v071-product-completion-r2-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "d86b456f5f20521ceb542e8308c4a2eee094026e1d941e95154a2e59a2551d85"
+   },
+   {
+    "byteLength": 37457,
+    "path": "docs/_handoff/cluster-cast-v072-field-execution-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "24f1a28d8327092b48b9bd8b7a7013887bacb4150af97a5791b087590c98d2de"
+   },
+   {
+    "byteLength": 37975,
+    "path": "docs/_handoff/cluster-cast-v072-field-execution-r2-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "5de5442134f8bfabe736420931ab966203cd65fda9c87abcac3f5f435c209dd6"
+   },
+   {
+    "path": "docs/_handoff/cluster-cast-v072-field-execution-r3-exact-source.json",
+    "reason": "GENERATED_V072_R3_ATTESTATION_SELF_REFERENCE"
+   },
+   {
+    "byteLength": 23581,
+    "path": "docs/_handoff/two-track-cold-bootstrap-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "2d4ef414167acd5cbc1f4ad78fa2918d624df5a88c0fb3cf6d7cae4c5b44c1da"
+   },
+   {
+    "byteLength": 19950,
+    "path": "docs/_handoff/two-track-final-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "d808db00313c9ca6ae5ddd88068859cbe8719af1d853d4886d861b971362093a"
+   },
+   {
+    "byteLength": 22747,
+    "path": "docs/_handoff/two-track-hotfix-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "9797748a11c7c2accdedf228bc8e654dfff9867739e4427482a4b5370bb4eccc"
+   },
+   {
+    "byteLength": 22229,
+    "path": "docs/_handoff/two-track-replacement-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "716a961570ec6943edd4a668f80fdeaf0fcf2a56f89da54b753bf34313be74b1"
+   },
+   {
+    "byteLength": 4495,
+    "path": "docs/_handoff/two-track-stage-1-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "191e10ac5fc41e55084550304b242e7e471fd9fd6c47d93f54269fea5c64c6cc"
+   },
+   {
+    "byteLength": 11170,
+    "path": "docs/_handoff/two-track-stage-2-exact-source.json",
+    "reason": "PRIOR_OR_INVALIDATED_ATTESTATION",
+    "sha256": "05c4b0ea12a0c87fd71a05c698e963e68a99438980447e79da9a9ffca17e2586"
+   }
+  ],
+  "rule": "The generated 0.72 r3 attestation is a path-only exclusion to prevent recursion. Local tooling/runtime state, historical APK bytes and every prior attestation (0.70 x2, 0.71 x2 and the two superseded 0.72 attestations, whose inputs predate the bounded review-loop remediation) are excluded from build inputs and hash-inventoried, so each predecessor identity stays independently verifiable and unmodified."
+ },
+ "intendedUntracked": [
+  {
+   "byteLength": 4175,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastActivityRefresh.kt",
+   "sha256": "5d2a09bd270186245c140bf092f6e737933077f5dcdb7bf8c22782907085b011"
+  },
+  {
+   "byteLength": 2352,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastActivityStatusTimers.kt",
+   "sha256": "06407c4fc1bb8786ac35915da26c710f9be4c7972c615ad405719b010c46d8e2"
+  },
+  {
+   "byteLength": 4281,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastActivityWork.kt",
+   "sha256": "ca41ba8bb403ca034c1d9b487f3736957b229dadde6ead53dbc70cd195ddae27"
+  },
+  {
+   "byteLength": 6742,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastAdjustmentDialog.kt",
+   "sha256": "f2c20963cc7ba918bc42572f6a227b569defe4be3c5c853ce79b0043f4e8e4cc"
+  },
+  {
+   "byteLength": 6219,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastAppManagerBinding.kt",
+   "sha256": "9eb971ee6ddc4028063aff0b2ed8ba35be468214fbfdcd14de7bc41cf4e348eb"
+  },
+  {
+   "byteLength": 17667,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastAppManagerDialog.kt",
+   "sha256": "4b9b744e6b155436e650978d7989e83131338d89b6650a1aa41e9f810138dfdd"
+  },
+  {
+   "byteLength": 14900,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastAutomationService.kt",
+   "sha256": "c83817523890030e06e37ea02f2809ec279640cc1083c5f5ebb5651d6bb1714a"
+  },
+  {
+   "byteLength": 2220,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastLifecycleReceiver.kt",
+   "sha256": "3e914e113e3b43c2ce2a313aaf7d25aa30f07430b44c691a522d1bbf9f8f30ff"
+  },
+  {
+   "byteLength": 4724,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastOperationStatus.kt",
+   "sha256": "95510b232865caf19060c374cbbad0549a16449d1a154af19e131d845d24b062"
+  },
+  {
+   "byteLength": 1679,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastRetryPrompt.kt",
+   "sha256": "c0284b16d60c7ff763edb71d3777f624f7081af7b3b5f57939ebae3cbfbc1bed"
+  },
+  {
+   "byteLength": 11420,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAdjustmentWorkspace.kt",
+   "sha256": "7a4b49c16d6b156e03d2fe2860be8e7c5d87d06e56bf5ca95ee5474b72f79e00"
+  },
+  {
+   "byteLength": 8022,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAmStackParser.kt",
+   "sha256": "f3520a1011cb651fe08d38d7421a4a3da4eabe4c44e9f04f9a9c118789d7ecb8"
+  },
+  {
+   "byteLength": 11779,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAndroidLifecycle.kt",
+   "sha256": "ce84f067ded42609f530c13b6214d9c8dc753cc8f878d82d3deff41a7ba55c87"
+  },
+  {
+   "byteLength": 21628,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAndroidRuntime.kt",
+   "sha256": "87f8f183bf073b97e39863e35ec3dd7359be4ebd24bb322d0e2ef375e51eb533"
+  },
+  {
+   "byteLength": 9616,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAppCatalog.kt",
+   "sha256": "9d032c54a4ed4dab68ceeacb8b204621b53e3111e70d9bbd7d05f0165dc24a95"
+  },
+  {
+   "byteLength": 5894,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAppPresentation.kt",
+   "sha256": "86ae49a23a1f5edcbc174880f5c00b059dae0a2d9a902400376db9f258693f5e"
+  },
+  {
+   "byteLength": 15099,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAutomation.kt",
+   "sha256": "1be96568b962e72e3c89ab37ab1bcaa20f48eadcf20bcb5cdf85501d0250b3df"
+  },
+  {
+   "byteLength": 12215,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastAutomationSettings.kt",
+   "sha256": "9802d6554bfce2a04cc2cbd478ad763c4a09bbe86a068fb2a6ed108f879ed334"
+  },
+  {
+   "byteLength": 5694,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastBubbleProjection.kt",
+   "sha256": "cbf7eb230651660d41da5104bb02ccdc8c44cbd6a41f69758ad48d1861c84373"
+  },
+  {
+   "byteLength": 24412,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastColdBootstrap.kt",
+   "sha256": "61cf79a3ee8d725bde3bb826c00f468e3af4184a75dae2d1bc70cba29a6e4ac9"
+  },
+  {
+   "byteLength": 13388,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastCoordinator.kt",
+   "sha256": "824c8ccb0795327bcaf1e558615180409802563c8728380236283f75fe7faa8c"
+  },
+  {
+   "byteLength": 20195,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastExecutor.kt",
+   "sha256": "a4bcdc6217dc5ce52ad9fa440530e676f3c3be940d1395050113fe0d4c8e619d"
+  },
+  {
+   "byteLength": 3028,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastGeometry.kt",
+   "sha256": "c16b0dbbb84e06e560315b4c387c02d089f3f2aa38e98c200ae7006812107695"
+  },
+  {
+   "byteLength": 1622,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastInProcessDisplay.kt",
+   "sha256": "9dee78698bded32ddd7df47f9d295caadb7540c8b7ada97d7d757b12fb6f95dd"
+  },
+  {
+   "byteLength": 14132,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastManualIntent.kt",
+   "sha256": "d294af8ee8001f299e2b688112df9bbbfeeb7ac3ac0bf414bfff212a7368d539"
+  },
+  {
+   "byteLength": 18759,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastModels.kt",
+   "sha256": "09e87f6257cc25cc396f7949c52758d133f08bc064baf9dc240ccffa7bfb165c"
+  },
+  {
+   "byteLength": 1619,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastOperationLog.kt",
+   "sha256": "05a2e18a42e486208c20f29e3e563a7bfcea75acb26e84bf8e8bfb6d5f3aa78f"
+  },
+  {
+   "byteLength": 11931,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastPlacementCommands.kt",
+   "sha256": "d0c7e5f83178d3bf48d35c346332d61a1675035fb1d94716da41ddff12548b3d"
+  },
+  {
+   "byteLength": 23039,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastPlanner.kt",
+   "sha256": "754819da0b2b322872b6bad1e9d08b1449ec9dffad23c10e9064cfe98d465f9b"
+  },
+  {
+   "byteLength": 827,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastPolicy.kt",
+   "sha256": "fae88c91ae4d295b6af7a7cf0b29d991e68672ea1d8e30ea8134bfd18f31b34b"
+  },
+  {
+   "byteLength": 2000,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastRecovery.kt",
+   "sha256": "4b5f77e3feeafb90e8f1a2019a0b9e605dc8f342889bf8edcf28e1a6184619b5"
+  },
+  {
+   "byteLength": 2853,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastRolloutRegistry.kt",
+   "sha256": "89d91b70ccc4e977958d626945e8cce2558da756403938df29472b9fa6cb6b00"
+  },
+  {
+   "byteLength": 7478,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastRuntimeUi.kt",
+   "sha256": "0fd02384d38b553cd93abb5bfd252b72878b1b6c368fe8e143cbe46bc8f12db3"
+  },
+  {
+   "byteLength": 24216,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastSessionStore.kt",
+   "sha256": "57b9f76503b3087e8357877ddd2e912c84161de210695bf2d85e240e52f30149"
+  },
+  {
+   "byteLength": 2918,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastUiRenderer.kt",
+   "sha256": "dbe41f000ba7940899833ab65e47a30bed34f9ab0084829da0a8e8e69f2a551e"
+  },
+  {
+   "byteLength": 14515,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/CastUiStateProjector.kt",
+   "sha256": "bc80f782a627a9174a3b79f55d5e5ee6ee6989c5a35ee8ebe184bbe69b001bad"
+  },
+  {
+   "byteLength": 3612,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/ObservedStateReader.kt",
+   "sha256": "65dbbe18340888e81a5ab7ac93c249905c766f88aa3c1223d85013baed7d5c90"
+  },
+  {
+   "byteLength": 4652,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/v2/ShellGateway.kt",
+   "sha256": "2bd06cac9cdff9462dead239eb00a5e2289db9afee0785a984f16fea0249b209"
+  },
+  {
+   "byteLength": 8725,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/navigation/ClusterLaneAdapter.kt",
+   "sha256": "f5a52ee9dd61de41fd80407aed96d56ea341e15c332f8fd3319ffbde4f780fd2"
+  },
+  {
+   "byteLength": 1241,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/navigation/HudAdapter.kt",
+   "sha256": "7365cd4c32b4a9be00072fc9ff752b625c25a6e1e9918a8dbe470e9390e9d5ed"
+  },
+  {
+   "byteLength": 2564,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/navigation/NavigationFrameStore.kt",
+   "sha256": "9000389cb138a2efce90cbc9a3b73997e0141ce4677c9b1504aa91467cf49319"
+  },
+  {
+   "byteLength": 6281,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/navigation/NavigationModels.kt",
+   "sha256": "ac233cd817ee03b116cce0b625f1d413ace5d53d8819cc6814fb2784bca254a2"
+  },
+  {
+   "byteLength": 9546,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/java/com/byd/clusternav/navigation/NavigationSessionCoordinator.kt",
+   "sha256": "f121403712827b7b6dbb4481494ed5438c559abe15182271c1400c439a1a7f04"
+  },
+  {
+   "byteLength": 5240,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/res/layout-w1280dp/activity_cluster_cast.xml",
+   "sha256": "e6480ec913acac221d3ff1c3fa92a43c74f2fc5edf50ea1b49f41b51fc259ddf"
+  },
+  {
+   "byteLength": 5240,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/res/layout-w960dp/activity_cluster_cast.xml",
+   "sha256": "adada835c4f2ae94c5c3ad462383dfb6aa5bf25008cdf899eafa4f791b6c8a7a"
+  },
+  {
+   "byteLength": 5131,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/res/layout/activity_cluster_cast.xml",
+   "sha256": "db57675736735cef501f78fb8f6436c60a686a7066d3508a85a7f308b5a30fc9"
+  },
+  {
+   "byteLength": 113,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/res/values-w1280dp/integers.xml",
+   "sha256": "84b4c6a9fc2a3696078f72844688bf97ec87aebf9b4d8fb5985bcd0ee9ffd70b"
+  },
+  {
+   "byteLength": 113,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/res/values-w960dp/integers.xml",
+   "sha256": "84b4c6a9fc2a3696078f72844688bf97ec87aebf9b4d8fb5985bcd0ee9ffd70b"
+  },
+  {
+   "byteLength": 113,
+   "class": "PRODUCT_SOURCE_OR_RESOURCE",
+   "path": "app/src/main/res/values/integers.xml",
+   "sha256": "8288eef4c8f92691cc57a278dfd4597cb2a7861140862d3218345c266378e250"
+  },
+  {
+   "byteLength": 3361,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/BuildArtifactNamingTest.kt",
+   "sha256": "2afa5a790420cf31c30b686a7f866948ca650c70c3d1d355b69175cd4f7ace54"
+  },
+  {
+   "byteLength": 1943,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/DeadReckonRetirementTest.kt",
+   "sha256": "22bfa9f75b79097b606063844540b76f4fc11604682c7d6f2641b96832cdab85"
+  },
+  {
+   "byteLength": 4247,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/TwoTrackHomeContractTest.kt",
+   "sha256": "d92d98c39d5b02a26fdcf0f85dfaeb076abbdc33332d6f61cbc42c86cbebeda8"
+  },
+  {
+   "byteLength": 5816,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/CastActivityWorkTest.kt",
+   "sha256": "2419125b8be2f3560048a7cfcc4f89ccf3a182903466f3fc483e92d5c89bfdea"
+  },
+  {
+   "byteLength": 5991,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/CastOperationStatusTest.kt",
+   "sha256": "ad0cfb61744c769a78d8c603207a66b7e227e73e42abe6828de0a7b0d53c0f26"
+  },
+  {
+   "byteLength": 19921,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/CastSwapTest.kt",
+   "sha256": "3eb04a22a9e74724048fccdf20db8f446480078c635b8f6ccf3603ce5bbda1b4"
+  },
+  {
+   "byteLength": 2392,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAccessibilityTest.kt",
+   "sha256": "c9104810aa78fe8ff1c51ca9c6b34e5b11150574b59e222c6a53705b502f1544"
+  },
+  {
+   "byteLength": 6700,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAdjustmentWorkspaceTest.kt",
+   "sha256": "3ba74d452795b092a55f1aab58b71723df498c484b122b0b416c6be10412a2bd"
+  },
+  {
+   "byteLength": 5427,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAmStackParserTest.kt",
+   "sha256": "46b40f768758cecb775b09c6cb66f2c582a9b5006ffe58cd22d25ab2d3599f8d"
+  },
+  {
+   "byteLength": 1384,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAndroidAutoSliceTest.kt",
+   "sha256": "b0db7c9656c6705f1e3f5475a4e7f7e1d92ad1d88eb0643e05f9026112a13264"
+  },
+  {
+   "byteLength": 21969,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAndroidRuntimeTest.kt",
+   "sha256": "87ab60a3d57a3e5d1657bfddda512872d01ae82beb181667509f498929bdcef1"
+  },
+  {
+   "byteLength": 5363,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAppManagerWiringTest.kt",
+   "sha256": "0bc4990f3520d8a0d7828fb9dcac4748c788a01a834ab480e62c14de0cf4deee"
+  },
+  {
+   "byteLength": 9249,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAppPresentationTest.kt",
+   "sha256": "deeb7cebad56285e8b43404ecd0a9d62d07e348d34177d526c79ff7b65c2607c"
+  },
+  {
+   "byteLength": 14081,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAutomationHostTest.kt",
+   "sha256": "516def719782137817c4b206b2c6848eace18b945d47a28c2929fb4dd1842a5f"
+  },
+  {
+   "byteLength": 16579,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAutomationSettingsTest.kt",
+   "sha256": "b11581cea704af28f2490a57135a0e90058091821ac4f00a97bc18cd29385131"
+  },
+  {
+   "byteLength": 14032,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAutomationStoreTest.kt",
+   "sha256": "abb7821874427efeea4363b4f73cfb76ce27f16b7507f3778158619c97eebd33"
+  },
+  {
+   "byteLength": 16256,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastAutomationTest.kt",
+   "sha256": "52707afecc1db7f30de850b85ab38af91b85630b4ea537c48e64bc497b96f734"
+  },
+  {
+   "byteLength": 5532,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastBlockedIoTest.kt",
+   "sha256": "db9c138d5f4dc2d2a52592fecdbea10ff76f2ccbd504469d48506290dfe3640b"
+  },
+  {
+   "byteLength": 8162,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastBubbleProjectionTest.kt",
+   "sha256": "8c87fa67e7266339fd48574793032098621ae4e50a7fa67929c1d89d5e727b3a"
+  },
+  {
+   "byteLength": 1249,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastCarPlaySliceTest.kt",
+   "sha256": "8fe5db26568ace247342f0a62b383a76439838aed849c7ac6445566ff321cb1e"
+  },
+  {
+   "byteLength": 5694,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastColdBootstrapPreflightTest.kt",
+   "sha256": "416b19f29955d6031f66c8afa81e69a06d0040b0f7dffd5cc7122f4b7b1dbaec"
+  },
+  {
+   "byteLength": 22136,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastColdBootstrapTest.kt",
+   "sha256": "5783f8895e1af453b9f450e9b758cda9cfdccaeb66df3dbe2f49c5d2321cb301"
+  },
+  {
+   "byteLength": 3445,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastDiagnosticsContractTest.kt",
+   "sha256": "7ac7e065fa7c05ea8916457bdafae843408fa91469e42c27bfc7d5912005ba5f"
+  },
+  {
+   "byteLength": 2629,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastDryPlannerTest.kt",
+   "sha256": "66a79e83ddcc905d9d825ce2b6a7bcbde06228134e59fd79fb25abfb2a72eb6b"
+  },
+  {
+   "byteLength": 3529,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastExecutorThrowTest.kt",
+   "sha256": "3b5bdb3681b984eaa6409c4222243e0a8b0bb942aff77a07a7e9fcca34527746"
+  },
+  {
+   "byteLength": 13959,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastFieldParityTest.kt",
+   "sha256": "4619d742d00b453f4e4fad8e46ec3736c48de7ce59d86cc0664c7bd522e70fd1"
+  },
+  {
+   "byteLength": 1802,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastGeometryCommandEncoderTest.kt",
+   "sha256": "9ea495d3656e3d073078fc6310feeef2ba236857386575e520c3ad6184d3110f"
+  },
+  {
+   "byteLength": 2992,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastGeometryTest.kt",
+   "sha256": "bf7d7a6c27cf3e0ef4d19827d05520660042bed0e46888360349a351c0979661"
+  },
+  {
+   "byteLength": 9250,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastLifecycleTest.kt",
+   "sha256": "6e3c18c13da01c554cc8682bd67ddad5e91075e1813390e450718b45bead267b"
+  },
+  {
+   "byteLength": 18497,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastManualIntentTest.kt",
+   "sha256": "77ac5bad2cf1c67f6e322ee811eaa74dd2a70e03aa6847147da92a02b3dd0c6b"
+  },
+  {
+   "byteLength": 6914,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastNormalSliceTest.kt",
+   "sha256": "072c283408cc59581bfab48a778906f3d4565ece10d072d623c5550a37f88415"
+  },
+  {
+   "byteLength": 3010,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastOperationLogTest.kt",
+   "sha256": "bdbb666b64ab5fa0fba04da77d2f19d7332e32a53f281382aba3f9b603798c5a"
+  },
+  {
+   "byteLength": 14390,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastPlannerManifestTest.kt",
+   "sha256": "a74e33fcb4680c65128d1ce9a97c152e817339ed90252116e7eec3e937c8a370"
+  },
+  {
+   "byteLength": 3668,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastRecoveryTest.kt",
+   "sha256": "92998730bad3d10fb7d36ca41fdfa99eb77a34cecb90ddf5f47b45d07ca536a7"
+  },
+  {
+   "byteLength": 13824,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastRendererContractTest.kt",
+   "sha256": "765c5498c99acab222b91ca172e4bd31eb0efffbd2120d5fef78c18da2534e37"
+  },
+  {
+   "byteLength": 7537,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastRestartTest.kt",
+   "sha256": "a8324607f032e9b3fe40f1488e878aae6d94dbabeec84c562fb4946fe8d53779"
+  },
+  {
+   "byteLength": 12772,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastSessionStoreTest.kt",
+   "sha256": "4878eb70249c912d6d43668e863967c742bbe5311596473d59f87bc6bf94e1a4"
+  },
+  {
+   "byteLength": 4537,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastSwitchExecutionTest.kt",
+   "sha256": "ebc679c7cad680342466f186a2359427d7de6c959358f4fda2bcfc985a0ede29"
+  },
+  {
+   "byteLength": 14516,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastTransactionSafetyTest.kt",
+   "sha256": "2250db366f692beb637d10e1589df848d2da945a87886ff9b27a162652bc46a5"
+  },
+  {
+   "byteLength": 5227,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastUiAutomationProjectionTest.kt",
+   "sha256": "166ef6c50844d9af16ee7fa79e2da272733dab91fee515fb6db13ffb1c516035"
+  },
+  {
+   "byteLength": 17932,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastUiStateProjectorTest.kt",
+   "sha256": "f33baf959f98fb1c272a7948140c1bd94b60d9c941ef4c9073d1a1c666733577"
+  },
+  {
+   "byteLength": 2522,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/CastWarmMatrixTest.kt",
+   "sha256": "21d1733a5d136fe9fb29f0f7dc0c90034279392699a5deda7d691032f71ea0cd"
+  },
+  {
+   "byteLength": 2239,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/ExpectedLadder.kt",
+   "sha256": "fa83f70a620747130d5170cf432acfab0f7d1fb18f41d2cb24cc598e3c0a6e82"
+  },
+  {
+   "byteLength": 3908,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/v2/TwoPipelineStaticBoundaryTest.kt",
+   "sha256": "312ea5da1de75b6fb50aa53399b5277d04d486089bee3e92d5482aea1f2aef43"
+  },
+  {
+   "byteLength": 8087,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/navigation/NavigationOutputIsolationTest.kt",
+   "sha256": "68c4edb6ca714c8f71a0579157cfed1af85da8e8df7b7563016eccc5b2b624e7"
+  },
+  {
+   "byteLength": 13410,
+   "class": "TEST_SOURCE",
+   "path": "app/src/test/java/com/byd/clusternav/navigation/NavigationSessionCoordinatorTest.kt",
+   "sha256": "c5c56c7a4f278f37481fdfb6c02aeda29ffa6fb5bc913b48ef66bbc8d40cd344"
+  },
+  {
+   "byteLength": 6730,
+   "class": "SUPPORTING_DOCUMENT",
+   "path": "docs/HISTORICAL-ARTIFACTS.md",
+   "sha256": "97605696b0324fe27227dc5ca6c16262045274224087c486d88851cf57ed8154"
+  },
+  {
+   "byteLength": 2434,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/AUTONOMOUS-RESUME.md",
+   "sha256": "d79b9e8f46b0640a673c09a559541e40fdffa31657ed8e25e41f0ee99694825b"
+  },
+  {
+   "byteLength": 29637,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/EXECUTE-two-track-rebaseline.md",
+   "sha256": "92e26eb31ff04bf1c6b5249dfecdf75a4f989f57381ae86d91ed5a120687de5f"
+  },
+  {
+   "byteLength": 7435,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/HANDOFF-2026-07-24-v066-freezeproof.md",
+   "sha256": "d2053a6381c175d365132922f3ab15148354da63dab261dcd1d83fc4ec9d25c6"
+  },
+  {
+   "byteLength": 32726,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/HANDOFF-2026-07-25-v069-bootstrap-blocked.md",
+   "sha256": "a557ffe772c3fc548feaa3a32cada449128eac7d7e0e3f7974d041f276de7d81"
+  },
+  {
+   "byteLength": 5348,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/HANDOFF-2026-07-25-v071-offcar-exact-source.md",
+   "sha256": "ecf942c2a0ec449468a5f54f3ca73f5be1b6fc57e5548e7f1fd1f029abf42dcb"
+  },
+  {
+   "byteLength": 16680,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/HANDOFF-2026-07-25-v071-product-completion-planning.md",
+   "sha256": "046bfb75e21fe7fdda53002c30f65fcc623c8dc3e0e2358ea7f5fd8e66894bcc"
+  },
+  {
+   "byteLength": 6551,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/HANDOFF-2026-07-26-v072-field-execution.md",
+   "sha256": "746fdc47504775f7a0ba68495dd5f517b5ebe2426d179246f1489ba9ff4d742c"
+  },
+  {
+   "byteLength": 13277,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/research-aosp-wm.md",
+   "sha256": "25f91ac401de6688dc3514ba65c4ca2d4c67b24a1769c52f5beb29a3315bb599"
+  },
+  {
+   "byteLength": 13837,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/research-evidence-audit.md",
+   "sha256": "f2369bc22c15096506bb383668a01861ef0cfd09b5451b48a966c7d9e1d592d2"
+  },
+  {
+   "byteLength": 13860,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/review-errorhandling.md",
+   "sha256": "bec24c9866ac92d4c2a8daf9cdddd5ba31aa76483351016b92def693217a39d4"
+  },
+  {
+   "byteLength": 13699,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/review-projection-cpaa.md",
+   "sha256": "918ae75d993707e7dac6acb98bf95a4ec7fbb59deab5df9445d31a88019ffaf1"
+  },
+  {
+   "byteLength": 6805,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/stage-impl-cpaa-done.md",
+   "sha256": "5d08626506be3edf67de641f28f762ba030fcddc304ade48d68919a009ba3e9e"
+  },
+  {
+   "byteLength": 3794,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/stage-impl-hud-done.md",
+   "sha256": "ae60b8bd5a5e8e416b8c83788fb4eb8647a82eba5791663d286838d3cf6fe9ae"
+  },
+  {
+   "byteLength": 5680,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/stage-impl-swap-done.md",
+   "sha256": "bb980c7bde701db4e1967617a34f8e1b74cdee28e86fc8ba16cca3417e98ab93"
+  },
+  {
+   "byteLength": 4730,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-autonomous-progress.md",
+   "sha256": "08b48f8261ab7ddccb2c1eb45359df7779e035d7458b8faf915e2306ac11dc48"
+  },
+  {
+   "byteLength": 8424,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-offcar-review.md",
+   "sha256": "f7c8f6dbb3d657a5bc1dcd276c960997775d329a5279bff23276a4a4d7f0e947"
+  },
+  {
+   "byteLength": 5158,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-senior-review.md",
+   "sha256": "35023851bb68454bc79cd151901fdb52d13e33556c6fff4344a9a4ab423bb22d"
+  },
+  {
+   "byteLength": 3681,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-spec-approvals.md",
+   "sha256": "67013b1e00b9eb72c1a293ed3c3c1fab6cf971c1e5ff10ba73a300ae81168ab5"
+  },
+  {
+   "byteLength": 5623,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-stage-0-done.md",
+   "sha256": "956d0cedec16e0574240367605ca00323a7d9c10a2fb8fb800bcd6e737db935b"
+  },
+  {
+   "byteLength": 29265,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-stage-1-done.md",
+   "sha256": "5dd27a815e20ea0ac94ebd2809bb91c86899f0fb57c5ae175f9100c37aa40d0a"
+  },
+  {
+   "byteLength": 11142,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-stage-2-done.md",
+   "sha256": "4210d3d9db1049191d2b9e15d0f8673ac8f54129ab795f1583080d13df1f6844"
+  },
+  {
+   "byteLength": 4949,
+   "class": "EXECUTION_HANDOFF",
+   "path": "docs/_handoff/two-track-vehicle-ready.md",
+   "sha256": "398ea05f20841ca8725d0afda04d27e58e3a773980f0ea9d1512ddd69e7ab87b"
+  },
+  {
+   "byteLength": 20326,
+   "class": "EVIDENCE_DESIGN",
+   "path": "docs/design/cluster-cast-evidence.html",
+   "sha256": "665857f5bc4e2c28a01b944e5efe4aabb0aaac98befe64477ebdd00b12f4f182"
+  },
+  {
+   "byteLength": 17159,
+   "class": "EVIDENCE_DESIGN",
+   "path": "docs/design/navigation-hud-evidence.html",
+   "sha256": "8f7a74741324035d8e94fe67614dc4e2bef1c948324255c33112fb21ace2c7bc"
+  },
+  {
+   "byteLength": 10504,
+   "class": "VEHICLE_KIT",
+   "path": "docs/diagnostics/VEHICLE-TEST-V2.md",
+   "sha256": "778b35a70d4e4433d4c12b26ed8a4b7b72ec8e43bcc99d68df084aca1e6dfe6a"
+  },
+  {
+   "byteLength": 14625,
+   "class": "EVIDENCE_DESIGN",
+   "path": "docs/review/HANDOFF-2026-07-23-oncar-freeze.md",
+   "sha256": "c4d45f18919a14ec23cc01e17e52cf330d814c4973bfadb41ac170aa2cb306d5"
+  },
+  {
+   "byteLength": 19134,
+   "class": "EVIDENCE_DESIGN",
+   "path": "docs/review/HANDOFF-2026-07-23.md",
+   "sha256": "dd4f7afd266ccd7c61ad7886315893c74aace41d89373a233352c7826648e775"
+  },
+  {
+   "byteLength": 19183,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/cast-ui-state-v2.schema.json",
+   "sha256": "7894d8ea541e26bcff7ef2ea82066c7d0fa1f550f0a8fe6f8a8a0077ed15e4bb"
+  },
+  {
+   "byteLength": 112246,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/cluster-cast-rebaseline.html",
+   "sha256": "500fb77e783e54f06b45f7565dfe68d3b786c6a9e5d2348d7c2af15f447f40ec"
+  },
+  {
+   "byteLength": 55806,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/cluster-cast-v070-manual-cold-intent.html",
+   "sha256": "c1f071dc3fb2753443c915bb80fb76840403f4cff8682760b8ad8d71907d07ab"
+  },
+  {
+   "byteLength": 77561,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/cluster-cast-v071-product-completion.html",
+   "sha256": "7d06d43b818c030fda577fce31b544c76ff2848bda0368961094e1991d89ac65"
+  },
+  {
+   "byteLength": 45039,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/clusternav-two-track-final-plan.html",
+   "sha256": "0384f1205c6303e9680bb49e2c1b334d41f1f545bea68f406afffd4616c8fe23"
+  },
+  {
+   "byteLength": 103408,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/clusternav-uxui-rebaseline.html",
+   "sha256": "0a37f57abb01fa6a03184f2049b0ccf80d7128b7fcf2eb145bd7b60102db75a2"
+  },
+  {
+   "byteLength": 35291,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/dead-reckon-revalidation.html",
+   "sha256": "1a853493dcd48885e7e17bba85571e98337e740505c09047ccd7d8055d77e190"
+  },
+  {
+   "byteLength": 79711,
+   "class": "CANONICAL_SPEC",
+   "path": "docs/specs/freeze-proof-cluster-switch.html",
+   "sha256": "8538e3d8897b493a6c01ecf5b70bcc6c07738ddce1f32baa95a358cc1139d014"
+  },
+  {
+   "byteLength": 2134,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/orchestrator/resume-clusternav.sh",
+   "sha256": "d6af0a29f6df7c2bbf7443668357c24df7cab66435ad40d182d4fc1251dc698a"
+  },
+  {
+   "byteLength": 8007,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/auto-smoke-test.sh",
+   "sha256": "809f307749221a5e80feb7e6cb653ba5e19e437a0bb75faba52b9091e238247d"
+  },
+  {
+   "byteLength": 1070,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/capture-evidence.sh",
+   "sha256": "8d4223e12690426872b9a30098b0a93317767ff90b83d94ecd484fdabe6085e5"
+  },
+  {
+   "byteLength": 2135,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/common.sh",
+   "sha256": "96be4690c6e280f00b5fb07a1eca8682c64b2761f58998ae188081fe32e8072d"
+  },
+  {
+   "byteLength": 964,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/install-test-apk.sh",
+   "sha256": "d248e8e19f498853fbdda43d46da4ae5c04db076a524831e62b28fac0cd65d02"
+  },
+  {
+   "byteLength": 10171,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/listen-nav-signals.sh",
+   "sha256": "630452e0cc49dadb67b0f2a6ef19af1861dff6b407a28a3071b49ee324563987"
+  },
+  {
+   "byteLength": 706,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/preflight.sh",
+   "sha256": "f71d97d06d9678cc83f9d1f7e18d6bc0323e5d6e058cb8eb022774e38bd7fc87"
+  },
+  {
+   "byteLength": 2723,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/run-cast-matrix.sh",
+   "sha256": "33d7a7e9cb81959b8a8a0581a32edc2d54d50ba5eaf2585437effffe81574326"
+  },
+  {
+   "byteLength": 1428,
+   "class": "EXECUTION_SCRIPT",
+   "path": "scripts/vehicle/run-navigation-matrix.sh",
+   "sha256": "bd9861a0a771759d0c13f645fd5ef1918b364b0aea20aea35cf85ad0f038513d"
+  }
+ ],
+ "schema": "clusternav.exact-source/v1",
+ "sourceId": "92a95793079cc2dca717d0645c69431c0005fb3145831ae498d48cd16eda010e",
+ "trackedDiff": {
+  "byteLength": 308656,
+  "producer": "GIT_OPTIONAL_LOCKS=0 git diff --binary --no-ext-diff HEAD",
+  "sha256": "4987f8583d2e6db4c9cf62096e1de93d2a0234315425f0f9b148b5ea4dde6dbc"
+ },
+ "version": {
+  "label": "OFF-CAR EXACT-SOURCE ONLY · FIELD-EXECUTION CORRECTION",
+  "versionCode": 72,
+  "versionName": "0.72"
+ }
+}

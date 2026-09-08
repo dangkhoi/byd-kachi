@@ -1,0 +1,104 @@
+# ─── Android / Gradle build ───────────────────────────────
+build/
+.authorized-build/
+.gradle/
+*.apk
+# bản phát hành cho nhóm tải (release-signed, cùng chữ ký):
+!apk/ClusterNav-*-release.apk
+*.aab
+*.ap_
+*.dex
+local.properties*
+.cxx/
+app/.jqwik-database
+
+# ─── Signing keys (KHÔNG commit — giữ local, share riêng) ──
+keystore.properties
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+*.crt
+*.cert
+*.csr
+.env
+.env.*
+!.env.example
+!.env.template
+**/credentials.json
+**/service-account*.json
+**/firebase-*-adminsdk-*.json
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.example.tfvars
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+# ─── Local dev quick-reference (machine paths + vehicle IP — LOCAL ONLY, never commit) ──
+DEV-LOCAL.md
+# ─── IDE / OS ─────────────────────────────────────────────
+.idea/
+*.iml
+.DS_Store
+*.swp
+# ─── Logs & dữ liệu xe (PII: GPS/nhà/email/token — TUYỆT ĐỐI không public) ──
+dr_logs/
+*.log
+docs/diagnostics/carlog/
+docs/diagnostics/carlog2/
+# Chặn MỌI thư mục dump xe theo ngày (chứa IP nội bộ, SSID/BSSID WiFi, kê khai app) — chỉ 2 tên cứng
+# ở trên không bắt được thư mục có ngày, nên carlog-2026-07-21/ từng lọt. Whitelist file phân tích nếu cần.
+docs/diagnostics/carlog-*/
+docs/diagnostics/log-nav-debug.txt
+# Dump/trace on-car theo phiên (WM NPE traces, castlog, IP nội bộ, tên app) — PII, TUYỆT ĐỐI không public
+oncar-*/
+# ─── Không thuộc ClusterNav (PoSound / tooling / audio / bên thứ 3) ──
+tools/*
+!tools/re/
+tools/re/*
+!tools/re/manifest.json
+*.wav
+apks/
+# ─── Local Kiro autonomous orchestrator state (session ID, locks, logs) ───
+.kiro/runtime/
+# Python tooling cache
+__pycache__/
+*.pyc
+# Local agent config (workspace steering/settings — not product source)
+.kiro/
+# apk/ClusterNav-*-release.apk = kênh OTA self-test (README, từ 1.11): release-signed cùng key, TRACKED
+# để xe tự cập nhật (whitelist "!apk/ClusterNav-*-release.apk" ở đầu file). Debug/other .apk vẫn bị "*.apk" chặn.
+# Written by the authorized build; regenerated every time, so it is never source.
+docs/_handoff/vehicle-candidate.json
+# Attestation for an already-committed tree: the commit sha is the provenance, so this
+# file is a build gate artifact, regenerated whenever HEAD moves.
+docs/_handoff/*-committed-exact-source.json
+docs/_handoff/*-check.json
+oncar-emulator-*/oncar-q1-*/
+oncar-carexec-*/ui-review-*/
+# ─── Session on-car / emulator artifacts (screenshots + CAN/config dumps) ──
+# PII / vehicle telemetry (GPS-derived nav, road names, CAN frames) — NEVER commit.
+/emu_*.png
+scripts/vehicle/*.png
+scripts/vehicle/doorA_*.txt
+scripts/vehicle/doorB_*.txt
+
+# Vehicle drive telemetry (nav_log CSV + cluster screenshots) — road-name column reveals the
+# owner's real commute route (location PII); the repo is public/OTA. Keep raw logs LOCAL only.
+# Aggregate analysis lives in docs/diagnostics/*.md (no route), which IS committed.
+docs/diagnostics/nav-logs/
+
+# Shelved old release/vehicle-test builds — kept locally, NOT committed (closeout 1.30).
+# apk/ keeps only the latest ClusterNav-<ver>-release.apk (OTA payload) tracked via the whitelist above.
+apk/_archive-old-builds/
+
+# B3.52 SVG nháp (input cục bộ, không phải nguồn) — không commit
+scratchpad/

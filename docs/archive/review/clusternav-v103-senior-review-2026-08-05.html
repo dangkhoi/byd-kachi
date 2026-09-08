@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav v1.03 — Senior Refactor Review</title>
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem('clusternav-review-theme');
+    var dark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.classList.add('dark');
+  } catch (_) {}
+})();
+</script>
+<style>
+:root {
+  --bg:#f5f5f7; --panel:#ffffff; --panel2:#f0f1f4; --text:#19191d; --muted:#666a73;
+  --line:#d7d9df; --blue:#0a66c2; --green:#2f7d4a; --amber:#a15c00; --red:#b42318;
+  --purple:#7047a8; --shadow:0 16px 46px rgba(24,26,34,.08); --code:#f1f2f5;
+  --p0:#8f1721; --p1:#c33d26; --p2:#ad6b00; --p3:#4f6f8f;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+html.dark {
+  --bg:#111216; --panel:#1a1c22; --panel2:#22252d; --text:#f2f3f5; --muted:#a9adb7;
+  --line:#343843; --blue:#65aef5; --green:#70c98d; --amber:#f0b35f; --red:#ff7b72;
+  --purple:#b39be4; --shadow:0 18px 54px rgba(0,0,0,.35); --code:#242730;
+  --p0:#ff6b72; --p1:#ff8a65; --p2:#f2bd64; --p3:#8db8df;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.58}
+a{color:var(--blue)} code{font-family:var(--mono);font-size:.9em;background:var(--code);border-radius:5px;padding:.08rem .34rem;overflow-wrap:anywhere}
+button{font:inherit}.page{max-width:1180px;margin:0 auto;padding:26px 22px 90px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.theme{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:8px 13px;cursor:pointer}
+.hero{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:24px;padding:34px;box-shadow:var(--shadow)}
+h1{font-family:var(--display);font-size:clamp(32px,5vw,56px);line-height:1.04;letter-spacing:-.04em;margin:8px 0 14px;max-width:900px}.subtitle{font-size:18px;color:var(--muted);max-width:920px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 11px;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.verdict{margin-top:24px;border-left:5px solid var(--red);background:color-mix(in srgb,var(--red) 8%,var(--panel));border-radius:14px;padding:17px 19px}.verdict strong{color:var(--red);font-size:19px}.verdict p{margin:5px 0 0}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:22px 0 42px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}.stat b{font-family:var(--display);font-size:32px;line-height:1}.stat small{display:block;color:var(--muted);margin-top:7px}.stat.danger b{color:var(--red)}.stat.good b{color:var(--green)}
+nav.toc{position:sticky;top:10px;z-index:5;display:flex;overflow:auto;gap:7px;padding:8px;margin:0 0 34px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px}nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:12px;padding:6px 9px;border-radius:8px}nav.toc a:hover{background:var(--panel);color:var(--text)}
+section{scroll-margin-top:70px;margin:0 0 48px}.head{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:18px}.num{font-family:var(--mono);font-size:12px;color:var(--muted)}h2{font-family:var(--display);font-size:28px;letter-spacing:-.025em;margin:0}h3{font-size:18px;margin:24px 0 10px}p{margin:0 0 12px}.muted{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:19px}.card h3,.card h4{margin:0 0 8px}.card p:last-child{margin-bottom:0}
+.arch{display:grid;grid-template-columns:1fr 58px 1fr;align-items:stretch;gap:8px}.arch-col{border:1px solid var(--line);border-radius:18px;padding:18px;background:var(--panel)}.arch-col.good{border-top:4px solid var(--green)}.arch-col.bad{border-top:4px solid var(--red)}.arrow{display:grid;place-items:center;color:var(--muted);font-size:26px}.node{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:9px}.node.bad{border-color:color-mix(in srgb,var(--red) 50%,var(--line));background:color-mix(in srgb,var(--red) 7%,var(--panel))}.node small{display:block;color:var(--muted)}
+.sev{font-family:var(--mono);font-weight:700;font-size:12px}.sev.p0{color:var(--p0)}.sev.p1{color:var(--p1)}.sev.p2{color:var(--p2)}.sev.p3{color:var(--p3)}
+.finding{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px 18px;margin-bottom:11px}.finding.p0{border-left:5px solid var(--p0)}.finding.p1{border-left:5px solid var(--p1)}.finding.p2{border-left:5px solid var(--p2)}.finding h4{font-size:15px;margin:0 0 6px}.finding p{color:var(--muted);margin:0}.finding .refs{margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:15px;background:var(--panel)}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--panel2)}tr:last-child td{border-bottom:0}.status{font-weight:700;white-space:nowrap}.fail{color:var(--red)}.partial{color:var(--amber)}.pass{color:var(--green)}.na{color:var(--muted)}
+pre{margin:0;background:#17191f;color:#e9ebef;border-radius:14px;padding:17px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.58}.dark pre{background:#0b0c0f}.evidence{display:grid;grid-template-columns:1fr 1fr;gap:14px}.cmd{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}.cmd .result{font-family:var(--mono);font-size:12px;margin-top:9px}.result.ok{color:var(--green)}.result.bad{color:var(--red)}
+.reco{counter-reset:rec}.reco .card{position:relative;padding-left:66px}.reco .card:before{counter-increment:rec;content:counter(rec);position:absolute;left:20px;top:18px;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--text);color:var(--bg);font-family:var(--mono);font-weight:700}.reco ul{margin:8px 0 0;padding-left:18px}.reco li{margin:4px 0}
+.note{background:color-mix(in srgb,var(--amber) 9%,var(--panel));border:1px solid color-mix(in srgb,var(--amber) 35%,var(--line));border-radius:13px;padding:14px 16px}.good-note{background:color-mix(in srgb,var(--green) 8%,var(--panel));border-color:color-mix(in srgb,var(--green) 35%,var(--line))}
+footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:12px}.reviewers{display:flex;flex-wrap:wrap;gap:8px}.reviewers span{border:1px solid var(--line);border-radius:999px;padding:6px 9px;background:var(--panel)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}.grid3{grid-template-columns:1fr}.arch{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}.evidence{grid-template-columns:1fr}}
+@media(max-width:650px){.page{padding:18px 13px 60px}.hero{padding:24px}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.topbar{align-items:flex-start}h1{font-size:36px}}
+@media print{.theme,nav.toc{display:none}.page{max-width:none;padding:0}.hero,.card,.finding,.stat{box-shadow:none;break-inside:avoid}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="eyebrow">ClusterNav · v1.03 remediation · report-only review</div>
+    <button class="theme" id="themeToggle" type="button" aria-label="Đổi giao diện sáng tối">◐ Theme</button>
+  </div>
+
+  <header class="hero">
+    <div class="eyebrow">Senior architecture &amp; scope review · 2026-08-05</div>
+    <h1>Refactor đã compile và test xanh,<br>nhưng chưa đạt contract đã duyệt.</h1>
+    <p class="subtitle">Review đối chiếu working tree hiện tại với <code>clusternav-v102-review-remediation.html</code>, tập trung vào scope completeness, correctness, boundary shape, kiến trúc hai track, test evidence và release trust. Không có production code nào được sửa trong pass này.</p>
+    <div class="meta">
+      <span class="pill"><span class="dot" style="background:var(--red)"></span><b>Verdict</b>&nbsp;NOT APPROVED</span>
+      <span class="pill">Owner&nbsp;<b>Đăng Khôi · dangkhoi</b></span>
+      <span class="pill">Branch&nbsp;<code>main</code></span>
+      <span class="pill">Baseline HEAD&nbsp;<code>8842ffe</code></span>
+      <span class="pill">Review mode&nbsp;<b>report-only</b></span>
+    </div>
+    <div class="verdict"><strong>BLOCK SHIP / BLOCK VEHICLE CANDIDATE</strong><p>Có đường CP/AA có thể vào freeform/split, release hiện debuggable + debug-sign fallback, collector không xác thực APK, Cast vẫn commit lạc quan, output clear không đáng tin và widget provider chưa độc lập. T8 không nên bắt đầu từ source này.</p></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat danger"><b>3</b><small>P0 deduplicated</small></div>
+    <div class="stat danger"><b>16</b><small>P1 deduplicated</small></div>
+    <div class="stat"><b>6</b><small>P2 deduplicated</small></div>
+    <div class="stat good"><b>799</b><small>fresh JVM tests pass</small></div>
+    <div class="stat danger"><b>10</b><small>release lint errors</small></div>
+    <div class="stat"><b>−5,464</b><small>deleted lines in tracked diff</small></div>
+  </div>
+
+  <nav class="toc" aria-label="Mục lục">
+    <a href="#summary">Executive summary</a><a href="#architecture">Architecture</a><a href="#findings">Findings</a><a href="#scope">R1–R20</a><a href="#boundaries">Boundaries</a><a href="#tests">Evidence</a><a href="#freshness">Tech freshness</a><a href="#recommendations">Recommendations</a><a href="#review-log">Review log</a>
+  </nav>
+
+  <section id="summary">
+    <div class="head"><span class="num">01</span><h2>Executive summary</h2></div>
+    <div class="grid3">
+      <div class="card"><h3>Điểm tốt</h3><p>Gradle 9.6.1 có wrapper SHA; AGP 9.3.1 + SDK 37 + JDK 17 compile được; Kotlin 2.4.10 là stable. Immutable Navigation frame đã thêm route/ETA fields. Fresh compile/resources và 799 JVM tests đều pass. Current-content sensitive scan sạch.</p></div>
+      <div class="card"><h3>Điểm quyết định</h3><p>Phần “owner” mới chủ yếu bọc queue quanh transport cũ nhưng chưa có typed applied result. Cast chưa có operation owner/deadline/postcondition đúng nghĩa. V2 vẫn compiled và diagnostics vẫn đọc V2. Test xanh đến sau khi xóa hàng nghìn dòng test mà gần như không có replacement tests cho boundary mới.</p></div>
+      <div class="card"><h3>Kết luận scope</h3><p>T0 hoàn tất; T1 chỉ đạt toolchain, chưa đạt release hardening; T2–T5 còn contract gaps; T6 không phải active-suite rebaseline đúng nghĩa; T7 chưa clean và chưa có current exact-source manifest; T8 chưa bắt đầu. Tuyên bố “T2–T7 done” không được evidence hiện tại hỗ trợ.</p></div>
+    </div>
+    <div class="note" style="margin-top:16px"><b>Risk signal:</b> tracked diff có <b>302 insertions / 5.464 deletions</b>. Baseline trong spec ghi 938 tests (599 + 309 + 30); fresh suite hiện có 799 tests—giảm 139 tests. Không có direct test nào tham chiếu <code>NavigationHudOwner</code>, <code>NavigationSpeedSignOwner</code>, <code>VietMapWidgetBridge</code> hoặc per-slot freshness fields.</div>
+  </section>
+
+  <section id="architecture">
+    <div class="head"><span class="num">02</span><h2>Architecture verdict</h2></div>
+    <div class="arch" role="img" aria-label="So sánh kiến trúc target và hiện tại">
+      <div class="arch-col good">
+        <h3>Target đã duyệt</h3>
+        <div class="node"><b>Navigation session</b><small>immutable frame + session/sequence</small></div>
+        <div class="node"><b>Lane · HUD · Speed sign</b><small>mỗi output đúng một bounded owner, typed applied result</small></div>
+        <div class="node"><b>VietMap Speed / Alerts</b><small>reason + timestamp + generation độc lập</small></div>
+        <div class="node"><b>Simplified Cast</b><small>bounded operation owner + deadlines + exact postconditions</small></div>
+        <div class="node"><b>Home · Bubble · Diagnostics</b><small>read/dispatch cùng một simplified runtime</small></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="arch-col bad">
+        <h3>Working tree hiện tại</h3>
+        <div class="node bad"><b>Frame identity bị mất</b><small>NavigationFrame → NavState → synthetic frame; speed dùng distanceMeters</small></div>
+        <div class="node bad"><b>Queue kép / result giả</b><small>HudAdapter + NavigationHudOwner; HAL string chỉ log</small></div>
+        <div class="node bad"><b>Widget vẫn coupled</b><small>combined gate/global reason xóa speed fresh; không generation/reason riêng</small></div>
+        <div class="node bad"><b>Cast serial nhưng không bounded</b><small>unbounded executor, raw dadb I/O, sleep, Stop nằm sau queue</small></div>
+        <div class="node bad"><b>V2 vẫn active</b><small>29 core V2 production files; DiagActivity dùng CastAndroidRuntime/CastFacade</small></div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:12px">Architecture direction là đúng (simplified runtime, typed models, per-output isolation), nhưng implementation hiện tại tạo thêm adapter/worker mà chưa đóng physical truth, và chưa retire control plane cũ.</p>
+  </section>
+
+  <section id="findings">
+    <div class="head"><span class="num">03</span><h2>Severity-ranked findings</h2></div>
+
+    <h3>P0 · Critical / block ship</h3>
+    <div class="finding p0"><h4><span class="sev p0">[P0]</span> F-01 · CP/AA vẫn có thể vào freeform/split hoặc arbitrary stack</h4><p><code>AppMover</code> chọn stack đầu tiên theo display ID, không chứng minh standard/fullscreen. <code>CastSlot</code> luôn ép <code>AppType.NORMAL</code>; Bubble, Home picker và split autostart đều có thể dispatch protected package vào slot. Đây chính là crash path SurfaceFlinger mà spec yêu cầu fail-closed.</p><div class="refs">AppMover.kt:35–41, 86–112 · SimpleCastCoordinator.kt:237–257, 440–442 · BubbleActionDispatcher.kt:59–88 · MainActivityCastController.kt:167–178, 214–233</div></div>
+    <div class="finding p0"><h4><span class="sev p0">[P0]</span> F-02 · “release” đang debuggable và có debug-sign fallback</h4><p>Khi thiếu keystore, release dùng debug signing; đồng thời <code>isDebuggable=true</code>. Không có <code>vehicleTest</code> để cô lập diagnostic build. Artifact mang nhãn release vì vậy không đáng tin và không được phép public/vehicle candidate.</p><div class="refs">app/build.gradle.kts:24–31, 58–77</div></div>
+    <div class="finding p0"><h4><span class="sev p0">[P0]</span> F-03 · Collector không xác thực APK contract</h4><p>Collector tin variant/version từ Gradle config và chỉ kiểm tra “một file APK + timestamp”. Nó không đọc package, version, signer, debuggable flag hay variant từ APK. Một APK sai signer/sai package/debuggable vẫn có thể được ghi thành candidate hợp lệ.</p><div class="refs">app/build.gradle.kts:393–472</div></div>
+
+    <h3>P1 · High / fix before merge</h3>
+    <div class="grid2">
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Cast owner không bounded, timeout chỉ là comment</h4><p><code>Executors.newSingleThreadExecutor()</code> dùng queue không giới hạn; <code>Dadb.create</code>/<code>shell</code> không có deadline; nhiều sleep chạy trên cùng owner. Stop chỉ được enqueue sau I/O đang kẹt.</p><div class="refs">SimpleCastCoordinator.kt:26, 55–60, 127–143 · SimpleCastRuntime.kt:67–94</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Cast state vẫn commit lạc quan</h4><p>Full chỉ kiểm package visible, không exact task/stack/bounds. Split không verify landing/bounds; Stop bỏ qua return failure rồi Idle; resize/density lưu prefs dù command fail; occupied slot bị overwrite; whitelist flag set dù shell fail.</p><div class="refs">SimpleCastCoordinator.kt:168–212, 253–329, 437–447 · CastDensityControl.kt:14–39</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Ambiguity chọn “first”, không reject</h4><p>Foreground/task/stack/adoption đều chọn match đầu tiên hoặc substring. Comment hứa null khi ambiguous nhưng parser trả package đầu tiên; regex package chưa escape. Có thể move/resize/adopt sai task.</p><div class="refs">CastStackParser.kt:54–101 · AppMover.kt:107–162 · SimpleCastCoordinator.kt:112–118</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> HUD stop tự hủy clear</h4><p><code>stop()</code> enable worker, enqueue clear rồi gọi <code>stopSession()</code> ngay; reset cancel task/clear queue. Clear frame lại đi qua <code>writeNavFrame</code>, không phải <code>clearNavFrame</code>. HUD có thể giữ stale content và owner vẫn enabled.</p><div class="refs">NavigationHudOwner.kt:53–59 · ClusterLaneAdapter.kt:175–203</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> HAL outcome không typed; dedup theo enqueue</h4><p><code>NavigationFrameDelivery</code> trả <code>Unit</code>; HAL string chỉ log. HUD/speed cache cập nhật trước submit/apply; queue reject, timeout hoặc HAL failure vẫn chặn retry cùng value. <code>push(null)</code> lần đầu có thể trả ACCEPTED mà không clear.</p><div class="refs">NavigationModels.kt:189–203 · NavigationSpeedSignOwner.kt:23–64 · NavigationHudOwner.kt:26–88</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Immutable frame bị mất identity và type-reinterpret</h4><p>Authoritative <code>NavigationFrame</code> bị đổi thành <code>NavState</code>, mất session/source/sequence; HUD tạo synthetic <code>hud-direct</code>; speed-sign nhét limit vào <code>distanceMeters</code>. Không thể correlate/fence output theo sequence thật.</p><div class="refs">NavRepository.kt:92–111 · NavigationHudOwner.kt:72–104 · NavigationSpeedSignOwner.kt:69–84</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Speed/Alerts “independent” chỉ ở metadata</h4><p>Bridge tính per-slot freshness nhưng lại gọi parser qua combined minimum timestamp + global reason. Alerts stale/unbound có thể khiến parser null speed trong khi <code>speedFreshness=FRESH</code>; consumer nhận null và clear biển đúng lúc speed còn fresh.</p><div class="refs">VietMapWidgetBridge.kt:330–376 · VietMapWidgetTextParser.kt:84–115 · NavNotificationListener.kt:83–85</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Speed-sign lifecycle clear không đảm bảo</h4><p>Master OFF vẫn đăng ký widget listener; disconnect/destroy remove listener trước bridge stop nên không nhận unavailable clear; bootstrap null có thể bị dedup; stale clear là one-shot, không ack/retry.</p><div class="refs">NavNotificationListener.kt:43–61, 75–85 · NavigationSpeedSignOwner.kt:49–64</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Widget persistence/callback fail-open</h4><p>Mọi <code>commit()</code> result bị bỏ qua; delete ID lỗi vẫn xóa local recovery handle; consent-pending ID không có durable pending record; stale HostView/listener callback không có generation.</p><div class="refs">VietMapWidgetPrefs.kt:11–27 · VietMapWidgetBridge.kt:137–142, 167–255, 264–282, 440–449</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Bubble lifecycle và rapid taps không token-bound</h4><p>Anonymous state listener không remove; clear-cluster và split-autostart delayed work không cancel/generation-check; mỗi tap tạo raw Thread. Kết quả cũ có thể dispatch vào state mới hoặc giữ service/activity sau destroy.</p><div class="refs">FloatingBubbleService.kt:116–160 · BubbleActionDispatcher.kt:26–93 · MainActivityCastController.kt:67–70, 152–201</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Bubble zones không đạt automotive UX contract</h4><p>Zones cao 30dp, halves rộng 35dp; không có TouchDelegate. Zone vẽ disabled vẫn destructive: half đang dim có thể Stop full, full đang dim có thể Stop split. Content description không nêu action/reason.</p><div class="refs">FloatingBubbleService.kt:178–180, 245–254, 425–497, 558–561</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Home geometry/DPI trái contract</h4><p>Resize editor hardcode 1920×720 và 0,90–1920,630. Split tạo hai DPI buttons theo package dù density là display-global; tag <code>split_dpi</code> giữ stale closures khi occupant đổi.</p><div class="refs">MainActivityCastController.kt:365–451</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> V2 chưa retire, diagnostics đọc sai control plane</h4><p>Core vẫn compile 29 V2 production files. Bubble dùng V2 presentation types; notification/diagnostics còn “V2”; <code>DiagActivity</code> tạo <code>CastAndroidRuntime</code>/<code>CastFacade</code> và báo envelope/ledger không liên quan live <code>SimpleCastRuntime</code>.</p><div class="refs">DiagActivity.kt:13–61 · FloatingBubbleService.kt:28–29, 517–530 · core/.../clustercast/v2/</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Test suite được làm xanh chủ yếu bằng xóa test</h4><p>Tracked diff xóa 5.464 dòng, phần lớn test. Current suite giảm từ 938 xuống 799 tests. Không có replacement tests trực tiếp cho new output owners, widget bridge, per-slot freshness, clear retry, CP/AA stack proof hoặc UI lifecycle.</p><div class="refs">git diff --stat · current XML reports · direct test symbol scan: 0 matches</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> Release gates thiếu hoặc bị vô hiệu</h4><p>Không có <code>vehicleTest</code>; <code>lintVehicleTest</code> không tồn tại. <code>checkReleaseBuilds=false</code> + <code>abortOnError=false</code> khiến <code>lintRelease</code> xanh dù SARIF có 10 errors/141 warnings.</p><div class="refs">app/build.gradle.kts:58–77 · verified command output</div></div>
+      <div class="finding p1"><h4><span class="sev p1">[P1]</span> T7 exact-source readiness chưa tồn tại</h4><p>Không có exact-source manifest cho current 1.03 tree. <code>vehicle-candidate.json</code> vẫn trỏ 0.76. Candidate metadata ghi bằng <code>writeText</code> không atomic và source inputs chưa khai báo bằng <code>@InputFile(s)</code>.</p><div class="refs">docs/_handoff/vehicle-candidate.json · app/build.gradle.kts:329–362, 453–472</div></div>
+    </div>
+
+    <h3>P2 · Medium / required remediation</h3>
+    <div class="grid2">
+      <div class="finding p2"><h4><span class="sev p2">[P2]</span> Main-thread widget work</h4><p>Drawable bitmap hashing và PackageManager/provider scans chạy trên main mỗi update/tick; provider version persistence là write-only, không cache.</p></div>
+      <div class="finding p2"><h4><span class="sev p2">[P2]</span> Worker state vẫn có leak/wedge semantics</h4><p>Queued FutureTask bị deadline-cancel có thể không chạy finally để remove khỏi <code>activeTasks</code>; interrupt-ignoring I/O giữ worker vĩnh viễn; timeout reason có thể bị RuntimeException ghi đè.</p></div>
+      <div class="finding p2"><h4><span class="sev p2">[P2]</span> Code-health limits không đạt</h4><p><code>FloatingBubbleService.kt</code> 591 LOC, <code>MainActivityCastController.kt</code> 533 LOC, <code>app/build.gradle.kts</code> 505 LOC. Comment nói 56/40dp nhưng executable constant là 30dp.</p></div>
+      <div class="finding p2"><h4><span class="sev p2">[P2]</span> Kotlin migration warnings chưa đóng</h4><p>Fresh compile báo data-class copy visibility và expression-body return sẽ thành error ở Kotlin 2.5. Current 2.4.10 stable, nhưng migration debt đã được compiler chỉ rõ.</p></div>
+      <div class="finding p2"><h4><span class="sev p2">[P2]</span> Dependency reproducibility thiếu</h4><p>Không có <code>gradle/verification-metadata.xml</code> hoặc lockfile. Wrapper SHA chỉ bảo vệ Gradle distribution, không bảo vệ plugin/dependency artifacts.</p></div>
+      <div class="finding p2"><h4><span class="sev p2">[P2]</span> Persistence corruption clear chưa durable</h4><p>Navigation load fail-closed về null là tốt, nhưng bỏ qua <code>commit()==false</code>; corrupt bytes có thể tồn tại và lỗi lặp ở lần mở sau.</p></div>
+    </div>
+  </section>
+
+  <section id="scope">
+    <div class="head"><span class="num">04</span><h2>Scope completeness · R1–R20</h2></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>Verdict</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>R1</td><td class="status fail">❌ FAIL</td><td>Third active control plane remains through V2 runtime/diagnostics; “exactly two tracks” not proven.</td></tr>
+      <tr><td>R2</td><td class="status fail">❌ FAIL</td><td>29 core V2 production files remain compiled; DiagActivity uses V2 runtime/facade.</td></tr>
+      <tr><td>R3</td><td class="status fail">❌ FAIL</td><td>Only Full has weak package-visible check; split/return/resize/density optimistic.</td></tr>
+      <tr><td>R4</td><td class="status fail">❌ FAIL</td><td>Protected targets can enter slots/arbitrary stack/freeform; exact fullscreen proof absent.</td></tr>
+      <tr><td>R5</td><td class="status fail">❌ FAIL</td><td>Unbounded executor; no dadb deadlines; Stop cannot preempt pending work.</td></tr>
+      <tr><td>R6</td><td class="status fail">❌ FAIL</td><td>Failed return/resize/density can still alter state/prefs; occupied slot can be replaced.</td></tr>
+      <tr><td>R7</td><td class="status fail">❌ FAIL</td><td>Hardcoded 1920×720/800 remains in coordinator, protected placement and Home editor.</td></tr>
+      <tr><td>R8</td><td class="status fail">❌ FAIL</td><td>Listener/delay leaks, raw tap threads, 30×35dp zones, destructive disabled zones, two split DPI controls.</td></tr>
+      <tr><td>R9</td><td class="status partial">⚠ PARTIAL</td><td>Fields added and persisted, but original session/sequence is lost before physical outputs; synthetic/type-reinterpreted frames.</td></tr>
+      <tr><td>R10</td><td class="status fail">❌ FAIL</td><td>Queues exist but HUD has double queue; HAL result untyped; clear/dedup/applied truth broken.</td></tr>
+      <tr><td>R11</td><td class="status fail">❌ FAIL</td><td>No per-slot reason/generation; combined parser/global reason still couples providers.</td></tr>
+      <tr><td>R12</td><td class="status partial">⚠ PARTIAL</td><td>No self-grant found and manual command is shown for unavailable UI; denied/pending lifecycle remains incomplete.</td></tr>
+      <tr><td>R13</td><td class="status fail">❌ FAIL</td><td>Master OFF/disconnect/destroy/bootstrap clear missing or non-retryable; dedup is enqueue-based.</td></tr>
+      <tr><td>R14</td><td class="status partial">⚠ VEHICLE BLOCKED</td><td>HUD budget code/test agree at 20, but no Seal visual pass. On-car speed-sign write returned HAL string but did not render; not a pass.</td></tr>
+      <tr><td>R15</td><td class="status fail">❌ FAIL</td><td>Fresh suite passes, but V2 production/tests remain and removed coverage was not replaced for new architecture.</td></tr>
+      <tr><td>R16</td><td class="status partial">⚠ PARTIAL</td><td>Specified toolchain is current and compiles; dependency verification absent and compiler migration warnings remain.</td></tr>
+      <tr><td>R17</td><td class="status fail">❌ FAIL</td><td>No vehicleTest; unsafe release; non-gating lint; collector does not verify APK contract.</td></tr>
+      <tr><td>R18</td><td class="status fail">❌ FAIL</td><td>Three changed files exceed 500 LOC; stale V2/touch-size comments and unchecked persistence results remain.</td></tr>
+      <tr><td>R19</td><td class="status fail">❌ FAIL</td><td>Version 1.03 is configured, but no current exact-source manifest; vehicle-candidate still 0.76.</td></tr>
+      <tr><td>R20</td><td class="status na">⏸ NOT STARTED</td><td>SL6/Seal exact-candidate matrices and physical reboot rows are not executed; correctly cannot be closed off-car.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="boundaries">
+    <div class="head"><span class="num">05</span><h2>Boundary shape review</h2></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Producer → Consumer</th><th>Shape</th><th>Verdict</th><th>Why</th></tr></thead><tbody>
+      <tr><td>Notification → NavigationFrame</td><td>maneuver / distance / road / route / arrival</td><td class="partial">PARTIAL</td><td>Fields cross ingest/store, but <code>arrivalClock</code> validation is weak and output identity is later lost.</td></tr>
+      <tr><td>NavigationFrame → Lane/HUD</td><td>sessionId + source + sequence + content</td><td class="fail">MISMATCH</td><td>Converted to legacy NavState; output creates synthetic envelope and cannot fence authoritative sequence.</td></tr>
+      <tr><td>Output owner → HAL</td><td>typed applied result</td><td class="fail">MISSING</td><td>HAL returns String; worker sees only Unit/no exception and calls it completed.</td></tr>
+      <tr><td>Widget Speed → Snapshot</td><td>value + timestamp + freshness + reason + generation</td><td class="fail">MISMATCH</td><td>Timestamp/freshness fields exist; reason/generation missing; combined parser can null fresh value.</td></tr>
+      <tr><td>Snapshot → Speed sign</td><td>fresh valid limit or retryable clear</td><td class="fail">MISMATCH</td><td>One fire-and-forget push; clear can be deduped or lost and has no acknowledgement.</td></tr>
+      <tr><td>UI → CastSlot policy</td><td>closed target class + protected full-only rule</td><td class="fail">MISMATCH</td><td>CastSlot carries package/side only; coordinator reclassifies as NORMAL.</td></tr>
+      <tr><td>Shell observation → Cast state</td><td>exact task/display/stack/windowing/bounds</td><td class="fail">MISMATCH</td><td>Parser has no stack/windowing/bounds model; first/substring match becomes success.</td></tr>
+      <tr><td>Build config → Candidate metadata</td><td>actual package/version/variant/signer/debug</td><td class="fail">MISSING</td><td>Metadata is copied from Gradle properties, not inspected from APK.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="tests">
+    <div class="head"><span class="num">06</span><h2>Verification evidence</h2></div>
+    <div class="evidence">
+      <div class="cmd"><b>Fresh compile + JVM suite</b><pre>./gradlew --no-daemon --rerun-tasks \
+  :app:processDebugResources \
+  :app:compileDebugKotlin \
+  :core:test \
+  :app:testDebugUnitTest \
+  :car-integration:test</pre><div class="result ok">PASS · core 570 · app 218 · car 11 · failures/errors/skips 0</div></div>
+      <div class="cmd"><b>Required lint gate</b><pre>./gradlew :app:lintVehicleTest :app:lintRelease</pre><div class="result bad">FAIL · lintVehicleTest task not found</div></div>
+      <div class="cmd"><b>Release lint alone</b><pre>./gradlew :app:lintRelease</pre><div class="result bad">Process exits 0, but SARIF = 10 errors + 141 warnings</div></div>
+      <div class="cmd"><b>Current-content sensitive scan</b><pre>37 changed/untracked files
+private paths / RFC1918 / known credential formats</pre><div class="result ok">CLEAN for scanned patterns · no code sent externally</div></div>
+    </div>
+    <div class="note" style="margin-top:16px"><b>Interpretation:</b> green tests prove the remaining suite is internally consistent. They do not prove scope completeness because 139 tests disappeared versus the spec baseline, active V2 code remains, and direct replacement tests for the new critical boundaries are absent.</div>
+  </section>
+
+  <section id="freshness">
+    <div class="head"><span class="num">07</span><h2>Technology freshness</h2></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Technology</th><th>Configured</th><th>Review</th><th>Evidence / action</th></tr></thead><tbody>
+      <tr><td>Gradle</td><td>9.6.1</td><td class="pass">CURRENT</td><td>Official current release; wrapper SHA-256 pinned. JDK 17 satisfies Gradle 9 daemon requirement.</td></tr>
+      <tr><td>Android Gradle Plugin</td><td>9.3.1</td><td class="pass">CURRENT</td><td>Official AGP 9.3 release supports API 37 and requires Gradle ≥9.5/JDK 17. Build meets those baselines.</td></tr>
+      <tr><td>Kotlin JVM</td><td>2.4.10</td><td class="partial">CURRENT + WARNINGS</td><td>Official Kotlin docs list 2.4.10 stable (2026-07-14) and JDK 17 recommended. Compiler reports items that become errors in 2.5.</td></tr>
+      <tr><td>Dependency verification</td><td>Absent</td><td class="fail">OUTDATED PRACTICE</td><td>Official Gradle guidance recommends verification metadata and dependency locking; neither file/config exists.</td></tr>
+      <tr><td>dadb</td><td>2.0.0</td><td class="partial">BUILD-VERIFIED ONLY</td><td>Compile/tests pass after API migration, but transport deadline behavior is not implemented or documented by runtime evidence.</td></tr>
+      <tr><td>JUnit</td><td>6.1.2 BOM</td><td class="pass">SUITE VERIFIED</td><td>All remaining JVM tests execute successfully on JUnit Platform; test architecture coverage remains the issue.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted" style="margin-top:10px">Sources checked: Context7 official Gradle/Kotlin docs and official Android AGP 9.3 release notes. No dependency was changed in this report-only pass.</p>
+  </section>
+
+  <section id="recommendations">
+    <div class="head"><span class="num">08</span><h2>Prioritized recommendations</h2></div>
+    <div class="reco grid2">
+      <div class="card"><h3>Quarantine artifact pipeline</h3><p>Trước mọi candidate:</p><ul><li>Tạo <code>vehicleTest</code> riêng: release-key signed, debuggable=true.</li><li><code>release</code> non-debuggable, fail nếu thiếu release key, lint abort.</li><li>Collector inspect APK thật: package/version/variant/signer/debug flag.</li><li>Metadata publish bằng temp + atomic replace.</li></ul></div>
+      <div class="card"><h3>Fix Cast safety model</h3><p>Ưu tiên P0 crash path:</p><ul><li>Closed target classification ở boundary; CastSlot không thể chứa protected.</li><li>Parser typed stack/task/windowing/bounds; ambiguity reject.</li><li>Bounded operation owner với connect/read/op deadlines và close-on-timeout.</li><li>Stop là priority/preemptive control, không xếp sau I/O.</li></ul></div>
+      <div class="card"><h3>Make postconditions authoritative</h3><p>Mọi mutation phải trả typed outcome:</p><ul><li>Cast exact task lands + exact bounds.</li><li>Return exact task absent/moved to expected stack.</li><li>Resize/density persist chỉ sau observed apply.</li><li>Failure giữ occupant/state/preferences trước đó.</li></ul></div>
+      <div class="card"><h3>Repair Navigation outputs</h3><p>Không bọc thêm synthetic frame:</p><ul><li>Giữ original session/source/sequence tới physical owner.</li><li>Một owner/queue/cache cho mỗi output; bỏ queue kép.</li><li>HAL writer trả sealed success/failure.</li><li>Clear fence old work, execute, ack/retry; dedup theo applied state.</li></ul></div>
+      <div class="card"><h3>Make widget slots truly independent</h3><p>Tách domain model:</p><ul><li>Mỗi slot có value/timestamp/freshness/reason/generation.</li><li>Parser không dùng combined gate.</li><li>Generation-bind HostView/listener; durable pending ID cleanup.</li><li>Speed clear là state machine retryable cho OFF/stale/disconnect/destroy/bootstrap.</li></ul></div>
+      <div class="card"><h3>Rebuild active tests before deleting legacy</h3><p>Thay thế coverage, không chỉ xóa:</p><ul><li>Owner clear ordering, HAL fail, saturation, wedge, retry.</li><li>Widget independent freshness + lifecycle + commit failure.</li><li>Cast real-dump ambiguity, CP/AA stack proof, split/return/resize failure matrix.</li><li>Bubble rapid tap/recreate/48dp/accessibility; simplified diagnostics.</li></ul></div>
+      <div class="card"><h3>Finish UI lifecycle and geometry</h3><p>R8/R7 closure:</p><ul><li>Retain/remove listeners; cancel/token all delayed work.</li><li>Single tap token and visible reject/coalesce.</li><li>Touch targets ≥48dp; disabled means non-destructive.</li><li>Display-aware editor; one global split DPI control.</li></ul></div>
+      <div class="card"><h3>Re-run gates in order</h3><p>Chỉ chuyển T8 khi:</p><ul><li>Fresh compile/tests + replacement coverage pass.</li><li><code>lintVehicleTest</code> và <code>lintRelease</code> 0 errors.</li><li>0 actionable P0–P3 after repeat review.</li><li>Security CLEAN + current exact-source 1.03 manifest.</li></ul></div>
+    </div>
+  </section>
+
+  <section id="review-log">
+    <div class="head"><span class="num">09</span><h2>Review log &amp; limitations</h2></div>
+    <div class="grid2">
+      <div class="card"><h3>Independent audit stages</h3><div class="reviewers"><span>Navigation outputs</span><span>Widget boundary</span><span>Cast core</span><span>Cast UI</span><span>Build/release</span></div><p class="muted" style="margin-top:12px">Mỗi reviewer report-only, tối đa 5 files và một boundary; không chạy Git/Gradle và không patch. Primary reviewer đối chiếu cả hai đầu contract và chạy concrete verification.</p></div>
+      <div class="card"><h3>Review boundary</h3><p>Đã review working tree hiện tại, spec R1–R20/T1–T8, changed/new production code, relevant active consumers, build scripts, deleted test scope và current compiled V2 footprint.</p><p class="muted">Không build APK, không install, không vehicle test, không đóng firmware-dependent rows. Kết quả on-car speed-sign trước đó chỉ là research evidence và không được tính PASS.</p></div>
+    </div>
+    <div class="good-note note" style="margin-top:14px"><b>No patch statement:</b> review này chỉ tạo tài liệu báo cáo. Không production source, test, Gradle config, manifest hoặc artifact nào được sửa bởi review pass.</div>
+  </section>
+
+  <footer>
+    <b>ClusterNav v1.03 Senior Refactor Review</b> · Generated 2026-08-05 · Owner: Đăng Khôi · <code>dangkhoi</code><br>
+    Source of truth: <code>docs/specs/clusternav-v102-review-remediation.html</code> · Verdict: <span class="fail"><b>NOT APPROVED / INCOMPLETE</b></span>
+  </footer>
+</div>
+<script>
+(function () {
+  var btn = document.getElementById('themeToggle');
+  btn.addEventListener('click', function () {
+    document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('clusternav-review-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (_) {}
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  btn_secondary — DESIGN SYSTEM (Cockpit L2) · @style/Cockpit.Button.Secondary.Cyan face. Matches the
+  mockup `.btn.sec` (docs/specs/ui-visual-upgrade-l2.html): a @color/surface_2 fill + 1px @color/hairline_strong
+  stroke + 12dp corners; the label ink is cyan (set in the style). Selector adds pressed/disabled feedback
+  (pressed brightens the stroke to cyan). New drawable.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface" />
+            <corners android:radius="12dp" />
+            <stroke android:width="1dp" android:color="@color/hairline" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface_2" />
+            <corners android:radius="12dp" />
+            <stroke android:width="1dp" android:color="@color/accent_cyan" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface_2" />
+            <corners android:radius="12dp" />
+            <stroke android:width="1dp" android:color="@color/hairline_strong" />
+        </shape>
+    </item>
+</selector>

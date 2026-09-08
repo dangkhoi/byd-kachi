@@ -1,0 +1,146 @@
+{
+  "schema": "clusternav.offcar-milestone-pack/v1",
+  "milestone": "M1_NAV_HUD",
+  "corpusVerdict": "NOT_EXHAUSTIVE",
+  "truthState": "SOURCE_MINED_NOT_FIELD_PROVEN",
+  "visualPass": false,
+  "candidateCount": 5,
+  "blockedCount": 1,
+  "unknownCount": 4,
+  "D-M1-NAV-HUD": {
+    "state": "INERT_DATA_ONLY",
+    "visualPass": false,
+    "plans": [
+      {
+        "id": "OFFCAR-H1-NAV-MAP-PLAN",
+        "candidateId": "OFFCAR-H1-NAV-MAP",
+        "feature": "NAV_HUD",
+        "disposition": "UNKNOWN",
+        "reason": "Exact 2/1 call site exists; property access, type/provider config and prior remain unproven.",
+        "risk": "MEDIUM",
+        "evidenceIds": ["H1", "H4", "H7"],
+        "validationIssues": ["MISSING_EXPECTED_CONSUMER", "MISSING_PROPERTY_CONFIG", "MISSING_WRITE_ACCESS"],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H1"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":3,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":4,"phase":"READ","detail":"CONFIG:CATALOG:HUD_NAVIGATION_MAP"},
+          {"ordinal":5,"phase":"READ","detail":"PRIOR:CATALOG:HUD_NAVIGATION_MAP:PRIOR"},
+          {"ordinal":6,"phase":"PROPOSE","detail":"NAV_HUD_GATE:CATALOG:HUD_NAVIGATION_MAP:ENUM:ON:2:EVIDENCE=H1"},
+          {"ordinal":7,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:HUD_NAVIGATION_MAP:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":8,"phase":"OBSERVE","detail":"CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":9,"phase":"OBSERVE","detail":"HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":10,"phase":"INVERSE","detail":"RESTORE:CATALOG:HUD_NAVIGATION_MAP:PRIOR"},
+          {"ordinal":11,"phase":"INVERSE","detail":"VERIFY:CATALOG:HUD_NAVIGATION_MAP"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H1\\n2. READ EVIDENCE:H4\\n3. READ EVIDENCE:H7\\n4. READ CONFIG:CATALOG:HUD_NAVIGATION_MAP\\n5. READ PRIOR:CATALOG:HUD_NAVIGATION_MAP:PRIOR\\n6. PROPOSE NAV_HUD_GATE:CATALOG:HUD_NAVIGATION_MAP:ENUM:ON:2:EVIDENCE=H1\\n7. OBSERVE READ_BACK:CATALOG:HUD_NAVIGATION_MAP:PRIOR_OR_TYPED_VALUE\\n8. OBSERVE CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n9. OBSERVE HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n10. INVERSE RESTORE:CATALOG:HUD_NAVIGATION_MAP:PRIOR\\n11. INVERSE VERIFY:CATALOG:HUD_NAVIGATION_MAP"
+      },
+      {
+        "id": "OFFCAR-H2-HUD-SERVICE-PLAN",
+        "candidateId": "OFFCAR-H2-HUD-SERVICE",
+        "feature": "NAV_HUD",
+        "disposition": "UNKNOWN",
+        "reason": "Interface and client wrapper exist, but target service resolution and permission are unknown.",
+        "risk": "MEDIUM",
+        "evidenceIds": ["H2", "H4", "H7"],
+        "validationIssues": ["MISSING_EXPECTED_CONSUMER", "MISSING_PROPERTY_CONFIG", "MISSING_PROVIDER", "MISSING_WRITE_ACCESS"],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H2"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":3,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":4,"phase":"READ","detail":"CONFIG:CATALOG:HUD_SERVICE_NAVIGATION_MAP"},
+          {"ordinal":5,"phase":"READ","detail":"PRIOR:CATALOG:HUD_SERVICE_NAVIGATION_MAP:PRIOR"},
+          {"ordinal":6,"phase":"PROPOSE","detail":"HUD_SERVICE_GATE:CATALOG:HUD_SERVICE_NAVIGATION_MAP:BOOLEAN:true"},
+          {"ordinal":7,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:HUD_SERVICE_NAVIGATION_MAP:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":8,"phase":"OBSERVE","detail":"CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":9,"phase":"OBSERVE","detail":"HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":10,"phase":"INVERSE","detail":"RESTORE:CATALOG:HUD_SERVICE_NAVIGATION_MAP:PRIOR"},
+          {"ordinal":11,"phase":"INVERSE","detail":"VERIFY:CATALOG:HUD_SERVICE_NAVIGATION_MAP"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H2\\n2. READ EVIDENCE:H4\\n3. READ EVIDENCE:H7\\n4. READ CONFIG:CATALOG:HUD_SERVICE_NAVIGATION_MAP\\n5. READ PRIOR:CATALOG:HUD_SERVICE_NAVIGATION_MAP:PRIOR\\n6. PROPOSE HUD_SERVICE_GATE:CATALOG:HUD_SERVICE_NAVIGATION_MAP:BOOLEAN:true\\n7. OBSERVE READ_BACK:CATALOG:HUD_SERVICE_NAVIGATION_MAP:PRIOR_OR_TYPED_VALUE\\n8. OBSERVE CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n9. OBSERVE HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n10. INVERSE RESTORE:CATALOG:HUD_SERVICE_NAVIGATION_MAP:PRIOR\\n11. INVERSE VERIFY:CATALOG:HUD_SERVICE_NAVIGATION_MAP"
+      },
+      {
+        "id": "OFFCAR-H3-NAV-FUSION-PLAN",
+        "candidateId": "OFFCAR-H3-NAV-FUSION",
+        "feature": "NAV_HUD",
+        "disposition": "UNKNOWN",
+        "reason": "Fusion controls are source-backed gates without exact target config or inverse semantics.",
+        "risk": "MEDIUM",
+        "evidenceIds": ["H3", "H4", "H7"],
+        "validationIssues": ["MISSING_EXPECTED_CONSUMER", "MISSING_PROPERTY_CONFIG", "MISSING_PROVIDER", "MISSING_WRITE_ACCESS"],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H3"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":3,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":4,"phase":"READ","detail":"CONFIG:CATALOG:NAVIGATION_FUSION"},
+          {"ordinal":5,"phase":"READ","detail":"PRIOR:CATALOG:NAVIGATION_FUSION:PRIOR"},
+          {"ordinal":6,"phase":"PROPOSE","detail":"NAV_FUSION_GATE:CATALOG:NAVIGATION_FUSION:BOOLEAN:true"},
+          {"ordinal":7,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:NAVIGATION_FUSION:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":8,"phase":"OBSERVE","detail":"CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":9,"phase":"OBSERVE","detail":"HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":10,"phase":"INVERSE","detail":"RESTORE:CATALOG:NAVIGATION_FUSION:PRIOR"},
+          {"ordinal":11,"phase":"INVERSE","detail":"VERIFY:CATALOG:NAVIGATION_FUSION"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H3\\n2. READ EVIDENCE:H4\\n3. READ EVIDENCE:H7\\n4. READ CONFIG:CATALOG:NAVIGATION_FUSION\\n5. READ PRIOR:CATALOG:NAVIGATION_FUSION:PRIOR\\n6. PROPOSE NAV_FUSION_GATE:CATALOG:NAVIGATION_FUSION:BOOLEAN:true\\n7. OBSERVE READ_BACK:CATALOG:NAVIGATION_FUSION:PRIOR_OR_TYPED_VALUE\\n8. OBSERVE CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n9. OBSERVE HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n10. INVERSE RESTORE:CATALOG:NAVIGATION_FUSION:PRIOR\\n11. INVERSE VERIFY:CATALOG:NAVIGATION_FUSION"
+      },
+      {
+        "id": "OFFCAR-H4-AMAP-PROFILE-PLAN",
+        "candidateId": "OFFCAR-H4-AMAP-PROFILE",
+        "feature": "NAV_HUD",
+        "disposition": "UNKNOWN",
+        "reason": "Canonical content shape is source-backed; HUD surface behavior is not field-proven.",
+        "risk": "LOW",
+        "evidenceIds": ["H4", "H7"],
+        "validationIssues": [],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":3,"phase":"READ","detail":"CONFIG:CATALOG:AMAP_NAVIGATION_PROFILE"},
+          {"ordinal":4,"phase":"READ","detail":"PRIOR:CATALOG:AMAP_NAVIGATION_PROFILE:PRIOR"},
+          {"ordinal":5,"phase":"PROPOSE","detail":"AMAP_PROFILE:CATALOG:AMAP_NAVIGATION_PROFILE:TOKEN:GUIDANCE_LEFT"},
+          {"ordinal":6,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:AMAP_NAVIGATION_PROFILE:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":7,"phase":"OBSERVE","detail":"CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":8,"phase":"OBSERVE","detail":"HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":9,"phase":"INVERSE","detail":"RESTORE:CATALOG:AMAP_NAVIGATION_PROFILE:PRIOR"},
+          {"ordinal":10,"phase":"INVERSE","detail":"VERIFY:CATALOG:AMAP_NAVIGATION_PROFILE"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H4\\n2. READ EVIDENCE:H7\\n3. READ CONFIG:CATALOG:AMAP_NAVIGATION_PROFILE\\n4. READ PRIOR:CATALOG:AMAP_NAVIGATION_PROFILE:PRIOR\\n5. PROPOSE AMAP_PROFILE:CATALOG:AMAP_NAVIGATION_PROFILE:TOKEN:GUIDANCE_LEFT\\n6. OBSERVE READ_BACK:CATALOG:AMAP_NAVIGATION_PROFILE:PRIOR_OR_TYPED_VALUE\\n7. OBSERVE CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n8. OBSERVE HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n9. INVERSE RESTORE:CATALOG:AMAP_NAVIGATION_PROFILE:PRIOR\\n10. INVERSE VERIFY:CATALOG:AMAP_NAVIGATION_PROFILE"
+      },
+      {
+        "id": "OFFCAR-H5-DIRECT-NAV-PLAN",
+        "candidateId": "OFFCAR-H5-DIRECT-NAV",
+        "feature": "NAV_HUD",
+        "disposition": "BLOCKED",
+        "reason": "Direct instrument fallback is held until canonical Amap plus map-gate candidates are exhausted.",
+        "risk": "HIGH",
+        "evidenceIds": ["H4", "H5", "H7"],
+        "validationIssues": ["MISSING_PROPERTY_CONFIG", "UNBOUNDED_VALUE"],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H5"},
+          {"ordinal":3,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":4,"phase":"READ","detail":"CONFIG:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD"},
+          {"ordinal":5,"phase":"READ","detail":"PRIOR:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:PRIOR"},
+          {"ordinal":6,"phase":"PROPOSE","detail":"DIRECT_NAV_PAYLOAD:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:INT:2"},
+          {"ordinal":7,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":8,"phase":"OBSERVE","detail":"CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":9,"phase":"OBSERVE","detail":"HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":10,"phase":"INVERSE","detail":"RESTORE:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:PRIOR"},
+          {"ordinal":11,"phase":"INVERSE","detail":"VERIFY:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H4\\n2. READ EVIDENCE:H5\\n3. READ EVIDENCE:H7\\n4. READ CONFIG:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD\\n5. READ PRIOR:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:PRIOR\\n6. PROPOSE DIRECT_NAV_PAYLOAD:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:INT:2\\n7. OBSERVE READ_BACK:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:PRIOR_OR_TYPED_VALUE\\n8. OBSERVE CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n9. OBSERVE HUD_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n10. INVERSE RESTORE:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD:PRIOR\\n11. INVERSE VERIFY:CATALOG:INSTRUMENT_NAVIGATION_PAYLOAD"
+      }
+    ]
+  },
+  "P-M1-NAV-HUD": {
+    "state": "BLOCKED_PENDING_FIELD_PROOF",
+    "capability": "UNKNOWN",
+    "visualPass": false,
+    "sourcePlanIds": ["OFFCAR-H1-NAV-MAP-PLAN", "OFFCAR-H2-HUD-SERVICE-PLAN", "OFFCAR-H3-NAV-FUSION-PLAN", "OFFCAR-H4-AMAP-PROFILE-PLAN", "OFFCAR-H5-DIRECT-NAV-PLAN"]
+  }
+}

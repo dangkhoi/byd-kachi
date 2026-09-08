@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Car-Execution Core &amp; Two-Track Method</title>
+<script>(function(){try{var t=localStorage.getItem('cluster-cast-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(_){}})();</script>
+<style>
+:root{--bg:#f7f7f5;--surface:#fff;--surface2:#efefeb;--text:#171716;--muted:#676761;--line:#d8d8d1;--blue:#1769d2;--green:#237a45;--amber:#a55a00;--red:#b42318;--violet:#6e4bc5;--shadow:0 16px 50px rgba(24,24,20,.07);--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;--serif:"New York",ui-serif,Georgia,serif;--mono:"SFMono-Regular",ui-monospace,Menlo,monospace}
+html.dark{--bg:#0d0d0c;--surface:#181817;--surface2:#242421;--text:#f3f3ef;--muted:#aaa9a1;--line:#363631;--blue:#69a7ff;--green:#62d18b;--amber:#ffb454;--red:#ff746b;--violet:#b39aff;--shadow:none}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.62 var(--sans);-webkit-font-smoothing:antialiased}.page{max-width:1180px;margin:auto;padding:32px 24px 120px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:42px}.brand{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}button.theme{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:8px 12px;cursor:pointer}.hero{max-width:900px;margin-bottom:36px}.eyebrow{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:10px}h1{font:600 clamp(36px,6vw,66px)/1.02 var(--serif);letter-spacing:-.035em;margin:0 0 18px}.lead{font-size:19px;line-height:1.5;color:var(--muted);max-width:820px}.meta{font:12px/1.5 var(--mono);color:var(--muted);margin-top:20px}.verdict{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--red);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow);margin:30px 0}.verdict strong{color:var(--red)}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:28px 0 52px}.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:17px}.stat b{display:block;font:600 24px var(--serif)}.stat span{font:11px var(--mono);text-transform:uppercase;color:var(--muted)}nav.toc{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:56px}nav.toc a{color:var(--muted);text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:7px 10px;border-radius:999px;font-size:12px}nav.toc a:hover{color:var(--blue);border-color:var(--blue)}section{margin:0 0 64px;scroll-margin-top:20px}.section-head{display:flex;align-items:baseline;gap:13px;border-top:1px solid var(--line);padding-top:26px;margin-bottom:18px}.num{font:11px var(--mono);color:var(--blue)}h2{font:600 29px/1.15 var(--serif);letter-spacing:-.02em;margin:0}h3{font:600 19px/1.3 var(--serif);margin:30px 0 10px}h4{font-size:15px;margin:20px 0 7px}.muted{color:var(--muted)}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:19px 20px}.card h3,.card h4{margin-top:0}.callout{border-radius:12px;padding:15px 17px;margin:14px 0;background:var(--surface2);border-left:4px solid var(--blue)}.callout.red{border-left-color:var(--red)}.callout.amber{border-left-color:var(--amber)}.callout.green{border-left-color:var(--green)}code,pre{font-family:var(--mono)}code{font-size:.88em;background:var(--surface2);padding:.12em .34em;border-radius:5px}pre{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:16px;overflow:auto;font-size:12px;line-height:1.55}.badge{display:inline-flex;align-items:center;font:600 10px var(--mono);letter-spacing:.03em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:3px 7px;white-space:nowrap}.p0{color:var(--red)}.p1{color:var(--amber)}.p2{color:var(--violet)}.ok{color:var(--green)}.info{color:var(--blue)}table{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--line);border-radius:13px;overflow:hidden;font-size:13px;margin:14px 0}th{text-align:left;font:600 10px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--surface2)}th,td{padding:10px 11px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}td:first-child{white-space:nowrap}.scroll{overflow-x:auto}.scroll table{min-width:960px}.diagram{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin:18px 0;overflow:auto}.diagram svg{display:block;min-width:850px;width:100%;height:auto}.box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.box-blue{fill:color-mix(in srgb,var(--blue) 9%,var(--surface));stroke:var(--blue);stroke-width:1.7}.box-green{fill:color-mix(in srgb,var(--green) 9%,var(--surface));stroke:var(--green);stroke-width:1.7}.box-amber{fill:color-mix(in srgb,var(--amber) 9%,var(--surface));stroke:var(--amber);stroke-width:1.7}.box-red{fill:color-mix(in srgb,var(--red) 9%,var(--surface));stroke:var(--red);stroke-width:1.7}.dt{fill:var(--text);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.5;marker-end:url(#arr)}.edge-blue{stroke:var(--blue)}.edge-red{stroke:var(--red);stroke-dasharray:5 4}.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--muted);margin-top:12px}.dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;background:var(--blue)}ul,ol{padding-left:20px}li{margin:5px 0}.phase{display:grid;grid-template-columns:80px 1fr;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}.phase:last-child{border-bottom:0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{list-style:none;padding:0}.check li{padding-left:25px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue);font-family:var(--mono)}.small{font-size:12px;color:var(--muted)}.review{border-left:3px solid var(--line);padding-left:16px;margin:20px 0}.nowrap{white-space:nowrap}@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.page{padding:22px 15px 80px}h1{font-size:42px}.phase{grid-template-columns:1fr}.lead{font-size:17px}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="topbar"><div class="brand">ClusterNav · Architecture &amp; Method</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('cluster-cast-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Plan · chưa implement</div>
+<h1>Car-Execution Core</h1>
+<p class="lead">Tách đôi công việc: một <strong>core lib chạy được trên xe</strong> để chứng minh khả thi bằng bằng chứng đo được, và một <strong>lớp wiring vào app/UI</strong> tiêu thụ core qua façade hẹp. Lý do tách không phải cho gọn: cách làm hiện tại — trace từ app xuống xe — là <em>nguyên nhân</em> của chuỗi vá theo ca, và nó vừa che mất một khiếm khuyết nền suốt nhiều phiên.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Branch: release/v0.60-cast-hardening · Evidence: docs/refactor-car-execution/evidence · 2026-07-27</p>
+</header>
+<div class="verdict"><strong>Khiếm khuyết nền, P0 — và nó chỉ chặn một nửa.</strong> Sáng 27/7 app đặt task lên <code>displayId=1</code> đúng bounds, observer báo <code>ACTIVE_SINGLE, target=vn.vietmap.live</code>, trong khi cụm vật lý hiện đồng hồ suốt. Vậy <em>placement ở window manager không phải bằng chứng chiếu</em>. Điều này <b>không</b> chặn việc đánh giá trên xe: ở đó mắt người là trọng tài hợp lệ và luôn đủ. Điều nó chặn là <b>app tự tuyên bố "đã xác minh" lúc chạy thật</b>. Từ giờ app chỉ được nói cái nó đo được, và tuyệt đối không được rơi vào trạng thái chờ vô hạn.</div>
+<div class="stats"><div class="stat"><b>6</b><span>vòng build-cài sáng nay</span></div><div class="stat"><b>0</b><span>observable đủ tin</span></div><div class="stat"><b>2</b><span>bản hiện thực trùng</span></div><div class="stat"><b>3</b><span>ngõ cụt trạng thái</span></div><div class="stat"><b>1</b><span>quy tắc tôi tự đặt</span></div></div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#capabilities">Capabilities</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#risks">Risks</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+
+<section id="changelog"><div class="section-head"><span class="num">01</span><h2>Changelog</h2></div>
+<table><thead><tr><th>Date</th><th>Change</th><th>Status</th></tr></thead><tbody>
+<tr><td>2026-07-27</td><td>Thêm thiết kế di trú S0.5 ở mức file: 22/28 file <code>v2</code> đã sạch Android/dadb nên phần lớn là dời chỗ; khai báo hai port <code>Journal</code> và <code>DeviceShell</code>; 7 batch có exit gate riêng. B0 hoàn thành.</td><td><span class="badge ok">B0 done</span></td></tr>
+<tr><td>2026-07-27</td><td>Owner bổ sung chiều thứ hai: layer là hàng ngang, feature là hàng dọc. Đưa Navigation + HUD và Cluster Cast vào lưới; chốt <code>:core</code> / <code>:car-integration</code> / <code>:app</code> là module Gradle thật để ranh giới được cưỡng chế lúc biên dịch.</td><td><span class="badge ok">Binding</span></td></tr>
+<tr><td>2026-07-27</td><td>Owner chỉ đạo tách hai việc độc lập: core lib car-execution để đánh giá khả thi, và wiring vào app/UI. Lý do: đang mix hai việc, trace từ app vào xe quá dài, phần lớn là vá sự cố ad-hoc.</td><td><span class="badge ok">Binding</span></td></tr>
+<tr><td>2026-07-27</td><td>Field: <code>castSeq 30,16,35</code> gõ tay → cụm hiện VietMap. Trước đó app chiếu chỉ re-parent task, cụm giữ đồng hồ. Mở chiếu OEM là <em>session state</em>, không phải bootstrap một lần.</td><td><span class="badge p0">Root cause</span></td></tr>
+<tr><td>2026-07-27</td><td>Field: quan sát "task ở display 1" ≠ "cụm đang hiện app". <code>numLayers</code> trên fission display device là 0 khi rỗng, 2 khi có task — cả hai lúc cụm vẫn hiện đồng hồ. Necessary, not sufficient.</td><td><span class="badge p0">Invalidates criterion</span></td></tr>
+<tr><td>2026-07-27</td><td>Field: giao dịch treo <code>phase=RECOVERING</code> + <code>durableEpoch≠tx.epoch</code> + ledger có <code>ISSUED</code> → <code>mode=READ_ONLY</code>, khoá cả việc chọn app. Ba điều kiện độc lập cùng chặn bù trừ.</td><td><span class="badge p0">Dead end</span></td></tr>
+<tr><td>2026-07-27</td><td>Thu hồi "chỉ chiếm cụm khi đỗ". Không có trong spec (chỉ là câu hỏi mở), không có trong code (<code>interaction context is diagnostic only</code>). Do agent tự đặt. Điều kiện vận hành mặc định là <strong>đang chạy</strong>.</td><td><span class="badge ok">Retracted</span></td></tr>
+</tbody></table>
+</section>
+
+<section id="context"><div class="section-head"><span class="num">02</span><h2>Context — vì sao cách làm hiện tại sai</h2></div>
+<p>Sáng 27/7 mất khoảng ba giờ để sửa ba lỗi, và cả ba đều được tìm bằng đường dài nhất có thể: sửa code → build APK → cài lên xe → chạm màn hình → chụp ảnh → suy ra trạng thái từ ảnh. Mỗi vòng 5–10 phút. Không lỗi nào trong ba lỗi đó là lỗi UI; tất cả là <strong>thiếu trạng thái kết thúc trong máy trạng thái</strong> và <strong>tiêu chí thành công không kiểm chứng được</strong> — hai thứ mà một runner headless nối adb vào xe sẽ phơi ra trong vài phút.</p>
+<div class="grid2">
+<div class="card"><h3>Điều đã chứng minh trên xe hôm nay</h3><ul>
+<li>Đặt task lên cụm hoạt động: <code>Stack id=32 … displayId=1</code>, <code>taskId=26 vn.vietmap.live … visible=true</code>, bounds <code>[0,0][1920,720]</code>, windowingMode freeform.</li>
+<li>Cụm vẫn hiện đồng hồ cho tới khi phát <code>30 → 16 → 35</code> trên <code>AutoContainer</code>; cả ba trả <code>Parcel(0,0)</code>, sau đó owner xác nhận "lên rồi".</li>
+<li><code>18 → 0</code> đóng chiếu, trả đồng hồ, không reboot, không force-stop.</li>
+<li><code>numLayers</code> của <code>DisplayDevice{virtual, "fission_bg_xdjaVirtualSurface"}</code>: 0 khi không có task, 2 khi có task — <em>độc lập</em> với việc cụm có hiện hay không.</li>
+<li><code>bydAdd-&lt;pkg&gt;</code> không phải tín hiệu chiếu: lúc cụm hiện đồng hồ vẫn tồn tại cả <code>bydAdd-com.byd.clusternav#0</code> và <code>bydAdd-vn.vietmap.live#0</code>.</li>
+<li>Display 1 luôn tồn tại: <code>type VIRTUAL, state ON, owner com.xdja.containerservice</code>, bất kể có chiếu hay không.</li>
+</ul></div>
+<div class="card"><h3>Điều chưa chứng minh</h3><ul>
+<li>Observable nào phân biệt "cụm đang hiện app của ta" với "cụm đang hiện đồng hồ". <code>dumpsys AutoContainer</code> và <code>FissionGeneraySvc</code> trả rỗng; <code>FissionHostSvc</code> chỉ trả một dòng chào với mọi tham số đã thử.</li>
+<li><code>castSeq</code> cần phát lại mỗi lần chiếu, mỗi lần boot, hay chỉ sau khi bị đóng.</li>
+<li>Vì sao khung/DPI vẫn xám sau khi cụm đã hiện app (giả thiết: journal chưa ở trạng thái active-verified).</li>
+<li>Ngưỡng thời gian thật của một lần chiếu, và phần nào trong ladder tốn thời gian.</li>
+</ul></div>
+</div>
+<h3>Ba sai lầm về phương pháp, không phải về code</h3>
+<div class="grid3">
+<div class="card"><h4><span class="badge p0">P0</span> Hai bản hiện thực</h4><p class="small">Logic đặt/tháo cụm tồn tại trong Kotlin <em>và</em> được chép lại trong <code>scripts/vehicle/*.sh</code>. Bash chạy đúng không chứng minh gì cho app và ngược lại. Hai sự thật thì luôn có một cái sai mà không ai biết.</p></div>
+<div class="card"><h4><span class="badge p1">P1</span> Suy luận thay vì đo</h4><p class="small">09:33 tôi chạy <code>am stack list | grep -B2 displayId=1</code>, pattern không khớp, không có output, và tôi kết luận "cụm sạch" trong khi task đang ở đó. Fixture giờ chứng minh <code>Stack id=26 … displayId=1</code> nằm ngay dòng đầu. Parser phải là <em>một</em> đoạn code có test, không phải grep gõ tay mỗi lần.</p></div>
+<div class="card"><h4><span class="badge p1">P1</span> Ràng buộc tự phát minh</h4><p class="small">"Chỉ chiếm cụm khi đỗ" không có trong spec lẫn code, nhưng đã định hình mọi phiên test. Nó khiến tính năng bị kiểm tra sai điều kiện sử dụng: chiếu maps chỉ có nghĩa khi đang chạy.</p></div>
+</div>
+</section>
+
+<section id="requirements"><div class="section-head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr></thead><tbody>
+<tr><td><b>R1</b></td><td>Core lib chạy được trên xe không cần app: thư viện JVM/Kotlin không phụ thuộc Android UI, thực thi từng capability có tên qua adb.</td><td>Runner CLI trên laptop chạy <code>observe</code> trên xe thật, in JSON, không cài APK.</td></tr>
+<tr><td><b>R2</b></td><td>Observable phản ánh điều người lái thấy. Không tuyên bố thành công dựa trên trạng thái window manager.</td><td>Một tín hiệu đọc-chỉ, đo được, khác nhau giữa cụm-hiện-app và cụm-hiện-đồng-hồ, xác nhận bằng 4 bước ở §Verification.</td></tr>
+<tr><td><b>R3</b></td><td>Mọi thao tác đạt kết cục kết thúc; mọi trạng thái có tối thiểu một đường ra.</td><td>Quét vét cạn off-car trên tích Descartes <code>ObservedCoarseState</code> × <code>RecoverySubstate</code> × {ledger có ISSUED / không} × {epoch khớp / lệch} × <code>stopRequested</code>; mỗi tổ hợp phải có tập hành động khác rỗng và tồn tại đường tới trạng thái kết thúc.</td></tr>
+<tr><td><b>R4</b></td><td>Một bản hiện thực duy nhất. Script shell không được chứa logic đặt/tháo/quan sát.</td><td><code>scripts/vehicle/*.sh</code> chỉ còn gọi runner; test tĩnh chặn tái xuất hiện của opcode/am-start trong shell.</td></tr>
+<tr><td><b>R5</b></td><td>Parse output thiết bị bằng code có test, trên fixture thật của xe.</td><td>Observer test chạy trên <code>docs/refactor-car-execution/fixtures/*</code> và các fixture mới, không trên chuỗi tự bịa.</td></tr>
+<tr><td><b>R6</b></td><td>Mở chiếu OEM là session state, không phải bootstrap một lần.</td><td>Capability <code>open-projection</code> tách riêng, idempotent, có tiền đề và bằng chứng riêng; cast plan phải bao gồm nó khi chiếu chưa mở.</td></tr>
+<tr><td><b>R7</b></td><td>UI tiêu thụ core qua façade hẹp; UI không tự suy ra sự thật thiết bị.</td><td>Test tĩnh: lớp UI không tham chiếu gateway/adb/opcode; chỉ gọi façade.</td></tr>
+<tr><td><b>R8</b></td><td>Fake lái được vào mọi trạng thái, kể cả các trạng thái kẹt đã gặp thật.</td><td>Test UI dựng được <code>RECOVERY_PENDING</code>, <code>READ_ONLY</code>, epoch-drift, ISSUED-ledger mà không cần xe.</td></tr>
+<tr><td><b>R9</b></td><td>Điều kiện vận hành mặc định là xe đang chạy. Không ràng buộc đỗ trừ khi có bằng chứng.</td><td>Không code path nào chặn theo interaction context; ràng buộc duy nhất được ghi là máy phải nổ trong phiên dài (bằng chứng: phiên 26/7 chết sau ~12 phút do ACC standby).</td></tr>
+<tr><td><b>R13</b></td><td>App chỉ hiển thị điều nó đo được. Trạng thái "đã xác minh" chỉ tồn tại khi có observable; ngược lại dùng ngôn từ "đã yêu cầu / đã phát lệnh".</td><td>Không chuỗi UI nào nói đã chiếu khi bằng chứng duy nhất là placement window manager; Dừng luôn khả dụng khi đã phát lệnh mở.</td></tr>
+<tr><td><b>R14</b></td><td>Mọi trạng thái tự thoát được bằng hành động trong app, không cần adb và không cần người nhìn cụm.</td><td>Quét vét cạn chứng minh mọi trạng thái có đường ra; thêm case tái hiện đúng ngõ cụt 27/7 và chứng minh app tự ra được.</td></tr>
+<tr><td><b>R12</b></td><td>Ranh giới layer được cưỡng chế lúc biên dịch, không bằng kỷ luật. Feature không gọi ngang feature; dùng chung thì đẩy xuống layer thấp hơn.</td><td><code>:core</code> là module JVM thuần không có dependency adb/Android; <code>:app</code> chỉ thấy façade; test tĩnh chặn import chéo giữa hai cột feature.</td></tr>
+<tr><td><b>R11</b></td><td>Mọi thao tác có ngân sách thời gian và kết cục trung thực khi hết ngân sách. Không có trạng thái "đang chờ" vô hạn.</td><td>Đo được thời gian từng bước; hết deadline thì chuyển sang kết cục kết thúc kèm lý do, không giữ UI ở trạng thái chờ.</td></tr>
+<tr><td><b>R10</b></td><td>Mỗi phiên trên xe ≤ 10 phút, từng bước địa chỉ hoá, kết quả ghi thành evidence máy đọc được.</td><td>Conformance resumable theo bước; mỗi bước ghi verdict + fixture.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="section-head"><span class="num">04</span><h2>Design</h2></div>
+
+<h3>Cách làm hiện tại, và cách làm mới</h3>
+<div class="diagram"><svg viewBox="0 0 1000 300" role="img" aria-label="Vòng lặp hiện tại đi qua app và ảnh chụp, so với hai track độc lập">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+<text class="ds" x="20" y="20">HÔM NAY · một vòng 5–10 phút, kết luận bằng mắt</text>
+<rect class="box-red" x="20" y="34" width="132" height="56" rx="11"/><text class="dt" x="86" y="60" text-anchor="middle">sửa code</text><text class="ds" x="86" y="78" text-anchor="middle">Kotlin</text>
+<rect class="box-red" x="182" y="34" width="132" height="56" rx="11"/><text class="dt" x="248" y="60" text-anchor="middle">build APK</text><text class="ds" x="248" y="78" text-anchor="middle">+ attestation</text>
+<rect class="box-red" x="344" y="34" width="132" height="56" rx="11"/><text class="dt" x="410" y="60" text-anchor="middle">cài lên xe</text>
+<rect class="box-red" x="506" y="34" width="132" height="56" rx="11"/><text class="dt" x="572" y="60" text-anchor="middle">chạm màn hình</text><text class="ds" x="572" y="78" text-anchor="middle">input tap</text>
+<rect class="box-red" x="668" y="34" width="132" height="56" rx="11"/><text class="dt" x="734" y="60" text-anchor="middle">chụp ảnh</text>
+<rect class="box-red" x="830" y="34" width="150" height="56" rx="11"/><text class="dt" x="905" y="60" text-anchor="middle">suy ra trạng thái</text><text class="ds" x="905" y="78" text-anchor="middle">bằng mắt</text>
+<path class="edge edge-red" d="M152 62H180"/><path class="edge edge-red" d="M314 62H342"/><path class="edge edge-red" d="M476 62H504"/><path class="edge edge-red" d="M638 62H666"/><path class="edge edge-red" d="M800 62H828"/>
+<text class="ds" x="20" y="140">TỪ GIỜ · hai track độc lập</text>
+<rect class="box-green" x="20" y="156" width="440" height="120" rx="13"/>
+<text class="dt" x="240" y="182" text-anchor="middle">Track 1 · car-execution core</text>
+<text class="ds" x="240" y="204" text-anchor="middle">runner CLI → adb → xe · vòng lặp tính bằng giây</text>
+<text class="ds" x="240" y="224" text-anchor="middle">capability có tên · output JSON · fixture thật</text>
+<text class="ds" x="240" y="246" text-anchor="middle">trả lời: KHẢ THI hay KHÔNG, bằng số đo</text>
+<text class="ds" x="240" y="266" text-anchor="middle">không cần APK, không cần UI</text>
+<rect class="box-blue" x="540" y="156" width="440" height="120" rx="13"/>
+<text class="dt" x="760" y="182" text-anchor="middle">Track 2 · app · wiring &amp; UX</text>
+<text class="ds" x="760" y="204" text-anchor="middle">tiêu thụ core qua façade hẹp</text>
+<text class="ds" x="760" y="224" text-anchor="middle">test trên fake lái được vào mọi trạng thái</text>
+<text class="ds" x="760" y="246" text-anchor="middle">trả lời: người dùng DÙNG ĐƯỢC hay không</text>
+<text class="ds" x="760" y="266" text-anchor="middle">không cần xe</text>
+<path class="edge edge-blue" d="M462 216H538"/><text class="ds" x="500" y="208" text-anchor="middle">contract</text>
+</svg>
+<div class="legend"><span><i class="dot" style="background:var(--red)"></i>đường dài, kết luận bằng mắt</span><span><i class="dot" style="background:var(--green)"></i>đo được, không cần app</span><span><i class="dot" style="background:var(--blue)"></i>dùng được, không cần xe</span></div>
+</div>
+
+<h3>Kiến trúc lớp</h3>
+<div class="diagram"><svg viewBox="0 0 1000 430" role="img" aria-label="Kiến trúc lớp của core lib, runner, conformance, façade và UI">
+<rect class="box-blue" x="20" y="20" width="300" height="70" rx="12"/><text class="dt" x="170" y="46" text-anchor="middle">Runner CLI (laptop)</text><text class="ds" x="170" y="68" text-anchor="middle">observe · place · open · fit · teardown</text>
+<rect class="box-blue" x="350" y="20" width="300" height="70" rx="12"/><text class="dt" x="500" y="46" text-anchor="middle">Car conformance suite</text><text class="ds" x="500" y="68" text-anchor="middle">tiền đề → hành động → quan sát → assert</text>
+<rect class="box" x="680" y="20" width="300" height="70" rx="12"/><text class="dt" x="830" y="46" text-anchor="middle">App (Track 2)</text><text class="ds" x="830" y="68" text-anchor="middle">ClusterCastActivity · bubble · UX</text>
+<rect class="box" x="680" y="112" width="300" height="54" rx="12"/><text class="dt" x="830" y="136" text-anchor="middle">CastFacade</text><text class="ds" x="830" y="154" text-anchor="middle">bề mặt duy nhất UI được thấy</text>
+<rect class="box-green" x="20" y="188" width="960" height="112" rx="13"/>
+<text class="dt" x="500" y="214" text-anchor="middle">carexec core — một bản hiện thực duy nhất</text>
+<rect class="box" x="44" y="228" width="216" height="56" rx="10"/><text class="dt" x="152" y="252" text-anchor="middle">Capabilities</text><text class="ds" x="152" y="270" text-anchor="middle">có tiền đề + bằng chứng</text>
+<rect class="box" x="276" y="228" width="216" height="56" rx="10"/><text class="dt" x="384" y="252" text-anchor="middle">Observer</text><text class="ds" x="384" y="270" text-anchor="middle">parser có test</text>
+<rect class="box" x="508" y="228" width="216" height="56" rx="10"/><text class="dt" x="616" y="252" text-anchor="middle">State + Journal</text><text class="ds" x="616" y="270" text-anchor="middle">bất biến kết thúc</text>
+<rect class="box" x="740" y="228" width="216" height="56" rx="10"/><text class="dt" x="848" y="252" text-anchor="middle">Planner</text><text class="ds" x="848" y="270" text-anchor="middle">ladder + short-circuit</text>
+<rect class="box-amber" x="20" y="326" width="300" height="70" rx="12"/><text class="dt" x="170" y="352" text-anchor="middle">RealDevice</text><text class="ds" x="170" y="374" text-anchor="middle">dadb / adb → head unit</text>
+<rect class="box-amber" x="350" y="326" width="300" height="70" rx="12"/><text class="dt" x="500" y="352" text-anchor="middle">RecordedDevice</text><text class="ds" x="500" y="374" text-anchor="middle">fixture thật, off-car</text>
+<rect class="box-amber" x="680" y="326" width="300" height="70" rx="12"/><text class="dt" x="830" y="352" text-anchor="middle">FakeDevice</text><text class="ds" x="830" y="374" text-anchor="middle">lái được vào mọi trạng thái</text>
+<path class="edge" d="M170 92V186"/><path class="edge" d="M500 92V186"/><path class="edge edge-blue" d="M830 92V110"/><path class="edge edge-blue" d="M830 168V186"/>
+<path class="edge" d="M170 302V324"/><path class="edge" d="M500 302V324"/><path class="edge" d="M830 302V324"/>
+</svg>
+<div class="legend"><span><i class="dot"></i>consumer</span><span><i class="dot" style="background:var(--green)"></i>core dùng chung</span><span><i class="dot" style="background:var(--amber)"></i>transport thay được</span></div>
+</div>
+
+
+<h3>Kiến trúc module — hàng ngang là layer, hàng dọc là feature</h3>
+<p>Layer trả lời <em>"code này nói chuyện với ai"</em>: <code>:core</code> không biết thiết bị, <code>:car-integration</code> biết thiết bị, <code>:app</code> biết người dùng. Feature trả lời <em>"code này thuộc tính năng nào"</em>. Hai chiều độc lập, nên mỗi ô trong lưới là một đơn vị có chủ và có test riêng.</p>
+<div class="diagram"><svg viewBox="0 0 1000 470" role="img" aria-label="Lưới kiến trúc: ba layer ngang nhân với các feature dọc">
+<text class="ds" x="170" y="34" text-anchor="middle">FEATURE · Navigation + HUD</text>
+<text class="ds" x="500" y="34" text-anchor="middle">FEATURE · Cluster Cast</text>
+<text class="ds" x="838" y="34" text-anchor="middle">Shared / platform</text>
+
+<text class="ds" x="20" y="92">:app</text><text class="ds" x="20" y="108">người dùng</text>
+<rect class="box-blue" x="120" y="48" width="250" height="86" rx="11"/><text class="dt" x="245" y="76" text-anchor="middle">Nav card · HUD toggle</text><text class="ds" x="245" y="98" text-anchor="middle">ClusterNavActivity</text><text class="ds" x="245" y="116" text-anchor="middle">MainActivity (renderer)</text>
+<rect class="box-blue" x="380" y="48" width="250" height="86" rx="11"/><text class="dt" x="505" y="76" text-anchor="middle">Cast screen · nút nổi</text><text class="ds" x="505" y="98" text-anchor="middle">ClusterCastActivity · dialogs</text><text class="ds" x="505" y="116" text-anchor="middle">FloatingBubbleService</text>
+<rect class="box" x="640" y="48" width="340" height="86" rx="11"/><text class="dt" x="810" y="76" text-anchor="middle">UI kit · theme · a11y</text><text class="ds" x="810" y="98" text-anchor="middle">design token, drawable, layout variant</text><text class="ds" x="810" y="116" text-anchor="middle">ModuleHost · ModuleRegistry</text>
+
+<text class="ds" x="20" y="204">:car-integration</text><text class="ds" x="20" y="220">thiết bị</text>
+<rect class="box-amber" x="120" y="160" width="250" height="86" rx="11"/><text class="dt" x="245" y="188" text-anchor="middle">(trống — xem ghi chú)</text><text class="ds" x="245" y="210" text-anchor="middle">Navigation nói với thiết bị qua</text><text class="ds" x="245" y="228" text-anchor="middle">API Android cục bộ, nên thuộc :app</text>
+<rect class="box-amber" x="380" y="160" width="250" height="86" rx="11"/><text class="dt" x="505" y="188" text-anchor="middle">Capabilities cụm</text><text class="ds" x="505" y="210" text-anchor="middle">place · fit · open · teardown</text><text class="ds" x="505" y="228" text-anchor="middle">observe (parser) · restore</text>
+<rect class="box-amber" x="640" y="160" width="340" height="86" rx="11"/><text class="dt" x="810" y="188" text-anchor="middle">Transport · CLI runner</text><text class="ds" x="810" y="210" text-anchor="middle">RealDevice (dadb) · RecordedDevice · FakeDevice</text><text class="ds" x="810" y="228" text-anchor="middle">main() headless — dùng cho đánh giá trên xe</text>
+
+<text class="ds" x="20" y="316">:core</text><text class="ds" x="20" y="332">không biết gì</text>
+<rect class="box-green" x="120" y="272" width="250" height="86" rx="11"/><text class="dt" x="245" y="300" text-anchor="middle">Nav model · state</text><text class="ds" x="245" y="322" text-anchor="middle">maneuver, distance, arbiter</text><text class="ds" x="245" y="340" text-anchor="middle">NavigationUiState</text>
+<rect class="box-green" x="380" y="272" width="250" height="86" rx="11"/><text class="dt" x="505" y="300" text-anchor="middle">Cast state · journal</text><text class="ds" x="505" y="322" text-anchor="middle">planner · ladder · invariants</text><text class="ds" x="505" y="340" text-anchor="middle">envelope, epoch, terminal rules</text>
+<rect class="box-green" x="640" y="272" width="340" height="86" rx="11"/><text class="dt" x="810" y="300" text-anchor="middle">Data · metadata · config</text><text class="ds" x="810" y="322" text-anchor="middle">ClusterProfile (DL3/DL5), opcode map, geometry</text><text class="ds" x="810" y="340" text-anchor="middle">prefs schema, rollout flags, provenance</text>
+
+<path class="edge edge-blue" d="M245 136V158"/><path class="edge edge-blue" d="M505 136V158"/><path class="edge edge-blue" d="M810 136V158"/>
+<path class="edge" d="M245 248V270"/><path class="edge" d="M505 248V270"/><path class="edge" d="M810 248V270"/>
+<path class="edge-red" style="fill:none;stroke-width:1.6" d="M370 91H378" marker-end="url(#arr)"/>
+<text class="ds" x="374" y="80" text-anchor="middle" style="fill:var(--red)">✕</text>
+<text class="ds" x="500" y="392" text-anchor="middle">Phụ thuộc chỉ đi xuống. Feature không gọi ngang feature — cần dùng chung thì đẩy xuống cột Shared của layer thấp hơn.</text>
+<text class="ds" x="500" y="414" text-anchor="middle">Dead Reckon và mock-location đã rút khỏi baseline: không có ô nào, cố tình.</text>
+<text class="ds" x="500" y="436" text-anchor="middle">Feature mới = thêm một cột, không sửa cột đang có.</text>
+</svg>
+<div class="legend"><span><i class="dot"></i>:app biết người dùng</span><span><i class="dot" style="background:var(--amber)"></i>:car-integration biết thiết bị</span><span><i class="dot" style="background:var(--green)"></i>:core không biết gì ngoài dữ liệu và luật</span><span><i class="dot" style="background:var(--red)"></i>cấm gọi ngang</span></div>
+</div>
+
+<h4>Cách chia này sửa đúng cái gì</h4>
+<p class="small">Cột giữa là tình trạng hôm nay và nó là <span class="p0">xấu</span>. Cột phải là sau khi tách và nó là <span class="ok">điều mong muốn</span>.</p>
+<div class="scroll"><table><thead><tr><th>Vấn đề</th><th class="p0">Hôm nay — xấu</th><th class="ok">Sau khi tách — tốt</th></tr></thead><tbody>
+<tr><td><b>Máy trạng thái gọi thiết bị</b></td><td>Cùng một package chứa cả quyết định lẫn adb, nên bước hoà giải tôi thêm lúc 09:40 vô tình gọi transport ngay trong đường vẽ màn hình → treo UI.</td><td><code>:core</code> là JVM thuần, <b>không có</b> dependency adb. Gọi thiết bị từ máy trạng thái là lỗi biên dịch, không phải lỗi rà soát.</td></tr>
+<tr><td><b>Bắt ngõ cụt trạng thái</b></td><td>Ngõ cụt <code>RECOVERING</code> + epoch lệch + <code>ISSUED</code> chỉ lộ ra khi gặp trên xe, sau 6 vòng build-cài.</td><td>Quét vét cạn chạy như unit test off-car trong vài giây, không cần xe và không cần APK.</td></tr>
+<tr><td><b>Hai bản hiện thực</b></td><td>Logic đặt/tháo cụm có trong Kotlin <i>và</i> chép lại trong <code>scripts/vehicle/*.sh</code>. Bash đúng không chứng minh gì cho app; sai lệch âm thầm.</td><td>Một hiện thực trong <code>:car-integration</code>, hai entry point: <code>main()</code> headless để đánh giá trên xe, và API cho app. Shell chỉ còn gọi runner.</td></tr>
+<tr><td><b>Đọc output thiết bị</b></td><td><code>grep</code> gõ tay mỗi lần. 09:33 pattern không khớp, không có output, tôi kết luận "cụm sạch" trong khi task đang nằm trên cụm.</td><td>Parser là code của <code>:car-integration</code>, trả về kiểu của <code>:core</code>, có test chạy trên fixture thật của xe. Không còn chỗ cho grep tuỳ hứng.</td></tr>
+</tbody></table></div>
+
+<h4>Data flow và integration flow</h4>
+<div class="diagram"><svg viewBox="0 0 1000 430" role="img" aria-label="Luồng tích hợp của Cluster Cast và luồng dữ liệu của Navigation">
+<text class="ds" x="20" y="22">INTEGRATION FLOW · Cluster Cast — người dùng bấm Chiếu</text>
+<rect class="box-blue" x="20" y="34" width="150" height="58" rx="10"/><text class="dt" x="95" y="58" text-anchor="middle">:app</text><text class="ds" x="95" y="78" text-anchor="middle">bấm Chiếu</text>
+<rect class="box" x="196" y="34" width="150" height="58" rx="10"/><text class="dt" x="271" y="58" text-anchor="middle">CastFacade</text><text class="ds" x="271" y="78" text-anchor="middle">intent + target</text>
+<rect class="box-green" x="372" y="34" width="170" height="58" rx="10"/><text class="dt" x="457" y="58" text-anchor="middle">:core planner</text><text class="ds" x="457" y="78" text-anchor="middle">plan + tiền đề</text>
+<rect class="box-amber" x="568" y="34" width="180" height="58" rx="10"/><text class="dt" x="658" y="58" text-anchor="middle">:car-integration</text><text class="ds" x="658" y="78" text-anchor="middle">thực thi capability</text>
+<rect class="box" x="774" y="34" width="206" height="58" rx="10"/><text class="dt" x="877" y="58" text-anchor="middle">Head unit</text><text class="ds" x="877" y="78" text-anchor="middle">am start · opcode · resize</text>
+<path class="edge edge-blue" d="M170 63H194"/><path class="edge edge-blue" d="M346 63H370"/><path class="edge edge-blue" d="M542 63H566"/><path class="edge edge-blue" d="M748 63H772"/>
+<path class="edge" d="M877 96V126H658" /><rect class="box-amber" x="568" y="126" width="180" height="52" rx="10"/><text class="dt" x="658" y="148" text-anchor="middle">observe</text><text class="ds" x="658" y="166" text-anchor="middle">parse → kiểu :core</text>
+<path class="edge" d="M566 152H459"/><rect class="box-green" x="372" y="126" width="170" height="52" rx="10"/><text class="dt" x="457" y="148" text-anchor="middle">:core journal</text><text class="ds" x="457" y="166" text-anchor="middle">verify · kết cục</text>
+<path class="edge" d="M370 152H273"/><rect class="box" x="196" y="126" width="150" height="52" rx="10"/><text class="dt" x="271" y="148" text-anchor="middle">state + actions</text>
+<path class="edge edge-blue" d="M196 152H172"/><rect class="box-blue" x="20" y="126" width="150" height="52" rx="10"/><text class="dt" x="95" y="148" text-anchor="middle">:app render</text><text class="ds" x="95" y="166" text-anchor="middle">nút nào bật</text>
+<text class="ds" x="500" y="200" text-anchor="middle" style="fill:var(--red)">Điều kiện tuyên bố thành công nằm ở :core journal — và hôm nay nó dựa trên dữ kiện window manager, tức chưa đủ (Q1).</text>
+
+<line x1="20" y1="222" x2="980" y2="222" stroke="var(--line)"/>
+<text class="ds" x="20" y="252">DATA FLOW · Navigation + HUD — dữ liệu chảy một chiều</text>
+<rect class="box" x="20" y="264" width="170" height="58" rx="10"/><text class="dt" x="105" y="288" text-anchor="middle">App dẫn đường</text><text class="ds" x="105" y="308" text-anchor="middle">notification</text>
+<rect class="box-amber" x="216" y="264" width="180" height="58" rx="10"/><text class="dt" x="306" y="288" text-anchor="middle">:car-integration</text><text class="ds" x="306" y="308" text-anchor="middle">listener + parse</text>
+<rect class="box-green" x="422" y="264" width="180" height="58" rx="10"/><text class="dt" x="512" y="288" text-anchor="middle">:core nav state</text><text class="ds" x="512" y="308" text-anchor="middle">maneuver · distance</text>
+<rect class="box-green" x="628" y="264" width="150" height="58" rx="10"/><text class="dt" x="703" y="288" text-anchor="middle">:core arbiter</text><text class="ds" x="703" y="308" text-anchor="middle">một nguồn thật</text>
+<path class="edge" d="M190 293H214"/><path class="edge" d="M396 293H420"/><path class="edge" d="M602 293H626"/>
+<path class="edge edge-blue" d="M703 322V352"/>
+<rect class="box-amber" x="480" y="352" width="220" height="56" rx="10"/><text class="dt" x="590" y="375" text-anchor="middle">output làn cụm</text><text class="ds" x="590" y="394" text-anchor="middle">ClusterBroadcaster</text>
+<rect class="box-amber" x="730" y="352" width="220" height="56" rx="10"/><text class="dt" x="840" y="375" text-anchor="middle">output HUD</text><text class="ds" x="840" y="394" text-anchor="middle">frame builder</text>
+<path class="edge" d="M690 340H592" /><path class="edge" d="M716 340H838"/>
+<text class="ds" x="240" y="380">Hai output độc lập, cùng một nguồn.</text>
+<text class="ds" x="240" y="398">Không output nào được sửa state.</text>
+</svg>
+<div class="legend"><span><i class="dot"></i>đi xuống: ý định</span><span><i class="dot" style="background:var(--muted)"></i>đi lên: quan sát và trạng thái</span><span><i class="dot" style="background:var(--green)"></i>quyết định luôn ở :core</span></div>
+</div>
+<p class="small">Điểm cần nhớ ở cả hai luồng: <b>ý định đi xuống, quan sát đi lên, quyết định luôn nằm ở <code>:core</code></b>. <code>:app</code> không bao giờ tự suy ra sự thật thiết bị, và <code>:car-integration</code> không bao giờ tự quyết định thành công — nó chỉ báo cáo cái nó đo được.</p>
+
+<h4>Shell, jar hay APK — cái nào cần lúc nào</h4>
+<p class="small">Phần shell vẫn ở trong repo để đánh giá khả thi, và <b>không cần build APK</b>. Chỉ dòng cuối bảng cần APK.</p>
+<div class="scroll"><table><thead><tr><th>Việc</th><th>Chạy bằng</th><th>Artifact cần build</th><th>Cần xe</th></tr></thead><tbody>
+<tr><td>Khám phá recipe mới, dò opcode</td><td>adb thô, gõ tay</td><td>không</td><td>có</td></tr>
+<tr><td>Đánh giá một capability trên xe</td><td><code>:car-integration</code> CLI runner</td><td>jar JVM</td><td>có</td></tr>
+<tr><td>Conformance từng bước, ghi evidence</td><td>shell mỏng gọi runner</td><td>jar JVM</td><td>có</td></tr>
+<tr><td>Test parser, state machine, bất biến</td><td>JUnit trên fixture đã ghi</td><td>không</td><td>không</td></tr>
+<tr><td>Test UX và mọi trạng thái kẹt</td><td>JUnit + <code>FakeDevice</code></td><td>không</td><td>không</td></tr>
+<tr><td>Kiểm chứng người dùng dùng được</td><td>APK trên head unit</td><td>APK + attestation</td><td>có</td></tr>
+</tbody></table></div>
+<div class="callout"><strong>Ranh giới của "shell trong repo".</strong> Shell được phép chứa: tham số, thư mục evidence, chạy từng bước resumable, in verdict. Shell <b>không</b> được chứa: opcode, <code>am start</code>, resize, hay parse output — vì đó là bản hiện thực thứ hai. Khám phá bằng adb thô thì cứ làm, nhưng sản phẩm của nó là <em>recipe + fixture</em>, không phải logic được commit.</div>
+
+<h4>Hiện trạng theo từng ô, và phải đi đâu</h4>
+<div class="scroll"><table><thead><tr><th>Feature</th><th>Hôm nay ở đâu</th><th>Quy mô</th><th>Tách về</th></tr></thead><tbody>
+<tr><td><b>Cluster Cast</b></td><td><code>modules/clustercast</code> — trộn cả ba tầng: <code>ShellGateway</code> (thiết bị), <code>CastPlanner/Executor/Coordinator</code> (quyết định), <code>CastModels</code> (dữ liệu), Activity/bubble (UI)</td><td>11.588 LOC · 51 file · chỉ 5/28 file trong <code>v2</code> có import Android</td><td>cắt theo đúng seam đã có: models+planner+journal → <code>:core</code>; gateway+parser → <code>:car-integration</code>; Activity/bubble → <code>:app</code></td></tr>
+<tr><td><b>Navigation + HUD</b></td><td>root package (<code>NavParse</code>, <code>NavRepository</code>, <code>ClusterBroadcaster</code>, <code>AmapFrameBuilder</code>, <code>SourceArbiter</code>…) + <code>navigation/</code> + <code>modules/navaccess|navrealtime|navremoteviews|navaudiocue|dash|vdmap|hal</code></td><td><code>navigation/</code> 727 LOC + nhiều file rời ở root</td><td>model/state → <code>:core</code>; notification listener, broadcaster, HUD frame → <code>:car-integration</code>; card/toggle → <code>:app</code></td></tr>
+<tr><td><b>Dead Reckon · mock-location</b></td><td><code>modules/deadreckon</code>, <code>modules/mockloc</code></td><td>824 + 271 LOC, đã ngắt khỏi wiring</td><td>không tách, không có ô trong lưới; giữ nguyên để rollback đọc được</td></tr>
+<tr><td><b>Shared</b></td><td><code>ClusterProfile</code> (opcode DL3/DL5), <code>Prefs</code>, rollout flags, <code>ModuleHost/Registry</code>, design token</td><td>—</td><td>profile/opcode/prefs schema → <code>:core</code>; transport + runner → <code>:car-integration</code>; UI kit → <code>:app</code></td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>Cảnh báo chi phí.</strong> <code>settings.gradle.kts</code> hiện chỉ có <code>:app</code>, và toàn bộ hạ tầng attestation/exact-source gate đang gắn vào <code>app/build.gradle.kts</code>. Tách module phải kéo theo phần đó. Vì vậy làm <strong>một lần, sớm</strong> — tách dở sẽ tệ hơn không tách.</div>
+<h3>Bất biến hợp đồng</h3>
+<div class="grid2">
+<div class="card"><h4>I1 · Mọi thao tác có kết cục kết thúc</h4><p class="small">Không phase nào được tồn tại vĩnh viễn. Sáng nay <code>RECOVERING</code> là ngõ cụt tuyệt đối vì <code>decide()</code> từ chối bù trừ khi ledger có <code>ISSUED</code>, khi epoch lệch, hoặc khi <code>stopRequested</code> — cả ba đúng cùng lúc — còn <code>completeVerification</code> chỉ nhận <code>VERIFYING</code>.</p></div>
+<div class="card"><h4>I2 · Mọi trạng thái có ≥1 đường ra</h4><p class="small">Tập hành động rỗng là lỗi hợp đồng, không phải fail-safe. Trạng thái fail-closed vẫn phải giữ được Chẩn đoán và một hành động phục hồi đọc-chỉ.</p></div>
+<div class="card"><h4>I3 · Thành công cần bằng chứng người lái thấy được</h4><p class="small">Không dùng trạng thái window manager làm bằng chứng chiếu. Chưa có observable thì capability phải trả <em>không biết</em>, không được trả <em>thành công</em>.</p></div>
+<div class="card"><h4>I5 · Không tuyên bố cái không đo được</h4><p class="small">Không có observable thì trạng thái hiển thị là "đã phát lệnh mở chiếu", không phải "đang chiếu · đã xác minh". Trung thực về giới hạn là một yêu cầu, không phải lời xin lỗi.</p></div>
+<div class="card"><h4>I6 · Tự cứu được, không cần người nhìn</h4><p class="small">Mọi trạng thái phải tự thoát được bằng hành động trong app. Cần adb hay cần người nhìn cụm mới dùng lại được là lỗi hợp đồng nghiêm trọng nhất.</p></div>
+<div class="card"><h4>I4 · Một bản hiện thực</h4><p class="small">Opcode, <code>am start</code>, resize, parse chỉ tồn tại trong core. Shell chỉ được gọi runner.</p></div>
+</div>
+</section>
+
+<section id="capabilities"><div class="section-head"><span class="num">05</span><h2>Capability catalogue</h2></div>
+<p>Mỗi capability là một đơn vị chạy được độc lập trên xe, có tiền đề, có bằng chứng thành công riêng, và idempotent khi tiền đề đã thoả. Cột <em>bằng chứng</em> là điều phải đo được — chỗ nào chưa biết thì ghi thẳng là chưa biết.</p>
+<div class="scroll"><table><thead><tr><th>Capability</th><th>Hành động đã chứng minh</th><th>Bằng chứng thành công</th><th>Trạng thái</th></tr></thead><tbody>
+<tr><td><b>observe</b></td><td>đọc <code>am stack list</code>, <code>dumpsys display</code>, <code>dumpsys SurfaceFlinger</code>, 4 global</td><td>parse ra display cụm, occupant, geometry, globals — test trên fixture thật</td><td><span class="badge ok">khả thi, có fixture</span></td></tr>
+<tr><td><b>place</b></td><td><code>am start --display 1 --windowingMode 5 -n &lt;comp&gt;</code></td><td>xuất hiện <code>Stack … displayId=1</code> với taskId của target</td><td><span class="badge ok">đã chứng minh 27/7</span></td></tr>
+<tr><td><b>fit</b></td><td><code>am task resize &lt;tid&gt; 0 0 1920 720</code></td><td>bounds <code>[0,0][1920,720]</code> trên stack đó</td><td><span class="badge ok">đã chứng minh</span></td></tr>
+<tr><td><b>open-projection</b></td><td><code>service call AutoContainer 2 i32 1000 i32 {30,16,35} s16 ''</code></td><td><span class="p0">chưa có observable</span> — owner xác nhận bằng mắt "lên rồi"</td><td><span class="badge p0">khả thi, chưa đo được</span></td></tr>
+<tr><td><b>teardown</b></td><td><code>… i32 18</code> rồi <code>… i32 0</code></td><td><span class="p0">chưa có observable</span> — owner xác nhận đồng hồ về</td><td><span class="badge p0">khả thi, chưa đo được</span></td></tr>
+<tr><td><b>restore</b></td><td><code>am start --display 0 --windowingMode 1 -n &lt;comp&gt;</code> + trả globals về baseline</td><td>0 stack trên display 1; globals khớp baseline đã journal</td><td><span class="badge p1">thiếu journal cho force_resizable</span></td></tr>
+<tr><td><b>probe-profile</b></td><td><code>service list</code>, tên display, kích thước, density</td><td>khớp profile DL3; <code>svcName</code> phải lấy từ profile, không hardcode</td><td><span class="badge p1">DiLink5 chưa phủ</span></td></tr>
+</tbody></table></div>
+<div class="callout red"><strong>Hai capability quan trọng nhất — mở và đóng chiếu — hiện chỉ có bằng chứng bằng mắt người.</strong> Đó chính là lý do state machine không thể tự biết mình thành công hay thất bại, và là lý do phải giải R2 trước mọi việc khác.</div>
+</section>
+
+<section id="tasks"><div class="section-head"><span class="num">06</span><h2>Tasks</h2></div>
+<div class="phase"><div class="phase-id">S0.0</div><div><h4>Thu hồi nhánh "nhận giao dịch treo là thành công"</h4><p class="small">Nhánh tôi thêm lúc 09:40 hôm nay cho phép <code>completeVerification</code> chạy trên giao dịch <code>RECOVERING</code> và nhận nó là thành công dựa trên <code>ACTIVE_SINGLE</code> ở tầng window manager. Với dữ kiện 09:52 thì tiêu chí đó vô hiệu: nó sẽ tuyên bố chiếu thành công cho một cụm đang hiện đồng hồ. Phải revert trước mọi việc khác, vì nó đang nằm trong bản đã cài trên xe.</p><p class="small"><b>Exit gate:</b> không còn tham số <code>allowRecovering</code>; suite xanh; nhánh idle-close cũng phải xem lại theo Q8.</p></div></div>
+<div class="phase"><div class="phase-id">S0</div><div><h4>Giải R2 — observable cho "cụm đang hiện app"</h4><p class="small">Off-car: viết bộ so sánh hai dump SurfaceFlinger (đóng vs mở) và liệt kê mọi trường khác nhau. On-car: 4 bước ở §Verification, ≤ 2 phút. Nếu không tìm được tín hiệu đọc-chỉ nào, ghi vào Open Questions và <em>capability trả về không-biết</em> thay vì đoán.</p><p class="small"><b>Exit gate:</b> một biểu thức đọc-chỉ, có test trên fixture đóng và fixture mở, phân biệt đúng hai trạng thái.</p></div></div>
+<div class="phase"><div class="phase-id">S0.5</div><div><h4>Tách <code>:core</code> / <code>:car-integration</code> / <code>:app</code> — một lần, trước khi viết thêm capability</h4><p class="small">Cắt theo seam đã tồn tại: <code>v2</code> chỉ có 5/28 file phụ thuộc Android, nên phần lớn máy trạng thái đã sẵn sàng thành JVM thuần. Kéo theo hạ tầng attestation/exact-source từ <code>app/build.gradle.kts</code> sang cấu hình nhiều module. Không thêm tính năng trong bước này, không đổi hành vi.</p><p class="small">Chia thành 7 batch, thiết kế chi tiết ở mục dưới. <b>B0 đã xong 11:16.</b></p><p class="small"><b>Exit gate:</b> <code>settings.gradle.kts</code> có ba module; <code>:core</code> biên dịch không có Android/dadb trên classpath; toàn bộ 562 test hiện có vẫn xanh; <code>collectAuthorizedApk</code> và <code>verifyExactSourceIdentity</code> vẫn chạy đúng; test tĩnh chặn import chéo feature.</p></div></div>
+<div class="phase"><div class="phase-id">S1</div><div><h4>Runner headless + 7 capability</h4><p class="small">Trích <code>modules/clustercast/v2</code> thành core không phụ thuộc Android UI; thêm <code>RealDevice</code>/<code>RecordedDevice</code>/<code>FakeDevice</code>; CLI in JSON. Không sửa app trong bước này.</p><p class="small"><b>Exit gate:</b> <code>runner observe</code> chạy trên xe in JSON đúng; <code>runner place|fit|open|teardown|restore</code> chạy được từng cái rời; toàn bộ observer test chạy trên fixture thật.</p></div></div>
+<div class="phase"><div class="phase-id">S2</div><div><h4>Conformance trên xe + bất biến I1/I2</h4><p class="small">Mỗi capability một case: tiền đề → hành động → quan sát → assert. Thêm quét tổ hợp trạng thái × sự cố để chứng minh không có ngõ cụt và không có tập hành động rỗng.</p><p class="small"><b>Exit gate:</b> một phiên ≤ 10 phút, resumable, ghi verdict + fixture cho từng bước; quét bất biến chạy off-car và fail khi cố tình tạo ngõ cụt.</p></div></div>
+<div class="phase"><div class="phase-id">S3</div><div><h4>Khai tử logic trùng trong shell</h4><p class="small">Chuyển <code>scripts/vehicle/*.sh</code> sang gọi runner; thêm test tĩnh chặn opcode/<code>am start</code>/resize tái xuất hiện trong shell.</p><p class="small"><b>Exit gate:</b> grep không còn opcode hay <code>am start --display</code> trong <code>scripts/</code>; test tĩnh xanh.</p></div></div>
+<div class="phase"><div class="phase-id">S4</div><div><h4>Façade + wiring lại app, UX trên fake</h4><p class="small">UI chỉ thấy <code>CastFacade</code>. Dựng lại các trạng thái kẹt thật bằng <code>FakeDevice</code> và kiểm tra màn hình không bao giờ rơi vào tình trạng khoá sạch. Giữ phần thiết kế đã làm đêm 26/7 (hierarchy, disabled state, tiếng Việt, tích xanh, nút nổi) vì nó độc lập với Track 1.</p><p class="small"><b>Exit gate:</b> test tĩnh UI không tham chiếu gateway/adb/opcode; test UI phủ <code>RECOVERY_PENDING</code>, <code>READ_ONLY</code>, epoch-drift, ISSUED-ledger; không trạng thái nào cho tập hành động rỗng.</p></div></div>
+
+<h3>Thiết kế di trú S0.5 — file nào về đâu</h3>
+<p>Đo trên cây source ngày 27/7: <strong>22 trong 28 file của <code>v2</code> đã sạch cả Android lẫn dadb</strong>. Nên phần lớn công việc là dời file và đổi package, không phải viết lại. Chỉ 6 file có ràng buộc thật, và đúng một file trong đó cần tách đôi.</p>
+<div class="scroll"><table><thead><tr><th>Về module</th><th>File</th><th>LOC</th><th>Vì sao</th></tr></thead><tbody>
+<tr><td rowspan="4"><b>:core</b><br><span class="small muted">22 file · ~4.000 LOC</span></td><td><code>CastModels</code>, <code>CastGeometry</code>, <code>CastPolicy</code>, <code>CastRolloutRegistry</code></td><td>519</td><td>dữ liệu, metadata, config — không biết thiết bị</td></tr>
+<tr><td><code>CastPlanner</code>, <code>CastExecutor</code>, <code>CastCoordinator</code>, <code>CastRecovery</code>, <code>CastManualIntent</code>, <code>CastColdBootstrap</code>, <code>CastAutomation</code>, <code>CastAdjustmentWorkspace</code>, <code>CastAutomationSettings</code></td><td>2.642</td><td>quyết định thuần; đây là nơi bất biến I1/I2/I6 được kiểm off-car</td></tr>
+<tr><td><code>CastUiStateProjector</code>, <code>CastUiRenderer</code>, <code>CastRuntimeUi</code>, <code>CastBubbleProjection</code>, <code>CastAppPresentation</code></td><td>762</td><td>chiếu trạng thái ra <em>mô hình</em> hiển thị — vẫn là quyết định, không phải Android View</td></tr>
+<tr><td><code>ShellGateway</code>, <code>ObservedStateReader</code>, <code>CastAmStackParser</code>, <code>CastOperationLog</code></td><td>406</td><td>khai báo port + parser thuần; <code>ShellGateway</code> là interface nên thuộc core, impl nằm ở integration</td></tr>
+<tr><td rowspan="3"><b>:car-integration</b><br><span class="small muted">5 file · ~1.200 LOC</span></td><td><code>CastAndroidRuntime</code></td><td>468</td><td>Android + dadb: nối transport, timeout, khoá phiên</td></tr>
+<tr><td><code>CastPlacementCommands</code></td><td>242</td><td>dadb: sinh lệnh <code>am start</code> / resize / opcode</td></tr>
+<tr><td><code>CastAppCatalog</code>, <code>CastAndroidLifecycle</code>, <code>CastInProcessDisplay</code></td><td>500</td><td>PackageManager, broadcast, DisplayManager</td></tr>
+<tr><td><b>tách đôi</b></td><td><code>CastSessionStore</code></td><td>446</td><td><span class="p1">Đây là K3.</span> Phần <code>encode</code>/<code>decode</code>/checksum/schema là thuần → <code>:core</code>. Phần ghi file nguyên tử là Android → <code>:car-integration</code>, đứng sau port <code>Journal</code>.</td></tr>
+</tbody></table></div>
+
+<h4>Hai port phải khai báo trong <code>:core</code> trước khi dời</h4>
+<div class="grid2">
+<div class="card"><h4><code>Journal</code></h4><pre>interface Journal {
+    fun exists(): Boolean
+    fun read(): ByteArray
+    fun write(bytes: ByteArray)
+}</pre><p class="small">Ba impl: ghi file nguyên tử cho app, file thường cho CLI runner, in-memory cho test. Không có port này thì <code>:core</code> sẽ lén phụ thuộc Android và bảo đảm biên dịch trở thành vô nghĩa.</p></div>
+<div class="card"><h4><code>DeviceShell</code> (đã tồn tại tên <code>ShellGateway</code>)</h4><pre>interface DeviceShell {
+    fun run(command: String): String
+    fun close()
+}</pre><p class="small">Ba impl: <code>RealDevice</code> qua dadb, <code>RecordedDevice</code> phát lại fixture đã ghi, <code>FakeDevice</code> lái được vào mọi trạng thái. Interface đã sạch nên chỉ cần dời, không cần thiết kế mới.</p></div>
+</div>
+
+<h4>Thứ tự batch — mỗi batch phải xanh mới sang batch sau</h4>
+<div class="scroll"><table><thead><tr><th>Batch</th><th>Nội dung</th><th>Exit gate</th></tr></thead><tbody>
+<tr><td><b>B0</b></td><td>Dựng module <code>:core</code> trống, nối <code>:app → :core</code>, test cô lập classpath</td><td><span class="badge ok">XONG 11:16</span> — <code>:core</code> 2 test xanh, app 562 test xanh, cả 3 file <code>core/</code> có trong manifest attestation, <code>verifyExactSourceIdentity</code> xanh</td></tr>
+<tr><td><b>B1</b></td><td>Dời nhóm dữ liệu <span class="small muted">+ <code>CastAutomation</code>, bắt buộc theo bao đóng phụ thuộc</span></td><td><span class="badge ok">XONG 11:38</span> — 5 file / 843 LOC; app 562 + core 2 xanh; 3 chỗ smart-cast xuyên module đã bind cục bộ; <code>source()</code> của test parity đã biết cả hai gốc</td></tr>
+<tr><td><b>B2</b></td><td>Khai báo port <code>Journal</code> trong <code>:core</code>; tách <code>CastSessionStore</code> thành codec (core) + I/O (integration)</td><td><span class="badge ok">XONG</span> — port đã tồn tại sẵn tên <code>AtomicBytes</code>; codec + logic sang <code>:core</code>, <code>AndroidAtomicBytes</code> ở lại <code>:app</code>; constructor nhận <code>File</code> bỏ khỏi core, 1 call site đảo phụ thuộc</td></tr>
+<tr><td><b>B3</b></td><td>Dời parser + port: <code>ShellGateway</code>→<code>DeviceShell</code>, <code>ObservedStateReader</code>, <code>CastAmStackParser</code>, <code>CastOperationLog</code></td><td><span class="badge ok">XONG</span> — compile sạch ngay, không phải sửa gì</td></tr>
+<tr><td><b>B4</b></td><td>Dời nhóm quyết định (9 file, 2.642 LOC)</td><td><span class="badge ok">XONG</span> — kèm projector; 31 file test chuyển sang <code>:core</code>, ~10 khai báo mở visibility, <code>SourceRoots</code> dùng chung qua test-fixtures</td></tr>
+<tr><td><b>B5</b></td><td>Dời nhóm projector (5 file); tạo module <code>:car-integration</code> và dời 5 file thiết bị vào đó</td><td><span class="badge p1">4/5</span> — <code>:car-integration</code> + <code>CastFacade</code> + ratchet test; số file UI chạm máy móc 5 → <b>1</b>. Còn <code>ClusterCastActivity</code> (~35 call site, đang 497 dòng/ngưỡng 501 nên phải tách file trước)</td></tr>
+<tr><td><b>B6</b></td><td><code>main()</code> CLI runner trong <code>:car-integration</code></td><td><span class="badge ok">XONG 13:20</span> — <code>observe</code> chạy trên thiết bị thật qua adb không cần APK (2.315 ms), fail trung thực trong 15 ms khi không có thiết bị; runner chỉ-đọc và có test chặn thêm lệnh mutate trước khi Q1 được trả lời</td></tr>
+</tbody></table></div>
+<div class="callout red"><strong>Sửa lưới, 27/7 sau khi review Navigation.</strong> Ô <code>:car-integration</code> × Navigation ban đầu ghi <code>ClusterBroadcaster</code> và HUD frame — <b>sai</b>. Theo Q1, hai thứ đó nói với thiết bị bằng <em>API Android cục bộ</em> (broadcast, notification listener), không qua adb, nên chúng thuộc <code>:app</code>. Navigation hiện <b>không có</b> phần nào trong <code>:car-integration</code>, và đó là đúng.</div>
+<div class="callout amber"><strong>Lằn ranh <code>:car-integration</code> đã thu hẹp so với lúc viết spec (27/7, khi làm B5).</strong> "Nói chuyện với thiết bị" hoá ra là hai việc khác nhau: gửi lệnh <b>qua adb tới head unit</b> — thứ CLI runner phải chạy được không cần APK, nên bắt buộc JVM thuần và nằm ở module này; và gọi <b>API Android cục bộ của chính app</b> (PackageManager, DisplayManager, AtomicFile, broadcast) — thứ này không phải car-execution nên ở lại <code>:app</code>. Vì vậy chỉ <code>CastPlacementCommands</code> sang module mới; 5 file Android ở lại là có chủ ý. Gate cũ ghi "dời 5 file thiết bị" vì thế không còn đúng và đã được thay bằng gate façade.</div>
+<div class="callout red"><strong>Luật của giai đoạn di trú:</strong> chỉ dời file và đổi package. <b>Không</b> sửa hành vi, không sửa lỗi, không tối ưu, không đổi tên public API vì thấy tên xấu. Mọi thay đổi hành vi phải là commit riêng sau khi di trú xong — nếu trộn vào, ta mất khả năng nói "562 test xanh" có nghĩa gì.</div>
+<div class="callout amber"><strong>Thứ tự thực thi, cập nhật 11:09.</strong> S0.0 đã xong. <b>S0.5 làm ngay, off-car</b>: sau khi Q1 hạ xuống P1 và R13 cho phép làm đúng đắn mà không cần nó, việc tách module không còn phải chờ observable — hợp đồng cần thiết để tách là <em>ba layer và các capability đã chứng minh</em>, chứ không phải cách tự xác minh. S0 chuyển sang chạy khi có xe, và chỉ còn bước 3–4 của giao thức. S0.5 trước S1 vì nếu không có observable thì capability không thể tự báo thành công, và mọi thứ dựng lên trên sẽ lại là phán quyết trên dữ kiện sai — đúng thứ đã xảy ra sáng nay.</div>
+</section>
+
+<section id="verification"><div class="section-head"><span class="num">07</span><h2>Verification</h2></div>
+<h3>Hai loại sự thật — đừng trộn</h3>
+<div class="grid2">
+<div class="card"><h4>Sự thật lúc đánh giá <span class="badge ok">đã đủ công cụ</span></h4><p class="small">Track 1, shell/CLI trên xe. Kịch bản + candidate + chạy lần lượt + <b>owner nhìn cụm rồi cho verdict</b>. Mắt người là trọng tài, hoàn toàn hợp lệ, và không cần observable tự động nào. Repo đã có đúng hình này: <code>scripts/vehicle/matrix.sh</code> chạy từng bước địa chỉ hoá, nhận <code>p/f/s/q</code>, ghi <code>results.tsv</code>. Điều duy nhất phải giữ: verdict của người phải gắn với candidate và bước cụ thể, để sau này còn truy được.</p></div>
+<div class="card"><h4>Sự thật lúc chạy thật <span class="badge p0">chưa có</span></h4><p class="small">Trong APK, xe đang đi, không ai nhìn hộ. App phải tự quyết định hiện gì và bật nút nào. Hôm nay nó quyết định từ dữ kiện window manager, kết luận "đang chiếu" trong khi cụm hiện đồng hồ, rồi tự khoá sạch. Đây là chỗ duy nhất Q1 có ý nghĩa — và nó có một câu trả lời trung thực <em>không cần</em> giải Q1: app ngừng tuyên bố cái nó không kiểm chứng được.</p></div>
+</div>
+<div class="callout red"><strong>Bất biến quan trọng nhất của cả tài liệu này.</strong> Mắt người quyết định <em>tính năng có chạy hay không</em>. Nhưng app <b>không bao giờ được cần mắt người để thoát khỏi trạng thái kẹt</b>. Sáng 27/7 nó vi phạm đúng điều này: muốn dùng lại phải có người cắm adb vào xe. Một tính năng mà cách hồi phục duy nhất là gọi lập trình viên thì không phải tính năng.</div>
+<h3>Giao thức 4 bước cho R2 — làm trên xe, ≤ 2 phút, xe đang chạy</h3>
+<div class="scroll"><table><thead><tr><th>#</th><th>Trạng thái</th><th>Đo</th><th>Kỳ vọng</th></tr></thead><tbody>
+<tr><td>1</td><td>cụm hiện đồng hồ, không task trên display 1</td><td>ứng viên observable + <code>numLayers</code></td><td>đã có: <code>numLayers=0</code>; ghi giá trị ứng viên làm mốc "đóng"</td></tr>
+<tr><td>2</td><td>đã <code>place</code> task lên display 1, <b>chưa</b> phát <code>castSeq</code></td><td>cùng bộ đo</td><td>đã có: <code>numLayers=2</code> mà cụm vẫn đồng hồ → chứng minh tiêu chí cũ sai; ứng viên phải vẫn ở mốc "đóng"</td></tr>
+<tr><td>3</td><td>sau <code>30 → 16 → 35</code>, cụm hiện app (owner xác nhận)</td><td>cùng bộ đo</td><td>ứng viên phải đổi sang mốc "mở"; nếu không đổi thì loại ứng viên đó</td></tr>
+<tr><td>4</td><td>sau <code>18 → 0</code></td><td>cùng bộ đo</td><td>ứng viên trở lại mốc "đóng"; đồng hồ về</td></tr>
+</tbody></table></div>
+<p class="small">Bước 1 và 2 đã có dữ liệu từ sáng 27/7 nên phiên tới chỉ cần bước 3 và 4. Dump đầy đủ ở trạng thái "đóng" đã lưu tại <code>fixtures/sf-FULL-projection-CLOSED.txt</code>; cần thêm bản đối chiếu ở trạng thái "mở".</p>
+<h3>Bẫy đã biết khi chạy trên xe</h3>
+<ul>
+<li><code>service call … s16 ""</code> bị adb ăn mất chuỗi rỗng và trả <code>Parcel(fffffffc …)</code>. Phải gửi nguyên lệnh trong nháy: <code>adb shell "service call AutoContainer 2 i32 1000 i32 18 s16 ''"</code> → <code>Parcel(00000000 00000000)</code>.</li>
+<li><code>uiautomator dump</code> không dùng được trên head unit ("null root node"); tự động hoá UI phải dùng <code>screencap</code> + <code>input tap</code>. Đây là một lý do nữa để không test qua UI.</li>
+<li><code>am start</code> vào <code>ClusterCastActivity</code> bị SecurityException vì activity không exported; phải vào qua Home.</li>
+<li>Máy phải nổ trong phiên dài: phiên 26/7 chết sau ~12 phút vì ACC standby.</li>
+<li>Kiểm tra bằng <code>grep</code> gõ tay là nguồn sai: dùng parser của core, không tự bịa pattern.</li>
+</ul>
+<h3>Bảng phân chia bằng chứng</h3>
+<div class="grid2">
+<div class="card"><h4>Off-car chứng minh được</h4><ul class="small"><li>parse output thật (fixture)</li><li>bất biến I1/I2 trên toàn bộ tổ hợp</li><li>plan/ladder đúng thứ tự và short-circuit</li><li>map trạng thái → màn hình, mọi trạng thái kẹt</li></ul></div>
+<div class="card"><h4>Chỉ xe trả lời được</h4><ul class="small"><li>observable cho chiếu mở/đóng (R2)</li><li><code>castSeq</code> cần phát lại theo chu kỳ nào</li><li>độ trễ thật của từng bước</li><li>hành vi OEM khi CarPlay/Android Auto đang giữ</li></ul></div>
+</div>
+</section>
+
+
+<section id="risks"><div class="section-head"><span class="num">08</span><h2>Risks</h2></div>
+<p>Kết luận trước khi vào chi tiết: <strong>kiến trúc này work; rủi ro còn lại chủ yếu là thời gian</strong> cộng bốn rủi ro kỹ thuật cụ thể. Không rủi ro nào trong danh sách này nói rằng cách chia hai track là sai.</p>
+<div class="scroll"><table><thead><tr><th>#</th><th>Rủi ro</th><th>Vì sao đáng lo</th><th>Giảm thiểu</th></tr></thead><tbody>
+<tr><td><b>K1</b></td><td><s>Dồn việc vào đầu, không có gì dùng được trong một giai đoạn</s></td><td>Đã đóng: app vốn đã không dùng được, nên không có trạng thái tốt nào bị mất trong lúc refactor.</td><td><span class="badge ok">Không cần giảm thiểu</span></td></tr>
+<tr><td><b>K2</b></td><td>Chuỗi attestation đứt khi tách multi-module</td><td><code>ExactSourceIdentity</code>, <code>collectAuthorizedApk</code>, <code>verifyTree</code> nằm trong <code>app/build.gradle.kts</code> và chính chúng bảo đảm "APK khớp source". Mất nó thì không còn chứng minh được bản trên xe là source nào — tệ hơn lợi ích của việc tách.</td><td>Tách <code>:core</code> trước; giữ attestation phủ <b>toàn cây</b>, không tách theo module; <code>verifyExactSourceIdentity</code> phải xanh ở exit gate của S0.5.</td></tr>
+<tr><td><b>K3</b></td><td><code>:core</code> lén phụ thuộc Android qua journal</td><td>Journal hiện lưu bằng file/prefs Android. Nếu không định nghĩa port tử tế thì bảo đảm "core không thể gọi thiết bị" thành vô nghĩa — đúng loại hứa suông cần tránh.</td><td>Port <code>Journal</code> khai báo trong <code>:core</code>, ba impl: Android cho app, file cho CLI, in-memory cho test. Module <code>:core</code> không có Android trên classpath nên vi phạm là lỗi biên dịch.</td></tr>
+<tr><td><b>K4</b></td><td>Façade lệch shape giữa hai track</td><td>Core hoàn hảo, UI hoàn hảo, hợp đồng ở giữa lệch → feature gãy trong khi test hai bên vẫn xanh. Đây đúng loại lỗi steering của dự án cảnh báo, và là cách "86 test pass mà không dùng được" xảy ra.</td><td>Một façade duy nhất, kiểu tường minh, kèm test trace một giá trị đi hết vòng: ý định xuống, quan sát lên.</td></tr>
+<tr><td><b>K5</b></td><td>Fixture tạo cảm giác an toàn giả</td><td>Fixture là output của <b>một</b> head unit ở <b>một</b> firmware. DiLink5 đã khác <code>svcName</code>. Xanh off-car không suy ra được xanh trên xe.</td><td>Fixture đánh version theo profile; fixture-green không bao giờ đóng gate của xe; conformance trên xe vẫn là bắt buộc trước khi ship.</td></tr>
+<tr><td><b>K6</b></td><td>Lại vá ad-hoc ngay tại xe dưới áp lực thời gian</td><td>Hôm nay tôi vá và cài ba lần ngay tại xe; hai trong ba lần dựa trên chẩn đoán chưa đủ, và một lần làm treo UI. Kế hoạch không tự ngăn chuyện này.</td><td>Luật cứng: phiên trên xe <b>chỉ đo và ghi</b>. Ngoại lệ duy nhất là revert một thứ đã chứng minh sai.</td></tr>
+<tr><td><b>K7</b></td><td>Cột Navigation + HUD trong lưới có thể sai chủ</td><td>Tôi chia nó theo tên file, chưa đọc sâu. Nó rải khắp root package cộng bảy module con nên khả năng messy hơn Cast.</td><td>Coi phần nav trong lưới là tạm; chỉ chốt sau khi Cast xong. Không tách nav song song với Cast.</td></tr>
+</tbody></table></div>
+
+<h3>Quyết định — không làm vá tạm</h3>
+<div class="callout"><p><strong>Owner chốt 2026-07-27 11:09: bỏ.</strong> Lý do: app hiện <em>vốn đã không dùng được</em>, nên một bản vá chỉ để "có cast chạy tạm" không mua được gì thật, mà lại tiêu thời gian và kéo ta về đúng thói vá trên nền cũ. K1 vì thế không còn là rủi ro cần đánh đổi: không có gì để mất trong giai đoạn refactor.</p>
+<p class="small">Ghi lại để sau này không ai đề xuất lại: phương án đã cân nhắc là đưa <code>castSeq</code> vào kế hoạch chiếu thay vì chỉ nằm ở nhánh bootstrap. Nó vẫn là fix đúng về bản chất — nhưng chỗ đúng để làm là <code>:core</code> ở S1, nơi "đường chiếu đang mở" được mô hình hoá thành session state có tiền đề và bằng chứng riêng, không phải đắp thêm một lệnh vào code cũ.</p>
+</div>
+</section>
+<section id="questions"><div class="section-head"><span class="num">09</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>#</th><th>Câu hỏi</th><th>Ai trả lời</th><th>Ưu tiên</th></tr></thead><tbody>
+<tr><td>Q1</td><td><b>Hạ ưu tiên sau kết luận 27/7:</b> việc đánh giá không cần nó, vì mắt người là trọng tài hợp lệ. Nó chỉ cần cho việc app tự xác minh lúc chạy. Không có nó thì app vẫn đúng đắn được, chỉ là không bao giờ hiện "đã xác minh" (R13). Observable nào phản ánh "cụm đang hiện app của ta"? <code>dumpsys</code> của AutoContainer/FissionGeneraySvc trả rỗng, FissionHostSvc chỉ trả banner. Còn lại: so sánh dump SurfaceFlinger đóng vs mở.</td><td>xe, 2 phút, giao thức §07</td><td><span class="badge p1">P1 · hạ từ P0</span></td></tr>
+<tr><td>Q2</td><td><code>castSeq</code> phải phát lại mỗi lần chiếu, mỗi lần boot, hay chỉ khi chiếu đang đóng? Quyết định này định hình cast plan.</td><td>xe</td><td><span class="badge p0">P0</span></td></tr>
+<tr><td>Q3</td><td>Vì sao khung/DPI xám sau khi cụm đã hiện app? Giả thiết: journal chưa ở active-verified. Xác nhận sau khi có Q1.</td><td>off-car + xe</td><td><span class="badge p1">P1</span></td></tr>
+<tr><td>Q4</td><td><code>force_resizable_activities</code> chưa được journal và không có rung restore. Xe này mặc định 1 nên rủi ro nhỏ, nhưng máy nào mặc định 0 sẽ bị bỏ lại 1.</td><td>off-car</td><td><span class="badge p1">P1</span></td></tr>
+<tr><td>Q5</td><td><code>svcName</code> đang hardcode <code>AutoContainer</code>; DiLink5 dùng <code>auto_container</code>. Mọi encoding opcode phải lấy tên từ profile.</td><td>off-car</td><td><span class="badge p1">P1</span></td></tr>
+<tr><td>Q6</td><td><code>mode=READ_ONLY</code> nghĩa chính xác là gì và ai đặt nó? Nó khoá cả việc chọn app, tức nó chặn cả hành động không đụng thiết bị.</td><td>off-car</td><td><span class="badge p1">P1</span></td></tr>
+<tr><td>Q8</td><td>Nhánh "đóng giao dịch mồ côi khi cụm rỗng" cũng dựa trên <code>IDLE_CLEAN</code> — cũng là dữ kiện window manager. Nếu chiếu đang mở mà không có task nào trên display 1 thì WM báo rỗng trong khi cụm có thể vẫn đang hiện thứ gì đó. Nhánh này có an toàn hay không phụ thuộc Q1.</td><td>off-car sau khi có Q1</td><td><span class="badge p0">P0</span></td></tr>
+<tr><td>Q7</td><td>Có nên giữ nhánh "nhận giao dịch treo là thành công" tôi thêm lúc 09:40? Với dữ kiện mới thì <b>không</b> — nó sẽ tuyên bố thành công cho thứ vô hình. Cần thu hồi trước khi làm S1.</td><td>đã có kết luận</td><td><span class="badge p0">P0</span></td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="section-head"><span class="num">10</span><h2>References</h2></div>
+<ul>
+<li><code>docs/refactor-car-execution/evidence/2026-07-27-owner-correction.md</code> — owner xác nhận cụm chưa bao giờ hiện VietMap sáng nay; các giả định bị vô hiệu.</li>
+<li><code>docs/refactor-car-execution/fixtures/</code> — <code>am-stack-list-occupied.txt</code>, <code>am-stack-list-clean.txt</code>, <code>dumpsys-activities-occupied.txt</code>, <code>dumpsys-display-projection-CLOSED.txt</code>, <code>sf-FULL-projection-CLOSED.txt</code>, <code>sf-layers-*.txt</code>, <code>service-list.txt</code>, <code>globals-occupied.txt</code>.</li>
+<li><code>docs/refactor-car-execution/evidence/ ảnh diag 05 và 12</code> — hai bản dump journal cho thấy ngõ cụt RECOVERING và <code>mode=READ_ONLY</code>.</li>
+<li><code>docs/refactor-car-execution/evidence/2026-07-27-night-build.md</code> — các thay đổi đêm 26/7 và phần nợ đã ghi.</li>
+<li><code>docs/specs/cluster-cast-rebaseline.html</code> — hợp đồng Cast canonical; §Open Questions của nó chứa câu hỏi mở về parked signal, là nguồn của ngộ nhận "chỉ chiếm cụm khi đỗ".</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="section-head"><span class="num">11</span><h2>Reviewer Log</h2></div>
+<div class="review">
+<h3>Pass 1 — 2026-07-27 · tự review</h3>
+<p class="small">Sub-agent blocking đã bị vô hiệu hoá theo <code>.kiro/steering/execution-reliability.md</code> §4 sau hai lần cancel trong session, nên pass này do primary agent thực hiện, phạm vi giới hạn ở chính tài liệu.</p>
+<h4>Findings và đã vá trong pass này</h4>
+<ul class="small">
+<li><span class="badge p0">P0</span> Tài liệu ghi nhánh adoption phải thu hồi nhưng không có task nào làm việc đó, trong khi code đó đang chạy trên xe. → thêm <b>S0.0</b> đứng trước tất cả.</li>
+<li><span class="badge p0">P0</span> Nhánh idle-close cũng dựa trên dữ kiện window manager, cùng loại sai với nhánh adoption, nhưng ban đầu tôi chỉ chất vấn một nửa. → thêm <b>Q8</b>.</li>
+<li><span class="badge p1">P1</span> Thiếu yêu cầu về ngân sách thời gian, dù "loading chậm lắm" và cast chậm là triệu chứng owner báo trực tiếp. → thêm <b>R11</b>.</li>
+<li><span class="badge p1">P1</span> Nghiệm thu R3 nói "quét toàn bộ tổ hợp" mà không định nghĩa tổ hợp nào — không xây được. → nêu rõ tích Descartes phải quét.</li>
+<li><span class="badge p2">P2</span> Số đo <code>numLayers=2</code> ở trạng thái có-task-chiếu-đóng chỉ nằm trong transcript, chưa thành file fixture. → ghi vào §Verification là phiên tới cần dump đầy đủ ở trạng thái mở, và lưu kèm mốc đóng đã có.</li>
+</ul>
+<h4>Pass 2 — cập nhật kiến trúc hai chiều</h4>
+<ul class="small">
+<li>Thêm lưới layer × feature, lấy số liệu thật từ cây source: <code>modules/clustercast</code> 11.588 LOC / 51 file, <code>v2</code> chỉ 5/28 file phụ thuộc Android — nên seam để tách đã có sẵn, không phải viết lại.</li>
+<li>Thêm <b>R12</b>: ranh giới cưỡng chế lúc biên dịch, không bằng kỷ luật. Đây là điểm khác biệt so với cách cũ, nơi mọi ranh giới chỉ tồn tại trong ý định của tôi.</li>
+<li>Thêm <b>S0.5</b> tách module, đặt sau S0 chứ không trước: tách module quanh một hợp đồng chưa chốt là tách sai lần thứ hai.</li>
+<li>Ghi rõ Dead Reckon và mock-location <em>không có ô nào</em> trong lưới — cố tình, để không ai vô tình hồi sinh chúng khi refactor.</li>
+<li>Ghi cảnh báo chi phí: hạ tầng attestation đang nằm trong <code>app/build.gradle.kts</code> và sẽ phải chuyển theo.</li>
+</ul>
+<h4>Pass 3 — sửa một phát biểu sai của chính tôi</h4>
+<ul class="small">
+<li>Pass 1 và 2 trình bày Q1 như vật cản chặn mọi việc. Sai. Owner chỉ ra "kiểu gì cũng phải nhìn vật lý" — và điều đó đúng: ở tầng đánh giá, verdict của người là hợp lệ và luôn đủ. Q1 chỉ chặn việc <em>app tự xác minh lúc chạy</em>. Đã tách thành hai loại sự thật trong §07 và hạ Q1 xuống P1.</li>
+<li>Hệ quả là một bất biến mạnh hơn cái tôi viết ban đầu: app không bao giờ được cần mắt người để tự cứu. Thành <b>I6</b> và <b>R14</b>.</li>
+<li>Thêm <b>R13</b>: không tuyên bố cái không đo được. Đây là cách sống chung với Q1 mà vẫn trung thực, thay vì chờ giải Q1 mới làm tiếp.</li>
+<li>Thêm §Risks với 7 rủi ro và quyết định carve-out có thời hạn. Rủi ro thật là thời gian, chuỗi attestation, port journal rò, façade lệch shape, fixture ru ngủ, và thói vá tại xe của chính tôi — không cái nào phủ định kiến trúc.</li>
+</ul>
+<h4>Pass 4 — review đối kháng về cách chia (sau khi B5 xong)</h4>
+<p class="small">Owner yêu cầu review đối kháng, đặc biệt là chia đúng hay chia sai. Dưới đây là số đo, không phải cảm nhận.</p>
+<div class="scroll"><table><thead><tr><th>Hạng mục</th><th>Số đo</th><th>Kết luận</th></tr></thead><tbody>
+<tr><td><code>:core</code> có thật sạch?</td><td>0 import android/dadb · 0 phụ thuộc module · 26 file / 4.882 LOC · 224 test</td><td><span class="badge ok">ĐÚNG — có bảo đảm biên dịch</span></td></tr>
+<tr><td>Façade có thật là ranh giới?</td><td>UI vẫn import <b>42 kiểu v2</b> trực tiếp — bằng đúng con số trước B5</td><td><span class="badge p0">SAI như đã báo</span> — chỉ chặn được lời gọi, không chặn kiểu</td></tr>
+<tr><td><code>:car-integration</code> có làm được việc của nó?</td><td>1 file / 242 LOC / 0 test; transport thật (<code>CastAndroidRuntime</code>, dadb) vẫn ở <code>:app</code></td><td><span class="badge p0">CHƯA</span> — B6 sẽ đụng tường vì runner cần transport</td></tr>
+<tr><td>Đã phân tầng chưa?</td><td><code>:app/clustercast</code> 29 file / 6.638 LOC, lớn hơn <code>:core</code></td><td><span class="badge p1">MỘT NỬA</span></td></tr>
+<tr><td>Chiều feature (hàng dọc)?</td><td>không file nào được chia theo feature; navigation chưa động</td><td><span class="badge p1">CHỈ CÓ TRONG TÀI LIỆU</span></td></tr>
+<tr><td>Tên package</td><td>vẫn <code>...clustercast.v2</code> ở cả 3 module (split package)</td><td><span class="badge p2">GÂY NHẦM</span></td></tr>
+<tr><td>Bề mặt API</td><td>~12 khai báo <code>internal</code> → public để qua ranh giới module</td><td><span class="badge p1">ĐI NGƯỢC HƯỚNG</span> — ratchet không thấy</td></tr>
+</tbody></table></div>
+<h4>Sai của chính tôi trong pass này</h4>
+<ul class="small">
+<li>Ratchet đo <b>lời gọi</b> nhưng tôi trình bày như thể nó đo <b>ranh giới</b>. Con số thật của coupling là 42 kiểu, và nó không giảm chút nào sau B5.</li>
+<li>Tôi chia theo "file nào thuần" thay vì "runner cần gì", nên module car-execution rỗng và mục tiêu chạy-trên-xe-không-cần-APK chưa tiến thêm bước nào.</li>
+</ul>
+<h4>Việc phải làm trước B6, theo thứ tự</h4>
+<ol class="small">
+<li>Tách <code>CastAndroidRuntime</code>: phần transport dadb sang <code>:car-integration</code>, phần ghép nối Android ở lại <code>:app</code>. Không làm việc này thì B6 vô nghĩa.</li>
+<li>Đổi ratchet sang đo <b>số kiểu v2 mà UI import</b>, công bố con số thật 42 và hạ dần.</li>
+<li>Hoãn chiều feature: chưa cần cho Track 1, làm bây giờ chỉ là xáo trộn.</li>
+<li>Đổi tên package: gộp thành một lượt cơ học sau khi ranh giới đã ổn, không làm rải rác.</li>
+</ol>
+<h4>Điều pass này KHÔNG kiểm được</h4>
+<p class="small">Tài liệu này là kế hoạch, nên không có gì để chạy test. Hai giả định nền của nó — Q1 và Q2 — chỉ xe trả lời được. Nếu Q1 không có câu trả lời thì kết luận trung thực là Cluster Cast không thể tự báo thành công, và điều đó phải được nói ra với người dùng thay vì che bằng một trạng thái chờ.</p>
+</div>
+</section>
+</div>
+</body>
+</html>

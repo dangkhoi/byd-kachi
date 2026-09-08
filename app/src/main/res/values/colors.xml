@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ClusterNav — LIGHT palette (DAY / default qualifier · light/dark foundation Stage 1).
+  Owner wants a light mode + a default "Theo xe" (follow system). This values/ file is the LIGHT
+  variant; values-night/colors.xml holds the DARK cockpit palette. Both files declare the SAME set of
+  color NAMES (only the VALUES differ) so every @color reference resolves in BOTH modes and no layout,
+  res/color state-list or Kotlin R.color.* reference has to change.
+  Accent hues are kept but tuned DEEPER where they double as ink on white (AA contrast).
+  Custom Views (SeatDiagramView/SpeedDialView/Pm25GaugeView/SegmentedControlView/ClusterPreviewView)
+  still hardcode dark hex — Stage 2 fixes those; they will look wrong in light until then (expected).
+-->
+<resources>
+    <!-- ── Brand / primary ─────────────────────────────────────────── -->
+    <color name="brand">#2563eb</color>          <!-- blue-600 (deeper so white label passes AA) -->
+    <color name="brand_pressed">#1d4ed8</color>   <!-- blue-700 pressed -->
+
+    <!-- ── Surfaces / background ───────────────────────────────────── -->
+    <color name="surface">#ffffff</color>         <!-- card surface (white) -->
+    <color name="screen_bg">#eef0f4</color>       <!-- light window background -->
+
+    <!-- ── Text inks ───────────────────────────────────────────────── -->
+    <color name="text_primary">#14151d</color>    <!-- near-black ink -->
+    <color name="text_secondary">#565a68</color>  <!-- muted ink -->
+
+    <!-- ── Lines ───────────────────────────────────────────────────── -->
+    <color name="divider">#dfe1e8</color>         <!-- hairline -->
+
+    <!-- ── Semantic accents (tuned for AA on white) ────────────────── -->
+    <color name="ok_green">#047857</color>        <!-- emerald-700 (AA as status ink) -->
+    <color name="warn_amber">#b45309</color>      <!-- amber-700 (AA as warning ink) -->
+    <color name="err_red">#dc2626</color>         <!-- red-600 -->
+    <color name="off_gray">#9aa0ae</color>        <!-- muted/tertiary, disabled + idle dot on light -->
+    <color name="white">#FFFFFF</color>           <!-- on-brand text stays white -->
+
+    <!-- ── Extra surfaces + hairlines (light) ──────────────────────── -->
+    <color name="surface_2">#f5f6f9</color>       <!-- faint card-gradient stop -->
+    <color name="hairline">#dfe1e8</color>        <!-- default hairline -->
+    <color name="hairline_strong">#cdd0da</color> <!-- stronger card stroke -->
+    <color name="cockpit_bg">#eef0f4</color>      <!-- alias of screen_bg -->
+    <color name="cockpit_bg_tint">#173b82f6</color> <!-- ~9% blue radial tint (very subtle) top-left -->
+    <color name="cockpit_bg_tint_purple">#14a78bfa</color> <!-- ~8% purple radial tint (very subtle) top-right -->
+    <color name="text_tertiary">#878b99</color>   <!-- tertiary ink -->
+
+    <!-- ── Extended accent palette (deeper for white bg / AA) ──────── -->
+    <color name="accent_blue">#2563eb</color>
+    <color name="accent_indigo">#4f46e5</color>
+    <color name="accent_cyan">#0e7490</color>
+    <color name="accent_green">#047857</color>
+    <color name="accent_amber">#b45309</color>
+    <color name="accent_red">#dc2626</color>
+    <color name="accent_purple">#7c3aed</color>
+    <color name="accent_pink">#db2777</color>
+    <color name="accent_teal">#0f766e</color>
+
+    <!-- ── Pressed/ripple overlays for light ───────────────────────── -->
+    <color name="ripple_light">#1f000000</color>  <!-- subtle dark ripple on light -->
+    <color name="press_blue">#242563eb</color>    <!-- translucent blue press overlay -->
+    <color name="press_amber">#24b45309</color>   <!-- translucent amber press overlay -->
+    <color name="card_highlight">#14ffffff</color> <!-- faint top sheen (near-invisible on white — fine) -->
+
+    <!-- ── Drawable-literal tokens (light) ─────────────────────────────────────────────
+         LIGHT counterparts of the dark drawable-literal tokens in values-night/colors.xml.
+         Same NAMES; light VALUES here. -->
+
+    <!-- Feature-card icon tiles: deeper accent gradients so the white glyph keeps ≥3:1 on white cards. -->
+    <color name="tile_nav_start">#2563eb</color>    <color name="tile_nav_end">#4f46e5</color>
+    <color name="tile_cast_start">#7c3aed</color>   <color name="tile_cast_end">#6d28d9</color>
+    <color name="tile_mic_start">#059669</color>    <color name="tile_mic_end">#047857</color>
+    <color name="tile_badge_start">#d97706</color>  <color name="tile_badge_end">#b45309</color>
+    <color name="tile_bubble_start">#0d9488</color> <color name="tile_bubble_end">#0e7490</color>
+    <color name="tile_seat_start">#db2777</color>   <color name="tile_seat_end">#be185d</color>
+    <color name="tile_dust_start">#6366f1</color>   <color name="tile_dust_end">#4338ca</color>
+    <color name="tile_sys_start">#64748b</color>    <color name="tile_sys_end">#475569</color>
+    <color name="tile_adv_start">#dc2626</color>    <color name="tile_adv_end">#be123c</color>
+
+    <!-- Segmented-control recessed well: a light recessed field (slightly darker than screen_bg). -->
+    <color name="seg_track_well">#e4e6ec</color>
+    <!-- Primary-button pressed gradient END: deeper indigo. -->
+    <color name="btn_primary_end">#4338ca</color>
+    <!-- Status-pill translucent fills: light-tuned accents at low alpha over white. -->
+    <color name="pill_fill_green">#24047857</color>
+    <color name="pill_fill_red">#26DC2626</color>
+    <color name="pill_fill_amber">#26B45309</color>
+    <!-- Speed-dial face fill: red at ~8% over white. -->
+    <color name="speed_dial_fill">#14DC2626</color>
+
+    <!-- ── Custom-view semantic tokens (Stage 2 — theme-adaptive custom Views) ──────────────────────
+         Added for the Canvas Views that used to hardcode dark hex (SeatDiagramView / ClusterPreviewView).
+         LIGHT values here; values-night/colors.xml carries the EXACT former dark literals so dark rendering
+         is unchanged. Keep this NAME SET identical across both files. -->
+    <!-- Seat diagram: recessed car-body tray gradient + an OFF seat cushion fill (reads on a white card). -->
+    <color name="seat_body_top">#e9ebf1</color>
+    <color name="seat_body_bottom">#e0e2ea</color>
+    <color name="seat_off_fill">#d5d8e2</color>
+    <!-- Cluster preview: recessed screen face + the two split-half tints (blue left / purple right). -->
+    <color name="cluster_face">#e8eaf1</color>
+    <color name="cluster_tint_left">#242563eb</color>
+    <color name="cluster_tint_right">#227c3aed</color>
+</resources>

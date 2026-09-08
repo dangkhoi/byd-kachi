@@ -1,0 +1,6 @@
+SYSTEM_ALERT_WINDOW: allow; time=+37m46s20ms ago; duration=-24855d3h14m7s342ms
+TOAST_WINDOW: allow; time=+9h45m48s189ms ago; duration=+1m4s339ms
+READ_EXTERNAL_STORAGE: allow; time=+40m33s562ms ago
+WRITE_EXTERNAL_STORAGE: allow; time=+40m33s562ms ago
+BIND_ACCESSIBILITY_SERVICE: allow; time=+46m20s901ms ago
+START_FOREGROUND: allow; time=+37m46s20ms ago; duration=-24855d3h14m7s714ms

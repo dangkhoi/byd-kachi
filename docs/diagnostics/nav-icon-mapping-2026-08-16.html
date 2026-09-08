@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Mapping icon dẫn đường (GMaps → cụm AMAP / HUD CAN)</title>
+<script>(function(){var k='nav-icon-map-theme';var t=localStorage.getItem(k);var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:auto;padding:0 24px 100px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:7px 12px;cursor:pointer;font-size:13px}
+.hero{padding:56px 0 30px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.06;letter-spacing:-.03em;margin:12px 0 14px}
+.lead{font-size:18px;color:var(--muted);max-width:900px}.meta{font:12px var(--mono);color:var(--muted);margin-top:18px}
+section{padding-top:46px}.head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:4px 8px}
+h2{font-size:26px;letter-spacing:-.02em;margin:0}h3{font-size:18px;margin:24px 0 10px}
+.callout{padding:14px 16px;margin:14px 0;background:var(--paper);border:1px solid var(--line);border-radius:16px}
+.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}.callout.purple{background:var(--purple-soft);border-color:var(--purple)}
+code{font:12.5px var(--mono);background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:5px;padding:1px 5px}
+.scroll{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--paper);margin:12px 0}
+table{border-collapse:collapse;width:100%;min-width:760px}th,td{padding:8px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);font-size:13.5px}
+th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);position:sticky;top:0;background:var(--paper2)}
+tr:last-child td{border-bottom:0}.mono{font-family:var(--mono);font-size:12.5px}
+.tag{display:inline-block;font:600 10.5px var(--mono);padding:2px 7px;border-radius:999px;white-space:nowrap}
+.tag.a{background:var(--blue-soft);color:var(--blue)}.tag.c{background:var(--purple-soft);color:var(--purple)}.tag.new{background:var(--green-soft);color:var(--green)}.tag.fix{background:var(--amber-soft);color:var(--amber)}.tag.enc{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--muted)}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0;color:var(--muted);font-size:12.5px}
+@media(max-width:900px){.wrap{padding:0 16px 70px}}
+@media print{.top,.theme{display:none}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Nav Icon Mapping</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('nav-icon-map-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Reference · icon taxonomy · BYD DiLink 3.0</div>
+<h1>Mapping icon dẫn đường: GMaps → cụm (AMAP) / HUD (CAN)</h1>
+<p class="lead">Một hướng rẽ GMaps được phân loại thành một <code>Maneuver</code> trung lập, rồi encode ra <strong>hai bảng icon khác nhau</strong>: <span class="tag a">AMAP NEW_ICON 0..28</span> cho <strong>cụm</strong> (<code>toAmapIcon</code>) và <span class="tag c">CAN 1..49</span> cho <strong>HUD</strong> (<code>toHudIcon</code>). Hai bảng nối nhau bằng bảng remap firmware <code>TurnIdMapToCAN[]</code>. Đây là tài liệu tra cứu đầy đủ mapping + cách classifier suy Maneuver từ tín hiệu GMaps.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Ngày: 2026-08-16 · Đồng bộ bản 1.23 (roundabout 15→13, continue 11→12) · Companion: nav-output-architecture-2026-08-16.html</p>
+<nav class="toc">
+<a href="#oncar" style="border-color:var(--amber);color:var(--amber)">⚠ Cần test on-car</a><a href="#why">1 · Vì sao 2 bảng</a><a href="#master">2 · Bảng master</a><a href="#amap">3 · NEW_ICON 0..28 + TurnIdMapToCAN</a><a href="#reverse">4 · fromAmapIcon (khứ hồi)</a><a href="#classify">5 · GMaps → Maneuver</a><a href="#rab">6 · Vòng xuyến + lối ra N</a><a href="#decisions">7 · Quyết định & fix</a><a href="#src">8 · Nguồn</a>
+</nav>
+</header>
+
+<section id="oncar" style="padding-top:34px">
+<div class="callout amber" style="border-width:2px">
+<div class="head" style="margin-bottom:8px"><span class="num" style="color:var(--amber);border-color:var(--amber)">TEST</span><h2 style="font-size:22px">Cần verify on-car — checklist (mở ra test khi rảnh)</h2></div>
+<p style="margin:2px 0 12px;color:var(--muted)">Các mapping icon <strong>chưa xác nhận render thật trên xe</strong> (đúng theo RE/source nhưng chưa thấy hiển thị). Icon rẽ cơ bản (trái/phải/chếch/ngoặt/quay-đầu/thẳng) ĐÃ proven — không cần. Cột "Kết quả" để trống, điền khi test. Danh sách sống: xong cái nào tick cái đó.</p>
+<div class="scroll" style="margin:0">
+<table>
+<thead><tr><th>□</th><th>Mapping / icon</th><th>Mã</th><th>Ưu tiên</th><th>Cách test trên xe</th><th>Kết quả / ngày</th></tr></thead>
+<tbody>
+<tr><td>□</td><td><strong>ROUNDABOUT</strong> (进入环岛)</td><td class="mono">AMAP 11 · CAN 13</td><td><span class="tag fix">CAO</span></td><td>Vào vòng xuyến: cụm + HUD vẽ glyph VÒNG XUYẾN (không phải mũi tên chếch)? — 1.23 sửa 15→13</td><td></td></tr>
+<tr><td>□</td><td><strong>Số nhánh vòng xuyến (cụm)</strong></td><td class="mono">NEW_ICON 11 + ROUNG_ABOUT_NUM → CAN 25..34</td><td><span class="tag fix">CAO</span></td><td>Vòng xuyến "lối ra thứ N": cụm hiện glyph nhánh N đúng?</td><td></td></tr>
+<tr><td>□</td><td><strong>Oversea HUD (họ 0x1F7)</strong> — mũi tên/cự ly/tên/ETA</td><td class="mono">0x1F701010/018 · 0x1F7A1008 · 0x1F702x/705x</td><td><span class="tag fix">CAO</span></td><td>Sau 1.24: HUD (xe export / xe anh em đang lên mũi tên) có lên thêm TÊN ĐƯỜNG + ETA + thời gian/quãng đường còn lại? Xe Seal có lên gì?</td><td></td></tr>
+<tr><td>□</td><td>CONTINUE (顺行)</td><td class="mono">AMAP 20 · CAN 12</td><td><span class="tag enc">TB</span></td><td>Đoạn "tiếp tục / đi theo đường": glyph 顺行? — 1.23 sửa 11→12</td><td></td></tr>
+<tr><td>□</td><td>ramp / fork / keep → chếch</td><td class="mono">AMAP 4/5 · CAN 3/5</td><td><span class="tag enc">TB</span></td><td>Lên/xuống cao tốc, ngã ba Y, giữ làn → mũi tên CHẾCH (không cua 90°)?</td><td></td></tr>
+<tr><td>□</td><td>ROUNDABOUT_EXIT (驶出环岛)</td><td class="mono">AMAP 12 · CAN 24</td><td><span class="tag enc">THẤP</span></td><td>GMaps có báo "ra khỏi vòng xuyến" riêng không + render?</td><td></td></tr>
+<tr><td>□</td><td>TUNNEL / SERVICE / TOLL / WAYPOINT</td><td class="mono">CAN 49 / 46 / 47 / 45</td><td><span class="tag enc">THẤP</span></td><td>Hầm / trạm dừng nghỉ / thu phí / điểm dừng → glyph tương ứng? (GMaps VN hiếm phát signal này)</td><td></td></tr>
+<tr><td>□</td><td>UTURN_RIGHT</td><td class="mono">AMAP 19 · CAN 10</td><td><span class="tag enc">THẤP</span></td><td>Quay đầu PHẢI (hiếm, LHT) → glyph đúng?</td><td></td></tr>
+<tr><td>□</td><td>HUD số nhánh vòng xuyến <em>(wire 1.25)</em></td><td class="mono">CAN 24+N (25..34)</td><td><span class="tag fix">CAO</span></td><td>1.25 ĐÃ ghi CAN 24+N vào HUD (cả 2 họ 0x43F01010 + 0x1F701010) khi text có "lối ra thứ N" — HUD/cụm-centre có hiện glyph SỐ nhánh không?</td><td></td></tr>
+<tr><td>□</td><td>Cột NAME small-icon (tên drawable GMaps thật)</td><td class="mono">IconResource.NAME_TO_AMAP</td><td><span class="tag enc">THẤP</span></td><td>RE tên drawable từ APK GMaps mới → chỉnh substring cho khớp (chữ ký large-icon đã phủ chính)</td><td></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<section id="why"><div class="head"><span class="num">01</span><h2>Vì sao 2 bảng icon</h2></div>
+<p>Cụm và HUD là 2 đường ra độc lập (xem doc kiến trúc). Cụm nhận icon qua broadcast AUTONAVI = <strong>bảng AMAP NEW_ICON</strong> (AmapService tự remap CAN nội bộ). HUD nhận icon ghi thẳng feature INSTRUMENT = <strong>bảng CAN turn-id</strong>. Trước 1.14 app bắn mã AMAP vào feature CAN → HUD lệch 1 nấc → <strong>lật trái↔phải</strong>. Từ 1.14: 2 encoder thuần từ 1 <code>Maneuver</code>.</p>
+<div class="callout blue"><strong>Bất biến:</strong> <code>toHudIcon(m) == TurnIdMapToCAN[ toAmapIcon(m) ]</code> cho MỌI Maneuver (đã khoá bằng test bảng). Ngoại lệ duy nhất: vòng-xuyến-lối-ra-N dùng offset <code>ROUNG_ABOUT_NUM</code> (firmware tự tính CAN 25..34), không qua TurnIdMapToCAN.</div>
+<div class="legend">
+<span><span class="tag a">AMAP</span> cụm — NEW_ICON 0..28 (toAmapIcon)</span>
+<span><span class="tag c">CAN</span> HUD — turn-id 1..49 (toHudIcon)</span>
+<span><span class="tag new">NEW</span> thêm ở Track B (2026-08-14)</span>
+<span><span class="tag fix">FIX</span> sửa 1.23</span>
+</div>
+</section>
+
+<section id="master"><div class="head"><span class="num">02</span><h2>Bảng master — GMaps → Maneuver → cụm(AMAP) / HUD(CAN)</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Hướng rẽ GMaps (Directions maneuver / Car-App Type)</th><th>Maneuver enum</th><th>AMAP<br>(cụm)</th><th>CAN<br>(HUD)</th><th>Glyph / ghi chú</th></tr></thead>
+<tbody>
+<tr><td>straight · depart · head</td><td class="mono">STRAIGHT</td><td class="mono">9</td><td class="mono">11</td><td>đi thẳng</td></tr>
+<tr><td>turn-left · TURN_NORMAL_LEFT(7)</td><td class="mono">TURN_LEFT</td><td class="mono">2</td><td class="mono">1</td><td>rẽ trái</td></tr>
+<tr><td>turn-right · TURN_NORMAL_RIGHT(8)</td><td class="mono">TURN_RIGHT</td><td class="mono">3</td><td class="mono">2</td><td>rẽ phải</td></tr>
+<tr><td>turn-slight-left · TURN_SLIGHT_LEFT(5)</td><td class="mono">SLIGHT_LEFT</td><td class="mono">4</td><td class="mono">3</td><td>chếch trái</td></tr>
+<tr><td>turn-slight-right · TURN_SLIGHT_RIGHT(6)</td><td class="mono">SLIGHT_RIGHT</td><td class="mono">5</td><td class="mono">5</td><td>chếch phải</td></tr>
+<tr><td>turn-sharp-left · TURN_SHARP_LEFT(9)</td><td class="mono">SHARP_LEFT</td><td class="mono">6</td><td class="mono">7</td><td>ngoặt trái</td></tr>
+<tr><td>turn-sharp-right · TURN_SHARP_RIGHT(10)</td><td class="mono">SHARP_RIGHT</td><td class="mono">7</td><td class="mono">8</td><td>ngoặt phải</td></tr>
+<tr><td>uturn-left · U_TURN_LEFT(11)</td><td class="mono">UTURN</td><td class="mono">8</td><td class="mono">9</td><td>quay đầu (mặc định trái, chuẩn RHT/VN)</td></tr>
+<tr><td>uturn-right · U_TURN_RIGHT(12)</td><td class="mono">UTURN_RIGHT <span class="tag new">NEW</span></td><td class="mono">19</td><td class="mono">10</td><td>quay đầu phải (LHT/hiếm)</td></tr>
+<tr><td>roundabout-right (VN/RHT = CCW enter) · ...CCW(34)</td><td class="mono">ROUNDABOUT</td><td class="mono">11</td><td class="mono">13 <span class="tag fix">FIX</span></td><td>进入环岛 (1.23: 15→13)</td></tr>
+<tr><td>exit-roundabout (CCW) · ROUNDABOUT_EXIT_CCW(46)</td><td class="mono">ROUNDABOUT_EXIT <span class="tag new">NEW</span></td><td class="mono">12</td><td class="mono">24</td><td>驶出环岛</td></tr>
+<tr><td>continue · NAME_CHANGE(2) · follow road</td><td class="mono">CONTINUE</td><td class="mono">20</td><td class="mono">12 <span class="tag fix">FIX</span></td><td>顺行 (1.23: 11→12)</td></tr>
+<tr><td>arrive · DESTINATION(39)</td><td class="mono">DESTINATION</td><td class="mono">15</td><td class="mono">48</td><td>điểm đến</td></tr>
+<tr><td>merge · MERGE_LEFT/RIGHT(27/28)</td><td class="mono">MERGE <span class="tag new">NEW</span></td><td class="mono">9</td><td class="mono">11</td><td>nhập làn → đi thẳng (0..28 không có glyph merge; sửa bug "merge→rẽ phải")</td></tr>
+<tr><td>ramp-left · ON/OFF_RAMP_*_L</td><td class="mono">RAMP_LEFT <span class="tag new">NEW</span></td><td class="mono">4</td><td class="mono">3</td><td>lên/xuống dốc trái ≈ chếch trái (QĐ#1)</td></tr>
+<tr><td>ramp-right · ON/OFF_RAMP_*_R</td><td class="mono">RAMP_RIGHT <span class="tag new">NEW</span></td><td class="mono">5</td><td class="mono">5</td><td>≈ chếch phải (QĐ#1)</td></tr>
+<tr><td>fork-left · FORK_LEFT(25)</td><td class="mono">FORK_LEFT <span class="tag new">NEW</span></td><td class="mono">4</td><td class="mono">3</td><td>ngã ba Y giữ trái ≈ chếch trái</td></tr>
+<tr><td>fork-right · FORK_RIGHT(26)</td><td class="mono">FORK_RIGHT <span class="tag new">NEW</span></td><td class="mono">5</td><td class="mono">5</td><td>≈ chếch phải</td></tr>
+<tr><td>keep-left · KEEP_LEFT(3)</td><td class="mono">KEEP_LEFT <span class="tag new">NEW</span></td><td class="mono">4</td><td class="mono">3</td><td>giữ làn trái ≈ chếch trái</td></tr>
+<tr><td>keep-right · KEEP_RIGHT(4)</td><td class="mono">KEEP_RIGHT <span class="tag new">NEW</span></td><td class="mono">5</td><td class="mono">5</td><td>≈ chếch phải</td></tr>
+<tr><td>(hầm — từ ngữ cảnh/từ khoá)</td><td class="mono">TUNNEL <span class="tag new">NEW</span></td><td class="mono">16</td><td class="mono">49</td><td>进入隧道 (QĐ#3)</td></tr>
+<tr><td>(trạm dừng nghỉ)</td><td class="mono">SERVICE_AREA <span class="tag new">NEW</span></td><td class="mono">13</td><td class="mono">46</td><td>到达服务区</td></tr>
+<tr><td>(trạm thu phí)</td><td class="mono">TOLL <span class="tag new">NEW</span></td><td class="mono">14</td><td class="mono">47</td><td>到达收费站</td></tr>
+<tr><td>(điểm dừng trung gian / waypoint)</td><td class="mono">WAYPOINT <span class="tag new">NEW</span></td><td class="mono">10</td><td class="mono">45</td><td>到达途经点</td></tr>
+</tbody>
+</table></div>
+<div class="callout amber"><strong>Nhóm "reuse-mã" (encode-only):</strong> MERGE→9, RAMP/FORK/KEEP→4/5. Chúng KHÔNG có trong <code>fromAmapIcon</code> → 9/4/5 nghịch về STRAIGHT/SLIGHT_LEFT/SLIGHT_RIGHT (khứ hồi cụm chuẩn). <strong>Nhóm "mã DUY NHẤT":</strong> 10/12/13/14/16/19 (waypoint/exit-RAB/service/toll/tunnel/uturn-R) — có trong fromAmapIcon → cụm khứ hồi được glyph mới.</div>
+</section>
+
+<section id="amap"><div class="head"><span class="num">03</span><h2>Bảng AMAP NEW_ICON 0..28 + remap CAN</h2></div>
+<p>AmapService dùng mảng <code>TurnIdMapToCAN[index 0..28]</code> để đổi NEW_ICON → CAN cho làn cụm. Đây cũng chính là bảng nối 2 encoder (<code>toHudIcon = TurnIdMapToCAN[toAmapIcon]</code>).</p>
+<p class="mono" style="white-space:pre-wrap">TurnIdMapToCAN = {0,0,1,2,3,5,7,8,9,11,45,13,24,46,47,48,49,14,23,10,12,15,18,20,22,16,17,19,21}</p>
+<div class="scroll"><table>
+<thead><tr><th>NEW_ICON (AMAP)</th><th>Ý nghĩa</th><th>→ CAN (TurnIdMapToCAN)</th><th>App phát?</th></tr></thead>
+<tbody>
+<tr><td class="mono">0</td><td>none</td><td class="mono">0</td><td>—</td></tr>
+<tr><td class="mono">1</td><td>start-pin (điểm đầu — KHÔNG dùng, dễ nhầm)</td><td class="mono">0</td><td>—</td></tr>
+<tr><td class="mono">2</td><td>rẽ trái</td><td class="mono">1</td><td>✅</td></tr>
+<tr><td class="mono">3</td><td>rẽ phải</td><td class="mono">2</td><td>✅</td></tr>
+<tr><td class="mono">4</td><td>chếch trái (slight/keep/fork/ramp trái)</td><td class="mono">3</td><td>✅</td></tr>
+<tr><td class="mono">5</td><td>chếch phải</td><td class="mono">5</td><td>✅</td></tr>
+<tr><td class="mono">6</td><td>ngoặt trái</td><td class="mono">7</td><td>✅</td></tr>
+<tr><td class="mono">7</td><td>ngoặt phải</td><td class="mono">8</td><td>✅</td></tr>
+<tr><td class="mono">8</td><td>quay đầu (trái)</td><td class="mono">9</td><td>✅</td></tr>
+<tr><td class="mono">9</td><td>đi thẳng (+ merge)</td><td class="mono">11</td><td>✅</td></tr>
+<tr><td class="mono">10</td><td>到达途经点 waypoint</td><td class="mono">45</td><td>✅ <span class="tag new">NEW</span></td></tr>
+<tr><td class="mono">11</td><td>进入环岛 vào vòng xuyến (CCW/RHT)</td><td class="mono">13</td><td>✅</td></tr>
+<tr><td class="mono">12</td><td>驶出环岛 ra vòng xuyến (CCW)</td><td class="mono">24</td><td>✅ <span class="tag new">NEW</span></td></tr>
+<tr><td class="mono">13</td><td>到达服务区 trạm dừng nghỉ</td><td class="mono">46</td><td>✅ <span class="tag new">NEW</span></td></tr>
+<tr><td class="mono">14</td><td>到达收费站 trạm thu phí</td><td class="mono">47</td><td>✅ <span class="tag new">NEW</span></td></tr>
+<tr><td class="mono">15</td><td>điểm đến / destination</td><td class="mono">48</td><td>✅</td></tr>
+<tr><td class="mono">16</td><td>进入隧道 vào hầm</td><td class="mono">49</td><td>✅ <span class="tag new">NEW</span></td></tr>
+<tr><td class="mono">17</td><td>vào vòng xuyến CW (LHT)</td><td class="mono">14</td><td>— (chưa phát; RHT)</td></tr>
+<tr><td class="mono">18</td><td>ra vòng xuyến CW</td><td class="mono">23</td><td>—</td></tr>
+<tr><td class="mono">19</td><td>右转掉头 quay đầu phải</td><td class="mono">10</td><td>✅ <span class="tag new">NEW</span></td></tr>
+<tr><td class="mono">20</td><td>顺行 tiếp tục/continue</td><td class="mono">12</td><td>✅</td></tr>
+<tr><td class="mono">21–28</td><td>biến thể quanh-vòng-xuyến (firmware nội bộ)</td><td class="mono">15/18/20/22/16/17/19/21</td><td>— (không phát trực tiếp)</td></tr>
+</tbody>
+</table></div>
+<div class="callout blue"><strong>Lối ra vòng xuyến N:</strong> firmware nhận NEW_ICON <code>11</code> (hoặc 12) + <code>ROUNG_ABOUT_NUM = 1..10</code> → tự map ra <strong>CAN 25..34</strong> (CCW). Đường này KHÔNG qua TurnIdMapToCAN — xem §6.</div>
+</section>
+
+<section id="reverse"><div class="head"><span class="num">04</span><h2>fromAmapIcon — khứ hồi AMAP → Maneuver</h2></div>
+<p>Cầu nối cho các classifier còn phát mã AMAP (ManeuverSignature / ArrowClassifier / IconResource). <code>fromAmapIcon(x).toAmapIcon() == x</code> với mọi x pipeline phát ra. null nếu 0/1/-1/ngoài từ vựng.</p>
+<div class="scroll"><table>
+<thead><tr><th>AMAP</th><th>→ Maneuver</th><th>AMAP</th><th>→ Maneuver</th></tr></thead>
+<tbody>
+<tr><td class="mono">2</td><td class="mono">TURN_LEFT</td><td class="mono">12</td><td class="mono">ROUNDABOUT_EXIT</td></tr>
+<tr><td class="mono">3</td><td class="mono">TURN_RIGHT</td><td class="mono">13</td><td class="mono">SERVICE_AREA</td></tr>
+<tr><td class="mono">4</td><td class="mono">SLIGHT_LEFT</td><td class="mono">14</td><td class="mono">TOLL</td></tr>
+<tr><td class="mono">5</td><td class="mono">SLIGHT_RIGHT</td><td class="mono">15</td><td class="mono">DESTINATION</td></tr>
+<tr><td class="mono">6</td><td class="mono">SHARP_LEFT</td><td class="mono">16</td><td class="mono">TUNNEL</td></tr>
+<tr><td class="mono">7</td><td class="mono">SHARP_RIGHT</td><td class="mono">19</td><td class="mono">UTURN_RIGHT</td></tr>
+<tr><td class="mono">8</td><td class="mono">UTURN</td><td class="mono">20</td><td class="mono">CONTINUE</td></tr>
+<tr><td class="mono">9</td><td class="mono">STRAIGHT</td><td class="mono">—</td><td>0/1/17/18/21–28 → null</td></tr>
+<tr><td class="mono">10</td><td class="mono">WAYPOINT</td><td class="mono">—</td><td>(caller: chưa có maneuver)</td></tr>
+<tr><td class="mono">11</td><td class="mono">ROUNDABOUT</td><td class="mono">—</td><td></td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="classify"><div class="head"><span class="num">05</span><h2>GMaps signal → Maneuver (chuỗi classifier)</h2></div>
+<p>GMaps noti KHÔNG cho mã maneuver trực tiếp — phải suy. <code>NavNotificationListener.handle()</code> thử theo thứ tự (ưu tiên cao → thấp), ra mã AMAP rồi <code>fromAmapIcon</code> → Maneuver:</p>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Nguồn</th><th>Cơ chế</th><th>File</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Tên small-icon</td><td>đọc resource-name notification (substring → AMAP). Bản GMaps cũ có; ReVanced thường logo → trượt</td><td class="mono">IconResource.NAME_TO_AMAP</td></tr>
+<tr><td>2</td><td>Chữ ký large-icon</td><td>hạ mẫu 15×15 = 225 bit, khớp Hamming ≤18 với 38 template + NCC fallback → tên → AMAP (cách reference Open BYD/DashCast)</td><td class="mono">ManeuverSignature</td></tr>
+<tr><td>3</td><td>Động từ chữ</td><td>regex VN/EN trên title/text ("rẽ trái"/"turn left"/"nhập làn"/"hầm"…) → AMAP</td><td class="mono">NavFormat.maneuverVerbIcon</td></tr>
+<tr><td>4</td><td>Trọng tâm large-icon</td><td>heuristic COM cũ (dự phòng)</td><td class="mono">ArrowClassifier</td></tr>
+<tr><td>5</td><td>Giữ hướng trước</td><td>frame lỗi đọc → dùng lại mã hợp lệ gần nhất (chống nháy), reset ở ranh giới phiên</td><td class="mono">ManeuverHold</td></tr>
+</tbody>
+</table></div>
+<h3>Quy tắc chính tên/chữ → AMAP (đặc thù trước, generic sau)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Điều kiện (chứa)</th><th>→ AMAP</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td class="mono">roundabout + exit + !enter</td><td class="mono">12</td><td>ra vòng xuyến (xét trước "roundabout")</td></tr>
+<tr><td class="mono">roundabout</td><td class="mono">11</td><td>xét TRƯỚC u_turn (tên "roundabout..._u_turn")</td></tr>
+<tr><td class="mono">u_turn + right</td><td class="mono">19</td><td>trước nhánh u_turn chung</td></tr>
+<tr><td class="mono">u_turn</td><td class="mono">8</td><td></td></tr>
+<tr><td class="mono">destination / arrive</td><td class="mono">15</td><td></td></tr>
+<tr><td class="mono">depart / start</td><td class="mono">9</td><td>đi thẳng (KHÔNG ghim start-pin)</td></tr>
+<tr><td class="mono">sharp_left / sharp_right</td><td class="mono">6 / 7</td><td></td></tr>
+<tr><td class="mono">slight_left|fork_left / slight_right|fork_right</td><td class="mono">4 / 5</td><td></td></tr>
+<tr><td class="mono">ramp + left / ramp + right</td><td class="mono">4 / 5</td><td>TRƯỚC normal_left/right (QĐ#1 — ramp ≈ chếch)</td></tr>
+<tr><td class="mono">normal_left|turn_left / normal_right|turn_right</td><td class="mono">2 / 3</td><td></td></tr>
+<tr><td class="mono">merge</td><td class="mono">9</td><td>đi thẳng (0..28 không có glyph merge)</td></tr>
+<tr><td class="mono">tunnel / hầm</td><td class="mono">16</td><td>verb-path (sau turn, trước straight)</td></tr>
+<tr><td class="mono">straight / (mặc định)</td><td class="mono">9</td><td></td></tr>
+</tbody>
+</table></div>
+<div class="callout amber"><strong>Cột NAME (CHƯA hoàn tất):</strong> danh sách tên drawable GMaps thật (<code>IconResource.NAME_TO_AMAP</code>) là bản substring hiện có; tinh chỉnh đầy đủ cần RE tên drawable từ APK GMaps mới nhất — không chặn core (chữ ký large-icon + verb đã phủ chính).</div>
+</section>
+
+<section id="rab"><div class="head"><span class="num">06</span><h2>Vòng xuyến + lối ra thứ N</h2></div>
+<p>VN đi bên phải (RHT) → vòng xuyến = <code>roundabout-right</code> = CCW = NEW_ICON <code>11</code> (vào) → CAN <code>13</code> (进入环岛). Số nhánh ra:</p>
+<div class="scroll"><table>
+<thead><tr><th>Tình huống</th><th>Cụm (broadcast)</th><th>HUD</th></tr></thead>
+<tbody>
+<tr><td>Vòng xuyến, chưa biết lối ra</td><td class="mono">NEW_ICON 11 → CAN 13</td><td class="mono">toHudIcon(ROUNDABOUT)=13</td></tr>
+<tr><td>Vòng xuyến + lối ra N (1..10)</td><td class="mono">NEW_ICON 11 + ROUNG_ABOUT_NUM=N → firmware CAN 25..34</td><td class="mono">1.25: ghi thẳng CAN 24+N (25..34) vào HUD (cả 2 họ) → thử hiện số nhánh (chưa verify)</td></tr>
+<tr><td>Ra khỏi vòng xuyến</td><td class="mono">NEW_ICON 12 → CAN 24 (驶出环岛)</td><td class="mono">toHudIcon(ROUNDABOUT_EXIT)=24</td></tr>
+</tbody>
+</table></div>
+<p class="mono">Parse số nhánh: NavFormat.roundaboutExit — "lối ra thứ 3" / "3rd exit" / "take the 2nd exit" → N. (AmapFrameBuilder: exit∈1..10 → ép NEW_ICON=11 + ROUNG_ABOUT_NUM=N.)</p>
+</section>
+
+<section id="decisions"><div class="head"><span class="num">07</span><h2>Quyết định & fix (lịch sử)</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Mục</th><th>Nội dung</th><th>Bản</th></tr></thead>
+<tbody>
+<tr><td>QĐ#1</td><td>Ramp góc NORMAL → chếch (AMAP 4/5, CAN 3/5), KHÔNG cua thường — vì tên "off_ramp_normal_left" chứa cả ramp lẫn normal_left, bắt ramp trước</td><td>Track B</td></tr>
+<tr><td>QĐ#2</td><td>Vòng xuyến lối ra N → wire ROUNG_ABOUT_NUM vào broadcast (cụm hiện glyph nhánh N)</td><td>Track B</td></tr>
+<tr><td>QĐ#3</td><td>Thêm TUNNEL/SERVICE_AREA/TOLL/WAYPOINT + UTURN_RIGHT + ROUNDABOUT_EXIT vào enum</td><td>Track B</td></tr>
+<tr><td class="mono">ROUNDABOUT.toHudIcon</td><td><strong>15 → 13</strong> (15 = 绕环岛左转 vẽ SAI trên HUD; 13 = 进入环岛, khớp cụm). Ảnh owner on-car xác nhận</td><td><span class="tag fix">1.23</span></td></tr>
+<tr><td class="mono">CONTINUE.toHudIcon</td><td><strong>11 → 12</strong> (顺行, khôi phục bất biến với cụm)</td><td><span class="tag fix">1.23</span></td></tr>
+<tr><td>MERGE bug</td><td>"merge → rẽ phải" (cũ 5) → sửa về đi thẳng (9)</td><td>Track B</td></tr>
+<tr><td>Chống nháy</td><td>ManeuverHold — giữ hướng khi 1 noti không phân loại được (thay vì rớt về thẳng)</td><td><span class="tag fix">1.24</span></td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="src"><div class="head"><span class="num">08</span><h2>Nguồn tra cứu</h2></div>
+<ul>
+<li>Enum + 2 encoder + fromAmapIcon: <code>core/src/main/kotlin/com/byd/clusternav/navigation/Maneuver.kt</code> (khoá bằng <code>ManeuverTest.kt</code> + test bất biến toHudIcon==TurnIdMapToCAN[toAmapIcon]).</li>
+<li>Classifier: <code>ManeuverSignature.kt</code> (nameToAmap/nameToHal), <code>NavFormat.maneuverVerbIcon/roundaboutExit</code>, <code>app/.../IconResource.kt</code> (NAME_TO_AMAP), <code>ArrowClassifier.kt</code>, <code>ManeuverHold.kt</code>.</li>
+<li>Wire cụm: <code>AmapFrameBuilder.kt</code> (NEW_ICON + ROUNG_ABOUT_NUM). Wire HUD: <code>NavigationHudOwner</code> → <code>BydHal.writeNavFrame</code> (toHudIcon).</li>
+<li>Bảng NEW_ICON + TurnIdMapToCAN: RE <code>docs/diagnostics/re-maneuver-icon-tables-2026-08-14.md</code> (decompile AmapService).</li>
+<li>Taxonomy GMaps: Google Directions API <code>maneuver</code> enum + androidx.car.app <code>Maneuver.Type</code> (50 giá trị).</li>
+<li>Master gốc (markdown): <code>docs/diagnostics/gmaps-maneuver-mapping-master-2026-08-15.md</code>. Kiến trúc 2 đường: <code>docs/diagnostics/nav-output-architecture-2026-08-16.html</code>.</li>
+</ul>
+</section>
+
+</div></body>
+</html>

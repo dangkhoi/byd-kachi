@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<title>Hướng dẫn thu thập data HUD</title>
+<style>
+@page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+* { box-sizing: border-box; }
+body { font-family:"Segoe UI",Arial,sans-serif; color:#1a1a1a; font-size:12.5px; line-height:1.55; margin:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+h1 { font-size:21px; margin:0 0 2px; color:#0b5; }
+h1 span { color:#111; }
+.sub { color:#555; font-size:12px; margin:0 0 14px; }
+h2 { font-size:15px; margin:16px 0 6px; padding:6px 10px; background:#eafaf1; border-left:4px solid #0b5; border-radius:4px; page-break-after:avoid; }
+p,li { margin:4px 0; }
+ol,ul { margin:4px 0; padding-left:22px; }
+.step { page-break-inside:avoid; }
+.cmd { background:#f2f2f2; color:#0a0a0a; border:1.5px solid #999; font-family:"Consolas","Courier New",monospace; font-size:12px; font-weight:bold; padding:8px 11px; border-radius:6px; margin:6px 0; white-space:pre-wrap; word-break:break-all; }
+b.k { background:#ececec; color:#0a0a0a; border:1px solid #b0b0b0; border-radius:4px; padding:0 4px; font-family:"Consolas","Courier New",monospace; font-weight:bold; }
+.note { background:#fff8e1; border:1px solid #f0d060; border-radius:6px; padding:8px 12px; margin:8px 0; font-size:12px; }
+.warn { background:#fdecea; border:1px solid #f5aaa0; border-radius:6px; padding:8px 12px; margin:8px 0; font-size:12px; }
+.ok { background:#eafaf1; border:1px solid #8ad9ad; border-radius:6px; padding:8px 12px; margin:8px 0; font-size:12px; }
+.big { font-size:13px; font-weight:bold; }
+hr { border:none; border-top:1px solid #ddd; margin:12px 0; }
+</style></head><body>
+
+<h1>Thu thập data <span>HUD</span> — giúp tìm vì sao HUD xe kia không lên dẫn đường</h1>
+<p class="sub">Công cụ CHỈ ĐỌC (không sửa gì trên xe) · Dành cho người không rành IT · Bản 2026-08-18</p>
+
+<div class="ok"><b>Xe của bạn HUD kính hiện được dẫn đường (mũi tên + khoảng cách) — quá tốt!</b> Xe bên mình thì HUD KHÔNG lên nav. Bọn mình gần như chắc chắn là do <b>1 cờ cấu hình của xe</b> (không phải phần cứng, không phải app). Chỉ cần <b>đọc vài giá trị trên xe bạn</b> để so là chốt được. <b>Công cụ này chỉ ĐỌC — tuyệt đối không thay đổi gì trên xe.</b></div>
+
+<h2>Cần chuẩn bị</h2>
+<ul>
+<li>1 <b>laptop Windows</b> đã cài <b>ADB</b> (theo file <b>“Hướng dẫn lấy log Windows.pdf”</b> — Phần A, B, C). Nếu từng lấy log rồi thì đã có sẵn.</li>
+<li>Thư mục <b class="k">HUD-Toolkit</b> (gồm 2 file: <b class="k">hud-compare.bat</b> và <b class="k">navopen.jar</b>) — bọn mình gửi kèm.</li>
+<li>Laptop và xe <b>cùng 1 WiFi</b> (hotspot).</li>
+</ul>
+
+<h2>Bước 1 — Đặt 2 file chung 1 thư mục (bất kỳ)</h2>
+<p>Để <b class="k">hud-compare.bat</b> và <b class="k">navopen.jar</b> <b>chung MỘT thư mục bất kỳ</b> (ví dụ <b class="k">D:\clusternav</b> hoặc một folder trên Desktop). <b>KHÔNG cần chép vào platform-tools.</b> Công cụ <b>tự tìm adb</b>; nếu không thấy, nó sẽ hỏi — lúc đó <b>kéo-thả file <b class="k">adb.exe</b></b> (trong thư mục platform-tools bạn đã giải nén) vào cửa sổ đen rồi Enter.</p>
+
+<h2>Bước 2 — Chuẩn bị TRÊN XE (quan trọng)</h2>
+<ol>
+<li class="step">Mở <b>Google Maps</b> và bắt đầu <b>dẫn đường</b> (chọn 1 điểm đến bất kỳ).</li>
+<li class="step"><b>Đảm bảo HUD kính ĐANG HIỆN dẫn đường</b> (thấy mũi tên + khoảng cách trên kính). Giữ nguyên như vậy trong lúc chạy công cụ.</li>
+</ol>
+<div class="note">Bước đọc log cần HUD đang hiện nav để biết bộ phận nào “nuôi” HUD. Nếu HUD chưa hiện nav thì cứ chạy, nhưng có HUD hiện thì data quý hơn.</div>
+
+<h2>Bước 3 — Chạy công cụ</h2>
+<ol>
+<li class="step">Trên laptop, mở thư mục <b class="k">platform-tools</b> → <b>bấm đúp</b> vào <b class="k">hud-compare.bat</b>. (Nếu Windows cảnh báo “Windows protected your PC” → bấm <b>More info</b> → <b>Run anyway</b>.)</li>
+<li class="step">Cửa sổ đen hiện ra, hỏi <b>“IP xe”</b>. <b>Nối WiFi:</b> gõ IP xe (vd <b class="k">192.168.1.50</b>) rồi Enter. <b>Nối bằng cáp USB:</b> để trống, bấm Enter luôn. (IP xem trong Cài đặt WiFi trên xe, hoặc bọn mình báo.)</li>
+<li class="step">Công cụ tự làm: kết nối xe → đọc các cờ → ghi log 12 giây (nhớ <b>giữ HUD đang hiện nav</b> lúc này). Chờ khoảng <b>30–60 giây</b>.</li>
+<li class="step">Khi thấy chữ <b class="ok" style="padding:1px 6px">XONG!</b> là xong.</li>
+</ol>
+
+<h2>Bước 4 — Gửi lại kết quả</h2>
+<ul>
+<li>File <b class="k">hud-compare.txt</b> sẽ nằm trong thư mục <b class="k">D:\clusternav</b> → <b>gửi file này lại</b>. Cửa sổ đen cũng in ra đường dẫn đầy đủ khi xong.</li>
+<li><b>Chụp thêm 1 tấm ảnh HUD</b> đang hiện dẫn đường (mũi tên + khoảng cách) gửi kèm.</li>
+<li>Cho biết: <b>xe gì</b> (model + đời, vd Sealion 6 / Seal…) và <b>HUD loại nào</b> (theo xe sẵn hay lắp thêm mua ngoài).</li>
+</ul>
+<div class="big">🎯 Chỉ cần 3 thứ: file <b class="k">hud-compare.txt</b> + 1 ảnh HUD + tên xe. Vậy là đủ để bọn mình chốt nguyên nhân.</div>
+
+<h2>Nếu gặp lỗi</h2>
+<ul>
+<li><b>Hỏi “Duong dan adb.exe” / không tìm thấy adb</b> → <b>kéo-thả file <b class="k">adb.exe</b></b> (trong thư mục platform-tools đã giải nén) vào cửa sổ đen rồi Enter. Chưa cài adb thì làm theo “Hướng dẫn lấy log Windows” Phần B.</li>
+<li><b>failed to connect / timed out (khi nối WiFi)</b> → laptop và xe chưa cùng WiFi, hoặc sai IP, hoặc xe <b>chưa bật ADB-qua-WiFi</b>. <b>Cách chắc ăn: nối bằng CÁP USB</b> — chạy lại <b class="k">hud-compare.bat</b> và <b>để trống IP</b>, bấm Enter.</li>
+<li><b>Nối USB mà không nhận thiết bị</b> → trên xe cần bật <b>“Gỡ lỗi USB” (USB debugging)</b> trong Cài đặt → Tùy chọn nhà phát triển; nếu hiện popup “Cho phép?” trên màn xe thì bấm <b>Cho phép</b>.</li>
+<li><b>Trong file .txt nhiều dòng ghi “NOT provisioned / no permission”</b> → <b>bình thường</b>, đó chính là data bọn mình cần. Cứ gửi về.</li>
+</ul>
+
+<hr>
+<h2>Cách dự phòng — không có laptop (dùng app Bugjaeger trên điện thoại)</h2>
+<p>Nếu không tiện laptop: cài app <b>Bugjaeger</b> (Play Store), nối điện thoại–xe, đưa file <b class="k">navopen.jar</b> vào <b class="k">/data/local/tmp/navopen.jar</b> (mục File của Bugjaeger). Rồi vào mục Shell, gõ từng dòng và chụp màn hình gửi về (đang lúc HUD hiện nav):</p>
+<div class="cmd">CLASSPATH=/data/local/tmp/navopen.jar app_process /system/bin com.byd.navopen.NavOpen getraw instr 38B00030</div>
+<p>(Dòng trên là quan trọng nhất — kỳ vọng ra <b class="k">= 1</b>.) Rồi lần lượt đổi <b class="k">38B00030</b> thành: <b class="k">38B0002E</b>, và đổi <b>instr</b> thành <b>setting</b> với: <b class="k">38B00015</b>, <b class="k">38B0001C</b>, <b class="k">38B00028</b>, <b class="k">38B0001E</b>. Thêm 3 dòng thông tin xe:</p>
+<div class="cmd">getprop persist.sys.vehicle_40d_code
+getprop ro.build.region
+getprop persist.sys.byd.bluetooth_name</div>
+
+<hr>
+<p class="sub">Cảm ơn nhiều! Công cụ chỉ đọc — an toàn 100% với xe. Có gì trục trặc, chụp màn hình cửa sổ đen gửi bọn mình là được hỗ trợ ngay.</p>
+
+</body></html>

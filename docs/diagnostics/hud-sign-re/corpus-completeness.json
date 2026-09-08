@@ -1,0 +1,637 @@
+{
+  "baseline": {
+    "approved_diff": {
+      "producer": "git diff --binary HEAD -- <four-pre-existing-dirty-files>",
+      "sha256": "174110d242ce46f8187eb0d612b7b5c9da73a9d16b3661d99a2d6da3ba4a0536"
+    },
+    "approved_spec": {
+      "path": "docs/specs/seal-nav-hud-speed-sign-offcar.html",
+      "starting_sha256": "c93f502b96377752d725d0017e51ce4f0c6adf05d0f129874b1f3602f356f661"
+    },
+    "dirty_files": [
+      {
+        "current_sha256": "46cfa3fc625ac286b9cf92a368cb0beb7aba83d940322e89d1ea92be3ce05c83",
+        "disposition": "T0_QUARANTINED_TEST_SURFACE",
+        "path": "app/src/main/AndroidManifest.xml",
+        "starting_sha256": "e4a0c15bcbf3dcda926a2f06a694ba5fa77d210b3a5280d87431d6d333ec18a5"
+      },
+      {
+        "current_sha256": "fa5ab346131c2d947d42cba65972825c9762e82ebbc1b8df538fedac76cd3bf8",
+        "disposition": "T0_QUARANTINED_TEST_SURFACE",
+        "path": "app/src/main/java/com/byd/clusternav/RebindReceiver.kt",
+        "starting_sha256": "067df44fd17eeff1bf2cd165c9f1789333560756dc2a767f258446acfac29f3f"
+      },
+      {
+        "current_sha256": "37fab79611705f5af1abeea26b0812f77d71bb2d42d97c9a307f34f2e6de6f65",
+        "disposition": "PRESERVED_BYTE_FOR_BYTE_FIRST_LAUNCH_FIXES",
+        "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/FloatingBubbleService.kt",
+        "starting_sha256": "37fab79611705f5af1abeea26b0812f77d71bb2d42d97c9a307f34f2e6de6f65"
+      },
+      {
+        "current_sha256": "f1acda7b7e1f7bee7ed30a9dc5dc54b59fa555d10cf2495921199ca9bfd9f49e",
+        "disposition": "PRESERVED_BYTE_FOR_BYTE_FIRST_LAUNCH_TESTS",
+        "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/CastUILifecycleSafetyTest.kt",
+        "starting_sha256": "f1acda7b7e1f7bee7ed30a9dc5dc54b59fa555d10cf2495921199ca9bfd9f49e"
+      }
+    ],
+    "head": "d85b9f2e13c3081287005bee0e90bb482bd6d272",
+    "invalid_candidate": {
+      "apk_alias": "<project-root>/apk/ClusterNav-1.04-v104-527589f2d16a-release.apk",
+      "apk_sha256": "b9a0259e7174a694b7bd4fd8984199ac91091e5e52e8de9c73ae6c67542bb598",
+      "reason": "PRE_FIRST_LAUNCH_FIX_RELEASE_CRASHES_ON_CLEAN_FIRST_LAUNCH",
+      "source_id": "527589f2d16ac04400e811d89da31ae5b21f693058b5713cb8dd90eea365380c",
+      "status": "INVALID_DO_NOT_INSTALL_OR_PROMOTE"
+    }
+  },
+  "consolidation": {
+    "corpus_verdict": "NOT_EXHAUSTIVE",
+    "head": "d85b9f2e13c3081287005bee0e90bb482bd6d272",
+    "report_identities": {
+      "docs/diagnostics/hud-sign-re/README.md": "f854683acbda36c69f899a5d3a3bdc326c0df966dc49b24059eb2d94ccb1ee46",
+      "docs/diagnostics/hud-sign-re/candidate-report.html": "af3c3db29e29b5c4cd4ebd0a0d4ef863de5a7a2d7f60c527bbe989596ce3eb36",
+      "docs/diagnostics/hud-sign-re/evidence-index.json": "ac3fd27701e6b05c5037594b35d314b49ddadaeb0315d8a64c3a3da0bef980b9",
+      "docs/diagnostics/hud-sign-re/first-launch-emulator-result.json": "e60e63dced72dbc0d742476883930088385c5812b29d176f145f42430540ae39",
+      "docs/diagnostics/hud-sign-re/m1-nav-hud-plan.json": "c8eff7210e093fa1b2e32328abeddf37fa51d919d524df851e4ecd634d289bf9",
+      "docs/diagnostics/hud-sign-re/m2-hud-road-plan.json": "dffb04d3e26beadd9fd7f813870fca6712d5f213f4145787280ddb4718437faf",
+      "docs/diagnostics/hud-sign-re/m3-cluster-sign-plan.json": "ac2de2631de73ab2ddd2ad4efa2f33e805fae2d8007091e2ae3497c64625fb7e",
+      "docs/diagnostics/hud-sign-re/m4-hud-sign-plan.json": "51fc71db1050baa816e9df2e1250a196c1d6e608a48df228e5318d6077c910d1",
+      "docs/diagnostics/hud-sign-re/native/libbydcluster-diff.json": "d2d7f63ee1916905e8ef21ea58242f22f4e2c02a5a1e0b3854766341f77e9464",
+      "docs/diagnostics/hud-sign-re/traceability.json": "332ae311ed642441c7ec8640fc4c389e1e7865813eafef8b1442645ff3791e60",
+      "docs/diagnostics/hud-sign-re/zero-hit-report.txt": "55acd8bf51a0baf9f397b8765162f063fc1686d9544b3fdbc83eaa96955f273f",
+      "tools/re/manifest.json": "4b685ba2fc2234500094c820daf3b3f29d9e88af9afed4845668219100424418"
+    },
+    "schema": "clusternav.hud-sign-consolidation-identity/v1",
+    "source_files": [
+      {
+        "path": ".gitignore",
+        "sha256": "24ddad9601c8f413a616b962e57c05dd756c8ee6cd96cfa175394a526f85926f"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/AmapEmissionArbiter.kt",
+        "sha256": "f8233a3fefca1845bbcc367f5214dba9935dff7cb66b7667f362ec4c326fd65b"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/ClusterBroadcaster.kt",
+        "sha256": "4023f06722128dda45f7f11bbbc7eba7372e4712b3edcbe5f3d67beb090e0f07"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/HudMirrorController.kt",
+        "sha256": "9105bad1697001db5cb1aa707d72d41c06cbbcaa26dc7f3081594114fc6b51c2"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/MainActivity.kt",
+        "sha256": "187d0de1fff6a8b0c7d3501b740e19ca81d0910f84bb4b30cc10eb99bf676486"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/NavNotificationListener.kt",
+        "sha256": "5e91fffe7deb689df2cfb990debedc475d3baa456d8bb3f80c385157002c9a77"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt",
+        "sha256": "b1f778235ba5d227e0b77e9d57dd9f56df5979e4ef23027820978063458787f5"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/Prefs.kt",
+        "sha256": "f17ac54003fd7c4054a5538e4659adcd1cf3f9fe09d4d0c60e017bba42e25a41"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/RebindReceiver.kt",
+        "sha256": "fa5ab346131c2d947d42cba65972825c9762e82ebbc1b8df538fedac76cd3bf8"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/SpeedProvider.kt",
+        "sha256": "4bcb56e4269cf7dacbe2e50d14c82f3219ea77181c8c8977708140671632fe88"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/ClusterProfile.kt",
+        "sha256": "52e7888ed824a0e8dd21a79c8bc7f3803e5f3b226cc76736723ab79d3c17b9cc"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/FloatingBubbleService.kt",
+        "sha256": "37fab79611705f5af1abeea26b0812f77d71bb2d42d97c9a307f34f2e6de6f65"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/modules/hal/BydHal.kt",
+        "sha256": "e5a5299c02c4c60db6cfadc9318b57fceb52a6ebc2eab371db85a327abdc31bd"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/modules/wazehud/WazeHudSource.kt",
+        "sha256": "63a66fb57221f4d0860c8548474ac985d72b0431a7368c6067c6ef4d9a518c65"
+      },
+      {
+        "path": "app/src/main/java/com/byd/clusternav/vietmapwidget/VietMapWidgetBridge.kt",
+        "sha256": "bbd0755703df4c327f0733d2d88716091f8ba10743be159a90a41eb8adc3ac7a"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/AmapEmissionArbiterTest.kt",
+        "sha256": "4c2d70be08156f9907f70bfedfd8761502edb646e30c2fdcfa4efd5f785167a3"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/AmapFrameBuilderContractTest.kt",
+        "sha256": "01a8bb49c0546983df5b677caf59c78d5aed8e0d87d9c212a322659cc6969fc0"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/FloatingBubbleFirstLaunchContractTest.kt",
+        "sha256": "77c280c113475ac6b1ba59dfcee47281350286f7e132bc4a4f0be98794861b4a"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/HudRoadCapabilityTest.kt",
+        "sha256": "68625e9e7f9bfa51c34c85117bebe277f3565d64272896e571803a0c9b2c888e"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/MainProbeSurfaceAbsenceTest.kt",
+        "sha256": "1a3f3a8d7aae40d5c7d377b763c71081f89e1e78b6960fd65b58de8e783b4447"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/PhysicalHudOwnershipTest.kt",
+        "sha256": "fc90b96897873ee6aab9d0dcb1cf0aa9b3ab8a7367a787f9099be15ba89f99f4"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/SpeedSignSourceLifecycleTest.kt",
+        "sha256": "87cc80555cc2dae9d86e4ed43d04f150f5eada694d66a206f7af6a20cf98c632"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/modules/clustercast/CastUILifecycleSafetyTest.kt",
+        "sha256": "f1acda7b7e1f7bee7ed30a9dc5dc54b59fa555d10cf2495921199ca9bfd9f49e"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/modules/wazehud/WazeHudSourceTest.kt",
+        "sha256": "725f3287d0388a99fbdd874b1988689845b1edb1bdc2424e6d54274f6ff373b4"
+      },
+      {
+        "path": "app/src/test/java/com/byd/clusternav/navigation/NavigationOutputIsolationTest.kt",
+        "sha256": "5f85f9c67a177ed280a973743b08ee501c8cae9b05f2030459143fdb12fd55e2"
+      },
+      {
+        "path": "core/build.gradle.kts",
+        "sha256": "6c462b0a5db7eda0eeeee6c5ccb6ed7ccb316374d8604a8949a1c3cba90a1c35"
+      },
+      {
+        "path": "core/src/main/kotlin/com/byd/clusternav/navigation/SpeedSignLifecycleCoordinator.kt",
+        "sha256": "84030f3c84bb4dbfd37ee5762a96befce6f18d19778145353986f5c0ebb1f7c9"
+      },
+      {
+        "path": "core/src/main/kotlin/com/byd/clusternav/navigation/SpeedSignPorts.kt",
+        "sha256": "4ae2162e7746447f6283d9db8f20968ccfac3ed9223b03ed1f1e3ec2568837df"
+      },
+      {
+        "path": "core/src/test/kotlin/com/byd/clusternav/navigation/NavigationSpeedSignRaceTest.kt",
+        "sha256": "3fac97aec571bea3e0e0479adb7b475f7c9521dcfd45d382fe1ab14b91a01494"
+      },
+      {
+        "path": "core/src/test/kotlin/com/byd/clusternav/navigation/SpeedSignLifecycleCoordinatorTest.kt",
+        "sha256": "00dc3db3f9ac4cf6567b5d666e29d1fbd5fa65c5e41d4cc113e64acf8683c7d0"
+      },
+      {
+        "path": "offcar-planner/build.gradle.kts",
+        "sha256": "a8e1164d9b49cd77837acb57adee155d367b089dfb74a1c5fe01be5c2b4d98a3"
+      },
+      {
+        "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CandidateScenarioGenerator.kt",
+        "sha256": "adddcd651da5ebbdfb96c224cdbe1e7184e975e118cfb810a9025e596f660d9a"
+      },
+      {
+        "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CommandPlan.kt",
+        "sha256": "73e99f2290e4770e1c37913c4bceba92ce3e4023e8fd8edf0d4c7ceb920da8ca"
+      },
+      {
+        "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CommandPlanRenderer.kt",
+        "sha256": "d63d1eac658dac8faaa46b78e7247f5598e9be49e6eb379b73c87e6663938d0b"
+      },
+      {
+        "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/FakeVehicleTransport.kt",
+        "sha256": "860a1a3f27c734b6bd147c3c04125351900bcea345091dd479c96523b919aebc"
+      },
+      {
+        "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/FirmwareEvidence.kt",
+        "sha256": "d7482817ce3a98f0d0fcdfeb593f9d18b8d16ac94be5c7afa60c03573cf5ce93"
+      },
+      {
+        "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/OffCarPlannerMain.kt",
+        "sha256": "272964660a7575aacb8d0af6a3ef5fa016381e6d162358c9b4d474e68c9ea462"
+      },
+      {
+        "path": "offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/VehicleCandidate.kt",
+        "sha256": "1b49a0b260287bc15d0efe7eb5b3c772a8ab1f905e4ae73f9ff15e58ae54c716"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CandidateSafetyTest.kt",
+        "sha256": "3c4cfb376cee105ee83c224b1c1508b7dead80b1bd509dcfe54da2a98c0656e8"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CapabilityPromotionTest.kt",
+        "sha256": "9a3129fcfe854ee52aa769c5cedce015215e2cec7f6075df6f129f0b8da2e957"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/DependencyBoundaryTest.kt",
+        "sha256": "cc1f1b77801d075fe9964f1c258f9f43aedeb598ba544b319760fce24792fe18"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/FirmwareEvidenceGraphTest.kt",
+        "sha256": "b1c9a6ae7e8ac1b5b74e78e0a5d37bb50266b399861ae4195a8c4dbe3079c2cf"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ModernPropertyGatewayContractTest.kt",
+        "sha256": "3608c4a09dd4856bec018c88d8da1040875e584fa7a15a215ff9c4db422bb86a"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/NaviInfoSchemaTest.kt",
+        "sha256": "34685f0280b1262c0b73be5a59099000602abdbf5e54bec6b27f29dd562aae08"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/OffCarTransportFenceTest.kt",
+        "sha256": "b81ed1820052584bb6eb2335b11940aa6fafc420b6d5599883eb32393dd61600"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/PropertyCandidateValidatorTest.kt",
+        "sha256": "edca693b96d52829830e2e16d77de1226744899685c208b513323acf859d3680"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ScenarioSnapshotTest.kt",
+        "sha256": "b6c2cfc79997521c373e2dab71bf964b22354dc326bcae4b5145112ffe073eb4"
+      },
+      {
+        "path": "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/TraceabilityTest.kt",
+        "sha256": "9f9e3d649ba160e521080a9b6494ce82c2b2ac7799095cec2e287c778445c157"
+      },
+      {
+        "path": "scripts/re/build-evidence-graph.py",
+        "sha256": "02d9c1210448f426e7702c1c27626e45fdbefda78f23c991d75fffd1561f4e78"
+      },
+      {
+        "path": "scripts/re/decode-java.sh",
+        "sha256": "2782b4bc7a84e6f8e9f8fbb8af38de98a8ae0069def079b9cf6b5664caccc4fe"
+      },
+      {
+        "path": "scripts/re/ghidra/ExportRelevantFunctions.java",
+        "sha256": "491b359b609f462a564863f73292c200148640b2a88839b8bc962ab64cb72dc2"
+      },
+      {
+        "path": "scripts/re/hash-corpus.py",
+        "sha256": "5b7c99fd4b05aa5145a2d22486103a7190c7864f9075d20c5579f49fc6138f19"
+      },
+      {
+        "path": "scripts/re/index-features.py",
+        "sha256": "bd59394faded7670bf4b66bd3d7ce9a7e98793475801a7b546d7116228fb4b6b"
+      },
+      {
+        "path": "scripts/re/run-native-analysis.sh",
+        "sha256": "18185cab0b96a02eb68c2a36efefec6d5dd7a9fbd1959447d43d20475a31df0f"
+      },
+      {
+        "path": "scripts/re/tests/test_evidence_graph.py",
+        "sha256": "99f62de8d4baeb87c665cf53db0f2bd4b481717b088a903271d0200d0d35a73b"
+      },
+      {
+        "path": "scripts/re/tests/test_feature_index.py",
+        "sha256": "12719f2313a66562daf9f5874babfc5a2b74bca84d8873f3b48945e3aa17bb34"
+      },
+      {
+        "path": "scripts/re/tests/test_hash_corpus.py",
+        "sha256": "dceeb9e84b1c11a07d624b89f63339a9d37d2fa979efe279854f18313b70eb19"
+      },
+      {
+        "path": "scripts/re/tests/test_report_sanitizer.py",
+        "sha256": "ea43d495524071ed50912006dc66387205773a4534c021eaebb5bbb94d5d2f45"
+      },
+      {
+        "path": "scripts/re/verify-reproducibility.py",
+        "sha256": "fc4a381521b88241fa56e988b1a6db151ed0df03de8ef54957f9bcb5370a02fd"
+      },
+      {
+        "path": "scripts/verify-seal-hud-sign-offcar.sh",
+        "sha256": "b23253fa8f934b107c58186ef60fff7959b8e7b3059df1cb4a59d9d7f3a92a1a"
+      },
+      {
+        "path": "settings.gradle.kts",
+        "sha256": "7273739081e31fdeb3389d0aab02d39a3986b94751159858bcbce4acac6fbb68"
+      },
+      {
+        "path": "vehicle-contracts/build.gradle.kts",
+        "sha256": "9292e5f2da969e3aacf527b6a3451af54bfc67d4fcc59651e66ec294f3aa7495"
+      },
+      {
+        "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/contracts/SpeedLimitEnums.kt",
+        "sha256": "0c9d79c21829685b3083792b38d6d65e5c3944a2db865c94161720559f89f673"
+      },
+      {
+        "path": "vehicle-contracts/src/main/kotlin/com/byd/clusternav/contracts/SpeedLimitFrame.kt",
+        "sha256": "6b79028188211eeea710bc2b926d66ea5ae957960c0e812d48bbe569fa59b050"
+      },
+      {
+        "path": "vehicle-contracts/src/test/kotlin/com/byd/clusternav/contracts/SpeedLimitFrameTest.kt",
+        "sha256": "273bb27ff063e962ecd13cc4078b6cd578b5deb5d63f9b0855aabccb085d7797"
+      }
+    ],
+    "tracked_diff_sha256": "1e23dadc3b78363e68209d441763085f57ca94b4f78e7c1a3868714b351abd9d",
+    "visual_pass": false
+  },
+  "corpus": {
+    "aliases": {
+      "amap": "<project-root>/../jadx-amap2/sources",
+      "carsettings": "<project-root>/../carsettings-apk/jadx-carsettings/sources",
+      "dashcast": "<project-root>/../jadx-dashcast/sources",
+      "fw-new": "<project-root>/../firmware/fw-2602-diff/jadx-l3-new/sources",
+      "fw-new-product": "<project-root>/../firmware/fw-2602-diff/new_product",
+      "fw-old": "<project-root>/../firmware/fw-2602-diff/jadx-l3-old/sources",
+      "fw-old-product": "<project-root>/../firmware/fw-2602-diff/old_product",
+      "navopen": "<project-root>/../NavOpen/src",
+      "openbyd": "<project-root>/../jadx-openbyd24/sources",
+      "project-app": "<project-root>/app/src/main/java",
+      "tmap": "<project-root>/../jadx-tmap/sources"
+    },
+    "availability": [
+      {
+        "aliases": [
+          "amap-apk",
+          "amap-java"
+        ],
+        "branch": "AmapService and NaviInfo",
+        "state": "AVAILABLE_HASHED_AND_REDECODED"
+      },
+      {
+        "aliases": [
+          "carsettings-apk",
+          "carsettings-dex",
+          "carsettings-java"
+        ],
+        "branch": "CarSettings/CCS/DiCar",
+        "state": "JAVA_AND_FOUR_DEX_AVAILABLE; ORIGINAL_APK_MALFORMED"
+      },
+      {
+        "aliases": [
+          "l3-old-apk",
+          "l3-new-apk",
+          "fw-old-java",
+          "fw-new-java",
+          "services-old-framework",
+          "services-new-framework"
+        ],
+        "branch": "old/new framework Java",
+        "state": "AVAILABLE_HASHED_AND_REDECODED"
+      },
+      {
+        "aliases": [
+          "cluster-old-native",
+          "cluster-new-native"
+        ],
+        "branch": "unstripped libBydCluster old/new",
+        "state": "AVAILABLE_HASHED_AND_REQUESTED_NATIVE_SYMBOLS_ANALYZED"
+      },
+      {
+        "aliases": [
+          "openbyd-java",
+          "dashcast-java",
+          "tmap-java",
+          "navopen-java"
+        ],
+        "branch": "reference applications",
+        "state": "AVAILABLE_HASHED_AND_INDEXED"
+      },
+      {
+        "branch": "extracted product trees and raw system images",
+        "state": "AVAILABLE_FOR_FILENAME_INVENTORY; NOT_FULL_PARTITION_COMPLETENESS"
+      },
+      {
+        "branch": "vendor partition and vendor HAL provider libraries",
+        "state": "KNOWN_MISSING"
+      },
+      {
+        "branch": "system_ext, odm and vendor_boot partitions",
+        "state": "UNAVAILABLE_ZERO_HIT"
+      },
+      {
+        "branch": "Telenav/Neusoft provider APKs",
+        "state": "UNAVAILABLE_ZERO_HIT; PACKAGE_CITATIONS_ONLY"
+      },
+      {
+        "branch": "property registry/config database",
+        "state": "UNAVAILABLE_ZERO_HIT"
+      },
+      {
+        "branch": "cluster QML/RCC assets",
+        "state": "UNAVAILABLE_ZERO_HIT"
+      },
+      {
+        "branch": "service_contexts/hwservice_contexts",
+        "state": "UNAVAILABLE_ZERO_HIT_IN_SELECTED_ROOTS"
+      }
+    ],
+    "available_scope_verdict": "COMPLETE_FOR_AVAILABLE_JAVA_AND_REQUESTED_NATIVE_SYMBOL_SCOPE",
+    "selected_artifact_manifest_sha256": "1e4a836bf4a0b6113be2ff94b1c63cee8ac89f7a4e79d8fbf103a52c585db53b",
+    "selected_artifacts": [
+      {
+        "alias": "amap-apk",
+        "byte_count": 5115497,
+        "file_count": 1,
+        "sha256": "f3147928df1400c97b6d59b8dc82f1cbd9dfc2bd95b6982f89671caaab829464"
+      },
+      {
+        "alias": "amap-java",
+        "byte_count": 11162562,
+        "file_count": 1095,
+        "sha256": "7a5aa5de99b080ebb8ae488d7727469c912b20e5960118eb72fe5d3db1be48d8"
+      },
+      {
+        "alias": "carsettings-apk",
+        "byte_count": 33615864,
+        "file_count": 1,
+        "sha256": "2dfa40b44786df654a1a6c59942356e179161a2d111cd105571d9a20591400ba"
+      },
+      {
+        "alias": "carsettings-dex",
+        "byte_count": 18865152,
+        "file_count": 4,
+        "sha256": "1b68b42f94bd21703876759dd580953c3d42d86d712755d93a49eba9a0d10bdb"
+      },
+      {
+        "alias": "carsettings-java",
+        "byte_count": 49651370,
+        "file_count": 6131,
+        "sha256": "a4a5c5dfeedcd78fadd841548563b05bd6bd3479413744182cc1ee31a5a10ea2"
+      },
+      {
+        "alias": "cluster-new-native",
+        "byte_count": 31077752,
+        "file_count": 1,
+        "sha256": "3197abee462e1de4ae476b8643a5570a4e90b3d0623534e9451ea810d8ee8ae8"
+      },
+      {
+        "alias": "cluster-old-native",
+        "byte_count": 31072080,
+        "file_count": 1,
+        "sha256": "9f8a0b269fbee37bad510e8dfbc239b857e00a87663fc9fb7ae39913f86017ca"
+      },
+      {
+        "alias": "dashcast-java",
+        "byte_count": 35940254,
+        "file_count": 4652,
+        "sha256": "0d3e01a46dfc06835dbc7a53d5dab9b6d2975aaf233eac36d55bb4dc30ab69a3"
+      },
+      {
+        "alias": "fw-new-java",
+        "byte_count": 63004487,
+        "file_count": 8509,
+        "sha256": "4551fc6a7c04571e373733acc80a9d538baee8c9b1e74540d9096589ba8e32b0"
+      },
+      {
+        "alias": "fw-old-java",
+        "byte_count": 62567402,
+        "file_count": 8470,
+        "sha256": "20cb9333efb6b890baa12f9f0b89d8b6e63dc52c385ce8917794c32e4927ed0f"
+      },
+      {
+        "alias": "l3-new-apk",
+        "byte_count": 36724736,
+        "file_count": 1,
+        "sha256": "1d10959909d41c5bc51346c357296fabf1c9d963207dd2c75331fdc7ea2e16e4"
+      },
+      {
+        "alias": "l3-old-apk",
+        "byte_count": 36026314,
+        "file_count": 1,
+        "sha256": "f772c16fc9f223a799a7a7d3c2ce99560ac99f51d4441fc8b5d684d9bf8cfe9b"
+      },
+      {
+        "alias": "navopen-java",
+        "byte_count": 20069,
+        "file_count": 1,
+        "sha256": "ef18b00e6c72051c143bf2c53ab328d5255b0c8178efdde2822ca3f5f37e7436"
+      },
+      {
+        "alias": "openbyd-java",
+        "byte_count": 27451146,
+        "file_count": 6574,
+        "sha256": "3747f16a33b2ec12bd3789c67061f2c5a4516c1b171c14588979f034c6503a49"
+      },
+      {
+        "alias": "services-new-framework",
+        "byte_count": 15203494,
+        "file_count": 1,
+        "sha256": "fbb7c49dc4c282fe41dda78f2751e9b8c4d38bcffa4070319b54cc5457992777"
+      },
+      {
+        "alias": "services-old-framework",
+        "byte_count": 15195222,
+        "file_count": 1,
+        "sha256": "86c4ca6114911936f99eccedf2baed4291a0cbdd2d2c645a931ddd6cad7e33ec"
+      },
+      {
+        "alias": "tmap-java",
+        "byte_count": 34999384,
+        "file_count": 7760,
+        "sha256": "ca91ecb9b5349e6099a1e6feec1c2b523f35370167bbac89d21bf0665eb43efb"
+      }
+    ],
+    "verdict": "NOT_EXHAUSTIVE"
+  },
+  "decode": {
+    "cache_alias": "<user-cache>/clusternav-re/decoded/<input-sha256>",
+    "completed": [
+      {
+        "apktool": "decoded-smali-no-res",
+        "input": "AmapService.apk",
+        "jadx_auto_errors": 8,
+        "sha256": "f3147928df1400c97b6d59b8dc82f1cbd9dfc2bd95b6982f89671caaab829464"
+      },
+      {
+        "apktool": "not-applicable-standalone-dex",
+        "input": "classes.dex",
+        "jadx_auto_errors": 11,
+        "sha256": "e23be25add40b8a5ff5441c772e0d6611f6a9f05353b6b2985aee715d06e3862"
+      },
+      {
+        "apktool": "not-applicable-standalone-dex",
+        "input": "classes2.dex",
+        "jadx_auto_errors": 0,
+        "sha256": "5f4b840bde09a981f76cd91d396567c283a0291b7fd5a6f5433c48a986a68d0d"
+      },
+      {
+        "apktool": "not-applicable-standalone-dex",
+        "input": "classes3.dex",
+        "jadx_auto_errors": 2,
+        "sha256": "ea75450d9455a9d29ed2597e2008da82e314f5dfc4b58f0b9c91f55968e633ce"
+      },
+      {
+        "apktool": "not-applicable-standalone-dex",
+        "input": "classes4.dex",
+        "jadx_auto_errors": 0,
+        "sha256": "ff2dd9ce8c61f7b7f7a96101651f6acfbfeb031d692b5d50e37ae7af4a07aa97"
+      },
+      {
+        "apktool": "decoded-smali-no-res",
+        "input": "L3_old.apk",
+        "jadx_auto_errors": 83,
+        "sha256": "f772c16fc9f223a799a7a7d3c2ce99560ac99f51d4441fc8b5d684d9bf8cfe9b"
+      },
+      {
+        "apktool": "decoded-smali-no-res",
+        "input": "L3_new.apk",
+        "jadx_auto_errors": 83,
+        "sha256": "1d10959909d41c5bc51346c357296fabf1c9d963207dd2c75331fdc7ea2e16e4"
+      }
+    ],
+    "fallback_result": "ALL_SEVEN_INPUTS_EXIT_0",
+    "malformed_input": {
+      "input": "carsettings-apk/CarSetting.apk",
+      "sha256": "2dfa40b44786df654a1a6c59942356e179161a2d111cd105571d9a20591400ba",
+      "unzip_exit": 9,
+      "verdict": "ZIP_END_HEADER_MISSING; FOUR_EXTRACTED_DEX_FILES_USED"
+    }
+  },
+  "evidence": {
+    "evidence_index_sha256": "ac3fd27701e6b05c5037594b35d314b49ddadaeb0315d8a64c3a3da0bef980b9",
+    "native_primary_function_pairs": 25,
+    "native_report_sha256": "d2d7f63ee1916905e8ef21ea58242f22f4e2c02a5a1e0b3854766341f77e9464",
+    "native_scope_verdict": "COMPLETE_FOR_REQUESTED_NATIVE_SYMBOL_SCOPE",
+    "native_unresolved_functions": 0,
+    "navi_info_field_count": 18,
+    "navi_info_has_speed_limit": false,
+    "publication_boundary": "METADATA_ONLY_NO_DECOMPILED_SOURCE_LINES_OR_C_BODIES",
+    "qml_rcc_linkage": "UNAVAILABLE",
+    "taxonomy": [
+      "H0",
+      "H1",
+      "H2",
+      "H3",
+      "H4",
+      "H5",
+      "H6",
+      "H7",
+      "S0",
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "S6",
+      "S7",
+      "S8",
+      "S9",
+      "S10"
+    ],
+    "zero_hit_report_sha256": "55acd8bf51a0baf9f397b8765162f063fc1686d9544b3fdbc83eaa96955f273f"
+  },
+  "schema": "clusternav.hud-sign-corpus-completeness/v1",
+  "scope": {
+    "authorized": [
+      "T0",
+      "T0_MAIN_HOOK_QUARANTINE",
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "T8",
+      "T9"
+    ],
+    "forbidden": [
+      "VEHICLE_EXECUTION",
+      "T10",
+      "T11"
+    ]
+  },
+  "tool_manifest_sha256": "4b685ba2fc2234500094c820daf3b3f29d9e88af9afed4845668219100424418"
+}

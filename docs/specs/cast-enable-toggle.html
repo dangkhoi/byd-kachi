@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cluster Cast — master enable/disable toggle</title>
+<script>(function(){var t=localStorage.getItem('cnux-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1220px;margin:auto;padding:0 28px 110px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;letter-spacing:-.01em}
+.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}
+.hero{padding:72px 0 46px}
+.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(34px,5.5vw,56px);line-height:1.05;letter-spacing:-.045em;margin:14px 0 18px;max-width:1000px}
+.lead{font-size:19px;color:var(--muted);max-width:900px}
+.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px}
+.stat,.card,.callout,.phase{background:var(--paper);border:1px solid var(--line);border-radius:18px}
+.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}
+section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}
+h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}
+.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}
+.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}
+.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}
+code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}
+pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}
+.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:780px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}
+.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}
+.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}
+.sev{font:700 11px var(--mono);padding:3px 7px;border-radius:6px;white-space:nowrap}.sev.p0{background:var(--red-soft);color:var(--red)}.sev.p1{background:var(--amber-soft);color:var(--amber)}.sev.p2{background:var(--purple-soft);color:var(--purple)}.sev.new{background:var(--green-soft);color:var(--green)}
+.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.green{background:var(--green-soft);color:var(--green)}
+.review{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}
+.diagram{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;margin:16px 0;overflow:auto}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:6px}.sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Cluster Cast enable toggle</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('cnux-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Consolidated spec · requirements · design · tasks · off-car</div>
+<h1>Master switch để bật/tắt Cluster Cast — giữ lại nav lên cụm &amp; HUD.</h1>
+<p class="lead">Một số người dùng chỉ muốn đưa dẫn đường lên cụm đồng hồ (và HUD), KHÔNG muốn tính năng chiếu app (Cast). Thêm một công tắc "Bật Cluster Cast" (mặc định BẬT) lưu bền: BẬT → mở chiếu + hiện nút nổi như cũ; TẮT → dọn cụm về đồng hồ gốc, không vẽ chiếu, không nút nổi, và ẩn luôn phần UI Cast bên phải cho gọn — mọi lần mở app sau vẫn giữ trạng thái đó. Nav→cụm và HUD là hai track độc lập nên KHÔNG bị ảnh hưởng. Gộp vào release candidate <strong>1.05</strong>.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Version: 1.05 (versionCode 105) · Baseline: main@d85b9f2 + uncommitted WIP · Date: 2026-08-11</p>
+<div class="stats">
+<div class="stat"><b>1</b><span>pref (castEnabled)</span></div>
+<div class="stat"><b>3</b><span>gate points</span></div>
+<div class="stat"><b>+11</b><span>tests (contract)</span></div>
+<div class="stat"><b>0</b><span>new deps</span></div>
+<div class="stat"><b>no</b><span>commit (contract)</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-08-11</td><td>Spec khởi tạo từ 1 yêu cầu owner: checkbox/switch bật-tắt Cast, lưu bền; khi tắt dọn cụm về đồng hồ + ẩn UI Cast bên phải. Owner duyệt qua prompt ("làm luôn"), gộp vào 1.05.</td><td>Implemented off-car; chờ on-car → commit. Một cổng approval = message uỷ quyền này.</td></tr>
+<tr><td>2026-08-11 (on-car feedback)</td><td>Test trên xe → 3 điều chỉnh: <strong>(1) default Cast = TẮT</strong> (nav-only là mặc định — cụm giữ native + nav OEM hiện ngay, không projection/cong/đen); <strong>(2)</strong> bỏ checkbox <code>cb_lane</code> thừa, cluster-lane theo master switch Navigation+HUD (mặc định bật); <strong>(3)</strong> nav trên cụm dùng <strong>overlay OEM AMapService</strong> (ClusterNav chỉ feed qua <code>ClusterBroadcaster</code>) — KHÔNG vẽ overlay riêng. Cũng phát hiện: <code>closeProjection</code> (18→0) không revert kiểu cong (profile 30); flip flat (31) revert được nhưng RESTART màn chính (re-init container OEM) → không tự động hoá.</td><td>Implemented + verified (1097 tests, lintRelease 0). Item 3 = no code (OEM-limited): default-off khiến ca nav-only luôn hiện nav OEM; cast-đè-nav là z-order do OEM compositor quyết.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><strong>Approval gate (một cổng, ngoài tài liệu):</strong> owner authorized 2026-08-11 ("đang chưa lên xe nên làm luôn"). Thực thi implement → test → senior review; <strong>rebuild 1.05 candidate</strong> nhưng <strong>KHÔNG commit/push</strong> tới khi owner test trên xe. State không lưu trong HTML.</div>
+</section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="grid3">
+<div class="card"><h3>Nền hiện có (đọc từ source)</h3><ul>
+<li>Cast "projection-first": mở app → <code>MainActivityCastController.onCreate</code> gọi <code>coordinator.openProjection()</code>; <code>MainActivity</code> gọi <code>startForegroundService(FloatingBubbleService)</code>.</li>
+<li><code>FloatingBubbleService</code> = sole autostart driver (R1) + projection owner (R10): mở lại chiếu trên boot, hiện nút nổi, dispatch cast-autostart.</li>
+<li>Prefs Cast: interface <code>SimpleCastPrefs</code> (:core) + impl <code>SharedPrefsSimpleCastPrefs</code> (app, <code>simple_cast_prefs</code>) + <code>FakePrefs</code> (test). Pattern checkbox sẵn có: <code>cb_autostart</code> qua <code>CastAutostart</code>.</li>
+<li>Dọn cụm về đồng hồ đã có: <code>coordinator.closeProjection()</code> (<code>returnAllApps</code> + <code>cleanDisplay1</code> + <code>projection.close</code>); <code>CastDeepRescueAction</code> = "đứng hẳn xuống, không mở lại".</li>
+<li>Layout: <code>layout/activity_main.xml</code> (dọc, 2 thẻ chồng) + <code>layout-w960dp/activity_main.xml</code> (màn xe, 2 cột — Cast là cột phải). Thẻ "Navigation + HUD" đã có <code>Switch switch_enabled</code> ở header.</li>
+</ul></div>
+<div class="card"><h3>Owner request</h3><ul>
+<li>Thêm <strong>option (checkbox)</strong> cast sang cụm: check → mới start vẽ projection, giữ luôn cho các lần mở sau, hiện nút nổi.</li>
+<li>Nếu disable → <strong>dọn sạch cụm về default</strong>, lần sau mở cũng không vẽ projection, không nút nổi.</li>
+<li>Lý do: nhiều người chỉ thích đưa navigation lên cluster + HUD, không muốn cast app sang cluster.</li>
+<li>Bổ sung: khi disable, <strong>ẩn luôn phần UI Cast bên phải</strong> cho đẹp.</li>
+</ul></div>
+<div class="card"><h3>Ràng buộc</h3><ul>
+<li>Off-car: verify bằng JVM tests + <code>lintRelease</code> (<code>JAVA_HOME=/opt/homebrew/opt/openjdk@17</code>).</li>
+<li>Backward-compat: mặc định <strong>BẬT</strong> → user cũ không đổi hành vi.</li>
+<li>KHÔNG hồi quy nav→cụm &amp; HUD (đó chính là thứ user muốn giữ).</li>
+<li>W1: không thêm dependency mới; giữ SharedPreferences (KV nhỏ, đồng bộ) — cùng khoá vực <code>simple_cast_prefs</code> với các pref Cast khác.</li>
+<li>Gộp vào 1.05 ⇒ rebuild candidate; <strong>không commit/push</strong> tới khi owner test xe.</li>
+</ul></div>
+</div>
+<div class="callout amber"><strong>Ranh giới off-car:</strong> hành vi cụm/nút nổi thật chỉ khẳng định được trên xe. Off-car khoá bằng logic + contract test (đọc source 2 đầu boundary). PASS on-car để lại §Verification.</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance (off-car verifiable)</th></tr></thead><tbody>
+<tr><td>R1</td><td>Pref bền, mặc định TẮT</td><td><code>SimpleCastPrefs.castEnabled()/setCastEnabled()</code> ở :core; impl <code>SharedPrefsSimpleCastPrefs</code> key <code>"cast_enabled"</code> default <code>false</code> (nav-only là mặc định); <code>FakePrefs</code> default <code>false</code>; fail-safe <code>getOrDefault(false)</code>. Test: interface khai báo; impl default false + persist.</td></tr>
+<tr><td>R2</td><td>BẬT = chiếu + nút nổi</td><td>Khi <code>castEnabled=true</code>: <code>MainActivityCastController.onCreate</code> <code>openProjection()</code>; <code>MainActivity</code> <code>startForegroundService(FloatingBubbleService)</code>; nút nổi hiện. (Hành vi hiện tại — giữ nguyên.)</td></tr>
+<tr><td>R3</td><td>TẮT = không chiếu, không nút nổi, mọi lần mở sau</td><td>Khi <code>castEnabled=false</code>: <code>MainActivity</code> KHÔNG start service; controller KHÔNG openProjection; <code>FloatingBubbleService</code> (kể cả boot) tự <code>stopSelf()</code> sau <code>startForegroundOnce()</code>. Test: cả 3 gate đọc <code>castEnabled</code>; service gate sau foreground, trước overlay.</td></tr>
+<tr><td>R4</td><td>TẮT = dọn cụm về đồng hồ, không mở lại</td><td>Toggle OFF → <code>dispatch(Stop())</code> + <code>closeProjection()</code> + <code>stopService(FloatingBubbleService)</code>, KHÔNG reopen. Test: <code>disable()</code> chứa Stop/closeProjection/stopService và <strong>không</strong> chứa <code>openProjection</code>.</td></tr>
+<tr><td>R5</td><td>TẮT = ẩn UI Cast bên phải</td><td>Thẻ Cast thu lại còn header (title + switch) + hint; body (<code>cast_body</code>) <code>GONE</code>. Nút cập nhật app vẫn hiện (ngoài <code>cast_body</code>). Test: cả 2 layout có <code>switch_cast_enabled</code>, <code>cast_body</code>, <code>txt_cast_disabled_hint</code>, <code>btn_check_update</code> đặt sau body.</td></tr>
+<tr><td>R6</td><td>KHÔNG hồi quy nav→cụm &amp; HUD</td><td>nav→cụm (<code>ClusterBroadcaster.sendBroadcast</code>) + HUD (<code>WazeHudSource</code> qua <code>coordinator.executeShell</code>) độc lập projection. Toggle KHÔNG <code>shutdown()</code> coordinator (giữ shell gateway). Test: <code>CastEnableSwitch</code> không chứa <code>shutdown()</code>; suite <code>NavigationOutputIsolationTest</code>/HUD giữ xanh.</td></tr>
+<tr><td>R7</td><td>Code health + phân tầng</td><td>File mới ≤500 LOC; interface mở → cập nhật cả real + fake impl; <code>LayeringRulesTest</code> xanh; full JVM suite + <code>lintRelease</code> xanh; 0 new dep.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+
+<h3>Kiến trúc — một công tắc gate track Cast; nav &amp; HUD đi đường riêng</h3>
+<div class="diagram"><svg viewBox="0 0 900 430" width="100%" role="img" aria-label="Master switch gates only the Cast track; nav→cluster and HUD are independent">
+<style>
+.b{fill:var(--paper2);stroke:var(--line);stroke-width:1.5}
+.bcast{fill:var(--blue-soft);stroke:var(--blue);stroke-width:1.5}
+.bind{fill:var(--green-soft);stroke:var(--green);stroke-width:1.5}
+.boff{fill:var(--amber-soft);stroke:var(--amber);stroke-width:1.5}
+.t{fill:var(--ink);font:600 12px var(--sans)}
+.ts{fill:var(--muted);font:11px var(--mono)}
+.tc{fill:var(--ink);font:600 12px var(--sans);text-anchor:middle}
+.tsc{fill:var(--muted);font:10.5px var(--mono);text-anchor:middle}
+.ar{fill:none;stroke:var(--muted);stroke-width:1.6;marker-end:url(#h)}
+.arok{fill:none;stroke:var(--green);stroke-width:1.8;marker-end:url(#hg)}
+.arno{fill:none;stroke:var(--amber);stroke-width:1.8;marker-end:url(#ha)}
+</style>
+<defs>
+<marker id="h" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="var(--muted)"/></marker>
+<marker id="hg" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="var(--green)"/></marker>
+<marker id="ha" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="var(--amber)"/></marker>
+</defs>
+
+<!-- entry -->
+<rect x="24" y="24" width="230" height="58" rx="12" class="b"/>
+<text x="139" y="48" class="tc">App mở · boot · nổ máy</text>
+<text x="139" y="66" class="tsc">MainActivity / RebindReceiver</text>
+
+<!-- switch decision -->
+<rect x="330" y="20" width="240" height="66" rx="12" class="bcast"/>
+<text x="450" y="46" class="tc">prefs.castEnabled() ?</text>
+<text x="450" y="64" class="tsc">SharedPreferences · default TRUE</text>
+<path d="M254,53 L330,53" class="ar"/>
+
+<!-- ON column -->
+<rect x="628" y="8" width="248" height="92" rx="12" class="bind"/>
+<text x="752" y="30" class="tc">BẬT (mặc định)</text>
+<text x="646" y="52" class="ts">• openProjection() — cụm sẵn sàng</text>
+<text x="646" y="70" class="ts">• startForegroundService → nút nổi</text>
+<text x="646" y="88" class="ts">• cast-autostart (nếu cấu hình)</text>
+<path d="M570,44 L628,30" class="arok"/><text x="592" y="24" class="tsc">true</text>
+
+<!-- OFF column -->
+<rect x="628" y="116" width="248" height="110" rx="12" class="boff"/>
+<text x="752" y="138" class="tc">TẮT</text>
+<text x="646" y="160" class="ts">• MainActivity: KHÔNG start service</text>
+<text x="646" y="178" class="ts">• controller: KHÔNG openProjection</text>
+<text x="646" y="196" class="ts">• Service (boot): stopSelf() sau FG</text>
+<text x="646" y="214" class="ts">• UI: cast_body GONE + hint</text>
+<path d="M570,64 L628,150" class="arno"/><text x="592" y="98" class="tsc">false</text>
+
+<!-- toggle OFF action -->
+<rect x="330" y="150" width="240" height="86" rx="12" class="b"/>
+<text x="450" y="172" class="tc">Toggle → OFF (CastEnableSwitch)</text>
+<text x="348" y="194" class="ts">dispatch(Stop()) → returnAllApps</text>
+<text x="348" y="212" class="ts">closeProjection() → cụm về đồng hồ</text>
+<text x="348" y="230" class="ts">stopService() · KHÔNG reopen</text>
+<path d="M628,180 C600,182 590,190 570,192" class="ar"/>
+
+<!-- independent lane -->
+<rect x="24" y="300" width="852" height="104" rx="14" class="bcast"/>
+<text x="44" y="326" class="t">Track ĐỘC LẬP — luôn chạy bất kể công tắc Cast</text>
+<rect x="44" y="340" width="380" height="48" rx="10" class="b"/>
+<text x="234" y="360" class="tc">Navigation → Cụm</text>
+<text x="234" y="378" class="tsc">NavRepository → ClusterBroadcaster.sendBroadcast()</text>
+<rect x="452" y="340" width="404" height="48" rx="10" class="b"/>
+<text x="654" y="360" class="tc">HUD / biển báo tốc độ</text>
+<text x="654" y="378" class="tsc">WazeHudSource → coordinator.executeShell() (chỉ mượn shell)</text>
+<path d="M254,82 C180,150 120,250 130,300" class="ar"/>
+</svg>
+<div class="legend">
+<span><span class="sw" style="background:var(--blue-soft);border-color:var(--blue)"></span> quyết định / độc lập</span>
+<span><span class="sw" style="background:var(--green-soft);border-color:var(--green)"></span> nhánh BẬT</span>
+<span><span class="sw" style="background:var(--amber-soft);border-color:var(--amber)"></span> nhánh TẮT</span>
+</div>
+</div>
+<div class="callout blue"><strong>Boundary (W5.3) — vì sao TẮT Cast không gãy nav/HUD:</strong> nav→cụm là <em>broadcast Intent</em> (<code>ClusterBroadcaster</code>, "KHÔNG chiếm màn"), không dùng projection. HUD/speed-sign (<code>WazeHudSource</code>) đọc logcat qua <code>coordinator.executeShell</code> — chỉ mượn <em>cổng shell đặc quyền</em>, không cần projection. Vì thế <code>CastEnableSwitch.disable()</code> chỉ <code>closeProjection()</code> + stop service, <strong>tuyệt đối không</strong> <code>SimpleCastRuntime.shutdown()</code> (huỷ singleton) — nếu huỷ, cổng shell mất và HUD gãy. Trace E2E: bật/tắt Cast → <code>ClusterBroadcaster.emitLane</code> vẫn phát; <code>WazeHudSource{executeShell}</code> vẫn chạy.</div>
+
+<h3>D1 — Pref master enable (R1)</h3>
+<p>Thêm vào interface <code>SimpleCastPrefs</code> (:core, thuần) <code>fun castEnabled(): Boolean</code> + <code>fun setCastEnabled(enabled: Boolean)</code>. Impl <code>SharedPrefsSimpleCastPrefs</code> (app): <code>getBoolean("cast_enabled", true)</code> / <code>putBoolean</code> — cùng file <code>simple_cast_prefs</code>. <code>FakePrefs</code> (core test) thêm field default <code>true</code>. Mở interface ⇒ cập nhật ĐỒNG BỘ cả hai implementer (nếu thiếu → compile fail, đã kiểm: chỉ 2 implementer).</p>
+
+<h3>D2 — Gate 3 entry point (R2, R3)</h3>
+<p>Cast có đúng 3 chỗ khởi động projection/nút nổi — gate cả ba trên <code>castEnabled</code>:</p>
+<ul>
+<li><strong><code>MainActivity</code></strong>: bọc <code>startForegroundService(FloatingBubbleService)</code> trong <code>if (…prefs.castEnabled())</code>.</li>
+<li><strong><code>MainActivityCastController.onCreate</code></strong>: <code>if (coordinator.prefs.castEnabled()) coordinator.openProjection()</code>; <code>onDestroy</code>: chỉ <code>closeProjection()</code> khi <code>castEnabled &amp;&amp; !autostartOwns</code> (không đóng thứ chưa mở).</li>
+<li><strong><code>FloatingBubbleService</code></strong> (đường boot/autostart — quan trọng nhất): thêm <code>castEnabledNow()</code> (<code>getOrDefault(true)</code> fail-safe). Trong <code>onCreate</code> và <code>onStartCommand</code>, gate đặt <em>SAU</em> <code>startForegroundOnce()</code> (giữ hợp đồng foreground-service: phải <code>startForeground</code> trong ~5s) và <em>TRƯỚC</em> <code>requestOverlayIfMissing()</code>: <code>if (!castEnabledNow()) { stopSelf(); return }</code>. Đứng hẳn ⇒ không showBubble, không dispatchBootAutoStart.</li>
+</ul>
+<div class="callout amber"><strong>Thứ tự trong service (khoá bằng test):</strong> <code>startForegroundOnce()</code> → <code>castEnabledNow()</code> gate → <code>requestOverlayIfMissing()</code>. Giữ nguyên bất biến của <code>FloatingBubbleFirstLaunchContractTest</code> ("foreground trước overlay") — chỉ chèn gate vào giữa.</div>
+
+<h3>D3 — CastEnableSwitch (R4) + wiring</h3>
+<p>Class mới <code>app/…/clustercast/CastEnableSwitch.kt</code> (81 LOC), khuôn theo <code>CastDeepRescueAction</code> ("đứng hẳn, không mở lại", trừ force-stop DashCast vì đây là preference chứ không phải rescue xung đột):</p>
+<pre><code>fun bind(switch, castBody, disabledHint):
+  switch.setOnCheckedChangeListener(null)   // tránh bắn khi set trạng thái đã lưu
+  switch.isChecked = prefs.castEnabled()
+  applyVisibility(enabled, castBody, disabledHint)
+  switch.onCheckedChange { isChecked ->
+    prefs.setCastEnabled(isChecked)
+    applyVisibility(...)
+    if (isChecked) enable() else disable()
+  }
+enable():  openProjection(); startForegroundService(FloatingBubbleService); toast
+disable(): dispatch(Stop()); closeProjection(); stopService(FloatingBubbleService); toast  // NO reopen</code></pre>
+<p>Wire trong <code>MainActivityCastController.onCreate</code>: <code>CastEnableSwitch(activity, coordinator).bind(findViewById(switch_cast_enabled), findViewById(cast_body), findViewById(txt_cast_disabled_hint))</code>. <code>openProjection</code>/<code>closeProjection</code>/<code>dispatch</code> tự queue trên serial-executor của coordinator ⇒ shell chạy ngoài UI thread.</p>
+
+<h3>D4 — Layout: header switch + cast_body thu gọn (R5)</h3>
+<p>Cả <code>layout/</code> lẫn <code>layout-w960dp/</code>: đổi title "Cluster Cast" thành <em>header row</em> (TextView weight=1 + <code>Switch switch_cast_enabled</code>) — song song với thẻ "Navigation + HUD". Thêm <code>txt_cast_disabled_hint</code> (gone mặc định, hiện khi tắt: "Đang tắt · cụm vẫn hiện dẫn đường và HUD như thường…"). Bọc toàn bộ nội dung Cast (subtitle → recovery) trong <code>LinearLayout id=cast_body</code>. <code>btn_check_update</code> chuyển RA NGOÀI <code>cast_body</code> (xuống đáy thẻ) để vẫn bấm được khi Cast tắt. Khi tắt: <code>cast_body</code> <code>GONE</code> ⇒ cột phải (màn xe) thu còn header + hint + nút cập nhật = "gọn/đẹp".</p>
+<div class="callout green"><strong>Autonomous decisions (ghi lại):</strong> (1) Dùng <code>Switch</code> (không <code>CheckBox</code>) để đồng bộ với thẻ Navigation+HUD (<code>switch_enabled</code>) — cùng ngữ nghĩa master on/off. (2) Ẩn = thu <code>cast_body</code> về header + hint (giữ switch để bật lại) thay vì xoá cả cột phải + dời switch sang trái — discoverable hơn, không lệch layout weight. (3) <code>btn_check_update</code> giữ hiển thị (cập nhật app không thuộc Cast) → đặt ngoài <code>cast_body</code>, xuống đáy thẻ.</div>
+
+<div class="callout green"><strong>Implemented (2026-08-11):</strong> tất cả D1–D4 đã code + build + test xanh (xem §Tasks / §Verification). File: <code>SimpleCastModels.kt</code>, <code>SimpleCastRuntime.kt</code>, <code>CastCoordinatorTestFakes.kt</code>, <code>FloatingBubbleService.kt</code>, <code>MainActivity.kt</code>, <code>MainActivityCastController.kt</code>, <code>CastEnableSwitch.kt</code> (mới), <code>layout/activity_main.xml</code>, <code>layout-w960dp/activity_main.xml</code>, <code>CastEnableToggleContractTest.kt</code> (mới).</div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<p class="small">Feature nhỏ, một luồng tuần tự (không cần multi-wave DAG). Exit gate verify bằng command. Không commit tới khi owner test xe.</p>
+
+<div class="phase"><div><div class="phase-id">T1</div><div class="small">pref layer</div></div><div>
+<h4>Pref castEnabled (R1) <span class="pill green">DONE</span></h4>
+<ul class="check"><li>Interface :core + impl SharedPrefs (default true) + FakePrefs.</li></ul>
+<b class="small">Exit:</b> <code>:core:test</code> compile (fake implement đủ); contract test interface+default.
+</div></div>
+
+<div class="phase"><div><div class="phase-id">T2</div><div class="small">gates</div></div><div>
+<h4>Gate 3 entry point (R2,R3) + CastEnableSwitch (R4) + layout (R5) <span class="pill green">DONE</span></h4>
+<ul class="check"><li>Gate <code>FloatingBubbleService</code> (onCreate+onStartCommand), <code>MainActivity</code>, controller open/close.</li><li><code>CastEnableSwitch</code> enable/disable + wire; 2 layout header switch + <code>cast_body</code> + hint + update ngoài body.</li></ul>
+<b class="small">Exit:</b> <code>xmllint</code> well-formed (2 layout); build; contract test toàn boundary.
+</div></div>
+
+<div class="phase"><div><div class="phase-id">T3</div><div class="small">verify</div></div><div>
+<h4>Build + JVM suite + lintRelease (R6,R7) <span class="pill green">DONE</span></h4>
+<b class="small">Exit:</b> core 727 · app 339 (+11) · car-integration 28 = <strong>1094, 0 fail</strong>; <code>lintRelease</code> 0 error; bubble contract tests (3+14) xanh.
+</div></div>
+
+<div class="phase"><div><div class="phase-id">T4</div><div class="small">review + candidate</div></div><div>
+<h4>Senior review (opus) + rebuild 1.05 candidate <span class="pill">PENDING</span></h4>
+<ul class="check"><li>Review: scope R1–R7, boundary shape (nav/HUD độc lập), tech-freshness (0 new dep). Patch loop tới 0 P0–P1.</li><li>Rebuild candidate 1.05 qua <code>collectAuthorizedApk</code> + regenerate exact-source manifest + <code>vehicle-candidate.json</code>. KHÔNG commit/push.</li></ul>
+<b class="small">Exit:</b> 0 P0–P1; candidate mới verify (versionCode 105, not-debuggable, 0 <code>TEST_ADAS_*</code>); §Reviewer Log cập nhật.
+</div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<h3>Off-car (DONE — 2026-08-11)</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Command</th><th>Result</th></tr></thead><tbody>
+<tr><td>JVM suite</td><td><code>./gradlew :core:test :app:testDebugUnitTest :car-integration:test</code></td><td>BUILD SUCCESSFUL · core 727 · app 339 · car-integration 28 = <strong>1094, 0 failures/errors</strong></td></tr>
+<tr><td>New contract</td><td><code>CastEnableToggleContractTest</code></td><td><strong>11/11 pass</strong> (interface, default-true, service gate order, activity guard, controller wiring, enable/disable, no-shutdown, both layouts)</td></tr>
+<tr><td>Regression</td><td><code>FloatingBubbleFirstLaunchContractTest</code> · <code>BubbleGestureContractTest</code></td><td><strong>3/3 · 14/14 pass</strong> (gate không phá thứ tự foreground→overlay, không đụng wiring nút nổi)</td></tr>
+<tr><td>Lint</td><td><code>./gradlew :app:lintRelease</code></td><td>BUILD SUCCESSFUL · 0 error (abortOnError=true)</td></tr>
+<tr><td>XML</td><td><code>xmllint --noout</code> (2 layout)</td><td>WELL-FORMED · LinearLayout 15/15 &amp; 16/16 balanced</td></tr>
+</tbody></table></div>
+<h3>On-car (checklist — chưa chạy)</h3>
+<ul class="check">
+<li>Mở app (mặc định BẬT) → cụm sẵn sàng + nút nổi hiện (như cũ).</li>
+<li>Tắt switch "Bật Cluster Cast" → nút nổi biến mất, cụm trả về đồng hồ gốc, UI Cast bên phải thu gọn (chỉ header + hint + nút cập nhật).</li>
+<li>Trong lúc TẮT: mở GMaps/VietMap dẫn đường → <strong>nav vẫn lên cụm</strong>; HUD/biển báo tốc độ vẫn chạy.</li>
+<li>Đóng app + mở lại (hoặc nổ máy lại) khi đang TẮT → vẫn không projection, không nút nổi (pref bền).</li>
+<li>Bật lại switch → cụm mở chiếu lại + nút nổi trở lại; cast app hoạt động bình thường.</li>
+<li>(Nếu có autostart cast) TẮT Cast → boot không auto-cast; BẬT lại → autostart hoạt động lại.</li>
+</ul>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="grid2">
+<div class="card"><h3>wm reset khi tắt?</h3><p><code>disable()</code> dùng <code>closeProjection()</code> (chuẩn "trả cụm về đồng hồ", giống nút clear-cluster). KHÔNG thêm <code>wm size/density/overscan reset</code> như deep-rescue (đó là cho ca xung đột DashCast). Nếu on-car thấy sót state VD sau khi tắt, cân nhắc thêm reset — ghi nhận, chưa làm (tránh over-engineering).</p></div>
+<div class="card"><h3>Switch vs Checkbox</h3><p>Owner nói "checkbox"; đã chọn <code>Switch</code> cho đồng bộ với thẻ Navigation+HUD. Cùng ngữ nghĩa on/off. Nếu owner muốn đúng checkbox, đổi 1 dòng layout (id giữ nguyên).</p></div>
+</div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><code>docs/specs/cast-nav-ux-release-v104.html</code> — spec 1.05 gốc (7 việc); toggle này gộp cùng candidate.</li>
+<li><code>docs/specs/cluster-cast-simplified.html</code> — kiến trúc projection-first 4-state.</li>
+<li><code>docs/specs/clusternav-two-track-final-plan.html</code> — hai track độc lập (nav+HUD vs Cast) — nền tảng cho R6.</li>
+<li>Source: <code>SimpleCastModels.kt</code>, <code>SimpleCastRuntime.kt</code>, <code>FloatingBubbleService.kt</code>, <code>MainActivityCastController.kt</code>, <code>CastEnableSwitch.kt</code>, <code>ClusterBroadcaster.kt</code>, <code>NavNotificationListener.kt</code> (WazeHudSource shell gateway).</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><h3>Pass 0 — 2026-08-11 · author self-check</h3>
+<p class="small">Implement + off-car verify. Scope R1–R7: R1–R5 ✅ code+test+wired; R6 ✅ (boundary: switch không <code>shutdown()</code>; nav broadcast + HUD shell-gateway độc lập); R7 ✅ (CastEnableSwitch 81 LOC ≤500, 2 implementer cập nhật, LayeringRulesTest xanh, 0 new dep, lintRelease 0 error). Suite 1094/0-fail. <strong>Chờ Pass 1: senior review (opus)</strong> — append bên dưới, không overwrite.</p></div>
+
+<div class="review"><h3>Pass 1 — 2026-08-11 · senior review</h3>
+<p class="small"><strong>Verdict: <span class="pill green">APPROVED</span></strong> — 0 P0–P1, scope 100% (R1–R7 all ✅), all boundaries shape-matched and traced E2E, 0 new deps.</p>
+<h4 style="margin-top:12px">Scope checklist (code + wired + test + user-usable)</h4>
+<ul class="check">
+<li><strong>R1</strong> ✅ Interface <code>castEnabled()/setCastEnabled()</code> (SimpleCastModels.kt:313–314); impl <code>getBoolean("cast_enabled", true)</code> / <code>putBoolean</code> (SimpleCastRuntime.kt:254–257); <code>FakePrefs._castEnabled=true</code> (CastCoordinatorTestFakes.kt:133–134). Tests: interface + default-true.</li>
+<li><strong>R2</strong> ✅ ON → controller <code>openProjection()</code> (MainActivityCastController.kt:58); MainActivity guarded <code>startForegroundService</code> (MainActivity.kt:158–163); <code>enable()</code> (CastEnableSwitch.kt). Tests: activity guard, controller wiring, enable.</li>
+<li><strong>R3</strong> ✅ OFF → no service (MainActivity guard), no projection (controller gate), service <code>stopSelf()</code> after <code>startForegroundOnce()</code> in onCreate + onStartCommand. Tests: gate-order both entries + fail-safe.</li>
+<li><strong>R4</strong> ✅ <code>disable()</code> = <code>dispatch(Stop())</code> + <code>closeProjection()</code> + <code>stopService()</code>, no <code>openProjection</code> (mirrors proven <code>cast_clear_cluster</code> minus reopen). Test: disable-no-reopen.</li>
+<li><strong>R5</strong> ✅ Both layouts: header <code>switch_cast_enabled</code>, collapsible <code>cast_body</code>, <code>txt_cast_disabled_hint</code>, <code>btn_check_update</code> outside body. Test: both variants + update-after-body.</li>
+<li><strong>R6</strong> ✅ No <code>shutdown()</code> in switch (test asserts); nav→cluster (<code>ClusterBroadcaster</code>) &amp; HUD (<code>NavNotificationListener</code>→<code>coordinator.executeShell</code>) untouched by disable(); coordinator singleton survives.</li>
+<li><strong>R7</strong> ✅ 0 new dep; only 2 <code>SimpleCastPrefs</code> implementers (both updated); files ≤500 LOC after fix below; suite 1094/0-fail; lintRelease 0 error.</li>
+</ul>
+<h4 style="margin-top:12px">Boundary shape (both sides read, traced E2E)</h4>
+<ul class="check">
+<li><strong>Prefs iface ↔ SharedPrefs ↔ FakePrefs</strong> — <span class="pill green">OK</span> signatures + default <code>true</code> identical across all three.</li>
+<li><strong>CastEnableSwitch ↔ Coordinator</strong> — <span class="pill green">OK</span> <code>prefs</code> (public val), <code>openProjection()/closeProjection()/dispatch(Stop())</code> all self-queue on serial executor → UI-thread callers safe.</li>
+<li><strong>Layout ids ↔ findViewById</strong> — <span class="pill green">OK</span> <code>Switch</code>⊂<code>CompoundButton</code>, <code>LinearLayout</code>/<code>TextView</code>⊂<code>View</code>; ids present in narrow + wide.</li>
+<li><strong>Regression (nav/HUD)</strong> — <span class="pill green">OK</span> disable() never calls <code>SimpleCastRuntime.shutdown()</code>; HUD shell gateway + nav broadcast independent of projection.</li>
+<li><strong>Service gate order</strong> — <span class="pill green">OK</span> <code>startForegroundOnce()</code> → <code>castEnabledNow()</code> → <code>requestOverlayIfMissing()</code> in both onCreate + onStartCommand (FGS contract preserved).</li>
+</ul>
+<h4 style="margin-top:12px">Findings &amp; fixes</h4>
+<ul>
+<li><span class="sev p2">P2</span> <code>FloatingBubbleService.kt</code> = 506 LOC (feature gate + comments pushed it over the 500 guardrail). <strong>Fixed</strong>: condensed the feature's own duplicated <code>castEnabledNow</code> documentation (the fail-safe idea was stated twice) → <strong>500 LOC</strong>; no code/logic or test-asserted substring changed. Deeper decomposition of the pre-existing autostart/bubble bulk is a separate refactor, out of this feature's scope.</li>
+<li><span class="sev p2" style="background:var(--green-soft);color:var(--green)">none</span> No P0/P1 found. Verified no double-open on toggle-ON, correct onDestroy close-gating when disabled, idempotent enable(), and that toggle-OFF's Stop→closeProjection ordering matches the proven clear-cluster path.</li>
+</ul>
+<h4 style="margin-top:12px">Tech freshness (0 new deps)</h4>
+<p class="small"><code>SharedPreferences</code>, <code>Context.startForegroundService/stopService</code>, <code>Service.startForeground/stopSelf</code>, <code>android.widget.Switch</code>/<code>CompoundButton</code> — none deprecated in a way that matters here; <code>Switch</code> matches the existing <code>switch_enabled</code> pattern (lint tolerates it at baseline). <strong>Verdict: current.</strong></p>
+<h4 style="margin-top:12px">Test result (after fix)</h4>
+<p class="small"><code>:core:test</code> 727 · <code>:app:testDebugUnitTest</code> 339 · <code>:car-integration:test</code> 28 = <strong>1094, 0 failures/errors</strong>; <code>CastEnableToggleContractTest</code> 11/11; <code>:app:lintRelease</code> BUILD SUCCESSFUL, <strong>0 errors</strong>.</p></div>
+
+<div class="review"><h3>Pass 2 — 2026-08-11 · senior review (default-off + lane-follows-master)</h3>
+<p class="small">Scope: the two on-car-feedback changes only (default Cast = OFF; <code>cb_lane</code> removed → cluster-lane follows the Navigation+HUD master switch). Unrelated 1.05 WIP untouched. <strong>Verdict: <span class="pill green">APPROVED</span></strong> — 1 <span class="sev p1">P1</span> found in the startup lane-apply path and fixed; all boundaries shape-matched and traced E2E; 1097 tests / 0 failures; lintRelease 0 errors.</p>
+
+<h4 style="margin-top:12px">Item 1 — default Cluster Cast = OFF (verified)</h4>
+<ul class="check">
+<li>Default <code>false</code> consistent across all five surfaces: interface KDoc (<code>SimpleCastModels.kt</code> "Default FALSE"), impl <code>getBoolean("cast_enabled", false)</code> (<code>SimpleCastRuntime.kt:256</code>), <code>FakePrefs._castEnabled=false</code> (<code>CastCoordinatorTestFakes.kt:133</code>), fail-safe <code>castEnabledNow()=getOrDefault(false)</code> (<code>FloatingBubbleService.kt:311–312</code>). Enumerated <strong>all 8 readers</strong> — none assumes default-true.</li>
+<li>Fresh install stands down everywhere: <code>MainActivity</code> guards <code>startForegroundService</code> on <code>castEnabled()</code> (no bubble); <code>MainActivityCastController.onCreate</code> gates <code>openProjection()</code> (no curve); <code>FloatingBubbleService</code> <code>stopSelf()</code> after <code>startForegroundOnce()</code> in <strong>both</strong> <code>onCreate</code> (boot path) and <code>onStartCommand</code> — verified gate order <code>startForegroundOnce → castEnabledNow → requestOverlayIfMissing</code> preserved. So a boot-launched service stands down when OFF.</li>
+</ul>
+
+<h4 style="margin-top:12px">Item 2 — cb_lane removed, lane follows master (verified + fixed)</h4>
+<ul class="check">
+<li><strong>(a)</strong> No remaining <code>laneEnabled</code> field/listener and no <code>R.id.cb_lane</code> in <code>MainActivity</code> (only explanatory comments); no <code>CheckBox</code> import; both layouts dropped <code>@+id/cb_lane</code>. Grep-confirmed across <code>app/src/main</code>.</li>
+<li><strong>(b)</strong> Master ENABLE branch sets <code>Prefs.setLane(true)</code> + <code>NavRepository.setOutputEnabled(CLUSTER_LANE,true)</code> + <code>speedSign.onOutputEnabled(CLUSTER,true)</code>; DISABLE branch calls <code>NavRepository.stop()</code>. ✅</li>
+<li><strong>(c) startup-lane-apply trace</strong> — this is where the bug was. <code>NavNotificationListener</code> runs in the <em>same process</em> (no <code>android:process</code>) and on <code>onListenerConnected()</code> calls <code>NavRepository.setPermission(GRANTED)</code> → <code>connect()</code>, which builds the coordinator and reads <code>Prefs.lane</code> <em>once, at creation</em>. GMaps/VietMap nav reaches the cluster <em>through</em> that coordinator's <code>CLUSTER_LANE</code> gate (<code>handle()</code>→<code>NavRepository.ingest()</code>→<code>ClusterLaneAdapter</code>→<code>ClusterBroadcaster.emitLane</code>). For a migrated user with <code>lane=false</code> persisted, if the listener bound before Home opened, the coordinator was created with <code>CLUSTER_LANE=false</code>; the master listener only fires on <em>change</em>, and <code>Prefs.setLane(true)</code> alone can't re-open an already-created coordinator → <strong>nav never reaches the cluster</strong>. Fixed below.</li>
+</ul>
+
+<h4 style="margin-top:12px">Boundary shape (both sides read, traced E2E)</h4>
+<div class="scroll"><table><thead><tr><th>Producer → Consumer</th><th>Field / signature</th><th>Verdict</th></tr></thead><tbody>
+<tr><td><code>MainActivity</code> → <code>NavRepository.setOutputEnabled</code></td><td><code>(Context, NavigationOutputTarget.CLUSTER_LANE, Boolean)</code> — matches 3-arg signature; enable never triggers <code>stopLane</code></td><td><span class="pill green">OK</span></td></tr>
+<tr><td><code>NavNotificationListener</code> → <code>NavRepository.connect init</code></td><td>reads <code>Prefs.lane(Context):Boolean</code> at creation only — stale for pre-created coordinator</td><td><span class="pill red">MISMATCH → patched</span></td></tr>
+<tr><td><code>MainActivity</code> → <code>NavigationSpeedSignOwner</code></td><td><code>onOutputEnabled(SpeedSignOutput.CLUSTER, Boolean)</code> + <code>syncFromPrefs()</code> re-reads <code>Prefs.lane</code> each call (self-corrects at startup)</td><td><span class="pill green">OK</span></td></tr>
+<tr><td><code>MainActivity</code>/<code>controller</code> → both layouts</td><td>all <code>findViewById</code> ids present (<code>txt_lane_status</code>, <code>switch_enabled</code>, <code>switch_cast_enabled</code>, <code>cast_body</code>, <code>txt_cast_disabled_hint</code>, <code>cb_hud</code>); <code>cb_lane</code> absent — no dangling lookup</td><td><span class="pill green">OK</span></td></tr>
+<tr><td>Item 3 (idle-black / z-order)</td><td>intentionally not coded (OEM AMap overlay) — confirmed no such code introduced</td><td><span class="pill green">OK</span></td></tr>
+</tbody></table></div>
+
+<h4 style="margin-top:12px">Findings &amp; fixes</h4>
+<ul>
+<li><span class="sev p1">P1</span> <strong>Cluster-lane not applied at launch for a migrated user</strong> when the notification listener created the <code>NavRepository</code> coordinator before Home opened (coordinator reads <code>Prefs.lane</code> only at creation; forced <code>Prefs.setLane(true)</code> doesn't re-open it; master listener fires on change only). <strong>Fixed</strong> (<code>MainActivity.kt</code> onCreate, after the master-switch listener): re-assert the master state at startup — <code>if (Prefs.enabled(this)) { NavRepository.setOutputEnabled(this, NavigationOutputTarget.CLUSTER_LANE, true); speedSign.onOutputEnabled(SpeedSignOutput.CLUSTER, true) }</code>. Idempotent, mirrors the existing HUD startup force-apply pattern; no new imports; MainActivity 331→342 LOC (≤500).</li>
+<li><span class="sev p2">P3</span> Stale comment <code>// Master OFF (default ON)</code> in <code>FloatingBubbleService.kt</code> (default is now OFF). <strong>Fixed</strong> → <code>(default OFF, opt-in 2026-08-11)</code>; single-line edit, file stays 500 LOC.</li>
+<li><span class="sev p2">P3</span> <em>(noted, out of listed-files scope — not patched)</em> Two stale "default true/TRUE" comments survive in <code>MainActivityCastController.kt:55</code> and <code>CastEnableSwitch.kt:15</code>, and the spec §Design/§Requirements still narrate the pre-feedback default-true design. The §Changelog on-car-feedback row already records the flip; code behavior is correct. Recommend a doc-only sweep when those files are next touched.</li>
+<li><span class="sev new">none</span> No P0. Verified: fail-safe read returns <code>false</code> (never silently starts casting); boot service stands down; enabling <code>CLUSTER_LANE</code> is idempotent and does not stop the lane; nav→cluster (broadcast) &amp; HUD (shell gateway) remain independent of the Cast track.</li>
+</ul>
+
+<h4 style="margin-top:12px">Test result (after fix)</h4>
+<p class="small"><code>:core:test</code> 727 · <code>:app:testDebugUnitTest</code> <strong>342</strong> · <code>:car-integration:test</code> 28 = <strong>1097, 0 failures/errors</strong> (from JUnit XML); <code>:app:lintRelease</code> BUILD SUCCESSFUL, <strong>0 errors</strong>; <code>compileReleaseKotlin</code>/<code>compileDebugKotlin</code> re-ran clean on the patched sources. Source-scanning contract tests (<code>CastEnableToggleContractTest</code>, <code>HudOutputHiddenContractTest</code>, <code>SpeedSignSourceLifecycleTest</code>) still green against the edited <code>MainActivity</code>.</p></div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

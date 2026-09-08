@@ -1,0 +1,634 @@
+{
+  "artifactId": "CastUiStateV2",
+  "canonicalization": {
+    "algorithm": "Parse JSON, recursively sort object keys lexicographically, preserve array order, encode UTF-8 with ensure_ascii=false and compact separators comma/colon, then SHA-256 lowercase hex.",
+    "hashExcludes": []
+  },
+  "enums": {
+    "CastAction": [
+      "CAST",
+      "SWITCH",
+      "ADJUST",
+      "STOP",
+      "CHOOSE_ANOTHER_APP",
+      "OPEN_APP_MANAGER",
+      "RETRY_CONNECT",
+      "OPEN_DIAGNOSTICS",
+      "REQUEST_PHONE_DISCONNECT",
+      "TRY_ELIGIBLE_RECOVERY_ONCE",
+      "SHOW_PHYSICAL_INSTRUCTION",
+      "OPEN_PROFILE_SETUP",
+      "SELECT_TARGET_APP"
+    ],
+    "CoarseState": [
+      "UNKNOWN",
+      "COLD_PRISTINE",
+      "LEGACY_ACTIVE_READ_ONLY",
+      "PREPARING",
+      "ACTIVATING",
+      "SWITCHING",
+      "VERIFYING",
+      "STOP_REQUESTED",
+      "RESTORING",
+      "RECOVERING",
+      "IDLE_VERIFIED",
+      "ACTIVE_VERIFIED",
+      "ACTIVE_DEGRADED",
+      "RECOVERY_PENDING",
+      "MANUAL_REQUIRED"
+    ],
+    "DisabledReason": [
+      "NO_ACTIVE_TARGET",
+      "OPERATION_IN_FLIGHT",
+      "LEGACY_SESSION_UNSAFE",
+      "CONTRACT_UNMAPPED",
+      "PROTECTED_SESSION",
+      "GEOMETRY_LIMITED",
+      "RECOVERY_PENDING",
+      "ACTION_NOT_EXPORTED"
+    ],
+    "InteractionContextValue": [
+      "PARKED",
+      "MOVING",
+      "UNKNOWN"
+    ],
+    "NextSafeAction": [
+      "NONE",
+      "REQUEST_STOP",
+      "RETRY_CONNECT_BOUNDED",
+      "WAIT_AND_OBSERVE",
+      "OPEN_DIAGNOSTICS",
+      "REQUEST_PHONE_DISCONNECT",
+      "TRY_ELIGIBLE_RECOVERY_ONCE",
+      "SHOW_PHYSICAL_INSTRUCTION",
+      "OPEN_PROFILE_SETUP"
+    ],
+    "OperationPhase": [
+      "PREPARING",
+      "ACTIVATING",
+      "SWITCHING",
+      "VERIFYING",
+      "STOP_REQUESTED",
+      "RESTORING",
+      "RECOVERING"
+    ],
+    "RecoverySubstate": [
+      "UNKNOWN_EFFECT_STOP_AVAILABLE",
+      "UNKNOWN_EFFECT_STOP_REQUESTED",
+      "UNKNOWN_EFFECT_STOP_IN_PROGRESS",
+      "TRANSPORT_PREMUTATION_IDLE",
+      "TRANSPORT_ACTIVE_STOP_AVAILABLE",
+      "OBSERVATION_DIVERGED_STOP_AVAILABLE",
+      "OBSERVATION_DIVERGED_WAITING",
+      "OBSERVATION_BUDGET_EXHAUSTED",
+      "COMPENSATION_IN_PROGRESS",
+      "COMPENSATION_EXHAUSTED",
+      "PROTECTED_SINK_CONNECTED",
+      "DISCONNECTED_SINK_ELIGIBLE",
+      "DISCONNECTED_SINK_ATTEMPT_EXHAUSTED",
+      "OCCLUSION_FAILED_CONNECTED",
+      "OCCLUSION_FAILED_DISCONNECTED",
+      "JOURNAL_CORRUPT_DIAGNOSTIC",
+      "JOURNAL_CORRUPT_MANUAL",
+      "UNSUPPORTED_PROFILE_IDLE",
+      "UNSUPPORTED_PROFILE_ACTIVE_UNKNOWN"
+    ],
+    "StableState": [
+      "IDLE_VERIFIED",
+      "ACTIVE_VERIFIED",
+      "ACTIVE_DEGRADED",
+      "RECOVERY_PENDING",
+      "MANUAL_REQUIRED"
+    ],
+    "StopDispositionKind": [
+      "AVAILABLE",
+      "REQUESTED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "UNAVAILABLE"
+    ],
+    "UnavailableReason": [
+      "LEGACY_SESSION_UNSAFE",
+      "OBSERVATION_EXHAUSTED",
+      "COMPENSATION_EXHAUSTED",
+      "RECOVERY_ACTION_ONLY",
+      "PROTECTED_SESSION",
+      "ONE_ATTEMPT_EXHAUSTED",
+      "OCCLUSION_NOT_PROVEN",
+      "BASELINE_UNKNOWN",
+      "PROFILE_UNSUPPORTED_ACTIVE",
+      "CONTRACT_UNMAPPED"
+    ],
+    "AutomationDisposition": [
+      "DISABLED",
+      "REVIEW_REQUIRED",
+      "ARMED",
+      "PENDING",
+      "DEFERRED",
+      "CLAIMED",
+      "COMPLETED",
+      "BLOCKED",
+      "SUPERSEDED"
+    ],
+    "AutomationReason": [
+      "PRIOR_JOURNAL",
+      "STOP_REQUESTED",
+      "RECOVERY_OR_MANUAL",
+      "PROFILE_UNSUPPORTED",
+      "TARGET_INVALID",
+      "CONFIG_CHANGED",
+      "CONSENT_REVOKED",
+      "USER_SUPERSEDED",
+      "STOP_SUPERSEDED",
+      "BOOT_ROLLOVER",
+      "FOREGROUND_START_DENIED",
+      "NOTIFICATION_PERMISSION_DENIED",
+      "NOTIFICATION_START_FAILED",
+      "DEADLINE_EXPIRED",
+      "CLAIMED_NO_EFFECT_AFTER_RESTART",
+      "KNOWN_FAILURE",
+      "UNKNOWN_EFFECT",
+      "REEVALUATION_EXHAUSTED"
+    ]
+  },
+  "fields": [
+    {
+      "name": "schemaVersion",
+      "nullable": false,
+      "type": "Int"
+    },
+    {
+      "name": "schemaHash",
+      "nullable": false,
+      "type": "Sha256LowerHex"
+    },
+    {
+      "name": "coarseState",
+      "nullable": false,
+      "type": "CoarseState"
+    },
+    {
+      "name": "stableState",
+      "nullable": true,
+      "type": "StableState"
+    },
+    {
+      "name": "operationPhase",
+      "nullable": true,
+      "type": "OperationPhase"
+    },
+    {
+      "name": "recoverySubstate",
+      "nullable": true,
+      "type": "RecoverySubstate"
+    },
+    {
+      "name": "stopDisposition",
+      "nullable": false,
+      "type": "StopDisposition{kind:StopDispositionKind,reason:UnavailableReason?}"
+    },
+    {
+      "name": "nextSafeAction",
+      "nullable": false,
+      "type": "NextSafeAction"
+    },
+    {
+      "name": "unavailableReason",
+      "nullable": true,
+      "type": "UnavailableReason"
+    },
+    {
+      "name": "allowedActions",
+      "nullable": false,
+      "type": "Set<CastAction>"
+    },
+    {
+      "name": "disabledReasons",
+      "nullable": false,
+      "type": "Map<CastAction,DisabledReason>"
+    },
+    {
+      "name": "interactionContext",
+      "nullable": false,
+      "type": "InteractionContext{value:InteractionContextValue,provenance:String,observedAt:Instant,freshUntil:Instant,disagreementReason:String?}"
+    },
+    {
+      "name": "target",
+      "nullable": true,
+      "type": "Target{packageName:String,taskId:Int,displayId:Int}"
+    },
+    {
+      "name": "protectedResidue",
+      "nullable": true,
+      "type": "ProtectedResidue{packageName:String,taskId:Int,visibility:HIDDEN|UNKNOWN}"
+    },
+    {
+      "name": "acceptedGeometry",
+      "nullable": true,
+      "type": "AcceptedGeometry{bounds:Rect,densityDpi:Int?,profileId:String}"
+    },
+    {
+      "name": "operationId",
+      "nullable": true,
+      "type": "UUID"
+    },
+    {
+      "name": "durableEpoch",
+      "nullable": false,
+      "type": "Long"
+    },
+    {
+      "name": "deadlineAt",
+      "nullable": true,
+      "type": "Instant"
+    },
+    {
+      "name": "automationDisposition",
+      "nullable": true,
+      "type": "AutomationDisposition"
+    },
+    {
+      "name": "automationReason",
+      "nullable": true,
+      "type": "AutomationReason"
+    },
+    {
+      "name": "automationTargetPackage",
+      "nullable": true,
+      "type": "String"
+    }
+  ],
+  "invariants": [
+    "schemaVersion equals 5 and schemaHash equals the approved artifact fixture.",
+    "unavailableReason is non-null iff stopDisposition.kind is UNAVAILABLE and equals stopDisposition.reason.",
+    "For a recoverySubstate projection, allowedActions equals the singleton translated CastAction or the empty set; consumers may always expose non-operational navigation/menu chrome but no additional Cast intent.",
+    "If stopRequested is true and recoverySubstate is null, use stopRequestedWithoutRecoverySubstate.",
+    "If stopRequested is true and recoverySubstate is non-null, validate stopRequestedWithRecoverySubstate before using the recovery mapping; invalid combinations fail closed through decodeFailure.",
+    "Unknown fields may be ignored only when schemaVersion and schemaHash are already recognized; unknown enum values or mappings fail closed.",
+    "automationDisposition, automationReason and automationTargetPackage never widen allowedActions and never override durable Stop, recovery/manual or an active transaction projection."
+  ],
+  "nextSafeActionToCastAction": {
+    "NONE": null,
+    "OPEN_DIAGNOSTICS": "OPEN_DIAGNOSTICS",
+    "OPEN_PROFILE_SETUP": "OPEN_PROFILE_SETUP",
+    "REQUEST_PHONE_DISCONNECT": "REQUEST_PHONE_DISCONNECT",
+    "REQUEST_STOP": "STOP",
+    "RETRY_CONNECT_BOUNDED": "RETRY_CONNECT",
+    "SHOW_PHYSICAL_INSTRUCTION": "SHOW_PHYSICAL_INSTRUCTION",
+    "TRY_ELIGIBLE_RECOVERY_ONCE": "TRY_ELIGIBLE_RECOVERY_ONCE",
+    "WAIT_AND_OBSERVE": null
+  },
+  "projection": {
+    "decodeFailure": {
+      "allowedActions": [
+        "OPEN_DIAGNOSTICS"
+      ],
+      "coarseState": "MANUAL_REQUIRED",
+      "nextSafeAction": "OPEN_DIAGNOSTICS",
+      "stopDisposition": {
+        "kind": "UNAVAILABLE",
+        "reason": "CONTRACT_UNMAPPED"
+      }
+    },
+    "destructiveRecoveryEligibility": {
+      "eligible": {
+        "allowedActions": [
+          "TRY_ELIGIBLE_RECOVERY_ONCE"
+        ],
+        "nextSafeAction": "TRY_ELIGIBLE_RECOVERY_ONCE",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "RECOVERY_ACTION_ONLY"
+        }
+      },
+      "ineligible": "decodeFailure"
+    },
+    "coldPristine": {
+      "allowedActions": [
+        "CAST",
+        "CHOOSE_ANOTHER_APP",
+        "OPEN_APP_MANAGER",
+        "OPEN_DIAGNOSTICS"
+      ],
+      "coarseState": "COLD_PRISTINE",
+      "nextSafeAction": "NONE",
+      "stopDisposition": {
+        "kind": "COMPLETED",
+        "reason": null
+      }
+    },
+    "fallback": "decodeFailure",
+    "legacyActiveReadOnly": {
+      "allowedActions": [
+        "OPEN_DIAGNOSTICS",
+        "SHOW_PHYSICAL_INSTRUCTION"
+      ],
+      "coarseState": "LEGACY_ACTIVE_READ_ONLY",
+      "nextSafeAction": "OPEN_DIAGNOSTICS",
+      "stopDisposition": {
+        "kind": "UNAVAILABLE",
+        "reason": "LEGACY_SESSION_UNSAFE"
+      }
+    },
+    "nonTerminalTransaction": {
+      "allowedActions": "Exactly the validated runtime transaction action set for operationId/epoch; BOOTSTRAP may additionally expose CHOOSE_ANOTHER_APP so one pending target can be replaced, while STOP may appear only when planner StopDisposition is AVAILABLE.",
+      "coarseState": "Mapped from persisted OperationPhase.",
+      "nextSafeAction": "Mapped from the persisted planner projection; missing mapping is decodeFailure.",
+      "stopDisposition": "Mapped from the persisted planner projection; missing mapping is decodeFailure."
+    },
+    "precedence": [
+      "decodeFailure",
+      "legacyActiveReadOnly",
+      "stopRequestedWithRecoverySubstate",
+      "recoverySubstate",
+      "stopRequestedWithoutRecoverySubstate",
+      "nonTerminalTransaction",
+      "destructiveRecoveryEligibility",
+      "coldPristine",
+      "verifiedStableSession",
+      "fallback"
+    ],
+    "recoveryMapping": [
+      {
+        "allowedActions": [
+          "STOP"
+        ],
+        "messageKey": "cast.recovery.unknown_effect_stop_available",
+        "nextSafeAction": "REQUEST_STOP",
+        "recoverySubstate": "UNKNOWN_EFFECT_STOP_AVAILABLE",
+        "stopDisposition": {
+          "kind": "AVAILABLE",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [],
+        "messageKey": "cast.recovery.unknown_effect_stop_requested",
+        "nextSafeAction": "WAIT_AND_OBSERVE",
+        "recoverySubstate": "UNKNOWN_EFFECT_STOP_REQUESTED",
+        "stopDisposition": {
+          "kind": "REQUESTED",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [],
+        "messageKey": "cast.recovery.unknown_effect_stop_in_progress",
+        "nextSafeAction": "WAIT_AND_OBSERVE",
+        "recoverySubstate": "UNKNOWN_EFFECT_STOP_IN_PROGRESS",
+        "stopDisposition": {
+          "kind": "IN_PROGRESS",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [
+          "RETRY_CONNECT"
+        ],
+        "messageKey": "cast.recovery.transport_premutation_idle",
+        "nextSafeAction": "RETRY_CONNECT_BOUNDED",
+        "recoverySubstate": "TRANSPORT_PREMUTATION_IDLE",
+        "stopDisposition": {
+          "kind": "COMPLETED",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [
+          "STOP"
+        ],
+        "messageKey": "cast.recovery.transport_active_stop_available",
+        "nextSafeAction": "REQUEST_STOP",
+        "recoverySubstate": "TRANSPORT_ACTIVE_STOP_AVAILABLE",
+        "stopDisposition": {
+          "kind": "AVAILABLE",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [
+          "STOP"
+        ],
+        "messageKey": "cast.recovery.observation_diverged_stop_available",
+        "nextSafeAction": "REQUEST_STOP",
+        "recoverySubstate": "OBSERVATION_DIVERGED_STOP_AVAILABLE",
+        "stopDisposition": {
+          "kind": "AVAILABLE",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [],
+        "messageKey": "cast.recovery.observation_diverged_waiting",
+        "nextSafeAction": "WAIT_AND_OBSERVE",
+        "recoverySubstate": "OBSERVATION_DIVERGED_WAITING",
+        "stopDisposition": {
+          "kind": "REQUESTED",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [
+          "OPEN_DIAGNOSTICS"
+        ],
+        "messageKey": "cast.recovery.observation_budget_exhausted",
+        "nextSafeAction": "OPEN_DIAGNOSTICS",
+        "recoverySubstate": "OBSERVATION_BUDGET_EXHAUSTED",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "OBSERVATION_EXHAUSTED"
+        }
+      },
+      {
+        "allowedActions": [],
+        "messageKey": "cast.recovery.compensation_in_progress",
+        "nextSafeAction": "WAIT_AND_OBSERVE",
+        "recoverySubstate": "COMPENSATION_IN_PROGRESS",
+        "stopDisposition": {
+          "kind": "IN_PROGRESS",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [
+          "OPEN_DIAGNOSTICS"
+        ],
+        "messageKey": "cast.recovery.compensation_exhausted",
+        "nextSafeAction": "OPEN_DIAGNOSTICS",
+        "recoverySubstate": "COMPENSATION_EXHAUSTED",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "COMPENSATION_EXHAUSTED"
+        }
+      },
+      {
+        "allowedActions": [
+          "REQUEST_PHONE_DISCONNECT"
+        ],
+        "messageKey": "cast.recovery.protected_sink_connected",
+        "nextSafeAction": "REQUEST_PHONE_DISCONNECT",
+        "recoverySubstate": "PROTECTED_SINK_CONNECTED",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "PROTECTED_SESSION"
+        }
+      },
+      {
+        "allowedActions": [
+          "TRY_ELIGIBLE_RECOVERY_ONCE"
+        ],
+        "messageKey": "cast.recovery.disconnected_sink_eligible",
+        "nextSafeAction": "TRY_ELIGIBLE_RECOVERY_ONCE",
+        "recoverySubstate": "DISCONNECTED_SINK_ELIGIBLE",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "RECOVERY_ACTION_ONLY"
+        }
+      },
+      {
+        "allowedActions": [
+          "OPEN_DIAGNOSTICS"
+        ],
+        "messageKey": "cast.recovery.disconnected_sink_attempt_exhausted",
+        "nextSafeAction": "OPEN_DIAGNOSTICS",
+        "recoverySubstate": "DISCONNECTED_SINK_ATTEMPT_EXHAUSTED",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "ONE_ATTEMPT_EXHAUSTED"
+        }
+      },
+      {
+        "allowedActions": [
+          "REQUEST_PHONE_DISCONNECT"
+        ],
+        "messageKey": "cast.recovery.occlusion_failed_connected",
+        "nextSafeAction": "REQUEST_PHONE_DISCONNECT",
+        "recoverySubstate": "OCCLUSION_FAILED_CONNECTED",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "OCCLUSION_NOT_PROVEN"
+        }
+      },
+      {
+        "allowedActions": [
+          "OPEN_DIAGNOSTICS"
+        ],
+        "messageKey": "cast.recovery.occlusion_failed_disconnected",
+        "nextSafeAction": "OPEN_DIAGNOSTICS",
+        "recoverySubstate": "OCCLUSION_FAILED_DISCONNECTED",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "OCCLUSION_NOT_PROVEN"
+        }
+      },
+      {
+        "allowedActions": [
+          "OPEN_DIAGNOSTICS"
+        ],
+        "messageKey": "cast.recovery.journal_corrupt_diagnostic",
+        "nextSafeAction": "OPEN_DIAGNOSTICS",
+        "recoverySubstate": "JOURNAL_CORRUPT_DIAGNOSTIC",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "BASELINE_UNKNOWN"
+        }
+      },
+      {
+        "allowedActions": [
+          "SHOW_PHYSICAL_INSTRUCTION"
+        ],
+        "messageKey": "cast.recovery.journal_corrupt_manual",
+        "nextSafeAction": "SHOW_PHYSICAL_INSTRUCTION",
+        "recoverySubstate": "JOURNAL_CORRUPT_MANUAL",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "BASELINE_UNKNOWN"
+        }
+      },
+      {
+        "allowedActions": [
+          "OPEN_PROFILE_SETUP"
+        ],
+        "messageKey": "cast.recovery.unsupported_profile_idle",
+        "nextSafeAction": "OPEN_PROFILE_SETUP",
+        "recoverySubstate": "UNSUPPORTED_PROFILE_IDLE",
+        "stopDisposition": {
+          "kind": "COMPLETED",
+          "reason": null
+        }
+      },
+      {
+        "allowedActions": [
+          "OPEN_DIAGNOSTICS"
+        ],
+        "messageKey": "cast.recovery.unsupported_profile_active_unknown",
+        "nextSafeAction": "OPEN_DIAGNOSTICS",
+        "recoverySubstate": "UNSUPPORTED_PROFILE_ACTIVE_UNKNOWN",
+        "stopDisposition": {
+          "kind": "UNAVAILABLE",
+          "reason": "PROFILE_UNSUPPORTED_ACTIVE"
+        }
+      }
+    ],
+    "recoverySubstate": {
+      "coarseState": "RECOVERY_PENDING or MANUAL_REQUIRED as selected by the durable recovery state; action policy comes only from recoveryMapping.",
+      "mapping": "recoveryMapping"
+    },
+    "stopRequestedWithRecoverySubstate": {
+      "invalidIfMappedDispositionKind": [
+        "AVAILABLE"
+      ],
+      "invalidOutcome": "decodeFailure",
+      "validOutcome": "Use the exact recoveryMapping row; recovery mapping wins after the AVAILABLE consistency guard."
+    },
+    "stopRequestedWithoutRecoverySubstate": {
+      "allowedActions": [],
+      "coarseState": "STOP_REQUESTED",
+      "nextSafeAction": "WAIT_AND_OBSERVE",
+      "stopDisposition": {
+        "kind": "REQUESTED",
+        "reason": null
+      }
+    },
+    "verifiedStableSession": {
+      "ACTIVE_DEGRADED": {
+        "allowedActions": [
+          "SWITCH",
+          "STOP",
+          "OPEN_DIAGNOSTICS"
+        ],
+        "nextSafeAction": "REQUEST_STOP",
+        "stopDisposition": {
+          "kind": "AVAILABLE",
+          "reason": null
+        }
+      },
+      "ACTIVE_VERIFIED": {
+        "allowedActions": [
+          "SWITCH",
+          "ADJUST",
+          "STOP"
+        ],
+        "nextSafeAction": "REQUEST_STOP",
+        "stopDisposition": {
+          "kind": "AVAILABLE",
+          "reason": null
+        }
+      },
+      "IDLE_VERIFIED": {
+        "allowedActions": [
+          "CAST",
+          "CHOOSE_ANOTHER_APP",
+          "OPEN_APP_MANAGER"
+        ],
+        "nextSafeAction": "NONE",
+        "stopDisposition": {
+          "kind": "COMPLETED",
+          "reason": null
+        }
+      }
+    },
+    "automationDisposition": "Automation presentation is first-match after durable Stop, recovery/manual and any active transaction, and before steady stable/cold state. automationDisposition is non-null only when the envelope holds automation config, a request for the current boot or an outcome for the current boot; automationReason mirrors the request or outcome reason and is null for PENDING, CLAIMED, ARMED, DISABLED and COMPLETED; automationTargetPackage mirrors the recorded target. Unknown or invalid automation data maps to contract-unmapped manual state, never DISABLED, and never adds a Cast intent."
+  },
+  "schemaVersion": 5
+}

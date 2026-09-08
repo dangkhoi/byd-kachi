@@ -1,0 +1,31 @@
+{
+  "branch": "release/v0.60-cast-hardening",
+  "canonicalization": "UTF-8 JSON; recursively lexicographic object keys; preserve array order; ensure_ascii=false; compact comma/colon separators; no BOM.",
+  "head": "146e3429d2f12971b377bb26137c4601fa36ebcb",
+  "identityExclusions": {
+    "entries": [
+      {
+        "path": "docs/_handoff/stop-dispatch-fix-round2.json",
+        "reason": "GENERATED_ATTESTATION_SELF_REFERENCE"
+      },
+      {
+        "path": "docs/_handoff/vehicle-candidate.json",
+        "reason": "GENERATED_VEHICLE_CANDIDATE_RECORD"
+      }
+    ],
+    "rule": "Path-only exclusions prevent identity recursion and keep local tooling state, historical APK bytes, every prior attestation and build-generated candidate records out of the build inputs. Predecessor identities stay independently verifiable and unmodified."
+  },
+  "intendedUntracked": [],
+  "schema": "clusternav.exact-source/v1",
+  "sourceId": "488a7004bf40d1d758c380ecb7f93e068e887f256d96bfba803286192c4b26be",
+  "trackedDiff": {
+    "byteLength": 117360,
+    "producer": "GIT_OPTIONAL_LOCKS=0 git diff --binary --no-ext-diff HEAD",
+    "sha256": "191cbe22ae5b07bcad427600825f4fd66c06a8f108e01c95b59b1cfd0d03bedc"
+  },
+  "version": {
+    "label": "fix: Stop never dispatched (BOOTSTRAP_COMMANDS guard), bubble Stop wiring, CarPlay/AA phone-disconnect evidence, style-hide-when-unsupported, CastPolicy branch order, geometry-reject ordering, reconcileAbandoned stopRequested preservation; generic CastVehicleProfileCatalog",
+    "versionCode": 75,
+    "versionName": "0.75"
+  }
+}

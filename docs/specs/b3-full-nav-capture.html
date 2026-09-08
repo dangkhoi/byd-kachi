@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B3 Full — Screen-Capture Navigation (Waze/VietMap/GMaps → cụm + HUD) — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{background:rgba(0,113,227,.12);border-color:var(--accent)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 150px;min-width:130px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13px}
+.layer .node.new{background:rgba(0,113,227,.12);border-color:var(--accent)}
+.layer .node b{display:block;font-size:13.5px}.layer .node span{color:var(--muted);font-size:11.5px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>B3 Full — Screen-Capture Navigation</h1>
+<p class="muted">Slug: <code>b3-full-nav-capture</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Mở rộng B3 thành nguồn dẫn đường ĐẦY ĐỦ: đọc <b>mũi tên + làn đường + camera + text</b> từ Waze/VietMap/GMaps, có <b>menu chọn nguồn</b>, và <b>bắn lên cụm + HUD + vẽ overlay cụm</b> (như speed badge). Xây trên B3.5–B3.13 đã committed.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 7 — 2026-08-23</b>: <b>B3.13r — nhịp ĐỊNH KỲ cho vòng enum cửa sổ a11y</b>. Trước đó <code>resolveNavWindowRegardlessOfFocus</code> có ĐÚNG MỘT call site, nằm trong <code>onAccessibilityEvent</code> ⇒ không có nhịp nào chạy độc lập event (mô tả bệnh của Pass 7 đã được <b>đính chính ở Pass 8</b>). Vá bằng <code>NavWindowPump</code> (:core, thuần) + Handler main-looper: <b>một throttle dùng chung</b> cho cả đường event lẫn đường nhịp ⇒ <b>trần enum không đổi</b>. <span class="warn">Nhịp TỰ TẮT</span> khi không còn cửa sổ nav, và đường mồi lại là event a11y — độc lập với chính vòng enum. 18 test + 8 phép mutation-check. Chi tiết ở §9.</li>
+<li><b>Pass 8 — 2026-08-24</b>: <b>B3.13r vòng 2 — sửa sau phản biện</b>. <span class="warn">Đính chính mô tả bệnh</span>: “hết tươi 3&nbsp;s ⇒ cụm trống” <b>không thành lập</b> (nhịp chụp tự nuôi qua <code>SourceArbiter.shouldFeed(…, IMAGE)</code>); bệnh thật là <b>VÒNG TRÒN</b> — kênh ảnh im &gt; <code>STALE_MS</code> thì cổng <code>ScreenCaptureNavSource.tick</code> đóng, mà thứ duy nhất mở lại cổng nằm SAU chính nó. <span class="warn">Đính chính chi phí</span>: trần <b>đỉnh</b> không đổi nhưng <b>trung bình tăng</b> (~4500 enum + ~7200 <code>am stack list</code>/giờ ở ca im-event) ⇒ backlog <b>B3.13r-cost</b>. Thêm <b>mồi nguội</b> ở <code>onServiceConnected</code>, đổi tên <code>armOnNavEvent</code>→<code>arm</code>, +4 test giết 4 mutant vốn sống sót, sửa 3 KDoc/comment sai và 2 <code>functionBody</code> đếm ngoặc trên text thô. Chi tiết ở §9.</li>
+<li><b>Pass 6 — 2026-08-23</b>: <b>B3.49 — đổi menu nguồn có hiệu lực TỨC THÌ</b>. Trước đó đổi mode chỉ ghi <code>Prefs</code>, mà <code>NavOutputOwner</code> bắn theo độ tươi của <code>ScreenCaptureSignal</code> ⇒ mũi tên app cũ còn nằm lại trên cụm. Vá bằng <code>NavSourceModeSwitch</code> (:core) + <code>ScreenCaptureSignal.dropDisallowed</code> — bỏ <b>chỉ</b> kênh mà cổng mode mới từ chối, <b>không đụng <code>SourceArbiter</code></b> (giữ đường phát STOP của B3.48). <span class="warn">Bác đề xuất <code>SourceArbiter.clear()</code></span>: nó nuốt lệnh dừng (khung ghim 180&nbsp;s) và nới cổng AUTO. Chi tiết ở §9.</li>
+<li><b>Pass 6b — 2026-08-23 (vòng sửa sau phản biện)</b>: <span class="warn">bảo đảm “nhịp tick KẾ TIẾP im” của Pass 6 KHÔNG thành lập</span> — gỡ sample chỉ chặn nhịp bắn SAU, còn khung chỉ được nhả khi <b>cả ba</b> kênh hết tươi (<code>clear = !anyFresh</code>), nên một app khác giữ một kênh tươi là mũi tên app vừa bị loại ở lại <b>vô hạn</b> ([ĐO] <code>PROBE-A</code>). Vá: <code>dropDisallowed</code> ghi yêu cầu nhả khung one-shot, <code>NavOutputOwner.tick</code> nhả <b>chỉ khi</b> danh tính khung đang hiện đúng là gói bị loại. Kèm hai đính chính: ca hiện trường là <b>Waze/VietMap chứ không phải GMaps</b> ([ĐO] <code>PROBE-B</code>), và <code>dropDisallowed</code> chuyển sang <b>compare-and-set</b> (bản cũ nuốt mất nhịp publish xen giữa). 13 test <code>:app</code> + 6 test <code>:core</code> mới, 5 phép mutation-check. Hở còn lại (không cần đổi mode) tách sang backlog <b>B3.56</b>.</li>
+<li><b>Pass 5 — 2026-08-22</b>: Thêm <b>§R-GUARD — hợp lý hoá cự ly</b> (Requirements + Design §4.6 + V-BIII + OQ12/OQ13/OQ14). Cự-ly đọc bằng view-id nay phải qua <code>TurnDistancePlausibility</code> (:core, thuần): <b>warmup 3 mẫu liên tiếp</b> · <b>chặn nhảy tăng</b> cùng tên đường · <b>chặn đóng băng</b> khi xe đã chạy đủ quãng. Kèm <code>BydHal.blankNavDistance</code> để XOÁ TRẮNG ô cự-ly ở cạnh xuống (chỉ trả -1 là chưa đủ — <code>pushNavigation</code> coi &lt;0 là "bỏ ghi, giữ số cũ"). <span class="warn">Ghi rõ giới hạn</span>: guard KHÔNG cứu được ca "đúng app, sai tuyến". 29 test off-car.</li>
+<li><b>Pass 4 — 2026-08-22</b>: Thêm <b>§B-II — DWELL chống nhảy nguồn</b> (Design §4.5 + T-BII + V-BII + OQ9). Ứng viên mới phải thắng <b>3 nhịp enum LIÊN TIẾP</b> (≈2,4&nbsp;s) mới tiếp quản, và <b>CẤM đổi nguồn khi holder đã cam kết vào khúc rẽ</b> (cự ly tươi ≤ max(150&nbsp;m, closingRate×8&nbsp;s)). Kèm việc tách <code>SourceArbiter.allows()</code>/<code>noteSeen()</code> (hỏi cổng ≠ chiếm khoá) và tách bước dò view-id thành <b>dò CÂM</b> + publish-cho-nguồn-đã-bầu. Đã cài + khoá bằng 27 test off-car.</li>
+<li><b>Pass 3 — 2026-08-22</b>: Thêm <b>§R-BI — bất biến MỘT-PACKAGE-MỘT-KHUNG</b> (Requirements + Design §4.4 + Verification V-BI + OQ7/OQ8). Một khung HUD/cụm chỉ ghép từ các kênh cùng package; kênh tươi khác app bị DROP im lặng (không kéo theo clear). Đã cài + khoá bằng test off-car.</li>
+<li><b>Pass 2 — 2026-08-20</b>: Triển khai T1a/T1b/T3/T4/T5/T6 + T7 emulator. Full-B3 build XANH, senior review <b>APPROVED (0 P0/P1)</b>. <b>Arrow end-to-end PROVEN</b> trên emulator (Waze LEFT → capture → pick=wazemod → classify amap=2 → owner ACTIVE). Fix <b>P0 crash</b> MainActivity (thiếu <code>txt_nav_source_active</code> ở <code>layout-w960dp</code>). Overlay render + HAL push (cần display-1 + BYD HAL) + làn (Waze Compose không có viewId) + camera template = on-car/OQ.</li>
+<li><b>Pass 1 — 2026-08-20</b>: Owner chốt các OQ → R3/R4/R5/R6 refine: đọc ĐỦ mũi tên từng làn + recommended (sáng/mờ), render đủ; bắn ra cụm/HUD bằng CẢ <b>payload gốc LẪN overlay SONG SONG</b> (không fallback); <b>không gate — cứ bắn</b> (HUD hỗ trợ thì lên); camera lên cụm/HUD + overlay <b>bên phải speed sign</b>, dải làn <b>dưới speed badge</b>.</li>
+<li><b>Pass 0 — 2026-08-20</b>: Khởi tạo spec theo yêu cầu owner ("full B3 + menu chọn app + bắn cụm/HUD + lấy camera/làn VietMap + làn Waze + vẽ overlay cụm như speed badge"). Grounded từ code hiện tại (B3.5–B3.13 committed) + RE OpenBYD (WazeManager/BydAccessibilityService).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>PO / vấn đề:</b> B3 hiện mới đọc được <b>mũi tên Waze</b> (classify → <code>amap</code>) trên emulator, và đã có cơ chế đọc app khi không-foreground (B3.13). Nhưng tín hiệu B3 <b>chưa đi đâu cả</b> (ScreenCaptureSignal là "seam" chưa nối ra cụm/HUD — T7), <b>chưa đọc làn đường</b>, <b>chưa có menu chọn nguồn</b> (dữ liệu có, thiếu UI), và VietMap camera <b>chưa có template</b>. Owner muốn B3 thành nguồn nav hoàn chỉnh, hiển thị như speed badge đã làm.</p>
+
+<h3>Đã có sẵn (đọc source — TÁI DÙNG)</h3>
+<ul>
+<li><b>Pipeline capture + classify</b> (committed): <code>ScreenCaptureNavSource</code> (tick 2Hz, gate, capture transport fission+screencap fallback), <code>ManeuverSignature</code>+<code>ManeuverRegistry</code>+<code>WazeArrowRegistry</code> (mũi tên; Waze-TRÁI proven end-to-end, <code>amap=2</code>), <code>VietMapCameraMatcher</code> (camera; template RỖNG = OQ4), <code>CaptureRouter</code>/<code>CaptureBoundsHeuristic</code> (case + bounds), <code>NavWindowPicker</code> (B3.13 — chọn nav-window bất kể focus).</li>
+<li><b>Holder tín hiệu</b>: <code>ScreenCaptureSignal</code> — <code>arrow</code>(maneuver+amap) + <code>camera</code>(match). <b>Chưa có lane</b>. <b>Chưa ai đọc nó ra cụm/HUD (T7).</b></li>
+<li><b>Trọng tài nguồn</b>: <code>SourceArbiter</code> + <code>NavSourceMode</code> (AUTO=0 / PREFER_GMAPS=2 / PREFER_WAZE=3 / PREFER_VIETMAP=4) + <code>Prefs.sourceMode</code> (<code>setSourceMode</code>). <b>Thiếu UI menu.</b></li>
+<li><b>Overlay cụm</b>: <code>SpeedBadgeOverlay</code> + <code>ClusterSpeedBadgePort</code> (TYPE_APPLICATION_OVERLAY trên <b>display 1 = cụm</b>) + <code>SpeedSignPort/Output/Submission</code> — <b>pattern render overlay cụm ĐÃ CHẠY</b> (speed badge) → tái dùng cho nav overlay.</li>
+<li><b>Đầu ra HAL</b>: <code>BydHal.pushNavigation</code> đẩy mũi tên/cự-ly/pathname/trip → <b>cụm-centre + HUD</b> (domestic 0x43F + oversea 0x1F7) + SDK <code>sendSimpleGuidanceInfo</code>/<code>sendNextPathName</code>. <b>Chưa đẩy LÀN</b> (cụm CÓ register làn: <code>LANE_1_GUIDANCE_ARROW_SET 0x19802058</code>, <code>IS_LANE_n_RECOMMENDED 0x1980xx64</code>, <code>n_LANE_LINE_TYPE 0x1980xx60</code>).</li>
+</ul>
+
+<h3>OpenBYD làm gì (RE — học theo)</h3>
+<ul>
+<li><b>2 kênh</b>: (a) <b>TEXT</b> (cự ly/đường/ETA) qua a11y — <code>BydAccessibilityService</code> duyệt <code>getWindowsOnAllDisplays</code> tìm window nav (B3.13 mình đã port) → <code>WazeManager.updateNavigationTexts</code>; (b) <b>ẢNH</b> — <code>WazeArrowCaptureService</code> (MediaProjection) → <code>processArrowPixels</code> → classify.</li>
+<li><b>LÀN</b>: <code>findAccessibilityNodeInfosByViewId("com.waze:id/laneGuidanceView")</code> → lấy <b>bounds</b> → <code>updateLaneContainerBounds</code> → capture vùng đó (như mũi tên). Tức <b>làn = a11y-tìm-viewId + capture-vùng-làn + classify</b>.</li>
+</ul>
+
+<div class="card"><b>Cổng / phụ thuộc:</b>
+<ul>
+<li><span class="ok">KHÔNG bị gate</span>: đầu ra <b>cụm</b> (centre-nav + overlay display-1) app ghi được (đã chạy với speed badge + centre-nav). Mũi-tên/cự-ly <b>HUD</b> cũng chạy.</li>
+<li><span class="warn">Bị gate riêng (KHÔNG thuộc spec này)</span>: <b>tên đường trên HUD</b> = provisioning-gate MCU (C7/C8, đang dò v3). B3 chỉ đẩy mũi-tên/cự-ly ra HUD; tên đường HUD chờ C8.</li>
+<li><span class="warn">Prereq nội bộ</span>: <b>B3.11 [P1]</b> (false-positive crop trống → tín hiệu rẽ GIẢ) phải fix TRƯỚC khi nối output ra cụm (kẻo bắn nav sai). <b>B3.10</b> (arbiter dính nguồn cũ) nên fix để chuyển nguồn sạch.</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1. Trích xuất theo nguồn đang dẫn</b> (mở rộng):
+  <ul>
+  <li>R1a <b>Waze/WazeMod</b>: mũi tên maneuver <span class="ok">(có)</span> + <b>LÀN</b> (a11y <code>laneGuidanceView</code> bounds → capture → classify làn) + cự-ly/đường (a11y, B3.13).</li>
+  <li>R1b <b>VietMap</b>: <b>camera phạt nguội</b> (capture + template) + <b>LÀN</b> (a11y viewId hoặc capture — VietMap hiện lane guidance) + mũi tên (banner) + cự-ly/đường (a11y content-desc).</li>
+  <li>R1c <b>GMaps</b>: maneuver + cự-ly (notification + a11y — <b>đã có</b>); B3-capture là phụ.</li>
+  </ul></li>
+<li><b>R2. Menu chọn nguồn dẫn đường</b> — UI chọn AUTO / GMaps / Waze / VietMap → <code>Prefs.setSourceMode</code> → <code>SourceArbiter</code> tôn trọng; hiển thị nguồn đang active. (Data + arbiter có sẵn; chỉ thêm UI.)</li>
+<li><b>R3. Bắn ra CỤM + HUD — SONG SONG 2 usecase (KHÔNG fallback)</b>:
+  <ul>
+  <li>(a) <b>Payload gốc (BydHal)</b>: đẩy mũi tên + cự-ly + <b>làn</b> + <b>camera</b> vào payload cụm-centre + HUD — <b>CỨ BẮN đủ field</b>; HUD/cụm nào hỗ trợ thì lên, không hỗ trợ thì kệ (bắn thừa vô hại, KHÔNG gate — kể cả tên-đường HUD).</li>
+  <li>(b) <b>Overlay cụm tự vẽ (display-1)</b>: vẽ làn + camera bằng view riêng, độc lập với (a).</li>
+  <li>Cả (a) và (b) chạy <b>SONG SONG</b> (2 đầu ra khác nhau) — KHÔNG phải cái này fallback cái kia.</li>
+  </ul></li>
+<li><b>R4. Làn — đọc ĐỦ mũi tên TỪNG LÀN + render</b>: mỗi làn đọc hướng (trái / thẳng / phải / kết hợp) + trạng thái <b>RECOMMENDED (sáng)</b> vs không (mờ). VD 4 làn khi map bảo đi thẳng: <code>[L1 trái=mờ · L2+L3 thẳng=sáng · L4 phải=mờ]</code>. Overlay vẽ ĐỦ các làn theo thứ tự + tô sáng làn recommended.</li>
+<li><b>R5. Camera → cụm + HUD + overlay</b>: (a) đẩy camera (icon + cự-ly) vào payload cụm/HUD (cứ bắn, như R3a); (b) overlay cụm vẽ <b>icon camera + cự-ly BÊN PHẢI speed sign</b>.</li>
+<li><b>R6. Overlay layout (display-1, reuse SpeedBadgeOverlay)</b>: dải <b>làn vẽ Ở DƯỚI</b> overlay speed-badge; <b>camera bên phải</b> speed sign. Cùng cơ chế TYPE_APPLICATION_OVERLAY display-1, không dựng overlay mới.</li>
+<li><b>R-BI. Bất biến MỘT-PACKAGE-MỘT-KHUNG</b> — một khung bắn ra cụm/HUD chỉ được ghép từ các kênh thuộc <b>CÙNG một package</b>.
+  <ul>
+  <li><b>Vì sao</b>: ba kênh ảnh (mũi tên / làn / camera) publish ĐỘC LẬP, mỗi kênh tự tươi <code>ScreenCaptureSignal.STALE_MS</code> = 6000ms. Đổi app dẫn (Waze → VietMap) hoặc hai app dẫn cùng hiển thị ⇒ kênh app cũ còn tươi tới 6s ⇒ <b>dải làn của một ngã ba KHÁC nằm ngay cạnh mũi tên đang báo</b>. Nặng nhất là ca làn: rect đo trong cửa sổ app A vẫn crop ra pixel HỢP LỆ trong ảnh app B ⇒ dữ liệu BỊA (nhãn A, pixel B) mà tầng sau không thể phát hiện.</li>
+  <li><b>Danh tính khung</b> = package của kênh TƯƠI đầu tiên theo thứ tự cố định <b>ARROW &gt; LANE &gt; CAMERA</b>. <span class="warn">Đã cân nhắc và LOẠI</span> phương án "kênh mới nhất thắng": khi <code>CaptureForegroundSource</code> dao động (đã xảy ra thật — B3.7 overlay WazeMod đè VietMap) danh tính sẽ lật mỗi tick ⇒ cụm nhấp nháy trên xe đang chạy.</li>
+  <li><b>Ca DROP</b>: kênh còn tươi nhưng khác package khung ⇒ bỏ IM LẶNG, không thay bằng gì. <b>DROP KHÔNG kéo theo clear</b> — nếu không, khung đang hiện sẽ nhấp nháy mỗi khi xuất hiện một kênh lạ.</li>
+  <li><b>So khớp NGUYÊN chuỗi</b>, KHÔNG gộp theo họ <code>NavApps</code>: <code>com.waze</code> (zin) và <code>com.chisadin.wazemod</code> là HAI app cài song song, chỉ một bản đang dẫn (ca thật 08-22 — lý do <code>NavWindowPicker.rank</code> ra đời). Rỗng/null KHÔNG bao giờ là danh tính hợp lệ.</li>
+  <li><b>Nhãn phải là package RUNTIME</b> (<code>event.packageName</code> / <code>root.packageName</code>), tuyệt đối không phải tiền tố resource <code>NavApps.WAZE_RES_PREFIX</code> — dán lệch thì mọi kênh của WazeMod bị DROP im lặng (mất làn, không lỗi nào).</li>
+  <li><b>Cùng package ⇒ hành vi Y HỆT trước B-I</b> (mọi cổng mới là no-op khi 3 kênh cùng pkg). Mọi cổng đều <b>fail-CLOSED</b>: thiếu/lệch pkg ⇒ không bắn, rơi về đường cũ (rect cố định, seg = -1, không làn) — không đường nào bịa hướng hay cự ly.</li>
+  </ul></li>
+<li><b>R-GUARD. Hợp lý hoá cự ly nguồn ẢNH/view-id</b> — cự ly đọc bằng view-id a11y chỉ được lái ô cự-ly của cụm/HUD khi <b>chuỗi mẫu tự nó nhất quán</b>.
+  <ul>
+  <li><b>(a) Nhảy TĂNG</b> quá dung sai <code>max(30&nbsp;m, 10%)</code> trong khi <b>cùng một tên đường</b> ⇒ từ chối. Đổi tên đường = maneuver mới ⇒ tăng là hợp lệ, ACCEPT ngay (không bắt warmup lại — mỗi ngã rẽ mà mất cự ly là mất đúng lúc tài xế cần). Tăng dai dẳng (reroute thật) ⇒ NHẢ sau 2 lần từ chối rồi warmup lại.</li>
+  <li><b>(b) ĐÓNG BĂNG</b> — cự ly đứng im trong khi xe đã đi quá <code>max(150&nbsp;m, 10%)</code> ⇒ từ chối. Quãng đi tính theo <b>TỐC-ĐỘ-THẬT</b> (<code>SpeedProvider.mpsOrNull</code> × <code>TurnDistanceInterpolator.FACTOR</code>), KHÔNG theo thời gian trôi — bài học bug α-β. Dưới 1,5&nbsp;m/s coi như xe ĐỨNG ⇒ đứng im là hợp lý (dừng đèn đỏ).</li>
+  <li><b>(c) WARMUP</b> — nguồn vừa được chọn phải qua <b>3 mẫu hợp lý LIÊN TIẾP</b> (≈2,4&nbsp;s ở nhịp 800&nbsp;ms) mới được lái ô cự-ly.</li>
+  <li><b>Xoá thay vì bỏ trống</b>: khi mất tin mà cụm <b>đang hiện số của chính guard</b> ⇒ phát lệnh XOÁ TRẮNG ô cự-ly ĐÚNG MỘT LẦN (cạnh xuống). Chỉ trả -1 là KHÔNG đủ: <code>BydHal.pushNavigation</code> coi <code>segMeters &lt; 0</code> là "bỏ ghi, GIỮ số cũ" ⇒ số của nguồn CŨ nằm lại — tệ hơn hiện trạng. Chưa từng ACCEPT ⇒ KHÔNG BAO GIỜ xoá (không giẫm lên ô cự-ly của đường notification).</li>
+  <li><b>Chỉ gác Ô CỰ-LY, KHÔNG gác mũi tên</b>: VietMap/GMaps không phơi bộ view-id Waze ⇒ với chúng guard luôn "không có mẫu". Gate mũi tên theo guard = <code>CaptureArrowFallback</code> chết câm. <b>⚠ 08-23:</b> <code>CaptureArrowFallback</code> đã bị <b>GỠ</b> (owner chốt VietMap đi capture-only) — xem backlog B3.42; lập luận ở đây giữ lại làm lịch sử.</li>
+  <li class="warn"><b>GIỚI HẠN — phải đọc trước khi tin</b>: guard này <b>KHÔNG giải quyết được "đúng app, sai tuyến"</b>. Không field nào trong <code>NavViewIdSource</code> (<code>turnMeters</code>/<code>road</code>/<code>arrivalClock</code>/<code>routeSeconds</code>/<code>routeMeters</code>) mang <b>danh tính TUYẾN</b>. Một tuyến cũ (user mở từ sáng) vẫn phát ra chuỗi mẫu <b>hoàn toàn hợp lý</b>: cự ly giảm đều theo tốc độ, tên đường đổi ở mỗi ngã rẽ. Guard chỉ bắt được <b>mâu thuẫn nội tại của chuỗi mẫu</b> — tức bắt lúc <b>CHUYỂN TIẾP</b> giữa hai tuyến/hai app, không bắt được trạng thái ổn định của tuyến sai. <b>Giảm xác suất, không loại trừ.</b> Muốn loại trừ thì phải có định danh tuyến (destination string / polyline / route-id) — chưa nguồn nào phơi ra (OQ12).</li>
+  </ul></li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Classifier (arrow/lane/camera) <b>THUẦN ở :core</b> — unit-test off-car (khoá logic bằng fixture như ManeuverSignature).</li>
+<li>R-nf2. <b>Degrade-safe</b>: thiếu template/bounds/capture → bỏ frame, KHÔNG crash, KHÔNG bắn nav sai (fix B3.11 trước).</li>
+<li>R-nf3. KHÔNG phá speed-badge/Cast/centre-nav hiện có; overlay nav dùng CÙNG cơ chế display-1, không tranh chấp.</li>
+<li>R-nf4. <b>data &gt; image</b> (SourceArbiter): notification/widget (nếu có) ưu tiên hơn ảnh; B3 là fallback đọc-ảnh.</li>
+<li>R-nf5. Throttle a11y window-enum (B3.13) + tick 2Hz — không phình CPU/perf.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng dữ liệu</h3>
+<div class="flow">
+  <div class="fnode"><b>Nav apps</b><span>Waze / VietMap / GMaps</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>a11y + capture</b><span>window-enum (B3.13)<br>+ transport chụp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>Classify :core</b><span>arrow · <b>lane</b> · camera</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>ScreenCaptureSignal</b><span>+ lane</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>NavOutputOwner (T7)</b><span>trọng tài + đẩy</span></div>
+</div>
+<div class="flow">
+  <div class="fnode new"><b>NavOutputOwner</b></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>BydHal</b><span>HUD + cụm-centre<br>(+ lane reg)</span></div>
+  <div class="arrow">＋</div>
+  <div class="fnode new"><b>Cluster NavOverlay</b><span>display-1, pattern<br>SpeedBadgeOverlay</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới / mở rộng</span>
+</div>
+
+<h3>4.2 Các khối</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>Capture (có)</b><span>ScreenCaptureNavSource + transport</span></div>
+    <div class="node"><b>window-enum (B3.13)</b><span>NavWindowPicker</span></div>
+    <div class="node new"><b>Lane bounds</b><span>a11y viewId laneGuidanceView → CaptureBoundsSource(lane)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>ManeuverSignature (có)</b><span>arrow → amap/maneuver</span></div>
+    <div class="node new"><b>LaneSignature (mới)</b><span>vùng làn → [làn: hướng, recommended]</span></div>
+    <div class="node"><b>VietMapCameraMatcher (có)</b><span>camera (cần template OQ4)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>ScreenCaptureSignal + lane</b><span>publishLane / laneFresh</span></div>
+    <div class="node"><b>SourceArbiter + NavSourceMode (có)</b><span>AUTO/PREFER_*</span></div>
+    <div class="node new"><b>Nav-source menu (mới)</b><span>MainActivity → Prefs.sourceMode</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>NavOutputOwner (T7, mới)</b><span>gộp signal → đẩy, keep-alive, degrade</span></div>
+    <div class="node"><b>BydHal.pushNavigation (có)</b><span>+ push lane reg (mới)</span></div>
+    <div class="node new"><b>Cluster NavOverlay (mới)</b><span>reuse SpeedBadgeOverlay display-1</span></div>
+  </div>
+</div>
+
+<h3>4.3 Quyết định thiết kế</h3>
+<ul>
+<li><b>Làn</b>: học OpenBYD — a11y tìm <code>*:id/laneGuidanceView</code> (Waze) / view tương ứng VietMap → bounds → capture → <code>LaneSignature</code> (thuần) phân tích dải làn (mỗi làn: có/không, hướng mũi tên, recommended). Fallback: nếu app phơi làn qua content-desc/text thì đọc thẳng (rẻ hơn ảnh).</li>
+<li><b>Output owner (T7)</b>: 1 owner đọc <code>ScreenCaptureSignal</code> (+ nav notification hiện có) theo <code>SourceArbiter</code>, đẩy: mũi-tên/cự-ly → <code>BydHal</code> (HUD+cụm-centre, đã chạy); làn → cụm (register hoặc overlay); camera → overlay badge. Có keep-alive + clear khi hết dẫn (như HudKeepAlivePolicy đã có).</li>
+<li><b>Overlay cụm</b>: TÁI DÙNG cơ chế <code>SpeedBadgeOverlay</code>/<code>ClusterSpeedBadgePort</code> (TYPE_APPLICATION_OVERLAY display-1) — thêm view nav (mũi tên/làn/camera) cạnh badge tốc-độ, KHÔNG dựng cơ chế overlay mới.</li>
+<li><b>Menu nguồn</b>: item trong MainActivity (như selector chế-độ-hiển-thị cụm đã có) set <code>Prefs.sourceMode</code>; hiển thị <code>SourceArbiter.activeSource</code>.</li>
+<li><b>Cụm register làn vs overlay</b>: thử register gốc <code>0x19802058…</code> trước (cụm tự vẽ làn đẹp hơn); nếu không provision → overlay tự vẽ. (OQ3, verify on-car.)</li>
+<li><b>Context7</b>: chỉ dùng Android SDK (AccessibilityWindowInfo/MediaProjection/WindowManager) + BYDAuto HAL + khối nội bộ đã có → <b>không có thư viện mới → Context7 n/a</b>.</li>
+</ul>
+
+<h3>4.4 B-I — Bất biến MỘT-PACKAGE-MỘT-KHUNG (2026-08-22)</h3>
+<p>Bất biến §R-BI được cài ở <b>ba tầng</b>, mỗi tầng chốt đúng thứ chỉ tầng đó biết:</p>
+<div class="layers">
+  <div class="layer">
+    <div class="node new"><b>NavFrameIdentity</b><span>:core · <code>sameFrame(frame, candidate)</code><br>rỗng/null = KHÔNG hợp lệ</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>Sample bất biến</b><span>ArrowSample / LaneSample / CameraSample<br>pkg + giá trị + mốc trong MỘT object</span></div>
+    <div class="node new"><b>LaneBounds / CaptureBounds</b><span>rect + <b>chủ</b> + số làn + mốc<br>publish bắt buộc có pkg (không default)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>NavOutputDecision.decide</b><span>3 × NavChannelState → plan<br>framePkg + push* + dropped*</span></div>
+    <div class="node new"><b>ScreenCaptureNavSource</b><span>chốt tại NƠI SẢN XUẤT<br>lệch pkg ⇒ không crop</span></div>
+    <div class="node new"><b>CaptureArrowFallback</b><span>đường DATA — dùng CHUNG<br>một hàm bất biến (DRY)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>NavOutputOwner.tick</b><span>đọc 1 lần/kênh · seg theo <code>plan.framePkg</code><br>log IDENTITY / DROP (log-on-change)</span></div>
+  </div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.12);border-color:var(--accent)"></span>mới/đổi ở B-I</span><span class="sw"><span class="box"></span>đã có, chỉ nối lại dây</span></div>
+<ul>
+<li><b>Chống đọc-xé TRONG một kênh</b>: trước B-I mỗi kênh là 3–4 <code>@Volatile</code> rời ⇒ luồng capture publish xen giữa hai lần đọc của owner là ghép được pkg app mới với giá trị app cũ; bất biến khi đó chỉ có trên danh nghĩa. Nay một lần đọc ra một sample nhất quán. <span class="muted">Skew GIỮA các kênh vẫn còn — đó chính là thứ <code>decide</code> lọc bằng pkg; không thêm khoá (một producer, consumer 4Hz).</span></li>
+<li><b>Chốt ở NƠI SẢN XUẤT cho kênh làn</b>: nếu để lọt, <code>publishLane(pkg, …)</code> tạo ra dữ liệu bịa mà tầng decide không có cách nào biết. Producer (<code>NavAccessibilityService</code>) chỉ dán nhãn TRUNG THỰC theo <code>root.packageName</code>; việc DROP là của consumer, một chỗ duy nhất.</li>
+<li><b>Cự-ly đi theo danh tính</b>: <code>NavViewIdSource.freshTurnMetersFor(plan.framePkg, now)</code> thay cho guard lẻ đọc <code>arrowPkg</code> — MỘT nguồn sự thật. Lệch ⇒ -1 ⇒ <code>BydHal.kt:393</code> BỎ GHI ô cự-ly (không xoá trắng, không bịa số). Cùng lúc sửa bug <b>hai miền đồng hồ</b> (trước đây chấm tươi view-id bằng <code>clock()</code> chứ không phải <code>now</code> của tick).</li>
+<li><b>KHÔNG đụng <code>TurnDistanceInterpolator</code></b>: nó là object toàn cục <b>không có chiều package</b> (<code>anchor</code>/<code>refine</code> không mang pkg) và đang neo bởi đường notification GMaps đã proven ngoài hiện trường (§6 CLAUDE.md). Bơm seg đường ảnh vào đó = trộn hai track cự-ly của hai app vào một baseline, đúng căn bệnh B-I đang chữa. Guard đúng cho B-I là guard DANH TÍNH. Nếu sau này cần guard hợp lý hoá cho seg đường ảnh thì phải TÁI DÙNG <code>closingRate()</code> + từ vựng nhảy sẵn có và cho interpolator một chiều package trước — hạng mục riêng, gate bằng phép đo trên xe (§14).</li>
+<li><b>Đã xoá</b>: overload <code>decide(Boolean,Boolean,Boolean)</code> (để lại = còn một đường vòng qua bất biến) và <code>NavOutputPlan.IDLE</code> (dead code, không call site).</li>
+</ul>
+
+<h3>4.5 B-II — DWELL chống nhảy nguồn (2026-08-22)</h3>
+<p><b>Triệu chứng:</b> ô cự-ly trên HUD nhấp nháy <i>số → gạch → số</i> khi mở hai app nav cùng lúc.
+<b>Cơ chế (ĐÃ CHỨNG MINH từ source, chưa đo trên xe — CLAUDE.md §2):</b> vòng enum cửa sổ chạy mỗi
+<code>WINDOW_ENUM_THROTTLE_MS = 800&nbsp;ms</code> và bầu nguồn theo <b>DIỆN TÍCH</b> cửa sổ
+(<code>NavWindowPicker.rank</code>). Ở <code>PREFER_WAZE</code>, cổng <code>allow</code> đúng cho <b>cả</b>
+<code>com.waze</code> lẫn <code>com.chisadin.wazemod</code> (cùng <code>NavApps.WAZE</code>) ⇒ arbiter
+<b>không khoá gì</b>: đảo hạng diện tích là đổi nguồn ngay nhịp sau. Mà <code>NavViewIdSource</code> /
+<code>CaptureBoundsSource</code> là holder <b>MỘT-Ô</b> ⇒ nguồn mới ghi đè cự-ly nguồn cũ, rồi
+<code>NavOutputOwner</code> chỉ nhận cự-ly khi pkg khớp <code>arrowPkg</code> ⇒ gạch.</p>
+<div class="flow">
+  <div class="fnode"><b>enum 800 ms</b><span>NavWindowPicker.rank<br>(diện tích)</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>probeOrder</b><span>HOLDER TRƯỚC<br>rồi tới hạng</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>allows()</b><span>HỎI cổng<br>KHÔNG chiếm khoá</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>probeNavByViewId</b><span>dò CÂM<br>không ghi holder</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>NavSourceDwell.onTick</b><span>R0…R6 → elected</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>publishViewIdReading</b><span>chỉ nguồn ĐÃ BẦU</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode"><b>shouldFeed(elected)</b><span>chiếm khoá ĐÚNG 1 lần</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.12);border-color:var(--accent)"></span>mới ở B-II</span><span class="sw"><span class="box"></span>đã có, chỉ nối lại dây</span></div>
+<p>Bảng quyết định <code>NavSourceDwell.onTick</code> — <b>thứ tự xét là hợp đồng</b>, khoá bằng
+<code>NavSourceDwellTest</code>:</p>
+<table>
+<tr><th>#</th><th>Điều kiện</th><th>Kết quả</th><th>Vì sao thứ tự đó</th></tr>
+<tr><td>R0</td><td><code>candidate == null</code></td><td>chưa holder → <code>IDLE</code>; im quá <code>holderGraceMs</code> → <code>RELEASED</code>; còn lại <code>HOLD</code></td><td>không có cửa sổ nav nào ⇒ không bầu bừa, nhưng phải có đường NHẢ</td></tr>
+<tr><td>R1</td><td><code>holder == null</code></td><td>nhận NGAY (<code>BOOTSTRAP</code>)</td><td>bắt dwell ở đây = cụm TRẮNG 2,4&nbsp;s mở đầu mỗi chuyến</td></tr>
+<tr><td>R2</td><td><code>candidate == holder</code></td><td><code>HOLD</code>, xoá chuỗi challenger</td><td>holder còn dẫn ⇒ chuỗi PHẢI đứt (chữ "LIÊN TIẾP")</td></tr>
+<tr><td>R3</td><td><code>!holderAllowed</code></td><td>nhường ngay (<code>MODE</code>)</td><td>lựa chọn PREFER_* tường minh của user &gt; mọi lớp làm trễ</td></tr>
+<tr><td>R4</td><td>holder vắng &gt; <code>holderGraceMs</code></td><td>nhường ngay (<code>TAKEOVER</code>)</td><td>trần cứng: app đã tắt thì không guard nào được giữ</td></tr>
+<tr><td>R5</td><td><code>0 ≤ holderTurnMeters ≤ commitMeters</code></td><td>CHẶN (<code>COMMITTED</code>), <b>reset streak</b></td><td>đã cam kết vào khúc rẽ; reset streak để vừa qua rẽ KHÔNG đổi nguồn tức thì</td></tr>
+<tr><td>R6</td><td>còn lại</td><td>đủ 3 nhịp liên tiếp → <code>TAKEOVER</code>, chưa đủ → <code>DWELL</code></td><td>đứt chuỗi khi đổi ứng viên HOẶC hai nhịp cách nhau &gt; 2 chu kỳ</td></tr>
+</table>
+<ul>
+<li><b>Hỏi cổng ≠ chiếm khoá</b>: <code>SourceArbiter.shouldFeed</code> có tác dụng phụ đặt <code>activeSource</code>. Vòng enum cũ gọi nó cho <b>mọi</b> ứng viên ⇒ ứng viên rốt cuộc bị loại vẫn cướp khoá. Tách <code>allows()</code> (thuần); <code>shouldFeed</code> giữ nguyên chữ ký/ngữ nghĩa, chỉ gọi <b>một lần</b> cho <code>elected</code>. Chứng minh không đổi hành vi + khoá bằng <code>SourceArbiterAllowsTest</code>. <b>Cập nhật 2026-08-23 (B3.48)</b>: bản 08-22 còn tách kèm <code>noteSeen()</code> để nuôi sổ <code>isGroupFresh</code> — cả ba (<code>noteSeen</code>, <code>isGroupFresh</code>, <code>lastSeenByPkg</code>) nay đã bị <b>XOÁ HẲN</b> khỏi <code>SourceArbiter</code>; vòng enum chỉ còn HỎI.</li>
+<li><b>Dò phải CÂM</b>: <code>readNavByViewId</code> tách thành <code>probeNavByViewId</code> (trả dữ liệu) + <code>publishViewIdReading</code> (ghi holder). Không tách thì dwell vô nghĩa — ứng viên bị loại vẫn ghi đè cự-ly.</li>
+<li><b>Thứ tự dò holder-trước</b>: bằng chứng "đang dẫn" (đọc được dữ liệu) &gt; phỏng đoán "cửa sổ to hơn"; đồng thời đây là cách DUY NHẤT lấy được cự-ly TƯƠI của holder cho guard. Đảo thứ tự = guard mù.</li>
+<li><b>Không biết thì KHÔNG chặn</b>: <code>holderTurnMeters &lt; 0</code> ⇒ guard đứng ngoài. Cấm gate một đường phục hồi bằng dữ liệu mà chỉ chính nó làm mới được (CLAUDE.md §3).</li>
+<li><b>TÁI DÙNG, không viết lại</b>: ngưỡng động lấy <code>TurnDistanceInterpolator.closingRate()</code> (= tốc-độ-đồng-hồ × FACTOR 0,95); cự-ly GMaps chấm bằng <code>freshScreenRead()</code> (<code>SCREEN_READ_STALE_MS</code> 2,5&nbsp;s). <b>Không</b> gọi <code>SpeedProvider</code> (reflection xuống HAL) trong nhịp a11y trên luồng main.</li>
+<li><b>CẤM đọc <code>lastProjected()</code> làm cự-ly holder</b>: đường notification nhận cả <code>NavApps.ALL</code> nên anchor của interpolator không chắc thuộc GMaps ⇒ dùng nó là quy kết sai chủ. Chỉ dùng nguồn có gắn pkg rõ ràng.</li>
+<li><b>Hai miền đồng hồ</b>: dwell / <code>holderTurnMeters</code> / <code>CaptureForegroundSource</code> dùng MONOTONIC (<code>elapsedRealtime</code>); <code>SourceArbiter</code> dùng WALL (<code>currentTimeMillis</code>). Trong nhịp mới <code>now</code> chỉ đi vào dwell/publish, <code>nowWall</code> chỉ đi vào arbiter — khoá bằng contract test.</li>
+<li><b>Hẹp hoá có chủ đích (không phải regression)</b>: ứng viên KHÔNG được bầu nay không còn chiếm <code>activeSource</code>. Phần mất đi đúng là việc CHIẾM KHOÁ — chính cái bug đang chữa. <b>Cập nhật 2026-08-23 (B3.48)</b>: câu gốc ở đây nói "sổ <code>isGroupFresh</code> vẫn nguyên nhờ <code>noteSeen()</code>" — nay <b>SAI</b>, sổ đó đã bị xoá cùng cửa thoát <code>|| !isGroupFresh(X)</code>.</li>
+<li><b>Con số là THAM SỐ CHỌN, chưa đo trên xe</b> (CLAUDE.md §2): <code>DWELL_TICKS = 3</code>, <code>COMMIT_FLOOR_M = 150</code>, <code>COMMIT_SECONDS = 8</code>. Tiêm được qua ctor. Cách bác bỏ: xem OQ9.</li>
+<li><b>KHÔNG chạm</b>: <code>NavNotificationListener</code> / <code>ClusterBroadcaster</code> (đường noti GMaps đang chạy ngoài hiện trường — CLAUDE.md §6), đường event a11y (<code>CaptureForegroundSource.publish(pkg, b3Now)</code> giữ nguyên từng ký tự), <code>NavWindowPicker.rank</code>, <code>NavOutputDecision</code>, <code>NavOutputOwner</code>.</li>
+</ul>
+
+<h3>4.6 B-III — GUARD hợp lý hoá cự ly (2026-08-22)</h3>
+<p><b>Triệu chứng cần chặn:</b> ô cự-ly trên cụm/HUD hiện một con số <i>trông hợp lệ</i> nhưng thuộc về chuỗi
+khác (nguồn vừa đổi, tuyến vừa đổi, hoặc nav bar đã đóng băng vì app rơi xuống nền). Trên xe đang lăn bánh,
+<b>một cự ly SAI nguy hiểm hơn ô trống</b>.</p>
+
+<div class="flow">
+  <div class="fnode"><b>a11y 800 ms</b><span>navBarDistance<br>navBarStreetLine</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>NavViewIdSource<br>.Reading</b><span>ảnh chụp NHẤT QUÁN<br>(pkg + m + đường + mốc)</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode"><b>owner tick 250 ms</b><span>plan.framePkg (§R-BI)</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>TurnDistance<br>Plausibility</b><span>:core · thuần<br>REPEAT → (a) → (b) → (c)</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode new"><b>Decision</b><span>meters / UNKNOWN<br>+ blankDistance</span></div>
+  <div class="arrow">→</div>
+  <div class="fnode"><b>pushArrow(icon, seg)</b><span>mũi tên KHÔNG bị gác</span></div>
+  <div class="arrow">↘</div>
+  <div class="fnode new"><b>blankNavDistance</b><span>xoá trắng ô cự-ly<br>CONTENT-only</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.12);border-color:var(--accent)"></span>mới ở B-III</span><span class="sw"><span class="box"></span>đã có, chỉ nối lại dây</span></div>
+
+<p><b>Thứ tự xét trong <code>accept()</code> là hợp đồng</b> — khoá bằng <code>TurnDistancePlausibilityTest</code>:</p>
+<table>
+<tr><th>#</th><th>Điều kiện</th><th>Kết quả</th><th>Vì sao đứng ở đó</th></tr>
+<tr><td>1</td><td>cùng <code>pkg</code> + cùng <code>sampleAtMs</code></td><td><code>REPEAT</code>, trả NGUYÊN số cũ, <b>không đổi state</b></td><td>owner tick 4&nbsp;Hz nhưng a11y publish ~1,25&nbsp;Hz ⇒ một mẫu bị đọc lại 3–4 lần. Thiếu chốt này thì quãng-đóng-băng TỰ cộng và warmup TỰ đầy</td></tr>
+<tr><td>2</td><td><code>meters &lt; 0</code></td><td>uỷ quyền <code>noSample()</code></td><td>parse hụt một mẫu là chuyện thường; không được phá chuỗi warmup đang xây</td></tr>
+<tr><td>3</td><td>đổi <code>pkg</code> · mốc lùi · gap &gt; <code>FRESH_MS</code></td><td>episode MỚI → warmup lại</td><td>mất mạch thì không được tin tiếp; mốc lùi = process mới/đồng hồ lùi</td></tr>
+<tr><td>4a</td><td>đổi tên đường</td><td>re-anchor, <b>KHÔNG</b> warmup lại</td><td>maneuver mới ⇒ tăng hợp lệ. Bắt warmup ở đây = mất cự ly ở MỌI ngã rẽ, đúng lúc cần nhất</td></tr>
+<tr><td>4b</td><td>tăng &gt; <code>max(30&nbsp;m, 10%)</code>, cùng đường</td><td><code>REJECT_RISE</code>; sau 2 lần thì NHẢ + warmup lại</td><td>reroute thật giữ nguyên tên đường ⇒ phải có đường thoát, không kẹt vĩnh viễn</td></tr>
+<tr><td>4c</td><td><code>meters == anchor</code></td><td>cộng quãng-đi; quá <code>max(150&nbsp;m, 10%)</code> → <code>REJECT_FROZEN</code> (<b>không có nhả</b>)</td><td>đóng băng KHI ĐANG CHẠY là sai; cứ từ chối tới khi số đổi. Quãng đi theo TỐC-ĐỘ-THẬT ⇒ dừng đèn đỏ không sinh phán quyết sai</td></tr>
+<tr><td>4d</td><td>còn lại (giảm / tăng trong dung sai)</td><td>re-anchor, <code>goodStreak++</code></td><td>nhiễu làm tròn "1.2&nbsp;km"→"1.3&nbsp;km" không được làm mù ô cự-ly</td></tr>
+<tr><td>5</td><td><code>goodStreak &ge; 3</code></td><td><code>ACCEPT</code>, ngược lại <code>WARMUP</code></td><td>(c) nguồn vừa chọn phải CHỨNG MINH mình trước khi lái cụm</td></tr>
+</table>
+
+<p><b>Cạnh xuống — vì sao phải XOÁ chứ không chỉ trả −1</b> (đây là phần dễ bỏ sót nhất; bỏ nó thì cả hạng mục
+phản tác dụng):</p>
+<div class="diagram" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0">
+<svg viewBox="0 0 820 200" width="100%" role="img" aria-label="Dòng thời gian: guard đang hiện 260 m, mất tin, chỉ trả -1 thì số cũ nằm lại; blankNavDistance mới xoá trắng">
+  <defs>
+    <marker id="b3ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="var(--line)" stroke-width="1">
+    <line x1="40" y1="60" x2="780" y2="60"/><line x1="40" y1="150" x2="780" y2="150"/>
+  </g>
+  <g font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" fill="var(--muted)">
+    <text x="40" y="30">tick N — guard ACCEPT</text>
+    <text x="330" y="30">tick N+1 — guard mất tin</text>
+    <text x="40" y="180" fill="var(--warn)">CHỈ trả −1 ⇒ pushNavigation "bỏ ghi" ⇒ số CŨ nằm lại (tệ hơn hiện trạng)</text>
+  </g>
+  <g stroke="var(--accent)" stroke-width="1.6" fill="none" color="var(--accent)">
+    <line x1="300" y1="60" x2="330" y2="60" marker-end="url(#b3ah)"/>
+    <line x1="300" y1="150" x2="330" y2="150" marker-end="url(#b3ah)"/>
+  </g>
+  <g>
+    <rect x="40" y="42" width="250" height="36" rx="8" fill="rgba(0,113,227,.12)" stroke="var(--accent)"/>
+    <rect x="340" y="42" width="250" height="36" rx="8" fill="rgba(26,127,55,.12)" stroke="var(--ok)"/>
+    <rect x="40" y="132" width="250" height="36" rx="8" fill="rgba(0,113,227,.12)" stroke="var(--accent)"/>
+    <rect x="340" y="132" width="250" height="36" rx="8" fill="rgba(191,95,0,.12)" stroke="var(--warn)"/>
+  </g>
+  <g font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" fill="var(--fg)" text-anchor="middle">
+    <text x="165" y="65">cụm hiện "260 m"</text>
+    <text x="465" y="65">blankNavDistance ⇒ ô cự-ly TRỐNG</text>
+    <text x="165" y="155">cụm hiện "260 m"</text>
+    <text x="465" y="155">cụm VẪN hiện "260 m" (số chết)</text>
+  </g>
+  <g font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" fill="var(--ok)">
+    <text x="610" y="65">← đường B-III</text>
+  </g>
+</svg>
+</div>
+<ul>
+<li><b><code>BydHal.pushNavigation</code> coi <code>segMeters &lt; 0</code> là "BỎ GHI, giữ số cũ"</b> ⇒ nếu warmup chỉ trả −1 thì số của nguồn CŨ nằm lại trên cụm — <b>tệ hơn hôm nay</b> (hôm nay đổi nguồn là số nhảy sang giá trị mới ngay). Vì vậy thêm <code>blankNavDistance</code> (CONTENT-only, ghi −1 vào <code>INSTRUMENT_FRONT_CROSSING_DISTANCE_SET</code> + nhánh oversea), bắn ĐÚNG MỘT LẦN ở cạnh xuống.</li>
+<li><b>Chỉ xoá cái chính nó viết ra</b>: điều kiện <code>displaying == true</code> đảm bảo guard không bao giờ giẫm lên ô cự-ly do đường notification (<code>writeNavFrame</code>) ghi — §6 CLAUDE.md.</li>
+<li><b>KHÔNG tái dùng <code>NavArrivalGuard</code></b>: nó phục vụ đường notification GMaps <b>đang chạy ngoài hiện trường</b> với ngưỡng rất lỏng (<code>approachMeters=800</code>, <code>regressionJumpMeters=1500</code>) và state theo phiên notification. Siết ngưỡng của nó = đổi hành vi đường đã proven ⇒ CẤM. Trùng lặp nhẹ luật "nhảy tăng" giữa hai lớp là <b>CỐ Ý</b> và được ghi trong KDoc để reviewer không patch gộp.</li>
+<li><b>TÁI DÙNG, không viết lại</b>: hệ số bảo thủ lấy CHUNG <code>TurnDistanceInterpolator.FACTOR</code> (0,95 — chỉ đổi visibility, 0 thay đổi hành vi); mô hình "trừ theo TỐC-ĐỘ-THẬT, không theo thời gian trôi" lấy nguyên từ bản sửa bug α-β.</li>
+<li><b>Tốc độ phải là <code>SpeedProvider.mpsOrNull()</code></b>, KHÔNG phải biến thể last-good: last-good trả <b>0,0 khi HAL câm</b> ⇒ guard tưởng xe LUÔN ĐỖ ⇒ luật đóng-băng chết câm không ai biết. Khoá bằng test quét source.</li>
+<li><b>Ảnh chụp NHẤT QUÁN</b>: guard cần bộ ba (cự ly + tên đường + mốc) của CÙNG một lần publish. <code>NavViewIdSource.Reading</code> + <code>freshReadingFor()</code> đóng nốt khe đọc-xé mà §R-BI đã đóng cho <code>ScreenCaptureSignal</code>; <code>freshTurnMetersFor()</code> viết lại qua đường mới (cùng điều kiện, cùng kết quả — test cũ xanh nguyên vẹn là bằng chứng tương đương).</li>
+<li><b>Cái giá</b>: đổi nguồn ⇒ ô cự-ly trống ≈2,4&nbsp;s; reroute cùng tên đường ⇒ ≈4&nbsp;s. Chấp nhận theo thứ tự ưu tiên "sai cự ly nguy hiểm hơn không hiện gì". Cách chỉnh: hạ <code>warmupSamples</code> 3→2 <b>sau khi</b> đo log thật (OQ14), không chỉnh mù.</li>
+<li><b>PHẠM VI — cố ý KHÔNG làm</b>: (1) guard chỉ gác <b>ô cự-ly</b>, không gác mũi tên — VietMap/GMaps không phơi bộ view-id Waze nên với chúng guard luôn "không có mẫu"; gate mũi tên = <code>CaptureArrowFallback</code> chết câm (<b>⚠ nhánh này đã GỠ 08-23</b>, backlog B3.42). (2) không đụng kênh camera (<code>pushCamera</code> — cự ly tới CAMERA, ngữ nghĩa khác). (3) không đụng đường notification. (4) <b>giảm ĐỘT NGỘT bất hợp lý</b> (5&nbsp;km → 40&nbsp;m) là hiểm hoạ đối xứng nhưng ngoài phạm vi B-III — xem OQ15.</li>
+<li><b>Giới hạn còn lại đã biết</b>: khi mũi tên stale mà làn/camera còn tươi thì tick không đi qua nhánh mũi tên ⇒ không có cơ hội blank, số cũ nằm lại tới lúc clear cả frame. Ghi trong comment, không mở rộng phạm vi vòng này.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T0</td><td><span class="tag p1">P1</span>Fix <b>B3.11</b> (false-positive crop trống → chặn signature quá thưa) + <b>B3.10</b> (arbiter nhường nguồn stale) — prereq trước khi nối output</td><td><code>ManeuverSignature.kt</code>, <code>SourceArbiter.kt</code> (+test)</td></tr>
+<tr><td>T1</td><td><b>Lane extraction</b>: a11y lane-container bounds (viewId) + <code>LaneSignature</code> (:core thuần) + <code>ScreenCaptureSignal.publishLane</code> + test</td><td><code>NavAccessibilityService.kt</code>, <code>LaneSignature.kt(+Test)</code>, <code>ScreenCaptureSignal.kt</code></td></tr>
+<tr><td>T2</td><td><b>Thu template</b>: VietMap camera (OQ4) + full maneuver Waze/VietMap (drive + capture <code>signatureBits</code>, theo method emulator phiên này) → registry</td><td><code>WazeArrowRegistry.kt</code>, <code>VietMapCameraMatcher</code> templates</td></tr>
+<tr><td>T3</td><td><b>Menu chọn nguồn</b> (UI) → <code>Prefs.setSourceMode</code>; hiện active source</td><td><code>MainActivity.kt</code> (+ layout)</td></tr>
+<tr><td>T4</td><td><b>NavOutputOwner — payload gốc</b>: đọc signal theo arbiter → đẩy <b>mũi-tên + cự-ly + làn + camera</b> vào payload <code>BydHal</code> (HUD + cụm-centre), CỨ BẮN đủ field (không gate); keep-alive + clear</td><td><code>NavOutputOwner.kt(+Test)</code>, <code>BydHal.kt</code></td></tr>
+<tr><td>T5</td><td><b>Cluster NavOverlay — overlay tự vẽ (SONG SONG T4)</b>: dải làn (đủ làn + recommended sáng/mờ) vẽ DƯỚI speed-badge + camera (icon+cự-ly) BÊN PHẢI speed sign; display-1 reuse SpeedBadgeOverlay; wire từ NavOutputOwner</td><td><code>NavClusterOverlay.kt</code>, <code>speedbadge/*</code> (reuse)</td></tr>
+<tr><td>T6</td><td><b>Wire + gate</b>: ScreenCaptureNavSource/notification → NavOutputOwner; bật/tắt theo Prefs; degrade-safe</td><td><code>NavNotificationListener.kt</code>, owner</td></tr>
+<tr><td>T-BII</td><td><span class="tag p1">P1</span><b>DWELL chống nhảy nguồn</b>: policy thuần <code>NavSourceDwell</code> (3 nhịp liên tiếp + guard cam-kết-rẽ) · <code>SourceArbiter.allows()</code> (bản 08-22 kèm <code>noteSeen()</code> — đã xoá ở B3.48) · tách dò CÂM khỏi publish trong vòng enum</td><td><code>NavSourceDwell.kt(+Test)</code>, <code>SourceArbiter.kt(+AllowsTest)</code>, <code>NavAccessibilityService.kt</code>, <code>NavSourceDwellWiringContractTest.kt</code></td></tr>
+<tr><td>T-BIII</td><td><span class="tag p1">P1</span><b>GUARD hợp lý hoá cự ly</b>: <code>TurnDistancePlausibility</code> (:core, thuần — warmup 3 mẫu · chặn nhảy tăng · chặn đóng băng theo tốc-độ-thật) · <code>NavViewIdSource.Reading</code>/<code>freshReadingFor</code> (ảnh chụp nhất quán) · <code>BydHal.blankNavDistance</code> (xoá trắng ô cự-ly, CONTENT-only) · nối vào <code>NavOutputOwner</code></td><td><code>TurnDistancePlausibility.kt(+Test)</code>, <code>NavViewIdSource.kt(+Test)</code>, <code>TurnDistanceInterpolator.kt</code>, <code>BydHal.kt</code>, <code>NavOutputOwner.kt(+Test)</code>, <code>NavOutputGuardWiringTest.kt</code></td></tr>
+<tr><td>T7</td><td>Senior review + security scan + build (:core:test/:app) + <b>emulator test từng app</b> + on-car verify</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b>: <code>LaneSignature</code> (fixture lane → làn đúng) · <code>NavWindowPicker</code> (có) · <code>ManeuverSignature</code>/registry (có) · <code>SourceArbiter</code> (chuyển nguồn) · <code>NavOutputOwner</code> (signal → lệnh đẩy đúng, keep-alive, clear). <code>:core:test + :app:testDebugUnitTest</code> xanh.</li>
+<li><b>V-emulator</b> (method proven phiên 08-20): <code>adb root</code> + <code>wm size 960x720</code> + launch MainActivity (init verbose) + <code>emu geo fix</code> di chuyển. Cho từng app: mở dẫn → B3 đọc arrow/lane/camera → <b>overlay cụm vẽ</b> → <b>menu chuyển nguồn</b> đổi active. Log <code>arrow(image)/lane(image)/camera(image)</code> + overlay screenshot.</li>
+<li><b>V-oncar</b>: mũi-tên/cự-ly ra HUD + cụm-centre; làn ra cụm (register hoặc overlay); badge camera; chuyển nguồn; <b>reboot nút nguồn vật lý</b> nếu test yêu cầu. Waze khi cast cụm/không-foreground vẫn đọc (B3.13).</li>
+<li><b>V-BI</b> (off-car, §R-BI): <code>NavFrameIdentityTest</code> (rỗng/null không là danh tính · <code>com.waze</code> ≠ <code>com.chisadin.wazemod</code>) · <code>NavOutputDecisionTest</code> (6 ca cùng-pkg giữ nguyên hành vi + 8 ca DROP/rơi-bậc/fail-closed) · <code>ScreenCaptureHoldersTest</code> (sample bất biến, bounds mang chủ, fail-CLOSED khi vô chủ) · <code>CaptureArrowFallbackTest</code> (quét TOÀN BỘ bảng chân trị cũ ⇒ refactor DRY không đổi hành vi đường VietMap đang chạy) · <code>NavOutputOwnerTest</code> (bất biến ở tầng owner thật, cự-ly theo danh tính, đổi nguồn không clear thừa) · <code>ScreenCaptureNavSourceContractTest</code> (quét source: cổng danh tính đứng TRƯỚC crop; producer dán nhãn runtime).</li>
+<li><b>V-BII</b> (off-car, <b>45 test</b> — số đếm lại 2026-08-23 bằng <code>grep -c @Test</code>; bản cũ ghi 27 và nêu tên một test đã không còn tồn tại): <code>NavSourceDwellTest</code> (21) · <code>SourceArbiterAllowsTest</code> (12) · <code>NavSourceDwellWiringContractTest</code> (12).<br><code>NavSourceDwellTest</code> — BOOTSTRAP không dwell · 3 nhịp LIÊN TIẾP · chuỗi ĐỨT khi holder quay lại · chuỗi ĐỨT khi hai nhịp cách &gt; 2 chu kỳ · guard chặn ở 120&nbsp;m dù challenger thắng 10 nhịp · guard reset streak · guard NHẢ khi cự-ly vọt 800&nbsp;m · <code>-1</code> (không biết) KHÔNG chặn · <code>holderAllowed=false</code> nhường ngay · holder vắng quá grace nhường ngay · <code>candidate=null</code> giữ rồi NHẢ · <code>commitMeters</code> sàn khi rate ≤0/NaN/∞ · 30&nbsp;m/s → 240&nbsp;m · <code>probeOrder</code> holder-trước không trùng lặp · <code>reset()</code>.<br><code>SourceArbiterAllowsTest</code> — <code>allows()</code> đồng ý với <code>shouldFeed</code> ở cả 4 mode (canh cửa tái-inline: kênh DATA hôm nay uỷ thẳng) · <code>allows()</code> không chiếm khoá / không đóng mốc DATA · <code>allowedByMode()</code> thuần-mode · AUTO không được vượt mặt guard cam-kết-rẽ · <b>nhóm B3.48</b>: <code>PREFER_X</code> = đúng tập nhóm X (duyệt cả 3 nhóm) · PREFER_VIETMAP mà VietMap im hoàn toàn thì GMaps không bao giờ qua cổng · hai package KHÁC NHÓM không bao giờ cùng qua cổng · AUTO không đổi một bit · AUTO: cổng từ chối thì gói bị từ chối không bao giờ là <code>activeSource</code> · <code>PREFER_*</code>: nguồn giữ bị đổi chế độ thì <code>release()</code> báo đúng MỘT lần.<br><code>NavSourceDwellWiringContractTest</code> (quét source) — onTick TRƯỚC mọi publish · <code>probeNavByViewId</code> CÂM · <code>shouldFeed</code> đúng MỘT lần cho <code>elected</code> · đồng hồ monotonic + <code>tickPeriodMs</code> một nơi · nhánh rỗng vẫn chấm nhịp · reset khi connect · đường noti KHÔNG biết gì về dwell · đường event a11y giữ nguyên chuỗi cũ · <b>canh cửa</b> "vòng enum không <code>noteSeen</code>" (symbol đã xoá ở B3.48 ⇒ vế này nay là hằng đúng, giữ để lần khôi phục sổ trong tương lai không lặng lẽ nối lại).</li>
+<li><b>V-BIII</b> (off-car, 29 test): <code>TurnDistancePlausibilityTest</code> (18) — warmup K−1/K · chuỗi ĐỨT khi có mẫu xấu chen vào · nhảy tăng cùng đường bị chặn · tăng TRONG dung sai vẫn qua · đổi tên đường ACCEPT ngay (không re-warmup) · nhảy tăng dai dẳng được NHẢ rồi warmup lại · đóng băng khi xe chạy đủ quãng · xe ĐỨNG thì đứng im là hợp lý · <code>speedMps = null</code> ⇒ luật đóng-băng TẮT hẳn · số đổi ⇒ đếm quãng lại từ 0 · đọc lại cùng mẫu trả NGUYÊN số và không đổi state · gap &gt; <code>FRESH_MS</code> ⇒ warmup lại · đổi pkg ⇒ blank ĐÚNG một lần · chưa từng ACCEPT thì KHÔNG BAO GIỜ blank · <code>noSample</code> blank một lần rồi thôi · <code>reset</code> · <b>"đúng app sai tuyến" vẫn ACCEPT</b> (test TÀI LIỆU HOÁ giới hạn) · <code>meters &lt; 0</code> không phá chuỗi. <code>NavViewIdSourceTest</code> (+3) — composite nhất quán · sai pkg/quá hạn/không cự-ly ⇒ null · <code>clear</code> xoá luôn ảnh chụp. <code>NavOutputOwnerTest</code> (+5) — warmup ở tầng owner thật (mũi tên KHÔNG bị guard giết) · reject ⇒ <code>blankDistance()</code> đúng 1 lần · khung không có mẫu ⇒ −1, không crash · <code>issueClear</code> reset guard · sink ném ở <code>blankDistance</code> không sập tick. <code>NavOutputGuardWiringTest</code> (3, quét source) — guard có call site thật · CẤM <code>SpeedProvider.mps()</code> last-good · <code>blankNavDistance</code> không chạm session latch.</li>
+<li><b>V-lifecycle</b>: bắt đầu dẫn → overlay hiện → đổi nguồn → mất dẫn 40s → overlay clear + HAL clear (như WazeManager.checkExpiration/clearNavigation).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. <b>Template camera VietMap</b> — icon camera neo-bản-đồ DI CHUYỂN → cần a11y-bounds đúng node hoặc dò động, không fixed-rect; thu template trên emulator/xe. <span class="muted">chưa</span></li>
+<li>OQ2. <b>LaneSignature — HOW</b> (owner đã chốt WHAT ở R4: đọc hướng từng làn + recommended sáng/mờ, render đủ): còn phải research CÁCH phân tích ảnh dải làn (nhiều làn cạnh nhau, mỗi làn 1–2 mũi tên, phân biệt sáng/mờ) → làm với data emulator thật ở T1. <span class="muted">research khi có crop làn</span></li>
+<li>OQ3. <span class="ok">RESOLVED (owner)</span>: làn/camera ra cụm bằng <b>CẢ payload gốc LẪN overlay, SONG SONG</b> — không chọn một.</li>
+<li>OQ4. <span class="ok">RESOLVED (owner)</span>: <b>KHÔNG gate</b> — cứ bắn đủ payload (kể cả tên-đường HUD); HUD/cụm hỗ trợ thì lên, không thì kệ (bắn thừa vô hại).</li>
+<li>OQ7. <b>Register HAL LATCH sống qua lần đổi danh tính</b> (R1 của B-I) — <code>BydHal.kt:393</code> bỏ ghi cự-ly khi <code>seg &lt; 0</code> (KHÔNG xoá) và <code>clearNavFrame</code> (<code>BydHal.kt:351-358</code>) chỉ reset SEND_NAVI_STATUS / GUIDE_INFO_SIMPLE / FRONT_CROSSING_DISTANCE — <b>không chạm</b> <code>LANE_n_*</code> (0x19802058+) lẫn CAMERA (0x43F03010). Vậy sau Waze → VietMap, dải làn/badge cũ nhiều khả năng vẫn sáng dưới mũi tên mới. B-I chỉ thu hẹp thứ ta GHI, KHÔNG sửa được thứ cụm còn HIỆN. <b>Cấm vá mù</b>: (a) gọi thêm <code>clearNavFrame</code> — nó ghi session latch vốn độc quyền của <code>NavigationHudOwner</code> (<code>PhysicalHudOwnershipTest</code>), có thể hạ phiên HUD giữa lúc đang lái; (b) <code>pushCamera(0, …)</code> — nhánh <code>iconCode = 0</code> chưa có call site nào, chưa từng chạy trên xe. <span class="muted">Probe §14 tầng 1 + lệnh cụ thể: <code>docs/diagnostics/hal-register-latch-on-identity-switch-2026-08-22.md</code></span></li>
+<li>OQ8. <b>Tần suất ca DROP trên xe</b> (R2 của B-I) — badge camera VietMap có thể bị nén tối đa 6s khi mũi tên Waze còn tươi giữ danh tính. Chấp nhận có chủ ý (hiện ÍT hơn, không bao giờ hiện SAI); dòng log <code>nav output DROP</code> (log-on-change, in đủ 3 pkg) cho phép ĐO đúng tần suất trước khi cân nhắc nới. <span class="muted">đo on-car</span></li>
+<li>OQ5. <b>Display routing</b>: nav app trên cụm (cast) vs màn chính — capture đúng display (B3.13 cho displayId). <span class="muted">emulator 1-display hạn chế; verify on-car</span></li>
+<li>OQ9. <b>Bác bỏ các con số của B-II</b> (<code>DWELL_TICKS=3</code>, <code>COMMIT_FLOOR_M=150</code>, <code>COMMIT_SECONDS=8</code> — THAM SỐ CHỌN, chưa đo). Bật <code>NavLog.verbose</code>, lái một chuyến có 2 app nav cùng mở, thu dòng <code>dwell src=… reason=… streak=… holder=…m ngưỡng=…m</code> + đối chiếu <code>NavDistanceLog</code>. Kiểm 3 mệnh đề: (1) không có <code>TAKEOVER</code> nào rơi vào lúc holder ≤ 150&nbsp;m; (2) số lần bị <code>DWELL</code> chặn rồi challenger tự rụng (streak không lên 3) &gt; 0 — chứng minh dwell thực sự chặn nhiễu chứ không chỉ làm chậm; (3) độ trễ khi đổi app THẬT ≤ 3 nhịp. Nếu (2)=0 suốt chuyến ⇒ hoặc chưa gặp ca nhảy, hoặc <code>dwellTicks</code> thừa → chỉnh qua ctor, KHÔNG sửa policy. <span class="muted">đo on-car</span></li>
+<li>OQ10. <b>Guard MÙ với holder là VietMap</b> — VietMap không phơi view-id (<code>NavViewIdSource</code>) và cũng không nuôi mẫu đọc-màn (nhánh scan gate <code>pkg !in maps</code>) ⇒ <code>holderTurnMeters</code> luôn −1 ⇒ chỉ có dwell 2,4&nbsp;s bảo vệ, KHÔNG có chặn cam-kết-rẽ. Giữ degrade-safe (không biết → không chặn). Hạng mục riêng: đóng dấu pkg vào anchor của <code>TurnDistanceInterpolator</code> hoặc phơi <code>ClusterBroadcaster</code> nguồn đang chọn, để guard phủ cả nguồn nuôi bằng notification. <span class="muted">chưa</span></li>
+<li>OQ11. <b>ADJACENT BUG</b> (ngoài phạm vi B-II — cơ chế ĐÃ CHỨNG MINH từ source, hệ quả CHƯA đo trên xe): vòng enum gọi <code>shouldFeed</code> với kênh mặc định <code>DATA</code> ⇒ đóng mốc <code>lastDataByPkg</code> mỗi ≤800&nbsp;ms ⇒ mọi lời gọi kênh <code>IMAGE</code> của CHÍNH app đó bị trả <code>false</code> vì <code>isDataFresh</code>, tức <code>ScreenCaptureNavSource</code> không publish được arrow/lane/camera cho app đang được enum bầu. B-II GIỮ NGUYÊN hành vi đó (§6: không tự ý sửa đường đang chạy) nhưng phải chốt riêng (vd enum path dùng kênh riêng). <b>Cập nhật 2026-08-23</b>: phương án "chỉ <code>noteSeen</code>" nêu ở bản gốc nay KHÔNG còn — hàm đó đã bị xoá ở B3.48. <span class="muted">cần hạng mục riêng</span></li>
+<li>OQ12. <b>Định danh TUYẾN — đường ra thật cho ca "đúng app, sai tuyến"</b> (R-GUARD). Guard B-III chỉ bắt được mâu thuẫn nội tại của chuỗi mẫu, tức bắt lúc CHUYỂN TIẾP; một tuyến CŨ đang chạy ổn định phát ra chuỗi hợp lý hoàn hảo và luôn được ACCEPT (khoá bằng test <code>KHONG cuu duoc dung-app-sai-tuyen</code>). Muốn loại trừ thì phải có định danh tuyến — destination string, polyline, hoặc route-id. Cần khảo sát: Waze có phơi <code>lblDestination</code>/<code>navBarDestination</code> qua view-id không? VietMap/GMaps có field tương đương trong notification không? <span class="muted">chưa nguồn nào phơi ra — chưa đo</span></li>
+<li>OQ13. <b><code>blankNavDistance</code> chưa verify on-car</b> (CLAUDE.md §2 — mức <b>NGHI LÀ</b>). Mệnh đề: "ghi −1 vào <code>INSTRUMENT_FRONT_CROSSING_DISTANCE_SET</code> (+ nhánh oversea) làm cụm/HUD XOÁ TRẮNG ô cự-ly <b>trong khi</b> <code>SEND_NAVI_STATUS</code> vẫn = 2". Bằng chứng gián tiếp: <code>clearNavFrame</code> dùng đúng giá trị đó để xoá cự-ly khi kết thúc dẫn đường. Probe (§14 tầng 1): đang dẫn → ghi −1 lẻ vào register đó → chụp cụm/HUD → lưu <code>docs/diagnostics/</code>. Xấu nhất = no-op (số cũ nằm lại, đúng như hôm nay) ⇒ không bao giờ tệ hơn hiện trạng, nhưng nếu probe ÂM TÍNH thì phải sửa comment thành "chưa xoá được, số cũ nằm lại" — không được để comment hứa cái chưa đo. <span class="muted">probe on-car</span></li>
+<li>OQ14. <b>Bác bỏ các ngưỡng của B-III</b> (<code>warmupSamples=3</code>, <code>riseAbsToleranceM=30</code>/<code>riseRelTolerancePct=10</code>, <code>frozenAbsLimitM=150</code>, <code>movingMinMps=1.5</code> — THAM SỐ CHỌN, chưa hiệu chuẩn bằng log thật của Waze/WazeMod). Bật <code>NavLog.verbose</code>, lái một chuyến, thu dòng <code>seg guard &lt;verdict&gt; raw=… out=… road=… [state]</code>. Kiểm: (1) tần suất <code>REJECT_RISE</code>/<code>REJECT_FROZEN</code> — nếu ≈0 suốt chuyến thì hoặc chưa gặp ca xấu, hoặc ngưỡng quá lỏng; (2) tổng thời gian ô cự-ly TRỐNG vì <code>WARMUP</code> — nếu quá nhiều thì hạ <code>warmupSamples</code> 3→2 <b>qua ctor</b>, KHÔNG sửa thuật toán; (3) có <code>REJECT_RISE</code> nào rơi vào ngã rẽ hợp lệ không (⇒ dung sai quá chặt). <span class="muted">đo on-car</span></li>
+<li>OQ15. <b>Hiểm hoạ ĐỐI XỨNG: cự ly giảm ĐỘT NGỘT bất hợp lý</b> (5&nbsp;km → 40&nbsp;m ⇒ cụm báo "rẽ ngay" trong khi không có ngã rẽ). Ngoài phạm vi yêu cầu B-III và cần tốc độ để chặn cho đúng (giảm nhanh là HỢP LỆ khi xe đang chạy nhanh, và re-snap sau khi qua rẽ cũng giảm mạnh). CỐ Ý không implement ở vòng này để tránh code không call site / chặn nhầm re-snap hợp lệ — ghi thành follow-up, không âm thầm bỏ qua. <span class="muted">hạng mục riêng</span></li>
+<li>OQ6. <b>Perf</b>: window-enum + capture 2Hz + a11y flag — chấp nhận trên xe? (throttle). <span class="muted">đo on-car</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Commits phiên 08-20: <code>87fd1ad</code> (screencap fallback) · <code>e914642</code> (B3 core+app) · <code>ad4a454</code> (B3.5/3.7/3.9 + B3.6 Waze-trái) · <code>f33da16</code> (B3.13 window-enum) · backlog <code>93b55bd</code>.</li>
+<li>Backlog: <code>docs/PROJECT-BACKLOG.md</code> B3 + B3.1–B3.13 (B3.6/3.8/3.10/3.11 còn mở).</li>
+<li>OpenBYD (RE): <code>openbyd-2.3/…/WazeManager.java</code> (updateNavigationTexts · laneContainerBounds · processArrowPixels) · <code>BydAccessibilityService.java</code> (rootNodeForPackages · laneGuidanceView) · <code>ClusterOverlayManager.java</code>.</li>
+<li>Hiện có: <code>speedbadge/{SpeedBadgeOverlay,ClusterSpeedBadgePort,SpeedBadgeView}.kt</code> · <code>navigation/{SourceArbiter,NavSourceMode}.kt</code> · <code>modules/hal/BydHal.kt</code> · <code>navigation/screencapture/ScreenCaptureSignal.kt</code>.</li>
+<li>Diagnostics: <code>docs/diagnostics/b3-emulator-e2e-2026-08-20.md</code> (method test emulator) · spec cũ <code>waze-vietmap-screen-capture.html</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+
+<h3>2026-08-24 — F1→F4: hồi quy badge, HUD VietMap/Waze, và bước 1 nối phễu</h3>
+<ul>
+<li><b>F1 · HỒI QUY do chính B3.30</b>: badge tốc độ câm trên cụm dù cầu widget nối OK. [ĐO] <code>git diff dabfee1..40474af</code>:
+gỡ kênh Waze HUD Link đã gỡ luôn 3 dòng <code>onMasterEnabled(Prefs.enabled)</code>/<code>onSourceSelected</code> nằm TRONG vòng poll của nó —
+vòng đó <b>gánh hộ</b> việc bật công tắc mỗi nhịp. Vá: <code>ensureBridgeStarted</code> sync TRƯỚC <code>addListener</code>;
+<code>speedLimitPusher</code> sync MỖI NHỊP. Phép thử ĐỎ: gỡ vá ⇒ 2/3 test đỏ đúng chỗ.
+<b>Bài học ghi vào KDoc</b>: gỡ code chết phải hỏi <i>"nó còn gánh hộ việc gì không?"</i>.</li>
+
+<li><b>Vì sao nút thử không bắt được F1</b>: <code>debugForceBadge</code> gọi THẲNG <code>badgeOverlay.show()</code>, bỏ qua toàn bộ
+<code>SpeedSignLifecycleCoordinator</code>. Nút thử xanh chỉ chứng minh display 1 + overlay vẽ được — KHÔNG chứng minh dữ liệu widget
+tới được badge. Đúng bẫy <code>CLAUDE.md §8</code>. ⇒ <b>Test phải đi ĐÚNG đường người dùng đi.</b></li>
+
+<li><b>F4 · owner đo TRÊN XE SL6</b>: VietMap/Waze không lên HUD, GMaps thì OK. [ĐO] truy đủ chuỗi:
+<code>NavigationHudOwner</code> là chủ DUY NHẤT của chốt phiên (<code>SEND_NAVI_STATUS</code> + <code>SET_NAVI_SCREEN_STATUS</code> + 3 SDK);
+nó chỉ được nuôi bởi <code>NavRepository.ingest</code>; hàm đó có ĐÚNG MỘT call site trong <code>handle()</code>; <code>handle()</code> chỉ nhận GMaps.
+Đường ảnh (<code>NavOutputOwner</code>) tuyên bố ngay trong KDoc là "content-only, KHÔNG chạm session latch"
+⇒ VietMap/Waze bơm nội dung vào thanh ghi mà <b>không ai bật lớp nav</b>.
+<b>CÙNG HỌ với B3.45</b> (op-39 bề mặt cụm) — cùng lỗ hổng, một tầng khác.</li>
+
+<li><b>Kiến trúc — owner phát biểu và DUYỆT 08-24</b> (<code>docs/specs/nav-input-output-architecture.html</code>):
+<i>"nhận tín hiệu từ các maps (noti, a11y, screen capture...) vào 1 đầu vào duy nhất trong 1 thời điểm; sau đó HUD, cụm giữa + ETA,
+strip... là đầu ra"</i>. Đối chiếu <code>project-context §1</code> thì kiến trúc này đã ghi từ đầu — <b>code đã TRÔI, không phải thiết kế mới</b>.
+Chỗ trôi: <code>NavOutputOwner</code> (thêm 20/08, B3.15) dựng cửa thứ hai thay vì nối vào phễu sẵn có.</li>
+
+<li><b>F4 bước 1/3 XONG</b>: <code>NavContentBuilder.fromImage</code> dựng <code>NavigationFrameContent</code> từ
+<code>ScreenCaptureSignal</code> + <code>NavViewIdSource.Reading</code> → <code>NavRepository.ingestContent</code> = cùng cửa với notification.
+Giữ nguyên bất biến <code>NavFrameIdentity.sameFrame</code>. Test <code>NavFunnelWiringContractTest</code> (7 bài).
+[ĐO] <code>BydHal.pushNavigation</code>/<code>blankNavDistance</code> KHÔNG còn call site; <code>writeNavFrame</code> còn ĐÚNG 1 chủ ⇒ <b>đóng B3.54</b>.</li>
+
+<li><b>Bước 2–3 tách sang F7, owner HOÃN</b>: [ĐO] dải làn + chip camera ghi thanh ghi RIÊNG
+(<code>INSTRUMENT_GUIDE_INFO_CAMERA_SET</code>, <code>INSTRUMENT_CAMERA_DISPLAY_STATE_SET</code>, <code>INSTRUMENT_NAVI_CAM_REMAINING_MILEAGE_SET</code>),
+<b>không đụng</b> <code>INSTRUMENT_GUIDE_INFO_SIMPLE_SET</code> ⇒ không gây lỗi nào đang mở. Rủi ro thật khi làm: ba kênh có nhịp tươi ĐỘC LẬP,
+gộp một khung là trói chung vòng đời ⇒ dải làn chớp tắt theo mũi tên. Cách an toàn: trường tuỳ chọn mặc định null.
+Owner chốt: hoãn tới sau khi v1.15 xác nhận trên xe.</li>
+
+<li><b>F3 · phản biện bắt [P0] suýt ship</b>: 3 view id mới chỉ có ở <code>layout/</code>, xe dùng <code>layout-w960dp</code>
+⇒ mở app trên xe là NPE — mà <b>2058 test vẫn xanh</b>. Đã vá + <code>LayoutVariantIdParityTest</code> tự dò mọi biến thể layout.
+⇒ <b>Test xanh không chứng minh app mở được.</b></li>
+
+<li><b>Sự cố dữ liệu cá nhân (agent gây ra, chặn trước commit)</b>: fixture dựng từ ảnh chụp máy owner chứa nhãn điểm đến định danh được;
+bôi ảnh xong lại <b>chép chính dữ liệu đó ra dạng CHỮ</b> trong backlog (grep được, mạnh hơn ảnh) — lượt quét pre-commit bắt được;
+và một agent tự ý publish tài liệu lên dịch vụ ngoài. ⇒ Quy tắc: <b>ghi lại sự cố lộ dữ liệu thì KHÔNG chép lại chính dữ liệu đó</b>;
+<b>tài liệu chỉ lưu local</b>.</li>
+
+<li><b>CHƯA làm</b>: v1.15 chưa chạy trên xe (<code>CLAUDE.md §14</code> tầng 1) · chưa commit từ mốc <code>40474af</code> · F7 bước 2–3.</li>
+</ul>
+
+<h3>2026-08-23 — B3.13r (nhịp định kỳ cho vòng enum cửa sổ a11y) · sửa vòng 2 2026-08-24</h3>
+<ul>
+<li><b>Bệnh [ĐO]</b> (quét source 08-23): <code>resolveNavWindowRegardlessOfFocus</code> có <b>đúng một</b> call site và nó nằm <b>bên trong</b> <code>onAccessibilityEvent</code> — handler <code>return</code> ngay ở <code>if (pkg !in navPackages) return</code>. <code>grep -nE "postDelayed|Handler\(|Timer|ScheduledExecutor" NavAccessibilityService.kt</code> = <b>0 dòng</b> ⇒ không có nhịp nào chạy độc lập event.</li>
+<li class="warn"><b>ĐÍNH CHÍNH 08-24 (vòng 2) — mô tả bệnh ở trên là SAI, phải đọc theo bản này.</b> Bản 08-23 viết “<code>CaptureForegroundSource.isFresh</code> tắt sau 3&nbsp;s ⇒ cụm trống”. Đọc lại <code>ScreenCaptureNavSource.tick</code> + <code>SourceArbiter.shouldFeed</code> thì mệnh đề đó <b>không thành lập</b>: <code>tick</code> chỉ đòi <code>dataFresh || fgFresh</code>, mà <code>shouldFeed(pkg, …, NavChannel.IMAGE)</code> khi trả <code>true</code> lại tự đặt <code>activeSource = pkg; activeSeen = now</code>, và <code>pkg</code> của nhịp chụp có nhánh rơi <code>?: SourceArbiter.activeSource</code>. Nghĩa là <b>mỗi lần chụp + phân loại THÀNH CÔNG tự làm tươi chính cái cổng cho phép nó chạy</b> ⇒ chừng nào kênh ẢNH còn bắn được thì vòng chụp <b>tự nuôi</b>, không cần một event a11y nào.</li>
+<li><b>Bệnh THẬT = VÒNG TRÒN</b> (đúng họ lỗi <code>sats &gt;= 4</code>, CLAUDE.md §3): thứ DUY NHẤT làm tươi cổng đó chính là kênh ảnh. Kênh ảnh im quá <code>SourceArbiter.STALE_MS</code> = 6&nbsp;s là ca <b>thường xuyên</b> chứ không hiếm — [ĐO] B3.52: trên 87 khung VietMap chỉ <b>39</b> đi trọn tới mã AMAP, phần còn lại <b>im lặng có chủ ý</b> (thiếu template ⇒ thà không vẽ còn hơn vẽ sai hướng). Qua 6&nbsp;s đó <code>dataFresh</code> tắt; app im event thì <code>fgFresh</code> tắt theo sau 3&nbsp;s ⇒ <code>tick</code> return trắng ⇒ <b>từ giây đó không còn đường nào mở lại cổng</b>, vì đường mở lại (chụp + phân loại) nằm SAU chính cái cổng vừa đóng. Sau B3.44 VietMap không còn kênh notification nên không có nguồn thứ hai gỡ bí. Nhịp B3.13r là <b>đường cắt vòng tròn</b>: nó làm tươi <code>CaptureForegroundSource</code> bằng một quan sát ĐỘC LẬP với kết quả phân loại. Nhịp bắn event a11y của VietMap (Flutter) vẫn là <b>[CHƯA BIẾT]</b> — chưa đo trên xe.</li>
+<li><b>Vá</b>: <code>NavWindowPump</code> (<code>:core</code>, THUẦN, không Android) giữ toàn bộ chính sách; service chỉ có <code>Handler(Looper.getMainLooper())</code> + một <code>Runnable</code> giữ ở <code>val</code> (<code>removeCallbacks</code> so sánh THAM CHIẾU). Năm chốt: <b>(a)</b> <b>MỘT throttle dùng chung</b> — throttle cũ (<code>lastWindowEnumAt</code>) chuyển hẳn vào <code>NavWindowPump.tryEnum</code>, giữ nguyên phép so <code>now - mốc &lt; 800&nbsp;ms</code>, và CẢ đường event LẪN đường nhịp đều phải xin phép ⇒ <b>trần ĐỈNH enum/giây không đổi</b> so với hôm nay (trung bình thì tăng — xem gạch đầu dòng CHI PHÍ); <b>(b)</b> chu kỳ <code>postDelayed</code> = ĐÚNG <code>WINDOW_ENUM_THROTTLE_MS</code>, hằng số chỉ nằm một nơi; <b>(c)</b> <b>tự tắt</b> sau <code>IDLE_STOP_TICKS</code> = 4 nhịp liên tiếp không thấy cửa sổ nav ⇒ hàng đợi sạch, chi phí IPC về 0; <b>(d)</b> đường mồi lại là <code>NavWindowPump.arm()</code> gọi từ <code>onAccessibilityEvent</code> <b>và</b> từ <code>onServiceConnected</code> (mồi nguội, thêm ở vòng 2) — cả hai <b>độc lập hoàn toàn</b> với vòng enum (CLAUDE.md §3: cấm gate một đường phục hồi bằng dữ liệu mà chỉ chính đường đó mới làm mới được — bài học <code>sats &gt;= 4</code>); <b>(e)</b> cổng <code>Prefs.enabled</code> + <code>Prefs.accBooster</code> đặt trong <b>thân nhịp</b>, không chỉ ở chỗ mồi.</li>
+<li><b>Rủi ro đã biết + cách đóng (bài học B3.30)</b>: <code>WazeHudSource</code> từng poll 900&nbsp;ms sinh ~4000 lệnh/giờ <b>chạy vô điều kiện</b>, thậm chí TRƯỚC cổng <code>Prefs.enabled</code>. Ở đây: nhịp nằm SAU cả hai cổng (event handler đã gate ở đầu, thân nhịp gate lại mỗi lượt ⇒ tắt công tắc giữa chừng thì lượt kế tiếp chết ngay, không đợi (re)connect); trần chi phí do throttle chung giữ nguyên; và nhịp <b>tự tắt</b> khi không còn app dẫn.</li>
+<li><b>Quan sát "còn cửa sổ nav không"</b> lấy từ chính kết quả xếp hạng của lượt đó (<code>lastEnumSawNavWindow = ranked.isNotEmpty()</code>). Lượt bị throttle chung nuốt (đường event vừa enum xen vào) báo <code>null</code> = <b>chưa có quan sát mới</b>, KHÔNG được tính là "vắng" — tính vào là nhịp tự tắt oan đúng lúc app dẫn bắn event dày nhất.</li>
+<li><b>Degrade-safe</b>: mọi lối vào bọc <code>runCatching</code>. Một lượt nhịp ném ngoại lệ ⇒ <b>tắt hẳn nhịp</b> rồi để event sau mồi lại — nếu chỉ nuốt lỗi thì <code>running</code> kẹt <code>true</code> trong khi hàng đợi rỗng, <code>arm()</code> trả false vĩnh viễn và nhịp chết luôn. <code>onUnbind</code> <b>và</b> <code>onDestroy</code> đều <code>removeCallbacks</code> + hạ cờ (<code>onUnbind</code> không được bảo đảm gọi trong mọi ca huỷ service); <code>onServiceConnected</code> dọn hàng đợi → <code>reset()</code> → <b>mồi nguội một lượt</b> (vòng 2).</li>
+<li><b>[ĐO] mô phỏng off-car</b> (<code>NavWindowPumpTest.Sim</code>, mỗi bước 1&nbsp;ms): 5&nbsp;s im lặng sau MỘT event mồi ⇒ <b>6</b> lượt đủ-điều-kiện-nuôi <code>CaptureForegroundSource</code> (trước bản này = <b>0</b>) · 10&nbsp;s chỉ-nhịp ⇒ <b>13</b> lần enum · 10&nbsp;s <b>event dày 20&nbsp;Hz CỘNG nhịp</b> ⇒ vẫn <b>13</b> lần (≤&nbsp;13 = đúng trần 1/800&nbsp;ms hiện có) · đóng hết app dẫn ⇒ chỉ enum thêm <b>4</b> lần rồi hàng đợi sạch hẳn. <span class="warn">Đính chính 08-24:</span> con số “6” là <b>biến đếm CỦA MÔ HÌNH</b> (“enum chạy VÀ thấy cửa sổ nav”), <b>không</b> phải số lời gọi <code>CaptureForegroundSource.publish</code> thật — đường thật còn ba cổng nữa mà mô hình cố ý không mang (<code>SourceArbiter.allows</code> · có <code>winner</code>/<code>candidate</code> không · <code>NavSourceDwell.onTick</code> có bầu ra nguồn không). Ca “nhịp chạy mà 0 publish” là CÓ THẬT (vd <code>PREFER_GMAPS</code> trong khi chỉ có cửa sổ VietMap).</li>
+<li class="warn"><b>CHI PHÍ — “trần không đổi” chỉ đúng cho ĐỈNH</b> (đính chính 08-24). Ca app dẫn hiển thị mà IM EVENT trước đây tốn ~0 lệnh/giờ, nay tốn tới 1/800&nbsp;ms = <b>~4500 lượt enum/giờ</b>, mỗi lượt còn kéo theo <code>probeRanked</code> đi cây a11y có chặn cho TỪNG ứng viên; và khi lượt đó bầu được nguồn, nó làm tươi <code>CaptureForegroundSource</code> ⇒ giữ <code>ScreenCaptureNavSource</code> (<code>TICK_MS</code> = 500) chạy hết đường ⇒ <b>~7200 <code>am stack list</code> + 7200 lần chụp màn/giờ</b> ở tầng dưới. Mốc mà B3.30 coi là không chấp nhận được là ~4000 lệnh/giờ ⇒ <b>chi phí thật CHƯA ĐO trên xe và là rủi ro đang mở</b> — backlog <b>B3.13r-cost</b>. Vì sao chưa siết tiêu chí tự tắt (“có cửa sổ nav” → “có nguồn ĐỌC ĐƯỢC dữ liệu dẫn đường”): một lượt dò hụt thoáng qua sẽ tắt nhịp giữa lúc đang dẫn mà app im event, tức đánh đổi chi phí lấy đúng cái bệnh đang chữa. Phải đo trước, không đổi mù.</li>
+<li><b>Test</b>: <code>:core NavWindowPumpTest</code> <b>13</b> · <code>:app NavWindowPumpWiringContractTest</code> <b>9</b> (quét source — <code>AccessibilityService</code>/<code>Handler</code> không chạy được trên android.jar stub, cùng kỹ thuật <code>NavSourceDwellWiringContractTest</code>). <b>Mutation-check 12 phép, đỏ đúng chỗ rồi khôi phục xanh</b>. Vòng 1 (8 phép): (core) <code>arm</code>→false ⇒ 5 đỏ · <code>onTickDone</code>→luôn true ⇒ 2 đỏ · <code>tryEnum</code>→luôn true ⇒ 2 đỏ · coi <code>null</code> là "vắng" ⇒ 1 đỏ; (app) gỡ dòng mồi nhịp ⇒ 2 đỏ · gỡ <code>stopWindowPump</code> khỏi <code>onDestroy</code> ⇒ 1 đỏ · gỡ cổng <code>Prefs</code> khỏi thân nhịp ⇒ 1 đỏ · đổi chu kỳ post sang 400&nbsp;ms ⇒ 1 đỏ.</li>
+<li><b>Vòng 2 (08-24) — 4 mutant vốn SỐNG SÓT, nay đã có test giết</b> [ĐO], mỗi mutant đỏ đúng 1 test, không đỏ lây: gỡ <code>idleTicks = 0</code> khỏi <code>arm()</code> ⇒ <code>event nav xoa chuoi vang mat</code> · <code>IDLE_STOP_TICKS</code> 4→1 ⇒ <code>tu tat sau DUNG idleStopTicks luot vang, va mac dinh la 4</code> (test cũ tham số hoá theo chính hằng số nên mọi giá trị đều xanh) · thêm một <code>postDelayed(windowPumpRunnable, …)</code> thứ hai ⇒ <code>chi CO MOT noi postDelayed nhip</code> · gỡ mồi nguội ở <code>onServiceConnected</code> ⇒ <code>onServiceConnected MOI NGUOI nhip, sau khi da reset</code>.</li>
+<li><b>Vòng 2 — sửa kèm</b>: (1) <code>NavWindowPump.running</code> KHÔNG có call site production (<code>grep</code> = 0) ⇒ KDoc “service đọc cờ này” đã sai, viết lại đúng (service rẽ nhánh bằng GIÁ TRỊ TRẢ VỀ). (2) Comment “gỡ Runnable mồ côi của phiên trước” ở <code>onServiceConnected</code> sai — <code>removeCallbacks</code> so tham chiếu nên chỉ gỡ được Runnable của CHÍNH thể hiện này; đường bảo vệ thật là <code>onDestroy</code>. (3) <code>IDLE_STOP_TICKS</code> × 800&nbsp;ms = 3,2&nbsp;s &lt; <code>holderGraceMs</code> (6&nbsp;s) ⇒ nhánh <code>ranked.isEmpty()</code> KHÔNG bao giờ đủ dài để R0 <code>RELEASED</code> bắn qua đường nhịp — ghi vào KDoc, không phải hồi quy nhưng đừng viện nhịp làm đường nhả holder. (4) <code>functionBody</code> của hai contract test đếm ngoặc trên text THÔ ⇒ chuyển sang đếm sau <code>KotlinSource.stripComments</code> (một comment lẻ ngoặc là cắt sai thân hàm; cửa sổ 400 ký tự trong <code>NavSourceDwellWiringContractTest</code> đã ĐỎ vì văn bản chứ không vì hành vi).</li>
+<li><b>CHƯA on-car [CHƯA BIẾT]</b>: mở VietMap trên cụm, <b>không chạm gì 30&nbsp;s</b> ⇒ (1) <code>logcat -s NavAccess</code> (bật "Thu thập dữ liệu chẩn đoán") phải còn dòng <code>nav-window-enum</code> đều ~1,25&nbsp;Hz, (2) mũi tên trên cụm không tắt. Và đo chi phí thật của <code>getWindowsOnAllDisplays</code> ở nhịp 800&nbsp;ms trên đầu xe (<code>flagRetrieveInteractiveWindows</code> là IPC đắt).</li>
+</ul>
+
+<h3>2026-08-23 — B3.49 (đổi menu nguồn có hiệu lực TỨC THÌ)</h3>
+<ul>
+<li><b>Bệnh</b>: <code>MainActivity</code> đổi mode chỉ ghi <code>Prefs.setSourceMode</code>. <code>NavOutputOwner.tick</code> <b>không đọc <code>Prefs</code>, không hỏi <code>SourceArbiter</code></b> — nó bắn CHỈ theo độ tươi của <code>ScreenCaptureSignal</code> (<code>STALE_MS</code> = 6&nbsp;000&nbsp;ms). Hai cổng nguồn chặn được khung MỚI, nhưng mẫu CŨ vẫn sống ⇒ đang dẫn bằng <b>Waze</b> mà chọn “VietMap” (VietMap không dẫn) thì cụm còn vẽ mũi tên Waze thêm <b>tới 6 giây</b>. Lời hứa của owner ở B3.48 (“app đích danh không dẫn ⇒ không hiện gì”) khi đó đúng-<b>có-độ-trễ</b>.</li>
+<li><span class="warn">ĐÍNH CHÍNH 08-23 vòng 2 — ca hiện trường KHÔNG phải GMaps</span>: bản đầu của mục này (và của KDoc + fixture test) lấy GMaps làm ví dụ. <b>[ĐO] <code>PROBE-B</code></b>: <code>SourceArbiter.shouldFeed(…, IMAGE)</code> từ chối kênh ẢNH của gói có mốc DATA còn tươi, mà GMaps là app NOTIFICATION duy nhất (<code>NavApps.NOTIFICATION</code>) và bắn noti ~1&nbsp;Hz khi dẫn — <code>data=true · image(+0,5&nbsp;s)=false · image(+7&nbsp;s)=true</code>. ⇒ lúc đang dẫn, GMaps gần như không bao giờ là chủ kênh ảnh; với GMaps cửa đóng cụm đã là <code>stopClusterOwnedBy</code> của B3.48. Người hưởng lợi thật của hạng mục này là <b>họ Waze + VietMap</b> (hai app CHỈ có kênh ảnh). Fixture ca hiện trường đã đổi sang <code>com.waze</code>; luật thì thuần theo NHÓM nên ca GMaps vẫn được duyệt trong test ma trận.</li>
+<li><b>SAI LỆCH SPEC — bác đề xuất 2 dòng của chính hạng mục backlog</b> (<code>SourceArbiter.clear()</code> + <code>ScreenCaptureSignal.clear()</code>). Ba lý do đọc thẳng từ source: <b>(a)</b> <code>clear()</code> đặt <code>activeSource = null</code>, mà B3.48 phát lệnh dừng cụm ĐÚNG khi <code>SourceArbiter.release(pkg)</code> = true ⇒ xoá trước là <b>nuốt lệnh dừng</b>, để <code>keepAliveTick</code>/<code>heartbeat</code> ghim khung cuối <b>tới 180&nbsp;s</b> — đổi lỗi 6 giây lấy lỗi 3 phút; <b>(b)</b> <code>activeSource = null</code> mở nhánh AUTO của <code>allows</code> (<code>h == null</code> ⇒ mọi gói qua cổng) = <b>NỚI</b>; <b>(c)</b> <code>lastDataByPkg.clear()</code> gỡ mốc DATA đang chặn kênh ẢNH của cùng gói (tầng kênh R6) = nới lần hai. Còn <code>ScreenCaptureSignal.clear()</code> vô điều kiện làm <b>chính app vừa được chọn</b> nhả khung rồi dựng lại sau ~500&nbsp;ms ⇒ cụm nháy — “hiện SAI”, không phải “im lặng”.</li>
+<li><b>Vá thật — chỉ THU HẸP, 0 cổng bị nới</b>: <code>NavSourceModeSwitch.onModeSelected(previousMode, selectedMode, persist)</code> (<code>:core</code>, thuần Kotlin, <code>persist</code> là seam ghi <code>Prefs</code>). Trùng mode ⇒ <b>no-op tuyệt đối</b> (bẫy Spinner: Android bắn <code>onItemSelected</code> cả lúc <code>setSelection()</code> khi dựng màn hình). Mode đổi thật ⇒ <code>ScreenCaptureSignal.dropDisallowed { SourceArbiter.allowedByMode(pkg, modeMới, …) }</code>: bỏ <b>chỉ</b> kênh mà cổng mode mới từ chối, kênh còn được phép <b>không đụng</b>. <code>SourceArbiter</code> <b>không bị chạm một dòng</b> ⇒ đường dừng cụm của B3.48 nguyên vẹn.</li>
+<li><b>Một đường mã cho hai bố cục</b>: cả <code>res/layout/activity_main.xml</code> lẫn <code>res/layout-w960dp/activity_main.xml</code> khai cùng <code>@+id/spinner_nav_source</code>, và <code>MainActivity</code> bind ĐÚNG một lần (<code>MainActivity.kt:188</code>) ⇒ không thể có bố cục nào thiếu vá (B3.17 đã crash một lần vì đúng kiểu lệch này). Khoá bằng test đếm số lần bind.</li>
+<li><b>Test khoá</b>: <code>:app NavSourceModeSwitchTest</code> — 13 test (10 ở vòng 1, +3 ở vòng 2). Gồm ca hiện trường (đổi mode ⇒ nhịp tick KẾ TIẾP ở t+250&nbsp;ms đã im, nhả khung đúng 1 lần), <b>đối chứng đo chính cửa sổ 6 giây</b> (không đổi mode: còn bắn ở đúng mốc 6&nbsp;000&nbsp;ms, hết ở 6&nbsp;001&nbsp;ms), bẫy Spinner, “app vừa chọn không nháy”, duyệt 4 mode × 5 gói khớp <code>allowedByMode</code>, và test canh <b>“không được đụng <code>SourceArbiter</code>”</b>.</li>
+<li><b>Mutation-check vòng 1 (4 phép, đỏ đúng chỗ rồi khôi phục xanh)</b>: gỡ <code>dropDisallowed</code> ⇒ 3 đỏ · gỡ guard trùng-mode ⇒ 1 đỏ · trả <code>MainActivity</code> về HEAD ⇒ 2 đỏ · thêm <code>SourceArbiter.clear()</code> (đề xuất cũ) ⇒ 1 đỏ.</li>
+
+<li><span class="warn">VÒNG 2 — [P1] bảo đảm của vòng 1 KHÔNG thành lập</span>. Gỡ sample chỉ chặn nhịp bắn <b>SAU</b>. Nội dung đã ghi vào register HAL nằm lại tới khi khung được <b>NHẢ</b>, mà <code>NavOutputDecision</code> nhả theo <code>clear = !anyFresh</code> — <b>cả ba</b> kênh phải hết tươi. Một app khác (vẫn được phép) còn giữ một kênh tươi ⇒ khung sống tiếp, mà <code>BydHal.pushLane</code>/<code>pushCamera</code> <b>không ghi</b> <code>INSTRUMENT_GUIDE_INFO_SIMPLE_SET</code> ⇒ mũi tên của app vừa bị loại ở lại <b>vô hạn</b>, không phải 6 giây. <b>[ĐO] <code>PROBE-A</code></b> (arrow=Waze + lane=VietMap): <code>t0 arrow=1 clear=0</code> → đổi <code>PREFER_VIETMAP</code> → <code>t+250 lane=1 clear=0</code> → <code>t+500 lane=2 clear=0</code>; chỉ tới <code>t+19&nbsp;s</code> (làn mới stale) mới <code>clear=1</code>.</li>
+
+<li><b>Vá vòng 2 — yêu cầu nhả khung ONE-SHOT, có địa chỉ</b>: <code>ScreenCaptureSignal.dropDisallowed</code> trả về TẬP GÓI vừa bị gỡ kênh và ghi một yêu cầu nhả khung; <code>NavOutputOwner.tick</code> đọc <code>consumeFrameRelease()</code> ở đầu mỗi nhịp và nhả khung <b>CHỈ KHI</b> danh tính khung đang hiện (<code>framePkg</code>) nằm trong tập đó — nhả vô điều kiện là làm chính app vừa được chọn chớp tắt, tức “hiện SAI”. Nhả xong <b>dừng nhịp đó</b>; nhịp kế (250&nbsp;ms) dựng lại khung sạch từ kênh còn được phép. Cố ý <b>không</b> clear→push trong cùng một tick: <code>clearNavFrame</code> ghi cả <code>SEND_NAVI_STATUS = 4</code> và thứ tự đó chưa từng chạy trên xe (CLAUDE.md §6 — đường mới xuống cuối). Đường HAL dùng để xoá là <code>clearNavFrame</code>, <b>đã proven on-car</b> — không thêm ngữ nghĩa register mới.</li>
+
+<li><b>[P3] vá kèm — <code>dropDisallowed</code> nay là compare-and-set</b>: bản vòng 1 là đọc-rồi-ghi trên ô <code>@Volatile</code> ⇒ một <code>publish*</code> xen giữa <code>allow(pkg)</code> và <code>arrow = null</code> bị <b>nuốt trắng</b> — đúng cái “nháy khung” mà KDoc tuyên bố tránh được. Ba ô chuyển sang <code>AtomicReference</code> (cùng ngữ nghĩa bộ nhớ với <code>@Volatile</code>) và gỡ kênh bằng <code>compareAndSet</code>; khoá bằng test <b>tất định</b> — publish lại NGAY TRONG lambda <code>allow</code>, tức đúng vị trí luồng capture chen vào.</li>
+
+<li><b>[P3] vá kèm — <code>:core</code> nay tự canh được luật của mình</b>: <code>NavSourceModeSwitch</code> + <code>dropDisallowed</code> sống ở <code>:core</code> nhưng toàn bộ test khoá lại ở <code>:app</code>, nên lượt <code>./gradlew :core:test</code> chạy RIÊNG (khuyến nghị của bẫy E6) không canh gì. Thêm <code>:core NavSourceModeSwitchRulesTest</code> — 6 test (ma trận mode × gói + nhóm Waze 2 gói + bẫy Spinner + gom đủ 3 kênh vào một yêu cầu nhả khung + <code>clear()</code> dọn yêu cầu treo + đua publish↔gỡ kênh).</li>
+
+<li><b>Mutation-check vòng 2 (5 phép, đỏ đúng chỗ rồi khôi phục xanh)</b>: gỡ khối tiêu thụ yêu cầu nhả khung khỏi <code>NavOutputOwner.tick</code> ⇒ <b>1 đỏ</b> · gỡ CAS (<code>compareAndSet</code> → <code>set</code>) ⇒ <b>1 đỏ</b> (<code>:core</code>) · gỡ dòng ghi yêu cầu nhả khung khỏi <code>dropDisallowed</code> ⇒ <b>4 đỏ</b> (2 <code>:core</code> + 2 <code>:app</code>) · nhả khung VÔ ĐIỀU KIỆN (bỏ vế <code>framePkg in released</code>) ⇒ <b>1 đỏ</b> · gỡ hẳn <code>dropDisallowed</code> khỏi <code>onModeSelected</code> ⇒ <b>6 đỏ</b>.</li>
+
+<li><b>Test 5 module [ĐO] vòng 2</b> (bản sao cô lập, seal restore trước+sau, <code>:core</code> chạy RIÊNG): <code>:core</code> 869/0 · <code>:app</code> 959/1 · <code>:vehicle-contracts</code> 22/0 · <code>:car-integration</code> 28/0 · <code>:offcar-planner</code> 99/1 ⇒ <b>0 fail mới</b>. Hai fail còn lại được chứng minh KHÔNG thuộc việc này bằng <b>bản đối chứng</b> — cùng snapshot, trung hoà đúng 3 thay đổi của vòng 2, cả hai vẫn đỏ y hệt. ⚠ Số tuyệt đối là ảnh chụp lúc 08-24 ~00:00; cây có nhiều workstream song song (cùng phiên, <code>:core</code> đi từ 867/2 sang 869/0 trong 12 phút mà code B3.49 không đổi một ký tự) ⇒ đừng dùng làm baseline.</li>
+
+<li><span class="warn">CÒN HỞ — tách sang backlog B3.56 (KHÔNG cần đổi mode)</span>: cùng cơ chế <code>clear = !anyFresh</code> còn để lại mũi tên cũ ngay cả khi không ai đụng vào menu. <b>[ĐO] <code>PROBE-C</code></b>: Waze publish mũi tên lúc t=1&nbsp;s rồi thôi hẳn, VietMap publish làn mỗi 500&nbsp;ms, owner tick 4&nbsp;Hz suốt 30&nbsp;s ⇒ <code>arrow=25 lane=92 <b>clear=0</b></code>. Mũi tên Waze nằm lại cạnh dải làn VietMap. Có TỪ TRƯỚC B3.49; hai đường vá đều cần owner quyết + probe on-car (xem B3.56) nên KHÔNG vá ở vòng này.</li>
+<li><b>Còn hở, tách sang backlog B3.55</b>: nếu app cũ giữ cụm qua đường DATA mà <b>thôi hẳn gửi notification</b> đúng lúc đổi mode thì không cửa nào gọi <code>release()</code> ⇒ không ai phát STOP, keep-alive giữ khung tới 180&nbsp;s. Có từ TRƯỚC B3.49 (đường DATA); hạng mục này chỉ đóng cửa sổ 6&nbsp;s của đường ẢNH.</li>
+<li><b>Chưa on-car</b>: cần xác nhận bằng mắt trên cụm — đổi menu giữa chuyến ⇒ mũi tên app cũ tắt trong ≤ 1 nhịp keep-alive (250&nbsp;ms).</li>
+</ul>
+
+<h3>2026-08-23 — B3.40→B3.48 (VietMap đi hẳn đường ảnh + trọng tài nguồn)</h3>
+<ul>
+<li><b>B3.40 · VietMap content-desc</b> (<code>VietMapDescParser</code>, <code>:core</code>): VietMap là Flutter ⇒ probe bộ view-id kiểu OpenBYD trả <b>rỗng</b> trên mọi cửa sổ; content-desc thì đọc đủ cự ly + đường + ETA. Node phân loại <b>theo NỘI DUNG, không theo chỉ số</b> — node ETA cũng chứa một cự ly (<code>710m</code>) nên bám vị trí là ghép nhầm.</li>
+<li><b>B3.43 · 34 template mũi tên VietMap</b> sinh từ asset APK 3.3.4 (<code>maps/directions_white/*.svg</code>, 93 file). Hiệu chuẩn: template <code>turn_right</code> cách glyph THẬT <b>1 bit</b>. Biên liên-khoá ≥ <b>37 bit</b> (2×18+1), worst thật 41 — khoá bằng test, không bằng lời văn. ⚠ <b>KHÔNG dùng</b> bộ <code>hud/directions/</code> (lệch 65–72 bit, đó là chế độ HUD riêng của VietMap).</li>
+<li><b>B3.44 · gỡ VietMap + họ Waze khỏi KÊNH notification</b> (<code>NavApps.NOTIFICATION</code> = chỉ GMaps). Gốc: noti VietMap đóng mốc <code>lastDataByPkg</code> ⇒ <code>shouldFeed(IMAGE)</code> trả false ⇒ <b>tự khoá kênh ảnh của chính nó</b>. Waze gỡ vì đo 08-22 noti chỉ có <code>tickerText</code> — 0 dữ liệu, để lại là bẫy im lặng.</li>
+<li><b>B3.45 · SAI LỆCH SPEC — hồi quy do B3.44, phải vá ngay trong cùng phiên</b>: <code>handle()</code> là nơi <b>DUY NHẤT</b> gọi <code>ClusterNavLaneWidget.onNavActive</code> (clusterDebug op 39, thứ DỰNG lớp nav OEM giữa cụm, proven on-car 08-12). Thu roster ⇒ VietMap mất luôn lệnh dựng bề mặt đúng lúc mũi tên vừa chuyển sang kênh ảnh. Vá bằng seam <code>assertNavSurface</code> ở <code>NavOutputOwner</code> (mặc định no-op ⇒ test off-car không chạm shell). <b>Bài học ghi vào KDoc</b>: đường notification mang DỮ LIỆU + <b>hai</b> side-effect (bề mặt op-39 · nhịp tim <code>PREFER_*</code>) — rút một gói ra là rút cả ba.</li>
+<li><b>B3.46 · [P0] tách CỨNG hai quy ước crop</b>: <code>match</code>/<code>matchNCC</code> từng quét CHUNG 38 mục GMaps (quy ước <i>khung-vẽ có lề</i>) + <code>WazeArrowRegistry</code> (quy ước <i>bbox mực</i>). Lập luận an toàn cũ dựa trên biên Hamming ≥37 <b>bị phản biện bác</b>: nhánh <b>NCC mềm 0.45</b> không bị biên đó phủ — đo được 37/418 khung GMaps đổi mã AMAP dưới nhiễu dịch/dày-nét. Đóng bằng <b>cấu trúc</b> (hai đường không giao ở tầng code), không bằng bất đẳng thức. Test gác đổi từ lật-bit-ngẫu-nhiên sang <b>nhiễu hình học</b>.</li>
+<li><b>B3.47 · ĐÍNH CHÍNH phép đo phủ sóng</b>: bản sáng 08-23 quy thủ phạm cho <code>MAX_FILL</code> ("17/34") — <b>SAI</b>, vì đo trên proxy lưới 15×15 đã chuẩn hoá kích thước nên không thấy cổng chiều cao. Đo lại bằng khung dựng từ asset (khớp ảnh thật lệch 0.000–0.002): thủ phạm là <b><code>MAX_DP</code></b>. Chi tiết: <code>docs/diagnostics/vietmap-glyph-gate-measurement-2026-08-23.md</code>.</li>
+
+<li><b>B3.47 vòng 3 · [P1] CỔNG CŨ KHÔNG IM LẶNG KHI TRƯỢT — nó trả về một icon BẢN ĐỒ</b>. Chạy <code>NavGlyphLocator</code> <b>Kotlin thật</b> (không phải bản dựng lại bằng Python) trên 87 khung 1920×1080 ghép từ asset APK: <b>27 dò đúng / 60 ĐẢO MỒI / 0 null</b>. Đảo mồi = <b>icon POI điểm dừng xe buýt TRÊN BẢN ĐỒ</b> tại rect (603,78)-(642,117), cách mũi tên <b>560&nbsp;px</b>, qua sạch cả bốn ràng buộc cũ (đảo sáng ✓ · vành tối 4 phía ✓ · 39×39 ∈ [30,87] ✓ · lấp 0.106 ∈ [0.10,0.35] ✓) ⇒ crop SAI đi thẳng vào <code>classifyWazeInk</code>. <b>Giả định thiết kế "không dò được ⇒ im lặng" là SAI</b> — và đây là lỗi nguy hiểm hơn hẳn việc thiếu phủ sóng, nên nó được ưu tiên trước.
+
+<br><b>Cổng mới — cả ba đều là TỈ SỐ</b> (ràng buộc owner 08-23: <i>"vì nó có thể chỉnh DPI nên phải có giải pháp cho việc này, không hardcode được đâu"</i>): (a) gỡ hẳn <code>MAX_DP</code>; (b) <code>MAX_FILL</code> 0.35 → <b>0.60</b>; (c) <code>MIN/MAX_ASPECT</code> <b>[0.35, 1.45]</b> trên <code>gw/gh</code>; (d) <b><code>MAX_LEFT_ANCHOR</code> = 2.0</b> trên <code>(x₀ − winLeft) / max(gw,gh)</code>. Neo trái là tỉ số THẬT vì tử số (lề trái banner) và mẫu số (cỡ icon) đều là đại lượng dp của <i>cùng một layout</i> ⇒ không đổi khi <code>wm density</code> / <code>wm size</code> / chia đôi màn.
+
+<br><b>Hai ứng viên bị BÁC bằng số đo</b>: (1) nới <code>MAX_DP</code> 58→65 — chỉ dời chỗ chết sang app thứ ba; (2) trần <b>tương đối theo ROI</b> (<code>gh ≤ roiH/2</code>) — <code>roiH = min(0.45·winH, 220dp·scale)</code> phụ thuộc chiều cao cửa sổ nên <code>gh/roiH</code> của CÙNG một glyph chạy 0.16 → 0.49 giữa các fixture; đúng bệnh của ứng viên "tỉ lệ glyph/banner" đã bác trước đó.
+
+<br><b><code>MIN_DP</code> = 20 GIỮ LẠI, có lý do đo được</b>: nó là <b>sàn</b>, không phải trần, nên không thể loại một glyph vì glyph đó TO (đúng cơ chế đã giết họ <code>straight</code>/<code>slight</code>/<code>roundabout</code>). Và nó gánh việc thật — gỡ ra thì 3 rect icon status bar (9×15&nbsp;px @dpi240 · lấp 0.36 · <code>w/h</code> 0.60 · neo trái 0.87–2.07) qua sạch mọi cổng tỉ số rồi <b>thắng vì nằm bên trái mũi tên</b>.
+
+<br><b>Kết quả [ĐO]</b>: dò đúng <b>27 → 86/87</b> · đảo mồi <b>60 → 0</b> · null 0 → 1 (<code>fork_straight</code>, đúng là null vì glyph của nó trượt <code>ringIsDark</code>) · đi trọn đường tới mã AMAP <b>15 → 39/87</b> · <b>bbox 8 khung Waze không đổi một pixel</b>. Biên hai đầu: lấp 0.497 vs trần 0.60 (21%) · <code>w/h</code> 0.42–1.17 vs [0.35, 1.45] (17%/24%) · neo trái 1.36 vs 2.0 (47%), rác gần nhất 2.75 (38%) — chọn giữa khe, không sát mép như <code>MAX_DP</code> cũ (lọt với biên 0&nbsp;px).
+
+<br><b>Test khoá + phép thử làm ĐỎ</b>: <code>:core VietMapGlyphGateTest</code> 6 test (bảng phủ sóng · đảo mồi = 0 · khung nền không mũi tên ⇒ null · <b>bất biến tỉ lệ</b>: phóng khung ×2 + dpi ×2 ⇒ bbox ×2 đúng từng pixel · mọi cổng còn biên ≥ 10% · phủ sóng end-to-end + canary sai-hướng) và <code>NavGlyphLocatorTest.bbox Waze khong doi mot pixel nao (B3_47)</code> (8 rect chốt cứng). Khôi phục tạm cổng cũ ⇒ <b>5/6 test ĐỎ đúng chỗ</b> (<code>expected: &lt;null&gt; but was: &lt;CropRect(603,78,642,117)&gt;</code>), trong khi 12 test <code>NavGlyphLocatorTest</code> xanh ở CẢ HAI phía ⇒ bằng chứng độc lập Waze không hồi quy.
+
+<br><b>Dọn doc sai (R2.4)</b>: GỠ <code>WazeArrowRegistryTest.phu song that qua cong NavGlyphLocator</code> — nó đo trên proxy lưới 15×15 đã chuẩn hoá kích thước nên về nguyên tắc không thể thấy cổng chiều cao, và chính nó đẻ ra con số sai "17/34 · <code>MAX_FILL</code>". Cập nhật KDoc <code>WazeArrowRegistry</code> (2 chỗ), <code>NavApps</code>, <code>ScreenCaptureNavSource</code>, <code>SourceArbiterAllowsTest</code>, <code>project-context.md</code>, index doc.
+
+<br><b>Còn lại → B3.52</b>: 86 dò được nhưng chỉ 39 ra mã AMAP — nay do THIẾU TEMPLATE (34 template / ~16 lớp) + <b>10</b> tên nhiều-thành-phần lệch quy ước bbox (đo lại ở vòng 3b; bản trước ghi 4), <b>không còn do cổng locator</b>. <b>CHƯA on-car.</b></li>
+<li><b>B3.47 vòng 3b · [P1]×3 — "cổng đúng nhưng ĐẦU VÀO của cổng sai"</b> (sau ba lượt phản biện độc lập; cả ba tự tái lập được 27/60/0 và 86/0/1 nên số của vòng 3 giữ nguyên).
+<br><b>(1) <code>windowRect == null</code> ⇒ trả mũi tên của APP KHÁC.</b> Khung chia đôi dựng từ hai fixture THẬT (nửa trái Waze rẽ TRÁI · nửa phải VietMap rẽ PHẢI), hỏi về VietMap: ô cửa sổ đúng ⇒ (1000,85,1095,172) amap <b>3</b> ✓; <code>window=null</code> (nghĩa cũ = "cả khung") ⇒ (72,56,118,109) amap <b>2</b> = mũi tên của Waze với <b>Hamming 0</b> ⇒ <code>publishArrow(pkg=VietMap, amap=2)</code>. Đường vào có thật (<code>CaptureLocationResolver</code> trả null khi không parse ra task — KDoc của chính nó ghi ca đó đã xảy ra trên API 34). <b>Vá</b>: <code>locate(window: CropRect)</code> bỏ hẳn nullable (compiler chặn) + <code>handleArrowByGlyph</code> <code>return false</code> khi thiếu <code>windowRect</code>. Đây là §R-BI cho đường glyph — đường DUY NHẤT tự đi tìm rect nên <code>NavFrameIdentity.sameFrame</code> không áp được.
+<br><b>(2) <code>dpi</code> KHAI SAI làm sàn sụp.</b> [ĐO] khai ≤ 124 trên khung vẽ ở dpi 240 ⇒ trả <b>icon status bar (14,11,23,26) 9×15 cho CẢ 87/87 maneuver</b> — và test vòng 3 vẫn báo "hit 87/87" vì tiêu chí của nó là <code>rect.left &lt; 250</code>. <b>Vá</b>: sàn = <code>max(MIN_DP×dpi/160, win.height × 0.025)</code> (vế hai không đi qua dpi, vẫn là tỉ số ⇒ bất biến tỉ lệ; dư địa 1.96× glyph / 1.80× rác) + đổi tiêu chí "dò đúng" thành <b>rect nằm trọn trong ô canvas glyph đã dán</b>.
+<br><b>(3) Rơi về rect cố định SAU KHI đã đo được mũi tên ⇒ 2 ca SAI HƯỚNG.</b> <code>WAZE_ARROW_BANNER_D240</code> tra theo (target,W,H) chứ không theo package nên bị áp lên khung VietMap; [ĐO] trong 48 khung glyph không giải được, nó ra mã cho 3 và <b>2 sai hướng</b> (<code>depart_right</code> → amap <b>11</b> thay vì 3; <code>fork_slight_right</code> → amap <b>3</b> thay vì 5), cả 3 qua nhánh <b>NCC mềm</b>. <b>Vá</b>: dò được bbox ⇒ tầng glyph <b>SỞ HỮU</b> kênh ARROW nhịp đó. <b>Đảo ngược</b> quyết định Pass 1 của spec B3.27 — câu "rơi tiếp là an toàn vì hai quy ước khớp nhau nội bộ" đúng về <i>quy ước</i> nhưng bỏ sót rằng <i>rect</i> cũng là giả định. Nhánh NCC mềm của chính đường rect cố định vẫn còn (phục vụ Waze/GMaps đã proven ngoài hiện trường) ⇒ tách <b>B3.53</b>.
+<br><b>Sửa nhỏ + đính chính</b>: <code>MAX_BLOB_PX</code> chạm trần ⇒ bỏ đảo (trước: bbox dở dang vẫn qua cổng) · fixture bản-đồ-tối là <b>11</b> đảo và <b>cả 11 rớt ở SÀN</b> (không phải "12 đảo, neo trái loại 7, neo tới 93.0") · "94 glyph = 87 VietMap + 8 Waze" → <b>86</b> VietMap · ROI "~1/3 của 1.9 MB" → quên mảng <code>stack</code>, thật là <b>1.86 → 1.27 MB</b> · 8 bbox Waze là bbox trên fixture <b>dải</b> (<code>roiH</code> ~44 % thực tế): đắp lên nền bản đồ THẬT cho đủ chiều cao màn thì <code>w1920h720-d240-2line</code> ra (83,73,147,<b>148</b>) chứ không phải 144, hướng KHÔNG đổi.
+<br><b>BÁC kèm số đo</b>: nâng <code>MIN_FILL</code>→0.17 để tự loại POI (họ POI lấp tới <b>0.1676</b> vs glyph thấp nhất <b>0.2065</b> — chỉ 1.23×, mỗi mép do 1–2 mẫu ⇒ lặp lại đúng cái sai của <code>MAX_DP</code>) · cổng "chiều cao tương đối so với đảo cao nhất trong ROI".
+<br><b>Test khoá + phép thử làm ĐỎ</b>: <code>VietMapGlyphGateTest</code> +3 · <code>NavGlyphLocatorTest</code> +1 (ROI đầy đủ) và sửa 1 test yếu · <code>ScreenCaptureNavSourceContractTest</code> +2. Gỡ vế sàn theo cửa sổ ⇒ <code>dpi khai SAI…</code> ĐỎ; trả <code>handleArrowByGlyph</code> về hành vi cũ ⇒ 2 test contract <code>:app</code> ĐỎ. <b>Test 5 module</b> (chạy TÁCH vì <code>:offcar-planner:test</code> ghi đè seal ngay trong lượt): 4 module = <b>1802 / 0 fail</b>, <code>:offcar-planner</code> riêng = <b>99 / 5</b> ⇒ <b>1901 / 5</b>, 0 fail mới. <b>ĐÍNH CHÍNH</b>: "baseline 10 fail" là artefact thứ-tự-task — seal sạch thì <code>:core</code> T10SessionSafetyTest ×5 XANH. <b>CHƯA on-car.</b></li>
+<li><b>B3.48 · QUYẾT ĐỊNH OWNER đổi thiết kế trọng tài</b>: <code>PREFER_*</code> rút về <code>pkg in X</code>, bỏ cửa thoát <code>|| !isGroupFresh(X)</code> (kèm xoá <code>lastSeenByPkg</code>/<code>noteSeen</code>/<code>isGroupFresh</code>). App ưu tiên không dẫn ⇒ cụm <b>im lặng</b> — đánh đổi owner CHẤP NHẬN, không phải suy giảm cần bù. AUTO giữ nguyên (khoá bằng test).<br><b>Vòng sửa sau phản biện (cùng ngày)</b>: (1) <b>THI HÀNH</b> chữ "im lặng" — cắt nguồn thì phải kèm lệnh dừng. Cổng chỉ bỏ khung; nếu không phát STOP thì <code>AmapEmissionArbiter.heartbeat</code> (400&nbsp;ms, trần <code>ClusterBroadcaster.STALE_MS</code> = 180&nbsp;s) và <code>NavigationHudOwner.keepAliveTick</code> (250&nbsp;ms, trần <code>HudKeepAlivePolicy.DEFAULT_MAX_AGE_MS</code> = 180&nbsp;s) vẫn phát lại <b>khung CUỐI</b> ⇒ cụm + HUD ghim mũi tên rẽ với cự ly đứng yên tới 3 phút sau khi user đổi chế độ giữa chuyến — "hiện SAI", không phải "không hiện gì". Vá: <code>NavNotificationListener.stopClusterOwnedBy()</code>, gọi khi <code>SourceArbiter.release(pkg)</code> cho biết gói vừa bị cổng loại đúng là gói đang GIỮ cụm (kể cả ở nhánh "đã đến nơi" — nhánh đó gọi <code>shouldFeed</code> TRƯỚC <code>NavRepository.stop</code> nên đang nuốt mất lệnh clear = hồi quy R7/#2). AUTO không với tới được đường này theo cấu tạo (<code>!allows(pkg)</code> ⇒ <code>h != pkg</code> ⇒ <code>release</code> = false), có test khoá. (2) <b>ĐÍNH CHÍNH mệnh đề đóng</b>: bất biến chứng minh được chỉ là "hai package KHÁC NHÓM không bao giờ cùng qua cổng". Một NHÓM ≠ một PACKAGE — <code>NavApps.GMAPS</code> và <code>NavApps.WAZE</code> mỗi nhóm 2 gói, nên hai owner CÙNG NHÓM vẫn ghi xen kẽ được. Hiện trạng có từ trước B3.48, cần hạng mục backlog riêng.</li>
+<li><b>Đã GỠ (không để rác)</b>: <code>WazeHudSource</code> + quyền <code>READ_LOGS</code> (đo: 0 dòng logcat khi đang dẫn — hardware-gated, B3.21/B3.30) · <code>CaptureArrowFallback</code> (mượn mũi tên-capture vào khung notification — B3.42, hai nửa khung đến từ hai kênh và KHÔNG ghép được) · nguồn tốc độ Waze khỏi cả code lẫn UI.</li>
+<li><b>CHƯA làm</b>: toàn bộ B3.40→B3.48 <b>chưa chạy trên xe thật</b> (mới off-car + emulator) — <code>CLAUDE.md §14</code> tầng 1 chưa xanh cho 33/34 template mới. (Việc "chạy 93 khung dựng qua <code>NavGlyphLocator</code> Kotlin thật" đã XONG ở B3.47 vòng 3, xem mục trên.)</li>
+</ul>
+
+<h3>2026-08-22 — T-BIII (GUARD hợp lý hoá cự ly)</h3>
+<ul>
+<li><b><code>TurnDistancePlausibility</code></b> (<code>:core</code> thuần, MỚI, 1 lớp): <code>accept(pkg, meters, road, sampleAtMs, speedMps) → Decision(verdict, meters, blankDistance)</code> + <code>noSample()</code> + <code>reset()</code> + <code>debugState()</code>. Mọi ngưỡng ở ctor (tiêm được), mọi method <code>@Synchronized</code>. KDoc mở đầu bằng <b>TUYÊN BỐ GIỚI HẠN</b> nguyên văn.</li>
+<li><b><code>NavViewIdSource</code></b>: thêm <code>data class Reading</code> + <code>freshReadingFor()</code>; <code>publish()</code> ghi ảnh chụp CUỐI CÙNG, <code>clear()</code> xoá ĐẦU TIÊN; <code>freshTurnMetersFor()</code> viết lại qua đường mới (test cũ xanh nguyên vẹn = bằng chứng tương đương). KHÔNG phơi accessor "đọc thô" — hàm không call site là nợ (§8).</li>
+<li><b><code>TurnDistanceInterpolator.FACTOR</code></b>: <code>private const</code> → <code>const</code> (dùng CHUNG hệ số 0,95). Chỉ đổi visibility, không đụng thân hàm nào.</li>
+<li><b><code>BydHal.blankNavDistance(instr)</code></b> (MỚI, CONTENT-only): ghi <code>NAV_DISTANCE_BLANK = -1</code> vào <code>INSTRUMENT_FRONT_CROSSING_DISTANCE_SET</code> + <code>INSTRUMENT_DISTANCE_TARGET_HEAD_SET</code> (fallback <code>CROSSING_DIST_OVERSEA_ID</code>), qua <code>cachedSetInt</code>. KHÔNG chạm session latch, KHÔNG chạm icon. ⚠ <b>chưa verify on-car</b> — OQ13.</li>
+<li><b><code>NavOutputOwner</code></b>: ctor thêm <code>speed</code> (mặc định <code>SpeedProvider.mpsOrNull()</code> bọc <code>runCatching</code>) + <code>guard</code>; <code>Sink</code> thêm <code>blankDistance()</code> <b>không có default body</b> (default no-op = đúng bẫy §8); <code>tick</code> gọi <code>plausibleSegOrUnknown(plan.framePkg, now)</code>; <code>issueClear</code> gọi <code>guard.reset()</code>; <code>HalSink</code> override xuống <code>BydHal.blankNavDistance</code>.</li>
+<li><b>Lệch nhẹ so với thiết kế ban đầu</b> (ghi lại để trace): thiết kế viết <code>plausibleSegOrUnknown(now)</code> đọc <code>ScreenCaptureSignal.arrowPkg</code>. Bản cài dùng <code>plan.framePkg</code> vì B-I (§4.4) đã chuyển danh tính khung về MỘT nguồn sự thật; đọc lại global là mở đúng cái khe đọc-xé B-I vừa đóng.</li>
+<li><b>Test</b>: 29 mới (18 core guard + 3 core <code>NavViewIdSource</code> + 5 app owner + 3 app quét-source). Hai test cũ (<code>cu-ly di theo DANH TINH khung</code>, <code>cu-ly cham tuoi bang now cua tick</code>) tiêm <code>warmupSamples = 1</code> — GIỮ NGUYÊN ý định chúng khoá (danh tính khung / miền đồng hồ), chỉ tách khỏi luật warmup vốn đã có test riêng.</li>
+<li><b>Kết quả</b>: <code>:core:test</code> 772 · <code>:app:testDebugUnitTest</code> 431 · <code>:vehicle-contracts:test</code> 22 — <b>0 fail</b> (29 test mới: core 751→772, app 423→431).</li>
+<li><b>CHƯA làm</b>: probe on-car <code>blankNavDistance</code> (OQ13) · hiệu chuẩn ngưỡng bằng log thật (OQ14) · định danh tuyến (OQ12) · chặn giảm-đột-ngột (OQ15).</li>
+</ul>
+
+<h3>2026-08-20 — T4 (NavOutputOwner + BydHal payload gốc)</h3>
+<ul>
+<li><b>NavOutputDecision</b> (<code>:core</code> thuần, MỚI): <code>decide(arrowFresh,laneFresh,cameraFresh)→NavOutputPlan</code> (kênh tươi → bắn kênh đó, CỨ BẮN không gate chéo — R3a/OQ4; tất cả stale → clear) + <code>laneArrowCode(arrows)</code> (AMAP NEW_ICON của mũi tên chính) + <code>cameraIconCode(hasCamera)</code>. Unit-test <code>NavOutputDecisionTest</code> (9: arrow-only/lane+arrow/camera/cả-ba/all-stale→clear/keep-alive + map codes).</li>
+<li><b>BydHal</b> (<code>:app</code>, additive — KHÔNG đổi <code>writeNavFrame</code>): <code>pushNavigation(instr,icon,seg,road)</code> CONTENT-only (guidance icon/dualIcon/cự-ly/tên-đường, domestic 0x43F + oversea 0x1F7) · <code>pushLane(instr,LaneInfo)</code> (mỗi làn: <code>LANE_n_GUIDANCE_ARROW_SET</code> + <code>IS_LANE_n_RECOMMENDED_SET</code>, tối đa 8 làn, bước id 0x10, ưu tiên tên reflect ?: raw-id) · <code>pushCamera(instr,iconCode,dist)</code> (<code>GUIDE_INFO_CAMERA_SET 0x43F03010</code> + display-state + remaining-mileage). Dùng lại <code>cachedSetInt/Bytes</code> (skip id đã bị HAL từ chối).</li>
+<li><b>NavOutputOwner</b> (<code>:app</code>, MỚI, package <code>com.byd.clusternav</code> — anh em <code>NavigationHudOwner</code>): đọc <code>ScreenCaptureSignal</code> (tôn trọng freshness) → đẩy qua <code>BydHal.pushNavigation/pushLane/pushCamera</code>; keep-alive scheduler 250ms (<code>HudKeepAlivePolicy.DEFAULT_INTERVAL_MS</code>) re-assert mỗi tick khi còn tươi + <code>BydHal.clearNavFrame</code> đúng một lần khi tất cả kênh stale (ngưỡng <code>ScreenCaptureSignal.STALE_MS</code> 6s, hợp nguồn ẢNH tick 2Hz). Degrade-safe (runCatching mỗi kênh). Sink/clock tiêm được → unit-test <code>NavOutputOwnerTest</code> (8).</li>
+<li><b>Ranh giới sở hữu:</b> owner này KHÔNG gọi đường <code>writeNavFrame</code> — session-latch (SEND_NAVI_STATUS/SET_NAVI_SCREEN_STATUS/SDK) vẫn ĐỘC QUYỀN <code>NavigationHudOwner</code> (<code>PhysicalHudOwnershipTest</code> giữ xanh). Kênh ẢNH chỉ lên khi kênh DATA im (SourceArbiter) → hai owner không cùng ghi. Đặt owner ở package <code>com.byd.clusternav</code> (không phải <code>.navigation</code> phía :app) để tránh che khuất package :core cùng tên trong <code>SourceRoots</code> (giữ <code>NavigationOutputIsolationTest</code> xanh).</li>
+<li><b>ON-CAR-VERIFY:</b> id làn 2..8 SUY từ bước 0x10 (chỉ lane-1 có bằng chứng — OQ3); glyph làn nhiều-hướng (OQ2); mã loại camera (OQ4 — vòng này chỉ bật/tắt icon). Cự-ly mũi tên = -1 (nguồn ảnh không mang cự-ly → bỏ ghi ô, không xoá trắng); mũi tên không có hướng hợp lệ → BỎ bắn (chống rẽ giả, prereq B3.11).</li>
+<li><b>Build/verify off-car:</b> <code>JAVA_HOME=openjdk@17 ./gradlew :core:test :app:testDebugUnitTest --console=plain</code> → <b>BUILD SUCCESSFUL</b>. Suite mới xanh (<code>NavOutputDecisionTest</code> 9, <code>NavOutputOwnerTest</code> 8); guard giữ xanh (<code>PhysicalHudOwnershipTest</code> 2, <code>NavigationOutputIsolationTest</code> 4, <code>NavHalContentKeepAliveTest</code> 6, <code>LayeringRulesTest</code> 9). T6 wire + T7 on-car do stage khác.</li>
+</ul>
+
+<h3>2026-08-20 — T5 (Cluster NavOverlay) + T3 (menu chọn nguồn)</h3>
+<ul>
+<li><b>T5 — Cluster NavOverlay</b> (<code>:app</code> package mới <code>navoverlay/</code>): <code>NavClusterOverlay</code> vẽ overlay nav trên <b>display 1</b> — <b>dải LÀN dưới speed-badge</b> (<code>LaneStripView</code>: mỗi làn 1 cột glyph mũi tên, làn recommended SÁNG, còn lại MỜ) + <b>chip CAMERA bên phải speed sign</b> (<code>CameraChipView</code>: icon camera vẽ bằng Canvas + cự-ly). API <code>update(laneInfo, camera, arrow)</code> / <code>show()</code> / <code>hide()</code> cho orchestrator lái (T6). TÁI DÙNG cơ chế overlay display-1 của <code>SpeedBadgeOverlay</code> qua helper dùng-chung MỚI <code>ClusterOverlayHost</code> (TYPE_APPLICATION_OVERLAY + DisplayListener re-attach) — <b>KHÔNG đụng</b> <code>SpeedBadgeOverlay</code> (R-nf3), cửa sổ riêng. Vị trí neo theo badge (<code>Prefs.badge*</code> + <code>BadgeLayout</code>) nên dải làn/chip camera bám theo badge. Degrade-safe (off-car = no-op; nhớ frame cuối, re-show khi display 1 quay lại). Chưa wire lifecycle (T6).</li>
+<li><b>Logic THUẦN → :core</b> (R-nf1): <code>NavOverlayModel</code> (+ <code>LaneCell</code>/<code>LaneStripModel</code>) ở <code>core/.../navigation/</code> — map <code>Maneuver</code>→glyph, <code>Lane</code>→cell (glyph + sáng/mờ), camera→nhãn cự-ly (dùng lại <code>NavParse.formatMeters</code>). Unit-test <code>NavOverlayModelTest</code> (6 test, gồm VD 4-làn của owner <code>[← mờ · ↑ sáng · ↑ sáng · → mờ]</code> + degrade-safe rỗng→ẩn).</li>
+<li><b>T3 — Menu chọn nguồn</b> (<code>MainActivity</code>): selector nav-source thêm <b>VietMap</b> → nay đủ AUTO / GMaps / Waze / <b>VietMap</b> → <code>Prefs.setSourceMode</code>. Thêm dòng trạng thái <code>txt_nav_source_active</code> hiển thị <b>nguồn đang dẫn</b> (<code>SourceArbiter.activeSource</code>) đặt tên thương hiệu qua <code>NavSourceLabels</code> (THUẦN, :core) + đánh dấu "(cũ)" khi quá <code>STALE_MS</code> (đồng hồ WALL, khớp cách arbiter được nuôi); cập nhật mỗi nhịp <code>refresh()</code>. Unit-test <code>NavSourceLabelsTest</code> (3 test, gồm boundary: package arbiter phát ra ↔ nhãn).</li>
+<li><b>Build/verify off-car</b>: <code>:app:assembleDebug</code> XANH (APK build); <code>:core:test</code> XANH (9 test mới). Pure-files-in-app = 0 (LayeringRules giữ nguyên — logic thuần nằm :core). Placement fractions (làn/chip) để tinh chỉnh on-car (R6). Còn lại của B3 (T4 payload gốc, T6 wire, T7 on-car) do stage khác.</li>
+</ul>
+
+<h3>2026-08-20 — T6 (wire lifecycle) + T1b (lane capture) + T7 (emulator end-to-end)</h3>
+<ul>
+<li><b>T6 — wire</b>: <code>NavOutputOwner</code> thêm seam <code>overlaySink</code> — mỗi tick 250ms, sau quyết định push BydHal, feed (làn/camera/mũi tên TƯƠI) cho overlay (SONG SONG, không fallback). <code>NavNotificationListener</code> khởi/dừng owner + <code>NavClusterOverlay</code> cạnh <code>ScreenCaptureNavSource</code> (gate <code>Prefs.enabled</code>): connect → <code>overlay.show()</code> + <code>owner.start()</code> (overlaySink→overlay.update); disconnect → <code>owner.stop()</code> + <code>overlay.hide()</code>; <b>onDestroy → close() cả hai</b> (fix rò scheduler-thread + DisplayListener, senior review [P2]). Degrade-safe.</li>
+<li><b>T1b — lane capture</b>: <code>LaneBoundsSource</code> (<code>:core</code>) — a11y ghi bounds view lane-guidance + số làn. <code>NavAccessibilityService.maybePublishLaneBounds</code> tìm view qua viewId (<code>com.waze:id/laneGuidanceView</code>, như OpenBYD) → LaneBoundsSource. <code>ScreenCaptureNavSource.tick</code>: sau vòng per-target, nếu bounds làn tươi → crop → <code>LaneSignature.classify(laneCount)</code> → arbiter (data&gt;image) → <code>ScreenCaptureSignal.publishLane</code>.</li>
+<li><b>T7 — emulator end-to-end (emulator-5554, 960×720, adb root): MŨI TÊN ĐÃ CHỨNG MINH SỐNG.</b> Waze LEFT → screen capture → <code>NavWindowPicker pick=wazemod</code> (B3.13) → crop mũi tên → signature → <b>classify amap=2</b> (template LEFT thứ 2 thu tại chỗ) → <code>ScreenCaptureSignal.publishArrow</code> → <code>NavOutputOwner: nav output ACTIVE decided(arrow=true lane=false camera=false) sink=true</code> — owner TIÊU THỤ signal + đẩy đường BydHal. Menu T3 verified LIVE (uiautomator dump: <code>spinner_nav_source</code>="Tự động (app dẫn trước)" + <code>txt_nav_source_active</code>="Đang dẫn: —").</li>
+<li><b>P0 fix (5d4dab6):</b> MainActivity crash lúc launch trên màn rộng (xe/emulator 960dp) — <code>layout-w960dp/activity_main.xml</code> có <code>spinner_nav_source</code> nhưng THIẾU <code>txt_nav_source_active</code> (Agent B chỉ sửa <code>layout/</code> portrait) → <code>findViewById</code> null → NPE (build vẫn xanh vì R.id resolve từ portrait). Đã thêm vào w960dp; cross-check MỌI R.id MainActivity vs cả 2 variant (không sót id nào khác).</li>
+<li><b>Giới hạn emulator (trung thực):</b> (1) chỉ 1 display <code>EMU_display_0</code> — không có display-1 (cụm) → <code>NavClusterOverlay</code> không render được (render = on-car); (2) không có thiết bị BYD HAL → push BydHal là đường no-op (sink=true chỉ = call không throw); (3) làn: Waze này UI Compose (<code>mainContentCompose</code>) không có node <code>laneGuidanceView</code> → đường a11y-viewId không populate (lane=false) — cần Waze on-car HOẶC fallback crop vùng cố định; (4) camera: chưa có template VietMap (OQ4).</li>
+<li><b>Build off-car:</b> <code>:core:test</code> + <code>:app:testDebugUnitTest</code> + <code>:app:assembleDebug</code> XANH. Suite mới (<code>NavOutputDecisionTest</code>9, <code>NavOverlayModelTest</code>6, <code>NavSourceLabelsTest</code>3, <code>LaneSignatureTest</code>4, <code>NavOutputOwnerTest</code>8) + guard (<code>PhysicalHudOwnershipTest</code>, <code>NavigationOutputIsolationTest</code>, <code>LayeringRulesTest</code>) xanh.</li>
+</ul>
+
+<h3>2026-08-21 — ĐƠN GIẢN HOÁ (owner): BỎ overlay tự vẽ → cast-based</h3>
+<ul>
+<li><b>Quyết định owner:</b> B3 đổi hướng đơn giản hơn. Cụm nav = <b>CAST app THẬT</b> (VietMap/Waze) lên cụm qua Cluster Cast (hiện UI gốc app: bản đồ+mũi tên+camera), app KHÔNG tự vẽ lại. Nguồn ẢNH chỉ còn: screencap cụm → classify mũi tên → <b>đẩy lên HUD đọc-CAN</b> (loại b: HUD Taobao / HUD zin đã provision, đọc bus CAN độc lập) qua <code>NavOutputOwner→BydHal.pushNavigation</code>. Waze &amp; VietMap như nhau.</li>
+<li><b>BỎ (T5/§9-2026-08-20 SUPERSEDED):</b> xoá package <code>navoverlay/</code> (<code>NavClusterOverlay</code>, <code>ClusterOverlayHost</code>, <code>LaneStripView</code>, <code>CameraChipView</code>) + <code>:core NavOverlayModel</code> (+ <code>NavOverlayModelTest</code>) + seam <code>NavOutputOwner.overlaySink</code> + lifecycle overlay trong <code>NavNotificationListener</code> (show/hide/close/wire) + <code>Prefs.overlayDisplayId</code> mồ côi. T1b/B3.14 (lane-strip tự vẽ) MOOT.</li>
+<li><b>GIỮ:</b> capture (<code>ScreenCaptureNavSource</code>) + classify (<code>ManeuverSignature</code>/<code>WazeArrowRegistry</code>) + <code>NavOutputOwner→BydHal.pushNavigation/pushLane/pushCamera</code> (đường "lên HUD") + toàn bộ <code>speedbadge/</code> (badge tốc-độ/giới-hạn cũ, có toggle). Capture nay chỉ cần 1 case = chụp cụm (app đã cast, display cố định) thay 4-case.</li>
+<li><b>Build/verify off-car:</b> <code>:app:assembleRelease</code> XANH; <code>:app:testDebugUnitTest</code> 417 + <code>:core:test</code> 672 = 0 fail (đã trừ NavOverlayModelTest). CHƯA on-car: verify cast→capture→classify→HAL→HUD-đọc-CAN trên xe (loại b). Xem backlog <code>B3.simplify</code>.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul><li><b>Pass 3 — 2026-08-22 (B-I — bất biến MỘT-PACKAGE-MỘT-KHUNG)</b>: cài §R-BI ở ba tầng (danh tính thuần <code>NavFrameIdentity</code> · sample/bounds bất biến mang chủ · cổng ở <code>decide</code> + tại nơi sản xuất kênh làn và tier-1 bounds). Đổi chữ ký <code>NavOutputDecision.decide</code> sang <code>NavChannelState</code> (xoá overload boolean + <code>NavOutputPlan.IDLE</code> dead). Sửa kèm bug <b>hai miền đồng hồ</b> ở owner (<code>clock()</code> → <code>now</code> khi chấm tươi cự-ly view-id) và gộp guard cự-ly lẻ vào <code>plan.framePkg</code>. Refactor DRY <code>CaptureArrowFallback</code> (đường VietMap đang chạy) kèm test quét TOÀN BỘ bảng chân trị cũ. Thêm log-on-change <code>IDENTITY</code>/<code>DROP</code> (in đủ 3 pkg — bẫy R4 nhãn <code>com.waze</code> vs <code>com.chisadin.wazemod</code>). Test: core 732 · app 415 · vehicle-contracts 22, <b>0 fail</b> (baseline 715/407/22). <b>KHÔNG chữa</b> R1 (register latch → OQ7, cần probe on-car trước) và KHÔNG đụng <code>TurnDistanceInterpolator</code> (§4.4).</li><li><b>Pass 2 — 2026-08-20 (senior review full-B3, sau T6/T1b/T7)</b>: VERDICT <b>APPROVED</b> (0 P0/P1; scope đủ cho mọi deliverable verify-được off-car). Boundary-shape đọc cả 2 phía: ScreenCaptureSignal↔owner.tick, owner.Sink↔BydHal push*, overlaySink↔overlay.update, a11y LaneBoundsSource↔capture+LaneSignature, MainActivity R.id↔<b>CẢ layout/ VÀ layout-w960dp/</b> (0 id thiếu sau fix P0), overlay↔SpeedBadgeOverlay (không đụng) — tất cả OK. Parallel/no-gate + degrade-safe + writeNavFrame ownership: verified. <b>[P2] PATCHED</b>: onDestroy rò owner scheduler-thread + overlay DisplayListener → close() cả hai. <b>[P2] REPORTED (chưa patch, → T7 on-car)</b>: image-owner <code>clearNavFrame</code> ghi status=4 có thể chớp tắt centre-nav khi DATA vừa active (keep-alive DATA không re-assert status=2); đề xuất guard <code>issueClear()</code> bỏ qua khi SourceArbiter DATA còn tươi — cần validate on-car trước khi đổi clear-semantics. [P3]: overlaySink chạy 4×/s cả khi idle (no-op rẻ); OQ2/3/4 (id làn 2..8, glyph nhiều-hướng, mã camera) khoá off-car bằng test, dò on-car.</li></ul>
+
+</div></body>
+</html>

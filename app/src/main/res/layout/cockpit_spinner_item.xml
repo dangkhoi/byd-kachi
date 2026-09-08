@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  cockpit_spinner_item — DESIGN SYSTEM (Cockpit) COLLAPSED selected row shown inside a Spinner.
+  Applied via the adapters (ArrayAdapter(ctx, R.layout.cockpit_spinner_item, ...)). Styling lives in
+  @style/Cockpit.Spinner.Item so the vocabulary is reusable; horizontal padding + chevron clearance
+  come from @style/Cockpit.Spinner (paddingStart/paddingEnd), so this row only owns vertical rhythm.
+  New layout (allowed) — replaces the ugly default android.R.layout.simple_spinner_* on the sealed
+  layouts WITHOUT editing them.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Cockpit.Spinner.Item"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />

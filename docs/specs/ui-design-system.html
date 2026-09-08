@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cockpit UI Design System — ClusterNav 2.0</title>
+<!--
+  Design-system reference (Kiro-style). Documents the reusable @style/Cockpit.* vocabulary + shared
+  drawables that every ClusterNav screen must compose from. Apple-2026 style, inline CSS, light/dark.
+  Component previews are ALWAYS-DARK on purpose: the app runs on the framework dark @android:style/Theme.Material
+  and never follows system light. Diagrams/samples are visual HTML/CSS (workflow.md §3.1) — no mermaid/ascii.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+
+/* ── Always-dark cockpit preview surface (mirrors the real app tokens from colors.xml) ── */
+.ck{--c-bg:#07070b;--c-surface:#14151d;--c-surface2:#191b25;--c-tp:#f4f5fb;--c-ts:#9a9db0;--c-tt:#63667a;
+  --c-brand:#3b82f6;--c-indigo:#818cf8;--c-green:#34d399;--c-amber:#fbbf24;--c-red:#fb7185;
+  --c-hair:#242634;--c-hair2:#2e3140;
+  background:var(--c-bg);border:1px solid var(--line);border-radius:16px;padding:20px;margin:12px 0;
+  color:var(--c-tp);font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+.ck .row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.ck-card{background:linear-gradient(180deg,var(--c-surface2),var(--c-surface));border:1px solid var(--c-hair2);
+  border-radius:20px;padding:16px;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.06)}
+/* buttons */
+.ck-btn{border-radius:12px;min-height:44px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:600;border:1.5px solid transparent;cursor:default}
+.ck-btn.primary{background:linear-gradient(90deg,var(--c-brand),var(--c-indigo));color:#fff}
+.ck-btn.secondary{background:transparent;border-color:var(--c-brand);color:var(--c-brand)}
+.ck-btn.warning{background:transparent;border-color:var(--c-amber);color:var(--c-amber)}
+.ck-btn.text{background:transparent;color:var(--c-brand);border:0}
+/* icon tile */
+.ck-tile{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.ck-tile.nav{background:linear-gradient(135deg,#3b82f6,#6366f1)}
+.ck-tile.cast{background:linear-gradient(135deg,#22d3ee,#3b82f6)}
+.ck-tile.badge{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
+/* switch */
+.ck-sw{width:46px;height:26px;border-radius:999px;background:var(--c-green);position:relative;display:inline-block}
+.ck-sw::after{content:"";position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:50%;background:#fff}
+.ck-sw.off{background:var(--c-hair2)}.ck-sw.off::after{left:3px}
+/* spinner */
+.ck-spin{min-width:220px;min-height:44px;border-radius:10px;background:var(--c-surface2);border:1px solid var(--c-hair2);
+  display:flex;align-items:center;padding:0 14px;color:var(--c-tp);font-size:15px;position:relative}
+.ck-spin::after{content:"▾";position:absolute;right:14px;color:var(--c-ts)}
+.ck-popup{margin-top:8px;min-width:220px;background:var(--c-surface);border:1px solid var(--c-hair);border-radius:12px;overflow:hidden}
+.ck-popup .it{padding:12px 14px;font-size:15px;color:var(--c-tp);min-height:44px;display:flex;align-items:center}
+.ck-popup .it.sel{background:rgba(59,130,246,.13)}
+/* seekbar */
+.ck-seek{width:240px;height:26px;display:flex;align-items:center;position:relative}
+.ck-seek .track{height:4px;border-radius:2px;background:var(--c-hair2);width:100%}
+.ck-seek .fill{height:4px;border-radius:2px;background:var(--c-green);width:55%;position:absolute;left:0}
+.ck-seek .thumb{width:16px;height:16px;border-radius:50%;background:var(--c-green);position:absolute;left:calc(55% - 8px)}
+/* pill */
+.ck-pill{display:inline-flex;align-items:center;min-height:28px;padding:4px 12px;border-radius:999px;
+  background:var(--c-surface2);border:1px solid var(--c-hair2);font-size:13px;font-weight:600}
+.ck-pill.on{color:var(--c-green)}.ck-pill.warnp{color:var(--c-amber)}.ck-pill.err{color:var(--c-red)}.ck-pill.idle{color:var(--c-ts)}
+/* segment */
+.ck-seg{display:inline-flex;gap:10px}
+.ck-seg .s{min-width:64px;min-height:44px;padding:0 16px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:15px}
+.ck-seg .s.on{background:var(--c-brand);color:#fff}
+.ck-seg .s.off{background:transparent;border:1px solid var(--c-hair);color:var(--c-tp)}
+/* text specimens */
+.ck .t-title{font-size:24px;font-weight:600;color:var(--c-tp)}
+.ck .t-sub{font-size:16px;font-weight:600;color:var(--c-tp)}
+.ck .t-sect{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--c-tt)}
+.ck .t-hint{font-size:13px;color:var(--c-ts)}
+.ck .t-val{font-size:16px;font-weight:600;color:var(--c-tp)}
+/* list row */
+.ck-lr{display:flex;align-items:center;min-height:56px;border-top:1px solid var(--c-hair)}
+.ck-lr .lbl{flex:1;color:var(--c-tp);font-size:15px}
+/* swatches */
+.sw-grid{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.sw{width:132px;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px}
+.sw .chip{height:46px}.sw .lab{padding:6px 8px;background:var(--card)}
+.sw .lab b{display:block;font-size:12.5px}.sw .lab span{color:var(--muted);font-family:"SF Mono",monospace;font-size:11px}
+.cmp{display:grid;grid-template-columns:1fr;gap:6px}
+@media(min-width:720px){.two{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Cockpit UI Design System</h1>
+<p class="muted">Slug: <code>ui-design-system</code> · Framework theme <code>@android:style/Theme.Material</code> (always dark) · <span class="pill ok">Trạng thái: Current</span></p>
+<p class="muted"><b>Cập nhật</b>: 2026-09-05 · <b>Mục đích</b>: từ điển component dùng lại (<code>@style/Cockpit.*</code>) + token cho toàn bộ UI ClusterNav. Mọi màn mới phải lắp từ đây, không dựng widget mặc định lẻ.</p>
+<p class="muted">Nguồn: <code>app/src/main/res/values/{styles,themes,colors,dimens}.xml</code> + <code>app/src/main/res/drawable/*</code>. App KHÔNG có AppCompat/Material3 — parent widget là <code>@android:style/Widget.Material.*</code> (đã xác minh public ở platform-37 <code>public-final.xml</code>).</p>
+
+<h2>1. Context</h2>
+<p><b>(VI)</b> UI ClusterNav là "buồng lái" tối, luôn-tối. Trước đây các dropdown/Spinner/SeekBar còn mang look Material sáng mặc định (nền trắng, mũi tên xám) trông lạc lõng trên nền tối. Design system này (a) chuẩn hoá một bộ style dùng-lại có tên <code>Cockpit.*</code> tham chiếu token sẵn có, và (b) reskin toàn bộ Spinner + SeekBar qua <b>theme + adapter + resource mới</b> — <span class="warn">không sửa</span> hai layout bị byte-seal (<code>activity_main.xml</code> bản dọc + <code>layout-w960dp</code>).</p>
+<p><b>(EN)</b> The UI is an always-dark cockpit. Default Material spinners/seekbars still looked light-on-dark. This system standardizes a reusable <code>Cockpit.*</code> vocabulary bound to existing tokens, and re-skins every Spinner + the SeekBar via theme attrs + adapter item layouts + new drawables — with <b>zero edits</b> to the two byte-sealed layouts.</p>
+<div class="card"><b>Ràng buộc (đã tôn trọng):</b> không sửa <code>res/layout/activity_main.xml</code> · <code>res/layout-w960dp/activity_main.xml</code> · <code>values/strings.xml</code> (byte-sealed T11). Reskin đạt được ở tầng <b>theme</b> (<code>android:spinnerStyle</code>/<code>seekBarStyle</code>…) + <b>adapter</b> + <b>drawable/layout mới</b> ⇒ seal shasum không đổi (lần 17), không re-pin.</div>
+
+<h2>2. Tokens</h2>
+<h3>2.1 Bảng màu · Colour palette (<code>colors.xml</code>)</h3>
+<div class="sw-grid">
+  <div class="sw"><div class="chip" style="background:#07070b"></div><div class="lab"><b>screen_bg</b><span>#07070b</span></div></div>
+  <div class="sw"><div class="chip" style="background:#14151d"></div><div class="lab"><b>surface</b><span>#14151d</span></div></div>
+  <div class="sw"><div class="chip" style="background:#191b25"></div><div class="lab"><b>surface_2</b><span>#191b25</span></div></div>
+  <div class="sw"><div class="chip" style="background:#f4f5fb"></div><div class="lab"><b>text_primary</b><span>#f4f5fb</span></div></div>
+  <div class="sw"><div class="chip" style="background:#9a9db0"></div><div class="lab"><b>text_secondary</b><span>#9a9db0</span></div></div>
+  <div class="sw"><div class="chip" style="background:#63667a"></div><div class="lab"><b>text_tertiary</b><span>#63667a</span></div></div>
+  <div class="sw"><div class="chip" style="background:#3b82f6"></div><div class="lab"><b>brand</b><span>#3b82f6</span></div></div>
+  <div class="sw"><div class="chip" style="background:#818cf8"></div><div class="lab"><b>accent_indigo</b><span>#818cf8</span></div></div>
+  <div class="sw"><div class="chip" style="background:#34d399"></div><div class="lab"><b>ok_green</b><span>#34d399</span></div></div>
+  <div class="sw"><div class="chip" style="background:#fbbf24"></div><div class="lab"><b>warn_amber</b><span>#fbbf24</span></div></div>
+  <div class="sw"><div class="chip" style="background:#fb7185"></div><div class="lab"><b>err_red</b><span>#fb7185</span></div></div>
+  <div class="sw"><div class="chip" style="background:#2e3140"></div><div class="lab"><b>hairline_strong</b><span>#2e3140</span></div></div>
+</div>
+<p class="muted">Ngoài ra: <code>accent_blue/cyan/green/amber/red/purple/pink/teal</code> (dải nhấn), <code>hairline #242634</code>, <code>off_gray #63667a</code>, overlay <code>press_blue</code>/<code>press_amber</code>/<code>ripple_light</code>/<code>card_highlight</code>. <b>"Active/on" = xanh lá</b> (<code>ok_green</code>) qua <code>android:colorControlActivated</code>.</p>
+
+<h3>2.2 Nhịp & bo góc & type scale (<code>dimens.xml</code>)</h3>
+<table>
+<tr><th>Token</th><th>Giá trị</th><th>Dùng cho</th></tr>
+<tr><td><code>screen_pad</code></td><td>20dp</td><td>Padding mép màn hình</td></tr>
+<tr><td><code>card_pad</code></td><td>16dp</td><td>Padding trong thẻ (Cockpit.Card)</td></tr>
+<tr><td><code>gap</code></td><td>14dp</td><td>Khoảng cách giữa các thẻ</td></tr>
+<tr><td><code>touch_min</code></td><td>56dp</td><td>Vùng chạm tối thiểu (nút/spinner/seek/row)</td></tr>
+<tr><td>corners</td><td>20 / 12 / 10dp</td><td>Thẻ / nút+popup / spinner+tile (radius token = 16dp)</td></tr>
+<tr><td><code>text_title</code></td><td>24sp</td><td>Cockpit.Text.Title</td></tr>
+<tr><td><code>text_status</code></td><td>16sp</td><td>Cockpit.Text.Subtitle / Value</td></tr>
+<tr><td><code>text_body</code></td><td>15sp</td><td>Body / spinner / nút</td></tr>
+<tr><td><code>text_label</code></td><td>13sp</td><td>Hint / SectionHeader / pill</td></tr>
+</table>
+
+<h2>3. Components — <code>@style/Cockpit.*</code></h2>
+<p class="muted">Mỗi component: tên style · khi nào dùng · mẫu (preview luôn-tối, đúng token app).</p>
+
+<h3>3.1 Typography</h3>
+<div class="ck">
+  <div class="t-title">ClusterNav</div>
+  <div class="t-sub" style="margin-top:8px">Navigation + HUD</div>
+  <div class="t-sect" style="margin-top:10px">Chế độ hiển thị</div>
+  <div class="t-hint" style="margin-top:6px">Dẫn đường trên cụm + HUD</div>
+  <div class="t-val" style="margin-top:10px">1.2 km</div>
+</div>
+<table>
+<tr><th>Style</th><th>Khi dùng</th></tr>
+<tr><td><code>Cockpit.Text.Title</code></td><td>Tiêu đề trang (24sp medium, ink chính)</td></tr>
+<tr><td><code>Cockpit.Text.Subtitle</code></td><td>Tiêu đề thẻ / mục trong hàng tiêu đề (16sp medium)</td></tr>
+<tr><td><code>Cockpit.Text.SectionHeader</code></td><td>Nhãn nhóm nhỏ IN HOA xám (letter-spacing .08)</td></tr>
+<tr><td><code>Cockpit.Text.Hint</code></td><td>Dòng phụ / tóm tắt dưới tiêu đề (13sp muted)</td></tr>
+<tr><td><code>Cockpit.Text.Value</code></td><td>Giá trị đọc-ra (cự ly, tốc độ, mức) (16sp medium)</td></tr>
+</table>
+
+<h3>3.2 Card &amp; Icon tile</h3>
+<div class="two">
+  <div class="ck"><div class="ck-card"><div class="row"><span class="ck-tile nav">🧭</span><div><div class="t-sub">Navigation + HUD</div><div class="t-hint">Dẫn đường trên cụm + HUD</div></div></div></div></div>
+  <div>
+    <p><code>Cockpit.Card</code> — thẻ tính năng chuẩn: nền gradient tối (<code>@drawable/card_bg</code>) + <code>card_pad</code>. Bọc LinearLayout dọc gồm hàng tiêu đề + thân.</p>
+    <p><code>Cockpit.IconTile</code> — ô 34dp bo 10dp dẫn đầu hàng tiêu đề; nền gradient theo tính năng là các <code>@drawable/tile_*</code>, glyph trắng <code>ic_*_g</code>.</p>
+  </div>
+</div>
+
+<h3>3.3 Buttons</h3>
+<div class="ck"><div class="row">
+  <span class="ck-btn primary">Chiếu full cụm</span>
+  <span class="ck-btn secondary">Kết nối lại</span>
+  <span class="ck-btn warning">Dừng toàn bộ</span>
+  <span class="ck-btn text">Khắc phục sự cố</span>
+</div></div>
+<table>
+<tr><th>Style</th><th>Nền</th><th>Khi dùng</th></tr>
+<tr><td><code>Cockpit.Button.Primary</code></td><td><code>btn_primary</code> (blue→indigo)</td><td>Hành động chính, chữ trắng</td></tr>
+<tr><td><code>Cockpit.Button.Secondary</code></td><td><code>btn_outline</code></td><td>Hành động phụ, viền + chữ brand</td></tr>
+<tr><td><code>Cockpit.Button.Warning</code></td><td><code>btn_warning_outline</code></td><td>Cẩn trọng/huỷ (Dừng, Trả cụm, Dọn sạch)</td></tr>
+<tr><td><code>Cockpit.Button.Text</code></td><td>trong suốt</td><td>Hành động nhẹ inline (expander)</td></tr>
+</table>
+<p class="muted">Cả 4 đều phẳng (<code>stateListAnimator=@null</code>, elevation 0), chữ thường (<code>textAllCaps=false</code>), cao ≥ <code>touch_min</code>; trạng thái pressed/disabled do selector trong drawable.</p>
+
+<h3>3.4 Switch · SeekBar · StatusPill · SegmentButton</h3>
+<div class="ck">
+  <div class="row" style="gap:22px">
+    <span><span class="ck-sw"></span> <span class="t-hint">on</span></span>
+    <span><span class="ck-sw off"></span> <span class="t-hint">off</span></span>
+    <span class="ck-seek"><span class="track"></span><span class="fill"></span><span class="thumb"></span></span>
+  </div>
+  <div class="row" style="gap:10px;margin-top:16px">
+    <span class="ck-pill on">Đang dẫn</span><span class="ck-pill warnp">Cảnh báo</span>
+    <span class="ck-pill err">Mất kết nối</span><span class="ck-pill idle">—</span>
+  </div>
+  <div class="row" style="margin-top:16px"><span class="ck-seg"><span class="s on">Làm mát</span><span class="s off">Sưởi</span></span></div>
+</div>
+<table>
+<tr><th>Style</th><th>Parent</th><th>Khi dùng</th></tr>
+<tr><td><code>Cockpit.Switch</code></td><td>Widget.Material.CompoundButton.Switch</td><td>Bật/tắt tính năng; "on" glow xanh lá (theme). Opt-in.</td></tr>
+<tr><td><code>Cockpit.SeekBar</code></td><td>Widget.Material.SeekBar</td><td>Thanh trượt giá trị; fill+thumb xanh lá khớp switch. <b>Wired toàn app</b> qua <code>seekBarStyle</code>.</td></tr>
+<tr><td><code>Cockpit.StatusPill</code></td><td>—</td><td>Viên trạng thái; màu CHỮ mang nghĩa (xanh/hổ phách/đỏ/xám).</td></tr>
+<tr><td><code>Cockpit.SegmentButton</code></td><td>Widget.Material.CompoundButton.RadioButton</td><td>Radio dạng pill (fill brand khi chọn). Opt-in — KHÔNG áp global.</td></tr>
+</table>
+
+<h3>3.5 Spinner (dropdown)</h3>
+<div class="two">
+  <div class="ck">
+    <div class="ck-spin">Bật (Giữa + ETA)</div>
+    <div class="ck-popup"><div class="it sel">Bật (Giữa + ETA)</div><div class="it">Tắt</div></div>
+  </div>
+  <div>
+    <p><code>Cockpit.Spinner</code> — mặt điều khiển: nền <code>surface_2</code> bo 10dp + viền <code>hairline_strong</code> + chevron cuối (<code>@drawable/spinner_bg</code>); popup mở trên panel tối <code>@drawable/popup_bg</code>; <code>overlapAnchor=false</code> (list rơi xuống dưới). <b>Wired toàn app</b> qua <code>android:spinnerStyle</code> ⇒ cả 6 Spinner đổi mặt mà KHÔNG sửa layout.</p>
+    <p><code>Cockpit.Spinner.Item</code> = hàng đã-chọn (thu gọn, <code>@layout/cockpit_spinner_item</code>). <code>Cockpit.Spinner.DropDownItem</code> = hàng trong popup (<code>@layout/cockpit_spinner_dropdown_item</code>, nền chọn <code>spinner_item_bg</code>, cao <code>touch_min</code>).</p>
+  </div>
+</div>
+
+<h3>3.6 List row</h3>
+<div class="ck"><div class="ck-card">
+  <div class="ck-lr" style="border-top:0"><span class="lbl">Nút vô-lăng 328 → Kiki</span><span class="ck-btn warning" style="min-height:40px">Xoá</span></div>
+  <div class="ck-lr"><span class="lbl">Nút táp-lô 330 → Google</span><span class="ck-btn warning" style="min-height:40px">Xoá</span></div>
+</div></div>
+<p><code>Cockpit.ListRow</code> = hàng ngang cao <code>touch_min</code> (nhãn + control cuối); <code>Cockpit.ListRowLabel</code> = nhãn chính (ink chính, weight 1). Dùng cho danh sách bơm động (vd danh sách gán phím-thoại).</p>
+
+<h3>3.7 L2 Cockpit — Group / Row / Hero / Pill màu / Segmented / SpeedDial / ClusterPreview</h3>
+<p class="muted">Bộ thành phần "buồng lái" L2 (ref <code>ui-visual-upgrade-l2.html</code>) — <b>Stage 1 chỉ THÊM style + drawable + custom view</b>; Stage 2 sẽ lắp chúng vào layout. Group = hộp có chiều sâu (gradient + viền + bo 20 + đổ bóng qua <code>elevation</code>), bên trong xếp Row ngăn bởi RowDivider.</p>
+<div class="ck">
+  <div style="background:linear-gradient(170deg,var(--c-surface2),var(--c-surface));border:1px solid var(--c-hair);border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.55)">
+    <div class="row" style="min-height:58px;padding:13px 16px;gap:13px">
+      <span class="ck-tile nav">🧭</span>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600">Navigation + HUD</div><div class="t-hint" style="font-size:12px">Cụm: chờ dẫn đường</div></div>
+      <span style="display:inline-flex;background:#0c0d13;border:1px solid var(--c-hair2);border-radius:11px;padding:3px">
+        <span style="padding:6px 13px;border-radius:8px;background:linear-gradient(150deg,var(--c-brand),var(--c-indigo));color:#fff;font-size:12.5px;font-weight:600">Giữa + ETA</span>
+        <span style="padding:6px 13px;color:var(--c-ts);font-size:12.5px;font-weight:600">Tắt</span>
+      </span>
+    </div>
+    <div style="height:1px;background:var(--c-hair)"></div>
+    <div class="row" style="min-height:58px;padding:13px 16px;gap:13px">
+      <span class="ck-tile" style="background:linear-gradient(150deg,#f472b6,#db2777)">🔥</span>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600">Ghế mát / sưởi</div><div class="t-hint" style="font-size:12px">Làm mát · lái Mức 1</div></div>
+      <span style="display:inline-flex;background:#0c0d13;border:1px solid var(--c-hair2);border-radius:11px;padding:3px">
+        <span style="padding:6px 13px;border-radius:8px;background:linear-gradient(150deg,#f472b6,#fbbf24);color:#fff;font-size:12.5px;font-weight:600">Mát</span>
+        <span style="padding:6px 13px;color:var(--c-ts);font-size:12.5px;font-weight:600">Sưởi</span>
+      </span>
+    </div>
+  </div>
+  <div class="row" style="gap:10px;margin-top:16px">
+    <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(52,211,153,.15);color:var(--c-green)">Đang chiếu</span>
+    <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(251,113,133,.16);color:var(--c-red)">Mất</span>
+    <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(251,191,36,.16);color:var(--c-amber)">Cảnh báo</span>
+    <span style="width:60px;height:60px;border-radius:50%;border:3px solid var(--c-red);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(251,113,133,.08)"><b style="font-size:22px">48</b><span style="font-size:9px;color:var(--c-ts)">km/h</span></span>
+    <span style="width:120px;height:54px;border-radius:12px;border:1px solid var(--c-hair2);background:#0b0c12;position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;color:var(--c-tt);font-size:11px"><span style="position:absolute;left:0;top:0;bottom:0;width:42%;background:rgba(59,130,246,.16);border-right:1px solid var(--c-brand)"></span><span style="position:absolute;right:0;top:0;bottom:0;width:58%;background:rgba(167,139,250,.14)"></span>40:60</span>
+  </div>
+</div>
+<table>
+<tr><th>Style / View</th><th>Nền / API</th><th>Khi dùng</th></tr>
+<tr><td><code>Cockpit.Group</code></td><td><code>group_bg</code> + <code>elevation 8dp</code> + <code>clipToOutline</code></td><td>Hộp nhóm L2 có chiều sâu; xếp Row bên trong</td></tr>
+<tr><td><code>Cockpit.Row</code></td><td>ngang, minHeight 58dp, pad 16/13dp</td><td>Một hàng tính năng (tile + tiêu đề + control)</td></tr>
+<tr><td><code>Cockpit.RowDivider</code></td><td>cao 1dp, <code>@color/hairline</code></td><td>Vạch ngăn giữa hai Row</td></tr>
+<tr><td><code>Cockpit.Row.Tile</code></td><td>= <code>Cockpit.IconTile</code> (34dp)</td><td>Ô icon dẫn đầu Row</td></tr>
+<tr><td><code>Cockpit.Row.Title</code> / <code>.Subtitle</code></td><td>15sp medium ink / 12sp ink2</td><td>Tiêu đề + tóm tắt trong Row</td></tr>
+<tr><td><code>Cockpit.HeroCard</code></td><td><code>hero_card_bg</code> + <code>elevation 12dp</code></td><td>Thẻ hero trạng-thái-sống trên cùng</td></tr>
+<tr><td><code>Cockpit.HeroLead</code> / <code>.HeroDist</code> / <code>.HeroStreet</code></td><td>12sp caps / 34sp / 14sp</td><td>Nhãn dẫn · cự-ly lớn · tên đường trong hero</td></tr>
+<tr><td><code>Cockpit.Pill.Green/Red/Amber</code></td><td><code>pill_bg_*</code> (~15% accent) + chữ accent</td><td>Viên trạng thái màu (on / mất / cảnh báo)</td></tr>
+<tr><td><code>Cockpit.Button.Secondary.Cyan</code></td><td><code>btn_secondary</code> (surf2+line2) + chữ cyan</td><td>Nút phụ nhẹ inline ("Kiểm tra / Sửa")</td></tr>
+<tr><td><code>SegmentedControlView</code></td><td><code>setOptions(List)</code> · <code>selectedIndex</code> · <code>onSelected</code> · <code>warm</code></td><td>Điều khiển phân đoạn (thay Spinner chế-độ-cụm + RadioGroup ghế ở Stage 2)</td></tr>
+<tr><td><code>SpeedDialView</code></td><td><code>setSpeed(Int?)</code> (null → "—")</td><td>Vòng tốc-độ nhỏ (viền đỏ) cho hero</td></tr>
+<tr><td><code>ClusterPreviewView</code></td><td><code>setSplit(leftFraction, label)</code> · <code>setFull(label)</code></td><td>Preview cụm mini chia đôi (trái xanh / phải tím)</td></tr>
+</table>
+<p class="muted">Các custom view Canvas trên (Segmented là <code>LinearLayout</code>) đều FRAMEWORK-only, lấy màu từ palette; drawable dùng ARGB alpha-mix (<code>pill_bg_*</code>, tint segment/preview) vì không có token pha-alpha — cùng quy ước với <code>tile_*</code>. Góc gradient Android là bội số 45° (mockup 150/160/170° → 315/270°).</p>
+
+<h2>4. Widget re-skin — how the dropdowns/seekbar got styled without touching sealed layouts</h2>
+<div class="flow" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0">
+  <div class="card" style="margin:0;flex:1 1 150px"><b>Theme</b><br><span class="muted">AppTheme đặt <code>spinnerStyle</code>, <code>spinnerItemStyle</code>, <code>spinnerDropDownItemStyle</code>, <code>dropDownListViewStyle</code>, <code>seekBarStyle</code></span></div>
+  <div style="color:var(--accent);font-weight:700;font-size:18px">▶</div>
+  <div class="card" style="margin:0;flex:1 1 150px"><b>Drawable mới</b><br><span class="muted"><code>spinner_bg</code> (+<code>ic_chevron_down</code>), <code>popup_bg</code>, <code>spinner_item_bg</code>, <code>pill_bg</code></span></div>
+  <div style="color:var(--accent);font-weight:700;font-size:18px">▶</div>
+  <div class="card" style="margin:0;flex:1 1 150px"><b>Adapter + layout mới</b><br><span class="muted"><code>cockpit_spinner_item</code> / <code>cockpit_spinner_dropdown_item</code> qua <code>ArrayAdapter</code>+<code>setDropDownViewResource</code></span></div>
+</div>
+<ul>
+<li><b>6 Spinner</b> (<code>spinner_cluster_mode</code>, <code>spinner_autostart_app/left/right</code>, <code>spinner_voicekey_button/target</code>) nhận mặt cockpit từ <code>android:spinnerStyle</code> (không có <code>@+id</code>/layout nào bị sửa).</li>
+<li><b>1 SeekBar</b> (<code>seek_badge_size</code>) nhận fill/thumb xanh lá từ <code>android:seekBarStyle</code>.</li>
+<li><b>Adapter</b>: 4 call-site (<code>MainActivity.kt</code> ×3 + <code>CastAutostart.kt</code> ×1) đổi từ <code>android.R.layout.simple_spinner_*</code> → <code>R.layout.cockpit_spinner_item</code> + <code>setDropDownViewResource(R.layout.cockpit_spinner_dropdown_item)</code>. Hành vi (lựa chọn/listener/persist) không đổi.</li>
+</ul>
+
+<h2>5. Custom Views (không phải widget khung)</h2>
+<table>
+<tr><th>View</th><th>File</th><th>Vai trò</th></tr>
+<tr><td><code>SeatDiagramView</code></td><td><code>app/.../comfort/SeatDiagramView.kt</code></td><td>Sơ đồ ghế vẽ Canvas theo mockup <code>.car</code>: thân bo-đỉnh (26/20) gradient + kính chắn gió xanh + 4 ô ghế (fl/fr/rl/rr) bo 10/13; OFF = viền line2 + nền #171922, mức≥1 tô cyan(mát)/amber(sưởi) + quầng sáng + nhãn "Lái/Phụ·M1"; ghế sau mờ (α.35) khi 2-ghế. API giữ: <code>setSeatCount/setMode/setLevel/getLevel/onSeatLevelChanged</code>.</td></tr>
+<tr><td><code>Pm25GaugeView</code></td><td><code>app/.../comfort/Pm25GaugeView.kt</code></td><td>Đồng hồ bụi PM2.5 vẽ Canvas theo mockup <code>.gauge</code>: cung 270°, track #242634 stroke 7 round-cap, cung giá trị green(≤GOOD)→amber(≤MIDDLE)→red(HEAVY+), tâm = nhãn VI lớn + "PM2.5" nhỏ. API giữ: <code>setLevel</code>.</td></tr>
+<tr><td><code>SegmentedControlView</code></td><td><code>app/.../ui/SegmentedControlView.kt</code></td><td>Điều khiển phân đoạn (<code>LinearLayout</code>): track <code>segment_track_bg</code>, đoạn chọn trên <code>segment_selected_bg</code> (blue→indigo) hoặc <code>_warm_bg</code> (pink→amber) khi <code>warm</code>. API: <code>setOptions</code> · <code>selectedIndex</code> (setter KHÔNG bắn sự kiện) · <code>onSelected</code> · <code>warm</code>.</td></tr>
+<tr><td><code>SpeedDialView</code></td><td><code>app/.../ui/SpeedDialView.kt</code></td><td>Vòng tốc-độ Canvas (~60dp): viền đỏ + nền đỏ ~8% + số km/h lớn giữa + "km/h" nhỏ. API: <code>setSpeed(Int?)</code> (null → "—").</td></tr>
+<tr><td><code>ClusterPreviewView</code></td><td><code>app/.../ui/ClusterPreviewView.kt</code></td><td>Preview cụm mini Canvas: bo góc, chia LEFT (xanh) / RIGHT (tím) theo tỉ số, vách mảnh, nhãn giữa tuỳ chọn. API: <code>setSplit(leftFraction,label)</code> · <code>setFull(label)</code>.</td></tr>
+<tr><td>Icon tile</td><td><code>drawable/tile_*</code> + <code>ic_*_g</code></td><td>Ô 34dp gradient + glyph trắng (xem <code>Cockpit.IconTile</code>).</td></tr>
+<tr><td>Split-ratio cells</td><td><code>CastSplitRatioButtons.kt</code></td><td>9 ô tỉ-lệ dựng code (FrameLayout), thanh màu chia đôi + số l:r; viền chọn brand.</td></tr>
+</table>
+<p class="muted">Custom View vẽ Canvas phải lấy màu từ palette (brand/ok_green/warn_amber/err_red) — không hardcode hex mới. Nếu cần màu mới → thêm token vào <code>colors.xml</code> trước.</p>
+
+<h2>6. Reuse rules (bắt buộc)</h2>
+<div class="card">
+<ul>
+<li><b>Compose, đừng chế:</b> UI mới PHẢI lắp từ <code>@style/Cockpit.*</code> + drawable dùng-chung (<code>card_bg</code>, <code>btn_*</code>, <code>spinner_bg</code>, <code>popup_bg</code>, <code>pill_bg</code>, <code>segment_bg</code>, <code>tile_*</code>).</li>
+<li><b>Cấm widget mặc định lẻ:</b> không dựng button/spinner/seekbar bằng look Material mặc định hay style một-lần. Spinner/SeekBar mới tự động đúng nhờ theme; button/switch/pill/segment → gắn <code>style="@style/Cockpit.*"</code>.</li>
+<li><b>Thiếu component → thêm vào design system TRƯỚC:</b> nếu cần thứ chưa có, thêm style mới vào <code>styles.xml</code> (kèm comment) + drawable/token nếu cần, rồi mới dùng. Không đẻ style rời trong layout.</li>
+<li><b>Token là nguồn sự thật:</b> chỉ tham chiếu tên màu/dimen; không hardcode hex/sp/dp trong style hay layout.</li>
+<li><b>Không đụng layout byte-seal:</b> <code>activity_main.xml</code> (2 bản) + <code>strings.xml</code>. Đổi diện mạo widget qua theme/adapter/resource mới (mẫu §4).</li>
+</ul>
+</div>
+
+<h2>7. Verification</h2>
+<ul>
+<li>V-build: <code>./gradlew :app:assembleDebug -q</code> → exit 0. <span class="ok">[ĐO] PASS</span></li>
+<li>V-test: <code>./gradlew test --rerun-tasks --continue -Dorg.gradle.parallel=false</code> → 5 module, 0 fail (core 796 · car-integration 44 · offcar-planner 99 · vehicle-contracts 22 · app debug 461 · app vehicleTest 472). <span class="ok">[ĐO] PASS</span></li>
+<li>V-seal: <code>shasum -a256 res/layout/activity_main.xml</code> = <code>70b57ce9…0700d</code> (khớp pin lần 17) · <code>strings.xml</code> = <code>8300437c…4cdd</code>. Không sửa, không re-pin. <span class="ok">[ĐO] PASS</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>app/src/main/res/values/styles.xml</code> (design-system, file này tài liệu hoá) · <code>themes.xml</code> (wiring) · <code>colors.xml</code>/<code>dimens.xml</code> (token).</li>
+<li>Drawable: <code>spinner_bg.xml</code> · <code>ic_chevron_down.xml</code> · <code>popup_bg.xml</code> · <code>spinner_item_bg.xml</code> · <code>pill_bg.xml</code> · <code>segment_bg.xml</code> · <code>card_bg.xml</code> · <code>btn_*.xml</code> · <code>tile_*.xml</code>.</li>
+<li>Drawable L2 (Stage 1 mới): <code>group_bg.xml</code> · <code>hero_card_bg.xml</code> · <code>btn_secondary.xml</code> · <code>pill_bg_green/red/amber.xml</code> · <code>turn_tile_bg.xml</code> · <code>speed_dial_bg.xml</code> · <code>segment_track_bg.xml</code> · <code>segment_selected_bg.xml</code> · <code>segment_selected_warm_bg.xml</code> · <code>ic_turn_right_g.xml</code> · <code>ic_clock_g.xml</code>.</li>
+<li>Custom view L2 (Stage 1 mới): <code>app/.../ui/SegmentedControlView.kt</code> · <code>SpeedDialView.kt</code> · <code>ClusterPreviewView.kt</code>; tinh chỉnh <code>comfort/SeatDiagramView.kt</code> + <code>Pm25GaugeView.kt</code>.</li>
+<li>Layout: <code>layout/cockpit_spinner_item.xml</code> · <code>layout/cockpit_spinner_dropdown_item.xml</code>.</li>
+<li>Adapter: <code>MainActivity.kt</code> (clusterMode / voicekey button / voicekey target) · <code>modules/clustercast/CastAutostart.kt</code> (autostart app/left/right).</li>
+<li>Seal: <code>offcar-planner/.../ExpansionTransportFenceTest.kt</code> <code>T11_HASHES</code> (lần 17).</li>
+<li>Lineage: <code>docs/specs/ui-visual-upgrade-l2.html</code> (L2 palette/tiles/hero).</li>
+</ul>
+
+</div></body>
+</html>

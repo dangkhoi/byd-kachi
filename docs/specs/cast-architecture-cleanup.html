@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cast Architecture Cleanup — remove v2 stack, single simplified.* path</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;--accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--ok-bg:#0e2a16;--warn-bg:#332b00;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px}
+  .wrap{max-width:940px;margin:0 auto;padding:44px 24px 100px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:29px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  h2{font-size:21px;margin:44px 0 6px;padding-top:16px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--ok-bg);color:var(--ok)}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0;background:var(--warn-bg)}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px;color:var(--warn)}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:110px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.good{border-color:var(--ok);background:var(--ok-bg)}.fnode.bad{border-color:var(--line);opacity:.6;text-decoration:line-through}
+  .arrow{color:var(--ink2);font-size:18px}.en{color:var(--ink2);font-style:italic}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="eyebrow">byd-cluster-2 · Consolidated Spec</p>
+<h1>Cast Architecture Cleanup — remove the v2 stack, keep one <code>clustercast.simplified.*</code> path</h1>
+<div class="meta">
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-17</span>
+  <span><b>Slug:</b> cast-architecture-cleanup</span>
+</div>
+<div class="meta"><span class="pill">STATUS: DONE — 996 tests green · signed 1.0 APK · zero clustercast.v2 refs</span></div>
+
+<h2 id="context"><span class="n">1</span>Context</h2>
+<p><b>(VI)</b> Trước refactor, hệ Cast tồn tại <b>hai stack song song</b>: (1) stack <b>v2</b> cũ — pipeline phức tạp (CastCoordinator/Executor/Planner/Policy/Recovery/journal) + lớp <code>cast.platform</code> + <code>CastFacade</code> (855 LOC) + <code>cast.transport</code> (car-integration); (2) stack <b>simplified</b> mới (SimpleCastRuntime/Coordinator, projection-first, 4 trạng thái). Runtime sống chạy trên <code>simplified.*</code>, nhưng <code>cast.platform.CastAppCatalog</code> (dùng bởi MainActivityCastController + FloatingBubbleService sống) còn <code>import clustercast.v2.*</code> → v2 chưa phải code chết, mà là <b>đang gánh</b> qua CastAppCatalog. Closeout 1.30 §4f cố ý để nguyên "để không gây bất ổn".
+<br><span class="en">EN — Two parallel cast stacks existed; the live runtime is simplified.* but CastAppCatalog (live) still bridged to v2, so v2 was load-bearing, not dead. This refactor removes v2 and leaves a single clean stack.</span></p>
+
+<h2 id="req"><span class="n">2</span>Requirements</h2>
+<table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance</th></tr></thead><tbody>
+<tr><td><b>R1</b></td><td>Một stack cast duy nhất = <code>clustercast.simplified.*</code>; không còn package <code>clustercast.v2</code>.</td><td><code>grep clustercast.v2</code> rỗng; v2 dirs biến mất.</td></tr>
+<tr><td><b>R2</b></td><td>Tách <code>CastAppCatalog</code> khỏi v2 sang package model trung lập, giữ nguyên hành vi (favorites/protected/scale/dpi/style/bubble prefs + CastPolicy/CastAppPresentation).</td><td>CastAppCatalog <code>import clustercast.model.*</code>; test CastPolicyTest/CastAppPresentationTest/CastFavoriteProtectToggleTest/CastAppCatalogDensityDpiTest xanh.</td></tr>
+<tr><td><b>R3</b></td><td>Không hồi quy tính năng cast sống (bubble/cast/return, DiagActivity, CastAutomationService, boot).</td><td>Các component manifest còn nguyên; 5 suite xanh; APK build+ký.</td></tr>
+<tr><td><b>R4</b></td><td>Fork A: gỡ luôn công cụ off-car observe (CarExecCli observe + cast.transport + RecordedDevice); giữ carexec nav/HUD catalog + navopen + scripts/vehicle.</td><td>CarExecCli còn steps/scenarios; navopen + scripts nguyên.</td></tr>
+</tbody></table>
+
+<h2 id="design"><span class="n">3</span>Design</h2>
+<div class="diagram"><div class="flow">
+  <div class="fnode good"><div class="h">MainActivityCastController · FloatingBubbleService · BubbleActionDispatcher</div><div class="s">live UI</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode good"><div class="h">SimpleCastRuntime / SimpleCastCoordinator</div><div class="s">clustercast.simplified.* (giữ)</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode good"><div class="h">CastAppCatalog</div><div class="s">cast.platform (giữ) → clustercast.model.* (mới)</div></div>
+</div><div class="flow" style="margin-top:10px">
+  <div class="fnode bad"><div class="h">clustercast.v2.*</div><div class="s">CastCoordinator/Executor/Planner/Policy/Recovery…</div></div>
+  <div class="fnode bad"><div class="h">CastFacade + cast.platform runtime</div></div>
+  <div class="fnode bad"><div class="h">cast.transport + RecordedDevice + observe</div></div>
+</div></div>
+<p><b>Tách CastAppCatalog:</b> chuyển các type model/policy thuần (CastPolicy, CastAppPresentation, CastAppRow, AppProtectionSource, AppIconState, AppRowAction, AppUnavailableReason, TargetClass, TargetEvidence, ClusterStyle, CastManualTargetSnapshot) sang package mới <code>com.byd.clusternav.modules.clustercast.model</code> (ở <code>:core</code> để cả app + core dùng). CastAppCatalog đổi 1 dòng import → <b>hết phụ thuộc v2</b>. Sau đó toàn bộ v2 + satellite chết được xoá an toàn (compiler + test là lưới an toàn).</p>
+
+<h2 id="changed"><span class="n">4</span>What changed</h2>
+<ul>
+  <li><b>Thêm</b>: <code>core/.../clustercast/model/</code> (types trung lập) + relocate CastPolicyTest, CastAppPresentationTest.</li>
+  <li><b>Xoá 101 file</b>: toàn bộ <code>clustercast/v2/</code> (core main 26 + core test 46 + app test 2), <code>CastFacade</code> + satellite app chết (CastActivityRefresh/AutoStart, CastOperationStatus, CastRowActions, CastRetryPrompt, CastSplitRatioSetting, CastClearClusterAction, VietmapBubbleExperiment, CastAppRows, CastActivityWork, CastGuidanceDialogs, CastActivityStatusTimers) + test của chúng, <code>cast.platform</code> chết (CastAndroidRuntime/AndroidAtomicBytes/CastInProcessDisplay — <b>giữ</b> CastAppCatalog), <code>cast.transport</code> (CastAdbGateway/CastPlacementCommands), <code>RecordedDevice</code> + RealFixtureParsingTest.</li>
+  <li><b>Sửa 4</b>: CarExecCli (bỏ lệnh <code>observe</code> + import v2/transport; giữ steps/scenarios/navopen), CarExecCliTest, CastAppCatalogDensityDpiTest, LayeringRulesTest.</li>
+  <li><b>Fix latent</b>: re-pin <code>ExpansionTransportFenceTest</code> T11 hash của <code>strings.xml</code> (7e5113f7→4b068200) — đổi từ phiên isolation app_name="Cluster Nav 2.0" nhưng chưa re-pin (test bị cache nên chưa lộ).</li>
+</ul>
+
+<h2 id="verify"><span class="n">5</span>Verification</h2>
+<pre><code>grep -rl 'clustercast\.v2' --include=*.kt   → EMPTY (v2 dirs gone)
+./gradlew :core:test :app:testDebugUnitTest :vehicle-contracts:test :car-integration:test :offcar-planner:test --rerun-tasks
+  → core 481 · app 366 · vehicle-contracts 22 · car-integration 28 · offcar-planner 99 = 996 tests, 0 fail
+aapt2: com.byd.clusternav2 / "Cluster Nav 2.0" / vc1 / not-debuggable / no TEST_ADAS_*/TEST_SPEED_LIMIT / signed 6fcdf1b9
+Manifest cast components intact (DiagActivity, ClusterBlackActivity, FloatingBubbleService, CastAutomationService).</code></pre>
+
+<div class="callout"><div class="lbl">⚠ On-car re-verification required</div>
+Refactor này đụng đường cast sống. Off-car đã xanh (compile + 996 test + assemble + aapt2), NHƯNG <b>cast phải được test lại trên xe</b> (chiếu/return, bubble, boot auto-cast, DiagActivity) trước khi tin tưởng. <span class="en">EN — this touched the live cast path; off-car is green but on-car cast must be re-verified before trusting.</span></div>
+
+<h2 id="rev"><span class="n">6</span>Reviewer Log</h2>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px"><b>Pass 1 — 2026-08-17</b> — Fork A executed via 2-stage sub-agent DAG (decouple → delete) + independent orchestrator verification. Caught a latent strings.xml fence-pin failure the cached sub-agent run missed (exposed via <code>--rerun-tasks</code>). 996 tests green; APK verified. Pending: senior review + security scan.</div>
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

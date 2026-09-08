@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  spinner_item_bg — DESIGN SYSTEM (Cockpit) dropdown ROW background. Translucent blue
+  (@color/press_blue) on pressed/selected, transparent otherwise, so a highlighted row reads clearly
+  on the dark @drawable/popup_bg panel. Used by @layout/cockpit_spinner_dropdown_item and
+  @style/Cockpit.Spinner.DropDownItem. New drawable (allowed).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true" android:drawable="@color/press_blue" />
+    <item android:state_selected="true" android:drawable="@color/press_blue" />
+    <item android:state_activated="true" android:drawable="@color/press_blue" />
+    <item android:drawable="@android:color/transparent" />
+</selector>

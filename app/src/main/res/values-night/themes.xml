@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ClusterNav themes — DARK "cockpit" (NIGHT qualifier). Light/dark foundation Stage 1.
+  This is the CURRENT always-dark cockpit theme, moved to values-night/. AppTheme parent = FRAMEWORK
+  DARK @android:style/Theme.Material (no AppCompat / no Material3). values/themes.xml holds the LIGHT
+  sibling (@android:style/Theme.Material.Light). Both files carry the SAME attribute overrides pointing
+  at @color NAMES that resolve per mode. Only the parent + windowLightStatusBar/windowLightNavigationBar
+  differ from the light file (here FALSE = light icons on the dark bars).
+  Style NAMES (AppTheme, ClusterTheme) are unchanged so AndroidManifest + activities keep resolving.
+-->
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.Material">
+        <!-- Cockpit background (fixed dark, radial-tinted drawable) -->
+        <item name="android:windowBackground">@drawable/window_bg</item>
+        <item name="android:colorBackground">@color/screen_bg</item>
+
+        <!-- Brand — action bar background is dark cockpit surface; blue stays the ACCENT (colorAccent). -->
+        <item name="android:colorPrimary">@color/surface_2</item>
+        <item name="android:colorPrimaryDark">@color/screen_bg</item>
+        <item name="android:colorAccent">@color/brand</item>
+
+        <!-- Controls: Switch/CheckBox/RadioButton "on" glows green; "off"/normal is muted ink -->
+        <item name="android:colorControlActivated">@color/ok_green</item>
+        <item name="android:colorControlNormal">@color/text_secondary</item>
+        <item name="android:colorControlHighlight">@color/ripple_light</item>
+
+        <!-- Text inks (light on dark) — also tints the Spinner dropdown arrow via colorControlNormal -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_tertiary</item>
+
+        <!-- ── Cockpit design-system widget styles (docs/specs/ui-design-system.html) ──────────────
+             Re-skin the framework Spinner/SeekBar that the sealed layouts instantiate WITHOUT editing
+             those byte-sealed files. All parents are public @android:style/Widget.Material.*; the styles
+             reference @color names so they resolve per mode. -->
+        <item name="android:spinnerStyle">@style/Cockpit.Spinner</item>
+        <item name="android:spinnerItemStyle">@style/Cockpit.Spinner.Item</item>
+        <item name="android:spinnerDropDownItemStyle">@style/Cockpit.Spinner.DropDownItem</item>
+        <item name="android:dropDownListViewStyle">@style/Cockpit.DropDownListView</item>
+        <item name="android:seekBarStyle">@style/Cockpit.SeekBar</item>
+
+        <!-- System bars dark with light icons -->
+        <item name="android:statusBarColor">@color/screen_bg</item>
+        <item name="android:navigationBarColor">@color/screen_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <style name="ClusterTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

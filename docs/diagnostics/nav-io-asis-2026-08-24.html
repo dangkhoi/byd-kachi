@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nav I/O — Bản đồ HIỆN TRẠNG (as-is) · ClusterNav 2.0</title>
+<!--
+  DIAGNOSTICS — bản đồ HIỆN TRẠNG (as-is) mọi luồng nav input→process→output.
+  Mục đích: owner đọc để thấy toàn cảnh trước khi thiết kế to-be. CHỈ as-is + bằng chứng file:line.
+  KHÔNG chứa đề xuất/to-be (owner tự làm). Diagram = HTML visual (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--in:#0071e3;--proc:#8e5cff;--out:#1a7f37;--gate:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--in:#2997ff;--proc:#bf5cff;--out:#30d158;--gate:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+/* diagram */
+.layers{display:flex;flex-direction:column;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0}
+.band{border-radius:12px;padding:12px}
+.band-in{background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.25)}
+.band-proc{background:rgba(142,92,255,.06);border:1px solid rgba(142,92,255,.28)}
+.band-out{background:rgba(26,127,55,.06);border:1px solid rgba(26,127,55,.28)}
+.band .blab{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+.band-in .blab{color:var(--in)}.band-proc .blab{color:var(--proc)}.band-out .blab{color:var(--out)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.node{flex:1 1 150px;min-width:130px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;text-align:center;font-size:13px}
+.node b{display:block;font-size:13.5px}.node span{color:var(--muted);font-size:11.5px}
+.node.g{border-color:var(--gate);border-width:1.5px}
+.node .gate{display:block;color:var(--gate);font-size:11px;font-weight:600;margin-top:3px}
+.center{text-align:center;color:var(--proc);font-weight:700;font-size:18px;margin:2px 0}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px;text-align:center;font-size:13px;min-width:104px}
+.fnode b{display:block;font-size:13.5px}.fnode span{color:var(--muted);font-size:11.5px}
+.fnode.gate{border-color:var(--gate);border-width:1.5px}
+.arrow{color:var(--accent);font-weight:700;font-size:17px;padding:0 1px}
+.arrow.stop{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 0;font-size:12px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+.tagx{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;color:#fff}
+.tagx.bg{background:var(--ok)}.tagx.fg{background:var(--warn)}
+.grp{font-size:11px;font-weight:700;padding:1px 8px;border-radius:5px;color:#fff;white-space:nowrap}
+.grp.any{background:var(--ok)}.grp.nocast{background:var(--accent)}.grp.cast{background:var(--warn)}
+.tobe-banner{background:rgba(191,95,0,.10);border:1px solid var(--gate);border-radius:12px;padding:14px 18px;margin:18px 0}
+.node.any{border-color:var(--ok);border-width:1.5px}.node.nocast{border-color:var(--accent);border-width:1.5px}.node.cast{border-color:var(--warn);border-width:1.5px}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Nav I/O — Bản đồ HIỆN TRẠNG (as-is)</h1>
+<p class="muted">Diagnostics · <span class="pill">Cập nhật 2026-08-24</span> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill wait">Chỉ AS-IS — chưa có to-be</span></p>
+<p>Vẽ lại TẤT CẢ luồng dữ liệu dẫn đường hiện đang chạy trong code: đầu vào → xử lý → các bề mặt đầu ra (HUD kính · cụm giữa+ETA · dải làn · badge tốc độ · Cast). Mọi khẳng định gắn <code>file:line</code>. Tài liệu này KHÔNG đề xuất thay đổi — để owner đọc rồi tự chốt to-be. Bằng chứng lõi (phễu/HUD/cụm/screen-capture) đọc trực tiếp source; 3 luồng phụ (badge/Cast/a11y) trace qua sub-agent read-only rồi đối chiếu.</p>
+
+<h2>1. Toàn cảnh một trang</h2>
+<div class="layers">
+  <div class="band band-in">
+    <div class="blab">Đầu vào — nguồn tín hiệu</div>
+    <div class="row">
+      <div class="node"><b>GMaps</b><span>thông báo (noti)</span><span class="tagx bg">chạy NỀN</span></div>
+      <div class="node"><b>VietMap widget</b><span>tốc độ/giới hạn/sắp tới</span><span class="tagx bg">chạy NỀN</span></div>
+      <div class="node"><b>VietMap a11y</b><span>mô tả: đường/ETA/cự ly</span><span class="tagx fg">cần HIỆN</span></div>
+      <div class="node"><b>Waze a11y</b><span>view-id: cự ly/đường/ETA</span><span class="tagx fg">cần HIỆN</span></div>
+      <div class="node"><b>Chụp màn (glyph)</b><span>mũi tên VietMap/Waze</span><span class="tagx fg">cần HIỆN</span></div>
+    </div>
+  </div>
+  <div class="center">▼</div>
+  <div class="band band-proc">
+    <div class="blab">Xử lý</div>
+    <div class="row">
+      <div class="node"><b>PHỄU NAV</b><span>NavRepository.ingest (GMaps) · ingestContent (ảnh) → NavigationSessionCoordinator</span></div>
+      <div class="node"><b>Owner đường ẢNH</b><span>NavOutputOwner.tick → chỉ khi có mũi tên → phễu</span></div>
+      <div class="node"><b>Owner BADGE</b><span>SpeedSignLifecycleCoordinator — phễu RIÊNG, không đụng nav</span></div>
+      <div class="node"><b>Cast</b><span>SimpleCastCoordinator — track RIÊNG</span></div>
+    </div>
+  </div>
+  <div class="center">▼</div>
+  <div class="band band-out">
+    <div class="blab">Đầu ra — bề mặt</div>
+    <div class="row">
+      <div class="node"><b>Dải làn zin</b><span>broadcast AMAP</span><span class="gate">VÔ ĐIỀU KIỆN</span></div>
+      <div class="node g"><b>Cụm giữa + ETA</b><span>HAL SET_NAVI_SCREEN_STATUS</span><span class="gate">GATE: Cast OFF</span></div>
+      <div class="node g"><b>HUD kính</b><span>HAL GUIDE_INFO (nội dung)</span><span class="gate">HIỆN cũng bị GATE: Cast OFF ⚠</span></div>
+      <div class="node"><b>Badge tốc độ</b><span>overlay display 1 + HAL ISA</span><span class="gate">độc lập</span></div>
+      <div class="node"><b>Cast surface</b><span>app trên display 1</span><span class="gate">khi Cast ON</span></div>
+    </div>
+  </div>
+  <div class="legend">
+    <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> input</span>
+    <span class="sw"><span class="box" style="background:rgba(142,92,255,.15)"></span> xử lý</span>
+    <span class="sw"><span class="box" style="background:rgba(26,127,55,.15)"></span> output</span>
+    <span class="sw"><span class="box" style="border-color:var(--gate);border-width:1.5px"></span> có cổng chặn (gate)</span>
+    <span class="sw"><span class="tagx bg">NỀN</span> đọc được khi app chạy nền</span>
+    <span class="sw"><span class="tagx fg">HIỆN</span> chỉ đọc khi app hiện trên màn</span>
+  </div>
+</div>
+<div class="card"><b>Đọc nhanh:</b> chỉ <b>GMaps</b> và <b>widget tốc độ VietMap</b> có dữ liệu khi app chạy NỀN. Mọi thứ turn-by-turn của VietMap/Waze (mũi tên, và cả cự ly/đường qua a11y) chỉ lấy được khi app ĐANG HIỆN trên màn (foreground hoặc đang cast). <span class="warn">Ô "HUD kính" hiện đang bị cùng cổng "Cast OFF" với cụm-centre</span> — đây là chỗ owner đã chỉ ra là gộp sai (xem §7).</div>
+
+<h2>2. Đầu vào — 6 nguồn, khác nhau căn bản</h2>
+<table>
+<tr><th>Nguồn</th><th>Gói</th><th>Mang gì</th><th>Nền?</th><th>Vào đâu</th><th>file:line</th></tr>
+<tr><td><b>GMaps noti</b></td><td><code>com.google…maps</code> (roster <code>NavApps.NOTIFICATION</code> = CHỈ GMaps)</td><td>mũi tên (bitmap) + cự ly + đường + ETA — ĐỦ khung</td><td class="ok">CÓ</td><td><code>NavRepository.ingest</code></td><td><code>NavNotificationListener:542</code></td></tr>
+<tr><td><b>VietMap widget</b></td><td><code>vn.vietmap.live</code></td><td>CHỈ tốc độ / giới hạn / giới hạn sắp tới + cự ly</td><td class="ok">CÓ (AppWidgetHost)</td><td>luồng badge (KHÔNG vào nav)</td><td><code>VietMapWidgetBridge</code>; pusher <code>NavNotificationListener:313</code></td></tr>
+<tr><td><b>VietMap a11y desc</b></td><td><code>vn.vietmap.live</code> (Flutter → không view-id)</td><td>đường / ETA / cự ly / rẽ kế — KHÔNG có mũi tên</td><td class="warn">KHÔNG (foreground)</td><td><code>NavViewIdSource</code> (chỉ tô cho khung mũi tên)</td><td><code>NavAccessibilityService:816</code>, <code>VietMapDescParser</code></td></tr>
+<tr><td><b>Waze a11y view-id</b></td><td><code>com.waze</code> / <code>com.chisadin.wazemod</code> (arsc đều <code>com.waze</code>)</td><td>navBarDistance / navBarStreetLine / ETA + bounds mũi tên</td><td class="warn">KHÔNG (cần hiện)</td><td><code>NavViewIdSource</code> + <code>CaptureBoundsSource</code></td><td><code>NavAccessibilityService:310,333</code></td></tr>
+<tr><td><b>Chụp màn — mũi tên</b></td><td>VietMap + Waze</td><td>mũi tên (glyph → mã AMAP)</td><td class="warn">KHÔNG (app phải hiện/cast)</td><td><code>ScreenCaptureSignal.arrow</code></td><td><code>ScreenCaptureNavSource:handleArrowByGlyph</code></td></tr>
+<tr><td><b>GMaps a11y (đối chiếu)</b></td><td><code>com.google…maps</code></td><td>cự ly trên màn = ground-truth để nội suy</td><td class="warn">active-window</td><td><code>TurnDistanceInterpolator.refine</code></td><td><code>NavAccessibilityService</code> scan</td></tr>
+</table>
+<p class="muted">Điểm mấu chốt [ĐO]: <b>a11y desc/view-id KHÔNG bao giờ tự dựng khung nav</b> — nó chỉ tô thêm (đường/ETA/cự ly) cho một khung mà <b>mũi tên</b> đã tạo. <code>NavContentBuilder.fromImage</code> có <code>arrow ?: return null</code> (<code>NavContentBuilder.kt:76</code>), và <code>NavOutputOwner.tick</code> chỉ gọi phễu bên trong <code>if (plan.pushArrow)</code>. ⇒ VietMap/Waze không có mũi tên (chụp màn) thì cự ly/đường của chúng KHÔNG tới được phễu.</p>
+
+<h2>3. Luồng 1 — GMaps (đường CHẠY ĐƯỢC trên xe)</h2>
+<div class="flow">
+  <div class="fnode"><b>GMaps</b><span>notification nền</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Listener</b><span>handle() phân loại mũi tên</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>ingest()</b><span>fromNotification → phễu</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Coordinator</b><span>startSession/acceptFrame</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>3 đầu ra</b><span>làn · cụm-centre · HUD</span></div>
+</div>
+<p>GMaps mang đủ mọi thứ trong thông báo và chạy nền ⇒ đi thẳng vào phễu, không cần app hiện. Đây là lý do GMaps lên HUD/cụm bình thường. <span class="muted">Bằng chứng: <code>NavNotificationListener:542</code> → <code>NavRepository.ingest</code> (<code>NavRepository.kt</code> ~:76) → <code>NavContentBuilder.fromNotification</code>.</span></p>
+
+<h2>4. Luồng 2 — VietMap / Waze (đường ẢNH, đang KHÔNG lên được)</h2>
+<div class="flow">
+  <div class="fnode"><b>App VietMap/Waze</b><span>phải ĐANG HIỆN</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode gate"><b>Chụp màn</b><span>foreground→d1 · cast→d0 · nền→null</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode gate"><b>Glyph → mũi tên</b><span>nhận 39/87 kiểu</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>NavOutputOwner.tick</b><span>fromImage (+a11y tô)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>ingestContent</b><span>vào CÙNG phễu</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode gate"><b>owner.push</b><span>GATE Cast OFF</span></div>
+  <div class="arrow stop">▶</div>
+  <div class="fnode"><b>cụm-centre + HUD</b></div>
+</div>
+<p>Phễu ĐÃ chung với GMaps (F4 bước 1 — <code>NavOutputOwner.kt:158</code> gọi <code>ingestContent</code>). Nhưng đường này chỉ chạy khi có <b>mũi tên chụp được</b>, và mũi tên chỉ có khi app HIỆN. Ba trạng thái app:</p>
+<table>
+<tr><th>Trạng thái VietMap/Waze</th><th>Chụp màn</th><th>Kết quả</th><th>file:line</th></tr>
+<tr><td><b>Chạy nền</b> (đang nhìn cụm)</td><td class="warn">NOT_ACTIVE → offscreen → <code>null</code></td><td class="warn">không mũi tên → không khung → không gì lên</td><td><code>CaptureRouter.selectCase:170</code>; <code>OffscreenMirrorCapturer</code> (token là scaffold)</td></tr>
+<tr><td><b>Hiện màn chính</b></td><td>fission <code>-d1</code> OK</td><td>lên được, nhưng đang nhìn app rồi (ít nghĩa); glyph 39/87</td><td><code>ScreenCaptureTransport.FISSION_MAIN=1</code></td></tr>
+<tr><td><b>Cast lên cụm</b></td><td>fission <code>-d0</code> OK</td><td class="warn">có mũi tên vào phễu, NHƯNG Cast ON ⇒ <code>owner.push</code> bị bỏ qua ⇒ cụm-centre & HUD KHÔNG ghi</td><td><code>NavRepository.kt</code> gate <code>if(navOnlyMode)</code> ~:198</td></tr>
+</table>
+
+<h2>5. Luồng 3 — Badge tốc độ (độc lập hoàn toàn)</h2>
+<div class="flow">
+  <div class="fnode"><b>VietMap widget</b><span>RemoteViews nền</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>pusher</b><span>freshness=FRESH</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode gate"><b>SpeedSign coordinator</b><span>5 cổng: epoch/source/monotonic/master/value</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>2 port</b><span>CLUSTER · HUD</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>overlay display 1</b><span>+ HAL ISA 0x4B40001C</span></div>
+</div>
+<p>Đây là phễu RIÊNG, KHÔNG đụng <code>NavRepository</code>/<code>writeNavFrame</code>/cụm-centre. Chỉ dùng chung service <code>NavNotificationListener</code> làm chỗ nối + công tắc master <code>Prefs.enabled</code>.</p>
+<ul>
+<li><b>Cluster port</b> → <code>SpeedBadgeOverlay</code> = cửa sổ overlay <code>TYPE_APPLICATION_OVERLAY</code> trên <b>display 1</b> (không phải HAL register). Gate <code>Prefs.badgeEnabled</code>. <span class="muted"><code>SpeedBadgeOverlay</code> CLUSTER_DISPLAY_ID=1.</span></li>
+<li><b>HUD port</b> → <code>HalSpeedSignPort</code> ghi HAL register <b>khác họ</b> <code>0x4B40001C</code> (ISA giới hạn tốc độ) — <span class="muted"><code>HalSpeedSignPort.kt:22-23,45</code>.</span></li>
+<li><b>Badge "sắp tới"</b> = overlay thứ 2 trên display 1, đi thẳng từ owner (<code>UpcomingBadgeDecision</code>), <b>bỏ qua</b> coordinator/port.</li>
+<li><b>⚠ Phụ thuộc projection</b> (đính chính 2026-08-24): overlay badge cần <code>getDisplay(1)</code> non-null; theo comment vòng đời của chính <code>SpeedBadgeOverlay</code>, display 1 chỉ có khi <b>Cast đang projecting</b> ("display 1 absent… or Cast not yet projecting"; "re-attaches when display 1 returns e.g. Cast toggled off→on"). ⇒ KHÔNG cast → không vẽ badge overlay lên cụm. Phần HAL ISA (register) thì không cần display 1.</li>
+</ul>
+
+<h2>6. Luồng 4 — Cast cluster (track riêng)</h2>
+<div class="flow">
+  <div class="fnode"><b>Nút nổi / Home</b><span>tap · long-press</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>SimpleCastCoordinator</b><span>Off→Opening→Idle→Casting</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>dadb :5555</b><span>shell</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>AutoContainer + am start</b><span>app lên display 1</span></div>
+</div>
+<ul>
+<li>Trạng thái thật (sealed): Off · Opening · Idle · CastingFull · CastingSplit · Stopping · Closing · Error — <span class="muted">một owner <code>SimpleCastCoordinator</code>.</span></li>
+<li>Cơ chế: shell qua dadb <code>localhost:5555</code>; bề mặt = <code>service call AutoContainer 2 i32 1000 i32 &lt;op&gt;</code> (mở [30,16,35]); đưa app lên cụm = <code>am start … --display 1 --windowingMode 5</code> / <code>am stack move-task</code>. <span class="muted"><code>SimpleCastRuntime.kt:47-50,73-92</code>; <code>AppMover.kt:35-88</code>; <code>ProjectionManager.kt:41-58</code>.</span></li>
+<li><code>castEnabled()</code> = <b>công tắc master Cast</b>, pref bền <code>cast_enabled</code> mặc định false — KHÔNG phải trạng thái đang-cast-live. Set bởi <code>CastEnableSwitch</code>. <span class="muted"><code>SimpleCastRuntime.kt:256</code>.</span></li>
+<li><b>Giao với nav</b>: <code>navOnlyMode = !castEnabled()</code> (<code>NavRepository.kt:243</code>). Cụm-centre "Giữa+ETA" chỉ ghi khi <code>navOnlyMode</code> — comment ngay tại chỗ: <i>"when Cast is ON the Cast track owns the cluster surface and we must not fight it"</i> (<code>NavRepository.kt:195-197</code>). Cast + cụm-centre dùng CHUNG bề mặt display 1 ⇒ loại trừ nhau theo thiết kế.</li>
+</ul>
+
+<h2>7. Các bề mặt đầu ra — ai ghi, ghi bằng gì, cổng nào</h2>
+<table>
+<tr><th>Bề mặt</th><th>Chủ ghi</th><th>Kênh / register</th><th>Cổng chặn</th><th>Vô điều kiện?</th></tr>
+<tr><td><b>Dải làn zin (strip)</b></td><td><code>ClusterBroadcaster.emitLane</code></td><td>broadcast AUTONAVI/AMAP (<code>toAmapIcon</code>), nhịp tim 400ms</td><td>—</td><td class="ok">CÓ (trong lambda coordinator)</td></tr>
+<tr><td><b>Cụm giữa + ETA</b></td><td><code>NavigationHudOwner.push</code> → <code>BydHal.writeNavFrame</code></td><td><code>SET_NAVI_SCREEN_STATUS_SET</code> (0x4C10E015) dựng overlay nav cụm + <code>SEND_NAVI_STATUS=2</code></td><td class="warn"><code>navOnlyMode</code> (Cast OFF)</td><td>KHÔNG</td></tr>
+<tr><td><b>HUD kính</b></td><td>(cùng) <code>BydHal.writeNavFrame</code></td><td><code>INSTRUMENT_GUIDE_INFO_SIMPLE</code> (0x43F01010) + cự ly + PATHNAME + bản oversea (0x1F7) + SDK guidance</td><td class="warn"><code>navOnlyMode</code> (Cast OFF) — <b>đang trói chung, ⚠ chỗ owner báo sai</b></td><td>KHÔNG</td></tr>
+<tr><td><b>HUD (đường adapter)</b></td><td><code>ClusterBroadcaster.emitHud</code></td><td><b>STUB — "zero physical writes"</b> (không ghi gì)</td><td>—</td><td class="muted">no-op</td></tr>
+<tr><td><b>Badge tốc độ (cụm)</b></td><td><code>ClusterSpeedBadgePort</code></td><td>overlay <code>TYPE_APPLICATION_OVERLAY</code> display 1</td><td><code>Prefs.badgeEnabled</code></td><td>độc lập nav</td></tr>
+<tr><td><b>Badge tốc độ (HUD ISA)</b></td><td><code>HalSpeedSignPort</code></td><td>HAL <code>0x4B40001C</code> (họ Statistic)</td><td><code>Prefs.hud</code></td><td>độc lập nav</td></tr>
+<tr><td><b>Làn + camera (đường ảnh)</b></td><td><code>NavOutputOwner</code> → <code>BydHal.pushLane/pushCamera</code></td><td>làn 0x198020xx · camera 0x43F03xxx (khác họ guidance)</td><td>tươi kênh ảnh</td><td>chưa qua phễu (nợ F7)</td></tr>
+<tr><td><b>Cast surface</b></td><td><code>SimpleCastCoordinator</code></td><td>OEM AutoContainer + am start, display 1</td><td>khi Cast ON</td><td>—</td></tr>
+</table>
+<p class="muted">Lưu ý register: <code>INSTRUMENT_GUIDE_INFO_SIMPLE</code> (mũi tên/nội dung) được <b>CẢ cụm-centre LẪN HUD kính đọc</b> (project-context §3). <code>SET_NAVI_SCREEN_STATUS</code> là thứ RIÊNG dựng overlay giữa cụm. Cả hai đang nằm chung trong một lời gọi <code>writeNavFrame</code>, và cả lời gọi đó bị gate <code>navOnlyMode</code>. Chủ ghi guidance register hiện là DUY NHẤT <code>NavigationHudOwner</code> (<code>BydHal.pushNavigation</code> đã hết call site — B3.54).</p>
+
+<h2>8. Hiện trạng "lộn xộn" — quan sát (không phải đề xuất)</h2>
+<div class="card">
+<ul>
+<li><b>HUD kính bị trói vào cổng của cụm.</b> Nội dung mà HUD kính đọc (<code>GUIDE_INFO_SIMPLE</code>…) nằm chung <code>writeNavFrame</code> với cờ dựng bề mặt cụm (<code>SET_NAVI_SCREEN_STATUS</code>), và cả cục bị gate <code>navOnlyMode</code>. ⇒ Cast ON thì HUD kính KHÔNG được app ghi. <span class="muted">Owner [ĐO on-car]: HUD là bề mặt riêng, không nên phụ thuộc Cast.</span></li>
+<li><b>Đường adapter HUD (<code>emitHud</code>) là stub</b> — không ghi vật lý gì. Nên HUD kính hiện CHỈ có một đường nuôi là <code>writeNavFrame</code> (đang bị gate).</li>
+<li><b>VietMap/Waze phụ thuộc screen-capture</b> = chỉ đọc được khi app HIỆN. Không có kênh nền cho turn-by-turn (khác GMaps có noti nền). a11y desc/view-id không tự dựng khung.</li>
+<li><b>Tên gọi gây nhầm:</b> <code>NavigationHudOwner</code> thực chất ghi <b>cụm-centre</b> (KDoc của chính nó: <i>"It is NOT the windshield HUD… Named 'Hud' for historical reasons"</i>), còn HUD kính chỉ là hệ quả vì đọc chung register nội dung.</li>
+<li><b>Làn + camera đường ảnh</b> vẫn ghi thẳng HAL từ <code>NavOutputOwner</code> (chưa qua phễu — nợ F7). Register khác họ nên không xung đột, nhưng là đường thứ hai song song.</li>
+<li><b>Badge tốc độ</b> là hệ thống HOÀN TOÀN riêng (coordinator/owner/port riêng, overlay + register ISA riêng). Không liên quan phễu nav.</li>
+</ul>
+</div>
+
+<h2>9. References (file:line)</h2>
+<ul>
+<li>Phễu: <code>NavRepository.kt</code> (ingest ~:76 · ingestContent ~:94 · ingestFrame ~:133 · gate navOnlyMode ~:198 · navOnlyMode=!castEnabled ~:243) · <code>NavContentBuilder.kt:76</code></li>
+<li>Cụm-centre/HUD: <code>NavigationHudOwner.kt</code> (push, KDoc "not windshield HUD") · <code>BydHal.kt</code> (writeNavFrame · clearNavFrame · pushLane/pushCamera · pushNavigation dead)</li>
+<li>Dải làn / HUD adapter: <code>ClusterBroadcaster.kt</code> (emitLane · emitHud stub · heartbeat 400ms)</li>
+<li>Đường ảnh: <code>NavOutputOwner.kt:158,285</code> · <code>NavOutputDecision.kt</code> · <code>ScreenCaptureNavSource.kt</code> · <code>ScreenCaptureTransport.kt</code> · <code>OffscreenMirrorCapturer.kt</code> · <code>CaptureRouter.kt:170</code></li>
+<li>Đầu vào a11y: <code>NavAccessibilityService.kt:66,310,333,816,363,477,926</code> · <code>VietMapDescParser</code> · <code>NavViewIdSource</code> · <code>NavWindowPump</code></li>
+<li>Badge: <code>VietMapWidgetBridge.kt</code> · <code>NavNotificationListener.kt:313</code> · <code>NavigationSpeedSignOwner.kt:60</code> · <code>SpeedSignLifecycleCoordinator.kt:132</code> · <code>ClusterSpeedBadgePort.kt:32</code> · <code>HalSpeedSignPort.kt:22-45</code> · <code>SpeedBadgeOverlay.kt</code></li>
+<li>Cast: <code>SimpleCastRuntime.kt:47-50,73-92,256</code> · <code>SimpleCastCoordinator.kt:96-190</code> · <code>AppMover.kt:35-88</code> · <code>ProjectionManager.kt:41-79</code> · <code>CastEnableSwitch.kt:47</code></li>
+<li>Spec to-be liên quan (đã duyệt F4 bước 1): <code>docs/specs/nav-input-output-architecture.html</code></li>
+</ul>
+
+<h1 style="margin-top:64px">PHẦN B — Đề xuất TO-BE</h1>
+<div class="tobe-banner"><b>⚠ Đây là ĐỀ XUẤT của agent để owner review — CHƯA chốt.</b> Phần A ở trên là sự thật code (as-is). Phần B là hướng sắp xếp lại. Nguyên tắc: giữ nguyên phễu (đã đúng), chỉ TÁCH các đầu ra và gán mỗi cái một cổng riêng theo bề mặt vật lý của nó — thay vì gộp HUD kính chung cổng Cast với cụm-centre như hiện tại.</div>
+
+<h2>10. Nguyên tắc phân tách — độc lập vs dùng chung</h2>
+<table>
+<tr><th>Quan hệ</th><th>Gồm</th><th>Vì sao</th></tr>
+<tr><td><b>DÙNG CHUNG một nguồn</b></td><td><b>Khung dẫn trung lập</b> (1 Maneuver + cự ly + đường + ETA) do phễu <code>NavigationSessionCoordinator</code> sinh ra → nuôi 3 bề mặt dẫn đường: <b>HUD kính · cụm giữa+ETA · dải làn</b></td><td>Cùng một nội dung dẫn đường, chỉ khác chỗ hiện. Phễu hiện tại đã đúng — GIỮ NGUYÊN.</td></tr>
+<tr><td><b>ĐỘC LẬP hoàn toàn</b></td><td><b>Badge tốc độ</b> (nguồn = widget VietMap; sink = overlay display 1 + HAL ISA) · <b>Cast</b> (track riêng, chiếm display 1 khi bật)</td><td>Không dùng khung dẫn, không đụng phễu nav. Đã độc lập trong code — giữ.</td></tr>
+<tr><td><b>CHIA SẺ REGISTER, KHÁC BỀ MẶT</b></td><td>Register nội dung <code>GUIDE_INFO_SIMPLE</code> (+cự ly/đường/oversea) do <b>CẢ HUD kính LẪN cụm-centre</b> đọc</td><td>Ghi nội dung MỘT lần; "hiện trên cụm" do một công tắc bề mặt RIÊNG (<code>SET_NAVI_SCREEN_STATUS</code>) quyết định. ⇒ phải tách công tắc bề mặt khỏi việc ghi nội dung.</td></tr>
+</table>
+<div class="card"><b>Mấu chốt to-be:</b> tách <b>"GHI NỘI DUNG DẪN"</b> (phục vụ HUD kính — ghi VÔ ĐIỀU KIỆN khi đang dẫn) khỏi <b>"DỰNG BỀ MẶT CỤM"</b> (<code>SET_NAVI_SCREEN_STATUS</code> — chỉ khi không cast). Hiện hai cái nằm chung <code>writeNavFrame</code> và cùng bị gate <code>navOnlyMode</code> — đó là lý do Cast ON làm HUD kính cũng tắt.</div>
+
+<h2>11. Phân loại theo Cast — 3 nhóm</h2>
+<p class="muted">Đây là bảng chính anh cần: mỗi đầu ra thuộc nhóm nào theo trạng thái công tắc Cast.</p>
+<div class="legend" style="margin-bottom:6px">
+  <span class="sw"><span class="grp any">BẤT KỂ</span> chạy dù có cast hay không</span>
+  <span class="sw"><span class="grp nocast">CHỈ khi KHÔNG cast</span></span>
+  <span class="sw"><span class="grp cast">CHỈ khi CAST</span></span>
+</div>
+<table>
+<tr><th>Đầu ra</th><th>Nhóm</th><th>Cast ON</th><th>Cast OFF</th><th>Nguồn / nội dung</th></tr>
+<tr><td><b>HUD kính</b> (nội dung guidance)</td><td><span class="grp any">BẤT KỂ</span></td><td class="ok">✅</td><td class="ok">✅</td><td>khung dẫn trung lập <span class="muted">(dùng chung)</span></td></tr>
+<tr><td><b>Cụm giữa + ETA</b> (overlay OEM)</td><td><span class="grp nocast">KHÔNG cast</span></td><td class="warn">❌</td><td class="ok">✅</td><td>khung dẫn trung lập</td></tr>
+<tr><td><b>Dải làn zin</b> (strip AMAP)</td><td><span class="grp nocast">KHÔNG cast *</span></td><td class="warn">❌ *</td><td class="ok">✅</td><td>khung dẫn trung lập</td></tr>
+<tr><td><b>Làn / camera</b> (register cụm, đường ảnh)</td><td><span class="grp nocast">KHÔNG cast</span></td><td class="warn">❌</td><td class="ok">✅</td><td>screen-capture <span class="muted">(nợ F7 — chưa qua phễu)</span></td></tr>
+<tr><td><b>Badge tốc độ</b> — overlay display 1</td><td><span class="grp cast">CHỈ cast</span></td><td class="ok">✅</td><td class="warn">❌</td><td>widget VietMap → vẽ overlay <b>CẦN projection</b>: display 1 chỉ có khi Cast projecting (<code>SpeedBadgeOverlay</code> lifecycle + <code>getDisplay(1)</code>)</td></tr>
+<tr><td><b>Badge tốc độ</b> — HAL ISA <code>0x4B40001C</code></td><td><span class="grp any">ghi BẤT KỂ *</span></td><td class="ok">✅</td><td class="ok">✅</td><td>register (không cần display); OEM render qua widget ISA — bề mặt render chưa xác định (OQ5)</td></tr>
+<tr><td><b>Cast surface</b> (app trên cụm)</td><td><span class="grp cast">CHỈ cast</span></td><td class="ok">✅</td><td class="warn">❌</td><td>app được cast</td></tr>
+</table>
+<p class="muted">* Dải làn: hiện đang bắn <b>vô điều kiện</b>. Khi cast full che cụm thì broadcast vẫn gửi nhưng không thấy (vô hại, chỉ thừa). Về Ý NGHĨA nó thuộc bề mặt cụm ⇒ xếp nhóm "không cast". Có cần gate thật hay để mặc OEM che → <b>OQ2</b>.</p>
+<div class="tobe-banner"><b>⚠ Phát hiện quan trọng (owner chỉ ra 2026-08-24) — CỤM CÓ HAI CHẾ ĐỘ CHỦ, loại trừ nhau:</b>
+<ul>
+<li><b>Chế độ OEM</b> (Cast OFF / không projection): OEM sở hữu cụm — vẽ đồng hồ + nav-centre (SET_NAVI_SCREEN_STATUS) + dải làn + widget ISA tốc độ. App CHỈ tác động qua HAL register, <b>KHÔNG vẽ được overlay</b> lên cụm (<code>getDisplay(1)</code> = null khi chưa projection).</li>
+<li><b>Chế độ projection</b> (Cast ON): app sở hữu display 1 — vẽ app được cast + <b>overlay badge tốc độ</b>. OEM nav-centre lúc này tắt.</li>
+</ul>
+⇒ Hệ quả cho to-be: <b>overlay badge tốc độ</b> và <b>OEM cluster-centre nav</b> ở HAI chế độ khác nhau, KHÔNG cùng lúc trên cụm. Tốc độ hiện qua HAI cơ chế bù nhau: widget ISA OEM (chế độ OEM) vs overlay app (chế độ projection). HUD kính là màn RIÊNG nên không dính chuyện này.</div>
+
+<h2>12. Sơ đồ to-be</h2>
+<div class="layers">
+  <div class="band band-proc">
+    <div class="blab">Nguồn dùng chung</div>
+    <div class="row"><div class="node"><b>Phễu (giữ nguyên)</b><span>ingest / ingestContent → Coordinator → <b>Khung dẫn trung lập</b> (Maneuver·cự ly·đường·ETA)</span></div></div>
+  </div>
+  <div class="center">▼ fan-out — mỗi sink một cổng riêng ▼</div>
+  <div class="band band-out">
+    <div class="blab">Bề mặt dẫn đường (từ khung dùng chung)</div>
+    <div class="row">
+      <div class="node any"><b>HUD kính</b><span>ghi nội dung guidance</span><span class="grp any">BẤT KỂ</span></div>
+      <div class="node nocast"><b>Cụm giữa + ETA</b><span>SET_NAVI_SCREEN_STATUS</span><span class="grp nocast">KHÔNG cast</span></div>
+      <div class="node nocast"><b>Dải làn zin</b><span>broadcast AMAP</span><span class="grp nocast">KHÔNG cast *</span></div>
+      <div class="node nocast"><b>Làn / camera</b><span>register cụm (F7)</span><span class="grp nocast">KHÔNG cast</span></div>
+    </div>
+  </div>
+  <div class="band band-in" style="background:rgba(26,127,55,.06);border-color:rgba(26,127,55,.28)">
+    <div class="blab" style="color:var(--ok)">Độc lập — nguồn + sink riêng</div>
+    <div class="row">
+      <div class="node any"><b>Badge — HAL ISA</b><span>register 0x4B40001C</span><span class="grp any">ghi BẤT KỂ</span></div>
+      <div class="node cast"><b>Badge — overlay cụm</b><span>vẽ display 1 (cần projection)</span><span class="grp cast">CHỈ cast</span></div>
+      <div class="node cast"><b>Cast</b><span>SimpleCastCoordinator → app trên cụm</span><span class="grp cast">CHỈ cast</span></div>
+    </div>
+  </div>
+  <div class="legend">
+    <span class="sw"><b style="color:var(--gate)">Cổng duy nhất còn gate theo Cast</b> = nhóm "KHÔNG cast" (bề mặt cụm). HUD kính + badge = bất kể.</span>
+  </div>
+</div>
+
+<h2>13. Thay đổi cụ thể so với as-is (đề xuất)</h2>
+<table>
+<tr><th>#</th><th>Chỗ</th><th>As-is</th><th>To-be đề xuất</th></tr>
+<tr><td>1</td><td><code>BydHal.writeNavFrame</code></td><td>ghi CẢ nội dung (GUIDE_INFO…) LẪN bề mặt (SET_NAVI_SCREEN_STATUS) trong một hàm</td><td>chẻ 2 nhánh: <b>content</b> (GUIDE_INFO+dist+pathname+oversea+SDK + <b>SEND_NAVI_STATUS latch</b> — OQ1 chốt) và <b>surface</b> (CHỈ <code>SET_NAVI_SCREEN_STATUS</code>)</td></tr>
+<tr><td>2</td><td>lambda coordinator <code>NavRepository.kt</code></td><td><code>if(navOnlyMode){ owner.push(...) }</code> gate CẢ CỤC</td><td>gọi content-write <b>vô điều kiện</b>; chỉ bọc <code>if(navOnlyMode)</code> quanh surface-write</td></tr>
+<tr><td>3</td><td>2 owner tên lẫn lộn</td><td><code>NavigationHudOwner</code> thực chất là cụm-centre</td><td>tách rõ: <b>HudSink</b> (nội dung, bất kể) + <b>ClusterCentreSink</b> (bề mặt, gate). Đặt tên đúng.</td></tr>
+<tr><td>4</td><td><code>emitHud</code></td><td>stub no-op</td><td>bỏ (HUD nay do content-write phục vụ) hoặc để nguyên</td></tr>
+<tr><td>5</td><td>làn/camera ảnh</td><td>ghi thẳng HAL từ <code>NavOutputOwner</code> (nợ F7)</td><td>đưa vào phễu, xếp nhóm bề mặt cụm (gate)</td></tr>
+<tr><td>6</td><td>đầu vào ảnh</td><td>giữ nguyên</td><td>giữ nguyên — ca chạy được của VietMap/Waze = <b>cast lên cụm</b> (chụp màn đọc + HUD content vô điều kiện)</td></tr>
+<tr><td>7</td><td>chọn nguồn nav</td><td><code>SourceArbiter</code> AUTO / PREFER (đã có, B3.48)</td><td><b>GIỮ NGUYÊN</b> (OQ4): AUTO = app có tín hiệu dẫn TRƯỚC thì lấy app đó, KHÔNG auto-switch · PREFER = đích danh, app đó không dẫn thì không hiện gì. HUD lấy theo nguồn ĐÃ CHỌN, độc lập cast (cast không must)</td></tr>
+</table>
+
+<h2>14. Giới hạn thành thật + Open Questions (cần owner chốt)</h2>
+<div class="card">
+<p><b>Giới hạn ĐẦU VÀO (kiến trúc KHÔNG sửa được):</b> VietMap/Waze chạy NỀN không phơi dữ liệu rẽ ⇒ to-be này KHÔNG làm được "VietMap nền → HUD". Ca chạy được của VietMap/Waze = <b>cast app lên cụm</b> (hoặc để foreground màn chính) — lúc đó chụp màn đọc được mũi tên và HUD kính nhận nội dung vô điều kiện. GMaps thì nền vẫn chạy (có thông báo). Anh review với kỳ vọng đúng chỗ này.</p>
+</div>
+<ul>
+<li><b>OQ1</b> <span class="pill ok">CHỐT</span> — <code>SEND_NAVI_STATUS</code> (latch "đang dẫn") → xếp <b>nội dung</b> (HUD, vô điều kiện). <span class="muted">Owner OK.</span></li>
+<li><b>OQ2</b> <span class="pill ok">CHỐT</span> — Dải làn: <b>kệ</b>, giữ vô điều kiện (OEM tự che khi cast). Không thêm gate.</li>
+<li><b>OQ3</b> <span class="pill ok">CHỐT</span> — HUD kính: app chỉ cần <b>GHI ĐÚNG + vô điều kiện</b>; xe nào (HUD/provisioning) lên được thì lên. Không cố bác gate firmware ở kiến trúc này (việc D6 riêng).</li>
+<li><b>OQ4</b> <span class="pill ok">CHỐT</span> — Cast + HUD đồng thời: <b>đúng nhưng KHÔNG bắt buộc</b>. Nguồn nav lên HUD theo đúng lựa chọn trong UI: <b>AUTO</b> = app dẫn TRƯỚC thì lấy app đó, KHÔNG đổi; <b>chọn đích danh</b> = luôn app đó, KHÔNG đổi. HUD lấy theo nguồn đã chọn, độc lập cast. <span class="muted">(Đúng hành vi <code>SourceArbiter</code> B3.48 — giữ nguyên.)</span></li>
+<li><b>OQ5</b> <span class="pill ok">CHỐT</span> — <b>Nav ON + Cast OFF: badge overlay KHÔNG hiện</b> (owner đo trên xe 2026-08-24) ⇒ đúng giả định: badge overlay = <b>CHỈ khi cast</b> (cần projection/display 1). Khi không cast, tốc độ chỉ có thể qua widget ISA OEM. Test kỹ sau nếu muốn — không chặn.</li>
+</ul>
+
+<p class="muted" style="margin-top:40px">Phần B đã chốt OQ1–OQ5 (owner 2026-08-24). <b>ĐÃ IMPLEMENT 2026-08-24 (off-car)</b>: tách trong <code>BydHal.writeNavFrame</code> (thêm <code>writeSurface</code>: nội dung + <code>SEND_NAVI_STATUS</code> vô điều kiện, chỉ <code>SET_NAVI_SCREEN_STATUS</code> gate) · <code>NavigationHudOwner.push/reapply</code> mang <code>writeSurface</code> · <code>NavRepository</code> lambda bỏ gate khỏi nội dung, truyền <code>writeSurface = navOnlyMode(appCtx)</code>. Test: <code>NavHudSurfaceSplitWiringTest</code> (8) + cập nhật <code>NavHalContentKeepAliveTest</code>; <b>5 module 2142/0</b>, mutation-check gỡ <code>&amp;&amp; writeSurface</code> ⇒ 2 test đỏ đúng chỗ; senior review APPROVED (0 P0/P1, vá [P2] reapply). <b>CHƯA on-car</b> — cần APK để xác nhận HUD kính lên khi đang cast (CLAUDE.md §14 tầng 1). Giữ nguyên <code>SourceArbiter</code> + dải làn.</p>
+
+</div></body>
+</html>

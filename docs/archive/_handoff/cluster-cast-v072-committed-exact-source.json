@@ -1,0 +1,86 @@
+{
+  "branch": "release/v0.60-cast-hardening",
+  "canonicalization": "UTF-8 JSON; recursively lexicographic object keys; preserve array order; ensure_ascii=false; compact comma/colon separators; no BOM.",
+  "head": "7ce079a7112d8d97782e05b4679b0d6d3a575a90",
+  "identityExclusions": {
+    "entries": [
+      {
+        "path": "docs/_handoff/cluster-cast-v072-committed-exact-source.json",
+        "reason": "GENERATED_ATTESTATION_SELF_REFERENCE"
+      },
+      {
+        "path": "docs/_handoff/vehicle-candidate.json",
+        "reason": "GENERATED_VEHICLE_CANDIDATE_RECORD"
+      }
+    ],
+    "rule": "Path-only exclusions prevent identity recursion and keep local tooling state, historical APK bytes, every prior attestation and build-generated candidate records out of the build inputs. Predecessor identities stay independently verifiable and unmodified."
+  },
+  "intendedUntracked": [
+    {
+      "byteLength": 3325,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastBubbleControl.kt",
+      "sha256": "8f1543b4dfb203809cbf0f37a91353789b3e89575c15a5a48b4ff60572cdaca7"
+    },
+    {
+      "byteLength": 1675,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/java/com/byd/clusternav/modules/clustercast/CastScreenChrome.kt",
+      "sha256": "e67a8d7d26dd60ab204b86a941353ff28e5c96c19de934b48e36268d4bfa0917"
+    },
+    {
+      "byteLength": 396,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/color/btn_text.xml",
+      "sha256": "4a59fec8164c7f7218c4b8602bd4e85f7c20d6394de67e80f320ca2dd16169cf"
+    },
+    {
+      "byteLength": 232,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/color/btn_text_on_brand.xml",
+      "sha256": "bd0c32b8406624c1edd3db87dd45e5701d6360c0276cf526cf95df7e613fb188"
+    },
+    {
+      "byteLength": 376,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/bubble_panel.xml",
+      "sha256": "15c455177ab0b5704d7ef965101fa210ef2560e2c858f6025aa497d461b5bcbf"
+    },
+    {
+      "byteLength": 564,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/bubble_round.xml",
+      "sha256": "aa083f711d12e19e12f6d343b9ff1496097946990a610e6de951faaf72d43879"
+    },
+    {
+      "byteLength": 710,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/ic_cast_bubble.xml",
+      "sha256": "4a08fd25d50948efe9cd76d4c492846cae4d099f468cb4d987a40009236efd44"
+    },
+    {
+      "byteLength": 487,
+      "class": "PRODUCT_SOURCE_OR_RESOURCE",
+      "path": "app/src/main/res/drawable/ic_check_selected.xml",
+      "sha256": "87cbc0f78cc9faf31d1c4244433aa30fee2252bb55bf6228d464194422f20b44"
+    },
+    {
+      "byteLength": 8986,
+      "class": "EXECUTION_HANDOFF",
+      "path": "docs/_handoff/NIGHT-BUILD-2026-07-27.md",
+      "sha256": "c724fea4e24824f2b37091d1c871af2a0b7e0303c029b485677386c461480d17"
+    }
+  ],
+  "schema": "clusternav.exact-source/v1",
+  "sourceId": "4cbedbd6a5ff0061bbff0e5fca166c599aed72d83773a65e8e2c1693a6b3ce4a",
+  "trackedDiff": {
+    "byteLength": 114986,
+    "producer": "GIT_OPTIONAL_LOCKS=0 git diff --binary --no-ext-diff HEAD",
+    "sha256": "f9f71fab8e7ad56f9b739611b92b1c0b1abe39ce75ca852b3ead60fe5480318d"
+  },
+  "version": {
+    "label": "0.72 fix: adopt a stuck operation that observed reality proves succeeded",
+    "versionCode": 72,
+    "versionName": "0.72"
+  }
+}

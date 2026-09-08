@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  card_bg — DARK cockpit card (L2 Stage 1). Same resource name (layouts auto-reskin).
+  Vertical gradient surface_2 (top) -> surface (bottom), 1dp hairline stroke, ~20dp corners. layer-list.
+  FIX (stage2-ui · T3): the former 1.5dp top highlight <item> did NOT follow the 20dp rounded corners, so it
+  read as a DOUBLED line above the border at the corners. Removed — gradient + stroke + rounded corners keep
+  the card depth without the corner artifact.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base card: vertical gradient + hairline stroke + rounded corners -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="270"
+                android:startColor="@color/surface_2"
+                android:endColor="@color/surface" />
+            <corners android:radius="20dp" />
+            <stroke android:width="1dp" android:color="@color/hairline_strong" />
+        </shape>
+    </item>
+</layer-list>

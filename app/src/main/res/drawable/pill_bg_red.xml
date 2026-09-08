@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  pill_bg_red — DESIGN SYSTEM (Cockpit L2) · @style/Cockpit.Pill.Red background. Matches the mockup
+  `.pill.rd` (docs/specs/ui-visual-upgrade-l2.html): a fully-rounded capsule filled with @color/accent_red
+  at ~16% (ARGB 0x29 ≈ 16% of 255) over transparent; the label text is solid red (set in the style).
+  Literal ARGB (alpha-mixed accent has no palette token). New.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/pill_fill_red" />
+    <corners android:radius="999dp" />
+</shape>

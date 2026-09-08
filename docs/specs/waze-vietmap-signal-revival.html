@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>byd-cluster-2 — Revival: Waze-Mod nav-source + VietMap widget + speed-limit signal (adapt lên 1.30)</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--err:#b3261e;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--err-bg:#fce8e6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;
+    --accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--err:#ff453a;--ok-bg:#0e2a16;--warn-bg:#332b00;--err-bg:#3a0f0c;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:48px 24px 120px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:30px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink)}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--warn-bg);color:var(--warn)}
+  h2{font-size:22px;margin:48px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  h3{font-size:16.5px;margin:24px 0 6px;font-weight:650}
+  p{margin:10px 0}a{color:var(--accent);text-decoration:none}code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg)}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg)}.callout.warn .lbl{color:var(--warn)}
+  .callout.accent{background:var(--accent-bg)}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:120px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.good{border-color:var(--ok);background:var(--ok-bg)}.fnode.acc{border-color:var(--accent);background:var(--accent-bg)}
+  .arrow{color:var(--ink2);font-size:18px}
+  .en{color:var(--ink2);font-style:italic}
+  .toc{columns:2;font-size:14px;gap:24px}@media(max-width:600px){.toc{columns:1}}
+  .toc a{display:block;padding:3px 0;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">byd-cluster-2 · Consolidated Spec</p>
+<h1>Revival — Waze-Mod nav-source + VietMap widget + speed-limit signal (adapt lên base 1.30)</h1>
+<div class="meta">
+  <span><b>Repo:</b> byd-cluster-2 (base = ClusterNav 1.30, lịch sử đã sạch)</span>
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-17</span>
+  <span><b>Slug:</b> waze-vietmap-signal-revival</span>
+</div>
+<div class="meta"><span class="pill" style="background:var(--ok-bg);color:var(--ok)">STATUS: DONE — revived · 1366 tests green · signed release (no test surface) · senior review APPROVED · scan CLEAN</span></div>
+<div class="callout accent" style="margin-top:16px"><div class="lbl">Approval gate (1 lần)</div>
+Owner đã chốt: repo <b>byd-cluster-2</b>; revive <b>TẤT CẢ 3 nhóm</b> (Waze-Mod nav-source + VietMap widget + speed-limit signal, bao gồm cả Cascade C = catalog T10 speed-sign); <b>adapt luôn sang API 1.30</b> khi khôi phục (không giữ verbatim). Đây là <b>base để nghiên cứu/sửa tiếp</b> — các phần này ở 1.21 <b>vốn chưa chạy</b> (speed port = Noop; WazeHudSource poll logcat ~4000×/giờ). Approve → chạy autonomous: restore → re-wire → adapt → build xanh → review → scan → push.
+<br><span class="en">EN — Owner locked byd-cluster-2; revive all 3 signal-feature groups incl. Cascade C (T10 speed catalog); adapt to the 1.30 API on restore. This is a research base to fix further — these features were known-broken at 1.21. One approval gate → autonomous run.</span></div>
+
+<div class="card"><b>Contents</b>
+  <nav class="toc" style="margin-top:8px">
+    <a href="#changelog">1 · Changelog</a><a href="#context">2 · Context</a><a href="#req">3 · Requirements</a>
+    <a href="#design">4 · Design</a><a href="#tasks">5 · Tasks (DAG)</a><a href="#verify">6 · Verification</a>
+    <a href="#open">7 · Open Questions</a><a href="#ref">8 · References</a><a href="#rev">9 · Reviewer Log</a>
+  </nav>
+</div>
+
+<h2 id="changelog"><span class="n">1</span>Changelog</h2>
+<table><thead><tr><th>Rev</th><th>Date</th><th>Change</th></tr></thead><tbody>
+<tr><td>v1</td><td>2026-08-17</td><td>Spec tạo. Base byd-cluster-2 cloned từ ClusterNav 1.30 (main sạch + tag v1.21-signal-features). Revival = đảo ngược removal-manifest 1.22, adapt lên 1.30. Scope: tất cả 3 nhóm + Cascade C.</td></tr>
+</tbody></table>
+
+<h2 id="context"><span class="n">2</span>Context</h2>
+<p><b>(VI)</b> ClusterNav đóng ở 1.30. Owner tách <b>byd-cluster-2</b> làm base cho feature/research mới. 1.22 đã GỠ toàn bộ tín hiệu Waze/VietMap (nav-source + speed-limit) vì "không chạy, hao pin". Nay cần <b>lấy lại code đó</b> (từ tag <code>v1.21-signal-features</code>) đặt lên nền 1.30 (đã có các patch mới: TASK1 vòng xuyến có hướng, keep-alive 250ms, BydHal reflection cache, log-on-change, rejection cache…) để <b>nghiên cứu/hoàn thiện tiếp</b>.
+<br><span class="en">EN — ClusterNav shipped 1.30 (final). byd-cluster-2 is the new research base. The 1.22 removal took out all Waze/VietMap signal code; we restore it from the v1.21 tag onto the improved 1.30 base to continue the research.</span></p>
+<div class="callout ok"><div class="lbl">Nguồn chính xác đã verify</div><code>docs/archive/diagnostics/removal-manifest-waze-vietmap-1.22.md</code> liệt kê <b>29 file DELETE + 14 file EDIT</b> với <code>file:line</code> + thứ tự thao tác + coupling map. Revival làm <b>NGƯỢC</b> manifest. Tag v1.21 (local, đã filter-repo sạch) chứa đủ 28 file source Waze/VietMap; HEAD 1.30 có 0.</div>
+
+<h2 id="req"><span class="n">3</span>Requirements</h2>
+<table><thead><tr><th>ID</th><th>Yêu cầu</th><th>Acceptance</th></tr></thead><tbody>
+<tr><td><b>R1</b></td><td>Khôi phục đủ 29 file đã xoá (Waze nav-source · VietMap widget app+core · speed-sign runtime · SpeedLimit contracts · CarExecSpeedSignCatalog · VietmapBubbleExperiment) từ v1.21.</td><td>Các file tồn tại lại trong cây; danh sách khớp manifest §1.</td></tr>
+<tr><td><b>R2</b></td><td>Re-wire 14 file KEEP (NavNotificationListener, MainActivity, Prefs, NavSourceMode, SourceArbiter, AndroidManifest, 2 layout, CarExecCatalog, CarExecScenarios + 3 test) — thêm lại ref theo manifest §2, <b>lên bản 1.30</b>.</td><td>Consumer tham chiếu lại symbol đã restore; giữ nguyên đường GMaps 1.30 (TASK1 maneuver, log-on-change…).</td></tr>
+<tr><td><b>R3</b></td><td>Adapt sang API 1.30: sửa mọi lỗi compile do drift (NavState có <code>maneuver</code> mới, ClusterBroadcaster/SimpleCastRuntime/Maneuver có thể đổi chữ ký).</td><td>Build compile sạch cả 5 module.</td></tr>
+<tr><td><b>R4</b></td><td>Re-add nguồn chọn: nav-source (Auto/GMaps/Waze Mod) + speed-source (VietMap/Waze) spinner + <code>vn.vietmap.live</code> vào MAPS_PACKAGES (Open Q1 = revive tất cả).</td><td>UI + Prefs + SourceArbiter có lại các mode; NavSourceMode có PREFER_WAZE/VIETMAP + SPEED_*.</td></tr>
+<tr><td><b>R5</b></td><td>Cascade C (Open Q2 = tất cả): restore CarExecSpeedSignCatalog + contracts/SpeedLimit* + 3 carexec speed scenarios + test ids.</td><td><code>:core:test</code> + carexec catalog test xanh với các <code>sign-*</code> id.</td></tr>
+<tr><td><b>R6</b></td><td>Build xanh + không hồi quy 1.30.</td><td><code>:core:test :app:testDebugUnitTest :vehicle-contracts:test :car-integration:test :offcar-planner:test</code> xanh; <code>assembleRelease</code> + <code>assembleVehicleTest</code> ký được; aapt2 release <b>không</b> có test surface (bất biến 1.30 giữ).</td></tr>
+<tr><td><b>R7</b></td><td>Đẩy lên GitHub repo mới byd-cluster-2.</td><td>origin = byd-cluster-2; main + tag v1.21 pushed; branch revive merged.</td></tr>
+</tbody></table>
+
+<h2 id="design"><span class="n">4</span>Design</h2>
+<div class="callout accent"><div class="lbl">Tech freshness</div>Không thêm dependency mới. Code restore từ v1.21 chạy trên cùng stack (Kotlin/JDK17, compileSdk 37). Rủi ro duy nhất = API drift nội bộ 1.22→1.30 (xử ở R3). Context7 freshness để ở stage review.</div>
+
+<h3>Chiến lược: restore-rồi-rewire-rồi-adapt (đảo thứ tự removal)</h3>
+<p>Manifest gỡ theo thứ tự "edit consumer trước, xoá file sau". Revival làm <b>ngược</b>: <b>restore file trước</b> (symbol tồn tại) → <b>re-wire consumer</b> (tham chiếu lại) → <b>build & adapt</b> drift.</p>
+<div class="diagram">
+  <div class="flow">
+    <div class="fnode acc"><div class="h">tag v1.21 (sạch)</div><div class="s">28 file Waze/VietMap/speed</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">S1 restore</div><div class="s">git checkout v1.21 -- &lt;29 file&gt;</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">S2 re-wire</div><div class="s">14 KEEP file (manifest §2 đảo) lên 1.30</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">S3 adapt+build</div><div class="s">sửa API drift → compile sạch</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">S4 test+verify</div><div class="s">5 suite + assembleRelease/VehicleTest + aapt2</div></div>
+  </div>
+</div>
+
+<h3>Boundary phải giữ (từ manifest §3 — KHÔNG đụng)</h3>
+<p>Cast "VietMap-as-target" (<code>CastShell</code>, <code>ClusterCast</code>, CastSwapTest…) là <b>cast TARGET</b> pkg <code>vn.vietmap.live</code>, KHÁC speed-signal — giữ nguyên. Đường GMaps→cụm 1.30 (NavRepository, AmapFrameBuilder, ClusterBroadcaster, Maneuver TASK1, keep-alive) KHÔNG bị revert — chỉ THÊM nhánh Waze/VietMap vào cạnh nó.</p>
+
+<h3>Điểm adapt-lên-1.30 đã lường trước (R3)</h3>
+<ul>
+  <li><b>NavState</b>: 1.30 thêm field <code>maneuver: Maneuver?</code> (TASK1). <code>WazeHudSource.hlpTurnToManeuver</code>/<code>toNavState</code> + VietMap parser dựng NavState → bổ sung <code>maneuver</code> (hoặc để null → fromAmapIcon). Kiểm mọi constructor NavState.</li>
+  <li><b>NavNotificationListener</b>: 1.30 có <code>lastNavLogKey</code> (log-on-change) + set <code>NavState.maneuver</code> + <code>NavLog</code>. Re-wire Waze/VietMap phải chèn vào lifecycle 1.30 hiện tại, reset <code>lastNavLogKey</code>/<code>lastManeuverIcon</code> ở ranh giới phiên như hiện có.</li>
+  <li><b>MainActivity</b>: 1.30 có disclaimer + toggle verbose + spinner cluster ON/OFF (TASK4). Thêm lại spinner nav-source/speed-source KHÔNG đụng spinner cluster-mode.</li>
+  <li><b>BydHal</b>: 1.30 cache reflection + rejection cache — speed-sign nếu ghi HAL đi qua đường hiện có (không cần đổi).</li>
+  <li><b>SimpleCastRuntime.executeShell / ClusterBroadcaster.emitLane(byd=)</b>: kiểm chữ ký hiện tại khi WazeHudSource gọi.</li>
+</ul>
+
+<h2 id="tasks"><span class="n">5</span>Tasks (DAG)</h2>
+<p>Thực thi qua sub-agent DAG. Thứ tự theo Design (restore→rewire→adapt). Reference chi tiết file: <code>docs/archive/diagnostics/removal-manifest-waze-vietmap-1.22.md</code> §1 (restore) + §2 (rewire).</p>
+<table><thead><tr><th>Stage</th><th>Nội dung</th><th>Exit gate</th></tr></thead><tbody>
+<tr><td><b>S1 restore</b></td><td>Branch <code>revive/waze-vietmap-signal</code>. <code>git checkout v1.21-signal-features -- </code> tất cả file §1 (29 file: wazehud, vietmapwidget app+core, NavigationSpeedSignOwner, SpeedSignLifecycleCoordinator, SpeedSignPorts, CarExecSpeedSignCatalog, contracts/SpeedLimit{Frame,Enums}, VietmapBubbleExperiment + test).</td><td>Các file tồn tại; <code>git status</code> thấy 29 added.</td></tr>
+<tr><td><b>S2 re-wire</b><br>(2 agent)</td><td><b>A (nav/app)</b>: NavNotificationListener §2.1 · MainActivity §2.2 · Prefs §2.3 · layouts §2.7 · AndroidManifest §2.6.<br><b>B (core/carexec)</b>: NavSourceMode §2.4 · SourceArbiter §2.5 · CarExecCatalog §2.8 · CarExecScenarios §2.9 · CarExecCatalogTest §2.10 · HudOutputHiddenContractTest §2.11 · NavigationOutputIsolationTest §2.12. Re-add ref (đảo removal) lên bản 1.30.</td><td>Không còn ref thiếu; symbol khớp.</td></tr>
+<tr><td><b>S3 adapt+build</b></td><td><code>./gradlew :app:compileDebugKotlin :core:compileKotlin :vehicle-contracts:compileKotlin</code> → sửa lỗi drift (R3 list) đến compile sạch. Không đụng đường GMaps 1.30.</td><td>Compile sạch 5 module.</td></tr>
+<tr><td><b>S4 test+verify</b></td><td>5 suite + <code>assembleRelease</code> + <code>assembleVehicleTest</code> + aapt2 no-test-surface (release). Fix hồi quy.</td><td>R6 pass.</td></tr>
+<tr><td><b>S5 review+scan+push</b></td><td>Senior review (boundary GMaps↔Waze/VietMap; adapt đúng) + security scan diff → tạo GitHub repo byd-cluster-2 + push (cách tạo: chờ owner — gh install/auth HOẶC owner tạo repo rỗng).</td><td>0 P0/P1; scan clean; pushed.</td></tr>
+</tbody></table>
+
+<h2 id="verify"><span class="n">6</span>Verification</h2>
+<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+./gradlew :core:test :app:testDebugUnitTest :vehicle-contracts:test :car-integration:test :offcar-planner:test
+./gradlew :app:assembleRelease :app:assembleVehicleTest
+# aapt2: release APK KHÔNG có TEST_ADAS_*/TEST_SPEED_LIMIT export (bất biến 1.30)</code></pre>
+<ul>
+  <li>R1: 29 file restore đúng danh sách §1.</li>
+  <li>R2/R4: nav-source + speed-source mode/spinner có lại; MAPS_PACKAGES có waze/vietmap.</li>
+  <li>R3: compile sạch (không lỗi drift).</li>
+  <li>R5: CarExecCatalogTest có lại <code>sign-*</code> ids xanh.</li>
+  <li>R6: 5 suite xanh + 2 assemble ký + aapt2 release sạch test-surface.</li>
+</ul>
+
+<h2 id="open"><span class="n">7</span>Open Questions (đã chốt theo owner)</h2>
+<table><tbody>
+<tr><td><b>Q1</b></td><td>vn.vietmap.live + nav-source spinner → <b>revive tất cả</b> (owner chốt): re-add Waze Mod + VietMap + speed-source. (KHÔNG chọn GMaps-only.)</td></tr>
+<tr><td><b>Q2</b></td><td>Cascade C (T10 speed catalog) → <b>bao gồm</b> (owner "tất cả"): restore CarExecSpeedSignCatalog + contracts + carexec speed scenarios/tests.</td></tr>
+<tr><td><b>Q3</b></td><td>Tạo GitHub repo byd-cluster-2: <b>chờ owner</b> — `gh` chưa cài. Owner tạo repo rỗng + đưa URL, HOẶC cho phép `brew install gh` + `gh auth login`. Toàn bộ code+test làm local trước, push sau.</td></tr>
+<tr><td><b>Q4</b></td><td>Sau revive, các feature vẫn <b>chưa chạy</b> (bản chất 1.21) — đây là base để research/fix. Việc "làm chạy" (vd speed port thật thay Noop, bỏ poll logcat hao pin) là <b>công việc feature riêng sau</b>, ngoài spec revive này.</td></tr>
+</tbody></table>
+
+<h2 id="ref"><span class="n">8</span>References</h2>
+<ul>
+  <li>Removal manifest (reverse-plan chính): <code>docs/archive/diagnostics/removal-manifest-waze-vietmap-1.22.md</code></li>
+  <li>Tag nguồn: <code>v1.21-signal-features</code> (local, đã filter-repo sạch)</li>
+  <li>Base: ClusterNav 1.30 (main), closeout spec <code>docs/specs/clusternav-closeout-1.28.html</code></li>
+</ul>
+
+<h2 id="rev"><span class="n">9</span>Reviewer Log</h2>
+<div class="card"><b>Pass 0 — 2026-08-17</b> — Spec tạo, chờ approval. Chưa có code. <span class="en">Spec created, awaiting approval.</span></div>
+<div class="card"><b>Pass 1 — 2026-08-17 (execution complete)</b> — Approved → autonomous run. <b>S1</b> restore 29 file (verbatim từ tag v1.21) + 8 file EDIT không-drift. <b>S2</b> re-wire: 5 file drift merge tay lên nền 1.30 (NavNotificationListener, MainActivity, Prefs, 2 layout — GIỮ đường GMaps + B1 keep-alive, chèn tín hiệu trong <code>runCatching</code> cô lập), 8 file track-B qua checkout. <b>S3</b> compile sạch (NavState.maneuver có default nên WazeHudSource/VietMap/SpeedSign khôi phục không drift). <b>S4</b> 5 suite XANH: core 799 · app 418 · vehicle-contracts 22 · car-integration 28 · offcar-planner 99 = <b>1366 test, 0 fail</b> (fresh <code>--rerun-tasks</code>); <code>assembleRelease</code>+<code>assembleVehicleTest</code> ký (CN=ClusterNav); aapt2 release APK versionCode 130, không debuggable, <b>KHÔNG</b> có bề mặt TEST_ADAS_*/TEST_SPEED_LIMIT/HudSignProbe (bất biến 1.30 giữ; vehicleTest APK có probe → chứng minh check ý nghĩa). Đổi phụ: đảo 2 assertion anti-signal trong NavNotificationListenerTest, re-pin T11_HASHES layout/activity_main.xml (f9e9c3fb→ef73de91). <b>S5</b> senior review (opus-4.8) = <b>APPROVED</b> 0 P0/P1/P2, boundary 6/6 (Waze/VietMap THÊM cạnh GMaps, không thay); security scan = 0 [BLOCK], nội dung CLEAN (keystore/local.properties/carlog gitignored, không commit). <span class="en">Approved → autonomous: restore→rewire→adapt→build green (1366 tests, 0 fail)→signed release with no test surface→senior review APPROVED→scan CLEAN. R1–R6 met; R7 = push.</span></div>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

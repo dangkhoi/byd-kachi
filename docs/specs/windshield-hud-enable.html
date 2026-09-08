@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Enable dẫn đường trên HUD kính lái</title>
+<script>(function(){var k='windshield-hud-enable-theme';var t=localStorage.getItem(k);var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1220px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700;letter-spacing:-.01em}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:72px 0 46px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,62px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:1040px}.lead{font-size:19px;color:var(--muted);max-width:920px}.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px}.stat,.card,.callout,.phase,.review,.diagram,.fnode{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3,.grid4{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.grid4{grid-template-columns:repeat(4,1fr)}.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}.callout.purple{background:var(--purple-soft);border-color:var(--purple)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:820px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue);white-space:nowrap}.pill.green{background:var(--green-soft);color:var(--green)}.pill.amber{background:var(--amber-soft);color:var(--amber)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.purple{background:var(--purple-soft);color:var(--purple)}.review{padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}.diagram{padding:22px;overflow:auto}.diagram svg{display:block;min-width:900px;width:100%;height:auto}.box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}.box.blue{fill:var(--blue-soft);stroke:var(--blue)}.box.green{fill:var(--green-soft);stroke:var(--green)}.box.amber{fill:var(--amber-soft);stroke:var(--amber)}.box.red{fill:var(--red-soft);stroke:var(--red)}.box.purple{fill:var(--purple-soft);stroke:var(--purple)}.dt{fill:var(--ink);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.6;marker-end:url(#arrow)}.edge.blue{stroke:var(--blue)}.edge.green{stroke:var(--green)}.edge.red{stroke:var(--red);stroke-dasharray:5 4}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--blue);margin-right:6px}.flow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:stretch}.fnode{padding:16px;text-align:center;position:relative}.fnode b{display:block;margin-bottom:5px}.fnode span{font:11px/1.45 var(--mono);color:var(--muted)}.fnode:not(:last-child):after{content:"→";position:absolute;right:-14px;top:50%;transform:translateY(-50%);z-index:2;color:var(--muted);font-size:18px}.fnode.good{background:var(--green-soft);border-color:var(--green)}.fnode.bad{background:var(--red-soft);border-color:var(--red)}.fnode.warn{background:var(--amber-soft);border-color:var(--amber)}.kv{display:grid;grid-template-columns:210px 1fr;gap:8px 16px}.kv b{font:12px var(--mono);color:var(--muted)}.strike{text-decoration:line-through;color:var(--muted)}
+@media(max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3,.grid4{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.fnode:not(:last-child):after{content:"↓";right:auto;left:50%;top:auto;bottom:-20px;transform:translateX(-50%)}.kv{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review,.diagram{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Windshield HUD</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('windshield-hud-enable-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Consolidated spec · discovery → proof → production wiring</div>
+<h1>Enable dẫn đường trên HUD kính lái — bằng bằng chứng hiển thị, không bằng <code>rc=0</code>.</h1>
+<p class="lead">AmapService/broadcast là đường chuẩn đưa navigation lên cluster. Owner xác nhận trên một số biến thể HUD, cùng trigger này tự mirror mũi tên + khoảng cách lên kính lái nhưng không có tên đường; Seal W-mode hiện chỉ lên cluster. Vì vậy bài toán chính là tìm <strong>mirror gate/condition/field còn thiếu trên Seal</strong>, rồi xử lý tên đường như một side-channel thứ hai.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Baseline: main@d85b9f2e13c3 · Date: 2026-08-06 · Scope: Navigation/HUD only</p>
+<div class="stats">
+<div class="stat"><b>1</b><span>W-mode HUD đã đo</span></div>
+<div class="stat"><b>1</b><span>switch feedback: ON</span></div>
+<div class="stat"><b>1</b><span>AmapService canonical path</span></div>
+<div class="stat"><b>0</b><span>Seal mirror gate đã proof</span></div>
+<div class="stat"><b>1</b><span>visual gate bắt buộc</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Evidence / effect</th></tr></thead><tbody>
+<tr><td>2026-08-06</td><td>Khởi tạo spec từ handoff PM #2; đối chiếu lại source, raw verdict 2026-07-29 và probe 2026-08-06.</td><td>Loại giả thuyết “HUD đang tắt”; chốt discovery-first, debug-only probe, typed outcomes và visual windshield gate.</td></tr>
+<tr><td>2026-08-06</td><td>Owner bổ sung bằng chứng cross-vehicle: một số HUD tự mirror AmapService maneuver+distance nhưng thiếu road name; Seal không mirror.</td><td>Giữ AmapService làm canonical content path; ưu tiên diff mirror gate/field/state/profile. Road name tách thành milestone side-channel, direct INSTRUMENT không còn là primary path.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="callout red"><strong>Hai correction bắt buộc:</strong> (1) HUD vật lý của Seal là W-mode và đang ON, nên “bật lại switch” không phải lời giải; (2) <code>AUTONAVI_STANDARD_BROADCAST_SEND</code> → AmapService là canonical cluster path và không được loại bỏ chỉ vì Seal chưa mirror lên kính. Kết quả âm tính trước đây chỉ có nghĩa là <em>current Seal conditions/payload chưa mở nhánh HUD</em>.</div>
+<div class="callout green"><strong>Owner cross-vehicle evidence — 2026-08-06:</strong> trên một số loại HUD, khi trigger cùng navigation session lên cluster thì HUD tự hiện mũi tên + khoảng cách và chạy ổn; tên đường vẫn thiếu trên HUD dù cluster có tên đường. Trên Seal, cluster hiện đầy đủ nhưng HUD không hiện maneuver/distance. Đây là differential evidence để xếp ưu tiên giả thuyết, chưa thay cho exact model/ROM capture.</div>
+<div class="grid3">
+<div class="card"><h3>Đã chứng minh trên Seal</h3><ul><li>AmapService full broadcast render cluster icon + distance + road.</li><li>Field-test thêm cùng lúc ba chuỗi <code>*_AUTO</code> + <code>ROUTE_REMAIN_TIME_STRING</code> và distance hết kẹt <code>-1</code>; chưa isolate field nào trong bundle là individually necessary.</li><li>HUD config=1 W-mode, physical switch feedback=1/ON.</li><li><code>SET_DYNAMIC_NAVI_FUNCTION_STATUS_SET=1</code> đơn lẻ chưa làm HUD mirror.</li><li>Direct <code>INSTRUMENT_*</code> rc=0 đơn lẻ cũng chưa render HUD.</li></ul></div>
+<div class="card"><h3>Đã biết từ biến thể khác</h3><ul><li>Cùng cluster navigation trigger có thể kéo HUD lên tự động.</li><li>Mirror path đủ maneuver + distance.</li><li><code>NEXT_ROAD_NAME</code> lên cluster nhưng không được mirror sang HUD.</li><li>Vì vậy content source có thể vẫn là AmapService, với downstream branch/gate theo HUD/vehicle profile.</li></ul></div>
+<div class="card"><h3>Khoảng trống thật</h3><ul><li>Seal thiếu field, session transition, source flag, setting/property hay profile condition nào?</li><li>AmapService phát song song HAL/CAN và <code>sendInfo2(4, FlatBuffer NaviInfo)</code>; HUD variant nghe nhánh nào?</li><li>State builder hiện chỉ biết STOP/reset 10019/9, chưa model start-state.</li><li>Road name cần field khác, encoding khác hay direct pathname side-channel sau khi mirror active?</li></ul></div>
+</div>
+<h3>2.1 Correct evidence ladder</h3>
+<div class="flow">
+<div class="fnode good"><b>NavigationFrame</b><span>one source/session</span></div>
+<div class="fnode good"><b>Amap full Intent</b><span>10001 · TYPE=1 · _AUTO</span></div>
+<div class="fnode good"><b>AmapService</b><span>canonical producer bridge</span></div>
+<div class="fnode good"><b>Cluster</b><span>Seal icon + distance + road</span></div>
+<div class="fnode warn"><b>HUD mirror gate</b><span>works on some variants</span></div>
+<div class="fnode bad"><b>Seal W-mode</b><span>gate/condition missing</span></div>
+<div class="fnode warn"><b>Road side-channel</b><span>missing even on working HUDs</span></div>
+</div>
+<div class="callout blue"><strong>User story:</strong> Là người lái Seal, tôi muốn ClusterNav tiếp tục gửi một canonical AmapService navigation session lên cluster và kích hoạt đúng nhánh mirror để HUD hiện maneuver + distance. Nếu road name cần kênh riêng, app phải nói đúng capability thay vì trộn nó với mirror-enable.</div>
+<div class="grid2">
+<div class="card"><h3>In scope</h3><ul><li>Byte/field inventory của current full Amap frame + state lifecycle.</li><li>Cross-variant differential: payload, AmapService branch, HUD/vehicle profile và enable gates.</li><li>Seal mirror activation qua canonical Amap frame, cluster vẫn active trong proof.</li><li>Road-name side-channel sau khi maneuver+distance mirror đã proof.</li><li>Release-safe probe, truthful state, replay/stop/restart and exact-build evidence.</li></ul></div>
+<div class="card"><h3>Out of scope</h3><ul><li>Thay AmapService bằng direct HAL làm content transport chính.</li><li>Speed-limit sign / TSR injection.</li><li>Cluster Cast, geometry, projection or recovery.</li><li>Đoán state/field chưa thấy trong OEM code hoặc reference capture.</li><li>Commit, push, release respin và first-launch fixes ngoài regression preservation.</li></ul></div>
+</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance criteria</th></tr></thead><tbody>
+<tr><td>R1</td><td><strong>Seal HUD mirror maneuver + distance.</strong></td><td>Một exact release-signed <code>vehicleTest</code> candidate giữ canonical AmapService cluster frame active và làm Seal windshield HUD đổi đúng left/right + distance. Cluster được kỳ vọng hiện đồng thời; proof không yêu cầu Cluster lane OFF.</td></tr>
+<tr><td>R2</td><td><strong>AmapService là canonical content path.</strong></td><td><code>AUTONAVI_STANDARD_BROADCAST_SEND</code> và <code>AmapFrameBuilder</code> tiếp tục là source duy nhất cho cluster guidance. Không thay bằng direct <code>writeNavFrame</code> trước khi exhaust mirror differential; current full cluster payload không regression.</td></tr>
+<tr><td>R3</td><td><strong>Cross-vehicle differential có provenance.</strong></td><td>Mỗi reference fact phải có artifact path/hash hoặc tag <code>OWNER_OBSERVATION</code>/<code>UNAVAILABLE</code>. Ghi model/ROM/HUD mode/AmapService version, exact payload/state/settings nếu có; absent artifact không được biến thành inferred key.</td></tr>
+<tr><td>R4</td><td><strong>Không đồng nhất “sent” với “visible”.</strong></td><td>Broadcast sent, HAL rc=0, cluster visible và HUD visible là bốn truth riêng. Chỉ human windshield evidence đóng mirror gate; direct gate write thiếu/nonzero/exception thành typed fault.</td></tr>
+<tr><td>R5</td><td><strong>Tôn trọng physical HUD ownership.</strong></td><td>Production Confirm from OFF→ON is a durable user vehicle-setting change: HUD request OFF, Stop and arrival must issue zero physical-OFF write. Only explicitly consented diagnostic D5 may perform temporary OFF→ON→OFF restoration. App-owned mirror gates may still restore/disable.</td></tr>
+<tr><td>R6</td><td><strong>Enable mirror phải force-replay qua một emission arbiter.</strong></td><td>Fresh source frame, 400ms heartbeat, forced replay, stop và source change đi qua một monotonic session/sequence arbiter. Gate-ready tạo đúng một <em>additional forced-replay token</em> cho latest fresh frame, coalesce pending heartbeat, không replay stale/foreign.</td></tr>
+<tr><td>R7</td><td><strong>Capability coupling trung thực.</strong></td><td>HUD failure không làm hỏng cluster. Với <code>COUPLED_TO_CLUSTER</code>, request lane-OFF trong khi HUD requested phải bị block hoặc truthfully convert thành cả hai OFF; không hứa lane-off/HUD-on. Independent actions chỉ xuất hiện khi exact gate được proof.</td></tr>
+<tr><td>R8</td><td><strong>Một mirror controller + một Amap emission arbiter.</strong></td><td>Mirror controller serializes physical/gate operations; emission arbiter serializes source/heartbeat/replay/stop. Existing <code>NavigationHudOwner</code> performs zero maneuver/distance writes; only a separately proven M2 road side-channel may remain.</td></tr>
+<tr><td>R9</td><td><strong>Probe chỉ tồn tại trong release-signed vehicleTest.</strong></td><td>Off-car static gate proves manifest/source isolation. D0 target preflight binds vehicleTest+sender tuples and frozen action: DUMP branch proves shell success + ordinary-UID denial/zero mutation; no-DUMP branch proves non-exported receiver + sender denial and uses in-app UI. Release has zero probe surface.</td></tr>
+<tr><td>R10</td><td><strong>Probe catalog an toàn và source-backed.</strong></td><td>Mỗi candidate schema bắt buộc source citation, prior read, đúng một mutation variable, inverse và bounded values; static test rejects raw-id/MASS/unknown state. Catalog files touched by this work must be split so every changed source file ≤500 LOC.</td></tr>
+<tr><td>R11</td><td><strong>App-UID viability.</strong></td><td>Mirror candidate executes inside release-signed ClusterNav <code>vehicleTest</code> process while adb shell only triggers the permission-guarded entrypoint. Shell-only <code>app_process</code> success is insufficient.</td></tr>
+<tr><td>R12</td><td><strong>Lifecycle fail-closed.</strong></td><td>Stop/arrival reset canonical Amap state and mirror gate in proven order. Restart never emits stale frame. No proven Seal capability ⇒ seeded legacy <code>hud=true</code> migrates/ignores to port OFF and a test proves zero <code>NavigationHudOwner</code>/direct content write.</td></tr>
+<tr><td>R13</td><td><strong>UI truth.</strong></td><td>UI distinguishes “cluster active”, “HUD mirror gate chưa mở”, “frame đã gửi/chưa verify”, “HUD follows cluster”, “road name unsupported” and fault. No live “HUD visible” claim from rc/broadcast alone.</td></tr>
+<tr><td>R14</td><td><strong>Giữ ba first-launch behavior và non-HUD scope.</strong></td><td>Tests riêng prove (a) early-bail destroy safe, (b) <code>startForegroundOnce()</code> precedes every permission early return in both callbacks, (c) overlay settings launches at most once/service instance. Exact release P0 clean-install proves one prompt, no crash/RemoteServiceException, then foreground bubble after grant.</td></tr>
+<tr><td>R15</td><td><strong>Road name là milestone thứ hai.</strong></td><td>M1 “HUD enabled” requires maneuver+distance. M2 “HUD parity” requires visible road name via a proven Amap field/FlatBuffer mapping or separate pathname side-channel. If M2 fails, feature may only claim maneuver+distance and UI/docs state road unsupported.</td></tr>
+<tr><td>R16</td><td><strong>Hai exact-source/exact-build gates.</strong></td><td>One release-signed <code>vehicleTest</code> tuple passes D0–D3; one release tuple passes P0–P7. Each tuple records APK path/SHA, source manifest/sourceId, HEAD/tracked-diff hash, package/version, variant/debuggable, signing-cert SHA, build command/time. Current crashing <code>527589…</code> candidate is invalidated. P8 only for M2.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+<h3>4.1 Canonical AmapService → cluster/HUD mirror model</h3>
+<div class="diagram"><svg viewBox="0 0 1120 440" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="amap-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box blue" x="25" y="155" width="180" height="80" rx="14"/><text class="dt" x="115" y="185" text-anchor="middle">NavigationFrame</text><text class="ds" x="115" y="207" text-anchor="middle">source · maneuver · distance · road</text>
+<rect class="box purple" x="255" y="135" width="220" height="120" rx="14"/><text class="dt" x="365" y="168" text-anchor="middle">AmapFrameBuilder</text><text class="ds" x="365" y="190" text-anchor="middle">10001 full guidance</text><text class="ds" x="365" y="211" text-anchor="middle">10019 reset/stop</text><text class="ds" x="365" y="232" text-anchor="middle">single canonical Intent</text>
+<rect class="box green" x="525" y="135" width="220" height="120" rx="14"/><text class="dt" x="635" y="168" text-anchor="middle">AmapService</text><text class="ds" x="635" y="190" text-anchor="middle">HAL/CAN + sendInfo2(4)</text><text class="ds" x="635" y="211" text-anchor="middle">FlatBuffer NaviInfo under 1for2</text><text class="ds" x="635" y="232" text-anchor="middle">vehicle/profile conditions</text>
+<rect class="box green" x="825" y="35" width="250" height="90" rx="14"/><text class="dt" x="950" y="67" text-anchor="middle">Cluster renderer</text><text class="ds" x="950" y="89" text-anchor="middle">Seal: icon + distance + road proven</text>
+<rect class="box amber" x="825" y="175" width="250" height="90" rx="14"/><text class="dt" x="950" y="207" text-anchor="middle">HUD mirror branch</text><text class="ds" x="950" y="229" text-anchor="middle">other variants: arrow + distance</text><text class="ds" x="950" y="248" text-anchor="middle">Seal: inactive under current conditions</text>
+<rect class="box red" x="825" y="315" width="250" height="90" rx="14"/><text class="dt" x="950" y="347" text-anchor="middle">Road-name side-channel</text><text class="ds" x="950" y="369" text-anchor="middle">missing on working HUD variants too</text><text class="ds" x="950" y="388" text-anchor="middle">Amap field / FlatBuffer / pathname?</text>
+<path class="edge blue" style="marker-end:url(#amap-arrow)" d="M205,195 H255"/><path class="edge green" style="marker-end:url(#amap-arrow)" d="M475,195 H525"/>
+<path class="edge green" style="marker-end:url(#amap-arrow)" d="M745,175 C785,175 785,80 825,80"/><path class="edge" style="marker-end:url(#amap-arrow)" d="M745,205 H825"/><path class="edge red" style="marker-end:url(#amap-arrow)" d="M745,225 C785,225 785,360 825,360"/>
+</svg><div class="legend"><span><span class="dot" style="background:var(--green)"></span>canonical/proven</span><span><span class="dot" style="background:var(--amber)"></span>variant mirror gate</span><span><span class="dot" style="background:var(--red)"></span>separate road gap</span></div></div>
+<div class="callout blue"><strong>Interpretation:</strong> “Amap broadcast không lên HUD trên Seal” không phủ định AmapService. Nó xác định một missing conditional branch between AmapService output and Seal HUD. Direct INSTRUMENT writes remain useful diagnostics/possible road side-channel only after the Amap mirror session is active.</div>
+
+<h3>4.2 Two milestones</h3>
+<div class="grid2"><div class="card"><h3>M1 · HUD enabled</h3><ul><li>Canonical Amap frame still renders cluster.</li><li>Seal HUD changes maneuver left↔right and distance.</li><li>Stop/clear works and physical HUD stays on.</li><li>Road may remain explicitly unsupported.</li></ul></div><div class="card"><h3>M2 · HUD parity</h3><ul><li>Road name visible and changes with frame.</li><li>Exact source identified: Amap extra, FlatBuffer field or side-channel.</li><li>Encoding/budget/clear proven.</li><li>No full-parity claim before P8.</li></ul></div></div>
+
+<h3>4.3 Release-safe diagnostics boundary</h3>
+<div class="grid2"><div class="card"><h3>Main / release</h3><ul><li><code>RebindReceiver android:exported="false"</code>.</li><li>No <code>TEST_*</code> actions/handlers/classes in main/release.</li><li>Production contains only field-proven mirror gate + canonical Amap transport.</li><li>System/package/watchdog delivery covered by tests.</li></ul></div><div class="card"><h3>Release-signed vehicleTest only</h3><ul><li><code>src/vehicleTest</code> receiver + manifest; frozen action <code>com.byd.clusternav.VEHICLE_TEST_HUD_MIRROR</code>; <code>exported=true</code> only with <code>android.permission.DUMP</code>.</li><li>First target gate proves adb shell holds DUMP. A separately built <code>com.byd.clusternav.probesender</code> APK (ordinary UID, non-platform key, no DUMP) sends the same explicit Intent; denial plus unchanged receiver mutation counter proves ordinary-app isolation. If DUMP is unavailable, receiver stays non-exported and vehicleTest uses an in-app debug UI—never weaken permission.</li><li><code>goAsync()</code> + bounded executor + <code>finish()</code>; compile-time actions/values; no raw IDs.</li><li><code>vehicleTest</code> uses the release signing cert, avoiding debug↔release certificate mismatch after the one-time transition from the currently installed debug-key APK.</li></ul></div></div>
+
+<h3>4.4 Exact current payload inventory</h3>
+<div class="scroll"><table><thead><tr><th>Frame</th><th>Extra / sequence</th><th>Android type</th><th>Presence</th><th>Kotlin producer</th><th>Value domain</th><th>Clear sentinel / absent</th></tr></thead><tbody>
+<tr><td>10001 guidance</td><td><code>KEY_TYPE</code></td><td>Int</td><td>always</td><td><code>putExtra("KEY_TYPE", KEY_TYPE_GUIDE)</code></td><td><code>10001</code></td><td>N/A</td></tr>
+<tr><td>10001</td><td><code>TYPE</code></td><td>Int</td><td>always</td><td><code>TYPE_ACTIVE</code></td><td><code>1</code></td><td>N/A</td></tr>
+<tr><td>10001</td><td><code>EXTRA_STATE</code></td><td>Int</td><td>always</td><td>literal <code>1</code></td><td>guidance-state extra</td><td>N/A; not a 10019 start proof</td></tr>
+<tr><td>10001</td><td><code>EXTRA_IS_FOREGROUND</code></td><td>Int</td><td>always</td><td>literal <code>0</code></td><td>0 currently</td><td>N/A</td></tr>
+<tr><td>10001</td><td><code>IS_BYD_MAP</code></td><td>Boolean</td><td>always</td><td><code>byd</code> argument</td><td>runtime default <code>false</code></td><td>N/A; true requires reset</td></tr>
+<tr><td>10001</td><td><code>IS_BYD_BAIDU_MAP</code></td><td>Boolean</td><td>always</td><td>literal <code>false</code></td><td>false</td><td>N/A</td></tr>
+<tr><td>10001</td><td><code>NEW_ICON</code></td><td>Int</td><td>always</td><td>classified <code>icon</code></td><td>AMAP 0..28</td><td>fallback straight=9</td></tr>
+<tr><td>10001</td><td><code>ROUNG_ABOUT_NUM</code></td><td>Int</td><td>only exit 1..10</td><td><code>NavFormat.roundaboutExit()</code></td><td>1..10</td><td>ABSENT otherwise</td></tr>
+<tr><td>10001</td><td><code>SEG_REMAIN_DIS</code></td><td>Int</td><td>always</td><td><code>seg</code></td><td>metres &gt;0</td><td><code>-1</code></td></tr>
+<tr><td>10001</td><td><code>SEG_REMAIN_DIS_AUTO</code></td><td>String</td><td>always</td><td><code>NavParse.formatMeters(seg)</code></td><td>formatted distance</td><td>empty string</td></tr>
+<tr><td>10001</td><td><code>NEXT_ROAD_NAME</code></td><td>String</td><td>always</td><td><code>roadOverride ?: NavFormat.fitRoadName()</code></td><td>fitted/marquee road</td><td>may be empty string</td></tr>
+<tr><td>10001</td><td><code>ROUTE_REMAIN_DIS</code></td><td>Int</td><td>always</td><td><code>NavParse.parseEta().first</code></td><td>metres ≥0</td><td><code>-1</code></td></tr>
+<tr><td>10001</td><td><code>ROUTE_REMAIN_TIME</code></td><td>Int</td><td>always</td><td><code>NavParse.parseEta().second</code></td><td>seconds ≥0</td><td><code>-1</code></td></tr>
+<tr><td>10001</td><td><code>ROUTE_REMAIN_DIS_AUTO</code></td><td>String</td><td>only routeDis≥0</td><td><code>NavParse.formatMeters(routeDis)</code></td><td>formatted distance</td><td>ABSENT</td></tr>
+<tr><td>10001</td><td><code>ROUTE_REMAIN_TIME_AUTO</code></td><td>String</td><td>only routeTime≥0</td><td><code>NavParse.formatRemainTimeCn(routeTime)</code></td><td>Chinese 分/时 tokens</td><td>ABSENT</td></tr>
+<tr><td>10001</td><td><code>ROUTE_REMAIN_TIME_STRING</code></td><td>String</td><td>only routeTime≥0</td><td><code>NavParse.formatSeconds(routeTime)</code></td><td>cosmetic duration</td><td>ABSENT</td></tr>
+<tr><td>10001</td><td><code>ETA_TEXT</code></td><td>String</td><td>only valid arrival clock</td><td><code>NavParse.formatEtaCn()</code></td><td>预计…到达 shape</td><td>ABSENT</td></tr>
+<tr><td>10019 state</td><td><code>KEY_TYPE</code></td><td>Int</td><td>always in <code>buildStateFrame</code></td><td><code>keyType</code> argument</td><td>production <code>10019</code></td><td>N/A</td></tr>
+<tr><td>10019</td><td><code>EXTRA_STATE</code></td><td>Int</td><td>always</td><td><code>state</code> argument</td><td>only proven production <code>9</code></td><td>N/A; no known start value</td></tr>
+<tr><td>10019</td><td><code>IS_BYD_MAP</code></td><td>Boolean</td><td>always</td><td><code>byd</code> argument</td><td>true or false</td><td>N/A</td></tr>
+<tr><td>10019 sequence</td><td>reset/stop order</td><td>N/A</td><td>session start/stop reset</td><td><code>resetBydNaving()</code></td><td><code>IS_BYD_MAP=true</code> then <code>false</code>, both state=9</td><td>ordered pair; not an extra</td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>Field-test scope:</strong> three <code>*_AUTO</code> strings plus <code>ROUTE_REMAIN_TIME_STRING</code> changed together and distance recovered; individual necessity is unisolated. D0–D2 invoke/log real <code>AmapFrameBuilder</code>. V3 compares every column above against vehicleTest and generated catalog fixtures, including production Chinese AUTO time.</div>
+
+<h3>4.5 Differential investigation order</h3>
+<div class="flow">
+<div class="fnode good"><b>Seal baseline</b><span>full frame → cluster yes / HUD no</span></div>
+<div class="fnode"><b>Working reference</b><span>model · ROM · HUD · payload/log</span></div>
+<div class="fnode"><b>Field diff</b><span>keys · types · values · state order</span></div>
+<div class="fnode"><b>Gate diff</b><span>settings · props · 1for2 · profile</span></div>
+<div class="fnode warn"><b>One-variable probe</b><span>source-backed + inverse</span></div>
+<div class="fnode good"><b>M1 mirror proof</b><span>cluster + HUD arrow/distance</span></div>
+<div class="fnode warn"><b>M2 road probe</b><span>Amap/FlatBuffer/pathname</span></div>
+</div>
+<ol>
+<li><strong>Reference first:</strong> identify at least one vehicle/HUD variant where the same trigger mirrors; capture exact model, ROM, HUD mode, AmapService APK/version, full command/frame and relevant logcat if available.</li>
+<li><strong>Trace AmapService branch:</strong> search guidance handler after 10001 parsing for checks on foreground/source flags, HUD config, dynamic navi setting, fission/1for2, vehicle feature config and state transitions.</li>
+<li><strong>Seal A/B matrix:</strong> vary only a field/gate justified by the branch. Keep the full cluster-proven payload, cluster visible, and restore previous setting after each row.</li>
+<li><strong>Road only after M1:</strong> first verify whether road ever enters the HUD-bound payload. Then test <code>NEXT_ROAD_NAME</code> shape/encoding and, only with call-site evidence, <code>INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET</code> as a side-channel.</li>
+</ol>
+
+<h3>4.6 Production architecture</h3>
+<div class="diagram"><svg viewBox="0 0 1120 430" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="prod-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box" x="25" y="145" width="190" height="80" rx="14"/><text class="dt" x="120" y="176" text-anchor="middle">NavRepository</text><text class="ds" x="120" y="198" text-anchor="middle">one fresh frame/session</text>
+<rect class="box purple" x="270" y="125" width="230" height="120" rx="14"/><text class="dt" x="385" y="157" text-anchor="middle">AmapEmissionArbiter</text><text class="ds" x="385" y="179" text-anchor="middle">fresh · heartbeat · forced replay</text><text class="ds" x="385" y="200" text-anchor="middle">monotonic session/sequence tokens</text><text class="ds" x="385" y="221" text-anchor="middle">stop/source-change ordering</text>
+<rect class="box green" x="555" y="125" width="210" height="120" rx="14"/><text class="dt" x="660" y="157" text-anchor="middle">AmapService</text><text class="ds" x="660" y="179" text-anchor="middle">single content producer</text><text class="ds" x="660" y="200" text-anchor="middle">cluster + conditional mirror</text><text class="ds" x="660" y="221" text-anchor="middle">no duplicate direct frame</text>
+<rect class="box green" x="835" y="35" width="240" height="80" rx="14"/><text class="dt" x="955" y="67" text-anchor="middle">Cluster</text><text class="ds" x="955" y="89" text-anchor="middle">canonical output · must not regress</text>
+<rect class="box amber" x="835" y="155" width="240" height="80" rx="14"/><text class="dt" x="955" y="187" text-anchor="middle">Seal HUD mirror</text><text class="ds" x="955" y="209" text-anchor="middle">enabled by proven gate/profile</text>
+<rect class="box red" x="835" y="285" width="240" height="80" rx="14"/><text class="dt" x="955" y="317" text-anchor="middle">Optional road side-channel</text><text class="ds" x="955" y="339" text-anchor="middle">only if separately proven</text>
+<rect class="box blue" x="270" y="305" width="495" height="80" rx="14"/><text class="dt" x="517" y="337" text-anchor="middle">HudMirrorController</text><text class="ds" x="517" y="359" text-anchor="middle">physical state · mirror gate · capability · request generation</text>
+<path class="edge blue" style="marker-end:url(#prod-arrow)" d="M215,185 H270"/><path class="edge green" style="marker-end:url(#prod-arrow)" d="M500,185 H555"/>
+<path class="edge green" style="marker-end:url(#prod-arrow)" d="M765,165 C800,165 800,75 835,75"/><path class="edge" style="marker-end:url(#prod-arrow)" d="M765,195 H835"/><path class="edge red" style="marker-end:url(#prod-arrow)" d="M765,225 C800,225 800,325 835,325"/>
+<path class="edge blue" style="marker-end:url(#prod-arrow)" d="M517,305 V245"/>
+</svg></div>
+<p><code>AmapEmissionArbiter</code> is the sole sender: source frames, the 400ms heartbeat, gate-ready forced replay, Stop and source changes are commands on one monotonic session/sequence lane. Gate-ready cancels/coalesces a pending heartbeat and emits exactly one <em>additional forced-replay token</em>, not “one total broadcast.” The direct <code>NavigationHudOwner → writeNavFrame</code> path is retired for maneuver/distance; an M2 road writer exists only after exact consumer/order/clear proof.</p>
+
+<h3>4.7 Serialized mirror state machine</h3>
+<div class="flow">
+<div class="fnode"><b>HUD request</b><span>request generation</span></div>
+<div class="fnode"><b>READ_STATE</b><span>physical + mirror gates</span></div>
+<div class="fnode warn"><b>APPLY_GATE</b><span>source-backed writes only</span></div>
+<div class="fnode"><b>Coordinator lock</b><span>fresh current frame?</span></div>
+<div class="fnode good"><b>FORCE_AMAP_REPLAY</b><span>same canonical payload</span></div>
+<div class="fnode"><b>OBSERVE</b><span>cluster + windshield truths</span></div>
+<div class="fnode"><b>STOP/RESTORE</b><span>state reset + prior gates</span></div>
+</div>
+<ul><li>All setting/gate HAL operations run off-main in one serialized mirror controller. All Amap sends—including heartbeat—run through <code>AmapEmissionArbiter</code>.</li><li>Toggle OFF invalidates pending gate callbacks. Independent profile applies its gate; coupled profile blocks/converts a lane-OFF request and explains that HUD follows cluster.</li><li>Enable completion submits <code>FORCE_REPLAY(requestGeneration, sessionId, latestSequence)</code>. Arbiter drops stale tokens, coalesces pending heartbeat and orders concurrent source/Stop commands.</li><li>Stop uses the field-proven Amap reset sequence and restores only app-owned mirror gates. A production-confirmed physical HUD ON is durable and never auto-restored to OFF; temporary physical restoration is exclusive to consented D5 diagnostics.</li></ul>
+
+<h3>4.8 Typed truths and capability model</h3>
+<pre><code>enum class HudMirrorCapability {
+    UNKNOWN,
+    COUPLED_TO_CLUSTER,
+    INDEPENDENT_GATE,
+    UNSUPPORTED,
+}
+
+enum class RoadNameCapability {
+    UNKNOWN,
+    AMAP_PAYLOAD,
+    SIDE_CHANNEL,
+    UNSUPPORTED,
+}
+
+data class HudMirrorSnapshot(
+    val physicalHudOn: Boolean?,
+    val capability: HudMirrorCapability,
+    val roadName: RoadNameCapability,
+    val canonicalFrameSequence: Long?,
+    val broadcastSent: Boolean,
+    val clusterObserved: Boolean?,
+    val hudObserved: Boolean?, // evidence only; not inferred from send/rc
+)</code></pre>
+<div class="callout blue"><strong>Truth separation:</strong> Amap broadcast emitted ≠ AmapService consumed ≠ cluster visible ≠ HUD visible. Runtime may report emitted/gate state; exact-build evidence records physical observations. Other-vehicle owner evidence ranks hypotheses but does not set Seal capability.</div>
+<div class="callout amber"><strong>UNKNOWN vs UNSUPPORTED:</strong> use <code>UNKNOWN</code> whenever artifacts are missing, a source-backed branch is untested, or the bounded matrix is incomplete. Use <code>UNSUPPORTED</code> only after every documented candidate is exhausted on the exact model/ROM/HUD/AmapService profile. User copy says “not supported by this ClusterNav build/profile,” never “hardware can never support it.”</div>
+<div class="callout red"><strong>Partial gate mutation:</strong> stop on first rejected setting operation; restore every earlier changed gate from recorded prior values in the same serialized generation; record primary + rollback outcome. Canonical Amap frame itself is one broadcast, not a fake multi-register transaction.</div>
+
+<h3>4.9 Candidate strategy</h3>
+<div class="scroll"><table><thead><tr><th>Approach</th><th>Evidence</th><th>Decision</th></tr></thead><tbody>
+<tr><td>Keep current full Amap frame as baseline</td><td>Seal cluster renders icon+distance+road; other HUD variants mirror arrow+distance from cluster trigger.</td><td><span class="pill green">PRIMARY</span></td></tr>
+<tr><td>Diff guidance extras/state order</td><td>Current builder has no explicit HUD key and only models 10019 STOP; missing foreground/source/start condition is plausible.</td><td><span class="pill green">SELECTED after source/reference evidence</span></td></tr>
+<tr><td>Diff settings/properties/profile/1for2</td><td>Physical HUD ON and dynamic-nav flag alone insufficient; AmapService has HAL/CAN + FlatBuffer branches.</td><td><span class="pill green">SELECTED</span></td></tr>
+<tr><td>Direct INSTRUMENT maneuver+distance</td><td>rc=0 but no Seal HUD under inactive mirror conditions.</td><td><span class="pill amber">SECONDARY diagnostic only</span></td></tr>
+<tr><td>Direct pathname after mirror active</td><td>Working HUD variants miss road; current code already knows a UTF-16 pathname register but it is unproven on glass.</td><td><span class="pill amber">M2 candidate after call-site proof</span></td></tr>
+<tr><td>Blind MASS / guessed state values</td><td>Can change unrelated vehicle behavior and cannot attribute success.</td><td><span class="pill red">FORBIDDEN</span></td></tr>
+<tr><td>Replace AmapService with a new transport</td><td>Contradicts proven cluster path and cross-variant mirror evidence.</td><td><span class="pill red">REJECTED</span></td></tr>
+</tbody></table></div>
+
+<h3>4.10 User flow</h3>
+<div class="grid2"><div class="card"><h3>Independent-gate variant</h3><ol><li>User requests HUD.</li><li>Read physical + mirror gate.</li><li>Apply proven gate if needed.</li><li>Force replay latest Amap frame.</li><li>Cluster remains active; HUD mirrors.</li><li>HUD OFF toggles mirror gate only.</li></ol></div><div class="card"><h3>Coupled variant</h3><ol><li>App detects/knows capability from field-proven profile.</li><li>UI says “HUD follows cluster”.</li><li>Canonical frame drives both surfaces.</li><li>No fake independent checkbox action.</li><li>Road line says supported/unsupported separately.</li></ol></div></div>
+<div class="callout amber"><strong>No proven Seal gate:</strong> while the bounded matrix is incomplete, keep cluster navigation working and show “Chưa xác định được mirror gate trên build/profile này; cluster vẫn hoạt động.” Only an exhausted exact-profile matrix may use “not supported by this ClusterNav build/profile.” In both states, perform no duplicate maneuver/distance writes.</div>
+
+<h3>4.11 Vehicle evidence, identity and rollback</h3>
+<div class="kv"><b>Identity tuple</b><span>APK path + SHA-256; exact-source manifest + sourceId; HEAD + tracked-diff hash; package; versionCode/name; variant + debuggable; signing-cert SHA-256; build command + UTC time.</span><b>Diagnostic artifact</b><span>Release-signed <code>vehicleTest</code>, separately recorded and never relabeled release. Current debug-key APK needs one clean transition; subsequent vehicleTest↔release can keep signature/state.</span><b>Release artifact</b><span>Regenerate exact source, run release-only <code>collectAuthorizedApk</code>, then <code>record-hud-release.py</code> binds the collected APK to the source and persists package/version/variant/debuggable/cert/build command/time plus HEAD/diff. <code>apksigner</code> rejects unsigned/debug/wrong cert. Current 527589 is invalid.</span><b>Reference capture</b><span>Model · ROM · HUD mode · AmapService version · exact payload/log or provenance tag.</span><b>Seal baseline</b><span>Real builder frame; cluster icon/distance/road visible; HUD unchanged.</span><b>M1/M2</b><span>M1 proves left↔right+distance; M2 separately proves road update+clear.</span><b>Production ownership</b><span>P1 Confirm is a durable user choice. HUD request OFF, Stop, arrival and P7 restore only app-owned mirror gates and must emit zero physical-HUD-OFF write.</span><b>Diagnostic ownership</b><span>D5 is a separately consented temporary transaction and alone may restore physical OFF after OFF→ON proof.</span><b>Rollback</b><span>Known Amap stop/reset + app-owned gate restoration; mutation log distinguishes physical versus app-owned registers.</span></div>
+
+<h3>4.12 Planned file boundaries</h3>
+<div class="scroll"><table><thead><tr><th>File / area</th><th>Planned change</th><th>Reason</th></tr></thead><tbody>
+<tr><td><code>AmapFrameBuilder.kt</code></td><td>Preserve payload; add only proven field/state; expose shared typed fixture/introspection for parity tests.</td><td>Canonical contract.</td></tr>
+<tr><td><code>AmapEmissionArbiter.kt</code> (new)</td><td>Serialize fresh frame, heartbeat, forced replay, source change and stop with monotonic tokens.</td><td>Close replay/heartbeat race.</td></tr>
+<tr><td><code>ClusterBroadcaster.kt</code></td><td>Delegate every send/schedule/stop to arbiter; no private bypass.</td><td>One sender.</td></tr>
+<tr><td><code>HudMirrorController.kt</code> (new)</td><td>Serialized physical/mirror gate reads, writes, prior-state restore and capability.</td><td>Variant-specific enable.</td></tr>
+<tr><td><code>NavigationHudOwner.kt</code></td><td>Zero maneuver/distance runtime writes after mirror proof; optional M2 road seam only if proven.</td><td>No duplicate content path.</td></tr>
+<tr><td><code>BydHal.kt</code></td><td>Typed exact-gate primitives; optional road primitive only after M2.</td><td>Private HAL quarantine.</td></tr>
+<tr><td><code>NavRepository.kt</code> / coordinator / UI / Prefs</td><td>Capability coupling, request generation, fail-closed legacy pref, truthful actions/text.</td><td>Lifecycle and UX.</td></tr>
+<tr><td><code>app/src/vehicleTest</code></td><td>DUMP-protected receiver, mutation counter/oracle, or non-exported in-app fallback; real-builder actions.</td><td>Release-signed app-UID evidence.</td></tr>
+<tr><td><code>hud-probe-sender/</code> test app</td><td>Ordinary-UID no-DUMP sender APK with fixed applicationId and explicit broadcast action.</td><td>Executable unauthorized-sender denial.</td></tr>
+<tr><td><code>CarExecCatalog.kt</code> (currently 1,507 LOC)</td><td>Split before modification into small aggregator + Navigation/HUD/Cast catalog modules, every changed file ≤500 LOC.</td><td>Mandatory file-health rule.</td></tr>
+<tr><td><code>HudMirrorProbeCatalog.kt</code> + schema tests</td><td>Source/prior/single mutation/inverse/bounded-value metadata; reject raw/MASS.</td><td>Safe repeatable candidates.</td></tr>
+<tr><td><code>scripts/evidence/record-hud-vehicle-test.py</code></td><td>Report-only vehicleTest + sender identity records bound to <code>verifyExactSourceIdentity</code>.</td><td>Diagnostic identities.</td></tr>
+<tr><td><code>scripts/evidence/record-hud-release.py</code></td><td>Augment collected release into <code>hud-mirror-release-candidate.json</code> with every R16 field; SDK <code>apksigner verify --print-certs</code>; reject unsigned/debug/wrong cert, missing tuple fields, drift and 527589.</td><td>Executable release identity.</td></tr>
+<tr><td><code>scripts/verify-hud-spec-gates.sh</code></td><td>Runs V3–V16: tests, manifest/dex/action scan, direct-call scan, scope/LOC and identity checks.</td><td>One command-verifiable off-car gate.</td></tr>
+<tr><td><code>scripts/vehicle/run-hud-mirror-matrix.sh</code></td><td>Identity preflight + D/P row runner; no logic duplicated from typed catalogs.</td><td>Repeatable field evidence.</td></tr>
+<tr><td>Focused tests</td><td>Builder parity, arbiter races, coupling, legacy pref, receiver denial, first-launch ×3, catalog schema, identity.</td><td>Executable closure.</td></tr>
+</tbody></table></div>
+
+<h3>4.12a Frozen repository path allowlist</h3>
+<p class="small">This is a maximum set; implementation may touch fewer paths. Any additional path requires spec revision before edit. Generated exact-source filenames are recorded in the T0 baseline manifest and may not be substituted silently.</p>
+<pre><code>app/src/main/AndroidManifest.xml
+app/src/main/java/com/byd/clusternav/AmapFrameBuilder.kt
+app/src/main/java/com/byd/clusternav/AmapEmissionArbiter.kt
+app/src/main/java/com/byd/clusternav/ClusterBroadcaster.kt
+app/src/main/java/com/byd/clusternav/HudMirrorController.kt
+app/src/main/java/com/byd/clusternav/NavigationHudOwner.kt
+app/src/main/java/com/byd/clusternav/NavRepository.kt
+app/src/main/java/com/byd/clusternav/Prefs.kt
+app/src/main/java/com/byd/clusternav/MainActivity.kt
+app/src/main/java/com/byd/clusternav/RebindReceiver.kt
+app/src/main/java/com/byd/clusternav/modules/hal/BydHal.kt
+app/src/main/java/com/byd/clusternav/modules/clustercast/FloatingBubbleService.kt
+app/src/main/res/layout/activity_main.xml
+app/src/main/res/values/strings.xml
+app/src/vehicleTest/AndroidManifest.xml
+app/src/vehicleTest/java/com/byd/clusternav/HudMirrorProbeReceiver.kt
+app/src/vehicleTest/java/com/byd/clusternav/HudMirrorProbeActivity.kt  # only if DUMP unavailable
+core/src/main/kotlin/com/byd/clusternav/navigation/NavigationModels.kt
+core/src/main/kotlin/com/byd/clusternav/navigation/NavigationSessionCoordinator.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecNavigationCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecHudCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecSpeedSignCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecCastCoreCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecCastPlacementCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecCastDiagnosticsCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/HudMirrorProbeCatalog.kt
+settings.gradle.kts
+hud-probe-sender/build.gradle.kts
+hud-probe-sender/src/main/AndroidManifest.xml
+hud-probe-sender/src/main/java/com/byd/clusternav/probesender/ProbeSenderActivity.kt
+scripts/evidence/record-hud-vehicle-test.py
+scripts/evidence/record-hud-release.py
+scripts/verify-hud-spec-gates.sh
+scripts/vehicle/run-hud-mirror-matrix.sh
+app/src/test/java/com/byd/clusternav/AmapFrameBuilderContractTest.kt
+app/src/test/java/com/byd/clusternav/AmapEmissionArbiterTest.kt
+app/src/test/java/com/byd/clusternav/HudMirrorControllerTest.kt
+app/src/test/java/com/byd/clusternav/HudMirrorVariantIsolationTest.kt
+app/src/test/java/com/byd/clusternav/HudMirrorLegacyPrefTest.kt
+app/src/test/java/com/byd/clusternav/HudDirectWriteAbsenceTest.kt
+app/src/test/java/com/byd/clusternav/HudRoadNameCapabilityTest.kt
+app/src/test/java/com/byd/clusternav/FloatingBubbleFirstLaunchContractTest.kt
+app/src/test/java/com/byd/clusternav/modules/clustercast/CastUILifecycleSafetyTest.kt
+core/src/test/kotlin/com/byd/clusternav/navigation/NavigationSessionCoordinatorTest.kt
+core/src/test/kotlin/com/byd/clusternav/carexec/HudMirrorProbeCatalogTest.kt
+core/src/test/kotlin/com/byd/clusternav/carexec/CarExecCatalogTest.kt
+docs/specs/windshield-hud-enable.html
+docs/_handoff/hud-mirror-baseline.json
+docs/_handoff/hud-mirror-reference-matrix.json
+docs/_handoff/hud-mirror-vehicle-test-exact-source.json
+docs/_handoff/hud-mirror-release-exact-source.json
+docs/_handoff/hud-mirror-vehicle-test-candidate.json
+docs/_handoff/hud-mirror-probe-sender-candidate.json
+docs/_handoff/hud-mirror-release-candidate.json
+docs/_handoff/hud-mirror-release-build-command.txt
+docs/_handoff/vehicle-candidate.json</code></pre>
+<h3>4.13 Technology validation</h3>
+<div class="scroll"><table><thead><tr><th>Decision</th><th>Verified source/version</th><th>Result</th></tr></thead><tbody>
+<tr><td>Toolchain</td><td>AGP 9.3.1 built-in Kotlin for <code>:app</code>; Kotlin JVM 2.4.10 for JVM modules; Gradle 9.6.1+SHA; JDK17; SDK37.</td><td>No dependency/toolchain change; AGP 9.4 remains preview.</td></tr>
+<tr><td>Debug isolation</td><td>Context7/Android build-type source sets.</td><td><code>src/debug</code> code/manifest excluded from release.</td></tr>
+<tr><td>Receiver lifecycle</td><td>Android <code>goAsync()</code>/<code>finish()</code> and permission restriction.</td><td>Short bounded probes only; no raw thread.</td></tr>
+<tr><td>AmapService/BYD HAL</td><td>Private OEM API; no public Context7 contract.</td><td>Local decompile, exact payload and vehicle evidence are authoritative.</td></tr>
+<tr><td>Alternative transport</td><td>Cross-vehicle evidence favors existing Amap mirror chain.</td><td>Do not introduce a library/new content transport.</td></tr>
+</tbody></table></div>
+
+<h3>4.14 Boundary-shape checklist</h3>
+<div class="scroll"><table><thead><tr><th>Producer → consumer</th><th>Compare field-by-field</th><th>Proof</th></tr></thead><tbody>
+<tr><td>NavigationFrame → AmapFrameBuilder</td><td>maneuver, distance nullable/-1, road, route/ETA, session sequence</td><td>Current full-frame contract tests.</td></tr>
+<tr><td>AmapFrameBuilder → vehicleTest probe/CarExec → AmapService</td><td>all keys, Android types, values, conditional presence, sentinels, state order</td><td>V3 shared-fixture field parity; D0 logs real builder extras.</td></tr>
+<tr><td>Source/heartbeat/gate replay/stop → AmapEmissionArbiter</td><td>sessionId, source, frame sequence, request generation, emission token, pending heartbeat</td><td>V6 race matrix; no send bypass.</td></tr>
+<tr><td>AmapService → cluster</td><td>HAL/CAN and FlatBuffer outputs under fission/1for2</td><td>Cluster remains icon+distance+road throughout.</td></tr>
+<tr><td>AmapService/profile → HUD mirror</td><td>HUD config, source/foreground flags, settings, properties, vehicle/HUD profile</td><td>D1/D2 windshield maneuver+distance.</td></tr>
+<tr><td>Road producer → HUD renderer</td><td><code>NEXT_ROAD_NAME</code> vs FlatBuffer/pathname bytes, budget, terminator, clear</td><td>D4/P8 or explicit unsupported verdict.</td></tr>
+<tr><td>UI request → mirror controller</td><td>request generation, capability coupling, physical-vs-app-owned register ownership, fresh frame</td><td>race/restart/replay + zero physical-OFF-after-Confirm tests.</td></tr>
+<tr><td>probe-sender APK / adb shell → vehicleTest receiver</td><td>sender UID/permission, action, bounded extras, mutation counter</td><td>shell success; ordinary UID SecurityException/denial + zero mutation.</td></tr>
+<tr><td>Evidence → product claim</td><td>debug/release SHA, vehicle/ROM/HUD, cluster observed, HUD observed, road observed</td><td>M1 and M2 claims remain separate.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<div class="phase"><div class="phase-id">T0 · Preserve</div><div><h4>Freeze evidence, dirty baseline and invalid candidate</h4><ul class="check"><li>Record HEAD, full starting dirty diff hash and explicit allowed-file set; preserve first-launch slice.</li><li>Mark current <code>527589…</code> release candidate invalid/crashing; bind all future artifacts to regenerated exact source.</li><li>Record Seal builder-frame cluster proof/HUD baseline and owner cross-vehicle evidence with provenance tags.</li><li>Inventory every Amap extra type/presence/source and 10019 state behavior.</li></ul><p><strong>Exit:</strong> canonical payload/dirty inputs/allowed scope are frozen and no stale candidate can close a gate.</p></div></div>
+<div class="phase"><div class="phase-id">T1 · Isolate</div><div><h4>Create release-signed vehicleTest probe surface</h4><ul class="check"><li>Remove <code>TEST_*</code> from main; main receiver exported=false.</li><li>Create <code>src/vehicleTest</code> exported receiver guarded by target-proven <code>android.permission.DUMP</code>.</li><li>Off-car: verify receiver/sender manifests, permissions, allowlists and release absence only. Target D0: install exact sender, record DUMP status, run shell-vs-ordinary-UID proof; if DUMP unavailable, prove non-exported denial and use in-app UI.</li><li>Use bounded <code>goAsync</code>, real-builder actions, compile-time values and no raw IDs.</li></ul><p><strong>Exit:</strong> vehicleTest shell/app-UID probes work, unauthorized sender fails, release contains zero probe surface.</p></div></div>
+<div class="phase"><div class="phase-id">T2 · Reference</div><div><h4>Capture/identify a mirror-capable variant</h4><ul class="check"><li>Ask owner for exact vehicle/HUD types where auto-mirror was observed.</li><li>Collect model/ROM/HUD/AmapService/payload/log artifacts where accessible.</li><li>Tag every matrix cell <code>ARTIFACT(path,hash)</code>, <code>OWNER_OBSERVATION</code> or <code>UNAVAILABLE</code>.</li><li>Document road absence and coupled/independent behavior without inferring a key.</li></ul><p><strong>Exit:</strong> V13 provenance schema passes; unknown fields remain explicit.</p></div></div>
+<div class="phase"><div class="phase-id">T3 · Branch diff</div><div><h4>Split catalog, then find the Seal mirror condition</h4><ul class="check"><li>Split 1,507-line <code>CarExecCatalog.kt</code> into ≤500 LOC modules before touching its content.</li><li>Trace AmapService 10001 into HAL/CAN + <code>sendInfo2(4)</code> branches and compare exact builder fields/state/profile.</li><li>Define candidate schema: source, prior read, one mutation, inverse, bounded value; static reject raw/MASS/unknown state.</li><li>Add one source-backed candidate per row.</li></ul><p><strong>Exit:</strong> V14 passes and every candidate names branch + rollback.</p></div></div>
+<div class="phase"><div class="phase-id">T4 · M1 field proof</div><div><h4>Exact release-signed vehicleTest candidate</h4><ul class="check"><li>Generate exact-source identity + diagnostic identity tuple before install; D0 uses/logs real <code>AmapFrameBuilder</code>.</li><li>D1/D2 prove HUD left↔right+distance while cluster remains correct.</li><li>D3 stop/clear/restore; D5 physical switch conditionally.</li><li>Record vehicleTest→release same-cert install path; the current debug-key APK requires one clean transition and state capture first.</li></ul><p><strong>Exit A:</strong> exact vehicleTest tuple proves M1. <strong>Exit B:</strong> keep cluster only; capability remains UNKNOWN until bounded matrix exhausted.</p></div></div>
+<div class="phase"><div class="phase-id">T5 · M2 road</div><div><h4>Resolve the missing street-name channel after M1</h4><ul class="check"><li>Trace whether AmapService HUD-bound output contains road at all.</li><li>Test road changes through exact Amap/FlatBuffer field shape first.</li><li>Only with call-site evidence, test pathname register as a side-channel while mirror is active.</li><li>Freeze the source-backed M2 candidate matrix and hash before testing. Prove encoding, byte budget, update and clear. Set UNSUPPORTED only after every frozen candidate is exhausted on the same exact profile; otherwise retain UNKNOWN.</li></ul><p><strong>Exit:</strong> D4 PASS with changing road, or explicit non-blocking M2 unsupported verdict.</p></div></div>
+<div class="phase"><div class="phase-id">T6 · Product</div><div><h4>Wire proven mirror capability</h4><ul class="check"><li>Implement serialized <code>HudMirrorController</code> + <code>AmapEmissionArbiter</code>; production physical Confirm is durable, diagnostic D5 restoration is separate.</li><li>Retire direct maneuver/distance <code>NavigationHudOwner</code> path.</li><li>Model coupled vs independent mirror UX and fail-closed legacy prefs.</li><li>Add optional road side-channel only if M2 proof exists.</li></ul><p><strong>Exit:</strong> production has one canonical content sender and every visible HUD/road state is truthful.</p></div></div>
+<div class="phase"><div class="phase-id">T7 · Verify</div><div><h4>Commands, identity and exact release matrix</h4><ul class="check"><li>Run <code>scripts/verify-hud-spec-gates.sh</code>, then full debug/vehicleTest/release build/lint commands.</li><li>Enforce §4.12a exact path allowlist, ≤500 LOC and exact test selectors; run vehicle matrices only through <code>scripts/vehicle/run-hud-mirror-matrix.sh</code>.</li><li>Regenerate source identity; build through <code>collectAuthorizedApk</code>; create <code>hud-mirror-release-candidate.json</code> with <code>record-hud-release.py</code> and compare cert to vehicleTest.</li><li>P0 clean-install/security, P1–P7 M1, P8 only M2.</li></ul><p><strong>Exit:</strong> exact release identity tuple passes claimed rows; cluster payload and first-launch behavior do not regress.</p></div></div>
+<div class="phase"><div class="phase-id">T8 · Review</div><div><h4>Scope, boundary, security and evidence review</h4><ul class="check"><li>Review R1–R16 item-by-item, V1–V16 and all §4.14 boundaries.</li><li>Patch/retest/re-review until zero actionable P0–P3.</li><li>Security scan before any future commit/push.</li><li>No commit/push/release respin without separate owner request.</li></ul><p><strong>Exit:</strong> scope 100% for the claimed M1/M2 level, review clean, security clean.</p></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<h3>6.1 Off-car gates</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Command / scenario</th><th>Pass</th></tr></thead><tbody>
+<tr><td>V1 · Tests/build/lint</td><td><code>./gradlew :core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest :car-integration:test :app:assembleDebug :app:assembleVehicleTest :app:lintDebug :app:lintVehicleTest</code></td><td>0 failures/errors.</td></tr>
+<tr><td>V2 · Release</td><td><code>./gradlew :app:testReleaseUnitTest :app:assembleRelease :app:lintRelease &amp;&amp; scripts/verify-hud-spec-gates.sh --release-apk app/build/outputs/apk/release/app-release.apk</code></td><td><code>aapt2</code>/DEX/action scan proves non-debuggable release, no probe class/action and signing policy intact.</td></tr>
+<tr><td>V3 · Builder/probe parity</td><td>Compare real <code>AmapFrameBuilder</code> extras against vehicleTest receiver/shared fixture and any generated CarExec representation field-by-field.</td><td>Exact key/type/value/conditional/sentinel parity; no hand-built <code>5 min</code> drift from production Chinese AUTO time.</td></tr>
+<tr><td>V4 · State lifecycle</td><td>10019 reset/stop and any source-proven addition.</td><td>No guessed state; guidance <code>EXTRA_STATE=1</code> is not mislabeled start-state.</td></tr>
+<tr><td>V5 · Mirror gate/ownership</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.HudMirrorControllerTest</code></td><td>Typed faults; app-owned gate rollback; after production Confirm, HUD request OFF/Stop/arrival emit zero physical-OFF write; only diagnostic D5 restores physical OFF.</td></tr>
+<tr><td>V6 · Emission arbiter races</td><td>Gate-ready versus pending heartbeat, concurrent fresh frame, source change, HUD OFF and Stop.</td><td>One additional forced-replay token; heartbeat coalesced; monotonic session/sequence; no send bypass.</td></tr>
+<tr><td>V7 · Coupling actions</td><td>COUPLED lane-OFF while HUD requested; independent and unsupported profiles.</td><td>Coupled request blocked/converted truthfully; no lane-off/HUD-on promise.</td></tr>
+<tr><td>V8 · Road capability</td><td>AMAP_PAYLOAD, SIDE_CHANNEL, UNKNOWN, UNSUPPORTED.</td><td>UNSUPPORTED only after bounded exact-profile matrix exhausted; M1 independent from M2 label.</td></tr>
+<tr><td>V9 · Global direct-write absence</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.HudMirrorLegacyPrefTest --tests com.byd.clusternav.HudDirectWriteAbsenceTest</code> + checked-in call-site scan.</td><td>UNKNOWN, COUPLED and INDEPENDENT flows make zero <code>NavigationHudOwner</code>/<code>writeNavFrame</code> maneuver-distance call; only a separately named/proven road API may exist.</td></tr>
+<tr><td>V10 · Cluster regression</td><td>Named <code>AmapFrameBuilderContractTest</code>, NavParse/Maneuver tests and full-frame fixture.</td><td>Cluster icon/distance/road unchanged.</td></tr>
+<tr><td>V11 · Static receiver security</td><td><code>scripts/verify-hud-spec-gates.sh --static-receiver-security</code> (no install/ADB).</td><td>vehicleTest manifest has frozen action + DUMP or non-exported fallback; sender manifest requests no DUMP; malformed-input unit tests zero mutation; release manifest/DEX/action scan is empty. Target permission proof is D0.</td></tr>
+<tr><td>V12 · Scope/LOC allowlist</td><td><code>scripts/verify-hud-spec-gates.sh --baseline docs/_handoff/hud-mirror-baseline.json --scope --loc</code></td><td>Only §4.12a paths changed; no extra Cast/VietMap/speed-sign path; each changed source ≤500 LOC; catalog split complete.</td></tr>
+<tr><td>V13 · Reference provenance</td><td>Validate every reference matrix field.</td><td>Each cell is <code>ARTIFACT(path,hash)</code>, <code>OWNER_OBSERVATION</code> or <code>UNAVAILABLE</code>; no inferred key.</td></tr>
+<tr><td>V14 · Probe catalog schema</td><td>Static scan/tests for source, prior, one mutation, inverse, bounded values and command tokens.</td><td>Reject raw IDs, MASS, multiple mutations and unknown state values.</td></tr>
+<tr><td>V15 · First-launch ×3</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.FloatingBubbleFirstLaunchContractTest --tests com.byd.clusternav.modules.clustercast.CastUILifecycleSafetyTest</code></td><td>Safe early destroy; foreground-before-permission in onCreate/onStartCommand; one overlay launch/service instance.</td></tr>
+<tr><td>V16 · Artifact identity</td><td><code>scripts/verify-hud-spec-gates.sh --identity docs/_handoff/hud-mirror-vehicle-test-candidate.json --sender docs/_handoff/hud-mirror-probe-sender-candidate.json --release docs/_handoff/hud-mirror-release-candidate.json</code>.</td><td>All required tuple fields present and bytes/source current; vehicleTest cert==release cert; sender distinct/no-DUMP; unsigned/debug/wrong cert and 527589 rejected.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><strong>Executable off-car entrypoint:</strong> <code>scripts/verify-hud-spec-gates.sh --all --baseline docs/_handoff/hud-mirror-baseline.json</code> runs only static/unit V3–V16—never install, ADB or vehicle operations. Target security and D/P rows run only through <code>scripts/vehicle/run-hud-mirror-matrix.sh</code>.</div>
+
+<h3>6.1a Frozen V3–V16 command map</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Exact selector / checked-in flag</th></tr></thead><tbody>
+<tr><td>V3</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.AmapFrameBuilderContractTest</code></td></tr>
+<tr><td>V4</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.AmapFrameBuilderContractTest</code> (state-frame cases in same class)</td></tr>
+<tr><td>V5</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.HudMirrorControllerTest</code></td></tr>
+<tr><td>V6</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.AmapEmissionArbiterTest</code></td></tr>
+<tr><td>V7</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.HudMirrorVariantIsolationTest &amp;&amp; ./gradlew :core:test --tests com.byd.clusternav.navigation.NavigationSessionCoordinatorTest</code></td></tr>
+<tr><td>V8</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.HudRoadNameCapabilityTest</code></td></tr>
+<tr><td>V9</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.HudMirrorLegacyPrefTest --tests com.byd.clusternav.HudDirectWriteAbsenceTest</code> + <code>scripts/verify-hud-spec-gates.sh --direct-call-sites</code></td></tr>
+<tr><td>V10</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.AmapFrameBuilderContractTest &amp;&amp; ./gradlew :core:test --tests com.byd.clusternav.navigation.NavParseTest --tests com.byd.clusternav.navigation.ManeuverTest</code></td></tr>
+<tr><td>V11</td><td><code>scripts/verify-hud-spec-gates.sh --static-receiver-security</code></td></tr>
+<tr><td>V12</td><td><code>scripts/verify-hud-spec-gates.sh --baseline docs/_handoff/hud-mirror-baseline.json --scope --loc</code></td></tr>
+<tr><td>V13</td><td><code>scripts/verify-hud-spec-gates.sh --provenance docs/_handoff/hud-mirror-reference-matrix.json</code></td></tr>
+<tr><td>V14</td><td><code>./gradlew :core:test --tests com.byd.clusternav.carexec.HudMirrorProbeCatalogTest</code></td></tr>
+<tr><td>V15</td><td><code>./gradlew :app:testDebugUnitTest --tests com.byd.clusternav.FloatingBubbleFirstLaunchContractTest --tests com.byd.clusternav.modules.clustercast.CastUILifecycleSafetyTest</code></td></tr>
+<tr><td>V16</td><td><code>scripts/verify-hud-spec-gates.sh --identity docs/_handoff/hud-mirror-vehicle-test-candidate.json --sender docs/_handoff/hud-mirror-probe-sender-candidate.json --release docs/_handoff/hud-mirror-release-candidate.json</code></td></tr>
+</tbody></table></div>
+<p class="small">Every script flag is fail-closed: missing file/field/tool, selector with zero tests, unexpected path/call site, metadata drift or mismatch exits nonzero. <code>--all</code> invokes exactly this static map and excludes D/P target operations.</p>
+<h3>6.1b Frozen exact-source/build commands</h3>
+<pre><code># VehicleTest + ordinary sender (same source manifest; separate APK identities)
+python3 scripts/evidence/gen-exact-source.py \
+  --out docs/_handoff/hud-mirror-vehicle-test-exact-source.json \
+  --label 1.04-hud-mirror-vehicle-test
+SOURCE_ID=$(python3 -c 'import json; print(json.load(open("docs/_handoff/hud-mirror-vehicle-test-exact-source.json"))["sourceId"])')
+./gradlew verifyExactSourceIdentity :app:assembleVehicleTest :hud-probe-sender:assembleDebug \
+  -PexactSourceId="$SOURCE_ID" \
+  -PexactSourceManifest=docs/_handoff/hud-mirror-vehicle-test-exact-source.json
+python3 scripts/evidence/record-hud-vehicle-test.py \
+  --source-manifest docs/_handoff/hud-mirror-vehicle-test-exact-source.json \
+  --vehicle-test-apk app/build/outputs/apk/vehicleTest/app-vehicleTest.apk \
+  --sender-apk hud-probe-sender/build/outputs/apk/debug/hud-probe-sender-debug.apk \
+  --vehicle-out docs/_handoff/hud-mirror-vehicle-test-candidate.json \
+  --sender-out docs/_handoff/hud-mirror-probe-sender-candidate.json
+
+# Release (regenerate because any source change invalidates the previous identity)
+python3 scripts/evidence/gen-exact-source.py \
+  --out docs/_handoff/hud-mirror-release-exact-source.json \
+  --label 1.04-hud-mirror-release
+RELEASE_SOURCE_ID=$(python3 -c 'import json; print(json.load(open("docs/_handoff/hud-mirror-release-exact-source.json"))["sourceId"])')
+printf '%s\n' "./gradlew collectAuthorizedApk -PclusterNavVariant=release -PclusterNavSlice=hud-mirror -PexactSourceId=$RELEASE_SOURCE_ID -PexactSourceManifest=docs/_handoff/hud-mirror-release-exact-source.json" \
+  &gt; docs/_handoff/hud-mirror-release-build-command.txt
+./gradlew collectAuthorizedApk \
+  -PclusterNavVariant=release \
+  -PclusterNavSlice=hud-mirror \
+  -PexactSourceId="$RELEASE_SOURCE_ID" \
+  -PexactSourceManifest=docs/_handoff/hud-mirror-release-exact-source.json
+python3 scripts/evidence/record-hud-release.py \
+  --candidate docs/_handoff/vehicle-candidate.json \
+  --source-manifest docs/_handoff/hud-mirror-release-exact-source.json \
+  --vehicle-test docs/_handoff/hud-mirror-vehicle-test-candidate.json \
+  --build-command-file docs/_handoff/hud-mirror-release-build-command.txt \
+  --out docs/_handoff/hud-mirror-release-candidate.json</code></pre>
+<h3>6.2 Discovery — one exact release-signed vehicleTest identity tuple</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Scenario</th><th>Pass / recorded result</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>D0</td><td>Bind vehicleTest+sender tuples; record target DUMP status; run security preflight; then invoke/log real-builder baseline.</td><td>DUMP branch: shell frozen-action succeeds, ordinary sender same action denied and counter unchanged. No-DUMP branch: receiver non-exported, sender denied/counter unchanged, in-app UI drives probe. Then cluster icon+distance+road and HUD unchanged; extras match V3.</td><td>Both tuples, package/UID/SHA/cert, literal action, before/after counter, DUMP/fallback mode, payload + surfaces. Any tuple change invalidates D0.</td></tr>
+<tr><td>D1</td><td>One source-backed mirror condition; real-builder left+distance.</td><td>Cluster remains correct; Seal HUD left+distance.</td><td>Candidate source/prior/result + human verdict.</td></tr>
+<tr><td>D2</td><td>Same candidate, right+distinct distance.</td><td>Both surfaces update, proving live mirror.</td><td>Emission token/sequence + verdict.</td></tr>
+<tr><td>D3</td><td>Stop/reset via arbiter; restore app-owned mirror gates.</td><td>Guidance clears, physical HUD remains ON if production-style Confirm enabled it, and new session works. No physical-OFF write.</td><td>State/gate ownership/read-back.</td></tr>
+<tr><td>D4</td><td>With M1 active, change/clear road.</td><td>PASS if glass changes. One negative channel stays UNKNOWN unless the documented bounded M2 matrix is exhausted; M1 remains valid.</td><td>Road field/bytes + surfaces.</td></tr>
+<tr><td>D5</td><td>Separately consented diagnostic only: if app-UID viability unknown, prior OFF→enable/read-back→restore OFF; else N/A citation.</td><td>Feedback ON then diagnostic restore OFF, or justified N/A. This policy is never reused by production Stop.</td><td>Consent + prior/write/read/restore ownership log.</td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>M1 discovery exit:</strong> D0–D3 mandatory on one vehicleTest identity tuple; D4 records M2 state; D5 conditionally mandatory. Cluster remains the mirror trigger.</div>
+
+<h3>6.3 Production — one exact release identity tuple</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Scenario</th><th>Pass</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>P0</td><td>Clean install exact release with overlay permission absent; also try historical probe actions.</td><td>Exactly one overlay prompt; no crash/RemoteServiceException; after grant service is foreground and bubble renders; probes have no target/mutation.</td><td>Release identity tuple + prompt/crash/service evidence.</td></tr>
+<tr><td>P1</td><td>Physical HUD OFF via vehicle settings; app Cancel then Confirm.</td><td>Cancel zero write; Confirm applies proven gate off-main and feedback ON.</td><td>UI + read-back.</td></tr>
+<tr><td>P2</td><td>Real route left via production builder/arbiter.</td><td>Cluster + Seal HUD show left/current distance.</td><td>Emission token + owner/passenger verdict.</td></tr>
+<tr><td>P3</td><td>Distinct right/distance.</td><td>Both surfaces update.</td><td>Sequence + verdict.</td></tr>
+<tr><td>P4</td><td>HUD request and lane-OFF action during route.</td><td>Independent profile toggles proven gate; coupled profile blocks/converts lane-OFF and states “HUD follows cluster”; ON creates one additional forced replay despite heartbeat.</td><td>Capability/actions/emission timeline.</td></tr>
+<tr><td>P5</td><td>HUD gate fault/unavailable while cluster active.</td><td>Cluster continues; UI truthful.</td><td>Cluster + UI/log.</td></tr>
+<tr><td>P6</td><td>Process restart.</td><td>No stale replay; fresh frame restores according to capability; legacy unsupported profile makes zero direct write.</td><td>Restart timeline.</td></tr>
+<tr><td>P7</td><td>Stop/arrival and new session after production Confirm.</td><td>Guidance clears; only app-owned mirror gates restore; next session works; zero physical-HUD-OFF write and physical feedback stays ON.</td><td>Surfaces + register-ownership/read-back log.</td></tr>
+<tr><td>P8</td><td>Two real road names + clear.</td><td>Only for M2: glass matches and clears.</td><td>Road/emission sequence + verdict.</td></tr>
+</tbody></table></div>
+<div class="callout red"><strong>Claim policy:</strong> release P0–P7 closes M1; P8 closes M2. <code>UNKNOWN</code> remains until all source-backed candidates for the exact profile are exhausted. Artifact source or bytes change invalidates affected rows.</div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Question</th><th>Safe default / closure</th></tr></thead><tbody>
+<tr><td>Q1</td><td>Exact condition nào làm AmapService cluster session mirror sang HUD trên supported variants?</td><td>Close bằng reference diff + source-backed D1/D2; không thay transport.</td></tr>
+<tr><td>Q2</td><td>Condition nằm trong Intent field/state, AmapService branch, vehicle setting/property, fission/1for2 hay downstream HUD ECU profile?</td><td>Trace branch trước; vary one justified variable per row.</td></tr>
+<tr><td>Q3</td><td>Có AmapService navigation start-state ngoài 10019/9 STOP không?</td><td>Current code knows none. Do not guess value; require decompile/reference evidence.</td></tr>
+<tr><td>Q4</td><td><code>EXTRA_IS_FOREGROUND=0</code>, <code>TYPE=1</code> and map-source flags có tham gia mirror condition không?</td><td>Keep cluster-proven values until exact branch says otherwise; always restore/reset after source-flag experiments.</td></tr>
+<tr><td>Q5</td><td>HUD variant đang hoạt động nghe HAL/CAN hay <code>sendInfo2(4, FlatBuffer NaviInfo)</code>?</td><td>Compare logs/code/profile; Seal has 1for2 evidence but no mirror, so downstream profile remains plausible.</td></tr>
+<tr><td>Q6</td><td>Tại sao working HUD variants thiếu road dù cluster có <code>NEXT_ROAD_NAME</code>?</td><td>Treat as separate M2; inspect HUD-bound payload before trying encoding/register changes.</td></tr>
+<tr><td>Q7</td><td>Những model/HUD/ROM cụ thể nào owner đã thấy auto-mirror?</td><td>Owner cung cấp tên xe/HUD/version nếu nhớ; record uncertainty explicitly.</td></tr>
+<tr><td>Q8</td><td>Mirror là coupled-only hay có independent HUD gate?</td><td>Do not require cluster OFF. If no independent gate is proven, expose “HUD follows cluster”.</td></tr>
+<tr><td>Q9</td><td>ClusterNav app UID có quyền apply exact mirror gate/physical switch không?</td><td>Debug app-UID D1/D5; shell-only success insufficient.</td></tr>
+<tr><td>Q10</td><td>Nếu chưa tìm được Seal mirror gate?</td><td>Keep canonical cluster navigation and direct HUD content disabled. Say “not supported by this ClusterNav build/profile” only after exact bounded matrix exhaustion; otherwise status remains UNKNOWN.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li>Owner cross-vehicle evidence — 2026-08-06: some HUD variants auto-mirror AmapService maneuver+distance, road name absent; Seal does not mirror.</li>
+<li><code>app/src/main/java/com/byd/clusternav/AmapFrameBuilder.kt</code> — exact canonical full guidance/state payload.</li>
+<li><code>app/src/main/java/com/byd/clusternav/ClusterBroadcaster.kt</code> — reset, session, heartbeat and canonical send path.</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/carexec/CarExecCatalog.kt</code> — full-frame cluster proof, fission/1for2 notes, HUD settings.</li>
+<li><code>oncar-carexec-20260729/101610-verdict-gate_baseline-broadcast-only.log</code> — cluster icon/road baseline.</li>
+<li><code>oncar-carexec-20260729/101726-verdict-gate_broadcast-full-render.log</code> — cluster icon+444m+road with full payload.</li>
+<li><code>oncar-carexec-20260729/101521-verdict-hud_config-read.log</code> / <code>101522-verdict-hud_switch-feedback-read.log</code> — Seal W-mode and ON.</li>
+<li><code>oncar-carexec-20260729/103257-verdict-hud_nav-content-toggle-on.log</code> — current Seal conditions negative for HUD.</li>
+<li><code>docs/diagnostics/next-car-session-plan-2026-07-29.md</code> §5.2/§8.1/§8.2 — AmapService and HUD findings.</li>
+<li><code>docs/_handoff/session-2026-08-06-pm2-firstlaunch-fixes-and-hud-enable.md</code> — current working-tree/probe handoff.</li>
+<li>Android Developers / Context7 <code>/websites/developer_android</code> — build source sets, receiver security and async lifecycle.</li>
+<li><code>build.gradle.kts</code>, <code>app/build.gradle.kts</code>, <code>gradle/wrapper/gradle-wrapper.properties</code> — pinned toolchain and release-signed vehicleTest.</li>
+<li><code>scripts/evidence/gen-exact-source.py</code>, <code>verifyExactSourceIdentity</code>, <code>collectAuthorizedApk</code>, <code>docs/_handoff/vehicle-candidate.json</code> — source/build identity; current 527589… candidate invalid.</li>
+<li>Planned <code>hud-probe-sender</code>, <code>scripts/verify-hud-spec-gates.sh</code>, <code>record-hud-release.py</code>, and §4.12a/§6.1a–b — executable receiver/scope/test/identity gates.</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><p class="small">Append-only. Mỗi review pass mới thêm một mục; không ghi đè lịch sử.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-06 · Planning synthesis</h3><p>Đối chiếu handoff với source và raw vehicle verdict. Finding chính: physical HUD là W-mode và đang ON; cả Amap broadcast lẫn direct INSTRUMENT writes đã fail visual, nên “bật switch rồi bắn lại” là lặp thí nghiệm đã phủ định. Scope được sửa thành discover true HUD renderer → app-UID visual proof → production wiring. Thêm release-source-set isolation, typed rc, one-worker boundary, fresh replay, truthful UI, explicit rollback và speed-sign exclusion.</p></div>
+<div class="review"><h3>Pass 2 — 2026-08-06 · Technology and safety review</h3><p>Context7/official Android docs xác nhận build-type source sets, permission-restricted receiver và <code>goAsync()+finish()</code>. Official build navigation (updated 2026-08-04) lists AGP 9.3 stable line and 9.4 preview; project already pins AGP 9.3.1 built-in Kotlin for <code>:app</code>, Kotlin JVM plugin 2.4.10 for <code>:core</code>/<code>:car-integration</code>, Gradle 9.6.1 SHA and SDK37/JDK17, nên không thêm dependency hay upgrade preview. BYD private HAL has no public docs; spec therefore requires OEM call-site evidence and human windshield observation.</p></div>
+<div class="review"><h3>Pass 3 — 2026-08-06 · Independent planning audit corrections</h3><p>Independent audit found 3 P1, 4 P2 and 1 P3 planning gaps. Corrected: split exact debug discovery D0–D4 from exact release acceptance P0–P7; one serialized production HUD command owner with off-main HAL and request/session generations; atomic concurrent-frame replay; legacy <code>hud=true</code> fail-closed migration; partial-frame clear compensation; no live visual-verification UI claim; mandatory non-exported main receiver; explicit Cast/speed-sign diff allowlist; precise Kotlin toolchain wording. No runtime files changed during this pass.</p></div>
+<div class="review"><h3>Pass 4 — 2026-08-06 · Matrix consistency re-audit</h3><p>Fresh audit found 0 P0/P1, then one P2 conditional-D4 contradiction and one P3 stale H-matrix reference. Normalized the debug exit to D0–D3 mandatory with D4 PASS only when app-UID switch viability is unknown (otherwise N/A + cited prior evidence), and replaced the dangling H2/H3/H4 reference with T3 + D1/D2/D3 (+ D4 when applicable).</p></div>
+<div class="review"><h3>Pass 5 — 2026-08-06 · Final independent certification</h3><p>Final delta audit verdict: <strong>APPROVED — 0 P0–P3 findings</strong>. R14, T4 checklist/exit, D4 row, Discovery exit and Q1 consistently require D0–D3 plus conditionally mandatory D4 (or N/A with cited prior app-UID evidence). No runtime files or vehicle state changed during planning.</p></div>
+<div class="review"><h3>Pass 6 — 2026-08-06 · Owner cross-vehicle correction</h3><p>Spec reopened after owner clarified the real architecture: AmapService is the canonical cluster path, and some HUD variants automatically mirror maneuver+distance from that trigger while omitting road name. Replaced the broad “Amap path rejected / cluster OFF proof” model with variant-specific mirror-gate differential. M1 now enables Seal maneuver+distance with cluster active; M2 separately resolves road name. Previous review history remains preserved but does not certify this revised content.</p></div>
+<div class="review"><h3>Pass 7 — 2026-08-06 · Canonical-mirror audit corrections</h3><p>Independent audit found 5 P1 and 4 P2. Corrected exact payload claims (three <code>*_AUTO</code> + TIME_STRING bundle, per-extra types/presence, real-builder parity); added monotonic Amap emission arbiter for heartbeat/replay races; switched discovery to release-signed vehicleTest with DUMP/in-app fallback and full exact-source/APK/cert tuple; invalidated crashing 527589… candidate; added three distinct first-launch tests + clean-install P0; added provenance/catalog/legacy-pref/coupling gates; required CarExec catalog split ≤500 LOC; froze scope/lint commands; and defined UNKNOWN versus build/profile-specific UNSUPPORTED.</p></div>
+<div class="review"><h3>Pass 8 — 2026-08-06 · Executability and ownership corrections</h3><p>Re-audit found 1 P1 and 4 P2. Split durable production physical-HUD ownership from temporary D5 diagnostic rollback; expanded payload inventory to one row per guidance/state extra with frame/type/presence/producer/domain/sentinel; added ordinary-UID <code>hud-probe-sender</code> denial oracle; froze an explicit repository path set and checked-in V3–V16 scripts/commands/test selectors; expanded direct-write absence to all capabilities; and removed active UNKNOWN→UNSUPPORTED shortcuts.</p></div>
+<div class="review"><h3>Pass 9 — 2026-08-06 · Final target/identity/command closure</h3><p>Certification audit found 2 P1 + 1 P2. Split V11 into static off-car verification and D0 exact-target DUMP/fallback preflight bound to vehicleTest+ordinary-sender tuples and a frozen action/counter oracle; added <code>record-hud-release.py</code> + full release tuple/apksigner/cert comparison; and froze exact V3–V16 selectors/flags plus proven exact-source, vehicleTest/sender and <code>collectAuthorizedApk</code> command lines. Off-car <code>--all</code> now explicitly performs no install/ADB.</p></div>
+<div class="review"><h3>Pass 10 — 2026-08-06 · Final canonical-mirror certification</h3><p>Independent verdict: <strong>APPROVED — 0 P0–P3 findings</strong>. Certified the corrected AmapService canonical model, cluster-active M1 proof, separate M2 road channel, exact per-extra payload table, emission arbiter, physical-setting ownership, release-signed vehicleTest/sender security, full diagnostic/release identity tuples, frozen paths and exact V3–V16 commands. This is a specification certification, not implementation or on-car PASS.</p></div>
+</section>
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

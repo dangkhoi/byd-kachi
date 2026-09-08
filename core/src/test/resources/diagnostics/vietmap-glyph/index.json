@@ -1,0 +1,570 @@
+{
+ "base": "_base-vietmap-1920x1080-d240.png",
+ "canvas": 110,
+ "dpi": 240,
+ "glyphs": {
+  "arrive": {
+   "fill": 0.3913,
+   "gh": 67,
+   "gw": 51,
+   "ncomp": 2
+  },
+  "arrive_left": {
+   "fill": 0.643,
+   "gh": 48,
+   "gw": 58,
+   "ncomp": 3
+  },
+  "arrive_right": {
+   "fill": 0.6437,
+   "gh": 48,
+   "gw": 58,
+   "ncomp": 3
+  },
+  "arrive_straight": {
+   "fill": 0.64,
+   "gh": 36,
+   "gw": 51,
+   "ncomp": 3
+  },
+  "close": {
+   "fill": 0.3248,
+   "gh": 82,
+   "gw": 82,
+   "ncomp": 1
+  },
+  "continue": {
+   "fill": 0.3503,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "continue_left": {
+   "fill": 0.2755,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "continue_right": {
+   "fill": 0.2817,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "continue_slight_left": {
+   "fill": 0.3137,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "continue_slight_right": {
+   "fill": 0.3136,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "continue_straight": {
+   "fill": 0.3503,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "continue_uturn": {
+   "fill": 0.4247,
+   "gh": 82,
+   "gw": 80,
+   "ncomp": 1
+  },
+  "depart": {
+   "fill": 0.3948,
+   "gh": 67,
+   "gw": 51,
+   "ncomp": 2
+  },
+  "depart_left": {
+   "fill": 0.3668,
+   "gh": 68,
+   "gw": 67,
+   "ncomp": 2
+  },
+  "depart_right": {
+   "fill": 0.3696,
+   "gh": 68,
+   "gw": 67,
+   "ncomp": 2
+  },
+  "depart_straight": {
+   "fill": 0.3948,
+   "gh": 67,
+   "gw": 51,
+   "ncomp": 2
+  },
+  "end_of_road_left": {
+   "fill": 0.2937,
+   "gh": 87,
+   "gw": 84,
+   "ncomp": 1
+  },
+  "end_of_road_right": {
+   "fill": 0.2952,
+   "gh": 87,
+   "gw": 84,
+   "ncomp": 1
+  },
+  "exit_rotary": {
+   "fill": 0.316,
+   "gh": 109,
+   "gw": 74,
+   "ncomp": 1
+  },
+  "flag": {
+   "fill": 0.8467,
+   "gh": 43,
+   "gw": 59,
+   "ncomp": 2
+  },
+  "fork": {
+   "fill": 0.3527,
+   "gh": 96,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "fork_left": {
+   "fill": 0.3256,
+   "gh": 87,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "fork_right": {
+   "fill": 0.3318,
+   "gh": 87,
+   "gw": 67,
+   "ncomp": 1
+  },
+  "fork_slight_left": {
+   "fill": 0.3837,
+   "gh": 96,
+   "gw": 54,
+   "ncomp": 1
+  },
+  "fork_slight_right": {
+   "fill": 0.3833,
+   "gh": 96,
+   "gw": 54,
+   "ncomp": 1
+  },
+  "fork_straight": {
+   "fill": 0.3523,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "invalid": {
+   "fill": 0.357,
+   "gh": 96,
+   "gw": 52,
+   "ncomp": 1
+  },
+  "invalid_left": {
+   "fill": 0.2789,
+   "gh": 88,
+   "gw": 94,
+   "ncomp": 1
+  },
+  "invalid_right": {
+   "fill": 0.2817,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "invalid_slight_left": {
+   "fill": 0.3131,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "invalid_slight_right": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "invalid_straight": {
+   "fill": 0.3523,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "invalid_uturn": {
+   "fill": 0.4221,
+   "gh": 82,
+   "gw": 80,
+   "ncomp": 1
+  },
+  "merge_left": {
+   "fill": 0.2954,
+   "gh": 83,
+   "gw": 87,
+   "ncomp": 1
+  },
+  "merge_right": {
+   "fill": 0.2987,
+   "gh": 83,
+   "gw": 87,
+   "ncomp": 1
+  },
+  "merge_slight_left": {
+   "fill": 0.2962,
+   "gh": 95,
+   "gw": 66,
+   "ncomp": 1
+  },
+  "merge_slight_right": {
+   "fill": 0.2903,
+   "gh": 95,
+   "gw": 67,
+   "ncomp": 1
+  },
+  "merge_straight": {
+   "fill": 0.3503,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "new_name_left": {
+   "fill": 0.2756,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "new_name_right": {
+   "fill": 0.2817,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "new_name_sharp_left": {
+   "fill": 0.3886,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "new_name_sharp_right": {
+   "fill": 0.4004,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "new_name_slight_left": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "new_name_slight_right": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "new_name_straight": {
+   "fill": 0.3523,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "notificaiton_sharp_right": {
+   "fill": 0.4002,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "notification_left": {
+   "fill": 0.2755,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "notification_right": {
+   "fill": 0.2817,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "notification_sharp_left": {
+   "fill": 0.3886,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "notification_sharp_right": {
+   "fill": 0.4002,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "notification_slight_left": {
+   "fill": 0.3131,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "notification_slight_right": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "notification_straight": {
+   "fill": 0.3523,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "off_ramp_left": {
+   "fill": 0.2935,
+   "gh": 87,
+   "gw": 84,
+   "ncomp": 1
+  },
+  "off_ramp_right": {
+   "fill": 0.295,
+   "gh": 87,
+   "gw": 84,
+   "ncomp": 1
+  },
+  "off_ramp_slight_left": {
+   "fill": 0.3839,
+   "gh": 96,
+   "gw": 54,
+   "ncomp": 1
+  },
+  "off_ramp_slight_right": {
+   "fill": 0.3843,
+   "gh": 96,
+   "gw": 54,
+   "ncomp": 1
+  },
+  "on_ramp_left": {
+   "fill": 0.2755,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "on_ramp_right": {
+   "fill": 0.2817,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "on_ramp_sharp_left": {
+   "fill": 0.388,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "on_ramp_sharp_right": {
+   "fill": 0.3996,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "on_ramp_slight_left": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "on_ramp_slight_right": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "on_ramp_straight": {
+   "fill": 0.3523,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "road_icon_left": {
+   "fill": 0.6523,
+   "gh": 77,
+   "gw": 71,
+   "ncomp": 3
+  },
+  "road_icon_right": {
+   "fill": 0.6436,
+   "gh": 77,
+   "gw": 72,
+   "ncomp": 3
+  },
+  "rotary": {
+   "fill": 0.3427,
+   "gh": 49,
+   "gw": 34,
+   "ncomp": 3
+  },
+  "rotary_left": {
+   "fill": 0.3204,
+   "gh": 82,
+   "gw": 96,
+   "ncomp": 1
+  },
+  "rotary_right": {
+   "fill": 0.2968,
+   "gh": 79,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "rotary_sharp_left": {
+   "fill": 0.3819,
+   "gh": 96,
+   "gw": 87,
+   "ncomp": 1
+  },
+  "rotary_sharp_right": {
+   "fill": 0.4968,
+   "gh": 62,
+   "gw": 70,
+   "ncomp": 1
+  },
+  "rotary_slight_left": {
+   "fill": 0.3162,
+   "gh": 96,
+   "gw": 62,
+   "ncomp": 1
+  },
+  "rotary_slight_right": {
+   "fill": 0.4128,
+   "gh": 96,
+   "gw": 40,
+   "ncomp": 1
+  },
+  "rotary_straight": {
+   "fill": 0.3968,
+   "gh": 96,
+   "gw": 41,
+   "ncomp": 1
+  },
+  "rotary_uturn": {
+   "fill": 0.4946,
+   "gh": 96,
+   "gw": 54,
+   "ncomp": 1
+  },
+  "roundabout": {
+   "fill": 0.4057,
+   "gh": 28,
+   "gw": 50,
+   "ncomp": 3
+  },
+  "roundabout_left": {
+   "fill": 0.3204,
+   "gh": 82,
+   "gw": 96,
+   "ncomp": 1
+  },
+  "roundabout_right": {
+   "fill": 0.2968,
+   "gh": 79,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "roundabout_sharp_left": {
+   "fill": 0.3819,
+   "gh": 96,
+   "gw": 87,
+   "ncomp": 1
+  },
+  "roundabout_sharp_right": {
+   "fill": 0.4968,
+   "gh": 62,
+   "gw": 70,
+   "ncomp": 1
+  },
+  "roundabout_slight_left": {
+   "fill": 0.3162,
+   "gh": 96,
+   "gw": 62,
+   "ncomp": 1
+  },
+  "roundabout_slight_right": {
+   "fill": 0.4128,
+   "gh": 96,
+   "gw": 40,
+   "ncomp": 1
+  },
+  "roundabout_straight": {
+   "fill": 0.3968,
+   "gh": 96,
+   "gw": 41,
+   "ncomp": 1
+  },
+  "roundabout_uturn": {
+   "fill": 0.4946,
+   "gh": 96,
+   "gw": 54,
+   "ncomp": 1
+  },
+  "turn_left": {
+   "fill": 0.2755,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "turn_right": {
+   "fill": 0.2817,
+   "gh": 87,
+   "gw": 95,
+   "ncomp": 1
+  },
+  "turn_sharp_left": {
+   "fill": 0.3886,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "turn_sharp_right": {
+   "fill": 0.4004,
+   "gh": 84,
+   "gw": 76,
+   "ncomp": 1
+  },
+  "turn_slight_left": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "turn_slight_right": {
+   "fill": 0.3133,
+   "gh": 96,
+   "gw": 68,
+   "ncomp": 1
+  },
+  "turn_straight": {
+   "fill": 0.3523,
+   "gh": 96,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "updown": {
+   "fill": 0.4435,
+   "gh": 97,
+   "gw": 51,
+   "ncomp": 1
+  },
+  "uturn": {
+   "fill": 0.4221,
+   "gh": 82,
+   "gw": 80,
+   "ncomp": 1
+  }
+ },
+ "note": "d\u00e1n glyph <name>.png l\u00ean base t\u1ea1i origin \u2192 khung 1920x1080 \u0111\u1ec3 ch\u1ea1y NavGlyphLocator",
+ "origin": [
+  33,
+  69
+ ]
+}

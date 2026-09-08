@@ -1,0 +1,258 @@
+<title>Một cửa vào, nhiều cửa ra</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--dim:#c7c7cc}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--dim:#48484a}}
+:root[data-theme="dark"]{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--dim:#48484a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line);text-wrap:balance}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;overflow-x:auto}
+.diagram svg{max-width:100%;height:auto;display:block;margin:0 auto}
+.cap{color:var(--muted);font-size:12.5px;text-align:center;margin:10px 0 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card.warn{border-left:3px solid var(--warn)}
+.card.ok{border-left:3px solid var(--ok)}
+ul{padding-left:22px}li{margin:3px 0}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.bad{background:rgba(191,95,0,.14);color:var(--warn);border-color:transparent}
+.pill.good{background:rgba(26,127,55,.14);color:var(--ok);border-color:transparent}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin:12px 0 0;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:22px;height:0;border-top-width:2px;border-top-style:solid;display:inline-block}
+.steps{display:flex;flex-direction:column;gap:12px;margin:16px 0}
+.step{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.step b.n{flex:0 0 30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:14px}
+.step.last b.n{background:var(--muted)}
+.step h4{margin:0 0 4px;font-size:15.5px}
+.step p{margin:0;font-size:14.5px;color:var(--muted)}
+svg text{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+</style>
+
+<div class="wrap">
+
+<h1>Một cửa vào, nhiều cửa ra</h1>
+<p class="muted">Kiến trúc luồng dữ liệu dẫn đường · bản để owner review trước khi sửa · 2026-08-24</p>
+
+<div class="card warn">
+<b>Vì sao có tài liệu này.</b> Owner đo trên xe SL6 sáng 24/08: Google Maps lên HUD bình thường, VietMap và
+Waze không hiện gì. Truy ra thì không phải lỗi vặt — <b>code đã trôi khỏi kiến trúc thiết kế ban đầu</b>.
+Tài liệu này vẽ lại kiến trúc đúng, chỉ chỗ trôi, và đề xuất ba bước quay về.
+</div>
+
+<h2>Kiến trúc thiết kế</h2>
+
+<p>Nhiều cách nhận tín hiệu từ các app bản đồ, nhưng <b>tại một thời điểm chỉ một nguồn được chọn</b>. Nguồn
+đó đi vào <b>một cửa duy nhất</b>. Từ cửa đó mới toả ra các đầu ra.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 860 300" role="img" aria-label="Kiến trúc đúng: ba cách nhận tín hiệu vào một cửa, rồi toả ra bốn đầu ra">
+  <defs>
+    <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+    </marker>
+  </defs>
+
+  <text x="95" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)" letter-spacing=".06em">CÁCH NHẬN TÍN HIỆU</text>
+  <g fill="var(--bg)" stroke="var(--line)">
+    <rect x="14" y="42" width="162" height="46" rx="9"/>
+    <rect x="14" y="106" width="162" height="46" rx="9"/>
+    <rect x="14" y="170" width="162" height="46" rx="9"/>
+  </g>
+  <g font-size="13.5" fill="var(--fg)" text-anchor="middle">
+    <text x="95" y="65">Thông báo</text>
+    <text x="95" y="129">Trợ năng</text>
+    <text x="95" y="193">Đọc màn hình</text>
+  </g>
+  <g font-size="11" fill="var(--muted)" text-anchor="middle">
+    <text x="95" y="80">Google Maps</text>
+    <text x="95" y="144">Waze · VietMap</text>
+    <text x="95" y="208">Waze · VietMap</text>
+  </g>
+
+  <g stroke="var(--accent)" stroke-width="1.8" fill="none" marker-end="url(#a1)">
+    <path d="M176 65 C 220 65, 240 118, 286 128"/>
+    <path d="M176 129 L 286 129"/>
+    <path d="M176 193 C 220 193, 240 140, 286 131"/>
+  </g>
+
+  <rect x="292" y="86" width="150" height="88" rx="12" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+  <text x="367" y="118" text-anchor="middle" font-size="14" font-weight="700" fill="var(--fg)">MỘT CỬA VÀO</text>
+  <text x="367" y="137" text-anchor="middle" font-size="11.5" fill="var(--muted)">chọn 1 nguồn · chuẩn hoá</text>
+  <text x="367" y="153" text-anchor="middle" font-size="11.5" fill="var(--muted)">mở chốt phiên</text>
+
+  <path d="M442 130 L 520 130" stroke="var(--accent)" stroke-width="1.8" fill="none" marker-end="url(#a1)"/>
+
+  <text x="700" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)" letter-spacing=".06em">ĐẦU RA</text>
+  <g fill="var(--bg)" stroke="var(--line)">
+    <rect x="560" y="34" width="286" height="40" rx="9"/>
+    <rect x="560" y="86" width="286" height="40" rx="9"/>
+    <rect x="560" y="138" width="286" height="40" rx="9"/>
+    <rect x="560" y="190" width="286" height="40" rx="9"/>
+  </g>
+  <g font-size="13.5" fill="var(--fg)">
+    <text x="576" y="59">HUD kính lái</text>
+    <text x="576" y="111">Cụm giữa + giờ đến</text>
+    <text x="576" y="163">Dải làn đường</text>
+    <text x="576" y="215">Chip camera · cảnh báo</text>
+  </g>
+  <g stroke="var(--accent)" stroke-width="1.6" fill="none" marker-end="url(#a1)">
+    <path d="M520 130 C 540 130, 540 54, 556 54"/>
+    <path d="M520 130 C 540 130, 540 106, 556 106"/>
+    <path d="M520 130 C 540 130, 540 158, 556 158"/>
+    <path d="M520 130 C 540 130, 540 210, 556 210"/>
+  </g>
+  <circle cx="520" cy="130" r="3.5" fill="var(--accent)"/>
+</svg>
+<p class="cap">Nhận tín hiệu kiểu nào cũng được — vào chung một cửa, rồi mới toả ra.</p>
+</div>
+
+<h2>Thực tế hiện nay</h2>
+
+<p>Google Maps đi đúng đường. Nhưng khi thêm phần đọc màn hình cho VietMap và Waze (20/08), người làm
+<b>dựng một cửa thứ hai</b> thay vì nối vào cửa sẵn có.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 860 330" role="img" aria-label="Thực tế: Google Maps đi qua cửa chính, VietMap và Waze đi cửa phụ không mở được chốt phiên">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+    </marker>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--warn)"/>
+    </marker>
+  </defs>
+
+  <rect x="14" y="40" width="162" height="46" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="95" y="63" text-anchor="middle" font-size="13.5" fill="var(--fg)">Thông báo</text>
+  <text x="95" y="78" text-anchor="middle" font-size="11" fill="var(--muted)">Google Maps</text>
+
+  <rect x="14" y="196" width="162" height="46" rx="9" fill="var(--bg)" stroke="var(--warn)"/>
+  <text x="95" y="219" text-anchor="middle" font-size="13.5" fill="var(--fg)">Đọc màn hình</text>
+  <text x="95" y="234" text-anchor="middle" font-size="11" fill="var(--muted)">VietMap · Waze</text>
+
+  <path d="M176 63 L 286 63" stroke="var(--accent)" stroke-width="1.8" fill="none" marker-end="url(#a2)"/>
+  <path d="M176 219 L 286 219" stroke="var(--warn)" stroke-width="1.8" fill="none" marker-end="url(#a3)"/>
+
+  <rect x="292" y="34" width="150" height="70" rx="12" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+  <text x="367" y="60" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Cửa chính</text>
+  <text x="367" y="79" text-anchor="middle" font-size="11.5" fill="var(--ok)">mở được chốt phiên</text>
+
+  <rect x="292" y="188" width="150" height="70" rx="12" fill="var(--card)" stroke="var(--warn)" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="367" y="214" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Cửa thứ hai</text>
+  <text x="367" y="233" text-anchor="middle" font-size="11.5" fill="var(--warn)">KHÔNG mở được chốt</text>
+
+  <path d="M442 69 L 556 55" stroke="var(--accent)" stroke-width="1.6" fill="none" marker-end="url(#a2)"/>
+  <path d="M442 74 L 556 107" stroke="var(--accent)" stroke-width="1.6" fill="none" marker-end="url(#a2)"/>
+  <path d="M442 80 L 556 159" stroke="var(--accent)" stroke-width="1.6" fill="none" marker-end="url(#a2)"/>
+
+  <path d="M442 216 C 500 216, 510 168, 556 164" stroke="var(--warn)" stroke-width="1.6" fill="none" marker-end="url(#a3)"/>
+  <path d="M442 224 L 556 215" stroke="var(--warn)" stroke-width="1.6" fill="none" marker-end="url(#a3)"/>
+  <path d="M442 208 C 500 208, 505 118, 556 112" stroke="var(--warn)" stroke-width="1.6" fill="none" stroke-dasharray="4 4" marker-end="url(#a3)"/>
+
+  <g fill="var(--bg)" stroke="var(--line)">
+    <rect x="560" y="34" width="286" height="42" rx="9"/>
+    <rect x="560" y="88" width="286" height="42" rx="9"/>
+    <rect x="560" y="142" width="286" height="42" rx="9"/>
+    <rect x="560" y="196" width="286" height="42" rx="9"/>
+  </g>
+  <g font-size="13.5" fill="var(--fg)">
+    <text x="576" y="55">HUD kính lái</text>
+    <text x="576" y="109">Cụm giữa + giờ đến</text>
+    <text x="576" y="163">Dải làn đường</text>
+    <text x="576" y="217">Chip camera · cảnh báo</text>
+  </g>
+  <g font-size="11" text-anchor="end">
+    <text x="836" y="70" fill="var(--warn)">VietMap/Waze không tới được</text>
+    <text x="836" y="124" fill="var(--warn)">hai bộ ghi chồng nhau</text>
+  </g>
+
+  <rect x="292" y="284" width="554" height="34" rx="8" fill="var(--card)" stroke="var(--warn)"/>
+  <text x="569" y="305" text-anchor="middle" font-size="12.5" fill="var(--warn)">Cửa thứ hai chỉ ghi được nội dung. Không ai bật lớp hiển thị ⇒ HUD trống.</text>
+</svg>
+<div class="legend">
+  <span><i style="border-color:var(--accent)"></i> đường đang chạy tốt</span>
+  <span><i style="border-color:var(--warn)"></i> đường bị trôi</span>
+  <span><i style="border-color:var(--warn);border-top-style:dashed"></i> ghi chồng lên đường kia</span>
+</div>
+</div>
+
+<h3>Một chỗ trôi, đẻ ra bốn lỗi</h3>
+<table>
+<tr><th>Triệu chứng</th><th>Thật ra là</th></tr>
+<tr><td>VietMap/Waze không lên HUD <span class="pill bad">owner đo trên xe</span></td><td>cửa thứ hai không mở được chốt phiên</td></tr>
+<tr><td>Hai bộ ghi chồng lên nhau</td><td>vì có hai cửa thay vì một</td></tr>
+<tr><td>Phải vá riêng lệnh dựng bề mặt cụm (23/08)</td><td>cửa thứ hai không thừa hưởng được của cửa chính</td></tr>
+<tr><td>Đổi menu nguồn không có hiệu lực ngay</td><td>cửa thứ hai không hỏi bộ chọn nguồn</td></tr>
+</table>
+<p>Vá từng cái là vá triệu chứng. Nối lại về một cửa là chữa gốc — bốn cái tự hết.</p>
+
+<h2>Ba bước quay về</h2>
+
+<div class="steps">
+  <div class="step">
+    <b class="n">1</b>
+    <div>
+      <h4>Nối đường đọc màn hình vào cửa chính</h4>
+      <p>VietMap/Waze dựng khung chuẩn rồi đưa vào <b>đúng cửa mà thông báo đang dùng</b>. Từ đó cửa chính tự lo:
+      mở chốt phiên, bắn HUD, bắn cụm giữa, bắn dải làn. <b>Đây là bước làm HUD sáng.</b></p>
+    </div>
+  </div>
+  <div class="step">
+    <b class="n">2</b>
+    <div>
+      <h4>Dời hai đầu ra còn thiếu về cửa chính</h4>
+      <p>Dải làn và chip camera hiện chỉ tồn tại ở cửa thứ hai. Đưa chúng thành đầu ra của cửa chính, ngang hàng
+      với HUD và cụm giữa. Sau bước này <b>mọi đầu ra đều mọc từ một chỗ</b>.</p>
+    </div>
+  </div>
+  <div class="step last">
+    <b class="n">3</b>
+    <div>
+      <h4>Gỡ bỏ cửa thứ hai</h4>
+      <p>Sau bước 1 và 2, cửa thứ hai <b>không còn việc gì</b> — mọi tín hiệu đã đi cửa chính, mọi đầu ra đã mọc từ
+      cửa chính. Nó thành đoạn code chết vẫn đang ghi vào phần cứng. Bước 3 là <b>xoá nó đi</b>, để về sau không ai
+      nhìn thấy hai đường mà không biết đường nào đúng.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+<b>Bước 3 quan trọng ở chỗ nào.</b> Nếu để lại, sẽ có hai đoạn code cùng ghi vào một thanh ghi phần cứng —
+đúng cái đang gây lỗi ghi chồng hôm nay. Người sửa sau nhìn vào không biết sửa đường nào. Và nó vẫn tiêu
+tài nguyên để làm việc thừa. Xoá là để <b>không thể</b> tái diễn, chứ không phải để cho gọn.
+</div>
+
+<div class="card ok">
+<b>Google Maps không đổi một dòng nào.</b> Nó vẫn vào đúng cửa đó như hiện tại. Cái thay đổi là VietMap và
+Waze <b>nhập vào cùng cửa</b> thay vì đi cổng sau. Dù vậy vẫn phải chứng minh bằng bài kiểm tra rằng đường
+Google Maps không hồi quy — vì owner đã dặn không chỉnh gì thêm ở đường đã chạy tốt.
+</div>
+
+<h2>Cần owner chốt</h2>
+<table>
+<tr><th>Câu hỏi</th><th>Lựa chọn</th></tr>
+<tr>
+  <td>Làm tới đâu?</td>
+  <td><b>Chỉ bước 1</b> — đủ để HUD sáng, ít rủi ro nhất, nhưng còn nợ hai cửa.<br>
+      <b>Cả ba bước</b> — chữa gốc, đóng luôn bốn lỗi, nhưng lâu hơn.</td>
+</tr>
+<tr>
+  <td>Đo trên xe trước không?</td>
+  <td><b>Có</b> — làm bản chỉ mở chốt, owner chạy một chuyến xác nhận đúng nguyên nhân rồi mới làm tử tế.<br>
+      <b>Không</b> — tin chuỗi suy luận, làm luôn. Bằng chứng khá chắc vì Google Maps là đối chứng chạy tốt
+      trên cùng chiếc xe.</td>
+</tr>
+</table>
+
+<p class="muted" style="margin-top:28px">Mức bằng chứng: cấu trúc code đã đọc và chứng minh được từng mắt xích.
+Quy kết đó là nguyên nhân trên xe thì rất nhiều khả năng, nhưng chưa đo trực tiếp.</p>
+
+</div>

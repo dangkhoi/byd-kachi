@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B3.53 — Nhánh NCC mềm của đường rect cố định ra SAI HƯỚNG — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center;overflow-x:auto}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>B3.53 — Nhánh NCC mềm của đường rect cố định ra SAI HƯỚNG</h1>
+<p class="muted">Slug: <code>b3-53-fixed-rect-ncc</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill ok">Trạng thái: đã vá, off-car xanh · CHƯA on-car</span></p>
+<p class="muted">Owner: dangkhoi (<code>dangkhoi@users.noreply.github.com</code>) · Tách ra từ B3.47 vòng 3b · CLAUDE.md §2 (mức bằng chứng) · §6 (không đảo thứ tự đường đang chạy tốt) · §7 (generic, không hardcode tên gói) · §10 (test khoá bài học).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-08-23</b>: ĐO trước (2 bộ fixture off-car, không cần xe) → BÁC ứng viên (b) bằng số → chọn ứng viên (a) ở dạng "phép đo Hamming" → vá + 4 test khoá + 2 phép thử làm-đỏ.</li>
+<li><b>Pass 2 — 2026-08-23 (review + vá)</b>: phản biện độc lập tái lập được toàn bộ số của Pass 1, và tìm ra <b>nửa cửa còn lại</b> — rect a11y đo cho node <b>CAMERA</b> vẫn được áp cho plan <b>ARROW</b> ([P1], đã vá bằng <code>CaptureBounds.target</code>). Thêm bảng <b>giá phủ sóng</b> của bản vá đo trên đúng tier bị đổi, gộp bảng chân lý hướng trùng lặp, đính chính 3 con số không tái lập được.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>[ĐO] Cơ chế.</b> <code>CaptureCalibration.TABLE</code> (<code>core/…/screencapture/CaptureRouter.kt:42-61</code>) tra rect ARROW theo <code>Key(target, displayW, displayH)</code> — <b>không</b> theo package. Vì vậy <code>WAZE_ARROW_BANNER_D240 = CropRect(78,50,158,163)</code>, hiệu chuẩn trên banner <b>Waze</b>, cũng được áp nguyên xi lên khung <b>VietMap</b> cùng kích thước màn. Crop sai chỗ vẫn có mực ⇒ vẫn ra chữ ký 225-bit; mà <code>ManeuverSignature.classifyDetailed</code> (<code>ManeuverSignature.kt:143-150</code>) = <code>match(bits) ?: matchNCC(fill)</code> với <code>NCC_MIN = 0.45</code> là khớp <b>MỀM</b> và registry <b>không có lớp "không biết"</b> ⇒ gần như luôn tìm được một cái tên.</p>
+<p><b>[ĐO] Hậu quả.</b> Trên 87 khung VietMap ghép từ asset APK, crop qua đúng rect cố định: ra mã cho <b>3</b> khung, trong đó <b>2 SAI HỌ</b>. Cả ba trượt Hamming rất xa ngưỡng 18 ⇒ chỉ NCC mới cho ra tên ⇒ hướng hiển thị là bốc thăm.</p>
+<div class="card"><b>Phơi nhiễm còn lại sau B3.47 vòng 3b.</b> Vòng 3b đã cho tầng glyph <b>sở hữu</b> kênh ARROW khi <code>NavGlyphLocator</code> dò ra bbox, nên đường rect cố định chỉ còn sống ở hai ca: (i) <code>loc.windowRect == null</code> (resolver không parse ra task — KDoc của chính nó ghi ca này đã xảy ra trên API 34), (ii) locator trả <code>null</code>. Ca (i) đi thẳng vào đúng ba khung sai ở trên vì nó <b>bỏ qua cả tầng glyph</b>.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> — Số khung VietMap ra mã <b>SAI HỌ</b> qua đường rect cố định = <b>0</b> (trước: 2). Đo trên 87 khung ghép từ <code>core/src/test/resources/diagnostics/vietmap-glyph/</code>.</li>
+<li><b>R2</b> — Số khung GMaps đổi mã AMAP so với HEAD = <b>0/418</b> trên bộ nhiễu hình học (đường notification <b>đã chạy thật ngoài hiện trường</b>). Một khung đổi cũng là hồi quy.</li>
+<li><b>R3</b> — <code>ManeuverSignatureTest</code> · <code>WazeArrowRegistryTest</code> · <code>CaptureRouterTest</code> · <code>ClusterArrowCalibrationTest</code> giữ nguyên số pass.</li>
+<li><b>R4</b> — Đường <b>Waze + rect cố định</b> (fixture chụp nguyên văn ở 1920×720 và 1920×1080) không đổi một kết quả nào.</li>
+<li><b>R5</b> <span class="pill">Pass 2</span> — Rect a11y (tier 1) <b>đo cho một target</b> không được phục vụ target khác. Nghiệm thu: với VietMap (producer chọn node bằng <code>CaptureTarget.forPackage</code> = CAMERA), plan ARROW <b>không</b> mang rect đó và <b>không</b> mang nhãn <code>A11Y_DYNAMIC</code>.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Không rẽ nhánh theo tên gói (CLAUDE.md §7). Khác biệt phải lộ ra qua <b>đo đạc</b>.</li>
+<li><b>R-nf2</b> — Đường mới xuống cuối; đường cũ giữ nguyên trừ khi số đo chứng minh 0 thay đổi (CLAUDE.md §6).</li>
+<li><b>R-nf3</b> — Chứng minh được <b>off-car</b>, không cần xe; mọi con số kèm lệnh tái lập.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Chỗ hỏng nằm ở đâu trong luồng</h3>
+<div class="flow">
+  <div class="fnode"><b>bitmap display</b><span>fission screencap</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>tầng glyph</b><span>NavGlyphLocator<br>(B3.47 — sở hữu nhịp)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(191,95,0,.12)"><b>rect CỐ ĐỊNH</b><span>Key(target,W,H)<br>KHÔNG theo package</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(191,95,0,.12)"><b>classifyDetailed</b><span>match ?: <b>matchNCC 0.45</b></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>publishArrow</b><span>cụm / HUD</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối giữ nguyên</span>
+  <span class="sw"><span class="box" style="background:rgba(191,95,0,.12)"></span> hai khối cùng góp phần sinh lỗi (rect phỏng đoán × matcher mềm)</span>
+</div>
+<p>Lỗi <b>không</b> nằm ở một khối: rect phỏng đoán một mình thì cùng lắm là câm; matcher mềm một mình thì đúng chức năng nó sinh ra (lấp "vực im lặng" khi GMaps đổi style icon). Nguy hiểm là <b>tích</b> của hai cái — crop không biết mình đang crop cái gì, gặp matcher không biết nói "không biết".</p>
+
+<h3>4.2 Hai ứng viên — bảng số đo</h3>
+<p class="muted">Cả hai đo trên đúng hai bộ fixture của §Requirements. Tái lập: xem §6.</p>
+
+<h4>Ứng viên (b) — trần Hamming cho nhánh NCC · <span class="warn">BÁC</span></h4>
+<p>"Chỉ cho vào nhánh NCC khi Hamming của ứng viên tốt nhất ≤ một trần rộng hơn (vd 30)."</p>
+<table>
+<tr><th>Trần Hamming</th><th>Khung GMaps đổi kết quả (/418)</th><th>Chặn được cả 3 ca VietMap?</th></tr>
+<tr><td>19</td><td>251</td><td>có</td></tr>
+<tr><td>22</td><td>220</td><td>có</td></tr>
+<tr><td><b>26</b></td><td><b>162</b></td><td><b>có</b> (trần lớn nhất còn chặn được ca 27)</td></tr>
+<tr><td>30</td><td>130</td><td><b>không</b> — <code>depart_right</code> ở Hamming 27 lọt</td></tr>
+<tr><td>35</td><td>93</td><td>không</td></tr>
+<tr><td>68 (max)</td><td>0</td><td>không</td></tr>
+</table>
+<p><b>Kết luận [ĐO]</b>: ba ca sai nằm ở Hamming <b>27 / 37 / 38</b> ⇒ trần phải ≤ 26. Nhưng trên 418 khung GMaps nhiễu hình học có <b>256</b> khung đi qua NCC với <code>minD</code> trải tới <b>68</b>, nên trần 26 làm <b>162/418</b> khung đổi kết quả — vi phạm R2 (đòi 0/418) và CLAUDE.md §6. <b>Không tồn tại cửa sổ an toàn.</b></p>
+
+<h4>Ứng viên (a) — rect cố định chỉ áp cho bố cục nó được hiệu chuẩn · <span class="ok">CHỌN</span></h4>
+<p>Câu hỏi thi hành: <i>"đo bằng gì để biết đây có phải bố cục đã hiệu chuẩn không, mà không nhìn tên gói?"</i>. Phép đo đã có sẵn và không phải phát minh gì mới: <b>crop có rơi vào quả cầu Hamming 18 bit của một template không</b>. Rơi vào ⇒ rect đang khung đúng thứ nó được hiệu chuẩn để khung. Không rơi vào ⇒ chính giả định "crop đúng quy ước khung vẽ" đang bị nghi ngờ, và đó đúng là lúc <b>không</b> được dùng matcher mềm.</p>
+<table>
+<tr><th>Bộ fixture</th><th>Trước (classifyDetailed)</th><th>Sau (classifyStrict)</th><th>Δ</th></tr>
+<tr><td>87 khung VietMap × rect cố định</td><td>3 ra mã, <b>2 SAI HỌ</b></td><td><b>0 ra mã</b></td><td>R1 ✅</td></tr>
+<tr><td>418 khung GMaps nhiễu × đường notification</td><td>274 ra mã</td><td>274 (hàm không đổi)</td><td>R2 ✅ 0/418</td></tr>
+<tr><td>3 khung Waze THẬT × rect cố định</td><td>rẽ phải (H=15) · rẽ phải (H=18) · (không khớp)</td><td>y hệt</td><td>R4 ✅ 0/3</td></tr>
+</table>
+<p class="muted">Ghi chú R4: khung "compact" vốn đã <code>(không khớp)</code> ở HEAD — NCC cũng không cứu được nó (điểm &lt; 0.45), nên bản vá không lấy đi ca nào đang chạy.</p>
+
+<h4>Ứng viên (a′) đã cân nhắc rồi loại — cổng "mực không được chạm biên khung crop"</h4>
+<p>[ĐO] cả 38 template GMaps đều có mực <b>nằm trọn bên trong</b> lưới 15×15 (hàng 1..12, cột 1..13; <b>0/38</b> chạm biên) ⇒ "mực chạm biên = crop đang cắt ngang một thứ khác" là một bất biến có thật, và nó chặn đủ cả 3 ca VietMap. Loại vì <b>biên an toàn bằng 0</b>: khung Waze màn chính thật có mực ở cột 1..11 — sát mép trái đúng 1 ô, lệch một ô là mất một ca đang chạy. Cùng lý do, đặt nhầm cổng này vào <code>classifyDetailed</code> sẽ đổi <b>64/418</b> khung GMaps. Ứng viên (a) không đưa thêm ngưỡng hình học nào nên không có mặt yếu này.</p>
+
+<h3>4.3 Ranh giới quyết định sau bản vá</h3>
+<div class="diagram">
+<svg viewBox="0 0 720 250" role="img" aria-label="Ranh giới: rect đo được giữ matcher mềm, rect hiệu chuẩn sẵn chỉ khớp cứng">
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.5" color="var(--accent)">
+    <path d="M150,60 L250,60" marker-end="url(#a)"/><path d="M150,150 L250,150" marker-end="url(#a)"/>
+    <path d="M470,60 L560,60" marker-end="url(#a)"/><path d="M470,150 L560,150" marker-end="url(#a)"/>
+  </g>
+  <g font-family="-apple-system,sans-serif" font-size="12" fill="var(--fg)">
+    <rect x="10" y="35" width="140" height="50" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="80" y="55" text-anchor="middle" font-weight="700">rect ĐO ĐƯỢC</text>
+    <text x="80" y="72" text-anchor="middle" fill="var(--muted)">a11y node · bbox mực</text>
+
+    <rect x="10" y="125" width="140" height="50" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="80" y="145" text-anchor="middle" font-weight="700">rect HIỆU CHUẨN</text>
+    <text x="80" y="162" text-anchor="middle" fill="var(--muted)">Key(target,W,H)</text>
+
+    <rect x="255" y="30" width="215" height="60" rx="9" fill="var(--card)" stroke="var(--line)"/>
+    <text x="362" y="52" text-anchor="middle" font-weight="700">classify / classifyManeuver</text>
+    <text x="362" y="70" text-anchor="middle" fill="var(--muted)">Hamming ≤18 ?: NCC ≥0.45</text>
+
+    <rect x="255" y="120" width="215" height="60" rx="9" fill="rgba(26,127,55,.12)" stroke="var(--line)"/>
+    <text x="362" y="142" text-anchor="middle" font-weight="700">classifyStrict (MỚI)</text>
+    <text x="362" y="160" text-anchor="middle" fill="var(--muted)">CHỈ Hamming ≤18</text>
+
+    <rect x="565" y="35" width="145" height="50" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="637" y="55" text-anchor="middle" font-weight="700">publishArrow</text>
+    <text x="637" y="72" text-anchor="middle" fill="var(--muted)">đường cũ, không đổi</text>
+
+    <rect x="565" y="125" width="145" height="50" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="637" y="145" text-anchor="middle" font-weight="700">publish hoặc IM LẶNG</text>
+    <text x="637" y="162" text-anchor="middle" fill="var(--muted)">không khớp cứng ⇒ câm</text>
+
+    <text x="360" y="215" text-anchor="middle" fill="var(--muted)">Rẽ nhánh theo NGUỒN GỐC của rect — không theo tên gói (CLAUDE.md §7)</text>
+  </g>
+</svg>
+</div>
+<p><b>Vì sao tier a11y giữ nguyên</b>: ở đó rect là bounds đo được của một node <i>được chọn CHO chính target ARROW</i>, nên giả định "crop đúng quy ước khung vẽ" có căn cứ; và đó là đường OpenBYD đã proven. Bản vá chỉ siết đúng chỗ giả định đang sai.</p>
+<div class="card"><b>⚠ ĐÍNH CHÍNH Pass 2 [ĐO] — câu trên chỉ ĐÚNG TỪ bản vá <code>CaptureBounds.target</code>.</b>
+Pass 1 viết mệnh đề đó vào KDoc của <code>ManeuverSignature.classifyStrict</code> và <code>ScreenCaptureNavSource.handleArrow</code> <b>mà chưa đo</b>. Sự thật lúc đó:
+<code>CaptureBounds</code> chỉ mang <code>rect</code> + <code>pkg</code>, <b>không mang mục tiêu</b>, còn <code>CaptureRouter.computeBounds</code> áp snapshot tier-1 cho <b>mọi</b> target. Với VietMap,
+<code>NavAccessibilityService.maybePublishCaptureBounds</code> chọn node bằng <code>CaptureTarget.forPackage(pkg)</code> = <b>CAMERA</b> ⇒ ô holder luôn giữ rect <b>icon camera</b>, mà <code>routePlans</code> vẫn phát plan ARROW cho VietMap:
+<pre>PLAN target=ARROW  bounds=CropRect(1500,300,1620,420) src=A11Y_DYNAMIC   ← rect của node CAMERA
+PLAN target=CAMERA bounds=CropRect(1500,300,1620,420) src=A11Y_DYNAMIC</pre>
+Plan ARROW đó rơi vào nhánh <code>else</code> (khớp MỀM) — <b>đúng lớp lỗi mà bản vá Pass 1 chặn ở tier rect-cố-định</b>. [ĐO] crop 87 khung VietMap qua <code>VIETMAP_CAMERA_SEED</code>: khớp mềm ra mã <b>1</b> khung (<code>arrive_straight</code> → amap 12, đúng phải 9), khớp cứng ra <b>0</b>.
+Đây cũng là ca sách vở của CLAUDE.md §2 (trộn <i>cơ chế</i> với <i>quy kết</i>): cơ chế "rect đo được thì tin được" đúng, nhưng quy kết "rect trong tier-1 là rect mũi tên" chưa có dữ liệu.
+<b>Vá</b>: <code>CaptureBounds.target</code> (mục tiêu rect được đo cho) + gate <code>a11y.target == target</code> ở <code>computeBounds</code> + hai producer khai target. Waze/GMaps khai ARROW ⇒ <b>không đổi một nhịp nào</b> (§6).
+<b>Còn lại, chưa vá</b>: trong hai producer rect ARROW thì <code>navBarDirection</code> là view-id đích danh (proven), còn <code>CaptureBoundsHeuristic.pick(ARROW, …)</code> là <i>phỏng đoán</i> (có bậc <code>IMAGE_BASE</code> nhận cả <code>ImageView</code> không từ khoá) — phân biệt hai nguồn cần thêm một bậc provenance nữa. Ghi ở OQ4.</div>
+<p><b>Context7</b>: không dùng thư viện/framework mới — chỉ Kotlin thuần + khối đã có trong repo ⇒ không cần verify version.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>TT</th></tr>
+<tr><td>T1</td><td>ĐO trước: 87 khung VietMap × rect cố định; 418 khung GMaps; 3 khung Waze thật</td><td><code>core/src/test/…/FixedRectSoftMatchTest.kt</code></td><td>✅</td></tr>
+<tr><td>T2</td><td>Thêm <code>classifyStrict</code> (chỉ Hamming) — KHÔNG đụng <code>classify/classifyDetailed/classifyHal/classifyManeuver/classifyWazeInk</code></td><td><code>core/…/ManeuverSignature.kt:157-200</code></td><td>✅</td></tr>
+<tr><td>T3</td><td>Nối dây: tier <code>FIXED_CALIBRATED</code> dùng <code>classifyStrict</code>; tier <code>A11Y_DYNAMIC</code> giữ nguyên</td><td><code>app/…/ScreenCaptureNavSource.kt:190, 317-366</code></td><td>✅</td></tr>
+<tr><td>T4</td><td>Fixture loader dùng chung cho khung VietMap ghép</td><td><code>core/src/test/…/VietMapGlyphFrames.kt</code></td><td>✅</td></tr>
+<tr><td>T5</td><td>Test khoá + 2 phép thử làm-đỏ</td><td><code>FixedRectSoftMatchTest</code> (4) · <code>ScreenCaptureNavSourceContractTest</code> (+1)</td><td>✅</td></tr>
+<tr><td>T6</td><td>Doc atomic: backlog B3.53 · index · spec này</td><td><code>docs/</code></td><td>✅</td></tr>
+<tr><td>T7 <span class="pill">Pass 2</span></td><td>[P1] <code>CaptureBounds.target</code> + gate <code>a11y.target == target</code> ở tier-1; hai producer khai target</td><td><code>core/…/CaptureModels.kt</code> · <code>CaptureRouter.kt:200</code> · <code>CaptureBoundsSource.kt</code> · <code>app/…/NavAccessibilityService.kt:368,965</code></td><td>✅</td></tr>
+<tr><td>T8 <span class="pill">Pass 2</span></td><td>Test khoá R5 + bảng giá phủ sóng + bằng chứng pixel nửa cửa còn lại</td><td><code>CaptureRouterTest</code> (+3) · <code>ScreenCaptureHoldersTest</code> (+1) · <code>FixedRectSoftMatchTest</code> (+2) · <code>ScreenCaptureNavSourceContractTest</code> (+1)</td><td>✅</td></tr>
+<tr><td>T9 <span class="pill">Pass 2</span></td><td>[P2] Gộp bảng chân lý hướng trùng lặp (<code>expectedAmap</code>) về một nguồn</td><td><code>VietMapGlyphGateTest.kt:452</code> → <code>VietMapGlyphFrames.expectedAmap</code></td><td>✅</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<h3>V-unit — lệnh tái lập</h3>
+<pre>cd &lt;repo-root&gt;
+git checkout -- docs/diagnostics/hud-sign-re/          # E6: :offcar-planner ghi đè bộ niêm phong
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew \
+  :core:test --tests "com.byd.clusternav.navigation.screencapture.FixedRectSoftMatchTest" \
+  --rerun-tasks --continue
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew \
+  :app:testDebugUnitTest --tests "com.byd.clusternav.ScreenCaptureNavSourceContractTest" \
+  --rerun-tasks --continue
+git checkout -- docs/diagnostics/hud-sign-re/</pre>
+<table>
+<tr><th>Test</th><th>Khoá điều gì</th></tr>
+<tr><td><code>rect co dinh — khong con khung VietMap nao ra ma qua khop MEM (B3_53)</code></td><td>R1. Chốt cả cột TRƯỚC (3 khung, 2 sai họ) lẫn cột SAU (0) — ai chỉnh NCC là phải đo lại.</td></tr>
+<tr><td><code>3 khung Waze THAT qua rect co dinh — khop CUNG cho ket qua y het khop MEM</code></td><td>R4. So khớp-mềm vs khớp-cứng trên đường proven + chốt cứng giá trị (không chỉ "bằng nhau ở trạng thái câm").</td></tr>
+<tr><td><code>nhanh NCC van la thiet yeu cho duong notification — 418 khung GMaps nhieu hinh hoc</code></td><td>R2 + lý do phạm vi: 274 (mềm) vs 18 (cứng) ⇒ cấm đem <code>classifyStrict</code> sang đường notification.</td></tr>
+<tr><td><code>ung vien BAC — tran Hamming cho nhanh NCC khong co cua so an toan</code></td><td>Giữ bảng số của ứng viên (b) sống trong test, tính lại mỗi lần chạy.</td></tr>
+<tr><td><code>rect CO DINH chi chap nhan khop CUNG, tier a11y giu nguyen (B3_53)</code> (:app)</td><td>Dây nối thật: rẽ nhánh theo <code>BoundsSource</code>, truyền <code>plan.boundsSource</code>, và <code>NavNotificationListener</code> KHÔNG được dùng <code>classifyStrict</code>.</td></tr>
+<tr><td><code>routePlans — rect a11y do cho CAMERA KHONG duoc ap cho plan ARROW (B3_53 review)</code> <span class="pill">Pass 2</span></td><td><b>R5</b>. Bản trước của chính test này khẳng định điều ngược lại ("cùng holder a11y → cả hai target tầng-1 dùng nó") nên đã <b>khoá luôn cái lỗi</b>.</td></tr>
+<tr><td><code>routePlans — rect a11y do cho ARROW van phuc vu plan ARROW (khong hoi quy Waze)</code> <span class="pill">Pass 2</span></td><td>§6: đường Waze proven không đổi.</td></tr>
+<tr><td><code>bounds tang 1 — rect KHONG khai target thi bi bo qua (roi ve rect co dinh)</code> <span class="pill">Pass 2</span></td><td>Rect vô-mục-tiêu = fail-closed, cùng nguyên tắc với rect vô-chủ (§R-BI).</td></tr>
+<tr><td><code>bounds source giu nguyen MUC TIEU da khai (CAMERA khong bien thanh ARROW)</code> <span class="pill">Pass 2</span></td><td>Holder không được đánh rơi nhãn mục tiêu trên đường publish→snapshot.</td></tr>
+<tr><td><code>rect KHONG phai mui ten trong khung VietMap — khop MEM van ra ma, khop CUNG im</code> <span class="pill">Pass 2</span></td><td>Bằng chứng <b>pixel</b> cho nửa cửa: soft ra <code>{arrive_straight=12}</code> (đúng phải 9), strict ra <code>{}</code>.</td></tr>
+<tr><td><code>gia phu song cua B3_53 tren tier rect co dinh — nhich rect ±6px tren 2 khung Waze THAT</code> <span class="pill">Pass 2</span></td><td>Bảng <b>giá</b> của bản vá đo trên ĐÚNG tier bị đổi (xem §6.1). Trước đó spec chỉ có con số 418-khung của tier <i>khác</i>.</td></tr>
+<tr><td><code>producer dan nhan MUC TIEU cho rect tier-1 (B3_53 review)</code> (:app) <span class="pill">Pass 2</span></td><td>Hai producer <code>CaptureBoundsSource.publish</code> đều khai target, và target khai = target dùng để pick node.</td></tr>
+</table>
+
+<h3 id="gia-phu-song">6.1 Giá phủ sóng THẬT của bản vá — đo trên đúng tier bị đổi <span class="pill">Pass 2</span></h3>
+<p>Pass 1 chỉ báo "0/3 khung Waze đổi" — đúng, nhưng đo tại <b>đúng một điểm</b>: chính rect hiệu chuẩn. Mà KDoc của <code>WAZE_ARROW_BANNER_D240</code> tự khai mức bằng chứng "nhiều khả năng" và ghi rõ <b>density khác 240 CHƯA đo</b>. Nhích rect ±6 px (lưới 7×7 = 49 vị trí) là mô hình rẻ nhất cho "rect trượt khỏi glyph một chút". [ĐO] 2026-08-23 trên 2 khung Waze THẬT:</p>
+<table>
+<tr><th>Khung</th><th>khớp MỀM ra mã</th><th>trong đó <b>SAI HỌ</b></th><th>khớp CỨNG ra mã</th><th>khớp CỨNG ra mã tại vị trí mềm-sai-họ</th></tr>
+<tr><td>cụm 1920×720</td><td>40/49</td><td class="warn">6</td><td>8/49</td><td class="ok">0</td></tr>
+<tr><td>màn chính 1920×1080</td><td>39/49</td><td class="warn">7</td><td>5/49</td><td class="ok">0</td></tr>
+</table>
+<p><b>Đọc theo cả hai chiều.</b> <i>Giá</i>: bản vá bỏ 66 lượt ra-mã (phần lớn ĐÚNG hướng) trên lưới nhiễu này ⇒ nếu rect trượt thật trên xe, kênh mũi tên rect-cố-định sẽ IM nhiều hơn trước.
+<i>Lý do vẫn vá</i>: <b>13</b> lượt trong số đó là SAI HỌ — <code>maneuver_off_ramp_normal_right</code> (amap 5) và <code>maneuver_roundabout_enter_and_exit_cw_slight_right</code> (<b>amap 11 = vòng xuyến</b>) trong khi khung thật là rẽ phải thường (amap 3). Tức NCC trên rect trượt <b>không</b> "suy giảm dần" mà nhảy sang họ maneuver khác; khớp cứng trả <code>null</code> ở đúng cả 13 lượt đó. CLAUDE.md: im lặng &gt; sai hướng.</p>
+<p>Bảng này là để <b>owner chốt đánh đổi</b>, không phải bằng chứng "không mất gì". Đường phục hồi phủ sóng = <b>OQ2</b> (khoá <code>CaptureCalibration.TABLE</code> theo package) — vá nguyên nhân, còn bản vá hiện tại chặn hậu quả.</p>
+
+<h3>Kết quả chạy [ĐO] 2026-08-23 — <b>Pass 2</b> (E6: restore bộ niêm phong trước + sau, chạy TÁCH module)</h3>
+<table>
+<tr><th>Module</th><th>Test</th><th>Fail</th><th>Ghi chú</th></tr>
+<tr><td><code>:core</code></td><td>869</td><td class="ok">0</td><td>BUILD SUCCESSFUL (Pass 1: 856/0; +13 test của Pass 2 và các workstream khác)</td></tr>
+<tr><td><code>:app</code></td><td>474</td><td class="ok">0</td><td>BUILD SUCCESSFUL ở lượt chạy CUỐI. Lượt giữa phiên có <b>3 fail</b> của workstream khác — đã truy nguyên đích danh (dưới bảng) và workstream đó đã tự sửa xong trong lúc Pass 2 chạy</td></tr>
+<tr><td><code>:vehicle-contracts</code></td><td>22</td><td class="ok">0</td><td>—</td></tr>
+<tr><td><code>:car-integration</code></td><td>28</td><td class="ok">0</td><td>—</td></tr>
+<tr><td><code>:offcar-planner</code></td><td>99</td><td class="warn">1</td><td>ĐÍNH CHÍNH Pass 1 (ghi 2). <code>ExpansionTransportFenceTest</code>, và nguyên nhân là <code>app/src/main/res/layout/activity_main.xml</code> của workstream T11, <b>không</b> phải bộ niêm phong</td></tr>
+</table>
+<div class="card"><b>[ĐO] Chứng minh 3 fail <i>tạm thời</i> của <code>:app</code> KHÔNG do bản vá này</b> <span class="muted">(giữ lại làm mẫu quy trình: truy nguyên bằng dữ kiện, không đổ cho "workstream song song" — CLAUDE.md §2. Ba fail này đã tự hết ở lượt chạy cuối khi workstream kia sửa xong.)</span> (không dùng "chắc là do workstream khác" — CLAUDE.md §2). Cả ba là test đọc <b>văn bản nguồn</b> của <code>NavAccessibilityService.kt</code>, và điều kiện làm chúng đỏ nằm ngoài hai hunk của Pass 2 (Pass 2 chỉ chạm dòng 368 và 965):
+<pre>NavSourceDwellWiringContractTest &gt; khong co ung vien nao thi van cham nhip…
+  assert: "navDwell.onTick(candidate = null, holderAllowed = false)" nằm trong 400 ký tự sau "if (ranked.isEmpty())"
+  [ĐO] khoảng cách thật = 635 ký tự (một khối comment đã được chèn vào giữa) → đỏ
+
+NavWindowPumpWiringContractTest &gt; chu ky nhip… / nhip khong dung duong GMaps
+  assert: nguồn chứa "armOnNavEvent()"
+  [ĐO] "armOnNavEvent" KHÔNG còn trong nguồn; API đã đổi tên thành "navWindowPump.arm()" → đỏ</pre>
+Không token nào trong ba assert đó xuất hiện trong hunk của Pass 2. Tái lập không cần Gradle:
+<pre>python3 - &lt;&lt;'PY'
+s=open('app/src/main/java/com/byd/clusternav/modules/navaccess/NavAccessibilityService.kt').read()
+i=s.index('if (ranked.isEmpty())'); j=s.index('navDwell.onTick(candidate = null, holderAllowed = false)')
+print('khoang cach =', j-i, '(test cho phep &lt;400)'); print('armOnNavEvent?', 'armOnNavEvent' in s)
+PY</pre>
+Tương tự, fail của <code>:offcar-planner</code> là <code>activity_main.xml</code> (<code>expected 4738ceb6… but was fddc1ef5…</code>), file của workstream T11 — <code>docs/diagnostics/hud-sign-re/README.md</code> sau lệnh restore E6 khớp <b>đúng</b> hash niêm phong <code>f854683a…</code>.</div>
+<p class="muted"><b>Đính chính cảnh báo E6</b>: [ĐO] Pass 2 — <code>:offcar-planner:test</code> <b>không</b> còn ghi đè thư mục <code>docs/diagnostics/hud-sign-re/</code> trong cây làm việc (E6b đã gỡ hai lời gọi <code>main()</code>). Lệnh <code>git checkout --</code> vẫn giữ trong quy trình vì rẻ. Lưu ý cây hiện có <code>README.md</code> ở trạng thái <b>đã staged</b> (index = <code>f854683a…</code> = đúng hash niêm phong; HEAD = <code>61a7ba11…</code> = sai) ⇒ <code>git status</code> của thư mục đó <b>không thể rỗng</b> cho tới khi commit; đó là bản sửa đúng, không phải rác.</p>
+<p class="muted">⚠ Cây làm việc có agent khác chạy Gradle song song: đã gặp 3 lượt hỏng do tranh chấp (<code>NoSuchFileException …/in-progress-results-generic.bin</code>; một lượt cây không biên dịch được vì <code>SpeedSignPorts.kt</code> đang sửa dở của việc khác; một lượt console báo 14 fail của <code>SpeedSign*</code>/<code>SegmentShotDecisionTest</code>) — không lượt nào chạm file của B3.53. Số ở bảng là lượt chạy sạch sau cùng.</p>
+
+<h3>Phép thử làm-ĐỎ (test chưa từng đỏ là test mù)</h3>
+<table>
+<tr><th>Mutation</th><th>Kết quả</th></tr>
+<tr><td>Trả nhánh NCC vào <code>classifyStrict</code> (<code>match ?: matchNCC</code>)</td><td><b>[ĐO] Pass 2: 5 test ĐỎ</b> (Pass 1 ghi "2" — <b>sai</b>, đo lại được 3 trước khi Pass 2 thêm 2 test nữa): <code>rect co dinh — khong con khung VietMap…</code> · <code>nhanh NCC van la thiet yeu…</code> · <code>ung vien BAC — tran Hamming…</code> · <code>rect KHONG phai mui ten trong khung VietMap…</code> · <code>gia phu song cua B3_53…</code>. Đã khôi phục.</td></tr>
+<tr><td><span class="pill">Pass 2</span> Gỡ điều kiện <code>a11y.target == target</code> khỏi <code>CaptureRouter.computeBounds</code></td><td><b>[ĐO] 2 test ĐỎ</b> (<code>:core</code> 867 test, 2 fail): <code>routePlans — rect a11y do cho CAMERA KHONG duoc ap cho plan ARROW</code> và <code>bounds tang 1 — rect KHONG khai target thi bi bo qua</code>. Đã khôi phục.</td></tr>
+<tr><td>Gỡ nhánh <code>BoundsSource.FIXED_CALIBRATED</code> trong <code>handleArrow</code></td><td><b>1 test :app ĐỎ</b>: <code>handleArrow phải rẽ nhánh theo NGUỒN GỐC của rect … expected: &lt;true&gt; but was: &lt;false&gt;</code>. Đã khôi phục.</td></tr>
+</table>
+
+<h3>V-oncar — CHƯA làm (CLAUDE.md §14 tầng 1)</h3>
+<ul>
+<li>Bật <code>NavLog.verbose</code>, để VietMap dẫn, ép ca <code>windowRect == null</code> (task không parse được) rồi đọc logcat: phải thấy <code>arrow(image) … src=FIXED_CALIBRATED</code> KHÔNG kèm mã, hoặc dòng "rect CỐ ĐỊNH không khớp cứng … IM LẶNG".</li>
+<li>Waze dẫn ở cả cụm và màn chính: phải vẫn thấy <code>arrow(image) … amap=</code> như trước bản vá (không được câm).</li>
+<li><span class="pill">Pass 2</span> VietMap dẫn, a11y đang cấp quyền: logcat <b>không</b> được có dòng <code>arrow(image) … src=A11Y_DYNAMIC</code> cho <code>vn.vietmap.live</code> (rect tier-1 của nó là node CAMERA). Nếu thấy ⇒ gate target chưa ăn, dừng và đo lại.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — Có khung Waze/GMaps THẬT nào ngoài hiện trường chỉ khớp được nhờ NCC ở tier rect cố định không? <span class="muted">[CHƯA BIẾT] — trên 3 fixture đang có thì không có ca nào. Chốt bằng một chuyến verbose ghi <code>arrow-sig</code> + <code>src=</code>.</span></li>
+<li><b>OQ2</b> — Bảng <code>CaptureCalibration.TABLE</code> vẫn khoá theo <code>(target,W,H)</code>. Bản vá chặn <i>hậu quả</i>. <span class="muted"><b>Pass 2</b>: nay có SỐ cho câu hỏi này — §6.1 đo được cái giá là 66 lượt ra-mã trên lưới nhiễu ±6px. Khoá bảng theo package sẽ trả lại phủ sóng cho Waze mà VietMap vẫn im. <b>Cần owner chốt</b> vì nó động vào rect của GMaps (chưa biết rect nào đúng cho GMaps ở tier này).</span></li>
+<li><b>OQ3</b> — <s><code>VietMapGlyphGateTest</code> còn giữ bản sao riêng của loader fixture.</s> <span class="pill ok">Pass 2: bảng chân lý hướng (<code>expectedAmap</code>) ĐÃ gộp</span> về <code>VietMapGlyphFrames.expectedAmap</code> — đó là phần nguy hiểm (hai bản lệch nhau ⇒ hai test khẳng định hai sự thật trái ngược về trái/phải mà không ai đỏ). Phần <i>nạp file</i> vẫn còn trùng; để lại vì vô hại (lệch chỉ gây đỏ, không gây kết luận sai).</li>
+<li><b>OQ4</b> <span class="pill">Pass 2</span> — Rect ARROW tier-1 đến từ HAI producer có độ tin cậy khác nhau: <code>navBarDirection</code> (view-id đích danh, proven) và <code>CaptureBoundsHeuristic.pick(ARROW, …)</code> (phỏng đoán — có bậc <code>IMAGE_BASE</code> nhận cả <code>ImageView</code> không từ khoá, và bản thân heuristic là VERIFY-ON-CAR/OQ2). Tier <code>A11Y_DYNAMIC</code> hiện dùng khớp MỀM cho <b>cả hai</b>. <span class="muted">[CHƯA BIẾT] heuristic có bao giờ trả node không-phải-mũi-tên trên xe không. Chốt bằng một chuyến verbose ghi <code>arrow-sig … src=A11Y_DYNAMIC</code> kèm rect. Nếu có ⇒ cần bậc provenance thứ ba (view-id vs heuristic) chứ không phải siết cả tier.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/PROJECT-BACKLOG.md</code> — B3.53 (tách từ B3.47 vòng 3b), B3.52.</li>
+<li><code>docs/diagnostics/vietmap-glyph-gate-measurement-2026-08-23.md</code> §7.7 — nơi ba ca sai hướng được đo lần đầu.</li>
+<li><code>docs/specs/b3-full-nav-capture.html</code> — spec gốc của tầng screen-capture (§4.4 ba tầng bounds).</li>
+<li><code>core/…/ManeuverSignature.kt</code> — <code>classifyStrict</code> (mới) · <code>match</code> · <code>matchNCC</code> · <code>classifyWazeInk</code>.</li>
+<li><code>core/…/screencapture/CaptureRouter.kt:42-61</code> — <code>CaptureCalibration.TABLE</code>, gốc của "rect Waze áp lên khung VietMap".</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-08-23 · Pass 2 · bài học chính</b> — bản vá Pass 1 <b>đóng một nửa cửa và ghi vào KDoc rằng nửa kia an toàn</b>. Nửa kia (<code>A11Y_DYNAMIC</code> mang rect node CAMERA) chưa từng được đo; nó được suy ra từ tên tier. Đúng cái CLAUDE.md §2 cấm: cơ chế thì đúng, quy kết thì chưa có dữ liệu. Quy tắc rút ra: <b>khi vá một nhánh vì "nhánh kia an toàn", phải ĐO nhánh kia trong cùng vòng</b>, không được để câu khẳng định đó nằm lại trong KDoc như một sự thật.</li>
+<li><b>2026-08-23 · Pass 2 · test khoá luôn lỗi</b> — <code>CaptureRouterTest</code> có sẵn một test tên <i>"a11y tuoi ap cho MOI target (holder rect chung)"</i> khẳng định đúng hành vi hỏng, kèm chú thích "(VERIFY-ON-CAR: holder đơn, OQ2)". Một test xanh <b>không</b> có nghĩa hành vi đúng — nó chỉ có nghĩa hành vi khớp với điều ai đó từng tin.</li>
+<li><b>2026-08-23 · quyết định</b> — ĐO trước khi vá. Ứng viên (b) bị <b>bác bằng số</b> (162/418 là mức thấp nhất có thể, không có cửa sổ an toàn), nên không viết một dòng code nào cho nó.</li>
+<li><b>2026-08-23 · phát hiện ngoài dự kiến</b> — sau B3.47 vòng 3b, cả 3 khung rò rỉ đều là khung mà locator <b>dò được</b> (<code>locate=OK</code>), tức ở luồng bình thường chúng đã bị vòng 3b chặn. Đường sống thật sự còn lại là <code>windowRect == null</code> — ca bỏ qua cả tầng glyph. Tiền đề của B3.53 vẫn đúng nhưng <b>lý do</b> khác với mô tả trong backlog ("mọi khung locator trả null"): trên bộ fixture này, khung locator trả null (<code>fork_straight</code>) lại <b>không</b> ra mã.</li>
+<li><b>2026-08-23 · trade-off</b> — mất phủ sóng (mọi ca chỉ khớp được bằng NCC ở tier rect cố định nay im lặng) để đổi lấy an toàn. Đo được: mất <b>0</b> ca trên toàn bộ fixture hiện có. Cùng hạng đánh đổi với B3.47 vòng 3b.</li>
+<li><b>2026-08-23 · sai lệch spec</b> — backlog dự kiến chạm <b>một trong hai</b> <code>ManeuverSignature.kt</code> <i>hoặc</i> <code>CaptureRouter.kt</code>. Thực tế chạm <code>ManeuverSignature.kt</code> (thêm hàm mới, không sửa hàm cũ) <b>và</b> <code>ScreenCaptureNavSource.kt</code> (nơi chọn matcher theo tier) — vì bảng rect ở <code>CaptureRouter</code> là hàm thuần không nhìn thấy pixel nên không thể tự biết bố cục có khớp không. <code>CaptureRouter.kt</code> <b>không</b> bị sửa.</li>
+<li><b>2026-08-23 · bug suýt bỏ sót</b> — bản đầu tính đặt cổng "mực không chạm biên" thẳng trong <code>classifyDetailed</code>. Đo ra <b>64/418</b> khung GMaps đổi kết quả ⇒ vi phạm R2 ⇒ bỏ. Bài học lặp lại đúng của B3.47: <i>cổng thì đúng, chỗ đặt cổng mới là thứ quyết định.</i></li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-08-23 (phản biện độc lập)</h3>
+<p>Tái lập trên bản sao cây làm việc. <b>Toàn bộ số của bản thi công tái lập được</b> (87 khung: 3 mềm / 2 sai họ / 0 cứng · 0/418 GMaps · 0/3 Waze · 19+27+26+8 · 856/468/22/28 · 1 call site production · 0 hằng số px mới).</p>
+<table>
+<tr><th>#</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>P1-a</td><td>Lý do biện minh cho việc CHỪA tier <code>A11Y_DYNAMIC</code> SAI với VietMap — rect node CAMERA vẫn đi vào kênh ARROW qua khớp mềm.</td><td class="ok"><b>XÁC NHẬN + ĐÃ VÁ</b> (T7/T8). Tái lập độc lập: <code>PLAN target=ARROW … src=A11Y_DYNAMIC</code> mang rect CAMERA; soft 1/87 vs strict 0/87 qua <code>VIETMAP_CAMERA_SEED</code>.</td></tr>
+<tr><td>P1-b</td><td>"0 hồi quy trên đường proven" chỉ đo tại đúng một điểm; cái giá phải nằm trong spec và do owner chốt.</td><td class="ok"><b>XÁC NHẬN số, BÁC một phần diễn giải.</b> Bảng ±6px tái lập chính xác (40/8 · 39/5). Nhưng diễn giải "NCC là cơ chế <i>chịu lệch</i>, không phải bốc thăm" <b>sai</b>: [ĐO] 13/79 lượt khớp mềm ra <b>SAI HỌ</b> ngay trên cùng-app (amap 5 và <b>amap 11 = vòng xuyến</b> thay cho rẽ phải), và khớp cứng im lặng ở đúng cả 13. Quyết định giữ nguyên; cái giá đã vào §6.1 + backlog + OQ2.</td></tr>
+<tr><td>P2-a</td><td>Dùng thước 418 khung (tier khác) làm thước cho tier vừa đổi.</td><td class="ok"><b>XÁC NHẬN + ĐÃ SỬA</b> — §6.1 là bảng giá đo trên đúng tier, khoá bằng test.</td></tr>
+<tr><td>P2-b</td><td>Bảng chân lý hướng <code>expectedAmap</code> bị nhân đôi.</td><td class="ok"><b>XÁC NHẬN + ĐÃ SỬA</b> (T9).</td></tr>
+<tr><td>P3-a</td><td>Mutation-check báo thiếu: spec ghi 2 ĐỎ, thật là 3.</td><td class="ok"><b>XÁC NHẬN + ĐÃ SỬA</b> — nay là 5 (Pass 2 thêm 2 test).</td></tr>
+<tr><td>P3-b</td><td>Test <code>:app</code> là test GREP NGUỒN, không phải test hành vi.</td><td class="warn"><b>XÁC NHẬN, GIỮ NGUYÊN.</b> Đúng khuôn mọi test khác trong file (<code>:app</code> không chạy được pipeline pixel off-car). Hành vi đã khoá ở <code>:core</code>. Không tính nó là khoá hành vi.</td></tr>
+<tr><td>P3-c</td><td><code>:offcar-planner</code> 99/2 không tái lập (thật là 99/1).</td><td class="ok"><b>XÁC NHẬN + ĐÃ SỬA</b> — và truy ra nguyên nhân đích danh: <code>activity_main.xml</code> của workstream T11, không phải bộ niêm phong.</td></tr>
+<tr><td>C</td><td>Trạng thái bộ niêm phong: "worktree = <code>f854683a…</code> = đúng hash".</td><td class="warn"><b>ĐÍNH CHÍNH.</b> [ĐO] <b>index</b> (đã staged) = <code>f854683a…</code> = đúng; <b>HEAD</b> = <code>61a7ba11…</code> = sai; <b>worktree</b> lúc bắt đầu Pass 2 cũng là <code>61a7ba11…</code> (đã trôi về bản HEAD) ⇒ test niêm phong đỏ cho tới khi chạy <code>git checkout --</code>. Kết luận "chỉ commit mới làm <code>git status</code> rỗng" thì <b>đúng</b>.</td></tr>
+</table>
+
+</div></body>
+</html>

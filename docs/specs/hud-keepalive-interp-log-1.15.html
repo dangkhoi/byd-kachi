@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav 1.15 — HUD keep-alive · interp comparison log (data-driven tuning)</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--err:#b3261e;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--err-bg:#fce8e6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;
+    --accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--err:#ff453a;--ok-bg:#0e2a16;--warn-bg:#332b00;--err-bg:#3a0f0c;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 120px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:32px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--ok-bg);color:var(--ok)}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  h3{font-size:17px;margin:26px 0 6px;font-weight:650}
+  h4{font-size:14.5px;margin:16px 0 6px;font-weight:650}
+  p{margin:10px 0}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg)}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg)}.callout.warn .lbl{color:var(--warn)}
+  .callout.accent{background:var(--accent-bg)}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;border:1px solid var(--line);color:var(--ink2);margin-left:6px}
+  .tag.off{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+  .tag.on{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:120px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.bad{border-color:var(--err);background:var(--err-bg)}.fnode.good{border-color:var(--ok);background:var(--ok-bg)}
+  .fnode.hb{border-color:var(--accent);background:var(--accent-bg)}
+  .arrow{color:var(--ink2);font-size:18px}
+  .small{font-size:13px;color:var(--ink2)}
+  .toc{columns:2;font-size:14px;gap:24px}@media(max-width:600px){.toc{columns:1}}
+  .toc a{display:block;padding:3px 0;color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.5px;color:var(--ink2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">ClusterNav · Consolidated Spec</p>
+<h1>HUD keep-alive · turn-distance comparison log — data-driven interp tuning</h1>
+<div class="meta">
+  <span><b>Target:</b> 1.15 (versionCode 115) — planned bump on ship</span>
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-13</span>
+  <span><b>Slug:</b> hud-keepalive-interp-log-1.15</span>
+</div>
+<div class="meta"><span class="pill">STATUS: SHIPPED — 1.15 (versionCode 115) built · aapt2-verified · pushed to main for OTA</span></div>
+<div class="callout accent" style="margin-top:16px"><div class="lbl">Approval</div>
+Approved in-chat 2026-08-13 pm — <i>"uhm ok đó, có hướng thì fix thôi, có gì không đúng lại fix thôi mà"</i>. Scope this cycle: <b>J1</b> HUD keep-alive (clear-cut fix), <b>J2</b> add screen-read ground-truth to the existing distance log + an offline analysis script so interp tuning is data-driven. The actual interp <i>parameter</i> tuning happens <b>after</b> on-car data is collected (not in this cycle). HUD-uses-interpolated-distance is deferred (Open Questions).</div>
+
+<div class="card"><b>Contents</b>
+  <nav class="toc" style="margin-top:8px">
+    <a href="#changelog">1 · Changelog</a><a href="#context">2 · Context</a><a href="#req">3 · Requirements</a>
+    <a href="#design">4 · Design</a><a href="#tasks">5 · Tasks</a><a href="#verify">6 · Verification</a>
+    <a href="#open">7 · Open Questions</a><a href="#ref">8 · References</a><a href="#rev">9 · Reviewer Log</a>
+  </nav>
+</div>
+
+<h2 id="changelog"><span class="n">1</span>Changelog</h2>
+<table><thead><tr><th>Rev</th><th>Date</th><th>Change</th></tr></thead><tbody>
+<tr><td>v1</td><td>2026-08-13</td><td>Two on-car issues from the 1.14 drive investigated + root-caused by source read; approved in-chat; implementing off-car. J1 keep-alive + J2 comparison log. Recorded the "version 0.36" finding (see §2).</td></tr>
+<tr><td>v2</td><td>2026-08-13 pm</td><td>On-car 1.15 session: OTA confirmed; drive log shows <code>screenRead_m</code> empty — root cause the accessibility service was not enabled (enabled live over adb). Measured display bias −34.5 m vs Google (floor-quantize). Shipped <b>1.16</b>: <code>NavParse.quantizeDisplay</code> floor→round. FACTOR deferred to next drive (ground-truth now captured).</td></tr>
+</tbody></table>
+
+<h2 id="context"><span class="n">2</span>Context</h2>
+<p>Owner tested <b>1.14</b> on the BYD Seal (DiLink, Android 10). HUD arrow direction (I1 from 1.14) confirmed <b>correct</b>. Two new issues:</p>
+<table><tbody>
+<tr><td><b>J1</b></td><td>On a <b>long straight with no turn</b>, the windshield HUD <b>blanks for ~1s then reappears</b> (flicker). Owner's read: nothing is sent for a while (no fresh signal) so the OEM "rests" the display; a new signal repaints it → needs a <b>keep-alive</b>.</td></tr>
+<tr><td><b>J2</b></td><td>Turn-distance interpolation is <b>slightly off vs Google Maps</b>. Plan: build a comparison log (ours vs Google), collect data, then tune. Also asked to diff <b>"version 0.36"</b> — reportedly "the smoothest / most accurate" interp.</td></tr>
+</tbody></table>
+
+<div class="callout warn"><div class="lbl">Finding — "version 0.36" does not exist</div>
+Verified in git: historical <code>versionName</code>s were <code>0.28 / 0.31 / 0.33 / 0.34 / 0.35</code> then jumped to <code>0.57 / 0.60 / 0.63 / 0.72 …</code> — <b>no 0.36 in any tag, branch, or commit</b>. The <code>v0.3x</code> commits (0.31–0.35) are about <b>cast UI sizing + freeform + dead-reckon autostart</b>, not turn-distance interp. Decisive: <code>git diff</code> of <code>TurnDistanceInterpolator.kt</code> between the first public commit (<code>15551e8</code>) and HEAD is <b>byte-identical except the <code>package</code> line</b> (module split) — the interp algorithm has <b>never changed</b> on this repo, so there is no "0.36 interp" to recover. The "α-β" model named in the file comment lived in <b>pre-public history not in this repo</b>, and the comment itself records that α-β was <b>buggy</b> (km kept dropping at red lights then jumped). Conclusion: "0.36 = smoothest" is a memory artifact. Go by data, not memory.</div>
+
+<h2 id="req"><span class="n">3</span>Requirements</h2>
+<ul>
+  <li><b>J1</b> — The HUD / cluster-centre HAL output must not blank on long straights: while nav is active and a frame is showing, re-assert the last applied frame periodically (under the OEM staleness window), even if content is unchanged (bypass dedup). The cluster-lane broadcast path is unaffected. The <b>two-track boundary is preserved</b>: the keep-alive lives inside <code>NavigationHudOwner</code> — <code>ClusterBroadcaster</code> must stay decoupled from the HAL owner (<code>PhysicalHudOwnershipTest</code> stays green).</li>
+  <li><b>J2</b> — Capture, per frame, all four distance series on one timeline for offline comparison: GMaps <b>notification</b> distance, our <b>projected</b> (interp), our <b>display</b> (quantized), and the GMaps <b>on-screen</b> distance read via accessibility (ground truth). Provide a stdlib-only script that computes error metrics + jump counts to drive parameter tuning.</li>
+  <li>Build green: full JVM suite (<code>:core</code> + <code>:app</code> unit tests) + signed <code>assembleRelease</code>, no <code>vehicleTest</code> surface. No commit/push unless the owner asks.</li>
+</ul>
+
+<h2 id="design"><span class="n">4</span>Design</h2>
+
+<h3>Root cause of J1 — two emission paths, only one has a heartbeat</h3>
+<p>Navigation drives the cluster through <b>two independent paths</b>. Only the cluster-lane path has a heartbeat; the HAL path (which feeds the windshield HUD + the "Giữa+ETA" centre) has none, so it goes stale on straights and the OEM blanks it.</p>
+<div class="diagram">
+  <div class="flow">
+    <div class="fnode"><div class="h">GMaps notification</div><div class="s">NavNotificationListener</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode hb"><div class="h">System A · Cluster LANE</div><div class="s">ClusterBroadcaster → AmapEmissionArbiter</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">400 ms HEARTBEAT</div><div class="s">re-broadcast every 400 ms → never stale ✓</div></div>
+  </div>
+  <div class="flow" style="margin-top:12px">
+    <div class="fnode"><div class="h">GMaps notification</div><div class="s">NavRepository.ingest</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">System B · HAL</div><div class="s">Coordinator → NavigationHudOwner.push()</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode bad"><div class="h">was: NO heartbeat + dedup</div><div class="s">writes only on new noti; identical frames deduped → OEM HUD blanks after ~1s ✗</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">now: keep-alive ~400 ms</div><div class="s">re-assert last frame (bypass dedup) → HUD stays alive ✓</div></div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--accent-bg);border-color:var(--accent)"></span> existing heartbeat</span>
+    <span><span class="sw" style="background:var(--err-bg);border-color:var(--err)"></span> old (broken)</span>
+    <span><span class="sw" style="background:var(--ok-bg);border-color:var(--ok)"></span> fixed</span>
+  </div>
+</div>
+<p class="small">The windshield HUD reads its arrow from <code>INSTRUMENT_GUIDE_INFO_SIMPLE_SET</code>, written by <code>BydHal.writeNavFrame</code> — reached <b>only</b> through <code>NavigationHudOwner</code> (System B). <code>ClusterBroadcaster.emitHud</code> is a T7 no-op (zero physical writes). So the flicker is entirely a System-B staleness problem.</p>
+
+<h3>J1 — keep-alive inside NavigationHudOwner <span class="tag off">off-car fix</span></h3>
+<ul>
+  <li><b>Pure policy (core):</b> new <code>HudKeepAlivePolicy(intervalMs = 400)</code> — <code>onFrameWritten(now)</code> / <code>onCleared()</code> / <code>shouldReassert(now) = hasFrame && now − lastWrite ≥ interval</code>. No Android deps → JVM-testable. Clock is injected (monotonic <code>elapsedRealtime</code>).</li>
+  <li><b>Owner wiring (app):</b> <code>NavigationHudOwner</code> gets a single daemon <code>ScheduledExecutorService</code> started in <code>start()</code> (idempotent), ticking at the policy interval. The delivery lambda calls <code>onFrameWritten</code> after a successful HAL write and <code>onCleared</code> on any clear (incl. mode OFF). On tick, if <code>shouldReassert</code>, <code>resubmitApplied()</code> submits the last applied <code>(icon, seg, road)</code> <b>directly to the worker</b> — bypassing <code>push()</code>'s dedup. <code>stop()</code>/<code>close()</code> cancel the task; <code>close()</code> shuts the scheduler down.</li>
+  <li><b>Why re-assert (not re-project):</b> J1 is purely "don't blank". Re-asserting the last raw value keeps the element alive without changing distance behaviour. Dedup-suppressed pushes do <b>not</b> reset the keep-alive clock, so a stale display is always refreshed within one interval.</li>
+  <li><b>Boundary:</b> lane vs HUD are both the <b>Navigation</b> track — this does not touch the Nav↔Cast two-track rule. The keep-alive is contained in the owner; <code>ClusterBroadcaster</code> keeps zero reference to it (asserted by <code>PhysicalHudOwnershipTest</code> + a new wiring assertion).</li>
+</ul>
+<div class="callout warn"><div class="lbl">On-car verify</div>The exact OEM staleness window is a vehicle behaviour. Start at 400 ms (matches the proven cluster-lane cadence, comfortably under the observed ~1s blank); tune if needed. Also confirm re-writing <code>status=2 + screen-mode</code> every 400 ms while parked does not fight the OEM.</div>
+
+<h3>J2 — screen-read ground-truth column + offline analysis <span class="tag off">off-car fix</span></h3>
+<p>The comparison log already exists: <code>NavDistanceLog</code> writes a CSV per frame with <code>rawGmaps_m</code> (notification), <code>projected_m</code> (interp), <code>display_m</code> (quantized), plus <code>closing_mps</code> / <code>speed_mps</code>. What was missing is the <b>on-screen GMaps distance</b> (the smooth number the accessibility reader sees), which is the real ground truth. Changes:</p>
+<ul>
+  <li><b>Interpolator (core):</b> <code>TurnDistanceInterpolator.refine(seg, now)</code> already receives the accessibility reading; record it as <code>lastRefineSeg</code>/<code>lastRefineAt</code> (even when there is no baseline yet) and expose <code>lastRefined()</code> / <code>lastRefinedAt()</code>. Cleared in <code>reset()</code>.</li>
+  <li><b>Log (app):</b> <code>NavDistanceLog</code> header + <code>record(...)</code> gain <code>screenRead_m</code> and <code>screenRead_age_ms</code> (age from <code>elapsedRealtime − lastRefinedAt</code>, or <code>-1</code> when never read). New header: <code>t_ms,rawGmaps_m,projected_m,display_m,closing_mps,speed_mps,screenRead_m,screenRead_age_ms,road,key</code>.</li>
+  <li><b>Wiring (app):</b> <code>ClusterBroadcaster.sendFrame</code> reads <code>TurnDistanceInterpolator.lastRefined()/lastRefinedAt()</code> (same place it already reads <code>closingRate()</code>) and passes them to <code>record</code>. No new dependency, no HAL reference — <code>PhysicalHudOwnershipTest</code> stays green.</li>
+  <li><b>Analysis (script):</b> <code>scripts/analyze-nav-distance-log.py</code> (Python 3, stdlib only). Reads columns <b>by header name</b> (robust to the added columns; also reads old 8-col logs). For rows with a <i>fresh</i> screen-read (age ≥ 0 and ≤ 1500 ms) it reports mean / RMS / p50 / p95 / max of <code>projected − screenRead</code>, <code>display − screenRead</code>, and <code>rawGmaps − screenRead</code> (notification lag). It also counts display "jumps" (|Δdisplay| over a threshold while moving) and prints a tuning summary pointing at the knobs below.</li>
+</ul>
+<h4>Tuning knobs (for the post-data cycle — not changed now)</h4>
+<table><thead><tr><th>Knob</th><th>Where</th><th>Now</th><th>Effect</th></tr></thead><tbody>
+<tr><td><code>FACTOR</code></td><td>TurnDistanceInterpolator</td><td>0.95</td><td>dead-reckon decel vs true speed; &lt;1 biases corrections downward (anti jump-back)</td></tr>
+<tr><td><code>SLEW_MIN</code></td><td>TurnDistanceInterpolator</td><td>12</td><td>min display step per draw during correction (catch-up speed)</td></tr>
+<tr><td><code>MAX_EXTRAPOLATE_MS</code></td><td>TurnDistanceInterpolator</td><td>6000</td><td>how long to keep dead-reckoning without a fresh map value</td></tr>
+<tr><td><code>quantizeDisplay</code> steps</td><td>NavParse</td><td>10/25/100</td><td>display rounding granularity by distance band</td></tr>
+</tbody></table>
+
+<h2 id="tasks"><span class="n">5</span>Tasks</h2>
+<table><thead><tr><th>#</th><th>Files</th><th>Test</th></tr></thead><tbody>
+<tr><td>J1a</td><td><code>core/.../navigation/HudKeepAlivePolicy.kt</code> (new)</td><td><code>HudKeepAlivePolicyTest</code> (core, pure timing)</td></tr>
+<tr><td>J1b</td><td><code>app/.../NavigationHudOwner.kt</code> (scheduler + resubmit)</td><td><code>HudKeepAliveWiringTest</code> (source contract) + <code>PhysicalHudOwnershipTest</code> (unchanged, green)</td></tr>
+<tr><td>J2a</td><td><code>core/.../navigation/TurnDistanceInterpolator.kt</code> (lastRefined)</td><td><code>TurnDistanceInterpolatorTest</code> (+refine record)</td></tr>
+<tr><td>J2b</td><td><code>app/.../NavDistanceLog.kt</code> (columns) · <code>ClusterBroadcaster.kt</code> (wire)</td><td>build; boundary-shape vs script</td></tr>
+<tr><td>J2c</td><td><code>scripts/analyze-nav-distance-log.py</code> (new)</td><td>self-check on a synthetic CSV</td></tr>
+<tr><td>ver</td><td><code>app/build.gradle.kts</code> → 115/1.15 <i>(on ship only)</i></td><td>aapt2</td></tr>
+</tbody></table>
+
+<h2 id="verify"><span class="n">6</span>Verification</h2>
+<div class="callout ok"><div class="lbl">Off-car results — 2026-08-13</div>
+<code>JAVA_HOME=openjdk@17 ./gradlew :core:test :app:testDebugUnitTest :app:assembleRelease</code> → <b>BUILD SUCCESSFUL</b> (JDK 17.0.20). New/related suites: <code>HudKeepAlivePolicyTest</code> 6/0, <code>TurnDistanceInterpolatorTest</code> 9/0 (6 old + 3 new), <code>HudKeepAliveWiringTest</code> 3/0, <code>PhysicalHudOwnershipTest</code> 2/0 (two-track boundary intact, debug + vehicleTest). <code>assembleRelease</code>: <code>lintVitalRelease</code> + <code>validateSigningRelease</code> + <code>packageRelease</code> all pass. Analysis script self-checked on synthetic new-format (metrics + jump detection) and old 8-col logs (graceful skip). Then: senior-review loop + (only if owner asks to commit) pre-commit security scan.</div>
+
+<h2 id="open"><span class="n">7</span>Open Questions</h2>
+<ul>
+  <li><b>Keep-alive interval / OEM window</b> — 400 ms is a safe start; confirm on-car and tune. Does re-writing <code>status=2</code> + screen-mode every interval while parked cause any OEM flicker of its own?</li>
+  <li><b>HUD uses interpolated distance (deferred)</b> — System B currently shows the <b>raw</b> notification distance (steppier than the interpolated cluster lane). Feeding it <code>TurnDistanceInterpolator.lastProjected()</code> (a pure read; no double-advance) would smooth it. Decide <b>after</b> J2 data shows whether the HUD number is the source of the "off vs GMaps" feel.</li>
+  <li><b>Version bump</b> — 1.15/115 needed for the OTA self-update to pick this up; do it at ship time, not now.</li>
+  <li><b>Interp parameter tuning</b> — happens next cycle once on-car logs are analysed by the new script.</li>
+</ul>
+
+<h2 id="ref"><span class="n">8</span>References</h2>
+<ul class="small">
+  <li><b>J1:</b> <code>app/.../NavigationHudOwner.kt</code> (push/reapply/dedup) · <code>core/.../navigation/ClusterLaneAdapter.kt</code> (BoundedNavigationOutputWorker) · <code>app/.../ClusterBroadcaster.kt</code> (400 ms AmapEmissionArbiter) · <code>app/.../NavRepository.kt</code> (coordinator wiring) · <code>app/.../HudMirrorController.kt</code> (T7 no-op) · <code>app/src/test/java/.../PhysicalHudOwnershipTest.kt</code>.</li>
+  <li><b>J2:</b> <code>app/.../NavDistanceLog.kt</code> · <code>core/.../navigation/TurnDistanceInterpolator.kt</code> · <code>app/.../modules/navaccess/NavAccessibilityService.kt</code> (refine call, <code>elapsedRealtime</code>) · <code>core/.../navigation/NavParse.kt</code> (quantizeDisplay) · <code>app/.../SpeedProvider.kt</code>.</li>
+  <li><b>0.36 finding:</b> <code>git log -S versionName -- *build.gradle*</code> · <code>git diff 15551e8:…/TurnDistanceInterpolator.kt HEAD:…</code> (byte-identical) · backup branch <code>backup-before-scrub-36e3060</code>.</li>
+</ul>
+
+<h2 id="rev"><span class="n">9</span>Reviewer Log</h2>
+<p class="small">Append-only. One <code>Pass N — YYYY-MM-DD</code> per review pass.</p>
+<!-- Reviewer passes appended here. -->
+
+<h3>Pass 1 — 2026-08-13</h3>
+<p class="small">Senior architect review — scope · concurrency · two-track · boundary-shape · tech-freshness. Reviewer read every changed file plus both boundary ends and re-ran the full JVM suite (forced <code>--rerun-tasks</code>, not cached) and the analysis script against synthetic CSVs.</p>
+
+<div class="callout ok"><div class="lbl">Verdict — APPROVED</div>All J1/J2 deliverables present, wired end-to-end, and tested. <b>0</b> findings at [P0]–[P2]; 3 non-blocking [P3] observations (deferred/by-design), no code change applied. No public-API change beyond the fix; interpolation parameters unchanged (<code>FACTOR=0.95</code>, <code>SLEW_MIN=12</code>, <code>MAX_EXTRAPOLATE_MS=6000</code>).</div>
+
+<h4>Scope checklist (per deliverable)</h4>
+<table><thead><tr><th>ID</th><th>Deliverable</th><th>Code / wiring</th><th>Test</th><th></th></tr></thead><tbody>
+<tr><td>J1a</td><td><code>HudKeepAlivePolicy</code> (pure core)</td><td>onFrameWritten / onCleared / shouldReassert, injected clock, interval&gt;0 guarded</td><td><code>HudKeepAlivePolicyTest</code> 6/0</td><td>✅</td></tr>
+<tr><td>J1b</td><td><code>NavigationHudOwner</code> keep-alive</td><td>daemon <code>ScheduledExecutorService</code>, <code>scheduleWithFixedDelay</code>, <code>resubmitApplied()</code> bypass dedup, <code>AtomicLong</code> seq, <code>close()</code> shutdownNow; started from <code>createCoordinator</code>+<code>setOutputEnabled</code>, stopped on stop/disable</td><td><code>HudKeepAliveWiringTest</code> 3/0 · <code>PhysicalHudOwnershipTest</code> 2/0</td><td>✅</td></tr>
+<tr><td>J2a</td><td><code>TurnDistanceInterpolator</code> ground-truth</td><td><code>lastRefined()/lastRefinedAt()</code>, recorded in <code>refine()</code> even without baseline, cleared in <code>reset()</code></td><td><code>TurnDistanceInterpolatorTest</code> 9/0 (6 old + 3 new)</td><td>✅</td></tr>
+<tr><td>J2b</td><td><code>NavDistanceLog</code> columns + <code>ClusterBroadcaster</code> wire</td><td>header + <code>record()</code> gain <code>screenRead_m</code>/<code>screenRead_age_ms</code>; broadcaster reads <code>lastRefined()/lastRefinedAt()</code> where it already reads <code>closingRate()</code></td><td>build + boundary-shape trace (below)</td><td>✅</td></tr>
+<tr><td>J2c</td><td><code>scripts/analyze-nav-distance-log.py</code></td><td>stdlib-only, reads by header name, fresh-window filter, jump detection, tuning hints</td><td>self-checked on synthetic new-10-col + old-8-col + empty + missing-glob</td><td>✅</td></tr>
+</tbody></table>
+
+<h4>Concurrency (top priority) — no deadlock, no lost heartbeat</h4>
+<ul>
+  <li><b>Lock ordering:</b> every method acquires at most one of {<code>dedupLock</code>, <code>keepAliveLock</code>, <code>HudKeepAlivePolicy</code> lock} at a time and releases before taking the next — in the delivery lambda <code>synchronized(dedupLock){…}</code> <b>closes before</b> <code>keepAlive.onFrameWritten/onCleared</code>, and <code>keepAliveTick</code> reads the policy then <code>resubmitApplied()</code> takes <code>dedupLock</code> then releases before <code>worker.submit</code>. dedupLock and the policy lock are <b>never held simultaneously by any thread</b> → no cross-lock cycle. The only nesting is <code>keepAliveLock → scheduler-internal</code> in start/stop/close, which has no reverse path.</li>
+  <li><b>Task survival:</b> <code>keepAliveTick</code> body wrapped in <code>runCatching{…}.onFailure{log}</code> → a thrown tick cannot kill <code>scheduleWithFixedDelay</code>.</li>
+  <li><b>Idempotent start:</b> <code>worker.setEnabled(true)</code> is idempotent and the <code>if (keepAliveTask == null)</code> guard under <code>keepAliveLock</code> prevents a second task — safe from both <code>createCoordinator</code> and <code>setOutputEnabled(CLUSTER_LANE,true)</code>.</li>
+  <li><b>Lifecycle:</b> <code>stop()</code> cancels the task (<code>cancel(false)</code>, no mid-write interrupt) + <code>onCleared()</code>; <code>close()</code> cancels + <code>shutdownNow()</code>. Disabled worker <code>submit()</code> returns <code>DISABLED</code> (safe no-op).</li>
+  <li><b>Clock integrity:</b> a dedup-suppressed <code>push()</code> returns early <b>without</b> submitting → delivery lambda never runs → <code>onFrameWritten</code> not called → keep-alive clock is not reset, so a stale display is always refreshed within one interval. <code>onFrameWritten</code> fires only after a real <code>writeNavFrame</code>; the OFF/clear branches call <code>onCleared</code> and reset applied state, disengaging keep-alive.</li>
+  <li><b>Sequence:</b> <code>AtomicLong.getAndIncrement()</code> feeds <code>guidanceFrame()/clearFrame()</code> across <code>push()/reapply()/resubmitApplied()/stop()</code> from both the coordinator and scheduler threads — atomic, no torn reads.</li>
+</ul>
+
+<h4>Two-track boundary</h4>
+<p class="small">Confirmed by read + grep: <code>ClusterBroadcaster</code> references neither <code>NavigationHudOwner</code> nor <code>BydHal</code>; the <b>only</b> caller of <code>BydHal.writeNavFrame</code>/<code>clearNavFrame</code> in <code>app/src/main</code> is <code>NavigationHudOwner</code>. Guarded green by <code>PhysicalHudOwnershipTest</code> (2/0) and <code>HudKeepAliveWiringTest</code> (3/0). Owner gated by <code>navOnlyMode</code> (Cast master OFF) in <code>NavRepository</code>.</p>
+
+<h4>Boundary shape — CSV (producer↔consumer, traced E2E)</h4>
+<table><thead><tr><th>Field (header)</th><th><code>record()</code> write</th><th><code>record()</code> arg</th><th>call-site value</th><th>script key</th></tr></thead><tbody>
+<tr><td><code>t_ms</code></td><td>#1 <code>currentTimeMillis()</code></td><td>(generated)</td><td>—</td><td><code>t_ms</code> ✅</td></tr>
+<tr><td><code>rawGmaps_m</code></td><td>#2</td><td><code>rawM</code></td><td><code>rawMeters</code></td><td><code>rawGmaps_m</code> ✅</td></tr>
+<tr><td><code>projected_m</code></td><td>#3</td><td><code>projected</code></td><td><code>rawSeg</code> (interp <code>project()</code>)</td><td><code>projected_m</code> ✅</td></tr>
+<tr><td><code>display_m</code></td><td>#4</td><td><code>display</code></td><td><code>segOverride</code> (quantized)</td><td><code>display_m</code> ✅</td></tr>
+<tr><td><code>closing_mps</code></td><td>#5</td><td><code>closing</code></td><td><code>closingRate()</code></td><td><code>closing_mps</code> ✅</td></tr>
+<tr><td><code>speed_mps</code></td><td>#6</td><td><code>speed</code></td><td><code>SpeedProvider.mps()</code></td><td><code>speed_mps</code> ✅</td></tr>
+<tr><td><code>screenRead_m</code></td><td>#7</td><td><code>screenReadM</code></td><td><code>lastRefined()</code></td><td><code>screenRead_m</code> ✅</td></tr>
+<tr><td><code>screenRead_age_ms</code></td><td>#8</td><td><code>screenReadAgeMs</code></td><td><code>elapsedRealtime()−lastRefinedAt()</code> (−1 if none)</td><td><code>screenRead_age_ms</code> ✅</td></tr>
+<tr><td><code>road</code></td><td>#9</td><td><code>road</code></td><td><code>s.road</code></td><td><code>road</code> ✅</td></tr>
+<tr><td><code>key</code></td><td>#10</td><td><code>key</code></td><td><code>cleanRoad+"|"+maneuverText</code></td><td><code>key</code> ✅</td></tr>
+</tbody></table>
+<p class="small">Header order == write order == arg order == call-site order; the script reads <b>by name</b> (DictReader) so it also parses OLD 8-col logs (verified: metrics skipped, jump detection still runs). <b>Clock match:</b> <code>lastRefinedAt</code> is set from <code>SystemClock.elapsedRealtime()</code> in <code>NavAccessibilityService.scan()</code> and age is computed with the same <code>elapsedRealtime()</code> in <code>ClusterBroadcaster</code>; age is <code>-1</code> when never read.</p>
+
+<h4>Tech freshness</h4>
+<table><thead><tr><th>Dependency</th><th>Used</th><th>Status</th></tr></thead><tbody>
+<tr><td>JDK <code>java.util.concurrent</code></td><td><code>Executors.newSingleThreadScheduledExecutor(ThreadFactory)</code>, <code>ScheduledExecutorService</code>, <code>ScheduledFuture</code>, <code>scheduleWithFixedDelay</code>, <code>AtomicLong</code></td><td>Current on JDK 17 — none deprecated. Build ran on openjdk@17. ✅</td></tr>
+<tr><td>Python 3 stdlib</td><td><code>argparse, csv (DictReader), glob, math, os, sys</code></td><td>Current for 3.7+ — none deprecated; script self-checked on Python 3.14.6. ✅</td></tr>
+</tbody></table>
+
+<h4>Findings</h4>
+<ul>
+  <li><b>[P3]</b> <code>close()</code> calls <code>shutdownNow()</code>; a subsequent <code>start()</code> would throw <code>RejectedExecutionException</code>. No caller does this today (owner is process-scoped, <code>close()</code> exists only for the <code>AutoCloseable</code> contract) → <b>no change</b>.</li>
+  <li><b>[P3]</b> Keep-alive re-asserts <code>status=2 + screen-mode</code> every 400 ms while parked — already captured in §Open Questions as an on-car verify item, not a code defect → <b>no change</b>.</li>
+  <li><b>[P3]</b> <code>NavDistanceLog</code> sanitizes commas/newlines in <code>road</code>/<code>key</code> but not a literal <code>"</code>; VN road names don't contain it and this is owner-only diagnostic data → <b>no change</b>.</li>
+</ul>
+
+<h4>Final test result</h4>
+<div class="callout ok"><div class="lbl">Green (forced re-run, not cached)</div>
+<code>JAVA_HOME=openjdk@17 ./gradlew :core:test :app:testDebugUnitTest --rerun-tasks</code> → <b>BUILD SUCCESSFUL</b> (36 tasks executed). JUnit XML: <b>:core 759/0/0</b> (91 suites), <b>:app 371/0/0</b> (52 suites) = <b>1130 tests, 0 failures, 0 errors</b>. Changed suites: <code>HudKeepAlivePolicyTest</code> 6/0, <code>TurnDistanceInterpolatorTest</code> 9/0, <code>HudKeepAliveWiringTest</code> 3/0, <code>PhysicalHudOwnershipTest</code> 2/0. <code>:app:assembleRelease</code> → <b>BUILD SUCCESSFUL</b> (<code>lintVitalRelease</code> + <code>validateSigningRelease</code> + <code>packageRelease</code>), signed <code>app-release.apk</code> produced. Analysis script verified on synthetic new/old/empty CSVs. No commit/push performed.</div>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V2 Handoff — Accessibility NavScreenSource (đa app: GMaps/Waze/VietMap) · byd-cluster-2</title>
+<style>
+:root{--bg:#f5f5f7;--pa:#fff;--pa2:#fbfbfd;--ink:#1d1d1f;--mut:#6e6e73;--ln:#d2d2d7;--bl:#0071e3;--bls:#e8f2ff;--gn:#248a3d;--gns:#e9f7ed;--am:#9a5b00;--ams:#fff4df;--rd:#c9342f;--rds:#ffebe9;--pu:#7546b8;--pus:#f3ecff;--mono:ui-monospace,Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+@media(prefers-color-scheme:dark){:root{--bg:#09090b;--pa:#171719;--pa2:#1d1d20;--ink:#f5f5f7;--mut:#a1a1a6;--ln:#38383c;--bl:#5ac8fa;--bls:#112534;--gn:#68d982;--gns:#14291a;--am:#ffb340;--ams:#302511;--rd:#ff6961;--rds:#351714;--pu:#bf8cff;--pus:#281b35}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:auto;padding:0 22px 100px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--ln);font:600 13px var(--mono)}
+.hero{padding:44px 0 22px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--bl)}
+h1{font-size:clamp(26px,4.4vw,42px);line-height:1.07;letter-spacing:-.03em;margin:12px 0 12px}
+.lead{font-size:18px;color:var(--mut);max-width:880px}.meta{font:12px var(--mono);color:var(--mut);margin-top:16px}
+section{padding-top:42px}.head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.num{font:600 11px var(--mono);color:var(--bl);border:1px solid var(--bl);border-radius:999px;padding:4px 8px}
+h2{font-size:25px;letter-spacing:-.02em;margin:0}h3{font-size:17px;margin:22px 0 8px}
+p{max-width:880px}
+.card{background:var(--pa);border:1px solid var(--ln);border-radius:16px;padding:16px 18px;margin:14px 0}
+.callout{padding:13px 16px;margin:13px 0;border:1px solid var(--ln);border-radius:12px;border-left:3px solid var(--bl);background:var(--pa)}
+.callout.gn{border-left-color:var(--gn);background:var(--gns)}.callout.am{border-left-color:var(--am);background:var(--ams)}.callout.rd{border-left-color:var(--rd);background:var(--rds)}
+code{font:12.5px var(--mono);background:color-mix(in srgb,var(--mut) 14%,transparent);border-radius:5px;padding:1px 5px}
+.scroll{overflow:auto;border:1px solid var(--ln);border-radius:14px;margin:12px 0}
+table{border-collapse:collapse;width:100%;min-width:640px}th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--ln);font-size:13.5px}
+th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--mut);background:var(--pa2)}
+tr:last-child td{border-bottom:0}.mono{font-family:var(--mono);font-size:12.5px}
+ul,ol{max-width:880px}li{margin:5px 0}
+.rq{display:flex;gap:10px;margin:9px 0}.rq b{font:600 11px var(--mono);color:var(--bl);background:var(--bls);border-radius:6px;padding:2px 7px;height:fit-content;white-space:nowrap}
+.tag{display:inline-block;font:600 10.5px var(--mono);padding:2px 7px;border-radius:999px}.tag.reuse{background:var(--gns);color:var(--gn)}.tag.new{background:var(--bls);color:var(--bl)}.tag.chg{background:var(--ams);color:var(--am)}
+/* CSS flow diagram */
+.flow{background:var(--pa);border:1px solid var(--ln);border-radius:16px;padding:20px 16px;margin:16px 0}
+.frow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+.fnode{border:1px solid var(--ln);border-radius:12px;padding:10px 13px;text-align:center;background:var(--pa2);min-width:120px}
+.fnode b{display:block;font-size:13px}.fnode span{font:10.5px/1.4 var(--mono);color:var(--mut)}
+.fnode.src{background:var(--bls);border-color:var(--bl)}.fnode.acc{background:var(--pus);border-color:var(--pu)}.fnode.neu{background:var(--gns);border-color:var(--gn)}.fnode.out{background:var(--ams);border-color:var(--am)}
+.arrow{color:var(--mut);font-size:18px}.down{display:flex;justify-content:center;color:var(--mut);font-size:18px;margin:2px 0}
+.fb{border-style:dashed}
+</style></head><body><div class="wrap">
+<div class="top"><span>byd-cluster-2 · SPEC HANDOFF</span><span>v0.1 · 2026-08-17</span></div>
+
+<header class="hero">
+<div class="eyebrow">Handoff spec · từ ClusterNav 1.30 (đã đóng) → byd-cluster-2</div>
+<h1>Nguồn dẫn đường qua Accessibility (đọc màn hình app nav) — đa app GMaps / Waze / VietMap</h1>
+<p class="lead">Thay vì đọc <b>notification</b> (nghèo data), đọc thẳng <b>màn hình app nav</b> qua AccessibilityService để lấy đầy đủ: hướng rẽ, cự-ly chính xác, tên đường, <b>số lối ra vòng xuyến</b>, làn — và mở rộng sang <b>Waze / VietMap</b>. Kiến trúc OpenBYD-proven; đây là mục đích chính của byd-cluster-2.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · 2026-08-17 · Nguồn: RE OpenBYD 2.3 + phiên emulator GMaps 2026-08-17 · Trạng thái: HANDOFF (chưa implement) · Đích: repo byd-cluster-2</p>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">00</span><h2>Changelog</h2></div>
+<ul>
+<li><b>v0.1 · 2026-08-17</b> — Khởi tạo handoff. Chốt phát hiện: notification GMaps KHÔNG có số-lối-ra (xác minh emulator); OpenBYD lấy được qua accessibility screen-read (RE). Đề xuất kiến trúc NavScreenSource + adapter per-app. Chưa approve, chưa code.</li>
+</ul></section>
+
+<section id="context"><div class="head"><span class="num">01</span><h2>Context — vì sao</h2></div>
+<p>ClusterNav 1.30 relay <b>notification</b> của app nav rồi phân loại mũi tên (ảnh largeIcon) + parse text. Phiên 2026-08-17 xác minh trên emulator giới hạn của nguồn notification:</p>
+<div class="callout rd"><b>Notification GMaps quá nghèo (đo thật, emulator).</b> Toàn bộ extras = <code>android.title</code> (cự ly thô) · <code>android.subText</code> (ETA) · <code>android.text</code> (CHỈ tên đường — không động từ, không "Nth exit") · <code>android.largeIcon</code> (bitmap mũi tên 72×72) · <code>contentView=null</code>. <b>KHÔNG</b> có field số-lối-ra, KHÔNG có làn. Số lối ra vòng xuyến chỉ nằm (hình ảnh) trong bitmap → classifier đọc ra HƯỚNG, không ra SỐ.</div>
+<div class="callout gn"><b>OpenBYD 2.3 (RE) đọc MÀN HÌNH → data giàu, đa app.</b> <code>BydAccessibilityService</code> dùng <code>getWindowsOnAllDisplays()</code> (đọc cả khi app nav không focus, miễn đang vẽ), đọc <b>view-id riêng từng app</b>, có <b>3 manager</b>: <code>GoogleMapsManager</code> · <code>WazeManager</code> (+<code>WazeArrowCaptureService</code>) · <code>YandexManager</code>. Yandex có hẳn <code>:id/exit_number_text</code>; Waze có <code>:id/lane</code> (làn) + <code>:id/image_maneuverballoon_maneuver</code>; GMaps có <code>:id/step_instruction_container</code> (contentDescription = "take the 2nd exit…").</div>
+<p><b>Cơ hội cho byd-cluster-2:</b> (1) cự-ly chính xác hơn (đọc số đang hiển thị, không phải noti thô — 1.30 đã dùng 1 phần ở <code>acc_booster</code>); (2) <b>số lối ra vòng xuyến</b> (đường CAN 25–34 đã code sẵn ở 1.30, chỉ thiếu con số N); (3) <b>Waze + VietMap</b> — đúng mục đích repo v2.</p>
+</section>
+
+<section id="req"><div class="head"><span class="num">02</span><h2>Requirements</h2></div>
+<div class="rq"><b>R1</b><div><b>NavScreenSource trung lập.</b> Đọc màn app nav qua accessibility → trả một <code>NavReading</code> trung lập độc lập app: <code>{maneuver, distanceMeters, roadName, exitNumber?, lane?, etaText?}</code>. KHÔNG rò rỉ chi tiết app lên tầng trên.</div></div>
+<div class="rq"><b>R2</b><div><b>Đọc cả khi không focus.</b> Dùng <code>getWindowsOnAllDisplays()</code> (fallback <code>rootInActiveWindow</code>) để đọc app nav khi nó VISIBLE trên 1 display bất kỳ (vd màn chính head-unit) dù cụm/■app khác đang focus. (OpenBYD làm vậy.)</div></div>
+<div class="rq"><b>R3</b><div><b>Adapter per-app.</b> Mỗi app 1 adapter ôm phần dễ-gãy (view-id, glyph, format text): <code>GMapsAdapter</code>, <code>WazeAdapter</code>, <code>VietMapAdapter</code>. Dispatch theo <code>packageName</code>. Thêm app = thêm adapter, không đụng lõi.</div></div>
+<div class="rq"><b>R4</b><div><b>Tái dùng pipeline encoder 1.30.</b> <code>NavReading.maneuver</code> → <code>Maneuver</code> trung lập → <code>toAmapIcon</code> (strip) / <code>toHudIcon</code> (HUD). <code>exitNumber</code> → đường CAN 25–34 (đã có ở <code>NavRepository</code>/<code>AmapFrameBuilder</code> qua <code>ROUNG_ABOUT_NUM</code>).</div></div>
+<div class="rq"><b>R5</b><div><b>Notification = FALLBACK bền.</b> Khi app nav nền HẲN (không vẽ) → accessibility không đọc được → dùng notification (nghèo nhưng chạy nền). Screen-read là "booster" khi app đang hiện.</div></div>
+<div class="rq"><b>R6</b><div><b>Mô hình bảo trì phản ứng.</b> View-id gãy khi app update → chấp nhận. Quy trình sửa: lấy APK → giả lập emulator → dump view-id → sửa adapter (đồ nghề <code>scripts/emulator/</code> đã có, đã dùng trong phiên 2026-08-17).</div></div>
+<div class="rq"><b>R7</b><div><b>Privacy giữ nguyên.</b> Chỉ đọc màn của chính máy → đẩy lên cụm của chính máy; KHÔNG thu thập/gửi dữ liệu đi đâu (giữ nguyên tắc 1.30, strings.xml "không thu thập dữ liệu cá nhân").</div></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">03</span><h2>Design</h2></div>
+<h3>Luồng kiến trúc</h3>
+<div class="flow">
+<div class="frow">
+<div class="fnode src"><b>GMaps</b><span>apps.maps</span></div>
+<div class="fnode src"><b>Waze</b><span>com.waze</span></div>
+<div class="fnode src"><b>VietMap</b><span>vn.vietmap.*</span></div>
+</div>
+<div class="down">▼ vẽ UI trên màn (bất kỳ display)</div>
+<div class="frow"><div class="fnode acc"><b>NavAccessibilityService</b><span>getWindowsOnAllDisplays()<br>→ tìm window app nav</span></div></div>
+<div class="down">▼ node tree của app nav</div>
+<div class="frow"><div class="fnode acc"><b>Adapter per-app</b><span>view-id + glyph + text<br>→ NavReading trung lập</span></div></div>
+<div class="down">▼ {maneuver, distance, road, exitNumber, lane}</div>
+<div class="frow"><div class="fnode neu"><b>Maneuver (trung lập)</b><span>+ exitNumber (N)</span></div></div>
+<div class="down">▼ 2 encoder (như 1.30)</div>
+<div class="frow">
+<div class="fnode out"><b>STRIP cụm</b><span>toAmapIcon → broadcast<br>NEW_ICON 11 + ROUNG_ABOUT_NUM=N</span></div>
+<div class="arrow">＋</div>
+<div class="fnode out"><b>HUD / Giữa</b><span>toHudIcon → HAL<br>CAN 24+N (số lối ra)</span></div>
+</div>
+<div class="frow" style="margin-top:14px"><div class="fnode fb"><b>Notification</b><span>NotificationParser (fallback)</span></div><div class="arrow">┈▶</div><div class="fnode neu fb"><b>Maneuver</b><span>khi app nền hẳn</span></div></div>
+</div>
+
+<h3>Bằng chứng RE — view-id per-app (OpenBYD 2.3)</h3>
+<div class="scroll"><table>
+<thead><tr><th>App</th><th>Manager (OpenBYD)</th><th>View-id / nguồn dữ liệu</th><th>Lấy được gì đặc biệt</th></tr></thead>
+<tbody>
+<tr><td>GMaps</td><td class="mono">GoogleMapsManager</td><td class="mono">:id/distance_text · :id/top_cue_text · :id/bottom_cue_text · :id/step_instruction_container (contentDescription)</td><td>cự-ly chính xác; số-lối-ra ẩn trong contentDescription ("take the 2nd exit")</td></tr>
+<tr><td>Waze</td><td class="mono">WazeManager (+WazeArrowCaptureService)</td><td class="mono">:id/text_maneuverballoon_distance · :id/image_maneuverballoon_maneuver · :id/text_nextstreet · :id/lane</td><td>ảnh mũi tên riêng + <b>làn</b></td></tr>
+<tr><td>Yandex</td><td class="mono">YandexManager</td><td class="mono">:id/exit_number_text · :id/textview_eta_distance · :id/textview_eta_time</td><td><b>số-lối-ra field riêng</b>; parse ordinal "1st..10th exit"</td></tr>
+<tr><td>VietMap</td><td class="mono">(CHƯA có — cần dựng)</td><td class="mono">CHƯA BIẾT — phải dump view-id trên xe/emulator</td><td>fit concept; cần adapter mới</td></tr>
+</tbody></table></div>
+<p class="mono" style="color:var(--mut)">RE: ~/Library/Caches/clusternav-re/openbyd-2.3/sources/com/sr/openbyd/services/{BydAccessibilityService,GoogleMapsManager,WazeManager,YandexManager}.java · defpackage/w40.java (name→CAN) · mm1.java (glyph roundabout).</p>
+
+<h3>Tái dùng từ ClusterNav 1.30 (đừng viết lại)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Thành phần 1.30</th><th>Vai trò ở v2</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr><td class="mono">NavAccessibilityService</td><td>Khung service; đổi <code>rootInActiveWindow</code> → <code>getWindowsOnAllDisplays</code> + dispatch adapter</td><td><span class="tag chg">SỬA</span></td></tr>
+<tr><td class="mono">ManeuverSignature + ManeuverRegistry</td><td>Khớp glyph mũi tên GMaps (port từ OpenBYD) — dùng cho GMapsAdapter</td><td><span class="tag reuse">REUSE</span></td></tr>
+<tr><td class="mono">Maneuver.kt (toAmapIcon/toHudIcon)</td><td>Encoder trung lập → strip/HUD; đã có đủ CAN kể cả vòng-xuyến-có-hướng</td><td><span class="tag reuse">REUSE</span></td></tr>
+<tr><td class="mono">NavRepository + AmapFrameBuilder (đường CAN 25–34)</td><td>Số-lối-ra → NEW_ICON 11 + ROUNG_ABOUT_NUM / CAN 24+N — đã code, chỉ thiếu N</td><td><span class="tag reuse">REUSE</span></td></tr>
+<tr><td class="mono">NavFormat.roundaboutExit</td><td>Parse "Nth exit / lối ra thứ N" — feed exitNumber từ contentDescription</td><td><span class="tag reuse">REUSE</span></td></tr>
+<tr><td class="mono">NotificationParser + NavNotificationListener</td><td>Nhánh fallback (app nền hẳn)</td><td><span class="tag reuse">REUSE</span></td></tr>
+<tr><td class="mono">scripts/emulator/* (drive-corpus, capture, analyze, silhouette)</td><td>Bắt/verify/dò view-id per app + build corpus</td><td><span class="tag reuse">REUSE</span></td></tr>
+<tr><td class="mono">GMapsAdapter / WazeAdapter / VietMapAdapter</td><td>Đọc view-id → NavReading</td><td><span class="tag new">MỚI</span></td></tr>
+<tr><td class="mono">NavScreenSource interface + AdapterRegistry</td><td>Trừu tượng nguồn màn + dispatch</td><td><span class="tag new">MỚI</span></td></tr>
+</tbody></table></div>
+
+<h3>Technology notes (verify lại lúc implement)</h3>
+<ul>
+<li><b>Android AccessibilityService</b> (platform API, minSdk 29). Cần <code>canRetrieveWindowContent=true</code> + <code>FLAG_RETRIEVE_INTERACTIVE_WINDOWS</code> cho <code>getWindows()/getWindowsOnAllDisplays()</code>.</li>
+<li><code>AccessibilityNodeInfo.recycle()</code> <b>deprecated từ API 33</b> (không cần recycle thủ công nữa) — OpenBYD (code cũ) vẫn recycle; v2 chạy compileSdk 37 nên bỏ recycle. <b>Verify best-practice hiện hành lúc code</b> (đây là platform API, không phải lib — Context7 ít phủ; đối chiếu Android docs).</li>
+<li>View-id (<code>findAccessibilityNodeInfosByViewId</code>) <b>gãy theo version app</b> — chấp nhận (R6), có detection khi rỗng.</li>
+</ul>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">04</span><h2>Tasks (DAG cho v2)</h2></div>
+<ol>
+<li><b>T0 · VERIFY-FIRST (rẻ, chặn):</b> emulator — mở GMaps, lái tới vòng xuyến, dump <code>step_instruction_container.contentDescription</code> + <code>top/bottom_cue_text</code>: có "take the Nth exit" không? Nếu KHÔNG → số-lối-ra GMaps chết kể cả accessibility (chỉ Waze/Yandex/VietMap mới có). Quyết định phạm vi trước khi code.</li>
+<li><b>T1:</b> <code>NavScreenSource</code> interface + <code>NavReading</code> + <code>AdapterRegistry</code> (dispatch theo packageName). Pure :core, test được.</li>
+<li><b>T2:</b> Sửa <code>NavAccessibilityService</code>: <code>getWindowsOnAllDisplays</code> → tìm window app nav (bất kỳ display) → gọi adapter. Fallback <code>rootInActiveWindow</code>.</li>
+<li><b>T3:</b> <code>GMapsAdapter</code> — view-id GMaps (distance_text/step_instruction_container) → NavReading; exitNumber từ contentDescription qua <code>roundaboutExit</code>.</li>
+<li><b>T4:</b> Nối NavReading → <code>Maneuver</code> + đường CAN 25–34 (tái dùng); ưu tiên screen-read, fallback notification.</li>
+<li><b>T5:</b> <code>WazeAdapter</code> (view-id maneuverballoon + lane).</li>
+<li><b>T6:</b> <code>VietMapAdapter</code> — dump view-id VietMap trên xe/emulator trước, rồi map.</li>
+<li><b>T7:</b> Corpus + test per app (emulator capture); senior review; on-car verify.</li>
+</ol></section>
+
+<section id="verify"><div class="head"><span class="num">05</span><h2>Verification</h2></div>
+<ul>
+<li>Mỗi adapter: dump view-id + contentDescription thật (emulator/xe) → fixture → test parse ra đúng NavReading.</li>
+<li>E2E: 1 giá trị (vd exitNumber=2) đi xuyên adapter → Maneuver → CAN 24+2=26 (strip NEW_ICON 11 + ROUNG_ABOUT_NUM 2) — trace thật, không chỉ unit.</li>
+<li>Đối chiếu số-lối-ra/cự-ly screen-read vs notification (screen phải chính xác/mượt hơn).</li>
+<li>On-car: vòng xuyến hiện đúng SỐ lối ra trên cụm/HUD.</li>
+</ul></section>
+
+<section id="oq"><div class="head"><span class="num">06</span><h2>Open Questions</h2></div>
+<ul>
+<li><b>OQ1 (chặn số-lối-ra GMaps):</b> GMaps có phát "Nth exit" trong <code>step_instruction_container.contentDescription</code> không? Notification thì KHÔNG (đã xác minh). Màn hình thì CHƯA dump. → T0 verify.</li>
+<li><b>OQ2:</b> View-id VietMap = ? (chưa ai dump). VietMap có phát số-lối-ra không?</li>
+<li><b>OQ3:</b> Trên head-unit BYD đa-display: <code>getWindowsOnAllDisplays</code> có đọc được GMaps ở màn chính khi cụm đang focus không? (emulator 1 display không mô phỏng đủ — cần verify trên xe.)</li>
+<li><b>OQ4:</b> Cơ chế phát hiện view-id gãy (rỗng) → tự fallback notification + báo để dò lại.</li>
+<li><b>OQ5:</b> Waze/Yandex dùng ảnh mũi tên RIÊNG (không chung registry GMaps) → cần bộ glyph/logic riêng hay đọc contentDescription thay ảnh?</li>
+</ul></section>
+
+<section id="ref"><div class="head"><span class="num">07</span><h2>References</h2></div>
+<ul>
+<li><b>RE OpenBYD:</b> <code>~/Library/Caches/clusternav-re/openbyd-2.3/sources/com/sr/openbyd/services/{BydAccessibilityService,GoogleMapsManager,WazeManager,YandexManager,HudController}.java</code> · <code>defpackage/w40.java</code> (name→CAN) · <code>mm1.java</code> (glyph roundabout).</li>
+<li><b>Icon/CAN table:</b> <code>docs/diagnostics/re-maneuver-icon-tables-2026-08-14.md</code> (CAN 1..49 + TurnIdMapToCAN, CAN 25–34 = roundabout exit N).</li>
+<li><b>Mapping review (phiên này):</b> <code>docs/diagnostics/gmaps-arrow-mapping-review-2026-08-17.html</code> (GMaps arrow ↔ ảnh cụm thật; §B CAN 1..49).</li>
+<li><b>Kiến trúc 2 đường 1.30:</b> <code>docs/diagnostics/nav-output-architecture-2026-08-16.html</code>.</li>
+<li><b>Repo 1.30 (tái dùng):</b> <code>app/.../modules/navaccess/NavAccessibilityService.kt</code> · <code>NavAccessibilitySource.kt</code> · <code>core/.../navigation/{Maneuver,ManeuverSignature,ManeuverRegistry,NavFormat,NavScreenScan}.kt</code> · <code>app/.../NavRepository.kt</code> (đường CAN 25–34) · <code>AmapFrameBuilder.kt</code> · <code>scripts/emulator/*</code>.</li>
+</ul></section>
+
+<section id="rev"><div class="head"><span class="num">08</span><h2>Reviewer Log</h2></div>
+<h3>Pass 0 — 2026-08-17 (khởi tạo)</h3>
+<ul>
+<li>Handoff dựng từ RE OpenBYD + phiên emulator. Chưa review kỹ thuật, chưa approve. Approve out-of-band khi mở byd-cluster-2.</li>
+<li>Chốt phát hiện gốc: notification GMaps không có số-lối-ra (đo thật); OpenBYD lấy qua accessibility screen-read per-app (RE). T0 (verify GMaps contentDescription) phải chạy TRƯỚC khi cam kết phần số-lối-ra GMaps.</li>
+</ul></section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

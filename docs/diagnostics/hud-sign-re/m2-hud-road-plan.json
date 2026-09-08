@@ -1,0 +1,47 @@
+{
+  "schema": "clusternav.offcar-milestone-pack/v1",
+  "milestone": "M2_HUD_ROAD",
+  "corpusVerdict": "NOT_EXHAUSTIVE",
+  "truthState": "SOURCE_MINED_NOT_FIELD_PROVEN",
+  "visualPass": false,
+  "candidateCount": 1,
+  "blockedCount": 0,
+  "unknownCount": 1,
+  "D-M2-HUD-ROAD": {
+    "state": "INERT_DATA_ONLY",
+    "visualPass": false,
+    "plans": [
+      {
+        "id": "OFFCAR-H6-HUD-ROAD-PLAN",
+        "candidateId": "OFFCAR-H6-HUD-ROAD",
+        "feature": "HUD_ROAD",
+        "disposition": "UNKNOWN",
+        "reason": "Road producer is source-backed; direct HUD road consumer remains unavailable.",
+        "risk": "LOW",
+        "evidenceIds": ["H4", "H6", "H7"],
+        "validationIssues": ["MISSING_EXPECTED_CONSUMER"],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H6"},
+          {"ordinal":3,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":4,"phase":"READ","detail":"CONFIG:CATALOG:AMAP_ROAD_NAME"},
+          {"ordinal":5,"phase":"READ","detail":"PRIOR:CATALOG:AMAP_ROAD_NAME:PRIOR"},
+          {"ordinal":6,"phase":"PROPOSE","detail":"HUD_ROAD_PAYLOAD:CATALOG:AMAP_ROAD_NAME:TOKEN:ROAD_B"},
+          {"ordinal":7,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:AMAP_ROAD_NAME:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":8,"phase":"OBSERVE","detail":"CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":9,"phase":"OBSERVE","detail":"HUD_ROAD:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":10,"phase":"INVERSE","detail":"RESTORE:CATALOG:AMAP_ROAD_NAME:PRIOR"},
+          {"ordinal":11,"phase":"INVERSE","detail":"VERIFY:CATALOG:AMAP_ROAD_NAME"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H4\\n2. READ EVIDENCE:H6\\n3. READ EVIDENCE:H7\\n4. READ CONFIG:CATALOG:AMAP_ROAD_NAME\\n5. READ PRIOR:CATALOG:AMAP_ROAD_NAME:PRIOR\\n6. PROPOSE HUD_ROAD_PAYLOAD:CATALOG:AMAP_ROAD_NAME:TOKEN:ROAD_B\\n7. OBSERVE READ_BACK:CATALOG:AMAP_ROAD_NAME:PRIOR_OR_TYPED_VALUE\\n8. OBSERVE CLUSTER_NAVIGATION:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n9. OBSERVE HUD_ROAD:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n10. INVERSE RESTORE:CATALOG:AMAP_ROAD_NAME:PRIOR\\n11. INVERSE VERIFY:CATALOG:AMAP_ROAD_NAME"
+      }
+    ]
+  },
+  "P-M2-HUD-ROAD": {
+    "state": "BLOCKED_PENDING_FIELD_PROOF",
+    "capability": "UNKNOWN",
+    "visualPass": false,
+    "sourcePlanIds": ["OFFCAR-H6-HUD-ROAD-PLAN"]
+  }
+}

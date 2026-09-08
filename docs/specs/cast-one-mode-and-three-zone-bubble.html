@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Cast: một chế độ duy nhất, nút nổi 3 ô</title>
+<script>(function(){var t=localStorage.getItem('c1m-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e8f7ec;--amber:#a05a00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7a45bf;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#08080a;--paper:#171719;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#1e1430;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:14px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700;letter-spacing:-.01em}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:76px 0 48px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(34px,5.4vw,54px);line-height:1.06;letter-spacing:-.04em;margin:14px 0 18px;max-width:940px}.lead{font-size:19px;color:var(--muted);max-width:840px}.meta{font:12px var(--mono);color:var(--muted);margin-top:24px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}.stat,.card,.diagram,.callout,.phase,.review{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:18px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:60px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:28px;letter-spacing:-.03em;margin:0}h3{font-size:19px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.card{padding:20px}.card p:last-child,.card ul:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}.callout.purple{background:var(--purple-soft);border-color:var(--purple)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}pre{margin:0;padding:14px 16px;font:12.5px/1.55 var(--mono);white-space:pre-wrap;word-break:break-word}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;color:var(--muted);font-size:12px}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"◇";position:absolute;left:2px;color:var(--blue)}.review{padding:18px;margin:12px 0}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.green{background:var(--green-soft);color:var(--green)}.pill.amber{background:var(--amber-soft);color:var(--amber)}
+.diagram{padding:26px}
+.bub{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start}
+.bubwrap{text-align:center}
+.bubble{width:150px;height:150px;border-radius:26px;background:var(--bg);border:1px solid var(--line);padding:9px;display:grid;grid-template-rows:1fr 1fr;gap:6px}
+.bz{border-radius:14px;border:1.5px solid var(--line);background:var(--paper);display:flex;align-items:center;justify-content:center;font:600 11px var(--mono);color:var(--muted)}
+.bz.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.bzrow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.bubcap{font-size:12px;color:var(--muted);margin-top:10px;max-width:170px}
+.flow{display:flex;flex-direction:column;gap:0}
+.frow{display:flex;align-items:stretch;gap:14px}
+.fnode{flex:1;border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--bg)}
+.fnode.done{border-color:var(--green);background:var(--green-soft)}
+.fnode.now{border-color:var(--blue);background:var(--blue-soft)}
+.fnode.bad{border-color:var(--red);background:var(--red-soft)}
+.fnode b{display:block;font-size:13px;margin-bottom:4px}
+.fnode span{font-size:12px;color:var(--muted)}
+.farrow{display:flex;justify-content:center;padding:7px 0;color:var(--muted);font-size:17px}
+.slots{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin:10px 0 4px}
+.slot{height:56px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);display:flex;align-items:center;justify-content:center;font:600 11px var(--mono);color:var(--muted)}
+.slot.a{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+.slot.b{background:var(--purple-soft);border-color:var(--purple);color:var(--purple)}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:50px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Một chế độ · Nút nổi 3 ô</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('c1m-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Consolidated requirements · design · tasks — CHỜ DUYỆT</div>
+<h1>Bỏ hết mọi nhánh đoán trạng thái cụm. Một đường duy nhất, chạy đủ mọi bước, mọi lần. Nút nổi trở thành bản đồ của cụm.</h1>
+<p class="lead">Đêm 31/7–1/8 test trên xe thật: cast lên WM đúng nhưng cụm vật lý không đổi, phải <code>pm clear</code> 5 lần mới thoát kẹt. Gốc rễ không phải một bug — là <b>một lớp bug</b>: app có nhiều đường vào (migrate / bootstrap / cold / hot), mỗi đường tin vào một giả định khác nhau, và đường bị dùng nhiều nhất lại là đường bỏ qua bước mở cụm. Spec này xoá cả lớp đó, thay bằng một chuỗi duy nhất, cộng 8 yêu cầu chủ dự án chốt ngày 01/8.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Date: 2026-08-01 · Bằng chứng: đo trực tiếp trên DiLink3 (<vehicle-ip>) đêm 31/7–1/8 + 4 luồng điều tra source song song</p>
+<div class="stats">
+<div class="stat"><b>8</b><span>yêu cầu chủ dự án chốt</span></div>
+<div class="stat"><b>4</b><span>bug tìm ra khi điều tra, gộp vào cùng đợt</span></div>
+<div class="stat"><b>2</b><span>chỗ em từng khuyên SAI, đã sửa lại trong spec này</span></div>
+<div class="stat"><b>0</b><span>việc chạm CarPlay/AA đợt này (hoãn có chủ đích)</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-08-01</td><td>Spec khởi tạo sau phiên test xe đêm 31/7–1/8. Chủ dự án chốt 8 yêu cầu (UX + hướng xử lý tổng thể), yêu cầu gộp mọi bug tìm được vào cùng đợt. Chốt phương án <b>(b)</b> cho R1: một chuỗi duy nhất, nhưng chỉ mở projection lúc cast — giữ đồng hồ gốc khi chưa chiếu.</td><td>8 requirement + 4 bug. Chưa viết dòng code nào.</td></tr>
+</tbody></table></div></section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+
+<h3>Gốc rễ đêm 31/7: app có đường tắt bỏ qua bước mở cụm</h3>
+<div class="card">
+<p>Đọc <code>session.env</code> thật trên xe, hai phiên khác nhau ở đúng một chữ:</p>
+<pre>stable=IDLE_VERIFIED|V2|<b>runtime-migration</b>|<b>~</b>|display-1|…      ← cả tối nay dùng đường này
+stable=IDLE_VERIFIED|V2|<b>runtime-bootstrap</b>|<b>seal-dl3-cold-bootstrap-v1</b>|…  ← đường đúng</pre>
+<p><code>CastLifecycleMigration.migratePristine</code> (<code>CastAndroidLifecycle.kt:55-74</code>) thấy cụm đang rảnh thì <b>nhận luôn là "đã sẵn sàng"</b> và ghi <code>IDLE_VERIFIED</code> — <b>không gửi một lệnh AutoContainer nào</b>. Sau đó mọi lần cast đi nhánh <code>executeOrdinary</code> (vì <code>stableSession != null</code>) nên bootstrap thật <b>không bao giờ chạy</b>.</p>
+<p>Hệ quả đo được: WM đặt app lên display cụm đúng (<code>am stack list</code> xác nhận, <code>screencap -d 1</code> chụp được ảnh app vẽ thật), nhưng cụm vật lý vẫn hiện đồng hồ native — vì phần cứng chưa hề được bảo "chuyển sang hiện Android". Chạy tay 3 lệnh <code>service call AutoContainer 2 i32 1000 i32 30/16/35</code> → GMaps hiện lên cụm ngay lập tức.</p>
+<div class="callout green"><b>Mức bằng chứng: ĐÃ CHỨNG MINH.</b> Không suy đoán — đọc field <code>stable=</code> thật, đối chiếu đúng dòng code, và chứng minh bằng phép thử ngược (gửi tay 3 lệnh → cụm hiện ngay).</div>
+</div>
+
+<h3>Bốn phát hiện khi điều tra source (01/8) — hai cái phủ định lời khuyên trước đó</h3>
+<div class="scroll"><table><thead><tr><th>#</th><th>Phát hiện</th><th>Bằng chứng</th></tr></thead><tbody>
+<tr><td>F1</td><td><b>Nút nổi mất kéo — do chính đợt refactor 9d70f62 của tôi.</b> <code>attachDrag(root, root, …)</code> gắn touch listener lên <b>view cha</b>, nhưng con <code>circle</code> phủ kín 100% diện tích cha và có <code>setOnClickListener</code> ⇒ nó nuốt trọn <code>ACTION_DOWN</code>, nhánh <code>ACTION_MOVE</code> của cha không bao giờ chạy. Trước 9d70f62 drag gắn thẳng lên chính các nút nên vẫn chạy.</td><td><code>FloatingBubbleService.kt:229</code> vs <code>146e342:209-210</code>. Không test nào phủ drag ⇒ không có gì bắt được.</td></tr>
+<tr><td>F2</td><td><b>Nối <code>recover()</code> vào nút bấm KHÔNG cứu được ca kẹt đêm qua</b> — trái với điều tôi đã nói với chủ dự án. <code>compensationFor</code> chỉ ánh xạ <code>START_FRESH_NORMAL</code>, <code>RESUME_PROTECTED</code> và 2 kind geometry; <b>toàn bộ thang đặt app thường (PRE_OPEN_ON_MAIN → BLOCK_PIP) có 0 bước bù hoàn</b>. Một CAST kẹt luôn rơi vào <code>Manual(COMPENSATION_EXHAUSTED)</code> ⇒ <code>recover()</code> trả <code>Blocked</code>, không làm gì.</td><td><code>CastExecutor.kt:393-399</code>, <code>CastRecovery.kt:23-30</code>, <code>CastPlanner.kt:190-207</code>.</td></tr>
+<tr><td>F3</td><td><b>Resize (#5) không phải "đã implement, chưa test" — mà là "implement xong không thể xác minh nổi".</b> <code>observed.geometry</code> parse từ <b>bounds của DISPLAY</b>, còn <code>tx.requestedGeometry</code> là <b>rect của TASK</b>. Phép so bằng ở <code>completeVerification</code> chỉ đúng khi rect yêu cầu = nguyên khung display ⇒ <b>mọi lần resize thật đều verify là diverged → RECOVERING</b>.</td><td><code>CastDeviceParsers.kt:81-94</code> vs <code>CastCoordinator.kt:406-409</code>. Mức: chứng minh bằng đọc code, <b>chưa đo trên xe</b>.</td></tr>
+<tr><td>F4</td><td><b>App-op PIP bị chặn có thể không bao giờ được trả lại.</b> <code>BLOCK_PIP</code> đặt deny/ignore ở thang cast; <code>RESTORE_PIP</code> <b>chỉ</b> nằm trong nhánh STOP. STOP lại bị chặn nếu thiếu baseline geometry. Tệ hơn: cold-bootstrap <b>nhận pipMode đang quan sát được làm baseline mới</b> ⇒ nếu tiến trình chết lúc đang bị chặn thì "ignore" thành baseline vĩnh viễn.</td><td><code>CastPlanner.kt:100/204</code>, <code>CastColdBootstrap.kt:356-362</code>. Đêm qua VietMap dính đúng cái này — chính là lý do bong bóng tốc độ của nó im lặng.</td></tr>
+</tbody></table></div>
+
+<h3>Bằng chứng nền cho phần nâng cao (đo bằng shell thô trên xe, đêm 31/7)</h3>
+<div class="grid3">
+<div class="card"><h4>Freeform SỐNG trên cụm</h4><p><code>am start --display 1 --windowingMode 1</code> ra cửa sổ không-toàn-màn thật, <code>am task resize</code> đổi bounds thành công — <b>không</b> bị framework từ chối như ca CarPlay.</p></div>
+<div class="card"><h4>Hai app cùng hiện được</h4><p>GMaps <code>[0,90][960,810]</code> + VietMap <code>[960,90][1920,810]</code> hiện song song, rõ cả hai, xác nhận bằng <code>screencap</code> lẫn mắt người trên cụm thật.</p></div>
+<div class="card"><h4>Đè nhau thì khuất hẳn</h4><p>Cho GMaps full màn trong khi VietMap vẫn ở góc ⇒ VietMap <b>biến mất hoàn toàn</b> (task còn nguyên, chỉ bị vẽ đè). Không có cơ chế tự-thu-nhỏ nào của hệ thống.</p></div>
+</div>
+<div class="callout amber"><b>Z-order đi theo lần "start" cuối cùng, KHÔNG theo lần resize cuối.</b> Đo được khi resize GMaps về full mà VietMap (start sau) vẫn nằm đè lên trên. Bất kỳ thiết kế 2-app nào cũng phải tự quản thứ tự start, không được giả định resize là đủ.</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<p class="small" style="margin-top:-8px">R1–R4 là nhóm nền, phải chạy "nhuần nhuyễn" trước. R5–R8 là nhóm nâng cao, chỉ bắt đầu khi nhóm nền xanh trên xe thật. B1–B4 là bug gộp vào, không tách đợt.</p>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Yêu cầu</th><th>Nguồn / ghi chú</th></tr></thead><tbody>
+<tr><td><b>R1</b></td><td><b>Một chế độ duy nhất.</b> Mở app = cụm ở trạng thái "sẵn sàng chiếu". Không còn khái niệm migrate/bootstrap/cold/hot lộ ra ngoài lẫn bên trong: mọi lượt cast chạy <b>đúng cùng một chuỗi đầy đủ</b>, không có đường tắt nào được phép tuyên bố "đã sẵn sàng" mà chưa thực sự mở cụm.</td><td>Chủ dự án #1, phương án <b>(b)</b>: projection chỉ mở lúc cast, để giữ đồng hồ gốc khi chưa chiếu.</td></tr>
+<tr><td><b>R2</b></td><td><b>Autostart.</b> Nếu người dùng đã bật, mở ClusterNav → tự mở app đã chọn → tự chiếu sang cụm.</td><td>Chủ dự án #2. Cơ chế đã có (R6 cũ), chỉ cần R1 làm cho nó chạy thật.</td></tr>
+<tr><td><b>R3</b></td><td><b>Chạm nút nổi = chiếu app đang mở.</b> Người dùng mở app bất kỳ, chạm nút nổi → app đó lên cụm. Nút nổi <b>phải kéo được</b> đi khắp màn hình.</td><td>Chủ dự án #3 + <b>B1</b>.</td></tr>
+<tr><td><b>R4</b></td><td><b>Chạm lại = trả app về màn chính</b>, và cụm <b>vẫn giữ trạng thái sẵn sàng</b> để chiếu app khác ngay, không phải làm lại từ đầu.</td><td>Chủ dự án #4.</td></tr>
+<tr><td><b>R5</b></td><td><b>Chỉnh kích thước app đang chiếu</b> phải thật sự dùng được (hiện chưa từng verify nổi — xem F3).</td><td>Chủ dự án #5 + <b>B3</b>.</td></tr>
+<tr><td><b>R6</b></td><td><b>Chiếu 2 app</b> với đúng 3 tỉ lệ cố định: <b>50-50</b>, <b>30-70</b>, <b>70-30</b>. Không làm co giãn tự do.</td><td>Chủ dự án #6.</td></tr>
+<tr><td><b>R7</b></td><td><b>Nút nổi 3 ô</b>: một ô lớn phía trên (chiếu full màn), hai ô nhỏ phía dưới (chiếu vào ô trái / ô phải). Chạm ô đang có app → trả app đó về. <b>Chỉ có cast ↔ trả</b>, không có "switch app".</td><td>Chủ dự án #7.</td></tr>
+<tr><td><b>R8</b></td><td><b>Chiếu app rồi đẩy xuống nền</b> để chính app đó tự bung bong bóng PIP của nó (VietMap có sẵn bong bóng tốc độ).</td><td>Chủ dự án #8 + <b>B4</b>.</td></tr>
+<tr><td><b>B1</b></td><td>Sửa nút nổi kéo được trở lại + thêm test khoá (hiện <b>không có test nào</b> phủ drag).</td><td>F1 — hồi quy do đợt 9d70f62.</td></tr>
+<tr><td><b>B2</b></td><td><b>Phải có đường thoát thật khi transaction kẹt.</b> Đêm qua phải <code>pm clear</code> 5 lần. Lưu ý F2: nối <code>recover()</code> vào nút <b>không</b> giải quyết được — cần cơ chế khác (xem Design).</td><td>F2 — sửa lại lời khuyên sai trước đó.</td></tr>
+<tr><td><b>B3</b></td><td>Sửa phép so sánh xác minh geometry (task-rect vs display-bounds) — nếu không, R5 và R6 <b>không thể</b> verify được.</td><td>F3.</td></tr>
+<tr><td><b>B4</b></td><td>App-op PIP phải luôn có đường trả lại, kể cả khi tiến trình chết giữa chừng; và cold-bootstrap không được nhận trạng thái "đang bị chặn" làm baseline.</td><td>F4 — chặn trực tiếp R8.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><b>Ngoài phạm vi đợt này (có chủ đích).</b> CarPlay / Android Auto: đã đo được <code>am display move-stack</code> — đường DUY NHẤT cho app không-exported — <b>crash NPE thật trong framework AOSP</b>, 3/3 lần, làm rớt hẳn phiên CarPlay (xem <code>docs/diagnostics/carplay-move-stack-npe-crash-2026-08-01.md</code>). Chủ dự án chốt: làm xong 8 việc này rồi mới nghiên cứu CP/AA.</div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+
+<h3>R1 — cổng chặn đường tắt: dùng đúng dữ liệu ĐÃ CÓ SẴN</h3>
+<div class="card">
+<p>Không cần thêm field mới. Envelope <b>đã</b> phân biệt được hai đường, chỉ là chưa ai dùng nó để chặn: <code>StableCastSession.profileExport</code> = <code>"seal-dl3-cold-bootstrap-v1"</code> khi bootstrap thật chạy, và <code>null</code> khi chỉ là migration. Xác nhận bằng dump thật đêm qua (xem §Context).</p>
+<div class="diagram"><div class="flow">
+<div class="frow"><div class="fnode now"><b>Mở app</b><span>đọc envelope + quan sát cụm. KHÔNG gửi lệnh nào ra xe. Đồng hồ gốc giữ nguyên.</span></div></div>
+<div class="farrow">↓ người dùng chạm chiếu</div>
+<div class="frow">
+<div class="fnode bad"><b>profileExport == null</b><span>(migration, hoặc chưa từng bootstrap)<br><b>⇒ chạy bootstrap thật trước</b>: 30 → 16 → 35</span></div>
+<div class="fnode done"><b>profileExport != null</b><span>đã bootstrap thật trong đời máy này ⇒ đi thẳng bước đặt app</span></div>
+</div>
+<div class="farrow">↓ hợp lưu — từ đây CHỈ CÒN MỘT ĐƯỜNG</div>
+<div class="frow"><div class="fnode now"><b>Đặt app → fit → xác minh</b><span>đúng thang lệnh hiện có, không đổi</span></div></div>
+<div class="farrow">↓ trả app cuối cùng về màn chính</div>
+<div class="frow"><div class="fnode done"><b>Đóng projection (18 → 0)</b><span>CHỈ khi không còn occupant nào ⇒ đồng hồ gốc trở lại</span></div></div>
+</div>
+<div class="legend"><span><i style="background:var(--red)"></i>đường phải bổ sung bootstrap</span><span><i style="background:var(--green)"></i>đường đã sẵn sàng</span><span><i style="background:var(--blue)"></i>đường chung, không rẽ nhánh</span></div>
+</div>
+<p style="margin-top:16px"><b>Vì sao (b) chứ không phải "mở projection ngay lúc mở app":</b> đêm qua quan sát được, khi projection đang mở mà display cụm trống thì cụm <b>không trả về đồng hồ native</b> — nó giữ khung hình cũ đóng băng. Mở sẵn = tài xế mất đồng hồ suốt thời gian app mở. Ba lệnh AutoContainer trả về tức thì (đo thật), nên hoãn tới lúc cast gần như không tốn thêm thời gian.</p>
+</div>
+
+<h3>R7 — nút nổi 3 ô, đồng thời là bản đồ trạng thái cụm</h3>
+<div class="diagram">
+<div class="bub">
+<div class="bubwrap">
+<div class="bubble"><div class="bz">FULL</div><div class="bzrow"><div class="bz">TRÁI</div><div class="bz">PHẢI</div></div></div>
+<div class="bubcap">Cụm đang rảnh — chạm ô nào cũng là <b>chiếu</b> app đang mở vào ô đó.</div>
+</div>
+<div class="bubwrap">
+<div class="bubble"><div class="bz on">FULL</div><div class="bzrow"><div class="bz">TRÁI</div><div class="bz">PHẢI</div></div></div>
+<div class="bubcap">Một app đang chiếu full. Chạm ô lớn = <b>trả về</b>. Hai ô nhỏ mờ đi (không dùng được khi đang full).</div>
+</div>
+<div class="bubwrap">
+<div class="bubble"><div class="bz">FULL</div><div class="bzrow"><div class="bz on">TRÁI</div><div class="bz">PHẢI</div></div></div>
+<div class="bubcap">Chỉ ô trái có app. Chạm trái = trả về; chạm phải = chiếu app đang mở vào ô phải.</div>
+</div>
+<div class="bubwrap">
+<div class="bubble"><div class="bz">FULL</div><div class="bzrow"><div class="bz on">TRÁI</div><div class="bz on">PHẢI</div></div></div>
+<div class="bubcap">Hai app. Chạm ô nào trả app ô đó; ô còn lại vẫn chiếu bình thường.</div>
+</div>
+</div>
+<div class="legend"><span><i style="background:var(--blue)"></i>ô đang có app (tô đặc)</span><span><i style="background:var(--paper);border:1.5px solid var(--line)"></i>ô trống — chạm để chiếu</span></div>
+</div>
+<div class="grid2" style="margin-top:14px">
+<div class="card"><h4>Luật duy nhất, không ngoại lệ</h4><p>Ô trống + có app đang mở ⇒ <b>chiếu</b>. Ô đã có app ⇒ <b>trả app đó về</b>. Hết. Không switch, không menu, không long-press. Mỗi ô luôn trả lời được câu "chạm vào thì chuyện gì xảy ra" chỉ bằng cách nhìn nó.</p></div>
+<div class="card"><h4>Kích thước — bắt buộc phải to lên</h4><p>Nút hiện <code>BUBBLE_SIZE_DP = 56</code>. Ba vùng chạm trên xe đang chạy cần mỗi vùng ≥48dp ⇒ nút tổng <b>≈150dp</b>. Lưu ý: <code>clampX/clampY</code> hardcode <code>dp(72)</code> và vị trí mặc định hardcode <code>dp(84)/dp(28)</code> — <b>cả ba đều sai</b> khi nút to lên, phải sửa cùng lúc.</p></div>
+</div>
+
+<h3>R6 — ba tỉ lệ cố định, và vì sao mô hình dữ liệu hiện tại KHÔNG chứa nổi</h3>
+<div class="diagram">
+<div class="slots">
+<div class="slot a" style="grid-column:span 5">TRÁI 50%</div><div class="slot b" style="grid-column:span 5">PHẢI 50%</div>
+</div>
+<div class="slots">
+<div class="slot a" style="grid-column:span 3">TRÁI 30%</div><div class="slot b" style="grid-column:span 7">PHẢI 70%</div>
+</div>
+<div class="slots">
+<div class="slot a" style="grid-column:span 7">TRÁI 70%</div><div class="slot b" style="grid-column:span 3">PHẢI 30%</div>
+</div>
+<div class="legend"><span>Cụm 1920×720 · vùng vẽ thật <code>[0,90]–[1920,810]</code> (đo trên xe)</span></div>
+</div>
+<div class="callout red"><b>Chặn cứng: mô hình dữ liệu hiện tại chỉ chứa được MỘT occupant.</b> <code>AcceptedGeometry</code> = một rect + một density; <code>ObservedState.target</code> = một <code>CastTarget</code>; planner đòi <code>expectedTarget == observed.target</code>; xác minh đòi <code>ACTIVE_SINGLE</code> (hai app ⇒ <code>ACTIVE_MULTI</code> ⇒ luôn diverged); <code>wm density -d</code> là <b>toàn display</b> nên hai ô buộc chung một DPI; <code>AppScale</code> lưu <b>pixel tuyệt đối</b> nên đổi 50/50 → 30/70 phải ghi lại rect của mọi app.</div>
+<div class="card"><h4>Thay đổi tối thiểu cần có</h4><ul>
+<li><b>Layout theo ô, không theo app:</b> thay một <code>AcceptedGeometry</code> bằng <code>AcceptedLayout(slots: List&lt;Slot(pkg, taskId, rect, weightPct)&gt;, densityDpi)</code>.</li>
+<li><b>Quan sát phải đọc bounds theo TASK</b> (từ <code>am stack list</code>) chứ không phải bounds của display — đây cũng chính là bản vá B3, dùng chung cho R5.</li>
+<li><b>Xác minh chấp nhận <code>ACTIVE_MULTI</code></b> với một tập occupant kỳ vọng, so rect theo từng task.</li>
+<li><b>Lưu tỉ lệ chuẩn hoá</b> (phần trăm + neo trái/phải), không lưu pixel tuyệt đối.</li>
+</ul></div>
+
+<h3>B2 — đường thoát thật khi kẹt (thay cho lời khuyên sai trước đó)</h3>
+<div class="card">
+<p>F2 chứng minh <code>recover()</code> vô dụng cho ca kẹt thường: thang đặt app không có bước nào khai báo bù hoàn. Hai hướng, không loại trừ nhau:</p>
+<div class="grid2">
+<div class="card" style="background:var(--bg)"><h4>Cách 1 — khai báo bù hoàn cho thang đặt app</h4><p>Cho <code>PLACE_KEEP_SESSION</code>/<code>MOVE_STACK_TO_CLUSTER</code>/… có compensation là <code>RETURN_NORMAL_TO_MAIN</code>. Đúng bản chất (mỗi bước có đường lùi), nhưng đụng vào lõi ledger — rủi ro cao hơn, cần review kỹ.</p></div>
+<div class="card" style="background:var(--bg)"><h4>Cách 2 — "dọn cụm" một chạm <span class="pill green">đề xuất</span></h4><p>Một hành động: liệt kê <b>mọi</b> occupant quan sát được trên cụm (generic, không cần biết app nào), trả từng cái về display 0, đóng projection, rồi đóng sổ transaction. Không phụ thuộc ledger có bù hoàn hay không — nó dựa trên <b>quan sát thật</b>, đúng tinh thần <code>reconcileAbandoned</code> nhưng không đòi cụm phải sạch sẵn.</p></div>
+</div>
+<p style="margin-top:14px">Cách 2 cũng chính là "reclaim một chạm" đã treo ở Open Questions của spec trước — giờ có đủ lý do để làm thật. Với R7, nó có chỗ đặt tự nhiên: chạm ô đang có app = trả app đó; còn "dọn tất" nằm ở màn Home như một nút cứu hộ.</p>
+</div>
+
+<h3>R8 — bong bóng PIP: phải phát đúng tín hiệu, không phải đè cửa sổ</h3>
+<div class="card">
+<p>Đêm qua thử: mở app khác đè lên bằng <code>am start</code> <b>không</b> làm VietMap bung PIP — nó chỉ bị che. Bước 3 hiện tại của <code>VietmapBubbleExperiment</code> (đưa ClusterNav lên trước trên display 0) <b>gần như chắc chắn cũng không hiệu quả</b>: đổi focus ở display 0 không đụng tới vòng đời activity ở display 1 (mức: <b>nghi là</b> — suy luận từ cơ chế multi-display của Android 10, <b>chưa fetch source AOSP để chốt</b>, cũng chưa đo bằng <code>dumpsys activity activities</code> trước/sau).</p>
+<p>Muốn app tự bung PIP thì nó phải nhận <code>onUserLeaveHint</code> — chỉ đến khi <b>chính activity đó</b> bị pause với <code>userLeaving=true</code>. Trong codebase hiện <b>không có</b> lệnh nào làm việc đó (<code>grep moveTaskToBack</code> = 0 kết quả). Hai ứng viên chưa đo: <code>am stack move-task &lt;taskId&gt; &lt;stackId&gt; false</code> (đã bị gắn cờ rủi ro trong ghi chú RE nội bộ) và <code>input -d &lt;display&gt; keyevent 3</code> (chưa biết ROM này có nhận cờ <code>-d</code> không, cũng chưa biết display 1 có home stack để nhận HOME không).</p>
+<div class="callout amber"><b>Kèm điều kiện tiên quyết B4:</b> ngay cả khi phát đúng tín hiệu, nếu app-op PIP của app đó vẫn đang bị <code>BLOCK_PIP</code> đặt về deny/ignore thì hệ thống nuốt luôn — đúng thứ đã xảy ra với VietMap đêm qua. B4 phải xong trước khi đo R8, nếu không sẽ đo ra kết quả âm tính giả.</div>
+</div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<p class="small" style="margin-top:-8px">Nhóm nền (P1) phải xanh trên xe thật trước khi bắt đầu nhóm nâng cao (P2) — đúng yêu cầu "4 cái kia chạy nhuần nhuyễn thì làm tiếp".</p>
+
+<div class="phase"><div class="phase-id">T1 · P1<br><span class="pill red">chặn mọi thứ</span></div><div><h4>R1 — một chuỗi duy nhất</h4><ul class="check">
+<li>Chặn đường tắt: cast chỉ được bỏ qua bootstrap khi <code>profileExport != null</code>; ngược lại luôn chạy bootstrap thật trước.</li>
+<li>Đóng projection (18→0) khi occupant cuối rời cụm — không đóng khi vẫn còn app khác.</li>
+<li>Test off-car: envelope kiểu "migration" + yêu cầu cast ⇒ chuỗi lệnh <b>phải</b> chứa 30/16/35 trước các bước đặt app (dựng bằng E2E command-log, đúng pattern <code>CastE2ECommandLogTest</code>).</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T2 · P1</div><div><h4>B1 — nút nổi kéo được + to lên cho 3 ô</h4><ul class="check">
+<li>Gắn drag đúng view (<code>circle</code>) hoặc chặn ở cha bằng <code>onInterceptTouchEvent</code>; phải phân biệt được chạm (cast) và kéo (di chuyển) bằng <code>touchSlop</code>.</li>
+<li>Sửa <code>clampX/clampY</code> (đang hardcode <code>dp(72)</code>) và vị trí mặc định (<code>dp(84)/dp(28)</code>) theo kích thước nút thật.</li>
+<li>Test khoá: hiện <b>không có test nào</b> phủ drag — thêm test tĩnh khoá đúng view nhận listener, để đợt refactor sau không âm thầm làm hỏng lần nữa.</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T3 · P1</div><div><h4>B2 — đường thoát khi kẹt (Cách 2)</h4><ul class="check">
+<li>Hành động "dọn cụm": liệt kê occupant từ quan sát thật → trả từng cái về display 0 → đóng projection → đóng sổ transaction.</li>
+<li>Generic: không hardcode tên gói, hoạt động với số occupant bất kỳ.</li>
+<li>Test dựng từ dump 2-occupant thật đã lưu (GMaps + VietMap, 31/7).</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T4 · P1</div><div><h4>R2 · R3 · R4 — nối UX nền lên chuỗi mới</h4><ul class="check">
+<li>Autostart chạy trên chuỗi T1 (không còn nhánh riêng).</li>
+<li>Chạm nút nổi: ô trống ⇒ chiếu app đang mở; ô có app ⇒ trả về; cụm giữ trạng thái sẵn sàng sau khi trả.</li>
+<li>Không đụng vào ngữ nghĩa <code>stopOnTap</code> đã field-proven — chỉ mở rộng theo ô.</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T5 · P1<br><span class="pill">cần xe</span></div><div><h4>Kiểm chứng nhóm nền trên xe thật</h4><ul class="check">
+<li>Chiếu / trả / chiếu lại nhiều lần liên tiếp với GMaps và VietMap, <b>không</b> lần nào phải <code>pm clear</code>.</li>
+<li>Cố tình làm kẹt (rút mạng giữa chừng / force-stop) rồi dùng "dọn cụm" thoát ra — không cần adb.</li>
+<li>Chỉ khi bước này xanh mới mở nhóm P2.</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T6 · P2</div><div><h4>B3 — sửa nền xác minh geometry (chặn R5 và R6)</h4><ul class="check">
+<li>Quan sát phải đọc bounds theo <b>task</b> từ <code>am stack list</code>, không dùng bounds display để so với rect task.</li>
+<li>Test hồi quy dựng từ dump thật, khoá đúng lỗi F3 (rect task ≠ bounds display ⇒ trước đây luôn diverged).</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T7 · P2</div><div><h4>R5 — resize dùng được thật</h4><ul class="check">
+<li>Sau T6, verify lại toàn bộ đường chỉnh kích thước hiện có trên xe (chưa từng chạy được lần nào).</li>
+<li>Giữ nguyên bộ nút hiện tại nếu đã đủ dùng; chỉ sửa nếu đo thấy vướng.</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T8 · P2</div><div><h4>R6 · R7 — hai app, ba tỉ lệ, nút nổi 3 ô</h4><ul class="check">
+<li>Đổi mô hình sang layout-theo-ô (xem §Design); xác minh chấp nhận <code>ACTIVE_MULTI</code> với tập occupant kỳ vọng.</li>
+<li>Tự quản thứ tự start (z-order theo lần start cuối — đã đo).</li>
+<li>Nút nổi 3 ô + trạng thái từng ô; test khoá "chạm ô có app = trả đúng app đó".</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T9 · P2<br><span class="pill">cần xe</span></div><div><h4>B4 → R8 — PIP trả lại được, rồi mới đo bong bóng</h4><ul class="check">
+<li><b>B4 trước:</b> app-op PIP luôn có đường trả lại kể cả khi tiến trình chết; cold-bootstrap không nhận trạng thái đang-bị-chặn làm baseline.</li>
+<li>Đo trên xe: thử từng ứng viên phát tín hiệu rời-app, kiểm bằng <code>dumpsys activity activities</code> (RESUMED→PAUSED) + logcat của chính app đích.</li>
+<li>Chỉ viết code <code>car-integration</code> cho ứng viên nào đo thấy chạy — không code trước (CLAUDE.md §14).</li>
+</ul></div></div>
+
+<div class="phase"><div class="phase-id">T10</div><div><h4>Review + đóng gói</h4><ul class="check">
+<li>Senior review (Opus) sau mỗi nhóm P1 và P2, không dồn một lần cuối.</li>
+<li><code>--rerun-tasks</code> toàn bộ suite; bump version; security scan trước commit.</li>
+</ul></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<div class="card"><ul>
+<li><b>Tiêu chí nghiệm thu nhóm nền (T5):</b> 10 lượt chiếu/trả liên tiếp, 2 app khác nhau, <b>0 lần</b> phải can thiệp bằng adb hay xoá dữ liệu app. Đây đúng là điều đêm 31/7 không làm nổi.</li>
+<li><b>Mọi test hồi quy dựng từ dump thật đã lưu</b> (2-occupant 31/7; chuỗi lệnh AutoContainer 30/16/35 và 18/0 đã chạy tay thành công), không dùng dữ liệu tổng hợp.</li>
+<li><code>--rerun-tasks</code> bắt buộc — dự án đã có tiền lệ Gradle cache che lỗi sau khi đổi file nguồn.</li>
+<li><b>Không</b> viết test cho R8 trước khi có bằng chứng shell trên xe (§14): hiện chưa biết cơ chế nào phát được tín hiệu rời-app cho display phụ.</li>
+</ul></div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="card"><ul>
+<li><b>Cụm hiện gì trong khoảnh khắc chuyển giữa hai app?</b> Với (b), trả app A rồi chiếu app B ngay: projection có bị đóng-mở nhấp nháy không, hay giữ mở suốt vì "vẫn còn ý định chiếu"? Cần đo — ảnh hưởng trực tiếp cảm giác mượt của R4/R7.</li>
+<li><b>Hai ô chung một DPI</b> (<code>wm density -d</code> là toàn display). Với 30-70, ô 30% sẽ có chữ rất nhỏ. Chưa biết có cách đặt DPI riêng từng task trên ROM này không — nếu không, phải chấp nhận hoặc chọn DPI thoả hiệp.</li>
+<li><b>Tín hiệu rời-app cho display phụ</b> (R8): cả hai ứng viên đều chưa đo. Nếu cả hai đều không được, R8 có thể phải chuyển hướng hoàn toàn (ví dụ: chính ClusterNav vẽ bong bóng thay vì nhờ app đích tự bung) — đó sẽ là một spec khác.</li>
+<li><b>Thứ tự đóng projection khi còn occupant lạ</b>: nếu người dùng trả app của mình về nhưng trên cụm còn app lạ (do adb hoặc app khác tự nhảy vào), có nên đóng projection không? Nghiêng về <b>không</b> — nhưng cần chốt.</li>
+</ul></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<div class="card"><ul>
+<li><code>docs/diagnostics/carplay-move-stack-npe-crash-2026-08-01.md</code> — crash AOSP khi move-stack CarPlay, lý do hoãn CP/AA.</li>
+<li><code>docs/specs/cast-secondary-app-corner-overlay.html</code> — spec trước, chứa bằng chứng freeform/2-window và tiền lệ DashCast; R6/R8 kế thừa từ đó.</li>
+<li><code>docs/specs/cast-recovery-honesty-and-multi-occupant.html</code> — đợt vá 31/7 (R1/R2/R3 + 2 P0), nền của B2.</li>
+<li><code>CastAndroidLifecycle.kt:55-74</code> (<code>migratePristine</code>) · <code>CastExecutor.kt:393-399</code> (<code>compensationFor</code>) · <code>CastCoordinator.kt:406-409</code> (xác minh geometry) · <code>FloatingBubbleService.kt:229</code> (drag hỏng) · <code>CastPlanner.kt:100/204</code> (BLOCK_PIP / RESTORE_PIP).</li>
+</ul></div>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><p class="small">Append-only. Mỗi pass thêm một mục, không sửa mục cũ.</p></div>
+
+<div class="review">
+<h3>Pass 1 — 2026-08-01 · senior review (Opus) · append-only</h3>
+<p class="small">Phạm vi: toàn bộ diff của nhóm nền so với <code>6fe4807</code> — <code>CastColdBootstrap.kt</code>, <code>CastManualIntent.kt</code>, <code>CastCoordinator.kt</code> (<code>clearCluster</code>), <code>CastDeviceParsers.kt</code> + <code>CastModels.kt</code>, <code>CastPlanner.kt</code>, <code>CastBubbleProjection.kt</code>, <code>CarExecCatalog.kt</code>, <code>FloatingBubbleService.kt</code>, <code>CastFacade.kt</code>, <code>MainActivityCastController.kt</code>, <code>CastClearClusterAction.kt</code>, <code>CastGuidanceDialogs.kt</code>, hai <code>activity_main.xml</code> + toàn bộ test đi kèm. Kiểm cả call site phía dưới (<code>CastExecutor</code>, <code>CastRecovery</code>, <code>CastAndroidLifecycle</code>, <code>CastPlacementCommands</code>, <code>CastActivityWork</code>).</p>
+
+<div class="callout red"><strong>Cổng "một chế độ duy nhất" (R1) bắt đúng đường DI TRÚ nhưng bỏ lọt đường DỪNG — nên con bug của đêm 31/7 quay lại nguyên vẹn từ lượt chiếu THỨ HAI.</strong>
+Thang STOP kết thúc bằng <code>18</code> rồi <code>0</code>, tức ĐÓNG đường chiếu OEM; kết cục STOP ghi <code>IDLE_VERIFIED | runtime | profileExport=null</code>. Cổng lại đòi thêm tiền tố <code>runtime-migration</code>, mà <code>"runtime"</code> không khớp ⇒ lượt chiếu ngay sau một lần Dừng bỏ qua thang mở cụm ⇒ app lên đúng display ảo, cụm vật lý ở nguyên đồng hồ. Đúng tiêu chí nghiệm thu T5 ("10 lượt chiếu/trả liên tiếp, 0 lần can thiệp") sẽ hỏng ở lượt 2. Đã sửa + khoá bằng test hồi quy đã chứng minh là <em>bites</em> (bật lại cổng cũ ⇒ test đỏ; bỏ ra ⇒ xanh).</div>
+
+<div class="scroll"><table><thead><tr><th>#</th><th>Sev</th><th>Phát hiện</th><th>Đã sửa</th></tr></thead><tbody>
+
+<tr><td>1</td><td><strong>[P0]</strong></td><td><strong>Sau MỖI lần Dừng, lượt chiếu kế tiếp không mở lại cụm.</strong> <code>isUnprovenClusterClaim()</code> (<code>CastManualIntent.kt:34-35</code>) đòi <code>profileExport == null <em>và</em> createdByBuild.startsWith("runtime-migration")</code>. Nhưng <code>completeVerificationLocked</code> nhánh STOP/RECOVER ghi <code>createdByBuild = "runtime"</code> (<code>CastCoordinator.kt:774-777</code>), trong khi thang STOP vừa phát <code>SEAL_DL3_COMPENSATE_18</code> rồi <code>_0</code> (<code>CastPlanner.kt:119-128</code>) — hai opcode đóng đường chiếu, ĐO THẬT đêm 31/7. Cổng không bắt ⇒ <code>executeOrdinary</code> ⇒ đặt app lên display ảo mà đường chiếu vừa bị đóng. <code>grep SEAL_DL3_BOOTSTRAP</code> cho thấy KHÔNG chỗ nào khác trong repo phát lại 30/16/35 ⇒ ngõ cụt cho tới lần <code>pm clear</code> kế tiếp. Lý lẽ biện minh cho tiền tố ("gác bằng một mình <code>profileExport</code> sẽ nuốt đường đổi app") không đứng vững: phiên vừa cast xong là <code>ACTIVE_VERIFIED</code> + có <code>activeTarget</code>, đã bị ba guard trạng thái của <code>retireUnprovenClusterClaim</code> loại từ trước.</td><td>Cổng quay về đúng nguyên văn §Design: <code>isUnprovenClusterClaim() = profileExport == null</code>, giữ nguyên ba guard hẹp (<code>IDLE_VERIFIED</code>, không <code>activeTarget</code>, không <code>protectedResidue</code>) và điều kiện "gỡ xong là pristine". Đã liệt kê TOÀN BỘ 11 chỗ dựng <code>StableCastSession</code> để chắc chắn không ca nào lọt nhầm. Test hồi quy mới <code>a session written by a Stop must reopen the projection before the next placement</code> + fixture <code>stoppedSession()</code>; test cũ <code>warm session written by a real cast still switches without re-running bootstrap</code> vẫn xanh, tức đường đổi app không đổi một li.</td></tr>
+
+<tr><td>2</td><td><strong>[P1]</strong></td><td><strong>Ngân sách nghỉ mới có thể tự đẩy một lượt cast BÌNH THƯỜNG vượt hạn 15s ⇒ RECOVERING.</strong> Bản 31/7 nâng <code>manualVerificationDelayMillis</code> 500ms → 3000ms VÀ thêm một lần nghỉ thứ hai giữa hai mẫu, với lý lẽ "ngân sách thật là 15s nên 6s vẫn thừa". Lý lẽ đó chỉ cộng phần NGỦ. Cùng một hạn (<code>deadline = now + operationTimeoutMillis</code>, <code>CastExecutor.executeLocked</code>) còn phải nuôi cả thang đặt app (9 round-trip, <code>CastPlanner.placementSteps</code>) và HAI lần quan sát, mỗi lần SÁU lệnh shell (<code>ObservedStateReader.OBSERVATION_ORDER</code>) — tổng 21 round-trip + 6 giây ngủ trong 15 giây. Vượt hạn thì <code>completeVerificationLocked</code> ghi <code>copyForRecovery("verification deadline exceeded")</code>, tức đúng kết cục mà con số 3000ms sinh ra để tránh. Mức bằng chứng: <em>đã chứng minh bằng đọc source</em> rằng ba khoản chia chung một hạn; <em>chưa đo</em> độ trễ round-trip thật trên xe.</td><td>Hai chỗ ngủ gộp vào <code>CastManualIntentRunner.awaitSettle()</code> (cũng xoá luôn khối try/catch chép hai lần), kẹp theo hạn còn lại của chính transaction: ngủ nhiều nhất MỘT NỬA thời gian còn lại. Bất biến: sau khi ngủ vẫn còn ít nhất một nửa ngân sách cho lần quan sát kế tiếp. Không hardcode con số mới nào — ngân sách rộng thì vẫn ngủ đủ 3s như đã hiệu chỉnh trên xe (test <code>production verification delay…</code> giữ nguyên, vẫn xanh), ngân sách hẹp thì tự co lại thay vì cầm chắc vượt hạn. <code>CastCoordinator</code> truyền đồng hồ tường của mình xuống runner.</td></tr>
+
+<tr><td>3</td><td>[P2]</td><td><strong><code>clearCluster</code> không trả lại app-op PIP mà chính lượt cast kẹt đã đặt.</strong> <code>BLOCK_PIP</code> ghi <code>ignore</code> đúng ở ca "đặt app không bám" (<code>CastPlacementCommands.kt:115-119</code> no-op khi task đã bám) — tức đúng ca người lái phải bấm cứu hộ. Rung trả lại duy nhất là <code>restore-pip</code> của thang STOP (<code>CastPlanner.kt:100</code>). Người lái bấm "Trả cụm về đồng hồ" thay vì Dừng thì giữ nguyên cái chặn, và <code>commitCleared</code> còn xoá luôn baseline ghi mode cũ. Hậu quả ĐO ĐƯỢC với đúng residue này: bong bóng tốc độ của <code>vn.vietmap.live</code> chết lặng cho tới khi đặt tay <code>appops</code> về <code>allow</code>.</td><td>KHÔNG sửa hành vi — đóng đúng cách cần một rung trả app-op theo TỪNG occupant kèm bằng chứng occupant nào thật sự bị chặn, tức thêm một vòng quan sát vào đường cứu hộ; đó là B4/T9 đã hoãn có chủ đích, không phải sơ suất. Đã ghi khe hở này thành một mục KNOWN GAP ngay trong câu trả lời "HOW TO UNDO" của KDoc <code>clearCluster</code>, vì câu cũ ("no residue that needs a matching restore") đọc ra là một lời khẳng định rộng hơn sự thật (CLAUDE.md §2). Cách đọc trung thực của một lần dọn thành công là "đồng hồ đã về", không phải "xe như cũ".</td></tr>
+
+<tr><td>4</td><td>[P3]</td><td><code>clearCluster</code> dùng <code>RETURN_NORMAL_TO_MAIN</code> (<code>am start --display 0 --windowingMode 1</code>) cho MỌI occupant, kể cả phiên chiếu được bảo vệ — nơi thang STOP thường chọn <code>RETURN_PROTECTED_GENTLY</code> để không đụng vào windowing mode của sink (<code>CastPlanner.kt:80-82</code>). Phân loại target sống ở tầng trên <code>:core</code> nên không có ở đây, còn dùng verb "nhẹ" cho tất cả sẽ để app thường trôi nổi freeform trên màn giữa — đúng bài học V1 mà <code>--windowingMode 1</code> sinh ra để chữa.</td><td>KHÔNG sửa (chỉ hoàn thiện KDoc câu trả lời blast-radius #3): tệ nhất là component của sink không resolve được ⇒ rung đó vào <code>failures</code> của gói đó ⇒ thang vẫn chạy tới rung đóng chiếu. Đồng hồ là kết cục an toàn, một sink kẹt thì không.</td></tr>
+
+<tr><td>5</td><td>[P3]</td><td><code>ObservedState.taskBounds</code>/<code>targetTaskBounds</code>, <code>ClusterOccupancy.Measured</code> và <code>BubbleCastSource</code> chưa có call site sản xuất nào — chỉ test dựng chúng. Nhánh <code>NOTHING_TO_CAST</code> vì thế không thể xảy ra trên máy thật hôm nay.</td><td>KHÔNG sửa: cả ba đều là nền T6/T8 và ĐÃ được nói rõ trong KDoc kèm lý do vì sao cố ý chưa tiêu thụ (CLAUDE.md §6 — đổi cả đọc lẫn so trong một lần thì hồi quy trên xe không tách nổi bên nào sai). Đã đối chiếu CLAUDE.md §8: mọi hàm/kiểu MỚI còn lại đều có call site sản xuất thật (<code>clearCluster</code> ← <code>CastFacade</code> ← <code>CastClearClusterAction</code> ← <code>R.id.cast_clear_cluster</code>; <code>zoneShortLabel</code>/<code>zoneName</code> ← <code>FloatingBubbleService</code>; <code>CastPipBaseline</code> ← <code>CastColdBootstrap</code> + <code>CastPlanner</code>; <code>CastAmTaskBoundsParser</code> ← <code>DumpObservedStateParser</code>; <code>CastGuidanceDialogs</code> ← <code>MainActivityCastController</code>).</td></tr>
+
+</tbody></table></div>
+
+<h4>Đã soi kỹ và thấy SẠCH</h4>
+<ul class="check">
+<li><strong>Bỏ cổng <code>adopt</code> — gửi lại 30/16/35 khi projection đang mở.</strong> Không tới được: <code>CastColdBootstrap.run</code> chỉ chạy qua <code>bootstrapForManualIntent</code>, mà <code>CastColdBootstrapPreflight.inspect</code> đòi envelope pristine VÀ từ chối thẳng khi display cụm còn task ("the cluster display already holds a task"). Chiếu app thứ hai trong lúc app thứ nhất đang trên cụm đi nhánh SWITCH, không đụng thang bootstrap. <code>CastExecutor.BOOTSTRAP_COMMANDS</code> vẫn chặn mọi kế hoạch thường phát lại opcode kích hoạt.</li>
+<li><strong>Sổ bù hoàn không đăng ký kép, không nợ 18/0 khi chưa từng gửi.</strong> Ledger nay luôn đủ 5 bước, nhưng <code>fail()</code> chỉ gọi <code>compensate()</code> khi <code>ledger.take(3).any { OBSERVED }</code> — tức có ít nhất một opcode tiến đã thật sự có tác dụng. <code>authorizeCompensation</code> vẫn giữ ngân sách một lần (<code>compensationUsed</code>). <code>CastRecovery.decide</code> loại thẳng <code>operation == BOOTSTRAP</code> nên không có đường thứ hai chạm vào sổ này. Ledger rỗng cũ từng làm <code>tx.ledger[3]</code> nằm ngoài dải — nay không còn ca đó.</li>
+<li><strong>Phạm vi của <code>clearCluster</code> (CLAUDE.md §4).</strong> Display: <code>discoverClusterDisplay</code> đã bỏ <code>id &lt;= 0</code>, cộng guard <code>&lt; 1</code> ở đây; display 0 không bao giờ được liệt kê. App: đọc từ <code>am stack list</code> lọc theo đúng <code>displayId</code>, không một tên gói nào trong code (§7); test khoá <code>com.byd.launcher</code> trên display 0 không bị chạm. Stack: không reparent, không <code>am display move-stack</code>, không force-stop, không đụng home/recents/pinned. Hoàn tác: chiếu lại là mở lại.</li>
+<li><strong><code>RECOVERY_PENDING</code> tạm thời không thể ghim app.</strong> Chết giữa thang thì để lại claim <code>runtime-clear-cluster</code> — đọc được ngay trong <code>session.env</code> (§15) — và <code>clearCluster</code> tự chạy lại được từ đúng trạng thái đó (<code>closeWedgedJournal</code> dọn transaction, <code>carriedBaseline</code> không đòi gì). Nút cứu hộ cố ý không bao giờ bị tắt theo hợp đồng hành động, nên đường ra luôn còn.</li>
+<li><strong><code>stopRequested</code>.</strong> Chỉ xoá khi hai opcode đóng chiếu thật sự báo có tác dụng — ngược lại giữ nguyên. Đây đúng là mặt đối của <code>reconcileAbandoned</code> (giữ cờ vì nó KHÔNG phát 18/0) và lý do đứng vững. Không xoá thì <code>CastPlanner</code> lại từ chối STOP vì thiếu baseline geometry ⇒ cờ không còn đường tự gỡ.</li>
+<li><strong>Lease + đồng thời.</strong> <code>clearCluster</code> chạy trong <code>tryMutationLease</code> (không chờ, không đơ nhịp vẽ), <code>ReentrantLock</code> nên <code>executor.execute</code> bên trong vào lại được. Chạy trên làn <code>work.stop</code> — executor riêng, cấp tiến trình, KHÔNG phải luồng vẽ. Không có I/O nào trên main thread. Nút cứu hộ tự tắt trong lúc chạy rồi bật lại ở <code>postUi</code>, và <code>render</code> không bao giờ chạm tới nó ⇒ không có đường bật lại giữa chừng; cộng thêm <code>tryMutationLease</code> trả <code>Blocked</code> ⇒ hai lớp chặn phát trùng.</li>
+<li><strong>Nút nổi 3 ô.</strong> Kéo được: listener gắn đệ quy lên cả 5 view của cây, view thắng touch target tự phân xử; ACTION_DOWN nuốt cử chỉ nên <code>View.onTouchEvent</code> không chạy ⇒ không có đường bắn click thứ hai; <code>performClick()</code> chỉ phát khi chưa vượt <code>scaledTouchSlop</code> và chỉ trên view <code>isClickable</code> (khung ngoài im lặng). <code>actionMasked</code> nên ngón thứ hai không trượt hết mọi nhánh. Hai ô nửa cụm NÓI RA "chưa nối dây, đang làm" kèm đúng việc người lái vừa yêu cầu, không im lặng. <code>projecting</code> (tô) và <code>stopOnTap</code> (chạm) vẫn tách — ô cả cụm vẫn đi qua <code>onPrimaryTap()</code>, tức vẫn đọc lại sự thật tươi trước khi quyết định, không quyết bằng ảnh chụp 15 giây.</li>
+<li><strong>Nhãn rủi ro <code>am display move-stack</code>.</strong> <code>READ_ONLY</code> → <code>MAY_HANG_SYSTEM</code> là sửa đúng một lời nói dối nguy hiểm; giữ nguyên chuỗi lệnh sai tham số kèm ghi chú "cấm dùng, ai gỡ cấm phải sửa cả hai lỗi" là lựa chọn đúng (không nối dây cho thứ không ai được chạy). Lưới <code>mutatingVerbs</code> đã được vá bằng chính động từ đọc từ catalog, không suy từ trí nhớ.</li>
+<li><strong><code>CastPipBaseline</code>.</strong> Chỉ coi <code>ignore</code>/<code>deny</code> là chặn (đúng thứ ta ghi ra + thứ đo được), cố ý KHÔNG đụng <code>default</code> vì chưa fetch source AOSP — mức bằng chứng ghi đúng chỗ. Nhánh RECOVER thêm <code>restore-pip</code> ở CUỐI thang, không đảo rung quyết định (§6), và có cửa <code>ownerIsObservedTarget</code> để không lấy app-op của app khác làm bằng chứng.</li>
+<li><strong><code>taskBounds</code> vào <code>equals</code>/<code>hashCode</code>.</strong> Đúng: nó là đại lượng vừa bị <code>am task resize</code> đổi, nên phải đứng yên mới được coi là đã lắng. Không làm hỏng hội tụ của STOP/bootstrap (cụm rỗng ⇒ map rỗng).</li>
+<li><strong>Chất lượng chú thích tiếng Việt.</strong> Đã đọc từng khối dài: đều nói VÌ SAO kèm <code>file:line</code> hoặc phép đo, phân tách rõ "đã chứng minh / nghi là / chưa đo" theo §2, và nêu cả cái giá của lựa chọn (vd <code>CastPipBaseline</code> nói thẳng "người từng chủ động deny sẽ được trả về allow"). Không thấy chú thích trang trí.</li>
+</ul>
+
+<div class="callout amber"><strong>Còn để ngỏ, có chủ đích:</strong> #3 (app-op PIP sau khi dọn cụm — B4/T9) và #5 (nền T6/T8 chưa tiêu thụ). Cả hai đã ghi thành KNOWN GAP tại chỗ trong code, không phải chỉ ở đây.</div>
+
+<p class="small"><strong>Kiểm thử:</strong> <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew --offline --rerun-tasks :core:test :app:testDebugUnitTest :car-integration:test</code> → <strong>BUILD SUCCESSFUL, 879 test, 0 fail</strong> (nền 878 + 1 test hồi quy mới). Test mới đã chứng minh là bắt được lỗi: bật lại cổng cũ ⇒ đỏ đúng một test, bỏ ra ⇒ xanh.</p>
+
+<div class="callout green"><strong>Verdict: APPROVED để đóng APK cho chủ xe cài sáng mai</strong> — sau khi #1 và #2 đã sửa. Điều kiện đi kèm, không phải tuỳ chọn: buổi thử trên xe phải chạy đúng T5 (10 lượt <em>chiếu → trả → chiếu</em> liên tiếp với 2 app khác nhau) chứ không chỉ một lượt chiếu, vì #1 chỉ lộ ra từ lượt thứ hai. Nhóm P2 (R5–R8, hai app) vẫn đóng cho tới khi T5 xanh trên xe thật.</div>
+</div>
+
+<div class="review">
+<h3>Pass 2 — 2026-08-01 · senior review (Opus) · append-only</h3>
+<p class="small">Phạm vi: phần CHIẾU HAI APP (R6/R7, task T8) chồng lên nền mà Pass 1 đã duyệt — <code>CastModels.kt</code> (<code>ClusterSlot*</code>, <code>ClusterSplit</code>, <code>IntendedClusterLayout</code>), <code>CastPlanner.kt</code> (khối ô + rung <code>fit-cluster-slot</code>), <code>CastCoordinator.kt</code> (<code>intendedLayouts</code>, <code>layoutMatchesObservation</code>, nhánh xác minh có ô), <code>CastManualIntent.kt</code>, <code>CastPlacementCommands.kt</code> (<code>FIT_CLUSTER_COMPOSITE</code> theo ô), <code>CastFacade.kt</code> (<code>runHalfIntent</code>, <code>ClusterZoneReading</code>), <code>FloatingBubbleService.kt</code> (<code>dispatchHalfZone</code>), <code>CastSplitRatioSetting.kt</code>, hai <code>activity_main.xml</code>, và <code>CastBubbleProjection.kt</code> (chỗ luật ô được thi hành). Trace theo ĐƯỜNG CHẠY THẬT — từ ngón tay chạm một ô nửa cụm xuống tới chuỗi shell — chứ không đọc theo báo cáo của agent implement.</p>
+
+<div class="callout red"><strong>Tính năng hai app KHÔNG tới được: hai cửa từ chối hợp lệ nhưng loại trừ nhau, nên mọi đường vào đều đóng.</strong>
+Cụm RỖNG ⇒ hai ô nửa cụm hiện ra <em>dùng được</em>, chạm vào thì tầng dưới trả <code>SLOT_NEEDS_LIVE_SESSION</code> ("cast one full-screen first") — <strong>sau hai vòng đọc ra xe, bằng tiếng Anh</strong>. Cụm đang có MỘT app toàn màn ⇒ hai ô nửa cụm bị <code>zones()</code> khoá với <code>CLUSTER_TAKEN_FULLSCREEN</code> ("trả về trước"). Làm theo lời khuyên nào cũng quay lại lời khuyên kia. Bố cục hai app chỉ lập được khi một app ĐÃ nằm sẵn ở một nửa, mà không có cú chạm nào đặt được app ĐẦU TIÊN vào một nửa. Báo cáo của agent implement là ĐÚNG; đã kiểm lại bằng chính code, không bằng báo cáo.</div>
+
+<div class="scroll"><table><thead><tr><th>#</th><th>Sev</th><th>Phát hiện</th><th>Đã sửa</th></tr></thead><tbody>
+
+<tr><td>1</td><td><strong>[P0]</strong></td><td><strong>Ô nửa cụm mời một lượt chiếu không bao giờ thành công.</strong> Ba cửa ĐỘC LẬP chặn một lượt đặt vào nửa cụm khi nửa kia trống, và cả ba đều đúng về lý: (a) <code>CastManualIntentRunner.run</code> (<code>CastManualIntent.kt:185-187</code>) từ chối mọi <code>slotLayout</code> khi <code>stableSession.activeTarget == null</code>, vì nhánh bootstrap tái lập kế hoạch từ <code>pendingIntent</code> — thứ chỉ mang được TÊN GÓI — nên yêu cầu ô sẽ bốc hơi thành chiếu toàn cụm; (b) <code>ClusterSplit.contentRect</code> (<code>CastModels.kt:246-259</code>) trả <code>null</code> khi cụm không có task nào, vì con số 90 của dải vẽ chỉ đọc được TỪ một khung task thật (đoán nó chính là bug F3); (c) <code>CastPlanner</code> (<code>CastPlanner.kt:77-80</code>) vì thế trả <code>Blocked("Cluster content band is not measured yet…")</code>. Đường vào duy nhất còn lại theo §Design là "xếp app đang chiếu toàn cụm vào ô của nó trước" — planner CÓ sẵn rung <code>fit-cluster-slot</code> cho ca đó (<code>CastPlanner.kt:149-155</code>, khoá bởi <code>re-slotting the app already on the cluster is a resize only</code>) — nhưng <code>CastBubbleProjection.zones()</code> khoá cả hai ô nửa cụm ngay khi cụm có chủ, và <code>dispatchHalfZone</code> dù có mở khoá cũng chỉ chiếu <code>foregroundPackage(display 0)</code>, không bao giờ chiếu chính app đang trên cụm. Tức rung ấy KHÔNG có call site chạy được từ UI (CLAUDE.md §8). Trên xe đang chạy, một nút hứa suông tệ hơn một nút câm: người lái bấm, chờ, đọc một câu tiếng Anh, rồi bấm lại.</td><td>Đóng cửa ở đúng tầng biết câu trả lời, giá 0 vòng I/O: thêm <code>BubbleZoneDisabledReason.SPLIT_NEEDS_THE_OTHER_HALF</code> và một vế trong <code>half()</code> — <strong>một nửa chỉ mời chiếu khi nửa ĐỐI DIỆN đã đo được là có app</strong>, tức đúng và chỉ đúng ca mà tầng dưới nhận (lượt đặt app THỨ HAI, đúng phép đo 31/7). KDoc của reason liệt kê cả ba cửa kèm <code>file:line</code> và nói thẳng việc gì sẽ mở nó ra. KHÔNG tự ý thêm luật UX mới (cho phép xếp lại app đang toàn màn) — việc đó đổi §R7 hình 2 đã chốt, cần chủ dự án duyệt + một phép đo mới (CLAUDE.md §1/§14), và đưa thêm một đường mutation nữa vào đúng buổi thử T5. Test mới <code>a half only offers a cast when the other half already holds an app</code> khoá cả hai vế (câm khi không thể, VẪN mời khi thật sự có thể).</td></tr>
+
+<tr><td>2</td><td><strong>[P1]</strong></td><td><strong>Trả app từ một cụm ĐANG chia đôi đi đường Dừng ⇒ mất cả hai app <em>và</em> kẹt sổ.</strong> Khi bố cục hai app xác minh xong, <code>completeVerificationLocked</code> ghi <code>activeTarget = observed.target</code>, mà quan sát trung thực của hai app cùng <code>visible=true</code> là <code>target = null</code> (<code>CastDeviceParsers.kt</code>, khoá bởi <code>CastMultiOccupantObservationTest</code>). Cửa duy nhất của <code>returnZoneOccupant</code> lại là <code>occupant != null && active != null && occupant != active</code> — vế giữa sai nên cửa không đóng, và <code>requestStopOnce()</code> chạy với <code>targetPackage = null</code>: rung <code>RETURN_NORMAL_TO_MAIN</code> thành <code>NO_OP</code> (<code>CastPlacementCommands.kt:213</code>), <code>RESET_CLEAN_DISPLAY</code> cũng <code>NO_OP</code> vì cụm còn task, nhưng <code>SEAL_DL3_COMPENSATE_18/_0</code> VẪN phát và ĐÓNG đường chiếu. Kết cục: đồng hồ về, hai app còn nguyên trên display cụm mà không ai thấy, và xác minh STOP đòi <code>IDLE_CLEAN</code> nên transaction rơi vào RECOVERING. Đúng hình dạng "vietmap đi đâu mất tiêu" đo được chiều 27/7, cộng một cuốn sổ kẹt. Cùng cửa này cũng bắt ca bố cục DỞ DANG (một app ở nửa trái, app thứ hai lỡ nằm toàn màn).</td><td>Thêm vế <code>projection.measuredOccupants > 1</code> vào CÙNG biểu thức từ chối, chỉ sang <code>clearCluster</code> ("Trả cụm về đồng hồ") — phép DUY NHẤT biết xử lý nhiều occupant (liệt kê từng app từ dump, trả từng cái, rồi mới đóng chiếu). Không đụng ô cả cụm: nó vẫn đi <code>onPrimaryTap()</code>/<code>stopOnTap</code> như đường đã field-proven. <code>measuredOccupants</code> của một cụm một-app luôn ≤ 1 nên nhánh mới KHÔNG với tới đường một app. Khoá bằng assertion mới trong <code>CastHalfZoneWiringTest</code>.</td></tr>
+
+<tr><td>3</td><td>[P2]</td><td><strong>Câu từ chối cũ chỉ một hướng không dẫn tới đâu.</strong> <code>CLUSTER_TAKEN_FULLSCREEN</code> nói "Cụm đang chiếu full · <em>trả về trước</em>" — nhưng trả về xong thì cụm rỗng, và cụm rỗng cũng không chia đôi được. Người lái làm đúng lời khuyên rồi vẫn không tới đâu, giữa lúc đang lái.</td><td>Đổi thành "Cụm đang chiếu full · <strong>chưa chia đôi được</strong>" và câu mới "Chưa chia đôi được · nửa kia chưa có app". Chưa làm được thì nói chưa làm được (CLAUDE.md §2), không hứa một thao tác không tồn tại. KDoc <code>zoneUnavailable</code> ghi lại vì sao.</td></tr>
+
+<tr><td>4</td><td>[P2]</td><td><code>ObservedState.taskBounds</code> nay nằm trong <code>equals</code>, nên phép "hai mẫu quan sát bằng nhau" của đường MỘT APP cũng phải có khung task đứng yên. Đúng về nguyên tắc (Pass 1 đã duyệt), nhưng nó thêm một đại lượng nữa có thể còn trượt giữa hai mẫu cách nhau 3s.</td><td>KHÔNG sửa — bỏ nó ra là tự cho phép chốt trong lúc khung còn trượt, và kết cục xấu nhất ở đây là <code>VerificationPending</code> (transaction vẫn VERIFYING, vòng <code>observeAndComplete</code> sau còn hội tụ được), không phải RECOVERING. Ghi ra đây để buổi T5 biết mà nhìn: nếu thấy "quan sát chưa hội tụ" lặp lại, đây là nghi phạm đầu tiên.</td></tr>
+
+<tr><td>5</td><td>[P3]</td><td><code>SLOT_NEVER_QUEUES</code> / <code>SLOT_NEEDS_LIVE_SESSION</code> là chuỗi TIẾNG ANH đi thẳng ra <code>toast</code> qua <code>statusMessage()</code>. Rect ô cũng không bị chặn cận trên theo <code>top</code> ở tầng transport (chỉ chặn CHIỀU CAO), nên về lý thuyết một <code>top</code> rác vẫn lọt.</td><td>KHÔNG sửa: sau bản vá #1, <code>SLOT_NEEDS_LIVE_SESSION</code> không còn tới được từ nút nổi, và <code>SLOT_NEVER_QUEUES</code> chỉ còn với tới trong một khe TOCTOU vài mili giây. Còn <code>top</code> thì luôn được sinh từ <code>contentRect</code>, mà hàm đó lấy <code>top</code> từ khung task THẬT và đòi <code>bottom - top</code> đúng bằng chiều cao display — nên nó bị thực tế chặn cận, không phải bị chặn bằng niềm tin.</td></tr>
+
+</tbody></table></div>
+
+<h4>Đã soi kỹ và thấy SẠCH</h4>
+<ul class="check">
+<li><strong>Đường MỘT APP không hề bị chạm (ưu tiên số 1 của buổi thử sáng mai) — kiểm độc lập, không tin lời agent.</strong> <code>CastPlanner</code>: toàn bộ khối ô nằm sau <code>if (slotLayout != null)</code>; <code>outgoingKeepsASlot</code> rút gọn thành <code>false</code> khi không có ô nên điều kiện <code>return-outgoing-gently</code> đúng từng ký tự như trước; <code>geometry = slotGeometry ?: intent.geometry</code> với <code>slotGeometry == null</code> ⇒ y nguyên. <code>CastCoordinator</code>: cửa rẽ xác minh là một dữ kiện BỀN (<code>requestedGeometry.profileId == "cluster-slot-request"</code>), mà lượt toàn cụm chỉ từng mang <code>null</code> hoặc <code>"cluster-density-request"</code> ⇒ luôn rơi vào nhánh cũ. <code>CastPlacementCommands</code>: <code>git diff</code> xác nhận nhánh không-ô vẫn là <code>(am task resize … 0 0 W H 2>/dev/null) || wm overscan 0,90,0,90 -d N</code> — <strong>từng byte như cũ</strong>, thang đã chạy tốt ngoài hiện trường không bị đảo (§6). <code>CastManualIntent</code>: mọi caller cũ truyền <code>slotLayout = null</code> theo mặc định. Ô CẢ CỤM của nút nổi vẫn đi <code>onPrimaryTap()</code> và vẫn quyết bằng <code>stopOnTap</code> trên bản chiếu TƯƠI.</li>
+<li><strong>Hình học đúng loại, cả ba tỉ lệ, cả hai bên.</strong> Bẫy 90px được xử đúng ở cả ba chỗ: <code>contentRect</code> lấy KÍCH THƯỚC từ khung display nhưng lấy GỐC DỌC từ khung task thật (nên ô cắt ra cùng không gian toạ độ với thứ <code>am task resize</code> nhận); phép chặn rect ở transport so tuyệt đối theo chiều NGANG và chỉ so CHIỀU CAO theo chiều dọc; <code>layoutMatchesObservation</code> so <code>taskBounds</code> với <code>layout.rects</code> — cùng một không gian. Kiểm số: 1920 × {30,50,70}% ⇒ ranh giới {576, 960, 1344}, sáu rect của ba tỉ lệ đều lọt qua phép chặn transport, không rect nào bị từ chối oan. Hai ô luôn khít tại ĐÚNG một ranh giới ⇒ không chồng (chồng thì che hẳn — đã đo) và không hở.</li>
+<li><strong>Không có ngõ cụt mới (CLAUDE.md §5).</strong> Bố cục mất khỏi RAM (tiến trình chết) ⇒ <code>layout == null</code> ⇒ xác minh trả <code>false</code>, KHÔNG tự hạ xuống phép kiểm một-app rồi báo thành công. Mọi ca hỏng của một lượt xếp ô đều kết thúc ở RECOVERING, mà <code>clearCluster</code> chạy được từ RECOVERING (nó tự <code>closeWedgedJournal</code>, không đòi baseline, không đòi cụm sạch sẵn) ⇒ đường về đồng hồ luôn còn, và nút cứu hộ ở Home cố ý không bao giờ bị tắt theo hợp đồng hành động.</li>
+<li><strong>Trung thực về phép đo (§2).</strong> Chỉ 50-50 được gọi là đã đo; <code>LEFT_NARROW</code>/<code>LEFT_WIDE</code> ghi rõ "suy ra từ cùng một phép chia, chưa đo riêng" trong <code>ClusterSplitRatio</code>, và <code>DEFAULT_SPLIT_LEFT_PERCENT</code> nhắc lại. Nhãn dropdown dựng từ <code>leftPercent</code>, không có bộ chữ thứ hai. Đã grep chuỗi UI, KDoc và spec: không chỗ nào nói 30-70/70-30 đã chạy trên xe. <code>layoutMatchesObservation</code> tự khai giới hạn "không chứng minh được app A đúng là app ở ô TRÁI" thay vì lờ đi.</li>
+<li><strong>Không rẽ nhánh theo tên gói (§7).</strong> Mọi khác biệt của cả đường đi đến từ occupancy ĐO ĐƯỢC (<code>ClusterZoneReading.zoneOf</code> so rect bằng nhau tuyệt đối) hoặc từ <code>CastVehicleProfileCatalog</code>. Không một chuỗi tên gói nào trong nhánh quyết định.</li>
+<li><strong>Call site của hàm mới (§8).</strong> <code>runHalfIntent</code> ← <code>dispatchTarget(pkg, zone)</code> ← <code>dispatchHalfZone</code> ← <code>onZoneTap</code>; <code>zoneReturnsOnTap</code> ← <code>dispatchHalfZone</code>; <code>ClusterZoneReading.occupancy</code> ← <code>bubbleProjection</code>; <code>rememberIntendedLayout</code> ← cả <code>execute</code> lẫn <code>CastManualIntentRunner.executeOrdinary</code>. Ngoại lệ đã nêu ở #1: rung <code>fit-cluster-slot</code> của planner vẫn chưa có đường chạy từ UI — nay là một CỬA có tên và có lý do, không phải code chết im lặng.</li>
+</ul>
+
+<div class="callout amber"><strong>Còn để ngỏ, có chủ đích:</strong> đường "xếp lại app đang chiếm trọn cụm vào một nửa" — mắt xích DUY NHẤT còn thiếu để R6/R7 chạy đủ. Cơ chế đã ĐO THẬT (31/7: <code>am task resize &lt;maps&gt; 0 90 960 810</code> chạy trên chính app đang ở trên cụm) và planner đã mã hoá xong; thứ còn thiếu là một luật UX mới (§R7 hình 2 hiện chốt "hai ô nhỏ mờ đi khi đang full") <em>và</em> việc <code>dispatchHalfZone</code> phải nhắm app trên cụm thay vì app trên màn giữa. Cả hai cần chủ dự án duyệt, và theo §Tasks thì chỉ được mở sau khi T5 xanh.</div>
+
+<p class="small"><strong>Kiểm thử:</strong> <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew --offline --rerun-tasks :core:test :app:testDebugUnitTest :car-integration:test</code> → <strong>BUILD SUCCESSFUL, 904 test, 0 fail</strong> (566 core + 309 app + 29 car-integration; nền 903 + 1 test hồi quy mới).</p>
+
+<div class="callout green"><strong>Verdict: APPROVED để đóng APK — với tính năng HAI APP ở trạng thái "có mặt nhưng chưa mở".</strong>
+Lý do nói theo rủi ro với buổi thử MỘT APP, không nói theo độ hoàn thiện tính năng: T5 là 10 lượt <em>chiếu → trả → chiếu</em> liên tiếp, và giá của một lần kẹt giữa chừng là một lần xoá dữ liệu app — tức mất luôn cả buổi thử. Mỗi đường mutation thêm mà người lái với tới được là thêm một cơ hội kẹt sổ giữa buổi. Hai ô nửa cụm nay câm kèm một câu tiếng Việt đọc được, giá 0 vòng I/O, và KHÔNG đường nào của nó chạm tới đường một app (đã kiểm từng nhánh, xem mục SẠCH #1). Đúng thứ tự mà chính §Tasks đã chốt: P2 mở sau khi P1 xanh trên xe.
+<br><br>Việc còn lại, đúng một việc, và làm SAU T5: chủ dự án duyệt luật "chạm nửa trái/phải khi cụm đang full = xếp lại chính app đó vào nửa ấy". Khi đó chỉ cần bỏ một vế trong <code>half()</code> và cho <code>dispatchHalfZone</code> nhắm app trên cụm — phần còn lại của chuỗi (planner, transport, xác minh) đã xanh và đã có test đo bằng dump thật.</div>
+</div>
+</section>
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

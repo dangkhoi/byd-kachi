@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 2026-08-22: gỡ READ_LOGS. Quyền này chỉ để đọc tag logcat WazeHudLink của WazeMod (nguồn HLP) —
+         nguồn đó đã gỡ vì đo được 0 dòng khi không có HUD BLE. Không code nào của app đọc logcat nữa
+         (nhật ký chẩn đoán do app tự ghi ra file, không đọc ngược logcat). -->
+    <!-- Tự rebind nav listener sau khi khởi động lại máy (RebindReceiver). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- ADB loopback (socket 127.0.0.1:5555) để rebind listener từ trong app. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Nút nổi (bubble) đưa GMaps lên cluster: vẽ overlay trên app khác + foreground service giữ nút sống. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- liệt kê app cho picker "Chiếu app lên cụm". API29 không lọc; thêm để chắc trên API30+ (app sideload cá nhân). -->
+    <!-- Personal sideloaded app manager intentionally enumerates the full installed catalog. -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+    <!-- BYD privileged deployment may grant host binding; runtime still uses user-confirmed binding. -->
+    <uses-permission
+        android:name="android.permission.BIND_APPWIDGET"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- allowBackup=false: app lưu ADB private key (adb.key/adb.pub) trong filesDir — key này grant shell
+         localhost:5555. Bật backup sẽ để `adb backup`/auto-backup rút key ra ngoài → tắt để không lộ. -->
+    <application
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <!-- Màn điều khiển: bật/tắt, trạng thái, chọn nguồn, cấp quyền -->
+        <!-- Màn CHẨN ĐOÁN: gom mọi thứ kỹ thuật về 1 chỗ để anh em chụp màn gửi dev.
+             exported=false — mở từ nút trong app; adb vẫn 'am start' được activity non-exported. -->
+        <activity
+            android:name=".modules.clustercast.DiagActivity"
+            android:exported="false"
+            android:label="Chẩn đoán ClusterNav" />
+
+        <activity
+            android:name=".vietmapwidget.VietMapWidgetDiagActivity"
+            android:exported="false"
+            android:label="Dữ liệu VietMap" />
+
+        <activity
+            android:name=".modules.clustercast.ClusterBlackActivity"
+            android:exported="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity="com.byd.clusternav.cluster"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:label="ClusterNav Projection" />
+
+        <!-- resizeableActivity + configChanges + landscape: tránh size-compat (letterbox đen + scale) khi mở
+             dưới launcher tuỳ biến / DPI khác (vd dudu) — mirror ClusterNavActivity. VERIFY on-car (câu B): mở
+             Chẩn đoán xem còn size-compat không. Nếu dudu chạy app trong khung KHÔNG landscape → cân nhắc bỏ
+             screenOrientation. Xem docs/diagnostics/dudu-mainactivity-sizecompat-2026-08-14.md. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|screenLayout|density|smallestScreenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Card fallback (CHIẾM màn, MẤT đồng hồ) — chỉ dùng khi làn nav zin không lên.
+             Launch qua `am start` (cờ display + component .ClusterNavActivity) từ uid shell/dadb 2000, KHÔNG in-process.
+             exported=true BẮT BUỘC: BYD DiLink3 enforce export-check cho shell-uid → exported=false bị Permission
+             Denial (VERIFY TRÊN XE 2026-07-20). -->
+        <activity
+            android:name=".ClusterNavActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="landscape"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|screenLayout|density|smallestScreenSize|keyboardHidden"
+            android:theme="@style/ClusterTheme" />
+
+
+        <!-- Nút nổi (bubble): chạm đưa GMaps lên cluster. Foreground specialUse (không có type nào khớp hơn). -->
+        <service
+            android:name=".modules.clustercast.FloatingBubbleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="cluster_map_bubble" />
+        </service>
+
+        <!-- Bounded visible host for one claimed boot auto-cast request (0.71). Never exported. -->
+        <service
+            android:name=".modules.clustercast.CastAutomationService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="cluster_cast_boot_automation" />
+        </service>
+
+        <!-- 1.21 Item 1: HEADLESS boot setup — relocates the accessibility grant + force-bind and the
+             cluster-lane re-assert off MainActivity so boot doesn't foreground the app (né size-compat dudu).
+             Short-lived; started by RebindReceiver when "Tự khởi động nền" is ON. Never exported. -->
+        <service
+            android:name=".BootSetupService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="boot_headless_setup" />
+        </service>
+
+        <!-- B3 (2026-09-07): auto-start VietMap chạy ĐỘC LẬP (foreground service riêng) — KHÔNG block chuỗi
+             boot-setup (ghế / lọc bụi / nav / voice-key) vì nhánh bóng nay POLL tới khi VietMap vào map (tuỳ
+             network). Short-lived; started by BootSetupService (boot) / MainActivity (mở app · bật toggle bóng).
+             Never exported. -->
+        <service
+            android:name=".VietMapAutostartService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="vietmap_autostart" />
+        </service>
+
+        <!-- VietMap HUD BLE bridge: removed — same-device BLE self-loopback not viable (2026-08-04) -->
+
+        <!-- Lắng nghe notification dẫn đường -->
+        <service
+            android:name=".NavNotificationListener"
+            android:exported="false"
+            android:label="@string/nav_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- SELF-HEAL: tự bind lại nav listener sau khi cài đè / cập nhật / khởi động máy
+             → KHÔNG còn phải mở app hay disallow→allow tay để lấy lại nav. -->
+        <receiver
+            android:name=".RebindReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="com.byd.clusternav.REBIND_WATCHDOG" />
+            </intent-filter>
+        </receiver>
+
+        <!-- MODULE navaccess (booster): đọc UI GMaps trên màn -> tinh chỉnh cự ly tới rẽ. User tự bật trong
+             Cài đặt > Hỗ trợ. Xoá module navaccess → xoá dòng <service> này + res/xml/nav_accessibility_config.xml. -->
+        <service
+            android:name=".modules.navaccess.NavAccessibilityService"
+            android:exported="false"
+            android:label="@string/acc_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/nav_accessibility_config" />
+        </service>
+
+    </application>
+</manifest>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav 1.13 — Notification-grant fix · Docs refresh · Voice-key trigger</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --surface:#ffffff; --surface2:#fbfbfd; --ink:#1d1d1f; --ink2:#6e6e73;
+    --line:#d2d2d7; --accent:#0071e3; --ok:#1a7f37; --warn:#9a6700; --err:#b3261e;
+    --ok-bg:#e6f4ea; --warn-bg:#fff4d6; --err-bg:#fce8e6; --accent-bg:#e8f2fe;
+    --radius:14px; --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#000000; --surface:#1c1c1e; --surface2:#161618; --ink:#f5f5f7; --ink2:#a1a1a6;
+      --line:#38383c; --accent:#2997ff; --ok:#30d158; --warn:#ffd60a; --err:#ff453a;
+      --ok-bg:#0e2a16; --warn-bg:#332b00; --err-bg:#3a0f0c; --accent-bg:#0a2540;
+      --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;
+    -webkit-font-smoothing:antialiased;font-size:16px}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 120px}
+  header.top{margin-bottom:40px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:34px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;border:1px solid var(--line)}
+  .pill.draft{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+  h2{font-size:24px;letter-spacing:-.01em;margin:52px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);font-weight:600;margin-right:10px}
+  h3{font-size:18px;margin:30px 0 8px;font-weight:650}
+  h4{font-size:15px;margin:18px 0 6px;font-weight:650;color:var(--ink)}
+  p{margin:10px 0}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);
+    padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+    overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;
+    box-shadow:var(--shadow);margin:16px 0}
+  .grid{display:grid;gap:16px}
+  @media(min-width:720px){.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c2{grid-template-columns:repeat(2,1fr)}}
+  .track{border-left:4px solid var(--accent);padding-left:16px;margin:8px 0 4px}
+  .t1{border-color:#0071e3}.t2{border-color:#1a7f37}.t3{border-color:#9a6700}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12.5px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0;border:1px solid var(--line)}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg);border-color:transparent}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg);border-color:transparent}.callout.warn .lbl{color:var(--warn)}
+  .callout.err{background:var(--err-bg);border-color:transparent}.callout.err .lbl{color:var(--err)}
+  .callout.accent{background:var(--accent-bg);border-color:transparent}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .rec{display:inline-block;font-size:11.5px;font-weight:700;color:var(--ok);background:var(--ok-bg);
+    padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--surface2);
+    border:1px solid var(--line);color:var(--ink2);margin-right:6px}
+  .sev{font-weight:700}.p0{color:var(--err)}.p1{color:var(--warn)}
+  /* diagram */
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin:18px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:13px;
+    min-width:120px;flex:1;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;font-size:12.5px;margin-bottom:3px}
+  .fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.bad{border-color:var(--err);background:var(--err-bg)}
+  .fnode.good{border-color:var(--ok);background:var(--ok-bg)}
+  .arrow{display:flex;align-items:center;color:var(--ink2);font-size:20px;padding:0 2px}
+  .legend{font-size:12.5px;color:var(--ink2);margin-top:10px;display:flex;gap:18px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .toc{columns:2;font-size:14.5px;gap:28px}
+  @media(max-width:600px){.toc{columns:1}}
+  .toc a{display:block;padding:3px 0;color:var(--ink)}
+  .small{font-size:13px;color:var(--ink2)}
+  .kbd{font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--line);
+    border-bottom-width:2px;border-radius:6px;padding:1px 7px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">ClusterNav · Consolidated Spec</p>
+  <h1>Notification-grant fix · Full docs refresh · Physical-button voice trigger</h1>
+  <div class="meta">
+    <span><b>Target:</b> 1.13 (versionCode 113)</span>
+    <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+    <span><b>Date:</b> 2026-08-13</span>
+    <span><b>Slug:</b> notif-grant-docs-voicekey-1.13</span>
+  </div>
+  <div class="meta"><span class="pill" style="background:var(--ok-bg);color:var(--ok);border-color:transparent">STATUS: APPROVED · IMPLEMENTED — off-car verified (build + JVM suite green); pending senior review + security scan</span></div>
+  <div class="callout accent" style="margin-top:18px">
+    <div class="lbl">Approval</div>
+    One consolidated approval gate for the whole spec. Approve out-of-band with
+    <code>Approve spec notif-grant-docs-voicekey-1.13</code> (or reply which tracks to run). Approval state is
+    deliberately <b>not</b> stored in this file. After approval the tracks run autonomously to completion
+    (test → fix → senior review → security scan → build), stopping only on a security-scan BLOCK.
+  </div>
+</header>
+
+<div class="card">
+  <b>Contents</b>
+  <nav class="toc" style="margin-top:8px">
+    <a href="#changelog">1 · Changelog</a>
+    <a href="#context">2 · Context</a>
+    <a href="#requirements">3 · Requirements</a>
+    <a href="#design">4 · Design</a>
+    <a href="#tasks">5 · Tasks (DAG)</a>
+    <a href="#verification">6 · Verification</a>
+    <a href="#open">7 · Open Questions</a>
+    <a href="#references">8 · References</a>
+    <a href="#reviewer">9 · Reviewer Log</a>
+  </nav>
+</div>
+
+<!-- ============================================ -->
+<h2 id="changelog"><span class="n">1</span>Changelog</h2>
+<table>
+  <thead><tr><th>Rev</th><th>Date</th><th>Change</th></tr></thead>
+  <tbody>
+    <tr><td>v2</td><td>2026-08-13</td><td><b>APPROVED + IMPLEMENTED.</b> Q1=both (selfGrant + default-OFF), Q2=canonical docs only (preserve history), Q4=bump 1.13/113. Q3 refined: T3 in-scope, configurable button + gesture (nhấn/nhấn-giữ) + target, <b>no native-override</b> (consume only the configured combo), reuse known keymap + on-car "learn key" fallback. Code landed; <code>:core:test</code> + <code>:app:testDebugUnitTest</code> green; signed <code>assembleRelease</code> + <code>aapt2</code> vc113, no test surface. Pending senior review + security scan.</td></tr>
+    <tr><td>v1 (draft)</td><td>2026-08-13</td><td>Initial consolidated spec. Root cause for T1 confirmed by source read; T3 direction set from RE cache + <code>byd-dolphin-hacking</code> + <code>BYD&nbsp;Binti</code> pattern; T2 doc audit complete. Awaiting approval.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================ -->
+<h2 id="context"><span class="n">2</span>Context</h2>
+<p>Three owner requests on 2026-08-13, in priority order:</p>
+<div class="grid c3">
+  <div class="card"><div class="track t1"><b>T1 · Notification-permission bug</b></div>
+    <p class="small">On 1.11/1.12 the “Cấp quyền / kết nối lại” button, when the listener permission is missing, opens a system Settings screen the locked IVI doesn’t expose → BYD toast <i>“Hệ thống IVI không hỗ trợ hoạt động này.”</i> No toggle is reachable.</p></div>
+  <div class="card"><div class="track t2"><b>T2 · Docs refresh</b></div>
+    <p class="small">Bring project documentation in line with the real current state (1.12+ behaviour and the T1 fix).</p></div>
+  <div class="card"><div class="track t3"><b>T3 · Voice-key trigger</b> <span class="tag">optional</span></div>
+    <p class="small">If time permits: a physical car button that launches a voice assistant (Gemini / BYD “小迪” / Kiki). Clone what Dashcast / OpenBYD do — no deep research.</p></div>
+</div>
+
+<h3>Platform facts (confirmed this session)</h3>
+<table>
+  <tbody>
+    <tr><td><b>Head unit</b></td><td>BYD Seal, DiLink 3.0, Android 10 (API 29), <b>no root</b>. Owner: Đăng Khôi.</td></tr>
+    <tr><td><b>Current build</b></td><td>versionName <code>1.12</code> / versionCode <code>112</code> (<code>app/build.gradle.kts</code>). This spec targets <code>1.13</code> / <code>113</code>.</td></tr>
+    <tr><td><b>Proven grant path</b></td><td>App bundles <code>dev.mobile:dadb:2.0.0</code> and already runs uid-shell <code>cmd notification allow_listener &lt;comp&gt;</code> over the dadb loopback (127.0.0.1:5555) in <code>NavConnect.doReconnect</code>.</td></tr>
+    <tr><td><b>Existing services</b></td><td><code>NavNotificationListener</code> (BIND_NOTIFICATION_LISTENER_SERVICE) and <code>NavAccessibilityService</code> (<code>.modules.navaccess</code>, config <code>@xml/nav_accessibility_config</code>) both already declared.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================ -->
+<h2 id="requirements"><span class="n">3</span>Requirements</h2>
+
+<h3><span class="track t1" style="padding-left:10px">T1 — In-app notification-listener grant</span></h3>
+<p class="small">User story: <i>Là chủ xe không cắm laptop, tôi muốn cấp quyền đọc thông báo ngay trong app, để nguồn dẫn đường kết nối được mà không gặp “IVI không hỗ trợ”.</i></p>
+<ul>
+  <li><b>AC1</b> — Pressing the grant/reconnect button while permission is missing must <b>grant the listener via the dadb uid-shell path</b> (<code>allow_listener</code>), never dead-end on the IVI Settings toast.</li>
+  <li><b>AC2</b> — After a successful grant the listener binds and the nav card leaves the “Cần cấp quyền” state without the user leaving the app.</li>
+  <li><b>AC3</b> — Clear user feedback for each outcome: granting…, granted+connected, or failed (with the “Allow USB debugging” hint) — no silent dead button.</li>
+  <li><b>AC4</b> — The Settings-screen path may remain only as an explicit last-resort fallback when dadb fails.</li>
+  <li><b>AC5</b> (option B, recommended) — App opens with the master switch <b>OFF by default</b>; no adb/dadb runs at startup. The grant + connect fire only when the user turns the switch ON, reducing dadb contention.</li>
+  <li><b>AC6</b> — Contract test updated to lock the new wiring; full JVM suite stays green; release APK builds + is signed with no <code>vehicleTest</code> surface.</li>
+</ul>
+
+<h3><span class="track t2" style="padding-left:10px">T2 — Documentation refresh</span></h3>
+<ul>
+  <li><b>AC1</b> — <code>docs/HUONG-DAN.md</code> rewritten from the stale v0.99 to current 1.13 behaviour (nav-only default, Cast default OFF, floating-button cast, cluster nav-display mode selector, in-app notification grant, speed-limit sign, source selectors), VI + EN.</li>
+  <li><b>AC2</b> — Root <code>README.md</code> updated: version bump note, T1 in-app-grant behaviour, feature list and doc links verified current.</li>
+  <li><b>AC3</b> — Historical, dated records (<code>docs/_handoff/*</code>, <code>docs/diagnostics/*</code>, <code>docs/review/*</code>, superseded specs) are <b>not</b> rewritten; they stay as point-in-time history (README philosophy: “git history is the record”). Their historical status is stated clearly.</li>
+  <li><b>AC4</b> — No stale claim survives in a canonical/user-facing doc (e.g., “projection auto-activates on open”, “HUD output active”).</li>
+</ul>
+<div class="callout warn"><div class="lbl">Scope decision — needs confirmation</div>
+“Toàn bộ tài liệu” is read as <b>all canonical/user-facing docs</b> (README, HUONG-DAN, doc index), <b>not</b> a literal rewrite of ~100+ dated logs/handoffs. Rewriting history would destroy its evidentiary value and contradict the repo’s stated philosophy. Confirm this interpretation or tell me to widen scope.</div>
+
+<h3><span class="track t3" style="padding-left:10px">T3 — Physical-button voice trigger <span class="tag">optional / lowest priority</span></span></h3>
+<ul>
+  <li><b>AC1</b> — A hardware key can be captured app-wide without root and, when pressed, launches a user-chosen voice assistant.</li>
+  <li><b>AC2</b> — In-app UI: a toggle (default <b>OFF</b>), an assistant picker (Google Assistant/Gemini · BYD 小迪 · custom package · generic <code>RecognizerIntent</code>), and a “learn key” capture mode (records the next keycode, since the BYD button’s code is unknown off-car).</li>
+  <li><b>AC3</b> — All off-car-buildable plumbing lands behind the toggle; keycode + installed-assistant confirmation is deferred to on-car and documented as open.</li>
+  <li><b>AC4</b> — Zero impact on Nav/Cast when the toggle is OFF; JVM suite green.</li>
+</ul>
+<div class="callout accent"><div class="lbl">May be deferred</div>
+T3 is explicitly optional. It can be dropped from this cycle (T1+T2 only) without affecting the other tracks. Say the word.</div>
+
+<!-- ============================================ -->
+<h2 id="design"><span class="n">4</span>Design</h2>
+
+<h3><span class="track t1" style="padding-left:10px">T1 — Reuse the proven dadb self-grant</span></h3>
+<h4>Root cause (verified by source read)</h4>
+<p>In <code>MainActivity</code> the button branches on permission:</p>
+<pre><code>if (notificationAccessGranted()) {
+    NavConnect.reconnect(applicationContext)     // ← dadb allow_listener path (works)
+} else {
+    promptNotificationAccess()                   // ← opens Settings screens (dead end on IVI)
+}</code></pre>
+<p><code>promptNotificationAccess()</code> → <code>openNotificationAccessSettings()</code> tries
+<code>ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS</code> (API 30+, skipped on API 29),
+<code>ACTION_NOTIFICATION_LISTENER_SETTINGS</code>, then <code>ACTION_APPLICATION_DETAILS_SETTINGS</code>.
+The locked DiLink IVI does not expose those activities, so the BYD system shows
+<i>“Hệ thống IVI không hỗ trợ hoạt động này”</i> (confirmed <b>not</b> an app string via grep). The grant that actually
+works — <code>cmd notification allow_listener</code> over dadb uid-shell — already exists in
+<code>NavConnect.doReconnect</code>, but is only reachable from the <i>already-granted</i> branch.</p>
+
+<div class="diagram">
+  <div class="small" style="margin-bottom:8px;font-weight:650">Current (broken) vs proposed</div>
+  <div class="flow">
+    <div class="fnode"><div class="h">Tap button</div><div class="s">permission missing</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode bad"><div class="h">openNotificationAccessSettings()</div><div class="s">Settings.ACTION_NOTIFICATION_LISTENER_*</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode bad"><div class="h">BYD system toast</div><div class="s">“IVI không hỗ trợ” · dead end</div></div>
+  </div>
+  <div class="flow" style="margin-top:14px">
+    <div class="fnode"><div class="h">Tap button</div><div class="s">permission missing</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">NavConnect.selfGrant()</div><div class="s">dadb uid-shell · allow_listener</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">requestRebind + poll</div><div class="s">listener binds in-app</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">Settings dialog</div><div class="s">last-resort fallback only</div></div>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--err)"></span>current dead end</span>
+    <span><span class="dot" style="background:var(--ok)"></span>proposed path</span>
+  </div>
+</div>
+
+<h4>Change set</h4>
+<ul>
+  <li><b>New</b> <code>NavConnect.selfGrant(ctx)</code>: single-flight, background — <code>cmd notification allow_listener $COMP</code> then <code>NotificationListenerService.requestRebind(...)</code>, then poll <code>NavNotificationListener.connected</code>. No <code>disallow</code> for a first grant (disallow→allow only when already listed). Reuses <code>LocalDeviceShell.session</code> / <code>AdbKeys</code> exactly like <code>doReconnect</code>.</li>
+  <li><b>MainActivity</b> missing-permission branch → call <code>selfGrant</code> with a “Đang cấp quyền…” toast; on failure, surface the “bấm Allow USB debugging trên xe” hint and only then offer the Settings dialog fallback.</li>
+  <li><b>Option B</b> <span class="rec">RECOMMENDED</span> — flip <code>Prefs.enabled</code> default to <code>false</code>; gate startup <code>NavConnect.ensureConnected()</code> behind enabled; run <code>selfGrant</code> + connect when the master switch is turned ON. Once granted, the permission persists across reboots (RebindReceiver re-binds), so steady-state launches touch no adb.</li>
+  <li><b>Cleanup</b> — fix the stray comment artifact in <code>doReconnect</code> (<code>…client dadb khác)selfGrant)</code>).</li>
+</ul>
+<div class="callout ok"><div class="lbl">Recommendation</div>
+Do <b>both</b>: the <code>selfGrant</code> core fix (this is the actual bug) <b>and</b> Option B (default-OFF startup) to cut dadb contention as you asked. Both are small and independent. If you prefer the minimum, the <code>selfGrant</code> fix alone closes AC1–AC4.</div>
+<p class="small"><b>Tech validation:</b> no new library. The grant verb (<code>cmd notification allow_listener</code>), the dadb loopback, and <code>requestRebind</code> are all already proven in this repo. Nothing to Context7.</p>
+
+<h3><span class="track t2" style="padding-left:10px">T2 — Refresh canonical docs, preserve history</span></h3>
+<table>
+  <thead><tr><th>Doc</th><th>State</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><code>docs/HUONG-DAN.md</code></td><td class="sev p1">STALE v0.99 — “projection auto-on”, “HUD output active” (both false now)</td><td>Full rewrite to 1.13 (VI+EN)</td></tr>
+    <tr><td><code>README.md</code> (root)</td><td>Mostly current at 1.12</td><td>Bump note + T1 behaviour + verify links</td></tr>
+    <tr><td>README “Documentation” links</td><td>Point at current specs</td><td>Verify/repoint</td></tr>
+    <tr><td><code>docs/_handoff/*</code>, <code>docs/diagnostics/*</code>, <code>docs/review/*</code>, superseded <code>docs/specs/*</code></td><td>Historical, dated</td><td><b>Leave as-is</b> (history)</td></tr>
+  </tbody>
+</table>
+<p class="small"><b>Note:</b> steering references <code>docs/specs/_template.html</code> which does <b>not</b> exist; this spec replicates the mandated section order in the current Apple-2026 inline-CSS house style instead.</p>
+
+<h3><span class="track t3" style="padding-left:10px">T3 — Accessibility key capture → assistant intent</span></h3>
+<p>No-root pattern (as used by <code>BYD&nbsp;Binti</code>): capture the hardware key in an <b>AccessibilityService</b> that requests key filtering, then fire an intent to the chosen assistant. This app <b>already has</b> <code>NavAccessibilityService</code>, so no new service or permission is needed — only an <code>onKeyEvent</code> override plus two flags in its config.</p>
+<div class="diagram">
+  <div class="flow">
+    <div class="fnode"><div class="h">Physical button</div><div class="s">steering / panel key</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">NavAccessibilityService.onKeyEvent</div><div class="s">canRequestFilterKeyEvents + flagRequestFilterKeyEvents</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">AssistantLauncher</div><div class="s">matches learned keycode · reads Prefs target</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">Launch intent</div><div class="s">Assistant / 小迪 / RecognizerIntent</div></div>
+  </div>
+  <div class="legend"><span><span class="dot" style="background:var(--ok)"></span>reuses existing service</span></div>
+</div>
+<h4>Refined scope (approved 2026-08-13) — configurable, no native override</h4>
+<ul>
+  <li><b>Configurable</b>: user picks <b>button</b> (candidate keycodes — VOICE_ASSIST 231, ASSIST 219, media/steering — or <b>“learn key”</b> to capture the real code on-car) + <b>gesture</b> (nhấn / nhấn-giữ) + <b>target</b>. Stored in <code>Prefs</code>; the pure decision lives in <code>VoiceKeyMatcher</code> (:core, JVM-tested).</li>
+  <li><b>No native override</b>: <code>onKeyEvent</code> returns <code>true</code> (consume) <b>only</b> for the exact configured combo. PRESS consumes the chosen key’s DOWN+UP; HOLD lets a short tap pass through (native intact) and consumes only the long-press. Every other key/gesture → <code>super.onKeyEvent</code>. Feature OFF ⇒ always pass-through.</li>
+  <li><b>Enablement</b>: the feature needs the accessibility service on. Turning the switch ON self-enables it over dadb (<code>NavConnect.grantAccessibility</code> appends <code>enabled_accessibility_services</code>), same “ADB permission” pattern as T1 — no dead Settings screen.</li>
+  <li><b>Keymap</b>: reuse known Android candidates (no on-car re-probe); “learn key” is the fallback if the button’s code differs on this trim (“lên xe test không OK thì mới mò”).</li>
+</ul>
+<h4>Launch targets (user-selectable)</h4>
+<ul>
+  <li>Google Assistant / Gemini — <code>Intent(Intent.ACTION_VOICE_COMMAND)</code> / <code>ACTION_ASSIST</code>, fallback to launching the assistant package.</li>
+  <li>BYD voice “小迪” — <code>com.byd.autovoice</code> (present in firmware; exact launch intent to confirm on-car).</li>
+  <li>Generic — <code>RecognizerIntent.ACTION_VOICE_SEARCH_HANDS_FREE</code>.</li>
+</ul>
+<div class="callout accent"><div class="lbl">Context7 verification</div>
+Verified against <code>/websites/developer_android</code>: the <code>android.service.voice</code> VoiceInteraction framework and Assistant <b>Built-in Intents / App Actions</b> exist at API 29 (the car’s level). <code>AccessibilityService.onKeyEvent</code> + <code>canRequestFilterKeyEvents</code> is stable since API 18. <b>Unverified until on-car:</b> which client-launch intent the installed assistant actually answers, and whether the hardware key reaches accessibility (vs system-consumed) — hence the “learn key” capture mode.</div>
+
+<!-- ============================================ -->
+<h2 id="tasks"><span class="n">5</span>Tasks (DAG)</h2>
+<p class="small">§Design + §Tasks are finalised alongside code during implementation. Tracks are independent; T1 → T2 ordering only so docs describe the shipped fix.</p>
+<div class="grid c3">
+  <div class="card"><div class="track t1"><b>T1</b></div>
+    <ol class="small">
+      <li>Add <code>NavConnect.selfGrant()</code>; fix comment artifact.</li>
+      <li>Rewire MainActivity missing-permission branch + feedback.</li>
+      <li>Option B: default-OFF + gated startup connect.</li>
+      <li>Update <code>NotificationAccessFlowContractTest</code>.</li>
+      <li>Build release + JVM suite.</li>
+    </ol></div>
+  <div class="card"><div class="track t2"><b>T2</b></div>
+    <ol class="small">
+      <li>Rewrite <code>HUONG-DAN.md</code> (VI+EN) to 1.13.</li>
+      <li>Update <code>README.md</code> + doc links.</li>
+      <li>State historical-vs-current boundary.</li>
+    </ol></div>
+  <div class="card"><div class="track t3"><b>T3</b> <span class="tag">opt</span></div>
+    <ol class="small">
+      <li><code>onKeyEvent</code> + config flags on existing service.</li>
+      <li><code>AssistantLauncher</code> + Prefs (target, keycode, enabled).</li>
+      <li>UI: toggle + picker + “learn key”.</li>
+      <li>Unit tests; default OFF.</li>
+    </ol></div>
+</div>
+
+<!-- ============================================ -->
+<h2 id="verification"><span class="n">6</span>Verification</h2>
+<table>
+  <thead><tr><th>Track</th><th>Off-car (this cycle)</th><th>On-car (deferred)</th></tr></thead>
+  <tbody>
+    <tr><td>T1</td><td>Updated contract test asserts <code>selfGrant</code>/<code>allow_listener</code> in the missing branch; full <code>testDebugUnitTest</code> green; <code>assembleRelease</code> signed; <code>aapt2</code> shows versionCode 113 + no test surface.</td><td>Press button with permission missing → listener binds, no IVI toast.</td></tr>
+    <tr><td>T2</td><td>Docs read back against current source behaviour; links resolve; no stale claim in canonical docs.</td><td>—</td></tr>
+    <tr><td>T3</td><td>Unit tests for keycode match + target resolution; toggle OFF ⇒ zero nav/cast impact; suite green.</td><td>“Learn key” captures the button’s keycode; chosen assistant launches.</td></tr>
+  </tbody>
+</table>
+<div class="callout ok"><div class="lbl">Off-car results — 2026-08-13</div>
+<code>./gradlew :core:test :app:testDebugUnitTest</code> → BUILD SUCCESSFUL (new <code>VoiceKeyMatcherTest</code> + updated <code>NotificationAccessFlowContractTest</code> + all existing pass). <code>./gradlew :app:assembleRelease</code> → SUCCESSFUL incl <code>lintVitalRelease</code> (abortOnError). <code>aapt2 dump badging</code>: <code>com.byd.clusternav</code> versionCode <b>113</b> versionName <b>1.13</b>, not debuggable, no <code>TEST_*</code> surface. JDK 17.</div>
+<p class="small">Then: senior-review loop (patch → re-test → re-review until 0 P0–P1) and a mandatory pre-commit security scan before any commit/push.</p>
+
+<!-- ============================================ -->
+<h2 id="open"><span class="n">7</span>Open Questions</h2>
+<table>
+  <thead><tr><th>#</th><th>Question</th><th>Proposed default</th></tr></thead>
+  <tbody>
+    <tr><td>Q1</td><td><b>T1 scope:</b> just the <code>selfGrant</code> fix, or also Option B (default-OFF startup)?</td><td>Both (recommended).</td></tr>
+    <tr><td>Q2</td><td><b>T2 scope:</b> refresh canonical/user-facing docs only and preserve history?</td><td>Yes — don’t rewrite dated logs.</td></tr>
+    <tr><td>Q3</td><td><b>T3:</b> include this cycle, or defer? Which assistant is primary (Gemini vs BYD 小迪)?</td><td>Build plumbing (default OFF); confirm assistant on-car. OK to defer entirely.</td></tr>
+    <tr><td>Q4</td><td>Ship as <code>1.13</code> OTA after off-car green, or hold for on-car verify first?</td><td>Bump to 1.13; you decide push timing.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================ -->
+<h2 id="references"><span class="n">8</span>References</h2>
+<ul class="small">
+  <li><b>Code:</b> <code>MainActivity.kt</code> (btn_reconnect_nav, promptNotificationAccess, openNotificationAccessSettings) · <code>NavConnect.kt</code> (doReconnect, ensureConnected) · <code>NavNotificationListener.kt</code> · <code>Prefs.kt</code> (enabled default) · <code>app/src/main/AndroidManifest.xml</code> (NavAccessibilityService, NavNotificationListener) · <code>app/build.gradle.kts</code> (112/1.12).</li>
+  <li><b>Test to update:</b> <code>app/src/test/java/com/byd/clusternav/NotificationAccessFlowContractTest.kt</code>.</li>
+  <li><b>Docs to refresh:</b> <code>docs/HUONG-DAN.md</code>, <code>README.md</code>.</li>
+  <li><b>T3 external:</b> <code>wheregoes/byd-dolphin-hacking</code> (DiLink3/Android10 RE) · <code>BYD Binti</code> (AccessibilityService voice assistant) · RE cache <code>com.byd.autovoice</code>.</li>
+  <li><b>Context7:</b> <code>/websites/developer_android</code> — VoiceInteraction (API 29), App Actions/Built-in Intents, AccessibilityService key filtering.</li>
+</ul>
+
+<!-- ============================================ -->
+<h2 id="reviewer"><span class="n">9</span>Reviewer Log</h2>
+<p class="small">Append-only. One <code>Pass N — YYYY-MM-DD</code> block per senior-review pass; history is never overwritten.</p>
+<h3>Pass 1 — 2026-08-13</h3>
+<div class="card">
+<p><b>Pipeline:</b> senior-review → security-scan sub-agent DAG (blocking) ran to completion. <b>Security scan verdict: CLEAN</b> — 0 [BLOCK], 0 [WARN], 5 [INFO] (all benign: dadb loopback <code>127.0.0.1:5555</code>; signing passwords read from gitignored <code>keystore.properties</code> not literals; sanctioned public owner handle; package/keycode/HAL-register identifiers; public RE references). Signing material externalized + gitignored; vehicle IPs pre-redacted to <code>&lt;vehicle-ip&gt;</code>.</p>
+<p><b>Independent verification (orchestrator):</b></p>
+<ul>
+  <li><b>Scope</b> ✅ — T1 (selfGrant + default-OFF + fallback + comment fix), T2 (README + HUONG-DAN + spec), T3 (matcher + onKeyEvent + learn + config flags + UI + dadb accessibility grant) all present, wired, user-reachable.</li>
+  <li><b>Boundary shape</b> ✅ — both <code>layout/</code> and <code>layout-w960dp/</code> carry all 5 voice-key ids (5/5 each) → no findViewById NPE by screen size; Prefs int↔<code>VoiceKeyGesture/Target</code> mapping matches; <code>LocalDeviceShell.session</code> nullable/<code>.ok</code>/<code>.output</code> shape honored in <code>selfGrant</code>/<code>doGrantAccessibility</code>; <code>onKeyEvent</code> consumes only the configured combo, else <code>super</code>.</li>
+  <li><b>Diagnostics</b> ✅ — LSP: no diagnostics on MainActivity, NavConnect, NavAccessibilityService, AssistantLauncher, VoiceKeyMatcher.</li>
+  <li><b>Build/tests</b> ✅ — <code>:core:test</code> + <code>:app:testDebugUnitTest</code> + <code>:app:assembleRelease</code> BUILD SUCCESSFUL; <code>aapt2</code> vc113/1.13, not debuggable, no <code>TEST_*</code>. Only 2 pre-existing <code>recycle()</code> deprecation warnings in unrelated scan code (out of scope).</li>
+  <li>Working tree shows zero reviewer-authored file changes (the 11 modified + new dirs are the orchestrator's; no [P0]/[P1] patches were required).</li>
+</ul>
+<p><b>Verdict:</b> APPROVED off-car (0 P0–P1). On-car remains pending for the 3 physical checks (T1 button→bind, T3 keycode/assistant, cluster-mode value map).</p>
+</div>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

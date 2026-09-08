@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>byd-launcher — Foundation Spec</title>
+<style>
+  :root {
+    --bg: #fbfbfd; --fg: #1d1d1f; --muted: #6e6e73; --card: #fff; --border: #e5e5ea;
+    --accent: #0071e3; --ok: #34c759; --warn: #ff9f0a; --todo: #8e8e93; --code: #f5f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#000; --fg:#f5f5f7; --muted:#98989d; --card:#1c1c1e; --border:#2c2c2e;
+      --accent:#0a84ff; --code:#1c1c1e; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    line-height:1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 40px; letter-spacing:-0.02em; margin:0 0 4px; }
+  h2 { font-size: 26px; letter-spacing:-0.01em; margin:48px 0 12px; padding-top:12px; border-top:1px solid var(--border); }
+  h3 { font-size: 19px; margin:24px 0 8px; }
+  p, li { font-size: 16px; }
+  .sub { color:var(--muted); font-size:17px; margin:0 0 8px; }
+  code { background:var(--code); padding:2px 6px; border-radius:6px; font-size:13.5px;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:18px 20px; margin:16px 0; }
+  table { width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px; }
+  th,td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .pill { display:inline-block; padding:1px 9px; border-radius:999px; font-size:12px; font-weight:600; }
+  .p-ok{background:rgba(52,199,89,.15);color:var(--ok);} .p-todo{background:rgba(142,142,147,.18);color:var(--todo);}
+  .p-work{background:rgba(255,159,10,.15);color:var(--warn);}
+  .muted{color:var(--muted);}
+  .diagram{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin:16px 0;}
+  .layer{border:1px dashed var(--border);border-radius:10px;padding:12px;margin:10px 0;}
+  .layer .lname{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .row{display:flex;flex-wrap:wrap;gap:8px;}
+  .node{background:var(--code);border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:13.5px;flex:1;min-width:120px;text-align:center;}
+  .node.keep{border-color:var(--ok);} .node.new{border-color:var(--accent);}
+  .arrow{text-align:center;color:var(--muted);font-size:18px;margin:2px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>byd-launcher</h1>
+<p class="sub">Foundation spec — fork ClusterNav 2.0 → launcher xe BYD DiLink. Cập nhật 2026-09-08.</p>
+
+<div class="card">
+<b>TL;DR.</b> <code>byd-launcher</code> là bản fork của ClusterNav 2.0 (<code>byd-cluster-2</code>) để dựng thành
+một <b>launcher (màn hình chính)</b> cho xe BYD. Nó <b>giữ nguyên toàn bộ tính năng ClusterNav</b> (gom vào
+mục <b>Cài đặt / Settings</b>), thêm <b>vỏ HOME</b> và <b>nhiều app/tiện ích đi kèm</b> kiểu Dudu桌面. Cài
+<b>song song</b> (<code>applicationId = com.byd.launcher</code>) nên bản ClusterNav 2.0 ổn định
+(<code>com.byd.clusternav2</code>) trên xe không bị đụng.
+</div>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-08</b>: Fork từ ClusterNav <b>v1.38</b> (versionCode 39). Đổi <code>applicationId</code>
+→ <code>com.byd.launcher</code>, OTA <code>REPO</code> → <code>dangkhoi/byd-launcher</code>, <code>git init</code>
+sạch (bỏ lịch sử APK nặng). [ĐO] full test <b>1983/0</b> (5 module) — chức năng ClusterNav nguyên vẹn; debug APK
+<code>package=com.byd.launcher</code>. Khởi tạo spec + backlog §L. Chưa viết code launcher (làm dần).</li>
+</ul>
+
+<h2>2. Context — vì sao fork</h2>
+<p>ClusterNav 2.0 (<code>byd-cluster-2</code>) đã ổn định (v1.38, đang chạy tốt trên xe owner) — owner chốt
+<b>"để im"</b>. Owner muốn một <b>launcher</b> riêng, mà bản chất launcher chỉ <i>value</i> khi đi kèm nhiều
+app/tính năng (Dudu桌面PRO có rất nhiều). Vì launcher phải <b>giữ nguyên mọi chức năng ClusterNav</b>, fork
+nguyên codebase là đúng (không bê từng phần). Nền HAL/shell của ClusterNav (<code>BydHal</code> reflection +
+<code>carexec</code>/dadb đặc quyền) chính là thứ Dudu dùng (tầng "shellManage") — tái dùng được ngay.</p>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th></tr>
+<tr><td>R1</td><td><b>Giữ nguyên 100% tính năng ClusterNav</b> (nav+HUD, Cluster Cast, speed badge, bóng VietMap, ghế mát/sưởi, PM2.5, phím-thoại, OTA) — không mất, không giảm.</td></tr>
+<tr><td>R2</td><td><b>Vỏ HOME</b>: là launcher thật (đăng ký <code>CATEGORY_HOME</code>), chọn được làm màn hình chính của xe.</td></tr>
+<tr><td>R3</td><td>Tính năng ClusterNav gom vào một mục <b>Cài đặt / Settings</b> (board <code>MainActivity</code> hiện tại thành 1 màn con).</td></tr>
+<tr><td>R4</td><td><b>App/tiện ích đi kèm</b> kiểu Dudu: control xe (kính %, cửa/cốp, đèn, gạt mưa gồm chế độ bảo trì, AC), widget đồng hồ (lốp/range/PM2.5/năng lượng), lưới app/shortcut.</td></tr>
+<tr><td>R5</td><td><b>Cài song song</b> ClusterNav 2.0 (<code>applicationId</code> khác) — bản ổn không bị đè trong lúc phát triển.</td></tr>
+<tr><td>R-nf1</td><td>Mỗi bước có <b>test off-car xanh</b> + verify trên xe; theo kỷ luật doc/backlog/seal như ClusterNav.</td></tr>
+</table>
+
+<h2>4. Design — kiến trúc</h2>
+<p>Launcher = <b>vỏ HOME</b> (renderer/dispatcher) trên nền hạ tầng ClusterNav giữ nguyên. HOME điều hướng tới
+các "app" con: Settings (ClusterNav cũ), Control xe, Widget, Lưới app.</p>
+
+<div class="diagram" role="img" aria-label="Kiến trúc launcher phân tầng">
+  <div class="layer"><div class="lname">Vỏ HOME (mới)</div>
+    <div class="row">
+      <div class="node new">LauncherHomeActivity<br><span class="muted">CATEGORY_HOME · dashboard</span></div>
+    </div>
+    <div class="arrow">&#9660; điều hướng</div>
+    <div class="row">
+      <div class="node new">Settings<br><span class="muted">= MainActivity cũ</span></div>
+      <div class="node new">Control xe<br><span class="muted">kính/cửa/đèn/gạt/AC</span></div>
+      <div class="node new">Widget đồng hồ</div>
+      <div class="node new">Lưới app</div>
+    </div>
+  </div>
+  <div class="arrow">&#9660; dùng lại</div>
+  <div class="layer"><div class="lname">Tính năng ClusterNav (GIỮ NGUYÊN)</div>
+    <div class="row">
+      <div class="node keep">Nav+HUD</div><div class="node keep">Cluster Cast</div>
+      <div class="node keep">Speed badge</div><div class="node keep">Bóng VietMap</div>
+      <div class="node keep">Ghế · PM2.5</div><div class="node keep">Phím-thoại · OTA</div>
+    </div>
+  </div>
+  <div class="arrow">&#9660;</div>
+  <div class="layer"><div class="lname">Hạ tầng (GIỮ NGUYÊN — nền chung)</div>
+    <div class="row">
+      <div class="node keep">BydHal<br><span class="muted">HAL reflection + feature-id</span></div>
+      <div class="node keep">carexec / dadb<br><span class="muted">shell đặc quyền (= shellManage của Dudu)</span></div>
+      <div class="node keep">Cockpit.* UI · Prefs · Lang</div>
+    </div>
+  </div>
+</div>
+
+<h3>Quyết định fork</h3>
+<ul>
+<li><b>applicationId</b> <code>com.byd.clusternav2</code> &rarr; <code>com.byd.launcher</code> (cài song song). <b>Namespace code</b> <code>com.byd.clusternav.*</code> GIỮ NGUYÊN (không rename hàng loạt — chỉ 1 dòng build.gradle).</li>
+<li><b>OTA</b> <code>UpdateChecker.REPO</code> &rarr; <code>dangkhoi/byd-launcher</code> (khỏi kéo APK ClusterNav về launcher).</li>
+<li><b>git init sạch</b> (không mang ~38 APK nặng trong history byd-cluster-2). Fork từ working tree v1.38.</li>
+<li><b>HAL cho control xe</b>: theo RE Dudu, chuyển dần sang <code>AbsBYDAutoDevice.set(featureId, i2, i3)</code> cho phần mới (đèn/gạt/kính-%/sạc); giữ named-method cho cái đã proven (ghế/kính/PM2.5). Hybrid.</li>
+</ul>
+
+<h2>5. Roadmap — làm dần (chi tiết ở backlog §L)</h2>
+<table>
+<tr><th>Phase</th><th>Nội dung</th><th>Trạng thái</th></tr>
+<tr><td>L0</td><td>Fork + đổi appId/OTA + build/test xanh</td><td><span class="pill p-ok">✅ xong</span></td></tr>
+<tr><td>L1</td><td>Vỏ HOME (CATEGORY_HOME) + MainActivity → Settings</td><td><span class="pill p-todo">🔲 chưa</span></td></tr>
+<tr><td>L2</td><td>Tên/icon launcher riêng + khoá ký + OTA channel riêng</td><td><span class="pill p-todo">🔲 chưa</span></td></tr>
+<tr><td>L3</td><td>Widget đồng hồ read-only (lốp/range/PM2.5/năng lượng)</td><td><span class="pill p-todo">🔲 chưa</span></td></tr>
+<tr><td>L4</td><td>Control xe (kính %, cửa/cốp, đèn, gạt mưa+bảo trì, AC)</td><td><span class="pill p-todo">🔲 chưa</span></td></tr>
+<tr><td>L5</td><td>Lưới app / shortcut</td><td><span class="pill p-todo">🔲 chưa</span></td></tr>
+<tr><td>L-RE</td><td>Nợ RE feature-id (nền cho L3/L4)</td><td><span class="pill p-work">🔨 đang</span></td></tr>
+</table>
+
+<h2>6. Open Questions / nợ RE</h2>
+<div class="card">
+Từ <code>docs/diagnostics/dudu-launcher-hal-RE-2026-09-06.md</code>:
+<ul>
+<li><b>OQ1.</b> Giá trị SỐ của <code>BYDAutoFeatureIds.*</code> — Dudu chỉ import tên. Cần pull <code>/system/framework/*bydauto*.jar</code> từ xe (hoặc OpenBYD apk đủ).</li>
+<li><b>OQ2.</b> Ngữ nghĩa arg <code>set(featureId, i2, i3)</code> cho window-%, wiper-overhaul, light — đọc lớp control Dudu (obfuscated).</li>
+<li><b>OQ3.</b> Tầng <b>shellManage</b> đặc quyền của Dudu — ClusterNav đã có dadb; có feature nào cần cơ chế khác không (nhiều feature set trực tiếp đã rc=0).</li>
+<li><b>OQ4.</b> Launcher cần <b>khoá ký riêng</b> + OTA channel riêng (hiện release build cần <code>keystore.properties</code> — chưa thiết lập cho fork; debug build OK).</li>
+<li><b>OQ5.</b> Đổi <code>strings.xml</code> (tên app) đang vướng <b>seal T11</b> kế thừa từ ClusterNav — gỡ dần seal/baggage không liên quan launcher.</li>
+</ul>
+</div>
+
+<h2>7. References</h2>
+<ul>
+<li><code>docs/diagnostics/dudu-launcher-hal-RE-2026-09-06.md</code> — RE Dudu桌面PRO (cơ chế HAL + bản đồ feature-id).</li>
+<li><code>docs/PROJECT-BACKLOG.md</code> §L — roadmap launcher.</li>
+<li>Nguồn fork: ClusterNav 2.0 (<code>byd-cluster-2</code>) v1.38 (versionCode 39).</li>
+</ul>
+
+</div>
+</body>
+</html>

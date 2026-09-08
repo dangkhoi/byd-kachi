@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  cockpit_spinner_dropdown_item — DESIGN SYSTEM (Cockpit) DROPDOWN row shown in the popup list.
+  Applied via adapter.setDropDownViewResource(R.layout.cockpit_spinner_dropdown_item). Styling lives
+  in @style/Cockpit.Spinner.DropDownItem (text_primary, 12dp padding, touch_min height, selectable
+  @drawable/spinner_item_bg). New layout (allowed) — dark cockpit rows on the @drawable/popup_bg panel
+  WITHOUT editing the sealed layouts.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Cockpit.Spinner.DropDownItem"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />

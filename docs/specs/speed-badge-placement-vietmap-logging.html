@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speed badge — UI đặt vị trí trực quan + dời nguồn VietMap + log toàn tín hiệu</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Speed badge: UI đặt vị trí trực quan + dời nguồn VietMap + log toàn tín hiệu</h1>
+<p class="muted">Slug: <code>speed-badge-placement-vietmap-logging</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill wait">Chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/trace-den-tan-cung.md</code>, <code>product-team-workflow.md</code>. Không dùng thư viện mới (chỉ Android SDK: custom View + Canvas + MotionEvent + SharedPreferences) → không cần Context7.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-08-17</b>: Spec khởi tạo từ yêu cầu owner sau phiên on-car.</li>
+<li><b>DUYỆT — 2026-08-17</b>: Owner duyệt, "làm hết + gộp cả BUG-1". Chốt OQ: (1) bind = nút + dòng trạng thái ngay trong card Cast; (2) badge lưu theo <b>tâm</b>; (3) <b>gộp 1 overlay</b> (BUG-1) làm chung; (4) 1 PNG / hash. <b>Vị trí UI</b>: khối "biển báo tốc độ" (nguồn VietMap + hình chữ nhật đặt badge + size + xem thử) đặt NGAY TRÊN label "Khắc phục sự cố" (<code>cast_recovery_toggle</code>) trong card Cluster Cast.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Phiên on-car 2026-08-17 xác nhận: overlay badge tốc độ vẽ được lên <b>cụm khi Cast Cluster BẬT</b> (badge sống trên surface cast ảo display 1); dữ liệu tốc độ (60) lấy từ <b>VietMap</b>. Nhưng: (a) UI chỉnh badge hiện tại (4 nút góc + size ±) <i>khó xài</i>; (b) mục "Nguồn tốc độ + cảnh báo" đang nằm nhầm ở cột <b>Navigation + HUD</b> (trái) trong khi badge là thứ của <b>Cluster Cast</b> (phải); (c) VietMap còn bắn <b>cảnh báo/camera</b> (widget "Cảnh báo") và có thể nhiều field khác mà app chưa khai thác.</p>
+<p>Ba việc trong spec này (owner yêu cầu):</p>
+<ol>
+<li><b>Dời</b> mục lấy dữ liệu VietMap từ cột trái (Nav+HUD) sang cột phải (Cluster Cast) "cho đúng" + cho <b>bind nguồn</b>.</li>
+<li><b>UI đặt badge trực quan</b>: hình chữ nhật đại diện cụm (như editor resize khi cast app) + <b>kéo</b> cục badge tới vị trí bất kỳ + chỉnh <b>size</b>, WYSIWYG, lưu lại → vẽ đúng vị trí đó lên cụm.</li>
+<li><b>Log TOÀN BỘ tín hiệu VietMap</b> (tốc độ + camera/cảnh báo + field lạ + ảnh icon) để mai chạy lấy hết, off-car đánh giá cần vẽ thêm gì lên cụm.</li>
+</ol>
+
+<h2>3. Requirements</h2>
+
+<h3>Part A — Dời nguồn VietMap sang cột Cluster Cast</h3>
+<ul>
+<li>A1. Mục "Nguồn tốc độ + cảnh báo (biển báo · camera)" (label + <code>spinner_speed_source</code> + nút "Dữ liệu VietMap" <code>btn_vietmap_widget_diag</code>) chuyển từ card <b>Navigation + HUD</b> sang card <b>Cluster Cast</b>, ở CẢ 2 layout (<code>layout/</code> dọc + <code>layout-w960dp/</code> ngang 2 cột).</li>
+<li>A2. Có nút/luồng <b>bind nguồn</b> VietMap (widget speed + alerts) rõ ràng trong mục mới, kèm dòng trạng thái bind (bound / chưa bound / provider missing).</li>
+<li>A3. Không vỡ pipeline nav; các <code>findViewById</code> id cũ vẫn còn (đổi vị trí, không đổi id).</li>
+</ul>
+
+<h3>Part B — UI đặt vị trí + kích thước badge trực quan</h3>
+<ul>
+<li>B1. Hiện <b>hình chữ nhật tỉ lệ cụm</b> (display 1, mặc định 1920×720, đọc từ display config như CastResizeView) trong card Cluster Cast.</li>
+<li>B2. Bên trong có <b>cục badge</b> (vẽ bằng <code>SpeedBadgeView</code> thật → WYSIWYG, hiện số mẫu vd 50). User <b>kéo</b> cục badge tới vị trí bất kỳ; thả ra thì <b>lưu vị trí</b> (toạ độ cụm).</li>
+<li>B3. Bên dưới có <b>chỉnh size</b> (thanh trượt/± ), size phản ánh <b>ngay</b> vào cục badge trong hình chữ nhật.</li>
+<li>B4. Chọn xong size + vị trí → <b>lưu</b> → overlay thật vẽ đúng vị trí + size đó lên cụm (khi cast active). Bỏ mô hình "4 góc" cũ, chuyển sang <b>toạ độ tuyệt đối</b>.</li>
+<li>B5. Có nút "Xem thử trên cụm" (force-show badge) để đối chiếu preview ↔ cụm thật; và nút Đặt lại.</li>
+</ul>
+
+<h3>Part C — Log toàn bộ tín hiệu VietMap (cho chuyến mai)</h3>
+<ul>
+<li>C1. Log định kỳ (verbose-gated) <b>mọi raw value</b> app đã đọc: currentSpeed, speedLimit, và <b>cả 2 alert</b> (limit / distance / imageVisible / imageHash) + freshness + providerVersion.</li>
+<li>C2. <b>Khám phá field lạ</b>: duyệt toàn bộ cây view của widget "Cảnh báo" (và "Tốc độ") dump MỌI TextView (id-name + text) + MỌI ImageView (id-name + visible), kể cả field app chưa parse → để off-car biết VietMap còn bắn gì.</li>
+<li>C3. <b>Lưu ảnh icon cảnh báo</b> (warning_alert_image / second_…) ra PNG khi đổi (theo imageHash) → off-car xem icon camera/police/… trông ra sao để quyết vẽ gì.</li>
+<li>C4. Toàn bộ CSV + PNG ghi vào thư mục files (như telemetry hiện có), verbose-gated (debug auto-verbose đã bật), degrade-safe, không chặn thread widget.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Tổng thể — tái dùng pattern có sẵn</h3>
+<div class="diagram">
+<svg viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="12">
+<style>.b{fill:var(--card);stroke:var(--line)}.t{fill:var(--fg)}.a{stroke:var(--accent);stroke-width:1.5;fill:none;marker-end:url(#ar)}</style>
+<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
+<rect class="b" x="12" y="20" width="180" height="60" rx="10"/><text class="t" x="102" y="44" text-anchor="middle">BadgePlacementView</text><text class="t" x="102" y="62" text-anchor="middle" fill="var(--muted)">(mẫu CastResizeView)</text>
+<rect class="b" x="12" y="120" width="180" height="60" rx="10"/><text class="t" x="102" y="144" text-anchor="middle">SpeedBadgeView</text><text class="t" x="102" y="162" text-anchor="middle" fill="var(--muted)">WYSIWYG preview</text>
+<rect class="b" x="270" y="70" width="150" height="60" rx="10"/><text class="t" x="345" y="94" text-anchor="middle">Prefs.badgeX/Y/Size</text><text class="t" x="345" y="112" text-anchor="middle" fill="var(--muted)">toạ độ tuyệt đối</text>
+<rect class="b" x="500" y="70" width="200" height="60" rx="10"/><text class="t" x="600" y="94" text-anchor="middle">SpeedBadgeOverlay</text><text class="t" x="600" y="112" text-anchor="middle" fill="var(--muted)">vẽ x/y/size lên cụm (d.1)</text>
+<line class="a" x1="192" y1="50" x2="268" y2="88"/><line class="a" x1="192" y1="150" x2="268" y2="108"/><line class="a" x1="420" y1="100" x2="498" y2="100"/>
+</svg>
+</div>
+
+<h3>4.2 Part A — layout</h3>
+<ul>
+<li>Cắt block "Nguồn tốc độ + cảnh báo" khỏi card Nav+HUD, dán vào card Cluster Cast (trong <code>cast_body</code>, trên <code>cast_geometry_container</code>), ở cả <code>layout/activity_main.xml</code> và <code>layout-w960dp/activity_main.xml</code>. Giữ nguyên id.</li>
+<li>Bind nguồn: dùng lại <code>VietMapWidgetBridge</code>/<code>VietMapWidgetDiagActivity</code> (đã có bind). Thêm dòng trạng thái bind + nút "Kết nối nguồn VietMap" nếu chưa bound. MainActivity wiring giữ nguyên logic, chỉ đổi nơi các view được đặt.</li>
+</ul>
+
+<h3>4.3 Part B — BadgePlacementView + Prefs toạ độ tuyệt đối</h3>
+<ul>
+<li><b>Prefs</b> (thay mô hình 4 góc): <code>badgeX</code>, <code>badgeY</code> = toạ độ TÂM (hoặc top-left) badge theo px CỤM (0..W, 0..H); <code>badgeSizeDp</code> giữ (clamp 60..240). Bỏ/deprecate <code>badgeCorner/badgeDx/badgeDy</code> (giữ đọc cũ để migrate 1 lần: corner→x,y tương ứng).</li>
+<li><b>Pure core</b>: <code>BadgeLayout</code> thêm hàm thuần <code>clampPosition(x,y,size,W,H)</code> (giữ badge trong cụm) + unit test. Không phụ thuộc Android.</li>
+<li><b>BadgePlacementView</b> (app, mẫu <code>CastResizeView</code>): vẽ hình chữ nhật tỉ lệ cụm (W×H từ display config), vẽ cục badge = <code>SpeedBadgeView</code> thu nhỏ theo scale; <code>onTouch ACTION_MOVE</code> kéo badge (clamp trong rect), <code>ACTION_UP</code> → callback <code>(xCluster,yCluster)</code> → lưu Prefs + <code>overlay.refreshLayout()</code>. Slider size → cập nhật marker + Prefs + refresh.</li>
+<li><b>SpeedBadgeOverlay.buildLayoutParams()</b>: <code>gravity=TOP|LEFT</code>, <code>x=Prefs.badgeX</code>, <code>y=Prefs.badgeY</code> (đổi hệ nếu lưu tâm), <code>width=height=size*density</code>. <code>refreshLayout()</code> giữ nguyên (đã có).</li>
+<li>1 overlay dùng chung (gộp BUG-1 — có thể làm cùng hoặc tách track B1 trong kế hoạch off-car; spec này giả định overlay đơn).</li>
+</ul>
+
+<h3>4.4 Part C — VietMapSignalLog</h3>
+<ul>
+<li><b>VietMapSignalLog</b> (app): mỗi lần snapshot đổi (hook ở <code>VietMapWidgetBridge</code> nơi apply RemoteViews), verbose-gated, ghi 1 dòng CSV <code>vietmap_signal_*.csv</code>: ts, freshness, providerVersion, currentSpeed, speedLimit, a1Limit/a1Dist/a1ImgVisible/a1ImgHash, a2… .</li>
+<li><b>Dump field lạ</b>: thêm hàm trong <code>VietMapWidgetExtraction</code> duyệt cây (<code>root</code> đệ quy) liệt kê mọi TextView (resource-entry-name + text) + ImageView (name + visible) → ghi <code>vietmap_views_*.csv</code> (chỉ khi verbose). Dùng <code>Resources.getResourceEntryName</code> để lấy tên id thật của VietMap.</li>
+<li><b>Ảnh icon</b>: khi imageHash đổi, lưu bitmap alert image → <code>diag/vietmap-alert-&lt;hash&gt;.png</code> (đã có capturePixels; thêm nhánh ghi PNG). Off-car map hash→loại (camera/police/…).</li>
+<li>Off-thread cho hash/ghi (đã có hashExecutor); ghi CSV nối tiếp, RFC-4180 (dùng <code>CsvEscape</code> có sẵn). Degrade-safe.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Prefs toạ độ tuyệt đối badgeX/Y + migrate corner→x,y; BadgeLayout.clampPosition + test</td><td>Prefs.kt, core/BadgeLayout.kt(+Test)</td></tr>
+<tr><td>T2</td><td>SpeedBadgeOverlay dùng x/y/size tuyệt đối</td><td>speedbadge/SpeedBadgeOverlay.kt</td></tr>
+<tr><td>T3</td><td>BadgePlacementView (kéo badge + size, WYSIWYG) — mẫu CastResizeView</td><td>modules/clustercast/BadgePlacementView.kt (mới)</td></tr>
+<tr><td>T4</td><td>Part A: dời block VietMap sang card Cast + bind UI (2 layout) + wiring</td><td>layout/ + layout-w960dp/activity_main.xml, MainActivity.kt</td></tr>
+<tr><td>T5</td><td>Gắn BadgePlacementView vào card Cast + nút xem thử/đặt lại</td><td>MainActivity.kt / MainActivityCastController.kt</td></tr>
+<tr><td>T6</td><td>VietMapSignalLog CSV + dump view lạ + lưu PNG icon (verbose-gated)</td><td>vietmapwidget/VietMapSignalLog.kt(mới), VietMapWidgetExtraction.kt, VietMapWidgetBridge.kt</td></tr>
+<tr><td>T7</td><td>Test (Prefs migrate, clampPosition, log CSV shape) + 5 suite xanh + senior review + security scan</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>Off-car: 5 suite xanh (core/app/vehicle-contracts/car-integration/offcar-planner). Unit test: migrate corner→x,y; clampPosition; VietMapSignalLog dòng CSV đúng shape; dump view liệt kê đúng.</li>
+<li>Emulator/xe: kéo badge trong hình chữ nhật → cast active → badge hiện đúng vị trí + size trên cụm (đối chiếu bằng "Xem thử" + ảnh screencap -d 1).</li>
+<li>Chuyến mai: bật VietMap, chạy → <code>vietmap_signal_*.csv</code> + <code>vietmap_views_*.csv</code> + <code>diag/vietmap-alert-*.png</code> có dữ liệu camera/cảnh báo. Kéo về đánh giá off-car.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1 [A]: "bind nguồn" = chỉ dùng lại luồng bind của <code>VietMapWidgetDiagActivity</code>, hay cần nút bind riêng ngay trong card Cast? (đề xuất: nút + trạng thái ngay trong card, mở diag khi cần).</li>
+<li>OQ2 [B]: badge lưu theo <b>tâm</b> hay <b>top-left</b>? (đề xuất: tâm — kéo trực giác hơn; overlay quy đổi sang top-left khi set x/y).</li>
+<li>OQ3 [B]: gộp 1-overlay (BUG-1) làm trong spec này hay track riêng B1? (đề xuất: làm chung để badge thật = badge preview).</li>
+<li>OQ4 [C]: cỡ giới hạn số PNG icon lưu (tránh đầy thẻ)? (đề xuất: chỉ lưu 1 PNG / hash duy nhất).</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Mẫu drag/resize: <code>modules/clustercast/CastResizeView.kt</code>, <code>CastGeometryEditor.kt</code> (dùng <code>cast_geometry_container</code>).</li>
+<li>Badge: <code>speedbadge/SpeedBadgeOverlay.kt</code>, <code>SpeedBadgeView.kt</code>, <code>core/BadgeLayout.kt</code>, <code>Prefs.kt</code>.</li>
+<li>VietMap: <code>vietmapwidget/VietMapWidgetExtraction.kt</code>, <code>VietMapWidgetTextParser.kt</code>, <code>VietMapWidgetModels.kt</code>, <code>VietMapWidgetBridge.kt</code>, <code>VietMapWidgetDiagActivity.kt</code>.</li>
+<li>Layout: <code>layout/activity_main.xml</code>, <code>layout-w960dp/activity_main.xml</code>.</li>
+<li>Ngữ cảnh phiên: <code>_oncar-notes/2026-08-17-drive.md</code>, <code>docs/_handoff/off-car-plan-2026-08-17.md</code>.</li>
+</ul>
+
+<h2>9. Reviewer Log</h2>
+<p class="muted">(append-only; mỗi pass thêm 1 mục)</p>
+
+<h3>Pass 1 — 2026-08-17 — Senior review (kiro_default) — <span class="pill" style="background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent">APPROVED</span></h3>
+<p class="muted">Verdict APPROVED · 0 P0/P1 · scope 100% · all boundaries shape-matched · gates green.</p>
+<ul>
+<li><b>Scope (all ✅):</b> Part A — VietMap block relocated into the Cluster Cast card <i>above</i> <code>cast_recovery_toggle</code> in BOTH layouts, ids preserved (<code>spinner_speed_source</code>/<code>btn_vietmap_widget_diag</code>/<code>btn_nav_stop</code>), bind-status line <code>txt_speed_source_bind</code> (4 states). Part B — <code>BadgePlacementView</code> drag+size WYSIWYG, <code>Prefs.badgeCenterX/Y</code> absolute centre + one-time corner→centre migration, <code>SpeedBadgeOverlay</code> consumes it (<code>clampCenter</code>→<code>topLeftFromCenter</code>, <code>gravity=TOP|LEFT</code>), preview/reset buttons, BUG-1 ONE overlay (owner-owned, injected, test-asserted single construction). Part C — <code>VietMapSignalLog</code> 13-col CSV (a1/a2 order preserved via <code>combinedRaw</code>), <code>dumpAllViews</code> views CSV, PNG once-per-hash, all <code>NavLog.verbose</code>-gated + off-thread + degrade-safe.</li>
+<li><b>Boundary shapes (all OK):</b> Prefs↔overlay↔BadgePlacementView units consistent (centre in cluster-px, size = dp×density; centre→top-left correct); layout ids↔<code>findViewById</code> (MainActivity non-null lookups resolve in both variants, new ids null-tolerant, no lost listeners); <code>VietMapWidgetBridge</code>→<code>VietMapWidgetVerboseLog</code>→<code>VietMapSignalLog</code> field-for-field match (freshness enum/version/speeds/a1·a2 limit·dist·imgVisible·imgHash); <code>VietMapWidgetBindingStatus.providerAvailable/bound</code>; <code>SimpleCastState</code>→<code>clusterSize()</code>. E2E value trace verified: drag (view-px) → cluster-px → <code>clampCenter</code> → <code>Prefs.setBadgeCenterX/Y</code> → <code>debugRefreshBadgeLayout</code> → <code>buildLayoutParams</code> re-clamp vs real display → top-left x/y.</li>
+<li><b>Thread/degrade/compat:</b> overlay ops all on main handler; CSV appends on a lazy single-thread daemon, PNG encode on <code>hashExecutor</code>; only the unavoidable view-tree walk / drawable capture on main (verbose-only, ≤256px); every sink <code>runCatching</code>-wrapped; Android-10 safe (<code>getRealSize</code> suppressed-deprecated, no unguarded &gt;29 APIs).</li>
+<li><b>Findings:</b> No [P0]/[P1]/[P2]. [P3] (design tradeoffs, not patched — verbose-only + mirror existing <code>NavNotifLog</code> pattern): (1) verbose PNG path re-captures pixels already captured for hashing; (2) full view-tree walk on main per host-update when verbose; (3) <code>bindingStatuses()</code> enumerates providers on the main thread at resume (runCatching, not per-tick); (4) CSV writers flush-per-row but are never explicitly closed (no data loss).</li>
+<li><b>Gates:</b> <code>:core:test</code> 512 + <code>:app:testDebugUnitTest</code> 377 = 889 tests, 0 fail/err (JUnit XML). <code>:offcar-planner:test</code> 99, 0 fail/err. Fence re-pin <code>96f4092d…39fa</code> == actual narrow-layout SHA-256. All touched files ≤500 LOC. No patch applied (no actionable finding); no commit/push.</li>
+</ul>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

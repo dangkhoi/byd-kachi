@@ -1,0 +1,105 @@
+{
+  "acquisition_policy": {
+    "large_tools_location": "<user-cache>/clusternav-re",
+    "network_after_acquisition": "DISABLED_BY_WORKFLOW",
+    "project_or_artifact_upload": false
+  },
+  "freshness": {
+    "official_latest": {
+      "Apktool": "v3.0.3",
+      "Ghidra": "Ghidra_12.1.2_build",
+      "JADX": "v1.5.6"
+    },
+    "verified_date": "2026-08-07"
+  },
+  "schema": "clusternav.re-tools/v1",
+  "tools": [
+    {
+      "local": {
+        "jar_path": "/opt/homebrew/Cellar/jadx/1.5.6/libexec/lib/jadx-1.5.6-all.jar",
+        "jar_sha256": "966d314282d95ff7c72f597bb9c744999856666a3b856575e3c035a9c12a0b65",
+        "resolved_launcher_path": "/opt/homebrew/Cellar/jadx/1.5.6/bin/jadx",
+        "resolved_launcher_sha256": "64a6ee6bcf7490ea682508db2a73d6cda8b671a5211af5ee3ff098441af038a7"
+      },
+      "name": "JADX",
+      "official": {
+        "asset_sha256": "545ea2be9c242511bc145755cf4bda2485ade42966e096f8b4d3da2a230e8974",
+        "asset_url": "https://github.com/skylot/jadx/releases/download/v1.5.6/jadx-1.5.6.zip",
+        "release_url": "https://github.com/skylot/jadx/releases/tag/v1.5.6",
+        "signature": "SIGNATURE_UNAVAILABLE",
+        "tag": "v1.5.6"
+      },
+      "rejected": {
+        "jar_path": "<project-root>/../tools/jadx/lib/jadx-1.5.0-all.jar",
+        "jar_sha256": "c1290292e17ff6dcaa030d38b9173794c3eda4b844eaa90d17e82f9a8ab4429f",
+        "reason": "STALE_VERSION_1.5.0"
+      },
+      "smoke": "PASS: 1.5.6 with explicit JDK17",
+      "version": "1.5.6"
+    },
+    {
+      "local": {
+        "archive_path": "<user-cache>/clusternav-re/downloads/apktool_3.0.3.jar",
+        "archive_sha256": "dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423"
+      },
+      "name": "Apktool",
+      "official": {
+        "asset_sha256": "dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423",
+        "asset_url": "https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar",
+        "release_url": "https://github.com/iBotPeaches/Apktool/releases/tag/v3.0.3",
+        "signature": "SIGNATURE_UNAVAILABLE",
+        "tag": "v3.0.3"
+      },
+      "smoke": "PASS: 3.0.3 with explicit JDK17",
+      "version": "3.0.3"
+    },
+    {
+      "local": {
+        "analyze_headless_path": "<user-cache>/clusternav-re/tools/ghidra_12.1.2_PUBLIC/support/analyzeHeadless",
+        "analyze_headless_sha256": "302880328a0024ee24cfe0326d4d9a61c2237116d95f2e0e0df090f747f95e30",
+        "archive_path": "<user-cache>/clusternav-re/downloads/ghidra_12.1.2_PUBLIC_20260605.zip",
+        "archive_sha256": "b62e81a0390618466c019c60d8c2f796ced2509c4c1aea4a37644a77272cf99d"
+      },
+      "name": "Ghidra",
+      "official": {
+        "asset_sha256": "b62e81a0390618466c019c60d8c2f796ced2509c4c1aea4a37644a77272cf99d",
+        "asset_url": "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.2_build/ghidra_12.1.2_PUBLIC_20260605.zip",
+        "release_url": "https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_12.1.2_build",
+        "signature": "SIGNATURE_UNAVAILABLE",
+        "tag": "Ghidra_12.1.2_build"
+      },
+      "smoke": "PASS: headless usage under explicit Java21; usage exit=1 expected without project arguments",
+      "version": "12.1.2"
+    },
+    {
+      "local": {
+        "archive_path": "<user-cache>/clusternav-re/downloads/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.12_8.tar.gz",
+        "archive_sha256": "021d629349ebc12a409faa517b837ec80ceee8f58a5ac85c788ecad07ca6881c",
+        "java_path": "<user-cache>/clusternav-re/tools/jdk-21.0.12+8/Contents/Home/bin/java",
+        "java_sha256": "34b9c157bedcebafc6033b8beaa72c2ff14e2b697e33f45aa959a8373d6581a0",
+        "signature_path": "<user-cache>/clusternav-re/downloads/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.12_8.tar.gz.sig",
+        "signature_sha256": "37c85c715f0664a93a35e5961e067d7df4a6f3e1b41d34cfe14926db2d72a661"
+      },
+      "name": "Temurin Java sidecar",
+      "official": {
+        "asset_sha256": "021d629349ebc12a409faa517b837ec80ceee8f58a5ac85c788ecad07ca6881c",
+        "asset_url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12%2B8/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.12_8.tar.gz",
+        "release_tag": "jdk-21.0.12+8",
+        "signature": "DETACHED_SIGNATURE_AVAILABLE_NOT_TRUST-CHAIN-VERIFIED",
+        "signature_url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12%2B8/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.12_8.tar.gz.sig"
+      },
+      "role": "Ghidra only",
+      "smoke": "PASS: OpenJDK 21.0.12+8 LTS",
+      "version": "21.0.12+8"
+    },
+    {
+      "local": {
+        "java_home": "/opt/homebrew/opt/openjdk@17"
+      },
+      "name": "Project Gradle JDK",
+      "role": "Android Gradle, JADX and Apktool; unchanged",
+      "smoke": "PASS: OpenJDK 17.0.19",
+      "version": "17.0.19"
+    }
+  ]
+}

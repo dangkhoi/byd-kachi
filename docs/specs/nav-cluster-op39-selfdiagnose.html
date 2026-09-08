@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nav-on-cluster op39 "Giữa + ETA" — self-diagnosing off-car</title>
+<script>(function(){var t=localStorage.getItem('cnux-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1220px;margin:auto;padding:0 28px 110px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;letter-spacing:-.01em}
+.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}
+.hero{padding:72px 0 46px}
+.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(34px,5.5vw,56px);line-height:1.05;letter-spacing:-.045em;margin:14px 0 18px;max-width:1000px}
+.lead{font-size:19px;color:var(--muted);max-width:900px}
+.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px}
+.stat,.card,.callout,.phase{background:var(--paper);border:1px solid var(--line);border-radius:18px}
+.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}
+section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}
+h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}
+.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}
+.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}
+.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}
+code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}
+pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}
+.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:780px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}
+.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}
+.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"\2610";position:absolute;left:2px;color:var(--blue)}
+.sev{font:700 11px var(--mono);padding:3px 7px;border-radius:6px;white-space:nowrap}.sev.p0{background:var(--red-soft);color:var(--red)}.sev.p1{background:var(--amber-soft);color:var(--amber)}.sev.p2{background:var(--purple-soft);color:var(--purple)}.sev.new{background:var(--green-soft);color:var(--green)}
+.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.green{background:var(--green-soft);color:var(--green)}
+.review{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}
+.diagram{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;margin:16px 0;overflow:auto}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:6px}.sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · op39 self-diagnose</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('cnux-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Consolidated spec · requirements · design · tasks · off-car</div>
+<h1>Nav-on-cluster op39 "Giữa + ETA" — tự chẩn đoán off-car.</h1>
+<p class="lead">Trên xe, chọn <strong>"Giữa + ETA"</strong> chỉ lên nav <strong>nhỏ/ở trên</strong> (do broadcast vẽ), KHÔNG lên overlay op39 ở giữa như lần bắn test bằng adb laptop sáng cùng ngày. Trace cho thấy: lệnh op39 trong app <strong>đúng byte-for-byte</strong> với lệnh proven trong <code>nav-mode-probe.sh</code>; khác biệt là <strong>đường giao</strong> (in-app bắn qua dadb loopback <code>localhost:5555</code>, và chỉ bắn khi Cast TẮT) — cộng thêm một <strong>bug retry</strong> làm một lần bắn hụt chặn luôn lần thử lại 30s, và một UX <strong>fail im lặng</strong> khiến người dùng không biết gì. Spec này làm op39 tự chẩn đoán off-car: sửa bug retry (D1), log quyết định rõ ràng (D2), hiện trạng thái thật trên card Nav (D3), và thêm nút <strong>"Test cụm ngay"</strong> một chạm (D4) — để lần lên xe tới là <strong>một lần kiểm tra xác định</strong>, không cần laptop.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Target: 1.08 candidate (bundled với install-result + relaunch fixes đang ở working tree) · Baseline: main@b9b4dea (1.07) + uncommitted WIP · Date: 2026-08-12</p>
+<div class="stats">
+<div class="stat"><b>4</b><span>deliverables (D1–D4)</span></div>
+<div class="stat"><b>2</b><span>files sửa · 1 mới</span></div>
+<div class="stat"><b>0</b><span>new deps</span></div>
+<div class="stat"><b>0</b><span>opcode/lệnh đổi</span></div>
+<div class="stat"><b>no</b><span>commit (contract)</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog">
+<div class="head"><span class="num">00</span><h2>Changelog</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Ver</th><th>Date</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td>v3</td><td>2026-08-13</td><td><strong>ON-CAR CORRECTION (1.12):</strong> op39 (<code>service call AutoContainer 2 i32 1000 i32 39</code>) chứng minh <strong>NO-OP</strong> trên trim DiLink3.0 này (op6/7 đổi day/night OK ⇒ kênh ch1000 sống, nhưng op39 KHÔNG đổi center). Lever THẬT của "Giữa + ETA" là HAL <code>SET_NAVI_SCREEN_STATUS_SET</code> (<code>0x4C10E015</code> · BYDAutoSettingDevice) + <code>INSTRUMENT_GUIDE_INFO_SIMPLE_SET</code> (<code>0x43F01010</code>) — khớp <code>navopen</code>; mở khoá menu OEM "Đơn giản/Nhỏ/Toàn/OFF". App giờ lái qua <code>NavigationHudOwner</code>/<code>BydHal.writeNavFrame</code> (wired từ <code>NavRepository</code> lane, gated Cast-OFF) + <strong>selector chế độ cụm in-app</strong> (<code>Prefs.navClusterScreenMode</code>, spinner_cluster_mode) để dò value↔menu trên xe. Chi tiết: <code>docs/diagnostics/oncar-2026-08-13-amap-cluster-menu-and-op39-rootcause.md</code>.</td></tr>
+<tr><td>v2</td><td>2026-08-12</td><td><strong>Finalize (owner "chốt version này ở 2 điểm"):</strong> op39 "Giữa + ETA" là chế độ nav-trên-cụm <strong>DUY NHẤT</strong>. Gỡ hẳn biến thể "Nhỏ/ở trên" (không dò được opcode trên xe), <strong>nút chọn mode</strong> (NavClusterModeButtons) và <strong>nút "Test cụm ngay" (R4/D4)</strong> khỏi UI; bỏ <code>GATED_SMALL</code> + <code>selfTest()</code>. Card Nav giữ dòng trạng thái op39 (D3). Kèm <strong>point 1B</strong>: bật lại nội suy cự ly theo tốc độ (<code>Prefs.interpolate</code> mặc định ON + accBooster) cho mượt khi noti GMaps thưa. Xem callout ngay dưới + Reviewer Log.</td></tr>
+<tr><td>v1</td><td>2026-08-12</td><td>Spec hợp nhất khởi tạo từ on-car report (chọn "Giữa+ETA" chỉ lên nhỏ/ở trên) + off-car trace. Scope D1–D4 đã được owner approve trong phiên agent.</td></tr>
+</tbody>
+</table></div>
+<div class="callout amber"><strong>⚠ Amendment 2026-08-12 (v2) — đọc trước phần thân dưới:</strong> Phần thân spec (R2/R3/R4, sơ đồ, D2–D4) mô tả bản <strong>GỐC</strong> có nút chọn mode + nút "Test cụm ngay" + trạng thái <code>GATED_SMALL</code>. Bản finalize đã <strong>gỡ</strong> các mục đó — op39 là chế độ duy nhất:
+<ul>
+<li><strong>R4 / D4 (nút "Test cụm ngay") — ĐÃ GỠ.</strong> <code>ClusterNavLaneWidget.selfTest()</code> + <code>btn_nav_cluster_test</code> (cả 2 layout) đã xoá. Kiểm tra op39 giờ qua dòng trạng thái D3 + logcat.</li>
+<li><strong><code>GATED_SMALL</code> — ĐÃ GỠ</strong> khỏi <code>Op39Status</code>/<code>Decision</code>; <code>decide()</code>/<code>shouldAssert()</code> còn 2 tham số <code>(navActive, castEnabled)</code>. Gate: nav idle → SKIP_IDLE · Cast bật → GATED_CAST · còn lại → ASSERT.</li>
+<li><strong>Nút chọn mode (NavClusterModeButtons) — ĐÃ XOÁ</strong>; <code>Prefs.NAV_MODE_*</code> / <code>navClusterMode</code> / <code>setNavClusterMode</code> gỡ. R2/R3 vẫn đúng cho các case còn lại (bỏ nhánh "gated small").</li>
+<li><strong>D3 trạng thái</strong> giữ nguyên (ASSERTED / GATED_CAST / SHELL_UNREACHABLE / IDLE), chỉ bỏ dòng GATED_SMALL.</li>
+</ul>
+</div>
+</section>
+
+<section id="context">
+<div class="head"><span class="num">01</span><h2>Context</h2></div>
+<p>op39 (<code>service call AutoContainer 2 i32 1000 i32 39 s16 ""</code>, "简易导航 / Simple navigation") là cách bật overlay nav OEM ở <em>giữa</em> cụm (mũi tên + cự ly + tên đường + ETA sống), do <code>ClusterNavLaneWidget</code> phát trong <strong>nav-only mode</strong> (Cast master switch TẮT) khi đang dẫn đường. Nó là track NAV, tách khỏi track Cast.</p>
+<div class="grid2">
+<div class="card"><h3>Triệu chứng on-car (2026-08-12)</h3><p>Cài 1.07, chọn <strong>[Giữa + ETA]</strong>, mở dẫn đường → cụm chỉ hiện nav <strong>nhỏ/ở trên</strong> (kiểu OEM default do broadcast vẽ), KHÔNG lên op39 giữa. Sáng cùng ngày bắn op39 bằng <em>adb laptop</em> thì lên giữa OK.</p></div>
+<div class="card"><h3>Off-car trace — cái ĐÚNG</h3><p>Lệnh op39 trong app <strong>trùng khớp</strong> lệnh proven trong <code>scripts/vehicle/nav-mode-probe.sh</code> (đúng service <code>AutoContainer</code> cho DiLink3.0, đúng cả <code>s16 ""</code>). Vì cụm vẫn hiện nav nhỏ (broadcast tới nơi) ⇒ <code>onNavActive</code> ĐÃ chạy. Nên op39 chết ở gate hoặc ở đường giao — KHÔNG phải sai lệnh.</p></div>
+</div>
+<div class="callout amber"><strong>Ba phát hiện dẫn tới scope:</strong>
+<ul>
+<li><strong>Đường giao khác nhau:</strong> laptop bắn qua adb host (uid-2000 shell, luôn được). App bắn qua <strong>dadb loopback <code>localhost:5555</code></strong> — máy tự nối chính nó; cần adbd đang nghe TCP 5555 + key được authorize. Nếu 5555 rớt (vd sau power-cycle — bước dọn dẹp bắt buộc), loopback fail ⇒ op39 (và cả Cast/WazeHUD) fail âm thầm.</li>
+<li><strong>Bug retry (D1):</strong> <code>onNavActive</code> set <code>active=true</code> + <code>lastAssertAtMs</code> <em>TRƯỚC</em> khi shell chạy. Lần bắn đầu fail vẫn bị coi là "đã assert" ⇒ chặn retry suốt <code>REASSERT_MS</code>=30s, kể cả khi loopback sống lại giữa chừng. Khớp đúng triệu chứng "không bao giờ lên giữa".</li>
+<li><strong>Fail im lặng (D3):</strong> kết quả op39 bọc trong <code>runCatching</code>, chỉ log; khi bị gate Cast thì <em>không log dòng nào</em>. Người dùng không có tín hiệu nào để biết vì sao.</li>
+</ul>
+</div>
+<div class="callout red"><strong>Bất khả thi (đã chốt, KHÔNG làm):</strong> app non-root <strong>không thể tự bật</strong> adb-over-tcp (<code>service.adb.tcp.port</code> cần shell/root — mà shell chính là thứ đang chết → gà-và-trứng). Nếu nguyên nhân là 5555 rớt thì app chỉ <em>phát hiện + báo</em>, việc bật lại 5555 phải làm ngoài (laptop <code>adb tcpip 5555</code>). Xác nhận cuối (case gate vs loopback) vẫn cần logcat trên xe — nhưng sau D1–D4 chỉ tốn <strong>1 lần mở nav</strong>.</p></div>
+</section>
+
+<section id="requirements">
+<div class="head"><span class="num">02</span><h2>Requirements</h2></div>
+<p class="small">User story: <em>Là chủ xe, tôi muốn khi chọn "Giữa + ETA" mà cụm không lên giữa thì app <strong>nói cho tôi biết vì sao</strong> và tự thử lại khi kết nối phục hồi, đồng thời có <strong>nút test một chạm</strong> ngay trên xe — để tôi không phải cắm laptop đọc logcat mới biết chuyện gì xảy ra.</em></p>
+<div class="scroll"><table>
+<thead><tr><th>ID</th><th>Yêu cầu</th><th>Acceptance criteria</th></tr></thead>
+<tbody>
+<tr><td><strong>R1</strong><br><span class="pill">D1</span></td><td>Một lần bắn op39 hụt KHÔNG được chặn retry.</td><td>Khi nav còn active và bắn hụt (shell fail), lần notification kế tiếp sau backoff ngắn phải thử lại; khi loopback phục hồi, op39 tự assert trong thời gian có giới hạn. Bắn <em>thành công</em> vẫn giữ (hold) ~30s trước khi re-assert (giữ hành vi debounce cũ cho success).</td></tr>
+<tr><td><strong>R2</strong><br><span class="pill">D2</span></td><td>Mỗi quyết định op39 phải log rõ, không spam.</td><td>Log đúng <em>một dòng khi trạng thái đổi</em>: gated(cast) / gated(small) / asserted(exit=0) / shell-unreachable(err). Notification lặp cùng trạng thái KHÔNG log lại. Một dòng logcat đủ để phân biệt 3 case trên xe.</td></tr>
+<tr><td><strong>R3</strong><br><span class="pill">D3</span></td><td>Card Nav hiện trạng thái op39 trung thực.</td><td>Khi app mở, dòng trạng thái phản ánh đúng: đang hiện giữa+ETA / Cast đang bật (nhường cụm) / chế độ Nhỏ-ở-trên / không gửi được lệnh (5555?) / chờ dẫn đường. KHÔNG bao giờ im lặng khi fail.</td></tr>
+<tr><td><strong>R4</strong><br><span class="pill">D4</span></td><td>Nút "Test cụm ngay" một chạm, không cần laptop.</td><td>Bấm → bắn op39 tức thì (bỏ qua debounce; vẫn tôn trọng gate Cast) → Toast kết quả: "đã gửi (exit=0)" / "không tới được cụm — 5555?" / "Cast đang bật, tắt để test nav-only". Chạy off-UI-thread, marshal kết quả về UI thread.</td></tr>
+<tr><td><strong>R5</strong></td><td>Giữ ranh giới + an toàn.</td><td>op39 KHÔNG BAO GIỜ bắn khi Cast đang bật (two-track). Không thêm dependency. Không đổi opcode/lệnh. Không commit/push khi chưa security-scan + chưa có authorization. File ≤ 500 LOC.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="design">
+<div class="head"><span class="num">03</span><h2>Design</h2></div>
+
+<h3>Luồng quyết định + giao lệnh op39</h3>
+<div class="diagram">
+<svg viewBox="0 0 960 430" width="100%" role="img" aria-label="op39 decision and delivery flow">
+<defs>
+<marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--muted)"/></marker>
+<style>
+.n{fill:var(--paper2);stroke:var(--line);stroke-width:1.4;rx:12}
+.tn{fill:var(--ink);font:600 13px var(--sans)}.ts{fill:var(--muted);font:11px var(--mono)}
+.gate{fill:var(--blue-soft);stroke:var(--blue)}.ok{fill:var(--green-soft);stroke:var(--green)}
+.bad{fill:var(--red-soft);stroke:var(--red)}.warn{fill:var(--amber-soft);stroke:var(--amber)}
+.e{stroke:var(--muted);stroke-width:1.4;fill:none;marker-end:url(#ar)}
+.el{fill:var(--muted);font:10px var(--mono)}
+</style>
+</defs>
+<rect class="n" x="20" y="180" width="150" height="60"/>
+<text class="tn" x="40" y="205">onNavActive()</text><text class="ts" x="40" y="223">noti ~1/s</text>
+<rect class="n gate" x="210" y="180" width="150" height="60"/>
+<text class="tn" x="228" y="205">decide()</text><text class="ts" x="228" y="223">pure · unit-test</text>
+<rect class="n warn" x="410" y="20" width="180" height="52"/>
+<text class="tn" x="428" y="44">GATED_CAST</text><text class="ts" x="428" y="61">Cast bật → nhường</text>
+<rect class="n warn" x="410" y="90" width="180" height="52"/>
+<text class="tn" x="428" y="114">GATED_SMALL</text><text class="ts" x="428" y="131">chế độ Nhỏ/ở trên</text>
+<rect class="n gate" x="410" y="185" width="180" height="52"/>
+<text class="tn" x="428" y="209">shouldIssueNow()</text><text class="ts" x="428" y="226">hold 30s · retry 4s</text>
+<rect class="n" x="640" y="185" width="150" height="52"/>
+<text class="tn" x="658" y="209">executeShell</text><text class="ts" x="658" y="226">dadb :5555</text>
+<rect class="n ok" x="820" y="120" width="120" height="52"/>
+<text class="tn" x="836" y="144">ASSERTED</text><text class="ts" x="836" y="161">exit=0</text>
+<rect class="n bad" x="820" y="250" width="120" height="52"/>
+<text class="tn" x="834" y="274">SHELL_</text><text class="tn" x="834" y="290">UNREACHABLE</text>
+<rect class="n" x="410" y="300" width="180" height="52"/>
+<text class="tn" x="428" y="324">status + detail</text><text class="ts" x="428" y="341">@Volatile → UI/Toast</text>
+<line class="e" x1="170" y1="210" x2="206" y2="210"/>
+<line class="e" x1="360" y1="196" x2="406" y2="52"/><text class="el" x="366" y="120">cast</text>
+<line class="e" x1="360" y1="202" x2="406" y2="120"/><text class="el" x="366" y="150">!center</text>
+<line class="e" x1="360" y1="212" x2="406" y2="211"/><text class="el" x="366" y="204">ASSERT</text>
+<line class="e" x1="590" y1="211" x2="636" y2="211"/>
+<line class="e" x1="790" y1="200" x2="818" y2="150"/><text class="el" x="792" y="180">ok</text>
+<line class="e" x1="790" y1="222" x2="818" y2="270"/><text class="el" x="792" y="250">fail</text>
+<line class="e" x1="500" y1="142" x2="500" y2="183" stroke-dasharray="3 3"/>
+<line class="e" x1="820" y1="146" x2="590" y2="320" stroke-dasharray="3 3"/>
+<line class="e" x1="820" y1="276" x2="590" y2="330" stroke-dasharray="3 3"/>
+</svg>
+<div class="legend"><span><span class="sw" style="background:var(--blue-soft);border-color:var(--blue)"></span>pure/gate</span><span><span class="sw" style="background:var(--green-soft);border-color:var(--green)"></span>success</span><span><span class="sw" style="background:var(--amber-soft);border-color:var(--amber)"></span>gated (by design)</span><span><span class="sw" style="background:var(--red-soft);border-color:var(--red)"></span>delivery fail</span></div>
+</div>
+
+<h3>D1 · Sửa retry — chỉ tiêu debounce khi thành công</h3>
+<p>Tách quyết định timing thành hàm <strong>thuần</strong> để unit-test không cần Android:</p>
+<pre><code>const val REASSERT_MS = 30_000L          // giữ sau khi assert THÀNH CÔNG
+const val RETRY_AFTER_FAIL_MS = 4_000L   // backoff giữa các lần thử khi CHƯA thành công
+
+/** Thuần: có nên (re)issue op39 lúc now không? Success giữ 30s; sau một lần thử
+ *  bất kỳ, không thử lại nhanh hơn mỗi 4s (tránh spam dadb ở nhịp notification). */
+fun shouldIssueNow(nowMs, lastOkAtMs, lastAttemptAtMs): Boolean {
+    if (lastOkAtMs != 0L && nowMs - lastOkAtMs < REASSERT_MS) return false      // hold sau success
+    if (lastAttemptAtMs != 0L && nowMs - lastAttemptAtMs < RETRY_AFTER_FAIL_MS) return false
+    return true
+}</code></pre>
+<p><code>onNavActive</code> chỉ cập nhật <code>lastOkAtMs</code> khi <code>ShellResult.success</code>; <code>lastAttemptAtMs</code> cập nhật mỗi lần chạy shell. Fail ⇒ <code>lastOkAtMs</code> không đổi ⇒ sau 4s notification kế tiếp thử lại; success ⇒ hold 30s rồi re-assert (giữ hành vi cũ). Chạy trên single-thread executor như hiện tại.</p>
+
+<h3>D2 · Log quyết định (một dòng khi đổi trạng thái)</h3>
+<p>Thêm enum runtime + setter dedupe log:</p>
+<pre><code>enum class Op39Status { IDLE, ASSERTED, GATED_CAST, GATED_SMALL, SHELL_UNREACHABLE }
+@Volatile var status = Op39Status.IDLE; private set
+@Volatile var detail = ""; private set   // "exit=0" | "exit=-1 <err>" | lý do gate
+
+// chỉ log khi status ĐỔI → không spam ở nhịp noti
+gated cast   → Log.i(TAG, "op39 skip: Cast đang bật (nav nhường cụm)")
+gated small  → Log.i(TAG, "op39 skip: chế độ Nhỏ/ở trên (không assert op39)")
+asserted     → Log.i(TAG, "op39 asserted ok (exit=0)")
+unreachable  → Log.w(TAG, "op39 shell KHÔNG tới cụm: exit=-1 <stderr>")</code></pre>
+<p>Kết hợp với log sẵn có của <code>DadbSimpleCastShell</code> (tag <code>SimpleCast</code>: <code>shell:</code> / <code>shell OK</code> / <code>shell FAIL</code>), một lệnh <code>adb logcat ClusterNavWidget:* SimpleCast:*</code> là đủ kết luận trên xe.</p>
+
+<h3>D3 · Trạng thái trên card Nav (thay vì im lặng)</h3>
+<p>Lớp wiring mới <code>NavClusterOp39Status(activity)</code> (giữ <code>MainActivity</code> + <code>NavClusterModeButtons</code> gọn, và <em>bảo toàn hợp đồng "no shell"</em> của <code>NavClusterModeButtons</code>): <code>bind()</code> tìm view + gắn click nút test; <code>refresh()</code> đọc <code>ClusterNavLaneWidget.status/detail</code> → set text. Gọi <code>refresh()</code> từ <code>MainActivity.refresh()</code> (đã chạy mỗi 1s qua <code>refresher</code>). Chuỗi hiển thị qua <code>Lang.t(vi,en)</code>.</p>
+<div class="scroll"><table>
+<thead><tr><th>status</th><th>Text (vi)</th><th>Màu</th></tr></thead>
+<tbody>
+<tr><td>ASSERTED</td><td>Cụm: đang hiện Giữa + ETA</td><td>xanh lá</td></tr>
+<tr><td>GATED_CAST</td><td>Cụm: Cast đang bật — nav nhường cụm</td><td>hổ phách</td></tr>
+<tr><td>GATED_SMALL</td><td>Cụm: chế độ Nhỏ/ở trên (không dùng op39)</td><td>xám</td></tr>
+<tr><td>SHELL_UNREACHABLE</td><td>Cụm: chưa gửi được lệnh (kiểm tra kết nối 5555)</td><td>đỏ</td></tr>
+<tr><td>IDLE</td><td>Cụm: chờ dẫn đường</td><td>xám</td></tr>
+</tbody>
+</table></div>
+
+<h3>D4 · Nút "Test cụm ngay"</h3>
+<pre><code>fun selfTest(ctx, report: (Op39Status, detail:String) -> Unit) {
+    io.execute {
+        if (castEnabled) { report(GATED_CAST, "Cast đang bật — tắt để test nav-only"); return }
+        val r = runCatching { coordinator.executeShell(CMD) }.getOrNull()   // bỏ qua debounce + centerMode
+        if (r?.success == true) report(ASSERTED, "đã gửi op39 (exit=0)")
+        else report(SHELL_UNREACHABLE, r?.let{"exit=${it.exitCode} ${it.stderr}"} ?: "shell không phản hồi")
+    }
+}</code></pre>
+<p>Nút gọi <code>selfTest</code>; callback marshal về UI thread bằng <code>activity.runOnUiThread { Toast … }</code> + cập nhật luôn dòng trạng thái D3. <strong>Tôn trọng gate Cast</strong> (không đánh nhau với track Cast) nhưng <strong>bỏ qua</strong> yêu cầu nav-active/centerMode/debounce vì đây là hành động test tường minh của người dùng. Overlay chỉ có nội dung khi có nav sống — Toast nói rõ nó xác nhận <em>đường giao</em>, không phải hình.</p>
+
+<div class="callout blue"><strong>Boundary shapes (đọc cả 2 đầu):</strong>
+<ul>
+<li><code>ClusterNavLaneWidget.status/detail</code> (producer, <code>@Volatile</code>) ↔ <code>NavClusterOp39Status.refresh()</code> (consumer): enum + String, đọc thuần, không nullable.</li>
+<li><code>selfTest</code> callback <code>(Op39Status, String)</code> ↔ <code>MainActivity</code> lambda → <code>runOnUiThread</code>: gọi off-main, phải marshal.</li>
+<li><code>coordinator.executeShell(cmd): ShellResult</code> (core) — <code>success = exitCode==0</code>; dadb fail → <code>exitCode=-1</code>, <code>stderr=</code>msg (không throw). Consumer chỉ đọc <code>success/exitCode/stderr</code>.</li>
+<li>Layout ids mới (<code>txt_cluster_op39_status</code>, <code>btn_nav_cluster_test</code>) phải có ở <strong>cả</strong> <code>layout/</code> và <code>layout-w960dp/</code> để <code>findViewById</code> không null trên cả 2 cấu hình.</li>
+</ul>
+</div>
+</section>
+
+<section id="tasks">
+<div class="head"><span class="num">04</span><h2>Tasks</h2></div>
+<div class="phase"><div><div class="phase-id">D1+D2</div><span class="pill green">code+test</span></div><div>
+<h4>ClusterNavLaneWidget.kt — retry fix + decision log + status</h4>
+<ul class="check">
+<li>Thêm <code>decide()→Decision</code>, giữ <code>shouldAssert</code> (= decide==ASSERT) cho back-compat.</li>
+<li>Thêm <code>shouldIssueNow()</code> thuần + hằng <code>RETRY_AFTER_FAIL_MS</code>.</li>
+<li>Viết lại <code>onNavActive</code>: gate → shouldIssueNow → shell → chỉ set <code>lastOkAtMs</code> khi success.</li>
+<li>Thêm <code>Op39Status</code> + <code>status/detail</code> (@Volatile, exposed) + setter dedupe-log.</li>
+<li><code>onNavIdle</code> reset status=IDLE, timers=0.</li>
+</ul></div></div>
+<div class="phase"><div><div class="phase-id">D4</div><span class="pill green">code</span></div><div>
+<h4>ClusterNavLaneWidget.selfTest(ctx, cb) — one-shot delivery test</h4>
+<ul class="check"><li>Tôn trọng gate Cast; bỏ qua debounce/centerMode; report qua callback (off-main).</li></ul></div></div>
+<div class="phase"><div><div class="phase-id">D3+D4</div><span class="pill green">ui+wiring</span></div><div>
+<h4>NavClusterOp39Status.kt (mới) + activity_main.xml ×2 + MainActivity (3 dòng)</h4>
+<ul class="check">
+<li>Thêm <code>txt_cluster_op39_status</code> + <code>btn_nav_cluster_test</code> ("Test cụm ngay") vào cả 2 layout, ngay sau cụm nút chọn mode.</li>
+<li><code>NavClusterOp39Status</code>: <code>bind()</code> (view + click→selfTest→Toast) + <code>refresh()</code> (đọc status→text).</li>
+<li>MainActivity: field + <code>.bind()</code> trong onCreate + <code>.refresh()</code> trong refresh().</li>
+</ul></div></div>
+<div class="phase"><div><div class="phase-id">TEST</div><span class="pill green">jvm</span></div><div>
+<h4>ClusterNavLaneWidgetTest.kt — mở rộng</h4>
+<ul class="check">
+<li>Giữ 5 test cũ (shouldAssert/opcode).</li>
+<li><code>decide()</code>: ASSERT / GATED_CAST / GATED_SMALL / SKIP_IDLE.</li>
+<li><code>shouldIssueNow()</code>: hold sau success (&lt;30s=false, ≥30s=true); retry sau fail (&lt;4s=false, ≥4s=true); trạng thái ban đầu (0,0)=true.</li>
+</ul></div></div>
+</section>
+
+<section id="verification">
+<div class="head"><span class="num">05</span><h2>Verification</h2></div>
+<div class="grid2">
+<div class="card"><h3>Off-car (bắt buộc, agent chạy)</h3>
+<ul class="check">
+<li><code>./gradlew :core:test :app:testDebugUnitTest</code> — xanh, gồm test D1/D2 mới.</li>
+<li><code>./gradlew :app:assembleDebug</code> (và release) — build sạch.</li>
+<li>Grep xác nhận id layout mới có ở cả <code>layout/</code> + <code>layout-w960dp/</code>.</li>
+<li>Senior review sub-agent: 0 P0–P1 còn lại, scope 100%, boundary shapes khớp.</li>
+</ul></div>
+<div class="card"><h3>On-car (1 pass, sau khi có build)</h3>
+<ul class="check">
+<li>Cài bản mới. Card Nav: bấm <strong>"Test cụm ngay"</strong> → đọc Toast.</li>
+<li>Toast "đã gửi (exit=0)" nhưng cụm vẫn nhỏ → op39 tới nơi, soi hình OEM.</li>
+<li>Toast "không tới được cụm (5555?)" → loopback rớt → <code>adb tcpip 5555</code>.</li>
+<li>Toast "Cast đang bật…" → tắt Cast, thử lại.</li>
+<li>Mở dẫn đường thật → dòng trạng thái card Nav phản ánh đúng; nếu loopback phục hồi, op39 tự lên giữa (D1).</li>
+</ul></div>
+</div>
+</section>
+
+<section id="questions">
+<div class="head"><span class="num">06</span><h2>Open Questions</h2></div>
+<ul>
+<li><strong>Q1 (on-car):</strong> Khi <code>SHELL_UNREACHABLE</code>, gốc là 5555 chưa mở hay key chưa authorize? Phân biệt bằng <code>stderr</code> trong Toast/log + <code>getprop service.adb.tcp.port</code>. Không chặn D1–D4.</li>
+<li><strong>Q2 (deferred):</strong> Opcode cho "Màn hình nhỏ" thật (revert op39) vẫn chưa dò được — thuộc probe B6 (<code>nav-mode-probe.sh</code>), ngoài scope spec này.</li>
+<li><strong>Q3:</strong> Có nên persist <code>lastOkAtMs</code> qua process-restart không? Không — op39 là runtime; restart nên re-assert. Giữ in-memory.</li>
+</ul>
+</section>
+
+<section id="references">
+<div class="head"><span class="num">07</span><h2>References</h2></div>
+<ul>
+<li><code>app/src/main/java/com/byd/clusternav/modules/clustercast/ClusterNavLaneWidget.kt</code> — op39 emitter (D1/D2/D4).</li>
+<li><code>app/src/main/java/com/byd/clusternav/NavNotificationListener.kt</code> — hook onNavActive/onNavIdle (160/271 · 226/250).</li>
+<li><code>app/src/main/java/com/byd/clusternav/modules/clustercast/NavClusterModeButtons.kt</code> — mẫu wiring "no shell".</li>
+<li><code>core/.../simplified/SimpleCastCoordinator.kt:529</code> + <code>SimpleCastModels.kt:262</code> — executeShell + ShellResult.success.</li>
+<li><code>app/src/main/res/layout/activity_main.xml</code> + <code>layout-w960dp/activity_main.xml</code> — card Nav (D3/D4).</li>
+<li><code>scripts/vehicle/nav-mode-probe.sh</code> — lệnh op39 proven (đối chiếu).</li>
+<li><code>docs/diagnostics/oncar-handoff-2026-08-12.md</code> — handoff §A1 + §6.</li>
+</ul>
+</section>
+
+<section id="reviewers">
+<div class="head"><span class="num">08</span><h2>Reviewer Log</h2></div>
+<p class="small">Append-only. Mỗi pass thêm một mục, không ghi đè lịch sử.</p>
+<div class="review"><h3>Pass 0 — 2026-08-12 · author</h3><p class="small">Spec khởi tạo từ on-car report + off-car trace. Chờ senior review sub-agent sau khi implement + test xanh.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-12 · senior review (v2 finalize: op39-only + point 1B)</h3>
+<p class="small"><strong>Verdict: APPROVED</strong> — 0 P0–P3 findings; scope 100%; mọi boundary khớp shape; test xanh (fresh, no-cache).</p>
+<p class="small"><strong>Scope:</strong> ✅ POINT 2 op39-only — <code>NavClusterModeButtons.kt</code> đã xoá; <code>GATED_SMALL</code>/<code>navClusterMode</code>/<code>NAV_MODE_*</code>/<code>selfTest</code>/<code>centerMode</code> + id nút bị gỡ KHÔNG còn dấu vết trong app main+test source (raw pref key <code>"nav_cluster_mode"</code>/<code>"center_eta"</code>/<code>"small_top"</code> cũng sạch); dòng trạng thái <code>txt_cluster_op39_status</code> giữ ở CẢ 2 layout, bound trong onCreate + refresh mỗi 1s. ✅ POINT 1B — <code>Prefs.interpolate</code> default <code>true</code> + <code>accBooster</code> default <code>true</code>; <code>MainActivity.onCreate</code> ép ghi cả hai <code>true</code>; không nơi nào ghi <code>false</code>; <code>ClusterBroadcaster</code> đọc <code>Prefs.interpolate</code> ở CẢ hai path (emitLane anchor + heartbeat project).</p>
+<p class="small"><strong>Boundary shape (đọc 2 đầu):</strong> layout ids ↔ findViewById (không null cho id đã gỡ) · <code>decide/shouldAssert</code> 2-arg ↔ mọi caller (NavNotificationListener + test) · Prefs removed symbols ↔ 0 reference còn lại · <code>Op39Status</code>{IDLE,ASSERTED,GATED_CAST,SHELL_UNREACHABLE} ↔ <code>refresh()</code> when() exhaustive (4 nhánh) · <code>Lang.t(vi,en)</code> khớp · trace 1B E2E: noti → <code>emitLane</code> anchor(seg,SpeedProvider.mps) → 400ms heartbeat → <code>project(speed)</code> → <code>SEG_REMAIN_DIS</code>.</p>
+<p class="small"><strong>Tech freshness:</strong> không thêm dep; các sửa của 2 điểm chỉ dùng API hiện hành (SharedPreferences, Executors, @Volatile, findViewById/getColor/Log) — 0 deprecated API mới. Cảnh báo deprecation duy nhất khi build đều nằm ở file NGOÀI scope (ClusterBlackActivity, MainActivityCastController, NavAccessibilityService) — tồn tại từ trước.</p>
+<p class="small"><strong>Tests:</strong> fresh <code>--no-build-cache --rerun-tasks</code> — app <strong>365</strong> tests / 0 fail (50 suites), core <strong>742</strong> tests / 0 fail (89 suites); in-scope <code>ClusterNavLaneWidgetTest</code> 12/0, <code>NavCastUiWiringContractTest</code> 11/0. Không cần patch.</p>
+<p class="small"><strong>Ngoài scope (report-only, không review):</strong> cùng working tree còn thay đổi thuộc spec <code>cast-resize-dpi-bubble-fixes.html</code> (UpdateChecker relaunch + <code>UpdateRelaunch.kt</code>, Bubble slot-toggle, DPI/density 240, cast adopt-branch restore) — compile + test đều xanh nhưng KHÔNG nằm trong review này. Chưa commit; security-scan + owner authorization vẫn bắt buộc trước khi commit/push.</p></div>
+<div class="review"><h3>Pass 2 — 2026-08-13 · on-car correction (v3 / 1.12)</h3>
+<p class="small"><strong>Phát hiện on-car (&lt;vehicle-ip&gt;, 1.11):</strong> op39 ch1000 <strong>KHÔNG có tác dụng</strong> hình ảnh (fire + exit=0 + status ASSERTED, nhưng center vẫn màn "Điện năng"; op34 cũng no-op; op6/op7 đổi được day/night ⇒ kênh ch1000 sống). Cả manual op39 từ laptop lẫn cài lại app đều không lên "Giữa+ETA" ⇒ KHÔNG phải regression app, mà op39 không đè được center-view. RE <code>com.example.amapservice.AmapService</code> + <code>navopen</code> on-device cho thấy lever thật = HAL <code>SET_NAVI_SCREEN_STATUS_SET</code> (<code>0x4C10E015</code>, SettingDevice) + <code>INSTRUMENT_SEND_NAVI_STATUS_SET</code> (<code>0x43E0003A</code>) + <code>INSTRUMENT_GUIDE_INFO_SIMPLE_SET</code> (<code>0x43F01010</code>); ghi 0x4C10E015 mở khoá menu OEM "Đơn giản/Nhỏ/Toàn/OFF" (owner xác nhận trên xe).</p>
+<p class="small"><strong>Fix 1.12:</strong> App có sẵn <code>BydHal.writeNavFrame</code> (đúng chuỗi HAL) nhưng bị T7 fail-closed để mồ côi (<code>NavigationHudOwner</code> không được khởi tạo; <code>HudMirrorController</code> no-op). Đã wire <code>NavigationHudOwner</code> vào <code>NavRepository</code> lane-delivery (gated Cast-OFF two-track), tham số hoá <code>screenMode</code> = <code>Prefs.navClusterScreenMode</code> (đọc live), thêm selector chế độ cụm in-app (spinner_cluster_mode, cả 2 layout). Sửa <code>NavigationHudOwner.stop()</code> để clear đúng qua <code>clearNavFrame</code>. Cập nhật <code>PhysicalHudOwnershipTest</code> (giữ single-owner boundary, đổi intent "unreachable" → "wired via NavRepository two-track"). Re-seal T11 hash cho <code>layout/activity_main.xml</code>.</p>
+<p class="small"><strong>Còn phải verify ON-CAR (chưa làm off-car được):</strong> (a) value <code>0x4C10E015</code> nào = "Đơn giản" (selector cho phép dò 0/1/2/3); (b) app-uid ghi HAL in-process có render không (navopen proven từ uid shell; nếu fail → fallback navopen qua dadb loopback); (c) mã icon mũi tên (AMAP vs CAN). Verdict: <strong>OFF-CAR VERIFIED</strong> (compile + full JVM suite xanh, aapt2 versionCode 112, no test surface) · <strong>ON-CAR PENDING</strong> (3 điểm trên).</p></div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

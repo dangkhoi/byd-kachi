@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav 1.19 — Voice-key UX rework (bỏ gesture · học phím ngoài · đích = list app)</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--err:#b3261e;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--err-bg:#fce8e6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;
+    --accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--err:#ff453a;--ok-bg:#0e2a16;--warn-bg:#332b00;--err-bg:#3a0f0c;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 120px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:31px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--warn-bg);color:var(--warn)}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  h3{font-size:17px;margin:26px 0 6px;font-weight:650}
+  p{margin:10px 0}a{color:var(--accent);text-decoration:none}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg)}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg)}.callout.warn .lbl{color:var(--warn)}
+  .callout.accent{background:var(--accent-bg)}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:110px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.good{border-color:var(--ok);background:var(--ok-bg)}.fnode.key{border-color:var(--accent);background:var(--accent-bg)}
+  .arrow{color:var(--ink2);font-size:18px}.small{font-size:13px;color:var(--ink2)}
+  .toc{columns:2;font-size:14px;gap:24px}@media(max-width:600px){.toc{columns:1}}
+  .toc a{display:block;padding:3px 0;color:var(--ink)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;background:var(--accent-bg);color:var(--accent);margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">ClusterNav · Consolidated Spec</p>
+<h1>Voice-key UX rework — bỏ gesture · học phím ngoài · đích = list toàn bộ app</h1>
+<div class="meta">
+  <span><b>Target:</b> 1.19 (versionCode 119)</span>
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-14</span>
+  <span><b>Slug:</b> voicekey-rework-1.19</span>
+</div>
+<div class="meta"><span class="pill">STATUS: 1.19 đã ship. F3 (2026-08-24) — danh sách gán nhiều phím → nhiều app: code + test xong, CHƯA chạy trên xe.</span></div>
+<div class="callout accent" style="margin-top:16px"><div class="lbl">Vì sao</div>
+Tính năng "Nút vật lý → Trợ lý" (1.13→1.18) khó dùng: (a) ô Cử chỉ Nhấn/Nhấn-giữ vô nghĩa vì nút này short/long ra <b>keycode khác hẳn</b>; (b) "Học phím" nhét trong dropdown gây rối; (c) đích là enum trợ lý cứng + đoán intent ASSIST → chọn Kiki nhưng <b>mở nhầm Gemini</b> (test on-car 1.18). Owner chốt: bỏ gesture, học phím thành nút ngoài + đặt tên, đích = <b>liệt kê toàn bộ app</b> chọn tự do.</div>
+
+<div class="card"><b>Contents</b>
+  <nav class="toc" style="margin-top:8px">
+    <a href="#changelog">1 · Changelog</a><a href="#context">2 · Context</a><a href="#req">3 · Requirements</a>
+    <a href="#design">4 · Design</a><a href="#tasks">5 · Tasks</a><a href="#verify">6 · Verification</a>
+    <a href="#open">7 · Open Questions</a><a href="#ref">8 · References</a><a href="#rev">9 · Reviewer Log</a>
+  </nav>
+</div>
+
+<h2 id="changelog"><span class="n">1</span>Changelog</h2>
+<table><thead><tr><th>Rev</th><th>Date</th><th>Change</th></tr></thead><tbody>
+<tr><td>v3</td><td>2026-08-24</td><td><b>F3 vòng phản biện — [P0] app không mở được trên xe.</b> Ba view id của F3 chỉ có ở <code>layout/</code>, thiếu ở <code>layout-w960dp/</code> (bản mà đầu xe 1920×1080@240 = 1280dp thật sự render) ⇒ <code>findViewById</code> null → NPE trong <code>onCreate</code>. Đã bê khối F3 sang bản w960dp; khoá bất biến bằng test mới <code>LayoutVariantIdParityTest</code>; đường migrate nay chạy thật trong <code>VoiceKeyBindingMigrationTest</code>. Chi tiết ở §Nhật ký triển khai cuối trang.</td></tr>
+<tr><td>v2</td><td>2026-08-24</td><td><b>F3 — một cặp → DANH SÁCH gán.</b> Owner: <em>"binding nhiều nút vào nhiều app… chọn nút + chọn app xong → add, thì ra 1 dòng đã binding nút và app… listen theo cái danh sách đã save"</em>. §4.4 (persist một cặp) bị THAY bằng khoá <code>voicekey_bindings</code> + migrate không mất cấu hình; §4.1 matcher đổi từ so-một-mã sang tra-danh-sách (máy trạng thái chống-lặp giữ nguyên). Chi tiết ở §Nhật ký triển khai cuối trang.</td></tr>
+<tr><td>v1</td><td>2026-08-14</td><td>Chốt qua chat với owner: bỏ gesture + mốc 500ms; học phím = nút ngoài + đặt tên "{tên} (mã {code})" + thêm vào dropdown + xoá; đích = list toàn bộ app (reuse <code>ClusterCast.listInstalledApps</code>) + ghim 2 mục đặc biệt trên đầu; launch bằng launch-intent. Nhắm fix luôn bug Kiki→Gemini nếu phím tới được app.</td></tr>
+</tbody></table>
+
+<h2 id="context"><span class="n">2</span>Context</h2>
+<p>Xe BYD Seal DiLink 3.0 · Android 10 (API 29). Nút mic vô-lăng: <b>nhấn ngắn</b> → mã mở 小迪 (hệ thống); <b>nhấn giữ</b> → keycode 328 (ứng viên map). Test 1.18: chọn đích Kiki, gesture Nhấn → <b>vẫn mở Gemini</b>. Bằng chứng code: app map ĐÚNG (Kiki→nhánh KIKI, không chứa Gemini) → Gemini là do phím <b>không được app nuốt</b> → hệ thống mở trợ lý mặc định. Còn 3 nghi phạm (#1 hệ thống nuốt phím trước accessibility · #2 mã thực ≠ 328 · #3 giữ &gt;500ms nên PRESS từ chối). Rework này bỏ #3 (mốc 500ms) và luồng học-phím mới sẽ lộ #1/#2.</p>
+
+<h2 id="req"><span class="n">3</span>Requirements</h2>
+<ul>
+  <li><b>R1</b> — Bỏ ô <b>Cử chỉ</b> (Nhấn/Nhấn-giữ). Matcher: bắn 1 lần khi đúng keycode cấu hình, <b>nuốt</b> đúng keycode đó (không đụng phím khác).</li>
+  <li><b>R2</b> — <b>Học phím</b> = nút riêng NGOÀI dropdown. Bấm → chờ → bấm phím vật lý → hiện ô <b>đặt tên</b> (điền sẵn) → lưu nhãn <b>"{tên} (mã {code})"</b> → thêm vào dropdown nút + tự chọn.</li>
+  <li><b>R3</b> — Dropdown nút = <b>preset giữ nguyên</b> + các nút custom đã học; <b>xoá</b> được custom.</li>
+  <li><b>R4</b> — Đích = <b>liệt kê toàn bộ app có launcher</b> (reuse <code>ClusterCast.listInstalledApps</code>), sort theo tên; <b>ghim 2 mục đặc biệt</b> trên đầu: "Trợ lý mặc định hệ thống" + "Nhận dạng giọng nói". Chọn app nào → mở app đó bằng launch-intent.</li>
+  <li><b>R5</b> — Persist: danh sách nút custom (tên+keycode) + đích đã chọn (<b>lưu package/sentinel</b>, không lưu ordinal). Migrate cấu hình cũ.</li>
+  <li><b>R6</b> — Build xanh (JVM suite + signed <code>assembleRelease</code>, không surface <code>vehicleTest</code>, versionCode 119).</li>
+</ul>
+
+<h2 id="design"><span class="n">4</span>Design</h2>
+
+<h3>4.1 Matcher (:core) — bỏ gesture <span class="tag">R1</span></h3>
+<p><code>VoiceKeyMatcher</code>: xoá <code>enum VoiceKeyGesture</code>, nhánh PRESS/HOLD, hằng <code>DEFAULT_LONG_PRESS_MS</code>. Logic mới: nếu <code>keyCode == cfg.keyCode</code> → <b>consume=true</b> ở DOWN/UP/OTHER; <b>fire=true đúng 1 lần</b> mỗi lần nhấn (khoá theo <code>downTime</code>, bắn trên UP; nếu chỉ có DOWN thì bắn trên DOWN). Không phụ thuộc thời gian giữ → hết nghi phạm #3. <code>VoiceKeyConfig</code> bỏ field <code>gesture</code>. Cập nhật <code>VoiceKeyMatcherTest</code>.</p>
+
+<h3>4.2 Đích = package (bỏ enum trợ lý) <span class="tag">R4</span></h3>
+<p>Bỏ <code>enum VoiceKeyTarget</code> khỏi luồng chính. Đích lưu dạng <b>String</b>: hoặc <code>package name</code>, hoặc 1 trong 2 <b>sentinel</b> ghim đầu (<code>__ASSIST__</code>, <code>__RECOGNIZER__</code>). <code>AssistantLauncher</code> → <code>AppLauncher.launch(ctx, spec)</code>:</p>
+<pre><code>when (spec) {
+  "__ASSIST__"     -> ACTION_ASSIST / VOICE_COMMAND (trợ lý mặc định hệ thống)
+  "__RECOGNIZER__" -> RecognizerIntent.ACTION_VOICE_SEARCH_HANDS_FREE / WEB_SEARCH
+  else /* package */ -> pm.getLaunchIntentForPackage(spec)  // mở THẲNG app, +FLAG_ACTIVITY_NEW_TASK
+                        ?: Intent(ACTION_MAIN).addCategory(LAUNCHER).setPackage(spec)
+}</code></pre>
+<p>Chọn app trực tiếp = <b>không còn đoán intent ASSIST</b> → không lạc Gemini. (Kiki = chọn app <code>ai.zalo.kiki.car</code> → <code>getLaunchIntentForPackage</code> → CarMainActivity.)</p>
+
+<h3>4.3 Luồng Học phím (nút ngoài → service bắt → activity đặt tên) <span class="tag">R2</span></h3>
+<div class="diagram"><div class="flow">
+  <div class="fnode"><div class="h">MainActivity</div><div class="s">nút "Học phím mới" → set learn + toast "bấm nút…"</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode key"><div class="h">NavAccessibilityService.onKeyEvent</div><div class="s">learn mode: lưu pending code + broadcast báo Activity (KHÔNG set thẳng như cũ)</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode"><div class="h">MainActivity (đang mở màn)</div><div class="s">nhận broadcast → dialog đặt tên (điền sẵn) → lưu custom {tên,code}</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode good"><div class="h">Dropdown nút</div><div class="s">rebuild = preset + custom → chọn mục vừa học</div></div>
+</div></div>
+<p class="small">⚠️ Bắt phím xảy ra ở service → <b>phải đang mở màn ClusterNav</b> khi học (không học nền). Signal service→activity qua <code>LocalBroadcast</code>/action riêng; Activity đăng ký receiver lúc foreground.</p>
+
+<h3>4.4 Persistence + migrate <span class="tag">R5</span></h3>
+<table><thead><tr><th>Key</th><th>Cũ</th><th>Mới</th></tr></thead><tbody>
+<tr><td><code>voicekey_gesture</code></td><td>int 0/1</td><td><b>xoá</b></td></tr>
+<tr><td><code>voicekey_target</code></td><td>int ordinal (0=Kiki…3=Gemini)</td><td><b>String</b> package/sentinel. Migrate: 0→<code>ai.zalo.kiki.car</code>, 1→<code>com.byd.autovoice</code>, 2→<code>__RECOGNIZER__</code>, 3→<code>__ASSIST__</code></td></tr>
+<tr><td><code>voicekey_custom_buttons</code> (mới)</td><td>—</td><td>JSON/delimited list <code>[{name,keycode}]</code></td></tr>
+<tr><td><code>voicekey_keycode</code>, <code>_enabled</code>, <code>_learn</code></td><td colspan="2">giữ nguyên</td></tr>
+</tbody></table>
+
+<h3>4.5 Reuse + Layout <span class="tag">R3/R4</span></h3>
+<ul>
+  <li>Đích dropdown = <code>[__ASSIST__, __RECOGNIZER__] + ClusterCast.listInstalledApps(ctx)</code> (label+pkg, đã sort/distinct). KHÔNG viết hàm mới.</li>
+  <li>Layout <code>res/layout*/activity_main.xml</code> (mọi biến thể): thêm <code>Button</code> "Học phím mới" cạnh spinner nút; <b>bỏ</b> <code>spinner_gesture</code>; giữ <code>spinner_button</code> + <code>spinner_target</code>.</li>
+</ul>
+
+<h2 id="tasks"><span class="n">5</span>Tasks</h2>
+<table><thead><tr><th>#</th><th>File</th><th>Test/Gate</th></tr></thead><tbody>
+<tr><td>T2</td><td><code>core/…/voicekey/VoiceKeyMatcher.kt</code> (+Test)</td><td><code>VoiceKeyMatcherTest</code></td></tr>
+<tr><td>T3</td><td><code>app/…/modules/voicekey/AssistantLauncher.kt</code> → AppLauncher</td><td>build</td></tr>
+<tr><td>T4</td><td><code>app/…/Prefs.kt</code> (target String + custom list + migrate)</td><td>unit nếu có</td></tr>
+<tr><td>T5</td><td><code>app/…/modules/navaccess/NavAccessibilityService.kt</code> · <code>MainActivity.kt</code></td><td>build + on-car</td></tr>
+<tr><td>T6</td><td><code>res/layout*/activity_main.xml</code></td><td>build</td></tr>
+<tr><td>T7</td><td><code>app/build.gradle.kts</code> 119/1.19 · senior review · security scan</td><td>aapt2 · review · scan</td></tr>
+</tbody></table>
+
+<h2 id="verify"><span class="n">6</span>Verification</h2>
+<ul>
+  <li><b>Off-car:</b> <code>./gradlew :core:test :app:testDebugUnitTest :app:assembleRelease</code> xanh; <code>aapt2</code> vc119, không <code>TEST_*</code>.</li>
+  <li><b>On-car:</b> Học phím mới → giữ mic → <b>có ô đặt tên + mã hiện?</b> (đồng thời trả lời bug: mã=328? app có bắt được?). Chọn app Kiki từ list → bấm nút → <b>mở Kiki, không Gemini</b>. Xoá custom hoạt động.</li>
+</ul>
+
+<h2 id="open"><span class="n">7</span>Open Questions</h2>
+<ul>
+  <li><b>Q1 (bug gốc):</b> nếu Học phím KHÔNG hiện gì khi giữ mic → nghi phạm #1 (hệ thống nuốt phím trước accessibility) → app-capture bó tay; đổi hướng set trợ lý mặc định = Kiki (nếu Kiki đăng ký assist). Rework vẫn đáng làm cho các nút khác.</li>
+  <li><b>Q2:</b> matcher bắn trên UP hay DOWN cho nút-xung? → chọn UP, fallback DOWN nếu không có UP cùng downTime (xác nhận bằng log học-phím).</li>
+  <li><b>Q3:</b> Android 10 list app không vướng package-visibility; vẫn thêm <code>&lt;queries&gt;</code> MAIN/LAUNCHER cho chắc (targetSdk 37).</li>
+</ul>
+
+<h2 id="ref"><span class="n">8</span>References</h2>
+<ul class="small">
+  <li>Reuse: <code>app/…/modules/clustercast/ClusterCast.kt:309</code> <code>listInstalledApps(ctx):List&lt;AppInfo(label,pkg,icon)&gt;</code> · <code>labelOf</code>.</li>
+  <li>Sửa: <code>core/…/voicekey/VoiceKeyMatcher.kt</code> · <code>app/…/modules/voicekey/AssistantLauncher.kt</code> · <code>app/…/modules/navaccess/NavAccessibilityService.kt</code> · <code>Prefs.kt</code> · <code>MainActivity.kt</code> · <code>res/layout*/activity_main.xml</code>.</li>
+  <li>Bug 1.18 (Kiki→Gemini) điều tra: chat 2026-08-14 (mapping app-side đúng; Gemini = hệ thống mở khi phím không nuốt).</li>
+  <li>Spec 1.13 gốc voice-key: <code>docs/specs/notif-grant-docs-voicekey-1.13.html</code>.</li>
+</ul>
+
+<h2 id="rev"><span class="n">9</span>Reviewer Log</h2>
+<h3>Pass 1 — 2026-08-14</h3>
+<p class="small">Senior review (sub-agent) = <b>APPROVED</b>, 0 P0/P1. Scope R1–R6 ✅; boundary shapes (a–e) khớp. Patch: [P2] rò rỉ Activity — <code>onDestroy</code> clear <code>VoiceKeyLearnBus.setListener(null)</code>; [P3] hợp nhất sentinel (<code>AssistantLauncher.TARGET_* = Prefs.VK_TARGET_*</code>); [P3] bỏ chữ "+ cử chỉ" cũ trong 2 layout. Build lại xanh (VoiceKeyMatcherTest 6/6, assembleRelease vc119, no TEST_* surface). Chưa commit — chờ on-car + security scan.</p>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+
+<h3>2026-08-24 — F3: một cặp → DANH SÁCH gán (nhiều phím → nhiều app)</h3>
+<p>Owner yêu cầu (nguyên văn): <em>"có thể binding nhiều nút vào nhiều app được không? … nên có giao diện kiểu sau khi chọn nút + chọn app xong → add, thì ra 1 dòng đã binding nút và app, xong có thể chọn thêm add thêm, mình listen thì listen theo cái danh sách đã save đó thôi"</em>. Đây là <b>thay thế</b> mô hình một-cặp mô tả ở §4.4 của spec này.</p>
+<ul>
+  <li><b>Lưu trữ</b> — thêm khoá <code>voicekey_bindings</code> = JSON <code>[{"k":mã,"t":đích}]</code> (<code>VoiceKeyBindingStore</code>, <code>:app</code>, vì <code>org.json</code> là API Android — nhận thẳng <code>SharedPreferences</code> nên đúng tầng lưu trữ). Hai khoá cũ <code>voicekey_keycode</code>/<code>voicekey_target</code> <b>giữ nguyên đường ĐỌC</b> chỉ để migrate; hai setter <code>setVoiceKeyCode</code>/<code>setVoiceKeyTargetSpec</code> bị bỏ để không còn hai nguồn chân lý.</li>
+  <li><b>Migrate</b> (<code>VoiceKeyBindings.migrateLegacy</code>, <code>:core</code>) — điều kiện dựng dòng gán đầu tiên là <b>dấu vết thật</b> trong file prefs (<code>SharedPreferences.contains</code>) <i>hoặc</i> cờ <code>voicekey_enabled</code>, KHÔNG phải giá trị đọc được: cả hai khoá cũ đều có mặc định (328 → Kiki) nên máy vừa cài cũng "đọc ra một cặp". Ca dễ mất nhất — owner bật công tắc rồi xài thẳng cặp mặc định, file prefs không có khoá nào — chính là vế <code>enabled</code>. Kết quả được <b>ghi xuống ngay</b> (kể cả khi rỗng → <code>"[]"</code>) để migrate không chạy lại làm dòng owner vừa xoá sống dậy.</li>
+  <li><b>Khớp phím</b> — <code>VoiceKeyConfig</code> đổi từ <code>keyCode: Int</code> sang <code>bindings: List&lt;VoiceKeyBinding&gt;</code>; <code>VoiceKeyDecision</code> thêm <code>targetSpec</code> với bất biến <b><code>fire</code> ⟺ <code>targetSpec != null</code></b> (tầng app không tra prefs lần hai). Máy trạng thái chống-bắn-lặp của 1.19 <b>giữ nguyên</b> (CLAUDE.md §6), chỉ đổi ổ khoá từ <code>downTime</code> đơn lẻ sang <b>(mã phím, downTime)</b> — hai phím đã gán bấm trùng mốc ms mà dùng chung một ô thì phím thứ hai mất lần bắn.</li>
+  <li><b>Ràng buộc</b> — một mã phím chỉ gán một app. Cưỡng chế ở <b>hai đầu</b>: <code>put()</code> lúc ghi (ghi đè, giữ nguyên vị trí dòng, trả đích cũ cho UI báo) và <code>sanitize()</code> lúc đọc (file prefs có thể hỏng/sửa tay). Không có nó thì <code>targetFor</code> không tất định.</li>
+  <li><b>UI</b> — <code>activity_main.xml</code>: thêm <code>btn_voicekey_add</code>, <code>list_voicekey_bindings</code>, <code>txt_voicekey_empty</code>; mỗi dòng đã gán là layout mới <code>row_voicekey_binding.xml</code> (nhãn + nút Xoá). Chọn trong dropdown <b>không còn ghi cấu hình</b> — chỉ Thêm/Xoá mới đổi. Hệ quả: công thức "đặt trợ lý hệ thống = Google/Gemini" (<code>isGeminiVoiceSpec</code>) dời từ listener dropdown sang nút Thêm, tức chỉ chạy khi owner thật sự gán, thay vì mỗi lần lướt qua mục đó.</li>
+  <li><b>Seal</b> — <code>activity_main.xml</code> nằm trong <code>T11_PATHS</code> của <code>ExpansionTransportFenceTest</code>; hằng <code>T11_HASHES</code> đã cập nhật <code>fddc1ef5…</code> → <code>25fa8836…</code> kèm KDoc ghi lý do + trích yêu cầu owner. Đã <b>chứng minh seal còn sống</b>: đổi 1 byte trong layout ⇒ test đó ĐỎ.</li>
+  <li><b>Phép thử làm-đỏ bắt được một test mù</b> — bản đầu của <code>VoiceKeyBindingListTest</code> kiểm layout bằng <code>contains("btn_voicekey_add")</code>; đổi tên id thành <code>btn_voicekey_addnew</code> đồng bộ cả layout lẫn code thì test VẪN XANH (tên cũ là tiền tố tên mới). Đã sửa sang khớp <code>@+id/&lt;tên&gt;"</code> và xác nhận ĐỎ.</li>
+</ul>
+<h3>2026-08-24 — F3 vòng phản biện: nghiệm thu KHÔNG ĐẠT, [P0] app không mở được trên xe</h3>
+<p>Bản F3 ở trên qua 2058 test không lỗi <b>trong khi cây đang chứa một lỗi làm app chết ngay lúc mở trên xe</b>. Đó là bằng chứng đủ để bác câu "test đi đúng đường người dùng đi" của bản đầu.</p>
+<ul>
+  <li><b>[P0] Ba view id của F3 chỉ có ở bản layout DỌC; đầu xe render bản <code>layout-w960dp</code>.</b>
+      Màn chính 1920×1080 @ density 240 ⇒ <b>1280dp ≥ 960</b> (<code>docs/diagnostics/multi-app-nav-source-channels-2026-08-20.md:55</code>;
+      header <code>layout-w960dp/activity_main.xml:2</code> tự ghi đúng điều đó). Đo: <code>btn_voicekey_add</code> /
+      <code>list_voicekey_bindings</code> / <code>txt_voicekey_empty</code> = 1 ở <code>layout/</code>, <b>0</b> ở <code>layout-w960dp/</code>;
+      23 id còn lại có ở cả hai ⇒ chỉ F3 phá bất biến này. <code>MainActivity.kt:740</code> gọi
+      <code>findViewById&lt;Button&gt;(R.id.btn_voicekey_add).setOnClickListener{…}</code> — không <code>?.</code>, không try/catch, và
+      <code>onCreate</code> không bọc lời gọi ⇒ <code>findViewById</code> trả <code>null</code> → <b>NPE trong <code>onCreate</code></b> →
+      app chết lúc mở, kéo theo <code>navClusterStatus.bind()</code>, <code>btn_reconnect_nav</code>,
+      <code>VoiceKeyLearnBus.setListener</code> không bao giờ chạy. Máy build vẫn xanh vì <code>R.id.*</code> sinh từ <b>hợp</b> của mọi biến thể.</li>
+  <li><b>Kèm hồi quy kiểu F1 ("gỡ thứ đang gánh hộ").</b> Trước F3, hai listener dropdown chính là đường ghi cấu hình <b>duy nhất</b>;
+      F3 gỡ chúng và chuyển việc ghi sang một nút <b>không tồn tại trên bản layout mà xe render</b> ⇒ kể cả vá NPE thì trên xe owner vẫn
+      không tạo/sửa/xoá gán được. Cấu hình CŨ thì không mất (<code>NavAccessibilityService.kt:442</code> vẫn migrate được).
+      Câu hỏi "nó còn đang gánh hộ việc gì không?" đã không được hỏi lúc gỡ.</li>
+  <li><b>Đây là lần thứ HAI cùng một lỗi trong 4 ngày</b> — lần 1 là commit <code>5d4dab6</code> (<code>txt_nav_source_active</code>).
+      Bài học lúc đó chỉ nằm trong commit message, <b>không khoá bằng test</b> (trái CLAUDE.md §10) nên tái phát nguyên vẹn.</li>
+  <li><b>Vá [P0]</b> — bê đủ khối F3 sang <code>app/src/main/res/layout-w960dp/activity_main.xml</code>, đánh số nhãn 1·2·3 cho khớp bản dọc.</li>
+  <li><b>Vá [P1] — khoá bất biến bằng test</b>: <code>app/src/test/java/com/byd/clusternav/LayoutVariantIdParityTest.kt</code> (2 test).
+      (1) mọi biến thể của cùng một tên layout phải khai báo <b>cùng tập <code>@+id</code></b>, so <b>hai chiều</b> vì id chỉ có ở bản rộng
+      thì máy hẹp hơn 960dp crash y hệt, chỉ đổi vai; (2) mọi <code>R.id.*</code> mà <code>MainActivity</code> chạm phải có ở <b>mọi</b>
+      biến thể của layout nó <code>setContentView</code>, hoặc ở layout con nó <code>inflate</code>. Test tự dò thư mục <code>layout*</code>,
+      không ghim tên id nào ⇒ khoá luôn bài học <code>5d4dab6</code> và mọi biến thể thêm về sau.</li>
+  <li><b>Vá [P2] — đường migrate chưa từng được CHẠY trong test.</b> <code>VoiceKeyBindingListTest</code> chỉ khoá bằng
+      <code>body.contains(...)</code>. Đo tự chứng minh test cũ mù: đổi <code>writeVoiceKeyBindings(p, migrated)</code> →
+      <code>(p, emptyList())</code> — đúng ca <b>mất sạch cấu hình owner</b> — thì <code>VoiceKeyBindingListTest</code> <b>VẪN XANH</b>.
+      Vá: tách nạp chồng <code>Prefs.voiceKeyBindings/addVoiceKeyBinding/removeVoiceKeyBinding(p: SharedPreferences)</code>, bản
+      <code>Context</code> còn là vỏ một dòng; thêm <code>VoiceKeyBindingMigrationTest</code> (9 test) chạy THẬT cả 4 ca migrate
+      (chưa có khoá + có dấu vết / chưa có khoá + không dấu vết / đã có <code>"[]"</code> / đã có danh sách) trên ô nhớ giả.</li>
+  <li><b>Vá [P3]</b> — <code>setSystemAssistant</code> chỉ chạy khi cấu hình thật sự đổi (<code>replaced != target.second</code>);
+      nhãn nút "Xoá" từng dòng đặt lúc chạy qua <code>Lang.t</code> (trước hardcode tiếng Việt, trái KDoc của chính
+      <code>row_voicekey_binding.xml</code>); gỡ <code>VoiceKeyBindingStore.read()</code> — 0 call site (CLAUDE.md §8) và nguy hơn là
+      nó <i>trông giống</i> hàm đọc đúng nhưng nuốt mất phân biệt <code>null</code> ↔ <code>"[]"</code> ⇒ gọi nhầm là bỏ qua migrate.</li>
+  <li><b>[ĐO] test sau vá</b> — 5 module, <b>2087 test, 0 lỗi</b> (<code>app 1037 · core 888 · offcar-planner 99 · car-integration 41 ·
+      vehicle-contracts 22</code>), <code>./gradlew test --rerun-tasks --continue</code> → <code>BUILD SUCCESSFUL in 3m20s</code>.</li>
+  <li><b>[ĐO] phép thử làm-đỏ cho test MỚI</b> (test chưa từng đỏ là test mù): (A) xoá khối <code>btn_voicekey_add</code> khỏi
+      <code>layout-w960dp</code> ⇒ <b>cả hai</b> test parity ĐỎ; (B) <code>writeVoiceKeyBindings(p, emptyList())</code> ⇒ ĐỎ đúng
+      <code>nang cap tu 1_19 — cau hinh mot-cap cua owner duoc giu nguyen</code>; (C) bỏ early-return
+      <code>rawOrNull(...)?.let{return}</code> ⇒ <b>5/9</b> test migrate ĐỎ. Cả ba đã khôi phục, <code>shasum -a 256</code> của
+      <code>Prefs.kt</code> khớp trước/sau.</li>
+  <li><b>Hoãn có chủ ý, đã ghi backlog F5</b> — (a) nhấn-giữ dropdown để xoá nút tự học là <b>code chết từ 1.19</b>: đọc AOSP
+      <code>android-10.0.0_r47</code>, <code>Spinner.java</code> không gọi <code>performItemLongClick</code>/<code>performLongClick</code>
+      và <code>AdapterView.java</code> chỉ CẤT listener chứ không override <code>performLongClick()</code>; bên phát thật là
+      <code>AbsListView.performLongPress</code> mà <code>Spinner</code> không kế thừa. Không phải hồi quy F3, và cách chữa là THÊM giao diện
+      ⇒ quyết định của owner. (b) <code>layout-w960dp/activity_main.xml</code> không nằm trong seal T11 — thêm vào buộc phải sinh lại
+      <code>docs/diagnostics/hud-sign-re/offcar-boundary-revisions.json</code> + chuỗi <code>revisionSha256</code> móc xích, tức sửa vào
+      thư mục seal ⇒ owner duyệt rồi mới làm, không sửa lén.</li>
+</ul>
+
+<h3>2026-08-24 — F2: phím thoại câm ở lần mở app đầu (cổng cấp quyền adb) + vòng phản biện</h3>
+<p>Owner báo (nguyên văn): <em>"start app vẫn chưa hold mic gọi gemini/kiki được, phải tắt, mở lại thì mới xin được quyền và mới sử dụng được"</em>. Bằng chứng cơ chế + phép đo còn thiếu: <code>docs/diagnostics/voicekey-adb-approval-first-open-2026-08-24.md</code>. Quy kết "cổng cấp quyền adb chính là thủ phạm" vẫn ở mức <b>[SUY]</b> — chưa đo trên xe, F2 giữ 🔧.</p>
+<ul>
+  <li><b>Transport</b> (<code>:car-integration/carexec/LocalShellRetryPolicy.kt</code>, file mới) — phân loại thất bại theo <b>kiểu ngoại lệ</b> (<code>LocalShellFailure</code>: chờ-bấm-Đồng-ý / bị-từ-chối / cổng-5555-đóng / đứt-vào-ra / không-rõ) thay cho một chữ <code>null</code> câm, cộng vòng chờ có giãn cách. <code>LocalDeviceShell.session()</code> cũ <b>uỷ quyền</b> cho đường mới với chính sách <code>NONE</code> = nguyên hành vi trước 08-24, nên năm đường dùng chung (<code>VietMapAutostart</code>, <code>UpdateChecker</code>, <code>NavConnect</code>, <code>ClusterDiag</code>, <code>VietMapWidgetDiagActivity</code>) không đổi một ly — CLAUDE.md §6.</li>
+  <li><b>Chỉ hai đường owner-chủ-động</b> bật <code>AWAIT_ADB_APPROVAL</code>: giữ phím mic (<code>launchViaVoiceAssistKey</code>) và đặt trợ lý hệ thống (<code>setSystemAssistant</code>) — đúng lúc owner đang nhìn màn hình nên hộp thoại bung ra là bấm được ngay.</li>
+  <li><b>Lịch chờ = 4 lần thử, giãn 1/2/4 s, hạn đọc 6 s ⇒ ~31 s đồng hồ tường.</b> Con số này là con số <b>xe chạy</b>, không phải con số đồng hồ giả của test: bản vá đầu ghi 5 lần × 1/2/4/8 s vì đồng hồ giả đứng yên suốt mỗi lần thử nên trần thời gian không bao giờ chạm. Đã sửa cả hai đầu (chính sách <code>attempts = 4</code>, và đồng hồ giả trong test tiến đúng hạn đọc mỗi lần hỏng).</li>
+  <li><b>Cấm phát lại lệnh đã gửi</b> — hạn đọc áp cho cả lần đọc <i>kết quả</i> một lệnh, nên thử lại có thể gửi lại lệnh: tài xế nhận nhiều lần <code>KEYCODE_VOICE_ASSIST</code> từ MỘT cú bấm, hoặc công thức 12 lệnh của <code>setSystemAssistant</code> chạy lại từ đầu (nguy nhất là khe giữa <code>voice_interaction_service ''</code> và lần đặt lại — dừng ở đó là trợ lý hệ thống đang <b>rỗng</b>). Cờ <code>dispatched</code> đặt trước khi gửi, và <code>if (dispatched) break</code> là điều kiện dừng ĐẦU TIÊN của vòng lặp: an toàn thắng đủ tính năng.</li>
+  <li><b>Owner không còn bị bỏ trong im lặng</b> — toast lúc bắt đầu chờ (kèm nhắc tích "luôn cho phép", vì mỗi lần thử là một kết nối MỚI), toast khi bỏ cuộc kèm lý do, toast một lần khi cú bấm bị nuốt vì đang có vòng chờ chạy dở. Hỏng SAU khi đã gửi được lệnh thì nói đúng chuyện đó, không nói "chưa cấp quyền" (bắt tay đã xong rồi).</li>
+  <li><b>Chốt đơn-luồng</b> <code>voiceAssistInFlight</code> — vòng chờ dài hơn hẳn debounce 1.5 s nên phải có chốt riêng; nhả cả khi <code>Thread.start()</code> ném, và cú bấm bị nuốt không đẩy mốc debounce.</li>
+</ul>
+</body>
+</html>

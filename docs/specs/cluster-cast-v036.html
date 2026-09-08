@@ -1,0 +1,297 @@
+<meta charset="utf-8">
+<title>ClusterNav v0.36 — Ladder chiếu, chặn PIP, và gốc rễ "dựt dựt"</title>
+<style>
+  :root{
+    --bg:#fbfbfd; --fg:#1d1d1f; --muted:#6e6e73; --line:#e3e3e8; --card:#fff;
+    --accent:#0071e3; --warn:#b25000; --danger:#c2261a; --ok:#1d7a34;
+    --code-bg:#f5f5f7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000; --fg:#f5f5f7; --muted:#98989d; --line:#2c2c2e; --card:#1c1c1e;
+           --accent:#0a84ff; --warn:#ff9f0a; --danger:#ff6961; --ok:#30d158; --code-bg:#1c1c1e; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:64px 24px 120px}
+  h1{font-size:40px;line-height:1.1;letter-spacing:-.022em;margin:0 0 8px;font-weight:700}
+  h2{font-size:26px;letter-spacing:-.02em;margin:56px 0 12px;padding-top:24px;border-top:1px solid var(--line);font-weight:650}
+  h3{font-size:19px;letter-spacing:-.01em;margin:32px 0 8px;font-weight:600}
+  p,li{color:var(--fg)}
+  .sub{color:var(--muted);font-size:17px;margin:0 0 8px}
+  .meta{color:var(--muted);font-size:14px;margin:0 0 40px}
+  code,pre{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  code{background:var(--code-bg);padding:.12em .38em;border-radius:5px;font-size:.88em}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+      overflow-x:auto;font-size:13.5px;line-height:1.55}
+  pre code{background:none;padding:0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:20px;
+       border:1px solid currentColor;letter-spacing:.02em}
+  .p0{color:var(--danger)} .p1{color:var(--warn)} .p2{color:var(--muted)} .ok{color:var(--ok)}
+  .diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:20px 0;overflow-x:auto}
+  .diagram svg{display:block;width:100%;height:auto;min-width:560px}
+  .svg-box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+  .svg-box-hi{fill:none;stroke:var(--accent);stroke-width:2}
+  .svg-box-bad{fill:none;stroke:var(--danger);stroke-width:2;stroke-dasharray:5 4}
+  .svg-t{fill:var(--fg);font:13px -apple-system,sans-serif}
+  .svg-t-s{fill:var(--muted);font:11px -apple-system,sans-serif}
+  .svg-line{stroke:var(--muted);stroke-width:1.5;fill:none}
+  .svg-line-hi{stroke:var(--accent);stroke-width:2;fill:none}
+  .svg-line-bad{stroke:var(--danger);stroke-width:2;fill:none}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:12px}
+  .legend i{display:inline-block;width:22px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+  ul{padding-left:22px} li{margin:5px 0}
+  .kv{color:var(--muted);font-size:14px}
+</style>
+
+<div class="wrap">
+
+<h1>ClusterNav v0.36</h1>
+<p class="sub">Ladder đặt app 3 rung · chặn PIP · guard màn-giữa · và gốc rễ thật của “dẫn đường dựt dựt”</p>
+<p class="meta">Owner: Đăng Khôi (dangkhoi) · 2026-07-21 · nguồn: test hiện trường BYD SL6 · trạng thái: đã implement, build 0.36, 97 test pass</p>
+
+<h2>Changelog</h2>
+<table>
+  <tr><th>Ngày</th><th>Nội dung</th></tr>
+  <tr><td>2026-07-21</td><td>Tạo spec. Gộp 3 báo cáo hiện trường (Android Auto không lên cụm · YouTube méo/nhảy PIP · máy lag + Vietmap dựt) + 2 lỗi P0 tự phát hiện khi đọc code.</td></tr>
+</table>
+
+<h2>Context</h2>
+<p>Anh em trong hội test v0.35 trên <strong>BYD SL6</strong> — dòng xe app <em>chưa từng</em> được tinh chỉnh (mọi thứ trước đó làm trên Seal DL3). Báo về ba việc: Vietmap chiếu đẹp, YouTube méo, Android Auto không lên cụm. Sau đó báo thêm: máy chậm/lag và <strong>dẫn đường bị dựt dựt</strong>.</p>
+<p>Điều tra bằng nhiều agent đọc thẳng source AOSP 10 (android-10.0.0_r47, fetch thật từ googlesource) cho ra kết luận quan trọng: <strong>chuyện lag/dựt hoàn toàn không liên quan tới việc chiếu</strong> — nó nằm ở lớp mock GPS chạy nền 24/7.</p>
+
+<h2>Requirements</h2>
+
+<h3>R1 — Android Auto phải lên được cụm mà không cần daemon</h3>
+<p class="kv">Từ log hiện trường: <code>move không bám VD (đang 0) → fallback fresh-launch</code> → <code>freeform chưa bám</code> → <code>app chưa bám VD (đang display=0)</code>.</p>
+<ul>
+  <li>Tiêu chí: app đang chạy ở display 0 phải được đưa sang VD cụm mà <strong>không kill</strong>, nếu framework cho phép.</li>
+  <li>Không leo sang T3 daemon như một “đường chắc ăn” — phải chứng minh được daemon có mua thêm gì không.</li>
+</ul>
+
+<h3>R2 — Không lệnh nào được nhắm vào màn hình giữa</h3>
+<ul>
+  <li>Mọi lệnh phạm vi-task (<code>am task resize</code>) chỉ chạy khi task <em>thực sự</em> nằm trên VD, xác minh bằng ground truth chứ không bằng cờ.</li>
+  <li>Chiếu hụt phải tự dọn: app về màn giữa, ở dạng fullscreen, đồng hồ trả về gốc.</li>
+</ul>
+
+<h3>R3 — YouTube xem được</h3>
+<ul>
+  <li>Có cách <strong>một chạm</strong> đặt khung đúng tỉ lệ.</li>
+  <li>App không được rơi vào PIP khi chiếu.</li>
+</ul>
+
+<h3>R4 — Hết lag và hết dựt</h3>
+<ul>
+  <li>App ở trạng thái nghỉ không được đụng vào state toàn hệ thống theo chu kỳ.</li>
+  <li>Không app nào khác được nhận provider GPS bị rút ra/cắm lại theo chu kỳ.</li>
+</ul>
+
+<h2>Design</h2>
+
+<h3>D1 — Ladder đặt app (thay 2 rung cũ)</h3>
+<p>Kiểm chứng trên source AOSP 10: <code>am start --display</code> đi qua <code>ActivityStarter</code> và bị chặn bởi <code>canBeLaunchedOnDisplay</code>/<code>canPlaceEntityOnDisplay</code>; khi bị chặn nó <em>âm thầm</em> nhắm lại mọi display (<code>ActivityStarter.java:2624</code>) nên app ở lại display 0. Còn <code>am display move-stack</code> (<code>ActivityManagerShellCommand.java:2516</code> → <code>ATMS.java:3395</code> → <code>RootActivityContainer.java:937</code> → <code>ActivityStack.reparent:880</code>) <strong>không đi qua ActivityStarter</strong> và reparent vô điều kiện — không gate freeform, launchMode, orientation hay resizeable.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 860 300" role="img" aria-label="Ladder 3 rung đặt app lên cụm">
+  <rect class="svg-box" x="10" y="16" width="150" height="54" rx="10"/>
+  <text class="svg-t" x="85" y="40" text-anchor="middle">app ở display 0</text>
+  <text class="svg-t-s" x="85" y="57" text-anchor="middle">task đang chạy</text>
+
+  <rect class="svg-box-hi" x="205" y="10" width="185" height="66" rx="10"/>
+  <text class="svg-t" x="297" y="32" text-anchor="middle">R1 · am start --display</text>
+  <text class="svg-t-s" x="297" y="49" text-anchor="middle">giữ nguyên phiên</text>
+  <text class="svg-t-s" x="297" y="64" text-anchor="middle">qua ActivityStarter (có thể bị chặn)</text>
+
+  <rect class="svg-box-hi" x="205" y="106" width="185" height="66" rx="10"/>
+  <text class="svg-t" x="297" y="128" text-anchor="middle">R2 · am display move-stack</text>
+  <text class="svg-t-s" x="297" y="145" text-anchor="middle">giữ nguyên phiên</text>
+  <text class="svg-t-s" x="297" y="160" text-anchor="middle">KHÔNG qua ActivityStarter</text>
+
+  <rect class="svg-box-bad" x="205" y="202" width="185" height="66" rx="10"/>
+  <text class="svg-t" x="297" y="224" text-anchor="middle">R3 · force-stop + mở lại</text>
+  <text class="svg-t-s" x="297" y="241" text-anchor="middle">MẤT phiên — opt-out bằng ◈</text>
+  <text class="svg-t-s" x="297" y="256" text-anchor="middle">bắt buộc có force-stop</text>
+
+  <rect class="svg-box" x="640" y="16" width="150" height="54" rx="10"/>
+  <text class="svg-t" x="715" y="40" text-anchor="middle">bám VD cụm</text>
+  <text class="svg-t-s" x="715" y="57" text-anchor="middle">→ áp khung ⑧</text>
+
+  <rect class="svg-box" x="640" y="202" width="150" height="66" rx="10"/>
+  <text class="svg-t" x="715" y="226" text-anchor="middle">không bám</text>
+  <text class="svg-t-s" x="715" y="243" text-anchor="middle">trả app về màn giữa</text>
+  <text class="svg-t-s" x="715" y="258" text-anchor="middle">+ trả đồng hồ</text>
+
+  <path class="svg-line" d="M160 43 H205"/>
+  <path class="svg-line-hi" d="M390 43 H640" marker-end="url(#ah)"/>
+  <path class="svg-line-bad" d="M297 76 V106"/>
+  <path class="svg-line-hi" d="M390 139 H520 V50 H640" marker-end="url(#ah)"/>
+  <path class="svg-line-bad" d="M297 172 V202"/>
+  <path class="svg-line-hi" d="M390 235 H560 V56 H640" marker-end="url(#ah)"/>
+  <path class="svg-line-bad" d="M390 250 H640" marker-end="url(#ahb)"/>
+
+  <text class="svg-t-s" x="312" y="96" >không bám →</text>
+  <text class="svg-t-s" x="312" y="192">không bám →</text>
+
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="var(--accent)"/></marker>
+    <marker id="ahb" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="var(--danger)"/></marker>
+  </defs>
+</svg>
+<div class="legend">
+  <span><i style="color:var(--accent)"></i>bám được → dừng ladder</span>
+  <span><i style="color:var(--danger);border-top-style:dashed"></i>leo tiếp / thất bại</span>
+</div>
+</div>
+
+<p>Mỗi rung kết thúc bằng <code>CastShell.landedOn()</code> — poll có giới hạn (2.5s, bước 250ms, thoát sớm) và <strong>loại stack <code>pinned</code></strong> — thay cho một lần <code>sleep(900)</code> mù. App projection nặng khởi động chậm hơn 900ms trước đây bị kết luận “chưa bám” oan rồi rơi thẳng xuống rung phá hoại.</p>
+
+<p><strong>T3 daemon bị hạ cấp.</strong> Nó gọi đúng <code>moveStackToDisplay</code> mà R2 gọi, cùng uid-2000, cùng quyền <code>INTERNAL_SYSTEM_WINDOW</code> → không thể đặt app ở chỗ R2 hụt. Hai lệnh còn lại của nó cũng chết khi freeform chưa sống. Giờ nó chỉ chạy như bước <em>ép freeform sau khi đã bám</em>, và chỉ khi probe cho thấy freeform thật sự sống.</p>
+
+<h3>D2 — Parser nhận biết display và windowing-mode</h3>
+<p>Ba helper cũ (<code>appStack</code>/<code>appDisplay</code>/<code>appTaskId</code>) đều lấy match <em>đầu tiên</em>. Mà <code>am stack list</code> luôn in display 0 trước. Hệ quả: app có nhiều task (wrapper Android Auto, launcher trampoline) bị báo “chưa bám VD” dù đã lên; app rơi vào PIP thì lấy nhầm taskId của stack pinned.</p>
+<p>Thay bằng <code>StackParse</code> (thuần, unit-test off-device) trả về mọi entry kèm <code>displayId</code> + <code>mode</code>, và <code>pick(preferDisplay)</code> ưu tiên đúng display, loại pinned.</p>
+
+<h3>D3 — Chặn PIP</h3>
+<p>Chính hai rung <code>am start</code> của ta bật cờ <code>supportsEnterPipOnTaskSwitch</code> trên activity đang focus; lần pause kế tiếp app vào PIP, và Android 10 pin PIP lên <em>đúng display app đang ở</em> → PIP hiện trên cụm. Chặn bằng app-op, enforce trong <code>system_server</code> (bản mod không lách được), trả lại khi tắt chiếu; gói đang bị chặn lưu bền để app chết giữa chừng vẫn trả lại được.</p>
+<pre><code>cmd appops set --user 0 &lt;pkg&gt; PICTURE_IN_PICTURE ignore   # chiếu
+cmd appops set --user 0 &lt;pkg&gt; PICTURE_IN_PICTURE allow    # tắt chiếu</code></pre>
+
+<h3>D4 — Gốc rễ “dựt dựt”</h3>
+<p>Không liên quan cast. <code>DeadReckonService</code> tự chạy từ lúc khởi động máy (mặc định bật) và khi mock, cứ ~20 giây lại gọi <code>MockLoc.stop()</code> = <code>removeTestProvider(GPS_PROVIDER)</code>, rồi 3–8 giây sau add lại. Theo source <code>LocationManagerService</code> (AOSP 10), <code>removeProviderLocked</code> làm ba việc:</p>
+<ul>
+  <li>ghi <code>Settings.Secure.LOCATION_PROVIDERS_ALLOWED = "-gps"</code> và <strong>broadcast <code>PROVIDERS_CHANGED</code> tới UserHandle.ALL</strong>;</li>
+  <li><strong>xoá sạch <code>mLastLocation</code> của MỌI provider</strong> → <code>getLastKnownLocation()</code> trả null toàn hệ thống;</li>
+  <li>gọi <code>onProviderDisabled</code> tới mọi client GPS.</li>
+</ul>
+<p>Lặp chu kỳ đó vô tận trong lúc Vietmap đang dẫn = đúng hiện tượng giật theo nhịp.</p>
+<div class="card">
+<p><strong>Đã thử một hướng sửa SAI và review bắt được.</strong> Ý tưởng đầu tiên là thay <code>removeTestProvider</code> bằng <code>setTestProviderEnabled(false)</code> để “tạm ngưng mà không gỡ”. Sai ở tầng framework: <code>addTestProvider</code> <em>gỡ</em> provider GPS thật khỏi <code>mProviders</code> và cất vào <code>mRealProviders</code>; <strong>chỉ <code>removeTestProvider</code> mới lắp lại</strong>. Tắt cờ enabled thì provider thật vẫn không có trong <code>mProviders</code>, mà <code>handleLocationChangedLocked</code> mở đầu bằng <code>if (!mProviders.contains(provider)) return</code> → fix thật không bao giờ tới. Kết quả sẽ là peek mù hoàn toàn, và COLD_SEED (được miễn failsafe) ghim GPS của cả máy suốt chuyến — <em>tệ hơn hẳn bug ban đầu</em>.</p>
+<p>Hướng thứ hai cũng sai: thêm điều kiện “chỉ peek khi thấy ≥4 vệ tinh”. Vì <code>addTestProvider</code> đã đẩy <code>ProviderRequest</code> rỗng xuống GNSS thật → <code>native_stop()</code> → <code>GnssStatus.Callback</code> không fire lần nào nữa → <code>sats</code> <strong>đóng băng</strong>. Mà chỉ peek mới bật lại được engine. Phụ thuộc vòng tròn, cổng tự khoá vĩnh viễn.</p>
+</div>
+<p><strong>Cách sửa thực tế đã ship:</strong> peek vẫn phải <code>removeTestProvider</code> (không có đường nào khác lấy lại GPS thật), nhưng <strong>giãn chu kỳ theo trạng thái</strong>: COLD_SEED vị trí đóng băng nên không trôi → 60&nbsp;s; DEAD_RECKON trôi theo quãng đường → giữ 20&nbsp;s như cũ. Cửa peek nới 3→5&nbsp;s (GNSS vừa bị <code>native_stop</code> cần thời gian hot-start). Số lần gỡ/cắm provider trong kịch bản hay gặp nhất (đỗ hầm, cold-seed) giảm 3×, mà không đánh đổi độ chính xác lúc đang dead-reckon.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 840 210" role="img" aria-label="Chu kỳ peek: cũ phá provider, mới chỉ tắt cờ">
+  <text class="svg-t" x="12" y="26">CŨ (v0.35)</text>
+  <rect class="svg-box-bad" x="12" y="38" width="180" height="46" rx="9"/>
+  <text class="svg-t" x="102" y="60" text-anchor="middle">removeTestProvider</text>
+  <text class="svg-t-s" x="102" y="76" text-anchor="middle">mỗi ~20–28 s</text>
+  <path class="svg-line-bad" d="M192 61 H250" marker-end="url(#ahb2)"/>
+  <rect class="svg-box-bad" x="250" y="30" width="250" height="62" rx="9"/>
+  <text class="svg-t-s" x="375" y="50" text-anchor="middle">broadcast PROVIDERS_CHANGED (mọi user)</text>
+  <text class="svg-t-s" x="375" y="66" text-anchor="middle">xoá mLastLocation của MỌI provider</text>
+  <text class="svg-t-s" x="375" y="82" text-anchor="middle">onProviderDisabled tới mọi client</text>
+  <path class="svg-line-bad" d="M500 61 H560" marker-end="url(#ahb2)"/>
+  <rect class="svg-box-bad" x="560" y="38" width="180" height="46" rx="9"/>
+  <text class="svg-t" x="650" y="60" text-anchor="middle">Vietmap khựng</text>
+  <text class="svg-t-s" x="650" y="76" text-anchor="middle">theo đúng chu kỳ</text>
+
+  <text class="svg-t" x="12" y="136">MỚI (v0.36)</text>
+  <rect class="svg-box-hi" x="12" y="148" width="180" height="46" rx="9"/>
+  <text class="svg-t" x="102" y="170" text-anchor="middle">vẫn removeTestProvider</text>
+  <text class="svg-t-s" x="102" y="186" text-anchor="middle">(không có đường khác)</text>
+  <path class="svg-line-hi" d="M192 171 H250" marker-end="url(#ah2)"/>
+  <rect class="svg-box-hi" x="250" y="148" width="250" height="46" rx="9"/>
+  <text class="svg-t-s" x="375" y="164" text-anchor="middle">COLD_SEED (đứng yên): 60 s</text>
+  <text class="svg-t-s" x="375" y="180" text-anchor="middle">DEAD_RECKON (trôi): 20 s như cũ</text>
+  <path class="svg-line-hi" d="M500 171 H560" marker-end="url(#ah2)"/>
+  <rect class="svg-box-hi" x="560" y="148" width="180" height="46" rx="9"/>
+  <text class="svg-t" x="650" y="170" text-anchor="middle">nhiễu giảm 3×</text>
+  <text class="svg-t-s" x="650" y="186" text-anchor="middle">ở kịch bản hay gặp nhất</text>
+
+  <defs>
+    <marker id="ah2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="var(--accent)"/></marker>
+    <marker id="ahb2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="var(--danger)"/></marker>
+  </defs>
+</svg>
+</div>
+
+<h2>Tasks</h2>
+<table>
+  <tr><th>#</th><th>Việc</th><th>File</th><th>Xong</th></tr>
+  <tr><td>T1</td><td>Parser đa-stack có display + windowing-mode</td><td>StackParse.kt (mới) + StackParseTest.kt (7 test)</td><td class="ok">✅</td></tr>
+  <tr><td>T2</td><td>Tách parser dumpsys display</td><td>DisplayParse.kt (mới)</td><td class="ok">✅</td></tr>
+  <tr><td>T3</td><td>Ladder R1→R2→R3 + poll landedOn</td><td>ClusterCast.placeLadder · CastShell.kt (mới)</td><td class="ok">✅</td></tr>
+  <tr><td>T4</td><td><span class="tag p0">P0</span> chỉ commit state khi đã xác minh bám VD</td><td>ClusterCast.cast (cold + warm)</td><td class="ok">✅</td></tr>
+  <tr><td>T5</td><td><span class="tag p0">P0</span> guard display cho mọi lệnh phạm vi-task</td><td>ClusterCast.applyBounds/applyScaleLive · T3Daemon.java</td><td class="ok">✅</td></tr>
+  <tr><td>T6</td><td>Dọn màn giữa sau khi chiếu hụt (ép fullscreen)</td><td>CastShell.restoreFullscreenOnMain</td><td class="ok">✅</td></tr>
+  <tr><td>T7</td><td>Chặn/trả PIP theo app, lưu bền</td><td>ClusterCast.blockPip/restorePip · CastShell.pipCmd</td><td class="ok">✅</td></tr>
+  <tr><td>T8</td><td>Preset khung 16:9 / 21:9 + seed giữ inset</td><td>AppScale.fit · ClusterCastActivity</td><td class="ok">✅</td></tr>
+  <tr><td>T9</td><td><span class="tag p1">P1</span> <code>force_resizable_activities</code> 0 → 1, ghi 1 lần/phiên</td><td>CastShell.ensureFreeformSeed</td><td class="ok">✅</td></tr>
+  <tr><td>T10</td><td>Chốt chuỗi teardown lúc cast</td><td>ClusterCast.activeTeardown</td><td class="ok">✅</td></tr>
+  <tr><td>T11</td><td>Giãn chu kỳ peek theo trạng thái (60 s cold-seed · 20 s dead-reckon), cửa peek 3→5 s</td><td>DeadReckonService.peekIntervalMs</td><td class="ok">✅</td></tr>
+  <tr><td>T12</td><td>Vị trí đóng băng → speed 0, không bearing</td><td>MockLoc.push(moving=)</td><td class="ok">✅</td></tr>
+  <tr><td>T13</td><td>Bỏ <code>animator_duration_scale</code> khỏi bộ khoá animation</td><td>ClusterCast.ANIM_KEYS</td><td class="ok">✅</td></tr>
+  <tr><td>T14</td><td>Bỏ cờ accessibility phạm vi hệ thống</td><td>nav_accessibility_config.xml</td><td class="ok">✅</td></tr>
+  <tr><td>T15</td><td>Gyro lười (chỉ khi useGyro, 50→15 Hz) + nhịp tick 5 Hz chỉ khi mocking + đọc HAL lái chỉ khi cần + backoff self-grant 8 s→10 phút. <em>Wakelock giữ nguyên suốt đời service</em> — thử thu hẹp thì chính vòng dò mất-GPS không còn thức.</td><td>DeadReckonService · MockLoc</td><td class="ok">✅</td></tr>
+<tr><td>T17</td><td>Sửa di chứng <code>animator_duration_scale=0</code> mà bản ≤0.35 ghim lại</td><td>ClusterCast.repairLegacyAnim</td><td class="ok">✅</td></tr>
+<tr><td>T18</td><td>Dẹp cửa sổ PIP đang mở (ưu tiên bung fullscreen, chỉ remove khi hết cách và app không bật ◈)</td><td>ClusterCast.cast</td><td class="ok">✅</td></tr>
+<tr><td>T19</td><td>Bật sẵn ◈ cho Android Auto/CarPlay · hộp log cuộn được + tự cuộn · nút CHIẾU/TẮT tự mở log</td><td>ClusterCast.loadPrefs · ClusterCastActivity</td><td class="ok">✅</td></tr>
+  <tr><td>T16</td><td>Nút giữ-nhấn 3 trạng thái · ô hồ sơ không doạ lỗi · sanitize chuỗi dán</td><td>ClusterCastActivity · ClusterProfile</td><td class="ok">✅</td></tr>
+</table>
+
+<h2>Verification</h2>
+<p><strong>Đã chạy:</strong> <code>./gradlew clean assembleRelease testDebugUnitTest</code> — build thành công, <strong>97 test pass, 0 fail</strong> (thêm 12 test mới: 7 cho StackParse, 5 cho AppScale.fit). APK: <code>apk/ClusterNav-0.36-release.apk</code>.</p>
+
+<h3>Còn phải verify TRÊN XE</h3>
+<table>
+  <tr><th>#</th><th>Kịch bản</th><th>Kỳ vọng</th></tr>
+  <tr><td>V1</td><td>Chiếu Android Auto</td><td>Log hiện <code>R2 am display move-stack … → ✓ R2 bám VD (giữ state)</code>. Nếu R2 in <code>SecurityException</code> → báo lại nguyên văn, cả hướng ladder phải tính lại.</td></tr>
+  <tr><td>V2</td><td>Chiếu YouTube, bấm <strong>16:9</strong></td><td>Khung 1280×720 căn giữa, log <code>overscan [320,0,320,0]</code>; không rơi vào cửa sổ PIP nữa.</td></tr>
+  <tr><td>V3</td><td>Chiếu app không bám được</td><td>Log <code>❌ … KHÔNG bám được VD sau cả 3 rung → HỦY chiếu, trả đồng hồ</code>; cụm về đồng hồ gốc; nút size không còn tác dụng lên app đó.</td></tr>
+  <tr><td>V4</td><td>Lái với Vietmap ~15 phút, không chiếu</td><td>Hết dựt theo chu kỳ ~20 s.</td></tr>
+  <tr><td>V5</td><td>Vào hầm rồi ra</td><td>DR vẫn vá được GPS; ra hầm nhả mock, vị trí snap về thật.</td></tr>
+  <tr><td>V6</td><td>Tắt máy xe hẳn 1 lần rồi mở lại, chiếu lại</td><td>Log khung đổi từ <code>overscan …</code> sang <code>resize freeform → […]</code>.</td></tr>
+</table>
+
+<h2>Open Questions</h2>
+<ul>
+  <li><strong>Kích cụm SL6</strong> chưa đo. <code>ClusterProfile.detectSeed()</code> vẫn map mọi head-unit BYD về hồ sơ Seal (1920×720, chuỗi [30,16,35]). Cần chạy <code>dumpsys display | grep -A5 'Display 1'</code> trên SL6 rồi thêm hồ sơ riêng nếu khác.</li>
+  <li><strong>Hằng số dead-reckoning</strong> (<code>WHEELBASE</code> 2.92, <code>STEER_RATIO</code> 15.5, <code>SPEEDO_CORRECTION</code> 0.93) là của Seal. Trên SL6 quãng đường/hướng tích phân sẽ lệch — nên đưa vào <code>ClusterProfile</code>.</li>
+  <li><strong><code>SpeedProvider</code> trên SL6</strong>: nếu HAL trả 0 vĩnh viễn thì cổng an toàn <code>speed &lt; 2.0</code> của cold-seed bị vô hiệu. Cần phân biệt “0” với “không đọc được”.</li>
+  <li><strong><code>force_resizable_activities=1</code></strong> có hiệu lực sau lần khởi động sau và không được hoàn tác — chấp nhận được, nhưng nên có nút hoàn tác trong Cài đặt.</li>
+</ul>
+
+<h2>References</h2>
+<ul>
+  <li><code>docs/diagnostics/cast-bug-2026-07-20.log</code> — phiên tìm gốc rễ trước (freeform boot-gate).</li>
+  <li><code>docs/reference/dashcast-projection-recipe.md</code> — recipe DashCast đã RE; bước 4 có <code>am force-stop</code> mà ClusterNav từng bỏ sót.</li>
+  <li>AOSP android-10.0.0_r47: <code>ActivityStarter.java</code>, <code>RootActivityContainer.java</code>, <code>ActivityManagerShellCommand.java</code>, <code>ActivityTaskManagerService.java</code>, <code>LocationManagerService.java</code>, <code>ActivityRecord.checkEnterPictureInPictureState</code>.</li>
+</ul>
+
+<h2>Reviewer Log</h2>
+<h3>Pass 1 — 2026-07-21</h3>
+<p>Review 4 lens (correctness · an toàn state hệ thống · hồi quy so với v0.35 · trải nghiệm hiện trường SL6), mỗi phát hiện P0/P1 do một agent độc lập phản biện lại. Verdict: <strong>NEEDS_WORK</strong>.</p>
+<ul>
+  <li><span class="tag p0">P0</span> <strong>đã vá</strong> — <code>MockLoc.pause()</code> bằng <code>setTestProviderEnabled</code> không thể lấy lại GPS thật (chỉ <code>removeTestProvider</code> mới lắp lại provider thật). Bỏ hẳn pause/resume, peek trở lại <code>stop()</code>.</li>
+  <li><span class="tag p1">P1</span> <strong>đã vá</strong> — wakelock: thu hẹp về “chỉ khi mocking” là sai, chính vòng dò mất-GPS mới cần CPU thức. Trả lại như cũ.</li>
+  <li><span class="tag p1">P1</span> <strong>đã vá</strong> — bỏ <code>animator_duration_scale</code> khỏi <code>ANIM_KEYS</code> nhưng máy đã chạy bản cũ vẫn giữ giá trị 0 → thêm sửa-di-chứng 1 lần.</li>
+  <li><span class="tag p1">P1</span> <strong>đã vá</strong> — warm path: <code>lastDisplayId</code> ghi trước khi đặt app; phục hồi app cũ bằng rung không phá (không bao giờ force-stop app đang dẫn); trả lại đúng khung/dpi của app cũ.</li>
+  <li><span class="tag p1">P1</span> <strong>đã vá</strong> — app-op PIP: lưu marker + mode CŨ trước khi đổi state; trả về đúng mode cũ (không “allow” cứng) ở cả <code>stop()</code> lẫn <code>rollback()</code>.</li>
+  <li><span class="tag p1">P1</span> <strong>đã vá</strong> — nút CHIẾU/TẮT không mở log; R2 bám VD khi freeform chưa sống có thể trắng màn với app GL/video → thêm cảnh báo kèm cách xử lý.</li>
+</ul>
+
+<h3>Pass 2 — 2026-07-21 (review loop sau khi vá)</h3>
+<p>Verdict: <strong>NOT APPROVED</strong> ở vòng này — bản vá pass 1 sinh ra một P0 mới, đã sửa tiếp.</p>
+<ul>
+  <li><span class="tag p0">P0</span> <strong>đã vá</strong> — cổng “chỉ peek khi ≥4 vệ tinh” tự khoá vĩnh viễn: <code>sats</code> đóng băng trong lúc mock (GNSS thật đã bị <code>native_stop</code>), mà chỉ peek mới bật lại engine. Bỏ cổng; thay bằng giãn chu kỳ theo trạng thái.</li>
+  <li><span class="tag p1">P1</span> <strong>đã vá</strong> — auto-scroll log là no-op (cha của TextView là LinearLayout chứ không phải ScrollView) → dùng <code>ScrollingMovementMethod</code> + tự cuộn tới dòng cuối.</li>
+  <li><span class="tag p1">P1</span> <strong>đã vá</strong> — 60 s peek áp cho cả DEAD_RECKON làm trôi tới ~1 km sau khi ra hầm → tách chu kỳ theo trạng thái.</li>
+  <li><span class="tag p2">P2</span> <strong>đã vá</strong> — <code>rollback()</code> còn trả PIP bằng “allow” cứng; warm-fail xoá density/overscan của VD đang sống; probe freeform chạy sau <code>applyBounds</code> làm mất khung user; PIP đang mở bị <code>am stack remove</code> kể cả với app bật ◈; <code>keepSessionApps</code> rỗng lúc đầu → bật sẵn ◈ cho Android Auto/CarPlay.</li>
+</ul>
+<p class="kv">Sau pass 2: build sạch, 97 test pass. Các mục P2/P3 còn lại (hằng số dead-reckoning theo model, hồ sơ SL6, nút hoàn tác <code>force_resizable_activities</code>) nằm ở §Open Questions — cần số đo trên xe mới làm được.</p>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>

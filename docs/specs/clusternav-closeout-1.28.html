@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav 1.30 — Project Closeout: bug fixes cuối · dọn tài liệu song ngữ · đánh giá đóng dự án</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--err:#b3261e;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--err-bg:#fce8e6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;
+    --accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--err:#ff453a;--ok-bg:#0e2a16;--warn-bg:#332b00;--err-bg:#3a0f0c;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:48px 24px 120px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:32px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--warn-bg);color:var(--warn)}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  h3{font-size:17px;margin:26px 0 6px;font-weight:650}
+  h4{font-size:14.5px;margin:16px 0 6px;font-weight:650}
+  p{margin:10px 0}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg)}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg)}.callout.warn .lbl{color:var(--warn)}
+  .callout.err{background:var(--err-bg)}.callout.err .lbl{color:var(--err)}
+  .callout.accent{background:var(--accent-bg)}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;border:1px solid var(--line);color:var(--ink2);margin-left:6px}
+  .tag.off{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+  .tag.block{background:var(--err-bg);color:var(--err);border-color:transparent}
+  .tag.p0{background:var(--err-bg);color:var(--err);border-color:transparent}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:120px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.bad{border-color:var(--err);background:var(--err-bg)}.fnode.good{border-color:var(--ok);background:var(--ok-bg)}
+  .fnode.hb{border-color:var(--accent);background:var(--accent-bg)}
+  .arrow{color:var(--ink2);font-size:18px}
+  .small{font-size:13px;color:var(--ink2)}
+  .toc{columns:2;font-size:14px;gap:24px}@media(max-width:600px){.toc{columns:1}}
+  .toc a{display:block;padding:3px 0;color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.5px;color:var(--ink2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+  .en{color:var(--ink2);font-style:italic}
+  .task-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .task-h .id{font-weight:700;color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">ClusterNav · Consolidated Closeout Spec</p>
+<h1>Project Closeout 1.30 — bug fixes cuối, dọn tài liệu song ngữ, đánh giá đóng dự án</h1>
+<div class="meta">
+  <span><b>Target:</b> 1.30 (versionCode 130)</span>
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-16</span>
+  <span><b>Slug:</b> clusternav-closeout-1.28</span>
+</div>
+<div class="meta"><span class="pill" style="background:var(--ok-bg);color:var(--ok)">STATUS: SHIPPED — 1.30 (versionCode 130) built, signed, aapt2 no test surface</span></div>
+<div class="callout accent" style="margin-top:16px"><div class="lbl">Approval gate (1 lần, ngoài tài liệu)</div>
+Đây là spec hợp nhất cho phiên đóng dự án. Owner đã chốt trong chat 2026-08-16: <b>TASK 2 = phương án B</b> (dọn churn keep-alive + hạ interval 400→250ms + ghi rõ nháy còn lại là OEM-internal); <b>bilingual</b> chỉ bộ canonical/user-facing; <b>dọn <code>apk/</code></b> giữ bản release mới nhất; <b>TASK 4</b> rút selector còn ON/OFF; <b>commit/push</b> chỉ khi owner cho phép rõ ràng — không tự push <code>main</code>. Approve spec này → chạy autonomous (implement→test→senior review→security scan→dừng chờ lệnh commit).
+<br><span class="en">EN — Single approval gate. Owner confirmed in chat 2026-08-16: TASK 2 = option B; bilingual for the canonical/user-facing set only; prune <code>apk/</code> to the latest release; TASK 4 reduce to ON/OFF; commit/push only on explicit owner authorization (never auto-push main). Approving this spec authorizes the autonomous run through senior review + security scan, stopping before any commit.</span></div>
+
+<div class="card"><b>Contents</b>
+  <nav class="toc" style="margin-top:8px">
+    <a href="#changelog">1 · Changelog</a><a href="#context">2 · Context</a><a href="#req">3 · Requirements</a>
+    <a href="#design">4 · Design</a><a href="#tasks">5 · Tasks (DAG)</a><a href="#verify">6 · Verification</a>
+    <a href="#open">7 · Open Questions</a><a href="#ref">8 · References</a><a href="#rev">9 · Reviewer Log</a>
+  </nav>
+</div>
+
+<h2 id="changelog"><span class="n">1</span>Changelog</h2>
+<table><thead><tr><th>Rev</th><th>Date</th><th>Change</th></tr></thead><tbody>
+<tr><td>v1</td><td>2026-08-16</td><td>Consolidated closeout spec created from HANDOFF A (coding) + HANDOFF B (HUD research). Assessment done off-car: git state, 6-task source read + off-car/on-car classification, docs inventory. Decisions locked with owner (TASK 2=B; bilingual canonical-only; prune apk/; TASK 4 ON/OFF; no auto-push).</td></tr>
+</tbody></table>
+
+<h2 id="context"><span class="n">2</span>Context</h2>
+<p>ClusterNav là dự án hobby cá nhân (BYD DiLink3.0). Owner quyết định <b>đóng dự án</b>: làm nốt các bug còn lại từ phiên on-car 2026-08-16, dọn/sắp xếp tài liệu (song ngữ VI/EN cho bộ canonical), rồi đánh giá lại toàn cục để chốt trạng thái cuối.
+<br><span class="en">EN — ClusterNav is a personal hobby project on BYD DiLink3.0. The owner is closing it out: finish the remaining bugs from the 2026-08-16 on-car session, clean up + reorganize docs (bilingual VI/EN for the canonical set), then re-evaluate the whole project and record the final state.</span></p>
+
+<h3>Trạng thái working tree (đã kiểm) <span class="en">/ working-tree state</span></h3>
+<ul>
+  <li>Nhánh <code>main</code>, commit cuối <code>fb514bc</code> = 1.26. Uncommitted (dở 1.27): <code>app/build.gradle.kts</code> (126→127), <code>Maneuver.kt</code> (<code>ROUNDABOUT.toHudIcon</code> 13→20 — <b>chỉ chỉnh số generic, HANDOFF A nói CHƯA đủ</b>), <code>ManeuverTest.kt</code>, +4 docs. TASK 1 thật (theo hướng) <b>chưa làm</b>.</li>
+  <li><code>apk/</code>: ~40 APK cũ (0.63→1.27) untracked; nhiều doc/script mới untracked.</li>
+  <li>Docs: <code>_handoff</code> 101 file, <code>diagnostics</code> 74 file, <code>specs</code> 35 file + review/reference/design/research/refactor. README ghi "1.18" (stale); <code>HUONG-DAN.md</code> ở thời 1.13 (stale).</li>
+</ul>
+
+<h3>Nền on-car 2026-08-16 (dùng cho mọi task) <span class="en">/ on-car baseline</span></h3>
+<ul>
+  <li><b>Bảng CAN vòng xuyến = khớp 100% OpenBYD <code>HudController.java</code></b> (owner soi ảnh sweep): <code>15=RAB¾ trái · 16=RAB¼ trái · 17=RAB¾ phải · 18=RAB¼ phải · 19=generic CW · 20=generic/straight CCW · 21/22=u-turn · 25..34=CCW lối ra 1..10 · 35..44=CW lối ra 1..10</code>.</li>
+  <li>Centre "Giữa+ETA" render khi <b>naviState=1</b> (broadcast AUTONAVI mở). <b>Đã xác minh bằng code</b>: heartbeat 400ms re-gửi <code>EXTRA_STATE=1</code> liên tục.</li>
+  <li>HUD kính không nuôi được trên xe owner = cờ coding xe <code>0x38B00030</code> chưa provisioned (HANDOFF B) — <b>KHÔNG phải bug app</b>. App ghi oversea đã đúng; xe Sealion 6 (provision) tự mirror.</li>
+</ul>
+
+<h2 id="req"><span class="n">3</span>Requirements</h2>
+<p>Mỗi requirement có acceptance criteria kiểm được. <span class="en">Each requirement has verifiable acceptance criteria.</span></p>
+<table><thead><tr><th>ID</th><th>Yêu cầu / Requirement</th><th>Acceptance</th></tr></thead><tbody>
+<tr><td><b>R1</b></td><td>Vòng xuyến hiện HƯỚNG RA + SỐ LỐI RA (hết generic). <span class="en">Roundabout shows exit direction + exit number.</span></td><td>GMaps vòng xuyến rẽ trái→HUD CAN 15; phải→18; thẳng→20; u-turn→22; "lối ra thứ 3"→27. Unit test khoá từng chữ ký→CAN theo bảng OpenBYD.</td></tr>
+<tr><td><b>R2</b></td><td>Voice-key sống lại sau reboot bằng tắt/bật "Nút vật lý" (không cần restart app). <span class="en">Voice-key recovers via toggle OFF→ON.</span></td><td>Toggle OFF→ON reset single-flight + fresh grant + force-rebind; grant hang tự nhả qua timeout. Test wiring off-car.</td></tr>
+<tr><td><b>R3</b></td><td>Selector chế độ cụm không còn nút chết. <span class="en">No dead cluster-mode buttons.</span></td><td>UI còn ON/OFF (bỏ 3 mode layout chết). ON=Giữa+ETA, OFF=tắt overlay.</td></tr>
+<tr><td><b>R4</b></td><td>Hết spam log feature không provisioned; vẫn chạy trên xe provision oversea. <span class="en">No rejected-feature log spam; still works where oversea is provisioned.</span></td><td>Feature trả rejection (−2147482648/no-permission) → cache → skip frame sau. Feature thành công → tiếp tục ghi. Test cache off-car.</td></tr>
+<tr><td><b>R5</b></td><td>Centre lên ổn định lúc boot (naviState prime). <span class="en">Centre stable at boot.</span></td><td>Verify ordering NavRepository:110-140; nếu HAL-first-frame trước naviState → prime 1 broadcast trước/cùng frame HAL đầu. Test ordering.</td></tr>
+<tr><td><b>R6</b></td><td>Giảm churn keep-alive + hạ interval; nháy còn lại ghi rõ là OEM-internal. <span class="en">Reduce keep-alive churn + lower interval; document residual as OEM-internal.</span></td><td>Keep-alive re-assert CONTENT (icon/dist/road), không re-fire status/screen-mode/SDK. <code>DEFAULT_INTERVAL_MS</code> 400→250 (giữ maxAge 180s). Test.</td></tr>
+<tr><td><b>R7</b></td><td>Tài liệu dọn + song ngữ bộ canonical. <span class="en">Docs cleaned + bilingual canonical set.</span></td><td>Historical → <code>docs/archive/</code>; README + HUONG-DAN + closeout doc song ngữ VI/EN, cập nhật 1.28; link không gãy.</td></tr>
+<tr><td><b>R8</b></td><td>Đánh giá đóng dự án + ghi giới hạn đã biết. <span class="en">Closeout evaluation + known limitations.</span></td><td>Doc "final state": what works / blocked (HUD coding flag, 4-mode wall, TASK2 OEM-internal, DR removed). README status 1.18→1.28.</td></tr>
+<tr><td><b>R9</b></td><td>Build xanh, không lộ test surface. <span class="en">Green build, no test surface.</span></td><td><code>:core:test :app:testDebugUnitTest :car-integration:test</code> pass; <code>assembleRelease</code> ký được; <code>aapt2</code> xác nhận không có <code>vehicleTest</code> surface trong release APK.</td></tr>
+</tbody></table>
+
+<h2 id="design"><span class="n">4</span>Design</h2>
+<div class="callout accent"><div class="lbl">Tech freshness</div>KHÔNG thêm dependency mới. Stack giữ nguyên: Kotlin/JDK17, Android compileSdk/targetSdk 37, minSdk 29, JUnit4, <code>dadb</code> (Apache-2.0). Mọi thay đổi nằm trong code Kotlin/Android hiện có + pattern sẵn có (enum encoder, AtomicBoolean single-flight, ScheduledExecutorService). Context7 freshness check để ở stage senior review (không có lib mới để verify ở planning). <span class="en">EN — No new dependencies; existing stack unchanged. Context7 freshness check deferred to senior-review stage.</span></div>
+
+<h3>Kiến trúc 2 đường nav (nền cho TASK 2/5/6) <span class="en">/ two nav paths</span></h3>
+<div class="diagram">
+  <div class="flow">
+    <div class="fnode"><div class="h">GMaps noti + arrow bitmap</div><div class="s">NavNotificationListener → classify</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">NavState (maneuver TRUNG LẬP)</div><div class="s">nguồn sự thật 1 quyết định hướng</div></div>
+  </div>
+  <div class="flow" style="margin-top:12px">
+    <div class="arrow">↳</div>
+    <div class="fnode hb"><div class="h">Đường A · Cluster LANE (strip)</div><div class="s">ClusterBroadcaster → AmapEmissionArbiter · broadcast AUTONAVI</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode good"><div class="h">heartbeat 400ms · EXTRA_STATE=1</div><div class="s">giữ naviState=1 liên tục ✓ (đã verify code)</div></div>
+  </div>
+  <div class="flow" style="margin-top:12px">
+    <div class="arrow">↳</div>
+    <div class="fnode hb"><div class="h">Đường B · Centre "Giữa+ETA" + HUD</div><div class="s">NavigationHudOwner → BydHal.writeNavFrame (HAL)</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">keep-alive 400→250ms</div><div class="s">re-assert content (TASK2) · gate bởi navOnlyMode (Cast OFF)</div></div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--accent-bg);border-color:var(--accent)"></span> đường có heartbeat</span>
+    <span><span class="sw" style="background:var(--ok-bg);border-color:var(--ok)"></span> đã verify/fix</span>
+  </div>
+</div>
+<p class="small">Centre render = frame HAL tươi (đường B) <b>AND</b> naviState=1 (đường A). Cả hai heartbeat 400ms nhưng khác scheduler; naviState là session-flag latch (giữ =1 tới khi STOP) nên drift không đóng cổng.</p>
+
+<h3 class="task-h"><span class="id">TASK 1</span> Vòng xuyến: hướng ra + số lối ra <span class="tag off">off-car</span></h3>
+<p><b>2 lỗ gốc:</b> (1) <code>ManeuverSignature</code> gộp mọi biến thể vòng xuyến về generic (<code>roundabout→11/20</code>); (2) số lối ra phụ thuộc text GMaps thường không có. <b>Bottleneck</b>: <code>NavState.maneuverIcon</code> (AMAP int) collapse mọi vòng xuyến→11→<code>fromAmapIcon(11)=ROUNDABOUT</code> generic.</p>
+<div class="diagram"><div class="flow">
+  <div class="fnode">chữ ký icon<br><span class="s">ManeuverRegistry name</span></div><div class="arrow">→</div>
+  <div class="fnode bad">cũ: nameToAmap<br><span class="s">roundabout→11 (mất hướng)</span></div><div class="arrow">→</div>
+  <div class="fnode">AMAP 11<div class="s">→ fromAmapIcon → ROUNDABOUT generic</div></div><div class="arrow">→</div>
+  <div class="fnode bad">toHudIcon=20<div class="s">generic — bug</div></div>
+</div>
+<div class="flow" style="margin-top:12px">
+  <div class="fnode">chữ ký icon</div><div class="arrow">→</div>
+  <div class="fnode good">mới: nameToManeuver<br><span class="s">per-variant (mirror w40.java)</span></div><div class="arrow">→</div>
+  <div class="fnode good">NavState.maneuver = ROUNDABOUT_LEFT…<div class="s">encode-only, giữ trực tiếp</div></div><div class="arrow">→</div>
+  <div class="fnode good">toHudIcon=15/18/20/22<div class="s">có hướng ✓</div></div>
+</div></div>
+<ul>
+  <li><b>core <code>Maneuver.kt</code>:</b> thêm member encode-only: <code>ROUNDABOUT_LEFT</code>(HUD 15), <code>ROUNDABOUT_RIGHT</code>(18), <code>ROUNDABOUT_STRAIGHT</code>(20), <code>ROUNDABOUT_UTURN</code>(22) + CW: <code>_LEFT_CW</code>(16)/<code>_RIGHT_CW</code>(17)/<code>_STRAIGHT_CW</code>(19)/<code>_UTURN_CW</code>(21). <code>toAmapIcon()</code>=11 hết (cụm-strip generic). <b>KHÔNG</b> vào <code>fromAmapIcon</code> (giữ khứ hồi AMAP 11→ROUNDABOUT cho cụm). <code>ROUNDABOUT</code> generic giữ nguyên (fallback).</li>
+  <li><b>core <code>ManeuverSignature.kt</code>:</b> thêm <code>nameToManeuver(name): Maneuver?</code> map per-variant theo OpenBYD <code>w40.java</code> (chữ ký <code>_ccw_*_left/_slight_left/_sharp_left→_LEFT</code>, <code>_right→_RIGHT</code>, <code>_straight→_STRAIGHT</code>, <code>_u_turn→_UTURN</code>, CW→_CW; <code>_exit</code> thuần→<code>ROUNDABOUT_EXIT</code>; <code>enter_ccw</code> generic→<code>ROUNDABOUT</code>). Giữ <code>nameToAmap</code>=11 (cụm không có glyph hướng).</li>
+  <li><b>app wiring:</b> nơi classify arrow trước ingest (<code>NavNotificationListener</code>) set <code>NavState.maneuver = ManeuverSignature.classifyManeuver(bitmap)</code> trực tiếp → <code>NavRepository:72</code> giữ (<code>value.maneuver ?: fromAmapIcon(...)</code>). <code>NavRepository:127-131</code> giữ ưu tiên số lối ra <code>24+N</code>; khi không số, <code>maneuver?.toHudIcon()</code> ra hướng.</li>
+  <li><b>Rủi ro:</b> map SAI hướng tệ hơn generic → test bám ĐÚNG bảng OpenBYD (đã cross-validate on-car). VN CCW là chính; CW giữ cho LHT.</li>
+</ul>
+
+<h3 class="task-h"><span class="id">TASK 3</span> Voice-key reset khi tắt/bật <span class="tag off">off-car</span></h3>
+<ul>
+  <li><b>Bug:</b> <code>NavConnect.doGrantAccessibility:106</code> <code>grantingAcc.compareAndSet(false,true)</code> → nếu grant trước HANG (dadb kẹt), cờ giữ <code>true</code> → mọi lần sau no-op → chỉ restart app mới reset.</li>
+  <li><b>Fix:</b> (1) đường "grant có RESET" cho path enable: <code>grantAccessibility(reset=true)</code> → set <code>grantingAcc=false</code> (+ interrupt/bỏ grant cũ nếu hang) trước khi <code>compareAndSet</code>, rồi fresh grant + <code>forceRebindIfNeeded</code>. (2) timeout cho dadb session trong grant để single-flight tự nhả (không hang vô hạn). <b>KHÔNG</b> auto-loop/backoff.</li>
+  <li><b>Wiring:</b> <code>MainActivity.setupVoiceKeyControls</code> switch OFF→ON gọi path reset; path start bình thường (Nav+HUD) giữ single-flight thường.</li>
+  <li><b>Test:</b> mở rộng <code>AccessibilityForceBindTest</code>/<code>AccessibilityRebindTest</code>: assert path enable gọi grant-reset; assert timeout nhả cờ.</li>
+</ul>
+
+<h3 class="task-h"><span class="id">TASK 4</span> Selector cụm → ON/OFF <span class="tag off">off-car</span></h3>
+<ul>
+  <li>On-car verdict: 3 mode layout (Đơn giản/Toàn/Nhỏ) KHÔNG đổi live (no-root wall); chỉ OFF chạy. <b>Rút UI còn ON/OFF</b> (đúng "no dead button").</li>
+  <li><b><code>MainActivity</code>:</b> spinner 4 mục → 2 mục: <b>Bật (Giữa + ETA)</b> / <b>Tắt</b>. Map ON→<code>NAV_SCREEN_SIMPLE</code> (mode render centre đã proven), OFF→<code>NAV_SCREEN_OFF</code>.</li>
+  <li><code>Prefs.NAV_SCREEN_FULL/SMALL</code> giữ hằng số (back-compat + <code>BydHal.NAV_SCREEN_MODE_ON</code>) nhưng KHÔNG cho chọn ở UI. Migrate pref cũ =FULL/SMALL → SIMPLE khi đọc.</li>
+</ul>
+
+<h3 class="task-h"><span class="id">TASK 5</span> Runtime-rejection cache <span class="tag off">off-car</span></h3>
+<ul>
+  <li><code>BydHal.writeNavFrame</code> ghi oversea <code>0x1F7*</code> + SDK mỗi frame → trên trim owner rc=−2147482648 + spam <code>no permission device 1007</code>.</li>
+  <li><b>Fix:</b> cache rejection <b>per-feature-id</b> in-process (Set/ConcurrentHashMap). Trước khi ghi 1 feature đã-bị-rejection → skip. Feature trả rejection lần đầu (rc==−2147482648 hoặc SDK ném no-permission) → thêm vào cache. Xe provision oversea (Sealion 6) → feature không bị reject → không cache → <b>vẫn ghi bình thường</b>. Cache reset khi process restart. <b>KHÔNG hard-remove</b> code oversea.</li>
+  <li><b>Test:</b> feature trả sentinel rejection → frame sau bị skip; feature thành công → tiếp tục ghi.</li>
+</ul>
+
+<h3 class="task-h"><span class="id">TASK 6</span> Prime naviState lúc boot <span class="tag off">off-car (verify-first)</span></h3>
+<ul>
+  <li><b>Verify:</b> <code>NavRepository.createCoordinator</code> delivery lambda gọi <code>emitLane</code> (broadcast, naviState=1) TRƯỚC <code>owner.push</code> (HAL) mỗi frame → ordering per-frame là broadcast-first. Nhưng cả hai async khác scheduler → thứ tự delivery boot không đảm bảo.</li>
+  <li><b>Fix (leading):</b> lúc coordinator start (boot headless / bật Nav+HUD), <b>prime 1 broadcast EXTRA_STATE=1</b> (mở session) trước frame HAL đầu → centre có naviState=1 sẵn. Lành tính (chỉ re-khẳng định session).</li>
+  <li><b>Test:</b> assert coordinator phát naviState prime trước HAL write đầu tiên. Nếu verify cho thấy đã đúng → NO-OP + ghi rõ trong doc.</li>
+</ul>
+
+<h3 class="task-h"><span class="id">TASK 2</span> Keep-alive churn + interval (option B) <span class="tag off">off-car</span></h3>
+<div class="callout ok"><div class="lbl">Code inspection kết luận (không cần on-car)</div>Đã loại 4/5 nghi phạm bằng đọc code: naviState giữ liên tục (heartbeat re-gửi EXTRA_STATE=1); dedup bị bypass bởi keep-alive; maxAge 180s (số liệu thật); cast-flip không định kỳ. Còn lại chỉ "400ms có đủ nhanh vs timeout render OEM không" = OEM-internal, hộp đen. <span class="en">EN — 4 of 5 candidates ruled out by code. The only live one is OEM-internal render timeout — not observable/controllable from the app.</span></div>
+<ul>
+  <li><b>Dọn churn:</b> keep-alive (<code>NavigationHudOwner.resubmitApplied</code>) hiện re-ghi CẢ frame (status=2 + screen-mode + SDK + oversea) mỗi tick. Đổi sang <b>re-assert CONTENT</b> (icon/dist/road + oversea equivalents chịu TASK 5 cache) — KHÔNG re-fire <code>SEND_NAVI_STATUS</code>, <code>SET_NAVI_SCREEN_STATUS</code>, SDK (status là session-flag latch, không cần đặt lại 2.5×/s). Thêm <code>BydHal.writeNavFrame(..., keepAlive:Boolean=false)</code> hoặc <code>reassertNavContent(...)</code>.</li>
+  <li><b>Hạ interval:</b> <code>HudKeepAlivePolicy.DEFAULT_INTERVAL_MS</code> 400→<b>250</b>. Giữ <code>maxAge 180_000</code> (case hầm/kẹt an toàn — có số liệu).</li>
+  <li><b>Document:</b> nếu sau đó vẫn nháy → OEM render-layer, ngoài tầm app (ghi vào closeout, KHÔNG nợ đo on-car).</li>
+  <li><b>Test:</b> <code>HudKeepAlivePolicyTest</code> interval default=250; test keep-alive path là content-only (không re-fire status/screen-mode).</li>
+</ul>
+
+<h3>Tài liệu: dọn + song ngữ (R7/R8) <span class="en">/ docs cleanup + bilingual</span></h3>
+<ul>
+  <li><b>Archive:</b> tạo <code>docs/archive/</code>; <code>git mv</code> historical vào đó: <code>_handoff/*</code> (session/stage/exact-source JSON), <code>diagnostics/*</code> lịch sử + raw logs/png/ps1, <code>review/*</code> cũ. GIỮ: canonical specs (two-track plan, cast/uxui rebaseline, dead-reckon, closeout này), <code>diagnostics/nav-icon-mapping-2026-08-16.html</code> + <code>nav-output-architecture-2026-08-16.html</code> (còn tham chiếu), <code>HISTORICAL-ARTIFACTS.md</code>. Không gãy link README.</li>
+  <li><b>Prune <code>apk/</code>:</b> giữ <code>ClusterNav-1.30-release.apk</code> (mới nhất); bỏ ~40 bản cũ + vehicle-test (git history còn; OTA chỉ cần bản mới). Blocklist 1.04 vẫn ghi trong on-car guard.</li>
+  <li><b>Bilingual VI/EN (canonical only):</b> <code>README.md</code> (EN primary + mục VI, cập nhật 1.28), <code>docs/HUONG-DAN.md</code> (VI + EN, refresh 1.28), spec closeout này (đã song ngữ inline), doc "final state" mới <code>docs/CLOSEOUT-2026-08-16.md</code> (VI+EN). Docs lịch sử KHÔNG dịch.</li>
+</ul>
+
+<h2 id="tasks"><span class="n">5</span>Tasks (DAG — thực thi qua sub-agent)</h2>
+<p>Rule: ≤5 deliverable/agent, ≤2 agent/stage, dependency→tách stage; mỗi stage có exit gate verify được. <span class="en">Executed via sub-agent DAG.</span></p>
+<table><thead><tr><th>Stage</th><th>Agent</th><th>Deliverables</th><th>Exit gate</th></tr></thead><tbody>
+<tr><td><b>S1 · core</b></td><td>A (core)</td><td>TASK 1 core (Maneuver members + ManeuverSignature <code>nameToManeuver</code> + ManeuverTest/ManeuverSignatureTest) · TASK 2 core (HudKeepAlivePolicy interval 250 + test) · TASK 5 core helper nếu tách được</td><td><code>:core:test</code> xanh; map từng chữ ký→CAN khớp bảng OpenBYD.</td></tr>
+<tr><td><b>S2 · app</b><br>(reads S1)</td><td>B1</td><td>TASK 1 app wiring (NavNotificationListener/NavRepository set NavState.maneuver) · TASK 6 (naviState prime) · TASK 2 app (content-only keep-alive)</td><td rowspan="2"><code>:app:testDebugUnitTest</code> + <code>:car-integration:test</code> xanh; PhysicalHudOwnershipTest xanh.</td></tr>
+<tr><td></td><td>B2</td><td>TASK 3 (voice-key reset + timeout) · TASK 4 (selector ON/OFF) · TASK 5 (BydHal rejection cache + test)</td></tr>
+<tr><td><b>S3 · verify+docs</b></td><td>orchestrator</td><td>Bump 1.28 · full test + <code>assembleRelease</code> + aapt2 no-test-surface · docs archive/prune/bilingual · <code>CLOSEOUT-2026-08-16.md</code> + README 1.28</td><td>R9 pass; link README không gãy; APK ký.</td></tr>
+<tr><td><b>S4 · review+scan</b></td><td>reviewer + security</td><td>Senior review (model cao nhất) patch loop tới 0 P0–P1 + Context7 freshness + boundary shape · security scan diff</td><td>0 P0–P1; scan CLEAN/không BLOCK; DỪNG chờ owner cho phép commit.</td></tr>
+</tbody></table>
+
+<h2 id="verify"><span class="n">6</span>Verification</h2>
+<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || echo /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home)
+./gradlew :core:test :app:testDebugUnitTest :car-integration:test   # unit — phải xanh
+./gradlew :app:assembleRelease                                      # APK ký
+# aapt2: xác nhận release KHÔNG export test surface (TEST_ADAS_*/TEST_SPEED_LIMIT)</code></pre>
+<ul>
+  <li><b>R1:</b> ManeuverTest/ManeuverSignatureTest khoá: rẽ trái→15, phải→18, thẳng→20, u-turn→22, CW 16/17/19/21; "lối ra thứ 3"→27; bất biến hai-đầu-ra giữ cho non-roundabout.</li>
+  <li><b>R2:</b> test wiring: enable-path gọi grant-reset; timeout nhả single-flight.</li>
+  <li><b>R3:</b> UI còn 2 lựa chọn; pref cũ FULL/SMALL migrate→SIMPLE.</li>
+  <li><b>R4:</b> test rejection cache skip/keep.</li>
+  <li><b>R5:</b> test ordering prime trước HAL đầu.</li>
+  <li><b>R6:</b> test interval=250 + content-only keep-alive.</li>
+  <li><b>R7/R8:</b> <code>docs/archive/</code> tồn tại; README/HUONG-DAN/CLOSEOUT song ngữ + 1.28; grep link README không trỏ file đã move.</li>
+  <li><b>R9:</b> 3 test task xanh + assembleRelease ký + aapt2 sạch.</li>
+</ul>
+
+<h2 id="open"><span class="n">7</span>Open Questions / giới hạn on-car</h2>
+<table><tbody>
+<tr><td><b>Q1</b></td><td><b>TASK 2 residual:</b> sau khi hạ interval 250 + dọn churn, còn nháy không? — chỉ 1 quan sát trực quan (yes/no) của owner, KHÔNG mò log. Nếu còn → OEM render-layer, đóng như giới hạn.</td></tr>
+<tr><td><b>Q2</b></td><td><b>Vòng xuyến on-car:</b> GMaps VN phát chữ ký hướng (CCW variants) đủ chưa? Map bám OpenBYD (đã cross-validate glyph), nhưng xác nhận nhẹ khi lái qua vòng xuyến thật.</td></tr>
+<tr><td><b>Q3</b></td><td><b>HUD kính (HANDOFF B):</b> chặn ở cờ coding xe <code>0x38B00030</code> — cần coding tool BYD (OBD/UDS), ngoài phần mềm. Không phải bug app. Chờ data Sealion 6 (<code>getraw 38B00030</code>) để chốt 100%.</td></tr>
+<tr><td><b>Q4</b></td><td><b>4-mode layout:</b> no-root wall — không đổi live được từ Android. Đóng: rút ON/OFF (TASK 4).</td></tr>
+</tbody></table>
+
+<h2 id="ref"><span class="n">8</span>References</h2>
+<ul>
+  <li>HANDOFF A (coding): <code>docs/_handoff/next-session-A-coding-2026-08-16.md</code></li>
+  <li>HANDOFF B (HUD research): <code>docs/_handoff/next-session-B-research-hud-2026-08-16.md</code></li>
+  <li>On-car session: <code>docs/diagnostics/oncar-session-2026-08-16.md</code> · app-code-updates: <code>docs/diagnostics/app-code-updates-2026-08-16.md</code></li>
+  <li>Icon tables: <code>docs/diagnostics/re-maneuver-icon-tables-2026-08-14.md</code> · <code>nav-icon-mapping-2026-08-16.html</code> · <code>nav-output-architecture-2026-08-16.html</code></li>
+  <li>Voice-key: <code>docs/diagnostics/oncar-handoff-voicekey-2026-08-14.md</code></li>
+  <li>OpenBYD RE: <code>~/Library/Caches/clusternav-re/openbyd-2.3/sources/</code> (<code>w40.java</code>, <code>HudController.java</code>, <code>mm1.java</code>, <code>YandexManager.java</code>)</li>
+  <li>Baseline: <code>docs/specs/clusternav-two-track-final-plan.html</code></li>
+</ul>
+
+<h2 id="rev"><span class="n">9</span>Reviewer Log</h2>
+<p class="small">Append-only. Mỗi pass review thêm 1 mục, không ghi đè.</p>
+<div class="card"><b>Pass 0 — 2026-08-16</b> — Spec tạo, chờ approval. Chưa có code. <span class="en">Spec created, awaiting approval; no code yet.</span></div>
+<div class="card"><b>Pass 1 — 2026-08-16</b> — Senior review <b>APPROVED</b> (0 P0/P1). TASK 4: giá trị ON được sửa về <code>NAV_SCREEN_FULL</code> đã chứng minh (proven). Security scan <b>CLEAN</b> sau khi redact placeholder. Kèm đợt hardening đóng dự án: giảm log (log-on-change + chẩn đoán nặng sau cờ verbose off-main), cache reflection BydHal trên hot-path, disclaimer lần đầu mở app, hoàn tất ghi công CREDITS, lưu trữ diagnostics lịch sử. 1.28 (versionCode 128) build + ký; <code>aapt2</code> xác nhận không có test surface trong release APK. <span class="en">Senior review APPROVED (0 P0/P1). TASK 4: the ON value was corrected to the proven <code>NAV_SCREEN_FULL</code>. Security scan CLEAN after placeholder redactions. Includes the closeout hardening pass: logging reduction (log-on-change + heavy diagnostics behind an off-main verbose flag), BydHal reflection caching on the hot path, in-app first-launch disclaimer, CREDITS attribution completed, historical diagnostics archived. 1.28 (versionCode 128) built + signed; <code>aapt2</code> confirms no test surface in the release APK.</span></div>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

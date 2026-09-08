@@ -1,0 +1,4 @@
+force_resizable_activities=1
+transition_animation_scale=0.5
+window_animation_scale=0.5
+animator_duration_scale=1.0

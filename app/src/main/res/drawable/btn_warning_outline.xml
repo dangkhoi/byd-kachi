@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  btn_warning_outline — DARK cockpit warning outline button (L2 Stage 1). Same resource name + structure.
+  Transparent fill + amber stroke + ~12dp corners. Pressed overlay switched from black to translucent
+  amber. Strokes reference @color/warn_amber + @color/divider (auto-reskinned).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="12dp" />
+            <stroke android:width="1dp" android:color="@color/divider" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/press_amber" />
+            <corners android:radius="12dp" />
+            <stroke android:width="1.5dp" android:color="@color/warn_amber" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="12dp" />
+            <stroke android:width="1.5dp" android:color="@color/warn_amber" />
+        </shape>
+    </item>
+</selector>

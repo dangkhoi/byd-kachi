@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Kế hoạch T10 thử HUD và biển tốc độ trên xe</title>
+<script>(function(){var k='seal-hud-sign-t10-theme';var t=localStorage.getItem(k);var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{color-scheme:light;--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 60px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{color-scheme:dark;--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.62 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1240px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700;letter-spacing:-.01em}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:72px 0 42px}.eyebrow,.meta,.num,.phase-id,th,.mono{font-family:var(--mono)}.eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,62px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:1080px}.lead{font-size:19px;color:var(--muted);max-width:960px}.meta{font-size:12px;color:var(--muted);margin-top:20px}.stats,.grid2,.grid3,.grid4{display:grid;gap:14px}.stats{grid-template-columns:repeat(5,1fr);margin-top:30px}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}.stat,.card,.callout,.phase,.review,.fnode,.diagram,.gate-card{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:17px}.stat b{display:block;font-size:22px;line-height:1.25}.stat span,.small{font-size:12px;color:var(--muted)}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:22px 0 0}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:58px;scroll-margin-top:52px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font-size:11px;font-weight:700;color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.card,.review,.gate-card{padding:19px}.card h3,.gate-card h3{margin-top:0}.card p:last-child,.card ul:last-child,.card ol:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.blue{background:var(--blue-soft);border-color:var(--blue)}.green{background:var(--green-soft);border-color:var(--green)}.amber{background:var(--amber-soft);border-color:var(--amber)}.red{background:var(--red-soft);border-color:var(--red)}.purple{background:var(--purple-soft);border-color:var(--purple)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px;overflow-wrap:anywhere}pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:12.5px/1.58 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:860px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.phase{display:grid;grid-template-columns:145px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font-size:12px;font-weight:700;color:var(--blue)}.check,.stop-list{padding-left:0;list-style:none}.check li,.stop-list li{padding:5px 0 5px 27px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.stop-list li:before{content:"■";position:absolute;left:5px;top:8px;color:var(--red);font-size:8px}.pill{display:inline-block;font:700 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue);white-space:nowrap}.pill.green{background:var(--green-soft);color:var(--green)}.pill.amber{background:var(--amber-soft);color:var(--amber)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.purple{background:var(--purple-soft);color:var(--purple)}.review{margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.flow{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;align-items:stretch}.flow.six{grid-template-columns:repeat(6,minmax(0,1fr))}.flow.five{grid-template-columns:repeat(5,minmax(0,1fr))}.fnode{padding:15px;text-align:center;position:relative;min-height:88px;display:flex;flex-direction:column;justify-content:center}.fnode b{display:block;margin-bottom:5px}.fnode span{font:11px/1.45 var(--mono);color:var(--muted)}.fnode:not(:last-child):after{content:"→";position:absolute;right:-14px;top:50%;transform:translateY(-50%);z-index:2;color:var(--muted);font-size:18px}.fnode.good{background:var(--green-soft);border-color:var(--green)}.fnode.warn{background:var(--amber-soft);border-color:var(--amber)}.fnode.bad{background:var(--red-soft);border-color:var(--red)}.fnode.info{background:var(--blue-soft);border-color:var(--blue)}.diagram{padding:22px;overflow:auto}.diagram svg{display:block;min-width:960px;width:100%;height:auto}.box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}.box.blue{fill:var(--blue-soft);stroke:var(--blue)}.box.green{fill:var(--green-soft);stroke:var(--green)}.box.amber{fill:var(--amber-soft);stroke:var(--amber)}.box.red{fill:var(--red-soft);stroke:var(--red)}.box.purple{fill:var(--purple-soft);stroke:var(--purple)}.dt{fill:var(--ink);font:700 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.6;marker-end:url(#arrow)}.edge.green{stroke:var(--green)}.edge.red{stroke:var(--red);stroke-dasharray:5 4}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}.kv{display:grid;grid-template-columns:230px 1fr;gap:9px 18px}.kv b{font:12px var(--mono);color:var(--muted)}.step-list{counter-reset:step;display:grid;gap:10px;padding:0;list-style:none}.step-list li{counter-increment:step;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px 14px 54px;position:relative}.step-list li:before{content:counter(step);position:absolute;left:15px;top:14px;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue);font:700 11px var(--mono)}.step-list strong{color:var(--ink)}.approval{border-left:5px solid var(--amber)}.no-print{display:initial}
+@media(max-width:1020px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3,.grid4{grid-template-columns:1fr}.flow,.flow.six,.flow.five{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.fnode:not(:last-child):after{content:"↓";right:auto;left:50%;top:auto;bottom:-20px;transform:translateX(-50%)}.kv{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme,.no-print{display:none}.wrap{max-width:none}.card,.phase,.review,.diagram,.gate-card{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · T10 HUD/Sign Vehicle Plan</div><button class="theme" type="button" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('seal-hud-sign-t10-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Consolidated spec · FUTURE T10 · plan only</div>
+<h1>Kế hoạch từng bước thử HUD dẫn đường và biển tốc độ trên xe — đọc trước, duyệt offline, rồi mới được ghi.</h1>
+<p class="lead">Phiên đầu tiên luôn chỉ đọc. Mọi phát hiện trên xe là <code>DISCOVERY_ONLY</code>; không phát hiện nào được dùng để ghi trong cùng phiên. Chỉ pack N+1 được tái tạo, review độc lập và chứa candidate <code>READY_FOR_FIELD</code> mới có thể đi vào một phiên mutation được ủy quyền riêng, với prior value, read-back, clear, inverse và restore đã arm trước.</p>
+<div class="callout red"><strong>Trạng thái hiện tại: ARTIFACT_READY_OPERATIONALLY_BLOCKED.</strong> Pack vẫn <code>INERT_IDENTITY_BLOCKED</code>, thiếu authorized T10 handoff, có <code>allowedMutationCandidateRevisionIds=[]</code> và không có candidate <code>READY_FOR_FIELD</code>. Vì vậy tài liệu này không cho phép truy cập xe, ADB/DADB, cài APK hay thay đổi trạng thái xe.</div>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Date: 2026-08-08 · Parents: seal-nav-hud-speed-sign-offcar.html + seal-hud-sign-candidate-expansion.html</p>
+<div class="stats">
+<div class="stat"><b>11</b><span>rows trong template hiện tại</span></div>
+<div class="stat"><b>7</b><span>READ_ONLY rows</span></div>
+<div class="stat"><b>4</b><span>MILESTONE độc lập</span></div>
+<div class="stat"><b>0</b><span>MUTATION rows</span></div>
+<div class="stat"><b>60 phút</b><span>budget hiện tại · 3,600,000 ms</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-08-08</td><td>Tạo kế hoạch T10 hợp nhất cho H8, D-H0 và M1–M4.</td><td>Tách implementation approval, Session N chỉ đọc, review offline, N+1 promotion, mutation authorization, rollback và result sealing.</td></tr>
+<tr><td>2026-08-08</td><td>Đối chiếu pack expansion revision 3 và bốn milestone pack.</td><td>Giữ nguyên <code>INERT_IDENTITY_BLOCKED</code>, 7 read-only + 4 milestone + 0 mutation; S12 bị loại tuyệt đối vì <code>RAW_SELECTOR</code>.</td></tr>
+<tr><td>2026-08-08</td><td>Không tìm thấy <code>docs/specs/_template.html</code>.</td><td>Dùng đúng thứ tự section bắt buộc của workspace và style HTML Apple-like từ các spec hiện hữu; không tạo template thay thế.</td></tr>
+<tr><td>2026-08-10</td><td>Stage A reseal: canonical revision-2 boundary, resolved T10-Q4 inventory and expansion registry revision 4.</td><td>Authorizes exact later T10 source/attestation paths only; all 13 T11 paths remain forbidden and runtime/vehicle work remains unstarted.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="grid3">
+<div class="card"><h3>Đã đóng off-car</h3><p>Parent T0–T9 và expansion review đã đạt zero-finding certification. Các artifact hiện tại là dữ liệu chuẩn bị, không phải bằng chứng capability trên xe.</p></div>
+<div class="card"><h3>Khoảng trống</h3><p>Exact T10 APK/signer/sender/profile chưa tồn tại; vendor/property/provider/QML corpus còn thiếu; vehicle capability vẫn <code>UNKNOWN</code>.</p></div>
+<div class="card"><h3>Mục tiêu T10</h3><p>Thu bằng chứng an toàn, có identity và có thể đảo ngược để quyết định candidate nào—nếu có—được promotion offline cho phiên sau.</p></div>
+</div>
+<h3>2.1 Current immutable planning baseline</h3>
+<div class="scroll"><table><thead><tr><th>Item</th><th>Current value</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>Expansion verdict</td><td><code>NOT_EXHAUSTIVE</code></td><td>Không được suy thành unsupported hoặc field-ready.</td></tr>
+<tr><td>Identity state</td><td><code>INERT_IDENTITY_BLOCKED</code></td><td>Không thể instantiate runtime session.</td></tr>
+<tr><td>Registry revision</td><td><code>4</code> · revision hash <code>cbbc451bbb3a6629c99420024c1d3cd08960d12ba4925bbe3c5cd7429dc09080</code></td><td>Predecessor is revision 3; the same five candidate refs/states are retained without promotion.</td></tr>
+<tr><td>Registry identity</td><td>full <code>cba3e45b044aa021bbbd28046a2eb99e0580fb20e1e3ed70f1419b7c1b424a7c</code> · self <code>c128ad729133a004d6f8140dddd489b1fc1e99050a42af7e064dc02c191da9d3</code></td><td>Canonical regenerated registry bytes.</td></tr>
+<tr><td>Pack SHA-256</td><td><code>d99d602705f0da99dceb0ac43abe9c1a880b0ee817a03ef6aa7a19a2e10d68f3</code></td><td>Planning baseline hiện tại; mọi pack được dùng trên xe phải tự bind exact identity mới.</td></tr>
+<tr><td>Plan identity</td><td>full <code>51674404c6d93791c44198007d59f0fab05364cb6a0315bcb57d3de8446213b4</code> · self <code>4301e4c8401b6dd20f7baadc1273c247afea8bd8736a4987acb7572549db7e8e</code></td><td>Byte identity của revision-4 inert template.</td></tr>
+<tr><td>Manifest identity</td><td>full <code>9c05c05c43f504e89afd2744723f3d8ba2020aa9333a90dcbc50a70219681185</code> · self <code>812dc0c76a1fd0d0ba760055b9ed996d676811eb5a0e7f3be460510313f9c714</code></td><td>Exactly 11 entries; manifest generated last.</td></tr>
+<tr><td>H8</td><td><code>CAND-H-008-PROPERTY-CONFIG-METADATA@3</code> · <code>READ_ONLY_READY</code></td><td>Candidate-bound read-only row duy nhất.</td></tr>
+<tr><td>S11</td><td><code>CAND-S-011-SOURCE-DOMAIN@1</code> · <code>MUTATION_REVIEW</code></td><td>Chỉ có <code>FACT-PARENT-S6</code>; không được mutate.</td></tr>
+<tr><td>S12</td><td><code>CAND-S-012-REJECTED-SHAPE@1</code> · <code>REJECTED</code></td><td>Absolute reject <code>RAW_SELECTOR</code>; không được hồi sinh bằng field trial.</td></tr>
+</tbody></table></div>
+<h3>2.2 User story and success boundary</h3>
+<div class="callout blue"><strong>User story:</strong> Là owner của một thử nghiệm hobby trên xe đang đỗ, tôi muốn thu bằng chứng HUD/navigation/speed-sign theo từng bước có stop gate và rollback rõ ràng, để chỉ những candidate đã được chứng minh và review offline mới có cơ hội được thử ghi trong một phiên sau.</div>
+<div class="grid2">
+<div class="card"><h3>In scope</h3><ul><li>Lập và sau approval mới triển khai transport T10 trong <code>vehicleTest</code>.</li><li>Exact identity, sender/permission/profile preflight.</li><li>Session N chỉ đọc: sáu discovery probes, H8 và bốn milestone observations.</li><li>Offline review, registry/pack N+1 regeneration và independent approval.</li><li>Conditional one-dimension mutation, clear, inverse, restore và D-H0/M1–M4 sealing.</li></ul></div>
+<div class="card"><h3>Out of scope</h3><ul><li>Không chạy xe ngoài đường công cộng hoặc thử khi xe đang di chuyển.</li><li>Không dùng raw ID, MASS, free-form selector, guessed enum hay payload không source-backed.</li><li>Không đổi AmapService khỏi vai trò canonical navigation route.</li><li>Không hợp nhất speed-sign vào navigation transport.</li><li>Không implement T11/release wiring, commit, push hay release trong plan phase.</li></ul></div>
+</div>
+<h3>2.3 Authorization is intentionally split</h3>
+<div class="flow five">
+<div class="fnode info"><b>Approve spec</b><span>cho phép implement + verify off-car T10</span></div>
+<div class="fnode"><b>Build &amp; review</b><span>không xe · không ADB · exact artifact</span></div>
+<div class="fnode warn"><b>Authorize Session N</b><span>exact identity · READ_ONLY only</span></div>
+<div class="fnode"><b>Review + N+1</b><span>offline promotion only</span></div>
+<div class="fnode bad"><b>Authorize mutation</b><span>separate exact pack/candidate consent</span></div>
+</div>
+<div class="callout amber approval"><strong>Approval semantics:</strong> prompt <code>Approve spec seal-hud-sign-vehicle-test-t10</code> là consolidated approval duy nhất cho implementation plan. Nó chỉ cho phép triển khai và kiểm tra T10 off-car. Nó không tự động cho phép kết nối xe, cài APK, chạy Session N hay mutation. Mỗi hành động on-car vẫn cần explicit operational authorization gắn với exact handoff/pack.</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance criteria</th></tr></thead><tbody>
+<tr><td>T10-R1</td><td><strong>Plan approval ≠ vehicle authorization.</strong></td><td>Spec approval chỉ mở implementation/off-car verification. Không có ADB/DADB/install/vehicle command trước một authorization mới chứa exact handoff và session mode.</td></tr>
+<tr><td>T10-R2</td><td><strong>Session đầu tiên chỉ đọc.</strong></td><td>Session N chứa đúng frozen READ_ONLY/MILESTONE rows; <code>allowedMutationCandidateRevisionIds=[]</code>; zero mutation/clear/inverse dispatch.</td></tr>
+<tr><td>T10-R3</td><td><strong>Exact identity fail-closed.</strong></td><td>Source, diff, APK, signer, registry, pack, candidate set, variant, sender, component, permission và profile đều resolved; mismatch/absence chặn trước SESSION_START và phát zero vehicle event.</td></tr>
+<tr><td>T10-R4</td><td><strong>Fixed typed transport only.</strong></td><td>Operation/probe IDs map tới compile-time catalog functions. Không có shell text, selector, raw ID, enum hay provider string đến từ input runtime.</td></tr>
+<tr><td>T10-R5</td><td><strong>Same-session quarantine.</strong></td><td>Mọi dữ liệu mới là <code>DISCOVERY_ONLY</code>; không thay Freeze, CandidateState, allowlist hoặc row order. Chỉ review + regeneration N+1 mới có thể dùng.</td></tr>
+<tr><td>T10-R6</td><td><strong>Physical safety prerequisite.</strong></td><td>Xe ở khu vực riêng, đứng yên, số P, phanh đỗ, có battery support phù hợp, operator + observer, không public-road driving. Thiếu một điều kiện ⇒ no-go.</td></tr>
+<tr><td>T10-R7</td><td><strong>Approved battery threshold.</strong></td><td>Ngưỡng điện áp/nguồn hỗ trợ phải được owner phê duyệt trước phiên và được monitor. Không có ngưỡng hoặc vượt ngưỡng ⇒ dừng; không đoán một con số trong code/plan.</td></tr>
+<tr><td>T10-R8</td><td><strong>One dimension, one live rollback frame.</strong></td><td>Mỗi mutation row đổi đúng một dimension; không row interleaving; normal execution có tối đa một armed rollback frame.</td></tr>
+<tr><td>T10-R9</td><td><strong>Prior/read-back/clear/inverse/restore.</strong></td><td>Mutation chỉ bắt đầu sau prior capture và immutable inverse frame; immediate read-back, content clear và state restore đều bắt buộc; <code>rc=0</code> đơn lẻ không đủ.</td></tr>
+<tr><td>T10-R10</td><td><strong>Started row finishes cleanup.</strong></td><td>Mutation/clear failure hoặc deadline không được bỏ qua clear/restore. Chỉ restore PASS mới pop rollback frame và cho phép terminal result bình thường.</td></tr>
+<tr><td>T10-R11</td><td><strong>Restore failure hard-blocks.</strong></td><td>Restore failure giữ frame armed, chặn toàn bộ mutation sau đó, kích hoạt recovery procedure và không được tự động retry/đoán lệnh.</td></tr>
+<tr><td>T10-R12</td><td><strong>Canonical navigation and separate signs.</strong></td><td>AmapService tiếp tục là canonical navigation route. Speed-sign source/frame/ports và clear lifecycle độc lập; không encode sign vào navigation distance hoặc suy ngược.</td></tr>
+<tr><td>T10-R13</td><td><strong>Independent surface truth.</strong></td><td>Cluster navigation không chứng minh M1; M1 không chứng minh M2; M3 không chứng minh M4. Cluster/HUD observations được ghi riêng cho từng result ID.</td></tr>
+<tr><td>T10-R14</td><td><strong>Mutation requires READY_FOR_FIELD in N+1.</strong></td><td>Candidate latest revision, exact pack row và allowlist đều phải là <code>READY_FOR_FIELD</code>; <code>MUTATION_REVIEW</code>, <code>READ_ONLY_READY</code> và <code>REJECTED</code> không thể mutate.</td></tr>
+<tr><td>T10-R15</td><td><strong>Source-backed priority, not guessed fallback.</strong></td><td>M1 ưu tiên H4→H1, rồi H2/H3; M2 H6; M3 closure S11 rồi S1→S5→S4; M4 safe-driving→fusion. Mỗi item vẫn cần promotion độc lập; H0/H5 deprioritized và S12 cấm tuyệt đối.</td></tr>
+<tr><td>T10-R16</td><td><strong>Physical HUD ownership.</strong></td><td>D-H0 là diagnostic riêng có consent. Production path không tự tắt physical HUD; prior OFF chỉ được restore OFF trong transaction diagnostic đã phê duyệt.</td></tr>
+<tr><td>T10-R17</td><td><strong>Privacy and local raw evidence.</strong></td><td>Tracked output không có VIN, serial, IP, GPS, route, credentials, app inventory, private path, source/decompile payload. Raw evidence ở ignored local storage và phải redact trước khi chia sẻ.</td></tr>
+<tr><td>T10-R18</td><td><strong>Hash-chained result ledger.</strong></td><td>Session/row/event identity, outcomes, evidence references và terminal result validate theo <code>result-ledger.schema.json</code>; previous/event hashes gapless và immutable.</td></tr>
+<tr><td>T10-R19</td><td><strong>vehicleTest and release isolation.</strong></td><td>Probe receiver/activity/transport chỉ ở authorized T10 surface; main/release giữ zero test action/raw selector. Unknown sender permission defaults deny/non-exported, không hạ bảo vệ.</td></tr>
+<tr><td>T10-R20</td><td><strong>Explicit transport target.</strong></td><td>Host chọn đúng một approved serial/transport; 0, nhiều hơn 1, offline, unauthorized hoặc identity drift đều fail. Không dùng “first discovered device”.</td></tr>
+<tr><td>T10-R21</td><td><strong>Recovery before evidence claim.</strong></td><td>Không row nào PASS nếu clear/restore chưa PASS; recovery-blocked session không được dùng để promote candidate hoặc claim capability.</td></tr>
+<tr><td>T10-R22</td><td><strong>T11 remains separate.</strong></td><td>D-results không tự mở production wiring. T11, release candidate, UI capability và P-M1…P-M4 cần spec/authorization riêng.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+<h3>4.1 End-to-end control flow</h3>
+<div class="diagram"><svg viewBox="0 0 1180 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="T10 closed-world execution flow">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box blue" x="25" y="155" width="180" height="90" rx="14"/><text class="dt" x="115" y="186" text-anchor="middle">Frozen pack</text><text class="ds" x="115" y="207" text-anchor="middle">registry · rows · allowlists</text><text class="ds" x="115" y="226" text-anchor="middle">exact identity</text>
+<rect class="box purple" x="250" y="135" width="210" height="130" rx="14"/><text class="dt" x="355" y="168" text-anchor="middle">Host runner</text><text class="ds" x="355" y="190" text-anchor="middle">fixed row order</text><text class="ds" x="355" y="209" text-anchor="middle">budget · ledger · stop gates</text><text class="ds" x="355" y="228" text-anchor="middle">no free-form command</text>
+<rect class="box amber" x="505" y="135" width="210" height="130" rx="14"/><text class="dt" x="610" y="168" text-anchor="middle">DadbVehicleTransport</text><text class="ds" x="610" y="190" text-anchor="middle">explicit serial only</text><text class="ds" x="610" y="209" text-anchor="middle">bounded I/O · typed outcome</text><text class="ds" x="610" y="228" text-anchor="middle">transport faults separate</text>
+<rect class="box blue" x="760" y="135" width="200" height="130" rx="14"/><text class="dt" x="860" y="168" text-anchor="middle">vehicleTest boundary</text><text class="ds" x="860" y="190" text-anchor="middle">receiver/activity</text><text class="ds" x="860" y="209" text-anchor="middle">sender + permission check</text><text class="ds" x="860" y="228" text-anchor="middle">fixed operation IDs</text>
+<rect class="box green" x="1005" y="35" width="150" height="90" rx="14"/><text class="dt" x="1080" y="67" text-anchor="middle">Read probes</text><text class="ds" x="1080" y="89" text-anchor="middle">metadata only</text>
+<rect class="box red" x="1005" y="155" width="150" height="90" rx="14"/><text class="dt" x="1080" y="187" text-anchor="middle">Fixed catalogs</text><text class="ds" x="1080" y="209" text-anchor="middle">one dimension</text>
+<rect class="box green" x="1005" y="285" width="150" height="90" rx="14"/><text class="dt" x="1080" y="317" text-anchor="middle">Surfaces</text><text class="ds" x="1080" y="339" text-anchor="middle">M1 · M2 · M3 · M4</text>
+<rect class="box" x="505" y="330" width="455" height="90" rx="14"/><text class="dt" x="732" y="361" text-anchor="middle">Hash-chained ledger + local raw evidence</text><text class="ds" x="732" y="383" text-anchor="middle">prior · read-back · observation · clear · restore · terminal</text>
+<path class="edge" d="M205,200 H250"/><path class="edge" d="M460,200 H505"/><path class="edge" d="M715,200 H760"/><path class="edge green" d="M960,175 C985,175 985,80 1005,80"/><path class="edge red" d="M960,200 H1005"/><path class="edge green" d="M960,225 C985,225 985,330 1005,330"/><path class="edge" d="M860,265 V330"/><path class="edge" d="M610,265 V330"/>
+</svg><div class="legend"><span><span class="dot" style="background:var(--blue)"></span>closed identity/control boundary</span><span><span class="dot" style="background:var(--green)"></span>read/observe</span><span><span class="dot" style="background:var(--red)"></span>mutation path—absent in Session N</span></div></div>
+<div class="callout blue"><strong>Key boundary:</strong> planner data never becomes shell text. Runtime resolves typed probe/operation IDs through fixed catalogs. The T10 adapter is the only bridge from the neutral pack contract to live CarExec/vehicleTest transport.</div>
+
+<h3>4.2 Roles and two-person rule</h3>
+<div class="scroll"><table><thead><tr><th>Role</th><th>Responsibility</th><th>Cannot do</th></tr></thead><tbody>
+<tr><td>Owner / Authorizer</td><td>Approves exact spec, then exact handoff/session mode, and later exact N+1 mutation pack.</td><td>Cannot give blanket “try everything” authorization.</td></tr>
+<tr><td>Operator</td><td>Runs preflight/runner, reads identity aloud, controls transport, never leaves frozen row order.</td><td>Cannot observe HUD while simultaneously driving; cannot type a selector/value.</td></tr>
+<tr><td>Safety Observer</td><td>Confirms P/parking brake/battery state, watches cluster/HUD/warnings, calls STOP immediately.</td><td>Cannot approve a result based only on operator logs.</td></tr>
+<tr><td>Offline Reviewer</td><td>Validates ledger, privacy, candidate proof, clear/restore and N→N+1 diff.</td><td>Cannot promote a same-session discovery during the vehicle window.</td></tr>
+<tr><td>Independent Certifier</td><td>Reviews final implementation/results and issues zero-finding or blocker report.</td><td>Cannot reuse implementer self-assessment as independent proof.</td></tr>
+</tbody></table></div>
+
+<h3>4.3 Physical setup and go/no-go</h3>
+<div class="grid2">
+<div class="card"><h3>Mandatory before any connection</h3><ul class="check"><li>Private, level, ventilated location; no public-road movement.</li><li>Vehicle stationary, selector P, parking brake engaged.</li><li>Compatible battery support attached and stable.</li><li>Approved stop threshold visible to both people.</li><li>Operator and observer both present; communication phrase “STOP T10” agreed.</li><li>HUD/cluster visible without blocking driver controls.</li><li>Emergency access and physical power control unobstructed.</li></ul></div>
+<div class="card"><h3>Immediate no-go</h3><ul class="stop-list"><li>Vehicle/profile does not match approved identity.</li><li>Any pre-existing unexpected DTC/warning is unresolved.</li><li>Battery support/threshold unavailable or unstable.</li><li>Only one person is present for a mutation-capable window.</li><li>Vehicle cannot remain stationary/P/parking-brake state.</li><li>Raw evidence storage is not local/ignored or privacy plan is missing.</li></ul></div>
+</div>
+<div class="callout red"><strong>Movement rule:</strong> if the vehicle leaves stationary/P state at any time, start no new row. A read-only row stops. A started mutation row performs only its pre-armed clear/restore/recovery path, then the session ends.</div>
+
+<h3>4.4 Exact identity preflight—before SESSION_START</h3>
+<ol class="step-list">
+<li><strong>Load one handoff.</strong> Use only <code>docs/_handoff/hud-sign-vehicle-test-candidate.json</code>; no override path, renamed APK or historical artifact.</li>
+<li><strong>Re-hash local bytes.</strong> Compare APK, source snapshot, candidate diff, registry, pack and candidate-set identities with the handoff/template.</li>
+<li><strong>Verify signer from APK DER certificates.</strong> At least one signer; sorted certificate hash set must match <code>signerSha256</code>.</li>
+<li><strong>Verify build role.</strong> Variant must be <code>VEHICLE_TEST</code>; release/main must contain no probe surface.</li>
+<li><strong>Verify sender/component/permission/profile.</strong> Every typed ID must match the frozen exact identity. Unknown permission defaults deny; do not weaken export rules.</li>
+<li><strong>Select one transport explicitly.</strong> Resolve the authorized serial/transport; reject zero, multiple, offline or unauthorized devices.</li>
+<li><strong>Compare target profile using read-only facts.</strong> Model/ROM/profile match is recorded as typed/sanitized evidence, never raw private identifiers in tracked files.</li>
+<li><strong>Instantiate Freeze only on full equality.</strong> Any mismatch stops before SESSION_START and emits no vehicle ledger event.</li>
+</ol>
+
+<h3>4.5 Session N—read-only frozen order</h3>
+<div class="callout green"><strong>Session objective:</strong> collect metadata and independent surface baselines only. Even if a read reveals a convincing key, type, permission or enum, it remains <code>DISCOVERY_ONLY</code> until the vehicle session is closed and reviewed offline.</div>
+<div class="scroll"><table><thead><tr><th>Order</th><th>Frozen row</th><th>Action</th><th>Allowed output</th><th>Forbidden</th></tr></thead><tbody>
+<tr><td>1</td><td><code>ROW-0001-DISCOVERY-LIST-PACKAGE-METADATA</code></td><td>List fixed package metadata fields.</td><td>Sanitized discovery refs; raw inventory local only.</td><td>No package-derived selector.</td></tr>
+<tr><td>2</td><td><code>ROW-0002-DISCOVERY-LIST-PROPERTY-CONFIGS</code></td><td>List fixed property config metadata.</td><td>Typed config/access/type candidates as discovery.</td><td>No write, no ID sweep.</td></tr>
+<tr><td>3</td><td><code>ROW-0003-DISCOVERY-LIST-SERVICE-METADATA</code></td><td>List fixed service metadata.</td><td>Provider/permission facts as discovery.</td><td>No service start/stop/bind mutation.</td></tr>
+<tr><td>4</td><td><code>ROW-0004-DISCOVERY-READ-PACKAGE-METADATA</code></td><td>Read approved package metadata fields.</td><td>Hash-linked local evidence.</td><td>No arbitrary package input.</td></tr>
+<tr><td>5</td><td><code>ROW-0005-DISCOVERY-READ-PROPERTY-CONFIG</code></td><td>Read fixed property configuration.</td><td>Config/type/access evidence.</td><td>No value write/read sweep.</td></tr>
+<tr><td>6</td><td><code>ROW-0006-DISCOVERY-READ-SERVICE-METADATA</code></td><td>Read fixed service metadata.</td><td>Resolved/unknown provider and permission state.</td><td>No fallback permission.</td></tr>
+<tr><td>7</td><td><code>ROW-0007-READ-H-008-PROPERTY-CONFIG-METADATA</code></td><td>Execute H8 read via <code>PROBE-READ-PROPERTY-CONFIG</code>.</td><td>H8 result bound to <code>HUD_NAV_MAP</code>.</td><td>No H1/H4 mutation or promotion.</td></tr>
+<tr><td>8</td><td><code>ROW-0008-D-M1-SURFACE</code></td><td>Observe HUD navigation map independently.</td><td><code>RESULT-D-M1-0001</code>: PASS/FAIL/INCONCLUSIVE/BLOCKED.</td><td>Do not infer from cluster navigation alone.</td></tr>
+<tr><td>9</td><td><code>ROW-0009-D-M2-SURFACE</code></td><td>Observe HUD road-name surface independently.</td><td><code>RESULT-D-M2-0001</code>.</td><td>Do not infer from M1 maneuver/distance.</td></tr>
+<tr><td>10</td><td><code>ROW-0010-D-M3-SURFACE</code></td><td>Observe cluster speed-sign surface independently.</td><td><code>RESULT-D-M3-0001</code>.</td><td>Do not infer HUD sign.</td></tr>
+<tr><td>11</td><td><code>ROW-0011-D-M4-SURFACE</code></td><td>Observe HUD speed-sign surface independently.</td><td><code>RESULT-D-M4-0001</code>.</td><td>Do not infer from M3.</td></tr>
+</tbody></table></div>
+<p class="small">The runner follows the exact regenerated pack used for the authorized session. The table above documents the current revision-4 planning template; any N pack drift requires a new review and authorization before use.</p>
+
+<h3>4.6 Session N closeout—still on site, still no promotion</h3>
+<ol class="step-list">
+<li><strong>Finish every started read-only/milestone automaton.</strong> Record one terminal outcome per row; never reconstruct from memory later.</li>
+<li><strong>Close transport cleanly.</strong> Do not install another build or open an ad-hoc shell after the frozen final row.</li>
+<li><strong>Record physical baseline.</strong> Cluster/HUD/warnings and vehicle stationary state must match the preflight baseline.</li>
+<li><strong>Seal local raw evidence.</strong> Hash files locally, retain them in ignored storage, and create only metadata references for review.</li>
+<li><strong>Export the ledger.</strong> Validate hash chain/schema before leaving; an invalid ledger means the session is inconclusive.</li>
+<li><strong>End authorization.</strong> The on-site window closes. Discoveries cannot be acted on until a new pack and a new explicit authorization exist.</li>
+</ol>
+
+<h3>4.7 Offline N → N+1 review and promotion</h3>
+<div class="flow six">
+<div class="fnode info"><b>Sanitize</b><span>raw local · metadata tracked</span></div>
+<div class="fnode"><b>Validate</b><span>ledger · identity · row lifecycle</span></div>
+<div class="fnode"><b>Disposition</b><span>every discovery exactly once</span></div>
+<div class="fnode"><b>Derive state</b><span>no manual promotion</span></div>
+<div class="fnode warn"><b>Independent review</b><span>proof + privacy + boundaries</span></div>
+<div class="fnode good"><b>Generate N+1</b><span>new hashes + frozen rows</span></div>
+</div>
+<div class="grid2">
+<div class="card"><h3>Promotion checklist</h3><ul class="check"><li>Fixed selector and source citation.</li><li>Exact config + READ_WRITE/WRITE access.</li><li>Java type, provider and permission.</li><li>Concrete app-UID transport proof.</li><li>Bounded source-backed value domain.</li><li>Prior read + immediate read-back operation.</li><li>Required clear + ordered inverse.</li><li>Expected consumer/surface and ownership.</li><li>Risk accepted; no absolute reject.</li></ul></div>
+<div class="card"><h3>Outcomes</h3><ul><li><code>READY_FOR_FIELD</code>: appears as one mutation row in N+1.</li><li><code>MUTATION_REVIEW</code>: evidence improved but no row.</li><li><code>READ_ONLY_READY</code>: read-only row only.</li><li><code>REJECTED</code>: never appears; append tombstone if newly invalidated.</li><li>No candidate ready: N+1 remains read-only/blocked; do not schedule mutation.</li></ul></div>
+</div>
+<div class="callout red"><strong>Non-negotiable:</strong> S11 remains <code>MUTATION_REVIEW</code> until all missing domain/prior/read-back/clear/inverse proof closes. S12 remains <code>REJECTED</code> regardless of observed behavior because its shape contains a raw selector.</div>
+
+<h3>4.8 Separate mutation authorization envelope</h3>
+<div class="kv"><b>Authorization must name</b><span>Exact N+1 pack SHA, handoff/APK SHA, signer identity, registry revision, candidate revision IDs, row order, vehicle profile, time window, operator/observer roles and recovery procedure.</span><b>Authorization must confirm</b><span>Vehicle stationary setup, approved battery threshold/support, one-dimension rule, privacy handling and no same-session additions.</span><b>Authorization expires on</b><span>Any source/APK/signer/registry/pack/candidate/profile/permission/transport drift; code rebuild; candidate revision; safety setup change; recovery block.</span><b>Not authorized by</b><span>Old Session N consent, spec approval, a candidate report, <code>rc=0</code>, a cluster-only visual result or an operator’s ad-hoc note.</span></div>
+
+<h3>4.9 Common one-dimension mutation transaction</h3>
+<div class="flow">
+<div class="fnode info"><b>Precondition</b><span>identity · safety · dependency</span></div>
+<div class="fnode"><b>Read prior</b><span>typed value + physical baseline</span></div>
+<div class="fnode warn"><b>Arm inverse</b><span>immutable frame pushed first</span></div>
+<div class="fnode bad"><b>Mutate once</b><span>one fixed operation ID</span></div>
+<div class="fnode"><b>Read back</b><span>typed equality/status</span></div>
+<div class="fnode good"><b>Observe</b><span>independent surfaces</span></div>
+<div class="fnode"><b>Clear</b><span>content plane</span></div>
+<div class="fnode good"><b>Restore</b><span>prior + verify · then terminal</span></div>
+</div>
+<ol class="step-list">
+<li><strong>Re-run identity and physical preconditions.</strong> Reject any drift, warning, transport ambiguity or unresolved dependency.</li>
+<li><strong>Read exact prior state.</strong> Capture typed value/status and required physical surface baseline. A missing/ambiguous prior blocks the row.</li>
+<li><strong>Build an immutable rollback frame.</strong> Copy prior plus ordered inverse IDs and expected post-restore checks.</li>
+<li><strong>Push/arm the frame before the write call.</strong> It remains live even if the call throws, times out or partially applies.</li>
+<li><strong>Execute exactly one mutation operation.</strong> No second field/gate/value change is allowed inside the row.</li>
+<li><strong>Read back immediately.</strong> Compare exact typed state; a mismatch marks mutation failure but does not skip cleanup.</li>
+<li><strong>Observe every required surface independently.</strong> Record cluster/HUD/warnings separately; never infer a sibling surface.</li>
+<li><strong>Clear the content plane.</strong> Use only the candidate’s approved clear operation/sentinel. D-H0 is the explicit no-content-plane exception.</li>
+<li><strong>Restore the prior state.</strong> Execute ordered inverse from the armed snapshot, not from mutable caller data.</li>
+<li><strong>Verify restore.</strong> Typed read-back and physical baseline must both pass. Only then pop the frame.</li>
+<li><strong>Emit terminal result.</strong> PASS requires mutation/read-back/observations/clear/restore shape. FAIL/INCONCLUSIVE still require restore PASS.</li>
+<li><strong>Return to a clean baseline before the next row.</strong> Normal execution never overlaps two armed frames.</li>
+</ol>
+
+<h3>4.10 Conditional feature lanes and priority</h3>
+<div class="scroll"><table><thead><tr><th>Lane</th><th>Order after READY_FOR_FIELD</th><th>Required baseline</th><th>Independent proof</th><th>Clear / restore</th><th>Never do</th></tr></thead><tbody>
+<tr><td>D-H0 · Physical HUD diagnostic</td><td>Optional, deprioritized, separately consented only.</td><td>Physical switch/config prior; prior must be OFF for OFF→ON→OFF diagnostic.</td><td>Feedback ON and physical HUD state; no navigation claim.</td><td>No content clear; restore physical OFF and verify.</td><td>Never reuse diagnostic restore policy in production; never run without explicit consent.</td></tr>
+<tr><td>M1 · NAV_HUD</td><td>H4 Amap profile → H1 map gate (<code>2=ON</code>, <code>1=OFF</code>) → H2/H3 fallback. H0/H5 remain last/deprioritized.</td><td>Canonical AmapService full frame and exact app-owned gate prior.</td><td>Cluster navigation and HUD navigation recorded separately; left/right/distinct distance if encoded by row.</td><td>Amap stop/reset + restore only app-owned gates; physical H0 excluded.</td><td>Do not infer M1 from cluster alone; no direct unbounded H5 payload.</td></tr>
+<tr><td>M2 · HUD_ROAD</td><td>H6 only, and only after its direct HUD consumer proof closes.</td><td>Field-proven M1 tuple; Road A baseline.</td><td>Cluster road and HUD road separately; Road B transition.</td><td>Empty/proven sentinel + app-owned road state restore.</td><td>Do not claim from cluster road or M1 maneuver/distance.</td></tr>
+<tr><td>M3 · CLUSTER_SIGN</td><td>Close S11 source-domain proof first; then S1 Statistics → S5 ISA map → S4 gate last. Each needs its own READY row.</td><td>Route-independent sign source, exact type/unit/gates, warning baseline.</td><td>Cluster sign 50→80; HUD sign recorded but does not close M4; unrelated warnings monitored.</td><td>Channel-proven clear + restore every changed sign value/gate.</td><td>Never mutate S11 while MUTATION_REVIEW; never use unbounded S4.</td></tr>
+<tr><td>M4 · HUD_SIGN</td><td>HUD safe-driving Boolean gate → HUD-sign fusion gate.</td><td>Independently field-proven M3 content plane active through an approved baseline, not retained hidden mutation state.</td><td>Cluster sign and HUD sign separately; M4 closes only on HUD surface.</td><td>M3 content clear + HUD clear + restore app-owned HUD/sign gates.</td><td>Never infer M4 from M3; never execute S12.</td></tr>
+</tbody></table></div>
+<p class="small">This is a prioritization policy, not an allowlist. A named hypothesis is executable only when its exact latest candidate revision exists in the authorized N+1 pack as <code>READY_FOR_FIELD</code>.</p>
+
+<h3>4.11 Stop gates and recovery</h3>
+<div class="grid2">
+<div class="card"><h3>Stop before mutation / start no new row</h3><ul class="stop-list"><li>Any exact-identity or signer mismatch.</li><li>Unknown selector, type, provider, permission, value domain or consumer.</li><li>Vehicle/profile mismatch or transport not uniquely selected.</li><li>Vehicle leaves stationary/P/parking-brake state.</li><li>Battery monitor crosses the approved threshold or support becomes unstable.</li><li>Unexpected DTC, warning, odor, heat, display instability or observer STOP call.</li><li>Prior value unavailable/ambiguous; baseline cannot be observed.</li><li>Read-only discovery suggests a new operation not in Freeze.</li></ul></div>
+<div class="card"><h3>After a mutation attempt</h3><ul class="stop-list"><li>Read-back mismatch, exception, timeout or transport interruption: start no new mutation; finish approved clear/restore.</li><li>Unexpected surface or warning: capture minimal evidence, then clear/restore.</li><li>Deadline expires: current row still finishes clear/restore; later rows become skipped.</li><li>Clear fails: continue to restore; terminal cannot be PASS.</li><li>Restore fails: retain frame, emit recovery block, end all normal execution.</li><li>No automatic reboot. Any approved reboot evidence uses physical head-unit power control; <code>adb reboot</code> is not equivalent.</li></ul></div>
+</div>
+<div class="flow five">
+<div class="fnode bad"><b>Restore failed</b><span>frame remains armed</span></div>
+<div class="fnode warn"><b>Freeze session</b><span>no subsequent mutation</span></div>
+<div class="fnode"><b>Run approved recovery</b><span>same prior snapshot only</span></div>
+<div class="fnode"><b>Verify baseline</b><span>typed + physical</span></div>
+<div class="fnode good"><b>Seal blocker</b><span>independent review required</span></div>
+</div>
+<div class="callout red"><strong>Restore failure policy:</strong> even if emergency recovery later succeeds, the same vehicle window does not resume mutation. The recovery event and retained-frame evidence must be reviewed offline before any new authorization.</div>
+
+<h3>4.12 Independent result matrix</h3>
+<div class="scroll"><table><thead><tr><th>Result</th><th>Baseline</th><th>Action</th><th>Must observe independently</th><th>Clear / restore proof</th><th>Valid terminal states</th></tr></thead><tbody>
+<tr><td><code>D-H0-HUD-PHYSICAL-TEMP</code></td><td>Physical config/switch prior.</td><td>Separately consented OFF→ON only if exact ready row exists.</td><td>Feedback and physical HUD; no content assertion.</td><td>No clear; inverse to prior OFF + read-back.</td><td>NOT_RUN, BLOCKED, PASS, FAIL, INCONCLUSIVE.</td></tr>
+<tr><td><code>D-M1-NAV-HUD</code></td><td>Cluster full frame + HUD gates/state.</td><td>One ready H candidate + row-defined guidance transitions.</td><td>Cluster navigation and HUD navigation separately.</td><td>Amap stop/reset + app-owned gate restore.</td><td>NOT_RUN, BLOCKED, PASS, FAIL, INCONCLUSIVE.</td></tr>
+<tr><td><code>D-M2-HUD-ROAD</code></td><td>Same exact M1 tuple + Road A.</td><td>One ready road channel; Road B.</td><td>Cluster road and HUD road separately.</td><td>Proven empty/sentinel + road gate restore.</td><td>NOT_RUN, BLOCKED, PASS, FAIL, INCONCLUSIVE.</td></tr>
+<tr><td><code>D-M3-CLUSTER-SIGN</code></td><td>Sign source/type/unit/gates + warning baseline.</td><td>One ready sign channel; 50→80 if encoded in the row.</td><td>Cluster sign; HUD sign and unrelated warnings recorded separately.</td><td>Channel-proven clear + all sign-state restore.</td><td>NOT_RUN, BLOCKED, PASS, FAIL, INCONCLUSIVE.</td></tr>
+<tr><td><code>D-M4-HUD-SIGN</code></td><td>Field-proven M3 content + exact HUD gates.</td><td>One ready HUD gate dimension.</td><td>Cluster sign and HUD sign separately.</td><td>M3 clear + HUD clear + app-owned gate restore.</td><td>NOT_RUN, BLOCKED, PASS, FAIL, INCONCLUSIVE.</td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>No cross-result inference:</strong> a PASS in one row never fills another result file. A result without direct surface observation remains NOT_RUN/BLOCKED/INCONCLUSIVE even if a neighboring surface looks correct.</div>
+
+<h3>4.13 Evidence fields and privacy boundary</h3>
+<div class="grid2">
+<div class="card"><h3>Tracked metadata allowed</h3><ul><li>Typed artifact aliases and SHA-256 identities.</li><li>Session/row/event/result IDs and monotonic offsets.</li><li>Candidate/operation/probe IDs from closed schemas.</li><li>PASS/FAIL/INCONCLUSIVE/BLOCKED outcomes and fixed reason IDs.</li><li>Sanitized surface booleans/categories.</li><li>Clear/restore evidence references and hashes.</li><li>Reviewer identity alias and finding counts.</li></ul></div>
+<div class="card"><h3>Raw/local only—never tracked</h3><ul><li>VIN, device serial, private IP, GPS, route/destination.</li><li>Credentials, ADB keys, tokens or signing private material.</li><li>Installed-app inventory and package dumps beyond sanitized aliases.</li><li>Full logcat/dumpsys/provider rows/property payloads.</li><li>Raw/decompiled source or native C bodies.</li><li>Private absolute paths, faces, reflections or EXIF location.</li></ul></div>
+</div>
+<div class="kv"><b>Raw evidence</b><span>Stored in a gitignored, session-local directory; hash before redaction; no upload or public sharing.</span><b>Tracked D-results</b><span><code>docs/diagnostics/hud-sign-re/vehicle/d-h0-hud-physical-temp-result.json</code> and <code>d-m1…d-m4</code> metadata files only.</span><b>Photos/video</b><span>Local evidence; crop/redact identifiers, reflections, surroundings and EXIF before any derived share.</span><b>Ledger publication</b><span>Schema-validated metadata references only; semantic privacy scan rejects private identifiers even inside typed-ID suffixes.</span></div>
+
+<h3>4.14 Time budgets and scheduling</h3>
+<div class="scroll"><table><thead><tr><th>Window</th><th>Budget</th><th>Purpose</th><th>Hard rule</th></tr></thead><tbody>
+<tr><td>Off-car implementation/review</td><td>Separate from vehicle day.</td><td>Build, tests, identity, dry-run fixtures, privacy review.</td><td>No vehicle access while any off-car gate is open.</td></tr>
+<tr><td>Physical setup</td><td>~20 minutes reserve.</td><td>Parking, battery support, roles, display visibility, raw storage.</td><td>Does not consume frozen session budget.</td></tr>
+<tr><td>Identity/preflight</td><td>~15 minutes reserve.</td><td>Hashes, signer, sender/permission/profile, explicit transport.</td><td>Failure means no SESSION_START.</td></tr>
+<tr><td>Read-only Session N</td><td>Exact pack budget: 3,600,000 ms.</td><td>Seven read-only + four milestone rows.</td><td>First non-fitting row and later rows are SKIPPED per frozen scheduler.</td></tr>
+<tr><td>On-site closeout</td><td>~20 minutes reserve.</td><td>Baseline, hashes, ledger validation, disconnect.</td><td>No ad-hoc follow-up probe.</td></tr>
+<tr><td>Offline N→N+1</td><td>Not time-boxed by vehicle session.</td><td>Sanitize, disposition, derive state, review, regenerate.</td><td>Never rushed on site.</td></tr>
+<tr><td>Mutation window</td><td>One separately authorized pack window; reserve recovery time.</td><td>Rows execute frozen order, one dimension/frame at a time.</td><td>A started row finishes clear/restore after deadline; no new row starts.</td></tr>
+</tbody></table></div>
+<p class="small">Time estimates are planning reserves, not safety thresholds. The generated pack’s monotonic budget and the separately approved battery threshold are authoritative.</p>
+
+<h3>4.15 Canonical revision-2 boundary and resolved T10-Q4 inventory</h3>
+<div class="callout blue"><strong>Stage A authorization only:</strong> <code>docs/diagnostics/hud-sign-re/offcar-boundary-revisions.json</code> is the canonical machine authority. Revision 1 preserves the historical 81 CURRENT + 15 T10 FUTURE + 13 T11 FUTURE boundary and old parent hash. Active revision 2 points to revision 1 and contains sorted unique exact paths only. This Stage A pass does not create any runtime file below, build an APK, instantiate a session, prove app-UID reachability/permission, or authorize vehicle/device/network operations.</div>
+<div class="grid2"><div class="card"><h3>SOURCE_SEAL_INPUT</h3><p>The active class has 155 exact paths: all historical parent paths, all 29 expansion CURRENT paths, the authority/spec/handoff paths, and this exact 45-path T10 implementation/test/build/verifier subset:</p></div><div class="card"><h3>Authorization semantics</h3><p>Only <code>SOURCE_SEAL_INPUT</code> and <code>POST_BUILD_ATTESTATION</code> can authorize changed repository paths. <code>LOCAL_IGNORED</code> never does. Presence in the boundary is not runtime proof, build permission, install permission, session readiness or field evidence.</p></div></div>
+<pre><code># SOURCE_SEAL_INPUT — exact approved T10 subset (45)
+.gitignore
+app/build.gradle.kts
+app/src/test/java/com/byd/clusternav/BuildArtifactNamingTest.kt
+app/src/test/java/com/byd/clusternav/MainProbeSurfaceAbsenceTest.kt
+app/src/testVehicleTest/java/com/byd/clusternav/VehicleTestSurfaceContractTest.kt
+app/src/vehicleTest/AndroidManifest.xml
+app/src/vehicleTest/java/com/byd/clusternav/HudSignProbeActivity.kt
+app/src/vehicleTest/java/com/byd/clusternav/HudSignProbeReceiver.kt
+car-integration/build.gradle.kts
+car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/DadbVehicleTransport.kt
+car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/HudSignSessionRunner.kt
+car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/T10LocalAuthorization.kt
+car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/T10ResultStore.kt
+car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/T10RunnerMain.kt
+car-integration/src/test/kotlin/com/byd/clusternav/vehicleprobe/DadbVehicleTransportTest.kt
+car-integration/src/test/kotlin/com/byd/clusternav/vehicleprobe/HudSignSessionRunnerTest.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecClusterDiagnosticsCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecClusterLifecycleCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecClusterProjectionCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecHudCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecModels.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecNavigationCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecSpeedSignCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/T10FixedOperationCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/T10RollbackExecutor.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/T10SessionEngine.kt
+core/src/test/kotlin/com/byd/clusternav/carexec/CarExecCatalogTest.kt
+core/src/test/kotlin/com/byd/clusternav/carexec/T10SessionSafetyTest.kt
+docs/_handoff/session-2026-08-10-hud-sign-t10-offcar-complete.md
+docs/_handoff/session-2026-08-10-hud-sign-t10-preparation.md
+gradle/authorized-apk-tasks.gradle.kts
+gradle/exact-source-tasks.gradle.kts
+scripts/evidence/gen-exact-source.py
+scripts/evidence/tests/test_hud_sign_t10_evidence.py
+scripts/evidence/verify-hud-sign-t10.py
+scripts/vehicle/run-seal-hud-sign-matrix.sh
+scripts/verify-seal-hud-sign-vehicle-test-t10.sh
+vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Canonical.kt
+vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Identity.kt
+vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Ledger.kt
+vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Session.kt
+vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/T10Transport.kt
+vehicle-contracts/src/main/resources/t10-contracts.schema.json
+vehicle-contracts/src/test/kotlin/com/byd/clusternav/vehicle/t10/T10ContractsTest.kt
+
+# POST_BUILD_ATTESTATION — exact eventual outputs (7)
+docs/_handoff/hud-sign-t10-exact-source.json
+docs/_handoff/hud-sign-vehicle-test-candidate.json
+docs/diagnostics/hud-sign-re/vehicle/d-h0-hud-physical-temp-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m1-nav-hud-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m2-hud-road-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m3-cluster-sign-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m4-hud-sign-result.json
+
+# LOCAL_IGNORED — local policy only, never tracked authorization
+.authorized-build
+.t10-local
+keystore.properties
+release.keystore
+POLICY-T10-APK-ARTIFACT-NAME
+
+# FUTURE_FORBIDDEN — original T11 paths (13)
+app/src/main/java/com/byd/clusternav/vehicle/BydPropertyGateway.kt
+app/src/main/java/com/byd/clusternav/vehicle/ClusterSpeedSignPort.kt
+app/src/main/java/com/byd/clusternav/vehicle/HudSignSettingsController.kt
+app/src/main/java/com/byd/clusternav/vehicle/HudSpeedSignPort.kt
+app/src/main/java/com/byd/clusternav/vehicle/HudVehicleProfile.kt
+app/src/main/java/com/byd/clusternav/vehicle/SpeedSignVehicleProfile.kt
+app/src/main/res/layout/activity_main.xml
+app/src/main/res/values/strings.xml
+docs/_handoff/hud-sign-release-candidate.json
+docs/diagnostics/hud-sign-re/vehicle/p-m1-nav-hud-result.json
+docs/diagnostics/hud-sign-re/vehicle/p-m2-hud-road-result.json
+docs/diagnostics/hud-sign-re/vehicle/p-m3-cluster-sign-result.json
+docs/diagnostics/hud-sign-re/vehicle/p-m4-hud-sign-result.json</code></pre>
+<div class="grid2"><div class="card"><h3>Implementation constraints</h3><ul><li><code>T10RollbackExecutor.kt</code> is an optional exact split, never a wildcard.</li><li>Split CarExec catalogs before any source exceeds 500 LOC.</li><li>Keep <code>:offcar-planner</code> transport-free.</li><li>Vehicle runner consumes a closed pack; no arbitrary CLI selector/value.</li><li>Receiver/activity use explicit component targeting and deny-by-default permission behavior.</li><li>All I/O bounded; transport exception differs from operation outcome.</li></ul></div><div class="card"><h3>Still forbidden</h3><ul><li>Any unlisted T10 source, test, build, verifier or output path.</li><li>Any <code>LOCAL_IGNORED</code> name used as tracked authorization.</li><li>All 13 T11 production gateway/profile/UI/release/P-result paths.</li><li>Raw/MASS/free-form CarExec functions or runtime-created operation IDs.</li><li>Vehicle/device/network operations without separate exact operational authorization.</li></ul></div></div>
+<div class="callout red"><strong>Fail-closed truth:</strong> the corpus proves <code>getPropertyConfigs</code> and HUD key <code>0x38B00030</code> exist, but not that this app can invoke them on the target. The six probe IDs still have no proven third-party runtime reachability/permission binding. Final off-car state remains <code>ARTIFACT_READY_OPERATIONALLY_BLOCKED</code>.</div>
+
+<h3>4.16 Technology validation</h3>
+<div class="scroll"><table><thead><tr><th>Technology</th><th>Verified state</th><th>Selected pattern</th><th>Alternative / decision</th></tr></thead><tbody>
+<tr><td>Android BroadcastReceiver</td><td>Official Android docs: explicit package/component targeting, exported/non-exported rules, sender/receiver permission enforcement; <code>goAsync()</code> transfers one <code>PendingResult</code> to bounded background work and must call <code>finish()</code>.</td><td>vehicleTest-only receiver/activity, fixed actions, explicit component, deny-by-default permission, bounded executor and guaranteed finish.</td><td>If exact exported permission is unproven, use non-exported/in-app activity; never weaken protection.</td></tr>
+<tr><td>ADB transport semantics</td><td>Official ADB source: <code>host:transport:&lt;serial&gt;</code>/<code>-s SERIAL</code> chooses one transport; ambiguous/offline/unauthorized states fail.</td><td>Exact serial from authorized local setup; verify state before every session; never “first device”.</td><td>Generic discovery is rejected because upstream may return the first device.</td></tr>
+<tr><td>dadb</td><td>Workspace pins <code>dev.mobile:dadb:2.0.0</code>; Maven Central lists 2.0.0; upstream README documents <code>Dadb.create(...).use</code>, explicit <code>AdbServer.createDadb(...host:transport:serial)</code>, typed operation results and <code>AdbException</code> transport failures.</td><td>Reuse 2.0.0; explicit transport; close with <code>use</code>; inspect shell exit code; keep transport and operation faults separate.</td><td>No dependency change. Direct shell CLI remains only the host protocol reference, not a free-form execution surface.</td></tr>
+<tr><td>Project toolchain</td><td>Reuse parent-pinned JDK 17, AGP/Kotlin/Gradle/SDK configuration; no new framework.</td><td>Build/test off-car first; exact APK and signer are later bound into handoff.</td><td>No upgrade in T10 unless separately planned and revalidated.</td></tr>
+</tbody></table></div>
+<p class="small">Context7 did not expose an exact dadb library entry; official Android/ADB docs were verified through Context7, while dadb 2.0.0 version/API were cross-checked against the local Gradle pin, upstream project README and Maven Central.</p>
+
+<h3>4.17 Boundary-shape checklist</h3>
+<div class="scroll"><table><thead><tr><th>Producer → consumer</th><th>Compare field-by-field</th><th>Required proof</th></tr></thead><tbody>
+<tr><td>Handoff → identity preflight</td><td>artifact IDs, source/diff/APK/signer/registry/pack/candidate hashes, variant/sender/component/permission/profile</td><td>Deep equality before Freeze; mismatch emits no vehicle event.</td></tr>
+<tr><td>Template → runtime Freeze</td><td>revision, budget, row order, allowed probes/candidates/mutations, exact identity</td><td>Byte-equivalent non-runtime fields; immutable snapshots.</td></tr>
+<tr><td>Row ID → fixed catalog</td><td>probe/mutation/clear/inverse IDs, order, kind, candidate revision</td><td>Exhaustive mapping; unknown ID rejects; no caller override.</td></tr>
+<tr><td>Host runner → dadb transport</td><td>explicit serial, command ID, timeout, exit/transport outcome</td><td>No ambiguous target; transport and operation failures distinct.</td></tr>
+<tr><td>Sender → vehicleTest component</td><td>component, action, UID/permission, pack/session identity</td><td>Authorized sender accepted; unauthorized sender zero mutation.</td></tr>
+<tr><td>Candidate proof → live operation</td><td>selector, type, bounded value, prior/read-back, clear/inverse, consumer, ownership</td><td>Exact latest <code>READY_FOR_FIELD</code> projection only.</td></tr>
+<tr><td>Amap frame → AmapService → M1/M2</td><td>canonical keys/types/presence/sentinels/state order; cluster/HUD outputs separate</td><td>No replacement transport; no cluster-only inference.</td></tr>
+<tr><td>Speed source → frame/ports → M3/M4</td><td>value, unit, source, freshness, sequence, clear; cluster/HUD outputs separate</td><td>No distance encoding; no M3→M4 inference.</td></tr>
+<tr><td>Row events → ledger/result</td><td>row kind, outcomes, evidence refs, previous hash, terminal shape</td><td>Schema/hash-chain validation and one terminal per row.</td></tr>
+<tr><td>Raw evidence → tracked metadata</td><td>hash/alias/outcome only; no private payload</td><td>Semantic privacy scan before any tracked result.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<div class="phase"><div class="phase-id">T10-P0 · Approval &amp; build</div><div><h4>Approve consolidated spec, freeze scope, implement T10 off-car only</h4><ul class="check"><li>Receive out-of-band spec approval; record that it excludes vehicle operations.</li><li><strong>Stage A complete:</strong> canonical boundary revision 2 contains the approved exact Q4 classes; all 13 T11 paths remain forbidden.</li><li>Implement fixed catalogs, vehicleTest boundary, strict adapter/transport and generated runner without free-form selectors.</li><li>Run unit/static/build/lint/security/privacy gates; prove release/main has zero probe surface.</li></ul><p><strong>Exit:</strong> exact off-car reviewed implementation; vehicle state still untouched.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P1 · Safety &amp; identity</div><div><h4>Create exact handoff and perform physical preflight</h4><ul class="check"><li>Generate/review exact source/APK/signer/registry/pack/candidate identity.</li><li>Obtain explicit Session N READ_ONLY authorization tied to that identity.</li><li>Set up stationary/P/parking brake, battery support/threshold and two-person roles.</li><li>Resolve one transport and target profile; instantiate Freeze only on full equality.</li></ul><p><strong>Exit:</strong> GO for Session N or BLOCKED before SESSION_START.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P2 · Session N</div><div><h4>Execute exactly seven read-only rows and four independent milestones</h4><ul class="check"><li>Follow frozen order; every row gets precondition and terminal outcome.</li><li>Record every new fact as DISCOVERY_ONLY.</li><li>Observe M1–M4 independently; no capability inference.</li><li>Validate ledger, physical baseline and local evidence hashes before disconnect.</li></ul><p><strong>Exit:</strong> complete read-only ledger; mutation count exactly zero.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P3 · Offline N+1</div><div><h4>Review evidence and regenerate the next closed-world pack</h4><ul class="check"><li>Sanitize raw evidence; disposition every discovery exactly once.</li><li>Derive candidate state from complete proof; no manual state assignment.</li><li>Independent review N→N+1 candidate/registry/pack diff.</li><li>If no READY candidate exists, keep mutation blocked and plan another read-only cycle only if justified.</li></ul><p><strong>Exit:</strong> reviewed N+1, either read-only/blocked or with exact READY mutation rows.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P4 · Conditional M1</div><div><h4>Navigation HUD lane: H4 → H1 → H2/H3</h4><ul class="check"><li>Obtain separate mutation authorization for exact N+1 pack.</li><li>Run only READY rows in frozen order, one dimension/live frame at a time.</li><li>Keep AmapService canonical; observe cluster and HUD independently.</li><li>Clear Amap session and restore app-owned gates; physical H0 excluded unless separately consented.</li></ul><p><strong>Exit:</strong> D-M1 sealed or restored BLOCKED/FAIL/INCONCLUSIVE; no inferred M2.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P5 · Conditional M2</div><div><h4>HUD road lane: H6 only</h4><ul class="check"><li>Require field-proven exact M1 baseline and H6 direct consumer proof.</li><li>Transition Road A→Road B through one READY row.</li><li>Observe cluster road and HUD road independently.</li><li>Apply proven empty/sentinel, restore and verify.</li></ul><p><strong>Exit:</strong> D-M2 sealed independently; M1 remains unchanged.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P6 · Conditional M3</div><div><h4>Cluster sign lane: close S11, then S1 → S5 → S4</h4><ul class="check"><li>Never mutate S11 until it becomes READY in a reviewed pack.</li><li>Prefer bounded S1 50|80, then S5; keep S4 last until domain/inverse are bounded.</li><li>Observe cluster sign, HUD sign and unrelated warnings separately.</li><li>Clear channel and restore all changed gates/values.</li></ul><p><strong>Exit:</strong> D-M3 sealed independently; no inferred M4.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P7 · Conditional M4</div><div><h4>HUD sign lane: safe-driving gate → fusion</h4><ul class="check"><li>Require independently field-proven M3 content plane and exact HUD gate proof.</li><li>Run one READY HUD gate dimension at a time.</li><li>Observe cluster and HUD sign separately.</li><li>Clear M3 content + HUD surface, restore gates; reject S12 permanently.</li></ul><p><strong>Exit:</strong> D-M4 sealed independently or restored non-PASS.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P8 · Recovery &amp; sealing</div><div><h4>Close every window safely and publish metadata-only results</h4><ul class="check"><li>Finish clear/restore for every started row even after failure/deadline.</li><li>On restore failure: retain frame, run approved recovery only, end mutation window.</li><li>Validate result schema/hash chain and redact all private/raw fields.</li><li>Write only the five enumerated D-result metadata artifacts and exact handoff.</li></ul><p><strong>Exit:</strong> vehicle baseline verified or explicit recovery blocker preserved.</p></div></div>
+<div class="phase"><div class="phase-id">T10-P9 · Independent review</div><div><h4>Review implementation, evidence, boundaries and handoff</h4><ul class="check"><li>Check T10-R1…R22 and every gate/result independently.</li><li>Compare both sides of each §4.17 boundary field-by-field.</li><li>Patch/retest off-car issues; vehicle evidence is never rewritten.</li><li>Certify zero findings or publish blockers. T11 remains separately planned.</li></ul><p><strong>Exit:</strong> T10 evidence package truthful and closed; never automatic FEATURE_DONE.</p></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<h3>6.1 Gate matrix</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Evidence</th><th>Pass condition</th><th>Failure action</th></tr></thead><tbody>
+<tr><td>T10-G0 · Approval scope</td><td>Out-of-band spec approval record.</td><td>Implementation-only scope explicit; no vehicle consent implied.</td><td>Do not implement.</td></tr>
+<tr><td>T10-G1 · Parent baseline</td><td><code>scripts/verify-hud-sign-candidate-expansion.sh</code> and parent digests before T10 boundary revision.</td><td>Current certified bytes/gates understood; any required boundary revision is explicit.</td><td>Revise/review spec boundary before code.</td></tr>
+<tr><td>T10-G2 · T10 code isolation</td><td>Source-set/manifest/DEX/dependency scans.</td><td>vehicleTest has fixed surface; main/release zero probe/raw/free-form path.</td><td>Block build/handoff.</td></tr>
+<tr><td>T10-G3 · Unit/build/lint</td><td>Focused catalog/adapter/transport/receiver/ledger tests plus affected builds/lint.</td><td>All pass; changed source ≤500 LOC; no untested operation mapping.</td><td>Fix off-car; no vehicle access.</td></tr>
+<tr><td>T10-G4 · Identity</td><td>Exact handoff + local hash/signer/profile comparison.</td><td>All identity fields deep-equal; one target transport.</td><td>Zero vehicle event; block session.</td></tr>
+<tr><td>T10-G5 · Physical safety</td><td>Two-person checklist and battery monitor record.</td><td>Stationary/P/parking brake/support/threshold/observer all confirmed.</td><td>No connection or immediate safe stop.</td></tr>
+<tr><td>T10-G6 · Session N read-only</td><td>Freeze, runner transcript, ledger.</td><td>7 READ_ONLY + 4 MILESTONE; zero MUTATION/CLEAR/RESTORE operation dispatch.</td><td>Invalidate session; investigate off-car.</td></tr>
+<tr><td>T10-G7 · Same-session quarantine</td><td>Ledger/registry/allowlist before and after N.</td><td>Discoveries only; frozen bytes and eligibility unchanged.</td><td>Reject results and T10 implementation.</td></tr>
+<tr><td>T10-G8 · N+1 derivation</td><td>Candidate proof, registry diff, regenerated pack, independent review.</td><td>Every READY row has full proof; every discovery dispositioned; S12 absent.</td><td>No mutation authorization.</td></tr>
+<tr><td>T10-G9 · Mutation authorization</td><td>Exact pack/candidate/profile/time-window consent.</td><td>Consent matches live identity and frozen rows exactly.</td><td>Block before mutation.</td></tr>
+<tr><td>T10-G10 · Prior + armed rollback</td><td>PRECONDITION/prior snapshot/frame event.</td><td>Typed prior captured; inverse frame immutable and pushed before mutation.</td><td>BLOCKED row; no write.</td></tr>
+<tr><td>T10-G11 · One dimension/read-back</td><td>Catalog operation + immediate read-back.</td><td>Exactly one mutation ID; typed expected result or controlled FAIL.</td><td>Clear/restore; no next mutation.</td></tr>
+<tr><td>T10-G12 · Clear/restore</td><td>Clear and restore evidence references/read-backs.</td><td>Both PASS for normal terminal; frame popped only after restore PASS.</td><td>Recovery block; end window.</td></tr>
+<tr><td>T10-G13 · Independent surfaces</td><td>D-H0/M1/M2/M3/M4 result files.</td><td>Each required surface directly observed; no sibling inference.</td><td>Result remains INCONCLUSIVE/BLOCKED.</td></tr>
+<tr><td>T10-G14 · Privacy</td><td>Recursive semantic scan of all tracked T10 outputs.</td><td>No VIN/serial/IP/GPS/route/credential/private path/raw payload/PII.</td><td>Redact/regenerate; do not publish.</td></tr>
+<tr><td>T10-G15 · Ledger/result integrity</td><td><code>result-ledger.schema.json</code>, hash-chain and lifecycle validation.</td><td>Gapless immutable events, one terminal per row, identity consistent.</td><td>Session cannot promote capability.</td></tr>
+<tr><td>T10-G16 · Independent review</td><td>Reviewer log/certification.</td><td>Zero actionable P0–P3; all R/G/result boundaries covered.</td><td>Patch off-car or retain blockers.</td></tr>
+<tr><td>T10-G17 · T11 fence</td><td>Changed-path/release scans.</td><td>No T11/P-result/UI/release wiring.</td><td>Revert out-of-scope changes.</td></tr>
+</tbody></table></div>
+
+<h3>6.2 Current-plan validation versus future field validation</h3>
+<div class="grid2">
+<div class="gate-card"><h3>Valid now—plan phase</h3><ul class="check"><li>HTML is standalone, responsive and supports persistent dark mode.</li><li>Required consolidated section order is complete.</li><li>Current pack facts/digests/candidate states match generated artifacts.</li><li>No private path/IP/VIN/GPS/credential/raw payload in this spec.</li><li>No vehicle command, install or mutation was executed.</li></ul></div>
+<div class="gate-card"><h3>Deferred by design</h3><ul class="check"><li>T10 code, tests, APK and handoff do not yet exist.</li><li>Vehicle/profile/sender/permission identity is unresolved.</li><li>Session N has not started.</li><li>No N+1 pack or READY mutation row exists.</li><li>D-H0 and D-M1…D-M4 remain NOT_RUN.</li></ul></div>
+</div>
+
+<h3>6.3 Requirement traceability</h3>
+<div class="scroll"><table><thead><tr><th>Requirements</th><th>Tasks</th><th>Gates</th><th>Primary artifact</th></tr></thead><tbody>
+<tr><td>T10-R1,R19,R22</td><td>T10-P0,P9</td><td>T10-G0,G2,G17</td><td>This spec + source-set/release scans.</td></tr>
+<tr><td>T10-R2,R5</td><td>T10-P2,P3</td><td>T10-G6,G7,G8</td><td><code>vehicle-session-plan.json</code> + ledger.</td></tr>
+<tr><td>T10-R3,R20</td><td>T10-P1</td><td>T10-G4</td><td><code>hud-sign-vehicle-test-candidate.json</code>.</td></tr>
+<tr><td>T10-R4,R14,R15</td><td>T10-P0,P3,P4,P5,P6,P7</td><td>T10-G2,G8,G11</td><td>Fixed CarExec catalogs + candidate registry/pack.</td></tr>
+<tr><td>T10-R6,R7</td><td>T10-P1</td><td>T10-G5</td><td>Session preflight metadata.</td></tr>
+<tr><td>T10-R8,R9,R10,R11,R21</td><td>T10-P4…P8</td><td>T10-G10,G11,G12,G15</td><td>Ledger + result artifacts.</td></tr>
+<tr><td>T10-R12,R13,R16</td><td>T10-P4,P5,P6,P7</td><td>T10-G13</td><td>D-H0 and D-M1…D-M4 result files.</td></tr>
+<tr><td>T10-R17,R18</td><td>T10-P2,P8,P9</td><td>T10-G14,G15,G16</td><td>Sanitized metadata ledger/results + reviewer log.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><strong>Future runner rule:</strong> <code>scripts/vehicle/run-seal-hud-sign-matrix.sh</code> is the sole planned vehicle entrypoint after implementation. Its accepted inputs must be exact handoff/pack identity and control actions such as safe stop/resume—not a selector, raw ID, value, provider, permission or shell command.</div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Question</th><th>Safe default</th><th>Must close before</th></tr></thead><tbody>
+<tr><td>T10-Q1</td><td>Exact approved vehicle model/ROM/profile tuple?</td><td>Unresolved ⇒ no Session N.</td><td>Identity preflight.</td></tr>
+<tr><td>T10-Q2</td><td>Approved battery support procedure and stop threshold?</td><td>No numeric guess; unresolved ⇒ no-go.</td><td>Physical setup.</td></tr>
+<tr><td>T10-Q3</td><td>Which sender/permission mode is proven on target?</td><td>Non-exported/in-app activity; never weaken permission.</td><td>T10 build/handoff.</td></tr>
+<tr><td>T10-Q4</td><td>Which exact additional test/verifier paths are needed beyond the parent 15-path FUTURE list?</td><td><strong>Resolved 2026-08-10:</strong> §4.15 and canonical boundary revision 2 enumerate the complete 45 source/test/build/verifier paths plus seven post-build attestations; no wildcard.</td><td>Closed by Stage A.</td></tr>
+<tr><td>T10-Q5</td><td>When and where will Session N run, and who fills operator/observer roles?</td><td>Unset; no vehicle window scheduled.</td><td>Session authorization.</td></tr>
+<tr><td>T10-Q6</td><td>Raw evidence retention duration and encrypted local location?</td><td>Local + ignored + least retention; no upload.</td><td>Session N.</td></tr>
+<tr><td>T10-Q7</td><td>Is D-H0 physical OFF→ON→OFF diagnostic consented?</td><td>No; omit D-H0 mutation.</td><td>Any D-H0 row.</td></tr>
+<tr><td>T10-Q8</td><td>If N+1 contains multiple READY rows, what exact pack window is authorized?</td><td>Frozen order, one dimension/frame at a time; no ad-hoc subset or reordering.</td><td>Mutation authorization.</td></tr>
+<tr><td>T10-Q9</td><td>What recovery action is approved for a restore failure on the exact profile?</td><td>No automatic reboot/retry; stop and preserve armed frame evidence.</td><td>Mutation authorization.</td></tr>
+<tr><td>T10-Q10</td><td>When may T11 production wiring begin?</td><td>Never from T10 alone; separate approved spec after field proof.</td><td>T11.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><code>docs/diagnostics/hud-sign-re/offcar-boundary-revisions.json</code> — canonical append-only path-class authority; active revision 2.</li>
+<li><code>docs/specs/seal-nav-hud-speed-sign-offcar.html</code> — authoritative T0–T9 history and successor-boundary semantics.</li>
+<li><code>docs/specs/seal-hud-sign-candidate-expansion.html</code> — candidate states, exact identity, same-session quarantine, rollback and N+1 semantics.</li>
+<li><code>docs/specs/windshield-hud-enable.html</code> — older M1/M2-only design context; not the consolidated M1–M4 T10 authority.</li>
+<li><code>docs/diagnostics/hud-sign-re/expansion/vehicle-session-plan.json</code> and <code>docs/diagnostics/hud-sign-re/expansion/vehicle-session-plan.txt</code> — current inert revision-4 template.</li>
+<li><code>docs/diagnostics/hud-sign-re/expansion/vehicle-session-checklist.html</code> — generated current row list.</li>
+<li><code>docs/diagnostics/hud-sign-re/expansion/candidate-registry.json</code> — H8/S11/S12 states.</li>
+<li><code>docs/diagnostics/hud-sign-re/expansion/result-ledger.schema.json</code> — future runtime ledger contract.</li>
+<li><code>docs/diagnostics/hud-sign-re/m1-nav-hud-plan.json</code>, <code>docs/diagnostics/hud-sign-re/m2-hud-road-plan.json</code>, <code>docs/diagnostics/hud-sign-re/m3-cluster-sign-plan.json</code>, <code>docs/diagnostics/hud-sign-re/m4-hud-sign-plan.json</code> — milestone hypotheses and lifecycle shapes.</li>
+<li><code>docs/diagnostics/VEHICLE-TEST-V2.md</code> — existing general vehicle safety/evidence context; not authority for this T10 pack.</li>
+<li>Android Developers official BroadcastReceiver/permission/<code>goAsync()</code> documentation; Android ADB host transport source; mobile-dev-inc/dadb upstream README; Maven Central <code>dev.mobile:dadb:2.0.0</code>.</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><p class="small">Append-only. Approval state is intentionally not stored in this HTML.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-08 · Consolidated T10 planning synthesis</h3><p>Combined the certified off-car parent, candidate expansion freeze and M1–M4 packs into one vehicle-session plan. Preserved the current inert state, first-session read-only rule, exact identity, no guessed selectors, same-session quarantine, one-dimension pre-armed rollback, independent result surfaces, privacy boundary and separate T11 authorization.</p></div>
+<div class="review"><h3>Pass 2 — 2026-08-08 · Independent plan safety audit</h3><p><strong>reviewerId:</strong> <code>kiro_default_independent_plan_audit_20260808</code> · <strong>P0:</strong> 0 · <strong>P1:</strong> 0 · <strong>P2:</strong> 0 · <strong>P3:</strong> 0 · <strong>verdict:</strong> APPROVED. The reviewer independently matched the current pack/candidate facts, Session N quarantine, authorization layers, physical stop gates, immutable pre-armed rollback, M1–M4 separation/priorities, privacy boundary, required HTML sections and T11 fence against the authoritative artifacts.</p></div>
+<div class="review"><h3>Pass 3 — 2026-08-10 · Stage A boundary/Q4 reseal</h3><p>Resolved T10-Q4 with exact wildcard-free source/test/build/verifier and attestation classes, preserved immutable revision-1 history, and retained all 13 T11 paths as <code>FUTURE_FORBIDDEN</code>. Registry revision 4 contains unchanged H8@1/@2/@3, S11@1 and S12@1 refs; the regenerated pack remains 11 rows (7 READ_ONLY, 4 MILESTONE, 0 MUTATION), empty mutation allowlist and <code>INERT_IDENTITY_BLOCKED</code>. Six probe IDs still lack proven third-party app runtime reachability/permission binding. Corpus presence of <code>getPropertyConfigs</code> and <code>0x38B00030</code> is not invocation proof. No T10 runtime file, APK, exact-source/candidate artifact, session, vehicle/device/network operation or T11 implementation was produced; final state is <code>ARTIFACT_READY_OPERATIONALLY_BLOCKED</code>.</p></div>
+<div class="review"><h3>Pass 4 — 2026-08-10 · Fast-field proof-before-probe correction</h3><p><strong>Correction:</strong> the production binding set remains <code>UNPROVEN_APP_REACHABILITY</code> while <code>T10SessionEngine</code> exits 23 before dispatch, creating a proof-before-probe deadlock. Candidate/source discovery is complete for this field pass and is not restarted. The vehicleTest launcher therefore exposes only four compile-time cases: (1) M1+M2 with H1 <code>config 0x38B00030 == 1</code>, <code>status 0x38B0002E</code>, <code>set 0x32B1102E</code>, 2/1 and H2 <code>status 0x38B00028</code>, <code>set 0x4C10E03A</code>, 1/2; (2) M3-S1 statistic <code>0x4B40001C</code>, 50→80; (3) M3-S5 setting <code>0x4B4000AA</code>, 50→80; and (4) M4 safe-driving gate <code>status 0x38B0001E</code>, <code>set 0x4C10E030</code>, 1/2. M4 is gate-only and never inherits an M3 result.</p><p>Each case remains launcher-only/no-payload, requires an explicit human confirmation, runs on one serialized bounded worker, captures a synchronous exact prior before the first write, arms rollback before dispatch, verifies read-back, and restores/verifies in <code>finally</code>. Missing prior means <code>BLOCKED</code> with zero write; restore mismatch sets the process-memory <code>STOP/RESTORE_FAILED</code> lock and disables all later cases. Preparation, unit tests and APK assembly never execute a case: mutation remains exactly zero until a human confirms one case during a separately authorized on-car window, and this off-car correction makes no on-car capability claim.</p></div>
+</section>
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

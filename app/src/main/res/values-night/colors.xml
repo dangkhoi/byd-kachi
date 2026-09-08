@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ClusterNav — DARK "cockpit" palette (NIGHT qualifier · light/dark foundation Stage 1).
+  This file is the VERBATIM dark cockpit palette that previously lived in values/colors.xml; it is now
+  the values-night/ (dark) variant. values/colors.xml holds the LIGHT palette with the SAME color NAMES,
+  so every @color reference resolves in BOTH modes. Keep this NAME SET identical to values/colors.xml.
+  Ref: docs/specs/ui-visual-upgrade-l2.html (original dark palette).
+-->
+<resources>
+    <!-- ── Brand / primary ─────────────────────────────────────────── -->
+    <color name="brand">#3b82f6</color>          <!-- blue -->
+    <color name="brand_pressed">#2563eb</color>   <!-- deeper blue for pressed -->
+
+    <!-- ── Surfaces / background ───────────────────────────────────── -->
+    <color name="surface">#14151d</color>         <!-- card surface -->
+    <color name="screen_bg">#07070b</color>       <!-- cockpit window background -->
+
+    <!-- ── Text inks ───────────────────────────────────────────────── -->
+    <color name="text_primary">#f4f5fb</color>    <!-- light ink -->
+    <color name="text_secondary">#9a9db0</color>  <!-- muted ink -->
+
+    <!-- ── Lines ───────────────────────────────────────────────────── -->
+    <color name="divider">#242634</color>         <!-- hairline -->
+
+    <!-- ── Semantic accents ────────────────────────────────────────── -->
+    <color name="ok_green">#34d399</color>        <!-- green -->
+    <color name="warn_amber">#fbbf24</color>      <!-- amber -->
+    <color name="err_red">#fb7185</color>         <!-- red -->
+    <color name="off_gray">#63667a</color>        <!-- muted/tertiary, disabled + idle dot -->
+    <color name="white">#FFFFFF</color>           <!-- on-brand text stays white -->
+
+    <!-- ── Extra surfaces + hairlines (dark cockpit) ───────────────── -->
+    <color name="surface_2">#191b25</color>       <!-- lighter card surface (gradient top) -->
+    <color name="hairline">#242634</color>        <!-- default hairline -->
+    <color name="hairline_strong">#2e3140</color> <!-- stronger card stroke -->
+    <color name="cockpit_bg">#07070b</color>      <!-- alias of screen_bg -->
+    <color name="cockpit_bg_tint">#4d3b82f6</color> <!-- ~30% blue radial tint for window bg (top-left) -->
+    <color name="cockpit_bg_tint_purple">#3aa78bfa</color> <!-- ~23% purple radial tint for window bg (top-right) -->
+    <color name="text_tertiary">#63667a</color>   <!-- tertiary ink -->
+
+    <!-- ── Extended accent palette (from the L2 mockup) ────────────── -->
+    <color name="accent_blue">#3b82f6</color>
+    <color name="accent_indigo">#818cf8</color>
+    <color name="accent_cyan">#22d3ee</color>
+    <color name="accent_green">#34d399</color>
+    <color name="accent_amber">#fbbf24</color>
+    <color name="accent_red">#fb7185</color>
+    <color name="accent_purple">#a78bfa</color>
+    <color name="accent_pink">#f472b6</color>
+    <color name="accent_teal">#2dd4bf</color>
+
+    <!-- ── Pressed/ripple overlays for dark ────────────────────────── -->
+    <color name="ripple_light">#33ffffff</color>  <!-- subtle light ripple on dark -->
+    <color name="press_blue">#223b82f6</color>    <!-- translucent blue press overlay -->
+    <color name="press_amber">#22fbbf24</color>   <!-- translucent amber press overlay -->
+    <color name="card_highlight">#14ffffff</color> <!-- faint top highlight on cards -->
+
+    <!-- ── Drawable-literal tokens (dark) ──────────────────────────────────────────────
+         Names introduced so drawables that used to hardcode a dark hex can reference @color and
+         resolve per mode. DARK values here = the exact former literals (dark rendering unchanged).
+         The matching values/colors.xml gives each a LIGHT value. -->
+
+    <!-- Feature-card icon tiles (accent gradient plates, white glyph). Dark = former tile_* literals. -->
+    <color name="tile_nav_start">#3b82f6</color>    <color name="tile_nav_end">#6366f1</color>
+    <color name="tile_cast_start">#a78bfa</color>   <color name="tile_cast_end">#7c3aed</color>
+    <color name="tile_mic_start">#34d399</color>    <color name="tile_mic_end">#059669</color>
+    <color name="tile_badge_start">#fbbf24</color>  <color name="tile_badge_end">#f59e0b</color>
+    <color name="tile_bubble_start">#2dd4bf</color> <color name="tile_bubble_end">#0891b2</color>
+    <color name="tile_seat_start">#f472b6</color>   <color name="tile_seat_end">#db2777</color>
+    <color name="tile_dust_start">#818cf8</color>   <color name="tile_dust_end">#4f46e5</color>
+    <color name="tile_sys_start">#64748b</color>    <color name="tile_sys_end">#475569</color>
+    <color name="tile_adv_start">#fb7185</color>    <color name="tile_adv_end">#e11d48</color>
+
+    <!-- Segmented-control recessed well (former #0C0D13 in segment_track_bg). -->
+    <color name="seg_track_well">#0C0D13</color>
+    <!-- Primary-button pressed gradient END (former #5b63d6 in btn_primary). -->
+    <color name="btn_primary_end">#5b63d6</color>
+    <!-- Status-pill translucent fills (former alpha-mixed accents in pill_bg_*). -->
+    <color name="pill_fill_green">#2634D399</color>
+    <color name="pill_fill_red">#29FB7185</color>
+    <color name="pill_fill_amber">#29FBBF24</color>
+    <!-- Speed-dial face fill (former #14FB7185 in speed_dial_bg). -->
+    <color name="speed_dial_fill">#14FB7185</color>
+
+    <!-- ── Custom-view semantic tokens (Stage 2 — theme-adaptive custom Views) ──────────────────────
+         DARK values = the EXACT former hardcoded literals from the custom Views, so dark rendering is
+         byte-for-byte the same look. values/colors.xml gives each a LIGHT value. Keep NAME SET identical. -->
+    <color name="seat_body_top">#12131b</color>
+    <color name="seat_body_bottom">#0b0c11</color>
+    <color name="seat_off_fill">#171922</color>
+    <color name="cluster_face">#0b0c12</color>
+    <color name="cluster_tint_left">#293b82f6</color>
+    <color name="cluster_tint_right">#24a78bfa</color>
+</resources>

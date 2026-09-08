@@ -1,0 +1,6 @@
+kind=RETURN_NORMAL_TO_MAIN shell=am start --display 0 --windowingMode 1 -n 'com.example.maps/.MainActivity'
+kind=RESTORE_PIP shell=appops set com.example.maps PICTURE_IN_PICTURE allow
+kind=RESTORE_TRANSITION_ANIMATION shell=settings put global window_animation_scale 1.0; settings put global transition_animation_scale 0.5
+kind=RESET_CLEAN_DISPLAY shell=wm size 1920x720 -d 2; wm density 180 -d 2; wm overscan reset -d 2
+kind=SEAL_DL3_COMPENSATE_18 shell=service call AutoContainer 2 i32 1000 i32 18 s16 ""
+kind=SEAL_DL3_COMPENSATE_0 shell=service call AutoContainer 2 i32 1000 i32 0 s16 ""

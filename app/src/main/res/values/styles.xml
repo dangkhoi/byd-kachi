@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ══════════════════════════════════════════════════════════════════════════════════════════════════
+  ClusterNav — COCKPIT DESIGN SYSTEM (res/values/styles.xml)
+  ══════════════════════════════════════════════════════════════════════════════════════════════════
+  Doc: docs/specs/ui-design-system.html   ·   Palette: res/values/colors.xml   ·   Scale: res/values/dimens.xml
+
+  This is the REUSABLE component vocabulary for the dark "cockpit" UI. Every future screen/dialog/overlay
+  MUST compose from these @style/Cockpit.* styles + the shared drawables (card_bg, btn_*, spinner_bg,
+  popup_bg, pill_bg, segment_bg, tile_*). Do NOT introduce one-off / default-Material-styled widgets; if a
+  needed component is missing, ADD it here first, then use it.
+
+  Foundations:
+    • Theme parent is the FRAMEWORK dark @android:style/Theme.Material (no AppCompat / no Material3), so all
+      widget parents below are @android:style/Widget.Material.* (verified public in platform-37 public-final.xml).
+    • Tokens are referenced by NAME only (colors.xml / dimens.xml). Never hardcode hex or sp/dp here — change a
+      token once, every Cockpit.* style follows.
+    • "Active/on" control colour is GREEN (@color/ok_green) via theme android:colorControlActivated — switches,
+      seekbar and radios all glow green so the control family reads as one system.
+
+  Naming: dotted names inherit their prefix (e.g. Cockpit.Text.Title extends Cockpit.Text). Widget styles that
+  must keep framework behaviour set an explicit android: parent; pure text/item styles set parent="" so they do
+  NOT accidentally inherit a widget style that shares their prefix.
+
+  v1.34 (task v134-fixes · FIX 2): TEXT sizes + HORIZONTAL paddings RESTORED to the v1.32 originals (owner:
+  v1.33's ~70% shrink made text unreadable on the car). Only VERTICAL metrics stay at ~70% — minHeight (via
+  @dimen/touch_min = 40dp), paddingTop/paddingBottom, Row heights, Hero vertical padding — so the layout is
+  noticeably shorter while text is full size. Elevation is a cosmetic shadow (restored, not a layout height).
+
+  loosen-spacing (owner on-car after v1.34: padding/margin/line-height felt cramped, elements "dính dính vào
+  nhau"): the ~70% VERTICAL metrics are raised to ~88-92% of the v1.32 originals so nothing touches — Row
+  minHeight 41->52dp + paddingV 9->12dp, HeroCard paddingV 13->17dp, Compact buttons 27->34dp minHeight +
+  5->7dp paddingV, StatusPill 20->26dp + 3->4dp, SegmentButton 31->38dp, ListRow paddingV 6->8dp, Spinner
+  paddingV 4->6dp (Item 7->9, DropDown 8->11), Pill paddingV 3->4dp, Row.Subtitle marginTop 1->2dp.
+  `android:lineSpacingMultiplier` 1.2 is added to the WRAPPED-sentence styles (Cockpit.Text.Hint,
+  Cockpit.Row.Subtitle) for line-height breathing — NOT to single-line titles/labels. Comfortable, still
+  marginally shorter than the (too-tall) v1.32. Text sizes + horizontal metrics UNCHANGED.
+  ══════════════════════════════════════════════════════════════════════════════════════════════════
+-->
+<resources>
+
+    <!-- ═════════════════════════════ SURFACES ═════════════════════════════ -->
+
+    <!-- Cockpit.Card — the standard feature container. Gradient dark surface (@drawable/card_bg:
+         surface_2→surface, hairline_strong stroke, ~20dp corners, top sheen) + card_pad padding.
+         Apply to the vertical LinearLayout that wraps a feature's header + body. -->
+    <style name="Cockpit.Card" parent="">
+        <item name="android:background">@drawable/card_bg</item>
+        <item name="android:padding">@dimen/card_pad</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <!-- ═════════════════════════════ TYPOGRAPHY ════════════════════════════ -->
+
+    <!-- Cockpit.Text — base ink for all cockpit text (primary ink, body size). Not used directly;
+         the variants below extend it. -->
+    <style name="Cockpit.Text" parent="">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_body</item>
+    </style>
+
+    <!-- Cockpit.Text.Title — the page / screen title (e.g. "ClusterNav"). 24sp medium, primary ink. -->
+    <style name="Cockpit.Text.Title">
+        <item name="android:textSize">@dimen/text_title</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Cockpit.Text.Subtitle — a card / section title inside a header row. 16sp medium, primary ink. -->
+    <style name="Cockpit.Text.Subtitle">
+        <item name="android:textSize">@dimen/text_status</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Cockpit.Text.SectionHeader — small UPPERCASE grey label that heads a group of controls. -->
+    <style name="Cockpit.Text.SectionHeader">
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:textColor">@color/text_tertiary</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Cockpit.Text.Hint — secondary helper / summary line under a title. 13sp muted ink. -->
+    <style name="Cockpit.Text.Hint">
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <!-- Cockpit.Text.Value — a read-out value (distance, speed, level). 16sp medium primary ink. -->
+    <style name="Cockpit.Text.Value">
+        <item name="android:textSize">@dimen/text_status</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- ═════════════════════════════ BUTTONS ═══════════════════════════════ -->
+    <!-- All cockpit buttons are FLAT (stateListAnimator/elevation cleared) with a shared drawable face,
+         sentence-case labels (textAllCaps=false) and a touch_min tap target. Parent="" keeps them off the
+         Material raised-button look; the drawable's own selector carries pressed/disabled states. -->
+
+    <!-- Cockpit.Button.Primary — filled brand→indigo gradient (@drawable/btn_primary), white-on-brand text. -->
+    <style name="Cockpit.Button.Primary" parent="">
+        <item name="android:background">@drawable/btn_primary</item>
+        <item name="android:textColor">@color/btn_text_on_brand</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <!-- Cockpit.Button.Secondary — outlined brand button (@drawable/btn_outline), brand-blue text. -->
+    <style name="Cockpit.Button.Secondary" parent="">
+        <item name="android:background">@drawable/btn_outline</item>
+        <item name="android:textColor">@color/brand</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <!-- Cockpit.Button.Warning — outlined amber button (@drawable/btn_warning_outline) for destructive /
+         caution actions (Dừng, Trả cụm, Dọn sạch…). -->
+    <style name="Cockpit.Button.Warning" parent="">
+        <item name="android:background">@drawable/btn_warning_outline</item>
+        <item name="android:textColor">@color/warn_amber</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <!-- Cockpit.Button.Text — borderless text button (no fill), brand-blue label. For low-emphasis inline
+         actions (e.g. an expander / "Khắc phục sự cố" affordance). -->
+    <style name="Cockpit.Button.Text" parent="">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:textColor">@color/brand</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <!-- ─────────────────────────── COMPACT BUTTONS ─────────────────────────
+         Compact action-button variants (task ui-visual-upgrade-l2 · owner polish: "button đang còn to chiếm
+         chỗ xấu"). The default buttons render tall + full-width and dominate the board; these trim the metrics
+         so a low-emphasis action hugs its label. v1.34: side padding RESTORED to 14dp (readable text fit),
+         vertical padding kept at 5dp + 27dp min height so the row stays short. Each variant INHERITS its family
+         face (outline / warning-outline / borderless) via an explicit parent, so only the size changes.
+         Consumers pair these with android:layout_width="wrap_content" so the button no longer fills the row. -->
+    <style name="Cockpit.Button.Compact.Secondary" parent="@style/Cockpit.Button.Secondary">
+        <item name="android:minHeight">34dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">7dp</item>
+        <item name="android:paddingBottom">7dp</item>
+        <item name="android:textSize">@dimen/text_label</item>
+    </style>
+
+    <!-- Cockpit.Button.Compact.Warning — compact caution action (outlined amber). Same metrics as
+         Compact.Secondary; inherits the warning face from Cockpit.Button.Warning. -->
+    <style name="Cockpit.Button.Compact.Warning" parent="@style/Cockpit.Button.Warning">
+        <item name="android:minHeight">34dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">7dp</item>
+        <item name="android:paddingBottom">7dp</item>
+        <item name="android:textSize">@dimen/text_label</item>
+    </style>
+
+    <!-- Cockpit.Button.Compact.Text — compact borderless text action. Same metrics as Compact.Secondary;
+         inherits the transparent face + brand ink from Cockpit.Button.Text. -->
+    <style name="Cockpit.Button.Compact.Text" parent="@style/Cockpit.Button.Text">
+        <item name="android:minHeight">34dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">7dp</item>
+        <item name="android:paddingBottom">7dp</item>
+        <item name="android:textSize">@dimen/text_label</item>
+    </style>
+
+    <!-- ═════════════════════════════ ICON TILE ═════════════════════════════ -->
+
+    <!-- Cockpit.IconTile — the 34dp rounded gradient plate that leads a feature-card header. Size + inset +
+         centring only; the per-feature gradient face is the @drawable/tile_* set the ImageView on it
+         (tile_nav / tile_cast / tile_mic / tile_badge / tile_bubble / tile_seat / tile_dust / tile_sys /
+         tile_adv), with a white ic_*_g glyph as android:src. v1.34: restored to 34dp (a glyph plate — read
+         alongside text; its height sits within the row min-height). -->
+    <style name="Cockpit.IconTile" parent="">
+        <item name="android:layout_width">34dp</item>
+        <item name="android:layout_height">34dp</item>
+        <item name="android:padding">6dp</item>
+        <item name="android:scaleType">center</item>
+        <item name="android:layout_gravity">center_vertical</item>
+        <item name="android:layout_marginEnd">12dp</item>
+    </style>
+
+    <!-- ═════════════════════════════ SWITCH ════════════════════════════════ -->
+
+    <!-- Cockpit.Switch — the master/feature on-off toggle. Framework Material switch; the "on" track/thumb
+         glow is GREEN via theme android:colorControlActivated (@color/ok_green). Label ink is muted so the
+         green state is the eye-catch. Opt-in style (raw <Switch> already inherits the same green from the
+         theme); apply where you want the explicit cockpit label treatment. -->
+    <style name="Cockpit.Switch" parent="@android:style/Widget.Material.CompoundButton.Switch">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:switchPadding">10dp</item>
+    </style>
+
+    <!-- ═════════════════════════════ SPINNER ═══════════════════════════════ -->
+
+    <!-- Cockpit.Spinner — the dropdown control face. Rounded surface_2 field + hairline_strong stroke +
+         end chevron (@drawable/spinner_bg); the popup opens on the dark @drawable/popup_bg panel. paddingEnd
+         clears the chevron; overlapAnchor=false drops the list BELOW the field. Wired app-wide via AppTheme
+         android:spinnerStyle, so ALL framework Spinners adopt this WITHOUT editing the sealed layouts. -->
+    <style name="Cockpit.Spinner" parent="@android:style/Widget.Material.Spinner">
+        <item name="android:background">@drawable/spinner_bg</item>
+        <item name="android:popupBackground">@drawable/popup_bg</item>
+        <item name="android:overlapAnchor">false</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">36dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+    </style>
+
+    <!-- Cockpit.Spinner.Item — the COLLAPSED selected row (see @layout/cockpit_spinner_item). parent="" so it
+         does NOT inherit the Cockpit.Spinner widget style. Horizontal padding comes from Cockpit.Spinner; this
+         owns ink + vertical rhythm + single-line ellipsize. -->
+    <style name="Cockpit.Spinner.Item" parent="">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- Cockpit.Spinner.DropDownItem — a popup ROW (see @layout/cockpit_spinner_dropdown_item). Also wired as
+         AppTheme android:spinnerDropDownItemStyle for any future default-adapter spinner. parent="" (no radio
+         checkMark); selectable @drawable/spinner_item_bg gives the pressed/selected blue wash; touch_min tall. -->
+    <style name="Cockpit.Spinner.DropDownItem" parent="">
+        <item name="android:background">@drawable/spinner_item_bg</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">11dp</item>
+        <item name="android:paddingBottom">11dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <!-- Cockpit.DropDownListView — the ListView inside a Spinner popup. No visible divider + transparent
+         listSelector, because each row owns its own pressed wash (spinner_item_bg). Wired via AppTheme
+         android:dropDownListViewStyle. -->
+    <style name="Cockpit.DropDownListView" parent="@android:style/Widget.Material.ListView.DropDown">
+        <item name="android:divider">@color/hairline</item>
+        <item name="android:dividerHeight">0dp</item>
+        <item name="android:listSelector">@android:color/transparent</item>
+    </style>
+
+    <!-- ═════════════════════════════ SEEKBAR ═══════════════════════════════ -->
+
+    <!-- Cockpit.SeekBar — value slider (e.g. badge size). Active fill + thumb are GREEN (@color/ok_green) to
+         match the switch family; the unfilled track is a subtle hairline. Explicit tints so the look is not
+         theme-implicit. Wired app-wide via AppTheme android:seekBarStyle. -->
+    <style name="Cockpit.SeekBar" parent="@android:style/Widget.Material.SeekBar">
+        <item name="android:progressTint">@color/ok_green</item>
+        <item name="android:thumbTint">@color/ok_green</item>
+        <item name="android:progressBackgroundTint">@color/hairline_strong</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+    </style>
+
+    <!-- ═════════════════════════════ STATUS PILL ═══════════════════════════ -->
+
+    <!-- Cockpit.StatusPill — a small capsule TextView for a status word/short phrase. Neutral dark capsule
+         (@drawable/pill_bg); set the TEXT colour to convey status: text_secondary (idle), ok_green (active),
+         warn_amber (caution), err_red (error). -->
+    <style name="Cockpit.StatusPill" parent="">
+        <item name="android:background">@drawable/pill_bg</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">26dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+    </style>
+
+    <!-- ═════════════════════════════ SEGMENT BUTTON ════════════════════════ -->
+
+    <!-- Cockpit.SegmentButton — a RadioButton rendered as a segmented pill (button glyph hidden,
+         @drawable/segment_bg fills BRAND when checked, @color/segment_text flips to white when checked). Use
+         inside a horizontal RadioGroup for mutually-exclusive choices. OPT-IN: it is NOT wired as the global
+         android:radioButtonStyle, so plain framework radios (e.g. seat cool/heat) keep the default circle +
+         green tick, which is acceptable on dark. Apply style="@style/Cockpit.SegmentButton" to opt a radio in. -->
+    <style name="Cockpit.SegmentButton" parent="@android:style/Widget.Material.CompoundButton.RadioButton">
+        <item name="android:button">@null</item>
+        <item name="android:background">@drawable/segment_bg</item>
+        <item name="android:textColor">@color/segment_text</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">38dp</item>
+        <item name="android:minWidth">64dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+    </style>
+
+    <!-- ═════════════════════════════ LIST ROW ══════════════════════════════ -->
+
+    <!-- Cockpit.ListRow — a horizontal row container (label + trailing control/value), touch_min tall, used
+         for dynamically-added list items (e.g. a voice-key binding row). -->
+    <style name="Cockpit.ListRow" parent="">
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
+
+    <!-- Cockpit.ListRowLabel — the primary label inside a Cockpit.ListRow. Primary ink, body size, centred
+         vertically. The consumer sets layout_width=0dp + layout_weight=1 so the label fills and the trailing
+         control keeps its intrinsic width. -->
+    <style name="Cockpit.ListRowLabel" parent="">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:layout_gravity">center_vertical</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <!-- ═════════════════════════════ L2 GROUP / ROW ════════════════════════
+         Compose-ready building blocks for the Level-2 "cockpit" board (docs/specs/ui-visual-upgrade-l2.html
+         + ui-design-system.html). A GROUP is a rounded, elevated container; ROWs stack inside it separated by
+         RowDividers. Colours are token-by-NAME; the mockup-exact one-off sizes (sp) are literal here because
+         dimens.xml has no matching token and this file is the only value-resource in scope. -->
+
+    <!-- Cockpit.Group — the standard L2 feature container (mockup `.group`): gradient surf2→surf face with a
+         1px hairline stroke + 20dp corners (@drawable/group_bg), a soft drop shadow via elevation, and
+         clipToOutline so child rows/dividers are clipped to the rounded corners. Apply to a vertical
+         LinearLayout that stacks Cockpit.Row + Cockpit.RowDivider children. -->
+    <style name="Cockpit.Group" parent="">
+        <item name="android:background">@drawable/group_bg</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:elevation">10dp</item>
+        <item name="android:clipToOutline">true</item>
+    </style>
+
+    <!-- Cockpit.Row — a single feature/setting row inside a Group (mockup `.row`): horizontal, children centred
+         vertically. v1.34: horizontal padding RESTORED to 16dp (text fit); vertical padding 9dp + 41dp min
+         height kept (~70%) so rows are shorter. Lead with a Cockpit.Row.Tile, then a Cockpit.Row.Title
+         (+ optional Cockpit.Row.Subtitle) in a weighted column, then a trailing control. -->
+    <style name="Cockpit.Row" parent="">
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <!-- Cockpit.RowDivider — the 1px hairline between stacked rows (mockup `.row+.row{border-top}`). Apply to
+         a plain View placed between two Cockpit.Row elements (consumer sets layout_width=match_parent). -->
+    <style name="Cockpit.RowDivider" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/hairline</item>
+    </style>
+
+    <!-- Cockpit.Row.Tile — the 34dp rounded gradient plate that leads a row (mockup `.tile`). parent="" would
+         inherit the Cockpit.Row LinearLayout style, so it explicitly re-parents to the shared Cockpit.IconTile
+         (size + inset + centring). Set the per-feature @drawable/tile_* as background and a white ic_*_g as src. -->
+    <style name="Cockpit.Row.Tile" parent="@style/Cockpit.IconTile" />
+
+    <!-- Cockpit.Row.Title — the row's primary label (mockup `.tt`): 15sp medium primary ink. parent="" so it
+         does NOT inherit the Cockpit.Row widget style that shares its prefix. -->
+    <style name="Cockpit.Row.Title" parent="">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Cockpit.Row.Subtitle — the row's secondary summary line under the title (mockup `.ts`): 12sp muted
+         ink, 1dp above-gap. parent="" (see Cockpit.Row.Title). v1.34: textSize restored to 12sp. -->
+    <style name="Cockpit.Row.Subtitle" parent="">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <!-- ═════════════════════════════ L2 HERO CARD ══════════════════════════ -->
+
+    <!-- Cockpit.HeroCard — the top glanceable status card (mockup `.hcard`): gradient surf2→surf face with a
+         hairline stroke + 20dp corners + inset top-highlight (@drawable/hero_card_bg), a deeper elevation for
+         a floating feel. v1.34: horizontal padding RESTORED to 18dp (text fit); vertical padding kept at 13dp
+         (~70%) so the card is shorter. clipToOutline rounds the content. -->
+    <style name="Cockpit.HeroCard" parent="">
+        <item name="android:background">@drawable/hero_card_bg</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingLeft">18dp</item>
+        <item name="android:paddingRight">18dp</item>
+        <item name="android:paddingTop">17dp</item>
+        <item name="android:paddingBottom">17dp</item>
+        <item name="android:elevation">14dp</item>
+        <item name="android:clipToOutline">true</item>
+    </style>
+
+    <!-- Cockpit.HeroLead — the small uppercase lead label of a hero card (mockup `.hlead`): 12sp muted medium
+         ink, all-caps with a touch of tracking. v1.34: textSize restored to 12sp. -->
+    <style name="Cockpit.HeroLead" parent="">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.06</item>
+    </style>
+
+    <!-- Cockpit.HeroDist — the big distance-to-turn readout (mockup `.dist`): 34sp medium primary ink.
+         v1.34: textSize restored to 34sp. -->
+    <style name="Cockpit.HeroDist" parent="">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Cockpit.HeroStreet — the road / maneuver subtitle under the distance (mockup `.street`): 14sp muted ink.
+         v1.34: textSize restored to 14sp. -->
+    <style name="Cockpit.HeroStreet" parent="">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- ═════════════════════════════ L2 STATUS PILLS ═══════════════════════
+         Coloured capsules (mockup `.pill.gr/.rd/.am`): a ~15% accent wash capsule with solid accent text.
+         Cockpit.StatusPill (above) stays the neutral dark capsule; these are the semantic coloured variants. -->
+
+    <!-- Cockpit.Pill — shared capsule base (11sp bold, 10dp/3dp padding, fully rounded). Not used directly;
+         the coloured variants below set the @drawable/pill_bg_* face + accent text colour. v1.34: textSize +
+         horizontal padding restored (11sp / 10dp), vertical padding kept at 3dp. -->
+    <style name="Cockpit.Pill" parent="">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+    </style>
+
+    <!-- Cockpit.Pill.Green — "on/active/good" capsule (mockup `.pill.gr`). -->
+    <style name="Cockpit.Pill.Green">
+        <item name="android:background">@drawable/pill_bg_green</item>
+        <item name="android:textColor">@color/accent_green</item>
+    </style>
+
+    <!-- Cockpit.Pill.Red — "lost/error" capsule (mockup `.pill.rd`). -->
+    <style name="Cockpit.Pill.Red">
+        <item name="android:background">@drawable/pill_bg_red</item>
+        <item name="android:textColor">@color/accent_red</item>
+    </style>
+
+    <!-- Cockpit.Pill.Amber — "caution" capsule (mockup `.pill.am`). -->
+    <style name="Cockpit.Pill.Amber">
+        <item name="android:background">@drawable/pill_bg_amber</item>
+        <item name="android:textColor">@color/accent_amber</item>
+    </style>
+
+    <!-- ═════════════════════════════ L2 SECONDARY (CYAN) BUTTON ════════════ -->
+
+    <!-- Cockpit.Button.Secondary.Cyan — a compact "surface" button with a line2 stroke and CYAN label
+         (mockup `.btn.sec`), for low-emphasis inline actions like "Kiểm tra / Sửa". Inherits the flat,
+         no-elevation behaviour + tap target from Cockpit.Button.Secondary; only the face, ink and size change.
+         (The filled brand button remains @style/Cockpit.Button.Primary — unchanged, reused as-is.) -->
+    <style name="Cockpit.Button.Secondary.Cyan">
+        <item name="android:background">@drawable/btn_secondary</item>
+        <item name="android:textColor">@color/accent_cyan</item>
+        <item name="android:textSize">@dimen/text_label</item>
+    </style>
+
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  turn_tile_bg — DESIGN SYSTEM (Cockpit L2) · the hero turn-arrow plate. Matches the mockup `.turn`
+  (docs/specs/ui-visual-upgrade-l2.html): a blue→indigo gradient with 16dp corners; a white turn glyph
+  (@drawable/ic_turn_right_g) sits on top. New drawable.
+  NOTE: Android <gradient> angle must be a multiple of 45 (315 ≈ the mockup's 150deg diagonal).
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="315"
+        android:startColor="@color/accent_blue"
+        android:endColor="@color/accent_indigo" />
+    <corners android:radius="16dp" />
+</shape>

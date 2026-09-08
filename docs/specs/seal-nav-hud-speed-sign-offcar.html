@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Seal Navigation HUD + Speed Sign Off-Car Program</title>
+<script>(function(){var k='seal-hud-sign-offcar-theme';var t=localStorage.getItem(k);var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1240px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:70px 0 44px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,62px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:1080px}.lead{font-size:19px;color:var(--muted);max-width:940px}.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px}.stat,.card,.callout,.phase,.review,.diagram,.fnode{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3,.grid4{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.grid4{grid-template-columns:repeat(4,1fr)}.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}.callout.purple{background:var(--purple-soft);border-color:var(--purple)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:12.5px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:860px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.phase{display:grid;grid-template-columns:140px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue);white-space:nowrap}.pill.green{background:var(--green-soft);color:var(--green)}.pill.amber{background:var(--amber-soft);color:var(--amber)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.purple{background:var(--purple-soft);color:var(--purple)}.review{padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}.diagram{padding:22px;overflow:auto}.diagram svg{display:block;min-width:920px;width:100%;height:auto}.box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}.box.blue{fill:var(--blue-soft);stroke:var(--blue)}.box.green{fill:var(--green-soft);stroke:var(--green)}.box.amber{fill:var(--amber-soft);stroke:var(--amber)}.box.red{fill:var(--red-soft);stroke:var(--red)}.box.purple{fill:var(--purple-soft);stroke:var(--purple)}.dt{fill:var(--ink);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.6;marker-end:url(#arrow)}.edge2{marker-end:url(#arrow2)}.edge.green{stroke:var(--green)}.edge.red{stroke:var(--red);stroke-dasharray:5 4}.edge.blue{stroke:var(--blue)}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--blue);margin-right:6px}.flow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:stretch}.fnode{padding:16px;text-align:center;position:relative}.fnode b{display:block;margin-bottom:5px}.fnode span{font:11px/1.45 var(--mono);color:var(--muted)}.fnode:not(:last-child):after{content:"→";position:absolute;right:-14px;top:50%;transform:translateY(-50%);z-index:2;color:var(--muted);font-size:18px}.fnode.good{background:var(--green-soft);border-color:var(--green)}.fnode.warn{background:var(--amber-soft);border-color:var(--amber)}.fnode.bad{background:var(--red-soft);border-color:var(--red)}.kv{display:grid;grid-template-columns:220px 1fr;gap:8px 16px}.kv b{font:12px var(--mono);color:var(--muted)}
+@media(max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3,.grid4{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.fnode:not(:last-child):after{content:"↓";right:auto;left:50%;top:auto;bottom:-20px;transform:translateX(-50%)}.kv{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review,.diagram{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Seal HUD + Speed Sign</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('seal-hud-sign-offcar-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Superseding consolidated spec · off-car firmware RE · candidate execution</div>
+<h1>Đưa navigation lên HUD và speed-limit sign lên HUD + cluster.</h1>
+<p class="lead">Chương trình off-car toàn diện: khai thác firmware Java/native, lập evidence graph cho mọi candidate có căn cứ, dựng code và generated ADB shell scenarios fail-closed. AmapService tiếp tục là canonical cluster navigation path; speed sign là pipeline riêng. Không gửi lệnh tới xe trong off-car phase này.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Baseline: main@d85b9f2e13c3 · Date: 2026-08-06 · Supersedes: windshield-hud-enable.html for active planning</p>
+<div class="stats"><div class="stat"><b>2</b><span>physical outputs: cluster + HUD</span></div><div class="stat"><b>2</b><span>pipelines: nav + speed sign</span></div><div class="stat"><b>6+</b><span>firmware/reference corpora</span></div><div class="stat"><b>0</b><span>vehicle commands in off-car phase</span></div><div class="stat"><b>1</b><span>consolidated approval gate</span></div></div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-08-06</td><td>Khởi tạo consolidated scope theo owner: off-car firmware RE + code/harness cho navigation HUD và speed-limit sign trên HUD/cluster.</td><td>Supersedes narrow HUD-only active plan. Vehicle execution remains a later operational gate.</td></tr>
+<tr><td>2026-08-06</td><td>Inventory local corpus/toolchain và first-pass source mining.</td><td>Promoted HUD navigation-map gate and Statistics ISA sign channels; separated Amap NaviInfo from sign pipeline.</td></tr>
+<tr><td>2026-08-06</td><td>Independent audit corrections: transport isolation, corpus honesty, lifecycle, taxonomy and traceability.</td><td>Introduced pure <code>:offcar-planner</code>, exact current/future path sets, NOT_EXHAUSTIVE gate, full source-clear matrix and independent M1–M4 rows.</td></tr>
+<tr><td>2026-08-06</td><td>Certification closure: neutral contracts module, exact tests/evidence phases and canonical artifact references.</td><td>Removed planner→core/CarExec classpath path; completed T10/T11 evidence outputs, trace artifacts and HTML/code validity.</td></tr>
+<tr><td>2026-08-07</td><td>T0–T2 implementation: baseline freeze, main-hook quarantine, exact tools, deterministic Java corpus mining.</td><td>Main receiver is private and probe-free; first-launch fixes preserved; local tool/decode/evidence manifests produced; available Java scope complete, overall corpus NOT_EXHAUSTIVE.</td></tr>
+<tr><td>2026-08-07</td><td>T7 fail-closed runtime implementation: serialized Amap emission, UNKNOWN HUD controller and typed Waze/VietMap speed-sign lifecycle.</td><td>Canonical Amap payload remains unchanged; physical HUD/sign writes are unreachable; exact 5,000ms clears, independent NOOP ports and source/process/queue fencing are verified off-car.</td></tr>
+<tr><td>2026-08-07</td><td>T8–T9 off-car verifier, report sealing and consolidation review.</td><td>O1–O27 pass for every achievable off-car gate; emulator execution is truthfully blocked by the explicit no-ADB/install scope; corpus remains NOT_EXHAUSTIVE and FEATURE_DONE=false.</td></tr>
+<tr><td>2026-08-07</td><td>Security publication-boundary remediation after final audit.</td><td>Java evidence citations are metadata-only; canonical native reports retain decompile hashes/status only; raw source lines, command bodies and Ghidra C stay out of tracked reports.</td></tr>
+<tr><td>2026-08-10</td><td>Stage A parent-boundary reconciliation and expansion trust-anchor reseal.</td><td>Introduces the canonical append-only revision authority: historical revision 1 is immutable, active revision 2 authorizes exact source/attestation paths only, LOCAL_IGNORED never authorizes tracked changes, and all 13 T11 paths remain forbidden.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="callout green"><strong>Canonical facts:</strong> <code>AUTONAVI_STANDARD_BROADCAST_SEND</code> → AmapService already renders cluster icon + distance + road. Some HUD variants mirror maneuver+distance from this trigger. Seal W-mode is physically ON but does not mirror under current conditions.</div>
+<div class="callout blue"><strong>New high-priority HUD evidence:</strong> OEM <code>Hud00600401300000</code> proves <code>INSTRUMENT_HUD_NAVIGATION_MAP_SET=0x32B1102E</code> with <strong>2=ON, 1=OFF</strong>; config <code>0x38B00030</code>, status <code>0x38B0002E</code> where status 2 means enabled. This gate was not in the previous vehicle probe.</div>
+<div class="callout purple"><strong>New speed-sign evidence:</strong> native cluster exposes <code>trafficSignValue</code>, <code>trafficSignType</code>, <code>trafficSign</code>, <code>slaEquip</code>. Firmware exposes explicit map/ISA writes such as <code>STATISTICS_ISA_CURRENT_ROAD_SPEED_LIMIT_SET=0x4B40001C</code>. Amap <code>NaviInfo</code> has 18 nav fields but no speed limit, proving sign output is separate.</div>
+<div class="grid3">
+<div class="card"><h3>Already working</h3><ul><li>GMaps/Waze/VietMap acquisition.</li><li>AmapService cluster navigation.</li><li>VietMap/Waze speed-limit values and freshness.</li><li>Exact-source/release build machinery.</li><li>Release-signed <code>vehicleTest</code> build type.</li></ul></div>
+<div class="card"><h3>Broken/unproven</h3><ul><li>Seal HUD mirror gate.</li><li>HUD road-name rendering.</li><li>Cluster speed-limit value channel.</li><li>HUD speed-limit mirroring/gate.</li><li>Current <code>writeSpeedLimit</code> uses invalid runtime ADAS fallback.</li><li><code>rc=0</code> is not display proof.</li></ul></div>
+<div class="card"><h3>Current phase</h3><ul><li>Read-only firmware mining.</li><li>Install exact local RE tools after approval.</li><li>Generate typed candidates and dry-run commands.</li><li>Compile/tests/emulator only.</li><li>No ADB connection/install/write to a vehicle.</li><li>No production feature claim.</li></ul></div>
+</div>
+<h3>2.1 Product milestones</h3>
+<div class="grid4"><div class="card"><h4>M1 · Nav HUD</h4><p>Seal HUD shows left/right + distance while Amap cluster remains correct.</p></div><div class="card"><h4>M2 · HUD road</h4><p>Road name changes and clears on glass; otherwise capability remains explicit.</p></div><div class="card"><h4>M3 · Cluster sign</h4><p>Controlled 50→80→clear renders correct sign on cluster.</p></div><div class="card"><h4>M4 · HUD sign</h4><p>Same typed speed-limit source renders/mirrors correct sign on HUD without corrupting cluster.</p></div></div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance criteria</th></tr></thead><tbody>
+<tr><td>R1</td><td><strong>One consolidated scope.</strong></td><td>Requirements, RE, candidates, code-as-plan data and verification cover M1–M4 here; predecessor is context only.</td></tr>
+<tr><td>R2</td><td><strong>Hard off-car transport fence.</strong></td><td><code>:offcar-planner</code> depends only on neutral <code>:vehicle-contracts</code>, which contains no CarExec/Android/dadb. Neither app nor car-integration depends on planner; fixed-ID adapter exists only T10.</td></tr>
+<tr><td>R3</td><td><strong>AmapService canonical.</strong></td><td>Cluster guidance remains byte/type compatible; direct HAL cannot replace AmapService without field proof.</td></tr>
+<tr><td>R4</td><td><strong>HUD map gate first.</strong></td><td><code>0x32B1102E</code> 2/1 with config/status is highest-priority source-backed future row.</td></tr>
+<tr><td>R5</td><td><strong>All HUD candidate families.</strong></td><td>Physical/map/service/fusion/profile/direct/road/topology candidates are indexed, each with evidence class and executability.</td></tr>
+<tr><td>R6</td><td><strong>Road separate.</strong></td><td>M1 maneuver+distance can pass without M2 road; parity requires exact road update/clear.</td></tr>
+<tr><td>R7</td><td><strong>Typed fresh speed source.</strong></td><td>VietMap/Waze remain route-independent; positive→0, timeout, source switch, disconnect, stop, output OFF and restart all produce generation-fenced clear intent.</td></tr>
+<tr><td>R8</td><td><strong>Speed sign separate from NaviInfo.</strong></td><td>No speed value is hidden in Amap's 18 fields or nav distance.</td></tr>
+<tr><td>R9</td><td><strong>Typed SpeedLimitFrame.</strong></td><td>Value, sign type, limit type, unit, source, freshness, sequence and clear reason are first-class.</td></tr>
+<tr><td>R10</td><td><strong>Cluster sign.</strong></td><td>Future proof is independent 50→80→clear on cluster, with unrelated warnings unchanged.</td></tr>
+<tr><td>R11</td><td><strong>HUD sign.</strong></td><td>Cluster value and HUD gates are separate dimensions; HUD surface observed independently.</td></tr>
+<tr><td>R12</td><td><strong>Exact property semantics.</strong></td><td>Key/ID, access, provider, Java type, enum/range, prior/read-back, inverse and expected consumer are known before executable promotion.</td></tr>
+<tr><td>R13</td><td><strong>Modern property API preferred.</strong></td><td><code>getCarProperty/setCarProperty</code> first; deprecated and BYDAuto reflection are explicit fallback only.</td></tr>
+<tr><td>R14</td><td><strong>Native old/new RE.</strong></td><td>Relevant unstripped ARM64 functions are matched by demangled name, with old/new address, size, body hash, callers and metadata-only decompile status/hash; raw C remains local/ignored.</td></tr>
+<tr><td>R15</td><td><strong>Evidence graph.</strong></td><td>Every claim has level, artifact hash/path/line-or-address and producer→transport→consumer→surface linkage.</td></tr>
+<tr><td>R16</td><td><strong>No blind execution.</strong></td><td>MASS/raw ID/free-form feature name/guessed enum/Cartesian mutation are rejected; one source-backed mutation dimension only.</td></tr>
+<tr><td>R17</td><td><strong>All safe scenarios rendered.</strong></td><td>Deterministic JSON/HTML/text plans contain baseline, mutation, observation and inverse; no executable shell file in T0–T9.</td></tr>
+<tr><td>R18</td><td><strong>No execute flag off-car.</strong></td><td>Off-car renderer exposes no <code>--execute</code> and depends only on <code>FakeVehicleTransport</code>; process/network invocation is a static-test failure.</td></tr>
+<tr><td>R19</td><td><strong>Main hook quarantine.</strong></td><td>All existing <code>TEST_*</code>, MASS and raw-ID handlers/actions are removed from main manifest/receiver. Fixed-catalog permission-guarded vehicleTest transport is deferred to T10.</td></tr>
+<tr><td>R20</td><td><strong>Truthful states.</strong></td><td>Planned/sent/accepted/read-back/cluster-observed/HUD-observed are distinct; off-car cannot produce visual PASS.</td></tr>
+<tr><td>R21</td><td><strong>One nav arbiter, independent sign ports.</strong></td><td>Nav emission serialized; cluster/HUD sign ports own queues and never backpressure each other or nav.</td></tr>
+<tr><td>R22</td><td><strong>Complete sign clear lifecycle.</strong></td><td>Waze/VietMap/source selector/listener lifecycle and queue saturation cannot leave stale sign; only channel-proven clear may execute later.</td></tr>
+<tr><td>R23</td><td><strong>UNKNOWN before UNSUPPORTED.</strong></td><td>Incomplete corpus/RE/matrix stays UNKNOWN; exact profile UNSUPPORTED only after frozen candidates exhausted.</td></tr>
+<tr><td>R24</td><td><strong>First-launch preservation.</strong></td><td>Three distinct tests and clean-install emulator gate remain.</td></tr>
+<tr><td>R25</td><td><strong>Code health + lint.</strong></td><td>Every changed source ≤500 LOC; CarExec monolith is untouched T0–T9 and split before T10 extension; gateways not duplicated; all module lint gates pass.</td></tr>
+<tr><td>R26</td><td><strong>Exact tool selection.</strong></td><td>Preflight pins system JADX 1.5.6 by absolute resolved path/hash and rejects stale workspace JADX 1.5.0; Apktool/Ghidra/JDK21 exact releases/hashes recorded.</td></tr>
+<tr><td>R27</td><td><strong>No exfiltration.</strong></td><td>Firmware/APKs/binaries/vehicle data stay local; reports sanitize paths/IPs.</td></tr>
+<tr><td>R28</td><td><strong>Exact future identities.</strong></td><td>Future vehicleTest/sender/release tuples bind source, diff, bytes, signer, variant, command; 527589 invalid.</td></tr>
+<tr><td>R29</td><td><strong>Four independent field milestones.</strong></td><td>M1 nav HUD, M2 road, M3 cluster sign and M4 HUD sign have separate D/P rows, identities, observation, clear, restore and invalidation.</td></tr>
+<tr><td>R30</td><td><strong>No implicit repository/vehicle operation.</strong></td><td>Approval authorizes T0–T9 implementation only; commit/push/release/T10/T11 remain separately explicit.</td></tr>
+<tr><td>R31</td><td><strong>Physical HUD ownership.</strong></td><td>Production Confirm OFF→ON is durable; Stop/arrival/output-OFF never write physical OFF. Only separately consented diagnostic transaction may restore OFF.</td></tr>
+<tr><td>R32</td><td><strong>Corpus completeness is honest.</strong></td><td>Required partition/provider/QML/property artifacts are enumerated. Missing vendor/system_ext/odm/provider assets force <code>NOT_EXHAUSTIVE</code>, never a green exhaustive verdict.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+<h3>4.0 Hard off-car execution boundary</h3>
+<div class="callout red"><strong>T0–T9 cannot touch a vehicle:</strong> zero-transport contracts live in <code>:vehicle-contracts</code>; candidate/evidence/generator/fake/renderer live in <code>:offcar-planner</code>, depending only on contracts. Planner/contracts classpaths exclude core CarExec, dadb, Android, socket/process and execution callbacks. Real adapter begins T10.</div>
+<div class="callout amber"><strong>Immediate quarantine:</strong> implementation removes current main-manifest/main-receiver <code>TEST_*</code>, <code>TEST_ADAS_MASS</code>, arbitrary raw-ID and free-form feature-name handlers before adding any candidate model. Runtime debug gating alone is not accepted.</div>
+<h3>4.1 Target system</h3>
+<div class="diagram"><svg viewBox="0 0 1160 560" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box blue" x="25" y="70" width="190" height="82" rx="14"/><text class="dt" x="120" y="102" text-anchor="middle">Navigation sources</text><text class="ds" x="120" y="124" text-anchor="middle">GMaps · Waze · VietMap</text>
+<rect class="box purple" x="270" y="45" width="230" height="132" rx="14"/><text class="dt" x="385" y="78" text-anchor="middle">AmapEmissionArbiter</text><text class="ds" x="385" y="101" text-anchor="middle">full frame · heartbeat · replay</text><text class="ds" x="385" y="122" text-anchor="middle">10019 stop/reset</text><text class="ds" x="385" y="143" text-anchor="middle">one canonical sender</text>
+<rect class="box green" x="555" y="45" width="210" height="132" rx="14"/><text class="dt" x="660" y="78" text-anchor="middle">AmapService</text><text class="ds" x="660" y="101" text-anchor="middle">HAL/CAN + NaviInfo</text><text class="ds" x="660" y="122" text-anchor="middle">sendInfo2(4)</text><text class="ds" x="660" y="143" text-anchor="middle">profile/gate branch</text>
+<rect class="box green" x="850" y="30" width="270" height="92" rx="14"/><text class="dt" x="985" y="63" text-anchor="middle">Cluster navigation</text><text class="ds" x="985" y="86" text-anchor="middle">icon · distance · road (proven)</text>
+<rect class="box amber" x="850" y="150" width="270" height="92" rx="14"/><text class="dt" x="985" y="183" text-anchor="middle">HUD navigation mirror</text><text class="ds" x="985" y="206" text-anchor="middle">map gate · fusion · profile</text>
+<rect class="box blue" x="25" y="345" width="190" height="82" rx="14"/><text class="dt" x="120" y="377" text-anchor="middle">Speed-limit sources</text><text class="ds" x="120" y="399" text-anchor="middle">VietMap · Waze · freshness</text>
+<rect class="box purple" x="270" y="320" width="230" height="132" rx="14"/><text class="dt" x="385" y="352" text-anchor="middle">SpeedLimitFrame</text><text class="ds" x="385" y="375" text-anchor="middle">value · type · unit · source</text><text class="ds" x="385" y="396" text-anchor="middle">sequence · freshness · clear</text><text class="ds" x="385" y="417" text-anchor="middle">no distanceMeters encoding</text>
+<rect class="box amber" x="555" y="300" width="210" height="172" rx="14"/><text class="dt" x="660" y="333" text-anchor="middle">SignCandidateGateway</text><text class="ds" x="660" y="356" text-anchor="middle">Statistics ISA</text><text class="ds" x="660" y="377" text-anchor="middle">Instrument traffic sign</text><text class="ds" x="660" y="398" text-anchor="middle">ADAS SLA / provider</text><text class="ds" x="660" y="419" text-anchor="middle">string property API</text><text class="ds" x="660" y="440" text-anchor="middle">field-proven profile only</text>
+<rect class="box green" x="850" y="300" width="270" height="92" rx="14"/><text class="dt" x="985" y="333" text-anchor="middle">Cluster speed sign</text><text class="ds" x="985" y="356" text-anchor="middle">trafficSignValue/type consumer</text>
+<rect class="box amber" x="850" y="420" width="270" height="92" rx="14"/><text class="dt" x="985" y="453" text-anchor="middle">HUD speed sign</text><text class="ds" x="985" y="476" text-anchor="middle">safe driving / fusion / mirror</text>
+<path class="edge blue" d="M215,111 H270"/><path class="edge green" d="M500,111 H555"/><path class="edge green" d="M765,91 H850"/><path class="edge" d="M765,131 C810,131 810,196 850,196"/>
+<path class="edge blue" d="M215,386 H270"/><path class="edge" d="M500,386 H555"/><path class="edge green" d="M765,365 H850"/><path class="edge" d="M765,407 C810,407 810,466 850,466"/>
+</svg><div class="legend"><span><span class="dot" style="background:var(--green)"></span>proven or target output</span><span><span class="dot" style="background:var(--amber)"></span>candidate/gated</span><span><span class="dot"></span>typed source/control</span></div></div>
+
+<h3>4.2 Evidence/access taxonomy</h3>
+<div class="scroll"><table><thead><tr><th>Level</th><th>Meaning</th><th>Executable later?</th></tr></thead><tbody>
+<tr><td>SOURCE_CONSTANT</td><td>Key/name exists only.</td><td>No.</td></tr>
+<tr><td>WRITE_INTENT_CONSTANT</td><td>Name ends SET / suggests input, but no access config/call site.</td><td>No.</td></tr>
+<tr><td>STATUS_OR_OUTPUT_ONLY</td><td>Name/callers indicate output/status/read path.</td><td>No write.</td></tr>
+<tr><td>CONTROL_OR_GATE</td><td>Enable/config/offset/fusion/map control, not display value.</td><td>Only with type/prior/inverse.</td></tr>
+<tr><td>SERVICE_INTERFACE</td><td>AIDL/SPI interface exists.</td><td>No; runtime service unproven.</td></tr>
+<tr><td>CLIENT_WRAPPER</td><td>Client delegates/catches service failure.</td><td>No; read-only service preflight first.</td></tr>
+<tr><td>CONCRETE_SET_CALL_SITE</td><td>OEM/reference writes exact key/type/value/inverse.</td><td>Potentially, after property access proof.</td></tr>
+<tr><td>NATIVE_CONSUMER</td><td>Renderer/data source consumes value/type/gate.</td><td>Strengthens linkage; needs transport.</td></tr>
+<tr><td>RECORDED_FIELD</td><td>Prior exact log.</td><td>Seeds candidate only.</td></tr>
+<tr><td>OWNER_OBSERVATION</td><td>Behavior without artifact.</td><td>Ranks hypotheses only.</td></tr>
+<tr><td>FIELD_PROVEN</td><td>Exact build + inverse + human surface evidence.</td><td>May enter production profile.</td></tr>
+<tr><td>UNKNOWN / UNAVAILABLE</td><td>Incomplete branch or missing corpus.</td><td>No.</td></tr>
+</tbody></table></div>
+
+<h3>4.3 Corpus manifest and completeness</h3>
+<div class="scroll"><table><thead><tr><th>Corpus</th><th>State</th><th>Required output/gap rule</th></tr></thead><tbody>
+<tr><td>AmapService v1/v2 + NaviInfo</td><td>AVAILABLE</td><td>Parser/CAN/FlatBuffer map and old/new diff.</td></tr>
+<tr><td>Vehicle settings/CCS/DiCar</td><td>AVAILABLE</td><td>HUD map call site, gates, TSR/provider call sites.</td></tr>
+<tr><td>Framework old/new system/product</td><td>AVAILABLE</td><td>Feature/API/service diff.</td></tr>
+<tr><td>Unstripped libBydCluster old/new</td><td>AVAILABLE</td><td>Ghidra relevant body/caller/data-reference diff.</td></tr>
+<tr><td>OpenBYD/DashCast/Kim/NavOpen/TMap</td><td>AVAILABLE</td><td>Reference transport evidence.</td></tr>
+<tr><td>Vendor partition / vendor HAL libs</td><td><strong>KNOWN MISSING from current fw diff</strong></td><td>Acquire from OTA/local dump later; until present overall verdict NOT_EXHAUSTIVE.</td></tr>
+<tr><td>system_ext / odm / vendor_boot</td><td>INVENTORY REQUIRED</td><td>Hash if present; absent→UNAVAILABLE.</td></tr>
+<tr><td><code>libbydauto*</code>, <code>libbydautoservice*</code></td><td>SEARCH REQUIRED</td><td>Provider/type/access mapping.</td></tr>
+<tr><td>Property registry/config DB/XML/JSON</td><td>SEARCH REQUIRED</td><td>CarPropertyConfig access/provider/type truth.</td></tr>
+<tr><td>service/hwservice/SELinux contexts</td><td>SEARCH REQUIRED</td><td>HUD/property/traffic service registration and permission map.</td></tr>
+<tr><td>trafficmonitor + Telenav/Neusoft ISA providers</td><td>PARTIAL / APK AVAILABILITY UNKNOWN</td><td>Manifest/AIDL/provider arbitration; package names known, target install unknown.</td></tr>
+<tr><td>Cluster Qt/QML/RCC assets</td><td>SEARCH/EXTRACT REQUIRED</td><td>trafficSignValue/type/slaEquip visibility bindings.</td></tr>
+</tbody></table></div>
+<div class="callout red"><strong>Exhaustiveness rule:</strong> O4/O8 can report COMPLETE_FOR_AVAILABLE_CORPUS, but “all possibilities” remains NOT_EXHAUSTIVE while required vendor/provider/property/QML artifacts are missing. Every query records hits and zero hits.</div>
+
+<h3>4.4 Off-car RE pipeline</h3>
+<div class="flow"><div class="fnode good"><b>Hash corpus</b><span>immutable input manifest</span></div><div class="fnode"><b>Decode</b><span>JADX + Apktool</span></div><div class="fnode"><b>Index</b><span>keys · call sites · values</span></div><div class="fnode"><b>Native RE</b><span>Ghidra old/new</span></div><div class="fnode warn"><b>Evidence graph</b><span>producer→consumer</span></div><div class="fnode"><b>Candidate catalog</b><span>guard · inverse · risk</span></div><div class="fnode good"><b>Dry-run pack</b><span>JSON · HTML · shell</span></div></div>
+<div class="callout amber"><strong>Completeness rule:</strong> searches run across old/new firmware, all reference apps and native symbols. Every search query records zero-hit as evidence. Decompiled Java is cross-checked with smali/native or call-site shape where JADX flags inconsistent code.</div>
+
+<h3>4.5 HUD navigation candidate families</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Candidate</th><th>Evidence class / semantics</th><th>Executable state</th></tr></thead><tbody>
+<tr><td>H0</td><td>Physical switch/config</td><td>CONCRETE_SET_CALL_SITE; 1/2, Seal W-mode/ON recorded.</td><td>Future precondition; ownership R31.</td></tr>
+<tr><td>H1</td><td>HUD navigation-map <code>0x32B1102E</code></td><td>CONCRETE_SET_CALL_SITE; 2=ON/1=OFF, config/status exact.</td><td>Highest future candidate after access/prior read.</td></tr>
+<tr><td>H2</td><td><code>ICarHudService</code> dynamic/fusion/map/safe-driving</td><td>SERVICE_INTERFACE + CLIENT_WRAPPER only; client delegates via SPI and catches failure.</td><td>NON_EXECUTABLE until manager resolution, remote service, config/mode, typed read and permission pass.</td></tr>
+<tr><td>H3</td><td>Low-level fusion/request/map-format</td><td>WRITE_INTENT_CONSTANT / CONTROL_OR_GATE; image-text fusion, integrate config, request/order, projection, format.</td><td>UNKNOWN until configs/call sites.</td></tr>
+<tr><td>H4</td><td>Amap state/profile</td><td>CONCRETE call path; 10001/10019, fission/1for2, NaviInfo.</td><td>Canonical content; differential inputs source-backed only.</td></tr>
+<tr><td>H5</td><td>Direct Instrument icon/distance</td><td>Reference call sites; current Seal visual negative before map-gate proof.</td><td>Fallback only.</td></tr>
+<tr><td>H6</td><td>Road side-channel</td><td>NaviInfo carries road; pathname/overseas keys require consumer proof.</td><td>M2 UNKNOWN.</td></tr>
+<tr><td>H7</td><td>HUD topology/status</td><td>ATOM_HUD, ADAS_HUD_SIGNAL_EFFECTIVE/SYSTEM_STATUS, ARHUD mode, projection/integrate config, <code>INSTRUMENT_DD_SPEED_UNIT_ARHUD</code>, HUD display-screen identification and <code>TRAFFIC_SIGNS_VISIBLE</code>.</td><td>Read-only topology/profile inventory; no write without access/call site.</td></tr>
+</tbody></table></div>
+
+<h3>4.6 Speed-sign evidence/access matrix</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Family</th><th>Current evidence/access class</th><th>Promotion requirement</th></tr></thead><tbody>
+<tr><td>S0</td><td>VietMap/Waze acquisition</td><td>FIELD/UNIT proven source values + freshness.</td><td>Lifecycle clear fixes R7/R22.</td></tr>
+<tr><td>S1</td><td>Statistics ISA current-road value/type/unit/sign</td><td>WRITE_INTENT_CONSTANT only; explicit <code>*_SET</code> names, no concrete writer/type enum yet.</td><td>CarPropertyConfig ACCESS_WRITE/READ_WRITE + Java type/provider + call site/equivalent transport + prior/clear.</td></tr>
+<tr><td>S2</td><td>Instrument traffic-sign identify/value/color/BM/23A</td><td>SOURCE_CONSTANT / STATUS_OR_OUTPUT_ONLY unknown; no SET suffix for value.</td><td>Access config + native setter/consumer mapping before any write.</td></tr>
+<tr><td>S3</td><td><code>ADAS_SLA_OUTPUT_SPEED_LIMIT</code> and RSI/SLR outputs</td><td>STATUS_OR_OUTPUT_ONLY by naming until call site proves otherwise.</td><td>Read/listener candidate only.</td></tr>
+<tr><td>S4</td><td>SLA/ISLA/smart/preview/offset/TSR map controls</td><td>CONTROL_OR_GATE; some OEM setter call sites, not arbitrary speed values.</td><td>Exact enum/range/prior/inverse; never encode km/h into enable.</td></tr>
+<tr><td>S5</td><td><code>SETTING_ISA_MAP_*_SPEED_LIMIT_CHANGE*_SET</code></td><td>WRITE_INTENT_CONSTANT family including value/type/distance/rain/snow/time.</td><td>Property access/type/call site/native consumer linkage.</td></tr>
+<tr><td>S6</td><td>Modern string property transport</td><td>Concrete current API <code>setCarProperty/getCarProperty</code>; transport, not value semantics.</td><td>Per-key config/access/provider proof.</td></tr>
+<tr><td>S7</td><td>trafficmonitor source arbitration</td><td>SOURCE_ARBITRATION; known provider package candidates <code>com.telenav.app.isa</code> and <code>com.neusoft.app.isa</code>; target install unknown.</td><td>APK/manifest/service presence + AIDL call shape.</td></tr>
+<tr><td>S8</td><td>Native cluster sign/visibility consumers</td><td>NATIVE_CONSUMER: <code>trafficSign</code>, <code>trafficSignValue</code>, <code>trafficSignType</code>, <code>limitTrafficSignRecognition</code>, <code>slaEquip</code>. <code>trafficSignalStatus</code> is adjacent traffic-light evidence and OUT_OF_SCOPE unless callers/QML prove sign relevance.</td><td>Separate value/type consumers from visibility/control gates and map to S1/S2/S3 transport.</td></tr>
+<tr><td>S9</td><td>Speed reminder thresholds</td><td>REMINDER_THRESHOLD, accepted but not sign output.</td><td>Excluded from sign candidate execution.</td></tr>
+<tr><td>S10</td><td>Old ADAS traffic-limit prompt</td><td>Legacy constant; runtime low-level path rejected/absent.</td><td>Read-only forensic comparison.</td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>Executable promotion:</strong> an apparent <code>*_SET</code> name is insufficient. Required: property config proves write access and exact Java type/provider/permission; concrete set call site or equivalent transport proof; bounded values; prior read; inverse/clear; expected native consumer.</div>
+
+<h3>4.7 Modern property gateway</h3>
+<pre><code>interface BydPropertyGateway {
+    fun config(key: String): PropertyConfigResult
+    fun readInt(key: String): PropertyReadResult&lt;Int&gt;
+    fun writeInt(key: String, value: Int): PropertyWriteResult
+}
+
+// Preferred private-OEM API shape from current firmware:
+ICarPropertyManager.getCarProperty(propertyKey)
+ICarPropertyManager.setCarProperty(propertyKey, value)
+
+// Explicit fallback only when modern service/config is unavailable:
+BYDAuto*Device.set(intArrayOf(featureId), BYDAutoEventValue)</code></pre>
+<p>Gateway records provider/config/feature ID before write and rate-limits same-ECU writes. Deprecated <code>setProperty</code> from old <code>DiCarSetter</code> is not copied into new code.</p>
+
+<h3>4.8 Candidate data contract</h3>
+<pre><code>data class FirmwareEvidence(
+    val id: String,
+    val level: EvidenceLevel,
+    val artifactSha256: String,
+    val path: String,
+    val lineOrAddress: String,
+    val claim: String,
+)
+
+enum class CandidateFeature { NAV_HUD, HUD_ROAD, CLUSTER_SIGN, HUD_SIGN }
+
+data class VehicleCandidate(
+    val id: String,
+    val feature: CandidateFeature,
+    val preconditions: List&lt;ReadStep&gt;,
+    val mutations: List&lt;MutationStep&gt;,
+    val observations: List&lt;Observation&gt;,
+    val inverse: List&lt;MutationStep&gt;,
+    val risk: CandidateRisk,
+    val evidenceIds: List&lt;String&gt;,
+)
+
+data class SpeedLimitFrame(
+    val limitKph: Int?,
+    val signType: Int?,
+    val limitType: Int?,
+    val unit: SpeedUnit,
+    val source: SpeedLimitSource,
+    val sequence: Long,
+    val freshness: Freshness,
+    val clearReason: ClearReason?,
+)</code></pre>
+
+<h3>4.9 Safe scenario generator</h3>
+<div class="diagram"><svg viewBox="0 0 1120 330" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arrow2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box blue" x="25" y="110" width="170" height="76" rx="14"/><text class="dt" x="110" y="140" text-anchor="middle">Candidate</text><text class="ds" x="110" y="161" text-anchor="middle">source-backed only</text>
+<rect class="box" x="245" y="110" width="170" height="76" rx="14"/><text class="dt" x="330" y="140" text-anchor="middle">Read baseline</text><text class="ds" x="330" y="161" text-anchor="middle">config · status · prior</text>
+<rect class="box amber" x="465" y="90" width="190" height="116" rx="14"/><text class="dt" x="560" y="122" text-anchor="middle">One dimension</text><text class="ds" x="560" y="144" text-anchor="middle">gate OR value OR type</text><text class="ds" x="560" y="165" text-anchor="middle">never blind Cartesian</text><text class="ds" x="560" y="186" text-anchor="middle">bounded enum/range</text>
+<rect class="box" x="705" y="110" width="170" height="76" rx="14"/><text class="dt" x="790" y="140" text-anchor="middle">Observe</text><text class="ds" x="790" y="161" text-anchor="middle">rc/read-back/surfaces</text>
+<rect class="box green" x="925" y="110" width="170" height="76" rx="14"/><text class="dt" x="1010" y="140" text-anchor="middle">Inverse</text><text class="ds" x="1010" y="161" text-anchor="middle">restore prior + verify</text>
+<path class="edge edge2" d="M195,148 H245"/><path class="edge edge2" d="M415,148 H465"/><path class="edge edge2" d="M655,148 H705"/><path class="edge green edge2" d="M875,148 H925"/>
+<path class="edge red edge2" d="M560,206 V270 H1010 V186"/><text class="ds" x="785" y="260" text-anchor="middle">failure still runs inverse when effect is known</text>
+</svg></div>
+<p>Outputs are inert canonical JSON, searchable HTML and plain-text command transcripts with placeholders. T0–T9 create no executable shell script and invoke no process/network/device API. Quoting is generated from typed arguments; UI accepts no free-form command.</p>
+
+<h3>4.10 Scenario dimensions</h3>
+<div class="scroll"><table><thead><tr><th>Feature</th><th>Dimensions</th><th>Generated proofs</th></tr></thead><tbody>
+<tr><td>Nav HUD</td><td>transport: property/HUD service/legacy; gates: physical/map/dynamic/fusion; payload: Amap/direct; state: start/update/stop.</td><td>left→right, distance change, clear, new session; cluster remains correct.</td></tr>
+<tr><td>HUD road</td><td>Amap <code>nextRouteName</code>, UTF-16 pathname, overseas pathname, map-format/profile.</td><td>Road A→Road B→empty while maneuver stable.</td></tr>
+<tr><td>Cluster sign</td><td>transport: Statistics/Instrument/ADAS; gates: map/SLA/ISA; data: type/unit/value.</td><td>50→80→clear; unrelated warning lights unchanged.</td></tr>
+<tr><td>HUD sign</td><td>cluster sign channel × safe-driving × image-text/driving/navigation fusion × HUD map capability.</td><td>Cluster and HUD observed independently; coupled capability recorded honestly.</td></tr>
+</tbody></table></div>
+
+<h3>4.11 Runtime boundaries and ownership</h3>
+<div class="grid2"><div class="card"><h3>Navigation/HUD</h3><ul><li><code>AmapEmissionArbiter</code> sole content sender.</li><li><code>HudMirrorController</code> gates only.</li><li>Production physical OFF→ON Confirm is durable; Stop/arrival/output-OFF never write physical OFF.</li><li>Temporary OFF→ON→OFF exists only in separately consented future diagnostic row.</li><li>Road remains separate capability.</li></ul></div><div class="card"><h3>Speed sign lifecycle</h3><ul><li><code>SpeedLimitFrame</code> pure core model.</li><li>Exact files: <code>NavNotificationListener.kt</code>, <code>WazeHudSource.kt</code>, speed-source preference/arbiter and both sign ports.</li><li>Parameterized for WAZE and VIETMAP: positive→0, exact monotonic TTL=5,000ms expiry, source switch, listener/provider disconnect, source stop, master/output OFF, process epoch restart and queue saturation.</li><li>Each recording cluster/HUD port receives exactly one typed clear intent; no older-generation positive may follow. T0–T9 never translate clear intent into a property write.</li><li>Cluster/HUD ports independent; clear only after channel-specific proof.</li></ul></div></div>
+
+<h3>4.12 Historical revision-1 path boundary</h3>
+<p class="small">This exact wildcard-free CURRENT/FUTURE list is immutable history and is preserved byte-for-byte as revision 1 in <code>docs/diagnostics/hud-sign-re/offcar-boundary-revisions.json</code>, together with the historical 13-file parent baseline identity. It is no longer the active changed-path authority; it remains visible so the transition is reviewable rather than rewritten.</p>
+<div class="grid3"><div class="card"><h3>CURRENT · runtime/contracts/tests</h3><pre><code>settings.gradle.kts
+core/build.gradle.kts
+vehicle-contracts/build.gradle.kts
+vehicle-contracts/src/main/kotlin/com/byd/clusternav/contracts/SpeedLimitFrame.kt
+vehicle-contracts/src/main/kotlin/com/byd/clusternav/contracts/SpeedLimitEnums.kt
+vehicle-contracts/src/test/kotlin/com/byd/clusternav/contracts/SpeedLimitFrameTest.kt
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/byd/clusternav/RebindReceiver.kt
+app/src/main/java/com/byd/clusternav/AmapFrameBuilder.kt
+app/src/main/java/com/byd/clusternav/AmapEmissionArbiter.kt
+app/src/main/java/com/byd/clusternav/HudMirrorController.kt
+app/src/main/java/com/byd/clusternav/ClusterBroadcaster.kt
+app/src/main/java/com/byd/clusternav/NavNotificationListener.kt
+app/src/main/java/com/byd/clusternav/MainActivity.kt
+app/src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt
+app/src/main/java/com/byd/clusternav/Prefs.kt
+app/src/main/java/com/byd/clusternav/SpeedProvider.kt
+app/src/main/java/com/byd/clusternav/modules/wazehud/WazeHudSource.kt
+app/src/main/java/com/byd/clusternav/vietmapwidget/VietMapWidgetBridge.kt
+app/src/main/java/com/byd/clusternav/modules/hal/BydHal.kt
+app/src/main/java/com/byd/clusternav/modules/clustercast/FloatingBubbleService.kt
+app/src/main/java/com/byd/clusternav/modules/clustercast/ClusterProfile.kt
+core/src/main/kotlin/com/byd/clusternav/navigation/SpeedSignPorts.kt
+core/src/main/kotlin/com/byd/clusternav/navigation/SpeedSignLifecycleCoordinator.kt
+app/src/test/java/com/byd/clusternav/AmapFrameBuilderContractTest.kt
+app/src/test/java/com/byd/clusternav/AmapEmissionArbiterTest.kt
+app/src/test/java/com/byd/clusternav/HudRoadCapabilityTest.kt
+app/src/test/java/com/byd/clusternav/MainProbeSurfaceAbsenceTest.kt
+app/src/test/java/com/byd/clusternav/SpeedSignSourceLifecycleTest.kt
+app/src/test/java/com/byd/clusternav/PhysicalHudOwnershipTest.kt
+app/src/test/java/com/byd/clusternav/navigation/NavigationOutputIsolationTest.kt
+app/src/test/java/com/byd/clusternav/FloatingBubbleFirstLaunchContractTest.kt
+app/src/test/java/com/byd/clusternav/modules/wazehud/WazeHudSourceTest.kt
+app/src/test/java/com/byd/clusternav/modules/clustercast/CastUILifecycleSafetyTest.kt
+core/src/test/kotlin/com/byd/clusternav/navigation/SpeedSignLifecycleCoordinatorTest.kt
+core/src/test/kotlin/com/byd/clusternav/navigation/NavigationSpeedSignRaceTest.kt</code></pre></div><div class="card"><h3>CURRENT · isolated planner/RE</h3><pre><code>offcar-planner/build.gradle.kts
+offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/FirmwareEvidence.kt
+offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/VehicleCandidate.kt
+offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CommandPlan.kt
+offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CandidateScenarioGenerator.kt
+offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/FakeVehicleTransport.kt
+offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/CommandPlanRenderer.kt
+offcar-planner/src/main/kotlin/com/byd/clusternav/offcar/OffCarPlannerMain.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/OffCarTransportFenceTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/FirmwareEvidenceGraphTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/NaviInfoSchemaTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/PropertyCandidateValidatorTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ModernPropertyGatewayContractTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CandidateSafetyTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ScenarioSnapshotTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CapabilityPromotionTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/TraceabilityTest.kt
+offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/DependencyBoundaryTest.kt
+.gitignore
+tools/re/manifest.json
+scripts/re/hash-corpus.py
+scripts/re/decode-java.sh
+scripts/re/index-features.py
+scripts/re/build-evidence-graph.py
+scripts/re/run-native-analysis.sh
+scripts/re/verify-reproducibility.py
+scripts/re/ghidra/ExportRelevantFunctions.java
+scripts/re/tests/test_hash_corpus.py
+scripts/re/tests/test_feature_index.py
+scripts/re/tests/test_evidence_graph.py
+scripts/re/tests/test_report_sanitizer.py
+scripts/verify-seal-hud-sign-offcar.sh</code></pre></div><div class="card"><h3>Reports + future phases</h3><pre><code># CURRENT inert reports
+docs/diagnostics/hud-sign-re/README.md
+docs/diagnostics/hud-sign-re/evidence-index.json
+docs/diagnostics/hud-sign-re/candidate-report.html
+docs/diagnostics/hud-sign-re/zero-hit-report.txt
+docs/diagnostics/hud-sign-re/native/libbydcluster-diff.json
+docs/diagnostics/hud-sign-re/first-launch-emulator-result.json
+docs/diagnostics/hud-sign-re/traceability.json
+docs/diagnostics/hud-sign-re/corpus-completeness.json
+docs/diagnostics/hud-sign-re/m1-nav-hud-plan.json
+docs/diagnostics/hud-sign-re/m2-hud-road-plan.json
+docs/diagnostics/hud-sign-re/m3-cluster-sign-plan.json
+docs/diagnostics/hud-sign-re/m4-hud-sign-plan.json
+docs/specs/seal-nav-hud-speed-sign-offcar.html
+
+# FUTURE T10 only
+app/src/vehicleTest/AndroidManifest.xml
+app/src/vehicleTest/java/com/byd/clusternav/HudSignProbeReceiver.kt
+app/src/vehicleTest/java/com/byd/clusternav/HudSignProbeActivity.kt
+car-integration/src/main/kotlin/com/byd/clusternav/vehicleprobe/DadbVehicleTransport.kt
+scripts/vehicle/run-seal-hud-sign-matrix.sh
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecNavigationCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecHudCatalog.kt
+core/src/main/kotlin/com/byd/clusternav/carexec/CarExecSpeedSignCatalog.kt
+docs/_handoff/hud-sign-vehicle-test-candidate.json
+docs/diagnostics/hud-sign-re/vehicle/d-h0-hud-physical-temp-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m1-nav-hud-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m2-hud-road-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m3-cluster-sign-result.json
+docs/diagnostics/hud-sign-re/vehicle/d-m4-hud-sign-result.json
+
+# FUTURE T11 only
+app/src/main/java/com/byd/clusternav/vehicle/BydPropertyGateway.kt
+app/src/main/java/com/byd/clusternav/vehicle/HudVehicleProfile.kt
+app/src/main/java/com/byd/clusternav/vehicle/SpeedSignVehicleProfile.kt
+app/src/main/java/com/byd/clusternav/vehicle/ClusterSpeedSignPort.kt
+app/src/main/java/com/byd/clusternav/vehicle/HudSpeedSignPort.kt
+app/src/main/java/com/byd/clusternav/vehicle/HudSignSettingsController.kt
+app/src/main/res/layout/activity_main.xml
+app/src/main/res/values/strings.xml
+docs/_handoff/hud-sign-release-candidate.json
+docs/diagnostics/hud-sign-re/vehicle/p-m1-nav-hud-result.json
+docs/diagnostics/hud-sign-re/vehicle/p-m2-hud-road-result.json
+docs/diagnostics/hud-sign-re/vehicle/p-m3-cluster-sign-result.json
+docs/diagnostics/hud-sign-re/vehicle/p-m4-hud-sign-result.json</code></pre></div></div>
+
+<h3>4.12A Active revision-2 authority</h3>
+<div class="callout blue"><strong>Single machine authority:</strong> <code>docs/diagnostics/hud-sign-re/offcar-boundary-revisions.json</code> is canonical compact UTF-8 JSON. Keys are recursively ASCII-sorted; path arrays are sorted and unique; revision and root SHA-256 values are lowercase and independently reproducible. Revision 2 points to the pinned revision-1 digest, and both the parent verifier and expansion fence validate exact revision numbers, chain, canonical bytes and hashes.</div>
+<div class="grid2"><div class="card"><h3>SOURCE_SEAL_INPUT</h3><p>Exact file paths only: all 81 historical parent CURRENT paths, all 29 materialized expansion CURRENT paths, this parent spec, the approved T10 spec and preparation/final handoffs, the authority itself, and the complete T10-Q4 source/test/build/verifier inventory from §4.15 of the T10 spec. Optional <code>T10RollbackExecutor.kt</code> is one exact path, never a directory grant.</p></div><div class="card"><h3>POST_BUILD_ATTESTATION</h3><p>Exactly seven eventual artifacts: the T10 exact-source manifest, vehicle-test candidate handoff, and D-H0/D-M1/D-M2/D-M3/D-M4 result files. They are authorized paths, not evidence that the artifacts or a session currently exist.</p></div><div class="card"><h3>LOCAL_IGNORED</h3><p>Exactly <code>.authorized-build</code>, <code>.t10-local</code>, <code>keystore.properties</code>, <code>release.keystore</code>, plus fixed token <code>POLICY-T10-APK-ARTIFACT-NAME</code>. This class is local policy metadata only and can never authorize a tracked change.</p></div><div class="card"><h3>FUTURE_FORBIDDEN</h3><p>The original 13 T11 paths remain exact and forbidden, including the two pre-existing resource files whose bytes stay pinned. O24 rejects any changed T11 path before considering authorization.</p></div></div>
+<div class="callout red"><strong>Fail-closed result:</strong> only <code>SOURCE_SEAL_INPUT</code> and <code>POST_BUILD_ATTESTATION</code> authorize changed repository paths. No wildcard, glob, directory-wide source rule or LOCAL_IGNORED token participates in authorization. The six probe IDs still lack proven third-party app runtime reachability and permission binding. Corpus evidence for <code>getPropertyConfigs</code> and HUD key <code>0x38B00030</code> does not prove this app can invoke them on target; therefore the state remains <code>ARTIFACT_READY_OPERATIONALLY_BLOCKED</code>.</div>
+
+<h3>4.13 Toolchain validation</h3>
+<div class="scroll"><table><thead><tr><th>Tool</th><th>Verified state</th><th>Selected pattern</th></tr></thead><tbody>
+<tr><td>JADX</td><td>Official latest 1.5.6. System <code>/opt/homebrew/bin/jadx</code> reports 1.5.6; stale workspace <code>../tools/jadx</code> contains 1.5.0.</td><td>Preflight pins resolved 1.5.6 path/hash with explicit JDK17 and rejects 1.5.0; auto + fallback bad-class pass.</td></tr>
+<tr><td>Apktool</td><td>Official latest 3.0.3; acquired under <code>&lt;user-cache&gt;</code>; official/local SHA-256 <code>dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423</code>.</td><td>Official release asset, GitHub digest, <code>SIGNATURE_UNAVAILABLE</code>; decode-only, isolated output/framework dir, no rebuild/sign.</td></tr>
+<tr><td>Ghidra</td><td>Official latest 12.1.2; acquired under <code>&lt;user-cache&gt;</code>; official/local SHA-256 <code>b62e81a0390618466c019c60d8c2f796ced2509c4c1aea4a37644a77272cf99d</code>.</td><td>Headless smoke passed with Java21. ARM64 ELF import/export remains T3; upstream separate signature asset is unavailable.</td></tr>
+<tr><td>Java</td><td>Android JDK17.0.19 retained; Temurin JDK21.0.12+8 sidecar acquired for Ghidra only.</td><td>Explicit per-command JAVA_HOME; never switch project Gradle to 21.</td></tr>
+<tr><td>Android SDK</td><td>Build-tools 36.0.0; aapt2 2.20; apksigner 0.9; adb 37.</td><td>Absolute SDK paths; off-car entrypoint statically rejects adb invocation.</td></tr>
+<tr><td>Python/ELF</td><td>Python3.14.6; file/nm available.</td><td>Local generators; symbol pre-index; zero network upload.</td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>Dependency action after approval:</strong> acquire exact Apktool/Ghidra/JDK21 artifacts from official sources and record tag/signature/archive SHA plus extracted binary hashes. The stale workspace JADX 1.5.0 is quarantined, not silently upgraded in place.</div>
+<div class="callout green"><strong>T1 implemented 2026-08-07:</strong> pinned resolved system JADX 1.5.6 and rejected sibling 1.5.0; acquired hash-verified Apktool 3.0.3, Ghidra 12.1.2 and Temurin Java 21.0.12+8 under <code>&lt;user-cache&gt;/clusternav-re</code>. Ghidra headless, Apktool and JADX smokes pass. Gradle remains JDK 17. Exact URLs, upstream/local hashes and signature availability are in <code>tools/re/manifest.json</code>.</div>
+
+<h3>4.14 Boundary-shape checklist</h3>
+<div class="scroll"><table><thead><tr><th>Producer → consumer</th><th>Fields to compare</th><th>Proof</th></tr></thead><tbody>
+<tr><td>Amap frame → AmapService</td><td>all key names/types/presence/sentinels/state order</td><td>Builder/receiver/catalog parity.</td></tr>
+<tr><td>AmapService → cluster/HUD</td><td>CAN + NaviInfo fields, HUD gates/profile</td><td>Native/Java call graph + future surface rows.</td></tr>
+<tr><td>Speed source → SpeedLimitFrame</td><td>positive/zero/timeout/source-switch/disconnect/stop/restart, value/unit/source/freshness/sequence</td><td>Waze/VietMap lifecycle matrix; no stale sign survives.</td></tr>
+<tr><td>SpeedLimitFrame → candidate gateway</td><td>value/type/unit/gates/order/clear</td><td>Generated transcript snapshots.</td></tr>
+<tr><td>Property key → DiCar provider</td><td>string key, config feature ID/provider/type/status</td><td>config read before mutation.</td></tr>
+<tr><td>Native DataSourceManager → QML surface</td><td>trafficSign/value/type, limitTrafficSignRecognition, slaEquip; trafficSignalStatus explicitly adjacent/out-of-scope</td><td>Ghidra call/data references + QML/RCC or UNAVAILABLE.</td></tr>
+<tr><td>Candidate JSON → shell/vehicleTest</td><td>one mutation, quoting, prior, inverse, expected evidence</td><td>exact snapshot + parser tests.</td></tr>
+<tr><td>Evidence → capability</td><td>artifact/source/build/profile/surface verdict + corpus completeness</td><td>No promotion beyond evidence level; missing vendor/provider assets force NOT_EXHAUSTIVE.</td></tr>
+</tbody></table></div>
+
+<h3>4.15 Implemented T8–T9 verifier and sealing design</h3>
+<div class="flow"><div class="fnode good"><b>Sealed inputs</b><span>HEAD · diff · 17 corpus hashes · 65 source rows</span></div><div class="fnode"><b>Static fences</b><span>CURRENT/FUTURE · ≤500 LOC · main quarantine · dependencies</span></div><div class="fnode"><b>Repeat evidence</b><span>7 decodes · schemas · snapshots · graph</span></div><div class="fnode"><b>Offline build</b><span>6 test targets · 3 APK variants · 3 lint variants</span></div><div class="fnode warn"><b>Truth verdict</b><span>APPROVED T0–T9 · NOT_EXHAUSTIVE · no visual PASS</span></div></div>
+<div class="grid2"><div class="card"><h3>Fail-closed implementation</h3><p><code>scripts/verify-seal-hud-sign-offcar.sh</code> accepts no options, uses Gradle <code>--offline</code>, invokes no ADB/DADB/network/vehicle process, and exits non-zero on any O1–O27 drift. <code>verify-reproducibility.py</code> validates the complete report set, recursive privacy rules, JSON shapes, honest corpus state, inert packs and bidirectional trace statuses.</p></div><div class="card"><h3>Determinism normalization</h3><p>JADX auto reconstruction is nondeterministic for a bounded set of equivalent try/catch shapes. O3 therefore requires identical auto file inventory and error counts plus byte-identical JADX fallback and Apktool trees. Raw auto byte equality is not used as semantic evidence; deterministic fallback remains the canonical repeat proof.</p></div><div class="card"><h3>Real vehicleTest host tests</h3><p>AGP 9.3.1 disables host tests for the release-derived custom build type by default. The allowed settings hook enables the real <code>vehicleTest</code> unit-test variant via the public variant builder; <code>testVehicleTestUnitTest</code> is not an alias to debug tests.</p></div><div class="card"><h3>Truthful emulator boundary</h3><p>An emulator binary and one AVD are present, but clean first-launch execution requires ADB and APK installation, both forbidden in this session. The result report records <code>executed=false</code>, no observed claims and the exact retry condition while unit/static contracts remain green.</p></div></div>
+<div class="callout green"><strong>Exact sealing:</strong> <code>corpus-completeness.json</code> binds HEAD, tracked diff, every changed source/build/script row and every non-self-referential report. Two lint-only files were promoted by exact path into CURRENT before semantic-preserving constant/BOM fixes; FUTURE T10/T11 remains untouched.</div>
+<div class="callout purple"><strong>Public report boundary:</strong> Java citations contain only artifact SHA-256, alias/path, line, sanitized-line SHA-256 and explicit matched-token IDs. Full Ghidra C remains only in ignored local raw output; canonical native JSON retains status, character count, raw/address-normalized hashes and truncation state. The report validator rejects any <code>snippet</code> or <code>decompile.c</code> field fail-closed.</div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<div class="phase"><div class="phase-id">T0 · Freeze/quarantine</div><div><h4>Baseline, corpus gaps and unsafe-hook removal</h4><ul class="check"><li>Hash repo HEAD/diff and every selected artifact.</li><li>Record vendor/system_ext/odm/provider/property/QML availability; current missing vendor ⇒ NOT_EXHAUSTIVE.</li><li>Remove all main <code>TEST_*</code>, MASS, raw-ID/free-form handlers/actions.</li><li>Preserve three first-launch fixes; invalidate 527589 candidate.</li></ul><p><strong>Exit:</strong> corpus + diff manifest and main/release zero unsafe hooks.</p><p><span class="pill green">IMPLEMENTED · 2026-08-07</span> HEAD, approved diff and 17 selected artifacts are hashed; all four starting dirty-file hashes are bound; first-launch implementation/tests remain byte-identical; 527589 is invalidated; main receiver is <code>exported=false</code> with zero TEST/MASS/raw/free-form paths.</p></div></div>
+<div class="phase"><div class="phase-id">T1 · Tools</div><div><h4>Pin exact local RE toolchain</h4><ul class="check"><li>Pin/hash system JADX 1.5.6; reject workspace 1.5.0.</li><li>Acquire Apktool 3.0.3.</li><li>Acquire Ghidra 12.1.2 + Java21 sidecar; retain JDK17 Gradle.</li><li>Write tool manifest/preflight with explicit JAVA_HOME and no network after acquisition.</li></ul><p><strong>Exit:</strong> version/hash/smoke gates green.</p><p><span class="pill green">IMPLEMENTED · 2026-08-07</span> Exact official assets acquired outside the repo; release/local/extracted hashes and signature states recorded; version/headless smokes pass; stale 1.5.0 is explicitly rejected; Java 21 is a Ghidra-only sidecar and project Java stays 17.</p></div></div>
+<div class="phase"><div class="phase-id">T2 · Corpus/Java RE</div><div><h4>Decode available corpus and expose gaps</h4><ul class="check"><li>Re-decode hash-named inputs; index old/new constants and call sites.</li><li>Trace HUD map, Amap, DiCar, TSR, Telenav/Neusoft/trafficmonitor and service/property configs.</li><li>Search required partitions/libs/registries/QML; record each zero hit.</li><li>Never claim exhaustive while required artifact unavailable.</li></ul><p><strong>Exit:</strong> COMPLETE_FOR_AVAILABLE_CORPUS + explicit UNAVAILABLE branches.</p><p><span class="pill green">IMPLEMENTED · 2026-08-07</span> Seven hash-named APK/DEX inputs decoded with auto-error counts plus clean fallback; two independent Java index/graph runs are byte-identical; H0–H7/S0–S10 and required concrete citations are present. Verdict: <strong>COMPLETE_FOR_AVAILABLE_JAVA_CORPUS / NOT_EXHAUSTIVE</strong> because vendor/property/provider/QML and other required branches remain unavailable.</p></div></div>
+<div class="phase"><div class="phase-id">T3 · Native RE</div><div><h4>Headless old/new libBydCluster body/caller diff</h4><ul class="check"><li>Import both unstripped ARM64 ELFs by hash/build ID.</li><li>Match by demangled symbol, not shifted address.</li><li>Export trafficSign/sla/NaviInfo body identities, sizes, body hashes, callers/data refs and decompile metadata; keep raw C only in ignored local cache.</li><li>Map to QML/RCC when available; absent assets stay UNAVAILABLE.</li></ul><p><strong>Exit:</strong> reproducible native report.</p></div></div>
+<div class="phase"><div class="phase-id">T4 · Evidence/taxonomy</div><div><h4>Build evidence graph in pure :offcar-planner</h4><ul class="check"><li>Validate taxonomy and producer→consumer edges.</li><li>Index H0–H7 and S0–S10 without touching live CarExec catalogs.</li><li>Require property config/access/type/provider before future write promotion.</li><li>Freeze inert source-backed matrix; no raw/MASS/guessed candidates.</li></ul><p><strong>Exit:</strong> plan data is isolated from app/car-integration/live CLI.</p></div></div>
+<div class="phase"><div class="phase-id">T5 · Pure modules</div><div><h4>Runtime-neutral core frame + isolated off-car plans</h4><ul class="check"><li>Create evidence/candidate/CommandPlan/SpeedLimitFrame models.</li><li>Generate source-backed combinations and inert JSON/HTML/text only.</li><li>No <code>--execute</code>, process, socket, adb/dadb dependency.</li><li>Property/schema/snapshot/safety tests.</li></ul><p><strong>Exit:</strong> deterministic all-scenario plan data through FakeVehicleTransport.</p></div></div>
+<div class="phase"><div class="phase-id">T6 · Isolated fake E2E</div><div><h4>Pure :offcar-planner, no live catalog or DADB graph</h4><ul class="check"><li>Create neutral <code>:vehicle-contracts</code>; <code>:offcar-planner</code> depends only on contracts and Kotlin/JUnit—zero dependency on <code>:core</code>.</li><li>Assert app/car-integration/CarExecCli have no dependency/reference to planner classes, IDs or JSON; planner/contracts classpaths contain no CarExec class.</li><li>Render placeholder command data and parse recorded fixtures.</li><li>Reject execution callback, ProcessBuilder/Runtime/Socket/adb/dadb/device APIs.</li></ul><p><strong>Exit:</strong> planner classpath and dependency graph are physically transport-free.</p></div></div>
+<div class="phase"><div class="phase-id">T7 · Fail-closed runtime</div><div><h4>Compile disabled architecture and close known lifecycle debt</h4><ul class="check"><li>Add nav arbiter/HUD controller behind UNKNOWN capability; enforce physical ownership.</li><li>Replace speed <code>distanceMeters</code> encoding with typed frame/ports.</li><li>Implement <code>SpeedSignLifecycleCoordinator</code> event API for WAZE+VIETMAP with monotonic 5,000ms TTL, source/output/master-state events, process generations and recording/NOOP ports; T11 UI wiring remains separate.</li><li>No candidate gateway enabled; current cluster nav unchanged.</li></ul><p><strong>Exit:</strong> runtime compiles, writes no new vehicle feature, stale sign impossible in tests.</p><p><span class="pill green">IMPLEMENTED · 2026-08-07</span> <code>AmapEmissionArbiter</code> now serializes reset/source/400ms heartbeat/one-shot replay/source-change/Stop with monotonic generations and tokens while retaining the exact <code>AmapFrameBuilder</code> payload. <code>HudMirrorController</code> remains UNKNOWN with durable physical-ON ownership and zero write dependency. WAZE+VIETMAP feed typed frames into independent recording/NOOP ports; positive→0, exact half-open 5,000ms TTL, switch, disconnect, stop, master/output OFF, process epoch and queue saturation all priority-clear once with older-generation positives fenced. The obsolete ADAS speed writer is removed; T10/T11 remain untouched.</p></div></div>
+<div class="phase"><div class="phase-id">T8 · Off-car verify</div><div><h4>Run exact O1–O27 gates</h4><ul class="check"><li>RE determinism/corpus/taxonomy/command-fence tests.</li><li>Full JVM/build/lint and release surface scans.</li><li>Frozen path/LOC/security/privacy gates.</li><li>First-launch and nav regression tests.</li></ul><p><strong>Exit:</strong> off-car green or explicit NOT_EXHAUSTIVE blocker.</p><p><span class="pill green">IMPLEMENTED · 2026-08-07</span> The fail-closed verifier passes O1–O27, including a fresh seven-input decode repeat, 13 Python tests, 1,352 JVM executions, three assemblies and three zero-error lint variants. O21 unit/static evidence passes; emulator execution is explicitly blocked because this authorized session forbids the ADB/install operations a clean launch requires.</p></div></div>
+<div class="phase"><div class="phase-id">T9 · Review/pack</div><div><h4>Senior review and inert vehicle-ready pack</h4><ul class="check"><li>Verify R1–R32 traceability and all boundaries.</li><li>Patch/retest/re-review to zero P0–P3.</li><li>Security scan; exact source/report identities.</li><li>Generate four independent future D/P packs as data only.</li></ul><p><strong>Exit:</strong> VEHICLE_READY_DATA or NOT_EXHAUSTIVE; never FEATURE_DONE.</p><p><span class="pill green">IMPLEMENTED · 2026-08-07</span> R1–R32 now carry exact evidence and explicit status (27 verified off-car, three deferred T10/T11, one emulator authorization blocker, one NOT_EXHAUSTIVE). Four deterministic D/P packs and the final candidate report are inert; 65 source rows and 12 reports are sealed; the 80-file current-scope sensitive-data scan is clean. Java/native tracked evidence is metadata-only and fail-closed against copied source/C bodies. Review verdict is APPROVED for achievable T0–T9 only, with corpus NOT_EXHAUSTIVE and FEATURE_DONE=false.</p></div></div>
+<div class="phase"><div class="phase-id">T10 · Future transport</div><div><h4>Separately approved vehicle execution implementation</h4><ul class="check"><li>Add fixed-ID planner-to-CarExec adapter, split live catalog, vehicleTest receiver and DadbVehicleTransport only now.</li><li>Exact sender/permission/identity preflight.</li><li>Execute one dimension with inverse/read-back.</li><li>Promote only FIELD_PROVEN profiles.</li></ul><p><strong>Forbidden in current authorization.</strong></p></div></div>
+<div class="phase"><div class="phase-id">T11 · Future production</div><div><h4>Wire field-proven profiles and exact release</h4><ul class="check"><li>Select proven nav/sign gateways; delete guesses.</li><li>Run independent M1/M2/M3/M4 production rows.</li><li>Truthful UI/capability limitations.</li><li>Separate commit/push/release authorization.</li></ul></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<h3>6.1 Off-car gates</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Gate</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>O1</td><td>Repo/corpus manifest</td><td>HEAD/diff + available artifact hashes stable.</td></tr><tr><td>O2</td><td>Tool manifest</td><td>Pinned JADX1.5.6; stale1.5.0 rejected; Apktool/Ghidra/JDK roles/hashes.</td></tr><tr><td>O3</td><td>Decode determinism</td><td>Normalized outputs/error counts stable.</td></tr><tr><td>O4</td><td>Corpus completeness</td><td>Required artifact checklist; missing⇒NOT_EXHAUSTIVE.</td></tr><tr><td>O5</td><td>Java/access index</td><td>Every key classified and access-proof state recorded.</td></tr><tr><td>O6</td><td>NaviInfo</td><td>18 fields, road present, speed absent.</td></tr><tr><td>O7</td><td>Native body index</td><td>name/address/size/body hash/callers old/new.</td></tr><tr><td>O8</td><td>Native/QML map</td><td>sign/SLA/Navi mapping or UNAVAILABLE.</td></tr><tr><td>O9</td><td>Evidence graph</td><td>No dangling/overpromoted claims.</td></tr><tr><td>O10</td><td>Candidate taxonomy</td><td>All H/S families, correct access class.</td></tr><tr><td>O11</td><td>Safety schema</td><td>Source/prior/one mutation/range/inverse/risk.</td></tr><tr><td>O12</td><td>Scenario completeness</td><td>All safe plans have lifecycle shape.</td></tr><tr><td>O13</td><td>Pure planner fence</td><td><code>:offcar-planner</code> no dadb/socket/process/execution callback; no app/car-integration/CarExec references.</td></tr><tr><td>O14</td><td>Inert snapshots</td><td>JSON/HTML/text deterministic/non-executable.</td></tr><tr><td>O15</td><td>Main/release quarantine</td><td>0 TEST/MASS/raw/free-form paths.</td></tr><tr><td>O16</td><td>Modern property boundary</td><td>Current API preferred; no new deprecated usage.</td></tr><tr><td>O17</td><td>Typed frame</td><td>No distance encoding; exhaustive clear model.</td></tr><tr><td>O18</td><td>Parameterized source lifecycle</td><td>WAZE+VIETMAP × positive→0/TTL/switch/disconnect/stop/OFF/restart/saturation; each recording port sees one clear, no older positive follows.</td></tr><tr><td>O19</td><td>Output isolation</td><td>Nav/cluster-sign/HUD-sign independent.</td></tr><tr><td>O20</td><td>Physical ownership</td><td>Production zero physical-OFF; diagnostic plan separate.</td></tr><tr><td>O21</td><td>First launch</td><td>Three tests + emulator clean install.</td></tr><tr><td>O22</td><td>Full tests/build</td><td>All modules/build variants green.</td></tr><tr><td>O23</td><td>Lint</td><td>debug/vehicleTest/release lint zero errors.</td></tr><tr><td>O24</td><td>Exact paths/LOC</td><td>Only CURRENT paths; FUTURE untouched; every source ≤500.</td></tr><tr><td>O25</td><td>Privacy/no exfil</td><td>Sanitized reports; no outbound upload.</td></tr><tr><td>O26</td><td>Bidirectional trace</td><td>Every R/T/O/future ID referenced; aliases/ranges/bare N/A rejected.</td></tr><tr><td>O27</td><td>Inert milestone packs</td><td>Four current JSON packs with D/P sections; no visual PASS.</td></tr>
+</tbody></table></div>
+<h3>6.1A T0–T2 implementation evidence · 2026-08-07</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Status</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>O1</td><td><span class="pill green">PASS · scoped</span></td><td><code>corpus-completeness.json</code> binds HEAD, starting diff, four dirty files and 17 selected artifact/tree hashes.</td></tr>
+<tr><td>O2</td><td><span class="pill green">PASS</span></td><td><code>tools/re/manifest.json</code>; exact version/hash/signature states; all smokes green; stale JADX rejected.</td></tr>
+<tr><td>O3</td><td><span class="pill amber">T2 evidence only</span></td><td>Seven hash-named decodes completed with explicit auto error counts and fallback exit 0. Full normalized decode-output repeat gate remains T8.</td></tr>
+<tr><td>O4–O6</td><td><span class="pill green">PASS · available Java</span></td><td>Required availability checklist + zero hits; H/S access classes; NaviInfo 18 fields, road present, speed absent. Global verdict remains NOT_EXHAUSTIVE.</td></tr>
+<tr><td>O9–O10</td><td><span class="pill green">PASS · T2 graph</span></td><td>Two byte-identical evidence graphs; complete H0–H7/S0–S10; every row non-executable and no visual PASS. T4 planner graph is not claimed.</td></tr>
+<tr><td>O15</td><td><span class="pill green">PASS</span></td><td><code>MainProbeSurfaceAbsenceTest</code> + static scan: zero TEST/MASS/raw/free-form main paths; system/watchdog behavior retained.</td></tr>
+<tr><td>O21</td><td><span class="pill amber">JVM PASS / emulator open</span></td><td>Three exact first-launch contracts plus preserved lifecycle tests pass. Clean-install emulator execution was not run in this no-device-command stage.</td></tr>
+<tr><td>O22</td><td><span class="pill amber">app scope PASS</span></td><td><code>:app:testDebugUnitTest :app:assembleDebug</code> green. Full all-module/all-variant gate remains T8.</td></tr>
+<tr><td>O24–O25</td><td><span class="pill green">PASS · scoped</span></td><td>All changed source under 500 LOC; no FUTURE path; reports sanitized; local-only scripts; no artifact upload.</td></tr>
+</tbody></table></div>
+<h3>6.1B T7 fail-closed runtime evidence · 2026-08-07</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Status</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>O17</td><td><span class="pill green">PASS</span></td><td><code>SpeedLimitFrame</code> uses a half-open monotonic freshness window; <code>NavigationSpeedSignOwner</code> contains no <code>NavigationFrame.distanceMeters</code> encoding. <code>BydHal.writeSpeedLimit/clearSpeedLimit</code> and the broken ADAS fallback constant are removed.</td></tr>
+<tr><td>O18</td><td><span class="pill green">PASS</span></td><td><code>SpeedSignLifecycleCoordinatorTest</code>, <code>SpeedSignSourceLifecycleTest</code>, updated Waze tests and race tests cover both WAZE/VIETMAP across positive→0, 5,000ms TTL, output disable→re-enable at the original deadline, source switch, disconnect, stop, master/output OFF, restart epoch and saturation. Priority clear is one-per-port/per transition; stale generations and prior AppWidgetHostView callbacks are rejected.</td></tr>
+<tr><td>O19–O20</td><td><span class="pill green">PASS · disabled runtime</span></td><td>Cluster/HUD sign ports are independent NOOP instances; Amap navigation has no sign dependency. HUD/road capabilities remain UNKNOWN; <code>ClusterBroadcaster</code> has no <code>NavigationHudOwner</code> caller and Stop/arrival/output-OFF perform zero physical-HUD writes.</td></tr>
+<tr><td>O21</td><td><span class="pill amber">JVM PASS / emulator open</span></td><td><code>FloatingBubbleFirstLaunchContractTest</code> remains three distinct passing contracts: safe early teardown, foreground-before-permission in both callbacks and one-shot overlay prompt. No emulator/device operation was authorized or run in T7.</td></tr>
+<tr><td>O22</td><td><span class="pill green">PASS · T7 JVM/compile scope</span></td><td>Final run: vehicle-contracts 3, core 669 and app 320 tests = <strong>992/992</strong>, zero failures/errors/skips. The exact T7 set adds regression coverage for output re-enable TTL and stale host-view rejection. <code>:app:compileDebugKotlin</code> and <code>:app:compileVehicleTestKotlin</code> pass on JDK 17.</td></tr>
+<tr><td>O24</td><td><span class="pill green">PASS · T7 paths</span></td><td>Static gates: zero main TEST/MASS/candidate hooks, zero obsolete speed-sign write symbols, zero active direct HUD caller, zero T10/T11 path, zero changed source over 500 LOC; <code>VietMapWidgetBridge.kt</code> is 497 LOC.</td></tr>
+<tr><td>Technology</td><td><span class="pill green">CURRENT</span></td><td>No dependency added or changed. Context7 official Kotlin guidance confirms immutable/data/sealed state and synchronized JVM coordination remain current; recorded Android official evidence plus compile/lint confirms <code>SystemClock</code>, notification lifecycle, API-33 <code>PackageInfoFlags</code> with scoped legacy fallback and the AGP variant API introduce no new deprecated usage. Project Kotlin 2.4.10, AGP 9.3.1, Gradle 9.6.1, JUnit 6.1.2 and Java 17 remain pinned.</td></tr>
+</tbody></table></div>
+<h3>6.1C T8–T9 final off-car consolidation · 2026-08-07</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Status</th><th>Final evidence</th></tr></thead><tbody>
+<tr><td>O1–O3</td><td><span class="pill green">PASS</span></td><td>HEAD and tracked diff sealed; all 17 corpus inputs rehashed; exact JADX/Apktool/Ghidra/JDK bytes pass; seven isolated repeat decodes retain identical auto inventory/error counts and byte-identical fallback/Apktool trees.</td></tr>
+<tr><td>O4–O14</td><td><span class="pill green">PASS · NOT_EXHAUSTIVE</span></td><td>All required schemas, H0–H7/S0–S10 rows, 18-field NaviInfo, 25 native primary pairs, five graph edges, one-dimensional candidates, numeric range/known-enum evidence validation, inert snapshots and planner transport/dependency fences pass. Nine missing corpus branches remain explicit.</td></tr>
+<tr><td>O15–O20</td><td><span class="pill green">PASS</span></td><td>Main/release unsafe hooks are zero; modern property API stays preferred; typed frame/lifecycle/output-isolation/physical-ownership tests pass for WAZE and VIETMAP.</td></tr>
+<tr><td>O21</td><td><span class="pill amber">STATIC PASS · EXECUTION BLOCKED</span></td><td>Three first-launch contracts pass. Emulator binary + one AVD are available, but clean execution requires ADB/install forbidden by this session; <code>first-launch-emulator-result.json</code> records <code>executed=false</code> and no observed claims.</td></tr>
+<tr><td>O22</td><td><span class="pill green">PASS</span></td><td>1,352 JVM executions: contracts 3, planner 29, core 669, app debug 320, app vehicleTest 320, car-integration 11; zero failures/errors/skips. Debug, vehicleTest and release assemblies pass on JDK 17/SDK 37.</td></tr>
+<tr><td>O23</td><td><span class="pill green">PASS</span></td><td><code>lintDebug</code>, <code>lintVehicleTest</code> and <code>lintRelease</code>: zero errors; 147 pre-existing warnings per variant. Nine initial errors were patched and all three gates rerun.</td></tr>
+<tr><td>O24–O27</td><td><span class="pill green">PASS</span></td><td>Exact path sets pass; FUTURE paths absent; max changed source 498 LOC; 13 Python tests pass; 80 current files pass the sensitive-data scan with BLOCK=0/WARN=0; raw Java snippet fields=0 and canonical native C fields=0; R/T/O/future reverse graph and four D/P packs validate with no visual PASS.</td></tr>
+</tbody></table></div>
+<h3>6.1D T0–T9 scope completeness</h3>
+<div class="scroll"><table><thead><tr><th>Task</th><th>Status</th><th>Code + test + wiring evidence</th></tr></thead><tbody>
+<tr><td>T0</td><td>✅ Done</td><td>Baseline/corpus report, main manifest/receiver quarantine, invalid candidate state and three first-launch contracts are present and verified.</td></tr>
+<tr><td>T1</td><td>✅ Done</td><td>Exact local tool manifest, preflight hashes and JDK-role separation pass.</td></tr>
+<tr><td>T2</td><td>✅ Done</td><td>Seven decoded inputs, Java index, zero-hit inventory and available-corpus graph are reproducible.</td></tr>
+<tr><td>T3</td><td>✅ Done</td><td>Old/new native report pairs 54 implementation/thunk rows by full demangled name with zero unresolved selected functions.</td></tr>
+<tr><td>T4</td><td>✅ Done</td><td>Typed evidence/taxonomy graph covers H0–H7/S0–S10 and blocks promotion without exact semantics.</td></tr>
+<tr><td>T5</td><td>✅ Done</td><td>Neutral contracts and 12 inert one-dimension candidates generate final HTML/JSON/text data.</td></tr>
+<tr><td>T6</td><td>✅ Done</td><td>Planner depends only on contracts; runtime consumers and compiled planner surfaces have zero transport linkage.</td></tr>
+<tr><td>T7</td><td>✅ Done</td><td>Serialized Amap, UNKNOWN HUD, typed source lifecycle and independent NOOP ports are wired through existing controls and providers.</td></tr>
+<tr><td>T8</td><td>✅ Done · achievable scope</td><td>Fail-closed verifier passes every achievable O gate; the prohibited emulator operation is recorded as an authorization blocker, not a false result.</td></tr>
+<tr><td>T9</td><td>✅ Done</td><td>Trace statuses, exact identities, candidate report, four packs, security scan and review loop are complete.</td></tr>
+</tbody></table></div>
+<h3>6.1E Boundary-shape consolidation</h3>
+<div class="scroll"><table><thead><tr><th>Producer → consumer</th><th>Verdict</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Amap token/builder → AmapService broadcast</td><td>OK</td><td>Exact key/type set, 10019 order, sequence/generation and 400ms timing tests pass.</td></tr>
+<tr><td>Waze/VietMap → SpeedLimitFrame</td><td>OK</td><td>Value/source/unit/monotonic time/zero/unavailable shapes are compared on both sides; late/stale callbacks are fenced.</td></tr>
+<tr><td>Coordinator → cluster/HUD ports</td><td>OK</td><td>Separate output generations, typed clear reasons and no-positive-after-clear traces pass for both ports.</td></tr>
+<tr><td>Typed planner → M1–M4 JSON/HTML</td><td>OK</td><td>Snapshot hashes, one PROPOSE step, READ/OBSERVE/INVERSE lifecycle and false visual state validate.</td></tr>
+<tr><td>Trace model → traceability JSON</td><td>OK</td><td>32 requirement rows, 12 task reverse keys, 27 gate reverse keys and nine future reverse keys match field-by-field.</td></tr>
+<tr><td>Corpus gaps → capability verdict</td><td>OK</td><td>Vendor/provider/property/QML gaps map to NOT_EXHAUSTIVE/UNKNOWN, never UNSUPPORTED or FIELD_PROVEN.</td></tr>
+</tbody></table></div>
+<div class="callout green"><strong>Final T0–T9 verdict:</strong> <strong>APPROVED</strong> for all achievable off-car gates. The data pack is <strong>NOT_EXHAUSTIVE</strong>, not FEATURE_DONE or vehicle-ready execution authorization. T10/T11, ADB/DADB, install, vehicle commands, commit and push remain untouched.</div>
+<h3>6.2 Future field rows — complete independent shapes</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Identity</th><th>Baseline</th><th>Mutation</th><th>Independent observation</th><th>Clear</th><th>Restore scope</th><th>Invalidation</th></tr></thead><tbody>
+<tr><td>D-H0-HUD-PHYSICAL-TEMP</td><td>exact vehicleTest+sender</td><td>physical config/switch prior</td><td>separately consented OFF→ON</td><td>feedback + physical HUD</td><td>NONE — no content plane; terminal observation is feedback ON before inverse</td><td>diagnostic-only restore OFF + verify</td><td>source/APK/profile/consent changes</td></tr>
+<tr><td>D-M1-NAV-HUD</td><td>exact vehicleTest+sender</td><td>cluster full frame; HUD state/gates</td><td>one H candidate + left/right/distance</td><td>cluster and HUD separately</td><td>Amap stop/reset</td><td>app-owned gates only; physical H0 excluded</td><td>source/APK/profile/candidate bytes</td></tr>
+<tr><td>D-M2-HUD-ROAD</td><td>same exact M1 tuple</td><td>M1 active + Road A</td><td>one road channel; Road B</td><td>cluster road and HUD road separately</td><td>empty/proven sentinel</td><td>road/app-owned gates; physical excluded</td><td>M1 tuple/road candidate/encoding changes</td></tr>
+<tr><td>D-M3-CLUSTER-SIGN</td><td>exact vehicleTest+sender</td><td>sign/gates/prior warnings</td><td>one channel: type/unit/50→80</td><td>cluster sign; HUD recorded independently</td><td>channel-proven clear</td><td>all changed sign gates/values</td><td>source/APK/profile/candidate/clear changes</td></tr>
+<tr><td>D-M4-HUD-SIGN</td><td>same exact M3 tuple</td><td>M3 sign active + HUD gates</td><td>one HUD gate dimension</td><td>cluster and HUD signs separately</td><td>M3 clear + HUD clear</td><td>sign/HUD app-owned gates; physical excluded</td><td>M3 tuple/HUD candidate changes</td></tr>
+<tr><td>P-M1-NAV-HUD</td><td>exact release tuple</td><td>real route + physical/app-owned states</td><td>left/right/distance</td><td>cluster and HUD</td><td>Stop/arrival</td><td>app-owned only; durable physical ON remains</td><td>release/source/profile/config changes</td></tr>
+<tr><td>P-M2-HUD-ROAD</td><td>same exact release</td><td>P-M1 + real Road A</td><td>Road B</td><td>cluster/HUD road</td><td>route end/empty</td><td>road/app-owned only</td><td>release/source/profile/road path changes</td></tr>
+<tr><td>P-M3-CLUSTER-SIGN</td><td>exact release tuple</td><td>route-independent source/gates</td><td>real value transitions</td><td>cluster sign; HUD separate</td><td>TTL/source unavailable</td><td>sign app-owned values/gates</td><td>release/source/provider/profile changes</td></tr>
+<tr><td>P-M4-HUD-SIGN</td><td>same exact release</td><td>P-M3 + HUD gates</td><td>real sign transitions</td><td>cluster/HUD signs separately</td><td>TTL/source unavailable</td><td>sign/HUD app-owned gates; physical excluded</td><td>release/source/provider/profile changes</td></tr>
+</tbody></table></div>
+<h3>6.3 R1–R32 traceability</h3>
+<div class="scroll"><table><thead><tr><th>Req</th><th>Tasks</th><th>Off-car gates</th><th>Exact artifact/test</th><th>Future IDs or NONE</th></tr></thead><tbody>
+<tr><td>R1</td><td>T0,T4,T5,T8,T9</td><td>O9,O26,O27</td><td><code>docs/diagnostics/hud-sign-re/traceability.json</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M1-NAV-HUD,P-M2-HUD-ROAD,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R2</td><td>T0,T5,T6,T8,T9</td><td>O13,O15,O26</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/OffCarTransportFenceTest.kt</code> + <code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/DependencyBoundaryTest.kt</code></td><td>NONE — off-car-only fence</td></tr>
+<tr><td>R3</td><td>T2,T5,T7,T10,T11</td><td>O6,O19</td><td><code>app/src/test/java/com/byd/clusternav/AmapFrameBuilderContractTest.kt</code></td><td>D-M1-NAV-HUD,P-M1-NAV-HUD</td></tr>
+<tr><td>R4</td><td>T2,T4,T5,T9,T10,T11</td><td>O5,O10,O12</td><td><code>docs/diagnostics/hud-sign-re/evidence-index.json</code></td><td>D-M1-NAV-HUD,P-M1-NAV-HUD</td></tr>
+<tr><td>R5</td><td>T2,T4,T5,T9,T10,T11</td><td>O5,O9,O10</td><td><code>docs/diagnostics/hud-sign-re/candidate-report.html</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,P-M1-NAV-HUD,P-M2-HUD-ROAD</td></tr>
+<tr><td>R6</td><td>T4,T5,T7,T10,T11</td><td>O12,O17</td><td><code>app/src/test/java/com/byd/clusternav/HudRoadCapabilityTest.kt</code></td><td>D-M2-HUD-ROAD,P-M2-HUD-ROAD</td></tr>
+<tr><td>R7</td><td>T5,T7,T8,T10,T11</td><td>O17,O18</td><td><code>app/src/test/java/com/byd/clusternav/SpeedSignSourceLifecycleTest.kt</code></td><td>D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R8</td><td>T2,T4,T5,T10,T11</td><td>O6,O17</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/NaviInfoSchemaTest.kt</code></td><td>D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R9</td><td>T5,T7,T10,T11</td><td>O17</td><td><code>vehicle-contracts/src/test/kotlin/com/byd/clusternav/contracts/SpeedLimitFrameTest.kt</code></td><td>D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R10</td><td>T4,T5,T9,T10,T11</td><td>O10,O11,O12,O27</td><td><code>docs/diagnostics/hud-sign-re/m3-cluster-sign-plan.json</code></td><td>D-M3-CLUSTER-SIGN,P-M3-CLUSTER-SIGN</td></tr>
+<tr><td>R11</td><td>T4,T5,T9,T10,T11</td><td>O10,O11,O12,O19,O27</td><td><code>docs/diagnostics/hud-sign-re/m4-hud-sign-plan.json</code></td><td>D-M4-HUD-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R12</td><td>T2,T4,T6,T10,T11</td><td>O5,O11,O16</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/PropertyCandidateValidatorTest.kt</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R13</td><td>T2,T6,T8,T10,T11</td><td>O16</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ModernPropertyGatewayContractTest.kt</code></td><td>D-M1-NAV-HUD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R14</td><td>T3,T8,T10,T11</td><td>O7,O8</td><td><code>docs/diagnostics/hud-sign-re/native/libbydcluster-diff.json</code></td><td>D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R15</td><td>T2,T3,T4,T5,T9</td><td>O9</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/FirmwareEvidenceGraphTest.kt</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R16</td><td>T4,T5,T6,T8,T10</td><td>O10,O11,O12,O13,O14,O15</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CandidateSafetyTest.kt</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R17</td><td>T5,T8,T9</td><td>O12,O14,O27</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ScenarioSnapshotTest.kt</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M1-NAV-HUD,P-M2-HUD-ROAD,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R18</td><td>T5,T6,T8,T9</td><td>O13</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/OffCarTransportFenceTest.kt</code></td><td>NONE — T10 boundary</td></tr>
+<tr><td>R19</td><td>T0,T8,T10</td><td>O15</td><td><code>app/src/test/java/com/byd/clusternav/MainProbeSurfaceAbsenceTest.kt</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R20</td><td>T4,T5,T9,T10,T11</td><td>O9,O27</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/FirmwareEvidenceGraphTest.kt</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M1-NAV-HUD,P-M2-HUD-ROAD,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R21</td><td>T5,T7,T8,T10,T11</td><td>O19</td><td><code>app/src/test/java/com/byd/clusternav/navigation/NavigationOutputIsolationTest.kt</code></td><td>D-M1-NAV-HUD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M1-NAV-HUD,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R22</td><td>T5,T7,T8,T10,T11</td><td>O18,O19</td><td><code>core/src/test/kotlin/com/byd/clusternav/navigation/SpeedSignLifecycleCoordinatorTest.kt</code></td><td>D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R23</td><td>T4,T5,T9,T10,T11</td><td>O4,O9,O10</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/CapabilityPromotionTest.kt</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+<tr><td>R24</td><td>T0,T7,T8,T11</td><td>O21,O22</td><td><code>app/src/test/java/com/byd/clusternav/FloatingBubbleFirstLaunchContractTest.kt</code> + <code>app/src/test/java/com/byd/clusternav/modules/clustercast/CastUILifecycleSafetyTest.kt</code> + <code>docs/diagnostics/hud-sign-re/first-launch-emulator-result.json</code></td><td>P-M1-NAV-HUD</td></tr>
+<tr><td>R25</td><td>T0,T4,T6,T8,T9,T10,T11</td><td>O23,O24</td><td><code>scripts/verify-seal-hud-sign-offcar.sh</code></td><td>NONE — code-health gate</td></tr>
+<tr><td>R26</td><td>T1,T8</td><td>O2,O3</td><td><code>tools/re/manifest.json</code> + <code>scripts/verify-seal-hud-sign-offcar.sh</code></td><td>NONE — tool gate</td></tr>
+<tr><td>R27</td><td>T0,T1,T2,T3,T8,T9</td><td>O25</td><td><code>scripts/re/tests/test_report_sanitizer.py</code></td><td>NONE — privacy gate</td></tr>
+<tr><td>R28</td><td>T0,T9,T10,T11</td><td>O1,O27</td><td><code>docs/_handoff/hud-sign-vehicle-test-candidate.json</code> + <code>docs/_handoff/hud-sign-release-candidate.json</code></td><td>D-H0-HUD-PHYSICAL-TEMP,D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M1-NAV-HUD,P-M2-HUD-ROAD,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R29</td><td>T9,T10,T11</td><td>O27</td><td><code>docs/diagnostics/hud-sign-re/m1-nav-hud-plan.json</code> + <code>docs/diagnostics/hud-sign-re/m2-hud-road-plan.json</code> + <code>docs/diagnostics/hud-sign-re/m3-cluster-sign-plan.json</code> + <code>docs/diagnostics/hud-sign-re/m4-hud-sign-plan.json</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M1-NAV-HUD,P-M2-HUD-ROAD,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R30</td><td>T9,T10,T11</td><td>O13,O26</td><td><code>offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/OffCarTransportFenceTest.kt</code></td><td>D-H0-HUD-PHYSICAL-TEMP,D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN,P-M1-NAV-HUD,P-M2-HUD-ROAD,P-M3-CLUSTER-SIGN,P-M4-HUD-SIGN</td></tr>
+<tr><td>R31</td><td>T4,T7,T9,T10,T11</td><td>O20</td><td><code>app/src/test/java/com/byd/clusternav/PhysicalHudOwnershipTest.kt</code></td><td>D-H0-HUD-PHYSICAL-TEMP,D-M1-NAV-HUD,P-M1-NAV-HUD</td></tr>
+<tr><td>R32</td><td>T0,T2,T3,T8,T10,T11</td><td>O4,O8</td><td><code>docs/diagnostics/hud-sign-re/corpus-completeness.json</code></td><td>D-M1-NAV-HUD,D-M2-HUD-ROAD,D-M3-CLUSTER-SIGN,D-M4-HUD-SIGN</td></tr>
+</tbody></table></div>
+<div class="callout red"><strong>Trace validator:</strong> rejects aliases, ranges, “all”, and bare N/A; every R/T/O/future ID must be referenced bidirectionally. Off-car exit is VEHICLE_READY_DATA or NOT_EXHAUSTIVE—never visual PASS.</div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Question</th><th>Safe default / closure</th></tr></thead><tbody>
+<tr><td>Q1</td><td>Seal exposes modern ICarHudService?</td><td>SERVICE_INTERFACE/CLIENT_WRAPPER only; future read-only preflight must prove manager, binder, mode/config/read/permission before setter row.</td></tr>
+<tr><td>Q2</td><td>HUD map config/status on Seal?</td><td>Highest future read-before-write H1.</td></tr>
+<tr><td>Q3</td><td>Map gate alone activates mirror?</td><td>Canonical Amap D-M1; no direct fallback first.</td></tr>
+<tr><td>Q4</td><td>Which fusion/topology gates are prerequisites?</td><td>Read-only configs/call sites first.</td></tr>
+<tr><td>Q5</td><td>Road consumer?</td><td>Native/QML/data-reference before M2 candidate.</td></tr>
+<tr><td>Q6</td><td>Statistics ISA types/enums/access?</td><td>WRITE_INTENT_CONSTANT, non-executable until config/type/provider/call site.</td></tr>
+<tr><td>Q7</td><td>Instrument traffic-sign value writable?</td><td>STATUS_OR_OUTPUT_ONLY UNKNOWN until access/native mapping.</td></tr>
+<tr><td>Q8</td><td>SLA output readable or writable?</td><td>Output-only default; never write without proof.</td></tr>
+<tr><td>Q9</td><td>Correct sign clear sentinels?</td><td>No future positive candidate without channel-specific inverse.</td></tr>
+<tr><td>Q10</td><td>Telenav/Neusoft provider APK/service available?</td><td>Package names known; target presence UNAVAILABLE until corpus/runtime inventory.</td></tr>
+<tr><td>Q11</td><td>Vendor/property/QML artifacts obtainable?</td><td>Without them overall NOT_EXHAUSTIVE.</td></tr>
+<tr><td>Q12</td><td>Ghidra macOS ARM native rebuild needed?</td><td>Headless smoke first; bundled-native build only if required.</td></tr>
+<tr><td>Q13</td><td>Working HUD reference model/ROM?</td><td>OWNER_OBSERVATION until artifact.</td></tr>
+<tr><td>Q14</td><td>Signs without route?</td><td>Source remains route-independent; future surfaces separate.</td></tr>
+<tr><td>Q15</td><td>When UNKNOWN→UNSUPPORTED?</td><td>Only frozen exact-profile matrix exhaustion with complete required corpus.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><code>docs/specs/windshield-hud-enable.html</code> — predecessor HUD-only planning and audit history.</li>
+<li><code>app/src/main/java/com/byd/clusternav/AmapFrameBuilder.kt</code>, <code>ClusterBroadcaster.kt</code>, <code>NavigationSpeedSignOwner.kt</code>, <code>modules/hal/BydHal.kt</code>.</li>
+<li><code>docs/_handoff/session-2026-08-06-pm2-firstlaunch-fixes-and-hud-enable.md</code> and <code>speed-limit-sign-oncar-plan.md</code>.</li>
+<li><code>../jadx-amap2/sources/com/example/amapservice/AmapService.java</code> and <code>../jadx-amap2/sources/byd/fbs/naviInfo/NaviInfo.java</code>.</li>
+<li><code>../carsettings-apk/jadx-carsettings/sources/</code>: Hud006, HudOptionDisplayModel, TrafficSign, DiCarSetter/Getter.</li>
+<li><code>../firmware/fw-2602-diff/jadx-l3-new</code> feature classes, <code>ICarHudManager/Service</code>, Vision events.</li>
+<li><code>../firmware/fw-2602-diff/cmp/libBydCluster_OLD.so</code> / <code>NEW.so</code>.</li>
+<li>JADX 1.5.6 official release + Context7 <code>/skylot/jadx</code>.</li>
+<li>Apktool 3.0.3 official release + Context7 <code>/ibotpeaches/apktool</code>.</li>
+<li>Ghidra 12.1.2 official release/Getting Started; Context7 12.0.2 headless API pattern. Upstream release SHA <code>b62e81a0390618466c019c60d8c2f796ced2509c4c1aea4a37644a77272cf99d</code>; signature recorded when published, otherwise SIGNATURE_UNAVAILABLE.</li>
+<li><code>../firmware/fw-2602-diff/README.md</code> — known vendor-partition gap.</li>
+<li>trafficmonitor/Telenav/Neusoft provider call sites and package constants.</li>
+<li>System JADX <code>/opt/homebrew/bin/jadx</code> 1.5.6 versus stale sibling workspace <code>../tools/jadx</code> 1.5.0.</li>
+<li>Android Developers source-set/receiver docs; current project toolchain/build identity files.</li>
+<li><code>tools/re/manifest.json</code> — T1 official release URLs, tags, upstream/local hashes, signatures and smoke states.</li>
+<li><code>docs/diagnostics/hud-sign-re/corpus-completeness.json</code>, <code>evidence-index.json</code>, <code>zero-hit-report.txt</code>, <code>README.md</code> — T0/T2 exact evidence.</li>
+<li><code>scripts/re/</code> and <code>scripts/re/tests/</code> — deterministic local-only hash/decode/index/graph/reproducibility implementation.</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><p class="small">Append-only. Previous HUD spec reviews certify only their historical scope.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-06 · Expanded-scope planning synthesis</h3><p>Owner expanded scope to exhaustive off-car firmware RE, candidate code and generated ADB execution for navigation HUD plus speed-limit signs on cluster/HUD. Inventory confirmed local Java/native corpus and promoted source-backed HUD map, modern HUD service, Statistics ISA, Instrument traffic-sign and native DataSourceManager candidate families. Spec explicitly separates current off-car authorization from later vehicle execution.</p></div>
+<div class="review"><h3>Pass 2 — 2026-08-06 · Toolchain freshness</h3><p>Context7 verified JADX/Apktool decode and Ghidra headless patterns. Official releases corrected stale version metadata: JADX 1.5.6 (installed/latest), Apktool 3.0.3 (latest/not installed), Ghidra 12.1.2 (latest/not installed). Ghidra requires Java 21 64-bit; Android remains pinned to project JDK17.</p></div>
+<div class="review"><h3>Pass 3 — 2026-08-06 · Independent expanded-scope audit corrections</h3><p>Audit found 7 P1 + 1 P2. Corrections: hard-separated inert T0–T9 from future real T10 transport; quarantined all current main TEST/MASS/raw hooks; added 32-row traceability and exact current/future path sets; reclassified speed keys by access/evidence and added ISA-map/SLR/RSI/topology/provider families; introduced corpus completeness/NOT_EXHAUSTIVE for missing vendor/property/QML/provider assets; added full Waze/VietMap stale-clear lifecycle; restored durable physical-HUD ownership; pinned system JADX 1.5.6 while rejecting stale workspace 1.5.0; and downgraded modern HUD service to interface/client-wrapper pending runtime proof.</p></div>
+<div class="review"><h3>Pass 4 — 2026-08-06 · Module isolation and executable-trace corrections</h3><p>Re-audit found 4 P1 + 2 P2 + 1 P3. Moved all off-car candidate/fake/renderer code into pure <code>:offcar-planner</code> outside app/car-integration/live CarExec; replaced wildcard paths with exact current/T10/T11 files and report packs; defined WAZE+VIETMAP 5s TTL/generation clear matrix; expanded each D/P milestone plus separate physical diagnostic row; made traceability bidirectional with canonical IDs and O23 lint mapping; added native visibility/topology evidence; and corrected changelog/path/signature hygiene.</p></div>
+<div class="review"><h3>Pass 5 — 2026-08-06 · Neutral-contract and phase-evidence closure</h3><p>Certification audit found 3 P1 + 4 P2 + 1 P3. Added zero-CarExec <code>:vehicle-contracts</code> between runtime and planner; enumerated every promised test/report path; moved vehicleTest identity/D results to T10 and release/P results to T11; completed physical diagnostic Clear semantics; replaced shorthand trace artifacts with canonical paths and both first-launch classes; fixed sibling corpus roots and Kotlin candidate enum; and wired the second SVG to its local marker.</p></div>
+<div class="review"><h3>Pass 6 — 2026-08-06 · Final expanded-scope certification</h3><p>Independent verdict: <strong>APPROVED — 0 P0–P3 findings</strong> for the T0–T9 off-car specification only. Certified canonical Amap/NaviInfo facts, H1 map-gate evidence, speed access taxonomy, missing-corpus NOT_EXHAUSTIVE rule, neutral module isolation, hard no-transport fence, exact paths/traceability, full Waze/VietMap lifecycle, independent M1–M4 rows, physical HUD ownership, toolchain freshness and document/privacy rules. This is not implementation completion, T10/T11 authorization or vehicle PASS.</p></div>
+<div class="review"><h3>Pass 7 — 2026-08-07 · T0–T2 implementation and off-car verification</h3><p>Implemented the starting-baseline freeze, main attack-surface quarantine, exact local toolchain and deterministic Java corpus index. During execution, JADX auto exit 3 was corrected to an honest partial-output state requiring a clean fallback; the malformed CarSettings APK was not misreported and its four valid DEX files were decoded instead. Focused and full app JVM/build checks pass; first-launch implementation/tests are preserved; evidence and zero-hit reports are path-sanitized and reproducible. Scoped verdict: <strong>T0/T1/T2 COMPLETE_FOR_AVAILABLE_JAVA_CORPUS; overall NOT_EXHAUSTIVE</strong>. T3–T11, emulator clean-install, vehicle transport, visual PASS, commit and push remain unexecuted.</p></div>
+<div class="review"><h3>Pass 8 — 2026-08-07 · Final implementation review loop</h3><p>Review found and patched three <strong>[P2]</strong> issues: the required tool manifest was hidden by the broad tools ignore rule; available-corpus completion did not require every requested provider/property/Instrument/ADAS citation; and fallback/Apktool decoder failures could discard their diagnostic log. One <strong>[P3]</strong> documentation issue corrected stale install/signature wording and added sanitized corpus-root mappings. Re-review evidence: official latest endpoints remain JADX 1.5.6, Apktool 3.0.3 and Ghidra 12.1.2; manifest→receiver boundary matches <code>exported=false</code> plus four preserved actions; index→graph boundary has H0–H7/S0–S10 and 14/14 mandatory citations; baseline→files hashes match; 10 Python tests and 299 app JVM tests pass with zero failures/errors; debug assembly passes; max source is 463 LOC; five reports pass sanitization; no FUTURE path changed. <strong>Final scoped verdict: 0 actionable P0–P3 remaining; T0/T1/T2 COMPLETE_FOR_AVAILABLE_JAVA_CORPUS / NOT_EXHAUSTIVE.</strong></p></div>
+<div class="review"><h3>Pass 9 — 2026-08-07 · T3 native old/new implementation</h3><p>Sequential T3 ownership began only after the foundation pass. The two pinned unstripped ARM64 ELFs were analyzed read-only with Ghidra 12.1.2 and the Java 21 sidecar. Initial headless startup failed because Ghidra 12.1.2 ignores module jars whose runtime path contains <code>Caches</code>; archive completeness and fresh user state were verified before the same hash-pinned archive was re-extracted offline to a reversible non-cache runtime path. Full demangled symbol plus implementation/thunk role—not address—pairs all 54 rows: 27 implementations and 27 thunks, with 25 primary implementations and two <code>trafficSignalStatus</code> rows retained as adjacent/out-of-scope. Six implementation bodies are byte-identical; 21 raw hashes differ only by layout/relocation after address-normalized decompile; zero possible semantic changes and zero unresolved functions remain. All requested decompiles, callers and data references are in the bounded JSON. Two complete old/new imports produced byte-identical 402,192-byte report bytes (SHA-256 <code>9774f32efc78ddb5463090c0b68e94f209576177e8fe8a597224da2c1a63bbdc</code>). Embedded QML/RCC indicators exist, but extractable assets/direct bindings and S1/S2/S3 transport linkage remain unavailable/unproven; therefore <strong>T3 COMPLETE_FOR_REQUESTED_NATIVE_SYMBOL_SCOPE; available Java plus requested native-symbol scope complete; overall NOT_EXHAUSTIVE</strong>. No vehicle, ADB/DADB, install, broadcast, commit or push operation occurred.</p></div>
+<div class="review"><h3>Pass 10 — 2026-08-07 · T4–T6 pure contracts, evidence plans and isolated fake E2E</h3><p><strong>T4 ✅</strong> A pure typed catalog now binds the complete generated evidence index SHA-256 <code>89b080a317304a91a6410a032c6c08458fff80dc7bf061a649743218bddac868</code>, all H0–H7/S0–S10 rows, exact access/evidence classes and hit counts, five producer/consumer edges, nine explicit UNAVAILABLE corpus branches and the 18-field/no-speed NaviInfo schema. The validator requires artifact/config/access/type/provider/consumer proof and prior/inverse before future writes, while rejecting raw IDs, free-form names, MASS, guessed enums and multiple mutation dimensions. <strong>T5 ✅</strong> Added pure <code>:vehicle-contracts</code> and <code>:offcar-planner</code>; generated 12 one-dimension inert candidates (2 policy-BLOCKED, 10 UNKNOWN), deterministic JSON/HTML/text and four current M1–M4 packs with separately keyed D/P sections. H0 remains separately consented candidate-report context and is excluded from M1 D/P ownership; no output contains a visual PASS. <strong>T6 ✅</strong> Resolved planner runtime classpath is Kotlin 2.4.10 plus <code>:vehicle-contracts</code> only; app/core/car-integration have zero planner edge/reference; source and 66 compiled classes contain no Android, CarExec, dadb, process, socket or command-option transport API. Forced verification: <code>:vehicle-contracts:test</code> 3/3 and <code>:offcar-planner:test</code> 28/28, zero failures/errors/skips; <code>:core:compileKotlin</code> passes; JSON/HTML schemas, canonical bidirectional R/T/O/future traceability, deterministic hashes and all-source ≤500 LOC gates pass. Context7/official freshness retained Kotlin 2.4.10 and JUnit 6.1.2 on Java 17. <strong>Scoped verdict: T4/T5/T6 COMPLETE; overall corpus remains NOT_EXHAUSTIVE and capabilities remain UNKNOWN/BLOCKED, never prematurely UNSUPPORTED.</strong> Live CarExec catalogs, car-integration implementation, T7–T11, vehicle operations, commit and push were not modified or executed.</p></div>
+<div class="review"><h3>Pass 11 — 2026-08-07 · T7 fail-closed runtime implementation and review loop</h3><p><strong>Scope verdict: T7 COMPLETE; overall program remains NOT_EXHAUSTIVE.</strong> Implemented the exact disabled runtime architecture only: one Amap emission lane, UNKNOWN HUD/road state, typed speed frames, independent NOOP sign ports and preference/source lifecycle wiring. Review found and patched four issues before the final pass: <strong>[P1]</strong> source selection initially left a window for an old heartbeat/queued frame, fixed with predeclared session fencing plus old-frame timestamp rejection; <strong>[P2]</strong> freshness was inclusive at the 5,000ms deadline, fixed to a half-open window; <strong>[P2]</strong> VietMap could accept a late host callback after clear, fixed by clear-before-stop, generation advance, pre-stop <code>listening=false</code> and callback guard; <strong>[P2]</strong> app-path controllers were initially JVM-pure, fixed with injectable Android Handler/SystemClock seams rather than weakening layering rules. Boundary review compared Amap token→builder→broadcast, Waze/VietMap snapshot→typed frame, coordinator→cluster/HUD port, and Prefs/Main events→disabled owner field-by-field. Final evidence: 991/991 JVM tests and all 58 exact T7 tests pass; debug and vehicleTest Kotlin compile pass; zero main test hooks, obsolete sign writes, active direct-HUD callers or future T10/T11 paths; max changed source 496 LOC; no new dependency/deprecated API. HUD/sign capability remains UNKNOWN, no physical or candidate write executed, and no ADB/DADB/device/commit/push operation occurred.</p></div>
+<div class="review"><h3>Pass 12 — 2026-08-07 · T8–T9 implementation, consolidation and final review loop</h3><p><strong>Final review verdict: APPROVED for all achievable T0–T9 gates; corpus NOT_EXHAUSTIVE; FEATURE_DONE=false.</strong> Implemented the 351-line fail-closed O1–O27 verifier, the 373-line report-set sanitizer/schema validator, truthful blocked emulator result, exact source/report sealing and explicit status on every R1–R32 row. The loop found and patched <strong>[P1]</strong> the required <code>testVehicleTestUnitTest</code> task was absent—AGP now enables the real vehicleTest host-test variant rather than an alias; <strong>[P1]</strong> nine lint errors across typed permission constants, intentional privileged permissions and a literal mid-file BOM—patched with semantic-preserving constants, scoped manifest rationale and an escaped code point; <strong>[P2]</strong> raw JADX auto bytes varied across equivalent try/catch reconstruction—O3 now requires stable auto inventory/error counts plus exact fallback/Apktool bytes; and <strong>[P2]</strong> traceability lacked row status and emulator truth—both schemas were completed. Final rerun: O1–O27 pass; 12/12 Python and 1,350/1,350 JVM executions pass; three APK assemblies pass; debug/vehicleTest/release lint each has zero errors; max changed source is 498 LOC; 65 source rows and 12 reports are sealed; 79-file security scan is CLEAN; every T0–T9 deliverable is code+test+wired. Boundary shapes are consistent from Amap/source frames through runtime ports and from typed planner data through JSON/HTML/trace reverse maps. Missing vendor/provider/property/QML corpus remains explicit, so capabilities stay UNKNOWN and no visual/vehicle claim is made. No ADB, DADB, install, vehicle command, commit or push occurred.</p></div>
+<div class="review"><h3>Pass 13 — 2026-08-07 · Senior architect boundary and lifecycle re-audit</h3><p><strong>Final verdict: APPROVED for 100% of achievable T0–T9; 0 actionable P0–P3 remain; corpus NOT_EXHAUSTIVE; FEATURE_DONE=false.</strong> The re-audit traced notification/Waze navigation through immutable frames, the sole Amap arbiter and exact AmapService broadcast; traced Waze/VietMap positive→typed frame→independent ports→clear; and traced evidence→candidate→fake transport→M1–M4 inert D/P packs field-by-field. Three findings were patched: <strong>[P1]</strong> re-enabling one sign output replaced the active frame while the 5,000ms expiry still referenced the old object, allowing TTL clear to be skipped—fixed by cancelling/rescheduling against the replay while preserving the original absolute deadline; <strong>[P1]</strong> a delayed VietMap callback from a prior host view could execute after stop/start and satisfy the current generation—fixed by requiring current AppWidgetHostView identity before extraction; <strong>[P2]</strong> numeric candidate values were not checked against declared ranges and a known enum could cite evidence outside the candidate—fixed in <code>PropertyCandidateValidator</code> with deterministic snapshot regeneration. Focused tests and the full fail-closed verifier pass: 12/12 Python and 1,352/1,352 JVM executions, three assemblies, three zero-error lint variants, exact CURRENT/FUTURE and ≤500 LOC gates, sanitized report validation and clean diff. No dependency was added; Context7/official evidence confirms the Kotlin/JVM patterns remain current, and recorded Android/AGP APIs compile/lint without new deprecations. Missing vendor/provider/property/QML artifacts remain explicit <code>NOT_EXHAUSTIVE</code>; emulator execution remains <code>BLOCKED_BY_EXPLICIT_NO_ADB_INSTALL</code>. No ADB, DADB, install, vehicle command, T10/T11 edit, commit or push occurred.</p></div>
+<div class="review"><h3>Pass 14 — 2026-08-07 · Security publication-boundary remediation and reseal</h3><p>The final security re-audit identified and patched two publication blockers before any commit: <strong>[P1/BLOCK]</strong> Java evidence copied complete decompiled source lines/command bodies, and <strong>[P1/BLOCK]</strong> canonical native JSON copied 108 Ghidra C bodies. <code>index-features.py</code> now emits artifact/path/line/line-hash/matched-token metadata only; <code>build-evidence-graph.py</code> selects facts by explicit token IDs; <code>run-native-analysis.sh</code> strips C at the canonical boundary while local ignored raw output retains it. The sanitizer/schema validator and regression suite reject <code>snippet</code> and <code>decompile.c</code> fields. Reports and typed catalog were regenerated/resealed (evidence <code>ac3fd277…80b9</code>; native <code>d2d7f63…e9464</code>), two independent metadata index/graph runs are byte-identical, and the exact O1–O27 verifier passes with 13/13 Python tests, 1,352/1,352 JVM executions, three assemblies and three zero-error lint variants. Final 80-file pattern+semantic scan reports BLOCK=0/WARN=0. <strong>Verdict: APPROVED for all achievable T0–T9; corpus remains NOT_EXHAUSTIVE; FEATURE_DONE=false.</strong> Emulator execution remains blocked by the explicit no-ADB/install scope; T10/T11, vehicle operations, commit and push remain untouched.</p></div>
+<div class="review"><h3>Pass 15 — 2026-08-10 · Stage A append-only boundary transition</h3><p>The parent O24 authority moves from the embedded historical list to canonical revision 2. Revision 1 retains the old 81 CURRENT, 15 T10 FUTURE, 13 T11 FUTURE entries and historical parent baseline hash. Revision 2 admits only exact <code>SOURCE_SEAL_INPUT</code> and <code>POST_BUILD_ATTESTATION</code> paths; <code>LOCAL_IGNORED</code> is non-authorizing, and the original 13 T11 paths remain <code>FUTURE_FORBIDDEN</code>. This pass authorizes off-car Stage A and later exact T10 source work only. It does not establish app runtime reachability, permission binding, a vehicle session, installation permission, or field readiness; the state remains <code>ARTIFACT_READY_OPERATIONALLY_BLOCKED</code>.</p></div>
+</section>
+</div></body>
+</html>

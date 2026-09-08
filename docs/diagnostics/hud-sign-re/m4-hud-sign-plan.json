@@ -1,0 +1,80 @@
+{
+  "schema": "clusternav.offcar-milestone-pack/v1",
+  "milestone": "M4_HUD_SIGN",
+  "corpusVerdict": "NOT_EXHAUSTIVE",
+  "truthState": "SOURCE_MINED_NOT_FIELD_PROVEN",
+  "visualPass": false,
+  "candidateCount": 2,
+  "blockedCount": 0,
+  "unknownCount": 2,
+  "D-M4-HUD-SIGN": {
+    "state": "INERT_DATA_ONLY",
+    "visualPass": false,
+    "plans": [
+      {
+        "id": "OFFCAR-M4-HUD-SAFE-DRIVING-PLAN",
+        "candidateId": "OFFCAR-M4-HUD-SAFE-DRIVING",
+        "feature": "HUD_SIGN",
+        "disposition": "UNKNOWN",
+        "reason": "HUD safe-driving service gate is unproven on the target profile.",
+        "risk": "MEDIUM",
+        "evidenceIds": ["H2", "H4", "H7", "S0", "S1", "S6", "S8"],
+        "validationIssues": ["MISSING_EXPECTED_CONSUMER", "MISSING_PROPERTY_CONFIG", "MISSING_PROVIDER", "MISSING_WRITE_ACCESS"],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H2"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":3,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":4,"phase":"READ","detail":"EVIDENCE:S0"},
+          {"ordinal":5,"phase":"READ","detail":"EVIDENCE:S1"},
+          {"ordinal":6,"phase":"READ","detail":"EVIDENCE:S6"},
+          {"ordinal":7,"phase":"READ","detail":"EVIDENCE:S8"},
+          {"ordinal":8,"phase":"READ","detail":"CONFIG:CATALOG:HUD_SAFE_DRIVING"},
+          {"ordinal":9,"phase":"READ","detail":"PRIOR:CATALOG:HUD_SAFE_DRIVING:PRIOR"},
+          {"ordinal":10,"phase":"PROPOSE","detail":"HUD_SAFE_DRIVING_GATE:CATALOG:HUD_SAFE_DRIVING:BOOLEAN:true"},
+          {"ordinal":11,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:HUD_SAFE_DRIVING:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":12,"phase":"OBSERVE","detail":"CLUSTER_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":13,"phase":"OBSERVE","detail":"HUD_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":14,"phase":"INVERSE","detail":"RESTORE:CATALOG:HUD_SAFE_DRIVING:PRIOR"},
+          {"ordinal":15,"phase":"INVERSE","detail":"VERIFY:CATALOG:HUD_SAFE_DRIVING"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H2\\n2. READ EVIDENCE:H4\\n3. READ EVIDENCE:H7\\n4. READ EVIDENCE:S0\\n5. READ EVIDENCE:S1\\n6. READ EVIDENCE:S6\\n7. READ EVIDENCE:S8\\n8. READ CONFIG:CATALOG:HUD_SAFE_DRIVING\\n9. READ PRIOR:CATALOG:HUD_SAFE_DRIVING:PRIOR\\n10. PROPOSE HUD_SAFE_DRIVING_GATE:CATALOG:HUD_SAFE_DRIVING:BOOLEAN:true\\n11. OBSERVE READ_BACK:CATALOG:HUD_SAFE_DRIVING:PRIOR_OR_TYPED_VALUE\\n12. OBSERVE CLUSTER_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n13. OBSERVE HUD_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n14. INVERSE RESTORE:CATALOG:HUD_SAFE_DRIVING:PRIOR\\n15. INVERSE VERIFY:CATALOG:HUD_SAFE_DRIVING"
+      },
+      {
+        "id": "OFFCAR-M4-HUD-SIGN-FUSION-PLAN",
+        "candidateId": "OFFCAR-M4-HUD-SIGN-FUSION",
+        "feature": "HUD_SIGN",
+        "disposition": "UNKNOWN",
+        "reason": "Image/navigation fusion gate lacks exact access, type, prior and HUD sign consumer proof.",
+        "risk": "MEDIUM",
+        "evidenceIds": ["H3", "H4", "H7", "S0", "S1", "S6", "S8"],
+        "validationIssues": ["MISSING_EXPECTED_CONSUMER", "MISSING_PROPERTY_CONFIG", "MISSING_PROVIDER", "MISSING_WRITE_ACCESS"],
+        "visualPass": false,
+        "steps": [
+          {"ordinal":1,"phase":"READ","detail":"EVIDENCE:H3"},
+          {"ordinal":2,"phase":"READ","detail":"EVIDENCE:H4"},
+          {"ordinal":3,"phase":"READ","detail":"EVIDENCE:H7"},
+          {"ordinal":4,"phase":"READ","detail":"EVIDENCE:S0"},
+          {"ordinal":5,"phase":"READ","detail":"EVIDENCE:S1"},
+          {"ordinal":6,"phase":"READ","detail":"EVIDENCE:S6"},
+          {"ordinal":7,"phase":"READ","detail":"EVIDENCE:S8"},
+          {"ordinal":8,"phase":"READ","detail":"CONFIG:CATALOG:HUD_SIGN_FUSION"},
+          {"ordinal":9,"phase":"READ","detail":"PRIOR:CATALOG:HUD_SIGN_FUSION:PRIOR"},
+          {"ordinal":10,"phase":"PROPOSE","detail":"HUD_SIGN_FUSION_GATE:CATALOG:HUD_SIGN_FUSION:BOOLEAN:true"},
+          {"ordinal":11,"phase":"OBSERVE","detail":"READ_BACK:CATALOG:HUD_SIGN_FUSION:PRIOR_OR_TYPED_VALUE"},
+          {"ordinal":12,"phase":"OBSERVE","detail":"CLUSTER_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":13,"phase":"OBSERVE","detail":"HUD_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION"},
+          {"ordinal":14,"phase":"INVERSE","detail":"RESTORE:CATALOG:HUD_SIGN_FUSION:PRIOR"},
+          {"ordinal":15,"phase":"INVERSE","detail":"VERIFY:CATALOG:HUD_SIGN_FUSION"}
+        ],
+        "textTranscript": "1. READ EVIDENCE:H3\\n2. READ EVIDENCE:H4\\n3. READ EVIDENCE:H7\\n4. READ EVIDENCE:S0\\n5. READ EVIDENCE:S1\\n6. READ EVIDENCE:S6\\n7. READ EVIDENCE:S8\\n8. READ CONFIG:CATALOG:HUD_SIGN_FUSION\\n9. READ PRIOR:CATALOG:HUD_SIGN_FUSION:PRIOR\\n10. PROPOSE HUD_SIGN_FUSION_GATE:CATALOG:HUD_SIGN_FUSION:BOOLEAN:true\\n11. OBSERVE READ_BACK:CATALOG:HUD_SIGN_FUSION:PRIOR_OR_TYPED_VALUE\\n12. OBSERVE CLUSTER_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n13. OBSERVE HUD_SPEED_SIGN:NOT_RUN_OFF_CAR:INDEPENDENT_FUTURE_OBSERVATION\\n14. INVERSE RESTORE:CATALOG:HUD_SIGN_FUSION:PRIOR\\n15. INVERSE VERIFY:CATALOG:HUD_SIGN_FUSION"
+      }
+    ]
+  },
+  "P-M4-HUD-SIGN": {
+    "state": "BLOCKED_PENDING_FIELD_PROOF",
+    "capability": "UNKNOWN",
+    "visualPass": false,
+    "sourcePlanIds": ["OFFCAR-M4-HUD-SAFE-DRIVING-PLAN", "OFFCAR-M4-HUD-SIGN-FUSION-PLAN"]
+  }
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  segment_track_bg — DESIGN SYSTEM (Cockpit L2) · SegmentedControlView track. Matches the mockup `.seg`
+  (docs/specs/ui-visual-upgrade-l2.html): a recessed field + 1px @color/hairline_strong stroke + 11dp
+  corners. The recessed-well tone is @color/seg_track_well (dark #0c0d13 in values-night, a light recessed
+  gray in values) so it adapts per light/dark mode.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/seg_track_well" />
+    <corners android:radius="11dp" />
+    <stroke android:width="1dp" android:color="@color/hairline_strong" />
+</shape>

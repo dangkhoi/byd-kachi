@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUD / Cluster — Checklist thử trên xe</title>
+<script>(function(){var d=matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--paper:#fff;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--green:#1a7f37;--red:#c9342f;--amber:#9a5b00;--chip:#eef0f2}
+html.dark{--bg:#0a0a0c;--paper:#161618;--ink:#f5f5f7;--muted:#9a9aa1;--line:#33333a;--blue:#5ac8fa;--green:#3fb950;--red:#ff6961;--amber:#ffb340;--chip:#22222a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 120px}
+h1{font-size:26px;letter-spacing:-.02em;margin:.2em 0 .1em}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 8px}
+.sub{color:var(--muted);font-size:13px}
+.banner{border:1px solid var(--red);border-radius:12px;padding:12px 14px;margin:14px 0;background:color-mix(in srgb,var(--red) 8%,transparent);font-size:13.5px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin:10px 0}
+.hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.id{font-weight:700;font-size:15px}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--chip);color:var(--muted)}
+.badge.proven{color:var(--green);background:color-mix(in srgb,var(--green) 14%,transparent)}
+.badge.open{color:var(--amber);background:color-mix(in srgb,var(--amber) 16%,transparent)}
+.surf{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted)}
+.goal{margin:8px 0 6px}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.mono{display:block;background:var(--chip);border-radius:8px;padding:8px 10px;margin:8px 0;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.watch{border-left:3px solid var(--blue);padding:6px 10px;margin:8px 0;font-size:13.5px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg label{padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;border-right:1px solid var(--line);user-select:none}
+.seg label:last-child{border-right:0}
+.seg input{display:none}
+.seg label.p.on{background:var(--green);color:#fff}
+.seg label.f.on{background:var(--red);color:#fff}
+.seg label.b.on{background:var(--amber);color:#fff}
+.fld{font-size:13px}
+.fld input[type=text]{font:inherit;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);width:120px}
+textarea{font:inherit;width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);margin-top:8px;resize:vertical}
+label.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+button{font:inherit;font-weight:600;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+button.primary{background:var(--blue);color:#fff;border-color:transparent}
+.counts b{font-variant-numeric:tabular-nums}
+.pre-in{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);width:110px}
+table.pf{width:100%;border-collapse:collapse}
+table.pf td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:13.5px}
+table.pf td:last-child{text-align:right}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);max-width:92vw;width:680px;padding:0}
+dialog pre{margin:0;padding:16px;white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:70vh;overflow:auto}
+.dhd{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+@media print{.bar,button{display:none}.card{break-inside:avoid}}
+</style></head>
+<body><div class="wrap">
+<h1>HUD / Cluster — checklist thử trên xe</h1>
+<p class="sub">Khớp 1:1 với <code>scripts/vehicle/hud-cluster-probe.sh</code> + <code>apks/navopen-v3.jar</code>. Điền PASS/FAIL/BLOCKED sau khi nhìn cụm/HUD từng ca. Trang tự lưu vào máy (localStorage). Nút <b>Xuất kết quả</b> ở cuối để copy báo cáo.</p>
+
+<div class="banner"><b>⚠ AN TOÀN.</b> Chỉ chạy khi <b>xe ĐỖ, số P, phanh tay, khu vực riêng, KHÔNG lái</b>. Script ghi HAL feature-id (rủi ro) nhưng luôn <b>đọc prior → ghi → khôi phục → verify</b>; nếu restore fail nó <b>KHOÁ</b> và dừng mọi ca sau — khi đó kiểm tra cụm/HUD, reboot xe nếu cần. navopen dùng context-spoof ⇒ “chạy được” ≠ “app tự làm được bằng uid thật”.</div>
+
+<h2>0 · Chuẩn bị & lệnh chạy</h2>
+<div class="card">
+<div class="fld">Meta phiên — điền tay:</div>
+<div class="row">
+  <span class="fld">Ngày/giờ <input class="pre-in" data-k="meta_when" style="width:150px"></span>
+  <span class="fld">IP/serial xe <input class="pre-in" data-k="meta_serial" style="width:150px"></span>
+  <span class="fld">Người test <input class="pre-in" data-k="meta_who" style="width:120px"></span>
+</div>
+<span class="mono">cd .../ClusterNav
+adb connect &lt;ip-xe&gt;:5555          # hoặc cắm USB
+./scripts/vehicle/hud-cluster-probe.sh &lt;ip-xe&gt;:5555
+#  gõ YES (xác nhận đỗ) → mỗi ca nhìn cụm/HUD, gõ p/f/b, Enter
+#  chạy riêng nhóm:  SEL="B" ./scripts/vehicle/hud-cluster-probe.sh &lt;ip&gt;
+#  tự giữ 8s/ca:     OBSERVE=8 ...     xem trước không chạm xe: DRY=1 ...</span>
+<div class="sub">Thứ tự ưu tiên: <b>A</b> (sanity, phải PASS) → <b>B</b> (ẩn số chính: biển tốc độ lên cụm) → <b>C</b> (HUD) → <b>D</b>. Hết giờ thì dừng ở đâu ghi ở đó.</div>
+</div>
+
+<h2>1 · Preflight — đọc trạng thái hiện tại (đọc-only, không ghi)</h2>
+<div class="card"><table class="pf" id="preTbl"></table>
+<div class="sub" style="margin-top:8px">Script tự in các giá trị này ở đầu log; chép lại vào đây để đối chiếu prior.</div></div>
+
+<div id="cases"></div>
+
+<h2>Ghi chú chung cuối phiên</h2>
+<div class="card"><textarea data-k="notes_final" placeholder="Quan sát chung, sự cố, RECOVERY_LOCK có bật không, đã reboot chưa…"></textarea></div>
+</div>
+
+<div class="bar">
+  <span class="counts sub">PASS <b id="cPass">0</b> · FAIL <b id="cFail">0</b> · BLOCKED <b id="cBlock">0</b> · chưa <b id="cNone">0</b></span>
+  <span>
+    <button onclick="resetAll()">Xoá hết</button>
+    <button class="primary" onclick="exportRes()">Xuất kết quả</button>
+  </span>
+</div>
+
+<dialog id="dlg"><div class="dhd"><b>Báo cáo phiên</b><button onclick="dlg.close()">Đóng</button></div><pre id="out"></pre>
+<div style="padding:12px 16px;border-top:1px solid var(--line);text-align:right"><button class="primary" onclick="copyOut()">Copy vào clipboard</button></div></dialog>
+
+<script>
+const PRE=[
+ ["PRE-HUDCFG","HUD config",  "setting 0x38B00015","0=không HUD · 1=W-mode · 2=AR-mode"],
+ ["PRE-HUDSW","HUD switch status","setting 0x38B0001C","1=đang bật · 2=đang tắt"],
+ ["PRE-SLA","ADAS SLA state","adas 0x31600025","0=off·1=fusion·2=vision·3=nv·4=defect"],
+ ["PRE-SLAOUT","ADAS SLA output speed-limit","adas 0x2D500020","số km/h HAL đang xuất (nếu có)"],
+ ["PRE-ISA","ISA current road speed-limit","statistic 0x4B40001C","giá trị hiện tại (thường 0/none)"],
+ ["PRE-ARHUD","ADAS ACC_MODE_ARHUD","adas 0x29C0000C","chế độ ARHUD (group D)"],
+ ["PRE-HUDSYS","ADAS HUD_SYSTEM_STATUS","adas 0x17F00008","trạng thái hệ HUD (group D)"]
+];
+const CASES=[
+ {id:"[A] nav render (broadcast)",g:"A",exp:"proven",surf:"CỤM",
+  goal:"Xác nhận rig sống: broadcast Amap full-render đã CHỨNG MINH 29/07.",
+  act:"am broadcast AUTONAVI_STANDARD_BROADCAST_SEND KEY_TYPE=10001 TYPE=1 NEW_ICON=3 SEG=444 NEXT_ROAD_NAME='Ba Test Le Loi' + 4 field _AUTO → stop (10019/EXTRA_STATE=9) + navopen close",
+  watch:"CỤM: có icon rẽ + “444 m” + “Ba Test Le Loi” không?"},
+ {id:"[A2] navopen open+frame",g:"A",exp:"proven",surf:"CỤM",
+  goal:"Đường HAL instrument trực tiếp (thay broadcast) mở làn nav + 1 frame.",
+  act:"navopen full 'Le Loi Test' → navopen close",
+  watch:"CỤM: làn nav zin hiện icon + “Le Loi Test” không?"},
+
+ {id:"B1-ISA-CUR",g:"B",exp:"open",surf:"CỤM",prior:1,
+  goal:"⭐ Ẩn số chính: ghi SỐ km/h vào ISA current-road speed-limit → cụm có vẽ biển?",
+  act:"statistic 0x4B40001C : prior → 50 → 80 → prior",
+  watch:"CỤM: hiện biển “50” rồi đổi “80” km/h?"},
+ {id:"B2-ISA-TYPE",g:"B",exp:"open",surf:"CỤM",prior:1,
+  goal:"Value kèm TYPE (type có thể cần để firmware vẽ biển).",
+  act:"statistic type 0x4B400034=1 + value 0x4B40001C=60 → restore cả hai (verify)",
+  watch:"CỤM: biển “60” có vẽ ra khi kèm type không?"},
+ {id:"B3-ISA-TSTYPE",g:"B",exp:"open",surf:"CỤM",prior:1,
+  goal:"ISA traffic-sign-type — đổi kiểu biển hiển thị.",
+  act:"statistic 0x4B400064 : prior → 1 → 5 → prior",
+  watch:"CỤM: có biển/kiểu biển nào đổi theo không?"},
+ {id:"B4-INSTR-TSR",g:"B",exp:"open",surf:"CỤM",prior:1,
+  goal:"INSTRUMENT traffic-sign-identify VALUE (đường TSR trên cụm).",
+  act:"instr 0x23A00010 : prior → 50 → 80 → prior",
+  watch:"CỤM: vùng TSR hiện “50” rồi “80”?"},
+ {id:"B6-SETTING-S5",g:"B",exp:"open",surf:"CỤM",prior:1,
+  goal:"Setting S5 — id biển tốc độ đường setting.",
+  act:"setting 0x4B4000AA : prior → 50 → 80 → prior",
+  watch:"CỤM: biển “50” rồi “80”?"},
+ {id:"B7-SLA-STATE",g:"B",exp:"open",surf:"CỤM",prior:1,
+  goal:"Bật TOÀN BỘ tính năng SLA/TSR (on/off, không phải số) rồi đọc output.",
+  act:"adas set 0x38500022=1 (status 0x31600025) — xem 0x2D500020 đổi?",
+  watch:"CỤM: khi bật SLA, có biển tốc độ zin nào tự hiện không?"},
+
+ {id:"C1-HUD-NAV",g:"C",exp:"open",surf:"HUD",prior:1,
+  goal:"Nav + tên đường lên KÍNH LÁI. Tổ hợp master+gate+bơm nav — 29/07 mới thử gate lẻ (âm).",
+  act:"setting master 0x4C10E023=1 + nav-gate 0x4C10E03A=1 + bơm nav → restore cả hai",
+  watch:"KÍNH LÁI: có hiện hướng rẽ + tên đường không? (cụm có thể có sẵn — HUD mới là câu hỏi)"},
+ {id:"C2-HUD-ADAS",g:"C",exp:"open",surf:"HUD",prior:1,
+  goal:"Nội dung ADAS/an-toàn lên kính lái.",
+  act:"setting master 0x4C10E023=1 + ADAS-gate 0x4C10E030=1 → restore",
+  watch:"KÍNH LÁI: có icon ADAS/cảnh báo an toàn không?"},
+ {id:"C3-INSTR-HUDMAP",g:"C",exp:"open",surf:"HUD/CỤM",prior:1,
+  goal:"INSTRUMENT HUD nav-map (H1) bật kênh bản đồ HUD.",
+  act:"instr 0x32B1102E=2 (status 0x38B0002E) → restore prior",
+  watch:"KÍNH LÁI/CỤM: kênh bản đồ HUD có đổi không?"},
+
+ {id:"D1-SMART-SLC",g:"D",exp:"open",surf:"HUD",prior:1,
+  goal:"ADAS smart-speed-limit-control — biển tốc độ trên HUD?",
+  act:"adas set 0x32B0E018=1 (status 0x1FF02012) → restore prior",
+  watch:"KÍNH LÁI: biển giới hạn tốc độ có hiện không?"}
+];
+
+const $=s=>document.querySelector(s), ce=(t,c)=>{const e=document.createElement(t);if(c)e.className=c;return e};
+const KEY="hud-cluster-checklist-v1";
+let store=JSON.parse(localStorage.getItem(KEY)||"{}");
+const save=()=>localStorage.setItem(KEY,JSON.stringify(store));
+function bind(el){const k=el.dataset.k;if(!k)return;
+ if(el.type==="radio"){if(store[el.name]===el.value)el.checked=true;el.addEventListener("change",()=>{store[el.name]=el.value;save();counts()});}
+ else if(el.type==="checkbox"){el.checked=!!store[k];el.addEventListener("change",()=>{store[k]=el.checked;save()});}
+ else{if(store[k]!=null)el.value=store[k];el.addEventListener("input",()=>{store[k]=el.value;save()});}}
+
+// preflight table
+const pt=$("#preTbl");
+PRE.forEach(([id,name,fid,note])=>{const tr=ce("tr");
+ tr.innerHTML=`<td><b>${name}</b><br><span class="mono" style="display:inline;background:none;padding:0">${fid}</span><br><span class="sub">${note}</span></td>`;
+ const td=ce("td");const inp=ce("input");inp.className="pre-in";inp.type="text";inp.placeholder="giá trị";inp.dataset.k="pre_"+id;td.appendChild(inp);tr.appendChild(td);pt.appendChild(tr);bind(inp);});
+
+// case cards
+const wrap=$("#cases");let curG="";
+CASES.forEach(c=>{
+ if(c.g!==curG){curG=c.g;const h=ce("h2");h.textContent={A:"2 · Nhóm A — nav lên CỤM (sanity, đã proven)",B:"3 · Nhóm B — BIỂN TỐC ĐỘ lên CỤM (mục tiêu chính, chưa thử)",C:"4 · Nhóm C — nav / tên đường / ADAS lên HUD (kính lái)",D:"5 · Nhóm D — biển tốc độ / AR-HUD"}[c.g];wrap.appendChild(h);}
+ const card=ce("div","card");
+ const hd=ce("div","hd");
+ hd.innerHTML=`<span class="id">${c.id}</span><span class="surf">${c.surf}</span><span class="badge ${c.exp}">${c.exp==="proven"?"ĐÃ PROVEN":"CHƯA THỬ"}</span>`;
+ card.appendChild(hd);
+ const g=ce("div","goal");g.textContent=c.goal;card.appendChild(g);
+ const m=ce("span","mono");m.textContent=c.act;card.appendChild(m);
+ const w=ce("div","watch");w.innerHTML="👁 "+c.watch;card.appendChild(w);
+ const row=ce("div","row");
+ // result segmented
+ const seg=ce("div","seg");
+ [["PASS","p"],["FAIL","f"],["BLOCKED","b"]].forEach(([v,cl])=>{
+   const lab=ce("label",cl);const r=ce("input");r.type="radio";r.name="res_"+c.id;r.value=v;r.dataset.k="res_"+c.id;
+   lab.appendChild(r);lab.appendChild(document.createTextNode(v));
+   r.addEventListener("change",()=>{[...seg.children].forEach(x=>x.classList.remove("on"));lab.classList.add("on")});
+   if(store["res_"+c.id]===v)lab.classList.add("on");
+   seg.appendChild(lab);bind(r);});
+ row.appendChild(seg);
+ if(c.prior){const ps=ce("span","fld");ps.innerHTML=`prior: <input type="text" data-k="prior_${c.id}" placeholder="đọc được">`;row.appendChild(ps);bind(ps.querySelector("input"));}
+ const ck=ce("label","chk");const cb=ce("input");cb.type="checkbox";cb.dataset.k="rv_"+c.id;ck.appendChild(cb);ck.appendChild(document.createTextNode(" restore verify OK"));row.appendChild(ck);bind(cb);
+ card.appendChild(row);
+ const ta=ce("textarea");ta.placeholder="ghi chú ca này (thấy gì / rc / bất thường)";ta.dataset.k="note_"+c.id;card.appendChild(ta);bind(ta);
+ wrap.appendChild(card);
+});
+
+function counts(){let p=0,f=0,b=0,n=0;CASES.forEach(c=>{const v=store["res_"+c.id];if(v==="PASS")p++;else if(v==="FAIL")f++;else if(v==="BLOCKED")b++;else n++;});
+ $("#cPass").textContent=p;$("#cFail").textContent=f;$("#cBlock").textContent=b;$("#cNone").textContent=n;}
+counts();
+
+function exportRes(){
+ let o=`HUD/CLUSTER FIELD TEST — báo cáo\n`;
+ o+=`Ngày: ${store.meta_when||"?"}   Xe: ${store.meta_serial||"?"}   Người: ${store.meta_who||"?"}\n`;
+ o+=`\n[PREFLIGHT]\n`;PRE.forEach(([id,name])=>{o+=`  ${name}: ${store["pre_"+id]||"-"}\n`;});
+ let g="";CASES.forEach(c=>{if(c.g!==g){g=c.g;o+=`\n[NHÓM ${g}]\n`;}
+  const r=store["res_"+c.id]||"—";const rv=store["rv_"+c.id]?"restore✓":"restore?";
+  const pr=c.prior?` prior=${store["prior_"+c.id]||"-"}`:"";const nt=store["note_"+c.id]?` — ${store["note_"+c.id]}`:"";
+  o+=`  ${r.padEnd(7)} ${c.id}${pr} [${rv}]${nt}\n`;});
+ o+=`\n[GHI CHÚ]\n${store.notes_final||"-"}\n`;
+ $("#out").textContent=o;$("#dlg").showModal();
+}
+function copyOut(){navigator.clipboard.writeText($("#out").textContent).then(()=>{},()=>{});}
+function resetAll(){if(confirm("Xoá hết kết quả đã điền?")){store={};save();location.reload();}}
+</script>
+</body></html>

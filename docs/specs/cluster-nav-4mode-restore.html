@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClusterNav — Khôi phục AMAP Nav-trên-cụm 4 mode (regression sau reboot) + candidate test</title>
+<style>
+  :root{--bg:#f5f5f7;--surface:#fff;--surface2:#fbfbfd;--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;
+    --accent:#0071e3;--ok:#1a7f37;--warn:#9a6700;--err:#b3261e;--ok-bg:#e6f4ea;--warn-bg:#fff4d6;--err-bg:#fce8e6;--accent-bg:#e8f2fe;
+    --radius:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+  @media (prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#161618;--ink:#f5f5f7;--ink2:#a1a1a6;--line:#38383c;
+    --accent:#2997ff;--ok:#30d158;--warn:#ffd60a;--err:#ff453a;--ok-bg:#0e2a16;--warn-bg:#332b00;--err-bg:#3a0f0c;--accent-bg:#0a2540;--shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);}}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 120px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-size:32px;line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--ink2);font-size:14px;margin-bottom:8px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--warn-bg);color:var(--warn)}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:18px;border-top:1px solid var(--line);font-weight:700}
+  h2 .n{color:var(--ink2);margin-right:10px}
+  h3{font-size:17px;margin:26px 0 6px;font-weight:650}
+  h4{font-size:14.5px;margin:16px 0 6px;font-weight:650}
+  p{margin:10px 0}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.9em;background:var(--surface2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  pre{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.5}
+  pre code{background:none;border:none;padding:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:650;color:var(--ink2);font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  .callout{border-radius:var(--radius);padding:14px 18px;margin:16px 0}
+  .callout .lbl{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .callout.ok{background:var(--ok-bg)}.callout.ok .lbl{color:var(--ok)}
+  .callout.warn{background:var(--warn-bg)}.callout.warn .lbl{color:var(--warn)}
+  .callout.err{background:var(--err-bg)}.callout.err .lbl{color:var(--err)}
+  .callout.accent{background:var(--accent-bg)}.callout.accent .lbl{color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:6px;border:1px solid var(--line);color:var(--ink2);margin-left:6px}
+  .tag.proven{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+  .tag.guess{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+  .tag.oncar{background:var(--accent-bg);color:var(--accent);border-color:transparent}
+  .diagram{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:16px 0;overflow:auto}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .fnode{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;min-width:120px;box-shadow:var(--shadow)}
+  .fnode .h{font-weight:650;margin-bottom:2px}.fnode .s{color:var(--ink2);font-size:12px}
+  .fnode.bad{border-color:var(--err);background:var(--err-bg)}.fnode.good{border-color:var(--ok);background:var(--ok-bg)}
+  .fnode.key{border-color:var(--accent);background:var(--accent-bg)}
+  .arrow{color:var(--ink2);font-size:18px}
+  .small{font-size:13px;color:var(--ink2)}
+  .toc{columns:2;font-size:14px;gap:24px}@media(max-width:600px){.toc{columns:1}}
+  .toc a{display:block;padding:3px 0;color:var(--ink)}
+  .mono{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="eyebrow">ClusterNav · Consolidated Spec</p>
+<h1>Khôi phục AMAP Nav-trên-cụm 4 mode (regression sau reboot) + candidate test 4 mode</h1>
+<div class="meta">
+  <span><b>Target:</b> 1.19 (versionCode 119) — dự kiến</span>
+  <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+  <span><b>Date:</b> 2026-08-14</span>
+  <span><b>Slug:</b> cluster-nav-4mode-restore</span>
+</div>
+<div class="meta"><span class="pill">STATUS: DRAFT — chờ owner approve + dữ liệu on-car (readback map). Chưa code app.</span></div>
+<div class="callout accent" style="margin-top:16px"><div class="lbl">Vì sao spec này</div>
+Owner báo: hôm 2026-08-13 cụm lên <b>"Đơn giản (Giữa + ETA)"</b> ngon từ 1.14; sau khi cài <b>1.17 + reboot</b> thì <b>mất</b>, và <b>menu OEM "Nav trên cụm"</b> (Đơn giản / Màn hình nhỏ / Toàn màn hình / OFF) cũng bị cắt/xám lại. Cần đào sâu cơ chế + <b>chuẩn bị candidate để test cả 4 mode</b> trên xe. Spec này là <b>kết quả điều tra đã verify</b> (RE + git + on-car doc) và <b>kế hoạch candidate</b>, KHÔNG assume giá trị chưa đo.</div>
+
+<div class="card"><b>Contents</b>
+  <nav class="toc" style="margin-top:8px">
+    <a href="#changelog">1 · Changelog</a><a href="#context">2 · Context</a><a href="#req">3 · Requirements</a>
+    <a href="#design">4 · Design (cơ chế + candidate)</a><a href="#tasks">5 · Tasks</a><a href="#verify">6 · Verification</a>
+    <a href="#open">7 · Open Questions</a><a href="#ref">8 · References</a><a href="#rev">9 · Reviewer Log</a>
+  </nav>
+</div>
+
+<h2 id="changelog"><span class="n">1</span>Changelog</h2>
+<table><thead><tr><th>Rev</th><th>Date</th><th>Change</th></tr></thead><tbody>
+<tr><td>v1</td><td>2026-08-14</td><td>Điều tra lại đầy đủ (đọc toàn bộ doc 13/8, source, RE firmware, git diff 1.14→1.17, web). Chốt root-cause = reboot-cleared OEM/MCU state (KHÔNG phải code). Tìm thêm id <code>0x4C10E040 EASY_NAVI</code> trong RE. Enhance probe. Soạn candidate matrix 4 mode. Chờ approve.</td></tr>
+</tbody></table>
+
+<h2 id="context"><span class="n">2</span>Context</h2>
+<table><tbody>
+<tr><td><b>Xe</b></td><td>BYD Seal · DiLink 3.0 · Android 10 (API 29) · KHÔNG root · parked-only test.</td></tr>
+<tr><td><b>Triệu chứng</b></td><td>Sau <b>1.17 + reboot</b>: (1) cụm mất <b>"Giữa + ETA"</b> (nav rớt về dải nhỏ ở đỉnh); (2) mất/xám <b>menu OEM "Nav trên cụm"</b> (Đơn giản/Nhỏ/Toàn/OFF).</td></tr>
+<tr><td><b>Đã đúng hôm 13/8</b></td><td>~10:19 mở khoá menu bằng <code>navopen</code> (ghi <code>0x4C10E015</code>). Cả ngày <b>không reboot</b> → 1.15/1.16/1.17 <b>đều thấy Giữa+ETA</b>. Tối reboot (test Gemini) → mất.</td></tr>
+</tbody></table>
+
+<div class="callout ok"><div class="lbl">Root cause — verified, KHÔNG phải regression code</div>
+<code>git diff 5589c8e(1.14) → 3cdac14(1.17)</code>: <code>modules/hal/BydHal.kt</code> = <b>0 thay đổi</b>, <code>NavRepository.kt</code> = <b>0 thay đổi</b>. <code>NavigationHudOwner.kt</code> chỉ đổi ở <b>1.15</b> (keep-alive heartbeat — re-assert <i>đúng</i> frame/mode cũ, không đụng logic unlock/value). 1.16 = làm tròn khoảng cách; 1.17 = voice-key Gemini. ⇒ Code 1.17 kích hoạt centre <b>y hệt</b> 1.14. Khác biệt duy nhất = <b>trạng thái thiết bị bị reboot xoá</b> (menu OEM khoá/xám lại; renderer cụm ngừng vẽ centre dù HAL vẫn nhận rc=0).</div>
+
+<h2 id="req"><span class="n">3</span>Requirements</h2>
+<ul>
+  <li><b>R1 — Discovery:</b> Trên xe, xác định <b>value↔menu map thật cho CẢ 4 mode</b> (Đơn giản/Màn hình nhỏ/Toàn màn hình/OFF) bằng <b>readback</b> (OEM tự khai số), hết đoán. Gồm id mới <code>0x4C10E040 EASY_NAVI</code>.</li>
+  <li><b>R2 — Unlock:</b> Tìm <b>chuỗi mở khoá</b> làm menu OEM hết xám sau reboot (đây là fix gốc của regression).</li>
+  <li><b>R3 — Render:</b> Sau khi mở khoá + set đúng value "Đơn giản", cụm phải lên <b>Giữa + ETA</b> ổn định khi GMaps đang dẫn (không phải 1-shot).</li>
+  <li><b>R4 — Persist:</b> App tự <b>re-assert</b> unlock + mode lúc <b>boot / bật Nav+HUD</b>, để reboot không làm mất nữa (giống fix self-grant accessibility 1.18).</li>
+  <li><b>R5 — 4-mode selector đúng:</b> Selector trong app map đúng 4 value đã đo (R1); mỗi mode render đúng layout; OFF tắt centre.</li>
+  <li><b>R6:</b> Off-car build xanh (JVM suite + signed <code>assembleRelease</code>, không surface <code>vehicleTest</code>).</li>
+</ul>
+
+<h2 id="design"><span class="n">4</span>Design</h2>
+
+<h3>4.1 Cơ chế thật (RE-proven)</h3>
+<p>Nguồn: <code>~/Library/Caches/clusternav-re/</code> — <code>com.example.amapservice/AmapService.java</code> (renderer, priv-app uid system) + <code>DiCarServer .../feature/setting/Setting.java</code> (id thật).</p>
+<div class="diagram">
+  <div class="flow">
+    <div class="fnode"><div class="h">GMaps nav</div><div class="s">notification</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">ClusterNav</div><div class="s">broadcast AUTONAVI_STANDARD_BROADCAST_SEND · IS_BYD_MAP=false</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode key"><div class="h">AmapService (OEM)</div><div class="s">mIsGAODENaving=true → vẽ nav lên cụm</div></div>
+    <div class="arrow">→</div>
+    <div class="fnode"><div class="h">Cụm (MCU/Qt)</div><div class="s">layout theo VALUE MENU đã persist</div></div>
+  </div>
+  <div class="flow" style="margin-top:12px">
+    <div class="fnode key"><div class="h">SET_NAVI_SCREEN_STATUS_SET<br>0x4C10E015</div><div class="s">chọn/ mở menu 4 mode (BYDAutoSettingDevice)</div></div>
+    <div class="arrow">⟶</div>
+    <div class="fnode bad"><div class="h">AmapService chỉ ghi 0x4C10E015 lúc<br>init / KILL / SHUTDOWN</div><div class="s">KHÔNG ghi lúc đang dẫn → ghi mid-nav bị bơ</div></div>
+  </div>
+</div>
+<ul>
+  <li><b>[RE:AmapService.onStartCommand]</b> chỉ <code>setNaviScreenStatus(0x4C10E015, 3)</code> khi <code>isServiceRestart</code>; và lúc <code>KILL_BydAutoMap</code>/<code>ACTION_SHUTDOWN</code> cũng ghi <b>=3</b>. Lúc đang dẫn chỉ ghi guide-info (status/icon/dist/road/eta). ⇒ <b>layout do value MENU đã persist ở firmware CỤM quyết định</b>, không phải do ghi lúc dẫn.</li>
+  <li><b>value 3</b> = mặc định/reset của AMAP (KHÔNG chắc = "Toàn màn hình"). Chỉ 3 là proven rc=0. <code>getraw</code> 015/01D/03A/040 = <code>-10011</code> (SET-only, không đọc value trực tiếp — readback qua menu-pick).</li>
+  <li><b>[doc]</b> "State reset (factory/OTA/wipe)" làm menu xám. <b>reboot = một state reset</b> ⇒ menu khoá lại.</li>
+</ul>
+
+<h3>4.2 Feature-id ứng viên (RE-found) <span class="tag proven">id verified</span></h3>
+<table><thead><tr><th>Tên (Setting.java)</th><th>id</th><th>Vai trò (giả thuyết)</th><th>Test?</th></tr></thead><tbody>
+<tr><td><code>SET_NAVI_SCREEN_STATUS_SET</code></td><td><code>0x4C10E015</code></td><td>Lever chính mở/chọn menu 4 mode</td><td><span class="tag proven">=3 proven</span></td></tr>
+<tr><td><code>SET_MAP_SENDING_STATUS_SET</code></td><td><code>0x4C10E01D</code></td><td>Bật gửi map xuống cụm (combo?)</td><td><span class="tag guess">combo chưa render</span></td></tr>
+<tr><td><code>SET_DYNAMIC_NAVI_FUNCTION_STATUS_SET</code></td><td><code>0x4C10E03A</code></td><td>Bật "nav động" trên cụm (combo?)</td><td><span class="tag guess">combo chưa render</span></td></tr>
+<tr><td><code>SETTING_EASY_NAVI_SIGNAL_MAP_TYPE</code></td><td><code>0x4C10E040</code></td><td><b>"EASY_NAVI" ≈ Đơn giản</b> — ứng viên mạnh, chưa từng test</td><td><span class="tag oncar">MỚI — test kỳ này</span></td></tr>
+<tr><td><code>SET_MULTIMEDIA_INFO_FUSION_SWITCH_SET</code></td><td><code>0x4C10E03E</code></td><td>Fusion đa phương tiện (ít khả năng)</td><td>—</td></tr>
+</tbody></table>
+<div class="callout warn"><div class="lbl">Không assume</div>4 mode có thể là <b>1 value của 0x4C10E015</b>, hoặc <b>tổ hợp</b> (015 + 01D + 03A + 040). Bắt buộc <b>readback trên xe</b> mới chốt — xem R1/§4.4.</div>
+
+<h3>4.3 Wiring hiện tại trong app (đã đọc source)</h3>
+<div class="diagram"><div class="flow">
+  <div class="fnode"><div class="h">MainActivity</div><div class="s">spinner_cluster_mode<br>values [SIMPLE 1, FULL 3, SMALL 2, OFF 0]</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode"><div class="h">Prefs</div><div class="s">navClusterScreenMode<br>default FULL=3</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode"><div class="h">NavRepository<br>.reapplyClusterMode</div><div class="s">→ hudOwner.reapply()</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode"><div class="h">NavigationHudOwner</div><div class="s">clear(status4) → push(status2 + mode)</div></div>
+  <div class="arrow">→</div>
+  <div class="fnode bad"><div class="h">BydHal.writeNavFrame</div><div class="s">CHỈ ghi 0x4C10E015 (+instrument ids). KHÔNG ghi 01D/03A/040</div></div>
+</div></div>
+<p class="small">Value map trong <code>Prefs</code> hiện là <b>GUESS</b>: OFF=0, SIMPLE=1, SMALL=2, FULL=3. <code>BydHal.NAV_SCREEN_MODE_ON=3</code>. Đây là chỗ sẽ sửa sau khi có R1.</p>
+
+<h3>4.4 Candidate matrix — test 4 mode <span class="tag oncar">on-car</span></h3>
+<p>Chia 2 lớp: <b>Discovery (không cần build APK)</b> trước, rồi <b>Fix build</b> sau khi có số.</p>
+
+<h4>Candidate A — Discovery probe (ưu tiên, chạy trước) <span class="tag proven">ready</span></h4>
+<p>Dùng <code>scripts/vehicle/nav-screen-mode-probe.sh</code> (đã enhance kỳ này: thêm <code>0x4C10E040 EASY_NAVI</code> vào readback + sweep). navopen sẵn ở <code>/data/local/tmp/navopen.jar</code> (uid shell — proven).</p>
+<pre><code># B1. TRƯỚC KHI ghi gì: boot sạch → mở Cài đặt "Nav trên cụm" → menu xám hay chọn được? (chụp)
+# B2. READBACK (OEM tự khai số cho 4 mode) — CHỈ chạy được khi menu ĐÃ hết xám:
+VEH=&lt;vehicle-ip&gt;:5555 MODE=readback bash scripts/vehicle/nav-screen-mode-probe.sh
+#   → tự tay chọn Đơn giản → Nhỏ → Toàn → OFF; script readback 015/01D/03A/040 mỗi lần
+#   → nav-mode-probe/value-map.txt  = R1
+# B3. SWEEP (đối chiếu, khi menu vẫn xám cũng chạy được): ghi 015=0..7, combo 015×01D, easy_navi=0..3
+VEH=&lt;vehicle-ip&gt;:5555 MODE=sweep bash scripts/vehicle/nav-screen-mode-probe.sh</code></pre>
+
+<h4>Candidate B — Unlock sequence (nếu menu vẫn xám) <span class="tag oncar">mò</span></h4>
+<p>Thứ tự thử (sau MỖI bước MỞ Cài đặt xem menu hết xám chưa — theo <code>oncar-handoff-2026-08-14.md §A1–A3</code>):</p>
+<ol>
+  <li><code>navopen</code> demo OPEN (status2 + screen3 + 1 frame).</li>
+  <li><b>Bơm broadcast "đang dẫn" TRƯỚC</b> (AUTONAVI KEY_TYPE 10001) rồi mới <code>setraw 015</code>.</li>
+  <li>Sweep <code>015 = 0..5</code> + combo <code>01D=1 &amp; 03A=1 &amp; 015=3</code> + <b>MỚI:</b> <code>040 (EASY_NAVI) = 0..3</code>.</li>
+</ol>
+<div class="callout accent"><div class="lbl">Giả thuyết mới kỳ này</div>Menu bị cắt có thể mở bằng <code>0x4C10E040 EASY_NAVI</code> (chưa từng thử) hoặc tổ hợp có 040 — vì tên "EASY_NAVI" khớp "Đơn giản". Ưu tiên test 040 trong Candidate B.</div>
+
+<h4>Candidate B2 — ICarHudService enable-API (RE-found kỳ này, ƯU TIÊN) <span class="tag oncar">mới</span></h4>
+<p><b>[RE:com.byd.car.feature.vision.ICarHudService]</b> — binder service (BYD Car SDK) có <b>API bật/tắt cấp cao</b> hơn HAL thô, và <b>ĐỌC được</b> (khác id HAL 0x4C10E015 SET-only trả −10011):</p>
+<table><thead><tr><th>Method</th><th>txn</th><th>Ý nghĩa</th></tr></thead><tbody>
+<tr><td><code>setNavigationMapEnabled(bool)</code></td><td>24</td><td><b>Ứng viên mở menu "Nav trên cụm"</b></td></tr>
+<tr><td><code>isNavigationMapEnabled()</code></td><td>23</td><td><b>ĐỌC</b> trạng thái → xác nhận reboot có tắt không</td></tr>
+<tr><td><code>setDynamicNavigationEnabled(bool)</code></td><td>20</td><td>↔ HAL <code>0x4C10E03A</code></td></tr>
+<tr><td><code>setNavigationFusionEnabled(bool)</code></td><td>22</td><td>fusion nav (combo?)</td></tr>
+<tr><td><code>getHudSupportedModes()</code>/<code>getHudMode()</code></td><td>2/13</td><td>enum mode (đối chiếu 4 mode)</td></tr>
+</tbody></table>
+<p>Vì sao mạnh hơn Candidate A/B: đây là <b>lớp "enable"</b> đúng ngữ nghĩa "menu bị cắt", và <code>isNavigationMapEnabled()</code> cho <b>readback thật</b> (cái mà HAL 015 không cho). Reboot nhiều khả năng lật cờ này về false → <code>setNavigationMapEnabled(true)</code> = fix gốc.</p>
+<pre><code># BƯỚC 0 on-car: service có trong servicemanager không?
+adb -s $VEH shell service list | grep -iE "hud|vision|byd"
+#  → nếu CÓ tên &lt;svc&gt;: đọc rồi bật (txn 23=đọc, 24=set true):
+adb -s $VEH shell service call &lt;svc&gt; 23        # isNavigationMapEnabled (đọc trước)
+adb -s $VEH shell service call &lt;svc&gt; 24 i32 1  # setNavigationMapEnabled(true) → mở menu?
+adb -s $VEH shell service call &lt;svc&gt; 20 i32 1  # setDynamicNavigationEnabled(true)
+#  → mở Cài đặt xem menu hết xám chưa; nếu chưa có trong servicemanager
+#    (SPI-bound, không phải binder tên) → cần build diagnostic gọi qua BYD Car SDK
+#    (Spi.getService(ICarHudService).setNavigationMapEnabled(true)) — xem Candidate C.
+</code></pre>
+<div class="callout warn"><div class="lbl">Chưa chắc</div>Descriptor = <code>com.byd.car.feature.vision.ICarHudService</code>; truy cập qua <code>Spi.getService</code> (SDK locator), <b>chưa chắc</b> nằm trong <code>servicemanager</code> để <code>service call</code> trực tiếp. Bước 0 (<code>service list</code>) quyết định: nếu không có → phải gọi qua SDK trong 1 diagnostic build (app-uid có thể cần OEM perm; fallback dadb loopback uid-shell).</div>
+
+<h4>Candidate C — Fix build (SAU khi có R1/R2) <span class="tag guess">chưa code, chờ số</span></h4>
+<table><thead><tr><th>#</th><th>Thay đổi</th><th>Điều kiện áp dụng</th></tr></thead><tbody>
+<tr><td>C-1</td><td><code>Prefs.NAV_SCREEN_{OFF,SIMPLE,SMALL,FULL}</code> = value THẬT từ <code>value-map.txt</code>; <code>BydHal.NAV_SCREEN_MODE_ON</code> = value "Đơn giản".</td><td>Luôn (sau R1).</td></tr>
+<tr><td>C-2</td><td><code>BydHal.writeNavFrame</code> ghi <b>tổ hợp</b> 015 (+01D +03A +040) theo bảng R1, thay vì chỉ 015.</td><td>Nếu R1 cho thấy mode là tổ hợp.</td></tr>
+<tr><td>C-3</td><td>Re-assert unlock+mode lúc <b>boot / bật Nav+HUD</b> (mirror pattern self-grant accessibility 1.18). Nếu chỉ uid-shell mở được → chạy chuỗi unlock qua <b>dadb loopback</b> (<code>SimpleCastRuntime…executeShell</code>).</td><td>R4 (persist qua reboot).</td></tr>
+</tbody></table>
+
+<h2 id="tasks"><span class="n">5</span>Tasks</h2>
+<table><thead><tr><th>#</th><th>Task</th><th>Khi</th><th>Trạng thái</th></tr></thead><tbody>
+<tr><td>T1</td><td>Enhance probe: thêm <code>0x4C10E040 EASY_NAVI</code> vào readback + sweep.</td><td>off-car</td><td><span class="tag proven">DONE (kỳ này)</span></td></tr>
+<tr><td>T2</td><td>On-car: chạy Candidate A/B → thu <code>value-map.txt</code> (R1) + chuỗi unlock (R2) + xác nhận render (R3).</td><td>on-car</td><td>TODO — chờ lên xe</td></tr>
+<tr><td>T3</td><td>Code Candidate C-1/C-2/C-3 theo số R1/R2 → bump 1.19 → build xanh.</td><td>off-car sau T2</td><td>chờ T2</td></tr>
+<tr><td>T4</td><td>On-car verify: 4 mode render đúng + reboot vẫn giữ (R4/R5).</td><td>on-car</td><td>chờ T3</td></tr>
+</tbody></table>
+
+<h2 id="verify"><span class="n">6</span>Verification</h2>
+<ul>
+  <li><b>Probe (T1):</b> <code>bash -n scripts/vehicle/nav-screen-mode-probe.sh</code> = <b>SYNTAX OK</b> (đã chạy); grep xác nhận <code>EN=4C10E040</code>, <code>easy_navi</code>, sweep <code>0x$EN=0..3</code> có mặt.</li>
+  <li><b>R1 pass:</b> <code>value-map.txt</code> có số cho cả 4 mode (015 [+01D +03A +040 nếu combo]).</li>
+  <li><b>R2 pass:</b> ghi lại chuỗi CHÍNH XÁC làm menu hết xám (không lặp lệnh doc đã ghi FAIL).</li>
+  <li><b>R3/R5 pass:</b> owner nhìn cụm — mỗi mode render đúng layout; Đơn giản = Giữa+ETA; OFF tắt centre.</li>
+  <li><b>R4 pass:</b> power-cycle nút nguồn vật lý → bật Nav+HUD → centre tự lên lại (không cần laptop).</li>
+  <li><b>R6 pass:</b> <code>./gradlew :core:test :app:testDebugUnitTest :app:assembleRelease</code> xanh + <code>aapt2</code> không có <code>TEST_*</code>.</li>
+</ul>
+<div class="callout warn"><div class="lbl">Ràng buộc bằng chứng</div>Reboot = <b>power-cycle nút nguồn vật lý</b> (không tính <code>adb reboot</code>). HỎI lại IP mỗi phiên. Mọi map value↔menu phải readback trên xe (no-assumptions.md).</div>
+
+<h2 id="open"><span class="n">7</span>Open Questions</h2>
+<ul>
+  <li><b>Q1:</b> Boot sạch → menu OEM mặc định xám hay chọn được? (dữ liệu quyết định C-3 có cần re-assert mỗi boot không.)</li>
+  <li><b>Q2:</b> Chuỗi mở khoá thật là gì? (015 đơn thuần đã FAIL post-reboot → nghi 040 EASY_NAVI hoặc broadcast-first hoặc tổ hợp.)</li>
+  <li><b>Q3:</b> Mode là 1 value hay tổ hợp? (quyết định C-2.)</li>
+  <li><b>Q4:</b> App-uid (BydPermissionBypassContext) có ghi render được không, hay chỉ uid-shell (navopen) → cần dadb loopback (C-3)?</li>
+  <li><b>Q5:</b> Menu re-select thủ công trong Cài đặt có persist qua reboot không (nếu có, C-3 chỉ cần nhắc user, không cần tự ghi)?</li>
+  <li><b>Q6 (mới):</b> <code>ICarHudService</code> có trong <code>servicemanager</code> (gọi <code>service call</code> được) hay chỉ SPI-bound (cần BYD Car SDK trong diagnostic build)? <code>isNavigationMapEnabled()</code> trước/sau reboot trả gì?</li>
+</ul>
+
+<h2 id="ref"><span class="n">8</span>References</h2>
+<ul class="small">
+  <li><b>Regression điều tra:</b> <code>docs/diagnostics/cluster-centre-nav-regression-2026-08-13.md</code>; handoff <code>docs/diagnostics/oncar-handoff-2026-08-14.md</code> (§A0/§A1-3/§B/§C/§D).</li>
+  <li><b>Cơ chế menu + AmapService:</b> <code>docs/diagnostics/oncar-2026-08-13-amap-cluster-menu-and-op39-rootcause.md</code>; <code>docs/diagnostics/oncar-sdk-findings-2026-08-13.md</code> (feature-id decimal→hex).</li>
+  <li><b>RE:</b> <code>~/Library/Caches/clusternav-re/diagnostic-amap/auto/sources/com/example/amapservice/AmapService.java</code>; <code>~/Library/Caches/clusternav-re/sysimg/jadx-DiCarServer/sources/com/byd/feature/setting/Setting.java</code> (0x4C10E015/01D/03A/<b>040</b>).</li>
+  <li><b>Source:</b> <code>modules/hal/BydHal.kt</code> (writeNavFrame, NAV_SCREEN_MODE_ON=3) · <code>NavigationHudOwner.kt</code> (reapply/OFF) · <code>NavRepository.kt</code> (reapplyClusterMode) · <code>Prefs.kt</code> (NAV_SCREEN_*) · <code>MainActivity.kt</code> (spinner_cluster_mode).</li>
+  <li><b>Git:</b> 1.14 <code>5589c8e</code> · 1.15 <code>a126d72</code> · 1.16 <code>f9c3b81</code> · 1.17 <code>3cdac14</code> · 1.18 <code>998b22b</code>.</li>
+  <li><b>Probe:</b> <code>scripts/vehicle/nav-screen-mode-probe.sh</code> (MODE=readback|sweep).</li>
+  <li><b>Web:</b> mỏng — chỉ BYD marketing + AMAP SDK docs, không có community doc về menu 4-mode DiLink → RE + on-car readback là nguồn chính.</li>
+</ul>
+
+<h2 id="rev"><span class="n">9</span>Reviewer Log</h2>
+<p class="small">Append-only; mỗi pass senior-review thêm một <code>Pass N — YYYY-MM-DD</code>. Chưa có (spec còn DRAFT, chưa code app).</p>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

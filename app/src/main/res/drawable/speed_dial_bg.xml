@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  speed_dial_bg — DESIGN SYSTEM (Cockpit L2) · the speed-limit dial look. Matches the mockup `.spd`
+  (docs/specs/ui-visual-upgrade-l2.html): a circle with a 3dp @color/accent_red ring over a ~8% red fill
+  (ARGB 0x14 ≈ 8% of 255). Provided as the shared "look" for a speed dial background; the Canvas
+  SpeedDialView paints its own ring but composes on this face when used as a View background. New drawable.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@color/speed_dial_fill" />
+    <stroke android:width="3dp" android:color="@color/accent_red" />
+</shape>

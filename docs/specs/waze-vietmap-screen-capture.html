@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screen-capture nav source — Waze arrow + VietMap camera (học OpenBYD)</title>
+<!--
+  Spec Kiro-style (consolidated). Slug: waze-vietmap-screen-capture.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  Diagram = HTML visual (inline SVG). CẤM mermaid/ascii. Status: CHỜ DUYỆT — KHÔNG implement.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:16px 0 6px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.tag.c1{background:#0071e3}.tag.c2{background:#5856d6}.tag.c3{background:#1a7f37}.tag.c4{background:#bf5f00}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Screen-capture nav source — Waze arrow + VietMap camera</h1>
+<p class="muted">Slug: <code>waze-vietmap-screen-capture</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · Backlog <b>B3</b> (B3.1–B3.4) · <span class="pill wait">Trạng thái: Chờ duyệt — KHÔNG implement</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,image-reading-subagent}.md</code>. Chỉ dùng Android SDK (<code>MediaProjection</code>/<code>ImageReader</code>/<code>VirtualDisplay</code>/<code>PixelCopy</code>) + khối đã có (<code>ManeuverSignature</code>, <code>PixelFrame</code>, dadb <code>fission_screencap</code>) → <b>không cần thư viện mới</b>. Context7 sẽ chỉ verify lại API MediaProjection/ImageReader lúc implement (§Design 4.7).</p>
+
+<h2>1. Changelog</h2>
+<p class="muted">Mỗi pass = 1 dòng, mới nhất trên cùng.</p>
+<ul>
+<li><b>Pass 2 — 2026-08-20</b>: Sửa 2 bug đọc nav-element (từ test emulator Waze+VietMap @960×720). <b>B3.5</b> — <code>CaptureBoundsHeuristic.pick()</code> hết chọn RÁC nhỏ (18×19/62×62): thêm lọc-cứng min-size (cạnh + diện tích abs/‰-region) + đảo "nhỏ nhất thắng" → chấm điểm tier+size-đỉnh+zone−aspect; thêm lọc gom min-size ở <code>NavAccessibilityService</code>. <b>B3.7</b> — overlay đa-app không còn cướp foreground: helper thuần <code>ForegroundWindowFilter</code> (window type + active/focused, degrade sang WINDOW_STATE_CHANGED/same-pkg keep-alive vì <code>flagRetrieveInteractiveWindows</code> tắt cho perf); gate <code>CaptureForegroundSource.publish</code>+bounds trong service. +16 test (0 fail); off-car xanh. Chi tiết §9.</li>
+<li><b>Pass 1 — 2026-08-19</b>: Triển khai lát cắt THUẦN <code>:core</code> (phần off-car-lockable, R-nf5): <code>CaptureRouter</code> (4 case + bounds 3 tầng + offset/clamp nửa), <code>VietMapCameraMatcher</code> (grid+NCC, no false-positive), <code>PixelFrameOps.crop</code>, tích hợp <code>SourceArbiter</code> data&gt;image (<code>NavChannel</code>). Gate <code>:core:test</code> xanh (594 tests, +34 mới). Chi tiết + lệch-spec ở §9. Phần <code>:app</code>/on-car (MediaProjection/VD/PixelCopy/dadb, OQ1-6) vẫn CHỜ.</li>
+<li><b>Pass 0 — 2026-08-19</b>: Khởi tạo spec B3 từ owner note (PROJECT-BACKLOG B3.1–B3.4). Học <code>OpenBYD/WazeArrowCaptureService</code> (MediaProjection + ImageReader + AUTO_MIRROR VirtualDisplay + PixelCopy + <code>processArrowPixels</code>). Thiết kế cho 4 case hiển thị + tận dụng đường dadb <code>fission_screencap</code> đã proven trong <code>SegmentShotCapturer</code>. <b>Chưa implement</b> — chờ owner duyệt.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Vấn đề THẬT (PO):</b> Waze và VietMap KHÔNG luôn phơi ra một <b>kênh dữ liệu</b> ổn định trên xe:</p>
+<ul>
+<li><b>Waze</b> — HLP/1 của WazeMod (<code>WazeHudSource</code>) chỉ phát khi có peer BT/BLE kết nối; single-device không tự loopback được (đã ghi rõ trong <code>WazeHudSource</code>). Notification của Waze nghèo (thường không có mã hướng rẽ số hoá). ⇒ Khi không có kênh data, <b>mũi tên rẽ chỉ tồn tại dưới dạng PIXEL trên màn hình</b>.</li>
+<li><b>VietMap</b> — widget (<code>VietMapWidgetBridge</code>/<code>ALERT_FULL</code>) phơi tốc độ + giới hạn + "sắp tới", nhưng <b>icon camera phạt nguội</b> mà VietMap vẽ trên bản đồ không chắc có trong widget/notification. ⇒ camera cũng có thể chỉ tồn tại dưới dạng PIXEL.</li>
+</ul>
+<p><b>Owner muốn (B3):</b> một <b>nguồn dẫn đường bằng screen-capture + xử lý ảnh</b> — chụp vùng màn hình nơi app dẫn đường vẽ mũi tên (Waze) / icon camera (VietMap), rồi phân loại bằng image-processing (tái dùng <code>ManeuverSignature</code> cho mũi tên; template-match cho camera). Đây đúng là cách <code>OpenBYD/WazeArrowCaptureService</code> làm.</p>
+
+<h3>2.1 Đã có sẵn trong codebase (đọc source)</h3>
+<table>
+<tr><th>Khối</th><th>File</th><th>Dùng cho B3</th></tr>
+<tr><td><code>ManeuverSignature</code> — chữ ký 225-bit + Hamming + NCC fallback → AMAP/HAL/Maneuver</td><td><code>core/…/navigation/ManeuverSignature.kt</code></td><td><b>Tái dùng NGUYÊN</b> để phân loại mũi tên Waze đã capture (chính là port của <code>wm0.b/d</code> = <code>processArrowPixels</code> của OpenBYD)</td></tr>
+<tr><td><code>PixelFrame</code> (interface, :core) + <code>BitmapPixelFrame</code> (:app)</td><td><code>core/…/navigation/PixelFrame.kt</code>, <code>app/…/BitmapPixelFrame.kt</code></td><td>Input cho <code>ManeuverSignature</code> — bọc <code>Bitmap</code> capture thành <code>PixelFrame</code></td></tr>
+<tr><td>dadb <code>fission_screencap -d</code> / <code>screencap -d</code> (chụp cả cụm + màn chính, KHÔNG cần MediaProjection consent)</td><td><code>app/…/SegmentShotCapturer.kt</code></td><td>Đường capture <b>thay thế</b> in-process MediaProjection (đã proven on-car 2026-08-17)</td></tr>
+<tr><td><code>SourceArbiter</code> (PREFER_WAZE/VIETMAP, STALE 6s)</td><td><code>core/…/navigation/SourceArbiter.kt</code></td><td>Chỗ nguồn screen-capture "cắm" vào — cùng trọng tài với GMaps/Waze/VietMap hiện có</td></tr>
+<tr><td><code>NavAccessibilityService</code>/<code>NavAccessibilitySource</code> (đọc node a11y, bounds màn)</td><td><code>app/…/modules/navaccess/…</code></td><td>Nguồn <b>bounds động</b> (thay cho fixed rect) — đọc <code>getBoundsInScreen</code> của node mũi tên/camera</td></tr>
+<tr><td><code>Maneuver.toHudIcon()</code> (CAN) / <code>toAmapIcon()</code> (làn cụm), <code>NavLog.verbose</code></td><td><code>core/…/navigation/Maneuver.kt</code>, <code>app/…/NavLog.kt</code></td><td>Đầu ra + gate verbose (mặc định OFF)</td></tr>
+</table>
+
+<h3>2.2 OpenBYD làm gì (nguồn học — đọc decompiled)</h3>
+<p><code>com.sr.openbyd.services.WazeArrowCaptureService</code> + <code>WazeManager</code>:</p>
+<ul>
+<li><b>Consent 1 lần</b>: <code>CaptureRequestActivity</code> xin <code>MediaProjection</code>; kết quả (resultCode + data Intent) cất trong <code>MediaProjectionHolder</code>; service start với token đó.</li>
+<li><b>Lifecycle</b>: <code>onStartCommand</code> → <code>startForeground(type=mediaProjection)</code> (SDK 34+), tạo <code>ImageReader.newInstance(w,h,PixelFormat.RGBA_8888,2)</code>, tạo <code>VirtualDisplay</code> cờ <code>16</code> (<code>VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR</code>) mirror màn chính vào surface của ImageReader; vòng lặp coroutine gọi <code>captureArrow</code>; <code>registerCallback.onStop → stopSelf</code>. <code>onDestroy</code> release VD/ImageReader/MediaProjection.</li>
+<li><b>Định tuyến/frame</b> (<code>captureArrow</code>): (a) gate <code>WazeManager.isNavigationActive()</code> — không dẫn thì drain image + return; (b) nếu Waze đang chiếu lên cụm (có <code>getProjectedSurfaceView()</code> &amp; package==Waze) → <b>release VD mirror</b> rồi <code>PixelCopy</code> từ SurfaceView; (c) ngược lại → (tái)tạo VD mirror, <code>acquireLatestImage</code>, đọc pixel từ buffer.</li>
+<li><b>Bounds</b>: <code>getArrowBounds()</code> mặc định <b>fixed</b> <code>Rect(26,218,208,298)</code>; <code>getLaneContainerBounds()</code> nullable — set từ ngoài (a11y). Có lane-container → segment các làn theo độ lệch màu nền, chọn làn active (diff max), crop; không có → dùng arrow bounds đơn.</li>
+<li><b>Xử lý ảnh</b>: <code>processArrowPixels(ctx,px,w,h)</code> → <code>wm0.b(w,h,px,0.8f,true)</code> (chữ ký) → <code>wm0.d</code> (khớp) → <code>mm1.a(name)</code> (mã HUD). <b>= chính xác <code>ManeuverSignature</code> của ta.</b></li>
+<li><b>Perf/degrade</b>: cache <code>rowBytes/pixelInts/croppedPixelInts/diffsFloat/bitmap</code>; guard <code>isPixelCopyInProgress</code> + <code>isProcessing(AtomicBoolean)</code>; mỗi capture bọc try/catch — lỗi capture không đụng nav.</li>
+</ul>
+
+<div class="card"><b>Cổng / phụ thuộc:</b> B3 là feature <b>on-car-heavy</b>. Off-car chỉ khoá được: (1) logic phân loại (<code>ManeuverSignature</code> + <code>VietMapCameraMatcher</code>) bằng unit test trên fixture PNG; (2) logic chọn case + tính bounds (hàm thuần :core). Mọi thứ chạm <code>MediaProjection</code>/<code>VirtualDisplay</code>/<code>PixelCopy</code>/display-id thật <b>phải verify trên xe</b> — theo <code>trace-den-tan-cung.md</code>, các Open Question dưới đây (§7) phải có bằng chứng on-car trước khi đóng, KHÔNG kết luận "không làm được" khi chưa diff môi trường (OpenBYD chạy được ⇒ có đường chạy được).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Nguồn Waze arrow bằng ảnh.</b> Khi Waze đang dẫn và không có kênh data (HLP/1 im), capture vùng mũi tên → <code>ManeuverSignature.classifyManeuver()/classifyHal()</code> → <code>Maneuver</code> → cấp cho làn cụm (AMAP) + HUD (CAN). Acceptance: trên fixture 18/18 glyph Waze, phân loại đúng như test <code>ManeuverSignatureTest</code> hiện có.</li>
+<li><b>R2 — Nguồn camera VietMap bằng ảnh.</b> Khi VietMap đang dẫn và icon camera không có trong widget/data, capture vùng camera → <b>template-match</b> với bộ template icon camera VietMap → phát tín hiệu "có camera + (nếu đọc được) tốc độ/cự ly". Acceptance: template-match ≥ ngưỡng trên fixture icon thật → nhận đúng; nền không camera → không false-positive.</li>
+<li><b>R3 — 4 CASE hiển thị (owner).</b> Nguồn phải hoạt động ở cả 4 vị trí app dẫn đường có thể ở (chi tiết §4.3). Với mỗi frame: (1) <b>detect</b> app đang ở đâu, (2) lấy <b>bounds</b> vùng mũi tên/camera trong không gian ảnh đúng, (3) chọn <b>capture path</b> tương ứng.</li>
+<li><b>R4 — Consent MediaProjection 1 lần.</b> Nếu dùng đường MediaProjection: xin consent 1 lần, cache token (kiểu <code>MediaProjectionHolder</code>), tự phục hồi qua <code>registerCallback.onStop</code>. Nếu auto-grant qua dadb khả thi (OQ1) thì không cần dialog.</li>
+<li><b>R5 — isNavigationActive gate.</b> Chỉ capture khi (a) master Nav+HUD ON, VÀ (b) có nguồn dẫn đang active/tươi (<code>SourceArbiter.isFresh</code> hoặc <code>NavAccessibilitySource.foreground</code>). Không dẫn → drain + skip, KHÔNG tạo VD, KHÔNG classify (đúng như OpenBYD).</li>
+<li><b>R6 — Cắm vào arbiter chung.</b> Nguồn screen-capture đi qua <code>SourceArbiter</code> (như GMaps/Waze/VietMap), không tự ý ghi đè khi nguồn data ưu tiên còn tươi. Data-channel (HLP/1, widget) khi CÓ luôn thắng ảnh (ảnh là fallback).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 — degrade-safe.</b> Mọi capture/classify bọc <code>runCatching</code>; lỗi capture/thiếu quyền/thiếu VD → chỉ bỏ frame, KHÔNG crash, KHÔNG đụng feed cụm đang chạy (đúng envelope <code>SegmentShotCapturer</code>).</li>
+<li><b>R-nf2 — off main thread.</b> Vòng capture + classify chạy trên executor/coroutine riêng (single-thread daemon), không chặn thread notification/main. Guard single-in-flight (<code>isPixelCopyInProgress</code> + <code>isProcessing</code>).</li>
+<li><b>R-nf3 — perf/nhịp.</b> Nhịp capture ≤ ~2–4 Hz, <code>acquireLatestImage</code> (bỏ frame cũ), tái dùng buffer/bitmap cache. Ngân sách CPU không làm giật nav.</li>
+<li><b>R-nf4 — verbose gate + storage.</b> Lưu ảnh chẩn đoán CHỈ khi <code>NavLog.verbose</code> ON (mặc định OFF); tôn trọng storage cap &lt;150 MB (A8). Runtime classify không cần lưu ảnh.</li>
+<li><b>R-nf5 — :core thuần.</b> Quyết định chọn-case + tính bounds + classify là hàm thuần ở <code>:core</code> (unit-test off-car). Phần Android (MediaProjection/VD/PixelCopy/shell) mỏng ở <code>:app</code>.</li>
+<li><b>R-nf6 — không bề mặt test export.</b> Không thêm activity/receiver export nào (giữ release APK sạch như README yêu cầu). CaptureRequest (nếu có) không export.</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện song song với code. Diagram = HTML visual (inline SVG).</p>
+
+<h3>4.1 Kiến trúc pipeline</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="11">
+<style>.b{fill:var(--card);stroke:var(--line)}.bn{fill:rgba(0,113,227,.14);stroke:var(--accent)}.t{fill:var(--fg)}.m{fill:var(--muted)}.a{stroke:var(--accent);stroke-width:1.4;fill:none;marker-end:url(#ar)}</style>
+<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
+
+<rect class="bn" x="8" y="24" width="176" height="86" rx="10"/>
+<text class="t" x="96" y="44" text-anchor="middle" font-weight="700">Capture transport</text>
+<text class="m" x="96" y="62" text-anchor="middle">A) MediaProjection +</text>
+<text class="m" x="96" y="76" text-anchor="middle">ImageReader/VD mirror</text>
+<text class="m" x="96" y="93" text-anchor="middle">B) dadb fission_screencap</text>
+
+<rect class="bn" x="8" y="150" width="176" height="70" rx="10"/>
+<text class="t" x="96" y="172" text-anchor="middle" font-weight="700">CaptureRouter (:core)</text>
+<text class="m" x="96" y="190" text-anchor="middle">chọn 1/4 case +</text>
+<text class="m" x="96" y="205" text-anchor="middle">tính crop bounds</text>
+
+<rect class="b" x="228" y="86" width="150" height="64" rx="10"/>
+<text class="t" x="303" y="108" text-anchor="middle">Bitmap → PixelFrame</text>
+<text class="m" x="303" y="126" text-anchor="middle">BitmapPixelFrame</text>
+<text class="m" x="303" y="140" text-anchor="middle">(crop vùng arrow/cam)</text>
+
+<rect class="b" x="422" y="30" width="176" height="64" rx="10"/>
+<text class="t" x="510" y="52" text-anchor="middle">ManeuverSignature</text>
+<text class="m" x="510" y="70" text-anchor="middle">arrow → Maneuver</text>
+<text class="m" x="510" y="84" text-anchor="middle">(reuse, :core)</text>
+
+<rect class="bn" x="422" y="142" width="176" height="64" rx="10"/>
+<text class="t" x="510" y="164" text-anchor="middle">VietMapCameraMatcher</text>
+<text class="m" x="510" y="182" text-anchor="middle">template-match icon</text>
+<text class="m" x="510" y="196" text-anchor="middle">(mới, :core)</text>
+
+<rect class="b" x="648" y="86" width="150" height="64" rx="10"/>
+<text class="t" x="723" y="104" text-anchor="middle">SourceArbiter</text>
+<text class="m" x="723" y="122" text-anchor="middle">PREFER_WAZE/</text>
+<text class="m" x="723" y="136" text-anchor="middle">VIETMAP · data&gt;ảnh</text>
+
+<rect class="b" x="648" y="196" width="150" height="72" rx="10"/>
+<text class="t" x="723" y="218" text-anchor="middle">Đầu ra</text>
+<text class="m" x="723" y="236" text-anchor="middle">Làn cụm (AMAP)</text>
+<text class="m" x="723" y="250" text-anchor="middle">HUD (CAN) ·</text>
+<text class="m" x="723" y="264" text-anchor="middle">badge camera</text>
+
+<line class="a" x1="184" y1="67" x2="226" y2="100"/>
+<line class="a" x1="184" y1="185" x2="226" y2="128"/>
+<line class="a" x1="378" y1="110" x2="420" y2="70"/>
+<line class="a" x1="378" y1="120" x2="420" y2="168"/>
+<line class="a" x1="598" y1="62" x2="646" y2="104"/>
+<line class="a" x1="598" y1="174" x2="646" y2="128"/>
+<line class="a" x1="723" y1="150" x2="723" y2="194"/>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+</div>
+
+<h3>4.2 isNavigationActive gate + vòng đời (học OpenBYD)</h3>
+<p>Cổng chạy trước MỌI capture (R5). Ánh xạ khái niệm OpenBYD → khối của ta:</p>
+<table>
+<tr><th>OpenBYD</th><th>Của ta</th></tr>
+<tr><td><code>WazeManager.isNavigationActive</code> (set bởi <code>updateNavigationTexts</code>, hết hạn 40 s)</td><td>master Nav+HUD ON <b>&amp;&amp;</b> <code>SourceArbiter.isFresh(now)</code> (STALE 6 s) — hoặc <code>NavAccessibilitySource.foreground(now)</code> cho app foreground</td></tr>
+<tr><td>Start/stop <code>WazeArrowCaptureService</code> theo nav</td><td>Nguồn screen-capture start khi gate mở, stop khi gate đóng (idle) — vòng đời gắn với NavigationSessionCoordinator hiện có</td></tr>
+<tr><td><code>MediaProjectionHolder</code> giữ token</td><td>Nếu đi đường A: holder tương tự; nếu đường B (dadb): không cần token</td></tr>
+</table>
+
+<h3>4.3 <span class="tag c1">CASE 1</span><span class="tag c2">CASE 2</span><span class="tag c3">CASE 3</span><span class="tag c4">CASE 4</span> — 4 case hiển thị</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="11">
+<style>.b{fill:var(--card);stroke:var(--line)}.g{fill:var(--fg)}.m{fill:var(--muted)}.a{stroke:var(--accent);stroke-width:1.3;fill:none;marker-end:url(#a2)}
+.c1{fill:rgba(0,113,227,.16);stroke:#0071e3}.c2{fill:rgba(88,86,214,.16);stroke:#5856d6}.c3{fill:rgba(26,127,55,.16);stroke:#1a7f37}.c4{fill:rgba(191,95,0,.16);stroke:#bf5f00}</style>
+<defs><marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
+
+<rect class="b" x="330" y="12" width="200" height="52" rx="10"/>
+<text class="g" x="430" y="33" text-anchor="middle" font-weight="700">Gate mở (đang dẫn)</text>
+<text class="m" x="430" y="50" text-anchor="middle">App dẫn đường đang ở đâu?</text>
+
+<rect class="c1" x="14" y="120" width="188" height="96" rx="10"/>
+<text class="g" x="108" y="140" text-anchor="middle" font-weight="700">CASE 1 · full màn chính</text>
+<text class="m" x="108" y="158" text-anchor="middle">detect: task fullscreen</text>
+<text class="m" x="108" y="172" text-anchor="middle">display 0</text>
+<text class="m" x="108" y="188" text-anchor="middle">capture: mirror D0</text>
+<text class="m" x="108" y="202" text-anchor="middle">crop: bounds toàn màn</text>
+
+<rect class="c2" x="220" y="120" width="188" height="96" rx="10"/>
+<text class="g" x="314" y="140" text-anchor="middle" font-weight="700">CASE 2 · 1/2 màn chính</text>
+<text class="m" x="314" y="158" text-anchor="middle">detect: split L/R,</text>
+<text class="m" x="314" y="172" text-anchor="middle">slotSide + leftPercent</text>
+<text class="m" x="314" y="188" text-anchor="middle">capture: mirror D0</text>
+<text class="m" x="314" y="202" text-anchor="middle">crop: offset đúng nửa</text>
+
+<rect class="c3" x="426" y="120" width="200" height="96" rx="10"/>
+<text class="g" x="526" y="140" text-anchor="middle" font-weight="700">CASE 3 · bên cụm (cast)</text>
+<text class="m" x="526" y="158" text-anchor="middle">detect: pkg trên display 1</text>
+<text class="m" x="526" y="172" text-anchor="middle">capture: cụm (D1)</text>
+<text class="m" x="526" y="188" text-anchor="middle">fission_screencap -d 0</text>
+<text class="m" x="526" y="202" text-anchor="middle">·/· PixelCopy nếu có SV</text>
+
+<rect class="c4" x="644" y="120" width="200" height="96" rx="10"/>
+<text class="g" x="744" y="140" text-anchor="middle" font-weight="700">CASE 4 · không active</text>
+<text class="m" x="744" y="158" text-anchor="middle">detect: nav tươi nhưng</text>
+<text class="m" x="744" y="172" text-anchor="middle">app không foreground</text>
+<text class="m" x="744" y="188" text-anchor="middle">capture: VD offscreen</text>
+<text class="m" x="744" y="202" text-anchor="middle">app render → ImageReader</text>
+
+<rect class="b" x="330" y="268" width="200" height="58" rx="10"/>
+<text class="g" x="430" y="290" text-anchor="middle" font-weight="700">PixelFrame → classify</text>
+<text class="m" x="430" y="308" text-anchor="middle">ManeuverSignature / CameraMatcher</text>
+
+<line class="a" x1="360" y1="64" x2="130" y2="118"/>
+<line class="a" x1="400" y1="64" x2="312" y2="118"/>
+<line class="a" x1="460" y1="64" x2="520" y2="118"/>
+<line class="a" x1="500" y1="64" x2="740" y2="118"/>
+<line class="a" x1="108" y1="216" x2="360" y2="270"/>
+<line class="a" x1="314" y1="216" x2="400" y2="268"/>
+<line class="a" x1="526" y1="216" x2="460" y2="268"/>
+<line class="a" x1="744" y1="216" x2="500" y2="270"/>
+</svg>
+</div>
+
+<h4><span class="tag c1">CASE 1</span> App dẫn full màn chính</h4>
+<ul>
+<li><b>Detect:</b> package dẫn (theo <code>SourceArbiter.activeSource</code>) có task fullscreen trên <b>display 0</b> (Android main). Xác nhận qua <code>am stack list</code>/<code>dumpsys window</code> (như <code>AppMover.isWindowedOnMain</code> đọc bounds) hoặc a11y window.</li>
+<li><b>Bounds:</b> vùng mũi tên/camera trong không gian <b>toàn màn chính</b> — ưu tiên a11y (<code>getBoundsInScreen</code> node mũi tên/camera); fallback fixed rect đã hiệu chỉnh theo (app, độ phân giải D0) — kiểu <code>getArrowBounds()</code> của OpenBYD.</li>
+<li><b>Capture path:</b> đường A = AUTO_MIRROR VirtualDisplay của display 0 → ImageReader → <code>acquireLatestImage</code> → crop bounds. Đường B = <code>fission_screencap -d 1</code> (fission -d 1 = MAIN, đã proven) → decode PNG → crop.</li>
+</ul>
+
+<h4><span class="tag c2">CASE 2</span> App dẫn 1/2 màn chính (split trái/phải)</h4>
+<ul>
+<li><b>Detect:</b> task ở <b>freeform/split</b> trên display 0, chiếm nửa trái HOẶC phải. Ta đã có mô hình <code>ClusterSlotSide.LEFT/RIGHT</code> + <code>leftPercent</code> trong <code>AppMover.fitToCluster</code> — cùng khái niệm áp cho màn chính. Đọc bounds task từ <code>am stack list</code>.</li>
+<li><b>Bounds:</b> giống Case 1 NHƯNG <b>offset theo nửa</b>: nếu app ở nửa phải → cộng <code>displayWidth×leftPercent/100</code> vào <code>rect.left/right</code>; a11y <code>getBoundsInScreen</code> đã ở toạ độ màn tuyệt đối nên tự đúng, chỉ cần clamp vào nửa của app (loại nhiễu từ app kia ở nửa còn lại).</li>
+<li><b>Capture path:</b> vẫn mirror D0 / <code>fission_screencap -d 1</code> (chụp cả màn), rồi crop đúng nửa. Không cần capture riêng từng nửa.</li>
+</ul>
+
+<h4><span class="tag c3">CASE 3</span> App dẫn bên cụm (đã cast)</h4>
+<div class="card">
+<b>⚠ Delta kiến trúc (trace-den-tan-cung — KHÔNG bỏ qua):</b> owner mô tả "PixelCopy từ SurfaceView cast" theo cách <b>OpenBYD</b> — nơi app cast render vào <b>SurfaceView do OpenBYD sở hữu</b> trong overlay FrameLayout (<code>ClusterOverlayManager.getProjectedSurfaceView()</code>), nên <code>PixelCopy.request(surfaceView,…)</code> đọc được. <b>Cast của DỰ ÁN TA KHÁC:</b> ta <b>move-stack / fresh-launch freeform</b> app THẬT lên OEM VirtualDisplay của cụm (qua AutoContainer profiles 30/16/35 — xem <code>ProjectionManager</code> + <code>AppMover</code>), <b>KHÔNG có SurfaceView do app ta sở hữu</b>. ⇒ <code>PixelCopy.request(SurfaceView)</code> nguyên bản KHÔNG áp dụng trực tiếp cho cast hiện tại.
+</div>
+<ul>
+<li><b>Detect:</b> package dẫn có task trên <b>display 1</b> (cụm) — đọc <code>am stack list</code> theo <code>displayId=1</code> (như <code>AppMover.findTaskIdOnDisplay</code>), hoặc trạng thái cast từ <code>SimpleCastCoordinator</code>.</li>
+<li><b>Bounds:</b> vùng mũi tên/camera trong không gian <b>cụm</b>. a11y trên cụm không đảm bảo (window trên display phụ) → nghiêng về fixed rect hiệu chỉnh theo geometry cụm (1920×720 / 1920×800 SL6), có tính <code>leftPercent</code> nếu split-cast.</li>
+<li><b>Capture path (đề xuất chốt cho kiến trúc HIỆN TẠI):</b> chụp <b>display cụm</b> trực tiếp — <code>fission_screencap -d 0</code> (fission -d 0 = CLUSTER, proven) HOẶC <code>screencap -d 1</code> (Android cast/overlay layer, proven bắt được lớp overlay) → decode → crop. Đây là đường đã chạy on-car trong <code>SegmentShotCapturer</code>.</li>
+<li><b>Đường PixelCopy-SurfaceView (parity OpenBYD) — CHỈ khi có SurfaceView do app sở hữu:</b> nếu tương lai áp cast kiểu <b>DashCast Path B</b> (daemon app_process uid-2000 tự <code>createVirtualDisplay</code> backed bởi SurfaceView overlay type=2006 — xem <code>docs/reference/dashcast-projection-recipe.md</code>), thì lúc đó <code>PixelCopy.request(thatSurfaceView, bounds, bitmap, listener, handler)</code> mới đúng nguyên bản OpenBYD. Điều kiện mở khoá: có Path B + (có thể) ký platform. Ghi lại làm nhánh tương lai, không phải scope B3 vòng này.</li>
+</ul>
+
+<h4><span class="tag c4">CASE 4</span> App không active ở đâu (nav tươi nhưng không foreground)</h4>
+<ul>
+<li><b>Detect:</b> <code>SourceArbiter</code> báo nguồn còn tươi (nav đang chạy nền) nhưng app dẫn KHÔNG foreground trên D0 và KHÔNG trên cụm → không có pixel nào để chụp từ màn thật.</li>
+<li><b>Bounds:</b> theo geometry của VirtualDisplay offscreen ta tạo (ta tự chọn kích thước → bounds cố định trong không gian VD đó).</li>
+<li><b>Capture path (học OpenBYD mirroring VD, nhưng đảo mục tiêu):</b> tạo một <b>VirtualDisplay offscreen</b> (surface = ImageReader) rồi <b>đưa app dẫn render vào VD đó</b> để capture — hai biến thể:
+  <ul>
+  <li><b>4a (mirror):</b> nếu app vẫn có window sống ở đâu đó, dùng <code>AUTO_MIRROR</code> VD của display chứa nó (giống OpenBYD mirror D0) → crop. Đơn giản nhất, nhưng cần app có window.</li>
+  <li><b>4b (offscreen render):</b> <code>am start --display &lt;vdId&gt; --windowingMode 5</code> đưa app dẫn vào VD offscreen (không hiện lên màn nào tài xế thấy) → ImageReader đọc → classify. Đây là "chỗ để app vẫn render mà capture" owner nói. <b>Rủi ro:</b> app dẫn có thể chỉ chạy 1 instance / không thích render 2 nơi; cần verify từng app (Waze/VietMap) trên xe.</li>
+  </ul>
+</li>
+<li><b>Ghi chú thực tế:</b> Case 4 là <b>khó nhất</b> (B3.4). Nếu 4b bất khả thi với một app cụ thể → theo trace-den-tan-cung, ghi bằng chứng (app từ chối render vào VD phụ / SecurityException) + điều kiện mở khoá, KHÔNG âm thầm bỏ. Fallback an toàn: khi không capture được ở Case 4, nguồn ảnh <b>im lặng</b> (degrade), nhường cho data-channel/nguồn khác.</li>
+</ul>
+
+<h3>4.4 Crop bounds — làm sao biết vùng mũi tên/camera</h3>
+<p>Ba tầng, ưu tiên từ trên xuống (mirror cách OpenBYD dùng <code>arrowBounds</code> fixed + <code>laneContainerBounds</code> set-từ-a11y):</p>
+<ol>
+<li><b>a11y động (ưu tiên):</b> <code>NavAccessibilityService</code> đọc node mũi tên/lệnh-kế/camera → <code>getBoundsInScreen(Rect)</code> → publish vào một <code>CaptureBounds</code> (kiểu <code>NavAccessibilitySource</code>). Tươi trong FRESH_MS thì dùng. Ưu điểm: tự thích ứng layout/độ phân giải.</li>
+<li><b>Fixed calibrated fallback:</b> bảng rect theo (app, display, geometry) — ví dụ Waze arrow ở góc dưới-trái vùng chỉ đường. Đây đúng là <code>getArrowBounds()=Rect(26,218,208,298)</code> của OpenBYD (giá trị của họ cho geometry của họ; ta phải tự hiệu chỉnh trên xe). Lưu trong <code>Prefs</code>/hằng số :core.</li>
+<li><b>Lane-container segmentation (nâng cao, như OpenBYD):</b> nếu có vùng "lane guidance" rộng, segment các dải làn theo độ lệch màu nền, chọn làn active (diff max) rồi crop — port <code>segmentLaneGuidanceView</code>/<code>findActiveLane</code>. Để pha sau (không bắt buộc vòng B3 đầu).</li>
+</ol>
+
+<h3>4.5 Xử lý ảnh</h3>
+<ul>
+<li><b>Waze arrow → <code>ManeuverSignature</code> (tái dùng nguyên):</b> crop bitmap → <code>BitmapPixelFrame</code> → <code>classifyManeuver()</code> (vòng xuyến có hướng) / <code>classifyHal()</code> (CAN) / <code>classify()</code> (AMAP làn cụm). Đây CHÍNH là <code>processArrowPixels</code> của OpenBYD (cùng <code>wm0.b/d</code>). Không viết lại thuật toán.</li>
+<li><b>VietMap camera → <code>VietMapCameraMatcher</code> (mới, :core):</b> template-match vùng crop với bộ template icon camera VietMap. Kỹ thuật đề xuất: chuẩn hoá về lưới nhỏ (như signature 15×15) rồi NCC/khoảng-cách như <code>matchNCC</code>/<code>match</code> của <code>ManeuverSignature</code> — hoặc so histogram màu đặc trưng (icon camera VietMap có màu/hình khá đặc trưng). Trả: <code>hasCamera:Boolean</code> + (nếu OCR/known-template) tốc độ + cự ly. Ngưỡng chống false-positive.</li>
+<li><b>Fixture off-car:</b> PNG mẫu (arrow Waze 18 glyph đã có trong <code>ManeuverRegistry</code>/test; camera VietMap cần thu thập template — OQ4). Unit-test khoá phân loại độc lập Android (dùng <code>ArrayPixelFrame</code>).</li>
+</ul>
+
+<h3>4.6 Capture transport — 2 đường, đánh giá</h3>
+<table>
+<tr><th>Tiêu chí</th><th>A) MediaProjection + VD + PixelCopy (như OpenBYD)</th><th>B) dadb <code>fission_screencap</code>/<code>screencap</code> (đã có)</th></tr>
+<tr><td>Consent</td><td>Cần dialog user 1 lần (hoặc auto-grant qua dadb — OQ1)</td><td><b>Không dialog</b> — đã chạy qua dadb loopback (proven)</td></tr>
+<tr><td>Case 3 (cụm)</td><td>PixelCopy chỉ đúng khi có SurfaceView app-owned (ta chưa có)</td><td><code>fission_screencap -d 0</code> chụp thẳng cụm (proven)</td></tr>
+<tr><td>Case 4 (offscreen)</td><td>Hợp — tạo VD offscreen + ImageReader (đúng bài OpenBYD)</td><td>Khó — screencap chụp display có thật, không chụp VD offscreen tuỳ ý</td></tr>
+<tr><td>Nhịp/độ trễ</td><td>Cao (in-process, ImageReader liên tục)</td><td>Thấp hơn (mỗi shot = 1 round-trip shell + encode PNG)</td></tr>
+<tr><td>Rủi ro</td><td>Consent lifecycle, giữ VD, xung đột mirror khi cast</td><td>Phụ thuộc dadb shell sống + quyền screencap</td></tr>
+</table>
+<p><b>Quyết định đề xuất (chờ owner/OQ):</b> <b>hybrid</b> — Case 1/2 dùng A hoặc B đều được (B rẻ để bắt đầu); <b>Case 3 dùng B</b> (<code>fission_screencap -d 0</code>) vì ta không có SurfaceView; <b>Case 4 dùng A</b> (VD offscreen + ImageReader) vì đó là cách duy nhất "app render mà không chiếm màn". Chốt cuối phụ thuộc OQ1 (auto-grant MediaProjection qua dadb) + đo perf on-car.</p>
+
+<h3>4.7 Context7 (verify lúc implement)</h3>
+<ul>
+<li>Android <code>MediaProjection</code>/<code>MediaProjectionManager</code>/<code>VirtualDisplay</code>/<code>ImageReader</code>/<code>PixelCopy</code> — verify API hiện hành cho compileSdk 37 (đặc biệt: <code>MediaProjection.Callback</code> bắt buộc SDK 34+, <code>ImageReader.OnImageAvailableListener</code>, <code>PixelCopy.request</code> overload mới, và yêu cầu <code>FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION</code>). Ghi version + pattern đã verify vào §Nhật ký triển khai khi code.</li>
+<li>Không thư viện bên thứ ba mới (chỉ SDK + khối nội bộ) → phạm vi Context7 hẹp.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">Chưa chạy (spec chờ duyệt). Thứ tự phản ánh phụ thuộc; off-car trước, on-car sau.</p>
+<table>
+<tr><th>#</th><th>Task</th><th>File (dự kiến)</th><th>Case</th></tr>
+<tr><td>T1</td><td><code>CaptureRouter</code> thuần :core — input (nơi app: FULL_MAIN/SPLIT_MAIN/CLUSTER/NONE + geometry + slotSide/leftPercent) → output (capture path + crop Rect). + unit test 4 case</td><td>core/…/navigation/CaptureRouter.kt(+Test)</td><td>1–4</td></tr>
+<tr><td>T2</td><td><code>VietMapCameraMatcher</code> thuần :core (template-match, NCC/histogram) + data class kết quả + unit test (fixture camera vs nền)</td><td>core/…/navigation/VietMapCameraMatcher.kt(+Test)</td><td>—</td></tr>
+<tr><td>T3</td><td><code>CaptureBounds</code> provider: a11y động (đọc <code>getBoundsInScreen</code>) + fixed fallback per (app,geometry); wire vào <code>NavAccessibilityService</code></td><td>app/…/modules/navaccess/…, Prefs.kt</td><td>1–3</td></tr>
+<tr><td>T4</td><td>Capture transport B (reuse): crop từ <code>fission_screencap -d 0/1</code>/<code>screencap -d 1</code> → <code>BitmapPixelFrame</code>. Off main thread, runCatching, verbose-gated lưu ảnh</td><td>app/…/ScreenCaptureNavSource.kt</td><td>1,2,3</td></tr>
+<tr><td>T5</td><td>Capture transport A: <code>MediaProjection</code> consent (1 lần, holder) + foreground service + <code>ImageReader</code> + AUTO_MIRROR <code>VirtualDisplay</code> + <code>acquireLatestImage</code>/PixelCopy; lifecycle theo gate</td><td>app/…/ScreenCaptureService.kt, CaptureConsent(no-export)</td><td>1,4</td></tr>
+<tr><td>T6</td><td>Case 4 offscreen VD render (4b): tạo VD offscreen + <code>am start --display &lt;vd&gt; --windowingMode 5</code>; verify từng app trên xe; degrade nếu app từ chối</td><td>app/…/ScreenCaptureService.kt</td><td>4</td></tr>
+<tr><td>T7</td><td>Wire nguồn ảnh vào <code>SourceArbiter</code> (data&gt;ảnh; PREFER_WAZE/VIETMAP) + gate isNavigationActive; đầu ra làn cụm/HUD/badge camera</td><td>app/…/NavNotificationListener.kt, NavRepository.kt</td><td>1–4</td></tr>
+<tr><td>T8</td><td>UI toggle "Nguồn ảnh (Waze/VietMap)" + chọn transport A/B (nếu giữ cả hai) trong card Nav+HUD; mặc định theo OQ</td><td>MainActivity.kt + layout</td><td>—</td></tr>
+<tr><td>T9</td><td>Verify on-car 4 case + đo perf; hiệu chỉnh fixed bounds thật; thu template camera VietMap</td><td>docs/diagnostics/…</td><td>1–4</td></tr>
+<tr><td>T10</td><td>Senior review + security scan + build APK</td><td>—</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit (off-car, khoá được ngay):</b> <code>:core</code> xanh — <code>CaptureRouterTest</code> (4 case → path + Rect đúng, gồm offset nửa Case 2), <code>VietMapCameraMatcherTest</code> (fixture camera nhận đúng / nền không false-positive), <code>ManeuverSignatureTest</code> hiện có vẫn 18/18 cho arrow Waze (nguồn ảnh dùng lại nó).</li>
+<li><b>V-gate:</b> unit khẳng định KHÔNG capture khi gate đóng (master OFF / nav stale) — mirror hành vi OpenBYD drain+skip.</li>
+<li><b>V-oncar (bắt buộc, mỗi case):</b>
+  <ul>
+  <li>Case 1: Waze/VietMap dẫn full D0 → mũi tên/camera nhận đúng trên cụm; so với màn thật.</li>
+  <li>Case 2: split trái/phải → crop đúng nửa, không lẫn app kia.</li>
+  <li>Case 3: cast app dẫn lên cụm → <code>fission_screencap -d 0</code> crop + nhận đúng.</li>
+  <li>Case 4: nav nền, app không foreground → 4a/4b có ra tín hiệu không; nếu app từ chối render VD → ghi bằng chứng + điều kiện mở khoá.</li>
+  <li>Reboot bằng <b>nút nguồn vật lý</b> nếu test yêu cầu reboot (<code>adb reboot</code> KHÔNG tương đương).</li>
+  </ul>
+</li>
+<li><b>V-perf:</b> đo CPU/độ trễ vòng capture ≤ ngân sách, không giật nav; nhịp ≤ ~2–4 Hz.</li>
+<li><b>V-lifecycle/degrade:</b> thiếu quyền/không VD/không cast → nguồn im lặng, không crash, không đụng feed cụm; bật/tắt master + toggle sạch; storage &lt;150 MB khi verbose ON.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 — Quyền MediaProjection trên xe:</b> có <b>auto-grant qua dadb</b> được không (vd <code>appops set … PROJECT_MEDIA allow</code> / cấp qua uid-shell), để bỏ dialog consent? Nếu được → đường A khả thi headless như OpenBYD; nếu không → ưu tiên đường B (<code>fission_screencap</code>) cho Case 1/2/3 và chỉ dùng A cho Case 4. <span class="muted">[cần thử on-car]</span></li>
+<li><b>OQ2 — Bounds detection:</b> a11y có đọc được bounds node mũi tên (Waze) / icon camera (VietMap) đủ ổn định không, hay phải fixed-rect hiệu chỉnh per app/geometry? Trên <b>cụm (Case 3)</b> a11y window có tồn tại không? <span class="muted">[on-car; A5 cho thấy VietMap phơi nav ở contentDescription — cần xác minh có bounds]</span></li>
+<li><b>OQ3 — Perf/nhịp:</b> nhịp capture bao nhiêu là đủ mượt mà không giật nav? Đường B mỗi shot tốn round-trip shell + encode PNG — chịu được ≥2 Hz không, hay cần đường A ImageReader liên tục? <span class="muted">[đo on-car]</span></li>
+<li><b>OQ4 — Template camera VietMap:</b> cần thu thập bộ <b>template icon camera</b> VietMap (các biến thể: camera tốc độ, đèn đỏ, cố định…) từ ảnh thật để <code>VietMapCameraMatcher</code> khớp. Có mấy loại? Icon có kèm số tốc độ (cần OCR) hay chỉ glyph? <span class="muted">[thu thập on-car]</span></li>
+<li><b>OQ5 — Case 4 khả thi tới đâu:</b> app dẫn (Waze/VietMap) có chấp nhận render vào VirtualDisplay offscreen (4b) mà không xung đột instance chính không? Nếu không → Case 4 giới hạn ở 4a (mirror khi còn window) + degrade. <span class="muted">[on-car; đây là B3.4 khó nhất]</span></li>
+<li><b>OQ6 — Transport chốt:</b> giữ CẢ A và B (hybrid §4.6) hay chọn một? Ảnh hưởng UI (T8) và scope. <span class="muted">[owner quyết sau khi có OQ1/OQ3]</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>OpenBYD decompiled: <code>jadx-openbyd/sources/com/sr/openbyd/services/WazeArrowCaptureService.java</code>, <code>WazeManager.java</code>, <code>ui/overlay/ClusterOverlayManager.java</code>, <code>utils/AppConstants.java</code> — nguồn học (MediaProjection/VD/PixelCopy/bounds/processArrowPixels).</li>
+<li><code>core/…/navigation/ManeuverSignature.kt</code> — port <code>wm0.b/c/d</code> (=<code>processArrowPixels</code>); <code>PixelFrame.kt</code>/<code>ArrayPixelFrame</code>.</li>
+<li><code>app/…/BitmapPixelFrame.kt</code> — bọc Bitmap → PixelFrame.</li>
+<li><code>app/…/SegmentShotCapturer.kt</code> — đường dadb <code>fission_screencap -d 0/1</code> / <code>screencap -d 1</code> proven (fission id đảo Android: -d0=cụm, -d1=main).</li>
+<li><code>core/…/navigation/SourceArbiter.kt</code> + <code>NavSourceMode.kt</code> — trọng tài nguồn (PREFER_WAZE/VIETMAP).</li>
+<li><code>app/…/modules/navaccess/NavAccessibilitySource.kt</code> — nguồn bounds a11y.</li>
+<li><code>core/…/modules/clustercast/simplified/ProjectionManager.kt</code> + <code>AppMover.kt</code> — cast của ta = move-stack/fresh-launch OEM VD (không SurfaceView app-owned).</li>
+<li><code>docs/reference/dashcast-projection-recipe.md</code> — Path B (SurfaceView-backed VD) = điều kiện mở khoá PixelCopy parity OpenBYD (Case 3 tương lai).</li>
+<li><code>core/…/vietmapwidget/VietMapWidgetModels.kt</code> — kênh data VietMap (khi CÓ thắng ảnh); <code>VietMapRoadAlert.imageVisible/imageHash</code>.</li>
+<li>PROJECT-BACKLOG B3 / B3.1–B3.4 (owner note 2026-08-19).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi NGAY khi code — phản ánh code THỰC TẾ (gồm chỗ lệch spec). Nếu là quyết định KIẾN TRÚC xuyên suốt ⇒ mở ADR ở <code>docs/decisions/</code> và link vào đây.</p>
+
+<h3>Pass 2 — 2026-08-20 · sửa 2 bug đọc nav-element từ ảnh (B3.5 wrong-node · B3.7 overlay) — DONE, xanh off-car</h3>
+<p>Hai bug tìm ra từ test emulator THẬT (Waze+VietMap dẫn @960×720): B3 chụp màn OK nhưng đọc SAI phần tử nav. Gate <code>:core:test</code> + <code>:app:testDebugUnitTest</code> = <b>BUILD SUCCESSFUL</b> (các class B3 mới/đổi: CaptureBoundsHeuristicTest 13, ForegroundWindowFilterTest 7, NavForegroundGateContractTest 3, ScreenCaptureNavSourceContractTest 10 — 0 fail).</p>
+
+<h4><span class="tag p1">B3.5</span> a11y-dynamic bounds chọn NHẦM node (RÁC nhỏ thay vì banner/icon)</h4>
+<p><b>Triệu chứng:</b> <code>CaptureBoundsHeuristic.pick()</code> trả về vùng RÁC tí hon (18×19 = icon biển báo, 62×62 = mảnh marker xe) thay vì banner mũi tên Waze (~180×80 góc trên-trái) / icon camera VietMap. <b>Gốc:</b> scorer cũ chọn node DIỆN TÍCH NHỎ NHẤT trong nhóm khớp → mọi RÁC nhỏ đều thắng banner thật.</p>
+<ul>
+<li><b>Lọc cứng "quá nhỏ":</b> loại ứng viên (sau clamp) có cạnh &lt; <code>MIN_ICON_W=32</code>/<code>MIN_ICON_H=24</code>, HOẶC diện tích &lt; <code>max(MIN_ICON_AREA=5000, region×2‰)</code>. Giết 18×19 (=342) và 62×62 (=3844) mà vẫn giữ icon ~80×80 (=6400). Trần panel cũ (<b>cả hai</b> cạnh &gt; <code>MAX_ICON_PX=360</code>) giữ nguyên.</li>
+<li><b>Đảo "nhỏ nhất thắng" → CHẤM ĐIỂM:</b> <code>score = tier(keyword≫image) + sizeScore + zoneScore − aspectPenalty</code>. <code>sizeScore</code> đạt đỉnh tại <code>IDEAL_AREA=20000</code> rồi GIẢM (∝1/diện tích) ⇒ icon/banner đúng cỡ thắng cả RÁC nhỏ lẫn panel-nhỡ. <code>zoneScore</code> ưu tiên NỬA TRÊN màn (cả 2 target) + lệch TRÁI (Waze arrow). <code>aspectPenalty</code> loại marquee/sliver (tỉ lệ cạnh &gt; 4). Tier luôn thắng size/zone/aspect (keyword 1000 ≫ image 200 + max phụ) nên ưu tiên khớp-từ-khoá được giữ.</li>
+<li><b>Lọc gom (gather) ở <code>NavAccessibilityService.gatherCaptureCandidates</code>:</b> bỏ node &lt; <code>GATHER_MIN_PX=12</code> mỗi chiều để không làm ô nhiễm danh sách 250-cap + region-union bằng noise 1–11px (thước-đo-kích-thước chuẩn vẫn ở heuristic thuần).</li>
+<li><b>Test (repro + khoá):</b> +6 case trong <code>CaptureBoundsHeuristicTest</code> — banner thắng bộ {18×19, 62×62} (repro chính, node RÁC còn mang từ khoá "turn"); 62×62 đơn độc → null; "prefer larger not smallest"; camera icon thắng glyph tí hon; marquee sliver thua banner; zone top-left thắng khi đồng cỡ. 7 test cũ giữ nguyên vẫn xanh.</li>
+</ul>
+
+<h4><span class="tag p2">B3.7</span> ô nhiễm foreground do overlay đa-app (WazeMod nổi đè VietMap)</h4>
+<p><b>Triệu chứng:</b> overlay NỔI của WazeMod bắn event (pkg=WazeMod) trong khi VietMap mới là app foreground thật → <code>CaptureForegroundSource.pkg</code> bị set = WazeMod ⇒ B3 định tuyến VietMap sang ARROW thay vì CAMERA. <b>Gốc:</b> service publish foreground cho MỌI event của mọi nav package, không phân biệt cửa sổ nổi vs task foreground.</p>
+<ul>
+<li><b>Helper THUẦN mới <code>ForegroundWindowFilter.shouldPublishForeground()</code></b> (:core, package screencapture): (1) window overlay/hệ-thống (IME/system/a11y-overlay/divider/magnifier) KHÔNG bao giờ là foreground; (2) window <code>TYPE_APPLICATION</code> chỉ tính khi <code>isActive || isFocused</code> (overlay báo APP nhưng không active/focused → loại); (3) không đọc được window info (<code>TYPE_UNKNOWN</code>) → rớt về NGỮ NGHĨA EVENT: <code>WINDOW_STATE_CHANGED</code> (chuyển-foreground thật) HOẶC same-pkg keep-alive (overlay của pkg KHÁC không cướp được qua cập-nhật nội-dung thụ động).</li>
+<li><b>⚠ Lệch thực-tế (trace-den-tan-cung):</b> window info (type/active/focused) cần <code>flagRetrieveInteractiveWindows</code> — cờ này ĐANG TẮT có chủ đích vì hiệu năng (xem <code>nav_accessibility_config.xml</code>: bắt system_server theo dõi mọi cửa sổ trên mọi display, gấp đôi khi chiếu). Nên TRÊN XE nhánh (3) ngữ-nghĩa-event là đường CHÍNH; nhánh window-info (1)(2) chỉ đúng nếu sau này bật cờ. KHÔNG tự bật cờ (ngoài scope + phá quyết định perf đã ghi). Cả hai nhánh đều đã unit-test.</li>
+<li><b>Wire ở <code>NavAccessibilityService</code>:</b> <code>CaptureForegroundSource.publish</code> + <code>maybePublishCaptureBounds</code> nay bọc trong <code>if (isEventFromForegroundApp(event, pkg))</code>. Helper Android đọc <code>event.source?.window</code> (degrade null→UNKNOWN, degrade-safe runCatching), lấy type/isActive/isFocused + <code>eventType==TYPE_WINDOW_STATE_CHANGED</code> + so pkg với foreground hiện tại, rồi giao quyết định cho filter thuần.</li>
+<li><b>Không đụng GMaps path:</b> <code>NavAccessibilitySource.lastEventAt</code> (foreground chỉ-GMaps, dùng cho booster cự-ly) giữ NGUYÊN — bug là ca Waze/VietMap/WazeMod nên chỉ gate holder đa-app <code>CaptureForegroundSource</code>.</li>
+<li><b>Test:</b> <code>ForegroundWindowFilterTest</code> (7, thuần) khoá cả 2 nhánh + ca overlay-content-của-pkg-khác-không-cướp; <code>NavForegroundGateContractTest</code> (3, source-scan) khoá wiring gate trong service.</li>
+</ul>
+<p><b>Phạm vi động chạm:</b> <code>CaptureBoundsHeuristic.kt</code>, <code>CaptureBoundsSource.kt</code> (thêm object <code>ForegroundWindowFilter</code> cạnh <code>CaptureForegroundSource</code>), <code>NavAccessibilityService.kt</code> + test tương ứng. KHÔNG đụng <code>ScreenCaptureNavSource</code>/<code>CaptureModels</code>/<code>CaptureRouter</code>/<code>ManeuverSignature</code>/<code>ManeuverRegistry</code>/<code>VietMapCameraMatcher</code>. Không thêm dependency. <b>Còn VERIFY-ON-CAR:</b> a11y đọc đúng node arrow/camera + độ ổn định (OQ2), và window info có sẵn không khi cờ interactive-windows tắt (nhánh event-semantics là chính).</p>
+
+<h3>Pass 2 — 2026-08-20 · B3.6 (classifier registry mũi tên Waze/VietMap) + B3.8 (VietMap đọc CẢ arrow LẪN camera) — DONE, xanh off-car</h3>
+<p>Vá hai lỗ hổng lộ ra từ test emulator thật: (B3.8) B3 crop mũi tên Waze đúng nhưng VietMap chỉ thử MỘT target; (B3.6) registry phân loại KHÔNG có template glyph Waze/VietMap nên <code>classify*</code> trả null dù crop đúng. Gate <code>:core:test</code> = <b>649 tests</b> + <code>:app:testDebugUnitTest</code> = <b>409 tests</b>, cả hai <b>BUILD SUCCESSFUL</b> (thêm 25 test: +24 core, +1 app). Không thêm phụ thuộc; <code>:core</code> vẫn thuần.</p>
+
+<h4>B3.8 — VietMap thử CẢ ARROW + CAMERA trong một nhịp</h4>
+<ul>
+<li><b>[CANONICAL API]</b> <code>CaptureTarget.targetsForPackage(pkg): List&lt;CaptureTarget&gt;</code> MỚI — VietMap → <code>[ARROW, CAMERA]</code> (banner mũi tên top-left + icon camera trên bản đồ); Waze/WazeMod/GMaps → <code>[ARROW]</code>.</li>
+<li><b>[LỆCH SPEC — bắt buộc do ranh giới]</b> Spec ghi "Change <code>forPackage</code> to return a LIST/SET". KHÔNG đổi được chữ ký <code>forPackage</code>: <code>NavAccessibilityService.kt</code> (line 248) + <code>CaptureBoundsHeuristic.pick(target: CaptureTarget)</code> tiêu thụ nó như MỘT <code>CaptureTarget</code>, và cả hai file do agent khác sở hữu (DO-NOT-TOUCH) → đổi kiểu trả sẽ làm chúng KHÔNG biên dịch (gãy build). GIỮ <code>forPackage(pkg): CaptureTarget</code> (đơn, hành vi y hệt: VietMap→CAMERA else ARROW) cho đường a11y; THÊM <code>targetsForPackage</code> (đa) cho routing. Ý ĐỊNH chức năng của B3.8 (VietMap đọc cả hai) đạt đủ qua đường mới.</li>
+<li><code>CaptureRouter.routePlans(loc, geom, a11y?, now, freshMs): List&lt;CapturePlan&gt;</code> MỚI — 1 plan MỖI target (ARROW = arrow rect hiệu chỉnh; CAMERA = <code>VIETMAP_CAMERA_SEED</code>/a11y), rỗng khi gate đóng. <code>route(...)</code> (đơn, nullable) GIỮ NGUYÊN cho back-compat (<code>CaptureLocationResolverTest</code> khẳng định null khi gate đóng). Tách <code>planFor(case, target, …)</code> dùng chung <code>computeBounds</code> (DRY).</li>
+<li><code>ScreenCaptureNavSource.tick</code>: chụp display MỘT lần → <code>routePlans</code> → lặp mỗi plan, mỗi target bọc <code>runCatching</code> RIÊNG (degrade-safe R-nf1: một target lỗi/không-bounds không rớt target kia) → <code>handleArrow</code>/<code>handleCamera</code> (giữ nguyên guard <code>SourceArbiter.shouldFeed(..., NavChannel.IMAGE)</code>). Waze/GMaps 1 plan = tương đương hành vi cũ.</li>
+</ul>
+
+<h4>B3.6 — cơ chế nạp template mũi tên Waze/VietMap (KHÔNG bịa dữ liệu)</h4>
+<ul>
+<li><code>ManeuverSignature.signatureBits(frame): String?</code> MỚI, PUBLIC — trả chuỗi 225-bit '0/1' ĐÚNG format <code>ManeuverRegistry.RAW</code> (per-word MSB-first), TÁI DÙNG <code>signature()</code> private (KHÔNG đổi math) rồi giải-đóng-gói. Để orchestrator sinh template Waze thật từ ảnh PNG crop sau.</li>
+<li><code>WazeArrowRegistry.kt</code> MỚI (<code>navigation</code>, thuần) — registry NẠP-ĐƯỢC (chuỗi 225-bit → tên maneuver), <code>BUILTIN=emptyList</code> (bitstring thật thu trên xe/emulator sau, KHÔNG bịa). <code>register</code>/<code>load</code>/<code>clear</code> <code>@Synchronized</code> + <code>version</code> bump; hợp-lệ-hoá 225-bit-0/1 + chống trùng.</li>
+<li><code>ManeuverSignature</code> KHỚP THÊM registry Waze CÙNG đường Hamming (<code>match</code>) + NCC (<code>matchNCC</code>) — cache đóng-gói theo <code>WazeArrowRegistry.version</code> (production rỗng ⇒ 0 chi phí). Tên Waze dùng cùng từ vựng nên đi qua <code>nameToAmap/Hal/Maneuver</code> y hệt. Short-circuit <code>d==0</code> ⇒ template Waze khớp chính xác thắng mọi near-match GMaps. Refactor <code>packBits</code>/<code>grayBits</code> dùng chung (DRY).</li>
+<li><code>VietMapCameraMatcher</code>: xác nhận loadable (constructor + <code>templateFrom</code>); THÊM registry nạp-được runtime (<code>register</code>/<code>load</code>/<code>clearLoaded</code>/<code>loadedTemplates</code>/<code>fromRegistry</code>) song song WazeArrowRegistry cho template camera thật (OQ4). App dựng matcher qua <code>fromRegistry()</code>. Production rỗng ⇒ match NONE (an toàn).</li>
+<li><b>Test (mới):</b> <code>WazeArrowRegistryTest</code> (12: signatureBits 225-bit/tất-định/null; nạp template tổng-hợp → <code>classify</code>/<code>classifyHal</code>/<code>classifyManeuver</code> khớp qua Hamming=0; hợp-lệ-hoá/trùng/load; 38 mục AMAP KHÔNG regression); <code>CaptureRouterTest</code> +7 (targetsForPackage, routePlans VietMap 2-plan / Waze 1-plan / gate rỗng / giữ case / a11y); <code>VietMapCameraMatcherTest</code> +5 (fromRegistry/register/load/clearLoaded); contract app +1 (B3.8 multi-target degrade-safe). <code>ManeuverSignatureTest</code>/<code>ManeuverRegistryTest</code>/<code>CaptureLocationResolverTest</code> GIỮ NGUYÊN & xanh (xác nhận không regression + <code>route</code> đơn còn hoạt động).</li>
+</ul>
+<p><b>Còn on-car (nợ):</b> bitstring template Waze/VietMap THẬT (B3.6, thu từ crop emulator/xe) + template camera THẬT (OQ4) — registry hiện RỖNG nên arrow-Waze/camera vẫn null/NONE ở production tới khi nạp. Giá trị rect calibration + a11y bounds trên cụm vẫn VERIFY-ON-CAR (OQ2). Chỉ CƠ CHẾ (API + đường khớp + đa-target) được khoá off-car vòng này.</p>
+
+
+<h3>Pass 1 — 2026-08-19 · lát cắt THUẦN <code>:core</code> (off-car-lockable, R-nf5) — DONE, xanh off-car</h3>
+<p>Chỉ triển khai phần khoá-được-off-car (quyết định case + bounds + classify), KHÔNG đụng MediaProjection/VirtualDisplay/PixelCopy/dadb (các phần đó là stage <code>:app</code> sau, vẫn CHỜ verify on-car). Gate <code>./gradlew :core:test</code> = <b>594 tests, 0 fail</b> (34 test mới).</p>
+<p><b>File mới</b> (package <code>com.byd.clusternav.navigation.screencapture</code> + 1 file ở <code>navigation</code>):</p>
+<ul>
+<li><code>CaptureModels.kt</code> — <code>CaptureCase</code>{FULL_MAIN·HALF_MAIN_SPLIT·CLUSTER_CAST·NOT_ACTIVE}, <code>AppLocation</code>, <code>DisplayGeometry</code>, <code>CropRect</code> (Rect thuần), <code>CaptureBounds</code>, <code>CaptureTarget</code>{ARROW·CAMERA}, <code>BoundsSource</code>, <code>CapturePlan</code>.</li>
+<li><code>CaptureRouter.kt</code> — <code>route()</code>/<code>selectCase()</code>/<code>computeBounds()</code>/<code>halfOffsetX()</code>/<code>appRegion()</code> + <code>CaptureCalibration</code> (bảng rect cố định).</li>
+<li><code>VietMapCameraMatcher.kt</code> — matcher template-match (grid+NCC) + <code>CameraTemplate</code> + <code>CameraMatch</code>.</li>
+<li><code>PixelFrameOps.kt</code> — <code>crop(PixelFrame, CropRect)</code> thuần (chuỗi crop→classify test được).</li>
+<li><code>NavChannel.kt</code> — enum {DATA, IMAGE}.</li>
+<li><b>Sửa</b> <code>SourceArbiter.kt</code> — thêm overload <code>shouldFeed(pkg, mode, now, channel=DATA)</code> + <code>isDataFresh()</code>; <code>clear()</code> reset map data.</li>
+</ul>
+<p><b>Quyết định / lệch spec (ghi để owner soi):</b></p>
+<ul>
+<li><b>Tái dùng <code>ClusterSlotSide</code></b> (module clustercast, đã ở <code>:core</code>) thay vì đẻ enum SlotSide mới — DRY, khớp <code>AppMover.fitToCluster</code> (nghĩa <code>leftPercent</code>: vách = W·lp/100, trái=[0,vách), phải=[vách,W)). <code>slotSide=null</code> = không split.</li>
+<li><b><code>route()</code> trả <code>null</code> CHỈ khi gate đóng</b> (<code>navFresh=false</code>) — đây là điểm khoá V-gate "không capture khi nav stale". Còn lại luôn trả <code>CapturePlan</code>; <code>bounds.isEmpty()</code> ⇒ caller bỏ frame.</li>
+<li><b>Case-4 vs foreground:</b> <code>foreground=false</code> ⇒ <code>NOT_ACTIVE</code> bất kể displayId. Foreground trên display phụ KHÁC cụm ⇒ coi như <code>CLUSTER_CAST</code> (chụp thẳng display đó).</li>
+<li><b>Bounds 3 tầng:</b> a11y-động (nếu <code>now−capturedAt ≤ freshMs</code>, mặc định <code>A11Y_FRESH_MS=1500</code>, tham-số-hoá để test bằng <code>now</code> thuần) → cố-định-hiệu-chỉnh (offset +W·lp/100 cho Case-2 nửa phải, clamp về nửa app) → lane-seg <b>HOÃN</b> (trả EMPTY+NONE). Tầng freshness do <code>:app</code> quyết bằng cách publish/không-publish, ở <code>:core</code> chỉ chấm bằng <code>now</code>.</li>
+<li><b>Seed calibration:</b> <code>WAZE_ARROW_OPENBYD=CropRect(26,218,208,298)</code> (nguyên OpenBYD) + <code>VIETMAP_CAMERA_SEED=CropRect(0,120,160,280)</code> (placeholder — rect thật OQ2/OQ4 tune on-car).</li>
+<li><b>VietMapCameraMatcher:</b> KHÔNG gọi được <code>ManeuverSignature.signature()</code> (private, trả bit hướng rẽ) → tự viết grid+NCC CÙNG kỹ thuật. Đặc trưng ô = trung bình (luminance×alpha/255) ⇒ khung TRỐNG có phương sai 0 ⇒ <code>CameraMatch.NONE</code> (không false-positive). Ngưỡng <code>DEFAULT_MIN_SCORE=0.62</code>. <code>BUILTIN=emptyList()</code> (template thật OQ4).</li>
+<li><b>SourceArbiter data&gt;image:</b> overload thêm tham số <code>channel</code> mặc định <code>DATA</code> ⇒ mọi caller cũ (HLP/1, widget, a11y) giữ nguyên hành vi + tự ghi mốc data; nguồn ảnh gọi <code>IMAGE</code> và bị chặn khi <code>isDataFresh(pkg, now)</code> (≤ <code>STALE_MS</code>=6s). Ảnh bị chặn KHÔNG chiếm khoá nguồn (activeSeen giữ nguyên).</li>
+<li><b>Arrow:</b> KHÔNG viết lại — test <code>crop-classify</code> nhúng glyph registry vào frame lớn → route→crop→<code>ManeuverSignature.classify</code> ra đúng mã (xác nhận chuỗi compile+chạy).</li>
+</ul>
+<p><b>Pure-testable (đã khoá) vs on-car (còn nợ):</b> khoá được off-car = chọn case, tính bounds 3 tầng, offset/clamp nửa, template-match camera (fixture tổng hợp), data&gt;image, chuỗi crop→classify. Còn on-car = giá trị rect thật (OQ2), template camera thật (OQ4), transport A/B + auto-grant MediaProjection (OQ1), nhịp/perf (OQ3), Case-4 4b khả thi (OQ5), a11y bounds trên cụm (OQ2). Handoff: <code>docs/_handoff/stage-b3-core-done.md</code>.</p>
+<p class="muted">Trạng thái tổng: spec vẫn CHỜ DUYỆT cho phần <code>:app</code>/on-car; chỉ lát <code>:core</code> thuần đã land + xanh off-car.</p>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm <code>Pass N — YYYY-MM-DD</code>; tag finding <code>[P0]–[P3]</code>; verdict APPROVED/INCOMPLETE.</p>
+<ul>
+<li>(chưa có pass review — spec mới draft, chờ owner duyệt.)</li>
+</ul>
+
+</div></body>
+</html>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cockpit scale tokens.
+  v1.34 (task v134-fixes · FIX 2): text sizes RESTORED to the v1.32 originals. loosen-spacing (owner on-car
+  after v1.34: padding/margin/line-height felt cramped, elements "dính dính vào nhau"): VERTICAL spacing raised
+  from the ~70% values to ~88-92% of the v1.32 originals so nothing touches — `gap` 10->13dp (v1.32 14),
+  `touch_min` 40->46dp (v1.32 56). Horizontal/edge tokens (`card_pad`, `screen_pad`), corner `radius` and TEXT
+  sizes are UNCHANGED. Net: text at original size, comfortable spacing, still marginally shorter than v1.32.
+-->
+<resources>
+    <dimen name="text_title">24sp</dimen>
+    <dimen name="text_status">16sp</dimen>
+    <dimen name="text_body">15sp</dimen>
+    <dimen name="text_label">13sp</dimen>
+    <dimen name="card_pad">16dp</dimen>
+    <dimen name="screen_pad">20dp</dimen>
+    <dimen name="gap">13dp</dimen>
+    <dimen name="radius">16dp</dimen>
+    <dimen name="touch_min">46dp</dimen>
+</resources>

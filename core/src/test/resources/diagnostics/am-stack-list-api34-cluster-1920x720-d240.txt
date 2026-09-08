@@ -1,0 +1,3 @@
+RootTask id=266 bounds=[0,0][1920,720] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [en_US] ldltr sw480dp w1280dp h396dp 240dpi nrml long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 720) mAppBounds=Rect(0, 0 - 1920, 630) mMaxBounds=Rect(0, 0 - 1920, 720) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.69 fontWeightAdjustment=0}
+  taskId=266: com.chisadin.wazemod/com.waze.FreeMapAppActivity bounds=[0,0][1920,720] userId=0 visible=true topActivity=ComponentInfo{com.chisadin.wazemod/com.waze.MainActivity}

@@ -1,0 +1,66 @@
+[
+ {
+  "file": "w1280h480-d160.png",
+  "dpi": 160,
+  "w": 1280,
+  "h": 480,
+  "strip": 240,
+  "label": "left"
+ },
+ {
+  "file": "w1600h600-d200.png",
+  "dpi": 200,
+  "w": 1600,
+  "h": 600,
+  "strip": 240,
+  "label": "left"
+ },
+ {
+  "file": "w1920h720-d160.png",
+  "dpi": 160,
+  "w": 1920,
+  "h": 720,
+  "strip": 240,
+  "label": "left"
+ },
+ {
+  "file": "w1920h720-d240.png",
+  "dpi": 240,
+  "w": 1920,
+  "h": 720,
+  "strip": 320,
+  "label": "left"
+ },
+ {
+  "file": "w1920h720-d320.png",
+  "dpi": 320,
+  "w": 1920,
+  "h": 720,
+  "strip": 320,
+  "label": "left"
+ },
+ {
+  "file": "w1920h1080-d240.png",
+  "dpi": 240,
+  "w": 1920,
+  "h": 1080,
+  "strip": 320,
+  "label": "left"
+ },
+ {
+  "file": "w1920h720-d240-2line.png",
+  "dpi": 240,
+  "w": 1920,
+  "h": 720,
+  "strip": 320,
+  "label": "right"
+ },
+ {
+  "file": "w1920h1080-d240-2line.png",
+  "dpi": 240,
+  "w": 1920,
+  "h": 1080,
+  "strip": 320,
+  "label": "right"
+ }
+]

@@ -1,0 +1,18 @@
+ClusterNav HUD/sign RE zero-hit report
+scope=T0-T3 local available corpus
+
+ZERO C-BYDAUTO-PROVIDER-LIB: required corpus branch
+ZERO C-ODM-PARTITION: required corpus branch
+ZERO C-PROPERTY-REGISTRY: required corpus branch
+ZERO C-PROVIDER-APK: required corpus branch
+ZERO C-QML-RCC: required corpus branch
+ZERO C-SERVICE-CONTEXT: required corpus branch
+ZERO C-SYSTEM-EXT-PARTITION: required corpus branch
+ZERO C-VENDOR-BOOT: required corpus branch
+ZERO C-VENDOR-PARTITION: required corpus branch
+
+HIT S8: 25 demangled native implementation pairs; transport linkage remains UNPROVEN.
+INDICATOR QML/RCC: old=11 new=11; no extractable asset/direct binding.
+ADJACENT trafficSignalStatus: OUT_OF_SCOPE; no sign relevance proven.
+
+A zero hit is evidence of absence only within the named available roots, not proof of platform absence.

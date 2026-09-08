@@ -1,0 +1,100 @@
+Display Root#0
+mBelowAppWindowsContainers#0
+WallpaperWindowToken{c9a5067 token=android.os.Binder@996ec26}#0
+1137b06 com.byd.wallpaper.service.BydWallpaperService#0
+com.byd.wallpaper.service.BydWallpaperService#0
+com.android.server.wm.DisplayContent$TaskStackContainers@73069e#0
+animationLayer#0
+splitScreenDividerAnchor#0
+WindowToken{2d53bf9 android.os.BinderProxy@7e55c43}#0
+8a6973e DockedStackDivider#0
+Stack=0#0
+animation background stackId=0#0
+Task=12#0
+AppWindowToken{a22c7d6 token=Token{747eff1 ActivityRecord{8448b98 u0 com.android.launcher3/.home.MainActivity t12}}}#0
+3ce53ce com.android.launcher3/com.android.launcher3.home.MainActivity#0
+homeAnimationLayer#0
+Stack=12#0
+animation background stackId=12#0
+Task=13#0
+AppWindowToken{c070dad token=Token{cd2dac4 ActivityRecord{a1de1d7 u0 com.byd.diLinkAccount/.main.MainActivity t13}}}#0
+b0dd2e1 com.byd.diLinkAccount/com.byd.diLinkAccount.main.MainActivity#0
+Stack=14#0
+animation background stackId=14#0
+Task=15#0
+AppWindowToken{3a676ca token=Token{29f235 ActivityRecord{ca7dc6c u0 com.byd.filemanager/.view.MainActivity t15}}}#0
+6392bd0 com.byd.filemanager/com.byd.filemanager.view.MainActivity#0
+Stack=21#0
+animation background stackId=21#0
+Task=22#0
+AppWindowToken{7949e47 token=Token{ab44586 ActivityRecord{33f1661 u0 com.byd.carsettings/.MainActivity t22}}}#0
+ef67734 com.byd.carsettings/com.byd.carsettings.MainActivity#0
+Stack=24#0
+animation background stackId=24#0
+Task=25#0
+AppWindowToken{e75114 token=Token{e9bff67 ActivityRecord{6e5f726 u0 com.android.systemui/.recents.RecentsActivity t25}}}#0
+f161962 com.android.systemui/com.android.systemui.recents.RecentsActivity#0
+Stack=13#0
+animation background stackId=13#0
+Task=14#0
+AppWindowToken{66c2b81 token=Token{f4d3b68 ActivityRecord{9a08e8b u0 com.android.launcher3/.Launcher t14}}}#0
+9c0f8f8 com.android.launcher3/com.android.launcher3.Launcher#0
+Stack=30#0
+animation background stackId=30#0
+Task=30#0
+AppWindowToken{3d78e81 token=Token{98c4a68 ActivityRecord{e46798b u0 com.byd.clusternav/.MainActivity t30}}}#0
+3860b3c com.byd.clusternav/com.byd.clusternav.MainActivity#0
+AppWindowToken{efeb0f token=Token{7bd286e ActivityRecord{9b393e9 u0 com.byd.clusternav/.modules.clustercast.ClusterCastActivity t30}}}#0
+240d721 com.byd.clusternav/com.byd.clusternav.modules.clustercast.ClusterCastActivity#0
+AppWindowToken{689e91f token=Token{34714be ActivityRecord{8db3f79 u0 com.byd.clusternav/.modules.clustercast.DiagActivity t30}}}#0
+7b9dd17 com.byd.clusternav/com.byd.clusternav.modules.clustercast.DiagActivity#0
+com.byd.clusternav/com.byd.clusternav.modules.clustercast.DiagActivity#0
+boostedAnimationLayer#0
+mAboveAppWindowsContainers#0
+WindowToken{2a6aac4 android.os.BinderProxy@69ef1d7}#0
+969dad BydLauncher_CardBarwindow#0
+WindowToken{b83e09 android.os.BinderProxy@c456bd3}#0
+54f580e AssistPreviewPanel#0
+WindowToken{c5760d1 android.os.BinderProxy@5d9b3f8}#0
+35a1736 com.byd.vrassistant.xf.image#0
+WindowToken{ebcca91 android.os.BinderProxy@bafacb8}#0
+9409df6 com.byd.clusternav#0
+bydAdd-com.byd.clusternav#0
+mImeWindowsContainers#0
+WindowToken{349f0a2 android.os.Binder@99a4c6d}#0
+WindowToken{ea5ddb6 android.os.BinderProxy@19d7678}#0
+6f10ab7 StatusBar#0
+StatusBar#0
+WindowToken{5046d58 android.os.BinderProxy@c2e923b}#0
+6438eb1 BydQSBar#0
+WindowToken{6ca4630 android.os.BinderProxy@4c107e2}#0
+ea2b2a9 NavigationBar0#0
+NavigationBar0#0
+WindowToken{52f7279 android.os.Binder@130953b}#0
+Display Overlays#0
+Sprite#1
+Sprite#0
+Sprite#2
+WindowToken{6160ec3 android.os.BinderProxy@7a37a72}#0
+db5e340 ScreenDecorOverlay#0
+WindowToken{1c0d41f android.os.BinderProxy@caacbbe}#0
+eb5f36c ScreenDecorOverlayBottom#0
+Display Root#1
+mBelowAppWindowsContainers#1
+com.android.server.wm.DisplayContent$TaskStackContainers@f3a21e0#0
+animationLayer#1
+homeAnimationLayer#1
+splitScreenDividerAnchor#1
+Stack=26#0
+Task=26#0
+AppWindowToken{f04820e token=Token{cbfd009 ActivityRecord{c9dfd10 u0 vn.vietmap.live/.MainActivity t26}}}#0
+93ee2c1 vn.vietmap.live/vn.vietmap.live.MainActivity#0
+Background for -SurfaceView - vn.vietmap.live/vn.vietmap.live.MainActivity#0
+Bounds for - vn.vietmap.live/vn.vietmap.live.MainActivity#0
+SurfaceView - vn.vietmap.live/vn.vietmap.live.MainActivity#0
+vn.vietmap.live/vn.vietmap.live.MainActivity#0
+animation background stackId=26#0
+boostedAnimationLayer#1
+mAboveAppWindowsContainers#1
+mImeWindowsContainers#1
+Display Overlays#1

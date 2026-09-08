@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghế: làm mát / sưởi tự động — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Ghế: làm mát / sưởi tự động</h1>
+<p class="muted">Slug: <code>seat-comfort-auto</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill ok">Off-car: build xanh + test 0 fail</span> · <span class="pill wait">On-car: chờ xác nhận 2 ẩn số</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,documentation-and-backlog}.md</code>. Không dùng thư viện/framework mới → không cần Context7 (chỉ Android SDK + hạ tầng HAL đã có).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-03</b>: Khởi tạo + implement đầy đủ (core + app + 2 layout + test). Từ RE app tham chiếu <code>com.byd.mecanum.dashboard</code> (device 1023 = ghế). Owner yêu cầu: mục UI ngay sau khối voice-key, chế độ toàn cục làm mát/sưởi, mỗi ghế 3 mức, hiện 2/4 ghế theo mẫu xe, tự áp ~5s sau start, mặc định TẮT.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Vấn đề / mong muốn (PO):</b> Xe BYD có sưởi/làm mát ghế nhưng OEM KHÔNG tự bật theo sở thích lúc lên xe. Owner muốn ClusterNav tự đặt mức làm-mát/sưởi ghế đã lưu, ~5 giây sau khi app/khởi động chạy — giống app tham chiếu đã proven trên xe owner.</p>
+<p><b>Đã có sẵn:</b> hạ tầng HAL reflection <code>BydHal.device(fqn, *ctxs)</code> + <code>BydHal.setInt(dev, id, value)</code> + <code>bypass()</code>/<code>systemBypassContext()</code> (đường đã proven ghi cụm/nav). Kiểu Prefs accessor + UI dựng-bằng-code + song ngữ <code>Lang.t</code> + pattern detach-listener (<code>setupVmOverlayControls</code>/voice-key).</p>
+<div class="card"><b>Nguồn RE (ground truth, app <code>com.byd.mecanum.dashboard</code>):</b> lệnh HAL <code>(deviceType, featureId, value)</code>; <code>deviceType 1023</code> = ghế/tiện-nghi. App đó gọi qua binder proxy <code>m.Y(sCommunicationBinder, 1023, featureId, value)</code>; ClusterNav đi ĐƯỜNG REFLECTION SẴN CÓ (cùng HAL nền). Làm mát và sưởi <b>loại trừ nhau</b> (set cái này → xe reset cái kia). Mức áp ~5000 ms sau start (<code>Handler.postDelayed 5000</code>).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li>R1. UI ở cột TRÁI (Nav+HUD), NGAY SAU khối voice-key (kết ở <code>@+id/list_voicekey_bindings</code>), ở CẢ hai biến thể layout.</li>
+<li>R2. Chế độ TOÀN CỤC: "Làm mát" ↔ "Sưởi" — chọn một (loại trừ).</li>
+<li>R3. Mỗi ghế: chọn 3 mức — Tắt / Mức 1 / Mức 2 (2 mức hoạt động + tắt).</li>
+<li>R4. Sơ đồ ghế: 4 ghế nếu Han, 2 ghế nếu Seal — <b>tự phát hiện</b> theo mẫu xe.</li>
+<li>R5. KHÔNG có sưởi vô-lăng.</li>
+<li>R6. Lúc start: tự áp mỗi ghế đặt Mức1/Mức2 → gửi lệnh HAL (cool/heat theo chế độ toàn cục) ở giá trị đã map, ~5s sau start.</li>
+<li>R7. Mặc định TẮT / không làm gì (cài mới không đụng gì tới khi owner bật).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Ghi HAL = reflection, <b>degrade-safe</b> (runCatching; off-car = no-op, không crash). Bộ test đầy đủ chạy off-car không được ném.</li>
+<li>R-nf2. Song ngữ đặt lúc chạy qua <code>Lang.t</code> (KHÔNG thêm <code>strings.xml</code> — đang byte-seal).</li>
+<li>R-nf3. Giữ parity <code>@+id</code> hai biến thể layout (LayoutVariantIdParityTest).</li>
+<li>R-nf4. Áp trên thread nền (~5s sleep) — không chặn UI/boot.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng dữ liệu</h3>
+<div class="flow">
+  <div class="fnode"><b>UI (MainActivity)</b><span>switch · mode · mức/ghế</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Prefs</b><span>enabled · mode · level[i]</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>SeatComfortApplier</b><span>~5s nền · applyNow</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>SeatComfort (:core)</b><span>featureId · halValue</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>BydHal</b><span>device(AC)+setInt</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse: BydHal, Prefs style, Lang.t)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới (SeatComfort, SeatComfortApplier, UI)</span>
+</div>
+
+<h3>4.2 Bảng feature-id RE (device 1023) — mẫu <code>0x4310101{0,4,8,C}</code>, +8 mỗi hàng ghế</h3>
+<table>
+<tr><th>Ghế</th><th>index</th><th>COOL (làm mát)</th><th>HEAT (sưởi)</th><th>Mức bằng chứng</th></tr>
+<tr><td>Trước-trái (lái)</td><td>0</td><td><code>0x43101010</code> (1125122064)</td><td><code>0x43101014</code> (1125122068)</td><td class="ok">RE proven (xe owner)</td></tr>
+<tr><td>Trước-phải (phụ)</td><td>1</td><td><code>0x43101018</code> (1125122072)</td><td><code>0x4310101C</code> (1125122076)</td><td class="ok">RE proven (xe owner)</td></tr>
+<tr><td>Sau-trái (Han)</td><td>2</td><td><code>0x43101020</code></td><td><code>0x43101024</code></td><td class="warn">SUY (+8/hàng) — cần on-car</td></tr>
+<tr><td>Sau-phải (Han)</td><td>3</td><td><code>0x43101028</code></td><td><code>0x4310102C</code></td><td class="warn">SUY (+8/hàng) — cần on-car</td></tr>
+</table>
+
+<h3>4.3 Ánh xạ giá trị (lựa chọn người dùng → giá trị HAL)</h3>
+<table>
+<tr><th>Lựa chọn</th><th>level (Prefs)</th><th>HAL value</th></tr>
+<tr><td>Tắt</td><td>0</td><td>0</td></tr>
+<tr><td>Mức 1</td><td>1</td><td>2</td></tr>
+<tr><td>Mức 2</td><td>2</td><td>3</td></tr>
+</table>
+<p class="muted">Mảng chỉnh-được duy nhất: <code>SeatComfort.HAL_VALUE = intArrayOf(0, 2, 3)</code>. App tham chiếu (proven) gửi 2 và 3 làm hai mức, 0 = tắt. <b>Nếu 2/3 không ăn on-car</b> → ghế có thể dùng 1/2: đổi mảng thành <code>intArrayOf(0, 1, 2)</code> (một chỗ).</p>
+
+<h3>4.4 Phát hiện mẫu xe (số ghế)</h3>
+<p><code>SeatComfortApplier.isHanModel(ctx)</code> gộp manh mối theo thứ tự best-effort: (1) BYD HAL statistic device — probe getter mẫu-xe; (2) <code>android.os.SystemProperties.get</code> vài khoá mẫu/sản-phẩm; (3) <code>android.os.Build.MODEL</code>. Rồi so <code>SeatComfort.isHanModel</code> (chứa "han", không phân biệt hoa/thường). Không manh mối nào chứa "han" ⇒ <b>Seal (2 ghế)</b> — off-car luôn trả 2. UI ẩn <code>@+id/seat_rear_row</code> khi 2 ghế; applier chỉ áp <code>seatsForModel</code>.</p>
+
+<h3>4.5 Quyết định thiết kế + Context7</h3>
+<ul>
+<li>Model thuần ở <code>:core</code> (<code>SeatComfort</code>) để unit-test off-device; phần chạm Android (HAL, SystemProperties, Build) ở <code>:app</code> (<code>SeatComfortApplier</code>).</li>
+<li>Dùng LẠI <code>BydHal.device</code>/<code>setInt</code>/<code>bypass</code> — KHÔNG chế reflection mới (đúng ràng buộc). Thêm đúng 1 hằng <code>BydHal.AC</code>.</li>
+<li>Áp trên Thread nền + <code>Thread.sleep(5000)</code> (đơn giản, khớp <code>postDelayed 5000</code> RE; không cần Handler/Coroutine mới).</li>
+<li><b>Context7</b>: không dùng thư viện/framework mới → không cần. Chỉ Android SDK + hạ tầng đã có.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Model thuần + test (feature-id/halValue/seatsForModel/isHanModel)</td><td><code>core/.../comfort/SeatComfort.kt (+Test)</code></td></tr>
+<tr><td>T2</td><td>Hằng device AC</td><td><code>app/.../modules/hal/BydHal.kt</code></td></tr>
+<tr><td>T3</td><td>Prefs: enabled/mode/level[i]</td><td><code>app/.../Prefs.kt</code></td></tr>
+<tr><td>T4</td><td>Applier (applyOnStart ~5s · applyNow · detect model)</td><td><code>app/.../comfort/SeatComfortApplier.kt</code></td></tr>
+<tr><td>T5</td><td>UI 2 biến thể (parity id)</td><td><code>app/.../res/layout[-w960dp]/activity_main.xml</code></td></tr>
+<tr><td>T6</td><td>Wiring MainActivity + applyOnStart; BootSetupService applyOnStart</td><td><code>MainActivity.kt · BootSetupService.kt</code></td></tr>
+<tr><td>T7</td><td>Seal re-pin (lần 10) + build + full test</td><td><code>offcar-planner/.../ExpansionTransportFenceTest.kt</code></td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>SeatComfortTest</code> (:core) khoá bảng feature-id (mẫu +8/hàng, +4 cool→heat), map halValue (0→0/1→2/2→3 + clamp), seatsForModel (Seal 2 / Han 4), isHanModel (contains "han", null-safe). <code>LayoutVariantIdParityTest</code> (:app) khoá parity 29 id mới.</li>
+<li>V-build: <code>:app:assembleDebug</code> exit 0 (Kotlin + aapt2 link 2 layout). Full suite <code>./gradlew test --rerun-tasks --continue</code> = 0 fail (5 module).</li>
+<li>V-seal: SHA-256 bản dọc <code>activity_main.xml</code> = hằng pin <code>c53e73c2…5c4c</code> (lần 10).</li>
+<li>V-oncar (CHỜ): (a) mức 2/3 có chỉnh ghế không (nếu không → thử 1/2); (b) feature-id ghế sau Han (2,3) có đúng không (SUY +8/hàng). Xác minh bằng <code>logcat -s SeatComfort</code>: mỗi ghi in seat/mode/featureId/value/rc.</li>
+<li>V-lifecycle: bật switch → chọn mode/mức → thoát app → mở lại: state khôi phục từ Prefs; ~5s sau mở app tự áp; nút "Áp dụng ngay" áp tức thì. Off-car: <code>device(AC)</code> null → log rồi return, không crash.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Giá trị HAL cho hai mức là 2/3 hay 1/2? <span class="muted">Mặc định 2/3 (RE proven); đổi <code>HAL_VALUE</code> nếu on-car sai — CHỜ đo.</span></li>
+<li>OQ2. feature-id ghế sau Han (index 2,3) đúng chưa (SUY +8/hàng)? <span class="muted">CHỜ xác nhận trên xe Han.</span></li>
+<li>OQ3. Khoá phát hiện mẫu Han (SystemProperties/HAL getter) trên ROM thật là gì? <span class="muted">Best-effort đa-nguồn; mặc định Seal an toàn. Có thể tinh chỉnh khi có log on-car.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>RE app tham chiếu <code>com.byd.mecanum.dashboard</code> — <code>m.Y(sCommunicationBinder, 1023, featureId, value)</code>, <code>Handler.postDelayed 5000</code>.</li>
+<li><code>app/.../modules/hal/BydHal.kt</code> — <code>device()</code>/<code>setInt()</code>/<code>bypass()</code>/<code>systemBypassContext()</code> (đường HAL đã proven).</li>
+<li><code>app/.../MainActivity.kt</code> — pattern <code>setupVmOverlayControls</code>/voice-key (detach-listener + Lang.t).</li>
+<li><code>offcar-planner/.../ExpansionTransportFenceTest.kt</code> — T11 seal (KDoc trace "lần N").</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-03 · Quyết định</b> — tách model thuần (<code>:core SeatComfort</code>) khỏi phần chạm-Android (<code>:app SeatComfortApplier</code>) để unit-test off-device; <code>detectSeatCount</code>/<code>isHanModel(ctx)</code> (đọc HAL/SystemProperties/Build) ở applier vì không thuần Kotlin được.</li>
+<li><b>2026-09-03 · Quyết định</b> — nút "Áp dụng ngay" (<code>btn_seat_comfort_apply</code>) gọi <code>applyNow</code> thay vì auto-apply mỗi lần đổi radio (tránh bùng nổ ghi HAL mỗi lần chạm); auto-apply chỉ ở start (~5s) theo R6.</li>
+<li><b>2026-09-03 · Quyết định</b> — control con (mode/mức/nút) mờ+khoá khi công tắc chính TẮT (<code>refreshSeatComfortPanel</code>); RadioGroup không tự truyền enable xuống con nên khoá cả nút con.</li>
+<li><b>2026-09-03 · Trade-off</b> — <code>halValue</code> clamp thay vì ném khi level ngoài dải (degrade-safe cho pref hỏng); test khoá cả clamp.</li>
+<li><b>2026-09-03 · Sai lệch spec (nhỏ)</b> — spec chỉ đòi <code>seat_rear_row</code>; đã thêm <code>seatN_label</code> + <code>txt_seat_comfort_hint</code> để đặt nhãn song ngữ lúc chạy (không vào strings.xml). Không đổi hợp đồng.</li>
+<li><b>2026-09-03 · Seal</b> — sửa bản dọc <code>activity_main.xml</code> ⇒ hash đổi <code>6369e497…b2dfb2</code> → <code>c53e73c2…5c4c</code> (lần 10), đã cập nhật <code>T11_HASHES</code> + KDoc trace.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li><b>Pass 1 — 2026-09-03</b>: Tự review (implementer). Off-car: <code>:app:assembleDebug</code> exit 0; full suite 5 module 0 fail; SHA bản dọc khớp hằng pin lần 10. Ẩn số on-car ghi ở §7 (OQ1/OQ2). Verdict: APPROVED off-car (on-car chờ đo 2 ẩn số).</li>
+</ul>
+
+</div></body>
+</html>

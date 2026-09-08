@@ -1,0 +1,12 @@
+kind=SEAL_DL3_BOOTSTRAP_30 shell=service call AutoContainer 2 i32 1000 i32 30 s16 ""
+kind=SEAL_DL3_BOOTSTRAP_16 shell=service call AutoContainer 2 i32 1000 i32 16 s16 ""
+kind=SEAL_DL3_BOOTSTRAP_35 shell=service call AutoContainer 2 i32 1000 i32 35 s16 ""
+kind=PRE_OPEN_ON_MAIN shell=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n 'com.example.maps/.MainActivity'
+kind=PLACE_KEEP_SESSION shell=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER --display 2 --windowingMode 5 -n 'com.example.maps/.MainActivity'
+kind=FIT_CLUSTER_COMPOSITE shell=(am task resize 42 0 90 1920 630 2>/dev/null) || wm overscan 0,90,0,90 -d 2
+kind=SET_FORCE_RESIZABLE shell=echo cast-v2-noop
+kind=DISABLE_TRANSITION_ANIMATION shell=echo cast-v2-noop
+kind=BLOCK_PIP shell=echo cast-v2-noop
+kind=MOVE_STACK_TO_CLUSTER shell=echo cast-v2-noop
+kind=REASSERT_ON_CLUSTER shell=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER --display 2 --windowingMode 5 -n 'com.example.maps/.MainActivity'
+kind=FIT_CLUSTER_COMPOSITE shell=(am task resize 42 0 90 1920 630 2>/dev/null) || wm overscan 0,90,0,90 -d 2

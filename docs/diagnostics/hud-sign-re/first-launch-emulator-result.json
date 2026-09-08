@@ -1,0 +1,42 @@
+{
+  "schema": "clusternav.first-launch-emulator-result/v1",
+  "recordedDate": "2026-08-07",
+  "status": "BLOCKED_BY_EXPLICIT_NO_ADB_INSTALL",
+  "executed": false,
+  "visualPass": false,
+  "environment": {
+    "androidSdkAvailable": true,
+    "emulatorBinaryAvailable": true,
+    "configuredAvdCount": 1
+  },
+  "authorization": {
+    "adbAllowed": false,
+    "apkInstallAllowed": false,
+    "vehicleCommandsAllowed": false
+  },
+  "blocker": {
+    "code": "CLEAN_INSTALL_SMOKE_REQUIRES_FORBIDDEN_ADB_AND_APK_INSTALL",
+    "detail": "A configured local AVD exists, but a clean first-launch smoke requires installing and launching the APK through ADB. This T8-T9 session explicitly forbids ADB and installation, so no emulator execution or visual result is claimed.",
+    "retryCondition": "A later owner-authorized emulator-only session permits ADB plus clean APK install; no vehicle endpoint may be selected."
+  },
+  "offCarEvidence": {
+    "unitAndStaticStatus": "PASS",
+    "tests": [
+      "app/src/test/java/com/byd/clusternav/FloatingBubbleFirstLaunchContractTest.kt",
+      "app/src/test/java/com/byd/clusternav/modules/clustercast/CastUILifecycleSafetyTest.kt",
+      "app/src/test/java/com/byd/clusternav/MainProbeSurfaceAbsenceTest.kt"
+    ],
+    "contracts": [
+      "foreground starts before overlay gate in onCreate",
+      "foreground starts before overlay gate in onStartCommand",
+      "overlay settings request is one-shot per service instance",
+      "early-stop teardown guards both late-initialized collaborators"
+    ]
+  },
+  "claims": {
+    "cleanInstallObserved": false,
+    "firstLaunchObserved": false,
+    "overlayPromptObserved": false,
+    "crashFreeObserved": false
+  }
+}

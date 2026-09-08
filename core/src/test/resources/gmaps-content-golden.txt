@@ -1,0 +1,22 @@
+met-co-ban | code=3 | text=null | dist=250 | road=Nguyễn Huệ | etaMs=null | rMeters=5200 | rSeconds=480 | clock=10:32 | man=TURN_RIGHT
+km-cham | code=2 | text=null | dist=1200 | road=Xa lộ Hà Nội | etaMs=null | rMeters=12400 | rSeconds=1260 | clock=10:45 | man=TURN_LEFT
+km-phay-thap-phan | code=3 | text=null | dist=1200 | road=Võ Văn Kiệt | etaMs=null | rMeters=12400 | rSeconds=1260 | clock=11:07 | man=TURN_RIGHT
+khung-rong | code=null | text=null | dist=null | road=null | etaMs=null | rMeters=null | rSeconds=null | clock=null | man=null
+di-thang | code=9 | text=Đi thẳng | dist=80 | road=Lê Lợi | etaMs=null | rMeters=3100 | rSeconds=360 | clock=7:05 | man=STRAIGHT
+vong-xuyen-co-so-loi-ra | code=11 | text=Đi vào vòng xuyến, lối ra thứ 2 | dist=300 | road=Điện Biên Phủ | etaMs=null | rMeters=9800 | rSeconds=900 | clock=18:21 | man=ROUNDABOUT_RIGHT
+eta-gio-cong-phut-khong-co-dong-ho | code=11 | text=lối ra thứ 3 | dist=500 | road=null | etaMs=null | rMeters=null | rSeconds=7500 | clock=null | man=ROUNDABOUT
+eta-chi-co-km | code=4 | text=null | dist=45 | road=Ngõ 12 | etaMs=null | rMeters=5200 | rSeconds=null | clock=null | man=SLIGHT_LEFT
+eta-nua-dem | code=null | text=null | dist=2000 | road=QL1A | etaMs=null | rMeters=1000 | rSeconds=120 | clock=0:04 | man=null
+gio-khong-hop-le-va-duong-rong | code=6 | text=null | dist=120 | road=null | etaMs=null | rMeters=4000 | rSeconds=300 | clock=null | man=SHARP_LEFT
+u-turn | code=8 | text=Quay đầu | dist=30 | road=Trường Chinh | etaMs=null | rMeters=400 | rSeconds=60 | clock=23:59 | man=UTURN
+km-le | code=15 | text=null | dist=1050 | road=Cầu Sài Gòn | etaMs=null | rMeters=30000 | rSeconds=2700 | clock=12:00 | man=DESTINATION
+icon-0-khong-map-duoc | code=0 | text=null | dist=600 | road=Nguyễn Văn Linh | etaMs=null | rMeters=7000 | rSeconds=660 | clock=9:15 | man=null
+icon-ngoai-bang | code=13 | text=Trạm dừng nghỉ | dist=700 | road=Vành Đai 3 | etaMs=null | rMeters=null | rSeconds=null | clock=null | man=SERVICE_AREA
+maneuver-co-san-icon-am | code=null | text=null | dist=90 | road=Pasteur | etaMs=null | rMeters=null | rSeconds=null | clock=null | man=TURN_LEFT
+maneuver-co-san-thang-icon | code=3 | text=null | dist=90 | road=Pasteur | etaMs=null | rMeters=null | rSeconds=null | clock=null | man=STRAIGHT
+cu-ly-0m | code=12 | text=null | dist=0 | road=Hàm Nghi | etaMs=null | rMeters=100 | rSeconds=60 | clock=8:00 | man=ROUNDABOUT_EXIT
+eta-chi-co-phut | code=5 | text=null | dist=150 | road=Cách Mạng Tháng 8 | etaMs=null | rMeters=null | rSeconds=480 | clock=null | man=SLIGHT_RIGHT
+eta-chi-co-dong-ho | code=7 | text=null | dist=150 | road=Nam Kỳ Khởi Nghĩa | etaMs=null | rMeters=null | rSeconds=null | clock=10:32 | man=SHARP_RIGHT
+cu-ly-khong-doc-duoc | code=2 | text=null | dist=null | road=Lý Thường Kiệt | etaMs=null | rMeters=2000 | rSeconds=240 | clock=6:30 | man=TURN_LEFT
+duong-co-khoang-trang-hai-dau | code=3 | text=null | dist=70 | road=  Nguyễn Trãi   | etaMs=null | rMeters=2000 | rSeconds=240 | clock=6:31 | man=TURN_RIGHT
+maneuver-text-toan-khoang-trang | code=9 | text=null | dist=70 | road=Trần Hưng Đạo | etaMs=null | rMeters=null | rSeconds=null | clock=null | man=STRAIGHT

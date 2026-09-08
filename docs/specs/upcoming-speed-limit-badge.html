@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vẽ "giới hạn tốc độ sắp tới + cự ly" (VietMap) lên cụm</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Vẽ "giới hạn tốc độ sắp tới + cự ly" (VietMap) lên cụm</h1>
+<p class="muted">Slug: <code>upcoming-speed-limit-badge</code> · Branch <code>feat/speed-limit-badge-hal-hud</code> · <span class="pill">Hướng đã chốt (OQ resolved)</span> · <span class="pill block">Cổng implement: V3 PASS</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung}.md</code>. Không dùng thư viện mới (chỉ Android SDK: <code>SpeedBadgeView</code>/Canvas + WindowManager overlay + SharedPreferences, đều đã dùng trong badge hiện tại) → <b>không cần Context7</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-08-18</b>: Spec khởi tạo từ finding phiên sáng: VietMap phơi "giới hạn tốc độ sắp tới + cự ly" qua <code>VMAlertWidgetProvider</code> (slot <code>ALERT_FULL</code>, đã CAPTURE ở commit <code>36f6bf0</code>). Owner muốn vẽ nó lên cụm.</li>
+<li><b>Pass 0.1 — CHỐT HƯỚNG 2026-08-18</b>: Owner trả lời OQ (chưa implement, chờ V3): <b>OQ1</b> neo dưới badge chính ✓. <b>OQ2</b> <b>theo VietMap</b> — KHÔNG đặt ngưỡng cự ly riêng, hiện đúng khi VietMap hiện (dùng cự ly VietMap báo). <b>OQ3</b> HUD kính lái: <b>rất muốn</b> nhưng <b>không chắc lên</b> — vì <b>ngay cả giới hạn tốc độ HIỆN TẠI cũng CHƯA lên HUD</b> (badge đang chạy trên <b>CỤM qua cast</b>, HUD bị chặn bởi provisioning <code>0x38B00030</code>) → HUD ngoài scope, gate theo V5/coding. <b>OQ4</b> số <b>đếm lùi</b>. <b>OQ5</b> chỉ <b>1 cái gần nhất</b>.</li>
+<li><b>Pass 1 — REFINE 2026-08-19 (B1+B2, owner)</b>: (B1) badge bật → <b>tự khởi động VietMap</b> khi mở app để widget có nguồn (degrade-safe). (B2) tinh chỉnh biển sắp-tới lệch khỏi thiết kế gốc: <b>viền + số XÁM (muted)</b> thay vì đỏ/đen, kích thước <b>80%</b> (từ ~70%), vị trí <b>chéo 45° phía DƯỚI-TRÁI</b> badge chính (thay vì thẳng dưới). Xem §7 Nhật ký triển khai.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Owner xác nhận (14:26–14:39): mở widget VietMap thấy tối đa 3 loại — biển cấm dừng/đỗ, giới hạn tốc độ hiện tại, và <b>"sắp thay đổi giới hạn tốc độ (có cự ly)"</b> → owner: <i>"cái này lấy để vẽ lên cũng hay"</i>. (OBD2 = áp suất lốp → bỏ.)</p>
+<p>Đã có (off-car, commit <code>36f6bf0</code>): slot <code>ALERT_FULL</code> bind <code>vn.vietmap.live.homewidget.VMAlertWidgetProvider</code>, đọc <code>warning_speed_limit_widget_text_view</code> + <code>warning_speed_distance_text_view</code> → publish vào <code>VietMapWidgetSnapshot</code>: <code>upcomingLimitKph</code>, <code>upcomingDistanceMeters</code>, <code>upcomingDistanceText</code>, <code>second*</code>, <code>alertFullFreshness</code>. CSV <code>vietmap_signal</code> đã thêm cột <code>upLimit/upDist/up2Limit/up2Dist</code> (17 cột, đã verify build ghi đúng trên emulator).</p>
+<div class="card"><b>Phụ thuộc dữ liệu (cổng):</b> emulator ghi cột nhưng <b>0 non-empty</b> (VietMap không dẫn → không có upcoming). <b>Feature này CHỈ implement sau khi V3 PASS</b> — tức chuyến thật xác nhận <code>upLimit/upDist</code> có giá trị khi VietMap dẫn qua đoạn đổi giới hạn tốc độ. Nếu V3 cho thấy widget không bắn (VMAlertWidgetProvider không yield trên xe thật) → feature này <b>bị chặn</b>, ghi bằng chứng + điều kiện mở khoá (theo <code>trace-den-tan-cung.md</code>).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li>R1. Khi VietMap báo giới hạn tốc độ sắp tới (<code>upcomingLimitKph</code> ≠ null, <code>alertFullFreshness=FRESH</code>) → hiện trên <b>cụm</b> một <b>biển giới hạn tốc độ (giá trị SẮP TỚI)</b> + <b>cự ly tới nó</b> (số, vd "300 m"). <b>Theo VietMap (OQ2)</b>: KHÔNG đặt ngưỡng cự ly riêng — hiện đúng khi VietMap đang hiện, dùng cự ly VietMap báo.</li>
+<li>R2. Cự ly <b>đếm lùi</b> (số) theo mỗi snapshot khi lại gần; khi tới nơi (VietMap chuyển giá trị đó thành giới hạn HIỆN TẠI <code>speedLimitKph</code>) → <b>ẩn</b> biển sắp-tới.</li>
+<li>R3. Ẩn khi: <code>upcomingLimitKph=null</code>, hoặc <code>alertFullFreshness≠FRESH</code> (stale/unavailable — VietMap thôi hiện), hoặc master Nav+HUD/Cast tắt.</li>
+<li>R4. Phân biệt rõ với biển giới hạn HIỆN TẠI (badge đang có): biển sắp-tới nhỏ hơn (thiết kế gốc ~70% → <b>80% + viền/số XÁM + chéo 45° dưới-trái sau tinh chỉnh B2</b>, xem §4.2 + §7) + có nhãn cự ly → tài xế không nhầm "đang phạt" với "sắp tới".</li>
+<li>R5. <b>Toggle bật/tắt</b> riêng (mặc định BẬT — theo tiền lệ badge). Off → không bao giờ vẽ biển sắp-tới.</li>
+<li>R6b. <b>Chỉ 1 cái gần nhất (OQ5)</b> — bỏ qua <code>second*</code>.</li>
+<li>R7b. <b>Bề mặt = CỤM qua cast (OQ3)</b>. HUD kính lái ngoài scope: hiện <b>ngay cả giới hạn HIỆN TẠI cũng chưa lên HUD</b> (HUD bị chặn provisioning <code>0x38B00030</code>). Khi V5/coding mở khoá HUD thì badge hiện-tại + sắp-tới cùng lên HUD sau (track riêng).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R6. Không ảnh hưởng badge giới hạn HIỆN TẠI (thêm mới, không sửa hành vi cũ). Degrade-safe: thiếu data → chỉ ẩn, không crash, không đụng feed cụm.</li>
+<li>R7. Quyết định hiện/ẩn + giá trị hiển thị là <b>hàm thuần ở <code>:core</code></b> (unit-test off-car), không phụ thuộc Android.</li>
+<li>R8. Off-thread, không chặn thread widget; tái dùng vòng đời overlay đã có (idempotent init + DisplayListener).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng dữ liệu (tái dùng pipeline hiện có)</h3>
+<div class="diagram">
+<svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="11.5">
+<style>.b{fill:var(--card);stroke:var(--line)}.t{fill:var(--fg)}.m{fill:var(--muted)}.a{stroke:var(--accent);stroke-width:1.5;fill:none;marker-end:url(#ar)}</style>
+<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
+<rect class="b" x="8" y="90" width="150" height="64" rx="10"/><text class="t" x="83" y="114" text-anchor="middle">VietMapWidgetBridge</text><text class="m" x="83" y="132" text-anchor="middle">ALERT_FULL slot</text>
+<rect class="b" x="196" y="90" width="160" height="64" rx="10"/><text class="t" x="276" y="110" text-anchor="middle">VietMapWidgetSnapshot</text><text class="m" x="276" y="128" text-anchor="middle">upcomingLimitKph</text><text class="m" x="276" y="143" text-anchor="middle">upcomingDistanceMeters</text>
+<rect class="b" x="394" y="30" width="170" height="58" rx="10"/><text class="t" x="479" y="52" text-anchor="middle">UpcomingBadgeDecision</text><text class="m" x="479" y="70" text-anchor="middle">(:core, hàm thuần)</text>
+<rect class="b" x="394" y="150" width="170" height="58" rx="10"/><text class="t" x="479" y="172" text-anchor="middle">speedLimitPusher</text><text class="m" x="479" y="190" text-anchor="middle">(NavNotificationListener)</text>
+<rect class="b" x="600" y="90" width="150" height="64" rx="10"/><text class="t" x="675" y="110" text-anchor="middle">SpeedBadgeOverlay</text><text class="m" x="675" y="128" text-anchor="middle">badge chính +</text><text class="m" x="675" y="143" text-anchor="middle">biển sắp-tới + cự ly</text>
+<line class="a" x1="158" y1="122" x2="194" y2="122"/>
+<line class="a" x1="356" y1="112" x2="392" y2="70"/>
+<line class="a" x1="356" y1="132" x2="392" y2="176"/>
+<line class="a" x1="564" y1="60" x2="620" y2="88"/>
+<line class="a" x1="564" y1="180" x2="620" y2="150"/>
+</svg>
+</div>
+<ul>
+<li><code>speedLimitPusher</code> (đã nhận <code>VietMapWidgetSnapshot</code>) tính thêm <code>UpcomingBadgeDecision.decide(snapshot, thresholdM, System…)</code> → đẩy xuống overlay qua 1 method mới <code>setUpcoming(limitKph:Int?, distanceMeters:Int?)</code> (null = ẩn).</li>
+<li>Badge giới hạn hiện tại vẫn đi đường cũ (<code>onSpeedLimit</code>) — <b>không đổi</b>.</li>
+</ul>
+
+<h3>4.2 Hiển thị</h3>
+<p class="muted"><b>Cập nhật 2026-08-19 (B2):</b> mô tả dưới đây phản ánh CODE THỰC TẾ sau tinh chỉnh — khác thiết kế gốc (thẳng dưới, đỏ/đen). Xem §7 Nhật ký triển khai.</p>
+<ul>
+<li>Biển sắp-tới = 1 <code>SpeedBadgeView</code> thứ hai ở <b>style MUTED</b> (<code>muted = true</code>): <b>viền XÁM + số XÁM (~#888)</b> thay cho đỏ/đen — để tài xế không nhầm với biển giới hạn HIỆN TẠI. Hiển thị <code>upcomingLimitKph</code> + <b>nhãn cự ly</b> ngay dưới ("300 m" / dùng <code>upcomingDistanceText</code> nếu có, else format từ mét).</li>
+<li><b>Kích thước: 80%</b> badge chính (<code>UPCOMING_SCALE = 0.8f</code>).</li>
+<li><b>Vị trí: chéo 45° phía DƯỚI-TRÁI</b> badge chính — tâm biển sắp-tới lệch trái (−x) + xuống (+y) một lượng bằng nhau (<code>UPCOMING_DIAG_FRAC = 0.70f</code> × cỡ badge chính mỗi trục = vector 45°). Neo theo tâm (đã clamp on-screen) của badge chính user đặt qua UI placement → không cần UI đặt vị trí thứ hai. Cửa sổ riêng (additive), KHÔNG đụng cửa sổ badge hiện-tại.</li>
+<li>Biển giới hạn HIỆN TẠI giữ NGUYÊN (đỏ/đen, <code>muted = false</code>).</li>
+<li>Đếm lùi: mỗi snapshot cập nhật nhãn cự ly; R2/R3 quyết ẩn.</li>
+</ul>
+
+<h3>4.3 Quyết định thuần (:core)</h3>
+<pre>data class UpcomingBadge(val show: Boolean, val limitKph: Int, val distanceMeters: Int)
+object UpcomingBadgeDecision {
+  // OQ2 — theo VietMap: show khi limit hợp lệ (&gt;0) + FRESH. KHÔNG có ngưỡng cự ly riêng
+  // (VietMap tự quyết khi nào hiện; ta chỉ soi gương). dist chỉ để hiển thị + ẩn khi ≤0 (đã tới).
+  fun decide(limitKph: Int?, distanceMeters: Int?, fresh: Boolean): UpcomingBadge
+}</pre>
+<ul><li>Unit-test: null→ẩn; stale/unavailable→ẩn; FRESH+limit&gt;0→hiện (cự ly dùng như VietMap báo); dist≤0→ẩn (đã tới).</li></ul>
+
+<h3>4.4 Prefs</h3>
+<ul>
+<li><code>showUpcomingBadge</code> (Bool, mặc định <b>true</b>) — R5 toggle.</li>
+<li>(OQ2 chốt: <b>KHÔNG</b> cần <code>upcomingThresholdMeters</code> — hiện/ẩn theo VietMap.)</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td><code>UpcomingBadgeDecision</code> + data class + unit test (5 case)</td><td>core/…/navigation/UpcomingBadgeDecision.kt(+Test)</td></tr>
+<tr><td>T2</td><td>Prefs <code>showUpcomingBadge</code> (default ON) + <code>upcomingThresholdMeters</code> (1000)</td><td>Prefs.kt</td></tr>
+<tr><td>T3</td><td>Overlay: [biển sắp-tới (SpeedBadgeView 80% MUTED, B2) + nhãn cự ly] trong cửa sổ riêng; <code>setUpcoming(limit?,dist?,text?)</code>; neo chéo 45° dưới-trái badge chính (B2 — xem §7); ẩn/hiện</td><td>speedbadge/SpeedBadgeOverlay.kt (+ view)</td></tr>
+<tr><td>T4</td><td>Wire: <code>speedLimitPusher</code> gọi <code>UpcomingBadgeDecision.decide</code> từ snapshot → <code>setUpcoming</code>; gate theo <code>showUpcomingBadge</code></td><td>NavNotificationListener.kt</td></tr>
+<tr><td>T5</td><td>UI toggle "Hiện giới hạn sắp tới" trong card Cluster Cast (cạnh toggle badge)</td><td>layout + MainActivity.kt</td></tr>
+<tr><td>T6</td><td>Senior review + security scan + build APK</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>Cổng (bắt buộc trước implement)</b>: <b>V3 PASS</b> — chuyến thật, VietMap dẫn qua đoạn đổi giới hạn tốc độ → <code>vietmap_signal</code> cột <code>upLimit/upDist</code> CÓ giá trị (dùng <code>scripts/analysis/analyze_drive_logs.py</code>: "upLimit … non-empty &gt; 0").</li>
+<li>V-unit: <code>:core</code> + <code>:app</code> suites xanh; UpcomingBadgeDecision 5 case.</li>
+<li>V-visual (on-car): cast BẬT → lái qua đoạn đổi giới hạn → biển sắp-tới + cự ly hiện, đếm lùi, tới nơi thì ẩn; toggle OFF → không hiện.</li>
+<li>V-lifecycle: badge sắp-tới không làm hỏng badge chính; degrade khi data mất (chỉ ẩn).</li>
+</ul>
+
+<h2>7. Nhật ký triển khai</h2>
+<p class="muted">R2.6 (<code>.kiro/steering/documentation-and-backlog.md</code>): ghi mọi sai lệch-spec NGAY khi code, để spec phản ánh CODE THỰC TẾ.</p>
+<h3>2026-08-19 — B1 tự khởi động VietMap + B2 tinh chỉnh biển sắp-tới (owner)</h3>
+<ul>
+<li><b>B1 — auto-start VietMap:</b> <code>MainActivity.onCreate</code> (cuối, sau khi UI dựng) gọi <code>maybeAutoStartVietMap()</code>: nếu <code>Prefs.badgeEnabled</code> (BẬT mặc định) VÀ VietMap (<code>vn.vietmap.live</code>) đã cài → <code>getLaunchIntentForPackage</code> + <code>startActivity</code> (<code>FLAG_ACTIVITY_NEW_TASK</code>) để tiến trình VietMap sống, cấp nguồn cho widget/biển. Degrade-safe (runCatching): thiếu VietMap (launch intent null) hoặc lỗi launch → no-op im lặng, không crash Home. Best-effort bỏ qua nếu VietMap đang foreground (<code>ActivityManager.runningAppProcesses</code> · IMPORTANCE_FOREGROUND — không cần quyền đặc biệt, Android 10+ thường trả false nên mặc định vẫn launch). Manifest đã khai <code>QUERY_ALL_PACKAGES</code> nên <code>getLaunchIntentForPackage</code> phân giải được VietMap trên API 30+.</li>
+<li><b>B2 — SAI LỆCH THIẾT KẾ GỐC (owner yêu cầu 2026-08-19):</b> thiết kế gốc §4.2 (Pass 0.1) là biển sắp-tới <b>~70%, đỏ/đen (tái dùng SpeedBadgeView nguyên), neo THẲNG DƯỚI</b> badge chính. Owner đổi thành:
+  <ul>
+    <li><b>(a) Màu:</b> <b>viền + số XÁM (muted, ~#888888)</b> thay vì đỏ/đen → thêm cờ <code>muted</code> vào <code>SpeedBadgeView</code> (mặc định <code>false</code> = đỏ/đen giữ nguyên cho badge hiện-tại; upcoming badge set <code>muted = true</code> trong <code>ensureUpcomingContainer</code>). Màu ring/số chọn theo <code>muted</code> mỗi <code>onDraw</code>.</li>
+    <li><b>(b) Kích thước:</b> <b>80%</b> (từ ~70%) → <code>UPCOMING_SCALE 0.7f → 0.8f</code>.</li>
+    <li><b>(c) Vị trí:</b> <b>chéo 45° phía DƯỚI-TRÁI</b> (từ thẳng dưới) → <code>buildUpcomingLayoutParams</code> đổi từ <code>y = top + mainSize + gap</code> sang lệch tâm trái+xuống bằng nhau: <code>upcomingCx = mcx − diag</code>, <code>upcomingCy = mcy + diag</code> với <code>diag = UPCOMING_DIAG_FRAC(0.70f) × mainSizePx</code>. Hằng <code>UPCOMING_GAP_FRAC</code> (khoảng hở thẳng dưới) đã BỎ vì không còn dùng.</li>
+  </ul>
+  Lý do owner: phân biệt rõ "sắp tới" (mờ/nhỏ/chéo) với "hiện tại" (đỏ/đen/to/đúng chỗ user đặt). Tất cả degrade-safe; chỉ thêm/không đụng badge hiện-tại (giữ <code>muted = false</code>).</li>
+<li><b>Cổng:</b> <code>./gradlew :app:testDebugUnitTest</code> XANH (396 test · 0 fail · 0 error) sau thay đổi. <code>SpeedBadgeLifecycleContractTest</code> (đọc source-text) vẫn PASS — giữ nguyên mọi chuỗi lifecycle nó assert (<code>if (clusterWm == null) initOverlay()</code>, <code>BadgeLayout.clampCenter(</code>, teardown…). KHÔNG có test nào assert cỡ/vị trí cũ (~70%/thẳng-dưới) nên không phải sửa test.</li>
+<li><b>Ghi chú môi trường:</b> gate từng đỏ do <b>build song song</b> (session khác chạy cùng <code>:app:testDebugUnitTest</code> trong cùng worktree → đụng <code>app/build/test-results/.../binary/in-progress-results-generic.bin</code> → <code>EOFException/NoSuchFileException</code>). Chạy khi worktree "im" (không có tiến trình test khác) → XANH. Không liên quan code.</li>
+</ul>
+
+<h2>8. Open Questions — ĐÃ CHỐT (owner 2026-08-18)</h2>
+<ul>
+<li>OQ1 <span class="ok">✓</span> Vị trí: <b>neo dưới badge chính</b> (không làm UI đặt vị trí riêng).</li>
+<li>OQ2 <span class="ok">✓</span> Ngưỡng cự ly: <b>theo VietMap</b> — không đặt ngưỡng riêng; hiện/ẩn + cự ly đúng như VietMap báo.</li>
+<li>OQ3 <span class="warn">✓ (ngoài scope)</span> HUD kính lái: <b>rất muốn</b> nhưng <b>không chắc lên</b> — ngay cả giới hạn HIỆN TẠI cũng chưa lên HUD (badge chạy trên CỤM qua cast; HUD chặn bởi provisioning <code>0x38B00030</code>). Để sau, gate theo V5/coding.</li>
+<li>OQ4 <span class="ok">✓</span> Cự ly: <b>số đếm lùi</b> (không dùng thanh tiến trình).</li>
+<li>OQ5 <span class="ok">✓</span> Chỉ <b>1 cái gần nhất</b> (bỏ <code>second*</code>).</li>
+</ul>
+<p class="muted">Hướng đã chốt. <b>Chưa implement</b> — chờ V3 (chuyến thật xác nhận <code>upLimit/upDist</code> có data) rồi mới code.</p>
+
+<h2>9. References</h2>
+<ul>
+<li>Commit <code>36f6bf0</code> — capture ALERT_FULL (upcoming limit+distance).</li>
+<li><code>core/…/vietmapwidget/VietMapWidgetModels.kt</code> — <code>VietMapWidgetSnapshot.upcoming*</code>, slot <code>ALERT_FULL</code>.</li>
+<li><code>app/…/speedbadge/{SpeedBadgeView,SpeedBadgeOverlay}.kt</code> — badge render + overlay lifecycle.</li>
+<li><code>docs/specs/speed-badge-placement-vietmap-logging.html</code> — badge placement + VietMap logging (nền).</li>
+<li><code>docs/_handoff/progress-2026-08-18-findings-offcar-oncar.md</code> — V3 + backlog.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">(chưa có pass review — spec mới draft, chờ owner duyệt + V3.)</p>
+
+</div></body>
+</html>

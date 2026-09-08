@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>B3 — Data Flow (Screen-Capture Navigation)</title>
+<style>
+  :root{
+    --bg:#fff; --fg:#1d1d1f; --muted:#6e6e73; --line:#d2d2d7; --card:#f5f5f7;
+    --accent:#0071e3; --in:#34c759; --proc:#0071e3; --out:#ff9f0a; --sig:#af52de; --danger:#ff3b30;
+    --svg-stroke:#86868b; --svg-fill:#f5f5f7; --svg-text:#1d1d1f;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#000; --fg:#f5f5f7; --muted:#98989d; --line:#38383c; --card:#1c1c1e;
+      --svg-stroke:#8e8e93; --svg-fill:#1c1c1e; --svg-text:#f5f5f7; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:56px 24px 120px}
+  h1{font-size:40px;letter-spacing:-.02em;font-weight:700;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:18px;margin:0 0 40px}
+  h2{font-size:26px;letter-spacing:-.01em;font-weight:650;margin:52px 0 14px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:19px;font-weight:640;margin:28px 0 8px}
+  p{margin:10px 0}
+  code{font:13.5px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;background:var(--card);
+    padding:1.5px 6px;border-radius:6px}
+  .lead{font-size:17px;color:var(--fg)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:18px 0}
+  .grid{display:grid;gap:14px}
+  @media(min-width:720px){.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;color:#fff;vertical-align:middle}
+  .t-in{background:var(--in)}.t-proc{background:var(--proc)}.t-out{background:var(--out)}.t-sig{background:var(--sig)}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--card);font-weight:640}
+  .fig{margin:22px 0;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;overflow-x:auto}
+  .figcap{color:var(--muted);font-size:13px;margin:6px 2px 0}
+  .ok{color:var(--in);font-weight:640}.no{color:var(--danger);font-weight:640}
+  ul{margin:10px 0;padding-left:22px}li{margin:5px 0}
+  .kbd{font:12.5px "SF Mono",monospace;color:var(--muted)}
+  svg{display:block;max-width:100%;height:auto}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>B3 — Data Flow</h1>
+<p class="sub">Screen-capture navigation: đầu vào → xử lý → đầu ra. Vẽ CÁI GÌ, ra ĐƯỜNG NÀO, dữ liệu NÀO.</p>
+
+<p class="lead">B3 biến các app dẫn đường (Waze · VietMap · Google Maps) thành một <b>nguồn nav</b> cho cụm đồng hồ + HUD của xe, kể cả khi app KHÔNG chạy nền có API. Nó đọc <b>mũi tên rẽ</b>, <b>làn đường</b>, <b>camera phạt nguội</b> và <b>text</b> (cự ly/tên đường) bằng ba kỹ thuật — chụp màn hình + phân tích pixel, accessibility (a11y) window/node, và notification — rồi bắn ra <b>SONG SONG</b> theo hai đường đầu ra: <b>native payload</b> (HAL cụm/HUD) và <b>overlay tự vẽ</b> (như speed badge).</p>
+
+<div class="card">
+<b>Ba tầng, một dòng chảy.</b>
+<div class="legend">
+  <span><i class="dot" style="background:var(--in)"></i> INPUT — app dẫn đường + cách lấy</span>
+  <span><i class="dot" style="background:var(--proc)"></i> PROCESS — capture · gate · route · crop · classify</span>
+  <span><i class="dot" style="background:var(--sig)"></i> SIGNAL — bus trung gian (freshness)</span>
+  <span><i class="dot" style="background:var(--out)"></i> OUTPUT — payload HAL + overlay (song song)</span>
+</div>
+</div>
+
+<!-- ============ DIAGRAM 1: FULL PIPELINE ============ -->
+<h2>1. Toàn cảnh pipeline</h2>
+<div class="fig">
+<svg viewBox="0 0 1020 560" role="img" aria-label="B3 full pipeline">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="var(--svg-stroke)"/>
+    </marker>
+    <style>
+      .b{fill:var(--svg-fill);stroke:var(--svg-stroke);stroke-width:1.5;rx:10}
+      .t{fill:var(--svg-text);font:13px -apple-system,sans-serif}
+      .tb{fill:var(--svg-text);font:13.5px -apple-system,sans-serif;font-weight:640}
+      .ts{fill:var(--svg-text);font:11px "SF Mono",monospace;opacity:.72}
+      .ln{stroke:var(--svg-stroke);stroke-width:1.5;fill:none;marker-end:url(#arr)}
+      .lnd{stroke:var(--svg-stroke);stroke-width:1.4;fill:none;stroke-dasharray:4 4;marker-end:url(#arr)}
+    </style>
+  </defs>
+
+  <!-- INPUT -->
+  <rect x="14" y="20" width="210" height="150" rx="12" fill="none" stroke="var(--in)" stroke-width="1.5"/>
+  <text class="tb" x="24" y="40" fill="var(--in)">INPUT · app dẫn đường</text>
+  <rect class="b" x="26" y="52" width="186" height="30"/><text class="t" x="36" y="71">Waze / WazeMod</text>
+  <rect class="b" x="26" y="88" width="186" height="30"/><text class="t" x="36" y="107">VietMap Live</text>
+  <rect class="b" x="26" y="124" width="186" height="30"/><text class="t" x="36" y="143">Google Maps</text>
+
+  <!-- ACQUIRE -->
+  <rect x="252" y="20" width="230" height="230" rx="12" fill="none" stroke="var(--proc)" stroke-width="1.5"/>
+  <text class="tb" x="262" y="40" fill="var(--proc)">CÁCH LẤY (3 kỹ thuật)</text>
+  <rect class="b" x="264" y="52" width="206" height="42"/>
+  <text class="t" x="274" y="70">a11y window-enum (B3.13)</text><text class="ts" x="274" y="86">NavAccessibilityService</text>
+  <rect class="b" x="264" y="100" width="206" height="42"/>
+  <text class="t" x="274" y="118">screen capture (pixel)</text><text class="ts" x="274" y="134">ScreenCaptureTransport</text>
+  <rect class="b" x="264" y="148" width="206" height="42"/>
+  <text class="t" x="274" y="166">a11y node / notification</text><text class="ts" x="274" y="182">text: cự ly · đường · ETA</text>
+  <rect class="b" x="264" y="196" width="206" height="42"/>
+  <text class="t" x="274" y="214">a11y viewId → lane bounds</text><text class="ts" x="274" y="230">LaneBoundsSource</text>
+
+  <!-- PROCESS -->
+  <rect x="510" y="20" width="235" height="300" rx="12" fill="none" stroke="var(--proc)" stroke-width="1.5"/>
+  <text class="tb" x="520" y="40" fill="var(--proc)">PROCESS · ScreenCaptureNavSource</text>
+  <rect class="b" x="522" y="52" width="210" height="34"/><text class="t" x="532" y="74">tick 2 Hz → GATE</text>
+  <rect class="b" x="522" y="92" width="210" height="34"/><text class="t" x="532" y="114">CaptureRouter (case → rect)</text>
+  <rect class="b" x="522" y="132" width="210" height="34"/><text class="t" x="532" y="154">crop (CropRect calib)</text>
+  <rect class="b" x="522" y="172" width="210" height="40"/>
+  <text class="t" x="532" y="188">classify arrow</text><text class="ts" x="532" y="204">ManeuverSignature+Registry</text>
+  <rect class="b" x="522" y="218" width="210" height="40"/>
+  <text class="t" x="532" y="234">classify lane / camera</text><text class="ts" x="532" y="250">LaneSignature · CameraMatcher</text>
+  <rect class="b" x="522" y="264" width="210" height="34"/><text class="t" x="532" y="286">SourceArbiter.shouldFeed</text>
+
+  <!-- SIGNAL -->
+  <rect x="772" y="60" width="234" height="150" rx="12" fill="none" stroke="var(--sig)" stroke-width="1.5"/>
+  <text class="tb" x="782" y="80" fill="var(--sig)">SIGNAL bus</text>
+  <rect class="b" x="784" y="92" width="210" height="30"/><text class="t" x="794" y="111">ScreenCaptureSignal</text>
+  <text class="ts" x="784" y="140">arrow · lane · camera</text>
+  <text class="ts" x="784" y="158">+ pkg + timestamp</text>
+  <text class="ts" x="784" y="176">freshness STALE_MS = 6s</text>
+
+  <!-- OUTPUT -->
+  <rect x="772" y="250" width="234" height="150" rx="12" fill="none" stroke="var(--out)" stroke-width="1.5"/>
+  <text class="tb" x="782" y="270" fill="var(--out)">OUTPUT (song song)</text>
+  <rect class="b" x="784" y="282" width="210" height="46"/>
+  <text class="t" x="794" y="300">NavOutputOwner → BydHal</text><text class="ts" x="794" y="317">payload cụm/HUD (native)</text>
+  <rect class="b" x="784" y="336" width="210" height="46"/>
+  <text class="t" x="794" y="354">NavClusterOverlay</text><text class="ts" x="794" y="371">tự vẽ display-1 (như badge)</text>
+
+  <!-- flows -->
+  <path class="ln" d="M224 96 H250"/>
+  <path class="ln" d="M482 135 H508"/>
+  <path class="ln" d="M745 150 H770 V135"/>
+  <path class="ln" d="M889 210 V248"/>
+  <text class="ts" x="612" y="336">owner tick 250ms đọc signal</text>
+  <path class="lnd" d="M745 300 C 760 300, 758 305, 770 305"/>
+</svg>
+<div class="figcap">Hình 1 — Dòng chảy tổng: app → (3 kỹ thuật lấy) → ScreenCaptureNavSource xử lý → ScreenCaptureSignal (bus) → hai đầu ra SONG SONG (payload HAL + overlay). Đường nét đứt: owner poll signal theo nhịp 250ms.</div>
+</div>
+
+<!-- ============ INPUT ============ -->
+<h2>2. INPUT — app dẫn đường &amp; kênh lấy dữ liệu <span class="tag t-in">INPUT</span></h2>
+<p>Mỗi app phơi dữ liệu khác nhau. B3 chọn kênh theo app:</p>
+<table>
+<thead><tr><th>App</th><th>Kênh DATA (nền, không chụp)</th><th>Kênh ẢNH (screen-capture)</th><th>B3 đọc gì</th></tr></thead>
+<tbody>
+<tr><td><b>Waze / WazeMod</b></td><td>Không có API nền. Speed-limit qua <code>WazeMod HLP-logcat</code> (nếu bật)</td><td><span class="ok">✔ cần</span> — mũi tên rẽ trên banner</td><td>mũi tên (→amap) · làn (nếu app phơi <code>laneGuidanceView</code>)</td></tr>
+<tr><td><b>VietMap Live</b></td><td>Widget nền: speed/limit/upcoming ✔ · a11y content-desc (turn/đường/ETA, chỉ khi foreground)</td><td><span class="ok">✔ cần</span> — mũi tên (banner trái) + camera (neo bản đồ)</td><td>mũi tên · <b>camera phạt nguội</b> · làn · text</td></tr>
+<tr><td><b>Google Maps</b></td><td>Notification + a11y (turn/cự ly/đường) ✔ — kênh data đủ dùng</td><td>tuỳ chọn (mũi tên nếu cần)</td><td>chủ yếu qua notification/a11y (đường data sẵn có)</td></tr>
+</tbody>
+</table>
+<p class="card"><b>Điểm mấu chốt (B3.13):</b> B3 KHÔNG cần app foreground. <code>NavAccessibilityService</code> gọi <code>getWindows()</code>/<code>getWindowsOnAllDisplays()</code> (bật cờ <code>flagRetrieveInteractiveWindows</code>), <code>NavWindowPicker</code> chọn <b>cửa sổ TYPE_APPLICATION nav lớn nhất bất kể focus</b> (loại overlay/widget theo type+size) → biết app nào đang hiển thị + bounds để crop. Đây là cách OpenBYD đọc Waze khi không foreground.</p>
+
+<!-- ============ PROCESS ============ -->
+<h2>3. PROCESS — capture · gate · route · crop · classify <span class="tag t-proc">PROCESS</span></h2>
+<p><code>ScreenCaptureNavSource.tick()</code> chạy <b>2 Hz</b>. Mỗi tick:</p>
+<div class="grid g2">
+<div class="card"><b>① GATE (tự chặn)</b><br>Chỉ chụp khi <code>SourceArbiter.isFresh</code> (có tín hiệu data gần đây) HOẶC a11y foreground/window-enum thấy app nav. GPS đứng yên → không sự kiện → cổng đóng → không chụp (tiết kiệm).</div>
+<div class="card"><b>② ROUTE (case → rect)</b><br><code>CaptureLocationResolver</code> (đọc <code>am stack</code>) + <code>CaptureRouter</code> chọn <b>case</b> &amp; vùng crop: <code>MAIN_FULL</code> · <code>HALF_MAIN_SPLIT</code> · <code>CLUSTER_CAST</code>. Rect theo bảng calib (vd Waze 960×720 = tight arrow-only).</div>
+<div class="card"><b>③ CAPTURE (pixel)</b><br><code>ScreenCaptureTransport</code>: fission <code>-d1</code>(màn chính)/<code>-d0</code>(cụm) trên xe, có <b>fallback <code>screencap -p</code></b> cho emulator. Cần shell ROOT (screencap ghi cache app-private).</div>
+<div class="card"><b>④ CROP + CLASSIFY</b><br><code>PixelFrameOps.crop</code> → downsample 15×15 → chữ ký. Mũi tên: <code>ManeuverSignature</code> (Hamming/NCC) khớp <code>ManeuverRegistry</code>(GMaps/AMAP) + <code>WazeArrowRegistry</code>(template Waze/VietMap thật). Camera: <code>VietMapCameraMatcher</code>. Làn: <code>LaneSignature</code> (chia cột → hướng + recommended theo độ sáng).</div>
+</div>
+
+<h3>Ba kênh classify → publish</h3>
+<table>
+<thead><tr><th>Kênh</th><th>Đầu vào crop</th><th>Bộ phân loại</th><th>Publish</th></tr></thead>
+<tbody>
+<tr><td><b>Mũi tên</b></td><td>banner top-left (rect calib per app)</td><td><code>ManeuverSignature.classify</code> + <code>WazeArrowRegistry</code></td><td><code>publishArrow(pkg, maneuver, amap, now)</code></td></tr>
+<tr><td><b>Làn</b></td><td>vùng <code>laneGuidanceView</code> (a11y bounds → <code>LaneBoundsSource</code>)</td><td><code>LaneSignature.classify(laneCount)</code> → <code>LaneInfo</code></td><td><code>publishLane(pkg, LaneInfo, now)</code></td></tr>
+<tr><td><b>Camera</b></td><td>icon phạt nguội trên map (VietMap)</td><td><code>VietMapCameraMatcher</code> → <code>CameraMatch</code></td><td><code>publishCamera(pkg, CameraMatch, now)</code></td></tr>
+</tbody>
+</table>
+<p class="card"><b>Chống dương-tính-giả (B3.11):</b> <code>ManeuverSignature.match</code> loại chữ ký query có <code>&lt; MIN_SIG_BITS(10)</code> bit set (crop trống/HOME ~0–4 bit từng khớp nhầm template thưa → rẽ giả). <b>Arbiter (B3.10):</b> <code>SourceArbiter.shouldFeed</code> ưu tiên DATA &gt; ẢNH — kênh ảnh chỉ lên khi data im, và route theo app đang HIỂN THỊ (window-enum) chứ không theo activeSource cũ.</p>
+
+<!-- ============ SIGNAL ============ -->
+<h2>4. SIGNAL — bus trung gian <span class="tag t-sig">SIGNAL</span></h2>
+<p><code>ScreenCaptureSignal</code> là "seam" tách ĐỌC khỏi BẮN. Nó giữ frame mới nhất mỗi kênh + timestamp, và tự chấm <b>freshness</b>:</p>
+<table>
+<thead><tr><th>Trường</th><th>Kiểu</th><th>Freshness</th></tr></thead>
+<tbody>
+<tr><td><code>arrowManeuver</code> / <code>arrowAmap</code> / <code>arrowPkg</code></td><td><code>Maneuver?</code> / <code>Int?</code> / <code>String</code></td><td><code>arrowFresh(now)</code></td></tr>
+<tr><td><code>laneInfo</code> / <code>lanePkg</code></td><td><code>LaneInfo?</code></td><td><code>laneFresh(now)</code></td></tr>
+<tr><td><code>cameraMatch</code> / <code>cameraPkg</code></td><td><code>CameraMatch?</code></td><td><code>cameraFresh(now)</code></td></tr>
+</tbody>
+</table>
+<p>Ngưỡng tươi <code>STALE_MS = 6000ms</code> (khớp nguồn ảnh 2Hz + <code>SourceArbiter.STALE_MS</code>). Quá hạn → kênh coi như stale → đầu ra clear kênh đó.</p>
+
+<!-- ============ DIAGRAM 2: OUTPUT FAN-OUT ============ -->
+<h2>5. OUTPUT — hai đường SONG SONG <span class="tag t-out">OUTPUT</span></h2>
+<div class="fig">
+<svg viewBox="0 0 1020 430" role="img" aria-label="B3 output fan-out">
+  <defs>
+    <marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="var(--svg-stroke)"/></marker>
+    <style>
+      .b2{fill:var(--svg-fill);stroke:var(--svg-stroke);stroke-width:1.5}
+      .t2{fill:var(--svg-text);font:13px -apple-system,sans-serif}
+      .tb2{fill:var(--svg-text);font:13.5px -apple-system,sans-serif;font-weight:640}
+      .ts2{fill:var(--svg-text);font:11px "SF Mono",monospace;opacity:.72}
+      .ln2{stroke:var(--svg-stroke);stroke-width:1.6;fill:none;marker-end:url(#arr2)}
+    </style>
+  </defs>
+
+  <rect class="b2" x="20" y="170" width="180" height="80" rx="12"/>
+  <text class="tb2" x="34" y="200" fill="var(--sig)">ScreenCaptureSignal</text>
+  <text class="ts2" x="34" y="220">arrow · lane · camera</text>
+  <text class="ts2" x="34" y="236">(+ freshness)</text>
+
+  <rect class="b2" x="300" y="150" width="230" height="120" rx="12"/>
+  <text class="tb2" x="314" y="176" fill="var(--out)">NavOutputOwner</text>
+  <text class="ts2" x="314" y="196">tick 250ms · keep-alive</text>
+  <text class="ts2" x="314" y="214">NavOutputDecision.decide</text>
+  <text class="ts2" x="314" y="232">CỨ BẮN kênh nào tươi</text>
+  <text class="ts2" x="314" y="250">(không gate chéo)</text>
+
+  <!-- output A: BydHal payload -->
+  <rect class="b2" x="640" y="40" width="350" height="150" rx="12"/>
+  <text class="tb2" x="656" y="66" fill="var(--out)">A · BydHal payload (native cụm/HUD)</text>
+  <text class="t2" x="656" y="90">pushNavigation — mũi tên+cự ly+đường</text>
+  <text class="ts2" x="656" y="106">0x43F dom / 0x1F7 oversea · dualIcon 0x43F01030</text>
+  <text class="t2" x="656" y="128">pushLane — mỗi làn arrow + recommended</text>
+  <text class="ts2" x="656" y="144">LANE_n 0x19802058 / 0x19802064 · bước 0x10 · ≤8</text>
+  <text class="t2" x="656" y="166">pushCamera — icon + state + mileage</text>
+  <text class="ts2" x="656" y="182">GUIDE_INFO_CAMERA 0x43F03010</text>
+
+  <!-- output B: overlay -->
+  <rect class="b2" x="640" y="230" width="350" height="150" rx="12"/>
+  <text class="tb2" x="656" y="256" fill="var(--out)">B · NavClusterOverlay (tự vẽ, display-1)</text>
+  <text class="t2" x="656" y="280">LaneStripView — dải làn DƯỚI speed badge</text>
+  <text class="ts2" x="656" y="296">glyph/làn · recommended SÁNG, còn lại MỜ</text>
+  <text class="t2" x="656" y="318">CameraChipView — chip PHẢI speed sign</text>
+  <text class="ts2" x="656" y="334">icon camera + cự ly (vd "300 m")</text>
+  <text class="ts2" x="656" y="356">ClusterOverlayHost (như SpeedBadgeOverlay)</text>
+
+  <path class="ln2" d="M200 210 H298"/>
+  <path class="ln2" d="M530 190 C 590 150, 600 120, 638 115"/>
+  <path class="ln2" d="M530 230 C 590 270, 600 300, 638 305"/>
+  <text class="ts2" x="214" y="200">poll</text>
+  <text class="ts2" x="548" y="140">payload</text>
+  <text class="ts2" x="548" y="300">overlaySink</text>
+</svg>
+<div class="figcap">Hình 2 — Fan-out đầu ra. Một owner đọc signal, bắn SONG SONG: (A) payload native cho cụm/HUD OEM, (B) overlay tự vẽ trên display-1. Không fallback — "cứ bắn"; HUD nào hỗ trợ thì hiện, dư thừa vô hại.</div>
+</div>
+
+<h3>5.1 Vẽ CÁI GÌ &amp; vẽ NHƯ THẾ NÀO</h3>
+<table>
+<thead><tr><th>Thành phần</th><th>Vẽ gì</th><th>Vẽ ở đâu</th><th>Đường nào</th></tr></thead>
+<tbody>
+<tr><td><b>Mũi tên rẽ</b></td><td>icon hướng (trái/phải/thẳng/quay đầu/vòng xuyến…) + cự ly + tên đường</td><td>cụm giữa "Giữa + ETA" + HUD kính lái (native OEM)</td><td>A — <code>BydHal.pushNavigation</code> (KHÔNG vẽ trên overlay)</td></tr>
+<tr><td><b>Dải làn</b></td><td>mỗi làn 1 cột glyph mũi tên; làn nên đi = SÁNG, còn lại = MỜ (vd <code>← mờ · ↑ sáng · ↑ sáng · → mờ</code>)</td><td>overlay DƯỚI speed badge · payload làn cụm</td><td>A <code>pushLane</code> + B <code>LaneStripView</code></td></tr>
+<tr><td><b>Camera phạt nguội</b></td><td>icon camera + cự ly (vd "300 m")</td><td>overlay PHẢI speed sign · payload camera cụm</td><td>A <code>pushCamera</code> + B <code>CameraChipView</code></td></tr>
+</tbody>
+</table>
+<p class="card"><b>Cách vẽ overlay (B):</b> <code>NavClusterOverlay.update(laneInfo, camera, arrow)</code> → <code>NavOverlayModel</code> (thuần :core) map <code>Maneuver</code>→glyph, <code>Lane</code>→cell (sáng/mờ), camera→nhãn cự ly → hai <code>View</code> tự vẽ Canvas. Cửa sổ <code>TYPE_APPLICATION_OVERLAY</code> qua <code>ClusterOverlayHost</code> (TÁI DÙNG cơ chế <code>SpeedBadgeOverlay</code>, neo theo <code>Prefs.badge*</code> — dải làn/chip bám theo badge; KHÔNG đụng badge). Mũi tên do đường A (native HUD/centre) vẽ, overlay chỉ giữ làm state.</p>
+<p class="card"><b>Ranh giới sở hữu (quan trọng):</b> đường A dùng <code>push*</code> <b>CONTENT-only</b> — KHÔNG gọi <code>writeNavFrame</code> (session-latch SEND_NAVI_STATUS / SET_NAVI_SCREEN_STATUS / SDK vẫn ĐỘC QUYỀN <code>NavigationHudOwner</code> = đường DATA). Kênh ẢNH chỉ lên khi DATA im (arbiter) → hai owner không cùng ghi frame.</p>
+
+<!-- ============ VERIFIED ============ -->
+<h2>6. Đã kiểm chứng (emulator) &amp; phần cần xe</h2>
+<div class="grid g2">
+<div class="card"><b class="ok">✔ ĐỌC → SIGNAL (emulator)</b><br>Waze LEFT → capture → <code>NavWindowPicker pick=wazemod</code> → chữ ký → classify <code>amap=2</code> → <code>publishArrow</code>. Multi-app: window-enum chọn được cả Waze lẫn VietMap.</div>
+<div class="card"><b class="ok">✔ OWNER tiêu thụ (emulator)</b><br><code>NavOutputOwner: nav output ACTIVE decided(arrow=true) sink=true</code> — owner đọc signal + bắn đường BydHal (off-car HAL là no-op nhưng call-path chạy).</div>
+<div class="card"><b class="ok">✔ OVERLAY tự vẽ (emulator, display 0)</b><br>Đặt <code>Prefs.overlayDisplayId=0</code> → overlay render trên màn chính. Inject frame tổng hợp → vẽ ĐÚNG: <b>dải làn 4 cell <code>← mờ · ↑ sáng · ↑ sáng · → mờ</code></b> + <b>chip camera "300 m"</b>. Đây là bằng chứng render KHÔNG cần cụm.</div>
+<div class="card"><b>⛑ Chỉ cần xe (không đổi đầu ra)</b><br>(1) overlay trên <b>display-1 cụm</b> thật (emulator không có display-1 — nhưng vẽ đã proven trên display 0); (2) <b>BydHal ghi HUD/centre thật</b> = đường <code>writeNavFrame</code>/native đã proven từ nav data — B3 chỉ ĐỔI ĐẦU VÀO (nguồn), đầu ra không đổi ⇒ không cần test lại.</div>
+</div>
+
+<h2>7. Tham chiếu code</h2>
+<ul>
+<li><b>Input/a11y:</b> <code>NavAccessibilityService</code> (window-enum, <code>maybePublishLaneBounds</code>) · <code>NavWindowPicker</code> · <code>CaptureForegroundSource</code> · <code>LaneBoundsSource</code></li>
+<li><b>Process:</b> <code>ScreenCaptureNavSource</code> · <code>CaptureRouter</code>/<code>CaptureModels</code> · <code>ScreenCaptureTransport</code> · <code>ManeuverSignature</code>+<code>ManeuverRegistry</code>+<code>WazeArrowRegistry</code> · <code>LaneSignature</code> · <code>VietMapCameraMatcher</code> · <code>SourceArbiter</code></li>
+<li><b>Signal:</b> <code>ScreenCaptureSignal</code> · <code>LaneInfo</code>/<code>Lane</code> · <code>CameraMatch</code> · <code>Maneuver</code></li>
+<li><b>Output:</b> <code>NavOutputOwner</code> + <code>NavOutputDecision</code> · <code>BydHal.pushNavigation/pushLane/pushCamera</code> · <code>NavClusterOverlay</code>+<code>ClusterOverlayHost</code>+<code>LaneStripView</code>+<code>CameraChipView</code> · <code>NavOverlayModel</code></li>
+<li><b>Menu nguồn:</b> <code>MainActivity</code> (<code>spinner_nav_source</code>) → <code>Prefs.setSourceMode</code> → <code>SourceArbiter</code></li>
+<li><b>Spec chi tiết:</b> <code>docs/specs/b3-full-nav-capture.html</code> (requirements/design/tasks/impl-log)</li>
+</ul>
+
+<p class="figcap" style="margin-top:40px">B3 Data Flow · byd-cluster-2 · cập nhật 2026-08-20. Nguồn sự thật = repo; xem spec đầy đủ để biết chi tiết requirement/tasks.</p>
+
+</div>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — VietMap Widget Bridge POC</title>
+<script>(function(){var t=localStorage.getItem('vietmap-widget-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e8f7ec;--amber:#a05a00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7a45bf;--purple-soft:#f2eaff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#08080a;--paper:#171719;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:14px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700;letter-spacing:-.01em}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:76px 0 48px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,60px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:950px}.lead{font-size:19px;color:var(--muted);max-width:850px}.meta{font:12px var(--mono);color:var(--muted);margin-top:24px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}.stat,.card,.diagram,.callout,.phase,.review,.flow-node{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:18px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:60px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}.callout.purple{background:var(--purple-soft);border-color:var(--purple)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}pre{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font-size:13px;line-height:1.5}pre code{background:none;padding:0}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:760px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.diagram{padding:22px;overflow:auto}.diagram svg{display:block;min-width:820px;width:100%;height:auto}.box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}.box.blue{fill:var(--blue-soft);stroke:var(--blue)}.box.green{fill:var(--green-soft);stroke:var(--green)}.box.amber{fill:var(--amber-soft);stroke:var(--amber)}.box.purple{fill:var(--purple-soft);stroke:var(--purple)}.dt{fill:var(--ink);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.5;marker-end:url(#arrow)}.edge.blue{stroke:var(--blue)}.edge.green{stroke:var(--green)}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--blue);margin-right:6px}.phase{display:grid;grid-template-columns:120px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.review{padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.flow{display:grid;grid-template-columns:1fr 34px 1fr 34px 1fr;align-items:center;gap:8px}.flow-node{padding:18px;text-align:center}.flow-node b{display:block;margin-bottom:4px}.flow-node span{font:11px var(--mono);color:var(--muted)}.arrow-text{text-align:center;color:var(--muted);font-size:22px}.scope-no{opacity:.72}.kv{display:grid;grid-template-columns:180px 1fr;gap:8px 16px}.kv b{font:12px var(--mono);color:var(--muted)}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arrow-text{transform:rotate(90deg)}.kv{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:50px}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · VietMap Widget Bridge</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('vietmap-widget-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Navigation track · background AppWidgetHost POC · 2026-08-04</div>
+<h1>Đọc speed limit VietMap khi ứng dụng chạy nền.</h1>
+<p class="lead">Thay BLE self-loopback và Accessibility bằng giao thức Android chính thống: ClusterNav bind widget VietMap một lần, duy trì <code>AppWidgetHost</code> trong Navigation lifecycle, rồi đọc dữ liệu đã được VietMap chủ động đẩy qua <code>RemoteViews</code>.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Scope: acquisition POC only · Android baseline: API 29 / DiLink3</p>
+<div class="stats"><div class="stat"><b>2</b><span>VietMap widget providers</span></div><div class="stat"><b>1×</b><span>system bind consent</span></div><div class="stat"><b>0</b><span>Accessibility dependency</span></div><div class="stat"><b>0</b><span>BLE hardware dependency</span></div></div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>2026-08-04</td><td>Khởi tạo spec POC sau khi loại BLE self-loopback và Accessibility khỏi hướng sản phẩm.</td><td>VietMap 3.3.4 decompile + emulator semantics + official Android widget-host docs + senior review.</td></tr>
+</tbody></table></div></section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="callout green"><strong>Đầu mối đã chứng minh:</strong> VietMap 3.3.4 chủ động gọi <code>AppWidgetManager.updateAppWidget()</code> để đẩy tốc độ hiện tại, speed limit, hai cảnh báo gần nhất và khoảng cách cảnh báo vào <code>VMOnlySpeedLimitWidgetProvider</code> và <code>VMAlertWidgetProvider</code>.</div>
+<div class="grid3">
+<div class="card"><h3>BLE self-loopback</h3><p>Không có API Android được hỗ trợ để VietMap scan/connect GATT server của ClusterNav trên cùng adapter. Hướng này dừng.</p></div>
+<div class="card"><h3>Accessibility</h3><p>Đọc được <code>0 km/h 50</code> và <code>100m + road</code>, nhưng phụ thuộc cửa sổ VietMap còn accessible. User yêu cầu VietMap được chạy nền, nên không chọn.</p></div>
+<div class="card"><h3>AppWidgetHost</h3><p>IPC hệ thống, cùng máy, không root, không sửa VietMap. Provider chủ động push dữ liệu kể cả khi UI VietMap không active — cần POC xác minh background freshness.</p></div>
+</div>
+<div class="callout blue"><strong>Ranh giới scope:</strong> POC này chỉ lấy dữ liệu, hiển thị trạng thái và chứng minh lifecycle nền. Chưa đẩy speed limit lên cluster/HUD, chưa thay SourceArbiter và không sửa pipeline Google Maps.</div>
+<div class="callout amber"><strong>Approval gate:</strong> implementation chỉ bắt đầu sau approval out-of-band cho toàn bộ spec. Không lưu trạng thái approval trong tài liệu.</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Requirement</th><th>Acceptance criteria</th></tr></thead><tbody>
+<tr><td>R1</td><td><strong>Không dùng Accessibility hoặc BLE.</strong></td><td>Không thêm Accessibility parsing, BLE advertising, GATT self-link hay thiết bị ngoài vào runtime POC.</td></tr>
+<tr><td>R2</td><td><strong>Binding chính thống, một lần (self-grant trên head unit).</strong></td><td>ClusterNav allocate widget ID, gọi <code>bindAppWidgetIdIfAllowed()</code>; khi bị từ chối, nếu có UI consent thì mở <code>ACTION_APPWIDGET_BIND</code>. Trên head unit KHÔNG có UI consent, app <strong>tự cấp quyền</strong> qua <code>appwidget grantbind --package … --user 0</code> trên adb loopback (uid shell 2000, <code>LocalDeviceShell.grantAppWidgetBind</code>) rồi bind lại một lần — message thủ công chỉ là fallback cuối. ID đã bind được persist và tái dùng sau process restart.</td></tr>
+<tr><td>R3</td><td><strong>Hai provider độc lập.</strong></td><td>Bind <code>VMOnlySpeedLimitWidgetProvider</code> và <code>VMAlertWidgetProvider</code>; provider thiếu hoặc đổi package phải fail closed với reason rõ.</td></tr>
+<tr><td>R4</td><td><strong>Chạy khi VietMap ở nền.</strong></td><td>Sau khi route đang chạy, chuyển VietMap ra background vẫn nhận update current speed/speed limit ít nhất 60 giây; không cần window VietMap active.</td></tr>
+<tr><td>R5</td><td><strong>Typed snapshot.</strong></td><td>Expose currentSpeedKph, speedLimitKph, tối đa 2 alerts (limit/distance/image hash), updatedAt, providerVersion và freshness. Giá trị thiếu/“--”/“!” thành null, không bịa số.</td></tr>
+<tr><td>R6</td><td><strong>Không dùng resource integer hardcode.</strong></td><td>Resolve view IDs theo tên từ package <code>vn.vietmap.live</code>. Unknown layout/version → UnsupportedShape, không crash.</td></tr>
+<tr><td>R7</td><td><strong>Freshness trung thực.</strong></td><td>Update mới trong 5 giây = Fresh; quá hạn = Stale; unbound/provider missing = Unavailable. Không giữ speed limit cũ như dữ liệu hiện tại.</td></tr>
+<tr><td>R8</td><td><strong>Navigation lifecycle độc lập Cast.</strong></td><td>Host/listener được sở hữu bởi Navigation track; không gọi hoặc phụ thuộc FloatingBubbleService, SimpleCastCoordinator hay Cast journal.</td></tr>
+<tr><td>R9</td><td><strong>Widget không hiển thị cho user.</strong></td><td>Widget chỉ tồn tại như nguồn RemoteViews nội bộ. UI chỉ có bind/unbind, parsed snapshot, provider/version, timestamp và freshness; không render giao diện widget VietMap.</td></tr>
+<tr><td>R10</td><td><strong>Restart-safe.</strong></td><td>ClusterNav process restart tái tạo host views từ persisted IDs; provider reinstall/invalid ID được phát hiện và yêu cầu bind lại, không loop/crash.</td></tr>
+<tr><td>R11</td><td><strong>Không log dữ liệu hành trình lâu dài.</strong></td><td>Chỉ log lifecycle/reason; road/alert payload chỉ hiện trong diagnostics hiện tại, không persist và không gửi ra ngoài.</td></tr>
+<tr><td>R12</td><td><strong>POC không mutate Navigation output.</strong></td><td>NavRepository, cluster lane và HUD output giữ nguyên; widget snapshot chưa tham gia source arbitration trong scope này.</td></tr>
+</tbody></table></div></section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+<h3>4.1 Architecture</h3>
+<div class="diagram"><svg viewBox="0 0 1040 390" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box green" x="25" y="65" width="190" height="70" rx="14"/><text class="dt" x="120" y="94" text-anchor="middle">VietMap runtime</text><text class="ds" x="120" y="113" text-anchor="middle">navigation may be background</text>
+<rect class="box blue" x="270" y="65" width="210" height="70" rx="14"/><text class="dt" x="375" y="94" text-anchor="middle">AppWidgetManager</text><text class="ds" x="375" y="113" text-anchor="middle">RemoteViews update IPC</text>
+<rect class="box purple" x="535" y="40" width="220" height="120" rx="14"/><text class="dt" x="645" y="72" text-anchor="middle">VietMapWidgetHost</text><text class="ds" x="645" y="94" text-anchor="middle">2 persisted widget IDs</text><text class="ds" x="645" y="113" text-anchor="middle">custom HostView callback</text><text class="ds" x="645" y="132" text-anchor="middle">startListening / stopListening</text>
+<rect class="box amber" x="810" y="65" width="205" height="70" rx="14"/><text class="dt" x="912" y="94" text-anchor="middle">RemoteViews parser</text><text class="ds" x="912" y="113" text-anchor="middle">dynamic IDs · debounce</text>
+<rect class="box blue" x="810" y="230" width="205" height="80" rx="14"/><text class="dt" x="912" y="260" text-anchor="middle">Typed snapshot</text><text class="ds" x="912" y="281" text-anchor="middle">values + freshness + reason</text>
+<rect class="box" x="535" y="230" width="220" height="80" rx="14"/><text class="dt" x="645" y="260" text-anchor="middle">Diagnostics UI</text><text class="ds" x="645" y="281" text-anchor="middle">bind · parsed state · freshness</text>
+<rect class="box" x="270" y="230" width="210" height="80" rx="14"/><text class="dt" x="375" y="260" text-anchor="middle">NavNotificationListener</text><text class="ds" x="375" y="281" text-anchor="middle">Navigation lifecycle owner</text>
+<path class="edge green" d="M215,100 H270"/><path class="edge blue" d="M480,100 H535"/><path class="edge blue" d="M755,100 H810"/><path class="edge" d="M912,135 V230"/><path class="edge" d="M810,270 H755"/><path class="edge" d="M480,270 H535"/><path class="edge" d="M375,230 V175 C375,150 520,175 590,160"/>
+<text class="ds" x="242" y="90" text-anchor="middle">push</text><text class="ds" x="507" y="90" text-anchor="middle">bind</text><text class="ds" x="782" y="90" text-anchor="middle">apply</text>
+</svg>
+<div class="legend"><span><span class="dot" style="background:var(--green)"></span>VietMap-owned</span><span><span class="dot"></span>Android framework boundary</span><span><span class="dot" style="background:var(--purple)"></span>new ClusterNav runtime</span></div></div>
+
+<h3>4.2 Binding flow</h3>
+<div class="flow"><div class="flow-node"><b>Allocate</b><span>AppWidgetHost.allocateAppWidgetId()</span></div><div class="arrow-text">→</div><div class="flow-node"><b>Try bind</b><span>bindAppWidgetIdIfAllowed()</span></div><div class="arrow-text">→</div><div class="flow-node"><b>User consent</b><span>ACTION_APPWIDGET_BIND if needed</span></div></div>
+<div class="callout blue"><strong>Persistence rule:</strong> chỉ persist ID sau khi provider thực sự bound. Cancel/failure phải <code>deleteAppWidgetId()</code>. Hai provider bind tuần tự để result không nhập nhằng.</div>
+<div class="callout amber"><strong>Self-grant trên head unit (đảo R12 remediation, chủ dự án chốt 2026-08-06).</strong> Đầu xe không có launcher/UI để hiện dialog <code>ACTION_APPWIDGET_BIND</code>, nên trước đây app hiện message bắt người dùng gõ tay <code>adb shell appwidget grantbind</code> — bất khả thi khi đang lái. App vốn đã là công cụ adb-mode (cài đặt đã hàm ý quyền loopback: Cast dùng <code>pm install</code>/<code>wm</code>/<code>am</code>, tự cập nhật dùng <code>pm install</code>), nên nó tự chạy <code>appwidget grantbind --package com.byd.clusternav --user 0</code> qua <code>LocalDeviceShell</code> (uid shell 2000) rồi <code>bindAppWidgetIdIfAllowed()</code> lại một lần. Grant chỉ mở cho CHÍNH package này (không đụng app khác) và persist ở allowlist user 0. Chạy off-main; retry đúng MỘT lần; message thủ công giữ làm fallback cuối nếu loopback không tới được. Đường consent chính thống vẫn dùng khi có UI.</div>
+
+<h3>4.3 Lifecycle ownership</h3>
+<div class="grid2">
+<div class="card"><h3>Start</h3><ul><li><code>NavNotificationListener.onListenerConnected()</code> gọi bridge start.</li><li>Load persisted IDs, verify provider component, create host views.</li><li><code>AppWidgetHost.startListening()</code>.</li><li>Không phụ thuộc VietMap notification content.</li></ul></div>
+<div class="card"><h3>Stop / recover</h3><ul><li><code>onListenerDisconnected()</code> stop listening; RebindReceiver khôi phục.</li><li>Process restart recreate host từ IDs.</li><li>Package replaced / bad provider → Unavailable và yêu cầu rebind.</li><li>Không tự allocate ID lặp vô hạn.</li></ul></div>
+</div>
+<div class="callout amber"><strong>POC assumption cần đo:</strong> <code>AppWidgetHostView</code> nội bộ, không hiển thị và không gắn window vẫn phải nhận/apply update trong process. Background test là exit gate, không phải giả định ship. Nếu framework bắt buộc attach view, chỉ được dùng container nội bộ 1×1 trong suốt, không lộ UI widget.</div>
+
+<h3>4.4 Data contract</h3>
+<div class="scroll"><table><thead><tr><th>Field</th><th>VietMap view name</th><th>Normalization</th><th>POC use</th></tr></thead><tbody>
+<tr><td>currentSpeedKph</td><td><code>osw_current_speed_tv</code></td><td>0..300; else null</td><td>Diagnostics only</td></tr>
+<tr><td>speedLimitKph</td><td><code>speed_limit_widget_text_view</code></td><td>1..300; “--”/“!”/0 → null</td><td>Primary proof</td></tr>
+<tr><td>alert1LimitKph</td><td><code>warning_speed_limit_widget_text_view</code></td><td>1..300 or null</td><td>Diagnostics</td></tr>
+<tr><td>alert1Distance</td><td><code>warning_speed_distance_text_view</code></td><td>raw text + optional metres parse</td><td>Diagnostics</td></tr>
+<tr><td>alert2LimitKph</td><td><code>second_speed_limit_widget_text_view</code></td><td>1..300 or null</td><td>Diagnostics</td></tr>
+<tr><td>alert2Distance</td><td><code>second_warning_speed_distance_text_view</code></td><td>raw text + optional metres parse</td><td>Diagnostics</td></tr>
+<tr><td>alert image</td><td><code>warning_alert_image</code> / second</td><td>visibility + stable pixel hash only</td><td>No semantic claim yet</td></tr>
+</tbody></table></div>
+<pre><code>data class VietMapWidgetSnapshot(
+    val currentSpeedKph: Int?,
+    val speedLimitKph: Int?,
+    val alerts: List&lt;VietMapRoadAlert&gt;,
+    val providerVersion: String?,
+    val updatedAtElapsedMs: Long?,
+    val freshness: Freshness,
+    val reason: UnavailableReason?,
+)</code></pre>
+
+<h3>4.5 Technology validation</h3>
+<div class="scroll"><table><thead><tr><th>Decision</th><th>Verified API/pattern</th><th>Result</th></tr></thead><tbody>
+<tr><td>Widget host</td><td>Android framework <code>AppWidgetHost</code>, <code>AppWidgetHostView</code>, <code>AppWidgetManager</code></td><td>No new dependency; valid on API 29.</td></tr>
+<tr><td>Binding</td><td><code>allocateAppWidgetId</code> → <code>bindAppWidgetIdIfAllowed</code> → <code>ACTION_APPWIDGET_BIND</code></td><td>Official user-consent flow; persisted ID contract.</td></tr>
+<tr><td>Listening</td><td><code>startListening()</code> / <code>stopListening()</code></td><td>Navigation service lifecycle, not Activity-only.</td></tr>
+<tr><td>Parsing</td><td>Applied <code>AppWidgetHostView</code> hierarchy</td><td>No reflection into private RemoteViews actions.</td></tr>
+<tr><td>Context7</td><td>Official Android library resolved; concept query returned unrelated snippets.</td><td>Cross-checked current official Android widget-host guide.</td></tr>
+</tbody></table></div>
+
+<h3>4.6 File plan</h3>
+<div class="scroll"><table><thead><tr><th>File</th><th>Change</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><code>core/.../vietmapwidget/VietMapWidgetModels.kt</code></td><td>New</td><td>Snapshot, alert, freshness/reason.</td></tr>
+<tr><td><code>core/.../vietmapwidget/VietMapWidgetTextParser.kt</code></td><td>New</td><td>Pure parsing/validation; unit-testable.</td></tr>
+<tr><td><code>app/.../vietmapwidget/VietMapAppWidgetHost.kt</code></td><td>New</td><td>Host + custom HostView update callback.</td></tr>
+<tr><td><code>app/.../vietmapwidget/VietMapWidgetBridge.kt</code></td><td>New</td><td>Binding state, IDs, provider validation, snapshot listeners.</td></tr>
+<tr><td><code>app/.../vietmapwidget/VietMapWidgetPrefs.kt</code></td><td>New</td><td>Persist host/widget IDs and provider version only.</td></tr>
+<tr><td><code>app/.../vietmapwidget/VietMapWidgetDiagActivity.kt</code></td><td>New</td><td>Consent flow và parsed state; không render widget VietMap.</td></tr>
+<tr><td><code>NavNotificationListener.kt</code></td><td>Modify</td><td>Start/stop bridge with Navigation lifecycle.</td></tr>
+<tr><td><code>MainActivity.kt</code></td><td>Modify</td><td>Minimal status/link to diagnostics; no parsing logic.</td></tr>
+<tr><td><code>AndroidManifest.xml</code></td><td>Modify</td><td>Diagnostics activity and declared widget-host permission.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<div class="phase"><div class="phase-id">T1 · Core</div><div><h4>Typed model + parser</h4><ul class="check"><li>Create snapshot/freshness/reason contracts.</li><li>Parse numeric and distance widget text; reject sentinels and out-of-range values.</li><li>Unit tests for valid, stale, malformed and version-shape cases.</li></ul></div></div>
+<div class="phase"><div class="phase-id">T2 · Host</div><div><h4>Widget host and persistence</h4><ul class="check"><li>Implement custom AppWidgetHost/HostView callback.</li><li>Persist and validate two widget IDs.</li><li>Resolve remote view IDs dynamically by package/name.</li><li>Batch/debounce separate RemoteViews updates into one snapshot.</li></ul></div></div>
+<div class="phase"><div class="phase-id">T3 · Binding</div><div><h4>One-time consent UX</h4><ul class="check"><li>Enumerate exact providers.</li><li>Sequential allocate/bind flow with ACTION_APPWIDGET_BIND fallback.</li><li>Cancel, invalid ID, provider removed and rebind paths.</li></ul></div></div>
+<div class="phase"><div class="phase-id">T4 · Runtime</div><div><h4>Navigation-owned background lifecycle</h4><ul class="check"><li>Start/stop listening from NavNotificationListener.</li><li>Restore after process restart/rebind.</li><li>Fresh/stale/unavailable transitions without changing NavRepository output.</li></ul></div></div>
+<div class="phase"><div class="phase-id">T5 · Diagnostics</div><div><h4>Internal proof and target validation</h4><ul class="check"><li>Show binding state and parsed fields only; keep VietMap HostView internal/non-visible.</li><li>Emulator route test with VietMap foreground then background.</li><li>On-car bind/background/restart matrix.</li></ul></div></div>
+<div class="phase"><div class="phase-id">T6 · Review</div><div><h4>Scope and boundary review</h4><ul class="check"><li>Compare RemoteViews producer fields against parser field-by-field.</li><li>Run focused tests and build.</li><li>Senior review with no cluster-output expansion.</li></ul></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Scenario</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>V1 · Unit</td><td>Parser valid/sentinel/malformed/range/distance.</td><td>All deterministic JVM tests pass.</td></tr>
+<tr><td>V2 · Bind</td><td>Fresh install, bind both providers, cancel one, retry.</td><td>No leaked IDs; both bindings survive Activity recreate.</td></tr>
+<tr><td>V3 · Emulator foreground</td><td>VietMap route active; internal HostView receives RemoteViews.</td><td>Diagnostics parsed speed/limit matches VietMap values within 3 seconds without rendering the widget.</td></tr>
+<tr><td>V4 · Emulator background</td><td>Send VietMap to background for 60 seconds.</td><td>At least one real value change arrives without Accessibility.</td></tr>
+<tr><td>V5 · Freshness</td><td>Stop route / force-stop VietMap.</td><td>Snapshot becomes Stale after 5 seconds, then Unavailable per policy; no old limit claimed fresh.</td></tr>
+<tr><td>V6 · Restart</td><td>Kill/restart ClusterNav process.</td><td>Persisted IDs recreate host views; no consent loop.</td></tr>
+<tr><td>V7 · Version</td><td>Provider/resource missing or VietMap replaced.</td><td>UnsupportedShape/NeedsRebind, no crash.</td></tr>
+<tr><td>V8 · On-car</td><td>Bind dialog, route active, VietMap background, screen cycle.</td><td>Speed limit/current speed continue; result documented with timestamps.</td></tr>
+<tr><td>V9 · Isolation</td><td>Cast active while widget bridge updates.</td><td>No Cast state, shell command or projection lifecycle change.</td></tr>
+<tr><td>V10 · Build</td><td><code>:core:test</code> + <code>:app:assembleRelease</code>.</td><td>Green after review patches.</td></tr>
+</tbody></table></div>
+<div class="callout red"><strong>Fail-fast rule:</strong> nếu BYD không cung cấp ACTION_APPWIDGET_BIND hoặc background update không tới host, POC dừng ở verdict NOT VIABLE. Không bypass bằng Accessibility, root, BLE hay patch VietMap trong cùng scope.</div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Question</th><th>Decision gate</th></tr></thead><tbody>
+<tr><td>Q1</td><td>BYD firmware có Activity xử lý <code>ACTION_APPWIDGET_BIND</code> không?</td><td>On-car POC. Không có UI bind → NOT VIABLE trong scope.</td></tr>
+<tr><td>Q2</td><td>HostView nội bộ không attach window có tiếp tục nhận RemoteViews khi VietMap nền không?</td><td>Emulator + on-car 60s background test; 1×1 transparent attach chỉ là fallback kỹ thuật, không phải UI.</td></tr>
+<tr><td>Q3</td><td>Widget cập nhật khi màn tắt/xe sleep tới mức nào?</td><td>Đo riêng sau POC; không block foreground/background acceptance ban đầu.</td></tr>
+<tr><td>Q4</td><td>Alert bitmap có mapping ổn định qua version không?</td><td>Chỉ giữ hash/visibility trong POC; semantic mapping để spec sau.</td></tr>
+<tr><td>Q5</td><td>Sau POC, speed limit hiển thị ở cluster overlay, HUD hay Home?</td><td>Scope mới, cần approval mới sau khi data acquisition proven.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><code>docs/diagnostics/vietmap-same-device-hud-research-2026-08-04.md</code> — corrected same-device research and senior verdict.</li>
+<li><code>docs/diagnostics/vietmap-ble-hud-protocol.md</code> — historical BLE protocol reverse-engineering; not the selected runtime architecture.</li>
+<li>Android Developers: Build a widget host — binding, persistent IDs, consent and host lifecycle.</li>
+<li>VietMap 3.3.4: <code>Aa/g.java</code>, <code>VMOnlySpeedLimitWidgetProvider</code>, <code>VMAlertWidgetProvider</code> — reverse-engineered evidence.</li>
+<li><code>NavNotificationListener.kt</code> / <code>NavRepository.kt</code> — authoritative Navigation lifecycle and output isolation.</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><h3>Pass 1 — 2026-08-04 · Architecture research</h3><p>Senior Android/Bluetooth review (<code>claude-opus-4.8</code>) rejected same-adapter BLE self-link, ranked AppWidgetHost first and Accessibility second, and confirmed HostView inspection after official binding as the next bounded experiment. No factual P0–P3 issue remained; target bindability and background freshness stay as explicit evidence gates.</p></div>
+<div class="review"><h3>Pass 2 — 2026-08-04 · Planning consistency</h3><p>Spec keeps Navigation and Cast independent, excludes output wiring from POC, uses dynamic remote resource lookup, treats stale data honestly, and provides one consolidated out-of-band approval gate.</p></div>
+</section>
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

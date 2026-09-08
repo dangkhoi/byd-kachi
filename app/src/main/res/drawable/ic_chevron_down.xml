@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ic_chevron_down — DESIGN SYSTEM (Cockpit). A small downward chevron "▾" used as the Spinner
+  dropdown affordance (composed into @drawable/spinner_bg). Tinted with @color/text_secondary so it
+  reads as a muted control glyph on the dark surface_2 spinner fill, matching colorControlNormal.
+  New drawable (allowed) — no sealed-layout / strings edit.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="@color/text_secondary"
+        android:pathData="M7,9.5 L12,14.5 L17,9.5 L15.6,8.1 L12,11.7 L8.4,8.1 Z" />
+</vector>

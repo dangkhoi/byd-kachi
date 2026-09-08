@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  hero_card_bg — DESIGN SYSTEM (Cockpit L2) · @style/Cockpit.HeroCard background. Matches the mockup `.hcard`
+  (docs/specs/ui-visual-upgrade-l2.html): a diagonal gradient surface_2→surface, a 1px @color/hairline
+  stroke and 20dp corners. The soft shadow comes from android:elevation on the style.
+  NOTE: Android <gradient> angle must be a multiple of 45 (315 ≈ the mockup's 160deg diagonal; 300 is not
+  a legal Android gradient angle so the nearest legal diagonal is used).
+  FIX (stage2-ui · T3): the former straight 1px top-highlight <item> did NOT follow the 20dp rounded
+  corners, so it read as a DOUBLED line above the border at the corners. Removed — the gradient + stroke +
+  rounded corners + elevation keep the depth without the corner artifact.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base hero face: diagonal gradient + hairline stroke + rounded corners -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="315"
+                android:startColor="@color/surface_2"
+                android:endColor="@color/surface" />
+            <corners android:radius="20dp" />
+            <stroke android:width="1dp" android:color="@color/hairline" />
+        </shape>
+    </item>
+</layer-list>

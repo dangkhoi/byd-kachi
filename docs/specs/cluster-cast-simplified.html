@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Cluster Cast Simplified Architecture</title>
+<script>(function(){var t=localStorage.getItem('cast-simple-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e8f7ec;--amber:#a05a00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7a45bf;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#08080a;--paper:#171719;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:14px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700;letter-spacing:-.01em}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:76px 0 48px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,60px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:900px}.lead{font-size:19px;color:var(--muted);max-width:820px}.meta{font:12px var(--mono);color:var(--muted);margin-top:24px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}.stat,.card,.diagram,.callout,.phase,.review{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:18px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:60px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}pre{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font-size:13px;line-height:1.5}pre code{background:none;padding:0}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:700px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.diagram{padding:22px;overflow:auto}.diagram svg{display:block;min-width:700px;width:100%;height:auto}.box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}.box.blue{fill:var(--blue-soft);stroke:var(--blue)}.box.green{fill:var(--green-soft);stroke:var(--green)}.box.amber{fill:var(--amber-soft);stroke:var(--amber)}.box.red{fill:var(--red-soft);stroke:var(--red)}.dt{fill:var(--ink);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.5;marker-end:url(#arrow)}.edge.blue{stroke:var(--blue)}.edge.green{stroke:var(--green)}.edge.red{stroke:var(--red);stroke-dasharray:6 5}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--blue);margin-right:6px}.phase{display:grid;grid-template-columns:120px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.review{padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:50px}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Cast Simplified</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('cast-simple-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Simplified architecture · field-proven 2026-08-02</div>
+<h1>Cluster Cast: Projection-First, Move-App, Done.</h1>
+<p class="lead">Bỏ state machine phức tạp, bootstrap verification, seal tracking và migration. Thay bằng: mở projection một lần → cast = di chuyển app sang display 1 → stop = di chuyển app về display 0. Projection vẫn mở, cụm luôn sẵn sàng. Config <code>wm size</code> + <code>wm overscan</code> riêng từng loại app.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Date: 2026-08-02 · Field-proven measurements from on-car session</p>
+<div class="stats"><div class="stat"><b>4</b><span>states thay vì 11</span></div><div class="stat"><b>0</b><span>bootstrap verify</span></div><div class="stat"><b>1</b><span>projection lifecycle</span></div><div class="stat"><b>3</b><span>app-type configs</span></div></div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Status</th></tr></thead><tbody>
+<tr><td>2026-08-02</td><td>Spec khởi tạo dựa trên kết quả đo field session 02/8. Owner chốt hướng đơn giản hoá triệt để.</td><td><span class="pill">Initial draft</span></td></tr>
+</tbody></table></div></section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+
+<div class="callout green"><strong>Field-proven 2026-08-02:</strong> Toàn bộ recipe cast/stop cho app thường, CarPlay và Android Auto đã được kiểm chứng trên xe thật. Cast thành công 3-4s, Stop 1-2s, cast lặp lại nhiều lần OK.</div>
+
+<div class="grid2">
+<div class="card"><h3>Vấn đề của kiến trúc cũ</h3>
+<ul>
+<li><strong>Verification luôn fail</strong> — observation race với migration refresh, <code>completeVerificationLocked</code> ghim RECOVERING vĩnh viễn</li>
+<li><strong>Projection đóng do reset seal</strong> — <code>resetSessionForFreshBoot</code> xoá seal → cast không bootstrap</li>
+<li><strong>State machine 11 trạng thái</strong> — ObservedState (6) + OperationState (6) + StableState (5) → quá phức tạp cho use case đơn giản</li>
+<li><strong>SCALE_CLUSTER_DENSITY gây hỏng</strong> — density global ảnh hưởng mọi app, không reset khi crash</li>
+<li><strong>UI chậm 10-15s</strong> — reconcile cycle + observation timeout → trạng thái không phản ánh thực tế</li>
+</ul>
+</div>
+<div class="card"><h3>Hướng mới (owner-approved)</h3>
+<ul>
+<li><strong>Projection mở khi app khởi động</strong> — user mở ClusterNav = cụm sẵn sàng ngay, không cần bấm thêm</li>
+<li><strong>Cast = move app</strong> — <code>am start --display 1</code> hoặc <code>am stack move-task</code>, luôn full cluster</li>
+<li><strong>Stop = bấm bất kỳ nút nào</strong> — khi đang chiếu, mọi tap trên bubble = trả app về display 0</li>
+<li><strong>Tắt app = đóng projection</strong> — profile 18/0, cụm về đồng hồ</li>
+<li><strong>Per-app config</strong> — <code>wm size</code> + <code>wm overscan</code> theo từng loại app (CP/AA/thường)</li>
+</ul>
+</div>
+</div>
+
+<div class="grid3">
+<div class="card"><h3>Bỏ được</h3>
+<ul>
+<li>Bootstrap verification phức tạp</li>
+<li>Seal/profileExport tracking</li>
+<li>Migration state machine</li>
+<li><code>retireUnprovenClusterClaim</code></li>
+<li>Observation-based CAST verification</li>
+<li><code>SCALE_CLUSTER_DENSITY</code></li>
+<li>Transaction journal cho cast/stop</li>
+</ul>
+</div>
+<div class="card"><h3>Giữ lại</h3>
+<ul>
+<li>CastSessionStore (simplified)</li>
+<li>CastAppCatalog (app list)</li>
+<li>Bubble/UI interaction</li>
+<li>Per-app geometry prefs</li>
+<li>AutomationConfig (auto-start)</li>
+<li>Shell gateway (dadb)</li>
+<li>Display discovery</li>
+</ul>
+</div>
+<div class="card"><h3>Config đo được trên xe</h3>
+<ul>
+<li><strong>CarPlay:</strong> wm size 1422×800, overscan 10,-120,10,50</li>
+<li><strong>Android Auto:</strong> wm size 1920×1080, overscan 0,0,0,0</li>
+<li><strong>App thường:</strong> wm size user-configurable (default ~1920×800)</li>
+<li><strong>Density:</strong> reset (320 native) for all</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Yêu cầu</th><th>Tiêu chí chấp nhận</th></tr></thead><tbody>
+<tr><td>R1</td><td><strong>Mở app = mở projection ngay.</strong></td><td>Khi app ClusterNav khởi động (<code>onCreate</code>): gửi profile sequence [30, 16, 35] + set <code>wm size</code> + <code>wm overscan</code> mặc định. Cụm sẵn sàng chiếu ngay, user không cần bấm gì thêm để "bật cụm". Projection KHÔNG đóng khi stop app — chỉ đóng khi user thoát app ClusterNav.</td></tr>
+<tr><td>R2</td><td><strong>Cast CP/AA = luôn full cluster, không chia đôi.</strong></td><td>CP/AA lên cụm: LUÔN chiếm toàn bộ. Không có option trái/phải/split. Bấm bất kỳ nút cast nào khi target là CP/AA = full cluster.</td></tr>
+<tr><td>R3</td><td><strong>CP/AA đang chiếu full → bấm bất kỳ nút nào = trả về màn chính.</strong></td><td>Khi CP/AA đang full cluster, mọi tap trên bubble = stop toàn bộ, trả CP/AA về display 0. Cụm vẫn mở (projection giữ nguyên).</td></tr>
+<tr><td>R3a</td><td><strong>App thường: cast được chia đôi trái/phải.</strong></td><td>App thường có thể cast vào slot trái hoặc slot phải. Hai slot independent: mỗi slot chứa 1 app. Cast app vào slot trái không ảnh hưởng slot phải và ngược lại.</td></tr>
+<tr><td>R3b</td><td><strong>App thường chia đôi: nhấn slot nào → trả app slot đó về.</strong></td><td>Nhấn nút tương ứng slot trái → trả app trái về display 0, slot trái trống. Có thể cast app khác vào slot trái. Tương tự bên phải. Slot còn lại không bị ảnh hưởng.</td></tr>
+<tr><td>R4</td><td><strong>Tắt Cast = đóng projection.</strong></td><td>Khi user thoát app hoặc bấm "Tắt cụm": gửi profile sequence [18, 0]. Cụm về hiện đồng hồ.</td></tr>
+<tr><td>R5</td><td><strong>Per-app-type display config.</strong></td><td>Trước khi cast, set <code>wm size</code> và <code>wm overscan</code> phù hợp loại app: CP (1422×800 + overscan), AA (1920×1080), app thường (user-configurable). Reset display config khi đổi loại app.</td></tr>
+<tr><td>R6</td><td><strong>Cast lặp lại nhiều lần không kẹt.</strong></td><td>Cast → Stop → Cast → Stop ... N lần liên tiếp không gây treo, orphan hoặc projection đóng. Đã field-proven N=3+.</td></tr>
+<tr><td>R7</td><td><strong>UI phản ánh trạng thái tức thì (≤ 2s).</strong></td><td>Bỏ observation-based verification. Dùng ledger: command issued → state update ngay. Bubble và Home status cập nhật trong 2s thay vì 10-15s.</td></tr>
+<tr><td>R8</td><td><strong>CP/AA đang chiếu: KHÔNG cho chỉnh kích thước.</strong></td><td>CP luôn 1422×800. AA luôn 1920×1080. UI hoàn toàn ẨN mọi resize/split controls khi app đang chiếu là CP hoặc AA. Không hiện thanh kéo, không hiện nút chia đôi, không hiện option nào liên quan size.</td></tr>
+<tr><td>R9</td><td><strong>App thường: 1 config per app, hệ thống tự fit theo slot.</strong></td><td>Mỗi app lưu DUY NHẤT 1 bộ preferred size (wmSize + overscan). Khi cast full → dùng config đó cho toàn bộ cluster. Khi cast split (trái/phải) → hệ thống tự fit config vào nửa cụm tương ứng. User chỉ chỉnh 1 lần, không cần config riêng cho full/left/right.</td></tr>
+<tr><td>R10</td><td><strong>Không freeze, không orphan.</strong></td><td>Mọi failure path kết thúc ở state xác định: IDLE (projection open, no app) hoặc ACTIVE (app on cluster). Không bao giờ kẹt ở trạng thái trung gian.</td></tr>
+<tr><td>R11</td><td><strong>Hai pipeline độc lập.</strong></td><td>Navigation + HUD (Pipeline A) và Cluster Cast (Pipeline B) không chia sẻ state, executor, journal, lifecycle hay recovery. Giữ nguyên contract từ cluster-cast-rebaseline D0.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+
+<h3>4.1 Simplified state model — 4 trạng thái</h3>
+<div class="diagram"><svg viewBox="0 0 860 260" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box" x="30" y="40" width="170" height="65" rx="14"/><text class="dt" x="115" y="66" text-anchor="middle">OFF</text><text class="ds" x="115" y="84" text-anchor="middle">projection closed</text>
+<rect class="box green" x="260" y="40" width="170" height="65" rx="14"/><text class="dt" x="345" y="66" text-anchor="middle">IDLE</text><text class="ds" x="345" y="84" text-anchor="middle">projection open · ready</text>
+<rect class="box blue" x="510" y="10" width="200" height="65" rx="14"/><text class="dt" x="610" y="36" text-anchor="middle">CASTING_FULL</text><text class="ds" x="610" y="54" text-anchor="middle">CP/AA or 1 normal app</text>
+<rect class="box blue" x="510" y="100" width="200" height="65" rx="14"/><text class="dt" x="610" y="126" text-anchor="middle">CASTING_SPLIT</text><text class="ds" x="610" y="144" text-anchor="middle">2 normal apps: L + R</text>
+<path class="edge" d="M200,72 H250"/><text class="ds" x="225" y="64" text-anchor="middle">open</text>
+<path class="edge" d="M430,55 H500"/><text class="ds" x="465" y="47" text-anchor="middle">cast full</text>
+<path class="edge" d="M430,80 L500,125"/><text class="ds" x="455" y="112" text-anchor="middle">cast split</text>
+<path class="edge" d="M510,55 H440"/><text class="ds" x="475" y="70" text-anchor="middle">stop</text>
+<path class="edge" d="M510,140 L440,85"/><text class="ds" x="460" y="135" text-anchor="middle">stop both</text>
+<path class="edge red" d="M260,100 C200,140 130,130 115,105"/><text class="ds" x="180" y="140" text-anchor="middle">close</text>
+</svg>
+<div class="legend"><span><span class="dot" style="background:var(--green)"></span>IDLE = sẵn sàng cast</span><span><span class="dot"></span>CASTING_FULL = CP/AA hoặc 1 app full</span><span><span class="dot"></span>CASTING_SPLIT = 2 app thường chia đôi</span><span><span class="dot" style="background:var(--red)"></span>close = đóng projection</span></div>
+</div>
+
+<div class="callout blue"><strong>CP/AA vs App thường:</strong> CP/AA chỉ có thể vào CASTING_FULL (chiếm toàn bộ cụm). App thường có thể vào CASTING_FULL (1 app full) hoặc CASTING_SPLIT (2 app chia đôi trái/phải). Từ CASTING_SPLIT, stop 1 slot → vẫn ở CASTING_SPLIT (1 slot trống), stop cả 2 → IDLE.</div>
+
+<h3>4.2 Cast flow — mỗi bước là 1 lệnh shell</h3>
+<div class="diagram"><svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<text class="dt" x="430" y="24" text-anchor="middle">OPEN PROJECTION (chạy 1 lần khi khởi động Cast)</text>
+<rect class="box amber" x="30" y="40" width="180" height="55" rx="10"/><text class="dt" x="120" y="62" text-anchor="middle">Profile 30</text><text class="ds" x="120" y="79" text-anchor="middle">cmd service call → curved</text>
+<rect class="box amber" x="240" y="40" width="180" height="55" rx="10"/><text class="dt" x="330" y="62" text-anchor="middle">Profile 16</text><text class="ds" x="330" y="79" text-anchor="middle">cmd service call → keepKmh</text>
+<rect class="box amber" x="450" y="40" width="180" height="55" rx="10"/><text class="dt" x="540" y="62" text-anchor="middle">Profile 35</text><text class="ds" x="540" y="79" text-anchor="middle">cmd service call → activate</text>
+<rect class="box green" x="660" y="40" width="170" height="55" rx="10"/><text class="dt" x="745" y="62" text-anchor="middle">wm size + overscan</text><text class="ds" x="745" y="79" text-anchor="middle">per-app-type config</text>
+<path class="edge" style="marker-end:url(#a2)" d="M210,67 H240"/><path class="edge" style="marker-end:url(#a2)" d="M420,67 H450"/><path class="edge" style="marker-end:url(#a2)" d="M630,67 H660"/>
+<text class="dt" x="430" y="130" text-anchor="middle">CAST (mỗi lần bấm chiếu)</text>
+<rect class="box" x="80" y="145" width="220" height="55" rx="10"/><text class="dt" x="190" y="167" text-anchor="middle">Detect app type</text><text class="ds" x="190" y="184" text-anchor="middle">CP / AA / Normal</text>
+<rect class="box green" x="340" y="145" width="220" height="55" rx="10"/><text class="dt" x="450" y="167" text-anchor="middle">Set wm size/overscan</text><text class="ds" x="450" y="184" text-anchor="middle">if different from current</text>
+<rect class="box blue" x="600" y="145" width="230" height="55" rx="10"/><text class="dt" x="715" y="167" text-anchor="middle">Move app to display 1</text><text class="ds" x="715" y="184" text-anchor="middle">am start --display / move-task</text>
+<path class="edge" style="marker-end:url(#a2)" d="M300,172 H340"/><path class="edge" style="marker-end:url(#a2)" d="M560,172 H600"/>
+<text class="dt" x="430" y="240" text-anchor="middle">STOP (bấm nút nổi lần 2)</text>
+<rect class="box" x="200" y="255" width="240" height="55" rx="10"/><text class="dt" x="320" y="277" text-anchor="middle">Return app to display 0</text><text class="ds" x="320" y="294" text-anchor="middle">am start --display 0 / move-task</text>
+<rect class="box green" x="480" y="255" width="200" height="55" rx="10"/><text class="dt" x="580" y="277" text-anchor="middle">State → IDLE</text><text class="ds" x="580" y="294" text-anchor="middle">projection stays open</text>
+<path class="edge" style="marker-end:url(#a2)" d="M440,282 H480"/>
+</svg></div>
+
+<h3>4.3 Per-app-type display configuration</h3>
+<div class="scroll"><table><thead><tr><th>App Type</th><th>Detection</th><th>wm size</th><th>wm overscan</th><th>Resizable</th><th>Move command</th></tr></thead><tbody>
+<tr><td><strong>CarPlay</strong></td><td>Package contains <code>carplay</code> or known CP packages</td><td>1422×800</td><td>10,-120,10,50</td><td>❌ Fixed</td><td><code>am stack move-task</code></td></tr>
+<tr><td><strong>Android Auto</strong></td><td>Package contains <code>android.auto</code> or known AA packages</td><td>1920×1080</td><td>0,0,0,0</td><td>❌ Fixed</td><td><code>am stack move-task</code></td></tr>
+<tr><td><strong>App thường</strong></td><td>Everything else</td><td>User pref (default 1920×800)</td><td>User pref (default 0,0,0,0)</td><td>✅ User adjustable</td><td><code>am start --display &lt;VD&gt; -W -n</code></td></tr>
+</tbody></table></div>
+
+<h3>4.4 Component architecture (simplified)</h3>
+<div class="diagram"><svg viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="a3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+<rect class="box" x="250" y="15" width="360" height="55" rx="12"/><text class="dt" x="430" y="38" text-anchor="middle">UI / Bubble / Home Panel</text><text class="ds" x="430" y="55" text-anchor="middle">emit intent · render CastState · never issue shell</text>
+<rect class="box blue" x="250" y="110" width="360" height="65" rx="12"/><text class="dt" x="430" y="135" text-anchor="middle">SimpleCastCoordinator</text><text class="ds" x="430" y="155" text-anchor="middle">state: OFF | IDLE | CASTING · single executor</text>
+<rect class="box green" x="30" y="230" width="220" height="60" rx="12"/><text class="dt" x="140" y="255" text-anchor="middle">ProjectionManager</text><text class="ds" x="140" y="272" text-anchor="middle">open / close profile seq</text>
+<rect class="box green" x="280" y="230" width="220" height="60" rx="12"/><text class="dt" x="390" y="255" text-anchor="middle">AppMover</text><text class="ds" x="390" y="272" text-anchor="middle">cast / stop per app-type</text>
+<rect class="box green" x="530" y="230" width="220" height="60" rx="12"/><text class="dt" x="640" y="255" text-anchor="middle">DisplayConfigurator</text><text class="ds" x="640" y="272" text-anchor="middle">wm size / overscan / reset</text>
+<rect class="box" x="180" y="330" width="200" height="50" rx="10"/><text class="dt" x="280" y="358" text-anchor="middle">ShellGateway (dadb)</text>
+<rect class="box" x="430" y="330" width="200" height="50" rx="10"/><text class="dt" x="530" y="358" text-anchor="middle">CastPrefs</text>
+<path class="edge" style="marker-end:url(#a3)" d="M430,70 V110"/><path class="edge" style="marker-end:url(#a3)" d="M350,175 C300,200 180,210 150,230"/><path class="edge" style="marker-end:url(#a3)" d="M430,175 V230"/><path class="edge" style="marker-end:url(#a3)" d="M510,175 C560,200 620,210 635,230"/><path class="edge" style="marker-end:url(#a3)" d="M140,290 C160,310 230,320 270,330"/><path class="edge" style="marker-end:url(#a3)" d="M390,290 C370,310 310,320 290,330"/><path class="edge" style="marker-end:url(#a3)" d="M640,290 C600,310 560,320 540,330"/>
+</svg></div>
+
+<div class="grid2">
+<div class="card"><h3>SimpleCastCoordinator</h3>
+<p>Thay thế CastCoordinator phức tạp. Trách nhiệm:</p>
+<ul>
+<li>Quản lý state machine 3 trạng thái (OFF/IDLE/CASTING)</li>
+<li>Serialise mọi operation trên single executor</li>
+<li>Expose immutable state cho UI observe</li>
+<li>Delegate shell work cho 3 component con</li>
+</ul>
+<p class="small">Target: ≤200 LOC</p>
+</div>
+<div class="card"><h3>So sánh LOC</h3>
+<table style="min-width:auto"><thead><tr><th>Module</th><th>Cũ</th><th>Mới (target)</th></tr></thead><tbody>
+<tr><td>Coordinator</td><td>~500+</td><td>≤200</td></tr>
+<tr><td>Executor</td><td>~350</td><td>merged into AppMover ≤150</td></tr>
+<tr><td>Planner/Policy</td><td>~480</td><td>eliminated (inline logic)</td></tr>
+<tr><td>SessionStore</td><td>~250</td><td>CastPrefs ≤80</td></tr>
+<tr><td>ObservedStateReader</td><td>~300</td><td>eliminated (not needed)</td></tr>
+<tr><td>Recovery</td><td>~300</td><td>eliminated</td></tr>
+<tr><td><strong>Total Cast core</strong></td><td><strong>~2200+</strong></td><td><strong>≤600</strong></td></tr>
+</tbody></table>
+</div>
+</div>
+
+<h3>4.5 Projection lifecycle</h3>
+<pre><code>// Open projection (OFF → IDLE) — called automatically on app onCreate
+fun openProjection(displayId: Int, appType: AppType) {
+    shell("service call SurfaceFlinger 1035 i32 $displayId i32 30")  // curved
+    sleep(300)
+    shell("service call SurfaceFlinger 1035 i32 $displayId i32 16")  // keepKmh  
+    sleep(300)
+    shell("service call SurfaceFlinger 1035 i32 $displayId i32 35")  // activate
+    sleep(500)
+    applyDisplayConfig(displayId, appType)
+    state = IDLE
+}
+
+// Close projection (→ OFF)
+fun closeProjection(displayId: Int) {
+    shell("service call SurfaceFlinger 1035 i32 $displayId i32 18")  // close
+    sleep(300)
+    shell("service call SurfaceFlinger 1035 i32 $displayId i32 0")   // refresh
+    state = OFF
+}
+
+// Cast app (IDLE → CASTING) — always FULL cluster for CP/AA
+fun castApp(pkg: String, displayId: Int) {
+    val appType = classifyApp(pkg)
+    if (currentDisplayConfig != appType) applyDisplayConfig(displayId, appType)
+    when (appType) {
+        CP, AA -> shell("am stack move-task $taskId $stackOnDisplay1")  // full only, no split
+        NORMAL -> shell("am start --display $displayId --windowingMode 5 -n $pkg/$activity")
+    }
+    state = CASTING(target = pkg)
+}
+
+// Stop (CASTING → IDLE) — ANY bubble tap while casting = stop
+fun stopCast(displayId: Int) {
+    val target = state.target
+    when (classifyApp(target)) {
+        CP, AA -> shell("am stack move-task $taskId $stackOnDisplay0")
+        NORMAL -> shell("am start --display 0 -n $target/$activity")
+    }
+    state = IDLE
+}</code></pre>
+
+<h3>4.6 Error handling — simple and fail-safe</h3>
+<div class="grid2">
+<div class="card"><h4>Shell command fails</h4>
+<ul>
+<li>Retry once after 1s</li>
+<li>If still fails: state stays at previous known-good state</li>
+<li>Show toast "Lệnh thất bại, thử lại" — user bấm lại</li>
+<li>NO automatic recovery chain, NO state machine escalation</li>
+</ul>
+</div>
+<div class="card"><h4>App crashes on cluster</h4>
+<ul>
+<li>Detect via simple AM observation (optional, periodic 5s poll)</li>
+<li>If active target gone from display 1: state → IDLE</li>
+<li>Projection stays open — user can cast again immediately</li>
+<li>NO complex orphan/residue tracking</li>
+</ul>
+</div>
+</div>
+
+<h3>4.7 UI state contract</h3>
+<pre><code>// Replaces complex CastUiStateV2 with 19 recovery mappings
+sealed interface SimpleCastState {
+    object Off : SimpleCastState
+    object Opening : SimpleCastState          // transient: projection opening
+    object Idle : SimpleCastState             // projection open, ready
+    data class CastingFull(
+        val targetPkg: String,
+        val appType: AppType,                 // CP | AA | NORMAL
+        val displayConfig: DisplayConfig,
+    ) : SimpleCastState
+    data class CastingSplit(
+        val left: SlotState?,                 // null = slot empty
+        val right: SlotState?,                // null = slot empty
+    ) : SimpleCastState
+    object Stopping : SimpleCastState         // transient: returning app
+    data class Error(val msg: String) : SimpleCastState  // show toast, auto-clear
+}
+
+data class SlotState(
+    val pkg: String,
+    val displayConfig: DisplayConfig,
+)
+
+enum class AppType { CARPLAY, ANDROID_AUTO, NORMAL }
+
+data class DisplayConfig(
+    val wmSize: String,      // e.g. "1422x800"  
+    val overscan: String,    // e.g. "10,-120,10,50"
+    val resizable: Boolean,
+)</code></pre>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<p class="small">Thứ tự implement. Mỗi task phải test được off-car trước khi sang task sau.</p>
+
+<div class="phase"><div class="phase-id">T1</div><div>
+<h4>Tạo SimpleCastCoordinator + state model</h4>
+<p>File mới: <code>core/.../v2/SimpleCastCoordinator.kt</code>. State machine 3 trạng thái, single executor, expose StateFlow cho UI.</p>
+<ul class="check">
+<li>OFF / IDLE / CASTING states + transitions</li>
+<li>Reject invalid transitions (e.g. cast when OFF)</li>
+<li>Thread-safe via single-thread executor</li>
+<li>Unit test mọi transition path</li>
+</ul>
+</div></div>
+
+<div class="phase"><div class="phase-id">T2</div><div>
+<h4>ProjectionManager — open/close profile sequence</h4>
+<p>File mới: <code>core/.../v2/ProjectionManager.kt</code>. Wrap các lệnh profile (30/16/35 mở, 18/0 đóng). Tái dùng shell gateway hiện có.</p>
+<ul class="check">
+<li>openProjection(displayId): issue 3 profile commands</li>
+<li>closeProjection(displayId): issue 2 commands</li>
+<li>Idempotent: gọi open khi đã open → no-op</li>
+<li>Unit test với FakeShell</li>
+</ul>
+</div></div>
+
+<div class="phase"><div class="phase-id">T3</div><div>
+<h4>DisplayConfigurator — wm size/overscan per-app-type</h4>
+<p>File mới: <code>core/.../v2/DisplayConfigurator.kt</code>. Set/reset wm size + overscan. Track current config để không set lại nếu không đổi.</p>
+<ul class="check">
+<li>applyConfig(displayId, AppType): set wm size + overscan</li>
+<li>resetConfig(displayId): wm size reset + overscan 0,0,0,0</li>
+<li>Skip nếu config hiện tại == config muốn set</li>
+<li>Per-app-type constants (CP/AA/Normal default)</li>
+<li>User override cho NORMAL type từ CastPrefs</li>
+</ul>
+</div></div>
+
+<div class="phase"><div class="phase-id">T4</div><div>
+<h4>AppMover — cast/stop per app-type</h4>
+<p>File mới: <code>core/.../v2/AppMover.kt</code>. Di chuyển app giữa display 0 ↔ display 1. Phân biệt CP/AA (move-task) vs Normal (am start --display).</p>
+<ul class="check">
+<li>castToCluster(pkg, displayId, appType): move app lên</li>
+<li>returnToMain(pkg, appType): trả app về display 0</li>
+<li>Classify app type từ package name</li>
+<li>FakeShell tests cho mọi app type</li>
+</ul>
+</div></div>
+
+<div class="phase"><div class="phase-id">T5</div><div>
+<h4>Wire UI — Bubble + Home panel dùng SimpleCastCoordinator</h4>
+<p>Thay thế wiring cũ (CastFacade → CastCoordinator phức tạp) bằng SimpleCastCoordinator. Bubble tap: if CASTING → stop, if IDLE → cast foreground app.</p>
+<ul class="check">
+<li>Bubble observe SimpleCastState</li>
+<li>Home panel hiển thị state + controls</li>
+<li>Resize controls chỉ hiện cho NORMAL app type</li>
+<li>Cast/Stop button state đúng</li>
+</ul>
+</div></div>
+
+<div class="phase"><div class="phase-id">T6</div><div>
+<h4>CastPrefs — simplified persistent state</h4>
+<p>Thay thế CastSessionStore + CastSessionEnvelope phức tạp. Chỉ lưu: last active target, per-app display config, automation config.</p>
+<ul class="check">
+<li>SharedPreferences-based (đơn giản, không cần AtomicFile)</li>
+<li>Per-app wm size + overscan prefs</li>
+<li>Default app for auto-cast</li>
+<li>Last known display ID</li>
+</ul>
+</div></div>
+
+<div class="phase"><div class="phase-id">T7</div><div>
+<h4>On-car validation</h4>
+<p>Test matrix trên xe thật:</p>
+<ul class="check">
+<li>CP: cast → chiếu đúng 1422×800, overscan đúng → stop → cụm vẫn mở → cast lại</li>
+<li>AA: cast → 1920×1080 → stop → cast lại</li>
+<li>App thường (VietMap, GMaps): cast → resize → stop → cast lại với size đã lưu</li>
+<li>Đổi app type: CP → App thường → verify wm size reset/re-apply đúng</li>
+<li>Cast 5+ lần liên tiếp: không kẹt, không orphan</li>
+<li>Tắt Cast: projection đóng, cụm về đồng hồ</li>
+</ul>
+</div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<div class="grid2">
+<div class="card"><h3>Off-car (unit tests)</h3>
+<ul>
+<li>SimpleCastCoordinator: mọi transition, invalid transition rejection</li>
+<li>ProjectionManager: open/close idempotency, command sequence</li>
+<li>DisplayConfigurator: per-app-type config, skip-if-same, reset</li>
+<li>AppMover: correct command per app-type, error handling</li>
+<li>Full flow: open → cast → stop → cast different type → close</li>
+</ul>
+</div>
+<div class="card"><h3>On-car (field test)</h3>
+<ul>
+<li>CP cast + stop + recast: 3 cycles, timing ≤5s each</li>
+<li>AA cast + stop: verify stream renders (no scale, accept crop)</li>
+<li>Normal app cast + resize + stop + recast with saved size</li>
+<li>Type switch: CP → Normal → AA → verify wm config correct each time</li>
+<li>Stress: 5+ consecutive cast/stop without orphan/freeze</li>
+<li>Close projection: gauges return, no residual tasks on display 1</li>
+<li>UI responsiveness: bubble + Home ≤2s update after cast/stop</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Question</th><th>Impact</th><th>Status</th></tr></thead><tbody>
+<tr><td>Q1</td><td>CP chiếm toàn cụm (unresizable) — có cần xử lý "cast 2 app chia đôi" cho CP?</td><td>CP/AA luôn full → bỏ split mode cho CP/AA</td><td><strong>Resolved:</strong> CP/AA = full only, no split (owner 02/8)</td></tr>
+<tr><td>Q2</td><td>AA stream không scale theo wm size — chấp nhận cắt top/bottom hay tìm cách config?</td><td>Nếu chấp nhận → 1920×1080 là final, không cần resize logic cho AA</td><td>Chấp nhận cắt (owner decision 02/8)</td></tr>
+<tr><td>Q3</td><td>App crash detection: poll <code>am stack list</code> mỗi 5s hay dùng cơ chế khác?</td><td>Poll đơn giản nhưng tốn resource. Alternative: TaskStackListener nếu có quyền.</td><td>Bắt đầu với poll 5s, tối ưu sau nếu cần</td></tr>
+<tr><td>Q4</td><td>Dual-app (chia đôi cụm) — đã verify off-car nhưng chưa test on-car với app thật</td><td>Confirmed cho app thường. CP/AA = full only.</td><td><strong>Resolved:</strong> app thường cast trái/phải, CP/AA full only (owner 02/8). On-car test cần.</td></tr>
+<tr><td>Q5</td><td>HUD overlay trên cụm (SYSTEM_ALERT_WINDOW trên display 1) — owner muốn nhưng chưa test code</td><td>Tính năng bổ sung, không ảnh hưởng core Cast flow</td><td>Deferred — implement sau khi Cast ổn định</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><a href="../diagnostics/session-summary-2026-08-02.md">Session summary 2026-08-02</a> — field measurements, root causes, owner decision</li>
+<li><a href="cluster-cast-rebaseline.html">Cluster Cast Re-baseline</a> — previous complex architecture (superseded by this spec for new implementation)</li>
+<li><a href="clusternav-two-track-final-plan.html">Two-track final plan</a> — two independent pipeline contract (still binding)</li>
+<li><a href="cast-simplified-active-app-toggle.html">Cast simplified active-app toggle</a> — bubble UX simplification (complementary)</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><h3>Pass 0 — 2026-08-02 (initial draft)</h3>
+<p>Spec created based on field session findings. Owner approved direction verbally during on-car testing. Awaiting formal spec review before implementation begins.</p>
+</div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

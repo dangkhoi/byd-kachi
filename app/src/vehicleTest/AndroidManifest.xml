@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <receiver
+            android:name=".HudSignProbeReceiver"
+            android:exported="false" />
+
+        <activity
+            android:name=".HudSignProbeActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="T10 vehicle-test status"
+            android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- HAL PROBE (vehicleTest-only): bắn lệnh HAL nhanh qua adb để RE + kiểm tra trên xe.
+             exported=true để `adb shell am broadcast -a com.byd.clusternav.vehicletest.HAL_PROBE …`
+             tới được từ uid shell. Chỉ nằm ở src/vehicleTest → KHÔNG có trong release/debug APK. -->
+        <receiver
+            android:name=".HalProbeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.byd.clusternav.vehicletest.HAL_PROBE" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

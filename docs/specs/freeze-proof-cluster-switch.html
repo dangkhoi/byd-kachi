@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<title>ClusterNav — Đổi app trên cụm CHỐNG FREEZE (v0.66) + tên đường lên HUD</title>
+<style>
+  :root{
+    --bg:#fbfbfd; --fg:#1d1d1f; --muted:#6e6e73; --line:#e3e3e8; --card:#fff;
+    --accent:#0071e3; --warn:#b25000; --danger:#c2261a; --ok:#1d7a34; --code-bg:#f5f5f7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000; --fg:#f5f5f7; --muted:#98989d; --line:#2c2c2e; --card:#1c1c1e;
+           --accent:#0a84ff; --warn:#ff9f0a; --danger:#ff6961; --ok:#30d158; --code-bg:#1c1c1e; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:64px 24px 120px}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.022em;margin:0 0 8px;font-weight:700}
+  h2{font-size:26px;letter-spacing:-.02em;margin:56px 0 12px;padding-top:24px;border-top:1px solid var(--line);font-weight:650}
+  h3{font-size:19px;letter-spacing:-.01em;margin:32px 0 8px;font-weight:600}
+  .sub{color:var(--muted);font-size:17px;margin:0 0 8px}
+  .meta{color:var(--muted);font-size:14px;margin:0 0 40px}
+  code,pre{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  code{background:var(--code-bg);padding:.12em .38em;border-radius:5px;font-size:.88em}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.55}
+  pre code{background:none;padding:0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:20px;border:1px solid currentColor}
+  .p0{color:var(--danger)} .p1{color:var(--warn)} .p2{color:var(--muted)} .ok{color:var(--ok)}
+  .warnbox{border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0}
+  .okbox{border-left:3px solid var(--ok);background:color-mix(in srgb,var(--ok) 8%,transparent);padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0}
+  .dangerbox{border-left:3px solid var(--danger);background:color-mix(in srgb,var(--danger) 8%,transparent);padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0}
+  .diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:20px 0;overflow-x:auto}
+  .diagram svg{display:block;width:100%;height:auto;min-width:560px}
+  .svg-box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+  .svg-box-hi{fill:none;stroke:var(--accent);stroke-width:2}
+  .svg-box-bad{fill:none;stroke:var(--danger);stroke-width:2;stroke-dasharray:5 4}
+  .svg-box-ok{fill:none;stroke:var(--ok);stroke-width:2}
+  .svg-t{fill:var(--fg);font:13px -apple-system,sans-serif}
+  .svg-t-s{fill:var(--muted);font:11px -apple-system,sans-serif}
+  .svg-line{stroke:var(--muted);stroke-width:1.5;fill:none}
+  .svg-line-hi{stroke:var(--accent);stroke-width:2;fill:none}
+  .svg-line-bad{stroke:var(--danger);stroke-width:2;fill:none}
+  .svg-line-ok{stroke:var(--ok);stroke-width:2;fill:none}
+  ul{padding-left:22px} li{margin:5px 0}
+  .kv{color:var(--muted);font-size:14px}
+</style>
+
+<div class="wrap">
+
+<h1>Đổi app trên cụm — CHỐNG FREEZE (v0.66)</h1>
+<p class="sub">Kiến trúc swap giữ Virtual Display sống + bê app cũ ra bằng đường KHÔNG-transition → né cả 2 NPE gây treo. Kèm: đẩy tên đường (viết tắt) lên HUD.</p>
+<p class="meta">Owner: Đăng Khôi (dangkhoi) · 2026-07-23 · trạng thái: <strong>CHỜ DUYỆT PLAN</strong> (chưa code) · nguồn: field session 23/07 (v0.60→v0.65 freeze saga) + research AOSP WM.</p>
+
+<div class="dangerbox">
+<strong>⚠ Ràng buộc cốt tử:</strong> freeze chỉ verify được 100% khi có xe. Xe hiện tắt (chủ dự án đang ngủ). Plan + code + test off-car sẽ hoàn tất đêm nay; <strong>on-car validation dời sang phiên sau</strong>. Tuyệt đối KHÔNG tuyên bố "hết freeze" khi chưa test xe. Mọi quyết định thiếu bằng chứng xe → chọn đường AN TOÀN NHẤT theo research AOSP + ghi Open Questions.
+</div>
+
+<h2>Changelog</h2>
+<table>
+<tr><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>2026-07-23</td><td>Tạo spec sau field session freeze (v0.60→v0.65) + 2 research doc (AOSP WM internals + evidence audit). Chốt hướng: force-stop app cũ (đường không-transition) thay move-stack.</td></tr>
+</table>
+
+<h2>Context</h2>
+<p>Cả tối 23/07 test trên Seal (DL3, AOSP10) phát hiện bug P0: <strong>đổi app trên cụm → TREO head unit</strong> (đơ màn chính, mất touch, phải reboot cứng bằng nút nguồn). Đã thử 6 bản (v0.60→v0.65), freeze biến hình qua 2 lớp NPE. Chi tiết: <code>docs/review/HANDOFF-2026-07-23-oncar-freeze.md</code>.</p>
+<div class="warnbox">
+<strong>Gốc rễ (research AOSP 10):</strong> cả 2 NPE đều xuất phát từ <code>AppWindowToken.initializeChangeTransition()</code>.
+<ul>
+<li><strong>NPE A</strong> (LẶP → treo): <code>initializeChangeTransition</code> nạp app vào <code>mDisplayContent.mChangingApps</code> → <code>AppTransitionController.handleChangingApps</code> → <code>loadAnimation</code> → <code>getTask().getDisplayContent().getDisplayInfo()</code> null (khi VD bị huỷ). Lặp vô hạn ở surface-placement → treo.</li>
+<li><strong>NPE B</strong> (một-lần): cùng <code>initializeChangeTransition</code> gọi <code>TaskSnapshotController.createTaskSnapshot</code> → <code>getRotation()</code> trên DisplayContent null (task đang reparent). Một-lần/caught, nhưng làm move-off flaky.</li>
+</ul>
+<strong>Suy ra: chặn được <code>initializeChangeTransition</code> = né CẢ HAI.</strong> Điều kiện nó chạy (<code>shouldStartChangeTransition</code>): <code>isVisible() && windowing-mode qua ranh FREEFORM && !mAppTransition.isTransitionSet() && surfaceControl != null</code>. KHÔNG chạy cho task-to-front / new-launch / <strong>process death (force-stop)</strong>.
+</div>
+
+<h3>Đã đo được (validated on-car)</h3>
+<table>
+<tr><th>Primitive</th><th>Kết quả</th><th>NPE A</th><th>NPE B</th></tr>
+<tr><td><code>am start --display 1 --windowingMode 5</code> (đặt app MỚI lên VD sống)</td><td>Đã chứng minh KHÔNG treo (adb 22:15 + v0.64 on-car)</td><td class="ok">an toàn</td><td class="ok">an toàn</td></tr>
+<tr><td>Huỷ/tái tạo VD lúc switch (cmd16 / teardown[18,0])</td><td>TREO (v0.60 warm, v0.63 cold)</td><td class="p0">GÂY</td><td>—</td></tr>
+<tr><td><code>am display move-stack &lt;app&gt; 0</code> (bê app khỏi VD)</td><td>Flaky, ném exception (v0.65)</td><td>—</td><td class="p0">GÂY</td></tr>
+<tr><td><code>am force-stop &lt;app&gt;</code></td><td>Đã dùng để clear GL surface Maps — KHÔNG treo (empirical)</td><td class="ok">an toàn*</td><td class="ok">an toàn*</td></tr>
+</table>
+<p class="kv">*force-stop: research AOSP high-confidence (process death = CLOSE transition, không initializeChangeTransition, không đụng VD do container sở hữu). Chi tiết: <code>docs/_handoff/research-aosp-wm.md</code>.</p>
+
+<h2>Requirements</h2>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th><th>P</th></tr>
+<tr><td>R1</td><td><strong>Đổi app trên cụm KHÔNG TREO.</strong> Đường switch tuyệt đối KHÔNG huỷ/tái tạo VD, KHÔNG <code>move-stack</code> task đang-hiện khỏi VD (2 trigger của NPE A/B).</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>R2</td><td><strong>Mỗi thời điểm CHỈ 1 app trên cụm.</strong> Sau swap: chỉ app mới trên VD; app cũ + mọi app lạ đã rời VD.</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>R3</td><td><strong>App cũ về màn chính (display 0) FULLSCREEN, chạy bình thường</strong> — không cửa sổ nổi freeform-bé, không kẹt. (An toàn quan trọng: freeform-bé còn sót trên display 0 là nghi phạm freeze khi user bấm Home — H4.) <strong>Điều kiện thành công phải VERIFY, không giả định:</strong> app cũ (a) KHÔNG còn trên VD, (b) <code>displayId==0</code>, (c) <code>mode==fullscreen</code>. Chỉ đủ (a) là KHÔNG đạt R3 — đây đúng là bài học v0.65 (app rời VD nhưng còn freeform-bé trên d0 → treo khi bấm Home). Thiếu (c) → ép lại fullscreen (<code>am start -f 0x20000000 --windowingMode 1</code>) rồi kiểm lại.</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>R4</td><td>Cấu hình size/vị trí/DPI <strong>luôn nhắm ĐÚNG app đang trên cụm</strong> (<code>lastCastApp = target</code> sau swap; applyBounds áp lên app mới).</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>R5</td><td><strong>KHÔNG force-stop app giữ-phiên.</strong> Tập được miễn = <code>isKeepSession(pkg) <strong>||</strong> isPhoneProjection(comp, pkg)</code>. ⚠ <strong>BẮT BUỘC cả hai vế:</strong> <code>keepSessionApps</code> MẶC ĐỊNH RỖNG (<code>applyDefaultModes</code> chỉ thêm AA vào <code>t3Apps</code>, CỐ Ý KHÔNG thêm vào <code>keepSessionApps</code> — xem W1-4), nên CarPlay/Android Auto trên thực tế CHỈ được bảo vệ bởi <code>isPhoneProjection</code> (nhận diện theo hành vi, khớp <code>placeLadder</code> R3). Nếu chỉ wire <code>isKeepSession</code> → CP/AA BỊ force-stop → mất phiên chiếu điện thoại (phải cắm lại) = regression P1. Với app được miễn: dùng đường nhẹ (<code>am start</code> d0), hụt thì chấp nhận để nó nằm sau B trên VD (log, KHÔNG treo, KHÔNG force-stop).</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>R6</td><td><strong>Gate "app mới đã bám VD" TRƯỚC khi bê app cũ.</strong> App mới bounce (Maps GL) → app mới chưa lên VD → HỦY switch, GIỮ app cũ trên cụm (VD không bao giờ rỗng → né NPE A). Đã có ở v0.64, giữ.</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>R7</td><td><strong>HUD tên đường</strong>: đẩy tên đường ĐÃ VIẾT TẮT (<code>fitRoadName</code>, vd "Trần Trọng Kim"→"T.T.Kim") lên HUD với ngân sách ký tự CHỈNH ĐƯỢC (buffer HUD thật chưa rõ — cần trace xe có HUD mới). Thuật toán generic, KHÔNG hardcode tên đường.</td><td><span class="tag p2">P2</span></td></tr>
+<tr><td>R8</td><td>Test off-car (FakeShell) phủ chuỗi swap mới + viết tắt HUD. Giữ 184 test cũ pass. On-car dời phiên sau.</td><td><span class="tag p2">P2</span></td></tr>
+</table>
+
+<h2>Design</h2>
+
+<h3>D1 — Nguyên tắc: né <code>initializeChangeTransition</code> ở mọi thao tác đụng VD</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 300" role="img" aria-label="Nhân quả NPE và cách né">
+  <rect class="svg-box-bad" x="20" y="20" width="200" height="46" rx="10"/>
+  <text class="svg-t" x="120" y="40" text-anchor="middle">huỷ/tái tạo VD lúc switch</text>
+  <text class="svg-t-s" x="120" y="56" text-anchor="middle">cmd16 · teardown[18,0]</text>
+  <rect class="svg-box-bad" x="20" y="90" width="200" height="46" rx="10"/>
+  <text class="svg-t" x="120" y="110" text-anchor="middle">move-stack app-hiện khỏi VD</text>
+  <text class="svg-t-s" x="120" y="126" text-anchor="middle">am display move-stack X 0</text>
+
+  <rect class="svg-box-bad" x="300" y="55" width="230" height="46" rx="10"/>
+  <text class="svg-t" x="415" y="75" text-anchor="middle">initializeChangeTransition()</text>
+  <text class="svg-t-s" x="415" y="91" text-anchor="middle">shouldStartChangeTransition = true</text>
+
+  <rect class="svg-box-bad" x="610" y="18" width="230" height="52" rx="10"/>
+  <text class="svg-t" x="725" y="38" text-anchor="middle">NPE B: createTaskSnapshot</text>
+  <text class="svg-t-s" x="725" y="55" text-anchor="middle">getRotation() null · một-lần</text>
+  <rect class="svg-box-bad" x="610" y="88" width="230" height="60" rx="10"/>
+  <text class="svg-t" x="725" y="108" text-anchor="middle">NPE A: mChangingApps →</text>
+  <text class="svg-t-s" x="725" y="124" text-anchor="middle">handleChangingApps→loadAnimation</text>
+  <text class="svg-t-s" x="725" y="138" text-anchor="middle">→getDisplayInfo() null · LẶP → TREO</text>
+
+  <path class="svg-line-bad" d="M220 43 C 260 43, 270 74, 300 74"/>
+  <path class="svg-line-bad" d="M220 113 C 260 113, 270 82, 300 82"/>
+  <path class="svg-line-bad" d="M530 70 C 570 70, 580 44, 610 44"/>
+  <path class="svg-line-bad" d="M530 82 C 570 82, 580 112, 610 112"/>
+
+  <rect class="svg-box-ok" x="150" y="200" width="560" height="70" rx="12"/>
+  <text class="svg-t" x="430" y="228" text-anchor="middle">NÉ: chỉ dùng primitive KHÔNG kích initializeChangeTransition</text>
+  <text class="svg-t-s" x="430" y="248" text-anchor="middle">① đặt app mới lên VD sống (am start --display, task-to-front)  ·  ② bê app cũ = am force-stop (process death → CLOSE transition)</text>
+  <text class="svg-t-s" x="430" y="263" text-anchor="middle">VD KHÔNG bao giờ bị huỷ  ·  KHÔNG move-stack task-hiện khỏi VD</text>
+</svg>
+</div>
+
+<h3>D2 — Luồng swap mới (<code>hotSwapOnVd</code> v0.66)</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 340" role="img" aria-label="Luồng hot-swap v0.66">
+  <rect class="svg-box-hi" x="20" y="20" width="200" height="52" rx="10"/>
+  <text class="svg-t" x="120" y="40" text-anchor="middle">① đặt B lên VD sống</text>
+  <text class="svg-t-s" x="120" y="57" text-anchor="middle">am start --display vd -wm 5</text>
+
+  <rect class="svg-box" x="20" y="100" width="200" height="52" rx="10"/>
+  <text class="svg-t" x="120" y="120" text-anchor="middle">B bám VD? (landedOn)</text>
+  <text class="svg-t-s" x="120" y="137" text-anchor="middle">R6 gate</text>
+
+  <rect class="svg-box-bad" x="20" y="180" width="200" height="46" rx="10"/>
+  <text class="svg-t" x="120" y="200" text-anchor="middle">KHÔNG → giữ app cũ, thoát</text>
+  <text class="svg-t-s" x="120" y="216" text-anchor="middle">VD không rỗng → né NPE A</text>
+
+  <rect class="svg-box-hi" x="300" y="100" width="240" height="66" rx="10"/>
+  <text class="svg-t" x="420" y="122" text-anchor="middle">② returnAppToMain(app cũ)</text>
+  <text class="svg-t-s" x="420" y="139" text-anchor="middle">keep-session? → nhẹ (am start d0)</text>
+  <text class="svg-t-s" x="420" y="153" text-anchor="middle">còn lại → force-stop + relaunch d0 -wm 1</text>
+
+  <rect class="svg-box-hi" x="300" y="196" width="240" height="52" rx="10"/>
+  <text class="svg-t" x="420" y="216" text-anchor="middle">③ evict app lạ khỏi VD</text>
+  <text class="svg-t-s" x="420" y="233" text-anchor="middle">evictableOnVd (giữ home/pinned) → returnAppToMain</text>
+
+  <rect class="svg-box-hi" x="620" y="100" width="220" height="52" rx="10"/>
+  <text class="svg-t" x="730" y="120" text-anchor="middle">④ re-assert B trên top</text>
+  <text class="svg-t-s" x="730" y="137" text-anchor="middle">am start --display vd B (H7)</text>
+
+  <rect class="svg-box-ok" x="620" y="196" width="220" height="66" rx="10"/>
+  <text class="svg-t" x="730" y="218" text-anchor="middle">⑤ applyBounds(B) + set</text>
+  <text class="svg-t-s" x="730" y="235" text-anchor="middle">lastCastApp=B (R4) · casting=true</text>
+  <text class="svg-t-s" x="730" y="249" text-anchor="middle">cụm CHỈ có B (R2)</text>
+
+  <path class="svg-line-hi" d="M120 72 V100"/>
+  <path class="svg-line-bad" d="M120 152 V180"/>
+  <path class="svg-line-hi" d="M220 126 H300"/>
+  <path class="svg-line-hi" d="M420 166 V196"/>
+  <path class="svg-line-hi" d="M540 126 H620"/>
+  <path class="svg-line-hi" d="M730 152 V196"/>
+</svg>
+</div>
+
+<div class="dangerbox">
+<strong>⚠ 3 CHỐT AN TOÀN BẮT BUỘC trong luồng D2 (giữ bất biến "VD KHÔNG BAO GIỜ rỗng" = né NPE A). Thiếu bất kỳ chốt nào → tái hiện đúng freeze đang chữa:</strong>
+<ul>
+<li><strong>[P0] Chốt <code>oldApp != target</code> TRƯỚC bước ②.</strong> Khi user chiếu lại CHÍNH app đang trên cụm, <code>target == lastCastApp == oldApp</code>. Nếu bước ② gọi <code>returnAppToMain(oldApp)</code> vô điều kiện → force-stop đúng app vừa đặt lên VD ở bước ① → <strong>VD rỗng (0 app) → NPE A → treo</strong>. Bắt buộc: <code>if (oldApp.isNotBlank() &amp;&amp; oldApp != target) { … returnAppToMain(oldApp) … }</code>. (Code v0.65 ĐANG có chốt này — bản rewrite T2 TUYỆT ĐỐI không được bỏ.)</li>
+<li><strong>[P1] RE-CHECK B còn bám VD NGAY TRƯỚC bước ② (chống TOCTOU).</strong> Gate landedOn ở bước ① chỉ chứng minh B bám VD tại thời điểm đó; app GL (Maps) có thể <em>bounce</em> khỏi VD ngay sau. Nếu B bounce rồi mới force-stop old → VD rỗng → NPE A. Bắt buộc: đọc lại <code>am stack list</code>, xác nhận B còn trên VD; nếu KHÔNG → HỦY swap, GIỮ old trên cụm (old vẫn còn vì chưa đụng), KHÔNG force-stop, KHÔNG treo.</li>
+<li><strong>[P1] Điều kiện thành công của bước ② = FULLSCREEN trên d0, không chỉ "rời VD"</strong> (R3/H4). Xem D3.</li>
+</ul>
+</div>
+
+<div class="okbox">
+<strong>✅ Implementation (v0.66):</strong> lõi shell của luồng D2 được TÁCH thành <code>CastShell.swapOnVd(adb, sh, target, comp, oldApp, vd, log): SwapResult</code> (Context-free) để test off-xe qua <code>FakeShell</code> + <code>FakeDadb</code>; <code>ClusterCast.hotSwapOnVd</code> giữ phần cần Context (① <code>setDensityIfNeeded</code>, ⑥ <code>applyBounds</code>, commit <code>lastCastApp</code>/<code>casting</code>, 2 guard <code>divergenceOn</code>). Các chốt F1/F4/F5 nằm trong <code>swapOnVd</code>; <code>SwapResult.target==null</code> → caller GIỮ app cũ (KHÔNG commit). Bước ⑤ re-assert dùng đúng <code>am start --display vd --windowingMode 5 -n Bcomp</code>, sau đó RE-PICK bằng <code>landedOn</code> (F10) trước khi trả về caller applyBounds.
+</div>
+
+<h3>D3 — Helper mới <code>returnAppToMain(adb, sh, app, vd, log): Boolean</code></h3>
+<p>Trung tâm hoá "bê 1 app khỏi VD về display 0 fullscreen" bằng đường KHÔNG-transition. Thay MỌI <code>am display move-stack …0</code> trong đường SWITCH.</p>
+<pre><code>// ★ keepSession TÍNH BÊN TRONG — caller KHÔNG truyền (chống wire nhầm chỉ isKeepSession → force-stop CP/AA).
+fun returnAppToMain(sh, app, vd): Boolean {   // true = app RỜI VD + FULLSCREEN d0 (R3 đủ 3 điều kiện)
+  comp = resolveComp(app) ?: return false
+  val keepSession = isKeepSession(app) || isPhoneProjection(comp, app)   // R5 — CẢ HAI vế (keepSessionApps rỗng mặc định)
+  if (keepSession) {                       // CP/AA/sink — KHÔNG được giết phiên
+    sh("am start --display 0 --windowingMode 1 -f 0x20000000 -n comp"); sleep(500)
+    val off = app KHÔNG còn trên vd
+    if (!off) log("⚠ $app (giữ-phiên) chưa rời VD — chấp nhận nằm sau B, KHÔNG force-stop, KHÔNG treo (OQ3)")
+    return off        // giữ-phiên: chỉ cần rời VD; fullscreen-d0 không ép được vì không được đụng mạnh
+  }
+  // app thường: đường TẤT ĐỊNH, không-transition
+  sh("am force-stop app"); sleep(400)                         // process death → CLOSE transition (an toàn A+B)
+  sh("am start --display 0 --windowingMode 1 -n comp"); sleep(500)   // dựng lại fullscreen ở màn chính
+  // ★ VERIFY R3/H4 — KHÔNG chỉ "rời VD" mà phải FULLSCREEN trên d0 (freeform-bé sót lại = nghi phạm freeze khi bấm Home).
+  var e = pick(app, preferDisplay = 0)
+  if (e == null || e.displayId != 0) return false             // relaunch hụt → báo caller (chưa đạt R3)
+  if (e.mode != "fullscreen") {                               // còn freeform-bé → ÉP fullscreen lần nữa
+    sh("am start -f 0x20000000 --windowingMode 1 -n comp"); sleep(400)
+    e = pick(app, preferDisplay = 0)
+  }
+  return e != null &amp;&amp; e.displayId == 0 &amp;&amp; e.mode == "fullscreen"   // R3 = off VD + d0 + fullscreen
+}</code></pre>
+<div class="okbox">
+<strong>Vì sao force-stop là đường AN TOÀN NHẤT (dù mất state):</strong> research AOSP high-confidence + <em>bằng chứng thực tế trên chính head unit này</em> (đã force-stop Maps để clear GL surface, không treo). Đánh đổi mất-state được chấp nhận vì R1 (không treo) &gt; giữ-state, và yêu cầu chủ dự án chỉ là "chạy bình thường" = app chạy lại bình thường. <code>am start --display 0</code> đơn thuần bị research đánh giá RISKY (có thể no-op thành "brought-to-front" NGAY TRÊN VD = đúng bug app-cũ-nhảy-lên-top) → chỉ dùng cho keep-session, KHÔNG dùng làm đường chính.
+</div>
+<div class="warnbox">
+<strong>⚠ Blast-radius <code>restoreFullscreenOnMain</code> (đọc kỹ trước khi code):</strong> hàm <code>CastShell.restoreFullscreenOnMain</code> hiện có <code>am display move-stack $it 0</code> BÊN TRONG (bê stack app khỏi cluster-display) — đó CHÍNH là primitive NPE B. Trong đường SWITCH, <code>returnAppToMain</code> phải <strong>THAY THẾ</strong> mọi lời gọi <code>restoreFullscreenOnMain</code> (không gọi song song), để không bao giờ move-stack một task đang-hiện khỏi VD. Riêng nhánh HỦY của R6 (B bounce, chưa bám VD): tuyệt đối KHÔNG gọi <code>restoreFullscreenOnMain(target)</code> nếu target có thể còn 1 stack hiện trên VD — nó sẽ move-stack target khỏi VD (NPE B, một-lần/caught nhưng vi phạm R1). Nhánh này chỉ cần GIỮ old + thoát; target bounce về d0 tự nằm đó (fix fullscreen ở lần chiếu sau).
+</div>
+
+<h3>D4 — HUD tên đường (Track phụ)</h3>
+<p><code>ClusterBroadcaster.pushHud()</code> hiện truyền <strong>lastCleanRoad (tên ĐẦY ĐỦ)</strong> vào <code>BydHal.writeNavFrame(icon, seg, road)</code> → <code>road.toByteArray(Charsets.UTF_16LE)</code> ghi vào <code>INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET</code> (buffer BYTE cố định, nhỏ) → <strong>tràn buffer → firmware bỏ tên → chỉ còn mũi tên</strong>. <code>NavFormat.fitRoadName</code> SẴN sinh "T.T.Kim" nhưng <strong>pushHud CHƯA gọi nó</strong> (xác nhận khi review: pushHud dùng thẳng <code>lastCleanRoad</code>).</p>
+<pre><code>// NavFormat.kt — tham số hoá ngân sách (giữ default cho caller cụm; NFC hoá để 1 ký tự = 1 code-unit = 2 byte)
+fun fitRoadName(road: String, maxUnits: Int = ROAD_MAX_UNITS): String { /* NFC(road) rồi mới đo/cắt */ }
+const val HUD_ROAD_MAX_UNITS = 7   // ★ AN TOÀN THEO ĐO XE: bằng ROAD_MAX_UNITS=7 (ô cụm cùng họ, đo 2026-06-23:
+                                   //   hiện ~7 ký tự rồi "…"). KHÔNG đặt 8 khi buffer HUD CHƯA đo (OQ2) — thà "VNG"
+                                   //   còn hơn tràn → mất luôn tên (đúng bug đang chữa). Trace ra ≥8 thì mới nâng.
+
+// ClusterBroadcaster.pushHud — đẩy tên VIẾT TẮT, dedup theo bản viết tắt
+val hudRoad = NavFormat.fitRoadName(lastCleanRoad, NavFormat.HUD_ROAD_MAX_UNITS)
+if (icon==lastHudIcon && seg==lastHudSeg && hudRoad==lastHudRoad) return
+... BydHal.writeNavFrame(app, icon, seg, hudRoad)</code></pre>
+<p class="kv"><strong>Đơn vị "maxUnits" (trả lời nghi vấn byte vs char):</strong> buffer là BYTE; <code>maxUnits</code> đếm UTF-16 code-unit. Với text BMP (tiếng Việt NFC precomposed = 1 code-unit/ký tự) → <strong>số byte = 2 × maxUnits</strong>, nên maxUnits LÀ đơn vị đúng MIỄN LÀ chuỗi ở dạng NFC. Bắt buộc <code>Normalizer.normalize(road, NFC)</code> trước khi đo/cắt: (a) nếu input NFD (dấu tách rời) thì 1 ký tự = 2 code-unit = 4 byte → phá quan hệ 2×; (b) <code>take(maxUnits)</code> trên NFD có thể cắt GIỮA base + dấu kết hợp → rác hiển thị. Cũng vì buffer có thể cần ký tự kết thúc (NUL) → chọn 7 (14 byte) an toàn hơn 8 (16 byte, chạm mép ô ~16 byte).</p>
+<p class="kv"><strong>Dedup theo bản viết tắt = ĐÚNG</strong> (dedup theo cái HIỂN THỊ): 2 tên khác nhau mà viết tắt trùng thì trên HUD vốn trông y hệt → nén là hợp lý; seg/icon đổi thì vẫn ghi. Không hardcode tên đường. "Võ Nguyên Giáp"→ ở 7: "VNG"; ở 8: "V.N.Giáp" — nâng hằng nếu trace HUD cho phép.</p>
+
+<h2>Tasks</h2>
+<table>
+<tr><th>ID</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Thêm helper <code>returnAppToMain(sh, app, vd)</code> (đường force-stop + relaunch d0 fullscreen). <strong>keepSession TÍNH BÊN TRONG</strong> = <code>isKeepSession(app) || isPhoneProjection(comp, app)</code> — caller KHÔNG truyền (chống wire nhầm chỉ <code>isKeepSession</code> → force-stop CP/AA, R5). Điều kiện trả <code>true</code> = app RỜI VD <strong>VÀ</strong> <code>displayId==0</code> <strong>VÀ</strong> <code>mode==fullscreen</code> (R3/H4); còn freeform → ép lại 1 lần rồi kiểm.</td><td>CastShell.kt (+ClusterCast helper)</td></tr>
+<tr><td>T2</td><td>Viết lại <code>hotSwapOnVd</code> bước ③ (dùng <code>returnAppToMain</code>) + ④ (evictVd) + thêm ⑤ re-assert B on top + ⑥ applyBounds. Giữ ② place-ladder + gate landedOn (R6). <strong>PHẢI giữ chốt <code>oldApp != target</code></strong> (P0 — không thì chiếu-lại-cùng-app tự force-stop app trên VD → rỗng VD → treo). <strong>Thêm RE-CHECK B còn trên VD ngay trước ③</strong> (TOCTOU, B bounce → hủy, giữ old). Bỏ MỌI <code>am display move-stack …0</code> trong đường switch — kể cả gián tiếp qua <code>restoreFullscreenOnMain</code> (nó có move-stack bên trong). Sau ④ re-assert B, RE-PICK lại StackEntry của B trước ⑥ (taskId có thể đổi).</td><td>ClusterCast.kt (~600-660)</td></tr>
+<tr><td>T3</td><td>Viết lại <code>CastShell.evictVd</code>: route TỪNG stray qua <code>returnAppToMain</code> (thừa hưởng miễn-trừ keep-session/projection — stray là CP/AA thì KHÔNG force-stop), giữ <code>evictableOnVd</code> filter home/pinned (H8), KHÔNG <code>move-stack</code>. ⚠ <strong>Blast-radius:</strong> <code>evictVd</code> CÒN được gọi ở <code>placeAppOnVd</code> (đường COLD first-cast) → đổi sang force-stop áp dụng CẢ cold path; xác nhận chấp nhận (stray hiếm ở cold, và sink vẫn được miễn). Chỉ đổi CƠ CHẾ relocate, không đổi filter chọn nạn nhân.</td><td>CastShell.kt</td></tr>
+<tr><td>T4</td><td>HUD: tham số hoá <code>fitRoadName(road, maxUnits)</code> + hằng <code>HUD_ROAD_MAX_UNITS=7</code> (KHÔNG 8 — an toàn theo đo xe, OQ2). <strong>NFC-normalize</strong> trong <code>fitRoadName</code> trước khi đo/cắt (giữ quan hệ 1 ký tự = 2 byte, không cắt giữa dấu). <code>pushHud</code> đẩy <code>fitRoadName(lastCleanRoad, HUD_ROAD_MAX_UNITS)</code>, dedup theo bản viết tắt. Giữ default <code>ROAD_MAX_UNITS</code> cho caller cụm (backward-compat).</td><td>NavFormat.kt · ClusterBroadcaster.kt</td></tr>
+<tr><td>T5</td><td><strong>Trước hết MỞ RỘNG FakeShell</strong> (hiện <code>am force-stop</code> + <code>am start --display</code> rơi vào <code>else→""</code> → swap KHÔNG mô phỏng được, mọi test sẽ dừng ở gate R6): (a) <code>am force-stop &lt;pkg&gt;</code> → gỡ stack của pkg khỏi model + đếm <code>forceStopCount</code>/ghi pkg; (b) <code>am start --display &lt;vd&gt; … &lt;comp&gt;</code> → thêm/di chuyển stack lên vd (mô phỏng "landed"); <code>--windowingMode 1</code> d0 → đặt fullscreen d0. Rồi test: ① swap thường (Vietmap↔Maps): có force-stop old, KHÔNG có <code>move-stack …0</code> trên switch, cụm còn ĐÚNG 1 app, old ở d0 fullscreen; ② <strong>miễn-trừ</strong>: old = CarPlay/AA (isPhoneProjection) → KHÔNG có <code>force-stop</code> old; ③ <strong>chốt oldApp==target</strong>: chiếu lại chính app → KHÔNG force-stop, VD không rỗng; ④ <strong>B bounce</strong> (am start không land): giữ old, KHÔNG force-stop, KHÔNG move-stack; test <code>fitRoadName</code> nhiều tên (T.T.Kim, V.N.Giáp@7→VNG, QL1A, hầm…, NFC/NFD, đo byte ≤ 2×maxUnits). Giữ 184 test cũ.</td><td>*Test.kt · FakeShell.kt</td></tr>
+<tr><td>T6</td><td>Bump v0.66, build release+debug, full test pass, senior review + patch loop, cập nhật SDD + handoff on-car steps. Port sang debug branch. KHÔNG commit nếu security scan chưa sạch. KHÔNG merge main tới khi on-car FAIL=0.</td><td>build.gradle.kts · docs</td></tr>
+</table>
+
+<div class="okbox">
+<strong>✅ Implementation status (v0.66, off-car, đêm 2026-07-24):</strong>
+<ul>
+<li><strong>T1 ✅</strong> <code>CastShell.returnAppToMain(adb, sh, app, vd, log): Boolean</code> — keepSession tính bên trong (<code>isKeepSession || isPhoneProjection</code>, F2); app thường → force-stop + relaunch d0, VERIFY off-VD ∧ d0 ∧ fullscreen, ép lại 1 lần nếu freeform (F3); giữ-phiên → am start nhẹ, KHÔNG force-stop; KHÔNG move-stack …0 ở mọi nhánh.</li>
+<li><strong>T2 ✅</strong> <code>hotSwapOnVd</code> viết lại — ②③④⑤ chuyển vào <code>CastShell.swapOnVd</code> (né NPE A/B). Giữ chốt F1 (<code>oldApp != target</code>), F4 (re-check B bounce trước bước phá hoại), F5 (KHÔNG <code>restoreFullscreenOnMain(target)</code> ở nhánh R6), F10 (re-pick B trước applyBounds). Giữ ① density, ② gate <code>landedOn</code>, guard <code>divergenceOn</code>.</li>
+<li><strong>T3 ✅</strong> <code>CastShell.evictVd</code> viết lại — route từng stray qua <code>returnAppToMain</code> (KHÔNG move-stack; sink được miễn force-stop). Áp dụng cả đường COLD <code>placeAppOnVd</code> (F6).</li>
+<li><strong>T5 ✅</strong> <code>FakeShell</code> mở rộng: <code>am force-stop</code> gỡ stack + đếm <code>forceStoppedPkgs</code>; <code>am start --display</code> đặt/di chuyển stack (app "land"); <code>cmd package resolve-activity</code>; <code>FakeDadb</code> (route <code>shell</code>); hook <code>afterStackList</code> (mô phỏng B bounce F4). Test: <code>CastSwapTest</code> (10 test) — swap thường, re-cast cùng app (F1), B bounce (F4), CarPlay giữ-phiên (F2/F5), KHÔNG move-stack …0, + returnAppToMain (F3 fullscreen/ép-lại) + evictVd (F6). <strong>194/194 test PASS</strong> (184 cũ + 10 mới), 0 fail.</li>
+<li><strong>T4/T6</strong> ngoài phạm vi phiên impl này (HUD tên đường + bump/build/on-car). On-car validation vẫn là cổng BẮT BUỘC trước merge (§Verification on-car).</li>
+</ul>
+</div>
+
+<h2>Verification</h2>
+<h3>Off-car (đêm nay, tất định)</h3>
+<ul>
+<li><code>./gradlew --offline testDebugUnitTest</code> — 184 test cũ + test mới PASS.</li>
+<li>Grep chứng minh <strong>đường switch</strong> (<code>hotSwapOnVd</code> + <code>returnAppToMain</code> + <code>evictVd</code>) KHÔNG còn <code>am display move-stack</code> ra display 0, VÀ KHÔNG gọi <code>restoreFullscreenOnMain</code> (hàm này CÒN move-stack bên trong — chỉ được dùng ở teardown/reconcile/stop, KHÔNG dùng trên switch).</li>
+<li>Test verify chuỗi lệnh swap: place B → (B landed) → <strong>re-check B on VD</strong> → force-stop old → am start d0 old → <strong>verify old fullscreen d0</strong> → evict strays → re-assert B → re-pick B → applyBounds; và cụm cuối cùng chỉ có B.</li>
+<li>Test verify: old = isPhoneProjection → KHÔNG force-stop; target==lastCastApp → KHÔNG force-stop; B bounce → giữ old + KHÔNG force-stop + KHÔNG move-stack.</li>
+<li>Build 2 APK (<code>apk/ClusterNav-0.66-release.apk</code> + debug), navprobe=0 ở release.</li>
+</ul>
+<h3>On-car (phiên sau — BẮT BUỘC trước khi tin/merge)</h3>
+<ol>
+<li>Reboot cứng (nút nguồn) → baseline sạch (NPE=0, gauges).</li>
+<li>(Rẻ, chắc) validate adb TRƯỚC: cast Vietmap → <code>am start --display 1 -wm 5 maps</code> (B lên VD) → <code>am force-stop vietmap</code> → <code>am start --display 0 -wm 1 vietmap</code> → check: NPE=0, cụm chỉ Maps, Vietmap fullscreen màn chính.</li>
+<li>Cài v0.66 → đổi app NHIỀU vòng 2 chiều (Vietmap↔Maps↔Waze): mỗi lần NPE=0, cụm đúng 1 app, app cũ về màn chính fullscreen chạy được.</li>
+<li>Resize trên cụm: đúng target, lưu. Rồi CP/AA (kiểm R5: đổi TỪ CP/AA đi — phiên không chết bất ngờ).</li>
+<li>Bấm Home/Back sau vài lần đổi — KHÔNG treo (kiểm H4 freeform-bé đã hết).</li>
+</ol>
+
+<h2>Open Questions</h2>
+<ul>
+<li><strong>OQ1 (state loss):</strong> force-stop app cũ mất state (Maps đang nav bị reset khi đổi đi). Chấp nhận cho v0.66 (ưu tiên không-treo). Nếu chủ dự án cần giữ nav khi đổi qua-lại → v0.67 thử "occlude-first" (đặt B fullscreen che A → A invisible → move A không kích change-transition) — research med-conf, cần validate xe. Ghi nhận, chưa làm.</li>
+<li><strong>OQ2 (HUD budget):</strong> buffer <code>INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET</code> của HUD mới CHƯA đo (xe chủ dự án chưa có HUD). Đặt <strong>7</strong> (= <code>ROAD_MAX_UNITS</code>, an toàn theo đo ô cụm cùng họ 2026-06-23; tránh tràn = mất tên). Nâng lên 8 CHỈ khi trace HUD trên xe hội chứng minh buffer ≥16 byte (và không cần NUL terminator) — sửa 1 hằng.</li>
+<li><strong>OQ3 (keep-session switch-away):</strong> đổi TỪ CarPlay/AA sang app khác — đường nhẹ (am start d0) có thể không bê được CP/AA khỏi VD (không được force-stop). Khi đó cụm có thể còn CP/AA phía sau (R2 vi phạm mềm) nhưng KHÔNG treo. Chấp nhận; log rõ.</li>
+</ul>
+
+<h2>References</h2>
+<ul>
+<li><code>docs/_handoff/research-aosp-wm.md</code> — AOSP 10 WM internals (createTaskSnapshot / initializeChangeTransition / getDisplayInfo; ranked primitives).</li>
+<li><code>docs/_handoff/research-evidence-audit.md</code> — audit evidence + xác nhận primitive catalog + đánh giá design (holes H1-H8).</li>
+<li><code>docs/review/HANDOFF-2026-07-23-oncar-freeze.md</code> — nhật ký freeze saga v0.60→v0.65.</li>
+<li>Evidence: <code>oncar-*-freeze-*/</code> (npe traces, castlogs).</li>
+</ul>
+<p class="kv">Tech validation: Context7 KHÔNG phủ AOSP WM internals → dùng research AOSP source (web) thay thế, ghi rõ ở đây (W1 deviation, có lý do).</p>
+
+<h2>Reviewer Log</h2>
+<p class="kv">(append-only — mỗi pass review thêm 1 mục, không ghi đè.)</p>
+
+<h3>Pass 1 — 2026-07-23 — Senior plan review (pre-implementation)</h3>
+<p class="kv">Reviewer: senior Android systems architect. Đã đọc: plan này, <code>research-aosp-wm.md</code>, <code>research-evidence-audit.md</code>, <code>HANDOFF-2026-07-23-oncar-freeze.md</code>, và code thật (<code>ClusterCast.kt</code> · <code>CastShell.kt</code> · <code>StackParse.kt</code> · <code>NavFormat.kt</code> · <code>ClusterBroadcaster.kt</code> · <code>BydHal.kt</code> · <code>FakeShell.kt</code>). Chỉ sửa plan HTML, KHÔNG viết code.</p>
+
+<div class="okbox">
+<strong>Hướng LỚN của plan là ĐÚNG và tôi tán thành:</strong> force-stop + relaunch làm đường CHÍNH cho app thường là lựa chọn AN TOÀN NHẤT khi chưa validate xe (research high-conf: process death = CLOSE transition, không <code>initializeChangeTransition</code>, không đụng VD; + bằng chứng thực tế force-stop Maps trên chính head unit này không treo). Các chốt H3 (gate B-landed), H7 (re-assert B), H8 (<code>evictableOnVd</code> filter) đã có trong luồng. Đường switch (<code>hotSwapOnVd</code>) xác nhận KHÔNG chứa teardown/cmd16 → né NPE A về mặt cấu trúc. Generic/không-hardcode (F): đạt — <code>PROJECTION_HINTS</code> nhận diện theo hành vi. 2-app-trên-VD trong khoảnh khắc giữa ① và ③ là CỐ Ý và CẦN THIẾT (giữ VD không rỗng) — hợp lệ.</div>
+
+<p><strong>Findings (đã PATCH tất cả vào plan):</strong></p>
+<table>
+<tr><th>#</th><th>Sev</th><th>Tiêu chí</th><th>Vấn đề</th><th>Đã patch ở</th></tr>
+<tr><td>F1</td><td><span class="tag p0">P0</span></td><td>B</td><td><strong>Thiếu chốt <code>oldApp != target</code>.</strong> Chiếu lại chính app đang trên cụm → <code>returnAppToMain(old==target)</code> force-stop đúng app vừa đặt → <strong>VD RỖNG (0 app) → NPE A → treo</strong> = đúng freeze đang chữa. Code v0.65 CÓ chốt này; plan (T2 "viết lại ③") im lặng → dễ mất khi rewrite.</td><td>D2 (dangerbox), T2</td></tr>
+<tr><td>F2</td><td><span class="tag p1">P1</span></td><td>C · H5</td><td><strong>Miễn-trừ keep-session KHÔNG đủ.</strong> D3/T1 wire <code>keepSession</code> theo <code>isKeepSession(pkg)</code>, mà <code>keepSessionApps</code> MẶC ĐỊNH RỖNG (<code>applyDefaultModes</code> cố ý không thêm CP/AA — W1-4). CP/AA thực tế chỉ được che bởi <code>isPhoneProjection</code> (như <code>placeLadder</code> R3). Wire thiếu vế này → CP/AA bị force-stop → mất phiên chiếu điện thoại. Vi phạm R5.</td><td>R5, D3 (tính keepSession bên trong), T1</td></tr>
+<tr><td>F3</td><td><span class="tag p1">P1</span></td><td>D · H4</td><td><strong>Điều kiện thành công của <code>returnAppToMain</code> = "rời VD" là KHÔNG đủ.</strong> Bài học v0.65 (evidence-audit §b): app rời VD nhưng còn <em>freeform-bé trên d0</em> → bấm Home → transition animate cửa sổ freeform mồ côi → freeze. Phải VERIFY <code>displayId==0 &amp;&amp; mode==fullscreen</code>.</td><td>R3, D3 (verify + ép lại), T1</td></tr>
+<tr><td>F4</td><td><span class="tag p1">P1</span></td><td>E</td><td><strong>TOCTOU: B bounce giữa "gate landed" và "force-stop old".</strong> Maps GL hay bounce khỏi VD; nếu bounce SAU khi landedOn xác nhận nhưng TRƯỚC force-stop old → force-stop → VD rỗng → NPE A. Cần re-check B còn trên VD ngay trước bước phá hoại.</td><td>D2 (dangerbox), T2, Verification</td></tr>
+<tr><td>F5</td><td><span class="tag p2">P2</span></td><td>A</td><td><strong><code>restoreFullscreenOnMain</code> có <code>am display move-stack …0</code> BÊN TRONG</strong> (primitive NPE B). Đường switch phải THAY THẾ nó bằng <code>returnAppToMain</code>, không gọi song song. Nhánh hủy R6 không được <code>restoreFullscreenOnMain(target)</code> nếu target còn hiện trên VD.</td><td>D3 (warnbox), T2, Verification (grep)</td></tr>
+<tr><td>F6</td><td><span class="tag p2">P2</span></td><td>A · D</td><td><strong>Blast-radius <code>evictVd</code>:</strong> nó còn được gọi ở <code>placeAppOnVd</code> (đường COLD first-cast) → đổi sang force-stop áp dụng cả cold path; và mỗi stray phải qua <code>returnAppToMain</code> để thừa hưởng miễn-trừ sink (stray = CP/AA thì KHÔNG force-stop).</td><td>T3</td></tr>
+<tr><td>F7</td><td><span class="tag p2">P2</span></td><td>G</td><td><strong><code>HUD_ROAD_MAX_UNITS=8</code> MÂU THUẪN bằng chứng đo xe.</strong> <code>ROAD_MAX_UNITS=7</code> có comment "ĐO TRÊN XE 2026-06-23: hiện ~7 ký tự rồi …". Ô HUD cùng họ, buffer CHƯA đo (OQ2). Đặt 8 &gt; ngân sách đo được → có thể tràn → firmware bỏ tên = ĐÚNG bug đang chữa. Vi phạm chính nguyên tắc "chọn an toàn nhất khi thiếu bằng chứng xe" của plan.</td><td>D4, T4, OQ2 (đổi về 7)</td></tr>
+<tr><td>F8</td><td><span class="tag p2">P2</span></td><td>G · H(unit)</td><td><strong>Byte vs char:</strong> buffer là BYTE, <code>maxUnits</code> đếm code-unit. Đúng (2 byte/unit) CHỈ KHI text BMP NFC. Input NFD → 1 ký tự = 2 unit = 4 byte (phá quan hệ) + <code>take()</code> cắt giữa dấu. Cần NFC-normalize trước đo/cắt; ô ~16 byte có thể cần NUL → 7 an toàn hơn 8.</td><td>D4, T4</td></tr>
+<tr><td>F9</td><td><span class="tag p2">P2</span></td><td>H</td><td><strong>T5 KHÔNG khả thi như viết.</strong> <code>FakeShell</code> hiện cho <code>am force-stop</code> + <code>am start --display</code> rơi vào <code>else→""</code> → app mới KHÔNG "land", swap luôn dừng ở gate R6 → đường force-stop KHÔNG BAO GIỜ được test. Phải mở rộng FakeShell TRƯỚC (force-stop gỡ stack; am start land). Thiếu case test: miễn-trừ sink, chốt oldApp==target, B-bounce.</td><td>T5, Verification</td></tr>
+<tr><td>F10</td><td><span class="tag p2">P2</span></td><td>B</td><td><code>applyBounds(⑥)</code> dùng <code>landed</code> chụp ở bước ①; sau re-assert B (⑤) taskId có thể đổi → resize nhầm/trượt. Re-pick StackEntry của B trước applyBounds.</td><td>T2, Verification</td></tr>
+</table>
+
+<div class="warnbox">
+<strong>RESIDUAL RISK — implementer PHẢI theo dõi trên xe (off-car KHÔNG chứng minh được):</strong>
+<ul>
+<li><strong>Freeze thật CHỈ verify được trên xe.</strong> FakeShell không tái hiện WM NPE. Test off-car chỉ chốt <em>chuỗi lệnh + bất biến</em> (không move-stack, còn 1 app, có/không force-stop đúng chỗ). On-car validation là cổng BẮT BUỘC trước merge (đã có trong plan) — giữ nguyên.</li>
+<li><strong>H6 (chưa giải, không phải regression):</strong> nếu B=Maps GL và freeform CHƯA sống → cụm có thể TRẮNG tới khi composite; <code>applyBounds</code> resize cần freeform, kick duy nhất là <code>am start</code> re-assert. Quan sát trên xe; nếu trắng → force-stop-B (nghịch lý: chính force-stop clear được GL surface) có thể là lối thoát, nhưng B là app ĐÍCH nên không force-stop trong swap — ghi nhận cho v0.67.</li>
+<li><strong>OQ3 (soft R2):</strong> đổi TỪ CP/AA đi → CP/AA nằm sau B trên VD (2 app). Re-assert đẩy B lên top nhưng sink có thể tự re-front. Chấp nhận + log; kiểm mắt trên xe.</li>
+<li><strong>Khoảnh khắc VD "mỏng" sau force-stop old:</strong> dựa giả định container KHÔNG tự huỷ VD khi hết nội dung hiện (research: vòng đời VD độc lập nội dung). Đúng theo research nhưng CHƯA đo đúng thời khắc "0 visible" trên xe. Gate landedOn + re-check (F4) giảm thiểu; theo dõi.</li>
+<li><strong>Relaunch old có thể hụt im lặng</strong> (app không mở lại) → R3 không đạt; <code>returnAppToMain</code> nay trả false trong case đó — caller phải log, KHÔNG coi là swap thành công.</li>
+</ul>
+</div>
+
+<p><strong>VERDICT:</strong> plan GỐC = <span class="tag p0">NEEDS-REVISION</span> (1×P0 + 3×P1 chưa được ghi vào thiết kế). Sau các patch ở Pass 1 (thiết kế nay đã mã hoá đủ chốt an toàn) → <span class="tag ok">APPROVED to implement</span>, với ĐIỀU KIỆN: (1) implement ĐÚNG D2/D3/T1–T5 đã patch — đặc biệt chốt F1 (oldApp≠target), F2 (miễn-trừ <code>isPhoneProjection</code>), F3 (verify fullscreen), F4 (re-check B); (2) mở rộng FakeShell TRƯỚC khi viết test swap (F9); (3) on-car validation FAIL=0 vẫn là cổng bắt buộc trước merge main. Không có P0/P1 nào còn "để ngỏ" trong plan sau patch.</p>
+
+<h3>Pass 2 — 2026-07-24 — impl (freeze swap)</h3>
+<p class="kv">Implementer: orchestrated session <code>impl_freeze_swap</code>. Off-car (không đụng xe/adb), verify bằng unit test (FakeShell/FakeDadb). Phạm vi: T1, T2, T3, T5 (T4 HUD + T6 bump/on-car ngoài phiên này).</p>
+<div class="okbox">
+<strong>Files changed</strong>
+<ul>
+<li><code>app/.../clustercast/CastShell.kt</code> — THÊM <code>returnAppToMain(adb, sh, app, vd, log): Boolean</code> (T1), <code>SwapResult</code> + <code>swapOnVd(adb, sh, target, comp, oldApp, vd, log): SwapResult</code> (T2 lõi shell), VIẾT LẠI <code>evictVd</code> (T3, route qua returnAppToMain).</li>
+<li><code>app/.../clustercast/ClusterCast.kt</code> — VIẾT LẠI <code>hotSwapOnVd</code>: ①density + delegate ②③④⑤ cho <code>CastShell.swapOnVd</code> + ⑥applyBounds(re-picked) + commit; bỏ move-stack retry loop + bỏ <code>restoreFullscreenOnMain(target)</code> ở nhánh R6 (F5). <code>stop()</code>/<code>placeLadder</code>/<code>divergenceOn</code>/<code>guardSinksOffVd</code> KHÔNG đụng.</li>
+<li><code>app/src/test/.../clustercast/FakeShell.kt</code> — mở rộng (F9): <code>am force-stop</code> (gỡ stack + <code>forceStoppedPkgs</code>), <code>am start --display</code> (đặt/di chuyển stack + windowing-mode), <code>cmd package resolve-activity</code>, ghi <code>commands</code>, hook <code>afterStackList</code> (B bounce F4), <code>stuckFreeformPkgs</code> (F3), <code>FakeStack.mode</code> → var, <code>FakeDadb</code> (impl interface Dadb — chỉ route <code>shell</code>).</li>
+<li><code>app/src/test/.../clustercast/CastSwapTest.kt</code> — MỚI, 10 test.</li>
+</ul>
+<strong>Kết quả test:</strong> <code>./gradlew --offline testDebugUnitTest</code> → <strong>194/194 PASS</strong> (184 cũ giữ nguyên + 10 mới), 0 failure/error. Grep chứng minh switch path (<code>hotSwapOnVd</code>+<code>swapOnVd</code>+<code>returnAppToMain</code>+<code>evictVd</code>) KHÔNG còn <code>am display move-stack …0</code> và KHÔNG gọi <code>restoreFullscreenOnMain</code>.
+<br><strong>Deviation:</strong> lõi shell tách ra <code>CastShell.swapOnVd</code> (thay vì để nguyên trong <code>hotSwapOnVd</code>) — lý do: <code>hotSwapOnVd</code> cần <code>Context</code> (không test được bằng plain-JVM), tách phần shell ra để test off-xe đúng F9; đồng thời theo Code-Health "reusable shell logic ở CastShell". Không đổi hành vi, chỉ đổi nơi đặt code.
+<br><strong>Còn lại:</strong> on-car validation (§Verification on-car) — cổng BẮT BUỘC, chưa chạy (xe tắt). T4 (HUD) + T6 (bump/build/commit) chưa làm.
+</div>
+
+<h3>Pass 2 — 2026-07-24 — impl (HUD street-name · T4 + T5-HUD)</h3>
+<p class="kv">Implementer: orchestrated session <code>impl_hud_streetname</code>. TIẾP NỐI wave impl Pass 2 — làm nốt <strong>T4</strong> (HUD tên đường viết tắt) + phần test <strong>T5</strong> tương ứng. KHÔNG đụng file Stage-1 (<code>ClusterCast.kt</code> · <code>CastShell.kt</code> · <code>FakeShell.kt</code> · <code>CastSwapTest.kt</code>). Off-car, verify bằng unit test. Honor F7 + F8 (BINDING).</p>
+<div class="okbox">
+<strong>Files changed</strong>
+<ul>
+<li><code>app/.../NavFormat.kt</code> — <code>fitRoadName</code> tham số hoá: <code>fun fitRoadName(road: String, maxUnits: Int = ROAD_MAX_UNITS): String</code> (GIỮ default → caller cụm marquee backward-compat). <strong>NFC-normalize</strong> (<code>Normalizer.Form.NFC</code>) raw road ở ĐẦU hàm — trước cả <code>cleanRoadName</code> — nên đo <code>length</code>/<code>take()</code>/dựng dotted đều chạy trên NFC (F8: 1 ký tự BMP = 1 code-unit = 2 byte; không cắt giữa base+dấu; bonus: regex loại-đường viết theo NFC khớp cả input NFD → "Quốc lộ" NFD vẫn ra "QL"). THÊM <code>const val HUD_ROAD_MAX_UNITS = 7</code> (F7 — = <code>ROAD_MAX_UNITS</code> đã đo xe 2026-06-23; comment cấm nâng 8 tới khi trace buffer HUD thật, vì tràn = firmware bỏ tên = đúng bug đang chữa).</li>
+<li><code>app/.../ClusterBroadcaster.kt</code> — <code>pushHud</code> nay tính <code>val hudRoad = NavFormat.fitRoadName(lastCleanRoad, NavFormat.HUD_ROAD_MAX_UNITS)</code> rồi truyền <code>hudRoad</code> (KHÔNG phải full <code>lastCleanRoad</code>) vào <code>BydHal.writeNavFrame</code>; dedup + <code>lastHudRoad</code> đổi sang so theo <code>hudRoad</code> (nhất quán với chuỗi THẬT ghi lên kính). <code>clearHud</code> giữ reset <code>lastHudRoad=" "</code>. <strong>BydHal.kt KHÔNG đụng</strong> (chỉ đọc xác nhận nó ghi <code>road</code> UTF-16LE vào <code>INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET</code>).</li>
+<li><code>app/src/test/.../NavFormatTest.kt</code> — +13 test (T5 HUD): <code>'Trần Trọng Kim'@7→'T.T.Kim'(len7)</code>; <code>'Võ Nguyên Giáp'@7→'VNG'</code> (dotted 'V.N.Giáp'=8&gt;7); <code>'Võ Nguyên Giáp'@8→'V.N.Giáp'</code>; <code>'Nguyễn Hữu Cảnh'@7→'NHC'</code>; <code>'Quốc lộ 1A'→'QL1A'</code> (@7 + default); <code>'hầm Thủ Thiêm'@7→'hầm TT'</code>; single-word (ngắn giữ nguyên / dài take); empty-blank→""; <strong>NFD length</strong> ("Hà Nội" NFD 9 unit → đo NFC 6 → KHÔNG viết tắt oan); <strong>NFD take-diacritic</strong> ("Ông Ích Khiêm" NFD → acronym giữ dấu "ÔÍK", KHÔNG thoái hoá "OIK"); <strong>byte-budget</strong> (UTF-16LE ≤ 2×maxUnits ∀ mẫu @7/@8); <strong>backward-compat</strong> (default-arg == gọi tường minh <code>ROAD_MAX_UNITS</code>); <strong>F7 lock</strong> (<code>HUD_ROAD_MAX_UNITS==7==ROAD_MAX_UNITS</code>).</li>
+</ul>
+<strong>Kết quả test:</strong> <code>./gradlew --offline testDebugUnitTest</code> → <strong>207/207 PASS</strong> (194 cũ giữ nguyên + 13 mới), 0 failure/error/skip. <code>NavFormatTest</code> suite = 25 (was 12). Backward-compat test chứng minh caller cụm (marquee) KHÔNG đổi hành vi.
+<br><strong>Autonomous decision:</strong> đặt <code>Normalizer.normalize(NFC)</code> ở ĐẦU <code>fitRoadName</code> (trước <code>cleanRoadName</code>) thay vì chỉ trước bước đo — an toàn hơn (regex loại-đường khớp input NFD) mà KHÔNG đổi kết quả cho input NFC hiện có (normalize NFC là idempotent). <code>cleanRoadName</code> public + caller khác KHÔNG đổi.
+</div>
+
+<h3>Pass 3 — 2026-07-24 — Senior impl review (freeze-proof swap + HUD)</h3>
+<p class="kv">Reviewer: senior Android/AOSP systems architect. Adversarial static review + tests (xe TẮT — không validate on-car được, nên static review + unit test LÀ lưới an toàn phiên này). Đã đọc TOÀN BỘ hai đầu mọi boundary: <code>CastShell.kt</code> (returnAppToMain·swapOnVd·SwapResult·evictVd·restoreFullscreenOnMain), <code>ClusterCast.kt</code> (hotSwapOnVd·cast·stop·rollback·placeAppOnVd·placeLadder·isKeepSession·isPhoneProjection·applyBounds·divergenceOn·commit), <code>StackParse.kt</code>, <code>FakeShell.kt</code>, <code>CastSwapTest.kt</code>, <code>NavFormat.kt</code>, <code>ClusterBroadcaster.kt</code>, <code>BydHal.kt</code>, <code>NavFormatTest.kt</code>, + <code>research-aosp-wm.md</code>.</p>
+
+<div class="okbox">
+<strong>Kết luận: hiện thực TRUNG THÀNH với thiết kế an toàn D1–D4 + mọi chốt F1–F10 của Pass 1.</strong> Bất biến cốt tử "VD KHÔNG BAO GIỜ rỗng" (né NPE A) + "KHÔNG <code>move-stack …0</code> trên switch path" (né NPE B) được mã hoá đúng và có test khoá. Grep chứng minh <code>hotSwapOnVd</code>/<code>swapOnVd</code>/<code>returnAppToMain</code>/<code>evictVd</code> KHÔNG gọi <code>restoreFullscreenOnMain</code> và KHÔNG phát <code>move-stack …0</code>; move-stack duy nhất trên switch là <code>move-stack … &lt;vd&gt;</code> (LÊN VD, CastShell.kt:358). Không phát hiện P0/P1. 1 lỗ hổng test (P2) đã vá.</p>
+</div>
+
+<h4>Scope checklist — Tasks T1–T5 (T6 ngoài phạm vi review)</h4>
+<table>
+<tr><th>Task</th><th>Code (wired?)</th><th>Test</th><th>Verdict</th></tr>
+<tr><td>T1 <code>returnAppToMain</code></td><td>CastShell.kt:297–329 — keepSession tính bên trong; app thường force-stop→relaunch d0→verify off-VD∧d0∧fullscreen, ép lại 1 lần nếu freeform; sink am start nhẹ. Wired: gọi từ swapOnVd③ + evictVd.</td><td>3 (F3 fullscreen, F3 re-force→false, F2 sink)</td><td class="ok">✅</td></tr>
+<tr><td>T2 <code>hotSwapOnVd</code>+<code>swapOnVd</code></td><td>ClusterCast.kt:604–623 (density→delegate→applyBounds→commit) + CastShell.kt:337–382. Wired: cast() route isWarm→hotSwapOnVd.</td><td>swap thường, re-cast(F1), bounce(F4), CarPlay(F2/F5), evict, R2-fallback(mới)</td><td class="ok">✅</td></tr>
+<tr><td>T3 <code>evictVd</code></td><td>CastShell.kt:391–401 — route từng stray qua returnAppToMain, KHÔNG move-stack. Wired: swapOnVd④ + placeAppOnVd cold (ClusterCast.kt:726).</td><td>evictVd F6 (force-stop stray, miễn sink), vd&lt;1 no-op</td><td class="ok">✅</td></tr>
+<tr><td>T4 HUD</td><td>NavFormat.kt:20 (HUD_ROAD_MAX_UNITS=7) + :86–108 (fitRoadName param+NFC). ClusterBroadcaster.pushHud → fitRoadName → BydHal.writeNavFrame(hudRoad). Wired.</td><td>13 (dotted/acronym/keep-class/NFD×2/byte-budget/backward-compat/F7 lock)</td><td class="ok">✅</td></tr>
+<tr><td>T5 test harness</td><td>FakeShell mở rộng (force-stop·am start land·resolve-activity·FakeDadb·afterStackList·stuckFreeform + <strong>startNoLandPkgs mới</strong>). </td><td>CastSwapTest 11 + NavFormat 13</td><td class="ok">✅</td></tr>
+</table>
+
+<h4>Scope checklist — Requirements R1–R8</h4>
+<table>
+<tr><th>Req</th><th>Bằng chứng</th><th>Verdict</th></tr>
+<tr><td>R1 không treo</td><td>Switch path: 0× VD teardown/cmd16, 0× <code>move-stack …0</code> (grep + test <code>noMoveToZero</code>); VD-không-rỗng giữ bởi F1+F4. <strong>Freeze thật chỉ verify được on-car</strong> — off-car chốt chuỗi+bất biến.</td><td class="ok">✅ (code) · ⚠ on-car GATE</td></tr>
+<tr><td>R2 cụm 1 app</td><td><code>onVd(dev,1)==[target]</code> sau swap (5 test); evictVd dọn stray.</td><td class="ok">✅</td></tr>
+<tr><td>R3 old fullscreen d0</td><td>returnAppToMain trả true CHỈ khi off-VD∧d0∧fullscreen (CastShell.kt:328); test khoá + freeform→ép-lại→false.</td><td class="ok">✅</td></tr>
+<tr><td>R4 config đúng app</td><td>setLastCastApp(target)+applyBounds(landed re-picked) sau swap (ClusterCast.kt:620–621).</td><td class="ok">✅</td></tr>
+<tr><td>R5 không force-stop giữ-phiên</td><td>F2: <code>isKeepSession||isPhoneProjection</code> bên trong; test CarPlay KHÔNG bị force-stop dù keepSessionApps rỗng.</td><td class="ok">✅</td></tr>
+<tr><td>R6 gate B-landed</td><td>landedOn gate + F4 re-check; test bounce→abort→giữ old.</td><td class="ok">✅</td></tr>
+<tr><td>R7 HUD tên viết tắt</td><td>pushHud đẩy fitRoadName(…,HUD_ROAD_MAX_UNITS); generic, không hardcode; test đủ mẫu.</td><td class="ok">✅</td></tr>
+<tr><td>R8 test off-car giữ pass cũ</td><td><strong>208/208 PASS</strong> (207 + 1 mới), 0 fail/err/skip.</td><td class="ok">✅</td></tr>
+</table>
+
+<h4>F1–F10 re-verification (đọc code THẬT, không tin handoff)</h4>
+<table>
+<tr><th>#</th><th>Ràng buộc</th><th>Thoả?</th><th>Cite</th></tr>
+<tr><td>F1</td><td>chốt <code>oldApp != target</code> trước bước ③ (chống force-stop chính B → VD rỗng → NPE A)</td><td class="ok">✅</td><td>CastShell.kt:366 <code>if (oldApp.isNotBlank() &amp;&amp; oldApp != target)</code>; test (2)</td></tr>
+<tr><td>F2</td><td>keepSession = <code>isKeepSession||isPhoneProjection</code> tính BÊN TRONG returnAppToMain</td><td class="ok">✅</td><td>CastShell.kt:301; test (4)+(sink)</td></tr>
+<tr><td>F3</td><td>returnAppToMain true chỉ khi off-VD∧d0∧fullscreen; ép lại nếu freeform</td><td class="ok">✅</td><td>CastShell.kt:322–328; 2 test</td></tr>
+<tr><td>F4</td><td>re-check B còn trên VD bằng stack list MỚI ngay trước bê old; bounce→abort no-force-stop</td><td class="ok">✅</td><td>CastShell.kt:369–371; test (3)</td></tr>
+<tr><td>F5</td><td>switch KHÔNG restoreFullscreenOnMain(target on VD) &amp; KHÔNG <code>move-stack …0</code></td><td class="ok">✅</td><td>grep: 0 hit trong swapOnVd/hotSwapOnVd; move-stack chỉ →vd (CastShell.kt:358); test <code>noMoveToZero</code></td></tr>
+<tr><td>F6</td><td>evictVd route mọi stray qua returnAppToMain; đúng cả cold placeAppOnVd</td><td class="ok">✅</td><td>CastShell.kt:399; ClusterCast.kt:726; test evictVd</td></tr>
+<tr><td>F7</td><td><code>HUD_ROAD_MAX_UNITS==7==ROAD_MAX_UNITS</code>, khoá bằng test</td><td class="ok">✅</td><td>NavFormat.kt:20; test <code>HUD_ROAD_MAX_UNITS = 7</code></td></tr>
+<tr><td>F8</td><td>fitRoadName NFC-normalize TRƯỚC measure/take/dotted</td><td class="ok">✅</td><td>NavFormat.kt:87 (đầu hàm, trước cleanRoadName); 2 test NFD</td></tr>
+<tr><td>F10</td><td>swapOnVd re-pick B sau re-assert; hotSwapOnVd applyBounds dùng entry re-pick</td><td class="ok">✅</td><td>CastShell.kt:379 <code>landedOn(…) ?: landed</code>; ClusterCast.kt:620</td></tr>
+</table>
+
+<h4>Boundary-shape (đọc CẢ HAI đầu, field-by-field, trace E2E)</h4>
+<table>
+<tr><th>Boundary</th><th>Kiểm</th><th>Kết quả</th></tr>
+<tr><td>(a) <code>swapOnVd:SwapResult</code> ↔ <code>hotSwapOnVd</code></td><td>branch target==null=abort; ① density TRƯỚC; ⑥ applyBounds+setLastCastApp+setCasting+lastDisplayId+divergence SAU; không double-commit</td><td class="ok">OK — density ClusterCast.kt:609 (trước :612); null→return :616–618 KHÔNG commit; commit :620–623 chỉ khi non-null. Shape khớp (SwapResult.target:StackEntry?).</td></tr>
+<tr><td>(b) <code>returnAppToMain:Boolean</code> ↔ callers</td><td>false có được xử lý/không claim ngầm?</td><td class="p2">MOSTLY OK — swapOnVd③ (CastShell.kt:372–374): false→log "chưa fullscreen d0 sạch — KHÔNG treo, tiếp tục" (đúng). evictVd (:399): <strong>bỏ qua boolean</strong> → stray hụt = soft-R2 (mỗi stray vẫn log bên trong returnAppToMain). [P3] ghi nhận, không vá.</td></tr>
+<tr><td>(c) <code>FakeShell</code> ↔ <code>am</code> thật</td><td>force-stop gỡ stack? am start land? stack list phản ánh? test có ý nghĩa hay pass rỗng?</td><td class="ok">OK — force-stop removeAll(pkg) (process death); am start đặt/dời stack + windowing-mode; am stack list render đúng regex A10. Test kiểm displayId chuyển + membership forceStoppedPkgs + command log → KHÔNG vacuous. Caveat CỐ Ý: WM NPE không tái hiện off-car (chỉ xe). Fidelity gap "am start --display luôn land" NAY đã vá bằng <code>startNoLandPkgs</code> → R2 fallback được test.</td></tr>
+<tr><td>(d) <code>pushHud.hudRoad</code> ↔ <code>BydHal.writeNavFrame</code></td><td>chuỗi viết-tắt chảy xuyên; dedup nhất quán</td><td class="ok">OK — ClusterBroadcaster.pushHud: <code>hudRoad=fitRoadName(lastCleanRoad,HUD_ROAD_MAX_UNITS)</code> → truyền hudRoad (KHÔNG full) → writeNavFrame ghi <code>road.toByteArray(UTF_16LE)</code> vào INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET. Dedup theo hudRoad, <code>lastHudRoad=hudRoad</code> → nhất quán chuỗi thật ghi lên kính.</td></tr>
+</table>
+
+<h4>Findings theo severity</h4>
+<table>
+<tr><th>#</th><th>Sev</th><th>Vấn đề</th><th>Xử lý</th></tr>
+<tr><td>P3-1</td><td><span class="tag p0">P2</span>→vá</td><td><strong>Lỗ hổng test:</strong> nhánh R2 <code>move-stack … &lt;vd&gt;</code> trong swapOnVd (CastShell.kt:356–360) — move-stack DUY NHẤT trên switch path — KHÔNG được test nào chạm (FakeShell <code>am start --display</code> luôn land). Đây đúng là câu hỏi freeze tế nhị nhất (đẩy LÊN VD gần ranh freeform).</td><td class="ok">ĐÃ VÁ: thêm field opt-in <code>FakeDevice.startNoLandPkgs</code> (mặc định rỗng → test cũ bất biến) mô phỏng ActivityStarter redirect-về-d0; thêm test <code>am start display hut - swapOnVd leo R2 move-stack LEN VD</code> khoá bất biến: moveCount&gt;0, cụm chỉ B, old force-stop, <code>noMoveToZero</code>, move-stack nhắm d1. 207→208 pass.</td></tr>
+<tr><td>P3-2</td><td><span class="tag p2">P3</span></td><td>swapOnVd re-pick cuối <code>landedOn(…) ?: landed</code> (CastShell.kt:379): nếu B biến mất đúng lúc re-assert cuối → commit StackEntry CŨ (taskId có thể chết). KHÔNG treo: applyBounds guard <code>displayId!=vd</code>, resize task chết → rơi overscan.</td><td>KHÔNG vá — bảo thủ đúng: old ĐÃ force-stop rồi, giữ B (dù cũ) đúng hơn abort; không phải freeze. Ghi nhận.</td></tr>
+<tr><td>P3-3</td><td><span class="tag p2">P3</span></td><td>returnAppToMain thiếu guard <code>vd&lt;1</code> tường minh (dựa caller). Trên mọi live path (hotSwap/evict vd≥1) không bao giờ chạm vd&lt;1.</td><td>KHÔNG vá — không reachable với vd&lt;1; thêm guard = code chết.</td></tr>
+<tr><td>P3-4</td><td><span class="tag p2">P3</span></td><td><code>ClusterCast.kt:942</code> <code>val scale</code> unused trong applyScaleLive (đọc lại <code>cur=scaleOf(pkg)</code> trong vòng lặp). Cảnh báo compiler.</td><td>KHÔNG vá — PRE-EXISTING, ngoài phạm vi freeze/HUD (applyScaleLive không đổi phiên này); file safety-critical, tránh scope creep.</td></tr>
+</table>
+
+<div class="warnbox">
+<strong>Residual (on-car watch — KHÔNG phải lỗi code, nhất quán Pass 1):</strong>
+<ul>
+<li><strong>R2 <code>move-stack … &lt;vd&gt;</code> vượt ranh freeform (fullscreen d0 → freeform VD).</strong> Theo research Q1 guard (d), reparent vượt ranh freeform CÓ THỂ kích <code>initializeChangeTransition</code> nếu token còn <code>isVisible</code> và chưa có transition ở đích. Giảm thiểu: (1) đây LÀ primitive placeLadder R2 đã dùng + validate on-car; (2) bước ② phát <code>am start --display vd</code> TRƯỚC → chuẩn bị transition ở VD (Q2 guard (b) có thể chặn change-transition); (3) chỉ là fallback. VD sống (không huỷ) nên KHÔNG có NPE A; NPE B "một-lần/caught". <strong>Cần mắt trên xe.</strong></li>
+<li><strong>Khoảnh khắc VD "mỏng"</strong> giữa F4 re-check và force-stop old (1 lệnh <code>resolveComp</code> chen giữa): nếu B bounce đúng khe này → force-stop old → VD có thể rỗng. Khe cực nhỏ; không khử được bằng shell (không atomic). Đã ghi Pass 1.</li>
+<li><strong>Freeze thật</strong> chỉ verify được on-car. §Verification on-car = cổng BẮT BUỘC trước merge, GIỮ NGUYÊN.</li>
+</ul>
+</div>
+
+<h4>Tech freshness</h4>
+<p class="kv">Primitive lõi = AOSP 10 <code>am</code>/<code>wm</code> shell verbs — <strong>Context7 KHÔNG phủ AOSP WM internals</strong> (đã ghi W1 deviation §References; dùng research AOSP source thay thế). API Kotlin/Android trong code mới KHÔNG deprecated: <code>java.text.Normalizer.normalize(…, Form.NFC)</code> (JDK chuẩn), <code>dadb.Dadb</code> interface impl (FakeDadb — dadb 1.x, khớp bản đang dùng). Cảnh báo <code>Criteria</code>/<code>recycle</code>/<code>RemoteViews</code> deprecated thuộc file KHÁC (mockloc/navaccess/navremoteviews), pre-existing, ngoài phạm vi.</p>
+
+<div class="okbox">
+<strong>Final test:</strong> <code>./gradlew --offline testDebugUnitTest</code> → <strong>208/208 PASS</strong> (0 failure/error/skip). CastSwapTest 11 (was 10), NavFormatTest 25. Verify bằng aggregate JUnit XML.
+<br><strong>VERDICT (off-car): <span class="tag ok">APPROVED</span></strong> — 0 P0/P1 còn lại; 1 P2 (lỗ hổng test) đã vá + re-run xanh; scope T1–T5 · R1–R8 = 100% (R1 đạt ở mức bất-biến-code, freeze runtime vẫn chờ cổng on-car). Các P3 là ghi nhận/không-vá có lý do. <strong>ĐIỀU KIỆN merge KHÔNG đổi:</strong> on-car validation (§Verification) FAIL=0 là cổng bắt buộc — off-car test KHÔNG thay thế được.
+</div>
+
+<h2>Re-review 2026-07-24 (chiều) — CP/AA + phục hồi lỗi + code health (v0.7x)</h2>
+<p class="sub">Sau khi v0.67 switch Maps→CarPlay tạo orphan (brick tới reboot). Chủ dự án yêu cầu đi lại NGHIÊM TÚC toàn bộ sourcecode. 2 review doc: <code>docs/_handoff/review-projection-cpaa.md</code> + <code>review-errorhandling.md</code>. Nguồn chân lý: <code>docs/reference/dashcast-projection-recipe.md</code> (validated on-car v0.23).</p>
+
+<div class="dangerbox">
+<strong>Nhận lỗi (drift khỏi recipe đã proven):</strong> recipe nói MỌI app (gồm CP/AA) cast bằng <strong>FRESH-LAUNCH</strong> (<code>am start --display VD --windowingMode 5 --activity-clear-task</code>) + <strong>warm re-issue cmd16</strong> (xoá ADAS/chiếu). v0.67 <code>swapOnVd</code> đặt target bằng <code>am start --wm5</code> = <em>resume</em> (KHÔNG clear-task, KHÔNG cmd16) → CP/AA trắng + ADAS đen; và gentle-move sink CP/AA lúc còn <em>visible</em> (size-compat → qua ranh freeform → <code>initializeChangeTransition</code> đường RISKY) → half-complete → <strong>orphan</strong>. Maps/Vietmap (resizeable) qua được nên test xanh; CP/AA rơi đúng lỗ hổng.
+</div>
+
+<h3>Requirements (bổ sung)</h3>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th><th>P</th></tr>
+<tr><td>R9</td><td><strong>CP/AA cast/switch ĐÚNG như trước</strong> (recipe): target thường → fresh-launch (<code>--activity-clear-task</code>); target sink (CP/AA, <code>isPhoneProjection</code>) → resume <code>--wm5</code> (KHÔNG clear-task, KHÔNG force-stop — giữ phiên chiếu điện thoại). Chiếu chính xác (không trắng, không ADAS đen).</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>R10</td><td><strong>Lỗi cast KHÔNG được làm chết/brick app.</strong> Mọi failure path: bắt exception cụ thể, <code>restoreConsistentState()</code> trong <code>finally</code> (trả về pre-cast: gauges/app cũ), self-heal orphan (<code>healDivergence</code> = force-stop sink → re-check → chỉ báo reboot khi heal thất bại), bounded retry (transient 2×, fatal 0×), surface nút "🔧 Thử phục hồi" + cho cast lại/thử app khác. KHÔNG brick-tới-reboot.</td><td><span class="tag p0">P0</span></td></tr>
+<tr><td>R11</td><td><strong>Không gentle-move một task VISIBLE size-compat/sink</strong> (đường RISKY tạo orphan). App cũ phải được <strong>occlude</strong> (isVisible==false, nhờ fresh-launch target full-VD phủ lên) TRƯỚC khi gentle-return; sink cũ cưỡng lại → để yên (KHÔNG force-stop, KHÔNG orphan).</td><td><span class="tag p1">P1</span></td></tr>
+<tr><td>R12</td><td><strong>Code health:</strong> tách <code>ClusterCast.kt</code> (1284 LOC) → ≤500 LOC/file; xoá dead code (<code>PROFILE_CURVED/RECT</code>, <code>T3Daemon</code>, migrations 1-lần cũ); sửa <code>catch(Throwable)</code> → cụ thể; gom <code>sh()</code> trùng 7×; comment mâu thuẫn version. (Làm SAU khi fix chức năng + validate — tránh refactor lớn chồng rewrite chức năng.)</td><td><span class="tag p2">P2</span></td></tr>
+</table>
+
+<h3>Design D5 — SWITCH thống nhất (backbone VD-sống, occlude-correct, bám recipe)</h3>
+<pre><code>hotSwapOnVd(target, old, vd):
+  ① wm density (per-app dpi)
+  ② PLACE target lên VD SỐNG:
+       - target THƯỜNG → fresh-launch: am start --display vd --wm5 --activity-clear-task -n comp
+       - target SINK (isPhoneProjection) → resume: am start --display vd --wm5 -n comp   (KHÔNG clear-task)
+     GATE landedOn(target, vd); null → GIỮ old, return (R6, VD không rỗng → né NPE A)
+  ③ RE-CHECK target còn trên VD (F4 TOCTOU) + OCCLUDE-VERIFY old.isVisible==false (target full-VD phủ lên)
+  ④ RETURN old về d0:  gentle am start --display 0 --wm1  (old đã occlude → snapshot-free → giữ state)
+       - old là SINK mà cưỡng lại (còn visible/không rời) → ĐỂ YÊN, KHÔNG force-stop, KHÔNG move-stack (OQ3)
+       - old thường không rời sau gentle → PHAO force-stop + relaunch d0 (hiếm)
+  ⑤ (tuỳ chọn, flag on-car) ADAS cmd16 — CHỈ theo Ordering A: sau khi old rời hẳn (VD chỉ còn target) → VD "tươi" → cmd16.
+       Mặc định TẮT: fresh-launch full-VD buffer đã phủ ADAS (recipe quy ADAS-đen cho move-stack, không phải thiếu cmd16).
+  ⑥ re-pick target (F10) → applyBounds → setLastCastApp(target)+commit
+</code></pre>
+<p class="kv"><strong>cmd16 &amp; freeze:</strong> cmd16 KHÔNG phải thủ phạm freeze (v0.61 bỏ nó vẫn treo — thủ phạm là move-stack NPE B + restoreFullscreen đồng thời). cmd16 an toàn CHỈ trên "VD tươi" (không token transition) → nếu bật, phải chạy SAU khi old rời (⑤ Ordering A). MUST-VALIDATE-ON-CAR.</p>
+
+<h3>Design D6 — Phục hồi lỗi (không brick)</h3>
+<pre><code>cast(): try { … } catch (specific) { log } finally { restoreConsistentState(); busy=false }
+  restoreConsistentState(): rollback bounds/density/anim/PIP về pre-cast (mở rộng envelope, atomic)
+divergenceOn(orphan) → healDivergence():
+  1. force-stop <orphan.pkg>  (process death xoá window — research Q3: orphan shell-recoverable)
+  2. re-check divergence
+  3. sạch → tiếp tục cast   |   vẫn bẩn → refuse + nút "🔧 Thử phục hồi" + (last resort) báo reboot
+retry: transient (dadb IOException, vd&lt;1, landing race) → 2× backoff+jitter; fatal (not-installed, resolveComp null, sink-keep, orphan-after-heal) → 0×. KHÔNG retry mutation chưa rollback (chống "đẻ mồ côi").</code></pre>
+
+<h3>Tasks (bổ sung)</h3>
+<table>
+<tr><th>ID</th><th>Task</th><th>File</th></tr>
+<tr><td>T7</td><td>CP/AA đúng (R9/R11): <code>swapOnVd</code> ② split fresh-launch (thường, <code>--activity-clear-task</code>) vs resume (sink); ③ thêm occlude-verify old.isVisible==false trước ④; <code>returnAppToMain</code> precondition "old đã occlude" — sink cưỡng lại → để yên (không force-stop). Fresh-launch cần force-stop target thường trước (recipe #4) — cân nhắc keep-state opt-in.</td><td>CastShell.kt · ClusterCast.kt</td></tr>
+<tr><td>T8</td><td>Phục hồi (R10): <code>healDivergence()</code> wired ở 4 guard site (heal-then-refuse); <code>restoreConsistentState()</code> trong finally; catch cụ thể (bỏ <code>catch(Throwable)</code> chỉ log message); bounded retry table; nút "🔧 Thử phục hồi" (UI) + surface retry/try-another.</td><td>ClusterCast.kt · MainActivity</td></tr>
+<tr><td>T9</td><td>Thay <code>move-stack …0</code> sót ở <code>guardSinksOffVd:707</code> bằng <code>returnAppToMain</code>. Orphan-recovery: force-stop sink đã mất.</td><td>ClusterCast.kt</td></tr>
+<tr><td>T10</td><td>(P2, SAU validate) Code health: tách ClusterCast.kt → 6 file (CastState/CastPlacement/CastDivergence/CastTeardown/CastLifecycle + orchestrator slim); xoá dead code; gom <code>sh()</code>; sửa comment version.</td><td>clustercast/*</td></tr>
+</table>
+
+<h3>Verification (bổ sung — on-car, khi kết nối lại được)</h3>
+<ul>
+<li>Cast CP/AA từ gauges → chiếu đúng (không trắng/ADAS-đen). Switch Maps↔CP↔AA↔Vietmap nhiều vòng → mỗi lần NPE=0, cụm 1 app, KHÔNG orphan.</li>
+<li>Ép lỗi (cast app không cài / sink lỗi) → app KHÔNG chết, self-heal hoặc báo + cho retry/thử app khác; KHÔNG cần reboot.</li>
+<li>Nếu orphan xảy ra → nút "🔧 Thử phục hồi" (force-stop sink) dọn được KHÔNG cần reboot.</li>
+<li>cmd16 (nếu bật ⑤): xác nhận không re-freeze khi chạy trên VD-tươi (Ordering A).</li>
+</ul>
+
+<h2>Reviewer Log → Pass 4 — 2026-07-24 (chiều) — Re-review toàn codebase (2 agent)</h2>
+<p class="kv">Trigger: v0.67 switch→CarPlay tạo orphan + mandate đi-lại-nghiêm-túc. 2 review doc grounded vào recipe + code (file:line). Tóm tắt:</p>
+<ul>
+<li><strong>Track projection/CP-AA:</strong> drift table (fresh-launch DRIFTED, cmd16-warm DRIFTED, density/teardown FOLLOWS, no-move-stack PARTIAL @guardSinksOffVd:707). CP/AA hỏng = resume-không-fresh-launch + gentle-move-visible-sink. Unified switch D5 (occlude-correct). cmd16 an toàn chỉ VD-tươi (Ordering A, gate on-car).</li>
+<li><strong>Track error-handling:</strong> busy LUÔN release (không phải crash); brick = orphan + thiếu self-heal. Orphan force-stop-recoverable → <code>healDivergence</code> (P0). <code>restoreConsistentState</code> + exception cụ thể (P1). Retry table (P1). Code split 6-file + dead code (P2/P3). PIP appop leak khi throw sớm (P2). <code>catch(Throwable)</code> L500 chỉ log message (P1).</li>
+</ul>
+<p><strong>VERDICT plan mở rộng:</strong> <span class="tag ok">APPROVED to implement</span> R9–R12 theo D5/D6/T7–T10. <strong>Gate:</strong> fix chức năng (T7–T9) TRƯỚC; code-split (T10) SAU khi on-car FAIL=0 (tránh refactor lớn chồng rewrite). MUST-VALIDATE-ON-CAR: fresh-launch render CP/AA · occlude-return sink · healDivergence force-stop dọn orphan · cmd16 Ordering-A. Off-car: unit test khoá chuỗi lệnh + bất biến.</p>
+
+<h2>Reviewer Log → Pass 5 — impl (CP/AA correct) — 2026-07-24</h2>
+<p class="kv">Implementer: orchestrated session <code>impl_cpaa_correct</code>. Phạm vi: <strong>T7 + T9</strong> (R9/R11). Off-car (không đụng xe/adb) — verify bằng unit test (FakeShell). T8 (healDivergence/retry) + T10 (code-split) NGOÀI phạm vi phiên này. cmd16 KHÔNG thêm (giữ default OFF theo review §3 — deferred, MUST-VALIDATE-ON-CAR).</p>
+
+<div class="okbox">
+<strong>Files changed (7)</strong>
+<ul>
+<li><code>app/.../clustercast/WmParse.kt</code> — THÊM <code>isVisibleOn(dump, pkg, vd): Boolean</code> (occlude-verify helper, D5 U3). <strong>Mặc-định-an-toàn</strong>: token có trên VD nhưng KHÔNG đọc được cờ <code>isVisible=</code> (format đời xe khác) → coi như VISIBLE → caller KHÔNG gentle-move (chống tái tạo orphan). PURE.</li>
+<li><code>app/.../clustercast/CastShell.kt</code> — (a) <code>resolveComp(sh, pkg)</code> overload (bỏ phụ thuộc <code>adb</code> để guardSinksOffVd gọi returnAppToMain được); (b) VIẾT LẠI <code>returnAppToMain(sh, app, vd, <strong>oldOccluded</strong>, log)</code> — occluded → gentle (giữ state) + phao force-stop cho app thường; NOT occluded → SINK để yên (KHÔNG force-stop/move-stack, R11), app thường force-stop (process death an toàn); (c) THÊM <code>occludeVerify(sh, oldApp, vd, …)</code> poll <code>isVisibleOn</code> tới invisible; (d) VIẾT LẠI <code>swapOnVd(sh, …)</code> — <strong>split fresh-launch/resume</strong> + U3 occlude-verify; (e) <code>evictVd(sh, …)</code> per-stray occlusion. (bỏ tham số <code>adb</code> ở 3 hàm — sh-based.)</li>
+<li><code>app/.../clustercast/ClusterCast.kt</code> — <code>hotSwapOnVd</code> gọi <code>swapOnVd(sh,…)</code>; <code>placeAppOnVd</code> gọi <code>evictVd(sh,…)</code>; <strong>T9</strong>: <code>guardSinksOffVd:707</code> thay <code>am display move-stack …0</code> bằng <code>CastShell.returnAppToMain</code> (occlude→gentle | leave). <code>stop()</code>/<code>rollback()</code>/cold <code>placeLadder</code>/<code>castSeq</code>/parsers/applyBounds KHÔNG đụng.</li>
+<li><code>app/src/test/.../FakeShell.kt</code> — MODEL OCCLUSION: <code>FakeStack.front</code> (Z-order) + <code>FakeDevice.isVisibleModel</code> + render <code>isVisible=</code>; <code>--activity-clear-task</code> (fresh reset taskId) vs resume; <code>resistReturnPkgs</code> (sink cưỡng lại — luôn visible, leave-in-place); front bump ở <code>am start</code>/<code>move-stack</code>.</li>
+<li><code>app/src/test/.../CastSwapTest.kt</code> — VIẾT LẠI 15 test (fresh-launch/resume, occlude-verify order, sink-resist leave, F1/F4, returnAppToMain occluded/not-occluded × normal/sink, evictVd).</li>
+<li><code>app/src/test/.../CastFlowTest.kt</code> — UC3 (5 test) cập nhật cho guardSinksOffVd mới (occlude→gentle | leave; KHÔNG move-stack…0; KHÔNG force-stop sink).</li>
+<li><code>app/src/test/.../CastStressTest.kt</code> — SL1/SL3/SL4/SL5 cập nhật (occluded-sink gentle | sink-resist leave); N nhỏ hơn (gentle THẬT có Thread.sleep) — stress = LẶP + bất biến.</li>
+</ul>
+<strong>R9 đạt (CP/AA cast/switch đúng):</strong> <code>swapOnVd</code> ② SPLIT — target THƯỜNG (mới) → FRESH-LAUNCH (<code>am force-stop</code> + <code>am start --display vd --wm5 --activity-clear-task</code>, recipe #4 → composite full-VD, hết trắng/ADAS-đen); target SINK (<code>isPhoneProjection‖isKeepSession</code>) HOẶC re-cast chính app → RESUME (<code>am start --wm5</code>, KHÔNG force-stop/clear-task → giữ phiên chiếu điện thoại). Test (1)(2) khoá.
+<br><strong>R11 đạt (không gentle-move task visible size-compat/sink):</strong> U3 OCCLUDE-VERIFY (<code>occludeVerify</code> poll <code>isVisibleOn</code> tới <code>isVisible==false</code>) chạy TRƯỚC <code>returnAppToMain(oldOccluded)</code>. Occluded → gentle (né change-transition); sink cưỡng lại (không occlude được) → ĐỂ YÊN sau target (KHÔNG force-stop, KHÔNG move-stack, 2-on-VD, KHÔNG orphan). Test (3)(4) + returnAppToMain (13) khoá.
+<br><strong>Kết quả test:</strong> <code>./gradlew --offline testDebugUnitTest</code> → <strong>218/218 PASS</strong> (0 failure/error/skip; baseline 209 → +15 CastSwapTest mới thay 12 cũ, +6 WmParseTest isVisibleOn). Grep chứng minh switch path (<code>swapOnVd</code>/<code>returnAppToMain</code>/<code>evictVd</code>/<code>hotSwapOnVd</code>/<code>guardSinksOffVd</code>) 0× <code>move-stack …0</code> (move-stack duy nhất là R2 <code>→ vd</code>, CastShell:421); <code>…0</code> chỉ còn ở teardown (<code>stop():534</code>, <code>restoreFullscreenOnMain:147</code>) + cold <code>placeLadder:824</code> (ngoài phạm vi).
+<br><strong>Autonomous decisions:</strong> (1) bỏ <code>adb</code> khỏi <code>returnAppToMain</code>/<code>swapOnVd</code>/<code>evictVd</code> (sh-based + <code>resolveComp(sh)</code> overload) → guardSinksOffVd gọi returnAppToMain KHÔNG cần đổi chữ ký (giữ test CastFlowTest/CastStressTest gọi theo sh). (2) T9 buộc cập nhật CastFlowTest/CastStressTest (ngoài gợi ý "CastSwapTest+FakeShell") vì các test đó assert đúng cơ chế <code>move-stack</code> đang bị thay — giữ CONTRACT (sink off VD/giữ phiên/keepPkg/idempotent), đổi assertion cơ chế. (3) <code>isVisibleOn</code> mặc-định-VISIBLE-khi-không-đọc-được-cờ (an toàn on-car).
+<br><strong>MUST-VALIDATE-ON-CAR (chưa test xe):</strong> (a) fresh-launch full-VD render CP/AA đúng (không trắng/ADAS-đen) không cần cmd16; (b) tên field visibility THẬT trong <code>dumpsys window displays</code> đời xe (nếu khác <code>isVisible=</code> → occlude-verify rơi mặc-định-VISIBLE → app thường force-stop mất state, sink để yên — an toàn nhưng cần chỉnh parser); (c) gentle <code>am start --display 0</code> trên sink CP/AA occluded NPE=0.
+</div>
+
+</div>
+</html>
+
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L2 Stage 2a — feature-card icon tile: Tự lọc bụi mịn (indigo). Rounded 10dp gradient plate. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:type="linear" android:angle="315"
+        android:startColor="@color/tile_dust_start" android:endColor="@color/tile_dust_end" />
+    <corners android:radius="10dp" />
+</shape>

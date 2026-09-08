@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cluster Cast — resize persistence · split DPI (240 default) · bubble left/right toggle</title>
+<script>(function(){var t=localStorage.getItem('cnux-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1220px;margin:auto;padding:0 28px 110px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;letter-spacing:-.01em}
+.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}
+.hero{padding:72px 0 46px}
+.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(34px,5.5vw,56px);line-height:1.05;letter-spacing:-.045em;margin:14px 0 18px;max-width:1000px}
+.lead{font-size:19px;color:var(--muted);max-width:920px}
+.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px}
+.stat,.card,.callout,.phase{background:var(--paper);border:1px solid var(--line);border-radius:18px}
+.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}
+section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}
+h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}
+.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}
+.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}
+.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}
+code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}
+pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}
+.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:780px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}
+.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}
+.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"\2610";position:absolute;left:2px;color:var(--blue)}
+.done li:before{content:"\2611";color:var(--green)}
+.sev{font:700 11px var(--mono);padding:3px 7px;border-radius:6px;white-space:nowrap}.sev.p0{background:var(--red-soft);color:var(--red)}.sev.p1{background:var(--amber-soft);color:var(--amber)}.sev.p2{background:var(--purple-soft);color:var(--purple)}.sev.new{background:var(--green-soft);color:var(--green)}
+.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.green{background:var(--green-soft);color:var(--green)}
+.review{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}
+.diagram{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;margin:16px 0;overflow:auto}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:6px}.sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Cast resize/DPI/bubble fixes</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('cnux-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Consolidated spec · requirements · design · tasks · off-car</div>
+<h1>Cast: giữ size khi resize · lưu DPI split (mặc định 240) · nút nổi trái/phải toggle.</h1>
+<p class="lead">Ba lỗi Cluster Cast do chủ báo (2026-08-12): <strong>(1)</strong> resize app xong không lưu size; <strong>(2)</strong> chia đôi màn thì DPI không lưu, luôn về ~360 — cần lưu DPI 2 nửa + đặt DPI mặc định 240; <strong>(3)</strong> khi đã chiếu 2 app trái/phải, nhấn giữ nút nổi → nhấn trái/phải phải <em>trả</em> đúng nửa đó (nếu đang chiếu), chưa chiếu thì <em>cast</em> app đang mở — hiện tại luôn cast. Cả ba nằm trên luồng <strong>simplified</strong> (SimpleCastCoordinator); luồng v2 đã chết.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Target: 1.09 candidate · Baseline: main@b9b4dea (1.07) + 1.08 WIP (op39 + OTA) · Date: 2026-08-12</p>
+<div class="stats">
+<div class="stat"><b>3</b><span>bugs</span></div>
+<div class="stat"><b>5</b><span>files sửa · 0 mới</span></div>
+<div class="stat"><b>+7</b><span>unit tests</span></div>
+<div class="stat"><b>0</b><span>new deps</span></div>
+<div class="stat"><b>A10</b><span>DPI = display-global</span></div>
+</div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog">
+<div class="head"><span class="num">00</span><h2>Changelog</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Ver</th><th>Date</th><th>Change</th></tr></thead>
+<tbody><tr><td>v1</td><td>2026-08-12</td><td>Spec khởi tạo từ 3 bug report của chủ + off-car trace (sub-agent, verified bằng direct read). Scope đã được chủ giao ("fix các bug này đi"; #2 "nghĩ xem hướng nào").</td></tr></tbody>
+</table></div>
+</section>
+
+<section id="context">
+<div class="head"><span class="num">01</span><h2>Context</h2></div>
+<p>Luồng Cast đang chạy = <strong>simplified</strong>: <code>SimpleCastCoordinator</code> (core) + <code>FloatingBubbleService</code>/<code>BubbleActionDispatcher</code> (app) + state <code>SimpleCastState</code> (Off/Idle/CastingFull/CastingSplit). Geometry per-app lưu qua <code>SimpleCastPrefs</code> theo <strong>profile key</strong>: FULL = <code>&lt;pkg&gt;</code>; split = <code>&lt;pkg&gt;__L&lt;pct&gt;</code>/<code>__R&lt;pct&gt;</code>. Density áp bằng <code>wm density -d 1</code>.</p>
+<div class="callout amber"><strong>Ràng buộc phần cứng (A10):</strong> <code>wm density</code> là <strong>display-global</strong> — cả cụm chỉ có MỘT giá trị density tại một thời điểm. KHÔNG thể đặt trái=240 và phải=180 đồng thời (last-write-wins). Vì vậy "lưu DPI 2 màn" = lưu per-profile + áp lại khi re-cast, nhưng vật lý vẫn là 1 giá trị cho cả cụm. DPI per-side thực sự độc lập cần per-task scaling (ngoài scope).</p></div>
+</section>
+
+<section id="requirements">
+<div class="head"><span class="num">02</span><h2>Requirements</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>ID</th><th>Yêu cầu</th><th>Acceptance</th></tr></thead>
+<tbody>
+<tr><td><strong>R1</strong><br><span class="pill">#1</span></td><td>Resize app xong phải giữ size qua re-cast/khởi động lại.</td><td>Re-cast một app đang có sẵn trên cụm phải khôi phục đúng size (và DPI) đã lưu, không về full/default.</td></tr>
+<tr><td><strong>R2</strong><br><span class="pill">#2</span></td><td>DPI mặc định 240 (không native ~360); DPI split lưu + áp lại.</td><td>Mọi cast NORMAL baseline = 240 (CP/AA giữ native). Đổi DPI khi split → lưu theo per-ratio profile 2 nửa → re-cast áp lại. Đổi DPI KHÔNG được làm hỏng layout split.</td></tr>
+<tr><td><strong>R3</strong><br><span class="pill">#3</span></td><td>Nút nổi long-press trái/phải = toggle theo nửa.</td><td>Nửa đang chiếu → nhấn trả nửa đó (Stop(side)); nửa trống → cast app foreground vào nửa đó. Đồng nhất với nút zone trong app.</td></tr>
+<tr><td><strong>R4</strong></td><td>An toàn + không hồi quy.</td><td>Giữ two-track (CP/AA không vào split), profile-key backward-compat, ≤500 LOC/file, không thêm dep, không đổi lệnh/opcode. Không commit khi chưa security-scan + authorization.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="design">
+<div class="head"><span class="num">03</span><h2>Design</h2></div>
+
+<h3>#3 · Nút nổi trái/phải — toggle (return-if-occupied else cast)</h3>
+<div class="diagram">
+<svg viewBox="0 0 900 250" width="100%" role="img" aria-label="bubble left/right toggle decision">
+<defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--muted)"/></marker>
+<style>.n2{fill:var(--paper2);stroke:var(--line);stroke-width:1.4}.t2{fill:var(--ink);font:600 13px var(--sans)}.s2{fill:var(--muted);font:11px var(--mono)}.e2{stroke:var(--muted);stroke-width:1.4;fill:none;marker-end:url(#ar2)}.l2{fill:var(--muted);font:10px var(--mono)}.ok2{fill:var(--green-soft);stroke:var(--green)}.bl2{fill:var(--blue-soft);stroke:var(--blue)}</style></defs>
+<rect class="n2" x="20" y="95" width="200" height="60" rx="12"/><text class="t2" x="38" y="120">long-press → Trái/Phải</text><text class="s2" x="38" y="138">onCastSlot(side)</text>
+<rect class="n2 bl2" x="290" y="95" width="220" height="60" rx="12"/><text class="t2" x="308" y="120">slotOutcome(state, side)</text><text class="s2" x="308" y="138">pure · unit-test</text>
+<rect class="n2 ok2" x="600" y="20" width="270" height="54" rx="12"/><text class="t2" x="618" y="44">RETURN → Stop(side)</text><text class="s2" x="618" y="61">nửa đang chiếu → trả nửa đó</text>
+<rect class="n2 ok2" x="600" y="170" width="270" height="54" rx="12"/><text class="t2" x="618" y="194">CAST → CastSlot(fg, side)</text><text class="s2" x="618" y="211">nửa trống → cast app foreground</text>
+<line class="e2" x1="220" y1="125" x2="286" y2="125"/>
+<line class="e2" x1="510" y1="112" x2="596" y2="52"/><text class="l2" x="516" y="80">CastingSplit && side!=null</text>
+<line class="e2" x1="510" y1="138" x2="596" y2="192"/><text class="l2" x="516" y="170">else</text>
+</svg>
+<div class="legend"><span><span class="sw" style="background:var(--blue-soft);border-color:var(--blue)"></span>pure decision</span><span><span class="sw" style="background:var(--green-soft);border-color:var(--green)"></span>coordinator intent</span></div>
+</div>
+<p>Thêm hàm thuần <code>BubbleGesturePlanner.slotOutcome(state, side) → RETURN|CAST</code> (RETURN chỉ khi <code>state is CastingSplit</code> và nửa đó <code>!= null</code>). <code>BubbleActionDispatcher.onCastSlot</code> dùng nó: RETURN → <code>dispatch(Stop(side))</code>; CAST → <code>detectForeground → dispatch(CastSlot(fg, side))</code>. Đây chính là logic nút zone trong app (<code>MainActivityCastController.setupZoneButtons</code>) — nay dùng chung cho cả nút nổi.</p>
+
+<h3>#1 · Resize không lưu — regression ở nhánh "adopt"</h3>
+<p>Trong <code>SimpleCastCoordinator.handleCastFull</code>, khi app <strong>đã ở sẵn trên cụm</strong>:</p>
+<pre><code>// TRƯỚC (bug): dùng NORMAL_DEFAULT + return TRƯỚC applySavedProfile → mất size đã lưu
+if (geometry.isAppOnDisplay(pkg, displayId)) {
+    setState(CastingFull(pkg, appType, DisplayConfig.forAppType(appType))); return
+}
+// SAU (fix): resolve config đã lưu + restore bounds/DPI
+if (geometry.isAppOnDisplay(pkg, displayId)) {
+    val adoptConfig = configurator.resolveConfig(pkg, appType, prefs)
+    setState(CastingFull(pkg, appType, adoptConfig))
+    if (appType == NORMAL) geometry.applySavedProfile(pkg, CastProfile.FULL)
+    return
+}</code></pre>
+<p>Phụ (đã sửa): <code>CastDensityControl.saveForPkg/saveForProfile</code> khi seed từ <code>NORMAL_DEFAULT</code> (bounds full 1920×720) khiến một thay-đổi-DPI-thuần đóng dấu bounds full lên slot split → re-cast phóng slot full, hỏng layout. Fix: seed <code>NORMAL_DEFAULT.copy(bounds = null)</code> cho các ghi density-only.</p>
+
+<h3>#2 · DPI mặc định 240 + split persistence</h3>
+<p>Không có literal "360" — đó là density gốc của panel mà <code>wm density reset</code> khôi phục; default cast là chuỗi <code>"reset"</code>. Đổi mặc định: <code>NORMAL_DEFAULT.density = "240"</code> (một điểm duy nhất; CARPLAY/ANDROID_AUTO KHÔNG đổi vì dùng default param <code>"reset"</code>). Từ đó <code>openProjection</code> (apply NORMAL_DEFAULT), <code>resolveConfig</code> (NORMAL default), và nhánh adopt đều lấy 240. Split per-side DPI đã lưu+restore sẵn qua <code>setDensitySplit → CastDensityControl.setForSplit</code> (lưu 2 profile L/R) + <code>applySavedProfile</code>; nay không còn bị hỏng bởi bug bounds-stamping, và nhánh adopt (#1) khôi phục cả density.</p>
+<div class="callout blue"><strong>Boundary shapes:</strong>
+<ul>
+<li><code>DisplayConfig.density: String</code> ("reset" | số). Default param GIỮ "reset"; chỉ <code>NORMAL_DEFAULT</code> = "240". CP/AA configs không set density → giữ "reset".</li>
+<li>Profile keys KHÔNG đổi (FULL=<code>&lt;pkg&gt;</code>; split=<code>__L/R&lt;pct&gt;</code>) — backward-compat.</li>
+<li><code>slotOutcome(state, side)</code> ↔ <code>onCastSlot</code>: enum RETURN/CAST; RETURN chỉ khi <code>CastingSplit</code> + nửa occupied.</li>
+<li>Persist ONLY on shell success (R6) — giữ nguyên.</li>
+</ul></div>
+</section>
+
+<section id="tasks">
+<div class="head"><span class="num">04</span><h2>Tasks</h2></div>
+<div class="phase"><div><div class="phase-id">#1</div><span class="pill green">done</span></div><div><h4>Adopt-branch restore + no-stamp-bounds</h4>
+<ul class="check done"><li><code>SimpleCastCoordinator.handleCastFull</code> adopt branch → resolveConfig + applySavedProfile(FULL).</li><li><code>CastDensityControl.saveForPkg/saveForProfile</code> seed bounds-less.</li></ul></div></div>
+<div class="phase"><div><div class="phase-id">#2</div><span class="pill green">done</span></div><div><h4>Default DPI 240</h4>
+<ul class="check done"><li><code>SimpleCastModels.NORMAL_DEFAULT.density = "240"</code> (CP/AA unchanged). Split per-side persist/restore verified (đã có, không hồi quy).</li></ul></div></div>
+<div class="phase"><div><div class="phase-id">#3</div><span class="pill green">done</span></div><div><h4>Bubble left/right toggle</h4>
+<ul class="check done"><li><code>BubbleGesturePlanner.slotOutcome</code> (pure) + <code>BubbleActionDispatcher.onCastSlot</code> return-vs-cast.</li></ul></div></div>
+<div class="phase"><div><div class="phase-id">TEST</div><span class="pill green">done</span></div><div><h4>+7 unit tests</h4>
+<ul class="check done"><li>slotOutcome (2) · default DPI 240 (1) · no-stamp-bounds (1) · adopt-branch restore (1) · slotOutcome CAST on non-split (1) · occupied both sides (in same test).</li></ul></div></div>
+</section>
+
+<section id="verification">
+<div class="head"><span class="num">05</span><h2>Verification</h2></div>
+<div class="grid2">
+<div class="card"><h3>Off-car (đã chạy)</h3><ul class="check done">
+<li><code>:core:test</code> + <code>:app:testDebugUnitTest</code> → BUILD SUCCESSFUL, 0 failures/errors.</li>
+<li>Tests mới cover cả 3 fix (pure + coordinator+fake).</li>
+<li><code>:app:assembleRelease</code> → APK 1.09.</li>
+</ul></div>
+<div class="card"><h3>On-car (1 pass)</h3><ul class="check">
+<li>#1: cast app → resize → trả về → cast lại ⇒ đúng size cũ.</li>
+<li>#2: split → đổi DPI ⇒ 2 nửa giữ DPI khi re-cast; mặc định 240 (không 360).</li>
+<li>#3: đang chiếu trái+phải → long-press → Trái ⇒ TRẢ trái; Phải ⇒ TRẢ phải; nửa trống ⇒ cast app đang mở.</li>
+<li>⚠️ freeform cần còn sống (power-cycle 1 lần nếu am task resize bị từ chối).</li>
+</ul></div>
+</div>
+</section>
+
+<section id="questions">
+<div class="head"><span class="num">06</span><h2>Open Questions</h2></div>
+<ul>
+<li><strong>Q1 (A10 constraint):</strong> DPI per-side thực sự độc lập không khả thi qua <code>wm density</code> (display-global). Nếu chủ cần trái/phải khác DPI thật → phải per-task scaling (scope riêng, lớn).</li>
+<li><strong>Q2 (freeform):</strong> resize/split cần freeform sống (đọc lúc boot). Nếu <code>am task resize</code> bị từ chối → cần power-cycle 1 lần; restore FULL có <code>wm size</code> fallback, split thì không (per-task bounds).</li>
+</ul>
+</section>
+
+<section id="references">
+<div class="head"><span class="num">07</span><h2>References</h2></div>
+<ul>
+<li><code>core/.../simplified/SimpleCastCoordinator.kt</code> — handleCastFull adopt branch (#1).</li>
+<li><code>core/.../simplified/CastDensityControl.kt</code> — saveForPkg/saveForProfile bounds-less (#1/#2).</li>
+<li><code>core/.../simplified/SimpleCastModels.kt</code> — NORMAL_DEFAULT density 240 (#2).</li>
+<li><code>core/.../simplified/BubbleGesturePlanner.kt</code> — slotOutcome (#3).</li>
+<li><code>app/.../clustercast/BubbleActionDispatcher.kt</code> — onCastSlot return-vs-cast (#3).</li>
+<li>Tests: <code>BubbleGesturePlannerTest.kt</code>, <code>CastProfileDensityTest.kt</code>.</li>
+</ul>
+</section>
+
+<section id="reviewers">
+<div class="head"><span class="num">08</span><h2>Reviewer Log</h2></div>
+<p class="small">Append-only.</p>
+<div class="review"><h3>Pass 0 — 2026-08-12 · author</h3><p class="small">Implement + tests xanh (core 89 files, app 50 files, 0 fail). Chờ senior review sub-agent.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-12 · senior review (inline; sub-agent bị huỷ giữa chừng)</h3><p class="small">VERDICT: APPROVED — 0 P0–P1. Diff audit: #3 slotOutcome RETURN chỉ khi CastingSplit+side occupied, CAST còn lại; onCastSlot Stop(side) vs detectForeground→CastSlot; two-track giữ (CAST vẫn qua validateCastSlot rejects CP/AA). #1 adopt branch resolveConfig+applySavedProfile(FULL) cho NORMAL, vẫn return (không re-cast → không loop); density-only seed bounds=null (không stamp full), resize thật vẫn persist bounds. #2 chỉ NORMAL_DEFAULT.density="240" (default param giữ "reset" → CP/AA native). Boundary shapes khớp; profile keys không đổi. A10 display-global DPI đã document (per-side độc lập bất khả thi). Evidence: :core:test 89 files + :app:testDebugUnitTest 50 files → BUILD SUCCESSFUL, 0 failures/0 errors; :app:assembleRelease → 1.09 (aapt versionCode=109).</p></div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

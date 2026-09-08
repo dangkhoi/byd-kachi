@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav 2.0 — Speed-Limit Cluster Badge + HAL Port + HUD Probe (On-Car Ready)</title>
+<script>(function(){var k='speed-limit-oncar-theme';var t=localStorage.getItem(k);var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1240px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:70px 0 44px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,52px);line-height:1.06;letter-spacing:-.04em;margin:14px 0 18px;max-width:1080px}.lead{font-size:18px;color:var(--muted);max-width:940px}.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:32px}.stat,.card,.callout,.phase{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.card{padding:20px}.card h3{margin-top:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}.callout.purple{background:var(--purple-soft);border-color:var(--purple)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:12.5px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:700px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.phase{display:grid;grid-template-columns:140px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue);white-space:nowrap}.pill.green{background:var(--green-soft);color:var(--green)}.pill.amber{background:var(--amber-soft);color:var(--amber)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.purple{background:var(--purple-soft);color:var(--purple)}
+@media(max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav 2.0 · Speed-Limit + HUD</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('speed-limit-oncar-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Consolidated spec · 3 tracks · On-Car Ready philosophy</div>
+<h1>Biển tốc độ VietMap lên cụm + HAL port thật + HUD probe sẵn sàng</h1>
+<p class="lead">Ba track xây song song off-car, thiết kế để on-car 15-30 phút chỉ chạy confirm pass/fail. Mỗi track: code + test xanh + script probe sẵn sàng. On-car KHÔNG khám phá — chỉ chứng minh.</p>
+<p class="meta">Owner: dangkhoi · Baseline: main@f7843c0 (1.0) · Date: 2026-08-17 · App: com.byd.clusternav2</p>
+<div class="stats">
+<div class="stat"><b>T3</b><span>Badge overlay lên cụm (display 1)</span></div>
+<div class="stat"><b>T1</b><span>HalSpeedSignPort thay Noop</span></div>
+<div class="stat"><b>T2</b><span>HUD windshield probe script</span></div>
+<div class="stat"><b>15'</b><span>On-car session budget (max 30')</span></div>
+</div>
+<nav class="toc"><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#oncar">On-Car Checklist</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a></nav>
+</header>
+
+<!-- ═══════════════════════ CONTEXT ═══════════════════════ -->
+<section id="context"><div class="head"><span class="num">01</span><h2>Context</h2></div>
+
+<div class="callout green"><strong>Nguyên tắc On-Car Ready:</strong> On-car = 15-30 phút, chỉ pass/fail. Mọi thứ phải build xong, script viết sẵn, kết quả thu về off-car đủ để tiếp tục. KHÔNG khám phá trên xe. Code phải sẵn cả 2 nhánh (HAL có / HAL không).</div>
+
+<h3>1.1 Trạng thái hiện tại</h3>
+<div class="grid3">
+<div class="card"><h3>✅ Đã có</h3>
+<ul>
+<li>VietMap speed-limit acquisition (<code>VietMapWidgetTextParser</code> → 1..300 kph, FRESH ≤5s)</li>
+<li>Typed lifecycle coordinator (<code>SpeedSignLifecycleCoordinator</code>) với clear fencing, generation, source switch</li>
+<li><code>ClusterNavActivity</code> vẽ card nav trên display 1 (arrow + distance + road + ETA)</li>
+<li><code>BydHal.kt</code> infra: reflection getInstance, setInt, featureIdsMatching</li>
+<li><code>hud-cluster-probe.sh</code> v3 + <code>hud3-speedlimit-v4.sh</code> (đã dùng 29/07, proven)</li>
+<li><code>NavOpen</code> jar (getraw/setraw/full/close/probe — field-proven)</li>
+</ul></div>
+<div class="card"><h3>⏸ Noop placeholder</h3>
+<ul>
+<li><code>NoopSpeedSignPort(CLUSTER)</code> — nhận frame, drop, không ghi HAL</li>
+<li><code>NoopSpeedSignPort(HUD)</code> — tương tự</li>
+<li>Không có speed badge UI trên cụm</li>
+<li>Không có HAL write thật cho speed-limit</li>
+</ul></div>
+<div class="card"><h3>❓ Chưa biết (on-car sẽ chốt)</h3>
+<ul>
+<li><code>0x4B40001C</code> (ISA speed-limit) ghi → cụm có vẽ biển?</li>
+<li><code>0x4C10E023=1</code> → HUD kính BẬT?</li>
+<li>Z-order: badge overlay có đè được cast task trên display 1?</li>
+<li>Overlay <code>TYPE_APPLICATION_OVERLAY</code> trên <code>createDisplayContext(1)</code> — có sống?</li>
+</ul></div>
+</div>
+
+<h3>1.2 Data flow hiện tại (speed-limit)</h3>
+<pre><code>VietMapWidget (on-screen text "60")
+  → VietMapWidgetTextParser.parseSpeedLimit → Int (1..300)
+  → VietMapWidgetBridge → NavigationSpeedSignOwner.onSpeedLimit(VIETMAP, 60, monotonic)
+    → SpeedSignLifecycleCoordinator.onSpeedLimit(...)
+      → publish(SpeedLimitFrame.active(...)) → SpeedSignPort.publish(frame, gen)
+        → NoopSpeedSignPort: accepts + drops  ← THAY CHỖ NÀY
+
+Output cần:
+  CLUSTER: badge "60" trên cụm (display 1) — T3
+  HAL: ghi 0x4B40001C=60 (nếu proven) — T1
+  HUD: chưa biết, đợi probe — T2
+</code></pre>
+</section>
+
+<!-- ═══════════════════════ REQUIREMENTS ═══════════════════════ -->
+<section id="requirements"><div class="head"><span class="num">02</span><h2>Requirements</h2></div>
+
+<h3>R1 — Track T3: Speed-limit badge overlay trên cluster display 1</h3>
+<div class="callout blue">User story: "Lái xe, tôi muốn thấy biển giới hạn tốc độ (nguồn VietMap) luôn hiện trên cụm đồng hồ, kể cả khi đang cast app khác, để biết mình đang ở mức nào mà không nhìn điện thoại."</div>
+<ul class="check">
+<li>Badge hình tròn đỏ + số km/h trắng (style biển VN) hiện ở góc trên-phải cụm (display 1, 1920×720)</li>
+<li>Badge LUÔN hiện khi Nav+HUD bật VÀ có speed-limit FRESH (≤5s)</li>
+<li>Badge ẨN khi speed-limit STALE/UNAVAILABLE hoặc Nav+HUD tắt</li>
+<li>Badge hiện ĐỘC LẬP với ClusterNavActivity (nav có thể đang idle nhưng speed-limit vẫn có → badge vẫn hiện)</li>
+<li>Badge PHẢI đè (z-order trên) cast task trên cùng display — ẩn số cần on-car confirm</li>
+<li>Approach chính: <code>TYPE_APPLICATION_OVERLAY</code> + <code>createDisplayContext(1)</code> (system-alert-window, đã khai manifest)</li>
+<li>Approach fallback: launch 1 activity riêng trên display 1, keep-alive (kiểu ClusterBlackActivity)</li>
+<li>Unit test off-car cho logic show/hide/value. On-car chỉ verify z-order + render.</li>
+</ul>
+
+<h3>R2 — Track T1: HalSpeedSignPort thay NoopSpeedSignPort</h3>
+<div class="callout purple">User story: "Tôi muốn khi VietMap có biển 60, app TỰ ĐẨY giá trị 60 vào HAL để cụm OEM vẽ biển native (đẹp hơn overlay) — NẾU chứng minh được trên xe."</div>
+<ul class="check">
+<li>Implement <code>HalSpeedSignPort</code> thay thế <code>NoopSpeedSignPort(CLUSTER)</code></li>
+<li>Ghi <code>BydHal.setInt(statisticDevice, 0x4B40001C, valueKph)</code> khi publish</li>
+<li>Clear = ghi 0 (hoặc giá trị proven "tắt biển")</li>
+<li>Fallback an toàn: nếu <code>featureId("STATISTICS_ISA_CURRENT_ROAD_SPEED_LIMIT_SET")</code> trả null → degrade thành Noop (HAL không có feature này trên ROM)</li>
+<li>Probe on-car bằng script sẵn (<code>hud-cluster-probe.sh SEL="B"</code>) — chỉ pass/fail</li>
+<li><strong>KHÔNG hardcode fallback candidate khác</strong> (0x4B4000AA, 0x23A00010) — mỗi candidate cần on-car evidence riêng trước khi wire</li>
+<li>Unit test off-car: mock HAL → verify setInt called đúng value + generation fencing hoạt động</li>
+</ul>
+
+<h3>R3 — Track T2: On-car HUD probe script (sẵn sàng, chỉ chạy + đọc kết quả)</h3>
+<div class="callout amber">User story: "Tôi lên xe 15 phút, chạy 1 script, nó thử TẤT CẢ candidate HUD, mỗi cái: đọc→ghi→nhìn→khôi phục, xong lấy log file chứa pass/fail mỗi candidate."</div>
+<ul class="check">
+<li>Script <code>hud-cluster-probe.sh</code> đã tồn tại và cover Group C (HUD nav) + Group D (HUD speed-sign)</li>
+<li>Bổ sung: <strong>Group E</strong> — thử <code>0x4C10E023=1</code> (SET_HUD_SWITCH_SET) đơn lẻ → quan sát HUD kính → restore</li>
+<li>Output: file log timestamped + VERDICT mỗi ca (PASS/FAIL/BLOCKED)</li>
+<li>Checklist on-car ≤ 10 mục, mỗi mục = 1 lệnh chạy (đã sẵn trong script), 1 dòng expected, 1 verdict</li>
+<li>Kết quả đủ để off-car quyết định: wire hay không wire, candidate nào hoạt động</li>
+</ul>
+
+<h3>R4 — Nguyên tắc chung</h3>
+<ul class="check">
+<li>Mọi code phải build cả 2 nhánh: "HAL có" (ghi) và "HAL không có" (Noop graceful)</li>
+<li>Không ship code phụ thuộc kết quả on-car chưa có — code phải xanh VỚI cả 2 giá trị</li>
+<li>On-car script phải self-contained (push jar, chạy, log, restore, thoát)</li>
+<li>Mọi HAL write phải có prior→restore + recovery lock (đã có trong hud-cluster-probe pattern)</li>
+<li>Release APK không export test surface (bất biến từ 1.0)</li>
+</ul>
+</section>
+
+<!-- ═══════════════════════ DESIGN ═══════════════════════ -->
+<section id="design"><div class="head"><span class="num">03</span><h2>Design</h2></div>
+
+<h3>3.1 T3 — Badge speed-limit overlay trên display 1</h3>
+
+<h4>Approach: WindowManager overlay trên display context</h4>
+<pre><code>// Trong FloatingBubbleService (đã chạy, đã có SYSTEM_ALERT_WINDOW)
+val displayManager = getSystemService(DisplayManager::class.java)
+val clusterDisplay = displayManager.getDisplay(clusterDisplayId) // 1
+val displayContext = createDisplayContext(clusterDisplay)
+val wm = displayContext.getSystemService(WindowManager::class.java) as WindowManager
+
+val params = WindowManager.LayoutParams(
+    badgeSize, badgeSize,
+    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+    PixelFormat.TRANSLUCENT
+).apply {
+    gravity = Gravity.TOP or Gravity.END
+    x = 40; y = 40
+}
+wm.addView(speedBadgeView, params)
+</code></pre>
+
+<p><strong>Lý do chọn overlay thay vì activity:</strong></p>
+<ul>
+<li>Overlay luôn đè mọi activity (z-order cao nhất) → đè cast app</li>
+<li>ClusterNavActivity là fullscreen activity → DƯỚI overlay → không che badge</li>
+<li>Không cần activity lifecycle riêng, không đụng task stack display 1</li>
+<li>Đã có <code>SYSTEM_ALERT_WINDOW</code> trong manifest (line 14)</li>
+<li>FloatingBubbleService đã chạy trên display 0 — extend thêm 1 view trên display 1</li>
+</ul>
+
+<p><strong>Ẩn số z-order (on-car confirm):</strong> Android 10 (DiLink3) có thể không cho overlay trên display ≠ 0 từ app uid. Nếu fail → fallback: vẽ badge ngay trong <code>ClusterNavActivity</code> layout (thêm <code>ImageView</code> + <code>TextView</code> góc phải) — nhưng badge sẽ biến khi cast (activity bị đè). Kết quả on-car quyết định dùng approach nào.</p>
+
+<h4>Data flow</h4>
+<pre><code>SpeedSignLifecycleCoordinator
+  → ClusterSpeedBadgePort.publish(frame) [THAY cho NoopSpeedSignPort(CLUSTER)]
+    → post to main thread
+      → SpeedBadgeOverlay.show(value=60)    [overlay trên display 1]
+      
+SpeedSignLifecycleCoordinator
+  → ClusterSpeedBadgePort.replaceWithClear(frame)
+    → SpeedBadgeOverlay.hide()
+</code></pre>
+
+<h4>Badge UI</h4>
+<ul>
+<li>Hình tròn: viền đỏ 8dp, nền trắng, số đen bold 36sp (2 chữ số) / 28sp (3 chữ số)</li>
+<li>Size: 120×120dp (phù hợp 1920×720, góc trên-phải, cách mép 40dp)</li>
+<li>Custom View vẽ bằng Canvas (không cần XML layout — đơn giản, nhẹ)</li>
+</ul>
+
+<h3>3.2 T1 — HalSpeedSignPort</h3>
+
+<h4>Interface đã có</h4>
+<pre><code>interface SpeedSignPort : AutoCloseable {
+    val output: SpeedSignOutput
+    fun publish(frame: SpeedLimitFrame, generation: Long): SpeedSignSubmission
+    fun replaceWithClear(frame: SpeedLimitFrame, generation: Long): SpeedSignSubmission
+}
+</code></pre>
+
+<h4>Implementation</h4>
+<pre><code>class HalSpeedSignPort(
+    private val hal: BydHal,       // object, nhưng inject cho testable
+    private val featureId: Int,    // 0x4B40001C resolved at init
+    private val device: Any,       // BYDAutoStatisticDevice instance
+) : SpeedSignPort {
+    override val output = SpeedSignOutput.CLUSTER
+    private val lock = Any()
+    private var acceptedGeneration = 0L
+
+    override fun publish(frame: SpeedLimitFrame, generation: Long): SpeedSignSubmission {
+        synchronized(lock) {
+            if (generation < acceptedGeneration) return SpeedSignSubmission.STALE_DROPPED
+            acceptedGeneration = generation
+        }
+        // Ghi HAL — fire-and-forget (HAL write ~2ms, không block)
+        BydHal.setInt(device, featureId, frame.value!!)
+        return SpeedSignSubmission.ACCEPTED
+    }
+
+    override fun replaceWithClear(frame: SpeedLimitFrame, generation: Long): SpeedSignSubmission {
+        synchronized(lock) {
+            if (generation < acceptedGeneration) return SpeedSignSubmission.STALE_DROPPED
+            acceptedGeneration = generation
+        }
+        BydHal.setInt(device, featureId, 0) // 0 = clear (unproven — cần on-car)
+        return SpeedSignSubmission.ACCEPTED
+    }
+
+    override fun close() { /* HAL device has no close */ }
+
+    companion object {
+        /** Trả null nếu HAL không có feature này trên ROM → caller dùng Noop. */
+        fun createOrNull(context: Context): HalSpeedSignPort? {
+            val id = BydHal.featureId("STATISTICS_ISA_CURRENT_ROAD_SPEED_LIMIT_SET") ?: return null
+            val ctx = BydHal.bypass(context)
+            val dev = BydHal.device(BydHal.STATISTIC, ctx, BydHal.systemBypassContext()) ?: return null
+            return HalSpeedSignPort(BydHal, id, dev)
+        }
+    }
+}
+</code></pre>
+
+<h4>Wire vào NavigationSpeedSignOwner</h4>
+<pre><code>// NavigationSpeedSignOwner constructor thay đổi:
+private val clusterPort: SpeedSignPort = HalSpeedSignPort.createOrNull(appContext)
+    ?: NoopSpeedSignPort(SpeedSignOutput.CLUSTER)  // graceful fallback
+</code></pre>
+
+<h3>3.3 T2 — HUD probe script extension</h3>
+
+<p><code>hud-cluster-probe.sh</code> đã có Group A–D. Thêm <strong>Group E</strong>:</p>
+<pre><code># ── GROUP E: HUD switch thuần (0x4C10E023) — chưa thử lần nào ──
+case " $SEL " in *" E "*)
+  toggle_case "E1-HUD-SWITCH-ONLY" setting 4C10E023 38B0001C 1 2 \
+    "SET_HUD_SWITCH_SET on=1 off=2 → KÍNH LÁI BẬT?"
+;; esac
+</code></pre>
+
+<p>Mục đích: kiểm xem CHỈ bật switch <code>0x4C10E023=1</code> (không kèm content-gate) → HUD kính có sáng không. Kết hợp kết quả Group C (đã bật switch + content-gate + nav feed) để suy ra gate nào cần thiết.</p>
+</section>
+
+<!-- ═══════════════════════ TASKS ═══════════════════════ -->
+<section id="tasks"><div class="head"><span class="num">04</span><h2>Tasks</h2></div>
+
+<div class="phase"><div class="phase-id">STAGE 1<br><span class="pill">off-car</span></div><div>
+<h4>T3 — Badge overlay</h4>
+<ol>
+<li>Tạo <code>app/.../SpeedBadgeView.kt</code> — custom View vẽ biển tốc độ bằng Canvas (circle + text)</li>
+<li>Tạo <code>app/.../SpeedBadgeOverlay.kt</code> — quản lý WindowManager trên display 1 (add/update/remove)</li>
+<li>Tạo <code>ClusterSpeedBadgePort.kt</code> (implement <code>SpeedSignPort</code>) — bridge lifecycle → overlay (post main thread)</li>
+<li>Wire: <code>NavigationSpeedSignOwner</code> dùng <code>ClusterSpeedBadgePort</code> thay <code>NoopSpeedSignPort(CLUSTER)</code></li>
+<li>Fallback: nếu overlay trên display 1 fail (security exception) → log + degrade thành Noop (không crash)</li>
+<li>Unit test: <code>ClusterSpeedBadgePort</code> generation fencing, show/hide logic</li>
+</ol>
+</div></div>
+
+<div class="phase"><div class="phase-id">STAGE 2<br><span class="pill">off-car</span></div><div>
+<h4>T1 — HalSpeedSignPort</h4>
+<ol>
+<li>Tạo <code>app/.../HalSpeedSignPort.kt</code> như design §3.2</li>
+<li>Wire: <code>NavigationSpeedSignOwner</code> thử <code>HalSpeedSignPort.createOrNull</code> cho HUD port (hoặc 2nd cluster channel); CLUSTER port giờ = badge overlay (T3)</li>
+<li>Unit test: mock BydHal → verify setInt, generation fencing, createOrNull fallback null</li>
+<li><strong>Quyết định:</strong> HalSpeedSignPort → HUD port (thay Noop HUD). Cluster port = badge overlay. Vì mục tiêu owner = "hiện speed-limit ĐÚNG lên cụm" — badge là chắc ăn; HAL ISA nếu proven sẽ thêm native sign song song.</li>
+</ol>
+</div></div>
+
+<div class="phase"><div class="phase-id">STAGE 3<br><span class="pill">off-car</span></div><div>
+<h4>T2 — Probe script + on-car checklist</h4>
+<ol>
+<li>Thêm Group E vào <code>hud-cluster-probe.sh</code></li>
+<li>Viết <code>scripts/vehicle/oncar-checklist-2026-08.md</code> — mỗi mục = 1 command + expected + pass/fail</li>
+<li>Verify script chạy được (dry-run: <code>DRY=1 SEL="E" ./hud-cluster-probe.sh dummy</code>)</li>
+</ol>
+</div></div>
+
+<div class="phase"><div class="phase-id">STAGE 4<br><span class="pill">off-car</span></div><div>
+<h4>Build + test + APK</h4>
+<ol>
+<li><code>./gradlew :app:assembleRelease</code> — APK 1.1 (bump version)</li>
+<li>Toàn bộ test suite xanh</li>
+<li><code>aapt2</code> verify: không test surface export</li>
+<li>Publish <code>apk/ClusterNav-1.1-release.apk</code> (OTA)</li>
+</ol>
+</div></div>
+</section>
+
+<!-- ═══════════════════════ ON-CAR CHECKLIST ═══════════════════════ -->
+<section id="oncar"><div class="head"><span class="num">05</span><h2>On-Car Checklist (15-30 phút)</h2></div>
+
+<div class="callout red"><strong>Quy tắc:</strong> KHÔNG khám phá. Mỗi mục dưới đây = chạy 1 lệnh/script đã build sẵn → NHÌN → ghi PASS/FAIL. Mang về log file. Done.</div>
+
+<div class="scroll"><table><thead><tr><th>#</th><th>Mục</th><th>Command/Action</th><th>Expected (PASS)</th><th>Nếu FAIL</th><th>~Thời gian</th></tr></thead><tbody>
+<tr><td>1</td><td>Cài APK 1.1</td><td><code>adb install -r ClusterNav-1.1-release.apk</code></td><td>Success (cài song song app cũ)</td><td>Check signing key</td><td>1'</td></tr>
+<tr><td>2</td><td>Bật Nav+HUD</td><td>Mở app → toggle ON</td><td>App grant + connect</td><td>Check dadb</td><td>1'</td></tr>
+<tr><td>3</td><td>Badge hiện khi VietMap có speed-limit</td><td>Mở VietMap nav → đi qua biển</td><td>Biển đỏ tròn góc phải cụm</td><td>Log SecurityException? Overlay bị từ chối?</td><td>3'</td></tr>
+<tr><td>4</td><td>Badge ẩn khi hết biển</td><td>Ra khỏi vùng có biển / đợi 5s</td><td>Badge biến</td><td>Clear logic fail</td><td>1'</td></tr>
+<tr><td>5</td><td>Badge đè cast</td><td>Cast 1 app → badge vẫn hiện?</td><td>Badge ĐÈ trên cast</td><td>Overlay trên display 1 không được → fallback vào ClusterNavActivity layout</td><td>2'</td></tr>
+<tr><td>6</td><td>HAL ISA write</td><td><code>SEL="B" I_CONFIRM_PARKED=1 ./hud-cluster-probe.sh &lt;ip&gt;</code></td><td>B1: cụm hiện biển "50" rồi "80"</td><td>FAIL = HAL ISA không render native → disable HalSpeedSignPort</td><td>3'</td></tr>
+<tr><td>7</td><td>HUD switch</td><td><code>SEL="E" I_CONFIRM_PARKED=1 ./hud-cluster-probe.sh &lt;ip&gt;</code></td><td>E1: KÍNH LÁI sáng/hiện gì</td><td>FAIL = cần coding flag 0x38B00030</td><td>2'</td></tr>
+<tr><td>8</td><td>HUD nav + speed</td><td><code>SEL="C D" I_CONFIRM_PARKED=1 ./hud-cluster-probe.sh &lt;ip&gt;</code></td><td>C1/D1: tên đường/icon trên kính</td><td>FAIL → ghi kết quả, off-car phân tích</td><td>3'</td></tr>
+<tr><td>9</td><td>Thu log</td><td><code>adb pull /sdcard/Download/clusternav/ .</code></td><td>Có file log + hud-cluster-probe-*.log</td><td>—</td><td>1'</td></tr>
+<tr><td>10</td><td>Reboot verify</td><td>Nút nguồn → khởi lại → mọi thứ về bình thường</td><td>Launcher OK, app OK, không kẹt</td><td>Recovery lock đã bật trong script</td><td>2'</td></tr>
+</tbody></table></div>
+
+<p><strong>Tổng: ~19 phút.</strong> Budget 30 phút cho trễ/retry.</p>
+
+<h3>Sau on-car: decision matrix</h3>
+<div class="scroll"><table><thead><tr><th>Kết quả</th><th>Hành động off-car</th></tr></thead><tbody>
+<tr><td>#3 PASS + #5 PASS</td><td>Badge overlay hoạt động → giữ T3 nguyên, ship 1.1</td></tr>
+<tr><td>#3 PASS + #5 FAIL</td><td>Overlay không đè cast → chuyển sang vẽ badge TRONG ClusterNavActivity (fallback). Badge chỉ hiện khi nav active hoặc khi không cast. Accept limitation.</td></tr>
+<tr><td>#3 FAIL (SecurityException)</td><td>Overlay trên display 1 bị chặn → dùng fallback activity approach</td></tr>
+<tr><td>#6 B1 PASS</td><td>HAL ISA native sign hoạt động → enable <code>HalSpeedSignPort</code> là 2nd output song song badge</td></tr>
+<tr><td>#6 B1 FAIL</td><td>ISA không render → <code>HalSpeedSignPort</code> disabled, chỉ dùng badge overlay</td></tr>
+<tr><td>#7 E1 PASS</td><td>HUD kính bật bằng app → wire vào hệ thống (version 1.2)</td></tr>
+<tr><td>#7 E1 FAIL</td><td>Cần coding tool OBD → ghi nhận known limitation, không thay đổi code</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ═══════════════════════ VERIFICATION ═══════════════════════ -->
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification (off-car)</h2></div>
+<ul class="check">
+<li>All existing tests pass (996+)</li>
+<li>New unit tests for <code>ClusterSpeedBadgePort</code>: publish → show, replaceWithClear → hide, stale → dropped</li>
+<li>New unit tests for <code>HalSpeedSignPort</code>: mock device → verify setInt(id, value), createOrNull returns null when featureId absent</li>
+<li><code>SpeedBadgeView</code>: instrumental / screenshot test (nếu cần, nhưng Canvas pure → có thể skip)</li>
+<li><code>./gradlew :app:assembleRelease</code> sạch</li>
+<li><code>aapt2 dump xmltree app-release.apk AndroidManifest.xml | grep -i test</code> = empty</li>
+<li>Script dry-run: <code>DRY=1 SEL="B C D E" ./hud-cluster-probe.sh dummy</code> in ra đúng sequence</li>
+<li>Version bumped: 1.1 / versionCode 2</li>
+</ul>
+</section>
+
+<!-- ═══════════════════════ OPEN QUESTIONS ═══════════════════════ -->
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>#</th><th>Câu hỏi</th><th>Cách chốt</th><th>Ảnh hưởng nếu FAIL</th></tr></thead><tbody>
+<tr><td>Q1</td><td><code>TYPE_APPLICATION_OVERLAY</code> trên <code>createDisplayContext(1)</code> có sống trên Android 10 DL3?</td><td>On-car #3</td><td>Fallback: vẽ trong ClusterNavActivity</td></tr>
+<tr><td>Q2</td><td>Overlay z-order có đè cast task (freeform window mode 5)?</td><td>On-car #5</td><td>Badge bị che khi cast → accept hoặc dùng HAL native</td></tr>
+<tr><td>Q3</td><td><code>0x4B40001C</code> ghi 60 → cụm hiện biển 60?</td><td>On-car #6 (B1)</td><td>Không native sign → chỉ badge overlay</td></tr>
+<tr><td>Q4</td><td><code>0x4C10E023=1</code> → HUD kính bật?</td><td>On-car #7 (E1)</td><td>Cần coding tool → out of scope</td></tr>
+<tr><td>Q5</td><td>Clear value cho ISA: ghi 0 tắt biển, hay cần giá trị khác?</td><td>On-car probe (set 0 → nhìn cụm)</td><td>Nếu 0 không tắt → thử 255 / 0xFFFF</td></tr>
+</tbody></table></div>
+</section>
+
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav v1.03 — Review Remediation & Vehicle Verification</title>
+<script>(function(){var t=localStorage.getItem('clusternav-remediation-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--shadow:0 20px 55px rgba(0,0,0,.08);--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35;--shadow:0 22px 70px rgba(0,0,0,.42)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.58 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:1220px;margin:auto;padding:0 28px 110px}.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:13px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{font-weight:700;letter-spacing:-.01em}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}.hero{padding:72px 0 46px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}h1{font-size:clamp(38px,6vw,62px);line-height:1.04;letter-spacing:-.045em;margin:14px 0 18px;max-width:1000px}.lead{font-size:19px;color:var(--muted);max-width:900px}.meta{font:12px var(--mono);color:var(--muted);margin-top:22px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:32px}.stat,.card,.diagram,.callout,.phase,.review,.metric{background:var(--paper);border:1px solid var(--line);border-radius:18px}.stat{padding:17px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}.toc{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 4px}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}section{padding-top:58px}.head{display:flex;align-items:center;gap:14px;margin-bottom:22px}.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:5px 8px}h2{font-size:30px;letter-spacing:-.03em;margin:0}h3{font-size:20px;letter-spacing:-.015em;margin:30px 0 12px}h4{font-size:15px;margin:0 0 8px}.grid2,.grid3,.grid4{display:grid;gap:14px}.grid2{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}.grid4{grid-template-columns:repeat(4,1fr)}.card{padding:20px}.card h3{margin-top:0}.card p:last-child,.card ul:last-child{margin-bottom:0}.callout{padding:16px 18px;margin:16px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}.callout.purple{background:var(--purple-soft);border-color:var(--purple)}code{font:13px var(--mono);background:color-mix(in srgb,var(--muted) 12%,transparent);border-radius:5px;padding:2px 5px}pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;font:13px/1.55 var(--mono);white-space:pre-wrap}pre code{background:none;padding:0}.scroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--paper)}table{border-collapse:collapse;width:100%;min-width:780px}th,td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}tr:last-child td{border-bottom:0}.diagram{padding:22px;overflow:auto}.diagram svg{display:block;min-width:820px;width:100%;height:auto}.box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}.box.blue{fill:var(--blue-soft);stroke:var(--blue)}.box.green{fill:var(--green-soft);stroke:var(--green)}.box.amber{fill:var(--amber-soft);stroke:var(--amber)}.box.red{fill:var(--red-soft);stroke:var(--red)}.box.purple{fill:var(--purple-soft);stroke:var(--purple)}.dt{fill:var(--ink);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.5;marker-end:url(#arrow)}.edge.blue{stroke:var(--blue)}.edge.green{stroke:var(--green)}.edge.red{stroke:var(--red);stroke-dasharray:6 5}.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--blue);margin-right:6px}.phase{display:grid;grid-template-columns:132px 1fr;gap:20px;padding:20px;margin:12px 0}.phase-id{font:600 12px var(--mono);color:var(--blue)}.phase h4{font-size:17px}.check{padding-left:0;list-style:none}.check li{padding:5px 0 5px 26px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.review{padding:18px;margin:12px 0}.review h3{margin:0 0 8px;font-size:16px}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;font:600 11px var(--mono);padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue)}.pill.red{background:var(--red-soft);color:var(--red)}.pill.green{background:var(--green-soft);color:var(--green)}.pill.amber{background:var(--amber-soft);color:var(--amber)}.sev{font:700 11px var(--mono);padding:3px 7px;border-radius:6px;white-space:nowrap}.sev.p0{background:var(--red-soft);color:var(--red)}.sev.p1{background:var(--amber-soft);color:var(--amber)}.sev.p2{background:var(--purple-soft);color:var(--purple)}.ok{color:var(--green);font-weight:700}.no{color:var(--red);font-weight:700}.partial{color:var(--amber);font-weight:700}.mono{font-family:var(--mono)}.kpi{font-size:26px;font-weight:700}.muted{color:var(--muted)}
+@media(max-width:900px){.stats,.grid4{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.phase{grid-template-columns:1fr}.wrap{padding:0 18px 80px}.hero{padding-top:48px}}@media(max-width:560px){.stats,.grid4{grid-template-columns:1fr}}@media print{.top,.theme{display:none}.wrap{max-width:none}.card,.diagram,.phase,.review{break-inside:avoid}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · v1.03 Remediation</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('clusternav-remediation-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+<header class="hero">
+<div class="eyebrow">Consolidated requirements · design · implementation DAG · vehicle gates</div>
+<h1>Patch toàn bộ review debt, rồi chứng minh trên SL6 và Seal.</h1>
+<p class="lead">Đưa simplified Cast, Navigation/HUD, VietMap widget và release pipeline về cùng một contract trung thực: state chỉ đổi sau kết quả có bằng chứng, output không chia sẻ failure domain, widget bind có prerequisite rõ ràng, test suite chỉ kiểm architecture đang ship, và candidate kế tiếp mang identity chính xác.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Baseline reviewed: main@8842ffe + current v1.02 dirty tree · Planned candidate: 1.03 (103) · Date: 2026-08-04</p>
+<div class="stats"><div class="stat"><b>1</b><span>P0 system-crash hazard</span></div><div class="stat"><b>46</b><span>current failing JVM tests</span></div><div class="stat"><b>2</b><span>vehicle profiles: SL6 + Seal</span></div><div class="stat"><b>1</b><span>consolidated approval gate</span></div></div>
+<nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
+</header>
+
+<section id="changelog"><div class="head"><span class="num">01</span><h2>Changelog</h2></div>
+<div class="scroll"><table><thead><tr><th>Date</th><th>Change</th><th>Effect</th></tr></thead><tbody>
+<tr><td>2026-08-04</td><td>Initial consolidated remediation spec from full-project senior review. Adds all Navigation, Cast, widget, output, test, release, freshness and file-health findings; adds explicit SL6/Seal vehicle matrix and manual VietMap <code>appwidget grantbind</code> prerequisite.</td><td>Planning only. No implementation/build/install authorization is stored here.</td></tr>
+</tbody></table></div>
+<div class="callout blue"><strong>Approval:</strong> exactly one out-of-band gate for this whole document. Approve with agent prompt <code>Approve spec clusternav-v102-review-remediation</code>. Approval state is not stored in HTML.</div>
+</section>
+
+<section id="context"><div class="head"><span class="num">02</span><h2>Context</h2></div>
+<div class="callout red"><strong>Current verdict:</strong> v1.02 is not a trusted candidate. The ignored APK hash <code>69f21744…508d</code> predates current instrumentation; only emulator is connected; SL6 split is full/full; HUD road and speed-sign clear remain unverified on Seal.</div>
+<div class="grid3">
+<div class="card"><h3>What is proven</h3><ul><li>SL6 and Seal full Cast reach the physical cluster.</li><li>VietMap widget IDs 19/20 are bound and fresh on SL6.</li><li>Emulator background update, stale clearing and process restore pass.</li><li>Navigation typed coordinator/store and first-level lane/HUD worker isolation tests pass.</li><li>Dead Reckon/mock-location product wiring is retired.</li></ul></div>
+<div class="card"><h3>What is broken</h3><ul><li>CP/AA may inherit a freeform stack that source says can crash SurfaceFlinger.</li><li>Cast commits optimistic state after failed landing/resize/return.</li><li>Arrow and ETA are lost at the Navigation boundary.</li><li>HUD and speed-sign share an unbounded hidden executor.</li><li>Two widget providers collapse into one freshness state.</li><li>Release is debuggable, can debug-sign silently, and lint is non-gating.</li></ul></div>
+<div class="card"><h3>Current verification truth</h3><ul><li><code>:core:test</code>: 599 tests, 6 fail.</li><li><code>:app:testDebugUnitTest</code>: 309 tests, 40 fail.</li><li><code>:car-integration:test</code>: 30/30 pass.</li><li>AAPT/debug compilation pass.</li><li>Most app failures are stale V2/static contracts, proving the suite no longer represents the shipped runtime.</li></ul></div>
+</div>
+<h3>Precedence and scope</h3>
+<div class="scroll"><table><thead><tr><th>Source</th><th>Binding after approval</th><th>Rule</th></tr></thead><tbody>
+<tr><td>This spec</td><td>Remediation source of truth</td><td>Supersedes conflicting active-runtime, test, release and vehicle wording only for this remediation.</td></tr>
+<tr><td><code>cluster-cast-simplified.html</code></td><td>Product direction</td><td>Projection-first simplified Cast remains; old V2 transaction architecture is not revived.</td></tr>
+<tr><td>Two-track + UX specs</td><td>Isolation and UI contracts</td><td>Exactly Navigation/HUD and Cast; Home remains renderer/dispatcher.</td></tr>
+<tr><td><code>vietmap-widget-bridge.html</code></td><td>Acquisition foundation</td><td>Official AppWidgetHost flow remains; this spec explicitly authorizes typed speed-sign output with new safety gates.</td></tr>
+<tr><td><code>VEHICLE-TEST-V2.md</code></td><td>Historical evidence framework</td><td>Exact-hash, parked, physical reboot and redaction rules remain. Its V2 behavioral matrix is replaced by the v1.03 matrix below.</td></tr>
+</tbody></table></div>
+<div class="callout amber"><strong>Hard boundary:</strong> all source/off-car findings are implementation scope. Firmware-dependent conclusions are implemented fail-closed, then closed only by exact-build vehicle evidence. No speculative fallback, <code>pm clear</code>, automatic global-setting mutation, or silent “best effort” success.</div>
+</section>
+
+<section id="requirements"><div class="head"><span class="num">03</span><h2>Requirements</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Binding requirement</th><th>Acceptance criteria</th></tr></thead><tbody>
+<tr><td>R1</td><td><strong>Exactly two runtime tracks.</strong></td><td>Navigation/HUD and simplified Cast share no mutable state, executor, shell gateway, output queue, lifecycle, journal or recovery. Dead Reckon/mock provider remains absent.</td></tr>
+<tr><td>R2</td><td><strong>One active Cast control plane.</strong></td><td>Home, Bubble, diagnostics and autostart use one simplified runtime. Retired V2/legacy mutation/runtime diagnostics are removed from active source and tests; git history is rollback.</td></tr>
+<tr><td>R3</td><td><strong>Cast state follows postconditions, not command issuance.</strong></td><td>Cast commits only after the exact task lands on the target display; split additionally verifies requested bounds; return commits only after exact occupant absence/move. Unknown result preserves prior state and exposes Retry/Stop/Diagnostics.</td></tr>
+<tr><td>R4</td><td><strong>CP/AA crash path is fail-closed.</strong></td><td>Protected targets are full-only, require a measured standard fullscreen destination stack and never enter freeform. Missing/ambiguous stack blocks without shell mutation. No caller can label CP/AA as NORMAL or use CastSlot.</td></tr>
+<tr><td>R5</td><td><strong>Bounded Cast transport.</strong></td><td>One bounded owner queue, explicit connect/read/operation deadlines, close-on-timeout and typed timeout/transport/command outcomes. No raw unbounded thread per tap; Stop remains reachable while an operation is pending.</td></tr>
+<tr><td>R6</td><td><strong>Failure preserves occupant and preferences.</strong></td><td>Failed return never erases state; failed resize/density never persists requested values; occupied split slot cannot be overwritten; invalid package/bounds/ratio/config is rejected before shell.</td></tr>
+<tr><td>R7</td><td><strong>Display-aware geometry.</strong></td><td>No Seal-only 1920×720 editor constants. Geometry derives from the selected display and observed content band. SL6 split uses measured bounds; no automatic <code>force_resizable_activities</code> change.</td></tr>
+<tr><td>R8</td><td><strong>Lifecycle-safe automotive UI.</strong></td><td>Listeners and delayed actions are removable/token-bound; duplicate taps coalesce or reject visibly; all touch targets ≥48dp; disabled visuals are non-destructive and labeled; split DPI is presented as one display-global value.</td></tr>
+<tr><td>R9</td><td><strong>Immutable Navigation frame is complete.</strong></td><td>Sequence-bound maneuver code, text, distance, road, route remaining distance/time and arrival clock cross the coordinator. No global bitmap/state lookup during output delivery; no field is silently dropped or type-reinterpreted.</td></tr>
+<tr><td>R10</td><td><strong>Truthful independent outputs.</strong></td><td>Lane, HUD and speed-sign each own a bounded queue/executor/cache/applied-state. Physical writer returns typed success/failure. Stale/disable/disconnect/process start issues an owned clear; no output can wedge a sibling.</td></tr>
+<tr><td>R11</td><td><strong>VietMap providers are independent.</strong></td><td>Speed and Alerts each expose timestamp/freshness/reason. A bad Alerts slot cannot invalidate fresh speed. Preference commit failures, orphan IDs and stale HostView callbacks fail closed and are test-covered.</td></tr>
+<tr><td>R12</td><td><strong>Manual AppWidget bind grant prerequisite.</strong></td><td>Parked operator runs <code>adb shell appwidget grantbind --package com.byd.clusternav --user 0</code> before binding on SL6/Seal. App never self-grants or shells a hidden fallback. Normal Android consent flow remains available. Rollback uses unbind + <code>revokebind</code>.</td></tr>
+<tr><td>R13</td><td><strong>Speed-sign lifecycle is safe.</strong></td><td>Only fresh, valid speed-provider limit may write. Master OFF, stale, provider loss, listener disconnect/destroy and process bootstrap force clear. Dedup tracks applied result, not enqueued intent. Failed clear remains retryable.</td></tr>
+<tr><td>R14</td><td><strong>HUD road and speed sign are vehicle-gated.</strong></td><td>HUD road budget has one consistent code/test value and Seal visual evidence. Speed-sign known-limit and stale/zero clear are visually verified. No release claim from HAL return strings alone.</td></tr>
+<tr><td>R15</td><td><strong>Tests represent shipped architecture.</strong></td><td>Obsolete V2 static tests are removed/replaced; source-scanning task inputs are declared; fresh <code>--rerun-tasks</code> suite has 0 failures; failure-path tests prove no optimistic Cast success or stale output.</td></tr>
+<tr><td>R16</td><td><strong>Current stable toolchain.</strong></td><td>JDK 17; Gradle 9.6.1; AGP 9.3.1 built-in Kotlin for app; Kotlin JVM plugin 2.4.10 for pure modules; dadb 2.0.0; JUnit 6.1.2; compile/target SDK 37. Migration is isolated and verified before runtime patches.</td></tr>
+<tr><td>R17</td><td><strong>Trusted artifact classes.</strong></td><td><code>vehicleTest</code> is explicitly diagnostic, exact-source, release-key signed and records debuggable=true. Public <code>release</code> is non-debuggable, release-key required, lint-gated. No debug-sign fallback. Collector verifies package/version/variant/signer/debug flag.</td></tr>
+<tr><td>R18</td><td><strong>Code-health limits.</strong></td><td>Every modified production/build file ≤500 LOC; UI components target ≤300–400 where steering requires. No stale comments, orphan XML, ignored persistence result, or duplicated client/gateway creation.</td></tr>
+<tr><td>R19</td><td><strong>Exact candidate and version.</strong></td><td>Next artifact is 1.03 (103), never overwrites v1.00/v1.02 bytes, has exact-source manifest + SHA-256 + signer + variant metadata, and is built only after separate build authorization.</td></tr>
+<tr><td>R20</td><td><strong>Vehicle evidence is mandatory.</strong></td><td>SL6 and Seal run the matrices below while parked. Physical reboot is used where specified. Raw evidence remains ignored/redacted. Any code change invalidates affected evidence and candidate identity.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="design"><div class="head"><span class="num">04</span><h2>Design</h2></div>
+<h3>D1 — Target boundaries</h3>
+<div class="diagram"><svg viewBox="0 0 1100 430" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="var(--muted)"/></marker></defs>
+<rect class="box blue" x="25" y="30" width="500" height="360" rx="18"/><text class="dt" x="275" y="60" text-anchor="middle">TRACK A · NAVIGATION + HUD</text><text class="ds" x="275" y="80" text-anchor="middle">one source/session · three isolated outputs</text>
+<rect class="box" x="65" y="105" width="180" height="64" rx="12"/><text class="dt" x="155" y="132" text-anchor="middle">Notification / Widget</text><text class="ds" x="155" y="151" text-anchor="middle">typed producers</text>
+<rect class="box green" x="300" y="105" width="180" height="64" rx="12"/><text class="dt" x="390" y="132" text-anchor="middle">NavigationCoordinator</text><text class="ds" x="390" y="151" text-anchor="middle">immutable frame + store</text>
+<rect class="box" x="55" y="245" width="130" height="70" rx="12"/><text class="dt" x="120" y="274" text-anchor="middle">Lane</text><text class="ds" x="120" y="294" text-anchor="middle">broadcast owner</text>
+<rect class="box" x="210" y="245" width="130" height="70" rx="12"/><text class="dt" x="275" y="274" text-anchor="middle">HUD</text><text class="ds" x="275" y="294" text-anchor="middle">HAL owner</text>
+<rect class="box" x="365" y="245" width="130" height="70" rx="12"/><text class="dt" x="430" y="274" text-anchor="middle">Speed sign</text><text class="ds" x="430" y="294" text-anchor="middle">ADAS owner</text>
+<path class="edge" d="M245,137 H300"/><path class="edge" d="M390,169 V205 H120 V245"/><path class="edge" d="M390,169 V215 H275 V245"/><path class="edge" d="M390,169 V225 H430 V245"/>
+<rect class="box purple" x="575" y="30" width="500" height="360" rx="18"/><text class="dt" x="825" y="60" text-anchor="middle">TRACK B · SIMPLIFIED CLUSTER CAST</text><text class="ds" x="825" y="80" text-anchor="middle">one runtime · bounded mutation owner</text>
+<rect class="box" x="620" y="105" width="180" height="64" rx="12"/><text class="dt" x="710" y="132" text-anchor="middle">Home / Bubble</text><text class="ds" x="710" y="151" text-anchor="middle">intent + render only</text>
+<rect class="box green" x="850" y="105" width="180" height="64" rx="12"/><text class="dt" x="940" y="132" text-anchor="middle">CastOperationOwner</text><text class="ds" x="940" y="151" text-anchor="middle">bounded queue + tokens</text>
+<rect class="box" x="610" y="245" width="135" height="70" rx="12"/><text class="dt" x="677" y="274" text-anchor="middle">Projection</text><text class="ds" x="677" y="294" text-anchor="middle">30/16/35 · 18/0</text>
+<rect class="box" x="765" y="245" width="135" height="70" rx="12"/><text class="dt" x="832" y="274" text-anchor="middle">Placement</text><text class="ds" x="832" y="294" text-anchor="middle">task + bounds</text>
+<rect class="box" x="920" y="245" width="135" height="70" rx="12"/><text class="dt" x="987" y="274" text-anchor="middle">Observation</text><text class="ds" x="987" y="294" text-anchor="middle">postcondition</text>
+<path class="edge" d="M800,137 H850"/><path class="edge" d="M940,169 V205 H677 V245"/><path class="edge" d="M940,169 V215 H832 V245"/><path class="edge" d="M940,169 V225 H987 V245"/>
+<path class="edge red" d="M525,210 H575"/><text class="ds" x="550" y="200" text-anchor="middle">NO CROSS EDGE</text>
+</svg><div class="legend"><span><span class="dot"></span>typed boundary</span><span><span class="dot" style="background:var(--green)"></span>single owner</span><span><span class="dot" style="background:var(--red)"></span>forbidden runtime edge</span></div></div>
+
+<h3>D2 — Cast operation contract</h3>
+<div class="diagram"><svg viewBox="0 0 1050 260" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arrow2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="var(--muted)"/></marker></defs>
+<rect class="box" x="20" y="80" width="145" height="65" rx="12"/><text class="dt" x="92" y="108" text-anchor="middle">Intent</text><text class="ds" x="92" y="127" text-anchor="middle">token + expected state</text>
+<rect class="box blue" x="205" y="80" width="160" height="65" rx="12"/><text class="dt" x="285" y="108" text-anchor="middle">Validate</text><text class="ds" x="285" y="127" text-anchor="middle">type · bounds · identity</text>
+<rect class="box amber" x="405" y="80" width="160" height="65" rx="12"/><text class="dt" x="485" y="108" text-anchor="middle">Dispatch</text><text class="ds" x="485" y="127" text-anchor="middle">deadline · exact command</text>
+<rect class="box purple" x="605" y="80" width="160" height="65" rx="12"/><text class="dt" x="685" y="108" text-anchor="middle">Observe</text><text class="ds" x="685" y="127" text-anchor="middle">task/display/bounds</text>
+<rect class="box green" x="805" y="35" width="220" height="65" rx="12"/><text class="dt" x="915" y="63" text-anchor="middle">Verified → commit state</text><text class="ds" x="915" y="82" text-anchor="middle">persist applied values only</text>
+<rect class="box red" x="805" y="155" width="220" height="65" rx="12"/><text class="dt" x="915" y="183" text-anchor="middle">Rejected/Unknown → preserve</text><text class="ds" x="915" y="202" text-anchor="middle">visible reason · safe retry/stop</text>
+<path d="M165,112 H205" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow2)"/><path d="M365,112 H405" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow2)"/><path d="M565,112 H605" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow2)"/><path d="M765,105 L805,72" fill="none" stroke="var(--green)" stroke-width="1.5" marker-end="url(#arrow2)"/><path d="M765,120 L805,185" fill="none" stroke="var(--red)" stroke-width="1.5" marker-end="url(#arrow2)"/>
+</svg></div>
+<pre><code>sealed interface DeviceMutationOutcome {
+  data class Verified(val evidence: DevicePostcondition) : DeviceMutationOutcome
+  data class Rejected(val reason: MutationRejectReason) : DeviceMutationOutcome
+  data class Unknown(val command: String, val reason: String) : DeviceMutationOutcome
+  data class TimedOut(val command: String, val elapsedMs: Long) : DeviceMutationOutcome
+}
+
+// No state/pref commit occurs outside Verified.</code></pre>
+<div class="grid2"><div class="card"><h4>Protected target rule</h4><p>CP/AA classification is produced by one policy, carried as a closed type and rechecked by placement. Destination stack must be standard + fullscreen on the selected display. If not proven, return <code>Rejected(PROTECTED_FULLSCREEN_STACK_UNPROVEN)</code>; never guess.</p></div><div class="card"><h4>Queue rule</h4><p>Capacity is bounded. One active operation plus at most one replaceable latest Cast target; Stop/Close is never queued behind unbounded work. Timeout closes the dadb session and records evidence ID, command, elapsed time and outcome.</p></div></div>
+
+<h3>D3 — Complete Navigation frame and outputs</h3>
+<pre><code>data class NavigationFrameContent(
+  val maneuverCode: Int?,          // classified before the immutable boundary
+  val maneuverText: String?,
+  val distanceMeters: Int?,
+  val roadName: String?,
+  val routeRemainingMeters: Int?,
+  val routeRemainingSeconds: Int?,
+  val arrivalClock: String?,       // validated HH:mm
+)
+
+data class OutputDeliveryResult(
+  val attemptedAtEpochMs: Long,
+  val completedAtEpochMs: Long?,
+  val applied: Boolean,
+  val failure: NavigationOutputFailureReason?,
+)</code></pre>
+<ul><li>Bitmap remains app-local only long enough to classify; physical output never reads <code>NavRepository.state</code>.</li><li>Remove <code>DISPLAY_VERIFIED</code> unless a production acknowledgement/observation exists; otherwise carry sessionId + sequence in the acknowledgement contract.</li><li>Lane, HUD and speed sign call physical transport inside their own bounded worker and propagate typed failure.</li><li>Every output owns a generation. Clear invalidates queued positive writes before enqueuing the clear.</li></ul>
+
+<h3>D4 — VietMap binding, grant and per-provider truth</h3>
+<div class="diagram"><svg viewBox="0 0 1050 330" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arrow3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="var(--muted)"/></marker></defs>
+<rect class="box amber" x="25" y="40" width="190" height="72" rx="12"/><text class="dt" x="120" y="69" text-anchor="middle">Parked preflight</text><text class="ds" x="120" y="90" text-anchor="middle">grantbind · user 0</text>
+<rect class="box" x="265" y="40" width="190" height="72" rx="12"/><text class="dt" x="360" y="69" text-anchor="middle">Allocate ID</text><text class="ds" x="360" y="90" text-anchor="middle">one pending record</text>
+<rect class="box blue" x="505" y="40" width="190" height="72" rx="12"/><text class="dt" x="600" y="69" text-anchor="middle">Bind if allowed</text><text class="ds" x="600" y="90" text-anchor="middle">official framework API</text>
+<rect class="box green" x="745" y="15" width="270" height="72" rx="12"/><text class="dt" x="880" y="44" text-anchor="middle">Bound + persist exact slot</text><text class="ds" x="880" y="65" text-anchor="middle">commit result checked</text>
+<rect class="box purple" x="745" y="125" width="270" height="72" rx="12"/><text class="dt" x="880" y="154" text-anchor="middle">ACTION_APPWIDGET_BIND</text><text class="ds" x="880" y="175" text-anchor="middle">user consent fallback</text>
+<rect class="box red" x="505" y="235" width="190" height="72" rx="12"/><text class="dt" x="600" y="264" text-anchor="middle">Cancel / error</text><text class="ds" x="600" y="285" text-anchor="middle">delete ID · no leak</text>
+<path d="M215,76 H265" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow3)"/><path d="M455,76 H505" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow3)"/><path d="M695,65 H745" fill="none" stroke="var(--green)" stroke-width="1.5" marker-end="url(#arrow3)"/><path d="M695,88 C720,88 720,160 745,160" fill="none" stroke="var(--purple)" stroke-width="1.5" marker-end="url(#arrow3)"/><path d="M880,197 C880,270 735,270 695,270" fill="none" stroke="var(--red)" stroke-width="1.5" marker-end="url(#arrow3)"/>
+</svg></div>
+<pre><code># Host-side command — parked vehicle, fixed baseline user 0
+adb shell appwidget grantbind --package com.byd.clusternav --user 0
+
+# Capture evidence; pass requires the package/user grant plus successful binding
+adb shell dumpsys appwidget &gt; &lt;evidence&gt;/appwidget-grant-and-bind.txt
+
+# Rollback after in-app “Unbind all”
+adb shell appwidget revokebind --package com.byd.clusternav --user 0</code></pre>
+<div class="callout amber"><strong>Security boundary:</strong> <code>grantbind</code> changes the platform allowlist for user 0. It is a manual operator prerequisite, not a command ClusterNav may issue through dadb. If the command is absent/rejected, capture output and stop the bind test; do not add Accessibility/root/BLE fallback.</div>
+<pre><code>data class VietMapProviderSnapshot&lt;T&gt;(
+  val slot: VietMapWidgetSlot,
+  val values: T?,
+  val updatedAtElapsedMs: Long?,
+  val freshness: VietMapWidgetFreshness,
+  val reason: VietMapWidgetUnavailableReason?,
+  val generation: Long,
+)
+
+data class VietMapWidgetSnapshot(
+  val speed: VietMapProviderSnapshot&lt;VietMapSpeedValues&gt;,
+  val alerts: VietMapProviderSnapshot&lt;List&lt;VietMapRoadAlert&gt;&gt;,
+  val providerVersion: String?,
+)</code></pre>
+
+<h3>D5 — UI and diagnostics</h3>
+<div class="grid3"><div class="card"><h4>Bubble</h4><ul><li>Three ≥48dp zones.</li><li>One gesture owner and one in-flight action token.</li><li>Renderer restores zone + action content descriptions.</li><li>Listener handle is removed on destroy.</li></ul></div><div class="card"><h4>Home</h4><ul><li>Controller delegates to extracted autostart and geometry components.</li><li>No fixed-delay command without token/state recheck.</li><li>Geometry derives from selected display.</li><li>Split exposes one shared DPI.</li></ul></div><div class="card"><h4>Diagnostics</h4><ul><li>Reads simplified state, last typed command outcome and observed postcondition.</li><li>No V2 journal/runtime creation.</li><li>No repair mutation from diagnostics.</li><li>Copy output redacts paths/IPs.</li></ul></div></div>
+
+<h3>D6 — Toolchain freshness and release types</h3>
+<div class="scroll"><table><thead><tr><th>Layer</th><th>Baseline</th><th>Target</th><th>Verified pattern</th></tr></thead><tbody>
+<tr><td>JDK</td><td>17</td><td>17</td><td>Gradle/Kotlin supported LTS; use toolchains.</td></tr>
+<tr><td>Gradle</td><td>8.7</td><td>9.6.1</td><td>Wrapper + pinned distribution SHA-256.</td></tr>
+<tr><td>AGP</td><td>8.5.2</td><td>9.3.1</td><td>Requires Gradle ≥9.5, JDK17; API ≤37.</td></tr>
+<tr><td>Kotlin app</td><td>plugin 1.9.24</td><td>AGP built-in Kotlin</td><td>Remove <code>org.jetbrains.kotlin.android</code>; use compilerOptions/default Java target.</td></tr>
+<tr><td>Kotlin JVM</td><td>1.9.24</td><td>2.4.10</td><td>Pure <code>:core</code>/<code>:car-integration</code> plugin, JDK17 toolchain.</td></tr>
+<tr><td>dadb</td><td>1.2.10</td><td>2.0.0</td><td>Typed transport exceptions/operation results plus ClusterNav-owned deadline.</td></tr>
+<tr><td>JUnit</td><td>5.10.2</td><td>6.1.2</td><td>JUnit BOM pinned; Java17.</td></tr>
+<tr><td>Android SDK</td><td>compile/target 34</td><td>compile/target 37</td><td>Re-test boot FGS, overlay, notification listener, widget host on API29 vehicle.</td></tr>
+</tbody></table></div>
+<div class="grid2"><div class="card"><h4><code>vehicleTest</code></h4><p>Diagnostic exact-source APK, same application ID, release signing key required, <code>debuggable=true</code> recorded in candidate metadata, never published as release. Build/install remain separately authorized.</p></div><div class="card"><h4><code>release</code></h4><p><code>debuggable=false</code>, release key required, lint/security/test/vehicle gates green. Collector verifies signer, manifest version, package, variant and debug flag before publication.</p></div></div>
+
+<h3>D7 — Active-source cleanup</h3>
+<ul><li>Replace V2-only <code>BubbleZone</code>/label dependencies with simplified UI types.</li><li>Replace V2 diagnostics with simplified diagnostics.</li><li>Delete unreachable V2/legacy production and stale static test code after semantic searches prove zero active caller; preserve field command evidence in docs and git history.</li><li>Rebuild vehicle scripts/checklists for v1.03 simplified cases. Do not claim old V2 rows passed.</li><li>Split active files before completion: coordinator into owner/operation/observation; Bubble into renderer/gesture/dispatcher; Home controller into autostart/geometry/status; widget bridge into binding/lifecycle/extraction; build logic into focused plugins/tasks.</li></ul>
+
+<h3>D8 — Risk controls</h3>
+<div class="scroll"><table><thead><tr><th>Risk</th><th>Severity</th><th>Control</th></tr></thead><tbody>
+<tr><td>CP/AA moved into freeform stack → SurfaceFlinger crash</td><td><span class="sev p0">P0</span></td><td>Exact fullscreen standard-stack proof or block; parked tests first; preserve phone session.</td></tr>
+<tr><td>Toolchain migration obscures behavior regression</td><td><span class="sev p1">P1</span></td><td>Isolated first stage; no runtime edit until clean compile + tests; record dependency graph.</td></tr>
+<tr><td>Optimistic Cast state forgets live occupant</td><td><span class="sev p1">P1</span></td><td>Commit only on postcondition; prior state remains on rejected/unknown.</td></tr>
+<tr><td>Queued stale positive HAL write executes after clear</td><td><span class="sev p1">P1</span></td><td>Per-output generation; clear invalidates queued writes; applied-state dedup.</td></tr>
+<tr><td><code>grantbind</code> changes device security state</td><td><span class="sev p1">P1</span></td><td>Manual parked command, evidence capture, user 0 fixed, reversible <code>revokebind</code>, never self-issued.</td></tr>
+<tr><td>Legacy cleanup removes hidden active caller</td><td><span class="sev p2">P2</span></td><td>Semantic references + manifest/resource scan + compile/tests before deletion; one logical batch.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="tasks"><div class="head"><span class="num">05</span><h2>Tasks</h2></div>
+<p class="muted">Primary agent executes direct, visible 3–5-file batches. Tests run outside sub-agents. A reviewer is report-only and bounded by one boundary; primary applies patches and reruns focused tests. One spec owner at a time.</p>
+<h3>Implementation DAG</h3>
+<div class="diagram"><svg viewBox="0 0 1080 510" xmlns="http://www.w3.org/2000/svg"><defs><marker id="arrow4" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="var(--muted)"/></marker></defs>
+<rect class="box blue" x="420" y="20" width="240" height="64" rx="12"/><text class="dt" x="540" y="47" text-anchor="middle">T0 · Freeze + exact baseline</text><text class="ds" x="540" y="66" text-anchor="middle">spec · diff · tests · inventory</text>
+<rect class="box purple" x="420" y="120" width="240" height="64" rx="12"/><text class="dt" x="540" y="147" text-anchor="middle">T1 · Toolchain + release</text><text class="ds" x="540" y="166" text-anchor="middle">AGP9 · Kotlin · dadb2 · variants</text>
+<rect class="box green" x="90" y="225" width="250" height="64" rx="12"/><text class="dt" x="215" y="252" text-anchor="middle">T2 · Navigation outputs</text><text class="ds" x="215" y="271" text-anchor="middle">frame · lane · HUD · HAL</text>
+<rect class="box amber" x="415" y="225" width="250" height="64" rx="12"/><text class="dt" x="540" y="252" text-anchor="middle">T4 · Simplified Cast core</text><text class="ds" x="540" y="271" text-anchor="middle">bounded transport · postconditions</text>
+<rect class="box" x="740" y="225" width="250" height="64" rx="12"/><text class="dt" x="865" y="252" text-anchor="middle">T6 · Test/legacy rebaseline</text><text class="ds" x="865" y="271" text-anchor="middle">active suite · delete dead paths</text>
+<rect class="box green" x="90" y="335" width="250" height="64" rx="12"/><text class="dt" x="215" y="362" text-anchor="middle">T3 · Widget + speed sign</text><text class="ds" x="215" y="381" text-anchor="middle">provider truth · grant UX · output</text>
+<rect class="box amber" x="415" y="335" width="250" height="64" rx="12"/><text class="dt" x="540" y="362" text-anchor="middle">T5 · Cast UI + diagnostics</text><text class="ds" x="540" y="381" text-anchor="middle">Bubble · Home · accessibility</text>
+<rect class="box blue" x="740" y="335" width="250" height="64" rx="12"/><text class="dt" x="865" y="362" text-anchor="middle">T7 · Consolidate</text><text class="ds" x="865" y="381" text-anchor="middle">0 failures · review · security</text>
+<rect class="box red" x="330" y="440" width="420" height="52" rx="26"/><text class="dt" x="540" y="463" text-anchor="middle">T8 · BUILD AUTH → SL6 + Seal vehicle gates</text><text class="ds" x="540" y="481" text-anchor="middle">exact candidate · parked · grantbind · evidence</text>
+<path class="edge" d="M540,84 V120"/><path class="edge" d="M540,184 V205 H215 V225"/><path class="edge" d="M540,184 V225"/><path class="edge" d="M540,184 V205 H865 V225"/><path class="edge" d="M215,289 V335"/><path class="edge" d="M540,289 V335"/><path class="edge" d="M865,289 V335"/><path class="edge" d="M340,367 H395"/><path class="edge" d="M665,367 H740"/><path class="edge" d="M865,399 V420 H540 V440"/><path class="edge" d="M540,399 V440"/><path class="edge" d="M215,399 V420 H540 V440"/>
+</svg></div>
+
+<div class="phase"><div class="phase-id">T0 · Baseline</div><div><h4>Freeze identity and map every reviewed finding</h4><ul class="check"><li>Record branch/HEAD, tracked diff, untracked inventory and existing APK hashes.</li><li>Map every R1–R20 item to files/tests and classify ACTIVE / RETIRED / VEHICLE_ONLY.</li><li>Preserve v1.00 APK bytes; mark existing v1.02 APK stale/non-candidate.</li><li>Append implementation start to this spec; no approval state.</li></ul><p><strong>Exit:</strong> no unknown dirty path; requirements-to-task matrix complete.</p></div></div>
+
+<div class="phase"><div class="phase-id">T1 · Fresh build</div><div><h4>Migrate toolchain and harden artifact variants</h4><ul class="check"><li>Gradle 9.6.1 + SHA; AGP 9.3.1; built-in Kotlin app; Kotlin JVM 2.4.10; JUnit 6.1.2 BOM; dadb 2.0.0; SDK37.</li><li>Migrate <code>kotlinOptions</code> to compilerOptions/toolchains; adapt dadb result/exception API.</li><li>Add dependency verification/locking and explicit source-scanning task inputs.</li><li>Add <code>vehicleTest</code> and hardened <code>release</code>; require release key; remove silent fallback.</li><li>Collector atomically publishes candidate metadata and inspects APK signer/package/version/variant/debug flag.</li></ul><p><strong>Exit:</strong> compile/resources + focused build-logic tests pass; no runtime behavior edits in this stage.</p></div></div>
+
+<div class="phase"><div class="phase-id">T2 · Navigation</div><div><h4>Repair immutable frame and physical output ownership</h4><ul class="check"><li>Classify arrow before frame; add typed ETA/route fields; remove global arrow lookup.</li><li>Fix session/sequence verification shape or remove unreachable DISPLAY_VERIFIED.</li><li>Fix stale FutureTask retention and timeout reason overwrite.</li><li>Move physical HUD work into its bounded owner; return typed HAL result.</li><li>Add independent bounded speed-sign owner; generation-fence writes and clears.</li><li>Persistence load corruption fails closed without crashing Home.</li></ul><p><strong>Exit:</strong> field-by-field producer→frame→lane/HUD tests plus block/throw/saturation/stale/clear tests pass.</p></div></div>
+
+<div class="phase"><div class="phase-id">T3 · VietMap</div><div><h4>Make widget providers independent and output lifecycle safe</h4><ul class="check"><li>Split speed/alert freshness, reason, timestamp and generation.</li><li>Check all preference commits; reconcile pending/orphan host IDs; generation-bind HostViews/listeners.</li><li>Move drawable hashing off main; cache provider metadata responsibly.</li><li>Show exact manual grant instruction on BIND_UI_UNAVAILABLE/BIND_DENIED; never self-grant.</li><li>Speed-sign consumes only fresh speed provider; master OFF/disconnect/destroy/startup force retryable clear.</li></ul><p><strong>Exit:</strong> bridge lifecycle/fake manager tests; emulator grant/bind/background/restart/stale tests; Cast state unchanged.</p></div></div>
+
+<div class="phase"><div class="phase-id">T4 · Cast core</div><div><h4>Replace optimistic commands with bounded verified operations</h4><ul class="check"><li>Extract transport, operation owner, strict stack/task parser and postcondition verifier; each file ≤500 LOC.</li><li>Enforce CP/AA full-only and exact fullscreen standard stack; block ambiguity.</li><li>Validate package, display, bounds, ratio and density before shell.</li><li>Verify landing/resize/return; preserve prior state on rejection/unknown/timeout.</li><li>Block occupied-slot replacement; persist only applied geometry/density.</li><li>Make whitelist preference conditional on command success.</li></ul><p><strong>Exit:</strong> real-dump parser tests and command-log failure matrix; no test may reach Casting when no target task exists.</p></div></div>
+
+<div class="phase"><div class="phase-id">T5 · Cast UI</div><div><h4>Lifecycle-safe Home/Bubble and truthful diagnostics</h4><ul class="check"><li>Extract Bubble renderer/gesture/action dispatcher; retain/remove listener handle.</li><li>≥48dp zones, accurate action descriptions, non-destructive disabled zones, one tap token.</li><li>Extract Home autostart/geometry/status; cancel delayed work on lifecycle/state/config change.</li><li>Use display-aware editor; one shared DPI for split.</li><li>Replace V2 diagnostics with simplified operation/observation report.</li></ul><p><strong>Exit:</strong> base/w960 resource parity, accessibility, rapid tap, recreation, stale callback and operation-result tests pass.</p></div></div>
+
+<div class="phase"><div class="phase-id">T6 · Active suite</div><div><h4>Remove stale V2/legacy contracts and rebuild tests/scripts</h4><ul class="check"><li>Semantic/manifest/resource reference scan proves active simplified replacements.</li><li>Delete retired V2/legacy production/tests from compiled source; retain documentation evidence only.</li><li>Replace old V2 vehicle matrix with v1.03 simplified Navigation/Cast/widget rows.</li><li>Update HUD budget test to the approved source value and vehicle gate.</li><li>Remove orphan XML/comments; enforce LOC ratchets for active files.</li></ul><p><strong>Exit:</strong> fresh core/app/car suite 0 failures; no obsolete architecture assertion remains.</p></div></div>
+
+<div class="phase"><div class="phase-id">T7 · Consolidate</div><div><h4>Review, security and exact-source readiness</h4><ul class="check"><li>Read R1–R20 and every task; mark ✅ code + test + wiring or continue implementing.</li><li>Bounded senior reviews by Navigation, widget/output, Cast core, Cast UI and release boundary.</li><li>Patch all findings, rerun focused/full tests, re-review until 0 actionable P0–P3.</li><li>Redact private IPs/absolute paths; scan diff for secrets/PII/internal identifiers.</li><li>Generate exact-source manifest only after clean review; no APK yet.</li></ul><p><strong>Exit:</strong> 0 test failures, 0 review findings, security CLEAN, candidate source ready for separate build authorization.</p></div></div>
+
+<div class="phase"><div class="phase-id">T8 · Vehicle</div><div><h4>Build authorization, exact candidate, parked SL6 + Seal evidence</h4><ul class="check"><li>After explicit BUILD AUTH, assemble/collect one exact <code>vehicleTest</code> 1.03 artifact.</li><li>Run emulator smoke against candidate manifest.</li><li>Run manual grantbind preflight, install exact SHA, then matrices below.</li><li>Any source change regenerates identity and reruns affected rows.</li><li>Only after all required rows pass may a separate non-debuggable release build be authorized.</li></ul><p><strong>Exit:</strong> exact SHA evidence + SL6 PASS + Seal PASS + owner sign-off.</p></div></div>
+</section>
+
+<section id="verification"><div class="head"><span class="num">06</span><h2>Verification</h2></div>
+<h3>Off-car gates</h3>
+<div class="scroll"><table><thead><tr><th>Gate</th><th>Command/evidence</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>Compile/resources</td><td><code>./gradlew --rerun-tasks :app:processDebugResources :app:compileDebugKotlin</code></td><td>Success, no new deprecation in changed code.</td></tr>
+<tr><td>All JVM tests</td><td><code>./gradlew --rerun-tasks :core:test :app:testDebugUnitTest :car-integration:test</code></td><td>0 fail/error/skip unless an explicitly documented environment assumption applies.</td></tr>
+<tr><td>Lint</td><td><code>./gradlew :app:lintVehicleTest :app:lintRelease</code></td><td>0 error; release lint blocks collection.</td></tr>
+<tr><td>Architecture</td><td>Semantic/static tests</td><td>Exactly two tracks; one simplified Cast runtime; no V2 mutation/runtime reference; per-output resources distinct.</td></tr>
+<tr><td>Failure matrix</td><td>Fake shell/HAL/AppWidget manager</td><td>Timeout/reject/partial failure never commits success or loses prior state.</td></tr>
+<tr><td>LOC/health</td><td><code>wc -l</code> + guard scans</td><td>Every modified source/build file ≤500 LOC; no scattered config/unsafe exception swallowing.</td></tr>
+<tr><td>Emulator E2E</td><td>Updated <code>scripts/emulator/e2e-smoke.sh</code></td><td>Install exact candidate, Home/Bubble/widget flows, secondary display, no crash; BYD-only rows explicitly skipped.</td></tr>
+<tr><td>Security</td><td>Mandatory diff scan</td><td>No BLOCK/WARN unresolved; private IP/path redacted outside raw artifacts.</td></tr>
+</tbody></table></div>
+
+<h3>Vehicle hard boundaries</h3>
+<ul><li>Parked vehicle only. Stop immediately on cluster/phone-session instability, system UI restart, repeated timeout, unexpected occupant, or unsafe distraction.</li><li>Use exact candidate path/SHA from <code>docs/_handoff/vehicle-candidate.json</code>; record model, ROM, SDK, display inventory and signer before install.</li><li>USB for CarPlay/Android Auto; Wi‑Fi for ADB evidence. Use <code>&lt;vehicle-ip&gt;</code> placeholders in tracked docs.</li><li>No <code>pm clear</code>. No <code>adb reboot</code> as reboot evidence. No blind global-setting mutation.</li><li>Raw logs/dumps remain in ignored evidence directories and are redacted before sharing.</li></ul>
+
+<h3>Widget grant/bind preflight — both vehicles</h3>
+<pre><code># 1. Confirm target user baseline; expected 0
+adb shell am get-current-user
+
+# 2. Manually grant host package permission
+adb shell appwidget grantbind --package com.byd.clusternav --user 0
+
+# 3. Capture grant state before opening ClusterNav
+adb shell dumpsys appwidget &gt; &lt;evidence&gt;/appwidget-before-bind.txt
+
+# 4. In ClusterNav: VietMap data → Bind two sources
+# Expected: both exact provider components bind; no leaked IDs; status Bound.
+
+# 5. Capture IDs/providers/grant after binding
+adb shell dumpsys appwidget &gt; &lt;evidence&gt;/appwidget-after-bind.txt</code></pre>
+<p><strong>Pass:</strong> package/user grant is present; exact two provider components bind; IDs persist through process restart; VietMap background updates speed/limit for ≥60s; speed and Alerts freshness remain independent.</p>
+<p><strong>Rollback:</strong> use in-app Unbind all, verify IDs removed, then run <code>adb shell appwidget revokebind --package com.byd.clusternav --user 0</code> and capture final dumpsys. Do not revoke on the currently working SL6 before replacement candidate testing unless the owner explicitly chooses a destructive rebind test.</p>
+
+<h3>SL6 matrix</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Scenario</th><th>Required evidence</th><th>Pass</th></tr></thead><tbody>
+<tr><td>SL6-01</td><td>Exact install + appwidget grant/bind</td><td>Candidate SHA/signer/version; grant dumps; IDs/provider components.</td><td>1.03 exact; two slots bound; no false error.</td></tr>
+<tr><td>SL6-02</td><td>Normal full Cast ×3</td><td>SimpleCast command/outcome records + stack dumps.</td><td>Exact task lands, visible; Stop returns it; no orphan/freeze.</td></tr>
+<tr><td>SL6-03</td><td>Left slot 50/50</td><td>Selected display, exact start/resize, exit/stderr, requested and observed task bounds.</td><td>Observed left half equals requested; physical screen left half.</td></tr>
+<tr><td>SL6-04</td><td>Right slot + two apps</td><td>Both task IDs/bounds/z-order before/after.</td><td>Two visible non-overlapping occupants; tapping one returns only it.</td></tr>
+<tr><td>SL6-05</td><td>30/70 and 70/30</td><td>Exact rect arithmetic and observed bounds.</td><td>Both ratios tile display with no gap/overlap.</td></tr>
+<tr><td>SL6-06</td><td>Explicit manual resize diagnostic</td><td>Original <code>force_resizable_activities</code>; exact task resize; post stack.</td><td>Classify reject/ignored/surface mismatch; restore any changed setting.</td></tr>
+<tr><td>SL6-07</td><td>Bubble rapid tap/drag/recreate</td><td>Video or timestamped notes + operation log.</td><td>No duplicate command; drag never casts; ≥48dp usable; state labels correct.</td></tr>
+<tr><td>SL6-08</td><td>VietMap background + restart</td><td>Snapshots over ≥60s; process restart; provider-specific ages.</td><td>Speed remains fresh independent of Alerts; IDs persist.</td></tr>
+<tr><td>SL6-09</td><td>Speed-sign known limit + stale</td><td>Known road limit, snapshot, output result, cluster photo before/after stale.</td><td>Correct sign appears; stale/master OFF/disconnect clears; no old sign remains.</td></tr>
+<tr><td>SL6-10</td><td>Physical power reboot</td><td>Before/after grants, IDs, output and Cast state.</td><td>No auto mutation; grant/IDs behavior documented; no stale sign/app.</td></tr>
+<tr><td>SL6-11</td><td>CP/AA protected full, if available</td><td>Phone session, source/destination task+stack+windowing mode, system log.</td><td>Fullscreen standard stack only; phone session intact; no system UI/SF crash.</td></tr>
+</tbody></table></div>
+
+<h3>Seal regression matrix</h3>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Scenario</th><th>Required evidence</th><th>Pass</th></tr></thead><tbody>
+<tr><td>SEAL-01</td><td>Exact install + widget grant/bind</td><td>Same identity/grant/provider evidence as SL6.</td><td>Two providers bound and restart-safe.</td></tr>
+<tr><td>SEAL-02</td><td>Known-good full/split regression</td><td>Command and observed-bounds transcripts.</td><td>No regression versus field-proven path; Stop exact.</td></tr>
+<tr><td>SEAL-03</td><td>CarPlay + Android Auto</td><td>Fullscreen standard stack, phone session, return result.</td><td>No freeform, force-stop, phone teardown or head-unit crash.</td></tr>
+<tr><td>SEAL-04</td><td>Navigation arrow + ETA + route</td><td>Notification parsed fields, immutable frame and physical cluster photo.</td><td>Same-sequence maneuver; ETA/route extras visible where firmware supports them.</td></tr>
+<tr><td>SEAL-05</td><td>HUD road text</td><td>HUD photo with arrow/distance/road; exact encoded text length.</td><td>Road text appears without dropping arrow/distance; code/test budget agrees.</td></tr>
+<tr><td>SEAL-06</td><td>Lane/HUD toggle isolation</td><td>Per-output status/results before/after toggles.</td><td>Disabling/failing one does not stop or queue-block sibling.</td></tr>
+<tr><td>SEAL-07</td><td>VietMap speed sign + clear</td><td>Known limit and stale/master OFF/disconnect/process restart photos.</td><td>Correct value and reliable clear; failures remain retryable/visible.</td></tr>
+<tr><td>SEAL-08</td><td>Physical power reboot</td><td>State/output snapshots and grant/ID evidence.</td><td>No stale navigation/sign/Cast; independent rehydration.</td></tr>
+</tbody></table></div>
+
+<h3>Final exit criteria</h3>
+<ul class="check"><li>R1–R20 each has code + test + wiring evidence.</li><li>Fresh full test suite: 0 failures.</li><li>Senior review loop exits with 0 P0–P3 findings.</li><li>Security scan CLEAN; tracked docs contain no private vehicle IP or developer path.</li><li>All required SL6 rows PASS against one exact candidate SHA.</li><li>All required Seal rows PASS against the same exact candidate SHA.</li><li>Widget grant/bind/rollback evidence captured; ClusterNav never self-grants.</li><li>Owner explicitly signs off before any public non-debuggable release build.</li></ul>
+</section>
+
+<section id="questions"><div class="head"><span class="num">07</span><h2>Open Questions</h2></div>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Question</th><th>Safe default / closure</th></tr></thead><tbody>
+<tr><td>Q1</td><td>SL6 firmware honors <code>am task resize</code> for the exact cluster task?</td><td>Do not infer. Fail closed; close with SL6-03/06 command + observed bounds + physical result.</td></tr>
+<tr><td>Q2</td><td>Which exact fullscreen standard stack accepts CP/AA on each vehicle?</td><td>Never select an arbitrary/freeform stack. Capture stack/windowing evidence; block if no exact candidate.</td></tr>
+<tr><td>Q3</td><td>Does ADAS value 0 clear the real speed sign on Seal and SL6?</td><td>Code treats clear as unverified until visual test. Retry and show fault if no typed success.</td></tr>
+<tr><td>Q4</td><td>Does <code>grantbind</code> persist across physical reboot on BYD firmware?</td><td>Do not assume; capture before/after. Re-run manual grant only if absent. App never grants itself.</td></tr>
+<tr><td>Q5</td><td>Is HUD road budget 20 accepted by Seal firmware?</td><td>Start with reviewed 20-unit candidate; Seal-05 decides. If rejected, change once from evidence and regenerate candidate.</td></tr>
+<tr><td>Q6</td><td>Will target SDK 37 change boot FGS/overlay/listener behavior on API29?</td><td>Emulator + both vehicle reboot rows are mandatory; block release on any denied start or missing service.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="references"><div class="head"><span class="num">08</span><h2>References</h2></div>
+<ul>
+<li><code>docs/_handoff/session-v1.02-sl6-widget-cast-2026-08-04.md</code> — current source/artifact/vehicle handoff.</li>
+<li><code>docs/diagnostics/VEHICLE-TEST-V2.md</code> — historical exact-hash and safety/evidence rules.</li>
+<li><code>docs/specs/cluster-cast-simplified.html</code> — active simplified Cast direction.</li>
+<li><code>docs/specs/cast-simplified-active-app-toggle.html</code> and <code>cast-one-mode-and-three-zone-bubble.html</code> — Home/Bubble UX history.</li>
+<li><code>docs/specs/clusternav-two-track-final-plan.html</code> and <code>clusternav-uxui-rebaseline.html</code> — pipeline isolation and UI contracts.</li>
+<li><code>docs/specs/vietmap-widget-bridge.html</code> — AppWidget acquisition foundation.</li>
+<li>Android Developers, “Build a widget host” — current binding, consent, persistence and delete-ID responsibilities (checked 2026-08-04).</li>
+<li>Platform <code>appwidget help</code> — exact <code>grantbind</code>/<code>revokebind</code> syntax verified on Android 34 emulator.</li>
+<li>Android Developers AGP 9.3 release notes and built-in Kotlin migration; Gradle 9.6.1 release notes; Kotlin 2.4.10 docs; JUnit 6.1.2 docs; Maven Central dadb 2.0.0.</li>
+</ul>
+</section>
+
+<section id="reviewers"><div class="head"><span class="num">09</span><h2>Reviewer Log</h2></div>
+<div class="review"><p class="small">Append-only. Implementation and every re-review add a new dated pass; prior entries are never overwritten.</p></div>
+<div class="review"><h3>Pass 1 — 2026-08-04 · Full-project senior review synthesis</h3><p>Read authoritative specs, active source and both ends of Navigation, Cast, widget, HAL and release contracts. Independent bounded reviews confirmed one P0 protected-stack hazard and P1 failures in optimistic Cast state, unbounded transport, Navigation frame shape, hidden HAL queues, widget provider coupling, output lifecycle, UI concurrency/accessibility and release trust. Fresh validation: AAPT/debug compile pass; core 599/6 fail; app 309/40 fail; car-integration 30/30 pass. Verdict before remediation: NOT APPROVED / INCOMPLETE.</p></div>
+<div class="review"><h3>Pass 2 — 2026-08-04 · Technology and grantbind planning</h3><p>Verified current AGP/Gradle/Kotlin/JUnit/dadb lines and AGP built-in Kotlin migration. Context7 Android query was incomplete, so the current official Android widget-host guide was checked directly. Platform command help confirmed <code>appwidget grantbind --package &lt;PACKAGE&gt; --user &lt;USER_ID&gt;|current</code> and reversible <code>revokebind</code>. The design keeps official consent, makes grant manual/parked/reversible, and forbids app self-grant.</p></div>
+<div class="review"><h3>Pass 3 — pending · Implementation review</h3><p>To be appended after approval and implementation; must include scope checklist, technology freshness, boundary-shape trace, fixes, tests and zero-finding verdict.</p></div>
+</section>
+</div>
+<h2>Nhật ký triển khai (Implementation Log)</h2>
+<p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+</body></html>

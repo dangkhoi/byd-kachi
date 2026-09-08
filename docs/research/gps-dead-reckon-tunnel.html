@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Mất GPS trong hầm: nghiên cứu hướng xử lý</title>
+<script>(function(){try{var t=localStorage.getItem('tunnel-research-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(_){}})();</script>
+<style>
+:root{--bg:#f5f7f5;--surface:#fff;--surface2:#edf1ed;--text:#171a18;--muted:#626a64;--line:#d5dcd6;--blue:#1769d2;--green:#237a45;--amber:#a65c00;--red:#b42318;--violet:#7048c8;--shadow:0 14px 46px rgba(20,28,22,.07);--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;--serif:"New York",ui-serif,Georgia,serif;--mono:"SFMono-Regular",ui-monospace,Menlo,monospace}
+html.dark{--bg:#0d0f0e;--surface:#181b19;--surface2:#232824;--text:#f2f5f2;--muted:#a8b0a9;--line:#353b36;--blue:#6aa7ff;--green:#66d390;--amber:#ffb454;--red:#ff756c;--violet:#b39aff;--shadow:none}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.62 var(--sans);-webkit-font-smoothing:antialiased}.page{max-width:1160px;margin:auto;padding:30px 24px 110px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:40px}.brand{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}button{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:8px 12px;cursor:pointer}.eyebrow{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}h1{font:600 clamp(38px,6vw,66px)/1.03 var(--serif);letter-spacing:-.035em;margin:8px 0 18px}.lead{font-size:19px;color:var(--muted);max-width:900px}.meta{font:12px/1.55 var(--mono);color:var(--muted);margin-top:18px}.verdict{margin:28px 0;padding:22px 24px;border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}.verdict strong{color:var(--blue)}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:28px 0 46px}.stat{padding:17px;background:var(--surface);border:1px solid var(--line);border-radius:14px}.stat b{display:block;font:600 24px var(--serif)}.stat span{font:10px var(--mono);text-transform:uppercase;color:var(--muted)}nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:56px}nav a{padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);text-decoration:none;font-size:12px}section{margin-bottom:64px;scroll-margin-top:18px}.head{display:flex;align-items:baseline;gap:13px;border-top:1px solid var(--line);padding-top:25px;margin-bottom:18px}.num{font:11px var(--mono);color:var(--blue)}h2{font:600 29px/1.15 var(--serif);margin:0}h3{font:600 19px/1.3 var(--serif);margin:28px 0 10px}h4{margin:17px 0 7px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card,.callout{padding:18px 20px;background:var(--surface);border:1px solid var(--line);border-radius:14px}.callout{border-left:4px solid var(--blue);margin:14px 0}.callout.red{border-left-color:var(--red)}.callout.amber{border-left-color:var(--amber)}.callout.green{border-left-color:var(--green)}table{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--line);border-radius:13px;overflow:hidden;font-size:13px;margin:14px 0}th{text-align:left;font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--surface2)}th,td{padding:10px 11px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}.scroll{overflow-x:auto}.scroll table{min-width:920px}.badge{display:inline-flex;padding:3px 7px;border:1px solid currentColor;border-radius:999px;font:600 10px var(--mono);text-transform:uppercase;white-space:nowrap}.p0{color:var(--red)}.p1{color:var(--amber)}.p2{color:var(--violet)}.ok{color:var(--green)}.info{color:var(--blue)}code,pre{font-family:var(--mono)}code{font-size:.88em;background:var(--surface2);padding:.12em .34em;border-radius:5px}pre{padding:16px;overflow:auto;background:var(--surface2);border:1px solid var(--line);border-radius:12px}.diagram{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin:18px 0;overflow:auto}.diagram svg{display:block;min-width:820px;width:100%;height:auto}.box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}.bblue{fill:color-mix(in srgb,var(--blue) 9%,var(--surface));stroke:var(--blue);stroke-width:1.7}.bred{fill:color-mix(in srgb,var(--red) 9%,var(--surface));stroke:var(--red);stroke-width:1.7}.bamber{fill:color-mix(in srgb,var(--amber) 9%,var(--surface));stroke:var(--amber);stroke-width:1.7}.bgreen{fill:color-mix(in srgb,var(--green) 9%,var(--surface));stroke:var(--green);stroke-width:1.7}.dt{fill:var(--text);font:600 13px var(--sans)}.ds{fill:var(--muted);font:11px var(--mono)}.edge{fill:none;stroke:var(--muted);stroke-width:1.5}.edger{fill:none;stroke:var(--red);stroke-width:1.6;stroke-dasharray:5 4}.check{list-style:none;padding:0}.check li{padding-left:24px;position:relative}.check li:before{content:"□";position:absolute;left:2px;color:var(--blue)}.small{font-size:12px;color:var(--muted)}ul{padding-left:20px}li{margin:5px 0}@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}.page{padding:22px 15px 80px}h1{font-size:42px}}
+</style>
+</head>
+<body><div class="page">
+<div class="top"><div class="brand">ClusterNav · Research — không phải authorization</div><button onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('tunnel-research-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header><div class="eyebrow">Research · chưa được phép implement</div><h1>Mất GPS trong hầm</h1><p class="lead">Hiện trường: đi hầm ban đêm, GPS mất, bản đồ đứng lại, ra khỏi hầm không biết đi lối nào. Tài liệu này phân tích nguyên nhân, kết luận vì sao <em>không</em> quay lại cách mock GPS cũ, và đề xuất một hướng khác cùng phần cần đo trên xe trước khi quyết.</p><p class="meta">Owner: Đăng Khôi · dangkhoi · Nguồn: source v0.72 · minSdk 29 · targetSdk 34 · 2026-07-26</p></header>
+
+<div class="verdict"><strong>Kết luận nghiên cứu:</strong> không revive Dead Reckon kiểu cũ — nó thay <code>GPS_PROVIDER</code> toàn hệ thống, và đã có bằng chứng hiện trường thất bại. Hướng đáng làm là <strong>Tunnel Hold</strong>: khi mất GPS, ClusterNav tiếp tục đếm ngược cự ly-tới-rẽ trên <em>output của chính nó</em> (cụm + HUD) bằng tốc độ xe thật, và nói rõ đây là số ước lượng. Không inject location, không xin quyền, không đụng provider hệ thống. Trước khi viết code cần một phiên đo trên xe (§05) vì kết quả đo có thể chứng minh hướng này vô nghĩa.</div>
+
+<div class="stats"><div class="stat"><b>0</b><span>quyền location cần thêm</span></div><div class="stat"><b>1</b><span>hướng đề xuất</span></div><div class="stat"><b>4</b><span>phép đo bắt buộc</span></div><div class="stat"><b>53′/10 km</b><span>drift đã ghi nhận của bản cũ</span></div><div class="stat"><b>REMOVE</b><span>quyết định DR vẫn giữ</span></div></div>
+
+<nav><a href="#field">Hiện trường</a><a href="#why">Nguyên nhân</a><a href="#reject">Vì sao không revive</a><a href="#hold">Tunnel Hold</a><a href="#measure">Cần đo</a><a href="#options">So sánh lựa chọn</a><a href="#today">Làm được ngay</a><a href="#gates">Cổng re-entry</a><a href="#refs">References</a></nav>
+
+<section id="field"><div class="head"><span class="num">01</span><h2>Hiện trường</h2></div>
+<p>Báo cáo của chủ xe (đêm 2026-07-25 → 26): vào hầm, mất GPS, bản đồ dừng, ra hầm không biết đi đường nào. Cần tách thành ba triệu chứng riêng vì cách xử lý khác nhau:</p>
+<div class="grid3">
+<div class="card"><h3>S1 · Vị trí đóng băng</h3><p>Mũi xe trên bản đồ đứng tại điểm cuối cùng còn fix. Đây là hành vi <em>đúng</em> của một thiết bị chỉ có GNSS: không có fix thì không có vị trí.</p></div>
+<div class="card"><h3>S2 · Hướng dẫn ngừng cập nhật</h3><p>Cự ly-tới-rẽ và bước rẽ kế tiếp không đổi nữa, vì app dẫn đường chỉ tiến bước khi vị trí tiến. Đây là phần <strong>có thể cải thiện được</strong> mà không cần vị trí thật.</p></div>
+<div class="card"><h3>S3 · Ra hầm mất phương hướng</h3><p>Khoảng trống giữa lúc ra khỏi hầm và lúc GNSS re-fix. Độ dài khoảng trống này là số <strong>chưa ai đo</strong> trên xe này — nó quyết định vấn đề nằm ở đâu.</p></div>
+</div>
+<div class="callout amber"><strong>Chưa có số:</strong> không có log nào trong repo cho biết mất fix sau bao lâu vào hầm, và re-fix sau bao lâu khi ra. Nếu re-fix chỉ mất 3–5 giây thì S3 gần như không đáng sửa bằng code; nếu mất 40–60 giây thì đáng. §05 đo chính xác chỗ này.</div>
+</section>
+
+<section id="why"><div class="head"><span class="num">02</span><h2>Nguyên nhân</h2></div>
+<p>GNSS cần đường truyền tới vệ tinh; bê tông hầm chặn tín hiệu. Muốn tiếp tục biết vị trí thì phải <em>tự suy</em> — đó chính là dead reckoning, và nó cần hai đại lượng: <strong>đi được bao xa</strong> và <strong>đi theo hướng nào</strong>.</p>
+<div class="grid2">
+<div class="card"><h3>Quãng đường — đã có</h3><p><code>SpeedProvider</code> đọc tốc độ xe thật từ BYD HAL (<code>BYDAutoSpeedDevice.getCurrentSpeed</code>) in-process, no-root. Nó đã phân biệt “không đọc được” (<code>mpsOrNull()</code> trả <code>null</code>) với “đang đứng yên” — bài học từ review W1-3, vì gộp hai cái đó lại từng làm cổng an toàn luôn mở.</p></div>
+<div class="card"><h3>Hướng — chỗ vỡ</h3><p>DR đúng nghĩa lấy hướng từ IMU (gyroscope + accelerometer), hoặc từ wheel-tick hai bên bánh. Bản cũ suy hướng từ góc lái + wheelbase với hằng số hardcode; trong hầm cong, sai số hướng tích luỹ không kiểm soát. Head unit có IMU hay không là <strong>chưa biết</strong> — phải đo (§05 M1).</p></div>
+</div>
+<p>Vì thế trên điện thoại Google Maps vẫn “bò” tiếp trong hầm (điện thoại có gyro + accel), còn trên head unit chỉ có GNSS thì bản đồ đứng. Đây là khác biệt phần cứng, không phải lỗi cấu hình.</p>
+<div class="diagram">
+<svg viewBox="0 0 900 250" role="img" aria-label="Hai đại lượng cần cho dead reckoning và chỗ thiếu trên head unit">
+<rect class="bgreen" x="20" y="40" width="200" height="70" rx="12"/><text class="dt" x="40" y="70">Tốc độ xe (BYD HAL)</text><text class="ds" x="40" y="92">có · SpeedProvider · freshness OK</text>
+<rect class="bred" x="20" y="140" width="200" height="70" rx="12"/><text class="dt" x="40" y="170">Hướng đi</text><text class="ds" x="40" y="192">thiếu nguồn tin cậy</text>
+<path class="edge" d="M220 75 H330"/><path class="edger" d="M220 175 H330"/>
+<rect class="bblue" x="330" y="88" width="200" height="74" rx="12"/><text class="dt" x="352" y="118">Tích phân vị trí</text><text class="ds" x="352" y="140">cần CẢ HAI mới đúng</text>
+<path class="edge" d="M530 125 H640"/>
+<rect class="box" x="640" y="40" width="240" height="70" rx="12"/><text class="dt" x="660" y="70">Vị trí suy ra</text><text class="ds" x="660" y="92">drift theo thời gian</text>
+<rect class="bamber" x="640" y="140" width="240" height="70" rx="12"/><text class="dt" x="660" y="170">Cự ly-tới-rẽ suy ra</text><text class="ds" x="660" y="192">chỉ cần tốc độ · đủ dùng</text>
+<path class="edge" d="M530 140 C580 190 600 175 640 175"/>
+<text class="ds" x="243" y="168">thiếu</text>
+</svg>
+</div>
+<p class="small">Điểm mấu chốt của cả tài liệu này nằm ở ô cam: <em>đếm ngược cự ly tới khúc rẽ chỉ cần tốc độ</em>, không cần hướng. Vị trí tuyệt đối mới cần hướng — và vị trí tuyệt đối là thứ ta không định làm nữa.</p>
+</section>
+
+<section id="reject"><div class="head"><span class="num">03</span><h2>Vì sao không revive bản Dead Reckon cũ</h2></div>
+<p>Bản cũ (1.096 LOC, đã quiesce khỏi product baseline) hoạt động bằng cách <strong>thay thế</strong> <code>GPS_PROVIDER</code> bằng test provider rồi bơm toạ độ tự suy vào, kỳ vọng Google Maps tiêu thụ. Bốn lý do kỹ thuật khiến hướng này không nên quay lại:</p>
+<div class="scroll"><table><thead><tr><th>Mức</th><th>Vấn đề</th><th>Bằng chứng</th></tr></thead><tbody>
+<tr><td><span class="badge p0">P0</span></td><td>Mock là <strong>toàn hệ thống</strong>, không phải chỉ cho app mình. Muốn thêm provider tên <code>gps</code> phải gỡ provider thật ra trước (Android 10 ném <code>IllegalArgumentException: Provider "gps" already exists</code>), và khi đã mock thì hệ thống ngừng đẩy GNSS callback cho mọi client.</td><td>Comment trong <code>MockLoc.kt</code> mô tả đúng cơ chế này; báo cáo cộng đồng xác nhận GNSS measurement callback tắt khi mock.</td></tr>
+<tr><td><span class="badge p0">P0</span></td><td>Dọn dẹp phụ thuộc lifecycle: nếu process chết đúng lúc đang mock, GPS thật của <em>cả xe</em> có thể ở trạng thái hỏng cho tới khi watchdog/alarm chạy lại. Bản cũ phải “peek” gỡ-rồi-thêm-lại theo chu kỳ chỉ để nhìn thấy fix thật.</td><td>Failure-mode audit của spec DR, mức P0 + P1 COLD_SEED không có failsafe hữu hạn.</td></tr>
+<tr><td><span class="badge p1">P1</span></td><td>Không chứng minh được consumer tiêu thụ. Maps có thể lấy vị trí từ fused/nguồn khác và “nhảy về” vị trí thật, hoặc báo “Searching for GPS signal”. Ta chỉ quan sát được <em>đã bơm</em>, không quan sát được <em>đã dùng</em>.</td><td>D1 của spec DR; báo cáo cộng đồng về mock bị nhảy về vị trí thật.</td></tr>
+<tr><td><span class="badge p1">P1</span></td><td>Sai số hướng không chặn được: đã ghi nhận một lần drift 53 phút / 10 km.</td><td>Field note trong spec DR.</td></tr>
+</tbody></table></div>
+<div class="diagram">
+<svg viewBox="0 0 900 210" role="img" aria-label="Biên giới không quan sát được giữa bơm toạ độ và kết quả người dùng">
+<rect class="bblue" x="20" y="60" width="150" height="66" rx="12"/><text class="dt" x="38" y="88">DR engine</text><text class="ds" x="38" y="110">tự suy toạ độ</text>
+<path class="edge" d="M170 93 H230"/>
+<rect class="bamber" x="230" y="60" width="160" height="66" rx="12"/><text class="dt" x="248" y="88">Test provider</text><text class="ds" x="248" y="110">thay GPS · bơm</text>
+<path class="edger" d="M390 93 H460"/>
+<rect class="box" x="460" y="60" width="170" height="66" rx="12"/><text class="dt" x="478" y="88">Maps / fused</text><text class="ds" x="478" y="110">có dùng? không rõ</text>
+<path class="edger" d="M630 93 H700"/>
+<rect class="box" x="700" y="60" width="180" height="66" rx="12"/><text class="dt" x="718" y="88">Kết quả tài xế</text><text class="ds" x="718" y="110">tuyến có liền? không rõ</text>
+<text class="ds" x="400" y="165">đường gạch đỏ = biên giới không có API nào cho ta quan sát</text>
+<text class="ds" x="400" y="185">→ trạng thái sản phẩm mãi là CONSUMER_UNVERIFIED</text>
+</svg>
+</div>
+<p>Theo hợp đồng re-entry D5 đã duyệt: <code>INJECTING_ATTEMPTED</code> không bao giờ được hiển thị là thành công, và nếu không verify được consumer thì trạng thái giữ ở <code>CONSUMER_UNVERIFIED</code> — nghĩa là cổng KEEP <em>không tồn tại</em> cho hướng inject. Đó là lý do kỹ thuật, không phải lý do thủ tục.</p>
+</section>
+
+<section id="hold"><div class="head"><span class="num">04</span><h2>Hướng đề xuất — Tunnel Hold</h2></div>
+<p>Đảo ngược bài toán: đừng cố sửa vị trí của Maps. Chỉ giữ cho <strong>output của ClusterNav</strong> (làn cụm + HUD) tiếp tục có ích trong lúc mất GPS, và nói thật rằng số đang là ước lượng.</p>
+<h3>Nguyên liệu đã có sẵn trong source</h3>
+<ul>
+<li><code>NavRepository</code> + notification listener: đường hiện tại, kiểu rẽ, cự ly tới rẽ.</li>
+<li><code>TurnDistanceInterpolator</code> + <code>ClusterBroadcaster</code>: <em>đã</em> nội suy cự ly giữa hai lần notification bằng tốc độ thật, và đã tự khử over-read của đồng hồ (ưu tiên <code>closingRate</code> tự suy, chỉ dùng <code>SPEEDO_CORRECTION=0.93</code> khi chưa có).</li>
+<li><code>SpeedProvider.mpsOrNull()</code>: tốc độ có phân biệt “không biết”.</li>
+</ul>
+<p>Nói cách khác, cơ chế đếm ngược đã chạy hằng ngày để hạ lag notification. Tunnel Hold chỉ là <em>mở rộng vòng đời</em> của nó sang trường hợp notification ngừng cập nhật, cộng với nhãn trung thực và cổng hết hạn.</p>
+<div class="diagram">
+<svg viewBox="0 0 900 260" role="img" aria-label="Máy trạng thái Tunnel Hold">
+<rect class="bgreen" x="30" y="30" width="190" height="72" rx="12"/><text class="dt" x="50" y="60">LIVE</text><text class="ds" x="50" y="82">noti tươi · số thật</text>
+<path class="edge" d="M220 66 H340"/><text class="ds" x="238" y="56">noti quá hạn</text>
+<rect class="bamber" x="340" y="30" width="220" height="72" rx="12"/><text class="dt" x="360" y="60">HOLD_ESTIMATED</text><text class="ds" x="360" y="82">đếm ngược theo tốc độ</text>
+<path class="edge" d="M560 66 H690"/><text class="ds" x="576" y="56">hết hạn tin cậy</text>
+<rect class="bred" x="690" y="30" width="180" height="72" rx="12"/><text class="dt" x="710" y="60">HOLD_EXPIRED</text><text class="ds" x="710" y="82">“chờ GPS”</text>
+<path class="edge" d="M450 102 C450 170 200 170 125 108"/><text class="ds" x="250" y="160">noti mới → resync, bỏ ước lượng</text>
+<path class="edge" d="M780 102 C780 200 200 210 125 110"/><text class="ds" x="430" y="222">noti mới → về LIVE</text>
+<rect class="box" x="30" y="150" width="190" height="86" rx="12"/><text class="dt" x="50" y="180">Cổng hết hạn</text><text class="ds" x="50" y="200">tốc độ = không biết</text><text class="ds" x="50" y="218">· quá T giây · cự ly ≤ 0</text>
+</svg>
+</div>
+<h3>Vì sao hướng này an toàn theo đúng các cổng đã duyệt</h3>
+<div class="grid2">
+<div class="card"><h3>Không còn biên giới mù</h3><p>Consumer là output của chính ClusterNav, nên “đã hiển thị gì” là quan sát được trực tiếp. Vấn đề <code>CONSUMER_UNVERIFIED</code> của D1 biến mất vì không còn app thứ ba ở giữa.</p></div>
+<div class="card"><h3>Không đụng state hệ thống</h3><p>Không <code>addTestProvider</code>, không app-op <code>mock_location</code>, không quyền location nào. Không có gì để dọn sau khi process chết → toàn bộ nhóm P0 cleanup của bản cũ không phát sinh.</p></div>
+<div class="card"><h3>Fail-closed sẵn có</h3><p>Tốc độ “không biết” đã là một giá trị riêng. Không đọc được tốc độ ⇒ không đếm ngược ⇒ hiện “chờ GPS”, chứ không đếm bằng tốc độ cũ.</p></div>
+<div class="card"><h3>Test được off-car</h3><p>Lõi là hàm thuần (cự ly, tốc độ, thời gian) → property test được như <code>TurnDistanceInterpolator</code> hiện tại, không cần xe để regression-lock.</p></div>
+</div>
+<div class="callout red"><strong>Giới hạn phải nói thẳng.</strong> Tunnel Hold <em>không</em> giải quyết được: (a) bản đồ trên màn giữa vẫn đóng băng — nó là app khác, ta không sửa vị trí của nó; (b) nếu có nhánh rẽ <em>bên trong</em> hầm thì Maps không tiến bước, nên ClusterNav cũng không biết bước kế tiếp và chỉ được phép im lặng, không được đoán; (c) nó chỉ đếm ngược <em>maneuver đang có</em>, không tạo maneuver mới. Nếu nhu cầu thật là “bản đồ phải bò tiếp trong hầm” thì Tunnel Hold không đáp ứng, và câu trả lời đúng là dùng nav trên điện thoại (§07).</div>
+</section>
+
+<section id="measure"><div class="head"><span class="num">05</span><h2>Cần đo gì trên xe trước khi quyết</h2></div>
+<p>Bốn phép đo, tất cả read-only. Chạy được ghép vào phiên thử xe kế tiếp; <code>scripts/vehicle/probe-gps-tunnel.sh</code> thu thập M1–M4 và ghi vào thư mục evidence (gitignored).</p>
+<div class="scroll"><table><thead><tr><th>ID</th><th>Đo gì</th><th>Cách đo</th><th>Kết quả quyết định điều gì</th></tr></thead><tbody>
+<tr><td><span class="badge info">M1</span></td><td>Head unit có IMU không (gyroscope / accelerometer / rotation vector).</td><td><code>dumpsys sensorservice</code> · liệt kê sensor.</td><td>Có IMU ⇒ về sau có thể ước lượng hướng cho <em>output của mình</em>. Không có ⇒ vĩnh viễn không có DR vị trí trên head unit, và Maps đóng băng là kỳ vọng đúng.</td></tr>
+<tr><td><span class="badge info">M2</span></td><td>Mất fix sau bao lâu vào hầm; re-fix sau bao lâu khi ra.</td><td><code>dumpsys location</code> lấy mẫu theo chu kỳ + mốc thời gian.</td><td>Độ dài thật của S3. Re-fix nhanh ⇒ không cần code. Chậm ⇒ Tunnel Hold có giá trị đo được.</td></tr>
+<tr><td><span class="badge info">M3</span></td><td>Tốc độ HAL có còn đọc được trong hầm không.</td><td>Log tốc độ từ ClusterNav (chẩn đoán) theo chu kỳ.</td><td>Nếu tốc độ cũng mất trong hầm thì Tunnel Hold không có nguyên liệu ⇒ dừng hướng này.</td></tr>
+<tr><td><span class="badge info">M4</span></td><td>Notification dẫn đường có tiếp tục gửi khi mất GPS? Cự ly có đóng băng hay biến mất?</td><td><code>dumpsys notification --noredact</code> lấy mẫu, so cự ly theo thời gian.</td><td>Đây là dữ liệu quyết định nhất: Tunnel Hold chỉ có nghĩa nếu maneuver cuối vẫn còn đó để đếm ngược.</td></tr>
+</tbody></table></div>
+<div class="callout"><strong>Thứ tự đúng:</strong> đo trước, viết spec sau, code sau nữa. Bài học của bản DR cũ là 1.096 LOC được viết trước khi có bất kỳ số đo hiện trường nào, rồi không ai chứng minh được nó có tác dụng.</div>
+</section>
+
+<section id="options"><div class="head"><span class="num">06</span><h2>So sánh lựa chọn</h2></div>
+<div class="scroll"><table><thead><tr><th>Lựa chọn</th><th>Giải quyết</th><th>Rủi ro</th><th>Chi phí</th><th>Đánh giá</th></tr></thead><tbody>
+<tr><td><strong>A · Tunnel Hold</strong> (output riêng)</td><td>S2, một phần S3</td><td>Thấp — không đụng location hệ thống</td><td>Nhỏ; mở rộng cơ chế nội suy đã chạy</td><td><span class="badge ok">Đề xuất</span> sau khi M1–M4 xác nhận</td></tr>
+<tr><td><strong>B · Revive mock DR</strong></td><td>Trên lý thuyết S1+S2</td><td>P0: hỏng GPS toàn hệ thống, không dọn được chắc chắn</td><td>Rất lớn: state/evidence model, provider gateway, on-car protocol</td><td><span class="badge p0">Bác</span> — không có cổng KEEP</td></tr>
+<tr><td><strong>C · DR bằng IMU nếu M1 có</strong></td><td>S2 tốt hơn, hướng đáng tin hơn</td><td>Trung bình; vẫn <em>không</em> inject vào hệ thống</td><td>Vừa; cần hiệu chuẩn + test</td><td><span class="badge info">Để mở</span>, phụ thuộc M1</td></tr>
+<tr><td><strong>D · Dùng nav trên điện thoại trong hầm dài</strong></td><td>S1+S2+S3 (điện thoại có IMU)</td><td>Không</td><td>0 dòng code</td><td><span class="badge ok">Dùng ngay</span></td></tr>
+<tr><td><strong>E · Tải bản đồ offline</strong></td><td>Không giải quyết vị trí</td><td>Không</td><td>0</td><td><span class="badge info">Nên làm</span> — loại bỏ biến số mạng</td></tr>
+<tr><td><strong>F · Nav gốc của xe</strong></td><td>Có thể S1 nếu xe tự DR từ CAN</td><td>Không kiểm soát được</td><td>0</td><td><span class="badge info">Thử &amp; quan sát</span> trong hầm để so sánh</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="today"><div class="head"><span class="num">07</span><h2>Làm được ngay, không cần code</h2></div>
+<ul>
+<li><strong>Hầm dài thì để điện thoại dẫn</strong>. Điện thoại có gyro + accel nên Maps trên điện thoại tự bù được trong hầm; head unit chỉ có GNSS thì không. Đây là khác biệt phần cứng.</li>
+<li><strong>Tải sẵn vùng bản đồ offline</strong> trước khi đi tuyến có hầm — tách rủi ro mạng khỏi rủi ro vị trí.</li>
+<li><strong>Trước khi vào hầm, nhìn trước bước rẽ kế tiếp</strong>. Nếu bước rẽ nằm sau hầm, cự ly hiển thị lúc vào hầm cộng với đồng hồ tốc độ là đủ để ước lượng — đúng chính là việc Tunnel Hold sẽ tự động hoá.</li>
+<li><strong>Đừng chọn ClusterNav làm app mock location</strong>. Đường dây đó đã quiesce; chọn lại chỉ tạo rủi ro GPS cho cả xe.</li>
+</ul>
+</section>
+
+<section id="gates"><div class="head"><span class="num">08</span><h2>Cổng phải qua trước khi có dòng code nào</h2></div>
+<ol>
+<li>Chạy M1–M4 trên xe, lưu evidence.</li>
+<li>Nếu M3 hoặc M4 phủ định (tốc độ mất trong hầm, hoặc notification biến mất) → dừng, ghi lại kết luận, không code.</li>
+<li>Nếu M1–M4 thuận: viết spec riêng (Requirements/Design/Tasks) cho Tunnel Hold, nêu rõ nó <em>không</em> phải Dead Reckon và không inject location.</li>
+<li>Chờ owner approve spec. Quyết định REMOVE với DR cũ vẫn giữ nguyên và không bị tài liệu này thay đổi.</li>
+<li>Chỉ sau khi có approval mới sửa runtime; Navigation + HUD và Cluster Cast không được thay đổi cấu trúc để phục vụ hướng này.</li>
+</ol>
+<div class="callout amber"><strong>Tài liệu này không phải authorization.</strong> Không có quyền implement, build, install, commit hay chạy trên xe kèm theo nó. Nó cũng không hồi sinh Dead Reckon: mọi mutation provider vẫn cần <code>IMPLEMENTATION_AUTH_DR</code> theo spec revalidation.</div>
+</section>
+
+<section id="refs"><div class="head"><span class="num">09</span><h2>References</h2></div>
+<ul>
+<li><code>docs/specs/dead-reckon-revalidation.html</code> — quyết định REMOVE, failure-mode audit, hợp đồng re-entry D5.</li>
+<li><code>app/src/main/java/com/byd/clusternav/modules/mockloc/MockLoc.kt</code> — mô tả cơ chế gỡ provider thật và hệ quả với GNSS thật (historical, unreachable).</li>
+<li><code>app/src/main/java/com/byd/clusternav/SpeedProvider.kt</code> — nguồn tốc độ HAL và bài học W1-3 “không đọc được ≠ 0”.</li>
+<li><code>app/src/main/java/com/byd/clusternav/modules/navrealtime/NavRealtimeModule.kt</code> + <code>TurnDistanceInterpolator</code> — cơ chế nội suy cự ly đang chạy, nền tảng của Tunnel Hold.</li>
+<li>Android <code>LocationManager</code> test-provider API: provider trùng tên phải gỡ provider thật trước; mock có phạm vi toàn hệ thống, không theo app.</li>
+<li>Tài liệu ngành về dead reckoning (u-blox, OxTS, IEEE): DR cần gyro + accelerometer hoặc wheel-tick; chỉ có tốc độ thì không dựng lại được vị trí.</li>
+</ul>
+</section>
+
+</div></body></html>

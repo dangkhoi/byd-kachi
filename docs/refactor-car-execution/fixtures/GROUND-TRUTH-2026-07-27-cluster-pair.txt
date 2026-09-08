@@ -1,0 +1,2 @@
+chủ xe 2026-07-27T19:38 (+07): "vietmap lên ok nhé" — cụm HIỆN MAP, task đã đặt, đã gửi 30,16,35
+chủ xe 2026-07-27T19:40 (+07): "đồng hồ, và vietmap cũng ko ở màn chính luôn" — cụm HIỆN ĐỒNG HỒ, task 40 vẫn trên display 1 visible=true → app thành mồ côi

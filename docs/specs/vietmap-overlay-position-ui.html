@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spec — UI chỉnh vị trí overlay VietMap trên cụm</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--mut:#6e6e73;--acc:#0071e3;--card:#f5f5f7;--line:#d2d2d7;--ok:#34c759;--warn:#ff9f0a}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--mut:#98989d;--card:#1c1c1e;--line:#38383a}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.6 -apple-system,"SF Pro Text",system-ui,sans-serif;background:var(--bg);color:var(--fg);padding:40px 20px}
+main{max-width:920px;margin:0 auto}h1{font-size:32px;letter-spacing:-.02em;margin:0 0 4px}h2{font-size:22px;margin:34px 0 12px;letter-spacing:-.01em}h3{font-size:17px;margin:20px 0 8px}
+.sub{color:var(--mut);margin:0 0 24px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+code{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font:14px "SF Mono",ui-monospace,monospace}
+pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow:auto;font:13px "SF Mono",ui-monospace,monospace}
+table{border-collapse:collapse;width:100%;margin:10px 0}th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;font-size:14px;vertical-align:top}th{background:var(--card)}
+.tag{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;border:1px solid var(--line);color:var(--mut)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}ul{margin:8px 0;padding-left:22px}li{margin:4px 0}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0;text-align:center}
+</style></head><body><main>
+<h1>UI chỉnh vị trí overlay VietMap trên cụm</h1>
+<p class="sub">docs/specs/vietmap-overlay-position-ui.html · 2026-08-28 · slug <code>vietmap-overlay-position-ui</code> · owner duyệt hướng <b>(A) UI chỉnh động</b></p>
+
+<h2>Changelog</h2>
+<div class="card"><b>2026-08-28</b> — Tạo spec. Owner chốt closing: sau khi gỡ nav VietMap/Waze (item 1), đi đường <b>mod VietMap</b> (bong bóng→cụm khi Cluster Cast ON). Cần khung UI chỉnh vị trí bong bóng trên cụm (mặc định nửa phải). Owner chọn (A) chỉnh động qua UI, KHÔNG hardcode.</div>
+
+<h2>Context</h2>
+<div class="card">
+<p>[ĐO smali mod] Bong bóng VietMap (<code>vn/vietmap/live/b.smali</code>) đặt <code>LayoutParams.x/y/gravity</code> qua setter kéo-tay (dòng 603/609). <b>KHÔNG</b> có BroadcastReceiver hay SharedPreferences cho vị trí. Ghi prefs riêng của VietMap trên xe non-root: không được (quyền). ⇒ Không có "adb broadcast đã có"; phải <b>tạo</b> kênh điều khiển.</p>
+<p>Cụm chỉ "live" khi <b>Cluster Cast ON</b> (bong bóng mod mới lên cụm — đã proven trên xe 2026-08-28).</p>
+</div>
+
+<h2>Requirements</h2>
+<div class="card">
+<p><b>User story:</b> Là chủ xe, tôi muốn kéo/nhích vị trí bong bóng VietMap trên cụm từ UI của ClusterNav (mặc định đặt nửa phải để không đè đồng hồ trái), để bong bóng nằm đúng chỗ tôi muốn mà không phải kéo tay trên màn cụm (không chạm tới được khi lái).</p>
+<b>Acceptance:</b>
+<ul>
+<li>AC1: ClusterNav có panel chỉnh vị trí: nút nhích ←→↑↓ (bước 10px) + preset "Nửa phải".</li>
+<li>AC2: Bấm áp dụng → bong bóng VietMap trên cụm dời tới đúng x/y (verify [ĐO] qua <code>dumpsys window</code> frame).</li>
+<li>AC3: Vị trí lưu bền (ClusterNav prefs) + tự áp lại khi mở lại / bong bóng dựng lại.</li>
+<li>AC4: Panel chỉ bật khi Cluster Cast ON (cụm live); tắt thì disable + ghi chú lý do.</li>
+<li>AC5: Không đụng luồng GMaps/widget/voice-key; build + full test xanh.</li>
+</ul>
+</div>
+
+<h2>Design</h2>
+<div class="diagram"><svg viewBox="0 0 860 200" width="100%" style="max-width:860px">
+<style>.b{fill:var(--card);stroke:var(--line);stroke-width:1.5;rx:10}.t{fill:var(--fg);font:13px sans-serif}.m{fill:var(--mut);font:11px sans-serif}.a{stroke:var(--acc);stroke-width:2;fill:none;marker-end:url(#ah)}</style>
+<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="var(--acc)"/></marker></defs>
+<rect class="b" x="10" y="60" width="180" height="70" rx="10"/><text class="t" x="30" y="90">ClusterNav UI</text><text class="m" x="30" y="108">panel nửa-phải + nhích x/y</text>
+<rect class="b" x="250" y="60" width="180" height="70" rx="10"/><text class="t" x="270" y="90">sendBroadcast</text><text class="m" x="270" y="108">action VM_BUBBLE_POS +x,y</text>
+<rect class="b" x="490" y="60" width="170" height="70" rx="10"/><text class="t" x="510" y="90">Mod receiver</text><text class="m" x="510" y="108">(inject vào VietMap)</text>
+<rect class="b" x="710" y="60" width="140" height="70" rx="10"/><text class="t" x="726" y="90">bong bóng</text><text class="m" x="726" y="108">setPos(x,y) → cụm</text>
+<path class="a" d="M190,95 L248,95"/><path class="a" d="M430,95 L488,95"/><path class="a" d="M660,95 L708,95"/>
+</svg></div>
+
+<h3>1. Hợp đồng broadcast</h3>
+<table><tr><th>Trường</th><th>Giá trị</th></tr>
+<tr><td>action</td><td><code>com.byd.clusternav.VM_BUBBLE_POS</code></td></tr>
+<tr><td>extra <code>x</code> (int)</td><td>toạ độ X trên cụm (px)</td></tr>
+<tr><td>extra <code>y</code> (int)</td><td>toạ độ Y trên cụm (px)</td></tr>
+<tr><td>gửi</td><td>ClusterNav <code>sendBroadcast(Intent(action).putExtra…)</code> — receiver mod EXPORTED nên tới thẳng, không cần dadb</td></tr></table>
+
+<h3>2. Mở rộng mod VietMap (smali)</h3>
+<ul>
+<li>Trong <code>VMBluetoothService.onCreate()</code> (nơi tạo bong bóng <code>Lvn/vietmap/live/b;</code>): giữ ref bong bóng, đăng ký <b>BroadcastReceiver EXPORTED</b> action <code>com.byd.clusternav.VM_BUBBLE_POS</code>.</li>
+<li>onReceive: đọc extra x,y → gọi setter vị trí sẵn có của bong bóng (dòng 603/609 = <code>gravity=TOP|LEFT</code> + set x,y trực tiếp lên LayoutParams rồi <code>updateViewLayout</code>).</li>
+<li>Cập nhật <code>docs/runbook-mod-vietmap-cluster.md</code> §mới: cách inject receiver này khi re-mod bản mới.</li>
+</ul>
+
+<h3>3. ClusterNav UI</h3>
+<ul>
+<li>Panel trong app (Settings) HOẶC overlay nhỏ trên cụm: nút ← → ↑ ↓ (bước 10px), preset <b>"Nửa phải"</b> (x = clusterW/2 + lề, y = giữa), nút "Áp dụng".</li>
+<li>Lưu x/y vào <code>Prefs</code> (key <code>vm_bubble_x</code>/<code>vm_bubble_y</code>). Mỗi lần áp dụng + khi mở app (nếu Cast ON) → gửi broadcast.</li>
+<li>Gate: chỉ bật khi <code>SimpleCastRuntime…castEnabled()</code> = true; ngược lại disable + label "Bật Cluster Cast để chỉnh".</li>
+</ul>
+
+<h2>Tasks</h2>
+<table><tr><th>#</th><th>Task</th><th>Exit</th></tr>
+<tr><td>T1</td><td>Mở rộng mod: inject receiver VM_BUBBLE_POS → setPos; rebuild+ký APK mod</td><td>bong bóng dời khi bắn broadcast (dumpsys frame đổi)</td></tr>
+<tr><td>T2</td><td>ClusterNav: Prefs x/y + hàm gửi broadcast + áp-lúc-mở (gate Cast ON)</td><td>unit test gửi đúng action+extra; build xanh</td></tr>
+<tr><td>T3</td><td>ClusterNav UI panel (nhích + preset nửa-phải + áp dụng)</td><td>UI hiện, bấm → broadcast; disable khi Cast OFF</td></tr>
+<tr><td>T4</td><td>Runbook cập nhật + full test xanh + senior review</td><td>full test 5 module 0 fail; review APPROVED</td></tr></table>
+
+<h2>Verification</h2>
+<ul>
+<li>[ĐO] emulator: cài VietMap mod (có receiver) → <code>adb shell am broadcast -a com.byd.clusternav.VM_BUBBLE_POS --ei x 1200 --ei y 300</code> → <code>dumpsys window | grep vn.vietmap.live</code> frame đổi sang (1200,300).</li>
+<li>[ĐO] ClusterNav UI bấm preset "Nửa phải" → bong bóng sang nửa phải cụm.</li>
+<li>build release + full test 5 module xanh.</li>
+</ul>
+
+<h2>Open Questions</h2>
+<ul>
+<li>Panel đặt trong Settings (dễ) hay overlay trực tiếp trên cụm (khó chạm khi lái)? → mặc định Settings; preset nửa-phải là chính.</li>
+<li>Bong bóng mod có method updateViewLayout sẵn không, hay phải remove+add lại view? → xác nhận khi đọc kỹ b.smali lúc implement T1.</li>
+</ul>
+
+<h2>Reviewer Log</h2>
+<div class="card">(chờ senior review sau implement)</div>
+</main></body></html>

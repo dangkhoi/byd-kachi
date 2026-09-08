@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClusterNav — Kiến trúc 2 đường ra Navigation + bảng field (domestic & oversea)</title>
+<script>(function(){var k='nav-out-arch-theme';var t=localStorage.getItem(k);var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})()</script>
+<style>
+:root{--bg:#f5f5f7;--paper:#fff;--paper2:#fbfbfd;--ink:#1d1d1f;--muted:#6e6e73;--line:#d2d2d7;--blue:#0071e3;--blue-soft:#e8f2ff;--green:#248a3d;--green-soft:#e9f7ed;--amber:#9a5b00;--amber-soft:#fff4df;--red:#c9342f;--red-soft:#ffebe9;--purple:#7546b8;--purple-soft:#f3ecff;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+html.dark{--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:#f5f5f7;--muted:#a1a1a6;--line:#38383c;--blue:#5ac8fa;--blue-soft:#112534;--green:#68d982;--green-soft:#14291a;--amber:#ffb340;--amber-soft:#302511;--red:#ff6961;--red-soft:#351714;--purple:#bf8cff;--purple-soft:#281b35}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:auto;padding:0 24px 100px}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.brand{font-weight:700}.theme{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:7px 12px;cursor:pointer;font-size:13px}
+.hero{padding:56px 0 30px}.eyebrow{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(30px,5vw,48px);line-height:1.06;letter-spacing:-.03em;margin:12px 0 14px}
+.lead{font-size:18px;color:var(--muted);max-width:900px}.meta{font:12px var(--mono);color:var(--muted);margin-top:18px}
+section{padding-top:46px}.head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.num{font:600 11px var(--mono);color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:4px 8px}
+h2{font-size:26px;letter-spacing:-.02em;margin:0}h3{font-size:18px;margin:26px 0 10px}
+.card,.callout,.flow,.fnode{background:var(--paper);border:1px solid var(--line);border-radius:16px}
+.callout{padding:14px 16px;margin:14px 0}.callout.blue{background:var(--blue-soft);border-color:var(--blue)}.callout.green{background:var(--green-soft);border-color:var(--green)}.callout.amber{background:var(--amber-soft);border-color:var(--amber)}.callout.red{background:var(--red-soft);border-color:var(--red)}
+code{font:12.5px var(--mono);background:color-mix(in srgb,var(--muted) 14%,transparent);border-radius:5px;padding:1px 5px}
+.scroll{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--paper);margin:12px 0}
+table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);font-size:13.5px}
+th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);position:sticky;top:0;background:var(--paper2)}
+tr:last-child td{border-bottom:0}td.mono,.mono{font-family:var(--mono);font-size:12.5px}
+.tag{display:inline-block;font:600 10.5px var(--mono);padding:2px 7px;border-radius:999px;white-space:nowrap}
+.tag.w{background:var(--green-soft);color:var(--green)}.tag.n{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--muted)}.tag.o{background:var(--purple-soft);color:var(--purple)}.tag.d{background:var(--blue-soft);color:var(--blue)}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:16px;align-items:stretch;margin:14px 0}
+.fnode{padding:13px;text-align:center;position:relative}.fnode b{display:block;margin-bottom:4px;font-size:13px}.fnode span{font:11px/1.4 var(--mono);color:var(--muted)}
+.fnode.src{background:var(--blue-soft);border-color:var(--blue)}.fnode.p1{background:var(--green-soft);border-color:var(--green)}.fnode.p2{background:var(--purple-soft);border-color:var(--purple)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0;color:var(--muted);font-size:12.5px}.legend span{display:flex;align-items:center;gap:6px}
+.kbd{font:12px var(--mono);color:var(--muted)}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0}.toc a{text-decoration:none;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:12px}.toc a:hover{color:var(--blue);border-color:var(--blue)}
+@media(max-width:900px){.flow{grid-template-columns:1fr}.wrap{padding:0 16px 70px}}
+@media print{.top,.theme{display:none}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div class="brand">ClusterNav · Nav Output Architecture</div><button class="theme" onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('nav-out-arch-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
+
+<header class="hero">
+<div class="eyebrow">Reference · RE-derived · BYD DiLink 3.0 (Seal)</div>
+<h1>Một nguồn GMaps → hai đường ra Navigation độc lập</h1>
+<p class="lead">Tài liệu tham chiếu chi tiết: 1 nguồn dẫn đường (Google Maps) được đọc một lần thành một <code>Maneuver</code> trung lập, rồi encode ra <strong>hai đường vật lý độc lập</strong> — (1) <strong>Broadcast AUTONAVI</strong> (bảng AMAP) ra <strong>cụm</strong>, và (2) <strong>Ghi thẳng INSTRUMENT HAL</strong> (bảng CAN) ra <strong>HUD kính lái + cụm-centre "Giữa+ETA"</strong>. Kèm đầy đủ từng field của mỗi đường, và <strong>bảng domestic (0x43F) + oversea (0x1F7)</strong> của đường 2.</p>
+<p class="meta">Owner: Đăng Khôi · dangkhoi · Ngày: 2026-08-16 · Trạng thái: cập nhật theo bản 1.24 (probe oversea) · Nguồn: source đã đọc + RE firmware</p>
+<nav class="toc">
+<a href="#overview">1 · Tổng quan</a><a href="#source">2 · Nguồn & encoder</a><a href="#path1">3 · Đường 1 (broadcast/cụm)</a><a href="#path2">4 · Đường 2 (INSTRUMENT/HUD)</a><a href="#dom">4a · Bảng domestic 0x43F</a><a href="#ovr">4b · Bảng oversea 0x1F7</a><a href="#writes">5 · ClusterNav ghi gì (1.24)</a><a href="#delivery">6 · Truyền/dedup/keep-alive</a><a href="#status">7 · Trạng thái & CHƯA BIẾT</a><a href="#src">8 · Nguồn tra cứu</a>
+</nav>
+</header>
+
+<section id="overview"><div class="head"><span class="num">01</span><h2>Tổng quan</h2></div>
+<div class="flow">
+<div class="fnode src"><b>GMaps noti</b><span>1 nguồn</span></div>
+<div class="fnode src"><b>Maneuver trung lập</b><span>đọc/phân loại 1 lần</span></div>
+<div class="fnode p1"><b>Đường 1 · Broadcast</b><span>toAmapIcon (AMAP)</span></div>
+<div class="fnode p1"><b>AmapService</b><span>→ CỤM (làn strip)</span></div>
+<div class="fnode p2"><b>Đường 2 · INSTRUMENT HAL</b><span>toHudIcon (CAN) → HUD + cụm-centre</span></div>
+</div>
+<div class="legend">
+<span><span class="tag d">AMAP</span> bảng icon 0..28 (đường 1, cụm)</span>
+<span><span class="tag o">CAN</span> bảng icon 1..49 (đường 2, HUD)</span>
+<span><span class="tag w">✅ WRITE</span> app ghi (từ 1.24)</span>
+<span><span class="tag n">—</span> app chưa ghi</span>
+</div>
+<div class="callout blue"><strong>Bất biến nối 2 encoder:</strong> <code>toHudIcon(m) == TurnIdMapToCAN[toAmapIcon(m)]</code> cho mọi Maneuver (trừ vòng-xuyến-lối-ra dùng offset). Hai đường encode RIÊNG nhưng cùng suy từ một <code>Maneuver</code> → không thể lệch hướng rẽ.</div>
+<div class="callout amber"><strong>Trục "độc lập" là theo CÁCH TRUYỀN, không phải theo màn hình:</strong> đường Broadcast → <strong>cụm-STRIP</strong>; đường INSTRUMENT-HAL → <strong>HUD kính lái + cụm-CENTRE "Giữa+ETA"</strong> (2 cái sau đọc CÙNG feature INSTRUMENT nên không độc lập với nhau). Chỉ cụm-strip (broadcast) mới thực sự độc lập với HUD. Ngoài ra còn <code>HudMirrorController/emitHud</code> nhưng nó <strong>no-op</strong> (chỉ ghi sổ, không đẩy phần cứng).</div>
+</section>
+
+<section id="source"><div class="head"><span class="num">02</span><h2>Nguồn & 2 encoder</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Thành phần</th><th>File</th><th>Vai trò</th></tr></thead>
+<tbody>
+<tr><td>Đọc noti GMaps</td><td class="mono">NavNotificationListener.kt</td><td>gate app + phân loại hướng rẽ (small-icon → chữ ký large-icon → verb → ArrowClassifier), giữ hướng khi 1 frame lỗi (ManeuverHold)</td></tr>
+<tr><td>Parse field</td><td class="mono">NotificationParser.kt / NavParse.kt</td><td>tách cự ly, tên đường, ETA (km còn lại, giây còn lại, giờ tới "H:MM")</td></tr>
+<tr><td>Nguồn sự thật</td><td class="mono">Maneuver.kt</td><td>1 enum trung lập + 2 encoder: <code>toAmapIcon()</code> (AMAP 0..28) và <code>toHudIcon()</code> (CAN 1..49)</td></tr>
+<tr><td>Fan-out</td><td class="mono">NavRepository.kt (createCoordinator)</td><td>mỗi frame → <code>emitLane</code> (đường 1) + <code>owner.push</code> (đường 2)</td></tr>
+<tr><td>Đường 1</td><td class="mono">AmapFrameBuilder.kt / ClusterBroadcaster.kt</td><td>dựng Intent AUTONAVI → gửi AmapService</td></tr>
+<tr><td>Đường 2</td><td class="mono">NavigationHudOwner.kt → BydHal.writeNavFrame</td><td>ghi thẳng feature INSTRUMENT/SETTING qua reflection HAL</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="path1"><div class="head"><span class="num">03</span><h2>Đường 1 — Broadcast AUTONAVI → CỤM</h2></div>
+<p>Action <code>AUTONAVI_STANDARD_BROADCAST_SEND</code>. <code>KEY_TYPE=10001</code> = guidance; <code>10019</code> = state/stop. Icon = <code>NEW_ICON</code> (bảng <span class="tag d">AMAP</span> 0..28 = <code>toAmapIcon</code>). AmapService (client AutoContainer) render lên cụm.</p>
+<div class="scroll"><table>
+<thead><tr><th>Field (extra)</th><th>Kiểu</th><th>Có khi</th><th>Giá trị / nguồn</th></tr></thead>
+<tbody>
+<tr><td class="mono">KEY_TYPE</td><td>Int</td><td>luôn</td><td><code>10001</code> guidance / <code>10019</code> state</td></tr>
+<tr><td class="mono">TYPE</td><td>Int</td><td>luôn</td><td><code>1</code> (active; TYPE=8 no-op trên xe này)</td></tr>
+<tr><td class="mono">EXTRA_STATE</td><td>Int</td><td>luôn</td><td>guidance <code>1</code>; stop <code>9</code></td></tr>
+<tr><td class="mono">EXTRA_IS_FOREGROUND</td><td>Int</td><td>luôn</td><td><code>0</code></td></tr>
+<tr><td class="mono">IS_BYD_MAP</td><td>Bool</td><td>luôn</td><td><code>false</code> (flip cờ mIsGAODENaving); reset dùng true→false</td></tr>
+<tr><td class="mono">IS_BYD_BAIDU_MAP</td><td>Bool</td><td>luôn</td><td><code>false</code></td></tr>
+<tr><td class="mono">NEW_ICON</td><td>Int</td><td>luôn</td><td><span class="tag d">AMAP</span> 0..28 = <code>Maneuver.toAmapIcon()</code>; fallback 9 (thẳng)</td></tr>
+<tr><td class="mono">ROUNG_ABOUT_NUM</td><td>Int</td><td>vòng xuyến 1..10</td><td>số nhánh ra (firmware remap glyph 25..34)</td></tr>
+<tr><td class="mono">SEG_REMAIN_DIS</td><td>Int</td><td>luôn</td><td>mét tới khúc rẽ; <code>-1</code> khi chỉ-hướng</td></tr>
+<tr><td class="mono">SEG_REMAIN_DIS_AUTO</td><td>String</td><td>luôn</td><td><code>NavParse.formatMeters</code> ("444 m" / "6.0 km")</td></tr>
+<tr><td class="mono">NEXT_ROAD_NAME</td><td>String</td><td>luôn</td><td>marquee window HOẶC <code>NavFormat.fitRoadName</code> (thang "NHCảnh")</td></tr>
+<tr><td class="mono">ROUTE_REMAIN_DIS</td><td>Int</td><td>luôn</td><td>tổng mét còn lại; <code>-1</code> thiếu</td></tr>
+<tr><td class="mono">ROUTE_REMAIN_TIME</td><td>Int</td><td>luôn</td><td>tổng giây còn lại; <code>-1</code> thiếu</td></tr>
+<tr><td class="mono">ROUTE_REMAIN_DIS_AUTO</td><td>String</td><td>dis≥0</td><td>quãng đường đã format</td></tr>
+<tr><td class="mono">ROUTE_REMAIN_TIME_AUTO</td><td>String</td><td>time≥0</td><td><strong>tiếng Trung 时/分</strong> (parseTime firmware chỉ đọc CN) — <code>formatRemainTimeCn</code></td></tr>
+<tr><td class="mono">ROUTE_REMAIN_TIME_STRING</td><td>String</td><td>time≥0</td><td>"1h 25m" (mỹ quan)</td></tr>
+<tr><td class="mono">ETA_TEXT</td><td>String</td><td>có giờ tới</td><td><code>预计今天HH:MM到达</code> (<code>formatEtaCn</code>)</td></tr>
+</tbody>
+</table></div>
+<p class="kbd">Nguồn: <code>AmapFrameBuilder.buildGuidanceFrame</code> / <code>buildStateFrame</code>. Danh sách AmapService parser đọc: IS_BYD_MAP, KEY_TYPE, TYPE, SEG_REMAIN_DIS, NEXT_ROAD_NAME, NEXT_NEXT_ROAD_NAME, ROUTE_REMAIN_DIS/TIME, TRAFFIC_LIGHT_NUM, ROUNG_ABOUT_NUM, NEW_ICON, NEXT_NEXT_TURN_ICON, ETA_TEXT, EXIT_NAME_INFO, EXIT_DIRECTION_INFO, *_AUTO, EXTRA_STATE.</p>
+</section>
+
+<section id="path2"><div class="head"><span class="num">04</span><h2>Đường 2 — Ghi thẳng INSTRUMENT HAL → HUD + cụm-centre</h2></div>
+<p><code>BydHal.writeNavFrame</code> ghi feature qua reflection <code>set(int[] id, EventValue)</code>. Icon = bảng <span class="tag o">CAN</span> 1..49 (<code>toHudIcon</code>). Feature-id là <strong>hex string trong firmware</strong> (DiCarServer <code>Instrument.java</code>) = int id HAL. <strong>Họ nav được nhân đôi</strong>: <span class="tag d">domestic 0x43F…</span> và <span class="tag o">oversea 0x1F7…</span> — cùng suffix, khác prefix. Xe export/VN đọc họ oversea.</p>
+
+<h3>Field chung (status + màn hình)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>Device</th><th>id</th><th>Kiểu</th><th>Giá trị</th></tr></thead>
+<tbody>
+<tr><td class="mono">INSTRUMENT_SEND_NAVI_STATUS_SET</td><td>INSTRUMENT</td><td class="mono">—</td><td>Int</td><td><code>2</code> active / <code>4</code> clear</td></tr>
+<tr><td class="mono">SET_NAVI_SCREEN_STATUS_SET</td><td>SETTING</td><td class="mono">0x4C10E015</td><td>Int</td><td>chế độ nav-screen (Đơn giản/Toàn màn hình…); mặc định 3</td></tr>
+</tbody>
+</table></div>
+
+<h3 id="dom">4a · Bảng DOMESTIC — họ <code>0x43F</code> (nội địa/TQ)</h3>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>id</th><th>Kiểu</th><th>Ý nghĩa</th><th>App ghi (1.24)</th></tr></thead>
+<tbody>
+<tr><td class="mono">INSTRUMENT_GUIDE_INFO_SIMPLE_SET</td><td class="mono">0x43F01010</td><td>Int</td><td><strong>Mũi tên</strong> (CAN 1..49 = toHudIcon)</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_FRONT_CROSSING_DISTANCE_SET</td><td class="mono">0x43F01018</td><td>Int</td><td><strong>Cự ly tới khúc rẽ</strong> (mét)</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_GUIDE_INFO_AND_ROAD_AHEAD_DISTANCE_SET</td><td class="mono">0x43F01030</td><td>bytes?</td><td>gói guide + đường phía trước (struct — chưa rõ layout)</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_TRIP_INFO_HOUR_SET</td><td class="mono">0x43F02010</td><td>Int</td><td><strong>Thời gian còn lại — giờ</strong></td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_TRIP_INFO_MINUTE_SET</td><td class="mono">0x43F02018</td><td>Int</td><td><strong>Thời gian còn lại — phút</strong></td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_TRIP_REMAINING_SECOND_SET</td><td class="mono">0x43F0201E</td><td>Int</td><td><strong>Thời gian còn lại — giây</strong></td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_REMAIN_DRIVING_TIME_DAY_SET</td><td class="mono">0x43F02024</td><td>Int</td><td><strong>Thời gian còn lại — ngày</strong></td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_TRIP_INFO_MILEAGE_SET</td><td class="mono">0x43F02028</td><td>Int</td><td><strong>Quãng đường còn lại</strong> (mét)</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_GUIDE_INFO_CAMERA_SET</td><td class="mono">0x43F03010</td><td>—</td><td>guide camera (bắn tốc/đèn)</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_CAMERA_DISPLAY_STATE_SET</td><td class="mono">0x43F03018</td><td>—</td><td>trạng thái hiển thị camera</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_CAM_REMAINING_MILEAGE_SET</td><td class="mono">0x43F0301C</td><td>Int</td><td>còn bao xa tới camera</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_GUIDE_INFO_SAFETY_SET</td><td class="mono">0x43F04010</td><td>—</td><td>guide an toàn</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_SAFETY_DISPLAY_STATE_SET</td><td class="mono">0x43F04018</td><td>—</td><td>trạng thái hiển thị an toàn</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_SAFETY_REMAINING_MILEAGE_SET</td><td class="mono">0x43F0401C</td><td>Int</td><td>còn bao xa tới điểm an toàn</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_LEAD_MSG_ADVANCED_SET</td><td class="mono">0x43F08010</td><td>—</td><td>lead-msg nâng cao</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_DISTANCE_OF_TARGET_AHEAD_ADVANCED_SET</td><td class="mono">0x43F08018</td><td>Int</td><td>cự ly target nâng cao</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_GUIDE_INFO_ADVANCED_ACTION_SET</td><td class="mono">0x43F08030</td><td>—</td><td>guide action nâng cao</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECTED_ARRIVE_DAY_SET</td><td class="mono">0x43F09010</td><td>Int</td><td>ETA — ngày tới</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECTED_ARRIVE_HOUR_SET</td><td class="mono">0x43F09018</td><td>Int</td><td><strong>ETA — giờ tới</strong></td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECTED_ARRIVE_MINUTE_SET</td><td class="mono">0x43F09020</td><td>Int</td><td><strong>ETA — phút tới</strong></td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECTED_ARRIVE_SECOND_SET</td><td class="mono">0x43F09028</td><td>Int</td><td>ETA — giây tới</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_DISTANCE_FROM_LAST_TRAFFIC_LIGHT_SET</td><td class="mono">0x43F11010</td><td>Int</td><td>khoảng cách từ đèn giao thông trước</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET</td><td class="mono">0x43FA1008</td><td>bytes</td><td><strong>Tên đường kế</strong> (UTF-16LE)</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_TARGET_HOME_ADDRESS_INFO_SET</td><td class="mono">0x43FE1008</td><td>bytes</td><td>địa chỉ Nhà</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_TARGET_COMPANY_ADDRESS_INFO_SET</td><td class="mono">0x43FF1008</td><td>bytes</td><td>địa chỉ Công ty</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_NAVI_MAP_ARRIVAL_DESTINATION_PASSPOINT_STATUS_SET</td><td class="mono">0x43FFF030</td><td>Int</td><td>trạng thái tới đích/điểm dừng</td><td><span class="tag n">—</span></td></tr>
+</tbody>
+</table></div>
+<p class="kbd">Các field ngoài nav (không liệt kê hết): <code>0x43F41008</code> RADIO_CHANNEL_INFO, <code>0x43FB1008</code> MUSIC_INFO, <code>0x43FC1008…0x43FCE010</code> CALL_INFO (điện thoại), <code>0x43FD1008</code> RADIO_INFO — media/phone, không thuộc nav.</p>
+
+<h3 id="ovr">4b · Bảng OVERSEA — họ <code>0x1F7</code> (export/VN)</h3>
+<div class="callout purple"><strong>Đây là họ xe VN/export nhiều khả năng đọc.</strong> Suffix id trùng với domestic (vd 01010 mũi tên, 01018 cự ly, A1008 tên đường), chỉ khác prefix <code>0x1F7</code>. Đây là phát hiện chính giải thích vì sao tên đường (và có thể mũi tên/cự ly) không lên HUD Seal khi app chỉ ghi domestic.</div>
+<div class="scroll"><table>
+<thead><tr><th>Feature</th><th>id</th><th>Kiểu</th><th>Ý nghĩa</th><th>Domestic tương ứng</th><th>App ghi (1.24)</th></tr></thead>
+<tbody>
+<tr><td class="mono">INSTRUMENT_EASY_NAVI_GUIDE_INFOR_SET</td><td class="mono">0x1F701010</td><td>Int</td><td><strong>Mũi tên</strong></td><td class="mono">0x43F01010</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_DISTANCE_TARGET_HEAD_SET</td><td class="mono">0x1F701018</td><td>Int</td><td><strong>Cự ly tới khúc rẽ</strong></td><td class="mono">0x43F01018</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_DISTANCE_TARGET_HEAD_UNIT_TYPE_SET</td><td class="mono">0x1F701030</td><td>Int</td><td>đơn vị cự ly (m/km)</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_REMAIN_DRIVE_TIME_HOUR_SET</td><td class="mono">0x1F702010</td><td>Int</td><td><strong>Thời gian còn lại — giờ</strong></td><td class="mono">0x43F02010</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_REMAIN_DRIVE_TIME_MINUTE_SET</td><td class="mono">0x1F702018</td><td>Int</td><td><strong>Thời gian còn lại — phút</strong></td><td class="mono">0x43F02018</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_REMAIN_DRIVE_TIME_SECOND_SET</td><td class="mono">0x1F70201E</td><td>Int</td><td><strong>Thời gian còn lại — giây</strong></td><td class="mono">0x43F0201E</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_REMAIN_MILEAGE_SET</td><td class="mono">0x1F702028</td><td>Int</td><td><strong>Quãng đường còn lại</strong> (mét)</td><td class="mono">0x43F02028</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_REMAIN_MILEAGE_UNIT_TYPE_SET</td><td class="mono">0x1F703010</td><td>Int</td><td>đơn vị quãng đường</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EASY_NAVI_DISPLAY_ENTRY_ACTION_GUIDE_INFOR_SET</td><td class="mono">0x1F704010</td><td>Int?</td><td>guide "entry action" (vào cao tốc/ra…) — ứng viên</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_TARGET_HEAD_DISTANCE_SET</td><td class="mono">0x1F704018</td><td>Int</td><td>cự ly tới target (biến thể)</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_DISTANCE_UNIT_TYPE_SET</td><td class="mono">0x1F704030</td><td>Int</td><td>đơn vị cự ly (biến thể)</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECT_ARRIVAL_TIME_DAY_SET</td><td class="mono">0x1F705010</td><td>Int</td><td>ETA — ngày tới</td><td class="mono">0x43F09010</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECT_ARRIVAL_TIME_HOUR_SET</td><td class="mono">0x1F705018</td><td>Int</td><td><strong>ETA — giờ tới</strong></td><td class="mono">0x43F09018</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECT_ARRIVAL_TIME_MINUTE_SET</td><td class="mono">0x1F705020</td><td>Int</td><td><strong>ETA — phút tới</strong></td><td class="mono">0x43F09020</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_EXPECT_ARRIVAL_TIME_SECOND_SET</td><td class="mono">0x1F705028</td><td>Int</td><td>ETA — giây tới</td><td class="mono">0x43F09028</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_OVERASEA_SET</td><td class="mono">0x1F7A1008</td><td>bytes</td><td><strong>Tên đường kế</strong> (UTF-16LE)</td><td class="mono">0x43FA1008</td><td><span class="tag w">✅</span></td></tr>
+<tr><td class="mono">INSTRUMENT_CURRENT_UNIT_DAY_DATA_LENGTH_SET</td><td class="mono">0x1F7B1008</td><td>Int</td><td>độ dài dữ liệu ô ngày (format)</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_CURRENT_UNIT_HOUR_DATA_LENGTH_SET</td><td class="mono">0x1F7C1008</td><td>Int</td><td>độ dài dữ liệu ô giờ</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_CURRENT_UNIT_MINUTE_DATA_LENGTH_SET</td><td class="mono">0x1F7D1008</td><td>Int</td><td>độ dài dữ liệu ô phút</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_CURRENT_UNIT_DISTANCE_DATA_LENGTH_SET</td><td class="mono">0x1F7E1008</td><td>Int</td><td>độ dài dữ liệu ô quãng đường</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_CURRENT_FRONT_CROSS_DISTANCE_DATA_LENGTH_SET</td><td class="mono">0x1F7F1008</td><td>Int</td><td>độ dài dữ liệu ô cự ly khúc rẽ</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+<tr><td class="mono">INSTRUMENT_FRONT_CROSSING_DISTANCE_UNIT_LENGTH_SET</td><td class="mono">0x1F7F9008</td><td>Int</td><td>độ dài/đơn vị cự ly khúc rẽ</td><td class="mono">—</td><td><span class="tag n">—</span></td></tr>
+</tbody>
+</table></div>
+<p class="kbd">Ô <em>*_UNIT_TYPE</em> / <em>*_DATA_LENGTH</em>: cấu hình đơn vị/format hiển thị — app <strong>cố ý chưa ghi</strong> (để firmware mặc định; ghi sai chỉ đổi đơn vị, không hại nhưng chưa cần). <code>DISPLAY_ENTRY_ACTION</code> = ứng viên "kích hoạt" nếu 1.24 chưa lên gì.</p>
+</section>
+
+<section id="writes"><div class="head"><span class="num">05</span><h2>ClusterNav ghi gì (bản 1.24) + chuyển đổi dữ liệu</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Dữ liệu app có</th><th>Nguồn</th><th>→ Đường 1 (cụm/AMAP)</th><th>→ Đường 2 domestic</th><th>→ Đường 2 oversea</th></tr></thead>
+<tbody>
+<tr><td>Hướng rẽ</td><td>Maneuver</td><td class="mono">NEW_ICON = toAmapIcon</td><td class="mono">0x43F01010 = toHudIcon</td><td class="mono">0x1F701010 = toHudIcon</td></tr>
+<tr><td>Cự ly khúc rẽ (m)</td><td>seg (nội suy)</td><td class="mono">SEG_REMAIN_DIS</td><td class="mono">0x43F01018</td><td class="mono">0x1F701018</td></tr>
+<tr><td>Tên đường</td><td>road (fit/marquee)</td><td class="mono">NEXT_ROAD_NAME</td><td class="mono">0x43FA1008 (UTF-16LE)</td><td class="mono">0x1F7A1008 (UTF-16LE)</td></tr>
+<tr><td>Thời gian còn lại</td><td>routeSeconds → d/h/m/s</td><td class="mono">ROUTE_REMAIN_TIME(_AUTO)</td><td class="mono">02010/018/01E/024</td><td class="mono">02010/018/01E</td></tr>
+<tr><td>Quãng đường còn lại (m)</td><td>routeMeters</td><td class="mono">ROUTE_REMAIN_DIS(_AUTO)</td><td class="mono">0x43F02028</td><td class="mono">0x1F702028</td></tr>
+<tr><td>ETA giờ tới</td><td>arrivalClock "H:MM" → h,m</td><td class="mono">ETA_TEXT</td><td class="mono">0x43F09018/020</td><td class="mono">0x1F705018/020</td></tr>
+</tbody>
+</table></div>
+<div class="callout blue"><strong>Chuyển đổi:</strong> icon đường 1 = <code>toAmapIcon</code> (AMAP), đường 2 = <code>toHudIcon</code> (CAN) — 2 bảng khác nhau (bug lật T/P 1.14). <code>routeSeconds</code> tách <code>day=s/86400, hour=(s%86400)/3600, min=(s%3600)/60, sec=s%60</code>. <code>arrivalClock</code> ("H:MM") split ":" → giờ/phút. Đường 2 ghi qua <code>featureId(name)</code> (reflect BYDAutoFeatureIds) <strong>fallback raw-id</strong> (tên oversea vắng trong lớp reflect).</div>
+</section>
+
+<section id="delivery"><div class="head"><span class="num">06</span><h2>Truyền · dedup · keep-alive</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Khía cạnh</th><th>Đường 1 (broadcast)</th><th>Đường 2 (INSTRUMENT HAL)</th></tr></thead>
+<tbody>
+<tr><td>Cơ chế</td><td><code>Context.sendBroadcast(Intent)</code></td><td>reflection <code>device.set(int[], EventValue)</code> qua bypass-context</td></tr>
+<tr><td>Luồng</td><td>worker làn cụm + heartbeat 400ms</td><td>worker HUD riêng (<code>NavigationHudOwner</code>) + heartbeat 400ms</td></tr>
+<tr><td>Dedup</td><td>window/tick marquee</td><td>theo <code>icon+seg+road</code> (ETA/remaining KHÔNG vào dedup)</td></tr>
+<tr><td>Keep-alive</td><td>re-emit frame giữ cụm không blank</td><td>re-assert icon/seg/road; <strong>KHÔNG</strong> re-gửi ETA/remaining → firmware giữ số cũ (không xoá trắng)</td></tr>
+<tr><td>Clear/stop</td><td>KEY_TYPE 10019 EXTRA_STATE 9 (true→false)</td><td>status=4 + guide/dist=0/-1</td></tr>
+</tbody>
+</table></div>
+<div class="callout amber"><strong>ETA/remaining chỉ ghi khi có giá trị hợp lệ</strong> (routeSeconds/Meters ≥ 0, arrivalClock ≠ null). Frame keep-alive/absent bỏ qua các ô này → không nhấp nháy số. Two-track gate: đường 2 (writeNavFrame) chỉ chạy khi <code>navOnlyMode</code> (Cast master OFF).</div>
+</section>
+
+<section id="status"><div class="head"><span class="num">07</span><h2>Trạng thái & CHƯA BIẾT (no-assumptions)</h2></div>
+<div class="scroll"><table>
+<thead><tr><th>Mục</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr><td>Đường 1 (broadcast) → cụm strip</td><td><span class="tag w">PROVEN</span> render icon+cự ly+tên+ETA (đo trên xe)</td></tr>
+<tr><td>Đường 2 → cụm-centre "Giữa+ETA"</td><td><span class="tag w">PROVEN</span> (INSTRUMENT_GUIDE_INFO_SIMPLE + SET_NAVI_SCREEN)</td></tr>
+<tr><td>Đường 2 domestic → HUD kính lái (xe khác)</td><td><span class="tag d">OWNER-OBSERVED</span> mũi tên + cự ly lên; tên/ETA thì chưa (trước 1.24)</td></tr>
+<tr><td>Đường 2 oversea → HUD (export/Seal)</td><td><span class="tag o">CHƯA BIẾT — PROBE 1.24</span> giả thuyết xe export đọc 0x1F7; đang test</td></tr>
+<tr><td>HUD Seal có phần tử nav?</td><td><span class="tag n">CHƯA CHẮC</span> RE cũ nói "no nav element / coding-gated 0x38B00030"; owner cho là 2-đường nên đang thử lại</td></tr>
+<tr><td>Đơn vị/format oversea (*_UNIT/*_DATA_LENGTH)</td><td><span class="tag n">CHƯA GHI</span> để firmware default</td></tr>
+</tbody>
+</table></div>
+<div class="callout red"><strong>Bản 1.24 là PROBE.</strong> Chưa verify xe export thật sự đọc họ <code>0x1F7</code> cho hiển thị. Cần test trên xe (owner + anh em): HUD có lên mũi tên/cự ly/tên/ETA không. Nếu không → ứng viên kế: <code>GUIDE_INFO_AND_ROAD_AHEAD 0x43F01030</code> (struct), <code>EASY_NAVI_DISPLAY_ENTRY_ACTION 0x1F704010</code>, hoặc công tắc <code>NAVIGATION_ACTIVATED_SET 0x40C0C01D</code>.</div>
+</section>
+
+<section id="src"><div class="head"><span class="num">08</span><h2>Nguồn tra cứu</h2></div>
+<ul>
+<li>Đường 1: <code>app/src/main/java/com/byd/clusternav/AmapFrameBuilder.kt</code>, <code>ClusterBroadcaster.kt</code>; field list <code>docs/specs/windshield-hud-enable.html §4.4</code>.</li>
+<li>Đường 2: <code>app/src/main/java/com/byd/clusternav/modules/hal/BydHal.kt</code> (writeNavFrame), <code>NavigationHudOwner.kt</code>, <code>NavRepository.kt</code>.</li>
+<li>Encoder + bảng CAN: <code>core/src/main/kotlin/com/byd/clusternav/navigation/Maneuver.kt</code> (toAmapIcon/toHudIcon); <code>docs/diagnostics/re-maneuver-icon-tables-2026-08-14.md</code> (TurnIdMapToCAN).</li>
+<li>Feature-id firmware: RE <code>DiCarServer/com/byd/feature/instrument/Instrument.java</code> + <code>InstrumentMapper.java</code> (họ 0x43F domestic / 0x1F7 oversea; hệ EXPORT_REGION/OVERSEA_MAP).</li>
+<li>HUD coding wall: <code>docs/_handoff/hud-cluster-injection-findings-2026-08-10.md</code> (0x38B00030); <code>docs/specs/windshield-hud-enable.html</code> (M1/M2).</li>
+<li>Ship: <code>apk/ClusterNav-1.24-release.apk</code> (versionCode 124) — commit đầy đủ 2 đường + full data HUD.</li>
+</ul>
+</section>
+
+</div></body>
+</html>

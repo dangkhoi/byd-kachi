@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cockpit window background (L2): flat dark base (@color/screen_bg #07070b) + TWO large soft radial glows,
+  mirroring the mockup body background (docs/specs/ui-visual-upgrade-l2.html):
+    radial-gradient(... rgba(59,130,246,.14) ... at 15% -10%)   → blue glow, top-LEFT
+    radial-gradient(... rgba(167,139,250,.12) ... at 100% 0%)   → purple glow, top-RIGHT
+  Both glows are low-alpha tints over the near-black base so the window reads with depth, still dark.
+  New drawable (allowed); referenced only from AppTheme android:windowBackground.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flat near-black base. -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/screen_bg" />
+        </shape>
+    </item>
+    <!-- Blue glow, top-left (mockup 15% -10%). -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:centerX="0.15"
+                android:centerY="0.0"
+                android:gradientRadius="640dp"
+                android:startColor="@color/cockpit_bg_tint"
+                android:endColor="#003b82f6" />
+        </shape>
+    </item>
+    <!-- Purple glow, top-right (mockup 100% 0%). -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:centerX="1.0"
+                android:centerY="0.0"
+                android:gradientRadius="640dp"
+                android:startColor="@color/cockpit_bg_tint_purple"
+                android:endColor="#00a78bfa" />
+        </shape>
+    </item>
+</layer-list>
