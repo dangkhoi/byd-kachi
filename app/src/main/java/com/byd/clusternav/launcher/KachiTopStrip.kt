@@ -122,7 +122,7 @@ class KachiTopStrip(
     /** Cập nhật chip xe (PM2.5 / nhiệt ngoài / pin·km) từ [DemoCarData]. */
     fun refreshChips() {
         chipRow.removeAllViews()
-        val d = DemoCarData
+        val d: CarDataPort = DemoCarData   // interface type (Int?): chip vẫn hiện "—" nếu nguồn xe thật trả null
         val pm = d.pm25Level()?.let { if (it <= 2) "Tốt" else if (it <= 4) "TB" else "Kém" } ?: "—"
         chipRow.addView(chip("PM2.5 · $pm", "ic-leaf", "#c3cee0"), chipLp())
         chipRow.addView(chip("${d.outsideTempC() ?: "—"}°C ngoài", null, "#c3cee0"), chipLp())

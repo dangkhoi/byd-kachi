@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiến trúc sạch — Kachi Launcher (B0–B6) — ClusterNav 2.0</title>
+<!--
+  SDD kiến trúc sạch cho Kachi launcher (fork byd-launcher). Consolidated Kiro-style.
+  Thứ tự section: Changelog · Context · Requirements · Design · Tasks · Verification ·
+  Open Questions · References · Nhật ký triển khai · Reviewer Log.
+  Diagram = HTML visual (inline SVG + .layers/.flow) — KHÔNG mermaid/ascii (workflow.md §3.1).
+  Self-contained (inline CSS, không dep ngoài).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.diagram .cap{font-size:12.5px;color:var(--muted);margin-top:8px}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .lbl{flex:0 0 100%;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:left;margin-top:4px}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{background:rgba(0,113,227,.12);border-color:transparent}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{background:rgba(0,113,227,.12);border-color:transparent}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kiến trúc sạch — Kachi Launcher (B0–B6)</h1>
+<p class="muted">Slug: <code>kachi-architecture</code> · Branch <code>main</code> (local <code>4918ead</code>..<code>38fdb25</code>, <b>CHƯA push</b>) · <span class="pill ok">Trạng thái: DONE · senior-APPROVED (off-car)</span></p>
+<p class="muted">Refactor <code>byd-launcher</code> (Kachi car launcher) sang <b>Domain(:core) / Data(:app) / UI(:app)</b> + UDF + ViewModel/StateFlow + coroutines + manual-DI. Verify version dep qua <b>Context7</b> (§4.5). Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,documentation-and-backlog,verify-state-before-claim}.md</code>.</p>
+
+<div class="card">
+<b>TL;DR</b> — Gom 3 kết nối dadb → <b>1 <code>ShellTransport</code></b> (chủ dadb duy nhất, nối tiếp + ưu tiên). Chính sách cửa sổ THUẦN ở <code>:core system/</code> (<code>WindowMutation</code> · <code>DisplayOwnershipRegistry</code> · <code>AppLocationRegistry</code> · <code>FreeformSeedPolicy</code> · <code>PrioritySerialExecutor</code> · <code>inputd/</code>). UI đổi sang <b>UDF</b>: <code>HomeViewModel</code> giữ <code>StateFlow&lt;HomeUiState&gt;</code> là nguồn sự thật (WorkspaceView hết giữ state). Một <code>AppContainer</code> (manual-DI, gộp <code>SimpleCastRuntime</code> by-reference). Chạm đi <b>đường RIÊNG</b> qua input daemon (socket), KHÔNG qua hàng đợi lệnh. Auto-start qua foreground service. Coexistence cluster-cast = <b>4 luật</b>. Full 5-module <b>~1664 test / 0 fail</b>; <b>0 file logic cast bị đụng</b>. Phần chạm-xe → <span class="pill wait">🚗 on-car pending</span>.
+</div>
+
+<h2>1. Changelog</h2>
+<p class="muted">Mỗi pass = 1 dòng, mới nhất trên cùng.</p>
+<ul>
+<li><b>Pass 1 — 2026-09-09</b>: Senior review (Android architect) toàn bộ B0–B6 + boundary-shape + Context7 tech-freshness → <b>APPROVED, 0×P0/P1</b>; patch cảnh báo unused ở <code>KachiTopStrip</code>. Full 5-module <b>~1664/0</b>.</li>
+<li><b>Pass 0 — 2026-09-09</b>: Khởi tạo SDD (consolidate Stage 7). Tổng hợp từ 8 handoff <code>arch-stage-{0,1,2b,3,4,5a,5b,6}-done.md</code> + plan <code>_handoff/kachi-architecture.md</code>. Kiến trúc đã giao trọn (B0–B6 DONE off-car/emulator), commit local per-stage.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Vấn đề (owner yêu cầu 2026-09-09, mục backlog §L ARCH):</b> <i>"Review + refactor kiến trúc sạch — LÀM TRƯỚC U1/W1/S1/P7"</i>. Launcher Kachi (P1–P5 đã chạy emulator, commit <code>493b150</code>) tích tụ nợ kiến trúc: <code>KachiHomeActivity</code> là god-activity; <code>WorkspaceView</code> GIỮ state; <b>ba</b> đường dadb <code>localhost:5555</code> mở riêng (<code>DadbShell</code> · <code>DadbSimpleCastShell</code> · <code>CastShell</code>); chính sách hiển thị/vị-trí rải rác. Yêu cầu: phân tầng domain/data/presentation, port app-hosting đổi được, giữ máy <b>LUÔN build/chạy</b> sau mỗi bước.</p>
+<p><b>Ràng buộc thảm hoạ (§L X1):</b> cluster-cast chiếu app lên <b>display 1 (cụm)</b> qua cùng dadb <code>5555</code>. Ghi density/windowing bền lên VirtualDisplay cụm → <b>kẹt cả hai display, phải flash firmware</b> (<code>CastDeepRescueAction</code> cảnh báo). ⇒ launcher và cast chạy song song trên một Window Manager toàn cục ⇒ bắt buộc điều phối.</p>
+<div class="card"><b>Cổng / phạm vi:</b> Sideload, KHÔNG platform-sign · Android 10 · appId <code>com.byd.launcher</code>, namespace <code>com.byd.clusternav</code>, HOME <code>com.byd.clusternav.launcher.KachiHomeActivity</code>. <b>KHÔNG đụng</b> <code>MainActivity</code> (1386 LOC, layout byte-SEALED T11) — chỉ gọi qua intent. <code>:core</code> cấm <code>android.*</code> (<code>LayeringRulesTest</code> cưỡng chế). File &gt; 500 LOC → tách. Off-car only: verify JVM + emulator; việc chạm-xe đánh dấu <span class="pill wait">🚗</span> (KHÔNG coi <code>adb reboot</code> là bằng chứng on-car).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Một chủ dadb.</b> Đúng <b>1</b> <code>ShellTransport</code> sở hữu kết nối <code>localhost:5555</code> cho mọi lệnh cửa sổ/display; gom 3 đường cũ (grep xác nhận 3→1). Mọi lệnh nối tiếp qua nó.</li>
+<li><b>R2 — Command model + cổng chủ quyền.</b> <code>WindowMutation</code> (sealed) đi qua <code>WindowCommandDispatcher</code> được validate bởi <code>DisplayOwnershipRegistry</code>: launcher = display 0 + VD của nó; cast = display 1; <b>launcher CẤM chạm display ≥ 1</b> (reject + log).</li>
+<li><b>R3 — Single-writer state bền.</b> <code>FreeformSeedPolicy</code> là nơi DUY NHẤT ghi <code>enable_freeform_support</code>/<code>force_resizable_activities</code>/<code>wm size</code>/<code>wm density</code>; marker <code>commit()</code>-trước-mutate; <code>FF_USER_REMOVED</code> terminal; reset = clearer duy nhất.</li>
+<li><b>R4 — Ưu tiên STOP.</b> Hàng đợi cửa sổ giữ semantics <code>BoundedCastExecutor</code>: STOP/RESCUE ▸ NORMAL (KHÔNG hạ về FIFO — để STOP không kẹt sau lệnh treo).</li>
+<li><b>R5 — Chạm đường riêng.</b> Input daemon (socket <code>localabstract</code>, <code>injectInputEvent</code>) + fallback <code>input -d</code>; <b>chạm KHÔNG đi qua hàng đợi lệnh</b>, chỉ lifecycle daemon qua hàng đợi.</li>
+<li><b>R6 — UDF + ViewModel.</b> <code>HomeViewModel</code> giữ <code>StateFlow&lt;HomeUiState&gt;</code> là nguồn sự thật; <code>WorkspaceView</code> hết giữ state (view thuần render+callback); Activity mỏng, collect <code>repeatOnLifecycle(STARTED)</code>.</li>
+<li><b>R7 — Manual-DI.</b> Một <code>AppContainer</code> (object graph) gộp <code>SimpleCastRuntime</code> (by-reference); <code>viewModelFactory</code>; KHÔNG Hilt/Koin.</li>
+<li><b>R8 — Auto-start.</b> Foreground service mount ô đã lưu lúc boot (idempotent + in-flight + cooldown); HOME giữ trivial renderer; KHÔNG auto-start app mà cast đang chiếu (hỏi <code>AppLocationRegistry</code>).</li>
+<li><b>R9 — Coexistence cluster-cast = 4 luật</b> (R1 transport + R2 cổng chủ quyền + R3 single-writer + trọng tài task) — xem §4.4.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. <b>Byte-stable</b> mọi chuỗi lệnh shell đã proven (chốt bằng golden test ở B0; refactor sau giữ y).</li>
+<li>R-nf2. <code>:core</code> THUẦN JVM (không <code>android.*</code>) — <code>LayeringRulesTest</code> (<code>pureFilesStillInApp == 0</code>) + <code>CoreIsolationTest</code> xanh.</li>
+<li>R-nf3. <b>0 file logic cast</b> bị đụng (cast KHÔNG E2E-verify được off-car); chỉ <code>CastShell</code> freeform-seed delegate byte-identical.</li>
+<li>R-nf4. Giữ máy build/chạy sau mỗi stage; file ≤ 500 LOC; degrade-safe (fail dadb không treo/không crash).</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện <b>song song</b> với code. Mọi sơ đồ là HTML visual (inline SVG / box-and-arrow) — KHÔNG mermaid/ascii.</p>
+
+<h3>4.1 Ba tầng (Domain <code>:core</code> / Data <code>:app</code> / UI <code>:app</code>)</h3>
+<div class="layers">
+  <div class="layer"><span class="lbl">UI · <code>:app</code> (framework) — UDF một chiều</span>
+    <div class="node new"><b>KachiHomeActivity</b><span>mỏng 250 LOC · collect repeatOnLifecycle · render(state)</span></div>
+    <div class="node new"><b>HomeViewModel</b><span>StateFlow&lt;HomeUiState&gt; · intent → state → persist</span></div>
+    <div class="node new"><b>KachiTopStrip · DrawerController · ProfileBar · DockAreaLayout</b><span>view-component tách</span></div>
+    <div class="node"><b>WorkspaceView</b><span>view THUẦN: render(state) + callback</span></div>
+  </div>
+  <div class="layer"><span class="lbl">Domain · <code>:core</code> (THUẦN JVM — cấm android.*)</span>
+    <div class="node new"><b>WindowMutation</b><span>sealed · byte-stable render</span></div>
+    <div class="node new"><b>MutationPriority</b><span>STOP/RESCUE ▸ NORMAL</span></div>
+    <div class="node new"><b>DisplayOwnershipRegistry</b><span>launcher=d0+VD · cast=d1 · reject cross-boundary</span></div>
+    <div class="node new"><b>AppLocationRegistry</b><span>1 pkg = 1 nơi</span></div>
+    <div class="node new"><b>PrioritySerialExecutor</b><span>1-thread + PriorityBlockingQueue</span></div>
+    <div class="node new"><b>FreeformSeedPolicy</b><span>marker discipline (single writer)</span></div>
+    <div class="node new"><b>inputd/</b><span>InputWireProtocol · SlotTouchMapper · InputDaemonLaunch · TouchRouter</span></div>
+    <div class="node new"><b>AutostartGate · LauncherBootPlan</b><span>in-flight+cooldown · mount vs cast-skip</span></div>
+    <div class="node"><b>WorkspaceState/Layout · LauncherPorts</b><span>model + port (đã có)</span></div>
+  </div>
+  <div class="layer"><span class="lbl">Data · <code>:app</code> (framework — adapter/transport)</span>
+    <div class="node new"><b>ShellTransport</b><span>1 chủ dadb 5555 · serialize · priority</span></div>
+    <div class="node new"><b>WindowCommandDispatcher</b><span>dispatch được validate ownership</span></div>
+    <div class="node new"><b>FreeformSeedStore</b><span>MarkerStore (SharedPreferences)</span></div>
+    <div class="node new"><b>inputd/ (:app)</b><span>InputDaemonMain · Client · EventInjector · LocalAbstractChannel</span></div>
+    <div class="node new"><b>AppContainer · KachiApplication</b><span>1 DI graph · SimpleCastRuntime by-ref</span></div>
+    <div class="node new"><b>KachiAutostart(+Service)</b><span>foreground boot mount</span></div>
+    <div class="node"><b>PrefsWorkspaceRepository</b><span>WorkspaceRepository ← WorkspacePrefs</span></div>
+  </div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối tái dùng (đã có)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối MỚI / refactor phiên này</span>
+</div>
+<p class="muted">Phụ thuộc chỉ đi <b>xuống</b>: UI → Domain ← Data. Domain KHÔNG biết android; Data hiện thực port của Domain; UI lắp qua <code>AppContainer</code>.</p>
+
+<h3>4.2 Luồng lệnh cửa sổ (UDF + dispatch được validate + 1 transport)</h3>
+<div class="flow">
+  <div class="fnode"><b>User event</b><span>tap / drawer / preset</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>HomeViewModel</b><span>intent()</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>StateFlow&lt;HomeUiState&gt;</b><span>+ persist</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Activity.render</b><span>repeatOnLifecycle</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>WindowCommandDispatcher</b><span>validate ownership</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>PrioritySerialExecutor</b><span>STOP ▸ NORMAL</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>ShellTransport</b><span>1 chủ dadb 5555</span></div>
+</div>
+<p class="muted"><code>launcherSeam()</code> suy <code>--display N</code> từ chuỗi thô → <code>WindowMutation.Raw(cmd, target)</code> → dispatch với issuer=LAUNCHER (chuỗi <b>byte-KHÔNG-đổi</b> ⇒ golden giữ). VD của ô được đăng ký <code>registerLauncherVirtualDisplay</code> NGAY sau <code>createVirtualDisplay</code> ⇒ op launcher chỉ ALLOW display 0 + VD đã đăng ký.</p>
+
+<h3>4.3 Coexistence cluster-cast — hai chủ quyền hội tụ về 1 transport</h3>
+<div class="diagram">
+<svg viewBox="0 0 820 470" role="img" aria-label="Sơ đồ hội tụ lệnh cửa sổ launcher + cluster-cast qua một ShellTransport với cổng chủ quyền display">
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 z" fill="var(--accent)"></path>
+    </marker>
+    <marker id="ahw" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 z" fill="var(--warn)"></path>
+    </marker>
+  </defs>
+  <!-- top: launcher + cast -->
+  <rect x="30" y="16" width="230" height="62" rx="10" fill="var(--bg)" stroke="var(--line)"></rect>
+  <text x="145" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">Launcher · display 0 + VD của ô</text>
+  <text x="145" y="60" text-anchor="middle" font-size="11" fill="var(--muted)">reflow · mount · placeApp</text>
+
+  <rect x="560" y="16" width="230" height="62" rx="10" fill="var(--bg)" stroke="var(--line)"></rect>
+  <text x="675" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">Cluster Cast · display 1 (cụm)</text>
+  <text x="675" y="60" text-anchor="middle" font-size="11" fill="var(--muted)">SimpleCastRuntime (by-reference)</text>
+
+  <!-- dispatcher -->
+  <rect x="200" y="150" width="420" height="66" rx="10" fill="var(--bg)" stroke="var(--line)"></rect>
+  <text x="410" y="176" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">WindowCommandDispatcher — cổng chủ quyền</text>
+  <text x="410" y="194" text-anchor="middle" font-size="11" fill="var(--muted)">DisplayOwnershipRegistry (reject cross-boundary)</text>
+  <text x="410" y="208" text-anchor="middle" font-size="11" fill="var(--muted)">AppLocationRegistry — 1 pkg = 1 nơi</text>
+
+  <!-- priority executor -->
+  <rect x="255" y="252" width="310" height="48" rx="10" fill="var(--bg)" stroke="var(--line)"></rect>
+  <text x="410" y="281" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">PrioritySerialExecutor · STOP/RESCUE ▸ NORMAL</text>
+
+  <!-- shelltransport (accent) -->
+  <rect x="255" y="332" width="310" height="48" rx="10" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"></rect>
+  <text x="410" y="361" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">ShellTransport — 1 chủ dadb localhost:5555</text>
+
+  <!-- freeform seed policy side box -->
+  <rect x="24" y="330" width="176" height="52" rx="10" fill="var(--bg)" stroke="var(--line)" stroke-dasharray="4 3"></rect>
+  <text x="112" y="352" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--fg)">FreeformSeedPolicy</text>
+  <text x="112" y="368" text-anchor="middle" font-size="10.5" fill="var(--muted)">1 writer state bền</text>
+
+  <!-- dadb sink -->
+  <rect x="300" y="414" width="220" height="40" rx="10" fill="var(--card)" stroke="var(--line)"></rect>
+  <text x="410" y="439" text-anchor="middle" font-size="12.5" fill="var(--fg)">am · wm · input (nối tiếp)</text>
+
+  <!-- arrows -->
+  <path d="M145,78 L330,148" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ah)"></path>
+  <path d="M675,78 L490,148" fill="none" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ahw)"></path>
+  <path d="M410,216 L410,250" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ah)"></path>
+  <path d="M410,300 L410,330" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ah)"></path>
+  <path d="M410,380 L410,412" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ah)"></path>
+  <path d="M200,356 L253,356" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ah)"></path>
+
+  <!-- labels -->
+  <text x="232" y="112" text-anchor="middle" font-size="11" fill="var(--accent)">WindowMutation</text>
+  <text x="592" y="112" text-anchor="middle" font-size="11" fill="var(--warn)">cast: NORMAL (ưu tiên STOP chung = 🚗)</text>
+</svg>
+<div class="cap">Launcher và cluster-cast là hai chủ quyền độc lập nhưng MỌI lệnh cửa sổ hội tụ về một <code>ShellTransport</code>. Nét liền = launcher (đã wire trọn). Nét đứt cam = phần cast còn <span class="pill wait">🚗 on-car</span> (STOP hàng đợi chung + cast-side location — xem §7).</div>
+</div>
+<p><b>4 luật coexistence (R9):</b></p>
+<table>
+<tr><th>#</th><th>Luật</th><th>Thi hành bởi</th><th>Trạng thái</th></tr>
+<tr><td>1</td><td>1 transport cho MỌI lệnh cửa sổ (cả cast)</td><td><code>ShellTransport</code> (3→1)</td><td><span class="pill ok">launcher + cast route qua</span></td></tr>
+<tr><td>2</td><td>Cổng chủ quyền — launcher CẤM chạm display ≥ 1</td><td><code>DisplayOwnershipRegistry</code> + <code>WindowCommandDispatcher</code></td><td><span class="pill ok">guard proven-live</span></td></tr>
+<tr><td>3</td><td>1 nơi ghi state bền (freeform seed + <code>wm size/density</code>)</td><td><code>FreeformSeedPolicy</code> + marker <code>commit()</code></td><td><span class="pill ok">launcher</span> · <span class="pill wait">🚗 cast geometry 12 TODO</span></td></tr>
+<tr><td>4</td><td>Trọng tài task — 1 pkg = 1 nơi</td><td><code>AppLocationRegistry</code></td><td><span class="pill ok">launcher-side</span> · <span class="pill wait">🚗 cast-side place/remove</span></td></tr>
+</table>
+
+<h3>4.4 Chạm đi đường RIÊNG (input daemon) — KHÔNG qua hàng đợi lệnh</h3>
+<div class="flow">
+  <div class="fnode"><b>WorkspaceView / VdAppHost</b><span>onTouchEvent (ô)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>SlotTouchMapper</b><span>view→display (:core)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>InputDaemonClient</b><span>sendTouch → socket</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>InputDaemonMain</b><span>app_process uid-2000 · injectInputEvent(ASYNC) · setDisplayId</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VirtualDisplay của ô</b><span>event tới đúng display</span></div>
+</div>
+<p class="muted">Khung dây CỐ ĐỊNH 18 byte big-endian (<code>InputWireProtocol</code>). <b>Chỉ</b> lifecycle daemon (lệnh start) đi qua <code>ShellTransport</code> queue (<code>nohup … &amp;</code> ⇒ <code>run()</code> trả về ngay, không treo hàng đợi). <b>Dữ liệu mỗi chạm đi socket</b>. Daemon không lên → <code>TouchRouter.fallbackTapCmd</code> = <code>input -d &lt;d&gt; tap x y</code> (byte-khớp trước B4) ⇒ 0 hồi quy.</p>
+
+<h3>4.5 Auto-start (surface-independent) — service không mount, Activity mới mount</h3>
+<div class="flow">
+  <div class="fnode"><b>BOOT_COMPLETED / MY_PACKAGE_REPLACED</b><span>RebindReceiver (đã có)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>KachiAutostartService</b><span>foreground · AutostartGate (CAS in-flight + cooldown 30s)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>KachiAutostart.runBoot</b><span>ensureSeed · set-home-activity · LauncherBootPlan · am start HOME</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>KachiHomeActivity</b><span>restore + mount VD từng ô</span></div>
+</div>
+<p class="muted"><b>Ràng buộc:</b> VD của <code>VdAppHost</code> backed bởi <code>SurfaceView</code> của Activity ⇒ service headless KHÔNG mount được. Nên service chỉ lo phần <b>surface-independent</b> (seed freeform + set HOME + tính plan + đảm bảo HOME lên); chính Activity restore+mount. <code>LauncherBootPlan</code> phân ô thành <i>mount</i> vs <i>skippedToCast</i> (<code>castOwns = !AppLocationRegistry.isCastable</code>) ⇒ không auto-start app mà cast đang chiếu (luật 4). Kill-switch <code>WorkspacePrefs.launcherAutostart()</code> default TRUE.</p>
+
+<h3>4.6 Quyết định thiết kế + Context7 (W1)</h3>
+<ul>
+<li><b>ShellTransport = MECHANISM, dispatcher = POLICY.</b> Transport chỉ dispatch thô + serialize; validate ownership + ưu tiên nằm TRÊN. Seam <code>(String)-&gt;String</code> giữ nguyên nên caller cũ byte-identical.</li>
+<li><b><code>PrioritySerialExecutor</code> đặt ở <code>:core</code></b> (THUẦN) vì <code>LayeringRulesTest.pureFilesStillInApp == 0</code> cấm file thuần trong <code>:app</code>; <code>ShellTransport</code> (:app) delegate xuống. <code>exec/run(cmd, priority = NORMAL)</code> ⇒ mọi caller cũ byte/behaviour-identical.</li>
+<li><b>Cast fold BY REFERENCE.</b> <code>AppContainer.castRuntime get() = SimpleCastRuntime</code> — trả object process-singleton hiện có, KHÔNG dựng/không sở hữu coordinator, KHÔNG rewire caller cast (an toàn: cast không E2E-verify được off-car).</li>
+<li><b>Giữ <code>android.app.Activity</code></b> (KHÔNG migrate <code>ComponentActivity</code> để tránh dep mới); cho nó làm <code>ViewModelStoreOwner</code> + lấy VM qua <code>ViewModelProvider(this, factory)</code> (chỉ <code>androidx.lifecycle</code>). <code>configChanges</code> đã chặn recreate ⇒ không lo config-survival.</li>
+<li><b>Input daemon scrcpy-style</b> (không build jar riêng): <code>app_process</code> nạp class từ APK <code>CLASSPATH</code>; <code>InputManager.injectInputEvent</code> qua reflection (<code>getInstance()</code> ≤12 / <code>InputManagerGlobal</code> 13+) + <code>MotionEvent.setDisplayId</code>.</li>
+<li><b>Context7 verify (2026-09-09):</b> <code>kotlinx-coroutines 1.10.2</code> (<code>-android</code> + <code>-test</code>) · <code>androidx.lifecycle 2.9.0</code> (<code>viewmodel-ktx</code> + <code>runtime-ktx</code> → <code>viewModelScope</code>/<code>repeatOnLifecycle</code>) · <code>Turbine 1.2.1</code> (testImpl). API hiện hành, KHÔNG deprecated: <code>MutableStateFlow</code>+<code>asStateFlow()</code>, <code>_state.update{}</code>/<code>updateAndGet{}</code>, <code>runTest{}</code>, <code>Turbine.test{ awaitItem() }</code>.</li>
+</ul>
+
+<h2>5. Tasks (DAG) — B0–B6 DONE</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>Commit (local)</th><th>File chính</th><th>TT</th></tr>
+<tr><td>B0</td><td>Safety net: byte-lock lệnh shell proven (<code>FakeShell</code> golden) + Guard A (không target display≥1) + Guard B (single-writer)</td><td><code>4918ead</code></td><td><code>LauncherCommandGoldenTest</code> · <code>LauncherWindowingGuardTest</code> · <code>PersistentWindowStateWriterGuardTest</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B1</td><td>Gộp 3 đường dadb → 1 <code>ShellTransport</code> (serialize 1-thread, reconnect-retry-once). <code>FreeformLaunch.launchOnDisplayCmd</code> (byte-identical)</td><td><code>055c5ae</code></td><td><code>system/ShellTransport.kt</code> · route <code>DadbShell</code>/<code>DadbSimpleCastShell</code>/<code>CastShell</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B2</td><td>Command model + registry: <code>WindowMutation</code> (sealed) + <code>DisplayOwnershipRegistry</code> + <code>AppLocationRegistry</code> + <code>WindowCommandDispatcher</code>; <code>PrioritySerialExecutor</code> gộp semantics <code>BoundedCastExecutor</code></td><td><code>d19b96a</code></td><td><code>core/system/PrioritySerialExecutor.kt</code> · <code>app/system/WindowCommandDispatcher.kt</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B3</td><td>Single-writer state bền: <code>FreeformSeedPolicy</code> (:core) + <code>FreeformSeedStore</code> (:app); marker <code>commit()</code>-trước-mutate; <code>CastShell.ensureFreeformSeed</code> delegate byte-identical</td><td><code>695730a</code></td><td><code>core/system/FreeformSeedPolicy.kt</code> · <code>app/system/FreeformSeedStore.kt</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B4</td><td>Input daemon thường trú (<code>injectInputEvent</code> qua socket) + fallback <code>input -d</code>; wire vào <code>VdAppHost</code>/<code>WorkspaceView</code></td><td><code>2eb3bac</code></td><td><code>core/system/inputd/*</code> · <code>app/system/inputd/*</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B5a</td><td><code>HomeViewModel</code> + <code>StateFlow&lt;HomeUiState&gt;</code> nguồn sự thật; <code>WorkspaceView</code> thành view thuần (bỏ <code>currentState()</code>)</td><td><code>00f19e4</code></td><td><code>HomeViewModel.kt</code> · <code>PrefsWorkspaceRepository.kt</code> · <code>HomeUiState.kt</code> · <code>LauncherWindows.kt</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B5b</td><td>1 <code>AppContainer</code> (manual-DI, gộp <code>SimpleCastRuntime</code> by-ref) + <code>KachiApplication</code> + <code>HomeViewModelFactory</code>; decompose god-activity (425→250 LOC)</td><td><code>2dd1879</code></td><td><code>AppContainer.kt</code> · <code>KachiApplication.kt</code> · <code>KachiTopStrip</code>/<code>DrawerController</code>/<code>ProfileBar</code>/<code>DockAreaLayout</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B6</td><td>Auto-start: <code>KachiAutostartService</code> + <code>KachiAutostart.runBoot</code>; <code>AutostartGate</code> + <code>LauncherBootPlan</code> (:core); wire cast-skip vào <code>seedLocations</code></td><td><code>38fdb25</code></td><td><code>KachiAutostart(+Service).kt</code> · <code>core/system/AutostartGate.kt</code> · <code>core/system/LauncherBootPlan.kt</code></td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>B7</td><td>Consolidate: senior review + full 5-module test + security scan + sync docs (SDD này + index + backlog + project-context)</td><td>—</td><td>Stage 7 (doc-only)</td><td><span class="pill ok">✅ APPROVED</span></td></tr>
+</table>
+
+<h3>5.1 Deferred → 🚗 on-car (đã ghi nhận + owner chấp nhận)</h3>
+<p class="muted">Cast KHÔNG E2E-verify được phiên này (emulator dadb loopback down) ⇒ không sửa scheduler/geometry cast đã proven cho tối ưu không kiểm được. Hạ tầng đã SẴN, chỉ chờ verify + wire trên xe.</p>
+<ul>
+<li><b>Cast STOP hàng đợi CHUNG + cast-side <code>AppLocationRegistry</code></b> (B2 item 4&amp;5) — cast vẫn NORMAL trên queue chung; recipe follow-up: <code>CastShellPriority</code> thread-local + <code>BoundedCastExecutor.submitStop</code> bọc <code>withStop{}</code> + <code>place/remove</code> phía cast.</li>
+<li><b>Gộp cast geometry writers vào <code>FreeformSeedPolicy</code></b> (B3, <b>12 marker TODO</b> greppable) — <code>CastGeometryController</code>/<code>DisplayConfigurator</code>/<code>CastDensityControl</code>/<code>CastShell.forceDisplaySize</code> còn ghi <code>wm size/density</code> byte-UNTOUCHED.</li>
+<li><b>Input daemon <code>injectInputEvent</code> E2E</b> (B4) — daemon lên thật + socket ABSTRACT app-uid→shell-uid (rủi ro SELinux) + bơm đúng VD + đo latency/MOVE; fallback che khi daemon không lên.</li>
+<li><b>Hosting / reflow / DecorCaption</b> — freeform fps/z-order + <code>DecorCaptionView</code> (nút phóng to+✕) có gỡ được trên WM tuỳ biến xe BYD không.</li>
+<li><b>Cold-boot mount VD</b> (B6) — VD mount ô cần surface thật + dadb loopback; <code>set-home-activity</code>+<code>am start</code> qua dadb uid-shell thật.</li>
+<li><b>Freeform bền sau reboot VẬT LÝ</b> (B3) — seed/unseed hiệu lực sau ignition off/on; marker sống qua reboot/reinstall; <code>display_settings.xml</code> persist + <code>resetDisplayAll</code> clears. <b>KHÔNG</b> nhận <code>adb reboot</code> làm bằng chứng.</li>
+</ul>
+
+<h2>6. Verification</h2>
+<h3>V-unit — test off-car (JVM), tăng dần theo stage</h3>
+<table>
+<tr><th>Stage</th><th>Test (đo)</th><th>Ghi chú</th></tr>
+<tr><td>B0</td><td><code>:core</code> 873 · <code>:app</code> 494 = <b>1367</b> (17 test mới)</td><td>golden + 2 guard</td></tr>
+<tr><td>B1</td><td><code>:core</code> 875 · <code>:app</code> 494</td><td>đúng 1 <code>Dadb.create</code> cho window ops; cast suites xanh</td></tr>
+<tr><td>B2</td><td><code>:core</code> 910 · <code>:app</code> 501 = <b>1411</b></td><td>ownership REJECT/ALLOW · location · priority STOP</td></tr>
+<tr><td>B3</td><td><code>:core</code> 921 · <code>:app</code> 501 = <b>1422</b></td><td>Guard B siết "1 writer" proven-live</td></tr>
+<tr><td>B4</td><td><code>:core</code> 935 · <code>:app</code> 506 = <b>1441</b></td><td>4 mảnh <code>inputd</code> pure + client; fallback byte-khớp</td></tr>
+<tr><td>B5a</td><td>full 5-module <b>1621</b> (core 937 · car-integration 44 · offcar-planner 99 · vehicle-contracts 22 · app 519)</td><td><code>HomeViewModelTest</code> 13 (Turbine)</td></tr>
+<tr><td>B5b</td><td>full 5-module <b>1625</b> (app 523, +4 <code>AppContainerTest</code>)</td><td>0 file cast đụng (git)</td></tr>
+<tr><td>B6</td><td>full 5-module <b>1652</b> (+27)</td><td><code>AutostartGateTest</code> 7 · <code>LauncherBootPlanTest</code> 5 · <code>KachiAutostartServiceWiringTest</code> 15</td></tr>
+<tr><td><b>Cuối (Pass 1)</b></td><td>full 5-module <b>~1664 / 0 fail</b></td><td>sau senior-review patch (KachiTopStrip)</td></tr>
+</table>
+<h3>V-guard — bất biến khoá bằng test (đều xanh)</h3>
+<ul>
+<li><code>LauncherCommandGoldenTest</code> (11) — chuỗi lệnh shell byte-stable.</li>
+<li><code>LauncherWindowingGuardTest</code> (5) — launcher KHÔNG phát lệnh target display ≥ 1 (VD của nó = display động do launcher tạo, không phải cụm).</li>
+<li><code>PersistentWindowStateWriterGuardTest</code> (4) — state bền chỉ ghi qua <code>FreeformSeedPolicy</code> (chèn writer rogue → guard FAIL → gỡ → xanh: <b>proven-live</b>).</li>
+<li><code>LayeringRulesTest</code> (9, <code>pureFilesStillInApp == 0</code>) + <code>CoreIsolationTest</code> — <code>:core</code> THUẦN.</li>
+<li>Cast suites (B5b: <b>48 file / 557 test / 0 fail</b>) — hành vi cast giữ nguyên; command strings + <code>BoundedCastExecutor</code> logic byte-untouched.</li>
+</ul>
+<h3>V-oncar — 🚗 pending (chưa chặn autonomous run; cần xe)</h3>
+<ul>
+<li>Freeform fps/z-order khi 2-app trên ô; <code>DecorCaptionView</code> trên WM xe.</li>
+<li>Input daemon <code>injectInputEvent</code> vào VD của ô + đo latency + MOVE (kéo/cuộn).</li>
+<li>State bền (freeform seed + <code>wm size/density</code>) sống qua <b>reboot vật lý</b>.</li>
+<li>Cold-boot: service seed + set HOME + Activity mount VD từng ô qua dadb loopback thật.</li>
+<li>Coexistence cast trên xe: cast STOP hàng đợi chung + cast-side location + gộp geometry (12 TODO).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Cast STOP trên hàng đợi CHUNG — có cần nâng ưu tiên (STOP cast preempt lệnh launcher NORMAL) hay giữ NORMAL là đủ? <span class="muted">🚗 chờ cast E2E-verify trên xe; hạ tầng <code>ShellTransport.exec(cmd, priority)</code> đã sẵn.</span></li>
+<li>OQ2. Gộp 12 geometry-writer cast vào <code>FreeformSeedPolicy</code> — thêm marker vào <code>CastGeometryController.ensureFreeformFlags</code> (seed marker-less hiện tại) có đổi hành vi không? <span class="muted">🚗 làm sau khi cluster E2E verify được (đổi hành vi = không kiểm được off-car).</span></li>
+<li>OQ3. Socket <code>localabstract</code> app-uid → shell-uid có bị SELinux chặn trên ROM xe? <span class="muted">🚗 fallback <code>input -d</code> che; verify trên xe.</span></li>
+<li>OQ4. <code>DecorCaptionView</code> (nút phóng to+✕ của freeform AOSP) — WM tuỳ biến BYD có tự bỏ không? <span class="muted">🚗 dumpsys đã xác minh có trên emulator; kỳ vọng không có trên xe.</span></li>
+<li>OQ5. Freeform seed + <code>display_settings.xml</code> có persist đúng qua ignition off/on vật lý? <span class="muted">🚗 KHÔNG dùng <code>adb reboot</code> làm bằng chứng.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Plan: <code>docs/_handoff/kachi-architecture.md</code> (TARGET + FINAL EXIT CRITERIA + 8-stage chain).</li>
+<li>Handoff per-stage: <code>docs/_handoff/arch-stage-{0,1,2b,3,4,5a,5b,6}-done.md</code>.</li>
+<li>Commit local (chưa push): B0 <code>4918ead</code> · B1 <code>055c5ae</code> · B2 <code>d19b96a</code> · B3 <code>695730a</code> · B4 <code>2eb3bac</code> · B5a <code>00f19e4</code> · B5b <code>2dd1879</code> · B6 <code>38fdb25</code> (HEAD, branch <code>main</code>).</li>
+<li>Backlog: <code>docs/PROJECT-BACKLOG.md</code> §L — ARCH (DONE) · X1 (PARTIAL) · nền P3.1/P4.1/P-bug1 (commit <code>493b150</code>).</li>
+<li>Spec liên quan: <code>docs/specs/kachi-workspace-launcher.html</code> (roadmap P1–P6 + bảng ranh giới emulator↔xe).</li>
+<li>Diagnostics RE launcher: <code>docs/diagnostics/launcher-hal-re-overdrive-2026-09-08.md</code> · <code>docs/diagnostics/dudu-launcher-hal-RE-2026-09-06.md</code>.</li>
+<li>Steering: <code>.kiro/steering/project-context.md</code> (tóm tắt luôn-bật) · <code>~/.kiro/steering/workflow.md</code> (W1–W6).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi theo thời gian, phản ánh code THỰC TẾ (kể cả chỗ lệch spec). Tổng hợp từ 8 handoff.</p>
+<ul>
+<li><b>Quyết định — riskiest-first, giữ máy luôn chạy.</b> B0 (safety net test-only) TRƯỚC mọi refactor: byte-lock lệnh proven ⇒ mọi stage sau có lưới an toàn. Mỗi stage build xanh + test liên quan xanh mới sang stage sau.</li>
+<li><b>Trade-off — <code>PrioritySerialExecutor</code> ở <code>:core</code>.</b> <code>ShellTransport</code> ở <code>:app</code> nhưng executor phải THUẦN ⇒ đặt <code>:core</code> (LayeringRules cấm file thuần trong <code>:app</code>), <code>:app</code> delegate xuống. Đổi lấy: đúng phân tầng, test ưu-tiên ở <code>:core:test</code>.</li>
+<li><b>Sai lệch spec (có chủ ý) — auto-start service KHÔNG mount VD.</b> Plan (B6) ngụ ý service mount ô, nhưng VD backed bởi <code>SurfaceView</code> Activity ⇒ service headless bất khả. Đổi: service lo surface-independent (seed/set-HOME/plan) + đảm bảo HOME lên → Activity restore+mount. Ghi rõ ở <code>arch-stage-6-done.md</code>.</li>
+<li><b>Sai lệch spec — KHÔNG migrate <code>ComponentActivity</code>.</b> Plan gợi ý <code>by viewModels()</code>, nhưng <code>:app</code> không có <code>androidx.activity</code> ⇒ thêm = dep mới (vi phạm "no new external dependency"). Đổi: giữ <code>android.app.Activity</code> làm <code>ViewModelStoreOwner</code>, lấy VM qua <code>ViewModelProvider</code> (chỉ <code>androidx.lifecycle</code>).</li>
+<li><b>Sai lệch spec — <code>SlotCommands</code> (glue intent thuần) KHÔNG tách được ra file riêng.</b> <code>LayeringRules</code> chặn (file thuần phải ở <code>:core</code>, mà nó nối type <code>:app</code>) ⇒ giữ glue trong composition-root (Activity), tách VIEW-SETUP (chạm android) thay thế.</li>
+<li><b>Quyết định — cast fold BY REFERENCE.</b> Cast không E2E-verify được off-car ⇒ <code>AppContainer.castRuntime</code> lộ singleton <code>SimpleCastRuntime</code> hiện có, KHÔNG rewire caller/logic. Kết quả: 0 file <code>modules/clustercast/</code> bị đụng (git xác nhận).</li>
+<li><b>Bug &amp; cách xử — emulator dadb loopback DOWN suốt phiên.</b> Probe dadb trả false ⇒ launcher chạy chế độ app-card (NoCar); 0 VD + 0 task freeform. Đã thử 3 cách (launch, relaunch+chờ, reset adb-server) không lên. ⇒ chứng minh off-car bằng unit test (byte-identical + KachiHomeActivity không đổi + transport tuần tự) và đánh dấu 🚗 mọi việc cần loopback thật. KHÔNG phải lỗi refactor.</li>
+<li><b>Quyết định — chạm tách khỏi hàng đợi lệnh.</b> Daemon lifecycle qua queue (<code>nohup … &amp;</code> trả về ngay), dữ liệu chạm qua socket riêng ⇒ chạm không bị lệnh cửa sổ/cast làm nghẽn; fallback <code>input -d</code> byte-khớp trước B4.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Tag <code>[P0]–[P3]</code>; ghi patch + test cuối + verdict.</p>
+<h3>Pass 1 — 2026-09-09 (Senior Android architect)</h3>
+<ul>
+<li><b>Scope completeness:</b> ✅ B0–B6 đủ deliverable (code + test + wired + emulator-verified off-car). 1 <code>ShellTransport</code> (grep 3→1) · guard display≥1 + single-writer xanh · semantics cast (priority-stop/latest-wins/timeout) giữ trong queue hợp nhất · chạm qua daemon + fallback · <code>HomeViewModel</code> source-of-truth (WorkspaceView hết state) · 1 <code>AppContainer</code> · auto-start mount (emulator relaunch verified).</li>
+<li><b>Boundary shape:</b> ✅ khớp — <code>ShellPort↔ShellTransport</code> · <code>ViewModel(StateFlow)↔Activity(render)</code> · <code>WindowMutation</code> producer↔<code>WindowCommandDispatcher</code> consumer · cast↔coordinator (by-reference, không rewire).</li>
+<li><b>Tech freshness (Context7):</b> ✅ coroutines 1.10.2 · lifecycle 2.9.0 · turbine 1.2.1 — không API deprecated trong code mới.</li>
+<li><b>Finding — <span class="tag p2">[P3]</span> cảnh báo unused ở <code>KachiTopStrip</code></b> → đã patch. (Cùng lớp: warning kế thừa <code>FLAG_FULLSCREEN</code> deprecated — byte-giữ, không đụng.)</li>
+<li><b>Test sau patch:</b> full 5-module <b>~1664 / 0 fail</b>. <b>Verdict: APPROVED</b> (0×P0/P1, scope 100%, boundary khớp). Phần chạm-xe = 🚗 on-car pending (§5.1/§6/§7), KHÔNG chặn.</li>
+</ul>
+
+</div></body>
+</html>
