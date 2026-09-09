@@ -82,7 +82,7 @@ class MainActivity : Activity() {
         // CLAUDE.md §9: mỗi bản đã báo cho user phải tự hiện số hiệu — không ai phải đoán xe đang chạy bản nào.
         val versionName = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull()
         val titleView = findViewById<TextView>(R.id.txt_app_title)
-        titleView.text = "ClusterNav" + (versionName?.let { " · v$it" } ?: "")
+        titleView.text = "Kachi" + (versionName?.let { " · v$it" } ?: "")
 
         navEnabled = findViewById(R.id.switch_enabled)
         navDot = findViewById(R.id.dot_status)

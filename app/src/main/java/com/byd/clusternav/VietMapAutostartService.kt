@@ -94,7 +94,7 @@ class VietMapAutostartService : Service() {
         @Suppress("DEPRECATION")
         return android.app.Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle("ClusterNav")
+            .setContentTitle("Kachi")
             .setContentText(Lang.t("Đang mở VietMap…", "Starting VietMap…"))
             .setOngoing(true)
             .build()

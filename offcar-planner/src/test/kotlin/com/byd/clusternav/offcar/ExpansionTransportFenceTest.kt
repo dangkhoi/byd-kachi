@@ -869,6 +869,20 @@ class ExpansionTransportFenceTest {
          *
          * Hằng cũ lần-26 (giữ trace): activity_main.xml = 0678a33d…650091.
          *
+         * ⚠ CẬP NHẬT 2026-09-08 (strings.xml · lần 1 — đổi tên launcher "Kachi") — owner duyệt
+         * (task rename-launcher-kachi; repo fork byd-launcher, tên launcher = Kachi), KHÔNG sửa lén.
+         *
+         * `strings.xml` đổi LẦN ĐẦU kể từ khi lập seal: `app_name` "Cluster Nav 2.0" → **"Kachi"**. Đây là
+         * nhãn launcher hiện trên icon / recents / danh sách app (manifest `android:label="@string/app_name"`
+         * cho CẢ `<application>` lẫn `MainActivity`). CHỈ đổi `app_name`; `nav_listener_label` + `acc_label`
+         * GIỮ NGUYÊN (nhãn bề mặt dịch vụ của TÍNH NĂNG dẫn đường ClusterNav — README giữ ClusterNav làm nhóm
+         * tính năng). Tiêu đề hiện trên màn (`MainActivity` ghi `txt_app_title` lúc chạy) + tiêu đề thông báo
+         * foreground (`BootSetupService` · `VietMapAutostartService`) đổi sang "Kachi" ở `.kt` — KHÔNG đụng seal.
+         * Layout `android:text="ClusterNav"` là placeholder design-time (bị `MainActivity` ghi đè lúc chạy) nên
+         * KHÔNG đổi → hằng `activity_main.xml` GIỮ NGUYÊN (556c78e4…785c). Chỉ cập nhật hằng `strings.xml` dưới đây.
+         *
+         * Hằng cũ (giữ trace): strings.xml = 8300437c…e8fe4cdd.
+         *
          * ⚠ CHỈ được cập nhật hằng ở đây khi thay đổi là CHỦ Ý và có vết trong backlog. Cập nhật theo phản xạ
          * "cho test xanh" là **phá seal** — đúng thứ cơ chế này sinh ra để bắt.
          * ⚠ CẤM gỡ `activity_main.xml` khỏi `T11_PATHS` để né việc cập nhật hằng — nó có mặt trong danh sách
@@ -876,7 +890,7 @@ class ExpansionTransportFenceTest {
          */
         private val T11_HASHES = mapOf(
             "app/src/main/res/layout/activity_main.xml" to "556c78e4c46c34f5263d63a2e797df192c458f2ae28542e2bfa648793945785c",
-            "app/src/main/res/values/strings.xml" to "8300437c9f186d4296100f36b6a3960e0c9b693828fccb9145ec8e84e8fe4cdd",
+            "app/src/main/res/values/strings.xml" to "45fa51a8e23fff153fd262792cddbda0ad40ddd129bee73f9d2200606657fa04",
         )
         private val T10_PREFIXES = "app/src/vehicleTest/|app/src/testVehicleTest/|car-integration/|core/src/main/kotlin/com/byd/clusternav/carexec/|core/src/test/kotlin/com/byd/clusternav/carexec/|gradle/|scripts/evidence/|scripts/vehicle/|vehicle-contracts/src/main/kotlin/com/byd/clusternav/vehicle/t10/|vehicle-contracts/src/test/kotlin/com/byd/clusternav/vehicle/t10/".split('|')
         private val T10_FIXED = pathSet(".gitignore|app/build.gradle.kts|app/src/test/java/com/byd/clusternav/BuildArtifactNamingTest.kt|app/src/test/java/com/byd/clusternav/MainProbeSurfaceAbsenceTest.kt|docs/_handoff/session-2026-08-10-hud-sign-t10-offcar-complete.md|docs/_handoff/session-2026-08-10-hud-sign-t10-preparation.md|scripts/verify-seal-hud-sign-vehicle-test-t10.sh|vehicle-contracts/src/main/resources/t10-contracts.schema.json")

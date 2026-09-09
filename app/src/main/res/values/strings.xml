@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Cluster Nav 2.0</string>
+    <string name="app_name">Kachi</string>
     <string name="nav_listener_label">ClusterNav — đọc dẫn đường</string>
     <string name="idle">Chờ dẫn đường…</string>
 

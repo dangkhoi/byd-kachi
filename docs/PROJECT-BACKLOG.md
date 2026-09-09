@@ -1,20 +1,31 @@
 # byd-launcher — Project Backlog
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-08 · **Fork** của ClusterNav 2.0 (`byd-cluster-2`) → phát triển dần thành LAUNCHER xe BYD (`com.byd.launcher`, cài song song). Fork từ ClusterNav **v1.38** (versionCode 39). Spec: `docs/specs/launcher-foundation.html`.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-09 · **Fork** của ClusterNav 2.0 (`byd-cluster-2`) → phát triển dần thành LAUNCHER xe BYD (`com.byd.launcher`, cài song song). Fork từ ClusterNav **v1.38** (versionCode 39). Spec: `docs/specs/launcher-foundation.html`.
 
-## §L. LAUNCHER ROADMAP (làm dần)
+## §L. LAUNCHER ROADMAP — Kachi Workspace (theo phase)
 
-> Nguyên tắc: **GIỮ NGUYÊN mọi tính năng ClusterNav** (gom vào Settings), KHÔNG phá; thêm dần vỏ HOME + app/tiện ích kiểu Dudu. Mỗi bước có test + verify xe. Status 2 trục như §0.
+> Nguyên tắc: **GIỮ NGUYÊN mọi tính năng ClusterNav** (gom vào "Cài đặt"), KHÔNG phá; dựng dần vỏ **HOME** kiểu **workspace** (mở app vào ô 1/2/3/4 + thanh điều khiển 4 viền + widget trong ô + thanh trạng thái). **Kế hoạch chi tiết + bảng ranh giới emulator↔xe: `docs/specs/kachi-workspace-launcher.html`** (chờ owner duyệt). Prototype đã duyệt: `docs/prototypes/kachi-workspace.html`.
+> **Test**: JVM unit + **emulator 1 màn** cho phần thuần Android; phần chạm xe (freeform app-vào-ô + BydHal control/data + cluster-cast) đánh dấu **🚗 chờ verify xe**. Status 2 trục như §0.
+> **OQ chốt (2026-09-08)**: (1) KHÔNG xoay dọc (chỉ ngang); (2) THAY hẳn launcher gốc — bật sau khi P2 chạy ổn; (3) KHÔNG khoá thao tác/video nào khi chạy. **Multi-app = freeform multi-window** (KHÔNG PIP; VirtualDisplay chỉ dự phòng) — **cơ chế ĐÃ field-proven trong cluster-cast** (`CastShell`/`AppMover`/`CastGeometryController`: seed freeform + `--windowingMode 5` + `am task resize` theo ô + chia 2-app). Workspace = tổng quát hoá lên **display 0, N ô**; P2.0 = port + cho chrome Kachi sống chung cửa sổ freeform + **đo N-app fps/RAM**. KHÔNG cần native/AOSP.
 
+**Nền / hạ tầng**
 | ID | Việc | Làm | Xe | Ghi chú |
 |----|------|-----|-----|---------|
 | L0 | Fork byd-cluster-2 → byd-launcher (appId `com.byd.launcher`, OTA `REPO`→byd-launcher, git init sạch, bỏ APK ClusterNav) | ✅ | — | [ĐO] full test **1983/0**; debug APK `package=com.byd.launcher` vc=39; ClusterNav v1.38 KHÔNG đụng |
-| L1 | Vỏ **HOME**: Activity đăng ký `CATEGORY_HOME` + dashboard tối thiểu; board `MainActivity` hiện tại → màn **"Cài đặt / Settings"** | 🔲 | 🚗 | giữ mọi feature ClusterNav |
-| L2 | Tên app (label) + icon launcher riêng (rời "Cluster Nav 2.0"); khoá ký + OTA channel riêng launcher | 🔲 | 🚗 | `strings.xml` đang seal ClusterNav — gỡ seal baggage dần |
-| L3 | Widget đồng hồ read-only (áp suất lốp / range / PM2.5 / năng lượng) qua `BydHal` + feature-id | 🔲 | 🚗 | cần L-RE (giá trị số feature-id) |
-| L4 | Control xe: kính theo **%** · cửa/cốp/ca-pô · đèn · gạt mưa (cả **chế độ bảo trì**) · AC | 🔲 | 🚗 | cần L-RE (ngữ nghĩa arg + shellManage) |
-| L5 | Lưới **app/shortcut** mở app khác (media · map · cài đặt xe…) | 🔲 | 🚗 | launch intent / dadb |
-| L-RE | Nợ RE (`docs/diagnostics/dudu-launcher-hal-RE-2026-09-06.md`): giá trị SỐ `BYDAutoFeatureIds.*` (pull `/system/framework/*bydauto*.jar`), ngữ nghĩa `set(featureId,i2,i3)`, tầng shellManage đặc quyền | 🔨 | — | nền cho L3/L4 |
+| L2 | **Tên app (label) → "Kachi"** ✅ 2026-09-08 (`app_name` + tiêu đề màn `txt_app_title` + tiêu đề thông báo FGS); CÒN: icon launcher riêng · khoá ký + OTA channel riêng | 🔨 | 🚗 | seal T11 `strings.xml` re-pin `8300437c…`→`45fa51a8…` (KDoc trace "lần 1", owner duyệt); test **1983/0**. namespace/appId KHÔNG đổi |
+| L-RE | Nợ RE (`docs/diagnostics/dudu-launcher-hal-RE-2026-09-06.md`): giá trị SỐ `BYDAutoFeatureIds.*` (pull `/system/framework/*bydauto*.jar`), ngữ nghĩa `set(featureId,i2,i3)`, tầng shellManage đặc quyền | 🔨 | — | nền cho P3/P4 phần xe |
+
+**Phase (chi tiết ở spec `kachi-workspace-launcher.html` §5 — L1/L3/L4/L5 cũ gộp vào đây)**
+| Phase | Việc | Làm | Xe | Emulator? |
+|-------|------|-----|-----|-----------|
+| P1 | Vỏ **HOME** (`KachiHomeActivity`, `CATEGORY_HOME`, landscape) + layout engine 1/2/3/4 (`:core launcher/WorkspaceLayout`) + slot model + `WorkspacePrefs` + lối vào **"Cài đặt"** | ✅ 2026-09-08 | — | ✅ **CHẠY emulator** (AVD clusternav10, screenshot `docs/prototypes/kachi-p1-emulator.png`); `:core:test` xanh (13); debug APK ok |
+| P2 | **App drawer** + mở app vào ô — **reuse máy cast** (`CastShell`/`AppMover`/`CastGeometryController`: `--windowingMode 5` + `am task resize` theo ô, đã proven). **P2.0 = port lên display 0 + cho chrome Kachi sống chung + đo N-app fps/RAM (làm TRƯỚC)** | ✅ 2026-09-09 | 🚗 | ✅ **E2E emulator**: drawer app thật → đặt Settings vào ô; `FreeformLaunch`+`ShellAppLauncher` (:core, 8 test); port `AppLauncher` (off-car=NoCar giữ thẻ app) · cửa sổ freeform thật + fps/z-order = xe |
+| P3 | **Thanh điều khiển** 4 viền + customize + wire **PM2.5/ghế** (proven); còn lại theo L-RE | ✅ 2026-09-09 | 🚗 | ✅ dock 4 viền toggle+stepper + **icon vector** (emulator) · hành động HAL = xe |
+| P4 | **Widget** trong ô (đồng hồ/nhạc local + pin/lốp/PM2.5/tốc độ/trạng-thái-xe qua BydHal) + thanh trạng thái trên | ✅ 2026-09-09 | 🚗 | ✅ widget vòng đo/bảng kính/media/tốc-độ + thanh trên (emulator, DemoCarData) · dữ liệu xe thật = xe |
+| P5 | **Hồ sơ tài xế** + sáng/tối + kéo-thả sắp xếp (Lái/Đỗ **tuỳ chọn**, **KHÔNG khoá gì** — owner chốt) | ✅ 2026-09-09 | — | ✅ hồ sơ (pill+dialog tạo/đổi) + kéo-thả đổi ô + ✕ gỡ + `ThemeMode` (:core, 3 test) — ⚠ bảng màu NGÀY đủ + nút gạt deferred → P6 |
+| P6 | (tuỳ chọn) `AppWidgetHost` bên thứ 3 · **scenes** · nút **Chiếu-cụm** gọi lại pipeline cast | 🔲 | 🚗 | phần nào emulator · cast = xe |
+
+Mỗi phase: build → **JVM unit + emulator test** → senior review → đánh dấu phần xe chờ verify. **P1–P5 XONG trên emulator (fidelity 93/100)** + full 5-module test XANH + senior review **APPROVED** (3×[P2] patch: taskId theo display, tile lốp rỗng, tên hồ sơ) + debug APK `app-debug.apk`. Còn: bề mặt **chạm-xe** (freeform fps/z-order, BydHal control/data) verify **TRÊN XE**; **P6 tuỳ chọn** (bảng màu NGÀY đủ + nút gạt · `AppWidgetHost` · nút Chiếu-cụm). CHƯA commit (chờ owner).
 
 ---
 

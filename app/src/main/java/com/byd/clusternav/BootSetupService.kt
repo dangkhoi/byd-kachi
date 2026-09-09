@@ -122,7 +122,7 @@ class BootSetupService : Service() {
         @Suppress("DEPRECATION")
         return android.app.Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle("ClusterNav")
+            .setContentTitle("Kachi")
             .setContentText(Lang.t("Đang khởi động nền…", "Starting in background…"))
             .setOngoing(true)
             .build()

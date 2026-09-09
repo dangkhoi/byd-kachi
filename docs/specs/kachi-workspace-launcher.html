@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi Workspace Launcher — Kachi (byd-launcher)</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.emu{color:var(--accent);font-weight:600}.car{color:var(--warn);font-weight:600}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 150px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.car{border-color:var(--warn);border-style:dashed}
+.layer .node.new{background:rgba(0,113,227,.10)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi Workspace Launcher</h1>
+<p class="muted">Slug: <code>kachi-workspace-launcher</code> · Repo <code>byd-launcher</code> (→ <code>byd-kachi</code>) · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Màn hình chính (HOME) cho launcher <b>Kachi</b>: một <b>sân khấu</b> mở nhiều app vào ô (bố cục 1/2/3/4), <b>thanh điều khiển</b> đặt được mọi viền, <b>widget</b> trong ô, <b>thanh trạng thái</b> trên cùng. Kế hoạch chia <b>phase</b>, mỗi phase nêu rõ phần <span class="emu">chạy được trên emulator</span> vs phần <span class="car">chỉ verify trên xe</span>.</p>
+<div class="card">Nền tảng đã duyệt qua 2 prototype tương tác: <code>docs/prototypes/kachi-workspace.html</code> (hướng chốt) + <code>docs/prototypes/kachi-launcher-prototypes.html</code> (4 concept). Spec này biến prototype thành sản phẩm thật, làm dần theo phase.</div>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 2 — 2026-09-08</b>: Owner: "virtual display, freeform là cái đã làm quá giỏi khi làm cluster-cast rồi". ĐÚNG — đọc lại <code>CastShell</code>/<code>AppMover</code>/<code>CastGeometryController</code>: seed freeform + <code>am start --windowingMode 5</code> + <code>am task resize</code> theo Rect từng ô + <b>chia 2-app</b> + chặn PIP + watchdog đã <b>field-proven</b> (DiLink3 A10). ⇒ P2 KHÔNG phải nghiên cứu cơ chế; reframe P2.0 = <b>port máy cast lên display 0 với N ô + cho chrome Kachi sống chung cửa sổ freeform + đo N-app perf</b>. Rủi ro còn lại nhỏ hơn nhiều.</li>
+<li><b>Pass 1 — 2026-09-08</b>: Owner chốt OQ — (1) <b>KHÔNG xoay dọc</b> (chỉ ngang); (2) <b>thay hẳn launcher gốc</b> nhưng chỉ khi <b>P2 chạy ổn</b>; (3) <b>KHÔNG khoá</b> thao tác/video nào khi chạy. Chốt hướng multi-app: <b>freeform multi-window</b> (KHÔNG PIP — Dudu lag vì PIP; KHÔNG VirtualDisplay) — thêm §4.5, task <b>P2.0 spike đo hiệu năng</b> (sống-còn), và R-nf7 hiệu năng.</li>
+<li><b>Pass 0 — 2026-09-08</b>: Khởi tạo spec từ 2 prototype owner đã duyệt (owner: "đúng ý hết rồi, lên plan/backlog, chia phase, test trên emulator 1 màn"). Chốt stack tái dùng (Views + Prefs + dadb/am + BydHal), ranh giới emulator↔xe, và 6 phase P1–P6 + nợ RE (L-RE).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Owner fork <code>byd-cluster-2</code> → <code>byd-launcher</code>, đổi tên launcher thành <b>Kachi</b>, và muốn màn hình chính kiểu <b>workspace</b>: mở app thật (Bản đồ / YouTube / Netflix…) vào các ô chia 1/2/3/4, thanh điều khiển các thao tác hằng ngày (cửa, kính %, cốp, đèn, lọc bụi, ghế, nhiệt độ, gió…) đặt được ở viền dưới/trái/phải/trên, widget trong ô, và mọi thứ tuỳ biến được.</p>
+<p><b>Đã có sẵn (reuse):</b> stack Kotlin + Android Views + custom View (<code>SeatDiagramView</code>, <code>Pm25GaugeView</code>, <code>SpeedDialView</code>, <code>SegmentedControlView</code>…), <code>Prefs</code> (SharedPreferences), <b>đường phóng app đặc quyền</b> qua dadb/am (<code>SimpleCastRuntime</code>/<code>AppMover</code> — đang dùng chiếu app lên cụm), <code>BydHal</code> (dữ liệu + điều khiển xe: PM2.5, ghế, cửa sổ/cốp core, tốc độ…), <code>ThemeMode</code> (sáng/tối), song ngữ runtime. minSdk 29 / target 37 / JDK 17.</p>
+<div class="card"><b>Cổng / phụ thuộc:</b>
+<ul>
+<li><b>Byte-seal</b>: <code>app/src/main/res/layout/activity_main.xml</code> + <code>strings.xml</code> đang bị pin (T11) — đó là màn <b>ClusterNav/Settings hiện có</b>. HOME là <b>bề mặt MỚI</b> (file mới) ⇒ KHÔNG churn seal cũ.</li>
+<li><b>Freeform</b>: mở app "thật" vào ô cần <code>FEATURE_FREEFORM_WINDOW_MANAGEMENT</code> — <span class="car">xe có</span> (đã chứng minh qua cluster-cast + Dudu multi-window), <span class="emu">emulator thường KHÔNG</span> → fallback fullscreen/placeholder.</li>
+<li><b>L-RE</b>: giá trị số <code>BYDAutoFeatureIds.*</code> + ngữ nghĩa <code>set(featureId,i2,i3)</code> cho điều khiển thân xe + dữ liệu widget — nợ RE, nuôi phần xe của P3/P4.</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 · HOME shell</b> — Activity mới đăng ký là home (<code>intent-filter</code> <code>CATEGORY_HOME</code>+<code>DEFAULT</code>); nút "đặt Kachi làm màn hình chính" qua <code>RoleManager.ROLE_HOME</code>. <b>Chỉ NGANG</b>, không xoay dọc (owner chốt OQ1). <b>Mục tiêu: thay HẲN launcher gốc</b> khi P2 (multi-app) chạy ổn (owner chốt OQ2). Mở máy → vào workspace.</li>
+<li><b>R2 · Layout engine</b> — bố cục <code>1 · 2-cột · 2-hàng · 3(trái to + phải chia) · 4-ô</code>; đổi tức thời; lưu bền. AC: mỗi preset render đúng khung ô (đã có công thức trong prototype), đổi qua lại giữ nguyên app/widget theo chỉ số ô.</li>
+<li><b>R3 · Ô app/widget</b> — mỗi ô = <i>trống</i> | <i>app</i> | <i>widget</i>. Ô trống → drawer chọn <b>Mở app</b> hoặc <b>＋ Widget</b>. Ô có tiêu đề + nút đổi (⇄) + đóng (×). Lưu gán ô.</li>
+<li><b>R4 · Render app vào ô</b> — thiết bị có freeform → phóng app thật vào <code>Rect</code> của ô (<code>setLaunchBounds</code>, hoặc đường đặc quyền am/dadb như cluster-cast); không có → fallback (mở fullscreen / ô hiện placeholder). AC-<span class="car">xe</span>: 2–4 app hiện đồng thời đúng ô.</li>
+<li><b>R5 · Thanh điều khiển</b> — đặt viền <b>dưới/trái/phải/trên</b>; tile bật/tắt + tile −/+ (nhiệt độ, gió); chọn tile nào hiện (customize); lưu vị trí + bộ tile. Hành động bơm qua <code>BydHal</code> (<span class="car">xe</span>), off-car là no-op an toàn.</li>
+<li><b>R6 · Widget</b> — host widget trong ô; 8 widget: Năng lượng+tầm · Áp suất lốp · PM2.5 · Đồng hồ+thời tiết · Đang phát · Trạng thái xe · Tốc độ+giới hạn · Bảng tổng hợp. Widget dữ-liệu-xe đọc <code>BydHal</code> (<span class="car">xe</span>; off-car hiện "—"); đồng hồ/nhạc = thuần Android.</li>
+<li><b>R7 · Thanh trạng thái trên</b> — giờ/ngày (thuần Android) + liếc xe (nhiệt độ ngoài · pin/tầm · PM2.5 — <span class="car">xe</span>) + hồ sơ tài xế.</li>
+<li><b>R8 · Tuỳ biến + bền</b> — mọi lựa chọn (bố cục · gán ô · vị trí thanh · bộ tile · widget) lưu qua <code>Prefs</code>; (P5) theo <b>hồ sơ tài xế</b>.</li>
+<li><b>R9 · Sáng/tối</b> — tái dùng <code>ThemeMode</code> (Theo xe / Sáng / Tối).</li>
+<li><b>R10 · Giữ ClusterNav</b> — vào được màn ClusterNav hiện tại như một mục <b>"Cài đặt"</b> (mở <code>MainActivity</code> cũ), KHÔNG phá tính năng.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 · Emulator-first</b> — toàn bộ vỏ/logic/persistence chạy + test được trên emulator 1 màn; bề mặt-xe cô lập sau <b>interface (Port)</b> để off-car degrade + unit-test được.</li>
+<li><b>R-nf2 · Không đụng seal</b> — HOME là file mới; KHÔNG sửa <code>activity_main.xml</code>/<code>strings.xml</code> đã pin.</li>
+<li><b>R-nf3 · Degrade-safe</b> — thiếu BydHal/freeform (emulator) ⇒ không crash: hiện mock/placeholder/"—".</li>
+<li><b>R-nf4 · Gọn</b> — không thêm dep nặng (không Compose); tái dùng Views + Prefs + dadb + BydHal (giữ APK OTA nhẹ).</li>
+<li><b>R-nf5 · Khoá khi lái</b> — <b>KHÔNG khoá</b> thao tác/video nào khi xe chạy (owner chốt OQ4 — xe cá nhân, tự chịu). Bỏ yêu cầu Drive/Parked bắt buộc; nếu có chỉ là tuỳ chọn đổi bố cục.</li>
+<li><b>R-nf7 · Hiệu năng (SỐNG-CÒN)</b> — nhiều app song song phải MƯỢT (mục tiêu ~60fps, không giật/không nóng máy). Dùng <b>freeform multi-window</b> (hệ thống tự ghép cửa sổ, mỗi app render surface riêng → gần native), <b>KHÔNG PIP</b>. Đo fps/RAM trên head-unit thật (P2.0) là <b>cổng đi tiếp</b> của cả launcher.</li>
+<li><b>R-nf6 · Thread</b> — HAL/dadb chạy off main-thread; UI trên main; đọc widget theo nhịp, không mỗi-frame.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Kiến trúc — vỏ thuần Android + cổng ra xe (Port/Adapter)</h3>
+<p>Chìa khoá để "emulator chạy được": mọi thứ chạm xe nằm sau một <b>Port (interface)</b>. Emulator dùng adapter mock; xe dùng adapter <code>BydHal</code>/freeform. Vỏ launcher + layout + widget UI + persistence = thuần Android, test trên emulator + JVM.</p>
+<div class="layers">
+  <div class="layer"><div class="node new"><b>KachiHomeActivity</b><span>đăng ký HOME · vào workspace</span></div></div>
+  <div class="layer">
+    <div class="node new"><b>WorkspaceView</b><span>layout engine · slot Rects (1/2/3/4)</span></div>
+    <div class="node new"><b>ControlDockView</b><span>4 viền · tile · customize</span></div>
+    <div class="node new"><b>TopStatusStrip</b><span>giờ · liếc xe</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>SlotView</b><span>trống | AppHost | WidgetHost</span></div>
+    <div class="node new"><b>WidgetRegistry</b><span>8 widget (custom View)</span></div>
+    <div class="node new"><b>ControlRegistry</b><span>tile toggle/stepper</span></div>
+    <div class="node new"><b>WorkspacePrefs</b><span>bố cục·ô·dock·hồ sơ</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>AppLauncher (Port)</b><span>mở app vào Rect</span></div>
+    <div class="node"><b>CarControlPort</b><span>cửa/ghế/AC…</span></div>
+    <div class="node"><b>CarDataPort</b><span>pin/lốp/PM2.5/tốc độ</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>Fullscreen/Mock</b><span class="emu">EMULATOR</span></div>
+    <div class="node car"><b>FreeformLauncher</b><span class="car">XE · setLaunchBounds / am·dadb</span></div>
+    <div class="node car"><b>BydHal adapters</b><span class="car">XE · reflection HAL</span></div>
+  </div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.10)"></span> khối MỚI (thuần Android, emulator-ok)</span>
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> cổng/khối reuse</span>
+  <span class="sw"><span class="box" style="border-color:var(--warn);border-style:dashed"></span> adapter chỉ chạy trên xe</span>
+</div>
+<h3>4.2 Luồng "ô trống → nội dung"</h3>
+<div class="flow">
+  <div class="fnode"><b>Ô trống</b><span>Mở app / ＋Widget</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Drawer</b><span>app | widget</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>App → AppLauncher</b><span class="car">freeform Rect</span> / <span class="emu">fullscreen</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Widget → Host</b><span>custom View + CarDataPort</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>WorkspacePrefs</b><span>lưu gán ô</span></div>
+</div>
+<h3>4.3 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>UI = Android Views + custom View</b> (KHÔNG Compose): khớp codebase (đã nhiều custom View), tránh dep nặng, giữ APK OTA nhẹ, không đụng seal. Compose ghi nhận là lựa chọn hiện đại nhưng KHÔNG chọn (đồng nhất + nhẹ).</li>
+<li><b>Persistence = mở rộng <code>Prefs</code></b> (SharedPreferences) cho đồng nhất. DataStore là bản hiện đại hơn (ghi nhận) nhưng không đổi để nhất quán codebase.</li>
+<li><b>Render app vào ô</b> — <code>ActivityOptions.setLaunchBounds(Rect)</code>. <b>[Context7 · /websites/developer_android]</b>: <i>"ignored on devices without <code>FEATURE_FREEFORM_WINDOW_MANAGEMENT</code> or <code>FEATURE_PICTURE_IN_PICTURE</code>"</i> ⇒ gate bằng <code>packageManager.hasSystemFeature(...)</code>; có freeform → phóng vào Rect (tái dùng đường đặc quyền am/dadb của cluster-cast để ép bound trên xe); không → fullscreen/placeholder. Đây chính là ranh giới emulator↔xe.</li>
+<li><b>Đặt làm launcher mặc định</b> — <code>RoleManager.createRequestRoleIntent(ROLE_HOME)</code> (API 29+ = minSdk). <b>[verified]</b></li>
+<li><b>Widget bên thứ 3 (tuỳ chọn, P6)</b> — <code>AppWidgetHost</code>/<code>AppWidgetHostView</code> (platform, emulator-ok). Widget lõi Kachi = custom View + <code>CarDataPort</code>.</li>
+<li><b>Cô lập xe = Port/Adapter</b> — <code>AppLauncher</code>/<code>CarControlPort</code>/<code>CarDataPort</code> là interface trong <code>:core</code>; adapter <code>BydHal</code>/freeform trong <code>:app</code>; mock trong test/emulator. Giữ lõi thuần + unit-test được off-car.</li>
+</ul>
+
+<h3>4.4 Ranh giới EMULATOR ↔ XE (bảng test)</h3>
+<table>
+<tr><th>Bề mặt</th><th>Emulator (1 màn)</th><th>Xe</th><th>Cách test</th></tr>
+<tr><td>Đăng ký HOME + set default (ROLE_HOME)</td><td class="ok">✅</td><td class="ok">✅</td><td>emulator + manual</td></tr>
+<tr><td>Layout engine (slot Rects 1/2/3/4)</td><td class="ok">✅</td><td class="ok">✅</td><td>JVM unit + emulator UI</td></tr>
+<tr><td>Drawer + phóng app (intent)</td><td class="ok">✅ (fullscreen fallback)</td><td class="ok">✅</td><td>emulator (mở app thật) + xe</td></tr>
+<tr><td><b>App-vào-ô freeform (nhiều app cùng lúc)</b></td><td class="ok">✅ cơ chế (bật <code>enable_freeform_support</code> trên AVD)</td><td class="ok">✅</td><td>emulator (cơ chế) · <span class="car">XE: fps/RAM thật (P2.0)</span></td></tr>
+<tr><td>Thanh ĐK: UI · di viền · customize · lưu</td><td class="ok">✅</td><td class="ok">✅</td><td>JVM unit + emulator</td></tr>
+<tr><td><b>Hành động điều khiển</b> (cửa/kính/cốp/đèn/ghế/AC/lọc bụi/sấy)</td><td class="warn">❌ mock no-op</td><td class="ok">✅ BydHal</td><td><span class="car">CHỈ verify trên xe</span> (PM2.5/ghế đã proven)</td></tr>
+<tr><td>Widget UI/host · đồng hồ · nhạc</td><td class="ok">✅</td><td class="ok">✅</td><td>emulator</td></tr>
+<tr><td><b>Widget dữ-liệu-xe</b> (pin/tầm/lốp/PM2.5/tốc độ/trạng thái xe)</td><td class="warn">❌ hiện "—"/mock</td><td class="ok">✅ BydHal</td><td><span class="car">CHỈ verify trên xe</span></td></tr>
+<tr><td>Thanh trạng thái (giờ) · sáng/tối · kéo-thả sắp xếp</td><td class="ok">✅</td><td class="ok">✅</td><td>emulator</td></tr>
+<tr><td>Persistence (bố cục·ô·dock·hồ sơ) qua Prefs</td><td class="ok">✅</td><td class="ok">✅</td><td>JVM unit + emulator (restart)</td></tr>
+<tr><td>Khoá video khi chạy · Cluster cast tie-in</td><td class="warn">❌ (cần tốc độ/cụm)</td><td class="ok">✅</td><td><span class="car">CHỈ verify trên xe</span></td></tr>
+</table>
+<p class="muted">Nguyên tắc: mỗi phase làm <b>phần emulator trước</b> (dựng + test xanh trên máy), phần <span class="car">xe</span> wire sau interface và đánh dấu chờ xe. Không chặn tiến độ vì thiếu xe.</p>
+
+<h3>4.5 Multi-app — hướng hiệu năng (mấu chốt SỐNG-CÒN)</h3>
+<p><b>Vấn đề:</b> chạy 2–4 app THẬT cùng lúc trong workspace mà không lag. Dudu dùng <b>PIP</b> → lag + không ổn định (owner xác nhận).</p>
+<table>
+<tr><th>Cách</th><th>Cơ chế</th><th>Hiệu năng</th><th>Quyền</th><th>Kết luận</th></tr>
+<tr><td><b>Freeform multi-window</b></td><td>Cửa sổ THẬT; SurfaceFlinger tự ghép; mỗi app render surface riêng (như DeX / split-screen)</td><td class="ok">Gần native — KHÔNG copy/encode từng frame</td><td>Bật freeform qua shell đặc quyền (đã có dadb)</td><td class="ok">✅ ĐƯỜNG CHÍNH</td></tr>
+<tr><td>PIP (Dudu)</td><td>1 overlay đặc biệt, nhồi nhiều app kiểu PIP</td><td class="warn">Lag, không ổn định</td><td>app thường</td><td class="warn">BỎ</td></tr>
+<tr><td>VirtualDisplay + SurfaceView</td><td>Render app vào display ảo rồi vẽ trong view của mình</td><td class="warn">Thêm lớp render→copy (nặng hơn); hay lỗi render UI</td><td>Android 10 CẤM app thường phóng app KHÁC lên VD của nó (cần trusted-display đặc quyền)</td><td class="warn">DỰ PHÒNG (chỉ khi có quyền hệ thống)</td></tr>
+</table>
+<p><b>Cách làm freeform — TÁI DÙNG máy cluster-cast đã proven trên xe (owner nhấn mạnh):</b> cluster-cast đã chạy đúng chuỗi này trên display 1 (cụm), gồm cả <b>CHIA ĐÔI 2 app</b>:
+<br>(1) bật freeform 1 lần: <code>CastShell</code> ghi <code>enable_freeform_support</code>+<code>force_resizable_activities</code> vào Settings.Global (framework đọc lúc BOOT → cần power-cycle 1 lần);
+<br>(2) phóng app: <code>AppMover</code> — <code>am start --display &lt;id&gt; --windowingMode 5 -n &lt;comp&gt;</code>;
+<br>(3) đặt app vào <b>Rect từng ô</b>: <code>am task resize &lt;taskId&gt; left top right bottom</code> (<code>CastGeometryController.resizeSlot</code> — đã chia <code>0..576</code>/<code>576..1920</code> cho 2 app);
+<br>(4) tìm task/stack qua <code>am stack list</code> (<code>CastStackParser</code>); trả fullscreen bằng <code>fullscreenReturnCommand</code>; watchdog re-pin; và <b>chặn PIP</b> sẵn.
+<br><b>Workspace = tổng quát hoá lên display 0 với N ô</b> (thay vì display 1, 1–2 app).</p>
+<div class="card"><b>Có cần code native/sâu?</b> <b>KHÔNG</b> — và quan trọng: <b>anh đã làm xong phần khó này trong cluster-cast</b> (freeform + multi-window + chia-ô + chặn PIP + watchdog, field-proven BYD DiLink3 A10). KHÔNG cần AOSP/C++/SystemUI/kernel; chỉ cần <b>shell đặc quyền (dadb — đã có)</b> vốn đã dùng cho cast. Workspace = <b>tái dùng</b> <code>CastShell</code>/<code>AppMover</code>/<code>CastGeometryController</code>/<code>CastStackParser</code>, tổng quát hoá lên display 0 + N ô. [Context7 + web xác nhận: <code>enable_freeform_support</code> + <code>--windowingMode 5</code>; Android 10 chặn app thường phóng app khác lên VirtualDisplay → freeform là đường đúng, cũng là đường anh đã đi.]</div>
+<p><b>Emulator vs xe cho phần này:</b> cơ chế freeform <b>prototype được NGAY trên emulator</b> (AVD bật <code>enable_freeform_support</code> + <code>--windowingMode 5</code>) → chứng minh launcher đặt &amp; quản cửa sổ đúng ô. Nhưng <b>CON SỐ hiệu năng</b> (fps / RAM / nhiệt) phải đo trên <b>head-unit thật</b> (GPU/RAM xe yếu hơn) — đó là <b>P2.0</b>.</p>
+
+<h2>5. Tasks — chia PHASE (DAG)</h2>
+<p class="muted">Mỗi phase khép kín, có test riêng, giao được 1 bản chạy trên emulator. Cột <b>Verify</b>: <span class="emu">EMU</span> = xong trên emulator · <span class="car">XE</span> = chờ verify xe.</p>
+
+<h3>Phase P1 — Vỏ HOME + layout engine + lối vào Settings <span class="pill">EMULATOR</span></h3>
+<table>
+<tr><th>#</th><th>Task</th><th>File (mới)</th><th>Verify</th></tr>
+<tr><td>P1.1</td><td>Layout engine thuần: enum preset + hàm tính <code>Rect</code> từng ô theo kích thước màn (đối xứng prototype)</td><td><code>core/.../launcher/WorkspaceLayout.kt(+Test)</code></td><td class="emu">EMU·unit</td></tr>
+<tr><td>P1.2</td><td>Model ô + trạng thái (trống/app/widget) + <code>WorkspacePrefs</code> lưu/khôi phục</td><td><code>core/.../launcher/SlotModel.kt</code> · <code>app/.../launcher/WorkspacePrefs.kt(+Test)</code></td><td class="emu">EMU·unit</td></tr>
+<tr><td>P1.3</td><td><code>KachiHomeActivity</code> + <code>WorkspaceView</code> render ô + đổi bố cục (nút trên màn)</td><td><code>app/.../launcher/KachiHomeActivity.kt</code> · <code>WorkspaceView.kt</code> · <code>res/layout/activity_home.xml</code></td><td class="emu">EMU·UI</td></tr>
+<tr><td>P1.4</td><td>Manifest: <code>CATEGORY_HOME</code>+<code>DEFAULT</code>; nút "đặt làm màn chính" (<code>ROLE_HOME</code>); mục <b>Cài đặt</b> mở <code>MainActivity</code> (ClusterNav)</td><td><code>AndroidManifest.xml</code> · <code>HomeRole.kt</code></td><td class="emu">EMU + manual</td></tr>
+<tr><td>P1.x</td><td>Senior review + full test 5 module + build</td><td>—</td><td class="emu">EMU</td></tr>
+</table>
+<p class="muted"><b>Test emulator P1:</b> cài APK → bấm Home → chọn Kachi → vào workspace; đổi 5 bố cục render đúng; ô trống hiện; restart giữ bố cục; mở được Cài đặt (ClusterNav). <b>Không</b> đụng dữ liệu xe.</p>
+
+<h3>Phase P2 — Drawer + mở app vào ô <span class="pill">EMU core + XE freeform</span></h3>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Verify</th></tr>
+<tr><td><b>P2.0</b></td><td><b>SPIKE — port máy cast lên display 0 + đo N-app (làm TRƯỚC)</b>. Cơ chế freeform/resize ĐÃ proven (cluster-cast). Việc MỚI: (a) reuse <code>CastShell/AppMover/CastGeometryController</code> đặt <b>3–4 app vào N ô trên display 0</b>; (b) cho <b>chrome Kachi (dock/widget/viền) sống chung cửa sổ freeform</b> trên cùng display 0 (z-order — cluster-cast KHÔNG gặp vì display 1 không có launcher); (c) <b>đo fps/RAM</b> 3–4 app. <b>Cổng</b>: mượt → tiếp + bật OQ2; 4 app nặng → giới hạn ô / 1 ô video.</td><td><code>docs/diagnostics/freeform-workspace-spike-*.md</code></td><td class="emu">EMU cơ chế · <span class="car">XE fps + power-cycle</span></td></tr>
+<tr><td>P2.1</td><td>App drawer: liệt kê app đã cài (<code>queryIntentActivities</code>), icon/tên; chọn → gán ô</td><td><code>app/.../launcher/AppDrawer.kt</code> · <code>AppRepository.kt(+Test)</code></td><td class="emu">EMU·UI</td></tr>
+<tr><td>P2.2</td><td><code>AppLauncher</code> Port + adapter: gate <code>FEATURE_FREEFORM_WINDOW_MANAGEMENT</code>; <code>setLaunchBounds(slotRect)</code>; fallback fullscreen</td><td><code>core/.../launcher/AppLauncher.kt</code> · <code>app/.../launcher/FreeformAppLauncher.kt(+Test)</code></td><td class="emu">EMU (fallback) · <span class="car">XE</span></td></tr>
+<tr><td>P2.3</td><td>Chrome ô: tiêu đề + đổi (⇄) + đóng (×); vòng đời (mở/đóng app theo ô)</td><td><code>app/.../launcher/AppHostView.kt</code></td><td class="emu">EMU + <span class="car">XE</span></td></tr>
+<tr><td>P2.4</td><td><span class="car">XE</span>: ép bound freeform qua đường đặc quyền am/dadb (tái dùng <code>SimpleCastRuntime</code>/<code>AppMover</code>) khi <code>setLaunchBounds</code> không đủ</td><td><code>app/.../launcher/SlotAmLauncher.kt</code></td><td class="car">XE</td></tr>
+<tr><td>P2.x</td><td>Senior review + test + build</td><td>—</td><td class="emu">EMU</td></tr>
+</table>
+<p class="muted"><b>P2.0 làm TRƯỚC</b> (spike freeform + đo perf) — cổng quyết định cả launcher. <b>Test emulator P2:</b> bật <code>enable_freeform_support</code> trên AVD → phóng 2–3 app vào ô (freeform) chứng minh cơ chế + drawer/gán ô/đóng/đổi. <b>Verify xe P2:</b> fps/RAM/giật thật với app thật; app từ chối multi-window → fullscreen. Đạt → mới bật "thay launcher gốc" (OQ2).</p>
+
+<h3>Phase P3 — Thanh điều khiển + customize <span class="pill">EMU UI + XE hành động HAL</span></h3>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Verify</th></tr>
+<tr><td>P3.1</td><td><code>ControlRegistry</code> + <code>ControlDockView</code> (4 viền, tile toggle/stepper) + customize panel + lưu</td><td><code>core/.../launcher/ControlRegistry.kt(+Test)</code> · <code>app/.../launcher/ControlDockView.kt</code></td><td class="emu">EMU·UI+unit</td></tr>
+<tr><td>P3.2</td><td><code>CarControlPort</code> Port + adapter <code>BydHal</code>; wire các control ĐÃ proven: <b>PM2.5</b>, <b>ghế mát/sưởi</b> (tái dùng code ClusterNav)</td><td><code>core/.../launcher/CarControlPort.kt</code> · <code>app/.../launcher/BydHalControlAdapter.kt</code></td><td class="emu">EMU(mock) · <span class="car">XE</span></td></tr>
+<tr><td>P3.3</td><td><span class="car">XE</span>: control cần RE — kính %, cốp, đèn, sấy, lấy gió (phụ thuộc <b>L-RE</b>); degrade no-op tới khi có giá trị</td><td><code>app/.../launcher/BydHalControlAdapter.kt</code></td><td class="car">XE + L-RE</td></tr>
+<tr><td>P3.x</td><td>Senior review + test + build</td><td>—</td><td class="emu">EMU</td></tr>
+</table>
+<p class="muted"><b>Test emulator P3:</b> di thanh 4 viền, bật/tắt tile, −/+ nhiệt độ/gió, customize thêm/bớt tile, lưu qua restart — tất cả UI + state (hành động HAL là mock no-op). <b>Verify xe P3:</b> tile thật sự điều khiển xe (PM2.5/ghế trước, phần còn lại theo L-RE).</p>
+
+<h3>Phase P4 — Widget <span class="pill">EMU UI/local + XE dữ liệu</span></h3>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Verify</th></tr>
+<tr><td>P4.1</td><td><code>WidgetRegistry</code> + <code>WidgetHostView</code> (widget trong ô, co theo cỡ ô)</td><td><code>core/.../launcher/WidgetRegistry.kt(+Test)</code> · <code>app/.../launcher/WidgetHostView.kt</code></td><td class="emu">EMU·UI</td></tr>
+<tr><td>P4.2</td><td>Widget local: Đồng hồ+thời tiết · Đang phát (media session) · Bảng tổng hợp</td><td><code>app/.../launcher/widget/*.kt</code></td><td class="emu">EMU</td></tr>
+<tr><td>P4.3</td><td>Widget dữ-liệu-xe qua <code>CarDataPort</code>: Năng lượng+tầm · Áp suất lốp · PM2.5 · Tốc độ+giới hạn · Trạng thái xe (off-car "—")</td><td><code>core/.../launcher/CarDataPort.kt</code> · <code>app/.../launcher/BydHalDataAdapter.kt</code></td><td class="emu">EMU(—) · <span class="car">XE</span></td></tr>
+<tr><td>P4.4</td><td>Thanh trạng thái trên: giờ/ngày + liếc xe qua <code>CarDataPort</code></td><td><code>app/.../launcher/TopStatusStrip.kt</code></td><td class="emu">EMU + <span class="car">XE</span></td></tr>
+<tr><td>P4.x</td><td>Senior review + test + build</td><td>—</td><td class="emu">EMU</td></tr>
+</table>
+<p class="muted"><b>Test emulator P4:</b> đặt widget vào ô, widget local chạy (đồng hồ live, media), widget xe hiện "—" gọn (không crash); vòng đo render. <b>Verify xe P4:</b> số liệu xe thật (pin/lốp/PM2.5/tốc độ).</p>
+
+<h3>Phase P5 — Hồ sơ · chế độ Lái/Đỗ · sáng-tối · polish <span class="pill">EMU + XE tốc độ</span></h3>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Verify</th></tr>
+<tr><td>P5.1</td><td>Hồ sơ tài xế: lưu/khôi phục cả bộ (bố cục + ô + dock + widget) theo hồ sơ</td><td><code>app/.../launcher/Profiles.kt(+Test)</code></td><td class="emu">EMU·unit</td></tr>
+<tr><td>P5.2</td><td>(TUỲ CHỌN) chế độ Lái/Đỗ chỉ để <b>đổi bố cục</b> theo ngữ cảnh — <b>KHÔNG khoá</b> video/thao tác (owner chốt OQ4); có thể bỏ hẳn</td><td><code>core/.../launcher/DriveMode.kt(+Test)</code></td><td class="emu">EMU</td></tr>
+<tr><td>P5.3</td><td>Sáng/tối (tái dùng <code>ThemeMode</code>) cho HOME; kéo-thả sắp xếp ô/tile</td><td><code>app/.../launcher/*</code></td><td class="emu">EMU</td></tr>
+<tr><td>P5.x</td><td>Senior review + test + build</td><td>—</td><td class="emu">EMU</td></tr>
+</table>
+
+<h3>Phase P6 — (tuỳ chọn) widget bên thứ 3 · scenes · cluster-cast tie-in <span class="pill">sau</span></h3>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Verify</th></tr>
+<tr><td>P6.1</td><td><code>AppWidgetHost</code> host widget Android bên thứ 3 vào ô</td><td><code>app/.../launcher/AppWidgetHostView.kt</code></td><td class="emu">EMU</td></tr>
+<tr><td>P6.2</td><td>Scenes ("Lên xe"/"Nghỉ") 1 chạm chạy combo control</td><td><code>core/.../launcher/Scenes.kt(+Test)</code></td><td class="emu">EMU · <span class="car">XE</span></td></tr>
+<tr><td>P6.3</td><td>Nút/widget "Chiếu lên cụm" gọi lại pipeline cluster-cast sẵn có</td><td><code>app/.../launcher/*</code></td><td class="car">XE</td></tr>
+</table>
+
+<h3>L-RE — Nợ reverse-engineering HAL (song song, nuôi P3/P4 phần xe)</h3>
+<p class="muted">Xem <code>docs/diagnostics/dudu-launcher-hal-RE-2026-09-06.md</code>: kéo <code>/system/framework/*bydauto*.jar</code> lấy giá trị SỐ <code>BYDAutoFeatureIds.*</code>, ngữ nghĩa <code>set(featureId,i2,i3)</code>, tầng shellManage đặc quyền. Không chặn P1/P2 (thuần Android).</p>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit (off-car, JVM)</b> — layout math (slot Rects mỗi preset), model ô/dock/widget, serialize/restore <code>WorkspacePrefs</code>, gate freeform-capability, format số widget, DriveMode logic. Bộ 5 module giữ <b>xanh</b> (<code>./gradlew test</code>).</li>
+<li><b>V-emulator (1 màn, thuần Android)</b> — cài làm home; vào workspace; đổi 5 bố cục; mở app thật vào ô (fullscreen fallback); di thanh 4 viền; customize; đặt widget (local chạy, xe "—"); restart giữ trạng thái; sáng/tối; kéo-thả. <b>Không crash</b> khi thiếu BydHal/freeform.</li>
+<li><b>V-car (xe)</b> — freeform 2–4 app đúng ô; hành động HAL thật (PM2.5/ghế trước + phần L-RE); widget số liệu xe live; khoá video khi chạy; reboot bằng <b>nút nguồn vật lý</b> nếu bài test cần reboot (<code>adb reboot</code> KHÔNG tương đương).</li>
+<li><b>V-lifecycle</b> — tạo ô → gán app/widget → lưu → restart khôi phục → đổi/đóng; dock config bền; đổi hồ sơ áp đúng bộ.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Xoay dọc? — <span class="ok">✅ CHỐT: KHÔNG xoay dọc, chỉ NGANG (owner 2026-09-08).</span></li>
+<li>OQ2. Thay hẳn launcher gốc hay chạy song song? — <span class="ok">✅ CHỐT: THAY hẳn launcher gốc — bật sau khi P2 (multi-app) chạy ổn (owner 2026-09-08).</span></li>
+<li>OQ3. Freeform: BYD cho <code>setLaunchBounds</code> ở app thường, hay phải qua đường đặc quyền am/dadb? — <span class="muted">→ đo ở P2.0 spike (xe).</span></li>
+<li>OQ4. Khoá thao tác/video khi chạy? — <span class="ok">✅ CHỐT: KHÔNG khoá cái nào (owner 2026-09-08).</span></li>
+<li>OQ5. Hồ sơ tài xế khoá theo gì (nhớ ghế / thủ công)? — <span class="muted">P5</span></li>
+<li>OQ6. Bao nhiêu app/widget đồng thời trước khi head-unit đơ? — <span class="muted">→ đo ở P2.0 spike (xe).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Prototype: <code>docs/prototypes/kachi-workspace.html</code> (hướng chốt) · <code>docs/prototypes/kachi-launcher-prototypes.html</code> (4 concept).</li>
+<li>Backlog §L: <code>docs/PROJECT-BACKLOG.md</code> · Always-on: <code>.kiro/steering/project-context.md</code>.</li>
+<li><b>Reuse cluster-cast (đã field-proven trên xe — freeform/multi-window/chia-ô)</b>: <code>modules/clustercast/CastShell.kt</code> (seed freeform) · <code>simplified/AppMover.kt</code> (<code>am start --windowingMode 5</code> + <code>am task resize</code>) · <code>simplified/CastGeometryController.kt</code> (resize full/slot + persist) · <code>simplified/CastStackParser.kt</code> (parse <code>am stack list</code>) · <code>SimpleCastRuntime</code>/<code>SimpleCastCoordinator</code> (split + watchdog). + <code>modules/hal/BydHal.kt</code> · <code>comfort/*</code> (PM2.5/ghế) · <code>Prefs</code> · <code>ThemeMode</code> · custom View (<code>SeatDiagramView</code>/<code>Pm25GaugeView</code>/<code>SegmentedControlView</code>/<code>SpeedDialView</code>).</li>
+<li>Android: <code>ActivityOptions.setLaunchBounds</code> (yêu cầu <code>FEATURE_FREEFORM_WINDOW_MANAGEMENT</code>) · <code>RoleManager.ROLE_HOME</code> · <code>AppWidgetHost</code> · <code>intent-filter CATEGORY_HOME</code>. [Context7 /websites/developer_android + web]</li>
+<li>RE: <code>docs/diagnostics/dudu-launcher-hal-RE-2026-09-06.md</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted"><i>(Trống — chưa implement. Điền dần trong lúc code mỗi phase: quyết định / trade-off / sai lệch-spec / bug / "spec không work → đổi X".)</i></p>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review — spec mới draft, chờ owner duyệt.)</li>
+</ul>
+
+</div></body>
+</html>

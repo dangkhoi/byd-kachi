@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kachi — Workspace launcher (prototype)</title>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('kachi-ws-theme');
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (t === 'dark') document.documentElement.classList.add('dark');
+    } catch (e) {}
+  })();
+</script>
+<style>
+  :root{
+    --bg:#f4f6f9; --fg:#171a20; --muted:#5c6472; --line:#e2e6ec; --card:#fff; --card-2:#f9fafc;
+    --brand:#3b57ff; --brand-2:#6a5bff;
+    --shadow:0 1px 2px rgba(20,24,34,.06), 0 8px 30px rgba(20,24,34,.06);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --serif:ui-serif,Georgia,"Times New Roman",serif;
+  }
+  html.dark{ --bg:#0a0c10; --fg:#e8edf5; --muted:#8b95a7; --line:#1e232c; --card:#12151b; --card-2:#0f1218;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 40px rgba(0,0,0,.35); }
+  *{ box-sizing:border-box; } html,body{ margin:0; }
+  body{ background:var(--bg); color:var(--fg); font-family:var(--sans); font-size:14px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+
+  .top{ position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:11px 20px; background:color-mix(in srgb,var(--bg) 82%,transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
+  .brand{ display:flex; align-items:center; gap:10px; margin-right:auto; }
+  .brand .logo{ width:32px; height:32px; border-radius:9px; background:linear-gradient(140deg,var(--brand),var(--brand-2)); display:grid; place-items:center; color:#fff; font-weight:800; font-size:16px; box-shadow:0 4px 14px color-mix(in srgb,var(--brand) 45%,transparent); }
+  .brand .who b{ font-size:14.5px; } .brand .who div{ font-family:var(--mono); font-size:10px; letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+
+  .grp{ display:flex; align-items:center; gap:8px; }
+  .grp > .lbl{ font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:10px; background:var(--card); overflow:hidden; }
+  .seg button{ appearance:none; border:none; background:transparent; color:var(--muted); cursor:pointer; font:inherit; padding:7px 9px; display:grid; place-items:center; gap:0; }
+  .seg button + button{ border-left:1px solid var(--line); }
+  .seg button.on{ background:linear-gradient(140deg,var(--brand),var(--brand-2)); color:#fff; }
+  .seg button svg{ width:22px; height:16px; display:block; }
+  .seg.txt button{ font-size:12.5px; font-weight:600; padding:7px 12px; }
+  .btn{ appearance:none; cursor:pointer; border:1px solid var(--line); background:var(--card); color:var(--fg); font:inherit; font-weight:600; font-size:13px; padding:8px 13px; border-radius:10px; display:inline-flex; align-items:center; gap:7px; }
+  .btn.brand{ border:none; background:linear-gradient(140deg,var(--brand),var(--brand-2)); color:#fff; }
+  .btn svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; }
+  .icon-btn{ appearance:none; cursor:pointer; width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg); display:grid; place-items:center; }
+
+  .page{ max-width:1240px; margin:0 auto; padding:22px 20px 80px; }
+  .head{ margin-bottom:16px; }
+  .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); }
+  h1{ font-family:var(--serif); font-weight:500; font-size:27px; letter-spacing:-.02em; margin:6px 0 7px; }
+  .lede{ color:var(--muted); max-width:820px; } .lede b{ color:var(--fg); font-weight:600; }
+
+  .device{ border:1px solid var(--line); background:var(--card); border-radius:22px; padding:13px; box-shadow:var(--shadow); }
+  .bezel{ background:#04060a; border-radius:16px; padding:9px; border:1px solid #000; box-shadow:inset 0 0 0 2px #171b23, 0 12px 44px rgba(0,0,0,.4); }
+  .stage{ position:relative; width:100%; overflow:hidden; border-radius:11px; }
+  .kscreen{ position:absolute; top:0; left:0; width:1280px; height:720px; transform-origin:top left; overflow:hidden; border-radius:11px; color:var(--k-ink); font-family:var(--sans);
+    --k-ink:#eaf0f8; --k-mut:#93a0b4; --k-line:rgba(255,255,255,.09); --k-card:rgba(255,255,255,.06); --k-card-2:rgba(255,255,255,.1);
+    --k-accent:#4c7dff; --k-accent-2:#7b5cff; --k-cyan:#29d3ee; --k-green:#34d399; --k-amber:#fbbf24; --k-red:#fb7185; }
+  .cap{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:11px; color:var(--muted); font-size:12px; }
+
+  /* ---- launcher shell ---- */
+  .kwall{ position:absolute; inset:0; background:
+      radial-gradient(1100px 620px at 12% -12%, #16305e 0%, transparent 55%),
+      radial-gradient(1000px 700px at 112% 118%, #371a63 0%, transparent 55%),
+      linear-gradient(160deg,#0b0f17,#0a0d13 60%,#090b11); }
+  .launcher{ position:absolute; inset:0; display:flex; flex-direction:column; gap:10px; padding:12px; }
+  .topstrip{ flex:none; height:34px; display:flex; align-items:center; gap:12px; padding:0 13px; color:var(--k-mut); font-size:13.5px; background:rgba(9,12,19,.5); border:1px solid var(--k-line); border-radius:12px; }
+  .topstrip .time{ color:var(--k-ink); font-weight:700; font-size:16px; letter-spacing:.4px; }
+  .topstrip .sp{ margin-left:auto; }
+  .topstrip .chip{ display:inline-flex; align-items:center; gap:6px; }
+  .topstrip .chip svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; }
+  .topstrip .prof{ width:26px; height:26px; border-radius:50%; background:linear-gradient(140deg,var(--k-accent),var(--k-accent-2)); display:grid; place-items:center; color:#fff; font-weight:700; font-size:12px; }
+  .main{ flex:1; display:flex; gap:12px; min-height:0; }
+  .main[data-dock="bottom"]{ flex-direction:column; }
+  .main[data-dock="top"]{ flex-direction:column-reverse; }
+  .main[data-dock="left"]{ flex-direction:row-reverse; }
+  .main[data-dock="right"]{ flex-direction:row; }
+  .workspace{ flex:1; display:grid; gap:12px; min-width:0; min-height:0; }
+  .workspace[data-layout="1"]{ grid-template-columns:1fr; grid-template-rows:1fr; grid-template-areas:"s0"; }
+  .workspace[data-layout="2c"]{ grid-template-columns:1fr 1fr; grid-template-rows:1fr; grid-template-areas:"s0 s1"; }
+  .workspace[data-layout="2r"]{ grid-template-columns:1fr; grid-template-rows:1fr 1fr; grid-template-areas:"s0" "s1"; }
+  .workspace[data-layout="3"]{ grid-template-columns:1.55fr 1fr; grid-template-rows:1fr 1fr; grid-template-areas:"s0 s1" "s0 s2"; }
+  .workspace[data-layout="4"]{ grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; grid-template-areas:"s0 s1" "s2 s3"; }
+  .slot{ position:relative; border-radius:16px; overflow:hidden; background:var(--k-card); border:1px solid var(--k-line); display:flex; flex-direction:column; min-width:0; min-height:0; }
+  .slot[data-i="0"]{ grid-area:s0; } .slot[data-i="1"]{ grid-area:s1; } .slot[data-i="2"]{ grid-area:s2; } .slot[data-i="3"]{ grid-area:s3; }
+  .slot.hide{ display:none; }
+  /* placeholder */
+  .ph{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; cursor:pointer; border:2px dashed rgba(255,255,255,.14); border-radius:16px; color:var(--k-mut); }
+  .ph:hover{ border-color:color-mix(in srgb,var(--k-accent) 60%,transparent); color:var(--k-ink); background:rgba(76,125,255,.06); }
+  .ph .plus{ width:56px; height:56px; border-radius:16px; background:var(--k-card-2); display:grid; place-items:center; }
+  .ph .plus svg{ width:28px; height:28px; stroke:currentColor; fill:none; stroke-width:1.8; }
+  .ph b{ font-size:15px; color:var(--k-ink); font-weight:600; } .ph small{ font-size:12.5px; }
+  /* running app */
+  .slot-head{ position:absolute; top:0; left:0; right:0; height:34px; z-index:5; display:flex; align-items:center; gap:8px; padding:0 8px 0 11px;
+    background:linear-gradient(180deg, rgba(0,0,0,.55), transparent); color:#fff; font-size:12.5px; }
+  .slot-head .dot{ width:9px; height:9px; border-radius:3px; flex:none; }
+  .slot-head b{ font-weight:600; } .slot-head .sp{ margin-left:auto; }
+  .slot-head button{ appearance:none; border:none; background:rgba(255,255,255,.12); color:#fff; width:24px; height:24px; border-radius:7px; display:grid; place-items:center; cursor:pointer; }
+  .slot-head button:hover{ background:rgba(255,255,255,.26); } .slot-head button svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2; }
+  .appbody{ position:absolute; inset:34px 0 0 0; }
+
+  /* ---- dock ---- */
+  .dock{ flex:none; background:rgba(9,12,19,.62); border:1px solid var(--k-line); border-radius:18px; backdrop-filter:blur(12px); display:flex; gap:8px; }
+  .main[data-dock="bottom"] .dock, .main[data-dock="top"] .dock{ flex-direction:row; align-items:center; justify-content:center; height:104px; padding:0 14px; overflow-x:auto; }
+  .main[data-dock="left"] .dock, .main[data-dock="right"] .dock{ flex-direction:column; width:112px; padding:12px 0; overflow-y:auto; align-items:center; }
+  .dtile{ flex:none; border-radius:14px; background:var(--k-card); border:1px solid var(--k-line); color:var(--k-ink); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; transition:background .13s,border-color .13s,transform .06s; }
+  .main[data-dock="bottom"] .dtile, .main[data-dock="top"] .dtile{ width:80px; height:80px; }
+  .main[data-dock="left"] .dtile, .main[data-dock="right"] .dtile{ width:88px; height:66px; }
+  .dtile:active{ transform:scale(.96); }
+  .dtile svg{ width:26px; height:26px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; color:#c3cee0; }
+  .dtile .t{ font-size:11.5px; color:var(--k-mut); text-align:center; line-height:1.15; padding:0 4px; }
+  .dtile.on{ background:linear-gradient(140deg,color-mix(in srgb,var(--k-accent) 36%,transparent),color-mix(in srgb,var(--k-accent-2) 32%,transparent)); border-color:color-mix(in srgb,var(--k-accent) 55%,transparent); }
+  .dtile.on svg{ color:#fff; } .dtile.on .t{ color:#e7ecff; }
+  .dtile.step{ position:relative; }
+  .dtile .stepv{ font-size:15px; font-weight:700; color:var(--k-ink); }
+  .dtile .steprow{ display:flex; align-items:center; gap:9px; }
+  .dtile .steprow .pm{ width:20px; height:20px; border-radius:6px; background:rgba(255,255,255,.1); display:grid; place-items:center; }
+  .dtile .steprow .pm svg{ width:14px; height:14px; color:#c3cee0; }
+  .dtile.gear{ background:transparent; border-style:dashed; }
+
+  /* ---- overlays (drawer + customize) ---- */
+  .ov{ position:absolute; inset:0; z-index:20; background:rgba(4,6,11,.72); backdrop-filter:blur(10px); display:none; flex-direction:column; padding:26px 30px; }
+  .ov.show{ display:flex; animation:fade .18s ease; }
+  @keyframes fade{ from{opacity:0} to{opacity:1} }
+  .ov .ovhead{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .ov .ovhead h3{ margin:0; font-size:20px; font-weight:600; }
+  .ov .ovhead .x{ margin-left:auto; width:38px; height:38px; border-radius:11px; border:1px solid var(--k-line); background:var(--k-card); color:var(--k-ink); display:grid; place-items:center; cursor:pointer; }
+  .ov .ovhead .x svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
+  .appgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; overflow:auto; align-content:start; background:var(--k-card-2); border:1px solid var(--k-line); border-radius:16px; padding:18px; }
+  .agi{ background:var(--k-card); border:1px solid var(--k-line); border-radius:16px; padding:16px; display:flex; align-items:center; gap:13px; cursor:pointer; }
+  .agi:hover{ border-color:color-mix(in srgb,var(--k-accent) 60%,transparent); background:rgba(76,125,255,.08); }
+  .agi .bx{ width:52px; height:52px; border-radius:14px; display:grid; place-items:center; color:#fff; flex:none; } .agi .bx svg{ width:28px; height:28px; stroke:currentColor; fill:none; stroke-width:1.8; }
+  .agi b{ font-size:15px; } .agi small{ color:var(--k-mut); display:block; }
+
+  .cz{ display:grid; grid-template-columns:1fr 1fr; gap:14px 26px; overflow:auto; align-content:start; }
+  .cz .czsec{ grid-column:1 / -1; font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--k-mut); margin-top:6px; }
+  .czrow{ display:flex; align-items:center; gap:12px; background:var(--k-card); border:1px solid var(--k-line); border-radius:13px; padding:10px 13px; }
+  .czrow svg.ci{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; color:#c3cee0; flex:none; }
+  .czrow b{ font-size:13.5px; font-weight:600; } .czrow .sp{ margin-left:auto; }
+  .sw{ width:44px; height:26px; border-radius:999px; background:rgba(255,255,255,.16); position:relative; transition:background .16s; flex:none; cursor:pointer; }
+  .sw::after{ content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .16s; }
+  .sw.on{ background:linear-gradient(140deg,var(--k-accent),var(--k-accent-2)); } .sw.on::after{ left:21px; }
+
+  /* ---- app mock content ---- */
+  .m{ position:absolute; inset:0; overflow:hidden; }
+  .m .maproads{ position:absolute; inset:0; }
+  .m .navpill{ position:absolute; left:12px; bottom:12px; display:flex; align-items:center; gap:10px; background:rgba(9,12,18,.8); border:1px solid var(--k-line); border-radius:13px; padding:9px 13px; }
+  .m .navpill svg{ width:22px; height:22px; stroke:var(--k-accent); fill:none; stroke-width:1.9; } .m .navpill b{ font-size:15px; } .m .navpill small{ color:var(--k-mut); display:block; font-size:11.5px; }
+  .m.mapg{ background:radial-gradient(600px 400px at 40% 30%,#12233f,transparent 60%),linear-gradient(160deg,#0a121d,#0a0e15); }
+  .m.mapv{ background:radial-gradient(600px 400px at 60% 40%,#0f3324,transparent 60%),linear-gradient(160deg,#0a1710,#0a0e12); }
+  .m.yt{ background:#0f0f0f; } .m .ythead{ height:34px; background:#0f0f0f; display:flex; align-items:center; gap:8px; padding:0 12px; color:#fff; font-weight:700; font-size:13px; }
+  .m .ythead .play{ width:20px; height:20px; border-radius:5px; background:#ff0033; display:grid; place-items:center; } .m .ythead .play svg{ width:12px; height:12px; fill:#fff; stroke:none; }
+  .m .ythero{ position:absolute; inset:12px 12px 66px 12px; border-radius:12px; background:linear-gradient(135deg,#3b0d12,#7a1420); display:grid; place-items:center; }
+  .m .ythero .pc{ width:54px; height:54px; border-radius:50%; background:rgba(0,0,0,.5); display:grid; place-items:center; } .m .ythero .pc svg{ width:24px; height:24px; fill:#fff; stroke:none; margin-left:3px; }
+  .m .ytrow{ position:absolute; left:12px; right:12px; bottom:12px; display:flex; gap:8px; }
+  .m .ytrow i{ flex:1; height:46px; border-radius:8px; background:linear-gradient(135deg,#222,#333); display:block; }
+  .m.nf{ background:#0b0b0f; } .m .nfhead{ height:34px; display:flex; align-items:center; padding:0 12px; color:#e50914; font-weight:900; font-size:18px; letter-spacing:.5px; }
+  .m .nfhero{ position:absolute; inset:34px 12px auto 12px; height:52%; border-radius:12px; background:linear-gradient(135deg,#20111a,#3a0d16); position:absolute; display:flex; align-items:flex-end; padding:14px; }
+  .m .nfhero b{ color:#fff; font-size:18px; } 
+  .m .nfrow{ position:absolute; left:12px; right:12px; bottom:12px; display:flex; gap:8px; }
+  .m .nfrow i{ flex:1; height:58px; border-radius:6px; } 
+  .m.music{ background:linear-gradient(160deg,#241033,#12080f); display:flex; align-items:center; justify-content:center; }
+  .m .mwrap{ display:flex; flex-direction:column; align-items:center; gap:10px; width:80%; }
+  .m .art{ width:110px; height:110px; border-radius:16px; background:linear-gradient(140deg,#f59e0b,#ef4444); box-shadow:0 12px 30px rgba(0,0,0,.5); }
+  .m .prog{ width:100%; height:5px; border-radius:3px; background:rgba(255,255,255,.16); } .m .prog i{ display:block; width:42%; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--k-accent),var(--k-accent-2)); }
+  .m .mctrl{ display:flex; gap:20px; color:#fff; } .m .mctrl svg{ width:24px; height:24px; fill:#fff; stroke:none; }
+  .m.cam{ background:#06080d; display:grid; place-items:center; } .m .camlabel{ position:absolute; top:40px; left:12px; background:rgba(0,0,0,.5); border-radius:8px; padding:4px 9px; font-size:12px; color:var(--k-cyan); }
+  .m.web{ background:#0e1117; } .m .webbar{ height:34px; display:flex; align-items:center; gap:8px; padding:0 12px; } .m .webbar .url{ flex:1; height:20px; border-radius:999px; background:rgba(255,255,255,.1); }
+  .m .webc{ position:absolute; inset:44px 14px 14px; display:flex; flex-direction:column; gap:9px; } .m .webc i{ height:16px; border-radius:6px; background:rgba(255,255,255,.08); } .m .webc i.big{ height:70px; background:linear-gradient(135deg,#1f2937,#111827); }
+  .appname-title{ font-size:14px; }
+
+  /* ---- widgets ---- */
+  .wdg{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; padding:16px; text-align:center; }
+  .wdg .wbig{ font-size:40px; font-weight:800; line-height:1; }
+  .wdg .wsub{ color:var(--k-mut); font-size:13px; }
+  .wdg .ringwrap{ position:relative; display:grid; place-items:center; width:100%; }
+  .wdg svg.ring{ width:46%; max-width:150px; height:auto; }
+  .wdg .ringwrap .rc{ position:absolute; }
+  .wdg .ringwrap .rc b{ font-size:24px; font-weight:800; display:block; }
+  .wdg .ringwrap .rc small{ color:var(--k-mut); font-size:11.5px; }
+  .wdg.wclock .wbig{ font-size:54px; letter-spacing:1px; }
+  .wdg .tiregrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 22px; }
+  .wdg .tirec{ display:flex; flex-direction:column; }
+  .wdg .tirec small{ color:var(--k-mut); font-size:11.5px; } .wdg .tirec b{ font-size:19px; font-weight:700; }
+  .wdg .tirec.warn b{ color:var(--k-amber); }
+  .wdg .art2{ width:88px; height:88px; border-radius:15px; background:linear-gradient(140deg,#f59e0b,#ef4444); box-shadow:0 10px 26px rgba(0,0,0,.5); }
+  .wdg .prog2{ width:70%; height:5px; border-radius:3px; background:rgba(255,255,255,.16); } .wdg .prog2 i{ display:block; width:42%; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--k-accent),var(--k-accent-2)); }
+  .wdg .mctrl2{ display:flex; gap:20px; color:#fff; } .wdg .mctrl2 svg{ width:22px; height:22px; fill:#fff; stroke:none; }
+  .wdg svg.carmini{ width:32%; max-width:110px; height:auto; }
+  .wdg.board{ align-items:stretch; justify-content:stretch; padding:12px; }
+  .wdg.board .bgrid{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px; width:100%; height:100%; }
+  .wdg.board .bcell{ background:var(--k-card); border:1px solid var(--k-line); border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:8px; }
+  .wdg.board .bcell svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; }
+  .wdg.board .bcell b{ font-size:17px; } .wdg.board .bcell small{ color:var(--k-mut); font-size:11px; }
+  /* placeholder buttons */
+  .phbtns{ display:flex; gap:9px; margin-top:3px; }
+  .phb{ appearance:none; cursor:pointer; border:1px solid var(--k-line); background:var(--k-card); color:var(--k-ink); font:inherit; font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:9px; }
+  .phb:hover{ border-color:color-mix(in srgb,var(--k-accent) 60%,transparent); }
+  .phb.wgt{ background:linear-gradient(140deg,color-mix(in srgb,var(--k-accent) 26%,transparent),color-mix(in srgb,var(--k-accent-2) 22%,transparent)); }
+  /* drawer sections */
+  .drawerbody{ overflow:auto; display:flex; flex-direction:column; gap:14px; }
+  .drawerbody .appgrid{ overflow:visible; }
+  .dsec{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--k-mut); margin:0 2px 8px; }
+
+  /* notes */
+  .notes{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+  @media (max-width:820px){ .notes{ grid-template-columns:1fr; } .cz{ grid-template-columns:1fr; } .appgrid{ grid-template-columns:repeat(3,1fr);} }
+  .note{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow); }
+  .note h3{ font-family:var(--serif); font-weight:500; font-size:15px; margin:0 0 9px; }
+  .note ul{ margin:0; padding-left:0; list-style:none; }
+  .note li{ position:relative; padding:7px 0 7px 20px; border-top:1px solid var(--line); font-size:13px; color:var(--muted); }
+  .note li:first-child{ border-top:none; } .note li::before{ content:""; position:absolute; left:3px; top:14px; width:7px; height:7px; border-radius:2px; background:linear-gradient(140deg,var(--brand),var(--brand-2)); }
+  .note li b{ color:var(--fg); }
+  .kbd{ font-family:var(--mono); font-size:11.5px; background:var(--card-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--fg); }
+  .foot{ max-width:1240px; margin:0 auto; padding:0 20px 46px; color:var(--muted); font-size:12px; font-family:var(--mono); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-nav" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8-8-2z"/></symbol>
+  <symbol id="ic-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></symbol>
+  <symbol id="ic-cast" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 15a5 5 0 0 1 5 5"/><path d="M2 11a9 9 0 0 1 9 9"/></symbol>
+  <symbol id="ic-music" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="17" cy="16" r="2.5"/><path d="M8.5 18V6l11-2v10"/></symbol>
+  <symbol id="ic-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-3 2a11 11 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="ic-cam" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.4"/><path d="M8 6l1.5-2h5L16 6"/></symbol>
+  <symbol id="ic-web" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></symbol>
+  <symbol id="ic-prev" viewBox="0 0 24 24"><path d="M18 5v14l-11-7zM6 5v14"/></symbol>
+  <symbol id="ic-next" viewBox="0 0 24 24"><path d="M6 5v14l11-7zM18 5v14"/></symbol>
+  <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></symbol>
+  <symbol id="ic-fan" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h9a2.5 2.5 0 1 1-2.5 2.5"/></symbol>
+  <symbol id="ic-seat" viewBox="0 0 24 24"><path d="M8 3h1a2 2 0 0 1 2 2v6h5a2 2 0 0 1 2 2v6"/><path d="M6 20h4"/></symbol>
+  <symbol id="ic-window" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 12h18"/></symbol>
+  <symbol id="ic-wiper" viewBox="0 0 24 24"><path d="M5 20 12 6"/><path d="M5 20h15"/><path d="M8.5 20a7.5 7.5 0 0 1 7-9"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="ic-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7-1.5"/></symbol>
+  <symbol id="ic-light" viewBox="0 0 24 24"><path d="M3 7h6a5 5 0 0 1 0 10H3z"/><path d="M15 9h4M15 12h5M15 15h4"/></symbol>
+  <symbol id="ic-leaf" viewBox="0 0 24 24"><path d="M4 20c0-9 7-15 16-15 0 11-7 16-16 15z"/><path d="M4 20c6-2 9-6 11-11"/></symbol>
+  <symbol id="ic-defrost" viewBox="0 0 24 24"><path d="M12 3v8M8 6l4-3 4 3"/><path d="M5 15c2-2 4 2 6 0s4 2 6 0M5 19c2-2 4 2 6 0s4 2 6 0"/></symbol>
+  <symbol id="ic-door" viewBox="0 0 24 24"><path d="M3 21V9l6-5h9a1 1 0 0 1 1 1v16z"/><circle cx="8.5" cy="13" r="1.1"/></symbol>
+  <symbol id="ic-trunk" viewBox="0 0 24 24"><path d="M3 19v-4a9 7 0 0 1 18 0v4"/><path d="M3 19h18M12 8v11"/></symbol>
+  <symbol id="ic-hood" viewBox="0 0 24 24"><path d="M3 14a9 6 0 0 1 18 0"/><path d="M3 14h18v4H3z"/></symbol>
+  <symbol id="ic-readlight" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 1 4 10.5c-.6.6-1 1.2-1 2H9c0-.8-.4-1.4-1-2A6 6 0 0 1 12 3z"/><path d="M9 18h6M10 21h4"/></symbol>
+  <symbol id="ic-volume" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9.5a4 4 0 0 1 0 5"/><path d="M19 7a8 8 0 0 1 0 10"/></symbol>
+  <symbol id="ic-recirc" viewBox="0 0 24 24"><path d="M4 11a7 7 0 0 1 12-4l2 2"/><path d="M18 5v4h-4"/><path d="M20 13a7 7 0 0 1-12 4l-2-2"/><path d="M6 19v-4h4"/></symbol>
+  <symbol id="ic-temp" viewBox="0 0 24 24"><path d="M14 14V5a2 2 0 1 0-4 0v9a4 4 0 1 0 4 0z"/></symbol>
+  <symbol id="ic-ac" viewBox="0 0 24 24"><path d="M12 2v20M4 6l16 12M20 6L4 18"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="ic-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="ic-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="ic-swap" viewBox="0 0 24 24"><path d="M8 4 4 8l4 4"/><path d="M4 8h12a4 4 0 0 1 4 4"/><path d="M16 20l4-4-4-4"/><path d="M20 16H8a4 4 0 0 1-4-4"/></symbol>
+  <symbol id="ic-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></symbol>
+  <symbol id="ic-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+  <symbol id="ic-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="ic-tire" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></symbol>
+  <symbol id="ic-speed" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 13l5-4"/><circle cx="12" cy="13" r="1.6"/></symbol>
+</svg>
+
+<div class="top">
+  <div class="brand"><div class="logo">K</div><div class="who"><b>Kachi</b><div>workspace · prototype</div></div></div>
+
+  <div class="grp"><span class="lbl">Bố cục</span>
+    <div class="seg" id="seg-layout">
+      <button data-layout="1" title="1 app"><svg viewBox="0 0 22 16"><rect x="1" y="1" width="20" height="14" rx="2" fill="currentColor"/></svg></button>
+      <button data-layout="2c" title="2 cột"><svg viewBox="0 0 22 16"><rect x="1" y="1" width="9.5" height="14" rx="2" fill="currentColor"/><rect x="11.5" y="1" width="9.5" height="14" rx="2" fill="currentColor"/></svg></button>
+      <button data-layout="2r" title="2 hàng"><svg viewBox="0 0 22 16"><rect x="1" y="1" width="20" height="6.5" rx="2" fill="currentColor"/><rect x="1" y="8.5" width="20" height="6.5" rx="2" fill="currentColor"/></svg></button>
+      <button class="on" data-layout="3" title="3 app (trái to)"><svg viewBox="0 0 22 16"><rect x="1" y="1" width="12" height="14" rx="2" fill="currentColor"/><rect x="14" y="1" width="7" height="6.5" rx="2" fill="currentColor"/><rect x="14" y="8.5" width="7" height="6.5" rx="2" fill="currentColor"/></svg></button>
+      <button data-layout="4" title="4 app"><svg viewBox="0 0 22 16"><rect x="1" y="1" width="9.5" height="6.5" rx="2" fill="currentColor"/><rect x="11.5" y="1" width="9.5" height="6.5" rx="2" fill="currentColor"/><rect x="1" y="8.5" width="9.5" height="6.5" rx="2" fill="currentColor"/><rect x="11.5" y="8.5" width="9.5" height="6.5" rx="2" fill="currentColor"/></svg></button>
+    </div>
+  </div>
+
+  <div class="grp"><span class="lbl">Thanh ĐK</span>
+    <div class="seg txt" id="seg-dock">
+      <button data-dock="bottom" class="on">Dưới</button>
+      <button data-dock="left">Trái</button>
+      <button data-dock="right">Phải</button>
+      <button data-dock="top">Trên</button>
+    </div>
+  </div>
+
+  <button class="btn brand" id="btn-customize"><svg><use href="#ic-gear"/></svg> Tuỳ biến</button>
+  <button class="icon-btn" id="theme" title="Sáng / Tối"><svg style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8"><use href="#ic-moon"/></svg></button>
+</div>
+
+<div class="page">
+  <div class="head">
+    <div class="eyebrow">byd-launcher · màn hình chính (hướng #3 — sân khấu app + thanh điều khiển)</div>
+    <h1>Kachi Workspace — mở nhiều app vào màn, điều khiển quanh viền</h1>
+    <p class="lede">Màn trung tâm là một <b>sân khấu rộng</b>: chạm ô trống để <b>mở app hoặc đặt widget</b> vào đó. Đổi <b>bố cục</b> 1/2/3/4 ô; <b>thanh điều khiển</b> đẩy ra <b>viền dưới · trái · phải · trên</b>; <b>thanh trạng thái</b> mỏng trên cùng luôn hiện giờ · nhiệt độ · pin/tầm · PM2.5. Mặc định: YouTube trái · Bản đồ phải-trên · một <b>bảng widget</b> phải-dưới (chuyển bố cục 4 để thấy thêm widget Năng lượng).</p>
+  </div>
+
+  <div class="device">
+    <div class="bezel"><div class="stage">
+      <div class="kscreen" id="screen">
+        <div class="kwall"></div>
+        <div class="launcher" id="launcher">
+          <div class="topstrip">
+            <span class="time" data-clock>07:42</span>
+            <span data-date>Thứ Ba, 08/09</span>
+            <span class="sp"></span>
+            <span class="chip"><svg><use href="#ic-leaf"/></svg> PM2.5 · Tốt</span>
+            <span class="chip">26°C ngoài</span>
+            <span class="chip" style="color:var(--k-green)"><svg><use href="#ic-bolt"/></svg> 82% · 418 km</span>
+            <span class="prof">K</span>
+          </div>
+          <div class="main" id="main" data-dock="bottom">
+            <div class="workspace" id="workspace" data-layout="3">
+              <div class="slot" data-i="0"></div>
+              <div class="slot" data-i="1"></div>
+              <div class="slot" data-i="2"></div>
+              <div class="slot" data-i="3"></div>
+            </div>
+            <div class="dock" id="dock"></div>
+          </div>
+        </div>
+
+        <!-- app / widget drawer -->
+        <div class="ov" id="drawer">
+          <div class="ovhead"><h3>Mở app hoặc đặt widget vào ô này</h3><div class="x" data-close-ov><svg><use href="#ic-close"/></svg></div></div>
+          <div class="drawerbody" id="drawerbody"></div>
+        </div>
+
+        <!-- customize -->
+        <div class="ov" id="customize">
+          <div class="ovhead"><h3>Tuỳ biến thanh điều khiển</h3><div class="x" data-close-ov><svg><use href="#ic-close"/></svg></div></div>
+          <div class="cz" id="czlist"></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span>BYD DiLink · màn trung tâm 16:9 · mọi thứ trong khung là bản mô phỏng (chưa nối HAL/app thật)</span><span id="cap-state">3 app · thanh dưới</span></div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><h3>Bấm thử</h3><ul>
+      <li><b>Đổi bố cục</b> (góc trên): 1 · 2 cột · 2 hàng · 3 (trái to) · 4 ô.</li>
+      <li>Chạm ô trống → <b>Mở app</b> hoặc <b>＋ Widget</b>. Widget co theo cỡ ô. Mỗi ô có nút <b>đổi</b> (⇄) và <b>đóng</b> (×).</li>
+      <li><b>Widget</b>: Năng lượng+tầm · Áp suất lốp · Không khí PM2.5 · Đồng hồ+thời tiết · Đang phát · Trạng thái xe · Bảng tổng hợp.</li>
+      <li><b>Thanh ĐK</b>: đẩy ra viền Dưới / Trái / Phải / Trên. Nút bật/tắt; Nhiệt độ · Gió có −/+.</li>
+      <li><b>Tuỳ biến</b> → chọn nút nào hiện trên thanh (cửa, kính %, cốp, đèn đọc, lọc bụi, ghế mát, sấy…).</li>
+    </ul></div>
+    <div class="note"><h3>Ghi chú kỹ thuật</h3><ul>
+      <li>Mở nhiều app "thật" cùng lúc trên xe cần <b>multi-window / cast surface</b> — sẽ dựng dần; ở đây là placeholder mô phỏng.</li>
+      <li>Các nút điều khiển bơm qua <b>BydHal</b> (kính %, cốp, đèn, ghế, quạt…) — cần RE giá trị feature-id (nợ <span class="kbd">L-RE</span>).</li>
+      <li>Vị trí thanh + bộ nút đã chọn nên <b>lưu theo hồ sơ tài xế</b>.</li>
+      <li>Đang chạy thì nên <b>khoá video</b> (YouTube/Netflix) — chỉ cho khi đỗ.</li>
+    </ul></div>
+  </div>
+</div>
+
+<div class="foot">Prototype tĩnh · dữ liệu minh hoạ · docs/prototypes/kachi-workspace.html</div>
+
+<script>
+  // ---------- theme ----------
+  var themeBtn = document.getElementById('theme');
+  function syncTheme(){ var d=document.documentElement.classList.contains('dark'); themeBtn.innerHTML='<svg style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8"><use href="#'+(d?'ic-sun':'ic-moon')+'"/></svg>'; }
+  syncTheme();
+  themeBtn.onclick=function(){ document.documentElement.classList.toggle('dark'); try{localStorage.setItem('kachi-ws-theme',document.documentElement.classList.contains('dark')?'dark':'light');}catch(e){} syncTheme(); };
+
+  // ---------- fit ----------
+  var screen=document.getElementById('screen'), stage=screen.parentElement;
+  function fit(){ var s=stage.clientWidth/1280; screen.style.transform='scale('+s+')'; stage.style.height=(720*s)+'px'; }
+  window.addEventListener('resize',fit); window.addEventListener('load',fit); requestAnimationFrame(fit);
+
+  // ---------- apps ----------
+  var APPS = {
+    gmaps:{name:'Google Maps', grad:'linear-gradient(140deg,#2aa8ff,#1466ff)', icon:'ic-nav', sub:'Dẫn đường'},
+    vietmap:{name:'VietMap', grad:'linear-gradient(140deg,#22c55e,#0f9d58)', icon:'ic-map', sub:'Bản đồ VN'},
+    youtube:{name:'YouTube', grad:'linear-gradient(140deg,#ff5f6d,#ff0033)', icon:'ic-play', sub:'Video · chỉ khi đỗ'},
+    netflix:{name:'Netflix', grad:'linear-gradient(140deg,#b81d24,#e50914)', icon:'ic-play', sub:'Phim · chỉ khi đỗ'},
+    music:{name:'Nhạc', grad:'linear-gradient(140deg,#f59e0b,#ef4444)', icon:'ic-music', sub:'Đang phát'},
+    camera:{name:'Camera 360', grad:'linear-gradient(140deg,#64748b,#334155)', icon:'ic-cam', sub:'Toàn cảnh'},
+    browser:{name:'Trình duyệt', grad:'linear-gradient(140deg,#38bdf8,#2563eb)', icon:'ic-web', sub:'Web'},
+    phone:{name:'Điện thoại', grad:'linear-gradient(140deg,#34d399,#059669)', icon:'ic-phone', sub:'Gọi'}
+  };
+  function mapMock(cls,name,info){ return '<div class="m '+cls+'">'
+      + '<svg class="maproads" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" fill="none">'
+      + '<path d="M-20 210 C 90 200,130 110,220 96 S 340 60,430 40" stroke="rgba(120,160,255,.22)" stroke-width="18" fill="none"/>'
+      + '<path d="M-20 210 C 90 200,130 110,220 96 S 340 60,430 40" stroke="rgba(120,160,255,.55)" stroke-width="3" stroke-dasharray="1 11" fill="none"/>'
+      + '<path d="M150 300 C 170 210,200 150,220 96" stroke="rgba(255,255,255,.06)" stroke-width="14" fill="none"/>'
+      + '<circle cx="220" cy="96" r="6" fill="#4c7dff"/></svg>'
+      + '<div class="navpill"><svg><use href="#ic-nav"/></svg><div><b>'+info+'</b><small>'+name+'</small></div></div></div>'; }
+  function ytMock(){ return '<div class="m yt">'
+      + '<div class="ythero"><div class="pc"><svg viewBox="0 0 24 24"><use href="#ic-play"/></svg></div></div>'
+      + '<div class="ytrow"><i style="background:linear-gradient(135deg,#7a1420,#b81d24)"></i><i style="background:linear-gradient(135deg,#12233f,#2563eb)"></i><i style="background:linear-gradient(135deg,#241033,#a855f7)"></i></div></div>'; }
+  function nfMock(){ return '<div class="m nf"><div class="nfhead">NETFLIX</div>'
+      + '<div class="nfhero"><b>Đang thịnh hành</b></div>'
+      + '<div class="nfrow"><i style="background:linear-gradient(135deg,#3a0d16,#7a1420)"></i><i style="background:linear-gradient(135deg,#12233f,#1466ff55)"></i><i style="background:linear-gradient(135deg,#241033,#7b5cff55)"></i><i style="background:linear-gradient(135deg,#0f3324,#0f9d5855)"></i></div></div>'; }
+  function musicMock(){ return '<div class="m music"><div class="mwrap"><div class="art"></div>'
+      + '<div style="text-align:center"><div style="font-weight:700;font-size:15px">Chạy ngay đi</div><div style="color:var(--k-mut);font-size:12.5px">Sơn Tùng M-TP</div></div>'
+      + '<div class="prog"><i></i></div>'
+      + '<div class="mctrl"><svg viewBox="0 0 24 24"><use href="#ic-prev"/></svg><svg viewBox="0 0 24 24"><use href="#ic-play"/></svg><svg viewBox="0 0 24 24"><use href="#ic-next"/></svg></div></div></div>'; }
+  function camMock(){ return '<div class="m cam"><div class="camlabel">CAMERA 360°</div>'
+      + '<svg viewBox="0 0 150 250" width="80" height="150" fill="none"><rect x="30" y="20" width="90" height="210" rx="34" fill="rgba(41,211,238,.14)" stroke="rgba(41,211,238,.5)" stroke-width="2"/><rect x="46" y="70" width="58" height="110" rx="14" fill="rgba(255,255,255,.05)"/></svg></div>'; }
+  function webMock(){ return '<div class="m web"><div class="webbar"><span style="width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.1);display:inline-block"></span><span class="url"></span></div>'
+      + '<div class="webc"><i class="big"></i><i></i><i style="width:70%"></i><i style="width:85%"></i><i style="width:60%"></i></div></div>'; }
+  function appMock(id){ switch(id){
+      case 'gmaps': return mapMock('mapg','Google Maps','450 m · Nguyễn Huệ');
+      case 'vietmap': return mapMock('mapv','VietMap','1.2 km · CMT8');
+      case 'youtube': return ytMock(); case 'netflix': return nfMock();
+      case 'music': return musicMock(); case 'camera': return camMock();
+      case 'browser': return webMock(); case 'phone': return webMock();
+      default: return ''; } }
+
+  // ---------- widgets ----------
+  var WIDGETS = {
+    w_energy:{name:'Năng lượng', grad:'linear-gradient(140deg,#34d399,#059669)', icon:'ic-bolt', sub:'Pin + tầm'},
+    w_tire:{name:'Áp suất lốp', grad:'linear-gradient(140deg,#64748b,#334155)', icon:'ic-tire', sub:'4 bánh'},
+    w_pm25:{name:'Không khí', grad:'linear-gradient(140deg,#22d3ee,#0891b2)', icon:'ic-leaf', sub:'PM2.5'},
+    w_clock:{name:'Đồng hồ + thời tiết', grad:'linear-gradient(140deg,#4c7dff,#7b5cff)', icon:'ic-sun', sub:'Giờ · ngày'},
+    w_media:{name:'Đang phát', grad:'linear-gradient(140deg,#f59e0b,#ef4444)', icon:'ic-music', sub:'Nhạc'},
+    w_car:{name:'Trạng thái xe', grad:'linear-gradient(140deg,#4c7dff,#2563eb)', icon:'ic-lock', sub:'Cửa · khoá'},
+    w_speed:{name:'Tốc độ', grad:'linear-gradient(140deg,#fb7185,#e11d48)', icon:'ic-speed', sub:'Tốc độ + giới hạn'},
+    w_board:{name:'Bảng tổng hợp', grad:'linear-gradient(140deg,#7b5cff,#a855f7)', icon:'ic-grid', sub:'Nhiều widget'}
+  };
+  function ring(pct,color,big,small){ var C=263.9, off=(C*(1-pct/100)).toFixed(1);
+    return '<div class="ringwrap"><svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/>'
+      +'<circle cx="50" cy="50" r="42" fill="none" stroke="'+color+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'" transform="rotate(-90 50 50)"/></svg>'
+      +'<div class="rc"><b>'+big+'</b><small>'+small+'</small></div></div>'; }
+  function carMiniSvg(){ return '<svg class="carmini" viewBox="0 0 150 250" fill="none">'
+      +'<rect x="30" y="20" width="90" height="210" rx="34" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)" stroke-width="2"/>'
+      +'<rect x="42" y="40" width="66" height="46" rx="12" fill="rgba(76,125,255,.18)" stroke="rgba(120,160,255,.5)" stroke-width="1.5"/>'
+      +'<rect x="42" y="150" width="66" height="52" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.16)" stroke-width="1.5"/>'
+      +'<rect x="24" y="96" width="7" height="40" rx="3" fill="#34d399"/><rect x="119" y="96" width="7" height="40" rx="3" fill="#34d399"/>'
+      +'<rect x="52" y="212" width="46" height="8" rx="4" fill="#fbbf24"/></svg>'; }
+  function widgetMock(id){ switch(id){
+    case 'w_energy': return '<div class="wdg">'+ring(82,'#34d399','82%','pin')+'<div class="wsub">≈ 418 km · đầy sau 40′</div></div>';
+    case 'w_tire': return '<div class="wdg"><div class="tiregrid">'
+        +'<div class="tirec"><small>Trước trái</small><b>2.4</b></div><div class="tirec"><small>Trước phải</small><b>2.4</b></div>'
+        +'<div class="tirec"><small>Sau trái</small><b>2.3</b></div><div class="tirec warn"><small>Sau phải</small><b>2.1</b></div></div>'
+        +'<div class="wsub">bar · bánh sau phải non hơi</div></div>';
+    case 'w_pm25': return '<div class="wdg">'+ring(22,'#29d3ee','18','µg/m³')+'<div class="wsub">PM2.5 · Tốt · tự lọc đang bật</div></div>';
+    case 'w_clock': return '<div class="wdg wclock"><div class="wbig" data-clock>07:42</div><div class="wsub" data-date>Thứ Ba, 08/09</div>'
+        +'<div class="wsub" style="display:flex;align-items:center;gap:8px;justify-content:center"><svg style="width:20px;height:20px;stroke:var(--k-amber);fill:none;stroke-width:1.8"><use href="#ic-sun"/></svg> 26°C · Có mây</div></div>';
+    case 'w_media': return '<div class="wdg"><div class="art2"></div>'
+        +'<div><div style="font-weight:700;font-size:15px">Chạy ngay đi</div><div class="wsub">Sơn Tùng M-TP</div></div>'
+        +'<div class="prog2"><i></i></div><div class="mctrl2"><svg viewBox="0 0 24 24"><use href="#ic-prev"/></svg><svg viewBox="0 0 24 24"><use href="#ic-play"/></svg><svg viewBox="0 0 24 24"><use href="#ic-next"/></svg></div></div>';
+    case 'w_car': return '<div class="wdg">'+carMiniSvg()
+        +'<div class="wsub" style="color:var(--k-green)">Đã khoá · 4 cửa đóng</div><div class="wsub" style="color:var(--k-amber)">Cốp sau đang mở</div></div>';
+    case 'w_speed': return '<div class="wdg"><div class="wbig">56<span style="font-size:16px;color:var(--k-mut);font-weight:600"> km/h</span></div>'
+        +'<div style="display:flex;align-items:center;gap:9px;justify-content:center"><span style="border:3px solid #e11d48;background:#fff;color:#111;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;font-weight:800">60</span><span class="wsub">Giới hạn · còn dư 4</span></div></div>';
+    case 'w_board': return '<div class="wdg board"><div class="bgrid">'
+        +'<div class="bcell" style="color:var(--k-green)"><svg><use href="#ic-bolt"/></svg><b>82%</b><small>418 km</small></div>'
+        +'<div class="bcell" style="color:var(--k-cyan)"><svg><use href="#ic-leaf"/></svg><b>18µg</b><small>PM2.5 Tốt</small></div>'
+        +'<div class="bcell"><svg><use href="#ic-tire"/></svg><b>2.1–2.4</b><small>Áp suất lốp</small></div>'
+        +'<div class="bcell"><svg><use href="#ic-music"/></svg><b>Đang phát</b><small>Sơn Tùng</small></div></div></div>';
+    default: return ''; } }
+
+  // ---------- state ----------
+  var LAYOUT_N = { '1':1, '2c':2, '2r':2, '3':3, '4':4 };
+  var layout='3', dockPos='bottom';
+  var slots=['youtube','gmaps','w_board','w_energy'];
+  var activeSlot=0;
+
+  var workspace=document.getElementById('workspace'), main=document.getElementById('main');
+  var capState=document.getElementById('cap-state');
+
+  function renderWorkspace(){
+    workspace.setAttribute('data-layout', layout);
+    var n=LAYOUT_N[layout];
+    for(var i=0;i<4;i++){
+      var el=workspace.querySelector('.slot[data-i="'+i+'"]');
+      if(i>=n){ el.classList.add('hide'); el.innerHTML=''; continue; }
+      el.classList.remove('hide');
+      var id=slots[i];
+      if(!id){
+        el.innerHTML='<div class="ph" data-open="'+i+'"><div class="plus"><svg><use href="#ic-plus"/></svg></div><b>Mở app hoặc widget</b>'
+          +'<div class="phbtns"><button class="phb" data-open="'+i+'">Mở app</button><button class="phb wgt" data-openw="'+i+'">＋ Widget</button></div></div>';
+      } else {
+        var meta=APPS[id]||WIDGETS[id];
+        var body=APPS[id]?appMock(id):widgetMock(id);
+        el.innerHTML='<div class="slot-head"><span class="dot" style="background:'+meta.grad+'"></span><b>'+meta.name+'</b><span class="sp"></span>'
+          +'<button data-swap="'+i+'" title="Đổi"><svg><use href="#ic-swap"/></svg></button>'
+          +'<button data-remove="'+i+'" title="Đóng"><svg><use href="#ic-close"/></svg></button></div>'
+          +'<div class="appbody">'+body+'</div>';
+      }
+    }
+    var names={ '1':'1 app','2c':'2 cột','2r':'2 hàng','3':'3 app','4':'4 app' };
+    var dnames={ bottom:'thanh dưới', left:'thanh trái', right:'thanh phải', top:'thanh trên' };
+    capState.textContent = names[layout] + ' · ' + dnames[dockPos];
+    tick();
+  }
+
+  // ---------- controls ----------
+  var CONTROLS = [
+    { id:'lock',   icon:'ic-lock',     label:'Khoá xe',     kind:'toggle', on:true,  en:true },
+    { id:'window', icon:'ic-window',   label:'Kính 50%',    kind:'toggle', on:false, en:true },
+    { id:'trunk',  icon:'ic-trunk',    label:'Cốp sau',     kind:'toggle', on:false, en:true },
+    { id:'readl',  icon:'ic-readlight',label:'Đèn đọc',     kind:'toggle', on:false, en:true },
+    { id:'pm25',   icon:'ic-leaf',     label:'Lọc bụi',     kind:'toggle', on:true,  en:true },
+    { id:'seatc',  icon:'ic-seat',     label:'Ghế mát',     kind:'toggle', on:true,  en:true },
+    { id:'temp',   icon:'ic-temp',     label:'Nhiệt độ',    kind:'step',   val:22, unit:'°', en:true },
+    { id:'fan',    icon:'ic-fan',      label:'Gió',         kind:'step',   val:4,  unit:'',  en:true },
+    { id:'defrost',icon:'ic-defrost',  label:'Sấy kính',    kind:'toggle', on:false, en:false },
+    { id:'cam',    icon:'ic-cam',      label:'Camera 360',  kind:'toggle', on:false, en:false },
+    { id:'door',   icon:'ic-door',     label:'Mở cửa',      kind:'toggle', on:false, en:false },
+    { id:'hood',   icon:'ic-hood',     label:'Ca-pô',       kind:'toggle', on:false, en:false },
+    { id:'headl',  icon:'ic-light',    label:'Đèn pha',     kind:'toggle', on:false, en:false },
+    { id:'seath',  icon:'ic-seat',     label:'Ghế sưởi',    kind:'toggle', on:false, en:false },
+    { id:'recirc', icon:'ic-recirc',   label:'Lấy gió trong',kind:'toggle',on:false, en:false },
+    { id:'vol',    icon:'ic-volume',   label:'Âm lượng',    kind:'step',   val:12, unit:'', en:false },
+    { id:'wiper',  icon:'ic-wiper',    label:'Gạt mưa',     kind:'toggle', on:false, en:false },
+    { id:'cast',   icon:'ic-cast',     label:'Chiếu cụm',   kind:'toggle', on:false, en:false }
+  ];
+  var dock=document.getElementById('dock');
+  function ctrlById(id){ return CONTROLS.find(function(c){return c.id===id;}); }
+  function renderDock(){
+    main.setAttribute('data-dock', dockPos);
+    var html='';
+    CONTROLS.filter(function(c){return c.en;}).forEach(function(c){
+      if(c.kind==='step'){
+        html+='<div class="dtile step" data-step="'+c.id+'"><svg><use href="#'+c.icon+'"/></svg>'
+          +'<div class="steprow"><span class="pm" data-dec="'+c.id+'"><svg><use href="#ic-minus"/></svg></span>'
+          +'<span class="stepv" id="v-'+c.id+'">'+c.val+c.unit+'</span>'
+          +'<span class="pm" data-inc="'+c.id+'"><svg><use href="#ic-plus"/></svg></span></div></div>';
+      } else {
+        html+='<div class="dtile'+(c.on?' on':'')+'" data-toggle="'+c.id+'"><svg><use href="#'+c.icon+'"/></svg><span class="t">'+c.label+'</span></div>';
+      }
+    });
+    html+='<div class="dtile gear" id="dock-gear"><svg><use href="#ic-gear"/></svg><span class="t">Tuỳ biến</span></div>';
+    dock.innerHTML=html;
+  }
+
+  // ---------- customize ----------
+  var czlist=document.getElementById('czlist');
+  function renderCustomize(){
+    var html='<div class="czsec">Vị trí thanh điều khiển</div>';
+    html+='<div class="czrow" style="grid-column:1/-1"><svg class="ci"><use href="#ic-grid"/></svg><b>Đặt thanh ở</b><span class="sp"></span><span style="display:inline-flex;gap:6px">'
+      +['bottom:Dưới','left:Trái','right:Phải','top:Trên'].map(function(p){var k=p.split(':');return '<button class="btn'+(dockPos===k[0]?' brand':'')+'" data-dockpos="'+k[0]+'" style="padding:6px 12px">'+k[1]+'</button>';}).join('')+'</span></div>';
+    html+='<div class="czsec">Chọn nút hiện trên thanh</div>';
+    CONTROLS.forEach(function(c){
+      html+='<div class="czrow"><svg class="ci"><use href="#'+c.icon+'"/></svg><b>'+c.label+'</b>'
+        +(c.kind==='step'?'<small style="color:var(--k-mut);margin-left:6px">−/+</small>':'')
+        +'<span class="sp"></span><span class="sw'+(c.en?' on':'')+'" data-en="'+c.id+'"></span></div>';
+    });
+    czlist.innerHTML=html;
+  }
+
+  // ---------- drawer ----------
+  var drawer=document.getElementById('drawer'), drawerbody=document.getElementById('drawerbody'), customize=document.getElementById('customize');
+  function agi(id,o,kind){ return '<div class="agi" data-'+kind+'="'+id+'"><div class="bx" style="background:'+o.grad+'"><svg><use href="#'+o.icon+'"/></svg></div><div><b>'+o.name+'</b><small>'+o.sub+'</small></div></div>'; }
+  function renderDrawer(){
+    var apps=Object.keys(APPS).map(function(id){return agi(id,APPS[id],'app');}).join('');
+    var wids=Object.keys(WIDGETS).map(function(id){return agi(id,WIDGETS[id],'widget');}).join('');
+    drawerbody.innerHTML='<div><div class="dsec">Ứng dụng</div><div class="appgrid">'+apps+'</div></div>'
+      +'<div id="dsec-widget"><div class="dsec">Widget</div><div class="appgrid">'+wids+'</div></div>';
+  }
+  function openDrawer(i,focus){ activeSlot=i; renderDrawer(); drawer.classList.add('show');
+    if(focus==='widget'){ var s=document.getElementById('dsec-widget'); if(s) s.scrollIntoView({block:'start'}); } }
+  function closeOv(){ drawer.classList.remove('show'); customize.classList.remove('show'); }
+
+  // ---------- events ----------
+  document.getElementById('seg-layout').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+    this.querySelectorAll('button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); layout=b.dataset.layout; renderWorkspace(); fit(); });
+  document.getElementById('seg-dock').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+    this.querySelectorAll('button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); dockPos=b.dataset.dock; renderDock(); renderWorkspace(); fit(); });
+  document.getElementById('btn-customize').addEventListener('click',function(){ renderCustomize(); customize.classList.add('show'); });
+
+  // workspace clicks (open / swap / remove)
+  workspace.addEventListener('click',function(e){
+    var pw=e.target.closest('[data-openw]'); if(pw){ openDrawer(+pw.dataset.openw,'widget'); return; }
+    var ph=e.target.closest('[data-open]'); if(ph){ openDrawer(+ph.dataset.open,'app'); return; }
+    var sw=e.target.closest('[data-swap]'); if(sw){ openDrawer(+sw.dataset.swap); return; }
+    var rm=e.target.closest('[data-remove]'); if(rm){ slots[+rm.dataset.remove]=null; renderWorkspace(); return; }
+  });
+  // drawer pick (app or widget)
+  drawerbody.addEventListener('click',function(e){
+    var a=e.target.closest('[data-app]'); if(a){ slots[activeSlot]=a.dataset.app; closeOv(); renderWorkspace(); return; }
+    var w=e.target.closest('[data-widget]'); if(w){ slots[activeSlot]=w.dataset.widget; closeOv(); renderWorkspace(); return; }
+  });
+  // overlay close buttons
+  document.querySelectorAll('[data-close-ov]').forEach(function(x){ x.addEventListener('click',closeOv); });
+  drawer.addEventListener('click',function(e){ if(e.target===drawer) closeOv(); });
+  customize.addEventListener('click',function(e){ if(e.target===customize) closeOv(); });
+
+  // dock interactions
+  dock.addEventListener('click',function(e){
+    var g=e.target.closest('#dock-gear'); if(g){ renderCustomize(); customize.classList.add('show'); return; }
+    var t=e.target.closest('[data-toggle]'); if(t){ var c=ctrlById(t.dataset.toggle); c.on=!c.on; t.classList.toggle('on',c.on); return; }
+    var dec=e.target.closest('[data-dec]'); if(dec){ stepCtrl(dec.dataset.dec,-1); return; }
+    var inc=e.target.closest('[data-inc]'); if(inc){ stepCtrl(inc.dataset.inc, 1); return; }
+  });
+  function stepCtrl(id,dir){ var c=ctrlById(id); if(id==='temp'){ c.val=Math.min(30,Math.max(16,c.val+dir)); } else if(id==='fan'){ c.val=Math.min(7,Math.max(0,c.val+dir)); } else { c.val=Math.min(30,Math.max(0,c.val+dir)); } var v=document.getElementById('v-'+id); if(v) v.textContent=c.val+c.unit; }
+
+  // customize interactions
+  czlist.addEventListener('click',function(e){
+    var en=e.target.closest('[data-en]'); if(en){ var c=ctrlById(en.dataset.en); c.en=!c.en; en.classList.toggle('on',c.en); renderDock(); return; }
+    var dp=e.target.closest('[data-dockpos]'); if(dp){ dockPos=dp.dataset.dockpos; document.getElementById('seg-dock').querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x.dataset.dock===dockPos);}); renderDock(); renderWorkspace(); renderCustomize(); fit(); return; }
+  });
+
+  // ---------- clock ----------
+  function tick(){ var d=new Date(); var hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
+    var days=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+    var dd=String(d.getDate()).padStart(2,'0'), mo=String(d.getMonth()+1).padStart(2,'0');
+    document.querySelectorAll('[data-clock]').forEach(function(el){ el.textContent=hh+':'+mm; });
+    document.querySelectorAll('[data-date]').forEach(function(el){ el.textContent=days[d.getDay()]+', '+dd+'/'+mo; });
+  }
+  setInterval(tick, 10000);
+
+  // ---------- init ----------
+  renderWorkspace(); renderDock(); tick(); fit();
+</script>
+</body>
+</html>

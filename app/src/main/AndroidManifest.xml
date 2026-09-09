@@ -24,6 +24,16 @@
         android:name="android.permission.BIND_APPWIDGET"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- 2026-09-09: NHÚNG app vào ô workspace (ActivityView, kiểu AAOS CarLauncher) — app render fullscreen trên
+         virtual display cỡ ô (KHÔNG caption, lọt khít khung, bo góc được), Kachi vẽ nút ⇄/✕ đè lên. Các quyền này
+         là signature|privileged: chỉ được cấp khi Kachi chạy như LAUNCHER HỆ THỐNG (priv-app trên xe / /system/priv-app
+         trên emulator + allowlist). Sideload thường KHÔNG được cấp → SlotAppHost degrade về freeform. -->
+    <uses-permission android:name="android.permission.INTERNAL_SYSTEM_WINDOW" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_STACKS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.ACTIVITY_EMBEDDING" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" tools:ignore="ProtectedPermissions" />
+
     <!-- allowBackup=false: app lưu ADB private key (adb.key/adb.pub) trong filesDir — key này grant shell
          localhost:5555. Bật backup sẽ để `adb backup`/auto-backup rút key ra ngoài → tắt để không lộ. -->
     <application
@@ -68,6 +78,23 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Kachi HOME (P1): màn hình chính launcher. CATEGORY_HOME để chọn Kachi làm màn chính.
+             MainActivity vẫn giữ LAUNCHER (icon "Cài đặt" ClusterNav) — không phá app cũ. Landscape. -->
+        <activity
+            android:name=".launcher.KachiHomeActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|screenLayout|density|smallestScreenSize|keyboardHidden"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 

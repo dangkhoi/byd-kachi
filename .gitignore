@@ -102,3 +102,5 @@ apk/_archive-old-builds/
 
 # B3.52 SVG nháp (input cục bộ, không phải nguồn) — không commit
 scratchpad/
+.playwright-mcp/
+proto_quad.png
