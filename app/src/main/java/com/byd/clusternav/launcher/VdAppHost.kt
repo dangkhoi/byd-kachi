@@ -72,8 +72,10 @@ class VdAppHost(context: Context, private val densityDpi: Int) : FrameLayout(con
         Thread {
             // TẤT CẢ lệnh dadb (blocking) chạy TRONG thread nền — KHÔNG gọi trên UI thread (chặn dựng SurfaceView → ô đen).
             val comp = resolveComponent(p, sh) ?: "$p/.MainActivity"
-            val cmd = "am start --display $displayId --windowingMode 1" +
-                " -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n '$comp'"
+            // B1: built by the pure FreeformLaunch builder (byte-locked by LauncherCommandGoldenTest) instead of
+            // an inline string. displayId = this host's OWN VirtualDisplay (a private secondary display for the
+            // slot), NOT the cluster. Touch/force-stop lifecycle stays inline (moves to the input daemon in B4).
+            val cmd = FreeformLaunch.launchOnDisplayCmd(comp, displayId, windowingMode = 1)
             sh("am force-stop $p")
             Thread.sleep(1000)     // đợi force-stop XONG hẳn → am start mở task MỚI trên VD, không tái dùng task fullscreen ở display 0 (bug gmail nhảy fullscreen)
             sh(cmd)                // mở ĐÚNG 1 lần trên VD — KHÔNG relaunch/di lần 2 (bỏ vòng retry gây nháy + làm app ô khác nhảy)

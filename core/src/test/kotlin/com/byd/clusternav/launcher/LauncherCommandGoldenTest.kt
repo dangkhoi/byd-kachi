@@ -73,6 +73,25 @@ class LauncherCommandGoldenTest {
         )
     }
 
+    // ── launchOnDisplayCmd: byte-locks the strings VdAppHost/SlotAppHost used to build inline (routed here in B1) ──
+
+    @Test
+    fun `launchOnDisplayCmd with launcher category is byte-exact (VdAppHost path)`() {
+        assertEquals(
+            "am start --display 7 --windowingMode 1 -a android.intent.action.MAIN" +
+                " -c android.intent.category.LAUNCHER -n 'com.foo/.Main'",
+            FreeformLaunch.launchOnDisplayCmd("com.foo/.Main", 7, 1),
+        )
+    }
+
+    @Test
+    fun `launchOnDisplayCmd without launcher category is byte-exact (SlotAppHost path)`() {
+        assertEquals(
+            "am start --display 7 --windowingMode 1 -n 'com.foo/.Main'",
+            FreeformLaunch.launchOnDisplayCmd("com.foo/.Main", 7, 1, withLauncherCategory = false),
+        )
+    }
+
     // ─────────────────────── ShellAppLauncher: exact emitted-command sequence ───────────────────────
 
     /** Records every shell command in order; scripts resolve / stack-list / resize replies by command. */

@@ -66,7 +66,9 @@ class SlotAppHost(context: Context, private val cornerRadiusPx: Float) : FrameLa
         val vd = virtualDisplayId()
         if (vd != null && vd > 0) {
             embedded = true
-            Thread { runCatching { sh("am start --display $vd --windowingMode 1 -n '$comp'") } }.start()
+            // B1: built by the pure FreeformLaunch builder (byte-locked by LauncherCommandGoldenTest). withLauncherCategory=false
+            // reproduces SlotAppHost's exact inline string (no -a/-c). vd = ActivityView's OWN VirtualDisplay, not the cluster.
+            Thread { runCatching { sh(FreeformLaunch.launchOnDisplayCmd(comp, vd, windowingMode = 1, withLauncherCategory = false)) } }.start()
         } else {
             h.postDelayed({ tryShellStart(comp, sh, tries - 1) }, 150)
         }

@@ -28,6 +28,26 @@ object FreeformLaunch {
         "am start --display $displayId --windowingMode 1 -f 0x20000000" +
             " -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n '$component'"
 
+    /**
+     * `am start` mở [component] trên MỘT [displayId] cụ thể (thường là VirtualDisplay của ô, id ≥ 1) với
+     * [windowingMode]. Tái tạo BYTE-CHÍNH-XÁC chuỗi mà [com.byd.clusternav.launcher.VdAppHost] /
+     * [com.byd.clusternav.launcher.SlotAppHost] dựng inline TRƯỚC Stage B1 — nay chúng gọi builder này để golden
+     * test khoá byte tại đây thay vì source-pin từng file.
+     *   • [withLauncherCategory] = true  → thêm `-a android.intent.action.MAIN -c android.intent.category.LAUNCHER`
+     *     (đường VdAppHost).
+     *   • [withLauncherCategory] = false → bỏ (đường SlotAppHost).
+     * ⚠ [displayId] ở đây là display ĐÍCH do host tạo (VirtualDisplay phụ để render app trong ô) — KHÔNG phải cụm.
+     */
+    fun launchOnDisplayCmd(
+        component: String,
+        displayId: Int,
+        windowingMode: Int,
+        withLauncherCategory: Boolean = true,
+    ): String {
+        val category = if (withLauncherCategory) " -a android.intent.action.MAIN -c android.intent.category.LAUNCHER" else ""
+        return "am start --display $displayId --windowingMode $windowingMode$category -n '$component'"
+    }
+
     /** Cờ freeform (framework chỉ đọc lúc BOOT → có hiệu lực sau khi tắt-mở máy xe 1 lần). */
     val freeformFlagCmds: List<String> = listOf(
         "settings put global enable_freeform_support 1",

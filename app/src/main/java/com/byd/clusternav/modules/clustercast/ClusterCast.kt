@@ -2,7 +2,6 @@ package com.byd.clusternav.modules.clustercast
 
 import android.content.Context
 import android.content.Intent
-import com.byd.clusternav.AdbKeys
 import com.byd.clusternav.Prefs
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -369,10 +368,10 @@ object ClusterCast {
                 runCatching {
                     val target = pkg.ifBlank { lastCastApp }.ifBlank { castableApps.firstOrNull() ?: "" }
                     if (target.isBlank() || !PKG_OK.matches(target)) { log("❌ chưa chọn app — vào Cài đặt chiếu tick app trước"); return@runCatching }
-                    dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                    com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                         fun sh(c: String): String { val r = adb.shell(c); val e = r.errorOutput.trim(); if (e.isNotEmpty()) log("  ⚠ $e"); return r.output.trim() }
 
-                        if (!isInstalled(adb, target)) { log("❌ app $target chưa cài trên xe"); return@use }
+                        if (!isInstalled(adb, target)) { log("❌ app $target chưa cài trên xe"); return@withConnection }
                         log("① app = ${labelOf(app, target)} ($target)")
 
                         // ★ trả lại quyền PIP cho app bị chặn ở lần chiếu TRƯỚC (kể cả lần đó kết thúc bằng crash → stop()
@@ -382,10 +381,10 @@ object ClusterCast {
                         var ents = StackParse.parse(sh("am stack list"))
                         var mine = StackParse.pick(ents, target)
                         if (mine == null) {
-                            val comp = CastShell.resolveComp(adb, target) ?: run { log("❌ không mở được $target (không có launcher activity)"); return@use }
+                            val comp = CastShell.resolveComp(adb, target) ?: run { log("❌ không mở được $target (không có launcher activity)"); return@withConnection }
                             log("② app chưa chạy → mở ở màn giữa: $comp"); sh("am start -n $comp"); Thread.sleep(2500)
                             ents = StackParse.parse(sh("am stack list")); mine = StackParse.pick(ents, target)
-                            if (mine == null) { log("❌ mở app xong vẫn không thấy stack → HỦY"); return@use }
+                            if (mine == null) { log("❌ mở app xong vẫn không thấy stack → HỦY"); return@withConnection }
                         } else log("② app đang chạy (${mine.brief()}) — BÊ NGUYÊN (giữ state)")
                         // ⓞ in TOÀN BỘ stack của app (gồm cả PIP) → hiện trường thấy ngay app có mấy task/có PIP không.
                         StackParse.of(ents, target).let { all ->
@@ -426,7 +425,7 @@ object ClusterCast {
                         divergenceOn({ c -> sh(c) }, curVd)?.let {
                             log("⛔ $it")
                             log("   (nút TẮT vẫn dùng được — nó chỉ trả đồng hồ, không đụng stack)")
-                            return@use
+                            return@withConnection
                         }
                         // ★★ v0.64: SWITCH = HOT-SWAP (VALIDATED on-car 2026-07-23 bằng adb manual test, NPE=0).
                         //   Freeze THẬT không phải warm-vs-cold — mà là HUỶ/TÁI TẠO VD lúc switch (warm=cmd16, cold=teardown)
@@ -437,7 +436,7 @@ object ClusterCast {
                         //     VD chưa có app (first-cast) → COLD path (castSeq tạo VD mới tinh — proven an toàn).
                         if (StackParse.isWarm(curVd, StackParse.parse(sh("am stack list")))) {
                             hotSwapOnVd(app, adb, { c -> sh(c) }, target, curVd, log)
-                            return@use
+                            return@withConnection
                         }
 
                         val prof = ClusterProfile.resolve(app)
@@ -474,7 +473,7 @@ object ClusterCast {
                                 if (vd >= 1) break
                                 Thread.sleep(500)
                             }
-                            if (vd < 1) { log("❌ không dò thấy VD cụm → rollback"); rollback(app, adb, prof.teardownSeq, log); return@use }
+                            if (vd < 1) { log("❌ không dò thấy VD cụm → rollback"); rollback(app, adb, prof.teardownSeq, log); return@withConnection }
                             log("⑥ VD cụm = display $vd")
 
                             log("⑦ đặt app lên VD $vd — ladder R1 start → R2 move-stack → R3 mở lại (nếu được phép)")
@@ -512,7 +511,7 @@ object ClusterCast {
         vdExec.execute {
             try {
                 runCatching {
-                    dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                    com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                         // ★ stderr KHÔNG còn bị nuốt (review): lệnh dọn cụm mà lỗi thì hiện trường phải thấy.
                         fun sh(c: String): String { val r = adb.shell(c); val e = r.errorOutput.trim(); if (e.isNotEmpty()) log("  ⚠ $e"); return r.output.trim() }
                         // ★ v0.37: lastDisplayId chỉ nằm trong RAM — app bị kill (xe ngủ, LMK, cài đè) là mất.
@@ -956,7 +955,7 @@ object ClusterCast {
         vdExec.execute {
             try {
                 runCatching {
-                    dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                    com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                         // ★ v0.38: KHÔNG nuốt stderr nữa — lệnh wm/am hỏng thì hiện trường phải thấy, trước đây
                         //   applyScaleLive chỉ lấy stdout nên mọi thất bại đều im lặng.
                         fun sh(c: String): String {
@@ -971,7 +970,7 @@ object ClusterCast {
                             ?: DisplayParse.clusterDisplayId(sh("dumpsys display | grep -iE 'Display [0-9]+:|fission|xdja'"))
                         if (vd < 1) {
                             log("đã lưu scale $pkg — chưa dò thấy cụm (chưa chiếu?) → lần chiếu sau tự áp")
-                            return@use
+                            return@withConnection
                         }
                         do {
                             scaleDirty.set(false)
@@ -989,7 +988,7 @@ object ClusterCast {
                                 if (diverged != null) log("đã lưu scale $pkg — nhưng ⛔ $diverged")
                                 else log("đã lưu scale $pkg — app KHÔNG đang ở trên cụm (đang ${e?.displayId ?: "không thấy"}). " +
                                     "Bấm \"CHIẾU APP NÀY LÊN CỤM\" rồi chỉnh, hoặc để vậy — lần chiếu sau tự áp.")
-                                return@use
+                                return@withConnection
                             }
                             // tới đây là app THẬT SỰ đang trên cụm → nhận lại phiên nếu cờ RAM đã mất
                             if (!casting || lastCastApp != pkg) { lastDisplayId = vd; setLastCastApp(app, pkg); setCasting(true) }
@@ -1030,7 +1029,7 @@ object ClusterCast {
         if (sp.getBoolean("animRepair36", false)) return
         vdExec.execute {
             runCatching {
-                dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                     val cur = adb.shell("settings get global $LEGACY_ANIM_KEY").output.trim()
                     if (cur == "0" || cur == "0.0") {
                         adb.shell("settings put global $LEGACY_ANIM_KEY 1.0")
@@ -1062,11 +1061,11 @@ object ClusterCast {
         val app = ctx.applicationContext
         vdExec.execute {
             runCatching {
-                dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                     fun sh(c: String) = adb.shell(c).output.trim()
                     CastShell.unseedFreeform(app, ::sh, log)
                     val floating = StackParse.floatingOnMain(StackParse.parse(sh("am stack list")))
-                    if (floating.isEmpty()) { log("  ✓ màn giữa không còn cửa sổ nổi nào"); return@use }
+                    if (floating.isEmpty()) { log("  ✓ màn giữa không còn cửa sổ nổi nào"); return@withConnection }
                     log("  ↩ dọn ${floating.size} cửa sổ nổi đang kẹt trên màn giữa")
                     floating.mapNotNull { it.comp.substringBefore('/').takeIf(String::isNotBlank) }.distinct()
                         .forEach { pkg -> CastShell.restoreFullscreenOnMain(adb, ::sh, pkg, -1, log) }
@@ -1084,7 +1083,7 @@ object ClusterCast {
         loadPrefs(app)
         vdExec.execute {
             runCatching {
-                dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                     fun sh(c: String) = adb.shell(c).output.trim()
                     // ★ v0.42: DÒ VD TRƯỚC. Bản cũ tính danh sách stack rồi mới dò vd, và vòng bê KHÔNG hề kiểm vd
                     //   → chạy lúc BOOT và sau mỗi lần cài đè app, có thể kéo cả stack launcher về display 0
@@ -1114,7 +1113,7 @@ object ClusterCast {
                             ?.let { add("overscan [${it[0]},${it[1]}][${it[2]},${it[3]}]") }
                     }
                     val vdDirty = dirtyBits.isNotEmpty()
-                    if (onVd.isEmpty() && !animStuck && !pipStuck && !vdDirty) return@use   // sạch → im lặng
+                    if (onVd.isEmpty() && !animStuck && !pipStuck && !vdDirty) return@withConnection   // sạch → im lặng
                     log("↻ dọn state phiên trước: ${onVd.size} stack trên cụm" +
                         (if (vdDirty) " · VD còn bẩn: " + dirtyBits.joinToString(", ") else "") +
                         (if (animStuck) " · animation đang bị ghim 0" else "") +
@@ -1221,13 +1220,13 @@ object ClusterCast {
             // ★ cờ CỤC BỘ: dùng `watchdogMisses == 0` để quyết định là sai — nó cũng bằng 0 khi app CÒN SỐNG.
             var shouldTeardown = false
             runCatching {
-                dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                     fun sh(c: String) = adb.shell(c).output.trim()
                     val vd = DisplayParse.clusterDisplayId(sh("dumpsys display | grep -iE 'Display [0-9]+:|fission|xdja'"))
                     val alive = vd >= 1 && StackParse.of(StackParse.parse(sh("am stack list")), marked)
                         .any { it.displayId == vd && !it.isPinned }
-                    if (alive) { watchdogMisses = 0; return@use }
-                    if (++watchdogMisses < WATCHDOG_MISSES) return@use
+                    if (alive) { watchdogMisses = 0; return@withConnection }
+                    if (++watchdogMisses < WATCHDOG_MISSES) return@withConnection
                     watchdogMisses = 0
                     shouldTeardown = true
                 }
@@ -1244,7 +1243,7 @@ object ClusterCast {
         val app = ctx.applicationContext
         vdExec.execute {
             runCatching {
-                dadb.Dadb.create("localhost", 5555, AdbKeys.ensure(app)).use { adb ->
+                com.byd.clusternav.system.ShellTransport.get(app).withConnection { adb ->
                     for (k in ANIM_KEYS) adb.shell("settings put global $k $scale")
                 }
                 log("đã set animation scale = $scale (mượt UI)")

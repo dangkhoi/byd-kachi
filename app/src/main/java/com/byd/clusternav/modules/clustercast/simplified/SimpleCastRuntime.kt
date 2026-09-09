@@ -2,7 +2,7 @@ package com.byd.clusternav.modules.clustercast.simplified
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.byd.clusternav.AdbKeys
+import com.byd.clusternav.system.ShellTransport
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastShell
 import com.byd.clusternav.modules.clustercast.simplified.ShellResult
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastPrefs
@@ -11,7 +11,6 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.ProjectionManager
 import com.byd.clusternav.modules.clustercast.simplified.DisplayConfigurator
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
-import dadb.Dadb
 
 /**
  * Android-side runtime for the simplified Cluster Cast coordinator.
@@ -61,31 +60,30 @@ object SimpleCastRuntime {
 }
 
 /**
- * SimpleCastShell implementation using dadb localhost connection.
+ * SimpleCastShell implementation backed by the single-owner [ShellTransport].
  *
- * Each shell command opens a fresh dadb session (same pattern as CastAdbGateway).
- * Connection timeout: 2s. Command timeout: 10s.
+ * B1: was a FRESH `Dadb.create(...).use { }` per command; now every command goes through the one shared
+ * connection, serialized on the transport's single owner thread (so cast commands can never interleave their
+ * streams with the launcher's window commands). The transport retries once on failure, which self-heals a
+ * stale connection exactly like the old fresh-conn-per-command path did. Command strings are unchanged.
  */
 private class DadbSimpleCastShell(private val app: Context) : SimpleCastShell {
 
     override fun execute(command: String): ShellResult {
         return try {
             android.util.Log.i("SimpleCast", "shell: $command")
-            val keyPair = AdbKeys.ensure(app)
-            Dadb.create("localhost", 5555, keyPair).use { adb ->
-                val result = adb.shell(command)
-                val shellResult = ShellResult(
-                    exitCode = result.exitCode,
-                    stdout = result.output,
-                    stderr = result.errorOutput,
-                )
-                if (isPlacementEvidenceCommand(command)) {
-                    logPlacementEvidence(command, shellResult)
-                } else {
-                    android.util.Log.i("SimpleCast", "shell OK: exit=${result.exitCode}")
-                }
-                shellResult
+            val result = ShellTransport.get(app).exec(command)
+            val shellResult = ShellResult(
+                exitCode = result.exitCode,
+                stdout = result.stdout,
+                stderr = result.stderr,
+            )
+            if (isPlacementEvidenceCommand(command)) {
+                logPlacementEvidence(command, shellResult)
+            } else {
+                android.util.Log.i("SimpleCast", "shell OK: exit=${result.exitCode}")
             }
+            shellResult
         } catch (e: Exception) {
             val shellResult = ShellResult(
                 exitCode = -1,

@@ -82,36 +82,40 @@ class LauncherWindowingGuardTest {
         )
     }
 
-    // ── inline golden-string DOC for the Android hosts (pinned; flagged for Stage 1) ─────────────────
-    // TODO(Stage1): VdAppHost / SlotAppHost build these inline. Route them through FreeformLaunch (with the
-    //  VirtualDisplay id) so they are byte-locked by the pure builder instead of by this source pin. They target
-    //  a SELF-CREATED VirtualDisplay (private secondary display for in-slot rendering), NOT the cluster.
+    // ── Stage 1 DONE: VdAppHost / SlotAppHost now build their am-start via FreeformLaunch.launchOnDisplayCmd ──
+    //  The exact strings are byte-locked by the PURE builder in LauncherCommandGoldenTest (launchOnDisplayCmd*),
+    //  not by a source pin. These tests confirm the routing + that the inline template is gone. Both target a
+    //  SELF-CREATED VirtualDisplay (private secondary display for in-slot rendering), NOT the cluster.
 
     @Test
-    fun `VdAppHost inline am-start template is pinned for Stage 1`() {
+    fun `VdAppHost routes am-start through FreeformLaunch (Stage 1)`() {
         val src = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/VdAppHost.kt")
         assertTrue(
-            src.contains("am start --display \$displayId --windowingMode 1"),
-            "VdAppHost am-start head changed — update this golden pin and the Stage-1 handoff",
+            src.contains("FreeformLaunch.launchOnDisplayCmd(comp, displayId, windowingMode = 1)"),
+            "VdAppHost must build its launch command via FreeformLaunch.launchOnDisplayCmd (byte-locked in LauncherCommandGoldenTest)",
         )
-        assertTrue(
-            src.contains(" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n '\$comp'"),
-            "VdAppHost launch-intent tail changed",
+        assertFalse(
+            src.contains("\"am start --display \$displayId"),
+            "VdAppHost inline am-start template must be gone (routed through FreeformLaunch)",
         )
-        assertTrue(src.contains("am force-stop \$p"), "VdAppHost force-stop template changed")
+        assertTrue(src.contains("am force-stop \$p"), "VdAppHost force-stop stays inline (touch/lifecycle moves in B4)")
         assertTrue(
             src.contains("cmd package resolve-activity --brief -a android.intent.action.MAIN" +
                 " -c android.intent.category.LAUNCHER \$pkg"),
-            "VdAppHost resolve-activity template changed",
+            "VdAppHost resolve-activity template unchanged",
         )
     }
 
     @Test
-    fun `SlotAppHost inline am-start template is pinned for Stage 1`() {
+    fun `SlotAppHost routes am-start through FreeformLaunch (Stage 1)`() {
         val src = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/SlotAppHost.kt")
         assertTrue(
-            src.contains("am start --display \$vd --windowingMode 1 -n '\$comp'"),
-            "SlotAppHost am-start template changed — update this golden pin and the Stage-1 handoff",
+            src.contains("FreeformLaunch.launchOnDisplayCmd(comp, vd, windowingMode = 1, withLauncherCategory = false)"),
+            "SlotAppHost must build its launch command via FreeformLaunch.launchOnDisplayCmd (byte-locked in LauncherCommandGoldenTest)",
+        )
+        assertFalse(
+            src.contains("\"am start --display \$vd"),
+            "SlotAppHost inline am-start template must be gone (routed through FreeformLaunch)",
         )
     }
 
