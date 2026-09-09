@@ -34,7 +34,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     var slotDensityDpi = 200                   // mật độ cho VirtualDisplay của ô (Dudu ~200; chỉnh để app hiện vừa mắt)
 
     private val gapPx = dp(10)
-    private var state = WorkspaceState()
+    // View-transient ONLY: bản sao khung hình ĐANG hiển thị, dùng để DIFF khi [render] để không dựng lại ô không đổi.
+    // KHÔNG phải nguồn sự thật — nguồn sự thật là HomeViewModel.uiState; không code ngoài nào đọc field này.
+    private var displayed = WorkspaceState()
     private val slotViews = ArrayList<View>()
     // B4: MỘT input-daemon THƯỜNG TRÚ dùng chung cho MỌI ô (mỗi khung tự mang displayId). Tạo lười khi có shell seam;
     // lệnh lifecycle daemon đi qua seam (queue), còn chạm đi socket riêng. null → VdAppHost fallback `input -d` (cũ).
@@ -50,12 +52,14 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     init { rebuild() }
 
     /**
-     * Cập nhật TĂNG DẦN: cùng preset → chỉ dựng lại ô có nội dung ĐỔI; giữ nguyên View (và VdAppHost) của các ô khác
-     * → thêm app vào ô mới KHÔNG relaunch/nháy app đang chạy ở ô khác, launcher đứng yên. Đổi preset/số ô → dựng lại cả.
+     * Áp trạng thái [s] lên view (was `setState`). PURE VIEW: chỉ RENDER — KHÔNG giữ nguồn sự thật.
+     * Cập nhật TĂNG DẦN: cùng preset → chỉ dựng lại ô có nội dung ĐỔI (so với khung đang hiển thị [displayed]);
+     * giữ nguyên View (và VdAppHost) của các ô khác → thêm app vào ô mới KHÔNG relaunch/nháy app đang chạy ở ô khác,
+     * launcher đứng yên. Đổi preset/số ô → dựng lại cả. Nguồn sự thật do HomeViewModel giữ; đây chỉ phản chiếu.
      */
-    fun setState(s: WorkspaceState) {
-        val old = state
-        state = s
+    fun render(s: WorkspaceState) {
+        val old = displayed
+        displayed = s
         if (old.preset != s.preset || slotViews.size != s.preset.slotCount) { rebuild(); return }
         for (i in 0 until s.preset.slotCount) {
             val oc = old.slots.getOrElse(i) { SlotContent.Empty }
@@ -76,12 +80,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         else -> false
     }
 
-    fun currentState(): WorkspaceState = state
-
     private fun rebuild() {
         removeAllViews(); slotViews.clear()
-        for (i in 0 until state.preset.slotCount) {
-            val content = state.slots.getOrElse(i) { SlotContent.Empty }
+        for (i in 0 until displayed.preset.slotCount) {
+            val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
             val v = makeSlot(i, content)
             addView(v); slotViews.add(v)
         }
@@ -227,7 +229,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
         val h = MeasureSpec.getSize(heightMeasureSpec)
         if (w > 0 && h > 0) {
-            val rects = WorkspaceLayout.slots(state.preset, w, h, gapPx)
+            val rects = WorkspaceLayout.slots(displayed.preset, w, h, gapPx)
             for (i in slotViews.indices) {
                 val r = rects.getOrNull(i) ?: continue
                 slotViews[i].measure(
@@ -242,7 +244,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val w = r - l; val h = b - t
         if (w <= 0 || h <= 0) return
-        val rects = WorkspaceLayout.slots(state.preset, w, h, gapPx)
+        val rects = WorkspaceLayout.slots(displayed.preset, w, h, gapPx)
         for (i in slotViews.indices) {
             val rect = rects.getOrNull(i) ?: continue
             slotViews[i].layout(rect.left, rect.top, rect.right, rect.bottom)

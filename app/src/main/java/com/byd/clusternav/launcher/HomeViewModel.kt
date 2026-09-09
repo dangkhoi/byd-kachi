@@ -1,0 +1,93 @@
+package com.byd.clusternav.launcher
+
+import android.content.Context
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
+
+/**
+ * NGUỒN SỰ THẬT DUY NHẤT cho HOME (Kachi): giữ [HomeUiState] trong một [StateFlow] read-only.
+ * Trạng thái launcher KHÔNG còn nằm trong [WorkspaceView] nữa — view chỉ `render(state)` + phát event lên.
+ *
+ * Luồng MỘT CHIỀU: view/user event → intent (hàm dưới) → cập nhật `_uiState` (immutable copy) + ghi bền qua
+ * [WorkspaceRepository] → `uiState` phát → Activity thu (`repeatOnLifecycle`) → render.
+ *
+ * Kế thừa [androidx.lifecycle.ViewModel] (chuẩn hiện hành: có sẵn `viewModelScope`, sống qua config-change).
+ * Các intent ở đây cập nhật state ĐỒNG BỘ + ghi bền ĐỒNG BỘ (SharedPreferences `apply()` vốn ghi nền) — giữ đúng
+ * hành vi cũ (Activity trước cũng `prefs.save(...)` ngay trên main). Không dùng coroutine cho ghi để test tất định.
+ */
+class HomeViewModel(
+    private val repository: WorkspaceRepository,
+    initialEmbedded: Boolean = false,
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(repository.load().copy(embedded = initialEmbedded))
+
+    /** Trạng thái HOME hiện tại — nguồn sự thật duy nhất cho toàn bộ view của launcher. */
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    // ── Intent: workspace (ô + bố cục) ───────────────────────────────────────────
+    fun setPreset(preset: LayoutPreset) = mutate { it.copy(workspace = it.workspace.withPreset(preset)) }
+
+    fun assignApp(slot: Int, pkg: String) =
+        mutate { it.copy(workspace = it.workspace.withSlot(slot, SlotContent.App(pkg))) }
+
+    fun assignWidgets(slot: Int, ids: List<String>) = mutate {
+        val content = if (ids.isEmpty()) SlotContent.Empty else SlotContent.Widget(ids)
+        it.copy(workspace = it.workspace.withSlot(slot, content))
+    }
+
+    fun clearSlot(slot: Int) = mutate { it.copy(workspace = it.workspace.clearSlot(slot)) }
+
+    fun swapSlots(a: Int, b: Int) = mutate { it.copy(workspace = it.workspace.swap(a, b)) }
+
+    // ── Intent: dock (thanh điều khiển) ──────────────────────────────────────────
+    fun setDockEdge(edge: DockEdge) = mutate { it.copy(dock = it.dock.withEdge(edge)) }
+
+    /** Xoay viền thanh điều khiển theo vòng BOTTOM → LEFT → RIGHT → TOP. */
+    fun cycleDockEdge() = mutate {
+        val order = listOf(DockEdge.BOTTOM, DockEdge.LEFT, DockEdge.RIGHT, DockEdge.TOP)
+        it.copy(dock = it.dock.withEdge(order[(order.indexOf(it.dock.edge) + 1) % order.size]))
+    }
+
+    /** Bật/tắt một control trong thanh (danh sách control hiện) — [DockConfig.setEnabled]. */
+    fun toggleDock(id: String, on: Boolean) = mutate { it.copy(dock = it.dock.setEnabled(id, on)) }
+
+    // ── Intent: theme ────────────────────────────────────────────────────────────
+    fun setThemeMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
+
+    // ── Intent: hồ sơ tài xế (uỷ quyền repository re-scope prefs + nạp lại hồ sơ đó) ──
+    fun switchProfile(name: String) = reload { repository.switchProfile(name) }
+
+    fun addProfile(name: String) = reload { repository.addProfile(name) }
+
+    fun deleteProfile(name: String) = reload { repository.deleteProfile(name) }
+
+    // ── Runtime host capability (không bền) ─────────────────────────────────────
+    /** Cập nhật cờ nhúng (dadb loopback nối được / ROM platform-signed). Chỉ runtime, KHÔNG ghi bền. */
+    fun setEmbedded(embedded: Boolean) = _uiState.update { it.copy(embedded = embedded) }
+
+    /** Cập nhật state (atomic) rồi ghi bền phần lưu-được. */
+    private fun mutate(block: (HomeUiState) -> HomeUiState) {
+        val next = _uiState.updateAndGet(block)
+        repository.persist(next)
+    }
+
+    /** Nạp lại state từ repository (đổi/thêm/xoá hồ sơ) — giữ nguyên cờ [HomeUiState.embedded] runtime. */
+    private fun reload(loader: () -> HomeUiState) {
+        val embedded = _uiState.value.embedded
+        _uiState.value = loader().copy(embedded = embedded)
+    }
+
+    companion object {
+        /**
+         * Factory TẠM cho :app (KachiHomeActivity là `android.app.Activity`, không có ViewModelStore).
+         * B5b sẽ gộp vào AppContainer/DI. Dùng applicationContext để không rò Activity.
+         */
+        fun factory(context: Context, embedded: Boolean = false): HomeViewModel =
+            HomeViewModel(PrefsWorkspaceRepository(context.applicationContext), embedded)
+    }
+}

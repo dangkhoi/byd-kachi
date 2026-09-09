@@ -48,4 +48,20 @@ class WorkspaceStateTest {
         val s = WorkspaceState().withSlot(1, SlotContent.App("x")).clearSlot(1)
         assertSame(SlotContent.Empty, s.slots[1])
     }
+
+    @Test fun `swap doi cho 2 o`() {
+        val s = WorkspaceState()
+            .withSlot(0, SlotContent.App("a"))
+            .withSlot(3, SlotContent.Widget("w_energy"))
+            .swap(0, 3)
+        assertEquals(SlotContent.Widget("w_energy"), s.slots[0])
+        assertEquals(SlotContent.App("a"), s.slots[3])
+    }
+
+    @Test fun `swap index xau hoac trung giu nguyen`() {
+        val s = WorkspaceState().withSlot(0, SlotContent.App("a"))
+        assertEquals(s, s.swap(0, 9))
+        assertEquals(s, s.swap(-1, 0))
+        assertEquals(s, s.swap(2, 2))
+    }
 }

@@ -21,66 +21,88 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.MainActivity
 import com.byd.clusternav.R
 import com.byd.clusternav.system.WindowCommandDispatcher
 import com.byd.clusternav.launcher.KachiTheme.c
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * Màn hình chính Kachi (HOME) — nền wall gradient + thanh trạng thái (segmented bố cục + pill) + workspace (widget/ô)
- * + thanh điều khiển 4 viền. Landscape. Thuần code, bám prototype kachi-workspace.html. Dữ liệu = [DemoCarData].
+ * Màn hình chính Kachi (HOME) — wall gradient + thanh trạng thái + workspace (widget/ô) + thanh điều khiển 4 viền.
+ * Landscape, thuần code, bám prototype kachi-workspace.html. Dữ liệu = [DemoCarData].
+ *
+ * B5a: state launcher KHÔNG còn ở [WorkspaceView] — [HomeViewModel] giữ `StateFlow<HomeUiState>` là NGUỒN SỰ THẬT
+ * DUY NHẤT. Activity thu (`repeatOnLifecycle(STARTED)`) → [render] áp state lên view; user event → INTENT (một chiều).
+ * Tự quản [LifecycleOwner] (LifecycleRegistry) vì kế thừa `android.app.Activity` → dùng được `lifecycleScope`.
+ * Orchestration cửa sổ freeform + overlay caption tách sang [LauncherWindows]. (Decompose view-component: B5b.)
  */
-class KachiHomeActivity : Activity() {
+class KachiHomeActivity : Activity(), LifecycleOwner {
+
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    override val lifecycle: Lifecycle get() = lifecycleRegistry
 
     private lateinit var workspace: WorkspaceView
     private lateinit var dock: ControlDockView
     private lateinit var clock: TextView
-    private lateinit var prefs: WorkspacePrefs
+    private lateinit var viewModel: HomeViewModel
+    private lateinit var windows: LauncherWindows
     private lateinit var mainArea: LinearLayout
     private lateinit var rootFrame: FrameLayout
     private var drawer: AppDrawer? = null
     private var drawerAsOverlay = false
-    // Cửa sổ app: XE + EMULATOR đều dùng ShellAppLauncher (am --windowingMode 5 + am task resize) qua dadb loopback —
-    // giống hệt cast. Chưa có dadb (emulator chưa `adb reverse`) → fallback IntentAppLauncher (chỉ mở, không reflow được).
+    // Cửa sổ app: XE + EMULATOR dùng ShellAppLauncher (am --windowingMode 5 + am task resize) qua dadb loopback (như cast).
+    // Chưa có dadb (emulator chưa `adb reverse`) → fallback IntentAppLauncher (chỉ mở, không reflow).
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
     private var shell: ((String) -> String)? = null
     private var winDispatcher: WindowCommandDispatcher? = null   // B2b: cổng validate sở hữu display + registry vị trí app
-    private val embedding get() = shell != null || SlotAppHost.embeddingUsable(this)   // dadb → app render lên VirtualDisplay trong ô (display phụ, KHÔNG caption) kiểu Dudu; hoặc ROM xe platform-signed → ActivityView. Cả 2 đều bỏ freeform + bỏ overlay header.
+    // dadb → app render lên VirtualDisplay trong ô kiểu Dudu; hoặc ROM platform-signed → ActivityView. Cả 2 bỏ freeform +
+    // overlay header. HomeUiState.embedded phản chiếu cờ này (đồng bộ ở probe).
+    private val embedding get() = shell != null || SlotAppHost.embeddingUsable(this)
     private val winExec = java.util.concurrent.Executors.newSingleThreadExecutor()
-    private var dockConfig = ControlRegistry.defaultDock()
     private val presetCells = HashMap<LayoutPreset, ImageView>()
     private lateinit var dateText: TextView
     private lateinit var chipRow: LinearLayout
     private lateinit var profileAvatarView: TextView
+    private var shownState: HomeUiState? = null   // view-side diff cache của collector (KHÔNG phải nguồn sự thật)
 
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable { override fun run() { updateClock(); handler.postDelayed(this, 10_000) } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        prefs = WorkspacePrefs(this)
-        dockConfig = prefs.loadDock()
+        // ViewModel = nguồn sự thật; nạp initial từ repository (WorkspacePrefs). embedded ban đầu = khả năng ActivityView.
+        viewModel = HomeViewModel.factory(this, embedded = SlotAppHost.embeddingUsable(this))
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-        setPadding(dp(14), dp(12), dp(14), dp(14))
+            setPadding(dp(14), dp(12), dp(14), dp(14))
         }
         content.addView(buildTopStrip(), LinearLayout.LayoutParams(MATCH, WRAP))
 
-        val ws = initialState()
         workspace = WorkspaceView(this).apply {
-            carData = DemoCarData; setState(ws)
+            carData = DemoCarData
             onSlotTap = { idx -> openDrawer(idx) }
             onSlotClear = { idx -> clearSlot(idx) }
             onSlotSwap = { a, b -> swapSlots(a, b) }
             onAppOpen = { idx -> reopenApp(idx) }
         }
-        selectPreset(ws.preset)
-        dock = ControlDockView(this).apply { control = NoCar; setConfig(dockConfig) }
+        windows = LauncherWindows(
+            this, workspace, winExec,
+            state = { viewModel.uiState.value }, embedding = { embedding }, drawerOpen = { drawer != null },
+            shell = { shell }, appLauncher = { appLauncher }, dispatcher = { winDispatcher },
+            onSlotSwap = { idx -> openDrawer(idx) }, onSlotClose = { idx -> clearSlot(idx) },
+        )
+        dock = ControlDockView(this).apply { control = NoCar }
 
         mainArea = LinearLayout(this)
         layoutMainArea()
@@ -91,70 +113,59 @@ class KachiHomeActivity : Activity() {
         rootFrame.addView(content, FrameLayout.LayoutParams(MATCH, MATCH))
         setContentView(rootFrame)
 
-        // Nối shell dadb (localhost:5555) trên nền — nối được thì dùng ShellAppLauncher để reflow THẬT như xe.
-        // B2b: MỌI lệnh cửa sổ của launcher đi qua WindowCommandDispatcher — validate sở hữu display TRƯỚC dispatch
-        // (launcher chỉ chạm display 0 + VD ô của nó; cụm bị chặn về mặt cấu trúc). Registry vị trí app luôn-bật.
+        // Thu NGUỒN SỰ THẬT: mọi thay đổi state → render (view-only). repeatOnLifecycle huỷ khi < STARTED.
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { render(it) }
+            }
+        }
+
+        // Nối shell dadb (localhost:5555) trên nền → ShellAppLauncher reflow THẬT như xe. B2b: mọi lệnh cửa sổ đi qua
+        // WindowCommandDispatcher (validate sở hữu display: launcher chỉ chạm display 0 + VD ô của nó). Registry luôn-bật.
         val dadb = DadbShell(this)
         val dispatcher = WindowCommandDispatcher.get(this)
         winDispatcher = dispatcher
-        seedLocations()
+        windows.seedLocations()
         val seam = dispatcher.launcherSeam()
         winExec.execute {
             if (dadb.probe()) {
                 shell = seam; appLauncher = ShellAppLauncher(seam)
                 runCatching { seam("appops set com.byd.launcher SYSTEM_ALERT_WINDOW allow") }  // để vẽ dải header nổi lên app freeform
                 runOnUiThread {
-                    workspace.registerVd = dispatcher::registerLauncherVirtualDisplay        // VD ô thuộc LAUNCHER → cổng ownership cho phép
+                    workspace.registerVd = dispatcher::registerLauncherVirtualDisplay        // VD ô thuộc LAUNCHER → ownership cho phép
                     workspace.unregisterVd = dispatcher::unregisterLauncherVirtualDisplay
-                    workspace.shell = seam; workspace.setState(workspace.currentState())      // bật render app lên VirtualDisplay trong ô (kiểu Dudu, không caption)
+                    workspace.shell = seam; workspace.render(viewModel.uiState.value.workspace)  // bật render app lên VirtualDisplay trong ô
+                    viewModel.setEmbedded(true)                                                // dadb nối được → nhúng (giữ embedded khớp getter)
                 }
             }
         }
     }
 
-    private val overlayHeads by lazy { OverlayHeads(this) }
-
-    private fun appLabel(pkg: String): String = runCatching {
-        packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
-    }.getOrDefault(pkg)
-
-    /** Dựng lại dải header NỔI (overlay) che caption freeform + hiện ⇄/✕ cho mỗi ô app đang hiện. Nhúng → không cần. */
-    private val overlayUpdate = Runnable {
-        if (embedding || drawer != null) { overlayHeads.clear(); return@Runnable }
-        val st = workspace.currentState(); val n = st.preset.slotCount
-        val heads = ArrayList<OverlayHeads.Head>()
-        for (i in 0 until n) {
-            (st.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
-                absoluteSlotRect(i)?.let { r ->
-                    val a = appRect(r)
-                    heads.add(OverlayHeads.Head(a.left, r.top + dp(3), a.width, a.height, appLabel(app.pkg), "#4c7dff",
-                        onSwap = { openDrawer(i) }, onClose = { clearSlot(i) }))
-                }
-            }
+    /**
+     * Áp [state] lên VIEW (duy nhất một chỗ, do collector gọi) — chỉ đọc-vẽ, KHÔNG đổi state. Diff so với [shownState]
+     * để chỉ làm việc khi phần liên quan đổi. Side-effect cửa sổ theo-ô ở handler; ở đây chỉ reflow khi preset/viền đổi.
+     */
+    private fun render(state: HomeUiState) {
+        val prev = shownState
+        workspace.render(state.workspace)
+        if (prev?.preset != state.preset) selectPreset(state.preset)
+        if (prev?.dock != state.dock) {
+            val edgeChanged = prev != null && prev.dock.edge != state.dock.edge
+            dock.setConfig(state.dock)
+            if (edgeChanged) layoutMainArea()
         }
-        overlayHeads.show(heads)
-    }
-
-    private fun updateOverlayHeads() {
-        workspace.removeCallbacks(overlayUpdate)                       // debounce: gọi dồn → chỉ chạy 1 lần (tránh chồng overlay)
-        if (embedding || drawer != null) { overlayHeads.clear(); return }
-        workspace.postDelayed(overlayUpdate, 350)
-    }
-
-    private fun initialState(): WorkspaceState {
-        val loaded = prefs.load()
-        return if (loaded.slots.all { it is SlotContent.Empty }) {
-            WorkspaceState(
-                LayoutPreset.THREE,
-                listOf(SlotContent.Widget("w_board"), SlotContent.Widget("w_energy"), SlotContent.Widget("w_pm25"), SlotContent.Empty),
-            )
-        } else loaded
+        if (prev == null || prev.activeProfile != state.activeProfile) {
+            profileAvatarView.text = state.activeProfile.take(1).uppercase()
+        }
+        if (prev != null && (prev.preset != state.preset || prev.dock.edge != state.dock.edge)) windows.reflow()
+        shownState = state
+        windows.updateOverlayHeads()
     }
 
     private fun buildTopStrip(): View {
         val strip = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, 14f, "#990a0d13", "#26ffffff")   // thanh mờ bo góc + viền rõ (prototype topstrip)
+            background = KachiTheme.card(context, 14f, "#990a0d13", "#26ffffff")   // thanh mờ bo góc + viền rõ (prototype)
             setPadding(dp(14), dp(4), dp(14), dp(4))
         }
         clock = TextView(this).apply {
@@ -218,12 +229,13 @@ class KachiHomeActivity : Activity() {
         (workspace.parent as? ViewGroup)?.removeView(workspace)
         (dock.parent as? ViewGroup)?.removeView(dock)
         mainArea.removeAllViews()
-        val vertical = !dockConfig.isVertical()
+        val cfg = viewModel.uiState.value.dock
+        val vertical = !cfg.isVertical()
         mainArea.orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
         val wsLp = if (vertical) LinearLayout.LayoutParams(MATCH, 0, 1f) else LinearLayout.LayoutParams(0, MATCH, 1f)
         val dockLp = if (vertical) LinearLayout.LayoutParams(MATCH, dp(116)) else LinearLayout.LayoutParams(dp(124), MATCH)
         val gap = dp(10)
-        when (dockConfig.edge) {
+        when (cfg.edge) {
             DockEdge.BOTTOM -> { mainArea.addView(workspace, wsLp); dockLp.topMargin = gap; mainArea.addView(dock, dockLp) }
             DockEdge.TOP -> { dockLp.bottomMargin = gap; mainArea.addView(dock, dockLp); mainArea.addView(workspace, wsLp) }
             DockEdge.LEFT -> { dockLp.marginEnd = gap; mainArea.addView(dock, dockLp); mainArea.addView(workspace, wsLp) }
@@ -231,14 +243,8 @@ class KachiHomeActivity : Activity() {
         }
     }
 
-    private fun cycleDockEdge() {
-        val order = listOf(DockEdge.BOTTOM, DockEdge.LEFT, DockEdge.RIGHT, DockEdge.TOP)
-        dockConfig = dockConfig.withEdge(order[(order.indexOf(dockConfig.edge) + 1) % order.size])
-        dock.setConfig(dockConfig); prefs.saveDock(dockConfig); layoutMainArea()
-        reflowWindows()
-    }
+    private fun cycleDockEdge() = viewModel.cycleDockEdge()   // state+persist → collector: dock.setConfig + layoutMainArea + reflow
 
-    // ── Hồ sơ tài xế: pill hiện tên, chạm = đổi hồ sơ, giữ = tạo mới ──
     private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(8) }
 
     private fun chip(text: String, iconName: String?, color: String): TextView = TextView(this).apply {
@@ -262,9 +268,10 @@ class KachiHomeActivity : Activity() {
         chipRow.addView(chip("${d.batteryPercent() ?: "—"}% · ${d.rangeKm() ?: "—"} km", "ic-bolt", KachiTheme.GREEN), chipLp())
     }
 
+    // ── Hồ sơ tài xế: pill hiện tên, chạm = đổi hồ sơ, giữ = tạo mới ──
     private fun profileAvatar(): TextView {
         profileAvatarView = TextView(this).apply {
-            text = prefs.activeProfile().take(1).uppercase(); setTextColor(Color.WHITE)
+            text = viewModel.uiState.value.activeProfile.take(1).uppercase(); setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
             val s = dp(30); width = s; height = s; background = KachiTheme.gradient(this@KachiHomeActivity, 999f)
             setOnClickListener { cycleProfile() }
@@ -274,10 +281,11 @@ class KachiHomeActivity : Activity() {
     }
 
     private fun cycleProfile() {
-        val list = prefs.profiles()
+        val s = viewModel.uiState.value
+        val list = s.profiles
         if (list.size <= 1) { addProfileDialog(); return }
-        val i = (list.indexOf(prefs.activeProfile()) + 1) % list.size
-        prefs.setActiveProfile(list[i]); applyProfile(); toast("Hồ sơ: ${list[i]}")
+        val i = (list.indexOf(s.activeProfile) + 1) % list.size
+        viewModel.switchProfile(list[i]); toast("Hồ sơ: ${list[i]}")   // collector nạp lại workspace/dock/preset/avatar
     }
 
     private fun addProfileDialog() {
@@ -287,61 +295,17 @@ class KachiHomeActivity : Activity() {
             .setView(input)
             .setPositiveButton("Tạo") { _, _ ->
                 val n = input.text.toString().trim()
-                if (n.isNotEmpty()) { prefs.addProfile(n); applyProfile() }
+                if (n.isNotEmpty()) viewModel.addProfile(n)   // collector nạp lại (hồ sơ mới = bố cục mặc định)
             }
             .setNegativeButton("Huỷ", null)
             .show()
     }
 
-    /** Nạp lại workspace + dock của hồ sơ đang chọn và vẽ lại. */
-    private fun applyProfile() {
-        dockConfig = prefs.loadDock()
-        val ws = initialState()
-        workspace.setState(ws)
-        dock.setConfig(dockConfig)
-        selectPreset(ws.preset)
-        layoutMainArea()
-        profileAvatarView.text = prefs.activeProfile().take(1).uppercase()
-    }
-
-    private fun switchPreset(p: LayoutPreset) {
-        val s = workspace.currentState().withPreset(p)
-        workspace.setState(s); prefs.save(s); selectPreset(p)
-        reflowWindows()
-    }
-
-    /**
-     * Sau khi đổi bố cục/viền: sắp lại cửa sổ app ĐANG mở theo THỨ TỰ ô (KHÔNG reset, app vẫn chạy).
-     * App ở ô hiện (index < số ô) → freeform đúng khung; app tràn (index ≥ số ô) → fullscreen chạy nền, ẩn sau launcher.
-     * Thứ tự lệnh cho z-order đúng: overflow→fullscreen trước, kéo launcher lên (che overflow), rồi mở lại app hiện (nổi trên launcher).
-     */
-    private fun reflowWindows() {
-        if (embedding) return   // nhúng: ô đổi kích thước theo layout view → app tự reflow, không cần am task resize
-        workspace.post {
-            val st = workspace.currentState()
-            val n = st.preset.slotCount
-            val visible = ArrayList<Pair<String, SlotRect>>()
-            val overflow = ArrayList<String>()
-            for (i in 0..3) {
-                val c = st.slots.getOrNull(i)
-                if (c is SlotContent.App) {
-                    if (i < n) absoluteSlotRect(i)?.let { visible.add(c.pkg to appRect(it)) } else overflow.add(c.pkg)
-                }
-            }
-            if (visible.isEmpty() && overflow.isEmpty()) return@post
-            val s = shell
-            winExec.execute {
-                overflow.forEach { appLauncher.closeSlot(it) }                                   // tràn → fullscreen chạy nền
-                if (overflow.isNotEmpty() && s != null) { s(HOME_FRONT); Thread.sleep(250) }      // kéo launcher lên che overflow
-                visible.forEach { (pkg, rect) -> appLauncher.openInSlot(pkg, rect) }              // ô hiện → freeform + đưa LÊN TRƯỚC launcher (cửa sổ hiện, không phải thẻ)
-                runOnUiThread { updateOverlayHeads() }
-            }
-        }
-    }
+    private fun switchPreset(p: LayoutPreset) = viewModel.setPreset(p)   // state+persist → collector: render + selectPreset + reflow
 
     private fun openDrawer(index: Int) {
         if (drawer != null) return
-        val current = (workspace.currentState().slots.getOrNull(index) as? SlotContent.Widget)?.ids ?: emptyList()
+        val current = (viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.Widget)?.ids ?: emptyList()
         val d = AppDrawer(
             this, WidgetRegistry.ALL, current,
             onPickApp = { pkg -> assignApp(index, pkg) },
@@ -349,9 +313,9 @@ class KachiHomeActivity : Activity() {
             onClose = { closeDrawer() },
         )
         drawer = d
-        overlayHeads.clear()
-        // Drawer NỔI như overlay (TYPE_APPLICATION_OVERLAY) → trên cả cửa sổ app freeform. Nếu để trong cửa sổ launcher
-        // (đáy z-order) sẽ bị app freeform đè lên (lỗi "app đè popup chọn app"). Chưa có quyền overlay → fallback vào launcher.
+        windows.clearOverlays()
+        // Drawer NỔI như overlay (TYPE_APPLICATION_OVERLAY) → trên cả cửa sổ app freeform (tránh app đè popup).
+        // Chưa có quyền overlay → fallback vào cửa sổ launcher.
         drawerAsOverlay = android.provider.Settings.canDrawOverlays(this) && runCatching {
             d.isFocusableInTouchMode = true
             d.setOnKeyListener { _, code, ev ->
@@ -374,89 +338,45 @@ class KachiHomeActivity : Activity() {
 
     private fun assignWidgets(index: Int, ids: List<String>) {
         closeDrawer()
-        val content: SlotContent = if (ids.isEmpty()) SlotContent.Empty else SlotContent.Widget(ids)
-        val s = workspace.currentState().withSlot(index, content)
-        workspace.setState(s); prefs.save(s)
+        viewModel.assignWidgets(index, ids)   // state+persist → collector: workspace.render
     }
 
     private fun closeDrawer() {
         drawer?.let { if (drawerAsOverlay) runCatching { windowManager.removeViewImmediate(it) } else rootFrame.removeView(it) }
-        drawer = null; drawerAsOverlay = false; updateOverlayHeads()
+        drawer = null; drawerAsOverlay = false; windows.updateOverlayHeads()
     }
 
     private fun assignApp(index: Int, pkg: String) {
         closeDrawer()
-        val prev = workspace.currentState().slots.getOrNull(index) as? SlotContent.App
-        val s = workspace.currentState().withSlot(index, SlotContent.App(pkg))
-        workspace.setState(s); prefs.save(s)
-        if (prev != null && prev.pkg != pkg) winDispatcher?.remove(prev.pkg)   // B2b: ô thay app khác → gỡ app cũ khỏi registry
-        winDispatcher?.place(pkg, 0, index)                                    // B2b: app mới chiếm ô index trên display 0
-        placeAppWindow(pkg, index, fresh = true)
+        val prev = viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App
+        viewModel.assignApp(index, pkg)                                       // state+persist → collector: workspace.render
+        if (prev != null && prev.pkg != pkg) winDispatcher?.remove(prev.pkg)  // B2b: ô thay app khác → gỡ app cũ khỏi registry
+        winDispatcher?.place(pkg, 0, index)                                   // B2b: app mới chiếm ô index trên display 0
+        windows.placeApp(pkg, index, fresh = true)
     }
 
     private fun reopenApp(index: Int) {
-        (workspace.currentState().slots.getOrNull(index) as? SlotContent.App)?.let { placeAppWindow(it.pkg, index) }
-    }
-
-    /** Mở/đặt cửa sổ app THẬT vào ô [index] (freeform + resize) trên thread nền (dadb blocking). */
-    private fun placeAppWindow(pkg: String, index: Int, fresh: Boolean = false) {
-        if (embedding) return   // WorkspaceView nhúng app bằng ActivityView → không cần freeform
-        val rect = absoluteSlotRect(index) ?: return
-        val s = shell
-        winExec.execute {
-            // Đặt MỚI: force-stop trước để app mở TƯƠI dạng freeform, KHÔNG tái dùng task fullscreen cũ
-            // (gốc lỗi "chọn gmaps mở fullscreen đè hết mọi thứ" — task cũ fullscreen bị `am start` tái dùng).
-            if (fresh && s != null) runCatching { s("am force-stop $pkg") }
-            appLauncher.openInSlot(pkg, appRect(rect))
-            runOnUiThread { updateOverlayHeads() }
-        }
+        (viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App)?.let { windows.placeApp(it.pkg, index) }
     }
 
     private fun clearSlot(index: Int) {
-        val cur = workspace.currentState()
+        val cur = viewModel.uiState.value
         (cur.slots.getOrNull(index) as? SlotContent.App)?.let { app ->
-            if (!embedding) winExec.execute { appLauncher.closeSlot(app.pkg) }
+            windows.closeApp(app.pkg)
             winDispatcher?.remove(app.pkg)   // B2b: ô đóng → gỡ vị trí (bất biến MỘT-VỊ-TRÍ)
         }
-        val s = cur.clearSlot(index); workspace.setState(s); prefs.save(s); updateOverlayHeads()
+        viewModel.clearSlot(index)   // state+persist → collector: workspace.render + updateOverlayHeads
     }
 
     /** Kéo-thả đổi chỗ 2 ô (widget/app). */
     private fun swapSlots(a: Int, b: Int) {
-        val cur = workspace.currentState()
+        val cur = viewModel.uiState.value
         if (a !in cur.slots.indices || b !in cur.slots.indices) return
-        val slots = cur.slots.toMutableList()
-        val t = slots[a]; slots[a] = slots[b]; slots[b] = t
-        val ns = cur.copy(slots = slots); workspace.setState(ns); prefs.save(ns)
+        viewModel.swapSlots(a, b)   // state+persist → collector: workspace.render
+        val ns = viewModel.uiState.value
         // B2b: 2 ô đổi chỗ → cập nhật lại index vị trí của app (nếu có) ở mỗi ô.
-        (slots.getOrNull(a) as? SlotContent.App)?.let { winDispatcher?.place(it.pkg, 0, a) }
-        (slots.getOrNull(b) as? SlotContent.App)?.let { winDispatcher?.place(it.pkg, 0, b) }
-    }
-
-    /** B2b: ghi vị trí ban đầu của các ô App vào registry → bất biến MỘT-VỊ-TRÍ có mặt ngay khi mở app. */
-    private fun seedLocations() {
-        workspace.currentState().slots.forEachIndexed { i, c ->
-            if (c is SlotContent.App) winDispatcher?.place(c.pkg, 0, i)
-        }
-    }
-
-    /** Khung ô ở toạ độ MÀN HÌNH (cho freeform on-car): offset vị trí workspace + Rect ô. */
-    private fun absoluteSlotRect(index: Int): SlotRect? {
-        if (workspace.width <= 0 || workspace.height <= 0) return null
-        val rects = WorkspaceLayout.slots(workspace.currentState().preset, workspace.width, workspace.height, dp(10))
-        val r = rects.getOrNull(index) ?: return null
-        val loc = IntArray(2); workspace.getLocationOnScreen(loc)
-        return SlotRect(index, loc[0] + r.left, loc[1] + r.top, loc[0] + r.right, loc[1] + r.bottom)
-    }
-
-    /**
-     * Khung CỬA SỔ app = LẤP ĐẦY ô (không bezel to như trước). Bo góc lo bằng: dải header đục (bo góc TRÊN + che caption)
-     * + 2 mặt nạ góc DƯỚI ([OverlayHeads]). Nhờ vậy margin ~0 giống prototype mà góc vẫn tròn.
-     */
-    private fun appRect(s: SlotRect): SlotRect {
-        val m = dp(10)        // margin trái/phải/dưới — nhiều hơn tý (yêu cầu owner)
-        val topCap = dp(24)   // thụt TRÊN thêm để caption freeform (~36px) lọt trong ô → hết "lòi đầu"
-        return SlotRect(s.index, s.left + m, s.top + topCap, s.right - m, s.bottom - m)
+        (ns.slots.getOrNull(a) as? SlotContent.App)?.let { winDispatcher?.place(it.pkg, 0, a) }
+        (ns.slots.getOrNull(b) as? SlotContent.App)?.let { winDispatcher?.place(it.pkg, 0, b) }
     }
 
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
@@ -467,7 +387,12 @@ class KachiHomeActivity : Activity() {
         dateText.text = SimpleDateFormat("EEEE, dd/MM", Locale.forLanguageTag("vi")).format(Date())
     }
 
-    override fun onResume() { super.onResume(); goImmersive(); updateClock(); handler.post(tick); workspace.postDelayed({ updateOverlayHeads() }, 600) }
+    override fun onStart() { super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START) }
+
+    override fun onResume() {
+        super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        goImmersive(); updateClock(); handler.post(tick); workspace.postDelayed({ windows.updateOverlayHeads() }, 600)
+    }
 
     @Suppress("DEPRECATION")
     private fun goImmersive() {
@@ -480,8 +405,15 @@ class KachiHomeActivity : Activity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus); if (hasFocus) goImmersive()
     }
-    override fun onPause() { super.onPause(); handler.removeCallbacks(tick) }
-    override fun onDestroy() { super.onDestroy(); winExec.shutdownNow(); overlayHeads.clear() }
+
+    override fun onPause() { super.onPause(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE); handler.removeCallbacks(tick) }
+
+    override fun onStop() { super.onStop(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP) }
+
+    override fun onDestroy() {
+        super.onDestroy(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        winExec.shutdownNow(); windows.clearOverlays()
+    }
 
     private fun toast(m: String) = Toast.makeText(this, m, Toast.LENGTH_SHORT).show()
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
@@ -489,6 +421,5 @@ class KachiHomeActivity : Activity() {
     companion object {
         private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
         private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
-        private const val HOME_FRONT = "am start -n com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity"
     }
 }

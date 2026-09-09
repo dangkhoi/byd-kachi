@@ -118,10 +118,22 @@ dependencies {
     testImplementation(testFixtures(project(":core")))
     implementation("dev.mobile:dadb:2.0.0")
 
+    // — B5a launcher UI-state: coroutines + AndroidX Lifecycle ViewModel/runtime (StateFlow single-source-of-truth) —
+    // Versions verified via Context7 + Maven Central (2026-09-10): kotlinx-coroutines 1.10.2 (latest stable band,
+    // README master = 1.11), androidx.lifecycle 2.9.0 (ktx artifacts transitively provide viewModelScope /
+    // repeatOnLifecycle / lifecycleScope / LifecycleRegistry), Turbine 1.2.1 (latest stable). Modern API only
+    // (MutableStateFlow.update, asStateFlow, runTest, Dispatchers.setMain) — no deprecated patterns.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
+
     // — JVM unit + property tests (off-device, chạy bằng ./gradlew testDebugUnitTest) —
     testImplementation(platform("org.junit:junit-bom:6.1.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    // B5a: test StateFlow của HomeViewModel — coroutines-test (runTest/Dispatchers.setMain) + Turbine (awaitItem).
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("app.cash.turbine:turbine:1.2.1")
     // Real org.json on the unit-test classpath: android.jar ships a stub that throws "Stub!",
     // so WazeMod HLP/1 parse tests need the reference implementation. Pinned. Test-only
     // (no prod classpath impact — production uses the platform org.json on-device).

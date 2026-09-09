@@ -36,6 +36,16 @@ data class WorkspaceState(
     /** Xoá 1 ô về trống. */
     fun clearSlot(index: Int): WorkspaceState = withSlot(index, SlotContent.Empty)
 
+    /** Đổi chỗ nội dung 2 ô [a] và [b] (0..3). Index ngoài phạm vi hoặc a==b → giữ nguyên. */
+    fun swap(a: Int, b: Int): WorkspaceState {
+        if (a !in slots.indices || b !in slots.indices || a == b) return this
+        return copy(
+            slots = slots.toMutableList().also {
+                val tmp = it[a]; it[a] = it[b]; it[b] = tmp
+            },
+        )
+    }
+
     /** Các ô ĐANG hiện theo preset (N ô đầu). */
     fun visibleSlots(): List<SlotContent> = slots.take(preset.slotCount)
 
