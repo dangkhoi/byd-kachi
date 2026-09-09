@@ -32,9 +32,16 @@ class LauncherWindows(
         activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(pkg, 0)).toString()
     }.getOrDefault(pkg)
 
-    /** B2b: ghi vị trí ban đầu của các ô App vào registry → bất biến MỘT-VỊ-TRÍ có mặt ngay khi mở app. */
+    /**
+     * B2b: ghi vị trí ban đầu của các ô App vào registry → bất biến MỘT-VỊ-TRÍ có mặt ngay khi mở app.
+     * B6 (cast coordination): dùng quyết định THUẦN [LauncherBootPlan] + [AppLocationRegistry.isCastable] để
+     * BỎ QUA app mà cluster-cast đang sở hữu trên cụm (display 1) — KHÔNG ghi đè vị trí cast (không "giành" app
+     * khỏi cụm). App chưa ở cụm ⇒ launcher sở hữu ô như cũ. Registry rỗng lúc boot ⇒ mọi app castable ⇒ y hệt cũ.
+     */
     fun seedLocations() {
-        state().slots.forEachIndexed { i, c -> if (c is SlotContent.App) dispatcher()?.place(c.pkg, 0, i) }
+        val d = dispatcher() ?: return
+        LauncherBootPlan.plan(state().slots) { pkg -> !d.locations.isCastable(pkg) }
+            .mount.forEach { d.place(it.pkg, 0, it.slot) }
     }
 
     fun clearOverlays() = overlayHeads.clear()

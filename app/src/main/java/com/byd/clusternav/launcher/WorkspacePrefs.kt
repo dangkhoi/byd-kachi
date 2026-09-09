@@ -74,6 +74,13 @@ class WorkspacePrefs(context: Context) {
 
     fun setThemeMode(m: ThemeMode) { sp.edit().putString(K_THEME, m.name).apply() }
 
+    // ── Launcher auto-start (chung mọi hồ sơ) — B6 ──
+    // Nổ máy → Kachi tự làm setup KHÔNG cần bung view (seed freeform + đặt HOME + đảm bảo HOME lên để khôi phục ô).
+    // Kill-switch của người dùng; MẶC ĐỊNH BẬT (launcher nên tự sẵn sàng). [com.byd.clusternav.KachiAutostart] đọc cờ này.
+    fun launcherAutostart(): Boolean = sp.getBoolean(K_AUTOSTART, true)
+
+    fun setLauncherAutostart(on: Boolean) { sp.edit().putBoolean(K_AUTOSTART, on).apply() }
+
     private fun encode(c: SlotContent): String = when (c) {
         SlotContent.Empty -> ""
         is SlotContent.App -> "app:${c.pkg}"
@@ -92,5 +99,6 @@ class WorkspacePrefs(context: Context) {
         private const val K_PROFILES = "profiles"
         private const val K_ACTIVE = "active_profile"
         private const val K_THEME = "theme_mode"
+        private const val K_AUTOSTART = "launcher_autostart"
     }
 }

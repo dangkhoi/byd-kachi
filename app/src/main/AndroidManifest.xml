@@ -158,6 +158,19 @@
                 android:value="vietmap_autostart" />
         </service>
 
+        <!-- B6 (launcher): Kachi auto-start — surface-INDEPENDENT boot orchestration (seed freeform + set-home +
+             cast-coordination plan + ensure the HOME activity is up so it restores + mounts the saved workspace).
+             Does NOT mount slots (VirtualDisplays are surface-bound → they live in KachiHomeActivity). Short-lived;
+             started by RebindReceiver on BOOT_COMPLETED / MY_PACKAGE_REPLACED. Never exported. -->
+        <service
+            android:name=".KachiAutostartService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="kachi_launcher_autostart" />
+        </service>
+
         <!-- VietMap HUD BLE bridge: removed — same-device BLE self-loopback not viable (2026-08-04) -->
 
         <!-- Lắng nghe notification dẫn đường -->

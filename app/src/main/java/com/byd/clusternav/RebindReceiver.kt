@@ -40,6 +40,11 @@ class RebindReceiver : BroadcastReceiver() {
                 // unchanged either way — the bubble/cast track is already headless and self-driven.
                 if (Prefs.headlessAutostart(context)) startBootSetup(context) else launchHome(context)
                 castBootWork(context, automation = true)
+                // B6 (launcher): surface-independent boot orchestration (seed freeform + set-home + ensure the
+                // Kachi HOME activity is up so it restores + mounts the saved workspace). Independent of the
+                // ClusterNav headlessAutostart toggle above — the launcher should come up ready regardless; its
+                // own pref + anti-loop gate live in KachiAutostart.runBoot. Best-effort (never throws).
+                KachiAutostartService.startForBoot(context)
             }
             Intent.ACTION_LOCKED_BOOT_COMPLETED -> {
                 scheduleWatchdog(context)
@@ -56,6 +61,10 @@ class RebindReceiver : BroadcastReceiver() {
                 // 1.21 Item 1 (owner): same headless gate as boot — when "Tự khởi động nền" is ON, run the
                 // background setup instead of reopening Home after an OTA self-update.
                 if (Prefs.headlessAutostart(context)) startBootSetup(context) else launchHome(context)
+                // B6 (launcher): the installer kills us on update and does NOT relaunch → ensure the Kachi HOME
+                // activity comes back up (which restores + mounts the saved workspace) via the surface-independent
+                // orchestration. Same independence + best-effort as the boot path.
+                KachiAutostartService.startForBoot(context)
             }
         }
     }
