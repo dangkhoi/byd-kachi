@@ -7,6 +7,9 @@ import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.widget.FrameLayout
+import com.byd.clusternav.system.inputd.InputDaemonClient
+import com.byd.clusternav.system.inputd.SlotTouchMapper
+import com.byd.clusternav.system.inputd.TouchRouter
 
 /**
  * Dudu-style app projection, done a bit better.
@@ -33,11 +36,16 @@ class VdAppHost(
     // cho phép lệnh `am start --display <vdId>`. Mặc định no-op (đường không-dispatcher / test).
     private val registerVd: (Int) -> Unit = {},
     private val unregisterVd: (Int) -> Unit = {},
+    // B4: input-injection daemon (smooth touch over its OWN socket). null → fallback-only (`input -d`), i.e. the
+    // pre-B4 behaviour. Touch data NEVER rides the ShellTransport command queue; only the daemon lifecycle start does.
+    private val inputClient: InputDaemonClient? = null,
 ) : FrameLayout(context) {
 
     private val surface = SurfaceView(context)
     private var vd: VirtualDisplay? = null
     private var vdDisplayId: Int? = null
+    private var dispW = 0                 // B4: cỡ VirtualDisplay (để map toạ độ ô→display; = cỡ surface nên map đồng nhất)
+    private var dispH = 0
     private var pkg: String? = null
     private var shell: ((String) -> String)? = null
     private var launched = false
@@ -56,6 +64,7 @@ class VdAppHost(
                     // 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ). Shell mở app lên VD vẫn được (khác ActivityView bị chặn ở API startActivity, không phải ở cờ này).
                     val created = dm.createVirtualDisplay("kachi-slot-${System.currentTimeMillis()}", w, ht, densityDpi, h.surface, 8 or 256)
                     vd = created
+                    dispW = w; dispH = ht          // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
                     // B2b: đăng ký display của VD (thuộc LAUNCHER) TRƯỚC maybeLaunch — nếu không, cổng ownership
                     // của launcherSeam sẽ REJECT lệnh `am start --display <vdId>` (fail-safe deny display không chủ).
                     created?.display?.displayId?.let { id -> vdDisplayId = id; runCatching { registerVd(id) } }
@@ -63,6 +72,7 @@ class VdAppHost(
                 } else {
                     v.surface = h.surface
                     v.resize(w, ht, densityDpi)
+                    dispW = w; dispH = ht          // B4: giữ cỡ VD đồng bộ để map toạ độ đúng sau resize
                 }
             }
             override fun surfaceDestroyed(h: SurfaceHolder) { vd?.surface = null }
@@ -91,6 +101,7 @@ class VdAppHost(
             sh("am force-stop $p")
             Thread.sleep(1000)     // đợi force-stop XONG hẳn → am start mở task MỚI trên VD, không tái dùng task fullscreen ở display 0 (bug gmail nhảy fullscreen)
             sh(cmd)                // mở ĐÚNG 1 lần trên VD — KHÔNG relaunch/di lần 2 (bỏ vòng retry gây nháy + làm app ô khác nhảy)
+            runCatching { inputClient?.ensureStarted() }   // B4: hâm nóng daemon bơm chạm (lifecycle qua queue) — chạm sau mượt; không block
         }.start()
     }
 
@@ -101,16 +112,36 @@ class VdAppHost(
         return out.trim().lines().lastOrNull { it.contains("/") && it.contains(pkg) }
     }
 
-    /** Forward touch into the VD via the shell. Spike: per-event `input -d` (laggy; a persistent
-     *  injectInputEvent daemon like Dudu's would be smoother — measured next). */
+    /**
+     * Forward touch into the VD. PRIMARY = the resident [InputDaemonClient] over its OWN socket
+     * (`injectInputEvent`, smooth, no per-event process spawn — the ~75ms/event `input` fork is gone). When the
+     * daemon is unavailable/unhealthy the tap FALLS BACK to the pre-B4 `input -d <display> tap x y`
+     * ([TouchRouter.fallbackTapCmd]) — BYTE-IDENTICAL to before, so touch never regresses when the daemon is off.
+     *
+     * DOWN/UP fall back (double-fire preserved on the fallback, exactly as before); the daemon path injects a
+     * proper DOWN+UP (one tap, no double-fire). MOVE is daemon-only smoothness — the pre-B4 path had no MOVE
+     * handling, so when the daemon is off this is a no-op = identical to today. Touch NEVER rides the command queue.
+     */
     override fun onTouchEvent(e: MotionEvent): Boolean {
         val v = vd ?: return false
         val sh = shell ?: return false
         val displayId = v.display.displayId
         val x = e.x.toInt(); val y = e.y.toInt()
+        // View→display map. The VD is created at the surface size, so this is the identity today (daemon coords ==
+        // fallback coords); it only scales if the display size ever diverges from the view size.
+        val m = SlotTouchMapper.toDisplay(x, y, width, height, dispW, dispH)
+        val dx = m[0]; val dy = m[1]
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP ->
-                Thread { runCatching { sh("input -d $displayId tap $x $y") } }.start()
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP -> {
+                val routed = runCatching { inputClient?.sendTouch(displayId, e.actionMasked, dx, dy) ?: false }
+                    .getOrDefault(false)
+                if (TouchRouter.shouldFallback(routed)) {
+                    Thread { runCatching { sh(TouchRouter.fallbackTapCmd(displayId, x, y)) } }.start()
+                }
+            }
+            MotionEvent.ACTION_MOVE ->
+                // Daemon-only smoothness (drag/scroll); no fallback (pre-B4 had none → no-op when the daemon is off).
+                runCatching { inputClient?.sendTouch(displayId, MotionEvent.ACTION_MOVE, dx, dy) }
         }
         return true
     }

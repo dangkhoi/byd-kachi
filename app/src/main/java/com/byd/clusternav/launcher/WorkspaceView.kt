@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.byd.clusternav.system.inputd.InputDaemonClient
 
 /**
  * Sân khấu workspace: đặt tối đa 4 "ô" theo [WorkspaceLayout] cho [WorkspaceState.preset].
@@ -35,6 +36,16 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private val gapPx = dp(10)
     private var state = WorkspaceState()
     private val slotViews = ArrayList<View>()
+    // B4: MỘT input-daemon THƯỜNG TRÚ dùng chung cho MỌI ô (mỗi khung tự mang displayId). Tạo lười khi có shell seam;
+    // lệnh lifecycle daemon đi qua seam (queue), còn chạm đi socket riêng. null → VdAppHost fallback `input -d` (cũ).
+    private var inputClient: InputDaemonClient? = null
+
+    private fun inputClientFor(sh: (String) -> String): InputDaemonClient? {
+        inputClient?.let { return it }
+        val apk = runCatching { context.applicationInfo.sourceDir }.getOrNull()
+        if (apk.isNullOrEmpty()) return null
+        return InputDaemonClient(apk, sh).also { inputClient = it }
+    }
 
     init { rebuild() }
 
@@ -100,7 +111,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.addView(appCard(content.pkg), mm)                       // fallback phía sau (hiện nếu nhúng lỗi)
                 val sh = shell
                 if (sh != null) {
-                    val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd)  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag
+                    val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd, inputClientFor(sh))  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag; chạm qua input-daemon (fallback `input -d`)
                     fl.addView(host, mm); host.bind(content.pkg, sh)
                 } else if (SlotAppHost.embeddingUsable(context)) {
                     val host = SlotAppHost(context, dp(16).toFloat())
