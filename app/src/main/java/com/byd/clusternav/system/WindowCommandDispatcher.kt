@@ -98,8 +98,6 @@ class WindowCommandDispatcher internal constructor(
         component.substringBefore('/').trim().ifEmpty { null }
 
     companion object {
-        @Volatile private var instance: WindowCommandDispatcher? = null
-
         /** Cờ `--display N` trong một chuỗi lệnh `am`; không có → [WindowMutation.NO_DISPLAY]. */
         private val DISPLAY_FLAG = Regex("""--display\s+(\d+)""")
 
@@ -107,20 +105,20 @@ class WindowCommandDispatcher internal constructor(
             DISPLAY_FLAG.find(cmd)?.groupValues?.get(1)?.toIntOrNull() ?: WindowMutation.NO_DISPLAY
 
         /**
-         * Process-wide dispatcher qua [ShellTransport] (một owner window/cast). Thread-safe. B5 gộp vào
-         * AppContainer cùng ShellTransport + registry.
+         * Dựng một dispatcher chạy trên [transport] cho [com.byd.clusternav.AppContainer] (chủ đồ thị DI). AppContainer
+         * giữ DUY NHẤT một instance (lazy) → factory này chỉ được gọi một lần cho cả tiến trình.
          */
-        fun get(context: Context): WindowCommandDispatcher {
-            val app = context.applicationContext
-            return instance ?: synchronized(this) {
-                instance ?: run {
-                    val transport = ShellTransport.get(app)
-                    WindowCommandDispatcher(
-                        runCommand = { cmd, priority -> transport.run(cmd, priority) },
-                        log = { msg -> android.util.Log.i("Kachi/WinDispatch", msg) },
-                    ).also { instance = it }
-                }
-            }
-        }
+        internal fun createOwned(transport: ShellTransport): WindowCommandDispatcher =
+            WindowCommandDispatcher(
+                runCommand = { cmd, priority -> transport.run(cmd, priority) },
+                log = { msg -> android.util.Log.i("Kachi/WinDispatch", msg) },
+            )
+
+        /**
+         * Process-wide dispatcher — NAY UỶ QUYỀN về [com.byd.clusternav.AppContainer] (đồ thị DI, B5), chạy trên chủ
+         * [ShellTransport] DUY NHẤT của container. Thread-safe. Caller cũ (FreeformSeed, KachiHomeActivity…) không đổi.
+         */
+        fun get(context: Context): WindowCommandDispatcher =
+            com.byd.clusternav.AppContainer.get(context).windowDispatcher
     }
 }

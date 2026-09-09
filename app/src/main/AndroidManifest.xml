@@ -37,6 +37,7 @@
     <!-- allowBackup=false: app lưu ADB private key (adb.key/adb.pub) trong filesDir — key này grant shell
          localhost:5555. Bật backup sẽ để `adb backup`/auto-backup rút key ra ngoài → tắt để không lộ. -->
     <application
+        android:name=".KachiApplication"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"

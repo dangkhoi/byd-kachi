@@ -1,6 +1,5 @@
 package com.byd.clusternav.launcher
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,14 +79,5 @@ class HomeViewModel(
     private fun reload(loader: () -> HomeUiState) {
         val embedded = _uiState.value.embedded
         _uiState.value = loader().copy(embedded = embedded)
-    }
-
-    companion object {
-        /**
-         * Factory TẠM cho :app (KachiHomeActivity là `android.app.Activity`, không có ViewModelStore).
-         * B5b sẽ gộp vào AppContainer/DI. Dùng applicationContext để không rò Activity.
-         */
-        fun factory(context: Context, embedded: Boolean = false): HomeViewModel =
-            HomeViewModel(PrefsWorkspaceRepository(context.applicationContext), embedded)
     }
 }

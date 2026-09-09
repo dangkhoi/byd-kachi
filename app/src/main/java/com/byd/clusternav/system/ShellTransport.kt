@@ -103,12 +103,17 @@ class ShellTransport private constructor(context: Context) {
     private fun <T> onOwner(priority: MutationPriority, body: () -> T): T = owner.submit(priority, body)
 
     companion object {
-        @Volatile private var instance: ShellTransport? = null
+        /**
+         * Dựng một [ShellTransport] mới cho [com.byd.clusternav.AppContainer] (chủ đồ thị DI). AppContainer giữ DUY
+         * NHẤT một instance (lazy) → factory này chỉ được gọi một lần cho cả tiến trình.
+         */
+        internal fun createOwned(context: Context): ShellTransport = ShellTransport(context.applicationContext)
 
-        /** Process-wide single owner. Thread-safe. (B5 will fold this into AppContainer.) */
-        fun get(context: Context): ShellTransport =
-            instance ?: synchronized(this) {
-                instance ?: ShellTransport(context.applicationContext).also { instance = it }
-            }
+        /**
+         * Process-wide single owner — NAY UỶ QUYỀN về [com.byd.clusternav.AppContainer] (đồ thị DI, B5). Mọi caller
+         * cũ (cast, [com.byd.clusternav.launcher.DadbShell], FreeformSeed…) chạy y nguyên; instance đến TỪ container
+         * thay cho @Volatile riêng ở đây. Thread-safe (AppContainer.get + field `by lazy` đều đồng bộ hoá).
+         */
+        fun get(context: Context): ShellTransport = com.byd.clusternav.AppContainer.get(context).shellTransport
     }
 }
