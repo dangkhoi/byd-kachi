@@ -27,6 +27,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     var onAppOpen: ((Int) -> Unit)? = null
     var carData: CarDataPort = NoCar
     var shell: ((String) -> String)? = null   // dadb uid-shell → nhúng app lên VirtualDisplay (display phụ, không caption) + bơm chạm
+    // B2b: đăng ký/gỡ display của VD ô với DisplayOwnershipRegistry (qua WindowCommandDispatcher). Mặc định no-op.
+    var registerVd: (Int) -> Unit = {}
+    var unregisterVd: (Int) -> Unit = {}
     var slotDensityDpi = 200                   // mật độ cho VirtualDisplay của ô (Dudu ~200; chỉnh để app hiện vừa mắt)
 
     private val gapPx = dp(10)
@@ -97,7 +100,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.addView(appCard(content.pkg), mm)                       // fallback phía sau (hiện nếu nhúng lỗi)
                 val sh = shell
                 if (sh != null) {
-                    val host = VdAppHost(context, slotDensityDpi)          // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag
+                    val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd)  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag
                     fl.addView(host, mm); host.bind(content.pkg, sh)
                 } else if (SlotAppHost.embeddingUsable(context)) {
                     val host = SlotAppHost(context, dp(16).toFloat())

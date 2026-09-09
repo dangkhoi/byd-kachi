@@ -3,9 +3,6 @@ package com.byd.clusternav.system
 import android.content.Context
 import com.byd.clusternav.AdbKeys
 import dadb.Dadb
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executors
 
 /**
  * SINGLE OWNER of the localhost:5555 window/display-command dadb connection (uid-2000 shell) that Kachi uses to
@@ -22,9 +19,16 @@ import java.util.concurrent.Executors
  * single-thread executor, so concurrent callers can never interleave the streams.
  *
  * ── SERIALIZATION PRIMITIVE ──────────────────────────────────────────────────────────────────────────────────
- * A single-thread [java.util.concurrent.ExecutorService] (`submit` + `Future.get`). kotlinx-coroutines is NOT a
- * dependency of `:app`, so `Dispatchers.IO.limitedParallelism(1)` is unavailable; the single-thread executor is
- * the dependency-free equivalent and gives the same strict one-at-a-time ordering.
+ * A single-worker [com.byd.clusternav.system.PrioritySerialExecutor] (submit + block for the result). kotlinx-
+ * coroutines is NOT a dependency of `:app`, so `Dispatchers.IO.limitedParallelism(1)` is unavailable; the
+ * single-worker executor is the dependency-free equivalent and gives the same strict one-at-a-time ordering.
+ *
+ * ── PRIORITY (Stage B2b) ─────────────────────────────────────────────────────────────────────────────────────
+ * B1 merged the launcher + cast window commands onto THIS one connection/owner. A plain FIFO owner would let a
+ * cast STOP get stuck behind a queued launcher command; instead the owner is a PRIORITY queue that still runs
+ * one-at-a-time but drains [MutationPriority.STOP]/[MutationPriority.RESCUE] ahead of [MutationPriority.NORMAL].
+ * [exec]/[run] take an optional `priority` that DEFAULTS to NORMAL, so every pre-B2b caller is byte/behaviour-
+ * identical; only callers that opt into STOP/RESCUE preempt the queue.
  *
  * ── RECONNECT / RESILIENCE ───────────────────────────────────────────────────────────────────────────────────
  * [exec] retries ONCE on failure (close + reconnect + retry). This REPLICATES the resilience the cast path used
@@ -40,10 +44,11 @@ class ShellTransport private constructor(context: Context) {
     /** The one shared connection. Touched ONLY on [owner] (see [onOwner]) so no external lock is needed. */
     private var db: Dadb? = null
 
-    /** Single owner thread — serializes every command so two callers can't interleave one connection's streams. */
-    private val owner = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "kachi-window-shell").apply { isDaemon = true }
-    }
+    /**
+     * Single owner — serializes every command (two callers can't interleave one connection's streams) AND drains
+     * STOP/RESCUE-priority commands ahead of NORMAL on the shared window/cast queue. Still strictly one-at-a-time.
+     */
+    private val owner = PrioritySerialExecutor("kachi-window-shell")
 
     /** Structured result mirroring the dadb `AdbShellResponse` fields the consumers read. */
     data class Response(val exitCode: Int, val stdout: String, val stderr: String, val allOutput: String)
@@ -59,11 +64,13 @@ class ShellTransport private constructor(context: Context) {
     }
 
     /**
-     * Run [cmd] serialized on the single owner thread and return the structured [Response].
+     * Run [cmd] serialized on the single owner at [priority] and return the structured [Response].
      * On failure: close + reconnect + retry ONCE (self-heals a stale connection, as fresh-conn-per-command did).
      * If the retry also fails, the (unwrapped) exception is thrown to the caller.
+     * [priority] defaults to [MutationPriority.NORMAL] — pre-B2b callers stay byte/behaviour-identical; a cast
+     * STOP/RESCUE path may pass a higher priority to preempt queued NORMAL launcher commands.
      */
-    fun exec(cmd: String): Response = onOwner {
+    fun exec(cmd: String, priority: MutationPriority = MutationPriority.NORMAL): Response = onOwner(priority) {
         runCatching { attempt(cmd) }.getOrElse {
             closeConn()
             attempt(cmd)
@@ -71,7 +78,8 @@ class ShellTransport private constructor(context: Context) {
     }
 
     /** `allOutput` of [cmd], or "" if BOTH attempts failed — byte-for-byte the legacy `DadbShell.run()` contract. */
-    fun run(cmd: String): String = runCatching { exec(cmd).allOutput }.getOrDefault("")
+    fun run(cmd: String, priority: MutationPriority = MutationPriority.NORMAL): String =
+        runCatching { exec(cmd, priority).allOutput }.getOrDefault("")
 
     /** One-command seam for [com.byd.clusternav.launcher.ShellAppLauncher] / reflow / VdAppHost. */
     val seam: (String) -> String = { run(it) }
@@ -86,17 +94,13 @@ class ShellTransport private constructor(context: Context) {
      * code MUST use [run]/[exec]/[seam]; this exists only to fold ClusterCast's `Dadb.create` sites onto the one
      * owner WITHOUT a risky rewrite of proven-but-unreachable code, and is removed when ClusterCast is deleted.
      */
-    fun <T> withConnection(block: (Dadb) -> T): T = onOwner { block(conn()) }
+    fun <T> withConnection(block: (Dadb) -> T): T = onOwner(MutationPriority.NORMAL) { block(conn()) }
 
     /** Close the shared connection; the next command reconnects. */
-    fun close() { onOwner { closeConn() } }
+    fun close() { onOwner(MutationPriority.NORMAL) { closeConn() } }
 
-    /** Submit [body] to the single owner thread, block for its result, and unwrap execution exceptions. */
-    private fun <T> onOwner(body: () -> T): T = try {
-        owner.submit(Callable { body() }).get()
-    } catch (e: ExecutionException) {
-        throw (e.cause ?: e)
-    }
+    /** Submit [body] to the single owner at [priority], block for its result (unwrap happens in the executor). */
+    private fun <T> onOwner(priority: MutationPriority, body: () -> T): T = owner.submit(priority, body)
 
     companion object {
         @Volatile private var instance: ShellTransport? = null

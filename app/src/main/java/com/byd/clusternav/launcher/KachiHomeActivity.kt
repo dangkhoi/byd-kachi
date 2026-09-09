@@ -23,6 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.byd.clusternav.MainActivity
 import com.byd.clusternav.R
+import com.byd.clusternav.system.WindowCommandDispatcher
 import com.byd.clusternav.launcher.KachiTheme.c
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -46,6 +47,7 @@ class KachiHomeActivity : Activity() {
     // giống hệt cast. Chưa có dadb (emulator chưa `adb reverse`) → fallback IntentAppLauncher (chỉ mở, không reflow được).
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
     private var shell: ((String) -> String)? = null
+    private var winDispatcher: WindowCommandDispatcher? = null   // B2b: cổng validate sở hữu display + registry vị trí app
     private val embedding get() = shell != null || SlotAppHost.embeddingUsable(this)   // dadb → app render lên VirtualDisplay trong ô (display phụ, KHÔNG caption) kiểu Dudu; hoặc ROM xe platform-signed → ActivityView. Cả 2 đều bỏ freeform + bỏ overlay header.
     private val winExec = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var dockConfig = ControlRegistry.defaultDock()
@@ -90,12 +92,22 @@ class KachiHomeActivity : Activity() {
         setContentView(rootFrame)
 
         // Nối shell dadb (localhost:5555) trên nền — nối được thì dùng ShellAppLauncher để reflow THẬT như xe.
+        // B2b: MỌI lệnh cửa sổ của launcher đi qua WindowCommandDispatcher — validate sở hữu display TRƯỚC dispatch
+        // (launcher chỉ chạm display 0 + VD ô của nó; cụm bị chặn về mặt cấu trúc). Registry vị trí app luôn-bật.
         val dadb = DadbShell(this)
+        val dispatcher = WindowCommandDispatcher.get(this)
+        winDispatcher = dispatcher
+        seedLocations()
+        val seam = dispatcher.launcherSeam()
         winExec.execute {
             if (dadb.probe()) {
-                shell = dadb.seam; appLauncher = ShellAppLauncher(dadb.seam)
-                runCatching { dadb.seam("appops set com.byd.launcher SYSTEM_ALERT_WINDOW allow") }  // để vẽ dải header nổi lên app freeform
-                runOnUiThread { workspace.shell = dadb.seam; workspace.setState(workspace.currentState()) }   // bật render app lên VirtualDisplay trong ô (kiểu Dudu, không caption)
+                shell = seam; appLauncher = ShellAppLauncher(seam)
+                runCatching { seam("appops set com.byd.launcher SYSTEM_ALERT_WINDOW allow") }  // để vẽ dải header nổi lên app freeform
+                runOnUiThread {
+                    workspace.registerVd = dispatcher::registerLauncherVirtualDisplay        // VD ô thuộc LAUNCHER → cổng ownership cho phép
+                    workspace.unregisterVd = dispatcher::unregisterLauncherVirtualDisplay
+                    workspace.shell = seam; workspace.setState(workspace.currentState())      // bật render app lên VirtualDisplay trong ô (kiểu Dudu, không caption)
+                }
             }
         }
     }
@@ -374,8 +386,11 @@ class KachiHomeActivity : Activity() {
 
     private fun assignApp(index: Int, pkg: String) {
         closeDrawer()
+        val prev = workspace.currentState().slots.getOrNull(index) as? SlotContent.App
         val s = workspace.currentState().withSlot(index, SlotContent.App(pkg))
         workspace.setState(s); prefs.save(s)
+        if (prev != null && prev.pkg != pkg) winDispatcher?.remove(prev.pkg)   // B2b: ô thay app khác → gỡ app cũ khỏi registry
+        winDispatcher?.place(pkg, 0, index)                                    // B2b: app mới chiếm ô index trên display 0
         placeAppWindow(pkg, index, fresh = true)
     }
 
@@ -399,7 +414,10 @@ class KachiHomeActivity : Activity() {
 
     private fun clearSlot(index: Int) {
         val cur = workspace.currentState()
-        if (!embedding) (cur.slots.getOrNull(index) as? SlotContent.App)?.let { app -> winExec.execute { appLauncher.closeSlot(app.pkg) } }
+        (cur.slots.getOrNull(index) as? SlotContent.App)?.let { app ->
+            if (!embedding) winExec.execute { appLauncher.closeSlot(app.pkg) }
+            winDispatcher?.remove(app.pkg)   // B2b: ô đóng → gỡ vị trí (bất biến MỘT-VỊ-TRÍ)
+        }
         val s = cur.clearSlot(index); workspace.setState(s); prefs.save(s); updateOverlayHeads()
     }
 
@@ -410,6 +428,16 @@ class KachiHomeActivity : Activity() {
         val slots = cur.slots.toMutableList()
         val t = slots[a]; slots[a] = slots[b]; slots[b] = t
         val ns = cur.copy(slots = slots); workspace.setState(ns); prefs.save(ns)
+        // B2b: 2 ô đổi chỗ → cập nhật lại index vị trí của app (nếu có) ở mỗi ô.
+        (slots.getOrNull(a) as? SlotContent.App)?.let { winDispatcher?.place(it.pkg, 0, a) }
+        (slots.getOrNull(b) as? SlotContent.App)?.let { winDispatcher?.place(it.pkg, 0, b) }
+    }
+
+    /** B2b: ghi vị trí ban đầu của các ô App vào registry → bất biến MỘT-VỊ-TRÍ có mặt ngay khi mở app. */
+    private fun seedLocations() {
+        workspace.currentState().slots.forEachIndexed { i, c ->
+            if (c is SlotContent.App) winDispatcher?.place(c.pkg, 0, i)
+        }
     }
 
     /** Khung ô ở toạ độ MÀN HÌNH (cho freeform on-car): offset vị trí workspace + Rect ô. */

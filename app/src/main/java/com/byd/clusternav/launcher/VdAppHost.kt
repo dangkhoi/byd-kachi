@@ -26,10 +26,18 @@ import android.widget.FrameLayout
  * uid-2000 shell. On a platform-signed ROM the caption-free + zero-lag path is [SlotAppHost]
  * (ActivityView); this is the sideload path.
  */
-class VdAppHost(context: Context, private val densityDpi: Int) : FrameLayout(context) {
+class VdAppHost(
+    context: Context,
+    private val densityDpi: Int,
+    // B2b: đăng ký/gỡ display của VD với DisplayOwnershipRegistry (qua WindowCommandDispatcher) để launcherSeam
+    // cho phép lệnh `am start --display <vdId>`. Mặc định no-op (đường không-dispatcher / test).
+    private val registerVd: (Int) -> Unit = {},
+    private val unregisterVd: (Int) -> Unit = {},
+) : FrameLayout(context) {
 
     private val surface = SurfaceView(context)
     private var vd: VirtualDisplay? = null
+    private var vdDisplayId: Int? = null
     private var pkg: String? = null
     private var shell: ((String) -> String)? = null
     private var launched = false
@@ -46,7 +54,11 @@ class VdAppHost(context: Context, private val densityDpi: Int) : FrameLayout(con
                     val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
                     // 8 = OWN_CONTENT_ONLY (chỉ hiện app đặt lên VD, KHÔNG mirror display 0 → hết "gương đệ quy")
                     // 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ). Shell mở app lên VD vẫn được (khác ActivityView bị chặn ở API startActivity, không phải ở cờ này).
-                    vd = dm.createVirtualDisplay("kachi-slot-${System.currentTimeMillis()}", w, ht, densityDpi, h.surface, 8 or 256)
+                    val created = dm.createVirtualDisplay("kachi-slot-${System.currentTimeMillis()}", w, ht, densityDpi, h.surface, 8 or 256)
+                    vd = created
+                    // B2b: đăng ký display của VD (thuộc LAUNCHER) TRƯỚC maybeLaunch — nếu không, cổng ownership
+                    // của launcherSeam sẽ REJECT lệnh `am start --display <vdId>` (fail-safe deny display không chủ).
+                    created?.display?.displayId?.let { id -> vdDisplayId = id; runCatching { registerVd(id) } }
                     maybeLaunch()
                 } else {
                     v.surface = h.surface
@@ -107,6 +119,7 @@ class VdAppHost(context: Context, private val densityDpi: Int) : FrameLayout(con
         super.onDetachedFromWindow()
         val p = pkg; val sh = shell
         if (p != null && sh != null) Thread { runCatching { sh("am force-stop $p") } }.start()
+        vdDisplayId?.let { id -> runCatching { unregisterVd(id) } }; vdDisplayId = null
         runCatching { vd?.release() }; vd = null
     }
 }

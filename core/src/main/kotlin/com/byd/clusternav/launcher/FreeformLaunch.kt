@@ -23,6 +23,13 @@ object FreeformLaunch {
     fun resolveCmd(pkg: String): String =
         "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $pkg"
 
+    /**
+     * force-stop [pkg] (process death). KHÔNG nhắm display nào. Byte-KHỚP chuỗi inline mà VdAppHost
+     * (`am force-stop $p`) và KachiHomeActivity (`am force-stop $pkg`) đang dùng — nay tập trung tại đây để
+     * B2 [com.byd.clusternav.system.WindowMutation.ForceStop] / B4 gọi lại một chuỗi DUY NHẤT (DRY).
+     */
+    fun forceStopCmd(pkg: String): String = "am force-stop $pkg"
+
     /** Đưa [component] về FULLSCREEN display chính (đóng ô) — công thức R6 cast (FLAG_ACTIVITY_SINGLE_TOP=0x20000000). */
     fun fullscreenCmd(component: String, displayId: Int = MAIN_DISPLAY): String =
         "am start --display $displayId --windowingMode 1 -f 0x20000000" +
