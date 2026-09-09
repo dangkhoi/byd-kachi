@@ -55,11 +55,11 @@ object FreeformLaunch {
         return "am start --display $displayId --windowingMode $windowingMode$category -n '$component'"
     }
 
-    /** Cờ freeform (framework chỉ đọc lúc BOOT → có hiệu lực sau khi tắt-mở máy xe 1 lần). */
-    val freeformFlagCmds: List<String> = listOf(
-        "settings put global enable_freeform_support 1",
-        "settings put global force_resizable_activities 1",
-    )
+    // ── Freeform boot flags MOVED to the single sanctioned writer (Stage B3) ──
+    // The launcher's freeform need is served ONLY by [com.byd.clusternav.system.FreeformSeedPolicy] (SEED_CMDS +
+    // 3-state marker discipline). Keeping a second copy of these command strings here would make FreeformLaunch a
+    // rogue persistent-state writer — PersistentWindowStateWriterGuardTest asserts NO launcher file writes them.
+    // Command strings are byte-identical to the former `freeformFlagCmds` constant (locked by FreeformSeedPolicyTest).
 
     /** Lấy taskId của [pkg] từ output `am stack list` (khớp regex proven trong AppMover). */
     fun parseTaskId(stackList: String, pkg: String): Int? =

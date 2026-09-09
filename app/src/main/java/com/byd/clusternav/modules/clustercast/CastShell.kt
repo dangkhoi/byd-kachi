@@ -30,86 +30,46 @@ internal object CastShell {
     fun logLines(out: String, log: (String) -> Unit) =
         out.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.take(6).forEach { log("      $it") }
 
-    /**
-     * Ghi 3 setting freeform 1 LẦN mỗi phiên app (không phải mỗi lần chiếu). Chúng CHỈ được framework đọc lúc BOOT
-     * (`ATMS.retrieveSettings`, không có ContentObserver) → ghi runtime chỉ có nghĩa cho lần khởi động SAU.
-     * ★ v0.36 ĐỔI 0 → 1 (bản cũ ghi 0 MỖI lần chiếu). Cần =1 vì HAI lý do, đều verify trên source AOSP 10:
-     *   (a) `ATMS.retrieveSettings` chỉ GÁN `mSupportsFreeformWindowManagement` BÊN TRONG nhánh
-     *       `(supportsMultiWindow || forceResizable)`. OEM đặt `config_supportsMultiWindow=false` (hoặc
-     *       `ro.config.low_ram=true`) là vế trái tắt → `enable_freeform_support` một mình bị VỨT ĐI.
-     *   (b) `ActivityDisplay.validateWindowingMode` sẽ downgrade FREEFORM cho app khai
-     *       `resizeableActivity="false"`, vì nó gate trên `TaskRecord.isResizeable()` =
-     *       `mForceResizableActivities || isResizeableMode(...) || mSupportsPictureInPicture`.
-     *   ⚠ KHÔNG hoàn tác được từ trong app (đảo về 0 sẽ phá freeform ở máy đã seed + power-cycle rồi).
-     *     Muốn gỡ tay: `adb shell settings delete global force_resizable_activities` rồi tắt-mở máy xe.
-     */
-    /** Khoá prefs đánh dấu ĐÃ ghi cờ freeform ra Settings.Global — ghi TRƯỚC khi đổi, để lần chạy sau còn biết đường gỡ. */
-    const val PREF_FREEFORM = "clusternav_state"
-    /** 0 = chưa seed · 1 = đã seed · 2 = NGƯỜI DÙNG ĐÃ GỠ (không được tự bật lại). */
-    const val K_FREEFORM_STATE = "freeform_state"
-    const val FF_NONE = 0
-    const val FF_SEEDED = 1
-    const val FF_USER_REMOVED = 2
-
-    private val FREEFORM_KEYS = listOf("enable_freeform_support", "force_resizable_activities")
-
+    // ── FREEFORM SEED (Settings.Global boot flags) — DELEGATED to the single sanctioned writer (Stage B3) ──
+    //
+    // The freeform-flag write + 3-state marker discipline (commit-before-mutate; user-removed is TERMINAL) moved
+    // to [com.byd.clusternav.system.FreeformSeedPolicy], so cast AND launcher share ONE writer and ONE on-disk
+    // marker (`clusternav_state`/`freeform_state`, via [com.byd.clusternav.system.FreeformSeedStore]). The emitted
+    // commands (`settings put/delete global enable_freeform_support|force_resizable_activities`) + the marker
+    // semantics are BYTE/behaviour-identical to the former inline implementation; only the OWNER changed.
+    //
+    // ⚠ These flags are STATE THAT OUTLIVES THE PROCESS (Settings.Global survives reboot/uninstall/data-clear) and
+    // are read ONLY at boot by ATMS.retrieveSettings — they ACTIVATE after a physical ignition off/on, they are
+    // not "fixed" by it. That is why the marker is committed BEFORE the write (the policy enforces this).
+    //
+    // CastShell keeps only the per-process RAM latch [freeformSeeded] (seed at most once per app session).
     @Volatile private var freeformSeeded = false
 
+    private fun freeformPolicy(ctx: android.content.Context, sh: (String) -> String, log: (String) -> Unit) =
+        com.byd.clusternav.system.FreeformSeedPolicy(com.byd.clusternav.system.FreeformSeedStore(ctx), sh, log)
+
     /**
-     * Ghi hai cờ freeform vào `Settings.Global`.
-     *
-     * ⚠ ĐÂY LÀ STATE SỐNG NGOÀI TIẾN TRÌNH (§5): `Settings.Global` sống qua reboot, qua gỡ app, qua xoá data.
-     * `ActivityTaskManagerService.retrieveSettings` đọc hai khoá này ĐÚNG MỘT LẦN lúc boot (không có
-     * ContentObserver) ⇒ **lần tắt-mở máy sau đó không chữa bệnh, nó KÍCH HOẠT hiệu lực**: trước power-cycle mọi
-     * yêu cầu freeform rơi xuống display 0 bị hạ cấp im lặng (vô hại); sau đó đúng lệnh ấy tạo cửa sổ nổi THẬT
-     * trên màn hình giữa của tài xế. Đó chính là lỗi hiện trường 22/07 ("Vietmap bị scale ở màn chính, khởi động
-     * lại vẫn bị").
-     *
-     * Vì thế: MARKER được ghi vào prefs (commit, đồng bộ) TRƯỚC khi chạm Settings.Global — để dù tiến trình
-     * chết ngay sau đó, lần khởi động sau vẫn biết mình đã bật và còn đường [unseedFreeform] để gỡ.
+     * Seed the two freeform boot flags via [com.byd.clusternav.system.FreeformSeedPolicy] (commit-before-mutate;
+     * user-removed is terminal). The RAM latch [freeformSeeded] keeps the once-per-session guarantee; the durable
+     * user-removed skip lives in the policy/marker.
      */
     fun ensureFreeformSeed(ctx: android.content.Context, sh: (String) -> String, log: (String) -> Unit) {
         if (freeformSeeded) return
-        // ★ ĐỌC MARKER BỀN TRƯỚC, không phải cờ RAM. Bản v0.50 chỉ gate bằng cờ RAM nên nút "GỠ CHẾ ĐỘ CỬA SỔ
-        //   NỔI" bị chính lần CHIẾU kế tiếp ghi lại — người dùng bấm gỡ, chiếu thêm một lần trước khi tắt máy
-        //   (rất dễ, cùng một màn), thế là công cốc và họ kết luận "nút gỡ không ăn".
-        if (freeformState(ctx) == FF_USER_REMOVED) {
-            log("  ⚙ bỏ qua cờ freeform — người dùng đã chủ động gỡ. Chỉnh kích thước sẽ dùng wm size/overscan.")
-            return
-        }
-        // ★ marker TRƯỚC khi đổi — §5. commit() chứ không apply(): apply() ghi nền, chết trước khi flush là mất marker.
-        ctx.applicationContext.getSharedPreferences(PREF_FREEFORM, android.content.Context.MODE_PRIVATE)
-            .edit().putInt(K_FREEFORM_STATE, FF_SEEDED).commit()
-        freeformSeeded = true
-        // ★ W2-8(a): BỎ `development_enable_freeform_windows_support` — nó KHÔNG PHẢI khoá của framework.
-        //   AOSP 10 Settings.java ánh xạ hằng DEVELOPMENT_ENABLE_FREEFORM_WINDOWS_SUPPORT về đúng chuỗi
-        //   "enable_freeform_support"; ghi thêm tên kia chỉ làm bẩn bảng settings, không ai đọc.
-        FREEFORM_KEYS.forEach { sh("settings put global $it 1") }
-        log("  ⚙ đã ghi cờ freeform (có hiệu lực sau khi TẮT MÁY XE hẳn 1 lần rồi mở lại)")
+        if (freeformPolicy(ctx, sh, log).ensureSeed()) freeformSeeded = true
     }
 
-    /** Trạng thái cờ freeform: [FF_NONE] / [FF_SEEDED] / [FF_USER_REMOVED]. Marker BỀN, không phải cờ RAM. */
-    fun freeformState(ctx: android.content.Context): Int =
-        ctx.applicationContext.getSharedPreferences(PREF_FREEFORM, android.content.Context.MODE_PRIVATE)
-            .getInt(K_FREEFORM_STATE, FF_NONE)
-
-    fun freeformSeedMarked(ctx: android.content.Context): Boolean = freeformState(ctx) == FF_SEEDED
+    /** true iff the durable marker records a prior seed — used by [ClusterCast.freeformSeeded]. */
+    fun freeformSeedMarked(ctx: android.content.Context): Boolean =
+        com.byd.clusternav.system.FreeformSeedStore(ctx).read() ==
+            com.byd.clusternav.system.FreeformSeedPolicy.SeedState.SEEDED
 
     /**
-     * GỠ hai cờ freeform. Đường trả lại mà §5 bắt buộc phải có — và nó chạy được cả khi tiến trình lần trước đã chết,
-     * vì marker nằm trong prefs chứ không trong RAM.
-     *
-     * Đánh đổi phải nói rõ với người dùng: gỡ xong thì tầng 1 (`am task resize`, chỉnh khung mượt trên cụm) hết
-     * tác dụng, việc chỉnh kích thước tụt xuống `wm size`/`wm overscan` — hai đường vốn vẫn chạy tốt cho Vietmap
-     * và CarPlay. Đổi lại: không còn cửa sổ nổi kẹt trên màn hình giữa của tài xế.
-     * Chỉ có hiệu lực sau khi TẮT MÁY XE hẳn một lần.
+     * Remove the two freeform flags + record the terminal user-removed marker, via
+     * [com.byd.clusternav.system.FreeformSeedPolicy]. Only takes effect after a physical ignition off/on.
      */
     fun unseedFreeform(ctx: android.content.Context, sh: (String) -> String, log: (String) -> Unit) {
-        FREEFORM_KEYS.forEach { sh("settings delete global $it") }
-        ctx.applicationContext.getSharedPreferences(PREF_FREEFORM, android.content.Context.MODE_PRIVATE)
-            .edit().putInt(K_FREEFORM_STATE, FF_USER_REMOVED).commit()
+        freeformPolicy(ctx, sh, log).unseed()
         freeformSeeded = false
-        log("  ⚙ đã GỠ cờ freeform — cần TẮT MÁY XE hẳn 1 lần rồi mở lại mới có hiệu lực")
     }
 
     /** freeform đã sống chưa? Probe rẻ + KHÔNG phá: resize task về ĐÚNG bounds hiện có → thành công = freeform sống. */

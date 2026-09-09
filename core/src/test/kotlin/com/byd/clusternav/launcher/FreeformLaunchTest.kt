@@ -57,10 +57,4 @@ class FreeformLaunchTest {
         assertTrue(c.contains("--windowingMode 1"), c)
         assertTrue(c.contains("0x20000000"), c)
     }
-
-    @Test
-    fun `freeform flags set both global settings`() {
-        assertTrue(FreeformLaunch.freeformFlagCmds.any { it.contains("enable_freeform_support") })
-        assertTrue(FreeformLaunch.freeformFlagCmds.any { it.contains("force_resizable_activities") })
-    }
 }

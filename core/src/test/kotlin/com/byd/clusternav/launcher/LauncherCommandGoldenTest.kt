@@ -64,12 +64,14 @@ class LauncherCommandGoldenTest {
 
     @Test
     fun `freeform boot flags are byte-exact and in order`() {
+        // Stage B3: the freeform-flag command strings live ONLY in the single sanctioned writer FreeformSeedPolicy
+        // (the former FreeformLaunch.freeformFlagCmds constant was removed). Byte-lock stays here + FreeformSeedPolicyTest.
         assertEquals(
             listOf(
                 "settings put global enable_freeform_support 1",
                 "settings put global force_resizable_activities 1",
             ),
-            FreeformLaunch.freeformFlagCmds,
+            com.byd.clusternav.system.FreeformSeedPolicy.SEED_CMDS,
         )
     }
 
