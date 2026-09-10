@@ -62,7 +62,6 @@ object ControlPanels {
 
 /** Helper THUẦN cho render 1 tile điều khiển (badge tier + xoay SELECT). */
 object ControlTileLogic {
-
     /** Tile có cần badge "chưa kiểm trên xe" không ([EvidenceTier.OVERDRIVE]/[EvidenceTier.DASHCAST]). */
     fun needsBadge(def: ControlDef): Boolean = def.tier.needsBadge
 
@@ -72,4 +71,115 @@ object ControlTileLogic {
 
     /** Nhãn hiển thị của SELECT theo [index]; ngoài phạm vi → nhãn nút. */
     fun selectLabel(def: ControlDef, index: Int): String = def.args.getOrElse(index) { def.label }
+}
+
+/**
+ * ═══ RW0 · Ô KHẢ NĂNG HỢP NHẤT ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Loại một "khả năng xe": **ĐỌC** (chỉ xem) hay **HÀNH ĐỘNG** (bấm được). Owner chốt 2026-09-10 (backlog nhóm 3):
+ * cả hai phải đặt được ở 3 vùng — thanh trên · ô giữa màn · thanh nút.
+ */
+enum class CapabilityKind {
+    /** Thông tin đọc từ xe — hiển thị, KHÔNG bấm. Nguồn: [TelemetryRegistry] hoặc [WidgetRegistry] (widget dựng tay). */
+    READ,
+    /** Hành động ghi vào xe — bấm được. Nguồn: [ControlRegistry]. */
+    WRITE,
+}
+
+/**
+ * Một khả năng CHỌN ĐƯỢC để đặt vào 3 vùng — gộp cả đọc lẫn hành động về MỘT hình dạng, để UI chỉ cần một danh
+ * sách và một bộ dựng ô.
+ *
+ * @property domain nhóm hiển thị; `null` với 8 widget dựng tay (chúng không thuộc nhóm nào).
+ * @property curated `true` = widget dựng tay (có bố cục riêng, đẹp hơn ô chung — cố ý KHÔNG gộp vào registry).
+ */
+data class CapabilityPick(
+    val id: String,
+    val label: String,
+    val icon: String,
+    val tier: EvidenceTier,
+    val kind: CapabilityKind,
+    val domain: Domain?,
+    val curated: Boolean = false,
+) {
+    val needsBadge: Boolean get() = tier.needsBadge
+}
+
+/**
+ * TRA CỨU KHẢ NĂNG — lớp mỏng nằm TRÊN ba bộ đăng ký, KHÔNG trộn dữ liệu của chúng.
+ *
+ * ## Vì sao một không gian mã PHẲNG là an toàn (và vì sao phải khoá lại)
+ * [ĐO] 2026-09-10: 123 mã telemetry + 64 mã control + 8 mã widget dựng tay = **195 mã, giao nhau RỖNG ở cả 3 cặp**.
+ * Nhờ vậy tra cứu chỉ cần `id` ⇒ **KHÔNG phải chuyển đổi cấu hình người dùng đã lưu** (ô + thanh nút đang lưu mã
+ * trần). Nhưng "hôm nay không trùng" KHÔNG phải bảo đảm: thêm một nút trùng tên một datum sẽ gây **nối chéo âm
+ * thầm** (ô hiện số trong khi người dùng tưởng bấm được, hoặc ngược lại). Vì thế [collisions] tồn tại và bị test
+ * khoá — thêm mã trùng ⇒ test ĐỎ ngay.
+ *
+ * Thứ tự tra: widget dựng tay → telemetry → control (xác định, không phụ thuộc việc không-trùng ở trên).
+ */
+object CapabilityCatalog {
+
+    /** [CapabilityKind] của [id], hoặc `null` nếu mã không thuộc bộ đăng ký nào (mã cũ đã xoá / rác trong prefs). */
+    fun kindOf(id: String): CapabilityKind? = when {
+        WidgetRegistry.byId(id) != null -> CapabilityKind.READ
+        TelemetryRegistry.byId(id) != null -> CapabilityKind.READ
+        ControlRegistry.byId(id) != null -> CapabilityKind.WRITE
+        else -> null
+    }
+
+    /** `true` nếu [id] là hành động bấm được — dùng ở chỗ quyết định dựng ô loại nào. */
+    fun isWrite(id: String): Boolean = kindOf(id) == CapabilityKind.WRITE
+
+    /** Một khả năng theo [id], hoặc `null` nếu mã lạ (⇒ chỗ gọi suy giảm an toàn, KHÔNG sập). */
+    fun pick(id: String): CapabilityPick? {
+        WidgetRegistry.byId(id)?.let {
+            return CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null, curated = true)
+        }
+        TelemetryRegistry.byId(id)?.let {
+            return CapabilityPick(it.id, it.label, WidgetCatalog.iconFor(it.domain), it.tier, CapabilityKind.READ, it.domain)
+        }
+        ControlRegistry.byId(id)?.let {
+            return CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain)
+        }
+        return null
+    }
+
+    /** MỌI khả năng: widget dựng tay → telemetry → control (thứ tự khai trong từng bộ được giữ). */
+    fun all(): List<CapabilityPick> = buildList {
+        WidgetRegistry.ALL.forEach {
+            add(CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null, curated = true))
+        }
+        TelemetryRegistry.ALL.forEach {
+            add(CapabilityPick(it.id, it.label, WidgetCatalog.iconFor(it.domain), it.tier, CapabilityKind.READ, it.domain))
+        }
+        ControlRegistry.ALL.forEach {
+            add(CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain))
+        }
+    }
+
+    /**
+     * Gom theo nhóm cho màn chọn: mỗi nhóm có phần ĐỌC rồi phần HÀNH ĐỘNG (đúng tinh thần "một ô khả năng" — người
+     * dùng thấy cùng chỗ cả thứ xem được lẫn thứ bấm được). Nhóm rỗng bị bỏ. Widget dựng tay KHÔNG vào đây (không
+     * thuộc nhóm nào) — UI hiện chúng riêng ở đầu, xem [WidgetCatalog.CURATED].
+     */
+    fun byDomain(): List<Pair<Domain, List<CapabilityPick>>> {
+        // `all()` dựng lại CẢ 195 mục mỗi lần gọi ⇒ gọi trong vòng lặp domain là 8 lượt dựng (1560 đối tượng) cho
+        // một lần mở màn chọn. Dựng MỘT lần rồi lọc: cùng kết quả, cùng thứ tự.
+        val everything = all()
+        return Domain.values().mapNotNull { d ->
+            val items = everything.filter { it.domain == d }
+            if (items.isEmpty()) null else d to items
+        }
+    }
+
+    /**
+     * Mã xuất hiện ở NHIỀU HƠN MỘT bộ đăng ký. **Phải luôn rỗng** — bị test khoá (spec R5).
+     * Trùng mã = nối chéo âm thầm giữa "xem" và "bấm", loại lỗi rất khó lần ra từ hiện tượng.
+     */
+    fun collisions(): List<String> {
+        val w = WidgetRegistry.ALL.map { it.id }
+        val t = TelemetryRegistry.ALL.map { it.id }
+        val c = ControlRegistry.ALL.map { it.id }
+        return (w + t + c).groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
+    }
 }

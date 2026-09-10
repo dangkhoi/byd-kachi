@@ -396,6 +396,15 @@ object Prefs {
     fun pm25FilterEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_PM25_ENABLED, false)
     fun setPm25FilterEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_PM25_ENABLED, v).apply()
 
+    // ─── Tự LẤY GIÓ TRONG khi nổ máy (W3 — spec kachi-unified-capability-tile §4.5) ───────────────
+    // MẶC ĐỊNH TẮT — cài mới KHÔNG đụng HAL tới khi owner tự bật. BẬT ⇒ RecircApplier bật chế độ lấy gió
+    // trong ~5s sau nổ máy (xe quên mỗi lần khởi động; đi trong phố lấy gió ngoài là hít khói).
+    // ⚠ MỨC BẰNG CHỨNG: nút này ở tier OVERDRIVE (đọc từ mã nguồn khác), CHƯA kiểm trên xe owner — KHÁC ghế
+    // mát và lọc bụi (đã chạy thật). Bật xong vẫn có thể xe không làm gì; chỉ trên xe mới biết.
+    private const val K_RECIRC_ON_START = "recirc_on_start_enabled"
+    fun recircOnStartEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_RECIRC_ON_START, false)
+    fun setRecircOnStartEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_RECIRC_ON_START, v).apply()
+
     // Toggle theo module (key namespaced "mod_" — không thể đụng các key lõi ở trên). Mặc định TẮT
     // (experiment phải bật tay). Key mồ côi sau khi xoá module = dead data vô hại, không cần dọn.
     fun moduleEnabled(ctx: Context, title: String): Boolean =

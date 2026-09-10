@@ -37,7 +37,8 @@ object WorkspaceRenderPlanner {
      * Quyết định ô nào phải dựng lại khi áp [new] lên khung đang hiển thị [old].
      *
      * @param builtSlotCount số view ô ĐANG dựng (view-side); lệch số ô của bố cục ⇒ phải dựng lại tất cả.
-     * @param statusChanged trạng thái xe đổi ⇒ widget phải dựng lại để làm mới GIÁ TRỊ (ô App/trống không cần).
+     * @param statusChanged trạng thái xe đổi ⇒ widget **có nội dung đọc** phải dựng lại để làm mới GIÁ TRỊ (ô
+     *   App/trống không cần; ô widget chỉ chứa nút HÀNH ĐỘNG cũng không cần — xem [hasReadContent]).
      * @param embedChanged **năng lực nhúng vừa đổi** (kênh shell null → có, hoặc ngược lại) ⇒ ô **App** phải dựng
      *   lại để gắn/nhả bộ chiếu. Đây là đầu vào chữa P-bug2; mặc định `false` nên mọi chỗ gọi cũ không đổi hành vi.
      */
@@ -54,10 +55,23 @@ object WorkspaceRenderPlanner {
             val oc = old.slots.getOrElse(i) { SlotContent.Empty }
             val nc = new.slots.getOrElse(i) { SlotContent.Empty }
             val contentChanged = !sameContent(oc, nc)
-            val widgetNeedsFreshValues = statusChanged && nc is SlotContent.Widget
+            val widgetNeedsFreshValues = statusChanged && nc is SlotContent.Widget && hasReadContent(nc)
             val appNeedsHostAttach = embedChanged && nc is SlotContent.App
             if (contentChanged || widgetNeedsFreshValues || appNeedsHostAttach) out.add(i)
         }
         return WorkspaceRenderPlan.PerSlot(out)
     }
+
+    /**
+     * Ô widget này có thứ gì **đọc từ xe** để làm mới không.
+     *
+     * Từ RW0, ô giữa màn nhận được cả **HÀNH ĐỘNG** ([CapabilityKind.WRITE] — nút bấm). Ô chỉ chứa nút thì trạng thái
+     * xe đổi KHÔNG có gì để làm mới, nhưng luật cũ vẫn dựng lại nó **2 nhịp/giây** trên xe ⇒ view bị tháo/gắn ngay
+     * giữa cú chạm của người dùng (chuỗi MotionEvent đứt ⇒ **mất cú bấm**), và cú nháy 220ms của nút bấm-1-phát biến
+     * mất. Đúng loại thiệt hại mà ràng buộc C5 dựng ra để chặn — trước đây chỉ chặn được cho ô App.
+     *
+     * Danh sách rỗng hoặc mã lạ ⇒ coi như CÓ nội dung đọc (giữ y hành vi cũ, không đoán).
+     */
+    private fun hasReadContent(w: SlotContent.Widget): Boolean =
+        w.ids.isEmpty() || w.ids.any { !CapabilityCatalog.isWrite(it) }
 }

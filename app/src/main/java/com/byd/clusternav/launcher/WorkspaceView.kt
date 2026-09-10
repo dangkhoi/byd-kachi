@@ -30,6 +30,27 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     var carStatus: CarStatus = CarStatus()
     var mediaProvider: () -> MediaSnapshot? = { null }   // đọc nhạc live (Bitmap ở :app → ngoài state :core)
     var onMedia: (String) -> Unit = {}                    // transport: play/pause/next/prev
+    // RW0: ô giữa màn nay đặt được cả HÀNH ĐỘNG (R2) ⇒ cần đường ra xe. Port (không phải state) nên nằm ở view như
+    // mediaProvider; off-car [NoCar] ⇒ bấm no-op.
+    var control: CarControlPort = NoCar
+    /**
+     * RW0/R11: lựa chọn ĐƠN VỊ của người dùng, dùng khi dựng ô ĐỌC. Đặt qua [setUnitPrefs] (không phải gán trực
+     * tiếp) vì đổi đơn vị BẮT BUỘC phải dựng lại ô — chuỗi số nằm trong View đã dựng, không tự đổi theo.
+     */
+    private var unitPrefs: UnitPrefs = UnitPrefs.DEFAULT
+
+    /**
+     * Đổi lựa chọn đơn vị. Dựng lại CHỈ KHI lựa chọn thật sự khác, và khi đó **chỉ dựng lại ô WIDGET**.
+     *
+     * ⚠ Bản đầu gọi `rebuild()` (dựng lại TẤT CẢ) — nghĩa là đổi chữ "bar"→"psi" sẽ tháo cả ô App: `VdAppHost` bị
+     * nhả, màn ảo mới được tạo, app trong ô phải mở lại. Đơn vị chỉ ảnh hưởng ô widget, nên ràng buộc C5 áp ở đây
+     * đúng như [WorkspaceRenderPlanner] đã áp cho nhịp trạng thái xe: ô App KHÔNG bị chạm tới.
+     */
+    fun setUnitPrefs(prefs: UnitPrefs) {
+        if (prefs == unitPrefs) return
+        unitPrefs = prefs
+        rebuildWidgetSlots()
+    }
     // ── KÊNH NHÚNG (gói 1, P-bug2): 4 thứ dưới đây PHẢI được gắn CÙNG LÚC qua [applyEmbedSeam] ─────────────────
     // Vì sao private: `makeSlot` đọc chúng LÚC DỰNG VIEW. Nếu để công khai cho bên ngoài gán rời từng cái thì ai
     // gán sai THỨ TỰ (vd dựng lại ô trước khi gắn kênh chạm) sẽ ra bộ chiếu thiếu kênh chạm — chạy đường bơm chạm
@@ -100,8 +121,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         requestLayout(); invalidate()
     }
 
-    /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live). */
-    private fun widgetData() = WidgetData(carStatus, mediaProvider(), onMedia)
+    /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live + cổng ra lệnh cho ô hành động + đơn vị). */
+    private fun widgetData() = WidgetData(carStatus, mediaProvider(), onMedia, control, unitPrefs)
 
     private fun rebuild() {
         removeAllViews(); slotViews.clear()
@@ -109,6 +130,21 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
             val v = makeSlot(i, content)
             addView(v); slotViews.add(v)
+        }
+        requestLayout(); invalidate()
+    }
+
+    /**
+     * Dựng lại CHỈ những ô đang là widget — dùng cho việc đổi thứ mà chỉ widget đọc (hiện tại: lựa chọn đơn vị).
+     * Ô App và ô trống giữ nguyên view ⇒ bộ chiếu app trong ô không bị nhả/gắn lại (C5).
+     */
+    private fun rebuildWidgetSlots() {
+        for (i in slotViews.indices) {
+            val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
+            if (content !is SlotContent.Widget) continue
+            removeView(slotViews[i])
+            val v = makeSlot(i, content)
+            addView(v); slotViews[i] = v
         }
         requestLayout(); invalidate()
     }

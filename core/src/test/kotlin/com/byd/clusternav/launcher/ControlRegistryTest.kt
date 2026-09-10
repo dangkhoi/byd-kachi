@@ -24,6 +24,25 @@ class ControlRegistryTest {
         assertEquals(d, d.setEnabled("khong-co", true))
     }
 
+    @Test fun `RW0 - thanh nut nhan CA thong tin DOC chu khong chi nut`() {
+        // ⚠ Đây là CỔNG CHẶN THẬT của yêu cầu "đặt được ở cả 3 vùng" (spec Đ3/R2): trước RW0 dòng này là
+        // `if (ControlRegistry.byId(id) == null) return this` ⇒ mọi mã KHÔNG phải nút bị BỎ QUA IM LẶNG, nên áp
+        // suất lốp / phần trăm pin không bao giờ vào được thanh.
+        // [ĐO] senior review 2026-09-10: hoàn nguyên đúng một dòng đó ⇒ CẢ 2431 bài vẫn XANH ⇒ dòng quan trọng
+        // nhất của gói này KHÔNG có bài nào canh. Bài này là bài canh nó.
+        val d = ControlRegistry.defaultDock()
+        listOf("tyre_p_fl", "soc").forEach { readId ->
+            assertEquals(CapabilityKind.READ, CapabilityCatalog.kindOf(readId), "tiền đề: '$readId' là thông tin ĐỌC")
+            val on = d.setEnabled(readId, true)
+            assertTrue(readId in on.enabled, "mã ĐỌC '$readId' PHẢI vào được thanh nút (R2 chiều một)")
+            assertFalse(readId in on.setEnabled(readId, false).enabled, "và bỏ ra được")
+        }
+        // Nới KHÔNG có nghĩa là nhận rác: mã không thuộc bộ đăng ký nào vẫn bị từ chối (giữ tính chất bản cũ).
+        listOf("khong_ton_tai", "", "TYRE_P_FL").forEach {
+            assertEquals(d, d.setEnabled(it, true), "mã lạ '$it' KHÔNG được vào cấu hình bền")
+        }
+    }
+
     @Test fun `withEdge + isVertical`() {
         assertTrue(ControlRegistry.defaultDock().withEdge(DockEdge.LEFT).isVertical())
         assertTrue(ControlRegistry.defaultDock().withEdge(DockEdge.RIGHT).isVertical())

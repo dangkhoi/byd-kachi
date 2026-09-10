@@ -19,6 +19,8 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.AppContainer
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.comfort.RecircApplier
 import com.byd.clusternav.MainActivity
 import kotlinx.coroutines.launch
 
@@ -55,6 +57,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private val media by lazy { MediaBridge(this) }        // đọc nhạc live cho w_media + transport
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
     private var customizePanel: CustomizePanel? = null     // overlay Tuỳ biến thanh điều khiển
+    /**
+     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13) — đọc MỘT LẦN từ tầng dữ liệu lúc mở màn. CỐ Ý không nằm trong
+     * [HomeUiState]: nó chỉ đổi khi người dùng vào chọn, nên đưa vào state là bắt cả HOME so-sánh-lại mỗi nhịp
+     * trạng thái xe (2/giây) mà không được gì. Đổi lựa chọn ⇒ gán lại field này rồi gọi `dock.setCarStatus(...)`.
+     */
+    private var unitPrefs: UnitPrefs = UnitPrefs.DEFAULT
     // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher (am --windowingMode 5 + am task resize); chưa có dadb → IntentAppLauncher.
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
     // @Volatile: GHI trên thread nền `winExec` (nhánh dò dadb) nhưng ĐỌC trên thread CHÍNH (openAppFullscreen —
@@ -74,6 +82,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         container = AppContainer.get(this)
+        unitPrefs = container.workspaceRepository.unitPrefs()   // đơn vị do người dùng chọn (chung mọi hồ sơ)
         // VM = nguồn sự thật (nạp từ repository qua factory AppContainer). embedded ban đầu = khả năng ActivityView; this là ViewModelStoreOwner.
         viewModel = ViewModelProvider(
             this, container.homeViewModelFactory(embedded = SlotAppHost.embeddingUsable(this)),
@@ -101,6 +110,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         workspace = WorkspaceView(this).apply {
             mediaProvider = { media.read() }                          // nhạc live (Bitmap ở :app, ngoài state :core)
             onMedia = { handleMedia(it) }
+            control = container.carControl                             // RW0: ô giữa màn đặt được cả HÀNH ĐỘNG (R2)
+            // Đơn vị đặt TRƯỚC lượt render đầu: nếu để lượt render đầu chạy với mặc định rồi mới đặt, thì người dùng
+            // đã chọn (vd psi) sẽ phải chịu thêm một lượt dựng lại ô widget mỗi lần mở HOME mà không được gì.
+            setUnitPrefs(unitPrefs)
             onSlotTap = { drawerController.open(it) }
             onSlotClear = { clearSlot(it) }
             onSlotSwap = { a, b -> swapSlots(a, b) }
@@ -189,7 +202,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private fun render(state: HomeUiState) {
         val prev = shownState
         workspace.render(state.workspace, state.carStatus)
-        if (prev == null || prev.carStatus != state.carStatus) topStrip.refreshChips(state.carStatus)
+        if (prev == null || prev.carStatus != state.carStatus) {
+            topStrip.refreshChips(state.carStatus, unitPrefs)
+            // RW0/Đ4: thanh nút cũng cần trạng thái xe để ô ĐỌC sống được ở đó. CHỈ đổ lại số của ô đọc — KHÔNG
+            // dựng lại thanh (C5: dựng lại mỗi nhịp 2/giây sẽ nháy + mất trạng thái ô vừa bấm).
+            dock.setCarStatus(state.carStatus, unitPrefs)
+            workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
+        }
         if (prev?.preset != state.preset) topStrip.selectPreset(state.preset)
         if (prev?.dock != state.dock) {
             val edgeChanged = prev != null && prev.dock.edge != state.dock.edge
@@ -274,6 +293,22 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             enabledIds = viewModel.uiState.value.dock.enabled,
             onToggle = { id, on -> viewModel.toggleDock(id, on) },   // state+persist → collector: dock.setConfig
             onClose = { closeCustomize() },
+            // W3: ô tick tự lấy gió trong. Bật ⇒ áp NGAY (không chờ lần nổ máy sau); tắt ⇒ CHỈ đặt lại cờ, KHÔNG
+            // tắt chế độ đang bật trên xe (người dùng có thể đang muốn dùng, chỉ là không muốn tự bật nữa).
+            recircOnStart = Prefs.recircOnStartEnabled(this),
+            onRecircOnStart = { on ->
+                Prefs.setRecircOnStartEnabled(this, on)
+                if (on) RecircApplier.applyNowAsync(this)
+            },
+            // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).
+            unitPrefs = unitPrefs,
+            onUnitPrefs = { prefs ->
+                unitPrefs = prefs
+                container.workspaceRepository.setUnitPrefs(prefs)
+                dock.setCarStatus(viewModel.uiState.value.carStatus, prefs)
+                workspace.setUnitPrefs(prefs)
+                topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs)
+            },
         )
         customizePanel = panel
         rootFrame.addView(panel, FrameLayout.LayoutParams(MATCH, MATCH))

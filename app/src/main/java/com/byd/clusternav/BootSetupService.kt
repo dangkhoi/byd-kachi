@@ -79,6 +79,11 @@ class BootSetupService : Service() {
                 // Lọc bụi mịn PM2.5: bật lọc-liên-tục (không popup) ~5s sau boot nếu công tắc BẬT. Gate
                 // pm25FilterEnabled + degrade-safe nằm trong applyOnStart.
                 com.byd.clusternav.comfort.Pm25FilterApplier.applyOnStart(applicationContext)
+                // W3 — Tự lấy gió trong: xe QUÊN chế độ này mỗi lần khởi động. Gate recircOnStartEnabled
+                // (mặc định TẮT) + degrade-safe nằm trong applyOnStart. ⚠ mã "recirc" CHƯA kiểm trên xe owner
+                // (tier OVERDRIVE) ⇒ có thể xe không nhận; đặt SAU 2 bộ đã proven để nếu nó hỏng thì không
+                // ảnh hưởng ghế/lọc bụi.
+                com.byd.clusternav.comfort.RecircApplier.applyOnStart(applicationContext)
                 // F4e boot (owner 08-25): boot headless KHÔNG mở MainActivity ⇒ onCreate không chạy ⇒ trợ lý
                 // hệ thống chưa được đặt = Gemini ⇒ hold-mic → keyevent 231 route sai. Đặt luôn ở đây NẾU có
                 // binding Gemini, để hold-mic → Gemini ready NGAY sau nổ máy mà KHÔNG cần mở app (owner

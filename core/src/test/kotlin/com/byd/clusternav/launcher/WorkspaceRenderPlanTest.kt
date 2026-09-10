@@ -131,6 +131,39 @@ class WorkspaceRenderPlanTest {
     }
 
     @Test
+    fun `o widget chi chua NUT thi trang thai xe doi KHONG dung lai no (RW0 - R3)`() {
+        // Từ RW0 ô giữa màn nhận được cả HÀNH ĐỘNG. Ô chỉ chứa nút thì trạng thái xe đổi KHÔNG có gì để làm mới;
+        // dựng lại nó 2 nhịp/giây là tháo/gắn view ngay giữa cú chạm ⇒ MẤT cú bấm (đúng thiệt hại C5 chặn).
+        val onlyAction = SlotContent.Widget(listOf("recirc"))
+        assertTrue(CapabilityCatalog.isWrite("recirc"), "tiền đề: 'recirc' là HÀNH ĐỘNG")
+        val s = state(LayoutPreset.QUAD, onlyAction, w1, empty, empty)
+        assertEquals(
+            listOf(1), rebuilt(WorkspaceRenderPlanner.decide(s, s, 4, statusChanged = true)),
+            "chỉ ô widget CÓ nội dung đọc (ô 1) được dựng lại; ô chỉ-có-nút (ô 0) phải để yên",
+        )
+    }
+
+    @Test
+    fun `o widget tron doc va nut thi VAN dung lai vi co so phai lam moi`() {
+        val mixed = SlotContent.Widget(listOf("recirc", "soc"))
+        val s = state(LayoutPreset.QUAD, mixed, empty, empty, empty)
+        assertEquals(
+            listOf(0), rebuilt(WorkspaceRenderPlanner.decide(s, s, 4, statusChanged = true)),
+            "có mục ĐỌC trong ô ⇒ vẫn phải làm mới (không được bỏ qua làm số đứng yên)",
+        )
+    }
+
+    @Test
+    fun `ma la trong o widget duoc coi nhu DOC de giu y hanh vi cu`() {
+        val unknown = SlotContent.Widget(listOf("khong_ton_tai"))
+        val s = state(LayoutPreset.QUAD, unknown, empty, empty, empty)
+        assertEquals(
+            listOf(0), rebuilt(WorkspaceRenderPlanner.decide(s, s, 4, statusChanged = true)),
+            "mã lạ ⇒ KHÔNG đoán là nút; giữ nguyên hành vi cũ (dựng lại)",
+        )
+    }
+
+    @Test
     fun `sameContent — App theo goi, Widget theo danh sach id, Empty bang Empty`() {
         assertTrue(WorkspaceRenderPlanner.sameContent(app, SlotContent.App("com.a")))
         assertFalse(WorkspaceRenderPlanner.sameContent(app, app2))

@@ -89,6 +89,12 @@ class WorkspacePrefs(context: Context) {
         sp.edit().putString(K_RECENT, RecentApps.encode(RecentApps.touch(recentApps(), pkg))).apply()
     }
 
+    // ── Đơn vị hiển thị (chung mọi hồ sơ) — RW0/R11 ──
+    // CHUNG chứ không theo hồ sơ: đơn vị là thói quen của người ĐỌC (cùng cách với theme). Chuỗi rỗng/rác ⇒ mặc định.
+    fun unitPrefs(): UnitPrefs = UnitPrefs.decode(sp.getString(K_UNITS, null))
+
+    fun setUnitPrefs(prefs: UnitPrefs) { sp.edit().putString(K_UNITS, prefs.encode()).apply() }
+
     private fun encode(c: SlotContent): String = when (c) {
         SlotContent.Empty -> ""
         is SlotContent.App -> "app:${c.pkg}"
@@ -109,5 +115,6 @@ class WorkspacePrefs(context: Context) {
         private const val K_THEME = "theme_mode"
         private const val K_AUTOSTART = "launcher_autostart"
         private const val K_RECENT = "recent_apps"
+        private const val K_UNITS = "unit_prefs"
     }
 }

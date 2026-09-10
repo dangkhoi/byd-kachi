@@ -7,6 +7,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -29,18 +30,33 @@ object DemoCarData : CarDataPort {
     override fun outsideTempC() = 26
 }
 
-/** Gói dữ liệu render cho widget: trạng thái xe [car] (nguồn sự thật state) + nhạc [media] (đọc live) + transport [onMedia]. */
+/**
+ * Gói dữ liệu render cho widget: trạng thái xe [car] (nguồn sự thật state) + nhạc [media] (đọc live) + transport
+ * [onMedia] + cổng ra lệnh [control].
+ *
+ * [control] có mặt từ RW0: ô giữa màn nay nhận được **cả hành động** (R2), và hành động thì phải có đường ra xe.
+ * Mặc định [NoCar] ⇒ off-car/emulator bấm không làm gì, không sập.
+ */
 class WidgetData(
     val car: CarStatus = CarStatus(),
     val media: MediaSnapshot? = null,
     val onMedia: (String) -> Unit = {},
+    val control: CarControlPort = NoCar,
+    /**
+     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13). Mặc định = [UnitPrefs.DEFAULT] ⇒ mọi chỗ gọi cũ và test cũ giữ
+     * nguyên hành vi (R12: không đổi gì thì không thấy khác biệt).
+     */
+    val units: UnitPrefs = UnitPrefs.DEFAULT,
 )
 
 /**
- * Dựng View cho 1 widget. Hai họ:
+ * Dựng View cho 1 widget. Ba họ:
  *  • **curated** (`w_*` trong [WidgetRegistry]) — thẻ dựng tay bám prototype, đọc từ [CarStatus].
- *  • **generic telemetry** (mọi `id` khác trong [TelemetryRegistry]) — render THEO [WidgetShape] qua [TelemetryReadout]:
- *    RING/DIAL/GAUGE/VALUE/CARD/BOARD/STRIP/BADGE. Field null/off-car ⇒ "—" + mờ; tier OVERDRIVE/DASHCAST ⇒ badge nhỏ.
+ *  • **generic telemetry** (mọi `id` ĐỌC khác trong [TelemetryRegistry]) — render THEO [WidgetShape] qua
+ *    [TelemetryReadout]: RING/DIAL/GAUGE/VALUE/CARD/BOARD/STRIP/BADGE. Field null/off-car ⇒ "—" + mờ; tier
+ *    OVERDRIVE/DASHCAST ⇒ badge nhỏ.
+ *  • **hành động** (`id` trong [ControlRegistry]) — ô BẤM ĐƯỢC qua [ControlTileFactory] (RW0/R2). Trước RW0 nhánh
+ *    này rơi vào đường telemetry, [TelemetryReadout.of] trả null và ra ô vô dụng (chữ hoa + "—") — sự thật Đ2.
  */
 object WidgetViews {
 
@@ -51,11 +67,13 @@ object WidgetViews {
         "w_energy" -> energyRing(ctx, data.car)
         "w_pm25" -> pm25Ring(ctx, data.car)
         "w_speed" -> speed(ctx, data.car)
-        "w_tire" -> tire(ctx, tyreBars(data.car))
+        "w_tire" -> tyreBoard(ctx, data)
         "w_media" -> media(ctx, data)
         "w_car" -> carState(ctx, data.car)
         "w_board" -> board(ctx, data)
-        else -> telemetry(ctx, id, data.car)           // generic telemetry theo shape
+        // Hành động → ô bấm được; còn lại (đọc) → đường telemetry cũ, KHÔNG đổi một dòng.
+        else -> if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.BIG)
+        else telemetry(ctx, id, data.car, data.units)
     }
 
     /**
@@ -90,18 +108,37 @@ object WidgetViews {
             "w_energy" -> miniCard(ctx, "ic-bolt", car.energy.soc?.let { "$it%" } ?: "—", car.energy.evRangeKm?.let { "$it km" } ?: "", KachiTheme.GREEN, false)
             "w_pm25"   -> miniCard(ctx, "ic-leaf", pm25Ug(car)?.toString() ?: "—", "µg · " + (car.climate.pm25Level?.let { pm(it) } ?: "—"), KachiTheme.CYAN, false)
             "w_speed"  -> miniCard(ctx, "ic-speed", car.drivetrain.speedKmh?.toString() ?: "—", "km/h", KachiTheme.RED, false)
-            "w_tire"   -> tyreBars(car)?.let { miniCard(ctx, "ic-tire", "${it.min()}–${it.max()}", "bar", KachiTheme.INK, false) } ?: miniCard(ctx, "ic-tire", "—", "bar", KachiTheme.INK, false)
+            "w_tire"   -> tyreMini(ctx, car, data.units)
             "w_clock"  -> miniCard(ctx, "ic-sun", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()), SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date()), KachiTheme.INK, false)
             "w_media"  -> miniCard(ctx, "ic-music", data.media?.title ?: "—", data.media?.artist ?: "", KachiTheme.AMBER, false)
             "w_car"    -> miniCard(ctx, "ic-lock", "Xe", "", KachiTheme.GREEN, false)
             "w_board"  -> miniCard(ctx, "ic-grid", "Tổng hợp", "", KachiTheme.ACCENT, false)
-            else       -> telemetryMini(ctx, id, car)
+            else       -> if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)
+            else telemetryMini(ctx, id, car, data.units)
+        }
+    }
+
+    /**
+     * HÀNH ĐỘNG trong ô giữa màn (R2 — chiều thứ hai, chiều bị chặn trước RW0). Dựng bằng **cùng** bộ dựng với thanh
+     * nút ([ControlTileFactory]) nên hai vùng không thể lệch nhau về hình dáng hay hành vi bấm.
+     *
+     * Mã hành động có trong [CapabilityCatalog] nhưng KHÔNG có trong [ControlRegistry] là không thể theo cách tra
+     * ([CapabilityCatalog.isWrite] hỏi đúng bộ đó) — vẫn giữ suy giảm an toàn cũ cho chắc, không sập.
+     */
+    private fun actionTile(ctx: Context, id: String, data: WidgetData, size: TileSize): View {
+        val def = ControlRegistry.byId(id) ?: return label(ctx, id.uppercase(), "—", "")
+        val tile = ControlTileFactory(ctx, control = { data.control }, size = size).actionTile(def)
+        val pad = if (size == TileSize.BIG) dpi(ctx, 12) else 0
+        return FrameLayout(ctx).apply {
+            setPadding(pad, pad, pad, pad)
+            addView(tile, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         }
     }
 
     /** Mini cho 1 telemetry id (icon domain + số + đơn vị/nhãn), "—"+mờ khi null, badge khi cần. */
-    private fun telemetryMini(ctx: Context, id: String, car: CarStatus): View {
-        val v = TelemetryReadout.of(id, car) ?: return miniCard(ctx, "", id, "", KachiTheme.MUT, false)
+    private fun telemetryMini(ctx: Context, id: String, car: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT): View {
+        val raw = TelemetryReadout.of(id, car) ?: return miniCard(ctx, "", id, "", KachiTheme.MUT, false)
+        val v = UnitFormat.apply(raw, units)
         val icon = WidgetCatalog.pick(id)?.icon ?: ""
         val sub = if (v.unit.isNotEmpty()) v.unit else v.label
         return miniCard(ctx, icon, v.display, sub, KachiTheme.INK, v.needsBadge, dim = !v.available)
@@ -122,8 +159,13 @@ object WidgetViews {
         }
 
     // ── Generic telemetry theo shape ────────────────────────────────────────────────────────────────────
-    private fun telemetry(ctx: Context, id: String, car: CarStatus): View {
-        val v = TelemetryReadout.of(id, car) ?: return label(ctx, id.uppercase(), "—", "")
+    /**
+     * Ô ĐỌC chung. Giá trị đi qua [UnitFormat] để theo lựa chọn đơn vị của người dùng (R11) — đây là chỗ DUY NHẤT
+     * ô giữa màn đổi đơn vị, không rải `/ 100` tại từng bộ vẽ như bản cũ.
+     */
+    private fun telemetry(ctx: Context, id: String, car: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT): View {
+        val raw = TelemetryReadout.of(id, car) ?: return label(ctx, id.uppercase(), "—", "")
+        val v = UnitFormat.apply(raw, units)
         val body = when (v.shape) {
             WidgetShape.RING -> telemetryRing(ctx, v)
             WidgetShape.BADGE -> badgeShape(ctx, v)
@@ -183,13 +225,62 @@ object WidgetViews {
     /** PM2.5 µg/m³: giá trị thật nếu có, nếu chỉ có mức thì suy diễn xấp xỉ (mức × 9); null → null. */
     private fun pm25Ug(car: CarStatus): Int? = car.climate.pm25ValueUgm3 ?: car.climate.pm25Level?.let { it * 9 }
 
-    /** Áp suất 4 lốp theo BAR (kPa ÷ 100) cho widget lốp; null nếu chưa đọc được lốp nào. */
-    private fun tyreBars(car: CarStatus): List<Double>? {
-        val t = car.tyres
-        val vals = listOf(t.pFlKpa, t.pFrKpa, t.pRlKpa, t.pRrKpa)
-        if (vals.all { it == null }) return null
-        return vals.map { ((it ?: 0.0) / 100.0 * 10).toInt() / 10.0 }   // 1 chữ số thập phân
+    // ── W4 · Bảng áp suất lốp 4 bánh ──────────────────────────────────────────────────────────────────
+    /**
+     * Ô lớn: [TyreBoardView] (hình xe + từng bánh một số).
+     *
+     * Bản cũ (`tire()`) vẽ 4 ô chữ với **ngưỡng cứng viết tại chỗ** `t[i] < 2.2` — ngưỡng THỨ BA của dự án, lệch với
+     * [TyreBoard]. Nay mọi phán xét về non/căng/lệch đến từ [TyreBoard.readings] (thuần, test off-car) và mọi con số
+     * đi qua [UnitFormat] ⇒ **một** nơi định nghĩa ngưỡng, **một** nơi đổi đơn vị.
+     */
+    private fun tyreBoard(ctx: Context, data: WidgetData): View {
+        val readings = TyreBoard.readings(data.car.tyres)
+        val unit = data.units.unitFor(Quantity.PRESSURE)
+        val values = readings.map { rd -> rd.pressureKpa?.let { formatPressure(it, data.units) } }
+        // Nhiệt độ CŨNG phải đi qua lớp đơn vị (chọn °F thì bảng lốp phải ghi °F) — [ĐO] bản đầu ghép "°C" cứng.
+        val tUnit = data.units.unitFor(Quantity.TEMPERATURE)
+        val temps = readings.map { rd -> rd.tempC?.let { formatTemp(it.toDouble(), data.units) + tUnit } }
+        // R8 — DẤU CHƯA KIỂM cho phần nhiệt: kênh nhiệt lốp ở mức [EvidenceTier.NEEDS_CAR] (feature-id số, chưa xác
+        // nhận trên xe owner) nên có thể không bao giờ có số. `EvidenceTier.needsBadge` chỉ đúng cho
+        // OVERDRIVE/DASHCAST ⇒ chấm amber KHÔNG áp được ở đây; nói bằng chữ ở dòng chân bảng là đường duy nhất
+        // không phải bịa. Ô vẽ vẫn KHÔNG biết gì về mức bằng chứng — chuỗi do chỗ gọi dựng.
+        val footer = if (TyreBoard.tempTier.wired) unit else "$unit · nhiệt chưa kiểm"
+        return TyreBoardView(ctx).apply { set(readings, values, footer, temps) }
     }
+
+    /** Ô nhỏ (lưới nhiều widget trong 1 ô): khoảng cao–thấp + màu theo [TyreBoard.anyAlert]. */
+    private fun tyreMini(ctx: Context, car: CarStatus, units: UnitPrefs): View {
+        val readings = TyreBoard.readings(car.tyres)
+        val known = readings.mapNotNull { it.pressureKpa }
+        val unit = units.unitFor(Quantity.PRESSURE)
+        if (known.isEmpty()) return miniCard(ctx, "ic-tire", "—", unit, KachiTheme.INK, false, dim = true)
+        val lo = formatPressure(known.min(), units)
+        val hi = formatPressure(known.max(), units)
+        val text = if (lo == hi) lo else "$lo–$hi"
+        val alert = readings.any { it.status.alert }
+        return miniCard(ctx, "ic-tire", text, unit, if (alert) KachiTheme.AMBER else KachiTheme.INK, false)
+    }
+
+    /**
+     * kPa → chuỗi theo đơn vị người dùng chọn. Đi qua [UnitFormat] (KHÔNG tự chia 100 tại chỗ như bản cũ — đó chính
+     * là chỗ khiến bộ đăng ký nói `kPa` mà widget hiện `bar`).
+     */
+    private fun formatPressure(kpa: Double, units: UnitPrefs): String {
+        val raw = TelemetryView("tyre", "", Units.BASE[Quantity.PRESSURE] ?: "kPa",
+            WidgetShape.BOARD, EvidenceTier.PROVEN, trimNumber(kpa))
+        return UnitFormat.apply(raw, units).display
+    }
+
+    /** °C → chuỗi theo đơn vị nhiệt người dùng chọn (cùng đường với [formatPressure]). */
+    private fun formatTemp(celsius: Double, units: UnitPrefs): String {
+        val raw = TelemetryView("tyre_t", "", Units.BASE[Quantity.TEMPERATURE] ?: "°C",
+            WidgetShape.BOARD, EvidenceTier.NEEDS_CAR, trimNumber(celsius))
+        return UnitFormat.apply(raw, units).display
+    }
+
+    /** Bỏ ".0" cho số nguyên để chuỗi vào [UnitFormat] gọn (nó tự áp số chữ số thập phân của đơn vị đích). */
+    private fun trimNumber(v: Double): String =
+        if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString()
 
     private fun col(ctx: Context): LinearLayout = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
@@ -247,20 +338,6 @@ object WidgetViews {
         addView(row)
         val limit = if (car.safety.speedLimitWarning == true) "Vượt tốc độ" else "Tốc độ hiện tại"
         addView(tv(ctx, limit, 13f, if (car.safety.speedLimitWarning == true) KachiTheme.RED else KachiTheme.MUT).apply { setPadding(0, dpi(ctx, 6), 0, 0) })
-    }
-
-    private fun tire(ctx: Context, t: List<Double>?) = col(ctx).apply {
-        if (t == null || t.size < 4) { addView(tv(ctx, "—", 28f, KachiTheme.INK, true)); addView(tv(ctx, "áp suất lốp (bar)", 12f, KachiTheme.MUT)); return@apply }
-        fun cell(v: Double, tag: String, low: Boolean) = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.START
-            val p = dpi(ctx, 5); setPadding(dpi(ctx, 6), p, dpi(ctx, 20), p)
-            addView(tv(ctx, tag, 11.5f, KachiTheme.MUT2).apply { gravity = Gravity.START })
-            addView(tv(ctx, "$v", 19f, if (low) KachiTheme.AMBER else KachiTheme.INK, true).apply { gravity = Gravity.START })
-        }
-        fun row(a: View, b: View) = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; addView(a); addView(b) }
-        addView(row(cell(t[0], "Trước trái", t[0] < 2.2), cell(t[1], "Trước phải", t[1] < 2.2)))
-        addView(row(cell(t[2], "Sau trái", t[2] < 2.2), cell(t[3], "Sau phải", t[3] < 2.2)))
-        addView(tv(ctx, "bar", 12f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, 6), 0, 0) })
     }
 
     private fun media(ctx: Context, data: WidgetData) = col(ctx).apply {
@@ -324,7 +401,14 @@ object WidgetViews {
             addView(b, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).also { it.setMargins(dpi(ctx,5),dpi(ctx,5),dpi(ctx,5),dpi(ctx,5)) })
         }
         val bat = car.energy.soc; val km = car.energy.evRangeKm; val lvl = car.climate.pm25Level; val ug = pm25Ug(car)
-        val tp = tyreBars(car)
+        // Lốp: qua TyreBoard (ngưỡng TẬP TRUNG) + đơn vị người dùng — không tự chia 100 tại chỗ nữa.
+        val tRead = TyreBoard.readings(car.tyres)
+        val tKnown = tRead.mapNotNull { it.pressureKpa }
+        val tUnit = data.units.unitFor(Quantity.PRESSURE)
+        val tText = if (tKnown.isEmpty()) null else {
+            val lo = formatPressure(tKnown.min(), data.units); val hi = formatPressure(tKnown.max(), data.units)
+            if (lo == hi) lo else "$lo\u2013$hi"
+        }
         return LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; val p = dpi(ctx, 6); setPadding(p, p, p, p)
             addView(rowOf(
@@ -332,7 +416,8 @@ object WidgetViews {
                 cell("ic-leaf", ug?.let { "${it}µg" } ?: "—", "PM2.5 " + (lvl?.let { pm(it) } ?: ""), KachiTheme.CYAN),
             ), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(rowOf(
-                cell("ic-tire", tp?.let { "${it.min()}–${it.max()}" } ?: "—", "Áp suất lốp", KachiTheme.INK),
+                cell("ic-tire", tText ?: "—", "Áp suất lốp ($tUnit)",
+                    if (tRead.any { it.status.alert }) KachiTheme.AMBER else KachiTheme.INK),
                 cell("ic-music", data.media?.title ?: "—", data.media?.artist ?: "", KachiTheme.INK),
             ), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         }

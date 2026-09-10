@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi gói 2 — Ô khả năng hợp nhất · Bảng lốp · Tự lấy gió trong</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi gói 2 — Ô khả năng hợp nhất · Bảng áp suất lốp · Tự lấy gió trong</h1>
+<p class="muted">
+  <b>Trạng thái</b>: Draft — chờ owner duyệt · <b>Ngày</b>: 2026-09-10 · <b>Mã việc</b>: RW0 · W4 · W3 ·
+  <b>Mục đích</b>: gộp "thông tin xe" và "hành động xe" về MỘT loại ô đặt được ở 3 vùng, rồi dùng ngay nền đó cho
+  bảng áp suất lốp 4 bánh và ô tick tự lấy gió trong khi nổ máy.
+</p>
+<p class="muted">Đọc kèm: <code>docs/specs/kachi-w1-real-data.html</code> (lớp khả năng) ·
+<code>docs/specs/kachi-open-app-correctly.html</code> (gói 1) · <code>docs/PROJECT-BACKLOG.md</code> nhóm 3.</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-10</td><td>Lập bản thiết kế sau khi ĐỌC code thật ở 3 mặt tiếp giáp (bộ đăng ký · thanh nút · bảng Tuỳ biến). Đo được 4 sự thật quyết định hình dáng thiết kế (§2). Xác minh cách vẽ qua Context7.</td></tr>
+<tr><td>1</td><td>2026-09-10</td><td><b>Owner thêm phạm vi</b>: <i>"mấy cái mà có đơn vị thì cho user chọn đơn vị luôn, đừng ép"</i> ⇒ thêm <b>R11–R13</b> + §4.6 (lớp đơn vị). [ĐO] 61/123 mục có đơn vị, trong đó <b>27 mục có lựa chọn hợp lý</b> (°C×12 · km×6 · kPa×4 · km/h×2 · Nm×1 · m×1 · kWh/100km×1 — <i>đếm lại ở senior review: bản đầu ghi 26, đếm thật là 27</i>). Phát hiện <b>tự mâu thuẫn hiện có</b>: bộ đăng ký ghi kPa nhưng widget lốp tự chia 100 hiện bar ⇒ đã có chuyển đổi ngầm rải rác. <b>OQ2 thay bằng "người dùng chọn"</b>. Owner cũng hỏi i18n → trả lời: <b>CHƯA chuẩn</b> ([ĐO] 0 thư mục ngôn ngữ · 24 chuỗi trong tài nguyên · launcher dùng cơ chế dịch <b>0 lần</b> so với 216 lần ở phần cũ) ⇒ owner CHỐT <b>tách i18n thành việc riêng</b>, không nhập vào gói 2 (backlog U5).</td></tr>
+</table>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Owner muốn gì (nguyên văn, backlog nhóm 3)</h3>
+<div class="card">
+Mọi "khả năng xe" chia <b>2 loại</b>: <b>ĐỌC</b> = thông tin lấy từ xe (tốc độ, điện, áp suất lốp…) → chỉ hiển thị,
+không bấm được. <b>HÀNH ĐỘNG</b> = tác động vào xe (mở kính, lấy gió trong…) → bấm được.
+Cả hai phải đặt được ở <b>3 vùng</b>: <b>thanh trên</b> · <b>widget giữa màn</b> · <b>thanh tác vụ</b>.
+<b>Trạng thái luôn cập nhật realtime.</b>
+</div>
+
+<h3>2.2 Bốn sự thật đã ĐO trong code hiện tại</h3>
+<p>Bốn điều dưới đây là <b>[ĐO]</b> (đọc code + đếm), không phải suy luận — chúng quyết định hình dáng thiết kế.</p>
+<table>
+<tr><th>#</th><th>Sự thật</th><th>Bằng chứng</th><th>Hệ quả thiết kế</th></tr>
+<tr>
+  <td>Đ1</td>
+  <td>Không phải 2 mà <b>3</b> bộ đăng ký, và <b>mã KHÔNG xung đột</b>: 123 thông tin + 64 nút + 8 widget dựng tay = 195 mã, giao nhau <b>rỗng</b> ở cả 3 cặp.</td>
+  <td><code>comm -12</code> trên 3 danh sách mã trích từ <code>TelemetryRegistry</code> / <code>ControlRegistry</code> / <code>WidgetRegistry</code></td>
+  <td><b>Dùng MỘT không gian mã phẳng</b> ⇒ <b>KHÔNG phải chuyển đổi cấu hình người dùng đã lưu</b>. Nhưng phải thêm <b>test khoá chống xung đột</b> về sau (hôm nay may, mai thêm nút trùng tên là cross-wire im lặng).</td>
+</tr>
+<tr>
+  <td>Đ2</td>
+  <td>Ô giữa màn <b>ĐÃ nhận được</b> thông tin-đọc bất kỳ; ngược lại nhét mã hành-động vào ô thì ra ô vô dụng (chữ hoa + "—") nhưng <b>không sập</b>.</td>
+  <td><code>WidgetViews.build</code> nhánh <code>else → telemetry()</code>; <code>TelemetryReadout.of</code> trả null → <code>label(id.uppercase(), "—")</code></td>
+  <td>Phần "đọc trong ô" <b>đã xong sẵn</b>. Việc thật = <b>hành-động trong ô</b> + suy giảm an toàn thay cho ô vô dụng.</td>
+</tr>
+<tr>
+  <td>Đ3</td>
+  <td><b>Cổng chặn thật</b> nằm ở chỗ bật/tắt mục trong thanh nút: mã nào không phải nút thì bị <b>bỏ qua im lặng</b>.</td>
+  <td><code>DockConfig.setEnabled</code> — <code>if (ControlRegistry.byId(id) == null) return this</code></td>
+  <td>Đây là <b>một dòng</b> phải nới, nhưng nới xong thì thanh nút phải <b>biết vẽ ô đọc</b> (xem Đ4).</td>
+</tr>
+<tr>
+  <td>Đ4</td>
+  <td>Thanh nút <b>KHÔNG nhận</b> trạng thái xe (chỉ có cấu hình + cổng ra lệnh + 3 bảng nhớ nội bộ). Thanh trên <b>thì có</b> đọc trạng thái xe rồi.</td>
+  <td><code>ControlDockView</code> chỉ có <code>config</code>/<code>control</code>/<code>on</code>/<code>values</code>/<code>selIndex</code>; <code>KachiTopStrip.refreshChips(carStatus)</code></td>
+  <td>Muốn ô đọc sống trong thanh nút thì phải <b>bơm trạng thái xe vào thanh nút</b> và cho nó vẽ lại khi số đổi.</td>
+</tr>
+</table>
+
+<h3>2.3 Hiện trạng — ai đặt được ở đâu</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 250" role="img" aria-label="Sơ đồ hiện trạng: thông tin đọc chỉ vào được ô giữa màn, hành động chỉ vào được thanh nút">
+  <defs>
+    <marker id="aOk" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="var(--ok)"/></marker>
+    <marker id="aNo" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="var(--warn)"/></marker>
+  </defs>
+  <!-- nguồn -->
+  <rect x="8" y="30" width="200" height="62" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="108" y="55" text-anchor="middle" font-size="14" font-weight="650" fill="var(--fg)">Thông tin ĐỌC</text>
+  <text x="108" y="76" text-anchor="middle" font-size="12" fill="var(--muted)">123 mục + 8 widget tay</text>
+
+  <rect x="8" y="150" width="200" height="62" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="108" y="175" text-anchor="middle" font-size="14" font-weight="650" fill="var(--fg)">HÀNH ĐỘNG</text>
+  <text x="108" y="196" text-anchor="middle" font-size="12" fill="var(--muted)">64 nút</text>
+
+  <!-- 3 vùng -->
+  <rect x="600" y="10" width="250" height="54" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="725" y="34" text-anchor="middle" font-size="13.5" font-weight="650" fill="var(--fg)">Thanh trên</text>
+  <text x="725" y="52" text-anchor="middle" font-size="11.5" fill="var(--muted)">chỉ nút bấm cố định + chip</text>
+
+  <rect x="600" y="88" width="250" height="54" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="725" y="112" text-anchor="middle" font-size="13.5" font-weight="650" fill="var(--fg)">Ô giữa màn</text>
+  <text x="725" y="130" text-anchor="middle" font-size="11.5" fill="var(--muted)">trống · app · widget</text>
+
+  <rect x="600" y="166" width="250" height="54" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="725" y="190" text-anchor="middle" font-size="13.5" font-weight="650" fill="var(--fg)">Thanh nút</text>
+  <text x="725" y="208" text-anchor="middle" font-size="11.5" fill="var(--muted)">ghim một mép</text>
+
+  <!-- đường đi được -->
+  <path d="M208 61 C 380 61, 430 115, 596 115" fill="none" stroke="var(--ok)" stroke-width="2.5" marker-end="url(#aOk)"/>
+  <text x="400" y="80" text-anchor="middle" font-size="12" fill="var(--ok)">đặt được (Đ2)</text>
+
+  <path d="M208 181 C 380 181, 430 193, 596 193" fill="none" stroke="var(--ok)" stroke-width="2.5" marker-end="url(#aOk)"/>
+  <text x="400" y="176" text-anchor="middle" font-size="12" fill="var(--ok)">đặt được</text>
+
+  <!-- đường bị chặn -->
+  <path d="M208 45 C 400 20, 470 30, 596 33" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#aNo)"/>
+  <path d="M208 196 C 400 240, 470 214, 596 205" fill="none" stroke="none"/>
+  <path d="M208 75 C 420 130, 470 180, 596 186" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#aNo)"/>
+  <text x="425" y="150" text-anchor="middle" font-size="12" fill="var(--warn)">bị chặn (Đ3 + Đ4)</text>
+  <path d="M208 165 C 420 150, 470 120, 596 118" fill="none" stroke="var(--warn)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#aNo)"/>
+  <text x="330" y="236" text-anchor="middle" font-size="12" fill="var(--muted)">nét liền = chạy được hôm nay · nét đứt = chưa</text>
+</svg>
+</div>
+
+<h3>2.4 Vì sao làm nền trước (RW0) thay vì làm thẳng lốp + lấy gió</h3>
+<p>
+  Ba việc còn lại của nhóm 3 (bảng lốp · lấy gió · camera 360) đều hỏi cùng một câu:
+  <i>"đặt cái này ở đâu, và làm sao nó tự cập nhật"</i>. Làm nền một lần thì mỗi việc sau chỉ còn phần riêng của nó.
+  Làm ngược lại thì viết logic đặt-chỗ + làm-mới ba lần rồi phải gộp — đúng cái nợ mà chính gói này đang đi trả
+  (ô đọc và nút bấm hôm nay đã là hai đường song song).
+</p>
+
+<h2>3. Requirements</h2>
+
+<h3>3.1 Bắt buộc — RW0 (nền)</h3>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R1</b></td><td>Một <b>loại ô chung</b>: đưa mã bất kỳ trong 3 bộ đăng ký thì hệ thống biết đó là ĐỌC hay HÀNH ĐỘNG và dựng đúng loại ô.</td><td>Test thuần JVM: mọi mã trong 3 bộ phân loại đúng; mã lạ → không có ô (không sập).</td></tr>
+<tr><td><b>R2</b></td><td>Đặt được ở <b>cả 3 vùng</b>. Cụ thể phải chạy 2 chiều đang bị chặn: <b>thông tin đọc trong thanh nút</b> và <b>hành động trong ô giữa màn</b>.</td><td>Đo trên máy ảo: gắn áp suất lốp vào thanh nút → hiện số; gắn nút lấy gió vào ô giữa → bấm được.</td></tr>
+<tr><td><b>R3</b></td><td><b>Cập nhật realtime</b>: số đọc đổi thì ô đổi theo, không cần mở lại màn hay đổi bố cục.</td><td>Test: trạng thái xe mới ⇒ ô đọc dựng lại; ô hành động KHÔNG bị dựng lại vô cớ (chống nháy — bài học P-bug1).</td></tr>
+<tr><td><b>R4</b></td><td><b>Không mất cấu hình đã lưu</b>: ô và thanh nút người dùng đặt trước đây đọc lên nguyên vẹn.</td><td>Test đọc-ghi: chuỗi lưu cũ giải mã ra đúng như trước; không có bước chuyển đổi dữ liệu.</td></tr>
+<tr><td><b>R5</b></td><td><b>Chống xung đột mã</b> về sau.</td><td>Test khoá: 3 bộ đăng ký giao nhau phải rỗng; thêm mã trùng ⇒ test đỏ.</td></tr>
+</table>
+
+<h3>3.2 Bắt buộc — W4 (bảng áp suất lốp)</h3>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R6</b></td><td>Bảng <b>từng bánh một số riêng</b> (thay vì khoảng min–max như hiện tại), có đơn vị, theo vị trí thật trên xe.</td><td>Ảnh chụp máy ảo: 4 ô số ở 4 góc quanh hình xe.</td></tr>
+<tr><td><b>R7</b></td><td>Bánh <b>bất thường đổi màu</b> (non / quá căng / lệch giữa các bánh). Thiếu số thì hiện "—", <b>KHÔNG bịa</b>.</td><td>Test thuần JVM cho phần quyết định màu; ca thiếu dữ liệu ⇒ trạng thái "không biết".</td></tr>
+<tr><td><b>R8</b></td><td><b>Nhiệt độ</b> hiện khi đọc được, kèm dấu hiệu đúng mức bằng chứng (nhiệt lốp hiện <b>chưa kiểm trên xe</b>).</td><td>Off-car: 4 áp suất "—" + 4 nhiệt "—" + dấu chưa-kiểm; không sập.</td></tr>
+</table>
+
+<h3>3.3 Bắt buộc — W3 (tự lấy gió trong khi nổ máy)</h3>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R9</b></td><td>Ô tick <b>"nổ máy thì tự lấy gió trong"</b>, <b>mặc định TẮT</b>, lưu bền, áp lúc khởi động.</td><td>Đo: bật → tắt app → mở lại vẫn bật; nhật ký cho thấy có áp lúc khởi động.</td></tr>
+<tr><td><b>R10</b></td><td><b>Không hứa quá</b>: lệnh lấy gió trong hiện ở mức <i>đọc từ mã nguồn khác, chưa kiểm trên xe owner</i> ⇒ giao diện phải nói rõ, và thất bại không được làm gãy chuỗi khởi động.</td><td>Ô tick có chú thích chưa-kiểm; lệnh lỗi ⇒ các bước khởi động khác vẫn chạy.</td></tr>
+</table>
+
+<h3>3.4 Bắt buộc — Đơn vị do NGƯỜI DÙNG chọn (owner thêm 2026-09-10)</h3>
+<p class="muted">Owner: <i>"mấy cái mà có đơn vị, thì cho user họ chọn đơn vị luôn, đừng ép chi tội họ"</i>.</p>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R11</b></td><td>Người dùng chọn đơn vị <b>theo LOẠI đại lượng</b> (áp suất · nhiệt độ · khoảng cách · tốc độ · tiêu thụ · mô-men · chiều dài), <b>không</b> phải chọn từng mục — 7 lựa chọn thay vì 61.</td><td>Test thuần JVM: đổi lựa chọn áp suất ⇒ cả 4 mục lốp đổi theo cùng lúc.</td></tr>
+<tr><td><b>R12</b></td><td><b>Mặc định = y như hiện tại</b> (hệ mét: kPa hiển thị dạng bar cho lốp, °C, km, km/h) ⇒ ai không đổi gì thì <b>không thấy khác biệt nào</b>.</td><td>Test: lựa chọn rỗng/mặc định ⇒ chuỗi hiển thị <b>giống trước từng ký tự</b> cho các mục đang có widget.</td></tr>
+<tr><td><b>R13</b></td><td>Chuyển đổi <b>không được bịa độ chính xác</b>: mỗi đơn vị có số chữ số thập phân riêng; giá trị thiếu vẫn "—"; đơn vị không có lựa chọn (%, độ, vôn, vòng/phút…) giữ nguyên, <b>không</b> bày lựa chọn giả.</td><td>Test: kPa→psi và °C→°F đúng số + đúng số lẻ; mục không có lựa chọn ⇒ danh sách lựa chọn rỗng.</td></tr>
+</table>
+<div class="card">
+<b>[ĐO] Vì sao phải làm cùng gói này, không để sau:</b> hiện đã có <b>chuyển đổi ngầm rải rác</b> — bộ đăng ký khai
+<code>kPa</code> nhưng widget lốp tự chia 100 để hiện <code>bar</code>. Ô khả năng hợp nhất là <b>chỗ DUY NHẤT</b> định
+dạng giá trị, nên đặt lớp đơn vị vào đây là một lần; để sau thì phải đi vá từng bộ vẽ.
+</div>
+
+<h3>3.5 Ràng buộc (không được phá)</h3>
+<table>
+<tr><th>Mã</th><th>Ràng buộc</th><th>Vì sao</th></tr>
+<tr><td>C1</td><td><code>:core</code> thuần JVM (cấm <code>android.*</code>)</td><td>Guard <code>CoreIsolationTest</code>/<code>LayeringRulesTest</code> đang xanh — logic quyết định phải test được off-car.</td></tr>
+<tr><td>C2</td><td><b>Không thêm phụ thuộc mới</b></td><td>Kỷ luật dự án; mọi thứ cần đã có sẵn.</td></tr>
+<tr><td>C3</td><td><b>Không đụng layout XML niêm phong</b></td><td>Sửa là phải xin owner duyệt đóng dấu lại. ⇒ ô tick của W3 đặt ở bề mặt <b>dựng bằng code</b> của launcher, KHÔNG nhét vào màn Cài đặt cũ.</td></tr>
+<tr><td>C4</td><td><b>Không đụng file logic chiếu-cụm</b>, không chạm màn cụm</td><td>Đua cấu hình trên màn cụm = kẹt cả hai, phải nạp lại firmware.</td></tr>
+<tr><td>C5</td><td>Giữ nguyên hành vi <b>cập nhật tăng dần</b> của bộ vẽ ô</td><td>Thành quả P-bug1 + P-bug2; dựng lại tất cả mỗi nhịp trạng thái xe sẽ làm nháy và mất kênh chạm của app trong ô.</td></tr>
+<tr><td>C6</td><td>Giữ mọi test hiện có xanh (mốc <b>2343</b>)</td><td>Không đánh đổi vùng đã chắc để lấy vùng mới.</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Ý tưởng một câu</h3>
+<div class="card">
+Giữ nguyên <b>ba bộ đăng ký</b> làm nguồn sự thật (đừng trộn dữ liệu), chỉ thêm <b>một lớp tra cứu mỏng</b> ở
+<code>:core</code> biến "mã" thành <b>khả năng</b> có phân loại ĐỌC/HÀNH ĐỘNG, rồi cho <b>cả ba vùng</b> dùng chung
+một <b>bộ dựng ô</b>. Không đổi định dạng lưu, không chuyển đổi dữ liệu.
+</div>
+
+<h3>4.2 Kiến trúc sau khi gộp</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>Thanh trên</b><br><span class="muted">danh sách mã (mới)</span></div>
+    <div class="node"><b>Ô giữa màn</b><br><span class="muted">danh sách mã (đã có)</span></div>
+    <div class="node"><b>Thanh nút</b><br><span class="muted">danh sách mã (nới)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node" style="flex:1 1 100%"><b>BỘ DỰNG Ô DÙNG CHUNG</b> — vào: mã + trạng thái xe + cổng ra lệnh · ra: một ô<br>
+      <span class="muted">ĐỌC → bộ vẽ theo hình (vòng · dải · huy hiệu · <b>bảng</b> · số) &nbsp;·&nbsp; HÀNH ĐỘNG → bộ vẽ theo kiểu nút (bật/tắt · −/+ · đóng-mở · chọn · bấm-1-phát)</span>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="node" style="flex:1 1 100%"><b>LỚP TRA CỨU KHẢ NĂNG</b> (<code>:core</code>, thuần) — mã → ĐỌC hay HÀNH ĐỘNG + nhãn + hình/kiểu + mức bằng chứng</div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>123 thông tin đọc</b></div>
+    <div class="node"><b>8 widget dựng tay</b></div>
+    <div class="node"><b>64 nút hành động</b></div>
+  </div>
+</div>
+<p class="muted">Mũi tên phụ thuộc đi <b>xuống</b>: vùng không biết gì về bộ đăng ký, chỉ giữ danh sách mã. Bộ dựng ô là
+nơi DUY NHẤT biết cách biến mã thành hình.</p>
+
+<h3>4.3 Ba việc cụ thể của RW0</h3>
+<table>
+<tr><th>#</th><th>Việc</th><th>Chỗ đụng</th><th>Ghi chú</th></tr>
+<tr><td>1</td><td><b>Lớp tra cứu khả năng</b> — gộp mục chọn của cả 3 bộ về một danh sách có phân loại; thêm test khoá chống xung đột mã (R5).</td><td>Mở rộng <code>LauncherCatalog</code> (<code>:core</code>) — nơi đã gom sẵn phần đọc và phần nút nhưng còn tách đôi.</td><td>Thuần JVM ⇒ test off-car. Không đổi <code>WidgetRegistry</code>/<code>ControlRegistry</code>/<code>TelemetryRegistry</code> (test cũ khoá).</td></tr>
+<tr><td>2</td><td><b>Nới cổng chặn + bơm trạng thái xe vào thanh nút</b> để ô đọc sống được ở đó (Đ3 + Đ4).</td><td><code>DockConfig.setEnabled</code> (một dòng) + <code>ControlDockView</code> nhận trạng thái xe.</td><td>Phải cập nhật lại khi số đổi (R3) nhưng <b>chỉ dựng lại ô đọc</b>, không đụng ô hành động (C5).</td></tr>
+<tr><td>3</td><td><b>Bộ dựng ô dùng chung</b> — tách phần dựng ô nút ra khỏi thanh nút để ô giữa màn và thanh trên dùng lại được.</td><td>Rút phần dựng tile khỏi <code>ControlDockView</code>; <code>WidgetViews</code> gọi sang khi mã là hành động.</td><td>Đây là phần <b>tốn công nhất</b> và cũng là chỗ dễ gãy nhất ⇒ làm sau cùng trong RW0, có test khớp mặt tiếp giáp.</td></tr>
+</table>
+
+<h3>4.4 W4 — bảng áp suất lốp</h3>
+<p>
+  Dữ liệu đã xong: <b>4 áp suất</b> ở mức <i>đã chạy trên xe owner</i>, <b>4 nhiệt độ</b> ở mức <i>chưa kiểm trên xe</i>.
+  Thiếu đúng <b>một kiểu hình</b>: <b>bảng nhiều ô</b> — hiện bộ vẽ chỉ làm được vòng, dải, huy hiệu; các hình còn lại
+  đều rơi về "số + đơn vị".
+</p>
+<div class="diagram">
+<svg viewBox="0 0 420 210" role="img" aria-label="Bố cục bảng áp suất lốp: hình xe ở giữa, bốn số ở bốn góc">
+  <rect x="150" y="35" width="120" height="140" rx="26" fill="none" stroke="var(--line)" stroke-width="2"/>
+  <path d="M168 62 H252" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="210" y="112" text-anchor="middle" font-size="11.5" fill="var(--muted)">hình xe</text>
+  <text x="210" y="128" text-anchor="middle" font-size="11.5" fill="var(--muted)">(nhìn từ trên)</text>
+
+  <g font-size="20" font-weight="700" fill="var(--fg)">
+    <text x="92" y="62" text-anchor="middle">2.4</text>
+    <text x="328" y="62" text-anchor="middle">2.4</text>
+    <text x="92" y="168" text-anchor="middle">2.3</text>
+    <text x="328" y="168" text-anchor="middle" fill="var(--warn)">2.1</text>
+  </g>
+  <g font-size="10.5" fill="var(--muted)">
+    <text x="92" y="78" text-anchor="middle">bar · 28°C</text>
+    <text x="328" y="78" text-anchor="middle">bar · 28°C</text>
+    <text x="92" y="184" text-anchor="middle">bar · 30°C</text>
+    <text x="328" y="184" text-anchor="middle" fill="var(--warn)">bar · non</text>
+  </g>
+  <rect x="52" y="40" width="80" height="48" rx="9" fill="none" stroke="var(--line)"/>
+  <rect x="288" y="40" width="80" height="48" rx="9" fill="none" stroke="var(--line)"/>
+  <rect x="52" y="146" width="80" height="48" rx="9" fill="none" stroke="var(--line)"/>
+  <rect x="288" y="146" width="80" height="48" rx="9" fill="none" stroke="var(--warn)" stroke-width="2"/>
+  <text x="210" y="200" text-anchor="middle" font-size="11" fill="var(--muted)">bánh bất thường viền + số đổi màu cảnh báo</text>
+</svg>
+</div>
+<p>
+  <b>Phần quyết định đặt ở <code>:core</code></b> (thuần, test off-car): nhận 4 áp suất → trả trạng thái từng bánh
+  (bình thường / non / quá căng / lệch / không biết). <b>Phần vẽ đặt ở <code>:app</code></b>: một ô vẽ bằng tay theo
+  cùng lối đã dùng cho vòng đo và sơ đồ ghế. Context7 xác nhận cách vẽ này còn hiện hành; các API đã lỗi thời
+  (bộ đệm vẽ, chiều cao chữ thanh lịch) <b>không</b> dùng.
+</p>
+<div class="card">
+<b>Ngưỡng — quyết định của tôi, anh sửa được:</b> non &lt; <b>2.0 bar</b> · quá căng &gt; <b>3.2 bar</b> ·
+lệch khi chênh giữa cao nhất và thấp nhất ≥ <b>0.3 bar</b>. Tôi <b>không</b> biết con số nhà sản xuất khuyến nghị cho
+đúng đời xe anh nên không bịa ra là "chuẩn"; đặt thành hằng số một chỗ để đổi một dòng. Trên xe đọc số thật rồi
+chỉnh lại là chắc nhất.
+</div>
+
+<h3>4.5 W3 — tự lấy gió trong khi nổ máy</h3>
+<p>
+  Đi <b>đúng đường đã mở</b> cho ghế mát và lọc bụi mịn: một khoá lưu bền mặc định TẮT + một bộ áp dụng có hàm
+  "áp lúc khởi động" + gọi từ chuỗi khởi động sẵn có. Không phát minh đường mới.
+</p>
+<table>
+<tr><th>Bước</th><th>Làm gì</th><th>Bám theo cái đã có</th></tr>
+<tr><td>1</td><td>Khoá lưu bền, mặc định TẮT</td><td>Giống khoá của lọc bụi mịn</td></tr>
+<tr><td>2</td><td>Bộ áp dụng: bật / tắt / áp-lúc-khởi-động, lỗi thì chỉ ghi log</td><td>Giống bộ áp dụng lọc bụi mịn</td></tr>
+<tr><td>3</td><td>Gọi trong chuỗi khởi động, sau ghế và lọc bụi</td><td>Cùng chỗ đã gọi 2 cái kia</td></tr>
+<tr><td>4</td><td>Ô tick trong bề mặt <b>dựng bằng code</b> của launcher (không đụng màn Cài đặt niêm phong — C3)</td><td>Bảng Tuỳ biến của launcher</td></tr>
+</table>
+<div class="card">
+<b class="warn">Nói thẳng:</b> lệnh lấy gió trong đang ở mức <i>đọc từ mã nguồn khác, CHƯA kiểm trên xe owner</i>
+(khác ghế mát và lọc bụi — hai cái đó đã chạy thật). Nghĩa là: <b>bật xong vẫn có thể xe không làm gì</b>, và chỉ trên
+xe mới biết. Vì vậy giao diện phải mang dấu chưa-kiểm (R10) và một lần thất bại không được kéo sập các bước khởi
+động khác.
+</div>
+
+<h3>4.6 Lớp ĐƠN VỊ do người dùng chọn</h3>
+<p>
+  Điểm mấu chốt: <b>KHÔNG sửa 61 dòng bộ đăng ký</b>. Loại đại lượng được <b>suy ra từ chính chuỗi đơn vị đã khai</b>
+  (<code>"kPa"</code> ⇒ áp suất, <code>"°C"</code> ⇒ nhiệt độ, <code>"km"</code> ⇒ khoảng cách…). Thêm một mục mới vào
+  bộ đăng ký thì nó tự có lựa chọn đơn vị, không phải khai thêm gì.
+</p>
+<div class="diagram">
+<svg viewBox="0 0 820 150" role="img" aria-label="Luồng đơn vị: giá trị gốc từ xe đi qua lớp đơn vị rồi ra chuỗi hiển thị">
+  <defs><marker id="au" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+    <path d="M0,0 L9,4.5 L0,9 z" fill="var(--accent)"/></marker></defs>
+  <rect x="6" y="46" width="150" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="81" y="70" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">Số gốc từ xe</text>
+  <text x="81" y="88" text-anchor="middle" font-size="11.5" fill="var(--muted)">240 · đơn vị khai "kPa"</text>
+
+  <rect x="236" y="30" width="230" height="90" rx="10" fill="var(--bg)" stroke="var(--accent)" stroke-width="1.6"/>
+  <text x="351" y="52" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">LỚP ĐƠN VỊ</text>
+  <text x="351" y="72" text-anchor="middle" font-size="11.5" fill="var(--muted)">"kPa" → loại: áp suất</text>
+  <text x="351" y="89" text-anchor="middle" font-size="11.5" fill="var(--muted)">lựa chọn của người dùng: bar</text>
+  <text x="351" y="106" text-anchor="middle" font-size="11.5" fill="var(--muted)">số lẻ theo từng đơn vị</text>
+
+  <rect x="546" y="46" width="150" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="621" y="70" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">Chuỗi hiển thị</text>
+  <text x="621" y="88" text-anchor="middle" font-size="11.5" fill="var(--muted)">"2.4" + "bar"</text>
+
+  <path d="M156 75 H232" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#au)"/>
+  <path d="M466 75 H542" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#au)"/>
+  <text x="740" y="70" font-size="11.5" fill="var(--muted)">dùng chung</text>
+  <text x="740" y="86" font-size="11.5" fill="var(--muted)">cho cả 3 vùng</text>
+</svg>
+</div>
+<table>
+<tr><th>Loại đại lượng</th><th>Đơn vị xe trả về</th><th>Cho chọn</th><th>Mặc định</th><th>Số mục</th></tr>
+<tr><td>Nhiệt độ</td><td>°C</td><td>°C · °F</td><td>°C</td><td>12</td></tr>
+<tr><td>Khoảng cách</td><td>km</td><td>km · mile</td><td>km</td><td>6</td></tr>
+<tr><td>Áp suất</td><td>kPa</td><td>kPa · bar · psi</td><td><b>bar</b> (giữ đúng cái đang hiện)</td><td>4</td></tr>
+<tr><td>Tốc độ</td><td>km/h</td><td>km/h · mph</td><td>km/h</td><td>2</td></tr>
+<tr><td>Tiêu thụ</td><td>kWh/100km</td><td>kWh/100km · km/kWh</td><td>kWh/100km</td><td>1</td></tr>
+<tr><td>Mô-men</td><td>Nm</td><td>Nm · lb·ft</td><td>Nm</td><td>1</td></tr>
+<tr><td>Chiều dài</td><td>m</td><td>m · ft</td><td>m</td><td>1</td></tr>
+<tr><td class="muted" colspan="5">Không bày lựa chọn cho: % · độ · vôn · vòng/phút · kWh · kW · giờ · phút · µg/m³ (34 mục) — không có đơn vị thay thế hợp lý (R13).</td></tr>
+</table>
+<p class="muted">
+  Đặt ở <code>:core</code> (thuần ⇒ test off-car), lưu cùng chỗ đã lưu giao diện sáng/tối (chung mọi hồ sơ tài xế —
+  đơn vị là thói quen của người đọc, không phải của hồ sơ). Mặc định áp suất chọn <b>bar</b> để R12 đúng: người không
+  đổi gì sẽ thấy y như cũ.
+</p>
+
+<h3>4.7 Việc cố ý KHÔNG làm trong gói này</h3>
+<ul>
+  <li><b>Không</b> gộp 8 widget dựng tay vào bộ đăng ký thông tin — chúng có bố cục riêng đẹp hơn ô chung; gộp là mất công mà xấu đi.</li>
+  <li><b>Không</b> làm trình vẽ bố cục động 12×6 (đó là P9, việc riêng, tốn công nhất nhóm 2).</li>
+  <li><b>Không</b> làm camera 360 và gán phím theo ngữ cảnh (W5) — cần nền này xong trước, và cần đo trên xe.</li>
+  <li><b>Không</b> đổi định dạng lưu cấu hình — Đ1 cho phép tránh hẳn việc đó.</li>
+  <li><b>Không</b> làm đa ngôn ngữ cho launcher — owner CHỐT tách thành việc riêng (backlog <b>U5</b>). [ĐO] hiện trạng: không có thư mục ngôn ngữ chuẩn nào · 24 chuỗi trong tài nguyên · launcher dùng cơ chế dịch <b>0 lần</b> (phần ClusterNav cũ: 216 lần) · nhãn 195 mục khả năng chỉ có tiếng Việt. Trộn vào gói này thì hai việc lớn dính nhau, khó soát và khó lùi.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td>Lớp tra cứu khả năng + test khoá chống xung đột mã</td><td>—</td><td>R1 · R5 xanh</td></tr>
+<tr><td>T2</td><td>Phần quyết định trạng thái lốp (thuần <code>:core</code>)</td><td>—</td><td>R7 xanh</td></tr>
+<tr><td>T2b</td><td><b>Lớp đơn vị</b> — suy loại đại lượng từ chuỗi đơn vị, chuyển đổi + số lẻ, lựa chọn của người dùng (thuần <code>:core</code>)</td><td>—</td><td>R11 · R12 · R13 xanh</td></tr>
+<tr><td>T3</td><td>Nới cổng chặn + bơm trạng thái xe vào thanh nút</td><td>T1</td><td>R2 (chiều đọc-trong-thanh-nút) · R3 · R4</td></tr>
+<tr><td>T4</td><td>Bộ dựng ô dùng chung (rút phần dựng ô nút ra ngoài)</td><td>T1 · T3</td><td>R2 (chiều hành-động-trong-ô)</td></tr>
+<tr><td>T5</td><td>Ô vẽ bảng lốp + nối vào widget lốp</td><td>T2 · T4</td><td>R6 · R8</td></tr>
+<tr><td>T6</td><td>Tự lấy gió trong: khoá lưu + bộ áp dụng + gọi lúc khởi động + ô tick</td><td>T1</td><td>R9 · R10</td></tr>
+<tr><td>T7</td><td>Chạy đủ test 5 module + dựng APK + thử phá (mutation)</td><td>T1–T6</td><td>≥ 2343, không mất test nào</td></tr>
+<tr><td>T8</td><td>Đo thật trên máy ảo (3 vùng · bảng lốp · ô tick lưu bền)</td><td>T7</td><td>Có số + ảnh</td></tr>
+<tr><td>T9</td><td>Senior review độc lập + tự vá + đồng bộ tài liệu</td><td>T8</td><td>Duyệt, 0 lỗi mức cao còn lại</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<p class="muted">Điền số thật khi chạy xong. Nguyên tắc: mỗi dòng phải là <b>[ĐO]</b>, không viết "đã xong" mà không có bằng chứng.</p>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td>Test thuần JVM</td><td>Phân loại 195 mã · xung đột rỗng · trạng thái lốp · đọc-ghi cấu hình cũ</td><td><span class="pill ok">xanh</span> 35 bài mới ở <code>:core</code> (UnitsTest 16 · CapabilityCatalogTest 9 · TyreBoardTest 10); <code>:core</code> tổng <b>1087/0</b></td></tr>
+<tr><td>Đủ 5 module</td><td><code>./gradlew test --continue</code></td><td><span class="pill ok">xanh</span> <b>2420 / 0 lỗi</b> (<code>--rerun-tasks</code>, tự chạy lại) — mốc trước gói 2 = 2343 ⇒ <b>+77</b>, không mất bài nào.<br><b>Sau senior review: 2434 / 0</b> (+14 bài khoá cho các lỗi tìm ở lượt soát; xem §10).</td></tr>
+<tr><td>Thử phá (mutation)</td><td>Bỏ nới cổng chặn ⇒ test đỏ · bỏ bơm trạng thái ⇒ test đỏ · nới ngưỡng lốp ⇒ test đỏ</td><td><span class="pill ok">5/5 đỏ đúng chỗ</span> (đường giao diện): bỏ <code>dock.setCarStatus</code> · gắn chạm vào ô ĐỌC · bỏ <code>UnitFormat</code> · dựng lại cả thanh mỗi nhịp · bỏ rẽ nhánh ở ô giữa màn.<br><b>⚠ ĐÍNH CHÍNH (senior review 2026-09-10):</b> phép <b>"bỏ nới cổng chặn"</b> ghi ở cột giữa <b>KHÔNG</b> nằm trong 5 phép đã chạy, và khi đo thật thì nó <b>SỐNG SÓT</b> — hoàn nguyên đúng một dòng <code>DockConfig.setEnabled</code> về <code>ControlRegistry.byId(id) == null</code> ⇒ <b>cả 2431 bài vẫn XANH</b>. Dòng quan trọng nhất của RW0 (sự thật Đ3) không có bài nào canh. Đã thêm bài khoá (<code>ControlRegistryTest</code> · "RW0 - thanh nút nhận CẢ thông tin ĐỌC") ⇒ nay phép đó <b>đỏ</b>. Tổng phép đã đo sau review: <b>9/9 đỏ đúng chỗ</b> (5 cũ + cổng chặn + luật kế-hoạch-dựng-ô + dấu chưa-kiểm nhiệt + chặn số không hữu hạn).</td></tr>
+<tr><td>Máy ảo — 3 vùng</td><td>Gắn áp suất lốp vào thanh nút; gắn nút lấy gió vào ô giữa màn</td><td><span class="pill ok">2/3 vùng xanh</span> AVD clusternav10 1920×1080: thanh nút hiện 3 ô hành động + <b>4 ô đọc</b> (áp lốp ×2 · pin · nhiệt ngoài) — off-car "—" + mờ + đơn vị <b>bar</b>; ô giữa màn hiện "Lấy gió trong" <b>bấm được</b> (chạm → bật gradient) + lưới trộn đóng-mở/bấm-1-phát/−+/đọc. <b>Thanh trên: ĐÃ XONG</b> — chip nhiệt/tầm chạy nay đi qua lớp đơn vị ([ĐO] hiện <code>—°F ngoài</code> sau khi chọn °F; trước đó vẫn ghi °C). Ảnh: <code>docs/prototypes/kachi-rw0-capability-tiles-emulator.png</code></td></tr>
+<tr><td>Máy ảo — bảng lốp</td><td>Đặt widget lốp vào ô rồi đọc ảnh; thêm một <b>bản thử tạm bơm số giả</b> (đã hoàn nguyên) để đo phần số + màu, vì off-car mọi field đều null</td><td><span class="pill ok">đạt</span> Hình xe nhìn từ trên + <b>4 góc</b> + nhãn TT/TP/ST/SP + đơn vị ở đáy. Off-car: cả 4 hiện "—", không sập. Có số: <b>240 kPa → 34.8 psi · 235 → 34.1 · 185 → 26.8</b> (đúng quy đổi), nhiệt <b>28/29/30/34 °C → 82/84/86/93 °F</b> (đúng lựa chọn người dùng), bánh 1.85 bar tô <b>hồng-đỏ</b> đúng ngưỡng non &lt; 2.0. Ảnh: <code>docs/prototypes/kachi-tyre-board-emulator.png</code></td></tr>
+<tr><td>Máy ảo — ô tick lấy gió</td><td>Bật trong bảng Tuỳ biến → đọc prefs + nhật ký</td><td><span class="pill ok">đạt</span> <code>recirc_on_start_enabled=true</code> lưu bền. Nhật ký: <i>"HAL không nhận lệnh lấy gió trong (off-car, hoặc trim chưa provision — mã chưa kiểm trên xe)"</i> ⇒ suy giảm an toàn ĐÚNG, không kéo sập gì. Ô tick có kèm cảnh báo chưa-kiểm.</td></tr>
+<tr><td>Đơn vị — không đổi gì thì y như cũ</td><td>Test: lựa chọn mặc định ⇒ chuỗi hiển thị giống trước <b>từng ký tự</b> (R12)</td><td><span class="pill ok">xanh</span> UnitsTest; [ĐO] trên máy ảo ô đọc áp lốp hiện đơn vị <b>bar</b> (registry khai kPa) = đúng thứ widget lốp đang hiện</td></tr>
+<tr><td>Đơn vị — đổi một lựa chọn</td><td>Đổi áp suất sang psi ⇒ cả 4 mục lốp đổi cùng lúc, số lẻ đúng; đổi nhiệt sang °F ⇒ 12 mục đổi</td><td><span class="pill ok">đạt</span> [ĐO] chạm psi + °F trong bảng Tuỳ biến ⇒ lưu <code>PRESSURE=psi;TEMPERATURE=°F</code>; <b>tắt hẳn app mở lại vẫn giữ</b>; 4 ô lốp + chip nhiệt trên thanh trên đổi cùng lúc; dump: <code>'Áp lốp trước-trái' → '—' → 'psi'</code> · <code>'Nhiệt ngoài xe' → '—' → '°F'</code></td></tr>
+<tr><td>Không nháy (C5)</td><td>Trạng thái xe đổi liên tục ⇒ ô app trong ô KHÔNG bị dựng lại</td><td><span class="pill ok">xanh</span> [ĐO] máy ảo: bật "Kính 50%" + bấm "+" hai lần (22°→24°) rồi chờ <b>6 s ≈ 12 nhịp</b> trạng thái xe → cả hai ô giữ nguyên trạng thái ⇒ thanh nút KHÔNG bị dựng lại</td></tr>
+</table>
+
+<h3>Bốn lỗi TỰ TÌM RA khi ĐỌC ẢNH máy ảo (test xanh không bắt được)</h3>
+<p class="muted">Ghi lại vì đây là bằng chứng: 2420 test xanh vẫn không thay được việc mở app ra xem bằng mắt.</p>
+<table>
+<tr><th>#</th><th>Lỗi</th><th>Sửa</th></tr>
+<tr><td>1</td><td><b>Nhiệt độ trên bảng lốp vẫn ghi °C</b> dù người dùng chọn °F — ô vẽ tự ghép ký hiệu cứng. Đúng loại lỗi mà gói này đi dọn.</td><td>Ô vẽ nhận <b>chuỗi đã format</b>; chỗ gọi đưa qua lớp đơn vị. Có test khoá: ô vẽ KHÔNG được chứa ký hiệu nhiệt cứng.</td></tr>
+<tr><td>2</td><td><b>Hai ô đọc trong thanh nút trông y hệt nhau</b>: "Áp lốp trước-trái" và "Áp lốp trước-phải" đều bị cắt thành "Áp lốp trước-t…"</td><td>Cho <b>2 dòng</b>. Cố ý KHÔNG bịa quy tắc viết tắt — 195 nhãn đủ kiểu, quy tắc tự nghĩ sẽ tạo nhãn vô nghĩa ở đâu đó mà không ai kiểm được.</td></tr>
+<tr><td>3</td><td><b>Một bánh hai màu cảnh báo</b> (số hồng-đỏ + dòng phụ hổ phách) ⇒ không rõ đang báo cái gì</td><td>Một cảnh báo = một màu: dòng phụ dùng CHÍNH màu của số.</td></tr>
+<tr><td>4</td><td><b>Hình xe không ra hình xe</b>: khối gần vuông (tỉ lệ 0.85) và viền chỉ chênh nền 21/255 nên tan vào nền tối</td><td>Thân thuôn dọc (0.65) + viền sáng hơn (tương phản <b>1.4:1 → 5.77:1</b>) + vệt bánh dính vào mép thân + cân lại lề dọc.</td></tr>
+</table>
+<p class="muted">Thêm một điểm tương tự ngoài bảng lốp: chip trên thanh trên cũng từng bỏ qua lựa chọn đơn vị (ghi °C khi đã chọn °F) — đã cho đi qua lớp đơn vị.</p>
+
+<h3>Phải verify TRÊN XE 🚗 (không đo được off-car)</h3>
+<ul>
+  <li>Số áp suất và nhiệt độ <b>thật</b> từng bánh — để chốt lại ngưỡng cảnh báo ở §4.4.</li>
+  <li>Lệnh <b>lấy gió trong</b> có thật sự ăn không (đang ở mức chưa kiểm).</li>
+  <li>Ô đọc trong thanh nút và ô hành động trong ô giữa màn khi có kênh điều khiển thật trên xe.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mặc định tôi chọn nếu anh không đổi</th></tr>
+<tr><td>OQ1</td><td>Ngưỡng cảnh báo lốp (§4.4) — anh biết số khuyến nghị cho đời xe mình không?</td><td>non &lt; 2.0 · căng &gt; 3.2 · lệch ≥ 0.3 bar; đặt một chỗ, đổi một dòng sau khi đo trên xe.</td></tr>
+<tr><td>OQ2</td><td><s>Đơn vị áp suất: bar hay kPa?</s></td><td><b>ĐÃ THAY 2026-09-10</b> — owner: <i>"cho user chọn đơn vị luôn, đừng ép"</i> ⇒ không chọn hộ nữa, xem R11–R13 + §4.6. Mặc định giữ bar để không ai thấy khác biệt.</td></tr>
+<tr><td>OQ3</td><td>Thanh trên có nên cho đặt ô khả năng luôn trong gói này, hay chỉ cần hai vùng kia trước?</td><td>Làm <b>đủ 3 vùng</b> vì yêu cầu owner ghi rõ 3 vùng; nếu thanh trên chật thì giới hạn số ô và nói rõ.</td></tr>
+<tr><td>OQ4</td><td>Ô tick lấy gió: chỉ bật lúc nổ máy, hay có thêm điều kiện (ví dụ chỉ khi ngoài trời bụi)?</td><td><b>Chỉ lúc nổ máy</b> — đúng nguyên văn yêu cầu; thêm điều kiện là mở phạm vi.</td></tr>
+</table>
+
+<h2>8. References</h2>
+<ul>
+  <li><code>docs/specs/kachi-w1-real-data.html</code> — lớp khả năng (thông tin + nút), mức bằng chứng.</li>
+  <li><code>docs/specs/kachi-open-app-correctly.html</code> — gói 1; bài học "đừng tin suy luận khi chưa đo".</li>
+  <li><code>docs/diagnostics/kachi-capability-catalog-2026-09-10.md</code> — bản kê khả năng xe.</li>
+  <li><code>docs/PROJECT-BACKLOG.md</code> nhóm 3 — định nghĩa đọc/ghi do owner chốt.</li>
+  <li>Context7 <code>/websites/developer_android</code> — cách vẽ ô tuỳ biến còn hiện hành; tránh API bộ đệm vẽ đã lỗi thời.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+
+<h3>Phiên 2026-09-10 (đêm) — nền thuần + 3 bề mặt người dùng (T1 · T2 · T2b · T5 · T6 + vá đo được)</h3>
+
+<p><b>Quyết định đã tự đưa ra (owner đi ngủ, chạy tự chủ):</b></p>
+<table>
+<tr><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td>Lớp đơn vị là <b>bước TRÌNH BÀY riêng</b> (<code>UnitFormat.apply</code>), KHÔNG nhét vào đường đọc <code>TelemetryReadout.of</code></td><td>[ĐO] <code>TelemetryReadoutTest</code> đang khoá <code>tyre_p_fl = "241"</code> (kPa làm tròn). Nhét chuyển đổi vào đường đọc là đổi hành vi TẦNG DỮ LIỆU chỉ vì lý do trình bày. Tách ra thì tầng dữ liệu = số thật của xe, tầng trình bày = cái người dùng muốn thấy, và <b>0 test cũ phải sửa</b>.</td></tr>
+<tr><td>Đơn vị đích <b>trùng</b> đơn vị gốc ⇒ trả về view <b>NGUYÊN VẸN</b>, không định dạng lại</td><td>Điều kiện đủ cho R12. Định dạng lại sẽ áp số-chữ-số-thập-phân của bảng lên chuỗi mà tầng đọc đã format ("28.5" °C → "29") — tức âm thầm đổi thứ người dùng đang thấy dù họ không chọn gì. <b>Tôi đã viết sai lần đầu và tự phát hiện</b>; mutation dựng lại lỗi này ⇒ 3 test đỏ.</td></tr>
+<tr><td>Mặc định áp suất = <b>bar</b> (không phải kPa như registry khai)</td><td>Bề mặt người dùng THẬT SỰ thấy hôm nay là widget lốp, và nó đang hiện bar (tự chia 100). Chọn kPa sẽ đổi thứ owner đang thấy — vi phạm R12 ở đúng chỗ quan trọng nhất.</td></tr>
+<tr><td>Loại đại lượng <b>suy ra từ chuỗi đơn vị</b> đã khai, KHÔNG thêm cột vào registry</td><td>Tránh sửa 61 dòng; thêm datum mới là tự có lựa chọn đơn vị, không phải khai thêm gì.</td></tr>
+<tr><td>Giữ không gian mã <b>PHẲNG</b> + thêm test khoá xung đột</td><td>[ĐO] 195 mã của 3 bộ giao nhau RỖNG ⇒ khỏi chuyển đổi dữ liệu đã lưu. Nhưng "hôm nay không trùng" không phải bảo đảm, nên khoá lại: mutation thêm mã nút trùng mã datum ⇒ 2 test đỏ.</td></tr>
+<tr><td>Ô tick lấy gió đặt ở <b>bảng Tuỳ biến</b> (dựng bằng code)</td><td>Ràng buộc C3: layout XML bị niêm phong, thêm một dòng vào đó là phải xin owner đóng dấu lại. Panel này dựng hoàn toàn bằng code ⇒ 0 file XML bị sửa (đã kiểm bằng <code>git status</code>).</td></tr>
+<tr><td>Tắt ô tick <b>KHÔNG</b> tắt chế độ lấy gió đang bật trên xe</td><td>Người dùng có thể đang muốn dùng, chỉ là không muốn tự bật nữa. Tắt hộ là hành động ngoài yêu cầu.</td></tr>
+<tr><td>Nhãn ô đọc bị cắt: cho <b>2 dòng</b>, KHÔNG bịa quy tắc viết tắt</td><td>Nhãn đến từ registry với 195 mục đủ kiểu; mọi quy tắc tự nghĩ (bỏ tiền tố, lấy chữ đầu) sẽ tạo nhãn vô nghĩa ở đâu đó mà không có test nào kiểm được.</td></tr>
+</table>
+
+<p><b>Sai lệch thiết kế đã sửa theo SỐ ĐO:</b></p>
+<ul>
+  <li><b>§3.4/R12 nói "giống trước từng ký tự"</b> — thực tế đúng cho bề mặt người dùng thấy (widget lốp giữ bar), nhưng <b>ô THÔ</b> của cùng datum lốp đổi từ kPa sang bar. Tôi <b>cố ý</b> chọn nhất quán thay vì giữ mâu thuẫn cũ (registry nói kPa, widget hiện bar). Ghi rõ ở đây thay vì im lặng.</li>
+  <li><b>Lựa chọn đơn vị KHÔNG nằm trong <code>HomeUiState</code></b> (khác brief ban đầu của tôi). Lý do do lượt trước ghi và tôi giữ: nó chỉ đổi khi người dùng vào chọn, nhét vào state là bắt cả HOME so-sánh-lại mỗi nhịp trạng thái xe (2/giây) mà không được gì. Đổi lựa chọn ⇒ gán field + gọi lại 3 bề mặt.</li>
+  <li><b>Widget lốp KHÔNG chỉ hiện min–max như tôi báo owner ban đầu</b> — ô lớn ĐÃ hiện 4 bánh riêng. Cái sai thật là nó có <b>ngưỡng cứng 2.2 viết tại chỗ</b>, tức ngưỡng THỨ BA của dự án, lệch với ngưỡng ở <code>:core</code>. Đã đính chính với owner và xoá hẳn hàm cũ.</li>
+</ul>
+
+<p><b>Bốn lỗi chỉ lộ ra khi ĐỌC ẢNH (xem §6) — không test nào bắt được:</b> nhiệt độ bảng lốp bỏ qua lựa chọn đơn vị · hai nhãn ô đọc bị cắt thành giống hệt nhau · một bánh hai màu cảnh báo · hình xe gần vuông + viền tan vào nền. Tất cả đã sửa và <b>khoá bằng test mới</b> (trừ phần tỉ lệ/màu là thẩm mỹ, khoá bằng số đo trong tài liệu).</p>
+
+<p><b>Test brittle đã sửa (không nới lỏng):</b> 3 khẳng định của lượt trước khoá <b>nguyên văn danh sách tham số</b> (<code>WidgetData(...)</code>, <code>telemetry(ctx, id, data.car)</code>, <code>refreshChips(state.carStatus)</code>) nên vừa thêm tham số đơn vị là đỏ, dù dây nối vẫn đúng. Đã đổi sang khoá <b>ý định</b> (có dựng, có truyền đơn vị) — mạnh hơn vì thêm được khẳng định "đơn vị phải chảy xuống".</p>
+
+<p><b>Còn tồn (không che):</b></p>
+<ul>
+  <li>Nút đổi-app ở đầu ô <b>đè lên đỉnh hình xe</b> trong bảng lốp (làm mờ ~35–40px viền). Là chrome chung của mọi ô, không phải lỗi riêng của bảng lốp ⇒ để lại, sửa chung khi làm P9.</li>
+  <li>Bảng lốp cho biết <b>bánh nào</b> có vấn đề nhưng chưa nói <b>sai cái gì</b> (không mũi tên, không chữ "thấp", không hiện ngưỡng). Người xem phải tự so số. Cân nhắc thêm sau khi có số thật trên xe.</li>
+  <li>Nhóm khả năng trong bảng Tuỳ biến dùng <b>một icon cho cả nhóm</b> ⇒ 10 ô cùng icon tia sét, phân biệt chỉ bằng chữ. Cần bộ icon riêng cho từng datum (nợ U1 — ~45 icon thiếu).</li>
+  <li>Ngưỡng lốp vẫn là <b>con số tôi tự chọn</b> (OQ1 chưa có câu trả lời của owner) — đặt một chỗ, đổi một dòng.</li>
+</ul>
+<p class="muted">Ghi NGAY khi code: quyết định · đánh đổi · chỗ lệch thiết kế · bug và cách xử.</p>
+
+<h3>Phiên 2026-09-10 — phần GIAO DIỆN của RW0 (T3 + T4)</h3>
+<p>
+  Làm đúng hai việc: <b>bơm trạng thái xe vào thanh nút + vẽ ô ĐỌC ở đó</b> (chiều một của R2) và <b>bộ dựng ô dùng
+  chung để ô giữa màn nhận được hành động</b> (chiều hai của R2). Nền <code>:core</code> (lớp tra cứu khả năng · lớp
+  đơn vị · quyết định trạng thái lốp) do phiên trước đã xong — phiên này chỉ dùng, không làm lại.
+</p>
+
+<h4>Quyết định tự đưa ra (không hỏi lại)</h4>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Vì sao</th></tr>
+<tr>
+  <td>1</td>
+  <td><b>Ô ĐỌC cập nhật TẠI CHỖ, không dựng lại view</b> — <code>ControlDockView.setCarStatus</code> chỉ gọi
+      <code>ReadTile.bind(...)</code> trên các ô đã dựng.</td>
+  <td>Thiết kế nói "chỉ dựng lại ô đọc" (C5). Đổi chữ trong <code>TextView</code> đã có thì <b>không dựng lại gì cả</b>
+      — mạnh hơn yêu cầu, và loại hẳn khả năng ô hành động bị chạm tới. Bài khoá cấm <code>rebuild()</code> /
+      <code>removeAllViews()</code> / <code>addView(</code> / <code>control</code> xuất hiện trong hàm đó.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><b>Bảng trạng thái ô nút dùng CHUNG cả tiến trình</b> (<code>ControlTileState.shared</code>).</td>
+  <td>Từ nay MỘT nút đặt được ở hai vùng. Mỗi vùng một bảng riêng thì bật "lấy gió trong" ở ô giữa màn xong nhìn
+      xuống thanh nút vẫn thấy tắt — hai bề mặt nói hai điều về một cái xe. Chỉ có một cái xe nên một bảng là đúng.
+      (Đây KHÔNG phải trạng thái đọc từ xe — phần lớn nút không có đường đọc lại.)</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><b>Hai cỡ ô</b> <code>TileSize.DOCK</code> / <code>BIG</code>; số của DOCK <b>y hệt</b> bản cũ.</td>
+  <td>Rút bộ dựng ra ngoài mà đổi luôn cỡ thì không phân biệt được "hỏng do rút" với "khác do cỡ". Giữ DOCK
+      bit-for-bit (22dp · 11.5sp · 15sp · 12.5sp · đệm 8 · bo 14) ⇒ thanh nút không đổi một pixel; ô giữa màn khung
+      to gấp nhiều lần nên phải có cỡ riêng, không thì trông như bị hụt.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><b>Lựa chọn đơn vị đi qua tầng dữ liệu</b> (<code>WorkspaceRepository.unitPrefs()</code> có thân mặc định +
+      <code>WorkspacePrefs</code> khoá <code>unit_prefs</code>, CHUNG mọi hồ sơ), <b>KHÔNG</b> nhét vào
+      <code>HomeUiState</code>.</td>
+  <td>Cùng lý lẽ đã dùng cho danh sách app gần đây: nó chỉ đổi khi người dùng vào chọn, đưa vào state là bắt cả HOME
+      so-sánh-lại mỗi nhịp trạng thái xe (2/giây) mà không được gì. Thân mặc định ⇒ bản giả in-memory trong test
+      không phải sửa (0 churn). Nếu để hằng số cứng trong view thì màn chọn đơn vị làm sau sẽ không có chỗ cắm.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><b>Ô ĐỌC trong thanh nút cắt nhãn dài</b> (một dòng + "…") thay vì tự viết tắt.</td>
+  <td>Ô thanh nút rộng 84dp mà nhãn registry dài ("Áp suất lốp trước trái"). Tự sinh chữ viết tắt là bịa ra một quy
+      tắc ngôn ngữ mà chưa ai duyệt; cắt thì người dùng thấy ngay là bị cắt. Nợ lại: thêm <b>nhãn ngắn</b> cho datum
+      (một trường ở <code>:core</code>) — xem "còn nợ" bên dưới.</td>
+</tr>
+</table>
+
+<h4>Chỗ LỆCH thiết kế (kèm lý do đo được)</h4>
+<ul>
+  <li>
+    <b>§4.6 nói lớp đơn vị là "chỗ DUY NHẤT định dạng giá trị", nhưng phiên này CHỈ áp nó cho ô ĐỌC trong thanh nút</b>
+    — đường widget cũ (<code>WidgetViews.telemetry</code> + widget lốp tự chia 100) <b>chưa</b> đi qua
+    <code>UnitFormat</code>. Lý do: yêu cầu phiên này ghi rõ "8 widget dựng tay và đường telemetry phải render Y NHƯ
+    CŨ"; nhét lớp đơn vị vào đó là đổi bề mặt đang có trong cùng một phiên với việc rút bộ dựng ô — hai thay đổi lớn
+    chồng nhau thì lúc lỗi không biết do cái nào. Việc gộp đường widget vào lớp đơn vị thuộc W4 (bộ vẽ bảng lốp) và
+    màn chọn đơn vị.
+  </li>
+  <li>
+    <b>OQ3 "làm đủ 3 vùng" — phiên này làm 2/3</b>: thanh trên vẫn chỉ có chip + nút cố định, chưa nhận mã khả năng.
+    Nó không nằm trong hai việc được giao và <code>KachiTopStrip</code> đang là bề mặt hẹp (chật chỗ) ⇒ để nguyên,
+    không mở phạm vi.
+  </li>
+  <li>
+    <b>Chưa có đường cho NGƯỜI DÙNG chọn mã ĐỌC vào thanh nút.</b> <code>DockConfig.setEnabled</code> đã nhận mọi mã
+    khả năng (phiên trước) và thanh nút đã biết vẽ ô đọc (phiên này), nhưng màn <b>Tuỳ biến</b> vẫn chỉ liệt kê
+    <code>ControlRegistry</code> (64 nút) nên trên máy không bấm được để thêm áp suất lốp vào thanh. Vì vậy chứng minh
+    R2 phải <b>gieo cấu hình bằng tay</b> (ghi thẳng <code>kachi_workspace.xml</code> qua <code>run-as</code> trên máy
+    ảo). Không tự sửa <code>CustomizePanel</code> vì nó là bề mặt mà việc "màn chọn đơn vị" sắp phải đụng vào —
+    hai phiên sửa cùng một file là cách nhanh nhất để mất một bên. <b>Đây là khe hở CÒN LẠI của R2</b>, xem "còn nợ".
+  </li>
+</ul>
+
+<h4>Bằng chứng [ĐO]</h4>
+<ul>
+  <li>Đủ 5 module <b>2394 / 0</b> (mốc cũ 2343 + 35 bài <code>:core</code> phiên trước + 8 bài dây nối phiên này ×2 biến thể build). <code>:app:assembleDebug</code> sạch.</li>
+  <li><b>Thử phá 5 phép, đỏ đúng chỗ cả 5</b>: bỏ <code>dock.setCarStatus</code> · gắn <code>setOnClickListener</code> vào ô ĐỌC · bỏ <code>UnitFormat.apply</code> · thay cập-nhật-tại-chỗ bằng <code>rebuild()</code> · bỏ rẽ nhánh <code>isWrite</code> ở ô giữa màn. Không phép nào lọt ⇒ bài khoá không phải bài trang trí.</li>
+  <li><b>Máy ảo clusternav10 (1920×1080)</b>: thanh nút render 3 ô hành động + 4 ô ĐỌC (áp lốp trước-trái/phải, pin, nhiệt ngoài xe) — off-car "—" + mờ, đơn vị <b>bar</b>; ô giữa màn render "Lấy gió trong" bấm được (chạm → nền gradient bật) và một lưới trộn đóng-mở · bấm-1-phát · −/+ · một ô đọc; widget vòng năng lượng giữ nguyên.</li>
+  <li><b>Không nháy (C5) đo trên máy</b>: bật "Kính 50%" + bấm "+" hai lần (22°→24°) rồi chờ 6 s (~12 nhịp trạng thái xe) → cả hai giữ nguyên ⇒ thanh nút không bị dựng lại.</li>
+</ul>
+
+<h4>File đã sửa / thêm</h4>
+<table>
+<tr><th>File</th><th>Việc</th></tr>
+<tr><td><code>:app ControlTileFactory.kt</code> <b>(mới)</b></td><td>Bộ dựng ô dùng chung: <code>actionTile</code> (5 kiểu nút) + <code>readTile</code> (không chạm) + <code>TileSize</code> + <code>ControlTileState</code> + <code>ReadTile</code>.</td></tr>
+<tr><td><code>:app ControlDockView.kt</code></td><td>Còn 90 dòng: nhận <code>CarStatus</code>+<code>UnitPrefs</code>, phân loại mã, cỡ ô, cập nhật tại chỗ. Toàn bộ phần dựng ô đã ra ngoài.</td></tr>
+<tr><td><code>:app WidgetViews.kt</code></td><td>Rẽ nhánh theo <code>CapabilityCatalog.isWrite</code> ở cả ô một-widget và ô lưới; <code>WidgetData</code> thêm cổng ra lệnh. Đường curated + telemetry KHÔNG đổi.</td></tr>
+<tr><td><code>:app WorkspaceView.kt</code></td><td>Thêm cổng <code>control</code> (port, không phải state) và truyền xuống <code>WidgetData</code>.</td></tr>
+<tr><td><code>:app KachiHomeActivity.kt</code></td><td>Bơm <code>dock.setCarStatus(state.carStatus, unitPrefs)</code> cùng nhánh với <code>topStrip.refreshChips</code>; đọc lựa chọn đơn vị từ tầng dữ liệu; nối cổng ra lệnh vào workspace.</td></tr>
+<tr><td><code>:app WorkspacePrefs.kt</code> · <code>PrefsWorkspaceRepository.kt</code> · <code>:core WorkspaceRepository.kt</code></td><td>Lưu/đọc lựa chọn đơn vị (khoá <code>unit_prefs</code>, chung mọi hồ sơ); hàm có thân mặc định ⇒ test cũ không phải sửa.</td></tr>
+<tr><td><code>:app CapabilityTileWiringContractTest.kt</code> <b>(mới, 8 bài)</b></td><td>Khoá dây nối: thanh nút nhận trạng thái xe · Activity bơm cùng nhánh · chỉ đổ lại ô đọc · ô đọc không chạm · số đi qua lớp đơn vị · thanh nút dùng bộ dựng chung · ô giữa màn rẽ nhánh · 8 widget tay + đường telemetry giữ nguyên.</td></tr>
+</table>
+
+<h4>Còn nợ (không che)</h4>
+<ul>
+  <li><b>Màn Tuỳ biến chưa liệt kê mã ĐỌC</b> ⇒ người dùng chưa tự thêm được áp suất lốp vào thanh nút. Cần cho
+      <code>CustomizePanel</code> đọc <code>CapabilityCatalog.byDomain()</code> thay vì <code>ControlPanels.byDomain()</code>
+      (đổi <code>tile(def: ControlDef)</code> sang <code>CapabilityPick</code>). <b>Việc nhỏ nhưng chưa làm</b> — nó
+      dùng chung bề mặt với màn chọn đơn vị.</li>
+  <li><b>Nhãn ngắn cho datum</b>: ô đọc trong thanh nút đang cắt chữ ("Áp lốp trước-t…").</li>
+  <li><b>Thanh trên</b> chưa nhận mã khả năng (vùng thứ ba của R2).</li>
+  <li><b>Trên xe 🚗</b>: số thật chảy vào ô đọc (off-car luôn "—" nên chỉ chứng minh được bố cục + suy giảm); ô hành
+      động trong ô giữa màn khi có kênh điều khiển thật.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only, mỗi lượt soát thêm một mục.</p>
+
+<h3>Pass 1 — 2026-09-10 · senior review độc lập (soát + tự vá)</h3>
+<p>Cách soát: đọc spec trước, rồi <b>mở từng file ra đối chiếu</b> (không tin §6/§9), kiểm ràng buộc <b>bằng lệnh</b>,
+và <b>thử phá</b> từng bản vá của chính mình. Mốc trước soát <b>2420 / 0</b> (đã tự chạy lại để xác nhận, không lấy
+theo lời khai). Sau soát <b>2434 / 0</b>, <code>:app:assembleDebug</code> sạch.</p>
+
+<p><b>Kết luận ngắn:</b> nền RW0 + W4 + W3 + lớp đơn vị làm đúng hình, phân tầng đúng chỗ (quyết định ở
+<code>:core</code>, vẽ ở <code>:app</code>), và bốn lỗi "chỉ thấy khi đọc ảnh" ở §6 là bằng chứng thật. Nhưng lượt
+soát tìm thêm <b>9 lỗi</b>, trong đó <b>3 lỗi mức cao</b> — và một trong số đó là <b>lời khai mutation ở §6 không
+đúng</b>.</p>
+
+<table>
+<thead><tr><th>#</th><th>Mức</th><th>Phát hiện (đo được)</th><th>Bản vá đã áp</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><b>[P1]</b></td><td><b>Cổng chặn của cả gói KHÔNG có bài nào canh.</b> Hoàn nguyên đúng một dòng
+<code>DockConfig.setEnabled</code> về <code>ControlRegistry.byId(id) == null</code> (tức xoá hẳn thành quả Đ3/R2)
+⇒ <b>cả 2431 bài vẫn XANH</b>. §6 ghi "bỏ nới cổng chặn ⇒ test đỏ" — <b>sai</b>: phép đó không nằm trong 5 phép đã
+chạy, và khi chạy thật thì nó sống sót.</td><td><code>ControlRegistryTest</code> +1 bài: mã ĐỌC
+(<code>tyre_p_fl</code>/<code>soc</code>) PHẢI vào được thanh, mã lạ vẫn bị từ chối. [ĐO] hoàn nguyên cổng ⇒ <b>đỏ</b>.
+Sửa cả dòng khai sai ở §6.</td></tr>
+
+<tr><td>2</td><td><b>[P1]</b></td><td><b>Đổi đơn vị tháo cả ô đang chiếu app.</b>
+<code>WorkspaceView.setUnitPrefs</code> gọi <code>rebuild()</code> = <code>removeAllViews()</code> + dựng lại MỌI ô ⇒
+đổi chữ "bar"→"psi" cũng nhả <code>VdAppHost</code>, tạo màn ảo mới, app trong ô phải mở lại. Đơn vị chỉ ảnh hưởng ô
+widget. Thêm nữa <code>render()</code> gọi nó ở nhánh <code>prev == null</code> ⇒ ai đã chọn psi thì <b>mỗi lần mở
+HOME</b> chịu thêm một lượt dựng lại toàn bộ ngay sau lượt render đầu. Đúng loại thiệt hại ràng buộc C5 dựng ra để
+chặn.</td><td><code>rebuildWidgetSlots()</code> (bỏ qua ô App/ô trống, cùng luật
+<code>WorkspaceRenderPlanner</code>) + gán đơn vị <b>trước</b> lượt render đầu trong <code>onCreate</code>. Bài khoá
+mới: <code>setUnitPrefs</code> không được chứa <code>rebuild()</code>, và hàm mới phải lọc
+<code>SlotContent.Widget</code>. [ĐO] hoàn nguyên ⇒ <b>đỏ</b>.</td></tr>
+
+<tr><td>3</td><td><b>[P1]</b></td><td><b>R3 chỉ đúng cho thanh nút, KHÔNG đúng cho ô giữa màn.</b>
+<code>WorkspaceRenderPlanner</code> dựng lại MỌI ô widget khi trạng thái xe đổi — mà từ RW0 ô widget có thể chứa
+<b>nút bấm</b>. Trên xe nhịp là 2/giây ⇒ view bị tháo/gắn ngay giữa cú chạm (chuỗi MotionEvent đứt ⇒ <b>mất cú
+bấm</b>), và cú nháy 220 ms của nút bấm-1-phát biến mất. Off-car không lộ vì mọi field null ⇒
+<code>status != oldStatus</code> luôn false. Số đo "không nháy" ở §6 đo trên <b>thanh nút</b>, không đo ca
+này.</td><td>Thêm <code>hasReadContent()</code>: ô widget <b>chỉ chứa nút</b> thì nhịp trạng thái xe không dựng lại
+nó (mã lạ / danh sách rỗng vẫn coi là ĐỌC ⇒ giữ y hành vi cũ). 3 bài mới ở
+<code>WorkspaceRenderPlanTest</code>; bài tương-đương-hành-vi-cũ &gt;1000 tổ hợp vẫn xanh. [ĐO] hoàn nguyên ⇒
+<b>đỏ</b>.</td></tr>
+
+<tr><td>4</td><td>[P2]</td><td><b>R8 chưa có trên màn.</b> <code>TyreBoard.tempTier</code> được khai + có bài kiểm
+hằng số, nhưng <b>không bề mặt nào đọc nó</b> ⇒ bảng lốp không hề mang "dấu chưa kiểm" cho nhiệt. Và
+<code>EvidenceTier.needsBadge</code> chỉ đúng cho OVERDRIVE/DASHCAST nên chấm amber <b>không bao giờ</b> áp cho nhiệt
+lốp (NEEDS_CAR) — nghĩa là đi đường badge cũng không xong.</td><td>Dòng chân bảng ghép
+<code>"$unit · nhiệt chưa kiểm"</code> theo <code>TyreBoard.tempTier.wired</code>; ô vẽ vẫn không biết gì về mức bằng
+chứng (chuỗi do chỗ gọi dựng). Bài khoá: bề mặt phải ĐỌC <code>tempTier</code>, ô vẽ KHÔNG được tự dựng chữ. [ĐO]
+bỏ dấu ⇒ <b>đỏ</b>.</td></tr>
+
+<tr><td>5</td><td>[P2]</td><td><b>Ô vẽ bảng lốp cấp phát trong <code>onDraw</code></b> — trái chính KDoc của nó.
+<code>Color.parseColor</code> (cắt chuỗi + parse số) gọi <b>6 lần mỗi lượt vẽ</b> (4 bánh + 2 nhãn); bài canh cũ chỉ
+cấm <code>Paint(</code> nên không bắt.</td><td>Phân giải 5 màu <b>một lần</b> ở field; <code>colorFor</code> chỉ chọn
+field. Thêm <code>Color.parseColor(</code> vào danh sách cấm trong <code>onDraw</code> ⇒ bài canh nay khớp đúng lời
+KDoc hứa. [ĐO] đưa lại 1 lời gọi ⇒ <b>đỏ</b>.</td></tr>
+
+<tr><td>6</td><td>[P3]</td><td><b>Số không hữu hạn lọt ra chuỗi.</b>
+<code>String.toDoubleOrNull()</code> <b>chấp nhận</b> "NaN"/"Infinity" (đúng đặc tả <code>Double.valueOf</code>), và
+phép nhân có thể tràn ⇒ <code>Units.format</code> sẽ in ra "NaN"/"Infinity", tức bịa một con số không có (trái
+R13).</td><td>Chặn ở <b>ba chỗ</b>: đầu vào <code>fromBase</code>, đầu ra <code>fromBase</code>, và số vừa parse
+trong <code>UnitFormat.apply</code>. +1 bài. [ĐO] bỏ chặn ⇒ <b>đỏ</b>.</td></tr>
+
+<tr><td>7</td><td>[P3]</td><td><b>Bài kiểm biên của chính gói này là bài trang trí.</b> Bài "chênh đúng bằng ngưỡng"
+đi qua <code>readings</code> nên không tới được ca bằng nhau tuyệt đối: kPa chia 100 ra số nhị phân không chẵn,
+2.6−2.3 = <b>0.30000000000000004</b> ⇒ đã LỚN HƠN ngưỡng. [ĐO] thử phá <code>&gt;=</code> → <code>&gt;</code>
+<b>sống sót</b>.</td><td>Đổi sang gọi thẳng <code>TyreBoard.statusOf(spread = SPREAD_BAR)</code> (bằng nhau tuyệt
+đối) + thêm ca dưới ngưỡng. [ĐO] nay thử phá <code>&gt;=</code> → <code>&gt;</code> ⇒ <b>đỏ</b>. Thêm 2 ca biên còn
+thiếu: <b>hai bánh bằng nhau ở mức thấp nhất</b> (cả hai đều bị đánh dấu — đúng, vì cả hai đều là thấp nhất) và
+<b>chỉ hai bánh đọc được</b>.</td></tr>
+
+<tr><td>8</td><td>[P3]</td><td><code>CapabilityCatalog.byDomain()</code> gọi <code>all()</code> <b>một lần cho mỗi
+nhóm</b> ⇒ dựng lại cả 195 mục 8 lượt (1560 đối tượng) cho một lần mở màn chọn.</td><td>Dựng một lần rồi lọc — cùng
+kết quả, cùng thứ tự.</td></tr>
+
+<tr><td>9</td><td>[P3]</td><td><code>PrefsWorkspaceRepository.setUnitPrefs(prefs)</code> <b>che</b> field
+<code>prefs</code> (phải viết <code>this.prefs</code> mới đúng) — đọc dễ tưởng gọi đệ quy.</td><td>Đổi tên tham số
+thành <code>units</code>.</td></tr>
+</tbody>
+</table>
+
+<h4>Đã soi và KHÔNG thấy lỗi (ghi lại để lượt sau khỏi soi lại)</h4>
+<ul>
+<li><b>Ràng buộc, kiểm bằng lệnh:</b> C1 <code>grep "^import android" core/src/main</code> = rỗng · C2 diff
+<code>*.gradle*</code> = rỗng · C3+C4 <code>git status --porcelain | grep -E "\.xml$|clustercast"</code> = <b>rỗng</b>
+· C6 không mất bài nào (2420 → 2434).</li>
+<li><b>Hệ số quy đổi:</b> kiểm từng cái — kPa→bar ÷100 · kPa→psi ×0.1450377377 · °C→°F ×9/5+32 · km→mile và
+km/h→mph ×0.6213711922 · Nm→lb·ft ×0.7375621493 · m→ft ×3.280839895 · kWh/100km→km/kWh = <b>100/v</b> (nghịch đảo,
+0 đã chặn). Tất cả <b>đúng</b>.</li>
+<li><b>R12 quét cả bảng đơn vị:</b> chỉ ÁP SUẤT có mặc định lệch đơn vị gốc (bar vs kPa) — đúng như §9 khai; 6 loại
+còn lại mặc định TRÙNG gốc ⇒ <code>apply</code> trả view nguyên vẹn. Đơn vị <code>%</code> · <code>°</code> ·
+rỗng · giá trị là chữ ("Có"/"Không") đều đi qua không sứt. Đối chiếu 123 đơn vị thật trong registry: 27 mục đổi
+được, 96 mục không có loại ⇒ không bày lựa chọn giả (R13).</li>
+<li><b>Chia cho 0 / bố cục 0 px:</b> <code>fromBase</code> chặn tiêu thụ 0 · <code>readings</code> chỉ tính độ chênh
+khi biết ≥2 bánh (<code>bars.max()</code> không thể gọi trên danh sách rỗng) · <code>onDraw</code> thoát sớm khi
+<code>w</code>/<code>h</code> ≤ 0.</li>
+<li><b>3 danh sách song song của bảng lốp:</b> rủi ro thật là lệch THỨ TỰ, không phải độ dài — cả
+<code>values</code> và <code>temps</code> map trên CHÍNH danh sách <code>readings</code> trong cùng một biểu thức, và
+ô vẽ đặt bánh theo <code>rd.corner</code> chứ không theo chỉ số ⇒ không lệch được. Đã thêm bài khoá điều đó, và
+<code>set()</code> nay chuẩn hoá độ dài để <code>getOrNull</code> không che được lỗi chỗ gọi.</li>
+<li><b><code>RecircApplier</code> gọi <code>AppContainer.get()</code> từ thread nền:</b> an toàn — khoá đôi +
+<code>@Volatile</code> (không dựng hai đồ thị), đồ thị toàn <code>by lazy</code> nên <b>không chạm
+<code>shellTransport</code>/dadb</b> lúc nổ máy, và <code>BydHalGateway</code> constructor chỉ giữ context (mọi phản
+chiếu HAL nằm trong lời gọi). Không có đường deadlock. Không chặn số lần gọi — <b>đúng lối nhà</b>
+(<code>Pm25FilterApplier.quickClean</code> y vậy cho lệnh một-phát) nên KHÔNG sửa.</li>
+<li><b><code>CustomizePanel</code> đổi đơn vị:</b> mỗi hàng giữ <code>chosen</code> riêng + <code>paint()</code> riêng,
+field <code>units</code> tích luỹ qua <code>with()</code>; tất cả trên thread chính nên bấm nhanh nhiều chip không
+sinh trạng thái lệch. Mở lại bảng đọc field đã cập nhật của Activity ⇒ hiện đúng lựa chọn mới.</li>
+<li><b>Bảy mặt tiếp giáp</b> (Activity↔Panel · WidgetData↔widgetData() · TyreBoardView.set↔tyreBoard ·
+Dock↔Factory↔ReadTile · Repository↔Prefs · RecircApplier↔carControl↔HalBindingTable · refreshChips↔chỗ gọi): đọc
+đồng thời hai đầu, <b>khớp hết</b> về tên/kiểu/nullable/thứ tự/thread.</li>
+<li><b>R4 (không mất cấu hình):</b> thanh nút lưu <b>CSV mã trần</b> và <code>loadDock</code> không kiểm mã ⇒ mã ĐỌC
+đi vào/ra không cần bước chuyển đổi nào; định dạng lưu không đổi một byte.</li>
+</ul>
+
+<h4>Nợ mới ghi ra (không vá trong lượt này, có lý do)</h4>
+<ul>
+<li><b>[P2] Bảng Tuỳ biến nay dựng 187 ô đồng bộ trên thread chính</b> (123 thông tin + 64 nút; trước gói 2 là 64) ≈
+600+ view, không tái dùng, trong một <code>ScrollView</code>. Máy ảo mạnh nên không thấy; đầu máy trên xe yếu hơn
+nhiều thì bấm "Tuỳ biến" sẽ có khoảng đứng. Vá đúng = danh sách có tái dùng (RecyclerView/phân trang) — <b>ngoài
+phạm vi gói 2</b> và đụng đúng bề mặt P9 sắp làm lại. <b>Đo trên xe rồi quyết.</b></li>
+<li><b>[P3] Ô widget TRỘN đọc + nút</b> vẫn bị dựng lại theo nhịp trạng thái xe (vì có số thật phải làm mới) ⇒ nút
+trong ô trộn vẫn chịu rủi ro mất cú bấm. Vá đúng = ô hành động cũng cập-nhật-tại-chỗ như <code>ReadTile</code> —
+việc riêng, không nhét vào lượt soát.</li>
+<li><b>[P3]</b> <code>KachiTopStrip</code> tự gọi <code>refreshChips(CarStatus())</code> lúc dựng với đơn vị mặc
+định ⇒ trong một khung đầu tiên (trước nhịp trạng thái đầu) chip ghi <code>—°C</code> dù đã chọn °F. Chỉ là nhãn trên
+chip toàn "—", và lượt render đầu (<code>prev == null</code>) sửa ngay.</li>
+<li><b>[P3]</b> Tiêu thụ = 0 mà người dùng chọn <code>km/kWh</code>: giữ nguyên số + <b>nhãn đơn vị gốc</b>
+(<code>kWh/100km</code>) vì nghịch đảo của 0 không xác định. Không bịa ∞, không xoá số thật — nhưng nhãn nói khác
+lựa chọn. Đánh đổi có ý thức.</li>
+<li><b>[P3]</b> Mã widget dựng tay (<code>w_*</code>) nay được <code>DockConfig.setEnabled</code> nhận, và trong thanh
+nút sẽ ra ô "—" mờ vĩnh viễn (chúng không có dạng một-số-một-đơn-vị). Bảng Tuỳ biến KHÔNG bày chúng nên đường UI
+không tới được; để nguyên theo đúng KDoc đã ghi.</li>
+</ul>
+
+<p><b>PHÁN QUYẾT: APPROVED</b> — sau 9 bản vá ở trên. Căn cứ: 5 module <b>2434 / 0</b> (mốc trước gói 2 là 2343,
+trước lượt soát là 2420, <b>không mất bài nào</b>) · <code>:app:assembleDebug</code> sạch · <b>9/9 phép thử phá đỏ
+đúng chỗ</b> (mỗi bản vá tự bị thử phá, kể cả một bài kiểm biên của chính tôi đã bị bắt là trang trí và phải viết
+lại) · C1–C4 kiểm bằng lệnh, C6 kiểm bằng số. Ba việc <b>còn phải đo trên xe</b> không đóng được off-car: số áp
+suất/nhiệt thật để chốt ngưỡng · lệnh lấy gió trong có ăn không · khoảng đứng của bảng Tuỳ biến 187 ô trên đầu máy
+thật.</p>
+
+</div>
+</body>
+</html>

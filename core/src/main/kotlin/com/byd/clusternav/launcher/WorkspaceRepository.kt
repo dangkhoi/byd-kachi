@@ -35,4 +35,17 @@ interface WorkspaceRepository {
 
     /** Ghi nhận vừa mở [pkg] (đưa lên đầu danh sách gần đây). Mặc định: không nhớ. */
     fun touchRecentApp(pkg: String) {}
+
+    /**
+     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13) — CHUNG mọi hồ sơ tài xế: đơn vị là thói quen của người ĐỌC, không
+     * phải của một hồ sơ (cùng lối với giao diện sáng/tối).
+     *
+     * Giống [recentApps]: CỐ Ý **không** nằm trong [HomeUiState]. Nó chỉ đổi khi người dùng vào chọn, nên nhét vào
+     * state sẽ bắt cả HOME so-sánh-lại mỗi nhịp trạng thái xe mà chẳng được gì. Có thân MẶC ĐỊNH ⇒ bản giả
+     * in-memory trong test không phải sửa.
+     */
+    fun unitPrefs(): UnitPrefs = UnitPrefs.DEFAULT
+
+    /** Ghi bền lựa chọn đơn vị. Mặc định: không lưu (bản giả). */
+    fun setUnitPrefs(prefs: UnitPrefs) {}
 }

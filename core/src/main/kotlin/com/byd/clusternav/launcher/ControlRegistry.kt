@@ -41,14 +41,30 @@ data class ControlDef(
     fun clamp(v: Int): Int = if (kind == ControlKind.STEP) v.coerceIn(min, max) else v
 }
 
-/** Cấu hình thanh (bền qua prefs): viền + danh sách id đang hiện (thứ tự = thứ tự hiển thị). */
+/**
+ * Cấu hình thanh (bền qua prefs): viền + danh sách id đang hiện (thứ tự = thứ tự hiển thị).
+ *
+ * **RW0 (2026-09-10)**: danh sách này nay nhận **cả thông tin ĐỌC lẫn HÀNH ĐỘNG** — xem [setEnabled].
+ * Định dạng lưu KHÔNG đổi (vẫn là danh sách mã trần) ⇒ cấu hình người dùng đã lưu đọc lên nguyên vẹn (spec R4).
+ */
 data class DockConfig(
     val edge: DockEdge = DockEdge.BOTTOM,
     val enabled: List<String> = ControlRegistry.defaultEnabledIds(),
 ) {
     fun withEdge(e: DockEdge): DockConfig = copy(edge = e)
+
+    /**
+     * Bật/tắt một **khả năng** trong thanh.
+     *
+     * TRƯỚC RW0 chỗ này chặn: `if (ControlRegistry.byId(id) == null) return this` ⇒ mọi mã KHÔNG phải nút bị **bỏ
+     * qua im lặng**, nên thông tin đọc (áp suất lốp, phần trăm pin…) không bao giờ vào được thanh. Đó là **cổng chặn
+     * thật** của yêu cầu "đặt được ở cả 3 vùng" (spec Đ3/R2).
+     *
+     * NAY nhận mọi mã có trong [CapabilityCatalog] (đọc HOẶC hành động). Vẫn từ chối mã lạ — giữ nguyên tính chất
+     * "không nhét rác vào cấu hình bền" của bản cũ.
+     */
     fun setEnabled(id: String, on: Boolean): DockConfig {
-        if (ControlRegistry.byId(id) == null) return this
+        if (CapabilityCatalog.kindOf(id) == null) return this
         val cur = enabled.toMutableList()
         if (on) { if (id !in cur) cur.add(id) } else cur.remove(id)
         return copy(enabled = cur)
