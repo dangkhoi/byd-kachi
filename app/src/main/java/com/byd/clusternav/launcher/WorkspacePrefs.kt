@@ -81,6 +81,14 @@ class WorkspacePrefs(context: Context) {
 
     fun setLauncherAutostart(on: Boolean) { sp.edit().putBoolean(K_AUTOSTART, on).apply() }
 
+    // ── App mở gần đây (chung mọi hồ sơ) — U3 ──
+    // CHUNG chứ không theo hồ sơ: đây là lịch sử dùng máy, không phải bố cục của một tài xế (cùng cách với theme).
+    fun recentApps(): List<String> = RecentApps.decode(sp.getString(K_RECENT, null))
+
+    fun touchRecentApp(pkg: String) {
+        sp.edit().putString(K_RECENT, RecentApps.encode(RecentApps.touch(recentApps(), pkg))).apply()
+    }
+
     private fun encode(c: SlotContent): String = when (c) {
         SlotContent.Empty -> ""
         is SlotContent.App -> "app:${c.pkg}"
@@ -100,5 +108,6 @@ class WorkspacePrefs(context: Context) {
         private const val K_ACTIVE = "active_profile"
         private const val K_THEME = "theme_mode"
         private const val K_AUTOSTART = "launcher_autostart"
+        private const val K_RECENT = "recent_apps"
     }
 }

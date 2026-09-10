@@ -32,6 +32,7 @@ class KachiTopStrip(
     private val onOpenSettings: () -> Unit,
     private val onProfileTap: () -> Unit,
     private val onProfileLongPress: () -> Unit,
+    private val onOpenAppList: () -> Unit = {},   // U3: lối vào "Mở ứng dụng" (mở app toàn màn, không gắn ô)
 ) {
     private val presetCells = HashMap<LayoutPreset, ImageView>()
     private lateinit var clock: TextView
@@ -57,6 +58,7 @@ class KachiTopStrip(
         strip.addView(View(activity), LinearLayout.LayoutParams(0, 1, 1f))
         chipRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         strip.addView(chipRow)
+        strip.addView(pill("Ứng dụng", false) { onOpenAppList() }, pillLp())   // U3: mở app toàn màn
         strip.addView(pill("Thanh", false) { onCycleDock() }, pillLp())
         strip.addView(pill("Tuỳ biến", false) { onCustomizeDock() }, pillLp())
         strip.addView(pill("Cài đặt", true) { onOpenSettings() }, pillLp())

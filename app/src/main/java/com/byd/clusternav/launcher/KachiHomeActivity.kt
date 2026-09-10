@@ -53,10 +53,14 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private lateinit var mainArea: LinearLayout
     private lateinit var rootFrame: FrameLayout
     private val media by lazy { MediaBridge(this) }        // đọc nhạc live cho w_media + transport
+    private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
     private var customizePanel: CustomizePanel? = null     // overlay Tuỳ biến thanh điều khiển
     // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher (am --windowingMode 5 + am task resize); chưa có dadb → IntentAppLauncher.
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
-    private var shell: ((String) -> String)? = null
+    // @Volatile: GHI trên thread nền `winExec` (nhánh dò dadb) nhưng ĐỌC trên thread CHÍNH (openAppFullscreen —
+    // lưới an toàn U3; reflow/placeApp cũng đọc trên main). Không có nó thì main có thể thấy mãi `null` ⇒ đường
+    // shell "biến mất" một cách im lặng. Cùng lý do với `appLauncher` ngay trên.
+    @Volatile private var shell: ((String) -> String)? = null
     // dadb → app render lên VirtualDisplay trong ô (Dudu) hoặc ROM platform-signed → ActivityView; cả 2 bỏ freeform + overlay header.
     private val embedding get() = shell != null || SlotAppHost.embeddingUsable(this)
     private val winExec = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -84,6 +88,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onOpenSettings = { startActivity(Intent(this, MainActivity::class.java)) },
             onProfileTap = { profileBar.cycle() },
             onProfileLongPress = { profileBar.addDialog() },
+            onOpenAppList = { drawerController.openAppList() },   // U3: mở app toàn màn (không gắn ô)
         )
 
         val content = LinearLayout(this).apply {
@@ -125,6 +130,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onOverlayHeads = { windows.updateOverlayHeads() },
             onPickApp = { idx, pkg -> assignApp(idx, pkg) },
             onPickWidgets = { idx, ids -> assignWidgets(idx, ids) },
+            onOpenApp = { pkg -> openAppFullscreen(pkg) },                        // U3
+            recentApps = { container.workspaceRepository.recentApps() },
         )
 
         // Thu NGUỒN SỰ THẬT: mọi thay đổi state → render (view-only). repeatOnLifecycle huỷ khi < STARTED.
@@ -157,11 +164,18 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 shell = seam; appLauncher = ShellAppLauncher(seam)
                 runCatching { seam("appops set com.byd.launcher SYSTEM_ALERT_WINDOW allow") }  // để vẽ dải header nổi lên app freeform
                 runOnUiThread {
-                    workspace.registerVd = dispatcher::registerLauncherVirtualDisplay        // VD ô thuộc LAUNCHER → ownership cho phép
-                    workspace.unregisterVd = dispatcher::unregisterLauncherVirtualDisplay
-                    workspace.shell = seam
-                    workspace.inputClient = container.inputDaemonClient                       // daemon do AppContainer sở hữu, tiêm vào
-                    workspace.render(viewModel.uiState.value.workspace, viewModel.uiState.value.carStatus)   // bật render app lên VirtualDisplay trong ô
+                    // GẮN NGUYÊN KHỐI (P-bug2): 1 lời gọi mang đủ kênh shell + kênh chạm + đăng ký/gỡ màn ảo, rồi
+                    // WorkspaceView tự dựng lại các ô App MỘT LẦN để gắn bộ chiếu. Trước đây đoạn này gán rời 4
+                    // field xong gọi `workspace.render(...)`, nhưng render so theo NỘI DUNG nên ô App "không đổi"
+                    // ⇒ không dựng lại ⇒ app trong ô chỉ hiện sau khi người dùng đổi bố cục.
+                    workspace.applyEmbedSeam(
+                        shell = seam,
+                        inputClient = container.inputDaemonClient,   // daemon do AppContainer sở hữu, tiêm vào
+                        registerVd = dispatcher::registerLauncherVirtualDisplay,   // VD ô thuộc LAUNCHER → ownership cho phép
+                        unregisterVd = dispatcher::unregisterLauncherVirtualDisplay,
+                        state = viewModel.uiState.value.workspace,
+                        status = viewModel.uiState.value.carStatus,
+                    )
                     viewModel.setEmbedded(true)                                               // dadb nối được → nhúng (giữ embedded khớp getter)
                 }
             }
@@ -206,6 +220,22 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     private fun reopenApp(index: Int) {
         (viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App)?.let { windows.placeApp(it.pkg, index) }
+    }
+
+    /**
+     * U3 — mở [pkg] **toàn màn** (đường "mở app kiểu thường"): KHÔNG ghi vào ô, KHÔNG đổi bố cục đã lưu, KHÔNG ghi
+     * sổ vị trí ô. Bấm HOME là về Kachi (Kachi là HOME).
+     *
+     * Thứ tự do SỐ ĐO quyết định (xem bảng ở [AppOpener]): thử **đường API** trên thread chính trước (đo được là
+     * tốt bằng-hoặc-hơn); chỉ khi nó thất bại mới dùng **đường shell** trên thread nền (dadb chặn).
+     * Ghi nhận "gần đây" trước để lần mở ngăn kéo sau đã thấy.
+     */
+    private fun openAppFullscreen(pkg: String) {
+        drawerController.close()
+        runCatching { container.workspaceRepository.touchRecentApp(pkg) }
+        if (appOpener.openByIntent(pkg)) return
+        val sh = shell ?: return
+        winExec.execute { appOpener.openByShell(pkg, sh) }
     }
 
     private fun clearSlot(index: Int) {
@@ -290,6 +320,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onDestroy() {
         super.onDestroy(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         if (isFinishing) vmStore.clear()
+        // Ngăn kéo có thể được gắn như CỬA SỔ RIÊNG (TYPE_APPLICATION_OVERLAY qua WindowManager) → nó KHÔNG chết
+        // cùng activity. Không đóng ở đây thì cửa sổ đó sống tiếp (rò rỉ view + giữ activity), và một cái chạm vào
+        // nó sẽ chạy vào `winExec` ĐÃ shutdown (RejectedExecutionException) hoặc mở activity từ activity đã huỷ.
+        drawerController.close()
         winExec.shutdownNow(); windows.clearOverlays()
     }
 

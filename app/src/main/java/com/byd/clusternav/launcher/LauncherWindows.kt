@@ -97,15 +97,27 @@ class LauncherWindows(
         }
     }
 
-    /** Mở/đặt cửa sổ app THẬT vào ô [index] (freeform + resize) trên thread nền (dadb blocking). */
+    /**
+     * Mở/đặt cửa sổ app THẬT vào ô [index] (freeform + resize) trên thread nền (dadb blocking).
+     *
+     * [fresh] = true (đặt app MỚI vào ô): dừng hẳn app trước để nó mở TƯƠI dạng freeform, KHÔNG tái dùng task
+     * fullscreen cũ (gốc lỗi đè full).
+     *
+     * [fresh] = false (đưa app ĐANG chạy về ô — vd chạm ô): **chỉ đặt lại khung**, KHÔNG mở lại app ⇒ hết nháy /
+     * hết cướp focus (U2). `moveToSlot` tự lùi về `openInSlot` nếu app chưa có task hoặc đang toàn màn (bị từ chối
+     * resize) ⇒ suy giảm an toàn, không mất chức năng.
+     */
     fun placeApp(pkg: String, index: Int, fresh: Boolean = false) {
         if (embedding()) return   // WorkspaceView nhúng app bằng ActivityView → không cần freeform
         val rect = absoluteSlotRect(index) ?: return
         val s = shell(); val launcher = appLauncher()
         winExec.execute {
-            // Đặt MỚI: force-stop trước để app mở TƯƠI dạng freeform, KHÔNG tái dùng task fullscreen cũ (gốc lỗi đè full).
-            if (fresh && s != null) runCatching { s("am force-stop $pkg") }
-            launcher.openInSlot(pkg, appRect(rect))
+            if (fresh) {
+                if (s != null) runCatching { s("am force-stop $pkg") }
+                launcher.openInSlot(pkg, appRect(rect))
+            } else {
+                launcher.moveToSlot(pkg, appRect(rect))
+            }
             activity.runOnUiThread { updateOverlayHeads() }
         }
     }

@@ -23,4 +23,16 @@ interface WorkspaceRepository {
 
     /** Xoá hồ sơ [name] (không xoá nếu chỉ còn 1) rồi trả trạng thái đã nạp lại. */
     fun deleteProfile(name: String): HomeUiState
+
+    /**
+     * App **mở gần đây** (U3, đường mở-thường) — mới nhất trước. CỐ Ý **không** nằm trong [HomeUiState]: nó chỉ
+     * được đọc lúc MỞ ngăn kéo, không tham gia render nên không phải "trạng thái màn hình"; đưa vào state sẽ ép
+     * render lại cả HOME mỗi lần mở app mà không được gì.
+     *
+     * Có thân MẶC ĐỊNH (rỗng / không làm gì) ⇒ bản giả in-memory trong test không phải sửa.
+     */
+    fun recentApps(): List<String> = emptyList()
+
+    /** Ghi nhận vừa mở [pkg] (đưa lên đầu danh sách gần đây). Mặc định: không nhớ. */
+    fun touchRecentApp(pkg: String) {}
 }

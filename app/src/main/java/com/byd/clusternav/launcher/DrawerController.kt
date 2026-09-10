@@ -21,21 +21,48 @@ class DrawerController(
     private val onOverlayHeads: () -> Unit,
     private val onPickApp: (Int, String) -> Unit,
     private val onPickWidgets: (Int, List<String>) -> Unit,
+    private val onOpenApp: (String) -> Unit = {},        // U3: chạm app ở chế độ mở-thường → mở TOÀN MÀN
+    private val recentApps: () -> List<String> = { emptyList() },
 ) {
     private var drawer: AppDrawer? = null
     private var asOverlay = false
 
     fun isOpen(): Boolean = drawer != null
 
+    /** Ngăn kéo GÁN VÀO Ô [index] (hành vi cũ). */
     fun open(index: Int) {
         if (drawer != null) return
         val current = currentWidgets(index)
-        val d = AppDrawer(
-            activity, WidgetRegistry.ALL, current,
-            onPickApp = { pkg -> onPickApp(index, pkg) },
-            onPickWidgets = { ids -> onPickWidgets(index, ids) },
-            onClose = { close() },
+        show(
+            AppDrawer(
+                activity, WidgetRegistry.ALL, current,
+                onPickApp = { pkg -> onPickApp(index, pkg) },
+                onPickWidgets = { ids -> onPickWidgets(index, ids) },
+                onClose = { close() },
+            ),
         )
+    }
+
+    /**
+     * Ngăn kéo **MỞ ỨNG DỤNG** (U3) — không gắn ô nào: chạm app là mở toàn màn. Có hàng "Gần đây".
+     * Không đụng bố cục/gán ô đã lưu.
+     */
+    fun openAppList() {
+        if (drawer != null) return
+        show(
+            AppDrawer(
+                activity, WidgetRegistry.ALL, emptyList(),
+                onPickApp = { pkg -> onOpenApp(pkg) },
+                onPickWidgets = {},
+                onClose = { close() },
+                mode = AppDrawer.Mode.OPEN_APP,
+                recentApps = recentApps(),
+            ),
+        )
+    }
+
+    /** Gắn ngăn kéo lên màn — dùng CHUNG cho cả 2 chế độ (byte-giữ so với nhánh overlay cũ). */
+    private fun show(d: AppDrawer) {
         drawer = d
         onClearOverlays()
         // Drawer NỔI như overlay → trên cả cửa sổ app freeform (tránh app đè popup). Chưa có quyền overlay → fallback

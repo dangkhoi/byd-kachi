@@ -30,10 +30,17 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     var carStatus: CarStatus = CarStatus()
     var mediaProvider: () -> MediaSnapshot? = { null }   // đọc nhạc live (Bitmap ở :app → ngoài state :core)
     var onMedia: (String) -> Unit = {}                    // transport: play/pause/next/prev
-    var shell: ((String) -> String)? = null   // dadb uid-shell → nhúng app lên VirtualDisplay (display phụ, không caption) + bơm chạm
+    // ── KÊNH NHÚNG (gói 1, P-bug2): 4 thứ dưới đây PHẢI được gắn CÙNG LÚC qua [applyEmbedSeam] ─────────────────
+    // Vì sao private: `makeSlot` đọc chúng LÚC DỰNG VIEW. Nếu để công khai cho bên ngoài gán rời từng cái thì ai
+    // gán sai THỨ TỰ (vd dựng lại ô trước khi gắn kênh chạm) sẽ ra bộ chiếu thiếu kênh chạm — chạy đường bơm chạm
+    // chậm hơn mà KHÔNG có gì báo lỗi. Đóng private ⇒ sai thứ tự trở thành KHÔNG THỂ.
+    private var shell: ((String) -> String)? = null   // dadb uid-shell → nhúng app lên VirtualDisplay (display phụ, không caption) + bơm chạm
     // B2b: đăng ký/gỡ display của VD ô với DisplayOwnershipRegistry (qua WindowCommandDispatcher). Mặc định no-op.
-    var registerVd: (Int) -> Unit = {}
-    var unregisterVd: (Int) -> Unit = {}
+    private var registerVd: (Int) -> Unit = {}
+    private var unregisterVd: (Int) -> Unit = {}
+    // B4: MỘT input-daemon THƯỜNG TRÚ dùng chung cho MỌI ô (mỗi khung tự mang displayId). B5b: KHÔNG tự dựng nữa —
+    // do AppContainer sở hữu và TIÊM vào (activity gắn khi dadb nối). null → VdAppHost fallback `input -d` (cũ).
+    private var inputClient: InputDaemonClient? = null
     var slotDensityDpi = 200                   // mật độ cho VirtualDisplay của ô (Dudu ~200; chỉnh để app hiện vừa mắt)
 
     private val gapPx = dp(10)
@@ -42,9 +49,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private var displayed = WorkspaceState()
     private var displayedStatus = CarStatus()
     private val slotViews = ArrayList<View>()
-    // B4: MỘT input-daemon THƯỜNG TRÚ dùng chung cho MỌI ô (mỗi khung tự mang displayId). B5b: KHÔNG tự dựng nữa —
-    // do AppContainer sở hữu và TIÊM vào (activity set khi dadb nối). null → VdAppHost fallback `input -d` (cũ).
-    var inputClient: InputDaemonClient? = null
 
     init { rebuild() }
 
@@ -54,20 +58,42 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * giữ nguyên View (và VdAppHost) của các ô khác → thêm app vào ô mới KHÔNG relaunch/nháy app đang chạy ở ô khác,
      * launcher đứng yên. Đổi preset/số ô → dựng lại cả. Nguồn sự thật do HomeViewModel giữ; đây chỉ phản chiếu.
      */
-    fun render(s: WorkspaceState, status: CarStatus = carStatus) {
+    fun render(s: WorkspaceState, status: CarStatus = carStatus) = renderInternal(s, status, embedChanged = false)
+
+    /**
+     * Gắn NGUYÊN KHỐI kênh nhúng (dadb shell + kênh chạm + đăng ký/gỡ màn ảo) rồi tự áp [state] lại MỘT LẦN.
+     *
+     * **Đây là bản vá P-bug2.** Trước đây activity gán rời 4 field rồi gọi [render]; nhưng [render] so sánh theo
+     * NỘI DUNG ô nên ô App "không đổi" ⇒ không dựng lại ⇒ `VdAppHost` không bao giờ được gắn ⇒ app trong ô chỉ
+     * hiện sau khi người dùng đổi bố cục (khi đó mới đi nhánh dựng-lại-tất-cả). Nay việc kênh-vừa-có được khai
+     * báo tường minh cho bộ quyết định, và vì hàm này gắn đủ 4 thứ TRƯỚC khi dựng lại nên không thể sai thứ tự.
+     */
+    fun applyEmbedSeam(
+        shell: (String) -> String,
+        inputClient: InputDaemonClient?,
+        registerVd: (Int) -> Unit,
+        unregisterVd: (Int) -> Unit,
+        state: WorkspaceState,
+        status: CarStatus,
+    ) {
+        val had = this.shell != null
+        this.registerVd = registerVd
+        this.unregisterVd = unregisterVd
+        this.inputClient = inputClient
+        this.shell = shell
+        renderInternal(state, status, embedChanged = !had)
+    }
+
+    private fun renderInternal(s: WorkspaceState, status: CarStatus, embedChanged: Boolean) {
         val old = displayed
         val oldStatus = displayedStatus
         displayed = s; displayedStatus = status; carStatus = status
-        if (old.preset != s.preset || slotViews.size != s.preset.slotCount) { rebuild(); return }
-        val statusChanged = status != oldStatus
-        for (i in 0 until s.preset.slotCount) {
-            val oc = old.slots.getOrElse(i) { SlotContent.Empty }
-            val nc = s.slots.getOrElse(i) { SlotContent.Empty }
-            // Widget slot dựng lại khi nội dung ĐỔI HOẶC carStatus đổi (làm mới GIÁ TRỊ widget). App/Empty chỉ đổi
-            // theo nội dung → KHÔNG đụng VdAppHost khi tick trạng thái (app đang chạy trong ô không bị relaunch).
-            if (!sameContent(oc, nc) || (statusChanged && nc is SlotContent.Widget)) {
+        // Luật "ô nào cần dựng lại" nằm ở :core (WorkspaceRenderPlanner) → test được off-car, kể cả ca P-bug2.
+        when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged)) {
+            WorkspaceRenderPlan.RebuildAll -> { rebuild(); return }
+            is WorkspaceRenderPlan.PerSlot -> plan.rebuild.forEach { i ->
                 removeView(slotViews[i])
-                val v = makeSlot(i, nc)
+                val v = makeSlot(i, s.slots.getOrElse(i) { SlotContent.Empty })
                 addView(v); slotViews[i] = v
             }
         }
@@ -76,13 +102,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live). */
     private fun widgetData() = WidgetData(carStatus, mediaProvider(), onMedia)
-
-    private fun sameContent(a: SlotContent, b: SlotContent): Boolean = when {
-        a is SlotContent.App && b is SlotContent.App -> a.pkg == b.pkg
-        a is SlotContent.Widget && b is SlotContent.Widget -> a.ids == b.ids
-        a is SlotContent.Empty && b is SlotContent.Empty -> true
-        else -> false
-    }
 
     private fun rebuild() {
         removeAllViews(); slotViews.clear()

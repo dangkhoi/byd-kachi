@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gói 1 — Mở app cho đúng (Kachi launcher)</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.bad{border-color:var(--warn);box-shadow:inset 0 0 0 1px rgba(191,95,0,.25)}
+.fnode.new{background:rgba(0,113,227,.10);border-color:var(--accent)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Gói 1 — “Mở app cho đúng”</h1>
+<p class="muted">Slug: <code>kachi-open-app-correctly</code> · Branch <code>main</code> · <span class="pill ok">Trạng thái: ĐÃ LÀM off-car — chờ verify trên xe</span></p>
+<p class="muted">Gồm 3 mục backlog: <b>P-bug2</b> (app trong ô không hiện lúc mở) · <b>U3</b> (mở app kiểu thường / toàn màn) · <b>U2</b> (bớt nháy khi đặt lại app). Nguồn: <code>docs/PROJECT-BACKLOG.md</code> §Nhóm 2 + đề xuất burn gói 1 (owner chốt 2026-09-10).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 3 — 2026-09-10</b>: <b>Senior review (độc lập) — APPROVED</b>. Đủ phạm vi 10/10 yêu cầu · khớp 7/7 mặt tiếp giáp · vá <b>3 [P2] + 1 [P3]</b> (rào bộ nhớ cho kênh shell · rò rỉ cửa sổ ngăn kéo lúc huỷ activity · một Drawable dùng cho hai ô lưới · index tài liệu lệch) + 2 test khoá bản vá ⇒ đủ 5 module <b>2343 test / 0 lỗi</b>. Ba nợ 🚗 ghi tường minh, xem §10.</li>
+<li><b>Pass 2 — 2026-09-10</b>: <b>Implement xong off-car</b>. Đủ 5 module <b>2339 test / 0 lỗi</b> (+37 so với mốc 2302), APK dựng sạch, đo E2E trên máy ảo đạt cả 3 ca. <b>Một sai lệch spec đã sửa theo số đo</b>: thứ tự hai đường mở toàn màn bị ĐẢO (xem §9).</li>
+<li><b>Pass 1 — 2026-09-10</b>: Owner chốt 5 câu hỏi mở → OQ1 duyệt (nút "Ứng dụng" trên thanh trên) · OQ2 KHÔNG thêm nút phóng to · OQ3 KHÔNG cần tự chiếu lại · OQ4 giữ U2 ở mức tối thiểu · OQ5 CÓ danh sách gần đây.</li>
+<li><b>Pass 0 — 2026-09-10</b>: Khởi tạo spec sau khi owner chốt burn gói 1. Đã đọc source 8 file liên quan → xác nhận gốc P-bug2 ở mức [ĐO], và phát hiện <b>3 sự thật mới</b> làm đổi phạm vi U2/U3 (§2.4). Đã verify API Android qua Context7 (§4.5).</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Owner muốn gì (PO)</h3>
+<ul>
+<li><b>Là</b> người dùng xe, <b>tôi muốn</b> mở một ứng dụng bình thường (toàn màn) từ launcher, <b>để</b> dùng app như trên máy thường — hiện “mở 1 app bình thường không được”.</li>
+<li><b>Là</b> người dùng, <b>tôi muốn</b> app đã lưu trong ô <b>hiện ra ngay khi mở launcher</b>, không phải đổi bố cục mới thấy.</li>
+<li><b>Là</b> người dùng, <b>tôi muốn</b> đặt/sắp lại app <b>không bị nháy</b>.</li>
+</ul>
+
+<h3>2.2 Gốc rễ P-bug2 <span class="pill ok">[ĐO] từ source</span></h3>
+<p>Ba mảnh khớp nhau tạo ra lỗi:</p>
+<ol>
+<li><code>WorkspaceView.makeSlot()</code> nhánh <code>SlotContent.App</code> đọc <code>shell</code> <b>tại thời điểm dựng view</b>: <code>val sh = shell; if (sh != null) { VdAppHost(...) }</code>. Chưa có kênh shell ⇒ chỉ dựng <b>thẻ app</b> (<code>appCard</code>), <b>không gắn</b> bộ chiếu.</li>
+<li><code>KachiHomeActivity.onCreate()</code> dựng view khi <code>shell == null</code> — việc dò kênh (<code>DadbShell.probe()</code>) chạy trên <b>thread nền</b> <code>winExec</code>, <b>luôn xong SAU</b> lần vẽ đầu.</li>
+<li>Khi dò xong: <code>runOnUiThread { … workspace.shell = seam; workspace.inputClient = …; workspace.render(state) }</code>. Nhưng <code>render()</code> so sánh <b>theo nội dung</b>: <code>sameContent(oc, nc)</code> = true (cùng gói) ⇒ <b>không dựng lại ô</b> ⇒ bộ chiếu <b>không bao giờ được gắn</b>.</li>
+</ol>
+<p>Đổi bố cục thì <code>render()</code> đi nhánh <code>rebuild()</code> (preset đổi) ⇒ <code>makeSlot</code> chạy lại lúc đã có kênh ⇒ app hiện. Khớp đúng triệu chứng owner gặp.</p>
+<div class="card"><b>Vì sao ảnh hưởng cả xe:</b> việc dò kênh trên xe cũng bất đồng bộ và cũng xong sau lần vẽ đầu ⇒ cùng một chuỗi nhân–quả. Đây <b>không</b> phải artifact máy ảo. Mức bằng chứng: cấu trúc code = <b>[ĐO]</b>; biểu hiện trên xe = <b>[SUY] mạnh</b> (cùng đường mã, đã [ĐO] trên máy ảo).</div>
+
+<h3>2.3 Đã có sẵn gì (không phát minh lại)</h3>
+<table>
+<tr><th>Mảnh</th><th>Ở đâu</th><th>Dùng cho</th></tr>
+<tr><td>Bộ chiếu app vào ô (màn ảo + shell)</td><td><code>VdAppHost</code></td><td>P-bug2 — chỉ cần được <i>gắn</i> đúng lúc</td></tr>
+<tr><td>Lệnh trả app về <b>toàn màn</b> (công thức cast đã proven)</td><td><code>FreeformLaunch.fullscreenCmd()</code>, đang dùng ở <code>ShellAppLauncher.closeSlot()</code></td><td>U3 — đường shell</td></tr>
+<tr><td>Mở app bằng API chuẩn (không cần shell)</td><td><code>IntentAppLauncher</code></td><td>U3 — đường API, chạy cả máy ảo lẫn xe</td></tr>
+<tr><td><b>Đặt lại khung KHÔNG mở lại app</b></td><td><code>AppLauncher.moveToSlot()</code> (cả 2 adapter đã hiện thực)</td><td>U2</td></tr>
+<tr><td>Ngăn kéo app (lưới app thật)</td><td><code>AppDrawer</code> + <code>DrawerController.open(index)</code></td><td>U3 — cần thêm chế độ “không gắn ô”</td></tr>
+<tr><td>Kéo launcher lên trước</td><td><code>LauncherWindows.HOME_FRONT</code></td><td>U3 — đường quay về</td></tr>
+</table>
+
+<h3>2.4 Ba sự thật MỚI phát hiện khi đọc code (làm đổi phạm vi)</h3>
+<div class="card">
+<p><span class="tag p1">1</span><b>Đường freeform bị bỏ qua hoàn toàn khi đang nhúng.</b> <code>embedding = shell != null || ActivityView dùng được</code>, và <code>LauncherWindows.placeApp/reflow/closeApp</code> đều <code>if (embedding()) return</code> ở dòng đầu. ⇒ <b>Khi kênh shell nối được (tức trên xe), toàn bộ lệnh cửa sổ freeform KHÔNG chạy</b> — app vào ô bằng bộ chiếu màn ảo. Hệ quả: <b>U2 (nháy do mở lại app freeform) có bán kính ảnh hưởng rất hẹp</b>, chỉ còn ca không có kênh shell. → OQ4.</p>
+<p><span class="tag p2">2</span><b><code>moveToSlot</code> đã tồn tại nhưng KHÔNG có chỗ gọi.</b> <code>placeApp</code> luôn gọi <code>openInSlot</code> (giải component → mở → chờ task → đặt khung), kể cả nhánh <code>fresh = false</code> (đường “chạm ô để mở lại”). Đây chính là phần U2 còn nợ, và là thay đổi nhỏ.</p>
+<p><span class="tag p2">3</span><b>Một task chỉ sống trên MỘT màn.</b> Mở toàn màn một app đang được chiếu trong ô sẽ <b>kéo task khỏi màn ảo</b> ⇒ ô đó thành đen. Cần quyết định hành vi. → OQ3.</p>
+</div>
+
+<h3>2.5 Ràng buộc phải tôn trọng</h3>
+<ul>
+<li><b>Đầu ô chỉ có ĐÚNG 1 nút</b> (đổi app), canh giữa, không thanh nền, không nút ✕ — <b>quyết định cũ của owner</b>, ghi trong KDoc <code>slotHead()</code>. Không tự thêm nút thứ hai. → OQ2.</li>
+<li><b>Không chạm màn cụm</b> (display ≥ 1): cổng chủ quyền <code>DisplayOwnershipRegistry</code> chặn; đua cấu hình trên màn cụm = kẹt cả hai, phải nạp lại firmware.</li>
+<li><b>Không đụng logic chiếu-cụm</b> (giữ nguyên bất biến “0 file logic cast bị sửa” của đợt kiến trúc).</li>
+<li><b>Giữ cập nhật tăng dần</b> của <code>render()</code> (thành quả P-bug1: thêm app ô khác không làm app đang chạy mở lại).</li>
+<li>Nguồn sự thật là <code>HomeViewModel.uiState</code>; view chỉ phản chiếu (một chiều).</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> (P-bug2). Mở launcher khi ô đã lưu app ⇒ app <b>hiện trong ô ngay</b>, không cần đổi bố cục. <i>Nghiệm thu</i>: sau khi kênh shell nối được, ô app <b>có</b> bộ chiếu gắn vào; trên máy ảo đo được màn ảo của ô được tạo <b>ngay khi mở</b> (không phải sau khi đổi bố cục).</li>
+<li><b>R2</b> (P-bug2). Việc gắn bộ chiếu <b>không</b> làm app đang chạy ở ô khác mở lại/nháy, và <b>không</b> làm mất bộ bơm chạm (phải gắn sau khi đã có đủ kênh chạm). <i>Nghiệm thu</i>: test khoá thứ tự — bộ chiếu chỉ được dựng khi cả kênh shell lẫn kênh chạm đã sẵn.</li>
+<li><b>R3</b> (U3). Có <b>đường mở app kiểu thường (toàn màn)</b> hạng nhất: từ launcher chọn app ⇒ app mở toàn màn như trên máy thường, <b>không</b> ghi vào ô, <b>không</b> đổi bố cục đã lưu. <i>Nghiệm thu</i>: mở 1 app bất kỳ ⇒ app chiếm toàn màn; bấm HOME ⇒ về Kachi; bố cục + gán ô <b>không đổi</b>.</li>
+<li><b>R4</b> (U3). Đường mở-thường phải chạy được <b>cả khi không có kênh shell</b> (máy ảo, hoặc xe lúc chưa nối). <i>Nghiệm thu</i>: đo trên máy ảo không cần chuyển cổng.</li>
+<li><b>R5</b> (U2, phạm vi tối thiểu). Chạm ô app đang chạy để đưa về ô ⇒ dùng <b>đặt lại khung</b> chứ không mở lại app. <i>Nghiệm thu</i>: test khoá đường không-làm-mới gọi <code>moveToSlot</code>; hành vi đặt-mới (<code>fresh</code>) <b>không đổi</b>.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b>. Mọi lệnh cửa sổ vẫn đi qua <b>một</b> hàng đợi 1-thread + cổng chủ quyền hiện có; không thêm đường ghi thứ hai.</li>
+<li><b>R-nf2</b>. Không thêm phụ thuộc mới. Chỉ dùng Android SDK + khối đã có.</li>
+<li><b>R-nf3</b>. Suy giảm an toàn: thiếu kênh shell / mở app thất bại ⇒ giữ nguyên hiện trạng (thẻ app), không crash, không xoá gán ô.</li>
+<li><b>R-nf4</b>. Quyết định render phải <b>test được off-car</b> (thuần JVM, không cần Android).</li>
+<li><b>R-nf5</b>. Không đụng file layout đang bị niêm phong; không đụng logic chiếu-cụm.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 P-bug2 — vì sao hỏng, và sửa ở đâu</h3>
+<p class="muted">Dòng thời gian hiện tại (đỏ = chỗ đứt):</p>
+<div class="flow">
+  <div class="fnode"><b>onCreate</b><span>dựng view</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>vẽ lần 1</b><span>chưa có kênh ⇒ chỉ THẺ app</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>dò kênh (nền)</b><span>xong SAU</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>vẽ lại</b><span>nội dung không đổi ⇒ BỎ QUA ô</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>ô vẫn là thẻ</b><span>app không hiện</span></div>
+</div>
+<p class="muted">Sau khi sửa:</p>
+<div class="flow">
+  <div class="fnode"><b>onCreate</b><span>dựng view</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>vẽ lần 1</b><span>thẻ app (đúng, vì chưa có kênh)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>dò kênh xong</b><span>gắn kênh MỘT LẦN, đủ bộ</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>năng lực nhúng ĐỔI</b><span>⇒ buộc dựng lại ô</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>app hiện trong ô</b><span>ngay khi mở</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15);border-color:var(--accent)"></span> khối mới</span>
+  <span class="sw"><span class="box" style="background:var(--bg);border-color:var(--warn)"></span> chỗ đứt</span>
+</div>
+
+<p><b>Chọn cách sửa:</b> <b>gắn kênh nguyên khối</b> — thêm một hàm duy nhất nhận đủ 4 thứ (kênh shell · kênh chạm · đăng ký/gỡ màn ảo) rồi <b>tự dựng lại ô một lần</b>.</p>
+<p><b>Vì sao KHÔNG dùng bản sửa 2 dòng cũ</b> (mở hàm <code>rebuildSlots()</code> rồi gọi thay <code>render</code>): nó <b>phụ thuộc thứ tự</b> lời gọi bên ngoài. Nếu ai đó dựng lại ô trước khi gắn kênh chạm thì bộ chiếu sinh ra với kênh chạm rỗng ⇒ rơi về đường bơm chạm cũ chậm hơn, mà <b>không có gì báo lỗi</b>. Một hàm nguyên khối làm sai-thứ-tự trở thành <b>không thể</b>.</p>
+
+<h3>4.2 Tách quyết định render ra chỗ test được</h3>
+<p>Luật “ô nào cần dựng lại” hiện nằm <b>trong</b> view Android ⇒ không test được off-car. Tách thành hàm thuần ở <code>:core</code>:</p>
+<pre>// :core — thuần JVM, không android.*
+WorkspaceRenderPlan.decide(
+    old, new,                 // WorkspaceState trước/sau
+    statusChanged: Boolean,   // trạng thái xe đổi ⇒ làm mới widget
+    embedChanged: Boolean,    // ⟵ MỚI: năng lực nhúng vừa đổi ⇒ dựng lại ô App
+): Plan   // RebuildAll | PerSlot(list of Keep/Rebuild)</pre>
+<p>Việc này <b>trả nợ</b> chứ không phải làm màu: nó biến chính ca lỗi P-bug2 thành <b>test hành vi thật</b> (“cùng nội dung nhưng năng lực nhúng đổi ⇒ phải dựng lại”), thay vì chỉ quét chữ trong source. <b>Trade-off</b>: có chạm <code>render()</code> — vùng đã proven ở P-bug1 ⇒ bắt buộc có test chứng minh <b>mọi ca cũ ra quyết định y hệt</b> trước khi thêm đầu vào mới.</p>
+
+<h3>4.3 U3 — ba đường mở app, tách bạch</h3>
+<div class="diagram">
+<svg viewBox="0 0 760 250" role="img" aria-label="Ba đường mở app: gán vào ô, mở toàn màn, chiếu vào ô">
+  <g font-family="-apple-system,sans-serif" font-size="12.5">
+    <rect x="270" y="12" width="220" height="40" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="380" y="30" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Ngăn kéo app (lưới app thật)</text>
+    <text x="380" y="45" text-anchor="middle" fill="var(--muted)">dùng lại, thêm CHẾ ĐỘ</text>
+
+    <line x1="330" y1="52" x2="150" y2="96" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="430" y1="52" x2="610" y2="96" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <rect x="40" y="96" width="220" height="52" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="150" y="116" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Chế độ GÁN VÀO Ô</text>
+    <text x="150" y="133" text-anchor="middle" fill="var(--muted)">mở từ ô trống — GIỮ NGUYÊN</text>
+
+    <rect x="500" y="96" width="220" height="52" rx="10" fill="rgba(0,113,227,.10)" stroke="var(--accent)"/>
+    <text x="610" y="116" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Chế độ MỞ THƯỜNG</text>
+    <text x="610" y="133" text-anchor="middle" fill="var(--muted)">mới — không ghi vào ô</text>
+
+    <line x1="150" y1="148" x2="150" y2="188" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="610" y1="148" x2="610" y2="188" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <rect x="40" y="188" width="220" height="52" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="150" y="208" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Chiếu vào ô</text>
+    <text x="150" y="225" text-anchor="middle" fill="var(--muted)">bộ chiếu màn ảo (đã có)</text>
+
+    <rect x="500" y="188" width="220" height="52" rx="10" fill="rgba(0,113,227,.10)" stroke="var(--accent)"/>
+    <text x="610" y="208" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">Toàn màn, màn chính</text>
+    <text x="610" y="225" text-anchor="middle" fill="var(--muted)">khung = null (API chuẩn)</text>
+
+    <text x="380" y="180" text-anchor="middle" fill="var(--muted)">bố cục + gán ô KHÔNG đổi ↑</text>
+  </g>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="var(--accent)"/></marker></defs>
+</svg>
+</div>
+<ul>
+<li><b>Đường mở-thường dùng API chuẩn</b>: mở app bằng ý-định thường + <b>khung = null</b> (tài liệu Android ghi rõ: <code>null</code> = toàn màn) và <b>không</b> đặt chế độ cửa sổ freeform. Không cần kênh shell ⇒ thoả R4, chạy cả máy ảo.</li>
+<li><b>Không</b> ghi vào trạng thái workspace ⇒ bố cục/gán ô không đổi (R3). Không gọi <code>place()</code> vào sổ vị trí (app không thuộc ô nào).</li>
+<li><b>Đường quay về</b>: Kachi là HOME ⇒ bấm HOME là về. Không cần code mới.</li>
+<li><b>Chế độ ngăn kéo</b> = tham số của <code>DrawerController.open(...)</code>: gán-vào-ô (như cũ, có số ô) hoặc mở-thường (không có số ô). Cùng một view ngăn kéo, không nhân bản UI.</li>
+</ul>
+
+<h3>4.4 U2 — thay đổi nhỏ nhất, không đụng thứ tự lớp</h3>
+<ul>
+<li>Đường <b>không-làm-mới</b> của <code>placeApp</code> (chạm ô app để đưa về ô) chuyển sang <code>moveToSlot</code> = chỉ đặt lại khung, không mở lại app.</li>
+<li><b>KHÔNG</b> đổi <code>reflow()</code>: nó cố ý dùng đường mở-lại để <b>đưa cửa sổ lên trước launcher</b> (thứ tự lớp). Đặt-lại-khung không nâng cửa sổ ⇒ đổi mù sẽ làm app tụt sau launcher. Ghi nhận là việc riêng nếu owner muốn.</li>
+<li>Đường <code>fresh = true</code> (đặt app mới, có <i>dừng hẳn app</i> trước) <b>giữ nguyên</b> — nó chữa lỗi “tái dùng task toàn màn cũ”.</li>
+</ul>
+
+<h3>4.5 Context7 — đã verify (bắt buộc trước khi trình)</h3>
+<table>
+<tr><th>Hỏi</th><th>Nguồn</th><th>Kết quả</th></tr>
+<tr><td>Cách chuẩn để mở app <b>toàn màn</b> khi có sẵn tuỳ chọn khung</td><td>Android Developers — <code>ActivityOptions(Compat).setLaunchBounds</code></td><td><b>Đặt <code>null</code> = toàn màn</b>, tường minh trong tài liệu. API <b>không</b> deprecated ⇒ đường U3 dùng đúng API hiện hành.</td></tr>
+<tr><td>Mở app lên một màn cụ thể</td><td>Android Developers — <code>setLaunchDisplayId</code></td><td>App <b>chỉ</b> được mở lên màn <b>công khai</b> hoặc màn nó đã có activity; màn <b>riêng tư</b> ⇒ <b>ném lỗi</b>. ⇒ <b>Xác nhận độc lập</b> giới hạn D-emu (màn ảo của ô là riêng tư nên app từ chối) — không phải lỗi code.</td></tr>
+<tr><td>Phụ thuộc mới?</td><td>—</td><td><b>Không thêm</b>. Chỉ Android SDK + khối đã có (thoả R-nf2). Bản androidx tương đương tồn tại nhưng không cần.</td></tr>
+</table>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Phụ thuộc</th></tr>
+<tr><td>T1</td><td>Tách luật render thành hàm thuần + test <b>tương đương hành vi cũ</b> (mọi ca hiện tại ra quyết định y hệt)</td><td><code>:core WorkspaceRenderPlan.kt</code> + <code>WorkspaceRenderPlanTest</code></td><td>—</td></tr>
+<tr><td>T2</td><td>Thêm đầu vào “năng lực nhúng đổi” ⇒ dựng lại ô App; test khoá ĐÚNG ca P-bug2</td><td>cùng T1</td><td>T1</td></tr>
+<tr><td>T3</td><td><code>WorkspaceView</code> dùng hàm thuần + thêm <b>gắn kênh nguyên khối</b> (1 hàm, tự dựng lại 1 lần)</td><td><code>:app WorkspaceView.kt</code></td><td>T2</td></tr>
+<tr><td>T4</td><td>Chỗ dò kênh gọi hàm nguyên khối thay 5 phép gán + <code>render</code>; test khoá dây nối (không còn <code>render</code> trần ở nhánh dò-thành-công)</td><td><code>:app KachiHomeActivity.kt</code> + <code>…WiringContractTest</code></td><td>T3</td></tr>
+<tr><td>T5</td><td>Đường <b>mở app toàn màn</b> (khung = null) + không ghi trạng thái ô; test lệnh/tuỳ chọn</td><td><code>:app IntentAppLauncher.kt</code> (thêm <code>openFullscreen</code>) hoặc lối mở riêng + test</td><td>—</td></tr>
+<tr><td>T6</td><td>Ngăn kéo có <b>2 chế độ</b> (gán-vào-ô / mở-thường) + lối vào trên thanh trên</td><td><code>:app DrawerController.kt</code> · <code>KachiTopStrip.kt</code> · <code>KachiHomeActivity.kt</code></td><td>T5 · OQ1</td></tr>
+<tr><td>T7</td><td>U2: đường không-làm-mới dùng đặt-lại-khung; test khoá (fresh giữ nguyên, reflow KHÔNG đụng)</td><td><code>:app LauncherWindows.kt</code> + test</td><td>OQ4</td></tr>
+<tr><td>T8</td><td>Chạy đủ 5 module + dựng APK + <b>đo trên máy ảo</b> theo §6</td><td>—</td><td>T4 · T6 · T7</td></tr>
+<tr><td>T9</td><td><b>Senior review</b> (tự vá, lặp tới hết phát hiện) + <b>quét bảo mật</b> trước khi commit</td><td>—</td><td>T8</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<h3>Kết quả [ĐO] 2026-09-10</h3>
+<table>
+<tr><th>Mục</th><th>Kết quả</th></tr>
+<tr><td><b>V-unit</b> — đủ 5 module</td><td><b>2343 test / 0 lỗi</b> sau khi vá review (mốc trước gói 1 = 2302 ⇒ <b>+41</b>: 17 test <code>:core</code> mới + 12 test <code>:app</code> × 2 biến thể). Số giữa kỳ (trước review) là 2339. Đã tự chạy lại <code>--rerun-tasks</code> để xác nhận, không nhận số báo cáo. APK debug dựng sạch.</td></tr>
+<tr><td><b>V-mutation</b></td><td><b>3 phép, đều đỏ/chặn đúng chỗ rồi khôi phục xanh</b>: (1) bỏ lý do "năng lực nhúng đổi" ⇒ <b>3 test P-bug2 ĐỎ</b>, test tương-đương-hành-vi-cũ vẫn xanh (chứng minh mutation đúng là "quay về hành vi cũ"); (2) dựng lại lỗi cũ ở chỗ gọi (gán rời + <code>render</code> trần) ⇒ <b>KHÔNG BIÊN DỊCH ĐƯỢC</b> (mạnh hơn test đỏ); (3) vô hiệu cờ nhúng trong <code>applyEmbedSeam</code> ⇒ <b>test dây nối ĐỎ</b>.</td></tr>
+<tr><td><b>E1</b> (R1) — app trong ô hiện ngay khi mở</td><td><b>ĐẠT</b>. Ô đã lưu app, mở nguội launcher không chạm gì: màn ảo của ô <b>0 → có ngay</b>; task app nằm đúng màn ảo với đúng cỡ ô (1132×768 cho ô lớn, 731×377 cho ô nhỏ), <code>visible=true</code>. Ảnh chụp (đọc qua tác nhân phụ): ô lớn <b>hiện bản đồ Google Maps thật</b>. Trước bản sửa phải đổi bố cục mới hiện.</td></tr>
+<tr><td><b>E2</b> (R3/R4) — mở app toàn màn</td><td><b>ĐẠT</b>. Nút “Ứng dụng” → ngăn kéo “Mở ứng dụng” (không có mục widget, đúng chế độ mới) → chạm app ⇒ khung <b>đúng [0,0][1920,1080]</b>. Chạy được <b>không cần kênh shell</b> (R4).</td></tr>
+<tr><td><b>R3</b> — không đụng bố cục/ô</td><td><b>ĐẠT</b>. Sau khi mở toàn màn: 3 ô + bố cục trong bộ nhớ bền <b>không đổi một ký tự</b>.</td></tr>
+<tr><td><b>OQ5</b> — danh sách gần đây</td><td><b>ĐẠT</b>. Mở app xong, mở lại ngăn kéo thì mục <b>“Gần đây”</b> xuất hiện đúng app; lưu bền theo thứ tự mới-nhất-trước.</td></tr>
+<tr><td><b>V-oncar</b> 🚗</td><td><b>CHƯA</b> — xem danh sách dưới.</td></tr>
+</table>
+<p class="muted"><b>Đo lại SAU khi vá review</b> (trên đúng bản sẽ giao): mở nguội launcher ⇒ màn ảo ô <b>0 → có trong ≤3 giây</b>, 2 task app nằm trên màn ảo của ô; mở app toàn màn ⇒ <b>[0,0][1920,1080]</b>; ô + bố cục <b>không đổi</b>.</p>
+
+<h3>Còn phải verify TRÊN XE 🚗</h3>
+<ul>
+<li>(a) Nổ máy → launcher lên ⇒ app trong ô hiện ngay (đường dò kênh trên xe cũng bất đồng bộ như máy ảo).</li>
+<li>(b) Mở app thường ⇒ toàn màn, bấm HOME về được Kachi; kiểm luôn ca "app từng nằm trong ô" (trên xe dự kiến không lệch 36px vì ô dùng màn ảo riêng — xem §9).</li>
+<li>(c) Mượt + thứ tự lớp khi vừa có app trong ô vừa mở app toàn màn.</li>
+<li>(d) <b>Không ảnh hưởng chiếu-cụm</b>: bật/tắt chiếu lên cụm vẫn bình thường (gói này không đụng file logic cast nào).</li>
+<li>(e) U2: chạm ô app đang chạy ⇒ không nháy/không mở lại (trên xe đường này chỉ chạy khi KHÔNG nhúng).</li>
+</ul>
+<h3>Ràng buộc đã giữ</h3>
+<ul>
+<li>Đầu ô vẫn <b>đúng 1 nút</b> (OQ2) · không đụng màn cụm · không đụng logic chiếu-cụm · không thêm phụ thuộc · không sửa file layout niêm phong.</li>
+<li>Guard kiến trúc của dự án (phân tầng · parity layout · cổng cửa sổ · chống ghi state bền) <b>đều xanh</b> trong lượt chạy đủ 5 module.</li>
+</ul>
+
+<h2>7. Open Questions <span class="pill ok">owner đã chốt 2026-09-10</span></h2>
+<ul>
+<li><b>OQ1 — Lối vào “mở app kiểu thường” đặt ở đâu?</b> → <b>DUYỆT đề xuất</b>: thêm nút <b>“Ứng dụng”</b> trên thanh trên (đặt đầu hàng pill, trước “Thanh”) ⇒ mở lưới app ⇒ chạm là mở toàn màn. <span class="muted">Đã làm; [ĐO] nút hiện đúng ở toạ độ ~(1403, 51) trên màn 1920×1080.</span></li>
+<li><b>OQ2 — Có thêm nút “phóng to” ở đầu ô không?</b> → <b>KHÔNG CẦN</b>. <span class="muted">Đầu ô giữ ĐÚNG 1 nút như quyết định cũ; không thêm gì.</span></li>
+<li><b>OQ3 — App trong ô khi mở toàn màn thì ô đó thế nào?</b> → <b>KHÔNG CẦN</b> xử lý tự chiếu lại. <span class="muted">Hệ quả đã biết (giữ nguyên, không che): mở toàn màn một app <i>đang</i> ở trong ô thì ô đó tạm trống vì một app chỉ sống trên MỘT màn; chạm lại ô để chiếu lại. Không có mã nào cố "chữa" ca này.</span></li>
+<li><b>OQ4 — U2 có giữ trong gói 1 không?</b> → <b>GIỮ, mức tối thiểu</b>. <span class="muted">Đã làm đúng §4.4: chỉ đổi đường không-làm-mới; <code>reflow</code> KHÔNG đụng.</span></li>
+<li><b>OQ5 — “Mở thường” có nhớ app dùng gần đây không?</b> → <b>NÊN CÓ</b>. <span class="muted">Đã làm: mục <b>Gần đây</b> (tối đa 12, mới nhất trước) ở đầu ngăn kéo mở-thường; nguồn là chính hành vi mở app trong Kachi ⇒ <b>không cần quyền nào</b> (cố ý không dùng quyền truy-cập-sử-dụng vì màn cài đặt hệ thống trên xe khoá lại không mở được). App đã gỡ tự rụng khỏi hàng.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/PROJECT-BACKLOG.md</code> §Nhóm 2 (P-bug2 · U3 · U2) + §Đề xuất thứ tự burn.</li>
+<li><code>docs/diagnostics/kachi-emulator-app-hosting-2026-09-10.md</code> — Finding 3 (gốc P-bug2 + bản sửa 2 dòng đã kiểm rồi revert) · Finding 4 (giới hạn màn phụ) · công thức 1 máy ảo.</li>
+<li><code>docs/_handoff/session-2026-09-10-emulator-launcher-hosting.md</code> — phiên phát hiện, quyết định revert.</li>
+<li><code>docs/specs/kachi-architecture.html</code> — 3 tầng, một hàng đợi lệnh cửa sổ, cổng chủ quyền màn hình, luật sống chung với chiếu-cụm.</li>
+<li>Source đã đọc: <code>WorkspaceView.kt</code> · <code>KachiHomeActivity.kt</code> · <code>LauncherWindows.kt</code> · <code>DrawerController.kt</code> · <code>LauncherPorts.kt</code> · <code>IntentAppLauncher.kt</code> · <code>ShellAppLauncher.kt</code> · <code>FreeformLaunch.kt</code>.</li>
+<li>Context7: Android Developers — <code>ActivityOptionsCompat.setLaunchBounds</code> / <code>setLaunchDisplayId</code> (§4.5).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi NGAY khi code (R2.6). Đây là chỗ spec phản ánh code THỰC TẾ, kể cả chỗ lệch kế hoạch.</p>
+
+<h3>2026-09-10 · Quyết định + lý do</h3>
+<ul>
+<li><b>Gắn kênh nguyên khối thay bản sửa 2 dòng</b> — thêm <code>WorkspaceView.applyEmbedSeam(...)</code> và đóng <b>private</b> cả 4 field kênh (kênh shell · kênh chạm · đăng ký/gỡ màn ảo). Lý do: bản 2 dòng (mở <code>rebuildSlots()</code>) phụ thuộc thứ tự lời gọi bên ngoài và im lặng khi sai. <b>Bằng chứng mạnh hơn cả test</b>: khi thử dựng lại lỗi cũ (gán rời + <code>render</code> trần) thì <b>KHÔNG BIÊN DỊCH ĐƯỢC</b> — kiến trúc làm việc viết lại lỗi này thành bất khả, không chỉ là "bị test bắt".</li>
+<li><b>Tách luật render sang <code>:core</code></b> (<code>WorkspaceRenderPlanner</code>) để ca P-bug2 thành test hành vi thật thay vì quét chữ. Kèm test <b>tương đương hành vi cũ</b> duyệt hơn 1000 tổ hợp (nội dung × bố cục × trạng thái) ⇒ chứng minh không làm hỏng thành quả cập-nhật-tăng-dần của P-bug1.</li>
+<li><b>Chỉ dựng lại ô App</b> khi năng lực nhúng đổi (không dựng lại cả màn) ⇒ widget không bị làm mới oan, app ở ô khác không bị đụng.</li>
+<li><b>Danh sách gần đây KHÔNG vào trạng thái màn hình</b> — nó chỉ được đọc lúc mở ngăn kéo, không tham gia render; đưa vào sẽ ép vẽ lại cả màn mỗi lần mở app mà không được gì. Thêm 2 hàm <b>có thân mặc định</b> vào tầng dữ liệu ⇒ bản giả trong test không phải sửa (0 churn).</li>
+<li><b>Test dây nối chỉ soi CODE</b> (bỏ chú thích trước khi quét). Phát sinh từ thực tế: hai test đầu đỏ oan vì <i>chính câu giải thích của tôi</i> có nhắc tên hàm đang bị cấm gọi. Đổi xong thì test còn mạnh hơn — không thể "đạt" bằng cách viết token vào comment.</li>
+</ul>
+
+<h3>2026-09-10 · SAI LỆCH SPEC (đã sửa theo số đo)</h3>
+<div class="card">
+<p><b>Spec §4.3 bản đầu nói</b>: ưu tiên <b>đường shell</b> khi có kênh, vì <i>"một task từng mở dạng cửa sổ nhỏ sẽ quay lại đúng dạng cũ nếu chỉ gọi ý-định thường, nên phải ép chế độ cửa sổ 1"</i>. <b>Đó là SUY LUẬN, và số đo đã BÁC.</b></p>
+<p><b>[ĐO] trên máy ảo</b> (Android 10, 1920×1080 @240dpi — cùng hình học với xe):</p>
+<table>
+<tr><th>App</th><th>Đường shell (ép chế độ cửa sổ 1)</th><th>Đường API (khung = null)</th></tr>
+<tr><td>Chưa từng thu nhỏ (Chrome / Calendar)</td><td>1920×1080 — đúng</td><td><b>1920×1080 — đúng</b></td></tr>
+<tr><td>Từng nằm trong ô (Clock)</td><td><b>1132×768 — quay về khung ô CŨ, SAI</b></td><td><b>phủ hết màn — đúng</b></td></tr>
+</table>
+<p><b>Đã sửa</b>: đảo thứ tự — <b>đường API là đường chính</b>, đường shell còn lại làm lưới an toàn. Đổi <code>AppOpener</code> thành 2 hàm rõ ràng (<code>openByIntent</code> / <code>openByShell</code>) để chỗ gọi tự lo luồng (API = thread chính, shell = thread nền), và <b>test khoá đúng thứ tự này</b> kèm lý do.</p>
+<p><b>Bài học</b>: cả hai đường đều "hợp lý trên giấy"; chỉ phép đo phân định được. Nếu ship theo bản thiết kế đầu thì mỗi app người dùng từng đặt vào ô sẽ "mở toàn màn" ra một cửa sổ bé — đúng cái lỗi đang định chữa.</p>
+</div>
+
+<h3>2026-09-10 · Còn tồn tại (đã đo, KHÔNG che)</h3>
+<ul>
+<li><b>Lệch ~36px khi app từng nằm trong ô</b>: cửa sổ phủ hết màn nhưng tụt xuống ~36px vì task vẫn ở chế độ cửa-sổ-nhỏ-đã-phóng-to (thanh tiêu đề cửa sổ). Đã thử và <b>không có đường nào sạch trên Android 10</b>: ép chế độ cửa sổ 1 (không ăn) · <code>am task resize</code> về khung full (cùng kết quả lệch) · <code>am stack remove-task</code> (<i>lệnh không tồn tại</i>). Trên xe, app trong ô chạy trên <b>màn ảo riêng</b> nên không tích khung cũ ở màn chính ⇒ dự kiến không gặp; xếp cùng nợ "thanh tiêu đề cửa sổ" đã hoãn từ 2026-09-09 → <b>verify trên xe</b>.</li>
+<li><b>App từ chối màn phụ</b> (Waze/Maps) vẫn là giới hạn cũ, không thuộc gói này. Tài liệu Android xác nhận độc lập: app thường không được mở lên màn riêng tư (§4.5).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-10 · Senior review (độc lập, tự vá) <span class="pill ok">APPROVED</span></h3>
+<p class="muted">Phạm vi soát: 15 file của gói 1 (3 mới ở <code>:core</code>, 1 mới + 8 sửa ở <code>:app</code>, 3 test mới) + đọc ĐỒNG THỜI cả hai đầu của 7 chỗ ghép. Đo lại đủ 5 module.</p>
+
+<h4>Đủ phạm vi (R1–R5 · R-nf1–R-nf5)</h4>
+<table>
+<tr><th>Yêu cầu</th><th>Kết luận</th><th>Bằng chứng</th></tr>
+<tr><td>R1 app trong ô hiện ngay</td><td><b>ĐỦ</b></td><td><code>WorkspaceView.applyEmbedSeam</code> (:80–87) đặt <code>embedChanged = !had</code> → <code>WorkspaceRenderPlanner.decide</code> (:52–70) thêm ô App vào danh sách dựng lại; <code>KachiHomeActivity</code> (:171–178) là chỗ gọi DUY NHẤT</td></tr>
+<tr><td>R2 không nháy ô khác · không mất kênh chạm</td><td><b>ĐỦ</b></td><td>Chỉ ô <code>SlotContent.App</code> vào danh sách (<code>appNeedsHostAttach</code>), widget/trống không bị đụng — khoá bởi 2 test <code>P-bug2 …</code>; 4 field gán TRƯỚC <code>renderInternal</code>, đóng <code>private</code> ⇒ không có đường gán rời</td></tr>
+<tr><td>R3 mở toàn màn, không ghi ô</td><td><b>ĐỦ</b></td><td><code>AppOpener.openByIntent</code> dùng <code>setLaunchBounds(null)</code>; <code>openAppFullscreen</code> (:236–242) không gọi <code>assignApp</code>/<code>setPreset</code>/<code>place(</code>/<code>placeApp</code> — khoá bởi test</td></tr>
+<tr><td>R4 chạy khi KHÔNG có kênh shell</td><td><b>ĐỦ</b></td><td>Đường API không đọc <code>shell</code>; <code>shell</code> chỉ dùng ở lưới an toàn</td></tr>
+<tr><td>R5 U2 đặt-lại-khung</td><td><b>ĐỦ</b></td><td><code>LauncherWindows.placeApp</code> (:114–124): <code>fresh=false</code> → <code>moveToSlot</code>; <code>fresh=true</code> giữ <code>force-stop</code>+<code>openInSlot</code>; <code>reflow</code> không đụng</td></tr>
+<tr><td>R-nf1 một hàng đợi + cổng chủ quyền</td><td><b>ĐỦ</b></td><td><code>openByShell</code> nhận <code>sh</code> = <code>dispatcher.launcherSeam()</code> ⇒ qua <code>WindowCommandDispatcher</code> → <code>ShellTransport</code>; <code>fullscreenCmd</code> nhắm <code>--display 0</code>; guard windowing/persistent-writer xanh</td></tr>
+<tr><td>R-nf2 không thêm phụ thuộc</td><td><b>ĐỦ</b></td><td>Chỉ <code>android.app.ActivityOptions</code>/<code>Intent</code> + khối đã có</td></tr>
+<tr><td>R-nf3 suy giảm an toàn</td><td><b>ĐỦ</b> (1 điểm mù on-car, xem dưới)</td><td>Thiếu ý-định → false → thử shell; seam bị REJECT → <code>""</code> → <code>parseComponent</code> null → false; thiếu cả hai → giữ nguyên thẻ app, không xoá gán ô</td></tr>
+<tr><td>R-nf4 test được off-car</td><td><b>ĐỦ</b></td><td><code>WorkspaceRenderPlan.kt</code>/<code>RecentApps.kt</code>: <b>0 import</b> <code>android/androidx/dadb</code> (đã grep); <code>LayeringRulesTest</code> xanh</td></tr>
+<tr><td>R-nf5 không đụng layout / chiếu-cụm</td><td><b>ĐỦ</b></td><td><code>git status</code>: 0 file XML, 0 file <code>modules/clustercast/**</code></td></tr>
+</table>
+
+<h4>Khớp mặt tiếp giáp (đọc đồng thời hai đầu)</h4>
+<p>7/7 chỗ ghép KHỚP tên · kiểu · nullable · thứ tự · thread: <code>applyEmbedSeam</code> (6 tham số, gọi bằng tên; <code>InputDaemonClient?</code> nullable cả hai đầu; chạy trên thread CHÍNH trong <code>runOnUiThread</code> vì nó dựng View) · <code>DrawerController→AppDrawer</code> (2 tham số mới đều CÓ mặc định ⇒ đường <code>open(index)</code> cũ byte-giữ) · <code>WorkspaceRepository→PrefsWorkspaceRepository→WorkspacePrefs</code> (2 hàm mới có thân mặc định ⇒ 2 bản giả trong test không phải sửa; <code>decode(String?)</code> chịu null của <code>getString</code>) · <code>AppOpener↔Activity</code> (API=main, shell=<code>winExec</code>) · <code>LauncherWindows→AppLauncher.moveToSlot(String, SlotRect): Boolean</code> (cả 2 adapter đã hiện thực) · <code>KachiTopStrip.onOpenAppList</code> · <code>decide(...)</code> 5 tham số đúng thứ tự, <code>when</code> vét cạn sealed.</p>
+
+<h4>Hai điểm yếu được soi riêng</h4>
+<ul>
+<li><b>(a) <code>applyEmbedSeam</code> có thể sai thứ tự?</b> <b>KHÔNG.</b> Bốn field <code>private</code>, không setter công khai, không chỗ gán nào khác (grep toàn repo: chỉ 1 chỗ gọi). <b>Rò rỉ màn ảo?</b> <b>KHÔNG</b> — <code>removeView</code> làm <code>VdAppHost.onDetachedFromWindow</code> chạy ĐỒNG BỘ: <code>unregisterVd</code> + <code>vd.release()</code>; <code>SlotAppHost</code> cũng <code>release()</code> khi detach. <b>Gọi 2 lần?</b> Lần 2 <code>had=true</code> ⇒ <code>embedChanged=false</code> ⇒ không dựng lại (không nháy), nhưng các host CŨ vẫn giữ kênh cũ ⇒ <b>chỉ được gọi MỘT lần mỗi vòng đời view</b>; hôm nay bất khả vì chỗ gọi nằm trong một <code>winExec.execute</code> duy nhất của <code>onCreate</code>.</li>
+<li><b>(b) <code>placeBtn</code> nullable còn chỗ nào giả định non-null?</b> <b>KHÔNG.</b> Chỉ <code>refreshPlaceBtn()</code> đọc, đã dùng <code>?.</code>; ở chế độ OPEN_APP không có ô widget nào nên nó cũng không bao giờ được gọi. <b>ASSIGN_SLOT đứng nguyên?</b> <b>CÓ</b> — nhánh <code>assign</code> giữ đúng trình tự cũ (tiêu đề · phụ đề · Widget+nút Đặt · telemetry theo domain · lưới app), 2 tham số mới đều có mặc định.</li>
+</ul>
+
+<h4>Phát hiện + đã vá</h4>
+<table>
+<tr><th>#</th><th>Mức</th><th>Vấn đề</th><th>Đã vá</th></tr>
+<tr><td>1</td><td><span class="tag p1">P2</span></td><td><b>Đọc kênh shell qua thread mà không có rào bộ nhớ.</b> <code>shell</code> được GHI trên thread nền <code>winExec</code>; gói 1 thêm chỗ ĐỌC trên thread CHÍNH (<code>openAppFullscreen</code>) mà field không <code>@Volatile</code> ⇒ thread chính có thể thấy mãi <code>null</code> ⇒ lưới an toàn của U3 "biến mất" im lặng (field <code>appLauncher</code> ngay bên cạnh vốn đã <code>@Volatile</code> — bất đối xứng).</td><td><code>KachiHomeActivity.kt</code>: <code>@Volatile private var shell</code> + test khoá</td></tr>
+<tr><td>2</td><td><span class="tag p1">P2</span></td><td><b>Rò rỉ CỬA SỔ ngăn kéo khi huỷ activity.</b> <code>DrawerController</code> gắn ngăn kéo bằng <code>WindowManager.addView(TYPE_APPLICATION_OVERLAY)</code> khi có quyền vẽ-đè ⇒ nó là cửa sổ RIÊNG, KHÔNG chết cùng activity; <code>onDestroy</code> chỉ gọi <code>windows.clearOverlays()</code>. Gói 1 vừa mở lối vào THỨ HAI cho đúng cửa sổ đó (nút "Ứng dụng") và một đường mới đẩy việc vào <code>winExec</code> ⇒ một cái chạm sau khi huỷ sẽ vào <code>winExec</code> ĐÃ <code>shutdownNow()</code> (<code>RejectedExecutionException</code>) hoặc mở activity từ activity đã chết.</td><td><code>KachiHomeActivity.onDestroy</code>: <code>drawerController.close()</code> TRƯỚC <code>winExec.shutdownNow()</code> + test khoá thứ tự</td></tr>
+<tr><td>3</td><td><span class="tag p1">P2</span></td><td><b>Một <code>Drawable</code> dùng cho hai <code>ImageView</code>.</b> Ở chế độ mở-thường, cùng một app xuất hiện ở CẢ "Gần đây" LẪN "Tất cả" nhưng <code>recentItems</code> trả về CHÍNH các <code>GridItem</code> của lưới kia ⇒ hai ô lưới cùng trỏ một <code>Drawable</code>; một Drawable chỉ giữ MỘT callback/bounds nên ô gắn sau chiếm callback, ô trước có thể không vẽ lại.</td><td><code>AppDrawer.recentItems</code>: nhân bản icon qua <code>constantState.newDrawable(resources)</code> (rẻ, chia sẻ constant-state), không sao chép được thì dùng lại bản gốc</td></tr>
+<tr><td>4</td><td><span class="tag p2">P3</span></td><td><b>Tài liệu lệch.</b> <code>docs/README.md</code> còn ghi spec này là "Draft — chờ owner duyệt (5 OQ)" trong khi 5 OQ đã chốt và gói 1 đã làm xong off-car (R2.4 cấm hai doc "current" mâu thuẫn).</td><td><code>docs/README.md</code>: đổi thành "DONE off-car … chờ verify trên xe / Current"</td></tr>
+</table>
+
+<h4>Còn tồn tại — CỐ Ý không vá (ngoài phạm vi spec / cần số đo trên xe)</h4>
+<ul>
+<li><b>[P2 🚗] <code>openByIntent</code> báo "thành công" mà app có thể KHÔNG mở.</b> Nó trả <code>true</code> khi <code>startActivity</code> không ném. Trên IVI khoá của BYD, một lần mở bị chặn hiện toast <i>"Hệ thống IVI không hỗ trợ hoạt động này"</i> mà <b>không ném</b> ⇒ lưới an toàn shell sẽ không bao giờ chạy. Không vá vì (a) máy ảo không tái tạo được ca này ⇒ sửa mù là suy luận, đúng cái bẫy §9 đã trả giá; (b) đảo thứ tự lại thì tái phát lỗi khung 1132×768 đã đo. <b>Nếu xe gặp</b>: sau <code>openByIntent</code>, poll trên <code>winExec</code> xem gói đã thành activity resumed chưa rồi mới lùi về <code>openByShell</code> — công thức đã có sẵn và đã test thuần: <code>VietMapAutostart.isResumedActivity</code>. Xếp vào mục verify (b).</li>
+<li><b>[P2 🚗] U2: đặt-lại-khung KHÔNG nâng cửa sổ.</b> <code>am task resize</code> chỉ đổi khung; nếu cửa sổ app đang nằm SAU launcher thì chạm ô sẽ resize mà người dùng không thấy gì. Đây chính là lý do §4.4 cố ý KHÔNG đổi <code>reflow</code> — cùng một vật lý cũng áp cho <code>placeApp</code>. Đã nằm trong mục verify (e); cần số đo trên xe trước khi thêm lệnh nâng-cửa-sổ.</li>
+<li><b>[P3] Chỉ ROM platform-signed:</b> khi kênh shell tới, ô App bị dựng lại ⇒ app đang nhúng bằng <code>ActivityView</code> (<code>SlotAppHost</code>) bị <code>release()</code> rồi mở lại trên màn ảo <b>một lần</b>. Bất khả trên bản sideload (<code>INTERNAL_SYSTEM_WINDOW</code> không được cấp — <code>embeddingUsable()</code> = false), và nếu có thì nó hội tụ về đúng đường tốt hơn (<code>VdAppHost</code>).</li>
+<li><b>[P3] Pre-existing:</b> <code>rebuild()</code> khi đổi bố cục làm host CŨ <code>force-stop</code> (lúc detach) trong khi host MỚI cũng <code>force-stop</code>+ngủ 1 s+<code>am start</code> ⇒ về lý thuyết hai lệnh có thể đảo thứ tự trong hàng đợi. Có từ trước gói 1, không đụng.</li>
+</ul>
+
+<h4>Đo lại sau khi vá</h4>
+<table>
+<tr><th>Mục</th><th>Kết quả</th></tr>
+<tr><td>Đủ 5 module <code>./gradlew test --continue --rerun-tasks</code></td><td><b>2343 test / 0 lỗi / 0 bỏ qua</b> (mốc 2339 → <b>+4</b> = 2 test khoá-bản-vá × 2 biến thể <code>:app</code>). Guard kiến trúc (phân tầng · cổng cửa sổ · chống ghi state bền · parity layout) xanh.</td></tr>
+<tr><td><code>:app:assembleDebug</code></td><td><b>BUILD SUCCESSFUL</b>, 0 lỗi/cảnh báo ở các file của gói 1.</td></tr>
+<tr><td>Ba lớp test của gói 1</td><td><code>OpenAppWiringContractTest</code> 24 · <code>WorkspaceRenderPlanTest</code> 9 · <code>RecentAppsTest</code> 8 — tất cả xanh.</td></tr>
+</table>
+<p><b>Phán quyết: APPROVED</b> — 100% R1–R5 + R-nf1–R-nf5 có mặt và nối dây thật; 7/7 mặt tiếp giáp khớp; 3 phát hiện [P2] + 1 [P3] đã vá và khoá bằng test; các mục còn lại là nợ <b>trên xe</b> đã ghi tường minh, không phải chỗ hổng off-car.</p>
+
+</div></body>
+</html>
