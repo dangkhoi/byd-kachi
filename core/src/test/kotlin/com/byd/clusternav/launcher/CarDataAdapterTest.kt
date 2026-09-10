@@ -1,0 +1,88 @@
+package com.byd.clusternav.launcher
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Test
+
+/** W1b: [CarDataAdapter] build [CarStatus] từ telemetry giả (named + feature), gộp 2 nhịp, 6 method cũ, off-car null. */
+class CarDataAdapterTest {
+
+    private fun adapter() = CarDataAdapter(
+        HalBindingTable(
+            FakeHalGateway(
+                getters = mapOf(
+                    "getElecPercentageValue" to "82",             // soc
+                    "getElecDrivingRangeValue" to "418",          // ev_range_km
+                    "getCurrentSpeed" to "56",                    // speed
+                    "getTyrePressureLeftFront" to "240",          // tyre_p_fl (kPa)
+                    "getTyrePressureRightFront" to "235",
+                    "getTyrePressureLeftRear" to "230",
+                    "getTyrePressureRightRear" to "210",
+                    "getWindowOpenPercent" to "98",               // window_* (per-index arg)
+                    "getAutoVIN" to "LGXCE4CB0N0000001",          // vin
+                    "getPM2p5Level" to "2",                       // pm25_level
+                    "getOutCarTemperature" to "26",               // ext_temp
+                ),
+                features = mapOf(
+                    842006544 to "45",     // charging_pct
+                    1031798832 to "24",    // cabin_temp
+                    950009866 to "1",      // light_low_beam
+                    305135676 to "1",      // esp_state
+                    339738656 to "120",    // motor_power (fast)
+                    535834664 to "1",      // speed_limit_warning (fast)
+                ),
+            ),
+        ),
+    )
+
+    @Test fun `readSlow builds CarStatus across domains`() {
+        val s = adapter().readSlow(CarStatus())
+        assertEquals(82, s.energy.soc)
+        assertEquals(418, s.energy.evRangeKm)
+        assertEquals(45, s.energy.chargingPct)
+        assertEquals(24, s.climate.cabinTempC)
+        assertEquals(240.0, s.tyres.pFlKpa)          // raw kPa in CarStatus
+        assertEquals(98, s.body.windowLfPct)
+        assertEquals(true, s.lights.lowBeam)
+        assertEquals(true, s.safety.espOn)
+        assertEquals("LGXCE4CB0N0000001", s.identity.vin)
+    }
+
+    @Test fun `readFast builds drivetrain and fast fields`() {
+        val s = adapter().readFast(CarStatus())
+        assertEquals(56, s.drivetrain.speedKmh)
+        assertEquals(120, s.energy.motorPowerKw)
+        assertEquals(true, s.safety.speedLimitWarning)
+    }
+
+    @Test fun `slow preserves fast fields (copy-merge boundary)`() {
+        val a = adapter()
+        val s = a.readSlow(a.readFast(CarStatus()))
+        assertEquals(56, s.drivetrain.speedKmh)          // from fast, kept
+        assertEquals(120, s.energy.motorPowerKw)         // fast field survives slow energy.copy
+        assertEquals(82, s.energy.soc)                   // from slow
+        assertEquals(true, s.safety.speedLimitWarning)   // fast alert survives slow safety.copy
+        assertEquals(true, s.safety.espOn)               // from slow
+    }
+
+    @Test fun `legacy 6 methods map correctly (kPa to bar)`() {
+        val a = adapter()
+        assertEquals(82, a.batteryPercent())
+        assertEquals(418, a.rangeKm())
+        assertEquals(listOf(2.4, 2.35, 2.3, 2.1), a.tirePressuresBar())
+        assertEquals(2, a.pm25Level())
+        assertEquals(56, a.speedKmh())
+        assertEquals(26, a.outsideTempC())
+    }
+
+    @Test fun `off-car returns all null`() {
+        val a = CarDataAdapter(HalBindingTable(FakeHalGateway()))
+        val s = a.readSlow(a.readFast(CarStatus()))
+        assertNull(s.energy.soc)
+        assertNull(s.drivetrain.speedKmh)
+        assertNull(s.tyres.pFlKpa)
+        assertNull(s.identity.vin)
+        assertNull(a.batteryPercent())
+        assertNull(a.tirePressuresBar())
+    }
+}

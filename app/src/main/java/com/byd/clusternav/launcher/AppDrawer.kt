@@ -79,6 +79,12 @@ class AppDrawer(
         addWidgetGrid(body, cols = 4)
         refreshPlaceBtn()
 
+        // ── Widget dữ liệu xe (telemetry, registry-driven) gom theo domain — thêm vào ô ──
+        WidgetCatalog.telemetryByDomain().forEach { (domain, picks) ->
+            body.addView(sectionLabel(domain.label).also { it.setPadding(0, dpi(context, 12), 0, dpi(context, 4)) })
+            addPickGrid(body, picks, cols = 4)
+        }
+
         // ── App (chạm mở ngay) ──
         body.addView(sectionLabel("Ứng dụng").also { it.setPadding(0, dpi(context, 14), 0, dpi(context, 4)) })
         addGrid(body, loadApps(), cols = 6)
@@ -129,6 +135,51 @@ class AppDrawer(
     }
 
     private fun refreshTiles() { widgetTiles.keys.forEach { applyTileState(it) } }
+
+    // ── Telemetry pick grid (registry-driven; cùng cơ chế chọn với curated) ──
+    private fun addPickGrid(parent: LinearLayout, picks: List<WidgetPick>, cols: Int) {
+        var row: LinearLayout? = null
+        picks.forEachIndexed { i, pick ->
+            if (i % cols == 0) {
+                row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+                parent.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+            row!!.addView(pickTile(pick), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        val rem = picks.size % cols
+        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
+    }
+
+    private fun pickTile(pick: WidgetPick): View {
+        val inner = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            setPadding(dpi(context, 8), dpi(context, 12), dpi(context, 8), dpi(context, 12))
+            addView(ImageView(context).apply {
+                val r = KachiTheme.iconRes(pick.icon); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
+                layoutParams = LinearLayout.LayoutParams(dpi(context, 40), dpi(context, 40))
+            })
+            addView(TextView(context).apply {
+                text = pick.label; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+                setPadding(dpi(context, 2), dpi(context, 6), dpi(context, 2), 0)
+            })
+            setOnClickListener {
+                if (pick.id in selected) selected.remove(pick.id)
+                else if (selected.size < MAX) selected.add(pick.id)
+                refreshTiles(); refreshPlaceBtn()
+            }
+        }
+        widgetTiles[pick.id] = inner
+        applyTileState(pick.id)
+        return if (pick.needsBadge) FrameLayout(context).apply {
+            addView(inner, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            addView(View(context).apply {
+                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c(KachiTheme.AMBER)) }
+            }, FrameLayout.LayoutParams(dpi(context, 7), dpi(context, 7), Gravity.TOP or Gravity.END).also {
+                it.topMargin = dpi(context, 6); it.marginEnd = dpi(context, 6)
+            })
+        } else inner
+    }
 
     private fun applyTileState(id: String) {
         val tile = widgetTiles[id] ?: return

@@ -205,6 +205,17 @@ class HomeViewModelTest {
         assertEquals(0, fake.persistCount)   // setEmbedded KHÔNG ghi bền
     }
 
+    @Test fun `setCarStatus bom trang thai xe live vao state, KHONG persist`() = runTest {
+        val fake = repo()
+        val vm = HomeViewModel(fake)
+        vm.uiState.test {
+            assertEquals(CarStatus(), awaitItem().carStatus)                       // initial rỗng ("—")
+            vm.setCarStatus(CarStatus(energy = CarStatus.Energy(soc = 77)))
+            assertEquals(77, awaitItem().carStatus.energy.soc)                      // live cập nhật
+        }
+        assertEquals(0, fake.persistCount)   // trạng thái xe LIVE KHÔNG ghi bền
+    }
+
     @Test fun `cycleDockEdge xoay vien va persist`() = runTest {
         val fake = repo()
         val vm = HomeViewModel(fake)

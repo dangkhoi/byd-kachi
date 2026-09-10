@@ -29,10 +29,18 @@ interface CarDataPort {
     fun outsideTempC(): Int?
 }
 
-/** Bơm một hành động điều khiển tới xe (BydHal). Off-car = no-op (trả false). */
+/** Bơm một hành động điều khiển tới xe (BydHal). Off-car = no-op (trả false). KHÔNG gate an toàn (owner bỏ 2026-09-10). */
 interface CarControlPort {
+    /** TOGGLE bật/tắt. */
     fun toggle(id: String, on: Boolean): Boolean
+    /** STEP đặt giá trị (nhiệt/quạt/độ sáng…). */
     fun step(id: String, value: Int): Boolean
+    /** COVER mở (true) / đóng (false) kính·nóc·rèm·cốp. */
+    fun cover(id: String, open: Boolean): Boolean
+    /** SELECT chọn lựa chọn thứ [index] (0-based, khớp `ControlDef.args`). */
+    fun select(id: String, index: Int): Boolean
+    /** BUTTON bấm-1-phát (lọc-ngay·nhớ-ghế·gập-gương·sạc-ngay). */
+    fun press(id: String): Boolean
 }
 
 /**
@@ -52,4 +60,7 @@ object NoCar : AppLauncher, CarDataPort, CarControlPort {
     override fun outsideTempC(): Int? = null
     override fun toggle(id: String, on: Boolean): Boolean = false
     override fun step(id: String, value: Int): Boolean = false
+    override fun cover(id: String, open: Boolean): Boolean = false
+    override fun select(id: String, index: Int): Boolean = false
+    override fun press(id: String): Boolean = false
 }

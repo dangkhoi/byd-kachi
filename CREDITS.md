@@ -24,3 +24,22 @@ Kotlin's standard runtime, bundled with every Kotlin module in the app. **Licens
 ### Bouncy Castle
 [Bouncy Castle](https://www.bouncycastle.org/) — thư viện mật mã mà `dadb` dùng để tạo/ký khoá RSA cho xác thực ADB (ADB key crypto).
 Cryptography library used by `dadb` to generate/sign the RSA key for ADB authentication. **License: Bouncy Castle License (MIT-style / adaptation of the MIT license).**
+
+## Research references — clean-room (MIT) · Tham chiếu nghiên cứu — clean-room (MIT)
+
+Kachi launcher's car telemetry/control layer (feature **W1**) reimplements — **clean-room** — the BYD DiLink HAL API
+surface documented by the two MIT-licensed projects below. We describe the API + numeric feature-ids + CAN opcodes
+(facts about the BYD HAL, not copyrightable expression) and re-author the code on ClusterNav's own `BydHal`
+reflection infrastructure; **no source is copied verbatim**.
+
+Lớp dữ liệu/điều khiển xe của Kachi (**W1**) **viết lại clean-room** từ bề mặt API HAL BYD DiLink mà 2 dự án MIT dưới
+đây đã tài liệu hoá. Chỉ dùng lại FACTS (feature-id số, CAN opcode, tên method HAL), **KHÔNG copy mã nguồn**.
+
+### Overdrive-release
+[`yash-srivastava/Overdrive-release`](https://github.com/yash-srivastava/Overdrive-release) — cầu BYD ↔ Home-Assistant;
+nguồn của bảng feature-id số + catalog telemetry/control (harvest vào `docs/diagnostics/kachi-capability-catalog-2026-09-10.md`).
+**License: MIT © 2026 Yash Srivastava.**
+
+### byd-dashcast
+[`Kiroha/byd-dashcast`](https://github.com/Kiroha/byd-dashcast) — kỹ thuật cluster-cast + CAN HUD/nav (AutoContainer opcodes, NaviInfo).
+**License: MIT © 2026 Cedric Carre.**

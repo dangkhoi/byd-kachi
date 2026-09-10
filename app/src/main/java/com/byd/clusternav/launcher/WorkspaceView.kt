@@ -26,7 +26,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     var onSlotClear: ((Int) -> Unit)? = null
     var onSlotSwap: ((Int, Int) -> Unit)? = null
     var onAppOpen: ((Int) -> Unit)? = null
-    var carData: CarDataPort = NoCar
+    // UDF: trạng thái xe LIVE đến từ HomeUiState.carStatus (KHÔNG đọc port trong view). Off-car mọi field null ⇒ "—".
+    var carStatus: CarStatus = CarStatus()
+    var mediaProvider: () -> MediaSnapshot? = { null }   // đọc nhạc live (Bitmap ở :app → ngoài state :core)
+    var onMedia: (String) -> Unit = {}                    // transport: play/pause/next/prev
     var shell: ((String) -> String)? = null   // dadb uid-shell → nhúng app lên VirtualDisplay (display phụ, không caption) + bơm chạm
     // B2b: đăng ký/gỡ display của VD ô với DisplayOwnershipRegistry (qua WindowCommandDispatcher). Mặc định no-op.
     var registerVd: (Int) -> Unit = {}
@@ -37,6 +40,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     // View-transient ONLY: bản sao khung hình ĐANG hiển thị, dùng để DIFF khi [render] để không dựng lại ô không đổi.
     // KHÔNG phải nguồn sự thật — nguồn sự thật là HomeViewModel.uiState; không code ngoài nào đọc field này.
     private var displayed = WorkspaceState()
+    private var displayedStatus = CarStatus()
     private val slotViews = ArrayList<View>()
     // B4: MỘT input-daemon THƯỜNG TRÚ dùng chung cho MỌI ô (mỗi khung tự mang displayId). B5b: KHÔNG tự dựng nữa —
     // do AppContainer sở hữu và TIÊM vào (activity set khi dadb nối). null → VdAppHost fallback `input -d` (cũ).
@@ -50,14 +54,18 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * giữ nguyên View (và VdAppHost) của các ô khác → thêm app vào ô mới KHÔNG relaunch/nháy app đang chạy ở ô khác,
      * launcher đứng yên. Đổi preset/số ô → dựng lại cả. Nguồn sự thật do HomeViewModel giữ; đây chỉ phản chiếu.
      */
-    fun render(s: WorkspaceState) {
+    fun render(s: WorkspaceState, status: CarStatus = carStatus) {
         val old = displayed
-        displayed = s
+        val oldStatus = displayedStatus
+        displayed = s; displayedStatus = status; carStatus = status
         if (old.preset != s.preset || slotViews.size != s.preset.slotCount) { rebuild(); return }
+        val statusChanged = status != oldStatus
         for (i in 0 until s.preset.slotCount) {
             val oc = old.slots.getOrElse(i) { SlotContent.Empty }
             val nc = s.slots.getOrElse(i) { SlotContent.Empty }
-            if (!sameContent(oc, nc)) {
+            // Widget slot dựng lại khi nội dung ĐỔI HOẶC carStatus đổi (làm mới GIÁ TRỊ widget). App/Empty chỉ đổi
+            // theo nội dung → KHÔNG đụng VdAppHost khi tick trạng thái (app đang chạy trong ô không bị relaunch).
+            if (!sameContent(oc, nc) || (statusChanged && nc is SlotContent.Widget)) {
                 removeView(slotViews[i])
                 val v = makeSlot(i, nc)
                 addView(v); slotViews[i] = v
@@ -65,6 +73,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         }
         requestLayout(); invalidate()
     }
+
+    /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live). */
+    private fun widgetData() = WidgetData(carStatus, mediaProvider(), onMedia)
 
     private fun sameContent(a: SlotContent, b: SlotContent): Boolean = when {
         a is SlotContent.App && b is SlotContent.App -> a.pkg == b.pkg
@@ -94,7 +105,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         when (content) {
             is SlotContent.Widget -> {
-                val body = WidgetViews.buildGrid(context, content.ids, carData)
+                val body = WidgetViews.buildGrid(context, content.ids, widgetData())
                 body.setPadding(body.paddingLeft, body.paddingTop + dp(30), body.paddingRight, body.paddingBottom)  // đẩy content XUỐNG DƯỚI header (hết đè)
                 fl.addView(body, mm)
                 val first = content.ids.firstOrNull() ?: ""

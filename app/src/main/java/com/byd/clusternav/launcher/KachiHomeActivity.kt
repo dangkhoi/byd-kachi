@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Màn hình chính Kachi (HOME) — wall gradient + thanh trạng thái + workspace (widget/ô) + thanh điều khiển 4 viền.
- * Landscape, thuần code, bám prototype kachi-workspace.html. Dữ liệu = [DemoCarData].
+ * Landscape, thuần code, bám prototype kachi-workspace.html. Dữ liệu xe LIVE = [AppContainer.carStatusRepository]
+ * (`StateFlow<CarStatus>`) thu qua `repeatOnLifecycle` → [HomeViewModel.setCarStatus] → state → render (off-car "—").
  *
  * B5a: [HomeViewModel] giữ `StateFlow<HomeUiState>` là NGUỒN SỰ THẬT DUY NHẤT; Activity thu
  * (`repeatOnLifecycle(STARTED)`) → [render] áp state lên view; user event → INTENT (một chiều).
@@ -51,6 +52,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private lateinit var profileBar: ProfileBar
     private lateinit var mainArea: LinearLayout
     private lateinit var rootFrame: FrameLayout
+    private val media by lazy { MediaBridge(this) }        // đọc nhạc live cho w_media + transport
+    private var customizePanel: CustomizePanel? = null     // overlay Tuỳ biến thanh điều khiển
     // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher (am --windowingMode 5 + am task resize); chưa có dadb → IntentAppLauncher.
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
     private var shell: ((String) -> String)? = null
@@ -77,6 +80,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             this,
             onSelectPreset = { viewModel.setPreset(it) },
             onCycleDock = { viewModel.cycleDockEdge() },
+            onCustomizeDock = { openCustomize() },
             onOpenSettings = { startActivity(Intent(this, MainActivity::class.java)) },
             onProfileTap = { profileBar.cycle() },
             onProfileLongPress = { profileBar.addDialog() },
@@ -90,7 +94,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         topStrip.setProfileInitial(viewModel.uiState.value.activeProfile)   // chữ đầu avatar ban đầu (parity onCreate cũ)
 
         workspace = WorkspaceView(this).apply {
-            carData = DemoCarData
+            mediaProvider = { media.read() }                          // nhạc live (Bitmap ở :app, ngoài state :core)
+            onMedia = { handleMedia(it) }
             onSlotTap = { drawerController.open(it) }
             onSlotClear = { clearSlot(it) }
             onSlotSwap = { a, b -> swapSlots(a, b) }
@@ -102,7 +107,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             shell = { shell }, appLauncher = { appLauncher }, dispatcher = { container.windowDispatcher },
             onSlotSwap = { drawerController.open(it) }, onSlotClose = { clearSlot(it) },
         )
-        dock = ControlDockView(this).apply { control = NoCar }
+        dock = ControlDockView(this).apply { control = container.carControl }
 
         mainArea = LinearLayout(this)
         DockAreaLayout.apply(mainArea, workspace, dock, viewModel.uiState.value.dock, resources.displayMetrics.density)
@@ -129,6 +134,19 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             }
         }
 
+        // Thu TRẠNG THÁI XE LIVE: poll 2 nhịp (start khi STARTED, stop khi < STARTED) → bơm vào VM (một chiều) →
+        // uiState.carStatus đổi → render → widget/chip cập nhật. Off-car mọi field null ⇒ "—".
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                container.carStatusRepository.start()
+                try {
+                    container.carStatusRepository.status.collect { viewModel.setCarStatus(it) }
+                } finally {
+                    container.carStatusRepository.stop()
+                }
+            }
+        }
+
         // Nối shell dadb (localhost:5555) nền → ShellAppLauncher reflow như xe; dispatcher + ShellTransport + daemon do AppContainer sở hữu.
         val dadb = DadbShell(this)
         val dispatcher = container.windowDispatcher
@@ -143,7 +161,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                     workspace.unregisterVd = dispatcher::unregisterLauncherVirtualDisplay
                     workspace.shell = seam
                     workspace.inputClient = container.inputDaemonClient                       // daemon do AppContainer sở hữu, tiêm vào
-                    workspace.render(viewModel.uiState.value.workspace)                       // bật render app lên VirtualDisplay trong ô
+                    workspace.render(viewModel.uiState.value.workspace, viewModel.uiState.value.carStatus)   // bật render app lên VirtualDisplay trong ô
                     viewModel.setEmbedded(true)                                               // dadb nối được → nhúng (giữ embedded khớp getter)
                 }
             }
@@ -156,7 +174,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      */
     private fun render(state: HomeUiState) {
         val prev = shownState
-        workspace.render(state.workspace)
+        workspace.render(state.workspace, state.carStatus)
+        if (prev == null || prev.carStatus != state.carStatus) topStrip.refreshChips(state.carStatus)
         if (prev?.preset != state.preset) topStrip.selectPreset(state.preset)
         if (prev?.dock != state.dock) {
             val edgeChanged = prev != null && prev.dock.edge != state.dock.edge
@@ -210,7 +229,40 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     }
 
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onBackPressed() { if (drawerController.isOpen()) drawerController.close() }
+    override fun onBackPressed() {
+        when {
+            customizePanel != null -> closeCustomize()
+            drawerController.isOpen() -> drawerController.close()
+        }
+    }
+
+    // ── Màn Tuỳ biến (chọn nút cho thanh điều khiển) — overlay trên rootFrame, một chiều qua VM ──
+    private fun openCustomize() {
+        if (customizePanel != null) return
+        val panel = CustomizePanel(
+            this,
+            enabledIds = viewModel.uiState.value.dock.enabled,
+            onToggle = { id, on -> viewModel.toggleDock(id, on) },   // state+persist → collector: dock.setConfig
+            onClose = { closeCustomize() },
+        )
+        customizePanel = panel
+        rootFrame.addView(panel, FrameLayout.LayoutParams(MATCH, MATCH))
+    }
+
+    private fun closeCustomize() {
+        customizePanel?.let { rootFrame.removeView(it) }
+        customizePanel = null
+    }
+
+    /** Transport nhạc từ widget w_media → [MediaBridge] (no-op nếu off-car/không quyền). */
+    private fun handleMedia(action: String) {
+        when (action) {
+            "play" -> media.play()
+            "pause" -> media.pause()
+            "next" -> media.next()
+            "prev" -> media.prev()
+        }
+    }
 
     override fun onStart() { super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START) }
 

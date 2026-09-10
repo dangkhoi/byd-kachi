@@ -2,6 +2,14 @@ package com.byd.clusternav
 
 import android.content.Context
 import androidx.lifecycle.ViewModelProvider
+import com.byd.clusternav.launcher.BydHalGateway
+import com.byd.clusternav.launcher.CarControlAdapter
+import com.byd.clusternav.launcher.CarControlPort
+import com.byd.clusternav.launcher.CarDataAdapter
+import com.byd.clusternav.launcher.CarDataPort
+import com.byd.clusternav.launcher.CarStatusRepository
+import com.byd.clusternav.launcher.HalBindingTable
+import com.byd.clusternav.launcher.HalGateway
 import com.byd.clusternav.launcher.HomeViewModelFactory
 import com.byd.clusternav.launcher.PrefsWorkspaceRepository
 import com.byd.clusternav.launcher.WorkspaceRepository
@@ -9,6 +17,9 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.system.ShellTransport
 import com.byd.clusternav.system.WindowCommandDispatcher
 import com.byd.clusternav.system.inputd.InputDaemonClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * ĐỒ THỊ DI thủ công DUY NHẤT cho tiến trình launcher (Kachi) — B5 (part 2). Sở hữu/giữ (lazy) các process-singleton
@@ -38,6 +49,10 @@ class AppContainer internal constructor(
     private val windowDispatcherInit: (ShellTransport) -> WindowCommandDispatcher,
     private val workspaceRepositoryInit: () -> WorkspaceRepository,
     private val inputDaemonClientInit: (WindowCommandDispatcher) -> InputDaemonClient?,
+    private val carGatewayInit: () -> HalGateway,
+    // Poll trạng thái xe = HAL binder reflection (IPC CHẶN) → chạy trên Dispatchers.IO (đúng pool cho blocking I/O),
+    // KHÔNG phải Default (pool CPU) — tránh chiếm luồng CPU khi đọc HAL trên xe. Off-car (gateway null) vô hại.
+    private val carScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     /** Chủ DUY NHẤT của kết nối dadb window/cast — [ShellTransport.get] uỷ quyền về đây. */
     val shellTransport: ShellTransport by lazy { shellTransportInit() }
@@ -50,6 +65,22 @@ class AppContainer internal constructor(
 
     /** Client input-daemon dùng chung mọi ô (null nếu không đọc được đường APK). Seam = [windowDispatcher]. */
     val inputDaemonClient: InputDaemonClient? by lazy { inputDaemonClientInit(windowDispatcher) }
+
+    // ── Lớp DỮ LIỆU + ĐIỀU KHIỂN XE (W1) — registry-driven, off-car trả null ⇒ UI "—" (OQ1: KHÔNG demo) ──
+    /** Bảng nối HAL dùng CHUNG (1 gateway) cho cả đọc telemetry lẫn ghi control. */
+    private val halBindingTable: HalBindingTable by lazy { HalBindingTable(carGatewayInit()) }
+
+    /** Adapter đọc xe: [CarDataPort] (widget cũ) + `CarStatusReader` (build [com.byd.clusternav.launcher.CarStatus]). */
+    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable) }
+
+    /** Cổng đọc xe LIVE cho widget/thanh trạng thái — off-car mọi field null ⇒ "—". */
+    val carData: CarDataPort get() = carDataAdapter
+
+    /** Cổng điều khiển xe (toggle/step/cover/select/press) — **KHÔNG gate**; off-car no-op (false). */
+    val carControl: CarControlPort by lazy { CarControlAdapter(halBindingTable) }
+
+    /** Repo trạng thái xe LIVE: poll 2 nhịp → `StateFlow<CarStatus>` (nguồn cho UDF HOME; Activity collect qua repeatOnLifecycle). */
+    val carStatusRepository: CarStatusRepository by lazy { CarStatusRepository(carDataAdapter, carScope) }
 
     /** Cast folded BY REFERENCE — process-singleton object hiện có; KHÔNG sở hữu/không dựng coordinator ở đây. */
     val castRuntime: SimpleCastRuntime get() = SimpleCastRuntime
@@ -74,6 +105,7 @@ class AppContainer internal constructor(
             windowDispatcherInit = { transport -> WindowCommandDispatcher.createOwned(transport) },
             workspaceRepositoryInit = { PrefsWorkspaceRepository(app) },
             inputDaemonClientInit = { dispatcher -> buildInputDaemonClient(app, dispatcher) },
+            carGatewayInit = { BydHalGateway(app) },
         )
 
         private fun buildInputDaemonClient(app: Context, dispatcher: WindowCommandDispatcher): InputDaemonClient? {

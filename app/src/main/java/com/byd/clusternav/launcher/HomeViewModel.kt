@@ -69,6 +69,12 @@ class HomeViewModel(
     /** Cập nhật cờ nhúng (dadb loopback nối được / ROM platform-signed). Chỉ runtime, KHÔNG ghi bền. */
     fun setEmbedded(embedded: Boolean) = _uiState.update { it.copy(embedded = embedded) }
 
+    /**
+     * Cập nhật trạng thái xe LIVE (do Activity thu từ `CarStatusRepository.status` qua `repeatOnLifecycle` rồi bơm
+     * vào — MỘT CHIỀU). Chỉ runtime, KHÔNG ghi bền (off-car mọi field null ⇒ widget "—").
+     */
+    fun setCarStatus(status: CarStatus) = _uiState.update { it.copy(carStatus = status) }
+
     /** Cập nhật state (atomic) rồi ghi bền phần lưu-được. */
     private fun mutate(block: (HomeUiState) -> HomeUiState) {
         val next = _uiState.updateAndGet(block)

@@ -28,6 +28,7 @@ class KachiTopStrip(
     private val activity: Activity,
     private val onSelectPreset: (LayoutPreset) -> Unit,
     private val onCycleDock: () -> Unit,
+    private val onCustomizeDock: () -> Unit,
     private val onOpenSettings: () -> Unit,
     private val onProfileTap: () -> Unit,
     private val onProfileLongPress: () -> Unit,
@@ -57,9 +58,10 @@ class KachiTopStrip(
         chipRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         strip.addView(chipRow)
         strip.addView(pill("Thanh", false) { onCycleDock() }, pillLp())
+        strip.addView(pill("Tuỳ biến", false) { onCustomizeDock() }, pillLp())
         strip.addView(pill("Cài đặt", true) { onOpenSettings() }, pillLp())
         strip.addView(profileAvatar(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(10) })
-        refreshChips()
+        refreshChips(CarStatus())
         return strip
     }
 
@@ -119,14 +121,13 @@ class KachiTopStrip(
         }
     }
 
-    /** Cập nhật chip xe (PM2.5 / nhiệt ngoài / pin·km) từ [DemoCarData]. */
-    fun refreshChips() {
+    /** Cập nhật chip xe (PM2.5 / nhiệt ngoài / pin·km) từ [CarStatus] LIVE. Off-car mọi field null ⇒ "—". */
+    fun refreshChips(status: CarStatus) {
         chipRow.removeAllViews()
-        val d: CarDataPort = DemoCarData   // interface type (Int?): chip vẫn hiện "—" nếu nguồn xe thật trả null
-        val pm = d.pm25Level()?.let { if (it <= 2) "Tốt" else if (it <= 4) "TB" else "Kém" } ?: "—"
+        val pm = status.climate.pm25Level?.let { if (it <= 2) "Tốt" else if (it <= 4) "TB" else "Kém" } ?: "—"
         chipRow.addView(chip("PM2.5 · $pm", "ic-leaf", "#c3cee0"), chipLp())
-        chipRow.addView(chip("${d.outsideTempC() ?: "—"}°C ngoài", null, "#c3cee0"), chipLp())
-        chipRow.addView(chip("${d.batteryPercent() ?: "—"}% · ${d.rangeKm() ?: "—"} km", "ic-bolt", KachiTheme.GREEN), chipLp())
+        chipRow.addView(chip("${status.climate.outsideTempC ?: "—"}°C ngoài", null, "#c3cee0"), chipLp())
+        chipRow.addView(chip("${status.energy.soc ?: "—"}% · ${status.energy.evRangeKm ?: "—"} km", "ic-bolt", KachiTheme.GREEN), chipLp())
     }
 
     // ── Hồ sơ tài xế: pill hiện tên, chạm = đổi hồ sơ, giữ = tạo mới ──

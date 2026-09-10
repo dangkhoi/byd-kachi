@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W1 — Dữ liệu & điều khiển xe TỐI ĐA cho HOME Kachi (registry-driven)</title>
+<style>
+  :root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--mut:#6e6e73;--line:#e2e2e6;--accent:#0071e3;
+    --ok:#1a7f37;--warn:#b8860b;--pend:#8a5cf6;--bad:#c0392b;--code:#f2f2f4}
+  @media(prefers-color-scheme:dark){:root{--bg:#0b0b0d;--card:#161618;--ink:#f5f5f7;--mut:#98989d;--line:#2a2a2e;
+    --accent:#409cff;--ok:#3fb950;--warn:#d9a441;--pend:#b48cff;--bad:#ff6b5e;--code:#1c1c20}}
+  *{box-sizing:border-box}
+  body{font:16px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);margin:0}
+  .wrap{max-width:940px;margin:0 auto;padding:48px 24px 96px}
+  h1{font-size:32px;letter-spacing:-.02em;margin:0 0 6px}
+  h2{font-size:22px;margin:44px 0 14px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:18px;margin:26px 0 10px}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 4px}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px}
+  .pill.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+  .pill.pend{background:color-mix(in srgb,var(--pend) 18%,transparent);color:var(--pend)}
+  .pill.warn{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+  .pill.draft{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+  code{background:var(--code);padding:1.5px 6px;border-radius:6px;font:13px "SF Mono",ui-monospace,Menlo,monospace}
+  .diagram{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin:18px 0;overflow-x:auto}
+  ul,ol{padding-left:22px}
+  .ok-t{color:var(--ok)}.pend-t{color:var(--pend)}.warn-t{color:var(--warn)}
+  .q{background:color-mix(in srgb,var(--accent) 7%,transparent);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:12px 16px;margin:12px 0}
+  .meta{color:var(--mut);font-size:14px}
+  svg{max-width:100%;height:auto;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>W1 — Dữ liệu &amp; điều khiển xe TỐI ĐA cho HOME Kachi</h1>
+<p class="sub">Slug: <code>kachi-w1-real-data</code> · Owner: dangkhoi · <span class="pill draft">DRAFT — chờ duyệt</span>
+  · Catalog nguồn: <code>docs/diagnostics/kachi-capability-catalog-2026-09-10.md</code></p>
+<p class="meta">Thay <code>DemoCarData</code>/<code>NoCar</code> bằng lớp dữ liệu/điều khiển THẬT, <b>registry-driven</b>, nối
+  <b>toàn bộ capability đã harvest</b> từ Dudu + Overdrive + byd-dashcast + ClusterNav (~112 telemetry · ~75 control ·
+  ~213 feature-id). Owner: <i>"Dudu + Overdrive đã làm hết trên xe → học của họ, không mò lại; plan thông tin/widget/nút TỐI ĐA."</i></p>
+
+<h2>1. Changelog</h2>
+<ul>
+  <li><b>2026-09-10 v3</b> — owner BỎ gate an toàn (<i>"tự dùng tự chịu"</i>): gỡ <code>SafetyGate</code> + gating speed/gear + nhãn cảnh báo ADAS + "AEB enable-only". Mọi control ghi THẲNG bất kể tốc độ/số.</li>
+  <li><b>2026-09-10 v2</b> — MỞ RỘNG theo chỉ đạo owner: từ "nối 6 đường proven + bôi xám phần còn lại" → <b>"nối cả catalog theo kiến trúc registry-driven"</b>. Nền: catalog harvest <code>kachi-capability-catalog-2026-09-10.md</code> (Overdrive/dashcast MIT + Dudu + ClusterNav).</li>
+  <li><b>2026-09-10 v1</b> — spec đầu (audit wired-vs-sample, 6 đường proven).</li>
+</ul>
+
+<h2>2. Context</h2>
+<div class="card">
+<p><b>Nguồn sự thật capability</b> = <code>docs/diagnostics/kachi-capability-catalog-2026-09-10.md</code> (bản kê đầy đủ, trích tới file:symbol). Tóm tắt:</p>
+<ul>
+  <li><b>~112 telemetry đọc được</b> (8 domain: năng lượng/sạc, động lực/tốc độ, khí hậu/không khí, lốp, thân/cửa/kính, đèn, an toàn/ADAS, danh tính).</li>
+  <li><b>~75 actuator điều khiển được</b> (khí hậu, ghế/vô-lăng, kính/nóc/rèm/cốp/cửa, đèn/ambient 31 màu, drive/năng lượng/sạc, ADAS 15+, giải trí/cụm/HUD).</li>
+  <li><b>~213 feature-id số</b> (decimal→hex) từ <code>BydFeatureIds.java</code> + CAN HUD/nav (dashcast).</li>
+</ul>
+<p><b>2 cơ chế chạm xe Kachi đã có</b> (tái dùng, KHÔNG copy code — clean-room MIT): (1) <b>reflection in-process</b> <code>BydHal.device()</code> → named-method (proven: ghế/kính/PM2.5/tốc độ) HOẶC <code>set(int[]{featureId}, EventValue)</code> (raw feature-id — đường Overdrive); (2) <b>daemon uid-2000</b> cho vài register HUD/CAN (chỉ khi in-process no-op).</p>
+<p><b>Wire point</b>: <code>KachiHomeActivity.onCreate</code> gán <code>workspace.carData = DemoCarData</code> + <code>dock.control = NoCar</code>. <code>AppContainer</code> chưa có cổng xe. HAL tự trả null off-car ⇒ an toàn.</p>
+</div>
+
+<h2>3. Requirements</h2>
+<div class="card">
+<p><b>R1 — Registry-driven (cốt lõi).</b> Telemetry + control là <b>DATA</b> (bảng đăng ký ở :core), KHÔNG hardcode từng cái. Thêm 1 thông tin/nút = thêm 1 dòng registry, không viết code mới. Đây là cách nối "tối đa" mà vẫn ≤500 LOC/file + test được.</p>
+<p><b>R2 — HAL binding có tier.</b> Mỗi id map tới 1 binding: <b>named-method</b> (cho path proven-ClusterNav) hoặc <b>feature-id số</b> (cho path Overdrive) theo kiểu <code>resolveOrFallback("Nested.FIELD", numeric)</code> — resolve field framework thật trước, số là fallback. rc sentinel <code>-2147482648</code> (NOT_PROVISIONED) ⇒ đánh dấu "không có trên trim này".</p>
+<p><b>R3 — Evidence tier hiện rõ, KHÔNG bịa.</b> <span class="pill ok">PROVEN</span> dùng bình thường; <span class="pill pend">OVERDRIVE (chưa kiểm xe)</span> vẫn NỐI + hiện, nhưng gắn badge nhỏ "chưa kiểm trên xe" tới khi verify; off-car / đọc null / NOT_PROVISIONED ⇒ "—" + mờ. Không hiện số giả.</p>
+<p><b>R4 — Widget TỐI ĐA (thông tin).</b> Toàn bộ nhóm widget ở catalog §D1: vòng năng lượng, thẻ sạc, PM2.5/không khí, bảng lốp, dải khí hậu, đồng hồ tốc-độ/công-suất, thẻ sức khoẻ pin (SOH/cell V/nhiệt), trip-meter, dải trạng thái thân xe, dải an toàn (dây/điểm mù/radar), odometer/danh tính.</p>
+<p><b>R5 — Nút điều khiển TỐI ĐA.</b> Toàn bộ tile ở catalog §D2: khí hậu (AC/quạt/nhiệt/recirc/defrost/PM2.5/anion), tiện nghi (ghế mát-sưởi 3 mức/sưởi vô-lăng/nhớ ghế), thân xe (kính từng cửa +%/tất cả/vent, cốp, nóc, rèm, gập gương, khoá trẻ em, gạt-mưa bảo trì, tự-đóng-kính-khi-mưa), đèn (DRL/pha/ambient 31 màu + độ sáng/đèn trần), drive/năng lượng (chế độ lái/EV-HEV/giữ-pin/target-SOC/regen/lái/phanh/AVH/mặt-đường), sạc (giới hạn %/thông minh/sạc-ngay/sạc-không-dây), ADAS panel (15+ toggle), giải trí (xoay màn/camera 360/độ sáng/nhạc-cụm), cụm/HUD (chiếu cụm/HUD on-off-mode-brightness-angle).</p>
+<p><b>R6 — KHÔNG gate an toàn (owner chốt 2026-09-10: "tự dùng tự chịu").</b> Mọi control ghi TRỰC TIẾP bất kể tốc độ/số — kính/nóc/rèm/cốp/cửa/nhớ-ghế thao tác được cả lúc đang lái (như nút bấm cứng xe zin). KHÔNG <code>SafetyGate</code>, KHÔNG chặn theo speed/gear, KHÔNG nhãn cảnh báo ADAS, KHÔNG giới hạn "AEB enable-only". Rủi ro thuộc người dùng — repo đã có disclaimer hobby/use-at-own-risk.</p>
+<p><b>R7 — Tuỳ biến + mặc định.</b> Không nhồi hết lên HOME. Có <b>bộ mặc định gọn</b> (OQ2) + màn "Tuỳ biến" chọn widget/nút từ toàn catalog. (Thanh điều khiển đã có cơ chế enable/đổi viền; mở rộng cho mọi nhóm.)</p>
+<p><b>R8 — Live 2 nhịp.</b> <code>StateFlow&lt;CarStatus&gt;</code> poll: nhóm NHANH (~1s: tốc độ, công suất, ADAS-alert) + nhóm CHẬM (~5–15s: pin/tầm/lốp/nhiệt/sạc). Không phá UDF.</p>
+<p><b>R9 — Ranh giới + kỷ luật.</b> Degrade-safe (off-car không crash); :core THUẦN (không android.*); mỗi file ≤500 LOC; KHÔNG đụng seal/MainActivity/appId/cast-logic; MIT clean-room (document + reimplement, giữ attribution ở <code>CREDITS.md</code>, KHÔNG copy mã Overdrive/dashcast).</p>
+</div>
+
+<h2>4. Design — kiến trúc registry-driven</h2>
+<div class="diagram">
+<svg viewBox="0 0 880 360" role="img" aria-label="Kiến trúc registry-driven">
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--mut)"/></marker>
+  <style>.b{fill:var(--card);stroke:var(--line);stroke-width:1.5}.pb{fill:var(--card);stroke:var(--pend);stroke-width:1.6}.ob{fill:var(--card);stroke:var(--ok);stroke-width:1.6}
+  .tt{fill:var(--ink);font:600 13px -apple-system,sans-serif}.m{fill:var(--mut);font:11px -apple-system,sans-serif}.ln{stroke:var(--mut);stroke-width:1.3;fill:none;marker-end:url(#a)}</style></defs>
+  <rect class="pb" x="18" y="20" width="238" height="150" rx="12"/>
+  <text class="tt" x="32" y="44">:core (THUẦN) — REGISTRY</text>
+  <text class="m" x="32" y="66">TelemetryRegistry (id,unit,kind,tier)</text>
+  <text class="m" x="32" y="84">ControlRegistry (id,kind,safety,tier)</text>
+  <text class="m" x="32" y="102">CarStatus · CarCapabilities</text>
+  <text class="m" x="32" y="120">ControlKind · WidgetKind (render)</text>
+  <text class="m" x="32" y="146">= DATA: thêm cap = thêm dòng</text>
+
+  <rect class="ob" x="320" y="20" width="250" height="150" rx="12"/>
+  <text class="tt" x="334" y="44">:app — HAL BINDING</text>
+  <text class="m" x="334" y="66">HalBindingTable: id → </text>
+  <text class="m" x="334" y="84">  named-method (proven) |</text>
+  <text class="m" x="334" y="102">  set(featureId) (Overdrive)</text>
+  <text class="m" x="334" y="122">CarDataAdapter · CarControlAdapter</text>
+  <text class="m" x="334" y="146">reuse BydHal reflection</text>
+
+  <rect class="b" x="320" y="200" width="250" height="70" rx="12"/>
+  <text class="tt" x="334" y="224">CarStatusRepository</text>
+  <text class="m" x="334" y="244">poll nhanh 1s + chậm 10s</text>
+  <text class="m" x="334" y="262">→ StateFlow&lt;CarStatus&gt;</text>
+
+  <rect class="b" x="632" y="20" width="230" height="115" rx="12"/>
+  <text class="tt" x="646" y="44">:app UI — RENDER theo KIND</text>
+  <text class="m" x="646" y="66">Widget: ring/card/gauge/board</text>
+  <text class="m" x="646" y="84">Tile: toggle/step/cover/select</text>
+  <text class="m" x="646" y="102">tier badge (proven/chưa-kiểm)</text>
+  <text class="m" x="646" y="122">Tuỳ biến: chọn từ catalog</text>
+
+  <rect class="b" x="632" y="170" width="230" height="60" rx="12"/>
+  <text class="tt" x="646" y="194">BydHal + daemon uid-2000</text>
+  <text class="m" x="646" y="214">(daemon chỉ khi in-proc no-op)</text>
+
+  <path class="ln" d="M256,80 L318,80"/>
+  <path class="ln" d="M445,170 L445,200"/>
+  <path class="ln" d="M570,235 L632,120"/>
+  <path class="ln" d="M570,95 L632,80"/>
+  <path class="ln" d="M570,150 L632,195"/>
+  <path class="ln" d="M256,120 L318,235" />
+</svg>
+</div>
+
+<h3>4.1 Thành phần</h3>
+<ul>
+  <li><b><code>TelemetryRegistry</code> (:core)</b> — mỗi datum = <code>TelemetrySpec(id, label, unit, domain, widgetKind, tier, bindingKey)</code>. Bao 8 domain của catalog §A.</li>
+  <li><b><code>ControlRegistry</code> (:core, MỞ RỘNG)</b> — <code>ControlSpec(id, label, icon, kind∈{TOGGLE,STEP,COVER,SELECT,BUTTON}, domain, tier, args)</code> — <code>domain</code> CHỈ để gom nhóm panel (KHÔNG gate). (Hiện có 20 <code>ControlDef</code> {TOGGLE,STEP}; mở lên toàn catalog §B + thêm kind COVER/SELECT/BUTTON.)</li>
+  <li><b><code>CarStatus</code> (:core)</b> — snapshot bất biến mọi field; null = chưa đọc/không có.</li>
+  <li><b><code>CarCapabilities</code> (:core)</b> — id nào WIRED + tier — UI badge/mờ theo đây.</li>
+  <li><b><code>HalBindingTable</code> (:app)</b> — id → <code>read(dev)</code> / <code>write(dev,args)→rc</code>. Proven = named-method; Overdrive = <code>set(int[]{fid}, EventValue)</code> với resolveOrFallback. Tái dùng <code>BydHal.device/callNamedInt</code>. Sentinel → unavailable.</li>
+  <li><b><code>CarDataAdapter</code>/<code>CarControlAdapter</code> (:app)</b> — implements port, route qua binding (KHÔNG gate).</li>
+  <li><b><code>CarStatusRepository</code> (:app)</b> — coroutine poll 2 nhịp → <code>StateFlow&lt;CarStatus&gt;</code>.</li>
+  <li><b>UI (:app)</b> — renderer generic theo <code>widgetKind</code> / <code>ControlKind</code>; tier badge; màn Tuỳ biến chọn từ registry.</li>
+  <li><b>Media bridge (:app)</b> — <code>MediaSessionManager.getActiveSessions(notifListener)</code> → w_media + transport thật.</li>
+  <li><b><code>AppContainer</code></b> — thêm <code>carData/carControl/carStatusFlow</code>; on-car adapter thật, off-car adapter thật trả null ⇒ "—" (chốt OQ1, bỏ demo).</li>
+</ul>
+
+<h3>4.2 Bảng widget/nút mặc định (đề xuất) — chi tiết đầy đủ ở catalog §D</h3>
+<table>
+  <thead><tr><th>Nhóm</th><th>Mặc định HIỆN</th><th>Thêm qua Tuỳ biến</th></tr></thead>
+  <tbody>
+    <tr><td>Widget</td><td>năng lượng · PM2.5 · tốc độ · lốp · nhạc · đồng hồ/thời tiết</td><td>thẻ sạc · sức khoẻ pin · trip · dải thân xe · dải an toàn · odometer</td></tr>
+    <tr><td>Khí hậu</td><td>PM2.5 (lọc + lọc-ngay) · nhiệt −/+ · quạt −/+</td><td>AC on/auto · recirc · defrost F/R · anion</td></tr>
+    <tr><td>Tiện nghi</td><td>ghế mát · ghế sưởi</td><td>sưởi vô-lăng · nhớ ghế</td></tr>
+    <tr><td>Thân xe</td><td>kính · cốp</td><td>kính từng cửa +% · nóc · rèm · gập gương · khoá trẻ em · gạt-mưa bảo trì · tự-đóng-kính-mưa</td></tr>
+    <tr><td>Đèn</td><td>đèn đọc</td><td>DRL · pha (off/auto/parking/low) · ambient on/off + 31 màu + độ sáng · đèn trần</td></tr>
+    <tr><td>Drive/năng lượng</td><td>—</td><td>chế độ lái · EV/HEV · giữ-pin · target-SOC · regen · lái/phanh · AVH · mặt-đường</td></tr>
+    <tr><td>Sạc</td><td>—</td><td>giới hạn sạc % · thông minh + lịch · sạc-ngay · sạc-không-dây</td></tr>
+    <tr><td>ADAS</td><td>—</td><td>panel 15+ toggle (SLW/ESP/BSD/TSR/ISLC/lane/ELKA/FCW/AEB/RCTA/DOW/…)</td></tr>
+    <tr><td>Giải trí/Cụm</td><td>—</td><td>xoay màn · camera 360 · độ sáng · nhạc-cụm · chiếu-cụm · HUD on/off/mode/brightness/angle</td></tr>
+  </tbody>
+</table>
+
+<h2>5. Tasks (phased)</h2>
+<ol>
+  <li><b>W1a</b> — Capability layer :core: <code>TelemetryRegistry</code> + <code>ControlRegistry</code> mở rộng + <code>CarStatus</code> + <code>CarCapabilities</code> (+ tier). Test thuần.</li>
+  <li><b>W1b</b> — <code>HalBindingTable</code> :app (named + feature-id fallback, reuse BydHal) + <code>CarDataAdapter</code>/<code>CarControlAdapter</code> + <code>CarStatusRepository</code> poll StateFlow. Test.</li>
+  <li><b>W1c</b> — UI renderer generic theo widgetKind + tile theo ControlKind (toggle/step/cover/select/button) + tier badge.</li>
+  <li><b>W1d</b> — Media bridge (MediaSessionManager) → w_media.</li>
+  <li><b>W1e</b> — Wire <code>AppContainer</code>/<code>KachiHomeActivity</code> + màn Tuỳ biến (chọn widget/nút) + bộ mặc định + off-car demo.</li>
+  <li><b>W1f</b> — Test 5-module + build + senior review + security scan + sync index/backlog + CREDITS attribution.</li>
+  <li><b>🚗 W1-on-car (sau)</b> — verify feature-id/method theo trim (catalog §E): dump <code>*bydauto*.jar</code>; xác nh nhận id ADAS/AC/sunroof/lock/window-%; đóng gap.</li>
+</ol>
+
+<h2>6. Verification</h2>
+<ul>
+  <li>Off-car: :core test (registry/capabilities/CarStatus) + :app test (binding map named+fid, media parse) xanh; full 5-module xanh; <code>:app:assembleDebug</code> sạch; LayeringRules xanh.</li>
+  <li>Emulator: widget default hiện "—" (off-car, KHÔNG demo); tile default bấm được (no-op off-car); tier badge đúng; media đọc app nhạc thật; màn Tuỳ biến thêm/bớt được.</li>
+  <li>🚗 On-car: telemetry proven thật; control proven rc=0 ghi THẲNG (không gate); Overdrive-tier verify từng cái (rc≠sentinel).</li>
+</ul>
+
+<h2>7. Open Questions — ✅ ĐÃ CHỐT 2026-09-10 (chi tiết + grab list ở §9)</h2>
+<div class="q"><b>OQ1 — Off-car hiện gì?</b> Giữ demo đẹp trên emulator (đề xuất) hay "—" thật thà. (Phần chưa-kiểm-xe vẫn có badge riêng.)</div>
+<div class="q"><b>OQ2 — Bộ mặc định.</b> Đồng ý bảng §4.2 (HOME gọn: năng lượng/PM2.5/tốc độ/lốp/nhạc + dock khí hậu/ghế/kính/cốp/đèn-đọc), còn lại bật qua Tuỳ biến? Hay muốn dày hơn ngay?</div>
+<div class="q"><b>OQ3 — ADAS + chế độ lái + HUD.</b> Mấy cái này ĐỔI HÀNH VI LÁI (ESP/lane/AEB/drive-mode) hoặc chưa kiểm trên trim. Đưa vào (xe của anh, anh quyết) nhưng để trong panel riêng có cảnh báo + mặc định TẮT/ẩn? Đồng ý?</div>
+<div class="q"><b>OQ4 — "Kính 50%".</b> Số feature-id % của Dudu chưa có (cần dump jar trên xe). Trước mắt dùng kính nhị phân (mở/đóng, proven) + để % là slider "chờ verify xe". OK?</div>
+<div class="q"><b>OQ5 — Đường ghi.</b> Bắt đầu bằng reflection in-process (proven); chỉ thêm daemon uid-2000 khi một feature no-op in-process (Overdrive cảnh báo vài setting-write phải từ app-process). Đồng ý cách tiệm tiến này?</div>
+
+<h2>8. References</h2>
+<ul>
+  <li><b>Catalog đầy đủ</b>: <code>docs/diagnostics/kachi-capability-catalog-2026-09-10.md</code> (A telemetry · B control · C feature-id số · D widget/action UX · E gap on-car · F license).</li>
+  <li>Narrative: <code>docs/diagnostics/launcher-hal-re-overdrive-2026-09-08.md</code>, <code>dudu-launcher-hal-RE-2026-09-06.md</code>, <code>bodywork-window-trunk-RE-2026-09-06.md</code>, <code>byd-pm25-airclean-RE-2026-09-04.md</code>.</li>
+  <li>Nguồn mở (MIT): Overdrive-release (yash-srivastava), byd-dashcast (Kiroha) — clean-room, attribution ở CREDITS.</li>
+  <li>Ports/wire: <code>core/.../launcher/{LauncherPorts,ControlRegistry,HomeUiState}.kt</code>; <code>app/.../{SpeedProvider, comfort/*Applier, body/BodyworkControl, modules/hal/BydHal}.kt</code>; <code>app/.../launcher/{KachiHomeActivity,WidgetViews,ControlDockView}.kt</code>; <code>AppContainer.kt</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+<p class="meta"><b>2026-09-10 — Owner CHỐT 5 câu (OQ):</b></p>
+<ul>
+  <li><b>OQ1 → OFF-CAR HIỆN "—"</b> (KHÔNG demo) để còn biết cái nào chưa làm. ⇒ bỏ <code>DemoCarData</code>, adapter thật trả null off-car ⇒ "—".</li>
+  <li><b>OQ2 → OK</b> bộ mặc định §4.2 + Tuỳ biến.</li>
+  <li><b>OQ3 → CÓ, cứ làm, không ngại</b> — ADAS + chế độ lái + HUD đưa vào (gom panel riêng cho gọn, KHÔNG cần ẩn). ⚠ <b>[cập nhật 2026-09-10]</b> phần "giữ gate an toàn cho control chuyển động" ĐÃ BỊ BỎ — xem mục dưới.</li>
+  <li><b>OQ4 → kính nhị phân trước</b>; số feature-id % (Dudu) + ẩn số khác: <b>owner đang TRÊN XE, lấy được khi cần</b> → xem grab list dưới.</li>
+  <li><b>OQ5 → OK</b> in-process trước, daemon uid-2000 chỉ khi no-op.</li>
+</ul>
+<p class="meta"><b>2026-09-10 — Owner BỎ gate an toàn (ghi đè R6 + phần "giữ gate" ở OQ3):</b></p>
+<ul>
+  <li>Bỏ <code>SafetyGate</code> + mọi chặn theo <code>speedKmh</code>/số P + nhãn cảnh báo ADAS + giới hạn "AEB enable-only". Mọi control ghi THẲNG bất kể tốc độ/số. Lý do owner (nguyên văn): <i>"tự dùng tự chịu, không cần quan tâm, mở kính lúc lái xe thì có gì an toàn?"</i></li>
+  <li>Ảnh hưởng: gỡ khỏi R6 · Design 4.1 (component <code>SafetyGate</code> + field <code>safetyClass</code>) · diagram · adapter · Tasks W1a/W1b/W1c · Verification. <code>ControlSpec.domain</code> GIỮ nhưng CHỈ để gom nhóm panel (không còn gate). KHÔNG thêm cảnh báo runtime — repo đã có disclaimer hobby/use-at-own-risk.</li>
+</ul>
+<h3 id="grab">ON-CAR GRAB LIST (owner đang trên xe — lấy khi rảnh, CHƯA gấp)</h3>
+<p class="meta">Đóng gap catalog §E cho ĐÚNG trim (Seal owner). Một lần dump là ra gần hết:</p>
+<ol>
+  <li><b>[CAO NHẤT] Dump framework jar</b> → feature-id số THẬT + chữ ký method của trim: <code>adb pull /system/framework/*bydauto*.jar</code> (hoặc qua dadb loopback) → <code>jadx</code>/<code>javap</code> đối chiếu <code>BYDAutoFeatureIds</code> + method <code>set*/get*</code>. Đóng: window-% · sunroof/sunshade/lock/AC set-temp/set-fan · wiper-overhaul · mọi id ADAS.</li>
+  <li><b>Liệt kê method/thiết bị thật</b> (probe vehicleTest SẴN CÓ — <code>docs/diagnostics/oncar-hal-probe.md</code>, <code>HalProbeReceiver</code>): <code>BydHal.methods(dev,"set","get")</code> cho SETTING/AC/BODYWORK/LIGHT/CHARGING/POWER/STATISTIC/TYRE/SPEED/RADAR/ADAS.</li>
+  <li><b>Probe id chưa chắc</b> (đọc rc; <code>-2147482648</code>=NOT_PROVISIONED ⇒ sai đường): kính-% Dudu · AC temp/fan · sunroof/lock · ADAS <code>*_SET</code> · ghế sau 3/4.</li>
+  <li><b>TPMS nhiệt lốp</b>: chạy vài phút cho TPMS phát rồi đọc <code>INSTRUMENT_*_TYRE_TEMPERATURE</code>.</li>
+</ol>
+<p class="meta">(Owner "note lại đó đã" — chưa chạy ngay; sẵn sàng khi có thời gian trên xe.)</p>
+
+<h3>Stage 1 (W1a) — Capability layer :core — 2026-09-10 <span class="pill ok">DONE off-car</span></h3>
+<ul>
+  <li><b>File tạo:</b> <code>launcher/CapabilityModel.kt</code> (Domain · WidgetShape · EvidenceTier) · <code>launcher/TelemetryRegistry.kt</code> (TelemetrySpec + 121 datum/8 domain) · <code>launcher/CarStatus.kt</code> (snapshot bất biến, mọi field nullable, 8 nested-class theo domain) · <code>launcher/CarCapabilities.kt</code> (VIEW derived từ 2 registry → id→(wired,tier)). <b>File sửa:</b> <code>launcher/ControlRegistry.kt</code> (mở rộng: ControlKind +COVER/SELECT/BUTTON; ControlDef +domain/tier/bindingKey/args; 20 nút gốc GIỮ NGUYÊN đầu list + enrich, +45 nút catalog §B = 65 tổng).</li>
+  <li><b>[QUYẾT ĐỊNH — deviation naming] <code>WidgetShape</code> thay vì <code>WidgetKind</code>:</b> spec §4.1 gọi field/enum là <code>widgetKind</code>, nhưng <code>enum class WidgetKind{LOCAL,CAR,BOARD}</code> ĐÃ tồn tại ở <code>WidgetRegistry.kt</code> (phân loại NGUỒN dữ liệu) và bị <code>WidgetRegistryTest</code> khoá. Redeclaration ⇒ lỗi biên dịch + vỡ test cũ. ⇒ enum HÌNH-render đặt tên <code>WidgetShape</code> (RING/GAUGE/DIAL/CARD/BOARD/STRIP/MEDIA/VALUE/BADGE); GIỮ tên field <code>TelemetrySpec.widgetKind</code> đúng theo spec (kiểu = <code>WidgetShape</code>). Không đụng WidgetKind cũ.</li>
+  <li><b>[QUYẾT ĐỊNH] mở rộng <code>ControlDef</code> (không tạo <code>ControlSpec</code> song song):</b> ít vỡ nhất — thêm 4 field <code>domain/tier/bindingKey/args</code> ở CUỐI (có default) ⇒ mọi call-site + 5 test cũ (<code>ControlRegistryTest</code>) còn nguyên; <code>ControlDockView.kt</code> (:app) dùng <code>if(kind==TOGGLE)</code> (không exhaustive when) ⇒ thêm kind KHÔNG vỡ (đã [ĐO] <code>:app:compileDebugKotlin</code> sạch).</li>
+  <li><b>[QUYẾT ĐỊNH] <code>Domain</code> = 8 telemetry + INFOTAINMENT (9):</b> INFOTAINMENT chỉ cho control (giải trí/cụm/HUD), KHÔNG có datum ⇒ test "phủ 8 domain" chỉ xét <code>Domain.TELEMETRY</code> (8). domain CHỈ gom nhóm — KHÔNG gate (owner bỏ).</li>
+  <li><b>[QUYẾT ĐỊNH] id toàn cục DUY NHẤT (telemetry ∪ control):</b> bắt lúc test — <code>target_soc</code>/<code>mirror_fold</code> ban đầu trùng ở cả 2 registry ⇒ đổi id control thành <code>target_soc_set</code>/<code>mirror_fold_btn</code>. <code>CarCapabilities.ALL = TELEMETRY + CONTROL</code> giờ không mất phần tử; test khoá <code>size == tổng</code>.</li>
+  <li><b>bindingKey convention (cho Stage 2 map):</b> named-method <code>"SimpleDevice.method"</code> (proven) · feature-id decimal <code>"501219340"</code> (Overdrive raw) · car-setting key <code>"unit_temperature"</code>. Là FACT (tên/số) — KHÔNG copy mã Overdrive/dashcast (MIT clean-room). NEEDS_CAR cho id số/method chưa chắc (grab-list §9).</li>
+  <li><b>Context7:</b> Stage 1 THUẦN Kotlin stdlib (data class/enum/object) — <b>0 dependency mới</b>. Test dùng JUnit Jupiter qua <code>junit-bom 6.1.2</code> (đã có sẵn ở <code>core/build.gradle.kts</code>), toolchain JVM 17. ⇒ KHÔNG có thư viện mới cần Context7 verify (ghi rõ: N/A cho stage này).</li>
+  <li><b>[ĐO]</b> <code>./gradlew :core:test</code> = <b>978/978 XANH</b> (100 test gói launcher, gồm 5 file test mới + test cũ ControlRegistry/WidgetRegistry còn xanh). <code>grep SafetyGate\|safetyClass core/src/main</code> = <b>RỖNG</b>. <code>LayeringRulesTest</code> + <code>CoreIsolationTest</code> = <b>XANH</b> (0 import android/androidx/dadb; 0 file ở root package; 0 tên chứa "Android"). Mỗi file ≤ 500 LOC (lớn nhất ControlRegistry 225).</li>
+</ul>
+
+<h3>Stage 2 (W1b + W1d) — HAL binding + data flow + media — 2026-09-10 <span class="pill ok">DONE off-car</span></h3>
+<ul>
+  <li><b>File tạo (:core, THUẦN):</b> <code>launcher/HalBindingTable.kt</code> (259 LOC — <code>HalGateway</code> interface + <code>sealed BindingRoute</code> + <code>routeOf</code>/<code>deviceFqn</code>/<code>coerce*</code> thuần + read/write dispatch) · <code>launcher/CarDataAdapter.kt</code> (132 — <code>CarDataPort</code> 6-cũ + <code>CarStatusReader</code> readFast/readSlow) · <code>launcher/CarControlAdapter.kt</code> (39 — <code>CarControlPort</code> + cover/select/press/act) · <code>launcher/CarStatusRepository.kt</code> (74 — <code>CarStatusReader</code> + poll 2 nhịp StateFlow). <b>File tạo (:app, Android):</b> <code>launcher/BydHalGateway.kt</code> (80 — <code>HalGateway</code> thật bọc BydHal + AudioManager) · <code>launcher/MediaBridge.kt</code> (100 — MediaSessionManager → MediaSnapshot + transport). <b>Sửa:</b> <code>core/build.gradle.kts</code> (+kotlinx-coroutines-core api + coroutines-test).</li>
+  <li><b>[QUYẾT ĐỊNH — DEVIATION vị trí module] 4 file logic THUẦN đặt ở <code>:core</code> (không phải <code>:app</code> như spec §4.1/plan ghi):</b> <code>LayeringRulesTest</code> (:app) khoá <code>pureFilesStillInApp == 0</code> — MỌI file <code>:app</code> không import android/androidx/dadb + không chạm Context/View/Activity/Service/Bitmap/Canvas bị coi là "logic thuần đặt sai chuồng" ⇒ FAIL build. <code>HalBindingTable</code>/<code>CarDataAdapter</code>/<code>CarControlAdapter</code>/<code>CarStatusRepository</code> viết theo cổng-&amp;-adapter (phụ thuộc interface <code>HalGateway</code>, KHÔNG chạm Android → test off-car được) nên THUẦN ⇒ đúng luật Q1 phải ở <code>:core</code>. Chỉ <code>BydHalGateway</code> (reflection BydHal + Context + AudioManager) + <code>MediaBridge</code> (MediaSessionManager + Bitmap) chạm Android ⇒ ở <code>:app</code>. Đây là cổng-&amp;-adapter chuẩn (interface + logic thuần ở :core; impl Android ở :app), KHÔNG game guard (bump số là anti-pattern). Test thuần theo cùng luật cũng dời sang <code>:core</code> test; <code>MediaBridgeTest</code> (chạm Bitmap) ở <code>:app</code>.</li>
+  <li><b>[QUYẾT ĐỊNH] <code>HalGateway</code> = trừu tượng thao tác HAL/local</b> (getter/namedInt/featureGet/featureSet/settingGet/settingSet/localGet/localSet) → [HalBindingTable] test được off-car bằng <code>FakeHalGateway</code> (ghi lại call + trả canned). Impl thật <code>BydHalGateway</code> TÁI DÙNG <code>BydHal.device/callGetter/callNamedInt/setInt/tryGet</code> (KHÔNG mở reflection mới) đúng công thức <code>SeatComfortApplier</code>/<code>BodyworkControl</code>.</li>
+  <li><b>[QUYẾT ĐỊNH] Đường feature-id chọn thiết bị theo <code>Domain</code></b> (ENERGY→Statistic, CLIMATE→Ac, BODY→Bodywork, LIGHTS→Light, SAFETY→ADAS…) — <b>best-effort</b>: id-nào-thuộc-thiết-bị-nào chính xác là <b>grab-list §9</b> (dump jar on-car). Off-car null ⇒ vô hại; on-car là điểm khởi đầu để refine.</li>
+  <li><b>[QUYẾT ĐỊNH] car-setting (<code>settingGet/settingSet</code>) trả null</b> (đường setting BYD chưa proven — grab-list §9) và <b>AutoContainer (cast) KHÔNG wire</b> ở <code>localSet</code> (trả false) — cast do <code>SimpleCastRuntime</code> sở hữu (ràng buộc: không đụng logic cluster-cast). Chỉ <code>AudioManager</code> (âm lượng) wire local thật.</li>
+  <li><b>Sentinel → unavailable:</b> rc/giá-trị <code>-2147482648</code> (NOT_PROVISIONED) / <code>-2147482645</code> (INVALID) ⇒ đọc trả null (UI "—"), ghi trả fail (false). KHÔNG gate an toàn: <code>CarControlAdapter</code>/<code>HalBindingTable.write</code> KHÔNG đọc tốc độ/số/permit (grep xác nhận: chỉ <code>CarDataAdapter</code> ĐỌC speed/gear làm telemetry, không chặn ghi).</li>
+  <li><b>2 nhịp poll (R8):</b> <code>CarStatusRepository</code> nhanh 1s (drivetrain/motorPower/ADAS-alert) + chậm 10s (pin/sạc/khí-hậu/lốp/thân/đèn/an-toàn-bền/danh-tính) → <code>StateFlow&lt;CarStatus&gt;</code>. <code>update{}</code> nguyên tử (2 vòng ghi cụm field khác nhau, gộp an toàn); đọc lỗi → giữ state cũ (degrade-safe); <code>stop()</code> huỷ sạch.</li>
+  <li><b>Context7 (2026-09-10):</b> kotlinx.coroutines <code>/websites/kotlinlang_api_kotlinx_coroutines</code> — <code>MutableStateFlow.update</code> (an toàn đồng thời) · <code>asStateFlow()</code> · <code>CoroutineScope.isActive</code> (vòng poll tôn trọng cancel) · <code>cancel()</code> — API HIỆN HÀNH 1.10.2, KHÔNG deprecated. Android <code>/websites/developer_android</code> — <code>MediaSessionManager.getActiveSessions(ComponentName)</code> + <code>MediaController.getMetadata/getPlaybackState/getTransportControls</code> (play/pause/skipToNext/skipToPrevious) = public API ổn định (API 21+), KHÔNG deprecated. Dep pin: coroutines 1.10.2 (khớp :app) + coroutines-test 1.10.2.</li>
+  <li><b>[ĐO]</b> <code>./gradlew :core:test</code> = <b>1015/0/0</b> (+37 test Stage 2: HalBindingTable 19 · CarControlAdapter 9 · CarDataAdapter 5 · CarStatusRepository 4). <code>./gradlew :app:testDebugUnitTest</code> = <b>542/0/0</b> (+MediaBridge 4). <code>./gradlew :app:assembleDebug</code> = <b>BUILD SUCCESSFUL</b> (sạch). <code>LayeringRulesTest</code> XANH (pureFilesStillInApp=0 giữ). Mỗi file ≤ 500 LOC (lớn nhất HalBindingTable 259).</li>
+</ul>
+
+<h3>Stage 3 (W1c + W1e) — UI render theo shape/kind + wire AppContainer→ViewModel→View + màn Tuỳ biến — 2026-09-10 <span class="pill ok">DONE off-car</span></h3>
+<ul>
+  <li><b>File tạo (:core, THUẦN):</b> <code>launcher/TelemetryReadout.kt</code> (162 — <code>TelemetryView</code> + <code>object TelemetryReadout.of(id,status)</code>: biên CarStatus→hiển thị, null⇒"—", needsBadge theo tier) · <code>launcher/LauncherCatalog.kt</code> (75 — <code>WidgetPick</code> + <code>WidgetCatalog</code> curated∪telemetry-theo-domain + <code>ControlPanels.byDomain</code> + <code>ControlTileLogic</code> badge/select-cycle). <b>File sửa (:core):</b> <code>HomeUiState.kt</code> (+<code>carStatus: CarStatus</code>) · <code>LauncherPorts.kt</code> (<code>CarControlPort</code> +cover/select/press; <code>NoCar</code> impl) · <code>CarControlAdapter.kt</code> (cover/select/press = <code>override</code>).</li>
+  <li><b>File sửa (:app, view):</b> <code>WidgetViews.kt</code> (render từ <code>CarStatus</code> + <code>WidgetData</code>; generic telemetry theo <code>WidgetShape</code> RING/DIAL/GAUGE/VALUE/CARD/BOARD/STRIP/BADGE + badge "chưa kiểm" + mờ khi null; media từ <code>MediaSnapshot</code>) · <code>ControlDockView.kt</code> (5 kind TOGGLE/STEP/COVER/SELECT/BUTTON + gọi <code>carControl</code> + chấm amber tier + icon fallback theo domain) · <code>WorkspaceView.kt</code> (bỏ <code>carData</code> port → <code>carStatus</code> state + <code>mediaProvider</code>/<code>onMedia</code>; <code>render(ws, carStatus)</code> làm mới widget-slot khi status đổi, KHÔNG đụng app-slot) · <code>KachiHomeActivity.kt</code> (collect <code>carStatusRepository.status</code> qua repeatOnLifecycle→<code>setCarStatus</code>; <code>dock.control=carControl</code>; mở Tuỳ biến; media transport) · <code>KachiTopStrip.kt</code> (chip từ CarStatus + pill "Tuỳ biến") · <code>HomeViewModel.kt</code> (+<code>setCarStatus</code>) · <code>AppContainer.kt</code> (+<code>carData</code>/<code>carControl</code>/<code>carStatusRepository</code> qua <code>carGatewayInit</code>+<code>carScope</code>) · <code>AppDrawer.kt</code> (widget picker + telemetry gom domain). <b>File tạo (:app):</b> <code>CustomizePanel.kt</code> (142 — overlay chọn nút dock gom theo domain).</li>
+  <li><b>[QUYẾT ĐỊNH — UDF] <code>CarStatus</code> vào <code>HomeUiState</code>, KHÔNG đọc port trong view:</b> Activity thu <code>StateFlow&lt;CarStatus&gt;</code> (repeatOnLifecycle STARTED) → <code>HomeViewModel.setCarStatus</code> (runtime, KHÔNG persist) → <code>uiState.carStatus</code> → <code>render</code> → <code>WorkspaceView.render(ws, carStatus)</code> + <code>topStrip.refreshChips(carStatus)</code>. View THUẦN render(state), một chiều. Repo poll <code>start()</code> ở STARTED / <code>stop()</code> ở &lt;STARTED (finally) — không poll khi ẩn.</li>
+  <li><b>[QUYẾT ĐỊNH — refresh widget-slot theo tick] </b> <code>WorkspaceView.render</code> dựng lại CHỈ widget-slot khi <code>carStatus</code> đổi (app/empty slot chỉ đổi theo NỘI DUNG) ⇒ tick 1s KHÔNG relaunch app đang chạy trong ô (VdAppHost giữ nguyên). Off-car status ổn định (mọi field null) ⇒ không dựng lại thừa.</li>
+  <li><b>[QUYẾT ĐỊNH — media ngoài state :core] </b> <code>MediaSnapshot</code> có <code>Bitmap</code> (Android) ⇒ KHÔNG bỏ được vào <code>HomeUiState</code> (:core thuần). Media đọc live ở :app qua <code>WorkspaceView.mediaProvider = { MediaBridge.read() }</code> + transport <code>onMedia</code>→<code>MediaBridge</code>. Đây là ngoại lệ có chủ đích của UDF (chỉ media, vì ràng buộc :core-thuần); phần dữ liệu xe VẪN đi qua state.</li>
+  <li><b>[QUYẾT ĐỊNH — BỎ DemoCarData khỏi wire (OQ1)] </b> <code>AppContainer.carData/carControl/carStatusRepository</code> dựng từ <code>BydHalGateway</code> thật (off-car reflection trả null ⇒ "—"). <code>KachiHomeActivity</code> + <code>KachiTopStrip</code> KHÔNG còn tham chiếu <code>DemoCarData</code>; class GIỮ LẠI (chỉ định nghĩa trong WidgetViews.kt, KHÔNG trên đường wire) theo yêu cầu tương thích. Grep xác nhận DemoCarData chỉ còn ở dòng định nghĩa.</li>
+  <li><b>[QUYẾT ĐỊNH — CarControlPort mở rộng] </b> thêm <code>cover/select/press</code> vào interface (thay vì chỉ ở adapter) để <code>ControlDockView.control: CarControlPort</code> gọi đúng theo kind; <code>NoCar</code> off-car trả false (no-op). Tương thích ngược: <code>CarControlAdapterTest</code> (đã test cover/select/press) không đổi.</li>
+  <li><b>[QUYẾT ĐỊNH — màn Tuỳ biến 2 mặt] </b> (1) <b>nút</b>: <code>CustomizePanel</code> (mới) gom <code>ControlRegistry</code> theo <code>Domain</code> (<code>ControlPanels</code>) — ADAS(SAFETY)/chế-độ-lái(DRIVETRAIN)/HUD(INFOTAINMENT) là panel RIÊNG có tiêu đề, KHÔNG ẩn (OQ3); chạm = bật/tắt vào dock → <code>viewModel.toggleDock</code> → <code>WorkspacePrefs</code>. Mở qua pill "Tuỳ biến" ở thanh trên. (2) <b>widget</b>: <code>AppDrawer</code> (per-ô) thêm mục telemetry gom domain (<code>WidgetCatalog</code>) — chọn id telemetry → <code>SlotContent.Widget</code>, <code>WidgetViews</code> render generic. Bộ MẶC ĐỊNH §4.2 GIỮ (dock <code>defaultEnabledIds</code> 8 nút = khí-hậu/ghế/kính/cốp/đèn-đọc; HOME widget mặc định qua <code>PrefsWorkspaceRepository</code>).</li>
+  <li><b>Context7 (2026-09-10):</b> androidx.lifecycle 2.9.0 — <code>lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED){ flow.collect{} }</code> qua <code>lifecycleScope.launch</code> là mẫu THU AN TOÀN HIỆN HÀNH (nguồn <code>/androidx/androidx</code> lifecycle-runtime <code>RepeatOnLifecycle.kt</code>: start ở STARTED, cancel khi &lt;STARTED) — KHÔNG deprecated; <code>collectAsStateWithLifecycle</code> chỉ cho Compose (không dùng — view thuần). <code>StateFlow.collect</code> không hoàn tất ⇒ <code>finally { repo.stop() }</code> chạy khi cancel. Dep đã pin (:app: lifecycle-viewmodel-ktx/runtime-ktx 2.9.0 + coroutines 1.10.2) — 0 dep mới.</li>
+  <li><b>[ĐO]</b> <code>./gradlew test</code> (FULL 5 module) + <code>:app:assembleDebug</code> = <b>BUILD SUCCESSFUL</b> (2m4s); tổng <b>2299 test / 0 fail / 0 error</b>. Mới: TelemetryReadout 11 · LauncherCatalog 7 (:core) · AppContainer +2 · HomeViewModel +1 (:app). <code>LayeringRulesTest</code> XANH (<code>pureFilesStillInApp=0</code> — 2 file pure mới ở :core) · <code>LayoutVariantIdParityTest</code> XANH (KHÔNG đụng XML layout — UI thuần code) · <code>LauncherWindowingGuardTest</code> XANH (0 file launcher target display≥1). Grep: DemoCarData chỉ ở định nghĩa; write path 0 gate (chỉ comment "KHÔNG gate"). Mỗi file ≤ 500 LOC (WidgetViews 339 lớn nhất).</li>
+</ul>
+
+<h3>Stage 5 (W1 telemetry full-wire) — đóng khe ~46 datum "pickable nhưng render trống" — 2026-09-10 <span class="pill ok">DONE off-car</span></h3>
+<ul>
+  <li><b>Vấn đề (Pass 4 [P2]):</b> 46/123 telemetry <b>pickable nhưng CHƯA nối value</b> (thiếu field <code>CarStatus</code> + thiếu case <code>TelemetryReadout</code>) ⇒ hiện "—" <b>KỂ CẢ trên xe</b>, dù <code>bindingKey</code> resolve được. Owner yêu cầu MAXIMUM: mọi datum resolve được phải chảy giá trị.</li>
+  <li><b>Phân loại 46 khe (theo <code>routeOf(bindingKey)</code>):</b> <b>44 resolve được</b> (27 <code>Feature</code> id-số + 14 <code>NamedMethod</code> <code>BYDAuto…</code> + 1 <code>Setting</code> <code>unit_temperature</code>) → nối ĐỦ; <b>2 KHÔNG resolve</b> (<code>gps_elevation</code>/<code>gps_heading</code> = <code>NaviInfo.*</code> → <code>BindingRoute.None</code>) → chỉ thêm case đọc "—".</li>
+  <li><b>Nối ĐỦ (3 chỗ/datum, THUẦN :core):</b> (1) <b>+46 field</b> <code>CarStatus</code> — Energy +15 (fuelPct/evMileageKm/tripKm·Hours·Kwh/consumption50/chargingEtaHour/chargingState/chargerWorkState/battRangeBodyworkKm/cellTempHigh·Low·AvgC/cellVHigh·Low) · Drivetrain +5 (motorRearRpm/motorFrontTorqueNm/engineRpm/wheelSpeedKmh/driftMode) · Climate +3 (setTempC/coolantTempC/tempUnit) · Body +4 (tailgatePct/sunroofOpen/wiperOn/emergencyAlarm) · Lights +6 (rearFog/leftTurn/rightTurn/sideLight/ambientRearColorIndex/ambientRearBrightness) · Safety +10 (omsDriver·Passenger/lca·rcta·dow Left·Right/radarVolume/volt12vLevel) · Identity +3 (engineCoolantLevel/gpsElevation/gpsHeading). (2) <code>CarDataAdapter</code> đọc từng field qua <code>HalBindingTable</code> — 5 drivetrain vào nhịp NHANH (readFast dựng <code>Drivetrain</code> mới nên phải liệt kê đủ), còn lại nhịp CHẬM (energy.copy/climate/body/lights/safety.copy/identity). (3) <code>TelemetryReadout.of</code> map <b>đủ 123 id</b> → field → chữ (Int→số · Double→dec1/dec2 cell-V · Bool→onOff/yesNo/openShut · state→số thô · null→"—").</li>
+  <li><b>[QUYẾT ĐỊNH] <code>coolant_temp</code> (tier NEEDS_CAR) VẪN nối</b> vì <code>bindingKey</code> = <code>BYDAutoEngineDevice.getEngineCoolantTemp</code> resolve được (NamedMethod). Tier GIỮ NEEDS_CAR (không badge) — off-car "—", on-car hiện nếu trim có. Tách bạch: "nối" theo <b>binding resolvability</b>, "badge" theo <b>tier</b>. Tương tự <code>tyre_t_*</code> (NEEDS_CAR + Feature) đã nối từ trước.</li>
+  <li><b>[QUYẾT ĐỊNH] genuine NEEDS_CAR (route None) KHÔNG bịa đường đọc:</b> <code>gps_elevation/heading</code> thêm field + case (đối xứng <code>gps_lat/lon</code> sẵn có) nhưng đọc qua route None ⇒ luôn null ⇒ "—". <code>target_soc</code> (<code>SET_DR_SOC_TARGET</code>) giữ nguyên. 5 datum None = {gps_lat,gps_lon,gps_elevation,gps_heading,target_soc} là tập DUY NHẤT còn "—" sau khi nối đủ.</li>
+  <li><b>[QUYẾT ĐỊNH] state code (charging_state/charger_work_state/lca/rcta/dow/oms/radar_volume/12v_level) hiện SỐ THÔ</b> (chưa map enum→nhãn) — honest, on-car grab-list §9 sẽ gắn nhãn. cell-V dùng <code>dec2</code> (raw scale mV/V hiệu chỉnh sau).</li>
+  <li><b>KHÔNG split file</b> (đều &lt; 500 LOC sau khi thêm): <code>CarStatus.kt</code> 130→176 · <code>CarDataAdapter.kt</code> 132→178 · <code>TelemetryReadout.kt</code> 162→212. :core THUẦN giữ (0 android import).</li>
+  <li><b>Test:</b> <code>FakeHalGateway</code> +<code>settings</code> map (phủ route Setting <code>temp_unit</code>). <code>TelemetryReadoutTest</code>: thay test cũ "trip_km → —" (nay trip_km ĐÃ nối) bằng (a) genuine-None → "—" (gps/target_soc), (b) datum mới nối hiện giá trị khi field có, (c) <b>FULL WIRE E2E</b>: gateway giả trả "1" cho MỌI binding resolve được → chạy adapter thật (fast+slow) → khẳng định tập "—" còn lại = ĐÚNG tập route None (không hơn) + mọi datum resolve được đều available, (d) wired-tier (tier≠NEEDS_CAR) đều nạp được field. Chống tái diễn "pickable-but-blank".</li>
+  <li><b>[ĐO]</b> <code>./gradlew test :app:assembleDebug</code> = <b>BUILD SUCCESSFUL</b> (2m2s) · <b>2302 test / 0 fail / 0 error</b> (292 suite, +3 net so 2299). <code>LayeringRulesTest</code>/<code>LayoutVariantIdParityTest</code>/<code>LauncherWindowingGuardTest</code> rerun XANH. grep <code>SafetyGate</code>/gate ở :core launcher = RỖNG; 0 file &gt; 500 LOC. Coverage: <b>123/123 id có case <code>TelemetryReadout</code></b>; <b>118 datum nối value</b> (chảy end-to-end qua gateway giả) vs <b>5 NEEDS_CAR route-None</b> ("—" tới grab-list §9). KHÔNG đụng seal/MainActivity/appId/cast/input-daemon/XML layout.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="meta">(Append-only sau mỗi pass.)</p>
+<h3>Pass 1 (self, Stage 1 W1a) — 2026-09-10</h3>
+<ul>
+  <li><b>Scope W1a:</b> 5 deliverable ✅ — TelemetryRegistry (121 datum/8 domain), ControlRegistry mở rộng (65 nút/5 kind, tương thích ngược), CarStatus (nullable/8 domain), CarCapabilities (derived), WidgetShape+EvidenceTier. Test JVM: 100 test gói launcher (5 file mới) đều xanh.</li>
+  <li><b>Ràng buộc:</b> :core thuần (0 android import — CoreIsolationTest + LayeringRulesTest xanh) · KHÔNG gate (grep SafetyGate/safetyClass rỗng) · ≤500 LOC/file · bindingKey không rỗng (test khoá) · MIT clean-room (chỉ facts: tên method/id số).</li>
+  <li><b>Deviation ghi ở §9:</b> WidgetShape (né redeclaration WidgetKind); mở rộng ControlDef thay ControlSpec; id toàn cục duy nhất (đổi 2 id control trùng).</li>
+  <li><b>Còn lại cho Stage 2–4:</b> HAL binding (map bindingKey→named/fid), adapter, StateFlow poll, UI render theo kind/tier, senior review + security scan. (Senior review chính thức = Stage 4.)</li>
+</ul>
+<h3>Pass 2 (self, Stage 2 W1b+W1d) — 2026-09-10</h3>
+<ul>
+  <li><b>Scope W1b+W1d:</b> 5 deliverable ✅ — HalBindingTable (route named/fid/setting/local/none + sentinel + coerce + per-index arg + writeArgs) · CarDataAdapter (6-cũ + CarStatus build 2 nhịp, kPa→bar) · CarControlAdapter (toggle/step/cover/select/press, no-gate) · CarStatusRepository (StateFlow 2 nhịp, degrade-safe, stop sạch) · MediaBridge (MediaSessionManager → snapshot + transport). +37 test :core, +4 test :app.</li>
+  <li><b>Ràng buộc:</b> TÁI DÙNG BydHal (không reflection mới) · degrade-safe off-car (null/false, không throw) · KHÔNG gate (grep: chỉ CarDataAdapter đọc speed/gear làm telemetry, write path sạch) · KHÔNG đụng seal/MainActivity/appId/cast/input-daemon · MIT clean-room (chỉ facts: tên method/id số) · mỗi file ≤500 LOC.</li>
+  <li><b>Deviation (§9):</b> 4 file logic THUẦN dời <code>:app</code>→<code>:core</code> (luật Q1 LayeringRulesTest pureFilesStillInApp==0) — cổng-&amp;-adapter chuẩn, chỉ BydHalGateway+MediaBridge (chạm Android) ở :app; feature-id chọn device theo Domain (best-effort, grab-list §9); car-setting + AutoContainer-cast để null/no-op (grab-list / cast-owned).</li>
+  <li><b>Boundary (Stage 3 so khớp):</b> <code>StateFlow&lt;CarStatus&gt;</code> (contract handoff w1-stage2-done.md) · <code>MediaSnapshot</code>(title/artist/albumArt/positionMs/durationMs/playing) + play/pause/next/prev · <code>CarControlAdapter.act(id,arg)</code> theo ControlKind.</li>
+  <li><b>Còn lại:</b> Stage 3 UI render (widgetKind/ControlKind + tier badge + Tuỳ biến + wire AppContainer→ViewModel) · Stage 4 senior review + security scan + docs sync.</li>
+</ul>
+<h3>Pass 3 (self, Stage 3 W1c+W1e) — 2026-09-10</h3>
+<ul>
+  <li><b>Scope W1c+W1e:</b> 5 deliverable ✅ — (1) widget renderer generic theo <code>WidgetShape</code> (RING/GAUGE/DIAL/CARD/BOARD/STRIP/MEDIA/VALUE/BADGE) qua <code>TelemetryReadout</code>: null⇒"—"+mờ, tier OVERDRIVE/DASHCAST⇒badge "chưa kiểm", PROVEN⇒không; (2) control tile theo <code>ControlKind</code> (TOGGLE/STEP/COVER/SELECT/BUTTON) gọi <code>carControl</code>, KHÔNG gate; (3) <code>AppContainer</code> +carData/carControl/carStatusRepository (BydHalGateway thật, off-car "—"), BỎ DemoCarData khỏi wire; (4) <code>KachiHomeActivity</code> collect <code>StateFlow&lt;CarStatus&gt;</code> (repeatOnLifecycle)→<code>HomeUiState.carStatus</code> (UDF một chiều)→render, <code>dock.control=CarControlAdapter</code>; (5) màn Tuỳ biến (<code>CustomizePanel</code> nút theo domain + <code>AppDrawer</code> widget telemetry theo domain), bộ mặc định §4.2, ADAS/HUD/drive panel riêng (OQ3), persist WorkspacePrefs.</li>
+  <li><b>Boundary so khớp (E2E):</b> <code>HalBindingTable→CarDataAdapter→StateFlow&lt;CarStatus&gt;→HomeViewModel.setCarStatus→HomeUiState.carStatus→WorkspaceView.render→TelemetryReadout.of→TelemetryView.display</code> — field/kiểu/nullable khớp (test <code>TelemetryReadoutTest</code> trace soc/bool/double/list; off-car mọi field null⇒"—"). <code>ControlRegistry(kind)↔ControlDockView(render)↔CarControlAdapter(write)</code> — 5 kind khớp; <code>WidgetCatalog/ControlPanels</code> phủ đúng registry (test tổng == size).</li>
+  <li><b>Ràng buộc:</b> :core thuần (2 file pure mới TelemetryReadout/LauncherCatalog ở :core — <code>LayeringRulesTest pureFilesStillInApp=0</code> XANH) · KHÔNG đụng XML layout (<code>LayoutVariantIdParityTest</code> XANH) · KHÔNG gate (write path grep sạch) · KHÔNG đụng seal/MainActivity/appId/cast/input-daemon · ≤500 LOC/file (WidgetViews 339) · degrade-safe (off-car "—", không crash).</li>
+  <li><b>Deviation (§9):</b> media (<code>MediaSnapshot</code> có Bitmap) đọc live ở :app ngoài <code>HomeUiState</code> (:core thuần) — ngoại lệ UDF có chủ đích; <code>CarControlPort</code> mở rộng cover/select/press (NoCar impl); DemoCarData GIỮ class (chỉ định nghĩa, ngoài wire).</li>
+  <li><b>[ĐO]</b> full 5-module <b>2299/0/0</b> + <code>:app:assembleDebug</code> sạch. Còn lại: <b>Stage 4</b> senior review (opus) + security scan + docs sync (index/backlog/context/CREDITS). 🚗 on-car: verify feature-id/method theo trim (grab-list §9).</li>
+</ul>
+
+<h3>Pass 4 (senior) — 2026-09-10 · <span class="pill ok">APPROVED</span> (off-car milestone)</h3>
+<p class="meta">Senior architect review toàn bộ W1 (3 stage). Baseline đo lại thật: <code>./gradlew test :app:assembleDebug</code> = <b>BUILD SUCCESSFUL</b>, <b>2299 test / 0 fail / 0 error</b> (292 suite); 3 guard test chạy tươi (rerun) XANH; mọi file ≤ 500 LOC (lớn nhất WidgetViews 340).</p>
+
+<h4>Scope checklist (R1–R9 + W1a–f)</h4>
+<table>
+  <thead><tr><th>Mục</th><th>Verdict</th><th>Bằng chứng</th></tr></thead>
+  <tbody>
+    <tr><td>R1 registry-driven</td><td class="ok-t">PASS*</td><td>TelemetryRegistry 121 + ControlRegistry 65 = DATA; CarCapabilities derived; thêm 1 dòng ⇒ tự routable + pickable. *Ghi chú: hiện <b>1 giá trị LIVE mới</b> cần 4 chỗ (registry + CarStatus field + CarDataAdapter read + TelemetryReadout case), không phải 1 — xem [P2].</td></tr>
+    <tr><td>R2 HAL binding tier</td><td class="ok-t">PASS</td><td><code>routeOf</code> named/feature/setting/local/none; sentinel <code>-2147482648</code>/<code>-2147482645</code>→unavailable (test <code>isSentinelRc</code> + <code>sentinel read null</code>); <code>BydHalGateway</code> featureGet/namedInt tái dùng BydHal.</td></tr>
+    <tr><td>R3 tier honest, không bịa</td><td class="ok-t">PASS</td><td>PROVEN không badge; OVERDRIVE/DASHCAST badge "chưa kiểm"; null/off-car/sentinel → "—"+mờ (<code>TelemetryReadout</code>/<code>WidgetViews</code> alpha 0.5; test 11 <code>TelemetryReadoutTest</code>).</td></tr>
+    <tr><td>R4 widget tối đa</td><td class="warn-t">PASS-with-gap</td><td>Mọi <code>WidgetShape</code> render generic; bộ mặc định (curated w_*) 100% chạy; 121 telemetry đều pickable. ⚠ ~47 datum chưa nối value (xem [P2]).</td></tr>
+    <tr><td>R5 control tối đa</td><td class="ok-t">PASS</td><td>65 control, 5 kind render+route; ADAS/drive/HUD panel riêng; write path đủ named/feature/local/none; NEEDS_CAR → no-op tới grab-list.</td></tr>
+    <tr><td>R6 KHÔNG gate an toàn</td><td class="ok-t">PASS</td><td>grep <code>SafetyGate</code>/<code>safetyClass</code> = 0 trong source (chỉ docs); write path (CarControlAdapter/HalBindingTable) 0 đọc speed/gear/permit (grep sạch).</td></tr>
+    <tr><td>R7 tuỳ biến + mặc định</td><td class="ok-t">PASS</td><td><code>CustomizePanel</code> gom domain (ADAS/drive/HUD panel riêng, không ẩn) → <code>toggleDock</code>→WorkspacePrefs; <code>AppDrawer</code> telemetry pick theo domain; <code>defaultEnabledIds</code> giữ.</td></tr>
+    <tr><td>R8 live 2 nhịp</td><td class="ok-t">PASS</td><td><code>CarStatusRepository</code> fast 1s + slow 10s → <code>StateFlow&lt;CarStatus&gt;</code>; copy-merge giữ field chéo nhịp (test <code>slow preserves fast fields</code> + <code>fast cadence ticks more often</code>).</td></tr>
+    <tr><td>R9 ranh giới + kỷ luật</td><td class="ok-t">PASS</td><td>degrade-safe off-car (AppContainerTest null/false, 0 crash); :core thuần (<code>LayeringRulesTest pureFilesStillInApp=0</code>); mọi file ≤500 LOC; 0 đụng seal/MainActivity/appId/cast/input-daemon; MIT clean-room (chỉ FACT id/method).</td></tr>
+    <tr><td>W1a capability :core</td><td class="ok-t">PASS</td><td>CapabilityModel/TelemetryRegistry/CarStatus/CarCapabilities/ControlRegistry mở rộng + test.</td></tr>
+    <tr><td>W1b binding+flow</td><td class="ok-t">PASS</td><td>HalBindingTable + CarDataAdapter + CarControlAdapter + CarStatusRepository + FakeHalGateway; 37 test :core.</td></tr>
+    <tr><td>W1c UI render kind/shape</td><td class="ok-t">PASS</td><td>WidgetViews (shape RING/DIAL/…/BADGE) + ControlDockView (5 kind) + tier badge; wired qua HomeUiState.carStatus (UDF).</td></tr>
+    <tr><td>W1d media bridge</td><td class="ok-t">PASS</td><td>MediaBridge (MediaSessionManager→snapshot+transport); 4 test :app (pick/toSnapshot).</td></tr>
+    <tr><td>W1e wire + customize</td><td class="ok-t">PASS</td><td>AppContainer carData/carControl/carStatusRepository (BydHalGateway thật, off-car "—"); KachiHomeActivity collect repeatOnLifecycle→setCarStatus; DemoCarData off-wire (grep: chỉ định nghĩa).</td></tr>
+    <tr><td>W1f consolidate</td><td class="ok-t">PASS</td><td>Senior review (đây); security = diff W1 chỉ FACT id-số/CAN opcode + tên method (KHÔNG secret/PII); docs sync + CREDITS do orchestrator.</td></tr>
+  </tbody>
+</table>
+
+<h4>Tech freshness (Context7 2026-09-10)</h4>
+<table>
+  <thead><tr><th>Dependency</th><th>Dùng</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>kotlinx-coroutines 1.10.2</td><td><code>MutableStateFlow.update{}</code> · <code>asStateFlow()</code> · <code>isActive</code> · <code>cancel()</code></td><td class="ok-t">CURRENT — Context7: <code>update</code> = "atomic, safe for concurrent use"; mẫu private <code>_x</code>+<code>asStateFlow()</code>+<code>update{}</code> là mẫu ĐƯỢC KHUYẾN NGHỊ. 0 deprecated.</td></tr>
+    <tr><td>androidx.lifecycle 2.9.0</td><td><code>lifecycle.repeatOnLifecycle(STARTED){collect}</code></td><td class="ok-t">CURRENT — Context7 <code>RepeatOnLifecycle.kt</code>: start@STARTED / cancel-below / <code>finally</code> cancel job. Activity dùng <code>lifecycle</code> (không phải Fragment → lint viewLifecycleOwner N/A). <code>collectAsStateWithLifecycle</code> = Compose-only, ĐÚNG là KHÔNG dùng (view thuần). 0 deprecated.</td></tr>
+    <tr><td>android.media.session</td><td><code>MediaSessionManager.getActiveSessions</code> · <code>MediaController.getMetadata/getPlaybackState/transportControls</code></td><td class="ok-t">CURRENT — public framework API ổn định (API 21+, không deprecated).</td></tr>
+    <tr><td>(pre-existing) WindowManager.FLAG_FULLSCREEN</td><td>immersive KachiHomeActivity</td><td class="warn-t">DEPRECATED (framework) nhưng CODE CŨ (B5-era, KHÔNG do W1 thêm; W1 chỉ thêm collector carStatus), đã <code>@Suppress</code>. Ngoài scope W1 — [P3].</td></tr>
+  </tbody>
+</table>
+
+<h4>Boundary shape (đọc 2 đầu, so field-by-field, trace E2E)</h4>
+<table>
+  <thead><tr><th>Producer → Consumer</th><th>Field</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>HalBindingTable→CarDataAdapter→StateFlow→setCarStatus→HomeUiState→WidgetViews/KachiTopStrip</td><td><code>energy.soc: Int?</code> (trace E2E)</td><td class="ok-t">OK — Int? nhất quán mọi hop; off-car null ⇒ "—" (energyRing + refreshChips + TelemetryReadout).</td></tr>
+    <tr><td>=</td><td><code>drivetrain.speedKmh: Int?</code></td><td class="ok-t">OK — nhịp NHANH; WidgetViews.speed + TelemetryReadout("speed").</td></tr>
+    <tr><td>=</td><td><code>tyres.pFlKpa: Double?</code> (kPa thô)</td><td class="ok-t">OK — CarStatus giữ kPa; curated w_tire ÷100=bar; generic TelemetryReadout hiện kPa (biến đổi CÓ CHỦ ĐÍCH + document + test bar list).</td></tr>
+    <tr><td>=</td><td><code>safety.radarZones: List&lt;Int&gt;?</code></td><td class="ok-t">OK — readIntList→List&lt;Int&gt;?→joinToString; shape BOARD.</td></tr>
+    <tr><td>readFast/readSlow copy-merge</td><td><code>motorPowerKw</code> + <code>safety.speedLimitWarning/bsd*</code></td><td class="ok-t">OK — slow <code>energy.copy</code>/<code>safety.copy</code> GIỮ field nhịp nhanh (test <code>slow preserves fast fields</code>).</td></tr>
+    <tr><td>ControlRegistry(kind) ↔ ControlDockView ↔ CarControlPort ↔ CarControlAdapter ↔ HalBindingTable.write</td><td>5 kind TOGGLE/STEP/COVER/SELECT/BUTTON</td><td class="ok-t">OK — <code>when(def.kind)</code> phủ đủ 5; Port có đủ 5 method; primary 1/0·value·1/0·index·1; writeArgs suy args nhiều-arg (ghế/kính) đúng (test <code>seat</code>/<code>win_rr</code>).</td></tr>
+    <tr><td>TelemetryRegistry(bindingKey) ↔ HalBindingTable(routeOf)</td><td>121 bindingKey</td><td class="ok-t">OK — mỗi id có route (named/feature/setting) HOẶC None (command/GPS/UPPER_SNAKE → unavailable = đúng NEEDS_CAR).</td></tr>
+  </tbody>
+</table>
+<p class="meta">Không tìm thấy mismatch field/kiểu/nullable nào (đọc cả 2 đầu mọi hop).</p>
+
+<h4>Findings + fix</h4>
+<ul>
+  <li><b>[P3] FIXED</b> — <code>AppContainer.carScope</code> đổi <code>Dispatchers.Default</code>→<code>Dispatchers.IO</code>: vòng poll đọc HAL = reflection binder (IPC CHẶN) ⇒ thuộc pool IO, KHÔNG phải pool CPU (Default). Off-car (gateway null) hành vi y hệt; on-car tránh chiếm luồng CPU. Đã rerun: 2299/0/0 giữ nguyên, assembleDebug sạch.</li>
+  <li><b>[P2] KNOWN-GAP (on-car follow-up, KHÔNG block off-car)</b> — ~47/121 telemetry pickable nhưng CHƯA nối value (thiếu field CarStatus + case TelemetryReadout) ⇒ hiện "—" KỂ CẢ trên xe. Gồm vài widget R4 gọi tên: <b>trip-meter</b> (trip_km/hours/kwh) + <b>sức khoẻ pin</b> (cell V cao/thấp, nhiệt cell). Đây là <b>quyết định phân kỳ CÓ Ý THỨC + có test</b> (spec §9 "…trip/cell/… → —"; <code>TelemetryReadoutTest</code> khoá <code>trip_km → —</code> là hành vi MONG ĐỢI) — hiển thị "—"+badge "chưa kiểm" là ĐÚNG R3 (không bịa số), 0 crash, 0 boundary-break. Off-car mọi field "—" nên vô hình ở mốc này. <b>KHUYẾN NGHỊ on-car</b>: nối từng datum = thêm CarStatus field + CarDataAdapter read + TelemetryReadout case (cùng nhịp grab-list §9). Reviewer KHÔNG tự ép thêm 47 mapping — tôn trọng quyết định phân kỳ đã document + tránh phình file/regress trên baseline xanh; R4 "widget tối đa" đạt về KIẾN TRÚC + bộ mặc định 100% chạy.</li>
+  <li><b>[P3] note</b> — <code>AppContainer.carData</code> (CarDataPort 6-method) lộ nhưng KHÔNG còn trên wire (WorkspaceView nay dùng <code>carStatus</code> state); giữ làm compat + có test. Vô hại.</li>
+  <li><b>[P3] note</b> — <code>HalBindingTable.readArg("inside_temp")=0</code> là dead (inside_temp không nạp vào CarStatus). Vô hại (getter arg thừa).</li>
+  <li><b>[P3] note</b> — <code>MutableStateFlow.update</code> có thể chạy lambda reader >1 lần khi fast/slow đụng CAS ⇒ đọc HAL dư hiếm khi; đọc idempotent nên đúng. Không đáng tái cấu trúc.</li>
+  <li><b>Security (W1 diff)</b>: chỉ feature-id số + CAN opcode + tên method BYDAuto = FACT kỹ thuật, KHÔNG phải secret/PII; 0 key/token/credential; 0 ảnh/fixture PII thêm. → CLEAN.</li>
+</ul>
+
+<h4>VERDICT: <span class="pill ok">APPROVED</span></h4>
+<p class="meta">0 [P0]–[P1]; mọi boundary khớp shape (trace E2E); scope OFF-CAR đủ (W1a–e + R1–R9 cho mốc off-car theo §6 Verification). Fix [P3] Dispatchers.IO đã áp + verify (2299/0/0). Gap [P2] telemetry value-wiring = phân kỳ on-car CÓ Ý THỨC + có test + honest "—"+badge (không block mốc off-car; ghi rõ để owner thấy). Còn lại thuộc orchestrator: docs sync (index/backlog/context/CREDITS) + commit local (KHÔNG push).</p>
+
+<h3>Pass 5 (self, Stage 5 telemetry full-wire) — 2026-09-10</h3>
+<ul>
+  <li><b>Đóng [P2] Pass 4:</b> 46/123 datum "pickable-but-blank" → nay <b>118 nối value</b> + <b>5 route-None</b> ("—" honest). Trip-meter (trip_km/hours/kwh) + sức khoẻ pin (cell V cao/thấp, nhiệt cell) — hai widget R4 Pass 4 gọi tên — nay CHẢY GIÁ TRỊ trên xe (off-car vẫn "—").</li>
+  <li><b>Boundary so khớp (đọc 2 đầu, field-by-field):</b> mỗi id mới có <b>bộ ba khớp</b>: <code>CarStatus</code> field ↔ <code>CarDataAdapter</code> read(id) ↔ <code>TelemetryReadout</code> case(id→field). Trace E2E bằng test <b>FULL WIRE</b> (gateway giả "1" cho mọi route resolve được → adapter → readout): tập "—" còn lại == ĐÚNG tập <code>routeOf==None</code> ⇒ 0 field lệch, 0 case thiếu, 0 read thiếu. readFast dựng <code>Drivetrain</code> mới ⇒ đã kiểm 5 field drivetrain mới nằm TRONG readFast (không bị null mỗi nhịp nhanh).</li>
+  <li><b>Ràng buộc GIỮ:</b> :core THUẦN (0 android import; <code>LayeringRulesTest pureFilesStillInApp=0</code> XANH) · KHÔNG gate (grep RỖNG) · ≤500 LOC/file (lớn nhất TelemetryReadout 212) · KHÔNG mở reflection mới (đi qua <code>HalBindingTable</code>/<code>BydHalGateway</code> sẵn) · KHÔNG đụng seal/MainActivity/appId/cast/input-daemon/XML (<code>LayoutVariantIdParityTest</code>/<code>LauncherWindowingGuardTest</code> XANH) · MIT clean-room (chỉ FACT id-số/method).</li>
+  <li><b>Phân kỳ có ý thức:</b> (1) <code>coolant_temp</code> nối dù tier NEEDS_CAR (binding resolve được) — "nối" theo binding, "badge" theo tier; (2) state code hiện SỐ THÔ (enum→nhãn = grab-list §9); (3) cell-V dùng dec2 (scale hiệu chỉnh on-car); (4) route None (GPS/target_soc) KHÔNG bịa đường đọc — honest "—".</li>
+  <li><b>[ĐO]</b> full 5-module <b>2302/0/0</b> + <code>:app:assembleDebug</code> sạch; 3 guard rerun XANH; 123/123 id mapped. Security: diff Stage 5 chỉ thêm field/case/số-hằng — 0 secret/PII/credential → CLEAN. Còn lại thuộc orchestrator: docs sync (index/backlog/context) + commit local (KHÔNG push).</li>
+</ul>
+
+</div>
+</body>
+</html>

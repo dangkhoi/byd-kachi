@@ -14,6 +14,9 @@ package com.byd.clusternav.launcher
  * @property themeMode chế độ giao diện sáng/tối (chung mọi hồ sơ).
  * @property embedded cờ RUNTIME: app có đang nhúng vào ô qua VirtualDisplay/ActivityView không (dadb loopback hoặc ROM
  *   platform-signed). KHÔNG bền — do host quyết định lúc chạy. Off-car/emulator không dadb → false.
+ * @property carStatus ảnh chụp trạng thái xe LIVE (W1c) — do [CarStatusRepository] phát qua `StateFlow<CarStatus>`,
+ *   Activity thu (`repeatOnLifecycle`) rồi bơm vào đây (một chiều) để widget render THEO STATE (KHÔNG đọc port trực
+ *   tiếp trong view). KHÔNG bền (runtime; off-car mọi field null ⇒ widget "—"). Mặc định [CarStatus] rỗng.
  */
 data class HomeUiState(
     val workspace: WorkspaceState = WorkspaceState(),
@@ -22,6 +25,7 @@ data class HomeUiState(
     val profiles: List<String> = listOf(DEFAULT_PROFILE),
     val themeMode: ThemeMode = ThemeMode.NIGHT,
     val embedded: Boolean = false,
+    val carStatus: CarStatus = CarStatus(),
 ) {
     /** Preset bố cục hiện tại (tiện đọc, uỷ quyền [WorkspaceState.preset]). */
     val preset: LayoutPreset get() = workspace.preset
