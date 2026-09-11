@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi P9 bước nền — Model bố cục động 12×6</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi P9 bước nền — Model bố cục động 12×6</h1>
+<p class="muted">
+  <b>Trạng thái</b>: bước NỀN xong off-car · <b>Ngày</b>: 2026-09-11 · <b>Mã việc</b>: P9 (bước 1/3) ·
+  <b>Mục đích</b>: owner muốn <i>"tự vẽ từng khung theo lưới ⇒ mỗi người một launcher"</i>. Bước này làm <b>model +
+  kiểm tra + đổi sang pixel</b>, và <b>chứng minh</b> lưới có thể thay tầng vẽ về sau mà bố cục cũ không xê dịch.
+</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-11</td><td>Model lưới + kiểm tra + đổi pixel + phép chứng minh tương đương. Đo được <b>một sự thật đổi phạm vi</b>: bố cục "3 ô" <b>không</b> biểu diễn được trên lưới 12 cột (§2). Thử phá 5 phép, trong đó 1 phép lộ ra <b>nhánh dư thừa</b> đã bỏ.</td></tr>
+</table>
+
+<h2>2. Context — sự thật quyết định phạm vi</h2>
+<div class="card">
+Câu hỏi phải trả lời TRƯỚC khi viết code: <b>lưới THAY THẾ hay CỘNG THÊM vào 5 bố cục sẵn có?</b>
+Nếu 5 bố cục ấy chỉ là trường hợp riêng của lưới thì thay thế được; nếu không thì phải cộng thêm.
+</div>
+<table>
+<tr><th>Bố cục</th><th>Trên lưới 12×6</th><th>Kết quả</th></tr>
+<tr><td>1 ô</td><td>(0,0,12,6)</td><td class="ok">ĐÚNG — phủ 72/72 ô</td></tr>
+<tr><td>2 cột</td><td>6 + 6</td><td class="ok">ĐÚNG — phủ 72/72</td></tr>
+<tr><td>2 hàng</td><td>3 + 3</td><td class="ok">ĐÚNG — phủ 72/72</td></tr>
+<tr><td>4 ô</td><td>2×2</td><td class="ok">ĐÚNG — phủ 72/72</td></tr>
+<tr><td><b>3 ô</b></td><td>cột trái = <code>1.55/2.55 = 0.6078</code> bề ngang = <b>7.294 cột</b></td><td class="warn">KHÔNG — không phải số nguyên. Ép 7 cột lệch <b>2.45%</b> bề ngang; ép 8 cột lệch <b>5.88%</b></td></tr>
+</table>
+<p>
+  ⇒ <b>Kết luận: lưới là nguồn bố cục THÊM VÀO, không thay thế.</b> 5 bố cục sẵn có đã khớp pixel với prototype owner
+  duyệt và đã proven trên máy ảo; viết lại chúng bằng lưới sẽ <b>làm xấu đi đúng cái đang đúng</b>. Hàm tra bố cục
+  cũ sang lưới trả <b>rỗng</b> cho "3 ô" thay vì làm tròn — làm tròn âm thầm là đổi bố cục owner đã duyệt mà không ai
+  biết.
+</p>
+
+<h2>3. Phạm vi bước này</h2>
+<table>
+<tr><th></th><th>Làm</th><th>KHÔNG làm (để bước sau)</th></tr>
+<tr>
+  <td><b>Nội dung</b></td>
+  <td>Model khung theo ô · kiểm tra (đè / ra ngoài / nhỏ quá / rỗng) · đổi sang khung pixel · lưu bền · <b>phép chứng minh tương đương</b></td>
+  <td>Tầng vẽ · trình vẽ khung cho người dùng · nới trần số ô · nối vào hồ sơ tài xế</td>
+</tr>
+<tr>
+  <td><b>Vì sao chia</b></td>
+  <td colspan="2">Tầng vẽ là chỗ phần <b>chiếu app vào ô</b> đang sống, và nó vừa được sửa hai lỗi khó (cập nhật tăng dần, và app-không-hiện-lúc-mở). Đổi nền trước — <b>cộng thêm, không sửa gì cũ</b> — rồi đổi tầng vẽ sau, mỗi bước tự kiểm được. [ĐO] bước này chỉ thêm <b>2 file mới</b>, 0 file cũ bị sửa.</td>
+</tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Toạ độ theo Ô, không theo pixel</h3>
+<p>
+  Khung được khai bằng <b>ô lưới</b> (cột, dòng, số cột, số dòng). Pixel chỉ sinh ra lúc vẽ. Nhờ vậy bố cục người
+  dùng vẽ <b>không phụ thuộc cỡ màn</b> — cùng một bố cục dùng được trên màn khác cỡ, và lưu bền cũng không cần biết
+  màn nào.
+</p>
+<div class="diagram">
+<svg viewBox="0 0 620 200" role="img" aria-label="Lưới 12 cột 6 dòng với ba khung ví dụ">
+  <g stroke="var(--line)" stroke-width="1">
+    <!-- lưới -->
+    <g>
+      <line x1="20" y1="20" x2="20" y2="180"/><line x1="70" y1="20" x2="70" y2="180"/>
+      <line x1="120" y1="20" x2="120" y2="180"/><line x1="170" y1="20" x2="170" y2="180"/>
+      <line x1="220" y1="20" x2="220" y2="180"/><line x1="270" y1="20" x2="270" y2="180"/>
+      <line x1="320" y1="20" x2="320" y2="180"/><line x1="370" y1="20" x2="370" y2="180"/>
+      <line x1="420" y1="20" x2="420" y2="180"/><line x1="470" y1="20" x2="470" y2="180"/>
+      <line x1="520" y1="20" x2="520" y2="180"/><line x1="570" y1="20" x2="570" y2="180"/>
+      <line x1="620" y1="20" x2="620" y2="180"/>
+      <line x1="20" y1="20" x2="620" y2="20"/><line x1="20" y1="47" x2="620" y2="47"/>
+      <line x1="20" y1="74" x2="620" y2="74"/><line x1="20" y1="101" x2="620" y2="101"/>
+      <line x1="20" y1="128" x2="620" y2="128"/><line x1="20" y1="155" x2="620" y2="155"/>
+      <line x1="20" y1="180" x2="620" y2="180"/>
+    </g>
+  </g>
+  <rect x="22" y="22" width="346" height="104" rx="5" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+  <text x="195" y="78" text-anchor="middle" font-size="12" fill="var(--accent)">khung 1 — (0,0,7,4)</text>
+  <rect x="372" y="22" width="246" height="50" rx="5" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+  <text x="495" y="52" text-anchor="middle" font-size="12" fill="var(--accent)">(7,0,5,2)</text>
+  <rect x="372" y="76" width="246" height="102" rx="5" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+  <text x="495" y="131" text-anchor="middle" font-size="12" fill="var(--accent)">(7,2,5,4)</text>
+  <rect x="22" y="130" width="346" height="48" rx="5" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="195" y="158" text-anchor="middle" font-size="11.5" fill="var(--muted)">còn trống — hợp lệ, không phải lỗi</text>
+</svg>
+</div>
+
+<h3>4.2 Luật kiểm tra — cái gì là lỗi, cái gì không</h3>
+<table>
+<tr><th>Tình huống</th><th>Xử lý</th><th>Vì sao</th></tr>
+<tr><td>Hai khung <b>đè nhau</b></td><td class="warn">LỖI — và nói <b>đích danh cặp nào</b></td><td>Trình vẽ cần biết tô đỏ khung nào; "bố cục không hợp lệ" thì người dùng không biết sửa đâu.</td></tr>
+<tr><td>Khung <b>ra ngoài lưới</b></td><td class="warn">LỖI</td><td>—</td></tr>
+<tr><td>Khung <b>nhỏ quá</b> (dưới 2×1 ô)</td><td class="warn">LỖI</td><td>1 cột ≈ 160px trên màn 1920 — không hiện nổi thứ gì có nghĩa. Giới hạn <b>dùng được</b>, không phải giới hạn kỹ thuật.</td></tr>
+<tr><td><b>Còn ô trống</b></td><td class="ok">KHÔNG phải lỗi</td><td>Để chỗ trống là <b>quyền của người dùng</b> (nền vẫn hiện ra ở đó). Backlog xếp nó vào mục kiểm tra, nhưng chặn vì lý do này là ép người dùng phủ kín màn. Vẫn <b>báo được</b> còn bao nhiêu ô trống cho trình vẽ hiển thị.</td></tr>
+</table>
+
+<h3>4.3 Phép chứng minh tương đương — chỗ chịu lực</h3>
+<div class="card">
+Nếu không chứng minh được thì việc đổi tầng vẽ sang lưới là <b>đánh cược</b>: bố cục người dùng có thể xê dịch mà
+không ai phát hiện. Nên có một test quét <b>4 bố cục × 5 cỡ màn × 5 khe hở = 100 tổ hợp</b>, đòi khung pixel ra
+<b>ĐÚNG TỪNG PIXEL</b> so với cách tính hiện tại. Có cả cỡ lẻ (1921×1081, 777×333) và khe lẻ (1, 7, 23) để bắt lỗi
+làm tròn.
+</div>
+<p>
+  <b class="warn">[ĐO] Phép chứng minh đã bắt lỗi ngay lần chạy đầu</b>: bản đầu tôi dùng <b>làm tròn</b>, cách tính
+  hiện tại dùng <b>chia số nguyên (cắt)</b> ⇒ lệch <b>1 pixel</b> ở bố cục 2 cột, màn 1920 khe 1 (959 so với 960).
+  Hình học thì giống nhau, chỉ quy tắc làm tròn khác — và 1 pixel là đủ để bố cục xê dịch. Đã đổi sang cắt.
+</p>
+
+<h2>5. Verification</h2>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td>Tương đương từng pixel</td><td>4 bố cục × 5 cỡ × 5 khe = 100 tổ hợp</td><td><span class="pill ok">đạt</span> khớp toàn bộ</td></tr>
+<tr><td>Bố cục "3 ô"</td><td>Tra sang lưới</td><td><span class="pill ok">trả rỗng đúng như thiết kế</span> — nói thẳng là không biểu diễn được</td></tr>
+<tr><td>Kiểm tra bố cục</td><td>Đè · ra ngoài · nhỏ quá · rỗng · còn trống</td><td><span class="pill ok">16 test, 0 lỗi</span></td></tr>
+<tr><td>Đủ 5 module</td><td><code>./gradlew test --continue</code></td><td><span class="pill ok">2563 / 0</span> (đầu phiên 2547 ⇒ <b>+16</b>)</td></tr>
+<tr><td>Không chạm gì cũ</td><td><code>git status</code></td><td><span class="pill ok">đạt</span> chỉ <b>2 file MỚI</b> ở <code>:core</code>; 0 file cũ bị sửa</td></tr>
+<tr><td>Thử phá</td><td>5 phép</td><td><span class="pill ok">4/5 đỏ đúng chỗ, 1 phép lộ NHÁNH DƯ</span>: làm tròn thay vì cắt ⇒ đỏ · cho "3 ô" làm tròn thành 7 cột ⇒ 2 đỏ · bỏ phép bắt đè nhau ⇒ đỏ · coi "còn ô trống" là lỗi ⇒ đỏ · <b>bỏ nhánh "khung sát mép" ⇒ 0 đỏ</b> ⇒ nhánh đó <b>dư thừa</b> (xem §6)</td></tr>
+</table>
+
+<h2>6. Nhật ký triển khai</h2>
+<p><b>Một nhánh dư thừa do thử phá lộ ra</b> — lần thứ hai trong hai phiên:</p>
+<p>
+  Tôi viết thêm nhánh đặc biệt <i>"khung sát mép thì lấy trọn bề rộng"</i> để mép phải/dưới không hở. Thử phá bỏ
+  nhánh đó ⇒ <b>0 test đỏ</b>. Soi ra: công thức <b>đã tự</b> cho ra đúng mép, và chứng minh được:
+  <code>edge(count) = inner + count·gap</code>, mà <code>inner = total − (count−1)·gap</code>, nên
+  <code>edge(count) − gap = total</code> — đúng cả với chia số nguyên vì <code>count·inner</code> chia hết cho
+  <code>count</code>.
+</p>
+<p>
+  Đã <b>bỏ nhánh</b> và thay bằng test khoá <b>chính tính chất</b> đó (quét 5 cỡ × 5 khe). Chứng minh tính chất tốt
+  hơn viết một ca đặc biệt để né nó — và nó giải thích cho người đọc sau <b>vì sao</b> không cần ca đặc biệt.
+</p>
+<p><b>Quyết định:</b></p>
+<ul>
+  <li><b>Lưới cộng thêm, không thay thế</b> (§2) — vì "3 ô" không biểu diễn đúng được.</li>
+  <li><b>Toạ độ theo ô</b>, pixel chỉ sinh lúc vẽ ⇒ bố cục không phụ thuộc cỡ màn.</li>
+  <li><b>"Còn ô trống" không phải lỗi</b> — lệch với cách backlog liệt kê, nhưng chặn vì lý do đó là ép người dùng phủ kín màn.</li>
+  <li><b>Chuỗi lưu tự đọc được</b> (<code>0,0,7,4;7,0,5,6</code>) thay vì gói lại: bố cục là thứ người dùng bỏ công vẽ, cần cứu bằng tay thì đọc được quan trọng hơn tiết kiệm byte.</li>
+  <li><b>Không chạm trần số ô</b> ở bước này — đổi trần là đổi định dạng lưu, thuộc bước sau.</li>
+</ul>
+
+<h2>7. Bước còn lại của P9</h2>
+<table>
+<tr><th>Bước</th><th>Nội dung</th><th>Rủi ro</th></tr>
+<tr><td>2</td><td><b>Trình vẽ khung</b> cho người dùng (kéo để tạo/đổi cỡ, hiện ô trống, tô đỏ chỗ đè)</td><td>UX là phần tốn công nhất; cần đo trên máy ảo bằng chạm thật</td></tr>
+<tr><td>3</td><td><b>Nối vào tầng vẽ + hồ sơ</b>: nới trần số ô, lưu bố cục theo hồ sơ, sắp lại app khi đổi bố cục</td><td><b>Cao</b> — đụng chỗ chiếu app vào ô. Nhờ phép chứng minh ở bước 1 mà rủi ro giảm hẳn: bố cục cũ đã được bảo đảm không xê dịch</td></tr>
+</table>
+
+<h2>8. Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mặc định</th></tr>
+<tr><td>OQ1</td><td>Khung tối thiểu <b>2×1 ô</b> có hợp không? (1 cột ≈ 160px trên màn 1920)</td><td>Giữ 2×1. Đặt một chỗ, đổi một dòng.</td></tr>
+<tr><td>OQ2</td><td>Bố cục "3 ô" không lên lưới được — có muốn <b>thêm một bố cục sẵn mới</b> gần giống nó mà đúng lưới (7+5 cột) không?</td><td><b>Không tự thêm.</b> Nó khác bố cục owner đã duyệt 2.45% bề ngang; thêm mà không hỏi là tự ý đổi thứ owner đã chốt.</td></tr>
+<tr><td>OQ3</td><td>Có cho người dùng <b>đặt tên</b> bố cục tự vẽ không?</td><td>Có, ở bước 3 khi nối vào hồ sơ.</td></tr>
+</table>
+
+<h2>9. References</h2>
+<ul>
+  <li><code>docs/PROJECT-BACKLOG.md</code> — P9 (kèm phần đánh giá khả thi).</li>
+  <li><code>docs/prototypes/kachi-workspace.html</code> — prototype owner đã duyệt, nguồn của 5 bố cục sẵn có.</li>
+  <li><code>docs/specs/kachi-open-app-correctly.html</code> — hai lỗi khó ở tầng vẽ, lý do bước này không chạm vào đó.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Chưa có lượt soát độc lập (tác nhân soát hỏng nhiều lần các phiên gần đây). Bù lại: phép chứng minh
+tương đương 100 tổ hợp + 5 phép thử phá, trong đó 1 phép tìm ra nhánh dư đã bỏ.</p>
+
+</div>
+</body>
+</html>

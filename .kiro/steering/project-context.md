@@ -45,6 +45,15 @@
 
 ## 5. Trạng thái (2026-09-10)
 
+- **2026-09-11 (chiều) · P9 BƯỚC NỀN — model bố cục động 12×6, DONE off-car.** Spec `docs/specs/kachi-dynamic-grid.html`. **[ĐO] 2563/0** (đầu phiên 2547 ⇒ **+16**); chỉ **2 file MỚI** ở `:core`, **0 file cũ bị sửa**.
+  - **Cố ý chia 3 bước**: bước 1 = model thuần (làm rồi) · bước 2 = trình vẽ khung · bước 3 = nối tầng vẽ + hồ sơ + nới trần ô. Lý do: tầng vẽ là chỗ **chiếu app vào ô** đang sống và vừa sửa hai lỗi khó (P-bug1, P-bug2) ⇒ đổi nền trước theo kiểu **cộng thêm, không sửa gì cũ**.
+  - ⚠⚠ **[ĐO] SỰ THẬT ĐỔI PHẠM VI**: bố cục **"3 ô" KHÔNG biểu diễn được** trên lưới 12 cột — cột trái của nó `1.55/2.55 = 0.6078` bề ngang = **7.294 cột**, không phải số nguyên (ép 7 lệch **2.45%**, ép 8 lệch **5.88%**). 4/5 bố cục còn lại thì ĐÚNG (phủ 72/72 ô). ⇒ **lưới là nguồn CỘNG THÊM, KHÔNG thay thế**; `fromPreset(THREE)` trả **null** thay vì làm tròn (làm tròn âm thầm = đổi bố cục owner đã duyệt mà không ai biết).
+  - **PHÉP CHỨNG MINH CHỊU LỰC**: test quét **4 bố cục × 5 cỡ màn × 5 khe hở = 100 tổ hợp**, đòi khung pixel ra **ĐÚNG TỪNG PIXEL** như `WorkspaceLayout`. Không có nó thì đổi tầng vẽ ở bước 3 là đánh cược. [ĐO] nó **bắt lỗi ngay lần chạy đầu**: tôi dùng **làm tròn**, code cũ dùng **chia số nguyên (cắt)** ⇒ lệch 1 pixel ở 2-cột/1920/khe-1 (959 vs 960). Hình học giống nhau, chỉ quy tắc làm tròn khác.
+  - **Luật kiểm tra**: đè nhau / ra ngoài lưới / nhỏ hơn 2×1 ô = **LỖI** (đè thì nói ĐÍCH DANH cặp nào để trình vẽ tô đỏ); **"còn ô trống" KHÔNG phải lỗi** (lệch với cách backlog liệt kê — chặn vì lý do đó là ép người dùng phủ kín màn), vẫn báo được số ô trống.
+  - **[ĐO] thử phá 5 phép: 4 đỏ đúng chỗ, 1 phép lộ NHÁNH DƯ THỪA** — nhánh "khung sát mép thì lấy trọn bề rộng" bỏ đi mà 0 test đỏ ⇒ công thức đã tự cho ra đúng mép, **chứng minh được**: `edge(count) − gap = total` (đúng cả với chia số nguyên). Đã bỏ nhánh + thay bằng test khoá **chính tính chất**. Lần thứ hai trong hai phiên thử phá tìm ra code chết.
+  - **Toạ độ theo Ô, không theo pixel** ⇒ bố cục không phụ thuộc cỡ màn; chuỗi lưu **tự đọc được** (`0,0,7,4;7,0,5,6`) để cứu dữ liệu bằng tay được.
+  - **Chưa có lượt soát độc lập** (tác nhân soát hỏng nhiều phiên gần đây).
+
 - **2026-09-11 (trưa) · P8 VÒNG KIỂM QUYỀN — DONE off-car.** Spec `docs/specs/kachi-permission-preflight.html`. **[ĐO] 2535/0** (đầu phiên 2503 ⇒ **+32**), APK sạch.
   - **Vì sao làm**: backlog ghi *"làm sớm giúp giảm nhiễu khi test trên xe"* — nợ-trên-xe là nút thắt lớn nhất. [ĐO] trước đó kiểm quyền **rải rác 5 chỗ**, không có nơi tập trung ⇒ người dùng chỉ biết thiếu quyền khi tính năng **im lặng không chạy**.
   - **6 điều kiện** gom về `LauncherRequirements` (:core thuần) + `PermissionPreflight` (:app đọc/cấp): đọc thông báo · trợ năng · vẽ overlay · cờ cửa sổ tự do · kênh shell · là màn hình chính. Luật: **đủ thì IM LẶNG** · **tự xin lại** cái tự xin được (không hỏi) · **KHÔNG chặn launcher** · **KHÔNG chỉ tới màn cài đặt** ([ĐO] màn đó khoá trên xe: *"Hệ thống IVI không hỗ trợ hoạt động này"*).
