@@ -126,8 +126,12 @@ object WidgetViews {
      * ([CapabilityCatalog.isWrite] hỏi đúng bộ đó) — vẫn giữ suy giảm an toàn cũ cho chắc, không sập.
      */
     private fun actionTile(ctx: Context, id: String, data: WidgetData, size: TileSize): View {
-        val def = ControlRegistry.byId(id) ?: return label(ctx, id.uppercase(), "—", "")
-        val tile = ControlTileFactory(ctx, control = { data.control }, size = size).actionTile(def)
+        // Gói lệnh (W2) cũng là HÀNH ĐỘNG ⇒ đặt được trong ô giữa màn như mọi nút khác. Đi qua CÙNG lớp đệm với ô nút
+        // (bản đầu trả ô trần ⇒ ô gói lệnh dính sát mép khung trong khi ô nút bên cạnh có đệm 12dp).
+        val factory = ControlTileFactory(ctx, control = { data.control }, size = size)
+        val tile = ActionMacros.byId(id)?.let { factory.macroTile(it) }
+            ?: ControlRegistry.byId(id)?.let { factory.actionTile(it) }
+            ?: return label(ctx, id.uppercase(), "—", "")
         val pad = if (size == TileSize.BIG) dpi(ctx, 12) else 0
         return FrameLayout(ctx).apply {
             setPadding(pad, pad, pad, pad)

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
+import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -15,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * BỘ DỰNG Ô DÙNG CHUNG (RW0 · spec `kachi-unified-capability-tile.html` §4.2/§4.3 việc 3).
@@ -130,6 +132,77 @@ class ControlTileFactory(
         }
     }
 
+    // ── GÓI LỆNH (W2) ───────────────────────────────────────────────────────────────────────────────────
+    /**
+     * Ô cho một GÓI LỆNH — bấm một phát, chạy nhiều lệnh theo thứ tự.
+     *
+     * Trông như ô bấm-một-phát (không có trạng thái bật/tắt vì gói không có trạng thái), nhưng:
+     *  • chạy trên **thread nền**: gói có chờ giữa các bước (mặc định 400 ms/bước) nên chạy trên thread chính sẽ
+     *    treo giao diện đúng bằng tổng thời gian chờ;
+     *  • **chống bấm kép**: gói đang chạy thì bấm thêm không xếp thêm lượt — bắn hai lượt "đóng hết kính" chồng nhau
+     *    là cách chắc chắn để một lệnh bị bỏ;
+     *  • mỗi bước đi qua **đúng cửa theo kiểu nút** ([actByKind]) — KHÔNG bắn tất cả qua `toggle`, xem KDoc của
+     *    [actByKind] để biết vì sao cách kia sai;
+     *  • kết quả ghi ra nhật ký kèm ĐÍCH DANH bước hỏng (bộ chạy thuần đã trả về danh sách đó).
+     */
+    fun macroTile(macro: ActionMacro): View {
+        val tile = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
+        }
+        val r = KachiTheme.iconRes(macro.icon)
+        val icon = ImageView(ctx).apply { if (r != 0) setImageResource(r) }
+        tile.addView(icon, LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp)))
+        val label = TextView(ctx).apply {
+            text = macro.label; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp)
+            gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+        }
+        tile.addView(label)
+        applyBg(tile, false); tint(icon, label, true)
+
+        val running = AtomicBoolean(false)
+        tile.setOnClickListener {
+            if (!running.compareAndSet(false, true)) return@setOnClickListener
+            applyBg(tile, true); tint(icon, label, true)
+            val port = control()
+            Thread({
+                var res: MacroResult? = null
+                try {
+                    res = MacroRunner.run(
+                        macro,
+                        emit = { id, arg -> runCatching { port.actByKind(id, arg) }.getOrDefault(false) },
+                        sleep = { ms -> runCatching { Thread.sleep(ms) } },
+                    )
+                    Log.i(TAG_MACRO, "${macro.id}: ${res.summary()}")
+                } catch (t: Throwable) {
+                    Log.w(TAG_MACRO, "${macro.id}: hỏng giữa lượt chạy", t)
+                } finally {
+                    // Nhả cờ NGAY TRÊN THREAD NÀY, KHÔNG nhả bên trong `tile.post`: `View.post` gọi trên view đã bị
+                    // `removeView` (đổi bố cục / dựng lại ô giữa lúc gói đang chạy) chỉ XẾP HÀNG chờ lần gắn lại —
+                    // có thể KHÔNG BAO GIỜ tới ⇒ cờ kẹt `true`, ô chết hẳn, bấm mãi không chạy nữa. Việc phục hồi
+                    // giao diện thì vẫn phải về thread chính nên để trong `post`.
+                    running.set(false)
+                    val done = res
+                    tile.post {
+                        runCatching {
+                            applyBg(tile, false); tint(icon, label, true)
+                            // Gói vừa GHI THẬT vào các nút bật/tắt ⇒ ghi lại vào bảng trạng thái DÙNG CHUNG, không
+                            // thì ô "Đèn đọc" vẫn sáng sau khi gói "Rời xe" đã tắt đèn — hai bề mặt nói hai điều về
+                            // MỘT cái xe, đúng thứ [ControlTileState.shared] sinh ra để tránh. Chỉ ghi bước ĂN và
+                            // chỉ với TOGGLE (COVER/STEP/SELECT không giữ cờ bật/tắt trong ô).
+                            macro.steps.zip(done?.results ?: emptyList()).forEach { (step, sr) ->
+                                if (sr.ok && ControlRegistry.byId(step.controlId)?.kind == ControlKind.TOGGLE) {
+                                    state.setOn(step.controlId, step.arg > 0)
+                                }
+                            }
+                        }
+                    }
+                }
+            }, "macro-${macro.id}").start()
+        }
+        return if (macro.needsBadge()) withBadge(tile) else tile
+    }
+
     // ── ĐỌC ─────────────────────────────────────────────────────────────────────────────────────────────
     /**
      * Ô CHỈ-XEM cho [pick]: icon + nhãn + số + đơn vị. **KHÔNG gắn `setOnClickListener`** — thông tin đọc không
@@ -212,6 +285,9 @@ class ControlTileFactory(
 
     private companion object {
         const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
+
+        /** Thẻ nhật ký của gói lệnh — một chỗ để `adb logcat -s ActionMacro` bắt đủ cả lượt chạy lẫn lượt hỏng. */
+        const val TAG_MACRO = "ActionMacro"
     }
 }
 

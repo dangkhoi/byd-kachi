@@ -68,7 +68,13 @@ class ControlDockView(context: Context) : LinearLayout(context) {
         removeAllViews(); readTiles.clear()
         config.enabled.forEach { id ->
             when (CapabilityCatalog.kindOf(id)) {
-                CapabilityKind.WRITE -> ControlRegistry.byId(id)?.let { addView(sized(tiles.actionTile(it))) }
+                CapabilityKind.WRITE -> {
+                    // Mã HÀNH ĐỘNG có thể là NÚT ĐƠN hoặc GÓI LỆNH (W2). Thiếu nhánh gói lệnh thì ô sẽ không hiện
+                    // gì cả mà cũng không báo lỗi — người dùng bật vào thanh rồi tưởng hỏng.
+                    val def = ControlRegistry.byId(id)
+                    if (def != null) addView(sized(tiles.actionTile(def)))
+                    else ActionMacros.byId(id)?.let { addView(sized(tiles.macroTile(it))) }
+                }
                 CapabilityKind.READ -> CapabilityCatalog.pick(id)?.let { pick ->
                     val tile = tiles.readTile(pick)
                     tile.bind(readout(id))

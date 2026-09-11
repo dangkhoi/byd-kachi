@@ -44,6 +44,28 @@ interface CarControlPort {
 }
 
 /**
+ * ĐỊNH TUYẾN MỘT HÀNH ĐỘNG tới **đúng cửa** của [CarControlPort] theo [ControlDef.kind] — MỘT bảng định tuyến duy
+ * nhất cho cả dự án ([CarControlAdapter.act] uỷ quyền về đây).
+ *
+ * [arg] theo kind: TOGGLE 1/0 · STEP giá trị · COVER 1(mở)/0(đóng) · SELECT chỉ số · BUTTON bỏ qua (luôn bấm).
+ * Mã lạ ⇒ `false` (không sập).
+ *
+ * ⚠ Vì sao phải có: chỗ gọi chỉ giữ **interface** (vd ô gói lệnh ở `:app` nhận `() -> CarControlPort`) nên không tới
+ * được [CarControlAdapter.act]. Thiếu hàm này thì chỗ gọi sẽ tự chọn một cửa — [ĐO] 2026-09-11: ô gói lệnh từng bắn
+ * MỌI bước qua [CarControlPort.toggle], tức bước trỏ nút STEP (nhiệt/quạt) bị nén thành 1/0, bước SELECT mất chỉ số,
+ * bước BUTTON có `arg=0` thì **không bấm gì cả**. Bốn gói đang khai chỉ dùng TOGGLE/COVER với 1/0 nên chưa lộ ra
+ * (`toggle` và `cover` ghi cùng một giá trị) — đúng loại lỗi ngủ đông tới gói lệnh thứ năm.
+ */
+fun CarControlPort.actByKind(id: String, arg: Int): Boolean = when (ControlRegistry.byId(id)?.kind) {
+    ControlKind.TOGGLE -> toggle(id, arg > 0)
+    ControlKind.STEP -> step(id, arg)
+    ControlKind.COVER -> cover(id, arg > 0)
+    ControlKind.SELECT -> select(id, arg)
+    ControlKind.BUTTON -> press(id)
+    null -> false
+}
+
+/**
  * Mặc định OFF-CAR / EMULATOR: không freeform, dữ liệu null ("—"), điều khiển no-op.
  * Nhờ [NoCar], toàn bộ vỏ launcher chạy + test được mà không cần xe.
  */

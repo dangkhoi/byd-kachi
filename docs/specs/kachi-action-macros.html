@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi gói 3 — Gói lệnh (một nút chạy nhiều việc)</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi gói 3 — Gói lệnh: một nút chạy nhiều việc</h1>
+<p class="muted">
+  <b>Trạng thái</b>: Draft — chờ owner duyệt · <b>Ngày</b>: 2026-09-11 · <b>Mã việc</b>: W2 (phần lớp gộp lệnh) ·
+  <b>Mục đích</b>: owner muốn <i>"mở cửa + tắt/mở đèn"</i> bằng MỘT nút, và muốn <i>"tất cả"</i> / <i>"½ tất cả"</i>
+  có nghĩa thật. Hiện code <b>không có</b> khái niệm chạy nhiều lệnh từ một nút.
+</p>
+<p class="muted">Nền dùng lại: ô khả năng hợp nhất (gói 2) — gói lệnh sẽ là một loại khả năng, nên tự động đặt được ở
+cả 3 vùng mà không cần code đặt-chỗ mới.</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-11</td><td>Lập thiết kế sau khi ĐỌC bộ đăng ký thật (64 nút). Đo được 3 sự thật quyết định phạm vi (§2.2), trong đó <b>một nút đang bị đặt tên sai</b> và <b>một yêu cầu của owner chưa làm được off-car</b>. Xác minh cách chạy nền qua Context7.</td></tr>
+</table>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Owner muốn gì (backlog W2, nguyên văn 7 hành động)</h3>
+<div class="card">
+cốp · đèn ban ngày · đèn đọc (tất cả) · kính ½ tất cả · kính mở hết · bảo trì gạt mưa · <b>"mở cửa + tắt/mở đèn"</b>
+</div>
+
+<h3>2.2 Ba sự thật đã ĐO trong bộ đăng ký (64 nút)</h3>
+<table>
+<tr><th>#</th><th>Sự thật</th><th>Bằng chứng</th><th>Hệ quả</th></tr>
+<tr>
+  <td>Đ1</td>
+  <td><b>Không có khái niệm gộp lệnh nào trong code.</b> Mọi nút là một lệnh, bấm một phát.</td>
+  <td>Không có lớp/kiểu nào mang nghĩa chuỗi-lệnh; mọi đường ghi đều là <code>write(id, primary)</code> đơn lẻ</td>
+  <td>Đây là <b>phần thật sự phải làm</b> — và là thứ khiến yêu cầu số 7 của owner hiện không thể có.</td>
+</tr>
+<tr>
+  <td>Đ2</td>
+  <td><b>Nút ghi nhãn "Kính 50%" KHÔNG làm 50%.</b> Nó ghi <b>đúng cùng một lệnh</b> với nút "Kính trước-trái": mở/đóng cửa lái, chỉ có 2 trạng thái.</td>
+  <td>Cả hai cùng <code>setBodyWindowCtrlState</code>; bảng dựng tham số cho cả hai đều ra <code>[1, state]</code> — <b>giống từng phần tử</b></td>
+  <td><b>Nhãn sai, phải sửa.</b> Người dùng bấm tưởng nửa kính, thực tế mở hẳn kính cửa lái.</td>
+</tr>
+<tr>
+  <td>Đ3</td>
+  <td><b>Đọc được</b> độ mở kính theo phần trăm (mức đã chạy trên xe), nhưng <b>không có lệnh GHI</b> phần trăm, cũng chưa biết có lệnh <i>dừng giữa hành trình</i> không.</td>
+  <td>Có 4 mục đọc <code>getWindowOpenPercent</code> tier đã-chạy-trên-xe; phía ghi chỉ có đóng/mở (0/1) và lệnh gộp 4 kính</td>
+  <td><b>"Kính ½ tất cả" KHÔNG làm được off-car.</b> Có đường đi khả thi (mở → đọc phần trăm → dừng ở ~50%) nhưng cần biết lệnh dừng ⇒ <b>việc trên xe</b>.</td>
+</tr>
+</table>
+
+<h3>2.3 Đối chiếu 7 hành động owner nêu với thực tế</h3>
+<table>
+<tr><th>Owner muốn</th><th>Hiện có gì</th><th>Gói này làm gì</th></tr>
+<tr><td>Cốp</td><td>Nút cốp, mức <b>đã chạy trên xe</b></td><td>Không cần làm gì</td></tr>
+<tr><td>Đèn ban ngày</td><td>Nút riêng, mức chưa-kiểm</td><td>Không cần làm gì</td></tr>
+<tr><td>Đèn đọc <b>tất cả</b></td><td>Một nút đèn đọc, mức chưa-kiểm. <b>Chưa rõ</b> nó bật một đèn hay tất cả</td><td>Không đoán. Ghi thành <b>việc trên xe</b>: bấm rồi xem đèn nào sáng</td></tr>
+<tr><td><b>Kính ½ tất cả</b></td><td><b>Không có</b> đường ghi phần trăm (Đ3)</td><td>⚠ <b>KHÔNG làm được</b>. Ghi rõ đường đi đề xuất + việc cần đo trên xe</td></tr>
+<tr><td><b>Kính mở hết</b></td><td>Có nút gộp 4 kính (mức chưa-kiểm) + 4 nút kính riêng (mức <b>đã chạy trên xe</b>)</td><td>✅ Làm <b>gói lệnh</b> từ 4 nút <b>đã chạy trên xe</b> — chắc ăn hơn nút gộp chưa kiểm</td></tr>
+<tr><td>Bảo trì gạt mưa</td><td>Chỉ có nút gạt mưa thường. <b>Không có</b> mã cho vị trí bảo trì</td><td>Không bịa mã. <b>Việc trên xe</b></td></tr>
+<tr><td><b>"Mở cửa + tắt/mở đèn"</b></td><td>Có nút cửa (mức <b>chỉ xác nhận được trên xe</b>) + nút đèn đọc</td><td>✅ Làm <b>gói lệnh</b> — đây là ca dùng chính của gói này</td></tr>
+</table>
+<p class="muted">Tức là trong 7 mục: <b>2 mục không cần làm</b> · <b>2 mục làm được ngay</b> (bằng lớp gộp lệnh) ·
+<b>3 mục phải đo trên xe</b> trước khi làm được. Nói trước để owner không chờ đủ 7.</p>
+
+<h2>3. Requirements</h2>
+
+<h3>3.1 Bắt buộc</h3>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R1</b></td><td><b>Một nút chạy nhiều lệnh</b>, theo <b>thứ tự</b> đã khai, có thể chờ giữa các bước (xe cần thời gian phản hồi).</td><td>Test thuần JVM: chạy gói 3 bước ⇒ đúng 3 lệnh, đúng thứ tự, đúng tham số.</td></tr>
+<tr><td><b>R2</b></td><td><b>Một bước hỏng KHÔNG được làm chết cả gói</b>; phải biết bước nào hỏng và báo được ra ngoài.</td><td>Test: bước 2 hỏng ⇒ bước 3 vẫn chạy, kết quả nói rõ 1 thành công / 1 thất bại / 1 thành công.</td></tr>
+<tr><td><b>R3</b></td><td>Gói lệnh <b>chỉ dùng lại nút đã khai</b>, KHÔNG tự viết lệnh xe mới. Bước trỏ tới mã lạ ⇒ bị loại lúc dựng, không phải lúc chạy.</td><td>Test: gói chứa mã lạ ⇒ báo lỗi khai báo; không có đường nào gọi HAL trực tiếp từ lớp gộp.</td></tr>
+<tr><td><b>R4</b></td><td>Gói lệnh là <b>một loại khả năng</b> ⇒ đặt được ở cả 3 vùng như mọi khả năng khác, không cần code đặt-chỗ mới.</td><td>Tra mã gói lệnh ra được nhãn/icon/mức bằng chứng; bật được vào thanh nút.</td></tr>
+<tr><td><b>R5</b></td><td><b>Mức bằng chứng của gói = mức THẤP NHẤT trong các bước.</b> Gói có một bước chưa kiểm thì cả gói mang dấu chưa-kiểm.</td><td>Test: gói gồm bước đã-chạy + bước chưa-kiểm ⇒ gói mang dấu chưa-kiểm.</td></tr>
+<tr><td><b>R6</b></td><td><b>Sửa nhãn sai</b> của nút "Kính 50%" (Đ2) thành đúng thứ nó làm.</td><td>Nhãn mới phản ánh đúng hành vi; test khoá để không ai đặt lại nhãn hứa phần trăm.</td></tr>
+<tr><td><b>R7</b></td><td>Chạy gói lệnh <b>không được chặn giao diện</b> (có chờ giữa các bước).</td><td>Thực thi trên thread nền, theo đúng lối các bộ áp dụng đã có.</td></tr>
+</table>
+
+<h3>3.2 Nợ gói 2 đóng luôn</h3>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R8</b></td><td>Bảng áp suất lốp phải nói <b>SAI CÁI GÌ</b> (non / quá căng / lệch), không chỉ bánh nào.</td><td>Test thuần: mỗi trạng thái ra một chữ ngắn; off-car không có số ⇒ không hiện chữ nào.</td></tr>
+</table>
+
+<h3>3.3 Ràng buộc</h3>
+<table>
+<tr><th>Mã</th><th>Ràng buộc</th><th>Vì sao</th></tr>
+<tr><td>C1</td><td><code>:core</code> thuần JVM, <b>lớp gộp lệnh KHÔNG có luồng</b></td><td>Nó chỉ mô tả bước + gộp kết quả ⇒ test off-car tất định, không cần chờ thời gian thật.</td></tr>
+<tr><td>C2</td><td>Không thêm phụ thuộc mới</td><td>Kỷ luật dự án.</td></tr>
+<tr><td>C3</td><td>Không sửa file XML nào</td><td>Layout niêm phong.</td></tr>
+<tr><td>C4</td><td>Không đụng file chiếu-cụm, không chạm màn cụm</td><td>Đua cấu hình = kẹt cả hai.</td></tr>
+<tr><td>C5</td><td><b>Không gộp lệnh nguy hiểm theo mặc định</b>: gói mặc định chỉ gồm việc đảo lại được</td><td>Owner đã bỏ mọi cổng an toàn ("tự dùng tự chịu"), nên chính chỗ ĐỊNH NGHĨA gói phải tự tiết chế: một nút chạy nhiều lệnh thì hậu quả nhân lên.</td></tr>
+<tr><td>C6</td><td>Giữ mọi test hiện có xanh (mốc <b>2434</b>)</td><td>Không đánh đổi vùng đã chắc.</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Hình dáng</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>Thanh trên</b></div>
+    <div class="node"><b>Ô giữa màn</b></div>
+    <div class="node"><b>Thanh nút</b></div>
+  </div>
+  <div class="layer">
+    <div class="node" style="flex:1 1 100%"><b>Ô khả năng hợp nhất</b> (đã có từ gói 2) — nay tra thêm được mã <b>gói lệnh</b></div>
+  </div>
+  <div class="layer">
+    <div class="node" style="flex:1 1 100%"><b>GÓI LỆNH</b> (<code>:core</code>, thuần): danh sách bước có thứ tự · mỗi bước = (mã nút đã khai, tham số, chờ bao lâu) · gộp kết quả · mức bằng chứng = thấp nhất trong các bước</div>
+  </div>
+  <div class="layer">
+    <div class="node" style="flex:1 1 100%"><b>64 nút đã khai</b> — gói lệnh KHÔNG tự viết lệnh xe mới</div>
+  </div>
+</div>
+
+<h3>4.2 Vì sao lớp gộp KHÔNG có luồng</h3>
+<p>
+  Lớp ở tầng lõi chỉ trả lời hai câu: <i>"gói này gồm những bước nào, theo thứ tự nào"</i> và <i>"gộp kết quả các
+  bước lại thì gói coi như thành công hay hỏng ở đâu"</i>. Việc <b>chờ</b> và việc <b>bơm lệnh</b> nằm ở tầng app,
+  dùng lại đúng lối các bộ áp dụng ghế / lọc bụi / lấy gió đang chạy. Nhờ vậy test off-car <b>không phải chờ thời
+  gian thật</b> và vẫn khoá được thứ tự.
+</p>
+<p class="muted">Context7 (<code>/websites/developer_android</code>) xác nhận các API dùng ở tầng app còn hiện hành
+(<code>getMainExecutor</code> · <code>postDelayed</code> · <code>Executor</code>); không thêm phụ thuộc.</p>
+
+<h3>4.3 Các gói lệnh đưa vào (chỉ những gói làm được TỬ TẾ)</h3>
+<table>
+<tr><th>Gói</th><th>Các bước</th><th>Mức bằng chứng</th><th>Vì sao chọn cách này</th></tr>
+<tr>
+  <td><b>Mở hết kính</b></td>
+  <td>4 kính riêng → mở, cách nhau một nhịp ngắn</td>
+  <td>thấp nhất trong 4 bước = <b>đã chạy trên xe</b></td>
+  <td>Có nút gộp-4-kính sẵn nhưng ở mức <b>chưa kiểm</b>. Gộp 4 nút <b>đã chạy thật</b> thì khả năng ăn cao hơn. Đây là giá trị cụ thể của lớp gộp lệnh.</td>
+</tr>
+<tr>
+  <td><b>Đóng hết kính</b></td>
+  <td>4 kính riêng → đóng</td>
+  <td><b>đã chạy trên xe</b></td>
+  <td>Cặp đối của trên; hữu ích khi rời xe.</td>
+</tr>
+<tr>
+  <td><b>Mở cửa + đèn đọc</b></td>
+  <td>mở cửa → chờ → bật đèn đọc</td>
+  <td>thấp nhất = <b>chỉ xác nhận được trên xe</b></td>
+  <td>Đúng yêu cầu số 7 của owner. Mang dấu chưa-kiểm vì nút cửa chưa xác nhận.</td>
+</tr>
+<tr>
+  <td><b>Rời xe</b></td>
+  <td>đóng hết kính → tắt đèn đọc → khoá xe</td>
+  <td>thấp nhất</td>
+  <td>Ca dùng thật, và mọi bước đều đảo lại được (C5).</td>
+</tr>
+</table>
+<div class="card">
+<b>KHÔNG đưa vào</b>: gói nào có bước <b>không đảo lại được</b> hoặc ảnh hưởng an toàn khi xe đang chạy
+(vd gộp mở cốp + mở cửa khi đang lăn bánh). Owner đã bỏ hết cổng an toàn nên chỗ <b>định nghĩa gói</b> là nơi duy
+nhất còn tiết chế được (C5).
+</div>
+
+<h3>4.4 Nhãn sai phải sửa (Đ2 / R6)</h3>
+<p>
+  Nút <code>window</code> đang mang nhãn <b>"Kính 50%"</b> nhưng ghi đúng cùng lệnh với nút kính cửa lái (mở/đóng,
+  không có nửa). Đổi nhãn thành thứ nó <b>thật sự</b> làm. Kèm test khoá để không ai đặt lại nhãn hứa phần trăm khi
+  chưa có đường ghi phần trăm.
+</p>
+
+<h3>4.5 "Kính ½ tất cả" — đường đi đề xuất, cần đo trên xe</h3>
+<p>
+  Off-car <b>không làm được</b> (Đ3). Nhưng đã có <b>một nửa</b> nguyên liệu: đọc được độ mở từng kính theo phần
+  trăm ở mức đã-chạy-trên-xe. Đường khả thi:
+</p>
+<div class="diagram">
+<svg viewBox="0 0 800 120" role="img" aria-label="Đường đi đề xuất cho kính nửa: mở, đọc phần trăm, dừng ở 50 phần trăm">
+  <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+    <path d="M0,0 L9,4.5 L0,9 z" fill="var(--accent)"/></marker></defs>
+  <rect x="6" y="34" width="170" height="52" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="91" y="56" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">Ra lệnh MỞ</text>
+  <text x="91" y="74" text-anchor="middle" font-size="11.5" fill="var(--ok)">đã chạy trên xe</text>
+  <rect x="216" y="34" width="200" height="52" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="316" y="56" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">ĐỌC độ mở %</text>
+  <text x="316" y="74" text-anchor="middle" font-size="11.5" fill="var(--ok)">đã chạy trên xe</text>
+  <rect x="456" y="34" width="200" height="52" rx="10" fill="var(--bg)" stroke="var(--warn)" stroke-width="2"/>
+  <text x="556" y="56" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">DỪNG ở ~50%</text>
+  <text x="556" y="74" text-anchor="middle" font-size="11.5" fill="var(--warn)">CHƯA biết có lệnh này</text>
+  <path d="M176 60 H212" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#a3)"/>
+  <path d="M416 60 H452" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#a3)"/>
+  <text x="700" y="56" font-size="11.5" fill="var(--muted)">thiếu đúng</text>
+  <text x="700" y="72" font-size="11.5" fill="var(--muted)">một mảnh</text>
+</svg>
+</div>
+<p>
+  Việc cần làm trên xe: thử xem lệnh kính có trạng thái <b>thứ ba</b> (dừng) không, hoặc ra lệnh mở rồi ra lệnh đóng
+  ngay có làm nó dừng lại không. Có mảnh đó là gói "½ tất cả" thành hiện thực bằng đúng lớp gộp lệnh này.
+</p>
+
+<h3>4.6 Cố ý KHÔNG làm</h3>
+<ul>
+  <li><b>Không</b> cho người dùng tự dựng gói lệnh trong giao diện (trình tạo macro) — việc riêng, tốn công UI, và
+  cần nghĩ kỹ về hậu quả khi người dùng gộp bừa. Gói này chỉ đưa các gói <b>định sẵn</b>.</li>
+  <li><b>Không</b> bịa mã cho bảo trì gạt mưa và đèn đọc "tất cả" — không có mã thì không đoán.</li>
+  <li><b>Không</b> gộp lệnh nguy hiểm (C5).</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td>Lớp gói lệnh thuần ở <code>:core</code> (bước · thứ tự · gộp kết quả · mức bằng chứng)</td><td>—</td><td>R1 · R2 · R3 · R5</td></tr>
+<tr><td>T2</td><td>Khai 4 gói lệnh của §4.3</td><td>T1</td><td>R3 · C5</td></tr>
+<tr><td>T3</td><td>Nối gói lệnh vào ô khả năng hợp nhất</td><td>T2</td><td>R4</td></tr>
+<tr><td>T4</td><td>Bộ chạy gói lệnh ở <code>:app</code> (thread nền, chờ giữa bước)</td><td>T2</td><td>R7</td></tr>
+<tr><td>T5</td><td>Sửa nhãn sai "Kính 50%" + test khoá</td><td>—</td><td>R6</td></tr>
+<tr><td>T6</td><td>Bảng lốp nói rõ SAI CÁI GÌ</td><td>—</td><td>R8</td></tr>
+<tr><td>T7</td><td>Test đủ 5 module + thử phá + dựng APK + đo máy ảo</td><td>T1–T6</td><td>≥ 2434, không mất test</td></tr>
+<tr><td>T8</td><td>Senior review + đồng bộ tài liệu</td><td>T7</td><td>Duyệt</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<p class="muted">Điền số thật khi chạy xong. Mỗi dòng phải là <b>[ĐO]</b>.</p>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td>Test thuần JVM</td><td>Thứ tự bước · một bước hỏng · mã lạ · mức bằng chứng gộp · nhãn không hứa %</td><td><span class="pill ok">21 test mới, 0 lỗi</span> (<code>ActionMacrosTest</code> 21 ở <code>:core</code>) + 6 test dây nối ở <code>:app</code></td></tr>
+<tr><td>Đủ 5 module</td><td><code>./gradlew test --continue</code></td><td><span class="pill ok">2467 / 0</span> (mốc trước gói 3 = 2434 ⇒ <b>+33</b>)</td></tr>
+<tr><td>Thử phá</td><td>3 phép trên bất biến quan trọng nhất</td><td><span class="pill ok">3/3 đỏ đúng chỗ</span>: (1) một bước hỏng làm DỪNG gói ⇒ 2 test đỏ · (2) lấy mức bằng chứng CAO nhất ⇒ 1 test đỏ · (3) đảo thứ tự bước ⇒ 2 test đỏ</td></tr>
+<tr><td>Máy ảo — gói lệnh hiện ra</td><td>Bật 2 gói vào thanh nút + 1 gói vào ô giữa màn</td><td><span class="pill ok">đạt</span> — [ĐO] dump: <code>"Mở hết kính"</code> · <code>"Rời xe"</code> (thanh nút) · <code>"Mở cửa + đèn đọc"</code> (ô giữa màn)</td></tr>
+<tr><td>Máy ảo — gói lệnh CHẠY</td><td>Bấm, đọc nhật ký</td><td><span class="pill ok">đạt</span> — <code>mac_win_open_all: không bước nào ăn (4 bước)</code> ⇒ chạy đủ 4 bước, off-car mọi lệnh no-op (ca bình thường); app <b>không sập, không treo</b> dù gói mất ~1.2 s</td></tr>
+<tr><td>Máy ảo — chống bấm kép</td><td>Bấm 3 lần trong ~0.3 s (gói chạy ~1.2 s)</td><td><span class="pill ok">đạt</span> — nhật ký đúng <b>1</b> lượt (6 bước), không phải 3</td></tr>
+<tr><td>Máy ảo — bảng lốp nói SAI CÁI GÌ</td><td>Bơm 3.40 / 2.40 / 2.35 / 1.85 bar (bản thử tạm, đã hoàn nguyên) rồi đọc ảnh</td><td><span class="pill ok">đạt</span> — [ĐO] <code>"TT · căng · 82°F"</code> và <code>"SP · non · 93°F"</code>; hai bánh bình thường KHÔNG có chữ lỗi. Số + dòng phụ CÙNG một màu. Không cắt chữ. Ảnh: <code>docs/prototypes/kachi-tyre-reason-emulator.png</code></td></tr>
+</table>
+
+<h3>Phải verify TRÊN XE 🚗</h3>
+<ul>
+  <li><b>Kính có lệnh dừng giữa hành trình không</b> (§4.5) — mở khoá cho gói "½ tất cả".</li>
+  <li><b>Đèn đọc</b>: nút hiện bật một đèn hay tất cả.</li>
+  <li><b>Bảo trì gạt mưa</b>: lấy mã vị trí bảo trì.</li>
+  <li>Các gói lệnh có chạy đủ bước trên xe không, và nhịp chờ giữa bước bao nhiêu là đủ.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mặc định nếu owner không đổi</th></tr>
+<tr><td>OQ1</td><td>Nhịp chờ giữa các bước trong một gói?</td><td><b>400 ms</b> — đủ để xe xử lý lệnh trước, không lâu tới mức người bấm tưởng treo. Đặt một chỗ.</td></tr>
+<tr><td>OQ2</td><td>Nhãn mới cho nút "Kính 50%"?</td><td><b>"Kính cửa lái"</b> — đúng thứ nó làm.</td></tr>
+<tr><td>OQ3</td><td>Gói "Rời xe" có nên khoá xe ở bước cuối không (đang khoá)?</td><td><b>Có</b> — mọi bước đều đảo lại được. Bỏ nếu owner không muốn.</td></tr>
+<tr><td>OQ4</td><td>Có muốn tự dựng gói lệnh trong giao diện không (§4.6)?</td><td><b>Không làm</b> gói này. Nếu owner muốn thì thành việc riêng có thiết kế riêng.</td></tr>
+</table>
+
+<h2>8. References</h2>
+<ul>
+  <li><code>docs/specs/kachi-unified-capability-tile.html</code> — gói 2, nền ô khả năng hợp nhất mà gói lệnh dùng lại.</li>
+  <li><code>docs/PROJECT-BACKLOG.md</code> nhóm 3 (W2) — 7 hành động owner nêu.</li>
+  <li><code>docs/diagnostics/kachi-capability-catalog-2026-09-10.md</code> — bản kê khả năng xe.</li>
+  <li>Context7 <code>/websites/developer_android</code> — API chạy nền còn hiện hành.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+
+<h3>Phiên 2026-09-11 (đêm) — T1…T6 (owner đi ngủ, chạy tự chủ)</h3>
+
+<p><b>Quyết định đã tự đưa ra:</b></p>
+<table>
+<tr><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td>Gói "mở/đóng hết kính" gộp <b>4 nút kính riêng</b> thay vì dùng nút "Tất cả kính" đã có</td><td>Nút gộp đó ở mức <b>chưa kiểm trên xe</b>; 4 nút riêng đều <b>đã chạy trên xe owner</b>. Gộp cái đã chạy thì khả năng ăn cao hơn — và đây chính là giá trị cụ thể của lớp gộp lệnh.</td></tr>
+<tr><td>Mức bằng chứng của gói = <b>THẤP NHẤT</b> trong các bước</td><td>Lấy mức cao nhất là hứa quá. Mutation đổi sang cao nhất ⇒ test đỏ.</td></tr>
+<tr><td>Một bước hỏng <b>KHÔNG</b> dừng gói</td><td>Xe từ chối một lệnh là chuyện thường; bỏ dở giữa gói còn tệ hơn (đóng 2 kính rồi dừng). Mutation dựng lại kiểu dừng-sớm ⇒ 2 test đỏ.</td></tr>
+<tr><td><b>Chống bấm kép</b> ở ô gói lệnh</td><td>Hai lượt "đóng hết kính" chồng nhau là cách chắc chắn để một lệnh bị bỏ. [ĐO] máy ảo: 3 lần bấm ra 1 lượt.</td></tr>
+<tr><td>Lớp gộp <b>không có luồng</b>; chờ + bơm lệnh ở <code>:app</code></td><td>Test off-car không phải chờ thời gian thật mà vẫn khoá được thứ tự.</td></tr>
+<tr><td>Đổi nhãn <code>window</code> thành <b>"Kính cửa lái"</b></td><td>Xem §2.2 Đ2 — nhãn cũ hứa thứ xe không làm.</td></tr>
+</table>
+
+<p><b>Phát hiện đáng chú ý nhất — nhãn nút nói sai thứ nó làm:</b> nút mang nhãn <b>"Kính 50%"</b> ghi <b>đúng cùng
+một lệnh</b> với nút kính cửa lái (cùng phương thức, và bảng dựng tham số cho ra <b>cùng một mảng</b>
+<code>[1, state]</code>). Tức là bấm nó không hề mở nửa kính — nó mở hẳn kính cửa lái. Đã đổi nhãn + <b>khoá cả họ</b>:
+test bắt lỗi nếu <b>bất kỳ</b> nút nào mang ký tự phần trăm trong nhãn, vì phía ghi không có lệnh phần trăm nào.</p>
+
+<p><b>Yêu cầu của owner mà tôi KHÔNG làm được, nói thẳng:</b> <i>"kính ½ tất cả"</i>. Không có đường ghi phần trăm;
+chỉ có đường <b>đọc</b> phần trăm (đã chạy trên xe). Đường đi khả thi ghi ở §4.5 — thiếu đúng một mảnh: lệnh
+<b>dừng giữa hành trình</b>. Đó là việc trên xe, không phải việc off-car. Tương tự: <b>bảo trì gạt mưa</b> (không có
+mã) và <b>đèn đọc "tất cả"</b> (chưa biết nút hiện bật một hay tất cả).</p>
+
+<p><b>Test brittle đã sửa (không nới lỏng):</b> một test của gói 2 đếm tổng mã theo <b>ba</b> bộ đăng ký; W2 thêm
+nguồn <b>thứ tư</b> (gói lệnh) nên nó đỏ. Ý định của phép kiểm (gộp không làm mất/nhân đôi mục nào) giữ nguyên, chỉ
+cập nhật số nguồn.</p>
+
+<p><b>Nợ gói 2 đã đóng:</b> bảng lốp nay nói <b>sai cái gì</b> — chữ ngắn ("non" / "căng" / "lệch") đặt ở tầng lõi
+cùng chỗ với ngưỡng, KHÔNG rải chuỗi trong bộ vẽ (có test khoá điều đó).</p>
+
+<p><b>Còn tồn:</b></p>
+<ul>
+  <li>Ca <b>"lệch"</b> chưa xác minh bằng mắt (bộ số thử không tạo ra bánh lệch nào) — đã khoá bằng test thuần ở tầng lõi.</li>
+  <li>Nhãn bánh vẫn là viết tắt TT/TP/ST/SP — người mới phải đoán; vị trí trên hình xe đỡ được phần nào.</li>
+  <li>Nút đổi-app vẫn đè đỉnh hình xe (nợ chung mọi ô, sửa khi làm P9).</li>
+  <li><b>Chưa có</b> trình cho người dùng tự dựng gói lệnh — cố ý (§4.6).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-11 (lượt soát bị NGẮT giữa đường; bản vá đã được kiểm chứng độc lập)</h3>
+
+<p class="muted">
+  <b>Nói rõ giới hạn</b>: lượt soát độc lập <b>chết vì lỗi kết nối</b> trước khi kịp viết báo cáo. Nó đã kịp áp một
+  số bản vá. Tôi <b>không nhận bản vá theo niềm tin</b> — đã tự mở từng file kiểm lại và tự chạy đủ test. Mục này ghi
+  đúng những gì <b>tôi kiểm chứng được</b>, không ghi những gì lượt soát "nói" mà tôi chưa xem.
+</p>
+
+<h4>Phát hiện đã kiểm chứng + bản vá</h4>
+<table>
+<tr><th>Mức</th><th>Phát hiện</th><th>Bản vá</th><th>Tôi kiểm bằng gì</th></tr>
+<tr>
+  <td><span class="tag">P1</span></td>
+  <td><b>Ô gói lệnh bắn MỌI bước qua một cửa duy nhất</b> (<code>toggle</code>). Bước trỏ nút bước-nhảy bị nén thành 1/0; bước trỏ nút chọn mất chỉ số; bước trỏ nút bấm-một-phát với tham số 0 thì <b>không bấm gì cả</b>.</td>
+  <td>Thêm hàm định tuyến <b>theo kiểu nút</b> ở <code>:core</code> (dùng được từ chỗ chỉ giữ interface) và cho cả <code>CarControlAdapter.act</code> uỷ quyền về đó ⇒ bảng định tuyến chỉ còn <b>một chỗ</b>.</td>
+  <td>Đọc hàm mới + đối chiếu kiểu của 7 nút mà 4 gói đang dùng: đều là bật/tắt hoặc đóng/mở. <b>Xác nhận lỗi này CHƯA lộ ra</b> với 4 gói hiện tại (hai cửa đó ghi cùng giá trị) — nó là <b>lỗi ngủ đông</b>, sẽ bung ở gói lệnh thứ năm. Đây là loại lỗi tôi tự tạo và <b>test của tôi không bắt được</b>.</td>
+</tr>
+<tr>
+  <td><span class="tag">P2</span></td>
+  <td><b>Cờ chống-bấm-kép có thể kẹt vĩnh viễn</b>: nếu thread gói lệnh chết trước khi tới bước hạ cờ thì ô <b>chết hẳn</b>, bấm mãi không chạy nữa.</td>
+  <td>Hạ cờ trong <code>finally</code>.</td>
+  <td>Đọc code: đã có <code>finally</code> bao quanh chỗ hạ cờ.</td>
+</tr>
+<tr>
+  <td><span class="tag">P2</span></td>
+  <td><b>Một test của tôi là TRANG TRÍ</b>: nó cắt vùng quét bằng một mốc <b>chú thích</b>, mà bộ quét đã <b>bỏ hết chú thích</b> trước đó ⇒ mốc không còn tồn tại ⇒ cắt không ăn ⇒ test quét sai vùng nhưng <b>vẫn xanh</b>.</td>
+  <td>Đổi mốc cắt sang thứ còn tồn tại sau khi bỏ chú thích.</td>
+<td>Đọc test: đã có ghi chú giải thích đúng nguyên nhân này. Bài học lặp lại: <b>test tự viết cũng phải bị thử phá</b>.</td>
+</tr>
+</table>
+
+<h4>Số đo tôi tự chạy lại</h4>
+<ul>
+  <li>Đủ 5 module: <b>2482 / 0 lỗi</b> (trước lượt soát 2467 ⇒ <b>+15</b> test do lượt soát thêm; không mất test nào).</li>
+  <li>Ràng buộc kiểm bằng lệnh: <b>0</b> file XML và <b>0</b> file chiếu-cụm bị đụng · <code>:core</code> vẫn <b>0</b> import Android · không thêm phụ thuộc.</li>
+</ul>
+
+<h4>Còn nợ của chính lượt soát này</h4>
+<p>
+  Vì lượt soát chết giữa đường, <b>ba điểm tôi tự nghi vẫn CHƯA có ai soi độc lập</b>: (1) gọi lại giao diện sau khi
+  ô đã bị tháo (đổi bố cục lúc gói đang chạy); (2) bảng xếp mức bằng chứng dựa vào việc mọi giá trị đều nằm trong
+  bảng — thêm mức mới về sau có thể tính sai; (3) gói "rời xe" khoá xe ở bước cuối dù bước đóng kính có thể đã hỏng.
+  Ghi ra đây để phiên sau soi, <b>không tự tuyên bố là đã duyệt</b>.
+</p>
+
+</div>
+</body>
+</html>

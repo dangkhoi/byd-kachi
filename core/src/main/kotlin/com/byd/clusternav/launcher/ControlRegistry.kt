@@ -82,7 +82,10 @@ object ControlRegistry {
         // ── 20 nút GỐC (giữ nguyên id + thứ tự + cờ default; bổ sung domain/tier/bindingKey) ───────
         ControlDef("lock", "Khoá xe", "ic-lock", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState"),
-        ControlDef("window", "Kính 50%", "ic-window", ControlKind.TOGGLE, enabledByDefault = true,
+        // ⚠ [ĐO] 2026-09-11: nút này TỪNG mang nhãn "Kính 50%" nhưng ghi ĐÚNG CÙNG lệnh với "win_lf"
+        // (`setBodyWindowCtrlState(1, state)` — kính CỬA LÁI, chỉ đóng/mở, KHÔNG có nửa). Nhãn cũ hứa thứ xe không
+        // làm. Chưa có đường GHI phần trăm nào (chỉ có đường ĐỌC `getWindowOpenPercent`) ⇒ đừng đặt lại nhãn hứa %.
+        ControlDef("window", "Kính cửa lái", "ic-window", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState"),
         ControlDef("trunk", "Cốp sau", "ic-trunk", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setHetchDoorStatus"),

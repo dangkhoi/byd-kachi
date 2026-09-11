@@ -124,6 +124,9 @@ object CapabilityCatalog {
         WidgetRegistry.byId(id) != null -> CapabilityKind.READ
         TelemetryRegistry.byId(id) != null -> CapabilityKind.READ
         ControlRegistry.byId(id) != null -> CapabilityKind.WRITE
+        // W2: GÓI LỆNH cũng là HÀNH ĐỘNG (nó tác động vào xe), nên tự động đặt được ở cả 3 vùng như mọi nút khác
+        // — không cần code đặt-chỗ mới. Đây là giá trị cụ thể của nền RW0.
+        ActionMacros.byId(id) != null -> CapabilityKind.WRITE
         else -> null
     }
 
@@ -141,6 +144,10 @@ object CapabilityCatalog {
         ControlRegistry.byId(id)?.let {
             return CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain)
         }
+        ActionMacros.byId(id)?.let {
+            // Mức bằng chứng của gói = THẤP NHẤT trong các bước ⇒ dấu "chưa kiểm" chảy ra UI đúng, không hứa quá.
+            return CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain)
+        }
         return null
     }
 
@@ -154,6 +161,9 @@ object CapabilityCatalog {
         }
         ControlRegistry.ALL.forEach {
             add(CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain))
+        }
+        ActionMacros.ALL.forEach {
+            add(CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain))
         }
     }
 
@@ -180,6 +190,7 @@ object CapabilityCatalog {
         val w = WidgetRegistry.ALL.map { it.id }
         val t = TelemetryRegistry.ALL.map { it.id }
         val c = ControlRegistry.ALL.map { it.id }
-        return (w + t + c).groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
+        val m = ActionMacros.ALL.map { it.id }
+        return (w + t + c + m).groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
     }
 }

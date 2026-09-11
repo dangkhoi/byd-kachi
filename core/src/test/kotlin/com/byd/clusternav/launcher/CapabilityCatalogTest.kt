@@ -28,7 +28,10 @@ class CapabilityCatalogTest {
 
     @Test
     fun `tong so ma bang tong ba bo va deu phan giai duoc`() {
-        val total = WidgetRegistry.ALL.size + TelemetryRegistry.ALL.size + ControlRegistry.ALL.size
+        // W2 thêm nguồn thứ TƯ: gói lệnh (cũng là HÀNH ĐỘNG). Ý định của phép kiểm không đổi — gộp không được làm
+        // MẤT hay NHÂN ĐÔI mục nào; chỉ cập nhật con số kỳ vọng cho đúng số nguồn hiện tại.
+        val total = WidgetRegistry.ALL.size + TelemetryRegistry.ALL.size + ControlRegistry.ALL.size +
+            ActionMacros.ALL.size
         assertEquals(total, CapabilityCatalog.all().size, "gộp không được làm mất hay nhân đôi mục nào")
         CapabilityCatalog.all().forEach { p ->
             assertNotNull(CapabilityCatalog.kindOf(p.id), "mã ${p.id} phải phân loại được")
@@ -228,5 +231,44 @@ class TyreBoardTest {
         assertTrue(TyreBoard.SPREAD_BAR > 0.0, "ngưỡng lệch phải dương")
         assertTrue(TyreBoard.HIGH_BAR - TyreBoard.LOW_BAR > TyreBoard.SPREAD_BAR,
             "dải bình thường phải rộng hơn ngưỡng lệch, nếu không mọi xe đều bị kêu lệch")
+    }
+
+    // ── R8 (nợ gói 2): bảng phải nói SAI CÁI GÌ ─────────────────────────────────────────────────────────
+    // [ĐO] senior review 2026-09-11: `TyreStatus.reason` ra đời cho R8 nhưng KHÔNG có phép kiểm thuần nào — chỉ có
+    // một test ở `:app` khoá điều NGƯỢC LẠI (chuỗi không được viết trong bộ vẽ). Tức nghiệm thu của R8 ("mỗi trạng
+    // thái ra một chữ ngắn; off-car không có số ⇒ không hiện chữ nào") chưa ai canh.
+
+    @Test
+    fun `moi trang thai co van de ra dung mot chu ngan`() {
+        assertEquals("non", TyreStatus.LOW.reason)
+        assertEquals("căng", TyreStatus.HIGH.reason)
+        assertEquals("lệch", TyreStatus.UNEVEN.reason)
+        TyreStatus.values().filter { it.alert }.forEach {
+            val w = it.reason
+            assertNotNull(w, "trạng thái cảnh báo $it phải nói được sai cái gì")
+            assertTrue(w!!.isNotBlank() && w.length <= 6,
+                "chữ phải NGẮN — nó nằm cạnh con số trong ô nhỏ, dài là bị cắt (đang là '$w')")
+        }
+    }
+
+    @Test
+    fun `binh thuong va chua doc duoc thi KHONG noi gi`() {
+        assertNull(TyreStatus.OK.reason, "bánh bình thường không có gì để nói ⇒ không chiếm chỗ")
+        assertNull(TyreStatus.UNKNOWN.reason, "chưa đọc được thì KHÔNG được bịa lý do")
+        assertTrue(TyreStatus.values().none { !it.alert && it.reason != null },
+            "chỉ trạng thái cảnh báo mới có chữ")
+    }
+
+    @Test
+    fun `off-car khong co so thi khong banh nao co chu`() {
+        assertTrue(TyreBoard.readings(tyres()).all { it.status.reason == null },
+            "off-car là ca BÌNH THƯỜNG — bảng không được hiện chữ lỗi nào")
+    }
+
+    @Test
+    fun `chu di kem dung banh dang co van de`() {
+        val r = TyreBoard.readings(tyres(240.0, 240.0, 240.0, 180.0))
+        assertEquals("non", r[3].status.reason, "bánh 1.8 bar phải nói 'non'")
+        assertTrue(r.take(3).all { it.status.reason == null }, "ba bánh kia không được mang chữ lỗi")
     }
 }

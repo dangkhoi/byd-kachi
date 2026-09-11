@@ -154,8 +154,16 @@ class TyreBoardView(context: Context) : View(context) {
             // MỘT cảnh báo = MỘT màu: bản đầu cho số màu đỏ mà dòng phụ màu hổ phách ⇒ cùng một bánh có hai màu
             // cảnh báo, người xem không biết đang báo cái gì. Nay dòng phụ dùng CHÍNH màu của số.
             subP.color = if (rd.status.alert) col else colMut2
+            // Dòng phụ nói LUÔN sai cái gì (non / căng / lệch) — trước đây chỉ có màu, người xem phải tự so số
+            // mới biết là non hay quá căng. Ưu tiên: lý do trước, rồi nhiệt độ, cuối cùng chỉ nhãn vị trí.
             val t = temps.getOrNull(i)
-            val sub = if (t != null) "${rd.corner.shortLabel} · $t" else rd.corner.shortLabel
+            val why = rd.status.reason
+            val sub = when {
+                why != null && t != null -> "${rd.corner.shortLabel} · $why · $t"
+                why != null -> "${rd.corner.shortLabel} · $why"
+                t != null -> "${rd.corner.shortLabel} · $t"
+                else -> rd.corner.shortLabel
+            }
             canvas.drawText(sub, x, y + m * 0.105f, subP)
         }
 

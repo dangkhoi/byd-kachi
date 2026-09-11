@@ -27,12 +27,11 @@ class CarControlAdapter(private val table: HalBindingTable) : CarControlPort {
     /**
      * Định tuyến chung theo [ControlDef.kind] — cho UI gọi 1 điểm. [arg]: TOGGLE 1/0, STEP giá trị, COVER 1/0,
      * SELECT index, BUTTON bỏ qua. Id lạ → false.
+     *
+     * Uỷ quyền về [actByKind] để bảng định tuyến chỉ tồn tại **một chỗ**: trước đây bảng này viết ở đây, nhưng chỗ
+     * gọi nào chỉ giữ [CarControlPort] thì không tới được ⇒ nó tự chọn cửa và đi sai (xem KDoc của [actByKind]).
      */
-    fun act(id: String, arg: Int): Boolean = when (ControlRegistry.byId(id)?.kind) {
-        ControlKind.TOGGLE, ControlKind.STEP, ControlKind.COVER, ControlKind.SELECT -> ok(table.write(id, arg))
-        ControlKind.BUTTON -> ok(table.write(id, 1))
-        null -> false
-    }
+    fun act(id: String, arg: Int): Boolean = actByKind(id, arg)
 
     /** rc hợp lệ (khác null + khác sentinel không-provisioned/không-hợp-lệ). Off-car null → false. */
     private fun ok(rc: Long?): Boolean = rc != null && !HalBindingTable.isSentinelRc(rc)

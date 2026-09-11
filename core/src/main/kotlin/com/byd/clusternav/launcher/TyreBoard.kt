@@ -26,6 +26,21 @@ enum class TyreStatus {
 
     /** Có cần làm nổi bật cảnh báo không. */
     val alert: Boolean get() = this == LOW || this == HIGH || this == UNEVEN
+
+    /**
+     * Chữ NGẮN nói **SAI CÁI GÌ** — đóng nợ gói 2: bảng lốp trước đây cho biết bánh nào có vấn đề (bằng màu) nhưng
+     * người xem phải tự so số mới biết là non hay căng. Trả `null` khi không có gì để nói (bình thường / chưa đọc)
+     * ⇒ bộ vẽ không hiện chữ nào, không chiếm chỗ.
+     *
+     * Ngắn có chủ ý: nó nằm trong ô nhỏ cạnh con số, dài là bị cắt.
+     */
+    val reason: String?
+        get() = when (this) {
+            LOW -> "non"
+            HIGH -> "căng"
+            UNEVEN -> "lệch"
+            OK, UNKNOWN -> null
+        }
 }
 
 /** Vị trí bánh — thứ tự cố định để bộ vẽ đặt đúng góc. */
