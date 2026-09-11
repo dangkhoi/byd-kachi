@@ -17,6 +17,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * BỘ DỰNG Ô DÙNG CHUNG (RW0 · spec `kachi-unified-capability-tile.html` §4.2/§4.3 việc 3).
@@ -50,7 +51,7 @@ class ControlTileFactory(
         val icon = ImageView(ctx).apply {
             val r = iconRes(def); if (r != 0) setImageResource(r)
             layoutParams = LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp))
-                .also { it.bottomMargin = dpi(ctx, 4) }
+                .also { it.bottomMargin = dpi(ctx, Sp.XS) }
         }
         val label = TextView(ctx).apply {
             // [SOÁT P3] `maxLines = 1` mà KHÔNG ellipsize ⇒ chữ bị cắt CỨNG, không có "…": trong ô 84dp thì 4 ô kính
@@ -72,7 +73,7 @@ class ControlTileFactory(
     }
 
     private fun tileToggle(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {
-        tile.addView(label)
+        tile.addView(reserveTwoLines(label))
         val active = state.isOn(def.id)
         applyBg(tile, active); tint(icon, label, active)
         tile.setOnClickListener {
@@ -86,7 +87,7 @@ class ControlTileFactory(
         applyBg(tile, false); tint(icon, label, true)
         val vtext = TextView(ctx).apply {
             text = "${state.value(def)}$unit"; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp)
-            typeface = Typeface.DEFAULT_BOLD; setPadding(dpi(ctx, 8), 0, dpi(ctx, 8), 0)
+            typeface = Typeface.DEFAULT_BOLD; setPadding(dpi(ctx, Sp.S), 0, dpi(ctx, Sp.S), 0)
         }
         val minus = stepBtn("−"); val plus = stepBtn("+")
         minus.setOnClickListener {
@@ -95,8 +96,14 @@ class ControlTileFactory(
         plus.setOnClickListener {
             val nv = def.clamp(state.value(def) + def.step); state.setValue(def.id, nv); vtext.text = "$nv$unit"; control().step(def.id, nv)
         }
+        // Nút −/+ mang WEIGHT, chữ giá trị WRAP: chữ lấy đủ chỗ trước, hai nút chia phần còn lại ⇒ giá trị
+        // không bao giờ bị bóp xuống hai dòng (lỗi [ĐO] khi hai nút dùng minWidth cố định).
+        vtext.maxLines = 1
         tile.addView(LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; addView(minus); addView(vtext); addView(plus)
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            addView(minus, LinearLayout.LayoutParams(0, WRAP, 1f))
+            addView(vtext, LinearLayout.LayoutParams(WRAP, WRAP))
+            addView(plus, LinearLayout.LayoutParams(0, WRAP, 1f))
         })
     }
 
@@ -107,8 +114,11 @@ class ControlTileFactory(
         val close = miniBtn(closeLbl) { control().cover(def.id, false) }
         val open = miniBtn(openLbl) { control().cover(def.id, true) }
         tile.addView(LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, dpi(ctx, 3), 0, 0)
-            addView(close, LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginEnd = dpi(ctx, 4) }); addView(open)
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
+            // ⚠ [ĐO] máy ảo: hai nút WRAP + lề trong S làm tổng bề ngang 84dp > 68dp dùng được của ô ⇒ nhãn
+            // nút thứ hai bị cắt, "Mở" hiện thành "M". Cho hai nút CHIA ĐỀU bằng weight thì không thể tràn.
+            addView(close, LinearLayout.LayoutParams(0, WRAP, 1f).also { it.marginEnd = dpi(ctx, Sp.XS) })
+            addView(open, LinearLayout.LayoutParams(0, WRAP, 1f))
         })
     }
 
@@ -118,7 +128,7 @@ class ControlTileFactory(
         val optView = TextView(ctx).apply {
             text = ControlTileLogic.selectLabel(def, state.sel(def.id)); setTextColor(c(KachiTheme.ACCENT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, size.optionSp); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-            maxLines = 1; setPadding(0, dpi(ctx, 2), 0, 0)
+            maxLines = 1; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
         }
         tile.addView(optView)
         tile.setOnClickListener {
@@ -128,7 +138,7 @@ class ControlTileFactory(
     }
 
     private fun tileButton(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {
-        tile.addView(label); applyBg(tile, false); tint(icon, label, true)
+        tile.addView(reserveTwoLines(label)); applyBg(tile, false); tint(icon, label, true)
         tile.setOnClickListener {
             applyBg(tile, true); tint(icon, label, true)
             control().press(def.id)
@@ -233,7 +243,7 @@ class ControlTileFactory(
         val r = KachiTheme.iconRes(pick.icon)
         if (r != 0) content.addView(
             ImageView(ctx).apply { setImageResource(r); setColorFilter(c("#aeb8c8")) },
-            LinearLayout.LayoutParams(dpi(ctx, size.iconDp - 4), dpi(ctx, size.iconDp - 4)).also { it.bottomMargin = dpi(ctx, 2) },
+            LinearLayout.LayoutParams(dpi(ctx, size.iconDp - Sp.XS), dpi(ctx, size.iconDp - Sp.XS)).also { it.bottomMargin = dpi(ctx, Sp.XS) },
         )
         val label = TextView(ctx).apply {
             // [ĐO] máy ảo 2026-09-10: một dòng + cắt cuối làm "Áp lốp trước-trái" và "Áp lốp trước-phải" đều thành
@@ -257,6 +267,21 @@ class ControlTileFactory(
         return ReadTile(outer, content, value, unit)
     }
 
+    /**
+     * Nhãn của ô **CHỈ-BẬT-TẮT / BẤM-MỘT-PHÁT** luôn chiếm ĐÚNG hai dòng, dù chữ chỉ có một dòng.
+     *
+     * ## ⚠⚠ [KIỂM TOÁN UX mục 6] Vì sao phải cố định, không phải rút ngắn nhãn
+     * [ĐO] trong 9 ô của thanh nút, *"Khoá / mở khoá"* là nhãn **duy nhất** xuống hai dòng ⇒ nội dung ô đó cao hơn
+     * các ô khác một dòng, mà ô căn giữa dọc ⇒ **icon của nó lệch trục 4–7px** so với tám ô còn lại. Rút ngắn nhãn
+     * chữa được ĐÚNG ô này và **không chữa nguyên nhân**: 64 nút, nhãn nào cũng có thể xuống dòng ở cỡ ô khác
+     * (thanh dọc rộng 100dp vs ngang 84dp), và lần sau sẽ không ai nhớ luật này.
+     *
+     * Chốt chỗ cho hai dòng thì chiều cao nội dung **không còn phụ thuộc độ dài chữ** ⇒ icon nằm cùng trục do cấu
+     * tạo. Chỉ áp cho hai kiểu ô mà nhãn là phần TỬ CUỐI: ô có thêm hàng giá trị (STEP/COVER/SELECT) thì thêm một
+     * dòng nữa sẽ đẩy hàng giá trị ra ngoài trần 86dp của ô — đúng bẫy [KachiSpace.TOUCH_TIGHT] đã đo.
+     */
+    private fun reserveTwoLines(label: TextView): TextView = label.apply { minLines = 2 }
+
     // ── Helper dùng chung ───────────────────────────────────────────────────────────────────────────────
     /** iconRes theo def.icon; nếu chưa map (ic-adas/ic-drive/ic-mirror…) → icon đại diện domain. */
     private fun iconRes(def: ControlDef): Int {
@@ -269,16 +294,27 @@ class ControlTileFactory(
         label.setTextColor(c(if (active) "#e7ecff" else "#c3cee0"))
     }
 
+    /**
+     * Nút −/+ của ô kiểu STEP.
+     *
+     * **Bề ngang do WEIGHT quyết định, KHÔNG phải `minWidth`** — đó là bài học [ĐO] trên máy ảo: đặt
+     * `minWidth = 36dp` làm hai nút chiếm 72dp trong ô chỉ có 68dp bề ngang dùng được, nên chữ giá trị bị bóp và
+     * `"22°"` **xuống hai dòng**. Với weight, hai nút tự chia phần còn lại sau khi chữ giá trị lấy đủ chỗ ⇒ không
+     * bao giờ bóp chữ, mà vẫn to hết mức ô cho phép.
+     *
+     * Chỉ [Sp.TOUCH_TIGHT] cho bề DỌC — chiều duy nhất còn nới được trong ô 84×86dp (xem KDoc của hằng đó).
+     */
     private fun stepBtn(s: String) = TextView(ctx).apply {
         text = s; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp); gravity = Gravity.CENTER
-        val sz = dpi(ctx, 22); minWidth = sz; minHeight = sz
-        background = GradientDrawable().apply { cornerRadius = dpi(ctx, 6).toFloat(); setColor(c("#2a2f3a")) }
+        minHeight = dpi(ctx, Sp.TOUCH_TIGHT); maxLines = 1
+        background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c("#2a2f3a")) }
     }
 
     private fun miniBtn(s: String, onClick: () -> Unit) = TextView(ctx).apply {
         text = s; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp - 0.5f); gravity = Gravity.CENTER
-        setPadding(dpi(ctx, 8), dpi(ctx, 3), dpi(ctx, 8), dpi(ctx, 3)); maxLines = 1
-        background = GradientDrawable().apply { cornerRadius = dpi(ctx, 8).toFloat(); setColor(c("#2a2f3a")) }
+        // Lề NGANG = XS (không phải S): nút này nằm trong ô 68dp cùng một nút nữa, lề rộng ăn hết chỗ của chữ.
+        setPadding(dpi(ctx, Sp.XS), dpi(ctx, Sp.XS), dpi(ctx, Sp.XS), dpi(ctx, Sp.XS)); maxLines = 1
+        background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c("#2a2f3a")) }
         setOnClickListener { onClick() }
     }
 
@@ -291,8 +327,8 @@ class ControlTileFactory(
         addView(content, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         addView(View(ctx).apply {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c(KachiTheme.AMBER)) }
-        }, FrameLayout.LayoutParams(dpi(ctx, 6), dpi(ctx, 6), Gravity.TOP or Gravity.END).also {
-            it.topMargin = dpi(ctx, 6); it.marginEnd = dpi(ctx, 6)
+        }, FrameLayout.LayoutParams(dpi(ctx, Sp.DOT), dpi(ctx, Sp.DOT), Gravity.TOP or Gravity.END).also {
+            it.topMargin = dpi(ctx, Sp.S); it.marginEnd = dpi(ctx, Sp.S)
         })
     }
 
@@ -305,9 +341,16 @@ class ControlTileFactory(
 }
 
 /**
- * Cỡ ô theo VÙNG. Con số của [DOCK] là **y hệt** bản cũ nằm trong [ControlDockView] (22dp icon · nhãn 11.5sp ·
- * số 15sp · lựa chọn 12.5sp · đệm 8dp · bo 14dp) ⇒ thanh nút không đổi một pixel sau khi rút bộ dựng ra ngoài.
- * [BIG] cho ô giữa màn (khung to hơn nhiều nên chữ/icon phải to theo, không thì ô trông như bị hụt).
+ * Cỡ ô theo VÙNG. [BIG] cho ô giữa màn (khung to hơn nhiều nên chữ/icon phải to theo, không thì ô trông hụt).
+ *
+ * ## ⚠ T5 — số của [DOCK] KHÔNG còn "y hệt bản cũ"
+ * KDoc trước ghi *"con số của DOCK là y hệt bản cũ nằm trong `ControlDockView` (22dp icon · đệm 8dp · bo 14dp)
+ * ⇒ thanh nút không đổi một pixel"*. Từ T5 điều đó **hết đúng** và cố ý: icon 22 → [Sp.ICON_S] (20),
+ * bo 14 → [Sp.RADIUS_L] (16), đệm 8 giữ nguyên ([Sp.S]). Lý do là chính bệnh T5 đi dọn — 22 và
+ * 14 nằm ngoài mọi nhịp, nên thanh nút lệch nhịp với phần còn lại của màn.
+ *
+ * Ghi lại ở đây thay vì xoá câu cũ: bất biến "không đổi một pixel" từng là **có thật** và là lý do bộ dựng ô
+ * được rút ra khỏi [ControlDockView] an toàn. Ai đọc sau cần biết nó đã được cố ý bỏ, chứ không phải bị quên.
  */
 enum class TileSize(
     val iconDp: Int,
@@ -315,10 +358,11 @@ enum class TileSize(
     val valueSp: Float,
     val optionSp: Float,
     val padDp: Int,
-    val radius: Float,
+    /** Bo góc, **dp dạng Int** từ T5 (họ `Sp.RADIUS_*`) — trước đây là `Float` với số trần 14f/16f. */
+    val radius: Int,
 ) {
-    DOCK(22, 11.5f, 15f, 12.5f, 8, 14f),
-    BIG(34, 15f, 26f, 16f, 14, 16f),
+    DOCK(Sp.ICON_S, 11.5f, 15f, 12.5f, Sp.S, Sp.RADIUS_L),
+    BIG(Sp.ICON_L, 15f, 26f, 16f, Sp.L, Sp.RADIUS_L),
 }
 
 /**
@@ -386,6 +430,19 @@ class ReadTile internal constructor(
         val u = v?.unit ?: ""
         unit.text = u
         unit.visibility = if (u.isEmpty()) View.GONE else View.VISIBLE
-        content.alpha = if (v?.available == true) 1f else 0.5f
+        // ⚠⚠ [KIỂM TOÁN UX mục 2] Làm mờ **GIÁ TRỊ**, KHÔNG làm mờ cả ô.
+        //
+        // `content.alpha = 0.5f` kéo cả **nhãn** xuống theo, và off-car là ca THƯỜNG (mọi field null) nên hậu quả là
+        // người dùng không đọc được ô đó đang là cái gì — đúng lỗi đã đo ở ô con của nhóm (2.33:1). Nhãn trả lời
+        // *"ô này là cái gì"*, câu đó không phụ thuộc việc xe đã trả số hay chưa.
+        content.alpha = 1f
+        val dim = if (v?.available == true) 1f else DIM
+        value.alpha = dim
+        unit.alpha = dim
+    }
+
+    private companion object {
+        /** Độ mờ của số chưa đọc được — cùng giá trị bản cũ dùng cho cả ô, nên dấu gạch trông y như trước. */
+        const val DIM = 0.5f
     }
 }

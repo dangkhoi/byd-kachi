@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.LinearLayout
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Thanh điều khiển — thẻ kính bo góc trên nền wall. Từ RW0 (spec `kachi-unified-capability-tile.html`) nó nhận **cả
@@ -38,9 +39,9 @@ class ControlDockView(context: Context) : LinearLayout(context) {
     init {
         gravity = Gravity.CENTER
         background = GradientDrawable().apply {
-            cornerRadius = dpi(context, 22).toFloat(); setColor(c("#d915191f")); setStroke(dpi(context, 1), c("#33ffffff"))
+            cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c("#d915191f")); setStroke(dpi(context, Sp.HAIRLINE), c("#33ffffff"))
         }
-        val p = dpi(context, 8); setPadding(p, p, p, p)
+        val p = dpi(context, Sp.S); setPadding(p, p, p, p)
         rebuild()
     }
 
@@ -57,11 +58,16 @@ class ControlDockView(context: Context) : LinearLayout(context) {
 
     /**
      * Giá trị hiển thị của một mã ĐỌC: đọc thô theo registry rồi **bắt buộc** đi qua lựa chọn đơn vị của người dùng
-     * ([UnitFormat.apply] — R11/R12). Mã không phải telemetry (8 widget dựng tay) ⇒ `null` ⇒ ô hiện "—" + mờ, vì
+     * ([UnitFormat.apply] — R11/R12). Mã không phải telemetry (9 widget dựng tay) ⇒ `null` ⇒ ô hiện "—" + mờ, vì
      * chúng có bố cục riêng ở ô giữa màn chứ không có dạng một-số-một-đơn-vị để nhét vào thanh.
+     *
+     * **NHÓM (G1) xét TRƯỚC** và ra một dòng TÓM TẮT ("2 cảnh báo") — [GroupBoard.summaryView]. Thiếu nhánh này thì
+     * nhóm rơi xuống `TelemetryReadout.of` (không có mã `g_*`) ⇒ ô hiện "—" **mãi mãi**, tức màn Cài đặt bày ra một
+     * lựa chọn chết. Đơn vị đã áp bên trong `summaryView` nên không đi qua [UnitFormat] lần thứ hai.
      */
     private fun readout(id: String): TelemetryView? =
-        TelemetryReadout.of(id, carStatus)?.let { UnitFormat.apply(it, unitPrefs) }
+        GroupBoard.summaryView(id, carStatus, unitPrefs)
+            ?: TelemetryReadout.of(id, carStatus)?.let { UnitFormat.apply(it, unitPrefs) }
 
     private fun rebuild() {
         orientation = if (config.isVertical()) VERTICAL else HORIZONTAL
@@ -86,11 +92,11 @@ class ControlDockView(context: Context) : LinearLayout(context) {
         }
     }
 
-    /** Cỡ ô của thanh nút — y hệt bản trước RW0 (100×70 khi dọc, 84×86 khi ngang, lề 4dp). */
+    /** Cỡ ô của thanh nút (100×70 khi dọc, 84×86 khi ngang, lề 4dp) — mọi số lấy từ [Sp]. */
     private fun sized(tile: View): View = tile.apply {
         layoutParams = LayoutParams(
-            dpi(context, if (config.isVertical()) 100 else 84),
-            dpi(context, if (config.isVertical()) 70 else 86),
-        ).also { it.setMargins(dpi(context, 4), dpi(context, 4), dpi(context, 4), dpi(context, 4)) }
+            dpi(context, if (config.isVertical()) Sp.DOCK_TILE_W_VERTICAL else Sp.DOCK_TILE_W),
+            dpi(context, if (config.isVertical()) Sp.DOCK_TILE_H_VERTICAL else Sp.DOCK_TILE_H),
+        ).also { it.setMargins(dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS)) }
     }
 }

@@ -1,0 +1,21 @@
+<!--
+  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm KHÍ HẬU & KHÔNG KHÍ (nhiệt độ, quạt, lấy gió, PM2.5, ion).
+  Nhiệt kế + luồng khí = hai nửa của nhóm. Cố ý KHÁC ic_temp (chỉ nhiệt) và ic_fan (chỉ gió).
+  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M9.9,5 A1.9,1.9 0 0 1 11.8,6.9 L11.8,13.6 A3.2,3.2 0 1 1 8,13.6 L8,6.9 A1.9,1.9 0 0 1 9.9,5 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M14.6,8.6 C16.4,7.4 18.4,8.6 19.6,7.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M14.6,12 C16.4,10.8 18.4,12 19.6,11"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M14.6,15.4 C16.4,14.2 18.4,15.4 19.6,14.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

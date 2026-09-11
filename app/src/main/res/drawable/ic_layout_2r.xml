@@ -1,5 +1,17 @@
+<!--
+  Bố cục sẵn "hai hàng" — sơ đồ CHIA MÀN, không phải icon nhận dạng.
+  T2: (a) trước đây là các khối TÔ ĐẶC ⇒ chuyển sang VẼ NÉT cho khớp cả bộ (§4.5); (b) trước đây khung vẽ là
+  22×16 (khác mọi icon) ⇒ nay 24×24 như cả bộ, vùng "màn hình" 18×11 nằm trong ô 20×20.
+  Khe giữa các ô con = 2 (bằng một nét 1.6 cộng lề) và ô con cao 4.5 ⇒ lòng ô còn hở 2.9, không bị bít.
+  Góc bo là do strokeLineJoin="round" — không cần cung tròn trong pathData.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp" android:height="17dp" android:viewportWidth="22" android:viewportHeight="16">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M1,1 L21,1 L21,7.5 L1,7.5 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M1,8.5 L21,8.5 L21,15 L1,15 Z" />
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M3,6.5 L21,6.5 L21,11 L3,11 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M3,13 L21,13 L21,17.5 L3,17.5 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

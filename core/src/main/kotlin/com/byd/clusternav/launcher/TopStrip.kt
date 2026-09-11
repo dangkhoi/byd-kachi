@@ -74,16 +74,32 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
         val DEFAULT_IDS: List<String> = BUILT_IN.toList()
         val DEFAULT = TopStripConfig(DEFAULT_IDS)
 
-        /** Đặt được lên thanh trên: 3 chip dựng sẵn, hoặc một datum ĐỌC. Gói lệnh/nút thì KHÔNG (xem KDoc lớp). */
+        /**
+         * Đặt được lên thanh trên: 3 chip dựng sẵn, hoặc một datum ĐỌC. Gói lệnh/nút thì KHÔNG (xem KDoc lớp).
+         *
+         * ⚠⚠ **NHÓM khả năng (G1) cũng KHÔNG**, dù [CapabilityCatalog.kindOf] trả [CapabilityKind.READ] cho nó. Hai
+         * lý do, và cả hai là lý do của CHÍNH chỗ này chứ không phải của loại khả năng:
+         *  1. **Không vẽ được**: chip cao ~24dp một dòng chữ; nhóm là bảng 4 bánh / dải 9 đèn / thẻ 10 con số. Nhồi
+         *     vào chip thì ra một ô hiện được đúng cái nhãn — mất hết thứ khiến nhóm có ích.
+         *  2. **An toàn**: 3/12 nhóm mang nút (kính · cửa & khoang · đèn). Cho nhóm lên đây là mở lại đúng cái cửa mà
+         *     KDoc lớp này đóng: một đích chạm 24dp bắn lệnh xe không hoàn lại được.
+         * Chặn ở ĐÂY thay vì bắt nhóm khai [CapabilityKind.WRITE] cho "khỏi lọt": làm thế sẽ khiến ô giữa màn dựng
+         * nhóm thành một cái nút đơn và mất hết thành viên (xem KDoc [CapabilityCatalog.kindOf]). Hạn chế là của
+         * thanh trên, nên nó phải nằm trong thanh trên.
+         */
         fun isChippable(id: String): Boolean =
-            id in BUILT_IN || CapabilityCatalog.kindOf(id) == CapabilityKind.READ
+            id in BUILT_IN ||
+                (CapabilityCatalog.kindOf(id) == CapabilityKind.READ && CapabilityGroups.byId(id) == null)
 
         /** Mọi thứ đặt được lên thanh trên, cho màn chọn bày ra. */
         fun choices(): List<CapabilityPick> = buildList {
             add(CapabilityPick(PM25, "Bụi mịn PM2.5", "ic-leaf", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE))
             add(CapabilityPick(TEMP, "Nhiệt độ ngoài", "ic-fan", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE))
             add(CapabilityPick(ENERGY, "Pin và tầm chạy", "ic-bolt", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.ENERGY))
-            addAll(CapabilityCatalog.all().filter { it.kind == CapabilityKind.READ && !it.curated })
+            // Lọc bằng CHÍNH [isChippable] thay vì viết lại điều kiện `kind == READ`: bản cũ lặp lại luật, nên khi
+            // luật ở [isChippable] chặt thêm (G1 loại NHÓM) thì màn chọn vẫn bày ra thứ mà [setEnabled] sẽ từ chối —
+            // người dùng bấm mà không có gì xảy ra. Một luật, một chỗ.
+            addAll(CapabilityCatalog.all().filter { !it.curated && isChippable(it.id) })
         }
 
         /** `"a,b,c"` → cấu hình. Chuỗi rỗng/lỗi ⇒ mặc định (không để thanh trên trắng vì một dòng prefs hỏng). */

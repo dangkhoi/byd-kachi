@@ -16,13 +16,13 @@ object WidgetRegistry {
         WidgetDef("w_pm25",   "Không khí",           "ic-leaf",  WidgetKind.CAR),
         WidgetDef("w_clock",  "Đồng hồ + thời tiết", "ic-sun",   WidgetKind.LOCAL),
         WidgetDef("w_media",  "Đang phát",           "ic-music", WidgetKind.LOCAL),
-        WidgetDef("w_car",    "Trạng thái xe",       "ic-lock",  WidgetKind.CAR),
+        WidgetDef("w_car",    "Trạng thái xe",       "ic-car",   WidgetKind.CAR),
         WidgetDef("w_speed",  "Tốc độ",              "ic-speed", WidgetKind.CAR),
         WidgetDef("w_board",  "Bảng tổng hợp",       "ic-grid",  WidgetKind.BOARD),
         // U4 phần (b): widget TRÌNH CHIẾU ảnh — owner nêu cả hình nền LẪN widget riêng. Đọc cùng thư mục ảnh với
         // hình nền, nhưng chạy ĐỘC LẬP: người dùng có thể muốn một khung ảnh trong ô mà KHÔNG đổi nền màn hình.
         // Kind LOCAL vì nguồn là tệp trên máy, không phải dữ liệu xe (nên off-car vẫn chạy đầy đủ).
-        WidgetDef("w_photos", "Trình chiếu ảnh",     "ic-sun",   WidgetKind.LOCAL),
+        WidgetDef("w_photos", "Trình chiếu ảnh",     "ic-photo", WidgetKind.LOCAL),
     )
 
     fun byId(id: String): WidgetDef? = ALL.firstOrNull { it.id == id }

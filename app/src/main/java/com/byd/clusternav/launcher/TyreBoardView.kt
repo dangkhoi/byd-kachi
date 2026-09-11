@@ -8,42 +8,50 @@ import android.graphics.RectF
 import android.view.View
 
 /**
- * BẢNG ÁP SUẤT LỐP 4 BÁNH (W4) — hình xe nhìn từ trên, **từng bánh một số riêng** ở 4 góc.
- * Spec `docs/specs/kachi-unified-capability-tile.html` §4.4 (R6–R8).
+ * BẢNG ÁP SUẤT LỐP 4 BÁNH (W4 · vẽ lại ở lượt kiểm toán UX 2026-09-12) — hình xe nhìn từ trên, **mỗi bánh một ô
+ * giá trị đặt đúng chỗ bánh đó**, kèm một dòng KẾT LUẬN.
  *
- * ## Nó thay thế gì (và vì sao không chỉ là "cho đẹp")
- * Bản cũ vẽ 4 ô chữ xếp 2 hàng với **ngưỡng cứng viết tại chỗ** (`t[i] < 2.2`). Đó là ngưỡng **THỨ BA** trong dự án,
- * lệch với ngưỡng ở [TyreBoard] ⇒ cùng một bánh có thể "non" ở chỗ này mà "bình thường" ở chỗ kia. Ô này **không tự
- * quyết định gì**: mọi phán xét lấy từ [TyreBoard.readings] (thuần, đã test off-car), nên chỉ còn MỘT nơi định nghĩa
- * thế nào là non/căng/lệch.
+ * Spec `docs/specs/kachi-unified-capability-tile.html` §4.4 (R6–R8) + kiểm toán UX mục 1.
  *
- * ## Quy ước vẽ (theo đúng lối [RingView] / sơ đồ ghế đã có)
- *  • Mọi `Paint` cấp phát MỘT LẦN ở field — KHÔNG cấp phát trong [onDraw].
+ * ## ⚠⚠ Vì sao phải vẽ lại — [ĐO] ảnh máy ảo 2026-09-12 (bản trước)
+ * Bản trước vẽ số **trần** ở bốn góc khung, cách thân xe rất xa và không có ô chứa:
+ *  • **thứ bậc chữ BỊ ĐẢO**: chữ viết tắt vị trí (`TT`/`TP`/`ST`/`SP`) có mực **cao 34px** trong khi *giá trị* —
+ *    thứ người ta mở ô này để xem — chỉ là dấu gạch **cao 11px**. Tức chữ to nhất trong ô là chữ ít giá trị nhất;
+ *  • **số rời khỏi bánh**: mép số cách thân xe **158px** (trái) / **162px** (phải), với ~246px trống ngoài rìa ⇒
+ *    mắt không ghép được "số này là bánh nào", đúng thứ mà cách xếp theo không gian phải giải quyết;
+ *  • **đơn vị chỉ có ở chân bảng**: muốn biết `2.4` là bar hay psi phải đọc xuống dòng cuối;
+ *  • **không có kết luận**: ô hứa trả lời *"lốp tôi ổn không"* mà người xem vẫn phải tự so bốn số;
+ *  • **hứa 8 mục, hiện 4**: nhiệt độ từng bánh nằm chung một dòng phụ với chữ viết tắt và lý do, nên khi có cả ba
+ *    thì dòng đó dài quá và bị cắt.
+ *
+ * Khuôn mới bám nguyên [RadarBoardView] (bảng `BOARD` thứ hai của dự án, và là bảng mà kiểm toán gọi là đúng nhất):
+ * **thân xe ở giữa · các ô giá trị áp sát thân theo đúng vị trí không gian · một dòng chân bảng**. Hai bảng `BOARD`
+ * nhìn ra ngay là cùng một họ.
+ *
+ * ## Quy ước vẽ (giữ nguyên từ bản W4 — phần này vốn đã đúng)
+ *  • Mọi `Paint` cấp phát MỘT LẦN ở field, màu phân giải MỘT LẦN — KHÔNG cấp phát/parse trong [onDraw].
  *  • Cỡ chữ/nét tính theo cạnh nhỏ nhất ⇒ bất biến với cỡ ô (ô 1/4 màn hay ô full đều đúng tỉ lệ).
- *  • Màu đọc từ [KachiTheme] (không hard-code hex tại chỗ) ⇒ đổi bảng màu là đổi theo.
- *  • Context7 (`/websites/developer_android`) đã xác nhận `onDraw(Canvas)` + `invalidate()` **hiện hành**; các API
- *    bộ-đệm-vẽ (`setWillNotCacheDrawing`, `setChildrenDrawnWithCacheEnabled`) và `Paint.setElegantTextHeight` đã lỗi
- *    thời ⇒ **không dùng**.
+ *  • Màu đọc từ [KachiTheme], **không** hard-code hex tại chỗ ⇒ đổi bảng màu là đổi theo.
+ *  • Ô vẽ **không tự quyết định gì**: trạng thái + kết luận đến từ [TyreBoard] (`:core`, test off-car), chuỗi số và
+ *    đơn vị do chỗ gọi format qua lớp đơn vị. Ở đây không có một ngưỡng nào — đó là điều kiện để chỉ có MỘT nơi
+ *    định nghĩa non/căng/lệch (bản trước bản W4 từng có `t[i] < 2.2` viết tại chỗ = ngưỡng thứ ba của dự án).
  */
 class TyreBoardView(context: Context) : View(context) {
 
-    /** 4 bánh theo thứ tự [TyreCorner]; rỗng = chưa có dữ liệu (vẽ 4 dấu gạch ngang). */
+    /** 4 bánh theo thứ tự [TyreCorner]; rỗng = chưa có dữ liệu (vẽ 4 ô với dấu gạch). */
     private var readings: List<TyreReading> = emptyList()
 
     /** Chuỗi số đã format sẵn theo đơn vị người dùng chọn (song song [readings]); `null` = "—". */
     private var values: List<String?> = emptyList()
 
-    /** Nhãn đơn vị đang dùng (vd "bar" / "psi") — hiện MỘT lần ở giữa, không lặp 4 lần cho gọn. */
+    /** Nhãn đơn vị (vd "bar" / "psi") — vẽ **ngay cạnh từng số**, không còn nằm một mình ở chân bảng. */
     private var unitLabel: String = ""
 
-    /**
-     * Nhiệt độ TỪNG BÁNH đã format sẵn kèm đơn vị (song song [readings]); `null` = chưa đọc ⇒ chỉ hiện nhãn vị trí.
-     *
-     * [ĐO] máy ảo 2026-09-10: bản đầu tự ghép `"${'$'}{rd.tempC}°C"` ngay trong ô vẽ ⇒ người dùng chọn °F mà bảng vẫn
-     * ghi °C. Đó CHÍNH LÀ loại lỗi gói này đi dọn (mỗi bề mặt tự quyết đơn vị). Nay chuỗi do chỗ gọi format qua
-     * lớp đơn vị, ô vẽ KHÔNG biết gì về đơn vị.
-     */
+    /** Nhiệt độ TỪNG BÁNH đã format sẵn kèm đơn vị (song song [readings]); `null` = chưa đọc. */
     private var temps: List<String?> = emptyList()
+
+    /** Dòng KẾT LUẬN ở chân bảng — do [TyreBoard.verdict] quyết định, chỗ gọi có thể nối thêm ghi chú bằng chứng. */
+    private var verdict: String = ""
 
     private val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         // MUT2 (không phải LINE ~9% trắng): [ĐO] đọc ảnh máy ảo cho thấy viền LINE chỉ chênh nền 21/255 ⇒ hình xe
@@ -51,19 +59,35 @@ class TyreBoardView(context: Context) : View(context) {
         style = Paint.Style.STROKE; color = Color.parseColor(KachiTheme.MUT2)
     }
     private val tyrePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+
+    /** Nền ô giá trị. Paint RIÊNG (không đổi màu của [tyrePaint] rồi trả lại — xem KDoc [RadarBoardView.dimOutline]). */
+    private val cellFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL; color = Color.parseColor(KachiTheme.CARD2)
+    }
+
+    /** Viền ô giá trị — mang màu trạng thái, nên bánh sai nhìn ra được cả khi chưa đọc con số. */
+    private val cellStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+
+    /** Số — thứ TO NHẤT trong ô. Align LEFT vì số và đơn vị xếp thành một cặp phải tự canh giữa (xem [drawPair]). */
     private val bigP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER; isFakeBoldText = true; color = Color.parseColor(KachiTheme.INK)
+        textAlign = Paint.Align.LEFT; isFakeBoldText = true; color = Color.parseColor(KachiTheme.INK)
+    }
+
+    /** Đơn vị — ngay cạnh số, nhỏ hơn hẳn để không tranh chỗ với con số. */
+    private val unitP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.LEFT; color = Color.parseColor(KachiTheme.MUT)
     }
     private val subP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER; color = Color.parseColor(KachiTheme.MUT2)
+        textAlign = Paint.Align.CENTER; color = Color.parseColor(KachiTheme.MUT)
     }
     private val midP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER; color = Color.parseColor(KachiTheme.MUT)
     }
     private val body = RectF()
+    private val cell = RectF()
 
-    // Màu PHÂN GIẢI MỘT LẦN. `Color.parseColor` cắt chuỗi + parse số mỗi lần gọi; ô widget bị dựng lại theo nhịp
-    // trạng thái xe nên [onDraw] chạy đều đặn ⇒ để trong onDraw là rác bộ nhớ đúng chỗ KDoc trên hứa là không có.
+    // Màu PHÂN GIẢI MỘT LẦN. `Color.parseColor` cắt chuỗi + parse số mỗi lần gọi; [onDraw] chạy đều đặn theo nhịp
+    // trạng thái xe ⇒ để trong onDraw là rác bộ nhớ đúng chỗ KDoc trên hứa là không có.
     private val colInk = Color.parseColor(KachiTheme.INK)
     private val colMut = Color.parseColor(KachiTheme.MUT)
     private val colMut2 = Color.parseColor(KachiTheme.MUT2)
@@ -71,17 +95,24 @@ class TyreBoardView(context: Context) : View(context) {
     private val colAmber = Color.parseColor(KachiTheme.AMBER)
 
     /**
-     * Đặt dữ liệu. [values] và [temps] **song song** với [readings] (chuỗi đã đổi đơn vị + format ở chỗ gọi — ô vẽ
-     * KHÔNG tự đổi đơn vị để chỉ có một nơi làm việc đó).
+     * Đặt dữ liệu. [values]/[temps] **song song** với [readings] (đã đổi đơn vị + format ở chỗ gọi — ô vẽ KHÔNG tự
+     * đổi đơn vị để chỉ có một nơi làm việc đó), [verdict] là kết luận đã quyết định ở `:core`.
      *
-     * Độ dài được CHUẨN HOÁ về đúng `readings.size` ngay ở đây: nếu chỗ gọi đưa danh sách lệch độ dài thì mọi bánh
-     * thiếu hiện "—" một cách nhất quán, thay vì lệch chỉ số làm số của bánh này nhảy sang bánh khác.
+     * Độ dài được CHUẨN HOÁ về đúng `readings.size` ngay ở đây: chỗ gọi đưa danh sách lệch độ dài thì mọi bánh thiếu
+     * hiện "—" một cách nhất quán, thay vì lệch chỉ số làm số của bánh này nhảy sang bánh khác.
      */
-    fun set(readings: List<TyreReading>, values: List<String?>, unitLabel: String, temps: List<String?>) {
+    fun set(
+        readings: List<TyreReading>,
+        values: List<String?>,
+        unitLabel: String,
+        temps: List<String?>,
+        verdict: String,
+    ) {
         this.readings = readings
         this.values = List(readings.size) { values.getOrNull(it) }
         this.unitLabel = unitLabel
         this.temps = List(readings.size) { temps.getOrNull(it) }
+        this.verdict = verdict
         invalidate()
     }
 
@@ -100,74 +131,118 @@ class TyreBoardView(context: Context) : View(context) {
         val m = minOf(w, h)
 
         outline.strokeWidth = m * 0.018f
-        bigP.textSize = m * 0.155f
-        subP.textSize = m * 0.075f
+        cellStroke.strokeWidth = m * 0.014f
+        bigP.textSize = m * 0.150f
+        unitP.textSize = m * 0.068f
+        // Dòng phụ = **cỡ NHÃN**, nhỏ hơn số 3.5 lần. [ĐO] vòng đầu tôi để 0.062 (46px với ô này) ⇒ chữ viết tắt
+        // vị trí vẫn ra mực **cao 28px** trong khi giá trị off-car chỉ là dấu gạch dày 11px — tức thứ bậc VẪN đảo
+        // đúng như kiểm toán đo được ở bản trước. Hạ về 0.042 (31px) cho nó đọc ra là một chú thích.
+        subP.textSize = m * 0.042f
         midP.textSize = m * 0.072f
 
-        // [ĐO] máy ảo 2026-09-10 (đọc ảnh): bản đầu vẽ thân xe 224×262 px = tỉ lệ 0.85 ⇒ gần VUÔNG, không đọc ra là
-        // xe; viền lại chỉ chênh nền ~21/255 nên gần như tan biến. Sửa: thân THUÔN DỌC (hẹp hơn, cao hơn) + viền
-        // sáng hơn hẳn. Toàn bộ khối dịch LÊN vì bản đầu chừa 80px phía trên mà chỉ 19px dưới chữ đơn vị.
-        val bodyW = w * 0.22f
-        val bodyH = h * 0.70f
-        val cy = h * 0.46f
+        // Thân xe THUÔN DỌC + vạch kính lái — cùng hình với [RadarBoardView] để hai bảng BOARD là một họ. Thân HẸP
+        // (0.20w) vì phần lớn bề ngang nay thuộc về bốn ô giá trị: chúng chứa số + đơn vị + dòng phụ.
+        val bodyW = w * 0.24f
+        val bodyH = h * 0.58f
+        val cy = h * 0.45f
         body.set((w - bodyW) / 2f, cy - bodyH / 2f, (w + bodyW) / 2f, cy + bodyH / 2f)
         val r = bodyW * 0.34f
         canvas.drawRoundRect(body, r, r, outline)
-        // Vạch ngang = kính lái, để người xem biết đâu là đầu xe (nếu không thì bảng 4 số bị lộn trước/sau).
-        canvas.drawLine(body.left + bodyW * 0.14f, body.top + bodyH * 0.22f,
-            body.right - bodyW * 0.14f, body.top + bodyH * 0.22f, outline)
+        canvas.drawLine(
+            body.left + bodyW * 0.14f, body.top + bodyH * 0.18f,
+            body.right - bodyW * 0.14f, body.top + bodyH * 0.18f, outline,
+        )
 
-        val leftX = w * 0.22f
-        val rightX = w * 0.78f
-        val topY = cy - bodyH * 0.30f
-        val botY = cy + bodyH * 0.30f
+        // Bốn ô giá trị ÁP SÁT thân xe: hai cột (trái/phải thân) × hai hàng (trước/sau). Khoảng cách tới thân là
+        // `gap` — nhỏ có chủ ý, vì chính khoảng cách này là thứ nói "ô này là bánh đó" (bản trước để 158px nên
+        // liên hệ đó mất).
+        val gap = m * 0.045f
+        val pad = w * 0.025f
+        val cellH = h * 0.24f
+        val topY = cy - bodyH * 0.26f
+        val botY = cy + bodyH * 0.26f
 
-        // Chưa có dữ liệu (off-car) ⇒ vẫn vẽ đủ 4 chỗ với "—" để bố cục không nhảy khi số về.
-        if (readings.size < 4) {
-            // Dùng CHÍNH toạ độ ở trên (không hardcode lại) ⇒ hai nhánh không thể lệch nhau khi chỉnh bố cục.
-            listOf(leftX to topY, rightX to topY, leftX to botY, rightX to botY).forEach { (x, y) ->
-                bigP.color = colorFor(TyreStatus.UNKNOWN)
-                canvas.drawText(TelemetryView.PLACEHOLDER, x, y, bigP)
-            }
-            midP.color = colMut
-            canvas.drawText(unitLabel.ifEmpty { "áp suất lốp" }, w / 2f, h * 0.93f, midP)
-            return
-        }
-
-        readings.forEachIndexed { i, rd ->
-            val x = if (rd.corner == TyreCorner.FRONT_LEFT || rd.corner == TyreCorner.REAR_LEFT) leftX else rightX
-            val y = if (rd.corner == TyreCorner.FRONT_LEFT || rd.corner == TyreCorner.FRONT_RIGHT) topY else botY
-            val col = colorFor(rd.status)
-
-            // Vệt bánh xe: gợi hình, và là chỗ mang màu cảnh báo (số + vệt cùng màu ⇒ thấy ngay bánh nào).
-            tyrePaint.color = col
-            val tw = m * 0.035f
-            val th = m * 0.115f
-            // Chồng NHẸ lên mép thân: bản đầu để rời hẳn nên 4 vệt trông như trang trí độc lập, không ra "bánh xe".
-            val edgeX = if (x < w / 2f) body.left - tw * 0.55f else body.right - tw * 0.45f
-            canvas.drawRoundRect(edgeX, y - th * 0.75f, edgeX + tw, y + th * 0.25f, tw / 2f, tw / 2f, tyrePaint)
-
-            bigP.color = col
-            canvas.drawText(values.getOrNull(i) ?: TelemetryView.PLACEHOLDER, x, y, bigP)
-
-            // Dòng phụ: nhiệt độ nếu đọc được, không thì nhãn vị trí bánh (luôn có thông tin, không để trống).
-            // MỘT cảnh báo = MỘT màu: bản đầu cho số màu đỏ mà dòng phụ màu hổ phách ⇒ cùng một bánh có hai màu
-            // cảnh báo, người xem không biết đang báo cái gì. Nay dòng phụ dùng CHÍNH màu của số.
-            subP.color = if (rd.status.alert) col else colMut2
-            // Dòng phụ nói LUÔN sai cái gì (non / căng / lệch) — trước đây chỉ có màu, người xem phải tự so số
-            // mới biết là non hay quá căng. Ưu tiên: lý do trước, rồi nhiệt độ, cuối cùng chỉ nhãn vị trí.
-            val t = temps.getOrNull(i)
-            val why = rd.status.reason
-            val sub = when {
-                why != null && t != null -> "${rd.corner.shortLabel} · $why · $t"
-                why != null -> "${rd.corner.shortLabel} · $why"
-                t != null -> "${rd.corner.shortLabel} · $t"
-                else -> rd.corner.shortLabel
-            }
-            canvas.drawText(sub, x, y + m * 0.105f, subP)
+        // Chưa có dữ liệu (off-car) ⇒ vẫn vẽ đủ 4 ô với "—" để bố cục không nhảy khi số về. Dùng CHÍNH toạ độ ở
+        // trên (không hardcode lại) ⇒ hai nhánh không thể lệch nhau khi chỉnh bố cục.
+        val rows = if (readings.size < 4) PLACEHOLDER_CORNERS else readings.map { it.corner }
+        rows.forEachIndexed { i, corner ->
+            val left = corner == TyreCorner.FRONT_LEFT || corner == TyreCorner.REAR_LEFT
+            val front = corner == TyreCorner.FRONT_LEFT || corner == TyreCorner.FRONT_RIGHT
+            val cyc = if (front) topY else botY
+            if (left) cell.set(pad, cyc - cellH / 2f, body.left - gap, cyc + cellH / 2f)
+            else cell.set(body.right + gap, cyc - cellH / 2f, w - pad, cyc + cellH / 2f)
+            val rd = readings.getOrNull(i)
+            drawCell(canvas, m, corner, rd, values.getOrNull(i), temps.getOrNull(i))
+            drawWheelMark(canvas, m, left, cyc, colorFor(rd?.status ?: TyreStatus.UNKNOWN))
         }
 
         midP.color = colMut
-        canvas.drawText(unitLabel, w / 2f, h * 0.93f, midP)
+        canvas.drawText(verdict, w / 2f, h * 0.965f, midP)
+    }
+
+    /** Vệt bánh xe trên mép thân — gợi hình, và mang màu trạng thái để bánh sai nhìn ra ngay trên hình xe. */
+    private fun drawWheelMark(canvas: Canvas, m: Float, left: Boolean, cy: Float, color: Int) {
+        tyrePaint.color = color
+        val tw = m * 0.035f
+        val th = m * 0.115f
+        val x = if (left) body.left - tw * 0.55f else body.right - tw * 0.45f
+        canvas.drawRoundRect(x, cy - th / 2f, x + tw, cy + th / 2f, tw / 2f, tw / 2f, tyrePaint)
+    }
+
+    /**
+     * Một ô giá trị: **số (to nhất) + đơn vị ngay cạnh** ở dòng trên, **nhiệt độ / lý do sai + vị trí** ở dòng dưới.
+     *
+     * Chữ viết tắt vị trí xuống dòng phụ và dùng cỡ nhãn (bản trước nó là chữ to nhất ô — xem KDoc lớp): vị trí đã
+     * được nói bằng **chỗ đặt ô**, chữ chỉ để xác nhận, nên nó không được to hơn con số.
+     */
+    private fun drawCell(canvas: Canvas, m: Float, corner: TyreCorner, rd: TyreReading?, value: String?, temp: String?) {
+        val st = rd?.status ?: TyreStatus.UNKNOWN
+        val col = colorFor(st)
+        val radius = m * 0.035f
+        canvas.drawRoundRect(cell, radius, radius, cellFill)
+        cellStroke.color = if (st.alert) col else colMut2
+        canvas.drawRoundRect(cell, radius, radius, cellStroke)
+
+        val hasValue = value != null
+        val numText = value ?: TelemetryView.PLACEHOLDER
+        bigP.color = col
+        // Đơn vị chỉ có nghĩa khi có số: "— bar" đọc như thể đơn vị là dữ liệu, mà nó không phải.
+        val unit = if (hasValue) unitLabel else ""
+        val numBase = cell.centerY() + bigP.textSize * 0.10f - subP.textSize * 0.60f
+        drawPair(canvas, m, numText, unit, numBase)
+
+        // Dòng phụ: LUÔN có nội dung. Thứ tự: vị trí · lý do sai · nhiệt độ — lý do trước nhiệt vì nó là thứ phải
+        // xử lý ngay. Nhiệt độ nằm ở đây chính là 4 mục còn lại của lời hứa "8 mục".
+        subP.color = if (st.alert) col else colMut
+        val why = st.reason
+        val sub = listOfNotNull(corner.shortLabel, why, temp).joinToString(" · ")
+        canvas.drawText(sub, cell.centerX(), numBase + subP.textSize * 1.35f, subP)
+    }
+
+    /**
+     * Vẽ cặp `số + đơn vị` **canh giữa theo cả cặp**, không canh giữa từng phần.
+     *
+     * Canh giữa riêng lẻ sẽ làm con số lệch khỏi tâm ô một nửa bề rộng đơn vị, và độ lệch đó KHÁC nhau giữa bốn
+     * bánh khi số có số chữ khác nhau (`2.4` vs `2.45`) ⇒ bốn ô trông như bị đặt lệch nhau.
+     */
+    private fun drawPair(canvas: Canvas, m: Float, number: String, unit: String, baseline: Float) {
+        val numW = bigP.measureText(number)
+        val gapU = if (unit.isEmpty()) 0f else m * 0.018f
+        val unitW = if (unit.isEmpty()) 0f else unitP.measureText(unit)
+        var x = cell.centerX() - (numW + gapU + unitW) / 2f
+        canvas.drawText(number, x, baseline, bigP)
+        if (unit.isEmpty()) return
+        x += numW + gapU
+        canvas.drawText(unit, x, baseline, unitP)
+    }
+
+    private companion object {
+        /**
+         * Thứ tự bánh dùng khi CHƯA có dữ liệu — đúng thứ tự khai của [TyreCorner].
+         *
+         * Suy từ `TyreCorner.values()` chứ không viết bốn tên: thêm/đổi bánh ở `:core` là bảng tự theo, và hai
+         * nhánh (có dữ liệu / chưa) không thể lệch thứ tự.
+         */
+        val PLACEHOLDER_CORNERS: List<TyreCorner> = TyreCorner.values().toList()
     }
 }

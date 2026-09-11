@@ -13,6 +13,7 @@ import android.widget.Toast
 import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * NỘI DUNG từng nhóm của màn Cài đặt (S1 · T3) — trừ nhóm "Màn hình chính" nằm ở [SettingsHomeSection] (trần 500
@@ -32,7 +33,7 @@ class SettingsSections(
     fun build(group: SettingsGroup): View {
         val body = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, 0, dpi(context, 4), dpi(context, 16))
+            setPadding(0, 0, dpi(context, Sp.XS), dpi(context, Sp.L))
         }
         when (group) {
             // Lưới 187 ô dựng trong đây ⇒ MỘT thực thể [CapabilityGridSection] mới cho mỗi lượt dựng trang (ràng
@@ -99,7 +100,7 @@ class SettingsSections(
                 profileRow(name, active = name == s.activeProfile, total = s.profiles.size),
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                ).also { it.bottomMargin = dpi(context, 6) },
+                ).also { it.bottomMargin = dpi(context, Sp.S) },
             )
         }
         body.addView(rows.button("Thêm hồ sơ…") { deps.onAddProfile() }, wrapLp())
@@ -122,8 +123,8 @@ class SettingsSections(
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, 14f, "#161b24")
-            val p = dpi(context, 12)
+            background = KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
+            val p = dpi(context, Sp.M)
             setPadding(p, p, p, p)
             addView(
                 LinearLayout(context).apply {
@@ -143,7 +144,7 @@ class SettingsSections(
             addView(TextView(context).apply {
                 text = "Xoá"; setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                 typeface = Typeface.DEFAULT_BOLD
-                setPadding(dpi(context, 14), dpi(context, 6), dpi(context, 6), dpi(context, 6))
+                setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.S), dpi(context, Sp.S))
                 setOnClickListener {
                     when {
                         // ⚠ [SOÁT S1 · P2] Thứ tự PHẢI là "hồ sơ cuối cùng" TRƯỚC "đang dùng". Máy mới cài có ĐÚNG

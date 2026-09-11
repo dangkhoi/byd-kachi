@@ -17,6 +17,7 @@ import java.util.Date
 import java.util.Locale
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Dữ liệu xe MẪU (emulator/demo) — GIỮ cho tương thích; **KHÔNG còn nằm trên đường wire** (OQ1: off-car "—", KHÔNG
@@ -76,12 +77,15 @@ object WidgetViews {
         "w_pm25" -> pm25Ring(ctx, data.car)
         "w_speed" -> speed(ctx, data.car)
         "w_tire" -> tyreBoard(ctx, data)
-        "w_media" -> media(ctx, data)
+        "w_media" -> MediaWidgetView.build(ctx, data)
         "w_car" -> carState(ctx, data.car)
         "w_board" -> board(ctx, data)
         "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
+        // G1·T3: NHÓM khả năng → ba bộ vẽ dùng chung. Đặt TRƯỚC nhánh hành động (thứ tự y như
+        // [CapabilityCatalog.kindOf]); bảng 4 bánh truyền vào bằng lambda để KHÔNG có bản dựng thứ hai.
+        else -> if (CapabilityGroups.byId(id) != null) GroupTiles.build(ctx, id, data) { c, d -> tyreBoard(c, d) }
         // Hành động → ô bấm được; còn lại (đọc) → đường telemetry cũ, KHÔNG đổi một dòng.
-        else -> if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.BIG)
+        else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.BIG)
         else telemetry(ctx, id, data.car, data.units)
     }
 
@@ -96,7 +100,7 @@ object WidgetViews {
         val n = list.size
         val topN = if (n <= 3) n else n / 2
         val rows = if (n <= 3) listOf(list) else listOf(list.subList(0, topN), list.subList(topN, n))
-        val g = dpi(ctx, 5)
+        val g = dpi(ctx, Sp.XS)
         return LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; setPadding(g, g, g, g)
             rows.forEach { rowIds ->
@@ -138,6 +142,13 @@ object WidgetViews {
             if (tag != null) {
                 val keep = CapabilityCatalog.isWrite(tag.id) || WorkspaceRenderPlanner.selfDriven(tag.id)
                 if (!keep) {
+                    // G1·T3 — ô NHÓM tự đổi chữ TẠI CHỖ. KHÔNG được thay view của nó: nhóm kính/cửa/đèn có **hàng
+                    // nút bên trong**, thay view là tháo/gắn nút giữa cú chạm ⇒ mất cú bấm (đúng bệnh [SOÁT P1-1]).
+                    val group = v as? GroupTileView
+                    if (group != null) {
+                        if (group.refresh(data)) changed++
+                        return
+                    }
                     val parent = v.parent as? ViewGroup ?: return
                     val at = parent.indexOfChild(v)
                     val lp = v.layoutParams
@@ -168,7 +179,9 @@ object WidgetViews {
             "w_car"    -> miniCard(ctx, "ic-lock", "Xe", "", KachiTheme.GREEN, false)
             "w_board"  -> miniCard(ctx, "ic-grid", "Tổng hợp", "", KachiTheme.ACCENT, false)
             "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
-            else       -> if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)
+            // G1·T3: nhóm trong ô nén ⇒ TÓM TẮT (xem KDoc GroupTiles.mini), không vẽ dải/bảng thu nhỏ.
+            else       -> if (CapabilityGroups.byId(id) != null) GroupTiles.mini(ctx, id, data)
+            else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)
             else telemetryMini(ctx, id, car, data.units)
         }
     }
@@ -187,7 +200,7 @@ object WidgetViews {
         val tile = ActionMacros.byId(id)?.let { factory.macroTile(it) }
             ?: ControlRegistry.byId(id)?.let { factory.actionTile(it) }
             ?: return label(ctx, id.uppercase(), "—", "")
-        val pad = if (size == TileSize.BIG) dpi(ctx, 12) else 0
+        val pad = if (size == TileSize.BIG) dpi(ctx, Sp.M) else 0
         return FrameLayout(ctx).apply {
             setPadding(pad, pad, pad, pad)
             addView(tile, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
@@ -206,12 +219,12 @@ object WidgetViews {
     private fun miniCard(ctx: Context, icon: String, big: String, sub: String, color: String, badge: Boolean, dim: Boolean = false): View =
         LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, 12f, "#1c212b")
-            val p = dpi(ctx, 6); setPadding(p, p, p, p)
+            background = KachiTheme.card(ctx, Sp.RADIUS_M, "#1c212b")
+            val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             if (dim) alpha = 0.5f
             val r = KachiTheme.iconRes(icon)
             if (r != 0) addView(ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
-                LinearLayout.LayoutParams(dpi(ctx, 20), dpi(ctx, 20)).also { it.bottomMargin = dpi(ctx, 3) })
+                LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S)).also { it.bottomMargin = dpi(ctx, Sp.XS) })
             addView(tv(ctx, big, 17f, color, true).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
             if (sub.isNotEmpty()) addView(tv(ctx, sub, 10.5f, KachiTheme.MUT).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
             if (badge) addView(badgeView(ctx))
@@ -244,15 +257,15 @@ object WidgetViews {
         val pctv = v.valueText?.toFloatOrNull()?.let { if (v.unit == "%") it else it.coerceIn(0f, 100f) } ?: 0f
         addView(RingView(ctx).apply { set(pctv, KachiTheme.CYAN, v.display, v.unit) },
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-        addView(tv(ctx, v.label, 12.5f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, 4), 0, 0) })
+        addView(tv(ctx, v.label, 12.5f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.XS), 0, 0) })
     }
 
     private fun valueShape(ctx: Context, v: TelemetryView): View = col(ctx).apply {
         addView(eyebrow(ctx, v.label))
         val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         row.addView(tv(ctx, v.display, 34f, KachiTheme.INK, true))
-        if (v.unit.isNotEmpty()) row.addView(tv(ctx, " ${v.unit}", 14f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, 10), 0, 0) })
-        addView(row.apply { setPadding(0, dpi(ctx, 3), 0, 0) })
+        if (v.unit.isNotEmpty()) row.addView(tv(ctx, " ${v.unit}", 14f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.M), 0, 0) })
+        addView(row.apply { setPadding(0, dpi(ctx, Sp.XS), 0, 0) })
     }
 
     private fun badgeShape(ctx: Context, v: TelemetryView): View = col(ctx).apply {
@@ -260,22 +273,22 @@ object WidgetViews {
         val badge = TextView(ctx).apply {
             text = v.display; setTextColor(c(if (v.available) KachiTheme.INK else KachiTheme.MUT)); typeface = Typeface.DEFAULT_BOLD
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f); gravity = Gravity.CENTER
-            setPadding(dpi(ctx, 16), dpi(ctx, 6), dpi(ctx, 16), dpi(ctx, 6))
+            setPadding(dpi(ctx, Sp.L), dpi(ctx, Sp.S), dpi(ctx, Sp.L), dpi(ctx, Sp.S))
             background = KachiTheme.pill(ctx, "#1c212b")
         }
-        addView(badge, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dpi(ctx, 6) })
+        addView(badge, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dpi(ctx, Sp.S) })
     }
 
     private fun stripShape(ctx: Context, v: TelemetryView): View = col(ctx).apply {
         addView(eyebrow(ctx, v.label))
-        addView(tv(ctx, v.display, 22f, if (v.available) KachiTheme.INK else KachiTheme.MUT, true).apply { setPadding(0, dpi(ctx, 4), 0, 0) })
+        addView(tv(ctx, v.display, 22f, if (v.available) KachiTheme.INK else KachiTheme.MUT, true).apply { setPadding(0, dpi(ctx, Sp.XS), 0, 0) })
     }
 
     private fun badgeView(ctx: Context): View = TextView(ctx).apply {
         text = BADGE; setTextColor(c(KachiTheme.AMBER)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f); gravity = Gravity.CENTER
-        setPadding(dpi(ctx, 6), dpi(ctx, 1), dpi(ctx, 6), dpi(ctx, 1)); maxLines = 1
-        background = GradientDrawable().apply { cornerRadius = dpi(ctx, 6).toFloat(); setColor(c("#33fbbf24")) }
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dpi(ctx, 4) }
+        setPadding(dpi(ctx, Sp.S), dpi(ctx, Sp.XS), dpi(ctx, Sp.S), dpi(ctx, Sp.XS)); maxLines = 1
+        background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c("#33fbbf24")) }
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dpi(ctx, Sp.XS) }
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────────────────────────────
@@ -303,8 +316,13 @@ object WidgetViews {
         // nhận trên xe owner) nên có thể không bao giờ có số. `EvidenceTier.needsBadge` chỉ đúng cho
         // OVERDRIVE/DASHCAST ⇒ chấm amber KHÔNG áp được ở đây; nói bằng chữ ở dòng chân bảng là đường duy nhất
         // không phải bịa. Ô vẽ vẫn KHÔNG biết gì về mức bằng chứng — chuỗi do chỗ gọi dựng.
-        val footer = if (TyreBoard.tempTier.wired) unit else "$unit · nhiệt chưa kiểm"
-        return TyreBoardView(ctx).apply { set(readings, values, footer, temps) }
+        //
+        // Chân bảng nay là **KẾT LUẬN** ([TyreBoard.verdict], quyết định ở `:core`) chứ không phải nhãn đơn vị: đơn
+        // vị đã đứng ngay cạnh từng số (kiểm toán UX mục 1), nên để nó một mình ở chân bảng là vừa lặp vừa chiếm
+        // đúng chỗ đáng giá nhất — dòng cuối là chỗ mắt dừng lại.
+        val verdict = TyreBoard.verdict(readings)
+        val footer = if (TyreBoard.tempTier.wired) verdict else "$verdict · nhiệt chưa kiểm"
+        return TyreBoardView(ctx).apply { set(readings, values, unit, temps, footer) }
     }
 
     /** Ô nhỏ (lưới nhiều widget trong 1 ô): khoảng cao–thấp + màu theo [TyreBoard.anyAlert]. */
@@ -341,11 +359,11 @@ object WidgetViews {
     private fun trimNumber(v: Double): String =
         if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString()
 
-    private fun col(ctx: Context): LinearLayout = LinearLayout(ctx).apply {
+    internal fun col(ctx: Context): LinearLayout = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-        val p = dpi(ctx, 14); setPadding(p, p, p, p)
+        val p = dpi(ctx, Sp.L); setPadding(p, p, p, p)
     }
-    private fun tv(ctx: Context, s: String, sp: Float, color: String, bold: Boolean = false) = TextView(ctx).apply {
+    internal fun tv(ctx: Context, s: String, sp: Float, color: String, bold: Boolean = false) = TextView(ctx).apply {
         text = s; setTextColor(c(color)); setTextSize(TypedValue.COMPLEX_UNIT_SP, sp); gravity = Gravity.CENTER
         if (bold) typeface = Typeface.DEFAULT_BOLD
     }
@@ -353,7 +371,7 @@ object WidgetViews {
 
     private fun label(ctx: Context, title: String, big: String, sub: String) = col(ctx).apply {
         addView(eyebrow(ctx, title))
-        addView(tv(ctx, big, 30f, KachiTheme.INK, true).apply { setPadding(0, dpi(ctx, 3), 0, dpi(ctx, 2)) })
+        addView(tv(ctx, big, 30f, KachiTheme.INK, true).apply { setPadding(0, dpi(ctx, Sp.XS), 0, dpi(ctx, Sp.XS)) })
         if (sub.isNotEmpty()) addView(tv(ctx, sub, 13f, KachiTheme.MUT))
     }
 
@@ -361,7 +379,7 @@ object WidgetViews {
         col(ctx).apply {
             addView(RingView(ctx).apply { set(percent, color, big, small) },
                 LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-            if (sub.isNotEmpty()) addView(tv(ctx, sub, 12.5f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, 4), 0, 0) })
+            if (sub.isNotEmpty()) addView(tv(ctx, sub, 12.5f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.XS), 0, 0) })
         }
 
     // ── Curated widgets (đọc từ CarStatus) ───────────────────────────────────────────────────────────────
@@ -381,11 +399,11 @@ object WidgetViews {
         addView(tv(ctx, SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()), 50f, KachiTheme.INK, true))
         addView(tv(ctx, SimpleDateFormat("EEEE, dd/MM", Locale.forLanguageTag("vi")).format(Date()), 14f, KachiTheme.MUT))
         addView(tv(ctx, (car.climate.outsideTempC?.let { "$it°C" } ?: "—") + " · ngoài xe", 13f, KachiTheme.MUT).apply {
-            setPadding(0, dpi(ctx, 6), 0, 0)
+            setPadding(0, dpi(ctx, Sp.S), 0, 0)
             val r = KachiTheme.iconRes("ic-sun")
             if (r != 0) {
-                val d = resources.getDrawable(r, ctx.theme).apply { setBounds(0, 0, dpi(ctx, 18), dpi(ctx, 18)); setTint(c(KachiTheme.AMBER)) }
-                setCompoundDrawablesRelative(d, null, null, null); compoundDrawablePadding = dpi(ctx, 6)
+                val d = resources.getDrawable(r, ctx.theme).apply { setBounds(0, 0, dpi(ctx, Sp.ICON_XS), dpi(ctx, Sp.ICON_XS)); setTint(c(KachiTheme.AMBER)) }
+                setCompoundDrawablesRelative(d, null, null, null); compoundDrawablePadding = dpi(ctx, Sp.S)
             }
         })
     }
@@ -396,38 +414,7 @@ object WidgetViews {
         row.addView(tv(ctx, " km/h", 15f, KachiTheme.MUT))
         addView(row)
         val limit = if (car.safety.speedLimitWarning == true) "Vượt tốc độ" else "Tốc độ hiện tại"
-        addView(tv(ctx, limit, 13f, if (car.safety.speedLimitWarning == true) KachiTheme.RED else KachiTheme.MUT).apply { setPadding(0, dpi(ctx, 6), 0, 0) })
-    }
-
-    private fun media(ctx: Context, data: WidgetData) = col(ctx).apply {
-        val m = data.media
-        val art = ImageView(ctx).apply {
-            background = KachiTheme.gradient(ctx, 15f, "#f59e0b", "#ef4444")
-            if (m?.albumArt != null) setImageBitmap(m.albumArt)
-        }
-        addView(art, LinearLayout.LayoutParams(dpi(ctx, 78), dpi(ctx, 78)).also { it.bottomMargin = dpi(ctx, 9) })
-        addView(tv(ctx, m?.title ?: "—", 15f, KachiTheme.INK, true).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
-        addView(tv(ctx, m?.artist ?: "", 12.5f, KachiTheme.MUT).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
-        val frac = m?.let { if (it.durationMs > 0) (it.positionMs.toFloat() / it.durationMs).coerceIn(0f, 1f) else 0f } ?: 0f
-        val prog = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            background = GradientDrawable().apply { cornerRadius = dpi(ctx, 3).toFloat(); setColor(c("#29FFFFFF")) }
-            addView(View(ctx).apply { background = GradientDrawable().apply { cornerRadius = dpi(ctx, 3).toFloat(); setColor(c(KachiTheme.ACCENT)) } },
-                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, frac.coerceAtLeast(0.001f)))
-            addView(View(ctx), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, (1f - frac).coerceAtLeast(0.001f)))
-        }
-        addView(prog, LinearLayout.LayoutParams(dpi(ctx, 150), dpi(ctx, 5)).also { it.topMargin = dpi(ctx, 10) })
-        addView(LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, dpi(ctx, 10), 0, 0)
-            fun mbtn(icon: String, action: String) = ImageView(ctx).apply {
-                val r = KachiTheme.iconRes(icon); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
-                setOnClickListener { data.onMedia(action) }
-            }
-            val playing = m?.playing == true
-            addView(mbtn("ic-prev", "prev"), LinearLayout.LayoutParams(dpi(ctx, 22), dpi(ctx, 22)).also { it.marginEnd = dpi(ctx, 20) })
-            addView(mbtn("ic-play", if (playing) "pause" else "play"), LinearLayout.LayoutParams(dpi(ctx, 22), dpi(ctx, 22)).also { it.marginEnd = dpi(ctx, 20) })
-            addView(mbtn("ic-next", "next"), LinearLayout.LayoutParams(dpi(ctx, 22), dpi(ctx, 22)))
-        })
+        addView(tv(ctx, limit, 13f, if (car.safety.speedLimitWarning == true) KachiTheme.RED else KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) })
     }
 
     private fun carState(ctx: Context, car: CarStatus) = col(ctx).apply {
@@ -438,7 +425,7 @@ object WidgetViews {
             doors.any { it == true } -> "Có cửa đang mở"
             else -> "4 cửa đóng"
         }
-        addView(tv(ctx, doorLine, 13f, if (doors.any { it == true }) KachiTheme.AMBER else KachiTheme.GREEN).apply { setPadding(0, dpi(ctx, 6), 0, 0) })
+        addView(tv(ctx, doorLine, 13f, if (doors.any { it == true }) KachiTheme.AMBER else KachiTheme.GREEN).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) })
         val tail = when (car.body.tailgateOpen) { true -> "Cốp sau đang mở"; false -> "Cốp sau đóng"; null -> "Cốp sau —" }
         addView(tv(ctx, tail, 13f, if (car.body.tailgateOpen == true) KachiTheme.AMBER else KachiTheme.MUT))
     }
@@ -447,17 +434,17 @@ object WidgetViews {
         val car = data.car
         fun cell(icon: String, big: String, sub: String, color: String) = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, 12f, "#1c212b")
+            background = KachiTheme.card(ctx, Sp.RADIUS_M, "#1c212b")
             val r = KachiTheme.iconRes(icon)
             if (r != 0) addView(ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
-                LinearLayout.LayoutParams(dpi(ctx, 22), dpi(ctx, 22)).also { it.bottomMargin = dpi(ctx, 3) })
+                LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S)).also { it.bottomMargin = dpi(ctx, Sp.XS) })
             addView(tv(ctx, big, 17f, color, true))
             if (sub.isNotEmpty()) addView(tv(ctx, sub, 11f, KachiTheme.MUT))
         }
         fun rowOf(a: View, b: View) = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
-            addView(a, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).also { it.setMargins(dpi(ctx,5),dpi(ctx,5),dpi(ctx,5),dpi(ctx,5)) })
-            addView(b, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).also { it.setMargins(dpi(ctx,5),dpi(ctx,5),dpi(ctx,5),dpi(ctx,5)) })
+            addView(a, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).also { it.setMargins(dpi(ctx, Sp.XS),dpi(ctx, Sp.XS),dpi(ctx, Sp.XS),dpi(ctx, Sp.XS)) })
+            addView(b, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).also { it.setMargins(dpi(ctx, Sp.XS),dpi(ctx, Sp.XS),dpi(ctx, Sp.XS),dpi(ctx, Sp.XS)) })
         }
         val bat = car.energy.soc; val km = car.energy.evRangeKm; val lvl = car.climate.pm25Level; val ug = pm25Ug(car)
         // Lốp: qua TyreBoard (ngưỡng TẬP TRUNG) + đơn vị người dùng — không tự chia 100 tại chỗ nữa.
@@ -469,7 +456,7 @@ object WidgetViews {
             if (lo == hi) lo else "$lo\u2013$hi"
         }
         return LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL; val p = dpi(ctx, 6); setPadding(p, p, p, p)
+            orientation = LinearLayout.VERTICAL; val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             addView(rowOf(
                 cell("ic-bolt", bat?.let { "$it%" } ?: "—", km?.let { "$it km" } ?: "", KachiTheme.GREEN),
                 cell("ic-leaf", ug?.let { "${it}µg" } ?: "—", "PM2.5 " + (lvl?.let { pm(it) } ?: ""), KachiTheme.CYAN),

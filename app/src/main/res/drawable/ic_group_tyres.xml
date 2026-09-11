@@ -1,0 +1,18 @@
+<!--
+  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm LỐP (áp suất + nhiệt của cả 4 bánh).
+  Thân xe nhìn từ trên + BỐN bánh RỜI hai bên. Nhóm này trả lời "lốp tôi ổn không?" ⇒ phải thấy cả 4 bánh cùng
+  lúc, đúng chỗ trên xe (spec §4.3: BOARD vẽ theo hình học thật của xe). ic_tire là icon của MỘT datum.
+  ⚠ Bản đầu đặt bánh ở x=6/18 cạnh thân x=8..16: trừ nửa nét mỗi bên thì khe chỉ còn 0.4 ⇒ [ĐO đọc ảnh] bánh
+  DÍNH vào thân, cả hình thành một khối. Nay bánh ra x=4.6/19.4 (khe 1.8) và dài 3.6 để ra dáng lốp.
+  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M10.6,4.4 L13.4,4.4 A2.6,2.6 0 0 1 16,7 L16,17 A2.6,2.6 0 0 1 13.4,19.6 L10.6,19.6 A2.6,2.6 0 0 1 8,17 L8,7 A2.6,2.6 0 0 1 10.6,4.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M4.6,6.8 L4.6,10.4 M19.4,6.8 L19.4,10.4 M4.6,13.6 L4.6,17.2 M19.4,13.6 L19.4,17.2"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

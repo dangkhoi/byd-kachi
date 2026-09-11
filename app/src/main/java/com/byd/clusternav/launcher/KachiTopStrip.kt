@@ -15,6 +15,7 @@ import com.byd.clusternav.launcher.KachiTheme.c
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Thanh trạng thái trên cùng của HOME: đồng hồ + ngày + chọn bố cục segmented + chip xe (cấu hình được) +
@@ -63,31 +64,39 @@ class KachiTopStrip(
     private fun build(): View {
         val strip = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, 14f, "#990a0d13", "#26ffffff")   // thanh mờ bo góc + viền rõ (prototype)
-            setPadding(dp(14), dp(4), dp(14), dp(4))
+            background = KachiTheme.card(context, Sp.RADIUS_L, "#990a0d13", "#26ffffff")   // thanh mờ bo góc + viền rõ (prototype)
+            setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.XS))
         }
         clock = TextView(activity).apply {
             setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f); typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.02f
         }
-        dateText = TextView(activity).apply { setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); setPadding(dp(10), 0, 0, 0) }
+        dateText = TextView(activity).apply { setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); setPadding(dp(Sp.M), 0, 0, 0) }
         strip.addView(clock); strip.addView(dateText)
-        strip.addView(buildSegmented(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(16) })
+        strip.addView(buildSegmented(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.L) })
         strip.addView(View(activity), LinearLayout.LayoutParams(0, 1, 1f))
         chipRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         strip.addView(chipRow)
         strip.addView(pill("Ứng dụng", false) { onOpenAppList() }, pillLp())   // U3: mở app toàn màn
         strip.addView(pill("Cài đặt", true) { onOpenSettings() }, pillLp())
-        strip.addView(profileAvatar(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(10) })
+        strip.addView(profileAvatar(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.SLOT_GAP) })
         refreshChips(CarStatus())
         return strip
     }
 
-    private fun pillLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(8) }
+    private fun pillLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.S) }
 
+    /**
+     * Pill bấm được của thanh trên ("Ứng dụng" · "Cài đặt").
+     *
+     * **T5 — cao ~30dp → [Sp.TOUCH]**: đây là đường vào chính của launcher (mở danh sách app, mở Cài đặt) mà
+     * lại là đích chạm dưới mức tối thiểu. Nới bằng `minimumHeight` chứ KHÔNG bằng cách tăng lề trong: lề trong
+     * đẩy cả chữ ra xa viền, còn `minimumHeight` chỉ kéo cao vùng chạm và giữ chữ ở giữa.
+     */
     private fun pill(text: String, primary: Boolean, onClick: () -> Unit) = TextView(activity).apply {
         this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-        setPadding(dp(14), dp(6), dp(14), dp(6))
-        if (primary) { background = KachiTheme.gradient(context, 999f); setTextColor(Color.WHITE) }
+        setPadding(dp(Sp.L), dp(Sp.S), dp(Sp.L), dp(Sp.S))
+        minimumHeight = dp(Sp.TOUCH)
+        if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(Color.WHITE) }
         else { background = KachiTheme.pill(context); setTextColor(c(KachiTheme.INK)) }
         setOnClickListener { onClick() }
     }
@@ -95,7 +104,9 @@ class KachiTopStrip(
     private fun buildSegmented(): View {
         val bar = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-            background = KachiTheme.pill(context); val p = dp(3); setPadding(p, p, p, p)
+            // Lề DỌC = 0 (chỉ còn lề ngang): từ T5 mỗi ô tự cao Sp.TOUCH, thêm lề dọc nữa thì thanh trên cao
+            // 56dp mà không ai chạm được phần lề đó.
+            background = KachiTheme.pill(context); setPadding(dp(Sp.XS), 0, dp(Sp.XS), 0)
         }
         presetCells.clear()
         listOf(
@@ -107,7 +118,13 @@ class KachiTopStrip(
         ).forEach { (icon, p) ->
             val cell = ImageView(activity).apply {
                 setImageResource(icon)
-                setPadding(dp(10), dp(7), dp(10), dp(7))
+                // T2: `ic_layout_*` đổi khung vẽ 22×16 → 24×24 (cả bộ icon một khung). Cỡ NỘI TẠI của drawable vì thế
+                // đi từ 24×17dp lên 24×24dp, nên lề dọc phải hạ 7 → 4 để ô giữ nguyên chiều cao (32dp so với 31dp
+                // trước đây). KHÔNG hạ thì dải chọn bố cục — thứ luôn nằm trên màn — tự nhiên cao thêm 7dp.
+                setPadding(dp(Sp.M), dp(Sp.XS), dp(Sp.M), dp(Sp.XS))
+                // T5 — ô chọn bố cục cao 32dp → Sp.TOUCH. Glyph giữ 24dp (cỡ nội tại của drawable, ImageView
+                // không kéo giãn khi khung lớn hơn hình), nên chỉ vùng chạm to ra.
+                minimumHeight = dp(Sp.TOUCH)
                 setOnClickListener { onSelectPreset(p) }
             }
             presetCells[p] = cell
@@ -119,7 +136,7 @@ class KachiTopStrip(
     /** Tô sáng ô preset đang chọn (do render gọi khi preset đổi). */
     fun selectPreset(sel: LayoutPreset) {
         presetCells.forEach { (p, cell) ->
-            if (p == sel) { cell.background = KachiTheme.gradient(activity, 999f); cell.setColorFilter(Color.WHITE) }
+            if (p == sel) { cell.background = KachiTheme.gradient(activity, Sp.RADIUS_PILL); cell.setColorFilter(Color.WHITE) }
             else { cell.background = null; cell.setColorFilter(c(KachiTheme.MUT)) }
         }
     }
@@ -132,11 +149,11 @@ class KachiTopStrip(
         return UnitFormat.apply(raw, units).display
     }
 
-    private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(8) }
+    private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.S) }
 
     private fun chip(text: String, iconName: String?, color: String): TextView = TextView(activity).apply {
         this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f); gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(4), 0, dp(4), 0)   // KHÔNG viền pill — chip prototype chỉ icon + chữ
+        setPadding(dp(Sp.XS), 0, dp(Sp.XS), 0)   // KHÔNG viền pill — chip prototype chỉ icon + chữ
         maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
         applyChipFace(this, iconName, color.ifEmpty { CHIP_INK })
     }
@@ -147,8 +164,8 @@ class KachiTopStrip(
         val r = iconName?.let { KachiTheme.iconRes(it) } ?: 0
         if (r != 0) {
             val d = activity.resources.getDrawable(r, activity.theme)
-                .apply { setBounds(0, 0, dp(16), dp(16)); setTint(c(color)) }
-            v.setCompoundDrawablesRelative(d, null, null, null); v.compoundDrawablePadding = dp(6)
+                .apply { setBounds(0, 0, dp(Sp.ICON_XS), dp(Sp.ICON_XS)); setTint(c(color)) }
+            v.setCompoundDrawablesRelative(d, null, null, null); v.compoundDrawablePadding = dp(Sp.S)
         } else {
             v.setCompoundDrawablesRelative(null, null, null, null)
         }
@@ -201,7 +218,10 @@ class KachiTopStrip(
         profileAvatarView = TextView(activity).apply {
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-            val s = dp(30); width = s; height = s; background = KachiTheme.gradient(activity, 999f)
+            // T5 — avatar 30dp → Sp.TOUCH. KDoc phía trên đã nói "một đích 30dp giữa lúc lái là chỗ dễ bấm nhầm"
+            // rồi kết luận bỏ cử chỉ GIỮ; nhưng cú CHẠM (đổi hồ sơ) vẫn ở lại trên đúng đích 30dp đó. Nới đích
+            // mới là chữa nguyên nhân, bỏ cử chỉ chỉ là bớt hậu quả.
+            val s = dp(Sp.TOUCH); width = s; height = s; background = KachiTheme.gradient(activity, Sp.RADIUS_PILL)
             setOnClickListener { onProfileTap() }
         }
         return profileAvatarView

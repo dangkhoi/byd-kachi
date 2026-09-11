@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Dải "slot-head" NỔI (overlay `TYPE_APPLICATION_OVERLAY`) đặt lên TRÊN cửa sổ freeform của app trong ô.
@@ -44,7 +45,7 @@ class OverlayHeads(private val activity: Activity) {
     fun show(heads: List<Head>) {
         clear()
         if (!android.provider.Settings.canDrawOverlays(activity)) return
-        val hpx = dp(34)
+        val hpx = dp(Sp.HEAD_BAR)
         heads.forEach { hd ->
             addOverlay(buildBar(hd), hd.width, hpx, hd.left, hd.top, touchable = true)   // header che caption + ⇄/✕
         }
@@ -62,16 +63,16 @@ class OverlayHeads(private val activity: Activity) {
     private fun buildBar(hd: Head): View {
         val bar = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(11), 0, dp(8), 0)
+            setPadding(dp(Sp.M), 0, dp(Sp.S), 0)
             // ĐỤC 100% (bo góc trên) để che KÍN caption freeform + KHỚP MÀU header của widget (khỏi lệch 2 màu). Màu chung = HEADER_BG.
             background = GradientDrawable().apply {
                 setColor(Color.parseColor("#0F1520"))
-                cornerRadii = floatArrayOf(dp(16).toFloat(), dp(16).toFloat(), dp(16).toFloat(), dp(16).toFloat(), 0f, 0f, 0f, 0f)
+                cornerRadii = floatArrayOf(dp(Sp.RADIUS_L).toFloat(), dp(Sp.RADIUS_L).toFloat(), dp(Sp.RADIUS_L).toFloat(), dp(Sp.RADIUS_L).toFloat(), 0f, 0f, 0f, 0f)
             }
         }
         bar.addView(View(activity).apply {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(hd.dotColor)) }
-        }, LinearLayout.LayoutParams(dp(9), dp(9)).also { it.marginEnd = dp(8) })
+        }, LinearLayout.LayoutParams(dp(Sp.DOT), dp(Sp.DOT)).also { it.marginEnd = dp(Sp.S) })
         bar.addView(TextView(activity).apply {
             text = hd.name; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             typeface = Typeface.DEFAULT_BOLD; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
@@ -81,12 +82,20 @@ class OverlayHeads(private val activity: Activity) {
         return bar
     }
 
-    private fun btnLp() = LinearLayout.LayoutParams(dp(24), dp(24)).also { it.marginStart = dp(6) }
+    /**
+     * Khung nút ⇄/✕ của thanh đầu ô.
+     *
+     * **T5 — đích chạm 24×24 → [Sp.TOUCH] rộng × cao HẾT thanh** (48×34 = **2,8 lần diện tích**). Nới được
+     * *miễn phí* vì thanh này trải HẾT bề rộng ô: rộng thêm không đẩy gì đi đâu, chỉ lấy phần trống sẵn có.
+     * Chiều cao dùng `MATCH_PARENT` chứ không phải [Sp.HEAD_BAR] để nút tự đúng nếu sau này thanh đổi cao.
+     */
+    private fun btnLp() = LinearLayout.LayoutParams(dp(Sp.TOUCH), ViewGroup.LayoutParams.MATCH_PARENT)
+        .also { it.marginStart = dp(Sp.S) }
 
     private fun btn(icon: String, onClick: () -> Unit): View = ImageView(activity).apply {
         val r = KachiTheme.iconRes(icon); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
-        setPadding(dp(5), dp(5), dp(5), dp(5))
-        background = GradientDrawable().apply { cornerRadius = dp(7).toFloat(); setColor(Color.parseColor("#33000000")) }
+        setPadding(dp(Sp.S), dp(Sp.S), dp(Sp.S), dp(Sp.S))
+        background = GradientDrawable().apply { cornerRadius = dp(Sp.RADIUS_S).toFloat(); setColor(Color.parseColor("#33000000")) }
         setOnClickListener { onClick() }
     }
 

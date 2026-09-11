@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- L2 Stage 2a — glyph: wind lines with curls = air/dust filter (white stroke). For tile_dust. -->
+<!-- L2 Stage 2a — glyph: wind lines with curls = air/dust filter (white stroke). For tile_dust.
+     LỀ QUANG HỌC (T2): bản cũ vươn tới x=22.70 / y=0.80 (cuộn xoáy đâm ra mép) ⇒ thu 0.885 quanh tâm (hai vòng: 0.93 rồi 0.952 — ĐỈNH cung nằm cao hơn ĐIỂM CUỐI cung nên vòng đầu chưa đủ). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="1.7" android:fillColor="#00000000"
-        android:strokeLineCap="round" android:strokeLineJoin="round"
-        android:pathData="M3,8 L16,8 A3,3 0 1 0 13,2 M3,12 L20,12 A3,3 0 1 1 17,18 M3,16 L12,16" />
+    <path android:pathData="M4.03,8.46 L15.54,8.46 A2.66,2.66 0 1 0 12.89,3.15 M4.03,12 L19.08,12 A2.66,2.66 0 1 1 16.43,17.31 M4.03,15.54 L12,15.54"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

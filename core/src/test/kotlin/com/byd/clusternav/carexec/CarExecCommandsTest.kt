@@ -66,7 +66,10 @@ class CarExecCommandsTest {
     @Test
     fun `app khong duoc dung shell tho`() {
         val roots = listOf("app/src/main/java", "../app/src/main/java").map(java.nio.file.Paths::get)
-        val root = roots.firstOrNull(Files::exists) ?: return
+        // [ĐO] 2026-09-12: bản trước là `?: return` ⇒ không giải ra được cây nguồn `:app` thì bài canh
+        // "app không được dùng shell thô" **tự tắt và báo XANH**. Phải nổ, không được im lặng.
+        val root = roots.firstOrNull(Files::exists)
+            ?: error("khong tim thay app/src/main/java — bai canh shell tho dang tu tat")
         val offenders = Files.walk(root).use { paths ->
             paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
                 .filter { it.toFile().readText().contains("CarExecShell") }

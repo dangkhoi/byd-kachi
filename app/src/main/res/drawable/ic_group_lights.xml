@@ -1,0 +1,15 @@
+<!--
+  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm ĐÈN (pha, cos, sương mù, xi-nhan, đèn ngày).
+  Mặt trước xe + HAI đèn sáng. Cố ý KHÁC ic_light (một chóa đèn + 3 tia = một đèn) vì nhóm nói về cả dàn đèn.
+  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M5,17.6 L6.4,10.4 C6.6,9.2 7.4,8.6 8.6,8.6 L15.4,8.6 C16.6,8.6 17.4,9.2 17.6,10.4 L19,17.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M7.4,14.6 L9.6,14.6 M14.4,14.6 L16.6,14.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

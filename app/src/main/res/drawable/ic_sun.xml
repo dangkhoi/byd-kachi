@@ -1,7 +1,14 @@
+<!--
+  Mặt trời (nắng / sáng ngoài trời). LỀ QUANG HỌC: bản cũ vươn tới 1.10..22.90 (tia sát mép khung) ⇒ đã thu về
+  0.90 quanh tâm (12,12) để hình nằm trong ô 20×20 như mọi icon khác. Hình dạng KHÔNG đổi, chỉ đổi cỡ.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M12,8A4,4 0 1 0 12.01,8Z" android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF" android:strokeWidth="1.8"/>
-    <path android:pathData="M12,2V4M12,20V22M2,12H4M20,12H22M4.9,4.9L6.3,6.3M17.7,17.7L19.1,19.1M19.1,4.9L17.7,6.3M6.3,17.7L4.9,19.1"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round"/>
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M12,8.4A3.6,3.6 0 1 0 12.01,8.4Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M12,3V4.8M12,19.2V21M3,12H4.8M19.2,12H21M5.61,5.61L6.87,6.87M17.13,17.13L18.39,18.39M18.39,5.61L17.13,6.87M6.87,17.13L5.61,18.39"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

@@ -161,8 +161,13 @@ class ActionMacroWiringContractTest {
 
     @Test
     fun `bang lop noi ro sai cai gi chu khong chi to mau`() {
-        assertTrue(board.contains("status.reason"),
-            "trước đây chỉ có màu ⇒ người xem phải tự so số mới biết non hay quá căng")
+        // Canh VIỆC (ô vẽ đọc lý do sai từ :core), không canh cách gõ tên biến — xem cùng bài học ở
+        // `Goi2FeatureWiringContractTest.mot canh bao mot mau`. Cặp đôi với bài dưới (chuỗi "non"/"căng"/"lệch"
+        // KHÔNG được nằm trong bộ vẽ) mới là phép khoá đủ: đọc `.reason` mà vẫn không tự ghép chữ.
+        assertTrue(
+            Regex("""\w+\.reason\b""").containsMatchIn(board),
+            "trước đây chỉ có màu ⇒ người xem phải tự so số mới biết non hay quá căng",
+        )
     }
 
     @Test

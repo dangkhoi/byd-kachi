@@ -15,6 +15,14 @@ import org.junit.jupiter.api.Test
  */
 class LayeringRulesTest {
 
+    /**
+     * ⚠ Trả null khi KHÔNG tìm thấy gốc — mọi chỗ gọi PHẢI `?: error(...)`, tuyệt đối không `?: return`.
+     *
+     * [ĐO] 2026-09-12: bản trước dùng `?: return` ở **9 chỗ**, tức 7 bài canh trong tệp này **tự tắt và báo
+     * XANH** nếu thư mục cần quét không giải ra được (đổi layout thư mục, đổi working dir của task test,
+     * dời module). Một bài canh im lặng bỏ qua chính đối tượng nó canh thì tệ hơn không có bài nào — vì nó
+     * còn phát ra dấu xanh. `error(...)` biến ca đó thành đỏ nói rõ lý do.
+     */
     private fun root(vararg candidates: String): Path? =
         candidates.map(Paths::get).firstOrNull(Files::exists)
 
@@ -39,9 +47,9 @@ class LayeringRulesTest {
      */
     @Test
     fun `test cua logic core khong duoc nam trong app`() {
-        val appTests = root("app/src/test/java", "../app/src/test/java") ?: return
-        val appMain = root("app/src/main/java", "../app/src/main/java") ?: return
-        val coreMain = root("core/src/main/kotlin", "../core/src/main/kotlin") ?: return
+        val appTests = root("app/src/test/java", "../app/src/test/java") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
+        val appMain = root("app/src/main/java", "../app/src/main/java") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
+        val coreMain = root("core/src/main/kotlin", "../core/src/main/kotlin") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
 
         val declaration = Regex(
             """(?m)^(?:internal |private )?(?:data |sealed |enum |abstract )*(?:class|object|interface|fun|val) ([A-Za-z0-9_]+)""",
@@ -74,7 +82,7 @@ class LayeringRulesTest {
 
     @Test
     fun `core khong duoc biet Android hay dadb`() {
-        val root = root("core/src/main/kotlin", "../core/src/main/kotlin") ?: return
+        val root = root("core/src/main/kotlin", "../core/src/main/kotlin") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
         val offenders = kotlinFiles(root).filter { androidOrDadb.containsMatchIn(it.toFile().readText()) }
         assertEquals(emptyList<Path>(), offenders, "quy tắc Q1: :core là JVM thuần")
     }
@@ -83,7 +91,7 @@ class LayeringRulesTest {
     fun `car-integration khong duoc biet Android`() {
         // Nó nói với head unit qua adb; API Android cục bộ là việc của :app. Nếu Android lọt vào đây thì
         // CLI runner không chạy được nữa — tức mất đúng lý do module này tồn tại.
-        val root = root("car-integration/src/main/kotlin", "../car-integration/src/main/kotlin") ?: return
+        val root = root("car-integration/src/main/kotlin", "../car-integration/src/main/kotlin") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
         val offenders = kotlinFiles(root).filter { androidOnly.containsMatchIn(it.toFile().readText()) }
         assertEquals(emptyList<Path>(), offenders, "quy tắc Q1: transport phải chạy trên JVM thuần")
     }
@@ -107,7 +115,7 @@ class LayeringRulesTest {
 
     @Test
     fun `so file thuan con nam trong app chi duoc giam`() {
-        val root = root("app/src/main/java", "../app/src/main/java") ?: return
+        val root = root("app/src/main/java", "../app/src/main/java") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
         val pure = kotlinFiles(root).filter { file ->
             val text = file.toFile().readText()
             !androidOrDadb.containsMatchIn(text) &&
@@ -130,7 +138,7 @@ class LayeringRulesTest {
      */
     @Test
     fun `moi file trong car-integration phai that su dung dadb`() {
-        val root = root("car-integration/src/main/kotlin", "../car-integration/src/main/kotlin") ?: return
+        val root = root("car-integration/src/main/kotlin", "../car-integration/src/main/kotlin") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
         val pure = kotlinFiles(root).filter { !it.toFile().readText().contains("dadb") }
         assertEquals(
             emptyList<String>(),
@@ -148,7 +156,7 @@ class LayeringRulesTest {
     @Test
     fun `khong file nao nam o goc package cua core`() {
         val root = root("core/src/main/kotlin/com/byd/clusternav", "../core/src/main/kotlin/com/byd/clusternav")
-            ?: return
+            ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
         val orphans = Files.list(root).use { paths ->
             paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }.toList()
         }
@@ -182,7 +190,7 @@ class LayeringRulesTest {
     @Test
     fun `navigation va cast khong goi ngang nhau trong core`() {
         val root = root("core/src/main/kotlin/com/byd/clusternav", "../core/src/main/kotlin/com/byd/clusternav")
-            ?: return
+            ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
         val nav = root.resolve("navigation")
         val cast = root.resolve("modules")
         if (Files.exists(nav)) {

@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Sắp [workspace] + [dock] trong vùng chính theo viền [DockConfig.edge] (BOTTOM/TOP/LEFT/RIGHT) — tách khỏi
@@ -23,8 +24,8 @@ object DockAreaLayout {
         val vertical = !cfg.isVertical()
         mainArea.orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
         val wsLp = if (vertical) LinearLayout.LayoutParams(MATCH, 0, 1f) else LinearLayout.LayoutParams(0, MATCH, 1f)
-        val dockLp = if (vertical) LinearLayout.LayoutParams(MATCH, dp(116)) else LinearLayout.LayoutParams(dp(124), MATCH)
-        val gap = dp(10)
+        val dockLp = if (vertical) LinearLayout.LayoutParams(MATCH, dp(Sp.DOCK_THICK)) else LinearLayout.LayoutParams(dp(Sp.DOCK_WIDE), MATCH)
+        val gap = dp(Sp.SLOT_GAP)
         when (cfg.edge) {
             DockEdge.BOTTOM -> { mainArea.addView(workspace, wsLp); dockLp.topMargin = gap; mainArea.addView(dock, dockLp) }
             DockEdge.TOP -> { dockLp.bottomMargin = gap; mainArea.addView(dock, dockLp); mainArea.addView(workspace, wsLp) }

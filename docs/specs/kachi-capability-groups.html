@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi G1 — Nhóm khả năng · khoảng cách · icon sang</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi G1 — Nhóm khả năng · khoảng cách · icon sang</h1>
+<p class="muted">
+  <b>Trạng thái</b>: Current · <b>Ngày</b>: 2026-09-11 · <b>Mã việc</b>: G1 (mới) + phần UX của U1 ·
+  <b>Mục đích</b>: owner chốt <i>"UXUI, margin, padding đang chưa OK, các icon cần làm elegant, luxury lên chút, cần gom
+  các widget – info – action lại phù hợp… không ai xem áp suất lốp 1 lốp cả, phải xem cả 4 cùng lúc"</i>.
+</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-11</td><td>Spec ban đầu. Ba việc: nhóm khả năng · thang khoảng cách · chuẩn hoá icon.</td></tr>
+</table>
+
+<h2>2. Context — ba số đo giải thích vì sao owner thấy chưa ổn</h2>
+<table>
+<tr><th>Việc</th><th>[ĐO] hiện trạng</th><th>Hệ quả người dùng thấy</th></tr>
+<tr><td>Gom nhóm</td><td><b>196 mục rời</b> (123 datum ĐỌC · 64 nút · 9 widget). Mỗi datum là <b>một ô riêng</b>: <code>tyre_p_fl</code>, <code>tyre_p_fr</code>, <code>tyre_p_rl</code>, <code>tyre_p_rr</code> là <b>bốn</b> ô khác nhau</td><td>muốn xem lốp phải đặt 4 ô; muốn xem kính phải đặt 4 ô. Không ai dùng xe theo cách đó</td></tr>
+<tr><td>Khoảng cách</td><td><b>115 lời gọi <code>dp(</code></b> với số tự chọn tại chỗ: 2·3·4·5·8·10·12·14·20… <b>không có thang</b></td><td>chỗ chật chỗ thưa, không có nhịp; đúng như owner nói</td></tr>
+<tr><td>Icon</td><td><b>68 tệp</b>, <b>9 độ dày nét khác nhau</b> (1.2 → 2.4), 23 tệp tô đặc lẫn 48 tệp vẽ nét, <b>0 tệp</b> khai <code>strokeLineCap</code>/<code>strokeLineJoin</code></td><td>nét đầu cắt vuông, đậm nhạt lẫn lộn ⇒ trông thô, không "sang"</td></tr>
+</table>
+
+<div class="card">
+  <b>⚠ Sự thật đáng chú ý: model ĐÃ tiên liệu việc gom nhóm.</b> <code>WidgetShape</code> khai sẵn
+  <code>BOARD</code> — <i>"Bảng lưới nhiều ô (4 lốp, 8 zone radar)"</i> — và <code>STRIP</code> — <i>"Dải icon trạng thái
+  (cửa/kính/đèn/dây an toàn)"</i>. Nhưng <b>chỉ có bảng lốp được dựng</b> (<code>w_board</code>). Nghĩa là việc tối nay
+  không phải phát minh khái niệm mới, mà là <b>làm nốt thứ đã thiết kế nhưng chưa dựng</b>.
+</div>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td>R1</td><td>Những thứ đi với nhau phải xem được <b>cùng lúc trong một ô</b></td><td>≥ 10 nhóm; đặt 1 ô "Lốp" thấy đủ 4 bánh; đặt 1 ô "Kính" thấy đủ 4 kính</td></tr>
+<tr><td>R2</td><td>Nhóm là <b>thứ người dùng gặp trước</b>, mục rời vẫn còn cho ai cần</td><td>màn chọn bày <b>Nhóm trước</b>, "từng mục riêng" sau; 0 mục rời bị xoá</td></tr>
+<tr><td>R3</td><td>Nhóm gộp <b>cả xem lẫn bấm</b> khi chúng thuộc cùng một việc</td><td>ô Kính có % mở (xem) + nút mở/đóng (bấm) trong cùng ô</td></tr>
+<tr><td>R4</td><td><b>Một thang khoảng cách duy nhất</b></td><td>mọi số dp đi qua <code>KachiSpace</code>; test quét mã chặn số lẻ ngoài thang</td></tr>
+<tr><td>R5</td><td>Icon <b>một phong cách</b>, sang trọng</td><td>1 độ dày nét · đầu/khớp nét tròn · cùng lưới 24 · test quét chặn tệp lệch chuẩn</td></tr>
+<tr><td>R6</td><td>Không phá thứ đang chạy</td><td>2797 test vẫn xanh · bố cục/hình nền/chip/thanh nút/Cài đặt không đổi hành vi · 0 tệp XML niêm phong bị đụng</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Nhóm — chốt 12 nhóm, thành viên là mã THẬT</h3>
+<p>Nguyên tắc chọn nhóm: <b>một nhóm = một câu hỏi người lái thật sự hỏi</b>. "Lốp tôi ổn không?" chứ không phải "áp lốp trước-trái bao nhiêu".</p>
+<table>
+<tr><th>Nhóm</th><th>Kiểu vẽ</th><th>Thành viên (mã thật)</th></tr>
+<tr><td><b>Lốp</b></td><td>BOARD</td><td><code>tyre_p_fl/fr/rl/rr</code> + <code>tyre_t_fl/fr/rl/rr</code> — đã có <code>TyreBoard</code>, nay thành nhóm chính thức</td></tr>
+<tr><td><b>Kính</b></td><td>STRIP + nút</td><td><code>window_lf/rf/lr/rr</code> · nút <code>win_*</code> · gói <code>mac_win_open_all</code>/<code>mac_win_close_all</code></td></tr>
+<tr><td><b>Cửa &amp; khoang</b></td><td>STRIP + nút</td><td><code>door_lf/rf/lr/rr</code> · <code>tailgate_status</code>/<code>tailgate_position</code> · <code>sunroof_state</code>/<code>sunroof_pos</code> · <code>sunshade_pct</code> · <code>mirror_fold</code> · nút khoá/cốp</td></tr>
+<tr><td><b>Đèn</b></td><td>STRIP + nút</td><td><code>light_low_beam</code>/<code>high_beam</code>/<code>front_fog</code>/<code>rear_fog</code>/<code>left_turn</code>/<code>right_turn</code>/<code>side</code>/<code>drl</code> · <code>headlight_feedback</code></td></tr>
+<tr><td><b>Đèn viền</b></td><td>CARD</td><td><code>ambient_enabled</code> · <code>ambient_front_color</code>/<code>rear_color</code> · <code>ambient_front_brightness</code>/<code>rear_brightness</code></td></tr>
+<tr><td><b>An toàn · ADAS</b></td><td>STRIP</td><td><code>bsd_fl_alarm</code>/<code>bsd_fr_alarm</code> · <code>lca_left</code>/<code>lca_right</code> · <code>rcta_left</code>/<code>rcta_right</code> · <code>dow_left</code>/<code>dow_right</code> · <code>speed_limit_warning</code> · <code>esp_state</code></td></tr>
+<tr><td><b>Người ngồi</b></td><td>STRIP</td><td><code>seatbelt_driver</code>/<code>seatbelt_passenger</code> · <code>oms_driver</code>/<code>oms_passenger</code> · <code>child_presence</code></td></tr>
+<tr><td><b>Cảm biến đỗ</b></td><td>BOARD</td><td><code>radar_zones</code> · <code>radar_volume</code> — đúng ca <code>WidgetShape.BOARD</code> đã ghi "8 zone radar"</td></tr>
+<tr><td><b>Khí hậu &amp; không khí</b></td><td>CARD</td><td><code>cabin_temp</code> · <code>inside_temp</code> · <code>ext_temp</code> · <code>ac_on</code> · <code>ac_wind</code> · <code>ac_cycle</code> · <code>pm25_level</code>/<code>pm25_value</code>/<code>pm25_online</code> · <code>anion_state</code></td></tr>
+<tr><td><b>Năng lượng &amp; sạc</b></td><td>CARD</td><td><code>soc</code> · <code>ev_range_km</code> · <code>fuel_range_km</code>/<code>fuel_pct</code> · <code>is_charging</code> · <code>charge_power</code> · <code>charging_pct</code> · <code>charging_eta_hour</code>/<code>min</code> · <code>motor_power</code></td></tr>
+<tr><td><b>Sức khoẻ pin</b></td><td>CARD</td><td><code>batt_temp</code> · <code>cell_temp_high</code>/<code>low</code>/<code>avg</code> · <code>cell_v_high</code>/<code>low</code> · <code>soh_oem</code> · <code>volt_12v</code>/<code>volt_12v_level</code></td></tr>
+<tr><td><b>Chuyến đi</b></td><td>CARD</td><td><code>trip_km</code> · <code>trip_hours</code> · <code>trip_kwh</code> · <code>consumption_50km</code> · <code>odometer</code> · <code>ev_mileage_km</code></td></tr>
+</table>
+<p class="muted">
+  Mã thành viên phải <b>tồn tại thật</b> trong <code>TelemetryRegistry</code>/<code>ControlRegistry</code>/
+  <code>ActionMacros</code> — có test đòi điều đó, nên nhóm không thể trỏ vào mã bịa hoặc mã đã đổi tên.
+</p>
+
+<h3>4.2 Nhóm KHÔNG thay thế mục rời</h3>
+<div class="card">
+  Xoá 123 mục rời để "cho gọn" là <b>làm mất khả năng</b> — có người chỉ muốn một con số tốc độ to giữa màn. Nên màn
+  chọn xếp <b>Nhóm lên trước</b> (thứ người dùng gặp đầu tiên), rồi mới tới <i>"từng mục riêng"</i> theo lĩnh vực như
+  hiện nay. Đây cũng là điều kiện để không phá cấu hình ai đã lưu: mọi mã cũ vẫn đặt được.
+</div>
+
+<h3>4.3 Ba bộ vẽ dùng chung</h3>
+<table>
+<tr><th>Bộ vẽ</th><th>Dùng cho</th><th>Cách trình bày</th></tr>
+<tr><td><code>STRIP</code></td><td>kính · cửa · đèn · ADAS · người ngồi</td><td>một dải ô con: icon + nhãn ngắn + trạng thái; ô con <b>sáng lên khi đang bật/đang cảnh báo</b>. Nút bấm (nếu nhóm có) nằm ở hàng dưới cùng ô</td></tr>
+<tr><td><code>BOARD</code></td><td>lốp · cảm biến đỗ</td><td>lưới theo hình học thật của xe (4 bánh theo vị trí; 8 vùng radar quanh xe)</td></tr>
+<tr><td><code>CARD</code></td><td>khí hậu · năng lượng · pin · chuyến đi · đèn viền</td><td>một số chính cỡ lớn + các số phụ xếp hàng, dùng <code>shortLabel</code> (RW0)</td></tr>
+</table>
+<p>
+  Cả ba đi qua <code>TelemetryReadout</code> + <code>UnitFormat</code> như mọi bề mặt khác ⇒ tự tôn trọng lựa chọn đơn vị,
+  và off-car ra <code>—</code> chứ không bịa số. Icon lấy qua <code>CapabilityIcons</code> (U1).
+</p>
+
+<h3>4.4 Thang khoảng cách</h3>
+<p>
+  <code>KachiSpace</code> (một chỗ): <code>XS=4 · S=8 · M=12 · L=16 · XL=20 · XXL=28</code> + <code>RADIUS</code> +
+  <code>TOUCH=48</code> (mức tối thiểu cho một đích chạm — cũng là con số đã dùng để quyết định "chip không nhận nút" ở RW0).
+  Mọi <code>dp(...)</code> trong tầng UI phải nhận hằng của thang, không nhận số viết tại chỗ. Có <b>test quét mã</b> chặn
+  số lẻ, để lần sau ai gõ <code>dp(7)</code> là đỏ.
+</p>
+<p class="muted">
+  Vì sao 6 bậc: ít hơn thì không đủ diễn đạt (nhãn sát icon vs thẻ cách thẻ), nhiều hơn thì lại thành "tự chọn số" như
+  hiện nay. 4/8/12/16 là nhịp 4dp quen thuộc; 20/28 cho khoảng thở của thẻ lớn trên màn 1920.
+</p>
+
+<h3>4.5 Icon — "sang" là gì, nói bằng số</h3>
+<table>
+<tr><th>Tiêu chí</th><th>Chuẩn chốt</th><th>Vì sao</th></tr>
+<tr><td>Độ dày nét</td><td><b>1.6</b> cho mọi tệp</td><td>hiện có 9 độ dày; mắt đọc thấy ngay sự lệch khi nhiều icon nằm cạnh nhau trong lưới</td></tr>
+<tr><td>Đầu &amp; khớp nét</td><td><code>strokeLineCap="round"</code> + <code>strokeLineJoin="round"</code></td><td>hiện <b>0 tệp</b> khai ⇒ mặc định vuông, đó chính là cảm giác "thô"</td></tr>
+<tr><td>Lưới</td><td>24×24, hình nằm trong ô 20×20 (chừa 2dp mỗi bên)</td><td>icon sát mép trông chật; chừa lề quang học là thủ pháp cơ bản của bộ icon cao cấp</td></tr>
+<tr><td>Tô đặc</td><td>chỉ dùng cho <b>chỉ báo trạng thái</b> (đèn đang bật, cảnh báo), không dùng cho icon nhận dạng</td><td>đang lẫn lộn 23 tô / 48 nét ⇒ không đọc được ý nghĩa của việc "được tô"</td></tr>
+<tr><td>Màu</td><td>icon <b>không</b> giữ màu riêng — nhận màu từ chỗ dùng</td><td>tránh bảng màu thứ hai, đúng bài học <code>ChipTone</code> của RW0</td></tr>
+</table>
+
+<h2>5. Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td><code>:core CapabilityGroups</code> — 12 nhóm + thành viên + kiểu vẽ + phép kiểm</td><td>mọi thành viên tồn tại thật; 0 nhóm rỗng; nhóm tra được như một khả năng</td></tr>
+<tr><td>T2</td><td>Chuẩn hoá 68 icon + bổ sung icon nhóm</td><td>1 độ dày · đầu nét tròn · test quét chặn lệch chuẩn</td></tr>
+<tr><td>T3</td><td>Ba bộ vẽ STRIP · BOARD · CARD</td><td>đặt ô nhóm vào ô giữa màn thấy đủ thành viên, off-car ra <code>—</code></td></tr>
+<tr><td>T4</td><td>Màn chọn bày Nhóm trước</td><td>ngăn kéo + Cài đặt đều có mục "Nhóm"; mục rời còn nguyên</td></tr>
+<tr><td>T5</td><td><code>KachiSpace</code> + chuyển 115 chỗ</td><td>test chặn số lẻ; nhìn có nhịp</td></tr>
+<tr><td>T6</td><td>Đo trên máy ảo + phục hồi cấu hình</td><td>ảnh chụp từng nhóm + prefs làm bằng chứng</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<p><b>[ĐO] 2960 test công bố · 0 đỏ</b> (mốc trước G1: 2797 ⇒ <b>+163</b>) · APK sạch · tệp lớn nhất 469 dòng ·
+<code>:core</code> 0 <code>import android.*</code> và 0 số dp · 0 tệp XML niêm phong bị đụng.</p>
+<table>
+<tr><th>Yêu cầu</th><th>Bằng chứng đo được</th></tr>
+<tr><td>R1 xem cùng lúc</td><td class="ok">12 nhóm; ô "Lốp" hiện đủ 4 bánh, ô "Kính" đủ 4 kính</td></tr>
+<tr><td>R2 nhóm trước, mục rời sau</td><td class="ok">bài canh so <b>vị trí</b> ở cả hai màn chọn; 123+64+9+4 mục rời còn nguyên</td></tr>
+<tr><td>R3 gộp xem + bấm</td><td class="ok">ô Kính = 4 ô con % mở + hàng 6 nút trong cùng ô</td></tr>
+<tr><td>R4 một thang khoảng cách</td><td class="ok">337 chỗ chuyển; <b>167 chỗ nới rộng</b>. ⚠ lượt soát bắt được R4 <b>chưa thật đạt</b>: <code>SettingsRows.px()</code> là hàm đổi dp <b>thứ hai</b> với 4 số trần, lách hoàn toàn bài canh (nó chỉ soi tên <code>dp</code>/<code>dpi</code>) ⇒ xoá hàm, và bài canh nay chặn <b>nguyên nhân</b> (khai hàm đổi dp tên lạ là đỏ)</td></tr>
+<tr><td>R5 icon một phong cách</td><td class="ok">9 độ dày nét → <b>1</b> (1.6) · 29/98 đường thiếu đầu nét → <b>145/145 đủ</b> · khung 24×24 cho 79/79</td></tr>
+<tr><td>R6 không phá thứ đang chạy</td><td class="ok">0 đỏ · bố cục/hình nền/chip/thanh nút/Cài đặt không đổi hành vi</td></tr>
+</table>
+<p><b>Đo trên máy ảo</b> (sao lưu prefs có kiểm trước, phục hồi sau, <code>cmp</code> byte-identical): mục "Nhóm" 12 ô ở
+<b>đầu</b> bảng chọn · 6 nhóm đặt thật vào ô giữa màn ở cả khung to và khung nhỏ · sau khi vẽ lại theo khuôn bảng radar:
+mép số → thân xe <b>158px → 12px</b>, cỡ số/cỡ chữ vị trí <b>2.4× → 3.6×</b>, số mục <b>4 → 8</b>, có dòng kết luận
+<i>"1 bánh non · nhiệt chưa kiểm"</i> · tương phản nhãn <b>2.33:1 → 6.09:1</b>, cao nét <b>10px → 15–16px</b> · hàng đọc
+ô Kính <b>1162×474px → 1160×94px</b>, mực trong hàng <b>0.31% → 2.92%</b> · nút "Đặt" ghim đáy: điểm sáng
+<b>6216 → 6216</b> qua 4 lần cuộn (trước: 7242 → 83 → <b>0</b>).</p>
+<p class="warn"><b>Chưa đo trên xe.</b> Bảng lốp mới chỉ chứng minh bằng dữ liệu gieo tạm (off-car mọi số lốp là
+<code>—</code>). Nhịp 1 lần/giây chỉ khoá bằng test. Bảng màu sáng không kiểm được (chỉ có bảng tối).</p>
+
+<h2>7. Open Questions</h2>
+<ul>
+  <li><b>OQ1</b> — nhóm "Kính" gộp cả nút bấm: chạm vào ô con là bấm luôn, hay phải chạm nút riêng ở hàng dưới? Mặc định chọn <b>nút riêng</b> (chạm ô con chỉ để xem), vì ô con nhỏ và lệnh kính không hoàn lại nhanh được.</li>
+  <li><b>OQ2</b> — có nên để nhóm <b>thay</b> mục rời trong màn chọn (gọn hơn nhưng mất đường tới 123 mục)? Mặc định: KHÔNG, xem §4.2.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+  <li><code>docs/specs/kachi-unified-capability-tile.html</code> — RW0 (ô khả năng, nhãn ngắn, chip)</li>
+  <li><code>docs/specs/kachi-capability-icons.html</code> — U1 (tra icon theo khái niệm)</li>
+  <li><code>docs/specs/kachi-settings-screen.html</code> — S1 (chỗ đặt màn chọn)</li>
+  <li><code>docs/specs/kachi-action-macros.html</code> — gói lệnh (thành viên nút của nhóm)</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+
+<h3>Thứ owner yêu cầu suýt không được giao — dù mã đã đúng</h3>
+<p>
+  Sau bốn chặng, 12 nhóm chạy được, 2918 test xanh, và tôi đã coi mục "gom nhóm" là xong. Rồi một lượt
+  <b>kiểm toán giao diện độc lập</b> mở ảnh ra xem và kết luận: <b>ô nhóm Lốp render giống hệt widget
+  <code>w_tire</code> cũ</b> — không kết luận tổng, không màu trạng thái, đơn vị nằm ở caption, vị trí chỉ là hai chữ
+  viết tắt cỡ ~60px (thứ to nhất màn) trong khi <b>giá trị thật là gạch 70×8px</b>, số cách vành xe <b>513px</b>. Tức là
+  đúng ví dụ owner nêu ra — <i>"không ai xem áp suất lốp 1 lốp cả"</i> — vẫn <b>chưa được cải thiện gì</b>, dù danh mục,
+  bộ vẽ và test đều báo đạt. Đây là lần thứ ba trong dự án <b>"đúng theo mã" khác "đúng theo người dùng"</b> (hai lần
+  trước: nút "Kính 50%" không làm 50%, và 4 gói lệnh không ai chạm tới được).
+</p>
+<p>
+  Khuôn đúng đã nằm ngay trong cùng phiên: <code>RadarBoardView</code> (Cảm biến đỗ) xếp 8 vùng quanh hình xe theo đúng
+  vị trí không gian — kiểm toán gọi nó là nhóm "đúng nhất". Lốp và ADAS nay dùng chung khuôn đó.
+</p>
+
+<h3>Ba phép kiểm im lặng — và cái nặng nhất là bộ niêm phong</h3>
+<p>
+  Chặng icon phát hiện bài canh của nó <b>không chạy lại</b> dù đặt đúng module <code>:app</code> (luật của S1): sửa
+  <code>strokeWidth</code> của một tệp icon rồi chạy test ra <code>UP-TO-DATE · BUILD SUCCESSFUL · 0 đỏ</code>. Gradle
+  chỉ biết đầu vào là classpath, mà đổi nội dung một tệp vector không đổi <code>R.java</code>. <b>Bất đối xứng nguy
+  hiểm</b>: thêm tệp MỚI thì đỏ đúng ⇒ rất dễ tưởng đã an toàn.
+</p>
+<p>
+  Đi soát cả họ lỗi thì ra <b>11 ca</b>, và ca nặng nhất là <b>bộ niêm phong T11</b>: sửa một dấu cách trong
+  <code>strings.xml</code> ⇒ <code>Task :offcar-planner:test UP-TO-DATE · BUILD SUCCESSFUL</code>. Ép chạy lại thì nó
+  <b>FAILED đúng chỗ</b> — nghĩa là phép so hash vẫn đúng, chỉ có dây nối chết. <b>Mọi lần ghim lại layout/strings từ
+  trước tới nay đều đi qua một niêm phong chưa hề mở ra</b>, trừ khi tình cờ có thứ khác làm task chạy lại. Đã khai đầu
+  vào tường minh ở 5 tệp gradle, mỗi ca chứng minh hai chiều.
+</p>
+<p>
+  Kèm theo: <code>LayeringRulesTest</code> có <b>9 chỗ <code>?: return</code></b> ⇒ <b>7 bài canh tự tắt và báo xanh</b>
+  khi không giải ra cây nguồn. <b>LUẬT: đặt bài đúng module chỉ là một nửa — nửa còn lại là gradle phải BIẾT thứ bài đó
+  quét; và bài canh không được có đường tự tắt.</b>
+</p>
+
+<h3>Số đo của tôi sai ba lần trong cùng đêm</h3>
+<ul>
+  <li><b>115 lời gọi <code>dp(</code></b> → đếm lại ra <b>369</b>: mẫu tìm của tôi chỉ khớp số đứng một mình trong ngoặc
+      nên bỏ sót dạng <code>dpi(ctx, N)</code> — dạng phổ biến nhất.</li>
+  <li><b>"0 tệp khai <code>strokeLineCap</code>"</b> → thật ra <b>41/68 tệp đã khai</b>. Bệnh không phải "không ai khai"
+      mà là <b>khai lẻ tẻ theo từng đường</b> ⇒ phải đếm theo <code>&lt;path&gt;</code>, không theo tệp.</li>
+  <li><b>"23 tệp tô đặc / 48 vẽ nét"</b> → 26 và 48; hai số đó vốn không cộng được (71 > 68).</li>
+</ul>
+<p>Cả ba đều cùng một kiểu: <b>đếm bằng một mẫu tìm rồi tin luôn con số</b>, không kiểm mẫu tìm có bỏ sót dạng nào.</p>
+
+<h3>Hai lời hứa đúng nhờ may mắn dữ liệu</h3>
+<p>
+  Lượt soát tìm ra <code>rowsOf</code> không giữ giao kèo của <b>chính nó</b>: <code>rowsOf(7,3)</code> ra
+  <code>[3,3,1]</code> trong khi KDoc cấm "hàng cuối một ô". 12 nhóm hiện tại không rơi vào ca đó ⇒ nó đúng
+  <b>vì dữ liệu tình cờ</b>. Và bài canh cho nó thì <b>không thể đỏ</b>: đổi <code>rowsOf</code> thành
+  <code>emptyList()</code> làm mọi ô nhóm mất sạch ô con mà 0 bài đỏ. Cùng lượt còn một lỗ nữa: ô chèn khai
+  <code>WRAP_CONTENT</code> giãn hết dưới spec <code>AT_MOST</code> ⇒ thân ô 0px / hàng nút 648px — đúng lỗi đã ghi KDoc
+  mà trước đó chỉ tìm ra được bằng cách đo máy ảo.
+</p>
+
+<h3>Nhóm Đèn dựng 9 ô con mà không hiện một pixel</h3>
+<p>
+  Chặng khoảng cách đo được <code>bodyChildren=2</code> nhưng <code>body=0</code>, <code>actions=648</code>. Gốc:
+  <code>View</code> trơ khai <code>WRAP_CONTENT</code> <b>giãn hết</b> dưới spec <code>AT_MOST</code>
+  (<code>getDefaultSize</code> trả trọn <code>specSize</code>) ⇒ ô chèn của hàng nút báo cao 648px, ăn hết phần
+  <code>weight=1</code> của thân ô. Tôi <b>suy diễn sai 4 lượt</b> trước khi log chiều cao thật trong <code>post{}</code>
+  — trong đó có một lần "chữa" bằng <code>minimumHeight</code>, mà thứ đó <b>vô tác dụng</b> ở đây nên sẽ để lại một chốt
+  giả trong mã.
+</p>
+
+<h3>Giả thuyết của tôi về thanh trên bị số đo bác</h3>
+<p>
+  Thanh trên cao thêm 42→56dp; tôi cho rằng do nới đích chạm lên 48dp. [ĐO] bỏ <b>cả hai</b>
+  <code>minimumHeight = dp(TOUCH)</code> ⇒ thanh <b>vẫn 84px</b>. Toàn bộ 14dp đến từ <b>avatar</b> (cỡ cứng 48dp) vì nó
+  cao nhất. Nghĩa là nới đích chạm cho "Ứng dụng"/"Cài đặt"/5 nút bố cục tốn <b>0 pixel</b>. Giữ nguyên: mất 21px =
+  <b>2.2%</b> chiều cao vùng làm việc, không đáng đánh đổi bằng <code>TouchDelegate</code> giòn cho một nút.
+</p>
+
+</div>
+</body>
+</html>

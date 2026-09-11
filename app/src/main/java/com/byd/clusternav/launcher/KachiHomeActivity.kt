@@ -22,6 +22,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.AppContainer
 import com.byd.clusternav.MainActivity
 import kotlinx.coroutines.launch
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Màn hình chính Kachi (HOME) — wall gradient + thanh trạng thái + workspace (widget/ô) + thanh điều khiển 4 viền.
@@ -161,7 +162,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(12), dp(14), dp(14))
+            setPadding(dp(Sp.L), dp(Sp.M), dp(Sp.L), dp(Sp.L))
         }
         content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, WRAP))
         topStrip.setProfileInitial(viewModel.uiState.value.activeProfile)   // chữ đầu avatar ban đầu (parity onCreate cũ)
@@ -189,7 +190,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         mainArea = LinearLayout(this)
         DockAreaLayout.apply(mainArea, workspace, dock, viewModel.uiState.value.dock, resources.displayMetrics.density)
-        content.addView(mainArea, LinearLayout.LayoutParams(MATCH, 0, 1f).also { it.topMargin = dp(12) })
+        content.addView(mainArea, LinearLayout.LayoutParams(MATCH, 0, 1f).also { it.topMargin = dp(Sp.M) })
 
         rootFrame = FrameLayout(this)
         wall = WallView(this)

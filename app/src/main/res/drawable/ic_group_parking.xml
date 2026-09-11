@@ -1,0 +1,25 @@
+<!--
+  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm CẢM BIẾN ĐỖ (8 vùng radar + âm lượng).
+  Xe ở giữa + TÁM vạch vùng quanh xe (3 trước · 3 sau · 2 hông) — đúng "8 zone radar" mà WidgetShape.BOARD ghi.
+  ⚠ Bản đầu vẽ 4 cung sóng trước/sau: khi ĐỌC ẢNH RENDER thì chúng xếp thành hình CUỘN DÂY, không ai đọc ra là
+  cảm biến. Bài test phong cách KHÔNG bắt được lỗi đó — chỉ mở ảnh ra xem mới thấy.
+  ⚠ Bản thứ hai để thân xe gần VUÔNG (7.2×6) ⇒ đọc ảnh thấy giống con CHIP hơn giống xe. Nay thân CAO hơn RỘNG
+  (5.2×6.8) như xe nhìn từ trên, khe thân–vạch giữ đủ 2.4 ở cả bốn phía.
+  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M10.4,8.6 L13.6,8.6 A1.6,1.6 0 0 1 15.2,10.2 L15.2,13.8 A1.6,1.6 0 0 1 13.6,15.4 L10.4,15.4 A1.6,1.6 0 0 1 8.8,13.8 L8.8,10.2 A1.6,1.6 0 0 1 10.4,8.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M9.8,6.2 L9.8,4.6 M12,6 L12,4.2 M14.2,6.2 L14.2,4.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M9.8,17.8 L9.8,19.4 M12,18 L12,19.8 M14.2,17.8 L14.2,19.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M7,12 L5.4,12 M17,12 L18.6,12"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

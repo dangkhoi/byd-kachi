@@ -128,6 +128,27 @@ object TyreBoard {
     /** Có bánh nào cần cảnh báo không — cho ô thu nhỏ / chip tóm tắt. */
     fun anyAlert(t: CarStatus.Tyres): Boolean = readings(t).any { it.status.alert }
 
+    /**
+     * KẾT LUẬN TỔNG một dòng — trả lời đúng câu *"lốp tao ổn không"* mà không buộc người xem tự so bốn con số.
+     *
+     * ## ⚠ Vì sao nó ở `:core` chứ không ghép chuỗi trong ô vẽ
+     * Nó là một **phán xét**, không phải cách trình bày: nó đọc [TyreStatus] (đã có [TyreStatus.reason]) và đếm.
+     * Ghép ở `:app` nghĩa là ô vẽ phải tự biết trạng thái nào đáng nói ⇒ đó là đường ngưỡng-thứ-hai đã sinh ra lỗi
+     * `t[i] < 2.2` viết tại chỗ. Ở đây thì kết luận và màu ô luôn nói **cùng một điều**, và kiểm được off-car.
+     *
+     * Ba ca: chưa đọc được bánh nào ⇒ nói thẳng là chưa đọc (KHÔNG nói "ổn" — off-car mà báo ổn là **bịa**, đúng
+     * loại lỗi tệ nhất trong bảng này); mọi bánh bình thường ⇒ *"lốp ổn"*; có bánh sai ⇒ đếm theo TỪNG loại sai,
+     * theo thứ tự ưu tiên khai trong [TyreStatus] (non ▸ căng ▸ lệch) nên câu luôn nêu thứ nguy trước.
+     */
+    fun verdict(readings: List<TyreReading>): String {
+        if (readings.none { it.pressureKpa != null }) return "chưa đọc được áp suất"
+        val faults = TyreStatus.values()
+            .filter { it.reason != null }
+            .mapNotNull { st -> readings.count { it.status == st }.takeIf { it > 0 }?.let { n -> n to st } }
+        if (faults.isEmpty()) return "lốp ổn"
+        return faults.joinToString(" · ") { (n, st) -> "$n bánh ${st.reason}" }
+    }
+
     /** Mức bằng chứng của phần NHIỆT ĐỘ (chưa kiểm trên xe) ⇒ bộ vẽ gắn dấu "chưa kiểm". */
     val tempTier: EvidenceTier = EvidenceTier.NEEDS_CAR
 }

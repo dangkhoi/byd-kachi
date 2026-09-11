@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * BẢNG VẼ BỐ CỤC (P9 bước 2) — chứa [GridEditorView] cùng các nút và phần báo lỗi.
@@ -54,7 +55,7 @@ class LayoutEditorPanel(
 
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(16), dp(20), dp(16))
+            setPadding(dp(Sp.XL), dp(Sp.L), dp(Sp.XL), dp(Sp.L))
         }
 
         // ── Đầu bảng ──
@@ -74,7 +75,7 @@ class LayoutEditorPanel(
             text = "Kéo giữa khung để di chuyển · kéo góc dưới-phải để đổi cỡ. Khung luôn bám ô lưới."
             setTextColor(Color.parseColor(KachiTheme.MUT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-            setPadding(0, dp(4), 0, dp(10))
+            setPadding(0, dp(Sp.XS), 0, dp(Sp.M))
         })
 
         // ── Trình vẽ ──
@@ -90,12 +91,12 @@ class LayoutEditorPanel(
             minLines = 1; maxLines = 1
             setTextColor(Color.parseColor(KachiTheme.RED))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-            setPadding(0, dp(8), 0, 0)
+            setPadding(0, dp(Sp.S), 0, 0)
         }
         info = TextView(context).apply {
             setTextColor(Color.parseColor(KachiTheme.MUT2))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            setPadding(0, dp(2), 0, dp(8))
+            setPadding(0, dp(Sp.XS), 0, dp(Sp.S))
         }
         root.addView(problem); root.addView(info)
 
@@ -183,17 +184,17 @@ class LayoutEditorPanel(
         this.text = text
         setTextColor(Color.parseColor(KachiTheme.INK))
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-        setPadding(dp(14), dp(9), dp(14), dp(9))
+        setPadding(dp(Sp.L), dp(Sp.M), dp(Sp.L), dp(Sp.M))
         background = GradientDrawable().apply {
-            cornerRadius = dp(20).toFloat()
+            cornerRadius = dp(Sp.RADIUS_XL).toFloat()
             setColor(Color.parseColor(KachiTheme.CARD2))
-            setStroke(dp(1), Color.parseColor(KachiTheme.LINE))
+            setStroke(dp(Sp.HAIRLINE), Color.parseColor(KachiTheme.LINE))
         }
         setOnClickListener { onTap() }
     }
 
     private fun space() = View(context).apply {
-        layoutParams = LinearLayout.LayoutParams(dp(8), 1)
+        layoutParams = LinearLayout.LayoutParams(dp(Sp.S), 1)
     }
 
     private fun dp(v: Int): Int =

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.util.Log
 import com.byd.clusternav.system.WindowCommandDispatcher
 import java.util.concurrent.ExecutorService
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Điều phối CỬA SỔ freeform + dải header NỔI (caption overlay) cho HOME — tách khỏi [KachiHomeActivity] (B5a) để
@@ -87,7 +88,7 @@ class LauncherWindows(
             (st.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
                 absoluteSlotRect(i)?.let { r ->
                     val a = appRect(r)
-                    heads.add(OverlayHeads.Head(a.left, r.top + dp(3), a.width, a.height, appLabel(app.pkg), "#4c7dff",
+                    heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appLabel(app.pkg), "#4c7dff",
                         onSwap = { onSlotSwap(i) }, onClose = { onSlotClose(i) }))
                 }
             }
@@ -169,7 +170,7 @@ class LauncherWindows(
     /** Khung ô ở toạ độ MÀN HÌNH (cho freeform on-car): offset vị trí workspace + Rect ô. */
     private fun absoluteSlotRect(index: Int): SlotRect? {
         if (workspace.width <= 0 || workspace.height <= 0) return null
-        val rects = EffectiveLayout.rects(state().preset, custom(), workspace.width, workspace.height, dp(10))
+        val rects = EffectiveLayout.rects(state().preset, custom(), workspace.width, workspace.height, dp(Sp.SLOT_GAP))
         val r = rects.getOrNull(index) ?: return null
         val loc = IntArray(2); workspace.getLocationOnScreen(loc)
         return SlotRect(index, loc[0] + r.left, loc[1] + r.top, loc[0] + r.right, loc[1] + r.bottom)
@@ -177,8 +178,8 @@ class LauncherWindows(
 
     /** Khung CỬA SỔ app = LẤP ĐẦY ô; bo góc lo bằng dải header đục (che caption) + 2 mặt nạ góc dưới. */
     private fun appRect(s: SlotRect): SlotRect {
-        val m = dp(10)        // margin trái/phải/dưới
-        val topCap = dp(24)   // thụt TRÊN cho caption freeform (~36px) lọt trong ô → hết "lòi đầu"
+        val m = dp(Sp.SLOT_APP_INSET)        // margin trái/phải/dưới
+        val topCap = dp(Sp.CAPTION_INSET)   // thụt TRÊN cho caption freeform (~36px) lọt trong ô → hết "lòi đầu"
         return SlotRect(s.index, s.left + m, s.top + topCap, s.right - m, s.bottom - m)
     }
 

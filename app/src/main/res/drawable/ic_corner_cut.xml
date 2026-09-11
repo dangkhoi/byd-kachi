@@ -1,6 +1,8 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="16dp" android:height="16dp" android:viewportWidth="24" android:viewportHeight="24">
+    android:width="16dp" android:height="16dp"
+    android:viewportWidth="24" android:viewportHeight="24">
     <!-- Góc DƯỚI-TRÁI: đục ở góc (0,24), khoét cung tròn về phía (24,0) → phủ góc vuông app, lộ mép bo tròn.
          Dùng scaleX=-1 cho góc dưới-phải. Màu = nền tường tối để khớp khe giữa các ô. -->
-    <path android:fillColor="#0A0D13" android:pathData="M0,0 L0,24 L24,24 A24,24 0 0 0 0,0 Z" />
+    <path android:pathData="M0,0 L0,24 L24,24 A24,24 0 0 0 0,0 Z"
+        android:fillColor="#0A0D13" />
 </vector>

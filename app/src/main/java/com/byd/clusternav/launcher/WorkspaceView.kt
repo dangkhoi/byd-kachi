@@ -15,6 +15,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.system.inputd.InputDaemonClient
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Sân khấu workspace: đặt tối đa 4 "ô" theo [WorkspaceLayout] cho [WorkspaceState.preset].
@@ -64,7 +65,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private var inputClient: InputDaemonClient? = null
     var slotDensityDpi = 200                   // mật độ cho VirtualDisplay của ô (Dudu ~200; chỉnh để app hiện vừa mắt)
 
-    private val gapPx = dp(10)
+    private val gapPx = dp(Sp.SLOT_GAP)
     // View-transient ONLY: bản sao khung hình ĐANG hiển thị, dùng để DIFF khi [render] để không dựng lại ô không đổi.
     // KHÔNG phải nguồn sự thật — nguồn sự thật là HomeViewModel.uiState; không code ngoài nào đọc field này.
     private var displayed = WorkspaceState()
@@ -221,16 +222,16 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private fun makeSlot(index: Int, content: SlotContent): View {
         val fl = FrameLayout(context)
         fl.background = GradientDrawable().apply {
-            cornerRadius = dp(16).toFloat()
+            cornerRadius = dp(Sp.RADIUS_L).toFloat()
             setColor(Color.parseColor("#171A20"))                 // nền card nhấc nhẹ khỏi nền (prototype --k-card)
-            setStroke(dp(1), Color.parseColor("#26FFFFFF"))       // viền HAIRLINE SÁNG mảnh (prototype, không phải viền tối)
+            setStroke(dp(Sp.HAIRLINE), Color.parseColor("#26FFFFFF"))       // viền HAIRLINE SÁNG mảnh (prototype, không phải viền tối)
         }
         fl.clipToOutline = true                                    // clip nội dung theo góc bo (như overflow:hidden của prototype)
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         when (content) {
             is SlotContent.Widget -> {
                 val body = WidgetViews.buildGrid(context, content.ids, widgetData())
-                body.setPadding(body.paddingLeft, body.paddingTop + dp(30), body.paddingRight, body.paddingBottom)  // đẩy content XUỐNG DƯỚI header (hết đè)
+                body.setPadding(body.paddingLeft, body.paddingTop + dp(Sp.SLOT_HEAD_CLEAR), body.paddingRight, body.paddingBottom)  // đẩy content XUỐNG DƯỚI header (hết đè)
                 fl.addView(body, mm)
                 val first = content.ids.firstOrNull() ?: ""
                 fl.addView(slotHead(index, widgetName(first), widgetAccent(first)), headLp())
@@ -244,7 +245,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                     val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd, inputClient)  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag; chạm qua input-daemon (fallback `input -d`)
                     fl.addView(host, mm); host.bind(content.pkg, sh)
                 } else if (SlotAppHost.embeddingUsable(context)) {
-                    val host = SlotAppHost(context, dp(16).toFloat())
+                    val host = SlotAppHost(context, dp(Sp.RADIUS_L).toFloat())
                     if (host.available()) { fl.addView(host, mm); host.embed(content.pkg) }   // ROM xe (platform-signed): ActivityView, không lag/caption
                 }
                 fl.addView(slotHead(index, appName(content.pkg), "#4c7dff"), headLp())   // ⇄/✕ đè lên trên cùng
@@ -253,8 +254,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             }
             SlotContent.Empty -> {
                 fl.background = GradientDrawable().apply {
-                    cornerRadius = dp(16).toFloat(); setColor(Color.parseColor("#0b0f16"))
-                    setStroke(dp(2), Color.parseColor("#42506a"), dp(7).toFloat(), dp(5).toFloat())
+                    cornerRadius = dp(Sp.RADIUS_L).toFloat(); setColor(Color.parseColor("#0b0f16"))
+                    setStroke(dp(Sp.STROKE), Color.parseColor("#42506a"), dp(Sp.DASH_ON).toFloat(), dp(Sp.DASH_OFF).toFloat())
                 }
                 fl.addView(emptyAdd(), mm)
                 fl.setOnClickListener { onSlotTap?.invoke(index) }
@@ -276,7 +277,21 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         v.startDragAndDrop(null, View.DragShadowBuilder(v), index, 0)
     }
 
-    private fun headLp() = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(34), Gravity.TOP)
+    /**
+     * Khung trong suốt bọc nút ⇄ **nổi** ở đầu ô.
+     *
+     * Cao [Sp.SLOT_HEAD_CLEAR] (không phải [Sp.HEAD_BAR]): nó phải chứa nổi `XS + ICON_L + XS`. Trước T5 khung
+     * cao 34dp trong khi nút chiếm 34dp ⇒ **không còn chỗ thở**, và độ hở của nội dung widget lại là 30dp ⇒
+     * nội dung bị đè. Hai con số ở hai tệp khác nhau, nên không bài test nào bắt được.
+     *
+     * ⚠ **Đích chạm 32dp — DƯỚI mức [Sp.TOUCH], có lý do**: nút này **nổi ĐÈ lên nội dung** ô (khác nút của
+     * [OverlayHeads] nằm trong thanh riêng). Nới lên 48dp buộc độ hở lên 56dp, tức mọi ô widget mất 56dp chiều
+     * cao (≈11% ô trong bố cục 2×2) cho một nút **hiếm dùng** và bấm nhầm thì chỉ mở bảng chọn (hoàn lại được).
+     * Đổi lấy 24dp nội dung thật cho một đích chạm rộng hơn là đánh đổi sai ở màn hình xe.
+     */
+    private fun headLp() = FrameLayout.LayoutParams(
+        FrameLayout.LayoutParams.MATCH_PARENT, dp(Sp.SLOT_HEAD_CLEAR), Gravity.TOP,
+    )
 
     private fun appName(pkg: String): String = runCatching {
         val pm = context.packageManager; pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
@@ -289,12 +304,16 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val wrap = FrameLayout(context)   // trong suốt, không nền
         val btn = ImageView(context).apply {
             val r = KachiTheme.iconRes("ic-swap"); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
-            setPadding(dp(6), dp(6), dp(6), dp(6))
+            setPadding(dp(Sp.S), dp(Sp.S), dp(Sp.S), dp(Sp.S))
             // scrim tròn mờ RẤT nhẹ chỉ để icon còn thấy trên app nền sáng (không phải thanh nền)
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor("#4D000000")) }
             setOnClickListener { onSlotTap?.invoke(index) }
         }
-        wrap.addView(btn, FrameLayout.LayoutParams(dp(30), dp(30), Gravity.TOP or Gravity.CENTER_HORIZONTAL).also { it.topMargin = dp(4) })
+        wrap.addView(
+            btn,
+            FrameLayout.LayoutParams(dp(Sp.ICON_L), dp(Sp.ICON_L), Gravity.TOP or Gravity.CENTER_HORIZONTAL)
+                .also { it.topMargin = dp(Sp.XS) },
+        )
         return wrap
     }
 
@@ -305,14 +324,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         else -> "#4c7dff"
     }
 
-    private fun headBtnLp() = LinearLayout.LayoutParams(dp(24), dp(24)).also { it.marginStart = dp(6) }
-
-    private fun headBtn(icon: String, onClick: () -> Unit): View = ImageView(context).apply {
-        val r = KachiTheme.iconRes(icon); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
-        setPadding(dp(5), dp(5), dp(5), dp(5))
-        background = GradientDrawable().apply { cornerRadius = dp(7).toFloat(); setColor(Color.parseColor("#1fffffff")) }
-        setOnClickListener { onClick() }
-    }
+    // ⚠ T5 đã XOÁ `headBtnLp()` + `headBtn()` ở đây: [ĐO] chúng chỉ được KHAI, không chỗ nào gọi (thanh đầu ô
+    // nay do [OverlayHeads] dựng, và ô widget chỉ có một nút ⇄ trong [slotHead]). Giữ lại thì T5 phải quyết cỡ
+    // đích chạm cho hai hàm mà người dùng không bao giờ chạm tới được — cùng lối dọn với `cycleDockEdge` ở S1.
 
     private fun placeholder(text: String) = TextView(context).apply {
         this.text = text
@@ -329,7 +343,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         })
         addView(TextView(context).apply {
             text = "Mở ứng dụng"; setTextColor(Color.parseColor("#93a0b4")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-            gravity = Gravity.CENTER; setPadding(0, dp(4), 0, 0)
+            gravity = Gravity.CENTER; setPadding(0, dp(Sp.XS), 0, 0)
         })
     }
 
@@ -340,12 +354,12 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         try {
             col.addView(ImageView(context).apply {
                 setImageDrawable(pm.getApplicationIcon(pkg))
-                layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
+                layoutParams = LinearLayout.LayoutParams(dp(Sp.ICON_XXL), dp(Sp.ICON_XXL))
             })
             col.addView(TextView(context).apply {
                 text = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0))
                 setTextColor(Color.parseColor("#eaf0f8")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
-                gravity = Gravity.CENTER; setPadding(0, dp(8), 0, 0)
+                gravity = Gravity.CENTER; setPadding(0, dp(Sp.S), 0, 0)
             })
         } catch (e: Exception) {
             col.addView(placeholder("▣  $pkg"))

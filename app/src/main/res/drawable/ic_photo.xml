@@ -1,0 +1,18 @@
+<!--
+  ẢNH (khung ảnh có núi + mặt trời nhỏ) — cho widget "Trình chiếu ảnh".
+  [KIỂM TOÁN UX mục 4d] Trước đây nó dùng `ic_sun`, tức **cùng hình** với widget "Đồng hồ + thời tiết" ⇒ hai widget
+  hoàn toàn khác việc trông y hệt nhau trong lưới chọn.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M4.4,5.2 L19.6,5.2 A1.6,1.6 0 0 1 21.2,6.8 L21.2,17.2 A1.6,1.6 0 0 1 19.6,18.8 L4.4,18.8 A1.6,1.6 0 0 1 2.8,17.2 L2.8,6.8 A1.6,1.6 0 0 1 4.4,5.2 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M2.8,15.6 L8.4,10.4 L13.2,15.2 L16,12.8 L21.2,17.2"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M16.4,9.2m-1.4,0a1.4,1.4 0 1 0 2.8,0a1.4,1.4 0 1 0 -2.8,0Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

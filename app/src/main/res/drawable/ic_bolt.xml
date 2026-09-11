@@ -1,4 +1,13 @@
+<!--
+  Tia sét — icon NHẬN DẠNG của nhóm năng lượng (`charge*`, `trip_kwh`, `consumption_*`, `volt_12v*`…).
+  T2: trước đây là khối ĐẶC. Theo chuẩn §4.5 của spec kachi-capability-groups, tô đặc chỉ dành cho CHỈ BÁO
+  TRẠNG THÁI; icon nhận dạng phải vẽ NÉT. Hình được nới rộng một chút so với bản đặc để hai đường nét
+  không dính nhau khi vẽ ở cỡ nhỏ (chip 16dp).
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M7,2L7,13L10,13L10,22L17,10L13,10L17,2Z" android:fillColor="#FFFFFF"/>
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M14,3 L6.8,13.2 L11.2,13.2 L10,21 L17.2,10.8 L12.8,10.8 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

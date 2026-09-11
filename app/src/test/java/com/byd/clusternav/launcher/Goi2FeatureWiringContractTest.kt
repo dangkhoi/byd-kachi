@@ -86,8 +86,13 @@ class Goi2FeatureWiringContractTest {
     @Test
     fun `mot canh bao mot mau`() {
         // Bản đầu: số màu đỏ + dòng phụ màu hổ phách trên CÙNG một bánh ⇒ hai màu cảnh báo, không rõ báo gì.
-        assertTrue(board.contains("if (rd.status.alert) col"),
-            "dòng phụ phải dùng CHÍNH màu của số khi có cảnh báo")
+        // ⚠ Canh QUAN HỆ, không canh cách gõ: dòng phụ phải lấy `col` (chính màu của số) khi trạng thái là cảnh
+        // báo. Bản trước so nguyên văn `if (rd.status.alert) col`, nên nó đỏ khi ô vẽ đổi tên biến trạng thái
+        // (`rd.status` → `st`, cần thiết vì bánh nay có thể chưa có dữ liệu) dù bất biến không hề đổi.
+        assertTrue(
+            Regex("""subP\.color = if \(\w+(?:\.\w+)*\.alert\) col""").containsMatchIn(board),
+            "dòng phụ phải dùng CHÍNH màu của số khi có cảnh báo",
+        )
     }
 
     @Test

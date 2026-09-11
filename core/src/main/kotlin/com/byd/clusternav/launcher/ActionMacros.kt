@@ -170,8 +170,8 @@ object ActionMacros {
     val ALL: List<ActionMacro> = listOf(
         // Vì sao gộp 4 nút riêng thay vì dùng nút "Tất cả kính" đã có: nút gộp đó ở mức CHƯA KIỂM, còn 4 nút riêng
         // đều ĐÃ CHẠY trên xe owner ⇒ gói này khả năng ăn cao hơn. Đây là giá trị cụ thể của lớp gộp lệnh.
-        ActionMacro("mac_win_open_all", "Mở hết kính", "ic-window", Domain.BODY, windows(open = true)),
-        ActionMacro("mac_win_close_all", "Đóng hết kính", "ic-window", Domain.BODY, windows(open = false)),
+        ActionMacro("mac_win_open_all", "Mở hết kính", "ic-window-open", Domain.BODY, windows(open = true)),
+        ActionMacro("mac_win_close_all", "Đóng hết kính", "ic-window-close", Domain.BODY, windows(open = false)),
         // Yêu cầu số 7 của owner: "mở cửa + tắt/mở đèn".
         ActionMacro(
             "mac_door_light", "Mở cửa + đèn đọc", "ic-door", Domain.BODY,

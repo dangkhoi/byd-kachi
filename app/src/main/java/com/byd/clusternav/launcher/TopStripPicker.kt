@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * BỘ CHỌN CHIP cho thanh trạng thái trên (RW0 **vùng thứ ba**).
@@ -60,7 +61,7 @@ class TopStripPicker(
                 "Chỉ thông tin XEM — nút bấm đặt ở thanh điều khiển hoặc ô giữa màn (chip quá nhỏ để bấm an toàn)."
             setTextColor(Color.parseColor(KachiTheme.MUT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-            setPadding(0, 0, 0, dpi(context, 8))
+            setPadding(0, 0, 0, dpi(context, Sp.S))
         })
         val shown = TopStripConfig.choices().filter { it.id in TopStripConfig.BUILT_IN || strip.has(it.id) }
         var row: LinearLayout? = null
@@ -82,15 +83,15 @@ class TopStripPicker(
     private fun tile(pick: CapabilityPick): View {
         val t = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            setPadding(dpi(context, 8), dpi(context, 12), dpi(context, 8), dpi(context, 12))
+            setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(ImageView(context).apply {
                 val r = iconRes(pick); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
-                layoutParams = LinearLayout.LayoutParams(dpi(context, 30), dpi(context, 30))
+                layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_L), dpi(context, Sp.ICON_L))
             })
             addView(TextView(context).apply {
                 text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
-                setPadding(dpi(context, 2), dpi(context, 6), dpi(context, 2), 0)
+                setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
             setOnClickListener { toggle(pick.id) }
         }
@@ -122,14 +123,14 @@ class TopStripPicker(
     private fun paint(id: String) {
         val t = tiles[id] ?: return
         t.background = if (strip.has(id)) GradientDrawable().apply {
-            cornerRadius = dpi(context, 14).toFloat()
-            setColor(Color.parseColor("#264c7dff")); setStroke(dpi(context, 1), Color.parseColor(KachiTheme.ACCENT))
-        } else KachiTheme.card(context, 14f, "#161b24")
+            cornerRadius = dpi(context, Sp.RADIUS_L).toFloat()
+            setColor(Color.parseColor("#264c7dff")); setStroke(dpi(context, Sp.HAIRLINE), Color.parseColor(KachiTheme.ACCENT))
+        } else KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
     }
 
     private fun label(text: String) = TextView(context).apply {
         this.text = text; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-        letterSpacing = 0.06f; setPadding(0, dpi(context, 14), 0, dpi(context, 6))
+        letterSpacing = 0.06f; setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.S))
     }
 
     /** Icon của khả năng; chưa map → icon đại diện nhóm (khỏi ô trống icon). */

@@ -1,0 +1,18 @@
+<!--
+  MÔ-TƠ ĐIỆN (vỏ mô-tơ + trục + tia điện) — cho "Công suất mô-tơ" và họ `motor_*`.
+  [KIỂM TOÁN UX mục 4d] Trước đây họ `motor_` tra ra `ic_speed` (ĐỒNG HỒ TỐC ĐỘ) ⇒ "công suất mô-tơ" trông như một
+  số tốc độ. Công suất và tốc độ là hai đại lượng khác nhau, dùng chung icon là mời người đọc hiểu sai.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M4.4,8.4 L14,8.4 A1.6,1.6 0 0 1 15.6,10 L15.6,15.6 A1.6,1.6 0 0 1 14,17.2 L4.4,17.2 A1.6,1.6 0 0 1 2.8,15.6 L2.8,10 A1.6,1.6 0 0 1 4.4,8.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M15.6,12.8 L19.2,12.8 M6.4,8.4 L6.4,6 M12,8.4 L12,6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M18.4,5.6 L15.6,9.6 L19.2,9.6 L17.2,13.2"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

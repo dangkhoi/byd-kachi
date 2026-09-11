@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Nội dung nhóm **"Màn hình chính"** của màn Cài đặt (S1 · T3) — bố cục · hình nền · chip thanh trạng thái · thanh
@@ -152,13 +153,24 @@ class SettingsHomeSection(
             "Chạm 1 ô để thêm/bớt khỏi thanh nút. GIỮ một ô XEM để đưa nó lên thanh trạng thái. " +
                 "Nhóm An toàn/Động lực/Giải trí đổi hành vi lái — tự dùng tự chịu.",
         ))
+        // ── NHÓM TRƯỚC (G1 · T4 · §4.2) ──
+        // Cùng thứ tự với ngăn kéo, và cùng nguồn (`CapabilityPicker`) ⇒ hai màn chọn không thể sắp khác nhau. Ô nhóm
+        // trên thanh nút hiện **tóm tắt** ("2 cảnh báo") — xem `GroupBoard.summaryView`; không có nó thì ô hiện "—"
+        // mãi mãi và mục này thành một lựa chọn chết.
+        body.addView(rows.sectionLabel(CapabilityPicker.GROUPS_TITLE))
+        body.addView(rows.note(CapabilityPicker.GROUPS_NOTE))
+        grid.addGrid(body, CapabilityPicker.groupPicks(), cols = 4)
+        body.addView(rows.sectionLabel(CapabilityPicker.SINGLES_TITLE))
         CapabilityCatalog.byDomain().forEach { (domain, picks) ->
+            // `singlesOf` BẮT BUỘC: nhóm đã bày ở mục trên, để nó nằm trong lĩnh vực nữa là **hai ô cùng một mã** ⇒
+            // `tiles[id]` bị ghi đè ⇒ chỉ ô sau được tô (đúng ba lỗi cùng lúc mà RW0 đã ghi ở KDoc lớp lưới).
             body.addView(rows.sectionLabel(domain.label))
-            grid.addGrid(body, picks, cols = 5)
+            CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(rows.note(it)) }
+            grid.addGrid(body, CapabilityPicker.singlesOf(picks), cols = 5)
         }
     }
 
     private fun wrapLp() = LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-    ).also { it.bottomMargin = dpi(context, 4) }
+    ).also { it.bottomMargin = dpi(context, Sp.XS) }
 }

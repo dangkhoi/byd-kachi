@@ -15,6 +15,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * LƯỚI Ô KHẢ NĂNG (187 ô) — chọn khả năng để đặt vào thanh nút xe; giữ để đưa lên thanh trạng thái (S1 · T2).
@@ -73,15 +74,20 @@ class CapabilityGridSection(
     private fun tile(pick: CapabilityPick): View {
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            setPadding(dpi(context, 8), dpi(context, 12), dpi(context, 8), dpi(context, 12))
-            addView(ImageView(context).apply {
-                val r = iconRes(pick); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
-                layoutParams = LinearLayout.LayoutParams(dpi(context, 34), dpi(context, 34))
-            })
+            setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
+            addView(iconWithBadge(iconRes(pick), pick.needsBadge))
             addView(TextView(context).apply {
                 text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
-                setPadding(dpi(context, 2), dpi(context, 6), dpi(context, 2), 0)
+                setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
+            })
+            // Dòng phụ nói ô này GỒM GÌ — chỉ NHÓM có ([CapabilityPick.sub]); mục rời để rỗng nên lưới 187 ô không
+            // cao thêm một dòng nào.
+            // ⚠ T5: 10sp là số TÔI TỰ CHỌN (nhãn 11.5sp ⇒ dòng phụ phải nhỏ hơn để đọc ra thứ bậc).
+            if (pick.sub.isNotEmpty()) addView(TextView(context).apply {
+                text = pick.sub; setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+                setPadding(dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS), 0)
             })
             setOnClickListener {
                 val now = pick.id !in enabled
@@ -107,22 +113,35 @@ class CapabilityGridSection(
         }
         tiles[pick.id] = content
         applyState(pick.id)
-        // badge tier "chưa kiểm" (chấm amber góc trên-phải)
-        return if (pick.needsBadge) FrameLayout(context).apply {
-            addView(content, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        return content
+    }
+
+    /**
+     * Icon + chấm "chưa kiểm trên xe" **dán vào góc ICON**, không phải góc thẻ.
+     *
+     * [KIỂM TOÁN UX mục 6] Ở góc thẻ, chấm cách icon hàng trăm pixel (ô rộng gấp nhiều lần icon) nên nó đọc thành
+     * một hạt bụi chứ không thành một dấu nói về mục này. Cùng bản vá với [AppDrawer.iconWithBadge] — hai màn chọn
+     * phải nói cùng một kiểu, nhưng mỗi màn giữ bộ dựng ô RIÊNG (xem cảnh báo "một lưới = một bảng tiles" ở KDoc
+     * lớp), nên đây là hàm riêng chứ không phải chỗ để dùng chung một hàm dựng ô.
+     */
+    private fun iconWithBadge(res: Int, needsBadge: Boolean): View {
+        val size = dpi(context, Sp.ICON_L)
+        val img = ImageView(context).apply { if (res != 0) { setImageResource(res); setColorFilter(Color.WHITE) } }
+        if (!needsBadge) return img.apply { layoutParams = LinearLayout.LayoutParams(size, size) }
+        return FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(size, size)
+            addView(img, FrameLayout.LayoutParams(size, size))
             addView(View(context).apply {
                 background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c(KachiTheme.AMBER)) }
-            }, FrameLayout.LayoutParams(dpi(context, 7), dpi(context, 7), Gravity.TOP or Gravity.END).also {
-                it.topMargin = dpi(context, 8); it.marginEnd = dpi(context, 8)
-            })
-        } else content
+            }, FrameLayout.LayoutParams(dpi(context, Sp.DOT), dpi(context, Sp.DOT), Gravity.TOP or Gravity.END))
+        }
     }
 
     private fun applyState(id: String) {
         val tile = tiles[id] ?: return
         tile.background = if (id in enabled) GradientDrawable().apply {
-            cornerRadius = dpi(context, 14).toFloat(); setColor(c("#264c7dff")); setStroke(dpi(context, 1), c(KachiTheme.ACCENT))
-        } else KachiTheme.card(context, 14f, "#161b24")
+            cornerRadius = dpi(context, Sp.RADIUS_L).toFloat(); setColor(c("#264c7dff")); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
+        } else KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
     }
 
     /** iconRes theo icon của khả năng; chưa map → icon đại diện nhóm (khỏi ô trống icon). */

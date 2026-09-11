@@ -28,7 +28,9 @@ object CapabilityIcons {
     private val EXACT: Map<String, String> = mapOf(
         // ── Năng lượng: tách PIN / QUÃNG ĐƯỜNG / NHIỆT / THỜI GIAN thay vì tất cả là tia sét ──
         "soc" to "ic-battery", "soh_oem" to "ic-battery", "target_soc" to "ic-battery",
-        "charging_pct" to "ic-battery", "fuel_pct" to "ic-battery",
+        "charging_pct" to "ic-battery",
+        // [KIỂM TOÁN UX mục 4d] Xăng KHÔNG dùng icon PIN: trên xe hybrid đó là hai bình chứa khác nhau.
+        "fuel_pct" to "ic-fuel",
         "ev_range_km" to "ic-road", "fuel_range_km" to "ic-road", "ev_mileage_km" to "ic-road",
         "odometer" to "ic-road", "trip_km" to "ic-road", "batt_range_bodywork" to "ic-road",
         "trip_hours" to "ic-clock", "charging_eta_hour" to "ic-clock", "charging_eta_min" to "ic-clock",
@@ -36,7 +38,9 @@ object CapabilityIcons {
         "cell_temp_avg" to "ic-temp",
         // ── Động lực ──
         "steering_deg" to "ic-steering",
-        "gear" to "ic-grid", "op_mode" to "ic-grid", "energy_mode" to "ic-grid", "drift_mode" to "ic-grid",
+        // [KIỂM TOÁN UX mục 4a] Bốn mục CHẾ ĐỘ LÁI trước đây tra ra `ic-grid` (⊞) — cùng hình với widget "Bảng tổng
+        // hợp" và với kính cửa. `ic-drive` đã có sẵn và nói đúng việc.
+        "gear" to "ic-drive", "op_mode" to "ic-drive", "energy_mode" to "ic-drive", "drift_mode" to "ic-drive",
         // ── Khí hậu: bụi ≠ nhiệt ≠ quạt ──
         "cabin_temp" to "ic-temp", "inside_temp" to "ic-temp", "ext_temp" to "ic-temp",
         "coolant_temp" to "ic-temp", "temp_unit" to "ic-temp",
@@ -50,6 +54,8 @@ object CapabilityIcons {
         "radar_zones" to "ic-radar", "radar_volume" to "ic-volume",
         "child_presence" to "ic-seat", "oms_driver" to "ic-seat", "oms_passenger" to "ic-seat",
         "speed_limit_warning" to "ic-speed",
+        // ESP có ký hiệu chuẩn trên táp-lô; trước đây nó lùi về icon nhóm AN TOÀN = hình lưới ⊞ (mục 4a).
+        "esp_state" to "ic-esp",
         "volt_12v" to "ic-bolt", "volt_12v_level" to "ic-bolt",
         // ── Danh tính ──
         "key_bluetooth" to "ic-lock",
@@ -74,7 +80,8 @@ object CapabilityIcons {
         "gps_" to "ic-gps",
         "pm25_" to "ic-leaf",
         "bsd_" to "ic-radar", "lca_" to "ic-radar", "rcta_" to "ic-radar", "dow_" to "ic-radar",
-        "motor_" to "ic-speed", "engine_rpm" to "ic-speed", "wheel_speed" to "ic-speed",
+        // [KIỂM TOÁN UX mục 4d] Công suất mô-tơ KHÔNG phải tốc độ ⇒ không dùng icon đồng hồ tốc.
+        "motor_" to "ic-motor", "engine_rpm" to "ic-speed", "wheel_speed" to "ic-speed",
         "charge" to "ic-bolt", "charging" to "ic-bolt", "is_charging" to "ic-bolt",
         "cell_v_" to "ic-bolt",
         "trip_kwh" to "ic-bolt", "consumption_" to "ic-bolt",

@@ -19,9 +19,17 @@ import org.junit.jupiter.api.Test
  */
 class CapabilityReachabilityTest {
 
-    /** Đúng những gì màn chọn (ngăn kéo + bảng Tuỳ biến) bày ra cho người dùng. */
+    /**
+     * Đúng những gì màn chọn (ngăn kéo + màn Cài đặt) bày ra cho người dùng.
+     *
+     * G1 · T4: mục **Nhóm** ([CapabilityPicker.groupPicks]) được kể riêng vì hai màn chọn nay **lọc nhóm khỏi lĩnh
+     * vực** ([CapabilityPicker.singlesOf]) — để cùng một mã không có hai ô (bảng tra `mã → view` sẽ bị ghi đè). Nếu
+     * ở đây chỉ kể `byDomain()` thì phép lọc đó làm 12 nhóm trông như "không có đường tới", tức bài này sẽ đỏ ĐÚNG
+     * nhưng vì lý do SAI. Kể cả hai nguồn = mô tả đúng thứ màn chọn thật sự bày.
+     */
     private fun reachable(): Set<String> =
-        CapabilityCatalog.byDomain().flatMap { it.second }.map { it.id }.toSet() +
+        CapabilityPicker.groupPicks().map { it.id }.toSet() +
+            CapabilityCatalog.byDomain().flatMap { it.second }.map { it.id }.toSet() +
             WidgetRegistry.ALL.map { it.id }.toSet()
 
     @Test
@@ -42,6 +50,25 @@ class CapabilityReachabilityTest {
             assertTrue(macro.id in reach, "gói lệnh '${macro.label}' (${macro.id}) không có đường đặt vào ô")
             assertNotNull(CapabilityCatalog.pick(macro.id), "gói lệnh phải tra ra được như một khả năng")
         }
+    }
+
+    @Test
+    fun `moi NHOM deu dat duoc - va dat duoc o MUC DAU`() {
+        // G1 · T4. Nhóm cũng dễ tàng hình như gói lệnh, chỉ theo cách khác: nó vào màn chọn qua mục **Nhóm** riêng,
+        // nên nếu ai đó bỏ mục đó đi (hoặc lọc nhóm khỏi lĩnh vực mà quên bày lại) thì 12 nhóm **im lặng biến mất**
+        // khỏi CẢ ngăn kéo LẪN màn Cài đặt — đúng bài học "vẽ được ≠ đặt được": T3 vẽ được ô nhóm, nhưng vẽ được
+        // không có nghĩa người dùng đặt được.
+        val reach = reachable()
+        val firstSection = CapabilityPicker.groupPicks().map { it.id }
+        CapabilityGroups.ALL.forEach { g ->
+            assertTrue(g.id in reach, "nhóm '${g.label}' (${g.id}) không có đường đặt vào ô")
+            assertNotNull(CapabilityCatalog.pick(g.id), "nhóm phải tra ra được như một khả năng")
+            assertTrue(g.id in firstSection, "nhóm '${g.label}' phải nằm ở MỤC ĐẦU của màn chọn (§4.2), không rải rác")
+        }
+        assertEquals(
+            CapabilityGroups.ALL.size, firstSection.size,
+            "mục đầu phải bày ĐÚNG các nhóm, không thêm không bớt",
+        )
     }
 
     @Test

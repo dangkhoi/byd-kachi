@@ -1,0 +1,19 @@
+<!--
+  MỞ HẾT KÍNH (gói lệnh `mac_win_open_all`) — khung kính + mũi tên XUỐNG (kính hạ xuống là mở).
+  [KIỂM TOÁN UX mục 4a] Trước đây "Mở hết kính" và "Đóng hết kính" dùng CHUNG một icon ⇒ hai nút ĐỐI NGHỊCH
+  trông y hệt nhau, chỉ phân biệt được bằng cách đọc chữ. Chiều mũi tên bám vật lý thật của kính, không bám ước lệ
+  "lên = bật".
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M3.2,16.4 L3.2,9.2 L7.2,5.2 L14.4,5.2 L14.4,16.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M5.2,12.4 L12.4,12.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M19.2,7.6 L19.2,18.4 M16,15.2 L19.2,18.4 L22.4,15.2"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

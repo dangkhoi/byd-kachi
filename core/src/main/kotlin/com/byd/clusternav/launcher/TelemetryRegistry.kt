@@ -198,7 +198,7 @@ object TelemetryRegistry {
         t("dow_left", "Mở cửa cảnh báo trái", "", SAFETY, STRIP, OVERDRIVE, "1098907680", short = "Cảnh báo cửa trái"),
         t("dow_right", "Mở cửa cảnh báo phải", "", SAFETY, STRIP, OVERDRIVE, "1098907682", short = "Cảnh báo cửa phải"),
         t("radar_zones", "Cảm biến đỗ (8 vùng)", "", SAFETY, BOARD, OVERDRIVE, "BYDAutoRadarDevice.getAllRadarProbeStates", short = "Cảm biến đỗ"),
-        t("radar_volume", "Âm lượng cảm biến", "", SAFETY, VALUE, OVERDRIVE, "BYDAutoRadarDevice.getRadarVolume"),
+        t("radar_volume", "Âm lượng cảm biến", "", SAFETY, VALUE, OVERDRIVE, "BYDAutoRadarDevice.getRadarVolume", short = "Âm lượng"),
         t("esp_state", "Cân bằng điện tử (ESP)", "", SAFETY, BADGE, OVERDRIVE, "305135676", short = "ESP"),
         t("mcu_status", "Trạng thái nguồn (MCU)", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoPowerDevice.getMcuStatus", short = "Nguồn MCU"),
         t("volt_12v", "Ắc-quy 12V", "V", SAFETY, VALUE, OVERDRIVE, "BYDAutoPowerDevice.getBatteryVoltage"),

@@ -1,0 +1,18 @@
+<!--
+  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm SỨC KHOẺ PIN (nhiệt cell, điện áp cell, SOH, 12V).
+  Pin NGANG + nhịp đo bên trong = "pin có khoẻ không". Cố ý KHÁC ic_group_energy (pin đứng + tia sét).
+  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M20.4,10.6 L20.4,13.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M5.4,7.6 L17.2,7.6 A1.5,1.5 0 0 1 18.7,9.1 L18.7,14.9 A1.5,1.5 0 0 1 17.2,16.4 L5.4,16.4 A1.5,1.5 0 0 1 3.9,14.9 L3.9,9.1 A1.5,1.5 0 0 1 5.4,7.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6.2,12 L8.4,12 L9.8,9.4 L11.8,14.6 L13.2,12 L16.4,12"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

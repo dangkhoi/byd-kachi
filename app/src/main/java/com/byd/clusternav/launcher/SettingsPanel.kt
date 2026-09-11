@@ -14,6 +14,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Mọi thứ màn Cài đặt cần biết, gom một chỗ (S1).
@@ -102,8 +103,8 @@ class SettingsPanel(
 
         val panel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = KachiTheme.card(context, 24f, "#12141c")
-            setPadding(dpi(context, 24), dpi(context, 20), dpi(context, 24), dpi(context, 20))
+            background = KachiTheme.card(context, Sp.RADIUS_XXL, "#12141c")
+            setPadding(dpi(context, Sp.XXL), dpi(context, Sp.XL), dpi(context, Sp.XXL), dpi(context, Sp.XL))
             isClickable = true                  // chặn chạm lọt xuống lớp scrim bên dưới
         }
         panel.addView(head())
@@ -111,19 +112,19 @@ class SettingsPanel(
         val body = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         body.addView(
             ScrollView(context).apply { addView(rail()); isVerticalScrollBarEnabled = false },
-            LinearLayout.LayoutParams(dpi(context, RAIL_DP), LinearLayout.LayoutParams.MATCH_PARENT),
+            LinearLayout.LayoutParams(dpi(context, Sp.RAIL_COL), LinearLayout.LayoutParams.MATCH_PARENT),
         )
         body.addView(
             content,
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-                .also { it.marginStart = dpi(context, 16) },
+                .also { it.marginStart = dpi(context, Sp.L) },
         )
         panel.addView(body, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
         addView(
             panel,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).also {
-                it.setMargins(dpi(context, 36), dpi(context, 22), dpi(context, 36), dpi(context, 22))
+                it.setMargins(dpi(context, Sp.XXL), dpi(context, Sp.XL), dpi(context, Sp.XXL), dpi(context, Sp.XL))
                 it.gravity = Gravity.CENTER
             },
         )
@@ -163,7 +164,7 @@ class SettingsPanel(
     private fun head(): View = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(0, 0, 0, dpi(context, 14))
+        setPadding(0, 0, 0, dpi(context, Sp.L))
         addView(
             LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
@@ -181,8 +182,8 @@ class SettingsPanel(
         addView(TextView(context).apply {
             text = "Xong"; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE); gravity = Gravity.CENTER
-            setPadding(dpi(context, 18), dpi(context, 7), dpi(context, 18), dpi(context, 7))
-            background = KachiTheme.gradient(context, 999f)
+            setPadding(dpi(context, Sp.XL), dpi(context, Sp.S), dpi(context, Sp.XL), dpi(context, Sp.S))
+            background = KachiTheme.gradient(context, Sp.RADIUS_PILL)
             setOnClickListener { onClose() }
         })
     }
@@ -198,7 +199,7 @@ class SettingsPanel(
                 cell,
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                ).also { it.bottomMargin = dpi(context, 4) },
+                ).also { it.bottomMargin = dpi(context, Sp.XS) },
             )
         }
     }
@@ -211,8 +212,8 @@ class SettingsPanel(
      */
     private fun railCell(group: SettingsGroup): LinearLayout = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
-        val p = dpi(context, 10)
-        setPadding(p, dpi(context, 9), p, dpi(context, 9))
+        val p = dpi(context, Sp.M)
+        setPadding(p, dpi(context, Sp.M), p, dpi(context, Sp.M))
         addView(TextView(context).apply {
             text = group.label; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
@@ -220,7 +221,7 @@ class SettingsPanel(
         addView(TextView(context).apply {
             text = group.sub; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(0, dpi(context, 2), 0, 0)
+            setPadding(0, dpi(context, Sp.XS), 0, 0)
         })
         setOnClickListener { show(group) }
     }
@@ -228,16 +229,12 @@ class SettingsPanel(
     /** Nhóm đang chọn = nền nhạt + viền accent; nhóm khác = trong suốt (rail không được ồn hơn nội dung). */
     private fun paintRail(cell: LinearLayout, on: Boolean) {
         cell.background = if (on) GradientDrawable().apply {
-            cornerRadius = dpi(context, 12).toFloat()
-            setColor(c("#264c7dff")); setStroke(dpi(context, 1), c(KachiTheme.ACCENT))
+            cornerRadius = dpi(context, Sp.RADIUS_M).toFloat()
+            setColor(c("#264c7dff")); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
         } else null
     }
 
-    private companion object {
-        /**
-         * Bề rộng rail. 230dp ở 1920×1080 (density 1.5 ⇒ 1280dp ngang) chừa ~950dp cho nội dung — đủ cho lưới 5 ô
-         * ngang của nhóm "Màn hình chính" mà nhãn nhóm dài nhất ("Dẫn đường · Cụm · Phím") vẫn nằm trên một dòng.
-         */
-        const val RAIL_DP = 230
-    }
+    // ⚠ [SOÁT G1] `private companion object { const val RAIL_DP = 230 }` đã XOÁ ở đây: bề rộng rail nay là
+    // [KachiSpace.RAIL_COL]. Một hằng cỡ dp sống ngoài thang thì bài canh không thấy (nó là định danh, không phải
+    // số trần) — tức "một thang, một chỗ" chỉ đúng trên giấy. Xem KDoc của hằng đó.
 }

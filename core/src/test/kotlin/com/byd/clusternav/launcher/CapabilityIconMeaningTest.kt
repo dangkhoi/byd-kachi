@@ -1,0 +1,177 @@
+package com.byd.clusternav.launcher
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+/**
+ * ═══ KIỂM TOÁN UX mục 4 — ICON PHẢI MANG ĐÚNG MỘT NGHĨA ══════════════════════════════════════════════════════
+ *
+ * `IconStyleContractTest` (:app) canh **phong cách** (một độ dày nét, đầu nét tròn, khung 24, không màu riêng). Nó
+ * KHÔNG canh **nghĩa** — và [ĐO] kiểm toán 2026-09-12 cho thấy nghĩa là chỗ hỏng thật:
+ *  • glyph ⊞ (`ic-grid`) mang **BA** nghĩa: cửa kính · widget *"Bảng tổng hợp"* · **ESP** (lùi về icon nhóm AN TOÀN);
+ *  • hai nút **ĐỐI NGHỊCH** *"Mở hết kính"* / *"Đóng hết kính"* dùng **CÙNG** một icon;
+ *  • nhóm ADAS: **8/10 mục cùng một icon sóng radar** ⇒ icon không giúp phân biệt gì;
+ *  • 5 icon **sai nghĩa**: *"Trạng thái xe"* = ổ khoá · *"Trình chiếu ảnh"* = mặt trời (y hệt *"Đồng hồ + thời
+ *    tiết"*) · *"Mức xăng"* = pin · *"Công suất mô-tơ"* = đồng hồ tốc · lốp có **hai** hình không liên quan nhau.
+ *
+ * Bài này ở `:core` vì cả ba nguồn quyết định nghĩa ([WidgetRegistry], [CapabilityIcons], [ActionMacros]) đều ở
+ * `:core` — đúng luật *"bài quét gì thì nằm cùng module với thứ đó"*.
+ */
+class CapabilityIconMeaningTest {
+
+    // ── 1 · Glyph ⊞ chỉ còn MỘT nghĩa ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `glyph luoi chi con nghia bang tong hop`() {
+        val widgets = WidgetRegistry.ALL.filter { it.icon == GRID }.map { it.id }
+        assertEquals(listOf("w_board"), widgets, "⊞ là hình một cái BẢNG — chỉ widget bảng tổng hợp được dùng")
+
+        val domains = Domain.values().filter { WidgetCatalog.iconFor(it) == GRID }
+        assertTrue(domains.isEmpty()) {
+            "lĩnh vực $domains lùi về ⊞ ⇒ mọi mục chưa khai icon của lĩnh vực đó mang hình 'bảng' (ESP đã từng vậy)"
+        }
+
+        val data = TelemetryRegistry.ALL.filter { CapabilityIcons.forTelemetry(it.id, it.domain) == GRID }.map { it.id }
+        assertTrue(data.isEmpty()) { "mục đọc mang hình 'bảng': $data" }
+
+        val controls = ControlRegistry.ALL.filter { it.icon == GRID }.map { it.id }
+        assertTrue(controls.isEmpty()) { "nút mang hình 'bảng': $controls" }
+    }
+
+    // ── 2 · Hai gói lệnh đối nghịch không được cùng icon ────────────────────────────────────────────
+
+    /**
+     * ⚠ Chặn **nguyên nhân**, không chỉ chặn đúng cặp kính: đòi **mọi** gói lệnh có icon riêng.
+     *
+     * Bốn gói hiện có đều là những việc khác nhau, nên "mỗi gói một icon" là luật đúng chứ không phải luật bó buộc.
+     * Nếu mai có hai gói thật sự cùng nghĩa thì bài đỏ và người sửa phải nói ra lý do — đúng cách bản vá P0 ngày
+     * 2026-09-11 đã học (bài chỉ chặn hiện tượng thì lần thứ hai lọt).
+     */
+    @Test
+    fun `moi goi lenh mang icon rieng`() {
+        val byIcon = ActionMacros.ALL.groupBy { it.icon }.filterValues { it.size > 1 }
+        assertTrue(byIcon.isEmpty()) {
+            "gói lệnh dùng chung icon ⇒ hai việc khác nhau trông y hệt: " +
+                byIcon.map { (i, ms) -> "$i ← ${ms.map { it.label }}" }
+        }
+        val open = ActionMacros.byId("mac_win_open_all")
+        val close = ActionMacros.byId("mac_win_close_all")
+        assertTrue(open != null && close != null)
+        assertNotEquals(
+            open!!.icon, close!!.icon,
+            "\"${open.label}\" và \"${close.label}\" là hai việc ĐỐI NGHỊCH — không thể cùng một hình",
+        )
+    }
+
+    // ── 3 · Nhóm mà icon không phân biệt được thì KHÔNG vẽ dải ──────────────────────────────────────
+
+    /**
+     * ⚠⚠ **MODEL phải NÓI RA khi icon không phân biệt được** — đó là điều kiện để bộ vẽ bỏ icon đi.
+     *
+     * Bản đầu của bài này viết luật *"nhóm có ≥3 mục cùng icon thì không được vẽ STRIP"*, và nó **đỏ ngay lần chạy
+     * đầu** với bốn nhóm khác (`g_windows`, `g_doors`, `g_lights`, `g_occupants`). Đó là bằng chứng luật đó SAI:
+     * ba nhóm đầu **có nút**, mà bất biến của dự án là *"nút chỉ ở STRIP"* ([CapabilityGroupsTest]) ⇒ chúng
+     * **không thể** đổi sang BOARD. Luật đúng không phải "đổi kiểu vẽ" mà là **"đừng vẽ cái icon vô nghĩa đó"**.
+     *
+     * Nên bài canh chuyển sang khoá đúng thứ dùng được: [GroupBoardModel.iconsDistinguish]. Danh sách dưới là
+     * [ĐO] hiện trạng — ai cho các mục đó icon riêng thì bài đỏ và phải xoá tên khỏi danh sách (nó **tự rữa**,
+     * không phải chỗ cất nợ).
+     */
+    @Test
+    fun `model noi ra nhom nao co icon khong phan biet duoc`() {
+        val blind = CapabilityGroups.ALL
+            .filterNot { GroupBoard.of(it, CarStatus()).iconsDistinguish }
+            .map { it.id }
+        assertEquals(
+            listOf(
+                "g_tyres", "g_windows", "g_doors", "g_lights", "g_ambient",
+                "g_adas", "g_occupants", "g_climate", "g_battery", "g_trip",
+            ),
+            blind,
+            "danh sách nhóm mà icon ô con KHÔNG phân biệt được đã đổi — cập nhật danh sách và xem lại bộ vẽ",
+        )
+        // ⚠ **10/12 nhóm** — con số này nói rằng "icon cho từng ô con" là ý tưởng chỉ đúng ở vài nhóm. Nó KHÔNG có
+        // hại ở phần lớn chỗ vì bộ vẽ đã không hiện icon ở đó: `BOARD` vẽ theo vị trí, `CARD` xếp ngang (nhãn · số),
+        // `STRIP` có nút thì bỏ icon để nhường bề cao. Chỗ nó THẬT SỰ hại là `STRIP` KHÔNG nút — đúng hai nhóm
+        // `g_adas` (nay là BOARD) và `g_occupants` (nay bộ vẽ bỏ icon). Bài canh phía `:app`
+        // (`GroupTileWiringContractTest.o con chi hien icon khi icon phan biet duoc`) khoá đúng chỗ đó.
+        // Và các nhóm còn lại phải phân biệt được thật (nếu không thì phép đo trên vô nghĩa).
+        assertTrue(
+            CapabilityGroups.ALL.any { GroupBoard.of(it, CarStatus()).iconsDistinguish },
+            "không nhóm nào phân biệt được ⇒ phép đo đang sai, không phải bộ icon sai",
+        )
+    }
+
+    /**
+     * Nhóm có nút thì bộ vẽ vốn đã bỏ icon (cần bề cao cho hàng nút), nên ba nhóm kính/cửa/đèn KHÔNG hiện icon
+     * trùng — bài này ghim đúng điều đó để đừng ai "sửa" bằng cách bật icon trở lại.
+     */
+    @Test
+    fun `nhom co nut thi khong hien icon o con`() {
+        listOf(CapabilityGroups.WINDOWS, CapabilityGroups.DOORS, CapabilityGroups.LIGHTS).forEach {
+            assertTrue(it.hasWrites, "${it.id} phải có nút — đó là lý do bộ vẽ bỏ icon ô con")
+            assertEquals(WidgetShape.STRIP, it.shape, "nhóm có nút BẮT BUỘC là STRIP (bất biến của dự án)")
+        }
+    }
+
+    /** Và nhóm ADAS phải ở dạng BOARD — ghim đúng bản vá, để không ai lặng lẽ trả nó về dải. */
+    @Test
+    fun `nhom adas xep theo phia`() {
+        assertEquals(WidgetShape.BOARD, CapabilityGroups.ADAS.shape)
+        val left = CapabilityGroups.ADAS.reads.count { GroupBoard.sideOf(it) == GroupSide.LEFT }
+        val right = CapabilityGroups.ADAS.reads.count { GroupBoard.sideOf(it) == GroupSide.RIGHT }
+        assertEquals(4, left, "4 cảnh báo bên trái (điểm mù · chuyển làn · cắt ngang · mở cửa)")
+        assertEquals(4, right, "và 4 bên phải")
+        // Hai mục nói về CẢ XE — không được gán bừa vào một bên.
+        assertEquals(GroupSide.NONE, GroupBoard.sideOf("esp_state"))
+        assertEquals(GroupSide.NONE, GroupBoard.sideOf("speed_limit_warning"))
+    }
+
+    // ── 4 · Năm icon sai nghĩa ─────────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `nam icon sai nghia da duoc sua`() {
+        val car = WidgetRegistry.byId("w_car")!!
+        assertNotEquals("ic-lock", car.icon, "\"${car.label}\" là sơ đồ TOÀN XE, không phải nút khoá cửa")
+
+        val photos = WidgetRegistry.byId("w_photos")!!
+        val clock = WidgetRegistry.byId("w_clock")!!
+        assertNotEquals(clock.icon, photos.icon, "trình chiếu ảnh và đồng hồ+thời tiết không thể cùng một hình")
+
+        assertEquals("ic-fuel", icon("fuel_pct"), "xăng ≠ pin (trên xe hybrid là hai bình chứa khác nhau)")
+        assertEquals("ic-motor", icon("motor_power"), "công suất ≠ tốc độ")
+        assertEquals("ic-esp", icon("esp_state"), "ESP có ký hiệu riêng, không dùng hình lùi-về-nhóm")
+    }
+
+    /**
+     * MỘT khái niệm = MỘT hình: icon của một bánh (`tyre_p_*`) và icon nhóm Lốp phải **cùng họ**.
+     *
+     * Không kiểm được "cùng họ" bằng mã, nên kiểm điều kiểm được: chúng là hai tệp KHÁC nhau (một bánh vs cả xe 4
+     * bánh — đúng, hai việc khác nhau) nhưng **không** được là hai hình rời rạc do ngẫu nhiên. Phần hình học thì
+     * khoá bằng ảnh chụp, và lý do ghi trong chính tệp `ic_tire.xml`.
+     */
+    @Test
+    fun `lop cua mot banh va lop cua ca nhom la hai muc rieng`() {
+        assertEquals("ic-tire", icon("tyre_p_fl"), "áp suất một bánh dùng icon MỘT bánh")
+        assertEquals("ic-group-tyres", CapabilityGroups.TYRES.icon, "nhóm dùng icon cả xe + 4 bánh")
+        assertNotEquals(icon("tyre_p_fl"), CapabilityGroups.TYRES.icon)
+    }
+
+    /** Nhiệt lốp vẫn phải KHÁC áp lốp (thành quả U1, dễ bị vô tình gộp lại khi sửa bảng tiền tố). */
+    @Test
+    fun `nhiet lop khac ap lop`() {
+        assertNotEquals(icon("tyre_p_fl"), icon("tyre_t_fl"))
+    }
+
+    private fun icon(id: String): String {
+        val spec = TelemetryRegistry.byId(id)
+        assertTrue(spec != null) { "$id không còn trong bộ đăng ký" }
+        return CapabilityIcons.forTelemetry(spec!!.id, spec.domain)
+    }
+
+    private companion object {
+        const val GRID = "ic-grid"
+    }
+}

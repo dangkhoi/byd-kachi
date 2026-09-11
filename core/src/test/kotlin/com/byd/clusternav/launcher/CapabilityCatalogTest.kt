@@ -29,10 +29,11 @@ class CapabilityCatalogTest {
 
     @Test
     fun `tong so ma bang tong ba bo va deu phan giai duoc`() {
-        // W2 thêm nguồn thứ TƯ: gói lệnh (cũng là HÀNH ĐỘNG). Ý định của phép kiểm không đổi — gộp không được làm
-        // MẤT hay NHÂN ĐÔI mục nào; chỉ cập nhật con số kỳ vọng cho đúng số nguồn hiện tại.
-        val total = WidgetRegistry.ALL.size + TelemetryRegistry.ALL.size + ControlRegistry.ALL.size +
-            ActionMacros.ALL.size
+        // W2 thêm nguồn thứ TƯ: gói lệnh (cũng là HÀNH ĐỘNG). G1 thêm nguồn thứ NĂM: NHÓM khả năng (đọc — xem KDoc
+        // [CapabilityCatalog.kindOf]). Ý định của phép kiểm không đổi — gộp không được làm MẤT hay NHÂN ĐÔI mục nào;
+        // chỉ cập nhật con số kỳ vọng cho đúng số nguồn hiện tại.
+        val total = CapabilityGroups.ALL.size + WidgetRegistry.ALL.size + TelemetryRegistry.ALL.size +
+            ControlRegistry.ALL.size + ActionMacros.ALL.size
         assertEquals(total, CapabilityCatalog.all().size, "gộp không được làm mất hay nhân đôi mục nào")
         CapabilityCatalog.all().forEach { p ->
             assertNotNull(CapabilityCatalog.kindOf(p.id), "mã ${p.id} phải phân loại được")
@@ -218,6 +219,41 @@ class TyreBoardTest {
         val r = TyreBoard.readings(tyres(fl = 240.0))
         assertEquals(TyreStatus.OK, r[0].status, "một bánh thì không có gì để so ⇒ không kêu lệch")
         assertTrue(r.drop(1).all { it.status == TyreStatus.UNKNOWN })
+    }
+
+    // ── KẾT LUẬN TỔNG (kiểm toán UX mục 1: ô phải trả lời "lốp tao ổn không") ────────────────────
+
+    @Test
+    fun `off-car ket luan noi la CHUA DOC DUOC, khong noi la on`() {
+        assertEquals(
+            "chưa đọc được áp suất", TyreBoard.verdict(TyreBoard.readings(tyres())),
+            "off-car mà báo 'ổn' là BỊA — và là kiểu bịa tệ nhất, vì nó trấn an sai",
+        )
+    }
+
+    @Test
+    fun `bon banh binh thuong thi ket luan on`() {
+        assertEquals("lốp ổn", TyreBoard.verdict(TyreBoard.readings(tyres(240.0, 240.0, 235.0, 235.0))))
+    }
+
+    @Test
+    fun `ket luan dem tung loai sai va neu thu nguy truoc`() {
+        // 1.8 bar (non) + 3.3 bar (căng) ⇒ phải nêu CẢ HAI, non trước (thứ tự ưu tiên của TyreStatus).
+        val r = TyreBoard.readings(tyres(180.0, 330.0, 240.0, 240.0))
+        assertEquals("1 bánh non · 1 bánh căng", TyreBoard.verdict(r))
+    }
+
+    @Test
+    fun `hai banh cung loi thi dem gop lai`() {
+        assertEquals("2 bánh non", TyreBoard.verdict(TyreBoard.readings(tyres(180.0, 190.0, 240.0, 240.0))))
+    }
+
+    @Test
+    fun `ket luan dung tu vung cua TyreStatus, khong co bang chu thu hai`() {
+        // Khoá giao kèo: chữ trong kết luận phải là chính [TyreStatus.reason]. Nếu ai thêm một bảng chữ riêng cho
+        // kết luận thì hai chỗ sẽ nói khác nhau về cùng một trạng thái.
+        val v = TyreBoard.verdict(TyreBoard.readings(tyres(260.0, 260.0, 260.0, 220.0)))
+        assertTrue(v.contains(TyreStatus.UNEVEN.reason!!), "phải dùng chữ 'lệch' của chính TyreStatus: $v")
     }
 
     @Test

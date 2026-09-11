@@ -108,6 +108,80 @@ android {
     }
 }
 
+/**
+ * ⚠⚠ MỌI TỆP CÂY-NGUỒN MÀ TEST ĐỌC PHẢI LÀ ĐẦU VÀO CỦA TASK TEST — không khai thì bài canh **không bao
+ * giờ chạy lại** và cho dấu xanh GIẢ.
+ *
+ * [ĐO] 2026-09-11 (T2, thử phá mutation 2): sửa `android:strokeWidth` của `ic_lock.xml` từ 1.6 → 2.4 rồi chạy
+ * `:app:testDebugUnitTest` ⇒ Gradle báo **`Task :app:testDebugUnitTest UP-TO-DATE`**, `BUILD SUCCESSFUL`, 0 đỏ —
+ * trong khi `IconStyleContractTest` sinh ra chính để bắt ca đó. Lý do: bài đọc tệp TRỰC TIẾP từ cây nguồn (qua
+ * `SourceRoots`), còn task test chỉ khai đầu vào là classpath + tài nguyên đã trộn; đổi NỘI DUNG một tệp vector
+ * không đổi `R.java` nên không có gì trong chuỗi đầu vào của nó thay đổi. (Thêm tệp MỚI thì lại đỏ đúng — vì
+ * `R.java` đổi. Chính sự bất đối xứng đó làm lỗi này rất dễ tưởng là đã an toàn.)
+ *
+ * [ĐO] 2026-09-12 (lượt truy quét cùng-họ) — cùng bệnh, đo trên tệp KHÁC, TRƯỚC khi vá:
+ *  - `src/main/AndroidManifest.xml`: nhân đôi `<uses-permission RECEIVE_BOOT_COMPLETED>` (đúng ca
+ *    `KachiAutostartServiceWiringTest` đếm `count() == 1`) ⇒ `:app:testDebugUnitTest` **UP-TO-DATE /
+ *    BUILD SUCCESSFUL**; ép chạy (`--rerun`) ⇒ **BUILD FAILED**. Manifest KHÔNG nằm trong classpath
+ *    unit-test (AGP mặc định `unitTests.isIncludeAndroidResources = false`) nên không có gì đổi.
+ *
+ * `src/main/java` khai TƯỜNG MINH dù đã có gián tiếp qua classpath: đường gián tiếp chỉ bắt được thay đổi
+ * làm ĐỔI BYTECODE. Rất nhiều bài ở đây quét **văn bản gốc kể cả KDoc/chú thích** (`SourceRoots.text`), mà
+ * sửa chú thích trong một dòng có sẵn thì bytecode y nguyên ⇒ không khai thì lại xanh giả.
+ *
+ * `core/`+`car-integration/` là cây nguồn của module KHÁC: `LayeringRulesTest` quét chúng, và `:app` KHÔNG
+ * biên dịch chúng thành nguồn ⇒ đổi văn bản ở đó không đụng gì trong chuỗi đầu vào của task này.
+ *
+ * Đây là **cùng họ với lỗi S1** ("bài quét mã của module X phải nằm trong module X"): điều kiện để một bài canh
+ * còn sống là Gradle BIẾT thứ nó quét. Đặt đúng module chỉ là một nửa; nửa còn lại là khai đầu vào.
+ */
+tasks.withType<Test>().configureEach {
+    // ── cây nguồn CỦA CHÍNH :app mà test đọc trực tiếp ──────────────────────────────────────────
+    inputs.dir(layout.projectDirectory.dir("src/main/res"))
+        .withPropertyName("appResForSourceScanningTests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(layout.projectDirectory.file("src/main/AndroidManifest.xml"))
+        .withPropertyName("appManifestForSourceScanningTests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(layout.projectDirectory.dir("src/main/java"))
+        .withPropertyName("appMainSourceTextForSourceScanningTests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `src/vehicleTest` = bề mặt probe mà `VehicleTestSurfaceContractTest` quét theo VĂN BẢN.
+    inputs.dir(layout.projectDirectory.dir("src/vehicleTest"))
+        .withPropertyName("appVehicleTestSourceForSurfaceContractTest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `src/release` là source set TÙY CHỌN (hiện KHÔNG tồn tại) — `MainProbeSurfaceAbsenceTest` quét nó
+    // nếu có. Dùng `inputs.files` chứ KHÔNG `inputs.dir`: `inputs.dir` nổ khi thư mục chưa tồn tại, còn
+    // `inputs.files` chấp nhận rỗng và vẫn đỏ đúng lúc ai đó TẠO thư mục đó kèm bề mặt probe.
+    inputs.files(layout.projectDirectory.dir("src/release"))
+        .withPropertyName("appReleaseSourceIfPresentForProbeAbsenceTest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `LayeringRulesTest` quét CHÍNH cây test (tên tệp + khai báo + văn bản) để bắt bài nằm sai module.
+    // Cây test đã là đầu vào gián tiếp qua `compileTestKotlin`, nhưng lại chỉ bắt thay đổi đổi BYTECODE —
+    // khai tường minh để sửa chú thích/đổi tên tệp cũng làm bài canh chạy lại.
+    inputs.dir(layout.projectDirectory.dir("src/test/java"))
+        .withPropertyName("appTestSourceTextForLayeringRulesTest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `BuildArtifactNamingTest` đọc chính tệp này.
+    inputs.file(layout.projectDirectory.file("build.gradle.kts"))
+        .withPropertyName("appBuildScriptForBuildArtifactNamingTest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+    // ── cây nguồn MODULE KHÁC + tài liệu mà `LayeringRulesTest` / probe-contract quét ────────────
+    inputs.dir(rootProject.layout.projectDirectory.dir("core/src/main/kotlin"))
+        .withPropertyName("coreSourceTextForLayeringRulesTest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(rootProject.layout.projectDirectory.dir("car-integration/src/main/kotlin"))
+        .withPropertyName("carIntegrationSourceTextForLayeringAndProbeTests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.layout.projectDirectory.file("docs/refactor-car-execution/layering-rules.md"))
+        .withPropertyName("layeringRulesDocForLayeringRulesTest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(rootProject.layout.projectDirectory.dir("scripts/vehicle"))
+        .withPropertyName("vehicleScriptsForVehicleTestSurfaceContractTest")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 dependencies {
     // "CÁI KIA" — dadb: ADB client thuần JVM, tự nối localhost:5555 -> uid 2000 -> chạy navopen (HAL trực tiếp,
     // ETA + icon hoàn hảo như DashCast). KÉO okio + bouncycastle transitively.
