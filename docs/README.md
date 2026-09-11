@@ -212,6 +212,7 @@ khi index đang giữ bytes đúng — sau một `git reset` thì index == HEAD 
 
 | Doc | Mục đích | Trạng thái | Cập nhật |
 |-----|----------|-----------|----------|
+| [`_handoff/session-2026-09-11-goi3-action-macros.md`](_handoff/session-2026-09-11-goi3-action-macros.md) | **Handoff gói 3** (W2 lớp gộp lệnh): 3 sự thật đã đo (không có khái niệm gộp lệnh · nhãn "Kính 50%" nói sai · không có lệnh ghi % nên "kính ½" là việc trên xe) · bảng tình trạng 7 hành động owner nêu · **lượt soát chết giữa đường nhưng kịp vá 3 lỗi** · ⚠ 3 điểm chưa ai soi độc lập · việc chờ owner + việc trên xe | Session | 2026-09-11 |
 | [`_handoff/session-2026-09-10-goi2-capability-tile.md`](_handoff/session-2026-09-10-goi2-capability-tile.md) | **Handoff gói 2** (RW0 · W4 · W3 · W-unit): 4 sự thật nền đã đo · 3 lỗi mức cao senior review tìm ra · **4 lỗi chỉ lộ khi đọc ảnh máy ảo** · bất biến phải giữ · điểm dừng + nợ trên xe | Session | 2026-09-10 |
 | [`_handoff/kachi-w1-real-data.md`](_handoff/kachi-w1-real-data.md) | **Prompt template autonomous** 4-stage burn W1 (nối data/điều khiển xe thật registry-driven) | Session | 2026-09-10 |
 | [`_handoff/w1-stage1-done.md`](_handoff/w1-stage1-done.md) | W1 Stage 1 — capability layer :core (registry/CarStatus/tier) + contract | Session | 2026-09-10 |
