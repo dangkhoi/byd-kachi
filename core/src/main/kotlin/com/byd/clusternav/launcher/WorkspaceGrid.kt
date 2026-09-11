@@ -197,3 +197,54 @@ object WorkspaceGrid {
         return GridLayout(frames)
     }
 }
+
+/**
+ * BỐ CỤC ĐANG HIỆU LỰC — **nguồn duy nhất** trả lời hai câu: *bao nhiêu ô* và *ô nằm ở đâu*.
+ *
+ * ## Vì sao phải có chỗ này
+ * [ĐO] trước khi có nó, **sáu chỗ** tự suy ra số ô và khung pixel từ bố cục sẵn: bộ dựng ô, đo cỡ, đặt chỗ (3 chỗ ở
+ * màn chính) và bộ sắp lại cửa sổ app (3 chỗ nữa). Thêm bố cục tự vẽ mà bỏ sót một chỗ thì màn hình vẽ theo bố cục
+ * mới nhưng **cửa sổ app lại đặt theo bố cục cũ** — app nằm lệch khỏi ô, đúng loại lỗi của P-bug2. Có test canh
+ * (`GridSeamGuardTest`) chặn việc suy ra ở chỗ khác.
+ *
+ * ## Luật LÙI AN TOÀN (quan trọng)
+ * Bố cục tự vẽ chỉ thắng khi nó **dùng được thật**: hợp lệ VÀ số khung nằm trong trần ô hiện tại. Ngược lại **lùi về
+ * bố cục sẵn** thay vì hiện ra thứ hỏng. Ba ca lùi:
+ *  - dữ liệu hỏng / giải mã ra rỗng ⇒ người dùng vẫn có màn hình dùng được, không phải màn trắng;
+ *  - bố cục đè nhau (lẽ ra trình vẽ đã chặn lúc lưu, nhưng đây là **lưới an toàn**);
+ *  - **nhiều khung hơn trần ô** — ca này có thật khi bản sau nới trần rồi người dùng hạ cấp bản: bố cục 6 khung lưu
+ *    bởi bản mới sẽ lùi về bố cục sẵn ở bản cũ chứ không làm mất ô.
+ */
+object EffectiveLayout {
+
+    /** Bố cục tự vẽ có dùng được với trần ô [cap] không. */
+    fun usable(custom: GridLayout?, cap: Int = WorkspaceState.SLOT_CAP): Boolean =
+        custom != null && custom.frames.isNotEmpty() && custom.frames.size <= cap && custom.valid
+
+    /** Số ô đang hiện. */
+    fun slotCount(preset: LayoutPreset, custom: GridLayout?, cap: Int = WorkspaceState.SLOT_CAP): Int =
+        if (usable(custom, cap)) custom!!.frames.size else preset.slotCount
+
+    /**
+     * Khung pixel của từng ô. Cùng thứ tự với ô nội dung ⇒ đổi bố cục thì app trong ô đi theo đúng thứ tự (giữ đúng
+     * cách sắp lại app đã có).
+     */
+    fun rects(
+        preset: LayoutPreset,
+        custom: GridLayout?,
+        width: Int,
+        height: Int,
+        gap: Int = 0,
+        cap: Int = WorkspaceState.SLOT_CAP,
+    ): List<SlotRect> =
+        if (usable(custom, cap)) custom!!.slots(width, height, gap)
+        else WorkspaceLayout.slots(preset, width, height, gap)
+
+    /** Lý do bố cục tự vẽ bị bỏ qua — để nói cho người dùng, không im lặng. `null` = đang dùng nó. */
+    fun ignoredReason(custom: GridLayout?, cap: Int = WorkspaceState.SLOT_CAP): String? = when {
+        custom == null || custom.frames.isEmpty() -> null          // chưa vẽ gì: không phải "bị bỏ qua"
+        custom.frames.size > cap -> "bố cục tự vẽ có ${custom.frames.size} khung, bản này đỡ tối đa $cap"
+        !custom.valid -> "bố cục tự vẽ đang lỗi: " + custom.problems().first()
+        else -> null
+    }
+}

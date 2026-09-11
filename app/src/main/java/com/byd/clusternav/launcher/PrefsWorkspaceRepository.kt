@@ -54,6 +54,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     // đọc dễ tưởng gọi đệ quy.
     override fun setUnitPrefs(units: UnitPrefs) = prefs.setUnitPrefs(units)
 
+    override fun gridLayout(): GridLayout = prefs.gridLayout()
+
+    override fun setGridLayout(layout: GridLayout?) = prefs.setGridLayout(layout)
+
     override fun wallpaperPrefs(): WallpaperPrefs = prefs.wallpaperPrefs()
 
     override fun setWallpaperPrefs(wall: WallpaperPrefs) = prefs.setWallpaperPrefs(wall)

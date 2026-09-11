@@ -53,6 +53,12 @@ interface WorkspaceRepository {
      * U4 — hình nền + trình chiếu. CHUNG mọi hồ sơ (hình nền nhìn thấy cả màn, không thuộc một hồ sơ).
      * Có thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa.
      */
+    /** P9 — bố cục tự vẽ. Thân mặc định = chưa vẽ, để bản giả trong test không phải sửa. */
+    fun gridLayout(): GridLayout = GridLayout(emptyList())
+
+    /** P9 — lưu bố cục tự vẽ. `null` = bỏ, quay về bố cục sẵn. */
+    fun setGridLayout(layout: GridLayout?) {}
+
     fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.DEFAULT
 
     /** Ghi bền lựa chọn hình nền. Mặc định: không lưu (bản giả). */

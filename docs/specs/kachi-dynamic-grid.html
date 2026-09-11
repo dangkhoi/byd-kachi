@@ -184,6 +184,82 @@ làm tròn.
 <tr><td>OQ3</td><td>Có cho người dùng <b>đặt tên</b> bố cục tự vẽ không?</td><td>Có, ở bước 3 khi nối vào hồ sơ.</td></tr>
 </table>
 
+<h2>Bước 2 — Trình vẽ khung (2026-09-11)</h2>
+
+<p><b>[ĐO] 2621/0</b> (trước bước này 2602 ⇒ <b>+19</b>) · <b>0 tệp XML</b> bị đụng · <code>:core</code> vẫn 0 import Android.</p>
+
+<h3>B2.1 Việc đầu tiên KHÔNG phải vẽ, mà là gom nguồn</h3>
+<div class="card">
+<b>[ĐO] sáu chỗ tự suy ra số ô và khung pixel</b> từ bố cục sẵn: ba chỗ ở màn chính (dựng ô · đo cỡ · đặt chỗ) và
+<b>ba chỗ ở bộ sắp cửa sổ app</b>. Thêm bố cục tự vẽ mà bỏ sót một chỗ thì <b>màn hình vẽ theo bố cục mới nhưng cửa sổ
+app đặt theo bố cục cũ</b> ⇒ app nằm lệch khỏi ô. Đây đúng là hình dạng của P-bug2.
+<br><br>
+⇒ Thêm <code>EffectiveLayout</code> (:core) làm <b>nguồn duy nhất</b>, và <b>test canh</b> quét mã nguồn: hai dạng
+suy-ra-trực-tiếp <b>không được xuất hiện</b> ở phía app. Chặn bằng test, không bằng lời nhắc.
+</div>
+
+<h3>B2.2 Luật lùi an toàn</h3>
+<p>Bố cục tự vẽ chỉ thắng khi nó <b>dùng được thật</b>: hợp lệ VÀ số khung trong trần ô. Ba ca lùi về bố cục sẵn:</p>
+<table>
+<tr><th>Ca</th><th>Vì sao phải lùi</th></tr>
+<tr><td>Dữ liệu hỏng / rỗng</td><td>Người dùng vẫn có màn hình dùng được, không phải màn trắng.</td></tr>
+<tr><td>Khung đè nhau</td><td>Lẽ ra trình vẽ đã chặn lúc lưu — đây là <b>lưới an toàn</b> cho dữ liệu cũ.</td></tr>
+<tr><td><b>Nhiều khung hơn trần ô</b></td><td>Ca này <b>có thật</b>: bản sau nới trần rồi người dùng hạ cấp bản. Bố cục 6 khung sẽ lùi về bố cục sẵn chứ không làm mất ô.</td></tr>
+</table>
+
+<h3>B2.3 Phạm vi cố ý: tối đa 4 khung</h3>
+<p>Trần ô hiện tại là <b>4</b> (mảng nội dung ô cố định 4 phần tử). Bước 2 <b>giữ nguyên trần đó</b> ⇒ bố cục tự vẽ
+<b>dùng được thật ngay</b> với toàn bộ đường chiếu app / sắp cửa sổ / kéo-thả đang chạy, mà <b>không phải chạm</b>
+phần rủi ro nhất. Nới trần để lại cho bước 3. Trình vẽ <b>nói thẳng</b> trần này thay vì im lặng chặn nút Thêm.</p>
+
+<h3>B2.4 Hai quyết định về trải nghiệm</h3>
+<table>
+<tr><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td><b>Cho phép đè nhau rồi tô ĐỎ</b>, không chặn tay lúc đang kéo</td><td>Chặn giữa lúc kéo làm khung "dính" vào nhau khó hiểu. Tô đỏ thì thấy ngay sai ở đâu, và nút Lưu bị chặn <b>kèm lý do đích danh cặp nào</b>.</td></tr>
+<tr><td><b>Vẽ theo đúng tỉ lệ màn hình</b></td><td>Vẽ vào khung vuông thì bố cục nhìn cân ở trình vẽ mà ra màn hình lại dẹt.</td></tr>
+</table>
+
+<h3>B2.5 Verification</h3>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td><b>Màn chính DÙNG THẬT bố cục tự vẽ</b></td><td>Lưu bố cục <code>0,0,5,6;5,0,7,2;5,2,7,4</code> (không giống bố cục sẵn nào), đọc khung ô thật từ cây giao diện, so với số tính độc lập</td><td><span class="pill ok">3/3 khung ĐÚNG TỪNG PIXEL</span> cả ngang lẫn dọc: <code>[21,102][794,870]</code> · <code>[809,102][1899,348]</code> · <code>[809,363][1899,870]</code>. Cột trái <b>773px</b> so với <b>1132px</b> của bố cục sẵn ⇒ khác rõ</td></tr>
+<tr><td>Kéo đổi cỡ</td><td>Kéo tay cầm góc vào trong 2 ô</td><td><span class="pill ok">đạt</span> "phủ kín màn" → "còn <b>4 ô trống</b>" (đúng 2 cột × 2 dòng)</td></tr>
+<tr><td>Kéo tạo đè nhau</td><td>Kéo khung 2 lên khung 1</td><td><span class="pill ok">đạt</span> "<b>Chưa lưu được: khung 1 và khung 2 đè lên nhau</b>", Lưu bị làm mờ, hai khung tô đỏ, khung thứ ba giữ màu</td></tr>
+<tr><td>Quay về bố cục sẵn</td><td>Bấm "Về bố cục sẵn"</td><td><span class="pill ok">đạt</span> cột trái về <b>1132×768</b> (bố cục sẵn) và khoá bố cục tự vẽ bị <b>xoá khỏi cấu hình</b></td></tr>
+<tr><td>Thử phá</td><td>4 phép</td><td><span class="pill ok">đỏ đúng chỗ cả 4</span>: bỏ luật lùi an toàn · bộ sắp cửa sổ tự đọc bố cục sẵn · đổi hình dạng cũng dựng lại toàn bộ ô · nguồn duy nhất làm lệch pixel</td></tr>
+<tr><td>Tương đương bố cục sẵn</td><td>Quét lại 100 tổ hợp qua đường MỚI</td><td><span class="pill ok">đúng từng pixel</span></td></tr>
+</table>
+
+<h3>B2.6 Hai lỗi nhìn thấy được, tìm ra khi ĐỌC ẢNH (test xanh không bắt)</h3>
+<table>
+<tr><th>Lỗi</th><th>Sửa</th></tr>
+<tr><td><b>Nền bảng trong mờ ⇒ giao diện launcher lọt xuyên qua</b>: tiêu đề đè chữ ngày của thanh trên, nút Đóng đè nút "Cài đặt", thanh nút xe nằm ngay dưới hàng nút của bảng</td><td>Nền <b>đục</b>. Đây là bề mặt làm-một-việc, thấy màn chính phía sau không được gì. [ĐO] sau khi sửa: <b>0/40</b> điểm sáng ở dải thanh nút xe, nền đúng màu nền</td></tr>
+<tr><td><b>Khung vẽ giật cỡ</b> khi dòng lỗi hiện/mất (ẩn hẳn ⇒ khung giãn rồi co) — giật ngay giữa lúc đang kéo</td><td><b>Giữ chỗ</b> của dòng lỗi. [ĐO] sau khi sửa: nút giữ nguyên <code>y=1003</code> trước và sau khi có lỗi</td></tr>
+</table>
+
+<h3>B2.7 Còn tồn</h3>
+<ul>
+  <li><b>Ô lưới không vuông</b> (cao hơn rộng ~12%) — <b>hệ quả toán học</b>, không phải lỗi vẽ: lưới 12/6 = 2.0 còn màn 16:9 = 1.78. Muốn ô vuông phải đổi lưới (ví dụ 16×9), mà đổi thì <b>mất</b> tính chất 4 bố cục sẵn biểu diễn được đúng từng pixel. Giữ 12×6.</li>
+  <li><b>Tối đa 4 khung</b> (bước 3 sẽ nới).</li>
+  <li><b>Chưa có lượt soát độc lập</b> phần code. Phần nhìn thì có tác nhân độc lập đọc ảnh và <b>chính nó tìm ra hai lỗi trên</b>.</li>
+  <li>Chưa có cách đổi <b>thứ tự</b> khung trong trình vẽ (thứ tự = thứ tự ô, quyết định app nào vào khung nào khi sắp lại).</li>
+</ul>
+
+<h3>B2.8 Nhật ký triển khai</h3>
+<div class="card">
+<b>⚠ Ba lần đo của tôi sai trước khi code sai — hôm nay lặp lại ba lần, đáng thành luật.</b>
+<ol>
+  <li>Hai khung chụp giống nhau từng byte ⇒ tôi tưởng widget không đổi ảnh; thật ra <b>màn máy ảo ngủ</b> nên lệnh chụp trả khung cũ.</li>
+  <li>So khung pixel ra "0/3 khớp" ⇒ tôi lấy bề rộng <b>cả màn (1920)</b> trong khi vùng làm việc chỉ rộng <b>1878</b> và lệch 21px. Tính lại theo đúng vùng thì <b>3/3 đúng từng pixel</b>.</li>
+  <li>Kiểm "đã về bố cục sẵn" ra "CHƯA về" ⇒ bộ lọc của tôi bắt <b>khung chứa</b> thay vì ô. Số thật cho thấy đã về đúng.</li>
+</ol>
+<b>Luật</b>: khi số đo nói code sai, <b>kiểm phép đo trước</b>. Cả ba lần code đều đúng.
+<br><br>
+Và một lỗi <b>do chính tôi gây ra khi đo</b>: tôi đọc tệp cấu hình rồi đẩy ngược lên máy <b>mà không kiểm lệnh đọc có
+thành công</b> — lệnh đọc thất bại (hai máy ảo cùng cắm nên không biết chọn máy nào), tệp rỗng, và tôi <b>xoá luôn cấu
+hình</b> trên máy ảo. Chỉ là dữ liệu thử, nhưng cách làm sai: nay có <b>chốt kiểm</b> trước khi đẩy.
+</div>
+
 <h2>9. References</h2>
 <ul>
   <li><code>docs/PROJECT-BACKLOG.md</code> — P9 (kèm phần đánh giá khả thi).</li>

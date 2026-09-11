@@ -46,6 +46,10 @@ class CustomizePanel(
     private val onWallpaper: (WallpaperPrefs) -> Unit = {},
     /** U4 — chỗ bỏ ảnh vào, để nói cho người dùng biết (họ không có cách nào tự đoán). */
     private val wallpaperFolderHint: String = "",
+    /** P9 — mở bảng vẽ bố cục. `null` = không hiện mục đó (chỗ gọi cũ và test cũ không phải sửa). */
+    private val onOpenLayoutEditor: (() -> Unit)? = null,
+    /** P9 — mô tả bố cục đang dùng, để nói cho người dùng biết họ đang ở đâu. */
+    private val layoutSummary: String = "",
 ) : FrameLayout(context) {
 
     private val enabled = HashSet(enabledIds)
@@ -96,6 +100,8 @@ class CustomizePanel(
             })
         }
 
+        layoutSection(body)
+
         body.addView(sectionLabel("Hình nền"))
         var wp = wallpaper
         body.addView(checkRow(
@@ -135,6 +141,32 @@ class CustomizePanel(
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         addView(panel, plp)
     }
+
+    /** P9 — mục mở bảng vẽ bố cục. Chỉ hiện khi chỗ gọi cấp đường mở ⇒ chỗ gọi cũ và test cũ không phải sửa. */
+    private fun layoutSection(parent: LinearLayout) {
+        val open = onOpenLayoutEditor ?: return
+        parent.addView(sectionLabel("Bố cục màn hình"))
+        parent.addView(TextView(context).apply {
+            text = layoutSummary.ifEmpty { "Đang dùng bố cục sẵn chọn ở thanh trên." }
+            setTextColor(Color.parseColor(KachiTheme.MUT))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setPadding(0, 0, 0, px(8))
+        })
+        parent.addView(TextView(context).apply {
+            text = "Vẽ bố cục riêng…"
+            setTextColor(Color.parseColor(KachiTheme.INK))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setPadding(px(14), px(9), px(14), px(9))
+            background = GradientDrawable().apply {
+                cornerRadius = px(20).toFloat()
+                setColor(Color.parseColor(KachiTheme.CARD2))
+                setStroke(px(1), Color.parseColor(KachiTheme.LINE))
+            }
+            setOnClickListener { open() }
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+    }
+
+    private fun px(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     private fun sectionLabel(text: String) = TextView(context).apply {
         this.text = text; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)

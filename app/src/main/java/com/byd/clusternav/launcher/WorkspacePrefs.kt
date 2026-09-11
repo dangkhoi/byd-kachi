@@ -99,6 +99,16 @@ class WorkspacePrefs(context: Context) {
      * U4 — hình nền + trình chiếu. CHUNG mọi hồ sơ: hình nền là thứ nhìn thấy cả màn, không phải thuộc tính của một
      * hồ sơ (cùng lối với giao diện sáng/tối và đơn vị).
      */
+    /** Bố cục tự vẽ của hồ sơ đang dùng. Rỗng = chưa vẽ ⇒ dùng bố cục sẵn. */
+    fun gridLayout(): GridLayout = WorkspaceGrid.decode(sp.getString(key(K_GRID), null))
+
+    fun setGridLayout(layout: GridLayout?) {
+        sp.edit().apply {
+            if (layout == null || layout.frames.isEmpty()) remove(key(K_GRID))
+            else putString(key(K_GRID), WorkspaceGrid.encode(layout))
+        }.apply()
+    }
+
     fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.decode(sp.getString(K_WALL, null))
 
     fun setWallpaperPrefs(prefs: WallpaperPrefs) { sp.edit().putString(K_WALL, prefs.encode()).apply() }
@@ -125,5 +135,11 @@ class WorkspacePrefs(context: Context) {
         private const val K_RECENT = "recent_apps"
         private const val K_UNITS = "unit_prefs"
         private const val K_WALL = "wallpaper_prefs"
+
+    /**
+     * P9 — bố cục tự vẽ, lưu THEO HỒ SƠ (mỗi tài xế có bố cục riêng, giống thanh nút). Chuỗi tự đọc được
+     * (`0,0,7,4;7,0,5,6`) để cứu bằng tay được nếu cần.
+     */
+    private const val K_GRID = "grid_layout"
     }
 }

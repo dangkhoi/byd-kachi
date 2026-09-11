@@ -16,6 +16,11 @@ class LauncherWindows(
     private val workspace: WorkspaceView,
     private val winExec: ExecutorService,
     private val state: () -> HomeUiState,
+    /**
+     * Bố cục tự vẽ đang hiệu lực. Là HÀM để bộ sắp cửa sổ luôn đọc giá trị **mới nhất** — nếu nhận giá trị chụp sẵn
+     * thì đổi bố cục xong app sẽ bị đặt theo bố cục CŨ, tức app nằm lệch khỏi ô.
+     */
+    private val custom: () -> GridLayout? = { null },
     private val embedding: () -> Boolean,
     private val drawerOpen: () -> Boolean,
     private val shell: () -> ((String) -> String)?,
@@ -49,7 +54,7 @@ class LauncherWindows(
     /** Dựng lại dải header NỔI che caption freeform + ⇄/✕ cho mỗi ô app đang hiện. Nhúng → không cần. */
     private val overlayUpdate = Runnable {
         if (embedding() || drawerOpen()) { overlayHeads.clear(); return@Runnable }
-        val st = state(); val n = st.preset.slotCount
+        val st = state(); val n = EffectiveLayout.slotCount(st.preset, custom())
         val heads = ArrayList<OverlayHeads.Head>()
         for (i in 0 until n) {
             (st.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
@@ -77,7 +82,7 @@ class LauncherWindows(
     fun reflow() {
         if (embedding()) return   // nhúng: ô đổi kích thước theo layout view → app tự reflow, không cần am task resize
         workspace.post {
-            val st = state(); val n = st.preset.slotCount
+            val st = state(); val n = EffectiveLayout.slotCount(st.preset, custom())
             val visible = ArrayList<Pair<String, SlotRect>>()
             val overflow = ArrayList<String>()
             for (i in 0..3) {
@@ -132,7 +137,7 @@ class LauncherWindows(
     /** Khung ô ở toạ độ MÀN HÌNH (cho freeform on-car): offset vị trí workspace + Rect ô. */
     private fun absoluteSlotRect(index: Int): SlotRect? {
         if (workspace.width <= 0 || workspace.height <= 0) return null
-        val rects = WorkspaceLayout.slots(state().preset, workspace.width, workspace.height, dp(10))
+        val rects = EffectiveLayout.rects(state().preset, custom(), workspace.width, workspace.height, dp(10))
         val r = rects.getOrNull(index) ?: return null
         val loc = IntArray(2); workspace.getLocationOnScreen(loc)
         return SlotRect(index, loc[0] + r.left, loc[1] + r.top, loc[0] + r.right, loc[1] + r.bottom)

@@ -83,6 +83,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private var wallPrefs = WallpaperPrefs.DEFAULT
     private var wallImages: List<String> = emptyList()
     private var photoPaths: List<String> = emptyList()   // U4(b): nguồn cho widget trình chiếu (độc lập với nền)
+    private var layoutPanel: LayoutEditorPanel? = null
+    /** P9 — bố cục tự vẽ đang hiệu lực. Giữ ở đây để bộ sắp cửa sổ app đọc được cùng giá trị với màn hình. */
+    private var customLayout: GridLayout? = null
     private var wallBitmap: android.graphics.Bitmap? = null
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
@@ -137,7 +140,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         }
         windows = LauncherWindows(
             this, workspace, winExec,
-            state = { viewModel.uiState.value }, embedding = { embedding }, drawerOpen = { drawerController.isOpen() },
+            state = { viewModel.uiState.value },
+            custom = { customLayout }, embedding = { embedding }, drawerOpen = { drawerController.isOpen() },
             shell = { shell }, appLauncher = { appLauncher }, dispatcher = { container.windowDispatcher },
             onSlotSwap = { drawerController.open(it) }, onSlotClose = { clearSlot(it) },
         )
@@ -187,6 +191,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // Nối shell dadb (localhost:5555) nền → ShellAppLauncher reflow như xe; dispatcher + ShellTransport + daemon do AppContainer sở hữu.
         val dadb = DadbShell(this)
         val dispatcher = container.windowDispatcher
+        // P9: nạp bố cục tự vẽ TRƯỚC khi sắp cửa sổ, để lần dựng đầu đã đúng khung (không nháy từ bố cục sẵn sang).
+        customLayout = container.workspaceRepository.gridLayout().takeIf { it.frames.isNotEmpty() }
+        workspace.setCustomLayout(customLayout)
         windows.seedLocations()
         val seam = dispatcher.launcherSeam()
         winExec.execute {
@@ -410,6 +417,40 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         wallBitmap = null
     }
 
+    // ── Màn vẽ bố cục (P9 bước 2) — overlay trên rootFrame, dựng bằng code nên 0 tệp XML bị đụng ──
+    private fun openLayoutEditor() {
+        if (layoutPanel != null) return
+        val panel = LayoutEditorPanel(
+            this,
+            initial = customLayout ?: GridLayout(emptyList()),
+            fallbackPreset = viewModel.uiState.value.preset,
+            onSave = { l -> applyCustomLayout(l) },
+            onClear = { applyCustomLayout(null) },
+            onClose = { closeLayoutEditor() },
+        )
+        layoutPanel = panel
+        rootFrame.addView(panel, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        goImmersive()
+    }
+
+    private fun closeLayoutEditor() {
+        layoutPanel?.let { rootFrame.removeView(it) }
+        layoutPanel = null
+        goImmersive()
+    }
+
+    /**
+     * Áp bố cục tự vẽ: lưu bền + áp NGAY cho màn hình, rồi **sắp lại cửa sổ app** theo khung mới. Thiếu bước sắp lại
+     * thì ô vẽ đúng chỗ mới nhưng cửa sổ app vẫn nằm ở khung cũ.
+     */
+    private fun applyCustomLayout(layout: GridLayout?) {
+        customLayout = layout
+        container.workspaceRepository.setGridLayout(layout)
+        workspace.setCustomLayout(layout)
+        windows.reflow()
+    }
+
     // ── Màn Tuỳ biến (chọn nút cho thanh điều khiển) — overlay trên rootFrame, một chiều qua VM ──
     private fun openCustomize() {
         if (customizePanel != null) return
@@ -432,6 +473,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // U4: nói CHỖ bỏ ảnh vào — người dùng không có cách nào tự đoán, và màn chọn tệp của hệ thống bị khoá trên xe.
             wallpaper = wallPrefs,
             wallpaperFolderHint = WallpaperStore.folderHint(this),
+            // P9: đường mở bảng vẽ bố cục + nói người dùng đang dùng bố cục nào.
+            onOpenLayoutEditor = { closeCustomize(); openLayoutEditor() },
+            layoutSummary = customLayout?.let {
+                "Đang dùng bố cục tự vẽ: ${it.frames.size} khung" +
+                    (EffectiveLayout.ignoredReason(it)?.let { r -> " — nhưng bị bỏ qua ($r)" } ?: "")
+            } ?: "",
             onWallpaper = { p ->
                 container.workspaceRepository.setWallpaperPrefs(p)
                 reloadWallpaper()

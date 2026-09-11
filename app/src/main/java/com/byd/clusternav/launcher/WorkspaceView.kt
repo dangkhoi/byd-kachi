@@ -134,6 +134,27 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private var photoCount = -1
 
     /**
+     * Bố cục TỰ VẼ (P9 bước 2). Để ở kênh riêng, KHÔNG nhét vào `WorkspaceState`: bộ quyết-định-dựng-lại đang bị
+     * test tương-đương-hành-vi hơn 1000 tổ hợp khoá, thêm field vào state là xáo trộn đúng chỗ đó.
+     */
+    private var customLayout: GridLayout? = null
+
+    /**
+     * Đặt bố cục tự vẽ. Số ô đổi ⇒ phải dựng lại; **số ô giữ nguyên mà chỉ đổi hình dạng ⇒ CHỈ đặt lại chỗ**, không
+     * dựng lại — nhờ vậy app đang chiếu trong ô **không bị nhả/gắn lại** (C5), chỉ đổi cỡ khung.
+     */
+    fun setCustomLayout(layout: GridLayout?) {
+        val before = EffectiveLayout.slotCount(displayed.preset, customLayout)
+        customLayout = layout
+        val after = EffectiveLayout.slotCount(displayed.preset, customLayout)
+        if (before != after) rebuild() else { requestLayout(); invalidate() }
+    }
+
+    /** Khung pixel đang hiệu lực — mọi chỗ trong view PHẢI đi qua đây (xem `EffectiveLayout`). */
+    private fun effectiveRects(w: Int, h: Int) =
+        EffectiveLayout.rects(displayed.preset, customLayout, w, h, gapPx)
+
+    /**
      * U4(b) — đặt nguồn ảnh cho widget trình chiếu. Dựng lại **chỉ ô widget** khi nguồn thật sự đổi.
      *
      * Cùng lối với [setUnitPrefs]: phải dựng lại vì ảnh nằm trong View đã dựng, nhưng **KHÔNG** dựng lại ô đang
@@ -149,7 +170,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     private fun rebuild() {
         removeAllViews(); slotViews.clear()
-        for (i in 0 until displayed.preset.slotCount) {
+        for (i in 0 until EffectiveLayout.slotCount(displayed.preset, customLayout)) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
             val v = makeSlot(i, content)
             addView(v); slotViews.add(v)
@@ -311,7 +332,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
         val h = MeasureSpec.getSize(heightMeasureSpec)
         if (w > 0 && h > 0) {
-            val rects = WorkspaceLayout.slots(displayed.preset, w, h, gapPx)
+            val rects = effectiveRects(w, h)
             for (i in slotViews.indices) {
                 val r = rects.getOrNull(i) ?: continue
                 slotViews[i].measure(
@@ -326,7 +347,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val w = r - l; val h = b - t
         if (w <= 0 || h <= 0) return
-        val rects = WorkspaceLayout.slots(displayed.preset, w, h, gapPx)
+        val rects = effectiveRects(w, h)
         for (i in slotViews.indices) {
             val rect = rects.getOrNull(i) ?: continue
             slotViews[i].layout(rect.left, rect.top, rect.right, rect.bottom)
