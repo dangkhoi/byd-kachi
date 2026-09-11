@@ -37,6 +37,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <h2>1. Changelog</h2>
 <table>
 <tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>1</td><td>2026-09-11</td><td><b>Phần (b) — widget trình chiếu đặt vào ô.</b> Chạy <b>độc lập</b> với hình nền (bật widget không cần bật nền). Nhịp <b>tự dọn</b> khi ô bị tháo. [ĐO] trên máy ảo: ảnh trong ô đổi <b>tím → cam → tím</b> qua ba khung <b>trong khi hình nền đang TẮT</b>. Một giả thuyết của tôi <b>bị số đo bác</b> (xem §7).</td></tr>
 <tr><td>0</td><td>2026-09-11</td><td>Logic thuần + kho ảnh + vẽ nền + điều khiển trong bảng Tuỳ biến. Đo trên máy ảo bằng <b>ba ảnh đơn sắc</b> (xác nhận đổi ảnh) rồi bằng <b>một ảnh vuông có hoa văn</b> (xác nhận cắt chứ không kéo méo). Tìm và sửa <b>một lỗi vòng-lặp-chết</b> khi dùng lần đầu.</td></tr>
 </table>
 
@@ -64,6 +65,8 @@ người dùng đã có đường bỏ tệp vào đó.
 <tr><td><b>R5</b></td><td>Chữ và ô của launcher <b>vẫn đọc được</b> trên nền ảnh.</td><td>Có mức làm tối, đo trên ảnh thật.</td></tr>
 <tr><td><b>R6</b></td><td>Ảnh to <b>không được làm hết bộ nhớ</b>.</td><td>Luôn nạp giảm cỡ theo khung, không nạp nguyên bản.</td></tr>
 <tr><td><b>R7</b></td><td>Không thêm quyền, không dùng màn hệ thống (§2).</td><td>Kiểm manifest + đường đọc ảnh.</td></tr>
+<tr><td><b>R8</b></td><td><b>Widget trình chiếu</b> đặt được vào ô (owner nêu cả hai).</td><td>Đo: ảnh hiện trong ô và tự đổi.</td></tr>
+<tr><td><b>R9</b></td><td>Widget chạy <b>độc lập</b> với hình nền.</td><td>Đo: widget đổi ảnh <b>khi nền đang tắt</b>.</td></tr>
 </table>
 
 <h2>4. Design</h2>
@@ -93,6 +96,14 @@ không chạy". Có test riêng khoá đúng điều đó.
 dùng bớt ảnh) ⇒ về đầu · chu kỳ ≤ 0 ⇒ coi như tối thiểu, không chia cho 0 · <b>chưa từng đổi ⇒ hiện ngay</b> (bắt
 chờ một chu kỳ thì mở launcher lên thấy nền trống 60 giây).</p>
 
+<h3>4.4 Widget trình chiếu — hai điểm phải giữ</h3>
+<table>
+<tr><th>Điểm</th><th>Vì sao</th></tr>
+<tr><td><b>Độc lập với hình nền</b>: bật widget <b>không</b> cần bật nền</td><td>Người dùng có thể muốn <b>một khung ảnh trong ô</b> mà không đổi nền màn hình. Nguồn ảnh nạp <b>trước</b> cổng bật/tắt nền — có test khoá đúng thứ tự đó.</td></tr>
+<tr><td><b>Nhịp phải TỰ DỌN</b> khi ô bị tháo</td><td>Ô có thể bị tháo bất cứ lúc nào (đổi bố cục · đổi đơn vị · đổi hồ sơ). Nhịp sống lâu hơn ô thì nó <b>giữ tham chiếu view và nạp ảnh mãi</b> — rò rỉ, và tốn bộ nhớ đúng lúc launcher cần nhất. Nhịp gắn vào lúc ô vào/ra khỏi màn.</td></tr>
+</table>
+<p class="muted">Widget <b>không</b> làm tối ảnh (khác hình nền): làm tối là để chữ trên nền đọc được, còn đây là <b>khung ảnh</b> — làm tối chỉ khiến ảnh xấu đi mà không được gì.</p>
+
 <h2>5. Verification</h2>
 <table>
 <tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
@@ -104,18 +115,37 @@ chờ một chu kỳ thì mở launcher lên thấy nền trống 60 giây).</p>
 <tr><td>Máy ảo — không lặp gạch</td><td>Cùng ảnh hoa văn</td><td><span class="pill ok">đạt</span> 217 vệt vòng tròn <b>đều nằm trên MỘT</b> vòng; pha lưới giữ nguyên 192 suốt bề ngang ⇒ không có chỗ nối</td></tr>
 <tr><td>Máy ảo — phủ kín 4 mép</td><td>Đếm pixel đen tuyệt đối ở mép</td><td><span class="pill ok">đạt</span> <b>0</b> pixel đen ở cả 4 mép ⇒ không viền đen, không letterbox</td></tr>
 <tr><td>Máy ảo — chữ đọc được</td><td>Đo độ lọt của nền qua từng vùng</td><td><span class="pill ok">đạt</span> thẻ workspace + bảng lốp <b>0%</b> lọt (đục hoàn toàn) · ô thanh dưới <b>3.5%</b> · <b>thanh trên 18%</b> (xem §6)</td></tr>
+<tr><td><b>Widget trong ô — có ảnh</b></td><td>Đặt widget vào ô, đo màu điểm ảnh trong vùng ô</td><td><span class="pill ok">đạt</span> RGB đo được <b>(128,69,197)</b> khớp ảnh mẫu (130,70,200); <b>0/26</b> điểm tối ở mép ô ⇒ phủ kín ô, không viền đen</td></tr>
+<tr><td><b>Widget — tự đổi ảnh</b></td><td>Ba khung cách 12 giây, chu kỳ 15 giây</td><td><span class="pill ok">đạt</span> <b>tím → cam → tím</b> (128,69,197 → 217,118,39 → 128,69,197)</td></tr>
+<tr><td><b>Widget — độc lập với nền</b></td><td>Đo trong khi lựa chọn nền ghi <code>false</code> (tắt)</td><td><span class="pill ok">đạt</span> widget vẫn đổi ảnh <b>khi nền đang tắt</b></td></tr>
+<tr><td><b>Nhịp không sống lâu hơn ô</b></td><td>Thử phá: bỏ lệnh dừng nhịp lúc ô bị tháo</td><td><span class="pill ok">test đỏ đúng chỗ</span></td></tr>
 <tr><td>Mặc định không đổi gì</td><td>Test + đo</td><td><span class="pill ok">đạt</span> mặc định TẮT; tắt ⇒ nền vẽ sẵn byte-giữ</td></tr>
 </table>
 
 <h2>6. Còn tồn (đã đo, không che)</h2>
 <ul>
   <li><b class="warn">Thanh trên là chỗ yếu nhất</b>: [ĐO] nền lọt qua <b>18%</b> ở đó (so với 0% ở thẻ workspace), và với ảnh tương phản cao thì nét ảnh cắt ngang qua nhóm nút bố cục và các nút "Tuỳ biến"/"Cài đặt" — vẫn đọc được nhưng <b>trông rối</b>. Nếu owner dùng ảnh nhiều hoa văn thì đây là nơi mất chữ trước nhất. Cách chữa: tăng độ đục nền của riêng thanh trên. Chưa làm vì cần owner xem ảnh thật của họ mới biết có đáng đổi hay không.</li>
-  <li><b>Trình chiếu chỉ ở HÌNH NỀN</b>, chưa có <b>widget</b> trình chiếu riêng đặt vào ô (owner nêu cả hai). Nền là phần dùng nhiều hơn nên làm trước; widget là bước sau, và nay đã có sẵn toàn bộ logic + kho ảnh nên rẻ.</li>
+  <li><b>Widget và hình nền dùng CHUNG chu kỳ</b> (một lựa chọn cho cả hai). Nếu owner muốn khung ảnh trong ô đổi nhanh hơn nền thì cần tách thành hai lựa chọn — chưa làm vì thêm lựa chọn thứ hai làm bảng Tuỳ biến rối mà chưa ai cần.</li>
+  <li>Widget và nền có <b>chỉ số riêng</b> nên có thể đang hiện <b>hai ảnh khác nhau</b> cùng lúc. Tôi coi đây là <b>đúng</b> (khung ảnh trong ô là thứ riêng, không phải bản sao của nền), nhưng nếu owner thấy rối thì đồng bộ được.</li>
   <li>Sai số nhịp tối đa <b>10 giây</b> (do dùng lại nhịp có sẵn — xem §4.2).</li>
   <li><b>Chưa có lượt soát độc lập</b> (tác nhân soát hỏng nhiều phiên gần đây). Phần xác minh <b>bằng mắt</b> thì có tác nhân độc lập làm, và chính nó nêu ra giới hạn "ảnh đơn sắc không kiểm được méo" — dẫn tới lượt đo thứ hai bằng ảnh hoa văn.</li>
 </ul>
 
 <h2>7. Nhật ký triển khai</h2>
+<div class="card">
+<b>⚠ Một giả thuyết của tôi bị số đo bác — đáng ghi lại.</b>
+<br><br>
+Lượt chụp đầu cho hai khung <b>giống nhau từng byte</b>, tôi kết luận widget không đổi ảnh và <b>đoán</b> nguyên nhân:
+ô bị dựng lại liên tục theo nhịp trạng thái xe nên trạng thái quay vòng bị xoá mỗi lần (đúng loại lỗi đã gặp ở gói 2).
+Nếu tin giả thuyết đó thì tôi đã <b>dựng lại kiến trúc</b> — đưa trạng thái quay vòng ra ngoài View.
+<br><br>
+Đếm thật thì: ô <b>chỉ gắn 1 lần</b>, nhịp chạy đều 6 lần, và chỉ số <b>có</b> đổi 1→0 ở giây thứ 20.
+<b>Lỗi nằm ở phép đo, không ở code</b> — màn máy ảo ngủ nên lệnh chụp trả về đúng khung cũ. Chụp lại với màn thức
+thì ba khung khác nhau và đổi ảnh đúng.
+<br><br>
+Bài học: <i>hai lần đo giống nhau y hệt</i> nên bị nghi là <b>phép đo hỏng</b> trước khi bị nghi là code hỏng.
+Suýt sửa một thứ không hỏng.
+</div>
 <p><b>Một lỗi dùng-được tìm ra khi đo, không phải khi test:</b></p>
 <div class="card">
 Thư mục ảnh <b>chỉ được tạo khi tính năng đã bật</b>. Nhưng muốn thấy ảnh thì phải bật, mà bật có nghĩa là <b>phải bỏ
@@ -134,7 +164,8 @@ giảm. Nạp nguyên bản rồi mới thu nhỏ là cách chắc chắn để 
 <table>
 <tr><th>#</th><th>Câu hỏi</th><th>Mặc định</th></tr>
 <tr><td>OQ1</td><td>Thanh trên có cần tăng độ đục khi bật hình nền không (§6)?</td><td>Chưa đổi. Cần owner xem với ảnh thật của họ.</td></tr>
-<tr><td>OQ2</td><td>Có muốn <b>widget trình chiếu riêng</b> đặt vào ô (ngoài hình nền) không?</td><td>Chưa làm. Logic + kho ảnh đã có nên rẻ nếu owner muốn.</td></tr>
+<tr><td>OQ2</td><td>Widget và nền nên dùng <b>chung</b> chu kỳ hay <b>tách riêng</b>?</td><td>Đang dùng chung (một lựa chọn). Tách được nhưng làm bảng Tuỳ biến rối hơn.</td></tr>
+<tr><td>OQ4</td><td>Widget và nền đang hiện <b>hai ảnh khác nhau</b> cùng lúc — thế có hợp không?</td><td>Giữ vậy: khung ảnh trong ô là thứ riêng. Đồng bộ được nếu owner thấy rối.</td></tr>
 <tr><td>OQ3</td><td>Mức làm tối mặc định <b>45%</b> có hợp không?</td><td>Giữ 45%; chọn được 0/25/45/65% trong bảng Tuỳ biến.</td></tr>
 </table>
 

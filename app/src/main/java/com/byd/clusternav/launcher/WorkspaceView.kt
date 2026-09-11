@@ -122,7 +122,30 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     }
 
     /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live + cổng ra lệnh cho ô hành động + đơn vị). */
-    private fun widgetData() = WidgetData(carStatus, mediaProvider(), onMedia, control, unitPrefs)
+    private fun widgetData() =
+        WidgetData(carStatus, mediaProvider(), onMedia, control, unitPrefs, photoProvider(), photoIntervalSec)
+
+    /**
+     * U4(b) — nguồn ảnh cho widget trình chiếu. Là HÀM (không phải danh sách) để chỗ gọi quyết định khi nào đọc thư
+     * mục: đọc thư mục là I/O, không nên chạy mỗi lần dựng ô.
+     */
+    private var photoProvider: () -> List<String> = { emptyList() }
+    private var photoIntervalSec: Int = Slideshow.DEFAULT_INTERVAL_SEC
+    private var photoCount = -1
+
+    /**
+     * U4(b) — đặt nguồn ảnh cho widget trình chiếu. Dựng lại **chỉ ô widget** khi nguồn thật sự đổi.
+     *
+     * Cùng lối với [setUnitPrefs]: phải dựng lại vì ảnh nằm trong View đã dựng, nhưng **KHÔNG** dựng lại ô đang
+     * chiếu app (làm thế là ngắt kênh chạm — ràng buộc C5 của gói 2). Gọi lại với cùng nguồn thì không làm gì.
+     */
+    fun setPhotoSource(paths: List<String>, intervalSec: Int) {
+        val changed = paths.size != photoCount || intervalSec != photoIntervalSec
+        photoProvider = { paths }
+        photoIntervalSec = intervalSec
+        photoCount = paths.size
+        if (changed) rebuildWidgetSlots()
+    }
 
     private fun rebuild() {
         removeAllViews(); slotViews.clear()

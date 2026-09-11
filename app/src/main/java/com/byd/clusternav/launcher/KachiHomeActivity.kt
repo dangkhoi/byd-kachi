@@ -82,6 +82,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private var slide = SlideshowState()
     private var wallPrefs = WallpaperPrefs.DEFAULT
     private var wallImages: List<String> = emptyList()
+    private var photoPaths: List<String> = emptyList()   // U4(b): nguồn cho widget trình chiếu (độc lập với nền)
     private var wallBitmap: android.graphics.Bitmap? = null
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
@@ -353,6 +354,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // dùng gặp vòng lặp chết — muốn thấy ảnh phải bật, muốn bật có nghĩa phải bỏ ảnh vào trước, mà thư mục lại
         // chưa tồn tại để mà bỏ vào.
         WallpaperStore.folder(this)
+        // U4(b): widget trình chiếu chạy ĐỘC LẬP với hình nền — nạp danh sách ảnh kể cả khi nền đang tắt, vì người
+        // dùng có thể muốn khung ảnh trong ô mà không đổi nền màn hình.
+        photoPaths = WallpaperStore.images(this)
+        workspace.setPhotoSource(photoPaths, wallPrefs.intervalSec)
         if (!wallPrefs.enabled) {
             wall.setPhoto(null)
             releaseWallBitmap()
@@ -390,7 +395,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         val path = Slideshow.pick(wallImages, slide.index) ?: return
         val next = WallpaperStore.loadScaled(path, wall.width.coerceAtLeast(1), wall.height.coerceAtLeast(1))
         if (next == null) {
-            Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: $path")
+            Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ ${slide.index + 1}/${wallImages.size}")
             return
         }
         val old = wallBitmap

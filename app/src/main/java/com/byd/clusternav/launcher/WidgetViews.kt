@@ -47,6 +47,13 @@ class WidgetData(
      * nguyên hành vi (R12: không đổi gì thì không thấy khác biệt).
      */
     val units: UnitPrefs = UnitPrefs.DEFAULT,
+    /**
+     * U4(b) — nguồn ảnh cho widget trình chiếu. Chỗ gọi đọc thư mục MỘT LẦN rồi truyền vào; để mỗi ô tự đọc thư mục
+     * là I/O lặp lại trên thread chính mỗi lần dựng ô.
+     */
+    val photos: List<String> = emptyList(),
+    /** U4(b) — chu kỳ đổi ảnh của widget trình chiếu. */
+    val photoIntervalSec: Int = Slideshow.DEFAULT_INTERVAL_SEC,
 )
 
 /**
@@ -71,6 +78,7 @@ object WidgetViews {
         "w_media" -> media(ctx, data)
         "w_car" -> carState(ctx, data.car)
         "w_board" -> board(ctx, data)
+        "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
         // Hành động → ô bấm được; còn lại (đọc) → đường telemetry cũ, KHÔNG đổi một dòng.
         else -> if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.BIG)
         else telemetry(ctx, id, data.car, data.units)
@@ -113,6 +121,7 @@ object WidgetViews {
             "w_media"  -> miniCard(ctx, "ic-music", data.media?.title ?: "—", data.media?.artist ?: "", KachiTheme.AMBER, false)
             "w_car"    -> miniCard(ctx, "ic-lock", "Xe", "", KachiTheme.GREEN, false)
             "w_board"  -> miniCard(ctx, "ic-grid", "Tổng hợp", "", KachiTheme.ACCENT, false)
+            "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
             else       -> if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)
             else telemetryMini(ctx, id, car, data.units)
         }
