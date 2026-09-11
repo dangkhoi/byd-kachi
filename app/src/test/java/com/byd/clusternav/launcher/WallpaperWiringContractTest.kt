@@ -80,6 +80,41 @@ class WallpaperWiringContractTest {
     }
 
     @Test
+    fun `doc va giai ma anh KHONG chay tren thread chinh`() {
+        // [SOÁT P2-2] quét thư mục + giải mã ảnh nhiều megapixel trên thread chính ngay lúc về HOME ⇒ đứng hình.
+        val fn = act.substringAfter("private fun reloadWallpaper()").substringBefore("private fun stepWallpaper")
+        assertTrue(fn.contains("winExec.execute"), "quét thư mục phải chạy ở thread nền")
+        assertTrue(fn.contains("runOnUiThread"), "chỉ phần đưa vào View mới ở thread chính")
+        val st = act.substringAfter("private fun stepWallpaper").substringBefore("private fun wallReqW")
+        assertTrue(st.contains("winExec.execute"), "giải mã ảnh phải chạy ở thread nền")
+        assertTrue(st.contains("WallpaperStore.loadScaled") &&
+            st.indexOf("winExec.execute") < st.indexOf("WallpaperStore.loadScaled"),
+            "lệnh giải mã phải nằm BÊN TRONG khối thread nền")
+    }
+
+    @Test
+    fun `luot nap cu ve muon thi bo, khong ghi de luot moi`() {
+        val st = act.substringAfter("private fun stepWallpaper").substringBefore("private fun wallReqW")
+        assertTrue(st.contains("gen != wallDecodeGen"), "phải có thẻ thế hệ cho việc giải mã")
+        assertTrue(st.contains("next?.recycle()"), "lượt bị bỏ phải nhả ảnh, không thì rò rỉ")
+        assertTrue(st.contains("isDestroyed"), "màn đã huỷ thì không được chạm View")
+    }
+
+    @Test
+    fun `quet thu muc va giai ma dung HAI the the he RIENG`() {
+        // ⚠ Bản vá đầu dùng MỘT thẻ chung ⇒ nhịp trình chiếu (tăng thẻ) chạy trước lúc quét thư mục về ⇒ lượt quét
+        // bị BỎ OAN ⇒ ảnh mới thêm / ảnh vừa xoá / chu kỳ vừa đổi không được nhận, im lặng dùng dữ liệu cũ.
+        assertTrue(act.contains("wallScanGen") && act.contains("wallDecodeGen"),
+            "phải có hai thẻ riêng cho hai việc chạy ở thread nền")
+        val re = act.substringAfter("private fun reloadWallpaper()").substringBefore("private fun stepWallpaper")
+        assertTrue(re.contains("wallScanGen") && !re.contains("wallDecodeGen"),
+            "lượt quét thư mục chỉ được dùng thẻ quét")
+        val st = act.substringAfter("private fun stepWallpaper").substringBefore("private fun wallReqW")
+        assertTrue(st.contains("wallDecodeGen") && !st.contains("wallScanGen"),
+            "lượt giải mã chỉ được dùng thẻ giải mã")
+    }
+
+    @Test
     fun `nhip dung khi HOME bi che`() {
         // [SOÁT P2-1] HOME bị app khác che thì ô KHÔNG bị tháo ⇒ nhịp cũ vẫn đọc đĩa + giải mã ảnh cho thứ không ai
         // xem. Lái ba giờ là hàng trăm lượt vô ích.
@@ -112,12 +147,18 @@ class WallpaperWiringContractTest {
 
     @Test
     fun `widget trinh chieu chay DOC LAP voi hinh nen`() {
-        val fn = act.substringAfter("private fun reloadWallpaper()")
-        val gate = fn.indexOf("if (!wallPrefs.enabled)")
-        val photoLoad = fn.indexOf("setPhotoSource(")
-        assertTrue(photoLoad in 1 until gate,
-            "nguồn ảnh cho widget phải nạp TRƯỚC cổng bật/tắt nền — người dùng có thể muốn khung ảnh trong ô mà " +
-                "KHÔNG đổi nền màn hình")
+        // Kiểm LUẬT, không kiểm vị trí dòng: nguồn ảnh cho widget phải được nạp **kể cả khi nền đang tắt**.
+        // (Test cũ so vị trí nên vỡ khi việc nạp chuyển sang thread nền, dù luật không đổi.)
+        val fn = act.substringAfter("private fun reloadWallpaper()").substringBefore("private fun stepWallpaper")
+        assertTrue(fn.contains("setPhotoSource("), "phải nạp nguồn ảnh cho widget")
+        // Nhánh "nền đang tắt" KHÔNG được thoát hàm — thoát là widget mất nguồn ảnh.
+        val off = fn.substringAfter("if (!wallPrefs.enabled) {").substringBefore("}")
+        assertFalse(off.contains("return"),
+            "nhánh 'nền đang tắt' không được thoát hàm, không thì widget trình chiếu mất nguồn ảnh")
+        // Và trong khối chạy ở thread chính, nguồn ảnh phải đặt TRƯỚC chỗ bỏ qua phần nền.
+        val ui = fn.substringAfter("runOnUiThread {")
+        assertTrue(ui.indexOf("setPhotoSource(") in 0 until ui.indexOf("if (!wallPrefs.enabled) return"),
+            "nguồn ảnh cho widget phải đặt trước chỗ bỏ qua phần hình nền")
     }
 
     @Test
@@ -147,9 +188,14 @@ class WallpaperWiringContractTest {
     @Test
     fun `luon tao san thu muc anh - tranh vong lap chet`() {
         // [ĐO] nếu chỉ tạo lúc bật thì: muốn thấy ảnh phải bật, muốn bật phải bỏ ảnh vào trước, mà thư mục chưa có.
-        val fn = act.substringAfter("private fun reloadWallpaper()")
-        val mk = fn.indexOf("WallpaperStore.folder(")
-        val gate = fn.indexOf("if (!wallPrefs.enabled)")
-        assertTrue(mk in 1 until gate, "phải tạo thư mục TRƯỚC cổng bật/tắt")
+        // Kiểm LUẬT: lệnh tạo thư mục KHÔNG được nằm trong nhánh "đang bật".
+        val fn = act.substringAfter("private fun reloadWallpaper()").substringBefore("private fun stepWallpaper")
+        assertTrue(fn.contains("WallpaperStore.folder("), "phải tạo thư mục")
+        val off = fn.substringAfter("if (!wallPrefs.enabled) {").substringBefore("}")
+        assertFalse(off.contains("return"), "nhánh tắt không được thoát trước khi tạo thư mục")
+        // Lệnh tạo thư mục nằm trong khối nền, chạy vô điều kiện (không bị bọc bởi cổng bật/tắt nào).
+        val bg = fn.substringAfter("winExec.execute {").substringBefore("runOnUiThread {")
+        assertTrue(bg.contains("WallpaperStore.folder("),
+            "tạo thư mục phải chạy vô điều kiện ở thread nền, không bị cổng bật/tắt che")
     }
 }

@@ -193,6 +193,17 @@ giảm. Nạp nguyên bản rồi mới thu nhỏ là cách chắc chắn để 
 
 <h2>10. Reviewer Log</h2>
 
+<h3>Pass 2 — 2026-09-11 (vá tiếp phần còn tồn của Pass 1)</h3>
+<p>Vá <b>3 mục còn tồn</b>. <b>[ĐO] 2652/0</b> (sau Pass 1 là 2639 ⇒ <b>+13 test</b>).</p>
+<table>
+<tr><th>Mục</th><th>Cách vá + số đo</th></tr>
+<tr><td><b>Đọc/giải mã ảnh trên thread chính</b></td><td>Đẩy cả quét thư mục lẫn giải mã <b>của hình nền</b> sang <b>thread nền có sẵn</b> (cùng nơi các lệnh cửa sổ dùng), chỉ đưa ảnh vào View trên thread chính. Kèm <b>thẻ thế hệ</b> (lượt cũ về muộn thì bỏ và <b>nhả ảnh</b>, không ghi đè lượt mới) và <b>chốt chống nạp trùng</b> cùng một ảnh. <b>[ĐO] máy ảo</b>: nền vẫn nét (biên độ 120, 24 vạch) và vẫn đổi ảnh (ảnh xám lệch đỏ-xanh 0 → ảnh cam +47), 0 ngoại lệ.</td></tr>
+<tr><td><b>Cổng giảm cỡ yếu</b></td><td>Thêm bước hạ <b>đúng khung ngay trong lúc giải mã</b> (không tạo ảnh trung gian — làm thế thì cần hai ảnh cùng sống, đúng thứ đang tránh). Lấy tỉ lệ <b>lớn hơn</b> trong hai chiều nên ảnh vẫn <b>trùm đủ</b> khung. <b>[ĐO]</b> ca 12000×9000 trong báo cáo: <b>27 MB → ~11 MB</b>; có test khoá bất biến "hạ xong vẫn trùm đủ khung" trên 5 tỉ lệ.</td></tr>
+<tr><td><b>Hiện ảnh thứ hai thay vì ảnh đầu</b></td><td>Ca "chưa từng chiếu" nay <b>giữ nguyên</b> chỉ số và chỉ đóng mốc thời gian. ⚠ <b>hai test cũ đang khoá hành vi SAI</b> nên đỏ — đã sửa cho khớp ý định, thêm ca thật: người dùng đang xem ảnh thứ 3, launcher mở lại thì phải hiện lại ảnh thứ 3 chứ không nhảy.</td></tr>
+</table>
+<p class="muted"><b>Còn lại chưa vá</b>: <b>widget trình chiếu VẪN giải mã ảnh trên thread chính</b> (lượt soát P2 chỉ nói hình nền, nhưng nói cho đủ: widget cũng nên chuyển) · Back không đóng bảng vẽ · chưa xử nhiều ngón tay · vài điểm vụn.</p>
+<p class="muted"><b>⚠ Bản vá đầu của Pass 2 tự gây một hồi quy</b>: dùng MỘT thẻ thế hệ chung cho cả quét thư mục lẫn giải mã ⇒ nhịp trình chiếu làm lượt quét <b>bị bỏ oan</b> ⇒ ảnh mới thêm / ảnh vừa xoá / chu kỳ vừa đổi <b>không được nhận</b>, và lỗi đó <b>im lặng</b>. Đã tách thành hai thẻ riêng + test khoá. Kèm dọn một trường đã thành <b>mã chết</b> sau khi vá.</p>
+
 <h3>Pass 1 — 2026-09-11 (soát độc lập)</h3>
 <p>Phạm vi: 9 tệp / 1233 dòng của bố cục động + hình nền. Kết quả: <b>0 lỗi mức P0 · 4 mức P1 · 4 mức P2 · 4 mức P3</b>.
 Soát viên <b>chỉ báo cáo</b>, tôi tự vá và tự kiểm từng cái.</p>
@@ -204,9 +215,9 @@ Soát viên <b>chỉ báo cáo</b>, tôi tự vá và tự kiểm từng cái.</
 <tr><td>P1</td><td>Đổi hồ sơ tài xế không nạp lại bố cục ⇒ mở bảng vẽ ở hồ sơ B rồi Lưu là <b>ghi đè mất</b> bố cục của B</td><td>✅ đã vá + test canh chỗ đọc</td></tr>
 <tr><td>P2</td><td>Bố cục hỏng vào tới trình vẽ ⇒ <b>kéo một khung là sập</b> (phép kẹp có trần nhỏ hơn sàn)</td><td>✅ đã vá cả cửa vào lẫn lưới an toàn</td></tr>
 <tr><td>P2</td><td>Nhịp widget vẫn chạy khi HOME bị app khác che ⇒ đọc đĩa + giải mã ảnh cho thứ không ai xem</td><td>✅ đã vá + test khoá</td></tr>
-<tr><td>P2</td><td>Toàn bộ đọc/giải mã ảnh nằm trên thread chính, ngay trong lúc về HOME</td><td>⏳ <b>chưa vá</b> — cần đưa sang thread nền, việc riêng</td></tr>
-<tr><td>P2</td><td>Cổng giảm cỡ yếu với ảnh tỉ lệ lệch (dừng khi một chiều đủ nhỏ) ⇒ ảnh 12000×9000 vẫn ra bitmap 27 MB</td><td>⏳ <b>chưa vá</b> — việc riêng</td></tr>
-<tr><td>P3</td><td>"Hiện ngay ảnh đầu tiên" thật ra hiện ảnh <b>thứ hai</b> (lệch chính tài liệu)</td><td>⏳ chưa vá</td></tr>
+<tr><td>P2</td><td>Toàn bộ đọc/giải mã ảnh nằm trên thread chính, ngay trong lúc về HOME</td><td>✅ <b>đã vá</b> (Pass 2) — sang thread nền có sẵn + thẻ thế hệ + chốt chống nạp trùng</td></tr>
+<tr><td>P2</td><td>Cổng giảm cỡ yếu với ảnh tỉ lệ lệch (dừng khi một chiều đủ nhỏ) ⇒ ảnh 12000×9000 vẫn ra bitmap 27 MB</td><td>✅ <b>đã vá</b> (Pass 2) — thêm bước hạ đúng khung <b>trong lúc</b> giải mã: 27 MB → ~11 MB</td></tr>
+<tr><td>P3</td><td>"Hiện ngay ảnh đầu tiên" thật ra hiện ảnh <b>thứ hai</b> (lệch chính tài liệu)</td><td>✅ <b>đã vá</b> (Pass 2) — 2 test cũ đang khoá hành vi SAI, đã sửa cho đúng ý định</td></tr>
 <tr><td>P3</td><td>Nút Back không đóng bảng vẽ · chưa xử nhiều ngón tay · vài điểm vụn</td><td>⏳ chưa vá</td></tr>
 </table>
 <p><b>Hai phát hiện có giá trị vượt ngoài danh sách lỗi:</b></p>

@@ -61,9 +61,13 @@ object Slideshow {
         if (count <= 1) return state.copy(index = if (count <= 0) 0 else state.index.coerceIn(0, count - 1))
         val safeIndex = if (state.index in 0 until count) state.index else 0
         val dueMs = state.lastChangeMs + intervalSec.coerceAtLeast(1) * 1000L
-        // Mốc = 0 nghĩa là CHƯA từng đổi ⇒ tính là tới hạn ngay, để ảnh đầu tiên hiện mà không phải chờ một chu kỳ.
-        val due = state.lastChangeMs <= 0L || nowMs >= dueMs
-        return if (due) SlideshowState((safeIndex + 1).mod(count), nowMs) else state.copy(index = safeIndex)
+        // [SOÁT P3] Mốc = 0 nghĩa là CHƯA từng chiếu ảnh nào. Trước đây ca này TĂNG chỉ số ⇒ lần mở đầu hiện ảnh
+        // **THỨ HAI**, lệch chính tài liệu ("hiện ngay ảnh đầu tiên") và mỗi lần về màn chính lại bắt đầu từ ảnh #2.
+        // Đúng phải là: giữ NGUYÊN chỉ số (ảnh đầu hiện ngay) và chỉ đóng mốc thời gian, để lần đổi kế tiếp cách
+        // đúng một chu kỳ.
+        if (state.lastChangeMs <= 0L) return SlideshowState(safeIndex, nowMs)
+        return if (nowMs >= dueMs) SlideshowState((safeIndex + 1).mod(count), nowMs)
+        else state.copy(index = safeIndex)
     }
 
     /** Ảnh đang chọn, hoặc `null` nếu danh sách rỗng / chỉ số sai (chỗ gọi vẽ nền mặc định). */

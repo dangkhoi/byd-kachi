@@ -63,8 +63,19 @@ object WallpaperStore {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(path, bounds)
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+            val sample = sampleSize(bounds.outWidth, bounds.outHeight, reqW, reqH)
+            val sampledW = bounds.outWidth / sample
+            val sampledH = bounds.outHeight / sample
+            val targetW = scaledWidth(sampledW, sampledH, reqW, reqH)
             val opts = BitmapFactory.Options().apply {
-                inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, reqW, reqH)
+                inSampleSize = sample
+                // [SOÁT P2-4] hạ đúng khung NGAY TRONG lúc giải mã: làm bằng cách tạo bitmap to rồi thu nhỏ sẽ cần
+                // hai ảnh cùng sống, tức đúng thứ đang muốn tránh.
+                if (targetW > 0) {
+                    inScaled = true
+                    inDensity = sampledW
+                    inTargetDensity = targetW
+                }
             }
             BitmapFactory.decodeFile(path, opts)
         }.getOrElse {
@@ -81,5 +92,25 @@ object WallpaperStore {
         var s = 1
         while (srcW / (s * 2) >= reqW && srcH / (s * 2) >= reqH) s *= 2
         return s
+    }
+
+    /**
+     * Bề rộng đích sau khi đã hạ **đúng khung** — dùng cho bước hạ cỡ trong lúc giải mã.
+     *
+     * ## [SOÁT P2-4] Vì sao cần bước này
+     * [sampleSize] chỉ giảm theo **luỹ thừa 2** và dừng khi một chiều sắp nhỏ hơn khung ⇒ với ảnh **tỉ lệ lệch** thì
+     * chiều còn lại vẫn rất lớn. Ví dụ thật: ảnh 12000×9000 cho khung 1920×1080 ⇒ tỉ lệ giảm 4 ⇒ còn 3000×2250 =
+     * **27 MB**. Lúc đổi ảnh có **hai** ảnh cùng sống, cộng thêm widget nữa ⇒ nguy cơ hết bộ nhớ.
+     *
+     * Bước này hạ tiếp cho **vừa khung** (vẫn phủ kín, vì chế độ phủ kín sẽ cắt): lấy tỉ lệ **lớn hơn** trong hai
+     * chiều nên ảnh vẫn trùm đủ khung. Ví dụ trên xuống còn 1920×1440 ≈ **11 MB**.
+     *
+     * Trả về 0 nghĩa là **không cần hạ thêm** (ảnh đã nhỏ hơn khung).
+     */
+    fun scaledWidth(sampledW: Int, sampledH: Int, reqW: Int, reqH: Int): Int {
+        if (sampledW <= 0 || sampledH <= 0 || reqW <= 0 || reqH <= 0) return 0
+        val scale = maxOf(reqW.toFloat() / sampledW, reqH.toFloat() / sampledH)
+        if (scale >= 1f) return 0
+        return (sampledW * scale).toInt().coerceAtLeast(1)
     }
 }

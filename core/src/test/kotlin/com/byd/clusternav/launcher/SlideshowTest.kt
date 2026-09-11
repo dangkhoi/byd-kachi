@@ -20,11 +20,21 @@ class SlideshowTest {
     // ── Luật đổi ảnh ─────────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `chua tung doi thi doi NGAY, khong phai cho mot chu ky`() {
-        // Mốc = 0 nghĩa là chưa từng đổi. Nếu bắt chờ một chu kỳ thì mở launcher lên sẽ thấy nền trống 60 giây.
+    fun `chua tung chieu thi hien NGAY anh DAU TIEN`() {
+        // Mốc = 0 nghĩa là chưa từng chiếu ảnh nào. Phải hiện NGAY (bắt chờ một chu kỳ thì mở launcher lên sẽ thấy
+        // nền trống tới 60 giây), nhưng hiện đúng ảnh ĐẦU TIÊN.
+        // [SOÁT P3] hành vi cũ TĂNG chỉ số ở ca này ⇒ lần mở đầu hiện ảnh THỨ HAI, lệch chính tài liệu, và mỗi lần
+        // về màn chính lại bắt đầu từ ảnh #2 — người dùng không bao giờ thấy ảnh đầu ở đầu vòng.
         val s = Slideshow.next(SlideshowState(index = 0, lastChangeMs = 0L), count = 3, nowMs = 1_000L)
-        assertEquals(1, s.index)
-        assertEquals(1_000L, s.lastChangeMs)
+        assertEquals(0, s.index, "phải hiện ảnh ĐẦU TIÊN, không nhảy sang ảnh thứ hai")
+        assertEquals(1_000L, s.lastChangeMs, "phải đóng mốc để lần đổi kế tiếp cách đúng một chu kỳ")
+    }
+
+    @Test
+    fun `chua tung chieu thi GIU nguyen anh dang chon, khong nhay`() {
+        // Ca thật: người dùng đang xem ảnh thứ 3, launcher mở lại (mốc mất) ⇒ phải hiện lại ảnh thứ 3, không nhảy.
+        val s = Slideshow.next(SlideshowState(index = 2, lastChangeMs = 0L), count = 5, nowMs = 500L)
+        assertEquals(2, s.index)
     }
 
     @Test
@@ -51,7 +61,8 @@ class SlideshowTest {
 
     @Test
     fun `vong lai dau khi het danh sach`() {
-        val s = Slideshow.next(SlideshowState(2, 0L), count = 3, nowMs = 1L)
+        // Đang ở ảnh cuối và ĐÃ TỚI HẠN ⇒ vòng về đầu. (Mốc phải khác 0, vì mốc 0 là ca "chưa từng chiếu".)
+        val s = Slideshow.next(SlideshowState(2, 10_000L), count = 3, nowMs = 100_000L, intervalSec = 60)
         assertEquals(0, s.index, "ảnh cuối ⇒ vòng về đầu")
     }
 

@@ -82,7 +82,17 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private var slide = SlideshowState()
     private var wallPrefs = WallpaperPrefs.DEFAULT
     private var wallImages: List<String> = emptyList()
-    private var photoPaths: List<String> = emptyList()   // U4(b): nguồn cho widget trình chiếu (độc lập với nền)
+    /**
+     * [SOÁT P2-2] Thẻ thế hệ cho hai việc chạy ở thread nền. **Phải là HAI thẻ riêng.**
+     *
+     * ⚠ Bản vá đầu của tôi dùng MỘT thẻ chung ⇒ nhịp trình chiếu (tăng thẻ giải mã) chạy trước lúc quét thư mục về
+     * ⇒ lượt quét thấy thẻ đã đổi nên **BỎ danh sách vừa quét** ⇒ ảnh mới thêm / ảnh vừa xoá / chu kỳ vừa đổi
+     * **không được nhận**, im lặng dùng dữ liệu cũ.
+     */
+    private var wallScanGen = 0
+    private var wallDecodeGen = 0
+    /** Ảnh đang được nạp ở thread nền (đường dẫn) — chặn nạp trùng cùng một ảnh khi nhịp tới trước lúc nạp xong. */
+    private var wallLoading: String? = null   // U4(b): nguồn cho widget trình chiếu (độc lập với nền)
     private var layoutPanel: LayoutEditorPanel? = null
     /** P9 — bố cục tự vẽ đang hiệu lực. Giữ ở đây để bộ sắp cửa sổ app đọc được cùng giá trị với màn hình. */
     private var customLayout: GridLayout? = null
@@ -375,20 +385,29 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // Tạo thư mục ảnh NGAY, kể cả khi tính năng đang tắt. [ĐO] máy ảo 2026-09-11: nếu chỉ tạo lúc bật thì người
         // dùng gặp vòng lặp chết — muốn thấy ảnh phải bật, muốn bật có nghĩa phải bỏ ảnh vào trước, mà thư mục lại
         // chưa tồn tại để mà bỏ vào.
-        WallpaperStore.folder(this)
-        // U4(b): widget trình chiếu chạy ĐỘC LẬP với hình nền — nạp danh sách ảnh kể cả khi nền đang tắt, vì người
-        // dùng có thể muốn khung ảnh trong ô mà không đổi nền màn hình.
-        photoPaths = WallpaperStore.images(this)
-        workspace.setPhotoSource(photoPaths, wallPrefs.intervalSec)
         if (!wallPrefs.enabled) {
             wall.setPhoto(null)
             releaseWallBitmap()
             wallImages = emptyList()
-            return
         }
-        wallImages = WallpaperStore.images(this)
-        slide = SlideshowState()          // đổi lựa chọn ⇒ bắt đầu lại từ ảnh đầu
-        stepWallpaper(force = true)
+        // [SOÁT P2-2] Tạo thư mục + quét thư mục + giải mã ảnh đều là I/O. Trước đây cả ba chạy trên thread chính
+        // NGAY trong lúc về màn chính ⇒ đứng hình mỗi lần về HOME. Nay đẩy sang thread nền có sẵn (cùng nơi các
+        // lệnh cửa sổ đã dùng), chỉ đưa ảnh vào View trên thread chính.
+        val gen = ++wallScanGen
+        winExec.execute {
+            WallpaperStore.folder(this)
+            val paths = WallpaperStore.images(this)
+            runOnUiThread {
+                // Lượt QUÉT cũ về muộn hơn lượt quét mới ⇒ bỏ. Dùng thẻ riêng của việc quét: dùng chung thẻ với việc
+                // giải mã thì nhịp trình chiếu sẽ làm lượt quét bị bỏ oan (xem KDoc wallScanGen).
+                if (gen != wallScanGen || isFinishing || isDestroyed) return@runOnUiThread
+                workspace.setPhotoSource(paths, wallPrefs.intervalSec)
+                if (!wallPrefs.enabled) return@runOnUiThread
+                wallImages = paths
+                slide = SlideshowState()          // đổi lựa chọn ⇒ bắt đầu lại từ ảnh đầu
+                stepWallpaper(force = true)
+            }
+        }
     }
 
     /**
@@ -415,16 +434,28 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         slide = Slideshow.next(slide, wallImages.size, System.currentTimeMillis(), wallPrefs.intervalSec)
         if (!force && slide.index == before.index && wall.hasPhoto()) return   // chưa tới hạn ⇒ không nạp lại
         val path = Slideshow.pick(wallImages, slide.index) ?: return
-        val next = WallpaperStore.loadScaled(path, wallReqW(), wallReqH())
-        if (next == null) {
-            Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ ${slide.index + 1}/${wallImages.size}")
-            return
+        if (wallLoading == path) return    // đang nạp đúng ảnh này rồi
+        val reqW = wallReqW(); val reqH = wallReqH()
+        val shown = slide.index + 1; val total = wallImages.size
+        // [SOÁT P2-2] Giải mã ảnh là việc nặng nhất ở đây (ảnh nhiều megapixel) ⇒ chạy ở thread nền.
+        val gen = ++wallDecodeGen
+        wallLoading = path
+        winExec.execute {
+            val next = WallpaperStore.loadScaled(path, reqW, reqH)
+            runOnUiThread {
+                if (wallLoading == path) wallLoading = null
+                if (gen != wallDecodeGen || isFinishing || isDestroyed) { next?.recycle(); return@runOnUiThread }
+                if (next == null) {
+                    Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ $shown/$total")
+                    return@runOnUiThread
+                }
+                val old = wallBitmap
+                wallBitmap = next
+                wall.setPhoto(next, wallPrefs.fit, wallPrefs.dim)
+                // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
+                old?.recycle()
+            }
         }
-        val old = wallBitmap
-        wallBitmap = next
-        wall.setPhoto(next, wallPrefs.fit, wallPrefs.dim)
-        // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
-        old?.recycle()
     }
 
     /**
