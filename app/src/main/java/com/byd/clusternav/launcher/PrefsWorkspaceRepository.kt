@@ -54,6 +54,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     // đọc dễ tưởng gọi đệ quy.
     override fun setUnitPrefs(units: UnitPrefs) = prefs.setUnitPrefs(units)
 
+    override fun wallpaperPrefs(): WallpaperPrefs = prefs.wallpaperPrefs()
+
+    override fun setWallpaperPrefs(wall: WallpaperPrefs) = prefs.setWallpaperPrefs(wall)
+
     /** Hồ sơ trống (mọi ô Empty) → bố cục mặc định 3 widget (khớp `initialState()` cũ của KachiHomeActivity). */
     private fun defaultIfEmpty(ws: WorkspaceState): WorkspaceState =
         if (ws.slots.all { it is SlotContent.Empty }) DEFAULT_WORKSPACE else ws

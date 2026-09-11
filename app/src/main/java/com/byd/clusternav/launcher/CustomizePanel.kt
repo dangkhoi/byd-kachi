@@ -40,6 +40,12 @@ class CustomizePanel(
     private val onUnitPrefs: (UnitPrefs) -> Unit = {},
     /** P8 — báo cáo vòng kiểm quyền. `null` = chưa kiểm ⇒ không hiện mục nào. */
     permissions: PermissionReport? = null,
+    /** U4 — lựa chọn hình nền hiện tại. */
+    wallpaper: WallpaperPrefs = WallpaperPrefs.DEFAULT,
+    /** U4 — người dùng đổi lựa chọn hình nền. */
+    private val onWallpaper: (WallpaperPrefs) -> Unit = {},
+    /** U4 — chỗ bỏ ảnh vào, để nói cho người dùng biết (họ không có cách nào tự đoán). */
+    private val wallpaperFolderHint: String = "",
 ) : FrameLayout(context) {
 
     private val enabled = HashSet(enabledIds)
@@ -90,6 +96,26 @@ class CustomizePanel(
             })
         }
 
+        body.addView(sectionLabel("Hình nền"))
+        var wp = wallpaper
+        body.addView(checkRow(
+            on = wp.enabled,
+            title = "Dùng ảnh làm hình nền",
+            sub = if (wallpaperFolderHint.isEmpty()) "Bỏ ảnh vào thư mục ảnh của Kachi"
+            else "Bỏ ảnh vào: $wallpaperFolderHint",
+        ) { on -> wp = wp.copy(enabled = on); onWallpaper(wp) })
+        body.addView(chipRow("Đổi ảnh mỗi", Slideshow.INTERVAL_CHOICES_SEC.map { it.toString() to Slideshow.intervalLabel(it) },
+            wp.intervalSec.toString()) { code ->
+            wp = wp.copy(intervalSec = code.toIntOrNull() ?: Slideshow.DEFAULT_INTERVAL_SEC); onWallpaper(wp)
+        })
+        body.addView(chipRow("Cách phủ", ImageFit.values().map { it.name to it.label }, wp.fit.name) { code ->
+            wp = wp.copy(fit = ImageFit.values().firstOrNull { it.name == code } ?: ImageFit.FILL); onWallpaper(wp)
+        })
+        body.addView(chipRow("Làm tối ảnh", listOf(0, 25, 45, 65).map { it.toString() to "$it%" },
+            wp.dim.toString()) { code ->
+            wp = wp.copy(dimPercent = code.toIntOrNull() ?: WallpaperPrefs.DEFAULT_DIM_PERCENT); onWallpaper(wp)
+        })
+
         body.addView(sectionLabel("Tiện nghi tự động"))
         body.addView(recircRow(recircOnStart) { onRecircOnStart(it) })
 
@@ -121,20 +147,35 @@ class CustomizePanel(
      * (ràng buộc C3) — thêm một dòng vào đó là phải xin owner đóng dấu lại. Panel này dựng hoàn toàn bằng code nên
      * không đụng seal.
      */
-    private fun recircRow(on: Boolean, onChange: (Boolean) -> Unit): View {
+    /**
+     * W3 — ô tick "nổ máy thì tự lấy gió trong". Dùng [checkRow] dùng chung (trước U4 hàng này dựng tay riêng; nay
+     * có hai chỗ cần cùng một kiểu hàng nên rút ra một chỗ — luật không-lặp-code).
+     *
+     * Đặt ở bề mặt dựng bằng CODE, không nhét vào màn Cài đặt cũ: layout XML của màn đó bị niêm phong.
+     */
+    private fun recircRow(on: Boolean, onChange: (Boolean) -> Unit): View = checkRow(
+        on = on,
+        title = "Nổ máy thì tự lấy gió trong",
+        // R10 — KHÔNG hứa quá: lệnh này ở mức "đọc từ mã nguồn khác, chưa xác nhận trên xe owner".
+        sub = "Xe quên chế độ này mỗi lần khởi động. ⚠ Lệnh chưa kiểm trên xe — có thể xe không nhận.",
+        onChange = onChange,
+    )
+
+    // ── Hàng dùng chung: ô tick + dãy chip ────────────────────────────────────────────────────────
+    /** Ô tick + tiêu đề + dòng phụ. Rút ra dùng chung cho hình nền và tiện nghi (trước đó chỉ có một chỗ dựng tay). */
+    private fun checkRow(on: Boolean, title: String, sub: String, onChange: (Boolean) -> Unit): View {
         val box = TextView(context).apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f); typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(dpi(context, 26), dpi(context, 26))
         }
         var state = on
         fun paint() {
             box.text = if (state) "✓" else ""
             box.setTextColor(Color.WHITE)
-            box.background = if (state) GradientDrawable().apply {
-                cornerRadius = dpi(context, 7).toFloat(); setColor(c(KachiTheme.ACCENT))
-            } else GradientDrawable().apply {
-                cornerRadius = dpi(context, 7).toFloat(); setColor(c("#00000000")); setStroke(dpi(context, 2), c(KachiTheme.MUT2))
+            box.background = GradientDrawable().apply {
+                cornerRadius = dpi(context, 7).toFloat()
+                if (state) setColor(c(KachiTheme.ACCENT))
+                else { setColor(c("#00000000")); setStroke(dpi(context, 2), c(KachiTheme.MUT2)) }
             }
         }
         paint()
@@ -147,16 +188,44 @@ class CustomizePanel(
                 orientation = LinearLayout.VERTICAL
                 setPadding(dpi(context, 12), 0, 0, 0)
                 addView(TextView(context).apply {
-                    text = "Nổ máy thì tự lấy gió trong"
-                    setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+                    text = title; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
                 })
                 addView(TextView(context).apply {
-                    // R10 — KHÔNG hứa quá: lệnh này ở mức "đọc từ mã nguồn khác, chưa xác nhận trên xe owner".
-                    text = "Xe quên chế độ này mỗi lần khởi động. ⚠ Lệnh chưa kiểm trên xe — có thể xe không nhận."
-                    setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                    text = sub; setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                 })
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             setOnClickListener { state = !state; paint(); onChange(state) }
+        }
+    }
+
+    /** Một hàng: nhãn bên trái + dãy chip chọn bên phải. Dùng chung cho đơn vị và hình nền. */
+    private fun chipRow(label: String, options: List<Pair<String, String>>, current: String,
+                        onPick: (String) -> Unit): View {
+        val chips = HashMap<String, TextView>()
+        var chosen = current
+        fun paint() = chips.forEach { (code, tv) ->
+            val on = code == chosen
+            tv.setTextColor(if (on) Color.WHITE else c(KachiTheme.MUT))
+            tv.background = if (on) KachiTheme.gradient(context, 999f) else KachiTheme.card(context, 999f, "#1a1f29")
+        }
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dpi(context, 5), 0, dpi(context, 5))
+            addView(TextView(context).apply {
+                text = label; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            options.forEach { (code, text) ->
+                val tv = TextView(context).apply {
+                    this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f); typeface = Typeface.DEFAULT_BOLD
+                    gravity = Gravity.CENTER
+                    setPadding(dpi(context, 12), dpi(context, 6), dpi(context, 12), dpi(context, 6))
+                    setOnClickListener { chosen = code; paint(); onPick(code) }
+                }
+                chips[code] = tv
+                addView(tv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .also { it.marginStart = dpi(context, 6) })
+            }
+            paint()
         }
     }
 

@@ -48,4 +48,13 @@ interface WorkspaceRepository {
 
     /** Ghi bền lựa chọn đơn vị. Mặc định: không lưu (bản giả). */
     fun setUnitPrefs(prefs: UnitPrefs) {}
+
+    /**
+     * U4 — hình nền + trình chiếu. CHUNG mọi hồ sơ (hình nền nhìn thấy cả màn, không thuộc một hồ sơ).
+     * Có thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa.
+     */
+    fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.DEFAULT
+
+    /** Ghi bền lựa chọn hình nền. Mặc định: không lưu (bản giả). */
+    fun setWallpaperPrefs(prefs: WallpaperPrefs) {}
 }

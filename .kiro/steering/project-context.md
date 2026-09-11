@@ -45,6 +45,16 @@
 
 ## 5. Trạng thái (2026-09-10)
 
+- **2026-09-11 (trưa-2) · U4 HÌNH NỀN TỪ ẢNH + TRÌNH CHIẾU — DONE off-car (phần nền).** Spec `docs/specs/kachi-wallpaper.html`. **[ĐO] 2580/0** (đầu phiên 2563 ⇒ **+17**).
+  - ⚠ **RÀNG BUỘC XE ĐỊNH HÌNH THIẾT KẾ**: hai đường thông thường đều vướng — màn chọn tệp hệ thống **bị khoá trên xe**, và quét bộ nhớ chung **cần quyền cấp lúc chạy**. ⇒ đọc từ **thư mục riêng của app ở bộ nhớ ngoài** (`Android/data/<gói>/files/wallpapers`): **không cần quyền nào**, và app **đã dùng** lối này để xuất log.
+  - `Slideshow` + `WallpaperPrefs` (:core thuần) · `WallpaperStore` (đọc thư mục + nạp **giảm cỡ** — ảnh 12MP nguyên cỡ ~48 MB, đủ làm launcher chết) · `WallView` vẽ ảnh, **nền vẽ sẵn là đường LÙI** (chưa bật / không ảnh / ảnh hỏng ⇒ byte-giữ như trước).
+  - **Mặc định TẮT** ⇒ ai không dùng **không thấy gì khác**. Làm tối mặc định **45%** — **cần thiết chứ không trang trí**: chữ/ô launcher màu sáng, ảnh sáng làm chữ không đọc được.
+  - **Bẫy kinh điển đã khoá test**: chưa tới hạn thì phải giữ NGUYÊN **cả** chỉ số **và** mốc thời gian — cập nhật mốc mà không đổi ảnh sẽ đẩy hạn lùi mãi ⇒ ảnh **không bao giờ đổi**, và lỗi đó **im lặng**.
+  - **Dùng LẠI nhịp 10 giây** của thanh trên thay vì dựng vòng đếm riêng (thêm vòng là thêm thứ phải nhớ dừng lúc huỷ màn); sai số tối đa 10s so với chu kỳ ngắn nhất 15s.
+  - **[ĐO] máy ảo 2 lượt**: (1) 3 ảnh đơn sắc ⇒ nền đổi **navy → lục** sau 22s, chữ vẫn đọc được; (2) tác nhân đọc ảnh **tự nêu giới hạn** "ảnh đơn sắc không kiểm được méo" ⇒ đo lượt 2 bằng **ảnh vuông 600×600 có lưới + vòng tròn**: bước lưới dọc **192.00** vs ngang **192.27** px (ô còn VUÔNG) · vòng tròn bán kính 800.3 px lệch chuẩn **0.53** px (còn TRÒN, không elip) · cắt trên/dưới **258/264** px (CÂN) · **0 pixel viền đen** · không lặp gạch ⇒ chế độ phủ kín **CẮT** đúng chứ không kéo méo.
+  - **[ĐO] lỗi dùng-được tìm ra khi ĐO (test không bắt)**: thư mục ảnh **chỉ tạo khi đã bật**, mà muốn bật phải bỏ ảnh vào trước ⇒ **vòng lặp chết** ngay lần dùng đầu. Sửa: luôn tạo sẵn + bảng Tuỳ biến **nói rõ đường dẫn**.
+  - **Còn tồn**: (b) **widget trình chiếu riêng** đặt vào ô chưa làm (owner nêu cả hai; logic + kho ảnh đã có nên rẻ) · **thanh trên nền lọt 18%** (thẻ workspace 0%) ⇒ ảnh nhiều hoa văn sẽ rối ở đó, cách chữa là tăng độ đục riêng thanh trên nhưng cần owner xem ảnh thật · chưa có lượt soát độc lập phần code.
+
 - **2026-09-11 (chiều) · P9 BƯỚC NỀN — model bố cục động 12×6, DONE off-car.** Spec `docs/specs/kachi-dynamic-grid.html`. **[ĐO] 2563/0** (đầu phiên 2547 ⇒ **+16**); chỉ **2 file MỚI** ở `:core`, **0 file cũ bị sửa**.
   - **Cố ý chia 3 bước**: bước 1 = model thuần (làm rồi) · bước 2 = trình vẽ khung · bước 3 = nối tầng vẽ + hồ sơ + nới trần ô. Lý do: tầng vẽ là chỗ **chiếu app vào ô** đang sống và vừa sửa hai lỗi khó (P-bug1, P-bug2) ⇒ đổi nền trước theo kiểu **cộng thêm, không sửa gì cũ**.
   - ⚠⚠ **[ĐO] SỰ THẬT ĐỔI PHẠM VI**: bố cục **"3 ô" KHÔNG biểu diễn được** trên lưới 12 cột — cột trái của nó `1.55/2.55 = 0.6078` bề ngang = **7.294 cột**, không phải số nguyên (ép 7 lệch **2.45%**, ép 8 lệch **5.88%**). 4/5 bố cục còn lại thì ĐÚNG (phủ 72/72 ô). ⇒ **lưới là nguồn CỘNG THÊM, KHÔNG thay thế**; `fromPreset(THREE)` trả **null** thay vì làm tròn (làm tròn âm thầm = đổi bố cục owner đã duyệt mà không ai biết).

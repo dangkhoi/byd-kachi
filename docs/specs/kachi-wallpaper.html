@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi U4 — Hình nền từ ảnh + trình chiếu</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi U4 — Hình nền từ ảnh + trình chiếu</h1>
+<p class="muted">
+  <b>Trạng thái</b>: DONE off-car · <b>Ngày</b>: 2026-09-11 · <b>Mã việc</b>: U4 ·
+  <b>Mục đích</b>: owner muốn <b>(a)</b> hình nền cho cả launcher và <b>(b)</b> widget trình chiếu — chọn sẵn bộ ảnh,
+  định kỳ tự đổi.
+</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-11</td><td>Logic thuần + kho ảnh + vẽ nền + điều khiển trong bảng Tuỳ biến. Đo trên máy ảo bằng <b>ba ảnh đơn sắc</b> (xác nhận đổi ảnh) rồi bằng <b>một ảnh vuông có hoa văn</b> (xác nhận cắt chứ không kéo méo). Tìm và sửa <b>một lỗi vòng-lặp-chết</b> khi dùng lần đầu.</td></tr>
+</table>
+
+<h2>2. Ràng buộc của xe định hình thiết kế</h2>
+<div class="card">
+Câu khó nhất của việc này không phải vẽ ảnh, mà là <b>lấy ảnh từ đâu</b>. Hai đường thông thường đều <b>vướng</b>:
+<br><br>
+❌ <b>Màn chọn tệp của hệ thống</b> — [ĐO] các màn hệ thống trên xe bị khoá (<i>"Hệ thống IVI không hỗ trợ hoạt động
+này"</i>, xem spec vòng kiểm quyền). Nút "chọn ảnh" kiểu thường sẽ dẫn người dùng vào chỗ không làm được gì.
+<br>
+❌ <b>Quét bộ nhớ chung</b> — cần quyền đọc bộ nhớ, mà quyền đó phải cấp lúc chạy.
+<br><br>
+✅ <b>Đường đã chọn: thư mục riêng của app ở bộ nhớ ngoài</b> (<code>Android/data/&lt;gói&gt;/files/wallpapers</code>).
+<b>Không cần quyền nào</b>, <b>không cần màn hệ thống nào</b>, và app <b>đã dùng</b> chính lối này để xuất log ⇒
+người dùng đã có đường bỏ tệp vào đó.
+</div>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R1</b></td><td>Dùng ảnh làm hình nền cho cả launcher.</td><td>Đo: nền là ảnh, không phải nền vẽ sẵn.</td></tr>
+<tr><td><b>R2</b></td><td><b>Định kỳ tự đổi ảnh</b>, chu kỳ người dùng chọn.</td><td>Đo: nền đổi sang ảnh khác sau một chu kỳ.</td></tr>
+<tr><td><b>R3</b></td><td><b>Mặc định TẮT</b> — ai không dùng thì <b>không thấy gì khác</b>.</td><td>Test: mặc định tắt; tắt ⇒ vẽ đúng nền cũ.</td></tr>
+<tr><td><b>R4</b></td><td>Ảnh phải <b>cắt</b> để phủ kín, <b>KHÔNG kéo méo</b>.</td><td>Đo bằng ảnh vuông có lưới + vòng tròn.</td></tr>
+<tr><td><b>R5</b></td><td>Chữ và ô của launcher <b>vẫn đọc được</b> trên nền ảnh.</td><td>Có mức làm tối, đo trên ảnh thật.</td></tr>
+<tr><td><b>R6</b></td><td>Ảnh to <b>không được làm hết bộ nhớ</b>.</td><td>Luôn nạp giảm cỡ theo khung, không nạp nguyên bản.</td></tr>
+<tr><td><b>R7</b></td><td>Không thêm quyền, không dùng màn hệ thống (§2).</td><td>Kiểm manifest + đường đọc ảnh.</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Chia tầng</h3>
+<table>
+<tr><th>Tầng</th><th>Việc</th><th>Vì sao ở đó</th></tr>
+<tr><td><code>:core</code> (thuần)</td><td>Quyết định <b>đã đến lúc đổi ảnh chưa</b> · lọc + sắp thứ tự tệp ảnh · lựa chọn của người dùng (lưu/đọc)</td><td>"Đến lúc chưa" là quyết định <b>theo thời gian</b>; để trong View thì muốn test phải <b>chờ thật</b>. Tách ra thì test đủ mọi ca <b>tức thời</b>.</td></tr>
+<tr><td><code>:app</code></td><td>Đọc thư mục · nạp ảnh giảm cỡ · vẽ · điều khiển trong bảng Tuỳ biến</td><td>Chạm Android.</td></tr>
+</table>
+
+<h3>4.2 Ba quyết định đáng nói</h3>
+<table>
+<tr><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td><b>Dùng lại nhịp 10 giây có sẵn</b> của thanh trên, KHÔNG dựng vòng đếm riêng</td><td>Thêm một vòng đếm là thêm một thứ phải nhớ dừng lúc huỷ màn. Sai số tối đa 10 giây so với chu kỳ ngắn nhất 15 giây — với trình chiếu ảnh thì <b>không ai thấy</b>.</td></tr>
+<tr><td><b>Làm tối ảnh, mặc định 45%</b></td><td><b>Cần thiết, không phải trang trí</b>: chữ và ô của launcher là màu sáng; ảnh sáng làm chữ không đọc được. Trần 90% — 100% thì mất hẳn ảnh.</td></tr>
+<tr><td><b>Nhả ảnh cũ SAU khi đưa ảnh mới vào View</b></td><td>Nhả trước thì lần vẽ kế tiếp dùng ảnh đã bị thu hồi và <b>sập</b>.</td></tr>
+</table>
+
+<h3>4.3 Luật đổi ảnh — và cái bẫy kinh điển</h3>
+<div class="card">
+<b>Chưa tới hạn thì phải giữ NGUYÊN cả chỉ số VÀ mốc thời gian.</b> Nếu cập nhật mốc mà không đổi ảnh thì hạn bị
+<b>đẩy lùi mãi</b> ⇒ ảnh <b>không bao giờ đổi</b>. Lỗi này <b>im lặng</b>: không ai thấy lỗi, chỉ thấy "trình chiếu
+không chạy". Có test riêng khoá đúng điều đó.
+</div>
+<p class="muted">Các ca khác đã khoá: một ảnh ⇒ không bao giờ đổi · không ảnh ⇒ không sập · chỉ số ra ngoài (người
+dùng bớt ảnh) ⇒ về đầu · chu kỳ ≤ 0 ⇒ coi như tối thiểu, không chia cho 0 · <b>chưa từng đổi ⇒ hiện ngay</b> (bắt
+chờ một chu kỳ thì mở launcher lên thấy nền trống 60 giây).</p>
+
+<h2>5. Verification</h2>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td>Test thuần JVM</td><td>Luật đổi ảnh · lọc tệp · thứ tự ổn định · lựa chọn lưu/đọc</td><td><span class="pill ok">17 test, 0 lỗi</span></td></tr>
+<tr><td>Đủ 5 module</td><td><code>./gradlew test --continue</code></td><td><span class="pill ok">2580 / 0</span> (đầu phiên 2563 ⇒ <b>+17</b>)</td></tr>
+<tr><td>Máy ảo — nền là ảnh</td><td>Đẩy 3 ảnh đơn sắc vào thư mục, bật, đọc ảnh chụp</td><td><span class="pill ok">đạt</span> nền là <b>một màu đơn phủ kín</b>, KHÔNG còn là nền vẽ sẵn (nền cũ có 2 vầng sáng xanh/tím ở hai góc — đã mất hẳn)</td></tr>
+<tr><td>Máy ảo — tự đổi ảnh</td><td>Chu kỳ 15 giây, chụp 2 lần cách 22 giây</td><td><span class="pill ok">đạt</span> nền đi từ <b>xanh navy sẫm → xanh lục sẫm</b> (2 ảnh khác nhau trong bộ 3)</td></tr>
+<tr><td>Máy ảo — CẮT chứ không kéo méo</td><td>Ảnh <b>vuông 600×600</b> có lưới đều + vòng tròn, phủ lên khung 16:9</td><td><span class="pill ok">đạt, đo được</span> bước lưới dọc <b>192.00</b> px vs ngang <b>192.27</b> px (lệch 0.14%) ⇒ ô còn <b>vuông</b>; vòng tròn khớp bán kính <b>800.3</b> px với độ lệch chuẩn chỉ <b>0.53</b> px ⇒ còn <b>tròn</b>, không thành elip; cắt trên/dưới <b>258 / 264</b> px ⇒ <b>cân</b> (lệch 3 px)</td></tr>
+<tr><td>Máy ảo — không lặp gạch</td><td>Cùng ảnh hoa văn</td><td><span class="pill ok">đạt</span> 217 vệt vòng tròn <b>đều nằm trên MỘT</b> vòng; pha lưới giữ nguyên 192 suốt bề ngang ⇒ không có chỗ nối</td></tr>
+<tr><td>Máy ảo — phủ kín 4 mép</td><td>Đếm pixel đen tuyệt đối ở mép</td><td><span class="pill ok">đạt</span> <b>0</b> pixel đen ở cả 4 mép ⇒ không viền đen, không letterbox</td></tr>
+<tr><td>Máy ảo — chữ đọc được</td><td>Đo độ lọt của nền qua từng vùng</td><td><span class="pill ok">đạt</span> thẻ workspace + bảng lốp <b>0%</b> lọt (đục hoàn toàn) · ô thanh dưới <b>3.5%</b> · <b>thanh trên 18%</b> (xem §6)</td></tr>
+<tr><td>Mặc định không đổi gì</td><td>Test + đo</td><td><span class="pill ok">đạt</span> mặc định TẮT; tắt ⇒ nền vẽ sẵn byte-giữ</td></tr>
+</table>
+
+<h2>6. Còn tồn (đã đo, không che)</h2>
+<ul>
+  <li><b class="warn">Thanh trên là chỗ yếu nhất</b>: [ĐO] nền lọt qua <b>18%</b> ở đó (so với 0% ở thẻ workspace), và với ảnh tương phản cao thì nét ảnh cắt ngang qua nhóm nút bố cục và các nút "Tuỳ biến"/"Cài đặt" — vẫn đọc được nhưng <b>trông rối</b>. Nếu owner dùng ảnh nhiều hoa văn thì đây là nơi mất chữ trước nhất. Cách chữa: tăng độ đục nền của riêng thanh trên. Chưa làm vì cần owner xem ảnh thật của họ mới biết có đáng đổi hay không.</li>
+  <li><b>Trình chiếu chỉ ở HÌNH NỀN</b>, chưa có <b>widget</b> trình chiếu riêng đặt vào ô (owner nêu cả hai). Nền là phần dùng nhiều hơn nên làm trước; widget là bước sau, và nay đã có sẵn toàn bộ logic + kho ảnh nên rẻ.</li>
+  <li>Sai số nhịp tối đa <b>10 giây</b> (do dùng lại nhịp có sẵn — xem §4.2).</li>
+  <li><b>Chưa có lượt soát độc lập</b> (tác nhân soát hỏng nhiều phiên gần đây). Phần xác minh <b>bằng mắt</b> thì có tác nhân độc lập làm, và chính nó nêu ra giới hạn "ảnh đơn sắc không kiểm được méo" — dẫn tới lượt đo thứ hai bằng ảnh hoa văn.</li>
+</ul>
+
+<h2>7. Nhật ký triển khai</h2>
+<p><b>Một lỗi dùng-được tìm ra khi đo, không phải khi test:</b></p>
+<div class="card">
+Thư mục ảnh <b>chỉ được tạo khi tính năng đã bật</b>. Nhưng muốn thấy ảnh thì phải bật, mà bật có nghĩa là <b>phải bỏ
+ảnh vào trước</b> — và thư mục lại chưa tồn tại để mà bỏ vào. <b>Vòng lặp chết</b> ngay lần dùng đầu.
+<br><br>
+Sửa: <b>luôn tạo thư mục</b> lúc mở launcher, kể cả khi tính năng đang tắt. Và bảng Tuỳ biến <b>nói rõ đường dẫn</b>
+— người dùng không có cách nào tự đoán.
+</div>
+<p><b>Một chỗ rút gọn theo luật không-lặp-code:</b> hàng "ô tick + tiêu đề + dòng phụ" trước đó dựng tay riêng cho ô
+lấy gió trong; nay có hai chỗ cần cùng kiểu hàng nên rút thành hàng dùng chung (và dãy chip chọn cũng vậy, dùng chung
+cho đơn vị và hình nền).</p>
+<p><b>Cách nạp ảnh:</b> hai lượt đọc — lượt đầu chỉ đọc <b>kích thước</b> (không nạp pixel), lượt sau nạp với tỉ lệ
+giảm. Nạp nguyên bản rồi mới thu nhỏ là cách chắc chắn để hết bộ nhớ: một ảnh 12MP nguyên cỡ là ~48 MB.</p>
+
+<h2>8. Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mặc định</th></tr>
+<tr><td>OQ1</td><td>Thanh trên có cần tăng độ đục khi bật hình nền không (§6)?</td><td>Chưa đổi. Cần owner xem với ảnh thật của họ.</td></tr>
+<tr><td>OQ2</td><td>Có muốn <b>widget trình chiếu riêng</b> đặt vào ô (ngoài hình nền) không?</td><td>Chưa làm. Logic + kho ảnh đã có nên rẻ nếu owner muốn.</td></tr>
+<tr><td>OQ3</td><td>Mức làm tối mặc định <b>45%</b> có hợp không?</td><td>Giữ 45%; chọn được 0/25/45/65% trong bảng Tuỳ biến.</td></tr>
+</table>
+
+<h2>9. References</h2>
+<ul>
+  <li><code>docs/PROJECT-BACKLOG.md</code> — U4.</li>
+  <li><code>docs/specs/kachi-permission-preflight.html</code> — nguồn của ràng buộc "màn hệ thống trên xe bị khoá".</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Chưa có lượt soát độc lập cho phần code. Phần xác minh bằng mắt có tác nhân độc lập làm (2 lượt).</p>
+
+</div>
+</body>
+</html>

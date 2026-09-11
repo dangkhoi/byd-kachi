@@ -76,8 +76,21 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private val winExec = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var shownState: HomeUiState? = null   // view-side diff cache của collector (KHÔNG phải nguồn sự thật)
 
+    private lateinit var wall: WallView
+    // U4: trạng thái trình chiếu (ảnh nào, đổi lần cuối lúc nào). Ảnh đang vẽ giữ riêng để giải phóng ĐÚNG LÚC —
+    // giải phóng trước khi View vẽ xong sẽ dùng ảnh đã thu hồi và sập.
+    private var slide = SlideshowState()
+    private var wallPrefs = WallpaperPrefs.DEFAULT
+    private var wallImages: List<String> = emptyList()
+    private var wallBitmap: android.graphics.Bitmap? = null
     private val handler = Handler(Looper.getMainLooper())
-    private val tick = object : Runnable { override fun run() { topStrip.updateClock(); handler.postDelayed(this, 10_000) } }
+    private val tick = object : Runnable {
+        override fun run() {
+            topStrip.updateClock()
+            stepWallpaper()   // U4: dùng LẠI nhịp có sẵn thay vì dựng thêm một vòng đếm riêng
+            handler.postDelayed(this, 10_000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -134,7 +147,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         content.addView(mainArea, LinearLayout.LayoutParams(MATCH, 0, 1f).also { it.topMargin = dp(12) })
 
         rootFrame = FrameLayout(this)
-        rootFrame.addView(WallView(this), FrameLayout.LayoutParams(MATCH, MATCH))
+        wall = WallView(this)
+        rootFrame.addView(wall, FrameLayout.LayoutParams(MATCH, MATCH))
         rootFrame.addView(content, FrameLayout.LayoutParams(MATCH, MATCH))
         setContentView(rootFrame)
 
@@ -326,6 +340,71 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         }
     }
 
+    // ── U4 · hình nền + trình chiếu ──────────────────────────────────────────────────────────────
+    /**
+     * Nạp lại lựa chọn + danh sách ảnh rồi vẽ ngay. Gọi lúc mở màn và mỗi khi người dùng đổi lựa chọn.
+     *
+     * TẮT (mặc định) ⇒ nhả ảnh và để [WallView] vẽ nền gradient như trước ⇒ người không dùng tính năng này
+     * **không thấy gì khác**.
+     */
+    private fun reloadWallpaper() {
+        wallPrefs = container.workspaceRepository.wallpaperPrefs()
+        // Tạo thư mục ảnh NGAY, kể cả khi tính năng đang tắt. [ĐO] máy ảo 2026-09-11: nếu chỉ tạo lúc bật thì người
+        // dùng gặp vòng lặp chết — muốn thấy ảnh phải bật, muốn bật có nghĩa phải bỏ ảnh vào trước, mà thư mục lại
+        // chưa tồn tại để mà bỏ vào.
+        WallpaperStore.folder(this)
+        if (!wallPrefs.enabled) {
+            wall.setPhoto(null)
+            releaseWallBitmap()
+            wallImages = emptyList()
+            return
+        }
+        wallImages = WallpaperStore.images(this)
+        slide = SlideshowState()          // đổi lựa chọn ⇒ bắt đầu lại từ ảnh đầu
+        stepWallpaper(force = true)
+    }
+
+    /**
+     * Một nhịp trình chiếu. Chạy trên nhịp 10 giây có sẵn của thanh trên — cố ý KHÔNG dựng thêm vòng đếm riêng
+     * (thêm một vòng nữa là thêm một thứ phải nhớ dừng lúc huỷ màn).
+     *
+     * Nhịp 10 giây với chu kỳ ngắn nhất 15 giây ⇒ sai số tối đa 10 giây. Với trình chiếu ảnh thì đó là **không ai
+     * thấy**; đổi lấy việc không có vòng đếm thứ hai là đáng.
+     */
+    private fun stepWallpaper(force: Boolean = false) {
+        if (!wallPrefs.enabled) return
+        if (wallImages.isEmpty()) {
+            // Bật mà chưa có ảnh: KHÔNG im lặng — nói chỗ bỏ ảnh vào, vì người dùng không có cách nào tự đoán.
+            if (force) {
+                Log.i("Wallpaper", "bật nhưng chưa có ảnh; bỏ ảnh vào: ${WallpaperStore.folderHint(this)}")
+                runCatching {
+                    Toast.makeText(this, "Chưa có ảnh. Bỏ ảnh vào:\n${WallpaperStore.folderHint(this)}", Toast.LENGTH_LONG).show()
+                }
+            }
+            wall.setPhoto(null)
+            return
+        }
+        val before = slide
+        slide = Slideshow.next(slide, wallImages.size, System.currentTimeMillis(), wallPrefs.intervalSec)
+        if (!force && slide.index == before.index && wall.hasPhoto()) return   // chưa tới hạn ⇒ không nạp lại
+        val path = Slideshow.pick(wallImages, slide.index) ?: return
+        val next = WallpaperStore.loadScaled(path, wall.width.coerceAtLeast(1), wall.height.coerceAtLeast(1))
+        if (next == null) {
+            Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: $path")
+            return
+        }
+        val old = wallBitmap
+        wallBitmap = next
+        wall.setPhoto(next, wallPrefs.fit, wallPrefs.dim)
+        // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
+        old?.recycle()
+    }
+
+    private fun releaseWallBitmap() {
+        wallBitmap?.recycle()
+        wallBitmap = null
+    }
+
     // ── Màn Tuỳ biến (chọn nút cho thanh điều khiển) — overlay trên rootFrame, một chiều qua VM ──
     private fun openCustomize() {
         if (customizePanel != null) return
@@ -345,6 +424,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             unitPrefs = unitPrefs,
             // P8: bảng Tuỳ biến là chỗ xem ĐỦ bức tranh quyền (thông báo chỉ nói mục ảnh hưởng tính năng lõi).
             permissions = PermissionPreflight.check(this, shellUsable = shell != null),
+            // U4: nói CHỖ bỏ ảnh vào — người dùng không có cách nào tự đoán, và màn chọn tệp của hệ thống bị khoá trên xe.
+            wallpaper = wallPrefs,
+            wallpaperFolderHint = WallpaperStore.folderHint(this),
+            onWallpaper = { p ->
+                container.workspaceRepository.setWallpaperPrefs(p)
+                reloadWallpaper()
+            },
             onUnitPrefs = { prefs ->
                 unitPrefs = prefs
                 container.workspaceRepository.setUnitPrefs(prefs)
@@ -376,7 +462,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     override fun onResume() {
         super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        goImmersive(); topStrip.updateClock(); handler.post(tick); workspace.postDelayed({ windows.updateOverlayHeads() }, 600)
+        goImmersive(); topStrip.updateClock(); reloadWallpaper(); handler.post(tick); workspace.postDelayed({ windows.updateOverlayHeads() }, 600)
     }
 
     @Suppress("DEPRECATION")
@@ -402,6 +488,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // cùng activity. Không đóng ở đây thì cửa sổ đó sống tiếp (rò rỉ view + giữ activity), và một cái chạm vào
         // nó sẽ chạy vào `winExec` ĐÃ shutdown (RejectedExecutionException) hoặc mở activity từ activity đã huỷ.
         drawerController.close()
+        releaseWallBitmap()   // U4: nhả ảnh nền, không để giữ bộ nhớ sau khi màn đã huỷ
         winExec.shutdownNow(); windows.clearOverlays()
     }
 

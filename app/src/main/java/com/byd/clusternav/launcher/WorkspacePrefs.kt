@@ -95,6 +95,14 @@ class WorkspacePrefs(context: Context) {
 
     fun setUnitPrefs(prefs: UnitPrefs) { sp.edit().putString(K_UNITS, prefs.encode()).apply() }
 
+    /**
+     * U4 — hình nền + trình chiếu. CHUNG mọi hồ sơ: hình nền là thứ nhìn thấy cả màn, không phải thuộc tính của một
+     * hồ sơ (cùng lối với giao diện sáng/tối và đơn vị).
+     */
+    fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.decode(sp.getString(K_WALL, null))
+
+    fun setWallpaperPrefs(prefs: WallpaperPrefs) { sp.edit().putString(K_WALL, prefs.encode()).apply() }
+
     private fun encode(c: SlotContent): String = when (c) {
         SlotContent.Empty -> ""
         is SlotContent.App -> "app:${c.pkg}"
@@ -116,5 +124,6 @@ class WorkspacePrefs(context: Context) {
         private const val K_AUTOSTART = "launcher_autostart"
         private const val K_RECENT = "recent_apps"
         private const val K_UNITS = "unit_prefs"
+        private const val K_WALL = "wallpaper_prefs"
     }
 }
