@@ -92,6 +92,15 @@ class HomeViewModel(
         repository.setUnitPrefs(prefs)
     }
 
+    /** Chip thanh trên (RW0 vùng thứ ba) — state + lưu bền trong MỘT lượt. */
+    fun setTopStrip(config: TopStripConfig) {
+        _uiState.update { it.copy(topStrip = config) }
+        repository.setTopStrip(config)
+    }
+
+    /** Bật/tắt một chip. Luật (trần 4 · chỉ nhận mục ĐỌC) nằm ở `:core`, đây chỉ chuyển tiếp. */
+    fun toggleTopStrip(id: String, on: Boolean) = setTopStrip(_uiState.value.topStrip.setEnabled(id, on))
+
     /** Lựa chọn hình nền (U4). */
     fun setWallpaperPrefs(prefs: WallpaperPrefs) {
         _uiState.update { it.copy(wallpaper = prefs) }

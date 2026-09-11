@@ -91,8 +91,14 @@ class AppDrawer(
             addWidgetGrid(body, cols = 4)
             refreshPlaceBtn()
 
-            // ── Widget dữ liệu xe (telemetry, registry-driven) gom theo domain — thêm vào ô ──
-            WidgetCatalog.telemetryByDomain().forEach { (domain, picks) ->
+            // ── Dữ liệu + HÀNH ĐỘNG của xe, gom theo nhóm — thêm vào ô ──
+            // [SOÁT RW0 2026-09-11] Chỗ này TRƯỚC ĐÂY chỉ bày `WidgetCatalog.telemetryByDomain()` = **duy nhất mục
+            // ĐỌC**. Hệ quả: `WidgetViews` VẼ được ô hành động và `ActionMacros` có 4 gói lệnh, nhưng người dùng
+            // **không có nút nào** để đặt chúng vào ô giữa màn — số đo "3 gói lệnh ở ô giữa màn" của phiên trước đạt
+            // được bằng cách **gieo cấu hình bằng tay**. Tức cả gói W2 đang không giao được tới người dùng.
+            // Nay dùng CÙNG nguồn với bảng Tuỳ biến (`CapabilityCatalog.byDomain()`), nên hai màn chọn không thể
+            // lệch nhau về việc "cái gì đặt được ở đâu".
+            CapabilityCatalog.byDomain().forEach { (domain, picks) ->
                 body.addView(sectionLabel(domain.label).also { it.setPadding(0, dpi(context, 12), 0, dpi(context, 4)) })
                 addPickGrid(body, picks, cols = 4)
             }
@@ -162,7 +168,7 @@ class AppDrawer(
     private fun refreshTiles() { widgetTiles.keys.forEach { applyTileState(it) } }
 
     // ── Telemetry pick grid (registry-driven; cùng cơ chế chọn với curated) ──
-    private fun addPickGrid(parent: LinearLayout, picks: List<WidgetPick>, cols: Int) {
+    private fun addPickGrid(parent: LinearLayout, picks: List<CapabilityPick>, cols: Int) {
         var row: LinearLayout? = null
         picks.forEachIndexed { i, pick ->
             if (i % cols == 0) {
@@ -175,7 +181,7 @@ class AppDrawer(
         if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
     }
 
-    private fun pickTile(pick: WidgetPick): View {
+    private fun pickTile(pick: CapabilityPick): View {
         val inner = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             setPadding(dpi(context, 8), dpi(context, 12), dpi(context, 8), dpi(context, 12))
@@ -184,7 +190,9 @@ class AppDrawer(
                 layoutParams = LinearLayout.LayoutParams(dpi(context, 40), dpi(context, 40))
             })
             addView(TextView(context).apply {
-                text = pick.label; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                // Hai loại nằm cùng một lưới ⇒ PHẢI dùng displayLabel: [ĐO] 18 nhãn trùng nhau giữa ô XEM và ô BẤM
+                // (vd hai ô đều ghi "Kính trước-trái"). Nhãn gốc không đổi, gợi ý chỉ thêm ở chỗ trùng.
+                text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, 2), dpi(context, 6), dpi(context, 2), 0)
             })

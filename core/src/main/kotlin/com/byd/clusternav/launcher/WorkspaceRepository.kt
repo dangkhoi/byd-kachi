@@ -44,6 +44,11 @@ interface WorkspaceRepository {
      * state sẽ bắt cả HOME so-sánh-lại mỗi nhịp trạng thái xe mà chẳng được gì. Có thân MẶC ĐỊNH ⇒ bản giả
      * in-memory trong test không phải sửa.
      */
+    /** Cấu hình chip thanh trên (RW0 vùng thứ ba). Thân mặc định ⇒ bản giả trong test không phải sửa. */
+    fun topStrip(): TopStripConfig = TopStripConfig.DEFAULT
+
+    fun setTopStrip(config: TopStripConfig) {}
+
     fun unitPrefs(): UnitPrefs = UnitPrefs.DEFAULT
 
     /** Ghi bền lựa chọn đơn vị. Mặc định: không lưu (bản giả). */

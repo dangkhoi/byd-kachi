@@ -24,6 +24,7 @@ class HomePanels(
     private val state: () -> HomeUiState,
     private val onToggleDock: (String, Boolean) -> Unit,
     private val onApplyLayout: (GridLayout?) -> Unit,
+    private val onTopStrip: (String, Boolean) -> Unit,
     private val onWallpaper: (WallpaperPrefs) -> Unit,
     private val onUnitPrefs: (UnitPrefs) -> Unit,
     private val shellUsable: () -> Boolean,
@@ -91,6 +92,9 @@ class HomePanels(
                 "Đang dùng bố cục tự vẽ: ${it.frames.size} khung" +
                     (EffectiveLayout.ignoredReason(it)?.let { r -> " — nhưng bị bỏ qua ($r)" } ?: "")
             } ?: "",
+            // RW0 vùng thứ ba: chip thanh trên.
+            topStrip = state().topStrip,
+            onTopStrip = { id, on -> onTopStrip(id, on) },
             onWallpaper = { p -> onWallpaper(p) },
             onUnitPrefs = { prefs -> onUnitPrefs(prefs) },
         )

@@ -108,6 +108,16 @@ class WorkspacePrefs(context: Context) {
      * sàn), và việc đếm ô trống chạy hàng tỉ nhịp làm treo giao diện. Màn hình thì đã có lưới an toàn (lùi về bố cục
      * sẵn), nhưng trình vẽ là nơi người dùng vào để **sửa** nên phải chặn ở đây.
      */
+    /**
+     * Cấu hình chip thanh trên (RW0 vùng thứ ba). Theo **hồ sơ** như thanh nút — hai tài xế thích hai bộ chip khác
+     * nhau là chuyện thường. Chuỗi lưu là danh sách mã trần, đọc được bằng mắt để cứu tay khi cần.
+     */
+    fun topStrip(): TopStripConfig = TopStripConfig.decode(sp.getString(key("top_strip"), null))
+
+    fun setTopStrip(config: TopStripConfig) {
+        sp.edit().putString(key("top_strip"), TopStripConfig.encode(config)).apply()
+    }
+
     fun gridLayout(): GridLayout {
         val raw = WorkspaceGrid.decode(sp.getString(key(K_GRID), null))
         val sane = raw.frames.filter {

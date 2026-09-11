@@ -120,51 +120,62 @@ class KachiTopStrip(
     private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(8) }
 
     private fun chip(text: String, iconName: String?, color: String): TextView = TextView(activity).apply {
-        this.text = text; setTextColor(c(color)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f); gravity = Gravity.CENTER_VERTICAL
+        this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f); gravity = Gravity.CENTER_VERTICAL
         setPadding(dp(4), 0, dp(4), 0)   // KHÔNG viền pill — chip prototype chỉ icon + chữ
-        if (iconName != null) {
-            val r = KachiTheme.iconRes(iconName)
-            if (r != 0) {
-                val d = activity.resources.getDrawable(r, activity.theme).apply { setBounds(0, 0, dp(16), dp(16)); setTint(c(color)) }
-                setCompoundDrawablesRelative(d, null, null, null); compoundDrawablePadding = dp(6)
+        maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+        applyChipFace(this, iconName, color.ifEmpty { CHIP_INK })
+    }
+
+    /** Đặt màu chữ + icon dẫn đầu cho một chip. Tách riêng để đổi được mà không dựng lại view. */
+    private fun applyChipFace(v: TextView, iconName: String?, color: String) {
+        v.setTextColor(c(color))
+        val r = iconName?.let { KachiTheme.iconRes(it) } ?: 0
+        if (r != 0) {
+            val d = activity.resources.getDrawable(r, activity.theme)
+                .apply { setBounds(0, 0, dp(16), dp(16)); setTint(c(color)) }
+            v.setCompoundDrawablesRelative(d, null, null, null); v.compoundDrawablePadding = dp(6)
+        } else {
+            v.setCompoundDrawablesRelative(null, null, null, null)
+        }
+    }
+
+    /**
+     * Làm mới chip xe theo **cấu hình** [TopStripConfig] (RW0 vùng thứ ba). Trước 2026-09-11 chỗ này là **3 chip viết
+     * cứng** nên thanh trên là vùng duy nhất người dùng không sửa được; nay danh sách chip là cấu hình bền, còn việc
+     * quyết định *chữ gì* nằm ở `:core` ([TopStripChips]) nên kiểm được off-car.
+     *
+     * **Dựng một lần, sau đó chỉ đổi CHỮ** — giữ nguyên bản vá [SOÁT P2-9]: bản trước gọi `removeAllViews()` rồi dựng
+     * lại 3 `TextView` (kèm tra + tint drawable) **mỗi nhịp trạng thái xe**, tức mỗi giây trên xe cho dữ liệu phần lớn
+     * không đổi. Chỉ dựng lại khi **danh sách chip đổi** (người dùng vừa sửa cấu hình).
+     *
+     * R11: mọi số đi qua lớp đơn vị. [ĐO] máy ảo bản đầu: người dùng chọn °F mà chip vẫn ghi °C, vì bề mặt này dựng
+     * chuỗi trực tiếp từ [CarStatus] — đúng bệnh "mỗi bề mặt tự đổi đơn vị theo ý mình".
+     */
+    fun refreshChips(status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT, config: TopStripConfig = chipConfig) {
+        chipConfig = config
+        val chips = TopStripChips.render(config, status, units)
+        if (chipViews.size != chips.size) {                 // danh sách đổi (hoặc lượt đầu) ⇒ dựng lại
+            chipRow.removeAllViews(); chipViews.clear()
+            chips.forEach { chipRow.addView(chip("", null, "").also { v -> chipViews.add(v) }, chipLp()) }
+        }
+        chips.forEachIndexed { idx, c ->
+            val v = chipViews[idx]
+            val color = when (c.tone) {
+                ChipTone.ENERGY -> KachiTheme.GREEN
+                ChipTone.NEUTRAL -> CHIP_INK
             }
+            // Icon/màu chỉ đặt lại khi ĐỔI — tra drawable + tint mỗi giây là việc bản vá P2-9 vừa dọn.
+            if (v.tag != c.icon.toString() + color) {
+                applyChipFace(v, c.icon, color)
+                v.tag = c.icon.toString() + color
+            }
+            v.text = c.text
+            v.contentDescription = c.desc
         }
     }
 
-    /**
-     * Cập nhật chip xe (PM2.5 / nhiệt ngoài / pin·km) từ [CarStatus] LIVE. Off-car mọi field null ⇒ "—".
-     *
-     * R11: nhiệt ngoài và tầm chạy **đi qua lớp đơn vị** — [ĐO] trên máy ảo bản đầu: người dùng chọn °F mà chip vẫn
-     * ghi °C, vì bề mặt này dựng chuỗi trực tiếp từ [CarStatus] chứ không qua [TelemetryReadout]/[UnitFormat]. Đó là
-     * đúng cái bệnh "mỗi bề mặt tự đổi đơn vị theo ý mình" mà gói này dọn.
-     */
-    /**
-     * Làm mới 3 chip xe. **Dựng một lần, sau đó chỉ đổi CHỮ.**
-     *
-     * [SOÁT P2-9] Bản trước gọi `chipRow.removeAllViews()` rồi dựng lại 3 `TextView` (kèm tra + tint drawable) **mỗi
-     * nhịp trạng thái xe** — tức mỗi giây trên xe, cho dữ liệu phần lớn không đổi. Cùng loại lãng phí mà ràng buộc C5
-     * đi dọn ở thanh nút và ô giữa màn; thanh trên bị bỏ sót.
-     */
-    fun refreshChips(status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT) {
-        if (chipPm == null) {
-            chipRow.removeAllViews()
-            chipPm = chip("", "ic-leaf", "#c3cee0").also { chipRow.addView(it, chipLp()) }
-            chipTemp = chip("", null, "#c3cee0").also { chipRow.addView(it, chipLp()) }
-            chipEnergy = chip("", "ic-bolt", KachiTheme.GREEN).also { chipRow.addView(it, chipLp()) }
-        }
-        val pm = status.climate.pm25Level?.let { if (it <= 2) "Tốt" else if (it <= 4) "TB" else "Kém" } ?: "—"
-        chipPm?.text = "PM2.5 · $pm"
-        val tUnit = units.unitFor(Quantity.TEMPERATURE)
-        val temp = status.climate.outsideTempC?.let { conv(it.toDouble(), Quantity.TEMPERATURE, units) } ?: "—"
-        chipTemp?.text = "$temp$tUnit ngoài"
-        val dUnit = units.unitFor(Quantity.DISTANCE)
-        val range = status.energy.evRangeKm?.let { conv(it.toDouble(), Quantity.DISTANCE, units) } ?: "—"
-        chipEnergy?.text = "${status.energy.soc ?: "—"}% · $range $dUnit"
-    }
-
-    private var chipPm: TextView? = null
-    private var chipTemp: TextView? = null
-    private var chipEnergy: TextView? = null
+    private var chipConfig: TopStripConfig = TopStripConfig.DEFAULT
+    private val chipViews = ArrayList<TextView>()
 
     // ── Hồ sơ tài xế: pill hiện tên, chạm = đổi hồ sơ, giữ = tạo mới ──
     private fun profileAvatar(): TextView {
@@ -193,5 +204,8 @@ class KachiTopStrip(
 
     private companion object {
         const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
+
+        /** Màu chữ chip trung tính. Bảng màu chỉ ở `:app` — `:core` chỉ nói SẮC THÁI (xem [ChipTone]). */
+        const val CHIP_INK = "#c3cee0"
     }
 }

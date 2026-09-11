@@ -27,6 +27,7 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         customLayout = prefs.gridLayout().takeIf { it.frames.isNotEmpty() },
         unitPrefs = prefs.unitPrefs(),
         wallpaper = prefs.wallpaperPrefs(),
+        topStrip = prefs.topStrip(),
     )
 
     override fun persist(state: HomeUiState) {
@@ -64,6 +65,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun gridLayout(): GridLayout = prefs.gridLayout()
 
     override fun setGridLayout(layout: GridLayout?) = prefs.setGridLayout(layout)
+
+    override fun topStrip(): TopStripConfig = prefs.topStrip()
+
+    override fun setTopStrip(config: TopStripConfig) = prefs.setTopStrip(config)
 
     override fun wallpaperPrefs(): WallpaperPrefs = prefs.wallpaperPrefs()
 

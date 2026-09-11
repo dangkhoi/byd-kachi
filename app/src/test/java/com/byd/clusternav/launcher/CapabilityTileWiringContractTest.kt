@@ -25,6 +25,8 @@ class CapabilityTileWiringContractTest {
     private val widgets by lazy { code("src/main/java/com/byd/clusternav/launcher/WidgetViews.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val workspace by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
+    private val drawer by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
+    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
 
     /**
      * Đọc source rồi **bỏ mọi chú thích** trước khi quét: test này canh **CODE**, không canh văn xuôi. Cùng lý do
@@ -157,4 +159,32 @@ class CapabilityTileWiringContractTest {
             "đúng 2 chỗ rẽ nhánh: ô một-widget và ô lưới nhiều-widget",
         )
     }
+
+    /**
+     * RW0 — ngăn kéo phải bày CẢ hành động, không chỉ mục đọc.
+     *
+     * ⚠ Trước 2026-09-11 chỗ này gọi `WidgetCatalog.telemetryByDomain()` = **chỉ mục ĐỌC** ⇒ tuy `WidgetViews` vẽ
+     * được ô hành động thì người dùng vẫn **không có nút nào** để đặt hành động/gói lệnh vào ô giữa màn. Bài này khoá
+     * ngăn kéo và bảng Tuỳ biến dùng **CÙNG một nguồn**, để hai màn chọn không thể lệch nhau.
+     */
+    @Test
+    fun `ngan keo phai bay ca hanh dong khong chi muc doc`() {
+        assertTrue(
+            drawer.contains("CapabilityCatalog.byDomain()"),
+            "ngăn kéo phải lấy từ không gian khả năng (đọc + hành động + gói lệnh)",
+        )
+        assertTrue(
+            !drawer.contains("WidgetCatalog.telemetryByDomain()"),
+            "không được quay lại nguồn CHỈ-ĐỌC — đó chính là chỗ chặn cũ",
+        )
+        assertTrue(
+            drawer.contains("pick.displayLabel"),
+            "hai loại nằm cùng một lưới ⇒ phải dùng nhãn có gợi ý loại ở chỗ nhãn trùng",
+        )
+        assertTrue(
+            panel.contains("CapabilityCatalog.byDomain()"),
+            "bảng Tuỳ biến phải dùng CÙNG nguồn với ngăn kéo",
+        )
+    }
+
 }

@@ -21,6 +21,8 @@ package com.byd.clusternav.launcher
 data class HomeUiState(
     val workspace: WorkspaceState = WorkspaceState(),
     val dock: DockConfig = DockConfig(),
+    /** Chip nào hiện trên thanh trạng thái (RW0 vùng thứ ba) — nguồn sự thật DUY NHẤT, KHÔNG có bản sao ở View. */
+    val topStrip: TopStripConfig = TopStripConfig.DEFAULT,
     val activeProfile: String = DEFAULT_PROFILE,
     val profiles: List<String> = listOf(DEFAULT_PROFILE),
     val themeMode: ThemeMode = ThemeMode.NIGHT,

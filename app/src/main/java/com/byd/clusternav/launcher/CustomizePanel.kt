@@ -14,6 +14,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 
@@ -46,6 +47,10 @@ class CustomizePanel(
     private val onWallpaper: (WallpaperPrefs) -> Unit = {},
     /** U4 — chỗ bỏ ảnh vào, để nói cho người dùng biết (họ không có cách nào tự đoán). */
     private val wallpaperFolderHint: String = "",
+    /** RW0 — cấu hình chip thanh trên hiện tại. */
+    topStrip: TopStripConfig = TopStripConfig.DEFAULT,
+    /** RW0 — người dùng bật/tắt một chip. Mặc định no-op ⇒ chỗ gọi cũ và test cũ không phải sửa. */
+    private val onTopStrip: (String, Boolean) -> Unit = { _, _ -> },
     /** P9 — mở bảng vẽ bố cục. `null` = không hiện mục đó (chỗ gọi cũ và test cũ không phải sửa). */
     private val onOpenLayoutEditor: (() -> Unit)? = null,
     /** P9 — mô tả bố cục đang dùng, để nói cho người dùng biết họ đang ở đâu. */
@@ -55,6 +60,8 @@ class CustomizePanel(
     private val enabled = HashSet(enabledIds)
     private val tiles = HashMap<String, LinearLayout>()
     private var units = unitPrefs
+    /** RW0 vùng thứ ba — bộ chọn chip thanh trên, tách riêng (xem [TopStripPicker]). */
+    private val stripPicker = TopStripPicker(context, topStrip) { id, on -> onTopStrip(id, on) }
 
     init {
         setBackgroundColor(c("#cc05070c"))
@@ -130,6 +137,8 @@ class CustomizePanel(
             body.addView(sectionLabel("Quyền còn thiếu"))
             rep.missing.forEach { body.addView(permissionRow(it, rep)) }
         }
+
+        stripPicker.section(body)
 
         // RW0/R2: bày CẢ hai loại. Trước đây chỗ này chỉ liệt kê nút HÀNH ĐỘNG (ControlPanels), nên dù cổng
         // DockConfig.setEnabled đã nới thì người dùng vẫn KHÔNG có đường nào thêm một ô ĐỌC vào thanh.
@@ -360,6 +369,22 @@ class CustomizePanel(
                 if (now) enabled.add(pick.id) else enabled.remove(pick.id)
                 applyState(pick.id); onToggle(pick.id, now)
             }
+            // GIỮ = đưa lên/bỏ khỏi thanh trạng thái. Đây là đường đặt **datum bất kỳ** lên thanh trên mà không phải
+            // dựng thêm 123 ô cho bảng này (xem [TopStripPicker.section]). Chỉ mục ĐỌC — nút thì nói rõ vì sao không được.
+            setOnLongClickListener {
+                if (TopStripConfig.isChippable(pick.id)) {
+                    stripPicker.toggle(pick.id)
+                    val onNow = stripPicker.has(pick.id)
+                    Toast.makeText(
+                        context,
+                        if (onNow) "Đã đưa \"${pick.label}\" lên thanh trạng thái" else "Đã bỏ \"${pick.label}\" khỏi thanh trạng thái",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                } else {
+                    Toast.makeText(context, "Nút bấm không đặt được lên thanh trên (chip quá nhỏ để bấm an toàn)", Toast.LENGTH_SHORT).show()
+                }
+                true
+            }
         }
         tiles[pick.id] = content
         applyState(pick.id)
@@ -388,4 +413,6 @@ class CustomizePanel(
         val d = pick.domain ?: return 0
         return KachiTheme.iconRes(WidgetCatalog.iconFor(d))
     }
+
+
 }

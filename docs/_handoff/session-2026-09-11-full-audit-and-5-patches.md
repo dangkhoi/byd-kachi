@@ -111,3 +111,14 @@ Sau vòng dọn, **hết nợ chất lượng off-car**; còn lại là việc t
 - **🚗 cần xe**: chiều đúng của lệnh khoá cửa (mã tier OVERDRIVE) · 3 cặp feature-id trùng (`L-RE2`) · ca "ô TRỘN 1 nhịp/giây" chỉ khoá bằng test, chưa đo trên xe · toàn bộ nợ 🚗 nhóm 6 của backlog.
 - **Off-car còn làm**: RW0 vùng **thanh trên** + nhãn ngắn datum + **ngăn kéo chưa bày hành động** cho ô giữa màn · U5 đa ngôn ngữ · W5 camera 360 · S1 màn Cài đặt · P7 tự khởi động · P6.
 - **Chưa commit** tới thời điểm ghi tệp này (xem mục cuối nếu đã commit sau đó).
+
+## RW0 xong cả 3 vùng (cùng phiên, sau khi clean)
+
+Owner chốt *"ok rw0"*. Ba mục còn tồn đã đóng — chi tiết + nhật ký triển khai ở `docs/specs/kachi-unified-capability-tile.html`.
+
+- **(d) Ngăn kéo bày cả hành động + gói lệnh.** Đây là chỗ nặng nhất và **không phải lỗi mã**: mọi thứ đã vẽ được, chỉ là **không ai chạm tới được**. Test mới `CapabilityReachabilityTest` khoá luật *"vẽ được" ≠ "đặt được"* ([ĐO] 200/200 khả năng có đường từ tay người dùng).
+- **(b) Thanh trên hết viết cứng.** `TopStripConfig`/`TopStripChips` (:core thuần) + `TopStripPicker` (:app) + lưu bền theo hồ sơ + intent ViewModel. Mặc định ra **đúng chuỗi bản cũ** (test khoá). ⚠ **cố ý chỉ nhận mục ĐỌC** — chip ~24dp dưới xa 48dp cho đích chạm, chạm lệch mà bắn lệnh xe là không hoàn lại được.
+- **(c) Nhãn ngắn cho datum.** `TelemetrySpec.short` (tham số mặc định, 0 churn) + `shortLabel` lùi về nhãn đầy; điền 22 datum.
+- **Tách tệp**: `CustomizePanel` vượt trần khi thêm mục chip ⇒ tách `TopStripPicker` (141 dòng). Không tệp launcher nào > 500 dòng.
+
+**[ĐO] 2725/0** (từ 2699 ⇒ +26) · APK sạch · thử phá 5 phép đỏ đúng chỗ cả 5 · đo trên máy ảo có phục hồi cấu hình gốc.

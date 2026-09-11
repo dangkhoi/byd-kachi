@@ -464,6 +464,46 @@ xe mới biết. Vì vậy giao diện phải mang dấu chưa-kiểm (R10) và 
 </ul>
 <p class="muted">Ghi NGAY khi code: quyết định · đánh đổi · chỗ lệch thiết kế · bug và cách xử.</p>
 
+<h3>Phiên 2026-09-11 (chiều-4) — RW0 XONG CẢ 3 VÙNG</h3>
+<p>Ba mục còn tồn của §9 đã đóng. Ghi lại vì hai trong ba là <em>bài học chứ không phải mã</em>.</p>
+<p><strong>(d) Ngăn kéo — lỗi nặng nhất của cả gói, và nó không phải lỗi mã.</strong> <code>WidgetViews</code> vẽ được ô
+hành động, <code>ActionMacros</code> có 4 gói lệnh, <code>CapabilityCatalog</code> tra ra được — nhưng
+<code>AppDrawer</code> chỉ liệt kê mục ĐỌC, nên <strong>không có đường nào</strong> từ tay người dùng tới một hành động
+ở ô giữa màn. Số đo <em>"3 gói lệnh ở ô giữa màn"</em> của phiên trước đạt được bằng <strong>gieo cấu hình bằng
+tay</strong> ⇒ nó không chứng minh người dùng làm được, và cả gói W2 (48 test + spec riêng) thực tế
+<strong>không giao được</strong>. Vá: ngăn kéo dùng CÙNG nguồn <code>CapabilityCatalog.byDomain()</code> với bảng Tuỳ
+biến. Luật đóng vào test <code>CapabilityReachabilityTest</code>: <em>"vẽ được" ≠ "đặt được"</em> — bài test đòi
+<strong>mọi</strong> khả năng phải nằm trong nguồn của màn chọn ([ĐO] 200/200 mục).</p>
+<p><strong>(b) Thanh trên.</strong> <code>TopStripConfig</code> + <code>TopStripChips</code> ở <code>:core</code> (thuần,
+kiểm được off-car — đây là bề mặt từng bỏ qua lựa chọn đơn vị) + <code>TopStripPicker</code> ở <code>:app</code>.
+<strong>Mặc định ra đúng chuỗi của bản viết cứng cũ</strong>, có test khoá: nới một bề mặt owner đã duyệt không phải
+giấy phép đổi mặc định.</p>
+<p><strong>Sai lệch thiết kế có chủ ý — thanh trên chỉ nhận mục ĐỌC.</strong> Yêu cầu R2 nói "đặt được ở cả 3 vùng",
+nhưng chip cao ~24dp, dưới xa mức tối thiểu 48dp cho một đích chạm, và một cú chạm lệch có thể bắn lệnh xe
+<em>không hoàn lại được</em> (vd mở khoá cửa). Nút vẫn có hai vùng rộng rãi hơn. Ghi ở KDoc <code>TopStripConfig</code>
+và có test khoá <strong>ý định</strong>. Muốn chip bấm được thì cần đích chạm to hơn — là quyết định của owner, không
+lặng lẽ nới ở đây.</p>
+<p><strong>(c) Nhãn ngắn.</strong> <code>TelemetrySpec.short</code> là tham số mặc định ⇒ không phải sửa 123 dòng
+registry; <code>shortLabel</code> tự lùi về nhãn đầy. Điền 22 datum nhãn dài nhất. [ĐO] <code>Áp lốp trước-trái ·
+2.4 bar</code> → <code>Lốp TT · 2.4 bar</code>.</p>
+<p><strong>Ba lỗi tôi tự gây, tìm ra trước khi giao.</strong> (1) Dùng lại <code>CustomizePanel.tile()</code> cho ô chọn
+chip sinh <em>ba</em> lỗi cùng lúc: sự kiện bấm bên trong bắn vào thanh nút (chọn chip lại thêm nút vào thanh),
+<code>tiles[id]</code> bị ghi đè vì cùng một mã có ở hai lưới, và hai chỗ tô nền tranh nhau ⇒ phải dựng ô riêng. Đúng
+bẫy "hai bản sao cùng khoá" mà dự án đang dọn. (2) Điều kiện làm mới chỉ xét <code>carStatus</code> ⇒ đổi danh sách chip
+mà màn hình không đổi gì (off-car trạng thái xe gần như không đổi) — họ lỗi đã gặp ở nút bố cục sẵn P9. (3) Bản nháp
+đầu để <code>:core</code> giữ mã màu hex và nó <strong>lệch ngay</strong> với <code>KachiTheme</code>
+(<code>#37d67a</code> vs <code>#34d399</code>) ⇒ chuyển sang <code>ChipTone</code>, bảng màu chỉ ở
+<code>:app</code>.</p>
+<p><strong>Phép đo của tôi sai hai lần trong cùng lượt (lần thứ 4–5 của dự án).</strong>
+<code>sips --cropOffset 0 0</code> cắt từ <em>giữa</em> màn chứ không từ mép trên, nên tôi "đọc thanh trên" mà thật ra
+đang đọc bảng đơn vị; và <code>uiautomator dump</code> trả cây cũ, báo "chưa mở bảng" trong khi ảnh chụp cho thấy bảng
+Tuỳ biến đang mở 88.6% màn — suýt kết luận nút Tuỳ biến hỏng vì tôi vừa tách tệp. Luật: ảnh chụp và prefs là nguồn đo
+tin được; cây giao diện phải đối chiếu.</p>
+<p><strong>[ĐO] 2725/0 · thử phá 5 phép đỏ đúng chỗ cả 5 · máy ảo</strong>: ngăn kéo hiện đủ 4 gói lệnh + nút kèm gợi ý
+<code>· xem</code>/<code>· bấm</code>; đặt "Rời xe" vào ô ⇒ lưu <code>slot_0=widget:w_board,mac_leave</code>, bấm ô chạy
+đủ 6 bước, app không sập; <code>top_strip=chip_energy,tyre_p_fl,chip_pm25</code> ⇒ thanh trên ra đúng thứ tự đó, chip
+nhiệt mất, chip lốp ghi <code>Lốp TT · —</code>, màu <code>#34D399</code> khớp theme; mục chọn chip hiện 4 ô với bật/tắt
+khớp cấu hình từng ô. Cấu hình gốc của máy ảo đã phục hồi sau khi đo.</p>
 <h3>Phiên 2026-09-10 — phần GIAO DIỆN của RW0 (T3 + T4)</h3>
 <p>
   Làm đúng hai việc: <b>bơm trạng thái xe vào thanh nút + vẽ ô ĐỌC ở đó</b> (chiều một của R2) và <b>bộ dựng ô dùng

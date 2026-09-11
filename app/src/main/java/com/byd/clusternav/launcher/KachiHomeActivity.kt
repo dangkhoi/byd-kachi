@@ -61,6 +61,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             state = { viewModel.uiState.value },
             onToggleDock = { id, on -> viewModel.toggleDock(id, on) },
             onApplyLayout = { l -> applyCustomLayout(l) },
+            onTopStrip = { id, on -> viewModel.toggleTopStrip(id, on) },
             onWallpaper = { p ->
                 viewModel.setWallpaperPrefs(p)     // state + lưu bền; reload đọc lại từ state
                 wallpaper.reload()
@@ -69,7 +70,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 viewModel.setUnitPrefs(prefs)      // state + lưu bền trong MỘT lượt
                 dock.setCarStatus(viewModel.uiState.value.carStatus, prefs)
                 workspace.setUnitPrefs(prefs)
-                topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs)
+                topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs, viewModel.uiState.value.topStrip)
             },
             shellUsable = { shell != null },
             goImmersive = { goImmersive() },
@@ -292,8 +293,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private fun render(state: HomeUiState) {
         val prev = shownState
         workspace.render(state.workspace, state.carStatus)
-        if (prev == null || prev.carStatus != state.carStatus) {
-            topStrip.refreshChips(state.carStatus, unitPrefs)
+        // ⚠ xét CẢ `topStrip`: thiếu nó thì đổi danh sách chip mà màn hình không đổi gì (off-car trạng thái xe gần như không đổi).
+        if (prev == null || prev.carStatus != state.carStatus || prev.topStrip != state.topStrip) {
+            topStrip.refreshChips(state.carStatus, unitPrefs, state.topStrip)
             // RW0/Đ4: thanh nút cũng cần trạng thái xe để ô ĐỌC sống được ở đó. CHỈ đổ lại số của ô đọc — KHÔNG
             // dựng lại thanh (C5: dựng lại mỗi nhịp 1/giây sẽ nháy + mất trạng thái ô vừa bấm).
             dock.setCarStatus(state.carStatus, unitPrefs)
