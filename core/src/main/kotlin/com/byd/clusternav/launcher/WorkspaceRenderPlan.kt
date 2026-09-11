@@ -79,5 +79,23 @@ object WorkspaceRenderPlanner {
      * Danh sách rỗng hoặc mã lạ ⇒ coi như CÓ nội dung đọc (giữ y hành vi cũ, không đoán).
      */
     private fun hasReadContent(w: SlotContent.Widget): Boolean =
-        w.ids.isEmpty() || w.ids.any { !CapabilityCatalog.isWrite(it) }
+        w.ids.isEmpty() || w.ids.any { !CapabilityCatalog.isWrite(it) && !isSelfDriven(it) }
+
+    /**
+     * Ô này **tự lo nội dung của nó**, KHÔNG lấy gì từ trạng thái xe.
+     *
+     * ## [SOÁT P1-1] Vì sao cần
+     * Bảng tra khả năng trả **READ** cho *mọi* widget dựng tay (nó xét bộ đăng ký widget trước). Với widget
+     * **trình chiếu ảnh** thì điều đó sai hậu quả nặng: trạng thái xe đổi **1 nhịp/giây** ⇒ ô bị tháo/dựng lại mỗi
+     * giây ⇒ (a) trạng thái quay vòng bị **đặt lại** nên ảnh **đứng mãi ở một tấm**, (b) mỗi giây một lượt **đọc tệp
+     * + giải mã ảnh trên thread chính** ⇒ launcher giật và dễ mất cú bấm.
+     *
+     * ⚠ Ca này **KHÔNG quan sát được off-car**: không có xe thì trạng thái luôn rỗng nên "trạng thái đổi" luôn là
+     * `false`. Phép đo off-car của tôi từng kết luận sai rằng chuyện này không xảy ra — nó chỉ chứng minh được
+     * *off-car không xảy ra*.
+     */
+    private fun isSelfDriven(id: String): Boolean = id in SELF_DRIVEN
+
+    /** Widget tự lo nội dung: trình chiếu ảnh (nhịp riêng, nguồn là tệp trên máy). */
+    private val SELF_DRIVEN = setOf("w_photos")
 }

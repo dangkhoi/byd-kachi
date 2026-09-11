@@ -288,6 +288,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             if (edgeChanged) DockAreaLayout.apply(mainArea, workspace, dock, state.dock, resources.displayMetrics.density)
         }
         if (prev == null || prev.activeProfile != state.activeProfile) topStrip.setProfileInitial(state.activeProfile)
+        // [SOÁT P1-4] Hồ sơ đổi ⇒ nạp lại bố cục TỰ VẼ của hồ sơ đó. Thiếu bước này thì: (a) đổi sang hồ sơ B vẫn
+        // thấy bố cục của A; (b) nặng hơn — mở bảng vẽ ở B sẽ nạp bố cục của A, bấm Lưu là **GHI ĐÈ mất** bố cục
+        // riêng của B. Đi qua đúng "một đường duy nhất" applyCustomLayout.
+        if (prev != null && prev.activeProfile != state.activeProfile) {
+            applyCustomLayout(container.workspaceRepository.gridLayout().takeIf { it.frames.isNotEmpty() })
+        }
         if (prev != null && (prev.preset != state.preset || prev.dock.edge != state.dock.edge)) windows.reflow()
         shownState = state
         windows.updateOverlayHeads()
@@ -409,7 +415,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         slide = Slideshow.next(slide, wallImages.size, System.currentTimeMillis(), wallPrefs.intervalSec)
         if (!force && slide.index == before.index && wall.hasPhoto()) return   // chưa tới hạn ⇒ không nạp lại
         val path = Slideshow.pick(wallImages, slide.index) ?: return
-        val next = WallpaperStore.loadScaled(path, wall.width.coerceAtLeast(1), wall.height.coerceAtLeast(1))
+        val next = WallpaperStore.loadScaled(path, wallReqW(), wallReqH())
         if (next == null) {
             Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ ${slide.index + 1}/${wallImages.size}")
             return
@@ -420,6 +426,21 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
         old?.recycle()
     }
+
+    /**
+     * Cỡ cần cho ảnh nền — lấy theo **MÀN HÌNH**, không theo cỡ View.
+     *
+     * ## [SOÁT P1-2] Vì sao không dùng cỡ View
+     * Ảnh nền được nạp trong `onResume`, mà **lượt đo cây view chạy SAU `onResume`** ⇒ lần mở đầu View còn rộng 0
+     * ⇒ cỡ cần = 1 ⇒ ảnh bị giảm tới mức tối đa (còn 1–2 điểm ảnh) rồi kéo lên phủ kín màn = **một vệt màu loang**,
+     * và không có gì nạp lại cho tới lần đổi ảnh kế tiếp (mặc định 60 giây, chọn được tới 30 phút).
+     *
+     * ⚠ Phép đo của tôi **không bắt được** vì lượt đầu tôi dùng **ảnh đơn sắc** — ảnh 1 điểm kéo lên trông y hệt ảnh
+     * thật. Bài học: ảnh đơn sắc che được cả méo hình LẪN mất chi tiết.
+     */
+    private fun wallReqW(): Int = maxOf(wall.width, resources.displayMetrics.widthPixels, 1)
+
+    private fun wallReqH(): Int = maxOf(wall.height, resources.displayMetrics.heightPixels, 1)
 
     private fun releaseWallBitmap() {
         wallBitmap?.recycle()

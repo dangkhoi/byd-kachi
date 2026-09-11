@@ -326,6 +326,22 @@ vẽ giữ <b>bản sao riêng</b> ⇒ [ĐO] cấu hình đã xoá mà màn hìn
   <li><b>Chưa có lượt soát độc lập</b> phần code.</li>
 </ul>
 
+<h2>Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-11 (soát độc lập, sau khi cả 3 bước DONE)</h3>
+<p>Phạm vi: 9 tệp / 1233 dòng (bố cục động + hình nền). <b>0 lỗi P0 · 4 P1 · 4 P2 · 4 P3.</b> Soát viên chỉ báo cáo;
+tôi tự vá và tự kiểm từng cái. Sau vá: <b>2639/0</b> (trước lượt soát 2628 ⇒ <b>+11 test</b>).</p>
+<table>
+<tr><th>Mức</th><th>Lỗi thuộc bố cục động</th><th>Trạng thái</th></tr>
+<tr><td>P1</td><td><b>Bộ sắp cửa sổ app còn quét CỨNG 4 ô</b> sau khi bước 3 nới trần lên 6 ⇒ app ở khung 5/6 không được đặt lại khung khi đổi bố cục, nằm lệch khỏi ô hoặc cứ toàn màn che launcher. <b>Đúng hình dạng P-bug2</b> — và test canh của tôi không bắt vì nó chỉ chặn hai TÊN hàm, không chặn số cứng.</td><td>✅ vá + <b>mở rộng test canh</b> chặn cả dạng <code>0..3</code></td></tr>
+<tr><td>P1</td><td><b>Đổi hồ sơ tài xế không nạp lại bố cục</b>: bố cục lưu theo hồ sơ (đúng) nhưng chỉ đọc MỘT lần lúc khởi động ⇒ đổi sang hồ sơ B vẫn thấy bố cục A; nặng hơn: mở bảng vẽ ở B thì nó nạp bố cục A, bấm Lưu là <b>ghi đè mất</b> bố cục riêng của B.</td><td>✅ vá + test canh chỗ <b>đọc</b> (đối xứng test đếm chỗ ghi)</td></tr>
+<tr><td>P2</td><td><b>Bố cục hỏng vào tới trình vẽ ⇒ kéo một khung là SẬP</b>: phép kẹp cỡ có trần nhỏ hơn sàn khi khung nằm ngoài lưới (dữ liệu sửa tay — mà chính spec bán điểm "chuỗi tự đọc được để cứu bằng tay"). Màn chính có lưới an toàn nên im lặng lùi về bố cục sẵn, nhưng trình vẽ là nơi người dùng vào để <b>sửa</b>.</td><td>✅ vá <b>hai lớp</b>: lọc ở cửa vào + lưới an toàn trong phép kẹp</td></tr>
+<tr><td>P3</td><td>Back không đóng bảng vẽ · chưa xử nhiều ngón tay · <code>Color.parseColor</code> gọi trong lúc vẽ · tay cầm đổi cỡ chiếm gần nửa khung nhỏ nhất</td><td>⏳ chưa vá</td></tr>
+</table>
+<p><b>Điều đáng ghi nhất</b>: lỗi P1 đầu tiên là <b>do chính bước 3 gây ra</b> — tôi nới trần ô mà không soát hết các
+chỗ viết cứng số 4, đúng loại lỗi mà bước 2 dựng nguồn duy nhất để chặn. Test canh tôi viết ở bước 2 <b>chặn tên hàm
+nhưng không chặn số cứng</b>, nên nó lọt. Nay đã chặn cả hai dạng.</p>
+
 <h2>9. References</h2>
 <ul>
   <li><code>docs/PROJECT-BACKLOG.md</code> — P9 (kèm phần đánh giá khả thi).</li>

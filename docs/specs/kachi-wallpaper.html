@@ -119,6 +119,8 @@ chờ một chu kỳ thì mở launcher lên thấy nền trống 60 giây).</p>
 <tr><td><b>Widget — tự đổi ảnh</b></td><td>Ba khung cách 12 giây, chu kỳ 15 giây</td><td><span class="pill ok">đạt</span> <b>tím → cam → tím</b> (128,69,197 → 217,118,39 → 128,69,197)</td></tr>
 <tr><td><b>Widget — độc lập với nền</b></td><td>Đo trong khi lựa chọn nền ghi <code>false</code> (tắt)</td><td><span class="pill ok">đạt</span> widget vẫn đổi ảnh <b>khi nền đang tắt</b></td></tr>
 <tr><td><b>Nhịp không sống lâu hơn ô</b></td><td>Thử phá: bỏ lệnh dừng nhịp lúc ô bị tháo</td><td><span class="pill ok">test đỏ đúng chỗ</span></td></tr>
+<tr><td><b>[SOÁT P1-1] Widget không bị dựng lại theo nhịp xe</b></td><td>Test đúng ca trạng-thái-xe-đổi (ca này off-car không dựng được)</td><td><span class="pill ok">đã vá</span> widget tự lo nội dung ⇒ không dựng lại; widget đọc dữ liệu xe thì <b>vẫn</b> dựng lại (có test chặn vá quá tay)</td></tr>
+<tr><td><b>[SOÁT P1-2] Nền giải mã ở cỡ thật lần mở đầu</b></td><td><b>Chứng minh hai chiều</b>: hoàn nguyên bản vá rồi đo lại</td><td><span class="pill ok">đã vá</span> có bản vá: biên độ <b>116</b>, <b>27</b> lần đổi sáng/tối; hoàn nguyên: biên độ <b>0</b> (ảnh biến mất). Bước lưới đo được <b>64px</b> = đúng 1920/900 × 30</td></tr>
 <tr><td>Mặc định không đổi gì</td><td>Test + đo</td><td><span class="pill ok">đạt</span> mặc định TẮT; tắt ⇒ nền vẽ sẵn byte-giữ</td></tr>
 </table>
 
@@ -133,7 +135,20 @@ chờ một chu kỳ thì mở launcher lên thấy nền trống 60 giây).</p>
 
 <h2>7. Nhật ký triển khai</h2>
 <div class="card">
-<b>⚠ Một giả thuyết của tôi bị số đo bác — đáng ghi lại.</b>
+<b>⚠⚠ ĐÍNH CHÍNH (sau lượt soát độc lập): kết luận dưới đây của tôi ĐÃ SAI.</b>
+<br><br>
+Tôi viết rằng giả thuyết "ô bị dựng lại liên tục" đã <b>bị số đo bác</b>. Lượt soát độc lập chỉ ra: phép đo đó chạy
+<b>off-car</b>, nơi trạng thái xe luôn rỗng nên "trạng thái đổi" <b>luôn là false</b> — tức là <b>ca đó không thể xảy
+ra khi đo</b>. Phép đo của tôi chỉ chứng minh được <i>off-car không xảy ra</i>, KHÔNG bác được giả thuyết cho xe.
+<br><br>
+Và giả thuyết đó <b>ĐÚNG</b>: bảng tra khả năng trả "có nội dung đọc" cho <b>mọi</b> widget dựng tay, kể cả widget
+trình chiếu ⇒ trên xe (trạng thái đổi 1 nhịp/giây) ô bị dựng lại <b>mỗi giây</b> ⇒ trạng thái quay vòng bị đặt lại nên
+ảnh <b>đứng mãi ở một tấm</b>, cộng với mỗi giây một lượt đọc tệp + giải mã ảnh trên thread chính. Đã vá + khoá test.
+<br><br>
+<b>Bài học kép</b>: phần "nghi phép đo trước khi nghi code" là đúng, nhưng tôi rút <b>kết luận sai</b> từ đó — đúng ra
+phải kết luận <i>"off-car không kiểm được ca này"</i> chứ không phải <i>"code không sao"</i>.
+<br><br>
+<b>Nguyên văn ghi nhận ban đầu, giữ lại để thấy chỗ tôi sai:</b>
 <br><br>
 Lượt chụp đầu cho hai khung <b>giống nhau từng byte</b>, tôi kết luận widget không đổi ảnh và <b>đoán</b> nguyên nhân:
 ô bị dựng lại liên tục theo nhịp trạng thái xe nên trạng thái quay vòng bị xoá mỗi lần (đúng loại lỗi đã gặp ở gói 2).
@@ -165,6 +180,7 @@ giảm. Nạp nguyên bản rồi mới thu nhỏ là cách chắc chắn để 
 <tr><th>#</th><th>Câu hỏi</th><th>Mặc định</th></tr>
 <tr><td>OQ1</td><td>Thanh trên có cần tăng độ đục khi bật hình nền không (§6)?</td><td>Chưa đổi. Cần owner xem với ảnh thật của họ.</td></tr>
 <tr><td>OQ2</td><td>Widget và nền nên dùng <b>chung</b> chu kỳ hay <b>tách riêng</b>?</td><td>Đang dùng chung (một lựa chọn). Tách được nhưng làm bảng Tuỳ biến rối hơn.</td></tr>
+<tr><td>OQ5</td><td><b>Ô trống có nên để thấy hình nền không?</b> [ĐO] hiện ô trống đục hoàn toàn nên giữa màn không thấy nền.</td><td>Giữ đục. Đổi được nếu owner muốn thấy nền ở giữa màn.</td></tr>
 <tr><td>OQ4</td><td>Widget và nền đang hiện <b>hai ảnh khác nhau</b> cùng lúc — thế có hợp không?</td><td>Giữ vậy: khung ảnh trong ô là thứ riêng. Đồng bộ được nếu owner thấy rối.</td></tr>
 <tr><td>OQ3</td><td>Mức làm tối mặc định <b>45%</b> có hợp không?</td><td>Giữ 45%; chọn được 0/25/45/65% trong bảng Tuỳ biến.</td></tr>
 </table>
@@ -176,7 +192,30 @@ giảm. Nạp nguyên bản rồi mới thu nhỏ là cách chắc chắn để 
 </ul>
 
 <h2>10. Reviewer Log</h2>
-<p class="muted">Chưa có lượt soát độc lập cho phần code. Phần xác minh bằng mắt có tác nhân độc lập làm (2 lượt).</p>
+
+<h3>Pass 1 — 2026-09-11 (soát độc lập)</h3>
+<p>Phạm vi: 9 tệp / 1233 dòng của bố cục động + hình nền. Kết quả: <b>0 lỗi mức P0 · 4 mức P1 · 4 mức P2 · 4 mức P3</b>.
+Soát viên <b>chỉ báo cáo</b>, tôi tự vá và tự kiểm từng cái.</p>
+<table>
+<tr><th>Mức</th><th>Lỗi</th><th>Trạng thái</th></tr>
+<tr><td>P1</td><td>Widget trình chiếu bị dựng lại ~1 lần/giây trên xe ⇒ ảnh đứng mãi + giải mã ảnh mỗi giây trên thread chính</td><td>✅ đã vá + 3 test khoá</td></tr>
+<tr><td>P1</td><td>Hình nền lần mở đầu giải mã ở cỡ 1×1 ⇒ vệt màu loang tới cả 30 phút</td><td>✅ đã vá + <b>chứng minh hai chiều</b></td></tr>
+<tr><td>P1</td><td>Bộ sắp cửa sổ app còn quét cứng 4 ô sau khi nới trần lên 6 ⇒ app ở khung 5/6 nằm lệch (hình dạng P-bug2)</td><td>✅ đã vá + mở rộng test canh chặn số cứng</td></tr>
+<tr><td>P1</td><td>Đổi hồ sơ tài xế không nạp lại bố cục ⇒ mở bảng vẽ ở hồ sơ B rồi Lưu là <b>ghi đè mất</b> bố cục của B</td><td>✅ đã vá + test canh chỗ đọc</td></tr>
+<tr><td>P2</td><td>Bố cục hỏng vào tới trình vẽ ⇒ <b>kéo một khung là sập</b> (phép kẹp có trần nhỏ hơn sàn)</td><td>✅ đã vá cả cửa vào lẫn lưới an toàn</td></tr>
+<tr><td>P2</td><td>Nhịp widget vẫn chạy khi HOME bị app khác che ⇒ đọc đĩa + giải mã ảnh cho thứ không ai xem</td><td>✅ đã vá + test khoá</td></tr>
+<tr><td>P2</td><td>Toàn bộ đọc/giải mã ảnh nằm trên thread chính, ngay trong lúc về HOME</td><td>⏳ <b>chưa vá</b> — cần đưa sang thread nền, việc riêng</td></tr>
+<tr><td>P2</td><td>Cổng giảm cỡ yếu với ảnh tỉ lệ lệch (dừng khi một chiều đủ nhỏ) ⇒ ảnh 12000×9000 vẫn ra bitmap 27 MB</td><td>⏳ <b>chưa vá</b> — việc riêng</td></tr>
+<tr><td>P3</td><td>"Hiện ngay ảnh đầu tiên" thật ra hiện ảnh <b>thứ hai</b> (lệch chính tài liệu)</td><td>⏳ chưa vá</td></tr>
+<tr><td>P3</td><td>Nút Back không đóng bảng vẽ · chưa xử nhiều ngón tay · vài điểm vụn</td><td>⏳ chưa vá</td></tr>
+</table>
+<p><b>Hai phát hiện có giá trị vượt ngoài danh sách lỗi:</b></p>
+<ul>
+  <li><b>Tuyên bố của tôi ở §7 bị bác</b> — xem phần đính chính ở đó.</li>
+  <li><b>Ô trống che kín nền</b>: [ĐO] thẻ workspace và ô trống cho <b>0%</b> nền lọt qua ⇒ giữa màn hình gần như không thấy hình nền, chỉ thấy ở lề và mép dưới. Đây là <b>quyết định của owner</b> (ô trống nên trong suốt để thấy nền không) nên tôi không tự đổi ⇒ OQ5.</li>
+</ul>
+<p class="muted">Cả hai lỗi P1 nặng nhất <b>không quan sát được off-car</b> vì cùng một lý do: không có xe thì trạng thái luôn
+rỗng, và ảnh đơn sắc che mất lỗi giải mã cỡ nhỏ. Cả hai chỗ tài liệu của tôi đều từng ghi "đã đo, đạt".</p>
 
 </div>
 </body>

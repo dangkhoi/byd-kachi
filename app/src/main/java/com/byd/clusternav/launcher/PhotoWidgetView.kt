@@ -42,7 +42,7 @@ class PhotoWidgetView(context: Context) : View(context) {
             if (!running) return
             step()
             // Nhịp bằng 1/3 chu kỳ, tối thiểu 5 giây: đủ mịn để đổi đúng hạn mà không thức dậy vô cớ.
-            postDelayed(this, (intervalSec * 1000L / 3).coerceAtLeast(5_000L))
+            postDelayed(this, tickDelayMs())
         }
     }
 
@@ -58,8 +58,28 @@ class PhotoWidgetView(context: Context) : View(context) {
         super.onAttachedToWindow()
         running = true
         step(force = true)
-        postDelayed(tick, (intervalSec * 1000L / 3).coerceAtLeast(5_000L))
+        postDelayed(tick, tickDelayMs())
     }
+
+    /**
+     * [SOÁT P2-1] HOME bị app khác che thì ô **không** bị tháo, nên nhịp cũ vẫn chạy: mỗi 15–60 giây một lượt đọc đĩa
+     * + giải mã ảnh cho thứ **không ai đang xem**. Lái ba giờ là hàng trăm lượt vô ích. Nhịp của màn chính dừng đúng
+     * lúc màn tạm dừng; nhịp của widget nay cũng dừng khi cửa sổ không còn hiện.
+     */
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        if (visibility == VISIBLE) {
+            if (!running && isAttachedToWindow) {
+                running = true
+                postDelayed(tick, tickDelayMs())
+            }
+        } else {
+            running = false
+            removeCallbacks(tick)
+        }
+    }
+
+    private fun tickDelayMs(): Long = (intervalSec * 1000L / 3).coerceAtLeast(5_000L)
 
     override fun onDetachedFromWindow() {
         // Dừng nhịp + nhả ảnh NGAY khi ô bị tháo — không để nhịp sống lâu hơn ô.

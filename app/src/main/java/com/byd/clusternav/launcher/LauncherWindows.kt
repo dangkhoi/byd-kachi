@@ -85,7 +85,10 @@ class LauncherWindows(
             val st = state(); val n = EffectiveLayout.slotCount(st.preset, custom())
             val visible = ArrayList<Pair<String, SlotRect>>()
             val overflow = ArrayList<String>()
-            for (i in 0..3) {
+            // [SOÁT P1-3] Trước đây viết cứng 0..3. Sau khi nới trần ô lên 6, app ở khung 5/6 KHÔNG được đặt lại
+            // khung khi đổi bố cục ⇒ nằm lệch khỏi ô, hoặc đang toàn màn thì cứ toàn màn che launcher — đúng hình
+            // dạng P-bug2. Quét theo trần ô thật.
+            for (i in 0 until WorkspaceState.SLOT_CAP) {
                 val c = st.slots.getOrNull(i)
                 if (c is SlotContent.App) {
                     if (i < n) absoluteSlotRect(i)?.let { visible.add(c.pkg to appRect(it)) } else overflow.add(c.pkg)

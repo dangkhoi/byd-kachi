@@ -80,6 +80,30 @@ class WallpaperWiringContractTest {
     }
 
     @Test
+    fun `nhip dung khi HOME bi che`() {
+        // [SOÁT P2-1] HOME bị app khác che thì ô KHÔNG bị tháo ⇒ nhịp cũ vẫn đọc đĩa + giải mã ảnh cho thứ không ai
+        // xem. Lái ba giờ là hàng trăm lượt vô ích.
+        assertTrue(photo.contains("override fun onWindowVisibilityChanged"),
+            "phải dừng nhịp khi cửa sổ không còn hiện")
+        val fn = photo.substringAfter("override fun onWindowVisibilityChanged").substringBefore("private fun tickDelayMs")
+        assertTrue(fn.contains("removeCallbacks(tick)"), "phải dừng nhịp")
+        assertTrue(fn.contains("running = false"), "phải hạ cờ")
+    }
+
+    @Test
+    fun `nen giai ma theo co MAN HINH, khong theo co view chua do`() {
+        // [SOÁT P1-2] ảnh nền nạp trong onResume, mà lượt đo cây view chạy SAU onResume ⇒ lần mở đầu view rộng 0
+        // ⇒ ảnh bị giảm còn 1–2 điểm rồi kéo lên phủ kín màn = một vệt màu loang, không có gì nạp lại.
+        // [ĐO] chứng minh: hoàn nguyên bản vá ⇒ nền phẳng biên độ 0; có bản vá ⇒ biên độ 116, 27 lần đổi sáng/tối.
+        assertTrue(act.contains("fun wallReqW()") && act.contains("fun wallReqH()"),
+            "phải có cỡ cần riêng, lấy theo màn hình")
+        val fn = act.substringAfter("private fun wallReqW()").substringBefore("private fun releaseWallBitmap")
+        assertTrue(fn.contains("displayMetrics"), "phải lấy cỡ theo MÀN HÌNH, không chỉ theo view")
+        assertFalse(act.contains("loadScaled(path, wall.width"),
+            "không được lấy cỡ view chưa qua lượt đo")
+    }
+
+    @Test
     fun `co o doi thi nap lai o dung co, khong phong anh cu`() {
         assertTrue(photo.contains("override fun onSizeChanged"), "cỡ ô đổi thì phải nạp lại")
     }

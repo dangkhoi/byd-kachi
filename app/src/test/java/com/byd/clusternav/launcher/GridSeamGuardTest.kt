@@ -48,6 +48,18 @@ class GridSeamGuardTest {
     }
 
     @Test
+    fun `khong ai duoc viet CUNG khoang o`() {
+        // [SOÁT P1-3] test canh cũ chỉ chặn hai TÊN hàm, nên một vòng lặp viết cứng `0..3` vẫn lọt qua và app ở
+        // khung 5/6 không được sắp lại. Chặn cả dạng số cứng.
+        val bad = Regex("0\\.\\.[0-9]+|0 until [0-9]+")
+        files.forEach { f ->
+            val hits = bad.findAll(code(f)).map { it.value }.toList()
+            assertTrue(hits.isEmpty(),
+                "$f có khoảng ô viết cứng $hits — phải dùng WorkspaceState.SLOT_CAP hoặc số ô thực tế")
+        }
+    }
+
+    @Test
     fun `ca hai phia deu THUC SU dung nguon duy nhat`() {
         // Chặn cách "đạt test" bằng việc xoá lệnh gọi đi mà không thay bằng gì.
         files.forEach { f ->
@@ -84,6 +96,19 @@ class GridSeamGuardTest {
         assertEquals(2, writes,
             "chỉ được ghi ở ĐÚNG 2 chỗ: applyCustomLayout (đường duy nhất) và lúc nạp ở khởi động. " +
                 "Đang có $writes chỗ ghi — chỗ nào khác phải gọi applyCustomLayout")
+    }
+
+    @Test
+    fun `doi ho so phai NAP LAI bo cuc cua ho so do`() {
+        // [SOÁT P1-4] bố cục lưu THEO HỒ SƠ, nhưng nếu chỉ đọc một lần lúc khởi động thì đổi hồ sơ vẫn thấy bố cục
+        // của hồ sơ cũ — và mở bảng vẽ rồi Lưu sẽ GHI ĐÈ mất bố cục riêng của hồ sơ mới.
+        val act = code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
+        assertTrue(Regex("activeProfile != [a-zA-Z.]*activeProfile").containsMatchIn(act),
+            "phải nhận ra hồ sơ đổi")
+        val i = act.indexOf("activeProfile != ")
+        val after = act.substring(i, (i + 400).coerceAtMost(act.length))
+        assertTrue(after.contains("gridLayout()"), "hồ sơ đổi thì phải đọc lại bố cục của hồ sơ đó")
+        assertTrue(after.contains("applyCustomLayout("), "phải đi qua đường duy nhất")
     }
 
     @Test

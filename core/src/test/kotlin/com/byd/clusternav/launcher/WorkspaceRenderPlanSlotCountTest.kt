@@ -69,6 +69,36 @@ class WorkspaceRenderPlanSlotCountTest {
         }
     }
 
+    // ── [SOÁT P1-1] Widget tự lo nội dung không được dựng lại theo nhịp trạng thái xe ────────────
+
+    @Test
+    fun `widget trinh chieu anh KHONG bi dung lai theo nhip trang thai xe`() {
+        // Trên xe trạng thái đổi 1 nhịp/giây. Nếu ô trình chiếu bị dựng lại theo nhịp đó thì trạng thái quay vòng bị
+        // ĐẶT LẠI mỗi giây ⇒ ảnh đứng mãi ở một tấm; và mỗi giây một lượt đọc tệp + giải mã ảnh trên thread chính.
+        // ⚠ Ca này KHÔNG quan sát được off-car (không xe ⇒ trạng thái luôn rỗng ⇒ "trạng thái đổi" luôn false).
+        val s = st(LayoutPreset.ONE, SlotContent.Widget(listOf("w_photos")))
+        val plan = WorkspaceRenderPlanner.decide(s, s, builtSlotCount = 1, statusChanged = true, slotCount = 1)
+        assertEquals(emptyList<Int>(), (plan as WorkspaceRenderPlan.PerSlot).rebuild,
+            "ô trình chiếu ảnh tự lo nội dung, trạng thái xe đổi KHÔNG có gì để làm mới")
+    }
+
+    @Test
+    fun `widget doc du lieu xe thi VAN dung lai theo nhip`() {
+        // Chặn cách vá quá tay: đừng miễn trừ hết mọi widget.
+        val s = st(LayoutPreset.ONE, SlotContent.Widget(listOf("w_energy")))
+        val plan = WorkspaceRenderPlanner.decide(s, s, builtSlotCount = 1, statusChanged = true, slotCount = 1)
+        assertEquals(listOf(0), (plan as WorkspaceRenderPlan.PerSlot).rebuild,
+            "ô đọc năng lượng PHẢI dựng lại khi trạng thái xe đổi, không thì số liệu đứng yên")
+    }
+
+    @Test
+    fun `o tron trinh chieu voi widget doc thi VAN dung lai`() {
+        // Ô có thể chứa nhiều widget. Chỉ cần MỘT cái đọc dữ liệu xe là phải làm mới.
+        val s = st(LayoutPreset.ONE, SlotContent.Widget(listOf("w_photos", "w_energy")))
+        val plan = WorkspaceRenderPlanner.decide(s, s, builtSlotCount = 1, statusChanged = true, slotCount = 1)
+        assertEquals(listOf(0), (plan as WorkspaceRenderPlan.PerSlot).rebuild)
+    }
+
     // ── Mặc định phải giữ NGUYÊN hành vi cũ ─────────────────────────────────────────────────────
 
     @Test

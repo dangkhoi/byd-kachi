@@ -100,7 +100,24 @@ class WorkspacePrefs(context: Context) {
      * hồ sơ (cùng lối với giao diện sáng/tối và đơn vị).
      */
     /** Bố cục tự vẽ của hồ sơ đang dùng. Rỗng = chưa vẽ ⇒ dùng bố cục sẵn. */
-    fun gridLayout(): GridLayout = WorkspaceGrid.decode(sp.getString(key(K_GRID), null))
+    /**
+     * Bố cục tự vẽ của hồ sơ đang dùng. Rỗng = chưa vẽ ⇒ dùng bố cục sẵn.
+     *
+     * [SOÁT P2-3] **Lọc ngay ở cửa vào**: chuỗi lưu là dạng người đọc được (để cứu bằng tay), nên nó có thể bị sửa
+     * thành số vô lý. Khung nằm ngoài lưới mà lọt vào trình vẽ thì **kéo một cái là sập** (phép kẹp có trần nhỏ hơn
+     * sàn), và việc đếm ô trống chạy hàng tỉ nhịp làm treo giao diện. Màn hình thì đã có lưới an toàn (lùi về bố cục
+     * sẵn), nhưng trình vẽ là nơi người dùng vào để **sửa** nên phải chặn ở đây.
+     */
+    fun gridLayout(): GridLayout {
+        val raw = WorkspaceGrid.decode(sp.getString(key(K_GRID), null))
+        val sane = raw.frames.filter {
+            it.cols in WorkspaceGrid.MIN_COLS..WorkspaceGrid.COLS &&
+                it.rows in WorkspaceGrid.MIN_ROWS..WorkspaceGrid.ROWS &&
+                it.col in 0 until WorkspaceGrid.COLS && it.row in 0 until WorkspaceGrid.ROWS &&
+                it.colEnd <= WorkspaceGrid.COLS && it.rowEnd <= WorkspaceGrid.ROWS
+        }
+        return if (sane.size == raw.frames.size) raw else GridLayout(sane)
+    }
 
     fun setGridLayout(layout: GridLayout?) {
         sp.edit().apply {

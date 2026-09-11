@@ -105,16 +105,27 @@ class GridEditorView(context: Context) : View(context) {
                         val col = floor((e.x - gx) / cw - grabCol + 0.5f).toInt()
                         val row = floor((e.y - gy) / chh - grabRow + 0.5f).toInt()
                         f.copy(
-                            col = col.coerceIn(0, WorkspaceGrid.COLS - f.cols),
-                            row = row.coerceIn(0, WorkspaceGrid.ROWS - f.rows),
+                            // [SOÁT P2-3] `coerceIn` NÉM LỖI khi min > max. Với bố cục hỏng (khung rộng hơn lưới,
+                            // hoặc góc nằm ngoài lưới — dữ liệu sửa tay hoặc hỏng), `COLS - f.cols` âm ⇒ kéo một
+                            // khung là **sập ngay trong onTouchEvent**. Kẹp trần về ít nhất bằng sàn.
+                            col = col.coerceIn(0, (WorkspaceGrid.COLS - f.cols).coerceAtLeast(0)),
+                            row = row.coerceIn(0, (WorkspaceGrid.ROWS - f.rows).coerceAtLeast(0)),
                         )
                     }
                     Mode.RESIZE -> {
                         val cols = ((e.x - gx) / cw).roundToInt() - f.col
                         val rows = ((e.y - gy) / chh).roundToInt() - f.row
                         f.copy(
-                            cols = cols.coerceIn(WorkspaceGrid.MIN_COLS, WorkspaceGrid.COLS - f.col),
-                            rows = rows.coerceIn(WorkspaceGrid.MIN_ROWS, WorkspaceGrid.ROWS - f.row),
+                            // [SOÁT P2-3] cùng lý do: khung có góc ngoài lưới thì `COLS - f.col` có thể nhỏ hơn
+                            // cỡ tối thiểu ⇒ coerceIn ném lỗi giữa lúc kéo.
+                            cols = cols.coerceIn(
+                                WorkspaceGrid.MIN_COLS,
+                                (WorkspaceGrid.COLS - f.col).coerceAtLeast(WorkspaceGrid.MIN_COLS),
+                            ),
+                            rows = rows.coerceIn(
+                                WorkspaceGrid.MIN_ROWS,
+                                (WorkspaceGrid.ROWS - f.row).coerceAtLeast(WorkspaceGrid.MIN_ROWS),
+                            ),
                         )
                     }
                     Mode.NONE -> f
