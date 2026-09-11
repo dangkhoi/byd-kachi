@@ -110,7 +110,11 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val oldStatus = displayedStatus
         displayed = s; displayedStatus = status; carStatus = status
         // Luật "ô nào cần dựng lại" nằm ở :core (WorkspaceRenderPlanner) → test được off-car, kể cả ca P-bug2.
-        when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged)) {
+        when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged,
+            // P9: số ô THỰC TẾ (bố cục tự vẽ có thể khác bố cục sẵn). Đọc từ bố cục sẵn ở đây sẽ
+            // làm bộ quyết định thấy 'số view lệch số ô' mọi lần render ⇒ dựng lại TẤT CẢ liên tục.
+            slotCount = EffectiveLayout.slotCount(displayed.preset, customLayout),
+        )) {
             WorkspaceRenderPlan.RebuildAll -> { rebuild(); return }
             is WorkspaceRenderPlan.PerSlot -> plan.rebuild.forEach { i ->
                 removeView(slotViews[i])

@@ -110,7 +110,16 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         topStrip = KachiTopStrip(
             this,
-            onSelectPreset = { viewModel.setPreset(it) },
+            onSelectPreset = {
+                // [ĐO] P9: bấm bố cục sẵn trong khi đang dùng bố cục tự vẽ thì trước đây **màn hình không đổi gì**
+                // (bố cục tự vẽ vẫn thắng) nhưng vẫn **dựng lại TOÀN BỘ ô** — người dùng tưởng nút hỏng, còn app
+                // trong ô thì bị nhả/gắn vô ích. Hành động tường minh của người dùng phải có tác dụng ⇒ chọn bố
+                // cục sẵn = BỎ bố cục tự vẽ. Đây cũng là đường quay về bố cục sẵn mà không phải mở bảng vẽ.
+                // Phải đi qua applyCustomLayout: [ĐO] xoá riêng biến ở đây thì khung vẽ vẫn giữ BẢN SAO của nó
+                // ⇒ cấu hình đã xoá mà màn hình vẫn hiện bố cục tự vẽ. Một đường duy nhất, có test canh.
+                if (customLayout != null) applyCustomLayout(null)
+                viewModel.setPreset(it)
+            },
             onCycleDock = { viewModel.cycleDockEdge() },
             onCustomizeDock = { openCustomize() },
             onOpenSettings = { startActivity(Intent(this, MainActivity::class.java)) },

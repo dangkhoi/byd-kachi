@@ -74,6 +74,19 @@ class GridSeamGuardTest {
     }
 
     @Test
+    fun `chi MOT duong duy nhat duoc doi bo cuc tu ve`() {
+        // [ĐO] tôi từng xoá riêng biến ở màn chính mà quên khung vẽ giữ BẢN SAO ⇒ cấu hình đã xoá nhưng màn hình vẫn
+        // hiện bố cục tự vẽ. Hai bản sao của cùng một trạng thái thì phải có ĐÚNG MỘT nơi ghi.
+        val act = code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
+        val writes = Regex("customLayout\\s*=\\s*(?!=)").findAll(act).count()
+        val inApply = Regex("fun applyCustomLayout\\([^)]*\\)[^{]*\\{[^}]*customLayout\\s*=").containsMatchIn(act)
+        assertTrue(inApply, "applyCustomLayout phải là nơi ghi")
+        assertEquals(2, writes,
+            "chỉ được ghi ở ĐÚNG 2 chỗ: applyCustomLayout (đường duy nhất) và lúc nạp ở khởi động. " +
+                "Đang có $writes chỗ ghi — chỗ nào khác phải gọi applyCustomLayout")
+    }
+
+    @Test
     fun `so o giu nguyen thi CHI dat lai cho, khong dung lai o`() {
         // Dựng lại ô là nhả/gắn lại bộ chiếu app trong ô (C5) — chỉ đổi hình dạng thì không cần.
         val src = code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")

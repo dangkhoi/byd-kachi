@@ -41,6 +41,11 @@ object WorkspaceRenderPlanner {
      *   App/trống không cần; ô widget chỉ chứa nút HÀNH ĐỘNG cũng không cần — xem [hasReadContent]).
      * @param embedChanged **năng lực nhúng vừa đổi** (kênh shell null → có, hoặc ngược lại) ⇒ ô **App** phải dựng
      *   lại để gắn/nhả bộ chiếu. Đây là đầu vào chữa P-bug2; mặc định `false` nên mọi chỗ gọi cũ không đổi hành vi.
+     * @param slotCount số ô **THỰC TẾ** đang hiện. Bố cục tự vẽ (P9) có thể có số khung khác bố cục sẵn; đọc số ô từ
+     *   bố cục sẵn khi đang dùng bố cục tự vẽ sẽ thấy "số view lệch số ô" ở **mọi** lần render ⇒ trả [RebuildAll]
+     *   liên tục ⇒ trên xe (trạng thái đổi 2 nhịp/giây) **app đang chiếu bị nhả/gắn 2 lần mỗi giây** và người dùng
+     *   **mất cú bấm** — đúng loại lỗi P-bug1/R3. Mặc định = số ô của bố cục sẵn ⇒ mọi chỗ gọi cũ **giữ nguyên hành
+     *   vi** (bộ này đang bị test tương-đương hơn 1000 tổ hợp khoá).
      */
     fun decide(
         old: WorkspaceState,
@@ -48,10 +53,11 @@ object WorkspaceRenderPlanner {
         builtSlotCount: Int,
         statusChanged: Boolean,
         embedChanged: Boolean = false,
+        slotCount: Int = new.preset.slotCount,
     ): WorkspaceRenderPlan {
-        if (old.preset != new.preset || builtSlotCount != new.preset.slotCount) return WorkspaceRenderPlan.RebuildAll
+        if (old.preset != new.preset || builtSlotCount != slotCount) return WorkspaceRenderPlan.RebuildAll
         val out = ArrayList<Int>()
-        for (i in 0 until new.preset.slotCount) {
+        for (i in 0 until slotCount) {
             val oc = old.slots.getOrElse(i) { SlotContent.Empty }
             val nc = new.slots.getOrElse(i) { SlotContent.Empty }
             val contentChanged = !sameContent(oc, nc)

@@ -67,14 +67,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         if (ws.slots.all { it is SlotContent.Empty }) DEFAULT_WORKSPACE else ws
 
     companion object {
-        private val DEFAULT_WORKSPACE = WorkspaceState(
-            LayoutPreset.THREE,
-            listOf(
-                SlotContent.Widget("w_board"),
-                SlotContent.Widget("w_energy"),
-                SlotContent.Widget("w_pm25"),
-                SlotContent.Empty,
-            ),
-        )
+        // Bố cục mặc định nay ở :core (WorkspaceState.DEFAULT) để KIỂM ĐƯỢC off-car. Trước đây nó là danh sách
+        // CỨNG 4 phần tử ở đây, nên khi nới trần ô 4 → 6 nó ném lỗi NGAY LÚC NẠP LỚP ⇒ launcher sập ở lần chạy đầu
+        // (lúc chưa có cấu hình để nạp). Không test nào bắt được vì lớp này cần Android.
+        private val DEFAULT_WORKSPACE = WorkspaceState.DEFAULT
     }
 }

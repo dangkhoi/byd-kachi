@@ -260,6 +260,72 @@ thành công</b> — lệnh đọc thất bại (hai máy ảo cùng cắm nên 
 hình</b> trên máy ảo. Chỉ là dữ liệu thử, nhưng cách làm sai: nay có <b>chốt kiểm</b> trước khi đẩy.
 </div>
 
+<h2>Bước 3 — Nới trần ô (2026-09-11)</h2>
+
+<p><b>[ĐO] 2628/0</b> (trước bước này 2621 ⇒ <b>+7</b>). Trần ô <b>4 → 6</b>.</p>
+
+<h3>B3.1 Rủi ro chính — chứng minh CÓ THẬT trước khi sửa</h3>
+<div class="card">
+Bộ quyết-định-dựng-lại so số view đang dựng với số ô của <b>bố cục sẵn</b>. Với bố cục tự vẽ 6 khung (bố cục sẵn 3 ô)
+nó thấy <code>6 ≠ 3</code> ⇒ trả <b>"dựng lại tất cả"</b> ở <b>MỌI</b> lần render. Trên xe trạng thái đổi
+<b>2 nhịp/giây</b> ⇒ ô bị tháo/gắn 2 lần mỗi giây ⇒ <b>app đang chiếu bị nhả/gắn liên tục</b> và <b>mất cú bấm</b> —
+đúng loại lỗi P-bug1/R3.
+<br><br>
+Tôi viết test <b>chứng minh rủi ro</b> trước khi sửa: gọi theo hành vi cũ ra đúng "dựng lại tất cả". Sửa bằng cách
+thêm tham số <b>số ô thực tế</b>, <b>mặc định = số ô của bố cục sẵn</b> ⇒ mọi chỗ gọi cũ giữ nguyên hành vi (bộ này
+đang bị test tương-đương hơn 1000 tổ hợp khoá — có test riêng khoá chính điều đó).
+</div>
+
+<h3>B3.2 Vì sao trần là 6</h3>
+<p>Trần bị chặn bởi <b>cỡ ô dùng được</b>, không phải bởi lưới. Trên 1920×1080: <b>6 ô</b> ⇒ mỗi ô ~640×360, còn
+<b>đặt được app</b>; <b>8 ô</b> ⇒ ~480×270, app trong ô nhỏ tới mức vô dụng. Lưới 12×6 với khung nhỏ nhất 2×1 về lý
+thuyết cho 36 khung — con số đó vô nghĩa với người dùng.</p>
+
+<h3>B3.3 ⚠ Một lỗi SẬP mà test không bắt được</h3>
+<div class="card">
+Nới trần xong, <b>bố cục mặc định của launcher</b> vẫn truyền <b>danh sách cứng 4 phần tử</b> ⇒ ném lỗi <b>ngay lúc
+nạp lớp</b> ⇒ <b>launcher sập ở lần chạy đầu</b> (khi chưa có cấu hình nào để nạp). <b>Không test nào bắt được</b> vì
+lớp đó nằm phía Android, cần Context.
+<br><br>
+Tôi tìm ra nó vì <b>đọc mã sản phẩm trước khi sửa test</b>. Nếu chỉ sửa hai test fixture đang đỏ thì đã <b>đẩy đi một
+lỗi sập</b>.
+<br><br>
+Sửa <b>tận gốc</b>, không sửa riêng chỗ đó: thêm hàm dựng <b>không cần biết trần ô</b> (thiếu thì đệm ô trống, quá thì
+báo lỗi rõ), và <b>đưa bố cục mặc định về <code>:core</code></b> để <b>kiểm được off-car</b> — trước đây nó nằm phía
+Android nên không test nào chạm tới, và đó chính là chỗ suýt sập.
+</div>
+
+<h3>B3.4 ⚠ Lỗi thứ hai: bấm bố cục sẵn mà màn hình không đổi gì</h3>
+<div class="card">
+[ĐO] bấm nút bố cục sẵn trong khi đang dùng bố cục tự vẽ: <b>dựng lại TOÀN BỘ ô</b> (vì bố cục sẵn đổi) nhưng
+<b>màn hình không đổi gì</b> (bố cục tự vẽ vẫn thắng). Người dùng tưởng nút hỏng, còn app trong ô thì bị nhả/gắn vô ích.
+<br><br>
+Sửa: <b>chọn bố cục sẵn = bỏ bố cục tự vẽ</b>. Hành động tường minh của người dùng phải có tác dụng, và đây cũng là
+đường quay về bố cục sẵn <b>không phải mở bảng vẽ</b>.
+<br><br>
+<b>Và tôi tự sập bẫy hai-bản-sao ngay tại đây</b>: lần sửa đầu tôi xoá bố cục ở <b>biến của màn chính</b> nhưng khung
+vẽ giữ <b>bản sao riêng</b> ⇒ [ĐO] cấu hình đã xoá mà màn hình <b>vẫn hiện 6 khung</b>. ⇒ ép mọi thay đổi đi qua
+<b>một đường duy nhất</b>, kèm <b>test canh đếm số chỗ ghi</b>.
+</div>
+
+<h3>B3.5 Verification</h3>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td><b>Bố cục 6 khung chạy thật</b></td><td>Lưu <code>0,0,4,3;4,0,4,3;8,0,4,3;0,3,4,3;4,3,4,3;8,3,4,3</code>, so khung ô thật với số tính độc lập</td><td><span class="pill ok">6/6 khung ĐÚNG TỪNG PIXEL</span></td></tr>
+<tr><td><b>Không dựng lại ô liên tục</b></td><td>Đếm trong 30 giây với bố cục 6 khung</td><td><span class="pill ok">0 lần</span> "dựng lại tất cả"; số view = số ô = 6 ở mọi lần render</td></tr>
+<tr><td>Bấm bố cục sẵn</td><td>Đang 6 khung tự vẽ → bấm nút 2×2</td><td><span class="pill ok">đạt</span> bố cục tự vẽ bị bỏ, <b>4 ô</b> của bố cục sẵn hiện đúng vị trí</td></tr>
+<tr><td>Dữ liệu cũ</td><td>Chỗ lưu đọc <code>slot_0..slot_5</code>, khoá thiếu ⇒ ô trống</td><td><span class="pill ok">tự tương thích</span>, không cần chuyển đổi</td></tr>
+<tr><td>Thử phá</td><td>3 phép</td><td><span class="pill ok">đỏ đúng chỗ cả 3</span>: quay lại đọc số ô từ bố cục sẵn (4 đỏ) · bỏ đệm ô trống (24 đỏ) · hạ trần về 4 (1 đỏ)</td></tr>
+</table>
+
+<h3>B3.6 Còn tồn</h3>
+<ul>
+  <li><b>Ca 2 nhịp/giây chỉ chứng minh bằng test, chưa đo trên xe.</b> Off-car trạng thái xe gần như không đổi (đo được 3 lần render trong 30 giây) nên không quan sát được nhịp thật. Phần quyết định thì khoá bằng test đúng ca đó.</li>
+  <li><b>Chưa đo 6 ô mà mỗi ô chứa APP thật</b> (mỗi ô chứa app cần một màn ảo riêng ⇒ 6 màn ảo). Đo được với widget; app trong ô là việc trên xe.</li>
+  <li>Chưa đổi được <b>thứ tự</b> khung.</li>
+  <li><b>Chưa có lượt soát độc lập</b> phần code.</li>
+</ul>
+
 <h2>9. References</h2>
 <ul>
   <li><code>docs/PROJECT-BACKLOG.md</code> — P9 (kèm phần đánh giá khả thi).</li>

@@ -6,10 +6,13 @@ import org.junit.jupiter.api.Test
 
 class WorkspaceStateTest {
 
-    @Test fun `mac dinh 3 app, 4 o trong`() {
+    @Test fun `mac dinh 3 widget, con lai o trong`() {
         val s = WorkspaceState()
         assertEquals(LayoutPreset.THREE, s.preset)
-        assertEquals(4, s.slots.size)
+        // Chốt trần ô để ai đổi phải NGHĨ: mỗi ô chứa app cần một màn ảo riêng, và ô quá nhỏ thì app vô dụng.
+        // Xem KDoc WorkspaceState.SLOT_CAP. Nới 4 → 6 ở P9 bước 3.
+        assertEquals(6, WorkspaceState.SLOT_CAP)
+        assertEquals(WorkspaceState.SLOT_CAP, s.slots.size)
         s.slots.forEach { assertSame(SlotContent.Empty, it) }
     }
 

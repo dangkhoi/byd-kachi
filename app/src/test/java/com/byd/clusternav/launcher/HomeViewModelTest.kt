@@ -71,9 +71,8 @@ class HomeViewModelTest {
 
     @Test fun `initial state nap tu repository`() = runTest {
         val initial = HomeUiState(
-            workspace = WorkspaceState(LayoutPreset.QUAD, listOf(
-                SlotContent.App("com.a"), SlotContent.Empty, SlotContent.Empty, SlotContent.Empty,
-            )),
+            // of(...) tự đệm tới trần ô ⇒ test không phải sửa mỗi lần trần đổi.
+            workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.a")),
             activeProfile = "P1", profiles = listOf("P1"), themeMode = ThemeMode.DAY,
         )
         val vm = HomeViewModel(repo(initial))
