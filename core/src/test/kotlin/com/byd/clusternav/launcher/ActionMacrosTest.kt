@@ -236,6 +236,35 @@ class ActionMacrosTest {
             "Nút hứa phần trăm nhưng không có đường ghi phần trăm. Nếu tìm được lệnh ghi % trên xe thì mở test này.")
     }
 
+    // ── Đóng 3 điểm treo (soát xét lượt 2) ───────────────────────────────────────────────────────
+
+    @Test
+    fun `thanh cong thi IM LANG, hong thi PHAI bao cho nguoi dung`() {
+        val r = Recorder()
+        assertNull(MacroRunner.run(macro3, r::emit, r::sleep).notice("Thử"),
+            "mọi bước ăn ⇒ không thông báo (không ai muốn bị báo mỗi lần bấm đúng)")
+
+        val partial = MacroRunner.run(macro3, Recorder(failOn = setOf("win_rf"))::emit)
+        val msg = partial.notice("Rời xe")!!
+        assertTrue(msg.contains("Rời xe"), "phải nói gói nào")
+        assertTrue(msg.contains("Kính trước-phải"),
+            "phải gọi bước hỏng bằng NHÃN (câu cho người đọc), không bằng mã")
+        assertFalse(msg.contains("win_rf"), "không phơi mã kỹ thuật ra cho người dùng")
+    }
+
+    @Test
+    fun `khong buoc nao an thi noi ro la xe khong nhan lenh`() {
+        val msg = MacroRunner.run(macro3, { _, _ -> false }).notice("Rời xe")!!
+        assertTrue(msg.contains("không nhận lệnh"),
+            "off-car / xe từ chối hết ⇒ nói thẳng, đừng để người ta đoán là tính năng hỏng")
+    }
+
+    @Test
+    fun `goi rong thi khong bao gi`() {
+        val empty = MacroRunner.run(ActionMacro("m", "l", "i", Domain.BODY, emptyList()), { _, _ -> true })
+        assertNull(empty.notice("x"), "gói rỗng không có gì để báo")
+    }
+
     @Test
     fun `tra goi theo ma`() {
         assertNotNull(ActionMacros.byId("mac_leave"))

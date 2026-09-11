@@ -209,7 +209,7 @@ class CustomizePanel(
                 layoutParams = LinearLayout.LayoutParams(dpi(context, 34), dpi(context, 34))
             })
             addView(TextView(context).apply {
-                text = pick.label; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, 2), dpi(context, 6), dpi(context, 2), 0)
             })

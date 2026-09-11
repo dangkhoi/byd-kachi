@@ -63,6 +63,11 @@ enum class WidgetShape {
  *                  (UI "—" + mờ) tới khi đóng grab-list ở spec §9.
  */
 enum class EvidenceTier {
+    // ⚠ GIAO KÈO: THỨ TỰ KHAI Ở ĐÂY LÀ ĐỘ TIN CẬY **GIẢM DẦN** (mạnh → yếu), và **code phụ thuộc vào nó**:
+    // `ActionMacro.tier()` xếp hạng bằng `ordinal` để lấy mức YẾU NHẤT trong các bước của một gói lệnh.
+    // ⇒ Thêm mức mới thì phải QUYẾT ĐỊNH nó đứng ở đâu trong thang này, không được chèn bừa vào giữa.
+    // Có test khoá (`ActionMacrosTest.thu tu khai cua EvidenceTier LA thu hang tin cay giam dan`): nó khẳng định
+    // NGUYÊN danh sách có thứ tự, nên đảo chỗ hoặc chèn giữa đều làm test đỏ — đúng ý muốn, để buộc xem lại.
     PROVEN,
     OVERDRIVE,
     DASHCAST,

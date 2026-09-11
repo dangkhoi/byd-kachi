@@ -9,6 +9,7 @@ package com.byd.clusternav.launcher
 /** Một mục widget CHỌN ĐƯỢC (curated `w_*` hoặc telemetry `id`). [needsBadge] ⇒ hiện "chưa kiểm trên xe". */
 data class WidgetPick(val id: String, val label: String, val icon: String, val tier: EvidenceTier) {
     val needsBadge: Boolean get() = tier.needsBadge
+
 }
 
 /**
@@ -23,14 +24,14 @@ object WidgetCatalog {
     /** Telemetry gom theo domain (thứ tự enum), mỗi datum → [WidgetPick]; icon suy từ domain. Nhóm rỗng bị bỏ. */
     fun telemetryByDomain(): List<Pair<Domain, List<WidgetPick>>> =
         Domain.values().mapNotNull { d ->
-            val picks = TelemetryRegistry.byDomain(d).map { WidgetPick(it.id, it.label, iconFor(d), it.tier) }
+            val picks = TelemetryRegistry.byDomain(d).map { WidgetPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, d), it.tier) }
             if (picks.isEmpty()) null else d to picks
         }
 
     /** Tra 1 pick theo id (curated trước, telemetry sau) — cho UI dựng nhãn/badge khi id đã nằm trong ô. */
     fun pick(id: String): WidgetPick? =
         CURATED.firstOrNull { it.id == id }
-            ?: TelemetryRegistry.byId(id)?.let { WidgetPick(it.id, it.label, iconFor(it.domain), it.tier) }
+            ?: TelemetryRegistry.byId(id)?.let { WidgetPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier) }
 
     /** Icon đại diện cho domain (dùng icon đã có trong bộ vector Kachi). */
     fun iconFor(domain: Domain): String = when (domain) {
@@ -103,6 +104,29 @@ data class CapabilityPick(
     val curated: Boolean = false,
 ) {
     val needsBadge: Boolean get() = tier.needsBadge
+
+    /**
+     * Nhãn để HIỂN THỊ. Bằng [label] trong hầu hết trường hợp; chỉ thêm gợi ý loại khi nhãn đó **bị trùng** giữa
+     * mục ĐỌC và HÀNH ĐỘNG — xem [CapabilityCatalog.collidingLabels].
+     *
+     * [ĐO] 2026-09-11: từ gói 2, bảng chọn bày CẢ hai loại trong cùng một lưới ⇒ **18 nhãn trùng nhau** lộ ra
+     * (vd hai ô đều ghi "Kính trước-trái": một cái để XEM độ mở %, một cái để BẤM đóng/mở). Trước gói 2 hai loại
+     * nằm ở hai màn khác nhau nên trùng không sao. Chỉ thêm gợi ý ở chỗ trùng — thêm cho cả 187 mục là nhiễu.
+     */
+    val displayLabel: String
+        get() = if (label in CapabilityCatalog.collidingLabels()) "$label · $kindHint" else label
+
+    /**
+     * Gợi ý loại, chỉ dùng khi nhãn bị trùng. Thứ tự xét quan trọng: **widget dựng tay trước**, vì nó cũng là ĐỌC
+     * nên nếu xét theo loại trước thì nó và mục đọc thô sẽ ra cùng một gợi ý ⇒ vẫn không phân biệt được.
+     * [ĐO] ca thật: widget "Tốc độ" (thẻ dựng tay) và mục đọc "Tốc độ" (số thô) — cùng là ĐỌC.
+     */
+    private val kindHint: String
+        get() = when {
+            curated -> "thẻ"
+            kind == CapabilityKind.READ -> "xem"
+            else -> "bấm"
+        }
 }
 
 /**
@@ -139,7 +163,7 @@ object CapabilityCatalog {
             return CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null, curated = true)
         }
         TelemetryRegistry.byId(id)?.let {
-            return CapabilityPick(it.id, it.label, WidgetCatalog.iconFor(it.domain), it.tier, CapabilityKind.READ, it.domain)
+            return CapabilityPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier, CapabilityKind.READ, it.domain)
         }
         ControlRegistry.byId(id)?.let {
             return CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain)
@@ -157,7 +181,7 @@ object CapabilityCatalog {
             add(CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null, curated = true))
         }
         TelemetryRegistry.ALL.forEach {
-            add(CapabilityPick(it.id, it.label, WidgetCatalog.iconFor(it.domain), it.tier, CapabilityKind.READ, it.domain))
+            add(CapabilityPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier, CapabilityKind.READ, it.domain))
         }
         ControlRegistry.ALL.forEach {
             add(CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain))
@@ -180,6 +204,21 @@ object CapabilityCatalog {
             val items = everything.filter { it.domain == d }
             if (items.isEmpty()) null else d to items
         }
+    }
+
+    /**
+     * Nhãn xuất hiện NHIỀU HƠN MỘT LẦN trên toàn bộ khả năng (không chỉ giữa đọc↔hành động: [ĐO] còn có ca cùng
+     * loại, vd widget "Tốc độ" dựng tay và mục đọc "Tốc độ" thô — cả hai đều ĐỌC).
+     *
+     * Tính một lần rồi giữ, vì [CapabilityPick.displayLabel] gọi nó cho TỪNG ô khi dựng lưới 187 ô — tính lại mỗi
+     * lần sẽ quét toàn bộ bộ đăng ký 187 lần cho một lần mở bảng.
+     */
+    fun collidingLabels(): Set<String> = collidingLabelsCache
+
+    private val collidingLabelsCache: Set<String> by lazy {
+        (WidgetRegistry.ALL.map { it.label } + TelemetryRegistry.ALL.map { it.label } +
+            ControlRegistry.ALL.map { it.label } + ActionMacros.ALL.map { it.label })
+            .groupBy { it }.filterValues { it.size > 1 }.keys
     }
 
     /**

@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -96,6 +97,44 @@ class CapabilityCatalogTest {
         WidgetRegistry.ALL.forEach {
             assertFalse(it.id in ids, "widget dựng tay ${it.id} KHÔNG được lọt vào nhóm domain")
         }
+    }
+
+    // ── Nhãn trùng giữa ĐỌC và HÀNH ĐỘNG (lộ ra từ khi gói 2 gộp hai loại vào MỘT lưới) ──────────
+
+    @Test
+    fun `sau khi phan biet thi KHONG con nhan nao trung nhau`() {
+        // Đây là phép kiểm mạnh nhất: [ĐO] 2026-09-11 có 18 nhãn trùng giữa mục ĐỌC và HÀNH ĐỘNG (vd hai ô đều ghi
+        // "Kính trước-trái": một để XEM độ mở %, một để BẤM đóng/mở). Trước gói 2 chúng ở hai màn khác nhau nên
+        // trùng không sao; nay nằm cạnh nhau trong cùng lưới ⇒ người dùng không phân biệt được.
+        val shown = CapabilityCatalog.all().map { it.displayLabel }
+        val dup = shown.groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
+        assertEquals(emptyList<String>(), dup, "còn nhãn hiển thị bị trùng ⇒ người dùng không phân biệt được ô nào")
+    }
+
+    @Test
+    fun `chi them goi y loai o dung cho bi trung`() {
+        val colliding = CapabilityCatalog.collidingLabels()
+        assertTrue(colliding.isNotEmpty(), "tiền đề: hiện CÓ nhãn trùng giữa hai loại")
+        assertTrue("Kính trước-trái" in colliding, "kính trước-trái có cả mục đọc lẫn nút bấm")
+
+        // Chỗ TRÙNG: phải có gợi ý loại
+        val readWin = CapabilityCatalog.pick("window_lf")!!
+        val writeWin = CapabilityCatalog.pick("win_lf")!!
+        assertEquals("Kính trước-trái · xem", readWin.displayLabel)
+        assertEquals("Kính trước-trái · bấm", writeWin.displayLabel)
+
+        // Chỗ KHÔNG trùng: giữ NGUYÊN nhãn, không thêm nhiễu cho cả 187 mục
+        val soc = CapabilityCatalog.pick("soc")!!
+        assertEquals(soc.label, soc.displayLabel, "nhãn không trùng thì không được thêm gì")
+        assertFalse("Pin (SOC)" in colliding)
+    }
+
+    @Test
+    fun `nhan goc KHONG bi doi - chi doi nhan HIEN THI`() {
+        // Nhãn gốc là dữ liệu; gợi ý loại chỉ là chuyện trình bày. Trộn hai thứ sẽ làm bẩn bộ đăng ký.
+        val w = CapabilityCatalog.pick("window_lf")!!
+        assertEquals("Kính trước-trái", w.label, "nhãn GỐC phải nguyên vẹn")
+        assertNotEquals(w.label, w.displayLabel, "nhãn HIỂN THỊ mới là cái mang gợi ý")
     }
 
     @Test

@@ -93,6 +93,17 @@ object KachiTheme {
         "ic-grid" -> R.drawable.ic_grid
         "ic-swap" -> R.drawable.ic_swap
         "ic-close" -> R.drawable.ic_close
+        // U1: 6 icon MỚI cho khái niệm xuất hiện nhiều mà trước đây không có icon nào gần nghĩa
+        "ic-road" -> R.drawable.ic_road
+        "ic-battery" -> R.drawable.ic_battery
+        "ic-seatbelt" -> R.drawable.ic_seatbelt
+        "ic-radar" -> R.drawable.ic_radar
+        "ic-gps" -> R.drawable.ic_gps
+        "ic-steering" -> R.drawable.ic_steering
+        // Tên icon dùng lại tệp đã có (trước đây chưa được map nên tra ra 0 = ô trống icon)
+        "ic-clock" -> R.drawable.ic_clock_g
+        "ic-turn-left" -> R.drawable.ic_turn_left
+        "ic-turn-right" -> R.drawable.ic_turn_right
         else -> 0
     }
 }

@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import java.util.concurrent.atomic.AtomicBoolean
@@ -182,19 +183,28 @@ class ControlTileFactory(
                     // có thể KHÔNG BAO GIỜ tới ⇒ cờ kẹt `true`, ô chết hẳn, bấm mãi không chạy nữa. Việc phục hồi
                     // giao diện thì vẫn phải về thread chính nên để trong `post`.
                     running.set(false)
-                    val done = res
+                    // Gói vừa GHI THẬT vào các nút bật/tắt ⇒ phải ghi lại vào bảng trạng thái DÙNG CHUNG, không thì
+                    // ô "Đèn đọc" vẫn sáng sau khi gói "Rời xe" đã tắt đèn — hai bề mặt nói hai điều về MỘT cái xe.
+                    //
+                    // Ghi NGAY TRÊN THREAD NÀY, KHÔNG đặt trong `tile.post`: nếu ô đã bị `removeView` (người dùng đổi
+                    // bố cục / đổi đơn vị / đổi hồ sơ giữa lúc gói đang chạy) thì việc `post` có chạy hay không là
+                    // hành vi mà tài liệu Android KHÔNG nói rõ. Thiết kế này **không cần biết câu trả lời**: dữ liệu
+                    // đi đường riêng, còn `post` chỉ làm việc trang trí (nếu ô mất thì trang trí cũng vô nghĩa).
+                    // An toàn vì [ControlTileState] dùng map đồng thời.
+                    // Chỉ ghi bước ĂN, và chỉ với TOGGLE (COVER/STEP/SELECT không giữ cờ bật/tắt trong ô).
+                    macro.steps.zip(res?.results ?: emptyList()).forEach { (step, sr) ->
+                        if (sr.ok && ControlRegistry.byId(step.controlId)?.kind == ControlKind.TOGGLE) {
+                            state.setOn(step.controlId, step.arg > 0)
+                        }
+                    }
+                    // Báo cho NGƯỜI DÙNG khi có bước không ăn. Trước đây kết quả chỉ vào nhật ký, mà người lái
+                    // không bao giờ đọc nhật ký ⇒ bấm "Rời xe" xong xe khoá mà kính chưa đóng thì không ai biết.
+                    // Thành công thì IM LẶNG (không ai muốn bị thông báo mỗi lần bấm đúng).
+                    val notice = res?.notice(macro.label)
                     tile.post {
                         runCatching {
                             applyBg(tile, false); tint(icon, label, true)
-                            // Gói vừa GHI THẬT vào các nút bật/tắt ⇒ ghi lại vào bảng trạng thái DÙNG CHUNG, không
-                            // thì ô "Đèn đọc" vẫn sáng sau khi gói "Rời xe" đã tắt đèn — hai bề mặt nói hai điều về
-                            // MỘT cái xe, đúng thứ [ControlTileState.shared] sinh ra để tránh. Chỉ ghi bước ĂN và
-                            // chỉ với TOGGLE (COVER/STEP/SELECT không giữ cờ bật/tắt trong ô).
-                            macro.steps.zip(done?.results ?: emptyList()).forEach { (step, sr) ->
-                                if (sr.ok && ControlRegistry.byId(step.controlId)?.kind == ControlKind.TOGGLE) {
-                                    state.setOn(step.controlId, step.arg > 0)
-                                }
-                            }
+                            if (notice != null) Toast.makeText(ctx, notice, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -318,9 +328,12 @@ enum class TileSize(
  * ⚠ Đây KHÔNG phải trạng thái đọc từ xe (phần lớn nút không có đường đọc lại) — nó chỉ là "tôi vừa bấm cái này".
  */
 class ControlTileState {
-    private val on = HashMap<String, Boolean>()
-    private val values = HashMap<String, Int>()
-    private val selIndex = HashMap<String, Int>()
+    // ConcurrentHashMap, KHÔNG phải HashMap: gói lệnh (W2) ghi trạng thái từ **thread nền** (xem `macroTile`) trong
+    // khi thread chính đang đọc để vẽ ô ⇒ HashMap ở đây là tranh chấp dữ liệu thật. Đổi sang map đồng thời là cách
+    // rẻ nhất và không đổi API.
+    private val on = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    private val values = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val selIndex = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
     init { ControlRegistry.ALL.forEach { on[it.id] = it.onByDefault; values[it.id] = it.value } }
 

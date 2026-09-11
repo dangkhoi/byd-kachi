@@ -274,6 +274,23 @@ nhất còn tiết chế được (C5).
 <tr><td>OQ2</td><td>Nhãn mới cho nút "Kính 50%"?</td><td><b>"Kính cửa lái"</b> — đúng thứ nó làm.</td></tr>
 <tr><td>OQ3</td><td>Gói "Rời xe" có nên khoá xe ở bước cuối không (đang khoá)?</td><td><b>Có</b> — mọi bước đều đảo lại được. Bỏ nếu owner không muốn.</td></tr>
 <tr><td>OQ4</td><td>Có muốn tự dựng gói lệnh trong giao diện không (§4.6)?</td><td><b>Không làm</b> gói này. Nếu owner muốn thì thành việc riêng có thiết kế riêng.</td></tr>
+<tr>
+  <td><b>OQ5</b><br><span class="pill wait">ưu tiên</span></td>
+  <td>
+    <b>Gói "Rời xe" có nên khoá xe khi bước đóng kính THẤT BẠI không?</b><br>
+    Hiện tại: <b>vẫn khoá</b> — theo luật "một bước hỏng không dừng gói" (R2). Hệ quả thật: có thể <b>khoá xe khi
+    kính còn mở</b>.
+  </td>
+  <td>
+    <b>Giữ nguyên (vẫn khoá) + đã BÁO cho người dùng</b> khi có bước không ăn (làm ở Pass 2). Lý do không tự đổi:
+    đây là đánh đổi về hậu quả thực tế, không phải lỗi kỹ thuật — R2 nói đừng bỏ dở giữa gói, C5 nói đừng gộp việc
+    gây hậu quả; hai luật <b>xung đột đúng ở ca này</b> nên cần owner chọn.<br><br>
+    <b>Còn một đường thứ ba, tốt hơn cả hai</b>: xe cho <b>đọc</b> độ mở từng kính theo phần trăm ở mức <b>đã chạy
+    trên xe</b> ⇒ gói có thể <b>tự kiểm chứng</b> (đóng kính → đọc lại % → chỉ khoá khi thật sự đã đóng) thay vì tin
+    vào kết quả ghi. Việc này cần thêm khái niệm "bước có điều kiện" vào lớp gộp lệnh ⇒ <b>ngoài phạm vi gói 3</b>,
+    nhưng là đường nên đi nếu owner muốn chắc chắn.
+  </td>
+</tr>
 </table>
 
 <h2>8. References</h2>
@@ -365,11 +382,44 @@ cùng chỗ với ngưỡng, KHÔNG rải chuỗi trong bộ vẽ (có test kho�
 
 <h4>Còn nợ của chính lượt soát này</h4>
 <p>
-  Vì lượt soát chết giữa đường, <b>ba điểm tôi tự nghi vẫn CHƯA có ai soi độc lập</b>: (1) gọi lại giao diện sau khi
-  ô đã bị tháo (đổi bố cục lúc gói đang chạy); (2) bảng xếp mức bằng chứng dựa vào việc mọi giá trị đều nằm trong
-  bảng — thêm mức mới về sau có thể tính sai; (3) gói "rời xe" khoá xe ở bước cuối dù bước đóng kính có thể đã hỏng.
-  Ghi ra đây để phiên sau soi, <b>không tự tuyên bố là đã duyệt</b>.
+  <b>ĐÃ ĐÓNG ở Pass 2</b> (xem dưới). Ba điểm khi đó là: gọi lại giao diện sau khi ô đã bị tháo · phụ thuộc thứ tự
+  khai enum · gói "rời xe" khoá xe dù bước đóng kính có thể đã hỏng.
 </p>
+
+<h3>Pass 2 — 2026-09-11 (đóng 3 điểm còn treo)</h3>
+<p class="muted">
+  Lượt soát độc lập <b>hỏng hai lần</b> (lỗi kết nối, rồi hệ thống quá tải) ⇒ tôi tự soi, nhưng <b>bằng thực nghiệm
+  chứ không bằng suy luận</b>: mỗi kết luận dưới đây kèm một phép đo hoặc một phép thử phá.
+</p>
+
+<table>
+<tr><th>#</th><th>Kết luận</th><th>Bằng chứng</th><th>Xử lý</th></tr>
+<tr>
+  <td>1</td>
+  <td><span class="tag">P1</span> <b>LỖI THẬT.</b> Việc ghi trạng thái nằm trong <code>tile.post</code> ⇒ nếu ô bị tháo giữa lúc gói đang chạy (đổi bố cục / đổi đơn vị / đổi hồ sơ) thì <b>trạng thái có thể mất</b>, và ô sẽ nói sai so với xe (đèn đã tắt mà ô vẫn sáng). Kèm một lỗi <b>thứ hai chưa ai thấy</b>: bảng trạng thái dùng chung là map <b>thường</b>, mà gói lệnh ghi từ <b>thread nền</b> ⇒ tranh chấp dữ liệu.</td>
+  <td>Đọc code: map bên trong là <code>HashMap</code>. Tài liệu Android <b>không nói rõ</b> <code>post</code> trên view đã tháo có chạy hay không ⇒ tôi <b>không dựa vào câu trả lời đó</b>.</td>
+  <td>Đưa việc ghi trạng thái <b>ra khỏi</b> <code>post</code> (đi đường riêng, không phụ thuộc view còn sống) + đổi bảng trạng thái sang map <b>đồng thời</b>. <code>post</code> nay chỉ làm việc trang trí — ô mất thì trang trí cũng vô nghĩa. <b>Thiết kế không còn cần biết</b> hành vi của <code>post</code>. Thử phá cả hai ⇒ đỏ đúng chỗ.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><span class="tag p2">P3</span> <b>KHÔNG phải lỗi</b> — test <b>có</b> khoá thật. Nhưng <b>giao kèo chưa được ghi tại chỗ khai</b>: người thêm một mức mới không có gì cảnh báo ngay tại enum.</td>
+  <td>Thử phá: đảo hai giá trị trong enum ⇒ test đỏ đúng bài. Đọc test: nó khẳng định <b>nguyên danh sách có thứ tự</b> nên chèn vào giữa cũng đỏ.</td>
+  <td>Ghi giao kèo vào ngay đầu enum (thứ tự khai = độ tin cậy giảm dần, <b>code phụ thuộc vào nó</b>, thêm mức mới phải quyết định vị trí). Không đổi code.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><b>QUYẾT ĐỊNH CỦA OWNER, không phải lỗi kỹ thuật.</b> Nhưng phát hiện một lỗi <b>thật</b> đi kèm: kết quả gói chỉ vào <b>nhật ký</b> — mà người lái <b>không bao giờ đọc nhật ký</b> ⇒ bấm "Rời xe" xong xe khoá mà kính chưa đóng thì <b>không có gì nói cho người ta biết</b>.</td>
+  <td>Luật R2 ("một bước hỏng không dừng gói") có lý do đúng — bỏ dở giữa gói còn tệ hơn. Nhưng R2 <b>không</b> cho phép <b>im lặng</b> về việc đã hỏng.</td>
+  <td><b>KHÔNG tự đổi hành vi khoá xe</b> (đó là owner quyết — xem OQ5, đã đặt ưu tiên). Việc tôi làm: gói hỏng một phần ⇒ <b>báo cho người dùng</b> bằng câu gọi bước hỏng theo <b>nhãn</b>, thành công thì im lặng. Câu báo soạn ở tầng lõi ⇒ test được off-car.</td>
+</tr>
+</table>
+
+<p><b>Số đo Pass 2</b>: đủ 5 module <b>2491 / 0</b> (trước Pass 2 là 2482 ⇒ <b>+9</b>, không mất test nào) · thử phá
+<b>4 phép</b> đều đỏ đúng chỗ (map thường · ghi trạng thái trong <code>post</code> · đảo thứ tự enum · lấy mức mạnh
+nhất) · APK debug dựng sạch.</p>
+
+<p class="warn"><b>Giới hạn của Pass 2</b>: đây là <b>tôi tự soi</b>, không phải người thứ ba — vì tác nhân soát hỏng
+hai lần. Đã bù bằng thực nghiệm cho từng kết luận, nhưng vẫn nên có một lượt soi ngoài khi có điều kiện.</p>
 
 </div>
 </body>

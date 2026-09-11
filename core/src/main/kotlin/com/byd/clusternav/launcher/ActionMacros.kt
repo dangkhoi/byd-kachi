@@ -97,6 +97,24 @@ data class MacroResult(val macroId: String, val results: List<MacroStepResult>) 
     /** KHÔNG bước nào ăn — off-car thì đây là ca bình thường (mọi lệnh no-op). */
     val allFailed: Boolean get() = results.isNotEmpty() && results.none { it.ok }
 
+    /**
+     * Câu báo CHO NGƯỜI DÙNG, hoặc `null` khi mọi bước đều ăn (thành công thì im lặng — không ai muốn bị thông báo
+     * mỗi lần bấm đúng).
+     *
+     * Vì sao cần: trước đây kết quả gói chỉ đi vào nhật ký, mà người lái **không bao giờ đọc nhật ký**. Hệ quả thật:
+     * bấm "Rời xe" xong xe khoá nhưng kính chưa đóng — và không có gì nói cho người ta biết. Luật "một bước hỏng
+     * không dừng gói" (R2) là đúng, nhưng nó KHÔNG cho phép im lặng về việc đã hỏng.
+     *
+     * Gọi bước hỏng bằng **nhãn** chứ không bằng mã, vì đây là câu cho người đọc.
+     */
+    fun notice(macroLabel: String): String? {
+        if (results.isEmpty()) return null
+        if (allOk) return null
+        val names = failed.map { ControlRegistry.byId(it)?.label ?: it }.distinct()
+        return if (allFailed) "$macroLabel: xe không nhận lệnh nào"
+        else "$macroLabel: chưa làm được — ${names.joinToString(", ")}"
+    }
+
     /** Một câu ngắn cho nhật ký / thông báo. */
     fun summary(): String = when {
         results.isEmpty() -> "gói rỗng"

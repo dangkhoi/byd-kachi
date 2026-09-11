@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi U1 — Icon theo khái niệm + nhãn phân biệt được</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi U1 — Icon theo khái niệm + nhãn phân biệt được</h1>
+<p class="muted">
+  <b>Trạng thái</b>: DONE off-car · <b>Ngày</b>: 2026-09-11 · <b>Mã việc</b>: U1 (+ một lỗi nhãn phát sinh từ gói 2) ·
+  <b>Mục đích</b>: bảng chọn khả năng đang có những hàng 5 ô <b>trông y hệt nhau</b> — icon không mang thông tin gì,
+  và có 18 nhãn trùng nhau.
+</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-11</td><td>Đo hiện trạng icon · vẽ 6 icon mới · lập bảng tra theo khái niệm · phát hiện thêm <b>18 nhãn trùng</b> do gói 2 gộp hai loại vào một lưới, và <b>1 ca trùng cùng loại</b> mà cách sửa đầu chưa xử được.</td></tr>
+</table>
+
+<h2>2. Context — ba số đo</h2>
+<table>
+<tr><th>#</th><th>Đo được</th><th>Nghĩa là gì</th></tr>
+<tr>
+  <td>Đ1</td>
+  <td><b>123 mục đọc chỉ dùng 7 icon</b> — vì icon lấy theo <b>NHÓM</b>, không theo mục.</td>
+  <td>Cả 28 mục năng lượng cùng icon tia sét, cả 20 mục an toàn cùng icon lưới. Trên lưới 5 cột, một hàng trông y hệt nhau ⇒ icon <b>không giúp phân biệt gì</b>, mà chữ thì bị cắt trong ô nhỏ.</td>
+</tr>
+<tr>
+  <td>Đ2</td>
+  <td>Có <b>59 tệp icon</b> nhưng chỉ <b>29 tên</b> được nối vào bảng tra.</td>
+  <td>30 icon đã vẽ rồi mà không cách nào dùng tới. Phần lớn việc là <b>nối lại</b>, không phải vẽ mới.</td>
+</tr>
+<tr>
+  <td>Đ3</td>
+  <td><b>18 nhãn trùng</b> giữa mục ĐỌC và HÀNH ĐỘNG, + <b>1 ca trùng cùng loại</b>.</td>
+  <td>Hai ô đều ghi "Kính trước-trái": một để <b>xem</b> độ mở %, một để <b>bấm</b> đóng/mở. Trước gói 2 hai loại nằm ở hai màn khác nhau nên trùng không sao; nay nằm cạnh nhau trong cùng lưới ⇒ không phân biệt được. <b>Đây là hệ quả của việc gộp ở gói 2</b>, không phải lỗi có từ đầu.</td>
+</tr>
+</table>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R1</b></td><td>Icon phân biệt <b>theo khái niệm</b> (đo cái gì), không theo nhóm.</td><td>Số icon phân biệt ít nhất <b>gấp đôi</b> cách cũ.</td></tr>
+<tr><td><b>R2</b></td><td><b>Không nhóm lớn nào</b> còn dùng chung đúng một icon.</td><td>Test: nhóm &gt;3 mục mà chỉ 1 icon ⇒ đỏ.</td></tr>
+<tr><td><b>R3</b></td><td><b>Không bao giờ ra ô trống icon</b>: mục chưa khai icon thì lùi về icon của nhóm.</td><td>Test: mọi mục ra tên icon hợp quy ước; mã lạ vẫn ra icon nhóm.</td></tr>
+<tr><td><b>R4</b></td><td><b>Không sửa 123 dòng</b> bộ đăng ký.</td><td>Bảng tra là một chỗ riêng; registry không đổi.</td></tr>
+<tr><td><b>R5</b></td><td><b>Không còn nhãn hiển thị nào trùng nhau.</b></td><td>Test: gộp toàn bộ nhãn hiển thị ⇒ 0 trùng.</td></tr>
+<tr><td><b>R6</b></td><td>Gợi ý loại <b>chỉ thêm ở chỗ bị trùng</b>; nhãn <b>GỐC</b> không đổi.</td><td>Test: mục không trùng giữ nguyên nhãn; nhãn gốc ≠ nhãn hiển thị chỉ ở chỗ trùng.</td></tr>
+<tr><td>C1</td><td><code>:core</code> thuần JVM · không thêm phụ thuộc · <b>không sửa layout niêm phong</b> · không đụng chiếu-cụm.</td><td>Kiểm bằng lệnh. ⚠ Có <b>thêm</b> 6 tệp icon mới — đó là tệp MỚI, không phải sửa layout đã niêm phong; test niêm phong xanh.</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Bảng tra theo khái niệm</h3>
+<p>
+  Cùng lối với lớp đơn vị ở gói 2: <b>không sửa registry</b>, chỉ thêm một bảng tra. Thứ tự tra: khớp <b>chính xác</b>
+  mã → khớp <b>tiền tố</b> (cho các họ như 4 kính, 4 cửa, 4 áp suất lốp) → <b>lùi về</b> icon của nhóm.
+</p>
+<div class="card">
+<b>Bẫy đã tránh</b>: tiền tố <b>dài phải xét trước</b> tiền tố ngắn. <code>tyre_t_</code> (nhiệt lốp) và
+<code>tyre_p_</code> (áp suất lốp) cùng bắt đầu bằng <code>tyre_</code>; xếp sai thì nhiệt lốp ra icon lốp. Có test
+riêng khoá đúng điều này — đây cũng là ví dụ rõ nhất của việc icon <b>mang thông tin</b>: 8 mục lốp trước đây cùng
+một icon, giờ 4 cái là lốp và 4 cái là nhiệt kế.
+</div>
+
+<h3>4.2 Sáu icon vẽ mới</h3>
+<table>
+<tr><th>Icon</th><th>Dùng cho</th><th>Vì sao phải vẽ mới</th></tr>
+<tr><td>Đường / quãng đường</td><td>Tầm chạy, odo, quãng đường chuyến (6 mục)</td><td>Không có icon nào gần nghĩa; đây là họ đông thứ nhì.</td></tr>
+<tr><td>Viên pin</td><td>Mức sạc, sức khoẻ pin, mục tiêu sạc, mức xăng (5 mục)</td><td>Tia sét nói về <b>điện</b>, không nói về <b>dung lượng</b>.</td></tr>
+<tr><td>Dây an toàn</td><td>Dây an toàn 2 ghế</td><td>Icon ghế đã dùng cho việc khác (phát hiện người trên ghế).</td></tr>
+<tr><td>Cảm biến vùng</td><td>Điểm mù, cắt ngang, mở cửa, radar (9 mục)</td><td>Trước đây tất cả là icon lưới — vô nghĩa.</td></tr>
+<tr><td>Vị trí</td><td>Toạ độ, hướng, độ cao (4 mục)</td><td>Không có icon vị trí nào trong bộ.</td></tr>
+<tr><td>Vô-lăng</td><td>Góc lái</td><td>—</td></tr>
+</table>
+
+<h3>4.3 Nhãn phân biệt — chỉ thêm ở chỗ trùng</h3>
+<p>
+  Thêm gợi ý loại cho <b>cả 187 mục</b> là nhiễu. Nên chỉ mục nào có nhãn <b>bị trùng</b> mới được thêm:
+  <b>· xem</b> (thông tin đọc) · <b>· bấm</b> (hành động) · <b>· thẻ</b> (widget dựng tay).
+</p>
+<div class="card">
+<b class="warn">Ca khó đã lộ ra nhờ test:</b> bản sửa đầu chỉ phân biệt <b>đọc ↔ hành động</b>, nên vẫn còn một cặp
+trùng <b>cùng loại</b>: widget <b>"Tốc độ"</b> (thẻ dựng tay) và mục đọc <b>"Tốc độ"</b> (số thô) — cả hai đều là ĐỌC.
+Đã tổng quát hoá: <b>bất kỳ</b> nhãn xuất hiện nhiều hơn một lần đều được thêm gợi ý, và <b>widget dựng tay xét
+trước</b> (nếu xét theo loại trước thì nó và mục đọc thô lại ra cùng một gợi ý). Test khoá: sau khi phân biệt,
+<b>0</b> nhãn hiển thị bị trùng.
+</div>
+<p class="muted">Nhãn <b>GỐC</b> trong bộ đăng ký <b>không đổi</b> — gợi ý loại chỉ là chuyện trình bày. Trộn hai thứ
+sẽ làm bẩn dữ liệu, và test khoá điều đó.</p>
+
+<h2>5. Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td>Vẽ 6 icon mới + nối các tên icon chưa được nối</td><td>Không tên icon nào tra ra rỗng</td></tr>
+<tr><td>T2</td><td>Bảng tra theo khái niệm ở <code>:core</code></td><td>R1 · R2 · R3 · R4</td></tr>
+<tr><td>T3</td><td>Nhãn phân biệt (chỉ ở chỗ trùng)</td><td>R5 · R6</td></tr>
+<tr><td>T4</td><td>Test đủ 5 module + đo trên máy ảo (đọc ảnh)</td><td>Giữ mốc, không mất test</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td>Số icon phân biệt</td><td>Đếm trên toàn bộ 123 mục đọc</td><td><span class="pill ok">7 → 29</span> (gấp <b>4,1 lần</b>)</td></tr>
+<tr><td>Theo từng nhóm</td><td>Đếm icon phân biệt trong mỗi nhóm</td><td><span class="pill ok">đạt</span> năng lượng 28 mục/<b>6</b> icon · an toàn 20/<b>7</b> · thân xe 18/<b>6</b> · đèn 14/<b>4</b> · động lực 14/<b>3</b> · khí hậu 12/<b>4</b> · danh tính 9/<b>4</b> · lốp 8/<b>2</b> — trước đây <b>mọi nhóm = 1</b></td></tr>
+<tr><td>Nhãn trùng</td><td>Gộp toàn bộ nhãn hiển thị, đếm trùng</td><td><span class="pill ok">18 + 1 → 0</span></td></tr>
+<tr><td>Đủ 5 module</td><td><code>./gradlew test --continue</code></td><td><span class="pill ok">2503 / 0</span> (đầu phiên 2482 ⇒ <b>+21</b>)</td></tr>
+<tr><td>Niêm phong</td><td>Chạy bộ test khoá layout/chuỗi</td><td><span class="pill ok">0 đỏ</span> — thêm tệp icon MỚI không phá niêm phong (nó khoá layout + chuỗi, không khoá bộ icon)</td></tr>
+<tr><td>Máy ảo — icon</td><td>Đọc ảnh bảng Tuỳ biến (30 ô nhóm năng lượng)</td><td><span class="pill ok">đạt</span> <b>6 icon khác nhau</b> trên 30 ô (pin · đường · tia sét · đồng hồ · nhiệt kế · đồng hồ đo); <b>0 ô trống icon</b> (ô ít mực nhất 12,2%); <b>0 icon lỗi</b> (mọi icon nằm gọn trong hộp 51×51, nét đồng nhất)</td></tr>
+<tr><td>Máy ảo — nhãn</td><td>Dump giao diện sau khi cuộn</td><td><span class="pill ok">đạt</span> <code>"Chế độ lái · xem"</code> và <code>"Chế độ lái · bấm"</code> hiện cạnh nhau; <code>"Tốc độ · xem"</code></td></tr>
+</table>
+
+<h3>Còn tồn (đã đo, không che)</h3>
+<ul>
+  <li><b>Icon phân biệt theo HỌ, chưa theo từng ô.</b> Tia sét vẫn dùng cho <b>11 ô</b> trong nhóm năng lượng (đang sạc / công suất sạc / điện áp cell / tiêu thụ…). Đi từ "vô dụng" lên "hữu dụng ở mức phân loại họ".</li>
+  <li><b>Cặp đối lập chưa phân biệt</b>: "Nhiệt cell cao" và "Nhiệt cell thấp" cùng một nhiệt kế; "Còn (giờ)" và "Còn (phút)" cùng một đồng hồ. Đây đúng là chỗ icon <b>đáng lẽ giúp nhất</b>. Cách làm: ghép mũi tên lên/xuống, hoặc tách tia sét thành các biến thể.</li>
+  <li><b>Nhãn hàng cuối bị viewport cắt ~4px</b> ở đáy bảng (mất dấu thanh dưới). Lỗi bố cục bảng, không phải lỗi icon.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mặc định</th></tr>
+<tr><td>OQ1</td><td>Có cần phân biệt tới <b>từng ô</b> (thêm ~10 biến thể icon cho các cặp cao/thấp, giờ/phút) không?</td><td><b>Chưa làm</b> — mức "phân loại họ" đã chữa được bệnh chính. Làm tiếp nếu owner thấy vẫn khó dùng.</td></tr>
+<tr><td>OQ2</td><td>Chữ gợi ý loại: <b>"xem / bấm / thẻ"</b> có ổn không, hay muốn ký hiệu thay chữ?</td><td>Giữ chữ — ngắn, không cần học ký hiệu.</td></tr>
+</table>
+
+<h2>8. References</h2>
+<ul>
+  <li><code>docs/specs/kachi-unified-capability-tile.html</code> — gói 2; nơi việc gộp hai loại vào một lưới làm 18 nhãn trùng lộ ra.</li>
+  <li><code>docs/PROJECT-BACKLOG.md</code> — U1.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+<p><b>Quyết định:</b></p>
+<ul>
+  <li><b>Nối lại icon đã có trước khi vẽ mới.</b> [ĐO] 59 tệp tồn tại mà chỉ 29 được nối ⇒ phần lớn việc là nối, chỉ 6 khái niệm thật sự thiếu icon.</li>
+  <li><b>Bảng tra riêng, không sửa 123 dòng registry</b> — cùng lối với lớp đơn vị ở gói 2. Thêm mục mới mà chưa khai icon thì tự lùi về icon nhóm, không bao giờ ra ô trống.</li>
+  <li><b>Gợi ý loại chỉ thêm ở chỗ trùng.</b> Thêm cho cả 187 mục là nhiễu.</li>
+  <li><b>Widget dựng tay xét TRƯỚC</b> khi chọn gợi ý — vì nó cũng là ĐỌC, xét theo loại trước sẽ không phân biệt được nó với mục đọc thô.</li>
+</ul>
+<p><b>Sai lệch:</b> bản sửa nhãn đầu chỉ xét trùng <b>giữa hai loại</b>; test mạnh ("sau khi phân biệt thì 0 trùng")
+bắt ra ca <b>cùng loại</b> mà tôi không nghĩ tới. Đã tổng quát hoá thành "bất kỳ nhãn nào xuất hiện &gt; 1 lần".
+Đây là lần thứ hai trong dự án một phép kiểm <b>toàn cục</b> ("không còn cái nào") bắt được thứ mà phép kiểm theo
+từng ca bỏ sót.</p>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Chưa có lượt soát độc lập cho U1 — tác nhân soát hỏng 2 lần trong phiên này (lỗi kết nối, rồi hệ
+thống quá tải). Phần xác minh bằng mắt (đọc ảnh máy ảo) thì <b>đã có tác nhân độc lập</b> làm và nó chính là chỗ tìm
+ra hai lỗi ngoài icon (nhãn trùng · nhãn hàng cuối bị cắt).</p>
+
+</div>
+</body>
+</html>

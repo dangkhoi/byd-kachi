@@ -106,6 +106,36 @@ class ActionMacroWiringContractTest {
         assertTrue(macroTile.contains("needsBadge()"), "gói có bước chưa kiểm thì phải hiện dấu")
     }
 
+    // ── Đóng 3 điểm treo (soát xét lượt 2) ───────────────────────────────────────────────────────
+
+    @Test
+    fun `ghi trang thai KHONG duoc phu thuoc vao view con song`() {
+        val fn = factory.substringAfter("fun macroTile(")
+        val postBlock = fn.substringAfter("tile.post {").substringBefore("}")
+        assertFalse(postBlock.contains("state.setOn("),
+            "Ghi trạng thái phải nằm NGOÀI tile.post: nếu ô đã bị removeView (đổi bố cục/đơn vị/hồ sơ giữa lúc gói " +
+                "đang chạy) thì việc post có chạy hay không là hành vi tài liệu Android KHÔNG nói rõ ⇒ trạng thái có " +
+                "thể mất, và ô sẽ nói sai so với xe.")
+        assertTrue(fn.contains("state.setOn("), "vẫn phải ghi trạng thái sau khi gói ghi thật")
+    }
+
+    @Test
+    fun `bang trang thai dung chung phai an toan da luong`() {
+        // Gói lệnh ghi từ thread NỀN trong khi thread chính đọc để vẽ ⇒ HashMap thường là tranh chấp dữ liệu.
+        assertTrue(factory.contains("ConcurrentHashMap"),
+            "ControlTileState phải dùng map đồng thời vì có đường ghi từ thread nền")
+        val stateCls = factory.substringAfter("class ControlTileState").substringBefore("companion object")
+        assertFalse(stateCls.contains("HashMap<String, Boolean>()") && !stateCls.contains("ConcurrentHashMap"),
+            "không được còn map thường trong bảng trạng thái")
+    }
+
+    @Test
+    fun `hong thi bao cho nguoi dung chu khong chi ghi nhat ky`() {
+        val fn = factory.substringAfter("fun macroTile(")
+        assertTrue(fn.contains("notice("), "phải soạn câu báo từ kết quả gói")
+        assertTrue(fn.contains("Toast"), "phải hiện ra cho người dùng — nhật ký thì người lái không đọc")
+    }
+
     // ── R8: nợ gói 2 — bảng lốp nói SAI CÁI GÌ ───────────────────────────────────────────────────
 
     @Test
