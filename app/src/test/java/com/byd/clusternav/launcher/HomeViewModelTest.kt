@@ -35,7 +35,12 @@ class HomeViewModelTest {
 
         override fun load(): HomeUiState {
             val base = store[active] ?: HomeUiState(activeProfile = active)
-            return base.copy(activeProfile = active, profiles = profileList.toList(), themeMode = theme, embedded = false)
+            // `autostart` nạp từ chỗ giữ RIÊNG (không theo hồ sơ) — mô phỏng đúng `PrefsWorkspaceRepository.load()`,
+            // nơi cờ này đọc từ `prefs.launcherAutostart()` chứ không từ bộ khoá của hồ sơ.
+            return base.copy(
+                activeProfile = active, profiles = profileList.toList(), themeMode = theme, embedded = false,
+                autostart = autostartStore,
+            )
         }
 
         override fun persist(state: HomeUiState) {
@@ -65,6 +70,16 @@ class HomeViewModelTest {
             }
             return load()
         }
+
+        /**
+         * S1·T4 — cờ "tự mở khi nổ máy". CHUNG mọi hồ sơ (không nằm trong bộ khoá theo hồ sơ) nên nó KHÔNG đi qua
+         * [persist]; bản giả phải giữ riêng, đúng như nơi lưu thật.
+         */
+        var autostartStore: Boolean = true; private set
+
+        override fun autostart(): Boolean = autostartStore
+
+        override fun setAutostart(on: Boolean) { autostartStore = on }
     }
 
     private fun repo(state: HomeUiState = HomeUiState()) = FakeWorkspaceRepository(state)
@@ -215,15 +230,23 @@ class HomeViewModelTest {
         assertEquals(0, fake.persistCount)   // trạng thái xe LIVE KHÔNG ghi bền
     }
 
-    @Test fun `cycleDockEdge xoay vien va persist`() = runTest {
+    /**
+     * Đặt THẲNG một viền — đường DUY NHẤT còn lại sau khi bỏ pill "Thanh" khỏi thanh trên.
+     *
+     * ⚠ Bài `cycleDockEdge xoay vien va persist` cũ đã **bỏ** cùng lúc với `HomeViewModel.cycleDockEdge()`: hành vi
+     * xoay vòng không còn tồn tại nên bài canh nó chỉ còn canh mã chết. Nhưng phép khẳng định mà nó mang (đổi viền
+     * thì state đổi **và** được ghi bền) thì vẫn cần — và [ĐO] `setDockEdge` trước đó **không có bài nào** canh, nên
+     * xoá thẳng bài cũ là mất phép kiểm. Chuyển sang đây.
+     */
+    @Test fun `setDockEdge dat thang mot vien va persist`() = runTest {
         val fake = repo()
         val vm = HomeViewModel(fake)
         vm.uiState.test {
             assertEquals(DockEdge.BOTTOM, awaitItem().dock.edge)
-            vm.cycleDockEdge()
-            assertEquals(DockEdge.LEFT, awaitItem().dock.edge)
+            vm.setDockEdge(DockEdge.RIGHT)                       // bấm "Phải" phải ra "Phải", không phải viền kế tiếp
+            assertEquals(DockEdge.RIGHT, awaitItem().dock.edge)
         }
-        assertEquals(DockEdge.LEFT, fake.lastPersisted!!.dock.edge)
+        assertEquals(DockEdge.RIGHT, fake.lastPersisted!!.dock.edge)
     }
 
     @Test fun `toggleDock bat tat control va persist`() = runTest {
@@ -236,5 +259,38 @@ class HomeViewModelTest {
             assertTrue(awaitItem().dock.enabled.contains("defrost"))
         }
         assertTrue(fake.lastPersisted!!.dock.enabled.contains("defrost"))
+    }
+
+    /**
+     * S1·T4 / R3 — **tự mở khi nổ máy**: đổi được + lưu bền.
+     *
+     * [SOÁT S1] Bài này bổ sung phần các bài canh dây nối KHÔNG kiểm được: chúng chỉ soi *hình dạng* mã nguồn, nên
+     * một bản `setAutostart` chỉ đổi state mà quên gọi cổng dữ liệu (hoặc ngược lại) vẫn qua được. Ở đây kiểm HÀNH VI
+     * ở cả hai đầu, và kiểm luôn rằng cờ này **không** đi qua `persist` (nó chung mọi hồ sơ, không thuộc bộ khoá theo
+     * hồ sơ) — nếu ai đó chuyển nó vào `persist` thì đổi hồ sơ sẽ ghi đè cờ của cả máy.
+     */
+    @Test fun `setAutostart doi state va ghi ben qua cong du lieu`() = runTest {
+        // Mặc định của MODEL phải khớp mặc định của nơi lưu (`getBoolean(..., true)`) và của cổng dữ liệu
+        // (`fun autostart(): Boolean = true`): ba mặc định lệch nhau thì ô tick nói sai ngay lần mở đầu, trước cả khi
+        // có gì được ghi. Đọc THẲNG model ở đây — đọc qua bản giả thì chỉ kiểm mặc định của bản giả.
+        assertTrue(HomeUiState().autostart, "mặc định của model phải BẬT — launcher nên tự sẵn sàng")
+        val fake = repo()
+        val vm = HomeViewModel(fake)
+        vm.uiState.test {
+            assertTrue(awaitItem().autostart)
+            vm.setAutostart(false)
+            assertFalse(awaitItem().autostart)
+        }
+        assertFalse(fake.autostartStore, "phải ghi bền qua cổng dữ liệu, không chỉ đổi state")
+        assertEquals(0, fake.persistCount, "cờ chung cả máy KHÔNG được đi qua persist theo hồ sơ")
+    }
+
+    /** Nạp lại (đổi hồ sơ) phải mang theo cờ đang lưu — mở lại màn Cài đặt là thấy đúng giá trị. */
+    @Test fun `autostart nap lai dung gia tri da luu`() = runTest {
+        val fake = repo()
+        val vm = HomeViewModel(fake)
+        vm.setAutostart(false)
+        val vm2 = HomeViewModel(fake)
+        assertFalse(vm2.uiState.value.autostart, "lượt nạp mới phải thấy cờ đã lưu, không về mặc định")
     }
 }

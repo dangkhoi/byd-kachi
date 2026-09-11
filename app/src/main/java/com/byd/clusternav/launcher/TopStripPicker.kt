@@ -18,7 +18,8 @@ import com.byd.clusternav.launcher.KachiTheme.dpi
 /**
  * BỘ CHỌN CHIP cho thanh trạng thái trên (RW0 **vùng thứ ba**).
  *
- * Tách khỏi [CustomizePanel] vì bảng đó vượt **trần 500 dòng** của dự án khi thêm mục này; và đây là một mảng liền
+ * Tách khỏi bảng "Tuỳ biến" cũ (đã xoá ở S1·T5) vì bảng đó vượt **trần 500 dòng** của dự án khi
+ * thêm mục này; và đây là một mảng liền
  * mạch (giữ danh sách chip đang chọn + vẽ ô + đổi trạng thái) nên cắt đúng khớp.
  *
  * Giữ **trạng thái đang chọn của phiên mở bảng** để tô ô đúng; nguồn sự thật vẫn là `HomeUiState.topStrip` — lớp này

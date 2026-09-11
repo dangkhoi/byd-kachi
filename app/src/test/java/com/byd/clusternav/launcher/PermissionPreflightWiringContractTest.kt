@@ -20,9 +20,13 @@ class PermissionPreflightWiringContractTest {
 
     private val pre by lazy { code("src/main/java/com/byd/clusternav/launcher/PermissionPreflight.kt") }
     private val act by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
-    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
+    /** Nội dung nhóm "Hệ thống & quyền" của màn Cài đặt (S1·T3) — hàng quyền chuyển tới đây từ bảng "Tuỳ biến" cũ. */
+    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
 
-    /** Chỗ GỌI bảng Tuỳ biến — tách khỏi Activity sang [HomePanels] (Activity vượt trần 500 dòng). */
+    /** Dòng quyền — chuyển sang bộ dựng dòng dùng chung (S1·T2) để màn Cài đặt dùng cùng một hàng. */
+    private val rows by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsRows.kt") }
+
+    /** Chỗ GỌI màn Cài đặt — tách khỏi Activity sang [HomePanels] (Activity vượt trần 500 dòng). */
     private val panel_caller by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
 
     // ── C4: đọc thì KHÔNG mở kênh shell ──────────────────────────────────────────────────────────
@@ -99,12 +103,24 @@ class PermissionPreflightWiringContractTest {
         assertTrue(fn.contains("if (msg != null)"), "đủ (hoặc chỉ thiếu mục nhỏ) ⇒ im lặng")
     }
 
+    /**
+     * Nhóm "Hệ thống & quyền" là chỗ xem ĐỦ bức tranh — và **không bao giờ là một trang trắng**.
+     *
+     * ⚠ Bài này thay bài cũ *"đủ thì KHÔNG hiện mục nào"*. Luật cũ đúng cho bảng "Tuỳ biến": mục quyền chỉ là một
+     * đoạn giữa một trang dài, ẩn đi khi đủ là hợp lý. Nay nó là **một nhóm người dùng chủ động bấm vào**, nên đủ mà
+     * hiện trang trắng thì trả lời sai câu họ vừa hỏi và trông y như app hỏng. Luật *"đủ thì im lặng"* vẫn được canh ở
+     * chỗ nó thuộc về — thông báo lúc mở launcher, `notice(coreOnly = true)` (bài `chi bao khi thieu…` phía trên).
+     */
     @Test
-    fun `bang Tuy bien la cho xem DU buc tranh`() {
+    fun `nhom He thong la cho xem DU buc tranh va khong bao gio trang`() {
         assertTrue(panel.contains("permissionRow("), "phải có hàng cho từng quyền thiếu")
-        assertTrue(panel.contains("losesWhatIfMissing"), "phải nói mất gì, không chỉ tên quyền")
-        assertTrue(panel.contains("!it.allOk"), "đủ thì KHÔNG hiện mục nào")
-        assertTrue(panel_caller.contains("permissions = PermissionPreflight.check("), "chỗ gọi phải truyền báo cáo vào")
+        assertTrue(rows.contains("losesWhatIfMissing"), "phải nói mất gì, không chỉ tên quyền")
+        val fn = SourceRoots.body(panel, "private fun system(")
+        assertTrue(fn.contains("rep.allOk"), "phải rẽ nhánh theo trạng thái đủ/thiếu")
+        assertTrue(fn.contains("rows.note("), "ca ĐỦ phải nói 'đủ quyền', không để trống")
+        assertTrue(fn.contains("rep.missing.forEach"), "ca THIẾU phải liệt kê đích danh")
+        assertTrue(panel_caller.contains("permissions = {"), "chỗ gọi phải truyền đường đọc báo cáo vào")
+        assertTrue(panel_caller.contains("PermissionPreflight.check("), "và đường đó phải là vòng kiểm thật")
     }
 
     @Test

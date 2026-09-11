@@ -17,21 +17,38 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Thanh trạng thái trên cùng của HOME: đồng hồ + ngày + chọn bố cục segmented + chip xe (PM2.5/nhiệt/pin) +
- * pill "Thanh"/"Cài đặt" + avatar hồ sơ. Tách khỏi [KachiHomeActivity] (B5b) để activity còn là composition-root.
+ * Thanh trạng thái trên cùng của HOME: đồng hồ + ngày + chọn bố cục segmented + chip xe (cấu hình được) +
+ * pill "Ứng dụng"/"Cài đặt" + avatar hồ sơ. Tách khỏi [KachiHomeActivity] (B5b) để activity còn là
+ * composition-root.
  *
  * THUẦN VIEW — KHÔNG giữ state launcher: mọi tương tác đẩy lên qua callback (một chiều), activity nối vào intent VM.
  * [selectPreset]/[setProfileInitial]/[refreshChips]/[updateClock] do [KachiHomeActivity.render] / vòng tick gọi để
- * phản chiếu state. Byte-giữ so với `buildTopStrip()`/`buildSegmented()`/`pill()`/`chip()`/`profileAvatar()` cũ.
+ * phản chiếu state.
+ *
+ * ## S1 — MỘT cửa vào cấu hình
+ * Trước S1 thanh này có **ba** bề mặt cấu hình: pill "Tuỳ biến" (bảng khả năng + đơn vị + hình nền + quyền), pill
+ * "Cài đặt" (nhảy thẳng sang màn ClusterNav cũ) và pill **"Thanh"** (xoay vòng 4 viền của thanh nút xe, ghi bền
+ * `dock_edge`). Ba chỗ cho cùng một loại việc, và không chỗ nào bày đủ. Nay chỉ còn **"Cài đặt"** → [SettingsPanel];
+ * màn ClusterNav là **một nhóm bên trong** đó.
+ *
+ * ⚠⚠ **Pill "Thanh" đã BỎ HẲN** (owner: *"không để cấu hình nằm lỉ tỉ"*). Chức năng không mất mà **tốt hơn**: Cài đặt
+ * → Màn hình chính → "Viền đặt thanh" bày cả 4 viền và đặt THẲNG một viền, thay vì bắt bấm tới ba lần để đi hết vòng
+ * BOTTOM → LEFT → RIGHT → TOP mà ô đang sáng thì không nói gì. `HomeViewModel.cycleDockEdge()` bị xoá cùng lúc vì sau
+ * khi gỡ pill nó không còn chỗ gọi nào (mã chết).
+ *
+ * Hai thứ **cố ý ở lại** (§4.5): 5 nút bố cục (đổi bố cục là việc hằng ngày; cả hai bề mặt đi cùng một intent) và
+ * avatar hồ sơ (đang ở hồ sơ nào là thông tin phải thấy liên tục). Nhưng avatar chỉ còn **hiển thị + chạm để đổi** —
+ * việc *tạo* hồ sơ chuyển vào Cài đặt, vì giữ cả hai đường tạo là hai chỗ phải sửa và sẽ lệch nhau.
+ *
+ * Giới hạn của thanh này là **khoá lưu bền nào được phép chạm**, không phải "bao nhiêu pill": chỉ `preset` (5 nút bố
+ * cục) và `active_profile` (avatar) — xem [SettingsCatalog.TOP_STRIP_ALLOWED_KEYS], nơi khai lý do, và
+ * `TopStripSurfaceContractTest` canh cả hai đầu.
  */
 class KachiTopStrip(
     private val activity: Activity,
     private val onSelectPreset: (LayoutPreset) -> Unit,
-    private val onCycleDock: () -> Unit,
-    private val onCustomizeDock: () -> Unit,
     private val onOpenSettings: () -> Unit,
     private val onProfileTap: () -> Unit,
-    private val onProfileLongPress: () -> Unit,
     private val onOpenAppList: () -> Unit = {},   // U3: lối vào "Mở ứng dụng" (mở app toàn màn, không gắn ô)
 ) {
     private val presetCells = HashMap<LayoutPreset, ImageView>()
@@ -59,8 +76,6 @@ class KachiTopStrip(
         chipRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         strip.addView(chipRow)
         strip.addView(pill("Ứng dụng", false) { onOpenAppList() }, pillLp())   // U3: mở app toàn màn
-        strip.addView(pill("Thanh", false) { onCycleDock() }, pillLp())
-        strip.addView(pill("Tuỳ biến", false) { onCustomizeDock() }, pillLp())
         strip.addView(pill("Cài đặt", true) { onOpenSettings() }, pillLp())
         strip.addView(profileAvatar(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(10) })
         refreshChips(CarStatus())
@@ -177,14 +192,17 @@ class KachiTopStrip(
     private var chipConfig: TopStripConfig = TopStripConfig.DEFAULT
     private val chipViews = ArrayList<TextView>()
 
-    // ── Hồ sơ tài xế: pill hiện tên, chạm = đổi hồ sơ, giữ = tạo mới ──
+    // ── Hồ sơ tài xế: avatar hiện chữ đầu, chạm = đổi hồ sơ ──
+    /**
+     * S1 — **không còn `setOnLongClickListener`**: tạo hồ sơ nay ở Cài đặt → Hồ sơ tài xế (§4.5). Giữ giữ-để-tạo ở
+     * đây thì có hai đường tạo cho cùng một việc, và cử chỉ giữ trên một đích 30dp giữa lúc lái là chỗ dễ bấm nhầm.
+     */
     private fun profileAvatar(): TextView {
         profileAvatarView = TextView(activity).apply {
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
             val s = dp(30); width = s; height = s; background = KachiTheme.gradient(activity, 999f)
             setOnClickListener { onProfileTap() }
-            setOnLongClickListener { onProfileLongPress(); true }
         }
         return profileAvatarView
     }

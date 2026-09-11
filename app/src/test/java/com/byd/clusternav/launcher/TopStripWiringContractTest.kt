@@ -21,7 +21,11 @@ class TopStripWiringContractTest {
     private val strip by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiTopStrip.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val picker by lazy { code("src/main/java/com/byd/clusternav/launcher/TopStripPicker.kt") }
-    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
+    /** Nhóm "Màn hình chính" của màn Cài đặt (S1·T3) — mục chọn chip + lưới ô nằm ở đây. */
+    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
+
+    /** Lưới ô khả năng — chuyển ra tệp riêng (S1·T2); đường "GIỮ ô để đưa lên thanh trên" nằm ở đó. */
+    private val grid by lazy { code("src/main/java/com/byd/clusternav/launcher/CapabilityGridSection.kt") }
     private val vm by lazy { code("src/main/java/com/byd/clusternav/launcher/HomeViewModel.kt") }
     private val prefs by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt") }
 
@@ -65,10 +69,13 @@ class TopStripWiringContractTest {
 
     @Test
     fun `nguoi dung co duong sua danh sach chip`() {
-        assertTrue(panel.contains("stripPicker.section("), "bảng Tuỳ biến phải bày mục chọn chip")
+        assertTrue(panel.contains("stripPicker.section("), "màn Cài đặt phải bày mục chọn chip")
         assertTrue(picker.contains("TopStripConfig.choices()"), "màn chọn phải lấy từ `:core`, không tự liệt kê")
         // Đặt được datum BẤT KỲ: giữ ô ở lưới chính (không dựng thêm 123 ô cho bảng đã có 187 ô).
-        assertTrue(panel.contains("setOnLongClickListener"), "phải có đường đưa datum bất kỳ lên thanh trên")
+        // S1·T2 — lưới đã chuyển sang [CapabilityGridSection]; nó nhận cổng vào bằng lambda nên phải khoá CẢ HAI đầu:
+        // lưới có gắn GIỮ và có gọi cổng, còn bảng thì nối cổng đó vào đúng bộ chọn (không nối = GIỮ thành vô nghĩa).
+        assertTrue(grid.contains("setOnLongClickListener"), "phải có đường đưa datum bất kỳ lên thanh trên")
+        assertTrue(grid.contains("onChipToggle("), "GIỮ phải gọi cổng ra, không được tự xử lý trong lưới")
         assertTrue(panel.contains("stripPicker.toggle("), "đường đó phải đi qua cùng một bộ chọn")
     }
 

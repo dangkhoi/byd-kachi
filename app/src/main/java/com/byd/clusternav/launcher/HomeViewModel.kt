@@ -44,13 +44,14 @@ class HomeViewModel(
     fun swapSlots(a: Int, b: Int) = mutate { it.copy(workspace = it.workspace.swap(a, b)) }
 
     // ── Intent: dock (thanh điều khiển) ──────────────────────────────────────────
+    /**
+     * Đặt THẲNG một viền — đường DUY NHẤT. Màn Cài đặt → Màn hình chính → "Viền đặt thanh" bày cả 4 viền.
+     *
+     * ⚠ `cycleDockEdge()` (xoay vòng BOTTOM → LEFT → RIGHT → TOP) đã **XOÁ** cùng lúc với pill "Thanh" ở thanh trên:
+     * sau khi gỡ pill nó không còn chỗ gọi nào ⇒ mã chết. Xoay vòng cũng là hình dạng SAI cho bề mặt hiện tại — khi
+     * cả 4 viền đang hiện ra thì bấm "Phải" phải ra "Phải", chứ không phải viền kế tiếp.
+     */
     fun setDockEdge(edge: DockEdge) = mutate { it.copy(dock = it.dock.withEdge(edge)) }
-
-    /** Xoay viền thanh điều khiển theo vòng BOTTOM → LEFT → RIGHT → TOP. */
-    fun cycleDockEdge() = mutate {
-        val order = listOf(DockEdge.BOTTOM, DockEdge.LEFT, DockEdge.RIGHT, DockEdge.TOP)
-        it.copy(dock = it.dock.withEdge(order[(order.indexOf(it.dock.edge) + 1) % order.size]))
-    }
 
     /** Bật/tắt một control trong thanh (danh sách control hiện) — [DockConfig.setEnabled]. */
     fun toggleDock(id: String, on: Boolean) = mutate { it.copy(dock = it.dock.setEnabled(id, on)) }
@@ -105,6 +106,17 @@ class HomeViewModel(
     fun setWallpaperPrefs(prefs: WallpaperPrefs) {
         _uiState.update { it.copy(wallpaper = prefs) }
         repository.setWallpaperPrefs(prefs)
+    }
+
+    /**
+     * S1·T4 — **tự mở khi nổ máy**. State + lưu bền trong MỘT lượt, cùng khuôn mẫu [setTopStrip].
+     *
+     * Không đi qua [mutate]/`persist` vì khoá này nằm ngoài bộ khoá theo hồ sơ (chung cả máy), đúng như đơn vị và
+     * hình nền.
+     */
+    fun setAutostart(on: Boolean) {
+        _uiState.update { it.copy(autostart = on) }
+        repository.setAutostart(on)
     }
 
     /** Cập nhật state (atomic) rồi ghi bền phần lưu-được. */

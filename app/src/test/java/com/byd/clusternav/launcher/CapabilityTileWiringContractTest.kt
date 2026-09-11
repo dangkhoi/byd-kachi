@@ -26,7 +26,8 @@ class CapabilityTileWiringContractTest {
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val workspace by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
     private val drawer by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
-    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
+    /** Nhóm "Màn hình chính" của màn Cài đặt (S1·T3) — lưới khả năng nằm ở đây. */
+    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
 
     /**
      * Đọc source rồi **bỏ mọi chú thích** trước khi quét: test này canh **CODE**, không canh văn xuôi. Cùng lý do
@@ -165,7 +166,7 @@ class CapabilityTileWiringContractTest {
      *
      * ⚠ Trước 2026-09-11 chỗ này gọi `WidgetCatalog.telemetryByDomain()` = **chỉ mục ĐỌC** ⇒ tuy `WidgetViews` vẽ
      * được ô hành động thì người dùng vẫn **không có nút nào** để đặt hành động/gói lệnh vào ô giữa màn. Bài này khoá
-     * ngăn kéo và bảng Tuỳ biến dùng **CÙNG một nguồn**, để hai màn chọn không thể lệch nhau.
+     * ngăn kéo và màn Cài đặt dùng **CÙNG một nguồn**, để hai màn chọn không thể lệch nhau.
      */
     @Test
     fun `ngan keo phai bay ca hanh dong khong chi muc doc`() {
@@ -183,7 +184,7 @@ class CapabilityTileWiringContractTest {
         )
         assertTrue(
             panel.contains("CapabilityCatalog.byDomain()"),
-            "bảng Tuỳ biến phải dùng CÙNG nguồn với ngăn kéo",
+            "màn Cài đặt phải dùng CÙNG nguồn với ngăn kéo",
         )
     }
 

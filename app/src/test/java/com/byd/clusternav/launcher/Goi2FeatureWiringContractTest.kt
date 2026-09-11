@@ -21,7 +21,14 @@ class Goi2FeatureWiringContractTest {
 
     private val widgets by lazy { code("src/main/java/com/byd/clusternav/launcher/WidgetViews.kt") }
     private val board by lazy { code("src/main/java/com/byd/clusternav/launcher/TyreBoardView.kt") }
-    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
+    /** Nhóm "Tiện nghi xe" + "Hiển thị & đơn vị" của màn Cài đặt (S1·T3). */
+    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
+
+    /** Nhóm "Màn hình chính" — lưới khả năng nằm ở đây (tách vì trần 500 dòng). */
+    private val panelHome by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
+
+    /** Dòng chọn đơn vị — chuyển sang bộ dựng dòng dùng chung (S1·T2). */
+    private val rows by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsRows.kt") }
     private val panels by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val boot by lazy { code("src/main/java/com/byd/clusternav/BootSetupService.kt") }
@@ -143,7 +150,7 @@ class Goi2FeatureWiringContractTest {
 
     @Test
     fun `o tick nam o be mat dung bang code va co canh bao chua kiem tren xe`() {
-        assertTrue(panel.contains("recircRow("), "ô tick phải nằm trong bảng Tuỳ biến (dựng bằng code)")
+        assertTrue(panel.contains("recircRow("), "ô tick phải nằm trong màn Cài đặt (dựng bằng code)")
         assertTrue(
             panel.contains("chưa kiểm trên xe"),
             "PHẢI có chú thích chưa-kiểm cạnh ô tick (R10) — lệnh lấy gió chưa xác nhận trên xe owner",
@@ -176,7 +183,7 @@ class Goi2FeatureWiringContractTest {
     fun `bang chon don vi chi bay loai thuc su co dung`() {
         assertTrue(panel.contains("UnitFormat.quantitiesInUse()"),
             "chỉ bày loại đại lượng có mục thật, không bày lựa chọn giả (R13)")
-        assertTrue(panel.contains("Units.options("), "danh sách lựa chọn phải lấy từ bảng tra")
+        assertTrue(rows.contains("Units.options("), "danh sách lựa chọn phải lấy từ bảng tra")
         assertTrue(panel.contains("unitRow("), "phải có hàng chọn cho từng loại")
     }
 
@@ -193,10 +200,10 @@ class Goi2FeatureWiringContractTest {
     @Test
     fun `bang chon bay CA hai loai kha nang`() {
         assertTrue(
-            panel.contains("CapabilityCatalog.byDomain()"),
+            panelHome.contains("CapabilityCatalog.byDomain()"),
             "bảng chọn phải bày cả ĐỌC lẫn HÀNH ĐỘNG — nếu chỉ bày nút thì người dùng không có đường thêm ô đọc " +
                 "vào thanh, và việc nới cổng ở DockConfig thành vô nghĩa",
         )
-        assertFalse(panel.contains("ControlPanels.byDomain()"), "không còn dùng danh sách chỉ-có-nút")
+        assertFalse(panelHome.contains("ControlPanels.byDomain()"), "không còn dùng danh sách chỉ-có-nút")
     }
 }

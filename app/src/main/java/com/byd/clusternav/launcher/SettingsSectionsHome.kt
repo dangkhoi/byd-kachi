@@ -1,0 +1,164 @@
+package com.byd.clusternav.launcher
+
+import android.content.Context
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import com.byd.clusternav.launcher.KachiTheme.dpi
+
+/**
+ * Nội dung nhóm **"Màn hình chính"** của màn Cài đặt (S1 · T3) — bố cục · hình nền · chip thanh trạng thái · thanh
+ * nút xe (viền + lưới 187 ô).
+ *
+ * Tách khỏi [SettingsSections] vì trần **500 dòng** của dự án: nhóm này một mình gom bốn mảng, còn sáu nhóm kia cộng
+ * lại vẫn ngắn hơn. Thứ tự bên trong theo [SettingsCatalog.entriesOf] cho [SettingsGroup.HOME]: đi từ **khung** ra
+ * **nội dung** (bố cục → hình nền → chip → thanh nút), vì chọn bố cục trước thì các lựa chọn sau mới có nghĩa.
+ *
+ * ## ⚠ MỘT THỰC THỂ CHO MỘT LƯỢT DỰNG TRANG
+ * Lớp này sở hữu [grid] ([CapabilityGridSection]) và [stripPicker] ([TopStripPicker]) — cả hai giữ **bảng tra
+ * `mã → view`** để tô lại ô khi bật/tắt. Vì vậy mỗi lượt dựng trang phải là một thực thể **MỚI** của lớp này
+ * ([SettingsSections.build] làm đúng thế). Dùng lại một thực thể cho hai lượt dựng sẽ để lại view cũ trong bảng tra —
+ * đúng bẫy *"hai bản sao cùng khoá"* đã sinh ra ba lỗi cùng lúc ở phiên RW0.
+ */
+class SettingsHomeSection(
+    private val context: Context,
+    private val rows: SettingsRows,
+    private val deps: SettingsDeps,
+) {
+
+    /** Bộ chọn chip thanh trạng thái (RW0 vùng thứ ba) — dùng LẠI y nguyên, không dựng bản thứ hai. */
+    private val stripPicker = TopStripPicker(context, deps.state().topStrip) { id, on -> deps.onTopStrip(id, on) }
+
+    /**
+     * Lưới 187 ô khả năng. **GIỮ** ô ⇒ đưa datum lên thanh trạng thái, và đường đó đi qua **cùng** [stripPicker] mà
+     * mục "Chip thanh trạng thái" phía trên dùng — nếu nối vào một bộ chọn thứ hai thì hai chỗ sẽ tô trạng thái khác
+     * nhau cho cùng một cấu hình.
+     */
+    private val grid = CapabilityGridSection(
+        context,
+        enabledIds = deps.state().dock.enabled,
+        onToggle = { id, on -> deps.onToggleDock(id, on) },
+        onChipToggle = { id -> stripPicker.toggle(id) },
+        chipEnabled = { id -> stripPicker.has(id) },
+    )
+
+    fun build(body: LinearLayout) {
+        layout(body)
+        wallpaper(body)
+        stripPicker.section(body)
+        dock(body)
+    }
+
+    // ── Bố cục ───────────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Bố cục sẵn (5) + đường mở bảng vẽ bố cục riêng.
+     *
+     * §4.5 — **5 nút bố cục Ở LẠI thanh trên** (đổi bố cục là việc làm hằng ngày, bắt mở Cài đặt là làm launcher tệ
+     * hơn). Ở đây bày **đủ** 5 bố cục kèm chữ, và cả hai bề mặt đi qua **cùng một** đường [SettingsDeps.onPreset] →
+     * `KachiHomeActivity.selectPreset` → intent `setPreset` ⇒ không có bản sao thứ hai của trạng thái, cũng không có
+     * bản sao thứ hai của hành vi "chọn bố cục sẵn thì bỏ bố cục tự vẽ".
+     */
+    private fun layout(body: LinearLayout) {
+        val s = deps.state()
+        body.addView(rows.sectionLabel("Bố cục màn hình"))
+        val summary = rows.note(layoutSummary(s.customLayout))
+        body.addView(summary)
+        body.addView(rows.chipRow(
+            "Bố cục sẵn",
+            LayoutPreset.values().map { it.name to it.label },
+            s.preset.name,
+        ) { code ->
+            LayoutPreset.values().firstOrNull { it.name == code }?.let { deps.onPreset(it) }
+            // ⚠ [SOÁT S1 · P2] Chọn bố cục sẵn = **BỎ bố cục tự vẽ** (`KachiHomeActivity.selectPreset`), nên dòng
+            // mô tả phía trên vừa thành SAI: nó còn nói "đang dùng bố cục tự vẽ: N khung". Trang này được **nhớ
+            // lại** (xem [SettingsPanel]) nên nó không tự dựng lại ⇒ phải sửa CHỮ tại chỗ. Sửa chữ chứ không dựng
+            // lại cả trang: dựng lại là 187 ô + mất chỗ đang cuộn. Đọc lại từ nguồn sự thật vì intent chạy đồng bộ.
+            summary.text = layoutSummary(deps.state().customLayout)
+        })
+        body.addView(rows.button("Vẽ bố cục riêng…") { deps.onOpenLayoutEditor() }, wrapLp())
+    }
+
+    /**
+     * Nói người dùng đang dùng bố cục nào — và **nếu bố cục tự vẽ bị bỏ qua thì nói lý do**.
+     *
+     * Im lặng ở chỗ này là ca xấu nhất: bố cục tự vẽ nhiều khung hơn trần ô (xảy ra thật khi hạ cấp bản) sẽ bị lùi về
+     * bố cục sẵn, và nếu không ai nói thì người dùng thấy "đã lưu bố cục" mà màn hình khác hẳn.
+     */
+    private fun layoutSummary(custom: GridLayout?): String = custom?.let {
+        "Đang dùng bố cục tự vẽ: ${it.frames.size} khung" +
+            (EffectiveLayout.ignoredReason(it)?.let { r -> " — nhưng bị bỏ qua ($r)" } ?: "")
+    } ?: "Đang dùng bố cục sẵn."
+
+    // ── Hình nền & trình chiếu ───────────────────────────────────────────────────────────────────
+
+    /**
+     * Bốn dòng chuyển **nguyên văn** từ bảng Tuỳ biến: bật/tắt · chu kỳ đổi ảnh · cách phủ · làm tối.
+     *
+     * Câu phụ phải nói **chỗ bỏ ảnh vào** ([SettingsDeps.wallpaperFolderHint]): người dùng không có cách nào tự đoán
+     * đường dẫn, và màn chọn tệp của hệ thống bị khoá trên xe.
+     */
+    private fun wallpaper(body: LinearLayout) {
+        body.addView(rows.sectionLabel("Hình nền"))
+        var wp = deps.state().wallpaper
+        body.addView(rows.checkRow(
+            on = wp.enabled,
+            title = "Dùng ảnh làm hình nền",
+            sub = if (deps.wallpaperFolderHint.isEmpty()) "Bỏ ảnh vào thư mục ảnh của Kachi"
+            else "Bỏ ảnh vào: ${deps.wallpaperFolderHint}",
+        ) { on -> wp = wp.copy(enabled = on); deps.onWallpaper(wp) })
+        body.addView(rows.chipRow(
+            "Đổi ảnh mỗi",
+            Slideshow.INTERVAL_CHOICES_SEC.map { it.toString() to Slideshow.intervalLabel(it) },
+            wp.intervalSec.toString(),
+        ) { code ->
+            wp = wp.copy(intervalSec = code.toIntOrNull() ?: Slideshow.DEFAULT_INTERVAL_SEC)
+            deps.onWallpaper(wp)
+        })
+        body.addView(rows.chipRow("Cách phủ", ImageFit.values().map { it.name to it.label }, wp.fit.name) { code ->
+            wp = wp.copy(fit = ImageFit.values().firstOrNull { it.name == code } ?: ImageFit.FILL)
+            deps.onWallpaper(wp)
+        })
+        body.addView(rows.chipRow(
+            "Làm tối ảnh",
+            listOf(0, 25, 45, 65).map { it.toString() to "$it%" },
+            wp.dim.toString(),
+        ) { code ->
+            wp = wp.copy(dimPercent = code.toIntOrNull() ?: WallpaperPrefs.DEFAULT_DIM_PERCENT)
+            deps.onWallpaper(wp)
+        })
+    }
+
+    // ── Thanh nút xe ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Viền đặt thanh nút + lưới 187 ô khả năng.
+     *
+     * Viền dùng [SettingsDeps.onDockEdge] (đặt THẲNG một viền) — nay là **đường DUY NHẤT**: pill "Thanh" ở thanh trên
+     * (xoay vòng BOTTOM → LEFT → RIGHT → TOP) đã bỏ hẳn cùng `HomeViewModel.cycleDockEdge()`. Đặt thẳng là hình dạng
+     * đúng cho bề mặt này: ở đây cả 4 viền đang hiện ra, nên bấm "Phải" phải ra "Phải" — xoay vòng sẽ bắt bấm ba lần
+     * và ô đang sáng nói sai.
+     *
+     * Lưới bày **CẢ** mục ĐỌC lẫn HÀNH ĐỘNG ([CapabilityCatalog.byDomain] — R2): nếu chỉ bày nút thì việc nới cổng
+     * `DockConfig.setEnabled` ở gói 2 thành vô nghĩa, vì không còn đường nào thêm một ô ĐỌC vào thanh.
+     */
+    private fun dock(body: LinearLayout) {
+        body.addView(rows.sectionLabel("Thanh nút xe"))
+        body.addView(rows.chipRow(
+            "Viền đặt thanh",
+            DockEdge.values().map { it.name to it.label },
+            deps.state().dock.edge.name,
+        ) { code -> DockEdge.values().firstOrNull { it.name == code }?.let { deps.onDockEdge(it) } })
+        body.addView(rows.note(
+            "Chạm 1 ô để thêm/bớt khỏi thanh nút. GIỮ một ô XEM để đưa nó lên thanh trạng thái. " +
+                "Nhóm An toàn/Động lực/Giải trí đổi hành vi lái — tự dùng tự chịu.",
+        ))
+        CapabilityCatalog.byDomain().forEach { (domain, picks) ->
+            body.addView(rows.sectionLabel(domain.label))
+            grid.addGrid(body, picks, cols = 5)
+        }
+    }
+
+    private fun wrapLp() = LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+    ).also { it.bottomMargin = dpi(context, 4) }
+}

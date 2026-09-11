@@ -48,6 +48,22 @@ data class HomeUiState(
     val unitPrefs: UnitPrefs = UnitPrefs.DEFAULT,
     /** Lựa chọn HÌNH NỀN (U4). Cùng lý do: state được render thì phải nằm trong nguồn sự thật. */
     val wallpaper: WallpaperPrefs = WallpaperPrefs.DEFAULT,
+    /**
+     * **Tự mở khi nổ máy** (S1·T4) — cờ cho `KachiAutostart.runBoot`.
+     *
+     * ## [ĐO] vì sao nó vào state chứ chỉ là một dòng đọc prefs
+     * Trước S1 khoá `launcher_autostart` có getter, có setter, **có người đọc thật** (`KachiAutostart.runBoot` gọi
+     * `WorkspacePrefs(app).launcherAutostart()` và bỏ cả lượt khởi động nếu tắt) — nhưng **không có nút nào** để
+     * người dùng đổi. Nghĩa là một kill-switch đã nối dây đầy đủ mà chủ xe không tới được: đúng họ lỗi *"vẽ được ≠
+     * đặt được"* của RW0.
+     *
+     * Đưa vào [HomeUiState] thay vì cho ô tick tự đọc/ghi prefs, để tầng UI **0 lần** ghi bền trực tiếp (luật kiến
+     * trúc đang có) và để mở lại màn Cài đặt là thấy đúng giá trị đang lưu — cùng khuôn mẫu [topStrip] của RW0.
+     *
+     * Mặc định **BẬT**, khớp `WorkspacePrefs.launcherAutostart()` (`getBoolean(..., true)`): launcher nên tự sẵn
+     * sàng. Hai mặc định lệch nhau sẽ làm ô tick nói sai ngay lần mở đầu, trước cả khi có gì được ghi.
+     */
+    val autostart: Boolean = true,
 ) {
     /** Preset bố cục hiện tại (tiện đọc, uỷ quyền [WorkspaceState.preset]). */
     val preset: LayoutPreset get() = workspace.preset

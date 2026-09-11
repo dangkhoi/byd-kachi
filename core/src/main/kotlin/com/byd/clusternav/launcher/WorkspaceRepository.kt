@@ -68,4 +68,16 @@ interface WorkspaceRepository {
 
     /** Ghi bền lựa chọn hình nền. Mặc định: không lưu (bản giả). */
     fun setWallpaperPrefs(prefs: WallpaperPrefs) {}
+
+    /**
+     * S1·T4 — **tự mở khi nổ máy** (cờ đọc bởi `KachiAutostart.runBoot`). CHUNG mọi hồ sơ: đây là hành vi của cả
+     * máy, không phải của một tài xế (cùng lối với giao diện sáng/tối và đơn vị).
+     *
+     * Mặc định `true` để KHỚP mặc định của nơi lưu bền — bản giả trong test không phải sửa, và quan trọng hơn: hai
+     * mặc định lệch nhau thì ô tick nói sai trước cả khi có gì được ghi.
+     */
+    fun autostart(): Boolean = true
+
+    /** Ghi bền cờ tự mở khi nổ máy. Mặc định: không lưu (bản giả). */
+    fun setAutostart(on: Boolean) {}
 }

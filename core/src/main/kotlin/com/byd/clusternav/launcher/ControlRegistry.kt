@@ -1,7 +1,23 @@
 package com.byd.clusternav.launcher
 
 /** Vị trí thanh điều khiển trên viền màn (owner: đặt được 4 viền). */
-enum class DockEdge { BOTTOM, LEFT, RIGHT, TOP }
+enum class DockEdge {
+    BOTTOM, LEFT, RIGHT, TOP;
+
+    /**
+     * Nhãn cho người đọc (S1). Trước S1 viền chỉ đổi được bằng pill **"Thanh"** ở thanh trên xoay vòng 4 viền, nên
+     * không nơi nào cần chữ; màn Cài đặt bày cả 4 viền để **chọn thẳng** (không phải bấm ba lần để tới viền mình
+     * muốn) nên phải có chữ. Pill đó nay đã **bỏ hẳn** ⇒ đây là đường duy nhất, và nó cần nhãn.
+     * Ở `:core` cùng lý do với [LayoutPreset.label].
+     */
+    val label: String
+        get() = when (this) {
+            BOTTOM -> "Dưới"
+            LEFT -> "Trái"
+            RIGHT -> "Phải"
+            TOP -> "Trên"
+        }
+}
 
 /**
  * Kiểu tile điều khiển.

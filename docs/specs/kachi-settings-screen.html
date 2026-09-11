@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi S1 — Màn Cài đặt: gom mọi cấu hình về một chỗ</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi S1 — Màn Cài đặt: gom mọi cấu hình về một chỗ</h1>
+<p class="muted">
+  <b>Trạng thái</b>: Current · <b>Ngày</b>: 2026-09-11 · <b>Mã việc</b>: S1 ·
+  <b>Mục đích</b>: owner chốt <i>"gom nhóm luôn các phần mới làm ở thanh, tuỳ chỉnh, bố cục… đưa vào màn cài đặt
+  vị trí, nhóm phù hợp, không có cấu hình, cài đặt nào nằm lẻ tẻ khắp nơi"</i>.
+</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-11</td><td>Spec ban đầu. Kiểm kê được <b>2 cấu hình lưu bền mà KHÔNG có đường nào tới</b> (§2) — cùng họ lỗi RW0 vừa vá.</td></tr>
+</table>
+
+<h2>2. Context — kiểm kê trước, thiết kế sau</h2>
+<div class="card">
+  Yêu cầu <i>"không có cấu hình nào nằm lẻ tẻ"</i> chỉ kiểm được nếu <b>biết đủ danh sách cấu hình</b>. Nên việc đầu
+  tiên là đếm, không phải vẽ màn hình.
+</div>
+
+<p>[ĐO] mọi khoá lưu bền của launcher (đọc <code>WorkspacePrefs.kt</code> + <code>Prefs</code>):</p>
+<table>
+<tr><th>Khoá</th><th>Là gì</th><th>Đường tới từ tay người dùng (TRƯỚC S1)</th></tr>
+<tr><td><code>preset</code></td><td>bố cục sẵn</td><td>5 nút ở thanh trên</td></tr>
+<tr><td><code>grid_layout</code></td><td>bố cục tự vẽ</td><td>Tuỳ biến → "Vẽ bố cục riêng…"</td></tr>
+<tr><td><code>wallpaper_prefs</code></td><td>hình nền + trình chiếu</td><td>Tuỳ biến → Hình nền (4 dòng)</td></tr>
+<tr><td><code>top_strip</code></td><td>chip thanh trạng thái</td><td>Tuỳ biến → Chip (RW0)</td></tr>
+<tr><td><code>dock_enabled</code> · <code>dock_edge</code></td><td>thanh nút xe</td><td>Tuỳ biến → 187 ô · đổi viền</td></tr>
+<tr><td><code>unit_prefs</code></td><td>đơn vị hiển thị</td><td>Tuỳ biến → Đơn vị</td></tr>
+<tr><td><code>profiles</code> · <code>active_profile</code></td><td>hồ sơ tài xế</td><td>avatar ở thanh trên (chạm/giữ)</td></tr>
+<tr><td><code>recirc_on_start_enabled</code></td><td>lấy gió trong khi nổ máy</td><td>Tuỳ biến → Tiện nghi</td></tr>
+<tr><td><code>theme_mode</code></td><td>ngày/đêm/tự động</td><td class="warn"><b>KHÔNG CÓ</b> — lưu bền, có intent, có repo, <b>không có nút nào</b></td></tr>
+<tr><td><code>launcher_autostart</code></td><td>tự mở khi nổ máy</td><td class="warn"><b>KHÔNG CÓ</b> — chỉ đọc/ghi trong mã</td></tr>
+<tr><td><code>recent_apps</code></td><td>app gần đây</td><td class="muted">không phải cấu hình — là trạng thái dùng</td></tr>
+<tr><td><code>slot_0</code>…<code>slot_5</code></td><td>nội dung từng ô</td><td class="warn"><b>KIỂM KÊ NÀY BỎ SÓT</b> — khoá dựng động trong vòng lặp <code>key("slot_$it")</code> nên không lộ ra khi tìm hằng <code>K_*</code>. Đặt trực tiếp bằng ngăn kéo/kéo-thả ⇒ không phải dòng cài đặt</td></tr>
+<tr><td><code>freeform_state</code> + 4 cờ hệ thống</td><td>trạng thái máy</td><td class="warn"><b>BỎ SÓT LẦN HAI</b> — nằm ở <b>tệp prefs thứ hai</b> và ở <code>Settings.Global/Secure</code>, ngoài vùng tìm ban đầu</td></tr>
+</table>
+
+<div class="card">
+  <b>⚠ Hai khoá cuối là đúng họ lỗi RW0 vừa vá</b>: <code>ThemeMode</code> có enum ở <code>:core</code>, có
+  <code>setThemeMode</code> ở ViewModel, có đường lưu bền, có test — nhưng <b>không ai chạm tới được</b>. Đây là bằng
+  chứng thứ hai cho luật <i>"vẽ được" ≠ "đặt được"</i>: nếu chỉ đếm mã và test thì hai khoá này trông như đã xong.
+</div>
+
+<h3>Bề mặt cấu hình đang rải ở đâu</h3>
+<p>
+  Trước S1 có <b>bốn</b> chỗ: bảng "Tuỳ biến" (6 mục + 187 ô, 418 dòng) · thanh trên (5 nút bố cục + avatar hồ sơ) ·
+  ngăn kéo (đặt nội dung vào ô) · pill "Cài đặt" (nhảy sang màn ClusterNav cũ 1386 dòng). Cùng một loại việc — đổi
+  cấu hình — nằm ở bốn nơi mang bốn hình dạng khác nhau.
+</p>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td>R1</td><td>Một màn Cài đặt DUY NHẤT cho launcher, chia nhóm theo chủ đề</td><td>mở từ pill "Cài đặt"; có rail nhóm; chuyển nhóm không mất chỗ đang cuộn của nhóm khác</td></tr>
+<tr><td>R2</td><td><b>Không cấu hình nào nằm lẻ tẻ</b> — mọi khoá lưu bền thuộc <b>đúng một</b> nhóm</td><td>test quét mã: mọi khoá trong <code>WorkspacePrefs</code> phải được <code>SettingsCatalog</code> nhận, 0 mục mồ côi, 0 mục thuộc 2 nhóm</td></tr>
+<tr><td>R3</td><td>Hai cấu hình đang không có đường tới phải được xử lý dứt điểm — <b>hoặc</b> có nút thật, <b>hoặc</b> nói thật là chưa làm được</td><td><code>launcher_autostart</code>: nút thật, đổi được, lưu bền. <code>theme_mode</code>: <b>dòng thông tin</b>, không phải nút — xem §4.5</td></tr>
+<tr><td>R4</td><td>Gộp bảng "Tuỳ biến" vào Cài đặt, không mất tính năng nào</td><td>6 mục cũ + 187 ô đều còn dùng được; bảng vẽ bố cục mở được từ Cài đặt</td></tr>
+<tr><td>R5</td><td>Không đụng màn ClusterNav cũ (niêm phong)</td><td>0 dòng đổi ở <code>MainActivity</code>/layout XML; nhóm ClusterNav chỉ <b>mở</b> màn cũ</td></tr>
+<tr><td>R6</td><td>Giữ mọi luật kiến trúc đang có</td><td><code>:core</code> thuần · UI 0 lần ghi bền trực tiếp · 0 tệp > 500 dòng · 0 tệp XML mới</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Nhóm — và vì sao chia thế</h3>
+<p>Nguyên tắc: nhóm theo <b>thứ người dùng đang nghĩ tới</b>, không theo tệp mã hay theo lớp lưu trữ.</p>
+<table>
+<tr><th>Nhóm</th><th>Chứa</th><th>Vì sao ở đây</th></tr>
+<tr><td><b>Màn hình chính</b></td><td>bố cục (sẵn + tự vẽ) · hình nền &amp; trình chiếu · chip thanh trạng thái · thanh nút xe (viền + 187 ô)</td><td>tất cả đều trả lời câu <i>"màn chính trông thế nào"</i></td></tr>
+<tr><td><b>Hiển thị &amp; đơn vị</b></td><td>đơn vị (7 loại) · chủ đề ngày/đêm/tự động</td><td>cách <i>trình bày</i> số và màu, không phụ thuộc bố cục</td></tr>
+<tr><td><b>Hồ sơ tài xế</b></td><td>danh sách hồ sơ · đang dùng · thêm/xoá</td><td>hồ sơ quyết định <i>toàn bộ</i> các nhóm trên ⇒ phải thấy rõ đang ở hồ sơ nào</td></tr>
+<tr><td><b>Tiện nghi xe</b></td><td>lấy gió trong khi nổ máy</td><td>việc Kachi làm với <i>xe</i>, không phải với màn hình</td></tr>
+<tr><td><b>Hệ thống &amp; quyền</b></td><td>quyền còn thiếu (P8) · tự mở khi nổ máy</td><td>điều kiện để launcher chạy đúng</td></tr>
+<tr><td><b>Dẫn đường · Cụm · Phím</b></td><td>một dòng mở màn ClusterNav</td><td>R5 — không nhập vào, chỉ dẫn sang</td></tr>
+<tr><td><b>Giới thiệu</b></td><td>phiên bản, tên gói, giấy phép</td><td>chỗ duy nhất còn lại cho thứ không phải cấu hình</td></tr>
+</table>
+
+<h3>4.2 Hình dạng màn</h3>
+<div class="diagram">
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,sans-serif" font-size="12">
+  <rect x="10" y="10" width="740" height="280" rx="14" fill="none" stroke="currentColor" stroke-opacity=".25"/>
+  <rect x="10" y="10" width="740" height="42" rx="14" fill="currentColor" fill-opacity=".06"/>
+  <text x="30" y="36" font-weight="700">Cài đặt Kachi</text>
+  <text x="640" y="36" fill="currentColor" fill-opacity=".6">Xong</text>
+  <rect x="26" y="66" width="190" height="208" rx="10" fill="currentColor" fill-opacity=".05"/>
+  <text x="40" y="90" font-weight="600">Màn hình chính</text>
+  <rect x="30" y="76" width="182" height="22" rx="6" fill="currentColor" fill-opacity=".12"/>
+  <text x="40" y="90" font-weight="600">Màn hình chính</text>
+  <text x="40" y="118">Hiển thị &amp; đơn vị</text>
+  <text x="40" y="144">Hồ sơ tài xế</text>
+  <text x="40" y="170">Tiện nghi xe</text>
+  <text x="40" y="196">Hệ thống &amp; quyền</text>
+  <text x="40" y="222">Dẫn đường · Cụm · Phím</text>
+  <text x="40" y="248">Giới thiệu</text>
+  <rect x="234" y="66" width="500" height="208" rx="10" fill="currentColor" fill-opacity=".03" stroke="currentColor" stroke-opacity=".15"/>
+  <text x="250" y="90" fill="currentColor" fill-opacity=".55" font-size="10.5" letter-spacing="1">BỐ CỤC</text>
+  <rect x="250" y="98" width="60" height="26" rx="7" fill="currentColor" fill-opacity=".18"/>
+  <rect x="316" y="98" width="60" height="26" rx="7" fill="currentColor" fill-opacity=".07"/>
+  <rect x="382" y="98" width="60" height="26" rx="7" fill="currentColor" fill-opacity=".07"/>
+  <rect x="448" y="98" width="120" height="26" rx="7" fill="currentColor" fill-opacity=".07"/>
+  <text x="462" y="116" font-size="11">Vẽ bố cục riêng…</text>
+  <text x="250" y="152" fill="currentColor" fill-opacity=".55" font-size="10.5" letter-spacing="1">HÌNH NỀN</text>
+  <rect x="250" y="160" width="470" height="24" rx="7" fill="currentColor" fill-opacity=".07"/>
+  <text x="250" y="212" fill="currentColor" fill-opacity=".55" font-size="10.5" letter-spacing="1">CHIP THANH TRẠNG THÁI</text>
+  <rect x="250" y="220" width="110" height="42" rx="9" fill="currentColor" fill-opacity=".07"/>
+  <rect x="368" y="220" width="110" height="42" rx="9" fill="currentColor" fill-opacity=".07"/>
+  <rect x="486" y="220" width="110" height="42" rx="9" fill="currentColor" fill-opacity=".07"/>
+  <text x="26" y="292" fill="currentColor" fill-opacity=".5" font-size="11">rail nhóm (bên trái, luôn thấy) — nội dung nhóm (bên phải, cuộn riêng)</text>
+</svg>
+</div>
+<p>
+  <b>Rail bên trái</b> thay vì danh sách → trang con: trên xe, mỗi lần lùi một cấp là một cú chạm thêm, và người dùng
+  đang ngồi trong xe chứ không ngồi bàn. Rail cho thấy <b>toàn bộ</b> bản đồ cài đặt ngay lần mở đầu — đó cũng là cách
+  chứng minh cho chính owner rằng không còn gì nằm ngoài.
+</p>
+
+<h3>4.3 Nguồn duy nhất cho "cấu hình nào thuộc nhóm nào"</h3>
+<p>
+  <code>:core SettingsCatalog</code> (thuần) khai <b>nhóm</b> + <b>mục cấu hình</b> + khoá lưu bền mà mục đó sở hữu.
+  Đây là chỗ khiến R2 <b>kiểm được bằng máy</b> thay vì bằng mắt:
+</p>
+<ul>
+  <li><code>GROUPS</code> — thứ tự hiện ra, nhãn, câu phụ.</li>
+  <li><code>ENTRIES</code> — mỗi mục: mã · nhóm · nhãn · <b>khoá lưu bền</b> (rỗng nếu mục không lưu gì, ví dụ hàng quyền).</li>
+  <li><code>groupOf(key)</code> · <code>orphans(keys)</code> · <code>duplicated()</code>.</li>
+  <li><code>NOT_SETTINGS</code> — danh sách khoá <b>cố ý không</b> phải cấu hình, kèm lý do tại chỗ (hiện có
+      <code>recent_apps</code>). Có danh sách này thì test mới phân biệt được <i>"quên gom"</i> với
+      <i>"cố ý không gom"</i>.</li>
+</ul>
+<p>
+  Test canh <code>SettingsCoverageContractTest</code> <b>quét mã nguồn</b> <code>WorkspacePrefs.kt</code> lấy mọi hằng
+  khoá rồi đối chiếu: khoá nào không thuộc nhóm nào và cũng không nằm trong <code>NOT_SETTINGS</code> ⇒ <b>đỏ</b>. Nên
+  lần sau ai thêm một cấu hình mà quên gom, bộ test nói ngay — không đợi owner phát hiện.
+</p>
+
+<h3>4.4 Tách tệp (trần 500 dòng)</h3>
+<table>
+<tr><th>Tệp</th><th>Việc</th></tr>
+<tr><td><code>:core SettingsCatalog.kt</code></td><td>nhóm + mục + khoá + phép kiểm (thuần, off-car)</td></tr>
+<tr><td><code>:app SettingsPanel.kt</code></td><td>vỏ: đầu bảng, rail nhóm, khung nội dung, đổi nhóm</td></tr>
+<tr><td><code>:app SettingsRows.kt</code></td><td>bộ dựng dòng dùng chung (nhãn mục, dòng tick, dòng chip, dòng đơn vị, dòng quyền) — <b>chuyển nguyên</b> từ <code>CustomizePanel</code></td></tr>
+<tr><td><code>:app SettingsSections.kt</code></td><td>nội dung từng nhóm</td></tr>
+<tr><td><code>:app CapabilityGridSection.kt</code></td><td>187 ô khả năng + đặt vào thanh nút — <b>chuyển nguyên</b> từ <code>CustomizePanel</code></td></tr>
+<tr><td><code>:app TopStripPicker.kt</code></td><td>dùng lại y nguyên (RW0)</td></tr>
+<tr><td><code>CustomizePanel.kt</code></td><td><b>xoá</b> sau khi chuyển hết; <code>HomePanels</code> đổi sang <code>openSettings()</code></td></tr>
+</table>
+
+<h3>4.5 Sai lệch có chủ ý</h3>
+<div class="card">
+  <b>5 nút bố cục sẵn Ở LẠI thanh trên.</b> Yêu cầu nói "không cấu hình nào nằm lẻ tẻ", và bố cục đúng là cấu hình.
+  Nhưng 5 nút đó là <b>cách đổi bố cục nhanh</b> đang dùng hằng ngày; bỏ đi để bắt người dùng mở Cài đặt là làm
+  launcher tệ hơn, và nó là bề mặt owner đã duyệt từ prototype. ⇒ giữ nút, đồng thời bày <b>đủ</b> bố cục trong Cài đặt.
+  Cả hai đi qua <b>cùng một</b> intent <code>setPreset</code> (không có bản sao thứ hai của trạng thái). Nếu owner muốn
+  gọn thanh trên thì bỏ 5 nút là một dòng.
+</div>
+<div class="card">
+  <b>Avatar hồ sơ Ở LẠI thanh trên</b> nhưng chỉ còn <b>hiển thị + chạm để đổi</b>; việc <i>tạo/xoá</i> hồ sơ chuyển vào
+  Cài đặt → Hồ sơ tài xế. Lý do: "đang ở hồ sơ nào" là thông tin phải thấy liên tục, còn "tạo hồ sơ mới" là việc làm
+  một lần. Giữ luôn "giữ để tạo nhanh" thì sẽ có hai đường tạo — bỏ đường ở thanh trên.
+</div>
+
+<div class="card">
+  <b>Không làm nút chủ đề ngày/đêm — nói thật thay vì làm nút chết.</b> [ĐO] <b>78 mã màu hex viết cứng ở 17 tệp</b>, và
+  <code>KachiTheme</code> dùng <code>const val</code> (hằng biên dịch, không đổi được lúc chạy); <code>state.themeMode</code>
+  <b>không chỗ nào đọc để vẽ</b>, <code>ThemeMode.isNight</code> <b>0 chỗ gọi</b>, <code>KachiHomeActivity</code> không
+  override <code>attachBaseContext</code>. Nút gạt đặt vào đây sẽ đổi giá trị mà màn hình <b>không đổi gì</b> — đúng loại
+  "nút chết" mà luật <code>product-team-workflow.md</code> cấm. ⇒ nhóm Hiển thị có <b>một dòng thông tin</b> nói đúng
+  hiện trạng, không bấm được, không hứa. Đường lưu bền <b>giữ nguyên</b> (chưa xoá vì owner chưa quyết — OQ2), và có
+  <b>bài canh tự đảo chiều</b>: ngày nào có người đọc <code>themeMode</code> để vẽ thì bài đỏ và đòi làm nút.
+</div>
+<div class="card">
+  <b>BỎ pill "Thanh" khỏi thanh trên</b> (khác bản spec đầu, theo chỉ thị owner <i>"không có cấu hình nào nằm lẻ tẻ"</i>).
+  [ĐO] hai luồng soát độc lập <b>cùng</b> tìm ra: pill đó gọi <code>cycleDockEdge()</code> ⇒ ghi <b>bền</b>
+  <code>dock_edge</code>, tức bề mặt cấu hình <b>thứ ba</b> trên thanh trên mà §4.5 không liệt kê. Chức năng không mất:
+  Cài đặt cho chọn <b>thẳng</b> từng viền, tốt hơn xoay vòng. <code>cycleDockEdge()</code> thành mã chết ⇒ xoá.
+  ⚠ [ĐO] bài canh cũ <i>"thanh trên chỉ còn MỘT cửa vào cấu hình"</i> <b>vẫn xanh</b> khi dựng lại pill này — nó chỉ đếm
+  pill <i>mở</i> cấu hình, không thấy pill <i>đổi</i> cấu hình tại chỗ ⇒ thêm <code>TopStripSurfaceContractTest</code>
+  kiểm theo <b>khoá lưu bền</b> (<code>TOP_STRIP_ALLOWED_KEYS</code>) chứ không theo số pill.
+</div>
+
+<h2>5. Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td><code>:core SettingsCatalog</code> + test</td><td>7 nhóm, mọi khoá có chủ, 0 mồ côi, 0 trùng</td></tr>
+<tr><td>T2</td><td>Chuyển bộ dựng dòng + lưới ô ra tệp riêng</td><td>hành vi <b>y nguyên</b>; test canh cũ trỏ sang tệp mới</td></tr>
+<tr><td>T3</td><td><code>SettingsPanel</code> + 7 nhóm nội dung</td><td>mở từ pill "Cài đặt"; đủ 6 mục cũ + 187 ô</td></tr>
+<tr><td>T4</td><td>Nối <code>theme_mode</code> + <code>launcher_autostart</code></td><td>đổi được, lưu bền, mở lại còn đúng</td></tr>
+<tr><td>T5</td><td>Xoá <code>CustomizePanel</code>, gộp pill "Tuỳ biến" vào "Cài đặt"</td><td>0 tham chiếu treo; Back đóng đúng lớp</td></tr>
+<tr><td>T6</td><td>Test canh: phủ khoá · dây nối · nhóm tới được</td><td>thử phá đỏ đúng chỗ</td></tr>
+<tr><td>T7</td><td>Đo trên máy ảo + phục hồi cấu hình gốc</td><td>ảnh chụp + prefs làm bằng chứng</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<p><b>[ĐO] 2797 test công bố · 2109 phân biệt · 0 đỏ</b> (mốc trước S1: 2725 công bố ⇒ <b>+72</b>) · APK debug sạch ·
+tệp lớn nhất 496 dòng · <code>:core</code> 0 <code>import android.*</code> · UI 0 lần ghi bền trực tiếp · 0 tệp XML ·
+0 dòng <code>MainActivity</code>. Số <code>@Test</code> đếm tay = 2109 <b>khớp đúng</b> số phân biệt đọc từ XML ⇒ không
+bài nào bị phép sửa hàng loạt ăn mất (bẫy regex DOTALL của phiên trước).</p>
+<table>
+<tr><th>Phép đo trên máy ảo</th><th>Kết quả</th></tr>
+<tr><td>Thanh trên sau khi bỏ pill "Thanh"</td><td class="ok">còn đúng <code>Ứng dụng</code> + 5 nút bố cục + <code>Cài đặt</code> + avatar; đo được <b>3</b> khối pill nửa phải, không còn chữ "Thanh"</td></tr>
+<tr><td>Rail 7 nhóm, đổi nhóm</td><td class="ok">đủ 7 nhóm đúng thứ tự danh mục; nội dung khung phải đổi thật (mật độ mực 12.39% / 0.91% / 0.68% cho 3 nhóm)</td></tr>
+<tr><td>Đổi viền thanh nút xe</td><td class="ok">chọn "Phải" ⇒ prefs <code>dock_edge</code> <b>BOTTOM→RIGHT</b> (đúng giá trị chọn, không phải giá trị kế tiếp của vòng xoay); 9 ô đi từ hàng dưới sang cột phải — dải dưới <b>44.1%→6.8%</b>, dải phải <b>20.2%→61.4%</b></td></tr>
+<tr><td>Ô tick tự mở khi nổ máy</td><td class="ok">bấm ⇒ <code>launcher_autostart=false</code>; <code>force-stop</code> (PID 9582→10420 = tiến trình chết thật) ⇒ mở lại ô tick <b>vẫn tắt</b> (độ sáng lòng ô 163.3 → 26.5 → 26.5)</td></tr>
+<tr><td>R1 — giữ chỗ đang cuộn</td><td class="ok">cuộn sâu nhóm Màn hình chính → sang Giới thiệu → quay lại: <b>77 000 điểm lấy mẫu khác 0.00%</b> so với lúc đã cuộn, khác 12.66% so với đầu trang</td></tr>
+<tr><td>Nền bảng đục</td><td class="ok"><code>(18,20,28)</code>; vùng sau bảng đổi 90.7% điểm ⇒ giao diện không lọt xuyên (lỗi đã gặp ở bảng vẽ bố cục)</td></tr>
+<tr><td>Xoá hồ sơ đang dùng</td><td class="ok">bị chặn, prefs không đổi</td></tr>
+<tr><td>Mở màn ClusterNav</td><td class="ok"><code>MainActivity</code> resumed</td></tr>
+</table>
+<p><b>Thử phá</b>: tổng <b>10 phép</b> qua 3 chặng, đỏ đúng chỗ cả 10, hoàn nguyên xanh lại (2 phép hoàn nguyên
+byte-identical có kiểm). Trong đó phép dựng lại pill "Thanh" là phép <b>chứng minh bài canh cũ không đủ</b>.</p>
+<p class="warn"><b>Chưa đo</b>: mọi phép trên là máy ảo, <b>không có gì đo trên xe</b>. Tác dụng thật của cờ tự-mở-khi-nổ-máy
+cần nổ máy thật. <code>clusternav_state.xml</code> không tồn tại trên máy ảo (vòng gieo cờ freeform chưa chạy) nên tệp
+prefs thứ hai chỉ chứng minh bằng quét mã. Nhánh "thiếu quyền" của nhóm Hệ thống chỉ khoá bằng test — ép thiếu quyền
+phải ghi <code>enabled_accessibility_services</code>, đúng chỗ dự án từng có lỗi xoá quyền app khác ⇒ cố ý không làm.</p>
+
+<h2>7. Open Questions</h2>
+<ul>
+  <li><b>OQ1</b> — có bỏ 5 nút bố cục khỏi thanh trên để thanh gọn hơn không? (§4.5, mặc định: giữ)</li>
+  <li><b>OQ2</b> — chủ đề SÁNG chưa có bảng màu đủ ở launcher (mọi mã màu hiện là tối). Nút gạt sẽ đổi được
+      <code>theme_mode</code> và lưu bền, nhưng <i>nhìn</i> chưa đổi cho tới khi làm bảng màu sáng — làm ở U5/S1 vòng 2?</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+  <li><code>docs/PROJECT-BACKLOG.md</code> — S1</li>
+  <li><code>docs/specs/kachi-unified-capability-tile.html</code> — RW0 (chip thanh trên, ô khả năng)</li>
+  <li><code>docs/specs/kachi-dynamic-grid.html</code> — P9 (bố cục)</li>
+  <li><code>docs/specs/kachi-wallpaper.html</code> — U4 (hình nền)</li>
+  <li><code>docs/specs/kachi-permission-preflight.html</code> — P8 (quyền)</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+
+<h3>Kiểm kê của tôi sai HAI lần, và cùng một kiểu sai</h3>
+<p>
+  §2 tự nhận đã đếm "mọi khoá lưu bền". Thật ra <b>bỏ sót hai họ</b>: <code>slot_0..slot_5</code> (dựng động
+  <code>key("slot_$it")</code> trong vòng lặp) và <code>freeform_state</code> + 4 cờ <code>Settings.Global/Secure</code>
+  (nằm ở <b>tệp prefs thứ hai</b> và ngoài thư mục <code>launcher/</code>). Cả hai lần đều vì tôi tìm <b>hằng khai
+  tường minh trong một tệp</b> — mà thứ lọt lưới lại là khoá <i>dựng lúc chạy</i> và khoá <i>ở tệp khác</i>. Bài học đắt
+  hơn hai khoá đó: <b>một phép kiểm dựa trên "tìm hằng trong một tệp" thì lỗ đúng ở chỗ nó không nhìn tới</b>. Nên phép
+  kiểm cuối cùng quét <b>3 gốc mã · 49 tệp · 4 nhánh ghi</b> (prefs · <code>Settings.*</code> · lệnh shell
+  <code>settings put</code> · tệp prefs mới) và có <b>7 mốc neo</b>, mỗi mốc đại diện một nhánh — nhánh nào chết là đỏ,
+  không im lặng.
+</p>
+
+<h3>Cái làm hỏng yêu cầu "không lẻ tẻ" không phải chỗ tôi nhìn, mà chỗ tôi không nhìn</h3>
+<p>
+  Tôi kết luận thanh trên còn <b>hai</b> bề mặt cấu hình được phép (5 nút bố cục + avatar). <b>Hai luồng soát độc lập
+  cùng</b> tìm ra cái <b>thứ ba</b>: pill "Thanh" gọi <code>cycleDockEdge()</code> ⇒ ghi bền <code>dock_edge</code>. Và
+  bài canh tôi viết cho chính luật này <b>vẫn xanh</b> khi dựng lại pill đó — vì nó đếm pill <i>mở</i> cấu hình, không
+  thấy pill <i>đổi</i> cấu hình tại chỗ. ⇒ đổi cách canh: kiểm theo <b>khoá lưu bền</b> mà thanh trên được phép chạm
+  (<code>TOP_STRIP_ALLOWED_KEYS</code>), không kiểm theo số pill — số pill lách được bằng cách đổi thành icon, gộp vào
+  segmented, hoặc gắn cử chỉ giữ.
+</p>
+
+<h3>Phép kiểm quan trọng nhất của S1 từng KHÔNG CHẠY</h3>
+<p>
+  Hai bài chống-rữa ban đầu đặt ở <code>:core</code> nhưng quét mã nguồn <code>:app</code>. [ĐO] đóng mốc
+  <code>:core:test</code> xanh → thêm một hằng khoá vào <code>app/.../WorkspacePrefs.kt</code> →
+  <code>Task :core:test <b>UP-TO-DATE</b>, BUILD SUCCESSFUL</code>. Tức R2 cho <b>dấu xanh sai</b> ở đúng ca nó sinh ra
+  để bắt: gradle không thấy tệp <code>:app</code> là đầu vào của <code>:core:test</code>. Chuyển sang <code>:app</code>
+  thành <code>SettingsCoverageContractTest</code>, đo lại cùng phép ⇒ <b>FAILED</b>. Họ lỗi này chưa từng gặp trong dự án:
+  không phải test viết sai, mà là <b>test đặt sai module nên không bao giờ chạy lại</b>.
+</p>
+
+<h3>Ba lỗi hành vi của bản đầu, lượt soát tìm ra</h3>
+<ul>
+  <li><b>Đường tạo hồ sơ vẫn còn trên thanh trên — ở ca thường gặp nhất.</b> Tôi gỡ <code>setOnLongClickListener</code>
+      khỏi avatar và ghi KDoc "tạo hồ sơ nay ở Cài đặt", nhưng <code>ProfileBar.cycle()</code> vẫn gọi
+      <code>addDialog()</code> khi chỉ có 1 hồ sơ = <b>mọi máy mới cài</b>. Bài canh của tôi chỉ soi hàm dựng avatar nên
+      không thấy.</li>
+  <li><b>Lời khuyên bất khả thi</b>: một hồ sơ thì nó tất nhiên đang dùng, mà thông báo lại nói "đổi sang hồ sơ khác
+      trước khi xoá" — không có hồ sơ nào để đổi. Sai vì thứ tự nhánh <code>when</code>.</li>
+  <li><b>Câu mô tả bố cục nói sai</b>: trang được nhớ lại, mà chọn bố cục sẵn thì bỏ bố cục tự vẽ ⇒ dòng "Đang dùng bố
+      cục tự vẽ: N khung" đứng nguyên.</li>
+</ul>
+
+<h3>Không làm nút chủ đề — và vì sao đó là quyết định, không phải bỏ dở</h3>
+<p>
+  Đo trước khi quyết: 78 mã màu viết cứng ở 17 tệp, <code>KachiTheme</code> là hằng biên dịch,
+  <code>state.themeMode</code> không ai đọc để vẽ. Làm nút gạt ở đây là làm <b>nút chết</b>. Làm bảng màu sáng cho đủ thì
+  là một việc riêng cỡ U5, không thuộc S1. ⇒ nói thật bằng một dòng thông tin, giữ đường lưu bền, và <b>gài bài canh tự
+  đảo chiều</b> để hôm nào bảng màu sáng có thật thì bộ test đòi làm nút. Đây là lần thứ hai trong dự án gặp cấu hình
+  "lưu bền mà không ai chạm tới được" (lần đầu: 4 gói lệnh của W2, mục d của RW0).
+</p>
+
+</div>
+</body>
+</html>

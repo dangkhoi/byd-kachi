@@ -28,6 +28,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         unitPrefs = prefs.unitPrefs(),
         wallpaper = prefs.wallpaperPrefs(),
         topStrip = prefs.topStrip(),
+        // S1·T4: nạp cùng lượt với mọi thứ khác ⇒ mở lại màn Cài đặt là thấy đúng cờ đang lưu (bài học P1-1: nạp
+        // bằng tay ở tầng UI thì sẽ có lần quên).
+        autostart = prefs.launcherAutostart(),
     )
 
     override fun persist(state: HomeUiState) {
@@ -73,6 +76,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun wallpaperPrefs(): WallpaperPrefs = prefs.wallpaperPrefs()
 
     override fun setWallpaperPrefs(wall: WallpaperPrefs) = prefs.setWallpaperPrefs(wall)
+
+    override fun autostart(): Boolean = prefs.launcherAutostart()
+
+    override fun setAutostart(on: Boolean) = prefs.setLauncherAutostart(on)
 
     /** Hồ sơ trống (mọi ô Empty) → bố cục mặc định 3 widget (khớp `initialState()` cũ của KachiHomeActivity). */
     private fun defaultIfEmpty(ws: WorkspaceState): WorkspaceState =

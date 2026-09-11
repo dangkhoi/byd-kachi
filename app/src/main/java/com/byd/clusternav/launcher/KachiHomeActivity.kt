@@ -10,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
-import android.widget.Toast
 import android.widget.LinearLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -21,8 +20,6 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.AppContainer
-import com.byd.clusternav.Prefs
-import com.byd.clusternav.comfort.RecircApplier
 import com.byd.clusternav.MainActivity
 import kotlinx.coroutines.launch
 
@@ -53,7 +50,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private lateinit var windows: LauncherWindows
     private lateinit var topStrip: KachiTopStrip
 
-    /** Hai bảng phủ toàn màn (Tuỳ biến + bảng vẽ bố cục) — xem [HomePanels]. */
+    /** Hai bảng phủ toàn màn (màn Cài đặt + bảng vẽ bố cục) — xem [HomePanels]. */
     private val panels: HomePanels by lazy {
         HomePanels(
             activity = this,
@@ -61,6 +58,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             state = { viewModel.uiState.value },
             onToggleDock = { id, on -> viewModel.toggleDock(id, on) },
             onApplyLayout = { l -> applyCustomLayout(l) },
+            onPreset = { p -> selectPreset(p) },          // CÙNG đường với 5 nút bố cục ở thanh trên (§4.5)
+            onDockEdge = { e -> viewModel.setDockEdge(e) },
             onTopStrip = { id, on -> viewModel.toggleTopStrip(id, on) },
             onWallpaper = { p ->
                 viewModel.setWallpaperPrefs(p)     // state + lưu bền; reload đọc lại từ state
@@ -72,6 +71,11 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 workspace.setUnitPrefs(prefs)
                 topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs, viewModel.uiState.value.topStrip)
             },
+            onAutostart = { on -> viewModel.setAutostart(on) },
+            onSwitchProfile = { name -> viewModel.switchProfile(name) },
+            onAddProfile = { profileBar.addDialog() },    // dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai
+            onDeleteProfile = { name -> viewModel.deleteProfile(name) },
+            onOpenClusterNav = { startActivity(Intent(this, MainActivity::class.java)) },
             shellUsable = { shell != null },
             goImmersive = { goImmersive() },
         )
@@ -102,7 +106,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * Lựa chọn đang hiệu lực — **đọc từ nguồn sự thật duy nhất** ([HomeViewModel.uiState]), KHÔNG giữ bản sao.
      *
      * ⚠ [SOÁT P1-1 kiến trúc] Ba nhóm này (đơn vị · hình nền · bố cục tự vẽ) trước đây là field riêng của màn chính
-     * (và của cả `WorkspaceView`/`ControlDockView`/`CustomizePanel`), đồng bộ bằng lời gọi tay. Lý do cũ ghi trong
+     * (và của cả `WorkspaceView`/`ControlDockView`/bảng "Tuỳ biến" cũ), đồng bộ bằng lời gọi tay. Lý do cũ ghi trong
      * KDoc là "đưa vào state thì mỗi nhịp trạng thái xe phải so lại" — nhưng `data class` so bằng tham chiếu cho
      * field không đổi nên phép so đó gần như miễn phí, còn giá của việc giữ nhiều bản sao thì đã trả bằng một lỗi
      * thật (xoá bố cục mà màn hình vẫn hiện 6 khung).
@@ -124,16 +128,6 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private var shownState: HomeUiState? = null   // view-side diff cache của collector (KHÔNG phải nguồn sự thật)
 
     private lateinit var wall: WallView
-    // U4: trạng thái trình chiếu (ảnh nào, đổi lần cuối lúc nào). Ảnh đang vẽ giữ riêng để giải phóng ĐÚNG LÚC —
-    // giải phóng trước khi View vẽ xong sẽ dùng ảnh đã thu hồi và sập.
-    /**
-     * [SOÁT P2-2] Thẻ thế hệ cho hai việc chạy ở thread nền. **Phải là HAI thẻ riêng.**
-     *
-     * ⚠ Bản vá đầu của tôi dùng MỘT thẻ chung ⇒ nhịp trình chiếu (tăng thẻ giải mã) chạy trước lúc quét thư mục về
-     * ⇒ lượt quét thấy thẻ đã đổi nên **BỎ danh sách vừa quét** ⇒ ảnh mới thêm / ảnh vừa xoá / chu kỳ vừa đổi
-     * **không được nhận**, im lặng dùng dữ liệu cũ.
-     */
-    /** Ảnh đang được nạp ở thread nền (đường dẫn) — chặn nạp trùng cùng một ảnh khi nhịp tới trước lúc nạp xong. */
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
@@ -156,21 +150,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         topStrip = KachiTopStrip(
             this,
-            onSelectPreset = {
-                // [ĐO] P9: bấm bố cục sẵn trong khi đang dùng bố cục tự vẽ thì trước đây **màn hình không đổi gì**
-                // (bố cục tự vẽ vẫn thắng) nhưng vẫn **dựng lại TOÀN BỘ ô** — người dùng tưởng nút hỏng, còn app
-                // trong ô thì bị nhả/gắn vô ích. Hành động tường minh của người dùng phải có tác dụng ⇒ chọn bố
-                // cục sẵn = BỎ bố cục tự vẽ. Đây cũng là đường quay về bố cục sẵn mà không phải mở bảng vẽ.
-                // Phải đi qua applyCustomLayout: [ĐO] xoá riêng biến ở đây thì khung vẽ vẫn giữ BẢN SAO của nó
-                // ⇒ cấu hình đã xoá mà màn hình vẫn hiện bố cục tự vẽ. Một đường duy nhất, có test canh.
-                if (customLayout != null) applyCustomLayout(null)
-                viewModel.setPreset(it)
-            },
-            onCycleDock = { viewModel.cycleDockEdge() },
-            onCustomizeDock = { panels.openCustomize() },
-            onOpenSettings = { startActivity(Intent(this, MainActivity::class.java)) },
+            onSelectPreset = { selectPreset(it) },
+            // ⚠ KHÔNG thêm cổng cấu hình nào nữa vào đây: thanh trên chỉ được chạm `preset` + `active_profile`
+            // (§4.5 / [SettingsCatalog.TOP_STRIP_ALLOWED_KEYS]). Pill "Thanh" (xoay vòng viền thanh nút, ghi bền
+            // `dock_edge`) đã BỎ — Cài đặt → Màn hình chính đặt THẲNG từng viền.
+            onOpenSettings = { panels.openSettings() },   // S1: MỘT cửa vào cấu hình (gộp pill "Tuỳ biến" cũ)
             onProfileTap = { profileBar.cycle() },
-            onProfileLongPress = { profileBar.addDialog() },
             onOpenAppList = { drawerController.openAppList() },   // U3: mở app toàn màn (không gắn ô)
         )
 
@@ -280,13 +265,6 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     }
 
     /**
-     * P8 — vòng kiểm quyền. Chạy trên [winExec] (thread nền) vì phần tự cấp có mở kênh shell.
-     *
-     * Ba luật: **đủ thì im lặng** · **tự xin lại** cái tự xin được (không hỏi người dùng) · **KHÔNG chặn launcher**
-     * dù thiếu gì — đây là màn hình chính của xe.
-     */
-
-    /**
      * Áp [state] lên VIEW (duy nhất một chỗ, do collector gọi) — chỉ đọc-vẽ, KHÔNG đổi state. Diff so với [shownState]
      * để chỉ làm việc khi phần liên quan đổi. Side-effect cửa sổ theo-ô ở handler; ở đây chỉ reflow khi preset/viền đổi.
      */
@@ -307,7 +285,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             dock.setConfig(state.dock)
             if (edgeChanged) DockAreaLayout.apply(mainArea, workspace, dock, state.dock, resources.displayMetrics.density)
         }
-        if (prev == null || prev.activeProfile != state.activeProfile) topStrip.setProfileInitial(state.activeProfile)
+        // Đổi/thêm/xoá hồ sơ nạp lại TOÀN BỘ state ⇒ trang đã dựng của màn Cài đặt (nếu đang mở) trở nên cũ. Đi theo
+        // đường một chiều: state đổi → render → bảng dựng lại. ⚠ phải xét CẢ `profiles`: xoá một hồ sơ KHÔNG phải hồ
+        // sơ đang dùng thì `activeProfile` không đổi, và nếu chỉ xét nó thì danh sách trên màn vẫn còn hồ sơ vừa xoá.
+        if (prev == null || prev.activeProfile != state.activeProfile || prev.profiles != state.profiles) {
+            topStrip.setProfileInitial(state.activeProfile)
+            panels.invalidateSettings()
+        }
         // [SOÁT P1-1 kiến trúc] Bố cục tự vẽ đẩy xuống view ở ĐÚNG MỘT CHỖ: theo state, khi state đổi. Trước đây
         // chỗ này tự đọc lại repository khi đổi hồ sơ (một đường đọc bền nằm trong tầng UI), còn việc đẩy xuống view
         // thì nằm ở hàm khác ⇒ hai đường song song cho cùng một việc. Nay `load()`/`switchProfile()` đã nạp bố cục
@@ -383,19 +367,27 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // HOME vốn không làm gì), người dùng tưởng bảng bị treo. Thứ tự: lớp phủ trên cùng đóng trước.
         when {
             panels.layoutOpen() -> panels.closeLayoutEditor()
-            panels.customizeOpen() -> panels.closeCustomize()
+            panels.settingsOpen() -> panels.closeSettings()
             drawerController.isOpen() -> drawerController.close()
         }
     }
 
-
-    // ── Màn vẽ bố cục (P9 bước 2) — overlay trên rootFrame, dựng bằng code nên 0 tệp XML bị đụng ──
-
-
     /**
-     * Áp bố cục tự vẽ: lưu bền + áp NGAY cho màn hình, rồi **sắp lại cửa sổ app** theo khung mới. Thiếu bước sắp lại
-     * thì ô vẽ đúng chỗ mới nhưng cửa sổ app vẫn nằm ở khung cũ.
+     * Chọn một bố cục sẵn — **đường DUY NHẤT**, dùng cho cả 5 nút ở thanh trên lẫn dãy chip trong màn Cài đặt (§4.5).
+     *
+     * [ĐO] P9: bấm bố cục sẵn trong khi đang dùng bố cục tự vẽ thì trước đây **màn hình không đổi gì** (bố cục tự vẽ
+     * vẫn thắng) nhưng vẫn **dựng lại TOÀN BỘ ô** — người dùng tưởng nút hỏng, còn app trong ô thì bị nhả/gắn vô ích.
+     * Hành động tường minh của người dùng phải có tác dụng ⇒ chọn bố cục sẵn = BỎ bố cục tự vẽ. Đây cũng là đường quay
+     * về bố cục sẵn mà không phải mở bảng vẽ.
+     *
+     * Phải đi qua [applyCustomLayout]: [ĐO] xoá riêng biến ở đây thì khung vẽ vẫn giữ BẢN SAO của nó ⇒ cấu hình đã xoá
+     * mà màn hình vẫn hiện bố cục tự vẽ. Một đường duy nhất, có test canh.
      */
+    private fun selectPreset(preset: LayoutPreset) {
+        if (customLayout != null) applyCustomLayout(null)
+        viewModel.setPreset(preset)
+    }
+
     /**
      * Áp bố cục tự vẽ = **ghi vào nguồn sự thật, hết**. Việc đẩy xuống màn hình + sắp lại cửa sổ app do `render()`
      * làm khi state đổi (một chiều). Trước đây hàm này tự gán field riêng + tự ghi bền + tự đẩy xuống view, tức
@@ -461,6 +453,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // cùng activity. Không đóng ở đây thì cửa sổ đó sống tiếp (rò rỉ view + giữ activity), và một cái chạm vào
         // nó sẽ chạy vào `winExec` ĐÃ shutdown (RejectedExecutionException) hoặc mở activity từ activity đã huỷ.
         drawerController.close()
+        // [SOÁT S1 · P3] `HomePanels.closeAll()` tự nhận là "gọi lúc huỷ màn (lớp phủ giữ view là giữ activity)"
+        // nhưng [ĐO] nó KHÔNG có chỗ gọi nào — mã chết + một câu KDoc nói sai. Nối vào đây: màn Cài đặt giữ 7 trang
+        // đã dựng (trang "Màn hình chính" một mình là 187 ô) nên nhả sớm là việc đúng, và từ nay câu KDoc thành thật.
+        panels.closeAll()
         wallpaper.release()   // U4: nhả ảnh nền, không để giữ bộ nhớ sau khi màn đã huỷ
         winExec.shutdownNow(); ioExec.shutdownNow(); windows.clearOverlays()
     }

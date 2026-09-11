@@ -30,7 +30,8 @@ class WallpaperWiringContractTest {
      */
     private val ctrl by lazy { code("src/main/java/com/byd/clusternav/launcher/WallpaperController.kt") }
     private val ws by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
-    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
+    /** Nhóm "Màn hình chính" của màn Cài đặt (S1·T3) — 4 dòng hình nền chuyển tới đây. */
+    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
 
     // ── R7: không thêm quyền, không dùng màn hệ thống ────────────────────────────────────────────
 
