@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi P8 — Vòng kiểm quyền lúc mở launcher</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi P8 — Vòng kiểm quyền lúc mở launcher</h1>
+<p class="muted">
+  <b>Trạng thái</b>: Draft — chờ owner duyệt · <b>Ngày</b>: 2026-09-11 · <b>Mã việc</b>: P8 ·
+  <b>Mục đích</b>: mở launcher là biết ngay <b>có thiếu quyền gì không</b>. Đủ thì im lặng; thiếu thì nói rõ thiếu
+  cái gì, tự xin lại được thì tự xin.
+</p>
+<p class="muted">
+  <b>Vì sao làm bây giờ</b>: backlog ghi <i>"làm sớm còn giúp giảm nhiễu khi test trên xe"</i> — mà nợ-trên-xe đang
+  là <b>nút thắt lớn nhất</b> của dự án. Thêm nữa, đây là lỗi <b>lặp lại nhiều lần</b>: quyền hay mất sau khi khởi
+  động lại, và mỗi lần lại chẩn đoán từ đầu.
+</p>
+
+<h2>1. Changelog</h2>
+<table>
+<tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>0</td><td>2026-09-11</td><td>Lập thiết kế sau khi ĐO hiện trạng: 6 điều kiện launcher phụ thuộc, đang kiểm rải rác ở <b>5 chỗ</b>, không có nơi tập trung. Xác minh API kiểm qua Context7 (dùng lại cách dự án đang dùng, không phát minh).</td></tr>
+</table>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Ba sự thật đã ĐO</h3>
+<table>
+<tr><th>#</th><th>Đo được</th><th>Nghĩa là gì</th></tr>
+<tr>
+  <td>Đ1</td>
+  <td>Phép kiểm quyền đang <b>rải rác ở 5 chỗ</b>: màn Cài đặt cũ, bộ mở ngăn kéo, dải header nổi, bộ tự-mở VietMap, và màn chính của launcher. <b>Không có</b> nơi tập trung.</td>
+  <td>Mỗi chỗ kiểm một kiểu, và không chỗ nào biết bức tranh toàn cảnh ⇒ người dùng chỉ biết thiếu quyền khi một tính năng <b>im lặng không chạy</b>.</td>
+</tr>
+<tr>
+  <td>Đ2</td>
+  <td>Hai quyền quan trọng nhất (đọc thông báo · trợ năng) là <b>quyền kiểu ADB</b> — đọc được bằng cách đọc thẳng cấu hình hệ thống, và <b>cấp được qua kênh shell</b> mà không cần người dùng làm gì.</td>
+  <td>Phần lớn việc <b>tự sửa được</b>. Đây là công thức đã chạy thật trên xe từ bản 1.13.</td>
+</tr>
+<tr>
+  <td>Đ3</td>
+  <td><b class="warn">Màn cài đặt hệ thống trên xe BỊ KHOÁ</b> — mở ra chỉ nhận thông báo <i>"Hệ thống IVI không hỗ trợ hoạt động này"</i>.</td>
+  <td>Vòng kiểm <b>KHÔNG được</b> đưa người dùng tới màn cài đặt hệ thống rồi coi như xong. Cái gì không tự cấp được thì phải nói <b>đúng cách khác</b> để làm.</td>
+</tr>
+</table>
+
+<h3>2.2 Sáu điều kiện launcher phụ thuộc</h3>
+<table>
+<tr><th>Điều kiện</th><th>Thiếu thì mất gì</th><th>Ai sửa được</th></tr>
+<tr><td><b>Đọc thông báo</b></td><td>Dẫn đường trên cụm mất nguồn dữ liệu</td><td class="ok">Tự sửa (kênh shell)</td></tr>
+<tr><td><b>Trợ năng</b></td><td>Gán phím vô-lăng chết; đọc màn hình dẫn đường chết</td><td class="ok">Tự sửa (kênh shell)</td></tr>
+<tr><td><b>Vẽ trên màn khác</b></td><td>Dải tiêu đề ô + ngăn kéo app không nổi lên được trên app freeform</td><td class="ok">Tự sửa (kênh shell)</td></tr>
+<tr><td><b>Kênh shell</b></td><td><b>App không vào được ô</b> — tính năng lõi của launcher</td><td class="warn">Môi trường (máy ảo cần một lệnh nối; trên xe có sẵn)</td></tr>
+<tr><td><b>Là màn hình chính</b></td><td>Bấm HOME không về Kachi</td><td class="warn">Người dùng chọn (và trên xe màn cài đặt khoá ⇒ phải nói cách khác)</td></tr>
+<tr><td><b>Cho phép cửa sổ tự do</b></td><td>App vào ô theo đường cửa sổ tự do không chạy</td><td class="ok">Tự sửa (kênh shell)</td></tr>
+</table>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>Mã</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td><b>R1</b></td><td><b>Một chỗ duy nhất</b> biết đủ 6 điều kiện, mỗi điều kiện có: cách kiểm · thiếu thì mất gì · ai sửa được.</td><td>Test thuần JVM: mọi điều kiện đều khai đủ 3 thứ đó.</td></tr>
+<tr><td><b>R2</b></td><td><b>Đủ thì IM LẶNG.</b> Không hiện gì, không chặn gì.</td><td>Test: mọi điều kiện đủ ⇒ không có gì để hiện.</td></tr>
+<tr><td><b>R3</b></td><td><b>Thiếu thì nói rõ thiếu cái gì</b> và <b>mất tính năng nào</b> — không phải câu chung "thiếu quyền".</td><td>Test: mỗi mục thiếu ra một câu nêu đích danh mục đó + hậu quả.</td></tr>
+<tr><td><b>R4</b></td><td><b>Tự xin lại</b> những gì tự xin được, KHÔNG hỏi người dùng.</td><td>Đo: gỡ một quyền tự-sửa-được ⇒ mở launcher ⇒ quyền quay lại.</td></tr>
+<tr><td><b>R5</b></td><td><b>KHÔNG chặn launcher</b> vì thiếu quyền. Launcher là màn hình chính của xe — chặn nó là làm xe không dùng được.</td><td>Test/đo: thiếu mọi quyền ⇒ launcher vẫn mở và dùng được.</td></tr>
+<tr><td><b>R6</b></td><td><b>Không đưa người dùng tới màn cài đặt hệ thống</b> như giải pháp (Đ3). Mục nào cần người dùng thì nói <b>cách làm thật sự dùng được trên xe</b>.</td><td>Test: không có mục nào khai cách sửa là "mở màn cài đặt".</td></tr>
+<tr><td><b>R7</b></td><td><b>Không xin quyền vô cớ</b>: chỉ kiểm và xin những gì launcher THẬT SỰ dùng.</td><td>Danh sách khớp 6 điều kiện ở §2.2, không hơn.</td></tr>
+</table>
+
+<h3>Ràng buộc</h3>
+<table>
+<tr><th>Mã</th><th>Ràng buộc</th><th>Vì sao</th></tr>
+<tr><td>C1</td><td><code>:core</code> thuần JVM — lớp quyết định KHÔNG chạm Android</td><td>Test off-car tất định. Phần đọc trạng thái thật nằm ở <code>:app</code>.</td></tr>
+<tr><td>C2</td><td><b>Dùng lại</b> phép kiểm/cấp đã có, KHÔNG viết lại</td><td>Công thức cấp qua kênh shell đã proven trên xe từ 1.13; viết lại là nhân bản kiến thức.</td></tr>
+<tr><td>C3</td><td>Không thêm phụ thuộc · không sửa layout niêm phong · không đụng chiếu-cụm</td><td>Kỷ luật dự án.</td></tr>
+<tr><td>C4</td><td><b>Không mở phiên kênh shell nếu không cần</b></td><td>Đọc trạng thái quyền KHÔNG cần kênh shell (đọc thẳng cấu hình hệ thống được). Chỉ mở khi thật sự phải CẤP. Bài học đã ghi trong code cũ: mở phiên thừa mỗi lần mở app là tốn.</td></tr>
+<tr><td>C5</td><td>Giữ mọi test hiện có xanh (mốc <b>2503</b>)</td><td>—</td></tr>
+</table>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Luồng</h3>
+<div class="diagram">
+<svg viewBox="0 0 840 210" role="img" aria-label="Luồng vòng kiểm quyền: đọc trạng thái, phân loại, tự sửa hoặc báo">
+  <defs><marker id="ap" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+    <path d="M0,0 L9,4.5 L0,9 z" fill="var(--accent)"/></marker></defs>
+  <rect x="6" y="78" width="150" height="54" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="81" y="100" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">Mở launcher</text>
+  <text x="81" y="118" text-anchor="middle" font-size="11.5" fill="var(--muted)">đọc 6 điều kiện</text>
+
+  <rect x="206" y="78" width="180" height="54" rx="10" fill="var(--bg)" stroke="var(--accent)" stroke-width="1.6"/>
+  <text x="296" y="100" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">PHÂN LOẠI</text>
+  <text x="296" y="118" text-anchor="middle" font-size="11.5" fill="var(--muted)">(lớp thuần, test off-car)</text>
+
+  <rect x="446" y="12" width="200" height="48" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="546" y="33" text-anchor="middle" font-size="12.5" fill="var(--fg)">Đủ hết</text>
+  <text x="546" y="50" text-anchor="middle" font-size="11.5" fill="var(--ok)">IM LẶNG (R2)</text>
+
+  <rect x="446" y="78" width="200" height="48" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="546" y="99" text-anchor="middle" font-size="12.5" fill="var(--fg)">Thiếu &amp; tự sửa được</text>
+  <text x="546" y="116" text-anchor="middle" font-size="11.5" fill="var(--muted)">tự xin qua kênh shell (R4)</text>
+
+  <rect x="446" y="144" width="200" height="48" rx="10" fill="var(--bg)" stroke="var(--warn)" stroke-width="1.6"/>
+  <text x="546" y="165" text-anchor="middle" font-size="12.5" fill="var(--fg)">Thiếu &amp; KHÔNG tự sửa</text>
+  <text x="546" y="182" text-anchor="middle" font-size="11.5" fill="var(--warn)">nói rõ thiếu gì + mất gì (R3)</text>
+
+  <path d="M156 105 H202" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#ap)"/>
+  <path d="M386 100 C 415 100, 420 38, 442 36" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#ap)"/>
+  <path d="M386 105 H442" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#ap)"/>
+  <path d="M386 112 C 415 112, 420 166, 442 168" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#ap)"/>
+  <text x="740" y="100" font-size="11.5" fill="var(--muted)">launcher LUÔN</text>
+  <text x="740" y="116" font-size="11.5" fill="var(--muted)">mở được (R5)</text>
+</svg>
+</div>
+
+<h3>4.2 Vì sao lớp quyết định KHÔNG chạm Android</h3>
+<p>
+  Nó chỉ trả lời: <i>"với bộ trạng thái này thì thiếu gì, cái nào tự sửa được, cần nói gì với người dùng"</i>. Việc
+  <b>đọc trạng thái thật</b> và <b>cấp quyền</b> nằm ở <code>:app</code>. Nhờ vậy test off-car chạy được đủ mọi tổ
+  hợp thiếu/đủ mà không cần máy thật — và đó là điều quan trọng, vì <b>ca thiếu quyền là ca khó tái hiện nhất</b>
+  trên máy thật.
+</p>
+
+<h3>4.3 Phân loại "ai sửa được" — chỗ này quyết định trải nghiệm</h3>
+<table>
+<tr><th>Loại</th><th>Nghĩa</th><th>Launcher làm gì</th></tr>
+<tr><td><b>Tự sửa</b></td><td>Cấp được qua kênh shell (công thức đã proven)</td><td><b>Tự làm, không hỏi.</b> Người dùng không cần biết có chuyện gì xảy ra.</td></tr>
+<tr><td><b>Cần người dùng</b></td><td>Chỉ người dùng đổi được (vd chọn màn hình chính)</td><td>Nói rõ <b>việc cần làm</b>, và <b>không</b> chỉ tới màn cài đặt hệ thống (Đ3/R6).</td></tr>
+<tr><td><b>Môi trường</b></td><td>Không ai trong app sửa được (vd kênh shell chưa nối trên máy ảo)</td><td>Nói rõ đây là hạn chế của môi trường, <b>không phải lỗi</b> — để người test không đi tìm bug không tồn tại.</td></tr>
+</table>
+
+<h3>4.4 Cố ý KHÔNG làm</h3>
+<ul>
+  <li><b>Không chặn launcher</b> để đòi quyền (R5). Đây là màn hình chính của xe.</li>
+  <li><b>Không lặp vô hạn</b> xin lại. Backlog viết <i>"lặp tới khi đủ"</i> — nhưng xin lại liên tục một quyền mà xe từ chối sẽ thành vòng lặp tốn kênh shell. Thay vào đó: xin <b>một lần mỗi lần mở launcher</b>, và có đường xin lại bằng tay.</li>
+  <li><b>Không mở màn cài đặt hệ thống</b> (Đ3).</li>
+  <li><b>Không</b> gom quyền của ClusterNav cũ vào đây — chỉ 6 điều kiện launcher thật sự dùng (R7).</li>
+</ul>
+
+<h2>5. Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td>Lớp quyết định thuần ở <code>:core</code>: danh mục 6 điều kiện + phân loại + soạn câu báo</td><td>R1 · R2 · R3 · R6 · R7</td></tr>
+<tr><td>T2</td><td>Bộ đọc trạng thái thật ở <code>:app</code> (dùng lại phép kiểm đã có)</td><td>C2 · C4</td></tr>
+<tr><td>T3</td><td>Tự xin lại những gì tự xin được, lúc mở launcher</td><td>R4 · R5</td></tr>
+<tr><td>T4</td><td>Chỗ hiện danh sách thiếu (bề mặt dựng bằng code)</td><td>R3 · C3</td></tr>
+<tr><td>T5</td><td>Test đủ 5 module + thử phá + đo trên máy ảo (gỡ một quyền xem có báo đúng)</td><td>Giữ mốc 2503</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<table>
+<tr><th>Hạng mục</th><th>Cách đo</th><th>Kết quả</th></tr>
+<tr><td>Test thuần JVM</td><td>Đủ/thiếu từng mục · phân loại · câu báo · không mục nào chỉ tới màn cài đặt</td><td><span class="pill ok">14 test, 0 lỗi</span> (<code>LauncherRequirementsTest</code>) + 9 test dây nối ở <code>:app</code></td></tr>
+<tr><td>Đủ 5 module</td><td><code>./gradlew test --continue</code></td><td><span class="pill ok">2535 / 0</span> (đầu phiên 2503 ⇒ <b>+32</b>)</td></tr>
+<tr><td>Thử phá</td><td>3 phép trên bất biến quan trọng nhất</td><td><span class="pill ok">2/3 đỏ đúng chỗ, 1 phép lộ DÒNG CHẾT</span>: coi "chưa đọc được" là thiếu ⇒ 2 test đỏ · cho một mục chỉ tới màn cài đặt ⇒ 1 test đỏ · <b>"đủ vẫn hiện thông báo" ⇒ 0 test đỏ</b> ⇒ phát hiện dòng kiểm đó là <b>dòng chết</b> (đủ hết thì hai danh sách kia vốn đã rỗng) ⇒ đã bỏ dòng đó thay vì giữ code không ai chạy tới</td></tr>
+<tr><td>Máy ảo — tự xin lại</td><td>Xoá quyền đọc thông báo bằng tay → mở launcher → đọc nhật ký + đọc lại cấu hình hệ thống</td><td><span class="pill ok">đạt</span> nhật ký: <code>thiếu: notif_listener, accessibility | tự xin: notif_listener, accessibility</code> → <code>sau khi tự cấp: đủ quyền</code>; và cấu hình hệ thống <b>thật sự có lại</b> <code>com.byd.launcher/…NavNotificationListener</code></td></tr>
+<tr><td>Máy ảo — đủ thì im lặng</td><td>Mở launcher khi đủ quyền → tìm chữ thông báo trong cây giao diện</td><td><span class="pill ok">đạt</span> không có thông báo nào</td></tr>
+<tr><td>Máy ảo — không chặn</td><td>Thiếu quyền → launcher vẫn mở và dùng được</td><td><span class="pill ok">đạt</span> thanh trên vẫn có "Ứng dụng" / "Tuỳ biến"</td></tr>
+<tr><td>Máy ảo — KHÔNG xoá trợ năng của app khác</td><td>Đặt sẵn một service trợ năng của app khác + tắt cờ → mở launcher → đọc lại danh sách</td><td><span class="pill ok">đạt (chứng minh bằng thực nghiệm)</span> trước: <code>com.example.other/…SvcA</code>, cờ=0 → sau: <code>com.example.other/…SvcA<b>:</b>com.byd.launcher/…NavAccessibilityService</code>, cờ=1 ⇒ service của app khác <b>được giữ nguyên</b>, Kachi nối thêm vào sau, và cờ được bật</td></tr>
+<tr><td>Guard kiến trúc</td><td>Chạy bộ guard trạng-thái-bền + guard màn-chính-giữ-mỏng</td><td><span class="pill ok">xanh sau khi sửa</span> — xem §9, hai guard này <b>đã bắt tôi làm sai</b></td></tr>
+</table>
+
+<h3>[ĐO] Phát hiện đáng giá nhất — đo được lời giải cho lỗi lặp lại</h3>
+<div class="card">
+  Backlog ghi <i>"gán phím vô-lăng hay mất quyền sau khi khởi động lại"</i> và mỗi lần lại chẩn đoán từ đầu.
+  <b>[ĐO] 2026-09-11 trên máy ảo</b>: cấp quyền trợ năng xong, đọc lại thấy <b>có</b> (cờ = 1); rồi
+  <b>tắt hẳn app và KHÔNG mở lại</b>, đọc lại thì danh sách về <b>null</b> và cờ về <b>0</b>.
+  ⇒ <b>Hệ thống TỰ THU HỒI</b> quyền trợ năng khi tiến trình chết, không phải app tự đánh mất.
+  <br><br>
+  Đó chính là lý do vòng kiểm này đáng tồn tại: nó <b>tự lành</b> mỗi lần mở launcher, thay vì để người dùng phát
+  hiện qua việc phím vô-lăng im lặng không chạy.
+  <br><br>
+  <b class="warn">Giới hạn của số đo</b>: tôi đo bằng <b>tắt hẳn app</b>, KHÔNG đo bằng <b>khởi động lại máy</b>.
+  Cơ chế thì khớp với hiện tượng owner báo, nhưng muốn chắc thì phải đo trên xe.
+</div>
+
+<h3>Phải verify TRÊN XE 🚗</h3>
+<ul>
+  <li><b>Quyền có mất sau khi khởi động lại xe không</b>, và vòng kiểm có tự lấy lại được không — đây là bệnh gốc.</li>
+  <li>Trên xe <b>là màn hình chính</b> kiểm ra đúng không (xe có launcher zin).</li>
+  <li>Kênh shell trên xe: vòng kiểm báo đủ chứ không báo thiếu.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mặc định</th></tr>
+<tr><td>OQ1</td><td>Chỗ hiện danh sách thiếu: <b>dải mỏng trên màn chính</b> hay <b>một mục trong bảng Tuỳ biến</b>?</td><td><b>Cả hai</b>: dải mỏng chỉ hiện khi thiếu mục ảnh hưởng tính năng lõi (app-vào-ô); còn lại nằm trong bảng Tuỳ biến để không chiếm chỗ màn chính.</td></tr>
+<tr><td>OQ2</td><td>Có nên tự xin lại mỗi lần mở launcher, hay chỉ khi phát hiện thiếu?</td><td><b>Chỉ khi thiếu</b> — đọc trạng thái không cần kênh shell, nên kiểm rẻ; chỉ mở kênh khi phải cấp (C4).</td></tr>
+<tr><td>OQ3</td><td>Backlog viết <i>"lặp tới khi đủ"</i> — có thật muốn lặp không?</td><td><b>Không lặp vô hạn</b> (xem §4.4). Nếu owner muốn lặp thì cần đặt trần số lần + khoảng nghỉ.</td></tr>
+</table>
+
+<h2>8. References</h2>
+<ul>
+  <li><code>docs/PROJECT-BACKLOG.md</code> — P8 (kèm ghi chú "giảm nhiễu khi test trên xe").</li>
+  <li><code>docs/specs/notif-grant-docs-voicekey-1.13.html</code> — công thức tự cấp quyền qua kênh shell, đã proven trên xe.</li>
+  <li>Context7 <code>/websites/developer_android</code> — cách kiểm quyền hiện hành; dự án dùng lại cách đang có.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+
+<h3>Phiên 2026-09-11 (trưa) — owner đi ngủ, chạy tự chủ</h3>
+
+<div class="card">
+<b>HAI GUARD KIẾN TRÚC ĐÃ BẮT TÔI LÀM SAI</b> — ghi ra vì đây là bài học, không phải chuyện nhỏ.
+<br><br>
+<b>Lần 1</b>: tôi cho vòng kiểm ra lệnh thô bật cờ cửa sổ tự do. Guard trạng-thái-bền đỏ ngay:
+dự án có luật <b>một-nơi-ghi-duy-nhất</b> cho trạng thái bền, và <b>phía launcher không được ghi trực tiếp</b>.
+<br>
+<b>Lần 2</b>: tôi sửa bằng cách cho màn chính gọi đường gieo. Guard <b>màn-chính-giữ-mỏng</b> đỏ ngay:
+<i>"HOME must not seed freeform"</i>.
+<br><br>
+<b>Kết luận đúng</b>: vòng kiểm chỉ <b>BÁO</b>, đường khởi động mới <b>SỬA</b>. Nên tôi thêm một loại phân loại mới
+<b>"app tự lo, nhưng ở đường khởi động"</b> — và nó làm mô hình <b>đúng hơn</b> chứ không phải chỉ để lách guard:
+tới màn chính mà cờ vẫn thiếu nghĩa là việc gieo lúc khởi động <b>đã không ăn</b>, và đó là tin đáng nói ra.
+<br><br>
+Hai guard này do phiên kiến trúc B0–B6 để lại. Chúng vừa <b>trả lãi</b> đúng lúc.
+</div>
+
+<p><b>Quyết định đã tự đưa ra:</b></p>
+<table>
+<tr><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td><b>Đọc trạng thái KHÔNG mở kênh shell</b></td><td>Ba quyền kiểu ADB đọc được bằng cách đọc thẳng cấu hình hệ thống. Code cũ đã ghi bài học "mở phiên thừa mỗi lần mở app là tốn". Chỉ mở kênh khi thật sự phải CẤP.</td></tr>
+<tr><td><b>Đọc không được ⇒ "chưa biết", KHÔNG suy ra là thiếu</b></td><td>Có ROM thiếu hẳn API (code cũ bọc lỗi vì lý do đó). Đoán là thiếu rồi đi xin lại sẽ tạo nhiễu <b>đúng lúc đang test trên xe</b> — trái hẳn mục đích của việc này. Thử phá: đổi thành "coi như thiếu" ⇒ 2 test đỏ.</td></tr>
+<tr><td><b>Chỉ BÁO khi thiếu thứ ảnh hưởng tính năng lõi</b></td><td>Thiếu mục nhỏ mà báo mỗi lần mở là nhiễu — đúng thứ việc này đi dọn. Danh sách đầy đủ nằm trong bảng Tuỳ biến.</td></tr>
+<tr><td><b>Phần tự cấp được thì IM LẶNG luôn</b></td><td>Launcher tự làm rồi; nói ra chỉ làm người dùng lo về việc họ không cần làm gì. Nhưng <b>nhật ký vẫn ghi</b> để buổi test trên xe đọc được.</td></tr>
+<tr><td><b>Trợ năng phải APPEND, không ghi đè</b></td><td>Ghi đè sẽ <b>tắt trợ năng của app khác</b> — kể cả của người khuyết tật đang dùng. Có test khoá.</td></tr>
+<tr><td><b>KHÔNG lặp vô hạn xin lại</b></td><td>Backlog viết "lặp tới khi đủ", nhưng xin lại liên tục một quyền mà xe từ chối sẽ thành vòng lặp tốn kênh shell. Xin <b>một lần mỗi lần mở launcher</b> (xem OQ3).</td></tr>
+</table>
+
+<p><b>Ba lỗi do LƯỢT QUÉT BẢO MẬT tìm ra</b> (nó vốn đi tìm rò rỉ dữ liệu, nhưng đọc kỹ code cấp quyền và tìm ra
+lỗi đúng-đắn) — cả ba đều phá đúng cái bảo đảm tôi vừa tuyên bố:</p>
+<table>
+<tr><th>Lỗi</th><th>Hậu quả thật</th><th>Sửa</th></tr>
+<tr><td>Nội suy giá trị vào lệnh shell <b>không bọc nháy</b></td><td>Token chứa khoảng trắng ⇒ lệnh chỉ nhận phần đầu ⇒ <b>mất phần còn lại của danh sách dùng chung</b> = xoá trợ năng của app khác đi vòng cửa sau</td><td>Bọc nháy — giá trị là <b>dữ liệu</b>, không phải mã lệnh</td></tr>
+<tr><td>Đọc-sửa-ghi chỉ lọc đúng chữ <code>"null"</code></td><td>Lệnh đọc trả về <b>một câu lỗi</b> ⇒ câu lỗi bị ghép vào danh sách rồi ghi đè cấu hình hệ thống</td><td>Chỉ giữ token đúng <b>DẠNG component</b> (<code>gói/lớp</code>) — an toàn kể cả khi ROM khác đổi định dạng trả về</td></tr>
+<tr><td>Phép kiểm "trợ năng đủ" <b>bỏ qua cờ</b> toàn hệ thống</td><td>Ca "có trong danh sách nhưng cờ = 0" bị báo là ĐỦ trong khi trợ năng <b>đang tắt</b>. [ĐO] chính cờ đó bị đưa về 0 khi tiến trình chết ⇒ <b>ca THẬT</b></td><td>Kiểm cả cờ; và nếu component đã có mà cờ tắt thì vẫn bật cờ</td></tr>
+</table>
+<p class="muted">Đã thêm một lớp test riêng cho chỗ này (<code>AccessibilityGrantSafetyContractTest</code>) vì đây là
+chỗ nguy hiểm nhất của cả việc: làm sai là <b>xoá trợ năng của app khác</b>, kể cả của người khuyết tật đang dùng.
+Thử phá (bỏ phép lọc theo dạng) ⇒ 2 test đỏ.</p>
+
+<p><b>Một test của TÔI báo nhầm chính code đúng:</b> phép kiểm "không cấp quyền rộng hơn cần thiết" so chuỗi literal,
+nhưng lệnh dùng <b>hằng số nội suy</b> ⇒ báo đỏ oan. Đã sửa cho nó khoá <b>ý định</b> (lệnh nhắm vào hằng số đó, và
+hằng số đó đúng là gói của chính app) thay vì khoá cách viết.</p>
+
+<p><b>Một dòng chết do thử phá lộ ra:</b> phép thử "đủ mà vẫn hiện thông báo" <b>không làm đỏ test nào</b>. Soi ra:
+dòng kiểm <i>đủ-thì-trả-rỗng</i> là <b>dòng chết</b> — vì khi đủ hết thì hai danh sách phía sau vốn đã rỗng. Đã <b>bỏ
+dòng đó</b> thay vì giữ code không ai chạy tới. Bài học: thử phá không chỉ tìm test mù, nó còn tìm <b>code chết</b>.</p>
+
+<p><b>Còn tồn:</b></p>
+<ul>
+  <li>Vòng kiểm chỉ chạy <b>lúc mở launcher</b>. Quyền mất trong lúc launcher đang chạy thì phải mở lại mới tự lành.</li>
+  <li>Số đo thu hồi quyền làm bằng <b>tắt hẳn app</b>, chưa đo bằng <b>khởi động lại máy</b> (xem §6).</li>
+  <li><s>Phép "không ghi đè trợ năng của app khác" chỉ được khoá bằng test logic.</s> <b>ĐÃ ĐÓNG</b> — dựng sẵn một service của app khác rồi đo: nó được giữ nguyên (xem §6).</li>
+  <li><b>Chưa có lượt soát độc lập</b> — tác nhân soát hỏng nhiều lần trong hai phiên gần đây.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Chưa có.</p>
+
+</div>
+</body>
+</html>

@@ -38,6 +38,8 @@ class CustomizePanel(
     unitPrefs: UnitPrefs = UnitPrefs.DEFAULT,
     /** R11 — người dùng đổi đơn vị của một loại đại lượng. */
     private val onUnitPrefs: (UnitPrefs) -> Unit = {},
+    /** P8 — báo cáo vòng kiểm quyền. `null` = chưa kiểm ⇒ không hiện mục nào. */
+    permissions: PermissionReport? = null,
 ) : FrameLayout(context) {
 
     private val enabled = HashSet(enabledIds)
@@ -90,6 +92,12 @@ class CustomizePanel(
 
         body.addView(sectionLabel("Tiện nghi tự động"))
         body.addView(recircRow(recircOnStart) { onRecircOnStart(it) })
+
+        // P8: chỉ hiện mục này KHI có thứ thiếu. Đủ thì im lặng — không ai muốn đọc danh sách những thứ đang chạy tốt.
+        permissions?.takeIf { !it.allOk }?.let { rep ->
+            body.addView(sectionLabel("Quyền còn thiếu"))
+            rep.missing.forEach { body.addView(permissionRow(it, rep)) }
+        }
 
         // RW0/R2: bày CẢ hai loại. Trước đây chỗ này chỉ liệt kê nút HÀNH ĐỘNG (ControlPanels), nên dù cổng
         // DockConfig.setEnabled đã nới thì người dùng vẫn KHÔNG có đường nào thêm một ô ĐỌC vào thanh.
@@ -149,6 +157,39 @@ class CustomizePanel(
                 })
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             setOnClickListener { state = !state; paint(); onChange(state) }
+        }
+    }
+
+    // ── P8 · một hàng cho mỗi quyền còn thiếu ─────────────────────────────────────────────────────────
+    /**
+     * Nói rõ **thiếu cái gì** và **mất gì**, kèm việc cần làm nếu người dùng phải tự làm.
+     * KHÔNG chỉ tới màn cài đặt hệ thống — [ĐO] màn đó bị khoá trên xe.
+     */
+    private fun permissionRow(req: LauncherRequirement, rep: PermissionReport): View {
+        val hint = when {
+            req in rep.selfFixable -> "Kachi đang tự xin lại — không cần làm gì"
+            req.userAction != null -> req.userAction
+            req in rep.environment -> "Hạn chế của môi trường, không phải lỗi của app"
+            else -> null
+        }
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            background = KachiTheme.card(context, 14f, "#161b24")
+            val p = dpi(context, 12); setPadding(p, p, p, p)
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            lp.bottomMargin = dpi(context, 6); layoutParams = lp
+            addView(TextView(context).apply {
+                text = if (req.coreFeature) "${req.label} — ảnh hưởng tính năng chính" else req.label
+                setTextColor(c(if (req.coreFeature) KachiTheme.AMBER else KachiTheme.INK))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            })
+            addView(TextView(context).apply {
+                text = "Thiếu thì: ${req.losesWhatIfMissing}"
+                setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            })
+            if (hint != null) addView(TextView(context).apply {
+                text = hint; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            })
         }
     }
 

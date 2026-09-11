@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import android.util.Log
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -9,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.Toast
 import android.widget.LinearLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -191,7 +193,46 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                     )
                     viewModel.setEmbedded(true)                                               // dadb nối được → nhúng (giữ embedded khớp getter)
                 }
+                runPreflight(shellUsable = true, sh = seam)
+            } else {
+                // Không có kênh shell: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng
+                // biết vì sao app không vào được ô, thay vì ngồi đoán.
+                runPreflight(shellUsable = false, sh = null)
             }
+        }
+    }
+
+    /**
+     * P8 — vòng kiểm quyền. Chạy trên [winExec] (thread nền) vì phần tự cấp có mở kênh shell.
+     *
+     * Ba luật: **đủ thì im lặng** · **tự xin lại** cái tự xin được (không hỏi người dùng) · **KHÔNG chặn launcher**
+     * dù thiếu gì — đây là màn hình chính của xe.
+     */
+    private fun runPreflight(shellUsable: Boolean, sh: ((String) -> String)?) {
+        val before = PermissionPreflight.check(this, shellUsable)
+        Log.i("Preflight", before.logLine())
+
+        // Tự cấp: chỉ khi CÓ kênh shell và thật sự đang thiếu (đọc thì không cần shell, cấp thì cần).
+        if (sh != null && before.selfFixable.isNotEmpty()) {
+            runCatching { PermissionPreflight.selfGrant(before, sh) }
+            // Trợ năng phải ĐỌC-SỬA-GHI (append, không ghi đè — ghi đè sẽ tắt trợ năng của app khác).
+            if (before.selfFixable.any { it.id == LauncherRequirements.ACCESSIBILITY.id }) {
+                runCatching {
+                    val cur = sh(PermissionPreflight.READ_ACCESSIBILITY_CMD).trim().takeIf { it != "null" }
+                    val flagOn = sh(PermissionPreflight.READ_ACCESSIBILITY_FLAG_CMD).trim() == "1"
+                    PermissionPreflight.accessibilityGrantCommands(cur, flagOn).forEach { sh(it) }
+                }
+            }
+            Log.i("Preflight", "sau khi tự cấp: " + PermissionPreflight.check(this, shellUsable).logLine())
+        }
+
+        // Chỉ NÓI khi thiếu thứ làm mất TÍNH NĂNG LÕI (app vào ô). Thiếu mục nhỏ mà báo mỗi lần mở là nhiễu —
+        // đúng thứ việc này đi dọn. Danh sách đầy đủ nằm trong bảng Tuỳ biến.
+        val after = PermissionPreflight.check(this, shellUsable)
+        val core = after.missingCore
+        if (core.isNotEmpty()) {
+            val msg = core.joinToString(" · ") { "${it.label}: ${it.losesWhatIfMissing}" }
+            runOnUiThread { runCatching { Toast.makeText(this, msg, Toast.LENGTH_LONG).show() } }
         }
     }
 
@@ -302,6 +343,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             },
             // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).
             unitPrefs = unitPrefs,
+            // P8: bảng Tuỳ biến là chỗ xem ĐỦ bức tranh quyền (thông báo chỉ nói mục ảnh hưởng tính năng lõi).
+            permissions = PermissionPreflight.check(this, shellUsable = shell != null),
             onUnitPrefs = { prefs ->
                 unitPrefs = prefs
                 container.workspaceRepository.setUnitPrefs(prefs)
