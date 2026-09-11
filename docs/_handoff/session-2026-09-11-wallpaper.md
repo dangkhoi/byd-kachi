@@ -4,7 +4,7 @@
 
 ## Kết quả một dòng
 
-Đã push (`874a820`). Full 5 module **2580 / 0 lỗi** (đầu phiên 2563 ⇒ **+17**). Cây git sạch.
+Đã push (`874a820` hình nền, `6717f6a` widget). Full 5 module **2602 / 0 lỗi** (đầu phiên 2563 ⇒ **+39**). Cây git sạch. **U4 xong cả hai phần.**
 
 ## Vì sao chọn U4
 
@@ -55,9 +55,25 @@ Thư mục ảnh **chỉ được tạo khi đã bật** tính năng. Nhưng mu�
 
 Sửa: luôn tạo thư mục lúc mở launcher, kể cả khi tính năng đang tắt.
 
+## Phần widget trình chiếu — làm xong luôn trong phiên
+
+Anh nêu **hai** thứ, nên tôi làm xong cả hai. Widget đặt được vào ô như mọi widget khác.
+
+**Nó chạy độc lập với hình nền** — anh có thể muốn một khung ảnh trong ô mà không đổi nền màn hình. Tôi đo bằng cách **tắt hình nền** rồi xem widget: ảnh trong ô vẫn đổi **tím → cam → tím** qua ba khung, phủ kín ô, không viền đen.
+
+Widget **không** làm tối ảnh (khác hình nền): làm tối là để chữ *trên* nền đọc được, còn đây là khung ảnh — làm tối chỉ làm ảnh xấu đi.
+
+### ⚠ Một giả thuyết của tôi bị số đo bác — tôi ghi lại vì đáng nhớ
+
+Lượt chụp đầu cho hai khung **giống nhau từng byte**. Tôi kết luận widget không đổi ảnh, và **đoán** nguyên nhân: ô bị dựng lại liên tục theo nhịp trạng thái xe nên trạng thái quay vòng bị xoá mỗi lần — đúng loại lỗi đã gặp ở gói 2. Nếu tôi tin giả thuyết đó thì đã **dựng lại kiến trúc**.
+
+Đếm thật thì: ô **chỉ gắn một lần**, nhịp chạy đều sáu lần, và chỉ số **có** đổi ở giây thứ 20. **Lỗi nằm ở phép đo** — màn máy ảo ngủ nên lệnh chụp trả về khung cũ. Suýt sửa một thứ không hỏng.
+
+Luật tôi rút ra: *hai lần đo giống nhau y hệt* thì nghi **phép đo hỏng** trước khi nghi code hỏng.
+
 ## Còn tồn
 
-- **Widget trình chiếu riêng đặt vào ô chưa làm** — anh nêu cả hai (hình nền + widget). Nền là phần dùng nhiều hơn nên làm trước; widget nay **rẻ** vì logic và kho ảnh đã có sẵn.
+- **Widget và nền dùng chung một chu kỳ**, và có **chỉ số riêng** nên có thể đang hiện **hai ảnh khác nhau** cùng lúc. Tôi coi đây là đúng (khung ảnh trong ô là thứ riêng, không phải bản sao của nền) — nhưng nếu anh thấy rối thì đồng bộ được, hoặc tách thành hai chu kỳ riêng.
 - **Thanh trên là chỗ yếu nhất**: đo được nền lọt qua **18%** ở đó (thẻ workspace 0%). Với ảnh nhiều hoa văn thì chữ ở thanh trên sẽ rối nhất. Cách chữa: tăng độ đục riêng thanh trên — nhưng cần anh xem với **ảnh thật của anh** mới biết có đáng đổi không.
 - Sai số nhịp tối đa 10 giây (do dùng lại nhịp có sẵn).
 - **Chưa có lượt soát độc lập phần code** (tác nhân soát hỏng nhiều phiên gần đây). Phần xác minh **bằng mắt** thì có tác nhân độc lập làm 2 lượt.
@@ -70,11 +86,11 @@ Sửa: luôn tạo thư mục lúc mở launcher, kể cả khi tính năng đan
 4. **Icon** có cần phân biệt tới từng ô không.
 5. **Vòng kiểm quyền** có nên lặp tới khi đủ không.
 6. **Bố cục "3 ô"** không lên lưới được — có muốn thêm bố cục mới gần giống mà đúng lưới không.
-7. **Mới**: thanh trên có cần tăng độ đục khi bật hình nền không · có muốn **widget trình chiếu riêng** không.
+7. **Mới**: thanh trên có cần tăng độ đục khi bật hình nền không · widget và nền nên dùng **chung** chu kỳ hay tách riêng · hai chỗ hiện **hai ảnh khác nhau** cùng lúc có hợp không.
 
 ## Thứ tự burn còn lại
 
-P9 bước 2 (trình vẽ khung) → P9 bước 3 (nối tầng vẽ — rủi ro cao nhất còn lại) → U4 phần widget trình chiếu (rẻ) · S1 (dựng lại màn Cài đặt, owner đã duyệt) · W5 (camera 360) → U5 (đa ngôn ngữ) · T1 · P6.
+P9 bước 2 (trình vẽ khung) → P9 bước 3 (nối tầng vẽ — rủi ro cao nhất còn lại) → S1 (dựng lại màn Cài đặt, owner đã duyệt) · W5 (camera 360) → U5 (đa ngôn ngữ) · T1 · P6.
 
 ## Tài liệu
 
