@@ -43,10 +43,15 @@ class CapabilityModelTest {
         assertFalse(EvidenceTier.NEEDS_CAR.wired)
     }
 
-    @Test fun `needsBadge chi cho OVERDRIVE va DASHCAST`() {
-        assertFalse(EvidenceTier.PROVEN.needsBadge)
-        assertTrue(EvidenceTier.OVERDRIVE.needsBadge)
-        assertTrue(EvidenceTier.DASHCAST.needsBadge)
-        assertFalse(EvidenceTier.NEEDS_CAR.needsBadge)
+    /**
+     * ⚠ [SOÁT P1-3] Bài này TRƯỚC ĐÂY khoá đúng hành vi SAI: nó đòi `NEEDS_CAR.needsBadge == false`, tức mức tin cậy
+     * THẤP NHẤT là mức duy nhất KHÔNG được cảnh báo — 4 nút yếu nhất bộ (`door`, `hood`, `adas_esp`,
+     * `start_charging`) hiện ra trông y như nút đã chạy thật. Luật đúng: cảnh báo cho MỌI mức trừ PROVEN.
+     */
+    @Test fun `needsBadge cho MOI muc tru PROVEN`() {
+        assertFalse(EvidenceTier.PROVEN.needsBadge, "đã chạy thật trên xe thì không cảnh báo")
+        EvidenceTier.values().filter { it != EvidenceTier.PROVEN }.forEach {
+            assertTrue(it.needsBadge, "$it chưa kiểm trên xe ⇒ PHẢI có cảnh báo")
+        }
     }
 }

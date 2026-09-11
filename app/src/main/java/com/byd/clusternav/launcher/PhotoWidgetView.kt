@@ -37,6 +37,12 @@ class PhotoWidgetView(context: Context) : View(context) {
     private var bitmap: Bitmap? = null
     private var running = false
 
+    /** Ảnh đang nạp (đường dẫn) — chặn nạp trùng khi nhịp tới trước lúc nạp xong. */
+    private var loading: String? = null
+
+    /** Thẻ thế hệ của việc giải mã: lượt cũ về muộn thì bị bỏ + nhả ảnh, không ghi đè lượt mới. */
+    private var decodeGen = 0
+
     private val tick = object : Runnable {
         override fun run() {
             if (!running) return
@@ -85,23 +91,51 @@ class PhotoWidgetView(context: Context) : View(context) {
         // Dừng nhịp + nhả ảnh NGAY khi ô bị tháo — không để nhịp sống lâu hơn ô.
         running = false
         removeCallbacks(tick)
+        decodeGen++            // [SOÁT P2-5] huỷ lượt giải mã đang bay: nó về sau khi ô đã tháo thì phải tự nhả ảnh
+        loading = null
         bitmap?.recycle()
         bitmap = null
         super.onDetachedFromWindow()
     }
 
+    /**
+     * Một nhịp trình chiếu.
+     *
+     * ## [SOÁT P2-5/P2-6] Hai điều bản trước làm sai, nay sửa
+     *  1. **Giải mã ảnh ở thread NỀN.** Bản trước gọi `loadScaled` ngay trong nhịp (thread chính) ⇒ mỗi 5–20 giây
+     *     launcher đứng một nhịp để đọc đĩa + giải mã ảnh nhiều megapixel. Hình nền đã chuyển sang thread nền từ
+     *     lượt soát trước; widget thì chưa — nay đi cùng một đường.
+     *  2. **Không giải mã ở cỡ 1×1.** `onAttachedToWindow` chạy TRƯỚC lượt đo cây view ⇒ `width == 0` ⇒ cỡ cần = 1 ⇒
+     *     ảnh bị giảm tối đa rồi kéo lên phủ ô = **vệt màu loang**. Đây đúng lỗi đã vá cho hình nền (lúc đó lấy cỡ
+     *     theo màn hình). Ở đây ô nhỏ hơn màn nên **chờ có cỡ thật**: chưa có cỡ thì chỉ đóng mốc, `onSizeChanged`
+     *     sẽ nạp.
+     */
     private fun step(force: Boolean = false) {
         if (images.isEmpty()) { invalidate(); return }
         val before = state
         state = Slideshow.next(state, images.size, System.currentTimeMillis(), intervalSec)
         if (!force && state.index == before.index && bitmap != null) return
         val path = Slideshow.pick(images, state.index) ?: return
-        val next = WallpaperStore.loadScaled(path, width.coerceAtLeast(1), height.coerceAtLeast(1)) ?: return
-        val old = bitmap
-        bitmap = next
-        invalidate()
-        // Nhả ảnh CŨ sau khi đã thay — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
-        old?.recycle()
+        val reqW = width
+        val reqH = height
+        if (reqW <= 0 || reqH <= 0) return          // chưa đo xong ⇒ để onSizeChanged nạp ở cỡ THẬT
+        if (loading == path) return                 // đang nạp đúng ảnh này rồi
+        val gen = ++decodeGen
+        loading = path
+        DECODER.execute {
+            val next = runCatching { WallpaperStore.loadScaled(path, reqW, reqH) }.getOrNull()
+            post {
+                if (loading == path) loading = null
+                // Lượt cũ về muộn / ô đã bị tháo ⇒ bỏ và NHẢ ảnh, không ghi đè lượt mới.
+                if (gen != decodeGen || !isAttachedToWindow) { next?.recycle(); return@post }
+                if (next == null) return@post
+                val old = bitmap
+                bitmap = next
+                invalidate()
+                // Nhả ảnh CŨ sau khi đã thay — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
+                old?.recycle()
+            }
+        }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -134,5 +168,13 @@ class PhotoWidgetView(context: Context) : View(context) {
         src.set((bw - cw) / 2, (bh - ch) / 2, (bw - cw) / 2 + cw, (bh - ch) / 2 + ch)
         dst.set(0, 0, w.toInt(), h.toInt())
         canvas.drawBitmap(b, src, dst, paint)
+    }
+
+    companion object {
+        /** MỘT thread nền dùng chung cho MỌI widget trình chiếu — xem KDoc ở step(). */
+        private val DECODER: java.util.concurrent.ExecutorService =
+            java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+                Thread(r, "kachi-photo-decode").apply { isDaemon = true; priority = Thread.MIN_PRIORITY }
+            }
     }
 }

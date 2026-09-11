@@ -42,7 +42,7 @@ ul{padding-left:22px}li{margin:3px 0}
   có nghĩa thật. Hiện code <b>không có</b> khái niệm chạy nhiều lệnh từ một nút.
 </p>
 <p class="muted">Nền dùng lại: ô khả năng hợp nhất (gói 2) — gói lệnh sẽ là một loại khả năng, nên tự động đặt được ở
-cả 3 vùng mà không cần code đặt-chỗ mới.</p>
+cả thanh tác vụ (⚠ đính chính 2026-09-11: chỉ 1/3 vùng trọn vẹn — thanh trên còn chip cứng, ngăn kéo chưa bày hành động) mà không cần code đặt-chỗ mới.</p>
 
 <h2>1. Changelog</h2>
 <table>
@@ -102,7 +102,7 @@ cốp · đèn ban ngày · đèn đọc (tất cả) · kính ½ tất cả · 
 <tr><td><b>R1</b></td><td><b>Một nút chạy nhiều lệnh</b>, theo <b>thứ tự</b> đã khai, có thể chờ giữa các bước (xe cần thời gian phản hồi).</td><td>Test thuần JVM: chạy gói 3 bước ⇒ đúng 3 lệnh, đúng thứ tự, đúng tham số.</td></tr>
 <tr><td><b>R2</b></td><td><b>Một bước hỏng KHÔNG được làm chết cả gói</b>; phải biết bước nào hỏng và báo được ra ngoài.</td><td>Test: bước 2 hỏng ⇒ bước 3 vẫn chạy, kết quả nói rõ 1 thành công / 1 thất bại / 1 thành công.</td></tr>
 <tr><td><b>R3</b></td><td>Gói lệnh <b>chỉ dùng lại nút đã khai</b>, KHÔNG tự viết lệnh xe mới. Bước trỏ tới mã lạ ⇒ bị loại lúc dựng, không phải lúc chạy.</td><td>Test: gói chứa mã lạ ⇒ báo lỗi khai báo; không có đường nào gọi HAL trực tiếp từ lớp gộp.</td></tr>
-<tr><td><b>R4</b></td><td>Gói lệnh là <b>một loại khả năng</b> ⇒ đặt được ở cả 3 vùng như mọi khả năng khác, không cần code đặt-chỗ mới.</td><td>Tra mã gói lệnh ra được nhãn/icon/mức bằng chứng; bật được vào thanh nút.</td></tr>
+<tr><td><b>R4</b></td><td>Gói lệnh là <b>một loại khả năng</b> ⇒ đặt được ở cả thanh tác vụ (⚠ đính chính 2026-09-11: chỉ 1/3 vùng trọn vẹn — thanh trên còn chip cứng, ngăn kéo chưa bày hành động) như mọi khả năng khác, không cần code đặt-chỗ mới.</td><td>Tra mã gói lệnh ra được nhãn/icon/mức bằng chứng; bật được vào thanh nút.</td></tr>
 <tr><td><b>R5</b></td><td><b>Mức bằng chứng của gói = mức THẤP NHẤT trong các bước.</b> Gói có một bước chưa kiểm thì cả gói mang dấu chưa-kiểm.</td><td>Test: gói gồm bước đã-chạy + bước chưa-kiểm ⇒ gói mang dấu chưa-kiểm.</td></tr>
 <tr><td><b>R6</b></td><td><b>Sửa nhãn sai</b> của nút "Kính 50%" (Đ2) thành đúng thứ nó làm.</td><td>Nhãn mới phản ánh đúng hành vi; test khoá để không ai đặt lại nhãn hứa phần trăm.</td></tr>
 <tr><td><b>R7</b></td><td>Chạy gói lệnh <b>không được chặn giao diện</b> (có chờ giữa các bước).</td><td>Thực thi trên thread nền, theo đúng lối các bộ áp dụng đã có.</td></tr>

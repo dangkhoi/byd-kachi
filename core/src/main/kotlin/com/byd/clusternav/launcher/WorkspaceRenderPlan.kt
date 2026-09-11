@@ -25,6 +25,10 @@ object WorkspaceRenderPlanner {
     /**
      * Hai ô có CÙNG nội dung hay không (App cùng gói · Widget cùng danh sách id · cùng là ô trống).
      * Bản chuyển từ `WorkspaceView.sameContent` private cũ — hành vi giữ y nguyên.
+     *
+     * Tầng vẽ cũng dùng hàm này để phân biệt hai lý do dựng lại: *nội dung ô đổi* (phải dựng lại view) và *chỉ số
+     * liệu đổi* (chỉ cần làm mới GIÁ TRỊ tại chỗ — xem `WidgetViews.refreshRead`). Chép lại phép so này ở tầng vẽ
+     * là cách chắc chắn để hai bên lệch nhau.
      */
     fun sameContent(a: SlotContent, b: SlotContent): Boolean = when {
         a is SlotContent.App && b is SlotContent.App -> a.pkg == b.pkg
@@ -43,7 +47,7 @@ object WorkspaceRenderPlanner {
      *   lại để gắn/nhả bộ chiếu. Đây là đầu vào chữa P-bug2; mặc định `false` nên mọi chỗ gọi cũ không đổi hành vi.
      * @param slotCount số ô **THỰC TẾ** đang hiện. Bố cục tự vẽ (P9) có thể có số khung khác bố cục sẵn; đọc số ô từ
      *   bố cục sẵn khi đang dùng bố cục tự vẽ sẽ thấy "số view lệch số ô" ở **mọi** lần render ⇒ trả [RebuildAll]
-     *   liên tục ⇒ trên xe (trạng thái đổi 2 nhịp/giây) **app đang chiếu bị nhả/gắn 2 lần mỗi giây** và người dùng
+     *   liên tục ⇒ trên xe (trạng thái đổi 1 nhịp/giây) **app đang chiếu bị nhả/gắn 1 lần mỗi giây** và người dùng
      *   **mất cú bấm** — đúng loại lỗi P-bug1/R3. Mặc định = số ô của bố cục sẵn ⇒ mọi chỗ gọi cũ **giữ nguyên hành
      *   vi** (bộ này đang bị test tương-đương hơn 1000 tổ hợp khoá).
      */
@@ -72,7 +76,7 @@ object WorkspaceRenderPlanner {
      * Ô widget này có thứ gì **đọc từ xe** để làm mới không.
      *
      * Từ RW0, ô giữa màn nhận được cả **HÀNH ĐỘNG** ([CapabilityKind.WRITE] — nút bấm). Ô chỉ chứa nút thì trạng thái
-     * xe đổi KHÔNG có gì để làm mới, nhưng luật cũ vẫn dựng lại nó **2 nhịp/giây** trên xe ⇒ view bị tháo/gắn ngay
+     * xe đổi KHÔNG có gì để làm mới, nhưng luật cũ vẫn dựng lại nó **1 nhịp/giây** trên xe ⇒ view bị tháo/gắn ngay
      * giữa cú chạm của người dùng (chuỗi MotionEvent đứt ⇒ **mất cú bấm**), và cú nháy 220ms của nút bấm-1-phát biến
      * mất. Đúng loại thiệt hại mà ràng buộc C5 dựng ra để chặn — trước đây chỉ chặn được cho ô App.
      *
@@ -95,6 +99,12 @@ object WorkspaceRenderPlanner {
      * *off-car không xảy ra*.
      */
     private fun isSelfDriven(id: String): Boolean = id in SELF_DRIVEN
+
+    /**
+     * Mã này **tự lo nội dung** ⇒ tầng vẽ KHÔNG được thay view của nó khi làm mới số liệu (thay là đặt lại trạng thái
+     * quay vòng ⇒ ảnh đứng một tấm). Cùng một nguồn sự thật với [isSelfDriven] để hai bên không lệch.
+     */
+    fun selfDriven(id: String): Boolean = isSelfDriven(id)
 
     /** Widget tự lo nội dung: trình chiếu ảnh (nhịp riêng, nguồn là tệp trên máy). */
     private val SELF_DRIVEN = setOf("w_photos")

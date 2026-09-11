@@ -113,9 +113,10 @@ class CapabilityCatalogTest {
 
     @Test
     fun `chi them goi y loai o dung cho bi trung`() {
+        // [SOÁT] bản cũ ĐÒI danh sách nhãn trùng phải KHÁC RỖNG và phải chứa đúng "Kính trước-trái" — tức nó khoá
+        // một hiện trạng SAI: ai sửa gốc (đổi nhãn registry cho khỏi trùng) sẽ làm test đỏ dù vừa làm điều đúng.
+        // Luật thật cần khoá: CHỖ TRÙNG thì có gợi ý loại, CHỖ KHÔNG TRÙNG thì nhãn giữ nguyên.
         val colliding = CapabilityCatalog.collidingLabels()
-        assertTrue(colliding.isNotEmpty(), "tiền đề: hiện CÓ nhãn trùng giữa hai loại")
-        assertTrue("Kính trước-trái" in colliding, "kính trước-trái có cả mục đọc lẫn nút bấm")
 
         // Chỗ TRÙNG: phải có gợi ý loại
         val readWin = CapabilityCatalog.pick("window_lf")!!

@@ -53,7 +53,7 @@ class CapabilityTileWiringContractTest {
 
     @Test
     fun `Activity bom trang thai xe vao thanh nut CUNG LUC voi thanh tren`() {
-        val fn = activity.substringAfter("private fun render(state: HomeUiState)").substringBefore("private fun assignApp(")
+        val fn = SourceRoots.body(activity, "private fun render(state: HomeUiState)")
         // Prefix: chip thanh trên nay nhận thêm lựa chọn đơn vị (R11) nên chữ ký dài hơn — khoá sự TỒN TẠI
         // của lời gọi, không khoá số tham số.
         assertTrue(fn.contains("topStrip.refreshChips(state.carStatus"), "thanh trên vẫn được làm mới như cũ")
@@ -63,8 +63,9 @@ class CapabilityTileWiringContractTest {
         val dockAt = fn.indexOf("dock.setCarStatus(state.carStatus")
         assertTrue(guard in 1 until chips && chips < dockAt, "cả hai phải nằm trong CÙNG nhánh 'trạng thái xe đổi'")
         assertTrue(
-            activity.contains("container.workspaceRepository.unitPrefs()"),
-            "lựa chọn đơn vị phải đọc từ tầng dữ liệu, không phải hằng số cứng trong view",
+            activity.contains("viewModel.uiState.value.unitPrefs"),
+            "lựa chọn đơn vị phải đọc từ NGUỒN SỰ THẬT (HomeUiState), không phải bản sao/hằng số trong view. " +
+                "Trước lượt soát 2026-09-11 thứ này có 4 bản sao đồng bộ bằng tay.",
         )
     }
 
@@ -72,7 +73,7 @@ class CapabilityTileWiringContractTest {
 
     @Test
     fun `cap nhat trang thai xe CHI do lai so cua o DOC`() {
-        val fn = dock.substringAfter("fun setCarStatus(").substringBefore("private fun readout(")
+        val fn = SourceRoots.body(dock, "fun setCarStatus(")
         assertTrue(fn.contains("readTiles"), "phải đi qua danh sách ô ĐỌC đang hiện")
         assertTrue(fn.contains(".bind("), "phải đổ số TẠI CHỖ vào ô đã dựng")
         listOf("rebuild()", "removeAllViews()", "addView(", "control").forEach {
@@ -87,7 +88,7 @@ class CapabilityTileWiringContractTest {
 
     @Test
     fun `o DOC KHONG gan cham`() {
-        val fn = factory.substringAfter("fun readTile(").substringBefore("private fun iconRes(")
+        val fn = SourceRoots.body(factory, "fun readTile(")
         assertFalse(
             fn.contains("setOnClickListener"),
             "thông tin đọc KHÔNG phải nút — gắn chạm vào đây là xoá ranh giới ĐỌC/HÀNH ĐỘNG của cả gói",
@@ -101,7 +102,7 @@ class CapabilityTileWiringContractTest {
             Regex("""UnitFormat\.apply\([^)]*unitPrefs""").containsMatchIn(dock),
             "giá trị phải đi qua UnitFormat với lựa chọn của người dùng (R11/R12), không hiện thẳng đơn vị gốc",
         )
-        val fn = dock.substringAfter("private fun readout(").substringBefore("private fun rebuild()")
+        val fn = SourceRoots.body(dock, "private fun readout(")
         assertTrue(fn.contains("TelemetryReadout.of("), "đọc số qua đúng một cửa (TelemetryReadout)")
     }
 
@@ -124,8 +125,10 @@ class CapabilityTileWiringContractTest {
         // Khoá Ý ĐỊNH, không khoá nguyên văn danh sách tham số: bản đầu khớp đúng chuỗi
         // "WidgetData(carStatus, mediaProvider(), onMedia, control)" nên vừa thêm tham số ĐƠN VỊ (R11) là đỏ, dù
         // cổng ra lệnh vẫn chảy xuống đúng. Nay kiểm: có dựng WidgetData với cổng ra lệnh, VÀ có truyền đơn vị.
+        // Khoá Ý ĐỊNH: cổng ra lệnh + đơn vị phải chảy xuống bộ dựng widget. KHÔNG khoá nguyên văn danh sách tham
+        // số — bản trước làm vậy nên vừa thêm bộ nhớ tạm cho lượt đọc nhạc (P2) là đỏ oan dù luật không đổi.
         assertTrue(
-            workspace.contains("WidgetData(carStatus, mediaProvider(), onMedia, control"),
+            Regex("""WidgetData\(carStatus,[^)]*control""").containsMatchIn(workspace),
             "cổng ra lệnh phải chảy xuống bộ dựng widget",
         )
         assertTrue(

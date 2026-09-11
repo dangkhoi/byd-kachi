@@ -76,6 +76,17 @@ enum class EvidenceTier {
     /** Có nối binding không (mọi tier trừ [NEEDS_CAR] đều đã có đường HAL để thử). */
     val wired: Boolean get() = this != NEEDS_CAR
 
-    /** Có cần badge "chưa kiểm trên xe" không ([OVERDRIVE]/[DASHCAST]). */
-    val needsBadge: Boolean get() = this == OVERDRIVE || this == DASHCAST
+    /**
+     * Có cần badge "chưa kiểm trên xe" không = **mọi mức trừ [PROVEN]**.
+     *
+     * ## ⚠ [SOÁT P1-3] Vì sao KHÔNG viết `== OVERDRIVE || == DASHCAST`
+     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **4 nút yếu nhất của cả bộ** (`door`, `hood`, `adas_esp`,
+     * `start_charging`) hiện ra **không có chấm cảnh báo** nào, trông y như nút đã chạy thật. Hai trong số đó
+     * (`hood`, `start_charging`) còn chưa có đường HAL nên chắc chắn không bao giờ ăn. Đúng chỗ ngược đời: mức
+     * tin cậy thấp nhất lại là mức duy nhất không được cảnh báo.
+     *
+     * `ActionMacro.needsBadge()` đã dùng `tier() != PROVEN` và KDoc ở đó nói rõ lý do — nhưng chỉ áp cho gói lệnh,
+     * không áp cho nút đơn. Nay hai bên cùng một luật.
+     */
+    val needsBadge: Boolean get() = this != PROVEN
 }

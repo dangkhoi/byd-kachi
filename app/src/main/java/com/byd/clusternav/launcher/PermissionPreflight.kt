@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.ComponentName
 import android.content.Context
+import android.widget.Toast
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
@@ -86,17 +87,33 @@ object PermissionPreflight {
     /**
      * Trợ năng cần **append** vào danh sách đang có chứ không ghi đè: ghi đè sẽ tắt trợ năng của app khác (kể cả
      * của người khuyết tật đang dùng). Trả về cặp lệnh đọc-rồi-ghi để chỗ gọi thực hiện tuần tự.
+     *
+     * [rawList] = **chuỗi THÔ** của `settings get secure enabled_accessibility_services`, truyền y nguyên. Hàm này
+     * tự phân biệt ba ca, vì đó chính là chỗ đã hở:
+     *  • `null` / rỗng / chỉ khoảng trắng ⇒ **KHÔNG đọc được** (kênh shell lỗi trả chuỗi rỗng thay vì ném);
+     *  • `"null"` ⇒ đọc được và danh sách **thật sự rỗng** (đây là cách `settings get` báo "chưa đặt");
+     *  • còn lại ⇒ danh sách thật, lọc theo dạng component.
+     *
+     * ## ⚠ [SOÁT P1-2] Vì sao phải phân biệt rỗng-thật với không-đọc-được
+     * [ĐO] `ShellTransport.run` trả **`""`** khi cả hai lượt thử thất bại, và `launcherSeam` trả `""` khi lệnh bị
+     * từ chối — **không ném ngoại lệ**. Bản trước lọc `takeIf { it != "null" }` nên `""` đi qua như "danh sách rỗng"
+     * ⇒ sinh lệnh ghi danh sách chỉ-có-Kachi ⇒ **xoá trợ năng của mọi app khác**, đúng hậu quả mà KDoc này nói đã
+     * chặn. Bộ lọc theo dạng component chặn được việc *chèn rác*, nhưng không chặn được việc *mất bản gốc*.
+     *
+     * Ca "đọc được chuỗi lạ nhưng không có token nào đúng dạng" cũng bị coi là KHÔNG đọc được: một câu lỗi
+     * (`"Error: permission denied"`) lọc ra rỗng, và không có cách nào phân biệt nó với danh sách rỗng thật.
+     * Không ghi thì tệ nhất là lần sau vòng kiểm thấy vẫn thiếu và thử lại — thua xa việc xoá của người khác.
      */
-    fun accessibilityGrantCommands(current: String?, flagOn: Boolean = false): List<String> {
+    fun accessibilityGrantCommands(rawList: String?, flagOn: Boolean = false): List<String> {
         val comp = flat(NavAccessibilityService::class.java.name)
-        // CHỈ giữ token đúng DẠNG component (`gói/lớp`). Ba lý do, đều là rủi ro thật:
-        //  • lệnh đọc có thể trả về "null" hoặc **một câu lỗi** — ghép câu lỗi vào rồi ghi đè cấu hình dùng chung là
-        //    cách chắc chắn để **xoá trợ năng của app khác** (kể cả của người khuyết tật đang dùng);
-        //  • token chứa khoảng trắng làm `settings put` chỉ nhận phần đầu ⇒ mất phần còn lại — cùng hậu quả;
-        //  • lọc theo dạng thì an toàn kể cả khi lệnh đọc đổi định dạng ở ROM khác.
-        val existing = (current ?: "")
+        val raw = rawList?.trim()
+        val emptyForSure = raw == "null"
+        val existing = (raw ?: "")
             .split(':').map { it.trim() }
             .filter { COMPONENT_SHAPE.matches(it) }
+        // Không đọc được ⇒ tuyệt đối KHÔNG chạm danh sách dùng chung. Bật cờ thì vẫn an toàn (không xoá gì của ai).
+        val readable = emptyForSure || existing.isNotEmpty()
+        if (!readable) return if (flagOn) emptyList() else listOf(FLAG_ON_CMD)
         val already = comp in existing
         // Có trong danh sách nhưng CỜ đang tắt thì trợ năng vẫn KHÔNG chạy ⇒ vẫn phải bật cờ.
         // [ĐO] 2026-09-11: chính cờ này bị hệ thống đưa về 0 khi tiến trình chết.
@@ -107,9 +124,13 @@ object PermissionPreflight {
             // Bọc nháy: giá trị là dữ liệu, không phải mã lệnh.
             cmds.add("settings put secure enabled_accessibility_services '$merged'")
         }
-        if (!flagOn) cmds.add("settings put secure accessibility_enabled 1")
+        if (!flagOn) cmds.add(FLAG_ON_CMD)
         return cmds
     }
+
+    /** Lệnh bật cờ trợ năng toàn hệ thống (một chỗ khai, hai chỗ dùng). */
+    private const val FLAG_ON_CMD = "settings put secure accessibility_enabled 1"
+
 
     /** Dạng component hợp lệ: `gói/lớp`, không khoảng trắng, không ký tự shell. */
     private val COMPONENT_SHAPE = Regex("""[A-Za-z0-9_.]+/[A-Za-z0-9_.$]+""")
@@ -162,4 +183,47 @@ object PermissionPreflight {
     private fun flat(cls: String) = "$PKG/$cls"
 
     private const val PKG = "com.byd.launcher"
+
+    /**
+     * CHẠY vòng kiểm rồi BÁO — gồm: đọc trạng thái · tự cấp phần tự cấp được · nói ra phần làm mất tính năng lõi.
+     *
+     * Ở đây (không ở Activity) vì đây là **luật của vòng kiểm**, không phải việc của màn hình: Activity chỉ nên là
+     * composition-root. [ĐO] sau vòng vá, `KachiHomeActivity` vượt **trần 500 dòng** của dự án; đây là một trong hai
+     * khối tách ra để về đúng trần (khối kia là hình nền → `WallpaperController`).
+     *
+     * Chạy trên thread NỀN (chỗ gọi lo): mọi lệnh cấp quyền đi qua kênh shell, chặn.
+     */
+    fun runAndReport(activity: android.app.Activity, shellUsable: Boolean, sh: ((String) -> String)?) {
+        val before = check(activity, shellUsable)
+        Log.i("Preflight", before.logLine())
+
+        // Tự cấp: chỉ khi CÓ kênh shell và thật sự đang thiếu (đọc thì không cần shell, cấp thì cần).
+        if (sh != null && before.selfFixable.isNotEmpty()) {
+            runCatching { selfGrant(before, sh) }
+            // Trợ năng phải ĐỌC-SỬA-GHI (append, không ghi đè — ghi đè sẽ tắt trợ năng của app khác).
+            if (before.selfFixable.any { it.id == LauncherRequirements.ACCESSIBILITY.id }) {
+                runCatching {
+                    // Truyền chuỗi THÔ: luật "đọc được hay không" nằm ở một chỗ duy nhất trong
+                    // PermissionPreflight.accessibilityGrantCommands (xem KDoc — `takeIf { it != "null" }` ở đây
+                    // từng để chuỗi rỗng của kênh shell lỗi đi qua như 'danh sách rỗng').
+                    val cur = sh(READ_ACCESSIBILITY_CMD)
+                    val flagOn = sh(READ_ACCESSIBILITY_FLAG_CMD).trim() == "1"
+                    accessibilityGrantCommands(cur, flagOn).forEach { sh(it) }
+                }
+            }
+            Log.i("Preflight", "sau khi tự cấp: " + check(activity, shellUsable).logLine())
+        }
+
+        // Chỉ NÓI khi thiếu thứ làm mất TÍNH NĂNG LÕI (app vào ô). Thiếu mục nhỏ mà báo mỗi lần mở là nhiễu —
+        // đúng thứ việc này đi dọn. Danh sách đầy đủ nằm trong bảng Tuỳ biến.
+        val after = check(activity, shellUsable)
+        // [SOÁT P3] Dùng `notice()` của :core thay vì tự ghép chuỗi ở đây. Trước đây `notice()`/`needsUser`/
+        // `fixedAtBoot` chỉ có TEST gọi ⇒ chúng là mã chết ở sản phẩm, và tệ hơn: câu chữ người dùng đọc lại nằm ở
+        // tầng UI nên hai bên có thể nói khác nhau. Nay một nguồn duy nhất, và mã kia hết chết.
+        val msg = after.notice(coreOnly = true)   // chỉ mục làm mất tính năng lõi — mục nhỏ để bảng Tuỳ biến nói
+        if (msg != null) {
+            activity.runOnUiThread { runCatching { Toast.makeText(activity, msg, Toast.LENGTH_LONG).show() } }
+        }
+    }
+
 }

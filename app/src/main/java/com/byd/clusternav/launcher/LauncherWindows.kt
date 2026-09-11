@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.app.Activity
+import android.util.Log
 import com.byd.clusternav.system.WindowCommandDispatcher
 import java.util.concurrent.ExecutorService
 
@@ -51,6 +52,32 @@ class LauncherWindows(
 
     fun clearOverlays() = overlayHeads.clear()
 
+    /**
+     * Huỷ MỌI lượt đã hẹn của bộ này + khoá không nhận việc mới. Gọi từ `onDestroy` TRƯỚC khi tắt thread nền.
+     *
+     * ## [SOÁT P2-4] Vì sao cần
+     * Bộ này hẹn hai loại việc: `overlayUpdate` (350 ms) và thân `reflow` (`workspace.post`). Cả hai chạy SAU khi
+     * `onDestroy` đã gọi `winExec.shutdownNow()` là (a) dựng cửa sổ overlay bằng WindowManager của activity đã chết
+     * ⇒ giữ view, giữ activity; (b) `winExec.execute` trên executor đã tắt ⇒ `RejectedExecutionException` **không
+     * ai bắt** ⇒ sập. Không dựa vào giả định "view đã tháo thì lượt post không chạy" — tài liệu Android không nói
+     * rõ, và ở chỗ khác dự án đang dựa vào giả định NGƯỢC LẠI. Chặn tường minh thì đúng với cả hai khả năng.
+     */
+    fun cancelPending() {
+        stopped = true
+        workspace.removeCallbacks(overlayUpdate)
+        overlayHeads.clear()
+    }
+
+    /** Đã huỷ màn ⇒ không hẹn thêm, không nộp thêm việc nền. */
+    @Volatile private var stopped = false
+
+    /** Nộp việc nền an toàn: bỏ qua nếu đã huỷ màn, và không để executor-đã-tắt làm sập tiến trình. */
+    private fun submit(block: () -> Unit) {
+        if (stopped) return
+        runCatching { winExec.execute { if (!stopped) block() } }
+            .onFailure { Log.w("LauncherWindows", "bỏ việc cửa sổ vì thread nền đã tắt: ${it.javaClass.simpleName}") }
+    }
+
     /** Dựng lại dải header NỔI che caption freeform + ⇄/✕ cho mỗi ô app đang hiện. Nhúng → không cần. */
     private val overlayUpdate = Runnable {
         if (embedding() || drawerOpen()) { overlayHeads.clear(); return@Runnable }
@@ -71,7 +98,7 @@ class LauncherWindows(
     fun updateOverlayHeads() {
         workspace.removeCallbacks(overlayUpdate)                       // debounce: gọi dồn → chỉ chạy 1 lần
         if (embedding() || drawerOpen()) { overlayHeads.clear(); return }
-        workspace.postDelayed(overlayUpdate, 350)
+        if (!stopped) workspace.postDelayed(overlayUpdate, 350)
     }
 
     /**
@@ -81,7 +108,9 @@ class LauncherWindows(
      */
     fun reflow() {
         if (embedding()) return   // nhúng: ô đổi kích thước theo layout view → app tự reflow, không cần am task resize
+        if (stopped) return
         workspace.post {
+            if (stopped) return@post
             val st = state(); val n = EffectiveLayout.slotCount(st.preset, custom())
             val visible = ArrayList<Pair<String, SlotRect>>()
             val overflow = ArrayList<String>()
@@ -96,7 +125,7 @@ class LauncherWindows(
             }
             if (visible.isEmpty() && overflow.isEmpty()) return@post
             val s = shell(); val launcher = appLauncher()
-            winExec.execute {
+            submit {
                 overflow.forEach { launcher.closeSlot(it) }                                     // tràn → fullscreen chạy nền
                 if (overflow.isNotEmpty() && s != null) { s(HOME_FRONT); Thread.sleep(250) }      // kéo launcher lên che overflow
                 visible.forEach { (pkg, rect) -> launcher.openInSlot(pkg, rect) }                // ô hiện → freeform, đưa LÊN TRƯỚC launcher
@@ -119,7 +148,7 @@ class LauncherWindows(
         if (embedding()) return   // WorkspaceView nhúng app bằng ActivityView → không cần freeform
         val rect = absoluteSlotRect(index) ?: return
         val s = shell(); val launcher = appLauncher()
-        winExec.execute {
+        submit {
             if (fresh) {
                 if (s != null) runCatching { s("am force-stop $pkg") }
                 launcher.openInSlot(pkg, appRect(rect))
@@ -134,7 +163,7 @@ class LauncherWindows(
     fun closeApp(pkg: String) {
         if (embedding()) return
         val launcher = appLauncher()
-        winExec.execute { launcher.closeSlot(pkg) }
+        submit { launcher.closeSlot(pkg) }
     }
 
     /** Khung ô ở toạ độ MÀN HÌNH (cho freeform on-car): offset vị trí workspace + Rect ô. */

@@ -18,7 +18,7 @@ import com.byd.clusternav.launcher.KachiTheme.dpi
  *
  * ## Cập nhật số mà KHÔNG dựng lại thanh (ràng buộc C5)
  * [setCarStatus] chỉ gọi [ReadTile.bind] trên các ô ĐỌC đã dựng — không `removeAllViews`, không đụng ô hành động.
- * Nếu dựng lại cả thanh mỗi nhịp trạng thái xe (2 nhịp/giây) thì: thanh nháy, và ô vừa bấm mất trạng thái sáng
+ * Nếu dựng lại cả thanh mỗi nhịp trạng thái xe (1 nhịp/giây) thì: thanh nháy, và ô vừa bấm mất trạng thái sáng
  * (kể cả cú nháy 220ms của BUTTON) — đúng loại lỗi P-bug1 đã trả giá một lần.
  *
  * Hành động qua [CarControlPort] ([NoCar] off-car → no-op). Tier OVERDRIVE/DASHCAST → chấm amber "chưa kiểm".

@@ -49,7 +49,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `applyEmbedSeam gan DU 4 thu TRUOC khi dung lai o`() {
-        val body = view.substringAfter("fun applyEmbedSeam(").substringBefore("private fun renderInternal(")
+        val body = SourceRoots.body(view, "fun applyEmbedSeam(")
         val fields = listOf("this.registerVd", "this.unregisterVd", "this.inputClient", "this.shell")
         fields.forEach { assertTrue(body.contains(it), "applyEmbedSeam phải gán $it") }
         val renderAt = body.indexOf("renderInternal(")
@@ -60,7 +60,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `nhanh do-kenh-thanh-cong goi applyEmbedSeam va KHONG goi render tran`() {
-        val block = activity.substringAfter("if (dadb.probe())").substringBefore("private fun render(")
+        val block = SourceRoots.body(activity, "if (dadb.probe())")
         assertTrue(block.contains("workspace.applyEmbedSeam("), "phải gọi applyEmbedSeam")
         assertFalse(
             block.contains("workspace.render("),
@@ -85,7 +85,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `mo toan man KHONG ghi trang thai o va KHONG ghi so vi tri o`() {
-        val fn = activity.substringAfter("private fun openAppFullscreen(").substringBefore("private fun clearSlot(")
+        val fn = SourceRoots.body(activity, "private fun openAppFullscreen(")
         assertTrue(fn.contains("appOpener.openByIntent("), "phải gọi đường API")
         assertTrue(fn.contains("touchRecentApp("), "phải ghi nhận app gần đây")
         listOf("viewModel.assignApp", "viewModel.setPreset", ".place(", "windows.placeApp").forEach {
@@ -95,7 +95,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `duong API di TRUOC duong shell (theo so do), va shell chay tren thread NEN`() {
-        val fn = activity.substringAfter("private fun openAppFullscreen(").substringBefore("private fun clearSlot(")
+        val fn = SourceRoots.body(activity, "private fun openAppFullscreen(")
         val intentAt = fn.indexOf("appOpener.openByIntent(")
         val shellAt = fn.indexOf("appOpener.openByShell(")
         assertTrue(intentAt > 0 && shellAt > 0, "phải có cả hai đường")
@@ -104,8 +104,8 @@ class OpenAppWiringContractTest {
             "đường API phải đi TRƯỚC — [ĐO] nó tốt bằng-hoặc-hơn đường shell ở cả app sạch lẫn app từng nằm trong ô",
         )
         assertTrue(
-            fn.contains("winExec.execute { appOpener.openByShell("),
-            "đường shell phải đặt trên winExec (dadb chặn — không được chạy trên thread chính)",
+            fn.contains("submitBg { appOpener.openByShell("),
+            "đường shell phải đi qua cửa nền submitBg (dadb chặn — không được chạy trên thread chính)",
         )
     }
 
@@ -123,7 +123,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `dua app dang chay ve o thi DAT LAI KHUNG, dat app moi thi giu duong cu`() {
-        val fn = windows.substringAfter("fun placeApp(").substringBefore("fun closeApp(")
+        val fn = SourceRoots.body(windows, "fun placeApp(")
         assertTrue(fn.contains("launcher.moveToSlot("), "đường không-làm-mới phải dùng moveToSlot")
         assertTrue(fn.contains("am force-stop"), "đường đặt-mới vẫn dừng hẳn app trước")
         assertTrue(fn.contains("launcher.openInSlot("), "đường đặt-mới vẫn mở vào ô")
@@ -131,7 +131,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `reflow KHONG bi doi sang dat-lai-khung — no can mo lai de nang cua so len truoc launcher`() {
-        val fn = windows.substringAfter("fun reflow()").substringBefore("fun placeApp(")
+        val fn = SourceRoots.body(windows, "fun reflow()")
         assertTrue(fn.contains("launcher.openInSlot("), "reflow vẫn dùng openInSlot")
         assertFalse(fn.contains("moveToSlot"), "reflow KHÔNG được dùng moveToSlot (mất thứ tự lớp)")
     }
@@ -149,7 +149,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `huy activity phai DONG ngan keo — no co the la cua so overlay rieng`() {
-        val fn = activity.substringAfter("override fun onDestroy()").substringBefore("private fun dp(")
+        val fn = SourceRoots.body(activity, "override fun onDestroy()")
         assertTrue(fn.contains("drawerController.close()"), "ngăn kéo overlay không chết cùng activity ⇒ phải đóng tay")
         val closeAt = fn.indexOf("drawerController.close()")
         val shutdownAt = fn.indexOf("winExec.shutdownNow()")

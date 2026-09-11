@@ -18,10 +18,17 @@ class CapabilityIconsTest {
     fun `so icon phan biet duoc phai hon HAN muc mot-icon-moi-nhom`() {
         val byDomainOnly = TelemetryRegistry.ALL.map { WidgetCatalog.iconFor(it.domain) }.toSet().size
         val byConcept = CapabilityIcons.distinctIconCount()
+        // [SOÁT] bản cũ chỉ đòi ">= gấp đôi cách cũ" = >= 14, nên số icon tụt từ 29 xuống 14 vẫn XANH — tức con
+        // số "7 → 29 icon" mà tài liệu công bố KHÔNG được bài nào khoá. Nay khoá cả sàn thật.
         assertTrue(
             byConcept >= byDomainOnly * 2,
             "Icon theo khái niệm phải phân biệt ÍT NHẤT gấp đôi cách cũ (theo nhóm). " +
                 "Đang có: theo nhóm=$byDomainOnly · theo khái niệm=$byConcept",
+        )
+        assertTrue(
+            byConcept >= 29,
+            "sàn đã đạt được là 29 icon phân biệt — tụt xuống dưới là hồi quy (đang có $byConcept). " +
+                "Thêm icon thì NÂNG số này lên, đừng hạ.",
         )
     }
 

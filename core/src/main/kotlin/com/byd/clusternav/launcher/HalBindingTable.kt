@@ -100,26 +100,6 @@ class HalBindingTable(private val gateway: HalGateway) {
         else -> null
     }
 
-    /**
-     * Tham số cuối cho GHI named-method (proven, nhiều arg). Còn lại 1 arg = [primary].
-     *  • ghế mát/sưởi `setSeatVentilatingState/HeatingState(seatId,state)` → [1(lái), state 2/1] (bật→mức1/tắt);
-     *  • sưởi vô-lăng `setSteeringWheelHeatingState(state)` → [2/1];
-     *  • kính từng cửa `setBodyWindowCtrlState(window,state)` → [index, 0/1]; tất cả kính → 4× state;
-     *  • kính-nhị-phân "window" → cửa lái [1, state]; cốp `setHetchDoorStatus` → [open?1:close?2];
-     *  • lọc-ngay/nhớ-ghế/gập-gương (BUTTON) → [1].
-     */
-    private fun writeArgs(def: ControlDef, primary: Int): IntArray = when (def.id) {
-        "seatc", "seath" -> intArrayOf(1, if (primary > 0) 2 else 1)
-        "steer_heat" -> intArrayOf(if (primary > 0) 2 else 1)
-        "win_lf" -> intArrayOf(1, primary); "win_rf" -> intArrayOf(2, primary)
-        "win_lr" -> intArrayOf(3, primary); "win_rr" -> intArrayOf(4, primary)
-        "windows_all" -> intArrayOf(primary, primary, primary, primary)
-        "window" -> intArrayOf(1, primary)
-        "trunk" -> intArrayOf(if (primary > 0) 1 else 2)
-        "pm25_clean_now", "seat_memory" -> intArrayOf(1)
-        else -> intArrayOf(primary)
-    }
-
     /** FQN thiết bị cho đường feature-id, chọn theo [Domain] (best-effort — id↔device chính xác = grab-list §9). */
     private fun featureDeviceFqn(domain: Domain): String = deviceFqn(
         when (domain) {
@@ -144,6 +124,50 @@ class HalBindingTable(private val gateway: HalGateway) {
 
         /** rc là sentinel không-provisioned/không-hợp-lệ ⇒ coi như unavailable. */
         fun isSentinelRc(rc: Long?): Boolean = rc == SENTINEL_NOT_PROVISIONED || rc == SENTINEL_INVALID
+
+        /**
+         * Tham số cuối cho GHI named-method (proven, nhiều arg). Còn lại 1 arg = [primary].
+         *  • ghế mát/sưởi `setSeatVentilatingState/HeatingState(seatId,state)` → [1(lái), state 2/1] (bật→mức1/tắt);
+         *  • sưởi vô-lăng `setSteeringWheelHeatingState(state)` → [2/1];
+         *  • kính từng cửa `setBodyWindowCtrlState(window,state)` → [index, 0/1]; tất cả kính → 4× state;
+         *  • kính-nhị-phân "window" → cửa lái [1, state]; cốp `setHetchDoorStatus` → [open?1:close?2];
+         *  • **khoá cửa `setDoorLockState(state)` → [khoá?2:mở?1]** (xem ⚠ dưới);
+         *  • **mưa-tự-đóng-kính `setRainCloseWindow(state)` → [bật?1:tắt?2]**;
+         *  • lọc-ngay/nhớ-ghế/gập-gương (BUTTON) → [1].
+         *
+         * ## ⚠ [SOÁT P0] Vì sao khoá cửa PHẢI có nhánh riêng
+         * [ĐO] 2026-09-11: `lock` ("Khoá xe") và `door` ("Mở cửa") khai **CÙNG** `bindingKey`
+         * `BYDAutoDoorlockDevice.setDoorLockState`, và trước bản vá này **cả hai** rơi vào nhánh `else` ⇒ gửi
+         * **ĐÚNG CÙNG một byte** cho cùng `primary`. Hai nhãn nghĩa ĐỐI NGHỊCH mà gửi byte y hệt ⇒ ít nhất một
+         * cái sai, **chứng minh được không cần xe**. Hệ quả nặng nhất: gói `mac_leave` ("Rời xe") kết bằng
+         * `MacroStep("lock", 1)` = đúng byte của `MacroStep("door", 1)` trong `mac_door_light` ⇒ bấm "Rời xe" thì
+         * kính đóng, đèn tắt, xe **KHÔNG khoá** — mà kết quả vẫn báo thành công (rc=0) và ô còn sáng như đã khoá.
+         *
+         * Giá trị lấy từ tài liệu dự án, KHÔNG tự nghĩ ra: `docs/diagnostics/launcher-hal-re-overdrive-2026-09-08.md`
+         * §7 (*"state_locked=\"2\", unlocked=\"1\""*) + `docs/diagnostics/kachi-capability-catalog-2026-09-10.md` §196
+         * (*"locked=2/unlocked=1"*). Mưa-tự-đóng lấy từ `bodywork-window-trunk-RE-2026-09-06.md` §14
+         * (*"setRainCloseWindow(int) (ON=1/OFF=2)"*) — trước bản vá này TẮT gửi `0`, một giá trị không có trong
+         * tài liệu nên gần như chắc chắn bị xe bỏ qua.
+         *
+         * ⚠ Cả hai mã vẫn ở mức **chưa kiểm trên xe** (`OVERDRIVE`/`NEEDS_CAR`): bản vá này sửa chỗ **tự mâu
+         * thuẫn nội bộ** (hai nhãn đối nghịch, một byte), KHÔNG hứa rằng xe sẽ nhận lệnh.
+         *
+         * THUẦN (không đọc gateway) ⇒ kiểm được off-car; [ControlWriteArgsTest] khoá cả họ "hai mã một lệnh".
+         */
+        fun writeArgs(def: ControlDef, primary: Int): IntArray = when (def.id) {
+            "seatc", "seath" -> intArrayOf(1, if (primary > 0) 2 else 1)
+            "steer_heat" -> intArrayOf(if (primary > 0) 2 else 1)
+            "win_lf" -> intArrayOf(1, primary); "win_rf" -> intArrayOf(2, primary)
+            "win_lr" -> intArrayOf(3, primary); "win_rr" -> intArrayOf(4, primary)
+            "windows_all" -> intArrayOf(primary, primary, primary, primary)
+            "window" -> intArrayOf(1, primary)
+            "trunk" -> intArrayOf(if (primary > 0) 1 else 2)
+            "lock" -> intArrayOf(if (primary > 0) 2 else 1)     // khoá = 2 · mở khoá = 1
+            "door" -> intArrayOf(1)                             // NÚT BẤM một chiều: mở khoá (1), không có mặt tắt
+            "rain_close" -> intArrayOf(if (primary > 0) 1 else 2)
+            "pm25_clean_now", "seat_memory" -> intArrayOf(1)
+            else -> intArrayOf(primary)
+        }
 
         /**
          * Phân loại `bindingKey` → [BindingRoute] (thuần, test được):

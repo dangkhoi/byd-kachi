@@ -40,17 +40,22 @@ class WallpaperScaleTest {
     @Test
     fun `luon con TRUM du khung o moi ti le`() {
         // Bất biến quan trọng: hạ xong vẫn phải phủ kín, không được để hở mép.
+        //
+        // ⚠ [SOÁT] Bản cũ có hai chỗ hỏng: (a) assert đầu dùng `||` nên **một chiều trùm là đủ** — trái hẳn tên bài;
+        // (b) assert sau viết `A && B || C && D || (E && F)` mà `&&` ưu tiên cao hơn `||` nên vế giữa là **mã chết**,
+        // và dung sai 0.99 cho phép hở tới ~19px trong khi tên bài nói "luôn TRÙM đủ". Nay đòi đúng điều cần đòi:
+        // **cả hai chiều** đều ≥ khung, không dung sai.
         listOf(4000 to 3000, 3000 to 4000, 8000 to 1000, 1000 to 8000, 2560 to 1440).forEach { (w, h) ->
             val s = WallpaperStore.sampleSize(w, h, 1920, 1080)
-            val sw = w / s; val sh = h / s
+            val sw = w / s
+            val sh = h / s
             val t = WallpaperStore.scaledWidth(sw, sh, 1920, 1080)
             if (t > 0) {
                 val th = (sh.toDouble() * t / sw).toInt()
-                assertTrue(t >= 1920 || th >= 1080,
-                    "ảnh ${w}x$h hạ thành ${t}x$th — phải còn trùm đủ ít nhất một chiều")
-                assertTrue(t >= 1919 && th >= 1079 || t >= 1920 && th >= 1080 ||
-                    (t.toDouble() / 1920 >= 0.99 && th.toDouble() / 1080 >= 0.99),
-                    "ảnh ${w}x$h hạ thành ${t}x$th — hở khung")
+                assertTrue(
+                    t >= 1920 && th >= 1080,
+                    "ảnh ${w}x$h hạ thành ${t}x$th — PHẢI trùm đủ CẢ HAI chiều (1920x1080), không thì hở mép",
+                )
             }
         }
     }

@@ -100,6 +100,11 @@ object KachiTheme {
         "ic-radar" -> R.drawable.ic_radar
         "ic-gps" -> R.drawable.ic_gps
         "ic-steering" -> R.drawable.ic_steering
+        // [SOÁT P3] 3 tên icon TRƯỚC ĐÂY KHÔNG được map ⇒ 13/64 nút lùi về icon NHÓM: 2 nút gương mang hình
+        // KÍNH (sai nghĩa), 3 nút chế độ lái và 8 nút hỗ trợ lái mang hình lưới (không gợi nghĩa gì).
+        "ic-mirror" -> R.drawable.ic_mirror
+        "ic-drive" -> R.drawable.ic_drive
+        "ic-adas" -> R.drawable.ic_adas
         // Tên icon dùng lại tệp đã có (trước đây chưa được map nên tra ra 0 = ô trống icon)
         "ic-clock" -> R.drawable.ic_clock_g
         "ic-turn-left" -> R.drawable.ic_turn_left

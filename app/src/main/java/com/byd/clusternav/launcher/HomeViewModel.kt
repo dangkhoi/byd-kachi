@@ -75,6 +75,29 @@ class HomeViewModel(
      */
     fun setCarStatus(status: CarStatus) = _uiState.update { it.copy(carStatus = status) }
 
+    // ── Bền, nhưng lưu ở KHOÁ RIÊNG (không nằm trong `persist`) ─────────────────
+    // Ba intent dưới đây tồn tại để tầng UI KHÔNG tự gọi repository: trước đây màn chính ghi thẳng
+    // `workspaceRepository.setGridLayout/setUnitPrefs/setWallpaperPrefs`, tức có đường ghi bền đi VÒNG qua
+    // ViewModel ⇒ state trên màn và state đã lưu có thể lệch nhau mà không ai phát hiện.
+
+    /** Bố cục tự vẽ (P9). `null` = quay về bố cục sẵn. Cập nhật state + lưu bền trong MỘT lượt. */
+    fun setCustomLayout(layout: GridLayout?) {
+        _uiState.update { it.copy(customLayout = layout) }
+        repository.setGridLayout(layout)
+    }
+
+    /** Lựa chọn đơn vị (R11). */
+    fun setUnitPrefs(prefs: UnitPrefs) {
+        _uiState.update { it.copy(unitPrefs = prefs) }
+        repository.setUnitPrefs(prefs)
+    }
+
+    /** Lựa chọn hình nền (U4). */
+    fun setWallpaperPrefs(prefs: WallpaperPrefs) {
+        _uiState.update { it.copy(wallpaper = prefs) }
+        repository.setWallpaperPrefs(prefs)
+    }
+
     /** Cập nhật state (atomic) rồi ghi bền phần lưu-được. */
     private fun mutate(block: (HomeUiState) -> HomeUiState) {
         val next = _uiState.updateAndGet(block)

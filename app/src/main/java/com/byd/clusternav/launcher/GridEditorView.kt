@@ -58,6 +58,8 @@ class GridEditorView(context: Context) : View(context) {
     private enum class Mode { NONE, MOVE, RESIZE }
     private var mode = Mode.NONE
     private var dragIndex = -1
+    /** Id ngón đang kéo — chống ngón thứ hai làm khung bay ([SOÁT P3]). */
+    private var activePointer = -1
     private var grabCol = 0f     // lệch giữa điểm chạm và góc khung, tính bằng ĐƠN VỊ Ô (kéo mới mượt)
     private var grabRow = 0f
 
@@ -94,39 +96,29 @@ class GridEditorView(context: Context) : View(context) {
                 mode = if (e.x >= r.right - hs && e.y >= r.bottom - hs) Mode.RESIZE else Mode.MOVE
                 grabCol = (e.x - r.left) / cw
                 grabRow = (e.y - r.top) / chh
+                activePointer = e.getPointerId(0)
                 parent?.requestDisallowInterceptTouchEvent(true)
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
                 if (mode == Mode.NONE || dragIndex !in layout.frames.indices) return false
+                // [SOÁT P3] Chỉ theo NGÓN đã bắt đầu kéo. Không có chốt này thì ngón thứ hai đặt xuống làm toạ độ
+                // e.x/e.y nhảy sang ngón khác ⇒ khung "bay" theo ngón mới giữa lúc đang kéo.
+                if (e.findPointerIndex(activePointer) < 0) return true
                 val f = layout.frames[dragIndex]
                 val next = when (mode) {
                     Mode.MOVE -> {
                         val col = floor((e.x - gx) / cw - grabCol + 0.5f).toInt()
                         val row = floor((e.y - gy) / chh - grabRow + 0.5f).toInt()
-                        f.copy(
-                            // [SOÁT P2-3] `coerceIn` NÉM LỖI khi min > max. Với bố cục hỏng (khung rộng hơn lưới,
-                            // hoặc góc nằm ngoài lưới — dữ liệu sửa tay hoặc hỏng), `COLS - f.cols` âm ⇒ kéo một
-                            // khung là **sập ngay trong onTouchEvent**. Kẹp trần về ít nhất bằng sàn.
-                            col = col.coerceIn(0, (WorkspaceGrid.COLS - f.cols).coerceAtLeast(0)),
-                            row = row.coerceIn(0, (WorkspaceGrid.ROWS - f.rows).coerceAtLeast(0)),
-                        )
+                        // Phép kẹp nằm ở [GridEditorLogic] (:core, thuần) — chỗ này từng chứa một lỗi SẬP
+                        // (`coerceIn` ném khi trần < sàn với bố cục hỏng) mà KHÔNG test nào canh được vì logic
+                        // thuần lại nằm trong onTouchEvent. Nay có bảng test off-car khoá.
+                        GridEditorLogic.move(f, col, row)
                     }
                     Mode.RESIZE -> {
                         val cols = ((e.x - gx) / cw).roundToInt() - f.col
                         val rows = ((e.y - gy) / chh).roundToInt() - f.row
-                        f.copy(
-                            // [SOÁT P2-3] cùng lý do: khung có góc ngoài lưới thì `COLS - f.col` có thể nhỏ hơn
-                            // cỡ tối thiểu ⇒ coerceIn ném lỗi giữa lúc kéo.
-                            cols = cols.coerceIn(
-                                WorkspaceGrid.MIN_COLS,
-                                (WorkspaceGrid.COLS - f.col).coerceAtLeast(WorkspaceGrid.MIN_COLS),
-                            ),
-                            rows = rows.coerceIn(
-                                WorkspaceGrid.MIN_ROWS,
-                                (WorkspaceGrid.ROWS - f.row).coerceAtLeast(WorkspaceGrid.MIN_ROWS),
-                            ),
-                        )
+                        GridEditorLogic.resize(f, cols, rows)
                     }
                     Mode.NONE -> f
                 }
@@ -137,7 +129,7 @@ class GridEditorView(context: Context) : View(context) {
                 return true
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                mode = Mode.NONE; dragIndex = -1
+                mode = Mode.NONE; dragIndex = -1; activePointer = -1
                 return true
             }
         }

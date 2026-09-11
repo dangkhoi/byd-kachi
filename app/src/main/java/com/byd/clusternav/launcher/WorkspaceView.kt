@@ -106,6 +106,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     }
 
     private fun renderInternal(s: WorkspaceState, status: CarStatus, embedChanged: Boolean) {
+        mediaCache = null      // lượt mới ⇒ đọc lại nhạc đúng MỘT lần cho cả lượt
         val old = displayed
         val oldStatus = displayedStatus
         displayed = s; displayedStatus = status; carStatus = status
@@ -117,8 +118,17 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         )) {
             WorkspaceRenderPlan.RebuildAll -> { rebuild(); return }
             is WorkspaceRenderPlan.PerSlot -> plan.rebuild.forEach { i ->
+                val nc = s.slots.getOrElse(i) { SlotContent.Empty }
+                val oc = old.slots.getOrElse(i) { SlotContent.Empty }
+                // [SOÁT P1-1] Ô chỉ cần LÀM MỚI SỐ (nội dung không đổi, năng lực nhúng không đổi) ⇒ đổi tại chỗ
+                // đúng những ô con là mục ĐỌC. Giữ nguyên view của nút và của widget trình chiếu ⇒ không mất cú bấm,
+                // không đặt lại vòng quay ảnh. Không thay được con nào ⇒ lùi về dựng lại cả ô (an toàn).
+                val onlyValues = !embedChanged && WorkspaceRenderPlanner.sameContent(oc, nc)
+                if (onlyValues && nc is SlotContent.Widget &&
+                    WidgetViews.refreshRead(slotViews[i], widgetData()) > 0
+                ) return@forEach
                 removeView(slotViews[i])
-                val v = makeSlot(i, s.slots.getOrElse(i) { SlotContent.Empty })
+                val v = makeSlot(i, nc)
                 addView(v); slotViews[i] = v
             }
         }
@@ -126,8 +136,16 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     }
 
     /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live + cổng ra lệnh cho ô hành động + đơn vị). */
-    private fun widgetData() =
-        WidgetData(carStatus, mediaProvider(), onMedia, control, unitPrefs, photoProvider(), photoIntervalSec)
+    private fun widgetData(): WidgetData {
+        // [SOÁT P2-8] Đọc nhạc là một lời gọi LIÊN TIẾN TRÌNH (`getActiveSessions`). Bản trước gọi nó trong hàm này,
+        // mà hàm này được gọi **mỗi Ô** (tới 6 ô) và mỗi nhịp trạng thái xe (1 giây) ⇒ tới 6 lời gọi/giây trên thread
+        // chính cho một dữ liệu y hệt nhau. Nay đọc MỘT LẦN cho mỗi lượt render và dùng lại trong lượt đó.
+        val media = mediaCache ?: mediaProvider().also { mediaCache = it }
+        return WidgetData(carStatus, media, onMedia, control, unitPrefs, photoProvider(), photoIntervalSec)
+    }
+
+    /** Ảnh chụp nhạc dùng cho LƯỢT render hiện tại (xoá ở đầu mỗi lượt) — xem KDoc widgetData. */
+    private var mediaCache: MediaSnapshot? = null
 
     /**
      * U4(b) — nguồn ảnh cho widget trình chiếu. Là HÀM (không phải danh sách) để chỗ gọi quyết định khi nào đọc thư
@@ -135,7 +153,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      */
     private var photoProvider: () -> List<String> = { emptyList() }
     private var photoIntervalSec: Int = Slideshow.DEFAULT_INTERVAL_SEC
-    private var photoCount = -1
+    private var photoPathsShown: List<String>? = null
 
     /**
      * Bố cục TỰ VẼ (P9 bước 2). Để ở kênh riêng, KHÔNG nhét vào `WorkspaceState`: bộ quyết-định-dựng-lại đang bị
@@ -165,14 +183,17 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * chiếu app (làm thế là ngắt kênh chạm — ràng buộc C5 của gói 2). Gọi lại với cùng nguồn thì không làm gì.
      */
     fun setPhotoSource(paths: List<String>, intervalSec: Int) {
-        val changed = paths.size != photoCount || intervalSec != photoIntervalSec
+        // [SOÁT] So theo SỐ LƯỢNG là sai: xoá 1 ảnh rồi thêm 1 ảnh khác ⇒ số lượng y nguyên ⇒ coi như "không đổi"
+        // ⇒ widget giữ danh sách CŨ, ảnh vừa xoá vẫn hiện và ảnh mới không bao giờ tới. So theo NỘI DUNG.
+        val changed = paths != photoPathsShown || intervalSec != photoIntervalSec
         photoProvider = { paths }
         photoIntervalSec = intervalSec
-        photoCount = paths.size
+        photoPathsShown = paths
         if (changed) rebuildWidgetSlots()
     }
 
     private fun rebuild() {
+        mediaCache = null      // lượt dựng lại cũng là một lượt mới ⇒ đọc nhạc lại đúng một lần
         removeAllViews(); slotViews.clear()
         for (i in 0 until EffectiveLayout.slotCount(displayed.preset, customLayout)) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }

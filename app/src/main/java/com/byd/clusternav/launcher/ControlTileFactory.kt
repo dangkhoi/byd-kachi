@@ -17,7 +17,6 @@ import android.widget.TextView
 import android.widget.Toast
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * BỘ DỰNG Ô DÙNG CHUNG (RW0 · spec `kachi-unified-capability-tile.html` §4.2/§4.3 việc 3).
@@ -54,7 +53,11 @@ class ControlTileFactory(
                 .also { it.bottomMargin = dpi(ctx, 4) }
         }
         val label = TextView(ctx).apply {
-            text = def.label; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp); gravity = Gravity.CENTER; maxLines = 1
+            // [SOÁT P3] `maxLines = 1` mà KHÔNG ellipsize ⇒ chữ bị cắt CỨNG, không có "…": trong ô 84dp thì 4 ô kính
+            // ("Kính trước-trái/phải", "Kính sau-trái/phải") trông gần như y hệt nhau. Ô ĐỌC đã sửa từ gói 2, ô hành
+            // động thì chưa.
+            text = def.label; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp); gravity = Gravity.CENTER
+            maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         }
         content.addView(icon)
 
@@ -161,9 +164,9 @@ class ControlTileFactory(
         tile.addView(label)
         applyBg(tile, false); tint(icon, label, true)
 
-        val running = AtomicBoolean(false)
         tile.setOnClickListener {
-            if (!running.compareAndSet(false, true)) return@setOnClickListener
+            // Chốt theo MÃ GÓI ở bảng dùng chung — không theo View (xem ControlTileState.beginRun).
+            if (!state.beginRun(macro.id)) return@setOnClickListener
             applyBg(tile, true); tint(icon, label, true)
             val port = control()
             Thread({
@@ -182,7 +185,7 @@ class ControlTileFactory(
                     // `removeView` (đổi bố cục / dựng lại ô giữa lúc gói đang chạy) chỉ XẾP HÀNG chờ lần gắn lại —
                     // có thể KHÔNG BAO GIỜ tới ⇒ cờ kẹt `true`, ô chết hẳn, bấm mãi không chạy nữa. Việc phục hồi
                     // giao diện thì vẫn phải về thread chính nên để trong `post`.
-                    running.set(false)
+                    state.endRun(macro.id)
                     // Gói vừa GHI THẬT vào các nút bật/tắt ⇒ phải ghi lại vào bảng trạng thái DÙNG CHUNG, không thì
                     // ô "Đèn đọc" vẫn sáng sau khi gói "Rời xe" đã tắt đèn — hai bề mặt nói hai điều về MỘT cái xe.
                     //
@@ -343,6 +346,22 @@ class ControlTileState {
     fun setValue(id: String, v: Int) { values[id] = v }
     fun sel(id: String): Int = selIndex[id] ?: 0
     fun setSel(id: String, i: Int) { selIndex[id] = i }
+
+    /**
+     * Chốt "gói lệnh này đang chạy" — **dùng chung theo mã gói, KHÔNG theo View**.
+     *
+     * ## ⚠ [SOÁT P1-1] Vì sao không để cờ trong View
+     * Bản trước giữ `AtomicBoolean` **bên trong** ô (`macroTile`). Trên xe, trạng thái xe đổi mỗi giây và ô TRỘN
+     * (có mục đọc + gói lệnh) bị **dựng lại** theo nhịp đó ⇒ ô mới có cờ mới `false` ⇒ người dùng bấm lần hai trong
+     * lúc lượt một còn đang chạy ⇒ **hai lượt "đóng hết kính" chạy chồng nhau**, đúng thứ cờ này sinh ra để chặn.
+     * Chốt theo mã gói thì dựng lại bao nhiêu lần cũng không mở được cửa thứ hai.
+     */
+    fun beginRun(id: String): Boolean = running.putIfAbsent(id, true) == null
+
+    /** Nhả chốt. PHẢI gọi trong `finally`, trên chính thread đang chạy gói. */
+    fun endRun(id: String) { running.remove(id) }
+
+    private val running = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
 
     companion object {
         /** Bảng dùng chung mọi vùng trong cùng tiến trình. */

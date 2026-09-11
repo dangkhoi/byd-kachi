@@ -110,13 +110,22 @@ data class PermissionReport(val results: List<RequirementResult>) {
      * chuyện đang hoạt động bình thường.
      *
      * Nêu **đích danh** mục thiếu kèm **mất gì** (R3), không phải câu chung "thiếu quyền".
+     *
+     * @param coreOnly `true` ⇒ chỉ nói mục làm **mất tính năng lõi** (app vào ô). Đây là chế độ màn HOME dùng: thiếu
+     *   mục nhỏ mà báo mỗi lần mở launcher là nhiễu — đúng thứ vòng kiểm này đi dọn. `false` (mặc định) ⇒ nói đủ
+     *   bức tranh, cho bề mặt xem chi tiết.
+     *
+     * ⚠ [SOÁT P3] Trước bản này màn HOME **tự ghép chuỗi** từ `missingCore` nên `notice()` không ai gọi (mã chết ở
+     * sản phẩm) và câu chữ người dùng đọc lại nằm ở tầng UI — hai nơi có thể nói khác nhau. Tôi đã thử cho HOME gọi
+     * thẳng `notice()`, nhưng [ĐO] test bắt được ngay: `notice()` nói RỘNG hơn `missingCore` ⇒ launcher sẽ ồn hơn
+     * thiết kế. Vậy nên thêm tham số thay vì đổi ngữ nghĩa: một hàm, hai chế độ, không còn mã chết.
      */
-    fun notice(): String? {
+    fun notice(coreOnly: Boolean = false): String? {
         // Chỉ nói về phần người dùng cần biết: cái tự sửa được thì launcher tự làm, nói ra chỉ gây lo.
         // (Không cần kiểm `allOk` riêng: đủ hết ⇒ hai danh sách dưới đều rỗng. [ĐO] thử phá cho thấy dòng kiểm đó
         // là DÒNG CHẾT — bỏ nó không test nào đỏ, nên bỏ luôn thay vì giữ code không ai chạy tới.)
         // SELF_AT_BOOT có mặt ở đây vì tới màn chính mà còn thiếu = việc lúc khởi động đã không ăn.
-        val speak = needsUser + environment + fixedAtBoot
+        val speak = if (coreOnly) missingCore else needsUser + environment + fixedAtBoot
         if (speak.isEmpty()) return null
         return speak.joinToString(" · ") { "${it.label}: ${it.losesWhatIfMissing}" }
     }

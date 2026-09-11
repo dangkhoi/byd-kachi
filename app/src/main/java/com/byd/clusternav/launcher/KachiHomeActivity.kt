@@ -52,19 +52,63 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private lateinit var viewModel: HomeViewModel
     private lateinit var windows: LauncherWindows
     private lateinit var topStrip: KachiTopStrip
+
+    /** Hai bảng phủ toàn màn (Tuỳ biến + bảng vẽ bố cục) — xem [HomePanels]. */
+    private val panels: HomePanels by lazy {
+        HomePanels(
+            activity = this,
+            rootFrame = rootFrame,
+            state = { viewModel.uiState.value },
+            onToggleDock = { id, on -> viewModel.toggleDock(id, on) },
+            onApplyLayout = { l -> applyCustomLayout(l) },
+            onWallpaper = { p ->
+                viewModel.setWallpaperPrefs(p)     // state + lưu bền; reload đọc lại từ state
+                wallpaper.reload()
+            },
+            onUnitPrefs = { prefs ->
+                viewModel.setUnitPrefs(prefs)      // state + lưu bền trong MỘT lượt
+                dock.setCarStatus(viewModel.uiState.value.carStatus, prefs)
+                workspace.setUnitPrefs(prefs)
+                topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs)
+            },
+            shellUsable = { shell != null },
+            goImmersive = { goImmersive() },
+        )
+    }
+
+    /**
+     * Hình nền + trình chiếu (U4) — tách khỏi Activity để Activity còn là composition-root (xem
+     * [WallpaperController]). Lười dựng: cần `wall` đã có mặt.
+     */
+    private val wallpaper: WallpaperController by lazy {
+        WallpaperController(
+            ctx = this,
+            wall = wall,
+            prefs = { viewModel.uiState.value.wallpaper },
+            submitIo = { block -> submitIo(block) },
+            onUi = { block -> runOnUiThread(block) },
+            gone = { destroyed || isFinishing || isDestroyed },
+            onPhotoSource = { paths, sec -> workspace.setPhotoSource(paths, sec) },
+        )
+    }
     private lateinit var drawerController: DrawerController
     private lateinit var profileBar: ProfileBar
     private lateinit var mainArea: LinearLayout
     private lateinit var rootFrame: FrameLayout
     private val media by lazy { MediaBridge(this) }        // đọc nhạc live cho w_media + transport
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
-    private var customizePanel: CustomizePanel? = null     // overlay Tuỳ biến thanh điều khiển
     /**
-     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13) — đọc MỘT LẦN từ tầng dữ liệu lúc mở màn. CỐ Ý không nằm trong
-     * [HomeUiState]: nó chỉ đổi khi người dùng vào chọn, nên đưa vào state là bắt cả HOME so-sánh-lại mỗi nhịp
-     * trạng thái xe (2/giây) mà không được gì. Đổi lựa chọn ⇒ gán lại field này rồi gọi `dock.setCarStatus(...)`.
+     * Lựa chọn đang hiệu lực — **đọc từ nguồn sự thật duy nhất** ([HomeViewModel.uiState]), KHÔNG giữ bản sao.
+     *
+     * ⚠ [SOÁT P1-1 kiến trúc] Ba nhóm này (đơn vị · hình nền · bố cục tự vẽ) trước đây là field riêng của màn chính
+     * (và của cả `WorkspaceView`/`ControlDockView`/`CustomizePanel`), đồng bộ bằng lời gọi tay. Lý do cũ ghi trong
+     * KDoc là "đưa vào state thì mỗi nhịp trạng thái xe phải so lại" — nhưng `data class` so bằng tham chiếu cho
+     * field không đổi nên phép so đó gần như miễn phí, còn giá của việc giữ nhiều bản sao thì đã trả bằng một lỗi
+     * thật (xoá bố cục mà màn hình vẫn hiện 6 khung).
      */
-    private var unitPrefs: UnitPrefs = UnitPrefs.DEFAULT
+    private val unitPrefs: UnitPrefs get() = viewModel.uiState.value.unitPrefs
+    private val wallPrefs: WallpaperPrefs get() = viewModel.uiState.value.wallpaper
+    private val customLayout: GridLayout? get() = viewModel.uiState.value.customLayout
     // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher (am --windowingMode 5 + am task resize); chưa có dadb → IntentAppLauncher.
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
     // @Volatile: GHI trên thread nền `winExec` (nhánh dò dadb) nhưng ĐỌC trên thread CHÍNH (openAppFullscreen —
@@ -74,14 +118,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     // dadb → app render lên VirtualDisplay trong ô (Dudu) hoặc ROM platform-signed → ActivityView; cả 2 bỏ freeform + overlay header.
     private val embedding get() = shell != null || SlotAppHost.embeddingUsable(this)
     private val winExec = java.util.concurrent.Executors.newSingleThreadExecutor()
+    /** Thread nền RIÊNG cho I/O ảnh (xem submitIo) — không để I/O ảnh chặn lệnh cửa sổ và ngược lại. */
+    private val ioExec = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var shownState: HomeUiState? = null   // view-side diff cache của collector (KHÔNG phải nguồn sự thật)
 
     private lateinit var wall: WallView
     // U4: trạng thái trình chiếu (ảnh nào, đổi lần cuối lúc nào). Ảnh đang vẽ giữ riêng để giải phóng ĐÚNG LÚC —
     // giải phóng trước khi View vẽ xong sẽ dùng ảnh đã thu hồi và sập.
-    private var slide = SlideshowState()
-    private var wallPrefs = WallpaperPrefs.DEFAULT
-    private var wallImages: List<String> = emptyList()
     /**
      * [SOÁT P2-2] Thẻ thế hệ cho hai việc chạy ở thread nền. **Phải là HAI thẻ riêng.**
      *
@@ -89,19 +132,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * ⇒ lượt quét thấy thẻ đã đổi nên **BỎ danh sách vừa quét** ⇒ ảnh mới thêm / ảnh vừa xoá / chu kỳ vừa đổi
      * **không được nhận**, im lặng dùng dữ liệu cũ.
      */
-    private var wallScanGen = 0
-    private var wallDecodeGen = 0
     /** Ảnh đang được nạp ở thread nền (đường dẫn) — chặn nạp trùng cùng một ảnh khi nhịp tới trước lúc nạp xong. */
-    private var wallLoading: String? = null   // U4(b): nguồn cho widget trình chiếu (độc lập với nền)
-    private var layoutPanel: LayoutEditorPanel? = null
-    /** P9 — bố cục tự vẽ đang hiệu lực. Giữ ở đây để bộ sắp cửa sổ app đọc được cùng giá trị với màn hình. */
-    private var customLayout: GridLayout? = null
-    private var wallBitmap: android.graphics.Bitmap? = null
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
             topStrip.updateClock()
-            stepWallpaper()   // U4: dùng LẠI nhịp có sẵn thay vì dựng thêm một vòng đếm riêng
+            wallpaper.step()   // U4: dùng LẠI nhịp có sẵn thay vì dựng thêm một vòng đếm riêng
             handler.postDelayed(this, 10_000)
         }
     }
@@ -111,7 +147,6 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         container = AppContainer.get(this)
-        unitPrefs = container.workspaceRepository.unitPrefs()   // đơn vị do người dùng chọn (chung mọi hồ sơ)
         // VM = nguồn sự thật (nạp từ repository qua factory AppContainer). embedded ban đầu = khả năng ActivityView; this là ViewModelStoreOwner.
         viewModel = ViewModelProvider(
             this, container.homeViewModelFactory(embedded = SlotAppHost.embeddingUsable(this)),
@@ -131,7 +166,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 viewModel.setPreset(it)
             },
             onCycleDock = { viewModel.cycleDockEdge() },
-            onCustomizeDock = { openCustomize() },
+            onCustomizeDock = { panels.openCustomize() },
             onOpenSettings = { startActivity(Intent(this, MainActivity::class.java)) },
             onProfileTap = { profileBar.cycle() },
             onProfileLongPress = { profileBar.addDialog() },
@@ -211,11 +246,11 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         val dadb = DadbShell(this)
         val dispatcher = container.windowDispatcher
         // P9: nạp bố cục tự vẽ TRƯỚC khi sắp cửa sổ, để lần dựng đầu đã đúng khung (không nháy từ bố cục sẵn sang).
-        customLayout = container.workspaceRepository.gridLayout().takeIf { it.frames.isNotEmpty() }
+        // Bố cục tự vẽ đã được nạp vào state ở `repository.load()` ⇒ ở đây chỉ ĐẨY xuống view.
         workspace.setCustomLayout(customLayout)
         windows.seedLocations()
         val seam = dispatcher.launcherSeam()
-        winExec.execute {
+        submitBg {
             if (dadb.probe()) {
                 shell = seam; appLauncher = ShellAppLauncher(seam)
                 runCatching { seam("appops set com.byd.launcher SYSTEM_ALERT_WINDOW allow") }  // để vẽ dải header nổi lên app freeform
@@ -234,11 +269,11 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                     )
                     viewModel.setEmbedded(true)                                               // dadb nối được → nhúng (giữ embedded khớp getter)
                 }
-                runPreflight(shellUsable = true, sh = seam)
+                PermissionPreflight.runAndReport(this, shellUsable = true, sh = seam)
             } else {
                 // Không có kênh shell: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng
                 // biết vì sao app không vào được ô, thay vì ngồi đoán.
-                runPreflight(shellUsable = false, sh = null)
+                PermissionPreflight.runAndReport(this, shellUsable = false, sh = null)
             }
         }
     }
@@ -249,33 +284,6 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * Ba luật: **đủ thì im lặng** · **tự xin lại** cái tự xin được (không hỏi người dùng) · **KHÔNG chặn launcher**
      * dù thiếu gì — đây là màn hình chính của xe.
      */
-    private fun runPreflight(shellUsable: Boolean, sh: ((String) -> String)?) {
-        val before = PermissionPreflight.check(this, shellUsable)
-        Log.i("Preflight", before.logLine())
-
-        // Tự cấp: chỉ khi CÓ kênh shell và thật sự đang thiếu (đọc thì không cần shell, cấp thì cần).
-        if (sh != null && before.selfFixable.isNotEmpty()) {
-            runCatching { PermissionPreflight.selfGrant(before, sh) }
-            // Trợ năng phải ĐỌC-SỬA-GHI (append, không ghi đè — ghi đè sẽ tắt trợ năng của app khác).
-            if (before.selfFixable.any { it.id == LauncherRequirements.ACCESSIBILITY.id }) {
-                runCatching {
-                    val cur = sh(PermissionPreflight.READ_ACCESSIBILITY_CMD).trim().takeIf { it != "null" }
-                    val flagOn = sh(PermissionPreflight.READ_ACCESSIBILITY_FLAG_CMD).trim() == "1"
-                    PermissionPreflight.accessibilityGrantCommands(cur, flagOn).forEach { sh(it) }
-                }
-            }
-            Log.i("Preflight", "sau khi tự cấp: " + PermissionPreflight.check(this, shellUsable).logLine())
-        }
-
-        // Chỉ NÓI khi thiếu thứ làm mất TÍNH NĂNG LÕI (app vào ô). Thiếu mục nhỏ mà báo mỗi lần mở là nhiễu —
-        // đúng thứ việc này đi dọn. Danh sách đầy đủ nằm trong bảng Tuỳ biến.
-        val after = PermissionPreflight.check(this, shellUsable)
-        val core = after.missingCore
-        if (core.isNotEmpty()) {
-            val msg = core.joinToString(" · ") { "${it.label}: ${it.losesWhatIfMissing}" }
-            runOnUiThread { runCatching { Toast.makeText(this, msg, Toast.LENGTH_LONG).show() } }
-        }
-    }
 
     /**
      * Áp [state] lên VIEW (duy nhất một chỗ, do collector gọi) — chỉ đọc-vẽ, KHÔNG đổi state. Diff so với [shownState]
@@ -287,7 +295,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         if (prev == null || prev.carStatus != state.carStatus) {
             topStrip.refreshChips(state.carStatus, unitPrefs)
             // RW0/Đ4: thanh nút cũng cần trạng thái xe để ô ĐỌC sống được ở đó. CHỈ đổ lại số của ô đọc — KHÔNG
-            // dựng lại thanh (C5: dựng lại mỗi nhịp 2/giây sẽ nháy + mất trạng thái ô vừa bấm).
+            // dựng lại thanh (C5: dựng lại mỗi nhịp 1/giây sẽ nháy + mất trạng thái ô vừa bấm).
             dock.setCarStatus(state.carStatus, unitPrefs)
             workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
         }
@@ -298,11 +306,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             if (edgeChanged) DockAreaLayout.apply(mainArea, workspace, dock, state.dock, resources.displayMetrics.density)
         }
         if (prev == null || prev.activeProfile != state.activeProfile) topStrip.setProfileInitial(state.activeProfile)
-        // [SOÁT P1-4] Hồ sơ đổi ⇒ nạp lại bố cục TỰ VẼ của hồ sơ đó. Thiếu bước này thì: (a) đổi sang hồ sơ B vẫn
-        // thấy bố cục của A; (b) nặng hơn — mở bảng vẽ ở B sẽ nạp bố cục của A, bấm Lưu là **GHI ĐÈ mất** bố cục
-        // riêng của B. Đi qua đúng "một đường duy nhất" applyCustomLayout.
-        if (prev != null && prev.activeProfile != state.activeProfile) {
-            applyCustomLayout(container.workspaceRepository.gridLayout().takeIf { it.frames.isNotEmpty() })
+        // [SOÁT P1-1 kiến trúc] Bố cục tự vẽ đẩy xuống view ở ĐÚNG MỘT CHỖ: theo state, khi state đổi. Trước đây
+        // chỗ này tự đọc lại repository khi đổi hồ sơ (một đường đọc bền nằm trong tầng UI), còn việc đẩy xuống view
+        // thì nằm ở hàm khác ⇒ hai đường song song cho cùng một việc. Nay `load()`/`switchProfile()` đã nạp bố cục
+        // vào state nên ca đổi hồ sơ tự đúng, không cần nhánh riêng.
+        if (prev?.customLayout != state.customLayout) {
+            workspace.setCustomLayout(state.customLayout)
+            windows.reflow()
         }
         if (prev != null && (prev.preset != state.preset || prev.dock.edge != state.dock.edge)) windows.reflow()
         shownState = state
@@ -342,7 +352,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         runCatching { container.workspaceRepository.touchRecentApp(pkg) }
         if (appOpener.openByIntent(pkg)) return
         val sh = shell ?: return
-        winExec.execute { appOpener.openByShell(pkg, sh) }
+        submitBg { appOpener.openByShell(pkg, sh) }
     }
 
     private fun clearSlot(index: Int) {
@@ -367,199 +377,33 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
+        // [SOÁT P3] Bảng vẽ bố cục từng bị bỏ sót ở đây: mở nó ra rồi bấm Back là **không có gì xảy ra** (Back của
+        // HOME vốn không làm gì), người dùng tưởng bảng bị treo. Thứ tự: lớp phủ trên cùng đóng trước.
         when {
-            customizePanel != null -> closeCustomize()
+            panels.layoutOpen() -> panels.closeLayoutEditor()
+            panels.customizeOpen() -> panels.closeCustomize()
             drawerController.isOpen() -> drawerController.close()
         }
     }
 
-    // ── U4 · hình nền + trình chiếu ──────────────────────────────────────────────────────────────
-    /**
-     * Nạp lại lựa chọn + danh sách ảnh rồi vẽ ngay. Gọi lúc mở màn và mỗi khi người dùng đổi lựa chọn.
-     *
-     * TẮT (mặc định) ⇒ nhả ảnh và để [WallView] vẽ nền gradient như trước ⇒ người không dùng tính năng này
-     * **không thấy gì khác**.
-     */
-    private fun reloadWallpaper() {
-        wallPrefs = container.workspaceRepository.wallpaperPrefs()
-        // Tạo thư mục ảnh NGAY, kể cả khi tính năng đang tắt. [ĐO] máy ảo 2026-09-11: nếu chỉ tạo lúc bật thì người
-        // dùng gặp vòng lặp chết — muốn thấy ảnh phải bật, muốn bật có nghĩa phải bỏ ảnh vào trước, mà thư mục lại
-        // chưa tồn tại để mà bỏ vào.
-        if (!wallPrefs.enabled) {
-            wall.setPhoto(null)
-            releaseWallBitmap()
-            wallImages = emptyList()
-        }
-        // [SOÁT P2-2] Tạo thư mục + quét thư mục + giải mã ảnh đều là I/O. Trước đây cả ba chạy trên thread chính
-        // NGAY trong lúc về màn chính ⇒ đứng hình mỗi lần về HOME. Nay đẩy sang thread nền có sẵn (cùng nơi các
-        // lệnh cửa sổ đã dùng), chỉ đưa ảnh vào View trên thread chính.
-        val gen = ++wallScanGen
-        winExec.execute {
-            WallpaperStore.folder(this)
-            val paths = WallpaperStore.images(this)
-            runOnUiThread {
-                // Lượt QUÉT cũ về muộn hơn lượt quét mới ⇒ bỏ. Dùng thẻ riêng của việc quét: dùng chung thẻ với việc
-                // giải mã thì nhịp trình chiếu sẽ làm lượt quét bị bỏ oan (xem KDoc wallScanGen).
-                if (gen != wallScanGen || isFinishing || isDestroyed) return@runOnUiThread
-                workspace.setPhotoSource(paths, wallPrefs.intervalSec)
-                if (!wallPrefs.enabled) return@runOnUiThread
-                wallImages = paths
-                slide = SlideshowState()          // đổi lựa chọn ⇒ bắt đầu lại từ ảnh đầu
-                stepWallpaper(force = true)
-            }
-        }
-    }
-
-    /**
-     * Một nhịp trình chiếu. Chạy trên nhịp 10 giây có sẵn của thanh trên — cố ý KHÔNG dựng thêm vòng đếm riêng
-     * (thêm một vòng nữa là thêm một thứ phải nhớ dừng lúc huỷ màn).
-     *
-     * Nhịp 10 giây với chu kỳ ngắn nhất 15 giây ⇒ sai số tối đa 10 giây. Với trình chiếu ảnh thì đó là **không ai
-     * thấy**; đổi lấy việc không có vòng đếm thứ hai là đáng.
-     */
-    private fun stepWallpaper(force: Boolean = false) {
-        if (!wallPrefs.enabled) return
-        if (wallImages.isEmpty()) {
-            // Bật mà chưa có ảnh: KHÔNG im lặng — nói chỗ bỏ ảnh vào, vì người dùng không có cách nào tự đoán.
-            if (force) {
-                Log.i("Wallpaper", "bật nhưng chưa có ảnh; bỏ ảnh vào: ${WallpaperStore.folderHint(this)}")
-                runCatching {
-                    Toast.makeText(this, "Chưa có ảnh. Bỏ ảnh vào:\n${WallpaperStore.folderHint(this)}", Toast.LENGTH_LONG).show()
-                }
-            }
-            wall.setPhoto(null)
-            return
-        }
-        val before = slide
-        slide = Slideshow.next(slide, wallImages.size, System.currentTimeMillis(), wallPrefs.intervalSec)
-        if (!force && slide.index == before.index && wall.hasPhoto()) return   // chưa tới hạn ⇒ không nạp lại
-        val path = Slideshow.pick(wallImages, slide.index) ?: return
-        if (wallLoading == path) return    // đang nạp đúng ảnh này rồi
-        val reqW = wallReqW(); val reqH = wallReqH()
-        val shown = slide.index + 1; val total = wallImages.size
-        // [SOÁT P2-2] Giải mã ảnh là việc nặng nhất ở đây (ảnh nhiều megapixel) ⇒ chạy ở thread nền.
-        val gen = ++wallDecodeGen
-        wallLoading = path
-        winExec.execute {
-            val next = WallpaperStore.loadScaled(path, reqW, reqH)
-            runOnUiThread {
-                if (wallLoading == path) wallLoading = null
-                if (gen != wallDecodeGen || isFinishing || isDestroyed) { next?.recycle(); return@runOnUiThread }
-                if (next == null) {
-                    Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ $shown/$total")
-                    return@runOnUiThread
-                }
-                val old = wallBitmap
-                wallBitmap = next
-                wall.setPhoto(next, wallPrefs.fit, wallPrefs.dim)
-                // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
-                old?.recycle()
-            }
-        }
-    }
-
-    /**
-     * Cỡ cần cho ảnh nền — lấy theo **MÀN HÌNH**, không theo cỡ View.
-     *
-     * ## [SOÁT P1-2] Vì sao không dùng cỡ View
-     * Ảnh nền được nạp trong `onResume`, mà **lượt đo cây view chạy SAU `onResume`** ⇒ lần mở đầu View còn rộng 0
-     * ⇒ cỡ cần = 1 ⇒ ảnh bị giảm tới mức tối đa (còn 1–2 điểm ảnh) rồi kéo lên phủ kín màn = **một vệt màu loang**,
-     * và không có gì nạp lại cho tới lần đổi ảnh kế tiếp (mặc định 60 giây, chọn được tới 30 phút).
-     *
-     * ⚠ Phép đo của tôi **không bắt được** vì lượt đầu tôi dùng **ảnh đơn sắc** — ảnh 1 điểm kéo lên trông y hệt ảnh
-     * thật. Bài học: ảnh đơn sắc che được cả méo hình LẪN mất chi tiết.
-     */
-    private fun wallReqW(): Int = maxOf(wall.width, resources.displayMetrics.widthPixels, 1)
-
-    private fun wallReqH(): Int = maxOf(wall.height, resources.displayMetrics.heightPixels, 1)
-
-    private fun releaseWallBitmap() {
-        wallBitmap?.recycle()
-        wallBitmap = null
-    }
 
     // ── Màn vẽ bố cục (P9 bước 2) — overlay trên rootFrame, dựng bằng code nên 0 tệp XML bị đụng ──
-    private fun openLayoutEditor() {
-        if (layoutPanel != null) return
-        val panel = LayoutEditorPanel(
-            this,
-            initial = customLayout ?: GridLayout(emptyList()),
-            fallbackPreset = viewModel.uiState.value.preset,
-            onSave = { l -> applyCustomLayout(l) },
-            onClear = { applyCustomLayout(null) },
-            onClose = { closeLayoutEditor() },
-        )
-        layoutPanel = panel
-        rootFrame.addView(panel, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-        goImmersive()
-    }
 
-    private fun closeLayoutEditor() {
-        layoutPanel?.let { rootFrame.removeView(it) }
-        layoutPanel = null
-        goImmersive()
-    }
 
     /**
      * Áp bố cục tự vẽ: lưu bền + áp NGAY cho màn hình, rồi **sắp lại cửa sổ app** theo khung mới. Thiếu bước sắp lại
      * thì ô vẽ đúng chỗ mới nhưng cửa sổ app vẫn nằm ở khung cũ.
      */
+    /**
+     * Áp bố cục tự vẽ = **ghi vào nguồn sự thật, hết**. Việc đẩy xuống màn hình + sắp lại cửa sổ app do `render()`
+     * làm khi state đổi (một chiều). Trước đây hàm này tự gán field riêng + tự ghi bền + tự đẩy xuống view, tức
+     * ba việc ở một chỗ và không ai bảo đảm ba việc đó thấy cùng một giá trị.
+     */
     private fun applyCustomLayout(layout: GridLayout?) {
-        customLayout = layout
-        container.workspaceRepository.setGridLayout(layout)
-        workspace.setCustomLayout(layout)
-        windows.reflow()
+        viewModel.setCustomLayout(layout)
     }
 
-    // ── Màn Tuỳ biến (chọn nút cho thanh điều khiển) — overlay trên rootFrame, một chiều qua VM ──
-    private fun openCustomize() {
-        if (customizePanel != null) return
-        val panel = CustomizePanel(
-            this,
-            enabledIds = viewModel.uiState.value.dock.enabled,
-            onToggle = { id, on -> viewModel.toggleDock(id, on) },   // state+persist → collector: dock.setConfig
-            onClose = { closeCustomize() },
-            // W3: ô tick tự lấy gió trong. Bật ⇒ áp NGAY (không chờ lần nổ máy sau); tắt ⇒ CHỈ đặt lại cờ, KHÔNG
-            // tắt chế độ đang bật trên xe (người dùng có thể đang muốn dùng, chỉ là không muốn tự bật nữa).
-            recircOnStart = Prefs.recircOnStartEnabled(this),
-            onRecircOnStart = { on ->
-                Prefs.setRecircOnStartEnabled(this, on)
-                if (on) RecircApplier.applyNowAsync(this)
-            },
-            // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).
-            unitPrefs = unitPrefs,
-            // P8: bảng Tuỳ biến là chỗ xem ĐỦ bức tranh quyền (thông báo chỉ nói mục ảnh hưởng tính năng lõi).
-            permissions = PermissionPreflight.check(this, shellUsable = shell != null),
-            // U4: nói CHỖ bỏ ảnh vào — người dùng không có cách nào tự đoán, và màn chọn tệp của hệ thống bị khoá trên xe.
-            wallpaper = wallPrefs,
-            wallpaperFolderHint = WallpaperStore.folderHint(this),
-            // P9: đường mở bảng vẽ bố cục + nói người dùng đang dùng bố cục nào.
-            onOpenLayoutEditor = { closeCustomize(); openLayoutEditor() },
-            layoutSummary = customLayout?.let {
-                "Đang dùng bố cục tự vẽ: ${it.frames.size} khung" +
-                    (EffectiveLayout.ignoredReason(it)?.let { r -> " — nhưng bị bỏ qua ($r)" } ?: "")
-            } ?: "",
-            onWallpaper = { p ->
-                container.workspaceRepository.setWallpaperPrefs(p)
-                reloadWallpaper()
-            },
-            onUnitPrefs = { prefs ->
-                unitPrefs = prefs
-                container.workspaceRepository.setUnitPrefs(prefs)
-                dock.setCarStatus(viewModel.uiState.value.carStatus, prefs)
-                workspace.setUnitPrefs(prefs)
-                topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs)
-            },
-        )
-        customizePanel = panel
-        rootFrame.addView(panel, FrameLayout.LayoutParams(MATCH, MATCH))
-    }
 
-    private fun closeCustomize() {
-        customizePanel?.let { rootFrame.removeView(it) }
-        customizePanel = null
-    }
 
     /** Transport nhạc từ widget w_media → [MediaBridge] (no-op nếu off-car/không quyền). */
     private fun handleMedia(action: String) {
@@ -575,8 +419,15 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     override fun onResume() {
         super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        goImmersive(); topStrip.updateClock(); reloadWallpaper(); handler.post(tick); workspace.postDelayed({ windows.updateOverlayHeads() }, 600)
+        goImmersive(); topStrip.updateClock(); wallpaper.reload(); handler.post(tick)
+        // [SOÁT P2-4] Runnable CÓ TÊN để `onDestroy` gỡ được. Trước đây là lambda vô danh nên không có cách nào
+        // huỷ, mà nó lại dựng cửa sổ overlay ⇒ chạy sau khi màn chết là giữ view + giữ activity.
+        workspace.removeCallbacks(overlayHeadsKick)
+        workspace.postDelayed(overlayHeadsKick, 600)
     }
+
+    /** Dựng dải header nổi sau khi cây view đã có kích thước thật (mở màn xong). */
+    private val overlayHeadsKick = Runnable { if (!destroyed) windows.updateOverlayHeads() }
 
     @Suppress("DEPRECATION")
     private fun goImmersive() {
@@ -597,12 +448,45 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onDestroy() {
         super.onDestroy(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         if (isFinishing) vmStore.clear()
+        // [SOÁT P2-4] Thứ tự QUAN TRỌNG: đánh dấu đã huỷ + gỡ mọi lượt đã hẹn TRƯỚC khi tắt thread nền. Làm ngược
+        // lại thì một lượt đã hẹn có thể chen vào giữa và nộp việc cho executor vừa tắt (RejectedExecutionException,
+        // không ai bắt) hoặc dựng cửa sổ overlay bằng WindowManager của activity đã chết.
+        destroyed = true
+        workspace.removeCallbacks(overlayHeadsKick)
+        handler.removeCallbacksAndMessages(null)
+        windows.cancelPending()
         // Ngăn kéo có thể được gắn như CỬA SỔ RIÊNG (TYPE_APPLICATION_OVERLAY qua WindowManager) → nó KHÔNG chết
         // cùng activity. Không đóng ở đây thì cửa sổ đó sống tiếp (rò rỉ view + giữ activity), và một cái chạm vào
         // nó sẽ chạy vào `winExec` ĐÃ shutdown (RejectedExecutionException) hoặc mở activity từ activity đã huỷ.
         drawerController.close()
-        releaseWallBitmap()   // U4: nhả ảnh nền, không để giữ bộ nhớ sau khi màn đã huỷ
-        winExec.shutdownNow(); windows.clearOverlays()
+        wallpaper.release()   // U4: nhả ảnh nền, không để giữ bộ nhớ sau khi màn đã huỷ
+        winExec.shutdownNow(); ioExec.shutdownNow(); windows.clearOverlays()
+    }
+
+    /** Màn đã huỷ ⇒ mọi lượt đã hẹn / callback về muộn phải im. */
+    @Volatile private var destroyed = false
+
+    /**
+     * MỘT cửa duy nhất để đẩy việc xuống thread nền của màn chính.
+     *
+     * [SOÁT P2-4] Trước đây 4 chỗ gọi thẳng `winExec.execute`; sau `onDestroy` (đã `shutdownNow`) mỗi chỗ đó là một
+     * `RejectedExecutionException` không ai bắt. Gom về đây để chỗ gọi không phải nhớ, và để chỉ có MỘT nơi biết
+     * luật "đã huỷ thì thôi".
+     */
+    private fun submitBg(block: () -> Unit) = submitOn(winExec, block)
+
+    /**
+     * Việc I/O ẢNH (quét thư mục, giải mã) — thread nền **RIÊNG**, không dùng chung với lệnh cửa sổ.
+     *
+     * [SOÁT P2-7] `winExec` còn chạy lệnh dadb **chặn tới ~3 giây** (poll khi đặt app vào ô). Trộn I/O ảnh vào đó là
+     * hai việc chờ nhau: đặt app vào ô phải đợi lượt giải mã ảnh xong, và ngược lại ảnh nền đổi trễ vì đang đặt app.
+     */
+    private fun submitIo(block: () -> Unit) = submitOn(ioExec, block)
+
+    private fun submitOn(exec: java.util.concurrent.ExecutorService, block: () -> Unit) {
+        if (destroyed) return
+        runCatching { exec.execute { if (!destroyed) block() } }
+            .onFailure { Log.w("Kachi", "bỏ việc nền vì màn đã huỷ: ${it.javaClass.simpleName}") }
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()

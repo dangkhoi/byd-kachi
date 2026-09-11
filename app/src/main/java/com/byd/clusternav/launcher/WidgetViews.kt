@@ -7,6 +7,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -91,7 +92,7 @@ object WidgetViews {
     fun buildGrid(ctx: Context, ids: List<String>, data: WidgetData): View {
         val list = ids.take(8)
         if (list.isEmpty()) return label(ctx, "WIDGET", "—", "")
-        if (list.size == 1) return build(ctx, list[0], data)
+        if (list.size == 1) return build(ctx, list[0], data).also { it.tag = WidgetTag(list[0], compact = false) }
         val n = list.size
         val topN = if (n <= 3) n else n / 2
         val rows = if (n <= 3) listOf(list) else listOf(list.subList(0, topN), list.subList(topN, n))
@@ -101,12 +102,57 @@ object WidgetViews {
             rows.forEach { rowIds ->
                 val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
                 rowIds.forEach { id ->
-                    row.addView(mini(ctx, id, data), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-                        .also { it.setMargins(g, g, g, g) })
+                    row.addView(
+                        mini(ctx, id, data).also { it.tag = WidgetTag(id, compact = true) },
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                            .also { it.setMargins(g, g, g, g) },
+                    )
                 }
                 addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
             }
         }
+    }
+
+    /** Thẻ gắn lên mỗi view con: mã khả năng + nó được dựng bằng bộ vẽ đầy-đủ hay bộ vẽ nén. */
+    private data class WidgetTag(val id: String, val compact: Boolean)
+
+    /**
+     * Làm mới **TẠI CHỖ** những ô con là **mục ĐỌC**, giữ nguyên view của nút HÀNH ĐỘNG và của widget tự-lo-nội-dung.
+     * Trả về số ô con đã thay (0 ⇒ chỗ gọi tự dựng lại cả ô cho chắc).
+     *
+     * ## ⚠ [SOÁT P1-1] Vì sao phải có hàm này
+     * Luật cũ: ô widget có **bất kỳ** mục đọc ⇒ dựng lại **CẢ Ô** mỗi khi trạng thái xe đổi (trên xe: mỗi giây).
+     * Với ô TRỘN (ví dụ áp suất lốp + nút "Đóng hết kính", hoặc trình chiếu ảnh + tốc độ) hậu quả là:
+     *  • nút bị tháo/gắn giữa cú chạm ⇒ **mất cú bấm**;
+     *  • widget trình chiếu bị dựng lại ⇒ trạng thái quay vòng đặt lại (**ảnh đứng một tấm**) + mỗi giây một lượt
+     *    đọc tệp & giải mã ảnh trên thread chính.
+     * Bản vá trước chỉ cứu ô mà **mọi** mục là trình chiếu ([WorkspaceRenderPlanner.selfDriven]); ô trộn vẫn hỏng.
+     *
+     * Cách làm: mỗi view con mang [WidgetTag] nên đổi được **đúng con cần đổi**, không phụ thuộc vào việc đoán lại
+     * cấu trúc cây mà [buildGrid] đã dựng.
+     */
+    fun refreshRead(root: View, data: WidgetData): Int {
+        var changed = 0
+        fun walk(v: View) {
+            val tag = v.tag as? WidgetTag
+            if (tag != null) {
+                val keep = CapabilityCatalog.isWrite(tag.id) || WorkspaceRenderPlanner.selfDriven(tag.id)
+                if (!keep) {
+                    val parent = v.parent as? ViewGroup ?: return
+                    val at = parent.indexOfChild(v)
+                    val lp = v.layoutParams
+                    val fresh = (if (tag.compact) mini(v.context, tag.id, data) else build(v.context, tag.id, data))
+                        .also { it.tag = tag }
+                    parent.removeViewAt(at)
+                    parent.addView(fresh, at, lp)
+                    changed++
+                }
+                return      // thẻ đánh dấu một ô con hoàn chỉnh — không đi sâu hơn
+            }
+            if (v is ViewGroup) for (i in v.childCount - 1 downTo 0) walk(v.getChildAt(i))
+        }
+        walk(root)
+        return changed
     }
 
     // ── Compact (lưới nhiều widget) ────────────────────────────────────────────────────────────────────

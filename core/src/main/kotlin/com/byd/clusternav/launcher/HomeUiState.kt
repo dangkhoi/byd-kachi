@@ -26,6 +26,26 @@ data class HomeUiState(
     val themeMode: ThemeMode = ThemeMode.NIGHT,
     val embedded: Boolean = false,
     val carStatus: CarStatus = CarStatus(),
+    /**
+     * Bố cục TỰ VẼ đang dùng (P9), `null` = dùng bố cục sẵn của [workspace].
+     *
+     * ## ⚠ [SOÁT P1-1 kiến trúc] Vì sao PHẢI ở đây
+     * Trước đây thứ này sống thành **hai bản sao** (một ở màn chính, một trong `WorkspaceView`) với lý do "để không
+     * xáo trộn bộ quyết-định-dựng-lại". Hậu quả có thật: một lần xoá bố cục ở bản của màn chính mà khung vẽ vẫn giữ
+     * bản riêng ⇒ [ĐO] cấu hình đã xoá mà màn hình **vẫn hiện 6 khung**. Lần đó vá bằng *quy ước* "mọi thay đổi đi
+     * qua một hàm", tức là vẫn hai bản sao, chỉ thêm luật con người phải nhớ.
+     *
+     * Bộ quyết-định-dựng-lại KHÔNG đọc [HomeUiState] (nó nhận [WorkspaceState]) nên đưa vào đây **không** đụng phép
+     * chứng minh tương-đương hơn 1000 tổ hợp — lý do tránh né ban đầu không còn đúng.
+     */
+    val customLayout: GridLayout? = null,
+    /**
+     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13). Trước đây có **4 bản sao** (màn chính · khung làm việc · thanh nút ·
+     * bảng Tuỳ biến) đồng bộ bằng lời gọi tay ⇒ quên một chỗ là hai bề mặt nói hai đơn vị cho cùng một con số.
+     */
+    val unitPrefs: UnitPrefs = UnitPrefs.DEFAULT,
+    /** Lựa chọn HÌNH NỀN (U4). Cùng lý do: state được render thì phải nằm trong nguồn sự thật. */
+    val wallpaper: WallpaperPrefs = WallpaperPrefs.DEFAULT,
 ) {
     /** Preset bố cục hiện tại (tiện đọc, uỷ quyền [WorkspaceState.preset]). */
     val preset: LayoutPreset get() = workspace.preset

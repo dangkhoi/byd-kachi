@@ -138,17 +138,33 @@ class KachiTopStrip(
      * ghi °C, vì bề mặt này dựng chuỗi trực tiếp từ [CarStatus] chứ không qua [TelemetryReadout]/[UnitFormat]. Đó là
      * đúng cái bệnh "mỗi bề mặt tự đổi đơn vị theo ý mình" mà gói này dọn.
      */
+    /**
+     * Làm mới 3 chip xe. **Dựng một lần, sau đó chỉ đổi CHỮ.**
+     *
+     * [SOÁT P2-9] Bản trước gọi `chipRow.removeAllViews()` rồi dựng lại 3 `TextView` (kèm tra + tint drawable) **mỗi
+     * nhịp trạng thái xe** — tức mỗi giây trên xe, cho dữ liệu phần lớn không đổi. Cùng loại lãng phí mà ràng buộc C5
+     * đi dọn ở thanh nút và ô giữa màn; thanh trên bị bỏ sót.
+     */
     fun refreshChips(status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT) {
-        chipRow.removeAllViews()
+        if (chipPm == null) {
+            chipRow.removeAllViews()
+            chipPm = chip("", "ic-leaf", "#c3cee0").also { chipRow.addView(it, chipLp()) }
+            chipTemp = chip("", null, "#c3cee0").also { chipRow.addView(it, chipLp()) }
+            chipEnergy = chip("", "ic-bolt", KachiTheme.GREEN).also { chipRow.addView(it, chipLp()) }
+        }
         val pm = status.climate.pm25Level?.let { if (it <= 2) "Tốt" else if (it <= 4) "TB" else "Kém" } ?: "—"
-        chipRow.addView(chip("PM2.5 · $pm", "ic-leaf", "#c3cee0"), chipLp())
+        chipPm?.text = "PM2.5 · $pm"
         val tUnit = units.unitFor(Quantity.TEMPERATURE)
         val temp = status.climate.outsideTempC?.let { conv(it.toDouble(), Quantity.TEMPERATURE, units) } ?: "—"
-        chipRow.addView(chip("$temp$tUnit ngoài", null, "#c3cee0"), chipLp())
+        chipTemp?.text = "$temp$tUnit ngoài"
         val dUnit = units.unitFor(Quantity.DISTANCE)
         val range = status.energy.evRangeKm?.let { conv(it.toDouble(), Quantity.DISTANCE, units) } ?: "—"
-        chipRow.addView(chip("${status.energy.soc ?: "—"}% · $range $dUnit", "ic-bolt", KachiTheme.GREEN), chipLp())
+        chipEnergy?.text = "${status.energy.soc ?: "—"}% · $range $dUnit"
     }
+
+    private var chipPm: TextView? = null
+    private var chipTemp: TextView? = null
+    private var chipEnergy: TextView? = null
 
     // ── Hồ sơ tài xế: pill hiện tên, chạm = đổi hồ sơ, giữ = tạo mới ──
     private fun profileAvatar(): TextView {

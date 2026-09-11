@@ -22,6 +22,7 @@ class Goi2FeatureWiringContractTest {
     private val widgets by lazy { code("src/main/java/com/byd/clusternav/launcher/WidgetViews.kt") }
     private val board by lazy { code("src/main/java/com/byd/clusternav/launcher/TyreBoardView.kt") }
     private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
+    private val panels by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val boot by lazy { code("src/main/java/com/byd/clusternav/BootSetupService.kt") }
     private val applier by lazy { code("src/main/java/com/byd/clusternav/comfort/RecircApplier.kt") }
@@ -33,12 +34,21 @@ class Goi2FeatureWiringContractTest {
     fun `bang lop dung phan quyet dinh o core chu KHONG tu tinh`() {
         assertTrue(widgets.contains("TyreBoard.readings("), "widget lốp phải lấy trạng thái từ TyreBoard (:core)")
         assertTrue(widgets.contains("TyreBoardView("), "ô lớn phải dùng ô vẽ bảng 4 bánh")
-        assertFalse(
-            board.contains("2.0") && board.contains("3.2"),
-            "ô VẼ không được chứa ngưỡng — ngưỡng chỉ nằm ở TyreBoard (:core) để đổi một chỗ",
-        )
-        assertTrue(board.contains("TyreBoard.readings(") || board.contains("TyreReading"),
-            "ô vẽ nhận kết quả đã quyết định, không tự phán xét")
+        // [SOÁT] bản cũ dùng `&&` ⇒ viết cứng MỘT ngưỡng vẫn qua. Chặn TỪNG ngưỡng.
+        // ⚠ CHỈ hai ngưỡng áp suất là kiểm được bằng chuỗi: ngưỡng lệch `0.3` trùng với **tỉ lệ vẽ** (`0.34f`,
+        // `0.30f`) nên quét chuỗi cho nó là dương tính giả — đã thử và nó báo sai ngay. Phần "không tự phán xét"
+        // được khoá bằng cấu trúc ở hai assert dưới (ô vẽ chỉ NHẬN kết quả, không gọi bộ quyết định).
+        listOf("2.0", "3.2").forEach { th ->
+            assertFalse(
+                board.contains(th),
+                "ô VẼ chứa ngưỡng '$th' — ngưỡng chỉ được nằm ở TyreBoard (:core) để đổi MỘT chỗ",
+            )
+        }
+        // [SOÁT] bản cũ có nhánh `|| contains("TyreReading")` — mà tên KIỂU đó bắt buộc xuất hiện trong chữ ký ô
+        // vẽ, nên assert KHÔNG THỂ đỏ. Luật thật: ô vẽ chỉ NHẬN kết quả, không tự tính trạng thái.
+        assertTrue(board.contains("TyreReading"), "ô vẽ phải nhận kiểu kết quả đã quyết định từ :core")
+        assertFalse(board.contains("TyreBoard.readings("),
+            "ô VẼ không được tự gọi bộ quyết định — chỗ gọi là WidgetViews, ô vẽ chỉ nhận kết quả")
     }
 
     @Test
@@ -76,7 +86,7 @@ class Goi2FeatureWiringContractTest {
     @Test
     fun `doi don vi KHONG duoc dung lai o vo co`() {
         val ws = code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
-        val fn = ws.substringAfter("fun setUnitPrefs(").substringBefore("}")
+        val fn = SourceRoots.body(ws, "fun setUnitPrefs(")
         assertTrue(fn.contains("if (prefs == unitPrefs) return"),
             "gọi lại với cùng lựa chọn KHÔNG được dựng lại ô — dựng lại là ngắt kênh chạm của app trong ô (C5)")
     }
@@ -87,17 +97,19 @@ class Goi2FeatureWiringContractTest {
         // bắt app trong ô mở lại. Đơn vị chỉ ảnh hưởng ô widget — cùng luật WorkspaceRenderPlanner đã áp cho nhịp
         // trạng thái xe (ô App không bị chạm).
         val ws = code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
-        val fn = ws.substringAfter("fun setUnitPrefs(").substringBefore("}")
+        val fn = SourceRoots.body(ws, "fun setUnitPrefs(")
         assertFalse(fn.contains("rebuild()"), "KHÔNG được dựng lại toàn bộ ô chỉ vì đổi đơn vị")
         assertTrue(fn.contains("rebuildWidgetSlots()"), "phải dựng lại đúng ô widget")
-        val only = ws.substringAfter("private fun rebuildWidgetSlots()").substringBefore("private fun makeSlot(")
+        val only = SourceRoots.body(ws, "private fun rebuildWidgetSlots()")
         assertTrue(only.contains("!is SlotContent.Widget) continue"), "phải BỎ QUA ô App và ô trống")
         assertFalse(only.contains("removeAllViews()"), "không được xoá sạch con — đó là dựng lại tất cả")
     }
 
     @Test
     fun `o ve khong cap phat trong onDraw va khong dung API loi thoi`() {
-        val draw = board.substringAfter("override fun onDraw")
+        // [SOÁT] bản cũ lấy "từ onDraw tới hết tệp" ⇒ (a) field khai TRƯỚC onDraw không bị soi, (b) hàm phụ SAU
+        // onDraw bị soi oan. Nay lấy đúng thân onDraw.
+        val draw = SourceRoots.body(board, "override fun onDraw")
         assertFalse(draw.contains("Paint("), "cấm cấp phát Paint trong onDraw (vẽ lại 2 lần/giây sẽ rác bộ nhớ)")
         // `Color.parseColor` cắt chuỗi + parse số mỗi lần gọi — cũng là cấp phát, đúng thứ KDoc của ô vẽ hứa là
         // không có. Bản đầu gọi nó 6 lần MỖI lượt vẽ (4 bánh + 2 nhãn) mà test cũ chỉ canh `Paint(` nên không bắt.
@@ -121,7 +133,7 @@ class Goi2FeatureWiringContractTest {
     fun `ba danh sach song song cua bang lop dung tu CUNG mot nguon`() {
         // Rủi ro thật của 3 danh sách song song không phải độ dài mà là LỆCH THỨ TỰ. Khoá lại: cả values lẫn temps
         // phải map trên CHÍNH danh sách readings (một biểu thức, một thứ tự), không tự đọc lại CarStatus lần nữa.
-        val fn = widgets.substringAfter("private fun tyreBoard(").substringBefore("private fun tyreMini(")
+        val fn = SourceRoots.body(widgets, "private fun tyreBoard(")
         assertTrue(fn.contains("val readings = TyreBoard.readings("), "phải có đúng một nguồn readings")
         assertTrue(fn.contains("readings.map"), "values/temps phải map trên chính readings đó")
         assertEquals(2, Regex("""readings\.map""").findAll(fn).count(), "đúng 2 danh sách song song sinh từ readings")
@@ -140,7 +152,7 @@ class Goi2FeatureWiringContractTest {
 
     @Test
     fun `bat thi ap ngay tat thi chi dat lai co`() {
-        val block = activity.substringAfter("onRecircOnStart").substringBefore("unitPrefs =")
+        val block = SourceRoots.body(panels, "onRecircOnStart")
         assertTrue(block.contains("setRecircOnStartEnabled"), "phải lưu bền lựa chọn")
         assertTrue(block.contains("if (on)") && block.contains("applyNowAsync"),
             "bật thì áp NGAY, không chờ lần nổ máy sau")
@@ -170,7 +182,7 @@ class Goi2FeatureWiringContractTest {
 
     @Test
     fun `doi don vi thi luu ben va ap lai ngay cho ca hai vung`() {
-        val block = activity.substringAfter("onUnitPrefs =").substringBefore("customizePanel = panel")
+        val block = SourceRoots.body(activity, "onUnitPrefs =")
         assertTrue(block.contains("setUnitPrefs("), "phải lưu bền")
         assertTrue(block.contains("dock.setCarStatus("), "thanh nút phải cập nhật ngay")
         assertTrue(block.contains("workspace.setUnitPrefs("), "ô giữa màn phải cập nhật ngay")

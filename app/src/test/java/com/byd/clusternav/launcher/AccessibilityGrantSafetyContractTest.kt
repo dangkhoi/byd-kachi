@@ -30,18 +30,23 @@ class AccessibilityGrantSafetyContractTest {
         // Lệnh đọc có thể trả về "null" HOẶC một câu lỗi. Ghép câu lỗi vào rồi ghi đè cấu hình dùng chung = xoá
         // trợ năng của app khác. Lọc theo DẠNG an toàn kể cả khi ROM khác đổi định dạng trả về.
         assertTrue(pre.contains("COMPONENT_SHAPE"), "phải có phép lọc theo dạng component")
-        val fn = pre.substringAfter("fun accessibilityGrantCommands(").substringBefore("private val COMPONENT_SHAPE")
+        val fn = SourceRoots.body(pre, "fun accessibilityGrantCommands(")
         assertTrue(fn.contains("COMPONENT_SHAPE.matches("), "phải LỌC danh sách đọc về, không tin nguyên văn")
-        assertFalse(
-            fn.contains("filter { it.isNotEmpty() }") && !fn.contains("COMPONENT_SHAPE"),
-            "lọc 'không rỗng' là KHÔNG đủ — câu lỗi cũng không rỗng",
+        // [SOÁT] bản cũ viết `assertFalse(A && !cóCOMPONENT_SHAPE)` — nhưng assert NGAY TRÊN đã buộc phải có
+        // COMPONENT_SHAPE, nên vế sau luôn false ⇒ assert này KHÔNG THỂ đỏ. Luật thật cần khoá: hàm phải phân
+        // biệt "đọc được nhưng rỗng thật" với "không đọc được" — hành vi đó có bài riêng
+        // (AccessibilityGrantBehaviourTest), ở đây khoá phần CẤU TRÚC của nó.
+        assertTrue(fn.contains("readable"), "phải có khái niệm 'đọc được hay không' tường minh")
+        assertTrue(
+            fn.contains("if (!readable)"),
+            "không đọc được thì phải THOÁT trước khi ghi danh sách dùng chung",
         )
     }
 
     @Test
     fun `gia tri ghi vao phai duoc BOC NHAY`() {
         // Token chứa khoảng trắng làm `settings put` chỉ nhận phần đầu ⇒ mất phần còn lại của danh sách.
-        val fn = pre.substringAfter("fun accessibilityGrantCommands(").substringBefore("private val COMPONENT_SHAPE")
+        val fn = SourceRoots.body(pre, "fun accessibilityGrantCommands(")
         assertTrue(
             fn.contains("'\$merged'"),
             "giá trị là DỮ LIỆU, không phải mã lệnh ⇒ phải bọc nháy khi nội suy vào lệnh shell",
@@ -51,7 +56,7 @@ class AccessibilityGrantSafetyContractTest {
     @Test
     fun `co trong danh sach nhung CO tat thi van phai bat co`() {
         // [ĐO] 2026-09-11: chính cờ này bị hệ thống đưa về 0 khi tiến trình chết ⇒ đây là ca THẬT.
-        val fn = pre.substringAfter("fun accessibilityGrantCommands(").substringBefore("private val COMPONENT_SHAPE")
+        val fn = SourceRoots.body(pre, "fun accessibilityGrantCommands(")
         assertTrue(fn.contains("flagOn"), "phải nhận trạng thái cờ")
         assertTrue(
             fn.contains("if (already && flagOn) return emptyList()"),
@@ -62,16 +67,16 @@ class AccessibilityGrantSafetyContractTest {
 
     @Test
     fun `phep kiem DU phai tinh ca co, khong chi danh sach`() {
-        val fn = pre.substringAfter("private fun accessibilityGranted(").substringBefore("private fun overlayGranted")
+        val fn = SourceRoots.body(pre, "private fun accessibilityGranted(")
         assertTrue(fn.contains("accessibility_enabled"), "thiếu phép kiểm cờ ⇒ báo ĐỦ trong khi trợ năng đang tắt")
         assertTrue(fn.contains("listed && flagOn"), "phải cần CẢ HAI")
     }
 
     @Test
     fun `cho goi phai doc ca co truoc khi cap`() {
-        assertTrue(act.contains("READ_ACCESSIBILITY_FLAG_CMD"), "chỗ gọi phải đọc cờ")
+        assertTrue(pre.contains("READ_ACCESSIBILITY_FLAG_CMD"), "chỗ gọi phải đọc cờ")
         assertTrue(
-            act.contains("accessibilityGrantCommands(cur, flagOn)"),
+            pre.contains("accessibilityGrantCommands(cur, flagOn)"),
             "phải truyền cả danh sách và cờ — thiếu cờ thì hàm cấp không biết có phải bật cờ hay không",
         )
     }

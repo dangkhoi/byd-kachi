@@ -80,7 +80,7 @@ data class DockConfig(
 object ControlRegistry {
     val ALL: List<ControlDef> = listOf(
         // ── 20 nút GỐC (giữ nguyên id + thứ tự + cờ default; bổ sung domain/tier/bindingKey) ───────
-        ControlDef("lock", "Khoá xe", "ic-lock", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
+        ControlDef("lock", "Khoá / mở khoá", "ic-lock", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState"),
         // ⚠ [ĐO] 2026-09-11: nút này TỪNG mang nhãn "Kính 50%" nhưng ghi ĐÚNG CÙNG lệnh với "win_lf"
         // (`setBodyWindowCtrlState(1, state)` — kính CỬA LÁI, chỉ đóng/mở, KHÔNG có nửa). Nhãn cũ hứa thứ xe không
@@ -104,7 +104,10 @@ object ControlRegistry {
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219362"),
         ControlDef("cam", "Camera 360", "ic-cam", ControlKind.TOGGLE,
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "3001"),
-        ControlDef("door", "Mở cửa", "ic-door", ControlKind.TOGGLE,
+        // ⚠ [SOÁT P0 · vòng 2] TRƯỚC ĐÂY là TOGGLE nhãn "Mở cửa" — nghĩa là **tắt nó thì KHOÁ xe**, mà nhãn không
+        // nói điều đó. Sau khi vá P0 (tắt = gửi 2 = khoá thật) thì đây lại đúng họ lỗi vừa dọn: "nhãn hứa việc A,
+        // trạng thái kia làm việc B". Nút BẤM một chiều thì không có mặt-tắt để nói dối: bấm = mở khoá, hết.
+        ControlDef("door", "Mở khoá cửa", "ic-door", ControlKind.BUTTON,
             domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState"),
         ControlDef("hood", "Ca-pô", "ic-hood", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BODYWORK_CMD_HOOD"),

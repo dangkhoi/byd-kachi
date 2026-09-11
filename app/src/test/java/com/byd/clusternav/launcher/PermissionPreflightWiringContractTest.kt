@@ -22,11 +22,14 @@ class PermissionPreflightWiringContractTest {
     private val act by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/CustomizePanel.kt") }
 
+    /** Chỗ GỌI bảng Tuỳ biến — tách khỏi Activity sang [HomePanels] (Activity vượt trần 500 dòng). */
+    private val panel_caller by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
+
     // ── C4: đọc thì KHÔNG mở kênh shell ──────────────────────────────────────────────────────────
 
     @Test
     fun `doc trang thai KHONG duoc mo kenh shell`() {
-        val readFns = pre.substringAfter("fun check(").substringBefore("fun selfGrant(")
+        val readFns = SourceRoots.body(pre, "fun check(")
         assertFalse(readFns.contains("sh("),
             "Đọc trạng thái phải đọc THẲNG cấu hình hệ thống (mọi app đọc được). Mở phiên kênh shell chỉ để đọc là " +
                 "tốn — code cũ đã ghi bài học này.")
@@ -48,27 +51,27 @@ class PermissionPreflightWiringContractTest {
 
     @Test
     fun `tu xin lai chi khi CO kenh shell va dang THIEU`() {
-        val fn = act.substringAfter("private fun runPreflight(")
+        val fn = SourceRoots.body(pre, "fun runAndReport(")
         assertTrue(fn.contains("selfFixable.isNotEmpty()"), "chỉ cấp khi thật sự đang thiếu")
         assertTrue(fn.contains("sh != null"), "chỉ cấp khi có kênh shell")
-        assertTrue(fn.contains("PermissionPreflight.selfGrant("), "phải dùng đường tự cấp tập trung")
+        assertTrue(fn.contains("selfGrant("), "phải dùng đường tự cấp tập trung")
     }
 
     @Test
     fun `tro nang phai APPEND chu khong ghi de danh sach`() {
         // Ghi đè sẽ TẮT trợ năng của app khác — kể cả của người khuyết tật đang dùng.
         assertTrue(pre.contains("fun accessibilityGrantCommands("), "phải có đường đọc-sửa-ghi riêng")
-        val fn = pre.substringAfter("fun accessibilityGrantCommands(").substringBefore("const val READ_ACCESSIBILITY")
+        val fn = SourceRoots.body(pre, "fun accessibilityGrantCommands(")
         assertTrue(fn.contains("existing"), "phải đọc danh sách đang có")
         assertTrue(fn.contains("+ comp") || fn.contains("existing + comp"), "phải APPEND vào danh sách đang có")
-        assertTrue(act.contains("READ_ACCESSIBILITY_CMD"), "chỗ gọi phải đọc trước khi ghi")
+        assertTrue(pre.contains("READ_ACCESSIBILITY_CMD"), "chỗ gọi phải đọc trước khi ghi")
     }
 
     // ── R5: KHÔNG chặn launcher ──────────────────────────────────────────────────────────────────
 
     @Test
     fun `KHONG chan launcher vi thieu quyen`() {
-        val fn = act.substringAfter("private fun runPreflight(")
+        val fn = SourceRoots.body(pre, "fun runAndReport(")
         listOf("finish()", "startActivityForResult", "setContentView").forEach {
             assertFalse(fn.contains(it),
                 "Launcher là màn hình CHÍNH của xe — chặn nó vì thiếu quyền là làm xe không dùng được ('$it')")
@@ -78,19 +81,22 @@ class PermissionPreflightWiringContractTest {
     @Test
     fun `van kiem quyen ngay ca khi KHONG co kenh shell`() {
         // Không có kênh shell là đúng ca người dùng cần biết NHẤT (app không vào được ô).
-        assertTrue(act.contains("runPreflight(shellUsable = false"),
+        assertTrue(act.contains("runAndReport(this, shellUsable = false"),
             "nhánh không có kênh shell vẫn phải chạy vòng kiểm")
-        assertTrue(act.contains("runPreflight(shellUsable = true"), "nhánh có kênh shell cũng phải chạy")
+        assertTrue(act.contains("runAndReport(this, shellUsable = true"), "nhánh có kênh shell cũng phải chạy")
     }
 
     // ── R2/R3: đủ thì im lặng, thiếu thì nói rõ ──────────────────────────────────────────────────
 
     @Test
     fun `chi bao khi thieu thu anh huong tinh nang loi`() {
-        val fn = act.substringAfter("private fun runPreflight(")
-        assertTrue(fn.contains("missingCore"),
+        val fn = SourceRoots.body(pre, "fun runAndReport(")
+        // [SOÁT P3] Trước đây tầng UI tự ghép chuỗi từ `missingCore` ⇒ `notice()` ở :core thành mã chết và câu chữ
+        // người dùng đọc nằm ở tầng UI. Nay lấy câu từ :core, chế độ chỉ-mục-lõi. ⚠ Tôi đã thử gọi `notice()` KHÔNG
+        // tham số và test bắt ngay: nó nói RỘNG hơn missingCore ⇒ launcher ồn hơn thiết kế.
+        assertTrue(fn.contains("notice(coreOnly = true)"),
             "thiếu mục nhỏ mà báo mỗi lần mở là nhiễu — đúng thứ việc này đi dọn")
-        assertTrue(fn.contains("if (core.isNotEmpty())"), "đủ (hoặc chỉ thiếu mục nhỏ) ⇒ im lặng")
+        assertTrue(fn.contains("if (msg != null)"), "đủ (hoặc chỉ thiếu mục nhỏ) ⇒ im lặng")
     }
 
     @Test
@@ -98,7 +104,7 @@ class PermissionPreflightWiringContractTest {
         assertTrue(panel.contains("permissionRow("), "phải có hàng cho từng quyền thiếu")
         assertTrue(panel.contains("losesWhatIfMissing"), "phải nói mất gì, không chỉ tên quyền")
         assertTrue(panel.contains("!it.allOk"), "đủ thì KHÔNG hiện mục nào")
-        assertTrue(act.contains("permissions = PermissionPreflight.check("), "chỗ gọi phải truyền báo cáo vào")
+        assertTrue(panel_caller.contains("permissions = PermissionPreflight.check("), "chỗ gọi phải truyền báo cáo vào")
     }
 
     @Test

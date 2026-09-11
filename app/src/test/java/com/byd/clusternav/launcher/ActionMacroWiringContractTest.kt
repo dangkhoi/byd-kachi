@@ -85,9 +85,21 @@ class ActionMacroWiringContractTest {
     }
 
     @Test
-    fun `chong bam kep`() {
-        assertTrue(macroTile.contains("compareAndSet(false, true)"),
+    fun `chong bam kep theo MA GOI, khong theo View`() {
+        assertTrue(macroTile.contains("state.beginRun(macro.id)"),
             "gói đang chạy thì bấm thêm KHÔNG được xếp thêm lượt — hai lượt chồng nhau làm lệnh bị bỏ")
+        // ⚠ [SOÁT P1-1] Chốt PHẢI ở bảng trạng thái dùng chung, KHÔNG phải biến trong thân hàm dựng ô: trên xe ô
+        // TRỘN (mục đọc + gói lệnh) từng bị dựng lại mỗi giây ⇒ ô mới có cờ mới `false` ⇒ bấm được lần hai trong khi
+        // lượt một còn chạy ⇒ hai lượt "đóng hết kính" chồng nhau, đúng thứ chốt này sinh ra để chặn.
+        assertFalse(macroTile.contains("AtomicBoolean("),
+            "cờ KHÔNG được tạo trong thân ô — ô dựng lại là mất cờ")
+        assertTrue(factory.contains("fun beginRun(") && factory.contains("fun endRun("),
+            "chốt phải nằm ở ControlTileState (bảng dùng chung, theo mã gói)")
+        // `beginRun` là hàm một-biểu-thức (không có ngoặc thân) ⇒ soi ngay dòng khai, không dùng helper đếm ngoặc.
+        assertTrue(
+            Regex("""fun beginRun\([^)]*\)[^\n]*putIfAbsent""").containsMatchIn(factory),
+            "chốt phải là phép đặt-nếu-chưa-có nguyên tử (putIfAbsent), không phải đọc-rồi-ghi hai bước",
+        )
     }
 
     @Test
@@ -95,7 +107,7 @@ class ActionMacroWiringContractTest {
         // `View.post` trên view đã bị removeView chỉ XẾP HÀNG chờ lần gắn lại — có thể không bao giờ tới ⇒ cờ kẹt
         // `true` và ô chết hẳn. Nhả cờ phải nằm trên thread nền, TRƯỚC khi nhờ thread chính vẽ lại.
         assertTrue(macroTile.contains("finally"), "phải nhả cờ trong finally, kể cả khi giữa lượt ném lỗi")
-        val release = macroTile.indexOf("running.set(false)")
+        val release = macroTile.indexOf("state.endRun(macro.id)")
         val post = macroTile.indexOf("tile.post")
         assertTrue(release in 1 until post,
             "cờ phải được nhả TRƯỚC/NGOÀI tile.post (nhả bên trong = ô có thể chết hẳn)")
@@ -110,8 +122,10 @@ class ActionMacroWiringContractTest {
 
     @Test
     fun `ghi trang thai KHONG duoc phu thuoc vao view con song`() {
-        val fn = factory.substringAfter("fun macroTile(")
-        val postBlock = fn.substringAfter("tile.post {").substringBefore("}")
+        // [SOÁT] bản cũ cắt khối bằng `substringBefore("}")` ⇒ chỉ lấy tới dấu } của `runCatching` bên trong,
+        // nên mọi lệnh nằm sau đó trong `tile.post` KHÔNG bị soi. Nay đếm ngoặc để lấy đúng cả khối.
+        val fn = SourceRoots.body(factory, "fun macroTile(")
+        val postBlock = SourceRoots.body(fn, "tile.post ")
         assertFalse(postBlock.contains("state.setOn("),
             "Ghi trạng thái phải nằm NGOÀI tile.post: nếu ô đã bị removeView (đổi bố cục/đơn vị/hồ sơ giữa lúc gói " +
                 "đang chạy) thì việc post có chạy hay không là hành vi tài liệu Android KHÔNG nói rõ ⇒ trạng thái có " +
@@ -121,17 +135,24 @@ class ActionMacroWiringContractTest {
 
     @Test
     fun `bang trang thai dung chung phai an toan da luong`() {
-        // Gói lệnh ghi từ thread NỀN trong khi thread chính đọc để vẽ ⇒ HashMap thường là tranh chấp dữ liệu.
-        assertTrue(factory.contains("ConcurrentHashMap"),
-            "ControlTileState phải dùng map đồng thời vì có đường ghi từ thread nền")
-        val stateCls = factory.substringAfter("class ControlTileState").substringBefore("companion object")
-        assertFalse(stateCls.contains("HashMap<String, Boolean>()") && !stateCls.contains("ConcurrentHashMap"),
-            "không được còn map thường trong bảng trạng thái")
+        // [SOÁT] bản cũ viết `assertFalse(cóHashMap && !cóConcurrentHashMap)` ⇒ chỉ cần MỘT map là ConcurrentHashMap
+        // thì assert LUÔN qua, dù hai map còn lại là HashMap thường. Nay kiểm TỪNG map một.
+        val state = SourceRoots.body(factory, "class ControlTileState")
+        val maps = Regex("""private val (\w+) = ([\w.]*Map)<""").findAll(state)
+            .map { it.groupValues[1] to it.groupValues[2] }.toList()
+        assertTrue(maps.size >= 4, "phải có ít nhất 4 bảng (bật/tắt · giá trị · lựa chọn · chốt đang chạy): $maps")
+        maps.forEach { (name, type) ->
+            assertTrue(
+                type.endsWith("ConcurrentHashMap"),
+                "bảng '$name' dùng $type — gói lệnh ghi từ THREAD NỀN trong khi thread chính đang đọc để vẽ ⇒ " +
+                    "map thường ở đây là tranh chấp dữ liệu thật",
+            )
+        }
     }
 
     @Test
     fun `hong thi bao cho nguoi dung chu khong chi ghi nhat ky`() {
-        val fn = factory.substringAfter("fun macroTile(")
+        val fn = SourceRoots.body(factory, "fun macroTile(")
         assertTrue(fn.contains("notice("), "phải soạn câu báo từ kết quả gói")
         assertTrue(fn.contains("Toast"), "phải hiện ra cho người dùng — nhật ký thì người lái không đọc")
     }

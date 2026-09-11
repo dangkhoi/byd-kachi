@@ -1,0 +1,30 @@
+<!--
+  Cần số / chế độ lái — cho nhóm `drive_*` (chế độ lái, mức phanh tái sinh, chế độ số).
+  [SOÁT P3] Tên "ic-drive" chưa được map nên 3 nút này lùi về icon nhóm. Nét: cần số hình chữ H (sơ đồ số) tối giản.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+    <!-- trục dọc + hai nhánh ngang = sơ đồ số H -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12,7.6 L12,18.5 M7,10 L7,15.6 M17,10 L17,15.6 M7,12.8 L17,12.8" />
+    <!-- núm cần số -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,3.4 m-2.4,0 a2.4,2.4 0 1,0 4.8,0 a2.4,2.4 0 1,0 -4.8,0" />
+    <!-- nối núm với trục -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M12,5.8 L12,7.6" />
+</vector>

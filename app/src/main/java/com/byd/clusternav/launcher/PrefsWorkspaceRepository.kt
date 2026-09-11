@@ -20,6 +20,13 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         profiles = prefs.profiles(),
         themeMode = prefs.themeMode(),
         embedded = false,
+        // [SOÁT P1-1 kiến trúc] Ba nhóm này nằm ở KHOÁ RIÊNG (không đi qua `persist`) nhưng vẫn phải có mặt trong
+        // state ngay từ lượt nạp. Nạp ở đây thì ca **đổi hồ sơ** tự đúng: `switchProfile` gọi lại `load()` nên bố cục
+        // tự vẽ của hồ sơ mới được nạp cùng lúc với mọi thứ khác — trước đây phải nhớ nạp lại bằng tay ở tầng UI
+        // (và đã từng quên, làm hồ sơ B hiện bố cục của A rồi bấm Lưu là ghi đè mất bố cục của B).
+        customLayout = prefs.gridLayout().takeIf { it.frames.isNotEmpty() },
+        unitPrefs = prefs.unitPrefs(),
+        wallpaper = prefs.wallpaperPrefs(),
     )
 
     override fun persist(state: HomeUiState) {
