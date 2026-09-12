@@ -168,28 +168,75 @@ class CapabilityGroupsTest {
         }
     }
 
+    // ── Nhóm KHÔNG được lên thanh trạng thái — MỘT BÀI CHO MỖI LỚP CHẶN (SOÁT P3-6) ──────────────
+    //
+    // Tài liệu dự án ghi *"nhóm bị chặn khỏi thanh trạng thái ở 4 lớp"*. Trước lượt soát, cả bốn lớp nằm trong **một**
+    // bài, nên (a) một lớp vỡ thì thông báo không nói lớp nào, và (b) không ai đếm được là 4 hay 1 — con số trong tài
+    // liệu không có gì đối chiếu. Tách ra một bài cho mỗi lớp: số bài **chính là** con số tài liệu nói, và mỗi bài đỏ
+    // nêu đích danh lớp bị hở. Lượt tách cũng lộ ra lớp thứ **năm** chưa ai canh: [TopStripConfig.decode].
+
+    /** Lớp 1 — phép **quyết định** (`isChippable`): nguồn duy nhất của luật, bốn lớp dưới đều hỏi nó. */
     @Test
-    fun `nhom KHONG duoc lot len thanh trang thai`() {
+    fun `chan nhom len chip - lop 1 phep quyet dinh`() {
         CapabilityGroups.ALL.forEach { g ->
             assertFalse(
                 TopStripConfig.isChippable(g.id),
                 "chip ~24dp không vẽ được nhóm ${g.id}, và 3/12 nhóm mang nút ⇒ đích chạm 24dp bắn lệnh xe",
             )
-            assertTrue(
-                TopStripConfig.choices().none { it.id == g.id },
-                "màn chọn chip cũng KHÔNG được bày nhóm ${g.id} (bày ra rồi từ chối = nút chết)",
-            )
-            // Cửa vào cấu hình bền phải từ chối, không chỉ màn chọn.
+        }
+    }
+
+    /** Lớp 2 — **màn chọn** (`choices`): bày ra rồi từ chối = nút chết (bấm mà không có gì xảy ra). */
+    @Test
+    fun `chan nhom len chip - lop 2 man chon khong bay ra`() {
+        val shown = TopStripConfig.choices().map { it.id }
+        CapabilityGroups.ALL.forEach { g ->
+            assertTrue(g.id !in shown, "màn chọn chip KHÔNG được bày nhóm ${g.id}")
+        }
+    }
+
+    /** Lớp 3 — **cửa vào cấu hình bền** (`setEnabled`): đường mà cú chạm của người dùng đi qua. */
+    @Test
+    fun `chan nhom len chip - lop 3 cua vao cau hinh ben`() {
+        CapabilityGroups.ALL.forEach { g ->
             assertFalse(
                 TopStripConfig.DEFAULT.setEnabled(g.id, true).has(g.id),
                 "cấu hình bền phải từ chối nhóm ${g.id}",
             )
         }
-        // Chốt ở lớp, không chỉ ở [setEnabled] — dựng trực tiếp cũng phải nổ.
-        val ex = runCatching { TopStripConfig(listOf("g_tyres")) }.exceptionOrNull()
-        assertNotNull(ex, "dựng thẳng TopStripConfig với mã nhóm phải bị chặn ngay tại lớp")
-        // Và luật cũ KHÔNG bị nới: datum đọc vẫn lên được thanh trên.
-        assertTrue(TopStripConfig.isChippable("tyre_p_fl"), "mục ĐỌC rời vẫn phải chip được — không được vá quá tay")
+    }
+
+    /** Lớp 4 — **chốt tại LỚP** (`init require`): dựng thẳng cũng phải nổ, không dựa vào "mọi chỗ gọi đều nhớ". */
+    @Test
+    fun `chan nhom len chip - lop 4 chot tai lop`() {
+        CapabilityGroups.ALL.forEach { g ->
+            assertNotNull(
+                runCatching { TopStripConfig(listOf(g.id)) }.exceptionOrNull(),
+                "dựng thẳng TopStripConfig với mã nhóm ${g.id} phải bị chặn ngay tại lớp",
+            )
+        }
+    }
+
+    /**
+     * Lớp 5 — **cửa đọc từ đĩa** (`decode`). ⚠ Lớp này TRƯỚC lượt soát P3-6 **không có bài nào canh**.
+     *
+     * Đây là đường của dữ liệu người dùng sửa tay và của **bản cũ**: một máy đã chạy bản trước G1 (lúc nhóm chưa bị
+     * chặn, hoặc chỉ cần một chuỗi gõ tay) sẽ có `g_tyres` nằm trong `top_strip` trên đĩa. `decode` phải **bỏ mục đó**
+     * — không bỏ thì `TopStripConfig(...)` ném ngay lúc nạp ⇒ **launcher sập khi mở**, chứ không phải một chip xấu.
+     */
+    @Test
+    fun `chan nhom len chip - lop 5 cua doc tu dia`() {
+        val cfg = TopStripConfig.decode("chip_pm25,g_tyres,tyre_p_fl")
+        assertEquals(listOf("chip_pm25", "tyre_p_fl"), cfg.ids, "decode phải bỏ MỤC nhóm, giữ các chip hợp lệ")
+        // Chuỗi chỉ có nhóm ⇒ lùi về mặc định, KHÔNG ném và KHÔNG để thanh trên trắng.
+        assertEquals(TopStripConfig.DEFAULT.ids, TopStripConfig.decode("g_tyres,g_lights").ids)
+    }
+
+    /** Và luật cũ KHÔNG bị vá quá tay: mục ĐỌC rời vẫn lên được thanh trên, mặc định vẫn đúng 3 chip. */
+    @Test
+    fun `chan nhom len chip - khong va qua tay`() {
+        assertTrue(TopStripConfig.isChippable("tyre_p_fl"), "mục ĐỌC rời vẫn phải chip được")
+        assertTrue(TopStripConfig.choices().any { it.id == "tyre_p_fl" }, "và màn chọn vẫn phải bày nó")
         assertEquals(3, TopStripConfig.DEFAULT.ids.size, "mặc định vẫn đúng 3 chip như owner đang thấy")
     }
 
@@ -265,6 +312,92 @@ class CapabilityGroupsTest {
         assertTrue(
             allProven.reads.all { TelemetryRegistry.byId(it)!!.tier == EvidenceTier.PROVEN },
             "tiền đề: áp suất lốp đã chạy thật trên xe owner",
+        )
+    }
+
+    // ── Hai nút cùng nhóm KHÔNG được gửi y hệt nhau lên bus (SOÁT P1-1) ──────────────────────────
+
+    /**
+     * ⚠⚠ **LỖI P1 ĐÃ CÓ THẬT**: nhóm Đèn từng đặt `headl` ("Đèn pha", TOGGLE) và `headlight_mode` ("Chế độ đèn pha",
+     * SELECT) **cạnh nhau, cùng icon**, mà cả hai ghi `bindingKey` 1276153912 với **tham số y hệt**.
+     *
+     * Là **mục rời** thì cặp đó được miễn trừ (`ControlWriteArgsTest.COLLISION_PENDING_CAR`) với lý do *"hai mục RỜI,
+     * người dùng phải cố ý đặt riêng"*. **G1 làm lý do đó hết đúng**: trong một nhóm, người dùng không chọn gì — ô tự
+     * bày cả hai ra, trông như hai việc khác nhau. Bản vá bỏ `headl` khỏi nhóm (nó **vẫn còn** là mục rời) và giữ
+     * `headlight_mode` vì nó nói được cả bốn trạng thái.
+     */
+    @Test
+    fun `khong nhom nao co hai nut gui y het nhau len bus`() {
+        assertEquals(
+            emptyList<String>(), CapabilityGroups.sameWireWrites(CapabilityGroups.ALL),
+            "hai nút cạnh nhau trong một ô, khác nhãn mà cùng một byte ⇒ người dùng không có cách nào biết",
+        )
+        // Và cụ thể: nhóm Đèn không được chứa `headl` nữa, nhưng `headl` vẫn phải CÒN là mục rời (không mất khả năng).
+        assertTrue("headl" !in CapabilityGroups.LIGHTS.writes, "`headl` phải rời khỏi nhóm Đèn")
+        assertTrue("headlight_mode" in CapabilityGroups.LIGHTS.writes, "và `headlight_mode` phải ở lại (phủ cả 4 trạng thái)")
+        assertNotNull(ControlRegistry.byId("headl"), "`headl` KHÔNG được xoá khỏi registry — đó là mất khả năng")
+        assertTrue(CapabilityGroups.groupsContaining("headl").isEmpty(), "và nó không thuộc nhóm nào khác")
+    }
+
+    /**
+     * ⚠ Phép so là (**lệnh + THAM SỐ**), không phải chỉ "cùng lệnh" — bài này chốt rằng luật không bắt oan.
+     *
+     * Bốn nút kính dùng chung `setBodyWindowCtrlState` nhưng khác **chỉ số cửa**; `lock`/`door` dùng chung
+     * `setDoorLockState` nhưng khác **giá trị** (2 vs 1, sau bản vá P0). Cả hai ca đều ĐÚNG và đều đang ở cùng một
+     * nhóm — một luật chỉ so `bindingKey` sẽ đòi xé chúng ra, và cách "sửa" nhanh nhất lúc đó là nới luật.
+     */
+    @Test
+    fun `luat khong bat oan nut cung lenh nhung khac tham so`() {
+        assertEquals(
+            emptyList<String>(), CapabilityGroups.sameWireWrites(listOf(CapabilityGroups.WINDOWS)),
+            "4 nút kính cùng lệnh nhưng khác chỉ số cửa ⇒ hợp lệ",
+        )
+        assertEquals(
+            emptyList<String>(), CapabilityGroups.sameWireWrites(listOf(CapabilityGroups.DOORS)),
+            "`lock`/`door` cùng lệnh nhưng khác giá trị (2 vs 1) ⇒ hợp lệ",
+        )
+    }
+
+    /**
+     * ⚠⚠ Chốt phép kiểm **CÓ RĂNG**: dựng lại đúng tình huống P1-1 bằng hai nút GIẢ.
+     *
+     * Chạy luật trên registry thật (đã sạch sau bản vá) chỉ trả tập rỗng, nên không phân biệt được *"luật đúng"* với
+     * *"luật không bao giờ chạy"* — đúng loại test trang trí mà dự án đã tìm ra ở ba chỗ khác. Hai nút giả không có
+     * nhánh riêng trong `writeArgs` nên cả hai đi qua `else`, y như `headl`/`headlight_mode`.
+     */
+    @Test
+    fun `phep kiem co rang - dung lai ca P1-1 bang nut gia thi phai bat duoc`() {
+        val key = "BYDAutoFakeLightDevice.setSomething"
+        val fake = mapOf(
+            "fake_toggle" to ControlDef("fake_toggle", "Đèn pha", "ic-light", ControlKind.TOGGLE, bindingKey = key),
+            "fake_select" to ControlDef("fake_select", "Chế độ đèn pha", "ic-light", ControlKind.SELECT, bindingKey = key),
+        )
+        val group = CapabilityGroup(
+            id = "g_fake", label = "Giả", icon = "ic-light", domain = Domain.LIGHTS, shape = WidgetShape.STRIP,
+            reads = listOf("light_side"), writes = fake.keys.toList(),
+        )
+        val found = CapabilityGroups.sameWireWrites(listOf(group), emptySet()) { fake[it] }
+        assertEquals(1, found.size, "hai nút giả cùng lệnh, cùng tham số, cùng nhóm ⇒ luật phải nêu đúng 1 cặp: $found")
+        assertTrue(found.single().contains("fake_toggle"), "thông báo phải nêu ĐÍCH DANH cặp vi phạm")
+        assertTrue(found.single().contains("g_fake"), "và nêu cả nhóm nào — người sửa cần biết chỗ bỏ mục")
+
+        // Khai vào danh sách cho phép thì luật im — nới CÓ KIỂM SOÁT, không phải nới mù.
+        assertEquals(
+            emptyList<String>(),
+            CapabilityGroups.sameWireWrites(listOf(group), setOf(setOf("fake_toggle", "fake_select"))) { fake[it] },
+        )
+    }
+
+    /** Danh sách miễn trừ phải **luôn còn đúng**: mỗi mục vẫn phải thật sự là một cặp trùng byte trong một nhóm. */
+    @Test
+    fun `danh sach mien tru khong duoc muc rua`() {
+        val stale = CapabilityGroups.SAME_WIRE_ALLOWED.keys.filterNot { pair ->
+            CapabilityGroups.sameWireWrites(CapabilityGroups.ALL, allowed = emptySet())
+                .any { line -> pair.all { id -> id in line } }
+        }
+        assertEquals(
+            emptyList<Set<String>>(), stale,
+            "cặp này KHÔNG còn trùng byte trong nhóm nào ⇒ đã sửa được thì xoá khỏi SAME_WIRE_ALLOWED",
         )
     }
 }

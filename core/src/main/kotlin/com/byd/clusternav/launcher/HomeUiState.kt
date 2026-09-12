@@ -91,6 +91,26 @@ data class HomeUiState(
      * sàng. Hai mặc định lệch nhau sẽ làm ô tick nói sai ngay lần mở đầu, trước cả khi có gì được ghi.
      */
     val autostart: Boolean = true,
+    /**
+     * ⚠⚠ [SOÁT P0-1] Id widget bên thứ ba đang bị **các hồ sơ tài xế KHÁC** giữ (đọc từ đĩa lúc [WorkspaceRepository.load]).
+     *
+     * ## Vì sao một trường "dữ liệu của người khác" lại nằm trong state của hồ sơ này
+     * Id widget do nền tảng cấp **cho một HOST**, không cho một hồ sơ; nhưng mọi trường khác ở đây là dữ liệu của
+     * riêng hồ sơ đang dùng (`WorkspacePrefs` khoá theo `"<hồ sơ>__<hậu tố>"`). Sự lệch đó chính là lỗi: phép "id nào
+     * hết dùng" đọc state, nên nó **không thấy** widget của hồ sơ kia và đi xoá chúng. [ĐO] `emulator-5554`: đặt
+     * widget ở hồ sơ *Mặc định* (id 654) rồi đổi sang hồ sơ *Vợ* ⇒ 654 mất khỏi host **vĩnh viễn**, quay lại thì ô
+     * hiện *"app đã bị gỡ"* trong khi app vẫn còn cài.
+     *
+     * Chọn cách này (một trường trong state) thay vì thêm tham số cho `AppWidgetIds.orphaned/unused` vì nó chốt bằng
+     * **KIỂU**: hai chỗ gọi đã nhận `HomeUiState`, nên không có cách nào hỏi "còn ai dùng" mà bỏ sót vế này. Thêm
+     * tham số thì mỗi chỗ gọi mới lại là một chỗ có thể quên — đúng hình dạng đã để lọt lỗi này hai lần.
+     *
+     * ⚠ **KHÔNG gồm hồ sơ đang dùng.** Hồ sơ đang dùng đã nằm ở [workspace] + [scenes] (bản trong bộ nhớ, luôn mới
+     * hơn đĩa). Gộp cả nó vào đây thì ảnh chụp lúc `load()` sẽ **bảo vệ vĩnh viễn** một id mà người dùng vừa bỏ khỏi ô
+     * ⇒ id rác sống mãi. Ảnh chụp là đủ vì dữ liệu hồ sơ khác chỉ đổi khi hồ sơ đó **được chọn**, mà lúc đó `load()`
+     * chạy lại.
+     */
+    val widgetIdsOtherProfiles: Set<Int> = emptySet(),
 ) {
     /** Preset bố cục hiện tại (tiện đọc, uỷ quyền [WorkspaceState.preset]). */
     val preset: LayoutPreset get() = workspace.preset

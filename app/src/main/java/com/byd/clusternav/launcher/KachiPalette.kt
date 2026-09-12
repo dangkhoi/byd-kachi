@@ -85,6 +85,18 @@ package com.byd.clusternav.launcher
  *   duy nhất là tự bảo đảm một nền tối phía sau. Widget nào tự vẽ nền đục thì lớp này bị che — không ảnh hưởng gì.
  * @property scrimBtn2 nền nút ⇄/✕ trên thanh nhãn app — khác [scrimBtn] ở chỗ nó nằm trên [headBg] ĐỤC (launcher
  *   biết màu đó), nên nó THEO chủ đề và glyph dùng [ink].
+ * @property wallScrim màu lớp **làm tối ảnh nền** (U4) — **KHÔNG theo chủ đề, và đó là một quyết định, không phải
+ *   bỏ sót.** Ba lý do, xếp theo sức nặng:
+ *   1. **Nhãn nói "Làm tối ảnh" / "Dim the photo".** Cho nó hoá trắng ở bảng sáng là nhãn hứa một việc mà mã làm
+ *      việc khác — đúng họ lỗi *"Kính 50%"* mà dự án đã phải đổi nhãn để dọn. Đổi CHIỀU của thanh trượt theo chủ đề
+ *      thì phải đổi cả nhãn, và đó là quyết định của owner chứ không phải của lượt vá.
+ *   2. **[ĐO] 2026-09-12 bảng SÁNG: bật/tắt lớp này chỉ đổi 0.01% điểm** — thẻ và ô trống cho **0%** nền lọt qua
+ *      (đã ghi ở G1/OQ5), nên ảnh nền gần như chỉ thấy ở lề. Đổi hành vi một bề mặt gần như không nhìn thấy được,
+ *      trên một thanh trượt người dùng đã đặt, là rủi ro không đổi lấy gì.
+ *   3. Chú thích cũ tại chỗ vẽ ghi *"chữ và ô của launcher là màu sáng"* — **U5 đã bác** (nay có bảng SÁNG). Câu đó
+ *      đã được sửa; giữ lại thì lần sửa sau sẽ suy luận từ một tiền đề sai.
+ *   ⚠ Còn tồn (ghi ra, không che): trên bảng sáng, làm tối ảnh là **sai chiều** cho chữ đậm nằm trên nó. Ngày nào
+ *   nền lọt qua nhiều hơn thì vai này là chỗ để thành theo-chủ-đề — cùng lúc với việc đổi nhãn.
  * @property scrimHead lớp mờ dưới nhãn app (bản sáng phải là mờ TRẮNG, vì mực trên nó là mực đậm).
  * @property green / @property amber / @property red / @property cyan / @property orange / @property slate
  *   **màu MANG NGHĨA DỮ LIỆU** (ổn · chưa kiểm · cảnh báo · không khí · nhạc · trung tính). Đây là nhóm mà yêu
@@ -139,6 +151,7 @@ data class KachiPalette(
     val scrimBtn: String,
     val scrimBtn2: String,
     val widgetBacking: String,
+    val wallScrim: String,
     val scrimHead: String,
     val green: String,
     val amber: String,
@@ -211,6 +224,7 @@ data class KachiPalette(
             scrimBtn = "#80000000",
             scrimBtn2 = "#33000000",
             widgetBacking = "#171a20",
+            wallScrim = "#000000",
             scrimHead = "#8c000000",
             green = "#34d399",
             amber = "#fbbf24",
@@ -281,6 +295,7 @@ data class KachiPalette(
             scrimBtn = "#80000000",
             scrimBtn2 = "#1f000000",
             widgetBacking = "#171a20",
+            wallScrim = "#000000",
             scrimHead = "#d9ffffff",
             green = "#04684c",
             amber = "#7d5200",

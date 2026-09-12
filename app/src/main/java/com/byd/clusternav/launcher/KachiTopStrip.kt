@@ -228,7 +228,9 @@ class KachiTopStrip(
 
     /** Chữ cái đầu của hồ sơ [profileName] lên avatar (do render / init gọi). */
     fun setProfileInitial(profileName: String) {
-        profileAvatarView.text = profileName.take(1).uppercase()
+        // [SOÁT P3-4] Chữ đầu lấy theo NHÃN (đã dịch), không theo khoá lưu: máy tiếng Anh hiện `D` (Default),
+        // không phải `M` (Mặc định). Tên GỐC vẫn là thứ duy nhất đi vào prefs — xem KDoc [ProfileNames].
+        profileAvatarView.text = ProfileNames.initial(profileName)
     }
 
     /** Cập nhật đồng hồ + ngày (do vòng tick / onResume gọi). */

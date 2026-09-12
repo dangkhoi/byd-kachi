@@ -154,7 +154,9 @@ class SettingsSections(
                 LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
                     addView(TextView(context).apply {
-                        text = name; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
+                        // [SOÁT P3-4] NHÃN dịch được, KHOÁ giữ nguyên: `name` vẫn là tên gốc và vẫn là thứ đi vào
+                        // `switchProfile`/`onDeleteProfile` bên dưới. Xem KDoc [ProfileNames].
+                        text = ProfileNames.display(name); setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
                     })
                     addView(TextView(context).apply {
@@ -176,7 +178,7 @@ class SettingsSections(
                         // "đổi sang hồ sơ khác trước khi xoá" trong khi KHÔNG có hồ sơ khác nào để đổi sang. Lời
                         // khuyên bất khả thi còn tệ hơn không nói gì, và đây là trạng thái mặc định của mọi máy.
                         total <= 1 -> toast(context.getString(R.string.kachi_profile_keep_one))
-                        active -> toast(context.getString(R.string.kachi_profile_in_use, name))
+                        active -> toast(context.getString(R.string.kachi_profile_in_use, ProfileNames.display(name)))
                         else -> deps.onDeleteProfile(name)
                     }
                 }

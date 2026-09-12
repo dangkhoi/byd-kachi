@@ -103,8 +103,12 @@ class WallpaperWiringContractTest {
         val door = SourceRoots.body(act, "private fun submitOn(")
         assertTrue(door.contains("exec.execute"), "cửa nền phải chạy trên executor được truyền vào")
         assertTrue(door.contains("destroyed"), "cửa nền phải bỏ việc sau khi màn đã huỷ")
+        // ⚠ Kiểm LUẬT, không kiểm cách gõ: bản đầu của bài này so đúng chuỗi
+        // `submitIo(block: () -> Unit) = submitOn(ioExec`, nên khi [SOÁT P3-2] thêm kiểu trả về `: Boolean` cho cửa nền
+        // thì bài vỡ **dù luật không đổi một chữ**. Đúng họ lỗi dự án đã ghi ở U4 pass 2 (hai bài dây nối kiểm vị trí
+        // dòng). Luật là: `submitIo` phải uỷ quyền cho `submitOn` với **ioExec**, không phải winExec.
         assertTrue(
-            act.contains("submitIo(block: () -> Unit) = submitOn(ioExec"),
+            Regex("""fun submitIo\([^\n]*=\s*submitOn\(ioExec""").containsMatchIn(act),
             "I/O ảnh phải đi executor RIÊNG (ioExec), không phải winExec",
         )
         assertTrue(act.contains("ioExec.shutdownNow()"), "executor riêng cũng phải được tắt lúc huỷ màn")

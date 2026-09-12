@@ -108,6 +108,19 @@
 
 **Còn tồn:** nhánh *"có cảnh báo nhưng không đủ chỗ ⇒ hiện cảnh báo + đếm phần còn lại"* chỉ chứng minh bằng test — off-car mọi field xe là `null` nên **không dựng được cảnh báo thật trên màn** · phép so trước/sau của mục 3 đo trên **bảng tối**; bảng sáng chỉ chứng minh bằng cách so với ô chuẩn không-bị-cắt (không có ảnh "trước" ở bảng sáng) · chưa đo gì **trên xe**.
 
+## Lượt soát độc lập sau P7/P6 — 2026-09-12 (chiều) · đã vá 20 lỗi
+
+> Đóng lượt soát độc lập sau chặng P7/P6 (soát cả các vùng chặng gần: hình nền U4, nhóm G1, đa ngôn ngữ U5, hồ sơ).
+> **20 phát hiện (1×P0 · 4×P1 · 9×P2 · 6×P3)** đã vá hết. **[ĐO] 3239 công bố / 0 đỏ** (`--rerun-tasks`, 73/73 tác vụ chạy thật) ⇒ **+48** so với mốc P7/P6 (3191). Bản đầy đủ: `docs/_handoff/session-2026-09-12-audit-after-p7-p6.md`; Reviewer Log ở spec `docs/specs/kachi-scenes-and-widgets.html` §9.
+>
+> **P0 duy nhất — mất dữ liệu ở GIAO ĐIỂM P7×P6**: đổi hồ sơ tài xế **xoá vĩnh viễn widget của hồ sơ kia** ([ĐO] id 654 biến khỏi `dumpsys`, ô báo sai "app đã bị gỡ" trong khi app vẫn cài). Gốc ở **kiểu dữ liệu** không ở nhánh code: id widget là của HOST (mọi hồ sơ) nhưng lượt dọn rác chỉ thấy dữ liệu hồ sơ đang dùng ⇒ thu id qua **hợp** id mọi hồ sơ (`AppWidgetIds`, thuần). Đúng "chỗ không ai thử" mà chặng P7/P6 tự cảnh báo.
+>
+> **P1 ×4**: `headl`/`headlight_mode` cùng nhóm gửi y hệt một byte → bỏ `headl` khỏi nhóm (G1 làm miễn-trừ "hai mục rời" hết đúng) · hình nền lần mở đầu giải mã cỡ view=0 · tắt hình nền thì ảnh quay lại · đổi hồ sơ không nạp lại bố cục.
+> **P2 ×9** (hiệu năng/nền): nhịp chạy khi HOME bị che · giải mã ảnh megapixel trên thread chính · luật "không hex" phủ cả màu-dựng-bằng-số · cổng giảm cỡ ảnh tỉ lệ lệch · huỷ giải mã đang bay khi ô tháo · tách I/O ảnh khỏi lệnh dadb · đọc nhạc một lần mỗi lượt · thanh trên chỉ đổi chữ.
+> **P3 ×6**: dòng phụ nhóm Đèn nói sai · nhả id widget khi bind bị từ chối · sửa tiền đề "chữ launcher màu sáng" (U5 đã bác) · **tên hồ sơ "Mặc định" lọt màn EN** → tách **khoá** (không dịch, là tiền tố khoá lưu bền) ↔ **nhãn** (dịch), tệp mới `ProfileNames.kt` · nhãn widget bên thứ ba trùng tên, tệp mới `AppWidgetLabels.kt` · số "4 lớp"→"5 lớp" (thêm lớp `decode`).
+>
+> ⚠ Lượt soát **không đụng** `AppDrawer`/`WorkspaceView`/`LauncherWindows`/`AppOpener` ⇒ **hồi quy "chọn app chiếu vào ô"** (owner báo 09-12) nằm ở một mốc **đã lưu** — truy riêng ở phiên soát UI kế tiếp (cùng với soát giao diện Settings so với prototype).
+
 ## Lượt soát độc lập TOÀN PHẦN 2026-09-11 (chiều) + vá 5 nhóm
 
 

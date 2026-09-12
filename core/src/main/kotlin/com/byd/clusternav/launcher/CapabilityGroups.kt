@@ -118,6 +118,17 @@ object CapabilityGroups {
      * `readl` (đèn đọc) không có datum ĐỌC tương ứng nhưng vẫn vào phần nút: đây là nhóm "Đèn", và một cái đèn
      * trong xe mà không có mặt ở nhóm đèn thì người dùng phải đi tìm ở chỗ khác. Đèn viền tách riêng ([AMBIENT]) vì
      * nó trả lời câu hỏi khác (trang trí, đặt một lần) chứ không phải *"đèn tôi đang bật cái gì"*.
+     *
+     * ## ⚠⚠ [SOÁT P1-1] Vì sao KHÔNG có `headl` ở đây, dù nó vẫn còn trong [ControlRegistry]
+     * `headl` ("Đèn pha", TOGGLE) và `headlight_mode` ("Chế độ đèn pha", SELECT) khai **CÙNG** `bindingKey`
+     * `1276153912` **và** [HalBindingTable.writeArgs] sinh **y hệt** tham số cho cả hai — đó là một **nợ xe** đã biết
+     * (`ControlWriteArgsTest.COLLISION_PENDING_CAR`), và nó được miễn trừ ở đó với lý do *"là hai mục RỜI, người dùng
+     * phải cố ý đặt riêng"*. **G1 làm lý do đó hết đúng**: nhóm này đặt cả hai vào **một ô, cạnh nhau, cùng icon** ⇒
+     * hai nút trông như hai việc khác nhau mà gửi cùng một byte, và người dùng không có cách nào biết.
+     *
+     * Giữ `headlight_mode` vì nó **nói được cả bốn trạng thái** (Tắt · Auto · Đỗ · Cốt) ⇒ phủ luôn việc bật/tắt mà
+     * `headl` làm. `headl` **vẫn còn** là mục rời (không xoá khả năng của ai đang dùng nó) — chỉ không nằm cạnh
+     * `headlight_mode` trong cùng một ô nữa. Chốt bằng [init] để ca này không mọc lại ở nhóm khác.
      */
     val LIGHTS = CapabilityGroup(
         id = "g_lights", label = "Đèn", labelEn = "Lights",
@@ -126,9 +137,12 @@ object CapabilityGroups {
             "light_low_beam", "light_high_beam", "light_front_fog", "light_rear_fog",
             "light_left_turn", "light_right_turn", "light_side", "light_drl", "headlight_feedback",
         ),
-        writes = listOf("headl", "headlight_mode", "drl", "readl"),
-        sub = "đèn ngoài + chế độ pha",
-        subEn = "exterior lights and headlight mode",
+        writes = listOf("headlight_mode", "drl", "readl"),
+        // ⚠ [SOÁT P3-1] Dòng phụ TỪNG nói "đèn ngoài + chế độ pha" trong khi `readl` là **đèn đọc TRONG xe**. KDoc ở
+        // trên giải thích vì sao đưa `readl` vào nhưng dòng phụ thì không được sửa theo ⇒ ô nói sai nội dung của
+        // chính nó, ở CẢ hai thứ tiếng. Sửa cả hai cùng lúc; luật "không chép tay số" vẫn giữ (không có chữ số nào).
+        sub = "đèn ngoài, chế độ pha, đèn đọc trong xe",
+        subEn = "exterior lights, headlight mode, interior reading light",
     )
 
     /**
@@ -305,6 +319,55 @@ object CapabilityGroups {
         TelemetryRegistry.ALL.map { it.id }.filterNot { it in coveredReadIds() }
 
     /**
+     * ⚠⚠ [SOÁT P1-1] Cặp nút trong **CÙNG một nhóm** được phép gửi y hệt nhau lên bus — mỗi mục PHẢI có lý do.
+     *
+     * Hiện **rỗng**, và đó là câu trả lời đúng: cặp duy nhất từng vi phạm (`headl` + `headlight_mode`) đã được xử bằng
+     * cách **bỏ một mục khỏi nhóm**, không bằng cách miễn trừ. Danh sách vẫn tồn tại vì sẽ có ca thật cần nó (hai kiểu
+     * ô cho **cùng một việc**, như `window`/`win_lf` ở [ControlRegistry] — nếu ngày nào cả hai vào cùng một nhóm).
+     *
+     * ⚠ KHÁC hẳn `ControlWriteArgsTest.COLLISION_PENDING_CAR`: danh sách đó miễn trừ cho **mục rời**, với lý do
+     * *"người dùng phải cố ý đặt riêng"*. Trong một nhóm thì lý do đó không còn — hai nút nằm cạnh nhau, cùng icon,
+     * người dùng không chọn gì cả. Vì thế miễn trừ ở đây phải được xét lại từ đầu, không kế thừa.
+     */
+    val SAME_WIRE_ALLOWED: Map<Set<String>, String> = emptyMap()
+
+    /**
+     * Cặp nút cùng nhóm gửi **y hệt** nhau lên bus (cùng lệnh xe + cùng tham số ở mọi trạng thái thăm dò).
+     *
+     * ## Vì sao phép so là (lệnh + THAM SỐ), không phải chỉ "cùng lệnh"
+     * Chỉ so `bindingKey` sẽ bắt oan hai ca **đúng**: bốn nút kính `win_lf/rf/lr/rr` dùng chung
+     * `setBodyWindowCtrlState` nhưng khác **chỉ số cửa**, và `lock`/`door` dùng chung `setDoorLockState` nhưng khác
+     * **giá trị** (2 vs 1, sau bản vá P0). Cả hai đều phải được phép ở cùng một nhóm. Thứ KHÔNG được phép là hai mã
+     * ra **cùng một byte** — đúng phép so mà `ControlWriteArgsTest` đã dùng cho mục rời.
+     *
+     * Gói lệnh ([ActionMacros]) bị bỏ qua: nó không có `bindingKey` của riêng nó (nó gộp nhiều nút), nên việc "hai gói
+     * trùng nhau" là câu hỏi khác và không thuộc chỗ này.
+     *
+     * [resolve] tách ra để bài canh chứng minh được phép kiểm **có răng** bằng dữ liệu giả — chạy nó trên registry
+     * thật (đã sạch) thì không phân biệt được "luật đúng" với "luật không bao giờ chạy".
+     */
+    fun sameWireWrites(
+        groups: List<CapabilityGroup>,
+        allowed: Set<Set<String>> = SAME_WIRE_ALLOWED.keys,
+        resolve: (String) -> ControlDef? = { ControlRegistry.byId(it) },
+    ): List<String> = buildList {
+        groups.forEach { g ->
+            val defs = g.writes.mapNotNull(resolve).filter { it.bindingKey.isNotBlank() }
+            for (i in defs.indices) for (j in i + 1 until defs.size) {
+                val a = defs[i]
+                val b = defs[j]
+                if (a.bindingKey != b.bindingKey) continue
+                val identical = (0..1).all { p ->
+                    HalBindingTable.writeArgs(a, p).contentEquals(HalBindingTable.writeArgs(b, p))
+                }
+                if (identical && setOf(a.id, b.id) !in allowed) {
+                    add("${g.id}: ${a.id}(\"${a.label}\") ≡ ${b.id}(\"${b.label}\") trên ${a.bindingKey}")
+                }
+            }
+        }
+    }
+
+    /**
      * ⚠⚠ **KHỐI NÀY PHẢI NẰM CUỐI THÂN `object`.** Thân `object` chạy **theo thứ tự khai**: đặt `init` phía trên
      * [ALL] thì lúc `require` đọc [ALL] nó còn `null` và cả gói test nổ `ExceptionInInitializerError` thay vì đỏ ở
      * một bài. Dự án đã trả giá đúng chỗ này: xem KDoc [TopStripConfig.BUILT_IN] ([ĐO] 27 bài đỏ vì `DEFAULT` dựng
@@ -385,5 +448,22 @@ object CapabilityGroups {
         // bắn lệnh — không phân biệt được bằng mắt.
         val bothWays = ALL.filter { g -> g.reads.any { it in g.writes } }.map { it.id }
         require(bothWays.isEmpty()) { "một mã vừa XEM vừa BẤM trong cùng nhóm: $bothWays" }
+
+        // ⚠⚠ [SOÁT P1-1] Hai nút cùng nhóm KHÔNG được gửi y hệt nhau lên bus.
+        //
+        // Ca thật đã lọt: `headl` ("Đèn pha") và `headlight_mode` ("Chế độ đèn pha") cùng `bindingKey` 1276153912 và
+        // cùng tham số, nằm CẠNH NHAU trong nhóm Đèn với CÙNG icon. Là mục rời thì việc đó được miễn trừ với lý do
+        // "người dùng phải cố ý đặt riêng" (`ControlWriteArgsTest.COLLISION_PENDING_CAR`); trong một nhóm thì lý do đó
+        // không còn — người dùng không chọn gì, ô tự bày cả hai ra.
+        //
+        // Chốt ở đây (lúc nạp lớp) vì bài canh cũ của nhóm KHÔNG hề nhắc `bindingKey`: [ĐO] grep `bindingKey` trong
+        // `CapabilityGroupsTest`/`GroupBoardTest` = 0 dòng, và 9 `require` có trước không phép nào hỏi câu này. Đây là
+        // chặn NGUYÊN NHÂN — nhóm nào mai sau gom hai mã trùng byte thì đỏ tại chỗ khai, không đợi ai đọc ảnh.
+        val sameWire = sameWireWrites(ALL)
+        require(sameWire.isEmpty()) {
+            "hai nút CÙNG NHÓM gửi y hệt nhau lên bus (cùng lệnh + cùng tham số) ⇒ hai ô con cạnh nhau, cùng icon, " +
+                "khác nhãn mà cùng một byte: $sameWire. Bỏ một mục khỏi nhóm (nó vẫn còn là mục rời), tách tham số ở " +
+                "HalBindingTable.writeArgs, hoặc — nếu thật là CÙNG một việc — khai vào SAME_WIRE_ALLOWED kèm lý do."
+        }
     }
 }

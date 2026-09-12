@@ -210,6 +210,31 @@ tiến trình</i>) · 6 ô mỗi ô một widget · nhà cung cấp bị gỡ th
   này</b> trước khi xoá.
 </p>
 
+<h2>9. Reviewer Log</h2>
+<h3>Pass 1 — 2026-09-12 · Lượt soát độc lập sau P7/P6 (đóng trong cây chưa commit)</h3>
+<p>
+  Bản đầy đủ: <code>docs/_handoff/session-2026-09-12-audit-after-p7-p6.md</code>. Soát toàn bộ việc off-car của phiên P7/P6
+  và gia cố các vùng chặng gần (hình nền, nhóm khả năng, đa ngôn ngữ, hồ sơ) ⇒ <b>20 phát hiện (1×P0 · 4×P1 · 9×P2 · 6×P3)</b>,
+  đã vá hết, <b>[ĐO] 3239 công bố / 0 đỏ</b> (<code>--rerun-tasks</code>, 73/73 tác vụ chạy thật).
+</p>
+<ul>
+  <li><b>P0-1</b> — đổi hồ sơ tài xế <b>xoá vĩnh viễn widget của hồ sơ kia</b> ([ĐO] id 654 biến khỏi <code>dumpsys</code>, ô báo
+    sai "app đã bị gỡ" trong khi app vẫn cài). Gốc ở <b>kiểu dữ liệu</b>: id widget là của HOST (mọi hồ sơ) nhưng lượt dọn rác chỉ
+    thấy dữ liệu hồ sơ đang dùng ⇒ thu id qua <b>hợp</b> id của mọi hồ sơ. Đúng giao điểm P7×P6 tự cảnh báo "chỗ không ai thử".</li>
+  <li><b>P1</b> ×4 — nút <code>headl</code>/<code>headlight_mode</code> cùng nhóm gửi y hệt một byte (bỏ <code>headl</code> khỏi nhóm) ·
+    hình nền lần mở đầu giải mã ở cỡ view=0 · tắt hình nền thì ảnh quay lại · đổi hồ sơ không nạp lại bố cục.</li>
+  <li><b>P2</b> ×9 — nhịp nền chạy khi HOME bị che · giải mã ảnh megapixel trên thread chính · luật "không hex" phủ cả màu-dựng-bằng-số ·
+    cổng giảm cỡ ảnh tỉ lệ lệch · huỷ giải mã đang bay khi ô tháo · tách I/O ảnh khỏi lệnh dadb · đọc nhạc một lần mỗi lượt ·
+    thanh trên chỉ đổi chữ thay vì dựng lại.</li>
+  <li><b>P3</b> ×6 — dòng phụ nhóm Đèn nói sai · nhả id widget khi bind bị từ chối · sửa tiền đề "chữ launcher màu sáng" (U5 đã bác) ·
+    tên hồ sơ "Mặc định" lọt màn EN (tách <b>khoá</b> không dịch ↔ <b>nhãn</b> dịch, tệp mới <code>ProfileNames.kt</code>) ·
+    nhãn widget bên thứ ba trùng tên (tệp mới <code>AppWidgetLabels.kt</code>) · số "4 lớp"→"5 lớp" (thêm lớp <code>decode</code>).</li>
+</ul>
+<p>
+  ⚠ Lượt soát <b>không đụng</b> <code>AppDrawer</code>/<code>WorkspaceView</code>/<code>LauncherWindows</code>/<code>AppOpener</code> ⇒
+  hồi quy "chọn app chiếu vào ô" owner báo nằm ở một mốc <b>đã lưu</b>, truy riêng ở phiên soát UI kế tiếp.
+</p>
+
 </div>
 </body>
 </html>

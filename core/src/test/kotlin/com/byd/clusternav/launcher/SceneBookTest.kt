@@ -371,11 +371,36 @@ class SceneBookTest {
         assertNull(Scene("s4", "x", LayoutPreset.ONE, "", emptyList(), DockConfig()).grid())
     }
 
+    /**
+     * ⚠⚠ [SOÁT P2-1] **Thanh nút RỖNG phải đi ra rỗng** — bài này TRƯỚC ĐÂY đóng dấu hành vi SAI.
+     *
+     * Bản cũ tên `danh sach nut rong thi doc ra nut mac dinh — khop cach loadDock doc` và đòi `decode` bù 9 nút mặc
+     * định cho trường rỗng, với lý do *"khớp `WorkspacePrefs.loadDock`"*. Lý do đó **không đúng**: `loadDock` dùng `?:`
+     * nên nó chỉ bù mặc định khi **khoá THIẾU**; chuỗi rỗng ở đó cho `[""]` → lọc → `[]`, tức nó **giữ** thanh nút
+     * rỗng. Mà thanh nút rỗng là trạng thái **đạt được thật**: `DockConfig.setEnabled` chỉ `remove`, không có sàn nào.
+     *
+     * Hậu quả của hành vi cũ, nhìn từ người dùng: tắt hết nút → lưu cảnh → gọi lại thì **9 nút mặc định quay về**, im
+     * lặng. Và vì có bài canh đóng dấu, nó **không thể tự lộ ra**. Đây là lý do bài canh cũng phải bị thử phá, không
+     * chỉ mã sản phẩm.
+     */
     @Test
-    fun `danh sach nut rong thi doc ra nut mac dinh — khop cach loadDock doc`() {
-        // Cùng ca rỗng, cùng câu trả lời như `WorkspacePrefs.loadDock` — hai lối đọc khác nhau cho cùng một chuỗi
-        // mới là chỗ sinh lệch. Giá phải trả (không phân biệt "không nút nào" với "chưa lưu") ghi rõ ở KDoc decode.
+    fun `danh sach nut RONG doc ra RONG — khop dung cach loadDock doc`() {
         val book = SceneBook.decode("s1|A|QUAD||widget:w_board|BOTTOM|", null)
-        assertEquals(ControlRegistry.defaultEnabledIds(), book.scenes[0].dock.enabled)
+        assertEquals(
+            emptyList<String>(), book.scenes[0].dock.enabled,
+            "trường rỗng = 'người dùng đã tắt hết nút', KHÔNG phải 'chưa lưu' — bản ghi luôn đủ 7 trường nên hai ca " +
+                "đó phân biệt được",
+        )
+        // Và vòng tròn phải kín: lưu một cảnh có thanh nút rỗng rồi đọc lại vẫn phải rỗng.
+        val empty = DockConfig(DockEdge.BOTTOM, emptyList())
+        val saved = SceneBook.EMPTY.saved("Rỗng", HomeUiState(dock = empty))
+        assertEquals(empty.enabled, SceneBook.decode(SceneBook.encode(saved), null).scenes[0].dock.enabled)
+    }
+
+    /** Ngược lại: có nút thì giữ đúng danh sách đó (chống vá quá tay thành "luôn rỗng"). */
+    @Test
+    fun `danh sach nut co noi dung thi giu dung danh sach do`() {
+        val book = SceneBook.decode("s1|A|QUAD||widget:w_board|BOTTOM|lock,window", null)
+        assertEquals(listOf("lock", "window"), book.scenes[0].dock.enabled)
     }
 }

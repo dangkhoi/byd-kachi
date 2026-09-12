@@ -278,6 +278,10 @@ data class SceneBook(
          * Giá trị enum lạ (`preset`/`dock edge`) thì **lùi về mặc định** chứ không bỏ cả cảnh: nội dung ô là phần
          * người dùng bỏ công nhất, mất nó vì một tên enum đổi ở bản sau là thiệt hại lớn hơn hẳn việc bố cục về
          * mặc định. Bản ghi chỉ bị bỏ khi **không đọc ra nổi** một cảnh (thiếu trường, thiếu mã, thiếu tên).
+         *
+         * ⚠ [SOÁT P2-1] Danh sách nút **RỖNG được giữ rỗng** — xem chú thích tại chỗ ở nhánh `dock`. Đừng "khớp lại"
+         * với `WorkspacePrefs.loadDock` bằng `ifEmpty { defaultEnabledIds() }`: `loadDock` dùng `?:` nên nó chỉ bù mặc
+         * định khi **khoá thiếu**, còn chuỗi rỗng thì nó cũng giữ rỗng. Hai lối đọc đã khớp; bản cũ mới là lối lệch.
          */
         fun decode(scenesRaw: String?, bootRaw: String?): SceneBook {
             if (scenesRaw.isNullOrBlank()) {
@@ -299,11 +303,19 @@ data class SceneBook(
                     slots = f[4].split(SLOT).map { SlotCodec.decode(it) },
                     dock = DockConfig(
                         edge = runCatching { DockEdge.valueOf(f[5]) }.getOrDefault(DockEdge.BOTTOM),
-                        // Danh sách rỗng ⇒ nút mặc định. Khớp `WorkspacePrefs.loadDock` (cùng cách đọc, cùng ca
-                        // rỗng) — hai lối đọc khác nhau cho cùng một chuỗi mới là chỗ sinh lệch. Giá phải trả: cảnh
-                        // "không nút nào" không phân biệt được với "chưa lưu nút", đúng như thanh nút đang chạy.
-                        enabled = f[6].split(",").filter { it.isNotBlank() }
-                            .ifEmpty { ControlRegistry.defaultEnabledIds() },
+                        // ⚠⚠ [SOÁT P2-1] Trường RỖNG = **thanh nút rỗng thật**, KHÔNG phải "chưa lưu" ⇒ giữ nguyên
+                        // danh sách rỗng.
+                        //
+                        // Bản cũ viết `.ifEmpty { ControlRegistry.defaultEnabledIds() }` kèm chú thích *"khớp
+                        // WorkspacePrefs.loadDock (cùng cách đọc, cùng ca rỗng)"*. Câu đó **SAI**: `loadDock` dùng `?:`
+                        // nên nó chỉ bù mặc định khi **khoá THIẾU**; chuỗi rỗng ở đó cho `[""]` → lọc → `[]`, tức thanh
+                        // nút rỗng ĐƯỢC GIỮ. Và thanh nút rỗng là trạng thái **đạt được thật** —
+                        // `DockConfig.setEnabled` chỉ `remove`, không hề có sàn.
+                        //
+                        // Hậu quả của bản cũ: tắt hết nút → lưu cảnh → gọi lại thì **9 nút mặc định quay về**, im lặng.
+                        // Ở đây phân biệt được vì bản ghi luôn có đủ [FIELDS] trường: thiếu trường ⇒ bản ghi bị bỏ
+                        // (không tới được dòng này), nên trường có mặt mà rỗng chỉ có một nghĩa.
+                        enabled = f[6].split(",").filter { it.isNotBlank() },
                     ),
                 )
             }

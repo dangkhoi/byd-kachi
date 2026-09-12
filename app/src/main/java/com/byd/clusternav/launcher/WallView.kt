@@ -91,9 +91,18 @@ class WallView(context: Context) : View(context) {
         }
         canvas.drawBitmap(p, src, dst, photoPaint)
 
-        // Làm tối: CẦN THIẾT, không phải trang trí — chữ và ô của launcher là màu sáng; ảnh sáng làm chữ không đọc được.
+        // Làm tối ảnh: CẦN THIẾT, không phải trang trí — ảnh sáng làm chữ/ô của launcher nằm trên nó khó đọc.
+        //
+        // ⚠ [SOÁT P3-3] Chú thích cũ ghi lý do là *"chữ và ô của launcher là màu SÁNG"* — **U5 đã bác câu đó** (nay có
+        // bảng màu SÁNG, mực là màu đậm). Giữ tiền đề sai thì lần sửa sau sẽ suy luận từ nó.
+        //
+        // Màu lấy từ [KachiTheme.WALL_SCRIM] chứ không viết cứng `Color.argb(…, 0, 0, 0)`: hằng màu viết bằng chữ vẫn
+        // là màu viết cứng, chỉ là bài canh "0 hex" không thấy — [ĐO] chèn `Color.rgb(255,255,255)` vào tầng vẽ mà cả
+        // 3191 bài vẫn XANH. Vai này CỐ Ý mang cùng một mã ở hai bảng (làm tối = làm tối, đúng như nhãn nói); lý do
+        // đầy đủ + phần còn tồn ở KDoc [KachiPalette.wallScrim]. **Độ trong suốt** thì vẫn do người dùng đặt.
         if (dimPercent > 0) {
-            dimPaint.color = Color.argb((dimPercent * 255 / 100).coerceIn(0, 255), 0, 0, 0)
+            dimPaint.color = (Color.parseColor(KachiTheme.WALL_SCRIM) and 0x00ffffff) or
+                ((dimPercent * 255 / 100).coerceIn(0, 255) shl 24)
             canvas.drawRect(0f, 0f, w, h, dimPaint)
         }
     }

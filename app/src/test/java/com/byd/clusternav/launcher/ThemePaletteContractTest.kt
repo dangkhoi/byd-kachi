@@ -83,6 +83,57 @@ class ThemePaletteContractTest {
         )
     }
 
+    /**
+     * ⚠⚠ [SOÁT P2-3] **Và màu DỰNG BẰNG SỐ cũng vậy** — `Color.rgb(…)` / `Color.argb(…)` / `Color.parseColor("#…")`.
+     *
+     * Hai bài trên có một lỗ đúng bằng cỡ lỗ mà `Color.WHITE` từng đi qua: [ĐO] 2026-09-12 chèn
+     * `Color.rgb(255, 255, 255)` vào `GroupTileViews.kt` rồi chạy cả bộ ⇒ **3191 bài, 0 đỏ**. Nghĩa là con đường mà
+     * U5 đã trả giá (22 chỗ `Color.WHITE`, 9 chỗ thành chữ trắng trên nền trắng) vẫn còn mở, chỉ đổi cách gõ.
+     *
+     * `parseColor` được phép khi đối số là **một vai của [KachiTheme]** (đó là cách duy nhất để đổi chuỗi hex của bảng
+     * màu thành số nguyên của Android). Bị chặn khi đối số là **literal** `"#…"`.
+     */
+    @Test
+    fun `0 mau dung bang so trong tang ve launcher`() {
+        // ⚠ `Color.rgb(`/`argb(` với **bất kỳ** đối số, không chỉ đối số là chữ số: [ĐO] THỬ PHÁ bản đầu của bài này
+        // dùng `\bColor\.(?:rgb|argb)\s*\(\s*\d` và **không bắt được** `Color.argb((dimPercent * 255 / 100), 0, 0, 0)`
+        // của `WallView` — đối số đầu là một biểu thức nên không bắt đầu bằng chữ số. Cách ĐÚNG để trộn độ trong suốt
+        // với một vai màu là `Color.parseColor(KachiTheme.<VAI>)` rồi thay kênh alpha, nên chặn hẳn hai hàm này.
+        val built = Regex("""\bColor\.(?:rgb|argb)\s*\(""")
+        val parsed = Regex("""\bColor\.parseColor\s*\(\s*"""")
+        val offenders = launcherSources()
+            .filter { it.fileName.toString() !in hexAllowed }
+            .mapNotNull { f ->
+                val c = code(f)
+                val found = (built.findAll(c) + parsed.findAll(c)).map { it.value.trim() }.toList()
+                if (found.isEmpty()) null else "${f.fileName}: ${found.distinct()}"
+            }
+        assertEquals(
+            emptyList<String>(), offenders,
+            "màu dựng bằng số cũng KHÔNG đổi theo chủ đề, và bài '0 hex' không thấy nó ([ĐO] chèn " +
+                "Color.rgb(255,255,255) ⇒ 3191 bài vẫn xanh). Khai một vai trong KachiPalette rồi " +
+                "`Color.parseColor(KachiTheme.<VAI>)`; nếu vai đó CỐ Ý dùng chung mã cho hai bảng thì nói lý do ở " +
+                "KDoc của nó (lệ scrimBtn/widgetBacking/wallScrim): $offenders",
+        )
+    }
+
+    /**
+     * Và chốt rằng lời gọi duy nhất từng vi phạm đã đi qua bảng màu: lớp **làm tối ảnh nền**.
+     *
+     * Bài trên chặn *hình dạng*; bài này chặn *chỗ cụ thể đã có lỗi*, để một lần "sửa cho test xanh" bằng cách bỏ hẳn
+     * lớp làm tối cũng bị bắt.
+     */
+    @Test
+    fun `lop lam toi anh nen di qua bang mau`() {
+        val src = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WallView.kt")
+        assertTrue("KachiTheme.WALL_SCRIM" in src, "lớp làm tối phải lấy màu từ bảng màu, không dựng bằng số")
+        assertEquals(
+            KachiPalette.DARK.wallScrim, KachiPalette.LIGHT.wallScrim,
+            "vai này CỐ Ý dùng chung mã cho hai bảng — nhãn nói 'Làm tối ảnh' nên nó phải làm tối ở cả hai chủ đề; " +
+                "lý do đầy đủ + phần còn tồn ở KDoc KachiPalette.wallScrim",
+        )
+    }
+
     // ══ (2) TƯƠNG PHẢN — tính từ chính hai bảng ═══════════════════════════════════════════════════════════
 
     /**

@@ -85,6 +85,7 @@ object KachiTheme {
     val SCRIM_BTN: String get() = palette.scrimBtn
     val SCRIM_BTN2: String get() = palette.scrimBtn2
     val WIDGET_BACKING: String get() = palette.widgetBacking
+    val WALL_SCRIM: String get() = palette.wallScrim
     val SCRIM_HEAD: String get() = palette.scrimHead
     val GREEN: String get() = palette.green
     val AMBER: String get() = palette.amber

@@ -66,8 +66,13 @@ class AppWidgetSlotHost(
     private val ctx: Context,
     /** Chạy một lệnh qua kênh shell (dadb loopback). `null` = kênh chưa sẵn sàng. Chạy trên thread NỀN. */
     private val shell: () -> ((String) -> String)?,
-    /** Đẩy một việc xuống thread nền của màn chính (nó biết luật "màn đã huỷ thì thôi"). */
-    private val background: (() -> Unit) -> Unit,
+    /**
+     * Đẩy một việc xuống thread nền của màn chính (nó biết luật "màn đã huỷ thì thôi").
+     *
+     * ⚠ [SOÁT P3-2] Trả `Boolean` = việc có được **NHẬN** hay không. Bắt buộc, không phải cho tiện: [bind] cấp id
+     * TRƯỚC khi đẩy việc, nên một lượt bị bỏ trong im lặng nghĩa là id rò **và** hàm gọi lại không bao giờ chạy.
+     */
+    private val background: (() -> Unit) -> Boolean,
     /** Nói cho người dùng một câu ngắn (thất bại phải NÓI RA, không im lặng để lại ô trống). */
     private val notify: (String) -> Unit,
 ) {
@@ -124,12 +129,24 @@ class AppWidgetSlotHost(
      *
      * Icon nạp bằng `loadIcon`, một lời gọi liên-tiến-trình cho **mỗi** nhà cung cấp ([ĐO] máy ảo có 19). Chấp nhận
      * vì nó chỉ chạy lúc mở màn chọn, không nằm trong nhịp vẽ; icon nào lỗi thì mục đó không có icon chứ không mất mục.
+     *
+     * ## ⚠ [SOÁT P3-5] Nhãn TRÙNG được gỡ ở đây, không ở màn chọn
+     * [ĐO] máy ảo bày **hai** mục cùng tên *"Cảnh báo"* (hai widget VietMap) và **hai** *"Google Play Music"* — người
+     * dùng phải bấm thử mới biết mục nào, mà mỗi lần bấm là một lần cấp id + ràng buộc + có thể mở kênh shell. Cơ chế
+     * gợi ý loại của RW0 (`· xem`/`· bấm`/`· thẻ`) **không phủ** ca này: nó đọc [CapabilityCatalog], còn nhãn ở đây do
+     * hệ thống trả về từ app khác. Phép gỡ trùng nằm ở `:core` ([AppWidgetLabels]) để kiểm được off-car; ở đây chỉ
+     * đưa dữ liệu vào. Đặt ở đây (chỗ dựng mục) chứ không ở [AppDrawer] vì [AppDrawer] cố ý **không biết**
+     * `AppWidgetProviderInfo` — nó chỉ nhận nhãn + icon + việc-khi-chạm.
      */
-    fun picks(onPick: (AppWidgetProviderInfo) -> Unit): List<AppWidgetPick> = providers().map { info ->
-        AppWidgetPick(
-            title = label(info),
-            icon = runCatching { info.loadIcon(ctx, ctx.resources.displayMetrics.densityDpi) }.getOrNull(),
-        ) { onPick(info) }
+    fun picks(onPick: (AppWidgetProviderInfo) -> Unit): List<AppWidgetPick> {
+        val infos = providers()
+        val titles = AppWidgetLabels.titles(infos.map { label(it) to it.provider.flattenToString() })
+        return infos.mapIndexed { i, info ->
+            AppWidgetPick(
+                title = titles[i],
+                icon = runCatching { info.loadIcon(ctx, ctx.resources.displayMetrics.densityDpi) }.getOrNull(),
+            ) { onPick(info) }
+        }
     }
 
     /**
@@ -155,7 +172,11 @@ class AppWidgetSlotHost(
             notify(ctx.getString(R.string.kachi_appwidget_err_no_shell)); done(null); return
         }
         notify(ctx.getString(R.string.kachi_appwidget_granting))
-        background {
+        // ⚠⚠ [SOÁT P3-2] Id ĐÃ được cấp ở trên, nên việc nền bị **từ chối** (màn vừa huỷ) là một ca phải dọn, không
+        // phải một ca bỏ qua. Bản cũ gọi `background { … }` như câu lệnh: `submitOn` bỏ việc khi `destroyed` ⇒ id
+        // không ai nhả **và** [done] không bao giờ chạy (chỗ gọi treo, không có ô nào được đặt, không câu nào nói).
+        // Nay nhận kết quả và tự dọn — cùng cách ba nhánh thất bại ở trên đã làm.
+        val accepted = background {
             val out = runCatching { sh(GRANT_CMD) }.getOrElse { "lỗi: ${it.javaClass.simpleName}" }
             Log.i(TAG, "xin bind-grant: '$out'")
             // Về thread chính: `bindAppWidgetIdIfAllowed` + dựng view là việc của thread chính.
@@ -168,6 +189,11 @@ class AppWidgetSlotHost(
                     done(null)
                 }
             }
+        }
+        if (!accepted) {
+            Log.w(TAG, "việc nền bị từ chối (màn đã huỷ) ⇒ nhả id=$id")
+            release(id)
+            done(null)
         }
     }
 

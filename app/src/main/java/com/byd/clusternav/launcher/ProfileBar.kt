@@ -38,7 +38,9 @@ class ProfileBar(
         val list = s.profiles
         if (list.size <= 1) { toast(activity.getString(R.string.kachi_profile_only_one)); return }
         val i = (list.indexOf(s.activeProfile) + 1) % list.size
-        viewModel.switchProfile(list[i]); toast(activity.getString(R.string.kachi_profile_switched, list[i]))   // collector nạp lại workspace/dock/preset/avatar
+        // ⚠ [SOÁT P3-4] `switchProfile` nhận tên GỐC (nó là tiền tố khoá lưu); chỉ câu THÔNG BÁO dùng nhãn đã dịch.
+        viewModel.switchProfile(list[i])
+        toast(activity.getString(R.string.kachi_profile_switched, ProfileNames.display(list[i])))   // collector nạp lại workspace/dock/preset/avatar
     }
 
     /** Dialog tạo hồ sơ mới → [HomeViewModel.addProfile]. Đường tới nó: **Cài đặt → Hồ sơ tài xế → "Thêm hồ sơ…"**. */

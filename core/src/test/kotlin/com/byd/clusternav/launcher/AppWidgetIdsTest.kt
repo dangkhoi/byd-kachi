@@ -21,8 +21,8 @@ class AppWidgetIdsTest {
      * Trạng thái đầy đủ — [AppWidgetIds.orphaned]/[AppWidgetIds.unused] nhận [HomeUiState] chứ không phải
      * [WorkspaceState], vì "còn ai dùng" phải tính **cả sổ cảnh** (xem KDoc [AppWidgetIds.used]).
      */
-    private fun ui(ws: WorkspaceState, scenes: SceneBook = SceneBook.EMPTY) =
-        HomeUiState(workspace = ws, scenes = scenes)
+    private fun ui(ws: WorkspaceState, scenes: SceneBook = SceneBook.EMPTY, others: Set<Int> = emptySet()) =
+        HomeUiState(workspace = ws, scenes = scenes, widgetIdsOtherProfiles = others)
 
     /** Một sổ cảnh giữ đúng những ô [contents] (dùng để chốt "id trong cảnh vẫn đang dùng"). */
     private fun sceneHolding(vararg contents: SlotContent): SceneBook =
@@ -171,6 +171,93 @@ class AppWidgetIdsTest {
         val book = sceneHolding(SlotContent.App("com.x"), SlotContent.Widget("w_board"))
         assertEquals(emptySet<Int>(), AppWidgetIds.idsIn(book))
         assertEquals(emptySet<Int>(), AppWidgetIds.idsIn(SceneBook.EMPTY))
+    }
+
+    // ── HỒ SƠ TÀI XẾ KHÁC: id của họ KHÔNG được thu hồi (SOÁT P0-1) ────────────────
+
+    /**
+     * ⚠⚠⚠ **LỖI P0 — ĐỔI HỒ SƠ TÀI XẾ XOÁ VĨNH VIỄN WIDGET CỦA HỒ SƠ KIA.**
+     *
+     * [ĐO] `emulator-5554` bản trước bản vá: đặt *Digital clock* vào ô ở hồ sơ **Mặc định** ⇒ nhận id 654; đổi sang
+     * hồ sơ **Vợ** ⇒ 654 **biến khỏi** `dumpsys appwidget`; quay lại **Mặc định** ⇒ ô hiện *"widget của
+     * com.google.android.deskclock không còn — app đã bị gỡ hoặc bị tắt"* trong khi `pm list packages` cho thấy app
+     * **vẫn còn cài** (`pm list packages -d` đếm 0 = không bị tắt). `force-stop` rồi mở lại vẫn vậy ⇒ **vĩnh viễn**,
+     * và còn **báo sai nguyên nhân**.
+     *
+     * Gốc: `WorkspacePrefs.key()` = `"<hồ sơ>__<hậu tố>"`, nên `workspace`/`scenes` trong [HomeUiState] **chỉ** của hồ
+     * sơ đang dùng — trong khi id widget là của **HOST** (mọi hồ sơ). Lỗi ở **KIỂU DỮ LIỆU**, không ở nhánh code: bài
+     * canh cũ chứng minh *"có gọi đúng hàm với cả hai state"* mà không hỏi *"hàm có thấy đủ dữ liệu chưa"*.
+     *
+     * Bài này hỏi đúng câu đó: hai hồ sơ, **chỉ đổi hồ sơ** (id 654 chuyển từ "của tôi" sang "của hồ sơ khác", id 700
+     * thì ngược lại) ⇒ [AppWidgetIds.orphaned] phải trả **RỖNG**.
+     */
+    @Test
+    fun `chi doi ho so tai xe thi KHONG thu hoi id nao`() {
+        // Hồ sơ A đang dùng: ô giữ 654. Hồ sơ B (chưa dùng) giữ 700.
+        val onA = ui(state(aw(654)), others = setOf(700))
+        // Sau khi đổi sang B: ô giữ 700, còn 654 nay là "của hồ sơ khác".
+        val onB = ui(state(aw(700)), others = setOf(654))
+        assertEquals(
+            emptySet<Int>(), AppWidgetIds.orphaned(onA, onB),
+            "đổi hồ sơ KHÔNG được thu hồi id nào — [ĐO] bản cũ xoá 654 vĩnh viễn rồi báo 'app đã bị gỡ'",
+        )
+        assertEquals(
+            emptySet<Int>(), AppWidgetIds.orphaned(onB, onA),
+            "và đổi ngược lại cũng vậy (đường về phải đối xứng, không thì lượt thứ hai mới chết)",
+        )
+    }
+
+    /**
+     * ⚠⚠ Đường thứ hai, **nặng hơn vì không cần ai chạm gì**: lượt dọn rác lúc khởi động.
+     *
+     * `allocated` = `host.appWidgetIds` = **mọi** id của host (tức mọi hồ sơ), còn "còn dùng" thì chỉ của hồ sơ đang
+     * dùng. Nghĩa là chỉ cần nổ máy với hồ sơ A là widget của hồ sơ B chết — miễn A có ít nhất một widget để qua chốt
+     * `if (used.isEmpty()) return`. Bài này khoá đúng ca đó: 700 là của hồ sơ khác, 999 là rác thật.
+     */
+    @Test
+    fun `don rac luc khoi dong khong xoa id cua ho so khac`() {
+        val loaded = ui(state(aw(654)), others = setOf(700))
+        assertEquals(
+            setOf(999), AppWidgetIds.unused(setOf(654, 700, 999), loaded),
+            "chỉ 999 là rác thật; 700 là của hồ sơ khác và 654 là của hồ sơ đang dùng",
+        )
+        assertEquals(setOf(654, 700), AppWidgetIds.used(loaded), "'còn dùng' phải gồm cả id của hồ sơ khác")
+    }
+
+    /** Và ca ngược: hồ sơ khác **hết** giữ id đó (hồ sơ bị xoá) ⇒ id thành rác thật ⇒ phải nhả. */
+    @Test
+    fun `xoa ho so thi id cua no thanh rac`() {
+        val before = ui(state(aw(654)), others = setOf(700))
+        val after = ui(state(aw(654)), others = emptySet())      // hồ sơ giữ 700 vừa bị xoá
+        assertEquals(
+            setOf(700), AppWidgetIds.orphaned(before, after),
+            "xoá hồ sơ = xoá mọi khoá của nó ⇒ id nó giữ không còn ai dùng ⇒ phải thu hồi, không để rò",
+        )
+    }
+
+    // ── Đọc id từ DỮ LIỆU ĐÃ LƯU của một hồ sơ (nguồn của vế thứ ba) ──────────────
+
+    /**
+     * [AppWidgetIds.idsInStored] là chỗ **giải mã** dữ liệu hồ sơ khác. Phần này thuần để kiểm được off-car — tệp
+     * `WorkspacePrefs` cần `Context` nên nếu để phép giải mã ở đó thì không có bài nào chạm tới được.
+     */
+    @Test
+    fun `doc id tu chuoi da luu cua mot ho so - ca o va ca canh`() {
+        val slots = listOf("", "aw:654@com.x/.W", "app:com.waze", "widget:w_board", "aw:655@com.y/.W", "")
+        assertEquals(setOf(654, 655), AppWidgetIds.idsInStored(slots, null))
+
+        // Cảnh đã lưu của hồ sơ đó cũng giữ id — cùng lý do như hồ sơ đang dùng.
+        val scenes = SceneBook.encode(SceneBook.EMPTY.saved("Cảnh", ui(state(aw(700)))))
+        assertEquals(setOf(654, 655, 700), AppWidgetIds.idsInStored(slots, scenes))
+        assertEquals(setOf(700), AppWidgetIds.idsInStored(List(6) { "" }, scenes))
+    }
+
+    /** Hồ sơ chưa có gì / chuỗi rác ⇒ tập rỗng, KHÔNG ném (dữ liệu đến từ đĩa, sửa tay được). */
+    @Test
+    fun `ho so trong hoac chuoi rac ra tap rong khong nem`() {
+        assertEquals(emptySet<Int>(), AppWidgetIds.idsInStored(emptyList(), null))
+        assertEquals(emptySet<Int>(), AppWidgetIds.idsInStored(List(6) { "" }, ""))
+        assertEquals(emptySet<Int>(), AppWidgetIds.idsInStored(listOf("aw:", "rác", "aw:0@com.x/.W"), "rác|rác"))
     }
 
     // ── Dạng lưu ──────────────────────────────────────────────────────────────────

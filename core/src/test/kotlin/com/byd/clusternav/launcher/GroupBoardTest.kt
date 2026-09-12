@@ -451,6 +451,13 @@ class GroupBoardTest {
      * ⚠ [ĐO] **giả định của tôi về nhóm *Đèn* bị dữ liệu bác**: tôi viết `g_lights to true` (tưởng nó chỉ lặp 2 lần)
      * và bài đỏ ngay — thật ra `headl` · `headlight_mode` · `drl` **đều** dùng `ic-light` ⇒ lặp 3 ⇒ nhóm Đèn cũng bỏ
      * icon. Giữ số đo, sửa giả định — và đây chính là lý do bài này đọc registry thật thay vì chép một danh sách.
+     *
+     * ## ⚠⚠ [SOÁT P1-1] Nhóm *Đèn* đã ĐỔI CHIỀU `false → true`, và đó là hệ quả ĐÚNG
+     * Bản vá P1-1 bỏ `headl` khỏi nhóm (nó trùng byte với `headlight_mode` — xem `CapabilityGroups.LIGHTS`). [ĐO]
+     * hàng nút nay là `headlight_mode:ic-light` · `drl:ic-light` · `readl:ic-readlight` ⇒ lặp tối đa **2**, dưới trần 3
+     * ⇒ icon phân biệt được trở lại nên được vẽ trở lại. Tức bỏ cái nút trùng **cũng trả lại icon** cho hàng đó: cái
+     * làm icon vô nghĩa chính là mục thứ ba cùng hình. Đây là ví dụ đúng của việc bài canh này đọc dữ liệu thật —
+     * nó phát hiện thay đổi hình dạng do một bản vá ở chỗ khác gây ra, và bắt người sửa xác nhận bằng số đo.
      */
     @Test
     fun `luat icon cua hang nut theo dung du lieu that cua 3 nhom co nut`() {
@@ -458,10 +465,11 @@ class GroupBoardTest {
             g.id to GroupBoard.of(g, CarStatus()).actionIconsDistinguish
         }
         assertEquals(
-            mapOf("g_windows" to false, "g_doors" to true, "g_lights" to false),
+            mapOf("g_windows" to false, "g_doors" to true, "g_lights" to true),
             verdict,
-            "nhóm Kính có 4/6 nút cùng icon cửa kính và nhóm Đèn có 3/4 nút cùng icon đèn ⇒ icon KHÔNG phân biệt " +
-                "được (bỏ đi, lấy lại 30px bề cao cho hàng nút); nhóm Cửa & khoang lặp tối đa 2 lần ⇒ vẫn giữ icon",
+            "nhóm Kính có 4/6 nút cùng icon cửa kính ⇒ icon KHÔNG phân biệt được (bỏ đi, lấy lại 30px bề cao cho " +
+                "hàng nút); nhóm Cửa & khoang lặp tối đa 2 lần ⇒ vẫn giữ icon; nhóm Đèn sau bản vá P1-1 (bỏ `headl` " +
+                "vì trùng byte với `headlight_mode`) cũng chỉ còn lặp 2 ⇒ [ĐO] icon phân biệt được trở lại",
         )
         // Và luật phải dùng CHUNG trần với ô con XEM — hai trần khác nhau cho cùng một câu hỏi là bẫy hai-bản-sao.
         val m = GroupBoard.of(CapabilityGroups.WINDOWS, CarStatus())

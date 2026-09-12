@@ -475,7 +475,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * `RejectedExecutionException` không ai bắt. Gom về đây để chỗ gọi không phải nhớ, và để chỉ có MỘT nơi biết
      * luật "đã huỷ thì thôi".
      */
-    private fun submitBg(block: () -> Unit) = submitOn(winExec, block)
+    private fun submitBg(block: () -> Unit): Boolean = submitOn(winExec, block)
 
     /**
      * Việc I/O ẢNH (quét thư mục, giải mã) — thread nền **RIÊNG**, không dùng chung với lệnh cửa sổ.
@@ -483,13 +483,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * [SOÁT P2-7] `winExec` còn chạy lệnh dadb **chặn tới ~3 giây** (poll khi đặt app vào ô). Trộn I/O ảnh vào đó là
      * hai việc chờ nhau: đặt app vào ô phải đợi lượt giải mã ảnh xong, và ngược lại ảnh nền đổi trễ vì đang đặt app.
      */
-    private fun submitIo(block: () -> Unit) = submitOn(ioExec, block)
+    private fun submitIo(block: () -> Unit): Boolean = submitOn(ioExec, block)
 
-    private fun submitOn(exec: java.util.concurrent.ExecutorService, block: () -> Unit) {
-        if (destroyed) return
-        runCatching { exec.execute { if (!destroyed) block() } }
+    // ⚠ [SOÁT P3-2] Trả `Boolean` = việc có được NHẬN (vì sao: KDoc `AppWidgetSlotHost.background` + `sweep`).
+    private fun submitOn(exec: java.util.concurrent.ExecutorService, block: () -> Unit): Boolean =
+        !destroyed && runCatching { exec.execute { if (!destroyed) block() } }
             .onFailure { Log.w("Kachi", "bỏ việc nền vì màn đã huỷ: ${it.javaClass.simpleName}") }
-    }
+            .isSuccess
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 

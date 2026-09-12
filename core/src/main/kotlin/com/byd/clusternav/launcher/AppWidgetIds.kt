@@ -17,6 +17,15 @@ package com.byd.clusternav.launcher
  * **Kéo-thả đổi chỗ hai ô**: cùng một id chuyển từ ô 0 sang ô 1. Nếu tính "orphan" theo *từng ô* (ô 0 trước có id X,
  * giờ không có ⇒ thu hồi X) thì ta **xoá đúng cái widget vừa kéo** — nó biến thành ô trống ngay sau khi thả. Phải
  * so theo **TẬP HỢP toàn bố cục**, không theo vị trí. [orphaned] làm đúng thế và có bài canh riêng cho ca này.
+ *
+ * ## ⚠⚠ Và ca đã LỌT hai lần: "còn dùng" bị hỏi HẸP HƠN sự thật
+ * Cả hai lỗi mất-widget-vĩnh-viễn của tính năng này đều KHÔNG nằm ở nhánh code mà ở **phạm vi dữ liệu** được hỏi:
+ *  1. hỏi bố cục mà không hỏi **cảnh đã lưu** ⇒ gọi lại cảnh ra thẻ "app đã bị gỡ" (KDoc [idsIn] cho `SceneBook`);
+ *  2. hỏi hồ sơ đang dùng mà không hỏi **hồ sơ khác** ⇒ đổi hồ sơ là xoá widget của hồ sơ kia (KDoc [idsInStored]).
+ *
+ * Hai lần cùng một hình dạng: bài canh chứng minh *"có gọi đúng hàm"* nhưng không hỏi *"hàm có thấy đủ dữ liệu"*.
+ * Vì thế mọi vế của "còn dùng" gom về ĐÚNG MỘT hàm ([used]) và nó nhận [HomeUiState] — kiểu dữ liệu mang đủ ba vế,
+ * nên phạm vi không thể bị thu hẹp bằng cách quên một tham số.
  */
 object AppWidgetIds {
 
@@ -47,13 +56,49 @@ object AppWidgetIds {
         book.scenes.flatMapTo(mutableSetOf()) { scene -> idsIn(scene.workspaceState()) }
 
     /**
-     * Id còn **ĐANG ĐƯỢC DÙNG** theo [state]: bố cục đang sống ∪ mọi cảnh đã lưu.
+     * Mọi id nằm trong dữ liệu ĐÃ LƯU của **một** hồ sơ — đọc từ chính hai chuỗi mà `WorkspacePrefs` giữ.
+     *
+     * ## ⚠⚠ [SOÁT P0-1] Vì sao phép này phải tồn tại, và vì sao nó THUẦN
+     * Id widget là thứ nền tảng cấp **cho một HOST**, không cho một hồ sơ tài xế. Nhưng [HomeUiState] chỉ mang dữ
+     * liệu của **hồ sơ đang dùng** (`WorkspacePrefs.key()` = `"<hồ sơ>__<hậu tố>"`), nên "còn ai dùng" tính trên
+     * state là một câu trả lời **hẹp hơn sự thật**. Hậu quả đo được trên `emulator-5554` (bản trước bản vá): đặt
+     * widget đồng hồ ở hồ sơ *Mặc định* ⇒ id 654; **đổi sang hồ sơ *Vợ*** ⇒ 654 biến khỏi host; quay lại *Mặc định*
+     * ⇒ ô hiện *"widget của com.google.android.deskclock không còn — app đã bị gỡ hoặc bị tắt"* trong khi app **vẫn
+     * còn cài** (`pm list packages` có, `pm list packages -d` đếm 0). `force-stop` rồi mở lại vẫn vậy = **vĩnh viễn**.
+     *
+     * Đường thứ hai còn nặng hơn vì **không cần ai chạm gì**: [unused] lúc khởi động lấy `allocated` =
+     * `host.appWidgetIds` (mọi id của host = mọi hồ sơ) trừ đi "còn dùng" (chỉ hồ sơ đang dùng) ⇒ chỉ cần nổ máy với
+     * hồ sơ A là widget của hồ sơ B chết.
+     *
+     * Việc giải mã (chỗ **có thể sai**) để ở đây, thuần, thay vì viết trong `WorkspacePrefs` (cần `Context` ⇒ không
+     * kiểm được off-car). Phía Android chỉ còn việc đọc chuỗi ra khỏi SharedPreferences.
+     *
+     * @param slotRaw chuỗi đã lưu của từng ô (`slot_0`..`slot_N`), đúng dạng [SlotCodec].
+     * @param scenesRaw chuỗi sổ cảnh đã lưu, đúng dạng [SceneBook.encode]; `null`/rỗng = hồ sơ chưa có cảnh nào.
+     */
+    fun idsInStored(slotRaw: List<String>, scenesRaw: String?): Set<Int> {
+        val slots = slotRaw.map { SlotCodec.decode(it) }
+            .filterIsInstance<SlotContent.AppWidget>()
+            .map { it.widgetId }
+        // `bootRaw = null`: con trỏ cảnh khởi động không giữ id nào, và truyền nó vào chỉ thêm một đường sai.
+        return slots.toSet() + idsIn(SceneBook.decode(scenesRaw, null))
+    }
+
+    /**
+     * Id còn **ĐANG ĐƯỢC DÙNG** theo [state]: bố cục đang sống ∪ mọi cảnh đã lưu ∪ **mọi hồ sơ tài xế KHÁC**.
      *
      * Đây là **định nghĩa duy nhất** của "còn dùng" trong toàn bộ tính năng. [orphaned] và [unused] đều đọc nó, nên
-     * không có đường nào trả lời câu hỏi đó theo một cách hẹp hơn — và đó là chủ ý: phiên bản chỉ-xét-bố-cục từng tồn
-     * tại ở đây và nó là nguyên nhân của lỗi ghi trong KDoc [idsIn]. Trần số id vẫn có chặn trên: 8 cảnh × trần ô.
+     * không có đường nào trả lời câu hỏi đó theo một cách hẹp hơn — và đó là chủ ý: **hai** phiên bản hẹp hơn đã
+     * từng tồn tại ở đây và mỗi lần đều là một lỗi mất-widget-vĩnh-viễn (chỉ-xét-bố-cục ⇒ KDoc [idsIn]; chỉ-xét-hồ-
+     * sơ-đang-dùng ⇒ KDoc [idsInStored]). Sửa ở đúng một chỗ này bịt cả [orphaned] lẫn [unused].
+     *
+     * ⚠ Vế thứ ba đến từ [HomeUiState.widgetIdsOtherProfiles], tức **dữ liệu phải có sẵn trong state**. Đó là chủ ý:
+     * chốt bằng KIỂU chứ không bằng lời nhắc — hai chỗ gọi (`reclaim`/`sweep`) nhận `HomeUiState` nên không có cách
+     * nào hỏi câu này mà "quên" vế đó. Bù lại, chỗ dựng state (`PrefsWorkspaceRepository.load`) **phải** điền nó, và
+     * có bài canh riêng đòi đúng điều đó — mặc định `emptySet()` chỉ để test khỏi phải khai khi ca đó không liên quan.
      */
-    fun used(state: HomeUiState): Set<Int> = idsIn(state.workspace) + idsIn(state.scenes)
+    fun used(state: HomeUiState): Set<Int> =
+        idsIn(state.workspace) + idsIn(state.scenes) + state.widgetIdsOtherProfiles
 
     /**
      * Id có ở [old] mà KHÔNG còn ở [new] ⇒ phải gọi `deleteAppWidgetId`.

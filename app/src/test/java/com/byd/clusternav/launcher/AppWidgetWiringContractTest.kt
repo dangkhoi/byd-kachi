@@ -186,6 +186,74 @@ class AppWidgetWiringContractTest {
         )
     }
 
+    /**
+     * ⚠⚠ [SOÁT P3-2] **Việc nền bị TỪ CHỐI cũng là một nhánh thất bại** — id đã cấp trước đó phải được nhả.
+     *
+     * `KachiHomeActivity.submitOn` cố ý **bỏ** việc khi màn đã huỷ. Bản cũ gọi `background { … }` như một câu lệnh nên
+     * ca đó nghĩa là: id đã `allocateAppWidgetId` mà **không ai nhả**, và `done` **không bao giờ chạy** (chỗ gọi treo,
+     * không ô nào được đặt, không câu nào nói ra). Chốt cả hai đầu của đường dây: kiểu trả về ở màn chính, và nhánh dọn
+     * ở đây.
+     */
+    @Test
+    fun `viec nen bi tu choi thi nha id va goi lai done`() {
+        val body = SourceRoots.body(code(host()), "fun bind(info: AppWidgetProviderInfo, done: (SlotContent.AppWidget?) -> Unit)")
+        assertTrue(
+            Regex("""val\s+accepted\s*=\s*background\s*\{""").containsMatchIn(body),
+            "phải NHẬN kết quả của `background` — gọi nó như câu lệnh là bỏ việc trong im lặng khi màn đã huỷ",
+        )
+        assertTrue(
+            Regex("""if\s*\(\s*!accepted\s*\)""").containsMatchIn(body),
+            "và phải có nhánh cho ca bị từ chối",
+        )
+        assertTrue(
+            "(() -> Unit) -> Boolean" in code(host()),
+            "kiểu của cổng vào phải là `-> Boolean`: `-> Unit` thì chỗ gọi KHÔNG THỂ biết việc có được nhận",
+        )
+        // Đầu kia của dây: màn chính phải thật sự trả kết quả, không thì bài trên chỉ canh một chữ ký giả.
+        val act = code(activity())
+        assertTrue(
+            Regex("""private fun submitOn\([^\n]*\): Boolean""").containsMatchIn(act),
+            "submitOn phải trả Boolean",
+        )
+        assertTrue(
+            Regex("""private fun submitBg\([^\n]*\): Boolean""").containsMatchIn(act),
+            "và submitBg (thứ được tiêm vào host) cũng vậy",
+        )
+    }
+
+    /**
+     * ⚠ [SOÁT P3-5] Nhãn widget bên thứ ba **TRÙNG NHAU** phải được gỡ trước khi bày ra.
+     *
+     * [ĐO] máy ảo bày hai mục cùng tên *"Cảnh báo"* (hai widget VietMap) và hai *"Google Play Music"* — người dùng phải
+     * bấm thử mới biết mục nào, mà mỗi lần bấm là một lần cấp id + ràng buộc + có thể mở kênh shell. Phép gỡ trùng ở
+     * `:core` ([AppWidgetLabels]) nên kiểm được off-car; bài này chỉ canh **dây nối** (khai một phép mà không ai gọi
+     * thì nó là mã chết, và màn chọn vẫn trùng y như cũ).
+     */
+    @Test
+    fun `nhan widget ben thu ba trung nhau duoc go truoc khi bay ra`() {
+        val body = SourceRoots.body(code(host()), "fun picks(onPick: (AppWidgetProviderInfo) -> Unit): List<AppWidgetPick>")
+        assertTrue(
+            "AppWidgetLabels.titles(" in body,
+            "picks() phải đi qua phép gỡ trùng — [ĐO] không có nó thì màn chọn hiện hai mục CÙNG TÊN 'Cảnh báo'",
+        )
+        assertTrue(
+            "provider.flattenToString()" in body,
+            "phép gỡ trùng cần chuỗi provider để sinh gợi ý (nhãn một mình không phân biệt được)",
+        )
+        // ⚠⚠ Đòi NHÃN THẬT SỰ LẤY TỪ kết quả đó. Bản đầu của bài này chỉ hỏi "có gọi `titles(` không" và [ĐO] THỬ PHÁ
+        // cho thấy nó **không thể đỏ**: đổi `title = titles[i]` về `title = label(info)` thì phép gỡ trùng vẫn được
+        // gọi (kết quả bị bỏ đi) ⇒ 21 bài vẫn XANH trong khi màn chọn trùng tên y như cũ. Đúng họ "test trang trí"
+        // mà dự án đã tìm ra ba lần — và lần này chính tôi vừa viết ra nó.
+        assertTrue(
+            Regex("""title\s*=\s*titles\[""").containsMatchIn(body),
+            "nhãn của mục PHẢI lấy từ danh sách đã gỡ trùng; gọi `titles(...)` rồi bỏ kết quả là không sửa gì",
+        )
+        assertTrue(
+            !Regex("""title\s*=\s*label\(""").containsMatchIn(body),
+            "`title = label(info)` là dạng TRƯỚC bản vá (nhãn thô, trùng nhau) — không được quay lại",
+        )
+    }
+
     // ── Không được im lặng ────────────────────────────────────────────────────────
 
     /**
@@ -341,7 +409,6 @@ class AppWidgetWiringContractTest {
     }
 
     // ── Nửa còn lại: gradle có BIẾT thứ bài này quét không ────────────────────────
-
     /**
      * ⚠⚠ Chốt chống **dấu xanh giả** — bài học 11 ca của bộ niêm phong T11.
      *

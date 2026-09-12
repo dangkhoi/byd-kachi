@@ -88,6 +88,12 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             langMode = prefs.langMode(),
             // P7/P6: sổ cảnh nạp cùng lượt ⇒ ca ĐỔI HỒ SƠ tự đúng (mỗi hồ sơ một bộ cảnh + một cảnh khởi động).
             scenes = prefs.sceneBook(),
+            // ⚠⚠ [SOÁT P0-1] BẮT BUỘC nạp ở đây, và bắt buộc ở CHÍNH lượt này. Id widget là của HOST (mọi hồ sơ)
+            // trong khi mọi trường trên là của riêng hồ sơ đang dùng ⇒ thiếu dòng này thì `AppWidgetIds.used` trả lời
+            // hẹp hơn sự thật và lượt thu hồi id đi **xoá vĩnh viễn** widget của hồ sơ khác ([ĐO] emulator: đổi hồ sơ
+            // ⇒ id 654 mất khỏi host, quay lại ra thẻ "app đã bị gỡ" dù app còn cài). `switchProfile`/`addProfile`/
+            // `deleteProfile` đều gọi lại `load()` nên ảnh chụp này luôn khớp hồ sơ đang dùng.
+            widgetIdsOtherProfiles = prefs.widgetIdsOtherProfiles(),
         )
         // Lượt `load()` thứ hai trở đi là ĐỔI/THÊM/XOÁ HỒ SƠ, không phải khởi động ⇒ **không** áp cảnh. Thiếu cờ này
         // thì bấm sang hồ sơ B sẽ bị cảnh khởi động của B ghi đè ngay lên bố cục vừa nạp của B.

@@ -27,23 +27,80 @@ class WorkspacePrefs(context: Context) {
 
     fun setActiveProfile(name: String) { sp.edit().putString(K_ACTIVE, name).apply() }
 
+    /**
+     * Thêm một hồ sơ và chuyển sang nó. Tên trùng hồ sơ đã có ⇒ chỉ chuyển sang, không tạo thêm.
+     *
+     * ## ⚠ [SOÁT P2-2] Hồ sơ MỚI phải bắt đầu TRỐNG — kể cả trên máy đã chạy bản cũ
+     * [deleteProfile] nay dọn sạch khoá, nhưng **máy đang chạy trên xe thì không**: mọi hồ sơ từng bị xoá bằng bản cũ
+     * còn để lại nguyên `<tên>__slot_*`, `__scenes`… trên đĩa. Đặt lại đúng cái tên đó sẽ nạp cấu hình của một hồ sơ
+     * người dùng tưởng đã xoá — trong đó có thể có `aw:<id>` mà id đã bị thu hồi ⇒ ô ra thẻ *"app đã bị gỡ"* dù app
+     * còn nguyên. Dọn ở đây làm ca đó tự lành, không cần lượt di dữ liệu nào.
+     */
     fun addProfile(name: String) {
         val clean = name.trim().replace(Regex("[\\r\\n]"), " "); if (clean.isEmpty()) return
         val list = profiles().toMutableList()
-        if (clean !in list) list.add(clean)
-        sp.edit().putString(K_PROFILES, list.joinToString("\n")).putString(K_ACTIVE, clean).apply()
+        val isNew = clean !in list
+        if (isNew) list.add(clean)
+        val e = sp.edit().putString(K_PROFILES, list.joinToString("\n")).putString(K_ACTIVE, clean)
+        // CHỈ khi thật sự mới: tên đã có trong danh sách thì đây là lượt "chuyển sang", xoá khoá là **mất cấu hình**.
+        if (isNew) profileKeys(clean).forEach { e.remove(it) }
+        e.apply()
     }
 
+    /**
+     * Xoá một hồ sơ — **và mọi khoá của nó**.
+     *
+     * ## ⚠⚠ [SOÁT P2-2] Bản cũ chỉ sửa hai khoá danh sách, để lại toàn bộ dữ liệu hồ sơ
+     * Nó cập nhật `profiles` + `active_profile` rồi dừng, nên `<tên>__preset`, `<tên>__slot_0..5`, `<tên>__dock_*`,
+     * `<tên>__top_strip`, `<tên>__grid_layout`, `<tên>__scenes`, `<tên>__boot_scene` **vẫn nằm nguyên trên đĩa**. Hai
+     * hậu quả, cái sau nặng hơn:
+     *  1. tệp prefs phình vô hạn (xoá/tạo hồ sơ bao nhiêu lần cũng không bao giờ thu lại);
+     *  2. [addProfile] KHÔNG kiểm khoá cũ ⇒ đặt lại **đúng cái tên vừa xoá** thì hồ sơ "mới" nạp nguyên cấu hình cũ,
+     *     trong đó có thể có `aw:<id>` của những widget mà id đã bị thu hồi ⇒ ô hiện thẻ *"app đã bị gỡ"* dù app còn
+     *     nguyên. Tức người dùng tạo một hồ sơ mới và nhận về rác của một hồ sơ đã xoá.
+     *
+     * ⚠ Dọn sạch khoá cũng là điều làm **id widget của hồ sơ bị xoá được nhả đúng lúc**: [widgetIdsOtherProfiles] đọc
+     * đĩa, nên sau lượt xoá này nó không còn kể id đó nữa ⇒ `AppWidgetIds.orphaned` (chạy ở lượt render kế tiếp) thấy
+     * chúng thành rác và `AppWidgetSlotHost.reclaim` thu hồi. Không cần đường nhả riêng — và không nên có, vì đường
+     * thứ hai là chỗ để quên.
+     */
     fun deleteProfile(name: String) {
         val list = profiles().toMutableList()
         if (list.size <= 1 || name !in list) return
         list.remove(name)
         val e = sp.edit().putString(K_PROFILES, list.joinToString("\n"))
         if (activeProfile() == name) e.putString(K_ACTIVE, list.first())
+        profileKeys(name).forEach { e.remove(it) }
         e.apply()
     }
 
     private fun key(suffix: String) = "${activeProfile()}__$suffix"
+
+    /**
+     * Mọi khoá thuộc hồ sơ [name] — **một chỗ duy nhất** khai danh sách này.
+     *
+     * Viết tay hai lần (một lần ở [deleteProfile], một lần ở [widgetIdsOtherProfiles]) là cách chắc chắn để bản sau
+     * thêm một khoá theo-hồ-sơ rồi chỉ cập nhật một trong hai chỗ — và cả hai lỗi đều **im lặng** (khoá mồ côi / id
+     * widget bị xoá oan). Có bài canh đòi mọi lời gọi `key("…")` trong tệp này phải có mặt trong [PROFILE_SUFFIXES].
+     */
+    private fun profileKeys(name: String): List<String> = PROFILE_SUFFIXES.map { "${name}__$it" }
+
+    /**
+     * [SOÁT P0-1] Id widget bên thứ ba đang bị **các hồ sơ KHÁC** giữ (bỏ hồ sơ đang dùng — xem KDoc
+     * [HomeUiState.widgetIdsOtherProfiles] về việc vì sao phải bỏ).
+     *
+     * Chỉ đọc chuỗi rồi giao việc giải mã cho `:core` ([AppWidgetIds.idsInStored]) — phần có thể sai thì phải kiểm
+     * được off-car, còn tệp này cần `Context` nên không kiểm được.
+     */
+    fun widgetIdsOtherProfiles(): Set<Int> {
+        val active = activeProfile()
+        return profiles().filter { it != active }.flatMapTo(mutableSetOf()) { p ->
+            AppWidgetIds.idsInStored(
+                slotRaw = (0 until WorkspaceState.SLOT_CAP).map { sp.getString("${p}__slot_$it", "") ?: "" },
+                scenesRaw = sp.getString("${p}__$K_SCENES", null),
+            )
+        }
+    }
 
     // ── Workspace (theo hồ sơ) ──
     fun load(): WorkspaceState {
@@ -239,5 +296,24 @@ class WorkspacePrefs(context: Context) {
      */
     private const val K_SCENES = "scenes"
     private const val K_BOOT_SCENE = "boot_scene"
+
+    /**
+     * ⚠⚠ [SOÁT P2-2] **MỌI hậu tố khoá theo-hồ-sơ, khai ĐÚNG MỘT LẦN.**
+     *
+     * Đây là danh sách mà [deleteProfile] dùng để dọn sạch và [widgetIdsOtherProfiles] dùng để dò. Hai chỗ đó **không
+     * được** tự viết lại danh sách: thêm một khoá theo-hồ-sơ ở bản sau mà chỉ cập nhật một trong hai nơi thì hoặc là
+     * khoá mồ côi sống mãi, hoặc là id widget của hồ sơ khác bị xoá oan — cả hai đều im lặng.
+     *
+     * `slot_*` phải sinh theo [WorkspaceState.SLOT_CAP], không chép tay: trần ô đã đổi một lần (4 → 6) và chỗ nào
+     * chép tay con số đó thì lần đổi sau sẽ bỏ sót hai ô cuối.
+     *
+     * ⚠ Chỉ khoá THEO HỒ SƠ. Khoá chung cả máy (`theme_mode`, `unit_prefs`, `wallpaper_prefs`, `recent_apps`,
+     * `launcher_autostart`, `profiles`, `active_profile`) **KHÔNG** được có ở đây — xoá một hồ sơ mà mất luôn lựa chọn
+     * đơn vị của cả xe là một lỗi tệ hơn lỗi đang vá. Có bài canh đòi đúng điều đó.
+     */
+    val PROFILE_SUFFIXES: List<String> = buildList {
+        addAll(listOf("preset", "dock_edge", "dock_enabled", "top_strip", K_GRID, K_SCENES, K_BOOT_SCENE))
+        addAll((0 until WorkspaceState.SLOT_CAP).map { "slot_$it" })
+    }
     }
 }

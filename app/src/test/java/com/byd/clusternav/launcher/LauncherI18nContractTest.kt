@@ -46,6 +46,8 @@ class LauncherI18nContractTest {
         // ── NHẬT KÝ — người dùng không bao giờ đọc; dịch nhật ký làm hỏng việc grep khi gỡ lỗi trên xe ──
         "hỏng giữa lượt chạy" to "nhật ký (Log.w) khi một bước gói lệnh ném — không hiện trên màn",
         "bỏ việc nền vì màn đã huỷ" to "nhật ký (Log.w) của cửa nền — không hiện trên màn",
+        "việc nền bị từ chối" to
+            "nhật ký (Log.w) của [SOÁT P3-2]: việc nền bị từ chối nên id widget vừa cấp được nhả — không hiện trên màn",
         "bỏ việc cửa sổ vì thread nền đã tắt" to "nhật ký (Log.w) của LauncherWindows — không hiện trên màn",
         "lỗi: " to "chuỗi mã lỗi shell, đi thẳng vào nhật ký của vòng kiểm quyền",
         "tự cấp " to "nhật ký (Log.i) của vòng kiểm quyền — không hiện trên màn",

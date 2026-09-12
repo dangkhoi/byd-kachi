@@ -350,6 +350,10 @@ class GroupTileWiringContractTest {
      * **số ô mỗi hàng** của cả 12 nhóm ở đúng ba trần đang dùng (`MAX_PER_ROW=5` cho dải · `CARD_PER_ROW=3` cho số
      * phụ của thẻ · `ACTIONS_PER_ROW=6` cho hàng nút) ⇒ nếu bản sửa làm xê dịch một hàng nào thì bài đỏ, và nếu
      * mai ai thêm/bớt thành viên thì cũng phải xem lại con số ở đây.
+     *
+     * ⚠ [SOÁT P1-1] Hàng nút của nhóm *Đèn* đi từ **4 → 3**: bản vá bỏ `headl` khỏi nhóm vì nó trùng byte với
+     * `headlight_mode` (xem `CapabilityGroups.LIGHTS`). Đúng cái bài này sinh ra để làm — bắt người sửa xác nhận thay
+     * đổi hình dạng bằng số đo, chứ không để nó lặng lẽ đi qua. Dải XEM và số phụ CARD **không đổi** (chỉ `writes` đổi).
      */
     @Test
     fun `phep chia hang khong doi hinh dang cua 12 nhom dang co`() {
@@ -383,9 +387,10 @@ class GroupTileWiringContractTest {
             g.id to GroupTileView.rowsOf(g.writes, 6).map { it.size }
         }
         assertEquals(
-            mapOf("g_windows" to listOf(6), "g_doors" to listOf(6), "g_lights" to listOf(4)),
+            mapOf("g_windows" to listOf(6), "g_doors" to listOf(6), "g_lights" to listOf(3)),
             actions,
-            "hàng nút (trần 6) đổi hình dạng",
+            "hàng nút (trần 6) đổi hình dạng — nhóm Đèn còn 3 nút sau [SOÁT P1-1] (bỏ `headl` vì trùng byte với " +
+                "`headlight_mode`); nếu con số này đổi tiếp thì phải xem lại thành viên nhóm, không sửa số cho xanh",
         )
     }
 
