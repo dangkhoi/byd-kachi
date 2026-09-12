@@ -290,6 +290,11 @@ class ControlTileFactory(
         val value = TextView(ctx).apply {
             text = TelemetryView.PLACEHOLDER; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
             setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp); gravity = Gravity.CENTER; maxLines = 1
+            // ⚠ [SOÁT ĐỘC LẬP 2026-09-12] `maxLines = 1` mà KHÔNG ellipsize ⇒ chữ bị cắt CỨNG, không có "…" — đúng
+            // họ lỗi mà chính tệp này đã vá hai lần cho NHÃN ô ([actionTile] và nhãn của ô đọc ngay trên). Từ khi
+            // giá trị và đơn vị chia CHUNG một hàng ngang, giá trị dài không còn được cả bề ngang ô nữa nên ca cắt
+            // gần hơn trước; có "…" thì người dùng đọc ra là "còn nữa", không đọc ra "số bị sai".
+            ellipsize = TextUtils.TruncateAt.END
         }
         val unit = TextView(ctx).apply {
             setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp - 2f)

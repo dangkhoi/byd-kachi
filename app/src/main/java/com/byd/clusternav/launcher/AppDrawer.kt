@@ -480,8 +480,8 @@ class AppDrawer(
 
     private companion object {
         const val MAX = 8
-        // [SOÁT UI 2026-09-12] MỘT vùng cuộn = MỘT lưới cột. Mọi ô khả năng/widget dùng COLS_TILE; danh sách app (icon nhỏ, loại khác) dùng COLS_APP.
-        const val COLS_TILE = 4
+        // [SOÁT UI 2026-09-12] MỘT vùng cuộn = MỘT lưới cột, và con số đó do `:core` giữ (màn Cài đặt bày CHÍNH những ô này — xem KDoc [CapabilityPicker.COLS]). Danh sách app khác loại nên có số riêng.
+        const val COLS_TILE = CapabilityPicker.COLS
         const val COLS_APP = 6
 
         /**

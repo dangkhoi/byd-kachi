@@ -172,14 +172,14 @@ class SettingsHomeSection(
         // mãi mãi và mục này thành một lựa chọn chết.
         body.addView(rows.sectionLabel(CapabilityPicker.GROUPS_TITLE))
         body.addView(rows.note(CapabilityPicker.GROUPS_NOTE))
-        grid.addGrid(body, CapabilityPicker.groupPicks(), cols = 4)
+        grid.addGrid(body, CapabilityPicker.groupPicks(), cols = CapabilityPicker.COLS)
         body.addView(rows.sectionLabel(CapabilityPicker.SINGLES_TITLE))
         CapabilityCatalog.byDomain().forEach { (domain, picks) ->
             // `singlesOf` BẮT BUỘC: nhóm đã bày ở mục trên, để nó nằm trong lĩnh vực nữa là **hai ô cùng một mã** ⇒
             // `tiles[id]` bị ghi đè ⇒ chỉ ô sau được tô (đúng ba lỗi cùng lúc mà RW0 đã ghi ở KDoc lớp lưới).
             body.addView(rows.sectionLabel(domain.displayLabel))
             CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(rows.note(it)) }
-            grid.addGrid(body, CapabilityPicker.singlesOf(picks), cols = 4)
+            grid.addGrid(body, CapabilityPicker.singlesOf(picks), cols = CapabilityPicker.COLS)
         }
     }
 

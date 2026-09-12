@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.util.TypedValue
@@ -132,7 +133,7 @@ class TopStripPicker(
         // mờ hơn cả body ngay dưới — lệch hẳn với các tiêu đề nhóm khác trong CÙNG bảng Cài đặt (đã đổi sang INK
         // đậm). Đồng bộ: INK sáng + đậm + thưa chữ.
         this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-        typeface = android.graphics.Typeface.DEFAULT_BOLD
+        typeface = Typeface.DEFAULT_BOLD
         letterSpacing = 0.06f; setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.S))
     }
 

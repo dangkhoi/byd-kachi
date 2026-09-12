@@ -78,6 +78,9 @@ internal class SideBoardView(context: Context) : View(context) {
     private val valueFloorPx = Sp.dpf(context, Sp.BOARD_VALUE_MIN)
     private val rowFloorPx = Sp.dp(context, Sp.BOARD_ROW_MIN)
 
+    /** SÀN khe nhãn ↔ thân xe — cùng lý do tính một lần như ba sàn trên (xem [onDraw]). */
+    private val gapFloorPx = Sp.dpf(context, Sp.S)
+
     /**
      * Đặt dữ liệu.
      *
@@ -125,8 +128,8 @@ internal class SideBoardView(context: Context) : View(context) {
         val rows = maxOf(plan.left.size, plan.right.size)
         // ⚠ [SOÁT UI 2026-09-12] Khoảng cách nhãn ↔ thân xe có SÀN: `min * GAP_RATIO` một mình cho ~5-7px khi ô ADAS
         // hẹp ([ĐO] ô ~190px ⇒ 190×0.03≈5.7px) làm chữ DÍNH sát nét xe. Sàn `Sp.S` giữ khe đọc được ở mọi cỡ ô;
-        // ô to thì tỉ lệ vẫn thắng.
-        val gap = maxOf(min * GAP_RATIO, Sp.dpf(context, Sp.S))
+        // ô to thì tỉ lệ vẫn thắng. Sàn lấy từ field (xem [gapFloorPx]) — `onDraw` không tra `displayMetrics`.
+        val gap = maxOf(min * GAP_RATIO, gapFloorPx)
         val pad = w * PAD_RATIO
         if (rows > 0) {
             // ⚠ Hình xe chỉ vẽ KHI có dữ liệu đặt quanh nó. [ĐO] ảnh máy ảo: ở ô thấp (kế hoạch chỉ còn một câu), vẽ

@@ -60,6 +60,23 @@ object CapabilityPicker {
     val HINT_PREFIX: String get() = Strings.t("Đã có trong nhóm: ", "Already in a group: ")
 
     /**
+     * SỐ CỘT của mọi lưới ô khả năng — **một con số cho cả hai màn chọn**.
+     *
+     * ## ⚠⚠ Vì sao nó ở `:core` chứ không ở mỗi màn
+     * Đây đúng bệnh mà KDoc lớp này nói: có HAI màn chọn ([AppDrawer] cho ô giữa màn · màn Cài đặt cho thanh nút xe)
+     * và chúng bày **chính những ô ấy**. Khi mỗi màn tự chọn số cột thì chúng lệch nhau, và [ĐO] 2026-09-12 đã lệch
+     * thật: ngăn kéo để Nhóm **3** cột rồi các phần dưới **4** cột **trong CÙNG một vùng cuộn** ⇒ cuộn xuống là tâm
+     * cột nhảy (owner báo *"chọn app vào ô lệch loạn"*), còn màn Cài đặt lại để mục lẻ **5** cột. Ba con số cho một
+     * quyết định = ba chỗ phải sửa, và lần này chỉ hai chỗ được sửa.
+     *
+     * Một vùng cuộn phải có MỘT lưới cột. Danh sách **app** thì khác loại (icon nhỏ, không phải ô khả năng) nên nó
+     * giữ số cột riêng ở tầng vẽ — cố ý không gộp vào đây.
+     *
+     * Không phải số dp (nó là một phép ĐẾM, không phải khoảng cách) nên nó không thuộc thang `KachiSpace`.
+     */
+    const val COLS = 4
+
+    /**
      * 12 ô nhóm theo **thứ tự khai** của [CapabilityGroups.ALL] (thứ hỏi thường xuyên trước).
      *
      * Lấy qua [CapabilityCatalog.all] chứ không tự dựng [CapabilityPick]: mức bằng chứng của nhóm (dấu *"chưa kiểm

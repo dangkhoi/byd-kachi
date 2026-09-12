@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
@@ -260,5 +259,8 @@ class SettingsSections(
         ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
     )
 
-    private fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    // ⚠ [SOÁT ĐỘC LẬP 2026-09-12] `private fun toast(...)` đã XOÁ ở đây: chỗ gọi DUY NHẤT của nó là nhánh chặn xoá
+    // hồ sơ, và nhánh đó biến mất khi nút Xoá chuyển sang "chỉ dựng khi xoá được thật". Kotlin không báo lỗi cho hàm
+    // private không ai gọi, nên nó sẽ ở lại im lặng — đúng loại nợ mà dự án đã phải đi dọn (`cycleDockEdge`,
+    // `LauncherRequirements.notice`). Cần nói một câu ở màn Cài đặt thì dựng lại một dòng, KHÔNG để hàm chờ sẵn.
 }

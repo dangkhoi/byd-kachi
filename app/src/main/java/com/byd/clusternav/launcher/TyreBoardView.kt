@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.util.TypedValue
 import android.view.View
 
 /**
@@ -95,6 +96,17 @@ class TyreBoardView(context: Context) : View(context) {
     private val colAmber = Color.parseColor(KachiTheme.AMBER)
 
     /**
+     * Trần cỡ chữ của dòng kết luận, quy ra **pixel** — tính MỘT LẦN (density không đổi trong đời một View), đúng
+     * cùng lối với các màu phân giải một lần ở trên: [onDraw] chạy theo nhịp trạng thái xe nên không được tra
+     * `displayMetrics` mỗi khung.
+     *
+     * `applyDimension(COMPLEX_UNIT_SP, …)` chứ không nhân tay với `scaledDensity`: trường đó **đã bị đánh dấu bỏ**
+     * (trình biên dịch cảnh báo trên bản này) và nó là một đường đổi sp→px thứ hai nằm ngoài mọi thang.
+     */
+    private val verdictCapPx =
+        TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, VERDICT_CAP_SP, resources.displayMetrics)
+
+    /**
      * Đặt dữ liệu. [values]/[temps] **song song** với [readings] (đã đổi đơn vị + format ở chỗ gọi — ô vẽ KHÔNG tự
      * đổi đơn vị để chỉ có một nơi làm việc đó), [verdict] là kết luận đã quyết định ở `:core`.
      *
@@ -142,7 +154,13 @@ class TyreBoardView(context: Context) : View(context) {
         // off-car — có TRẦN tuyệt đối. `m * 0.072` một mình cho ~43px ở ô Lốp lớn ⇒ câu "chưa có dữ liệu" thành chữ
         // TO NHẤT màn, to hơn cả tiêu đề nhóm (đảo thứ bậc). Trần theo sp (bất biến ô) giữ nó ở cỡ một câu kết luận;
         // ô nhỏ thì tỉ lệ vẫn thắng.
-        midP.textSize = minOf(m * 0.072f, VERDICT_CAP_SP * resources.displayMetrics.scaledDensity)
+        //
+        // ⚠⚠ [SOÁT ĐỘC LẬP 2026-09-12] …nhưng trần TUYỆT ĐỐI một mình lại đảo thứ bậc theo chiều NGƯỢC LẠI: dòng phụ
+        // của từng bánh (`subP`, `m * 0.042`) KHÔNG bị trần, nên ở ô lớn nó VƯỢT dòng kết luận. [ĐO] mật độ 1.5 ⇒
+        // trần = 24px, mà `sub` đạt 24px khi `m ≈ 571px` — và ô Lốp ở bố cục 1 ô có `m ≈ 900px` ⇒ **sub 37.8px vs
+        // verdict 24px**, tức chú thích to gấp 1.6 lần kết luận. Cùng họ lỗi mà chính trần này sinh ra để chữa.
+        // Nên trần có SÀN: kết luận không bao giờ nhỏ hơn chú thích nó kết luận về.
+        midP.textSize = maxOf(minOf(m * 0.072f, verdictCapPx), subP.textSize)
 
         // Thân xe THUÔN DỌC + vạch kính lái — cùng hình với [RadarBoardView] để hai bảng BOARD là một họ. Thân HẸP
         // (0.20w) vì phần lớn bề ngang nay thuộc về bốn ô giá trị: chúng chứa số + đơn vị + dòng phụ.
