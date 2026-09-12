@@ -92,4 +92,20 @@ interface WorkspaceRepository {
 
     /** Ghi bền lựa chọn ngôn ngữ. Mặc định: không lưu (bản giả). */
     fun setLangMode(mode: LangMode) {}
+
+    /**
+     * P7 + P6 — **SỔ CẢNH** của hồ sơ đang chọn (danh sách cảnh + cảnh lúc nổ máy). Xem [SceneBook].
+     *
+     * Theo **hồ sơ** (khác `unitPrefs`/`themeMode`/`langMode` là chung cả máy): cảnh là cách bố trí của một người,
+     * cùng lối với bố cục ([gridLayout]) và thanh nút. Nhờ vậy ca **đổi hồ sơ** tự đúng — `switchProfile` gọi lại
+     * `load()` nên sổ cảnh của hồ sơ mới được nạp cùng lúc với mọi thứ khác.
+     *
+     * Thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa, và mặc định [SceneBook.EMPTY] **khớp** mặc định
+     * của nơi lưu bền (chưa lưu gì ⇒ sổ rỗng) — hai mặc định lệch nhau thì màn Cài đặt nói sai trước cả khi có gì
+     * được ghi (bài học của cờ tự-mở).
+     */
+    fun sceneBook(): SceneBook = SceneBook.EMPTY
+
+    /** Ghi bền sổ cảnh. Mặc định: không lưu (bản giả). */
+    fun setSceneBook(book: SceneBook) {}
 }

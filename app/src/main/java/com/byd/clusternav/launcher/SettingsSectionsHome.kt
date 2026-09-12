@@ -44,6 +44,9 @@ class SettingsHomeSection(
     )
 
     fun build(body: LinearLayout) {
+        // Thứ tự = thứ tự khai trong [SettingsCatalog.entriesOf(HOME)]: CẢNH (cả bộ) → bố cục → hình nền → chip →
+        // thanh nút. Cảnh đứng đầu vì gọi lại một cảnh là việc thường xuyên nhất ở trang này.
+        SettingsSceneSection(context, rows, deps).build(body)
         layout(body)
         wallpaper(body)
         stripPicker.section(body)

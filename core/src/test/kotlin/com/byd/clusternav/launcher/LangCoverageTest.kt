@@ -84,8 +84,9 @@ class LangCoverageTest {
     @Test
     fun `moi muc cai dat co nhan EN — 7 nhom va 17 muc`() {
         assertEquals(7, SettingsCatalog.GROUPS.size)
-        // 17 = 16 + mục `display_lang` của U5·T3 (bộ chọn ngôn ngữ ở nhóm Hiển thị).
-        assertEquals(17, SettingsCatalog.ENTRIES.size)
+        // 20 = 16 + mục `display_lang` của U5·T3 (bộ chọn ngôn ngữ) + 3 mục CẢNH của P7/P6
+        // (`home_scenes` · `home_scene_boot` · `home_scene_save`).
+        assertEquals(20, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -119,12 +120,13 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 262`() {
+    fun `tong so nhan co ban EN dung 265`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
             LauncherRequirements.ALL
-        assertEquals(262, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 265 = 262 + 3 mục CẢNH của P7/P6 (danh sách cảnh · cảnh lúc nổ máy · nút lưu cảnh).
+        assertEquals(265, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

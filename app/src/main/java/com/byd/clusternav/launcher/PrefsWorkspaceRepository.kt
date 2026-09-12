@@ -7,34 +7,98 @@ import android.content.Context
  * Chạm [Context] nên KHÔNG phải "file thuần" (LayeringRules không tính vào `pureFilesStillInApp`).
  *
  * Áp quy tắc bố cục mặc định (3 widget) khi hồ sơ trống — chuyển logic `initialState()` cũ từ Activity vào tầng dữ liệu,
- * để [HomeViewModel] chỉ cần `load()`. KHÔNG tự ghi bền lúc load (giống cũ: mặc định chỉ hiện, được ghi khi user chạm).
+ * để [HomeViewModel] chỉ cần `load()`.
+ *
+ * ⚠ **Một ngoại lệ có chủ ý cho luật "không ghi bền lúc load"**: lượt `load()` ĐẦU TIÊN của tiến trình áp **cảnh lúc
+ * nổ máy** (P7) và ghi bền kết quả. Lý do đầy đủ ở KDoc [load]; tóm lại là áp cảnh mà không ghi thì màn hình và đĩa
+ * nói hai chuyện khác nhau. Mọi lượt `load()` sau (đổi/thêm/xoá hồ sơ) **chỉ đọc**, như trước.
  */
 class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
 
     private val prefs = WorkspacePrefs(context.applicationContext)
 
-    override fun load(): HomeUiState = HomeUiState(
-        workspace = defaultIfEmpty(prefs.load()),
-        dock = prefs.loadDock(),
-        activeProfile = prefs.activeProfile(),
-        profiles = prefs.profiles(),
-        themeMode = prefs.themeMode(),
-        embedded = false,
-        // [SOÁT P1-1 kiến trúc] Ba nhóm này nằm ở KHOÁ RIÊNG (không đi qua `persist`) nhưng vẫn phải có mặt trong
-        // state ngay từ lượt nạp. Nạp ở đây thì ca **đổi hồ sơ** tự đúng: `switchProfile` gọi lại `load()` nên bố cục
-        // tự vẽ của hồ sơ mới được nạp cùng lúc với mọi thứ khác — trước đây phải nhớ nạp lại bằng tay ở tầng UI
-        // (và đã từng quên, làm hồ sơ B hiện bố cục của A rồi bấm Lưu là ghi đè mất bố cục của B).
-        customLayout = prefs.gridLayout().takeIf { it.frames.isNotEmpty() },
-        unitPrefs = prefs.unitPrefs(),
-        wallpaper = prefs.wallpaperPrefs(),
-        topStrip = prefs.topStrip(),
-        // S1·T4: nạp cùng lượt với mọi thứ khác ⇒ mở lại màn Cài đặt là thấy đúng cờ đang lưu (bài học P1-1: nạp
-        // bằng tay ở tầng UI thì sẽ có lần quên).
-        autostart = prefs.launcherAutostart(),
-        // U5·T3: nạp cùng lượt ⇒ bộ chọn ngôn ngữ mở ra là thấy đúng lựa chọn đang lưu. `LangHost` giải nghĩa ra
-        // `Strings.current` từ giá trị này (nó cần locale của máy nên không giải được ở `:core`).
-        langMode = prefs.langMode(),
-    )
+    /**
+     * Lượt [load] ĐẦU TIÊN của tiến trình này đã đi qua chưa — đây là cách nhận ra *"launcher vừa khởi động nguội"*.
+     *
+     * ## ⚠⚠ Đây là chỗ định nghĩa NGỮ NGHĨA của "cảnh lúc nổ máy" (P7 · R3) — đọc trước khi sửa
+     * `load()` còn được gọi lại **giữa phiên** cho `switchProfile`/`addProfile`/`deleteProfile`. Nếu áp cảnh khởi động
+     * ở *mọi* lượt `load()` thì **đổi hồ sơ cũng bị áp cảnh** — người dùng bấm sang hồ sơ B và bố cục vừa nạp của B
+     * lập tức bị cảnh khởi động của B ghi đè. Cờ này giới hạn việc áp vào đúng **một lần cho mỗi lần tiến trình sống**.
+     *
+     * `@Volatile` vì `AppContainer` dựng repository một lần rồi dùng từ nhiều thread (Activity trên main;
+     * `KachiAutostart.logBootPlan` gọi `load()` trên thread nền của foreground service).
+     */
+    @Volatile private var coldStartDone = false
+
+    /**
+     * Nạp trạng thái đầy đủ của hồ sơ đang chọn, và ở **lượt đầu của tiến trình** thì áp **cảnh lúc nổ máy** nếu có
+     * (P7 · R3).
+     *
+     * ## Ngữ nghĩa đã chọn: áp lúc launcher KHỞI ĐỘNG NGUỘI (một lần cho mỗi lần tiến trình sống)
+     * Nói thẳng cái được và cái mất, vì đây là chỗ có thể làm mất công của người dùng:
+     *  - **Được**: một cơ chế duy nhất, luôn chạy, và đo được (`force-stop` rồi mở lại ⇒ ra đúng cảnh — T3 của spec).
+     *  - **Mất**: cách bố trí **chưa lưu thành cảnh** sẽ bị thay khi tiến trình khởi động lại.
+     *
+     * ## Vì sao KHÔNG dùng "chỉ khi đúng là máy vừa nổ"
+     * Dự án **phân biệt được** thật (`RebindReceiver` nhận `BOOT_COMPLETED` → `KachiAutostartService` →
+     * `KachiAutostart.runBoot`), và tôi đã dựng xong đôi dấu `markBootPending`/`consumeBootPending` rồi **bỏ**. [ĐO]
+     * đọc mã đường đó cho ba lỗ không vá được ở tầng này:
+     *  1. `runBoot` **thoát ngay dòng đầu** khi người dùng tắt `launcher_autostart` ⇒ "cảnh lúc nổ máy" chết theo một
+     *     công tắc **không liên quan**, im lặng. Đúng loại phụ thuộc ẩn làm tính năng trông như hỏng.
+     *  2. Nó cũng chạy trên `MY_PACKAGE_REPLACED` (cài bản mới) — **không phải** nổ máy ⇒ ngữ nghĩa "chỉ khi nổ máy"
+     *     đã sai ngay trong chính đường đóng dấu.
+     *  3. Nó có `AutostartGate` (một lượt đang bay + nguội 30 s) ⇒ một chùm trigger lúc boot có thể **bỏ** lượt đóng
+     *     dấu ⇒ cảnh khởi động lên *thất thường*. Chạy 8/10 lần khó dùng hơn luôn chạy.
+     *
+     * Rủi ro còn lại được trả bằng ba thứ **cụ thể**, không bằng lời hứa: hàng cảnh khởi động trong Cài đặt **nói
+     * thẳng** hợp đồng này; có đường **bỏ dấu** (chạm lại) mà không phải xoá cảnh; và cảnh chỉ chạm **vùng làm việc** —
+     * hình nền, chip thanh trạng thái, đơn vị, sáng/tối, ngôn ngữ, hồ sơ đều KHÔNG đổi (§6 OQ1).
+     *
+     * ## Vì sao có GHI BỀN ở đây (lớp này vốn "không tự ghi lúc load")
+     * Áp cảnh là một thay đổi trạng thái thật. Chỉ đổi trong bộ nhớ mà không ghi thì màn hình và đĩa nói hai chuyện
+     * khác nhau — đúng **bẫy hai-bản-sao** dự án đã trả giá bốn lần, và `KachiAutostart.logBootPlan` (đọc `load()` để
+     * biết ô nào có app) sẽ thấy dữ liệu cũ.
+     *
+     * ⚠ Mọi field vẫn nạp **trong chính hàm này** (không tách ra hàm phụ): ba bài canh của dự án
+     * (`TopStripWiringContractTest` · `SettingsScreenWiringContractTest` · `GridSeamGuardTest`) đọc **thân của
+     * `override fun load()`** để chốt *"nạp cùng một lượt, không nạp riêng ở tầng UI"*. Tách ra hàm phụ làm ba bài đó
+     * quét một thân rỗng — chúng đã đỏ đúng lúc tôi thử tách, và đó là hành vi đúng của chúng.
+     */
+    override fun load(): HomeUiState {
+        val base = HomeUiState(
+            workspace = defaultIfEmpty(prefs.load()),
+            dock = prefs.loadDock(),
+            activeProfile = prefs.activeProfile(),
+            profiles = prefs.profiles(),
+            themeMode = prefs.themeMode(),
+            embedded = false,
+            // [SOÁT P1-1 kiến trúc] Ba nhóm này nằm ở KHOÁ RIÊNG (không đi qua `persist`) nhưng vẫn phải có mặt trong
+            // state ngay từ lượt nạp. Nạp ở đây thì ca **đổi hồ sơ** tự đúng: `switchProfile` gọi lại `load()` nên bố
+            // cục tự vẽ của hồ sơ mới được nạp cùng lúc với mọi thứ khác — trước đây phải nhớ nạp lại bằng tay ở tầng
+            // UI (và đã từng quên, làm hồ sơ B hiện bố cục của A rồi bấm Lưu là ghi đè mất bố cục của B).
+            customLayout = prefs.gridLayout().takeIf { it.frames.isNotEmpty() },
+            unitPrefs = prefs.unitPrefs(),
+            wallpaper = prefs.wallpaperPrefs(),
+            topStrip = prefs.topStrip(),
+            // S1·T4: nạp cùng lượt với mọi thứ khác ⇒ mở lại màn Cài đặt là thấy đúng cờ đang lưu (bài học P1-1: nạp
+            // bằng tay ở tầng UI thì sẽ có lần quên).
+            autostart = prefs.launcherAutostart(),
+            // U5·T3: nạp cùng lượt ⇒ bộ chọn ngôn ngữ mở ra là thấy đúng lựa chọn đang lưu. `LangHost` giải nghĩa ra
+            // `Strings.current` từ giá trị này (nó cần locale của máy nên không giải được ở `:core`).
+            langMode = prefs.langMode(),
+            // P7/P6: sổ cảnh nạp cùng lượt ⇒ ca ĐỔI HỒ SƠ tự đúng (mỗi hồ sơ một bộ cảnh + một cảnh khởi động).
+            scenes = prefs.sceneBook(),
+        )
+        // Lượt `load()` thứ hai trở đi là ĐỔI/THÊM/XOÁ HỒ SƠ, không phải khởi động ⇒ **không** áp cảnh. Thiếu cờ này
+        // thì bấm sang hồ sơ B sẽ bị cảnh khởi động của B ghi đè ngay lên bố cục vừa nạp của B.
+        if (coldStartDone) return base
+        coldStartDone = true
+        val boot = base.scenes.bootScene() ?: return base
+        val applied = base.withScene(boot)
+        persist(applied)
+        setGridLayout(applied.customLayout)   // bố cục ở khoá RIÊNG, không nằm trong persist()
+        return applied
+    }
 
     override fun persist(state: HomeUiState) {
         prefs.setActiveProfile(state.activeProfile)
@@ -87,6 +151,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun langMode(): LangMode = prefs.langMode()
 
     override fun setLangMode(mode: LangMode) = prefs.setLangMode(mode)
+
+    override fun sceneBook(): SceneBook = prefs.sceneBook()
+
+    override fun setSceneBook(book: SceneBook) = prefs.setSceneBook(book)
 
     /** Hồ sơ trống (mọi ô Empty) → bố cục mặc định 3 widget (khớp `initialState()` cũ của KachiHomeActivity). */
     private fun defaultIfEmpty(ws: WorkspaceState): WorkspaceState =

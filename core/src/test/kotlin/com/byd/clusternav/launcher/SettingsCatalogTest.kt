@@ -142,15 +142,30 @@ class SettingsCatalogTest {
     fun `muc khong luu ben thi khai prefKey null`() {
         val noKey = SettingsCatalog.ENTRIES.filter { it.prefKey == null }.map { it.id }
         assertEquals(
-            listOf("home_grid_editor", "system_permissions", "clusternav_open", "about_version"),
+            listOf(
+                // P7/P6: nút "Lưu cảnh hiện tại…" là một VIỆC LÀM; cảnh lưu ra thì nằm ở khoá của `home_scenes`
+                // (một khoá, một chủ — cùng lối với cặp `home_grid_editor` / `home_grid`).
+                "home_scene_save",
+                "home_grid_editor", "system_permissions", "clusternav_open", "about_version",
+            ),
             noKey,
-            "bốn mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "năm mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")
         assertNull(SettingsCatalog.groupOf(""), "chuỗi rỗng không phải khoá")
     }
 
+    /**
+     * Thứ tự trong nhóm "Màn hình chính": **cả bộ trước, rồi khung ra nội dung**.
+     *
+     * ⚠ P7/P6 **mở rộng** luật cũ, không bỏ nó. Luật cũ là *"bố cục trước, rồi mới tới thứ nằm trong nó"* và nó vẫn
+     * được chốt nguyên vẹn ở phép so thứ hai dưới đây. Cảnh chen lên đầu vì nó không phải một *phần* của bố cục mà là
+     * **cả bộ** (bố cục + nội dung ô + thanh nút), và vì gọi lại một cảnh là việc làm **thường xuyên nhất** ở trang
+     * này — để nó sau mục thanh nút thì phải cuộn qua **lưới 187 ô** mới tới, tức "gọi lại nhanh" mất nghĩa. Cùng lập
+     * luận đã đặt "viền thanh nút" trước lưới 187 ô: thứ tự danh mục là thứ tự **dùng được**, không phải thứ tự nghe
+     * hợp lý khi đọc danh sách.
+     */
     @Test
     fun `entriesOf phu het ENTRIES va giu thu tu khai`() {
         val byGroup = SettingsCatalog.GROUPS.flatMap { SettingsCatalog.entriesOf(it) }
@@ -158,9 +173,15 @@ class SettingsCatalogTest {
             SettingsCatalog.ENTRIES.size, byGroup.size,
             "gộp mục của 7 nhóm phải ra đủ danh mục — thiếu nghĩa là có mục không nhóm nào bày ra",
         )
+        val home = SettingsCatalog.entriesOf(SettingsGroup.HOME).map { it.id }
+        assertEquals(
+            listOf("home_scenes", "home_scene_boot", "home_scene_save"),
+            home.take(3),
+            "cả bộ (cảnh) đứng trước các phần rời — nó là đường tắt của mọi thứ bên dưới",
+        )
         assertEquals(
             listOf("home_preset", "home_grid", "home_grid_editor"),
-            SettingsCatalog.entriesOf(SettingsGroup.HOME).take(3).map { it.id },
+            home.drop(3).take(3),
             "trong nhóm đi từ khung ra nội dung: bố cục trước, rồi mới tới thứ nằm trong nó",
         )
     }

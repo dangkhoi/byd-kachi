@@ -40,6 +40,7 @@ class HomePanels(
     private val onAddProfile: () -> Unit,
     private val onDeleteProfile: (String) -> Unit,
     private val onOpenClusterNav: () -> Unit,
+    private val scenes: SceneActions,
     private val shellUsable: () -> Boolean,
     private val goImmersive: () -> Unit,
 ) {
@@ -109,6 +110,9 @@ class HomePanels(
             onAddProfile = onAddProfile,
             onDeleteProfile = { name -> onDeleteProfile(name) },
             onOpenClusterNav = onOpenClusterNav,
+            // P7/P6: chuyển thẳng bộ việc làm với cảnh (hộp thoại nhập tên nằm trong `SceneController`, cùng khuôn
+            // với `ProfileBar.addDialog` — không dựng hộp thoại thứ hai cho cùng việc "hỏi một cái tên").
+            scenes = scenes,
         )
         val panel = SettingsPanel(activity, deps) { closeSettings() }
         settingsPanel = panel

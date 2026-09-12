@@ -31,8 +31,8 @@ enum class SettingsGroup(
     val subEn: String,
 ) : Localized {
     HOME(
-        "home", "Màn hình chính", "Bố cục, hình nền, chip thanh trạng thái và thanh nút xe",
-        "Home screen", "Layout, wallpaper, status-bar chips and the car button bar",
+        "home", "Màn hình chính", "Cảnh, bố cục, hình nền, chip thanh trạng thái và thanh nút xe",
+        "Home screen", "Scenes, layout, wallpaper, status-bar chips and the car button bar",
     ),
     DISPLAY(
         "display", "Hiển thị & đơn vị",
@@ -134,6 +134,17 @@ object SettingsCatalog {
      */
     val ENTRIES: List<SettingsEntry> = listOf(
         // ── Màn hình chính ──
+        // ── CẢNH đứng ĐẦU nhóm, trước từng phần rời ──
+        // Một cảnh là **cả bộ** những gì các mục dưới đây đặt riêng lẻ (bố cục + nội dung ô + thanh nút), nên nó
+        // thuộc đúng nhóm này chứ không phải một nhóm mới: gộp-và-các-phần phải nằm cạnh nhau, không thì người dùng
+        // chỉnh bố cục ở đây rồi phải đi tìm chỗ khác để lưu lại. Đặt TRƯỚC vì gọi lại một cảnh là việc làm **thường
+        // xuyên nhất** ở trang này, còn đi chỉnh từng phần thì thưa hơn — thứ tự danh mục là thứ tự dùng được (cùng
+        // lập luận đã đặt "viền thanh nút" trước lưới 187 ô).
+        SettingsEntry("home_scenes", SettingsGroup.HOME, "Cảnh đã lưu", "scenes", "Saved scenes"),
+        SettingsEntry("home_scene_boot", SettingsGroup.HOME, "Cảnh lúc nổ máy", "boot_scene", "Scene on engine start"),
+        // Không lưu gì: đây là NÚT lưu trạng thái đang dùng thành cảnh. Cảnh lưu ra thì nằm ở "home_scenes" phía
+        // trên — một khoá, một chủ (cùng lối với "home_grid_editor" và "home_grid").
+        SettingsEntry("home_scene_save", SettingsGroup.HOME, "Lưu cảnh hiện tại…", labelEn = "Save current scene…"),
         SettingsEntry("home_preset", SettingsGroup.HOME, "Bố cục sẵn", "preset", "Preset layout"),
         SettingsEntry("home_grid", SettingsGroup.HOME, "Bố cục tự vẽ", "grid_layout", "Custom layout"),
         // Không lưu gì: đây là NÚT mở bảng vẽ. Bố cục vẽ ra thì lưu ở "home_grid" phía trên — một khoá, một chủ.

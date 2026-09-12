@@ -10,6 +10,101 @@ sealed interface SlotContent {
     data class Widget(val ids: List<String>) : SlotContent {
         constructor(id: String) : this(listOf(id))   // tương thích chỗ gọi cũ (1 widget)
     }
+
+    /**
+     * Ô chứa **widget Android của app khác** (P6 · T4) — KHÁC hẳn [Widget] (thẻ Kachi dựng tay).
+     *
+     * ## Vì sao mang cả [widgetId] lẫn [provider], không chỉ một trong hai
+     *  - [widgetId] là số nền tảng cấp (`allocateAppWidgetId`). Nó là **thứ duy nhất** dựng lại được view sau khi
+     *    launcher khởi động lại, nên **phải lưu bền**. Không lưu thì mỗi lần mở app là một id mới ⇒ id cũ **rò**
+     *    (nhà cung cấp vẫn cập nhật cho một ô không còn ai xem — đúng thứ [AppWidgetIds] sinh ra để chặn).
+     *  - [provider] (ComponentName dạng phẳng) là để **nói ra được** khi id đã chết: app bị gỡ / bị vô hiệu thì
+     *    `getAppWidgetInfo(id)` trả `null`, lúc đó chỉ còn cái tên này để hiện *"widget của app X không còn"*
+     *    thay vì để lại một ô trống bí ẩn. Nó cũng là thứ ràng buộc lại id khi cần.
+     *
+     * ⚠ **KHÔNG** phải "thẻ dựng tay có thêm id". Ô này do nhà cung cấp tự vẽ (RemoteViews đẩy sang), nên tầng vẽ
+     * **không được** dựng lại nó theo nhịp trạng thái xe — dựng lại là tháo view đang nhận RemoteViews mỗi giây.
+     * Xem `WorkspaceRenderPlanner.decide` (bài học `w_photos`).
+     */
+    data class AppWidget(val widgetId: Int, val provider: String) : SlotContent
+}
+
+/**
+ * MÃ HOÁ nội dung một ô — **nguồn duy nhất** cho dạng chuỗi của [SlotContent].
+ *
+ * ## Vì sao nó ở `:core` chứ ở lại `WorkspacePrefs`
+ * Đây từng là hai hàm `private` trong `WorkspacePrefs` (:app). Khi cảnh (P7/P6) cần lưu **cùng** nội dung ô, chỉ có
+ * hai đường: chép lại phép mã hoá, hoặc đưa nó về một chỗ. Chép lại chính là cách dự án đã sinh ra **ngưỡng lốp thứ
+ * ba** và **hai bảng màu** — và ở đây hậu quả nặng hơn: hai bộ mã hoá lệch nhau nghĩa là cảnh đọc ra nội dung ô khác
+ * với thứ người dùng đã lưu, âm thầm.
+ *
+ * Dạng chuỗi của ba loại ô CŨ **KHÔNG đổi một byte** (`app:<gói>` · `widget:<id>,<id>` · rỗng = ô trống) ⇒ cấu hình
+ * đã nằm trên đĩa của xe đọc lên nguyên vẹn.
+ */
+object SlotCodec {
+
+    fun encode(c: SlotContent): String = when (c) {
+        SlotContent.Empty -> ""
+        is SlotContent.App -> "$APP${c.pkg}"
+        is SlotContent.Widget -> "$WIDGET${c.ids.joinToString(",")}"
+        is SlotContent.AppWidget -> "$APP_WIDGET${c.widgetId}$SEP${c.provider}"
+    }
+
+    /** Chuỗi lạ/rỗng ⇒ ô trống (không ném): chuỗi này đến từ đĩa và có thể bị sửa tay. */
+    fun decode(s: String): SlotContent = when {
+        // ⚠ THỨ TỰ: `aw:` phải xét TRƯỚC `app:`? Không — hai tiền tố không lồng nhau (`aw:` ≠ đầu của `app:`), nên
+        // thứ tự ở đây không quan trọng. Ghi ra vì tiền-tố-lồng-nhau đã là bẫy thật của dự án ở `CapabilityIcons`
+        // (`tyre_t_` phải xét trước `tyre_p_`), và người sửa sau sẽ tự hỏi đúng câu này.
+        s.startsWith(APP) -> SlotContent.App(s.removePrefix(APP))
+        s.startsWith(WIDGET) -> s.removePrefix(WIDGET).split(",").filter { it.isNotBlank() }
+            .let { if (it.isEmpty()) SlotContent.Empty else SlotContent.Widget(it) }
+        s.startsWith(APP_WIDGET) -> decodeAppWidget(s.removePrefix(APP_WIDGET))
+        else -> SlotContent.Empty
+    }
+
+    /**
+     * `<id>@<provider>` → [SlotContent.AppWidget]. Hỏng ⇒ **ô trống**, không ném.
+     *
+     * Ba ca hỏng đều có thật: thiếu dấu phân cách (sửa tay), id không phải số (sửa tay), id ≤ 0 (nền tảng KHÔNG bao
+     * giờ cấp id ≤ 0, nên giá trị đó chỉ đến từ dữ liệu rác — nhận nó vào sẽ tạo một ô xin view cho id không tồn tại).
+     * Provider rỗng cũng là hỏng: không có tên thì lúc id chết không nói được *widget của app nào*.
+     */
+    private fun decodeAppWidget(body: String): SlotContent {
+        val cut = body.indexOf(SEP)
+        if (cut <= 0) return SlotContent.Empty
+        val id = body.substring(0, cut).toIntOrNull() ?: return SlotContent.Empty
+        val provider = body.substring(cut + 1)
+        return if (id > 0 && provider.isNotBlank()) SlotContent.AppWidget(id, provider) else SlotContent.Empty
+    }
+
+    private const val APP = "app:"
+    private const val WIDGET = "widget:"
+
+    /**
+     * Tiền tố widget bên thứ ba. **Mới ở T4** — dạng chuỗi của ba loại cũ KHÔNG đổi một byte, nên cấu hình đã nằm
+     * trên đĩa của xe đọc lên nguyên vẹn, và bản cũ đọc chuỗi này ra **ô trống** (không sập) nếu người dùng hạ cấp.
+     */
+    private const val APP_WIDGET = "aw:"
+
+    /**
+     * Dấu phân cách id/provider.
+     *
+     * ## ⚠⚠ KHÔNG được là `|` — [ĐO] 2026-09-12, bản đầu dùng `|` và nó làm **mất cảnh trong im lặng**
+     * Đầu ra của [encode] được **nhúng vào** chuỗi lưu của [SceneBook], nơi `|` ngăn TRƯỜNG và `;` ngăn Ô. Một ô
+     * widget bên thứ ba mang thêm một `|` ⇒ bản ghi cảnh có **8 trường thay vì 7** ⇒ [SceneBook.decode] bỏ cả cảnh.
+     * Đo trên `emulator-5554`: lưu cảnh với widget đồng hồ ra chuỗi
+     * `s1|CoWidget|ONE|…|widget:g_windows;widget:g_adas;aw:651|com.google.android.deskclock/…;…|BOTTOM|lock,…`
+     * (8 trường), khởi động lại launcher ⇒ màn Cài đặt hiện *"Chưa có cảnh nào · 0 / 8"* — cảnh người dùng vừa lưu
+     * **biến mất**, không một lời nào.
+     *
+     * ⇒ Ký tự ở đây phải không nằm trong [SceneBook.RESERVED] và cũng không phải `,` (dấu ngăn danh sách thẻ dựng
+     * tay). `@` đạt cả hai và **không thể** xuất hiện trong một ComponentName dạng phẳng (`gói/lớp` chỉ gồm ký tự
+     * định danh Java, `.`, `$` và `/`) nên nó cũng không đụng chính dữ liệu nó ngăn.
+     *
+     * Chốt không phải là lời hứa: `SceneBookTest` có bài quét **mọi** loại ô, đòi đầu ra `encode` không chứa ký tự
+     * nào của [SceneBook.RESERVED] — nên loại ô thứ năm mai sau vi phạm là ĐỎ, chứ không phải mất cảnh.
+     */
+    private const val SEP = "@"
 }
 
 /**

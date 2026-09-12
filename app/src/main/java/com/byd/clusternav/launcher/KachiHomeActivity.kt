@@ -78,6 +78,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onAddProfile = { profileBar.addDialog() },    // dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai
             onDeleteProfile = { name -> viewModel.deleteProfile(name) },
             onOpenClusterNav = { startActivity(Intent(this, MainActivity::class.java)) },
+            scenes = sceneController,                     // P7/P6 — lưu/gọi/nổ-máy/đổi-tên/xoá cảnh
             shellUsable = { shell != null },
             goImmersive = { goImmersive() },
         )
@@ -100,9 +101,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     }
     private lateinit var drawerController: DrawerController
     private lateinit var profileBar: ProfileBar
+    private val sceneController by lazy { SceneController(this, viewModel) }   // P7/P6 (xem [SceneActions])
     private lateinit var mainArea: LinearLayout
     private lateinit var rootFrame: FrameLayout
     private val media by lazy { MediaBridge(this) }        // đọc nhạc live cho w_media + transport
+    /** T4 — chủ DUY NHẤT của widget Android bên thứ ba (host + id + bind-grant). Xem `AppWidgetSlotHost`. */
+    private val appWidgets by lazy { AppWidgetSlotHost(this, { shell }, { submitBg(it) }, { drawerController.say(it) }) }
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
     /**
      * Lựa chọn đang hiệu lực — **đọc từ nguồn sự thật duy nhất** ([HomeViewModel.uiState]), KHÔNG giữ bản sao.
@@ -170,7 +174,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         workspace = WorkspaceView(this).apply {
             mediaProvider = { media.read() }                          // nhạc live (Bitmap ở :app, ngoài state :core)
-            onMedia = { handleMedia(it) }
+            onMedia = { media.handle(it) }
             control = container.carControl                             // RW0: ô giữa màn đặt được cả HÀNH ĐỘNG (R2)
             // Đơn vị đặt TRƯỚC lượt render đầu: nếu để lượt render đầu chạy với mặc định rồi mới đặt, thì người dùng
             // đã chọn (vd psi) sẽ phải chịu thêm một lượt dựng lại ô widget mỗi lần mở HOME mà không được gì.
@@ -208,6 +212,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onPickWidgets = { idx, ids -> assignWidgets(idx, ids) },
             onOpenApp = { pkg -> openAppFullscreen(pkg) },                        // U3
             recentApps = { container.workspaceRepository.recentApps() },
+            appWidgetPicks = { idx ->        // T4: ràng buộc xong mới ghi vào ô; thất bại ⇒ bảng tự nói, ô không đổi
+                appWidgets.picks { i -> appWidgets.bind(i) { c -> c?.let { drawerController.close(); viewModel.assignAppWidget(idx, it) } } }
+            },
         )
 
         // Thu NGUỒN SỰ THẬT: mọi thay đổi state → render (view-only). repeatOnLifecycle huỷ khi < STARTED.
@@ -235,6 +242,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         val dispatcher = container.windowDispatcher
         // P9: nạp bố cục tự vẽ TRƯỚC khi sắp cửa sổ, để lần dựng đầu đã đúng khung (không nháy từ bố cục sẵn sang).
         // Bố cục tự vẽ đã được nạp vào state ở `repository.load()` ⇒ ở đây chỉ ĐẨY xuống view.
+        workspace.appWidgetView = { appWidgets.createView(it) }
+        workspace.appWidgetName = { appWidgets.deadLabel(it) }
+        appWidgets.sweep(viewModel.uiState.value)   // SAU load(): xem KDoc sweep (thứ tự là bắt buộc)
         workspace.setCustomLayout(customLayout)
         windows.seedLocations()
         val seam = dispatcher.launcherSeam()
@@ -274,6 +284,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         val prev = shownState
         // T1/T3 — bảng màu HOẶC ngôn ngữ đổi ⇒ dựng lại màn; `or` KHÔNG ngắn mạch vì `sync` là chỗ ÁP bảng màu.
         if ((ThemeHost.sync(state) or LangHost.changed(prev, state)) && prev != null) { recreate(); return }
+        // T4: thu hồi id ở ĐÚNG chỗ diff này ⇒ mọi đường đổi đều qua đây. CẢ state, vì "còn dùng" tính cả sổ cảnh.
+        prev?.let { appWidgets.reclaim(it, state) }
         workspace.render(state.workspace, state.carStatus)
         // ⚠ xét CẢ `topStrip`: thiếu nó thì đổi danh sách chip mà màn hình không đổi gì (off-car trạng thái xe gần như không đổi).
         if (prev == null || prev.carStatus != state.carStatus || prev.topStrip != state.topStrip) {
@@ -296,10 +308,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             topStrip.setProfileInitial(state.activeProfile)
             panels.invalidateSettings()
         }
-        // [SOÁT P1-1 kiến trúc] Bố cục tự vẽ đẩy xuống view ở ĐÚNG MỘT CHỖ: theo state, khi state đổi. Trước đây
-        // chỗ này tự đọc lại repository khi đổi hồ sơ (một đường đọc bền nằm trong tầng UI), còn việc đẩy xuống view
-        // thì nằm ở hàm khác ⇒ hai đường song song cho cùng một việc. Nay `load()`/`switchProfile()` đã nạp bố cục
-        // vào state nên ca đổi hồ sơ tự đúng, không cần nhánh riêng.
+        // [SOÁT P1-1 kiến trúc] Bố cục tự vẽ đẩy xuống view ở ĐÚNG MỘT CHỖ: theo state, khi state đổi. Trước đây chỗ
+        // này tự đọc lại repository khi đổi hồ sơ (đường đọc bền nằm trong tầng UI) còn việc đẩy xuống view thì ở hàm
+        // khác ⇒ hai đường song song. Nay `load()`/`switchProfile()` đã nạp bố cục vào state nên ca đó tự đúng.
+        // P7/P6: sổ cảnh đổi ⇒ danh sách cảnh phải vẽ lại (trang Cài đặt được nhớ nên không tự dựng lại; thiếu dòng
+        // này thì lưu/xoá một cảnh là "màn hình không đổi gì" — họ lỗi của nút bố cục sẵn ở P9).
+        if (prev != null && prev.scenes != state.scenes) panels.invalidateSettings()
         if (prev?.customLayout != state.customLayout) {
             workspace.setCustomLayout(state.customLayout)
             windows.reflow()
@@ -397,23 +411,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * làm khi state đổi (một chiều). Trước đây hàm này tự gán field riêng + tự ghi bền + tự đẩy xuống view, tức
      * ba việc ở một chỗ và không ai bảo đảm ba việc đó thấy cùng một giá trị.
      */
-    private fun applyCustomLayout(layout: GridLayout?) {
-        viewModel.setCustomLayout(layout)
-    }
+    private fun applyCustomLayout(layout: GridLayout?) = viewModel.setCustomLayout(layout)
 
-
-
-    /** Transport nhạc từ widget w_media → [MediaBridge] (no-op nếu off-car/không quyền). */
-    private fun handleMedia(action: String) {
-        when (action) {
-            "play" -> media.play()
-            "pause" -> media.pause()
-            "next" -> media.next()
-            "prev" -> media.prev()
-        }
-    }
-
-    override fun onStart() { super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START) }
+    override fun onStart() { super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START); appWidgets.startListening() }
 
     override fun onResume() {
         super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
@@ -441,7 +441,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     override fun onPause() { super.onPause(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE); handler.removeCallbacks(tick) }
 
-    override fun onStop() { super.onStop(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP) }
+    override fun onStop() { super.onStop(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP); appWidgets.stopListening() }
 
     override fun onDestroy() {
         super.onDestroy(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)

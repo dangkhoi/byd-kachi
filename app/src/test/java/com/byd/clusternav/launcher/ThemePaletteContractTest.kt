@@ -297,6 +297,35 @@ class ThemePaletteContractTest {
     }
 
     /**
+     * ⚠⚠ Ô widget bên thứ ba phải có **nền tối cố định**, không theo chủ đề.
+     *
+     * [ĐO] 2026-09-12 `emulator-5554`, bảng SÁNG + widget đồng hồ: ô chỉ còn **0.15%** điểm mực tối, chữ giờ gần như
+     * biến mất — RemoteViews của app khác dùng chữ TRẮNG theo quy ước "widget nằm trên nền tối", và launcher **không
+     * sửa được** màu đó. Cùng ngoại lệ đã ghi cho nút ⇄ (`scrimBtn`): vai nào nằm trên pixel của app khác thì nó
+     * phải một mình bảo đảm đọc được.
+     */
+    @Test
+    fun `o widget ben thu ba co nen toi co dinh khong theo chu de`() {
+        assertEquals(
+            KachiPalette.DARK.widgetBacking, KachiPalette.LIGHT.widgetBacking,
+            "vai này CỐ Ý dùng chung mã cho hai bảng — nội dung ô do app khác vẽ, không theo chủ đề của ta",
+        )
+        // Và nó phải thật sự TỐI: chữ trắng của widget phải đạt 4.5:1 trên nó.
+        val r = ratio(KachiPalette.DARK.onAccent, KachiPalette.DARK.widgetBacking)
+        assertTrue(r >= 4.5, "chữ trắng của widget trên nền này chỉ ${fmt(r)}:1 — widget sẽ không đọc được")
+        // Tầng vẽ phải THẬT SỰ dùng nó ở nhánh widget bên thứ ba (khai một vai mà không ai vẽ = vai chết).
+        val view = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
+        assertTrue(
+            "KachiTheme.WIDGET_BACKING" in view,
+            "phải vẽ nền tối phía sau widget bên thứ ba, không thì bảng sáng làm widget mất chữ",
+        )
+        assertTrue(
+            "fl.addView(appWidgetBacking(), hostLp)" in view,
+            "nền phải nằm DƯỚI view của widget và cùng khung với nó",
+        )
+    }
+
+    /**
      * ĐÚNG MỘT chỗ ghi bảng màu trong cả `app/src/main`.
      *
      * [KachiTheme.palette] là hình chiếu lúc vẽ của `HomeUiState.themeMode`. Chỗ ghi thứ hai biến nó thành **trạng

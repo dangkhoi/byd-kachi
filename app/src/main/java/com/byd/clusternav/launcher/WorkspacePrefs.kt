@@ -181,18 +181,38 @@ class WorkspacePrefs(context: Context) {
 
     fun setWallpaperPrefs(prefs: WallpaperPrefs) { sp.edit().putString(K_WALL, prefs.encode()).apply() }
 
-    private fun encode(c: SlotContent): String = when (c) {
-        SlotContent.Empty -> ""
-        is SlotContent.App -> "app:${c.pkg}"
-        is SlotContent.Widget -> "widget:${c.ids.joinToString(",")}"
+    /**
+     * P7 + P6 — **SỔ CẢNH**, lưu THEO HỒ SƠ (mỗi tài xế có bộ cảnh riêng, giống bố cục và thanh nút).
+     *
+     * ## Vì sao HAI khoá, không phải một
+     * `scenes` = danh sách; `boot_scene` = mã cảnh lúc nổ máy. Chúng là **hai câu hỏi khác nhau** của người dùng
+     * (*"tôi có những cảnh nào"* vs *"cái nào lên lúc nổ máy"*) nên mỗi câu có một mục riêng trong [SettingsCatalog] —
+     * gộp vào một khoá thì một trong hai mục sẽ phải khai `prefKey = null`, tức chỗ lưu của nó biến mất khỏi tầm kiểm
+     * của bài test phủ khoá.
+     *
+     * Cái giá của hai khoá là **lệch nhau được**: `boot_scene` có thể trỏ tới cảnh đã bị xoá khỏi `scenes`. Giá đó trả
+     * bằng máy chứ không bằng lời hứa — [SceneBook.decode] nhận cả hai chuỗi và **tự gỡ** con trỏ treo ngay tại cửa
+     * vào, nên phần còn lại của app không bao giờ thấy trạng thái lệch.
+     */
+    fun sceneBook(): SceneBook =
+        SceneBook.decode(sp.getString(key(K_SCENES), null), sp.getString(key(K_BOOT_SCENE), null))
+
+    fun setSceneBook(book: SceneBook) {
+        val clean = book.normalised()
+        sp.edit().apply {
+            putString(key(K_SCENES), SceneBook.encode(clean))
+            // Bỏ dấu ⇒ XOÁ khoá thay vì ghi chuỗi rỗng: đọc lại sẽ không phải phân biệt "rỗng" với "chưa có".
+            if (clean.bootSceneId == null) remove(key(K_BOOT_SCENE)) else putString(key(K_BOOT_SCENE), clean.bootSceneId)
+        }.apply()
     }
 
-    private fun decode(s: String): SlotContent = when {
-        s.startsWith("app:") -> SlotContent.App(s.removePrefix("app:"))
-        s.startsWith("widget:") -> s.removePrefix("widget:").split(",").filter { it.isNotBlank() }
-            .let { if (it.isEmpty()) SlotContent.Empty else SlotContent.Widget(it) }
-        else -> SlotContent.Empty
-    }
+
+    // ⚠ Phép mã hoá nội dung ô đã chuyển sang `:core` ([SlotCodec]) khi cảnh (P7/P6) cần lưu **cùng** dạng đó. Để
+    // lại hai bản ở hai nơi là cách chắc chắn để cảnh đọc ra nội dung ô khác với thứ người dùng đã lưu — cùng họ với
+    // "ngưỡng lốp thứ ba" và "hai bảng màu". Dạng chuỗi KHÔNG đổi một byte ⇒ cấu hình trên đĩa đọc lên nguyên vẹn.
+    private fun encode(c: SlotContent): String = SlotCodec.encode(c)
+
+    private fun decode(s: String): SlotContent = SlotCodec.decode(s)
 
     companion object {
         const val DEFAULT_PROFILE = "Mặc định"
@@ -209,5 +229,15 @@ class WorkspacePrefs(context: Context) {
      * (`0,0,7,4;7,0,5,6`) để cứu bằng tay được nếu cần.
      */
     private const val K_GRID = "grid_layout"
+
+    /**
+     * P7 + P6 — sổ cảnh + cảnh lúc nổ máy, cả hai lưu THEO HỒ SƠ. Xem KDoc [sceneBook] về việc **vì sao hai khoá**.
+     *
+     * ⚠ Cả hai phải khai trong [SettingsCatalog] (mỗi khoá một mục), không thì `SettingsCoverageContractTest` đỏ với
+     * đúng câu *"khoá lưu bền chưa được gom vào nhóm nào"* — đó là phép kiểm của R2 và nó đối chiếu với **mã nguồn**,
+     * nên không có cách nào thêm một khoá lặng lẽ.
+     */
+    private const val K_SCENES = "scenes"
+    private const val K_BOOT_SCENE = "boot_scene"
     }
 }

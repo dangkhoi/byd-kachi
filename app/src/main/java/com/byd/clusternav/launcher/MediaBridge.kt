@@ -60,6 +60,22 @@ class MediaBridge(context: Context) {
     fun next() = tx { it.skipToNext() }
     fun prev() = tx { it.skipToPrevious() }
 
+    /**
+     * Chuyển một **mã hành động** của widget nhạc (`w_media`) thành lệnh transport. Mã lạ ⇒ không làm gì.
+     *
+     * Bảng chuyển này trước đây nằm trong [KachiHomeActivity]; đưa về đây vì nó là **kiến thức của cầu nhạc**, không
+     * phải của màn hình — và vì màn hình đã sát trần 500 dòng nên mọi thứ không thuộc về nó phải đi. Chỗ gọi giờ chỉ
+     * còn `onMedia = media::handle`.
+     */
+    fun handle(action: String) {
+        when (action) {
+            "play" -> play()
+            "pause" -> pause()
+            "next" -> next()
+            "prev" -> prev()
+        }
+    }
+
     private fun tx(block: (MediaController.TransportControls) -> Unit) {
         runCatching { active?.transportControls?.let(block) }
     }

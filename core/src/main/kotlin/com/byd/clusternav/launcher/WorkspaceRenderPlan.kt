@@ -34,6 +34,13 @@ object WorkspaceRenderPlanner {
         a is SlotContent.App && b is SlotContent.App -> a.pkg == b.pkg
         a is SlotContent.Widget && b is SlotContent.Widget -> a.ids == b.ids
         a is SlotContent.Empty && b is SlotContent.Empty -> true
+        // Widget bên thứ ba (T4): CẢ id LẪN provider phải khớp.
+        //
+        // ⚠ So theo id thôi là chưa đủ, và ca phá nó có thật: ràng buộc lại một id sang nhà cung cấp khác (app cũ bị
+        // gỡ, người dùng chọn widget khác cho cùng ô) giữ nguyên số id ⇒ nếu chỉ so id thì tầng vẽ kết luận "ô không
+        // đổi" ⇒ **không dựng lại view** ⇒ ô vẫn hiện widget của app đã gỡ tới khi có việc khác tình cờ dựng lại nó.
+        a is SlotContent.AppWidget && b is SlotContent.AppWidget ->
+            a.widgetId == b.widgetId && a.provider == b.provider
         else -> false
     }
 
@@ -65,6 +72,12 @@ object WorkspaceRenderPlanner {
             val oc = old.slots.getOrElse(i) { SlotContent.Empty }
             val nc = new.slots.getOrElse(i) { SlotContent.Empty }
             val contentChanged = !sameContent(oc, nc)
+            // ⚠ `nc is SlotContent.Widget` ở đây là **cố ý HẸP**, không phải sơ suất: ô widget **bên thứ ba**
+            // ([SlotContent.AppWidget]) KHÔNG có gì đọc từ trạng thái xe — nhà cung cấp tự đẩy RemoteViews sang. Cho
+            // nó vào đây thì trên xe (trạng thái đổi 1 nhịp/giây) `AppWidgetHostView` bị **tháo và dựng lại mỗi
+            // giây**: mất RemoteViews vừa nhận (ô nháy hoặc trắng), mất cú bấm giữa lúc chạm, và mỗi giây một lượt
+            // `createView` liên-tiến-trình. Đây ĐÚNG họ lỗi `w_photos` (xem [isSelfDriven]) — lần đó off-car không
+            // quan sát được vì trạng thái luôn rỗng, nên chỗ này khoá bằng test chứ không bằng phép đo off-car.
             val widgetNeedsFreshValues = statusChanged && nc is SlotContent.Widget && hasReadContent(nc)
             val appNeedsHostAttach = embedChanged && nc is SlotContent.App
             if (contentChanged || widgetNeedsFreshValues || appNeedsHostAttach) out.add(i)

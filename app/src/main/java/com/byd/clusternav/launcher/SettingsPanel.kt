@@ -59,6 +59,11 @@ class SettingsDeps(
     val onAddProfile: () -> Unit,
     val onDeleteProfile: (String) -> Unit,
     val onOpenClusterNav: () -> Unit,
+    /**
+     * P7 + P6 — bộ việc làm với **cảnh**. Một tham số thay vì năm lambda: xem KDoc [SceneActions] (và
+     * [KachiHomeActivity] đang đúng trần 500 dòng).
+     */
+    val scenes: SceneActions,
 )
 
 /**

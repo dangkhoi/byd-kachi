@@ -54,6 +54,10 @@ class LauncherI18nContractTest {
         "ảnh không giải mã được" to "nhật ký (Log.w) của hình nền — không hiện trên màn",
         "không đọc được thư mục ảnh" to "nhật ký (Log.w) của WallpaperStore — không hiện trên màn",
         "không giải mã được ảnh" to "nhật ký (Log.w) của WallpaperStore — không hiện trên màn",
+        "bỏ qua id KHÔNG thuộc host này" to
+            "nhật ký (Log.w) của chốt bảo vệ badge tốc-độ VietMap: id đem thu hồi mà không thuộc host của launcher " +
+                "thì bỏ qua. Ca này chỉ tới từ dữ liệu hỏng nên nó là dấu vết để GREP khi gỡ lỗi trên xe, " +
+                "không phải câu nói với người lái",
 
         // ── LỖI LẬP TRÌNH — chỉ nổ khi mã sai, người dùng không bao giờ thấy ──
         "HomeViewModelFactory chỉ tạo HomeViewModel" to

@@ -38,6 +38,11 @@ class AppDrawer(
     private val onClose: () -> Unit,
     private val mode: Mode = Mode.ASSIGN_SLOT,
     private val recentApps: List<String> = emptyList(),
+    /**
+     * Mục "Widget của app khác" (T4). Mặc định rỗng ⇒ chế độ mở-app và mọi chỗ gọi cũ **không đổi hành vi**;
+     * ở chế độ gán ô thì mục vẫn hiện tiêu đề kèm câu "máy chưa có widget nào" thay vì mất tăm.
+     */
+    private val appWidgetPicks: List<AppWidgetPick> = emptyList(),
 ) : FrameLayout(context) {
 
     /** Ngăn kéo dùng để GÁN VÀO Ô (như cũ) hay để MỞ APP toàn màn (U3). */
@@ -104,6 +109,22 @@ class AppDrawer(
                 body.addView(sectionLabel(domain.displayLabel).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
                 CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(note(it)) }
                 addPickGrid(body, CapabilityPicker.singlesOf(picks), cols = 4)
+            }
+
+            // ── Widget của APP KHÁC (T4) — đặt SAU nhóm/thẻ dựng tay và các mục lẻ, TRƯỚC danh sách app ──
+            //
+            // Vì sao ở đây chứ không cạnh "Thẻ dựng tay": nó **ít dùng hơn** (thẻ Kachi đọc dữ liệu xe, cái người ta
+            // mở launcher để xem), và nó là thứ **có thể không chạy được trên xe** — ràng buộc widget cần bind-grant
+            // qua kênh shell. Đặt nó lên trước sẽ đẩy thứ chắc chắn chạy xuống dưới.
+            //
+            // Rỗng thì **vẫn hiện tiêu đề** kèm câu nói rõ "máy chưa có app nào cung cấp widget": im lặng bỏ cả mục
+            // sẽ thành "tính năng biến mất không lý do" — đúng họ lỗi trần-ô-chặn-im-lặng mà G1 đã phải đi vá.
+            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_appwidgets)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
+            if (appWidgetPicks.isEmpty()) {
+                body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets_none)))
+            } else {
+                body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets)))
+                addGrid(body, appWidgetPicks.map { p -> GridItem(APPWIDGET_PKG, p.title, p.icon, p.onTap) }, cols = 4)
             }
 
             // ── App (chạm đặt vào ô) ──
@@ -255,6 +276,19 @@ class AppDrawer(
         val px = dpi(context, Sp.S)
         v.setPadding(px, dpi(context, Sp.XS), px, dpi(context, Sp.XS))
     }
+
+    /**
+     * Nói một câu ra thanh đáy **từ ngoài** (T4: kết quả ràng buộc widget bên thứ ba).
+     *
+     * Có mặt vì việc ràng buộc widget là **không đồng bộ** (phải mở kênh shell để xin bind-grant) nên câu trả lời tới
+     * khi bảng này vẫn đang mở — và đây là kênh nói DUY NHẤT dùng được ở bề mặt phủ (xem KDoc [notice]: toast nằm
+     * DƯỚI lớp `APPLICATION_OVERLAY`, [ĐO] `dumpsys window` 81000 < 121000).
+     *
+     * ⚠ Khai SAU [notice], không phải trước: đặt trước thì KDoc *"vì sao không dùng Toast"* của [notice] (một luật của
+     * dự án, có bài canh riêng) bị **tách khỏi hàm nó nói về** — hai khối KDoc liền nhau thì Kotlin chỉ nhận khối
+     * cuối, nên [notice] mất tài liệu và chính lời dẫn "xem KDoc [notice]" ở trên trỏ vào chỗ trống.
+     */
+    fun say(msg: String) = notice(msg)
 
     // ── Widget grid (toggle) ──
     private fun addWidgetGrid(parent: LinearLayout, cols: Int) {
@@ -441,6 +475,15 @@ class AppDrawer(
 
     private companion object {
         const val MAX = 8
+
+        /**
+         * Gói giả cho mục widget bên thứ ba.
+         *
+         * [GridItem.pkg] chỉ được dùng để tra hàng **"Gần đây"** (`recentItems` khớp theo gói). Widget bên thứ ba
+         * không phải app để mở nên không bao giờ vào hàng đó; đưa một giá trị KHÔNG trùng gói thật vào đây để nó
+         * không thể tình cờ khớp — dùng tên gói thật sẽ làm mục widget hiện lại ở hàng "Gần đây" như một app.
+         */
+        const val APPWIDGET_PKG = "\u0000appwidget"
 
         /** Độ mờ của ô KHÔNG còn chọn được (đã đủ trần). */
         const val DIMMED = 0.4f

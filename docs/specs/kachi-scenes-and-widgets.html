@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi P7+P6 — Cảnh khởi động &amp; widget bên thứ ba</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi P7 + P6 — Cảnh khởi động &amp; widget bên thứ ba</h1>
+<p class="muted">
+  <b>Trạng thái</b>: Current · <b>Ngày</b>: 2026-09-12 · <b>Mã việc</b>: P7 · P6 ·
+  <b>Mục đích</b>: hai mục off-car cuối cùng còn làm được mà không cần xe.
+</p>
+
+<h2>1. Context — hai mục backlog hoá ra là MỘT khái niệm</h2>
+<table>
+<tr><th>Mục</th><th>Backlog ghi</th><th>Phần làm được off-car</th></tr>
+<tr><td><b>P7</b></td><td>"chọn bố cục + app từng ô cho lúc nổ máy; máy lên → launcher lên → app vào đúng ô"</td><td><b>cấu hình khởi động rõ ràng</b> (phần còn lại — đặt HOME trên xe, gắn khi máy nguội — cần xe)</td></tr>
+<tr><td><b>P6</b></td><td>"widget bên thứ ba · <b>cảnh (scenes)</b> · nút Chiếu-cụm · bảng màu NGÀY + nút gạt"</td><td>widget bên thứ ba · <b>cảnh</b>. (bảng màu ngày + nút gạt <b>đã xong ở U5</b>; nút Chiếu-cụm = cast = xe)</td></tr>
+</table>
+<div class="card">
+  <b>Nhận ra khi đọc kỹ hai dòng</b>: "cấu hình khởi động" của P7 và "cảnh" của P6 là <b>cùng một thứ</b> — một bộ
+  (bố cục + nội dung từng ô + thanh nút) có tên, gọi lại được. Làm một lần, dùng cho cả hai: cảnh gọi được <b>bằng tay</b>
+  (P6) và một cảnh được chọn làm <b>cảnh lúc nổ máy</b> (P7).
+  Đây cũng là cách tránh làm hai bộ lưu song song — đúng bẫy hai-bản-sao dự án đã trả giá 4 lần.
+</div>
+
+<h2>2. Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td>R1</td><td>Lưu trạng thái đang dùng thành một <b>cảnh</b> có tên</td><td>đặt tên, lưu bền, mở lại còn</td></tr>
+<tr><td>R2</td><td>Gọi lại cảnh bằng một cú chạm</td><td>bố cục + nội dung ô + thanh nút về đúng cảnh</td></tr>
+<tr><td>R3</td><td>Chọn <b>cảnh lúc nổ máy</b></td><td>đánh dấu một cảnh; khởi động lại app ⇒ ra đúng cảnh đó</td></tr>
+<tr><td>R4</td><td>Gọi cảnh <b>không nhả app đang chiếu</b> nếu ô đó không đổi</td><td>C5 của dự án: đổi cấu hình không được làm app trong ô mở lại vô ích</td></tr>
+<tr><td>R5</td><td>Đặt được <b>widget Android bên thứ ba</b> vào ô</td><td>chọn từ danh sách widget máy có; widget vẽ nội dung thật</td></tr>
+<tr><td>R6</td><td>Không phá thứ đang chạy</td><td>3059 test vẫn xanh · 0 tệp XML niêm phong bị đụng · 0 tệp > 500 dòng</td></tr>
+</table>
+
+<h2>3. Design</h2>
+
+<h3>3.1 Cảnh — dùng lại nguyên bộ lưu đang có</h3>
+<p>
+  <code>:core Scene</code> = <code>(id, name, preset, gridLayout?, slots, dock)</code> — <b>đúng những gì
+  <code>WorkspaceState</code> + <code>DockConfig</code> đã mang</b>, nên phép lưu/đọc dùng lại
+  <code>encode</code>/<code>decode</code> hiện có, không phát minh định dạng thứ hai.
+</p>
+<ul>
+  <li><code>SceneBook</code> (thuần): danh sách cảnh · thêm/xoá/đổi tên · <b>cảnh khởi động</b> (id hoặc rỗng) ·
+      <code>encode/decode</code> tự chữa dữ liệu hỏng (bỏ mục lỗi, không sập).</li>
+  <li>Áp cảnh đi qua <b>một</b> intent ViewModel (<code>applyScene</code>) → cùng đường
+      <code>setPreset</code>/<code>applyCustomLayout</code>/<code>assignWidgets</code> đang chạy ⇒ R4 tự đạt nhờ
+      <code>WorkspaceRenderPlanner</code> (nó đã biết "số ô giữ nguyên, chỉ đổi hình dạng thì chỉ đặt lại chỗ").</li>
+  <li>Trần số cảnh: <b>8</b> — đủ dùng, và nói ra khi đầy (luật "không chặn im lặng").</li>
+</ul>
+<p>
+  Cảnh lưu <b>theo hồ sơ tài xế</b> (như bố cục), vì cảnh là cách bố trí của một người.
+</p>
+
+<h3>3.2 Widget bên thứ ba</h3>
+<p>
+  <code>AppWidgetHost</code> + <code>AppWidgetHostView</code>. Ba việc: cấp id (<code>allocateAppWidgetId</code>) ·
+  <b>ràng buộc</b> id với nhà cung cấp · dựng view vào ô.
+</p>
+<div class="card">
+  <b class="warn">⚠ Rủi ro on-car đã biết trước, phải đo chứ không đoán</b>: ràng buộc widget cần quyền
+  <code>BIND_APPWIDGET</code> (mức <i>signature|privileged</i> — <b>không</b> cấp được bằng shell), hoặc phải qua
+  <b>hộp thoại hệ thống</b> <code>ACTION_APPWIDGET_BIND</code>. Trên IVI khoá, hộp thoại hệ thống <b>đã từng không mở
+  được</b> (màn "Notification access" trả toast <i>"Hệ thống IVI không hỗ trợ hoạt động này"</i> — đó là lý do dự án phải
+  tự cấp quyền qua dadb). ⇒ đo trên máy ảo, và <b>nếu đường ràng buộc không mở được thì nói thật</b>, đừng bày một mục
+  chọn rồi im lặng không làm gì.
+</div>
+<p>
+  Đường lùi khi không ràng buộc được: giữ nguyên bộ <b>9 widget dựng tay</b> + 12 nhóm (đang chạy tốt) và nói rõ trong
+  giao diện vì sao widget bên thứ ba chưa dùng được — <b>không</b> để một ô trống bí ẩn.
+</p>
+
+<h2>4. Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td><code>:core SceneBook</code> + lưu bền + intent</td><td>test: thêm/xoá/áp/cảnh khởi động, dữ liệu hỏng không sập</td></tr>
+<tr><td>T2</td><td>Cài đặt → mục <b>Cảnh</b></td><td>lưu cảnh · gọi cảnh · chọn cảnh khởi động; khai vào <code>SettingsCatalog</code></td></tr>
+<tr><td>T3</td><td>Áp cảnh lúc khởi động</td><td><code>force-stop</code> rồi mở lại ⇒ ra đúng cảnh</td></tr>
+<tr><td>T4</td><td>Widget bên thứ ba</td><td>đo được: ràng buộc được hay không; nếu được thì widget vẽ nội dung thật</td></tr>
+<tr><td>T5</td><td>Soát độc lập + đo + tài liệu</td><td>ảnh chụp trước/sau khi gọi cảnh</td></tr>
+</table>
+
+<h2>5. Verification</h2>
+<p><b>[ĐO] 3191 test / 0 đỏ</b> (mốc trước phiên: 3059 ⇒ <b>+132</b>) · APK sạch · 0 tệp launcher > 500 dòng ·
+<code>:core</code> 0 <code>import android.*</code>, 0 hex, 0 số dp · <b>niêm phong khớp hằng ghim</b>
+(<code>556c78e4…</code> · <code>45fa51a8…</code>) · <b>thử phá 12 phép, đỏ đúng chỗ cả 12</b> (chạy KHÔNG
+<code>--rerun-tasks</code>).</p>
+<table>
+<tr><th>Yêu cầu</th><th>Bằng chứng đo được</th></tr>
+<tr><td>R1 lưu cảnh</td><td class="ok"><b>không đạt lúc soát</b> (lưu rồi khởi động lại ra "Chưa có cảnh nào · 0/8") ⇒ vá; sau vá ra "1/8 cảnh"</td></tr>
+<tr><td>R2 gọi cảnh</td><td class="ok">hai cảnh khác bố cục <b>và</b> khác nội dung ô: gọi qua lại ⇒ <b>13.7%</b> pixel vùng làm việc đổi mỗi lượt</td></tr>
+<tr><td>R3 cảnh lúc nổ máy</td><td class="ok">đánh dấu ⇒ <code>boot_scene=s1</code> mà <code>preset</code> vẫn giữ (không áp ngay); <code>force-stop</code> (PID 19498→20281 = tiến trình chết thật) rồi mở lại ⇒ ảnh khác cảnh A <b>đúng 0.00%</b></td></tr>
+<tr><td>R4 không nhả app đang chiếu</td><td class="ok">gọi cảnh cùng nội dung ô App ⇒ <b>PID app 21156 trước, 21156 sau</b>; ô khác vẫn đổi thật (15.8% pixel)</td></tr>
+<tr><td>R5 widget bên thứ ba</td><td class="ok">bind qua <code>appwidget grantbind</code> (đường dự án <b>đã proven trên xe</b> cho badge VietMap); widget vẽ nội dung THẬT — <code>TextView</code> <b>503×243px</b> "12:47" + <b>194×33px</b> "SAT, SEP 12", 3 276 điểm sáng > 220 (trước vá: <b>0</b>)</td></tr>
+<tr><td>R6 không phá thứ đang chạy</td><td class="ok">3 loại ô cũ giữ <b>đúng từng byte</b> dạng lưu (dữ liệu trên xe đọc lên nguyên vẹn); 3 widget VietMap <b>alive mọi lần kiểm</b></td></tr>
+</table>
+<p class="warn"><b>Chưa đo trên xe</b>: <code>appwidget grantbind</code> trên IVI khoá · <code>updateAppWidgetSize</code> với cỡ ô
+thật · <b>reboot vật lý</b> (chỉ <code>force-stop</code>, nên "cảnh lúc nổ máy" mới chứng minh ở nghĩa <i>khởi động nguội
+tiến trình</i>) · 6 ô mỗi ô một widget · nhà cung cấp bị gỡ thật.</p>
+
+<h2>6. Open Questions</h2>
+<ul>
+  <li><b>OQ1</b> — cảnh có nên lưu cả <b>hình nền</b> và <b>chip thanh trạng thái</b>? Mặc định: <b>không</b> — cảnh là
+      cách bố trí <i>vùng làm việc</i>; kéo cả hình nền vào làm việc "gọi cảnh" thành "đổi cả giao diện", khó lường hơn.</li>
+  <li><b>OQ2</b> — nếu <code>BIND_APPWIDGET</code> không mở được trên xe thì có bỏ hẳn widget bên thứ ba? (P6 vốn là mục
+      <i>tuỳ chọn</i>)</li>
+</ul>
+
+<h2>7. References</h2>
+<ul>
+  <li><code>docs/specs/kachi-dynamic-grid.html</code> — P9 (bố cục, <code>WorkspaceRenderPlanner</code>)</li>
+  <li><code>docs/specs/kachi-settings-screen.html</code> — S1 (chỗ đặt mục Cảnh)</li>
+  <li><code>docs/specs/kachi-permission-preflight.html</code> — P8 (tiền lệ hộp thoại hệ thống bị khoá trên IVI)</li>
+</ul>
+
+<h2>8. Nhật ký triển khai</h2>
+
+<h3>Hai lỗi P0 nằm ở GIAO ĐIỂM hai tính năng — chỗ không ai thử</h3>
+<p>
+  Cảnh đúng khi đứng riêng. Widget bên thứ ba đúng khi đứng riêng. Nhưng <b>lưu một cảnh có widget bên thứ ba rồi gọi
+  lại</b> thì vỡ hoàn toàn, và cả hai lỗi đều <b>im lặng</b>:
+</p>
+<ul>
+  <li><b>Cảnh mất trắng</b>: <code>SlotCodec</code> dùng <code>|</code> để ngăn id với nhà cung cấp — <b>trùng dấu ngăn
+      TRƯỜNG</b> của chuỗi cảnh ⇒ bản ghi ra 8 trường trong khi cần 7 ⇒ <code>decode</code> bỏ cả cảnh. 23 bài
+      <code>SceneBookTest</code> đã có <b>không bài nào</b> đi qua loại ô thứ tư.</li>
+  <li><b>Id widget trong cảnh bị thu hồi</b>: lượt dọn rác chỉ xét bố cục đang dùng, không xét cảnh đã lưu ⇒ gọi lại cảnh
+      ra thẻ <i>"widget không còn — app đã bị gỡ"</i> <b>trong khi app vẫn còn nguyên trên máy</b>. Tức nó còn
+      <b>báo sai nguyên nhân</b>.</li>
+</ul>
+<p>
+  Vá: đổi dấu ngăn + khai <code>SceneBook.RESERVED</code> công khai + bài quét <b>mọi loại ô</b> bằng <code>when</code>
+  không có <code>else</code> ⇒ thêm loại ô thứ năm mà quên là <b>không biên dịch được</b> (chốt bằng KIỂU, không bằng lời
+  nhắc). Phép dọn rác nay nhận cả <code>HomeUiState</code>, và <b>xoá cảnh</b> thành đường duy nhất nhả id mà bố cục
+  không đổi ô nào.
+</p>
+
+<h3>Widget "đã bind, dumpsys nói OK, prefs đã lưu" mà ô vẫn TRỐNG</h3>
+<p>
+  Ba nguồn đều nói thành công — <code>dumpsys</code> ghi <code>views=RemoteViews@…</code>, cây view có
+  <code>LinearLayout</code> của đồng hồ kèm <code>text="12:47"</code>, prefs đã lưu — mà vùng ô 1242×684 có
+  <b>99.84% một màu nền</b>, <code>TextView</code> giờ đo được <b>4×1 px</b>. Hai nguyên nhân xếp lớp:
+  <code>AppWidgetHostView</code> <b>không tự khai cỡ</b> nên nhà cung cấp dựng RemoteViews ở cỡ 0; và bản vá đầu truyền
+  <code>Bundle.EMPTY</code> — <b>bundle không ghi được</b> mà <code>updateAppWidgetSize</code> lại GHI khoá cỡ vào chính
+  nó ⇒ ném <code>UnsupportedOperationException</code> ⇒ ô vẫn trống <b>y như chưa vá</b>, đội lốt "bản vá không ăn". Tìm
+  ra chỉ vì nhánh lỗi có ghi log kèm tên ngoại lệ. <b>Lần thứ tư của dự án: mã đúng + test xanh ≠ đã giao được.</b>
+</p>
+
+<h3>Ngữ nghĩa "cảnh lúc nổ máy" — đã dựng đường đúng rồi BỎ</h3>
+<p>
+  Tôi dựng xong cơ chế "chỉ khi đúng là máy vừa nổ" (móc vào <code>KachiAutostart.runBoot</code>, dự án phân biệt được
+  thật vì có <code>BOOT_COMPLETED</code>) rồi <b>bỏ</b>, vì đọc mã thấy ba lỗ không vá được ở tầng đó: <code>runBoot</code>
+  thoát ngay dòng đầu khi người dùng tắt <code>launcher_autostart</code> ⇒ cảnh chết theo một công tắc <b>không liên
+  quan</b>, im lặng · nó cũng chạy khi <b>cài bản mới</b> (≠ nổ máy) ⇒ ngữ nghĩa đã sai ngay trong chính đường đóng dấu ·
+  nó có cổng nguội 30 s ⇒ chùm trigger lúc boot có thể bỏ lượt ⇒ cảnh lên thất thường. ⇒ chọn <b>khởi động nguội tiến
+  trình, một lần mỗi lần tiến trình sống</b>, và trả giá bằng ba thứ cụ thể: hàng cảnh <b>nói thẳng</b> hợp đồng · chạm
+  lại "Nổ máy" là bỏ dấu · cảnh chỉ chạm vùng làm việc (không kéo hình nền/chip/đơn vị/ngôn ngữ/hồ sơ vào — có test khoá
+  cả 7).
+</p>
+
+<h3>Widget bên thứ ba mất chữ trên bảng màu SÁNG</h3>
+<p>
+  RemoteViews của app khác dùng chữ trắng theo quy ước launcher-nền-tối; launcher <b>không sửa được</b> nội dung đó.
+  [ĐO] bảng sáng chỉ còn <b>0.15%</b> mực tối = chữ biến mất. Vá bằng <b>nền tối cố định</b> phía sau widget — đúng tiền
+  lệ nút ⇄ của U5 (vai không được theo chủ đề vì nó nằm trên pixel của người khác).
+</p>
+
+<h3>Bài canh trang trí, và tai nạn của chính lượt soát</h3>
+<p>
+  Một bài canh cờ khởi-động-nguội là <b>trang trí</b>: đổi <code>if (coldStartDone)</code> thành <code>if (false)</code>
+  mà <b>vẫn xanh</b>, vì tên cờ còn xuất hiện ở dòng gán bên dưới.
+</p>
+<p class="warn">
+  <b>LUẬT MỚI</b>: cây làm việc <b>chưa commit</b> thì tuyệt đối không hoàn nguyên phép thử phá bằng
+  <code>git checkout -- &lt;tệp&gt;</code> — lệnh đó trả về <b>HEAD</b>, không trả về "bản trước khi thử phá". Trong lượt
+  soát nó đã <b>xoá sạch phần việc của phiên ở 4 tệp</b>; phục hồi được và kiểm được (diffstat khớp từng con số), nhưng
+  phải sao lưu theo tệp ra <code>/tmp</code>.
+</p>
+
+<h3>Ba loại ô cũ giữ nguyên dạng lưu — có chủ ý</h3>
+<p>
+  Thêm loại ô thứ tư mà <b>không đổi một byte</b> của <code>app:</code>/<code>widget:</code>/rỗng, nên cấu hình đã lưu
+  trên xe đọc lên nguyên vẹn. Và host id của launcher (<code>0x4B41</code>) <b>tách hẳn</b> host VietMap
+  (<code>0x564D</code>) đang giữ 3 widget badge tốc-độ <b>đã proven trên xe</b>: <code>appWidgetIds</code> là per-host nên
+  lượt dọn rác không thấy id của VietMap. Vẫn bịt thêm lỗ lý thuyết — <code>deleteAppWidgetId</code> của nền tảng chỉ kiểm
+  uid/gói chứ không kiểm id thuộc đúng host, mà hai host cùng gói ⇒ id đọc từ đĩa nay bị <b>giao với danh sách của host
+  này</b> trước khi xoá.
+</p>
+
+</div>
+</body>
+</html>

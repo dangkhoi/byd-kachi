@@ -23,11 +23,22 @@ class DrawerController(
     private val onPickWidgets: (Int, List<String>) -> Unit,
     private val onOpenApp: (String) -> Unit = {},        // U3: chạm app ở chế độ mở-thường → mở TOÀN MÀN
     private val recentApps: () -> List<String> = { emptyList() },
+    /**
+     * T4 — mục "Widget của app khác" cho ô [index]. Là HÀM nhận index vì mỗi lần mở ngăn kéo phải **đọc lại** danh
+     * sách nhà cung cấp (app có thể vừa được cài/gỡ) và vì việc chạm phải biết đặt vào ô nào.
+     */
+    private val appWidgetPicks: (Int) -> List<AppWidgetPick> = { emptyList() },
 ) {
     private var drawer: AppDrawer? = null
     private var asOverlay = false
 
     fun isOpen(): Boolean = drawer != null
+
+    /**
+     * Nói một câu vào bảng đang mở (T4). Bảng đã đóng ⇒ **không làm gì** — câu trả lời tới sau khi người dùng đã đóng
+     * bảng thì không còn chỗ nào hợp lý để hiện, và đúng lúc đó một toast cũng sẽ bị lớp phủ che (xem `AppDrawer.say`).
+     */
+    fun say(msg: String) { drawer?.say(msg) }
 
     /** Ngăn kéo GÁN VÀO Ô [index] (hành vi cũ). */
     fun open(index: Int) {
@@ -39,6 +50,7 @@ class DrawerController(
                 onPickApp = { pkg -> onPickApp(index, pkg) },
                 onPickWidgets = { ids -> onPickWidgets(index, ids) },
                 onClose = { close() },
+                appWidgetPicks = appWidgetPicks(index),
             ),
         )
     }

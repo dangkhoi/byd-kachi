@@ -28,6 +28,24 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     var onSlotClear: ((Int) -> Unit)? = null
     var onSlotSwap: ((Int, Int) -> Unit)? = null
     var onAppOpen: ((Int) -> Unit)? = null
+
+    /**
+     * T4 — dựng view cho ô widget bên thứ ba. `null` (chưa gắn, hoặc trả `null`) ⇒ ô hiện thẻ *"widget không còn"*.
+     *
+     * Là hàm tiêm vào chứ không phải `AppWidgetHost` nằm ngay đây: view này chỉ **là bề mặt vẽ**, còn vòng đời
+     * nghe-cập-nhật + thu hồi id phải do một chủ duy nhất giữ ([AppWidgetSlotHost]). Đặt host vào view thì mỗi lần
+     * view bị dựng lại là một host mới ⇒ id rò và nhịp nghe nhân đôi.
+     */
+    var appWidgetView: ((SlotContent.AppWidget) -> View?)? = null
+
+    /**
+     * T4 — tên nhà cung cấp của một ô widget bên thứ ba, dùng cho thẻ *"widget không còn"* ([deadWidgetCard]).
+     *
+     * ⚠ **KHÔNG** phải nhãn hiện ở dải đầu ô: [slotHead] hiện chỉ vẽ nút ⇄ và **bỏ qua** tham số tên của nó (nhãn +
+     * nút ✕ nay do [OverlayHeads] dựng ở một cửa sổ riêng). Ghi rõ ở đây vì lời hứa "tên hiện ở dải đầu ô" là thứ
+     * người đọc sau sẽ tin mà không mở [slotHead] ra xem — và trên máy ảo thì dải đó [ĐO] chỉ có đúng một nút ⇄.
+     */
+    var appWidgetName: ((SlotContent.AppWidget) -> String)? = null
     // UDF: trạng thái xe LIVE đến từ HomeUiState.carStatus (KHÔNG đọc port trong view). Off-car mọi field null ⇒ "—".
     var carStatus: CarStatus = CarStatus()
     var mediaProvider: () -> MediaSnapshot? = { null }   // đọc nhạc live (Bitmap ở :app → ngoài state :core)
@@ -239,6 +257,37 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.setOnClickListener { onSlotTap?.invoke(index) }
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
+            // ── T4: widget Android của APP KHÁC ──
+            //
+            // Nhà cung cấp tự vẽ nội dung (đẩy RemoteViews sang), nên ở đây chỉ có hai việc: xin view, và **nói ra**
+            // khi không xin được. `null` = id đã chết (app bị gỡ/vô hiệu) ⇒ hiện thẻ nói rõ app nào, chạm để chọn
+            // lại. Cố ý KHÔNG để ô trống: một ô trống ở đây là "widget của tôi biến mất không lý do".
+            is SlotContent.AppWidget -> {
+                val host = appWidgetView?.invoke(content)
+                if (host != null) {
+                    val hostLp = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT,
+                    ).also { it.topMargin = dp(Sp.SLOT_HEAD_CLEAR) }
+                    // ⚠⚠ Nền TỐI CỐ ĐỊNH phía sau widget — không theo chủ đề, cùng lý do nút ⇄ (`scrimBtn`).
+                    //
+                    // Nội dung ô này là RemoteViews do app KHÁC vẽ, và quy ước widget Android là "nền tối" nên phần
+                    // lớn widget dùng chữ TRẮNG. [ĐO] bảng SÁNG + widget đồng hồ: ô chỉ còn **0.15%** điểm mực tối,
+                    // chữ giờ gần như biến mất. Launcher không sửa được màu RemoteViews của app khác ⇒ chỗ duy nhất
+                    // chữa được là nền. Widget nào tự vẽ nền đục thì lớp này bị che, nên nó không làm hại ca nào.
+                    fl.addView(appWidgetBacking(), hostLp)
+                    // Chừa chỗ cho dải đầu ô (nút ⇄/✕) bằng LỀ NGOÀI, không phải `setPadding`: đệm trong sẽ do
+                    // RemoteViews của nhà cung cấp ghi đè khi nó cập nhật (nó tự đặt padding cho gốc layout của mình).
+                    fl.addView(host, hostLp)
+                    // Không đặt `setOnClickListener` cho CẢ ô: widget bên thứ ba có nút bấm riêng bên trong nó
+                    // (next/prev của widget nhạc…). Bắt chạm ở ô cha sẽ ăn mất cú bấm của widget. Đổi/xoá widget đi
+                    // qua nút ⇄/✕ ở dải đầu ô — đường mà mọi loại ô khác cũng dùng.
+                } else {
+                    fl.addView(deadWidgetCard(content), mm)
+                    fl.setOnClickListener { onSlotTap?.invoke(index) }
+                }
+                fl.addView(slotHead(index, appWidgetName?.invoke(content) ?: "", KachiTheme.ACCENT), headLp())
+                fl.setOnLongClickListener { startSlotDrag(index, fl); true }
+            }
             is SlotContent.App -> {
                 fl.addView(appCard(content.pkg), mm)                       // fallback phía sau (hiện nếu nhúng lỗi)
                 val sh = shell
@@ -349,6 +398,32 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     }
 
     /** Thẻ app trong ô: icon + tên thật (PackageManager). Trên xe app THẬT mở freeform vào ô; off-car hiện thẻ này. */
+    /**
+     * T4 — nền tối cố định phía sau widget bên thứ ba. Xem KDoc `KachiPalette.widgetBacking` về **vì sao không theo
+     * chủ đề**; ở đây chỉ là một lớp tô, cố ý KHÔNG có viền (viền của ô đã do chính ô vẽ).
+     */
+    private fun appWidgetBacking(): View = View(context).apply {
+        background = GradientDrawable().apply {
+            cornerRadius = dp(Sp.RADIUS_L).toFloat()
+            setColor(Color.parseColor(KachiTheme.WIDGET_BACKING))
+        }
+    }
+
+    /**
+     * T4 — thẻ hiện khi id widget đã CHẾT (app cung cấp bị gỡ / bị tắt).
+     *
+     * Bắt buộc phải có: `AppWidgetHost.createView` với id đã chết trả về một view **rỗng không báo lỗi**, nên nếu
+     * không chặn thì ô đó thành ô trống y như chưa gán gì — người dùng chỉ thấy widget của mình biến mất. Thẻ này nói
+     * **app nào** (nhờ provider được lưu cùng id) và chạm được để chọn lại.
+     */
+    private fun deadWidgetCard(content: SlotContent.AppWidget): View =
+        TextView(context).apply {
+            text = context.getString(R.string.kachi_appwidget_dead, appWidgetName?.invoke(content) ?: content.provider)
+            setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            gravity = Gravity.CENTER
+            setPadding(dp(Sp.L), dp(Sp.SLOT_HEAD_CLEAR), dp(Sp.L), dp(Sp.L))
+        }
+
     private fun appCard(pkg: String): View {
         val col = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }
         val pm = context.packageManager

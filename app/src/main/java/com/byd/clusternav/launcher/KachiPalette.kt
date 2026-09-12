@@ -78,6 +78,11 @@ package com.byd.clusternav.launcher
  *   [onAccent] (trắng) còn thấy được kể cả khi app phía dưới là **trắng tinh**. [ĐO] bản đầu của T1 đặt bản sáng
  *   `#26000000` (15% đen) theo phản xạ "bảng sáng thì scrim nhạt" ⇒ trắng trên (217,217,217) = **1.41:1**, glyph
  *   gần như biến mất. `#80000000` (50% đen) đo được **3.95:1** trên nền trắng và ~19:1 trên ô tối.
+ * @property widgetBacking nền phía SAU widget Android của app khác — **KHÔNG theo chủ đề, cùng lý do [scrimBtn]**:
+ *   nội dung ô đó là RemoteViews do app KHÁC vẽ, và quy ước của widget Android là *"nền tối"* nên phần lớn widget
+ *   dùng chữ TRẮNG. [ĐO] 2026-09-12 `emulator-5554`, widget đồng hồ trên bảng SÁNG: ô chỉ còn **0.15%** điểm mực tối,
+ *   chữ giờ gần như biến mất (trắng trên nền sáng). Launcher **không thể** sửa màu RemoteViews của app khác, nên cách
+ *   duy nhất là tự bảo đảm một nền tối phía sau. Widget nào tự vẽ nền đục thì lớp này bị che — không ảnh hưởng gì.
  * @property scrimBtn2 nền nút ⇄/✕ trên thanh nhãn app — khác [scrimBtn] ở chỗ nó nằm trên [headBg] ĐỤC (launcher
  *   biết màu đó), nên nó THEO chủ đề và glyph dùng [ink].
  * @property scrimHead lớp mờ dưới nhãn app (bản sáng phải là mờ TRẮNG, vì mực trên nó là mực đậm).
@@ -133,6 +138,7 @@ data class KachiPalette(
     val scrimPanel: String,
     val scrimBtn: String,
     val scrimBtn2: String,
+    val widgetBacking: String,
     val scrimHead: String,
     val green: String,
     val amber: String,
@@ -204,6 +210,7 @@ data class KachiPalette(
             scrimPanel = "#cc05070c",
             scrimBtn = "#80000000",
             scrimBtn2 = "#33000000",
+            widgetBacking = "#171a20",
             scrimHead = "#8c000000",
             green = "#34d399",
             amber = "#fbbf24",
@@ -273,6 +280,7 @@ data class KachiPalette(
             scrimPanel = "#b3121820",
             scrimBtn = "#80000000",
             scrimBtn2 = "#1f000000",
+            widgetBacking = "#171a20",
             scrimHead = "#d9ffffff",
             green = "#04684c",
             amber = "#7d5200",

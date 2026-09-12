@@ -140,6 +140,30 @@
     <string name="kachi_about_package">Tên gói: %1$s</string>
     <string name="kachi_about_licence">Giấy phép MIT. Thử nghiệm cá nhân, KHÔNG liên kết với BYD.</string>
 
+    <!-- ── SettingsSceneSection — Cảnh (P7 + P6) ── -->
+    <string name="kachi_sec_scenes">Cảnh</string>
+    <string name="kachi_scenes_note">Một cảnh gồm bố cục, nội dung từng ô và thanh nút xe. Chạm tên một cảnh để gọi lại. Hình nền, chip thanh trạng thái, đơn vị và giao diện KHÔNG đổi theo cảnh.</string>
+    <string name="kachi_scenes_empty">Chưa có cảnh nào. Bố trí màn hình theo ý bạn rồi bấm \"Lưu cảnh hiện tại…\".</string>
+    <string name="kachi_scenes_count">%1$d/%2$d cảnh</string>
+    <string name="kachi_scenes_full">Đã đủ %1$d cảnh — xoá một cảnh trước khi lưu thêm.</string>
+    <string name="kachi_scene_save">Lưu cảnh hiện tại…</string>
+    <string name="kachi_scene_save_title">Lưu cảnh</string>
+    <string name="kachi_scene_rename_title">Đổi tên cảnh</string>
+    <string name="kachi_scene_name_hint">Tên cảnh (vd: Đi làm)</string>
+    <string name="kachi_scene_confirm">Lưu</string>
+    <string name="kachi_scene_rename">Đổi tên</string>
+    <string name="kachi_scene_boot_mark">Nổ máy</string>
+    <string name="kachi_scene_boot_on">Lên lúc nổ máy</string>
+    <string name="kachi_scene_tap_recall">Chạm để gọi lại</string>
+    <string name="kachi_scene_boot_contract">Launcher sẽ lên bằng cảnh \"%1$s\" mỗi lần khởi động — cách bố trí chưa lưu thành cảnh sẽ bị thay. Chạm \"Nổ máy\" lần nữa để bỏ dấu.</string>
+    <string name="kachi_scene_boot_none">Chưa chọn cảnh lúc nổ máy — launcher lên đúng cách bố trí lúc bạn tắt máy.</string>
+    <string name="kachi_scene_boot_cleared">Đã bỏ cảnh lúc nổ máy</string>
+    <string name="kachi_scene_saved">Đã lưu cảnh \"%1$s\"</string>
+    <string name="kachi_scene_applied">Đã gọi cảnh \"%1$s\"</string>
+    <string name="kachi_scene_deleted">Đã xoá cảnh \"%1$s\"</string>
+    <string name="kachi_scene_name_empty">Cảnh cần một cái tên</string>
+    <string name="kachi_scene_name_taken">Đã có cảnh tên \"%1$s\"</string>
+
     <!-- ── SettingsSectionsHome — Màn hình chính ── -->
     <string name="kachi_sec_layout">Bố cục màn hình</string>
     <string name="kachi_row_preset">Bố cục sẵn</string>
@@ -196,4 +220,14 @@
 
     <!-- ── WorkspaceView — ô trống giữa màn ── -->
     <string name="kachi_slot_open_app">Mở ứng dụng</string>
+
+    <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
+    <string name="kachi_drawer_section_appwidgets">Widget của app khác</string>
+    <string name="kachi_drawer_note_appwidgets">Widget Android do app khác vẽ (đồng hồ, lịch, nhạc…). Chạm một cái để đặt vào ô này.</string>
+    <string name="kachi_drawer_note_appwidgets_none">Máy chưa có app nào cung cấp widget.</string>
+    <string name="kachi_appwidget_granting">Đang xin quyền đặt widget…</string>
+    <string name="kachi_appwidget_err_alloc">Không cấp được ô cho widget — thử lại sau.</string>
+    <string name="kachi_appwidget_err_no_shell">Chưa nối được kênh hệ thống nên chưa xin được quyền đặt widget. Thử lại sau khi mở lại Kachi.</string>
+    <string name="kachi_appwidget_err_bind">Xe không cho đặt widget của app khác. Thẻ dựng tay và nhóm vẫn dùng được bình thường.</string>
+    <string name="kachi_appwidget_dead">Widget của %1$s không còn — app đã bị gỡ hoặc tắt. Chạm để chọn lại.</string>
 </resources>

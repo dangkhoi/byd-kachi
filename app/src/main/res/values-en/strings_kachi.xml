@@ -132,6 +132,30 @@
     <string name="kachi_about_package">Package name: %1$s</string>
     <string name="kachi_about_licence">MIT licence. A personal experiment, NOT affiliated with BYD.</string>
 
+    <!-- ── SettingsSceneSection — Cảnh (P7 + P6) ── -->
+    <string name="kachi_sec_scenes">Scenes</string>
+    <string name="kachi_scenes_note">A scene holds the layout, each slot\'s content and the car button bar. Tap a scene name to recall it. Wallpaper, status-bar chips, units and theme do NOT change with a scene.</string>
+    <string name="kachi_scenes_empty">No scenes yet. Arrange the screen the way you want it, then tap \"Save current scene…\".</string>
+    <string name="kachi_scenes_count">%1$d of %2$d scenes</string>
+    <string name="kachi_scenes_full">You already have %1$d scenes — remove one before saving another.</string>
+    <string name="kachi_scene_save">Save current scene…</string>
+    <string name="kachi_scene_save_title">Save scene</string>
+    <string name="kachi_scene_rename_title">Rename scene</string>
+    <string name="kachi_scene_name_hint">Scene name (e.g. Commute)</string>
+    <string name="kachi_scene_confirm">Save</string>
+    <string name="kachi_scene_rename">Rename</string>
+    <string name="kachi_scene_boot_mark">On start</string>
+    <string name="kachi_scene_boot_on">Comes up on engine start</string>
+    <string name="kachi_scene_tap_recall">Tap to recall</string>
+    <string name="kachi_scene_boot_contract">The launcher will come up in the \"%1$s\" scene every time it starts — any arrangement you have not saved as a scene will be replaced. Tap \"On start\" again to clear it.</string>
+    <string name="kachi_scene_boot_none">No scene on engine start — the launcher comes up with the arrangement you left.</string>
+    <string name="kachi_scene_boot_cleared">Cleared the scene on engine start</string>
+    <string name="kachi_scene_saved">Saved the \"%1$s\" scene</string>
+    <string name="kachi_scene_applied">Recalled the \"%1$s\" scene</string>
+    <string name="kachi_scene_deleted">Deleted the \"%1$s\" scene</string>
+    <string name="kachi_scene_name_empty">A scene needs a name</string>
+    <string name="kachi_scene_name_taken">There is already a scene named \"%1$s\"</string>
+
     <!-- ── SettingsSectionsHome — Màn hình chính ── -->
     <string name="kachi_sec_layout">Screen layout</string>
     <string name="kachi_row_preset">Preset layout</string>
@@ -185,4 +209,14 @@
 
     <!-- ── WorkspaceView — ô trống giữa màn ── -->
     <string name="kachi_slot_open_app">Open an app</string>
+
+    <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
+    <string name="kachi_drawer_section_appwidgets">Widgets from other apps</string>
+    <string name="kachi_drawer_note_appwidgets">Android widgets drawn by other apps (clock, calendar, music…). Tap one to put it in this tile.</string>
+    <string name="kachi_drawer_note_appwidgets_none">No app on this device provides a widget.</string>
+    <string name="kachi_appwidget_granting">Requesting widget permission…</string>
+    <string name="kachi_appwidget_err_alloc">Could not allocate a widget tile — try again later.</string>
+    <string name="kachi_appwidget_err_no_shell">The system channel is not connected yet, so widget permission could not be requested. Try again after reopening Kachi.</string>
+    <string name="kachi_appwidget_err_bind">This car will not allow widgets from other apps. Built-in cards and groups still work normally.</string>
+    <string name="kachi_appwidget_dead">The %1$s widget is gone — the app was uninstalled or disabled. Tap to pick another.</string>
 </resources>

@@ -39,6 +39,16 @@ class HomeViewModel(
         it.copy(workspace = it.workspace.withSlot(slot, content))
     }
 
+    /**
+     * T4 — đặt một widget Android của app khác vào ô. [content] đã **ràng buộc xong** (có id nền tảng cấp).
+     *
+     * Chỉ ghi state như mọi intent khác; việc **thu hồi id cũ** của ô đó do `AppWidgetSlotHost.reclaim` làm khi thấy
+     * state đổi. Cố ý KHÔNG thu hồi ở đây: ViewModel không được giữ đối tượng Android, và trộn hai việc vào một chỗ
+     * là cách chắc chắn để một trong hai bị quên khi ô đổi nội dung bằng đường khác (kéo-thả, gọi cảnh, xoá ô).
+     */
+    fun assignAppWidget(slot: Int, content: SlotContent.AppWidget) =
+        mutate { it.copy(workspace = it.workspace.withSlot(slot, content)) }
+
     fun clearSlot(slot: Int) = mutate { it.copy(workspace = it.workspace.clearSlot(slot)) }
 
     fun swapSlots(a: Int, b: Int) = mutate { it.copy(workspace = it.workspace.swap(a, b)) }
@@ -98,8 +108,18 @@ class HomeViewModel(
     /** Bố cục tự vẽ (P9). `null` = quay về bố cục sẵn. Cập nhật state + lưu bền trong MỘT lượt. */
     fun setCustomLayout(layout: GridLayout?) {
         _uiState.update { it.copy(customLayout = layout) }
-        repository.setGridLayout(layout)
+        persistLayout(layout)
     }
+
+    /**
+     * ĐÚNG MỘT chỗ trong ViewModel nói với cổng lưu bố cục — [setCustomLayout] (người dùng đặt bố cục) và
+     * [applyScene] (gọi một cảnh) đều đi qua đây.
+     *
+     * Bố cục nằm ở **khoá riêng**, không đi qua `persist()`, nên nó là thứ dễ bị bỏ sót nhất khi thêm một đường ghi
+     * mới: quên gọi thì màn hình đổi bố cục mà lần mở sau lại về bố cục cũ. Gom về một hàm để `GridSeamGuardTest`
+     * (*"setGridLayout phải được gọi ở ĐÚNG MỘT chỗ"*) vẫn đúng **theo nghĩa nó muốn** khi có đường ghi thứ hai.
+     */
+    private fun persistLayout(layout: GridLayout?) = repository.setGridLayout(layout)
 
     /** Lựa chọn đơn vị (R11). */
     fun setUnitPrefs(prefs: UnitPrefs) {
@@ -131,6 +151,57 @@ class HomeViewModel(
     fun setAutostart(on: Boolean) {
         _uiState.update { it.copy(autostart = on) }
         repository.setAutostart(on)
+    }
+
+    // ── Intent: CẢNH (P7 + P6) ───────────────────────────────────────────────────────────────────
+    // Sổ cảnh lưu ở khoá RIÊNG theo hồ sơ (không đi qua `persist`), nên bốn intent dưới đây đi cùng khuôn
+    // [setTopStrip]: cập nhật state + ghi bền trong MỘT lượt.
+
+    /**
+     * Lưu trạng thái ĐANG DÙNG thành cảnh tên [name] (trùng tên ⇒ ghi đè cảnh đó, giữ nguyên dấu nổ máy).
+     *
+     * Đủ trần ⇒ [SceneBook.saved] trả về sổ cũ. Tầng UI **phải** kiểm [HomeUiState.scenes] `.full` TRƯỚC và nói ra —
+     * chặn im lặng là họ lỗi dự án đã vá ba lần (`DockConfig.setEnabled` · trần 8 mục của ngăn kéo · nút bố cục sẵn).
+     */
+    fun saveScene(name: String) = mutateScenes { it.scenes.saved(name, it) }
+
+    /**
+     * GỌI một cảnh — bố cục + nội dung ô + thanh nút về đúng cảnh đó (R2).
+     *
+     * ⚠ **MỘT phép `copy` duy nhất** qua [withScene] (cùng hàm mà đường khởi động dùng) ⇒ một lượt render, và
+     * [WorkspaceRenderPlanner] so nội dung từng ô như mọi lần ⇒ ô không đổi thì **không dựng lại** ⇒ app đang chiếu
+     * không bị nhả/gắn lại (R4 = C5 của dự án). Gọi ba intent rời (`setPreset` + `assignWidgets` + `setCustomLayout`)
+     * sẽ là ba lượt render với trạng thái trung gian, và một trạng thái trung gian có số ô khác là đủ để bộ quyết định
+     * trả "dựng lại tất cả".
+     *
+     * Mã lạ ⇒ không làm gì (cảnh có thể vừa bị xoá ở một bề mặt khác).
+     */
+    fun applyScene(id: String) {
+        val scene = _uiState.value.scenes.byId(id) ?: return
+        val next = _uiState.updateAndGet { it.withScene(scene) }
+        repository.persist(next)
+        persistLayout(next.customLayout)   // bố cục ở khoá RIÊNG, không nằm trong persist()
+    }
+
+    /** Đánh dấu / bỏ dấu **cảnh lúc nổ máy**. `null` = bỏ dấu (đường quay lại "lên như lúc tắt máy"). */
+    fun setBootScene(id: String?) = mutateScenes { it.scenes.withBootScene(id) }
+
+    /** Xoá một cảnh. Nó đang là cảnh nổ máy ⇒ dấu đó tự bỏ ([SceneBook.removed]). */
+    fun deleteScene(id: String) = mutateScenes { it.scenes.removed(id) }
+
+    /** Đổi tên một cảnh. Tên đã thuộc cảnh KHÁC ⇒ sổ không đổi; tầng UI phải nói ra. */
+    fun renameScene(id: String, name: String) = mutateScenes { it.scenes.renamed(id, name) }
+
+    /**
+     * ĐÚNG MỘT chỗ ghi bền sổ cảnh — bốn intent trên đều đi qua đây.
+     *
+     * Bốn lần viết `updateAndGet { ... } ; repository.setSceneBook(...)` là bốn chỗ có thể quên nửa sau, và quên nửa
+     * sau nghĩa là màn hình đổi nhưng mở lại thì cảnh biến mất (im lặng). Nhận `(HomeUiState) -> SceneBook` chứ không
+     * `(SceneBook) -> SceneBook` vì [saveScene] cần **cả** trạng thái để chụp cảnh.
+     */
+    private fun mutateScenes(block: (HomeUiState) -> SceneBook) {
+        val next = _uiState.updateAndGet { it.copy(scenes = block(it)) }
+        repository.setSceneBook(next.scenes)
     }
 
     /** Cập nhật state (atomic) rồi ghi bền phần lưu-được. */
