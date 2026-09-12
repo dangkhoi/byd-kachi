@@ -250,7 +250,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         when (content) {
             is SlotContent.Widget -> {
                 val body = WidgetViews.buildGrid(context, content.ids, widgetData())
-                body.setPadding(body.paddingLeft, body.paddingTop + dp(Sp.SLOT_HEAD_CLEAR), body.paddingRight, body.paddingBottom)  // đẩy content XUỐNG DƯỚI header (hết đè)
+                // ⚠ [SOÁT UI 2026-09-12] Widget FULL khung như ô App: nút ⇄ chỉ NỔI đè ở đầu ô (overlay), KHÔNG
+                // đẩy nội dung. Trước đây `setPadding(top += SLOT_HEAD_CLEAR)` đẩy cả nội dung widget xuống ⇒ mất một
+                // khúc TO ở đỉnh (owner báo: "widget bị che mất top 1 khúc lớn"), trong khi ô App không hề bị vì app
+                // render MATCH_PARENT còn nút chỉ nổi trên. Nay hai loại ô đồng nhất: nút nổi, khung giữ nguyên cỡ.
                 fl.addView(body, mm)
                 val first = content.ids.firstOrNull() ?: ""
                 fl.addView(slotHead(index, widgetName(first), widgetAccent(first)), headLp())
@@ -265,9 +268,11 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             is SlotContent.AppWidget -> {
                 val host = appWidgetView?.invoke(content)
                 if (host != null) {
+                    // ⚠ [SOÁT UI 2026-09-12] FULL khung như ô App/Widget: nút ⇄ chỉ NỔI đè, KHÔNG đẩy host xuống
+                    // (trước đây topMargin = SLOT_HEAD_CLEAR đẩy widget bên thứ ba xuống, mất khúc top).
                     val hostLp = FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT,
-                    ).also { it.topMargin = dp(Sp.SLOT_HEAD_CLEAR) }
+                    )
                     // ⚠⚠ Nền TỐI CỐ ĐỊNH phía sau widget — không theo chủ đề, cùng lý do nút ⇄ (`scrimBtn`).
                     //
                     // Nội dung ô này là RemoteViews do app KHÁC vẽ, và quy ước widget Android là "nền tối" nên phần
@@ -275,8 +280,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                     // chữ giờ gần như biến mất. Launcher không sửa được màu RemoteViews của app khác ⇒ chỗ duy nhất
                     // chữa được là nền. Widget nào tự vẽ nền đục thì lớp này bị che, nên nó không làm hại ca nào.
                     fl.addView(appWidgetBacking(), hostLp)
-                    // Chừa chỗ cho dải đầu ô (nút ⇄/✕) bằng LỀ NGOÀI, không phải `setPadding`: đệm trong sẽ do
-                    // RemoteViews của nhà cung cấp ghi đè khi nó cập nhật (nó tự đặt padding cho gốc layout của mình).
                     fl.addView(host, hostLp)
                     // Không đặt `setOnClickListener` cho CẢ ô: widget bên thứ ba có nút bấm riêng bên trong nó
                     // (next/prev của widget nhạc…). Bắt chạm ở ô cha sẽ ăn mất cú bấm của widget. Đổi/xoá widget đi

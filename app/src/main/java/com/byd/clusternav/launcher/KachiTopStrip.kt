@@ -94,7 +94,6 @@ class KachiTopStrip(
     private fun pill(text: String, primary: Boolean, onClick: () -> Unit) = TextView(activity).apply {
         this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
         setPadding(dp(Sp.L), dp(Sp.S), dp(Sp.L), dp(Sp.S))
-        minimumHeight = dp(Sp.TOUCH)
         if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(c(KachiTheme.ON_ACCENT)) }
         else { background = KachiTheme.pill(context); setTextColor(c(KachiTheme.INK)) }
         setOnClickListener { onClick() }
@@ -123,7 +122,6 @@ class KachiTopStrip(
                 setPadding(dp(Sp.M), dp(Sp.XS), dp(Sp.M), dp(Sp.XS))
                 // T5 — ô chọn bố cục cao 32dp → Sp.TOUCH. Glyph giữ 24dp (cỡ nội tại của drawable, ImageView
                 // không kéo giãn khi khung lớn hơn hình), nên chỉ vùng chạm to ra.
-                minimumHeight = dp(Sp.TOUCH)
                 setOnClickListener { onSelectPreset(p) }
             }
             presetCells[p] = cell
@@ -220,7 +218,7 @@ class KachiTopStrip(
             // T5 — avatar 30dp → Sp.TOUCH. KDoc phía trên đã nói "một đích 30dp giữa lúc lái là chỗ dễ bấm nhầm"
             // rồi kết luận bỏ cử chỉ GIỮ; nhưng cú CHẠM (đổi hồ sơ) vẫn ở lại trên đúng đích 30dp đó. Nới đích
             // mới là chữa nguyên nhân, bỏ cử chỉ chỉ là bớt hậu quả.
-            val s = dp(Sp.TOUCH); width = s; height = s; background = KachiTheme.gradient(activity, Sp.RADIUS_PILL)
+            val s = dp(Sp.ICON_L); width = s; height = s; background = KachiTheme.gradient(activity, Sp.RADIUS_PILL)
             setOnClickListener { onProfileTap() }
         }
         return profileAvatarView

@@ -167,7 +167,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(Sp.L), dp(Sp.M), dp(Sp.L), dp(Sp.L))
+            setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.M))
         }
         content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, WRAP))
         topStrip.setProfileInitial(viewModel.uiState.value.activeProfile)   // chữ đầu avatar ban đầu (parity onCreate cũ)
