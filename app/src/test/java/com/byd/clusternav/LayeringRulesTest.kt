@@ -113,13 +113,32 @@ class LayeringRulesTest {
      */
     private val pureFilesStillInApp = 0
 
+    /**
+     * File **thuần theo phép đo của bài này** nhưng PHẢI ở lại `:app`, kèm lý do (lệ `SettingsCatalog.NOT_SETTINGS`).
+     *
+     * ⚠ Vì sao là danh sách-kèm-lý-do chứ không phải nâng [pureFilesStillInApp] lên 2: con số đó là một **cái chốt
+     * chỉ-được-giảm**, và giá trị của nó nằm ở chỗ *chạm vào là phải giải thích*. Nâng con số lên thì lần sau ai đặt
+     * một parser thuần vào `:app` cũng chỉ cần nâng thêm một — chốt mất nghĩa. Danh sách tên thì vẫn đỏ với **file
+     * mới**, đúng việc bài này sinh ra để làm.
+     */
+    private val pureButMustStayInApp: Map<String, String> = mapOf(
+        // T1: luật của dự án là "sắc thái ở :core, MÃ MÀU ở :app" (bài học ChipTone — bản nháp RW0 viết #37d67a ở
+        // :core trong khi bảng là #34d399 ⇒ hai bảng màu lệch nhau ngay dòng đầu). Đây LÀ bảng màu, nên nó thuần về
+        // kỹ thuật nhưng thuộc `:app` về layering. `GroupTileWiringContractTest` canh chiều còn lại (:core = 0 hex).
+        "KachiPalette.kt" to "là bảng MÃ MÀU — :core bị cấm giữ hex (luật ChipTone)",
+        // Gọi `KachiTheme.applyTheme`, mà `KachiTheme` import android.graphics.Color ⇒ KHÔNG chuyển được sang :core.
+        // Nó "thuần" chỉ vì phép đo soi `import android` + vài tên lớp Android, không soi phụ thuộc bắc cầu.
+        "ThemeHost.kt" to "phụ thuộc KachiTheme (Android) qua lời gọi, không chuyển được sang :core",
+    )
+
     @Test
     fun `so file thuan con nam trong app chi duoc giam`() {
         val root = root("app/src/main/java", "../app/src/main/java") ?: error("khong tim thay cay nguon can quet — bai canh dang tu tat")
         val pure = kotlinFiles(root).filter { file ->
             val text = file.toFile().readText()
             !androidOrDadb.containsMatchIn(text) &&
-                !Regex("""\b(Context|View|Activity|Service|Bitmap|Canvas)\b""").containsMatchIn(text)
+                !Regex("""\b(Context|View|Activity|Service|Bitmap|Canvas)\b""").containsMatchIn(text) &&
+                file.fileName.toString() !in pureButMustStayInApp
         }
         assertEquals(
             pureFilesStillInApp,

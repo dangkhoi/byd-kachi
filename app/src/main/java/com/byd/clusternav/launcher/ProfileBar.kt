@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.widget.EditText
 import android.widget.Toast
+import com.byd.clusternav.R
 
 /**
  * Hồ sơ tài xế cho HOME — tách khỏi [KachiHomeActivity] (B5b). Chạm avatar = xoay hồ sơ kế tiếp.
@@ -35,22 +36,22 @@ class ProfileBar(
     fun cycle() {
         val s = viewModel.uiState.value
         val list = s.profiles
-        if (list.size <= 1) { toast("Chỉ có một hồ sơ — thêm hồ sơ ở Cài đặt → Hồ sơ tài xế"); return }
+        if (list.size <= 1) { toast(activity.getString(R.string.kachi_profile_only_one)); return }
         val i = (list.indexOf(s.activeProfile) + 1) % list.size
-        viewModel.switchProfile(list[i]); toast("Hồ sơ: ${list[i]}")   // collector nạp lại workspace/dock/preset/avatar
+        viewModel.switchProfile(list[i]); toast(activity.getString(R.string.kachi_profile_switched, list[i]))   // collector nạp lại workspace/dock/preset/avatar
     }
 
     /** Dialog tạo hồ sơ mới → [HomeViewModel.addProfile]. Đường tới nó: **Cài đặt → Hồ sơ tài xế → "Thêm hồ sơ…"**. */
     fun addDialog() {
-        val input = EditText(activity).apply { hint = "Tên hồ sơ (vd: Đường trường)" }
+        val input = EditText(activity).apply { hint = activity.getString(R.string.kachi_profile_name_hint) }
         AlertDialog.Builder(activity, android.R.style.Theme_Material_Dialog_Alert)
-            .setTitle("Hồ sơ mới")
+            .setTitle(R.string.kachi_profile_new_title)
             .setView(input)
-            .setPositiveButton("Tạo") { _, _ ->
+            .setPositiveButton(R.string.kachi_create) { _, _ ->
                 val n = input.text.toString().trim()
                 if (n.isNotEmpty()) viewModel.addProfile(n)
             }
-            .setNegativeButton("Huỷ", null)
+            .setNegativeButton(R.string.kachi_cancel, null)
             .show()
     }
 

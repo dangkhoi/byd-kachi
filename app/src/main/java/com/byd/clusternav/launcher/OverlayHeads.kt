@@ -66,7 +66,7 @@ class OverlayHeads(private val activity: Activity) {
             setPadding(dp(Sp.M), 0, dp(Sp.S), 0)
             // ĐỤC 100% (bo góc trên) để che KÍN caption freeform + KHỚP MÀU header của widget (khỏi lệch 2 màu). Màu chung = HEADER_BG.
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#0F1520"))
+                setColor(Color.parseColor(KachiTheme.HEAD_BG))
                 cornerRadii = floatArrayOf(dp(Sp.RADIUS_L).toFloat(), dp(Sp.RADIUS_L).toFloat(), dp(Sp.RADIUS_L).toFloat(), dp(Sp.RADIUS_L).toFloat(), 0f, 0f, 0f, 0f)
             }
         }
@@ -74,7 +74,7 @@ class OverlayHeads(private val activity: Activity) {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(hd.dotColor)) }
         }, LinearLayout.LayoutParams(dp(Sp.DOT), dp(Sp.DOT)).also { it.marginEnd = dp(Sp.S) })
         bar.addView(TextView(activity).apply {
-            text = hd.name; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            text = hd.name; setTextColor(Color.parseColor(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             typeface = Typeface.DEFAULT_BOLD; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         bar.addView(btn("ic-swap", hd.onSwap), btnLp())
@@ -93,9 +93,9 @@ class OverlayHeads(private val activity: Activity) {
         .also { it.marginStart = dp(Sp.S) }
 
     private fun btn(icon: String, onClick: () -> Unit): View = ImageView(activity).apply {
-        val r = KachiTheme.iconRes(icon); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
+        val r = KachiTheme.iconRes(icon); if (r != 0) { setImageResource(r); setColorFilter(Color.parseColor(KachiTheme.INK)) }
         setPadding(dp(Sp.S), dp(Sp.S), dp(Sp.S), dp(Sp.S))
-        background = GradientDrawable().apply { cornerRadius = dp(Sp.RADIUS_S).toFloat(); setColor(Color.parseColor("#33000000")) }
+        background = GradientDrawable().apply { cornerRadius = dp(Sp.RADIUS_S).toFloat(); setColor(Color.parseColor(KachiTheme.SCRIM_BTN2)) }
         setOnClickListener { onClick() }
     }
 

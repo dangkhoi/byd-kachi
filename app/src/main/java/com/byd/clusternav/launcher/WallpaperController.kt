@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import android.widget.Toast
+import com.byd.clusternav.R
 
 /**
  * BỘ ĐIỀU KHIỂN HÌNH NỀN (U4) — sở hữu [WallView] + trạng thái trình chiếu, tách khỏi [KachiHomeActivity].
@@ -102,7 +103,10 @@ class WallpaperController(
             if (force) {
                 Log.i("Wallpaper", "bật nhưng chưa có ảnh; bỏ ảnh vào: ${WallpaperStore.folderHint(ctx)}")
                 runCatching {
-                    Toast.makeText(ctx, "Chưa có ảnh. Bỏ ảnh vào:\n${WallpaperStore.folderHint(ctx)}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                    ctx, ctx.getString(R.string.kachi_wall_no_photos, WallpaperStore.folderHint(ctx)),
+                    Toast.LENGTH_LONG,
+                ).show()
                 }
             }
             wall.setPhoto(null)

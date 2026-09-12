@@ -63,8 +63,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onDockEdge = { e -> viewModel.setDockEdge(e) },
             onTopStrip = { id, on -> viewModel.toggleTopStrip(id, on) },
             onWallpaper = { p ->
-                viewModel.setWallpaperPrefs(p)     // state + lưu bền; reload đọc lại từ state
-                wallpaper.reload()
+                viewModel.setWallpaperPrefs(p); wallpaper.reload()   // state + lưu bền; reload đọc lại từ state
             },
             onUnitPrefs = { prefs ->
                 viewModel.setUnitPrefs(prefs)      // state + lưu bền trong MỘT lượt
@@ -72,6 +71,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 workspace.setUnitPrefs(prefs)
                 topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs, viewModel.uiState.value.topStrip)
             },
+            onThemeMode = { m -> viewModel.setThemeMode(m) },   // T1 — intent có sẵn từ S1; đọc-để-vẽ ở [ThemeHost]
+            onLangMode = { m -> viewModel.setLangMode(m) },     // U5·T3 — đọc-để-vẽ ở [LangHost.wrap]
             onAutostart = { on -> viewModel.setAutostart(on) },
             onSwitchProfile = { name -> viewModel.switchProfile(name) },
             onAddProfile = { profileBar.addDialog() },    // dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai
@@ -113,13 +114,11 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * thật (xoá bố cục mà màn hình vẫn hiện 6 khung).
      */
     private val unitPrefs: UnitPrefs get() = viewModel.uiState.value.unitPrefs
-    private val wallPrefs: WallpaperPrefs get() = viewModel.uiState.value.wallpaper
     private val customLayout: GridLayout? get() = viewModel.uiState.value.customLayout
     // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher (am --windowingMode 5 + am task resize); chưa có dadb → IntentAppLauncher.
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
-    // @Volatile: GHI trên thread nền `winExec` (nhánh dò dadb) nhưng ĐỌC trên thread CHÍNH (openAppFullscreen —
-    // lưới an toàn U3; reflow/placeApp cũng đọc trên main). Không có nó thì main có thể thấy mãi `null` ⇒ đường
-    // shell "biến mất" một cách im lặng. Cùng lý do với `appLauncher` ngay trên.
+    // @Volatile (cùng lý do `appLauncher` ngay trên): GHI ở thread nền `winExec` (dò dadb), ĐỌC ở thread CHÍNH
+    // (openAppFullscreen · reflow · placeApp). Không có nó thì main có thể thấy mãi `null` ⇒ đường shell im lặng mất.
     @Volatile private var shell: ((String) -> String)? = null
     // dadb → app render lên VirtualDisplay trong ô (Dudu) hoặc ROM platform-signed → ActivityView; cả 2 bỏ freeform + overlay header.
     private val embedding get() = shell != null || SlotAppHost.embeddingUsable(this)
@@ -138,6 +137,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         }
     }
 
+    override fun attachBaseContext(base: android.content.Context) = super.attachBaseContext(LangHost.wrap(base))
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
@@ -148,7 +149,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             this, container.homeViewModelFactory(embedded = SlotAppHost.embeddingUsable(this)),
         )[HomeViewModel::class.java]
         profileBar = ProfileBar(this, viewModel)
-
+        ThemeHost.sync(viewModel.uiState.value)   // T1 — bảng màu phải có TRƯỚC khi dựng view (xem [ThemeHost])
         topStrip = KachiTopStrip(
             this,
             onSelectPreset = { selectPreset(it) },
@@ -271,6 +272,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      */
     private fun render(state: HomeUiState) {
         val prev = shownState
+        // T1/T3 — bảng màu HOẶC ngôn ngữ đổi ⇒ dựng lại màn; `or` KHÔNG ngắn mạch vì `sync` là chỗ ÁP bảng màu.
+        if ((ThemeHost.sync(state) or LangHost.changed(prev, state)) && prev != null) { recreate(); return }
         workspace.render(state.workspace, state.carStatus)
         // ⚠ xét CẢ `topStrip`: thiếu nó thì đổi danh sách chip mà màn hình không đổi gì (off-car trạng thái xe gần như không đổi).
         if (prev == null || prev.carStatus != state.carStatus || prev.topStrip != state.topStrip) {

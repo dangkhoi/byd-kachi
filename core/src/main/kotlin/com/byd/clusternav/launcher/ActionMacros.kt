@@ -45,11 +45,13 @@ data class MacroStep(
  */
 data class ActionMacro(
     val id: String,
-    val label: String,
+    override val label: String,
     val icon: String,
     val domain: Domain,
     val steps: List<MacroStep>,
-) {
+    /** Nhãn tiếng Anh (U5 · T2) — tham số mặc định ở CUỐI để mọi chỗ dựng cũ (kể cả test) không phải sửa. */
+    override val labelEn: String? = null,
+) : Localized {
     /** Mã bước trỏ tới nút KHÔNG tồn tại. Phải rỗng — bị test khoá (R3). */
     fun invalidSteps(): List<String> = steps.map { it.controlId }.filter { ControlRegistry.byId(it) == null }
 
@@ -105,22 +107,28 @@ data class MacroResult(val macroId: String, val results: List<MacroStepResult>) 
      * bấm "Rời xe" xong xe khoá nhưng kính chưa đóng — và không có gì nói cho người ta biết. Luật "một bước hỏng
      * không dừng gói" (R2) là đúng, nhưng nó KHÔNG cho phép im lặng về việc đã hỏng.
      *
-     * Gọi bước hỏng bằng **nhãn** chứ không bằng mã, vì đây là câu cho người đọc.
+     * Gọi bước hỏng bằng **nhãn** chứ không bằng mã, vì đây là câu cho người đọc — và bằng nhãn theo **ngôn ngữ đang
+     * dùng** ([ControlDef.displayLabel]), không thì một câu tiếng Anh sẽ kể tên nút bằng tiếng Việt.
+     *
+     * @param macroLabel nhãn gói **đã theo ngôn ngữ** (chỗ gọi truyền [ActionMacro.displayLabel]).
      */
     fun notice(macroLabel: String): String? {
         if (results.isEmpty()) return null
         if (allOk) return null
-        val names = failed.map { ControlRegistry.byId(it)?.label ?: it }.distinct()
-        return if (allFailed) "$macroLabel: xe không nhận lệnh nào"
-        else "$macroLabel: chưa làm được — ${names.joinToString(", ")}"
+        val names = failed.map { ControlRegistry.byId(it)?.displayLabel ?: it }.distinct()
+        return if (allFailed) "$macroLabel: " + Strings.t("xe không nhận lệnh nào", "the car took no command")
+        else "$macroLabel: " + Strings.t("chưa làm được — ", "not done — ") + names.joinToString(", ")
     }
 
     /** Một câu ngắn cho nhật ký / thông báo. */
     fun summary(): String = when {
-        results.isEmpty() -> "gói rỗng"
-        allOk -> "đủ $total bước"
-        allFailed -> "không bước nào ăn ($total bước)"
-        else -> "$okCount/$total bước ăn; hỏng: ${failed.joinToString(", ")}"
+        results.isEmpty() -> Strings.t("gói rỗng", "empty pack")
+        allOk -> Strings.t("đủ $total bước", "all $total steps")
+        allFailed -> Strings.t("không bước nào ăn ($total bước)", "no step took ($total steps)")
+        else -> Strings.t(
+            "$okCount/$total bước ăn; hỏng: ${failed.joinToString(", ")}",
+            "$okCount/$total steps took; failed: ${failed.joinToString(", ")}",
+        )
     }
 }
 
@@ -170,17 +178,21 @@ object ActionMacros {
     val ALL: List<ActionMacro> = listOf(
         // Vì sao gộp 4 nút riêng thay vì dùng nút "Tất cả kính" đã có: nút gộp đó ở mức CHƯA KIỂM, còn 4 nút riêng
         // đều ĐÃ CHẠY trên xe owner ⇒ gói này khả năng ăn cao hơn. Đây là giá trị cụ thể của lớp gộp lệnh.
-        ActionMacro("mac_win_open_all", "Mở hết kính", "ic-window-open", Domain.BODY, windows(open = true)),
-        ActionMacro("mac_win_close_all", "Đóng hết kính", "ic-window-close", Domain.BODY, windows(open = false)),
+        ActionMacro("mac_win_open_all", "Mở hết kính", "ic-window-open", Domain.BODY, windows(open = true),
+            labelEn = "Open all"),
+        ActionMacro("mac_win_close_all", "Đóng hết kính", "ic-window-close", Domain.BODY, windows(open = false),
+            labelEn = "Close all"),
         // Yêu cầu số 7 của owner: "mở cửa + tắt/mở đèn".
         ActionMacro(
             "mac_door_light", "Mở cửa + đèn đọc", "ic-door", Domain.BODY,
             listOf(MacroStep("door", 1), MacroStep("readl", 1, waitAfterMs = 0)),
+            labelEn = "Unlock + reading light",
         ),
         // Ca dùng thật khi rời xe. Mọi bước đảo lại được (C5).
         ActionMacro(
             "mac_leave", "Rời xe", "ic-lock", Domain.BODY,
             windows(open = false) + listOf(MacroStep("readl", 0), MacroStep("lock", 1, waitAfterMs = 0)),
+            labelEn = "Leaving the car",
         ),
     )
 

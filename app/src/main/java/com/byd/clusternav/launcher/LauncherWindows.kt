@@ -88,7 +88,7 @@ class LauncherWindows(
             (st.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
                 absoluteSlotRect(i)?.let { r ->
                     val a = appRect(r)
-                    heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appLabel(app.pkg), "#4c7dff",
+                    heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appLabel(app.pkg), KachiTheme.ACCENT,
                         onSwap = { onSlotSwap(i) }, onClose = { onSlotClose(i) }))
                 }
             }

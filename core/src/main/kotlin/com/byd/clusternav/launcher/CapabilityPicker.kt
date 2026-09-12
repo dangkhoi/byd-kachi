@@ -31,8 +31,14 @@ package com.byd.clusternav.launcher
  */
 object CapabilityPicker {
 
-    /** Tiêu đề mục NHÓM — thứ người dùng gặp đầu tiên. */
-    const val GROUPS_TITLE = "Nhóm — xem cả cụm cùng lúc"
+    /**
+     * Tiêu đề mục NHÓM — thứ người dùng gặp đầu tiên.
+     *
+     * ⚠ U5 · T2 đổi từ `const val` sang thuộc tính có getter: `const` là **hằng biên dịch**, không đổi được lúc chạy
+     * ⇒ nó sẽ mãi tiếng Việt. Đây đúng cái bẫy `KachiTheme` gặp với 13 `const val` màu (spec §1) — cùng nguyên nhân,
+     * cùng cách chữa. Mọi chỗ gọi vẫn là phép đọc thuộc tính nên không phải sửa gì.
+     */
+    val GROUPS_TITLE: String get() = Strings.t("Nhóm — xem cả cụm cùng lúc", "Groups — see a whole set at once")
 
     /**
      * Câu phụ của mục nhóm. Nói **việc**, không nói kiến trúc: người ngồi trong xe không cần biết chữ "nhóm khả
@@ -40,14 +46,18 @@ object CapabilityPicker {
      *
      * ⚠ Không viết số vào câu này (cùng lý do [CapabilityGroup.sub]): số nhóm/số thành viên đổi thì câu nói sai.
      */
-    const val GROUPS_NOTE =
-        "Một ô cho cả bộ: cả bộ lốp, cả bộ kính, cả dải đèn. Đặt một ô thay vì đặt từng cái."
+    val GROUPS_NOTE: String
+        get() = Strings.t(
+            "Một ô cho cả bộ: cả bộ lốp, cả bộ kính, cả dải đèn. Đặt một ô thay vì đặt từng cái.",
+            "One tile for a whole set: all the tyres, all the windows, the whole light strip. " +
+                "Place one tile instead of placing each one.",
+        )
 
     /** Tiêu đề phần MỤC RỜI — vẫn còn nguyên cho ai chỉ muốn một con số to giữa màn (§4.2). */
-    const val SINGLES_TITLE = "Từng mục riêng"
+    val SINGLES_TITLE: String get() = Strings.t("Từng mục riêng", "Individual items")
 
     /** Câu mở đầu của phép GỢI Ý nhóm ở từng lĩnh vực — xem [groupHint]. */
-    const val HINT_PREFIX = "Đã có trong nhóm: "
+    val HINT_PREFIX: String get() = Strings.t("Đã có trong nhóm: ", "Already in a group: ")
 
     /**
      * 12 ô nhóm theo **thứ tự khai** của [CapabilityGroups.ALL] (thứ hỏi thường xuyên trước).
@@ -89,6 +99,6 @@ object CapabilityPicker {
         // ⚠ Ngăn cách bằng DẤU PHẨY, không bằng " · ": [ĐO] nhãn nhóm "An toàn · ADAS" đã chứa dấu giữa, nên nối bằng
         // " · " ra câu "Đã có trong nhóm: An toàn · ADAS · Người ngồi" — đọc thành BA nhóm thay vì hai. Không nhãn
         // nhóm nào chứa dấu phẩy (có test canh), nên dấu phẩy phân biệt được.
-        return HINT_PREFIX + CapabilityGroups.ALL.filter { it.id in hit }.joinToString(", ") { it.label }
+        return HINT_PREFIX + CapabilityGroups.ALL.filter { it.id in hit }.joinToString(", ") { it.displayLabel }
     }
 }

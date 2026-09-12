@@ -49,8 +49,11 @@ class SettingsScreenWiringContractTest {
                 "hiệu lực với chính màn hình mà nó bảo vệ",
         )
         val cell = SourceRoots.body(panel, "private fun railCell(")
-        assertTrue(cell.contains("group.label") && cell.contains("group.sub"),
-            "rail phải tự giải thích được: nhãn + câu phụ đều lấy từ danh mục")
+        // U5·T3 — phải là `displayLabel`/`displaySub`, KHÔNG phải `label`/`sub` gốc: nhãn gốc luôn tiếng Việt theo
+        // giao kèo `Localized.label`, nên đọc thẳng nó làm rail đứng nguyên tiếng Việt khi người dùng chọn English —
+        // [ĐO] máy ảo 2026-09-12 chụp được đúng cảnh đó (rail Việt / nội dung Anh trên cùng một màn).
+        assertTrue(cell.contains("group.displayLabel") && cell.contains("group.displaySub"),
+            "rail phải tự giải thích được VÀ theo ngôn ngữ: nhãn + câu phụ đều lấy từ danh mục qua display*")
     }
 
     @Test
@@ -110,7 +113,8 @@ class SettingsScreenWiringContractTest {
     fun `thanh tren chi con MOT cua vao cau hinh`() {
         val fn = SourceRoots.body(strip, "private fun build()")
         assertEquals(
-            1, Regex("""pill\("Cài đặt"""").findAll(fn).count(),
+            // U5·T3 — nhãn pill đến từ tài nguyên; đếm theo MÃ KHOÁ, tính chất không đổi.
+            1, Regex("""pill\([^)]*?R\.string\.kachi_pill_settings""").findAll(fn).count(),
             "đúng một pill mở cấu hình",
         )
         assertFalse(fn.contains("""pill("Tuỳ biến""""), "pill 'Tuỳ biến' đã gộp vào 'Cài đặt'")
@@ -129,8 +133,10 @@ class SettingsScreenWiringContractTest {
         listOf("ic_layout_1", "ic_layout_2c", "ic_layout_2r", "ic_layout_3", "ic_layout_4").forEach {
             assertTrue(seg.contains(it), "nút bố cục '$it' phải còn ở thanh trên")
         }
-        assertTrue(SourceRoots.body(strip, "private fun build()").contains("""pill("Ứng dụng""""),
-            "pill 'Ứng dụng' (U3) cũng cố ý ở lại")
+        assertTrue(
+            SourceRoots.body(strip, "private fun build()").contains("R.string.kachi_pill_apps"),
+            "pill 'Ứng dụng' (U3) cũng cố ý ở lại",
+        )
     }
 
     @Test
@@ -210,25 +216,47 @@ class SettingsScreenWiringContractTest {
         assertTrue(prefs.contains("fun setLauncherAutostart("), "và phải có đường ghi bền")
     }
 
+    /**
+     * ⚠⚠ **BÀI CANH TỰ ĐẢO CHIỀU — S1 gài, T1 đảo.** Đây là bằng chứng cơ chế đó hoạt động, nên giữ lại nguyên văn
+     * lịch sử của nó thay vì viết lại thành một bài mới.
+     *
+     * **Chiều CŨ (S1)**: `themeMode` chỉ có `PrefsWorkspaceRepository` đọc (nạp + ghi lại chính nó), `isNight()` có 0
+     * chỗ gọi, `KachiTheme` là 13 `const val` (hằng biên dịch) và có 82 hex viết cứng ở 21 tệp ⇒ nút gạt sẽ là **nút
+     * chết**. Bài khi đó đòi `display(` **KHÔNG** được có `setThemeMode` và **phải** có `rows.note(` nói thật hiện
+     * trạng; và nó đỏ ngay khi xuất hiện chỗ đọc `themeMode` thứ hai — tức là *"hôm nào có người đọc để vẽ thì đòi
+     * làm nút"*.
+     *
+     * **Chiều MỚI (T1)**: cả ba tiền đề đã bị bỏ — [KachiPalette] có bảng SÁNG, [KachiTheme] tra theo bảng, và
+     * [ThemeHost.sync] là người đọc `themeMode` để vẽ. Nên bài nay đòi **ngược lại**: phải CÓ nút thật, và phải có
+     * đúng những chỗ đọc `themeMode` mà thiết kế cần — không nhiều hơn (chỗ ghi bảng màu thứ hai bị
+     * [ThemePaletteContractTest] chặn riêng).
+     */
     @Test
-    fun `chua lam nut gat sang toi vi CHUA ai doc de ve`() {
-        // [ĐO] tiền đề của quyết định "chỉ nói hiện trạng, không làm nút": trong CẢ cây :app, `themeMode` chỉ được
-        // đọc để NẠP và GHI LẠI chính nó, và `isNight(...)` không có chỗ gọi nào. Thêm nút gạt bây giờ = nút chết.
-        // ⚠ Phải quét MÃ đã bỏ chú thích: lần đầu tôi quét thô và bài này đỏ vì chính KDoc giải thích quyết định
-        // (nó có nhắc `HomeUiState.themeMode`). Quét thô ở đây sẽ bắt văn xuôi, không bắt dây nối.
+    fun `nay PHAI co nut gat sang toi vi da co nguoi doc de ve`() {
+        // Chỗ ĐỌC `themeMode` trong MÃ (đã bỏ chú thích — lần đầu S1 quét thô và bài đỏ vì chính KDoc nhắc tên nó).
+        // Ba chỗ, mỗi chỗ một vai: nạp/ghi bền · người đọc-để-vẽ · nút bấm.
         val readers = appSources { it.contains(".themeMode") }
         assertEquals(
-            listOf("PrefsWorkspaceRepository.kt"), readers,
-            "nay đã có chỗ ĐỌC `themeMode` ngoài chỗ nạp/ghi ⇒ bảng màu sáng đã dùng được ⇒ ĐỔI dòng thông tin ở " +
-                "nhóm Hiển thị thành nút gạt thật (viewModel.setThemeMode). Chỗ đọc: $readers",
+            listOf("PrefsWorkspaceRepository.kt", "SettingsSections.kt", "ThemeHost.kt"), readers,
+            "đường một chiều của chủ đề đã đổi hình: lưu bền (PrefsWorkspaceRepository) → đọc-để-vẽ (ThemeHost) → " +
+                "nút bấm (SettingsSections). Chỗ đọc hiện tại: $readers",
         )
-        val callers = appSources { it.contains("isNight(") }
-        assertEquals(emptyList<String>(), callers, "có chỗ gọi isNight() ⇒ như trên, làm nút gạt thật")
+        assertTrue(
+            appSources { it.contains("isNight(") }.isNotEmpty(),
+            "isNight() lại thành 0 chỗ gọi ⇒ chế độ \"Tự động\" là lựa chọn chết",
+        )
 
         val fn = SourceRoots.body(sections, "private fun display(")
-        assertFalse(fn.contains("setThemeMode"), "chưa có bảng màu sáng thì không được dựng nút đổi (nút chết)")
-        assertTrue(fn.contains("rows.note("), "phải NÓI THẬT hiện trạng, không im lặng bỏ trống")
-        // Đường lưu bền + intent GIỮ NGUYÊN (owner chưa quyết bảng màu sáng — OQ2), không xoá.
+        assertTrue(fn.contains("deps.onThemeMode("), "nhóm Hiển thị phải có NÚT đổi chủ đề, không phải dòng chữ")
+        assertTrue(
+            fn.contains("rows.chipRow(") && fn.contains("ThemeMode.values()"),
+            "nút phải bày ĐỦ ba lựa chọn của ThemeMode (Sáng / Tối / Tự động), không phải công tắc hai trạng thái",
+        )
+        assertFalse(
+            fn.contains("chỉ có bảng màu TỐI"),
+            "dòng thông tin cũ nay NÓI SAI (đã có bảng sáng) — phải xoá, không được để lại cạnh nút",
+        )
+        // Đường lưu bền + intent GIỮ NGUYÊN: nút mới phải dùng lại chúng, không dựng đường thứ hai.
         assertTrue(vm.contains("fun setThemeMode("), "không được xoá intent đang có")
         assertTrue(prefs.contains("fun setThemeMode("), "không được xoá đường lưu bền đang có")
     }

@@ -26,7 +26,7 @@ enum class ImageFit {
     /** Vừa trong khung, giữ nguyên tỉ lệ, có thể còn viền — dùng khi muốn thấy trọn ảnh. */
     FIT;
 
-    val label: String get() = if (this == FILL) "Phủ kín" else "Vừa khung"
+    val label: String get() = if (this == FILL) Strings.t("Phủ kín", "Fill") else Strings.t("Vừa khung", "Fit")
 }
 
 /** Trạng thái RUNTIME của một trình chiếu: đang ở ảnh nào, đổi lần cuối lúc nào. */
@@ -42,9 +42,9 @@ object Slideshow {
 
     /** Nhãn cho người đọc, tránh bắt họ tự quy đổi giây. */
     fun intervalLabel(sec: Int): String = when {
-        sec < 60 -> "$sec giây"
-        sec < 3600 -> "${sec / 60} phút"
-        else -> "${sec / 3600} giờ"
+        sec < 60 -> Strings.t("$sec giây", "$sec s")
+        sec < 3600 -> Strings.t("${sec / 60} phút", "${sec / 60} min")
+        else -> Strings.t("${sec / 3600} giờ", "${sec / 3600} h")
     }
 
     /**

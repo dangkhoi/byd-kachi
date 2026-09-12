@@ -20,15 +20,48 @@ package com.byd.clusternav.launcher
  * @property label tên hiện cho người đọc.
  * @property sub câu phụ nói **nội dung** nhóm — rail phải tự giải thích được, vì đây là lần đầu owner thấy toàn bộ
  *   bản đồ cài đặt và mục đích của S1 là chứng minh *không còn gì nằm ngoài*.
+ * @property labelEn nhãn tiếng Anh (U5 · T2) · @property subEn câu phụ tiếng Anh. Bắt buộc cho cả 7 nhóm — rail là
+ *   thứ **đầu tiên** người dùng thấy khi mở Cài đặt, một dòng tiếng Việt lọt vào đây là lỗi nhìn thấy ngay.
  */
-enum class SettingsGroup(val id: String, val label: String, val sub: String) {
-    HOME("home", "Màn hình chính", "Bố cục, hình nền, chip thanh trạng thái và thanh nút xe"),
-    DISPLAY("display", "Hiển thị & đơn vị", "Đơn vị đo và giao diện sáng/tối — cách trình bày, không phụ thuộc bố cục"),
-    PROFILES("profiles", "Hồ sơ tài xế", "Hồ sơ đang dùng, thêm và xoá hồ sơ — mỗi hồ sơ giữ bố cục riêng"),
-    CAR("car", "Tiện nghi xe", "Việc Kachi tự làm với XE khi nổ máy, không phải với màn hình"),
-    SYSTEM("system", "Hệ thống & quyền", "Điều kiện để launcher chạy đúng: quyền còn thiếu và tự mở khi nổ máy"),
-    CLUSTERNAV("clusternav", "Dẫn đường · Cụm · Phím", "Mở màn ClusterNav — dẫn đường, chiếu cụm, phím vô-lăng"),
-    ABOUT("about", "Giới thiệu", "Phiên bản, tên gói và giấy phép"),
+enum class SettingsGroup(
+    val id: String,
+    override val label: String,
+    val sub: String,
+    override val labelEn: String,
+    val subEn: String,
+) : Localized {
+    HOME(
+        "home", "Màn hình chính", "Bố cục, hình nền, chip thanh trạng thái và thanh nút xe",
+        "Home screen", "Layout, wallpaper, status-bar chips and the car button bar",
+    ),
+    DISPLAY(
+        "display", "Hiển thị & đơn vị",
+        "Đơn vị đo và giao diện sáng/tối — cách trình bày, không phụ thuộc bố cục",
+        "Display & units", "Units of measure and light/dark theme — presentation, independent of layout",
+    ),
+    PROFILES(
+        "profiles", "Hồ sơ tài xế", "Hồ sơ đang dùng, thêm và xoá hồ sơ — mỗi hồ sơ giữ bố cục riêng",
+        "Driver profiles", "Active profile, add and remove profiles — each profile keeps its own layout",
+    ),
+    CAR(
+        "car", "Tiện nghi xe", "Việc Kachi tự làm với XE khi nổ máy, không phải với màn hình",
+        "Car comfort", "What Kachi does to the CAR on engine start, not to the screen",
+    ),
+    SYSTEM(
+        "system", "Hệ thống & quyền", "Điều kiện để launcher chạy đúng: quyền còn thiếu và tự mở khi nổ máy",
+        "System & permissions", "What the launcher needs to run: missing permissions and auto-start on engine start",
+    ),
+    CLUSTERNAV(
+        "clusternav", "Dẫn đường · Cụm · Phím", "Mở màn ClusterNav — dẫn đường, chiếu cụm, phím vô-lăng",
+        "Navigation · Cluster · Keys", "Open the ClusterNav screen — navigation, cluster casting, steering-wheel keys",
+    ),
+    ABOUT(
+        "about", "Giới thiệu", "Phiên bản, tên gói và giấy phép",
+        "About", "Version, package name and licence",
+    );
+
+    /** [sub] theo [Strings.current] — tự lùi về tiếng Việt nếu bản Anh trống. */
+    val displaySub: String get() = Strings.pick(sub, subEn)
 }
 
 /**
@@ -51,9 +84,11 @@ enum class SettingsGroup(val id: String, val label: String, val sub: String) {
 data class SettingsEntry(
     val id: String,
     val group: SettingsGroup,
-    val label: String,
+    override val label: String,
     val prefKey: String? = null,
-)
+    /** Nhãn tiếng Anh (U5 · T2) — tham số mặc định ở CUỐI để [prefKey] giữ vị trí thứ 4 dạng positional. */
+    override val labelEn: String? = null,
+) : Localized
 
 /**
  * NGUỒN DUY NHẤT cho *"cấu hình nào thuộc nhóm nào"* (S1 · §4.3). Thuần Kotlin (`:core`, cấm `android.*`) ⇒ kiểm
@@ -99,44 +134,56 @@ object SettingsCatalog {
      */
     val ENTRIES: List<SettingsEntry> = listOf(
         // ── Màn hình chính ──
-        SettingsEntry("home_preset", SettingsGroup.HOME, "Bố cục sẵn", "preset"),
-        SettingsEntry("home_grid", SettingsGroup.HOME, "Bố cục tự vẽ", "grid_layout"),
+        SettingsEntry("home_preset", SettingsGroup.HOME, "Bố cục sẵn", "preset", "Preset layout"),
+        SettingsEntry("home_grid", SettingsGroup.HOME, "Bố cục tự vẽ", "grid_layout", "Custom layout"),
         // Không lưu gì: đây là NÚT mở bảng vẽ. Bố cục vẽ ra thì lưu ở "home_grid" phía trên — một khoá, một chủ.
-        SettingsEntry("home_grid_editor", SettingsGroup.HOME, "Vẽ bố cục riêng…"),
-        SettingsEntry("home_wallpaper", SettingsGroup.HOME, "Hình nền & trình chiếu", "wallpaper_prefs"),
-        SettingsEntry("home_top_strip", SettingsGroup.HOME, "Chip thanh trạng thái", "top_strip"),
+        SettingsEntry("home_grid_editor", SettingsGroup.HOME, "Vẽ bố cục riêng…", labelEn = "Draw your own layout…"),
+        SettingsEntry("home_wallpaper", SettingsGroup.HOME, "Hình nền & trình chiếu", "wallpaper_prefs", "Wallpaper & slideshow"),
+        SettingsEntry("home_top_strip", SettingsGroup.HOME, "Chip thanh trạng thái", "top_strip", "Status-bar chips"),
         // Viền TRƯỚC danh sách nút: thứ tự khai ở đây LÀ thứ tự hiện ra, và mục "nút trên thanh" là lưới 187 ô. Khai
         // ngược lại thì muốn đổi viền phải cuộn qua hết 187 ô — thứ tự danh mục phải là thứ tự dùng được, không chỉ
         // là thứ tự nghe hợp lý khi đọc danh sách.
-        SettingsEntry("home_dock_edge", SettingsGroup.HOME, "Viền đặt thanh nút", "dock_edge"),
-        SettingsEntry("home_dock_items", SettingsGroup.HOME, "Nút trên thanh nút xe", "dock_enabled"),
+        SettingsEntry("home_dock_edge", SettingsGroup.HOME, "Viền đặt thanh nút", "dock_edge", "Button bar edge"),
+        SettingsEntry("home_dock_items", SettingsGroup.HOME, "Nút trên thanh nút xe", "dock_enabled", "Buttons on the car bar"),
 
         // ── Hiển thị & đơn vị ──
-        SettingsEntry("display_units", SettingsGroup.DISPLAY, "Đơn vị hiển thị", "unit_prefs"),
+        SettingsEntry("display_units", SettingsGroup.DISPLAY, "Đơn vị hiển thị", "unit_prefs", "Display units"),
         // [ĐO] §2: khoá này lưu bền, có enum + có đường ghi, nhưng TRƯỚC S1 không có nút nào chạm tới.
-        SettingsEntry("display_theme", SettingsGroup.DISPLAY, "Giao diện sáng/tối", "theme_mode"),
+        SettingsEntry("display_theme", SettingsGroup.DISPLAY, "Giao diện sáng/tối", "theme_mode", "Light / dark theme"),
+        // U5·T3 — NGÔN NGỮ. ⚠ Khoá `lang` KHÔNG nằm trong tệp `kachi_workspace` mà trong tệp lưu ngôn ngữ đã có của
+        // ClusterNav (`clusternav_lang`, `com.byd.clusternav.Lang`) — cố ý, để một APK chỉ có MỘT công tắc ngôn ngữ
+        // thay vì hai cái lệch nhau; lập luận đầy đủ ở KDoc `WorkspacePrefs.langMode`.
+        //
+        // Hệ quả về phép kiểm: bộ quét của `SettingsCoverageContractTest` KHÔNG thấy khoá này (gốc quét cố ý không
+        // gồm tệp của ClusterNav — kéo vào là biến bài R2 thành bài kiểm ClusterNav). Nên nó được canh bằng một bài
+        // RIÊNG đọc thẳng hằng trong `Lang.kt` (`LauncherI18nContractTest`), đúng khuôn đã dùng cho
+        // `recirc_on_start_enabled` ở `Prefs.kt` — cùng tình huống: khoá thật, nằm ngoài tệp chính.
+        SettingsEntry("display_lang", SettingsGroup.DISPLAY, "Ngôn ngữ", "lang", "Language"),
 
         // ── Hồ sơ tài xế ──
-        SettingsEntry("profiles_list", SettingsGroup.PROFILES, "Danh sách hồ sơ", "profiles"),
-        SettingsEntry("profiles_active", SettingsGroup.PROFILES, "Hồ sơ đang dùng", "active_profile"),
+        SettingsEntry("profiles_list", SettingsGroup.PROFILES, "Danh sách hồ sơ", "profiles", "Profile list"),
+        SettingsEntry("profiles_active", SettingsGroup.PROFILES, "Hồ sơ đang dùng", "active_profile", "Active profile"),
 
         // ── Tiện nghi xe ──
         // ⚠ Tên khoá THẬT là "recirc_on_start_enabled" (Prefs.K_RECIRC_ON_START), KHÁC tên "recirc_on_start" mà spec
         // §2 ghi. Lấy theo mã nguồn, vì bài test phủ khoá đối chiếu với mã chứ không với spec.
-        SettingsEntry("car_recirc_on_start", SettingsGroup.CAR, "Tự lấy gió trong khi nổ máy", "recirc_on_start_enabled"),
+        SettingsEntry(
+            "car_recirc_on_start", SettingsGroup.CAR, "Tự lấy gió trong khi nổ máy", "recirc_on_start_enabled",
+            "Recirculation on engine start",
+        ),
 
         // ── Hệ thống & quyền ──
         // Không lưu gì: hàng quyền chỉ ĐỌC trạng thái thật rồi tự xin lại (xem [LauncherRequirements]).
-        SettingsEntry("system_permissions", SettingsGroup.SYSTEM, "Quyền còn thiếu"),
+        SettingsEntry("system_permissions", SettingsGroup.SYSTEM, "Quyền còn thiếu", labelEn = "Missing permissions"),
         // [ĐO] §2: khoá thứ hai không có đường tới trước S1 — chỉ được đọc/ghi trong mã.
-        SettingsEntry("system_autostart", SettingsGroup.SYSTEM, "Tự mở khi nổ máy", "launcher_autostart"),
+        SettingsEntry("system_autostart", SettingsGroup.SYSTEM, "Tự mở khi nổ máy", "launcher_autostart", "Auto-start on engine start"),
 
         // ── Dẫn đường · Cụm · Phím ──
         // R5: KHÔNG gom cấu hình của ClusterNav vào đây, chỉ dẫn sang màn cũ (màn đó đang niêm phong).
-        SettingsEntry("clusternav_open", SettingsGroup.CLUSTERNAV, "Mở màn ClusterNav"),
+        SettingsEntry("clusternav_open", SettingsGroup.CLUSTERNAV, "Mở màn ClusterNav", labelEn = "Open ClusterNav"),
 
         // ── Giới thiệu ──
-        SettingsEntry("about_version", SettingsGroup.ABOUT, "Phiên bản và giấy phép"),
+        SettingsEntry("about_version", SettingsGroup.ABOUT, "Phiên bản và giấy phép", labelEn = "Version and licence"),
     )
 
     /**
@@ -296,6 +343,14 @@ object SettingsCatalog {
         require(GROUPS.all { it.id.isNotBlank() && it.label.isNotBlank() && it.sub.isNotBlank() }) {
             "mọi nhóm phải có mã, nhãn và câu phụ (rail phải tự giải thích được)"
         }
+        // U5 · T2 — nhãn tiếng Anh là bắt buộc cho CẢ nhóm lẫn mục. Chốt lúc nạp lớp vì thiếu nó thì màn Cài đặt
+        // tiếng Anh có một dòng tiếng Việt: sai **im lặng**, và chỉ người dùng English gặp.
+        require(GROUPS.all { it.labelEn.isNotBlank() && it.subEn.isNotBlank() }) {
+            "mọi nhóm phải có nhãn + câu phụ tiếng Anh: " +
+                GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
+        }
+        val entriesNoEn = ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
+        require(entriesNoEn.isEmpty()) { "mọi mục phải có nhãn tiếng Anh (labelEn): $entriesNoEn" }
         // Một khoá vừa có chủ vừa nằm trong danh sách loại = hai câu trả lời trái nhau cho cùng câu hỏi.
         val bothWays = NOT_SETTINGS.keys.filter { groupOf(it) != null }
         require(bothWays.isEmpty()) {

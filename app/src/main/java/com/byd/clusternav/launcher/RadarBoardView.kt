@@ -38,7 +38,7 @@ class RadarBoardView(context: Context) : View(context) {
      * dùng chung giữa hai việc là cách sinh lỗi "vẽ đúng ở lượt đầu, sai ở lượt sau" mà không ai lần ra.
      */
     private val dimOutline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; color = Color.parseColor("#2a2f3a")
+        style = Paint.Style.STROKE; color = Color.parseColor(KachiTheme.DIM)
     }
     private val zonePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val digitP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -61,7 +61,7 @@ class RadarBoardView(context: Context) : View(context) {
      * được"* bằng cùng một sắc độ.
      */
     private val colMut2 = Color.parseColor(KachiTheme.MUT2)
-    private val colDim = Color.parseColor("#2a2f3a")
+    private val colDim = Color.parseColor(KachiTheme.DIM)
     private val colRed = Color.parseColor(KachiTheme.RED)
     private val colAmber = Color.parseColor(KachiTheme.AMBER)
 

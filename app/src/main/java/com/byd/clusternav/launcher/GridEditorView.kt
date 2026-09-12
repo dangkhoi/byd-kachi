@@ -26,7 +26,7 @@ import kotlin.math.roundToInt
 class GridEditorView(context: Context) : View(context) {
 
     private val cell = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; strokeWidth = 1f; color = Color.parseColor("#22ffffff")
+        style = Paint.Style.STROKE; strokeWidth = 1f; color = Color.parseColor(KachiTheme.GRID_LINE)
     }
     private val frameFill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val frameLine = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3f }

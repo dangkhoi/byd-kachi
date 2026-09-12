@@ -23,11 +23,11 @@ enum class LayoutPreset(val slotCount: Int) {
      */
     val label: String
         get() = when (this) {
-            ONE -> "1 ô"
-            TWO_COL -> "2 cột"
-            TWO_ROW -> "2 hàng"
-            THREE -> "3 ô"
-            QUAD -> "4 ô"
+            ONE -> Strings.t("1 ô", "1 slot")
+            TWO_COL -> Strings.t("2 cột", "2 columns")
+            TWO_ROW -> Strings.t("2 hàng", "2 rows")
+            THREE -> Strings.t("3 ô", "3 slots")
+            QUAD -> Strings.t("4 ô", "4 slots")
         }
 }
 

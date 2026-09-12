@@ -5,21 +5,97 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import com.byd.clusternav.R
 
-/** Bảng màu + helper drawable khớp prototype kachi-workspace.html (dark automotive). */
+/**
+ * Bảng màu + helper drawable của launcher. **Tra theo chủ đề đang chọn** (T1) — mã hex nằm ở [KachiPalette].
+ *
+ * ## ⚠ Trước T1 đây là 13 `const val` — và đó là lý do nút gạt chủ đề từng bị BỎ
+ * `const val` là hằng **biên dịch**: chỗ gọi được nhúng thẳng chuỗi vào bytecode, nên đổi chủ đề lúc chạy không
+ * thể có tác dụng. Phiên S1 đo đúng điều đó rồi kết luận nút gạt sẽ là **nút chết** và cố ý không làm
+ * (`kachi-settings-screen.html` §4.5). T1 đổi 13 hằng thành **thuộc tính có getter** ⇒ tên gọi giữ nguyên (21 tệp
+ * không phải sửa cách gọi) nhưng giá trị nay đọc lại mỗi lần vẽ.
+ *
+ * ## Một nơi ghi duy nhất
+ * [applyTheme] là **chỗ duy nhất** đổi [palette]. Nó KHÔNG phải bản sao thứ hai của trạng thái: nguồn sự thật vẫn
+ * là `HomeUiState.themeMode`, còn đây là **hình chiếu lúc vẽ** của nguồn đó. Bài canh
+ * [com.byd.clusternav.launcher.ThemePaletteContractTest] đếm số chỗ gọi [applyTheme] trong `app/src/main` và đỏ nếu
+ * có chỗ thứ hai — chính cái bẫy "hai bản sao cùng khoá" mà dự án đã sập vào ba lần.
+ */
 object KachiTheme {
-    const val BG = "#0a0d13"
-    const val INK = "#eaf0f8"
-    const val MUT = "#93a0b4"
-    const val MUT2 = "#8b95a7"
-    const val LINE = "#17ffffff"     // ~9% trắng
-    const val CARD = "#141922"   // thẻ nền
-    const val CARD2 = "#1a1e28"
-    const val ACCENT = "#4c7dff"
-    const val ACCENT2 = "#7b5cff"
-    const val CYAN = "#29d3ee"
-    const val GREEN = "#34d399"
-    const val AMBER = "#fbbf24"
-    const val RED = "#fb7185"
+
+    /** Bảng màu đang dùng. Mặc định TỐI để mọi đường vẽ trước lượt [applyTheme] đầu tiên vẫn ra bảng cũ. */
+    var palette: KachiPalette = KachiPalette.DARK
+        private set
+
+    /**
+     * Chọn bảng màu cho [mode] tại giờ [hour] (0..23, chỉ dùng khi mode = AUTO).
+     *
+     * Trả về `true` nếu bảng **ĐỔI** — chỗ gọi dùng giá trị đó để quyết định có dựng lại màn hay không. Trả về
+     * `false` thay vì dựng lại vô điều kiện vì `applyTheme` được gọi mỗi lượt trạng thái đổi (1 nhịp/giây trên xe),
+     * và dựng lại màn mỗi giây thì app đang chiếu trong ô bị nhả/gắn liên tục — đúng họ lỗi P-bug1/R3.
+     */
+    fun applyTheme(mode: ThemeMode, hour: Int): Boolean {
+        val next = if (mode.isNight(hour)) KachiPalette.DARK else KachiPalette.LIGHT
+        if (next == palette) return false
+        palette = next
+        return true
+    }
+
+    // ══ VAI MÀU — tên GIỮ NGUYÊN từ bản `const val` để 21 tệp không phải đổi cách gọi ═════════════════════
+    val BG: String get() = palette.bg
+    val INK: String get() = palette.ink
+    val INK2: String get() = palette.ink2
+    val MUT: String get() = palette.mut
+    val MUT2: String get() = palette.mut2
+    val ICON: String get() = palette.icon
+    val CARD: String get() = palette.card
+    val CARD2: String get() = palette.card2
+    val CARD_FILL: String get() = palette.cardFill
+    val PANEL: String get() = palette.panel
+    val FIELD: String get() = palette.field
+    val CELL: String get() = palette.cell
+    val TILE: String get() = palette.tile
+    val CHIP_OFF: String get() = palette.chipOff
+    val DIM: String get() = palette.dim
+    val TRACK: String get() = palette.track
+    val SLOT: String get() = palette.slot
+    val BAR: String get() = palette.bar
+    val BAR_TOP: String get() = palette.barTop
+    val HEAD_BG: String get() = palette.headBg
+    val LINE: String get() = palette.line
+    val LINE_STRONG: String get() = palette.lineStrong
+    val GRID_LINE: String get() = palette.gridLine
+    val EMPTY_FILL: String get() = palette.emptyFill
+    val EMPTY_LINE: String get() = palette.emptyLine
+    val WASH: String get() = palette.wash
+    val OVERLAY: String get() = palette.overlay
+    val ACCENT: String get() = palette.accent
+    val ACCENT_INK: String get() = palette.accentInk
+    val ACCENT2: String get() = palette.accent2
+    val GRAD_FROM: String get() = palette.gradFrom
+    val GRAD_TO: String get() = palette.gradTo
+    val ON_ACCENT: String get() = palette.onAccent
+    val INK_ON_ACCENT: String get() = palette.inkOnAccent
+    val ACCENT_SOFT: String get() = palette.accentSoft
+    val ACCENT_LINE: String get() = palette.accentLine
+    val ACCENT_WASH: String get() = palette.accentWash
+    val TILE_ON_FROM: String get() = palette.tileOnFrom
+    val TILE_ON_TO: String get() = palette.tileOnTo
+    val TILE_ON_LINE: String get() = palette.tileOnLine
+    val SCRIM_PANEL: String get() = palette.scrimPanel
+    val SCRIM_BTN: String get() = palette.scrimBtn
+    val SCRIM_BTN2: String get() = palette.scrimBtn2
+    val SCRIM_HEAD: String get() = palette.scrimHead
+    val GREEN: String get() = palette.green
+    val AMBER: String get() = palette.amber
+    val RED: String get() = palette.red
+    val CYAN: String get() = palette.cyan
+    val ORANGE: String get() = palette.orange
+    val SLATE: String get() = palette.slate
+    val AMBER_SOFT: String get() = palette.amberSoft
+    val ART_TO: String get() = palette.artTo
+    val GLOW1: String get() = palette.glow1
+    val GLOW2: String get() = palette.glow2
+    val CLEAR: String get() = palette.clear
 
     fun c(s: String): Int = Color.parseColor(s)
     fun dp(ctx: Context, v: Float): Float = v * ctx.resources.displayMetrics.density
@@ -34,7 +110,7 @@ object KachiTheme {
     fun card(
         ctx: Context,
         radius: Int = KachiSpace.RADIUS_XL,
-        fill: String = "#14ffffff",
+        fill: String = CARD_FILL,
         stroke: String = LINE,
     ): GradientDrawable =
         GradientDrawable().apply {
@@ -43,8 +119,14 @@ object KachiTheme {
             setStroke(dpi(ctx, KachiSpace.HAIRLINE), c(stroke))
         }
 
-    /** Nền gradient accent (nút chính / tile bật). */
-    fun gradient(ctx: Context, radius: Int, from: String = ACCENT, to: String = ACCENT2): GradientDrawable =
+    /**
+     * Nền gradient accent (nút chính / tile bật).
+     *
+     * ⚠ Mặc định là [GRAD_FROM]/[GRAD_TO], **không** phải [ACCENT]/[ACCENT2]: chữ [ON_ACCENT] nằm TRÊN nền này, và
+     * [ĐO] trắng trên `#4c7dff` chỉ **3.69:1** (dưới 4.5). [GRAD_FROM] là cùng họ xanh nhưng tối một bậc ⇒ 4.83:1.
+     * [ACCENT] vẫn là màu nhận diện cho chấm/viền/lớp tô nhạt — chỗ không có chữ đè lên.
+     */
+    fun gradient(ctx: Context, radius: Int, from: String = GRAD_FROM, to: String = GRAD_TO): GradientDrawable =
         GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c(from), c(to))).apply {
             cornerRadius = KachiSpace.dpf(ctx, radius)
         }
@@ -54,19 +136,24 @@ object KachiTheme {
      * (accent 36% → accent2 32%, viền accent 55%). KHÁC gradient đặc [gradient] (dùng cho pill/preset chọn).
      */
     fun gradientSoft(ctx: Context, radius: Int): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c("#5C4C7DFF"), c("#527B5CFF"))).apply {
-            cornerRadius = KachiSpace.dpf(ctx, radius); setStroke(dpi(ctx, KachiSpace.HAIRLINE), c("#8C4C7DFF"))
+        GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c(TILE_ON_FROM), c(TILE_ON_TO))).apply {
+            cornerRadius = KachiSpace.dpf(ctx, radius); setStroke(dpi(ctx, KachiSpace.HAIRLINE), c(TILE_ON_LINE))
         }
 
-    /** Fade tối từ trên xuống cho thanh tiêu đề ô (slot-head) — khớp prototype `linear-gradient(180deg, rgba(0,0,0,.55), transparent)`. */
+    /**
+     * Fade dưới nhãn ô (slot-head) — khớp prototype `linear-gradient(180deg, rgba(0,0,0,.55), transparent)`.
+     *
+     * ⚠ Bản SÁNG dùng mờ **TRẮNG** chứ không phải mờ đen: mực trên nhãn này là [INK], và ở bảng sáng [INK] là mực
+     * đậm ⇒ mờ đen sẽ làm chữ đậm nằm trên nền đậm.
+     */
     fun topFade(ctx: Context, radius: Int = KachiSpace.RADIUS_L): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(c("#8C000000"), c("#00000000"))).apply {
+        GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(c(SCRIM_HEAD), c(CLEAR))).apply {
             val r = KachiSpace.dpf(ctx, radius)
             cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
         }
 
     /** Viên thuốc (pill) bo tròn hết cỡ. */
-    fun pill(ctx: Context, fill: String = "#14ffffff", stroke: String = LINE): GradientDrawable =
+    fun pill(ctx: Context, fill: String = CARD_FILL, stroke: String = LINE): GradientDrawable =
         GradientDrawable().apply {
             cornerRadius = KachiSpace.dpf(ctx, KachiSpace.RADIUS_PILL)
             setColor(c(fill))

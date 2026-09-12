@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -51,6 +52,8 @@ class SettingsDeps(
     val onToggleDock: (String, Boolean) -> Unit,
     val onDockEdge: (DockEdge) -> Unit,
     val onUnitPrefs: (UnitPrefs) -> Unit,
+    val onThemeMode: (ThemeMode) -> Unit,
+    val onLangMode: (LangMode) -> Unit,
     val onAutostart: (Boolean) -> Unit,
     val onSwitchProfile: (String) -> Unit,
     val onAddProfile: () -> Unit,
@@ -97,13 +100,13 @@ class SettingsPanel(
     private var current: SettingsGroup = SettingsCatalog.GROUPS.first()
 
     init {
-        setBackgroundColor(c("#cc05070c"))
+        setBackgroundColor(c(KachiTheme.SCRIM_PANEL))
         isClickable = true
         setOnClickListener { onClose() }        // chạm ra ngoài = đóng (giữ đúng thói quen của bảng cũ)
 
         val panel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_XXL, "#12141c")
+            background = KachiTheme.card(context, Sp.RADIUS_XXL, KachiTheme.PANEL)
             setPadding(dpi(context, Sp.XXL), dpi(context, Sp.XL), dpi(context, Sp.XXL), dpi(context, Sp.XL))
             isClickable = true                  // chặn chạm lọt xuống lớp scrim bên dưới
         }
@@ -169,19 +172,19 @@ class SettingsPanel(
             LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(context).apply {
-                    text = "Cài đặt Kachi"; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
+                    text = context.getString(R.string.kachi_settings_title); setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
                 })
                 addView(TextView(context).apply {
-                    text = "Mọi cấu hình của launcher ở đây — chọn nhóm ở cột bên trái."
+                    text = context.getString(R.string.kachi_settings_sub)
                     setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                 })
             },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
         )
         addView(TextView(context).apply {
-            text = "Xong"; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE); gravity = Gravity.CENTER
+            text = context.getString(R.string.kachi_done); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD
+            setTextColor(c(KachiTheme.ON_ACCENT)); gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.XL), dpi(context, Sp.S), dpi(context, Sp.XL), dpi(context, Sp.S))
             background = KachiTheme.gradient(context, Sp.RADIUS_PILL)
             setOnClickListener { onClose() }
@@ -215,11 +218,11 @@ class SettingsPanel(
         val p = dpi(context, Sp.M)
         setPadding(p, dpi(context, Sp.M), p, dpi(context, Sp.M))
         addView(TextView(context).apply {
-            text = group.label; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
+            text = group.displayLabel; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
         })
         addView(TextView(context).apply {
-            text = group.sub; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+            text = group.displaySub; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
             setPadding(0, dpi(context, Sp.XS), 0, 0)
         })
@@ -230,7 +233,7 @@ class SettingsPanel(
     private fun paintRail(cell: LinearLayout, on: Boolean) {
         cell.background = if (on) GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_M).toFloat()
-            setColor(c("#264c7dff")); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
+            setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
         } else null
     }
 

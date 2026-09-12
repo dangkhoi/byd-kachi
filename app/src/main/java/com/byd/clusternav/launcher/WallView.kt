@@ -58,10 +58,10 @@ class WallView(context: Context) : View(context) {
         canvas.drawRect(0f, 0f, w, h, base)
         val r = maxOf(w, h)
         glow.shader = RadialGradient(w * 0.13f, h * -0.06f, r * 0.42f,
-            Color.parseColor("#112036"), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            Color.parseColor(KachiTheme.GLOW1), Color.TRANSPARENT, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, w, h, glow)
         glow.shader = RadialGradient(w * 0.94f, h * 1.08f, r * 0.40f,
-            Color.parseColor("#160f28"), Color.TRANSPARENT, Shader.TileMode.CLAMP)
+            Color.parseColor(KachiTheme.GLOW2), Color.TRANSPARENT, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, w, h, glow)
     }
 

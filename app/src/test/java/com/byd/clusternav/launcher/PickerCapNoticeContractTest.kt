@@ -39,18 +39,69 @@ class PickerCapNoticeContractTest {
             "nhánh 'quá trần thì thôi' không có else = bỏ qua IM LẶNG. Đi qua toggleSelection() để có câu nói.",
         )
         val fn = SourceRoots.body(drawer, "private fun toggleSelection(")
-        assertTrue(fn.contains("Toast"), "quá trần phải NÓI ra cho người vừa bấm")
-        assertTrue(fn.contains("CAP_NOTE"), "và nói bằng đúng một câu dùng chung (không viết hai bản chữ)")
+        assertTrue(fn.contains("notice("), "quá trần phải NÓI ra cho người vừa bấm")
+        assertTrue(fn.contains("capNote()"), "và nói bằng đúng một câu dùng chung (không viết hai bản chữ)")
         assertTrue(fn.contains("return"), "và KHÔNG âm thầm đi tiếp như thể đã thêm")
+    }
+
+    /**
+     * ⚠⚠ **[KIỂM TOÁN 2026-09-12 mục 1] KÊNH NÓI CỦA MỘT CỬA SỔ PHỦ KHÔNG ĐƯỢC LÀ TOAST.**
+     *
+     * ## [ĐO] bằng số — máy ảo 2026-09-12
+     * `dumpsys window` lúc toast đang lên: toast `ty=TOAST mBaseLayer=81000` khung `[655,969][1264,1044]`; ngăn kéo
+     * `ty=APPLICATION_OVERLAY mBaseLayer=121000` khung `[0,0][1920,1080]`. 121000 > 81000 và cửa sổ phủ **kín màn** ⇒
+     * so hai ảnh chụp trước/sau cú bấm bị từ chối: dải CHỮ của toast (`y 969..1037`) đổi **0 pixel**; chỉ 7px lọt ra
+     * dưới đáy bảng (`y 1037..1044`) là đổi. Tức mã "đã nói" mà người dùng **không nghe được gì** — kênh im lặng, đúng
+     * họ lỗi bài này sinh ra để chặn, chỉ ở một tầng thấp hơn (bài cũ chặn *thiếu lời nói*, ca này là *nói vào chỗ
+     * không ai thấy*).
+     *
+     * Luật chỉ áp cho **bề mặt phủ** (`TYPE_APPLICATION_OVERLAY`): toast ở màn Cài đặt vẫn hiện đủ chữ vì bảng đó là
+     * con của cửa sổ Activity (`mBaseLayer` ~21000 < 81000). Nên đây KHÔNG phải "bỏ toast trong toàn dự án".
+     */
+    @Test
+    fun `be mat phu khong duoc noi bang Toast`() {
+        listOf("AppDrawer.kt", "OverlayHeads.kt").forEach { file ->
+            val src = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$file")
+            assertFalse(
+                src.contains("Toast"),
+                "$file mở bằng TYPE_APPLICATION_OVERLAY (mBaseLayer 121000) nên toast (81000) nằm DƯỚI nó và bị che " +
+                    "hoàn toàn — [ĐO] 0 pixel chữ. Nói bằng một view NẰM TRONG chính bảng đó.",
+            )
+        }
+    }
+
+    /** Câu nói phải đi vào một view nằm trong bảng, và phải ĐỔI HÌNH (không chỉ đổi chữ). */
+    @Test
+    fun `cau noi nam trong bang va nhin ra duoc`() {
+        val fn = SourceRoots.body(drawer, "private fun notice(")
+        assertTrue(fn.contains("capHint"), "câu nói phải đi vào dòng chữ ghim ở thanh đáy của CHÍNH bảng này")
+        assertTrue(
+            fn.contains("AMBER"),
+            "phải đổi màu/nền: khi đã đủ trần thì dòng đó VỐN ĐÃ hiện sẵn câu nhắc, nên đặt lại cùng một chữ là " +
+                "trên màn không có gì đổi — vẫn là im lặng, chỉ khó thấy hơn",
+        )
+        // Và phải trả về dáng THÔNG TIN khi người dùng đã bỏ một mục ra (không thì nền hổ phách nói một điều đã sai).
+        val reset = SourceRoots.body(drawer, "private fun refreshPlaceBtn(")
+        assertTrue(reset.contains("background = null"), "bỏ mục ra ⇒ dòng nhắc phải về dáng thường")
     }
 
     /** Câu nói phải nêu **cả trần lẫn đường đi tiếp** — "đã đủ 8" một mình không cho người dùng biết làm gì. */
     @Test
     fun `cau nhac tran neu ca so va cach di tiep`() {
-        val note = Regex("""const val CAP_NOTE = "([^"]*)"""").find(drawer)?.groupValues?.get(1)
-        assertTrue(note != null) { "phải khai CAP_NOTE ở một chỗ" }
-        assertTrue(note!!.contains("\$MAX"), "số trần phải lấy từ hằng MAX, không gõ lại (gõ lại là hai bản sao)")
+        // U5·T3 — câu chữ dời sang tài nguyên (`kachi_drawer_cap_note`), nên bài này kiểm HAI nửa:
+        //   (a) NỘI DUNG câu — đọc thẳng tệp tài nguyên bản Việt (không kiểm được ở `.kt` nữa);
+        //   (b) SỐ TRẦN vẫn chảy từ hằng `MAX` chứ không bị gõ lại trong bản dịch.
+        // Cả hai tính chất y như trước, chỉ đổi chỗ đọc.
+        val note = res("kachi_drawer_cap_note")
+        assertTrue(note.contains("%1\$d"), "câu nhắc phải NHẬN số trần làm tham số, không viết số vào bản dịch")
         assertTrue(note.contains("bỏ"), "phải nói cách đi tiếp: bỏ một mục ra")
+        assertTrue(
+            drawer.contains("R.string.kachi_drawer_cap_note, MAX)"),
+            "số trần phải lấy từ hằng MAX, không gõ lại (gõ lại là hai bản sao)",
+        )
+        assertFalse(
+            Regex("""tối đa 8|at most 8""").containsMatchIn(note), "KHÔNG gõ số 8 vào chữ — nó phải theo hằng MAX",
+        )
     }
 
     /**
@@ -110,4 +161,18 @@ class PickerCapNoticeContractTest {
         assertTrue(drawer.contains("setFadingEdgeLength("), "và phải khai độ dài dải mờ")
         assertTrue(drawer.contains("clipToPadding = false"), "đệm trên/dưới không được bị cắt theo vùng cuộn")
     }
+
+    /**
+     * Chữ THẬT sẽ hiện trên màn, đọc từ tệp tài nguyên bản Việt.
+     *
+     * ⚠ U5·T3 — trước đây bài này đọc chuỗi viết cứng trong `.kt`. Chữ nay nằm trong `res/values/strings_kachi.xml`,
+     * nên phép kiểm phải đi tới đó: nếu chỉ kiểm *"mã có gọi khoá này không"* thì ai xoá nội dung câu cảnh báo vẫn
+     * xanh. `app/build.gradle.kts` đã khai `inputs.dir("src/main/res")` nên đổi tệp đó là task chạy lại.
+     */
+    private fun res(name: String): String =
+        Regex("""<string name="$name">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL)
+            .find(SourceRoots.text("src/main/res/values/strings_kachi.xml"))
+            ?.groupValues?.get(1)
+            ?: error("không có chuỗi '$name' trong values/strings_kachi.xml — bài test đang quét vùng không tồn tại")
+
 }

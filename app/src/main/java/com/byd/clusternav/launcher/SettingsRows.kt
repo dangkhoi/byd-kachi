@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -73,17 +74,17 @@ class SettingsRows(private val context: Context) {
         var state = on
         fun paint() {
             box.text = if (state) "✓" else ""
-            box.setTextColor(Color.WHITE)
+            box.setTextColor(c(KachiTheme.ON_ACCENT))
             box.background = GradientDrawable().apply {
                 cornerRadius = dpi(context, Sp.RADIUS_S).toFloat()
-                if (state) setColor(c(KachiTheme.ACCENT))
-                else { setColor(c("#00000000")); setStroke(dpi(context, Sp.STROKE), c(KachiTheme.MUT2)) }
+                if (state) setColor(c(KachiTheme.GRAD_FROM))
+                else { setColor(c(KachiTheme.CLEAR)); setStroke(dpi(context, Sp.STROKE), c(KachiTheme.MUT2)) }
             }
         }
         paint()
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
+            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
             val p = dpi(context, Sp.M); setPadding(p, p, p, p)
             addView(box)
             addView(LinearLayout(context).apply {
@@ -113,8 +114,8 @@ class SettingsRows(private val context: Context) {
         var chosen = current
         fun paint() = chips.forEach { (code, tv) ->
             val on = code == chosen
-            tv.setTextColor(if (on) Color.WHITE else c(KachiTheme.MUT))
-            tv.background = if (on) KachiTheme.gradient(context, Sp.RADIUS_PILL) else KachiTheme.card(context, Sp.RADIUS_PILL, "#1a1f29")
+            tv.setTextColor(c(if (on) KachiTheme.ON_ACCENT else KachiTheme.MUT))
+            tv.background = if (on) KachiTheme.gradient(context, Sp.RADIUS_PILL) else KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.CHIP_OFF)
         }
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
@@ -142,24 +143,25 @@ class SettingsRows(private val context: Context) {
      */
     fun permissionRow(req: LauncherRequirement, rep: PermissionReport): View {
         val hint = when {
-            req in rep.selfFixable -> "Kachi đang tự xin lại — không cần làm gì"
-            req.userAction != null -> req.userAction
-            req in rep.environment -> "Hạn chế của môi trường, không phải lỗi của app"
+            req in rep.selfFixable -> context.getString(R.string.kachi_perm_self_fixing)
+            req.displayUserAction != null -> req.displayUserAction
+            req in rep.environment -> context.getString(R.string.kachi_perm_environment)
             else -> null
         }
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
+            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
             val p = dpi(context, Sp.M); setPadding(p, p, p, p)
             val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             lp.bottomMargin = dpi(context, Sp.S); layoutParams = lp
             addView(TextView(context).apply {
-                text = if (req.coreFeature) "${req.label} — ảnh hưởng tính năng chính" else req.label
+                text = if (req.coreFeature) context.getString(R.string.kachi_perm_core, req.displayLabel)
+                    else req.displayLabel
                 setTextColor(c(if (req.coreFeature) KachiTheme.AMBER else KachiTheme.INK))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
             })
             addView(TextView(context).apply {
-                text = "Thiếu thì: ${req.losesWhatIfMissing}"
+                text = context.getString(R.string.kachi_perm_loses, req.displayLoses)
                 setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             })
             if (hint != null) addView(TextView(context).apply {
@@ -178,14 +180,14 @@ class SettingsRows(private val context: Context) {
         var chosen = current
         fun paint() = chips.forEach { (code, tv) ->
             val on = code == chosen
-            tv.setTextColor(if (on) Color.WHITE else c(KachiTheme.MUT))
+            tv.setTextColor(c(if (on) KachiTheme.ON_ACCENT else KachiTheme.MUT))
             tv.background = if (on) KachiTheme.gradient(context, Sp.RADIUS_PILL)
-            else KachiTheme.card(context, Sp.RADIUS_PILL, "#1a1f29")
+            else KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.CHIP_OFF)
         }
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dpi(context, Sp.S), 0, dpi(context, Sp.S))
-            addView(rowLabel(q.label))
+            addView(rowLabel(q.displayLabel))
             Units.options(q).forEach { opt ->
                 val tv = TextView(context).apply {
                     text = opt.code; setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f); typeface = Typeface.DEFAULT_BOLD

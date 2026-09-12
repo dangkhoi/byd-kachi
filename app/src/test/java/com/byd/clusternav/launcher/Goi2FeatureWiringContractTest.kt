@@ -137,7 +137,15 @@ class Goi2FeatureWiringContractTest {
         // đọc nó ⇒ R8 ("kèm dấu hiệu đúng mức bằng chứng") chưa có trên màn. Thêm nữa `EvidenceTier.needsBadge` chỉ
         // đúng cho OVERDRIVE/DASHCAST nên chấm amber KHÔNG bao giờ áp cho nhiệt lốp (NEEDS_CAR).
         assertTrue(widgets.contains("TyreBoard.tempTier"), "bề mặt phải ĐỌC mức bằng chứng của kênh nhiệt")
-        assertTrue(widgets.contains("nhiệt chưa kiểm"), "phải nói rõ nhiệt lốp chưa kiểm trên xe (R8/R10)")
+        // U5·T3 — chữ dời sang tài nguyên: kiểm CẢ dây nối (mã gọi khoá) LẪN nội dung (chữ thật vẫn nói "chưa kiểm").
+        assertTrue(
+            widgets.contains("R.string.kachi_tyre_temp_unverified"),
+            "bề mặt phải dựng chân bảng từ chuỗi 'nhiệt chưa kiểm'",
+        )
+        assertTrue(
+            res("kachi_tyre_temp_unverified").contains("chưa kiểm"),
+            "phải nói rõ nhiệt lốp chưa kiểm trên xe (R8/R10)",
+        )
         assertFalse(board.contains("chưa kiểm"), "ô vẽ KHÔNG tự dựng chữ — chuỗi do chỗ gọi đưa")
     }
 
@@ -156,8 +164,10 @@ class Goi2FeatureWiringContractTest {
     @Test
     fun `o tick nam o be mat dung bang code va co canh bao chua kiem tren xe`() {
         assertTrue(panel.contains("recircRow("), "ô tick phải nằm trong màn Cài đặt (dựng bằng code)")
+        // U5·T3 — chữ dời sang tài nguyên; kiểm cả dây nối lẫn nội dung (xem [res]).
+        assertTrue(panel.contains("R.string.kachi_recirc_sub"), "dòng phụ của ô tick phải là chuỗi cảnh báo đó")
         assertTrue(
-            panel.contains("chưa kiểm trên xe"),
+            res("kachi_recirc_sub").contains("chưa kiểm trên xe"),
             "PHẢI có chú thích chưa-kiểm cạnh ô tick (R10) — lệnh lấy gió chưa xác nhận trên xe owner",
         )
     }
@@ -211,4 +221,18 @@ class Goi2FeatureWiringContractTest {
         )
         assertFalse(panelHome.contains("ControlPanels.byDomain()"), "không còn dùng danh sách chỉ-có-nút")
     }
+
+    /**
+     * Chữ THẬT sẽ hiện trên màn, đọc từ tệp tài nguyên bản Việt.
+     *
+     * ⚠ U5·T3 — trước đây bài này đọc chuỗi viết cứng trong `.kt`. Chữ nay nằm trong `res/values/strings_kachi.xml`,
+     * nên phép kiểm phải đi tới đó: nếu chỉ kiểm *"mã có gọi khoá này không"* thì ai xoá nội dung câu cảnh báo vẫn
+     * xanh. `app/build.gradle.kts` đã khai `inputs.dir("src/main/res")` nên đổi tệp đó là task chạy lại.
+     */
+    private fun res(name: String): String =
+        Regex("""<string name="$name">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL)
+            .find(SourceRoots.text("src/main/res/values/strings_kachi.xml"))
+            ?.groupValues?.get(1)
+            ?: error("không có chuỗi '$name' trong values/strings_kachi.xml — bài test đang quét vùng không tồn tại")
+
 }

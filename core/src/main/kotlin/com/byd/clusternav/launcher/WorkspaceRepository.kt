@@ -80,4 +80,16 @@ interface WorkspaceRepository {
 
     /** Ghi bền cờ tự mở khi nổ máy. Mặc định: không lưu (bản giả). */
     fun setAutostart(on: Boolean) {}
+
+    /**
+     * U5 · T3 — NGÔN NGỮ launcher, CHUNG mọi hồ sơ tài xế: ngôn ngữ là thuộc tính của người **đọc màn hình**, không
+     * của một hồ sơ xe (cùng lối với giao diện sáng/tối và đơn vị).
+     *
+     * Thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa, và mặc định [LangMode.AUTO] **khớp** mặc định của
+     * nơi lưu bền — hai mặc định lệch nhau thì bộ chọn nói sai trước cả khi có gì được ghi (bài học của cờ tự-mở).
+     */
+    fun langMode(): LangMode = LangMode.AUTO
+
+    /** Ghi bền lựa chọn ngôn ngữ. Mặc định: không lưu (bản giả). */
+    fun setLangMode(mode: LangMode) {}
 }

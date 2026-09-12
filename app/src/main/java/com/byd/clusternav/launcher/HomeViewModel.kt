@@ -59,6 +59,20 @@ class HomeViewModel(
     // ── Intent: theme ────────────────────────────────────────────────────────────
     fun setThemeMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
 
+    /**
+     * U5·T3 — NGÔN NGỮ. State + lưu bền trong MỘT lượt, cùng khuôn [setAutostart]/[setTopStrip]: khoá này nằm ngoài
+     * bộ khoá theo hồ sơ (chung cả máy) nên không đi qua [mutate]/`persist`.
+     *
+     * Chỉ ghi *lựa chọn*. Việc giải nghĩa ra ngôn ngữ thật (`Strings.current` + locale của `Context`) là của `LangHost`
+     * ở `:app`, gọi từ `attachBaseContext` — tức nó chạy lại **mỗi lần Activity được dựng**, kể cả lượt `recreate()`
+     * sau khi đổi ngôn ngữ. Đặt việc đó ở đây thì `ViewModel` phải biết Android và ngôn ngữ sẽ chỉ đúng ở lượt đổi,
+     * không đúng ở lượt mở app kế tiếp.
+     */
+    fun setLangMode(mode: LangMode) {
+        _uiState.update { it.copy(langMode = mode) }
+        repository.setLangMode(mode)
+    }
+
     // ── Intent: hồ sơ tài xế (uỷ quyền repository re-scope prefs + nạp lại hồ sơ đó) ──
     fun switchProfile(name: String) = reload { repository.switchProfile(name) }
 

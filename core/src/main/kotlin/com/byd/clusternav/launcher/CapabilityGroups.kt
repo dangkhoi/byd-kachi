@@ -1,94 +1,6 @@
 package com.byd.clusternav.launcher
 
 /**
- * Một NHÓM khả năng — nhiều mục rời gom lại thành **một câu người lái thật sự hỏi**.
- *
- * @property id mã ổn định, tiền tố `g_` — xem [CapabilityGroups.ID_PREFIX].
- * @property label nhãn cho người đọc, viết theo **câu người ta hỏi** ("Lốp", "Kính", "Cửa & khoang"), KHÔNG theo tên
- *   bảng dữ liệu ("TPMS", "bodywork"). Người ngồi trong xe hỏi *"lốp tôi ổn không"*, không hỏi *"giá trị TPMS"*.
- * @property icon tên KHÁI NIỆM `ic-group-*`, `:app` dịch sang drawable trong `KachiTheme.iconRes` — cùng quy ước với
- *   [WidgetDef.icon] / [ControlDef.icon] / [CapabilityIcons]. `:core` KHÔNG giữ mã màu và KHÔNG giữ id tài nguyên
- *   Android.
- *
- *   ⚠ Tên là **HỢP ĐỒNG giữa hai module**: đổi một bên mà không đổi bên kia thì `iconRes` rơi vào `else -> 0` và ô
- *   nhóm hiện ra **không có icon** — sai im lặng, vì không có ngoại lệ nào được ném. Nhóm dùng tiền tố riêng
- *   `ic-group-` (không dùng lại `ic-tire`/`ic-window`…) vì icon nhóm phải nói *"đây là cả bốn bánh"* chứ không phải
- *   *"đây là một cái lốp"*; T2 vẽ 12 icon riêng cho đúng việc đó. Có test hai đầu: `:core` canh tiền tố,
- *   `:app` canh cả 12 tên tra ra được drawable.
- * @property domain nhóm hiển thị ở màn chọn. Chỉ để **gom chỗ bày**, không mang ngữ nghĩa an toàn (xem [Domain]).
- *   ⚠ Thành viên KHÔNG buộc cùng domain với nhóm: [CapabilityGroups.BATTERY] là `ENERGY` nhưng chứa `volt_12v`
- *   (khai ở `SAFETY`). Sức khoẻ pin là câu hỏi về NĂNG LƯỢNG, còn `volt_12v` nằm ở `SAFETY` vì lý do lịch sử của
- *   bảng datum — bắt hai thứ đó phải khớp nhau sẽ làm nhóm sai theo cách người dùng nghĩ.
- * @property shape bộ vẽ dùng chung (§4.3): [WidgetShape.BOARD] · [WidgetShape.STRIP] · [WidgetShape.CARD]. Ba giá
- *   trị này ĐÃ có sẵn trong enum từ trước — [WidgetShape.BOARD] còn ghi rõ *"4 lốp, 8 zone radar"*. Nghĩa là việc
- *   gom nhóm KHÔNG phải khái niệm mới, mà là **làm nốt thứ đã thiết kế nhưng chưa dựng**.
- * @property reads mã datum ĐỌC trong [TelemetryRegistry], theo thứ tự hiện ra.
- * @property writes mã nút ([ControlRegistry]) hoặc gói lệnh ([ActionMacros]) — hàng dưới cùng ô (§4.3).
- * @property sub **nội dung** nhóm nói bằng chữ, KHÔNG có số. Dùng cho dòng phụ của ô chọn (T4): người dùng thấy ô
- *   *"Lốp"* mà không biết bên trong có gì thì vẫn phải đoán, và đoán sai thì họ đặt bốn ô rời như trước.
- *
- *   ⚠⚠ **CẤM viết số vào đây** (có [init] chặn): số thành viên phải lấy từ CHÍNH [reads]/[writes] — xem
- *   [contentLine]. Nếu chép tay *"4 bánh"* thì ngày ai đó thêm/bớt một thành viên, dòng phụ nói sai mà **không
- *   test nào đỏ** — đúng họ lỗi hai-bản-sao mà dự án đã trả giá nhiều lần (`unitPrefs` từng có 4 bản).
- */
-data class CapabilityGroup(
-    val id: String,
-    val label: String,
-    val icon: String,
-    val domain: Domain,
-    val shape: WidgetShape,
-    val reads: List<String>,
-    val writes: List<String> = emptyList(),
-    val sub: String = "",
-) {
-    /** Mọi thành viên: phần XEM trước, phần BẤM sau — đúng thứ tự trình bày của §4.3. */
-    val members: List<String> get() = reads + writes
-
-    /** Nhóm có nút bấm không. Chỉ 3 nhóm có (kính · cửa & khoang · đèn) — xem [CapabilityGroups]. */
-    val hasWrites: Boolean get() = writes.isNotEmpty()
-
-    /**
-     * Dòng phụ của ô chọn: **số đếm lấy từ dữ liệu**, chữ lấy từ [sub].
-     *
-     * Ví dụ thật: `"8 mục · áp suất + nhiệt độ từng bánh"` (Lốp) ·
-     * `"4 mục · 6 nút · phần trăm mở + mở/đóng từng kính"` (Kính).
-     *
-     * Ghép ở `:core` chứ không ở tầng vẽ vì có HAI màn chọn (ngăn kéo + Cài đặt) — ghép ở tầng vẽ là hai bản sao,
-     * và chúng sẽ lệch nhau đúng lúc ai đó sửa một chỗ.
-     */
-    val contentLine: String
-        get() = buildString {
-            append("$visibleReadCount mục")
-            if (writes.isNotEmpty()) append(" · ${writes.size} nút")
-            if (sub.isNotEmpty()) append(" · $sub")
-        }
-
-    /**
-     * Số mục **người dùng THẤY** trong ô — không phải số mã datum.
-     *
-     * ## ⚠⚠ [KIỂM TOÁN UX mục 6] Hai con số này KHÁC nhau, và bản trước đếm sai con số quan trọng hơn
-     * [ĐO] màn chọn ghi *"Cảm biến đỗ — **2 mục**"* trong khi ô đó hiện **8 ô vùng** + một dòng âm lượng: nhóm
-     * `PARKING` khai hai mã (`radar_zones`, `radar_volume`) nhưng `radar_zones` là **một mã mang cả 8 vùng**
-     * ([CarStatus.Safety.radarZones]). Tức nhóm được trình bày TỆ NHẤT lại là nhóm mà kiểm toán khen là đúng nhất —
-     * số đếm bán rẻ chính nó.
-     *
-     * Nên: mã nào **nở ra nhiều ô con** thì đếm theo số ô con thật. Bảng [EXPANDING] là chỗ DUY NHẤT khai điều đó,
-     * và nó lấy số từ hằng đã có ở `GroupBoard` (`const val` ⇒ hằng biên dịch, không tạo vòng khởi tạo giữa hai
-     * object) thay vì gõ lại số 8.
-     */
-    val visibleReadCount: Int get() = reads.sumOf { EXPANDING[it] ?: 1 }
-
-    private companion object {
-        /**
-         * Mã datum → số ô con nó VẼ RA (mã không có trong bảng = 1 ô con, ca thường).
-         *
-         * Chỉ nhận mã mà bộ vẽ thật sự nở ra nhiều ô — thêm bừa vào đây là làm số đếm nói sai theo chiều ngược lại.
-         */
-        val EXPANDING: Map<String, Int> = mapOf("radar_zones" to GroupBoard.RADAR_ZONE_COUNT)
-    }
-}
-
-/**
  * ═══ G1 · 12 NHÓM KHẢ NĂNG ═══════════════════════════════════════════════════════════════════════════════════
  *
  * Thuần Kotlin (`:core`, cấm `android.*`) ⇒ kiểm được off-car. Spec `docs/specs/kachi-capability-groups.html` §4.1.
@@ -151,12 +63,14 @@ object CapabilityGroups {
      * tức một ngoại lệ được viết riêng. Nay bảng lốp là **một trường hợp của luật chung** — không còn là ngoại lệ.
      */
     val TYRES = CapabilityGroup(
-        id = "g_tyres", label = "Lốp", icon = "ic-group-tyres", domain = Domain.TYRES, shape = WidgetShape.BOARD,
+        id = "g_tyres", label = "Lốp", labelEn = "Tyres",
+        icon = "ic-group-tyres", domain = Domain.TYRES, shape = WidgetShape.BOARD,
         reads = listOf(
             "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
             "tyre_t_fl", "tyre_t_fr", "tyre_t_rl", "tyre_t_rr",
         ),
         sub = "áp suất + nhiệt độ từng bánh",
+        subEn = "pressure and temperature of each wheel",
     )
 
     /**
@@ -167,10 +81,12 @@ object CapabilityGroups {
      * không vào đây: nó là **lựa chọn đặt-một-lần** ("tự đóng khi mưa"), không phải việc làm ngay lúc này.
      */
     val WINDOWS = CapabilityGroup(
-        id = "g_windows", label = "Kính", icon = "ic-group-windows", domain = Domain.BODY, shape = WidgetShape.STRIP,
+        id = "g_windows", label = "Kính", labelEn = "Windows",
+        icon = "ic-group-windows", domain = Domain.BODY, shape = WidgetShape.STRIP,
         reads = listOf("window_lf", "window_rf", "window_lr", "window_rr"),
         writes = listOf("win_lf", "win_rf", "win_lr", "win_rr", "mac_win_open_all", "mac_win_close_all"),
         sub = "phần trăm mở + mở/đóng từng kính",
+        subEn = "how far open, plus open/close each window",
     )
 
     /**
@@ -184,7 +100,8 @@ object CapabilityGroups {
      * `door` là nút BẤM một chiều "mở khoá cửa". Trước bản vá chúng gửi cùng một byte cho hai nghĩa đối nghịch.
      */
     val DOORS = CapabilityGroup(
-        id = "g_doors", label = "Cửa & khoang", icon = "ic-group-doors", domain = Domain.BODY, shape = WidgetShape.STRIP,
+        id = "g_doors", label = "Cửa & khoang", labelEn = "Doors & openings",
+        icon = "ic-group-doors", domain = Domain.BODY, shape = WidgetShape.STRIP,
         reads = listOf(
             "door_lf", "door_rf", "door_lr", "door_rr",
             "tailgate_status", "tailgate_position",
@@ -192,6 +109,7 @@ object CapabilityGroups {
         ),
         writes = listOf("lock", "door", "trunk", "sunroof", "sunshade", "mirror_fold_btn"),
         sub = "cửa, cốp, nóc, rèm, gương",
+        subEn = "doors, tailgate, sunroof, sunshade, mirrors",
     )
 
     /**
@@ -202,13 +120,15 @@ object CapabilityGroups {
      * nó trả lời câu hỏi khác (trang trí, đặt một lần) chứ không phải *"đèn tôi đang bật cái gì"*.
      */
     val LIGHTS = CapabilityGroup(
-        id = "g_lights", label = "Đèn", icon = "ic-group-lights", domain = Domain.LIGHTS, shape = WidgetShape.STRIP,
+        id = "g_lights", label = "Đèn", labelEn = "Lights",
+        icon = "ic-group-lights", domain = Domain.LIGHTS, shape = WidgetShape.STRIP,
         reads = listOf(
             "light_low_beam", "light_high_beam", "light_front_fog", "light_rear_fog",
             "light_left_turn", "light_right_turn", "light_side", "light_drl", "headlight_feedback",
         ),
         writes = listOf("headl", "headlight_mode", "drl", "readl"),
         sub = "đèn ngoài + chế độ pha",
+        subEn = "exterior lights and headlight mode",
     )
 
     /**
@@ -220,7 +140,8 @@ object CapabilityGroups {
      * nút đó như mục rời — đường đó vẫn còn nguyên. Ghi ra để phiên sau biết là **cố ý**, không phải bỏ sót.
      */
     val AMBIENT = CapabilityGroup(
-        id = "g_ambient", label = "Đèn viền", icon = "ic-group-ambient", domain = Domain.LIGHTS,
+        id = "g_ambient", label = "Đèn viền", labelEn = "Ambient light",
+        icon = "ic-group-ambient", domain = Domain.LIGHTS,
         shape = WidgetShape.CARD,
         reads = listOf(
             "ambient_enabled",
@@ -228,6 +149,7 @@ object CapabilityGroups {
             "ambient_front_brightness", "ambient_rear_brightness",
         ),
         sub = "bật/tắt, màu và độ sáng trước–sau",
+        subEn = "on/off, colour and brightness front–rear",
     )
 
     /**
@@ -244,7 +166,8 @@ object CapabilityGroups {
      * cấu hình ai đã lưu vẫn chạy. Phía trái/phải do `:core` quyết định ([GroupBoard.sideOf]).
      */
     val ADAS = CapabilityGroup(
-        id = "g_adas", label = "An toàn · ADAS", icon = "ic-group-adas", domain = Domain.SAFETY,
+        id = "g_adas", label = "An toàn · ADAS", labelEn = "Safety · ADAS",
+        icon = "ic-group-adas", domain = Domain.SAFETY,
         shape = WidgetShape.BOARD,
         reads = listOf(
             "bsd_fl_alarm", "bsd_fr_alarm", "lca_left", "lca_right",
@@ -252,14 +175,17 @@ object CapabilityGroups {
             "speed_limit_warning", "esp_state",
         ),
         sub = "điểm mù, chuyển làn, cắt ngang sau, mở cửa",
+        subEn = "blind spot, lane change, rear cross-traffic, door open",
     )
 
     /** *"Ai đang ngồi trong xe, cài dây chưa?"* — dây an toàn, nhận diện người, phát hiện trẻ em. */
     val OCCUPANTS = CapabilityGroup(
-        id = "g_occupants", label = "Người ngồi", icon = "ic-group-occupants", domain = Domain.SAFETY,
+        id = "g_occupants", label = "Người ngồi", labelEn = "Occupants",
+        icon = "ic-group-occupants", domain = Domain.SAFETY,
         shape = WidgetShape.STRIP,
         reads = listOf("seatbelt_driver", "seatbelt_passenger", "oms_driver", "oms_passenger", "child_presence"),
         sub = "dây an toàn + người ngồi",
+        subEn = "seatbelts and who is on board",
     )
 
     /**
@@ -268,15 +194,18 @@ object CapabilityGroups {
      * Đúng ca mà [WidgetShape.BOARD] đã ghi sẵn trong KDoc từ đầu (*"4 lốp, 8 zone radar"*) nhưng chưa ai dựng.
      */
     val PARKING = CapabilityGroup(
-        id = "g_parking", label = "Cảm biến đỗ", icon = "ic-group-parking", domain = Domain.SAFETY,
+        id = "g_parking", label = "Cảm biến đỗ", labelEn = "Parking sensors",
+        icon = "ic-group-parking", domain = Domain.SAFETY,
         shape = WidgetShape.BOARD,
         reads = listOf("radar_zones", "radar_volume"),
         sub = "vùng cảm biến quanh xe + âm lượng",
+        subEn = "sensor zones around the car, plus volume",
     )
 
     /** *"Trong xe có dễ thở không?"* — nhiệt trong/ngoài/cài đặt, điều hoà, bụi mịn, ion âm. */
     val CLIMATE = CapabilityGroup(
-        id = "g_climate", label = "Khí hậu & không khí", icon = "ic-group-climate", domain = Domain.CLIMATE,
+        id = "g_climate", label = "Khí hậu & không khí", labelEn = "Climate & air",
+        icon = "ic-group-climate", domain = Domain.CLIMATE,
         shape = WidgetShape.CARD,
         reads = listOf(
             "cabin_temp", "inside_temp", "ext_temp",
@@ -284,11 +213,13 @@ object CapabilityGroups {
             "pm25_level", "pm25_value", "pm25_online", "anion_state",
         ),
         sub = "nhiệt trong/ngoài, điều hoà, bụi mịn",
+        subEn = "inside/outside temperature, air conditioning, fine dust",
     )
 
     /** *"Còn đi được bao xa, sạc còn lâu không?"* — pin, tầm chạy, xăng, công suất sạc và thời gian còn lại. */
     val ENERGY = CapabilityGroup(
-        id = "g_energy", label = "Năng lượng & sạc", icon = "ic-group-energy", domain = Domain.ENERGY,
+        id = "g_energy", label = "Năng lượng & sạc", labelEn = "Energy & charging",
+        icon = "ic-group-energy", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
         reads = listOf(
             "soc", "ev_range_km", "fuel_range_km", "fuel_pct",
@@ -296,6 +227,7 @@ object CapabilityGroups {
             "charging_eta_hour", "charging_eta_min", "motor_power",
         ),
         sub = "pin, tầm chạy, công suất sạc",
+        subEn = "battery, range, charge power",
     )
 
     /**
@@ -305,7 +237,8 @@ object CapabilityGroups {
      * lâu nữa*. Gộp làm một sẽ ra một thẻ 19 con số mà không trả lời rõ câu nào.
      */
     val BATTERY = CapabilityGroup(
-        id = "g_battery", label = "Sức khoẻ pin", icon = "ic-group-battery", domain = Domain.ENERGY,
+        id = "g_battery", label = "Sức khoẻ pin", labelEn = "Battery health",
+        icon = "ic-group-battery", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
         reads = listOf(
             "batt_temp", "cell_temp_high", "cell_temp_low", "cell_temp_avg",
@@ -313,14 +246,20 @@ object CapabilityGroups {
             "volt_12v", "volt_12v_level",
         ),
         sub = "nhiệt và điện áp cell, SOH, ắc-quy",
+        // ⚠ [ĐO] bản dịch đầu của tôi viết *"…, SOH, 12V battery"* và `init` **đỏ ngay 86 bài**: luật "dòng phụ không
+        // được chép tay số" bắt đúng chữ `12`. Ở đây con số là điện áp chứ không phải số thành viên, nhưng bản tiếng
+        // Việt cũng chỉ viết "ắc-quy" (không có số) ⇒ giữ hai bản nói CÙNG một thứ, và luật giữ nguyên độ chặt.
+        subEn = "cell temperature and voltage, SOH, auxiliary battery",
     )
 
     /** *"Chuyến này tôi đi bao nhiêu, tốn bao nhiêu?"* — quãng đường, thời gian, điện tiêu thụ, odo. */
     val TRIP = CapabilityGroup(
-        id = "g_trip", label = "Chuyến đi", icon = "ic-group-trip", domain = Domain.ENERGY,
+        id = "g_trip", label = "Chuyến đi", labelEn = "Trip",
+        icon = "ic-group-trip", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
         reads = listOf("trip_km", "trip_hours", "trip_kwh", "consumption_50km", "odometer", "ev_mileage_km"),
         sub = "quãng đường, thời gian, điện tiêu thụ, odo",
+        subEn = "distance, time, energy used, odometer",
     )
 
     /** 12 nhóm, thứ tự khai = thứ tự hiện ra. */
@@ -399,10 +338,20 @@ object CapabilityGroups {
 
         // ⚠ Số ĐẾM phải đến từ [CapabilityGroup.reads]/[CapabilityGroup.writes], không phải từ chữ viết tay: chép
         // tay "4 bánh" thì thêm/bớt một thành viên là dòng phụ nói SAI mà không bài nào đỏ.
-        val handTypedNumber = ALL.filter { g -> g.sub.any { it.isDigit() } }.map { g -> "${g.id}='${g.sub}'" }
+        //
+        // U5 · T2: quét CẢ [CapabilityGroup.subEn] — bản dịch cũng là chữ viết tay, nên nó có đúng cùng cái bẫy. Bỏ
+        // sót nửa tiếng Anh nghĩa là luật chỉ áp cho người đọc tiếng Việt.
+        val handTypedNumber = ALL.flatMap { g ->
+            listOfNotNull(g.sub, g.subEn).filter { s -> s.any { it.isDigit() } }.map { "${g.id}='$it'" }
+        }
         require(handTypedNumber.isEmpty()) {
             "dòng phụ KHÔNG được chép tay số — số thành viên lấy từ chính danh sách (xem contentLine): $handTypedNumber"
         }
+
+        // U5 · T2 — mọi nhóm phải có nhãn + dòng phụ tiếng Anh. Chốt ngay lúc nạp lớp vì thiếu nó thì ô nhóm hiện
+        // tiếng Việt giữa màn tiếng Anh: sai kiểu **im lặng**, và chỉ người dùng English mới thấy.
+        val noEnglish = ALL.filter { it.labelEn.isNullOrBlank() || it.subEn.isNullOrBlank() }.map { it.id }
+        require(noEnglish.isEmpty()) { "nhóm phải có nhãn + dòng phụ tiếng Anh (labelEn/subEn): $noEnglish" }
 
         val empty = ALL.filter { it.members.isEmpty() }.map { it.id }
         require(empty.isEmpty()) { "nhóm rỗng thì ô hiện ra một khung trắng: $empty" }

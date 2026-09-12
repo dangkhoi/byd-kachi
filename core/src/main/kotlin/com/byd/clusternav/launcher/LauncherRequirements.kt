@@ -55,12 +55,30 @@ enum class FixBy {
  */
 data class LauncherRequirement(
     val id: String,
-    val label: String,
+    override val label: String,
     val losesWhatIfMissing: String,
     val fixBy: FixBy,
     val userAction: String? = null,
     val coreFeature: Boolean = false,
-)
+    /** Nhãn tiếng Anh (U5 · T2). */
+    override val labelEn: String? = null,
+    /**
+     * [losesWhatIfMissing] bằng tiếng Anh.
+     *
+     * Phải có, không được để trống rồi lùi: đây là **nửa mang thông tin** của câu báo ([PermissionReport.notice] ghép
+     * `"nhãn: mất gì"`). Lùi nửa sau về tiếng Việt sẽ ra một câu **trộn hai thứ tiếng trong cùng một dòng** — tệ hơn
+     * hẳn cả hai lựa chọn thuần. `LangCoverageTest` đòi đủ 6 điều kiện.
+     */
+    val losesWhatIfMissingEn: String? = null,
+    /** [userAction] bằng tiếng Anh — chỉ điều kiện [FixBy.USER] mới có. */
+    val userActionEn: String? = null,
+) : Localized {
+    /** "Mất gì nếu thiếu" theo [Strings.current]. */
+    val displayLoses: String get() = Strings.pick(losesWhatIfMissing, losesWhatIfMissingEn)
+
+    /** Việc người dùng cần làm, theo [Strings.current]; `null` khi điều kiện không cần người dùng. */
+    val displayUserAction: String? get() = userAction?.let { Strings.pick(it, userActionEn) }
+}
 
 /** Trạng thái đọc được của một điều kiện. */
 enum class RequirementState {
@@ -127,10 +145,16 @@ data class PermissionReport(val results: List<RequirementResult>) {
         // SELF_AT_BOOT có mặt ở đây vì tới màn chính mà còn thiếu = việc lúc khởi động đã không ăn.
         val speak = if (coreOnly) missingCore else needsUser + environment + fixedAtBoot
         if (speak.isEmpty()) return null
-        return speak.joinToString(" · ") { "${it.label}: ${it.losesWhatIfMissing}" }
+        return speak.joinToString(" · ") { "${it.displayLabel}: ${it.displayLoses}" }
     }
 
-    /** Một dòng cho nhật ký (kể cả phần tự sửa) — để buổi test trên xe đọc log là biết ngay. */
+    /**
+     * Một dòng cho nhật ký (kể cả phần tự sửa) — để buổi test trên xe đọc log là biết ngay.
+     *
+     * ⚠ **CỐ Ý KHÔNG dịch** (U5 · T2): đây là dòng cho **người phát triển**, không phải cho người lái. Nhật ký của
+     * dự án đang được đọc/grep bằng chính những chữ này ở nhiều tài liệu chẩn đoán; đổi theo ngôn ngữ máy sẽ làm log
+     * của hai lần đo không so được với nhau. Cũng vì thế nó gọi mã (`it.id`) chứ không gọi nhãn.
+     */
     fun logLine(): String = when {
         allOk && unknown.isEmpty() -> "đủ quyền"
         allOk -> "đủ quyền (chưa đọc được: ${unknown.joinToString(", ") { it.id }})"
@@ -153,6 +177,8 @@ object LauncherRequirements {
         label = "Đọc thông báo",
         losesWhatIfMissing = "dẫn đường trên cụm mất nguồn dữ liệu",
         fixBy = FixBy.SELF,
+        labelEn = "Notification access",
+        losesWhatIfMissingEn = "cluster navigation loses its data source",
     )
 
     /** Trợ năng — bắt phím vô-lăng + đọc màn hình dẫn đường. Quyền kiểu ADB ⇒ tự cấp được. */
@@ -161,6 +187,8 @@ object LauncherRequirements {
         label = "Trợ năng",
         losesWhatIfMissing = "gán phím vô-lăng và đọc màn hình dẫn đường không chạy",
         fixBy = FixBy.SELF,
+        labelEn = "Accessibility",
+        losesWhatIfMissingEn = "steering-wheel key mapping and navigation screen reading stop working",
     )
 
     /** Vẽ trên màn khác — dải tiêu đề ô + ngăn kéo app nổi lên trên app đang chiếu trong ô. */
@@ -169,6 +197,8 @@ object LauncherRequirements {
         label = "Vẽ trên màn khác",
         losesWhatIfMissing = "dải tiêu đề ô và ngăn kéo app không nổi lên được",
         fixBy = FixBy.SELF,
+        labelEn = "Draw over other apps",
+        losesWhatIfMissingEn = "slot title bars and the app drawer cannot float on top",
     )
 
     /** Cho phép cửa sổ tự do — đường đưa app vào ô. */
@@ -179,6 +209,8 @@ object LauncherRequirements {
         // KHÔNG phải SELF: cờ này do đường khởi động gieo (một-nơi-ghi-duy-nhất), màn chính không được tự gieo.
         fixBy = FixBy.SELF_AT_BOOT,
         coreFeature = true,
+        labelEn = "Freeform windows enabled",
+        losesWhatIfMissingEn = "apps cannot go into a slot over the freeform-window path",
     )
 
     /**
@@ -191,6 +223,8 @@ object LauncherRequirements {
         losesWhatIfMissing = "app không vào được ô — đây là tính năng lõi của launcher",
         fixBy = FixBy.ENVIRONMENT,
         coreFeature = true,
+        labelEn = "Window control channel",
+        losesWhatIfMissingEn = "apps cannot go into a slot — this is the launcher's core feature",
     )
 
     /**
@@ -204,6 +238,9 @@ object LauncherRequirements {
         losesWhatIfMissing = "bấm HOME không về Kachi",
         fixBy = FixBy.USER,
         userAction = "Bấm nút HOME rồi chọn Kachi trong hộp chọn của hệ thống",
+        labelEn = "Set as home screen",
+        losesWhatIfMissingEn = "pressing HOME does not come back to Kachi",
+        userActionEn = "Press the HOME button, then pick Kachi in the system chooser",
     )
 
     /** Thứ tự khai = thứ tự hiện cho người dùng. */

@@ -101,9 +101,11 @@ class TopStripSurfaceContractTest {
     @Test
     fun `thanh tren chi con hai pill va khong pill nao doi cau hinh tai cho`() {
         val fn = SourceRoots.body(strip, "private fun build()")
-        val pills = Regex("""pill\("([^"]+)"""").findAll(fn).map { it.groupValues[1] }.toList()
+        // U5·T3 — nhãn pill nay đến từ tài nguyên (`getString`), nên phép đếm đọc MÃ KHOÁ thay vì đọc chữ. Tính chất
+        // được canh KHÔNG đổi: đúng hai pill, đúng thứ tự đó, và không pill nào đổi cấu hình tại chỗ.
+        val pills = Regex("""pill\([^)]*?R\.string\.(\w+)""").findAll(fn).map { it.groupValues[1] }.toList()
         assertEquals(
-            listOf("Ứng dụng", "Cài đặt"), pills,
+            listOf("kachi_pill_apps", "kachi_pill_settings"), pills,
             "thanh trên chỉ được có hai pill: 'Ứng dụng' (mở app) và 'Cài đặt' (MỘT cửa vào cấu hình). Thêm pill nào " +
                 "cũng là thêm một bề mặt lỉ tỉ — pill 'Thanh' vừa bị bỏ đúng vì lý do đó",
         )

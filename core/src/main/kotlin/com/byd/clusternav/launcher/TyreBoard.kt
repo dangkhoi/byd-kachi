@@ -32,23 +32,36 @@ enum class TyreStatus {
      * người xem phải tự so số mới biết là non hay căng. Trả `null` khi không có gì để nói (bình thường / chưa đọc)
      * ⇒ bộ vẽ không hiện chữ nào, không chiếm chỗ.
      *
-     * Ngắn có chủ ý: nó nằm trong ô nhỏ cạnh con số, dài là bị cắt.
+     * Ngắn có chủ ý: nó nằm trong ô nhỏ cạnh con số, dài là bị cắt — kể cả bản tiếng Anh (U5 · T2).
      */
     val reason: String?
         get() = when (this) {
-            LOW -> "non"
-            HIGH -> "căng"
-            UNEVEN -> "lệch"
+            LOW -> Strings.t("non", "low")
+            HIGH -> Strings.t("căng", "high")
+            UNEVEN -> Strings.t("lệch", "uneven")
             OK, UNKNOWN -> null
         }
 }
 
-/** Vị trí bánh — thứ tự cố định để bộ vẽ đặt đúng góc. */
-enum class TyreCorner(val label: String, val shortLabel: String) {
-    FRONT_LEFT("Trước trái", "TT"),
-    FRONT_RIGHT("Trước phải", "TP"),
-    REAR_LEFT("Sau trái", "ST"),
-    REAR_RIGHT("Sau phải", "SP"),
+/**
+ * Vị trí bánh — thứ tự cố định để bộ vẽ đặt đúng góc.
+ *
+ * ⚠ [shortLabel] là **hai chữ viết tắt** (`TT`/`TP`/`ST`/`SP` — trước/sau × trái/phải) và nó nằm trong ô bánh xe của
+ * bảng lốp, nên bản tiếng Anh cũng phải hai chữ (`FL`/`FR`/`RL`/`RR` — chuẩn ngành).
+ */
+enum class TyreCorner(
+    override val label: String,
+    val shortLabel: String,
+    override val labelEn: String,
+    val shortLabelEn: String,
+) : Localized {
+    FRONT_LEFT("Trước trái", "TT", "Front left", "FL"),
+    FRONT_RIGHT("Trước phải", "TP", "Front right", "FR"),
+    REAR_LEFT("Sau trái", "ST", "Rear left", "RL"),
+    REAR_RIGHT("Sau phải", "SP", "Rear right", "RR");
+
+    /** Viết tắt theo [Strings.current] — dùng ở ô bánh của bảng lốp. */
+    val displayShortLabel: String get() = Strings.pick(shortLabel, shortLabelEn)
 }
 
 /**
@@ -141,12 +154,16 @@ object TyreBoard {
      * theo thứ tự ưu tiên khai trong [TyreStatus] (non ▸ căng ▸ lệch) nên câu luôn nêu thứ nguy trước.
      */
     fun verdict(readings: List<TyreReading>): String {
-        if (readings.none { it.pressureKpa != null }) return "chưa đọc được áp suất"
+        if (readings.none { it.pressureKpa != null }) {
+            return Strings.t("chưa đọc được áp suất", "pressure not read yet")
+        }
         val faults = TyreStatus.values()
             .filter { it.reason != null }
             .mapNotNull { st -> readings.count { it.status == st }.takeIf { it > 0 }?.let { n -> n to st } }
-        if (faults.isEmpty()) return "lốp ổn"
-        return faults.joinToString(" · ") { (n, st) -> "$n bánh ${st.reason}" }
+        if (faults.isEmpty()) return Strings.t("lốp ổn", "tyres OK")
+        return faults.joinToString(" · ") { (n, st) ->
+            Strings.t("$n bánh ${st.reason}", "$n ${if (n == 1) "wheel" else "wheels"} ${st.reason}")
+        }
     }
 
     /** Mức bằng chứng của phần NHIỆT ĐỘ (chưa kiểm trên xe) ⇒ bộ vẽ gắn dấu "chưa kiểm". */

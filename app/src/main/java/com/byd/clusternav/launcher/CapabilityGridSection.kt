@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -102,11 +103,13 @@ class CapabilityGridSection(
                     val onNow = chipEnabled(pick.id)
                     Toast.makeText(
                         context,
-                        if (onNow) "Đã đưa \"${pick.label}\" lên thanh trạng thái" else "Đã bỏ \"${pick.label}\" khỏi thanh trạng thái",
+                        context.getString(
+                    if (onNow) R.string.kachi_chip_added else R.string.kachi_chip_removed, pick.displayLabel,
+                ),
                         Toast.LENGTH_SHORT,
                     ).show()
                 } else {
-                    Toast.makeText(context, "Nút bấm không đặt được lên thanh trên (chip quá nhỏ để bấm an toàn)", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.kachi_chip_button_rejected, Toast.LENGTH_SHORT).show()
                 }
                 true
             }
@@ -126,7 +129,7 @@ class CapabilityGridSection(
      */
     private fun iconWithBadge(res: Int, needsBadge: Boolean): View {
         val size = dpi(context, Sp.ICON_L)
-        val img = ImageView(context).apply { if (res != 0) { setImageResource(res); setColorFilter(Color.WHITE) } }
+        val img = ImageView(context).apply { if (res != 0) { setImageResource(res); setColorFilter(c(KachiTheme.INK)) } }
         if (!needsBadge) return img.apply { layoutParams = LinearLayout.LayoutParams(size, size) }
         return FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size)
@@ -140,8 +143,8 @@ class CapabilityGridSection(
     private fun applyState(id: String) {
         val tile = tiles[id] ?: return
         tile.background = if (id in enabled) GradientDrawable().apply {
-            cornerRadius = dpi(context, Sp.RADIUS_L).toFloat(); setColor(c("#264c7dff")); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
-        } else KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
+            cornerRadius = dpi(context, Sp.RADIUS_L).toFloat(); setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
+        } else KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
     }
 
     /** iconRes theo icon của khả năng; chưa map → icon đại diện nhóm (khỏi ô trống icon). */

@@ -3,180 +3,6 @@ package com.byd.clusternav.launcher
 import com.byd.clusternav.comfort.Pm25Filter
 
 /**
- * SẮC THÁI một ô con của ô nhóm — **không phải mã màu**.
- *
- * Bảng màu nằm ở `:app` ([KachiTheme]), đúng quy ước [ChipTone] của RW0. [ĐO] bài học đã trả giá: bản nháp trước
- * viết `#37d67a` ở `:core` trong khi `KachiTheme.GREEN` là `#34d399` ⇒ dự án có **hai bảng màu** và chúng lệch nhau
- * ngay từ dòng đầu.
- *
- * Bốn sắc thái, không ba: spec §4.3 đòi *"ô con sáng lên khi đang bật/đang cảnh báo"* — đó là **hai** việc khác nhau.
- * Đèn cốt đang bật không phải chuyện đáng lo, nhưng phải nhìn ra ngay; cửa đang mở thì là chuyện đáng lo. Gộp chúng
- * vào một sắc thái sẽ khiến người xem không phân biệt được "đang chạy" với "đang sai".
- */
-enum class GroupTone {
-    /** Bình thường / đang tắt / chưa đọc được. */
-    NEUTRAL,
-
-    /** Đang bật, đang mở, đang hoạt động — làm nổi bật, KHÔNG phải cảnh báo. */
-    ACTIVE,
-
-    /** Đáng để ý nhưng không nguy (lốp lệch, ESP đang tắt, bụi mức trung bình). */
-    WARN,
-
-    /** Đang cảnh báo (cửa mở, dây chưa thắt, radar sát vật, lốp non/căng). */
-    ALERT,
-}
-
-/**
- * PHÍA của một ô con **trên xe** — để bộ vẽ `BOARD` đặt nó đúng chỗ trong không gian.
- *
- * ## Vì sao ở `:core` chứ không suy ra ở tầng vẽ
- * Biết `bsd_fl_alarm` là bên TRÁI là kiến thức về **mã datum**, cùng họ với việc biết `window_lf` là kính nào. Tầng
- * vẽ tự đoán từ mã nghĩa là nó phải chép quy ước đặt tên — đúng bản-sao-thứ-hai mà [CapabilityGroups] tồn tại để
- * loại bỏ, và có test cấm tầng vẽ nhắc tới mã thành viên.
- *
- * [NONE] **không phải** "chưa biết" mà là *"mục này không thuộc bên nào"* (ESP, cảnh báo quá tốc — chúng nói về cả
- * xe). Bộ vẽ đưa chúng xuống dòng chân bảng thay vì gán bừa vào một bên.
- */
-enum class GroupSide { LEFT, RIGHT, NONE }
-
-/**
- * Một ô con **XEM** trong ô nhóm — đã quyết định xong nội dung, không biết View.
- *
- * @property label nhãn NGẮN ([TelemetrySpec.shortLabel]) — ô con của nhóm hẹp hơn ô rời rất nhiều (một dải 10 cửa
- *   trên khung 640dp còn ~64dp mỗi ô), nhãn đầy sẽ bị cắt thành những chuỗi giống hệt nhau. Đây chính là lỗi [ĐO]
- *   2026-09-10 (*"Áp lốp trước-t…"* × 2) mà `short` của RW0 sinh ra để chữa.
- * @property number số/chữ **không kèm đơn vị** — cho bộ vẽ CARD dựng số chính cỡ lớn. `"—"` nếu chưa đọc được.
- * @property unit đơn vị đã theo lựa chọn người dùng ([UnitFormat]); rỗng nếu datum không có đơn vị.
- * @property available đọc được số hay chưa. Off-car là ca **thường**, không phải ca lỗi ⇒ bộ vẽ làm mờ, KHÔNG bịa số.
- * @property needsBadge mức bằng chứng chưa PROVEN ⇒ ô nhóm mang dấu "chưa kiểm trên xe".
- * @property side phía trên xe (xem [GroupSide]) — chỉ bộ vẽ `BOARD` dùng.
- */
-data class GroupCell(
-    val id: String,
-    val label: String,
-    val number: String,
-    val unit: String,
-    val tone: GroupTone,
-    val icon: String,
-    val available: Boolean,
-    val needsBadge: Boolean,
-    val side: GroupSide = GroupSide.NONE,
-) {
-    /**
-     * Số **kèm đơn vị** — dạng dùng cho dải STRIP và cho các số phụ của thẻ CARD.
-     *
-     * Là thuộc tính TÍNH RA, không phải field thứ ba: giữ cả `"2.4"` và `"2.4 bar"` trong hai field là hai bản sao
-     * của một dữ liệu, và chúng sẽ lệch nhau đúng lúc ai đó sửa một chỗ.
-     */
-    val value: String get() = if (!available || unit.isEmpty()) number else "$number $unit"
-}
-
-/**
- * Một ô con **BẤM** — nút ([ControlRegistry]) hoặc gói lệnh ([ActionMacros]), nằm ở **hàng dưới cùng ô** (§4.3).
- *
- * Chỉ mang thứ để dựng ô; **không** mang giá trị đọc, vì nút không có giá trị đọc (xem KDoc [ControlTileState]:
- * phần lớn nút không có đường đọc lại từ xe).
- */
-data class GroupActionCell(
-    val id: String,
-    val label: String,
-    val icon: String,
-    val needsBadge: Boolean,
-)
-
-/**
- * MODEL TRÌNH BÀY của một ô nhóm — kết quả THUẦN của [CapabilityGroup] + [CarStatus] + [UnitPrefs].
- *
- * Bộ vẽ ở `:app` chỉ đọc cái này; nó KHÔNG được tự tra [TelemetryReadout] hay tự đổi đơn vị (có test canh), vì mỗi
- * bề mặt tự quyết đơn vị chính là bệnh mà lớp [UnitFormat] sinh ra để dọn.
- */
-data class GroupBoardModel(
-    val id: String,
-    val label: String,
-    val icon: String,
-    val shape: WidgetShape,
-    val cells: List<GroupCell>,
-    val actions: List<GroupActionCell>,
-) {
-    /** Số chính của bộ vẽ CARD = ô con ĐẦU TIÊN (thứ tự khai trong nhóm là thứ tự trình bày). */
-    val lead: GroupCell? get() = cells.firstOrNull()
-
-    /** Các số phụ xếp hàng dưới số chính (CARD). */
-    val rest: List<GroupCell> get() = if (cells.isEmpty()) emptyList() else cells.drop(1)
-
-    /** Nhóm có hàng nút ở dưới không — chỉ 3/12 nhóm có (kính · cửa & khoang · đèn). */
-    val hasActions: Boolean get() = actions.isNotEmpty()
-
-    /**
-     * Ô con **bên trái / bên phải xe** (theo [GroupCell.side]) — cho bộ vẽ `BOARD` xếp theo không gian.
-     *
-     * ## Vì sao là hai danh sách chứ không phải danh sách CẶP
-     * Ghép cặp đòi hai bên **luôn** cùng số lượng. Đúng với nhóm ADAS hôm nay (4 trái / 4 phải), nhưng một nhóm chỉ
-     * có cảnh báo bên trái là chuyện hợp lệ, và lúc đó phép ghép cặp sẽ hoặc ném hoặc âm thầm đẩy một mục sang bên
-     * kia — tức **nói sai vị trí**, đúng thứ bảng theo-không-gian sinh ra để tránh. Hai cột độc lập thì bên nào có
-     * bao nhiêu vẽ bấy nhiêu.
-     */
-    val leftCells: List<GroupCell> get() = cells.filter { it.side == GroupSide.LEFT }
-
-    /** Đối xứng với [leftCells]. */
-    val rightCells: List<GroupCell> get() = cells.filter { it.side == GroupSide.RIGHT }
-
-    /** Ô con **không thuộc bên nào** (ESP, quá tốc…) ⇒ bộ vẽ BOARD đưa xuống dòng chân bảng. */
-    val centreCells: List<GroupCell> get() = cells.filter { it.side == GroupSide.NONE }
-
-    /**
-     * Icon của các ô con có **phân biệt được** không.
-     *
-     * ## ⚠⚠ [KIỂM TOÁN UX mục 4c] Icon không phân biệt được thì phải BỎ, không phải để cho đủ
-     * [ĐO] nhóm *An toàn · ADAS*: **8/10 mục cùng một icon sóng radar** ⇒ tám ô con trông y hệt nhau và icon **không
-     * mang thông tin nào**, nó chỉ chiếm chỗ của thứ có mang (con số và cái nhãn, mà nhãn thì đang bị cắt).
-     *
-     * Đo bằng *"có hình nào lặp ≥ [ICON_REPEAT_CAP] lần"* chứ không bằng *"mọi hình đều khác nhau"*: hai ô cùng hình
-     * (trái/phải của một cặp) vẫn phân biệt được nhờ nhãn và vị trí; ba ô trở lên thì mắt thôi phân loại được.
-     *
-     * [ĐO] hiện trạng — bốn nhóm KHÁC cũng không phân biệt được (`g_windows` 4× kính · `g_doors` 4× cửa · `g_lights`
-     * nhiều × đèn · `g_occupants` 3× ghế). Ba nhóm đầu **có nút** nên bộ vẽ vốn đã bỏ icon (chỗ đó cần bề cao cho
-     * hàng nút); `g_occupants` thì trước bản vá này vẫn hiện ba icon ghế giống nhau.
-     */
-    val iconsDistinguish: Boolean
-        get() = cells.groupingBy { it.icon }.eachCount().none { it.value >= ICON_REPEAT_CAP }
-
-    private companion object {
-        /**
-         * Số lần một hình được lặp trước khi coi là "không phân biệt được".
-         *
-         * 3 chứ không 2: một CẶP trái/phải cùng hình là chuyện bình thường và vẫn đọc được nhờ nhãn; từ ba ô thì
-         * không còn là cặp nữa mà là một dãy đồng nhất.
-         */
-        const val ICON_REPEAT_CAP = 3
-    }
-
-    /**
-     * Ô nhóm có mang dấu "chưa kiểm trên xe" không.
-     *
-     * Tính từ CHÍNH các thành viên đã có trong model, **không** dựng lại phép xếp hạng
-     * [EvidenceTier] lần thứ hai (`CapabilityCatalog` đã có một bản — hai bản sẽ lệch nhau).
-     */
-    val needsBadge: Boolean get() = cells.any { it.needsBadge } || actions.any { it.needsBadge }
-
-    /**
-     * Một dòng TÓM TẮT cho ô nén (khi người dùng nhét nhiều widget vào cùng một ô, mỗi ô con chỉ còn ~1/4 khung nên
-     * không vẽ nổi cả dải/bảng).
-     *
-     * Ưu tiên nói **cái sai** trước: một nhóm 10 cửa mà tóm tắt bằng số của cửa đầu tiên thì vô nghĩa; *"1 cảnh
-     * báo"* trả lời đúng câu người lái hỏi. Không có gì sai thì mới hiện số chính.
-     */
-    fun summary(): String {
-        val alerts = cells.count { it.tone == GroupTone.ALERT }
-        if (alerts > 0) return "$alerts cảnh báo"
-        val warns = cells.count { it.tone == GroupTone.WARN }
-        if (warns > 0) return "$warns lưu ý"
-        return lead?.takeIf { it.available }?.value ?: TelemetryView.PLACEHOLDER
-    }
-}
-
-/**
  * ═══ G1 · T3 — PHẦN QUYẾT ĐỊNH CỦA Ô NHÓM ════════════════════════════════════════════════════════════════════
  *
  * Thuần Kotlin (`:core`, cấm `android.*`) ⇒ kiểm được off-car. Spec `docs/specs/kachi-capability-groups.html` §4.3.
@@ -238,7 +64,9 @@ object GroupBoard {
         val radar = radarLevels(status)
         return GroupBoardModel(
             id = g.id,
-            label = g.label,
+            // U5 · T2: nhãn theo ngôn ngữ đang dùng ở CHÍNH chỗ dựng model — bộ vẽ ở `:app` chỉ đọc model, nên nếu
+            // để nhãn gốc ở đây thì `:app` phải tự dịch lại và đó là bản-sao-thứ-hai của phép chọn ngôn ngữ.
+            label = g.displayLabel,
             icon = g.icon,
             shape = g.shape,
             cells = g.reads.map { cell(it, status, units, tyres, radar) },
@@ -299,6 +127,36 @@ object GroupBoard {
         else -> GroupTone.NEUTRAL
     }
 
+    /**
+     * Kế hoạch cho bảng sơ đồ hai bên (xem [SideBoardPlan]) khi mỗi bên chỉ vẽ được [maxPerSide] hàng **ở cỡ chữ đọc
+     * được**.
+     *
+     * `maxPerSide` do `:app` tính từ pixel (nó là bên duy nhất biết ô cao bao nhiêu); hàm này chỉ quyết định *hiện
+     * cái gì*. Tách vậy để phép chọn kiểm được off-car — cùng lối [TyreBoard] ↔ `TyreBoardView`.
+     *
+     * ⚠ Sắp cảnh báo lên trước **giữ nguyên thứ tự khai** trong mỗi bên (`filter` ổn định): thứ tự khai là thứ tự
+     * không gian (trước → sau), nên xáo nó lên là nói sai vị trí.
+     */
+    fun sidePlan(m: GroupBoardModel, maxPerSide: Int): SideBoardPlan {
+        val l = m.leftCells
+        val r = m.rightCells
+        val total = l.size + r.size
+        // Đủ chỗ ⇒ vẽ đủ. Đây là ca THƯỜNG ở ô to, và nó phải byte-giữ hành vi cũ.
+        if (maxPerSide >= maxOf(l.size, r.size)) return SideBoardPlan(l, r, hidden = 0, summary = null)
+        val cap = maxPerSide.coerceAtLeast(0)
+        val la = l.filter { it.tone.isLoud }.take(cap)
+        val ra = r.filter { it.tone.isLoud }.take(cap)
+        val shown = la.size + ra.size
+        if (shown > 0) return SideBoardPlan(la, ra, hidden = total - shown, summary = null)
+        // Không có gì đáng nói mà cũng không đủ chỗ ⇒ MỘT dòng, và dòng đó phải phân biệt "đã đọc, sạch" với "chưa
+        // đọc được": off-car mọi field là null, nói "không có cảnh báo" ở đó là **hứa một điều chưa kiểm**.
+        val read = l.count { it.available } + r.count { it.available }
+        val summary =
+            if (read == 0) Strings.t("$total cảm biến · chưa đọc được", "$total sensors · not read yet")
+            else Strings.t("Không có cảnh báo · $total cảm biến", "No alerts · $total sensors")
+        return SideBoardPlan(emptyList(), emptyList(), hidden = total, summary = summary)
+    }
+
     // ── Dựng ô con ──────────────────────────────────────────────────────────────────────────────────────
 
     private fun cell(
@@ -314,7 +172,7 @@ object GroupBoard {
         val view = TelemetryReadout.of(id, s)?.let { UnitFormat.apply(it, units) }
         return GroupCell(
             id = id,
-            label = spec?.shortLabel ?: id,
+            label = spec?.displayShortLabel ?: id,
             number = view?.display ?: TelemetryView.PLACEHOLDER,
             unit = view?.unit ?: "",
             tone = toneOf(id, s, tyres, radar),
@@ -342,12 +200,19 @@ object GroupBoard {
         else -> GroupSide.NONE
     }
 
+    /**
+     * Nút của nhóm — nhãn dùng **bản NGẮN**, cùng lý do với ô con XEM (xem [GroupCell.label]).
+     *
+     * [ĐO] ảnh máy ảo 2026-09-12: hàng nút chia 6 ô trên khung 4/12 màn ⇒ 82px/ô, nhãn đầy bị cắt
+     * (`"Window front-ri…"` · `"Kính trước-p…"`). Nhãn ngắn khai ở [ControlDef.short]/[ActionMacro] chứ không viết tắt
+     * tại đây: quy tắc viết tắt tự nghĩ ở tầng trình bày sẽ ra nhãn vô nghĩa ở đâu đó trong 64 nút mà không ai kiểm.
+     */
     private fun action(id: String): GroupActionCell? {
         ControlRegistry.byId(id)?.let {
-            return GroupActionCell(it.id, it.label, it.icon, it.tier.needsBadge)
+            return GroupActionCell(it.id, it.displayShortLabel, it.icon, it.tier.needsBadge)
         }
         ActionMacros.byId(id)?.let {
-            return GroupActionCell(it.id, it.label, it.icon, it.needsBadge())
+            return GroupActionCell(it.id, it.displayLabel, it.icon, it.needsBadge())
         }
         return null
     }

@@ -16,7 +16,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -51,13 +51,13 @@ class AppDrawer(
     private var capHint: TextView? = null
 
     init {
-        setBackgroundColor(c("#cc05070c"))
+        setBackgroundColor(c(KachiTheme.SCRIM_PANEL))
         isClickable = true
         setOnClickListener { onClose() }
 
         val panel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_XXL, "#12141c")
+            background = KachiTheme.card(context, Sp.RADIUS_XXL, KachiTheme.PANEL)
             setPadding(dpi(context, Sp.XXL), dpi(context, Sp.XL), dpi(context, Sp.XXL), dpi(context, Sp.XL))
             isClickable = true
         }
@@ -67,13 +67,12 @@ class AppDrawer(
         val assign = mode == Mode.ASSIGN_SLOT
 
         panel.addView(TextView(context).apply {
-            text = if (assign) "Đặt widget hoặc mở app vào ô này" else "Mở ứng dụng"
+            text = context.getString(if (assign) R.string.kachi_drawer_title_assign else R.string.kachi_drawer_title_open)
             setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
         })
         panel.addView(TextView(context).apply {
-            text = if (assign) "Widget: chọn nhiều rồi bấm Đặt · App: chạm để mở ngay · chạm nền để đóng"
-            else "Chạm một app để mở TOÀN MÀN · bấm HOME để về Kachi · chạm nền để đóng"
+            text = context.getString(if (assign) R.string.kachi_drawer_hint_assign else R.string.kachi_drawer_hint_open)
             setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             setPadding(0, dpi(context, Sp.XS), 0, dpi(context, Sp.M))
         })
@@ -88,7 +87,7 @@ class AppDrawer(
             addPickGrid(body, CapabilityPicker.groupPicks(), cols = 3)
 
             // ── Widget dựng tay (chọn nhiều) ──
-            body.addView(sectionLabel("Thẻ dựng tay").also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
+            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_widgets)).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
             addWidgetGrid(body, cols = 4)
 
             // ── Dữ liệu + HÀNH ĐỘNG của xe, gom theo lĩnh vực — thêm vào ô ──
@@ -102,22 +101,22 @@ class AppDrawer(
             CapabilityCatalog.byDomain().forEach { (domain, picks) ->
                 // `singlesOf` BẮT BUỘC: nhóm đã bày ở mục đầu, để nó nằm trong lĩnh vực nữa là **hai ô cùng một mã**
                 // ⇒ `widgetTiles[id]` bị ghi đè ⇒ chỉ ô sau được tô sáng (đúng lỗi RW0 đã ghi).
-                body.addView(sectionLabel(domain.label).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
+                body.addView(sectionLabel(domain.displayLabel).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
                 CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(note(it)) }
                 addPickGrid(body, CapabilityPicker.singlesOf(picks), cols = 4)
             }
 
             // ── App (chạm đặt vào ô) ──
-            body.addView(sectionLabel("Ứng dụng").also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
+            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
             addGrid(body, loadApps(), cols = 6)
         } else {
             // ── Chế độ MỞ THƯỜNG: gần đây trước, rồi tất cả ──
             val all = loadApps()
             val recent = recentItems(all)
             if (recent.isNotEmpty()) {
-                body.addView(sectionLabel("Gần đây"))
+                body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_recent)))
                 addGrid(body, recent, cols = 6)
-                body.addView(sectionLabel("Tất cả ứng dụng").also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
+                body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_all_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
             }
             addGrid(body, all, cols = 6)
         }
@@ -160,18 +159,40 @@ class AppDrawer(
         val btn = TextView(context).apply {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
-            background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(Color.WHITE)
+            background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(c(KachiTheme.ON_ACCENT))
             setOnClickListener { onPickWidgets(selected.toList()) }
         }
         placeBtn = btn
         addView(btn)
     }
 
+    /**
+     * Câu nói khi đã đủ trần — nêu **cả trần lẫn đường đi tiếp**.
+     *
+     * Một chỗ duy nhất vì nó xuất hiện ở HAI nơi (câu nhắc ở thanh đáy + toast khi bấm): hai bản chữ sẽ lệch nhau
+     * đúng lúc ai đó sửa một chỗ, và lúc đó hai bề mặt nói hai điều về cùng một luật.
+     *
+     * ⚠ U5·T3 — đây từng là `const val CAP_NOTE` nội suy `$MAX`. Nay là HÀM vì chuỗi nằm trong tài nguyên (cần
+     * `Context`), và trần vẫn lấy từ [MAX] chứ không gõ lại — `PickerCapNoticeContractTest` đọc CHÍNH tệp tài nguyên
+     * để chốt hai tính chất cũ (nêu số trần · nói cách đi tiếp), nên phép kiểm không yếu đi khi chữ dời chỗ.
+     */
+    private fun capNote(): String = context.getString(R.string.kachi_drawer_cap_note, MAX)
+
     private fun refreshPlaceBtn() {
-        placeBtn?.text = if (selected.isEmpty()) "Bỏ widget" else "Đặt ${selected.size} widget"
+        placeBtn?.text = if (selected.isEmpty()) context.getString(R.string.kachi_drawer_place_none)
+        else context.resources.getQuantityString(R.plurals.kachi_drawer_place_n, selected.size, selected.size)
         // Câu nhắc chỉ hiện KHI ĐẦY (đủ thì im lặng — cùng luật với vòng kiểm quyền). Nói cả trần LẪN cách đi tiếp,
         // vì "đã đủ 8" một mình không cho người dùng biết phải làm gì.
-        capHint?.text = if (selected.size >= MAX) CAP_NOTE else ""
+        //
+        // Và **trả dòng này về dáng THÔNG TIN** (mực mờ, không nền): dáng CẢNH BÁO chỉ thuộc về cú bấm vừa bị từ chối
+        // (xem [notice]). Không trả về thì cái nền hổ phách còn nằm đó sau khi người dùng đã bỏ một mục ra — tức nó
+        // nói một điều không còn đúng.
+        capHint?.let { v ->
+            v.text = if (selected.size >= MAX) capNote() else ""
+            v.setTextColor(c(KachiTheme.MUT))
+            v.background = null
+            v.setPadding(0, 0, 0, 0)
+        }
     }
 
     /**
@@ -193,12 +214,46 @@ class AppDrawer(
         if (id in selected) {
             selected.remove(id)
         } else if (selected.size >= MAX) {
-            Toast.makeText(context, CAP_NOTE, Toast.LENGTH_SHORT).show()
+            notice(capNote())
             return
         } else {
             selected.add(id)
         }
         refreshTiles(); refreshPlaceBtn()
+    }
+
+    /**
+     * ═══ [KIỂM TOÁN 2026-09-12 mục 1] KÊNH NÓI CỦA NGĂN KÉO — KHÔNG THỂ LÀ TOAST ══════════════════════════════
+     *
+     * ## [ĐO] bằng số, không suy luận — 2026-09-12, máy ảo
+     * Ngăn kéo mở dưới dạng **cửa sổ phủ** (`TYPE_APPLICATION_OVERLAY`, xem [DrawerController]). `dumpsys window`
+     * lúc toast đang lên:
+     *  • toast: `ty=TOAST`, `mBaseLayer=81000`, khung `[655,969][1264,1044]`;
+     *  • ngăn kéo: `ty=APPLICATION_OVERLAY`, `mBaseLayer=**121000**`, khung `[0,0][1920,1080]`.
+     *
+     * 121000 > 81000 ⇒ ngăn kéo nằm **TRÊN** toast, và nó phủ **cả màn**. So hai ảnh chụp (trước / sau cú bấm bị từ
+     * chối): trong dải CHỮ của toast (`y 969..1037`) có **0 pixel** đổi; chỉ dải `y 1037..1044` — 7px lọt ra dưới đáy
+     * bảng — đổi (4018 px, (8,11,16) → (47,49,54)), tức thấy được **mép hộp** toast mà không thấy một nét chữ nào.
+     *
+     * Vì vậy toast ở bề mặt này là một **kênh im lặng**: mã có gọi, người dùng không nhận được gì. Cùng họ lỗi
+     * `DockConfig.setEnabled` (bỏ qua im lặng) và trần-8-mục (bấm không một lời nào) — dự án đã vá ba lần.
+     *
+     * ## Vì sao dòng chữ nằm trong THANH ĐÁY
+     * Nó **ghim ngoài vùng cuộn** (cùng hàng với nút áp cấu hình), nên luôn thấy được dù người dùng đang cuộn ở đâu —
+     * khác toast, nó không thể bị cửa sổ nào che vì nó là con của chính bảng. Đổi **màu + nền** (không chỉ đổi chữ)
+     * để một cú bấm bị từ chối tạo ra thay đổi **nhìn ra được**: khi đã đủ trần thì dòng này vốn đã hiện sẵn câu nhắc,
+     * nên nếu chỉ đặt lại cùng một chữ thì trên màn **không có gì đổi**.
+     *
+     * Toast ở màn Cài đặt thì vẫn dùng được (bảng đó là con của cửa sổ Activity, `mBaseLayer` ~21000 < 81000) — nên
+     * đây là luật của **bề mặt phủ**, không phải "bỏ toast trong toàn dự án".
+     */
+    private fun notice(msg: String) {
+        val v = capHint ?: return
+        v.text = msg
+        v.setTextColor(c(KachiTheme.AMBER))
+        v.background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.AMBER_SOFT, KachiTheme.AMBER)
+        val px = dpi(context, Sp.S)
+        v.setPadding(px, dpi(context, Sp.XS), px, dpi(context, Sp.XS))
     }
 
     // ── Widget grid (toggle) ──
@@ -220,11 +275,11 @@ class AppDrawer(
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(ImageView(context).apply {
-                val r = KachiTheme.iconRes(def.icon); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
+                val r = KachiTheme.iconRes(def.icon); if (r != 0) { setImageResource(r); setColorFilter(c(KachiTheme.INK)) }
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_XL), dpi(context, Sp.ICON_XL))
             })
             addView(TextView(context).apply {
-                text = def.label; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                text = def.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                 gravity = Gravity.CENTER; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
@@ -289,7 +344,7 @@ class AppDrawer(
      */
     private fun iconWithBadge(res: Int, needsBadge: Boolean): View {
         val size = dpi(context, Sp.ICON_XL)
-        val img = ImageView(context).apply { if (res != 0) { setImageResource(res); setColorFilter(Color.WHITE) } }
+        val img = ImageView(context).apply { if (res != 0) { setImageResource(res); setColorFilter(c(KachiTheme.INK)) } }
         if (!needsBadge) return img.apply { layoutParams = LinearLayout.LayoutParams(size, size) }
         return FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size)
@@ -305,7 +360,7 @@ class AppDrawer(
         val on = id in selected
         tile.background = if (on) GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_L).toFloat()
-            setColor(c("#264c7dff")); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))   // tô nền accent mờ + viền accent
+            setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))   // tô nền accent mờ + viền accent
         } else null
         // [KIỂM TOÁN UX mục 5b] Đầy trần ⇒ LÀM MỜ những ô không còn chọn được, để trạng thái "không bấm được nữa"
         // nhìn ra được TRƯỚC khi bấm; toast chỉ là lớp thứ hai cho người đã bấm.
@@ -386,14 +441,6 @@ class AppDrawer(
 
     private companion object {
         const val MAX = 8
-
-        /**
-         * Câu nói khi đã đủ trần — nêu **cả trần lẫn đường đi tiếp**.
-         *
-         * Một chỗ duy nhất vì nó xuất hiện ở HAI nơi (câu nhắc ở thanh đáy + toast khi bấm): hai bản chữ sẽ lệch
-         * nhau đúng lúc ai đó sửa một chỗ, và lúc đó hai bề mặt nói hai điều về cùng một luật.
-         */
-        const val CAP_NOTE = "Ô chứa tối đa $MAX mục — bỏ một mục để thêm"
 
         /** Độ mờ của ô KHÔNG còn chọn được (đã đủ trần). */
         const val DIMMED = 0.4f

@@ -16,5 +16,13 @@ enum class ThemeMode {
 
     fun next(): ThemeMode = values()[(ordinal + 1) % values().size]
 
-    fun label(): String = when (this) { DAY -> "Sáng"; NIGHT -> "Tối"; AUTO -> "Tự động" }
+    /**
+     * Nhãn cho người đọc. Sinh bằng `when` (không phải một dòng dữ liệu) ⇒ dịch tại chỗ bằng [Strings.t] — xem KDoc
+     * [Strings] về hai cơ chế của U5 · T2.
+     */
+    fun label(): String = when (this) {
+        DAY -> Strings.t("Sáng", "Light")
+        NIGHT -> Strings.t("Tối", "Dark")
+        AUTO -> Strings.t("Tự động", "Auto")
+    }
 }

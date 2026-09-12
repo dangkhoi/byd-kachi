@@ -39,7 +39,7 @@ class ControlDockView(context: Context) : LinearLayout(context) {
     init {
         gravity = Gravity.CENTER
         background = GradientDrawable().apply {
-            cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c("#d915191f")); setStroke(dpi(context, Sp.HAIRLINE), c("#33ffffff"))
+            cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c(KachiTheme.BAR)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.LINE_STRONG))
         }
         val p = dpi(context, Sp.S); setPadding(p, p, p, p)
         rebuild()

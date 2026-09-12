@@ -14,7 +14,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -69,7 +69,6 @@ class WidgetData(
  */
 object WidgetViews {
 
-    private const val BADGE = "chưa kiểm trên xe"
 
     fun build(ctx: Context, id: String, data: WidgetData): View = when (id) {
         "w_clock" -> clock(ctx, data.car)
@@ -95,7 +94,7 @@ object WidgetViews {
      */
     fun buildGrid(ctx: Context, ids: List<String>, data: WidgetData): View {
         val list = ids.take(8)
-        if (list.isEmpty()) return label(ctx, "WIDGET", "—", "")
+        if (list.isEmpty()) return label(ctx, ctx.getString(R.string.kachi_widget_none), "—", "")
         if (list.size == 1) return build(ctx, list[0], data).also { it.tag = WidgetTag(list[0], compact = false) }
         val n = list.size
         val topN = if (n <= 3) n else n / 2
@@ -171,13 +170,13 @@ object WidgetViews {
         val car = data.car
         return when (id) {
             "w_energy" -> miniCard(ctx, "ic-bolt", car.energy.soc?.let { "$it%" } ?: "—", car.energy.evRangeKm?.let { "$it km" } ?: "", KachiTheme.GREEN, false)
-            "w_pm25"   -> miniCard(ctx, "ic-leaf", pm25Ug(car)?.toString() ?: "—", "µg · " + (car.climate.pm25Level?.let { pm(it) } ?: "—"), KachiTheme.CYAN, false)
+            "w_pm25"   -> miniCard(ctx, "ic-leaf", pm25Ug(car)?.toString() ?: "—", "µg · " + (car.climate.pm25Level?.let { pm(ctx, it) } ?: "—"), KachiTheme.CYAN, false)
             "w_speed"  -> miniCard(ctx, "ic-speed", car.drivetrain.speedKmh?.toString() ?: "—", "km/h", KachiTheme.RED, false)
             "w_tire"   -> tyreMini(ctx, car, data.units)
-            "w_clock"  -> miniCard(ctx, "ic-sun", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()), SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date()), KachiTheme.INK, false)
+            "w_clock"  -> miniCard(ctx, "ic-sun", SimpleDateFormat("HH:mm", LangHost.locale()).format(Date()), SimpleDateFormat("dd/MM", LangHost.locale()).format(Date()), KachiTheme.INK, false)
             "w_media"  -> miniCard(ctx, "ic-music", data.media?.title ?: "—", data.media?.artist ?: "", KachiTheme.AMBER, false)
-            "w_car"    -> miniCard(ctx, "ic-lock", "Xe", "", KachiTheme.GREEN, false)
-            "w_board"  -> miniCard(ctx, "ic-grid", "Tổng hợp", "", KachiTheme.ACCENT, false)
+            "w_car"    -> miniCard(ctx, "ic-lock", ctx.getString(R.string.kachi_widget_car), "", KachiTheme.GREEN, false)
+            "w_board"  -> miniCard(ctx, "ic-grid", ctx.getString(R.string.kachi_widget_board), "", KachiTheme.ACCENT, false)
             "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
             // G1·T3: nhóm trong ô nén ⇒ TÓM TẮT (xem KDoc GroupTiles.mini), không vẽ dải/bảng thu nhỏ.
             else       -> if (CapabilityGroups.byId(id) != null) GroupTiles.mini(ctx, id, data)
@@ -219,7 +218,7 @@ object WidgetViews {
     private fun miniCard(ctx: Context, icon: String, big: String, sub: String, color: String, badge: Boolean, dim: Boolean = false): View =
         LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, Sp.RADIUS_M, "#1c212b")
+            background = KachiTheme.card(ctx, Sp.RADIUS_M, KachiTheme.CELL)
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             if (dim) alpha = 0.5f
             val r = KachiTheme.iconRes(icon)
@@ -274,7 +273,7 @@ object WidgetViews {
             text = v.display; setTextColor(c(if (v.available) KachiTheme.INK else KachiTheme.MUT)); typeface = Typeface.DEFAULT_BOLD
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f); gravity = Gravity.CENTER
             setPadding(dpi(ctx, Sp.L), dpi(ctx, Sp.S), dpi(ctx, Sp.L), dpi(ctx, Sp.S))
-            background = KachiTheme.pill(ctx, "#1c212b")
+            background = KachiTheme.pill(ctx, KachiTheme.CELL)
         }
         addView(badge, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dpi(ctx, Sp.S) })
     }
@@ -285,14 +284,16 @@ object WidgetViews {
     }
 
     private fun badgeView(ctx: Context): View = TextView(ctx).apply {
-        text = BADGE; setTextColor(c(KachiTheme.AMBER)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f); gravity = Gravity.CENTER
+        text = ctx.getString(R.string.kachi_badge_unverified); setTextColor(c(KachiTheme.AMBER)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f); gravity = Gravity.CENTER
         setPadding(dpi(ctx, Sp.S), dpi(ctx, Sp.XS), dpi(ctx, Sp.S), dpi(ctx, Sp.XS)); maxLines = 1
-        background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c("#33fbbf24")) }
+        background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c(KachiTheme.AMBER_SOFT)) }
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = dpi(ctx, Sp.XS) }
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────────────────────────────
-    private fun pm(level: Int) = when { level <= 2 -> "Tốt"; level <= 4 -> "TB"; else -> "Kém" }
+    private fun pm(ctx: Context, level: Int) = ctx.getString(
+        when { level <= 2 -> R.string.kachi_pm_good; level <= 4 -> R.string.kachi_pm_fair; else -> R.string.kachi_pm_poor },
+    )
 
     /** PM2.5 µg/m³: giá trị thật nếu có, nếu chỉ có mức thì suy diễn xấp xỉ (mức × 9); null → null. */
     private fun pm25Ug(car: CarStatus): Int? = car.climate.pm25ValueUgm3 ?: car.climate.pm25Level?.let { it * 9 }
@@ -321,7 +322,8 @@ object WidgetViews {
         // vị đã đứng ngay cạnh từng số (kiểm toán UX mục 1), nên để nó một mình ở chân bảng là vừa lặp vừa chiếm
         // đúng chỗ đáng giá nhất — dòng cuối là chỗ mắt dừng lại.
         val verdict = TyreBoard.verdict(readings)
-        val footer = if (TyreBoard.tempTier.wired) verdict else "$verdict · nhiệt chưa kiểm"
+        val footer = if (TyreBoard.tempTier.wired) verdict
+        else ctx.getString(R.string.kachi_tyre_temp_unverified, verdict)
         return TyreBoardView(ctx).apply { set(readings, values, unit, temps, footer) }
     }
 
@@ -385,20 +387,22 @@ object WidgetViews {
     // ── Curated widgets (đọc từ CarStatus) ───────────────────────────────────────────────────────────────
     private fun energyRing(ctx: Context, car: CarStatus): View {
         val soc = car.energy.soc
-        return ring(ctx, (soc ?: 0).toFloat(), KachiTheme.GREEN, soc?.let { "$it%" } ?: "—", "pin",
+        return ring(ctx, (soc ?: 0).toFloat(), KachiTheme.GREEN, soc?.let { "$it%" } ?: "—",
+            ctx.getString(R.string.kachi_widget_battery),
             car.energy.evRangeKm?.let { "≈ $it km" } ?: "")
     }
 
     private fun pm25Ring(ctx: Context, car: CarStatus): View {
         val ug = pm25Ug(car); val lvl = car.climate.pm25Level
         return ring(ctx, (ug ?: 0) * 1.2f, KachiTheme.CYAN, ug?.toString() ?: "—", "µg/m³",
-            "PM2.5 · " + (lvl?.let { pm(it) } ?: "—"))
+            "PM2.5 · " + (lvl?.let { pm(ctx, it) } ?: "—"))
     }
 
     private fun clock(ctx: Context, car: CarStatus) = col(ctx).apply {
-        addView(tv(ctx, SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()), 50f, KachiTheme.INK, true))
-        addView(tv(ctx, SimpleDateFormat("EEEE, dd/MM", Locale.forLanguageTag("vi")).format(Date()), 14f, KachiTheme.MUT))
-        addView(tv(ctx, (car.climate.outsideTempC?.let { "$it°C" } ?: "—") + " · ngoài xe", 13f, KachiTheme.MUT).apply {
+        addView(tv(ctx, SimpleDateFormat("HH:mm", LangHost.locale()).format(Date()), 50f, KachiTheme.INK, true))
+        addView(tv(ctx, SimpleDateFormat("EEEE, dd/MM", LangHost.locale()).format(Date()), 14f, KachiTheme.MUT))
+        val outside = ctx.getString(R.string.kachi_outside_temp, car.climate.outsideTempC?.let { "$it°C" } ?: "—")
+        addView(tv(ctx, outside, 13f, KachiTheme.MUT).apply {
             setPadding(0, dpi(ctx, Sp.S), 0, 0)
             val r = KachiTheme.iconRes("ic-sun")
             if (r != 0) {
@@ -413,20 +417,25 @@ object WidgetViews {
         row.addView(tv(ctx, car.drivetrain.speedKmh?.toString() ?: "—", 44f, KachiTheme.INK, true))
         row.addView(tv(ctx, " km/h", 15f, KachiTheme.MUT))
         addView(row)
-        val limit = if (car.safety.speedLimitWarning == true) "Vượt tốc độ" else "Tốc độ hiện tại"
+        val limit = ctx.getString(
+            if (car.safety.speedLimitWarning == true) R.string.kachi_speed_over else R.string.kachi_speed_current,
+        )
         addView(tv(ctx, limit, 13f, if (car.safety.speedLimitWarning == true) KachiTheme.RED else KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) })
     }
 
     private fun carState(ctx: Context, car: CarStatus) = col(ctx).apply {
         addView(CarMiniView(ctx), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         val doors = listOf(car.body.doorLfOpen, car.body.doorRfOpen, car.body.doorLrOpen, car.body.doorRrOpen)
-        val doorLine = when {
-            doors.all { it == null } -> "Trạng thái cửa —"
-            doors.any { it == true } -> "Có cửa đang mở"
-            else -> "4 cửa đóng"
-        }
+        val doorLine = ctx.getString(when {
+            doors.all { it == null } -> R.string.kachi_doors_unknown
+            doors.any { it == true } -> R.string.kachi_doors_open
+            else -> R.string.kachi_doors_closed
+        })
         addView(tv(ctx, doorLine, 13f, if (doors.any { it == true }) KachiTheme.AMBER else KachiTheme.GREEN).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) })
-        val tail = when (car.body.tailgateOpen) { true -> "Cốp sau đang mở"; false -> "Cốp sau đóng"; null -> "Cốp sau —" }
+        val tail = ctx.getString(when (car.body.tailgateOpen) {
+            true -> R.string.kachi_tailgate_open; false -> R.string.kachi_tailgate_closed
+            null -> R.string.kachi_tailgate_unknown
+        })
         addView(tv(ctx, tail, 13f, if (car.body.tailgateOpen == true) KachiTheme.AMBER else KachiTheme.MUT))
     }
 
@@ -434,7 +443,7 @@ object WidgetViews {
         val car = data.car
         fun cell(icon: String, big: String, sub: String, color: String) = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, Sp.RADIUS_M, "#1c212b")
+            background = KachiTheme.card(ctx, Sp.RADIUS_M, KachiTheme.CELL)
             val r = KachiTheme.iconRes(icon)
             if (r != 0) addView(ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
                 LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S)).also { it.bottomMargin = dpi(ctx, Sp.XS) })
@@ -459,10 +468,10 @@ object WidgetViews {
             orientation = LinearLayout.VERTICAL; val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             addView(rowOf(
                 cell("ic-bolt", bat?.let { "$it%" } ?: "—", km?.let { "$it km" } ?: "", KachiTheme.GREEN),
-                cell("ic-leaf", ug?.let { "${it}µg" } ?: "—", "PM2.5 " + (lvl?.let { pm(it) } ?: ""), KachiTheme.CYAN),
+                cell("ic-leaf", ug?.let { "${it}µg" } ?: "—", "PM2.5 " + (lvl?.let { pm(ctx, it) } ?: ""), KachiTheme.CYAN),
             ), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(rowOf(
-                cell("ic-tire", tText ?: "—", "Áp suất lốp ($tUnit)",
+                cell("ic-tire", tText ?: "—", ctx.getString(R.string.kachi_tyre_pressure_unit, tUnit),
                     if (tRead.any { it.status.alert }) KachiTheme.AMBER else KachiTheme.INK),
                 cell("ic-music", data.media?.title ?: "—", data.media?.artist ?: "", KachiTheme.INK),
             ), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))

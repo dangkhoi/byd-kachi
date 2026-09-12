@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -63,16 +64,16 @@ class LayoutEditorPanel(
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             addView(TextView(context).apply {
-                text = "Vẽ bố cục"
+                text = context.getString(R.string.kachi_layout_title)
                 setTextColor(Color.parseColor(KachiTheme.INK))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 19f)
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            addView(pill("Đóng") { onClose() })
+            addView(pill(context.getString(R.string.kachi_layout_close)) { onClose() })
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         root.addView(TextView(context).apply {
-            text = "Kéo giữa khung để di chuyển · kéo góc dưới-phải để đổi cỡ. Khung luôn bám ô lưới."
+            text = context.getString(R.string.kachi_layout_hint)
             setTextColor(Color.parseColor(KachiTheme.MUT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setPadding(0, dp(Sp.XS), 0, dp(Sp.M))
@@ -101,13 +102,13 @@ class LayoutEditorPanel(
         root.addView(problem); root.addView(info)
 
         // ── Nút ──
-        addBtn = pill("Thêm khung") { addFrame() }
-        delBtn = pill("Xoá khung đang chọn") { removeSelected() }
-        saveBtn = pill("Lưu") { save() }
+        addBtn = pill(context.getString(R.string.kachi_layout_add)) { addFrame() }
+        delBtn = pill(context.getString(R.string.kachi_layout_del)) { removeSelected() }
+        saveBtn = pill(context.getString(R.string.kachi_layout_save)) { save() }
         root.addView(LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             addView(addBtn); addView(space()); addView(delBtn); addView(space())
-            addView(pill("Về bố cục sẵn") { onClear(); onClose() })
+            addView(pill(context.getString(R.string.kachi_layout_reset)) { onClear(); onClose() })
             addView(space()); addView(saveBtn)
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
@@ -156,9 +157,9 @@ class LayoutEditorPanel(
         val probs = current.problems()
         val overCap = current.frames.size > cap
         problem.text = when {
-            overCap -> "Quá $cap khung — bản này đỡ tối đa $cap khung."
+            overCap -> context.getString(R.string.kachi_layout_over_cap, cap)
             probs.isEmpty() -> ""
-            else -> "Chưa lưu được: " + probs.joinToString(" · ")
+            else -> context.getString(R.string.kachi_layout_cannot_save, probs.joinToString(" · "))
         }
         // Giữ CHỖ của dòng lỗi (INVISIBLE, không GONE): ẩn hẳn thì khung vẽ giãn ra rồi co lại mỗi lần lỗi
         // xuất hiện/mất ⇒ hình đang kéo bị giật cỡ giữa lúc kéo.
@@ -166,10 +167,15 @@ class LayoutEditorPanel(
 
         val empty = current.uncoveredCells()
         info.text = buildString {
-            append("${current.frames.size} khung · ")
+            append(context.getString(R.string.kachi_layout_frames_n, current.frames.size)); append(" · ")
             // "Còn ô trống" là THÔNG TIN, không phải lỗi: nền sẽ hiện ra ở đó.
-            append(if (empty == 0) "phủ kín màn" else "còn $empty ô trống (nền hiện ra ở đó)")
-            if (current.frames.size >= cap) append(" · đã đủ $cap khung, bản sau sẽ nới")
+            append(
+                if (empty == 0) context.getString(R.string.kachi_layout_full)
+                else context.getString(R.string.kachi_layout_empty_n, empty),
+            )
+            // Dấu phân cách nằm ở MÃ, không trong chuỗi tài nguyên: khoảng trắng ĐẦU chuỗi bị Android cắt trừ khi
+            // bọc trong dấu ngoặc kép — một cái bẫy im lặng, và người dịch không có lý do gì phải biết nó.
+            if (current.frames.size >= cap) append(" · " + context.getString(R.string.kachi_layout_at_cap, cap))
         }
 
         val canSave = probs.isEmpty() && !overCap

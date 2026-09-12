@@ -114,7 +114,8 @@ class PermissionPreflightWiringContractTest {
     @Test
     fun `nhom He thong la cho xem DU buc tranh va khong bao gio trang`() {
         assertTrue(panel.contains("permissionRow("), "phải có hàng cho từng quyền thiếu")
-        assertTrue(rows.contains("losesWhatIfMissing"), "phải nói mất gì, không chỉ tên quyền")
+        // U5·T3 — nay đọc `displayLoses` (chính `losesWhatIfMissing` đã chọn theo ngôn ngữ), không đọc field thô.
+        assertTrue(rows.contains("displayLoses"), "phải nói mất gì, không chỉ tên quyền")
         val fn = SourceRoots.body(panel, "private fun system(")
         assertTrue(fn.contains("rep.allOk"), "phải rẽ nhánh theo trạng thái đủ/thiếu")
         assertTrue(fn.contains("rows.note("), "ca ĐỦ phải nói 'đủ quyền', không để trống")

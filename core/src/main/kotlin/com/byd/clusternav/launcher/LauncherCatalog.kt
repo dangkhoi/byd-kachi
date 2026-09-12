@@ -7,7 +7,14 @@ package com.byd.clusternav.launcher
  */
 
 /** Một mục widget CHỌN ĐƯỢC (curated `w_*` hoặc telemetry `id`). [needsBadge] ⇒ hiện "chưa kiểm trên xe". */
-data class WidgetPick(val id: String, val label: String, val icon: String, val tier: EvidenceTier) {
+data class WidgetPick(
+    val id: String,
+    override val label: String,
+    val icon: String,
+    val tier: EvidenceTier,
+    /** Nhãn tiếng Anh (U5 · T2) — chảy từ [WidgetDef.labelEn] / [TelemetrySpec.labelEn], không gõ lại ở đây. */
+    override val labelEn: String? = null,
+) : Localized {
     val needsBadge: Boolean get() = tier.needsBadge
 
 }
@@ -19,19 +26,23 @@ data class WidgetPick(val id: String, val label: String, val icon: String, val t
 object WidgetCatalog {
 
     /** Widget curated (prototype) — luôn coi PROVEN (dựng tay, có off-car "—" sẵn). */
-    val CURATED: List<WidgetPick> = WidgetRegistry.ALL.map { WidgetPick(it.id, it.label, it.icon, EvidenceTier.PROVEN) }
+    val CURATED: List<WidgetPick> =
+        WidgetRegistry.ALL.map { WidgetPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, it.labelEn) }
 
     /** Telemetry gom theo domain (thứ tự enum), mỗi datum → [WidgetPick]; icon suy từ domain. Nhóm rỗng bị bỏ. */
     fun telemetryByDomain(): List<Pair<Domain, List<WidgetPick>>> =
         Domain.values().mapNotNull { d ->
-            val picks = TelemetryRegistry.byDomain(d).map { WidgetPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, d), it.tier) }
+            val picks = TelemetryRegistry.byDomain(d)
+                .map { WidgetPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, d), it.tier, it.labelEn) }
             if (picks.isEmpty()) null else d to picks
         }
 
     /** Tra 1 pick theo id (curated trước, telemetry sau) — cho UI dựng nhãn/badge khi id đã nằm trong ô. */
     fun pick(id: String): WidgetPick? =
         CURATED.firstOrNull { it.id == id }
-            ?: TelemetryRegistry.byId(id)?.let { WidgetPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier) }
+            ?: TelemetryRegistry.byId(id)?.let {
+                WidgetPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier, it.labelEn)
+            }
 
     /** Icon đại diện cho domain (dùng icon đã có trong bộ vector Kachi). */
     fun iconFor(domain: Domain): String = when (domain) {
@@ -72,8 +83,14 @@ object ControlTileLogic {
     fun nextSelectIndex(current: Int, optionCount: Int): Int =
         if (optionCount <= 0) 0 else (current + 1).mod(optionCount)
 
-    /** Nhãn hiển thị của SELECT theo [index]; ngoài phạm vi → nhãn nút. */
-    fun selectLabel(def: ControlDef, index: Int): String = def.args.getOrElse(index) { def.label }
+    /**
+     * Nhãn hiển thị của SELECT theo [index]; ngoài phạm vi → nhãn nút.
+     *
+     * U5 · T2: đọc [ControlDef.displayArgs] và [ControlDef.displayLabel] — cả lựa chọn lẫn đường lùi đều theo ngôn
+     * ngữ, nên nút tiếng Anh không hiện ra một lựa chọn tiếng Việt.
+     */
+    fun selectLabel(def: ControlDef, index: Int): String =
+        def.displayArgs.getOrElse(index) { def.displayLabel }
 }
 
 /**
@@ -108,7 +125,7 @@ enum class CapabilityKind {
  */
 data class CapabilityPick(
     val id: String,
-    val label: String,
+    override val label: String,
     val icon: String,
     val tier: EvidenceTier,
     val kind: CapabilityKind,
@@ -116,19 +133,35 @@ data class CapabilityPick(
     val curated: Boolean = false,
     val group: Boolean = false,
     val sub: String = "",
-) {
+    /**
+     * Nhãn tiếng Anh (U5 · T2) — **chảy từ bộ đăng ký gốc**, không gõ lại ở đây (một nhãn, một chỗ).
+     *
+     * ⚠ Riêng ba chip TỔNG HỢP của thanh trên ([TopStripConfig.choices]) thì gõ tại chỗ, vì chúng KHÔNG có dòng
+     * registry nào — chúng là chip ghép từ hai datum.
+     */
+    override val labelEn: String? = null,
+) : Localized {
     val needsBadge: Boolean get() = tier.needsBadge
 
     /**
-     * Nhãn để HIỂN THỊ. Bằng [label] trong hầu hết trường hợp; chỉ thêm gợi ý loại khi nhãn đó **bị trùng** giữa
-     * mục ĐỌC và HÀNH ĐỘNG — xem [CapabilityCatalog.collidingLabels].
+     * Nhãn để HIỂN THỊ. Bằng [displayLabel] của [Localized] trong hầu hết trường hợp; chỉ thêm gợi ý loại khi nhãn đó
+     * **bị trùng** giữa mục ĐỌC và HÀNH ĐỘNG — xem [CapabilityCatalog.collidingLabels].
      *
      * [ĐO] 2026-09-11: từ gói 2, bảng chọn bày CẢ hai loại trong cùng một lưới ⇒ **18 nhãn trùng nhau** lộ ra
      * (vd hai ô đều ghi "Kính trước-trái": một cái để XEM độ mở %, một cái để BẤM đóng/mở). Trước gói 2 hai loại
      * nằm ở hai màn khác nhau nên trùng không sao. Chỉ thêm gợi ý ở chỗ trùng — thêm cho cả 187 mục là nhiễu.
+     *
+     * ⚠ Phép **phát hiện trùng vẫn chạy trên nhãn tiếng Việt** ([CapabilityCatalog.collidingLabels] đọc `label`):
+     * tiếng Việt là nhãn GỐC, và tập trùng của nó là tập đã được kiểm/khoá bằng test. Nếu đổi sang so nhãn hiện tại
+     * thì tập trùng sẽ **đổi theo ngôn ngữ** ⇒ cùng một màn hình lại có/không gợi ý loại tuỳ ngôn ngữ, và bài test
+     * *"0 nhãn trùng còn lại"* của gói 2 sẽ nói về một tập khác mỗi lần. Bản dịch nào làm sinh ra trùng MỚI thì
+     * `LangCoverageTest` báo ra để người dịch sửa chữ, chứ không tự vá bằng gợi ý loại.
      */
-    val displayLabel: String
-        get() = if (label in CapabilityCatalog.collidingLabels()) "$label · $kindHint" else label
+    override val displayLabel: String
+        get() {
+            val base = Strings.pick(label, labelEn)
+            return if (label in CapabilityCatalog.collidingLabels()) "$base · $kindHint" else base
+        }
 
     /**
      * Gợi ý loại, chỉ dùng khi nhãn bị trùng. Thứ tự xét quan trọng: **nhóm trước, rồi widget dựng tay**, vì cả hai
@@ -139,10 +172,10 @@ data class CapabilityPick(
      */
     private val kindHint: String
         get() = when {
-            group -> "nhóm"
-            curated -> "thẻ"
-            kind == CapabilityKind.READ -> "xem"
-            else -> "bấm"
+            group -> Strings.t("nhóm", "group")
+            curated -> Strings.t("thẻ", "card")
+            kind == CapabilityKind.READ -> Strings.t("xem", "view")
+            else -> Strings.t("bấm", "press")
         }
 }
 
@@ -195,17 +228,21 @@ object CapabilityCatalog {
     fun pick(id: String): CapabilityPick? {
         CapabilityGroups.byId(id)?.let { return groupPick(it) }
         WidgetRegistry.byId(id)?.let {
-            return CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null, curated = true)
+            return CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null,
+                curated = true, labelEn = it.labelEn)
         }
         TelemetryRegistry.byId(id)?.let {
-            return CapabilityPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier, CapabilityKind.READ, it.domain)
+            return CapabilityPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier,
+                CapabilityKind.READ, it.domain, labelEn = it.labelEn)
         }
         ControlRegistry.byId(id)?.let {
-            return CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain)
+            return CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain,
+                labelEn = it.labelEn)
         }
         ActionMacros.byId(id)?.let {
             // Mức bằng chứng của gói = THẤP NHẤT trong các bước ⇒ dấu "chưa kiểm" chảy ra UI đúng, không hứa quá.
-            return CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain)
+            return CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain,
+                labelEn = it.labelEn)
         }
         return null
     }
@@ -219,7 +256,7 @@ object CapabilityCatalog {
      */
     private fun groupPick(g: CapabilityGroup): CapabilityPick = CapabilityPick(
         g.id, g.label, g.icon, groupTier(g), CapabilityKind.READ, g.domain,
-        group = true, sub = g.contentLine,
+        group = true, sub = g.contentLine, labelEn = g.labelEn,
     )
 
     /**
@@ -250,16 +287,20 @@ object CapabilityCatalog {
             add(groupPick(it))
         }
         WidgetRegistry.ALL.forEach {
-            add(CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null, curated = true))
+            add(CapabilityPick(it.id, it.label, it.icon, EvidenceTier.PROVEN, CapabilityKind.READ, null,
+                curated = true, labelEn = it.labelEn))
         }
         TelemetryRegistry.ALL.forEach {
-            add(CapabilityPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier, CapabilityKind.READ, it.domain))
+            add(CapabilityPick(it.id, it.label, CapabilityIcons.forTelemetry(it.id, it.domain), it.tier,
+                CapabilityKind.READ, it.domain, labelEn = it.labelEn))
         }
         ControlRegistry.ALL.forEach {
-            add(CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain))
+            add(CapabilityPick(it.id, it.label, it.icon, it.tier, CapabilityKind.WRITE, it.domain,
+                labelEn = it.labelEn))
         }
         ActionMacros.ALL.forEach {
-            add(CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain))
+            add(CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain,
+                labelEn = it.labelEn))
         }
     }
 

@@ -31,6 +31,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         // S1·T4: nạp cùng lượt với mọi thứ khác ⇒ mở lại màn Cài đặt là thấy đúng cờ đang lưu (bài học P1-1: nạp
         // bằng tay ở tầng UI thì sẽ có lần quên).
         autostart = prefs.launcherAutostart(),
+        // U5·T3: nạp cùng lượt ⇒ bộ chọn ngôn ngữ mở ra là thấy đúng lựa chọn đang lưu. `LangHost` giải nghĩa ra
+        // `Strings.current` từ giá trị này (nó cần locale của máy nên không giải được ở `:core`).
+        langMode = prefs.langMode(),
     )
 
     override fun persist(state: HomeUiState) {
@@ -80,6 +83,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun autostart(): Boolean = prefs.launcherAutostart()
 
     override fun setAutostart(on: Boolean) = prefs.setLauncherAutostart(on)
+
+    override fun langMode(): LangMode = prefs.langMode()
+
+    override fun setLangMode(mode: LangMode) = prefs.setLangMode(mode)
 
     /** Hồ sơ trống (mọi ô Empty) → bố cục mặc định 3 widget (khớp `initialState()` cũ của KachiHomeActivity). */
     private fun defaultIfEmpty(ws: WorkspaceState): WorkspaceState =

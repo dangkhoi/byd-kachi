@@ -1,13 +1,22 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import com.byd.clusternav.Lang as ClusterNavLang
 
 /**
  * Lưu/khôi phục [WorkspaceState] + [DockConfig] theo HỒ SƠ TÀI XẾ (profile) + [ThemeMode] (chung), qua SharedPreferences.
  * Mỗi hồ sơ = một bố cục + thanh điều khiển riêng (khoá key theo tên hồ sơ). Off-car test được (thuần prefs).
+ *
+ * ⚠ Import có tên (`as ClusterNavLang`): `:core` cũng có một `Lang` (enum thuần `VI`/`EN`) và tệp này dùng **cả hai** —
+ * [LangMode] của `:core` là kiểu trên đường dây, `ClusterNavLang` là chỗ lưu. Hai tên khác nhau thì không lẫn được; để
+ * cả hai tên là `Lang` thì một trong hai phải viết đủ package ở mọi chỗ dùng, và chỗ nào quên sẽ **vẫn biên dịch** với
+ * kiểu sai nếu chữ ký trùng.
  */
 class WorkspacePrefs(context: Context) {
     private val sp = context.getSharedPreferences("kachi_workspace", Context.MODE_PRIVATE)
+
+    /** Cần cho đường ngôn ngữ: chỗ lưu ngôn ngữ là tệp prefs của ClusterNav, mở qua `Context` chứ không qua [sp]. */
+    private val appCtx = context.applicationContext
 
     // ── Hồ sơ tài xế ──
     fun profiles(): List<String> =
@@ -73,6 +82,38 @@ class WorkspacePrefs(context: Context) {
         runCatching { ThemeMode.valueOf(sp.getString(K_THEME, ThemeMode.NIGHT.name)!!) }.getOrDefault(ThemeMode.NIGHT)
 
     fun setThemeMode(m: ThemeMode) { sp.edit().putString(K_THEME, m.name).apply() }
+
+    // ── Ngôn ngữ (chung mọi hồ sơ) — U5 · T3 ──
+    /**
+     * ⚠⚠ **KHÔNG có khoá `lang` trong tệp `kachi_workspace`** — hai hàm này **uỷ quyền** sang chỗ lưu ngôn ngữ đã
+     * tồn tại của ClusterNav ([com.byd.clusternav.Lang], tệp `clusternav_lang`, khoá `lang`).
+     *
+     * ## Đây là SAI LỆCH CÓ CHỦ Ý so với spec §3.1, và lý do quan trọng hơn câu chữ của spec
+     * Spec ghi *"`WorkspacePrefs` khoá `lang`"*. Làm đúng chữ đó thì trong **một APK** sẽ có **hai** công tắc ngôn
+     * ngữ: một của launcher (`kachi_workspace/lang`) và một của màn ClusterNav (`clusternav_lang/lang`, đang có
+     * selector `seg_language` và được `MainActivity`/`ClusterNavActivity`/`BilingualLabels` đọc). Hai công tắc cho
+     * **một** câu hỏi *"người ngồi đây đọc thứ tiếng nào"* chính là **bẫy hai-bản-sao** mà dự án đã trả giá bốn lần
+     * (`customLayout` · `unitPrefs` ×4 bản · `wallpaper` · và chính `themeMode` trước T1). Biểu hiện ở đây sẽ rất khó
+     * chối: chọn English trong Cài đặt Kachi rồi bấm "Mở màn ClusterNav" thì màn đó **vẫn tiếng Việt**.
+     *
+     * Nên chọn ngược lại: **một chỗ lưu, hai bề mặt đọc.** Chỗ lưu là chỗ đã có (`Lang`) vì
+     *  1. nó **đã** mang đúng ba giá trị cần thiết (`auto`/`vi`/`en`) và đã có phép đọc tương thích ngược;
+     *  2. màn ClusterNav đang **niêm phong** — không sửa được một dòng, nên chỗ lưu phải là chỗ nó đã đọc;
+     *  3. `Lang.setChoice` cập nhật luôn cache của nó ⇒ hai bề mặt không thể lệch, kể cả trong cùng một lượt chạy.
+     *
+     * Cái mất: khoá này không nằm trong tệp prefs chính của launcher. Bù lại bằng máy, không bằng lời —
+     * `SettingsCoverageContractTest` đã được **nới gốc quét** để đọc `Lang.kt`, nên `lang` và `clusternav_lang` đều
+     * phải khai trong [SettingsCatalog] (và khai sai thì đỏ hai chiều).
+     *
+     * ## Vì sao vẫn đi qua `WorkspacePrefs` chứ không cho tầng UI gọi thẳng `Lang`
+     * Để launcher chỉ có **MỘT** cửa đọc/ghi cấu hình (`repository` → `WorkspacePrefs`), đúng luật *tầng UI 0 lần ghi
+     * bền trực tiếp*. Cho `SettingsSections` gọi `Lang.setChoice` thì tầng UI lại ghi thẳng xuống đĩa — đúng thứ RW0
+     * vừa dọn xong.
+     */
+    fun langMode(): LangMode = LangMode.of(ClusterNavLang.choice(appCtx).code)
+
+    fun setLangMode(mode: LangMode) =
+        ClusterNavLang.setChoice(appCtx, ClusterNavLang.Choice.entries.first { it.code == mode.code })
 
     // ── Launcher auto-start (chung mọi hồ sơ) — B6 ──
     // Nổ máy → Kachi tự làm setup KHÔNG cần bung view (seed freeform + đặt HOME + đảm bảo HOME lên để khôi phục ô).

@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ═══ U5 · T3 — LAUNCHER ON-SCREEN TEXT (English / en-GB) ══════════════════════════════════════════════════════
+
+  Translation of `values/strings_kachi.xml`. Same key set, always — `LauncherI18nContractTest` compares both
+  directions, so a key present on one side only is a red test.
+
+  ⚠ BRITISH English on purpose (`tyre`, `boot`, `colour`, `licence`, `motorway`): `:core` already translated its
+  123 telemetry labels that way, and two spellings of "tyre pressure" on one screen reads like a bug.
+
+  ⚠ This file must contain NO Vietnamese diacritics — the guard test rejects them. A Vietnamese sentence left in
+  here would only ever be seen by an English-speaking user, i.e. it fails silently for everyone who reviews it.
+-->
+<resources>
+
+    <!-- ── KachiTopStrip — thanh trên ── -->
+    <string name="kachi_pill_apps">Apps</string>
+    <string name="kachi_pill_settings">Settings</string>
+
+    <!-- ── AppDrawer — ngăn kéo chọn nội dung / mở app ── -->
+    <string name="kachi_drawer_title_assign">Put a widget or an app in this slot</string>
+    <string name="kachi_drawer_title_open">Open an app</string>
+    <string name="kachi_drawer_hint_assign">Widgets: pick several, then tap Place · Apps: tap to open now · tap the backdrop to close</string>
+    <string name="kachi_drawer_hint_open">Tap an app to open it FULL SCREEN · press HOME to come back to Kachi · tap the backdrop to close</string>
+    <string name="kachi_drawer_section_widgets">Hand-built cards</string>
+    <string name="kachi_drawer_section_apps">Applications</string>
+    <string name="kachi_drawer_section_recent">Recent</string>
+    <string name="kachi_drawer_section_all_apps">All applications</string>
+    <string name="kachi_drawer_place_none">Clear widgets</string>
+    <plurals name="kachi_drawer_place_n">
+        <!-- [ĐO] ảnh máy ảo: bản một-chuỗi in "Place 1 widgets". Số ít/số nhiều là việc của `<plurals>`, không của
+             một `if` trong mã — Android chọn nhánh theo quy tắc của TỪNG ngôn ngữ, còn `if (n == 1)` chỉ đúng cho
+             tiếng Anh và sẽ sai ngay ở ngôn ngữ thứ ba (vd tiếng Nga có ba nhánh). -->
+        <item quantity="one">Place %1$d widget</item>
+        <item quantity="other">Place %1$d widgets</item>
+    </plurals>
+    <string name="kachi_drawer_cap_note">A slot holds at most %1$d items — remove one to add another</string>
+
+    <!-- ── CapabilityGridSection — lưới chọn khả năng ── -->
+    <string name="kachi_chip_added">Added "%1$s" to the status bar</string>
+    <string name="kachi_chip_removed">Removed "%1$s" from the status bar</string>
+    <string name="kachi_chip_button_rejected">Buttons cannot go on the top bar (a chip is too small to tap safely)</string>
+
+    <!-- ── SideBoardView — bảng sơ đồ hai bên xe (ADAS) ── -->
+    <plurals name="kachi_board_hidden_n">
+        <item quantity="one">+%1$d more</item>
+        <item quantity="other">+%1$d more</item>
+    </plurals>
+
+    <!-- ── ControlTileFactory — ô điều khiển kiểu COVER (cửa/kính/cốp) ── -->
+    <string name="kachi_cover_close">Close</string>
+    <string name="kachi_cover_open">Open</string>
+
+    <!-- ── LayoutEditorPanel — bảng vẽ bố cục ── -->
+    <string name="kachi_layout_title">Draw a layout</string>
+    <string name="kachi_layout_close">Close</string>
+    <string name="kachi_layout_hint">Drag the middle of a frame to move it · drag the bottom-right corner to resize. Frames always snap to the grid.</string>
+    <string name="kachi_layout_add">Add frame</string>
+    <string name="kachi_layout_del">Delete selected frame</string>
+    <string name="kachi_layout_save">Save</string>
+    <string name="kachi_layout_reset">Back to a preset layout</string>
+    <string name="kachi_layout_over_cap">More than %1$d frames — this build supports %1$d at most.</string>
+    <string name="kachi_layout_cannot_save">Cannot save yet: %1$s</string>
+    <string name="kachi_layout_frames_n">%1$d frames</string>
+    <string name="kachi_layout_full">covers the whole screen</string>
+    <string name="kachi_layout_empty_n">%1$d empty cells left (the wallpaper shows through there)</string>
+    <string name="kachi_layout_at_cap">%1$d frames already — a later build will raise the cap</string>
+
+    <!-- ── PhotoWidgetView — ô trình chiếu ảnh ── -->
+    <string name="kachi_photos_none">No photos yet</string>
+    <string name="kachi_photos_hint">Put photos in the Kachi photo folder</string>
+
+    <!-- ── ProfileBar — avatar hồ sơ tài xế ── -->
+    <string name="kachi_profile_only_one">Only one profile — add profiles in Settings → Driver profiles</string>
+    <string name="kachi_profile_switched">Profile: %1$s</string>
+    <string name="kachi_profile_name_hint">Profile name (e.g. Motorway)</string>
+    <string name="kachi_profile_new_title">New profile</string>
+    <string name="kachi_create">Create</string>
+    <string name="kachi_cancel">Cancel</string>
+
+    <!-- ── SettingsPanel — vỏ màn Cài đặt ── -->
+    <string name="kachi_done">Done</string>
+    <string name="kachi_settings_title">Kachi settings</string>
+    <string name="kachi_settings_sub">Every launcher setting lives here — pick a group in the left column.</string>
+
+    <!-- ── SettingsRows — hàng dùng chung (quyền) ── -->
+    <string name="kachi_perm_self_fixing">Kachi is re-requesting it — nothing for you to do</string>
+    <string name="kachi_perm_environment">An environment limitation, not an app fault</string>
+    <string name="kachi_perm_core">%1$s — affects a core feature</string>
+    <string name="kachi_perm_loses">Without it: %1$s</string>
+
+    <!-- ── SettingsSections — Hiển thị & đơn vị ── -->
+    <string name="kachi_sec_units">Display units</string>
+    <string name="kachi_sec_theme">Light / dark theme</string>
+    <string name="kachi_row_palette">Colour palette</string>
+    <string name="kachi_theme_note">"Auto" means dark from 18:00 to 06:00. Changing the palette rebuilds the screen once.</string>
+    <string name="kachi_theme_note_clusternav">The ClusterNav screen (group "Navigation · Cluster · Keys") has its OWN light/dark setting — it uses Android resources, so it does not follow the launcher palette.</string>
+    <string name="kachi_sec_lang">Language</string>
+    <string name="kachi_row_lang">On-screen text</string>
+    <string name="kachi_lang_note">"By car" follows the system language: a Vietnamese system gets Vietnamese, anything else gets English. Changing the language rebuilds the screen once.</string>
+    <string name="kachi_lang_note_clusternav">The ClusterNav screen SHARES this setting — changing it here changes both screens (unlike the palette).</string>
+
+    <!-- ── SettingsSections — Hồ sơ tài xế ── -->
+    <string name="kachi_sec_profiles">Driver profiles</string>
+    <string name="kachi_profiles_note">Each profile keeps its OWN layout, slot contents, button bar and chips. Tap a profile to switch to it — the avatar on the top bar can switch too, but creating and deleting happen only here.</string>
+    <string name="kachi_profiles_add">Add profile…</string>
+    <string name="kachi_profile_active">In use</string>
+    <string name="kachi_profile_tap_switch">Tap to switch to this profile</string>
+    <string name="kachi_delete">Delete</string>
+    <string name="kachi_profile_keep_one">At least one profile must remain</string>
+    <string name="kachi_profile_in_use">"%1$s" is in use — switch to another profile before deleting it</string>
+
+    <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
+    <string name="kachi_sec_comfort">Automatic comfort</string>
+    <string name="kachi_recirc_title">Recirculate cabin air on engine start</string>
+    <string name="kachi_recirc_sub">The car forgets this mode on every start. ⚠ The command is unverified on a car — it may be rejected.</string>
+    <string name="kachi_sec_permissions">Permissions</string>
+    <string name="kachi_perm_all_ok">All permissions granted. Kachi re-requests them every time it opens, in case the system revoked them.</string>
+    <string name="kachi_perm_some_missing">Kachi re-requests what it can; the rest states exactly what you need to do.</string>
+    <string name="kachi_sec_boot">Start-up</string>
+    <string name="kachi_autostart_title">Open on engine start</string>
+    <string name="kachi_autostart_sub">On engine start Kachi rebuilds its slots and makes itself the home screen. Switched off, you open it by hand.</string>
+
+    <!-- ── SettingsSections — ClusterNav · Giới thiệu ── -->
+    <string name="kachi_sec_clusternav">Navigation · Instrument cluster · Steering-wheel keys</string>
+    <string name="kachi_clusternav_note1">Cluster navigation, casting the screen to the cluster, the speed-limit badge, the VietMap bubble, seat cooling/heating, PM2.5 filtering and steering-wheel key mapping all live on the ClusterNav screen.</string>
+    <string name="kachi_clusternav_note2">That screen is NOT folded in here: it is sealed (not one line changed), so Settings only opens it.</string>
+    <string name="kachi_clusternav_open">Open the ClusterNav screen</string>
+    <string name="kachi_sec_about">About</string>
+    <string name="kachi_about_tagline">Kachi — a home screen for BYD DiLink cars.</string>
+    <string name="kachi_about_version">Version %1$s (build %2$d)</string>
+    <string name="kachi_about_package">Package name: %1$s</string>
+    <string name="kachi_about_licence">MIT licence. A personal experiment, NOT affiliated with BYD.</string>
+
+    <!-- ── SettingsSectionsHome — Màn hình chính ── -->
+    <string name="kachi_sec_layout">Screen layout</string>
+    <string name="kachi_row_preset">Preset layout</string>
+    <string name="kachi_layout_open_editor">Draw your own layout…</string>
+    <string name="kachi_layout_custom_in_use">Using a custom layout: %1$d frames</string>
+    <string name="kachi_layout_ignored"> — but it is being ignored (%1$s)</string>
+    <string name="kachi_layout_preset_in_use">Using a preset layout.</string>
+    <string name="kachi_sec_wallpaper">Wallpaper</string>
+    <string name="kachi_wall_title">Use photos as the wallpaper</string>
+    <string name="kachi_wall_sub_nofolder">Put photos in the Kachi photo folder</string>
+    <string name="kachi_wall_sub_folder">Put photos in: %1$s</string>
+    <string name="kachi_wall_period">Change photo every</string>
+    <string name="kachi_wall_fit">Fit</string>
+    <string name="kachi_wall_dim">Dim the photo</string>
+    <string name="kachi_sec_dock">Car button bar</string>
+    <string name="kachi_dock_edge">Bar edge</string>
+    <string name="kachi_dock_note">Tap a tile to add or remove it from the button bar. HOLD a READ tile to put it on the status bar. The Safety / Drivetrain / Entertainment groups change how the car drives — use them at your own risk.</string>
+
+    <!-- ── TopStripPicker — chọn chip thanh trạng thái ── -->
+    <string name="kachi_topstrip_title">Status-bar chips</string>
+    <string name="kachi_topstrip_hint">Up to %1$d readings can sit next to the clock. Tap to switch one on or off. To bring a different reading up here, HOLD its tile in the list below. READ-only — buttons belong on the control bar or in a screen slot (a chip is too small to tap safely).</string>
+    <string name="kachi_topstrip_full">The top bar holds only %1$d chips — remove one first</string>
+
+    <!-- ── WallpaperController / WallpaperStore — hình nền ── -->
+    <string name="kachi_wall_no_photos">No photos yet. Put photos in:\n%1$s</string>
+    <string name="kachi_wall_no_ext_storage">(external storage unavailable)</string>
+
+    <!-- ── WidgetViews — ô widget dựng tay ── -->
+    <string name="kachi_badge_unverified">unverified on a car</string>
+    <string name="kachi_widget_board">Overview</string>
+    <!-- [SOÁT ĐỘC LẬP 2026-09-12 · P1] Xem lý do ở `values/strings_kachi.xml`. `kachi_widget_none` giữ nguyên
+         "WIDGET" ở cả hai thứ tiếng: đây là nhãn KỸ THUẬT của ô chưa chọn widget nào, và "widget" là từ dùng y hệt
+         trong tiếng Việt — dịch nó thành một câu dài sẽ làm nhãn nhỏ đó bị cắt. -->
+    <string name="kachi_widget_car">Car</string>
+    <string name="kachi_widget_battery">battery</string>
+    <string name="kachi_widget_none">WIDGET</string>
+    <string name="kachi_pm_good">Good</string>
+    <string name="kachi_pm_fair">Fair</string>
+    <string name="kachi_pm_poor">Poor</string>
+    <string name="kachi_tyre_temp_unverified">%1$s · temperature unverified</string>
+    <string name="kachi_outside_temp">%1$s · outside</string>
+    <string name="kachi_speed_over">Over the limit</string>
+    <string name="kachi_speed_current">Current speed</string>
+    <string name="kachi_doors_unknown">Door status —</string>
+    <string name="kachi_doors_open">A door is open</string>
+    <string name="kachi_doors_closed">All 4 doors closed</string>
+    <string name="kachi_tailgate_open">Boot open</string>
+    <string name="kachi_tailgate_closed">Boot closed</string>
+    <string name="kachi_tailgate_unknown">Boot —</string>
+    <string name="kachi_tyre_pressure_unit">Tyre pressure (%1$s)</string>
+
+    <!-- ── WorkspaceView — ô trống giữa màn ── -->
+    <string name="kachi_slot_open_app">Open an app</string>
+</resources>

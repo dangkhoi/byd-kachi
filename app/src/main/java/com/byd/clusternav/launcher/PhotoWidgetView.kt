@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.view.View
+import com.byd.clusternav.R
 
 /**
  * WIDGET TRÌNH CHIẾU ẢNH (U4 phần b) — một khung ảnh đặt vào ô, tự đổi ảnh theo chu kỳ.
@@ -153,9 +154,9 @@ class PhotoWidgetView(context: Context) : View(context) {
         if (b == null || b.isRecycled) {
             // Chưa có ảnh: NÓI chỗ bỏ ảnh vào chứ không để ô trống — người dùng không có cách nào tự đoán.
             hint.textSize = minOf(w, h) * 0.075f
-            canvas.drawText("Chưa có ảnh", w / 2f, h / 2f - hint.textSize * 0.4f, hint)
+            canvas.drawText(context.getString(R.string.kachi_photos_none), w / 2f, h / 2f - hint.textSize * 0.4f, hint)
             hint.textSize = minOf(w, h) * 0.058f
-            canvas.drawText("Bỏ ảnh vào thư mục ảnh của Kachi", w / 2f, h / 2f + hint.textSize * 1.4f, hint)
+            canvas.drawText(context.getString(R.string.kachi_photos_hint), w / 2f, h / 2f + hint.textSize * 1.4f, hint)
             return
         }
 

@@ -93,9 +93,14 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
 
         /** Mọi thứ đặt được lên thanh trên, cho màn chọn bày ra. */
         fun choices(): List<CapabilityPick> = buildList {
-            add(CapabilityPick(PM25, "Bụi mịn PM2.5", "ic-leaf", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE))
-            add(CapabilityPick(TEMP, "Nhiệt độ ngoài", "ic-fan", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE))
-            add(CapabilityPick(ENERGY, "Pin và tầm chạy", "ic-bolt", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.ENERGY))
+            // U5 · T2: ba chip TỔNG HỢP không có dòng registry nào để treo `labelEn` vào ⇒ dựng [CapabilityPick] với
+            // nhãn Việt + `labelEn` ngay tại chỗ, đúng cùng cơ chế như mọi mục khác (xem KDoc [Strings]).
+            add(CapabilityPick(PM25, "Bụi mịn PM2.5", "ic-leaf", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE,
+                labelEn = "Fine dust PM2.5"))
+            add(CapabilityPick(TEMP, "Nhiệt độ ngoài", "ic-fan", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE,
+                labelEn = "Outside temperature"))
+            add(CapabilityPick(ENERGY, "Pin và tầm chạy", "ic-bolt", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.ENERGY,
+                labelEn = "Battery and range"))
             // Lọc bằng CHÍNH [isChippable] thay vì viết lại điều kiện `kind == READ`: bản cũ lặp lại luật, nên khi
             // luật ở [isChippable] chặt thêm (G1 loại NHÓM) thì màn chọn vẫn bày ra thứ mà [setEnabled] sẽ từ chối —
             // người dùng bấm mà không có gì xảy ra. Một luật, một chỗ.
@@ -130,19 +135,32 @@ object TopStripChips {
 
     private fun chip(id: String, status: CarStatus, units: UnitPrefs): ChipView? = when (id) {
         TopStripConfig.PM25 -> {
-            val pm = status.climate.pm25Level?.let { if (it <= 2) "Tốt" else if (it <= 4) "TB" else "Kém" } ?: "—"
-            ChipView("PM2.5 · $pm", "ic-leaf", ChipTone.NEUTRAL, "Bụi mịn trong xe: $pm")
+            val pm = status.climate.pm25Level?.let {
+                if (it <= 2) Strings.t("Tốt", "Good") else if (it <= 4) Strings.t("TB", "Fair") else Strings.t("Kém", "Poor")
+            } ?: TelemetryView.PLACEHOLDER
+            ChipView("PM2.5 · $pm", "ic-leaf", ChipTone.NEUTRAL, Strings.t("Bụi mịn trong xe: $pm", "Fine dust in the car: $pm"))
         }
         TopStripConfig.TEMP -> {
             val u = units.unitFor(Quantity.TEMPERATURE)
-            val t = status.climate.outsideTempC?.let { conv(it.toDouble(), Quantity.TEMPERATURE, units) } ?: "—"
-            ChipView("$t$u ngoài", null, ChipTone.NEUTRAL, "Nhiệt độ ngoài xe $t$u")
+            val t = status.climate.outsideTempC?.let { conv(it.toDouble(), Quantity.TEMPERATURE, units) }
+                ?: TelemetryView.PLACEHOLDER
+            ChipView(
+                "$t$u " + Strings.t("ngoài", "outside"), null, ChipTone.NEUTRAL,
+                Strings.t("Nhiệt độ ngoài xe $t$u", "Outside temperature $t$u"),
+            )
         }
         TopStripConfig.ENERGY -> {
             val u = units.unitFor(Quantity.DISTANCE)
-            val r = status.energy.evRangeKm?.let { conv(it.toDouble(), Quantity.DISTANCE, units) } ?: "—"
-            ChipView("${status.energy.soc ?: "—"}% · $r $u", "ic-bolt", ChipTone.ENERGY,
-                "Pin ${status.energy.soc ?: "chưa đọc được"} phần trăm, đi thêm $r $u")
+            val r = status.energy.evRangeKm?.let { conv(it.toDouble(), Quantity.DISTANCE, units) }
+                ?: TelemetryView.PLACEHOLDER
+            val soc = status.energy.soc
+            ChipView(
+                "${soc ?: TelemetryView.PLACEHOLDER}% · $r $u", "ic-bolt", ChipTone.ENERGY,
+                Strings.t(
+                    "Pin ${soc ?: "chưa đọc được"} phần trăm, đi thêm $r $u",
+                    "Battery ${soc ?: "not read yet"} per cent, $r $u to go",
+                ),
+            )
         }
         else -> datumChip(id, status, units)
     }
@@ -153,10 +171,12 @@ object TopStripChips {
         val view = TelemetryReadout.of(id, status)?.let { UnitFormat.apply(it, units) } ?: return null
         val value = view.displayWithUnit()
         return ChipView(
-            text = "${spec.shortLabel} · $value",
+            // U5 · T2: nhãn ngắn THEO NGÔN NGỮ. Chip là bề mặt hẹp nhất của launcher nên nó cần đúng bản ngắn, không
+            // phải nhãn đầy — lý do `shortEn` tồn tại.
+            text = "${spec.displayShortLabel} · $value",
             icon = CapabilityIcons.forTelemetry(spec.id, spec.domain),
             tone = ChipTone.NEUTRAL,
-            desc = "${spec.label}: $value",
+            desc = "${spec.displayLabel}: $value",
         )
     }
 

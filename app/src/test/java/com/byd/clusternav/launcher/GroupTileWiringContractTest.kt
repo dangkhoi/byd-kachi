@@ -47,7 +47,19 @@ class GroupTileWiringContractTest {
     )
     private val tiles by lazy { tileFiles.joinToString("\n") { code(it) } }
     private val radar by lazy { code("src/main/java/com/byd/clusternav/launcher/RadarBoardView.kt") }
-    private val board by lazy { code("src/main/kotlin/com/byd/clusternav/launcher/GroupBoard.kt") }
+    private val side by lazy { code("src/main/java/com/byd/clusternav/launcher/SideBoardView.kt") }
+    /**
+     * Phần `:core` của ô nhóm = **HAI tệp** nối lại (`GroupBoard.kt` phần quyết định + `GroupBoardModel.kt` các kiểu).
+     *
+     * ⚠⚠ Phải nối, không được chỉ đọc một tệp — cùng lý do với [tileFiles]: `GroupBoardModel.kt` được **tách ra** khi
+     * `GroupBoard.kt` vượt trần 500 dòng, và nếu bài này chỉ quét tệp còn lại thì ba phép kiểm `:core` (không giữ mã
+     * màu hex · không biết `KachiTheme` · thuần JVM) **thôi phủ** phần vừa tách ⇒ *tách tệp* thành cách lách bài canh.
+     */
+    private val boardFiles = listOf(
+        "src/main/kotlin/com/byd/clusternav/launcher/GroupBoard.kt",
+        "src/main/kotlin/com/byd/clusternav/launcher/GroupBoardModel.kt",
+    )
+    private val board by lazy { boardFiles.joinToString("\n") { code(it) } }
 
     /** Đọc source rồi **bỏ chú thích**: bài này canh CODE, không canh văn xuôi (KDoc có nhắc chính token bị cấm). */
     private fun code(relative: String): String = SourceRoots.codeOf(relative)
@@ -67,6 +79,9 @@ class GroupTileWiringContractTest {
         val notBuilders = mapOf(
             "WidgetViews.kt" to "chỗ GỌI (rẽ nhánh sang GroupTiles), không dựng ô nhóm — đã quét riêng qua `widgets`",
             "RadarBoardView.kt" to "ô vẽ Canvas của một nhóm BOARD — đã quét riêng qua `radar`",
+            "SideBoardView.kt" to
+                "ô vẽ Canvas của nhóm ADAS — đã quét riêng qua `side` (nó hỏi `GroupBoard.sidePlan` để biết ô hẹp thì " +
+                    "hiện cái gì, đúng lối `RadarBoardView` hỏi `GroupBoard.radarTone`)",
             "ControlDockView.kt" to "thanh nút: chỉ hỏi tóm tắt — đã quét riêng trong GroupPickerWiringContractTest",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->
@@ -169,7 +184,7 @@ class GroupTileWiringContractTest {
         val lead = SourceRoots.body(tiles, "private fun leadRow(")
         assertFalse(lead.contains("setOnClickListener"), "số chính của thẻ CARD cũng chỉ để xem")
         // Cổng ra xe chỉ có ĐÚNG ở hàng nút.
-        val actions = SourceRoots.body(tiles, "private fun actionsRow(")
+        val actions = SourceRoots.body(tiles, "internal fun actionsRow(")
         assertTrue(actions.contains("ControlTileFactory("), "nút dựng bằng CÙNG bộ dựng với thanh nút")
         assertEquals(
             1, Regex("""ControlTileFactory\(""").findAll(tiles).count(),
@@ -203,6 +218,7 @@ class GroupTileWiringContractTest {
         listOf("TyreBoard.LOW_BAR", "TyreBoard.HIGH_BAR", "TyreBoard.SPREAD_BAR", "Pm25Filter", "2.2").forEach {
             assertFalse(tiles.contains(it), "tầng vẽ nhóm không được biết ngưỡng: $it")
             assertFalse(radar.contains(it), "ô vẽ radar không được biết ngưỡng: $it")
+            assertFalse(side.contains(it), "ô vẽ sơ đồ bên không được biết ngưỡng: $it")
         }
         // Ô vẽ radar cũng KHÔNG tự quyết mức nào là đỏ — nó hỏi :core.
         assertTrue(radar.contains("GroupBoard.radarTone("), "màu vùng phải theo sắc thái do :core quyết định")
@@ -224,12 +240,17 @@ class GroupTileWiringContractTest {
                     "người dùng chọn °F",
             )
             assertFalse(radar.contains(it), "ô vẽ radar cũng không ($it)")
+            assertFalse(side.contains(it), "ô vẽ sơ đồ bên cũng không ($it)")
         }
         // Và :core thì PHẢI đi qua nó.
         val cell = SourceRoots.body(board, "private fun cell(")
         assertTrue(cell.contains("TelemetryReadout.of("), "giá trị đọc từ bộ đăng ký")
         assertTrue(cell.contains("UnitFormat.apply("), "rồi áp lựa chọn đơn vị của người dùng")
-        assertTrue(cell.contains("shortLabel"), "nhãn ô con dùng nhãn NGẮN")
+        // ⚠ U5 · T2 — mốc này SIẾT lại, không nới: trước đây nó soi `shortLabel` (nhãn ngắn tiếng Việt), nay đòi
+        // `displayShortLabel` = nhãn ngắn **theo ngôn ngữ đang dùng**. Luật cũ (*"ô con dùng nhãn NGẮN, không dùng
+        // nhãn đầy"*) giữ nguyên và thêm một đòi hỏi: bản ngắn đó phải đi qua lớp ngôn ngữ, không thì ô nhóm tiếng
+        // Anh hiện *"Lốp TT"*. Đổi mốc vì tên thuộc tính đổi, KHÔNG vì luật đổi.
+        assertTrue(cell.contains("displayShortLabel"), "nhãn ô con dùng nhãn NGẮN, và bản ngắn THEO NGÔN NGỮ")
     }
 
     // ── 5 · Một danh sách thành viên ─────────────────────────────────────────────────────────────
@@ -244,6 +265,7 @@ class GroupTileWiringContractTest {
             .forEach {
                 assertFalse(tiles.contains(it), "tầng vẽ nhóm chép tay mã thành viên: $it")
                 assertFalse(radar.contains(it), "ô vẽ radar chép tay mã thành viên: $it")
+                assertFalse(side.contains(it), "ô vẽ sơ đồ bên chép tay mã thành viên: $it")
             }
     }
 
@@ -264,10 +286,12 @@ class GroupTileWiringContractTest {
         assertTrue(fill.contains("alpha(KachiTheme."), "nền suy ra từ chính màu của bảng màu chung + kênh trong suốt")
         val stroke = SourceRoots.body(tiles, "fun strokeOf(")
         assertTrue(stroke.contains("alpha(KachiTheme."), "viền cũng vậy")
-        // Đếm mã hex viết trực tiếp: chỉ được đúng MỘT (nền ô con bình thường, dùng lại giá trị ô nén đang có).
+        // Đếm mã hex viết trực tiếp: nay phải là **0**. Trước T1 còn đúng một mã (`CELL_BG` = nền ô con bình thường,
+        // dùng lại giá trị ô nén đang có); T1 đưa nó thành vai `KachiTheme.CELL` vì một mã cứng ở đây nghĩa là nền ô
+        // con **không đổi theo chủ đề** — trên bảng sáng nó sẽ là một ô tối lọt giữa các thẻ trắng.
         assertEquals(
-            1, Regex(""""#[0-9a-fA-F]{6,8}"""").findAll(tiles).count(),
-            "mỗi mã hex thêm vào đây là một bước tiến tới bảng màu thứ hai",
+            0, Regex(""""#[0-9a-fA-F]{6,8}"""").findAll(tiles).count(),
+            "mỗi mã hex thêm vào đây là một bước tiến tới bảng màu thứ hai — và nay còn là một ô không theo chủ đề",
         )
     }
 
@@ -379,7 +403,7 @@ class GroupTileWiringContractTest {
      */
     @Test
     fun `o chen cho trong khong duoc khai WRAP - bay getDefaultSize`() {
-        listOf("private fun gridRows(", "private fun actionsRow(").forEach { sig ->
+        listOf("private fun gridRows(", "internal fun actionsRow(").forEach { sig ->
             val fn = SourceRoots.body(tiles, sig)
             val fillers = fn.lines().filter { it.contains("repeat(cols") }
             assertTrue(fillers.isNotEmpty(), "$sig: phải có chỗ chèn ô trống (hàng phải đều nhau)")

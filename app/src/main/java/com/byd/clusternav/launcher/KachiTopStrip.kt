@@ -14,7 +14,6 @@ import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -64,11 +63,11 @@ class KachiTopStrip(
     private fun build(): View {
         val strip = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, "#990a0d13", "#26ffffff")   // thanh mờ bo góc + viền rõ (prototype)
+            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP, KachiTheme.LINE_STRONG)   // thanh mờ bo góc + viền rõ (prototype)
             setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.XS))
         }
         clock = TextView(activity).apply {
-            setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f); typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.02f
+            setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f); typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.02f
         }
         dateText = TextView(activity).apply { setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); setPadding(dp(Sp.M), 0, 0, 0) }
         strip.addView(clock); strip.addView(dateText)
@@ -76,8 +75,8 @@ class KachiTopStrip(
         strip.addView(View(activity), LinearLayout.LayoutParams(0, 1, 1f))
         chipRow = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         strip.addView(chipRow)
-        strip.addView(pill("Ứng dụng", false) { onOpenAppList() }, pillLp())   // U3: mở app toàn màn
-        strip.addView(pill("Cài đặt", true) { onOpenSettings() }, pillLp())
+        strip.addView(pill(activity.getString(R.string.kachi_pill_apps), false) { onOpenAppList() }, pillLp())   // U3: mở app toàn màn
+        strip.addView(pill(activity.getString(R.string.kachi_pill_settings), true) { onOpenSettings() }, pillLp())
         strip.addView(profileAvatar(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.SLOT_GAP) })
         refreshChips(CarStatus())
         return strip
@@ -96,7 +95,7 @@ class KachiTopStrip(
         this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
         setPadding(dp(Sp.L), dp(Sp.S), dp(Sp.L), dp(Sp.S))
         minimumHeight = dp(Sp.TOUCH)
-        if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(Color.WHITE) }
+        if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(c(KachiTheme.ON_ACCENT)) }
         else { background = KachiTheme.pill(context); setTextColor(c(KachiTheme.INK)) }
         setOnClickListener { onClick() }
     }
@@ -136,7 +135,7 @@ class KachiTopStrip(
     /** Tô sáng ô preset đang chọn (do render gọi khi preset đổi). */
     fun selectPreset(sel: LayoutPreset) {
         presetCells.forEach { (p, cell) ->
-            if (p == sel) { cell.background = KachiTheme.gradient(activity, Sp.RADIUS_PILL); cell.setColorFilter(Color.WHITE) }
+            if (p == sel) { cell.background = KachiTheme.gradient(activity, Sp.RADIUS_PILL); cell.setColorFilter(c(KachiTheme.ON_ACCENT)) }
             else { cell.background = null; cell.setColorFilter(c(KachiTheme.MUT)) }
         }
     }
@@ -216,7 +215,7 @@ class KachiTopStrip(
      */
     private fun profileAvatar(): TextView {
         profileAvatarView = TextView(activity).apply {
-            setTextColor(Color.WHITE)
+            setTextColor(c(KachiTheme.ON_ACCENT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
             // T5 — avatar 30dp → Sp.TOUCH. KDoc phía trên đã nói "một đích 30dp giữa lúc lái là chỗ dễ bấm nhầm"
             // rồi kết luận bỏ cử chỉ GIỮ; nhưng cú CHẠM (đổi hồ sơ) vẫn ở lại trên đúng đích 30dp đó. Nới đích
@@ -234,8 +233,8 @@ class KachiTopStrip(
 
     /** Cập nhật đồng hồ + ngày (do vòng tick / onResume gọi). */
     fun updateClock() {
-        clock.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        dateText.text = SimpleDateFormat("EEEE, dd/MM", Locale.forLanguageTag("vi")).format(Date())
+        clock.text = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date())
+        dateText.text = SimpleDateFormat("EEEE, dd/MM", LangHost.locale()).format(Date())
     }
 
     private fun dp(v: Int): Int = (v * activity.resources.displayMetrics.density).toInt()
@@ -244,6 +243,6 @@ class KachiTopStrip(
         const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
 
         /** Màu chữ chip trung tính. Bảng màu chỉ ở `:app` — `:core` chỉ nói SẮC THÁI (xem [ChipTone]). */
-        const val CHIP_INK = "#c3cee0"
+        val CHIP_INK: String get() = KachiTheme.INK2
     }
 }

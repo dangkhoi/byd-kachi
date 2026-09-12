@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.byd.clusternav.R
 import com.byd.clusternav.system.inputd.InputDaemonClient
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -223,8 +224,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val fl = FrameLayout(context)
         fl.background = GradientDrawable().apply {
             cornerRadius = dp(Sp.RADIUS_L).toFloat()
-            setColor(Color.parseColor("#171A20"))                 // nền card nhấc nhẹ khỏi nền (prototype --k-card)
-            setStroke(dp(Sp.HAIRLINE), Color.parseColor("#26FFFFFF"))       // viền HAIRLINE SÁNG mảnh (prototype, không phải viền tối)
+            setColor(Color.parseColor(KachiTheme.SLOT))                 // nền card nhấc nhẹ khỏi nền (prototype --k-card)
+            setStroke(dp(Sp.HAIRLINE), Color.parseColor(KachiTheme.LINE_STRONG))       // viền HAIRLINE SÁNG mảnh (prototype, không phải viền tối)
         }
         fl.clipToOutline = true                                    // clip nội dung theo góc bo (như overflow:hidden của prototype)
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -248,14 +249,14 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                     val host = SlotAppHost(context, dp(Sp.RADIUS_L).toFloat())
                     if (host.available()) { fl.addView(host, mm); host.embed(content.pkg) }   // ROM xe (platform-signed): ActivityView, không lag/caption
                 }
-                fl.addView(slotHead(index, appName(content.pkg), "#4c7dff"), headLp())   // ⇄/✕ đè lên trên cùng
+                fl.addView(slotHead(index, appName(content.pkg), KachiTheme.ACCENT), headLp())   // ⇄/✕ đè lên trên cùng
                 fl.setOnClickListener { onAppOpen?.invoke(index) }
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
             SlotContent.Empty -> {
                 fl.background = GradientDrawable().apply {
-                    cornerRadius = dp(Sp.RADIUS_L).toFloat(); setColor(Color.parseColor("#0b0f16"))
-                    setStroke(dp(Sp.STROKE), Color.parseColor("#42506a"), dp(Sp.DASH_ON).toFloat(), dp(Sp.DASH_OFF).toFloat())
+                    cornerRadius = dp(Sp.RADIUS_L).toFloat(); setColor(Color.parseColor(KachiTheme.EMPTY_FILL))
+                    setStroke(dp(Sp.STROKE), Color.parseColor(KachiTheme.EMPTY_LINE), dp(Sp.DASH_ON).toFloat(), dp(Sp.DASH_OFF).toFloat())
                 }
                 fl.addView(emptyAdd(), mm)
                 fl.setOnClickListener { onSlotTap?.invoke(index) }
@@ -297,16 +298,16 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val pm = context.packageManager; pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
     }.getOrDefault(pkg)
 
-    private fun widgetName(id: String): String = WidgetRegistry.ALL.firstOrNull { it.id == id }?.label ?: id
+    private fun widgetName(id: String): String = WidgetRegistry.ALL.firstOrNull { it.id == id }?.displayLabel ?: id
 
     /** Header ô — owner: CHỈ 1 nút đổi app, canh GIỮA trên cùng, KHÔNG thanh nền, KHÔNG nút ✕. */
     private fun slotHead(index: Int, name: String, dotColor: String): View {
         val wrap = FrameLayout(context)   // trong suốt, không nền
         val btn = ImageView(context).apply {
-            val r = KachiTheme.iconRes("ic-swap"); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
+            val r = KachiTheme.iconRes("ic-swap"); if (r != 0) { setImageResource(r); setColorFilter(Color.parseColor(KachiTheme.ON_ACCENT)) }
             setPadding(dp(Sp.S), dp(Sp.S), dp(Sp.S), dp(Sp.S))
             // scrim tròn mờ RẤT nhẹ chỉ để icon còn thấy trên app nền sáng (không phải thanh nền)
-            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor("#4D000000")) }
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(KachiTheme.SCRIM_BTN)) }
             setOnClickListener { onSlotTap?.invoke(index) }
         }
         wrap.addView(
@@ -319,9 +320,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     /** Màu chấm slot-head theo widget (khớp accent của widget); app dùng accent xanh. */
     private fun widgetAccent(id: String): String = when (id) {
-        "w_energy" -> "#34d399"; "w_pm25" -> "#29d3ee"; "w_board" -> "#7b5cff"
-        "w_media" -> "#f59e0b"; "w_speed" -> "#fb7185"; "w_tire" -> "#94a3b8"
-        else -> "#4c7dff"
+        "w_energy" -> KachiTheme.GREEN; "w_pm25" -> KachiTheme.CYAN; "w_board" -> KachiTheme.ACCENT2
+        "w_media" -> KachiTheme.ORANGE; "w_speed" -> KachiTheme.RED; "w_tire" -> KachiTheme.SLATE
+        else -> KachiTheme.ACCENT
     }
 
     // ⚠ T5 đã XOÁ `headBtnLp()` + `headBtn()` ở đây: [ĐO] chúng chỉ được KHAI, không chỗ nào gọi (thanh đầu ô
@@ -330,7 +331,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     private fun placeholder(text: String) = TextView(context).apply {
         this.text = text
-        setTextColor(Color.parseColor("#93a0b4"))
+        setTextColor(Color.parseColor(KachiTheme.MUT))
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
         gravity = Gravity.CENTER
     }
@@ -339,10 +340,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private fun emptyAdd(): View = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
         addView(TextView(context).apply {
-            text = "＋"; setTextColor(Color.parseColor("#8fa0bd")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f); gravity = Gravity.CENTER
+            text = "＋"; setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f); gravity = Gravity.CENTER
         })
         addView(TextView(context).apply {
-            text = "Mở ứng dụng"; setTextColor(Color.parseColor("#93a0b4")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            text = context.getString(R.string.kachi_slot_open_app); setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             gravity = Gravity.CENTER; setPadding(0, dp(Sp.XS), 0, 0)
         })
     }
@@ -358,7 +359,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             })
             col.addView(TextView(context).apply {
                 text = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0))
-                setTextColor(Color.parseColor("#eaf0f8")); setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setTextColor(Color.parseColor(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
                 gravity = Gravity.CENTER; setPadding(0, dp(Sp.S), 0, 0)
             })
         } catch (e: Exception) {

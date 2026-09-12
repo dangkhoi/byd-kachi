@@ -15,16 +15,16 @@ package com.byd.clusternav.launcher
  *
  * 8 domain đầu = telemetry catalog §A (xem [TELEMETRY]); [INFOTAINMENT] chỉ dùng cho control (giải trí/cụm/HUD).
  */
-enum class Domain(val label: String) {
-    ENERGY("Năng lượng & sạc"),
-    DRIVETRAIN("Động lực & tốc độ"),
-    CLIMATE("Khí hậu & không khí"),
-    TYRES("Lốp"),
-    BODY("Thân xe · cửa · kính"),
-    LIGHTS("Đèn"),
-    SAFETY("An toàn · ADAS"),
-    IDENTITY("Danh tính · khoá"),
-    INFOTAINMENT("Giải trí · cụm · HUD");
+enum class Domain(override val label: String, override val labelEn: String) : Localized {
+    ENERGY("Năng lượng & sạc", "Energy & charging"),
+    DRIVETRAIN("Động lực & tốc độ", "Drivetrain & speed"),
+    CLIMATE("Khí hậu & không khí", "Climate & air"),
+    TYRES("Lốp", "Tyres"),
+    BODY("Thân xe · cửa · kính", "Body · doors · windows"),
+    LIGHTS("Đèn", "Lights"),
+    SAFETY("An toàn · ADAS", "Safety · ADAS"),
+    IDENTITY("Danh tính · khoá", "Identity · keys"),
+    INFOTAINMENT("Giải trí · cụm · HUD", "Media · cluster · HUD");
 
     companion object {
         /**

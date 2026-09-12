@@ -25,7 +25,7 @@ object MediaWidgetView {
         fun build(ctx: Context, data: WidgetData): View = WidgetViews.col(ctx).apply {
             val m = data.media
             val art = ImageView(ctx).apply {
-                background = KachiTheme.gradient(ctx, Sp.RADIUS_L, "#f59e0b", "#ef4444")
+                background = KachiTheme.gradient(ctx, Sp.RADIUS_L, KachiTheme.ORANGE, KachiTheme.ART_TO)
                 if (m?.albumArt != null) setImageBitmap(m.albumArt)
             }
             addView(art, LinearLayout.LayoutParams(dpi(ctx, Sp.ART), dpi(ctx, Sp.ART)).also { it.bottomMargin = dpi(ctx, Sp.S) })
@@ -34,7 +34,7 @@ object MediaWidgetView {
             val frac = m?.let { if (it.durationMs > 0) (it.positionMs.toFloat() / it.durationMs).coerceIn(0f, 1f) else 0f } ?: 0f
             val prog = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
-                background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_PILL).toFloat(); setColor(c("#29FFFFFF")) }
+                background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_PILL).toFloat(); setColor(c(KachiTheme.OVERLAY)) }
                 addView(View(ctx).apply { background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_PILL).toFloat(); setColor(c(KachiTheme.ACCENT)) } },
                     LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, frac.coerceAtLeast(0.001f)))
                 addView(View(ctx), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, (1f - frac).coerceAtLeast(0.001f)))
@@ -43,7 +43,7 @@ object MediaWidgetView {
             addView(LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.M), 0, 0)
                 fun mbtn(icon: String, action: String) = ImageView(ctx).apply {
-                    val r = KachiTheme.iconRes(icon); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
+                    val r = KachiTheme.iconRes(icon); if (r != 0) { setImageResource(r); setColorFilter(c(KachiTheme.INK)) }
                     // Lề trong giữ GLYPH ở cỡ cũ (48 − 2×12 = 24dp) trong khi VÙNG CHẠM là 48dp. Không có lề này thì
                     // ImageView kéo hình đầy khung ⇒ nút nhạc to gấp đôi, tức là "sửa đích chạm" hoá ra đổi cả bố cục.
                     val p = dpi(ctx, Sp.M); setPadding(p, p, p, p)

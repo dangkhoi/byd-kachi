@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import com.byd.clusternav.R
 import java.io.File
 
 /**
@@ -35,7 +36,8 @@ object WallpaperStore {
     }.getOrNull()
 
     /** Đường dẫn để chỉ cho người dùng biết bỏ ảnh vào đâu. */
-    fun folderHint(ctx: Context): String = folder(ctx)?.absolutePath ?: "(bộ nhớ ngoài không dùng được)"
+    fun folderHint(ctx: Context): String =
+        folder(ctx)?.absolutePath ?: ctx.getString(R.string.kachi_wall_no_ext_storage)
 
     /**
      * Danh sách ảnh, **thứ tự ổn định** (xem [Slideshow.imagesFrom] — thứ tự đổi mỗi lần đọc sẽ làm trình chiếu

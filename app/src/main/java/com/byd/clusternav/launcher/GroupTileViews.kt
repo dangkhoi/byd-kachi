@@ -45,6 +45,14 @@ class GroupTileView(context: Context) : LinearLayout(context) {
     private var radar: RadarBoardView? = null
     private var sideBoard: SideBoardView? = null
 
+    /**
+     * Lưới ô con ĐANG dựng — thứ duy nhất trong ô này **nhường chỗ được** (xem [onMeasure]).
+     *
+     * `null` với nhóm BOARD (bảng tự vẽ, không có lưới) ⇒ ở đó không có gì nhường, mà cũng không cần: bất biến của
+     * [CapabilityGroups] là nhóm BOARD **không có nút**, nên không có ai tranh chỗ.
+     */
+    private var readGrid: ReadGrid? = null
+
     init {
         orientation = VERTICAL
         val p = dpi(context, Sp.M)
@@ -56,7 +64,7 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         val model = GroupBoard.of(id, data.car, data.units) ?: return false
         groupId = id
         tyreBoardPort = tyreBoard
-        removeAllViews(); binders.clear(); radar = null; sideBoard = null
+        removeAllViews(); binders.clear(); radar = null; sideBoard = null; readGrid = null
         bodyHolder.removeAllViews()
 
         addView(header(model), LayoutParams(MATCH, WRAP))
@@ -70,8 +78,40 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         buildBody(model, data)
         addView(View(context), LayoutParams(MATCH, 0, 1f))
         // Hàng nút dựng MỘT LẦN. [refresh] không chạm ⇒ cú bấm không bị cắt giữa chuỗi MotionEvent.
-        if (model.hasActions) addView(actionsRow(model, data), LayoutParams(MATCH, WRAP))
+        if (model.hasActions) addView(actionsRow(context, model, data), LayoutParams(MATCH, WRAP))
         return true
+    }
+
+    /**
+     * ═══ [KIỂM TOÁN 2026-09-12 mục 3] ĐO THEO THỨ TỰ ƯU TIÊN, KHÔNG THEO THỨ TỰ XẾP ═══════════════════════════
+     *
+     * ## Bệnh — hàng nút bị CẮT ĐÁY, và cắt IM LẶNG
+     * `LinearLayout` đo con **theo thứ tự xếp**, đưa cho mỗi con "chỗ còn lại tính tới lúc đó". Ô nhóm xếp
+     * `đầu ô → lưới đọc → khoảng thở → hàng nút`, nên lưới đọc (đứng trước) nhìn thấy phần còn lại **chưa trừ hàng
+     * nút** và lấy đủ trần [KachiSpace.READ_ROW]; hàng nút đứng cuối, chỉ nhận phần thừa, và khi thiếu thì nó **tràn
+     * ra ngoài** rồi bị cha cắt theo lề — không ném, không log, không có gì đỏ.
+     *
+     * [ĐO] ảnh máy ảo, nhóm *Kính* ở khung 4/12 màn (hộp nội dung 267px): đầu ô 26 + lưới **108** + hàng nút cần
+     * **148** ⇒ thiếu 15px ⇒ bốn ô kính bị cắt phẳng ở y=464 (mất vành dưới của nút *Đóng/Mở* + trọn lề dưới), trong
+     * khi hai ô macro cạnh đó thấp hơn nên nguyên vẹn.
+     *
+     * ## Chữa — cái nào CO ĐƯỢC thì nhường
+     * Nút phải bấm được ⇒ chi phí CỐ ĐỊNH. Dòng dữ liệu thì co được, và [ReadGrid] đã có sẵn giao kèo đó. Nên: đo một
+     * lượt bình thường, thấy tổng vượt hộp thì bảo lưới bớt đúng phần vượt và đo lại. Vòng lặp bị chặn bởi
+     * [ReadGrid.trimBy] (`false` khi tới sàn) nên tối đa hai lượt.
+     *
+     * ⚠ **PHẢI `resetTrim()` ở đầu mỗi lượt**: không thì lần đo sau (ô rộng ra, đổi bố cục) vẫn dùng phần đã bớt của
+     * lần trước ⇒ lưới **co dần một chiều** và không bao giờ trở lại — đúng họ lỗi "trạng thái rò qua các lượt vẽ".
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val grid = readGrid
+        grid?.resetTrim()
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        if (grid == null || MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) return
+        val box = MeasureSpec.getSize(heightMeasureSpec) - paddingTop - paddingBottom
+        var need = 0
+        for (i in 0 until childCount) need += getChildAt(i).measuredHeight
+        if (need > box && grid.trimBy(need - box)) super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 
     /**
@@ -113,6 +153,11 @@ class GroupTileView(context: Context) : LinearLayout(context) {
                 .also { it.marginEnd = dpi(context, Sp.S) },
         )
         addView(
+            // ⚠ [T1] Vai màu ở đây GIỮ NGUYÊN `MUT2` — và việc giữ nguyên là một kết luận có đo, không phải bỏ qua.
+            // Lượt đo đầu của tôi báo nhãn này chỉ **4.12:1** trên bảng sáng và tôi đã đổi sang `INK2`. Nhưng phép đo
+            // đó SAI: nó lấy trung vị mực trên **hộp a11y rộng 1158px** trong khi chữ "Lốp" chỉ chiếm **31px**, nên
+            // phân vị rơi vào viền khử răng cưa chứ không vào lòng nét. Cắt về đúng vùng có mực thì `MUT2` đo được
+            // **5.67:1** — ĐẠT. Đã hoàn nguyên: không đổi thẩm mỹ một màn owner đã duyệt dựa trên một số đo đã bị bác.
             text(context, m.label, 12f, KachiTheme.MUT2).apply {
                 letterSpacing = 0.06f; gravity = Gravity.START
             },
@@ -152,9 +197,15 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         else -> stripBody(m)
     }
 
-    /** Đổ dữ liệu cho [SideBoardView] — một chỗ duy nhất, dùng cho cả [bind] lẫn [refresh]. */
+    /**
+     * Đổ dữ liệu cho [SideBoardView] — một chỗ duy nhất, dùng cho cả [bind] lẫn [refresh].
+     *
+     * Truyền **cả model** vì phép chọn *"ô hẹp thì hiện cái gì"* cần biết mọi ô con và chỉ chạy được khi đã biết bề
+     * cao ⇒ nó nằm trong ô vẽ (xem KDoc [SideBoardView]). Chỗ này vẫn dựng dòng chân như trước, bằng CÙNG hàm với
+     * bảng radar — không có bản thứ hai của quy ước lead/rest.
+     */
     private fun fillSideBoard(v: SideBoardView, m: GroupBoardModel) =
-        v.set(m.leftCells, m.rightCells, m.centreCells.joinToString("   ") { "${it.label} · ${it.value}" })
+        v.set(m, m.centreCells.joinToString("   ") { "${it.label} · ${it.value}" })
 
     /**
      * Chân bảng BOARD = **các ô con mà bảng KHÔNG vẽ**.
@@ -217,8 +268,10 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         val rows = rowsOf(cells, perRow)
         val cols = rows.maxOfOrNull { it.size } ?: 0
         // TRẦN chiều cao = số hàng × chiều cao MỘT dòng dữ liệu. Đây là chỗ chặn phình (kiểm toán mục 3): lưới xin
-        // đúng chỗ nó cần, không xin "tất cả chỗ còn lại". [ReadGrid] tự co khi ô hẹp hơn trần.
+        // đúng chỗ nó cần, không xin "tất cả chỗ còn lại". [ReadGrid] tự co khi ô hẹp hơn trần, và **sàn co** là chỗ
+        // chữ thật cần — nó tự đo, nên không có con số dp nào để đoán sai (xem KDoc [ReadGrid]).
         return ReadGrid(context, dpi(context, Sp.READ_ROW) * rows.size).apply {
+            readGrid = this
             rows.forEach { rowCells ->
                 val row = LinearLayout(context).apply { orientation = HORIZONTAL }
                 rowCells.forEach { cell ->
@@ -309,42 +362,6 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         return root
     }
 
-    // ── Hàng nút ────────────────────────────────────────────────────────────────────────────────────────
-    /**
-     * Hàng nút dưới cùng (chỉ nhóm STRIP có — bất biến chốt trong [CapabilityGroups]).
-     *
-     * Dựng bằng **CÙNG** bộ dựng với thanh nút và ô hành động ([ControlTileFactory]) ⇒ nút trong nhóm không thể lệch
-     * hành vi với nút ngoài nhóm: cùng chốt chống-bấm-kép theo mã gói, cùng bảng trạng thái dùng chung.
-     */
-    private fun actionsRow(m: GroupBoardModel, data: WidgetData): View {
-        val factory = ControlTileFactory(context, control = { data.control }, size = TileSize.DOCK)
-        return LinearLayout(context).apply {
-            orientation = VERTICAL
-            setPadding(0, dpi(context, Sp.S), 0, 0)
-            val rows = rowsOf(m.actions, ACTIONS_PER_ROW)
-            val cols = rows.maxOfOrNull { it.size } ?: 0
-            rows.forEach { rowActions ->
-                val row = LinearLayout(context).apply { orientation = HORIZONTAL }
-                rowActions.forEach { a ->
-                    val tile = ActionMacros.byId(a.id)?.let { factory.macroTile(it) }
-                        ?: ControlRegistry.byId(a.id)?.let { factory.actionTile(it) }
-                        ?: View(context)
-                    row.addView(tile, LayoutParams(0, WRAP, 1f).also { it.setMargins(xs(), 0, xs(), 0) })
-                }
-                // Chèn tới số nút THỰC TẾ của hàng dài nhất — KHÔNG tới [ACTIONS_PER_ROW]. Cùng lỗi đã sửa ở
-                // [gridRows]: nhóm 4 nút bị chèn 2 ô trống ⇒ 1/3 bề ngang hàng nút bỏ không.
-                //
-                // ⚠⚠ CHIỀU CAO Ô CHÈN PHẢI LÀ 0, KHÔNG ĐƯỢC `WRAP` — bẫy này đã ăn mất CẢ dải mục đọc.
-                // `View.getDefaultSize` trả về TRỌN `specSize` khi spec là `AT_MOST`, nên một `View` trơ khai
-                // `WRAP_CONTENT` lại **giãn hết** chỗ còn lại thay vì cao 0. Hàng nút (`WRAP`) vì thế báo cao
-                // **648px**, ăn hết phần của thân ô (`weight = 1`) ⇒ thân ô cao **0** ⇒ 9 ô con của nhóm *Đèn*
-                // vẫn được DỰNG (log `bodyChildren=2`) mà không hiện một pixel. [ĐO] sau khi sửa: thân ô
-                // **0 → 498px**, hàng nút **648 → 125px**.
-                repeat(cols - rowActions.size) { row.addView(View(context), LayoutParams(0, 0, 1f)) }
-                addView(row, LayoutParams(MATCH, WRAP))
-            }
-        }
-    }
 
     /** [Sp.XS] quy ra pixel — khe/lề nhỏ nhất của lưới ô con, gọi nhiều lần nên tách cho gọn. */
     private fun xs(): Int = dpi(context, Sp.XS)
@@ -381,9 +398,6 @@ class GroupTileView(context: Context) : LinearLayout(context) {
 
         /** Số phụ mỗi hàng của thẻ CARD — 3, vì số phụ có nhãn dài hơn ô con của dải. */
         private const val CARD_PER_ROW = 3
-
-        /** Nút mỗi hàng — 6 vì nhóm nhiều nút nhất (kính · cửa & khoang) có đúng 6. */
-        private const val ACTIONS_PER_ROW = 6
 
         /**
          * Chia [items] thành các hàng **đều nhau**, mỗi hàng ≤ [max].
@@ -460,7 +474,7 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         }
 
         /** Nền ô con bình thường — cùng giá trị ô nén đang dùng, để nhóm không trông lạ giữa các widget khác. */
-        private const val CELL_BG = "#1c212b"
+        private val CELL_BG: String get() = KachiTheme.CELL
 
         /** `#RRGGBB` + kênh trong suốt `AA` → `#AARRGGBB` (dạng [android.graphics.Color.parseColor] nhận). */
         private fun alpha(hex: String, aa: String): String = "#$aa${hex.removePrefix("#")}"

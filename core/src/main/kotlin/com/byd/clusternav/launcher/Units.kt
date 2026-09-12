@@ -26,15 +26,21 @@ import java.util.Locale
  * thấy hôm nay không đổi một ký tự (R12), thay vì giữ hai bề mặt nói hai đơn vị khác nhau.
  */
 
-/** LOẠI đại lượng có thể đổi đơn vị. Chỉ gồm loại **có lựa chọn thay thế hợp lý** (R13). */
-enum class Quantity(val label: String) {
-    PRESSURE("Áp suất"),
-    TEMPERATURE("Nhiệt độ"),
-    DISTANCE("Khoảng cách"),
-    SPEED("Tốc độ"),
-    CONSUMPTION("Tiêu thụ điện"),
-    TORQUE("Mô-men xoắn"),
-    LENGTH("Chiều dài"),
+/**
+ * LOẠI đại lượng có thể đổi đơn vị. Chỉ gồm loại **có lựa chọn thay thế hợp lý** (R13).
+ *
+ * ⚠ [UnitOption.code] (`bar` · `kPa` · `°C` · `mph` · `lb·ft`…) **KHÔNG dịch**: đó là **ký hiệu đơn vị**, giống nhau
+ * ở mọi thứ tiếng và cũng là **khoá LƯU** — dịch nó sẽ vừa sai chuẩn vừa làm cấu hình đã lưu không đọc lại được.
+ * Chỉ [label] (tên loại) là chữ cho người đọc.
+ */
+enum class Quantity(override val label: String, override val labelEn: String) : Localized {
+    PRESSURE("Áp suất", "Pressure"),
+    TEMPERATURE("Nhiệt độ", "Temperature"),
+    DISTANCE("Khoảng cách", "Distance"),
+    SPEED("Tốc độ", "Speed"),
+    CONSUMPTION("Tiêu thụ điện", "Energy use"),
+    TORQUE("Mô-men xoắn", "Torque"),
+    LENGTH("Chiều dài", "Length"),
 }
 
 /**

@@ -198,6 +198,49 @@ object KachiSpace {
     const val READ_ROW = 72
 
     /**
+     * **SÀN cỡ chữ NHÃN của ô vẽ Canvas** (13dp = 19.5px @1.5× ⇒ **nét cao ~15px**, mực đủ ~19px).
+     *
+     * ## Vì sao một ô vẽ theo tỉ lệ lại cần SÀN theo dp
+     * Ô vẽ Canvas của dự án tính mọi cỡ theo tỉ lệ cạnh (`m * 0.058f`) — đúng để bất biến với dpi/cỡ ô, nhưng tỉ lệ
+     * **không biết ngưỡng đọc được của mắt**. [ĐO] ảnh máy ảo 2026-09-12: bảng sơ đồ ADAS ở khung 4/12 màn có
+     * `m = 231px` ⇒ nhãn 13.4px ⇒ **nét cao 10px / mực 13px**, dưới chuẩn G1 (15–16px). Tỉ lệ vẫn "đúng", chữ vẫn
+     * không đọc được.
+     *
+     * ## Con số suy từ CHÍNH chuẩn G1, không tự chọn
+     * G1 chốt nhãn ô con của nhóm ở **13.5sp** và ghi *"[ĐO] ở density 1.5: 13.5sp cho nét cao 16px"*. Ô vẽ này là
+     * cùng loại nội dung (nhãn của một ô con) nên phải cùng bậc ⇒ sàn 13dp ≈ 13.5sp. Đặt thấp hơn là để bảng ADAS có
+     * một chuẩn đọc riêng, thấp hơn phần còn lại của cùng một màn.
+     *
+     * Nên: cỡ = `max(tỉ lệ, sàn)`, và **số HÀNG** mới là thứ co theo chỗ (xem [SideBoardPlan]). Đảo lại — bóp chữ để
+     * nhồi đủ hàng — là chính cái bệnh đang chữa.
+     *
+     * **Không thể là một bậc của thang**: đây là cỡ CHỮ, không phải khoảng cách; và thang cố ý không quản typography
+     * (xem KDoc `SpacingScaleContractTest`) — nhưng một cái SÀN thì phải sống cùng chỗ với mọi con số dp khác, không
+     * thì nó thành hằng trần ở tầng vẽ (đúng lỗ `SettingsPanel.RAIL_DP` đã bị bắt).
+     */
+    const val BOARD_LABEL_MIN = 13
+
+    /**
+     * **SÀN cỡ chữ GIÁ TRỊ của ô vẽ Canvas** (16dp = 24px @1.5×).
+     *
+     * Lớn hơn [BOARD_LABEL_MIN] một bậc rõ rệt (1.23×) để giữ **thứ bậc** mà kiểm toán G1 đòi: *"giá trị là thứ to
+     * nhất trong ô con"*. Hai sàn bằng nhau sẽ đạt "đọc được" mà mất "đọc ra ngay đâu là số".
+     */
+    const val BOARD_VALUE_MIN = 16
+
+    /**
+     * **SÀN chiều cao một HÀNG của bảng sơ đồ hai bên** (24dp = 36px @1.5×).
+     *
+     * Suy ra từ [BOARD_VALUE_MIN] + [S] chứ không tự chọn: một hàng nay xếp **NGANG** (`nhãn · số`, xem
+     * `SideBoardView`) nên nó cần đúng một dòng chữ cao bằng chữ to nhất trong hàng ([BOARD_VALUE_MIN]) cộng khoảng
+     * thở. Bảng cũ xếp DỌC (số trên, nhãn dưới) nên một hàng cần gấp đôi — đó là lý do 4 hàng không vừa và chữ bị bóp.
+     *
+     * [ĐO] kiểm lại trên ô ADAS thật (`bodyH = 182px`): `182 / 36 = 5` hàng vừa được ⇒ cả 8 ô con vẫn hiện ĐỦ ở cỡ chữ
+     * đã nới. Tức phép co hàng là **lưới an toàn cho ô nhỏ**, không phải thứ ăn vào ca thường.
+     */
+    const val BOARD_ROW_MIN = BOARD_VALUE_MIN + S
+
+    /**
      * Chiều cao **số chính** của thẻ CARD = 1.5 × [READ_ROW].
      *
      * Suy ra từ [READ_ROW] chứ không tự chọn: số chính là một dòng dữ liệu **được ưu tiên**, nên nó phải to hơn một

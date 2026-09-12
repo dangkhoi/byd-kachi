@@ -33,6 +33,8 @@ class HomePanels(
     private val onTopStrip: (String, Boolean) -> Unit,
     private val onWallpaper: (WallpaperPrefs) -> Unit,
     private val onUnitPrefs: (UnitPrefs) -> Unit,
+    private val onThemeMode: (ThemeMode) -> Unit,
+    private val onLangMode: (LangMode) -> Unit,
     private val onAutostart: (Boolean) -> Unit,
     private val onSwitchProfile: (String) -> Unit,
     private val onAddProfile: () -> Unit,
@@ -100,6 +102,8 @@ class HomePanels(
             onDockEdge = { e -> onDockEdge(e) },
             // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).
             onUnitPrefs = { prefs -> onUnitPrefs(prefs) },
+            onThemeMode = { m -> onThemeMode(m) },
+            onLangMode = { m -> onLangMode(m) },
             onAutostart = { on -> onAutostart(on) },
             onSwitchProfile = { name -> onSwitchProfile(name) },
             onAddProfile = onAddProfile,

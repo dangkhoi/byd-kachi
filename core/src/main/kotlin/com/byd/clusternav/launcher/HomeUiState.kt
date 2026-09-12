@@ -26,6 +26,20 @@ data class HomeUiState(
     val activeProfile: String = DEFAULT_PROFILE,
     val profiles: List<String> = listOf(DEFAULT_PROFILE),
     val themeMode: ThemeMode = ThemeMode.NIGHT,
+    /**
+     * U5 · T3 — NGÔN NGỮ launcher. Mặc định [LangMode.AUTO] ("Theo xe", §6 OQ1): xe của owner đặt tiếng Việt nên
+     * không ai thấy gì khác, còn người cài trên máy tiếng khác thì nhận đúng tiếng Anh mà không phải đi tìm nút.
+     *
+     * ## Vì sao nó ở TRONG state chứ không để bộ chọn tự đọc prefs
+     * Cùng lý do đã trả giá bốn lần (`customLayout` · `unitPrefs` · `wallpaper` · và chính `themeMode`): thứ gì được
+     * **render** thì phải nằm trong nguồn sự thật, không thì bề mặt cấu hình và màn hình lệch nhau và không ai biết.
+     * Ở đây `prev.langMode != next.langMode` chính là điều kiện dựng lại màn (`LangHost.changed`) — không có nó trong
+     * state thì không có gì để so.
+     *
+     * ⚠ Đây là **lựa chọn ba cách**, chưa giải nghĩa. Ngôn ngữ THẬT (`Strings.current`) do `LangHost` ở `:app` giải ra
+     * và là chỗ ghi DUY NHẤT — [LangMode.resolve] cần locale của máy, tức cần Android, tức không thuộc `:core`.
+     */
+    val langMode: LangMode = LangMode.AUTO,
     val embedded: Boolean = false,
     val carStatus: CarStatus = CarStatus(),
     /**
@@ -75,6 +89,16 @@ data class HomeUiState(
         /**
          * Tên hồ sơ mặc định. Trùng chuỗi với `WorkspacePrefs.DEFAULT_PROFILE` (:app) — giữ literal ở đây để :core
          * không phụ thuộc ngược lên :app; giá trị thật lúc chạy luôn đến từ [WorkspaceRepository.load].
+         *
+         * ## ⚠⚠ U5 · T2 — CHUỖI NÀY **KHÔNG ĐƯỢC DỊCH**, dù nó có dấu tiếng Việt và hiện ra trên avatar
+         * Nó là **KHOÁ LƯU**, không phải nhãn: `WorkspacePrefs` ghi mọi cấu hình theo hồ sơ dưới dạng
+         * `"<tên hồ sơ>__<hậu tố>"` (bố cục, thanh nút, chip thanh trên…). Dịch nó thành `"Default"` sẽ làm mọi khoá
+         * cũ (`Mặc định__preset`, `Mặc định__slot_0`…) **thành mồ côi** ⇒ người dùng mở launcher lên thấy bố cục về
+         * mặc định và tưởng mất hết cấu hình, mà không có gì báo lỗi.
+         *
+         * Muốn avatar hiện chữ tiếng Anh thì phải là một lớp **trình bày** riêng (map tên-lưu → tên-hiện) ở `:app`,
+         * KHÔNG phải đổi giá trị này. Ghi ra đây vì T3 sẽ đi dịch phần `:app` và đây là chỗ dễ dịch nhầm nhất:
+         * nó *trông* y như một nhãn.
          */
         const val DEFAULT_PROFILE = "Mặc định"
     }

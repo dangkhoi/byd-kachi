@@ -9,13 +9,16 @@ enum class DockEdge {
      * không nơi nào cần chữ; màn Cài đặt bày cả 4 viền để **chọn thẳng** (không phải bấm ba lần để tới viền mình
      * muốn) nên phải có chữ. Pill đó nay đã **bỏ hẳn** ⇒ đây là đường duy nhất, và nó cần nhãn.
      * Ở `:core` cùng lý do với [LayoutPreset.label].
+     *
+     * U5 · T2: nhãn sinh ra bằng `when` (không phải một dòng dữ liệu) ⇒ dịch tại chỗ bằng [Strings.t] — xem KDoc
+     * [Strings] về hai cơ chế. Trả tiếng Việt khi [Strings.current] = [Lang.VI], nên test cũ giữ nguyên.
      */
     val label: String
         get() = when (this) {
-            BOTTOM -> "Dưới"
-            LEFT -> "Trái"
-            RIGHT -> "Phải"
-            TOP -> "Trên"
+            BOTTOM -> Strings.t("Dưới", "Bottom")
+            LEFT -> Strings.t("Trái", "Left")
+            RIGHT -> Strings.t("Phải", "Right")
+            TOP -> Strings.t("Trên", "Top")
         }
 }
 
@@ -40,7 +43,7 @@ enum class ControlKind { TOGGLE, STEP, COVER, SELECT, BUTTON }
  */
 data class ControlDef(
     val id: String,
-    val label: String,
+    override val label: String,
     val icon: String,
     val kind: ControlKind,
     val enabledByDefault: Boolean = false,
@@ -53,8 +56,55 @@ data class ControlDef(
     val tier: EvidenceTier = EvidenceTier.OVERDRIVE,
     val bindingKey: String = "",
     val args: List<String> = emptyList(),
-) {
+    /** Nhãn tiếng Anh (U5 · T2) — tham số mặc định, xem KDoc [Strings] về vì sao nhãn là DỮ LIỆU ở `:core`. */
+    override val labelEn: String? = null,
+    /**
+     * [args] bằng tiếng Anh — **cùng thứ tự, cùng số phần tử** với [args].
+     *
+     * Vì sao phải có: [args] không phải chú thích, nó là **chữ hiện trên nút** (`ControlTileLogic.selectLabel`, và ô
+     * đóng/mở của bộ dựng ô ở `:app`). Bỏ qua nó thì màn tiếng Anh vẫn có nút ghi *"Đóng"* / *"Xanh dương"* — nhãn
+     * chính đã dịch mà lựa chọn bên trong thì không, tức nửa vời theo cách người dùng thấy ngay.
+     *
+     * Rỗng ⇒ [displayArgs] lùi về [args]. **Lệch số phần tử** cũng lùi về [args] cho CẢ danh sách: một danh sách
+     * trộn hai thứ tiếng còn tệ hơn một danh sách nhất quán tiếng Việt, và `LangCoverageTest` đếm khớp nên ca đó
+     * đỏ off-car.
+     */
+    val argsEn: List<String> = emptyList(),
+    /**
+     * Nhãn NGẮN cho bề mặt HẸP — **cùng khuôn** [TelemetrySpec.short] (tham số mặc định, chỉ điền chỗ thật cần).
+     *
+     * ## [ĐO] bệnh nó chữa — ảnh máy ảo 2026-09-12
+     * Hàng nút của ô nhóm chia bề ngang cho tối đa 6 ô, nên ở khung 4/12 màn mỗi ô còn **82px** (≈70px dùng được).
+     * Nhãn đầy bị cắt ở CẢ hai thứ tiếng: `"Window front-ri…"` và `"Kính trước-tr…"` / `"Kính trước-p…"` — hai ô kính
+     * trước vì thế đọc ra **gần như y hệt nhau**, đúng họ lỗi 18-nhãn-trùng mà `TelemetrySpec.short` đã sinh ra để
+     * chữa cho ô ĐỌC. Ô BẤM thì tới nay chưa có bản ngắn nào.
+     *
+     * `null` ⇒ [shortLabel] lùi về [label]; phép lùi và thứ tự bậc giống hệt [TelemetrySpec] để hai bộ đăng ký không
+     * có hai luật khác nhau cho cùng một việc.
+     */
+    val short: String? = null,
+    /** Nhãn NGẮN tiếng Anh. `null` ⇒ [shortLabelIn] lùi về [labelEn] rồi tới [label]. */
+    val shortEn: String? = null,
+) : Localized {
     fun clamp(v: Int): Int = if (kind == ControlKind.STEP) v.coerceIn(min, max) else v
+
+    /** Nhãn ngắn tiếng Việt — luôn có giá trị (lùi về [label] khi chưa khai [short]). */
+    val shortLabel: String get() = short ?: label
+
+    /** Nhãn ngắn theo [Strings.current] — dùng ở hàng nút của ô nhóm. */
+    val displayShortLabel: String get() = shortLabelIn(Strings.current)
+
+    /** Bậc lùi: [shortEn] → [labelEn] → [short] → [label]. Xem KDoc [TelemetrySpec.shortLabelIn] về lý do. */
+    fun shortLabelIn(lang: Lang): String =
+        if (lang == Lang.EN) (shortEn?.takeIf { it.isNotBlank() } ?: labelEn?.takeIf { it.isNotBlank() } ?: shortLabel)
+        else shortLabel
+
+    /** [args] theo [Strings.current] — xem [argsEn] về luật lùi. */
+    val displayArgs: List<String> get() = argsIn(Strings.current)
+
+    /** [args] theo một ngôn ngữ CỤ THỂ (phép đọc thuần, cho test). */
+    fun argsIn(lang: Lang): List<String> =
+        if (lang == Lang.EN && argsEn.size == args.size && argsEn.isNotEmpty()) argsEn else args
 }
 
 /**
@@ -97,161 +147,245 @@ object ControlRegistry {
     val ALL: List<ControlDef> = listOf(
         // ── 20 nút GỐC (giữ nguyên id + thứ tự + cờ default; bổ sung domain/tier/bindingKey) ───────
         ControlDef("lock", "Khoá / mở khoá", "ic-lock", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState",
+            labelEn = "Lock / unlock"),
         // ⚠ [ĐO] 2026-09-11: nút này TỪNG mang nhãn "Kính 50%" nhưng ghi ĐÚNG CÙNG lệnh với "win_lf"
         // (`setBodyWindowCtrlState(1, state)` — kính CỬA LÁI, chỉ đóng/mở, KHÔNG có nửa). Nhãn cũ hứa thứ xe không
         // làm. Chưa có đường GHI phần trăm nào (chỉ có đường ĐỌC `getWindowOpenPercent`) ⇒ đừng đặt lại nhãn hứa %.
         ControlDef("window", "Kính cửa lái", "ic-window", ControlKind.TOGGLE, enabledByDefault = true,
-            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState"),
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
+            labelEn = "Driver window"),
         ControlDef("trunk", "Cốp sau", "ic-trunk", ControlKind.TOGGLE, enabledByDefault = true,
-            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setHetchDoorStatus"),
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setHetchDoorStatus",
+            labelEn = "Tailgate"),
         ControlDef("readl", "Đèn đọc", "ic-readlight", ControlKind.TOGGLE, enabledByDefault = true,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643002"),
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643002",
+            labelEn = "Reading light"),
         ControlDef("pm25", "Lọc bụi", "ic-leaf", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
-            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setAutoCleanAirState"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setAutoCleanAirState",
+            labelEn = "Air purifier"),
         ControlDef("seatc", "Ghế mát", "ic-seat", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
-            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
+            labelEn = "Seat ventilation"),
         ControlDef("temp", "Nhiệt độ", "ic-temp", ControlKind.STEP, enabledByDefault = true, value = 22, min = 17, max = 33, step = 1,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoAcDevice.setTemprature"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoAcDevice.setTemprature",
+            labelEn = "Temperature"),
         ControlDef("fan", "Gió", "ic-fan", ControlKind.STEP, enabledByDefault = true, value = 4, min = 0, max = 7, step = 1,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219340"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219340",
+            labelEn = "Fan"),
         // Có sẵn trong kho, mặc định TẮT (bật qua Tuỳ biến):
         ControlDef("defrost", "Sấy kính", "ic-defrost", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219362"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219362",
+            labelEn = "Defrost"),
         ControlDef("cam", "Camera 360", "ic-cam", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "3001"),
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "3001",
+            labelEn = "360 camera"),
         // ⚠ [SOÁT P0 · vòng 2] TRƯỚC ĐÂY là TOGGLE nhãn "Mở cửa" — nghĩa là **tắt nó thì KHOÁ xe**, mà nhãn không
         // nói điều đó. Sau khi vá P0 (tắt = gửi 2 = khoá thật) thì đây lại đúng họ lỗi vừa dọn: "nhãn hứa việc A,
         // trạng thái kia làm việc B". Nút BẤM một chiều thì không có mặt-tắt để nói dối: bấm = mở khoá, hết.
         ControlDef("door", "Mở khoá cửa", "ic-door", ControlKind.BUTTON,
-            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState"),
+            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState",
+            labelEn = "Unlock doors"),
         ControlDef("hood", "Ca-pô", "ic-hood", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BODYWORK_CMD_HOOD"),
+            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BODYWORK_CMD_HOOD",
+            labelEn = "Bonnet"),
         ControlDef("sunroof", "Cửa sổ trời", "ic-sunroof", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setSunroofState"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setSunroofState",
+            labelEn = "Sunroof"),
         ControlDef("headl", "Đèn pha", "ic-light", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153912"),
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153912",
+            labelEn = "Headlights"),
         ControlDef("seath", "Ghế sưởi", "ic-seat", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
+            labelEn = "Seat heating"),
         ControlDef("recirc", "Lấy gió trong", "ic-recirc", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219355"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219355",
+            labelEn = "Recirculation"),
         ControlDef("drl", "Đèn ban ngày", "ic-light", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "985661476"),
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "985661476",
+            // `shortEn` vì nhãn Anh dài 20 ký tự — trong ô hàng nút của nhóm *Đèn* nó bị cắt thành `"Daytime
+            // lights (D…"`. Bản Việt (12 ký tự, ba từ ngắn) tự ngắt dòng vừa nên không cần bản ngắn riêng.
+            labelEn = "Daytime lights (DRL)", shortEn = "Daytime (DRL)"),
         ControlDef("vol", "Âm lượng", "ic-volume", ControlKind.STEP, value = 12, min = 0, max = 30, step = 1,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.PROVEN, bindingKey = "AudioManager.setStreamVolume"),
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.PROVEN, bindingKey = "AudioManager.setStreamVolume",
+            labelEn = "Volume"),
         ControlDef("wiper", "Gạt mưa", "ic-wiper", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "321912848"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "321912848",
+            labelEn = "Wipers"),
         ControlDef("cast", "Chiếu cụm", "ic-cast", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "AutoContainer.sendInfo"),
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "AutoContainer.sendInfo",
+            labelEn = "Cast to cluster"),
 
         // ── MỞ RỘNG catalog §B (mặc định TẮT) ─────────────────────────────────────────────────────
         // Khí hậu
         ControlDef("ac_auto", "Điều hoà AUTO", "ic-fan", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324355606"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324355606",
+            labelEn = "A/C AUTO"),
         ControlDef("defrost_rear", "Sấy kính sau", "ic-defrost", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219357"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219357",
+            labelEn = "Rear defrost"),
         ControlDef("anion", "Ion âm", "ic-leaf", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1337982994"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1337982994",
+            labelEn = "Negative ions"),
         ControlDef("steer_heat", "Sưởi vô-lăng", "ic-seat", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setSteeringWheelHeatingState"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setSteeringWheelHeatingState",
+            labelEn = "Steering wheel heating"),
         ControlDef("pm25_clean_now", "Lọc ngay", "ic-leaf", ControlKind.BUTTON,
-            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setQuickCleanAirState"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setQuickCleanAirState",
+            labelEn = "Clean now"),
         // Thân xe — kính từng cửa (COVER)
+        //
+        // ⚠ [ĐO] `short`/`shortEn` ở bốn ô này KHÔNG phải trang trí: hàng nút của ô nhóm *Kính* chia 6 ô trên khung
+        // 4/12 màn ⇒ mỗi ô 82px, và nhãn đầy bị cắt thành `"Kính trước-tr…"` / `"Window front-ri…"` ⇒ hai kính TRƯỚC
+        // đọc ra y hệt nhau. Viết tắt theo ĐÚNG quy ước đã có ở bảng lốp (`tyre_p_fl` → `"Lốp TT"` / `"Tyre FL"`), để
+        // người dùng chỉ phải học một bộ viết tắt cho cả xe.
         ControlDef("win_lf", "Kính trước-trái", "ic-window", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở")),
+            args = listOf("Đóng", "Mở"),
+            labelEn = "Window front-left", argsEn = listOf("Close", "Open"),
+            short = "Kính TT", shortEn = "Window FL"),
         ControlDef("win_rf", "Kính trước-phải", "ic-window", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở")),
+            args = listOf("Đóng", "Mở"),
+            labelEn = "Window front-right", argsEn = listOf("Close", "Open"),
+            short = "Kính TP", shortEn = "Window FR"),
         ControlDef("win_lr", "Kính sau-trái", "ic-window", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở")),
+            args = listOf("Đóng", "Mở"),
+            labelEn = "Window rear-left", argsEn = listOf("Close", "Open"),
+            short = "Kính ST", shortEn = "Window RL"),
         ControlDef("win_rr", "Kính sau-phải", "ic-window", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở")),
+            args = listOf("Đóng", "Mở"),
+            labelEn = "Window rear-right", argsEn = listOf("Close", "Open"),
+            short = "Kính SP", shortEn = "Window RR"),
         ControlDef("windows_all", "Tất cả kính", "ic-window", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setAllWindowState",
-            args = listOf("Đóng", "Mở")),
+            args = listOf("Đóng", "Mở"),
+            labelEn = "All windows", argsEn = listOf("Close", "Open")),
         ControlDef("sunshade", "Rèm che nắng", "ic-sunroof", ControlKind.COVER,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở")),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở"),
+            labelEn = "Sunshade", argsEn = listOf("Close", "Open")),
         ControlDef("child_lock", "Khoá trẻ em", "ic-lock", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276141584"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276141584",
+            labelEn = "Child lock"),
         ControlDef("rain_close", "Tự đóng kính khi mưa", "ic-wiper", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setRainCloseWindow"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setRainCloseWindow",
+            labelEn = "Auto-close windows in rain"),
         ControlDef("mirror_auto", "Gập gương khi khoá", "ic-mirror", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1081081882"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1081081882",
+            labelEn = "Fold mirrors on lock"),
         ControlDef("mirror_fold_btn", "Gập gương", "ic-mirror", ControlKind.BUTTON,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276157992"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276157992",
+            labelEn = "Fold mirrors"),
         ControlDef("seat_memory", "Nhớ ghế lái", "ic-seat", ControlKind.BUTTON,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276186678"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276186678",
+            labelEn = "Driver seat memory"),
         // Đèn
         ControlDef("ambient_power", "Đèn viền cabin", "ic-light", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153924"),
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153924",
+            // ⚠ Nhãn Anh phải TRÙNG với datum `ambient_enabled` **đúng như bản Việt trùng nhau** ("Đèn viền cabin"):
+            // cặp này vốn là một-cái-xem / một-cái-bấm nên chúng ĐƯỢC trùng và đã có gợi ý loại (`· xem`/`· bấm`).
+            // Nhóm `g_ambient` thì mang nhãn KHÁC ("Ambient light"), y như bản Việt ("Đèn viền") — nếu dịch cả ba
+            // thành "Ambient lighting" thì tiếng Anh sinh ra một cặp trùng MỚI mà tiếng Việt không có, và cái trùng
+            // mới đó **không được gợi ý loại** (phép phát hiện trùng chạy trên nhãn Việt).
+            labelEn = "Cabin ambient light"),
         ControlDef("ambient_color", "Màu đèn viền", "ic-light", ControlKind.SELECT,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276194864",
-            args = listOf("Tím", "Xanh dương", "Xanh lá", "Vàng", "Trắng")),
+            args = listOf("Tím", "Xanh dương", "Xanh lá", "Vàng", "Trắng"),
+            labelEn = "Ambient colour", argsEn = listOf("Purple", "Blue", "Green", "Yellow", "White")),
         ControlDef("ambient_brightness", "Độ sáng viền", "ic-light", ControlKind.STEP, value = 3, min = 0, max = 10, step = 1,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276194858"),
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276194858",
+            labelEn = "Ambient brightness"),
         ControlDef("ambient_music", "Đèn viền theo nhạc", "ic-light", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "489701407"),
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "489701407",
+            labelEn = "Ambient follows music"),
         ControlDef("headlight_mode", "Chế độ đèn pha", "ic-light", ControlKind.SELECT,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153912",
-            args = listOf("Tắt", "Auto", "Đỗ", "Cốt")),
+            args = listOf("Tắt", "Auto", "Đỗ", "Cốt"),
+            labelEn = "Headlight mode", argsEn = listOf("Off", "Auto", "Parking", "Low beam")),
         // Drive / năng lượng / sạc
         ControlDef("drive_mode", "Chế độ lái", "ic-drive", ControlKind.SELECT,
             domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "1272971280",
-            args = listOf("Thường", "Eco", "Thể thao", "Tuyết")),
+            args = listOf("Thường", "Eco", "Thể thao", "Tuyết"),
+            labelEn = "Drive mode", argsEn = listOf("Normal", "Eco", "Sport", "Snow")),
+        // ⚠ Nhãn Anh TRÙNG nhãn Việt: "EV / HEV" là ký hiệu ngành (và `args` cũng vậy) ⇒ có tên trong danh sách cho
+        // phép của `LangCoverageTest`. Dịch thành "Electric / Hybrid" sẽ lệch với chữ trên táp-lô xe.
         ControlDef("powertrain_mode", "EV / HEV", "ic-bolt", ControlKind.SELECT,
             domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoEnergyDevice.setEnergyWorkMode",
-            args = listOf("EV", "HEV")),
+            args = listOf("EV", "HEV"),
+            labelEn = "EV / HEV", argsEn = listOf("EV", "HEV")),
         ControlDef("regen_level", "Mức tái tạo", "ic-bolt", ControlKind.SELECT,
             domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setEnergyFeedback",
-            args = listOf("Tiêu chuẩn", "Cao")),
+            args = listOf("Tiêu chuẩn", "Cao"),
+            labelEn = "Regen level", argsEn = listOf("Standard", "High")),
         ControlDef("itac", "iTAC (kiểm soát mô-men)", "ic-drive", ControlKind.TOGGLE,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376094"),
+            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376094",
+            labelEn = "iTAC (torque control)"),
         ControlDef("avh", "Giữ phanh tự động (AVH)", "ic-drive", ControlKind.TOGGLE,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "ADAS_AVH_STATE"),
+            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "ADAS_AVH_STATE",
+            labelEn = "Auto hold (AVH)"),
         ControlDef("target_soc_set", "Mục tiêu sạc", "ic-bolt", ControlKind.STEP, value = 80, min = 50, max = 100, step = 5,
-            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "SET_DR_SOC_TARGET"),
+            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "SET_DR_SOC_TARGET",
+            labelEn = "Charge target"),
         ControlDef("charge_cap", "Giới hạn sạc", "ic-bolt", ControlKind.TOGGLE,
-            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376132"),
+            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376132",
+            labelEn = "Charge limit"),
         ControlDef("wireless_charge", "Sạc không dây", "ic-bolt", ControlKind.TOGGLE,
-            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1312817218"),
+            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1312817218",
+            labelEn = "Wireless charging"),
         ControlDef("start_charging", "Sạc ngay", "ic-bolt", ControlKind.BUTTON,
-            domain = Domain.ENERGY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "StartChargingNowCommand"),
+            domain = Domain.ENERGY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "StartChargingNowCommand",
+            labelEn = "Charge now"),
         // ADAS (panel riêng — KHÔNG gate, owner tự chịu)
         ControlDef("adas_slw", "Cảnh báo quá tốc", "ic-adas", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "850452531"),
+            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "850452531",
+            labelEn = "Speed limit warning"),
         ControlDef("adas_esp", "Cân bằng điện tử (ESP)", "ic-adas", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "944766984"),
+            domain = Domain.SAFETY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "944766984",
+            labelEn = "Stability control (ESP)"),
         ControlDef("adas_tsr", "Nhận diện biển báo", "ic-adas", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944767044"),
+            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944767044",
+            labelEn = "Traffic sign recognition"),
         ControlDef("adas_lane", "Hỗ trợ giữ làn", "ic-adas", ControlKind.SELECT,
             domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoADASDevice.setLKSMode",
-            args = listOf("Tắt", "LDW", "LDP", "Cả hai")),
+            args = listOf("Tắt", "LDW", "LDP", "Cả hai"),
+            // LDW/LDP = ký hiệu ngành (lane departure warning / prevention) ⇒ giữ nguyên trong cả hai thứ tiếng.
+            labelEn = "Lane keep assist", argsEn = listOf("Off", "LDW", "LDP", "Both")),
         ControlDef("adas_fcw", "Cảnh báo va chạm trước", "ic-adas", ControlKind.STEP, value = 2, min = 0, max = 3, step = 1,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324560420"),
+            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324560420",
+            labelEn = "Forward collision warning"),
         ControlDef("adas_rcta", "Cắt ngang phía sau", "ic-adas", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944766990"),
+            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944766990",
+            labelEn = "Rear cross-traffic alert"),
         ControlDef("adas_dow", "Cảnh báo mở cửa", "ic-adas", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944766994"),
+            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944766994",
+            labelEn = "Door open warning"),
         ControlDef("adas_cpd", "Phát hiện trẻ em", "ic-adas", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324617778"),
+            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324617778",
+            labelEn = "Child presence detection"),
         // Giải trí / cụm / HUD
         ControlDef("screen_rotation", "Xoay màn hình", "ic-cast", ControlKind.SELECT,
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643005",
-            args = listOf("Ngang", "Dọc")),
+            args = listOf("Ngang", "Dọc"),
+            labelEn = "Screen rotation", argsEn = listOf("Landscape", "Portrait")),
         ControlDef("camera_view", "Góc camera", "ic-cam", ControlKind.SELECT,
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "3001",
-            args = listOf("Trước", "Sau", "Trái", "Phải", "Rộng")),
+            args = listOf("Trước", "Sau", "Trái", "Phải", "Rộng"),
+            labelEn = "Camera view", argsEn = listOf("Front", "Rear", "Left", "Right", "Wide")),
         ControlDef("cluster_music", "Nhạc trên cụm", "ic-music", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1138753546"),
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1138753546",
+            labelEn = "Music on cluster"),
         ControlDef("brightness_gear", "Độ sáng màn", "ic-light", ControlKind.STEP, value = 5, min = 0, max = 10, step = 1,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276174360"),
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276174360",
+            labelEn = "Screen brightness"),
+        // HUD = ký hiệu ngành (head-up display) ⇒ giữ nguyên.
         ControlDef("hud_switch", "HUD kính lái", "ic-cast", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "1276174371"),
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "1276174371",
+            labelEn = "Windscreen HUD"),
         ControlDef("hud_brightness", "Độ sáng HUD", "ic-light", ControlKind.STEP, value = 5, min = 0, max = 10, step = 1,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "1276174360"),
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "1276174360",
+            labelEn = "HUD brightness"),
     )
 
     fun byId(id: String): ControlDef? = ALL.firstOrNull { it.id == id }

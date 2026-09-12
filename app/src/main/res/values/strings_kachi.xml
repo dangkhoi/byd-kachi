@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ═══ U5 · T3 — CHỮ TĨNH TRÊN MÀN LAUNCHER (bản GỐC, tiếng Việt) ═══════════════════════════════════════════════
+
+  Spec `docs/specs/kachi-i18n-and-light-theme.html` §3.1. Bản tiếng Anh: `values-en/strings_kachi.xml` (BẮT BUỘC
+  cùng tập khoá — `LauncherI18nContractTest` so hai chiều, thiếu một bên là đỏ).
+
+  ⚠⚠ VÌ SAO LÀ TỆP RIÊNG, KHÔNG THÊM VÀO `values/strings.xml`
+  `values/strings.xml` bị NIÊM PHONG theo hash SHA-256 (`ExpansionTransportFenceTest.T11_HASHES`) — thêm một dòng
+  vào đó là phải xin owner ghim lại hằng, và mỗi lần ghim lại là một lần phép niêm phong mất giá trị. Android GỘP
+  mọi tệp `<resources>` trong cùng thư mục `values/`, nên `R.string.kachi_*` khai ở đây hoạt động y hệt như khai
+  trong tệp kia mà seal không bị đụng một byte.
+
+  ⚠ VÌ SAO KHÔNG DÙNG `Strings.t(vi, en)` CHO NHỮNG CHUỖI NÀY (mà `:core` thì dùng)
+  Chúng là chữ TRÊN MÀN, không phải dữ liệu của một dòng registry. Tra tài nguyên cho ba thứ mà `Strings.t` không
+  làm được: (a) `%1$s` là tham số CÓ SỐ THỨ TỰ nên bản dịch **đảo được thứ tự** đối số — chuỗi mẫu Kotlin thì nội
+  suy TRƯỚC khi biết ngôn ngữ nên không đảo được; (b) Android tự chọn tệp theo locale, không cần một `if` ở mỗi chỗ
+  gọi; (c) `values-en/` là chỗ người dịch tìm tới, không phải rải rác trong 21 tệp mã.
+
+  ⚠ ĐẶT TÊN: mọi khoá mang tiền tố `kachi_`. Tệp seal có 24 khoá không tiền tố (`app_name`, `idle`, `status_off`…);
+  tiền tố làm việc trùng tên trở thành KHÔNG THỂ, và cho phép grep ra đúng bề mặt của launcher.
+-->
+<resources>
+
+    <!-- ── KachiTopStrip — thanh trên ── -->
+    <string name="kachi_pill_apps">Ứng dụng</string>
+    <string name="kachi_pill_settings">Cài đặt</string>
+
+    <!-- ── AppDrawer — ngăn kéo chọn nội dung / mở app ── -->
+    <string name="kachi_drawer_title_assign">Đặt widget hoặc mở app vào ô này</string>
+    <string name="kachi_drawer_title_open">Mở ứng dụng</string>
+    <string name="kachi_drawer_hint_assign">Widget: chọn nhiều rồi bấm Đặt · App: chạm để mở ngay · chạm nền để đóng</string>
+    <string name="kachi_drawer_hint_open">Chạm một app để mở TOÀN MÀN · bấm HOME để về Kachi · chạm nền để đóng</string>
+    <string name="kachi_drawer_section_widgets">Thẻ dựng tay</string>
+    <string name="kachi_drawer_section_apps">Ứng dụng</string>
+    <string name="kachi_drawer_section_recent">Gần đây</string>
+    <string name="kachi_drawer_section_all_apps">Tất cả ứng dụng</string>
+    <string name="kachi_drawer_place_none">Bỏ widget</string>
+    <plurals name="kachi_drawer_place_n">
+        <!-- Tiếng Việt không phân biệt số ít/số nhiều ⇒ chỉ cần `other`; khai thêm `one` là dữ liệu chết. -->
+        <item quantity="other">Đặt %1$d widget</item>
+    </plurals>
+    <string name="kachi_drawer_cap_note">Ô chứa tối đa %1$d mục — bỏ một mục để thêm</string>
+
+    <!-- ── CapabilityGridSection — lưới chọn khả năng ── -->
+    <string name="kachi_chip_added">Đã đưa "%1$s" lên thanh trạng thái</string>
+    <string name="kachi_chip_removed">Đã bỏ "%1$s" khỏi thanh trạng thái</string>
+    <string name="kachi_chip_button_rejected">Nút bấm không đặt được lên thanh trên (chip quá nhỏ để bấm an toàn)</string>
+
+    <!-- ── SideBoardView — bảng sơ đồ hai bên xe (ADAS) ──
+         Ô hẹp không đủ chỗ cho mọi cảm biến Ở CỠ CHỮ ĐỌC ĐƯỢC ⇒ bảng chỉ hiện cái đang cảnh báo và ĐẾM phần còn lại.
+         Bỏ bớt mà không nói ra là đúng "kênh im lặng" dự án đã vá ba lần. -->
+    <plurals name="kachi_board_hidden_n">
+        <!-- Tiếng Việt không phân biệt số ít/số nhiều ⇒ chỉ cần `other`. -->
+        <item quantity="other">+%1$d mục khác</item>
+    </plurals>
+
+    <!-- ── ControlTileFactory — ô điều khiển kiểu COVER (cửa/kính/cốp) ── -->
+    <string name="kachi_cover_close">Đóng</string>
+    <string name="kachi_cover_open">Mở</string>
+
+    <!-- ── LayoutEditorPanel — bảng vẽ bố cục ── -->
+    <string name="kachi_layout_title">Vẽ bố cục</string>
+    <string name="kachi_layout_close">Đóng</string>
+    <string name="kachi_layout_hint">Kéo giữa khung để di chuyển · kéo góc dưới-phải để đổi cỡ. Khung luôn bám ô lưới.</string>
+    <string name="kachi_layout_add">Thêm khung</string>
+    <string name="kachi_layout_del">Xoá khung đang chọn</string>
+    <string name="kachi_layout_save">Lưu</string>
+    <string name="kachi_layout_reset">Về bố cục sẵn</string>
+    <string name="kachi_layout_over_cap">Quá %1$d khung — bản này đỡ tối đa %1$d khung.</string>
+    <string name="kachi_layout_cannot_save">Chưa lưu được: %1$s</string>
+    <string name="kachi_layout_frames_n">%1$d khung</string>
+    <string name="kachi_layout_full">phủ kín màn</string>
+    <string name="kachi_layout_empty_n">còn %1$d ô trống (nền hiện ra ở đó)</string>
+    <string name="kachi_layout_at_cap">đã đủ %1$d khung, bản sau sẽ nới</string>
+
+    <!-- ── PhotoWidgetView — ô trình chiếu ảnh ── -->
+    <string name="kachi_photos_none">Chưa có ảnh</string>
+    <string name="kachi_photos_hint">Bỏ ảnh vào thư mục ảnh của Kachi</string>
+
+    <!-- ── ProfileBar — avatar hồ sơ tài xế ── -->
+    <string name="kachi_profile_only_one">Chỉ có một hồ sơ — thêm hồ sơ ở Cài đặt → Hồ sơ tài xế</string>
+    <string name="kachi_profile_switched">Hồ sơ: %1$s</string>
+    <string name="kachi_profile_name_hint">Tên hồ sơ (vd: Đường trường)</string>
+    <string name="kachi_profile_new_title">Hồ sơ mới</string>
+    <string name="kachi_create">Tạo</string>
+    <string name="kachi_cancel">Huỷ</string>
+
+    <!-- ── SettingsPanel — vỏ màn Cài đặt ── -->
+    <string name="kachi_done">Xong</string>
+    <string name="kachi_settings_title">Cài đặt Kachi</string>
+    <string name="kachi_settings_sub">Mọi cấu hình của launcher ở đây — chọn nhóm ở cột bên trái.</string>
+
+    <!-- ── SettingsRows — hàng dùng chung (quyền) ── -->
+    <string name="kachi_perm_self_fixing">Kachi đang tự xin lại — không cần làm gì</string>
+    <string name="kachi_perm_environment">Hạn chế của môi trường, không phải lỗi của app</string>
+    <string name="kachi_perm_core">%1$s — ảnh hưởng tính năng chính</string>
+    <string name="kachi_perm_loses">Thiếu thì: %1$s</string>
+
+    <!-- ── SettingsSections — Hiển thị & đơn vị ── -->
+    <string name="kachi_sec_units">Đơn vị hiển thị</string>
+    <string name="kachi_sec_theme">Giao diện sáng/tối</string>
+    <string name="kachi_row_palette">Bảng màu</string>
+    <string name="kachi_theme_note">"Tự động" = tối từ 18h đến 6h. Đổi bảng màu thì màn hình dựng lại một lượt.</string>
+    <string name="kachi_theme_note_clusternav">Màn ClusterNav (nhóm "Dẫn đường · Cụm · Phím") có lựa chọn Sáng/Tối RIÊNG — nó dùng tài nguyên Android nên không đi chung với bảng màu của launcher.</string>
+    <string name="kachi_sec_lang">Ngôn ngữ</string>
+    <string name="kachi_row_lang">Chữ trên màn</string>
+    <string name="kachi_lang_note">"Theo xe" = theo ngôn ngữ của máy: máy tiếng Việt thì tiếng Việt, còn lại tiếng Anh. Đổi ngôn ngữ thì màn hình dựng lại một lượt.</string>
+    <string name="kachi_lang_note_clusternav">Màn ClusterNav dùng CHUNG lựa chọn này — đổi ở đây là đổi cả hai màn (khác với bảng màu).</string>
+
+    <!-- ── SettingsSections — Hồ sơ tài xế ── -->
+    <string name="kachi_sec_profiles">Hồ sơ tài xế</string>
+    <string name="kachi_profiles_note">Mỗi hồ sơ giữ bố cục, nội dung ô, thanh nút và chip RIÊNG. Chạm một hồ sơ để đổi sang nó — avatar ở thanh trên cũng đổi được, nhưng tạo và xoá thì chỉ ở đây.</string>
+    <string name="kachi_profiles_add">Thêm hồ sơ…</string>
+    <string name="kachi_profile_active">Đang dùng</string>
+    <string name="kachi_profile_tap_switch">Chạm để đổi sang hồ sơ này</string>
+    <string name="kachi_delete">Xoá</string>
+    <string name="kachi_profile_keep_one">Phải còn ít nhất một hồ sơ</string>
+    <string name="kachi_profile_in_use">Đang dùng "%1$s" — đổi sang hồ sơ khác trước khi xoá</string>
+
+    <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
+    <string name="kachi_sec_comfort">Tiện nghi tự động</string>
+    <string name="kachi_recirc_title">Nổ máy thì tự lấy gió trong</string>
+    <string name="kachi_recirc_sub">Xe quên chế độ này mỗi lần khởi động. ⚠ Lệnh chưa kiểm trên xe — có thể xe không nhận.</string>
+    <string name="kachi_sec_permissions">Quyền</string>
+    <string name="kachi_perm_all_ok">Đủ quyền — không thiếu gì. Kachi tự xin lại mỗi lần mở nếu hệ thống thu hồi.</string>
+    <string name="kachi_perm_some_missing">Kachi tự xin lại phần tự xin được; phần còn lại nói rõ việc cần làm.</string>
+    <string name="kachi_sec_boot">Khởi động</string>
+    <string name="kachi_autostart_title">Tự mở khi nổ máy</string>
+    <string name="kachi_autostart_sub">Nổ máy là Kachi tự dựng lại ô và đặt mình làm màn hình chính. Tắt thì phải mở tay.</string>
+
+    <!-- ── SettingsSections — ClusterNav · Giới thiệu ── -->
+    <string name="kachi_sec_clusternav">Dẫn đường · Cụm đồng hồ · Phím vô-lăng</string>
+    <string name="kachi_clusternav_note1">Dẫn đường trên cụm, chiếu màn lên cụm, biển báo tốc độ, bóng VietMap, ghế mát/sưởi, lọc bụi PM2.5 và gán phím vô-lăng nằm ở màn ClusterNav.</string>
+    <string name="kachi_clusternav_note2">Màn đó KHÔNG gom vào đây: nó đang niêm phong (không sửa một dòng), nên Cài đặt chỉ mở nó ra.</string>
+    <string name="kachi_clusternav_open">Mở màn ClusterNav</string>
+    <string name="kachi_sec_about">Giới thiệu</string>
+    <string name="kachi_about_tagline">Kachi — màn hình chính cho xe BYD DiLink.</string>
+    <string name="kachi_about_version">Phiên bản %1$s (mã %2$d)</string>
+    <string name="kachi_about_package">Tên gói: %1$s</string>
+    <string name="kachi_about_licence">Giấy phép MIT. Thử nghiệm cá nhân, KHÔNG liên kết với BYD.</string>
+
+    <!-- ── SettingsSectionsHome — Màn hình chính ── -->
+    <string name="kachi_sec_layout">Bố cục màn hình</string>
+    <string name="kachi_row_preset">Bố cục sẵn</string>
+    <string name="kachi_layout_open_editor">Vẽ bố cục riêng…</string>
+    <string name="kachi_layout_custom_in_use">Đang dùng bố cục tự vẽ: %1$d khung</string>
+    <string name="kachi_layout_ignored"> — nhưng bị bỏ qua (%1$s)</string>
+    <string name="kachi_layout_preset_in_use">Đang dùng bố cục sẵn.</string>
+    <string name="kachi_sec_wallpaper">Hình nền</string>
+    <string name="kachi_wall_title">Dùng ảnh làm hình nền</string>
+    <string name="kachi_wall_sub_nofolder">Bỏ ảnh vào thư mục ảnh của Kachi</string>
+    <string name="kachi_wall_sub_folder">Bỏ ảnh vào: %1$s</string>
+    <string name="kachi_wall_period">Đổi ảnh mỗi</string>
+    <string name="kachi_wall_fit">Cách phủ</string>
+    <string name="kachi_wall_dim">Làm tối ảnh</string>
+    <string name="kachi_sec_dock">Thanh nút xe</string>
+    <string name="kachi_dock_edge">Viền đặt thanh</string>
+    <string name="kachi_dock_note">Chạm 1 ô để thêm/bớt khỏi thanh nút. GIỮ một ô XEM để đưa nó lên thanh trạng thái. Nhóm An toàn/Động lực/Giải trí đổi hành vi lái — tự dùng tự chịu.</string>
+
+    <!-- ── TopStripPicker — chọn chip thanh trạng thái ── -->
+    <string name="kachi_topstrip_title">Chip trên thanh trạng thái</string>
+    <string name="kachi_topstrip_hint">Tối đa %1$d thông tin hiện cạnh đồng hồ. Chạm để bật/tắt. Muốn đưa một thông tin khác lên đây: GIỮ ô của nó ở danh sách bên dưới. Chỉ thông tin XEM — nút bấm đặt ở thanh điều khiển hoặc ô giữa màn (chip quá nhỏ để bấm an toàn).</string>
+    <string name="kachi_topstrip_full">Thanh trên chỉ chứa %1$d chip — bỏ một cái trước</string>
+
+    <!-- ── WallpaperController / WallpaperStore — hình nền ── -->
+    <string name="kachi_wall_no_photos">Chưa có ảnh. Bỏ ảnh vào:\n%1$s</string>
+    <string name="kachi_wall_no_ext_storage">(bộ nhớ ngoài không dùng được)</string>
+
+    <!-- ── WidgetViews — ô widget dựng tay ── -->
+    <string name="kachi_badge_unverified">chưa kiểm trên xe</string>
+    <string name="kachi_widget_board">Tổng hợp</string>
+    <!-- [SOÁT ĐỘC LẬP 2026-09-12 · P1] Ba chuỗi này TRƯỚC ĐÓ viết cứng trong `WidgetViews` và **hiện ra trên màn
+         tiếng Anh bằng tiếng Việt** — đã chụp ảnh máy ảo làm chứng ("Xe" ở ô trạng thái xe, "pin" trong vòng đo năng
+         lượng). Cả hai bài canh cũ đều KHÔNG thấy: bài quét-theo-dấu bỏ qua chữ Việt KHÔNG DẤU ("Xe"/"pin"), còn bài
+         "mọi chữ đi qua tài nguyên" chỉ soi ~9 dạng gọi (`text =`, `drawText(`…) nên bỏ qua chính kênh mà launcher
+         dùng để vẽ chữ: các hàm dựng view của riêng nó (`miniCard(`/`ring(`/`label(`). `kachi_widget_board` ngay trên
+         đã đi đúng đường từ đầu — ba dòng này là những đứa em bị bỏ lại. -->
+    <string name="kachi_widget_car">Xe</string>
+    <string name="kachi_widget_battery">pin</string>
+    <string name="kachi_widget_none">WIDGET</string>
+    <string name="kachi_pm_good">Tốt</string>
+    <string name="kachi_pm_fair">TB</string>
+    <string name="kachi_pm_poor">Kém</string>
+    <string name="kachi_tyre_temp_unverified">%1$s · nhiệt chưa kiểm</string>
+    <string name="kachi_outside_temp">%1$s · ngoài xe</string>
+    <string name="kachi_speed_over">Vượt tốc độ</string>
+    <string name="kachi_speed_current">Tốc độ hiện tại</string>
+    <string name="kachi_doors_unknown">Trạng thái cửa —</string>
+    <string name="kachi_doors_open">Có cửa đang mở</string>
+    <string name="kachi_doors_closed">4 cửa đóng</string>
+    <string name="kachi_tailgate_open">Cốp sau đang mở</string>
+    <string name="kachi_tailgate_closed">Cốp sau đóng</string>
+    <string name="kachi_tailgate_unknown">Cốp sau —</string>
+    <string name="kachi_tyre_pressure_unit">Áp suất lốp (%1$s)</string>
+
+    <!-- ── WorkspaceView — ô trống giữa màn ── -->
+    <string name="kachi_slot_open_app">Mở ứng dụng</string>
+</resources>

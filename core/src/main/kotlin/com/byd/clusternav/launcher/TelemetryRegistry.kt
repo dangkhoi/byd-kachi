@@ -38,7 +38,7 @@ import com.byd.clusternav.launcher.WidgetShape.VALUE
  */
 data class TelemetrySpec(
     val id: String,
-    val label: String,
+    override val label: String,
     val unit: String,
     val domain: Domain,
     val widgetKind: WidgetShape,
@@ -51,9 +51,36 @@ data class TelemetrySpec(
      * niệm này chỉ tồn tại ở `TyreCorner.shortLabel` (bảng lốp), tức mỗi bề mặt hẹp lại tự nghĩ cách viết tắt riêng.
      */
     val short: String? = null,
-) {
-    /** Nhãn để hiện ở bề mặt hẹp — luôn có giá trị, tự lùi về [label] nếu chưa khai [short]. */
+    /**
+     * Nhãn tiếng Anh (U5 · T2) — **cùng khuôn tham số mặc định** với [short], vì cùng lý do: nó là DỮ LIỆU của dòng
+     * này, không phải chữ tra từ tài nguyên Android (`:core` thuần, xem KDoc [Strings]).
+     *
+     * `null` ⇒ [displayLabel] lùi về [label]; `LangCoverageTest` đếm tuyệt đối 123 dòng nên bỏ trống là **đỏ off-car**.
+     */
+    override val labelEn: String? = null,
+    /** Nhãn NGẮN tiếng Anh. `null` ⇒ [shortLabelIn] lùi về [labelEn] rồi tới [label] — xem [shortLabel]. */
+    val shortEn: String? = null,
+) : Localized {
+    /**
+     * Nhãn để hiện ở bề mặt hẹp — luôn có giá trị, tự lùi về [label] nếu chưa khai [short].
+     *
+     * ⚠ Giữ nguyên nghĩa **tiếng Việt** (test cũ khoá `"Lốp TT"`); bản theo ngôn ngữ là [displayShortLabel].
+     */
     val shortLabel: String get() = short ?: label
+
+    /** Nhãn ngắn theo [Strings.current] — dùng ở chip thanh trên và ô con của nhóm. */
+    val displayShortLabel: String get() = shortLabelIn(Strings.current)
+
+    /**
+     * Nhãn ngắn theo một ngôn ngữ CỤ THỂ (phép đọc thuần, cho test).
+     *
+     * Bậc lùi có thứ tự: [shortEn] → [labelEn] → [short] → [label]. Lùi sang **nhãn đầy tiếng Anh** trước khi lùi về
+     * tiếng Việt là có chủ ý: một chip đọc `"Battery health (SOH)"` hơi dài vẫn tốt hơn một chip đột ngột nói tiếng
+     * Việt giữa màn tiếng Anh.
+     */
+    fun shortLabelIn(lang: Lang): String =
+        if (lang == Lang.EN) (shortEn?.takeIf { it.isNotBlank() } ?: labelEn?.takeIf { it.isNotBlank() } ?: shortLabel)
+        else shortLabel
 }
 
 /**
@@ -63,9 +90,19 @@ data class TelemetrySpec(
  */
 object TelemetryRegistry {
 
+    /**
+     * Một dòng registry. **Nhãn Việt và nhãn Anh đứng cạnh nhau** (tham số 2 và 3) chứ không nhét nhãn Anh xuống
+     * cuối: đọc một dòng là thấy cả hai thứ tiếng, nên bản dịch lệch nghĩa thì thấy ngay lúc đọc code — cùng lý do
+     * `Lang.kt` của ClusterNav để bản dịch tại chỗ gọi thay vì trong tệp tài nguyên riêng.
+     *
+     * ([TelemetrySpec] thì khai `labelEn` ở CUỐI, sau [TelemetrySpec.short], để mọi chỗ dựng bên ngoài registry —
+     * nếu có — không phải sửa. Hai thứ tự khác nhau vì hai mục đích khác nhau: hàm này là chỗ ĐỌC của con người,
+     * lớp kia là hợp đồng với mã bên ngoài.)
+     */
     private fun t(
         id: String,
         label: String,
+        labelEn: String,
         unit: String,
         domain: Domain,
         shape: WidgetShape,
@@ -73,147 +110,159 @@ object TelemetryRegistry {
         key: String,
         /** Nhãn NGẮN cho bề mặt hẹp (chip thanh trên). Bỏ trống ⇒ tự lùi về [label] — xem [TelemetrySpec.shortLabel]. */
         short: String? = null,
-    ) = TelemetrySpec(id, label, unit, domain, shape, tier, key, short)
+        /** Nhãn NGẮN tiếng Anh. Bỏ trống ⇒ lùi về [labelEn] — xem [TelemetrySpec.shortLabelIn]. */
+        shortEn: String? = null,
+    ) = TelemetrySpec(id, label, unit, domain, shape, tier, key, short, labelEn, shortEn)
 
     val ALL: List<TelemetrySpec> = listOf(
         // ── A1. Năng lượng / sạc / pin ───────────────────────────────────────────────────────────
-        t("soc", "Pin (SOC)", "%", ENERGY, RING, PROVEN, "BYDAutoStatisticDevice.getElecPercentageValue"),
-        t("ev_range_km", "Tầm hoạt động EV", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getElecDrivingRangeValue", short = "Tầm điện"),
-        t("fuel_range_km", "Tầm hoạt động xăng", "km", ENERGY, VALUE, OVERDRIVE, "1246773304", short = "Tầm xăng"),
-        t("fuel_pct", "Mức xăng", "%", ENERGY, VALUE, OVERDRIVE, "1246785600"),
-        t("odometer", "Odo tổng", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getTotalMileageValue"),
-        t("ev_mileage_km", "Km chạy điện", "km", ENERGY, VALUE, OVERDRIVE, "1146093608"),
-        t("trip_km", "Quãng đường chuyến", "km", ENERGY, VALUE, OVERDRIVE, "1246801948", short = "Quãng chuyến"),
-        t("trip_hours", "Thời gian chuyến", "h", ENERGY, VALUE, OVERDRIVE, "1246801938"),
-        t("trip_kwh", "Điện tiêu thụ chuyến", "kWh", ENERGY, VALUE, OVERDRIVE, "1246801976", short = "Điện chuyến"),
-        t("consumption_50km", "Tiêu thụ 50km", "kWh/100km", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume"),
-        t("motor_power", "Công suất mô-tơ", "kW", ENERGY, GAUGE, OVERDRIVE, "339738656"),
-        t("is_charging", "Đang sạc", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoPowerDevice.isCharging"),
-        t("charge_power", "Công suất sạc", "kW", ENERGY, CARD, OVERDRIVE, "BYDAutoChargingDevice.getChargePower"),
-        t("charging_pct", "Sạc %", "%", ENERGY, CARD, OVERDRIVE, "842006544"),
-        t("charging_eta_hour", "Còn (giờ)", "h", ENERGY, CARD, OVERDRIVE, "842006568"),
-        t("charging_eta_min", "Còn (phút)", "min", ENERGY, CARD, OVERDRIVE, "842006576"),
-        t("charging_capacity_kwh", "Đã sạc phiên", "kWh", ENERGY, CARD, OVERDRIVE, "666894360"),
-        t("charging_state", "Trạng thái sạc", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoChargingDevice.getChargeState"),
-        t("charger_work_state", "Trạng thái bộ sạc", "", ENERGY, BADGE, OVERDRIVE, "666894346"),
-        t("batt_temp", "Nhiệt độ pin", "°C", ENERGY, VALUE, OVERDRIVE, "BYDAutoChargingDevice.getBatteryTemp"),
-        t("cell_temp_high", "Nhiệt cell cao", "°C", ENERGY, VALUE, OVERDRIVE, "1148190752"),
-        t("cell_temp_low", "Nhiệt cell thấp", "°C", ENERGY, VALUE, OVERDRIVE, "1148190736"),
-        t("cell_temp_avg", "Nhiệt cell TB", "°C", ENERGY, VALUE, OVERDRIVE, "1148190776"),
-        t("cell_v_high", "Áp cell cao", "V", ENERGY, VALUE, OVERDRIVE, "1147142192"),
-        t("cell_v_low", "Áp cell thấp", "V", ENERGY, VALUE, OVERDRIVE, "1147142160"),
-        t("soh_oem", "Sức khoẻ pin (SOH)", "%", ENERGY, CARD, OVERDRIVE, "1145045032", short = "SOH pin"),
-        t("target_soc", "Mục tiêu sạc", "%", ENERGY, VALUE, NEEDS_CAR, "SET_DR_SOC_TARGET"),
-        t("batt_range_bodywork", "Tầm pin (thân xe)", "km", ENERGY, VALUE, OVERDRIVE, "300941336"),
+        t("soc", "Pin (SOC)", "Battery (SOC)", "%", ENERGY, RING, PROVEN, "BYDAutoStatisticDevice.getElecPercentageValue"),
+        t("ev_range_km", "Tầm hoạt động EV", "EV range", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getElecDrivingRangeValue", short = "Tầm điện"),
+        t("fuel_range_km", "Tầm hoạt động xăng", "Fuel range", "km", ENERGY, VALUE, OVERDRIVE, "1246773304", short = "Tầm xăng"),
+        t("fuel_pct", "Mức xăng", "Fuel level", "%", ENERGY, VALUE, OVERDRIVE, "1246785600"),
+        t("odometer", "Odo tổng", "Odometer", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getTotalMileageValue"),
+        t("ev_mileage_km", "Km chạy điện", "EV distance driven", "km", ENERGY, VALUE, OVERDRIVE, "1146093608", shortEn = "EV distance"),
+        t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, OVERDRIVE, "1246801948", short = "Quãng chuyến", shortEn = "Trip dist."),
+        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, OVERDRIVE, "1246801938"),
+        t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, OVERDRIVE, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
+        t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh/100km", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),
+        t("motor_power", "Công suất mô-tơ", "Motor power", "kW", ENERGY, GAUGE, OVERDRIVE, "339738656"),
+        t("is_charging", "Đang sạc", "Charging", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoPowerDevice.isCharging"),
+        t("charge_power", "Công suất sạc", "Charge power", "kW", ENERGY, CARD, OVERDRIVE, "BYDAutoChargingDevice.getChargePower"),
+        t("charging_pct", "Sạc %", "Charge %", "%", ENERGY, CARD, OVERDRIVE, "842006544"),
+        t("charging_eta_hour", "Còn (giờ)", "Remaining (h)", "h", ENERGY, CARD, OVERDRIVE, "842006568"),
+        t("charging_eta_min", "Còn (phút)", "Remaining (min)", "min", ENERGY, CARD, OVERDRIVE, "842006576"),
+        t("charging_capacity_kwh", "Đã sạc phiên", "Charged this session", "kWh", ENERGY, CARD, OVERDRIVE, "666894360", shortEn = "Session kWh"),
+        t("charging_state", "Trạng thái sạc", "Charge state", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoChargingDevice.getChargeState"),
+        t("charger_work_state", "Trạng thái bộ sạc", "Charger state", "", ENERGY, BADGE, OVERDRIVE, "666894346"),
+        t("batt_temp", "Nhiệt độ pin", "Battery temp", "°C", ENERGY, VALUE, OVERDRIVE, "BYDAutoChargingDevice.getBatteryTemp"),
+        t("cell_temp_high", "Nhiệt cell cao", "Cell temp high", "°C", ENERGY, VALUE, OVERDRIVE, "1148190752"),
+        t("cell_temp_low", "Nhiệt cell thấp", "Cell temp low", "°C", ENERGY, VALUE, OVERDRIVE, "1148190736"),
+        t("cell_temp_avg", "Nhiệt cell TB", "Cell temp avg", "°C", ENERGY, VALUE, OVERDRIVE, "1148190776"),
+        t("cell_v_high", "Áp cell cao", "Cell voltage high", "V", ENERGY, VALUE, OVERDRIVE, "1147142192", shortEn = "Cell V high"),
+        t("cell_v_low", "Áp cell thấp", "Cell voltage low", "V", ENERGY, VALUE, OVERDRIVE, "1147142160", shortEn = "Cell V low"),
+        t("soh_oem", "Sức khoẻ pin (SOH)", "Battery health (SOH)", "%", ENERGY, CARD, OVERDRIVE, "1145045032", short = "SOH pin", shortEn = "SOH"),
+        t("target_soc", "Mục tiêu sạc", "Charge target", "%", ENERGY, VALUE, NEEDS_CAR, "SET_DR_SOC_TARGET"),
+        t("batt_range_bodywork", "Tầm pin (thân xe)", "Battery range (body)", "km", ENERGY, VALUE, OVERDRIVE, "300941336", shortEn = "Batt range"),
 
         // ── A2. Động lực / tốc độ / chuyển động ──────────────────────────────────────────────────
-        t("speed", "Tốc độ", "km/h", DRIVETRAIN, DIAL, PROVEN, "BYDAutoSpeedDevice.getCurrentSpeed"),
-        t("accel_pct", "Chân ga", "%", DRIVETRAIN, GAUGE, OVERDRIVE, "BYDAutoSpeedDevice.getAccelerateDeepness"),
-        t("brake_pct", "Chân phanh", "%", DRIVETRAIN, GAUGE, OVERDRIVE, "BYDAutoSpeedDevice.getBrakeDeepness"),
-        t("motor_front_rpm", "Vòng tua mô-tơ trước", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "1141899272", short = "Tua trước"),
-        t("motor_rear_rpm", "Vòng tua mô-tơ sau", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "621805576", short = "Tua sau"),
-        t("motor_front_torque", "Mô-men mô-tơ trước", "Nm", DRIVETRAIN, VALUE, OVERDRIVE, "1141899288", short = "Mô-men trước"),
-        t("engine_rpm", "Vòng tua máy xăng", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getEngineSpeed"),
-        t("steering_deg", "Góc vô-lăng", "°", DRIVETRAIN, DIAL, PROVEN, "BYDAutoBodyworkDevice.getSteeringWheelValue"),
-        t("wheel_speed", "Tốc độ bánh", "km/h", DRIVETRAIN, VALUE, PROVEN, "BYDAutoSpecialDevice.getWheelSpeed"),
-        t("slope_deg", "Độ dốc", "°", DRIVETRAIN, VALUE, OVERDRIVE, "573571116"),
-        t("gear", "Số", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoGearboxDevice.getGearboxState"),
-        t("op_mode", "Chế độ lái", "", DRIVETRAIN, BADGE, OVERDRIVE, "1272971280"),
-        t("energy_mode", "Chế độ năng lượng", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoEnergyDevice.getEnergyWorkMode"),
-        t("drift_mode", "Chế độ drift", "", DRIVETRAIN, BADGE, OVERDRIVE, "681574694"),
+        t("speed", "Tốc độ", "Speed", "km/h", DRIVETRAIN, DIAL, PROVEN, "BYDAutoSpeedDevice.getCurrentSpeed"),
+        t("accel_pct", "Chân ga", "Accelerator pedal", "%", DRIVETRAIN, GAUGE, OVERDRIVE, "BYDAutoSpeedDevice.getAccelerateDeepness", shortEn = "Accelerator"),
+        t("brake_pct", "Chân phanh", "Brake pedal", "%", DRIVETRAIN, GAUGE, OVERDRIVE, "BYDAutoSpeedDevice.getBrakeDeepness"),
+        t("motor_front_rpm", "Vòng tua mô-tơ trước", "Front motor rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "1141899272", short = "Tua trước", shortEn = "Front rpm"),
+        t("motor_rear_rpm", "Vòng tua mô-tơ sau", "Rear motor rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "621805576", short = "Tua sau", shortEn = "Rear rpm"),
+        t("motor_front_torque", "Mô-men mô-tơ trước", "Front motor torque", "Nm", DRIVETRAIN, VALUE, OVERDRIVE, "1141899288", short = "Mô-men trước", shortEn = "Front torque"),
+        t("engine_rpm", "Vòng tua máy xăng", "Engine rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getEngineSpeed"),
+        t("steering_deg", "Góc vô-lăng", "Steering angle", "°", DRIVETRAIN, DIAL, PROVEN, "BYDAutoBodyworkDevice.getSteeringWheelValue"),
+        t("wheel_speed", "Tốc độ bánh", "Wheel speed", "km/h", DRIVETRAIN, VALUE, PROVEN, "BYDAutoSpecialDevice.getWheelSpeed"),
+        t("slope_deg", "Độ dốc", "Gradient", "°", DRIVETRAIN, VALUE, OVERDRIVE, "573571116"),
+        t("gear", "Số", "Gear", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoGearboxDevice.getGearboxState"),
+        t("op_mode", "Chế độ lái", "Drive mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "1272971280"),
+        t("energy_mode", "Chế độ năng lượng", "Energy mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoEnergyDevice.getEnergyWorkMode"),
+        t("drift_mode", "Chế độ drift", "Drift mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "681574694"),
 
         // ── A3. Khí hậu / không khí ──────────────────────────────────────────────────────────────
-        t("pm25_level", "Mức bụi PM2.5", "", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Level"),
-        t("pm25_value", "PM2.5", "µg/m³", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Value"),
-        t("pm25_online", "Cảm biến PM2.5", "", CLIMATE, BADGE, PROVEN, "BYDAutoPM2p5Device.getPM2p5OnlineState"),
-        t("cabin_temp", "Nhiệt trong cabin", "°C", CLIMATE, VALUE, OVERDRIVE, "1031798832"),
-        t("inside_temp", "Nhiệt cài đặt", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getTemprature", short = "Trong xe"),
-        t("ext_temp", "Nhiệt ngoài xe", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getOutCarTemperature"),
-        t("coolant_temp", "Nhiệt nước làm mát", "°C", CLIMATE, VALUE, NEEDS_CAR, "BYDAutoEngineDevice.getEngineCoolantTemp"),
-        t("ac_on", "Điều hoà", "", CLIMATE, BADGE, OVERDRIVE, "BYDAutoAcDevice.getAcStartState"),
-        t("ac_wind", "Mức quạt gió", "", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getWindLevel"),
-        t("ac_cycle", "Chế độ lấy gió", "", CLIMATE, BADGE, OVERDRIVE, "BYDAutoAcDevice.getCycleMode"),
-        t("temp_unit", "Đơn vị nhiệt", "", CLIMATE, BADGE, OVERDRIVE, "unit_temperature"),
-        t("anion_state", "Ion âm", "", CLIMATE, BADGE, OVERDRIVE, "1033895958"),
+        t("pm25_level", "Mức bụi PM2.5", "PM2.5 level", "", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Level"),
+        // ⚠ Nhãn Anh TRÙNG nhãn Việt — cố ý: PM2.5 là ký hiệu ngành, dịch thành câu dài sẽ sai chuẩn (spec §6 OQ2).
+        // Có tên trong danh sách cho phép của `LangCoverageTest`.
+        t("pm25_value", "PM2.5", "PM2.5", "µg/m³", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Value"),
+        t("pm25_online", "Cảm biến PM2.5", "PM2.5 sensor", "", CLIMATE, BADGE, PROVEN, "BYDAutoPM2p5Device.getPM2p5OnlineState"),
+        t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, OVERDRIVE, "1031798832"),
+        t("inside_temp", "Nhiệt cài đặt", "Set temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getTemprature", short = "Trong xe", shortEn = "In car"),
+        t("ext_temp", "Nhiệt ngoài xe", "Outside temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getOutCarTemperature"),
+        t("coolant_temp", "Nhiệt nước làm mát", "Coolant temp", "°C", CLIMATE, VALUE, NEEDS_CAR, "BYDAutoEngineDevice.getEngineCoolantTemp"),
+        t("ac_on", "Điều hoà", "Air conditioning", "", CLIMATE, BADGE, OVERDRIVE, "BYDAutoAcDevice.getAcStartState", shortEn = "A/C"),
+        t("ac_wind", "Mức quạt gió", "Fan level", "", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getWindLevel"),
+        t("ac_cycle", "Chế độ lấy gió", "Recirculation mode", "", CLIMATE, BADGE, OVERDRIVE, "BYDAutoAcDevice.getCycleMode", shortEn = "Air intake"),
+        t("temp_unit", "Đơn vị nhiệt", "Temperature unit", "", CLIMATE, BADGE, OVERDRIVE, "unit_temperature", shortEn = "Temp unit"),
+        t("anion_state", "Ion âm", "Negative ions", "", CLIMATE, BADGE, OVERDRIVE, "1033895958"),
 
         // ── A4. Lốp (TPMS) ──────────────────────────────────────────────────────────────────────
-        t("tyre_p_fl", "Áp lốp trước-trái", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureLeftFront", short = "Lốp TT"),
-        t("tyre_p_fr", "Áp lốp trước-phải", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureRightFront", short = "Lốp TP"),
-        t("tyre_p_rl", "Áp lốp sau-trái", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureLeftRear", short = "Lốp ST"),
-        t("tyre_p_rr", "Áp lốp sau-phải", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureRightRear", short = "Lốp SP"),
-        t("tyre_t_fl", "Nhiệt lốp trước-trái", "°C", TYRES, BOARD, NEEDS_CAR, "1246797848", short = "Nhiệt TT"),
-        t("tyre_t_fr", "Nhiệt lốp trước-phải", "°C", TYRES, BOARD, NEEDS_CAR, "1246797860", short = "Nhiệt TP"),
-        t("tyre_t_rl", "Nhiệt lốp sau-trái", "°C", TYRES, BOARD, NEEDS_CAR, "1246797872", short = "Nhiệt ST"),
-        t("tyre_t_rr", "Nhiệt lốp sau-phải", "°C", TYRES, BOARD, NEEDS_CAR, "1246797884", short = "Nhiệt SP"),
+        t("tyre_p_fl", "Áp lốp trước-trái", "Tyre pressure front-left", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureLeftFront", short = "Lốp TT", shortEn = "Tyre FL"),
+        t("tyre_p_fr", "Áp lốp trước-phải", "Tyre pressure front-right", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureRightFront", short = "Lốp TP", shortEn = "Tyre FR"),
+        t("tyre_p_rl", "Áp lốp sau-trái", "Tyre pressure rear-left", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureLeftRear", short = "Lốp ST", shortEn = "Tyre RL"),
+        t("tyre_p_rr", "Áp lốp sau-phải", "Tyre pressure rear-right", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureRightRear", short = "Lốp SP", shortEn = "Tyre RR"),
+        t("tyre_t_fl", "Nhiệt lốp trước-trái", "Tyre temp front-left", "°C", TYRES, BOARD, NEEDS_CAR, "1246797848", short = "Nhiệt TT", shortEn = "Temp FL"),
+        t("tyre_t_fr", "Nhiệt lốp trước-phải", "Tyre temp front-right", "°C", TYRES, BOARD, NEEDS_CAR, "1246797860", short = "Nhiệt TP", shortEn = "Temp FR"),
+        t("tyre_t_rl", "Nhiệt lốp sau-trái", "Tyre temp rear-left", "°C", TYRES, BOARD, NEEDS_CAR, "1246797872", short = "Nhiệt ST", shortEn = "Temp RL"),
+        t("tyre_t_rr", "Nhiệt lốp sau-phải", "Tyre temp rear-right", "°C", TYRES, BOARD, NEEDS_CAR, "1246797884", short = "Nhiệt SP", shortEn = "Temp RR"),
 
         // ── A5. Thân xe / cửa / kính / gương ─────────────────────────────────────────────────────
-        t("window_lf", "Kính trước-trái", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent"),
-        t("window_rf", "Kính trước-phải", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent"),
-        t("window_lr", "Kính sau-trái", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent"),
-        t("window_rr", "Kính sau-phải", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent"),
-        t("door_lf", "Cửa trước-trái", "", BODY, STRIP, OVERDRIVE, "692060176"),
-        t("door_rf", "Cửa trước-phải", "", BODY, STRIP, OVERDRIVE, "692060177"),
-        t("door_lr", "Cửa sau-trái", "", BODY, STRIP, OVERDRIVE, "692060178"),
-        t("door_rr", "Cửa sau-phải", "", BODY, STRIP, OVERDRIVE, "692060179"),
-        t("tailgate_status", "Cốp sau", "", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getHatchDoorStatus"),
-        t("tailgate_position", "Vị trí cốp", "%", BODY, VALUE, OVERDRIVE, "1074790456"),
-        t("sunroof_state", "Cửa sổ trời", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofState"),
-        t("sunroof_pos", "Vị trí cửa sổ trời", "%", BODY, VALUE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofPosition"),
-        t("sunshade_pct", "Rèm che nắng", "%", BODY, VALUE, OVERDRIVE, "1101004816"),
-        t("mirror_fold", "Gương chiếu hậu", "", BODY, BADGE, OVERDRIVE, "960495624"),
-        t("wiper_state", "Gạt mưa", "", BODY, BADGE, OVERDRIVE, "1196425226"),
-        t("power_level", "Nguồn xe", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getPowerLevel"),
-        t("vehicle_type", "Mẫu xe", "", BODY, VALUE, PROVEN, "BYDAutoBodyworkDevice.getType"),
-        t("emergency_alarm", "Cảnh báo khẩn", "", BODY, BADGE, OVERDRIVE, "692060190"),
+        // ⚠ Bốn dòng này có `short` (VI) từ 2026-09-12: trước đó chỉ có `shortEn`, nên ô con nhóm *Kính* hiện
+        // `"Window FL"` ở bản Anh mà `"Kính trước-trái"` (nhãn ĐẦY) ở bản Việt — [ĐO] ảnh máy ảo: bản Việt bị cắt
+        // `"Kính trước-p…"` ngay khi ô hẹp lại. Viết tắt theo ĐÚNG quy ước bảng lốp (`"Lốp TT"`), và **khớp** với
+        // `short` của bốn nút kính (`win_*`) để hai hàng trong cùng một ô nhóm gọi một cái kính bằng một tên.
+        t("window_lf", "Kính trước-trái", "Window front-left", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính TT", shortEn = "Window FL"),
+        t("window_rf", "Kính trước-phải", "Window front-right", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính TP", shortEn = "Window FR"),
+        t("window_lr", "Kính sau-trái", "Window rear-left", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính ST", shortEn = "Window RL"),
+        t("window_rr", "Kính sau-phải", "Window rear-right", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính SP", shortEn = "Window RR"),
+        t("door_lf", "Cửa trước-trái", "Door front-left", "", BODY, STRIP, OVERDRIVE, "692060176", shortEn = "Door FL"),
+        t("door_rf", "Cửa trước-phải", "Door front-right", "", BODY, STRIP, OVERDRIVE, "692060177", shortEn = "Door FR"),
+        t("door_lr", "Cửa sau-trái", "Door rear-left", "", BODY, STRIP, OVERDRIVE, "692060178", shortEn = "Door RL"),
+        t("door_rr", "Cửa sau-phải", "Door rear-right", "", BODY, STRIP, OVERDRIVE, "692060179", shortEn = "Door RR"),
+        t("tailgate_status", "Cốp sau", "Tailgate", "", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getHatchDoorStatus"),
+        t("tailgate_position", "Vị trí cốp", "Tailgate position", "%", BODY, VALUE, OVERDRIVE, "1074790456", shortEn = "Tailgate pos"),
+        t("sunroof_state", "Cửa sổ trời", "Sunroof", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofState"),
+        t("sunroof_pos", "Vị trí cửa sổ trời", "Sunroof position", "%", BODY, VALUE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofPosition", shortEn = "Sunroof pos"),
+        t("sunshade_pct", "Rèm che nắng", "Sunshade", "%", BODY, VALUE, OVERDRIVE, "1101004816"),
+        t("mirror_fold", "Gương chiếu hậu", "Door mirrors", "", BODY, BADGE, OVERDRIVE, "960495624"),
+        t("wiper_state", "Gạt mưa", "Wipers", "", BODY, BADGE, OVERDRIVE, "1196425226"),
+        t("power_level", "Nguồn xe", "Vehicle power", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getPowerLevel"),
+        t("vehicle_type", "Mẫu xe", "Vehicle model", "", BODY, VALUE, PROVEN, "BYDAutoBodyworkDevice.getType"),
+        t("emergency_alarm", "Cảnh báo khẩn", "Emergency alarm", "", BODY, BADGE, OVERDRIVE, "692060190"),
 
         // ── A6. Đèn ─────────────────────────────────────────────────────────────────────────────
-        t("light_low_beam", "Đèn cốt", "", LIGHTS, STRIP, OVERDRIVE, "950009866"),
-        t("light_high_beam", "Đèn pha", "", LIGHTS, STRIP, OVERDRIVE, "950009868"),
-        t("light_front_fog", "Đèn sương mù trước", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
-        t("light_rear_fog", "Đèn sương mù sau", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
-        t("light_left_turn", "Xi-nhan trái", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
-        t("light_right_turn", "Xi-nhan phải", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
-        t("light_side", "Đèn hông", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
-        t("light_drl", "Đèn ban ngày", "", LIGHTS, BADGE, OVERDRIVE, "985661476"),
-        t("headlight_feedback", "Chế độ đèn pha", "", LIGHTS, BADGE, OVERDRIVE, "1011875880"),
-        t("ambient_enabled", "Đèn viền cabin", "", LIGHTS, BADGE, OVERDRIVE, "1060110406"),
-        t("ambient_front_color", "Màu viền trước", "", LIGHTS, VALUE, OVERDRIVE, "1121976336"),
-        t("ambient_rear_color", "Màu viền sau", "", LIGHTS, VALUE, OVERDRIVE, "1121976343"),
-        t("ambient_front_brightness", "Độ sáng viền trước", "", LIGHTS, VALUE, OVERDRIVE, "1121976328"),
-        t("ambient_rear_brightness", "Độ sáng viền sau", "", LIGHTS, VALUE, OVERDRIVE, "1121976332"),
+        t("light_low_beam", "Đèn cốt", "Low beam", "", LIGHTS, STRIP, OVERDRIVE, "950009866"),
+        t("light_high_beam", "Đèn pha", "High beam", "", LIGHTS, STRIP, OVERDRIVE, "950009868"),
+        t("light_front_fog", "Đèn sương mù trước", "Front fog lights", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus", shortEn = "Fog front"),
+        t("light_rear_fog", "Đèn sương mù sau", "Rear fog lights", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus", shortEn = "Fog rear"),
+        t("light_left_turn", "Xi-nhan trái", "Left indicator", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
+        t("light_right_turn", "Xi-nhan phải", "Right indicator", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
+        t("light_side", "Đèn hông", "Side lights", "", LIGHTS, STRIP, OVERDRIVE, "BYDAutoLightDevice.getLightStatus"),
+        // DRL = ký hiệu ngành (daytime running lights), giữ nguyên viết tắt — spec §6 OQ2.
+        t("light_drl", "Đèn ban ngày", "Daytime lights (DRL)", "", LIGHTS, BADGE, OVERDRIVE, "985661476", shortEn = "DRL"),
+        t("headlight_feedback", "Chế độ đèn pha", "Headlight mode", "", LIGHTS, BADGE, OVERDRIVE, "1011875880"),
+        t("ambient_enabled", "Đèn viền cabin", "Cabin ambient light", "", LIGHTS, BADGE, OVERDRIVE, "1060110406", shortEn = "Ambient"),
+        t("ambient_front_color", "Màu viền trước", "Ambient colour front", "", LIGHTS, VALUE, OVERDRIVE, "1121976336", shortEn = "Colour front"),
+        t("ambient_rear_color", "Màu viền sau", "Ambient colour rear", "", LIGHTS, VALUE, OVERDRIVE, "1121976343", shortEn = "Colour rear"),
+        t("ambient_front_brightness", "Độ sáng viền trước", "Ambient brightness front", "", LIGHTS, VALUE, OVERDRIVE, "1121976328", shortEn = "Bright front"),
+        t("ambient_rear_brightness", "Độ sáng viền sau", "Ambient brightness rear", "", LIGHTS, VALUE, OVERDRIVE, "1121976332", shortEn = "Bright rear"),
 
         // ── A7. An toàn / ADAS / occupancy ──────────────────────────────────────────────────────
-        t("seatbelt_driver", "Dây an toàn lái", "", SAFETY, STRIP, OVERDRIVE, "692060184"),
-        t("seatbelt_passenger", "Dây an toàn phụ", "", SAFETY, STRIP, OVERDRIVE, "638582811"),
-        t("oms_driver", "Nhận diện tài xế", "", SAFETY, BADGE, OVERDRIVE, "834666600"),
-        t("oms_passenger", "Nhận diện ghế phụ", "", SAFETY, BADGE, OVERDRIVE, "834666605"),
-        t("child_presence", "Phát hiện trẻ em", "", SAFETY, BADGE, OVERDRIVE, "376438818"),
-        t("speed_limit_warning", "Cảnh báo quá tốc", "", SAFETY, BADGE, OVERDRIVE, "535834664"),
-        t("bsd_fl_alarm", "Điểm mù trước-trái", "", SAFETY, STRIP, OVERDRIVE, "1098907692"),
-        t("bsd_fr_alarm", "Điểm mù trước-phải", "", SAFETY, STRIP, OVERDRIVE, "1098907694"),
-        t("lca_left", "Chuyển làn trái", "", SAFETY, STRIP, OVERDRIVE, "1098907664"),
-        t("lca_right", "Chuyển làn phải", "", SAFETY, STRIP, OVERDRIVE, "1098907666"),
-        t("rcta_left", "Cắt ngang sau trái", "", SAFETY, STRIP, OVERDRIVE, "1098907668"),
-        t("rcta_right", "Cắt ngang sau phải", "", SAFETY, STRIP, OVERDRIVE, "1098907669"),
-        t("dow_left", "Mở cửa cảnh báo trái", "", SAFETY, STRIP, OVERDRIVE, "1098907680", short = "Cảnh báo cửa trái"),
-        t("dow_right", "Mở cửa cảnh báo phải", "", SAFETY, STRIP, OVERDRIVE, "1098907682", short = "Cảnh báo cửa phải"),
-        t("radar_zones", "Cảm biến đỗ (8 vùng)", "", SAFETY, BOARD, OVERDRIVE, "BYDAutoRadarDevice.getAllRadarProbeStates", short = "Cảm biến đỗ"),
-        t("radar_volume", "Âm lượng cảm biến", "", SAFETY, VALUE, OVERDRIVE, "BYDAutoRadarDevice.getRadarVolume", short = "Âm lượng"),
-        t("esp_state", "Cân bằng điện tử (ESP)", "", SAFETY, BADGE, OVERDRIVE, "305135676", short = "ESP"),
-        t("mcu_status", "Trạng thái nguồn (MCU)", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoPowerDevice.getMcuStatus", short = "Nguồn MCU"),
-        t("volt_12v", "Ắc-quy 12V", "V", SAFETY, VALUE, OVERDRIVE, "BYDAutoPowerDevice.getBatteryVoltage"),
-        t("volt_12v_level", "Mức ắc-quy 12V", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getBatteryVoltageLevel"),
+        t("seatbelt_driver", "Dây an toàn lái", "Seatbelt driver", "", SAFETY, STRIP, OVERDRIVE, "692060184", shortEn = "Belt driver"),
+        t("seatbelt_passenger", "Dây an toàn phụ", "Seatbelt passenger", "", SAFETY, STRIP, OVERDRIVE, "638582811", shortEn = "Belt pass."),
+        t("oms_driver", "Nhận diện tài xế", "Driver detected", "", SAFETY, BADGE, OVERDRIVE, "834666600"),
+        t("oms_passenger", "Nhận diện ghế phụ", "Passenger detected", "", SAFETY, BADGE, OVERDRIVE, "834666605", shortEn = "Passenger"),
+        t("child_presence", "Phát hiện trẻ em", "Child presence", "", SAFETY, BADGE, OVERDRIVE, "376438818"),
+        t("speed_limit_warning", "Cảnh báo quá tốc", "Speed limit warning", "", SAFETY, BADGE, OVERDRIVE, "535834664", shortEn = "Over speed"),
+        t("bsd_fl_alarm", "Điểm mù trước-trái", "Blind spot front-left", "", SAFETY, STRIP, OVERDRIVE, "1098907692", shortEn = "Blind spot L"),
+        t("bsd_fr_alarm", "Điểm mù trước-phải", "Blind spot front-right", "", SAFETY, STRIP, OVERDRIVE, "1098907694", shortEn = "Blind spot R"),
+        t("lca_left", "Chuyển làn trái", "Lane change left", "", SAFETY, STRIP, OVERDRIVE, "1098907664", shortEn = "Lane chg L"),
+        t("lca_right", "Chuyển làn phải", "Lane change right", "", SAFETY, STRIP, OVERDRIVE, "1098907666", shortEn = "Lane chg R"),
+        t("rcta_left", "Cắt ngang sau trái", "Rear cross-traffic left", "", SAFETY, STRIP, OVERDRIVE, "1098907668", shortEn = "Cross rear L"),
+        t("rcta_right", "Cắt ngang sau phải", "Rear cross-traffic right", "", SAFETY, STRIP, OVERDRIVE, "1098907669", shortEn = "Cross rear R"),
+        t("dow_left", "Mở cửa cảnh báo trái", "Door open warning left", "", SAFETY, STRIP, OVERDRIVE, "1098907680", short = "Cảnh báo cửa trái", shortEn = "Door warn L"),
+        t("dow_right", "Mở cửa cảnh báo phải", "Door open warning right", "", SAFETY, STRIP, OVERDRIVE, "1098907682", short = "Cảnh báo cửa phải", shortEn = "Door warn R"),
+        t("radar_zones", "Cảm biến đỗ (8 vùng)", "Parking sensors (8 zones)", "", SAFETY, BOARD, OVERDRIVE, "BYDAutoRadarDevice.getAllRadarProbeStates", short = "Cảm biến đỗ", shortEn = "Park sensors"),
+        t("radar_volume", "Âm lượng cảm biến", "Sensor volume", "", SAFETY, VALUE, OVERDRIVE, "BYDAutoRadarDevice.getRadarVolume", short = "Âm lượng", shortEn = "Volume"),
+        // ESP · MCU = ký hiệu ngành, giữ nguyên viết tắt (spec §6 OQ2). Nhãn ngắn "ESP" trùng cả hai thứ tiếng ⇒ có
+        // tên trong danh sách cho phép của `LangCoverageTest`.
+        t("esp_state", "Cân bằng điện tử (ESP)", "Stability control (ESP)", "", SAFETY, BADGE, OVERDRIVE, "305135676", short = "ESP", shortEn = "ESP"),
+        t("mcu_status", "Trạng thái nguồn (MCU)", "Power state (MCU)", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoPowerDevice.getMcuStatus", short = "Nguồn MCU", shortEn = "MCU power"),
+        t("volt_12v", "Ắc-quy 12V", "12V battery", "V", SAFETY, VALUE, OVERDRIVE, "BYDAutoPowerDevice.getBatteryVoltage"),
+        t("volt_12v_level", "Mức ắc-quy 12V", "12V battery level", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getBatteryVoltageLevel", shortEn = "12V level"),
 
         // ── A8. Danh tính / khoá / máy ──────────────────────────────────────────────────────────
-        t("vin", "Số VIN", "", IDENTITY, VALUE, OVERDRIVE, "BYDAutoBodyworkDevice.getAutoVIN"),
-        t("key_bluetooth", "Chìa Bluetooth", "", IDENTITY, BADGE, OVERDRIVE, "602931221"),
-        t("engine_code", "Mã máy", "", IDENTITY, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getEngineCode"),
-        t("engine_coolant_level", "Mức nước làm mát", "", IDENTITY, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getEngineCoolantLevel"),
-        t("oil_level", "Mức dầu", "%", IDENTITY, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getOilLevel"),
-        t("gps_lat", "Vĩ độ", "°", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.lat"),
-        t("gps_lon", "Kinh độ", "°", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.lon"),
-        t("gps_elevation", "Cao độ", "m", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.elevation"),
-        t("gps_heading", "Hướng", "°", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.heading"),
+        // VIN = ký hiệu ngành, giữ nguyên (spec §6 OQ2).
+        t("vin", "Số VIN", "VIN", "", IDENTITY, VALUE, OVERDRIVE, "BYDAutoBodyworkDevice.getAutoVIN"),
+        t("key_bluetooth", "Chìa Bluetooth", "Bluetooth key", "", IDENTITY, BADGE, OVERDRIVE, "602931221"),
+        t("engine_code", "Mã máy", "Engine code", "", IDENTITY, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getEngineCode"),
+        t("engine_coolant_level", "Mức nước làm mát", "Coolant level", "", IDENTITY, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getEngineCoolantLevel"),
+        t("oil_level", "Mức dầu", "Oil level", "%", IDENTITY, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getOilLevel"),
+        t("gps_lat", "Vĩ độ", "Latitude", "°", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.lat"),
+        t("gps_lon", "Kinh độ", "Longitude", "°", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.lon"),
+        t("gps_elevation", "Cao độ", "Elevation", "m", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.elevation"),
+        t("gps_heading", "Hướng", "Heading", "°", IDENTITY, VALUE, NEEDS_CAR, "NaviInfo.heading"),
     )
 
     fun byId(id: String): TelemetrySpec? = ALL.firstOrNull { it.id == id }

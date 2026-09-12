@@ -53,7 +53,9 @@ object TelemetryReadout {
     /** [TelemetryView] cho [id] từ [status], hoặc null nếu [id] không có trong [TelemetryRegistry]. */
     fun of(id: String, status: CarStatus): TelemetryView? {
         val spec = TelemetryRegistry.byId(id) ?: return null
-        return TelemetryView(spec.id, spec.label, spec.unit, spec.widgetKind, spec.tier, format(id, status))
+        // U5 · T2: nhãn theo ngôn ngữ ngay tại đây — `TelemetryView` là thứ tầng vẽ đọc, nên nếu để nhãn gốc thì
+        // `:app` phải tự dịch lại (bản-sao-thứ-hai của phép chọn ngôn ngữ).
+        return TelemetryView(spec.id, spec.displayLabel, spec.unit, spec.widgetKind, spec.tier, format(id, status))
     }
 
     /** Giá trị hiển thị đã format cho telemetry [id] từ [s]; null = chưa đọc/không có ⇒ "—". */
@@ -112,7 +114,7 @@ object TelemetryReadout {
         "ext_temp" -> s.climate.outsideTempC?.toString()
         "ac_on" -> s.climate.acOn?.let { onOff(it) }
         "ac_wind" -> s.climate.fanLevel?.toString()
-        "ac_cycle" -> s.climate.recircOn?.let { if (it) "Trong" else "Ngoài" }
+        "ac_cycle" -> s.climate.recircOn?.let { if (it) Strings.t("Trong", "Recirc") else Strings.t("Ngoài", "Fresh") }
         "anion_state" -> s.climate.anionOn?.let { onOff(it) }
         "inside_temp" -> s.climate.setTempC?.toString()
         "coolant_temp" -> s.climate.coolantTempC?.toString()
@@ -140,7 +142,7 @@ object TelemetryReadout {
         "tailgate_status" -> s.body.tailgateOpen?.let { openShut(it) }
         "sunroof_pos" -> s.body.sunroofPct?.toString()
         "sunshade_pct" -> s.body.sunshadePct?.toString()
-        "mirror_fold" -> s.body.mirrorFolded?.let { if (it) "Gập" else "Mở" }
+        "mirror_fold" -> s.body.mirrorFolded?.let { if (it) Strings.t("Gập", "Folded") else Strings.t("Mở", "Out") }
         "power_level" -> s.body.powerLevel?.toString()
         "vehicle_type" -> s.body.vehicleType
         "tailgate_position" -> s.body.tailgatePct?.toString()
@@ -165,8 +167,8 @@ object TelemetryReadout {
         "ambient_rear_brightness" -> s.lights.ambientRearBrightness?.toString()
 
         // ── A7. An toàn / ADAS ──────────────────────────────────────────────────────────
-        "seatbelt_driver" -> s.safety.seatbeltDriver?.let { if (it) "Thắt" else "Chưa" }
-        "seatbelt_passenger" -> s.safety.seatbeltPassenger?.let { if (it) "Thắt" else "Chưa" }
+        "seatbelt_driver" -> s.safety.seatbeltDriver?.let { if (it) Strings.t("Thắt", "On") else Strings.t("Chưa", "Not on") }
+        "seatbelt_passenger" -> s.safety.seatbeltPassenger?.let { if (it) Strings.t("Thắt", "On") else Strings.t("Chưa", "Not on") }
         "child_presence" -> s.safety.childPresence?.let { yesNo(it) }
         "speed_limit_warning" -> s.safety.speedLimitWarning?.let { yesNo(it) }
         "bsd_fl_alarm" -> s.safety.bsdLeftLevel?.toString()
@@ -202,9 +204,20 @@ object TelemetryReadout {
         else -> null
     }?.takeIf { it.isNotBlank() }
 
-    private fun yesNo(b: Boolean) = if (b) "Có" else "Không"
-    private fun onOff(b: Boolean) = if (b) "Bật" else "Tắt"
-    private fun openShut(b: Boolean) = if (b) "Mở" else "Đóng"
+    /**
+     * ⚠ **CHỮ GIÁ TRỊ CŨNG PHẢI DỊCH** (U5 · T2): `"Bật"`/`"Mở"`/`"Có"` là thứ hiện **trong ô**, không phải nhãn.
+     * Bỏ qua chúng thì màn tiếng Anh có ô ghi *"Low beam — Bật"*: nhãn đã dịch, giá trị thì không.
+     *
+     * Ba cặp dưới đây gọi qua [Strings.t] chứ không qua bảng dữ liệu, vì chúng là **phép quy đổi bool → chữ** dùng
+     * chung cho hàng chục datum, không phải nhãn của một dòng registry nào.
+     *
+     * ⚠ [GroupBoard] **KHÔNG** được so chuỗi này để quyết định sắc thái (KDoc ở đó đã cấm) — nay lý do càng mạnh:
+     * chuỗi đổi theo ngôn ngữ, nên so chuỗi sẽ **vỡ khi người dùng chọn English**, tức lỗi chỉ xảy ra với một nửa
+     * người dùng.
+     */
+    private fun yesNo(b: Boolean) = if (b) Strings.t("Có", "Yes") else Strings.t("Không", "No")
+    private fun onOff(b: Boolean) = if (b) Strings.t("Bật", "On") else Strings.t("Tắt", "Off")
+    private fun openShut(b: Boolean) = if (b) Strings.t("Mở", "Open") else Strings.t("Đóng", "Closed")
     private fun dec0(d: Double) = Math.round(d).toString()
     private fun dec1(d: Double) = String.format(Locale.US, "%.1f", d)
     private fun dec2(d: Double) = String.format(Locale.US, "%.2f", d)

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi U5 + bảng màu sáng — đóng nốt scope off-car</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.warn{color:var(--warn)}.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi U5 + bảng màu sáng — đóng nốt scope off-car</h1>
+<p class="muted">
+  <b>Trạng thái</b>: Current · <b>Ngày</b>: 2026-09-12 · <b>Mã việc</b>: U5 · OQ2 của S1 · L2 (phần icon) ·
+  <b>Mục đích</b>: owner <i>"làm tiếp cho đến khi xong hết scope"</i>. Đây là những mục off-car cuối cùng.
+</p>
+
+<h2>1. Context — kiểm kê trước</h2>
+<table>
+<tr><th>Việc</th><th>[ĐO] hiện trạng</th><th>Vì sao khó</th></tr>
+<tr><td><b>U5 đa ngôn ngữ</b></td><td><b>989 chuỗi tiếng Việt</b>: 345 ở <code>:app</code> launcher · <b>644 ở <code>:core</code></b>. 0 thư mục ngôn ngữ chuẩn cho launcher</td><td><code>:core</code> là JVM <b>thuần</b>, không đọc được <code>R.string</code>. Mà phần lớn chuỗi lại nằm ở đó (nhãn 123 datum + 64 nút + 12 nhóm + 7 nhóm cài đặt)</td></tr>
+<tr><td><b>Bảng màu sáng</b></td><td><b>82 mã hex viết cứng ở 21 tệp</b>; <code>KachiTheme</code> dùng <b>13 <code>const val</code></b> (hằng biên dịch)</td><td>hằng biên dịch <b>không đổi được lúc chạy</b> ⇒ nút gạt chủ đề của S1 phải bỏ vì sẽ là nút chết</td></tr>
+<tr><td><b>L2 icon launcher</b></td><td><code>ic_launcher.xml</code> <b>đã có</b> (chặng icon của G1 dựng)</td><td>còn lại là khoá ký + kênh cập nhật riêng = việc 🚗</td></tr>
+</table>
+
+<div class="card">
+  <b>Sự thật quyết định cách làm U5</b>: 644/989 chuỗi nằm ở <code>:core</code>, và chúng là <b>DỮ LIỆU</b> (nhãn của
+  từng mã khả năng) chứ không phải chữ trang trí trên màn. Nên tiếng Anh của chúng cũng phải là <b>dữ liệu nằm cạnh</b>,
+  không phải tra qua tài nguyên Android. Đây đúng khuôn <code>TelemetrySpec.short</code> của RW0: thêm
+  <b>tham số mặc định</b> ⇒ 0 churn trên 123 dòng registry.
+</div>
+
+<h2>2. Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td>R1</td><td>Launcher đổi được ngôn ngữ Việt / English</td><td>chọn trong Cài đặt → Hiển thị; đổi ngay, lưu bền, mở lại còn đúng</td></tr>
+<tr><td>R2</td><td>Nhãn khả năng (datum · nút · nhóm) có tiếng Anh</td><td>mọi mã có nhãn EN; test đòi <b>không mã nào thiếu</b></td></tr>
+<tr><td>R3</td><td>Chữ trên màn có tiếng Anh</td><td>không còn chuỗi tiếng Việt viết cứng ngoài cặp dịch; test quét mã chặn</td></tr>
+<tr><td>R4</td><td>Bảng màu SÁNG dùng được thật</td><td>chọn Sáng ⇒ màn đổi màu thật, chữ vẫn đọc được (tương phản ≥ 4.5:1)</td></tr>
+<tr><td>R5</td><td>Nút chủ đề <b>hết là nút chết</b></td><td>bài canh tự-đảo-chiều của S1 phải đỏ nếu nút vẫn không có ⇒ nay làm nút thật</td></tr>
+<tr><td>R6</td><td>Không phá thứ đang chạy</td><td>2960 test vẫn xanh · <b>0 tệp XML niêm phong bị đụng</b> · 0 tệp > 500 dòng</td></tr>
+</table>
+
+<h2>3. Design</h2>
+
+<h3>3.1 U5 — hai tầng, hai cách, cùng một công tắc</h3>
+<table>
+<tr><th>Tầng</th><th>Cách</th><th>Vì sao không dùng cách kia</th></tr>
+<tr><td><code>:core</code> (644 chuỗi = <b>dữ liệu</b>)</td><td><code>labelEn</code> là <b>tham số mặc định</b> cạnh <code>label</code>; <code>Lang</code> thuần ở <code>:core</code> quyết định trả cái nào</td><td>tra <code>R.string</code> đòi <code>Context</code> ⇒ phá tính thuần của <code>:core</code> và làm 1244 test <code>:core</code> phải có Android</td></tr>
+<tr><td><code>:app</code> (345 chuỗi = <b>chữ trên màn</b>)</td><td><b>tệp tài nguyên MỚI</b> <code>strings_kachi.xml</code> + <code>values-en/strings_kachi.xml</code></td><td>thêm vào <code>strings.xml</code> sẽ <b>đổi hash niêm phong</b> ⇒ phải xin ghim lại. Android gộp mọi tệp trong <code>values/</code> nên tệp mới hoạt động y hệt mà <b>seal không bị đụng</b></td></tr>
+</table>
+<p>
+  Công tắc: <code>WorkspacePrefs</code> khoá <code>lang</code> (theo máy, không theo hồ sơ — ngôn ngữ là thuộc tính của
+  người đọc màn hình, không của hồ sơ xe) → <code>HomeUiState.lang</code> → intent ViewModel → nạp trong
+  <code>load()</code>, đúng khuôn <code>topStrip</code>/<code>autostart</code>. Đổi ngôn ngữ ⇒ dựng lại màn (như
+  <code>ThemeMode</code> của ClusterNav làm), vì chuỗi đã nằm trong view.
+</p>
+<p class="muted">
+  <code>:app</code> đã có <code>Lang.t(vi, en)</code> (ClusterNav, 94 cặp) — <b>dùng lại</b> cho chỗ nào chữ sinh động
+  lúc chạy, còn chữ tĩnh thì vào tệp tài nguyên mới để đúng chuẩn Android.
+</p>
+
+<h3>3.2 Bảng màu sáng — bỏ <code>const val</code></h3>
+<p>
+  <code>KachiTheme</code> 13 <code>const val</code> → <b>hàm/thuộc tính tra theo chủ đề đang chọn</b>. 82 mã hex ở 21 tệp
+  đi qua đó. Bảng SÁNG không phải "đảo ngược bảng tối": nền sáng cần <b>mực đậm hơn</b> và <b>viền rõ hơn</b> để giữ
+  tương phản, còn màu nhấn phải <b>tối đi</b> mới đọc được trên nền sáng.
+</p>
+<table>
+<tr><th>Vai</th><th>Tối (đang có)</th><th>Sáng (mới)</th></tr>
+<tr><td>nền</td><td><code>#0a0d13</code></td><td>nền rất sáng, hơi lệch xanh cho đỡ chói</td></tr>
+<tr><td>mực</td><td><code>#eaf0f8</code></td><td>gần đen, đủ ≥ 7:1 trên nền</td></tr>
+<tr><td>mực phụ</td><td><code>#93a0b4</code></td><td>xám trung, ≥ 4.5:1</td></tr>
+<tr><td>thẻ</td><td><code>#141922</code></td><td>trắng, phân biệt bằng <b>viền</b> chứ không bằng độ sáng</td></tr>
+<tr><td>nhấn</td><td><code>#4c7dff</code></td><td>đậm hơn để chữ trắng trên nút vẫn đọc</td></tr>
+</table>
+<p class="warn">
+  ⚠ Bẫy đã biết: mã màu ở <code>:core</code> là <b>cấm</b> (bài học <code>ChipTone</code> — bản nháp RW0 viết
+  <code>#37d67a</code> trong khi theme là <code>#34d399</code>, hai bảng màu lệch ngay dòng đầu). Sắc thái ở
+  <code>:core</code>, hex ở <code>:app</code>.
+</p>
+
+<h3>3.3 Thứ tự làm</h3>
+<p>
+  Bảng màu <b>trước</b> U5: nút chủ đề sinh ra chuỗi mới ("Sáng"/"Tối"/"Theo xe"), làm sau thì U5 phải dịch lại.
+</p>
+
+<h2>4. Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Xong khi</th></tr>
+<tr><td>T1</td><td>Bảng màu sáng + nút chủ đề thật</td><td>chọn Sáng ⇒ ảnh chụp đổi màu thật, tương phản đo được ≥ 4.5:1</td></tr>
+<tr><td>T2</td><td><code>:core</code> nhãn EN cho mọi mã khả năng</td><td>test đòi 0 mã thiếu nhãn EN</td></tr>
+<tr><td>T3</td><td><code>:app</code> tệp tài nguyên mới + đổi ngôn ngữ</td><td>chọn English ⇒ màn ra tiếng Anh; seal không đụng</td></tr>
+<tr><td>T4</td><td>Mục tồn của G1</td><td>toast ngăn kéo giao được · nhãn sơ đồ ADAS đọc được</td></tr>
+<tr><td>T5</td><td>Soát độc lập + đo máy ảo + tài liệu</td><td>ảnh chụp cả 2 chủ đề × 2 ngôn ngữ</td></tr>
+</table>
+
+<h2>5. Verification</h2>
+<p><b>[ĐO] 3059 test / 0 đỏ</b> (mốc trước phiên: 2960 ⇒ <b>+99</b>) · APK sạch · 0 tệp launcher > 500 dòng ·
+<code>:core</code> 0 <code>import android.*</code>, 0 mã hex, 0 số dp · <b>niêm phong nguyên</b> (sha khớp hằng ghim) ·
+<code>MainActivity</code> không đụng · <b>thử phá 10 phép, đỏ đúng chỗ cả 10</b> (chạy KHÔNG <code>--rerun-tasks</code>).</p>
+<table>
+<tr><th>Yêu cầu</th><th>Bằng chứng đo được</th></tr>
+<tr><td>R1 đổi ngôn ngữ</td><td class="ok">bấm "Tiếng Việt" ⇒ <code>Apps/Settings/outside</code> → <code>Ứng dụng/Cài đặt/ngoài</code>, ghi <code>lang=vi</code>; <code>force-stop</code> (PID 13207→13415 = tiến trình chết thật) rồi mở lại vẫn đúng</td></tr>
+<tr><td>R2 nhãn khả năng có EN</td><td class="ok"><b>262 nhãn</b> ở 9 bộ; bài canh đếm tuyệt đối từng registry (123 datum · 64 nút · 12 nhóm · 9 widget · 4 gói lệnh · 7+17 mục cài đặt · enum · quyền)</td></tr>
+<tr><td>R3 chữ trên màn có EN</td><td class="warn"><b>KHÔNG đạt lúc soát</b> — 3 chuỗi lọt (<code>"Xe"</code>, <code>"pin"</code>, <code>"WIDGET"</code>) ⇒ đã vá + nới bài canh</td></tr>
+<tr><td>R4 bảng màu sáng</td><td class="ok">nền đo được <code>(238,241,246)</code> khớp <code>LIGHT.bg</code> từng byte; tương phản đo <b>từ pixel</b> ở 16 chỗ, <b>0 chỗ dưới ngưỡng</b> (thấp nhất 4.00, cao nhất 18.17)</td></tr>
+<tr><td>R5 nút chủ đề hết là nút chết</td><td class="ok">bấm "Sáng" ⇒ <code>theme_mode</code> NIGHT→DAY <b>và</b> pixel nền đổi thật (26,30,40)→(247,249,252); "Tự động" cũng có tác dụng (<code>isNight(6)=false</code> ⇒ ra bản sáng)</td></tr>
+<tr><td>R6 không phá thứ đang chạy</td><td class="ok">0 đỏ · seal khớp · 4 tổ hợp ngôn ngữ × chủ đề đều chụp ảnh đối chiếu</td></tr>
+</table>
+<p class="warn"><b>Chưa đo trên xe.</b> Ca "Theo xe" ở locale Việt chỉ suy ra từ logic. Bảng sáng ngoài trời phải xem bằng
+mắt trên xe. Ca 6 ô mỗi ô một app thật khi đổi ngôn ngữ cần 6 màn ảo (chỉ đo được 1 ô).</p>
+
+<h2>6. Open Questions</h2>
+<ul>
+  <li><b>OQ1</b> — "Theo xe" (theo cấu hình hệ thống) có nên là mặc định? Mặc định chọn: <b>có</b>, vì xe của owner đặt tiếng Việt và người khác cài sẽ nhận đúng ngôn ngữ máy họ.</li>
+  <li><b>OQ2</b> — dịch nhãn kỹ thuật (VIN · SOH · ESP · MCU) sang tiếng Anh thì <b>giữ nguyên viết tắt</b>; đúng chuẩn ngành, không dịch thành câu dài.</li>
+</ul>
+
+<h2>7. References</h2>
+<ul>
+  <li><code>docs/specs/kachi-settings-screen.html</code> — S1 §4.5 (vì sao HOÃN nút chủ đề) + OQ2</li>
+  <li><code>docs/specs/kachi-capability-groups.html</code> — G1 (nhóm, icon, khoảng cách)</li>
+  <li><code>docs/specs/kachi-unified-capability-tile.html</code> — RW0 (khuôn tham số mặc định <code>short</code>)</li>
+</ul>
+
+<h2>8. Nhật ký triển khai</h2>
+
+<h3>Ba con số kiểm kê của tôi trong spec này đều sai</h3>
+<ul>
+  <li><b>"345 chuỗi ở <code>:app</code>"</b> → trong <b>mã</b> chỉ <b>130</b>. Phép đếm của tôi bắt cả chuỗi trong
+      <b>chú thích</b> (KDoc dự án viết tiếng Việt).</li>
+  <li>Nặng hơn: đếm bằng <b>dấu tiếng Việt</b> nên <b>bỏ sót chữ Việt KHÔNG DẤU</b> — không thấy <code>"Xong"</code> (nút
+      đóng Cài đặt) và <code>"khung"</code> (bảng vẽ bố cục). Cùng lỗ hổng này về sau để lọt <code>"Xe"</code> và
+      <code>"pin"</code> ra tới màn tiếng Anh.</li>
+  <li><b>"17 mục cài đặt"</b> → thật là <b>16</b> lúc đo, sau thêm mục ngôn ngữ mới thành 17.</li>
+  <li><b>"78 hex / 17 tệp"</b> (số của S1) → <b>83 / 21</b>.</li>
+</ul>
+
+<h3>Bài canh bỏ sót đúng thứ nó sinh ra để bắt — hai lần, hai lý do khác nhau</h3>
+<p>
+  <b>Lần 1</b>: lượt soát độc lập tìm ra <code>"Xe"</code> · <code>"pin"</code> · <code>"WIDGET"</code> hiện giữa màn
+  tiếng Anh. Hai bài canh của chính phiên đều xanh: bài quét-theo-dấu <b>mù với chữ Việt không dấu</b>; bài "mọi chữ đi
+  qua tài nguyên" chỉ soi <b>9 dạng gọi của Android</b> (<code>text =</code>, <code>drawText(</code>…) mà launcher vẽ chữ
+  qua <b>hàm dựng view của riêng nó</b> (<code>miniCard(</code>/<code>ring(</code>/<code>label(</code>) ⇒
+  <b>chính kênh chở chữ không được quét</b>. Đáng chú ý: khoá tài nguyên ngay dòng bên cạnh
+  <code>"Xe"</code> đã đi đúng đường từ đầu ⇒ ba chỗ bị <b>bỏ lại</b>, không phải "chưa kịp làm".
+</p>
+<p>
+  <b>Lần 2</b>: phép chống-trùng nhãn EN bản đầu tha cả nhóm nếu <i>có</i> một mục đã trùng ở tiếng Việt ⇒ phép thử phá
+  <b>vẫn xanh</b>. Phép đúng là so <b>theo từng cặp</b>. Bài học: <b>thử phá phải kiểm cả bài canh, không chỉ mã sản
+  phẩm.</b>
+</p>
+
+<h3>Hai lỗi tương phản chỉ lộ khi đo pixel, không lộ khi đọc hằng</h3>
+<ul>
+  <li><b>Nút ⇄ đầu ô 1.41:1</b> — tôi đặt scrim sáng theo phản xạ "bảng sáng thì scrim nhạt", nhưng nút đó nằm trên
+      <b>pixel của app đang chiếu</b> ⇒ là vai <b>duy nhất không được theo chủ đề</b>. Nay 4.00 / 19.46.</li>
+  <li><b>Icon ô điều khiển đang BẬT 1.39:1</b> — icon trắng trên nền gradient <b>bán trong suốt</b> ⇒ nền sáng trộn ra
+      (211,217,248) làm glyph biến mất, trong khi NHÃN vẫn đúng nên lỗi rất dễ lọt qua một lượt nhìn nhanh.</li>
+  <li>Kèm <b>22 chỗ <code>Color.WHITE</code></b> — không phải hex nên bài canh "0 hex" xanh trơn, mà bảng sáng có ≥9 chỗ
+      thành <b>chữ trắng trên nền trắng</b>.</li>
+</ul>
+
+<h3>Sai lệch spec có chủ ý: chỗ lưu ngôn ngữ</h3>
+<p>
+  §3.1 ghi <i>"<code>WorkspacePrefs</code> khoá <code>lang</code>"</i>. Làm đúng chữ đó thì một APK có <b>hai</b> công
+  tắc ngôn ngữ (launcher + màn ClusterNav đang đọc <code>seg_language</code>) = đúng <b>bẫy hai-bản-sao</b> dự án đã trả
+  giá 4 lần; biểu hiện: chọn English ở Kachi rồi mở màn ClusterNav thì màn đó <b>vẫn tiếng Việt</b>. ⇒ dùng chỗ lưu của
+  ClusterNav làm chỗ lưu DUY NHẤT, <code>:core Strings.current</code> chỉ là hình chiếu lúc vẽ. Vẫn đi qua
+  <code>WorkspacePrefs</code> (uỷ quyền) để tầng UI giữ 0 lần ghi bền trực tiếp.
+</p>
+
+<h3><code>@Volatile</code> không phải trang trí</h3>
+<p>
+  <code>Strings.current</code> được đọc trên thread nền (nhãn gói lệnh đọc trong thread <code>macro-*</code>) và ghi trên
+  thread chính. Thiếu <code>@Volatile</code> thì biểu hiện là <i>"đổi English mà mấy ô dữ liệu xe vẫn tiếng Việt"</i> —
+  trông như lỗi giao diện nên sẽ bị đi tìm sai chỗ. Ngược lại <code>KachiTheme.palette</code> <b>không</b> cần
+  <code>@Volatile</code> vì mọi chỗ đọc đều ở thread chính (lượt soát kiểm 3 tệp nghi vấn).
+</p>
+
+<h3>Toast không giao được vì Z-ORDER, không vì toast hỏng</h3>
+<p>
+  [ĐO] <code>dumpsys window</code> lúc toast đang lên: ngăn kéo là <code>APPLICATION_OVERLAY</code> lớp
+  <b>121000</b> phủ kín 1920×1080, toast là <code>TOAST</code> lớp <b>81000</b> ⇒ toast nằm <b>dưới</b>. Toast ở màn Cài
+  đặt vẫn hiện vì bảng đó là con của cửa sổ Activity (~21000). ⇒ luật: <b>bề mặt phủ không được nói bằng Toast</b>, có
+  bài canh. Sau vá: dải chữ đổi <b>0 px → 59 363 px</b>, tương phản 7.13:1.
+</p>
+
+<h3>Đổi ngôn ngữ/chủ đề làm app trong ô mở lại — đo được, chưa vá</h3>
+<p>
+  [ĐO] đặt đồng hồ thật vào ô rồi đổi ngôn ngữ: PID 17942→<b>18211</b>, màn ảo #172→#173, task #591→#593. Đổi chủ đề
+  cũng vậy. Cơ chế là <code>recreate()</code>. Giảm nhẹ: app <b>về đúng ô</b> (không phải hình dạng P-bug2), tự phục hồi,
+  và giao diện <b>có nói trước</b>. Với <b>ngôn ngữ</b> thì <code>recreate()</code> gần như bắt buộc; với <b>chủ đề</b>
+  thì về lý vá được (màu nằm trong object Kotlin, không phải tài nguyên) nhưng phải sửa đúng chỗ sinh ra P-bug1/P-bug2
+  ⇒ <b>để owner quyết</b>, không tự sửa trong lượt soát.
+</p>
+
+</div>
+</body>
+</html>

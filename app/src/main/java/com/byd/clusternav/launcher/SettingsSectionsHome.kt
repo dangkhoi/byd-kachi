@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -61,11 +62,11 @@ class SettingsHomeSection(
      */
     private fun layout(body: LinearLayout) {
         val s = deps.state()
-        body.addView(rows.sectionLabel("Bố cục màn hình"))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_layout)))
         val summary = rows.note(layoutSummary(s.customLayout))
         body.addView(summary)
         body.addView(rows.chipRow(
-            "Bố cục sẵn",
+            context.getString(R.string.kachi_row_preset),
             LayoutPreset.values().map { it.name to it.label },
             s.preset.name,
         ) { code ->
@@ -76,7 +77,7 @@ class SettingsHomeSection(
             // lại cả trang: dựng lại là 187 ô + mất chỗ đang cuộn. Đọc lại từ nguồn sự thật vì intent chạy đồng bộ.
             summary.text = layoutSummary(deps.state().customLayout)
         })
-        body.addView(rows.button("Vẽ bố cục riêng…") { deps.onOpenLayoutEditor() }, wrapLp())
+        body.addView(rows.button(context.getString(R.string.kachi_layout_open_editor)) { deps.onOpenLayoutEditor() }, wrapLp())
     }
 
     /**
@@ -86,9 +87,9 @@ class SettingsHomeSection(
      * bố cục sẵn, và nếu không ai nói thì người dùng thấy "đã lưu bố cục" mà màn hình khác hẳn.
      */
     private fun layoutSummary(custom: GridLayout?): String = custom?.let {
-        "Đang dùng bố cục tự vẽ: ${it.frames.size} khung" +
-            (EffectiveLayout.ignoredReason(it)?.let { r -> " — nhưng bị bỏ qua ($r)" } ?: "")
-    } ?: "Đang dùng bố cục sẵn."
+        context.getString(R.string.kachi_layout_custom_in_use, it.frames.size) +
+            (EffectiveLayout.ignoredReason(it)?.let { r -> context.getString(R.string.kachi_layout_ignored, r) } ?: "")
+    } ?: context.getString(R.string.kachi_layout_preset_in_use)
 
     // ── Hình nền & trình chiếu ───────────────────────────────────────────────────────────────────
 
@@ -99,28 +100,28 @@ class SettingsHomeSection(
      * đường dẫn, và màn chọn tệp của hệ thống bị khoá trên xe.
      */
     private fun wallpaper(body: LinearLayout) {
-        body.addView(rows.sectionLabel("Hình nền"))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_wallpaper)))
         var wp = deps.state().wallpaper
         body.addView(rows.checkRow(
             on = wp.enabled,
-            title = "Dùng ảnh làm hình nền",
-            sub = if (deps.wallpaperFolderHint.isEmpty()) "Bỏ ảnh vào thư mục ảnh của Kachi"
-            else "Bỏ ảnh vào: ${deps.wallpaperFolderHint}",
+            title = context.getString(R.string.kachi_wall_title),
+            sub = if (deps.wallpaperFolderHint.isEmpty()) context.getString(R.string.kachi_wall_sub_nofolder)
+            else context.getString(R.string.kachi_wall_sub_folder, deps.wallpaperFolderHint),
         ) { on -> wp = wp.copy(enabled = on); deps.onWallpaper(wp) })
         body.addView(rows.chipRow(
-            "Đổi ảnh mỗi",
+            context.getString(R.string.kachi_wall_period),
             Slideshow.INTERVAL_CHOICES_SEC.map { it.toString() to Slideshow.intervalLabel(it) },
             wp.intervalSec.toString(),
         ) { code ->
             wp = wp.copy(intervalSec = code.toIntOrNull() ?: Slideshow.DEFAULT_INTERVAL_SEC)
             deps.onWallpaper(wp)
         })
-        body.addView(rows.chipRow("Cách phủ", ImageFit.values().map { it.name to it.label }, wp.fit.name) { code ->
+        body.addView(rows.chipRow(context.getString(R.string.kachi_wall_fit), ImageFit.values().map { it.name to it.label }, wp.fit.name) { code ->
             wp = wp.copy(fit = ImageFit.values().firstOrNull { it.name == code } ?: ImageFit.FILL)
             deps.onWallpaper(wp)
         })
         body.addView(rows.chipRow(
-            "Làm tối ảnh",
+            context.getString(R.string.kachi_wall_dim),
             listOf(0, 25, 45, 65).map { it.toString() to "$it%" },
             wp.dim.toString(),
         ) { code ->
@@ -143,16 +144,13 @@ class SettingsHomeSection(
      * `DockConfig.setEnabled` ở gói 2 thành vô nghĩa, vì không còn đường nào thêm một ô ĐỌC vào thanh.
      */
     private fun dock(body: LinearLayout) {
-        body.addView(rows.sectionLabel("Thanh nút xe"))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_dock)))
         body.addView(rows.chipRow(
-            "Viền đặt thanh",
+            context.getString(R.string.kachi_dock_edge),
             DockEdge.values().map { it.name to it.label },
             deps.state().dock.edge.name,
         ) { code -> DockEdge.values().firstOrNull { it.name == code }?.let { deps.onDockEdge(it) } })
-        body.addView(rows.note(
-            "Chạm 1 ô để thêm/bớt khỏi thanh nút. GIỮ một ô XEM để đưa nó lên thanh trạng thái. " +
-                "Nhóm An toàn/Động lực/Giải trí đổi hành vi lái — tự dùng tự chịu.",
-        ))
+        body.addView(rows.note(context.getString(R.string.kachi_dock_note)))
         // ── NHÓM TRƯỚC (G1 · T4 · §4.2) ──
         // Cùng thứ tự với ngăn kéo, và cùng nguồn (`CapabilityPicker`) ⇒ hai màn chọn không thể sắp khác nhau. Ô nhóm
         // trên thanh nút hiện **tóm tắt** ("2 cảnh báo") — xem `GroupBoard.summaryView`; không có nó thì ô hiện "—"
@@ -164,7 +162,7 @@ class SettingsHomeSection(
         CapabilityCatalog.byDomain().forEach { (domain, picks) ->
             // `singlesOf` BẮT BUỘC: nhóm đã bày ở mục trên, để nó nằm trong lĩnh vực nữa là **hai ô cùng một mã** ⇒
             // `tiles[id]` bị ghi đè ⇒ chỉ ô sau được tô (đúng ba lỗi cùng lúc mà RW0 đã ghi ở KDoc lớp lưới).
-            body.addView(rows.sectionLabel(domain.label))
+            body.addView(rows.sectionLabel(domain.displayLabel))
             CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(rows.note(it)) }
             grid.addGrid(body, CapabilityPicker.singlesOf(picks), cols = 5)
         }

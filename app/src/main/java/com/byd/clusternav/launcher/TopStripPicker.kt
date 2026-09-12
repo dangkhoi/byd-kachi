@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -54,11 +55,9 @@ class TopStripPicker(
      * **giữ** ô của nó ở danh sách bên dưới — có nói rõ trong câu mô tả.
      */
     fun section(parent: LinearLayout) {
-        parent.addView(label("Chip trên thanh trạng thái"))
+        parent.addView(label(context.getString(R.string.kachi_topstrip_title)))
         parent.addView(TextView(context).apply {
-            text = "Tối đa ${TopStripConfig.CAP} thông tin hiện cạnh đồng hồ. Chạm để bật/tắt. " +
-                "Muốn đưa một thông tin khác lên đây: GIỮ ô của nó ở danh sách bên dưới. " +
-                "Chỉ thông tin XEM — nút bấm đặt ở thanh điều khiển hoặc ô giữa màn (chip quá nhỏ để bấm an toàn)."
+            text = context.getString(R.string.kachi_topstrip_hint, TopStripConfig.CAP)
             setTextColor(Color.parseColor(KachiTheme.MUT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setPadding(0, 0, 0, dpi(context, Sp.S))
@@ -85,7 +84,7 @@ class TopStripPicker(
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(ImageView(context).apply {
-                val r = iconRes(pick); if (r != 0) { setImageResource(r); setColorFilter(Color.WHITE) }
+                val r = iconRes(pick); if (r != 0) { setImageResource(r); setColorFilter(c(KachiTheme.INK)) }
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_L), dpi(context, Sp.ICON_L))
             })
             addView(TextView(context).apply {
@@ -110,7 +109,7 @@ class TopStripPicker(
         if (next == strip) {
             Toast.makeText(
                 context,
-                "Thanh trên chỉ chứa ${TopStripConfig.CAP} chip — bỏ một cái trước",
+                context.getString(R.string.kachi_topstrip_full, TopStripConfig.CAP),
                 Toast.LENGTH_SHORT,
             ).show()
             return
@@ -124,8 +123,8 @@ class TopStripPicker(
         val t = tiles[id] ?: return
         t.background = if (strip.has(id)) GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_L).toFloat()
-            setColor(Color.parseColor("#264c7dff")); setStroke(dpi(context, Sp.HAIRLINE), Color.parseColor(KachiTheme.ACCENT))
-        } else KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
+            setColor(Color.parseColor(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), Color.parseColor(KachiTheme.ACCENT))
+        } else KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
     }
 
     private fun label(text: String) = TextView(context).apply {

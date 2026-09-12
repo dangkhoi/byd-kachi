@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher
 import com.byd.clusternav.comfort.Pm25Filter
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -319,7 +320,12 @@ class GroupBoardTest {
     fun `nut cua nhom lay nhan va icon tu bo dang ky, ke ca goi lenh`() {
         val m = GroupBoard.of(CapabilityGroups.WINDOWS, CarStatus())
         val btn = m.actions.first { ControlRegistry.byId(it.id) != null }
-        assertEquals(ControlRegistry.byId(btn.id)!!.label, btn.label)
+        // ⚠ [KIỂM TOÁN 2026-09-12 mục 4] Mốc này SIẾT lại, không nới: trước đây nó đòi nhãn ĐẦY (`label`), nay đòi
+        // nhãn NGẮN theo ngôn ngữ (`displayShortLabel`). Lý do là [ĐO] ảnh máy ảo: hàng nút của ô nhóm chia 6 ô trên
+        // khung 4/12 màn ⇒ 82px/ô, nhãn đầy bị cắt `"Window front-ri…"` / `"Kính trước-p…"` ⇒ hai kính TRƯỚC đọc ra y
+        // hệt nhau. Cùng luật đã áp cho ô con XEM ở U5·T2 (`displayShortLabel`), nay áp cho ô BẤM.
+        assertEquals(ControlRegistry.byId(btn.id)!!.displayShortLabel, btn.label)
+        assertEquals("Kính TT", btn.label, "nhãn ngắn phải theo ĐÚNG quy ước bảng lốp (`Lốp TT`), không viết tắt kiểu khác")
         assertEquals(ControlRegistry.byId(btn.id)!!.icon, btn.icon)
         val macro = m.actions.first { ActionMacros.byId(it.id) != null }
         assertEquals(ActionMacros.byId(macro.id)!!.label, macro.label)
@@ -327,5 +333,149 @@ class GroupBoardTest {
             ActionMacros.byId(macro.id)!!.needsBadge(), macro.needsBadge,
             "gói lệnh mang mức bằng chứng THẤP NHẤT trong các bước ⇒ dấu chưa-kiểm phải chảy ra đúng",
         )
+    }
+
+    /**
+     * ⚠⚠ **[KIỂM TOÁN 2026-09-12 mục 4] Nhãn nút của nhóm phải VỪA ô hẹp — ở CẢ hai thứ tiếng.**
+     *
+     * [ĐO] ảnh máy ảo: hàng nút của ô nhóm chia bề ngang cho tối đa 6 ô ⇒ **82px/ô** ở khung 4/12 màn (≈70px dùng
+     * được cho chữ), nhãn hai dòng ở 10.5sp ⇒ khoảng **9 ký tự mỗi dòng**. Nhãn đầy vượt mức đó bị cắt:
+     * `"Window front-ri…"` / `"Kính trước-p…"` ⇒ hai kính TRƯỚC đọc ra y hệt nhau.
+     *
+     * Hai điều kiện, và **điều kiện thứ hai mới là điều kiện thật**:
+     *  1. tổng ≤ [SHORT_CAP_TILE] ký tự;
+     *  2. **từ dài nhất** ≤ [WORD_CAP_TILE] — `TextView` chỉ ngắt dòng ở dấu CÁCH, nên `"Kính trước-trái"` (15 ký tự,
+     *     từ dài nhất `"trước-trái"` = 10) cần **ba** dòng và bị cắt dù mỗi từ đều ngắn. Chỉ đếm tổng thì luật này
+     *     xanh với những nhãn vẫn cắt.
+     *
+     * Kiểm trên **chuỗi thật sẽ hiện** (`GroupBoard.of(...).actions`), không kiểm registry — nhờ vậy nếu ai đổi
+     * `action()` về nhãn đầy thì bài đỏ, chứ không chỉ khi ai xoá `short`.
+     */
+    @Test
+    fun `nhan nut cua nhom vua o hep o ca hai thu tieng`() {
+        val tooLong = ArrayList<String>()
+        listOf(Lang.VI, Lang.EN).forEach { lang ->
+            Strings.current = lang
+            CapabilityGroups.ALL.filter { it.hasWrites }.forEach { g ->
+                GroupBoard.of(g, CarStatus()).actions.forEach { a ->
+                    val word = a.label.split(' ').maxOfOrNull { it.length } ?: 0
+                    if (a.label.length > SHORT_CAP_TILE || word > WORD_CAP_TILE) {
+                        tooLong += "$lang ${a.id}='${a.label}' (${a.label.length} ký tự, từ dài nhất $word)"
+                    }
+                }
+            }
+        }
+        Strings.current = Lang.VI
+        assertTrue(
+            tooLong.isEmpty(),
+            "nhãn nút vượt chỗ của ô hẹp ⇒ sẽ bị cắt trên màn. Khai `short`/`shortEn` cho nút đó (khuôn " +
+                "`TelemetrySpec.short`), đừng viết tắt ở tầng vẽ: $tooLong",
+        )
+    }
+
+    // ── Bảng sơ đồ hai bên: ô hẹp thì hiện cái gì ────────────────────────────────────────────────
+
+    @Test
+    fun `du cho thi ve du hai ben, y nhu truoc`() {
+        val m = GroupBoard.of(CapabilityGroups.ADAS, CarStatus())
+        val plan = GroupBoard.sidePlan(m, maxPerSide = 4)
+        assertEquals(m.leftCells, plan.left, "đủ chỗ ⇒ giữ nguyên hành vi cũ (vẽ đủ)")
+        assertEquals(m.rightCells, plan.right)
+        assertEquals(0, plan.hidden)
+        assertNull(plan.summary, "đủ chỗ thì KHÔNG có câu thay thế — câu đó chỉ dành cho ca không vẽ được hàng nào")
+    }
+
+    @Test
+    fun `khong du cho thi uu tien o DANG canh bao va dem phan con lai`() {
+        // Một cảnh báo bên trái (BSD trái mức 2) — mọi mục khác im lặng.
+        val s = CarStatus(safety = CarStatus.Safety(bsdLeftLevel = 2))
+        val m = GroupBoard.of(CapabilityGroups.ADAS, s)
+        val plan = GroupBoard.sidePlan(m, maxPerSide = 1)
+        assertEquals(listOf("bsd_fl_alarm"), plan.left.map { it.id }, "chỗ hẹp ⇒ ô ĐANG cảnh báo được chỗ trước")
+        assertTrue(plan.right.isEmpty(), "bên phải không có gì đáng nói ⇒ không vẽ ô rỗng (ô rỗng đọc thành 'an toàn')")
+        assertEquals(m.leftCells.size + m.rightCells.size - 1, plan.hidden, "phần còn lại phải được ĐẾM, không bỏ im")
+        assertNull(plan.summary)
+    }
+
+    @Test
+    fun `khong du cho ma cung khong co canh bao thi noi THANG trang thai`() {
+        val m = GroupBoard.of(CapabilityGroups.ADAS, CarStatus())     // off-car: mọi field null
+        val plan = GroupBoard.sidePlan(m, maxPerSide = 2)
+        assertTrue(plan.left.isEmpty() && plan.right.isEmpty())
+        val note = plan.summary
+        assertNotNull(note, "không vẽ được hàng nào thì phải có MỘT câu — để trống là kênh im lặng")
+        // ⚠ Phải phân biệt "chưa đọc được" với "đã đọc, không có gì": gộp hai câu là **nói sai** với người lái.
+        assertTrue(note!!.contains("chưa đọc"), "off-car chưa đọc được gì ⇒ nói đúng điều đó: '$note'")
+        val alive = CarStatus(
+            safety = CarStatus.Safety(
+                bsdLeftLevel = 0, bsdRightLevel = 0, lcaLeft = 0, lcaRight = 0,
+                rctaLeft = 0, rctaRight = 0, dowLeft = 0, dowRight = 0,
+            ),
+        )
+        val quiet = GroupBoard.sidePlan(GroupBoard.of(CapabilityGroups.ADAS, alive), maxPerSide = 2).summary
+        assertNotNull(quiet)
+        assertTrue(quiet!!.contains("Không có cảnh báo"), "đọc được mà sạch ⇒ nói 'không có cảnh báo': '$quiet'")
+    }
+
+    @Test
+    fun `sidePlan khong nem o ca bien`() {
+        val m = GroupBoard.of(CapabilityGroups.ADAS, CarStatus())
+        listOf(0, -3).forEach { cap ->
+            val p = GroupBoard.sidePlan(m, cap)
+            assertTrue(p.left.isEmpty() && p.right.isEmpty(), "trần $cap ⇒ không hàng nào, KHÔNG ném")
+            assertNotNull(p.summary, "và vẫn phải nói một câu")
+        }
+        // Nhóm KHÔNG có ô con hai bên ⇒ "đủ chỗ" theo định nghĩa, không có gì bị ẩn.
+        //
+        // ⚠ [ĐO] bản đầu của bài này dùng nhóm *Lốp* và **đỏ** (`hidden = 6`): tôi cho rằng lốp không có "phía", nhưng
+        // `GroupBoard.sideOf` đọc quy ước tên (`_fl`/`_fr`/`_rl`/`_rr`) nên **cả 8 datum lốp đều có phía**. Đúng theo
+        // thiết kế (bảng lốp cũng xếp theo không gian), chỉ là nó không phải ca "không có phía". Giữ số đo, sửa giả
+        // định: nhóm *Cảm biến đỗ* (`radar_zones` · `radar_volume`) mới thật sự không mã nào mang dấu hiệu phía.
+        val noSides = GroupBoard.sidePlan(GroupBoard.of(CapabilityGroups.PARKING, CarStatus()), 0)
+        assertEquals(0, noSides.hidden)
+        assertNull(noSides.summary)
+    }
+
+    /**
+     * ⚠⚠ **[THỬ PHÁ tìm ra] Luật icon của HÀNG NÚT trước đó KHÔNG có ai canh.**
+     *
+     * [ĐO] đổi thân [GroupBoardModel.actionIconsDistinguish] thành `get() = true` — tức hàng nút **luôn** vẽ icon, kể
+     * cả bốn nút kính cùng một hình — rồi chạy cả `:core:test` lẫn `:app:testDebugUnitTest`: **0 bài đỏ**. Mà chính
+     * con số 30px lấy lại từ việc bỏ icon là phần làm hàng nút hết bị cắt, nên đó là một luật **đang giữ một lỗi
+     * nhìn-thấy-được không mọc lại** mà không có gì bảo vệ.
+     *
+     * Bài này chốt luật bằng **dữ liệu thật của 3 nhóm có nút**, không bằng một ca dựng tay: nhóm *Kính* có 4/6 nút
+     * cùng `ic-window` ⇒ icon vô nghĩa ⇒ bỏ; hai nhóm kia lặp tối đa 2 ⇒ giữ. Ngày ai thêm/bớt nút là phải xem lại
+     * con số ở đây, đúng kiểu bài `phep chia hang khong doi hinh dang cua 12 nhom dang co`.
+     *
+     * ⚠ [ĐO] **giả định của tôi về nhóm *Đèn* bị dữ liệu bác**: tôi viết `g_lights to true` (tưởng nó chỉ lặp 2 lần)
+     * và bài đỏ ngay — thật ra `headl` · `headlight_mode` · `drl` **đều** dùng `ic-light` ⇒ lặp 3 ⇒ nhóm Đèn cũng bỏ
+     * icon. Giữ số đo, sửa giả định — và đây chính là lý do bài này đọc registry thật thay vì chép một danh sách.
+     */
+    @Test
+    fun `luat icon cua hang nut theo dung du lieu that cua 3 nhom co nut`() {
+        val verdict = CapabilityGroups.ALL.filter { it.hasWrites }.associate { g ->
+            g.id to GroupBoard.of(g, CarStatus()).actionIconsDistinguish
+        }
+        assertEquals(
+            mapOf("g_windows" to false, "g_doors" to true, "g_lights" to false),
+            verdict,
+            "nhóm Kính có 4/6 nút cùng icon cửa kính và nhóm Đèn có 3/4 nút cùng icon đèn ⇒ icon KHÔNG phân biệt " +
+                "được (bỏ đi, lấy lại 30px bề cao cho hàng nút); nhóm Cửa & khoang lặp tối đa 2 lần ⇒ vẫn giữ icon",
+        )
+        // Và luật phải dùng CHUNG trần với ô con XEM — hai trần khác nhau cho cùng một câu hỏi là bẫy hai-bản-sao.
+        val m = GroupBoard.of(CapabilityGroups.WINDOWS, CarStatus())
+        assertEquals(
+            m.actions.groupingBy { it.icon }.eachCount().none { it.value >= 3 }, m.actionIconsDistinguish,
+            "trần lặp icon của hàng nút phải là CÙNG con số với ô con XEM (3)",
+        )
+    }
+
+    private companion object {
+        /** Trần ký tự của nhãn nút trong ô HẸP — [ĐO] 82px ÷ 2 dòng ở 10.5sp ≈ 9 ký tự/dòng. */
+        const val SHORT_CAP_TILE = 14
+
+        /** Trần độ dài MỘT TỪ: `TextView` chỉ ngắt ở dấu cách, nên từ dài hơn một dòng thì cắt bất kể tổng bao nhiêu. */
+        const val WORD_CAP_TILE = 10
     }
 }

@@ -112,7 +112,7 @@ class OpenAppWiringContractTest {
     @Test
     fun `co loi vao Ung dung tren thanh tren, noi toi che do mo-thuong cua ngan keo`() {
         assertTrue(strip.contains("onOpenAppList"))
-        assertTrue(strip.contains("pill(\"Ứng dụng\""), "thanh trên phải có nút Ứng dụng")
+        assertTrue(strip.contains("R.string.kachi_pill_apps"), "thanh trên phải có nút Ứng dụng")
         assertTrue(activity.contains("onOpenAppList = { drawerController.openAppList() }"))
         assertTrue(drawer.contains("fun openAppList()"), "ngăn kéo phải có chế độ mở-thường")
         assertTrue(drawer.contains("AppDrawer.Mode.OPEN_APP"))

@@ -14,7 +14,7 @@ class RingView(context: Context) : View(context) {
     private var small = ""
 
     private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; color = Color.parseColor("#3A3F45")   // track xám THẤY ĐƯỢC (prototype), không tàng hình
+        style = Paint.Style.STROKE; color = Color.parseColor(KachiTheme.TRACK)   // track xám THẤY ĐƯỢC (prototype), không tàng hình
     }
     private val arc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; color = Color.parseColor(KachiTheme.GREEN)

@@ -11,6 +11,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import com.byd.clusternav.BuildConfig
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -52,22 +53,23 @@ class SettingsSections(
     // ── Hiển thị & đơn vị ────────────────────────────────────────────────────────────────────────
 
     /**
-     * Đơn vị (7 loại) + hiện trạng giao diện sáng/tối.
+     * Đơn vị (7 loại) + **nút chọn chủ đề sáng/tối** (T1).
      *
-     * ⚠⚠ **Giao diện sáng/tối ở đây là DÒNG CHỮ, không phải nút gạt — có chủ ý, đã ĐO.** `theme_mode` có enum
-     * [ThemeMode] ở `:core`, có `HomeViewModel.setThemeMode`, có đường lưu bền, có test — nhưng [ĐO] `grep` toàn
-     * `app/src/main`: **không một chỗ nào đọc `HomeUiState.themeMode` để VẼ hay để áp `uiMode`**; hai chỗ duy nhất
-     * đọc nó là `PrefsWorkspaceRepository.load/persist` (nạp và ghi lại chính nó), và `ThemeMode.isNight(...)` có
-     * **0** chỗ gọi. `KachiHomeActivity` cũng không override `attachBaseContext`. Cộng thêm: bảng màu launcher là
-     * **hằng biên dịch** (`KachiTheme.const val`) và [ĐO] có 78 mã màu hex viết cứng ở 17 tệp.
+     * ## ⚠ Đây từng là DÒNG CHỮ, không phải nút — và việc đổi lại là có bằng chứng
+     * S1 cố ý không làm nút gạt vì [ĐO] lúc đó: `KachiTheme` khai 13 `const val` (**hằng biên dịch**, không đổi được
+     * lúc chạy) + **82 mã hex viết cứng ở 21 tệp** + **không ai đọc `HomeUiState.themeMode` để vẽ** ⇒ nút sẽ lưu bền
+     * đúng mà màn hình không đổi một pixel = **nút chết**, thứ mà `product-team-workflow.md` cấm.
      *
-     * ⇒ Thêm nút gạt bây giờ sẽ là **nút chết**: bấm xong lưu bền đúng, mà màn hình không đổi một pixel. Luật dự án
-     * (`product-team-workflow.md`) cấm nút chết, và nó là đúng bệnh mà S1 đi dọn — nói khác đi, "vẽ được ≠ đặt được"
-     * sẽ thành "đặt được ≠ có tác dụng". Nên ở đây **nói thật hiện trạng**, và đường lưu bền + intent GIỮ NGUYÊN
-     * (owner chưa quyết bảng màu sáng — OQ2), không xoá.
+     * T1 bỏ cả ba tiền đề: hằng → thuộc tính tra bảng ([KachiTheme]), 82 hex → 0 hex ([KachiPalette] là chỗ duy nhất),
+     * và [ThemeHost.sync] là người đọc `themeMode` để vẽ. Nên nay nút là nút THẬT — và bài canh
+     * `SettingsScreenWiringContractTest` đã **đảo chiều**: hôm nay nó đỏ nếu chỗ này KHÔNG có nút.
+     *
+     * "Theo xe" = [ThemeMode.AUTO]: **tối 18h–6h**, không phải đọc cờ `uiMode` của hệ thống. Cố ý — launcher dựng
+     * view bằng mã (không qua `values-night/`) nên nó không nhận được thông báo khi xe đổi chế độ; lấy theo giờ thì
+     * kiểm được off-car và không phụ thuộc firmware. Câu chữ trên màn nói đúng điều đó, không hứa nhiều hơn.
      */
     private fun display(body: LinearLayout) {
-        body.addView(rows.sectionLabel("Đơn vị hiển thị"))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_units)))
         var units = deps.state().unitPrefs
         UnitFormat.quantitiesInUse().forEach { q ->
             body.addView(rows.unitRow(q, units.unitFor(q)) { code ->
@@ -75,26 +77,48 @@ class SettingsSections(
                 deps.onUnitPrefs(units)
             })
         }
-        body.addView(rows.sectionLabel("Giao diện sáng/tối"))
-        body.addView(rows.note(
-            "Kachi hiện chỉ có bảng màu TỐI — chọn được sáng/tối thì màn hình vẫn không đổi, nên ở đây chưa đặt " +
-                "nút gạt (một nút bấm mà không thấy gì đổi thì tệ hơn là chưa có nút).",
-        ))
-        body.addView(rows.note(
-            "Màn ClusterNav (nhóm \"Dẫn đường · Cụm · Phím\") có lựa chọn Sáng/Tối riêng và nó CHẠY cho các màn " +
-                "của ClusterNav.",
-        ))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_theme)))
+        body.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_row_palette),
+            options = ThemeMode.values().map { it.name to it.label() },
+            current = deps.state().themeMode.name,
+        ) { code -> deps.onThemeMode(ThemeMode.valueOf(code)) })
+        body.addView(rows.note(context.getString(R.string.kachi_theme_note)))
+        body.addView(rows.note(context.getString(R.string.kachi_theme_note_clusternav)))
+        lang(body)
+    }
+
+    /**
+     * U5·T3 — bộ chọn NGÔN NGỮ. Ba cách: Theo xe / Tiếng Việt / English (mặc định **Theo xe**, §6 OQ1).
+     *
+     * Cùng khuôn một chiều với nút chủ đề ngay trên: `deps.state().langMode` đọc từ nguồn sự thật →
+     * `deps.onLangMode` là intent → `HomeViewModel` ghi bền → màn dựng lại. Tầng UI **0** lần ghi bền trực tiếp.
+     *
+     * ⚠ Nhãn hai thứ tiếng cụ thể ("Tiếng Việt"/"English") KHÔNG dịch — xem KDoc [LangMode.label]. Đặt ở nhóm
+     * *Hiển thị* chứ không mở một nhóm mới: ngôn ngữ là **cách trình bày**, đúng định nghĩa của nhóm đó trong
+     * [SettingsGroup.DISPLAY] (*"cách trình bày, không phụ thuộc bố cục"*).
+     *
+     * Câu thứ hai nói thẳng rằng màn ClusterNav **dùng chung** lựa chọn này — cố ý khác câu của bảng màu ngay trên
+     * (bảng màu thì RIÊNG). Hai câu trái nhau nằm cạnh nhau trông như lỗi, nên nếu không nói rõ thì người dùng sẽ
+     * suy ra sai một trong hai.
+     */
+    private fun lang(body: LinearLayout) {
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_lang)))
+        body.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_row_lang),
+            options = LangMode.entries.map { it.name to it.label() },
+            current = deps.state().langMode.name,
+        ) { code -> deps.onLangMode(LangMode.valueOf(code)) })
+        body.addView(rows.note(context.getString(R.string.kachi_lang_note)))
+        body.addView(rows.note(context.getString(R.string.kachi_lang_note_clusternav)))
     }
 
     // ── Hồ sơ tài xế ─────────────────────────────────────────────────────────────────────────────
 
     private fun profiles(body: LinearLayout) {
         val s = deps.state()
-        body.addView(rows.sectionLabel("Hồ sơ tài xế"))
-        body.addView(rows.note(
-            "Mỗi hồ sơ giữ bố cục, nội dung ô, thanh nút và chip RIÊNG. Chạm một hồ sơ để đổi sang nó — " +
-                "avatar ở thanh trên cũng đổi được, nhưng tạo và xoá thì chỉ ở đây.",
-        ))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_profiles)))
+        body.addView(rows.note(context.getString(R.string.kachi_profiles_note)))
         s.profiles.forEach { name ->
             body.addView(
                 profileRow(name, active = name == s.activeProfile, total = s.profiles.size),
@@ -103,7 +127,7 @@ class SettingsSections(
                 ).also { it.bottomMargin = dpi(context, Sp.S) },
             )
         }
-        body.addView(rows.button("Thêm hồ sơ…") { deps.onAddProfile() }, wrapLp())
+        body.addView(rows.button(context.getString(R.string.kachi_profiles_add)) { deps.onAddProfile() }, wrapLp())
     }
 
     /**
@@ -123,7 +147,7 @@ class SettingsSections(
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, "#161b24")
+            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
             val p = dpi(context, Sp.M)
             setPadding(p, p, p, p)
             addView(
@@ -134,7 +158,7 @@ class SettingsSections(
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
                     })
                     addView(TextView(context).apply {
-                        text = if (active) "Đang dùng" else "Chạm để đổi sang hồ sơ này"
+                        text = context.getString(if (active) R.string.kachi_profile_active else R.string.kachi_profile_tap_switch)
                         setTextColor(c(if (active) KachiTheme.GREEN else KachiTheme.MUT))
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                     })
@@ -142,7 +166,7 @@ class SettingsSections(
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
             )
             addView(TextView(context).apply {
-                text = "Xoá"; setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                text = context.getString(R.string.kachi_delete); setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                 typeface = Typeface.DEFAULT_BOLD
                 setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.S), dpi(context, Sp.S))
                 setOnClickListener {
@@ -151,8 +175,8 @@ class SettingsSections(
                         // MỘT hồ sơ, và nó tất nhiên là hồ sơ đang dùng ⇒ xét `active` trước thì câu trả lời là
                         // "đổi sang hồ sơ khác trước khi xoá" trong khi KHÔNG có hồ sơ khác nào để đổi sang. Lời
                         // khuyên bất khả thi còn tệ hơn không nói gì, và đây là trạng thái mặc định của mọi máy.
-                        total <= 1 -> toast("Phải còn ít nhất một hồ sơ")
-                        active -> toast("Đang dùng \"$name\" — đổi sang hồ sơ khác trước khi xoá")
+                        total <= 1 -> toast(context.getString(R.string.kachi_profile_keep_one))
+                        active -> toast(context.getString(R.string.kachi_profile_in_use, name))
                         else -> deps.onDeleteProfile(name)
                     }
                 }
@@ -163,7 +187,7 @@ class SettingsSections(
     // ── Tiện nghi xe ─────────────────────────────────────────────────────────────────────────────
 
     private fun car(body: LinearLayout) {
-        body.addView(rows.sectionLabel("Tiện nghi tự động"))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_comfort)))
         body.addView(recircRow(deps.recircOnStart()) { deps.onRecircOnStart(it) })
     }
 
@@ -175,8 +199,10 @@ class SettingsSections(
      */
     private fun recircRow(on: Boolean, onChange: (Boolean) -> Unit): View = rows.checkRow(
         on = on,
-        title = "Nổ máy thì tự lấy gió trong",
-        sub = "Xe quên chế độ này mỗi lần khởi động. ⚠ Lệnh chưa kiểm trên xe — có thể xe không nhận.",
+        title = context.getString(R.string.kachi_recirc_title),
+        // Chuỗi `kachi_recirc_sub` mang câu "chưa kiểm trên xe" (R10) — `Goi2FeatureWiringContractTest` đọc
+        // CHÍNH tệp tài nguyên để chốt, nên câu cảnh báo không thể biến mất mà bài canh vẫn xanh.
+        sub = context.getString(R.string.kachi_recirc_sub),
         onChange = onChange,
     )
 
@@ -193,18 +219,18 @@ class SettingsSections(
      */
     private fun system(body: LinearLayout) {
         val rep = deps.permissions()
-        body.addView(rows.sectionLabel("Quyền"))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_permissions)))
         if (rep.allOk) {
-            body.addView(rows.note("Đủ quyền — không thiếu gì. Kachi tự xin lại mỗi lần mở nếu hệ thống thu hồi."))
+            body.addView(rows.note(context.getString(R.string.kachi_perm_all_ok)))
         } else {
-            body.addView(rows.note("Kachi tự xin lại phần tự xin được; phần còn lại nói rõ việc cần làm."))
+            body.addView(rows.note(context.getString(R.string.kachi_perm_some_missing)))
             rep.missing.forEach { body.addView(rows.permissionRow(it, rep)) }
         }
-        body.addView(rows.sectionLabel("Khởi động"))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_boot)))
         body.addView(rows.checkRow(
             on = deps.state().autostart,
-            title = "Tự mở khi nổ máy",
-            sub = "Nổ máy là Kachi tự dựng lại ô và đặt mình làm màn hình chính. Tắt thì phải mở tay.",
+            title = context.getString(R.string.kachi_autostart_title),
+            sub = context.getString(R.string.kachi_autostart_sub),
         ) { on -> deps.onAutostart(on) })
     }
 
@@ -212,25 +238,22 @@ class SettingsSections(
 
     /** R5 — **chỉ dẫn sang**, không gom vào: màn ClusterNav (và layout XML của nó) đang niêm phong. */
     private fun clusterNav(body: LinearLayout) {
-        body.addView(rows.sectionLabel("Dẫn đường · Cụm đồng hồ · Phím vô-lăng"))
-        body.addView(rows.note(
-            "Dẫn đường trên cụm, chiếu màn lên cụm, biển báo tốc độ, bóng VietMap, ghế mát/sưởi, lọc bụi PM2.5 và " +
-                "gán phím vô-lăng nằm ở màn ClusterNav.",
-        ))
-        body.addView(rows.note(
-            "Màn đó KHÔNG gom vào đây: nó đang niêm phong (không sửa một dòng), nên Cài đặt chỉ mở nó ra.",
-        ))
-        body.addView(rows.button("Mở màn ClusterNav") { deps.onOpenClusterNav() }, wrapLp())
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_clusternav)))
+        body.addView(rows.note(context.getString(R.string.kachi_clusternav_note1)))
+        body.addView(rows.note(context.getString(R.string.kachi_clusternav_note2)))
+        body.addView(rows.button(context.getString(R.string.kachi_clusternav_open)) { deps.onOpenClusterNav() }, wrapLp())
     }
 
     // ── Giới thiệu ───────────────────────────────────────────────────────────────────────────────
 
     private fun about(body: LinearLayout) {
-        body.addView(rows.sectionLabel("Giới thiệu"))
-        body.addView(rows.note("Kachi — màn hình chính cho xe BYD DiLink."))
-        body.addView(rows.note("Phiên bản ${BuildConfig.VERSION_NAME} (mã ${BuildConfig.VERSION_CODE})"))
-        body.addView(rows.note("Tên gói: ${BuildConfig.APPLICATION_ID}"))
-        body.addView(rows.note("Giấy phép MIT. Thử nghiệm cá nhân, KHÔNG liên kết với BYD."))
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_about)))
+        body.addView(rows.note(context.getString(R.string.kachi_about_tagline)))
+        body.addView(rows.note(context.getString(
+            R.string.kachi_about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE,
+        )))
+        body.addView(rows.note(context.getString(R.string.kachi_about_package, BuildConfig.APPLICATION_ID)))
+        body.addView(rows.note(context.getString(R.string.kachi_about_licence)))
     }
 
     // ── Dùng chung ───────────────────────────────────────────────────────────────────────────────
