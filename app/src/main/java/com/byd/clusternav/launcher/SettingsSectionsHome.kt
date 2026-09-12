@@ -84,7 +84,7 @@ class SettingsHomeSection(
             // lại cả trang: dựng lại là 187 ô + mất chỗ đang cuộn. Đọc lại từ nguồn sự thật vì intent chạy đồng bộ.
             summary.text = layoutSummary(deps.state().customLayout)
         })
-        body.addView(rows.button(context.getString(R.string.kachi_layout_open_editor)) { deps.onOpenLayoutEditor() }, wrapLp())
+        body.addView(rows.button(context.getString(R.string.kachi_layout_open_editor)) { deps.onOpenLayoutEditor() })
     }
 
     /**
@@ -183,7 +183,4 @@ class SettingsHomeSection(
         }
     }
 
-    private fun wrapLp() = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-    ).also { it.bottomMargin = dpi(context, Sp.XS) }
 }

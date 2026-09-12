@@ -178,17 +178,17 @@ class SettingsPanel(
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(context).apply {
                     text = context.getString(R.string.kachi_settings_title); setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.TITLE)
                 })
                 addView(TextView(context).apply {
                     text = context.getString(R.string.kachi_settings_sub)
-                    setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                    setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
                 })
             },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
         )
         addView(TextView(context).apply {
-            text = context.getString(R.string.kachi_done); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD
+            text = context.getString(R.string.kachi_done); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY); typeface = Typeface.DEFAULT_BOLD
             setTextColor(c(KachiTheme.ON_ACCENT)); gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.XL), dpi(context, Sp.S), dpi(context, Sp.XL), dpi(context, Sp.S))
             background = KachiTheme.gradient(context, Sp.RADIUS_PILL)
@@ -224,10 +224,10 @@ class SettingsPanel(
         setPadding(p, dpi(context, Sp.M), p, dpi(context, Sp.M))
         addView(TextView(context).apply {
             text = group.displayLabel; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
         })
         addView(TextView(context).apply {
-            text = group.displaySub; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+            text = group.displaySub; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
             maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
             setPadding(0, dpi(context, Sp.XS), 0, 0)
         })

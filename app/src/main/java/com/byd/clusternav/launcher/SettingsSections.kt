@@ -126,7 +126,7 @@ class SettingsSections(
                 ).also { it.bottomMargin = dpi(context, Sp.S) },
             )
         }
-        body.addView(rows.button(context.getString(R.string.kachi_profiles_add)) { deps.onAddProfile() }, wrapLp())
+        body.addView(rows.button(context.getString(R.string.kachi_profiles_add)) { deps.onAddProfile() })
     }
 
     /**
@@ -156,12 +156,12 @@ class SettingsSections(
                         // [SOÁT P3-4] NHÃN dịch được, KHOÁ giữ nguyên: `name` vẫn là tên gốc và vẫn là thứ đi vào
                         // `switchProfile`/`onDeleteProfile` bên dưới. Xem KDoc [ProfileNames].
                         text = ProfileNames.display(name); setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
                     })
                     addView(TextView(context).apply {
                         text = context.getString(if (active) R.string.kachi_profile_active else R.string.kachi_profile_tap_switch)
                         setTextColor(c(if (active) KachiTheme.GREEN else KachiTheme.MUT))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
                     })
                 },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
@@ -172,7 +172,7 @@ class SettingsSections(
             // affordance để hiểu nhầm, nên không cần toast giải thích nữa (khác ca P9: ở đây không có kỳ vọng bị chặn
             // im lặng — người dùng đơn giản không thấy nút). Lưới an toàn thật vẫn nằm ở `WorkspacePrefs.deleteProfile`.
             if (!active && total > 1) addView(TextView(context).apply {
-                text = context.getString(R.string.kachi_delete); setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                text = context.getString(R.string.kachi_delete); setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
                 typeface = Typeface.DEFAULT_BOLD
                 setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
                 background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.CLEAR, KachiTheme.RED)
@@ -238,7 +238,7 @@ class SettingsSections(
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_clusternav)))
         body.addView(rows.note(context.getString(R.string.kachi_clusternav_note1)))
         body.addView(rows.note(context.getString(R.string.kachi_clusternav_note2)))
-        body.addView(rows.button(context.getString(R.string.kachi_clusternav_open)) { deps.onOpenClusterNav() }, wrapLp())
+        body.addView(rows.button(context.getString(R.string.kachi_clusternav_open)) { deps.onOpenClusterNav() })
     }
 
     // ── Giới thiệu ───────────────────────────────────────────────────────────────────────────────
@@ -254,10 +254,6 @@ class SettingsSections(
     }
 
     // ── Dùng chung ───────────────────────────────────────────────────────────────────────────────
-
-    private fun wrapLp() = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-    )
 
     // ⚠ [SOÁT ĐỘC LẬP 2026-09-12] `private fun toast(...)` đã XOÁ ở đây: chỗ gọi DUY NHẤT của nó là nhánh chặn xoá
     // hồ sơ, và nhánh đó biến mất khi nút Xoá chuyển sang "chỉ dựng khi xoá được thật". Kotlin không báo lỗi cho hàm

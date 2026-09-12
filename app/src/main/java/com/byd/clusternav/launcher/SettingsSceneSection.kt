@@ -58,7 +58,7 @@ class SettingsSceneSection(
             text = if (book.full) context.getString(R.string.kachi_scenes_full, SceneBook.CAP)
             else context.getString(R.string.kachi_scenes_count, book.scenes.size, SceneBook.CAP)
             setTextColor(c(if (book.full) KachiTheme.AMBER else KachiTheme.MUT2))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
             setPadding(0, 0, 0, dpi(context, Sp.S))
         })
         body.addView(rows.button(context.getString(R.string.kachi_scene_save)) { deps.scenes.save() }, wrapLp())
@@ -94,14 +94,14 @@ class SettingsSceneSection(
                 addView(TextView(context).apply {
                     text = scene.name
                     setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
                 })
                 addView(TextView(context).apply {
                     text = context.getString(
                         if (boot) R.string.kachi_scene_boot_on else R.string.kachi_scene_tap_recall,
                     )
                     setTextColor(c(if (boot) KachiTheme.GREEN else KachiTheme.MUT))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
                 })
                 // Đích chạm của hành động CHÍNH (gọi lại cảnh) nằm ở khối tên, không ở cả hàng: cả hàng thì ba nút
                 // bên phải nằm TRONG vùng chạm đó và một cú chạm lệch sẽ vừa gọi cảnh vừa bấm nút.
@@ -124,7 +124,7 @@ class SettingsSceneSection(
     private fun action(text: String, colour: String, onClick: () -> Unit): View = TextView(context).apply {
         this.text = text
         setTextColor(c(colour))
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
         typeface = Typeface.DEFAULT_BOLD
         gravity = Gravity.CENTER
         setPadding(dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S))

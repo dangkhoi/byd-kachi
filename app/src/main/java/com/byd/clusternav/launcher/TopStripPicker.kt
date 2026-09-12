@@ -60,7 +60,7 @@ class TopStripPicker(
         parent.addView(TextView(context).apply {
             text = context.getString(R.string.kachi_topstrip_hint, TopStripConfig.CAP)
             setTextColor(Color.parseColor(KachiTheme.MUT))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
             setPadding(0, 0, 0, dpi(context, Sp.S))
         })
         val shown = TopStripConfig.choices().filter { it.id in TopStripConfig.BUILT_IN || strip.has(it.id) }
@@ -89,7 +89,7 @@ class TopStripPicker(
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_L), dpi(context, Sp.ICON_L))
             })
             addView(TextView(context).apply {
-                text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
@@ -132,7 +132,7 @@ class TopStripPicker(
         // [SOÁT UI 2026-09-12] Đây là tiêu đề nhóm DUY NHẤT của bộ chọn chip; trước dùng MUT2 (mờ) + 12sp nên nó
         // mờ hơn cả body ngay dưới — lệch hẳn với các tiêu đề nhóm khác trong CÙNG bảng Cài đặt (đã đổi sang INK
         // đậm). Đồng bộ: INK sáng + đậm + thưa chữ.
-        this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.SECTION)
         typeface = Typeface.DEFAULT_BOLD
         letterSpacing = 0.06f; setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.S))
     }
