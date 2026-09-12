@@ -108,6 +108,18 @@
 
 **Còn tồn:** nhánh *"có cảnh báo nhưng không đủ chỗ ⇒ hiện cảnh báo + đếm phần còn lại"* chỉ chứng minh bằng test — off-car mọi field xe là `null` nên **không dựng được cảnh báo thật trên màn** · phép so trước/sau của mục 3 đo trên **bảng tối**; bảng sáng chỉ chứng minh bằng cách so với ô chuẩn không-bị-cắt (không có ảnh "trước" ở bảng sáng) · chưa đo gì **trên xe**.
 
+## Design system + IA thật — 2026-09-12 (chiều-3) · owner: "có IA/design system thật chưa?"
+
+> **Trả lời thẳng (đo được): CHƯA có design system thật.** Có tokens rời (màu `KachiPalette`/`KachiTheme`, khoảng cách `KachiSpace`) + khung IA (`SettingsCatalog` 7 nhóm) nhưng thiếu 3 thứ nền: type scale (18 cỡ chữ tay 9.5→32sp), component library (nút/chip/nền dựng tay 14 tệp), quy tắc khoảng cách giữa phần tử (`checkRow` không lề ngoài ⇒ dính). Các fix trước chỉ chữa triệu chứng. Spec `docs/specs/kachi-design-system.html`. 3 commit `07ca70c`+`6050d3a`+`328f16e` (ĐÃ PUSH). **[ĐO] 3255 công bố / 0 đỏ**, senior APPROVED.
+>
+> **Nền dựng (áp Settings trước — spec §R7)**: `KachiType` (:app) 5 bậc DISPLAY28/TITLE20/SECTION16/BODY13.5/CAPTION12 + `apply()`. `SettingsRows` nâng thành **bộ component chuẩn** (mọi cỡ chữ qua KachiType; mọi hàng tự mang LỀ NGOÀI stack `stackLp`; `addChip` dùng chung; checkbox/button/chip style CỐ ĐỊNH). Chuyển hết setTextSize số tay ở 5 tệp Settings. Bài canh: `TypeScaleContractTest` + `SettingsStackMarginContractTest`.
+>
+> **Lưới ô nhóm = CHÍNH "nút widget dính" owner báo**: [ĐO] dính 0-4px ⇒ khe dọc Sp.S + ngang Sp.XS; ô cao MATCH_PARENT + căn TRÊN ⇒ ô nhãn ngắn/đang-chọn hết lệch (0-1px). Chip ngắn thành tròn ⇒ minWidth Sp.TOUCH; chip chọn/tắt lệch 4px cao ⇒ minHeight Sp.ICON_XL (0px).
+>
+> ⚠⚠ **Bài học: 3 vòng soát ảnh độc lập tìm ra cái mã+test không thấy** — áp type scale + component xong, HÀNG Settings hết dính nhưng LƯỚI ô nhóm (component khác) vẫn dính = đúng "nút widget dính" owner báo. Phải mở ảnh + để luồng độc lập xem mới ra.
+>
+> **CÒN TỒN (OQ/pha sau)**: màn Home-settings 2 cấp tiêu đề cùng cỡ SECTION (chưa có sub-header nhỏ hơn); 31 chỗ setTextSize(KachiType.X)+typeface tay chưa gộp apply(); CapabilityGridSection 2 cỡ tay 11.5/10 (ngoài 5 bậc); chip cao 44<48 (owner quyết); **lan ra ngăn kéo/thanh nút/widget 14 tệp = pha sau (OQ1)**; chưa đo trên xe.
+
 ## Sửa giao diện owner báo lộn xộn — 2026-09-12 (chiều-2) · 12 lỗi (10 + 2 senior)
 
 > Owner: *"UIUX chạy lộn xộn, đặc biệt Settings; chọn app chiếu vào ô lệch loạn = regression"*. Soát ảnh emulator qua luồng ĐỘC LẬP + tự kiểm gốc bằng code trước khi vá. Commit `375d44f` + `95c2f28` (ĐÃ PUSH). **[ĐO] 3247 công bố / 0 đỏ** (`--rerun-tasks`, 73/73).
