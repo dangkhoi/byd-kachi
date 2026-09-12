@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
@@ -32,13 +31,18 @@ class SettingsRows(private val context: Context) {
 
     /**
      * Lề STACK chuẩn cho một phần tử trong cột dọc của Settings. Gap giữa hàng = [KachiSpace.S]. [topGap] thêm
-     * lề trên [KachiSpace.L] cho tiêu đề nhóm (ranh giới) để nó tách khỏi nhóm phía trên.
+     * lề trên [KachiSpace.L] cho tiêu đề nhóm (ranh giới) để nó tách khỏi nhóm phía trên. [wrapWidth] cho phần tử
+     * gói theo nội dung (nút) — vẫn lấy lề từ ĐÂY, để khe stack chỉ khai một chỗ.
      *
      * ⚠ Mọi bề mặt Settings là `LinearLayout` dọc ⇒ dùng `LinearLayout.LayoutParams` an toàn. Chỗ gọi KHÔNG được
-     * truyền lp riêng khi `addView` (sẽ ghi đè lề này) — đó là điều test khoá canh.
+     * truyền lp riêng khi `addView` (sẽ ghi đè lề này) — `SettingsStackMarginContractTest` canh đúng điều đó ở cả
+     * hai chiều: mọi hàm dựng công khai ở đây phải tự đặt `layoutParams`, và không chỗ gọi nào được truyền lp.
      */
-    private fun stackLp(topGap: Boolean = false) =
-        LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also {
+    private fun stackLp(topGap: Boolean = false, wrapWidth: Boolean = false) =
+        LinearLayout.LayoutParams(
+            if (wrapWidth) ViewGroup.LayoutParams.WRAP_CONTENT else LinearLayout.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).also {
             if (topGap) it.topMargin = dpi(context, Sp.L)
             it.bottomMargin = dpi(context, Sp.S)
         }
@@ -217,9 +221,9 @@ class SettingsRows(private val context: Context) {
             setColor(c(KachiTheme.CARD2))
             setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.LINE))
         }
-        // Lề ngoài để nút không dính hàng trên; bề rộng gói theo chữ (không kéo dài hết hàng).
-        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            .also { it.bottomMargin = dpi(context, Sp.S) }
+        // Lề ngoài để nút không dính hàng trên; bề rộng gói theo chữ (không kéo dài hết hàng). Lề lấy từ [stackLp]
+        // ⇒ khe stack của Settings khai ĐÚNG MỘT chỗ (trước đây hàm này chép lại `bottomMargin = Sp.S` lần thứ hai).
+        layoutParams = stackLp(wrapWidth = true)
         setOnClickListener { onClick() }
     }
 }

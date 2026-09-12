@@ -2,11 +2,8 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
 import com.byd.clusternav.R
-import com.byd.clusternav.launcher.KachiTheme.dpi
-import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Nội dung nhóm **"Màn hình chính"** của màn Cài đặt (S1 · T3) — bố cục · hình nền · chip thanh trạng thái · thanh

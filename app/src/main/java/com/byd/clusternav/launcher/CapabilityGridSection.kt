@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.util.TypedValue
@@ -75,7 +74,12 @@ class CapabilityGridSection(
                 .also { it.marginStart = dpi(context, Sp.XS); it.marginEnd = dpi(context, Sp.XS) })
         }
         val rem = items.size % cols
-        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        // ⚠ Ô CHÈN cao ĐÚNG 0, không `WRAP_CONTENT`: một `View` trơ khai `WRAP_CONTENT` **giãn hết** dưới spec
+        // `AT_MOST` (`getDefaultSize` trả trọn `specSize`) — dự án đã trả giá đúng bẫy này ở nhóm Đèn (9 ô con không
+        // hiện một pixel). Ở đây trang Settings nằm trong `ScrollView` nên spec là `UNSPECIFIED` và ô chèn đo ra 0 ⇒
+        // hôm nay chưa lộ; nhưng từ lúc ô THẬT cao `MATCH_PARENT`, một ô chèn phình sẽ kéo **mọi ô cùng hàng** phình
+        // theo (`forceUniformHeight` ép chúng bằng chiều cao hàng). Cao 0 thì bẫy đó không còn cửa vào.
+        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, 0, 1f)
             .also { it.marginStart = dpi(context, Sp.XS); it.marginEnd = dpi(context, Sp.XS) }) }
     }
 

@@ -61,7 +61,7 @@ class SettingsSceneSection(
             setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
             setPadding(0, 0, 0, dpi(context, Sp.S))
         })
-        body.addView(rows.button(context.getString(R.string.kachi_scene_save)) { deps.scenes.save() }, wrapLp())
+        body.addView(rows.button(context.getString(R.string.kachi_scene_save)) { deps.scenes.save() })
     }
 
     /**
@@ -136,7 +136,9 @@ class SettingsSceneSection(
         LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
     ).also { it.bottomMargin = dpi(context, Sp.S) }
 
-    private fun wrapLp() = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-    ).also { it.bottomMargin = dpi(context, Sp.M) }
+    // ⚠ [SOÁT ĐỘC LẬP 2026-09-12] `private fun wrapLp()` đã XOÁ ở đây. Nó là lp truyền vào `addView(rows.button(…))`,
+    // tức chỗ gọi DUY NHẤT còn GHI ĐÈ lề mà component tự mang (design system §lề STACK) — nút này nhận lề dưới
+    // `Sp.M` trong khi hai nút cùng họ ("mở bảng vẽ bố cục", "thêm hồ sơ") nhận `Sp.S`, đúng kiểu nhịp không đều mà
+    // đợt design system đi dọn. Bỏ lp ⇒ nút lấy lề của chính component; hàm thành mã chết nên xoá luôn (Kotlin không
+    // báo lỗi cho hàm private không ai gọi — đúng loại nợ đã phải dọn ở `cycleDockEdge`/`toast`/`photoPaths`).
 }

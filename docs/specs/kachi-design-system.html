@@ -47,7 +47,7 @@ ul{padding-left:22px}li{margin:4px 0}.warn{border-left:3px solid #d29922;padding
 <tr><th>Bậc</th><th>sp</th><th>Dùng cho</th></tr>
 <tr><td>DISPLAY</td><td>28</td><td>số/giá trị hero (đồng hồ, giá trị lớn)</td></tr>
 <tr><td>TITLE</td><td>20</td><td>tiêu đề màn/panel</td></tr>
-<tr><td>SECTION</td><td>14</td><td>tiêu đề nhóm (đậm, sáng)</td></tr>
+<tr><td>SECTION</td><td>16</td><td>tiêu đề nhóm (đậm, sáng)</td></tr>
 <tr><td>BODY</td><td>13.5</td><td>nội dung, nhãn hàng, nút</td></tr>
 <tr><td>CAPTION</td><td>12</td><td>chú thích, dòng phụ, đơn vị</td></tr>
 </table>
@@ -82,5 +82,78 @@ ul{padding-left:22px}li{margin:4px 0}.warn{border-left:3px solid #d29922;padding
 </ul>
 
 <h2>7. Reviewer Log</h2>
-<p>(điền khi review)</p>
+
+<h3>Pass 1 — 2026-09-12 · senior review (độc lập) hai commit <code>07ca70c</code> + <code>6050d3a</code></h3>
+<p><b>Verdict: APPROVED</b> sau khi tự vá 3×[P1] + 4×[P2]/[P3]. <b>[ĐO]</b> <code>:app:testDebugUnitTest :core:test --rerun-tasks</code> ⇒ <b>247 lớp / 2247 test / 0 đỏ</b>. Mọi phát hiện dưới đây <b>chứng minh bằng thử phá</b>, không suy luận.</p>
+
+<p><b>[P1-1] Bài canh type scale bỏ qua 2 trong 3 cách viết ra cùng một lỗi.</b> <code>rawSp</code> chỉ soi
+<code>setTextSize(…COMPLEX_UNIT_SP, &lt;số&gt;)</code>. [ĐO] chèn <code>textSize = 99f</code> và <code>setTextSize(88f)</code> vào
+<code>SettingsSections.kt</code> ⇒ <b>BUILD SUCCESSFUL, 0 đỏ</b> — cả hai đều là cỡ chữ SP viết tay
+(<code>TextView.setTextSize(Float)</code> mặc định COMPLEX_UNIT_SP; <code>textSize =</code> của Kotlin biên dịch về đúng hàm đó).
+Quét theo DÒNG cũng làm một lời gọi vắt nhiều dòng đi qua sạch. Cùng họ với <code>px()</code> lách
+<code>SpacingScaleContractTest</code> ⇒ áp lại luật đã có: <b>chặn nguyên nhân, không chặn một chính tả</b>.
+<b>Vá</b>: 3 mẫu (hai-tham-số · một-tham-số · thuộc tính) + quét thêm cả tệp cho ca vắt dòng; số dòng báo lỗi tính lại
+trên tệp GỐC (<code>codeOf</code> gộp chú thích khối nên chỉ số lệch). Cũng bỏ bản sao hàm bỏ-chú-thích, dùng
+<code>SourceRoots.codeOf</code>. [ĐO] 3/3 mutation đỏ đúng chỗ.</p>
+
+<p><b>[P1-2] Bài <code>type scale co dung 5 bac</code> không thể đỏ ở đúng ca nó hứa.</b> Nó đếm 5 tên đã biết rồi đòi
+<code>== 5</code>, tức chỉ kiểm "5 bậc còn đủ", KHÔNG kiểm "không có bậc thứ sáu". [ĐO] thêm
+<code>const val MICRO = 9.5f</code> ⇒ <b>0 đỏ</b>, trong khi KDoc của chính nó viết <i>"thêm bậc tuỳ tiện là quay lại 18 cỡ
+chữ"</i>. <b>Vá</b>: so <b>TẬP</b> tên bậc với tập mong đợi ⇒ thêm/xoá/đổi tên đều đỏ. [ĐO] mutation đỏ.</p>
+
+<p><b>[P1-3] Giao kèo "component tự mang lề" được khai là CÓ test canh nhưng KHÔNG có, và đang bị vi phạm.</b>
+KDoc <code>stackLp</code> viết <i>"chỗ gọi KHÔNG được truyền lp riêng … đó là điều test khoá canh"</i>; [ĐO] grep toàn bộ
+<code>app/src/test</code>: <b>0 bài</b> quét điều đó. Đồng thời <code>SettingsSceneSection</code> vẫn truyền
+<code>wrapLp()</code> cho <code>rows.button(…)</code> ⇒ nút "Lưu cảnh" nhận lề dưới <code>Sp.M</code> trong khi hai nút cùng họ
+nhận <code>Sp.S</code> — đúng loại nhịp không đều mà đợt này đi dọn (hai tệp kia đã bỏ <code>wrapLp</code>, tệp này bị sót).
+<b>Vá</b>: bỏ lp ở chỗ gọi · xoá <code>wrapLp()</code> đã thành mã chết · <code>button()</code> lấy lề từ
+<code>stackLp(wrapWidth = true)</code> (trước đó chép <code>bottomMargin = Sp.S</code> lần thứ hai) · thêm
+<code>SettingsStackMarginContractTest</code> canh <b>hai chiều</b>: mọi hàm dựng công khai phải tự đặt
+<code>layoutParams</code>, và không chỗ gọi nào truyền lp (đếm ngoặc thật, bỏ qua chuỗi/lambda). [ĐO] 2/2 mutation đỏ.</p>
+
+<p><b>[P2] Ô chèn của hàng lưới cuối là <code>View</code> trơ cao <code>WRAP_CONTENT</code> — bẫy ngủ đông mà commit 2 vừa
+nạp đạn.</b> Dưới spec <code>AT_MOST</code> một <code>View</code> trơ <code>WRAP_CONTENT</code> giãn hết
+(<code>getDefaultSize</code> trả trọn <code>specSize</code>) — dự án đã trả giá đúng bẫy này ở nhóm Đèn. Hôm nay chưa lộ:
+trang Settings nằm trong <code>ScrollView</code> ⇒ spec là <code>UNSPECIFIED</code> ⇒ ô chèn đo ra 0 (đã lần chuỗi cha:
+<code>SettingsSections.build</code> trả <code>ScrollView</code> không bật <code>fillViewport</code>). Nhưng từ commit 2, ô THẬT cao
+<code>MATCH_PARENT</code> nên nếu spec đổi thành <code>AT_MOST</code> thì <code>forceUniformHeight</code> sẽ kéo <b>mọi ô cùng
+hàng</b> phình theo ô chèn. <b>Vá</b> cao đúng 0 — 0 thay đổi hình hiện tại, bịt hẳn cửa vào.</p>
+
+<p><b>[P2] Hai cửa đặt cỡ chữ (chưa vá — cần phiên riêng).</b> Design system có <code>KachiType.apply(tv, bậc, bold)</code>
+nhưng [ĐO] <b>31 chỗ</b> vẫn đi cửa thứ hai <code>setTextSize(COMPLEX_UNIT_SP, KachiType.X)</code> + <code>typeface</code> đặt
+tay. Bài canh cho phép cửa thứ hai (chỉ cấm con số), nên nó không sai luật — nhưng nó giữ nguyên bệnh "cỡ và nét đặt
+rời nhau". Kèm bẫy: <code>apply(tv, BODY)</code> ghi <code>Typeface.DEFAULT</code> tường minh ⇒ gọi nó SAU
+<code>typeface = DEFAULT_BOLD</code> là <b>âm thầm</b> mất đậm. [ĐO] 12 chỗ gọi hiện tại đều trên <code>TextView</code> vừa tạo,
+không chỗ nào đặt typeface riêng ⇒ <b>chưa có ca nào bị mất nét</b>. Đã ghi bẫy vào KDoc <code>apply</code>; đóng cửa thứ
+hai = chuyển 31 chỗ, thuộc OQ1.</p>
+
+<p><b>[P2] Chip cao 44dp &lt; đích chạm 48dp (chưa vá — chờ owner).</b> <code>addChip</code> đặt
+<code>minHeight = Sp.ICON_XL</code> (44) trong khi <code>button</code> dùng <code>Sp.TOUCH</code> (48), và KDoc của chính chip nói
+minWidth <i>"đạt đích chạm tối thiểu"</i> — nhưng chiều bị bó là CHIỀU CAO. Chip là điều khiển thật (đơn vị · chủ đề ·
+ngôn ngữ · bố cục · viền thanh nút · hình nền). Không tự sửa vì 44 là số owner <b>đã verify bằng ảnh</b> ([ĐO] 'm'
+72×44, lệch 0px); đổi 44→48 là đổi hình đã duyệt ⇒ để owner quyết. Cũng nên dùng hằng đúng vai
+(<code>TOUCH</code>, không phải một cỡ ICON) dù trị số có giữ.</p>
+
+<p><b>[P2] Lưới ô nhóm còn 2 cỡ chữ tay (11.5 · 10) và nằm NGOÀI bài canh.</b>
+<code>CapabilityGridSection</code> là bề mặt Settings, commit 2 có sửa nó, nhưng nó không có trong <code>SURFACES</code>. Không
+tự thêm: hạ 11.5→CAPTION(12) thì dòng phụ 10 không còn bậc nào nhỏ hơn để giữ thứ bậc ⇒ phải mở bậc thứ sáu, mà
+<i>"đúng 5 bậc"</i> vừa được khoá bằng test. Thuộc OQ1 (cùng họ ô lưới với ngăn kéo/widget).</p>
+
+<p><b>[P3] đã vá:</b> 6 import chết (<code>Typeface</code> ở SettingsRows và <code>ViewGroup</code>/<code>dpi</code>/<code>Sp</code>
+ở SettingsSectionsHome do chính hai commit này làm thừa; <code>Color</code> ở SettingsPanel/CapabilityGridSection có
+trước) · lệch tài liệu SECTION <b>14 vs code 16</b> ở KDoc <code>KachiType</code> và ở bảng §3.1 spec này (commit 2 sửa
+dòng gạch đầu dòng mà bỏ sót hai chỗ còn lại).</p>
+
+<p><b>Đã kiểm — KHÔNG phải lỗi:</b> (a) ô cao <code>MATCH_PARENT</code> trong hàng <code>WRAP_CONTENT</code> đo ĐÚNG trên
+minSdk 29+: <code>LinearLayout.measureHorizontal</code> bật cờ <code>matchHeight</code> khi spec cha khác
+<code>EXACTLY</code> rồi <code>forceUniformHeight</code> đo lại các con đó bằng <code>EXACTLY(chiều cao hàng)</code>, có giữ bề
+rộng đã chia theo weight — đây là hành vi nền tảng, không phải may mắn; (b) <code>stackLp</code> trả
+<code>LinearLayout.LayoutParams</code> an toàn: grep 100% chỗ gọi <code>rows.*</code> đều <code>addView</code> vào
+<code>LinearLayout</code> dọc (<code>body</code>), không có chỗ nào vào <code>FrameLayout</code>/<code>ScrollView</code>; (c) bài
+canh nằm đúng module <code>:app</code> và <code>app/build.gradle.kts</code> đã khai
+<code>inputs.dir("src/main/java")</code> ⇒ đổi mã sản phẩm là test chạy lại thật (mutation đỏ ngay lần đầu chứng minh dây
+nối sống, không UP-TO-DATE giả như họ lỗi S1/G1).</p>
+
+<p><b>Còn tồn:</b> chưa đo gì trên xe · chưa verify ảnh lại sau lượt vá này (các vá đều là test/lề/import + một ô chèn
+cao 0 vốn đã đo 0 ⇒ hình dự kiến không đổi, nhưng đó là suy luận, không phải ảnh).</p>
 </div></body></html>
