@@ -28,6 +28,10 @@ class SettingsStackMarginContractTest {
 
     private val surfaces = listOf(
         "SettingsSections.kt", "SettingsSectionsHome.kt", "SettingsSceneSection.kt",
+        // T4 · IA v2 — năm section mới. Chúng gọi `rows.*` dày đặc nên đây đúng là chỗ dễ tái phạm "tự chèn
+        // khoảng cách" nhất; để ngoài phạm vi thì luật lề STACK chỉ còn đúng ở ba tệp cũ.
+        "SettingsSectionsBars.kt", "SettingsSectionsNav.kt", "SettingsSectionsCast.kt",
+        "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
     )
 
     private fun code(name: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$name")
@@ -51,6 +55,57 @@ class SettingsStackMarginContractTest {
             "Component của Settings phải tự mang lề ngoài (đặt `layoutParams`, thường qua `stackLp()`); " +
                 "thiếu ở: $missing",
         )
+    }
+
+    /**
+     * Bộ component phải có ĐỦ các hàm dựng mà IA v2 §4.4 đòi — và mỗi hàm đó đi qua phép kiểm lề ở trên.
+     *
+     * ## Vì sao liệt kê TÊN, không chỉ đếm số
+     * Bài `moi component cua SettingsRows tu dat layoutParams` **tự tìm** hàm dựng bằng regex, nên nó canh đúng
+     * những gì ĐANG có. Nếu một hàm của §4.4 chưa được viết (hoặc bị xoá đi khi dọn dẹp), bài đó vẫn xanh — nó
+     * không có cách nào biết cái gì *đáng lẽ* phải tồn tại. Hai bài bổ nhau: bài này canh **phạm vi**, bài kia
+     * canh **chất lượng** của từng hàm trong phạm vi đó.
+     *
+     * Đây cũng là giao kèo mà các section mới (nav · cast · keys · car của T4) gọi tới — đổi tên một hàm ở đây là
+     * làm gãy chúng, và bài này bắt được ngay ở `:app:testDebugUnitTest` thay vì lúc biên dịch section.
+     */
+    @Test
+    fun `bo component co du cac ham dung ma IA v2 doi`() {
+        val src = code("SettingsRows.kt")
+        val builders = Regex("""\n    fun (\w+)\(""").findAll(src).map { it.groupValues[1] }.toSet()
+        val required = setOf(
+            // pha 1 (design system)
+            "sectionLabel", "checkRow", "chipRow", "unitRow", "permissionRow", "note", "button",
+            // pha 2 (IA v2 §4.4 — T3)
+            "subHeader", "statusRow", "stepperRow", "listRow", "embed",
+        )
+        assertTrue(
+            builders.containsAll(required),
+            "SettingsRows thiếu hàm dựng mà IA v2 §4.4 đòi: ${required - builders} (đang có: $builders)",
+        )
+    }
+
+    /**
+     * Hai hàm trả **holder** (`SettingsRows.StatusRow` / `SettingsRows.Stepper`) phải cho chỗ gọi cả `view` lẫn
+     * đường cập nhật — nếu không thì section lại phải dựng lại cả hàng để đổi một chữ (và tự phát minh một bảng
+     * tra `id → view`, thứ mà lớp này cố ý không có).
+     *
+     * ⚠ KHÔNG dùng `SourceRoots.body("inner class …")`: nó trả **thân khối** `{…}` của lớp, tức phần **danh sách
+     * tham số hàm dựng nằm NGOÀI** — mà `val view: View` lại khai đúng ở đó ⇒ bài canh sẽ đỏ oan. Cắt vùng từ
+     * tên lớp tới hàm dựng công khai kế tiếp (holder luôn đứng ngay trước hàm dựng của nó).
+     */
+    @Test
+    fun `holder cua statusRow va stepperRow cho cap nhat tai cho`() {
+        val src = code("SettingsRows.kt")
+        listOf(
+            "StatusRow" to "fun update(",
+            "Stepper" to "fun setValue(",
+        ).forEach { (holder, updater) ->
+            assertTrue(src.contains("inner class $holder"), "SettingsRows phải khai `inner class $holder`")
+            val region = src.substringAfter("inner class $holder").substringBefore("\n    fun ")
+            assertTrue(region.contains("val view: View"), "$holder phải lộ `val view: View` để chỗ gọi addView")
+            assertTrue(region.contains(updater), "$holder phải có `$updater…` để cập nhật mà không dựng lại hàng")
+        }
     }
 
     // ── Chiều 2 · chỗ gọi không ghi đè ───────────────────────────────────────────────────────────

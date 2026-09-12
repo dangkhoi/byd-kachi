@@ -29,15 +29,10 @@ class LauncherWindows(
     private val appLauncher: () -> AppLauncher,
     private val dispatcher: () -> WindowCommandDispatcher?,
     private val onSlotSwap: (Int) -> Unit,
-    private val onSlotClose: (Int) -> Unit,
 ) {
     private val overlayHeads by lazy { OverlayHeads(activity) }
     private val density = activity.resources.displayMetrics.density
     private fun dp(v: Int): Int = (v * density).toInt()
-
-    private fun appLabel(pkg: String): String = runCatching {
-        activity.packageManager.getApplicationLabel(activity.packageManager.getApplicationInfo(pkg, 0)).toString()
-    }.getOrDefault(pkg)
 
     /**
      * B2b: ghi vị trí ban đầu của các ô App vào registry → bất biến MỘT-VỊ-TRÍ có mặt ngay khi mở app.
@@ -79,7 +74,7 @@ class LauncherWindows(
             .onFailure { Log.w("LauncherWindows", "bỏ việc cửa sổ vì thread nền đã tắt: ${it.javaClass.simpleName}") }
     }
 
-    /** Dựng lại dải header NỔI che caption freeform + ⇄/✕ cho mỗi ô app đang hiện. Nhúng → không cần. */
+    /** Dựng lại nút ⇄ NỔI cho mỗi ô app đang hiện (đường freeform). Nhúng → không cần ([WorkspaceView.slotHead] lo). */
     private val overlayUpdate = Runnable {
         if (embedding() || drawerOpen()) { overlayHeads.clear(); return@Runnable }
         val st = state(); val n = EffectiveLayout.slotCount(st.preset, custom())
@@ -88,8 +83,7 @@ class LauncherWindows(
             (st.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
                 absoluteSlotRect(i)?.let { r ->
                     val a = appRect(r)
-                    heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appLabel(app.pkg), KachiTheme.ACCENT,
-                        onSwap = { onSlotSwap(i) }, onClose = { onSlotClose(i) }))
+                    heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appTop = a.top, onSwap = { onSlotSwap(i) }))
                 }
             }
         }

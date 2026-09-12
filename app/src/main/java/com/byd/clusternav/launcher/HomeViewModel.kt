@@ -63,8 +63,18 @@ class HomeViewModel(
      */
     fun setDockEdge(edge: DockEdge) = mutate { it.copy(dock = it.dock.withEdge(edge)) }
 
-    /** Bật/tắt một control trong thanh (danh sách control hiện) — [DockConfig.setEnabled]. */
-    fun toggleDock(id: String, on: Boolean) = mutate { it.copy(dock = it.dock.setEnabled(id, on)) }
+    /**
+     * Đặt **cả** cấu hình thanh nút một lượt (T6 · R-UI m).
+     *
+     * ⚠ Thay `toggleDock(id, on)` cũ, và đó là một quyết định chứ không phải đổi tên: bộ chọn nút
+     * ([DrawerController.openDockPicker]) trả về một **TẬP** người dùng vừa chốt, nên phép đổi luôn có **cả hai
+     * chiều** — mã bị bỏ tích phải rời thanh. Một cổng "bật/tắt từng mã" không diễn tả được chiều tắt hàng loạt
+     * ⇒ chỗ gọi sẽ viết `selected.forEach { setEnabled(it, true) }` và cấu hình chỉ **lớn lên** (xem KDoc
+     * [DockSelection] — đúng bẫy đó đã có thật ở bản nháp T6).
+     *
+     * Phép gấp TẬP → [DockConfig] nằm ở `:core` ([DockSelection.apply], có test); ViewModel chỉ nhận kết quả.
+     */
+    fun setDockConfig(config: DockConfig) = mutate { it.copy(dock = config) }
 
     // ── Intent: theme ────────────────────────────────────────────────────────────
     fun setThemeMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }

@@ -121,6 +121,9 @@ class ControlTileFactory(
             addView(vtext, LinearLayout.LayoutParams(WRAP, WRAP))
             addView(plus, LinearLayout.LayoutParams(0, WRAP, 1f))
         })
+        // [R7] Đích chạm: nới VÙNG NHẬN CHẠM ra nửa ô (≥ Sp.TOUCH bề dọc), KHÔNG nới cái nút — nới nút thì
+        // 2×48 > 68dp dùng được của ô và chữ giá trị xuống hai dòng ([ĐO] ghi ở KDoc Sp.TOUCH_TIGHT).
+        StepTouchTarget.attach(tile, minus, plus)
     }
 
     private fun tileCover(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {

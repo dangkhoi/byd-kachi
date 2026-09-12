@@ -266,16 +266,25 @@ class HomeViewModelTest {
         assertEquals(DockEdge.RIGHT, fake.lastPersisted!!.dock.edge)
     }
 
-    @Test fun `toggleDock bat tat control va persist`() = runTest {
+    /**
+     * T6 · R-UI (m) — `setDockConfig` thay `toggleDock`: bộ chọn trả về một TẬP nên phép đổi phải có **cả hai
+     * chiều**. Bài này kiểm đúng chiều mà cổng cũ không diễn tả được: bỏ tích một mã ⇒ nó phải RỜI thanh.
+     */
+    @Test fun `setDockConfig dat ca cau hinh, ca hai chieu, va persist`() = runTest {
         val fake = repo()
         val vm = HomeViewModel(fake)
         vm.uiState.test {
-            val enabled0 = awaitItem().dock.enabled
-            assertFalse(enabled0.contains("defrost"))                    // "defrost" mặc định TẮT
-            vm.toggleDock("defrost", true)
-            assertTrue(awaitItem().dock.enabled.contains("defrost"))
+            val dock0 = awaitItem().dock
+            assertFalse(dock0.enabled.contains("defrost"))               // "defrost" mặc định TẮT
+            // Chiều BẬT: thêm "defrost" vào tập người dùng vừa chốt.
+            vm.setDockConfig(DockSelection.apply(dock0, dock0.enabled.toSet() + "defrost"))
+            val dock1 = awaitItem().dock
+            assertTrue(dock1.enabled.contains("defrost"))
+            // Chiều TẮT: bỏ nó khỏi tập ⇒ phải rời thanh (cổng `toggleDock` cũ không có cách nào bắt hụt việc này).
+            vm.setDockConfig(DockSelection.apply(dock1, dock1.enabled.toSet() - "defrost"))
+            assertFalse(awaitItem().dock.enabled.contains("defrost"))
         }
-        assertTrue(fake.lastPersisted!!.dock.enabled.contains("defrost"))
+        assertFalse(fake.lastPersisted!!.dock.enabled.contains("defrost"))
     }
 
     /**

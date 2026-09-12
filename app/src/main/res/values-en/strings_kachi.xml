@@ -36,11 +36,6 @@
     </plurals>
     <string name="kachi_drawer_cap_note">A slot holds at most %1$d items — remove one to add another</string>
 
-    <!-- ── CapabilityGridSection — lưới chọn khả năng ── -->
-    <string name="kachi_chip_added">Added "%1$s" to the status bar</string>
-    <string name="kachi_chip_removed">Removed "%1$s" from the status bar</string>
-    <string name="kachi_chip_button_rejected">Buttons cannot go on the top bar (a chip is too small to tap safely)</string>
-
     <!-- ── SideBoardView — bảng sơ đồ hai bên xe (ADAS) ── -->
     <plurals name="kachi_board_hidden_n">
         <item quantity="one">+%1$d more</item>
@@ -61,7 +56,10 @@
     <string name="kachi_layout_reset">Back to a preset layout</string>
     <string name="kachi_layout_over_cap">More than %1$d frames — this build supports %1$d at most.</string>
     <string name="kachi_layout_cannot_save">Cannot save yet: %1$s</string>
-    <string name="kachi_layout_frames_n">%1$d frames</string>
+    <plurals name="kachi_layout_frames_n">
+        <item quantity="one">%1$d frame</item>
+        <item quantity="other">%1$d frames</item>
+    </plurals>
     <string name="kachi_layout_full">covers the whole screen</string>
     <string name="kachi_layout_empty_n">%1$d empty cells left (the wallpaper shows through there)</string>
     <string name="kachi_layout_at_cap">%1$d frames already — a later build will raise the cap</string>
@@ -94,14 +92,11 @@
     <string name="kachi_sec_theme">Light / dark theme</string>
     <string name="kachi_row_palette">Colour palette</string>
     <string name="kachi_theme_note">"Auto" means dark from 18:00 to 06:00. Changing the palette rebuilds the screen once.</string>
-    <string name="kachi_theme_note_clusternav">The ClusterNav screen (group "Navigation · Cluster · Keys") has its OWN light/dark setting — it uses Android resources, so it does not follow the launcher palette.</string>
     <string name="kachi_sec_lang">Language</string>
     <string name="kachi_row_lang">On-screen text</string>
     <string name="kachi_lang_note">"By car" follows the system language: a Vietnamese system gets Vietnamese, anything else gets English. Changing the language rebuilds the screen once.</string>
-    <string name="kachi_lang_note_clusternav">The ClusterNav screen SHARES this setting — changing it here changes both screens (unlike the palette).</string>
 
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
-    <string name="kachi_sec_profiles">Driver profiles</string>
     <string name="kachi_profiles_note">Each profile keeps its OWN layout, slot contents, button bar and chips. Tap a profile to switch to it — the avatar on the top bar can switch too, but creating and deleting happen only here.</string>
     <string name="kachi_profiles_add">Add profile…</string>
     <string name="kachi_profile_active">In use</string>
@@ -109,7 +104,7 @@
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
-    <string name="kachi_sec_comfort">Automatic comfort</string>
+    <string name="kachi_sec_recirc">Recirculation</string>
     <string name="kachi_recirc_title">Recirculate cabin air on engine start</string>
     <string name="kachi_recirc_sub">The car forgets this mode on every start. ⚠ The command is unverified on a car — it may be rejected.</string>
     <string name="kachi_sec_permissions">Permissions</string>
@@ -120,11 +115,6 @@
     <string name="kachi_autostart_sub">On engine start Kachi rebuilds its slots and makes itself the home screen. Switched off, you open it by hand.</string>
 
     <!-- ── SettingsSections — ClusterNav · Giới thiệu ── -->
-    <string name="kachi_sec_clusternav">Navigation · Instrument cluster · Steering-wheel keys</string>
-    <string name="kachi_clusternav_note1">Cluster navigation, casting the screen to the cluster, the speed-limit badge, the VietMap bubble, seat cooling/heating, PM2.5 filtering and steering-wheel key mapping all live on the ClusterNav screen.</string>
-    <string name="kachi_clusternav_note2">That screen is NOT folded in here: it is sealed (not one line changed), so Settings only opens it.</string>
-    <string name="kachi_clusternav_open">Open the ClusterNav screen</string>
-    <string name="kachi_sec_about">About</string>
     <string name="kachi_about_tagline">Kachi — a home screen for BYD DiLink cars.</string>
     <string name="kachi_about_version">Version %1$s (build %2$d)</string>
     <string name="kachi_about_package">Package name: %1$s</string>
@@ -158,7 +148,10 @@
     <string name="kachi_sec_layout">Screen layout</string>
     <string name="kachi_row_preset">Preset layout</string>
     <string name="kachi_layout_open_editor">Draw your own layout…</string>
-    <string name="kachi_layout_custom_in_use">Using a custom layout: %1$d frames</string>
+    <plurals name="kachi_layout_custom_in_use">
+        <item quantity="one">Using a custom layout: %1$d frame</item>
+        <item quantity="other">Using a custom layout: %1$d frames</item>
+    </plurals>
     <string name="kachi_layout_ignored"> — but it is being ignored (%1$s)</string>
     <string name="kachi_layout_preset_in_use">Using a preset layout.</string>
     <string name="kachi_sec_wallpaper">Wallpaper</string>
@@ -170,11 +163,12 @@
     <string name="kachi_wall_dim">Dim the photo</string>
     <string name="kachi_sec_dock">Car button bar</string>
     <string name="kachi_dock_edge">Bar edge</string>
-    <string name="kachi_dock_note">Tap a tile to add or remove it from the button bar. HOLD a READ tile to put it on the status bar. The Safety / Drivetrain / Entertainment groups change how the car drives — use them at your own risk.</string>
+    <string name="kachi_dock_note">Tap a tile to add or remove a button from the bar.</string>
+    <string name="kachi_dock_warn">⚠ Safety / Drivetrain / Entertainment groups change car behaviour.</string>
 
     <!-- ── TopStripPicker — chọn chip thanh trạng thái ── -->
     <string name="kachi_topstrip_title">Status-bar chips</string>
-    <string name="kachi_topstrip_hint">Up to %1$d readings can sit next to the clock. Tap to switch one on or off. To bring a different reading up here, HOLD its tile in the list below. READ-only — buttons belong on the control bar or in a screen slot (a chip is too small to tap safely).</string>
+    <string name="kachi_topstrip_hint">Up to %1$d readings fit next to the clock. Tap a tile to switch it.</string>
     <string name="kachi_topstrip_full">The top bar holds only %1$d chips — remove one first</string>
 
     <!-- ── WallpaperController / WallpaperStore — hình nền ── -->
@@ -217,4 +211,200 @@
     <string name="kachi_appwidget_err_no_shell">The system channel is not connected yet, so widget permission could not be requested. Try again after reopening Kachi.</string>
     <string name="kachi_appwidget_err_bind">This car will not allow widgets from other apps. Built-in cards and groups still work normally.</string>
     <string name="kachi_appwidget_dead">The %1$s widget is gone — the app was uninstalled or disabled. Tap to pick another.</string>
+
+    <!-- ── T6 · R-UI (m) · Drawer in PICK_DOCK mode — choose the tiles for the car button bar ── -->
+    <string name="kachi_drawer_title_dock">Pick the buttons for the car bar</string>
+    <string name="kachi_drawer_hint_dock">Tap to add or remove a tile on the button bar · pick as many as you like · tap Apply to save</string>
+    <string name="kachi_drawer_apply_n">Apply (%1$d)</string>
+
+    <!-- ── IA v2 · §4.2 — CÂU của cầu [ClusterNavBridge]. Mã BridgeMsg → khoá ở KachiHomeWiring.bridgeMsgRes().
+         Chép NGUYÊN VĂN câu của màn ClusterNav cũ (KDoc từng giá trị BridgeMsg ghi rõ dòng gốc): hai màn
+         phải nói cùng một lời, lệch một câu là người dùng tưởng hai tính năng khác nhau. ── -->
+    <string name="kachi_bridge_granting_notification">Granting notification access…</string>
+    <string name="kachi_bridge_notification_granted">Access granted — navigation connected.</string>
+    <string name="kachi_bridge_notification_fallback">Couldn\'t open settings. Go to Settings → Apps → Special access → Notification access → enable ClusterNav.</string>
+    <string name="kachi_bridge_reconnecting">Reconnecting navigation source…</string>
+    <string name="kachi_bridge_cast_on">Cluster cast on</string>
+    <string name="kachi_bridge_cast_off">Cluster cast off · cluster back to gauges</string>
+    <string name="kachi_bridge_cast_returning">Returning app…</string>
+    <string name="kachi_bridge_cluster_reset">Cluster reset · reopening…</string>
+    <string name="kachi_bridge_deep_rescue_running">Deep-cleaning cluster…</string>
+    <string name="kachi_bridge_enabling_accessibility">Enabling accessibility service…</string>
+    <string name="kachi_bridge_accessibility_enabled">Enabled. Press the mapped button to open the app.</string>
+    <string name="kachi_bridge_accessibility_failed">Couldn\'t enable accessibility — tap Allow USB debugging on the car and retry, or enable it in Settings > Accessibility.</string>
+    <string name="kachi_bridge_checking">Checking…</string>
+    <string name="kachi_bridge_voice_key_ready">Voice key ready.</string>
+    <string name="kachi_bridge_binding_removed">Binding removed</string>
+    <string name="kachi_bridge_button_saved">Button saved. Pick an app, then tap “Add binding”.</string>
+    <string name="kachi_bridge_button_removed">Button removed</string>
+    <string name="kachi_bridge_learn_press">Keep this screen open, then press the physical button…</string>
+    <string name="kachi_bridge_gemini_setting">Setting Gemini as system assistant…</string>
+    <string name="kachi_bridge_gemini_set">Assistant set to Google/Gemini. Long-press mic to TALK (not open app).</string>
+    <string name="kachi_bridge_gemini_failed">Couldn\'t set the system assistant.</string>
+    <string name="kachi_bridge_cleaning_air">Cleaning the air…</string>
+    <string name="kachi_bridge_update_needs_screen">Open the screen to check for updates.</string>
+    <string name="kachi_bridge_screen_open_failed">Couldn\'t open the screen.</string>
+
+    <!-- ── Dùng chung (hộp thoại của Cài đặt · SettingsDialogs) ── -->
+    <string name="kachi_save">Save</string>
+    <string name="kachi_dp_value">%1$d dp</string>
+    <string name="kachi_px_value">%1$d px</string>
+    <string name="kachi_diagnostics">Diagnostics and logs</string>
+
+    <!-- ── IA v2 nhóm 2 — Thanh trạng thái & thanh nút (SettingsBarsSection · TopStripPicker) ── -->
+    <string name="kachi_topstrip_more">Add another chip…</string>
+    <string name="kachi_topstrip_on">✓ %1$s</string>
+    <string name="kachi_topstrip_none">This build has nothing that can go on the status bar yet.</string>
+    <string name="kachi_dock_pick_n">Choose bar buttons… (%1$d on)</string>
+
+    <!-- ── IA v2 · R-UI (o) — chip thứ sáu của hàng bố cục: luôn có ĐÚNG một chip sáng ── -->
+    <string name="kachi_layout_custom_chip">Custom</string>
+
+    <!-- ── IA v2 nhóm 5 — Dẫn đường & cụm đồng hồ (SettingsNavSection) ── -->
+    <string name="kachi_sec_nav">Navigation + HUD</string>
+    <string name="kachi_nav_enabled_title">Navigation on the cluster</string>
+    <string name="kachi_nav_enabled_sub">Turning this on grants notification access through the car\'s own channel — no system settings needed.</string>
+    <string name="kachi_nav_source_none">Active: —</string>
+    <string name="kachi_nav_source">Active: %1$s</string>
+    <string name="kachi_nav_source_stale">Active: %1$s (data is stale)</string>
+    <string name="kachi_nav_channel_notification">notification</string>
+    <string name="kachi_nav_channel_screen">screen-read</string>
+    <string name="kachi_nav_output">Cluster: %1$s</string>
+    <string name="kachi_nav_out_unknown">—</string>
+    <string name="kachi_nav_out_off">off</string>
+    <string name="kachi_nav_out_starting">starting</string>
+    <string name="kachi_nav_out_emitting">emitting</string>
+    <string name="kachi_nav_out_verified">cluster acknowledged</string>
+    <string name="kachi_nav_out_stale">stale</string>
+    <string name="kachi_nav_out_fault">error</string>
+    <string name="kachi_nav_cluster_mode">Cluster display mode</string>
+    <string name="kachi_nav_cluster_off">Off</string>
+    <string name="kachi_nav_cluster_on">On (centre + ETA)</string>
+    <string name="kachi_nav_marquee_title">Scroll long street names</string>
+    <string name="kachi_nav_marquee_sub">Names wider than the cluster scroll across instead of being cut off.</string>
+    <string name="kachi_nav_reconnect">Reconnect the navigation source</string>
+    <string name="kachi_sub_badge">Speed limit badge</string>
+    <string name="kachi_badge_enabled_title">Show the speed limit badge</string>
+    <string name="kachi_badge_enabled_sub">Read from VietMap; turning it on starts VietMap once so there is a speed source.</string>
+    <string name="kachi_badge_upcoming_title">Show the upcoming limit</string>
+    <string name="kachi_badge_upcoming_sub">A second, smaller badge for the road ahead.</string>
+    <string name="kachi_badge_alert_title">Show camera alerts</string>
+    <string name="kachi_badge_alert_sub">VietMap\'s alert chip (speed cameras, hazards).</string>
+    <string name="kachi_badge_size">Badge size</string>
+    <string name="kachi_badge_pos_x">Badge position — across</string>
+    <string name="kachi_badge_pos_y">Badge position — down</string>
+    <string name="kachi_badge_drag_hint">Drag the badge inside the frame to place it on the cluster; the −/+ buttons above nudge it 10 px at a time.</string>
+    <string name="kachi_sub_bubble">VietMap bubble</string>
+    <string name="kachi_bubble_enabled_title">Show the VietMap bubble on the cluster</string>
+    <string name="kachi_bubble_enabled_sub">The small turn-by-turn box drawn by the modified VietMap build.</string>
+    <string name="kachi_bubble_need_cast">The position only moves while the cluster is casting — it is still saved, but the cluster will not follow yet.</string>
+    <string name="kachi_bubble_pos_x">Bubble position — across</string>
+    <string name="kachi_bubble_pos_y">Bubble position — down</string>
+    <string name="kachi_bubble_drag_hint">Drag the box inside the frame to place the bubble on the cluster.</string>
+
+    <!-- ── IA v2 nhóm 6 — Chiếu màn lên cụm (SettingsCastSection) ── -->
+    <string name="kachi_sec_cast">Cluster cast</string>
+    <string name="kachi_cast_enabled_title">Enable Cluster cast</string>
+    <string name="kachi_cast_enabled_sub">Opens the cluster so it can host app windows. Turning it off hands the cluster back to the gauges.</string>
+    <string name="kachi_cast_split">Split ratio</string>
+    <string name="kachi_sub_cast_autostart">Cast on engine start</string>
+    <string name="kachi_cast_autostart_title">Auto-cast full cluster</string>
+    <string name="kachi_cast_autostart_sub">On engine start, one app takes the whole cluster. Mutually exclusive with split auto-cast.</string>
+    <string name="kachi_cast_autostart_split_title">Auto-cast split view</string>
+    <string name="kachi_cast_autostart_split_sub">On engine start, two apps take one half each. Mutually exclusive with full auto-cast.</string>
+    <string name="kachi_cast_app_full">Full-cluster app: %1$s</string>
+    <string name="kachi_cast_app_left">Left-hand app: %1$s</string>
+    <string name="kachi_cast_app_right">Right-hand app: %1$s</string>
+    <string name="kachi_cast_app_none">not set</string>
+    <string name="kachi_cast_pick_app">Choose an app</string>
+    <string name="kachi_cast_no_apps">No app on this device can be cast to the cluster yet.</string>
+    <string name="kachi_sub_cast_now">Cast now</string>
+    <string name="kachi_cast_state_off">Off</string>
+    <string name="kachi_cast_state_opening">Opening cluster…</string>
+    <string name="kachi_cast_state_idle">Ready · tap the bubble to cast</string>
+    <string name="kachi_cast_state_full">Casting: %1$s</string>
+    <string name="kachi_cast_state_split">Split: %1$s | %2$s</string>
+    <string name="kachi_cast_state_stopping">Returning app…</string>
+    <string name="kachi_cast_state_closing">Closing cluster…</string>
+    <string name="kachi_cast_state_error">Error: %1$s</string>
+    <string name="kachi_cast_now_full">Cast full cluster…</string>
+    <string name="kachi_cast_now_left">Cast to the left half…</string>
+    <string name="kachi_cast_now_right">Cast to the right half…</string>
+    <string name="kachi_cast_now_stop">Stop casting</string>
+    <string name="kachi_sub_cast_rescue">Rescue</string>
+    <string name="kachi_cast_restore">Hand the cluster back to the gauges</string>
+    <string name="kachi_cast_deep">Deep-clean the cluster (unstick DashCast)</string>
+    <string name="kachi_cast_deep_confirm">This stops casting, force-stops apps fighting over the cluster and resets the cluster display settings. It cannot be undone.</string>
+    <string name="kachi_cast_deep_ok">Deep-clean</string>
+    <string name="kachi_cast_deep_done">Cleaned: stopped casting + force-stopped %1$s + reset cluster. Please UNINSTALL DashCast and power-cycle.</string>
+    <string name="kachi_cast_deep_none">(no conflicting app was running)</string>
+
+    <!-- ── IA v2 nhóm 7 — Phím vô-lăng (SettingsKeysSection) ── -->
+    <string name="kachi_sec_keys">Physical buttons → apps</string>
+    <string name="kachi_keys_enabled_title">Listen to physical buttons</string>
+    <string name="kachi_keys_enabled_sub">Turning this on re-grants the accessibility service through the car\'s own channel.</string>
+    <string name="kachi_keys_status_off">Voice key: off</string>
+    <string name="kachi_keys_status_active">Voice key: ACTIVE ✓</string>
+    <string name="kachi_keys_status_broken">Voice key: DISCONNECTED — tap Check / Fix now</string>
+    <string name="kachi_keys_check">Check / Fix now</string>
+    <string name="kachi_sub_keys_bindings">Button bindings</string>
+    <string name="kachi_keys_no_bindings">No buttons bound yet. Tap “Add binding…” to link a physical button to an app.</string>
+    <string name="kachi_keys_add">Add binding…</string>
+    <string name="kachi_keys_pick_button">Step 1 — choose a button</string>
+    <string name="kachi_keys_pick_target">Step 2 — choose what it opens</string>
+    <string name="kachi_keys_no_buttons">There is no button to bind yet.</string>
+    <string name="kachi_keys_no_targets">No app on this device can be opened from a button yet.</string>
+    <string name="kachi_sub_keys_custom">Self-learned buttons</string>
+    <string name="kachi_keys_no_custom">No buttons learned yet. Tap “Learn a new key…” then press the button on the steering wheel.</string>
+    <string name="kachi_keys_learn">Learn a new key…</string>
+    <string name="kachi_keys_learn_name">Name the button you just pressed</string>
+    <string name="kachi_key_custom_name">%1$s (code %2$d)</string>
+    <string name="kachi_key_code">key code %1$d</string>
+    <string name="kachi_key_unknown">%1$s (%2$d)</string>
+    <string name="kachi_key_mic_hold">Steering-wheel mic — hold (328)</string>
+    <string name="kachi_key_voice_assist">Voice assistant (VOICE_ASSIST · 231)</string>
+    <string name="kachi_key_assist">Assistant (ASSIST · 219)</string>
+    <string name="kachi_key_play_pause">Play/Pause (85)</string>
+    <string name="kachi_key_prev">Previous track (PREVIOUS · 88)</string>
+    <string name="kachi_key_next">Next track (NEXT · 87)</string>
+    <string name="kachi_key_headset">Headset hook (79)</string>
+    <string name="kachi_key_call">Call (CALL · 5)</string>
+    <string name="kachi_key_search">Search (SEARCH · 84)</string>
+    <string name="kachi_key_target_assist">System default assistant</string>
+    <string name="kachi_key_target_gemini">System assistant via hard key (Gemini · 231)</string>
+    <string name="kachi_key_target_recognizer">Speech recognizer</string>
+
+    <!-- ── IA v2 nhóm 8 — Tiện nghi xe (SettingsCarSection): ghế + bụi mịn nhận từ màn ClusterNav ── -->
+    <string name="kachi_sub_seat">Seat cooling / heating</string>
+    <string name="kachi_seat_enabled_title">Adjust the seats automatically</string>
+    <string name="kachi_seat_enabled_sub">The car applies the level you set for each seat once the cabin temperature calls for it.</string>
+    <string name="kachi_seat_mode">Mode</string>
+    <string name="kachi_seat_cool">Cooling</string>
+    <string name="kachi_seat_heat">Heating</string>
+    <string name="kachi_seat_hint">Tap a seat to change its level: off → level 1 → level 2.</string>
+    <string name="kachi_sub_pm25">Air purifier</string>
+    <string name="kachi_pm25_title">Purify automatically when the air is dirty</string>
+    <string name="kachi_pm25_sub">The car runs the purifier when the dust level rises; turn it off to purify only on demand.</string>
+    <string name="kachi_pm25_clean_now">Purify now</string>
+    <string name="kachi_pm25_level">Fine dust right now: %1$s</string>
+    <string name="kachi_pm25_unknown">not available</string>
+    <string name="kachi_pm25_excellent">Excellent</string>
+    <string name="kachi_pm25_good">Good</string>
+    <string name="kachi_pm25_low">Low grade</string>
+    <string name="kachi_pm25_middle">Moderate</string>
+    <string name="kachi_pm25_heavy">Heavy</string>
+    <string name="kachi_pm25_serious">Serious</string>
+
+    <!-- ── IA v2 nhóm 9 — Hệ thống & quyền: Khởi động · Bảo trì · Nâng cao ── -->
+    <string name="kachi_headless_title">Run the navigation/cluster service in the background on engine start</string>
+    <string name="kachi_headless_sub">DIFFERENT from the row above: that one opens the Kachi screen, this one only starts the service without any screen.</string>
+    <string name="kachi_sub_maint">Maintenance</string>
+    <string name="kachi_check_update">Check for updates</string>
+    <string name="kachi_nav_stop">Stop all navigation</string>
+    <string name="kachi_sub_advanced">Advanced</string>
+    <string name="kachi_open_legacy">ClusterNav screen (old build, for comparison)</string>
+    <string name="kachi_vietmap_data">VietMap data</string>
+
+    <!-- ── IA v2 nhóm 10 — miễn trừ trách nhiệm, chuyển từ hộp thoại một-lần của màn cũ (MainActivity:620–635) ── -->
+    <string name="kachi_about_disclaimer">Disclaimer: this is a personal experiment, NOT affiliated with BYD. It comes with no warranty of driving safety, compatibility or reliability. Install and use at your own risk.</string>
 </resources>

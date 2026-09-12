@@ -2,7 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -55,7 +54,9 @@ class LayoutEditorPanel(
 
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(Sp.XL), dp(Sp.L), dp(Sp.XL), dp(Sp.L))
+            // Lề ngang [KachiSpace.PANEL_INSET] để cột nội dung TRÙNG bảng Cài đặt (R-UI (h) — [ĐO] bảng này
+            // trước đây bắt đầu ở x=30px còn Cài đặt ở x=84px, hai bề mặt toàn màn hai cột khác nhau).
+            setPadding(dp(Sp.PANEL_INSET), dp(Sp.L), dp(Sp.PANEL_INSET), dp(Sp.L))
         }
 
         // ── Đầu bảng ──
@@ -165,7 +166,13 @@ class LayoutEditorPanel(
 
         val empty = current.uncoveredCells()
         info.text = buildString {
-            append(context.getString(R.string.kachi_layout_frames_n, current.frames.size)); append(" · ")
+            // finding #18 — số ít/nhiều là việc của `<plurals>`: bản một-chuỗi in "1 frames".
+            append(
+                context.resources.getQuantityString(
+                    R.plurals.kachi_layout_frames_n, current.frames.size, current.frames.size,
+                ),
+            )
+            append(" · ")
             // "Còn ô trống" là THÔNG TIN, không phải lỗi: nền sẽ hiện ra ở đó.
             append(
                 if (empty == 0) context.getString(R.string.kachi_layout_full)
@@ -184,16 +191,27 @@ class LayoutEditorPanel(
 
     // ── Dựng nút ─────────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Nút của bảng vẽ — **cùng một hình dạng với [SettingsRows.button]**, không phải một nút thứ hai.
+     *
+     * ## [ĐO] vì sao phải sửa
+     * Soát ảnh 2026-09-12 đếm **4 chiều cao cho 3 vai** trên cùng một sản phẩm: 35dp (Xong) · **43dp (chính hàm
+     * này)** · 44dp (chip) · 48dp (nút Settings). 43 không phải một lựa chọn — nó là *hệ quả* của đệm dọc
+     * [KachiSpace.M] cộng một dòng chữ BODY, tức không ai từng chọn chiều cao cho nút này. Nay: đệm
+     * `L·S` + `minHeight` [KachiSpace.TOUCH] + `gravity = CENTER`, đúng ba dòng của [SettingsRows.button]
+     * (IA v2 R7 · R-UI (h)). `ControlHeightContractTest` ghim dòng `minHeight` này.
+     *
+     * ⚠ Nền đi qua [KachiTheme.card] thay vì tự dựng `GradientDrawable`: design system R5 cấm dựng nút bằng
+     * `GradientDrawable` ngoài bộ component — mỗi bản dựng tay là một chỗ nữa sẽ lệch khi đổi chủ đề.
+     */
     private fun pill(text: String, onTap: () -> Unit) = TextView(context).apply {
         this.text = text
         setTextColor(Color.parseColor(KachiTheme.INK))
         KachiType.apply(this, KachiType.BODY)
-        setPadding(dp(Sp.L), dp(Sp.M), dp(Sp.L), dp(Sp.M))
-        background = GradientDrawable().apply {
-            cornerRadius = dp(Sp.RADIUS_XL).toFloat()
-            setColor(Color.parseColor(KachiTheme.CARD2))
-            setStroke(dp(Sp.HAIRLINE), Color.parseColor(KachiTheme.LINE))
-        }
+        gravity = Gravity.CENTER
+        setPadding(dp(Sp.L), dp(Sp.S), dp(Sp.L), dp(Sp.S))
+        minHeight = dp(Sp.TOUCH)
+        background = KachiTheme.card(context, Sp.RADIUS_XL, KachiTheme.CARD2)
         setOnClickListener { onTap() }
     }
 

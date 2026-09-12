@@ -1,14 +1,11 @@
 package com.byd.clusternav.launcher
 
-import android.content.Context
-import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.content.Context
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -19,77 +16,109 @@ import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
- * BỘ CHỌN CHIP cho thanh trạng thái trên (RW0 **vùng thứ ba**).
- *
- * Tách khỏi bảng "Tuỳ biến" cũ (đã xoá ở S1·T5) vì bảng đó vượt **trần 500 dòng** của dự án khi
- * thêm mục này; và đây là một mảng liền
- * mạch (giữ danh sách chip đang chọn + vẽ ô + đổi trạng thái) nên cắt đúng khớp.
+ * BỘ CHỌN CHIP cho thanh trạng thái trên (RW0 **vùng thứ ba**), nay thuộc nhóm *"Thanh trạng thái & thanh nút"*
+ * ([SettingsBarsSection], IA v2 · R-UI a).
  *
  * Giữ **trạng thái đang chọn của phiên mở bảng** để tô ô đúng; nguồn sự thật vẫn là `HomeUiState.topStrip` — lớp này
  * chỉ báo ra qua [onToggle] và KHÔNG ghi bền.
+ *
+ * ## ⚠ Ô ở đây dựng RIÊNG, KHÔNG dùng lại bộ dựng ô của lưới khác
+ * [ĐO] bản đầu dùng lại thì sinh ba lỗi cùng lúc: sự kiện bấm bắn vào **thanh nút** (chọn chip lại thêm nút vào
+ * thanh), `tiles[id]` bị **ghi đè** vì cùng một mã ở hai lưới, và hai chỗ tô nền tranh nhau. Đúng bẫy "hai bản sao
+ * cùng khoá". **Hình học** thì dùng chung ([CapabilityTileGrid]) — đó là ranh giới đúng theo R5: giống nhau về
+ * *nhịp*, không giống nhau về *hành vi bấm*.
+ *
+ * ## ⚠⚠ T4 · ba thứ đổi so với bản S1 — và vì sao
+ *  1. **Tiêu đề + chú thích đi qua [SettingsRows]** (`sectionLabel`/`note`): [ĐO] soát ảnh 2026-09-12, lớp này giữ
+ *     một `label()` **bản sao** của `sectionLabel` (findings #4) và một `TextView` chú thích dựng tay ⇒ lề/bậc chữ
+ *     của nó trôi khỏi mọi bề mặt Settings khác mỗi lần design system đổi. Nay không còn bản sao nào.
+ *  2. **Hàng ô đi qua [CapabilityTileGrid] với [CapabilityPicker.COLS]**: bản cũ tự xếp **5** cột trong khi lưới
+ *     kia 4 cột — hai hệ lưới khác nhau trong CÙNG một vùng cuộn (findings #14, [P2]), và khe ngang/dọc = 0 nên ô
+ *     dính nhau (findings #15).
+ *  3. **Nút "Thêm chip khác…"** ([openMore]): lối GIỮ-ô-ở-lưới-123 đã mất cùng lưới đó khi R-UI (m) bỏ lưới khỏi
+ *     Settings. Không có đường thay thế thì người dùng **mất hẳn** khả năng đưa một datum bất kỳ lên thanh trạng
+ *     thái (R8 *"không tính năng nào mất"*), nên đường đó nay là một hộp thoại danh sách — cùng bộ dữ liệu
+ *     [TopStripConfig.choices], cùng [toggle], không thêm một lưới thứ hai vào trang.
  */
 class TopStripPicker(
     private val context: Context,
+    private val rows: SettingsRows,
     initial: TopStripConfig,
     private val onToggle: (String, Boolean) -> Unit,
 ) {
     private var strip = initial
     private val tiles = HashMap<String, View>()
 
+    /** Hàng ô — giữ để [toggle] từ hộp thoại còn dựng lại được đúng khối này, không dựng lại cả trang. */
+    private val grid = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+
     fun has(id: String): Boolean = strip.has(id)
 
     /**
      * RW0 vùng thứ ba — chọn chip cho thanh trạng thái trên.
      *
-     * Trước 2026-09-11 thanh trên là **3 chip viết cứng** trong bộ vẽ ⇒ vùng duy nhất người dùng không sửa được, nên
-     * RW0 chưa trọn dù hai vùng kia đã xong.
-     *
      * **Chỉ nhận mục ĐỌC** — lý do (đích chạm 24dp là quá nhỏ để bắn lệnh xe + thanh trên là dòng trạng thái) ghi ở
      * KDoc [TopStripConfig]. Không phải bỏ sót.
      *
-     * ⚠ **Ô ở đây dựng RIÊNG, KHÔNG dùng lại `tile()`** — [ĐO] bản đầu dùng lại thì sinh ba lỗi cùng lúc: sự kiện bấm
-     * bên trong `tile()` bắn vào **thanh nút** (chọn chip lại thêm nút vào thanh), `tiles[id]` bị **ghi đè** vì cùng
-     * một mã xuất hiện ở cả hai lưới, và hai chỗ tô nền tranh nhau. Đúng bẫy "hai bản sao cùng khoá".
-     *
-     * ⚠ **Chỉ bày 3 chip dựng sẵn + chip đang chọn** (≤ 7 ô) chứ không bày cả 123 datum: bảng này đã dựng 187 ô đồng
-     * bộ trên thread chính (nợ đã ghi), thêm 123 ô nữa là nhân đôi giá mở bảng. Muốn đặt một datum bất kỳ thì
-     * **giữ** ô của nó ở danh sách bên dưới — có nói rõ trong câu mô tả.
+     * **Chỉ bày 3 chip dựng sẵn + chip đang chọn** (≤ 7 ô) chứ không bày cả 123 datum: trang này cố ý ngắn (R4 —
+     * mỗi nhóm ≤ 2 màn cuộn). Muốn đặt một datum bất kỳ thì bấm **Thêm chip khác…** ngay dưới.
      */
     fun section(parent: LinearLayout) {
-        parent.addView(label(context.getString(R.string.kachi_topstrip_title)))
-        parent.addView(TextView(context).apply {
-            text = context.getString(R.string.kachi_topstrip_hint, TopStripConfig.CAP)
-            setTextColor(Color.parseColor(KachiTheme.MUT))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
-            setPadding(0, 0, 0, dpi(context, Sp.S))
-        })
+        parent.addView(rows.sectionLabel(context.getString(R.string.kachi_topstrip_title)))
+        parent.addView(rows.note(context.getString(R.string.kachi_topstrip_hint, TopStripConfig.CAP)))
+        parent.addView(grid)
+        rebuild()
+        parent.addView(rows.button(context.getString(R.string.kachi_topstrip_more)) { openMore() })
+    }
+
+    /** Dựng lại hàng ô từ cấu hình hiện tại (chip vừa thêm từ hộp thoại phải hiện ra ngay). */
+    private fun rebuild() {
+        grid.removeAllViews()
+        tiles.clear()
         val shown = TopStripConfig.choices().filter { it.id in TopStripConfig.BUILT_IN || strip.has(it.id) }
-        var row: LinearLayout? = null
-        shown.forEachIndexed { i, pick ->
-            if (i % 5 == 0) {
-                row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-                parent.addView(row, LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-            }
-            row!!.addView(tile(pick), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        }
-        val rem = shown.size % 5
-        if (rem != 0) repeat(5 - rem) {
-            row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        // `cols =` dạng THAM SỐ TÊN, không truyền theo vị trí: `PickGridColumnContractTest` quét chính chuỗi
+        // `cols = <nguồn>` để chốt hai màn chọn cùng một nguồn số cột — truyền theo vị trí thì bài canh mù.
+        CapabilityTileGrid.rows(context, grid, shown.size, cols = CapabilityPicker.COLS) { i -> tile(shown[i]) }
+    }
+
+    /**
+     * Hộp thoại "đặt một datum BẤT KỲ lên thanh trạng thái" — thay cho lối GIỮ một ô ở lưới 123 (đã bỏ khỏi Settings).
+     *
+     * Danh sách bày **mọi** thứ đặt được ([TopStripConfig.choices] — chính hàm mà [section] lọc), có dấu ✓ trước mục
+     * đang bật để một danh sách dài vẫn đọc được trạng thái. Chọn một mục = [toggle] nó, tức cùng một đường với chạm
+     * ô ở trên (kể cả câu nhắc khi đã đầy trần).
+     */
+    private fun openMore() {
+        val all = TopStripConfig.choices()
+        SettingsDialogs.pick(
+            context,
+            context.getString(R.string.kachi_topstrip_more),
+            all.map {
+                if (strip.has(it.id)) context.getString(R.string.kachi_topstrip_on, it.displayLabel)
+                else it.displayLabel
+            },
+            context.getString(R.string.kachi_topstrip_none),
+        ) { index ->
+            toggle(all[index].id)
+            rebuild()
         }
     }
 
-    /** Ô chọn chip — dựng riêng, sự kiện riêng, bảng riêng (xem cảnh báo ở [section]). */
+    /** Ô chọn chip — dựng riêng, sự kiện riêng, bảng riêng (xem cảnh báo ở KDoc lớp). */
     private fun tile(pick: CapabilityPick): View {
         val t = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            orientation = LinearLayout.VERTICAL
+            // Căn NGANG-giữa, DỌC-TRÊN: ô cao MATCH_PARENT theo hàng ([CapabilityTileGrid]) nên căn giữa dọc sẽ đẩy
+            // icon ô nhãn-một-dòng xuống lệch với ô nhãn-hai-dòng cùng hàng. Cùng lẽ với `CapabilityGridSection`.
+            gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(ImageView(context).apply {
                 val r = iconRes(pick); if (r != 0) { setImageResource(r); setColorFilter(c(KachiTheme.INK)) }
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_L), dpi(context, Sp.ICON_L))
             })
             addView(TextView(context).apply {
-                text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
+                text = pick.displayLabel; setTextColor(c(KachiTheme.INK))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
@@ -124,17 +153,8 @@ class TopStripPicker(
         val t = tiles[id] ?: return
         t.background = if (strip.has(id)) GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_L).toFloat()
-            setColor(Color.parseColor(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), Color.parseColor(KachiTheme.ACCENT))
+            setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
         } else KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
-    }
-
-    private fun label(text: String) = TextView(context).apply {
-        // [SOÁT UI 2026-09-12] Đây là tiêu đề nhóm DUY NHẤT của bộ chọn chip; trước dùng MUT2 (mờ) + 12sp nên nó
-        // mờ hơn cả body ngay dưới — lệch hẳn với các tiêu đề nhóm khác trong CÙNG bảng Cài đặt (đã đổi sang INK
-        // đậm). Đồng bộ: INK sáng + đậm + thưa chữ.
-        this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.SECTION)
-        typeface = Typeface.DEFAULT_BOLD
-        letterSpacing = 0.06f; setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.S))
     }
 
     /** Icon của khả năng; chưa map → icon đại diện nhóm (khỏi ô trống icon). */

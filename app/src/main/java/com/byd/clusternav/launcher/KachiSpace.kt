@@ -321,6 +321,77 @@ object KachiSpace {
      */
     const val RAIL_COL = 230
 
+    /**
+     * **Lề NGANG của nội dung một bảng phủ toàn màn** ([XXL] + [XXL] = 56dp = 84px @1.5×).
+     *
+     * ## Suy ra từ bảng Cài đặt, không tự chọn
+     * [SettingsPanel] là bảng phủ toàn màn duy nhất đã được owner duyệt bằng ảnh: nó là một thẻ có **lề ngoài**
+     * [XXL] rồi **lề trong** [XXL] ⇒ nội dung bắt đầu ở x = 28 + 28 = 56dp ([ĐO] ảnh: **x = 84px**). Bảng vẽ bố
+     * cục ([LayoutEditorPanel]) là bảng phủ toàn màn ĐỤC (không thẻ, không scrim) nên không có hai lớp lề để cộng
+     * — nó phải khai thẳng cột nội dung, và cột đó phải TRÙNG với bảng kia, nếu không thì hai bề mặt toàn màn của
+     * cùng một app bắt đầu ở hai cột khác nhau (R-UI (h): *"bảng vẽ bố cục dùng cùng lề panel (x84)"*; [ĐO] trước
+     * bản vá nó ở **x = 30px**).
+     *
+     * Viết dạng **phép cộng** chứ không gõ 56: đổi [XXL] thì cả hai bề mặt đi cùng nhau. Đây chính là chỗ mà bẫy
+     * hai-bản-sao sẽ xuất hiện nếu gõ số.
+     *
+     * **Không thể là một bậc của thang**: cùng họ [LABEL_COL] / [RAIL_COL] — bề rộng một khối bố cục.
+     */
+    const val PANEL_INSET = XXL + XXL
+
+    /**
+     * **Bề rộng TỐI THIỂU của một chip** trong dãy segmented (66dp).
+     *
+     * ## [ĐO] bệnh nó chữa — chip 1–2 ký tự trông như HÌNH TRÒN
+     * Chip bo [RADIUS_PILL] (bo hết cỡ) nên dáng của nó do **tỉ lệ rộng/cao** quyết định. [ĐO] ảnh máy ảo
+     * 2026-09-12: chip *"m"* / *"ft"* / *"°C"* đo **72×66px** ⇒ tỉ lệ **1.09** — mắt đọc ra một hình tròn, lạc
+     * khỏi họ viên thuốc của các chip dài cùng hàng. Trước đó `minWidth` lấy [TOUCH] (48dp) vì lý do *đích chạm*,
+     * nhưng đích chạm và **dáng** là hai ràng buộc khác nhau và 48dp chỉ thoả cái thứ nhất.
+     *
+     * Suy từ chiều cao chip chứ không tự chọn: chip cao [ICON_XL] = 44dp, tỉ lệ tối thiểu để còn đọc ra viên
+     * thuốc là 1.5 ⇒ 44 × 1.5 = **66dp**. Đổi chiều cao chip thì con số này phải tính lại theo cùng tỉ lệ.
+     *
+     * **Không thể là một bậc của thang**: đây là bề rộng của MỘT VẬT (cùng họ [LABEL_COL] / [DOCK_TILE_W]),
+     * không phải khoảng cách giữa hai vật; bậc lớn nhất của thang là [XXL] = 28dp.
+     */
+    const val CHIP_MIN_W = 66
+
+    /**
+     * **Bề rộng TỐI ĐA của một dòng chú thích** (`SettingsRows.note`, 600dp).
+     *
+     * ## [ĐO] bệnh nó chữa — dòng chú thích dài 1358px
+     * Khung nội dung của màn Cài đặt rộng ~950dp (1920×1080, rail [RAIL_COL]), và `note()` là `MATCH_PARENT` nên
+     * [ĐO] ảnh máy ảo 2026-09-12: một dòng chú thích trải **1358px ≈ 150 ký tự/dòng**. Chuẩn sắp chữ là 45–90 ký
+     * tự/dòng — quá ngưỡng thì mắt **trượt dòng** khi xuống hàng (mất mốc quay về đầu dòng).
+     *
+     * 600dp = 900px @1.5×, ở [KachiType.CAPTION] 12sp (bề rộng trung bình ~7px/ký tự) cho **~90 ký tự/dòng** —
+     * đúng cận trên của khoảng dễ đọc, và vẫn là `maxWidth` (không phải bề rộng cố định) nên màn hẹp hơn thì dòng
+     * tự co, không có chỗ nào bị cắt.
+     *
+     * **Không thể là một bậc của thang**: cùng họ [LABEL_COL] — bề rộng một khối bố cục, không phải khoảng cách.
+     */
+    const val NOTE_MAX_W = 600
+
+    // ── Chiều cao của view TỰ VẼ nhúng vào Cài đặt (`SettingsRows.embed`) ───────────────────────────────
+    //
+    // ⚠ Ba số này là **bề cao một khối bố cục**, cùng họ [LABEL_COL]/[RAIL_COL]/[NOTE_MAX_W] — KHÔNG phải một
+    // bậc khoảng cách. Chúng phải nằm ở đây chứ không viết tại chỗ gọi vì `embed(view, heightDp)` nhận dp thô:
+    // một số trần ở chỗ gọi **không** bị `SpacingScaleContractTest` bắt (nó chỉ soi đối số của `dp(`/`dpi(`),
+    // tức đúng cái lỗ mà `px()` đã lách qua một lần (xem KDoc `dpHelperNames` của bài canh đó).
+
+    /**
+     * Sơ đồ ghế **và** khung KÉO-THẢ vị trí trên cụm (biển báo tốc độ · bong bóng VietMap).
+     *
+     * ⚠ Khung kéo-thả TRƯỚC ĐÂY có bậc riêng `EMBED_TALL = 200`. Bỏ đi ở lượt soát ảnh v2 (R4 — nhóm *Dẫn đường*
+     * đo được **2.68 màn cuộn**, trần là 2): khung đó **letterbox** cụm 1920×720 nên hạ chiều cao chỉ làm hình
+     * chiếu nhỏ lại, KHÔNG cắt mất phần nào của cụm — [ĐO] sau khi hạ, marker vẫn tròn, vẫn kéo được, biên khung
+     * vẫn thấy. Một bậc ít hơn cũng là một chỗ ít hơn để hai khung cùng loại trôi khỏi nhau.
+     */
+    const val EMBED_M = 160
+
+    /** Đồng hồ PM2.5 — một cung tròn + một con số; cao hơn nữa chỉ là chỗ trống. */
+    const val EMBED_S = 120
+
     /** Ảnh bìa nhạc (vuông). */
     const val ART = 80
 
@@ -359,6 +430,15 @@ object KachiSpace {
      * kéo theo con số này — đổi nó là đổi một cách lách nền tảng đã đo trên máy thật.
      */
     const val CAPTION_INSET = 24
+
+    /**
+     * Cao của dải phủ che caption freeform, tính từ MÉP TRÊN cửa sổ app (dp). Caption do hệ vẽ, cao khác nhau theo
+     * ROM: [ĐO 2026-09-13 máy ảo google_apis 240dpi] cửa sổ app top=124px, caption xám tới y=187 ⇒ 63px = **42dp**;
+     * trên xe [CAPTION_INSET] = 24dp là số đã đo. Lấy trần 44dp để phủ hết cả hai mà không phải đo lại từng ROM;
+     * [OverlayHeads] cộng thêm khoảng từ mép trên ô tới mép trên cửa sổ app. Đổi số này là đổi một phép đo, không
+     * phải nhịp thang — nên nó đứng riêng như [CAPTION_INSET].
+     */
+    const val CAPTION_COVER = 44
 
     // ══ Tiện ích ════════════════════════════════════════════════════════════════════════════════════════
 

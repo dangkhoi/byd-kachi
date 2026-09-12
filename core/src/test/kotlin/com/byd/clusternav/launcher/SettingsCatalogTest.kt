@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
  * S1 · T1 — danh mục cài đặt (phần **thuần `:core`**).
  *
  * ## Bài nào là bài THẬT
- * Bài ở đây khoá **ý định** (7 nhóm, thứ tự, nhãn không rỗng, phép [SettingsCatalog.orphans] trên dữ liệu tự dựng) —
+ * Bài ở đây khoá **ý định** (10 nhóm của IA v2, thứ tự, nhãn không rỗng, phép [SettingsCatalog.orphans] trên dữ liệu tự dựng) —
  * tức là chúng so danh mục với **chính nó**. Hai bài đáng giá nhất (đối chiếu danh mục với **nơi lưu THẬT**) nằm ở
  * `:app` [SettingsCoverageContractTest], vì chúng quét nguồn của `:app` và [ĐO] `:core:test` báo **UP-TO-DATE** khi
  * chỉ nguồn `:app` đổi — chi tiết ở KDoc lớp đó. Nếu bộ test này chỉ có loại "so với chính nó" thì nó là bộ test
@@ -30,22 +30,110 @@ class SettingsCatalogTest {
         "recirc_on_start_enabled",
     )
 
+    // IA v2 §4.3 — khoá của ClusterNav mà Settings mới phải nhận. Cũng viết tay, cùng lý do như trên; bài đối chiếu
+    // với MÃ NGUỒN THẬT (`"<khoá>"` có mặt trong Prefs.kt/SimpleCastRuntime.kt/…) nằm ở `:app`
+    // `ClusterNavKeysContractTest` — nó phải ở đó vì `:core:test` báo UP-TO-DATE khi chỉ nguồn `:app` đổi.
+    private val clusterNavMustBeOwned = listOf(
+        "enabled", "nav_cluster_screen_mode", "marquee",
+        "badge_enabled", "show_upcoming_badge", "show_alert_chip", "badge_size_dp", "badge_center_x",
+        "vm_bubble_enabled", "vm_bubble_x",
+        "cast_enabled", "split_ratio_left_pct", "autostart_enabled", "autostart_package",
+        "autostart_split_enabled", "autostart_left_package", "autostart_right_package",
+        "voicekey_enabled", "voicekey_bindings", "voicekey_custom_buttons", "voicekey_learn",
+        "seat_comfort_enabled", "seat_comfort_mode", "seat_level_0", "pm25_filter_enabled",
+        "headless_autostart",
+    )
+
     @Test
-    fun `dung bay nhom theo dung thu tu spec`() {
-        assertEquals(7, SettingsCatalog.GROUPS.size, "spec §4.1 chốt đúng 7 nhóm")
+    fun `dung muoi nhom theo dung thu tu spec`() {
+        assertEquals(10, SettingsCatalog.GROUPS.size, "IA v2 §4.1 chốt đúng 10 nhóm")
         assertEquals(
-            listOf("home", "display", "profiles", "car", "system", "clusternav", "about"),
+            listOf("home", "bars", "display", "profiles", "nav", "cast", "keys", "car", "system", "about"),
             SettingsCatalog.GROUPS.map { it.id },
-            "thứ tự rail là thứ tự người dùng đọc — không được đổi khi thêm nhóm",
+            "thứ tự rail là thứ tự TẦN SUẤT DÙNG (§4.1) — không được đổi khi thêm nhóm",
         )
         assertEquals("Màn hình chính", SettingsGroup.HOME.label)
-        assertEquals("Dẫn đường · Cụm · Phím", SettingsGroup.CLUSTERNAV.label)
+        // Nhóm `clusternav` của IA v1 BỊ BỎ: ba nhóm thật (nav/cast/keys) thay cho một nút "mở màn kia", và dòng mở
+        // màn cũ hạ xuống thành một mục của nhóm Hệ thống.
+        assertTrue(
+            SettingsCatalog.GROUPS.none { it.id == "clusternav" },
+            "nhóm 'clusternav' phải biến mất — giữ nó lại nghĩa là vẫn còn hai màn cấu hình",
+        )
+        assertEquals(
+            SettingsGroup.SYSTEM,
+            SettingsCatalog.ENTRIES.first { it.id == "system_advanced_screen" }.group,
+            "đường mở màn cũ ở lại, nhưng là một MỤC của Hệ thống chứ không phải một nhóm",
+        )
+    }
+
+    /**
+     * Câu phụ rail ≤ [SettingsCatalog.GROUP_SUB_MAX] ký tự — **ràng buộc HÌNH** (R-UI b).
+     *
+     * [ĐO ảnh 2026-09-12] 2/7 câu của IA v1 bị cắt cụt bằng "…" trên máy thật, và phần bị cắt chính là phần nói
+     * *"nhóm này chứa gì"*. Đây là loại lỗi trình biên dịch không thấy và bài test cũ cũng không thấy — nó chỉ hiện
+     * ra khi có người chụp màn hình. Ghim số để lần sau viết dài ra là đỏ ngay.
+     */
+    @Test
+    fun `cau phu rail du ngan de khong bi cat`() {
+        val tooLong = SettingsCatalog.GROUPS.flatMap { g ->
+            listOf(g.id to g.sub, "${g.id}(en)" to g.subEn)
+        }.filter { it.second.length > SettingsCatalog.GROUP_SUB_MAX }
+        assertTrue(
+            tooLong.isEmpty(),
+            "câu phụ dài quá ${SettingsCatalog.GROUP_SUB_MAX} ký tự ⇒ rail cắt '…': " +
+                tooLong.map { "${it.first}=${it.second.length}" },
+        )
     }
 
     @Test
-    fun `moi nhom co it nhat mot muc`() {
-        val empty = SettingsCatalog.GROUPS.filter { SettingsCatalog.entriesOf(it).isEmpty() }
-        assertTrue(empty.isEmpty(), "nhóm rỗng thì rail mở ra một trang trắng — nhóm rỗng: ${empty.map { it.id }}")
+    fun `moi nhom co it nhat HAI muc`() {
+        // IA v2 · R4 siết luật cũ (≥ 1) lên ≥ 2: [ĐO ảnh] nhóm 1 mục ("Tiện nghi xe", "Dẫn đường" của IA v1) mở ra
+        // một trang gần như trắng — đi qua rail để thấy đúng một dòng thì cái rail đó đang nói dối về độ sâu.
+        val thin = SettingsCatalog.GROUPS.filter { SettingsCatalog.entriesOf(it).size < 2 }
+        assertTrue(thin.isEmpty(), "nhóm dưới 2 mục: ${thin.map { "${it.id}=${SettingsCatalog.entriesOf(it).size}" }}")
+    }
+
+    @Test
+    fun `ENTRIES khai theo dung thu tu nhom`() {
+        // Thứ tự khai của danh mục LÀ thứ tự hiện ra, và `entriesOf` lọc theo nhóm — nếu mục của một nhóm nằm rải
+        // rác thì danh mục vẫn "đúng" với mọi phép kiểm khác, nhưng người đọc mã không còn thấy được một nhóm gồm
+        // những gì. Đây là phép canh cho chính khả năng đọc đó.
+        val order = SettingsCatalog.ENTRIES.map { it.group }.distinct()
+        assertEquals(SettingsCatalog.GROUPS, order, "mục của một nhóm phải khai liền nhau, theo thứ tự nhóm")
+    }
+
+    @Test
+    fun `moi khoa ClusterNav co dung mot chu`() {
+        clusterNavMustBeOwned.forEach { key ->
+            assertNotNull(SettingsCatalog.groupOf(key), "khoá ClusterNav '$key' chưa thuộc mục nào")
+        }
+        assertTrue(SettingsCatalog.duplicatedKeys().isEmpty(), "không khoá nào được hai mục cùng nhận")
+    }
+
+    @Test
+    fun `bang khoa ClusterNav tu nhat quan`() {
+        // Mỗi khoá trỏ vào một tệp prefs ĐÃ KHAI LÝ DO.
+        SettingsCatalog.CLUSTERNAV_KEYS.forEach { (key, file) ->
+            assertTrue(
+                file in SettingsCatalog.CLUSTERNAV_PREFS_FILES,
+                "khoá '$key' trỏ vào tệp prefs chưa khai: '$file'",
+            )
+        }
+        // Khoá ĐI KÈM phải trỏ vào một mục có thật, và không được đồng thời là khoá chính.
+        SettingsCatalog.CLUSTERNAV_COMPANION_KEYS.forEach { (key, ownerId) ->
+            assertTrue(
+                SettingsCatalog.ENTRIES.any { it.id == ownerId },
+                "khoá đi kèm '$key' trỏ vào mục không tồn tại: '$ownerId'",
+            )
+            assertNull(SettingsCatalog.groupOf(key), "'$key' không thể vừa là khoá chính vừa là khoá đi kèm")
+        }
+        // Khoá ẩn phải có LÝ DO và không được có UI.
+        assertTrue(SettingsCatalog.CLUSTERNAV_HIDDEN_KEYS.isNotEmpty(), "danh sách khoá ẩn rỗng = chưa ai trả lời")
+        SettingsCatalog.CLUSTERNAV_HIDDEN_KEYS.forEach { (key, why) ->
+            assertTrue(why.isNotBlank(), "khoá ẩn '$key' thiếu lý do")
+            assertNull(SettingsCatalog.groupOf(key), "khoá ẩn '$key' lại có mục — hai câu trả lời trái nhau")
+            assertTrue(key !in SettingsCatalog.CLUSTERNAV_KEYS, "khoá ẩn '$key' lại nằm trong bảng khoá có UI")
+        }
     }
 
     @Test
@@ -59,7 +147,13 @@ class SettingsCatalogTest {
     @Test
     fun `groupOf tra dung nhom cho tung khoa`() {
         assertEquals(SettingsGroup.HOME, SettingsCatalog.groupOf("preset"))
-        assertEquals(SettingsGroup.HOME, SettingsCatalog.groupOf("top_strip"))
+        assertEquals(SettingsGroup.BARS, SettingsCatalog.groupOf("top_strip"), "chip + thanh nút tách sang nhóm Thanh")
+        assertEquals(SettingsGroup.BARS, SettingsCatalog.groupOf("dock_edge"))
+        assertEquals(SettingsGroup.NAV, SettingsCatalog.groupOf("badge_size_dp"))
+        assertEquals(SettingsGroup.CAST, SettingsCatalog.groupOf("split_ratio_left_pct"))
+        assertEquals(SettingsGroup.KEYS, SettingsCatalog.groupOf("voicekey_bindings"))
+        assertEquals(SettingsGroup.CAR, SettingsCatalog.groupOf("seat_comfort_mode"))
+        assertEquals(SettingsGroup.SYSTEM, SettingsCatalog.groupOf("headless_autostart"))
         assertEquals(SettingsGroup.HOME, SettingsCatalog.groupOf("wallpaper_prefs"))
         assertEquals(SettingsGroup.DISPLAY, SettingsCatalog.groupOf("unit_prefs"))
         assertEquals(SettingsGroup.DISPLAY, SettingsCatalog.groupOf("theme_mode"))
@@ -145,11 +239,15 @@ class SettingsCatalogTest {
             listOf(
                 // P7/P6: nút "Lưu cảnh hiện tại…" là một VIỆC LÀM; cảnh lưu ra thì nằm ở khoá của `home_scenes`
                 // (một khoá, một chủ — cùng lối với cặp `home_grid_editor` / `home_grid`).
-                "home_scene_save",
-                "home_grid_editor", "system_permissions", "clusternav_open", "about_version",
+                "home_scene_save", "home_grid_editor",
+                // IA v2: mọi HÀNH ĐỘNG của màn ClusterNav (§4.3, cột "API ghi") — chúng bấm là chạy, không lưu gì.
+                "nav_reconnect", "cast_actions", "cast_rescue", "keys_check", "car_pm25_clean",
+                "system_permissions", "system_update", "system_nav_stop", "system_advanced_screen",
+                "system_vietmap_data", "system_diagnostics",
+                "about_version", "about_disclaimer",
             ),
             noKey,
-            "năm mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười lăm mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")
@@ -171,7 +269,7 @@ class SettingsCatalogTest {
         val byGroup = SettingsCatalog.GROUPS.flatMap { SettingsCatalog.entriesOf(it) }
         assertEquals(
             SettingsCatalog.ENTRIES.size, byGroup.size,
-            "gộp mục của 7 nhóm phải ra đủ danh mục — thiếu nghĩa là có mục không nhóm nào bày ra",
+            "gộp mục của 10 nhóm phải ra đủ danh mục — thiếu nghĩa là có mục không nhóm nào bày ra",
         )
         val home = SettingsCatalog.entriesOf(SettingsGroup.HOME).map { it.id }
         assertEquals(

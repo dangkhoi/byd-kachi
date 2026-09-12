@@ -1,0 +1,192 @@
+package com.byd.clusternav.launcher
+
+import android.content.Context
+import android.widget.LinearLayout
+import com.byd.clusternav.R
+import com.byd.clusternav.comfort.Pm25Filter
+import com.byd.clusternav.comfort.Pm25GaugeView
+import com.byd.clusternav.comfort.SeatComfort
+import com.byd.clusternav.comfort.SeatDiagramView
+import com.byd.clusternav.launcher.KachiSpace as Sp
+
+/**
+ * Nhóm **"Tiện nghi xe"** (IA v2 §4.1 nhóm 8) — lấy gió trong (đã có từ W3) + ghế mát/sưởi và lọc bụi mịn
+ * (chuyển từ màn ClusterNav, spec §4.3).
+ *
+ * Tách khỏi [SettingsSections] cùng lý do với các nhóm mới khác: một tệp cho một nhóm, trần 500 dòng (N1).
+ *
+ * ## Hai view TỰ VẼ nhúng thẳng — và vì sao được
+ * [SeatDiagramView] và [Pm25GaugeView] khai `@JvmOverloads constructor(context, attrs, defStyle)` ⇒ dựng được
+ * **thuần mã**, không cần XML, không cần gì từ `MainActivity` (spec R8 đã dự liệu đúng điều này). Chúng đi qua
+ * [SettingsRows.embed] để có nền + lề + một chiều cao TƯỜNG MINH — thả thẳng vào cột Settings thì view tự vẽ
+ * `WRAP_CONTENT` có thể cao **0px** mà không báo lỗi gì.
+ *
+ * ## N5 — hai lượt đọc HAL đều BẤT ĐỒNG BỘ
+ * `bridge.seatCount()` (dò `BydHal` bằng reflection) và `bridge.pm25Level()` (đọc HAL) chạy trên thread nền rồi
+ * post về luồng vẽ. Sơ đồ ghế vì thế dựng với **2 ghế** (mặc định Seal) rồi tự sửa lại khi biết số thật — chứ
+ * không chặn luồng vẽ chờ HAL như màn cũ làm.
+ */
+class SettingsCarSection(
+    private val context: Context,
+    private val rows: SettingsRows,
+    private val deps: SettingsDeps,
+) {
+
+    private val bridge get() = deps.bridge
+
+    private var seatView: SeatDiagramView? = null
+    private var gaugeView: Pm25GaugeView? = null
+    private lateinit var pm25Row: SettingsRows.StatusRow
+
+    fun build(body: LinearLayout) {
+        recirc(body)
+        seats(body)
+        pm25(body)
+    }
+
+    // ── Lấy gió trong ────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * W3 — ô tick "nổ máy thì tự lấy gió trong". Câu chữ giữ **nguyên văn**, kể cả câu *"chưa kiểm trên xe"*
+     * (R10): mã `recirc` ở tier OVERDRIVE, chưa xác nhận trên xe owner. `Goi2FeatureWiringContractTest` đọc
+     * CHÍNH tệp tài nguyên nên câu cảnh báo không thể biến mất mà bài canh vẫn xanh.
+     *
+     * Bật ⇒ áp NGAY (không chờ lần nổ máy sau); tắt ⇒ CHỈ đặt lại cờ, KHÔNG tắt chế độ đang bật trên xe (người
+     * dùng có thể đang muốn dùng, chỉ là không muốn tự bật nữa) — hành vi chuyển **y nguyên** từ `HomePanels`.
+     *
+     * Đường "áp ngay" nay nằm ở cầu (`applyRecircNow`) — nhóm này 100% đi qua cầu (N2), không còn ngoại lệ.
+     */
+    private fun recirc(body: LinearLayout) {
+        // ⚠ [ĐO] soát ảnh Settings v2: nhóm này TRƯỚC ĐÂY mở đầu thẳng bằng thẻ ô tick ⇒ thẻ dán sát mép trên vùng
+        // cuộn và nhóm là nhóm DUY NHẤT không có tiêu đề mục ở dòng đầu. Lề trên của thẻ thì không chữa được (nó
+        // phải bằng lề giữa hai thẻ), nên cách nhất quán với 7 nhóm kia là có TIÊU ĐỀ MỤC — `sectionLabel` đã mang
+        // sẵn lề trên `Sp.L` (xem [SettingsRows.stackLp]), tức vừa vá khoảng cách vừa vá thứ bậc bằng một dòng.
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_recirc)))
+        body.addView(rows.checkRow(
+            on = bridge.recircOnStart(),
+            title = context.getString(R.string.kachi_recirc_title),
+            sub = context.getString(R.string.kachi_recirc_sub),
+        ) { on ->
+            bridge.setRecircOnStart(on)
+            if (on) bridge.applyRecircNow()
+        })
+    }
+
+    // ── Ghế mát / sưởi ───────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Công tắc + chế độ (mát/sưởi) + sơ đồ ghế chạm-để-đổi-mức.
+     *
+     * Mức từng ghế ghi qua `bridge.setSeatLevel(i, level)` — [ĐO] KDoc cầu: đường đó dùng
+     * `SeatComfortApplier.applySeat` cho **đúng ghế đó**, KHÔNG dùng đường bulk `applyNow` (đường bulk bỏ qua
+     * mức "Tắt" ⇒ trước v1.34 không tắt được ghế). Đây là loại chi tiết mà chép nhầm thì lỗi quay lại y hệt.
+     */
+    private fun seats(body: LinearLayout) {
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sub_seat)))
+        body.addView(rows.checkRow(
+            on = bridge.seatEnabled(),
+            title = context.getString(R.string.kachi_seat_enabled_title),
+            sub = context.getString(R.string.kachi_seat_enabled_sub),
+        ) { on -> bridge.setSeatEnabled(on) })
+        body.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_seat_mode),
+            options = listOf(
+                SeatComfort.SeatMode.COOL.ordinal.toString() to context.getString(R.string.kachi_seat_cool),
+                SeatComfort.SeatMode.HEAT.ordinal.toString() to context.getString(R.string.kachi_seat_heat),
+            ),
+            current = bridge.seatMode().toString(),
+        ) { code ->
+            code.toIntOrNull()?.let {
+                bridge.setSeatMode(it)
+                seatView?.setMode(it == SeatComfort.SeatMode.COOL.ordinal)
+            }
+        })
+        val view = SeatDiagramView(context).apply {
+            setMode(bridge.seatMode() == SeatComfort.SeatMode.COOL.ordinal)
+            // ⚠ Bảng màu phải do CHỖ NHÚNG cấp: view đọc `@color` theo uiMode của MÁY, còn thẻ bọc nó tô theo
+            // [KachiTheme] (công tắc sáng/tối RIÊNG của launcher). [ĐO] soát ảnh v2: máy sáng + Kachi tối ⇒ thân xe
+            // `#e5e7ee` nằm giữa thẻ tối, là hình chữ nhật sáng duy nhất trên màn. Nền lấy `FIELD` (không phải nền
+            // thẻ `CELL`) để thân xe vẫn tách khỏi thẻ; ghế tắt lấy `CARD2` — cùng cặp mà ô tick đang dùng.
+            setPalette(
+                body = KachiTheme.c(KachiTheme.FIELD), seatOff = KachiTheme.c(KachiTheme.CARD2),
+                line = KachiTheme.c(KachiTheme.LINE_STRONG), ink = KachiTheme.c(KachiTheme.INK),
+                mutedInk = KachiTheme.c(KachiTheme.MUT), cool = KachiTheme.c(KachiTheme.CYAN),
+                warm = KachiTheme.c(KachiTheme.AMBER),
+            )
+            onSeatLevelChanged = { seat, level -> bridge.setSeatLevel(seat, level) }
+        }
+        seatView = view
+        body.addView(rows.embed(view, Sp.EMBED_M))
+        body.addView(rows.note(context.getString(R.string.kachi_seat_hint)))
+        // Số ghế đọc HAL trên thread nền (N5): dựng xong mới sửa lại, và chỉ mức của những ghế THẬT mới nạp.
+        bridge.seatCount { count ->
+            view.setSeatCount(count)
+            repeat(count) { i -> view.setLevel(i, bridge.seatLevel(i)) }
+        }
+    }
+
+    // ── Lọc bụi mịn ──────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Công tắc tự lọc + nút "Lọc ngay" + mức bụi hiện tại (dòng trạng thái **và** đồng hồ).
+     *
+     * "Lọc ngay" chạy **bất kể** công tắc auto — lặp lại `MainActivity.kt:1303`: đó là một việc làm tức thời,
+     * không phải một cấu hình, nên nó không được phụ thuộc cấu hình.
+     */
+    private fun pm25(body: LinearLayout) {
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sub_pm25)))
+        body.addView(rows.checkRow(
+            on = bridge.pm25Enabled(),
+            title = context.getString(R.string.kachi_pm25_title),
+            sub = context.getString(R.string.kachi_pm25_sub),
+        ) { on -> bridge.setPm25Enabled(on) })
+        pm25Row = rows.statusRow(KachiTheme.MUT2, context.getString(R.string.kachi_pm25_level, DASH))
+        body.addView(pm25Row.view)
+        val gauge = Pm25GaugeView(context)
+        gaugeView = gauge
+        body.addView(rows.embed(gauge, Sp.EMBED_S))
+        body.addView(rows.button(context.getString(R.string.kachi_pm25_clean_now)) {
+            bridge.pm25CleanNow()
+            refreshPm25()
+        })
+        refreshPm25()
+    }
+
+    /** Đọc mức bụi (thread nền) rồi cập nhật CẢ dòng chữ lẫn đồng hồ — hai bề mặt, một lượt đọc. */
+    private fun refreshPm25() = bridge.pm25Level { level ->
+        pm25Row.update(pm25Colour(level), context.getString(R.string.kachi_pm25_level, pm25Label(level)))
+        gaugeView?.setLevel(level)
+    }
+
+    /**
+     * Nhãn mức bụi — tra tài nguyên launcher theo hằng của `:core` (`Pm25Filter.EXCELLENT`…`SERIOUS`).
+     *
+     * KHÔNG gọi `Pm25Filter.levelLabelVi/En`: hai hàm đó là bảng nhãn **của nhánh ClusterNav** (dịch lúc chạy
+     * bằng `Lang.t`), còn tầng `launcher/` bắt mọi chữ đi qua tài nguyên. Mã số thì dùng chung, chữ thì mỗi bên
+     * một nguồn — đúng ranh giới mà `ClusterNavBridgeMsg` lập ra.
+     */
+    private fun pm25Label(level: Int): String = context.getString(
+        when (level) {
+            Pm25Filter.EXCELLENT -> R.string.kachi_pm25_excellent
+            Pm25Filter.GOOD -> R.string.kachi_pm25_good
+            Pm25Filter.LOW_GRADE -> R.string.kachi_pm25_low
+            Pm25Filter.MIDDLE -> R.string.kachi_pm25_middle
+            Pm25Filter.HEAVY -> R.string.kachi_pm25_heavy
+            Pm25Filter.SERIOUS -> R.string.kachi_pm25_serious
+            else -> R.string.kachi_pm25_unknown
+        },
+    )
+
+    /** Màu = mức bẩn, dùng lại đúng ngưỡng `Pm25Filter.isDirty` để dòng chữ và cái đồng hồ không nói khác nhau. */
+    private fun pm25Colour(level: Int): String = when {
+        level == Pm25Filter.INVALID -> KachiTheme.MUT2
+        Pm25Filter.isDirty(level) -> KachiTheme.RED
+        level >= Pm25Filter.LOW_GRADE -> KachiTheme.AMBER
+        else -> KachiTheme.GREEN
+    }
+
+    private companion object {
+        /** "Chưa đọc được" — cùng ký hiệu với mọi chỗ off-car của launcher. */
+        const val DASH = "—"
+    }
+}

@@ -15,7 +15,8 @@ import android.content.Context
  */
 class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
 
-    private val prefs = WorkspacePrefs(context.applicationContext)
+    private val app = context.applicationContext
+    private val prefs = WorkspacePrefs(app)
 
     /**
      * Lượt [load] ĐẦU TIÊN của tiến trình này đã đi qua chưa — đây là cách nhận ra *"launcher vừa khởi động nguội"*.
@@ -111,6 +112,22 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         prefs.save(state.workspace)
         prefs.saveDock(state.dock)
         prefs.setThemeMode(state.themeMode)
+        // IA v2 · R3 "một công tắc cho một khái niệm" (docs/specs/kachi-settings-ia-v2.html): màn ClusterNav cũ (nay là
+        // màn nâng cao) đọc chủ đề từ store RIÊNG `clusternav_theme` ở attachBaseContext — trước đây hai công tắc độc
+        // lập, người dùng chỉnh ở Kachi mà màn kia không đổi. Gương lựa chọn sang store đó NGAY lúc lưu bền, tại chính
+        // tầng lưu bền (không phải UI/ViewModel) để mọi đường ghi themeMode (chip Settings, đổi hồ sơ, cảnh) đều gương.
+        // Phép ánh xạ DAY/NIGHT/AUTO → light/dark/system là hàm thuần ở :core (ClusterNavSettingsModel), có test.
+        //
+        // ⚠ [SOÁT SENIOR 2026-09-13] Chỉ ghi khi THẬT SỰ đổi. `persist()` chạy sau **mọi** thay đổi state — kéo
+        // thả một ô, gạt một nút trên thanh, đổi một chip — còn `setChoice` là `edit().apply()`, tức mỗi lượt là
+        // một lần ghi lại NGUYÊN tệp `clusternav_theme.xml` trên thread nền, cho một giá trị hầu như không bao
+        // giờ đổi. `choice()` đọc từ bản đồ trong RAM của SharedPreferences nên phép so này gần như miễn phí.
+        val mirrored = com.byd.clusternav.ThemeMode.Choice.fromCode(
+            ClusterNavSettingsModel.themeChoiceCode(state.themeMode),
+        )
+        if (com.byd.clusternav.ThemeMode.choice(app) != mirrored) {
+            com.byd.clusternav.ThemeMode.setChoice(app, mirrored)
+        }
     }
 
     override fun switchProfile(name: String): HomeUiState {

@@ -32,13 +32,21 @@ class TypeScaleContractTest {
      * Bề mặt đã áp KachiType. `SettingsRows` là NGUỒN component (dùng `KachiType.apply` nội bộ).
      *
      * Mở rộng dần theo §R7: sau Settings, đã lan sang ngăn kéo / thanh trên / overlay / ô workspace / bảng vẽ.
-     * Ô lưới mật độ cao ([CapabilityGridSection] 11.5/10sp) và ô vẽ Canvas ([TyreBoardView]/[SideBoardView] theo tỉ
+     * Ô lưới mật độ cao (`CapabilityGridSection` 11.5/10sp — tệp đã xoá ở R-UI (m)) và ô vẽ Canvas
+     * ([TyreBoardView]/[SideBoardView] theo tỉ
      * lệ) KHÔNG ở đây — cỡ của chúng là ngoại lệ có lý do (mật độ / hình học), KHÔNG phải bậc chữ giao diện.
      */
     private val SURFACES = listOf(
         "SettingsSections.kt", "SettingsSectionsHome.kt", "SettingsSceneSection.kt",
         "SettingsPanel.kt", "TopStripPicker.kt", "SettingsRows.kt",
         "AppDrawer.kt", "KachiTopStrip.kt", "OverlayHeads.kt", "WorkspaceView.kt", "LayoutEditorPanel.kt",
+        // T6 tách phần danh sách app ra khỏi `AppDrawer` (trần 500 dòng). Tệp mới vẽ chữ ⇒ phải ở trong bài canh
+        // NGAY, không thì một bề mặt đã áp design system tự rơi ra khỏi phạm vi chỉ vì đổi tên tệp.
+        "AppDrawerApps.kt",
+        // T4 · IA v2 — năm section mới của Cài đặt. Cùng lý do `AppDrawerApps.kt`: chúng là bề mặt Settings, tức
+        // phạm vi GỐC của bài này; để ngoài thì một section mới có thể `setTextSize` số tay mà không ai thấy.
+        "SettingsSectionsBars.kt", "SettingsSectionsNav.kt", "SettingsSectionsCast.kt",
+        "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
     )
 
     /**

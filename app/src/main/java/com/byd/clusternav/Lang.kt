@@ -1,6 +1,8 @@
 package com.byd.clusternav
 
 import android.content.Context
+import com.byd.clusternav.launcher.Lang as CoreLang
+import com.byd.clusternav.launcher.Strings as CoreStrings
 
 /**
  * Đa ngôn ngữ NHẸ — Tiếng Việt (gốc) + English. Cố ý KHÔNG dùng resource `values-en/strings.xml`:
@@ -83,8 +85,28 @@ object Lang {
     }
 
     /**
-     * Chọn chuỗi theo ngôn ngữ ĐANG dùng (từ cache đã nạp). Mặc định VI nếu chưa nạp.
-     * Dùng dạng không-Context để call site gọn; Activity chịu trách nhiệm `load()` trước khi dựng UI.
+     * Chọn chuỗi theo ngôn ngữ ĐANG dùng. Dùng dạng không-Context để call site gọn; Activity của màn cũ chịu
+     * trách nhiệm [load] trước khi dựng UI.
      */
-    fun t(vi: String, en: String): String = if (cache == L.EN) en else vi
+    fun t(vi: String, en: String): String = if (effective() == L.EN) en else vi
+
+    /**
+     * ═══ NGÔN NGỮ HIỆU LỰC — cache của màn cũ, RỒI MỚI tới kênh của launcher ═════════════════════════════════
+     *
+     * ## [ĐO] Bệnh: view tự vẽ nói tiếng Việt trong giao diện English (soát ảnh Settings v2, 2026-09-13)
+     * `BadgePlacementView` / `VmBubblePlacementView` / `SeatDiagramView` là view của màn ClusterNav cũ, chữ vẽ
+     * thẳng lên [android.graphics.Canvas] nên **không** đi qua `R.string`. Nay chúng được nhúng vào các nhóm của
+     * màn Cài đặt Kachi (`SettingsNavSection` · `SettingsCarSection`), mà launcher **không bao giờ gọi** [load] —
+     * nó áp ngôn ngữ bằng đường riêng ([com.byd.clusternav.launcher.LangHost.wrap]: ghi
+     * [CoreStrings.current] + đặt locale của `Context`). [cache] vì thế còn `null` ⇒ `cache == L.EN` sai ⇒ **mọi**
+     * chuỗi rơi về tiếng Việt, im lặng, chỉ người dùng English thấy.
+     *
+     * ## Vì sao lùi về [CoreStrings.current] chứ không tự đọc prefs/locale ở đây
+     * Hai kênh đã **chung một nguồn lưu**: `WorkspacePrefs.langMode()` đọc chính [choice] của lớp này, và
+     * `WorkspacePrefs.setLangMode` ghi qua chính [setChoice] (⇒ [cache] được cập nhật ngay cả khi người dùng đổi
+     * ngôn ngữ TỪ launcher). Nên chỗ này không thêm nguồn sự thật thứ ba — nó chỉ đọc kênh mà [LangHost] vừa ghi,
+     * và chỉ khi màn cũ **chưa từng** nạp cache. Thứ tự này giữ nguyên hành vi màn cũ: ở đó [load] chạy đầu
+     * `onCreate` nên [cache] luôn khác `null` trước khi có chữ nào được vẽ.
+     */
+    private fun effective(): L = cache ?: if (CoreStrings.current == CoreLang.EN) L.EN else L.VI
 }

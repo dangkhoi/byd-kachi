@@ -1,9 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -25,10 +23,10 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * ([SettingsPanel.pages]) nên một trang dựng lại phải thấy giá trị MỚI. Đọc qua [state] thì mỗi lượt dựng đều lấy
  * từ nguồn sự thật duy nhất, không có bản sao nào để lệch.
  *
- * ⚠ **Không có hàm nào ở đây ghi bền.** Tầng UI 0 lần ghi bền trực tiếp (luật kiến trúc đang có): mọi thay đổi đi
- * qua intent của `HomeViewModel` mà [KachiHomeActivity] nối vào các lambda dưới đây. Hai ngoại lệ đi qua `Prefs`
- * của ClusterNav ([recircOnStart]/[onRecircOnStart]) vì khoá đó thuộc ClusterNav, không thuộc `WorkspacePrefs` —
- * và chúng cũng chỉ là lambda do chỗ gọi cấp, lớp này không tự chạm prefs.
+ * ⚠ **Không có hàm nào ở đây ghi bền.** Tầng UI 0 lần ghi bền trực tiếp (luật kiến trúc đang có): mọi thay đổi của
+ * phía **launcher** đi qua intent của `HomeViewModel` mà [KachiHomeActivity] nối vào các lambda dưới đây. Mọi thay
+ * đổi của phía **ClusterNav** đi qua [bridge] — một lớp, có KDoc từng hàm chỉ tới dòng gốc ở màn cũ (IA v2 · N2).
+ * Hai đường, hai luật, không có đường thứ ba: lớp này không tự chạm `Prefs` hay `SharedPreferences` lần nào.
  *
  * @param state nguồn sự thật (đọc mới mỗi lượt dựng trang).
  * @param permissions báo cáo vòng kiểm quyền (P8) — đọc lúc dựng trang, không giữ ảnh chụp cũ.
@@ -42,13 +40,32 @@ class SettingsDeps(
     val state: () -> HomeUiState,
     val permissions: () -> PermissionReport,
     val wallpaperFolderHint: String,
-    val recircOnStart: () -> Boolean,
-    val onRecircOnStart: (Boolean) -> Unit,
+    /**
+     * IA v2 · §4.2 — **cầu DUY NHẤT** sang mọi cấu hình/hành động của ClusterNav (nav · cast · phím · ghế ·
+     * PM2.5 · lấy gió trong · khởi động nền · cập nhật · mở màn nâng cao).
+     *
+     * Một tham số thay cho ~60 lambda: khác với các lambda phía launcher (chúng là **intent** của ViewModel, và
+     * danh sách của chúng chính là hợp đồng "UI không ghi bền"), phía ClusterNav đã có một lớp chịu trách nhiệm
+     * đó rồi. Bọc lại thành lambda ở đây chỉ là một tầng chép-tên thứ hai — và tầng đó sẽ lệch.
+     */
+    val bridge: ClusterNavBridge,
     val onPreset: (LayoutPreset) -> Unit,
     val onOpenLayoutEditor: () -> Unit,
     val onWallpaper: (WallpaperPrefs) -> Unit,
     val onTopStrip: (String, Boolean) -> Unit,
-    val onToggleDock: (String, Boolean) -> Unit,
+    /**
+     * T6 · R-UI (m) — mở **bộ chọn của ngăn kéo** ở chế độ chọn nút thanh xe.
+     * `(tập đang bật, gọi lại khi Áp dụng)`; xem hợp đồng ở [DrawerController.openDockPicker].
+     */
+    val openDockPicker: (Set<String>, (Set<String>) -> Unit) -> Unit,
+    /**
+     * Đặt **cả** cấu hình thanh nút một lượt — thay `onToggleDock(id, on)` cũ.
+     *
+     * Bộ chọn trả về một TẬP, và gấp tập đó vào [DockConfig] là một quyết định thật ([DockSelection.apply]: chiều
+     * TẮT + giữ thứ tự phần cũ). Cổng "bật/tắt từng mã" không diễn tả được chiều tắt hàng loạt, nên giữ nó lại
+     * chỉ mời người sau viết vòng lặp một chiều — đúng bẫy mà KDoc [DockSelection] mô tả.
+     */
+    val onDockConfig: (DockConfig) -> Unit,
     val onDockEdge: (DockEdge) -> Unit,
     val onUnitPrefs: (UnitPrefs) -> Unit,
     val onThemeMode: (ThemeMode) -> Unit,
@@ -57,7 +74,6 @@ class SettingsDeps(
     val onSwitchProfile: (String) -> Unit,
     val onAddProfile: () -> Unit,
     val onDeleteProfile: (String) -> Unit,
-    val onOpenClusterNav: () -> Unit,
     /**
      * P7 + P6 — bộ việc làm với **cảnh**. Một tham số thay vì năm lambda: xem KDoc [SceneActions] (và
      * [KachiHomeActivity] đang đúng trần 500 dòng).
@@ -81,10 +97,11 @@ class SettingsDeps(
  * Trang chỉ được dựng khi lần đầu chọn nhóm, rồi **giữ lại** trong [pages]:
  *  1. **R1** đòi *"chuyển nhóm không mất chỗ đang cuộn của nhóm khác"* — giữ chính thực thể `ScrollView` là cách duy
  *     nhất đạt được điều đó mà không phải tự nhớ toạ độ cuộn.
- *  2. Nhóm "Màn hình chính" chứa **lưới 187 ô** dựng đồng bộ trên thread chính (nợ đã ghi từ gói 2). Dựng lại mỗi
- *     lần đổi nhóm sẽ biến một cú chạm rail thành một lượt đứng hình.
- *  3. Mỗi trang HOME dựng ra một [CapabilityGridSection] **RIÊNG** (xem ràng buộc *"một lưới = một bảng tiles"* ở lớp
- *     đó). Giữ trang cũ trong bộ nhớ thay vì dựng thêm lưới thứ hai chính là điều ràng buộc đó muốn.
+ *  2. Trang nào cũng đọc lại state + (với ba nhóm ClusterNav) đọc `Prefs`/HAL qua [ClusterNavBridge]. Dựng lại mỗi
+ *     lần đổi nhóm là trả giá đó lại từ đầu cho một cú chạm rail.
+ *  3. Bộ chọn chip ([TopStripPicker]) giữ **bảng tra `mã → view`** để tô lại ô ⇒ mỗi lượt dựng trang phải là một
+ *     thực thể MỚI (ràng buộc *"một lưới = một bảng tiles"*). Giữ trang cũ trong bộ nhớ thay vì dựng thêm một bộ
+ *     chọn thứ hai chính là điều ràng buộc đó muốn.
  *
  * Đổi lại: state đổi thì trang đã nhớ trở nên cũ ⇒ [invalidateAll] để chỗ gọi bỏ hết và dựng lại theo state mới
  * (đường một chiều: state đổi → `render` → gọi vào đây), thay vì lớp này tự đi thu thay đổi.
@@ -118,7 +135,10 @@ class SettingsPanel(
 
         val body = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         body.addView(
-            ScrollView(context).apply { addView(rail()); isVerticalScrollBarEnabled = false },
+            // ⚠ [SOÁT ẢNH 2026-09-12] Thanh cuộn BẬT: rail lên 10 nhóm (IA v2 §4.1) nên nó cuộn được, mà không có
+            // chỉ báo thì người dùng không có cách nào biết còn nhóm ở dưới — trên xe, thứ không thấy là thứ không
+            // tồn tại. `isVerticalScrollBarEnabled = false` là mặc định cũ khi rail còn 7 nhóm và vừa một màn.
+            ScrollView(context).apply { addView(rail()); isVerticalScrollBarEnabled = true },
             LinearLayout.LayoutParams(dpi(context, Sp.RAIL_COL), LinearLayout.LayoutParams.MATCH_PARENT),
         )
         body.addView(
@@ -140,6 +160,21 @@ class SettingsPanel(
 
     /** Nhóm đang xem — chỗ gọi cần biết để nhật ký/đo, và để [invalidateAll] dựng lại đúng trang. */
     fun currentGroup(): SettingsGroup = current
+
+    /**
+     * Bảng bị tháo khỏi màn ⇒ trả lại tài nguyên sống NGOÀI cây view ([SettingsSections.dispose]).
+     *
+     * ## Vì sao móc vào `onDetachedFromWindow` chứ không vào `onClose`
+     * `onClose` là **một** đường đóng (nút Xong / chạm ra ngoài). Bảng còn biến mất theo ba đường khác mà nó
+     * không đi qua: phím Back của Activity, `HomePanels.closeAll()` lúc huỷ màn, và `openLayoutEditor` (đóng
+     * bảng này rồi mở bảng vẽ). `removeView` thì đường nào cũng phải gọi — [ĐO] `HomePanels.closeSettings()` là
+     * chỗ duy nhất gỡ view, và cả ba đường trên đều rơi vào nó. Bắt ở nơi HỆ THỐNG bảo "đã tháo" thì không có
+     * đường nào lọt, đúng kỷ luật *"kiểm bằng sự thật, không bằng cờ"* (CLAUDE.md §5).
+     */
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        sections.dispose()
+    }
 
     /**
      * Bỏ mọi trang đã nhớ rồi dựng lại trang đang xem.
@@ -171,25 +206,36 @@ class SettingsPanel(
     private fun head(): View = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(0, 0, 0, dpi(context, Sp.L))
+        // ⚠ [SOÁT ẢNH 2026-09-12] Đệm PHẢI [KachiSpace.XS] không phải 0: thân trang (`SettingsSections.build`) tự
+        // chừa `paddingRight = Sp.XS` cho thanh cuộn, nên đầu bảng để 0 thì mép phải nút "Xong" (x=1835) **thò ra
+        // 6px** so với mép phải của mọi thẻ bên dưới (x=1829). Hai khối chồng nhau theo chiều dọc phải cùng một
+        // cột — lệch vài px là thứ mắt đọc ra "lổn nhổn" mà không chỉ được tên.
+        setPadding(0, 0, dpi(context, Sp.XS), dpi(context, Sp.L))
         addView(
             LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(context).apply {
-                    text = context.getString(R.string.kachi_settings_title); setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.TITLE)
+                    text = context.getString(R.string.kachi_settings_title); setTextColor(c(KachiTheme.INK))
+                    KachiType.apply(this, KachiType.TITLE, bold = true)
                 })
                 addView(TextView(context).apply {
                     text = context.getString(R.string.kachi_settings_sub)
-                    setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
+                    setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
                 })
             },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
         )
+        // Nút CHÍNH của bảng — nền gradient (khác nút phụ viền mảnh của [SettingsRows.button]) nhưng **cùng đích
+        // chạm và cùng đệm**: [ĐO] ảnh 2026-09-12 nó cao **52px = 34.7dp**, dưới đích chạm [KachiSpace.TOUCH] 48
+        // và thấp hơn nút phụ (72px) ngay trên cùng một màn ⇒ 4 chiều cao cho 3 vai (design system §10 [P2]).
+        // `minHeight` + `gravity = CENTER` phải đi CÙNG NHAU: minHeight chỉ nới ô chứ không căn chữ.
+        // `ControlHeightContractTest` ghim dòng minHeight này.
         addView(TextView(context).apply {
-            text = context.getString(R.string.kachi_done); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY); typeface = Typeface.DEFAULT_BOLD
+            text = context.getString(R.string.kachi_done)
+            KachiType.apply(this, KachiType.BODY, bold = true)
             setTextColor(c(KachiTheme.ON_ACCENT)); gravity = Gravity.CENTER
-            setPadding(dpi(context, Sp.XL), dpi(context, Sp.S), dpi(context, Sp.XL), dpi(context, Sp.S))
+            setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
+            minHeight = dpi(context, Sp.TOUCH)
             background = KachiTheme.gradient(context, Sp.RADIUS_PILL)
             setOnClickListener { onClose() }
         })
@@ -221,12 +267,17 @@ class SettingsPanel(
         orientation = LinearLayout.VERTICAL
         val p = dpi(context, Sp.M)
         setPadding(p, dpi(context, Sp.M), p, dpi(context, Sp.M))
+        // ⚠ [SOÁT ẢNH 2026-09-12] Nhãn rail là bậc [KachiType.SECTION], KHÔNG phải BODY: rail là cấp **trên** của
+        // mọi tiêu đề mục bên trong trang, mà tiêu đề mục ([SettingsRows.sectionLabel]) đã là SECTION 16 ⇒ để rail
+        // ở BODY 13.5 là vẽ cây thư mục **ngược**, cấp cha nhỏ hơn cấp con. Cùng lẽ đã đưa sectionLabel từ 12–13
+        // lên 16 (KDoc [KachiType]). Câu phụ giữ CAPTION + 2 dòng — nó là chú thích của nhãn, không phải một cấp.
         addView(TextView(context).apply {
-            text = group.displayLabel; setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
+            text = group.displayLabel; setTextColor(c(KachiTheme.INK))
+            KachiType.apply(this, KachiType.SECTION, bold = true)
         })
         addView(TextView(context).apply {
-            text = group.displaySub; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
+            text = group.displaySub; setTextColor(c(KachiTheme.MUT2))
+            KachiType.apply(this, KachiType.CAPTION)
             maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END
             setPadding(0, dpi(context, Sp.XS), 0, 0)
         })

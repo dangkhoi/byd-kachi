@@ -76,14 +76,15 @@
             android:screenOrientation="landscape"
             android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|screenLayout|density|smallestScreenSize|keyboardHidden">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <!-- IA v2 (2026-09-12, docs/specs/kachi-settings-ia-v2.html R1): KHÔNG còn LAUNCHER — màn này là "màn
+                 nâng cao" mở từ Kachi Settings (Hệ thống › Nâng cao) và từ các intent tường minh (RebindReceiver,
+                 UpdateRelaunch, menu bong bóng). Icon duy nhất của APK nằm ở KachiHomeActivity. exported giữ vì
+                 các đường gọi tường minh từ dịch vụ/uid shell vẫn cần. -->
         </activity>
 
-        <!-- Kachi HOME (P1): màn hình chính launcher. CATEGORY_HOME để chọn Kachi làm màn chính.
-             MainActivity vẫn giữ LAUNCHER (icon "Cài đặt" ClusterNav) — không phá app cũ. Landscape. -->
+        <!-- Kachi HOME (P1) + LAUNCHER (IA v2): màn hình chính launcher và cũng là ICON DUY NHẤT của APK trong ngăn
+             kéo (SingleLauncherIconContractTest khoá: đúng một category LAUNCHER trong manifest chính, ở activity này).
+             CATEGORY_HOME để chọn Kachi làm màn chính. Landscape. -->
         <activity
             android:name=".launcher.KachiHomeActivity"
             android:exported="true"
@@ -96,6 +97,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 

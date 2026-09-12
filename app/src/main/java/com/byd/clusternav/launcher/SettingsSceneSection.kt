@@ -52,15 +52,19 @@ class SettingsSceneSection(
             body.addView(bootLine(book))
         }
 
-        // Câu đếm ĐỔI MÀU khi đủ trần: dòng này vốn đã hiện sẵn, nên nếu chỉ đổi chữ mà không đổi hình thì cú bấm bị
-        // từ chối trông y như không có gì xảy ra (bài học của dòng nhắc trong ngăn kéo).
-        body.addView(TextView(context).apply {
-            text = if (book.full) context.getString(R.string.kachi_scenes_full, SceneBook.CAP)
-            else context.getString(R.string.kachi_scenes_count, book.scenes.size, SceneBook.CAP)
-            setTextColor(c(if (book.full) KachiTheme.AMBER else KachiTheme.MUT2))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
-            setPadding(0, 0, 0, dpi(context, Sp.S))
-        })
+        // ⚠ [SOÁT ẢNH 2026-09-12 · findings #16 #17] Dòng đếm này trước đây là một `TextView` **dựng tay** với
+        // `setPadding` riêng ⇒ nó không mang lề stack của [SettingsRows] nên đứng lệch nhịp với mọi hàng khác, và
+        // ảnh máy ảo đo được hai dải trống quanh nó. Nay đi qua [SettingsRows.statusRow]: cùng lề, cùng bậc chữ,
+        // và **giữ được tín hiệu MÀU** — điều mà `note()` không làm được. Màu ở đây không phải trang trí: cú bấm
+        // "Lưu cảnh" bị từ chối khi đủ trần, nếu dòng này chỉ đổi chữ thì trông y như không có gì xảy ra (bài học
+        // của dòng nhắc trong ngăn kéo).
+        body.addView(
+            rows.statusRow(
+                if (book.full) KachiTheme.AMBER else KachiTheme.MUT2,
+                if (book.full) context.getString(R.string.kachi_scenes_full, SceneBook.CAP)
+                else context.getString(R.string.kachi_scenes_count, book.scenes.size, SceneBook.CAP),
+            ).view,
+        )
         body.addView(rows.button(context.getString(R.string.kachi_scene_save)) { deps.scenes.save() })
     }
 

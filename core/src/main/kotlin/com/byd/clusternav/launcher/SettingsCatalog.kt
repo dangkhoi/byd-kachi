@@ -1,96 +1,6 @@
 package com.byd.clusternav.launcher
 
 /**
- * NHÓM trong màn Cài đặt (S1) — thứ tự khai = thứ tự hiện trên rail bên trái.
- *
- * ## Vì sao chia THẾ NÀY
- * Nhóm theo **thứ người dùng đang nghĩ tới**, không theo tệp mã và cũng không theo lớp lưu trữ. Đây là điểm dễ làm
- * sai nhất: nếu chia theo nơi lưu thì [HOME] và [DISPLAY] sẽ dính làm một (cùng nằm trong `WorkspacePrefs`), còn
- * [CAR] lại bị đẩy ra ngoài (nó ở `Prefs` của ClusterNav). Người ngồi trong xe không biết và không cần biết điều đó —
- * họ chỉ nghĩ *"màn chính trông thế nào"* hay *"xe tự làm gì khi nổ máy"*.
- *
- * Hai đường biên đáng nói:
- *  - **[HOME] vs [DISPLAY]**: bố cục/hình nền/chip trả lời *"màn chính trông thế nào"*; đơn vị và sáng/tối là *cách
- *    trình bày số và màu*, đúng ở mọi bố cục ⇒ tách ra để đổi đơn vị không phải đi qua phần bố cục.
- *  - **[PROFILES] đứng riêng dù nó "thuộc" mọi nhóm trên**: hồ sơ quyết định [HOME] và thanh nút, nên nó phải là một
- *    nhóm thấy được — không thể là một dòng chìm trong [HOME], vì khi đó người dùng đổi bố cục mà không biết mình
- *    đang đổi cho hồ sơ nào.
- *
- * @property id mã ổn định (nhật ký/test/lưu chỗ đang chọn). KHÔNG đổi khi sửa [label].
- * @property label tên hiện cho người đọc.
- * @property sub câu phụ nói **nội dung** nhóm — rail phải tự giải thích được, vì đây là lần đầu owner thấy toàn bộ
- *   bản đồ cài đặt và mục đích của S1 là chứng minh *không còn gì nằm ngoài*.
- * @property labelEn nhãn tiếng Anh (U5 · T2) · @property subEn câu phụ tiếng Anh. Bắt buộc cho cả 7 nhóm — rail là
- *   thứ **đầu tiên** người dùng thấy khi mở Cài đặt, một dòng tiếng Việt lọt vào đây là lỗi nhìn thấy ngay.
- */
-enum class SettingsGroup(
-    val id: String,
-    override val label: String,
-    val sub: String,
-    override val labelEn: String,
-    val subEn: String,
-) : Localized {
-    HOME(
-        "home", "Màn hình chính", "Cảnh, bố cục, hình nền, chip thanh trạng thái và thanh nút xe",
-        "Home screen", "Scenes, layout, wallpaper, status-bar chips and the car button bar",
-    ),
-    DISPLAY(
-        "display", "Hiển thị & đơn vị",
-        "Đơn vị đo và giao diện sáng/tối — cách trình bày, không phụ thuộc bố cục",
-        "Display & units", "Units of measure and light/dark theme — presentation, independent of layout",
-    ),
-    PROFILES(
-        "profiles", "Hồ sơ tài xế", "Hồ sơ đang dùng, thêm và xoá hồ sơ — mỗi hồ sơ giữ bố cục riêng",
-        "Driver profiles", "Active profile, add and remove profiles — each profile keeps its own layout",
-    ),
-    CAR(
-        "car", "Tiện nghi xe", "Việc Kachi tự làm với XE khi nổ máy, không phải với màn hình",
-        "Car comfort", "What Kachi does to the CAR on engine start, not to the screen",
-    ),
-    SYSTEM(
-        "system", "Hệ thống & quyền", "Điều kiện để launcher chạy đúng: quyền còn thiếu và tự mở khi nổ máy",
-        "System & permissions", "What the launcher needs to run: missing permissions and auto-start on engine start",
-    ),
-    CLUSTERNAV(
-        "clusternav", "Dẫn đường · Cụm · Phím", "Mở màn ClusterNav — dẫn đường, chiếu cụm, phím vô-lăng",
-        "Navigation · Cluster · Keys", "Open the ClusterNav screen — navigation, cluster casting, steering-wheel keys",
-    ),
-    ABOUT(
-        "about", "Giới thiệu", "Phiên bản, tên gói và giấy phép",
-        "About", "Version, package name and licence",
-    );
-
-    /** [sub] theo [Strings.current] — tự lùi về tiếng Việt nếu bản Anh trống. */
-    val displaySub: String get() = Strings.pick(sub, subEn)
-}
-
-/**
- * Một MỤC trong màn Cài đặt.
- *
- * @property id mã ổn định của mục.
- * @property group nhóm chứa nó — **đúng một** nhóm (xem [SettingsCatalog]).
- * @property label nhãn cho người đọc.
- * @property prefKey khoá lưu bền mà mục này **sở hữu**, hoặc `null` nếu mục không lưu gì.
- *
- * ⚠ `prefKey` là **tên hậu tố THẬT** đúng như trong mã lưu trữ, không phải tên đẹp. Với khoá theo hồ sơ,
- * `WorkspacePrefs` ghi thành `"<tên hồ sơ>__<hậu tố>"`; ở đây khai **hậu tố** (`"preset"`, `"top_strip"`, …) vì đó là
- * phần bất biến, còn tiền tố thì đổi theo hồ sơ đang dùng. Khoá của mục [SettingsGroup.CAR] nằm ở `Prefs` của
- * ClusterNav nên nó **không** có tiền tố hồ sơ — khai đúng tên phẳng.
- *
- * `null` là trạng thái hợp lệ và có thật: hàng quyền, dòng mở màn ClusterNav, dòng phiên bản và nút mở bảng vẽ bố cục
- * đều là **việc làm** hoặc **thông tin**, không phải giá trị lưu bền. Nếu bắt mọi mục phải có khoá thì bốn thứ đó sẽ
- * bị đẩy ra ngoài danh mục — và ra ngoài danh mục nghĩa là ra ngoài tầm kiểm của bài test phủ khoá.
- */
-data class SettingsEntry(
-    val id: String,
-    val group: SettingsGroup,
-    override val label: String,
-    val prefKey: String? = null,
-    /** Nhãn tiếng Anh (U5 · T2) — tham số mặc định ở CUỐI để [prefKey] giữ vị trí thứ 4 dạng positional. */
-    override val labelEn: String? = null,
-) : Localized
-
-/**
  * NGUỒN DUY NHẤT cho *"cấu hình nào thuộc nhóm nào"* (S1 · §4.3). Thuần Kotlin (`:core`, cấm `android.*`) ⇒ kiểm
  * off-car.
  *
@@ -127,75 +37,41 @@ object SettingsCatalog {
     val GROUPS: List<SettingsGroup> = SettingsGroup.values().toList()
 
     /**
-     * MỌI mục cài đặt của launcher. Thứ tự trong nhóm = thứ tự hiện ra.
+     * MỌI mục cài đặt. Thứ tự trong nhóm = thứ tự hiện ra; thân dữ liệu ở [SettingsCatalogEntries] (trần 500 dòng).
      *
-     * Trong nhóm [SettingsGroup.HOME] thứ tự đi từ **khung** ra **nội dung** (bố cục → hình nền → chip → thanh nút):
-     * chọn bố cục trước thì các lựa chọn sau mới có nghĩa.
+     * Trong nhóm [SettingsGroup.HOME] thứ tự đi từ **cả bộ** (cảnh) ra **từng phần**, rồi từ **khung** ra **nội
+     * dung**: chọn bố cục trước thì các lựa chọn sau mới có nghĩa.
      */
-    val ENTRIES: List<SettingsEntry> = listOf(
-        // ── Màn hình chính ──
-        // ── CẢNH đứng ĐẦU nhóm, trước từng phần rời ──
-        // Một cảnh là **cả bộ** những gì các mục dưới đây đặt riêng lẻ (bố cục + nội dung ô + thanh nút), nên nó
-        // thuộc đúng nhóm này chứ không phải một nhóm mới: gộp-và-các-phần phải nằm cạnh nhau, không thì người dùng
-        // chỉnh bố cục ở đây rồi phải đi tìm chỗ khác để lưu lại. Đặt TRƯỚC vì gọi lại một cảnh là việc làm **thường
-        // xuyên nhất** ở trang này, còn đi chỉnh từng phần thì thưa hơn — thứ tự danh mục là thứ tự dùng được (cùng
-        // lập luận đã đặt "viền thanh nút" trước lưới 187 ô).
-        SettingsEntry("home_scenes", SettingsGroup.HOME, "Cảnh đã lưu", "scenes", "Saved scenes"),
-        SettingsEntry("home_scene_boot", SettingsGroup.HOME, "Cảnh lúc nổ máy", "boot_scene", "Scene on engine start"),
-        // Không lưu gì: đây là NÚT lưu trạng thái đang dùng thành cảnh. Cảnh lưu ra thì nằm ở "home_scenes" phía
-        // trên — một khoá, một chủ (cùng lối với "home_grid_editor" và "home_grid").
-        SettingsEntry("home_scene_save", SettingsGroup.HOME, "Lưu cảnh hiện tại…", labelEn = "Save current scene…"),
-        SettingsEntry("home_preset", SettingsGroup.HOME, "Bố cục sẵn", "preset", "Preset layout"),
-        SettingsEntry("home_grid", SettingsGroup.HOME, "Bố cục tự vẽ", "grid_layout", "Custom layout"),
-        // Không lưu gì: đây là NÚT mở bảng vẽ. Bố cục vẽ ra thì lưu ở "home_grid" phía trên — một khoá, một chủ.
-        SettingsEntry("home_grid_editor", SettingsGroup.HOME, "Vẽ bố cục riêng…", labelEn = "Draw your own layout…"),
-        SettingsEntry("home_wallpaper", SettingsGroup.HOME, "Hình nền & trình chiếu", "wallpaper_prefs", "Wallpaper & slideshow"),
-        SettingsEntry("home_top_strip", SettingsGroup.HOME, "Chip thanh trạng thái", "top_strip", "Status-bar chips"),
-        // Viền TRƯỚC danh sách nút: thứ tự khai ở đây LÀ thứ tự hiện ra, và mục "nút trên thanh" là lưới 187 ô. Khai
-        // ngược lại thì muốn đổi viền phải cuộn qua hết 187 ô — thứ tự danh mục phải là thứ tự dùng được, không chỉ
-        // là thứ tự nghe hợp lý khi đọc danh sách.
-        SettingsEntry("home_dock_edge", SettingsGroup.HOME, "Viền đặt thanh nút", "dock_edge", "Button bar edge"),
-        SettingsEntry("home_dock_items", SettingsGroup.HOME, "Nút trên thanh nút xe", "dock_enabled", "Buttons on the car bar"),
+    val ENTRIES: List<SettingsEntry> = SettingsCatalogEntries.ALL
 
-        // ── Hiển thị & đơn vị ──
-        SettingsEntry("display_units", SettingsGroup.DISPLAY, "Đơn vị hiển thị", "unit_prefs", "Display units"),
-        // [ĐO] §2: khoá này lưu bền, có enum + có đường ghi, nhưng TRƯỚC S1 không có nút nào chạm tới.
-        SettingsEntry("display_theme", SettingsGroup.DISPLAY, "Giao diện sáng/tối", "theme_mode", "Light / dark theme"),
-        // U5·T3 — NGÔN NGỮ. ⚠ Khoá `lang` KHÔNG nằm trong tệp `kachi_workspace` mà trong tệp lưu ngôn ngữ đã có của
-        // ClusterNav (`clusternav_lang`, `com.byd.clusternav.Lang`) — cố ý, để một APK chỉ có MỘT công tắc ngôn ngữ
-        // thay vì hai cái lệch nhau; lập luận đầy đủ ở KDoc `WorkspacePrefs.langMode`.
-        //
-        // Hệ quả về phép kiểm: bộ quét của `SettingsCoverageContractTest` KHÔNG thấy khoá này (gốc quét cố ý không
-        // gồm tệp của ClusterNav — kéo vào là biến bài R2 thành bài kiểm ClusterNav). Nên nó được canh bằng một bài
-        // RIÊNG đọc thẳng hằng trong `Lang.kt` (`LauncherI18nContractTest`), đúng khuôn đã dùng cho
-        // `recirc_on_start_enabled` ở `Prefs.kt` — cùng tình huống: khoá thật, nằm ngoài tệp chính.
-        SettingsEntry("display_lang", SettingsGroup.DISPLAY, "Ngôn ngữ", "lang", "Language"),
+    /**
+     * Khoá của ClusterNav có mặt trên UI Kachi → **tệp prefs** chứa nó (IA v2 · §4.3).
+     *
+     * Đây là lưới canh cho phần mà `SettingsCoverageContractTest` cố ý không quét (xem KDoc
+     * [SettingsCatalogClusterNav]): `ClusterNavKeysContractTest` ở `:app` đòi mỗi khoá ở đây có mặt **nguyên văn**
+     * trong tệp nguồn khai nó ⇒ gõ sai một ký tự là đỏ, thay vì lặng lẽ ghi vào một khoá không runtime nào đọc.
+     */
+    val CLUSTERNAV_KEYS: Map<String, String> = SettingsCatalogClusterNav.KEYS
 
-        // ── Hồ sơ tài xế ──
-        SettingsEntry("profiles_list", SettingsGroup.PROFILES, "Danh sách hồ sơ", "profiles", "Profile list"),
-        SettingsEntry("profiles_active", SettingsGroup.PROFILES, "Hồ sơ đang dùng", "active_profile", "Active profile"),
+    /** Tệp prefs của phía ClusterNav → lý do nó tồn tại riêng. Giá trị của [CLUSTERNAV_KEYS] phải nằm trong đây. */
+    val CLUSTERNAV_PREFS_FILES: Map<String, String> = SettingsCatalogClusterNav.PREFS_FILES
 
-        // ── Tiện nghi xe ──
-        // ⚠ Tên khoá THẬT là "recirc_on_start_enabled" (Prefs.K_RECIRC_ON_START), KHÁC tên "recirc_on_start" mà spec
-        // §2 ghi. Lấy theo mã nguồn, vì bài test phủ khoá đối chiếu với mã chứ không với spec.
-        SettingsEntry(
-            "car_recirc_on_start", SettingsGroup.CAR, "Tự lấy gió trong khi nổ máy", "recirc_on_start_enabled",
-            "Recirculation on engine start",
-        ),
+    /** Khoá ĐI KÈM (một điều khiển ghi hai khoá) → mã mục đặt nó. Xem [SettingsCatalogClusterNav.COMPANION_KEYS]. */
+    val CLUSTERNAV_COMPANION_KEYS: Map<String, String> = SettingsCatalogClusterNav.COMPANION_KEYS
 
-        // ── Hệ thống & quyền ──
-        // Không lưu gì: hàng quyền chỉ ĐỌC trạng thái thật rồi tự xin lại (xem [LauncherRequirements]).
-        SettingsEntry("system_permissions", SettingsGroup.SYSTEM, "Quyền còn thiếu", labelEn = "Missing permissions"),
-        // [ĐO] §2: khoá thứ hai không có đường tới trước S1 — chỉ được đọc/ghi trong mã.
-        SettingsEntry("system_autostart", SettingsGroup.SYSTEM, "Tự mở khi nổ máy", "launcher_autostart", "Auto-start on engine start"),
+    /** Khoá của ClusterNav **cố ý không lên UI** → lý do. Cùng vai trò [NOT_SETTINGS], cho phía ClusterNav. */
+    val CLUSTERNAV_HIDDEN_KEYS: Map<String, String> = SettingsCatalogClusterNav.HIDDEN_KEYS
 
-        // ── Dẫn đường · Cụm · Phím ──
-        // R5: KHÔNG gom cấu hình của ClusterNav vào đây, chỉ dẫn sang màn cũ (màn đó đang niêm phong).
-        SettingsEntry("clusternav_open", SettingsGroup.CLUSTERNAV, "Mở màn ClusterNav", labelEn = "Open ClusterNav"),
+    /** Tiền tố khoá dựng động phía ClusterNav → lý do (nay chỉ có `seat_level_`). */
+    val CLUSTERNAV_DYNAMIC_KEY_PREFIXES: Map<String, String> = SettingsCatalogClusterNav.DYNAMIC_KEY_PREFIXES
 
-        // ── Giới thiệu ──
-        SettingsEntry("about_version", SettingsGroup.ABOUT, "Phiên bản và giấy phép", labelEn = "Version and licence"),
-    )
+    /**
+     * Trần ký tự cho [SettingsGroup.sub]/[SettingsGroup.subEn] — **ràng buộc HÌNH, không phải văn phong**.
+     *
+     * [ĐO ảnh 2026-09-12] ô rail cho câu phụ đúng **2 dòng**; 2/7 câu của IA v1 bị cắt cụt bằng "…" (R-UI b). Ghim
+     * số ở đây để bản sau viết dài ra thì đỏ ngay, chứ không đợi ai chụp lại màn hình mới thấy.
+     */
+    const val GROUP_SUB_MAX = 60
 
     /**
      * Khoá lưu bền **cố ý KHÔNG phải cấu hình**, kèm lý do tại chỗ → lý do.
@@ -378,6 +254,44 @@ object SettingsCatalog {
         }
         require(PREFS_FILES.values.all { it.isNotBlank() }) {
             "mỗi tệp prefs phải kèm LÝ DO — đây là chỗ trả lời 'tệp thứ ba này ở đâu ra'"
+        }
+        // ── IA v2 · bảng khoá của ClusterNav ─────────────────────────────────────────────────────
+        // Câu phụ dài hơn ô rail thì bị cắt cụt bằng "…" — mà phần bị cắt chính là phần "nhóm này chứa gì". Chốt
+        // lúc nạp lớp vì đây là lỗi chỉ thấy được bằng MẮT trên máy thật; bài test và trình biên dịch đều im.
+        val subTooLong = GROUPS.filter { it.sub.length > GROUP_SUB_MAX || it.subEn.length > GROUP_SUB_MAX }
+        require(subTooLong.isEmpty()) {
+            "câu phụ rail dài quá $GROUP_SUB_MAX ký tự ⇒ bị cắt '…': " +
+                subTooLong.map { "${it.id}(${it.sub.length}/${it.subEn.length})" }
+        }
+        val unknownFile = CLUSTERNAV_KEYS.filterValues { it !in CLUSTERNAV_PREFS_FILES }
+        require(unknownFile.isEmpty()) {
+            "khoá ClusterNav trỏ vào tệp prefs chưa khai lý do: $unknownFile"
+        }
+        // Mỗi khoá ClusterNav phải có CHỦ: hoặc là khoá của một mục, hoặc là khoá ĐI KÈM của một mục có thật. Không
+        // có phép này thì thêm một khoá vào bảng mà quên dựng mục là chuyện xảy ra im lặng — đúng bệnh mà cả danh
+        // mục này sinh ra để chữa, chỉ là ở phía ClusterNav.
+        val ownerless = CLUSTERNAV_KEYS.keys.filter { key ->
+            if (groupOf(key) != null) return@filter false
+            val ownerId = CLUSTERNAV_COMPANION_KEYS[key]
+            ownerId == null || ENTRIES.none { it.id == ownerId }
+        }
+        require(ownerless.isEmpty()) {
+            "khoá ClusterNav không mục nào nhận (và cũng không khai là khoá đi kèm của một mục có thật): $ownerless"
+        }
+        // Khoá đi kèm KHÔNG được đồng thời là khoá chính của một mục — hai câu trả lời trái nhau cho "ai ghi nó".
+        val companionAlsoOwned = CLUSTERNAV_COMPANION_KEYS.keys.filter { groupOf(it) != null }
+        require(companionAlsoOwned.isEmpty()) {
+            "khoá vừa là khoá chính vừa là khoá đi kèm: $companionAlsoOwned"
+        }
+        val hiddenAlsoShown = CLUSTERNAV_HIDDEN_KEYS.keys.filter { it in CLUSTERNAV_KEYS || groupOf(it) != null }
+        require(hiddenAlsoShown.isEmpty()) {
+            "khoá không thể vừa có UI vừa 'cố ý không có UI': $hiddenAlsoShown"
+        }
+        require(CLUSTERNAV_HIDDEN_KEYS.values.all { it.isNotBlank() }) {
+            "mỗi khoá ẩn phải kèm LÝ DO — không thì danh sách này thành chỗ làm im bài test"
+        }
+        require(CLUSTERNAV_PREFS_FILES.values.all { it.isNotBlank() }) {
+            "mỗi tệp prefs của ClusterNav phải kèm lý do nó tồn tại riêng"
         }
     }
 }

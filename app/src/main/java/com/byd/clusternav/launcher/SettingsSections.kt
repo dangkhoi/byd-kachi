@@ -29,24 +29,52 @@ class SettingsSections(
     private val deps: SettingsDeps,
 ) {
 
+    /**
+     * Nhóm "Phím vô-lăng" của lượt dựng gần nhất — giữ **chỉ** để còn đóng được phiên học lúc bảng đóng.
+     *
+     * ⚠ Đây KHÔNG phải một bảng tra `nhóm → section` (thứ mà KDoc [SettingsRows] cấm): đúng một nhóm có tài
+     * nguyên sống ngoài cây view (listener của `VoiceKeyLearnBus`), và chỉ nhóm đó cần đường dọn. Trang được
+     * **nhớ lại** ([SettingsPanel.pages]) nên thực thể ở đây chính là thực thể người dùng đang thấy.
+     */
+    private var keysSection: SettingsKeysSection? = null
+
+    /**
+     * Bảng đã rời khỏi cây view ⇒ trả lại mọi tài nguyên sống NGOÀI cây view.
+     *
+     * Hôm nay đúng một thứ: phiên "học phím mới" giữ listener của bus dùng chung (xem
+     * [SettingsKeysSection.dispose]). View thì tự rụng theo `removeView`, nên không có gì khác phải dọn — và
+     * chỗ này cố ý không làm gì hơn thế.
+     */
+    fun dispose() {
+        keysSection?.dispose()
+    }
+
     /** Trang của một nhóm. Mỗi nhóm **cuộn riêng** (R1) vì vỏ bảng giữ lại chính thực thể này. */
     fun build(group: SettingsGroup): View {
         val body = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 0, dpi(context, Sp.XS), dpi(context, Sp.L))
         }
+        // ⚠ `when` **tường minh 10 nhánh, KHÔNG `else`**: thêm một nhóm vào `:core` mà quên dựng nội dung thì
+        // **không biên dịch được**. Bản trước có `else -> clusterNav(body)` và [ĐO] nó nuốt gọn ba nhóm mới
+        // (nav · cast · keys) — cả ba hiện ra một trang "mở màn ClusterNav" giống hệt nhau mà không gì báo lỗi.
+        // Đó chính là "trang trắng im lặng" mà KDoc lớp này nói là phải chặn, chỉ khác màu.
         when (group) {
-            // Lưới 187 ô dựng trong đây ⇒ MỘT thực thể [CapabilityGridSection] mới cho mỗi lượt dựng trang (ràng
-            // buộc "một lưới = một bảng tiles"). Vỏ bảng nhớ trang lại nên lượt dựng này không lặp mỗi lần đổi nhóm.
             SettingsGroup.HOME -> SettingsHomeSection(context, rows, deps).build(body)
+            SettingsGroup.BARS -> SettingsBarsSection(context, rows, deps).build(body)
             SettingsGroup.DISPLAY -> display(body)
             SettingsGroup.PROFILES -> profiles(body)
-            SettingsGroup.CAR -> car(body)
+            SettingsGroup.NAV -> SettingsNavSection(context, rows, deps).build(body)
+            SettingsGroup.CAST -> SettingsCastSection(context, rows, deps).build(body)
+            SettingsGroup.KEYS -> SettingsKeysSection(context, rows, deps).also { keysSection = it }.build(body)
+            SettingsGroup.CAR -> SettingsCarSection(context, rows, deps).build(body)
             SettingsGroup.SYSTEM -> system(body)
-            SettingsGroup.CLUSTERNAV -> clusterNav(body)
             SettingsGroup.ABOUT -> about(body)
         }
-        return ScrollView(context).apply { addView(body); isVerticalScrollBarEnabled = false }
+        // ⚠ [SOÁT ẢNH 2026-09-12 · P1 #2] Thanh cuộn BẬT. Trang dài nhất đo được **10.5 màn** mà không có một chỉ
+        // báo nào ⇒ trên xe, thứ không thấy là thứ không tồn tại: người dùng không biết dưới còn gì. Thân trang đã
+        // chừa sẵn `paddingRight = Sp.XS` cho đúng thanh này (xem [SettingsPanel.head] — hai khối phải cùng một cột).
+        return ScrollView(context).apply { addView(body); isVerticalScrollBarEnabled = true }
     }
 
     // ── Hiển thị & đơn vị ────────────────────────────────────────────────────────────────────────
@@ -82,8 +110,10 @@ class SettingsSections(
             options = ThemeMode.values().map { it.name to it.label() },
             current = deps.state().themeMode.name,
         ) { code -> deps.onThemeMode(ThemeMode.valueOf(code)) })
+        // ⚠ IA v2 · R3 — dòng "màn ClusterNav có lựa chọn Sáng/Tối RIÊNG" đã XOÁ: từ nay một chip ghi CẢ HAI
+        // store (`PrefsWorkspaceRepository.persist` gương sang `ThemeMode.setChoice`), nên câu đó nói SAI với
+        // người dùng. `ThemeMirrorWiringContractTest` canh chuỗi `kachi_theme_note_clusternav` không còn tồn tại.
         body.addView(rows.note(context.getString(R.string.kachi_theme_note)))
-        body.addView(rows.note(context.getString(R.string.kachi_theme_note_clusternav)))
         lang(body)
     }
 
@@ -108,15 +138,19 @@ class SettingsSections(
             options = LangMode.entries.map { it.name to it.label() },
             current = deps.state().langMode.name,
         ) { code -> deps.onLangMode(LangMode.valueOf(code)) })
+        // Dòng "màn ClusterNav dùng chung lựa chọn này" cũng xoá: sau IA v2 chỉ còn MỘT màn cấu hình, nên không
+        // còn "màn kia" nào để so — câu nhắc chỉ làm người đọc đi tìm một bề mặt đã biến mất.
         body.addView(rows.note(context.getString(R.string.kachi_lang_note)))
-        body.addView(rows.note(context.getString(R.string.kachi_lang_note_clusternav)))
     }
 
     // ── Hồ sơ tài xế ─────────────────────────────────────────────────────────────────────────────
 
     private fun profiles(body: LinearLayout) {
         val s = deps.state()
-        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_profiles)))
+        // ⚠ [SOÁT ẢNH 2026-09-12 · finding #21] KHÔNG có `sectionLabel` ở đây. Rail bên trái đã ghi "Hồ sơ tài xế"
+        // ở bậc SECTION; lặp đúng chữ đó làm tiêu đề đầu trang là hai lần trả lời cùng một câu hỏi, và [ĐO] nó đẩy
+        // nội dung thật xuống dưới một màn hình vốn chỉ dài 0.35 màn. Nhóm nhiều mục thì tiêu đề mục CÓ nghĩa (nó
+        // chia trang); nhóm một mục thì không.
         body.addView(rows.note(context.getString(R.string.kachi_profiles_note)))
         s.profiles.forEach { name ->
             body.addView(
@@ -182,26 +216,9 @@ class SettingsSections(
         }
 
     // ── Tiện nghi xe ─────────────────────────────────────────────────────────────────────────────
-
-    private fun car(body: LinearLayout) {
-        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_comfort)))
-        body.addView(recircRow(deps.recircOnStart()) { deps.onRecircOnStart(it) })
-    }
-
-    /**
-     * W3 — ô tick "nổ máy thì tự lấy gió trong". Chuyển **nguyên văn** từ bảng Tuỳ biến: cùng câu chữ, cùng cảnh báo.
-     *
-     * Giữ nguyên câu **"chưa kiểm trên xe"** (R10): mã `recirc` ở mức tier OVERDRIVE — đọc từ mã nguồn khác, chưa
-     * xác nhận trên xe owner (khác ghế/lọc-bụi đã PROVEN). Không được hứa nó chạy.
-     */
-    private fun recircRow(on: Boolean, onChange: (Boolean) -> Unit): View = rows.checkRow(
-        on = on,
-        title = context.getString(R.string.kachi_recirc_title),
-        // Chuỗi `kachi_recirc_sub` mang câu "chưa kiểm trên xe" (R10) — `Goi2FeatureWiringContractTest` đọc
-        // CHÍNH tệp tài nguyên để chốt, nên câu cảnh báo không thể biến mất mà bài canh vẫn xanh.
-        sub = context.getString(R.string.kachi_recirc_sub),
-        onChange = onChange,
-    )
+    //
+    // ⚠ Chuyển sang [SettingsCarSection] (T4): nhóm này nhận thêm ghế mát/sưởi + lọc bụi mịn từ màn ClusterNav
+    // nên nó không còn là "một ô tick" nữa. Một tệp cho một nhóm — cùng lẽ với nav · cast · keys · bars.
 
     // ── Hệ thống & quyền ─────────────────────────────────────────────────────────────────────────
 
@@ -223,34 +240,66 @@ class SettingsSections(
             body.addView(rows.note(context.getString(R.string.kachi_perm_some_missing)))
             rep.missing.forEach { body.addView(rows.permissionRow(it, rep)) }
         }
-        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_boot)))
+
+        // ── Khởi động: HAI công tắc, hai NGHĨA khác nhau (IA v2 · R3) ──
+        // [ĐO] kiểm kê 2026-09-12: `launcher_autostart` mở **màn hình** Kachi làm home, còn `headless_autostart`
+        // chạy **dịch vụ** dẫn đường/cụm ở nền. Hai màn cũ đặt chúng ở hai nơi với câu chữ gần giống nhau ⇒ trông
+        // như một cái bị lặp. Giữ cả hai (chúng làm hai việc thật), nhưng đứng CẠNH NHAU với nhãn nói đúng việc —
+        // đó là cách duy nhất để người đọc thấy chúng khác nhau ở đâu.
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sec_boot)))
         body.addView(rows.checkRow(
             on = deps.state().autostart,
             title = context.getString(R.string.kachi_autostart_title),
             sub = context.getString(R.string.kachi_autostart_sub),
         ) { on -> deps.onAutostart(on) })
+        body.addView(rows.checkRow(
+            on = deps.bridge.headlessAutostart(),
+            title = context.getString(R.string.kachi_headless_title),
+            sub = context.getString(R.string.kachi_headless_sub),
+        ) { on -> deps.bridge.setHeadlessAutostart(on) })
+
+        // ── Bảo trì ──
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sub_maint)))
+        // Nút kiểm tra cập nhật ĐỔI CHỮ theo kết quả (đang kiểm… / đã mới nhất / có bản mới): luồng này mất vài
+        // giây trên mạng xe, và một nút im lặng vài giây thì người dùng bấm lại lần hai.
+        val update = rows.button(context.getString(R.string.kachi_check_update)) {} as TextView
+        update.setOnClickListener { deps.bridge.checkUpdate { text -> update.text = text } }
+        body.addView(update)
+        body.addView(rows.button(context.getString(R.string.kachi_nav_stop)) { deps.bridge.navStop() })
+
+        // ── Nâng cao ──
+        // Màn ClusterNav cũ nay là **màn nâng cao/đối chiếu** (spec §4.1 nhóm 9 · OQ1), không còn icon riêng trong
+        // ngăn kéo app. Giữ đường mở nó để còn so hai bề mặt trên xe thật trước khi gỡ hẳn.
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sub_advanced)))
+        body.addView(rows.button(context.getString(R.string.kachi_open_legacy)) { deps.bridge.openLegacyScreen() })
+        body.addView(rows.button(context.getString(R.string.kachi_vietmap_data)) { deps.bridge.openVietMapData() })
+        body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { deps.bridge.openDiagnostics() })
     }
 
     // ── Dẫn đường · Cụm · Phím ───────────────────────────────────────────────────────────────────
-
-    /** R5 — **chỉ dẫn sang**, không gom vào: màn ClusterNav (và layout XML của nó) đang niêm phong. */
-    private fun clusterNav(body: LinearLayout) {
-        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_clusternav)))
-        body.addView(rows.note(context.getString(R.string.kachi_clusternav_note1)))
-        body.addView(rows.note(context.getString(R.string.kachi_clusternav_note2)))
-        body.addView(rows.button(context.getString(R.string.kachi_clusternav_open)) { deps.onOpenClusterNav() })
-    }
+    //
+    // ⚠ `private fun clusterNav(body)` đã XOÁ (IA v2 đảo R5 của `kachi-settings-screen.html`). Nó dựng một trang
+    // "màn ClusterNav đang niêm phong, Cài đặt chỉ mở nó ra" — câu đó nay SAI ở cả hai vế: ba nhóm nav · cast ·
+    // keys đã dựng lại đủ điều khiển (ghi cùng khoá), còn đường mở màn cũ thì nằm ở mục "Nâng cao" của nhóm Hệ
+    // thống. Ba chuỗi của nó (`kachi_sec_clusternav`, `kachi_clusternav_note1/note2`, `kachi_clusternav_open`) xoá
+    // khỏi cả hai tệp tài nguyên — `LauncherI18nContractTest.khong co khoa tai nguyen mo coi` canh hai chiều.
 
     // ── Giới thiệu ───────────────────────────────────────────────────────────────────────────────
 
     private fun about(body: LinearLayout) {
-        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_about)))
+        // Không `sectionLabel` — cùng lý do với nhóm Hồ sơ, xem chú thích ở `profiles` (finding #21).
         body.addView(rows.note(context.getString(R.string.kachi_about_tagline)))
         body.addView(rows.note(context.getString(
             R.string.kachi_about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE,
         )))
         body.addView(rows.note(context.getString(R.string.kachi_about_package, BuildConfig.APPLICATION_ID)))
         body.addView(rows.note(context.getString(R.string.kachi_about_licence)))
+        // Tuyên bố miễn trừ — chuyển từ hộp thoại MỘT LẦN của màn cũ (`MainActivity.maybeShowDisclaimer`, gác bằng
+        // `disclaimer_shown`) thành một dòng ĐỌC LẠI ĐƯỢC BẤT CỨ LÚC NÀO. Hộp thoại một-lần trả lời đúng câu hỏi
+        // pháp lý *"đã báo chưa"* nhưng sai câu hỏi của người dùng *"cái này là gì, ai chịu trách nhiệm"* — hỏi
+        // vào tháng thứ ba thì không còn chỗ nào để đọc lại. Cờ `disclaimer_shown` vẫn thuộc màn cũ (nó là trạng
+        // thái "đã hiện chưa", không phải một lựa chọn) nên mục này KHÔNG nhận khoá.
+        body.addView(rows.note(context.getString(R.string.kachi_about_disclaimer)))
     }
 
     // ── Dùng chung ───────────────────────────────────────────────────────────────────────────────

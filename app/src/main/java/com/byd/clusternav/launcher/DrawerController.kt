@@ -73,7 +73,38 @@ class DrawerController(
         )
     }
 
-    /** Gắn ngăn kéo lên màn — dùng CHUNG cho cả 2 chế độ (byte-giữ so với nhánh overlay cũ). */
+    /**
+     * ═══ T6 · R-UI (m) — BỘ CHỌN **NÚT CHO THANH NÚT XE**, MỘT BỘ CHỌN HAI LỐI VÀO ═══════════════════════════
+     *
+     * Mở chính [AppDrawer] ở [AppDrawer.Mode.PICK_DOCK]: đa chọn trên ĐÚNG tập ô mà màn Cài đặt đang bày cho thanh
+     * nút, tô sẵn theo [selected], bấm **Áp dụng (N)** ⇒ [onApply] nhận tập mã người dùng chốt và bảng tự đóng.
+     *
+     * ## Hợp đồng với chỗ gọi (màn Cài đặt, nhóm "Thanh trạng thái & thanh nút")
+     *  • [selected] = `state().dock.enabled.toSet()` — **đọc lại mỗi lần mở**, không chụp sẵn một lần lúc dựng
+     *    trang: người dùng có thể vừa đổi cấu hình ở lối vào kia.
+     *  • [onApply] KHÔNG được ghi bền trực tiếp (luật "chỉ ViewModel được ghi bền" —
+     *    `GridSeamGuardTest.chi ViewModel duoc ghi ben`): gấp tập này bằng [DockSelection.apply] rồi đẩy xuống qua
+     *    intent của ViewModel. **Đừng tự viết vòng lặp `setEnabled(id, true)`** — nó chỉ có chiều bật nên cấu hình
+     *    chỉ lớn lên, bỏ tích một ô rồi Áp dụng thì nút vẫn còn trên thanh (xem KDoc [DockSelection]).
+     *  • Bảng **không** tự đóng trước khi [onApply] chạy xong; chỗ gọi không phải gọi [close].
+     *
+     * Thanh nút xe KHÔNG có trần số mục (khác ô giữa màn, trần 8) — xem `AppDrawer.cap`.
+     */
+    fun openDockPicker(selected: Set<String>, onApply: (Set<String>) -> Unit) {
+        if (drawer != null) return
+        show(
+            AppDrawer(
+                activity, WidgetRegistry.ALL, selected.toList(),
+                onPickApp = {},
+                onPickWidgets = {},
+                onClose = { close() },
+                mode = AppDrawer.Mode.PICK_DOCK,
+                onApply = { ids -> onApply(ids); close() },
+            ),
+        )
+    }
+
+    /** Gắn ngăn kéo lên màn — dùng CHUNG cho cả 3 chế độ (byte-giữ so với nhánh overlay cũ). */
     private fun show(d: AppDrawer) {
         drawer = d
         onClearOverlays()

@@ -27,7 +27,7 @@ class CapabilityTileWiringContractTest {
     private val workspace by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
     private val drawer by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
     /** Nhóm "Màn hình chính" của màn Cài đặt (S1·T3) — lưới khả năng nằm ở đây. */
-    private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
+    private val bars by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt") }
 
     /**
      * Đọc source rồi **bỏ mọi chú thích** trước khi quét: test này canh **CODE**, không canh văn xuôi. Cùng lý do
@@ -182,10 +182,15 @@ class CapabilityTileWiringContractTest {
             drawer.contains("pick.displayLabel"),
             "hai loại nằm cùng một lưới ⇒ phải dùng nhãn có gợi ý loại ở chỗ nhãn trùng",
         )
+        // T4 · IA v2 R-UI (m): lưới 123 ô đã RỜI khỏi màn Cài đặt — nhóm "Thanh trạng thái & thanh nút" nay
+        // mở CHÍNH bộ chọn của ngăn kéo (`AppDrawer.Mode.PICK_DOCK`). Một bộ chọn, một nguồn ⇒ phép so "hai
+        // màn phải giống nhau" không còn đối tượng, và `CapabilityGridSection` đã bị xoá.
+        // Chỗ duy nhất còn phải canh là màn Cài đặt **mở đúng bộ chọn đó**, không dựng bản thứ hai.
         assertTrue(
-            panel.contains("CapabilityCatalog.byDomain()"),
-            "màn Cài đặt phải dùng CÙNG nguồn với ngăn kéo",
+            bars.contains("deps.openDockPicker("),
+            "màn Cài đặt phải MỞ bộ chọn của ngăn kéo, không dựng lưới ô thứ hai",
         )
+        assertFalse(bars.contains("CapabilityCatalog.byDomain()"), "và không được tự duyệt lại không gian khả năng")
     }
 
 }

@@ -11,6 +11,7 @@ import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import com.byd.clusternav.Lang
 import com.byd.clusternav.R
 
 /**
@@ -49,16 +50,17 @@ class SeatDiagramView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     // ── Palette (theme-adaptive: read from @color so LIGHT + DARK both resolve; a theme change calls
-    //    recreate() → a fresh instance re-reads these. Dark values equal the former hardcoded hex exactly). ──
-    private val coolColor = context.getColor(R.color.accent_cyan)        // cyan
-    private val heatColor = context.getColor(R.color.accent_amber)       // amber
-    private val bodyStroke = context.getColor(R.color.hairline_strong)   // line2
-    private val bodyTop = context.getColor(R.color.seat_body_top)        // body gradient top
-    private val bodyBottom = context.getColor(R.color.seat_body_bottom)  // body gradient bottom
-    private val offStroke = context.getColor(R.color.hairline_strong)    // line2
-    private val offFill = context.getColor(R.color.seat_off_fill)        // seat off fill
-    private val labelColor = context.getColor(R.color.text_primary)      // text_primary
-    private val offLabelColor = context.getColor(R.color.text_secondary) // off-seat label grey
+    //    recreate() → a fresh instance re-reads these. Dark values equal the former hardcoded hex exactly).
+    //    `var`, not `val`: a HOST with its own palette overrides them through [setPalette] — see its KDoc. ──
+    private var coolColor = context.getColor(R.color.accent_cyan)        // cyan
+    private var heatColor = context.getColor(R.color.accent_amber)       // amber
+    private var bodyStroke = context.getColor(R.color.hairline_strong)   // line2
+    private var bodyTop = context.getColor(R.color.seat_body_top)        // body gradient top
+    private var bodyBottom = context.getColor(R.color.seat_body_bottom)  // body gradient bottom
+    private var offStroke = context.getColor(R.color.hairline_strong)    // line2
+    private var offFill = context.getColor(R.color.seat_off_fill)        // seat off fill
+    private var labelColor = context.getColor(R.color.text_primary)      // text_primary
+    private var offLabelColor = context.getColor(R.color.text_secondary) // off-seat label grey
 
     private val density = resources.displayMetrics.density
     private fun dp(v: Float) = v * density
@@ -66,7 +68,17 @@ class SeatDiagramView @JvmOverloads constructor(
     private var seatCount = 2
     private var coolMode = true
     private val levels = intArrayOf(0, 0, 0, 0)
-    private val seatNames = arrayOf("Lái", "Phụ", "Sau T", "Sau P")
+    // Chữ VẼ THẲNG lên Canvas ⇒ không đi qua `R.string` được; dịch tại call site theo lối của màn cũ ([Lang]).
+    // ⚠ Trước 2026-09-13 bốn nhãn này viết cứng tiếng Việt, nên khi view được nhúng vào màn Cài đặt Kachi ở bản
+    // English thì sơ đồ ghế là chỗ DUY NHẤT còn nói tiếng Việt (soát ảnh Settings v2, [P2]).
+    private val seatNames = arrayOf(
+        // ⚠ Nhãn EN giữ ĐỘ DÀI xấp xỉ bản VI: huy hiệu tự co chữ cho vừa bề ngang ghế nhưng có SÀN `dp(7f)`, nên
+        // một chữ dài ("Passenger") tràn khỏi hình ghế thay vì co tiếp — [ĐO] ảnh máy ảo 2026-09-13.
+        Lang.t("Lái", "Driver"), Lang.t("Phụ", "Front R"), Lang.t("Sau T", "Rear L"), Lang.t("Sau P", "Rear R"),
+    )
+
+    /** Tiền tố mức trên huy hiệu ghế: `M1`/`M2` (Mức) ↔ `L1`/`L2` (Level). */
+    private val levelPrefix = Lang.t("M", "L")
 
     /** Fired when a seat is tapped and its level cycles. `seat` = 0=FL,1=FR,2=RL,3=RR; `level` = new 0/1/2. */
     var onSeatLevelChanged: ((seat: Int, level: Int) -> Unit)? = null
@@ -91,6 +103,34 @@ class SeatDiagramView @JvmOverloads constructor(
 
     fun setMode(cool: Boolean) {
         if (cool != coolMode) { coolMode = cool; invalidate() }
+    }
+
+    /**
+     * Override the whole palette from a HOST that paints itself (the Kachi launcher's `KachiTheme`).
+     *
+     * ## [ĐO] Why this exists — 2026-09-13, Settings v2 screenshot audit `[P2]`
+     * The colours above come from `@color` resources, i.e. from the **app's** day/night configuration. The Kachi
+     * launcher has its own light/dark switch (`KachiTheme`, driven by a user preference, not by `uiMode`), so a
+     * user on a light system + dark Kachi theme got a **light `#e5e7ee` car body inside a dark card** — the only
+     * light rectangle on the screen. A view cannot resolve that on its own: the two themes are separate sources
+     * of truth, and only the host knows which one applies to the surface it is embedding into.
+     *
+     * Callers that have no palette of their own (the old ClusterNav screen) simply never call this and keep the
+     * `@color` defaults — nothing changes for them.
+     *
+     * @param body fill of the car outline (drawn as a flat colour: the host's card is flat too)
+     * @param seatOff fill of a seat that is switched OFF
+     * @param line outline of the car body and of an OFF seat
+     * @param ink label colour of an ACTIVE seat · @param mutedInk label colour of an OFF seat
+     * @param cool tint for cooling mode · @param warm tint for heating mode
+     */
+    fun setPalette(body: Int, seatOff: Int, line: Int, ink: Int, mutedInk: Int, cool: Int, warm: Int) {
+        bodyTop = body; bodyBottom = body
+        offFill = seatOff
+        bodyStroke = line; offStroke = line
+        labelColor = ink; offLabelColor = mutedInk
+        coolColor = cool; heatColor = warm
+        invalidate()
     }
 
     fun setLevel(i: Int, level: Int) {
@@ -251,7 +291,7 @@ class SeatDiagramView @JvmOverloads constructor(
 
     /** Small centred badge: seat name, plus "·M1"/"·M2" when active. Shrinks to fit the seat width. */
     private fun drawSeatLabel(canvas: Canvas, r: RectF, name: String, level: Int, off: Boolean) {
-        val text = if (level >= 1) "$name·M$level" else name
+        val text = if (level >= 1) "$name·$levelPrefix$level" else name
         textPaint.color = if (off) offLabelColor else labelColor
         var size = r.height() * 0.24f
         textPaint.textSize = size

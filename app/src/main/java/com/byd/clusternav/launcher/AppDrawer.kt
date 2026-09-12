@@ -1,9 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.util.TypedValue
@@ -21,12 +18,18 @@ import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
- * Ngăn kéo app — **hai chế độ** (cùng một view, không nhân bản UI):
+ * Ngăn kéo app — **ba chế độ** (cùng một view, không nhân bản UI):
  *  - [Mode.ASSIGN_SLOT] (như cũ): "Đặt widget / mở app vào ô này". **Widget**: chọn NHIỀU (1..8) → tô sáng, bấm
  *    **Đặt** để áp vào ô. **Ứng dụng**: chạm 1 app → đặt vào ô (1 app / ô).
  *  - [Mode.OPEN_APP] (gói 1 · U3): "Mở ứng dụng" — KHÔNG có mục widget, chạm app là **mở toàn màn**, không gắn vào
  *    ô nào. Có thêm hàng **Gần đây** (nguồn: [RecentApps], không cần quyền nào).
- * Bám prototype kachi-workspace.html.
+ *  - [Mode.PICK_DOCK] (T6 · spec `kachi-settings-ia-v2.html` R-UI **(m)**): "Chọn nút cho thanh nút xe" — đa chọn
+ *    trên ĐÚNG tập ô mà màn Cài đặt đang bày cho thanh nút, chọn sẵn theo `dock.enabled`, bấm **Áp dụng (N)**.
+ *
+ * ## Vì sao chế độ thứ ba nằm Ở ĐÂY chứ không là một lưới thứ hai trong Cài đặt
+ * [ĐO] soát ảnh 2026-09-12: màn Cài đặt có lưới 123 ô của riêng nó ⇒ nhóm "Màn hình chính" dài **10.5 màn cuộn**, và
+ * hai lưới cùng bày một tập ô đã lệch nhau ba lần (cột 4-vs-5, thụt 6px, cỡ chữ ngoài thang). R-UI (m) chốt **một bộ
+ * chọn, hai lối vào** ⇒ mọi phép vá nhịp lưới (R5) chỉ phải làm một lần. Bám prototype kachi-workspace.html.
  */
 class AppDrawer(
     context: Context,
@@ -42,14 +45,29 @@ class AppDrawer(
      * ở chế độ gán ô thì mục vẫn hiện tiêu đề kèm câu "máy chưa có widget nào" thay vì mất tăm.
      */
     private val appWidgetPicks: List<AppWidgetPick> = emptyList(),
+    /** [Mode.PICK_DOCK] — tập khả năng người dùng vừa chốt cho **thanh nút xe**. Mặc định rỗng ⇒ chỗ gọi cũ y nguyên. */
+    private val onApply: (Set<String>) -> Unit = {},
 ) : FrameLayout(context) {
 
-    /** Ngăn kéo dùng để GÁN VÀO Ô (như cũ) hay để MỞ APP toàn màn (U3). */
-    enum class Mode { ASSIGN_SLOT, OPEN_APP }
+    /** Ngăn kéo dùng để GÁN VÀO Ô (như cũ), MỞ APP toàn màn (U3), hay CHỌN NÚT cho thanh nút xe (T6). */
+    enum class Mode { ASSIGN_SLOT, OPEN_APP, PICK_DOCK }
 
-    private val selected = ArrayList<String>().apply { addAll(initialWidgets.take(MAX)) }
+    /**
+     * Trần số mục **của bảng này** — không phải một hằng toàn cục.
+     *
+     * Ô giữa màn chứa tối đa [MAX] = 8 mục (giới hạn hình học của ô). **Thanh nút xe KHÔNG có trần**: `DockConfig`
+     * lưu `List<String>` dài tuỳ ý và `ControlRegistry.defaultEnabledIds()` đã 8 mục — mở bảng chọn với trần 8 cho
+     * một cấu hình đang có 10 nút sẽ **cắt mất 2 nút mà không nói gì**, đúng họ lỗi "chặn im lặng" mà
+     * [toggleSelection] sinh ra để chống.
+     */
+    private val cap: Int = if (mode == Mode.PICK_DOCK) NO_CAP else MAX
+
+    private val selected = ArrayList<String>().apply { addAll(initialWidgets.take(cap)) }
     private val widgetTiles = HashMap<String, LinearLayout>()
     private var placeBtn: TextView? = null
+
+    /** Phần danh sách ứng dụng (tách tệp vì trần 500 dòng) — xem [AppDrawerApps]. */
+    private val apps = AppDrawerApps(context, onPickApp)
 
     /** Câu nhắc trần ô ở thanh đáy — rỗng khi chưa đầy (đủ thì im lặng). */
     private var capHint: TextView? = null
@@ -68,50 +86,46 @@ class AppDrawer(
         val plp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).also {
             it.setMargins(dpi(context, Sp.XXL), dpi(context, Sp.XXL), dpi(context, Sp.XXL), dpi(context, Sp.XXL)); it.gravity = Gravity.CENTER
         }
-        val assign = mode == Mode.ASSIGN_SLOT
+        val assign = mode == Mode.ASSIGN_SLOT; val dock = mode == Mode.PICK_DOCK
 
         panel.addView(TextView(context).apply {
-            text = context.getString(if (assign) R.string.kachi_drawer_title_assign else R.string.kachi_drawer_title_open)
+            text = context.getString(
+                when (mode) {
+                    Mode.ASSIGN_SLOT -> R.string.kachi_drawer_title_assign
+                    Mode.OPEN_APP -> R.string.kachi_drawer_title_open
+                    Mode.PICK_DOCK -> R.string.kachi_drawer_title_dock
+                },
+            )
             setTextColor(c(KachiTheme.INK))
             KachiType.apply(this, KachiType.TITLE, bold = true)
         })
         panel.addView(TextView(context).apply {
-            text = context.getString(if (assign) R.string.kachi_drawer_hint_assign else R.string.kachi_drawer_hint_open)
+            text = context.getString(
+                when (mode) {
+                    Mode.ASSIGN_SLOT -> R.string.kachi_drawer_hint_assign
+                    Mode.OPEN_APP -> R.string.kachi_drawer_hint_open
+                    Mode.PICK_DOCK -> R.string.kachi_drawer_hint_dock
+                },
+            )
             setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
             setPadding(0, dpi(context, Sp.XS), 0, dpi(context, Sp.M))
         })
 
         val body = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
 
-        if (assign) {
-            // ── NHÓM — thứ người dùng gặp TRƯỚC (G1 · T4 · §4.2) ──
-            body.addView(sectionLabel(CapabilityPicker.GROUPS_TITLE))
-            body.addView(note(CapabilityPicker.GROUPS_NOTE))
-            // ⚠ [SOÁT UI 2026-09-12] Nhóm dùng **4 cột như mọi phần ô-khả-năng bên dưới** (widget/mục lẻ/widget app
-            // khác đều 4). Trước đây Nhóm để 3 cột "cho dòng phụ rộng" — nhưng nó nằm NGAY TRÊN các phần 4 cột trong
-            // CÙNG một vùng cuộn, nên cuộn xuống thì tâm cột nhảy 3→4 = "lệch loạn" (owner báo). Một vùng cuộn phải
-            // có MỘT lưới cột. Dòng phụ ở 4 cột vẫn đủ chỗ (xuống 2 dòng + cắt "…").
-            addPickGrid(body, CapabilityPicker.groupPicks(), cols = COLS_TILE)
+        if (dock) {
+            // ĐÚNG tập ô mà màn Cài đặt bày cho thanh nút, cùng thứ tự — không chép danh sách, cả hai đường đi qua
+            // `CapabilityPicker`/`CapabilityCatalog` ở `:core`. KHÔNG có widget dựng tay / widget app khác / danh sách
+            // app: `DockConfig.setEnabled` chỉ nhận mã trong `CapabilityCatalog` ⇒ bày chúng ở đây là bày nút chết.
+            groupSection(body); singlesSection(body)
+        } else if (assign) {
+            groupSection(body)
 
             // ── Widget dựng tay (chọn nhiều) ──
             body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_widgets)).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
             addWidgetGrid(body, cols = COLS_TILE)
 
-            // ── Dữ liệu + HÀNH ĐỘNG của xe, gom theo lĩnh vực — thêm vào ô ──
-            // [SOÁT RW0 2026-09-11] Chỗ này TRƯỚC ĐÂY chỉ bày `WidgetCatalog.telemetryByDomain()` = **duy nhất mục
-            // ĐỌC**. Hệ quả: `WidgetViews` VẼ được ô hành động và `ActionMacros` có 4 gói lệnh, nhưng người dùng
-            // **không có nút nào** để đặt chúng vào ô giữa màn — số đo "3 gói lệnh ở ô giữa màn" của phiên trước đạt
-            // được bằng cách **gieo cấu hình bằng tay**. Tức cả gói W2 đang không giao được tới người dùng.
-            // Nay dùng CÙNG nguồn với màn Cài đặt (`CapabilityCatalog.byDomain()`), nên hai màn chọn không thể
-            // lệch nhau về việc "cái gì đặt được ở đâu".
-            body.addView(sectionLabel(CapabilityPicker.SINGLES_TITLE).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
-            CapabilityCatalog.byDomain().forEach { (domain, picks) ->
-                // `singlesOf` BẮT BUỘC: nhóm đã bày ở mục đầu, để nó nằm trong lĩnh vực nữa là **hai ô cùng một mã**
-                // ⇒ `widgetTiles[id]` bị ghi đè ⇒ chỉ ô sau được tô sáng (đúng lỗi RW0 đã ghi).
-                body.addView(sectionLabel(domain.displayLabel).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
-                CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(note(it)) }
-                addPickGrid(body, CapabilityPicker.singlesOf(picks), cols = COLS_TILE)
-            }
+            singlesSection(body)
 
             // ── Widget của APP KHÁC (T4) — đặt SAU nhóm/thẻ dựng tay và các mục lẻ, TRƯỚC danh sách app ──
             //
@@ -126,22 +140,22 @@ class AppDrawer(
                 body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets_none)))
             } else {
                 body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets)))
-                addGrid(body, appWidgetPicks.map { p -> GridItem(APPWIDGET_PKG, p.title, p.icon, p.onTap) }, cols = COLS_TILE)
+                apps.grid(body, appWidgetPicks.map { p -> AppDrawerApps.Item(APPWIDGET_PKG, p.title, p.icon, p.onTap) }, cols = COLS_TILE)
             }
 
             // ── App (chạm đặt vào ô) ──
             body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
-            addGrid(body, loadApps(), cols = COLS_APP)
+            apps.grid(body, apps.load(), cols = COLS_APP)
         } else {
             // ── Chế độ MỞ THƯỜNG: gần đây trước, rồi tất cả ──
-            val all = loadApps()
-            val recent = recentItems(all)
+            val all = apps.load()
+            val recent = apps.recent(all, recentApps)
             if (recent.isNotEmpty()) {
                 body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_recent)))
-                addGrid(body, recent, cols = COLS_APP)
+                apps.grid(body, recent, cols = COLS_APP)
                 body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_all_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
             }
-            addGrid(body, all, cols = COLS_APP)
+            apps.grid(body, all, cols = COLS_APP)
         }
 
         panel.addView(
@@ -151,10 +165,14 @@ class AppDrawer(
                 // biên, đọc thành chữ lỗi chứ không đọc thành "còn nữa, cuộn đi". Mép mờ nói đúng điều đó, và là
                 // cách nền tảng có sẵn (không phải một lớp phủ tự vẽ phải tự nhớ đổi màu theo nền).
                 isVerticalFadingEdgeEnabled = true
-                setFadingEdgeLength(dpi(context, Sp.XL))
+                setFadingEdgeLength(dpi(context, Sp.M))
                 // Đệm trên/dưới + KHÔNG cắt theo đệm ⇒ hàng đầu và hàng cuối không dính vào biên vùng cuộn.
                 clipToPadding = false
-                setPadding(0, dpi(context, Sp.XS), 0, dpi(context, Sp.S))
+                // ⚠⚠ [R-UI (e)] Đệm ĐÁY phải LỚN HƠN dải mờ, không thì hàng cuối KHÔNG BAO GIỜ đọc được: [ĐO] đệm
+                // `Sp.S` < dải mờ `Sp.XL` ⇒ cuộn hết cỡ mà nhãn hàng cuối vẫn bị cắt ngang chữ. `Sp.TOUCH + Sp.S` =
+                // cao nút áp + một nhịp — [ĐO] soát ảnh v2: bản `+ Sp.M` kèm dải mờ `Sp.XL` để lại **99px trống** ở
+                // đáy mà vẫn làm mờ nhãn hàng cuối, nên dải mờ hạ về `Sp.M` (quan hệ "đệm > dải mờ" giữ: 56 > 12).
+                setPadding(0, dpi(context, Sp.XS), 0, dpi(context, Sp.TOUCH) + dpi(context, Sp.S))
             },
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f),
         )
@@ -163,11 +181,43 @@ class AppDrawer(
         // [ĐO] trước đây nó nằm trong thân cuộn (cạnh tiêu đề mục đầu), nên cuộn xuống là **mất nút**: điểm sáng ở
         // vùng nút đi 7242 → 83 → 0. Người dùng chọn xong ở cuối danh sách thì không còn đường áp — phải cuộn ngược
         // lên mới thấy, mà không có gì nói cho họ biết điều đó. Nút quyết định phải luôn ở trong tầm mắt.
-        if (assign) {
+        if (assign || dock) {
             panel.addView(placeBar(), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             refreshPlaceBtn()
         }
         addView(panel, plp)
+    }
+
+    /**
+     * Mục **NHÓM** — thứ người dùng gặp TRƯỚC (G1 · T4 · §4.2). Dùng chung cho ngăn kéo gán-ô và bộ chọn thanh nút.
+     *
+     * ⚠ [SOÁT UI 2026-09-12] Nhóm dùng **4 cột như mọi phần ô-khả-năng bên dưới**. Trước đây Nhóm để 3 cột "cho dòng
+     * phụ rộng" — nhưng nó nằm NGAY TRÊN các phần 4 cột trong CÙNG một vùng cuộn, nên cuộn xuống thì tâm cột nhảy
+     * 3→4 = "lệch loạn" (owner báo). Một vùng cuộn phải có MỘT lưới cột.
+     */
+    private fun groupSection(body: LinearLayout) {
+        body.addView(sectionLabel(CapabilityPicker.GROUPS_TITLE))
+        body.addView(note(CapabilityPicker.GROUPS_NOTE))
+        addPickGrid(body, CapabilityPicker.groupPicks(), cols = COLS_TILE)
+    }
+
+    /**
+     * Mục **TỪNG MỤC RIÊNG** — dữ liệu + HÀNH ĐỘNG của xe, gom theo lĩnh vực.
+     *
+     * [SOÁT RW0 2026-09-11] Chỗ này TRƯỚC ĐÂY chỉ bày `WidgetCatalog.telemetryByDomain()` = **duy nhất mục ĐỌC**.
+     * Hệ quả: `WidgetViews` VẼ được ô hành động và `ActionMacros` có 4 gói lệnh, nhưng người dùng **không có nút
+     * nào** để đặt chúng vào ô giữa màn. Nay dùng CÙNG nguồn với màn Cài đặt ([CapabilityCatalog.byDomain]), nên hai
+     * màn chọn không thể lệch nhau về việc "cái gì đặt được ở đâu".
+     */
+    private fun singlesSection(body: LinearLayout) {
+        body.addView(sectionLabel(CapabilityPicker.SINGLES_TITLE).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
+        CapabilityCatalog.byDomain().forEach { (domain, picks) ->
+            // `singlesOf` BẮT BUỘC: nhóm đã bày ở mục đầu, để nó nằm trong lĩnh vực nữa là **hai ô cùng một mã**
+            // ⇒ `widgetTiles[id]` bị ghi đè ⇒ chỉ ô sau được tô sáng (đúng lỗi RW0 đã ghi).
+            body.addView(sectionLabel(domain.displayLabel).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
+            CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(note(it)) }
+            addPickGrid(body, CapabilityPicker.singlesOf(picks), cols = COLS_TILE)
+        }
     }
 
     /** Thanh đáy ghim: câu nhắc trần ô (bên trái) + nút áp (bên phải). */
@@ -180,13 +230,18 @@ class AppDrawer(
         capHint = hint
         addView(hint, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val btn = TextView(context).apply {
-            KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
+            // ⚠ [R7] Đích chạm 48dp khai TẠI ĐÂY: [ĐO] soát ảnh v2 nút QUYẾT ĐỊNH của bảng cao **34.7dp**, thấp
+            // hơn mọi nút phụ của Settings (48dp) — đúng bệnh "bốn chiều cao cho ba vai" mà `SettingsRows` đã gom.
+            KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER; minHeight = dpi(context, Sp.TOUCH)
             setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
             background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(c(KachiTheme.ON_ACCENT))
-            setOnClickListener { onPickWidgets(selected.toList()) }
+            // Một nút, hai đích đến theo chế độ — KHÔNG hai nút: thanh đáy chỉ có chỗ cho một quyết định, và hai nút
+            // trong đó thì lúc nào cũng có đúng một cái là nút chết.
+            setOnClickListener {
+                if (mode == Mode.PICK_DOCK) onApply(selected.toSet()) else onPickWidgets(selected.toList())
+            }
         }
-        placeBtn = btn
-        addView(btn)
+        placeBtn = btn; addView(btn)
     }
 
     /**
@@ -202,16 +257,20 @@ class AppDrawer(
     private fun capNote(): String = context.getString(R.string.kachi_drawer_cap_note, MAX)
 
     private fun refreshPlaceBtn() {
-        placeBtn?.text = if (selected.isEmpty()) context.getString(R.string.kachi_drawer_place_none)
-        else context.resources.getQuantityString(R.plurals.kachi_drawer_place_n, selected.size, selected.size)
+        placeBtn?.text = when {
+            // Chọn nút cho thanh xe: nút luôn là "Áp dụng (N)" kể cả N = 0 — bỏ HẾT nút khỏi thanh là một lựa chọn
+            // hợp lệ (thanh ẩn đi), không phải một trạng thái phải đổi tên nút.
+            mode == Mode.PICK_DOCK -> context.getString(R.string.kachi_drawer_apply_n, selected.size)
+            selected.isEmpty() -> context.getString(R.string.kachi_drawer_place_none)
+            else -> context.resources.getQuantityString(R.plurals.kachi_drawer_place_n, selected.size, selected.size)
+        }
         // Câu nhắc chỉ hiện KHI ĐẦY (đủ thì im lặng — cùng luật với vòng kiểm quyền). Nói cả trần LẪN cách đi tiếp,
         // vì "đã đủ 8" một mình không cho người dùng biết phải làm gì.
-        //
         // Và **trả dòng này về dáng THÔNG TIN** (mực mờ, không nền): dáng CẢNH BÁO chỉ thuộc về cú bấm vừa bị từ chối
         // (xem [notice]). Không trả về thì cái nền hổ phách còn nằm đó sau khi người dùng đã bỏ một mục ra — tức nó
         // nói một điều không còn đúng.
         capHint?.let { v ->
-            v.text = if (selected.size >= MAX) capNote() else ""
+            v.text = if (selected.size >= cap) capNote() else ""
             v.setTextColor(c(KachiTheme.MUT))
             v.background = null
             v.setPadding(0, 0, 0, 0)
@@ -236,7 +295,7 @@ class AppDrawer(
     private fun toggleSelection(id: String) {
         if (id in selected) {
             selected.remove(id)
-        } else if (selected.size >= MAX) {
+        } else if (selected.size >= cap) {
             notice(capNote())
             return
         } else {
@@ -292,23 +351,15 @@ class AppDrawer(
      */
     fun say(msg: String) = notice(msg)
 
-    // ── Widget grid (toggle) ──
-    private fun addWidgetGrid(parent: LinearLayout, cols: Int) {
-        var row: LinearLayout? = null
-        widgets.forEachIndexed { i, def ->
-            if (i % cols == 0) {
-                row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-                parent.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-            }
-            row!!.addView(widgetTile(def), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        }
-        val rem = widgets.size % cols
-        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
-    }
+    // ── Widget grid (toggle) — khe/đồng cao lấy từ [CapabilityTileGrid] như mọi lưới khác (R5) ──
+    private fun addWidgetGrid(parent: LinearLayout, cols: Int) =
+        CapabilityTileGrid.rows(context, parent, widgets.size, cols) { i -> widgetTile(widgets[i]) }
 
     private fun widgetTile(def: WidgetDef): View {
         val tile = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            // Căn NGANG-giữa nhưng DỌC-TRÊN (không CENTER cả hai): ô cao MATCH_PARENT theo hàng, căn giữa dọc làm
+            // icon của ô nhãn ngắn tụt xuống lệch với ô nhãn hai dòng cùng hàng.
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(ImageView(context).apply {
                 val r = KachiTheme.iconRes(def.icon); if (r != 0) { setImageResource(r); setColorFilter(c(KachiTheme.INK)) }
@@ -329,22 +380,14 @@ class AppDrawer(
     private fun refreshTiles() { widgetTiles.keys.forEach { applyTileState(it) } }
 
     // ── Telemetry pick grid (registry-driven; cùng cơ chế chọn với curated) ──
-    private fun addPickGrid(parent: LinearLayout, picks: List<CapabilityPick>, cols: Int) {
-        var row: LinearLayout? = null
-        picks.forEachIndexed { i, pick ->
-            if (i % cols == 0) {
-                row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-                parent.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-            }
-            row!!.addView(pickTile(pick), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        }
-        val rem = picks.size % cols
-        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
-    }
+    private fun addPickGrid(parent: LinearLayout, picks: List<CapabilityPick>, cols: Int) =
+        CapabilityTileGrid.rows(context, parent, picks.size, cols) { i -> pickTile(picks[i]) }
 
     private fun pickTile(pick: CapabilityPick): View {
         val inner = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            // ⚠ [R5] Căn NGANG-giữa nhưng DỌC-TRÊN — cùng luật với lưới trong Cài đặt: ô cao `MATCH_PARENT` theo
+            // hàng, nếu căn giữa dọc thì ô có dòng phụ đẩy icon/nhãn xuống ~10px lệch với ô cùng hàng.
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(iconWithBadge(KachiTheme.iconRes(pick.icon), pick.needsBadge))
             addView(TextView(context).apply {
@@ -397,30 +440,18 @@ class AppDrawer(
         tile.background = if (on) GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_L).toFloat()
             setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))   // tô nền accent mờ + viền accent
-        } else null
+        } else {
+            // ⚠ [R-UI (g)] Ô CHƯA CHỌN cũng có NỀN MỜ, trước đây là `null`.
+            //
+            // [ĐO] soát ảnh pha 2: không nền thì hai ô cạnh nhau "nền liền mạch" — mắt không tách được ranh giới ô,
+            // và cái chấm "chưa kiểm trên xe" ở góc icon không có mặt phẳng nào để thuộc về. Cùng nền `FIELD` mà lưới
+            // trong Cài đặt đã dùng từ pha 1 ⇒ hai bề mặt đọc như một.
+            KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
+        }
         // [KIỂM TOÁN UX mục 5b] Đầy trần ⇒ LÀM MỜ những ô không còn chọn được, để trạng thái "không bấm được nữa"
         // nhìn ra được TRƯỚC khi bấm; toast chỉ là lớp thứ hai cho người đã bấm.
-        tile.alpha = if (on || selected.size < MAX) 1f else DIMMED
+        tile.alpha = if (on || selected.size < cap) 1f else DIMMED
     }
-
-    // ── App grid (single pick) ──
-    private class GridItem(val pkg: String, val label: String, val iconDrawable: Drawable?, val onTap: () -> Unit)
-
-    /** Các app gần đây (theo thứ tự [recentApps]) lọc xuống những app THẬT còn cài — app đã gỡ tự rụng khỏi hàng. */
-    private fun recentItems(all: List<GridItem>): List<GridItem> {
-        if (recentApps.isEmpty()) return emptyList()
-        val byPkg = all.associateBy { it.pkg }
-        // Cùng một app xuất hiện ở CẢ "Gần đây" LẪN "Tất cả" ⇒ phải NHÂN BẢN icon. Một Drawable chỉ giữ ĐÚNG MỘT
-        // callback (`setImageDrawable` gán view làm callback) và một bộ bounds/state; dùng chung cho 2 ImageView thì
-        // view gắn sau chiếm callback ⇒ view trước có thể không vẽ lại / lệch trạng thái.
-        return recentApps.mapNotNull { pkg ->
-            byPkg[pkg]?.let { GridItem(it.pkg, it.label, copyDrawable(it.iconDrawable), it.onTap) }
-        }
-    }
-
-    /** Bản sao độc lập của [d] (chia sẻ constant-state nên rẻ). Không sao chép được → dùng lại bản gốc. */
-    private fun copyDrawable(d: Drawable?): Drawable? =
-        d?.let { runCatching { it.constantState?.newDrawable(resources) }.getOrNull() ?: it }
 
     private fun sectionLabel(text: String) = TextView(context).apply {
         // [SOÁT UI 2026-09-12] Header nhóm TRƯỚC ĐÂY màu MUT2 (mờ) + 12sp ⇒ mờ và nhỏ HƠN chữ nội dung (INK ~14.5sp)
@@ -438,50 +469,18 @@ class AppDrawer(
         setPadding(0, 0, 0, dpi(context, Sp.S))
     }
 
-    private fun loadApps(): List<GridItem> {
-        val pm = context.packageManager
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        return pm.queryIntentActivities(intent, 0)
-            .mapNotNull { ri ->
-                val pkg = ri.activityInfo?.packageName ?: return@mapNotNull null
-                Triple(pkg, ri.loadLabel(pm).toString(), ri.loadIcon(pm))
-            }
-            .distinctBy { it.first }
-            .sortedBy { it.second.lowercase() }
-            .map { (pkg, label, icon) -> GridItem(pkg, label, icon) { onPickApp(pkg) } }
-    }
-
-    private fun addGrid(parent: LinearLayout, items: List<GridItem>, cols: Int) {
-        var row: LinearLayout? = null
-        items.forEachIndexed { i, item ->
-            if (i % cols == 0) {
-                row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-                parent.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-            }
-            row!!.addView(tileView(item), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        }
-        val rem = items.size % cols
-        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
-    }
-
-    private fun tileView(item: GridItem): View =
-        LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
-            setOnClickListener { item.onTap() }
-            addView(ImageView(context).apply {
-                if (item.iconDrawable != null) setImageDrawable(item.iconDrawable)
-                layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_XL), dpi(context, Sp.ICON_XL))
-            })
-            addView(TextView(context).apply {
-                text = item.label; setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
-                gravity = Gravity.CENTER; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-                setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
-            })
-        }
-
     private companion object {
+        /** Trần mục của MỘT Ô GIỮA MÀN (giới hạn hình học của ô) — xem [cap] về vì sao thanh nút xe không dùng nó. */
         const val MAX = 8
+
+        /**
+         * "KHÔNG có trần" — dùng cho [Mode.PICK_DOCK].
+         *
+         * Là một con số (không phải `null`) để mọi phép so `selected.size >= cap` giữ **một** hình dạng duy nhất:
+         * thêm một nhánh `cap == null` là thêm một chỗ nữa có thể quên, đúng họ lỗi "hai bản sao của một luật".
+         */
+        const val NO_CAP = Int.MAX_VALUE
+
         // [SOÁT UI 2026-09-12] MỘT vùng cuộn = MỘT lưới cột, và con số đó do `:core` giữ (màn Cài đặt bày CHÍNH những ô này — xem KDoc [CapabilityPicker.COLS]). Danh sách app khác loại nên có số riêng.
         const val COLS_TILE = CapabilityPicker.COLS
         const val COLS_APP = 6
@@ -489,7 +488,7 @@ class AppDrawer(
         /**
          * Gói giả cho mục widget bên thứ ba.
          *
-         * [GridItem.pkg] chỉ được dùng để tra hàng **"Gần đây"** (`recentItems` khớp theo gói). Widget bên thứ ba
+         * [AppDrawerApps.Item.pkg] chỉ dùng để tra hàng **"Gần đây"** (`recent` khớp theo gói). Widget bên thứ ba
          * không phải app để mở nên không bao giờ vào hàng đó; đưa một giá trị KHÔNG trùng gói thật vào đây để nó
          * không thể tình cờ khớp — dùng tên gói thật sẽ làm mục widget hiện lại ở hàng "Gần đây" như một app.
          */

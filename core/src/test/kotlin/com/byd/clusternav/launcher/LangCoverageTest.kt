@@ -82,11 +82,11 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 7 nhom va 17 muc`() {
-        assertEquals(7, SettingsCatalog.GROUPS.size)
-        // 20 = 16 + mục `display_lang` của U5·T3 (bộ chọn ngôn ngữ) + 3 mục CẢNH của P7/P6
-        // (`home_scenes` · `home_scene_boot` · `home_scene_save`).
-        assertEquals(20, SettingsCatalog.ENTRIES.size)
+    fun `moi muc cai dat co nhan EN — 10 nhom va 56 muc`() {
+        assertEquals(10, SettingsCatalog.GROUPS.size)
+        // 56 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
+        // system 6 thêm · about 1 thêm), trừ mục `clusternav_open` bị thay bằng `system_advanced_screen`.
+        assertEquals(56, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -120,13 +120,13 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 265`() {
+    fun `tong so nhan co ban EN dung 304`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
             LauncherRequirements.ALL
-        // 265 = 262 + 3 mục CẢNH của P7/P6 (danh sách cảnh · cảnh lúc nổ máy · nút lưu cảnh).
-        assertEquals(265, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 304 = 265 + 3 nhóm mới (nav · cast · keys — `bars` bù cho `clusternav` bị bỏ) + 36 mục mới của IA v2.
+        assertEquals(304, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

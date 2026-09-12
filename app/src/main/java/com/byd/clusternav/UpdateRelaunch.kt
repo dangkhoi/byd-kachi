@@ -17,8 +17,14 @@ import android.util.Log
  * is owned by the system and survives our death. It is scheduled while the app is still in the
  * FOREGROUND (the user just tapped "Tải & cài"), so on Android 10 (the DiLink head unit) the
  * "recently foreground" + SYSTEM_ALERT_WINDOW background-activity-start grace lets the alarm's
- * PendingIntent open [MainActivity]. Best-effort on newer Android where BAL is stricter — worst case
- * the user taps the app icon. Cancelled by [cancel] if the install did not actually happen.
+ * PendingIntent open the app's launcher entry. Best-effort on newer Android where BAL is stricter —
+ * worst case the user taps the app icon. Cancelled by [cancel] if the install did not actually happen.
+ *
+ * NOTE (IA v2, 2026-09-13 — docs/specs/kachi-settings-ia-v2.html R1): getLaunchIntentForPackage now
+ * resolves to `launcher.KachiHomeActivity`, not [MainActivity] — CATEGORY_LAUNCHER moved there so the
+ * APK shows a single icon. That is the intended post-OTA landing screen: Kachi IS the app now, and the
+ * old screen is reachable from Settings › System › Advanced. The explicit [MainActivity] fallback below
+ * stays for the (impossible-in-practice) case of no launcher entry at all.
  */
 object UpdateRelaunch {
     private const val TAG = "UpdateRelaunch"

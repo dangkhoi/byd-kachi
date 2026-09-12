@@ -136,11 +136,16 @@ class RebindReceiver : BroadcastReceiver() {
     }
 
     /**
-     * Bring the app to the foreground (Home / MainActivity). Used both on car BOOT_COMPLETED (I5 1.14:
+     * Bring the app to the foreground. Used both on car BOOT_COMPLETED (I5 1.14:
      * auto-open on start, per owner) and after a self-update (MY_PACKAGE_REPLACED). Uses the package's own
      * launcher intent with NEW_TASK; CLEAR_TOP so a stale task isn't stacked. Best-effort: background
      * activity-start needs the SYSTEM_ALERT_WINDOW exemption, so this may be a no-op if the overlay grant is
      * absent — it never throws.
+     *
+     * NOTE (IA v2, 2026-09-13 — docs/specs/kachi-settings-ia-v2.html R1): the launcher intent now resolves to
+     * `launcher.KachiHomeActivity` (CATEGORY_LAUNCHER moved there; one icon per APK), so this opens the Kachi
+     * home screen rather than the old ClusterNav screen. Intended — and it only fires when the
+     * `headless_autostart` toggle is OFF; the default-ON path still starts [BootSetupService] with no UI.
      */
     private fun launchHome(context: Context) {
         runCatching {

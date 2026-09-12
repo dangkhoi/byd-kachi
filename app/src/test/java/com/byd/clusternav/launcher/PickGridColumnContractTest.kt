@@ -30,7 +30,12 @@ import org.junit.jupiter.api.Test
 class PickGridColumnContractTest {
 
     private val drawer by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
-    private val home by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
+    /**
+     * Lưới ô CÒN LẠI của màn Cài đặt sau T4 · R-UI (m): bộ chọn chip thanh trạng thái. Lưới 123 ô đã rời khỏi
+     * Settings (mở bộ chọn của ngăn kéo thay thế) nên `SettingsSectionsHome` không còn lưới nào để canh — nhưng
+     * bộ chọn chip thì có, và nó vừa được đưa qua `CapabilityTileGrid` nên phải nằm trong bài này.
+     */
+    private val home by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/TopStripPicker.kt") }
 
     /** Mọi token truyền vào `cols = …` trong [src] (định danh HOẶC số trần). */
     private fun colsArgs(src: String): List<String> =
@@ -40,7 +45,7 @@ class PickGridColumnContractTest {
 
     @Test
     fun `so cot khong duoc la so tran o ca hai man chon`() {
-        val offenders = listOf("AppDrawer.kt" to drawer, "SettingsSectionsHome.kt" to home)
+        val offenders = listOf("AppDrawer.kt" to drawer, "TopStripPicker.kt" to home)
             .flatMap { (name, src) -> colsArgs(src).filter { it.all(Char::isDigit) }.map { "$name: cols = $it" } }
         assertEquals(
             emptyList<String>(), offenders,

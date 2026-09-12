@@ -133,9 +133,10 @@ class TopStripSurfaceContractTest {
         // Đường THAY THẾ phải còn và phải là đặt-thẳng: bỏ pill mà không có đường khác là mất tính năng.
         assertTrue(vm.contains("fun setDockEdge("), "phải còn đường đặt THẲNG một viền")
         assertTrue(
-            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt")
+            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt")
                 .contains("deps.onDockEdge("),
-            "và Cài đặt → Màn hình chính phải bày nó ra (không thì bỏ pill là mất chức năng)",
+            "và Cài đặt → Thanh trạng thái & thanh nút phải bày nó ra (T4 · R-UI a tách khỏi Màn hình chính; " +
+                "không bày ra thì bỏ pill là mất chức năng)",
         )
     }
 

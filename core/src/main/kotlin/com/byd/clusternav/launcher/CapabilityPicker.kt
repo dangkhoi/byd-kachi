@@ -23,7 +23,8 @@ package com.byd.clusternav.launcher
  * Cả hai màn chọn giữ **bảng tra `mã khả năng → view`** để tô ô đang bật (`AppDrawer.widgetTiles`,
  * `CapabilityGridSection.tiles`). Bày nhóm ở mục riêng RỒI vẫn để nó nằm trong lĩnh vực nghĩa là **cùng một mã có
  * hai ô** ⇒ `tiles[id]` bị ghi đè ⇒ chỉ ô sau được tô, ô trước nói sai cấu hình. Đó đúng ba lỗi cùng lúc mà RW0 đã
- * ghi lại (xem KDoc [CapabilityGridSection] nếu đọc từ `:app`). Vì thế lọc nhóm khỏi lĩnh vực là **bắt buộc**, và
+ * ghi lại (lỗi RW0; lưới cũ `CapabilityGridSection` nay đã xoá, bẫy còn nguyên ở `AppDrawer`). Vì thế lọc nhóm
+ * khỏi lĩnh vực là **bắt buộc**, và
  * có test canh cả hai màn đều gọi hàm này.
  *
  * Lọc ở đây KHÔNG xoá mục rời nào (§4.2 + OQ2): 123 datum · 64 nút · 9 widget · 4 gói lệnh còn nguyên, chỉ 12 mã

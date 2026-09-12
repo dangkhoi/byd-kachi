@@ -19,6 +19,16 @@ object BadgeLayout {
     const val SIZE_MAX_DP = 240
     const val SIZE_DEFAULT_DP = 120
 
+    /**
+     * Step between the sizes a user can actually pick — 10 notches over [SIZE_MIN_DP]..[SIZE_MAX_DP].
+     *
+     * Lives here, next to the bounds it must divide, rather than in the settings layer: a step declared apart
+     * from its bounds drifts the moment either side is widened, and the picker then offers a notch that
+     * [clampSizeDp] silently pulls back — a tap with no effect, the quietest kind of breakage. `:core` is also
+     * the only place this is checkable off-car, which is why the bounds already live here (see the class KDoc).
+     */
+    const val SIZE_STEP_DP = 20
+
     /** Clamp a badge size (dp) into [SIZE_MIN_DP]..[SIZE_MAX_DP]. Applied on both read and write in Prefs. */
     fun clampSizeDp(sizeDp: Int): Int = sizeDp.coerceIn(SIZE_MIN_DP, SIZE_MAX_DP)
 

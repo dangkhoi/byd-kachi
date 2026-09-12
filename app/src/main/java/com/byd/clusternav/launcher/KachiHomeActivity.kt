@@ -2,7 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.util.Log
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,7 +19,6 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.AppContainer
-import com.byd.clusternav.MainActivity
 import kotlinx.coroutines.launch
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -51,36 +49,29 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private lateinit var windows: LauncherWindows
     private lateinit var topStrip: KachiTopStrip
 
-    /** Hai bảng phủ toàn màn (màn Cài đặt + bảng vẽ bố cục) — xem [HomePanels]. */
+    /** Cầu sang cấu hình/hành động của ClusterNav (IA v2 · §4.2) — dựng MỘT lần, xem [clusterNavBridge]. */
+    private val bridge: ClusterNavBridge by lazy { clusterNavBridge() }
+
+    /** Hai bảng phủ toàn màn (màn Cài đặt + bảng vẽ bố cục) — khối nối dây ở [homePanels] (trần 500 dòng). */
     private val panels: HomePanels by lazy {
-        HomePanels(
-            activity = this,
-            rootFrame = rootFrame,
-            state = { viewModel.uiState.value },
-            onToggleDock = { id, on -> viewModel.toggleDock(id, on) },
+        homePanels(
+            activity = this, rootFrame = rootFrame, viewModel = viewModel, bridge = bridge,
+            scenes = sceneController, openDockPicker = { sel, apply -> drawerController.openDockPicker(sel, apply) },
             onApplyLayout = { l -> applyCustomLayout(l) },
             onPreset = { p -> selectPreset(p) },          // CÙNG đường với 5 nút bố cục ở thanh trên (§4.5)
-            onDockEdge = { e -> viewModel.setDockEdge(e) },
-            onTopStrip = { id, on -> viewModel.toggleTopStrip(id, on) },
-            onWallpaper = { p ->
+            onWallpaperChanged = { p ->
                 viewModel.setWallpaperPrefs(p); wallpaper.reload()   // state + lưu bền; reload đọc lại từ state
             },
-            onUnitPrefs = { prefs ->
+            onUnitsChanged = { prefs ->
                 viewModel.setUnitPrefs(prefs)      // state + lưu bền trong MỘT lượt
                 dock.setCarStatus(viewModel.uiState.value.carStatus, prefs)
                 workspace.setUnitPrefs(prefs)
                 topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs, viewModel.uiState.value.topStrip)
             },
-            onThemeMode = { m -> viewModel.setThemeMode(m) },   // T1 — intent có sẵn từ S1; đọc-để-vẽ ở [ThemeHost]
-            onLangMode = { m -> viewModel.setLangMode(m) },     // U5·T3 — đọc-để-vẽ ở [LangHost.wrap]
-            onAutostart = { on -> viewModel.setAutostart(on) },
-            onSwitchProfile = { name -> viewModel.switchProfile(name) },
             onAddProfile = { profileBar.addDialog() },    // dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai
-            onDeleteProfile = { name -> viewModel.deleteProfile(name) },
-            onOpenClusterNav = { startActivity(Intent(this, MainActivity::class.java)) },
-            scenes = sceneController,                     // P7/P6 — lưu/gọi/nổ-máy/đổi-tên/xoá cảnh
             shellUsable = { shell != null },
             goImmersive = { goImmersive() },
+            onPanelsChanged = { windows.updateOverlayHeads() },   // nút ⇄ nổi ẩn khi Cài đặt/bảng vẽ mở
         )
     }
 
@@ -187,9 +178,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         windows = LauncherWindows(
             this, workspace, winExec,
             state = { viewModel.uiState.value },
-            custom = { customLayout }, embedding = { embedding }, drawerOpen = { drawerController.isOpen() },
+            custom = { customLayout }, embedding = { embedding }, drawerOpen = { drawerController.isOpen() || panels.settingsOpen() || panels.layoutOpen() },
             shell = { shell }, appLauncher = { appLauncher }, dispatcher = { container.windowDispatcher },
-            onSlotSwap = { drawerController.open(it) }, onSlotClose = { clearSlot(it) },
+            onSlotSwap = { drawerController.open(it) },
         )
         dock = ControlDockView(this).apply { control = container.carControl }
 

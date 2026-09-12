@@ -35,13 +35,37 @@ class PickerCapNoticeContractTest {
     @Test
     fun `tran o khong duoc chan im lang`() {
         assertFalse(
-            Regex("""else if \(selected\.size < MAX\)""").containsMatchIn(drawer),
+            Regex("""else if \(selected\.size < (MAX|cap)\)""").containsMatchIn(drawer),
             "nhánh 'quá trần thì thôi' không có else = bỏ qua IM LẶNG. Đi qua toggleSelection() để có câu nói.",
         )
         val fn = SourceRoots.body(drawer, "private fun toggleSelection(")
         assertTrue(fn.contains("notice("), "quá trần phải NÓI ra cho người vừa bấm")
         assertTrue(fn.contains("capNote()"), "và nói bằng đúng một câu dùng chung (không viết hai bản chữ)")
         assertTrue(fn.contains("return"), "và KHÔNG âm thầm đi tiếp như thể đã thêm")
+    }
+
+    /**
+     * ⚠ T6 — TRẦN LÀ **CỦA MỘT CHẾ ĐỘ**, KHÔNG PHẢI MỘT HẰNG TOÀN CỤC.
+     *
+     * Ngăn kéo nay có chế độ thứ ba (chọn nút cho **thanh nút xe**, R-UI (m)) và thanh nút **không có trần**:
+     * `DockConfig.enabled` là `List<String>` dài tuỳ ý, mặc định đã 8 mục. Nếu bảng vẫn dùng thẳng hằng `MAX` = 8
+     * thì mở bộ chọn cho một cấu hình 10 nút sẽ **cắt mất 2 nút mà không nói gì** — đúng bệnh mà cả tệp test này
+     * sinh ra để chống, chỉ đi vào bằng cửa khác (`initialWidgets.take(...)`).
+     *
+     * Nên các bài dưới hỏi `cap` (trần **của bảng đang mở**) thay cho `MAX`; bài này chốt rằng `cap` vẫn **bắt
+     * nguồn từ** `MAX` cho hai chế độ gán-ô, để không ai lặng lẽ nới trần ô giữa màn bằng cách sửa một dòng.
+     */
+    @Test
+    fun `tran la cua che do, va che do gan o van lay tu MAX`() {
+        assertTrue(
+            Regex("""val cap: Int = if \(mode == Mode\.PICK_DOCK\) NO_CAP else MAX""").containsMatchIn(drawer),
+            "trần phải tính theo CHẾ ĐỘ: thanh nút xe không trần, ô giữa màn vẫn đúng MAX",
+        )
+        assertTrue(
+            Regex("""initialWidgets\.take\(cap\)""").containsMatchIn(drawer),
+            "tập chọn sẵn phải cắt theo `cap`, không theo MAX — cắt theo MAX là bỏ im lặng nút thứ 9 của thanh",
+        )
+        assertTrue(drawer.contains("const val NO_CAP = Int.MAX_VALUE"), "\"không trần\" phải là một con số có tên")
     }
 
     /**
@@ -130,7 +154,8 @@ class PickerCapNoticeContractTest {
     fun `o het cho phai mo di truoc khi bam`() {
         val fn = SourceRoots.body(drawer, "private fun applyTileState(")
         assertTrue(fn.contains("alpha"), "ô không còn chọn được phải mờ đi")
-        assertTrue(fn.contains("selected.size < MAX"), "và điều kiện mờ phải là chính cái trần")
+        // `cap` = trần của CHẾ ĐỘ đang mở (xem bài `tran la cua che do...`), không phải hằng MAX.
+        assertTrue(fn.contains("selected.size < cap"), "và điều kiện mờ phải là chính cái trần")
     }
 
     /**

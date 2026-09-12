@@ -25,7 +25,9 @@ class Goi2FeatureWiringContractTest {
     private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
 
     /** Nhóm "Màn hình chính" — lưới khả năng nằm ở đây (tách vì trần 500 dòng). */
-    private val panelHome by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
+    private val car by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCar.kt") }
+    private val bridgeKt by lazy { code("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt") }
+    private val drawerKt by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
 
     /** Dòng chọn đơn vị — chuyển sang bộ dựng dòng dùng chung (S1·T2). */
     private val rows by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsRows.kt") }
@@ -163,9 +165,10 @@ class Goi2FeatureWiringContractTest {
 
     @Test
     fun `o tick nam o be mat dung bang code va co canh bao chua kiem tren xe`() {
-        assertTrue(panel.contains("recircRow("), "ô tick phải nằm trong màn Cài đặt (dựng bằng code)")
+        // T4: ô tick chuyển sang [SettingsCarSection] cùng lúc nhóm "Tiện nghi xe" nhận thêm ghế + lọc bụi mịn.
+        assertTrue(car.contains("R.string.kachi_recirc_title"), "ô tick phải nằm trong màn Cài đặt (dựng bằng code)")
         // U5·T3 — chữ dời sang tài nguyên; kiểm cả dây nối lẫn nội dung (xem [res]).
-        assertTrue(panel.contains("R.string.kachi_recirc_sub"), "dòng phụ của ô tick phải là chuỗi cảnh báo đó")
+        assertTrue(car.contains("R.string.kachi_recirc_sub"), "dòng phụ của ô tick phải là chuỗi cảnh báo đó")
         assertTrue(
             res("kachi_recirc_sub").contains("chưa kiểm trên xe"),
             "PHẢI có chú thích chưa-kiểm cạnh ô tick (R10) — lệnh lấy gió chưa xác nhận trên xe owner",
@@ -174,10 +177,16 @@ class Goi2FeatureWiringContractTest {
 
     @Test
     fun `bat thi ap ngay tat thi chi dat lai co`() {
-        val block = SourceRoots.body(panels, "onRecircOnStart")
-        assertTrue(block.contains("setRecircOnStartEnabled"), "phải lưu bền lựa chọn")
-        assertTrue(block.contains("if (on)") && block.contains("applyNowAsync"),
+        // T4: hành vi chuyển NGUYÊN từ `HomePanels.onRecircOnStart` sang [SettingsCarSection.recirc]; cả đường GHI
+        // (`bridge.setRecircOnStart` → `Prefs.setRecircOnStartEnabled`) lẫn đường ÁP NGAY (`bridge.applyRecircNow` →
+        // `RecircApplier.applyNowAsync`) đều đi qua cầu (IA v2 · N2, 2026-09-13: 0 ngoại lệ).
+        val block = SourceRoots.body(car, "private fun recirc(")
+        assertTrue(block.contains("setRecircOnStart("), "phải lưu bền lựa chọn")
+        assertTrue(bridgeKt.contains("fun setRecircOnStart("), "và đường lưu bền phải nằm ở CẦU, không ở section")
+        assertTrue(block.contains("if (on)") && block.contains("applyRecircNow"),
             "bật thì áp NGAY, không chờ lần nổ máy sau")
+        assertTrue(bridgeKt.contains("fun applyRecircNow()") && bridgeKt.contains("RecircApplier.applyNowAsync(app)"),
+            "đường áp ngay nằm ở CẦU và gọi đúng RecircApplier.applyNowAsync")
         assertFalse(block.contains("toggle(\"recirc\", false)"),
             "tắt ô tick KHÔNG được tắt chế độ đang bật trên xe")
     }
@@ -204,7 +213,10 @@ class Goi2FeatureWiringContractTest {
 
     @Test
     fun `doi don vi thi luu ben va ap lai ngay cho ca hai vung`() {
-        val block = SourceRoots.body(activity, "onUnitPrefs =")
+        // T4: khối nối dây HomePanels chuyển sang `KachiHomeWiring.homePanels(...)` để Activity về ≤ 500 dòng;
+        // lambda "đổi đơn vị" vẫn ở Activity (nó chạm `dock`/`workspace`/`topStrip` — thứ chỉ Activity giữ) nhưng
+        // đổi tên tham số thành `onUnitsChanged`.
+        val block = SourceRoots.body(activity, "onUnitsChanged =")
         assertTrue(block.contains("setUnitPrefs("), "phải lưu bền")
         assertTrue(block.contains("dock.setCarStatus("), "thanh nút phải cập nhật ngay")
         assertTrue(block.contains("workspace.setUnitPrefs("), "ô giữa màn phải cập nhật ngay")
@@ -214,12 +226,16 @@ class Goi2FeatureWiringContractTest {
 
     @Test
     fun `bang chon bay CA hai loai kha nang`() {
+        // T4 · IA v2 R-UI (m): lưới 123 ô đã RỜI khỏi màn Cài đặt — nhóm "Thanh trạng thái & thanh nút" nay
+        // mở CHÍNH bộ chọn của ngăn kéo (`AppDrawer.Mode.PICK_DOCK`). Một bộ chọn, một nguồn ⇒ phép so "hai
+        // màn phải giống nhau" không còn đối tượng, và `CapabilityGridSection` đã bị xoá.
+        // Tính chất "bày CẢ ĐỌC lẫn HÀNH ĐỘNG" vì thế phải canh ở **ngăn kéo** — bề mặt duy nhất còn dựng lưới đó.
         assertTrue(
-            panelHome.contains("CapabilityCatalog.byDomain()"),
+            drawerKt.contains("CapabilityCatalog.byDomain()"),
             "bảng chọn phải bày cả ĐỌC lẫn HÀNH ĐỘNG — nếu chỉ bày nút thì người dùng không có đường thêm ô đọc " +
                 "vào thanh, và việc nới cổng ở DockConfig thành vô nghĩa",
         )
-        assertFalse(panelHome.contains("ControlPanels.byDomain()"), "không còn dùng danh sách chỉ-có-nút")
+        assertFalse(drawerKt.contains("ControlPanels.byDomain()"), "không còn dùng danh sách chỉ-có-nút")
     }
 
     /**

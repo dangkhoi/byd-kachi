@@ -40,9 +40,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     /**
      * T4 — tên nhà cung cấp của một ô widget bên thứ ba, dùng cho thẻ *"widget không còn"* ([deadWidgetCard]).
      *
-     * ⚠ **KHÔNG** phải nhãn hiện ở dải đầu ô: [slotHead] hiện chỉ vẽ nút ⇄ và **bỏ qua** tham số tên của nó (nhãn +
-     * nút ✕ nay do [OverlayHeads] dựng ở một cửa sổ riêng). Ghi rõ ở đây vì lời hứa "tên hiện ở dải đầu ô" là thứ
-     * người đọc sau sẽ tin mà không mở [slotHead] ra xem — và trên máy ảo thì dải đó [ĐO] chỉ có đúng một nút ⇄.
+     * ⚠ **KHÔNG** phải nhãn hiện ở dải đầu ô: [slotHead] chỉ vẽ nút ⇄ ([SlotSwapButton]) và **không nhận** tên
+     * nữa; [OverlayHeads] (đường freeform) cũng chỉ vẽ đúng nút đó. Không còn nhãn/✕ ở dải đầu ô trên bất kỳ
+     * đường nào (owner 2026-09-12/13).
      */
     var appWidgetName: ((SlotContent.AppWidget) -> String)? = null
     // UDF: trạng thái xe LIVE đến từ HomeUiState.carStatus (KHÔNG đọc port trong view). Off-car mọi field null ⇒ "—".
@@ -255,7 +255,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 // render MATCH_PARENT còn nút chỉ nổi trên. Nay hai loại ô đồng nhất: nút nổi, khung giữ nguyên cỡ.
                 fl.addView(body, mm)
                 val first = content.ids.firstOrNull() ?: ""
-                fl.addView(slotHead(index, widgetName(first), widgetAccent(first)), headLp())
+                fl.addView(slotHead(index), headLp())
                 fl.setOnClickListener { onSlotTap?.invoke(index) }
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
@@ -287,7 +287,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                     fl.addView(deadWidgetCard(content), mm)
                     fl.setOnClickListener { onSlotTap?.invoke(index) }
                 }
-                fl.addView(slotHead(index, appWidgetName?.invoke(content) ?: "", KachiTheme.ACCENT), headLp())
+                fl.addView(slotHead(index), headLp())
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
             is SlotContent.App -> {
@@ -300,7 +300,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                     val host = SlotAppHost(context, dp(Sp.RADIUS_L).toFloat())
                     if (host.available()) { fl.addView(host, mm); host.embed(content.pkg) }   // ROM xe (platform-signed): ActivityView, không lag/caption
                 }
-                fl.addView(slotHead(index, appName(content.pkg), KachiTheme.ACCENT), headLp())   // ⇄/✕ đè lên trên cùng
+                fl.addView(slotHead(index), headLp())                                             // ⇄ nổi đè lên trên cùng
                 fl.setOnClickListener { onAppOpen?.invoke(index) }
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
@@ -345,42 +345,20 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         FrameLayout.LayoutParams.MATCH_PARENT, dp(Sp.SLOT_HEAD_CLEAR), Gravity.TOP,
     )
 
-    private fun appName(pkg: String): String = runCatching {
-        val pm = context.packageManager; pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-    }.getOrDefault(pkg)
-
-    private fun widgetName(id: String): String = WidgetRegistry.ALL.firstOrNull { it.id == id }?.displayLabel ?: id
-
-    /** Header ô — owner: CHỈ 1 nút đổi app, canh GIỮA trên cùng, KHÔNG thanh nền, KHÔNG nút ✕. */
-    private fun slotHead(index: Int, name: String, dotColor: String): View {
-        val wrap = FrameLayout(context)   // trong suốt, không nền
-        val btn = ImageView(context).apply {
-            val r = KachiTheme.iconRes("ic-swap"); if (r != 0) { setImageResource(r); setColorFilter(Color.parseColor(KachiTheme.ON_ACCENT)) }
-            setPadding(dp(Sp.S), dp(Sp.S), dp(Sp.S), dp(Sp.S))
-            // scrim tròn mờ RẤT nhẹ chỉ để icon còn thấy trên app nền sáng (không phải thanh nền)
-            // ⚠ [SOÁT UI 2026-09-12] Scrim tròn + VIỀN sáng mảnh: scrim đen một mình tan vào ô widget nền tối
-            // ([ĐO] verify: nút chỉ rõ 1/3 ô). Viền [ON_ACCENT] mảnh cho nút nổi rõ trên MỌI nền (app sáng lẫn ô tối)
-            // mà vẫn kín đáo (nút hiếm dùng). Vẫn không theo chủ đề — nó nằm trên pixel của app đang chiếu.
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL; setColor(Color.parseColor(KachiTheme.SCRIM_BTN))
-                setStroke(dp(Sp.HAIRLINE), Color.parseColor(KachiTheme.ON_ACCENT))
-            }
-            setOnClickListener { onSlotTap?.invoke(index) }
-        }
-        wrap.addView(
-            btn,
-            FrameLayout.LayoutParams(dp(Sp.ICON_L), dp(Sp.ICON_L), Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-                .also { it.topMargin = dp(Sp.XS) },
-        )
-        return wrap
-    }
-
-    /** Màu chấm slot-head theo widget (khớp accent của widget); app dùng accent xanh. */
-    private fun widgetAccent(id: String): String = when (id) {
-        "w_energy" -> KachiTheme.GREEN; "w_pm25" -> KachiTheme.CYAN; "w_board" -> KachiTheme.ACCENT2
-        "w_media" -> KachiTheme.ORANGE; "w_speed" -> KachiTheme.RED; "w_tire" -> KachiTheme.SLATE
-        else -> KachiTheme.ACCENT
-    }
+    /**
+     * Header ô — owner: CHỈ 1 nút đổi app, canh GIỮA trên cùng, KHÔNG thanh nền, KHÔNG nút ✕.
+     *
+     * Hình + hình học ở [SlotSwapButton] — dùng CHUNG với [OverlayHeads] (đường freeform) để hai đường không lệch nhau
+     * ("lúc 1 icon lúc 2 icon", 2026-09-13).
+     *
+     * ⚠ [SOÁT SENIOR 2026-09-13] Hai tham số `name`/`dotColor` đã **BỎ**, cùng ba hàm chỉ sống để nuôi chúng
+     * (`appName` · `widgetName` · `widgetAccent`). Bản trước giữ chữ ký "cho chỗ gọi khỏi đổi" và đánh dấu
+     * `@Suppress("UNUSED_PARAMETER")` — nhưng chỗ gọi vẫn phải TÍNH hai giá trị đó mỗi lượt `render()`, và
+     * `appName` là một lượt `getApplicationInfo` + `getApplicationLabel` của `PackageManager` **cho mỗi ô App**
+     * để rồi vứt đi. Đúng lối dọn mà chính tệp này vừa làm với `headBtnLp()`/`headBtn()` ở T5 (CLAUDE.md §8).
+     */
+    private fun slotHead(index: Int): View =
+        SlotSwapButton.centered(context) { onSlotTap?.invoke(index) }
 
     // ⚠ T5 đã XOÁ `headBtnLp()` + `headBtn()` ở đây: [ĐO] chúng chỉ được KHAI, không chỗ nào gọi (thanh đầu ô
     // nay do [OverlayHeads] dựng, và ô widget chỉ có một nút ⇄ trong [slotHead]). Giữ lại thì T5 phải quyết cỡ
