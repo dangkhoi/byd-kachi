@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import com.byd.clusternav.R
@@ -71,7 +72,10 @@ class SettingsHomeSection(
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_row_preset),
             LayoutPreset.values().map { it.name to it.label },
-            s.preset.name,
+            // ⚠ [SOÁT UI 2026-09-12] Đang dùng bố cục TỰ VẼ thì KHÔNG pill bố-cục-sẵn nào được sáng: trước đây vẫn
+            // sáng "1 ô" (giá trị preset mặc định) trong khi dòng trên nói "đang dùng bố cục tự vẽ: N khung" ⇒ hai
+            // câu trên cùng màn đá nhau. Truyền mã KHÔNG khớp ("") ⇒ 0 pill sáng; chạm một preset vẫn sáng bình thường.
+            if (s.customLayout != null) "" else s.preset.name,
         ) { code ->
             LayoutPreset.values().firstOrNull { it.name == code }?.let { deps.onPreset(it) }
             // ⚠ [SOÁT S1 · P2] Chọn bố cục sẵn = **BỎ bố cục tự vẽ** (`KachiHomeActivity.selectPreset`), nên dòng
@@ -105,32 +109,40 @@ class SettingsHomeSection(
     private fun wallpaper(body: LinearLayout) {
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_wallpaper)))
         var wp = deps.state().wallpaper
+        // ⚠ [SOÁT UI 2026-09-12] Ba dãy pill dưới (chu kỳ · cách phủ · làm tối) CHỈ có nghĩa khi hình nền đang BẬT.
+        // Trước đây chúng luôn hiện đầy đủ + bấm được kể cả khi công tắc TẮT ⇒ 12 pill "chết" (bấm không đổi gì thấy
+        // được) — đúng luật cấm nút-chết của dự án. Nay ẩn hẳn khi tắt, hiện lại khi bật (đổi ngay, không mở lại trang).
+        val dependents = ArrayList<View>()
+        fun gate(on: Boolean) { val v = if (on) View.VISIBLE else View.GONE; dependents.forEach { it.visibility = v } }
         body.addView(rows.checkRow(
             on = wp.enabled,
             title = context.getString(R.string.kachi_wall_title),
             sub = if (deps.wallpaperFolderHint.isEmpty()) context.getString(R.string.kachi_wall_sub_nofolder)
             else context.getString(R.string.kachi_wall_sub_folder, deps.wallpaperFolderHint),
-        ) { on -> wp = wp.copy(enabled = on); deps.onWallpaper(wp) })
-        body.addView(rows.chipRow(
+        ) { on -> wp = wp.copy(enabled = on); deps.onWallpaper(wp); gate(on) })
+        val period = rows.chipRow(
             context.getString(R.string.kachi_wall_period),
             Slideshow.INTERVAL_CHOICES_SEC.map { it.toString() to Slideshow.intervalLabel(it) },
             wp.intervalSec.toString(),
         ) { code ->
             wp = wp.copy(intervalSec = code.toIntOrNull() ?: Slideshow.DEFAULT_INTERVAL_SEC)
             deps.onWallpaper(wp)
-        })
-        body.addView(rows.chipRow(context.getString(R.string.kachi_wall_fit), ImageFit.values().map { it.name to it.label }, wp.fit.name) { code ->
+        }
+        val fit = rows.chipRow(context.getString(R.string.kachi_wall_fit), ImageFit.values().map { it.name to it.label }, wp.fit.name) { code ->
             wp = wp.copy(fit = ImageFit.values().firstOrNull { it.name == code } ?: ImageFit.FILL)
             deps.onWallpaper(wp)
-        })
-        body.addView(rows.chipRow(
+        }
+        val dim = rows.chipRow(
             context.getString(R.string.kachi_wall_dim),
             listOf(0, 25, 45, 65).map { it.toString() to "$it%" },
             wp.dim.toString(),
         ) { code ->
             wp = wp.copy(dimPercent = code.toIntOrNull() ?: WallpaperPrefs.DEFAULT_DIM_PERCENT)
             deps.onWallpaper(wp)
-        })
+        }
+        dependents += period; dependents += fit; dependents += dim
+        body.addView(period); body.addView(fit); body.addView(dim)
+        gate(wp.enabled)
     }
 
     // ── Thanh nút xe ─────────────────────────────────────────────────────────────────────────────
@@ -167,7 +179,7 @@ class SettingsHomeSection(
             // `tiles[id]` bị ghi đè ⇒ chỉ ô sau được tô (đúng ba lỗi cùng lúc mà RW0 đã ghi ở KDoc lớp lưới).
             body.addView(rows.sectionLabel(domain.displayLabel))
             CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(rows.note(it)) }
-            grid.addGrid(body, CapabilityPicker.singlesOf(picks), cols = 5)
+            grid.addGrid(body, CapabilityPicker.singlesOf(picks), cols = 4)
         }
     }
 

@@ -128,7 +128,11 @@ class TopStripPicker(
     }
 
     private fun label(text: String) = TextView(context).apply {
-        this.text = text; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+        // [SOÁT UI 2026-09-12] Đây là tiêu đề nhóm DUY NHẤT của bộ chọn chip; trước dùng MUT2 (mờ) + 12sp nên nó
+        // mờ hơn cả body ngay dưới — lệch hẳn với các tiêu đề nhóm khác trong CÙNG bảng Cài đặt (đã đổi sang INK
+        // đậm). Đồng bộ: INK sáng + đậm + thưa chữ.
+        this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
         letterSpacing = 0.06f; setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.S))
     }
 

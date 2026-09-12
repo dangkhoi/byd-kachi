@@ -88,12 +88,15 @@ class AppDrawer(
             // ── NHÓM — thứ người dùng gặp TRƯỚC (G1 · T4 · §4.2) ──
             body.addView(sectionLabel(CapabilityPicker.GROUPS_TITLE))
             body.addView(note(CapabilityPicker.GROUPS_NOTE))
-            // 3 cột (không 4): ô nhóm có thêm DÒNG PHỤ nói nó gồm gì, cần chỗ cho chữ. Số cột do tôi chọn.
-            addPickGrid(body, CapabilityPicker.groupPicks(), cols = 3)
+            // ⚠ [SOÁT UI 2026-09-12] Nhóm dùng **4 cột như mọi phần ô-khả-năng bên dưới** (widget/mục lẻ/widget app
+            // khác đều 4). Trước đây Nhóm để 3 cột "cho dòng phụ rộng" — nhưng nó nằm NGAY TRÊN các phần 4 cột trong
+            // CÙNG một vùng cuộn, nên cuộn xuống thì tâm cột nhảy 3→4 = "lệch loạn" (owner báo). Một vùng cuộn phải
+            // có MỘT lưới cột. Dòng phụ ở 4 cột vẫn đủ chỗ (xuống 2 dòng + cắt "…").
+            addPickGrid(body, CapabilityPicker.groupPicks(), cols = COLS_TILE)
 
             // ── Widget dựng tay (chọn nhiều) ──
             body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_widgets)).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
-            addWidgetGrid(body, cols = 4)
+            addWidgetGrid(body, cols = COLS_TILE)
 
             // ── Dữ liệu + HÀNH ĐỘNG của xe, gom theo lĩnh vực — thêm vào ô ──
             // [SOÁT RW0 2026-09-11] Chỗ này TRƯỚC ĐÂY chỉ bày `WidgetCatalog.telemetryByDomain()` = **duy nhất mục
@@ -108,7 +111,7 @@ class AppDrawer(
                 // ⇒ `widgetTiles[id]` bị ghi đè ⇒ chỉ ô sau được tô sáng (đúng lỗi RW0 đã ghi).
                 body.addView(sectionLabel(domain.displayLabel).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
                 CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(note(it)) }
-                addPickGrid(body, CapabilityPicker.singlesOf(picks), cols = 4)
+                addPickGrid(body, CapabilityPicker.singlesOf(picks), cols = COLS_TILE)
             }
 
             // ── Widget của APP KHÁC (T4) — đặt SAU nhóm/thẻ dựng tay và các mục lẻ, TRƯỚC danh sách app ──
@@ -124,22 +127,22 @@ class AppDrawer(
                 body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets_none)))
             } else {
                 body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets)))
-                addGrid(body, appWidgetPicks.map { p -> GridItem(APPWIDGET_PKG, p.title, p.icon, p.onTap) }, cols = 4)
+                addGrid(body, appWidgetPicks.map { p -> GridItem(APPWIDGET_PKG, p.title, p.icon, p.onTap) }, cols = COLS_TILE)
             }
 
             // ── App (chạm đặt vào ô) ──
             body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
-            addGrid(body, loadApps(), cols = 6)
+            addGrid(body, loadApps(), cols = COLS_APP)
         } else {
             // ── Chế độ MỞ THƯỜNG: gần đây trước, rồi tất cả ──
             val all = loadApps()
             val recent = recentItems(all)
             if (recent.isNotEmpty()) {
                 body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_recent)))
-                addGrid(body, recent, cols = 6)
+                addGrid(body, recent, cols = COLS_APP)
                 body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_all_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
             }
-            addGrid(body, all, cols = 6)
+            addGrid(body, all, cols = COLS_APP)
         }
 
         panel.addView(
@@ -421,8 +424,10 @@ class AppDrawer(
         d?.let { runCatching { it.constantState?.newDrawable(resources) }.getOrNull() ?: it }
 
     private fun sectionLabel(text: String) = TextView(context).apply {
-        this.text = text; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-        letterSpacing = 0.06f; setPadding(0, 0, 0, dpi(context, Sp.S))
+        // [SOÁT UI 2026-09-12] Header nhóm TRƯỚC ĐÂY màu MUT2 (mờ) + 12sp ⇒ mờ và nhỏ HƠN chữ nội dung (INK ~14.5sp)
+        // nên không ra "đầu mục", các phần dồn thành một dải. Header phải NỔI hơn body: màu INK sáng + đậm + thưa chữ.
+        this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.06f; setPadding(0, 0, 0, dpi(context, Sp.S))
     }
 
     /** Câu phụ dưới tiêu đề mục — cùng khuôn với câu mô tả ở đầu bảng, không phải cỡ chữ mới. */
@@ -475,6 +480,9 @@ class AppDrawer(
 
     private companion object {
         const val MAX = 8
+        // [SOÁT UI 2026-09-12] MỘT vùng cuộn = MỘT lưới cột. Mọi ô khả năng/widget dùng COLS_TILE; danh sách app (icon nhỏ, loại khác) dùng COLS_APP.
+        const val COLS_TILE = 4
+        const val COLS_APP = 6
 
         /**
          * Gói giả cho mục widget bên thứ ba.

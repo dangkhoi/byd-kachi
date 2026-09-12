@@ -107,8 +107,6 @@
     <string name="kachi_profile_active">In use</string>
     <string name="kachi_profile_tap_switch">Tap to switch to this profile</string>
     <string name="kachi_delete">Delete</string>
-    <string name="kachi_profile_keep_one">At least one profile must remain</string>
-    <string name="kachi_profile_in_use">"%1$s" is in use — switch to another profile before deleting it</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
     <string name="kachi_sec_comfort">Automatic comfort</string>

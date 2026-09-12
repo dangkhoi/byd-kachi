@@ -295,7 +295,17 @@ class ControlTileFactory(
             setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp - 2f)
             gravity = Gravity.CENTER; maxLines = 1; visibility = View.GONE
         }
-        content.addView(label); content.addView(value); content.addView(unit)
+        content.addView(label)
+        // ⚠ [SOÁT UI 2026-09-12] Giá trị + đơn vị trên MỘT hàng ngang (trước đây đơn vị là dòng RIÊNG dưới giá trị).
+        // Ở ô THẤP của thanh nút (vd "Mức xăng"), ba dòng dọc (nhãn tối đa 2 dòng + giá trị + đơn vị) tràn khỏi ô ⇒
+        // đơn vị "%" bị CẮT ở đáy và trông lạc lõng, trong khi ô kế bên KHÔNG có nút −/+ nên ô này nhìn như hỏng.
+        // Gộp một hàng vừa hết cắt vừa đọc "— %" thành một cụm. Giữ 2 TextView riêng để [ReadTile.bind] không đổi.
+        content.addView(LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            addView(value)
+            addView(unit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .also { it.marginStart = dpi(ctx, Sp.XS) })
+        })
         val outer = if (pick.needsBadge) withBadge(content) else content
         return ReadTile(outer, content, value, unit)
     }

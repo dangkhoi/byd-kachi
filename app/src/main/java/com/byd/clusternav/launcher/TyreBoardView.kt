@@ -138,7 +138,11 @@ class TyreBoardView(context: Context) : View(context) {
         // vị trí vẫn ra mực **cao 28px** trong khi giá trị off-car chỉ là dấu gạch dày 11px — tức thứ bậc VẪN đảo
         // đúng như kiểm toán đo được ở bản trước. Hạ về 0.042 (31px) cho nó đọc ra là một chú thích.
         subP.textSize = m * 0.042f
-        midP.textSize = m * 0.072f
+        // ⚠ [SOÁT UI 2026-09-12] Dòng KẾT LUẬN (verdict) — gồm câu no-data "chưa đọc được áp suất · nhiệt chưa kiểm"
+        // off-car — có TRẦN tuyệt đối. `m * 0.072` một mình cho ~43px ở ô Lốp lớn ⇒ câu "chưa có dữ liệu" thành chữ
+        // TO NHẤT màn, to hơn cả tiêu đề nhóm (đảo thứ bậc). Trần theo sp (bất biến ô) giữ nó ở cỡ một câu kết luận;
+        // ô nhỏ thì tỉ lệ vẫn thắng.
+        midP.textSize = minOf(m * 0.072f, VERDICT_CAP_SP * resources.displayMetrics.scaledDensity)
 
         // Thân xe THUÔN DỌC + vạch kính lái — cùng hình với [RadarBoardView] để hai bảng BOARD là một họ. Thân HẸP
         // (0.20w) vì phần lớn bề ngang nay thuộc về bốn ô giá trị: chúng chứa số + đơn vị + dòng phụ.
@@ -237,6 +241,8 @@ class TyreBoardView(context: Context) : View(context) {
     }
 
     private companion object {
+        /** Trần cỡ chữ (sp) cho dòng kết luận — chặn ô lớn phình câu no-data thành chữ to nhất màn (SOÁT UI 2026-09-12). */
+        const val VERDICT_CAP_SP = 16f
         /**
          * Thứ tự bánh dùng khi CHƯA có dữ liệu — đúng thứ tự khai của [TyreCorner].
          *

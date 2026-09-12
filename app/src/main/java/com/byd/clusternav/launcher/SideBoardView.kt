@@ -123,7 +123,10 @@ internal class SideBoardView(context: Context) : View(context) {
         // Mấy hàng còn vẽ được **ở cỡ chữ sàn** — rồi để `:core` chọn hiện cái gì trong số đó.
         val plan = GroupBoard.sidePlan(m, (bodyH / rowFloorPx).toInt())
         val rows = maxOf(plan.left.size, plan.right.size)
-        val gap = min * GAP_RATIO
+        // ⚠ [SOÁT UI 2026-09-12] Khoảng cách nhãn ↔ thân xe có SÀN: `min * GAP_RATIO` một mình cho ~5-7px khi ô ADAS
+        // hẹp ([ĐO] ô ~190px ⇒ 190×0.03≈5.7px) làm chữ DÍNH sát nét xe. Sàn `Sp.S` giữ khe đọc được ở mọi cỡ ô;
+        // ô to thì tỉ lệ vẫn thắng.
+        val gap = maxOf(min * GAP_RATIO, Sp.dpf(context, Sp.S))
         val pad = w * PAD_RATIO
         if (rows > 0) {
             // ⚠ Hình xe chỉ vẽ KHI có dữ liệu đặt quanh nó. [ĐO] ảnh máy ảo: ở ô thấp (kế hoạch chỉ còn một câu), vẽ

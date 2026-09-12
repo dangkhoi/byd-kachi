@@ -167,21 +167,17 @@ class SettingsSections(
                 },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
             )
-            addView(TextView(context).apply {
+            // ⚠ [SOÁT UI 2026-09-12] Nút "Xoá" CHỈ dựng khi thực sự xoá được: KHÔNG phải hồ sơ đang dùng VÀ còn hồ
+            // sơ khác. Trước đây nút luôn hiện (chữ đỏ trần, cách tên ~1300px ở mép phải) rồi bấm ra toast "không xoá
+            // được" — một hành động nguy hiểm lại mời bấm nhầm trên màn xe. Ẩn hẳn khi không xoá được thì KHÔNG còn
+            // affordance để hiểu nhầm, nên không cần toast giải thích nữa (khác ca P9: ở đây không có kỳ vọng bị chặn
+            // im lặng — người dùng đơn giản không thấy nút). Lưới an toàn thật vẫn nằm ở `WorkspacePrefs.deleteProfile`.
+            if (!active && total > 1) addView(TextView(context).apply {
                 text = context.getString(R.string.kachi_delete); setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                 typeface = Typeface.DEFAULT_BOLD
-                setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.S), dpi(context, Sp.S))
-                setOnClickListener {
-                    when {
-                        // ⚠ [SOÁT S1 · P2] Thứ tự PHẢI là "hồ sơ cuối cùng" TRƯỚC "đang dùng". Máy mới cài có ĐÚNG
-                        // MỘT hồ sơ, và nó tất nhiên là hồ sơ đang dùng ⇒ xét `active` trước thì câu trả lời là
-                        // "đổi sang hồ sơ khác trước khi xoá" trong khi KHÔNG có hồ sơ khác nào để đổi sang. Lời
-                        // khuyên bất khả thi còn tệ hơn không nói gì, và đây là trạng thái mặc định của mọi máy.
-                        total <= 1 -> toast(context.getString(R.string.kachi_profile_keep_one))
-                        active -> toast(context.getString(R.string.kachi_profile_in_use, ProfileNames.display(name)))
-                        else -> deps.onDeleteProfile(name)
-                    }
-                }
+                setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
+                background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.CLEAR, KachiTheme.RED)
+                setOnClickListener { deps.onDeleteProfile(name) }
             })
             if (!active) setOnClickListener { deps.onSwitchProfile(name) }
         }

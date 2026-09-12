@@ -301,23 +301,15 @@ class SettingsScreenWiringContractTest {
     }
 
     @Test
-    fun `xoa ho so bi chan hai ca va noi ro ly do`() {
+    fun `nut xoa ho so chi hien khi thuc su xoa duoc`() {
         val fn = SourceRoots.body(sections, "private fun profileRow(")
-        assertTrue(fn.contains("active ->"), "không cho xoá hồ sơ ĐANG DÙNG")
-        assertTrue(fn.contains("total <= 1 ->"), "không cho xoá hồ sơ cuối cùng")
-        // [SOÁT S1 · P2] THỨ TỰ: máy mới cài có ĐÚNG MỘT hồ sơ và nó tất nhiên đang dùng ⇒ xét `active` trước thì
-        // câu trả lời là "đổi sang hồ sơ khác trước khi xoá" trong khi không có hồ sơ khác nào để đổi sang.
-        assertTrue(
-            fn.indexOf("total <= 1 ->") in 0 until fn.indexOf("active ->"),
-            "ca 'hồ sơ cuối cùng' phải xét TRƯỚC ca 'đang dùng', không thì máy mới cài nhận một lời khuyên bất khả thi",
-        )
-        assertTrue(
-            fn.contains("toast("),
-            "cú bấm không có tác dụng thì phải NÓI lý do — im lặng làm người dùng tưởng app hỏng (bài học P9)",
-        )
-        assertTrue(fn.contains("deps.onDeleteProfile("), "ca hợp lệ mới đi tới intent xoá")
-        // [ĐO] nơi lưu đã tự chặn ca "hồ sơ cuối cùng"; ca "đang dùng" thì KHÔNG — nó âm thầm đổi hồ sơ đang dùng
-        // sang phần tử đầu. Đọc thẳng mã nguồn thay vì tin lời, vì bản chặn ở UI dựa vào sự thật này.
+        // ⚠ [SOÁT UI 2026-09-12] ĐỔI giao kèo: trước đây nút Xoá LUÔN hiện rồi bấm ra toast chặn (bản cũ khoá
+        // `active ->` / `total <= 1 ->` / `toast(`). Hành vi đúng hơn: nút Xoá CHỈ dựng khi thực sự xoá được — KHÔNG
+        // phải hồ sơ đang dùng VÀ còn hồ sơ khác. Ẩn hẳn thì không có affordance để bấm nhầm trên màn xe, nên không
+        // cần toast giải thích (khác ca P9: không có kỳ vọng bị chặn im lặng — người dùng đơn giản không thấy nút).
+        assertTrue(fn.contains("if (!active && total > 1)"), "nút Xoá phải bọc trong điều kiện xoá-được-thật")
+        assertTrue(fn.contains("deps.onDeleteProfile("), "và chỉ trong nhánh đó mới đi tới intent xoá")
+        // [ĐO] nơi lưu đã tự chặn ca "hồ sơ cuối cùng" (UI ẩn nút chỉ là lớp ngoài, KHÔNG được là lớp duy nhất).
         assertTrue(
             SourceRoots.body(prefs, "fun deleteProfile(").contains("list.size <= 1"),
             "nơi lưu vẫn phải giữ lưới an toàn cho ca hồ sơ cuối cùng",

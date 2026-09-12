@@ -42,8 +42,11 @@ class SettingsRows(private val context: Context) {
     // thì phải có một cửa vào; mọi chỗ nay dùng `KachiTheme.dpi` / `KachiSpace.dpf`.
 
     fun sectionLabel(text: String) = TextView(context).apply {
-        this.text = text; setTextColor(c(KachiTheme.MUT2)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-        letterSpacing = 0.05f; typeface = Typeface.DEFAULT_BOLD; setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.S))
+        // [SOÁT UI 2026-09-12] TRƯỚC: màu MUT2 (mờ) + 12.5sp ⇒ header nhỏ và mờ HƠN chữ nội dung (INK 14.5sp), nên
+        // tiêu đề nhóm không ra "đầu mục" — mọi nhóm dồn thành một dải, đúng "chữ lộn xộn" owner báo. Header phải NỔI
+        // hơn body: màu INK sáng + đậm + thưa chữ (cỡ vẫn 13sp, bù bằng đậm + letterSpacing để không lấn cỡ body).
+        this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        letterSpacing = 0.06f; typeface = Typeface.DEFAULT_BOLD; setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.S))
     }
 
     // ── Hàng dùng chung: ô tick + dãy chip ────────────────────────────────────────────────────────

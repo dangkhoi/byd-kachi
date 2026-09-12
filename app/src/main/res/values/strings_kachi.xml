@@ -115,8 +115,6 @@
     <string name="kachi_profile_active">Đang dùng</string>
     <string name="kachi_profile_tap_switch">Chạm để đổi sang hồ sơ này</string>
     <string name="kachi_delete">Xoá</string>
-    <string name="kachi_profile_keep_one">Phải còn ít nhất một hồ sơ</string>
-    <string name="kachi_profile_in_use">Đang dùng "%1$s" — đổi sang hồ sơ khác trước khi xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
     <string name="kachi_sec_comfort">Tiện nghi tự động</string>
