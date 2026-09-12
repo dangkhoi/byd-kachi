@@ -295,7 +295,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             dock.setCarStatus(state.carStatus, unitPrefs)
             workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
         }
-        if (prev?.preset != state.preset) topStrip.selectPreset(state.preset)
+        // Ô preset nào sáng = bố cục ĐANG HIỆU LỰC, do `EffectiveLayout` trả lời (không suy ra tại chỗ — cùng luật
+        // với số ô / khung pixel, xem `GridSeamGuardTest`). So hai bên bằng chính giá trị sẽ tô ⇒ gọi lại đúng khi
+        // ô sáng đổi, kể cả ca "bỏ bố cục tự vẽ mà preset không đổi" (phải sáng lại preset).
+        val presetLit = EffectiveLayout.highlightedPreset(state.preset, state.customLayout)
+        if (prev == null || EffectiveLayout.highlightedPreset(prev.preset, prev.customLayout) != presetLit)
+            topStrip.selectPreset(presetLit)
         if (prev?.dock != state.dock) {
             val edgeChanged = prev != null && prev.dock.edge != state.dock.edge
             dock.setConfig(state.dock)

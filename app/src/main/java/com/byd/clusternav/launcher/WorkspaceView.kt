@@ -2,7 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.util.TypedValue
@@ -359,7 +358,13 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             val r = KachiTheme.iconRes("ic-swap"); if (r != 0) { setImageResource(r); setColorFilter(Color.parseColor(KachiTheme.ON_ACCENT)) }
             setPadding(dp(Sp.S), dp(Sp.S), dp(Sp.S), dp(Sp.S))
             // scrim tròn mờ RẤT nhẹ chỉ để icon còn thấy trên app nền sáng (không phải thanh nền)
-            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(KachiTheme.SCRIM_BTN)) }
+            // ⚠ [SOÁT UI 2026-09-12] Scrim tròn + VIỀN sáng mảnh: scrim đen một mình tan vào ô widget nền tối
+            // ([ĐO] verify: nút chỉ rõ 1/3 ô). Viền [ON_ACCENT] mảnh cho nút nổi rõ trên MỌI nền (app sáng lẫn ô tối)
+            // mà vẫn kín đáo (nút hiếm dùng). Vẫn không theo chủ đề — nó nằm trên pixel của app đang chiếu.
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL; setColor(Color.parseColor(KachiTheme.SCRIM_BTN))
+                setStroke(dp(Sp.HAIRLINE), Color.parseColor(KachiTheme.ON_ACCENT))
+            }
             setOnClickListener { onSlotTap?.invoke(index) }
         }
         wrap.addView(
@@ -384,7 +389,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private fun placeholder(text: String) = TextView(context).apply {
         this.text = text
         setTextColor(Color.parseColor(KachiTheme.MUT))
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+        KachiType.apply(this, KachiType.BODY)
         gravity = Gravity.CENTER
     }
 
@@ -392,10 +397,12 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private fun emptyAdd(): View = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
         addView(TextView(context).apply {
-            text = "＋"; setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f); gravity = Gravity.CENTER
+            // [type scale] ngoại lệ: `＋` là KÝ HIỆU trang trí (dấu "thêm vào đây"), không phải chữ — cỡ của nó là
+            // hình học của ô trống, không phải một bậc chữ. Trần 32f = DISPLAY(28) sẽ nhỏ đi thấy rõ.
+            text = "＋"; setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f); gravity = Gravity.CENTER   // [type scale] glyph trang trí, ngoài 5 bậc
         })
         addView(TextView(context).apply {
-            text = context.getString(R.string.kachi_slot_open_app); setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            text = context.getString(R.string.kachi_slot_open_app); setTextColor(Color.parseColor(KachiTheme.MUT)); KachiType.apply(this, KachiType.BODY)
             gravity = Gravity.CENTER; setPadding(0, dp(Sp.XS), 0, 0)
         })
     }
@@ -422,7 +429,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private fun deadWidgetCard(content: SlotContent.AppWidget): View =
         TextView(context).apply {
             text = context.getString(R.string.kachi_appwidget_dead, appWidgetName?.invoke(content) ?: content.provider)
-            setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTextColor(Color.parseColor(KachiTheme.MUT)); KachiType.apply(this, KachiType.BODY)
             gravity = Gravity.CENTER
             setPadding(dp(Sp.L), dp(Sp.SLOT_HEAD_CLEAR), dp(Sp.L), dp(Sp.L))
         }
@@ -437,7 +444,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             })
             col.addView(TextView(context).apply {
                 text = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0))
-                setTextColor(Color.parseColor(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setTextColor(Color.parseColor(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
                 gravity = Gravity.CENTER; setPadding(0, dp(Sp.S), 0, 0)
             })
         } catch (e: Exception) {

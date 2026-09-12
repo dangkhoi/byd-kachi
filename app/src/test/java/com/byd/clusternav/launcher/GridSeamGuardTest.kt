@@ -121,6 +121,32 @@ class GridSeamGuardTest {
         assertTrue(branch.contains("reflow()"), "phải sắp lại cửa sổ app theo khung mới")
     }
 
+    /**
+     * Dải bố-cục-sẵn ở thanh trên cũng phải hỏi **nguồn duy nhất**, không tự suy ra bằng `customLayout != null`.
+     *
+     * Đây là chỗ thứ BẢY từng tự suy ra bố cục đang hiệu lực (sáu chỗ kia đã dọn ở P9). Tự suy ra thì bố cục tự vẽ
+     * **lưu rồi mà không dùng được** (đè nhau / vượt trần ô — có thật khi hạ cấp bản) làm màn vẽ bố cục sẵn trong
+     * khi bộ chọn không sáng ô nào. Hàm thuần [EffectiveLayout.highlightedPreset] có test riêng ở `:core`.
+     */
+    @Test
+    fun `o preset sang di qua nguon duy nhat, khong suy ra tai cho`() {
+        val act = code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
+        val render = body(act, "private fun render(state: HomeUiState)")
+        assertTrue(
+            render.contains("EffectiveLayout.highlightedPreset("),
+            "render phải lấy ô preset sáng từ EffectiveLayout (nguồn duy nhất), không tự suy ra",
+        )
+        val i = render.indexOf("EffectiveLayout.highlightedPreset(")
+        assertTrue(
+            render.substring(i).contains("topStrip.selectPreset("),
+            "và phải đẩy chính giá trị đó xuống thanh trên",
+        )
+        assertEquals(
+            0, Regex("""selectPreset\(\s*(?:if\s*\(|state\.preset\s*\))""").findAll(render).count(),
+            "KHÔNG được dựng lại quyết định 'ô nào sáng' ngay tại chỗ gọi",
+        )
+    }
+
     @Test
     fun `bo cuc tu ve khong con BAN SAO o tang UI`() {
         // ⚠ [ĐO] tôi từng xoá riêng biến ở màn chính mà quên khung vẽ giữ BẢN SAO ⇒ cấu hình đã xoá nhưng màn hình

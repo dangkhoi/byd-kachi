@@ -60,6 +60,42 @@ class EffectiveLayoutTest {
         )
     }
 
+    // ── Ô preset nào SÁNG trên bộ chọn ──────────────────────────────────────────────────────────
+
+    /**
+     * Owner báo: lưu bố cục TỰ VẼ xong mà dải bố-cục-sẵn ở thanh trên vẫn sáng một ô ⇒ hai câu trên cùng màn đá
+     * nhau. Quyết định "ô nào sáng" nay là **hàm thuần** ở đây nên kiểm được off-device (màn chính là Activity,
+     * không kiểm được).
+     */
+    @Test fun `dang dung bo cuc TU VE thi KHONG o preset nao sang`() {
+        assertNull(EffectiveLayout.highlightedPreset(LayoutPreset.ONE, twoCol))
+        assertEquals(LayoutPreset.THREE, EffectiveLayout.highlightedPreset(LayoutPreset.THREE, null))
+        assertEquals(
+            LayoutPreset.QUAD, EffectiveLayout.highlightedPreset(LayoutPreset.QUAD, GridLayout(emptyList())),
+            "chưa vẽ gì (bố cục rỗng) thì vẫn là bố cục sẵn ⇒ phải sáng",
+        )
+    }
+
+    /**
+     * Ca dễ sai nhất: bố cục tự vẽ **có** nhưng KHÔNG dùng được ⇒ màn lùi về bố cục sẵn, nên ô preset đó phải
+     * sáng. Hỏi `custom != null` thay vì [EffectiveLayout.usable] là trả `null` ⇒ màn vẽ bố cục sẵn mà không ô nào
+     * sáng.
+     */
+    @Test fun `bo cuc tu ve KHONG dung duoc thi sang lai o preset dang hien`() {
+        val overlap = GridLayout(listOf(GridFrame(0, 0, 8, 6), GridFrame(4, 0, 8, 6)))
+        assertEquals(LayoutPreset.THREE, EffectiveLayout.highlightedPreset(LayoutPreset.THREE, overlap))
+        val six = GridLayout((0 until 6).map { GridFrame(it * 2, 0, 2, 3) })
+        assertEquals(LayoutPreset.TWO_COL, EffectiveLayout.highlightedPreset(LayoutPreset.TWO_COL, six, cap = 4))
+        // Khoá giao kèo "ô sáng = bố cục đang vẽ": cùng một (preset, custom) thì hai câu trả lời phải khớp nhau.
+        listOf<GridLayout?>(null, GridLayout(emptyList()), twoCol, overlap, six).forEach { c ->
+            val lit = EffectiveLayout.highlightedPreset(LayoutPreset.TWO_COL, c, cap = 4)
+            assertEquals(
+                lit == null, EffectiveLayout.usable(c, cap = 4),
+                "ô sáng phải khớp với bố cục ĐANG HIỆU LỰC, không phải với 'có lưu hay không': $c",
+            )
+        }
+    }
+
     // ── Nói lý do, không im lặng ────────────────────────────────────────────────────────────────
 
     @Test fun `noi RO ly do bo cuc tu ve bi bo qua`() {

@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
@@ -73,12 +72,12 @@ class AppDrawer(
 
         panel.addView(TextView(context).apply {
             text = context.getString(if (assign) R.string.kachi_drawer_title_assign else R.string.kachi_drawer_title_open)
-            setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+            setTextColor(c(KachiTheme.INK))
+            KachiType.apply(this, KachiType.TITLE, bold = true)
         })
         panel.addView(TextView(context).apply {
             text = context.getString(if (assign) R.string.kachi_drawer_hint_assign else R.string.kachi_drawer_hint_open)
-            setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
             setPadding(0, dpi(context, Sp.XS), 0, dpi(context, Sp.M))
         })
 
@@ -176,12 +175,12 @@ class AppDrawer(
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         setPadding(0, dpi(context, Sp.M), 0, 0)
         val hint = TextView(context).apply {
-            setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
         }
         capHint = hint
         addView(hint, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val btn = TextView(context).apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
             background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(c(KachiTheme.ON_ACCENT))
             setOnClickListener { onPickWidgets(selected.toList()) }
@@ -316,7 +315,7 @@ class AppDrawer(
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_XL), dpi(context, Sp.ICON_XL))
             })
             addView(TextView(context).apply {
-                text = def.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                text = def.displayLabel; setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
                 gravity = Gravity.CENTER; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
@@ -351,7 +350,7 @@ class AppDrawer(
             addView(TextView(context).apply {
                 // Hai loại nằm cùng một lưới ⇒ PHẢI dùng displayLabel: [ĐO] 18 nhãn trùng nhau giữa ô XEM và ô BẤM
                 // (vd hai ô đều ghi "Kính trước-trái"). Nhãn gốc không đổi, gợi ý chỉ thêm ở chỗ trùng.
-                text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)   // [type scale] ô lưới mật độ cao, ngoài 5 bậc
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
@@ -360,7 +359,7 @@ class AppDrawer(
             // ⚠ T5 (thang khoảng cách/cỡ chữ): 10sp là số TÔI TỰ CHỌN — nhãn ở trên là 11.5sp, dòng phụ phải nhỏ hơn
             // để đọc ra thứ bậc. Mọi dpi() ở đây là số ĐÃ dùng sẵn trong chính ô này, không thêm số mới.
             if (pick.sub.isNotEmpty()) addView(TextView(context).apply {
-                text = pick.sub; setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                text = pick.sub; setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)   // [type scale] ô lưới mật độ cao, ngoài 5 bậc
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS), 0)
             })
@@ -426,13 +425,16 @@ class AppDrawer(
     private fun sectionLabel(text: String) = TextView(context).apply {
         // [SOÁT UI 2026-09-12] Header nhóm TRƯỚC ĐÂY màu MUT2 (mờ) + 12sp ⇒ mờ và nhỏ HƠN chữ nội dung (INK ~14.5sp)
         // nên không ra "đầu mục", các phần dồn thành một dải. Header phải NỔI hơn body: màu INK sáng + đậm + thưa chữ.
-        this.text = text; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-        typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.06f; setPadding(0, 0, 0, dpi(context, Sp.S))
+        // ⚠ [type scale] Bản vá đó nâng lên 13sp — vẫn **dưới** [KachiType.BODY] (13.5) nên tỉ số cỡ với nội dung là
+        // 0.96: mắt không đọc ra thứ bậc, chỉ còn màu+nét gánh. Đây là TIÊU ĐỀ NHÓM ⇒ đúng bậc của nó là
+        // [KachiType.SECTION] (16, tỉ số 1.19) — cùng bậc `SettingsRows.sectionHeader` đang dùng cho cùng vai.
+        this.text = text; setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.SECTION, bold = true)
+        letterSpacing = 0.06f; setPadding(0, 0, 0, dpi(context, Sp.S))
     }
 
     /** Câu phụ dưới tiêu đề mục — cùng khuôn với câu mô tả ở đầu bảng, không phải cỡ chữ mới. */
     private fun note(text: String) = TextView(context).apply {
-        this.text = text; setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+        this.text = text; setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
         setPadding(0, 0, 0, dpi(context, Sp.S))
     }
 
@@ -472,7 +474,7 @@ class AppDrawer(
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_XL), dpi(context, Sp.ICON_XL))
             })
             addView(TextView(context).apply {
-                text = item.label; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                text = item.label; setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
                 gravity = Gravity.CENTER; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })

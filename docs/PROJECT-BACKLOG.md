@@ -1,6 +1,6 @@
 # byd-launcher — Project Backlog
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-11 (sau LƯỢT SOÁT ĐỘC LẬP toàn phần + vá 5 nhóm) · **Fork** của ClusterNav 2.0 (`byd-cluster-2`) → phát triển dần thành LAUNCHER xe BYD (`com.byd.launcher`, cài song song). Fork từ ClusterNav **v1.38** (versionCode 39). Spec: `docs/specs/launcher-foundation.html`.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-12 (tối — design system pha 2) · **Fork** của ClusterNav 2.0 (`byd-cluster-2`) → phát triển dần thành LAUNCHER xe BYD (`com.byd.launcher`, cài song song). Fork từ ClusterNav **v1.38** (versionCode 39). Spec: `docs/specs/launcher-foundation.html`.
 >
 > **🎯 Owner chốt 2026-09-10 (tối): dự án CHỈ làm LAUNCHER.** ClusterNav 2.0 = nền tảng **DÙNG LẠI** (gom vào mục Cài đặt), đã ổn định trên xe → **KHÔNG track backlog cho nó nữa**; toàn bộ backlog kế thừa đã tách sang `docs/archive/clusternav2-backlog-inherited-2026-09-10.md`. Batch việc mới của owner ở **§L2** (mô hình hiển thị Read/Write + 8 mục: hình nền, thanh action, lấy gió trong, áp suất lốp, vòng kiểm quyền, camera 360, bố cục động).
 >
@@ -119,6 +119,10 @@
 > ⚠⚠ **Bài học: 3 vòng soát ảnh độc lập tìm ra cái mã+test không thấy** — áp type scale + component xong, HÀNG Settings hết dính nhưng LƯỚI ô nhóm (component khác) vẫn dính = đúng "nút widget dính" owner báo. Phải mở ảnh + để luồng độc lập xem mới ra.
 >
 > **CÒN TỒN (OQ/pha sau)**: màn Home-settings 2 cấp tiêu đề cùng cỡ SECTION (chưa có sub-header nhỏ hơn); 31 chỗ setTextSize(KachiType.X)+typeface tay chưa gộp apply(); CapabilityGridSection 2 cỡ tay 11.5/10 (ngoài 5 bậc); chip cao 44<48 (owner quyết); **lan ra ngăn kéo/thanh nút/widget 14 tệp = pha sau (OQ1)**; chưa đo trên xe.
+>
+> **PHA 2 — 2026-09-12 (tối) · OQ1-a: lan type scale ra 5 bề mặt ngoài Settings. DONE off-car, senior APPROVED, soát ảnh ĐẠT CÓ ĐIỀU KIỆN.** AppDrawer · KachiTopStrip · OverlayHeads · WorkspaceView · LayoutEditorPanel chuyển hết cỡ chữ tay → `KachiType.apply`, vào `SURFACES` của `TypeScaleContractTest`; ngoại lệ phải khai marker `[type scale]` **kèm lý do ≥12 ký tự** + bài ghim `EXEMPT_LINES = 3` (senior siết: marker trần từng qua được). Kèm 2 vá lẻ: (a) thanh trên không tô sáng preset khi dùng bố cục tự vẽ — senior nâng thành hàm thuần `EffectiveLayout.highlightedPreset` (bất biến `lit == null ⟺ usable`, bố cục tự vẽ hỏng ⇒ sáng lại preset) + guard nguồn; (b) nút ⇄ nổi thêm viền `HAIRLINE`. **Owner chốt: chip GIỮ 44.** [ĐO] full 5 module 3255/0 trước vá review; app+core sau vá 2251/0 (+4). [ĐO] emulator: lưu bố cục tự vẽ 1 khung ⇒ 0 pixel accent trên dải preset. Spec `kachi-design-system.html` §10 Pass 2 (có §Changelog + §Nhật ký bổ sung theo template — spec pha 1 thiếu).
+>
+> **CÒN TỒN sau pha 2 (chuyển sang gói "Settings IA v2 + gộp ClusterNav")**: [P1] lưới ô nhóm trong NGĂN KÉO (AppDrawer) vẫn dính 0px + không đồng cao (pha 1 chỉ vá lưới trong Settings) · [P1] nút −/+ thanh nút xe 14–22dp · [P2] 4 chiều cao nút cho 3 vai (35/43/44/48dp) · [P2] đáy lưới drawer trống 104px mà hàng cuối bị fade cắt nhãn · OQ1-b WidgetViews 18 chỗ `tv(sp)` (marker phải ở CHÍNH dòng mã) · OQ1-c CapabilityGridSection 11.5/10 · OQ1-d 15 lời gọi cửa-thứ-hai ở Settings · OQ4 sub-header cùng cỡ SECTION.
 
 ## Sửa giao diện owner báo lộn xộn — 2026-09-12 (chiều-2) · 12 lỗi (10 + 2 senior)
 

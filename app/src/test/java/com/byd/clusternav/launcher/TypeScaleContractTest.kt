@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.SourceRoots
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -27,11 +28,47 @@ import org.junit.jupiter.api.Test
  */
 class TypeScaleContractTest {
 
-    /** Các bề mặt Settings đã áp KachiType. `SettingsRows` là NGUỒN component (dùng `KachiType.apply` nội bộ). */
+    /**
+     * Bề mặt đã áp KachiType. `SettingsRows` là NGUỒN component (dùng `KachiType.apply` nội bộ).
+     *
+     * Mở rộng dần theo §R7: sau Settings, đã lan sang ngăn kéo / thanh trên / overlay / ô workspace / bảng vẽ.
+     * Ô lưới mật độ cao ([CapabilityGridSection] 11.5/10sp) và ô vẽ Canvas ([TyreBoardView]/[SideBoardView] theo tỉ
+     * lệ) KHÔNG ở đây — cỡ của chúng là ngoại lệ có lý do (mật độ / hình học), KHÔNG phải bậc chữ giao diện.
+     */
     private val SURFACES = listOf(
         "SettingsSections.kt", "SettingsSectionsHome.kt", "SettingsSceneSection.kt",
         "SettingsPanel.kt", "TopStripPicker.kt", "SettingsRows.kt",
+        "AppDrawer.kt", "KachiTopStrip.kt", "OverlayHeads.kt", "WorkspaceView.kt", "LayoutEditorPanel.kt",
     )
+
+    /**
+     * NGOẠI LỆ tường minh: một dòng mang marker `[type scale]` được miễn — dùng cho cỡ KHÔNG thuộc 5 bậc mà có lý
+     * do tại chỗ (glyph trang trí cỡ lớn như `＋`, nhãn ô lưới mật độ cao). Cùng khuôn `allowedRaw` của
+     * [SpacingScaleContractTest] / `SAME_ON_PURPOSE` của i18n: ngoại lệ phải NÓI lý do ngay tại dòng, không im lặng.
+     */
+    private val EXEMPT_MARKER = "[type scale]"
+
+    /**
+     * Marker **một mình** không đủ — phải có LÝ DO ngay sau nó (tối thiểu bấy nhiêu ký tự).
+     *
+     * ⚠⚠ [SOÁT ĐỘC LẬP 2026-09-12 · pha 2] Bản đầu của cửa miễn chỉ so chuỗi: `line.contains(EXEMPT_MARKER)`.
+     * [ĐO] thử phá: chèn `textSize = 99f   // [type scale]` (marker TRẦN, không một chữ lý do) vào
+     * `OverlayHeads.kt` ⇒ **BUILD SUCCESSFUL, 0 đỏ**. Tức cửa miễn thành một **câu thần chú** dán vào là im bài —
+     * đúng cái mà `allowedRaw` của [SpacingScaleContractTest] (`allowedRaw[key].isNullOrBlank()` ⇒ trị RỖNG không
+     * được tính là ngoại lệ) và `SAME_ON_PURPOSE` của i18n (có hẳn một bài đòi `why.isNotBlank()`) đã chặn từ
+     * trước. Áp lại đúng khuôn ĐÃ CÓ, không phát minh khuôn mới.
+     */
+    private val EXEMPT_REASON_MIN = 12
+
+    /**
+     * Số dòng ĐANG được miễn — ghim lại, cùng lẽ với `SAME_ON_PURPOSE` (danh sách ngoại lệ phải là dữ liệu THẤY
+     * ĐƯỢC, không phải thứ mọc thêm lặng lẽ).
+     *
+     * 3 = 2 nhãn ô lưới mật độ cao ([AppDrawer] 11.5/10sp) + 1 glyph trang trí `＋` ([WorkspaceView] 32sp). Thêm
+     * một ngoại lệ thứ tư thì phải sửa con số này ⇒ nó hiện ra trong diff và người review phải đồng ý, thay vì một
+     * dòng comment lọt qua.
+     */
+    private val EXEMPT_LINES = 3
 
     /**
      * BA cách đặt cỡ chữ bằng số TAY — phải chặn **cả ba**, không chỉ cách hay gặp nhất.
@@ -51,39 +88,82 @@ class TypeScaleContractTest {
     private val rawProperty = Regex("""(?<![\w])textSize\s*=\s*\d""")
     private val handWritten = listOf(rawTwoArg, rawOneArg, rawProperty)
 
-    /** Bỏ chú thích khối + dòng để không bắt con số nằm trong câu giải thích (cửa DUY NHẤT: [SourceRoots.codeOf]). */
-    private fun code(name: String): String =
-        SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$name")
-
     /**
-     * Số dòng THẬT trong tệp gốc. [SourceRoots.codeOf] gộp chú thích khối nhiều dòng thành một khoảng trắng nên chỉ
-     * số dòng của bản đã-bỏ-chú-thích lệch với tệp thật — báo sai chỗ thì người đọc đi tìm nhầm dòng.
+     * Dòng mã của một bề mặt, đã **xoá chú thích KHỐI nhưng GIỮ số dòng** (thay mọi ký tự ≠ newline bằng khoảng
+     * trắng) — để không bắt con số trong KDoc mà vẫn báo đúng số dòng của tệp gốc.
      */
-    private fun lineOf(name: String, code: String): Int {
-        val raw = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$name").lines()
-        return raw.indexOfFirst { it.trim() == code }.let { if (it < 0) 0 else it + 1 }
+    private fun codeLines(file: String): List<String> =
+        SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$file")
+            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL)) { m ->
+                m.value.replace(Regex("[^\n]"), " ")
+            }
+            .lines()
+
+    /** Lý do khai sau [EXEMPT_MARKER] trên chính dòng đó; `null` = dòng không khai ngoại lệ. */
+    private fun exemptReason(line: String): String? {
+        val at = line.indexOf(EXEMPT_MARKER)
+        return if (at < 0) null else line.substring(at + EXEMPT_MARKER.length).trim()
     }
+
+    /** Ngoại lệ HỢP LỆ = marker + lý do đủ dài. Marker trần KHÔNG miễn được gì. */
+    private fun exemptOk(line: String): Boolean = (exemptReason(line)?.length ?: -1) >= EXEMPT_REASON_MIN
+
+    /** Dòng có đặt cỡ chữ bằng số tay (đã bỏ chú thích DÒNG). */
+    private fun handWrites(line: String): Boolean =
+        line.substringBefore("//").let { code -> handWritten.any { it.containsMatchIn(code) } }
 
     @Test
     fun `Settings khong dat co chu bang so tay - phai qua KachiType`() {
         val offenders = mutableListOf<String>()
         SURFACES.forEach { f ->
-            val src = code(f)
-            src.lines().forEach { l ->
-                if (handWritten.any { it.containsMatchIn(l) }) offenders += "$f:${lineOf(f, l.trim())}:${l.trim()}"
+            val rawLines = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$f").lines()
+            val lines = codeLines(f)
+            lines.forEachIndexed { i, line ->
+                val raw = handWrites(line)
+                // Ngoại lệ tường minh (glyph/ô lưới): dòng tự khai lý do bằng marker. Marker TRẦN không miễn —
+                // nếu không thì cửa miễn chỉ là một câu thần chú dán vào để bài canh im (xem [EXEMPT_REASON_MIN]).
+                if (exemptReason(line) != null) {
+                    if (raw && !exemptOk(line)) {
+                        offenders += "$f:${i + 1}: marker `$EXEMPT_MARKER` KHÔNG kèm lý do (cần ≥ " +
+                            "$EXEMPT_REASON_MIN ký tự): ${rawLines.getOrElse(i) { line }.trim()}"
+                    }
+                    return@forEachIndexed
+                }
+                if (raw) offenders += "$f:${i + 1}:${rawLines.getOrElse(i) { line }.trim()}"
             }
             // Lời gọi VẮT NHIỀU DÒNG (`setTextSize(\n  TypedValue.COMPLEX_UNIT_SP,\n  14f)`) không hiện trên một
-            // dòng nào ⇒ quét thêm cả tệp một lượt (`\s` khớp cả newline). Không có bước này thì chỉ cần bấm Enter
-            // là lách được bài canh.
-            if (handWritten.any { it.containsMatchIn(src) } && offenders.none { it.startsWith("$f:") }) {
+            // dòng nào ⇒ quét thêm cả tệp một lượt. Không có bước này thì chỉ cần bấm Enter là lách được bài canh.
+            // Chỉ bỏ ra những dòng miễn HỢP LỆ: dòng mang marker trần vẫn phải đi qua phép quét này.
+            val flat = lines.filterNot { exemptOk(it) }.joinToString("\n") { it.substringBefore("//") }
+            if (handWritten.any { it.containsMatchIn(flat) } && offenders.none { it.startsWith("$f:") }) {
                 offenders += "$f: (lời gọi vắt nhiều dòng)"
             }
         }
         assertTrue(
             offenders.isEmpty(),
-            "Cỡ chữ trong Settings phải đi qua KachiType (thang cỡ chữ), KHÔNG đặt bằng số tay " +
-                "(cả `setTextSize(UNIT, n)`, `setTextSize(n)` lẫn `textSize = n`):\n" +
-                offenders.joinToString("\n"),
+            "Cỡ chữ ở bề mặt đã áp design system phải đi qua KachiType (thang cỡ chữ), KHÔNG đặt bằng số tay " +
+                "(cả `setTextSize(UNIT, n)`, `setTextSize(n)` lẫn `textSize = n`); ngoại lệ phải khai marker " +
+                "`$EXEMPT_MARKER` kèm lý do tại dòng:\n" + offenders.joinToString("\n"),
+        )
+    }
+
+    /**
+     * Số dòng miễn trừ bị **GHIM** — mở thêm một cửa miễn phải là quyết định thấy được trong diff.
+     *
+     * Cùng lẽ với bài `moi muc trong danh sach cho phep trung deu co ly do, va deu dung toi` của i18n: một danh
+     * sách ngoại lệ không ai đếm sẽ lớn dần cho tới lúc bài canh chỉ còn canh những chỗ không ai định sửa.
+     */
+    @Test
+    fun `so dong duoc mien tru bi ghim`() {
+        val exempt = SURFACES.flatMap { f ->
+            codeLines(f).mapIndexedNotNull { i, line ->
+                if (handWrites(line) && exemptReason(line) != null) "$f:${i + 1}" else null
+            }
+        }
+        assertEquals(
+            EXEMPT_LINES, exempt.size,
+            "số dòng miễn thang cỡ chữ đổi — nếu là ngoại lệ CHÍNH ĐÁNG thì sửa EXEMPT_LINES (và nói lý do ở KDoc " +
+                "của nó); nếu không thì chuyển dòng đó về KachiType:\n" + exempt.joinToString("\n"),
         )
     }
 

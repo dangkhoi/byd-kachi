@@ -2,8 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.app.Activity
 import android.graphics.Color
-import android.graphics.Typeface
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -67,9 +65,9 @@ class KachiTopStrip(
             setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.XS))
         }
         clock = TextView(activity).apply {
-            setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f); typeface = Typeface.DEFAULT_BOLD; letterSpacing = 0.02f
+            setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.SECTION, bold = true); letterSpacing = 0.02f
         }
-        dateText = TextView(activity).apply { setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); setPadding(dp(Sp.M), 0, 0, 0) }
+        dateText = TextView(activity).apply { setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION); setPadding(dp(Sp.M), 0, 0, 0) }
         strip.addView(clock); strip.addView(dateText)
         strip.addView(buildSegmented(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.L) })
         strip.addView(View(activity), LinearLayout.LayoutParams(0, 1, 1f))
@@ -92,7 +90,7 @@ class KachiTopStrip(
      * đẩy cả chữ ra xa viền, còn `minimumHeight` chỉ kéo cao vùng chạm và giữ chữ ở giữa.
      */
     private fun pill(text: String, primary: Boolean, onClick: () -> Unit) = TextView(activity).apply {
-        this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+        this.text = text; KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
         setPadding(dp(Sp.L), dp(Sp.S), dp(Sp.L), dp(Sp.S))
         if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setTextColor(c(KachiTheme.ON_ACCENT)) }
         else { background = KachiTheme.pill(context); setTextColor(c(KachiTheme.INK)) }
@@ -130,8 +128,13 @@ class KachiTopStrip(
         return bar
     }
 
-    /** Tô sáng ô preset đang chọn (do render gọi khi preset đổi). */
-    fun selectPreset(sel: LayoutPreset) {
+    /**
+     * Tô sáng ô preset đang chọn (do render gọi khi preset/bố-cục đổi).
+     *
+     * [sel] `null` = đang dùng **bố cục tự vẽ** ⇒ KHÔNG ô nào sáng (trước đây luôn sáng "1 ô" dù màn vẽ bố cục tự vẽ
+     * — cùng họ lỗi đã vá ở màn Cài đặt, nhưng thanh trên là bộ chọn thứ hai nên phải vá riêng).
+     */
+    fun selectPreset(sel: LayoutPreset?) {
         presetCells.forEach { (p, cell) ->
             if (p == sel) { cell.background = KachiTheme.gradient(activity, Sp.RADIUS_PILL); cell.setColorFilter(c(KachiTheme.ON_ACCENT)) }
             else { cell.background = null; cell.setColorFilter(c(KachiTheme.MUT)) }
@@ -149,7 +152,7 @@ class KachiTopStrip(
     private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.S) }
 
     private fun chip(text: String, iconName: String?, color: String): TextView = TextView(activity).apply {
-        this.text = text; setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f); gravity = Gravity.CENTER_VERTICAL
+        this.text = text; KachiType.apply(this, KachiType.BODY); gravity = Gravity.CENTER_VERTICAL
         setPadding(dp(Sp.XS), 0, dp(Sp.XS), 0)   // KHÔNG viền pill — chip prototype chỉ icon + chữ
         maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
         applyChipFace(this, iconName, color.ifEmpty { CHIP_INK })
@@ -214,7 +217,7 @@ class KachiTopStrip(
     private fun profileAvatar(): TextView {
         profileAvatarView = TextView(activity).apply {
             setTextColor(c(KachiTheme.ON_ACCENT))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
             // T5 — avatar 30dp → Sp.TOUCH. KDoc phía trên đã nói "một đích 30dp giữa lúc lái là chỗ dễ bấm nhầm"
             // rồi kết luận bỏ cử chỉ GIỮ; nhưng cú CHẠM (đổi hồ sơ) vẫn ở lại trên đúng đích 30dp đó. Nới đích
             // mới là chữa nguyên nhân, bỏ cử chỉ chỉ là bớt hậu quả.

@@ -270,8 +270,10 @@ object WidgetViews {
     private fun badgeShape(ctx: Context, v: TelemetryView): View = col(ctx).apply {
         addView(eyebrow(ctx, v.label))
         val badge = TextView(ctx).apply {
-            text = v.display; setTextColor(c(if (v.available) KachiTheme.INK else KachiTheme.MUT)); typeface = Typeface.DEFAULT_BOLD
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f); gravity = Gravity.CENTER
+            // ⚠ typeface đậm đi qua `bold = true` chứ KHÔNG đặt riêng: `KachiType.apply` sở hữu CẢ cỡ CẢ nét, đặt
+            // typeface trước rồi gọi nó là mất đậm ÂM THẦM (xem KDoc KachiType.apply).
+            text = v.display; setTextColor(c(if (v.available) KachiTheme.INK else KachiTheme.MUT))
+            KachiType.apply(this, KachiType.SECTION, bold = true); gravity = Gravity.CENTER
             setPadding(dpi(ctx, Sp.L), dpi(ctx, Sp.S), dpi(ctx, Sp.L), dpi(ctx, Sp.S))
             background = KachiTheme.pill(ctx, KachiTheme.CELL)
         }
@@ -284,6 +286,9 @@ object WidgetViews {
     }
 
     private fun badgeView(ctx: Context): View = TextView(ctx).apply {
+        // [type scale] ngoại lệ: dấu "chưa kiểm trên xe" là badge MICRO ở góc thẻ, dưới hẳn bậc nhỏ nhất
+        // (CAPTION 12). Đưa lên 12 là +26% trên một dấu cố ý phải LẶNG, và nó `maxLines = 1` nằm chồng trên nội
+        // dung ô ⇒ nguy cơ cắt chữ. Cùng họ ngoại lệ với 2 cỡ ô lưới mật độ cao của `CapabilityGridSection`.
         text = ctx.getString(R.string.kachi_badge_unverified); setTextColor(c(KachiTheme.AMBER)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f); gravity = Gravity.CENTER
         setPadding(dpi(ctx, Sp.S), dpi(ctx, Sp.XS), dpi(ctx, Sp.S), dpi(ctx, Sp.XS)); maxLines = 1
         background = GradientDrawable().apply { cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c(KachiTheme.AMBER_SOFT)) }
@@ -366,6 +371,9 @@ object WidgetViews {
         val p = dpi(ctx, Sp.L); setPadding(p, p, p, p)
     }
     internal fun tv(ctx: Context, s: String, sp: Float, color: String, bold: Boolean = false) = TextView(ctx).apply {
+        // [type scale] ngoại lệ: cỡ đã là THAM SỐ của hàm — bậc do chỗ GỌI quyết. Các chỗ gọi trong tệp này còn
+        // truyền số tay (34/30/22/14/13/12.5/11f: giá trị hero + eyebrow của ô widget, phần lớn nằm ngoài 5 bậc) ⇒
+        // việc chuyển chúng là một lượt riêng, không thuộc phạm vi lượt này.
         text = s; setTextColor(c(color)); setTextSize(TypedValue.COMPLEX_UNIT_SP, sp); gravity = Gravity.CENTER
         if (bold) typeface = Typeface.DEFAULT_BOLD
     }

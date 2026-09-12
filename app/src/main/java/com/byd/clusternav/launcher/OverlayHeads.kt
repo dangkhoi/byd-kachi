@@ -4,10 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -74,8 +72,8 @@ class OverlayHeads(private val activity: Activity) {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.parseColor(hd.dotColor)) }
         }, LinearLayout.LayoutParams(dp(Sp.DOT), dp(Sp.DOT)).also { it.marginEnd = dp(Sp.S) })
         bar.addView(TextView(activity).apply {
-            text = hd.name; setTextColor(Color.parseColor(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-            typeface = Typeface.DEFAULT_BOLD; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+            text = hd.name; setTextColor(Color.parseColor(KachiTheme.INK)); KachiType.apply(this, KachiType.CAPTION, bold = true)
+            maxLines = 1; ellipsize = TextUtils.TruncateAt.END
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         bar.addView(btn("ic-swap", hd.onSwap), btnLp())
         bar.addView(btn("ic-close", hd.onClose), btnLp())

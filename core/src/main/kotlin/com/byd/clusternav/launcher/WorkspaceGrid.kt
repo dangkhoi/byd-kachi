@@ -258,6 +258,22 @@ object EffectiveLayout {
         if (usable(custom, cap)) custom!!.slots(width, height, gap)
         else WorkspaceLayout.slots(preset, width, height, gap)
 
+    /**
+     * Bố cục sẵn mà bộ chọn phải **tô sáng** — `null` khi màn đang vẽ bố cục TỰ VẼ ⇒ không ô nào sáng.
+     *
+     * ## ⚠ Vì sao phải hỏi [usable], không phải `custom != null`
+     * Bộ chọn nói *"màn đang hiện bố cục nào"*, nên nó phải trả lời theo **bố cục đang HIỆU LỰC** — cùng nguồn với
+     * [slotCount]/[rects]. Một bố cục tự vẽ **lưu rồi nhưng không dùng được** (đè nhau · nhiều khung hơn trần ô, ca
+     * có thật khi hạ cấp bản — xem luật LÙI AN TOÀN ở trên) sẽ **lùi về bố cục sẵn** trên màn; nếu chỗ này chỉ hỏi
+     * `custom != null` thì màn vẽ bố cục sẵn mà bộ chọn lại không sáng ô nào — đúng kiểu *"hai câu trên cùng màn đá
+     * nhau"* mà bản vá bộ chọn sinh ra để dọn.
+     */
+    fun highlightedPreset(
+        preset: LayoutPreset,
+        custom: GridLayout?,
+        cap: Int = WorkspaceState.SLOT_CAP,
+    ): LayoutPreset? = if (usable(custom, cap)) null else preset
+
     /** Lý do bố cục tự vẽ bị bỏ qua — để nói cho người dùng, không im lặng. `null` = đang dùng nó. */
     fun ignoredReason(custom: GridLayout?, cap: Int = WorkspaceState.SLOT_CAP): String? = when {
         custom == null || custom.frames.isEmpty() -> null          // chưa vẽ gì: không phải "bị bỏ qua"

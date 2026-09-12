@@ -21,7 +21,14 @@ ul{padding-left:22px}li{margin:4px 0}.warn{border-left:3px solid #d29922;padding
 <h1>Kachi — Design System &amp; IA</h1>
 <p class="sub">Trạng thái: <span class="tag">In-progress</span> · Cập nhật 2026-09-12 · Chủ: KhoiPD · Sinh từ yêu cầu owner: <em>"mớ Settings vẫn lộn xộn, nút/widget dính nhau, checkbox/button sai style; mình có IA, design system thật chưa?"</em></p>
 
-<h2>1. Context — vì sao vá điểm mãi vẫn lộn xộn</h2>
+<h2>1. Changelog</h2>
+<p class="muted">Mỗi pass = 1 dòng, mới nhất trên cùng.</p>
+<ul>
+<li><b>Pass 2 — 2026-09-12 (tối)</b>: Pha 2 = OQ1 (một phần): lan type scale ra <b>5 bề mặt ngoài Settings</b> (AppDrawer · KachiTopStrip · OverlayHeads · WorkspaceView · LayoutEditorPanel) + đưa cả 5 vào bài canh <code>TypeScaleContractTest</code> với cơ chế miễn trừ tường minh (marker <code>[type scale]</code>). Kèm 2 vá lẻ cùng họ IA: thanh trên không tô sáng preset khi đang dùng bố cục tự vẽ; nút ⇄ nổi thêm viền mảnh. Owner chốt: <b>chip giữ 44</b>. Thêm §Changelog + §Nhật ký triển khai (spec trước thiếu so template).</li>
+<li><b>Pass 1 — 2026-09-12 (chiều)</b>: Khởi tạo spec từ câu hỏi owner "có IA/design system thật chưa?"; pha 1 áp Settings (KachiType + SettingsRows + stack spacing + 2 bài canh); senior review APPROVED; 3 commit <code>07ca70c</code>·<code>6050d3a</code>·<code>328f16e</code>.</li>
+</ul>
+
+<h2>2. Context — vì sao vá điểm mãi vẫn lộn xộn</h2>
 <p>Đo trên code launcher (55 tệp): <b>có tokens rời</b> (màu <code>KachiPalette</code>/<code>KachiTheme</code> 2 bảng · khoảng cách <code>KachiSpace</code>) và <b>khung IA</b> (<code>SettingsCatalog</code> 7 nhóm), nhưng <b>thiếu ba thứ nền của một design system</b>:</p>
 <ul>
 <li><b>Không có type scale</b>: [ĐO] <b>18 cỡ chữ</b> khác nhau viết tay (9.5→32sp) — không có bậc "tiêu đề/nội dung/chú thích".</li>
@@ -30,7 +37,7 @@ ul{padding-left:22px}li{margin:4px 0}.warn{border-left:3px solid #d29922;padding
 </ul>
 <div class="warn">Các fix ngày 2026-09-12 (màu tiêu đề, thống nhất cột, scrim đục) chữa <b>triệu chứng</b>. Gốc là ba thứ trên.</div>
 
-<h2>2. Requirements</h2>
+<h2>3. Requirements</h2>
 <ul>
 <li><b>R1</b> — Type scale 5 bậc, một nguồn; Settings không còn <code>setTextSize</code> tay.</li>
 <li><b>R2</b> — Thư viện component <code>KachiUi</code> (một nơi): SectionHeader · Row (thẻ có LỀ NGOÀI chuẩn) · Checkbox · Button (chính/phụ/nguy hiểm) · Chip/Segmented · Note. Mọi bề mặt Settings đi qua nó.</li>
@@ -41,8 +48,8 @@ ul{padding-left:22px}li{margin:4px 0}.warn{border-left:3px solid #d29922;padding
 <li><b>R7</b> — Áp <b>Settings trước</b> (owner đau nhất); nền dùng được cho ngăn kéo/thanh nút/widget để <b>lan sau</b>. Verify ảnh độc lập.</li>
 </ul>
 
-<h2>3. Design</h2>
-<h3>3.1 Type scale — <code>KachiType</code> (:app, cạnh KachiSpace)</h3>
+<h2>4. Design</h2>
+<h3>4.1 Type scale — <code>KachiType</code> (:app, cạnh KachiSpace)</h3>
 <table>
 <tr><th>Bậc</th><th>sp</th><th>Dùng cho</th></tr>
 <tr><td>DISPLAY</td><td>28</td><td>số/giá trị hero (đồng hồ, giá trị lớn)</td></tr>
@@ -53,35 +60,76 @@ ul{padding-left:22px}li{margin:4px 0}.warn{border-left:3px solid #d29922;padding
 </table>
 <p>Mỗi bậc là <code>const val</code> sp + helper <code>KachiType.apply(tv, level, bold)</code>. Cỡ đặc thù (số trên widget/board, tính theo tỉ lệ ô) KHÔNG thuộc scale này — chúng là kích thước vẽ Canvas, khai riêng có lý do.</p>
 
-<h3>3.2 Component — nâng <code>SettingsRows</code> thành bộ dựng chuẩn</h3>
+<h3>4.2 Component — nâng <code>SettingsRows</code> thành bộ dựng chuẩn</h3>
 <p>SettingsRows đã là component sơ khai; nâng nó thành nguồn chuẩn: mọi hàm (<code>sectionLabel/checkRow/chipRow/unitRow/note/button/permissionRow</code>) (a) dùng <code>KachiType</code>, (b) tự mang <b>lề ngoài</b> qua <code>layoutParams.bottomMargin</code> (gap hàng = <code>Sp.S</code>; section header thêm <code>topMargin = Sp.L</code> để tách nhóm), (c) style checkbox/button/chip nhất quán (hình dạng cố định). Chỗ gọi chỉ <code>addView(component)</code> — không set lp, không set cỡ chữ.</p>
 
-<h3>3.3 Stack spacing</h3>
+<h3>4.3 Stack spacing</h3>
 <p>Body của mỗi nhóm là cột dọc; khoảng cách do component tự mang (không để chỗ gọi tự chèn) ⇒ mọi nhóm cách đều. Section header = ranh giới nhóm (lề trên lớn hơn).</p>
 
-<h2>4. Tasks</h2>
+<h2>5. Tasks</h2>
 <ul>
 <li><b>T2</b> KachiType (:app) + helper.</li>
 <li><b>T3</b> Nâng SettingsRows: type scale + lề ngoài + style nhất quán.</li>
 <li><b>T4</b> Áp Settings (SettingsSections/Home/TopStripPicker) đi qua SettingsRows; bỏ dựng-tay còn sót.</li>
 <li><b>T5</b> Test khoá R5 + rà IA.</li>
 <li><b>T6</b> Verify ảnh độc lập + full test + senior review + commit/push.</li>
+<li><b>T7 (pha 2, OQ1-a)</b> Lan KachiType ra 5 bề mặt ngoài Settings (AppDrawer · KachiTopStrip · OverlayHeads · WorkspaceView · LayoutEditorPanel); đưa vào <code>SURFACES</code> của bài canh; ngoại lệ cỡ chữ phải khai marker <code>[type scale]</code> kèm lý do tại dòng. Chưa gồm: WidgetViews (18 chỗ <code>tv(sp)</code> hero/eyebrow), CapabilityGridSection (2 cỡ ô lưới), 15 lời gọi "cửa thứ hai" ở Settings.</li>
 </ul>
 
-<h2>5. Verification</h2>
+<h2>6. Verification</h2>
 <ul>
 <li>[ĐO] Settings: 0 <code>setTextSize</code> số tay; mọi hàng cách đều (hết dính); checkbox/button một style.</li>
 <li>Ảnh emulator qua luồng độc lập: tiêu đề nhóm &gt; nội dung; hàng không dính; nút/chip đồng nhất.</li>
 <li>Full test 5 module 0 đỏ; senior review APPROVED.</li>
+<li><b>Pha 2 (2026-09-12 tối)</b> [ĐO] full 5 module <code>--rerun-tasks</code>: <b>3255 test / 0 đỏ</b> (379 lớp, 47 tác vụ). Bài canh TypeScale/StackMargin/PickGridColumn 8/8. Grep 5 tệp mới: 0 <code>setTextSize</code> số tay ngoài 3 dòng marker, 0 <code>Typeface.DEFAULT_BOLD</code> tay. Emulator <code>clusternav10</code> (google_apis 1920×1080/240dpi), APK debug 21:33 mới hơn mọi sửa nguồn: chụp 7 ảnh (Home · Drawer mở-thường · Drawer đặt-vào-ô 2 vị trí cuộn · Settings · Bảng vẽ bố cục · Home sau khi lưu bố cục tự vẽ). [ĐO] sau khi lưu bố cục tự vẽ 1 khung (<code>grid_layout=0,0,12,6</code>): <b>0 pixel accent</b> trên dải preset thanh trên ⇒ vá <code>selectPreset(null)</code> đúng. Kết quả soát ảnh độc lập + senior review: xem §10 Pass 2.</li>
 </ul>
 
-<h2>6. Open Questions</h2>
+<h2>7. Open Questions</h2>
 <ul>
-<li>OQ1 — Lan ra ngăn kéo/thanh nút/widget (14 tệp dựng tay) = pha sau, cần phiên riêng.</li>
+<li>OQ1 — Lan ra ngăn kéo/thanh nút/widget (14 tệp dựng tay). <b>Pha 2 (2026-09-12 tối) làm xong 5 tệp</b> (T7). Còn: <b>OQ1-b</b> WidgetViews (hero/eyebrow theo tỉ lệ ô, phần lớn ngoài 5 bậc — cần quyết có mở bậc riêng cho widget hay giữ ngoại lệ) · <b>OQ1-c</b> CapabilityGridSection 2 cỡ 11.5/10 (ô lưới mật độ cao) · <b>OQ1-d</b> 15 lời gọi cửa-thứ-hai <code>setTextSize(…, KachiType.X)</code> ở 4 tệp Settings gộp về <code>apply()</code>.</li>
+<li>OQ3 — <b>Chip cao 44 &lt; đích chạm 48</b>: <b>owner chốt 2026-09-12: GIỮ 44</b> (số đã verify bằng ảnh). Không đổi trị số; việc đổi tên hằng sang đúng vai (TOUCH thay vì một cỡ ICON) là P3, làm khi chạm chip lần sau.</li>
+<li>OQ4 — Màn Home-settings có 2 cấp tiêu đề (nhóm cha "Individual items" vs lĩnh vực con "Energy &amp; charging") <b>cùng cỡ SECTION</b>; thang 5 bậc không có sub-header. Chờ owner: thêm bậc thứ sáu (phá luật "đúng 5 bậc") hay phân biệt bằng màu/nét/lề thay vì cỡ.</li>
 <li>OQ2 — Có tách <code>KachiUi</code> thành lớp riêng (ngoài SettingsRows) để màn khác dùng không, hay giữ SettingsRows làm nguồn tạm.</li>
 </ul>
 
-<h2>7. Reviewer Log</h2>
+<h2>8. References</h2>
+<ul>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/KachiType.kt</code> — thang 5 bậc + <code>apply()</code>.</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/SettingsRows.kt</code> — bộ component chuẩn (pha 1).</li>
+<li><code>app/src/test/java/com/byd/clusternav/launcher/TypeScaleContractTest.kt</code> · <code>SettingsStackMarginContractTest.kt</code> — bài canh.</li>
+<li><code>docs/PROJECT-BACKLOG.md</code> mục "Design system + IA thật — 2026-09-12" · <code>.kiro/steering/project-context.md</code> §5.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-12 (tối) · Sai lệch spec → đã sửa spec</b> — Spec pha 1 thiếu §Changelog và §Nhật ký so <code>_template.html</code> (R2.6). Bổ sung ở pass 2 và đánh số lại mục theo template (Context=2 … Reviewer Log=10).</li>
+<li><b>2026-09-12 (tối) · Quyết định</b> — Ngoại lệ cỡ chữ ở bề mặt đã áp design system phải <b>khai tại dòng</b> bằng marker <code>[type scale]</code> + lý do, thay vì mở bậc mới. Vì: mở bậc thứ sáu phá luật "đúng 5 bậc" đã khoá bằng test; ngoại lệ có lý do hình học (glyph ＋ là ký hiệu trang trí cỡ ô trống) hoặc mật độ (ô lưới 11.5/10 cần thứ bậc nhãn/dòng phụ dưới CAPTION). Cùng khuôn <code>allowedRaw</code> của <code>SpacingScaleContractTest</code>. Trade-off: marker chỉ so chuỗi ⇒ cửa lách nếu ai đó dán marker mà không có lý do — senior review pass 2 soi điểm này.</li>
+<li><b>2026-09-12 (tối) · Quyết định</b> — <code>AppDrawer.sectionLabel</code> nâng 13sp → SECTION(16): bản vá trước (chiều-2) nâng lên 13 vẫn <b>dưới</b> BODY(13.5), tỉ số 0.96 ⇒ chỉ màu+nét gánh thứ bậc; SECTION cho tỉ số 1.19, cùng bậc <code>SettingsRows.sectionHeader</code> cùng vai.</li>
+<li><b>2026-09-12 (tối) · Trade-off</b> — Đổi bậc làm một số chữ đổi cỡ so hình đã duyệt: nhãn app trong lưới 12→13.5, nhãn app trong ô 15→13.5, placeholder 14→13.5, đồng hồ 17→16, badge widget 16→16 (không đổi), tiêu đề bảng vẽ 19→20. Chấp nhận để một hệ; verify ảnh pha 2 kiểm cắt/tràn.</li>
+<li><b>2026-09-12 (tối) · Cố ý chưa làm</b> — <code>WidgetViews.tv(ctx, s, sp, …)</code> có cỡ là THAM SỐ, 18 chỗ gọi truyền số tay (hero/eyebrow theo ô) ⇒ không thuộc 5 bậc; badge "chưa kiểm trên xe" 9.5sp cố ý lặng. Ghi KDoc tại chỗ, để OQ1-b.</li>
+<li><b>2026-09-12 (tối) · Bug &amp; cách xử (cùng họ IA)</b> — Thanh trên luôn tô sáng "1 ô" dù đang dùng bố cục tự vẽ (bộ chọn preset thứ hai, màn Cài đặt đã vá ở chiều-2 nhưng thanh trên chưa). Sửa: <code>KachiTopStrip.selectPreset(LayoutPreset?)</code> nhận <code>null</code>; <code>KachiHomeActivity.render</code> gọi lại khi preset đổi HOẶC trạng thái có/không bố cục tự vẽ đổi. [ĐO] emulator: lưu bố cục 1 khung ⇒ 0 pixel accent trên dải preset.</li>
+<li><b>2026-09-12 (tối) · Bug &amp; cách xử</b> — Nút ⇄ nổi (scrim đen mờ) tan vào ô widget nền tối, [ĐO] chỉ rõ ở 1/3 ô ⇒ thêm viền <code>Sp.HAIRLINE</code> màu <code>ON_ACCENT</code>. Không theo chủ đề vì nút nằm trên pixel của app đang chiếu.</li>
+<li><b>2026-09-12 (tối) · Cách đo</b> — Suýt đọc nhầm ảnh Home sau khi lưu bố cục 1 khung là "vẫn 3 ô" (3 thẻ nhìn như 3 ô). Kiểm bằng <code>dumpsys activity top</code>: WorkspaceView có <b>1</b> FrameLayout con 0,0-1872,782, 3 thẻ là nội dung widget nhóm bên trong. Bài học §15 CLAUDE.md: đọc cây view thật trước khi kết luận từ ảnh.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 2 — 2026-09-12 (tối) · pha 2 OQ1-a (5 bề mặt) + 2 vá lẻ · hai luồng độc lập (ảnh + code)</h3>
+<p><b>Verdict code: APPROVED</b> (senior, Opus) sau khi tự vá 2×[P2] + 1×[P3]; <b>verdict ảnh: ĐẠT CÓ ĐIỀU KIỆN</b>. [ĐO] <code>:app:testDebugUnitTest :core:test</code> sau vá: <b>2251 / 0 đỏ</b> (+4 bài so Pass 1). Mọi finding code chứng minh bằng thử phá.</p>
+<ul>
+<li><b>[P2-1 · đã vá]</b> Cửa miễn <code>[type scale]</code> chỉ so chuỗi ⇒ marker TRẦN (không lý do) cũng qua. [ĐO] chèn <code>textSize = 99f // [type scale]</code> ⇒ 0 đỏ. Vá: lý do ≥ <code>EXEMPT_REASON_MIN</code>(12) ký tự sau marker + bài ghim <code>EXEMPT_LINES = 3</code> (thêm ngoại lệ thứ tư có lý do thật ⇒ bài ghim đỏ = cổng quyết định). Cùng khuôn <code>allowedRaw</code> / <code>SAME_ON_PURPOSE</code>. Sau vá: marker trần ⇒ 2 bài đỏ.</li>
+<li><b>[P2-2 · đã vá]</b> "Ô preset nào sáng" tự suy ra tại chỗ bằng <code>customLayout != null</code>, trong khi màn hình quyết định bằng <code>EffectiveLayout.usable</code> (luật lùi an toàn): bố cục tự vẽ lưu rồi mà KHÔNG dùng được (đè nhau / vượt trần ô khi hạ cấp bản) ⇒ màn vẽ preset mà dải preset không ô nào sáng — chỗ thứ 7 tự suy bố cục hiệu lực (6 chỗ kia đã dọn ở P9). Vá: hàm thuần <code>EffectiveLayout.highlightedPreset(preset, custom, cap)</code> ở :core (bất biến <code>lit == null ⟺ usable</code>), render so bằng chính giá trị sẽ tô; +2 bài <code>EffectiveLayoutTest</code> + guard nguồn trong <code>GridSeamGuardTest</code> (cấm dựng lại quyết định tại chỗ gọi). Mutation: đổi hàm về <code>!= null</code> ⇒ 2 bài :core đỏ; trả render về tự suy ⇒ guard đỏ.</li>
+<li><b>[P3 · đã vá]</b> import chết <code>Typeface</code> ở WorkspaceView (có từ trước). <b>[P3 · không vá]</b> <code>substringBefore("//")</code> cắt literal chứa <code>//</code> — [ĐO] 0 ca thật trong 11 tệp SURFACES. <b>[INFO]</b> WidgetViews đặt marker ở dòng TRÊN dòng mã ⇒ khi vào SURFACES sẽ không được miễn (giao kèo: marker phải ở chính dòng) — lượt OQ1-b phải chuyển.</li>
+<li><b>Đã kiểm, không phải lỗi</b>: (c) 0 chỗ đặt <code>typeface</code> sau <code>apply()</code>; <code>apply</code> không chạm <code>letterSpacing</code>. (d) tràn chữ: ô app 6 cột ≈ 292px, "Cluster Nav 2.0" ≈ 158px ở 13.5sp ⇒ không cắt [SUY số học]; soát ảnh xác nhận 0 ellipsize sai. (f) <code>Sp.HAIRLINE = 1</code>, <code>dp(1)</code> ở 240dpi = 1px, không về 0.</li>
+<li><b>Tech freshness</b>: <code>setTextSize(COMPLEX_UNIT_SP, …)</code>, <code>Typeface.DEFAULT_BOLD</code> hiện hành, không deprecated; ghi nhận <code>Typeface.create(family, weight, italic)</code> (API 28+) là đường mịn hơn nhưng đổi sẽ đổi hình đã duyệt — không đổi. ⚠ nếu view nào bật autosize thì <code>setTextSize</code> thành no-op ⇒ <code>KachiType.apply</code> im lặng vô tác dụng; [ĐO] 0 chỗ dùng autosize trong <code>launcher/</code>.</li>
+</ul>
+<p><b>Soát ảnh độc lập (7 ảnh emulator 1920×1080/240dpi, đo cap-height PIL)</b>: thang chữ lan đúng — TITLE 22px / SECTION 17 / BODY 15 / CAPTION 13 trùng khít 5 bề mặt mới với Settings (sai số ≤1px); tương phản chữ chính 14–16:1, phụ 6.1–7.3:1; vá <code>selectPreset(null)</code>: 5 ô preset đồng màu nền, <b>0 pixel accent</b>. Findings còn lại (chuyển sang gói vá Settings/IA kế tiếp, xem backlog):</p>
+<ul>
+<li><b>[P1]</b> Lưới ô nhóm trong <b>ngăn kéo</b> (AppDrawer, không phải CapabilityGridSection): ô chọn cạnh nhau <b>dính 0px</b>, chung một đường viền, nền liền mạch; ô cùng hàng không đồng cao (165 vs 183px). Pha 1 chỉ vá lưới trong Settings — cùng bệnh, bề mặt khác.</li>
+<li><b>[P1]</b> Nút − / + trên thanh nút xe rộng 14–22dp (WidgetViews) — đích chạm nhỏ nhất màn, ngoài phạm vi pha 2.</li>
+<li><b>[P2]</b> Nút ⇄ chỉ nổi nhờ viền 1px (ruột tối hơn nền ô 1.19:1); chiều cao nút không thống nhất: 35dp (Done/FAB/Apps/Settings) · 43dp (pill bảng vẽ) · 44dp (chip, owner chốt) · 48dp (button Settings); đáy lưới drawer để trống 104px mà hàng cuối bị fade cắt nhãn.</li>
+<li><b>[P3]</b> Chip segmented Settings = CAPTION 12 trong khi pill/nút khác = BODY 13.5; OQ4 xác nhận bằng số ("Individual items" và "Energy &amp; charging" cùng cap 17px); ô nhóm chưa chọn không có nền; bảng vẽ bố cục dùng lề trang 30px không cùng họ panel (x84).</li>
+</ul>
+
 
 <h3>Pass 1 — 2026-09-12 · senior review (độc lập) hai commit <code>07ca70c</code> + <code>6050d3a</code></h3>
 <p><b>Verdict: APPROVED</b> sau khi tự vá 3×[P1] + 4×[P2]/[P3]. <b>[ĐO]</b> <code>:app:testDebugUnitTest :core:test --rerun-tasks</code> ⇒ <b>247 lớp / 2247 test / 0 đỏ</b>. Mọi phát hiện dưới đây <b>chứng minh bằng thử phá</b>, không suy luận.</p>
@@ -141,7 +189,7 @@ tự thêm: hạ 11.5→CAPTION(12) thì dòng phụ 10 không còn bậc nào n
 
 <p><b>[P3] đã vá:</b> 6 import chết (<code>Typeface</code> ở SettingsRows và <code>ViewGroup</code>/<code>dpi</code>/<code>Sp</code>
 ở SettingsSectionsHome do chính hai commit này làm thừa; <code>Color</code> ở SettingsPanel/CapabilityGridSection có
-trước) · lệch tài liệu SECTION <b>14 vs code 16</b> ở KDoc <code>KachiType</code> và ở bảng §3.1 spec này (commit 2 sửa
+trước) · lệch tài liệu SECTION <b>14 vs code 16</b> ở KDoc <code>KachiType</code> và ở bảng §4.1 spec này (commit 2 sửa
 dòng gạch đầu dòng mà bỏ sót hai chỗ còn lại).</p>
 
 <p><b>Đã kiểm — KHÔNG phải lỗi:</b> (a) ô cao <code>MATCH_PARENT</code> trong hàng <code>WRAP_CONTENT</code> đo ĐÚNG trên

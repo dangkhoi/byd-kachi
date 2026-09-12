@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -66,8 +65,7 @@ class LayoutEditorPanel(
             addView(TextView(context).apply {
                 text = context.getString(R.string.kachi_layout_title)
                 setTextColor(Color.parseColor(KachiTheme.INK))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 19f)
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                KachiType.apply(this, KachiType.TITLE, bold = true)
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(pill(context.getString(R.string.kachi_layout_close)) { onClose() })
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -75,7 +73,7 @@ class LayoutEditorPanel(
         root.addView(TextView(context).apply {
             text = context.getString(R.string.kachi_layout_hint)
             setTextColor(Color.parseColor(KachiTheme.MUT))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            KachiType.apply(this, KachiType.CAPTION)
             setPadding(0, dp(Sp.XS), 0, dp(Sp.M))
         })
 
@@ -91,12 +89,12 @@ class LayoutEditorPanel(
             text = " "        // giữ một dòng chiều cao ngay từ đầu
             minLines = 1; maxLines = 1
             setTextColor(Color.parseColor(KachiTheme.RED))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            KachiType.apply(this, KachiType.CAPTION)
             setPadding(0, dp(Sp.S), 0, 0)
         }
         info = TextView(context).apply {
             setTextColor(Color.parseColor(KachiTheme.MUT2))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            KachiType.apply(this, KachiType.CAPTION)
             setPadding(0, dp(Sp.XS), 0, dp(Sp.S))
         }
         root.addView(problem); root.addView(info)
@@ -189,7 +187,7 @@ class LayoutEditorPanel(
     private fun pill(text: String, onTap: () -> Unit) = TextView(context).apply {
         this.text = text
         setTextColor(Color.parseColor(KachiTheme.INK))
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        KachiType.apply(this, KachiType.BODY)
         setPadding(dp(Sp.L), dp(Sp.M), dp(Sp.L), dp(Sp.M))
         background = GradientDrawable().apply {
             cornerRadius = dp(Sp.RADIUS_XL).toFloat()
