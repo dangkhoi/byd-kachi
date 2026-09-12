@@ -23,7 +23,7 @@ import android.widget.TextView
  *
  *  • [DISPLAY] 28 — số/giá trị hero (đồng hồ, giá trị lớn giữa ô).
  *  • [TITLE]   20 — tiêu đề màn / bảng phủ.
- *  • [SECTION] 14 — tiêu đề nhóm (luôn dùng kèm đậm + màu sáng để nổi hơn [BODY]).
+ *  • [SECTION] 16 — tiêu đề nhóm (luôn dùng kèm đậm + màu sáng để nổi hơn [BODY]).
  *  • [BODY]  13.5 — nội dung, nhãn hàng, chữ trên nút.
  *  • [CAPTION] 12 — chú thích, dòng phụ, đơn vị.
  *
@@ -40,7 +40,7 @@ object KachiType {
 
     const val DISPLAY = 28f
     const val TITLE = 20f
-    const val SECTION = 14f
+    const val SECTION = 16f
     const val BODY = 13.5f
     const val CAPTION = 12f
 

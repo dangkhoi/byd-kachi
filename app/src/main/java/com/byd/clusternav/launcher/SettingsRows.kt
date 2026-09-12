@@ -133,6 +133,14 @@ class SettingsRows(private val context: Context) {
         val tv = TextView(context).apply {
             this.text = text; KachiType.apply(this, KachiType.CAPTION, bold = true); gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S))
+            // ⚠ [SOÁT UI 2026-09-12] Bề rộng tối thiểu = đích chạm: chip nhãn 1-2 ký tự ("m"/"ft"/"°C") không có
+            // minWidth thì bo-tròn-tuyệt-đối biến nó thành HÌNH TRÒN, lạc khỏi họ pill của các chip dài. minWidth
+            // [KachiSpace.TOUCH] vừa giữ dáng viên thuốc vừa đạt đích chạm tối thiểu.
+            // minWidth [KachiSpace.TOUCH]: chip 1-2 ký tự không thành hình tròn. minHeight [KachiSpace.ICON_XL]:
+            // chip CHỌN (nền gradient) và chip TẮT (nền card) cùng chiều cao — trước đây lệch ~4px làm mép hàng
+            // răng cưa, vì hai drawable nền đo khác nhau; ép cùng minHeight thì đồng cao bất kể nền.
+            minWidth = dpi(context, Sp.TOUCH)
+            minHeight = dpi(context, Sp.ICON_XL)
             setOnClickListener { onTap() }
         }
         row.addView(tv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)

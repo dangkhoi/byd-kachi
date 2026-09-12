@@ -64,17 +64,27 @@ class CapabilityGridSection(
         items.forEachIndexed { i, pick ->
             if (i % cols == 0) {
                 row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-                parent.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                // ⚠ [SOÁT UI 2026-09-12] KHE DỌC giữa các hàng ô: trước đây 0px ⇒ ô hàng trên chạm ô hàng dưới
+                // ("nút/widget dính nhau" owner báo). Lề dưới = Sp.S, đồng nhịp với stack spacing của SettingsRows.
+                parent.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .also { it.bottomMargin = dpi(context, Sp.S) })
             }
-            row!!.addView(tile(pick), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            // Ô cao MATCH_PARENT (không WRAP): mọi ô trong hàng cao bằng nhau ⇒ ô nhãn ngắn (vd đang chọn) không
+            // còn thấp hơn ô nhãn 2 dòng cùng hàng (verify: Occupants 134px vs 164px). KHE NGANG = Sp.XS mỗi bên.
+            row!!.addView(tile(pick), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                .also { it.marginStart = dpi(context, Sp.XS); it.marginEnd = dpi(context, Sp.XS) })
         }
         val rem = items.size % cols
-        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
+        if (rem != 0) repeat(cols - rem) { row!!.addView(View(context), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            .also { it.marginStart = dpi(context, Sp.XS); it.marginEnd = dpi(context, Sp.XS) }) }
     }
 
     private fun tile(pick: CapabilityPick): View {
         val content = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            // ⚠ [SOÁT UI 2026-09-12] Căn NGANG-giữa nhưng DỌC-TRÊN (không CENTER cả hai): ô cao MATCH_PARENT theo
+            // hàng, nếu căn giữa dọc thì ô có dòng phụ 1 dòng (vd đang chọn) đẩy icon/nhãn xuống ~10px lệch với ô
+            // 2 dòng cùng hàng. Căn trên ⇒ icon và nhãn mọi ô cùng hàng thẳng một đường.
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(iconWithBadge(iconRes(pick), pick.needsBadge))
             addView(TextView(context).apply {
