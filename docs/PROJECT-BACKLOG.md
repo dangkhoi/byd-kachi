@@ -108,6 +108,18 @@
 
 **Còn tồn:** nhánh *"có cảnh báo nhưng không đủ chỗ ⇒ hiện cảnh báo + đếm phần còn lại"* chỉ chứng minh bằng test — off-car mọi field xe là `null` nên **không dựng được cảnh báo thật trên màn** · phép so trước/sau của mục 3 đo trên **bảng tối**; bảng sáng chỉ chứng minh bằng cách so với ô chuẩn không-bị-cắt (không có ảnh "trước" ở bảng sáng) · chưa đo gì **trên xe**.
 
+## Sửa giao diện owner báo lộn xộn — 2026-09-12 (chiều-2) · 12 lỗi (10 + 2 senior)
+
+> Owner: *"UIUX chạy lộn xộn, đặc biệt Settings; chọn app chiếu vào ô lệch loạn = regression"*. Soát ảnh emulator qua luồng ĐỘC LẬP + tự kiểm gốc bằng code trước khi vá. Commit `375d44f` + `95c2f28` (ĐÃ PUSH). **[ĐO] 3247 công bố / 0 đỏ** (`--rerun-tasks`, 73/73).
+>
+> **HỒI QUY chọn-app-vào-ô (xác nhận)**: màn "Đặt widget/app vào ô" nhảy cột **3→4→6** giữa CÙNG vùng cuộn — G1 chèn phần Nhóm 3 cột lên đầu, phần cũ (widget/mục lẻ 4, app 6) giữ nguyên ⇒ cuộn xuống tâm cột lệch = "lệch loạn". Vá: **một vùng cuộn = MỘT lưới cột**, số cột về `:core CapabilityPicker.COLS` (trước nằm 3 chỗ) + `PickGridColumnContractTest` 2 lớp. [ĐO] verify ảnh độc lập ĐẠT: cột 303/741/1179/1617 bước 438px thẳng đều.
+>
+> **Settings lộn xộn (verify ảnh ĐẠT)**: tiêu đề nhóm mờ+nhỏ hơn body → sáng `INK` đậm (3 bộ dựng) · nền bảng lộ Home → scrim đục hẳn `#ff…` · nút hình nền tắt mà 3 dãy pill vẫn bấm được → ẩn khi tắt · bố cục tự vẽ mà sáng preset "1 ô" → không tô preset khi custom · nút Xoá hồ sơ luôn hiện → chỉ hiện khi xoá được (+sửa test).
+>
+> **Ô Home (verify code+test, chưa verify ảnh — off-car render mini-card)**: nhãn ADAS dính hình xe → khoảng cách có SÀN · câu "chưa đọc được" (verdict lốp) to nhất màn → cap trần 16sp (senior bắt thêm: dòng phụ từng bánh cũng cap) · ô Mức xăng chỉ-đọc nhồi vỏ stepper, % bị cắt → gộp giá trị+đơn vị một hàng + ellipsize.
+>
+> **Senior review APPROVED** (0 P0/P1) + tự vá 3 P2 (cột về :core + bài canh; cap dòng phụ; ellipsize) + 4 P3 (dọn API deprecated/mã chết/import). ⚠ **CHỈ đo được TRÊN XE**: đơn vị ô dock hẹp có thể bóp 0 khi giá trị dài; scrim bảng SÁNG nay gần đen quanh viền (owner chọn đục hẳn). Các finding P2/P3 còn lại của lượt soát UI (mật độ vs prototype cũ, icon trùng=U1, ô không viền) là **design/nợ đã biết**, KHÔNG nhập đợt này.
+
 ## Lượt soát độc lập sau P7/P6 — 2026-09-12 (chiều) · đã vá 20 lỗi
 
 > Đóng lượt soát độc lập sau chặng P7/P6 (soát cả các vùng chặng gần: hình nền U4, nhóm G1, đa ngôn ngữ U5, hồ sơ).
