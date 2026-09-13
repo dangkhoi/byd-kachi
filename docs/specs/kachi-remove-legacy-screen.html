@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi — Gỡ hẳn màn ClusterNav cũ, giữ đủ tính năng</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Kachi — Gỡ hẳn màn ClusterNav cũ (MainActivity), giữ đủ tính năng</h1>
+<p class="muted">Slug: <code>kachi-remove-legacy-screen</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: In-progress — owner chốt 2026-09-13 sáng: "Gỡ hẳn màn clusternav cũ đi, giữ đủ feature là OK"</span> · Chủ: KhoiPD</p>
+<h2>1. Changelog</h2>
+<ul><li><b>Pass 0 — 2026-09-13</b>: Khởi tạo từ quyết định owner (đóng OQ1 của <code>kachi-settings-ia-v2.html</code>).</li></ul>
+<h2>2. Context</h2>
+<p>Sau S2, mọi cấu hình/hành động của màn cũ đã có trong Kachi Settings qua <code>ClusterNavBridge</code>; màn cũ chỉ còn mở từ Hệ thống › Nâng cao. [ĐO] còn <b>4 thứ chỉ tồn tại ở màn cũ</b>: (1) <code>CastGeometryEditor</code> — khung + DPI (320/240/160) từng app/hồ sơ khi ĐANG chiếu, nút Đặt lại; (2) <code>ClusterPreviewView</code> — xem trước cụm đang chiếu; (3) hộp thoại miễn trừ trách nhiệm lần đầu (<code>disclaimer_shown</code>); (4) dòng trạng thái <code>NavClusterOp39Status</code>. Ngoài ra ~36 tệp <code>main</code> nhắc "MainActivity" (phần lớn KDoc), ~30 test đọc source <code>MainActivity.kt</code>/<code>activity_main.xml</code>.</p>
+<p><b>Niêm phong T11</b> [ĐO] <code>ExpansionTransportFenceTest</code>: <code>activity_main.xml</code> + <code>res/values/strings.xml</code> nằm trong <code>T11_PATHS</code> (13 mục) với hash; chú thích cấm gỡ <code>activity_main.xml</code> khỏi danh sách; <code>offcar-boundary-revisions.json</code> (tự-hash) cũng nhắc tên. ⇒ <b>Quyết định</b>: KHÔNG xoá/sửa hai tệp tài nguyên đó — chúng ở lại đĩa như hiện vật niêm phong (không activity nào inflate, không mã nào tham chiếu <code>R.layout.activity_main</code>); gỡ toàn bộ phần còn lại.</p>
+<h2>3. Requirements</h2>
+<ul>
+<li><b>R1</b> Không còn <code>MainActivity</code> (kt + manifest + <code>layout-w960dp/activity_main.xml</code> nếu không bị seal — [ĐO] chỉ <code>layout/activity_main.xml</code> bị seal, bản w960dp thì kiểm bằng <code>LayoutVariantIdParityTest</code> đang so hai bản; xoá bản w960dp và test parity đó). Mọi intent tường minh tới nó (RebindReceiver, UpdateRelaunch, FloatingBubbleService PendingIntent, BubbleActionDispatcher "Cấu hình", <code>ClusterNavBridge.openLegacyScreen</code>, mục Hệ thống › Nâng cao) chuyển sang <code>KachiHomeActivity</code> (kèm extra mở Settings đúng nhóm nếu có ý nghĩa: bong bóng "Cấu hình" → Settings › Chiếu cụm).</li>
+<li><b>R2 — Giữ đủ tính năng</b>: (a) bộ chỉnh khung/DPI khi đang chiếu nhúng vào Settings › Chiếu cụm (chỉ hiện khi <code>castState</code> đang chiếu; per-app/per-profile như <code>CastGeometryEditor</code>; Đặt lại) — đi qua bridge; (b) <code>ClusterPreviewView</code> nhúng ở Chiếu cụm (embed, cập nhật theo trạng thái); (c) miễn trừ trách nhiệm lần đầu: hộp thoại ở <code>KachiHomeActivity</code> lần mở đầu, cùng khoá <code>disclaimer_shown</code>, cùng câu chữ (song ngữ), có ở About; (d) dòng trạng thái cụm op39 vào statusRow ở Dẫn đường; (e) mọi thứ khác đã có (kiểm bằng bảng kiểm kê ClusterNav 30 cấu hình + 15 hành động ở spec IA v2 §4.3 — 100% có control).</li>
+<li><b>R3</b> Gỡ mã chết theo màn cũ: <code>MainActivityCastController</code>, <code>CastEnableSwitch</code>, <code>CastSplitRatioButtons</code>, <code>CastAutostart</code>, <code>BadgePlacementController</code>, <code>CastGeometryEditor</code> (sau khi chuyển logic sang bridge/section), <code>CastDeepRescueAction</code> (bridge đã lặp — hợp nhất về một chỗ), collapsible/tag helper, KDoc nhắc "MainActivity.kt:NNN" trong bridge sửa thành mô tả hành vi (giữ số dòng cũ trong Nhật ký spec IA v2 làm vết).</li>
+<li><b>R4</b> Test: xoá các wiring/parity test ĐỌC SOURCE màn cũ (L2Cockpit · CollapseTag · LayoutVariantIdParity · NavCastUiWiring · CastEnableToggle · NotificationAccessFlow · VoiceKeyGeminiReapply · VoiceKeyStatusWiring · ClusterModeSelector · AlertChipWiring · HudOutputHidden · SpeedSignSourceLifecycle · …) SAU KHI chuyển từng assert có ý nghĩa sang test của bridge/section (mỗi bài xoá phải có dòng "assert X đã ở bài Y" trong báo cáo; cái gì không còn ý nghĩa thì nói vì sao). Các test khác chỉ nhắc MainActivity trong chuỗi (vd KachiAutostartServiceWiringTest "MainActivity must NOT call runBoot") sửa cho đúng thực tế. Bài mới <code>LegacyScreenAbsenceContractTest</code>: không còn lớp/manifest entry/intent tới MainActivity; <code>R.layout.activity_main</code> không được tham chiếu.</li>
+<li><b>R5</b> Byte-seal: <code>git diff --stat</code> không có <code>res/layout/activity_main.xml</code>, <code>res/values/strings.xml</code>; T11 fence xanh không đổi hằng. <code>strings.xml</code> còn khoá không dùng (chuỗi màn cũ) — chấp nhận (lint UnusedResources không chặn build); ghi Nhật ký.</li>
+<li><b>R6</b> Không đổi khoá lưu bền nào; không mất cấu hình người dùng khi cập nhật.</li>
+<li><b>N</b> Tệp ≤ 500 dòng; :core thuần; chuỗi VI/EN ở <code>strings_kachi.xml</code>; không chữ cứng ở <code>launcher/</code>.</li>
+</ul>
+<h2>4. Design</h2>
+<div class="flow"><div class="fnode"><b>KachiHomeActivity</b><span>disclaimer lần đầu · nhận intent "mở Settings nhóm X"</span></div><div class="arrow">▶</div><div class="fnode"><b>Settings › Chiếu cụm</b><span>+ preview cụm · + khung/DPI khi đang chiếu</span></div><div class="arrow">▶</div><div class="fnode" style="background:rgba(0,113,227,.15)"><b>ClusterNavBridge (+Geometry)</b><span>logic CastGeometryEditor chuyển vào đây</span></div><div class="arrow">▶</div><div class="fnode"><b>SimpleCastRuntime · Prefs</b><span>không đổi</span></div></div>
+<ul>
+<li>Hình học chiếu: chuyển phần THUẦN của <code>CastGeometryEditor</code> (đọc/ghi <code>displayConfig</code> per pkg+profile, dải DPI, áp lại khung sống) sang <code>ClusterNavBridgeGeometry.kt</code>; UI = stepper/chip trong <code>SettingsSectionsCast</code> (chỉ khi <code>castState</code> là CastingFull/CastingSplit; nếu đang chia đôi thì chọn app trái/phải).</li>
+<li>Intent mở Settings nhóm: <code>KachiHomeActivity</code> nhận extra <code>open_settings_group=&lt;id&gt;</code> (chuỗi id nhóm ở <code>SettingsGroup</code>), mở panel + <code>show(group)</code>.</li>
+<li>Xoá theo thứ tự: chuyển tính năng → chuyển test → gỡ lớp → gỡ manifest → grep 0 tham chiếu (CLAUDE.md §8) → full test.</li>
+</ul>
+<h2>5. Tasks (DAG)</h2>
+<table><tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Chuyển 4 tính năng còn thiếu (R2 a–d)</td><td>ClusterNavBridgeGeometry.kt (mới) · SettingsSectionsCast/Nav · KachiHomeActivity/KachiHomeWiring · strings_kachi ×2</td></tr>
+<tr><td>T2</td><td>Đổi mọi intent/tham chiếu tới MainActivity → KachiHomeActivity (+extra nhóm)</td><td>RebindReceiver · UpdateRelaunch · FloatingBubbleService · BubbleActionDispatcher · ClusterNavBridge · SettingsSections · catalog mục system_advanced_screen (xoá) </td></tr>
+<tr><td>T3</td><td>Chuyển assert từ ~12 test đọc source màn cũ sang test bridge/section; xoá test; thêm LegacyScreenAbsenceContractTest</td><td>app/src/test</td></tr>
+<tr><td>T4</td><td>Xoá MainActivity.kt + 7 lớp chỉ phục vụ nó + manifest entry + layout-w960dp; giữ 2 tệp seal</td><td>—</td></tr>
+<tr><td>T5</td><td>Full test 5 module · APK · máy ảo: Settings › Chiếu cụm có preview + khung/DPI (khi chiếu) · disclaimer lần đầu (pm clear) · bong bóng "Cấu hình" mở Kachi · senior review · scan · commit</td><td>—</td></tr></table>
+<h2>6. Verification</h2>
+<ul><li>V-unit: 5 module 0 đỏ; T11 fence xanh không đổi hằng; grep "MainActivity" trong <code>app/src/main</code> = 0 (trừ KDoc lịch sử có gắn "đã gỡ 2026-09-13").</li><li>V-emulator: <code>pm query-activities</code> 1 LAUNCHER; <code>dumpsys package</code> không còn <code>.MainActivity</code>; <code>pm clear</code> rồi mở ⇒ disclaimer hiện một lần; Settings › Chiếu cụm có preview.</li><li>V-oncar: khung/DPI khi đang chiếu áp đúng (chờ xe).</li></ul>
+<h2>7. Open Questions</h2><ul><li>OQ1. <code>strings.xml</code> (seal) còn ~100 khoá chết của màn cũ — dọn khi/nếu owner cho phép mở seal T11 (đổi hằng có vết).</li></ul>
+<h2>8. References</h2><ul><li><code>docs/specs/kachi-settings-ia-v2.html</code> (§2, §4.3 bảng khoá, §10) · <code>ExpansionTransportFenceTest.kt:486, 880–895</code> · kiểm kê ClusterNav 2026-09-12.</li></ul>
+<h2>9. Nhật ký triển khai (Implementation Log)</h2><ul><li>(điền khi code)</li></ul>
+<h2>10. Reviewer Log</h2><ul><li>(chưa có)</li></ul>
+</div></body>
+</html>

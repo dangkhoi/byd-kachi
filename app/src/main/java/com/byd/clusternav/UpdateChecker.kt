@@ -13,7 +13,8 @@ import java.net.URL
  * KIỂM TRA & TẢI BẢN CẬP NHẬT từ GitHub — không cần server riêng, không thư viện ngoài.
  *
  * Cách hoạt động: repo public để sẵn APK release trong thư mục `apk/`. Hỏi GitHub Contents API xem thư mục
- * đó có file `ClusterNav-<ver>-release.apk` nào mới hơn bản đang cài không, rồi tải từ `download_url` và cài.
+ * đó có file `Kachi-<ver>-release.apk` (hoặc tên cũ `ClusterNav-…`) nào mới hơn bản đang cài không, rồi tải từ
+ * `download_url` và cài. Cùng khoá ký Kachi (keystore riêng từ 1.41, L2) nên `pm install -r` chạy được.
  *
  * CÀI qua dadb loopback (`dadb.install(file, "-r")`): app chạy trên đầu xe nối `localhost:5555` = uid shell,
  * đủ quyền `pm install`. Không cần REQUEST_INSTALL_PACKAGES, không cần người dùng bấm qua trình cài đặt —
@@ -25,10 +26,22 @@ import java.net.URL
  */
 object UpdateChecker {
 
-    private const val REPO = "dangkhoi/byd-launcher"
+    /**
+     * L2 (2026-09-13) — kênh cập nhật RIÊNG của Kachi: repo `dangkhoi/byd-kachi` (đúng remote của mã này), thư mục
+     * `apk/` trên nhánh [BRANCH]. Trước đây trỏ `dangkhoi/byd-launcher` (tên repo ClusterNav 2.0 kế thừa) ⇒ Kachi
+     * dò nhầm kênh của app khác — không bao giờ thấy bản của mình.
+     */
+    private const val REPO = "dangkhoi/byd-kachi"
     /** Nhánh chứa APK phát hành. Để trống = nhánh mặc định của repo (main). */
     private const val BRANCH = "main"
-    private val RE_APK = Regex("""ClusterNav-([0-9]+(?:\.[0-9]+)*)-release\.apk""")
+    /**
+     * Tên tệp phát hành: `Kachi-<ver>-release.apk`. Vẫn nhận `ClusterNav-<ver>-release.apk` để nếu owner đăng theo
+     * tên cũ thì kênh không câm — hai tiền tố, một dải phiên bản; bản mới nhất thắng bất kể tiền tố.
+     */
+    internal val RE_APK = Regex("""(?:Kachi|ClusterNav)-([0-9]+(?:\.[0-9]+)*)-release\.apk""")
+
+    /** Phiên bản trong tên tệp phát hành, `null` nếu tên không đúng khuôn (thuần — test off-device). */
+    internal fun apkVersion(fileName: String): String? = RE_APK.matchEntire(fileName)?.groupValues?.get(1)
 
     data class Result(
         val current: String,

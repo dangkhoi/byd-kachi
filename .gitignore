@@ -5,6 +5,7 @@ build/
 *.apk
 # bản phát hành cho nhóm tải (release-signed, cùng chữ ký):
 !apk/ClusterNav-*-release.apk
+!apk/Kachi-*-release.apk
 *.aab
 *.ap_
 *.dex

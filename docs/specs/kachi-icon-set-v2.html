@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi — Bộ icon v2: hình xe, theo vị trí, dễ chọn</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Kachi — Bộ icon v2: pictogram hình xe, theo vị trí, "fancy" nhưng đọc được ở 24dp</h1>
+<p class="muted">Slug: <code>kachi-icon-set-v2</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: In-progress — owner 2026-09-13: "U7 cần, và cần làm lại bộ icon fancy lên, các hình xe, điều khiển đèn này kia vẽ visual như hình xe, dễ hiểu dễ chọn, đẹp"</span> · Chủ: KhoiPD</p>
+<h2>1. Changelog</h2><ul><li><b>Pass 0 — 2026-09-13</b>: Khởi tạo sau U1/U6 (icon theo khái niệm). Owner muốn bước tiếp: hình XE + vị trí.</li></ul>
+<h2>2. Context</h2>
+<p>[ĐO] Sau U6: 56 icon phân biệt trên 123 mục đọc + 64 nút; còn 5 nhóm cùng glyph vì khác biệt nằm ở VỊ TRÍ: LIGHTS 14 ô (7 đèn ngoài một bóng đèn, 5 đèn viền một hình) · SAFETY 9 (+8 nút ADAS) sóng radar · BODY 10 (4 kính + 4 cửa) hình kính · TYRES 4 · IDENTITY 4. Bộ hiện tại là glyph trừu tượng 24dp nét 1.6 (<code>IconStyleContractTest</code>). Owner muốn người lái nhìn là biết ngay: "cửa nào, đèn nào, bánh nào".</p>
+<h2>3. Requirements</h2>
+<ul>
+<li><b>R1 — Ngôn ngữ hình: XE làm nền, phần điều khiển được TÔ.</b> Ba góc nhìn chuẩn: <i>từ trên</i> (cửa · kính · lốp · ghế · cảm biến đỗ · người ngồi · cốp/nắp ca-pô/cửa sổ trời), <i>từ trước</i> (đèn pha/cos/sương mù/ban ngày/xi-nhan, lưới tản nhiệt, gạt mưa), <i>từ sau</i> (đèn hậu/phanh/lùi/sương mù sau). Thân xe = nét INK 1.6 (tint được), phần được điều khiển = <b>vùng tô đặc</b> (fillColor tint theo View, cùng màu INK) hoặc nét dày hơn — KHÔNG màu riêng (bài canh giữ nguyên: 0 màu riêng trong tệp).</li>
+<li><b>R2 — Vị trí thật</b>: 4 cửa/kính/lốp/ghế/đèn xi-nhan = 4 biến thể FL/FR/RL/RR trên cùng khung xe; "tất cả" = tô cả 4. Đèn: pha (chùm dài) · cos (chùm ngắn) · sương mù (chùm thấp có sóng) · ban ngày (dải) · xi-nhan (mũi tên) · hậu · phanh · lùi · đèn viền/ambient (dải trong khoang, top view) — mỗi loại một hình khác nhau THẬT, không chỉ đổi nhãn.</li>
+<li><b>R3 — Đọc được ở 24dp trên xe</b>: ô quang học 20×20, chi tiết tối thiểu 1.6dp, không quá 3 "mảng" nhìn thấy; kiểm bằng ảnh máy ảo ở đúng cỡ lưới (icon ICON_L 32dp trong ô) — một soát viên độc lập phải gọi tên đúng ≥ 90% ô mà không đọc nhãn.</li>
+<li><b>R4 — Đồng bộ toàn bộ</b>: các icon U1/U6 giữ được thì giữ, nhưng cùng phong cách với bộ mới (nét 1.6, cap tròn, cùng độ "tròn"); "fancy" = tinh tế/nhất quán/có chiều sâu bằng vùng tô, KHÔNG phải gradient/màu riêng/đổ bóng (icon phải tint được theo chủ đề sáng/tối và trạng thái ô).</li>
+<li><b>R5 — Số đo</b>: <code>CapabilityIconsDiversityTest.pendingCeiling</code> về 0 cho 5 nhóm (trần ≤3 ô/hình mọi nhóm; với nhóm theo vị trí thì "hình" = hình + vị trí tô); <code>IconStyleContractTest</code> xanh; 0 icon mồ côi; mọi tên <code>ic-*</code> tra ra drawable.</li>
+<li><b>R6 — Huy hiệu "chưa kiểm trên xe"</b>: đảo dấu — chỉ đánh dấu ô CHƯA kiểm bằng chấm mờ nhỏ ở góc + gom một dòng "N mục chưa kiểm trên xe" ở đầu mỗi nhóm trong bộ chọn (thay vì 19/20 ô có chấm sáng). Ô ĐÃ kiểm không có gì. Kiểm bằng ảnh: chấm không chiếm > 8% ô.</li>
+</ul>
+<h2>4. Design</h2>
+<ul>
+<li><b>Khung xe dùng chung</b>: 3 path nền (top/front/rear) khai một lần trong tài liệu thiết kế (chú thích đầu mỗi tệp trỏ về khung nào); mỗi icon = khung + 1–4 vùng tô. Tệp: <code>ic_car_top_door_fl.xml</code>… đặt tên theo khung + bộ phận + vị trí. Bảng tra <code>CapabilityIcons</code> theo mã (mã đã có vị trí trong id, vd <code>door_fl</code>, <code>win_rr</code>, <code>tyre_rl</code> — đọc registry để lấy đúng hậu tố).</li>
+<li><b>Đèn</b> (khung front/rear): vùng tô = chùm sáng dạng quạt/dải; xi-nhan = mũi tên tô ở góc tương ứng.</li>
+<li><b>An toàn/ADAS</b>: khung top + vùng tô là VÙNG cảm biến (điểm mù trái/phải = quạt ở gương; lùi = quạt sau; cắt ngang phía sau = hai quạt chéo; lệch làn = hai vạch hai bên).</li>
+<li><b>Ghế/người ngồi</b>: khung top + 4 vị trí ghế; dây an toàn = dải chéo trên ghế.</li>
+<li>Không dùng Context7 (không thư viện mới; VectorDrawable attr đã xác nhận ở U6).</li>
+</ul>
+<h2>5. Tasks (DAG)</h2>
+<table><tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Kiểm kê mã có vị trí trong registry (BODY/TYRES/LIGHTS/SAFETY/SEATS/IDENTITY) → bảng mã ↔ khung ↔ vùng tô</td><td>docs/diagnostics/icon-set-v2-inventory-2026-09-13.md</td></tr>
+<tr><td>T2</td><td>Vẽ 3 khung xe + ~45 icon vị trí (cửa ×4+all, kính ×4+all, lốp ×4, ghế ×4, xi-nhan ×2/4, đèn ×8, ADAS ×8, cảm biến đỗ ×4, cốp/ca-pô/cửa sổ trời/gương ×2)</td><td>res/drawable/ic_car_*.xml</td></tr>
+<tr><td>T3</td><td>Bảng tra CapabilityIcons theo mã+vị trí; huy hiệu đảo dấu (R6) trong AppDrawer/TopStripPicker tiles + dòng "N chưa kiểm"</td><td>core/CapabilityIcons.kt · app/AppDrawer*.kt · KachiTheme.iconRes</td></tr>
+<tr><td>T4</td><td>Test: pendingCeiling → rỗng; bài "mã có vị trí ⇒ icon có vị trí"; IconStyle xanh</td><td>core/app tests</td></tr>
+<tr><td>T5</td><td>APK → máy ảo: chụp ngăn kéo từng nhóm; soát viên độc lập gọi tên ≥90% ô không đọc nhãn; senior review; scan; commit</td><td>—</td></tr></table>
+<h2>6. Verification</h2><ul><li>V-unit: 5 module 0 đỏ; pendingCeiling rỗng.</li><li>V-emulator: ảnh 5 nhóm; điểm gọi-tên-không-nhãn ≥ 90%; chấm "chưa kiểm" ≤ 8% ô.</li></ul>
+<h2>7. Open Questions</h2><ul><li>OQ1. Có vẽ lại luôn 56 icon U1/U6 theo phong cách "hình xe" (vd nhiệt độ cabin = khung top + sóng nhiệt) hay giữ glyph trừu tượng cho đại lượng đo? — <span class="muted">Đề xuất: đại lượng đo giữ glyph, chỉ những gì "nằm trên xe" mới vẽ hình xe; đồng bộ nét.</span></li></ul>
+<h2>8. References</h2><ul><li><code>docs/specs/kachi-capability-icons.html</code> (U1 + đợt 2 U6) · <code>CapabilityIconsDiversityTest.pendingCeiling</code> · <code>IconStyleContractTest</code>.</li></ul>
+<h2>9. Nhật ký triển khai (Implementation Log)</h2><ul><li>(điền khi code)</li></ul>
+<h2>10. Reviewer Log</h2><ul><li>(chưa có)</li></ul>
+</div></body>
+</html>
