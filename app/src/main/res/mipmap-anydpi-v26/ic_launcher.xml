@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon Kachi (L2 — icon launcher riêng, 2026-09-13). Nền accent + hình "1 ô lớn + 2 ô nhỏ". -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/launcher_bg" />
+    <foreground android:drawable="@drawable/launcher_fg" />
+</adaptive-icon>

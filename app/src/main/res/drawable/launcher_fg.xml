@@ -1,0 +1,11 @@
+<!-- Lớp TRƯỚC của adaptive icon Kachi (L2). Viewport 108, vùng an toàn 66 ở giữa (21..87) — hệ cắt mặt nạ tròn/
+     squircle theo OEM nên hình phải nằm trọn trong vùng đó. Cùng hình "1 ô lớn + 2 ô nhỏ" với ic_launcher.xml
+     (silhouette thông báo); ô nhỏ dưới tô accent2 nhạt để có một điểm nhấn thứ hai trên nền accent. Không đặt tên
+     `ic_*` vì đây không phải icon giao diện — bài canh IconStyleContractTest chỉ quét `ic_*`. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFF" android:pathData="M28.33,21.0 h20.169999999999998 a7.33,7.33 0 0 1 7.33,7.33 v51.34 a7.33,7.33 0 0 1 -7.33,7.33 h-20.169999999999998 a7.33,7.33 0 0 1 -7.33,-7.33 v-51.34 a7.33,7.33 0 0 1 7.33,-7.33 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M70.5,21.0 h9.169999999999998 a7.33,7.33 0 0 1 7.33,7.33 v14.669999999999998 a7.33,7.33 0 0 1 -7.33,7.33 h-9.169999999999998 a7.33,7.33 0 0 1 -7.33,-7.33 v-14.669999999999998 a7.33,7.33 0 0 1 7.33,-7.33 z" />
+    <path android:fillColor="#D6DEFF" android:pathData="M70.5,57.67 h9.169999999999998 a7.33,7.33 0 0 1 7.33,7.33 v14.669999999999998 a7.33,7.33 0 0 1 -7.33,7.33 h-9.169999999999998 a7.33,7.33 0 0 1 -7.33,-7.33 v-14.669999999999998 a7.33,7.33 0 0 1 7.33,-7.33 z" />
+</vector>

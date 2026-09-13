@@ -45,7 +45,6 @@ class IconStyleContractTest {
         "ic_chevron_down.xml" to
             "nằm TRONG layer-list @drawable/spinner_bg ⇒ không có View nào để tint; màu phải ở trong tệp",
         "ic_corner_cut.xml" to "#0A0D13 = màu tường; đây là MẶT NẠ che góc vuông, không phải icon",
-        "ic_launcher.xml" to "icon app trên OS (manifest + smallIcon thông báo): hệ thống không tint",
     )
 
     /**
@@ -53,7 +52,6 @@ class IconStyleContractTest {
      */
     private val fullBleedExceptions: Map<String, String> = mapOf(
         "ic_corner_cut.xml" to "mặt nạ: phải phủ trọn góc, chừa lề là hở góc vuông ra",
-        "ic_launcher.xml" to "icon app: nền màu phải phủ kín ô, đó là hình dạng của icon app",
     )
 
     /**

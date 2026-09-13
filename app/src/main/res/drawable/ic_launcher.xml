@@ -1,8 +1,16 @@
+<!--
+  Icon app Kachi (L2 — icon launcher riêng, 2026-09-13). Đây là bản SILHOUETTE 24dp dùng cho:
+  (1) smallIcon thông báo (BootSetupService · KachiAutostartService · VietMapAutostartService · FloatingBubbleService)
+      — hệ thống tô trắng theo chuẩn, nên chỉ có hình, không nền;
+  (2) fallback `android:icon` trên máy không có adaptive icon (không xảy ra: minSdk 29).
+  Hình = bố cục "1 ô lớn + 2 ô nhỏ" của workspace — đúng thứ Kachi làm: đặt app/widget vào ô. Ba khối tô đặc,
+  nằm trong ô quang học 20×20 (2..22) như mọi icon khác của bộ (IconStyleContractTest).
+  Icon trong ngăn kéo/launcher = adaptive icon ở mipmap-anydpi-v26 (nền accent + cùng hình).
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp" android:height="48dp"
+    android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M0,0h24v24H0z"
-        android:fillColor="#0A84FF" />
-    <path android:pathData="M12,4L6,19l6,-3l6,3z"
-        android:fillColor="#FFFFFF" />
+    <path android:fillColor="#FFFFFF" android:pathData="M5,3 h5.5 a2,2 0 0 1 2,2 v14 a2,2 0 0 1 -2,2 h-5.5 a2,2 0 0 1 -2,-2 v-14 a2,2 0 0 1 2,-2 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M16.5,3 h2.5 a2,2 0 0 1 2,2 v4 a2,2 0 0 1 -2,2 h-2.5 a2,2 0 0 1 -2,-2 v-4 a2,2 0 0 1 2,-2 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M16.5,13 h2.5 a2,2 0 0 1 2,2 v4 a2,2 0 0 1 -2,2 h-2.5 a2,2 0 0 1 -2,-2 v-4 a2,2 0 0 1 2,-2 z" />
 </vector>
