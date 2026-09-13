@@ -3,7 +3,9 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.view.View
 import com.byd.clusternav.R
@@ -37,6 +39,12 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *     ([GroupBoard.sidePlan]) *"vậy hiện cái gì"* — cảnh báo trước, phần còn lại **đếm** ở dòng chân, và nếu không
  *     có cảnh báo nào thì MỘT câu nói thẳng trạng thái.
  *
+ * ## U9 (2026-09-13) — hình xe nay là CHÍNH path của bộ icon v2
+ * Thân + hai vạch kính lấy từ [CarFrames] thay cho `drawRoundRect` + `drawLine` tự vẽ. Bề RỘNG của xe vì thế
+ * không còn là một tỉ lệ tự chọn mà **suy ra từ chiều cao dải hàng** theo đúng tỉ lệ của icon (có trần bề ngang
+ * để cột dữ liệu hai bên không bị bóp) — kéo giãn một chiều là làm ra chiếc xe thứ hai, đúng thứ [CarFrames]
+ * sinh ra để bỏ.
+ *
  * ## Quy ước vẽ — bám nguyên hai bảng BOARD đã có
  *  • Mọi `Paint` cấp phát MỘT LẦN ở field, màu phân giải MỘT LẦN — KHÔNG cấp phát/parse trong [onDraw].
  *  • Mọi cỡ tính theo cạnh nhỏ nhất / bề cao ⇒ bất biến với cỡ ô, và **không bao giờ tràn** ra ngoài khung (đó là
@@ -50,6 +58,8 @@ internal class SideBoardView(context: Context) : View(context) {
 
     private val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE; color = Color.parseColor(KachiTheme.MUT2)
+        // Đầu/khớp nét TRÒN — khung xe nay là path của bộ icon v2, vốn khai `strokeLineCap/Join="round"`.
+        strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
     private val cellFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL; color = Color.parseColor(KachiTheme.CARD2)
@@ -67,11 +77,26 @@ internal class SideBoardView(context: Context) : View(context) {
     private val body = RectF()
     private val cell = RectF()
 
+    // ── U9 · hình xe dùng chung ([CarFrames]) — cấp phát MỘT LẦN, đúng luật "không cấp phát trong onDraw" ──
+    private val carMatrix = Matrix()
+
+    /** Bản chép để biến hình — KHÔNG `transform` thẳng vào path dùng chung của [CarFrames]. */
+    private val carPath = Path()
+
+    /** Hộp bao thân xe trong hệ toạ độ icon (đọc một lần mỗi khung vẽ, xem [onDraw]). */
+    private val carSrc = RectF()
+
+    /** Khung đích đã chừa nửa nét — giữ riêng để không ghi đè [carSrc]. */
+    private val carDst = RectF()
+
     private val colInk = Color.parseColor(KachiTheme.INK)
     private val colMut = Color.parseColor(KachiTheme.MUT)
     private val colMut2 = Color.parseColor(KachiTheme.MUT2)
     private val colAmber = Color.parseColor(KachiTheme.AMBER)
     private val colRed = Color.parseColor(KachiTheme.RED)
+
+    /** SÀN nét khung xe (R1: không mảnh hơn 1.6dp tương đương) — bậc "nét" của thang, xem [TyreBoardView]. */
+    private val strokeFloorPx = Sp.dpf(context, Sp.STROKE)
 
     /** SÀN cỡ chữ quy ra pixel — tính một lần (density không đổi trong đời một View). */
     private val labelFloorPx = Sp.dpf(context, Sp.BOARD_LABEL_MIN)
@@ -107,7 +132,7 @@ internal class SideBoardView(context: Context) : View(context) {
         if (w <= 0f || h <= 0f) return
         val min = minOf(w, h)
 
-        outline.strokeWidth = min * OUTLINE_RATIO
+        outline.strokeWidth = maxOf(min * OUTLINE_RATIO, strokeFloorPx)
         cellStroke.strokeWidth = min * STROKE_RATIO
         // SÀN đứng trước tỉ lệ: ô to thì tỉ lệ thắng (chữ lớn theo ô), ô nhỏ thì sàn thắng (chữ vẫn đọc được).
         valueP.textSize = maxOf(min * VALUE_RATIO, valueFloorPx)
@@ -116,11 +141,23 @@ internal class SideBoardView(context: Context) : View(context) {
 
         // Thân xe chiếm dải giữa; hai cột dữ liệu áp sát nó. Thân CAO gần hết khung vì các hàng nằm dọc theo nó —
         // hàng đầu là cảnh báo phía trước, hàng cuối phía sau, đúng thứ tự khai của nhóm.
+        //
+        // ⚠ U9 — bề rộng KHÔNG còn là một tỉ lệ tự chọn: hình xe giữ nguyên tỉ lệ của icon, nên chọn chiều cao là
+        // đã chọn chiều rộng. Chiều cao đi trước (các hàng nằm dọc theo xe ⇒ xe ngắn là hàng đầu/cuối trôi ra
+        // ngoài xe, mất hẳn nghĩa "phía trước / phía sau"); trần [BODY_W_MAX] chặn ca ô rất thấp-rất hẹp, ở đó xe
+        // sẽ nuốt hết bề ngang của hai cột dữ liệu.
         val bottom = if (footer.isNotEmpty()) h * FOOTER_TOP else h
-        val bodyW = w * BODY_W_RATIO
         val top = h * BODY_INSET
-        val bodyH = (bottom - top) * BODY_H_RATIO
+        val band = (bottom - top) * BODY_H_RATIO
         val cy = top + (bottom - top) / 2f
+        CarFrames.frameBounds(carSrc)
+        val ratio = carSrc.width() / carSrc.height()
+        var bodyH = band
+        var bodyW = bodyH * ratio
+        if (bodyW > w * BODY_W_MAX) {
+            bodyW = w * BODY_W_MAX
+            bodyH = bodyW / ratio
+        }
         body.set((w - bodyW) / 2f, cy - bodyH / 2f, (w + bodyW) / 2f, cy + bodyH / 2f)
 
         // Mấy hàng còn vẽ được **ở cỡ chữ sàn** — rồi để `:core` chọn hiện cái gì trong số đó.
@@ -136,7 +173,7 @@ internal class SideBoardView(context: Context) : View(context) {
             // hình xe làm đường viền **cắt ngang giữa câu** — chữ đè lên nét xe, đọc không ra. Hình xe ở bảng này có
             // đúng một việc: nói *"bên trái / bên phải của xe"*; không có gì để đặt hai bên thì nó là hình trang trí
             // đang tranh chỗ với thứ mang thông tin.
-            drawBody(canvas, bodyW, bodyH)
+            drawBody(canvas)
             val rowH = bodyH / rows
             val cellH = rowH * CELL_H_RATIO
             drawColumn(canvas, plan.left, pad, body.left - gap, cellH, rowH)
@@ -155,14 +192,21 @@ internal class SideBoardView(context: Context) : View(context) {
         }
     }
 
-    /** Hình xe nhìn từ trên (thân + vạch kính lái) — chỉ vẽ khi có dữ liệu đặt hai bên (xem [onDraw]). */
-    private fun drawBody(canvas: Canvas, bodyW: Float, bodyH: Float) {
-        val r = bodyW * CORNER_RATIO
-        canvas.drawRoundRect(body, r, r, outline)
-        canvas.drawLine(
-            body.left + bodyW * WINDSCREEN_INSET, body.top + bodyH * WINDSCREEN_INSET,
-            body.right - bodyW * WINDSCREEN_INSET, body.top + bodyH * WINDSCREEN_INSET, outline,
-        )
+    /**
+     * Hình xe nhìn từ trên (thân + hai vạch kính) của [CarFrames] — chỉ vẽ khi có dữ liệu đặt hai bên (xem
+     * [onDraw]).
+     *
+     * Vẽ vào **đúng** [body] (đã đúng tỉ lệ icon từ [onDraw]) nên `ScaleToFit.CENTER` không phải bù gì; chỉ chừa
+     * nửa nét mỗi phía vì `Path` là ĐƯỜNG TÂM nét, không phải mép mực.
+     */
+    private fun drawBody(canvas: Canvas) {
+        CarFrames.frameBounds(carSrc)
+        carDst.set(body)
+        carDst.inset(outline.strokeWidth / 2f, outline.strokeWidth / 2f)
+        CarFrames.fit(carSrc, carDst, carMatrix)
+        carPath.set(CarFrames.topFrame)
+        carPath.transform(carMatrix)
+        canvas.drawPath(carPath, outline)
     }
 
     /**
@@ -243,11 +287,16 @@ internal class SideBoardView(context: Context) : View(context) {
         const val MID_RATIO = 0.062f
         const val FOOTER_TOP = 0.88f
         const val FOOTER_BASELINE = 0.97f
-        const val BODY_W_RATIO = 0.16f
+        /**
+         * TRẦN bề ngang của hình xe (theo bề ngang ô).
+         *
+         * Chỉ là TRẦN, không phải bề rộng: bề rộng thật suy từ chiều cao dải hàng theo tỉ lệ icon (xem [onDraw]).
+         * 0.40 = [ĐO] ở ô hai cột (≈925×780 trên máy ảo 1920×1080) nó vừa đủ để xe cao gần hết dải mà hai cột dữ
+         * liệu vẫn còn ~230px mỗi bên cho `nhãn · số`.
+         */
+        const val BODY_W_MAX = 0.40f
         const val BODY_H_RATIO = 0.94f
         const val BODY_INSET = 0.04f
-        const val CORNER_RATIO = 0.34f
-        const val WINDSCREEN_INSET = 0.16f
         const val GAP_RATIO = 0.03f
         const val PAD_RATIO = 0.02f
         const val CELL_H_RATIO = 0.82f

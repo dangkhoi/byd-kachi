@@ -2,6 +2,8 @@ package com.byd.clusternav
 
 import com.byd.clusternav.system.PackageQueries
 import com.byd.clusternav.carexec.LocalDeviceShell
+import com.byd.clusternav.carexec.LocalInstallOutcome
+import com.byd.clusternav.carexec.LocalShellFailure
 import com.byd.clusternav.carexec.LocalShellRetry
 import android.content.Context
 import org.json.JSONArray
@@ -117,23 +119,84 @@ object UpdateChecker {
      * Relaunch: một `-r` THÀNH CÔNG kill process này ngay → không code nào sau đó chạy. Nên ta HẸN GIỜ
      * mở lại Home TRƯỚC khi cài (lúc app còn foreground); nếu cài thất bại thì huỷ hẹn. Xem [UpdateRelaunch].
      *
-     * Kết quả THẬT: [LocalDeviceShell.installApk] trả `false` khi dadb báo lỗi (vd khác chữ ký:
-     * debug↔release, hoặc downgrade) — trước đây hàm này BỎ QUA giá trị đó và luôn báo "đã cài", nên
-     * một lần cài fail vẫn hiện "sẽ tự khởi động lại" rồi đứng im. Giờ báo đúng thành/bại.
+     * Kết quả THẬT: [LocalDeviceShell.installApk] trả [LocalInstallOutcome] — trước đây hàm này BỎ QUA giá
+     * trị trả về và luôn báo "đã cài", nên một lần cài fail vẫn hiện "sẽ tự khởi động lại" rồi đứng im.
+     *
+     * ## U11 — một câu cho mỗi NGUYÊN NHÂN, không còn một câu cho mọi thất bại
+     * Câu cũ đổ cho *"khác chữ ký/phiên bản?"* trong MỌI ca. **[ĐO] máy ảo 2026-09-13**: thiếu
+     * `adb reverse tcp:5555 tcp:5555` ⇒ không có kênh dadb nào, mà người dùng vẫn đọc được câu đổ cho chữ ký ⇒
+     * đi sửa nhầm bệnh. Nay lý do tới từ [LocalDeviceShell], còn chỗ này chỉ **dịch nó ra câu người đọc được**.
      */
     fun install(ctx: Context, apk: File): String {
         val app = ctx.applicationContext
         UpdateRelaunch.schedule(app) // arm BEFORE install: a successful -r kills us mid-call.
-        val ok = LocalDeviceShell.installApk(AdbKeys.ensure(app), apk, "-r", socketTimeoutMs = LocalShellRetry.BACKGROUND_READ_CAP.socketTimeoutMs)
-        return if (ok) {
-            Lang.t("đã cài — đang mở lại…", "installed — reopening…")
-        } else {
-            UpdateRelaunch.cancel(app) // nothing was replaced → don't relaunch.
-            Lang.t(
-                "cài thất bại (khác chữ ký/phiên bản?). APK đã tải ở: ${apk.absolutePath}",
-                "install failed (signature/version mismatch?). APK saved at: ${apk.absolutePath}",
-            )
-        }
+        val outcome = LocalDeviceShell.installApk(AdbKeys.ensure(app), apk, "-r", socketTimeoutMs = LocalShellRetry.BACKGROUND_READ_CAP.socketTimeoutMs)
+        // Chỉ MỘT chỗ dựng câu ([installMessage]) — kể cả câu thành công. Để nhánh Ok tự viết lại câu ở đây là
+        // hai bản sao của một chuỗi, đúng thứ lần sau sẽ lệch nhau.
+        if (outcome !is LocalInstallOutcome.Ok) UpdateRelaunch.cancel(app) // nothing was replaced → don't relaunch.
+        return installMessage(outcome, apk.absolutePath)
+    }
+
+    /**
+     * Lý do cài hỏng → câu cho người dùng. **THUẦN** (chỉ đọc [outcome] + [apkPath]) ⇒ khoá được off-device.
+     *
+     * Hai câu nói hai VIỆC PHẢI LÀM khác nhau, đó là lý do chúng phải khác nhau:
+     *  • không có kênh shell ⇒ việc cần làm nằm ở máy — và **việc đó khác nhau theo lý do**, xem [channelRemedy];
+     *    chỉ đường tới đúng trang *Cài đặt › Hệ thống & quyền* thay vì bỏ mặc người dùng đoán;
+     *  • pm từ chối ⇒ việc cần làm nằm ở bản APK (gỡ bản cũ, đổi bản) — và pm đã nói rõ lý do, chỉ cần **chuyển
+     *    nguyên văn** dòng đó ra thay vì thay bằng một dấu hỏi của mình.
+     *
+     * Đường dẫn APK giữ ở cả hai câu: bản đã tải vẫn nằm đó, cài tay được.
+     */
+    internal fun installMessage(outcome: LocalInstallOutcome, apkPath: String): String = when (outcome) {
+        is LocalInstallOutcome.Ok -> Lang.t("đã cài — đang mở lại…", "installed — reopening…")
+        is LocalInstallOutcome.NoShellChannel -> Lang.t(
+            "không có kênh shell tới xe (${outcome.reason.name}) — ${channelRemedy(outcome.reason, vi = true)}. " +
+                "APK đã tải ở: $apkPath",
+            "no shell channel to the head unit (${outcome.reason.name}) — ${channelRemedy(outcome.reason, vi = false)}. " +
+                "APK saved at: $apkPath",
+        )
+        is LocalInstallOutcome.PmRejected -> Lang.t(
+            "pm install từ chối: ${pmReason(outcome.pmOutput, vi = true)}. APK đã tải ở: $apkPath",
+            "pm install rejected: ${pmReason(outcome.pmOutput, vi = false)}. APK saved at: $apkPath",
+        )
+    }
+
+    /**
+     * VIỆC PHẢI LÀM khi không có kênh shell — **theo từng lý do**, không một câu cho cả năm.
+     *
+     * ## ⚠ Vì sao không để mỗi câu "xem Cài đặt › Hệ thống & quyền" (soát senior 2026-09-13)
+     * U11 sinh ra vì *một* câu cho mọi thất bại làm người đọc đi sửa nhầm bệnh — nhưng bản đầu chỉ tách tới mức
+     * "kênh" vs "pm", còn **bên trong kênh thì lại gộp lại y như cũ**. Ca hay gặp nhất của OTA là
+     * [LocalShellFailure.AWAITING_APPROVAL]: lần đầu nối bằng khoá mới, đầu xe đang bung hộp thoại *"Cho phép gỡ
+     * lỗi USB?"* **ngay trên màn hình đó** — bảo người dùng đi vào Cài đặt lúc ấy là chỉ sai hẳn chỗ, trong khi
+     * việc cần làm là bấm Cho phép rồi bấm cài lại. Cùng phân loại này `AssistantLauncher.failureMessage` đã nói
+     * đúng việc từ 2026-08-24; chỗ OTA thì chưa.
+     *
+     * Mã lý do (`reason.name`) vẫn nằm trong câu ở [installMessage] — ảnh chụp màn đủ để chẩn đoán từ xa.
+     */
+    internal fun channelRemedy(reason: LocalShellFailure, vi: Boolean): String = when (reason) {
+        // Hộp thoại đang ở ngay trước mặt ⇒ nói đúng cái nút phải bấm. Nhắc "luôn cho phép" vì mỗi lần thử là một
+        // kết nối MỚI: không tích thì quyền chết theo đúng kết nối đang treo (xem `AssistantLauncher.reportProgress`).
+        LocalShellFailure.AWAITING_APPROVAL, LocalShellFailure.AUTH_REJECTED ->
+            if (vi) "bấm \"Cho phép/Allow\" (tích \"luôn cho phép\") trên hộp thoại gỡ lỗi USB rồi cài lại"
+            else "tap \"Allow\" (tick \"always allow\") on the USB-debugging dialog, then install again"
+        LocalShellFailure.PORT_CLOSED, LocalShellFailure.IO_ERROR, LocalShellFailure.UNKNOWN ->
+            if (vi) "xem Cài đặt › Hệ thống & quyền" else "see Settings › System & permissions"
+    }
+
+    /**
+     * Dòng đáng đọc nhất trong output của pm.
+     *
+     * pm in nhiều dòng tiến trình rồi mới tới phán quyết, mà chỗ hiện câu này là **một dòng nút** — nên ưu tiên
+     * dòng mang `Failure`/`Error` (chỗ pm nói mã lỗi thật, vd `INSTALL_FAILED_UPDATE_INCOMPATIBLE`), không có thì
+     * lấy dòng cuối còn chữ. pm câm hẳn cũng là một sự thật, và nói ra vẫn hơn một câu tự bịa nguyên nhân.
+     */
+    internal fun pmReason(pmOutput: String, vi: Boolean): String {
+        val lines = pmOutput.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        return lines.firstOrNull { it.contains("Failure", true) || it.contains("Error", true) }
+            ?: lines.lastOrNull()
+            ?: if (vi) "pm không in gì" else "pm printed nothing"
     }
 
     // ── nội bộ ──

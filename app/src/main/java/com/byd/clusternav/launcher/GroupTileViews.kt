@@ -2,7 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -163,12 +162,15 @@ class GroupTileView(context: Context) : LinearLayout(context) {
             },
             LayoutParams(0, WRAP, 1f),
         )
+        // ⚠ U10 (soát 2026-09-13) — chấm vẽ bằng [PickerBadge.dot], KHÔNG còn [KachiTheme.AMBER].
+        // [ĐO] ảnh máy ảo bố cục 2 cột: sau khi U10 hạ chấm của thanh nút xuống mực mờ, hai ô nhóm "Lốp" /
+        // "Cảm biến đỗ" vẫn sáng **hổ phách** ở góc tiêu đề — cùng một sự thật ([GroupBoardModel.needsBadge] =
+        // `cells.any{…} || actions.any{…}` của CHÍNH [EvidenceTier.needsBadge], xem `GroupBoardModel.kt:192`),
+        // nói bằng hai giọng, trên cùng một màn hình. Đây KHÔNG phải cảnh báo thật: tông cảnh báo thật của ô nhóm
+        // đi đường khác ([GroupTone.ALERT]/[GroupTone.WARN] ở `tint`/`toneFill`), nên hổ phách ở đây chỉ tranh mất
+        // sắc độ của chúng.
         if (m.needsBadge) addView(
-            View(context).apply {
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL; setColor(c(KachiTheme.AMBER))
-                }
-            },
+            PickerBadge.dot(context),
             LayoutParams(dpi(context, Sp.DOT), dpi(context, Sp.DOT)),
         )
     }

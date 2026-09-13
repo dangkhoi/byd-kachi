@@ -3,9 +3,12 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.view.View
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * BẢNG CẢM BIẾN ĐỖ 8 VÙNG (G1 · T3) — hình xe nhìn từ trên, **4 vùng trước + 4 vùng sau** đúng vị trí quanh xe.
@@ -14,6 +17,11 @@ import android.view.View
  * Đây là ca mà [WidgetShape.BOARD] đã ghi sẵn trong KDoc từ đầu (*"4 lốp, 8 zone radar"*) nhưng **chưa ai dựng**:
  * trước T3, `radar_zones` hiện ra bằng ô số chung, tức một dòng chữ `"0 0 1 2 3 1 0 0"` — đúng dữ liệu nhưng người
  * lái không đọc được vùng nào đang sát vật.
+ *
+ * ## U9 (2026-09-13) — hình xe nay là CHÍNH path của bộ icon v2
+ * Thân + hai vạch kính lấy từ [CarFrames] thay cho `drawRoundRect` + `drawLine` tự vẽ ⇒ bảng này, bảng lốp,
+ * bảng ADAS và icon 24dp cùng một chiếc xe. Bảng radar **không** vẽ bánh: ngữ pháp của bộ icon là *vùng tô = bộ
+ * phận đang được nói tới*, mà ở đây thứ đang được nói tới là tám vùng cảm biến quanh xe, không phải bánh.
  *
  * ## Quy ước vẽ — bám nguyên [TyreBoardView] (tiền lệ đúng của W4)
  *  • Mọi `Paint` cấp phát MỘT LẦN ở field, màu phân giải MỘT LẦN — KHÔNG cấp phát/parse trong [onDraw].
@@ -31,6 +39,8 @@ class RadarBoardView(context: Context) : View(context) {
 
     private val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE; color = Color.parseColor(KachiTheme.MUT2)
+        // Đầu/khớp nét TRÒN — khung xe nay là path của bộ icon v2, vốn khai `strokeLineCap/Join="round"`.
+        strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
 
     /**
@@ -49,6 +59,16 @@ class RadarBoardView(context: Context) : View(context) {
     }
     private val body = RectF()
     private val bar = RectF()
+
+    // ── U9 · hình xe dùng chung ([CarFrames]) — cấp phát MỘT LẦN, đúng luật "không cấp phát trong onDraw" ──
+    private val carMatrix = Matrix()
+
+    /** Bản chép để biến hình — KHÔNG `transform` thẳng vào path dùng chung của [CarFrames]. */
+    private val carPath = Path()
+    private val srcBox = RectF()
+
+    /** SÀN nét khung xe (R1: không mảnh hơn 1.6dp tương đương) — lấy bậc "nét" của thang, xem [TyreBoardView]. */
+    private val strokeFloorPx = Sp.dpf(context, Sp.STROKE)
 
     private val colInk = Color.parseColor(KachiTheme.INK)
     private val colMut = Color.parseColor(KachiTheme.MUT)
@@ -89,23 +109,24 @@ class RadarBoardView(context: Context) : View(context) {
         if (w <= 0f || h <= 0f) return
         val m = minOf(w, h)
 
-        outline.strokeWidth = m * 0.018f
-        dimOutline.strokeWidth = m * 0.018f
+        outline.strokeWidth = maxOf(m * 0.018f, strokeFloorPx)
+        dimOutline.strokeWidth = outline.strokeWidth
         digitP.textSize = m * 0.085f
         midP.textSize = m * 0.072f
 
-        // Thân xe THUÔN DỌC + vạch kính lái, y hệt bảng lốp — để hai bảng BOARD nhìn ra là cùng một cái xe.
-        // Thân hẹp hơn bảng lốp vì ở đây còn phải chừa chỗ cho 4 thanh vùng phía trên và 4 thanh phía dưới.
+        // Thân xe của [CarFrames], y hệt bảng lốp — để hai bảng BOARD nhìn ra là cùng một cái xe. Khung dành cho
+        // xe hẹp hơn bảng lốp vì ở đây còn phải chừa chỗ cho 4 thanh vùng phía trên và 4 thanh phía dưới.
         val bodyW = w * 0.20f
         val bodyH = h * 0.34f
         val cy = h * 0.47f
         body.set((w - bodyW) / 2f, cy - bodyH / 2f, (w + bodyW) / 2f, cy + bodyH / 2f)
-        val r = bodyW * 0.34f
-        canvas.drawRoundRect(body, r, r, outline)
-        canvas.drawLine(
-            body.left + bodyW * 0.14f, body.top + bodyH * 0.26f,
-            body.right - bodyW * 0.14f, body.top + bodyH * 0.26f, outline,
-        )
+        // Chừa nửa nét mỗi phía: `Path` là ĐƯỜNG TÂM nét, không phải mép mực.
+        body.inset(outline.strokeWidth / 2f, outline.strokeWidth / 2f)
+        CarFrames.frameBounds(srcBox)
+        CarFrames.fit(srcBox, body, carMatrix)
+        carPath.set(CarFrames.topFrame)
+        carPath.transform(carMatrix)
+        canvas.drawPath(carPath, outline)
 
         // 4 vùng TRƯỚC xếp trên nắp máy, 4 vùng SAU dưới cốp — đúng thứ tự HAL trả về.
         // Số vùng mỗi hàng SUY RA từ [GroupBoard.RADAR_ZONE_COUNT], không viết cứng: `GridSeamGuardTest` cấm khoảng

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi — Hình xe lớn cho widget tổng hợp (U9)</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Kachi — Hình xe lớn cho widget tổng hợp: lốp · cửa/cốp · radar (U9)</h1>
+<p class="muted">Slug: <code>kachi-car-boards</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: T1–T3 xong off-car, chờ soát viên + xe — owner 2026-09-13: "vẽ hình xe cho những chức năng tổng hợp có hình xe như áp suất lốp, mở cửa, mở cốp"</span> · Chủ: KhoiPD</p>
+<h2>1. Changelog</h2><ul>
+<li><b>Pass 0 — 2026-09-13</b>: Khởi tạo sau U7 (bộ icon v2 có 3 khung xe dùng chung, bài mù 100%).</li>
+<li><b>Pass 1 — 2026-09-13</b>: T1–T3 xong off-car. <code>CarFrames</code> (155 dòng) + 8 bài canh mới; ba bảng vẽ lại trên path của bộ icon; [ĐO] 5 ảnh máy ảo ở bố cục <em>1 ô</em> và <em>2 cột</em> (§9). Đơn vị test app+core <b>2355 / 0 đỏ</b>.</li>
+<li><b>Soát viên cấp cao — 2026-09-13</b>: APPROVED sau 2 bản vá ([P1] chấm "chưa kiểm" ở đầu ô nhóm còn hổ phách — bề mặt thứ ba; [P2] "không có kênh shell" gộp cả 5 lý do vào một câu). 2522 bài / 0 đỏ. Chi tiết §10.</li>
+</ul>
+<h2>2. Context</h2><p>Ô nhóm (GroupBoard) của Lốp/Radar/thân xe hiện vẽ bằng Canvas trong <code>TyreBoardView</code> · <code>RadarBoardView</code> · <code>SideBoardView</code> — hình xe hiện tại là hình khối đơn giản, không cùng ngôn ngữ với bộ icon v2 (khung top/front/rear, nét = vật thể, vùng tô = bộ phận). Owner muốn widget "có hình xe" nhìn là hiểu: bánh nào non, cửa nào mở, cốp mở, vùng radar nào báo.</p>
+<h2>3. Requirements</h2><ul>
+<li><b>R1</b> Ba board dùng CÙNG khung xe với bộ icon v2 (path đã ghi ở kiểm kê U7), phóng theo ô, nét theo tỉ lệ (không mảnh hơn 1.6dp tương đương), bo góc/độ tròn khớp icon.</li>
+<li><b>R2</b> Bộ phận có trạng thái = VÙNG TÔ theo màu trạng thái hiện có (lốp non/căng: RED/AMBER; cửa mở: ACCENT; cốp/ca-pô mở: ACCENT; radar vùng báo: RED/AMBER theo khoảng cách) — giữ nguyên luật quyết định ở :core (<code>TyreBoard</code>, <code>GroupBoard.sidePlan</code>…), chỉ đổi cách vẽ.</li>
+<li><b>R3</b> Số/giá trị đứng CẠNH bộ phận (áp suất từng bánh cạnh bánh, nhiệt trong ngoặc/dòng phụ) như bản hiện tại, cỡ chữ có SÀN đã đo (không tụt dưới 13.5sp tương đương); kết luận tổng ở trên/giữa như cũ.</li>
+<li><b>R4</b> Kích thước tối thiểu: board chỉ dựng khi ô đủ lớn (luật hiện có); ở ô nhỏ vẫn mini-card. Verify ảnh máy ảo ở bố cục 1 ô lớn (1×) và 2 cột.</li>
+<li><b>R5</b> Test: phần thuần không đổi; thêm test khoá "3 board dùng chung một nguồn path khung xe" (source-scan: cùng hằng, không chép path) + không màu hex cứng (luật đã có).</li>
+<li><b>R6</b> Theo chủ đề sáng/tối (KachiTheme), không màu riêng.</li></ul>
+<h2>4. Design</h2>
+
+<h3>4.1 · <code>CarFrames</code> — nguồn hình duy nhất</h3>
+<p><code>app/src/main/java/com/byd/clusternav/launcher/CarFrames.kt</code> (<code>internal object</code>, 155 dòng). Giữ <b>chuỗi path SVG chép nguyên văn</b> từ script sinh icon U7 (<code>gen_car4.py</code>: <code>TOP_BODY</code> · <code>TOP_GLASS</code> · <code>WHEEL_FILL</code>) rồi đọc <b>một lần</b> (<code>by lazy</code>) qua <code>androidx.core.graphics.PathParser</code> thành <code>android.graphics.Path</code>.</p>
+<div class="flow">
+  <div class="fnode"><b>gen_car4.py</b><span>script sinh icon U7</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>res/drawable/<br>ic_car_top_*.xml</b><span>168 icon 24dp</span></div>
+  <div class="arrow">↘</div>
+  <div class="fnode"><b>CarFrames.kt</b><span>cùng chuỗi path, đọc 1 lần</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>3 bảng Canvas</b><span>Tyre · Radar · Side</span></div>
+</div>
+<p class="muted">Vòng khoá: <code>CarFramesSourceContractTest</code> so <b>hai chiều</b> giữa chuỗi trong <code>CarFrames.kt</code> và <code>android:pathData</code> của <code>ic_car_*.xml</code> ⇒ lệch một ký tự là đỏ.</p>
+
+<h3>4.2 · API</h3>
+<table><tr><th>thành viên</th><th>vai</th><th>chỗ gọi</th></tr>
+<tr><td><code>topFrame: Path</code></td><td>NÉT = thân + 2 vạch kính (lái · hậu), gộp một <code>Path</code> ⇒ một <code>drawPath</code></td><td>cả 3 bảng</td></tr>
+<tr><td><code>wheel(TyreCorner): Path</code></td><td>VÙNG TÔ một bánh; khoá theo enum <code>:core</code>, không theo hậu tố tên tệp (kiểm kê U7 §2 có <b>4</b> quy ước hậu tố khác nhau)</td><td>TyreBoardView</td></tr>
+<tr><td><code>wheelBounds(corner, out)</code></td><td>hộp bao bánh (hệ icon) ⇒ ô giá trị bám vào <b>chính cái bánh</b></td><td>TyreBoardView</td></tr>
+<tr><td><code>wheelRowGap: Float</code></td><td>khoảng cách tâm hàng bánh trước↔sau, <b>đo từ path</b> (không viết tay 6.8)</td><td>TyreBoardView</td></tr>
+<tr><td><code>frameBounds(out)</code></td><td>hộp bao THÂN (không kể bánh) — thứ được phóng vào ô</td><td>cả 3 bảng</td></tr>
+<tr><td><code>fit(src, dst, out: Matrix)</code></td><td><code>Matrix.setRectToRect(… ScaleToFit.CENTER)</code> — <b>giữ tỉ lệ</b></td><td>cả 3 bảng</td></tr>
+</table>
+
+<h3>4.3 · Vì sao phóng THÂN chứ không phóng cả xe-kèm-bánh</h3>
+<p>Xe kèm bánh rộng 17.8 × cao 15.7 (gần <b>vuông</b>). Phóng khối gần vuông đó vào một ô gần vuông (bố cục 2 cột ≈ 925×780 px trên máy ảo) thì hai hàng bánh chỉ cách nhau ~120 px, trong khi ô giá trị cao ~190 px ⇒ <b>hai ô cùng bên chồng lên nhau</b>. Phóng THÂN (9.6 × 15.7, dọc) thì bánh tự thò ra ngoài đúng như icon, và phần lớn bề ngang vẫn thuộc về bốn ô giá trị — tức bố cục ngang đã duyệt ở W4 <b>không đổi</b>.</p>
+
+<h3>4.4 · Thay đổi từng bảng</h3>
+<table><tr><th>bảng</th><th>trước</th><th>sau</th></tr>
+<tr><td><code>TyreBoardView</code></td><td><code>drawRoundRect(body)</code> + <code>drawLine</code> + 4 vệt bo góc <code>drawWheelMark</code></td><td>khung TOP phóng vào chính khung <code>body</code> cũ; 4 bánh = <code>drawPath</code> tô màu trạng thái; ô giá trị canh theo <b>tâm bánh đã vẽ</b> (<code>mapRect</code>), không suy từ tên góc; <code>cellH</code> và cỡ chữ có <b>trần theo khoảng cách hai hàng bánh</b></td></tr>
+<tr><td><code>RadarBoardView</code></td><td>như trên</td><td>khung TOP ở giữa; <b>không</b> vẽ bánh (ngữ pháp icon: vùng tô = thứ đang được nói tới, ở đây là 8 vùng); 8 thanh vùng + thứ tự HAL + <code>ZONES_PER_ROW</code> <b>giữ nguyên</b></td></tr>
+<tr><td><code>SideBoardView</code></td><td><code>drawBody(bodyW, bodyH)</code> với <code>BODY_W_RATIO = 0.16</code></td><td>bề rộng <b>suy từ</b> chiều cao dải hàng theo tỉ lệ icon, trần <code>BODY_W_MAX = 0.40</code>; điều kiện "chỉ vẽ khi có hàng" giữ nguyên</td></tr>
+</table>
+<p>Nét khung: <code>max(m × 0.018, KachiSpace.STROKE)</code> — sàn 2dp ≥ 1.6dp của R1; <code>strokeCap/Join = ROUND</code> khớp <code>strokeLineCap/Join="round"</code> của bộ icon.</p>
+
+<h3>4.5 · Phụ thuộc mới</h3>
+<p><code>androidx.core:core:1.19.0</code> (latest stable, đọc Google Maven group-index 2026-09-13). Lý do: <code>android.util.PathParser</code> của nền tảng là <code>@hide</code>. <code>androidx.core.graphics.PathParser.createPathFromPathData</code> là API công khai.</p>
+
+<h3>4.6 · Cố ý CHƯA làm</h3>
+<p><code>CarFrames</code> chỉ giữ <b>khung TOP + 4 bánh</b> — đúng những gì ba bảng đang vẽ. Khung FRONT/REAR và vùng tô cửa · kính · cốp · ca-pô <b>không</b> đưa vào lượt này: hằng không ai gọi thì không bài canh nào thấy khi nó trôi khỏi icon (CLAUDE.md §8). Không đổi <code>:core</code>, không đổi API công khai của 3 view.</p>
+<h2>5. Tasks (DAG)</h2><table><tr><th>#</th><th>Task</th><th>File</th></tr><tr><td>T1</td><td><code>CarFrames.kt</code> + test nguồn duy nhất</td><td>app/.../launcher/CarFrames.kt (+Test)</td></tr><tr><td>T2</td><td>TyreBoardView · SideBoardView (cửa/cốp/ca-pô/kính) · RadarBoardView vẽ lại trên CarFrames</td><td>3 view</td></tr><tr><td>T3</td><td>Ảnh máy ảo 1 ô lớn + 2 cột, bơm dữ liệu giả (lốp non, cửa mở, radar) — soát ảnh độc lập; senior review; scan; commit</td><td>—</td></tr></table>
+<h2>6. Verification</h2><ul><li>V-unit 0 đỏ; V-emulator ảnh 3 board ở 2 bố cục; soát viên gọi đúng bánh/cửa/vùng.</li></ul>
+<h2>7. Open Questions</h2><ul><li>OQ1. Có vẽ người ngồi/dây an toàn lên board thân xe không (dữ liệu có) — đề xuất: có, dùng glyph ghế của icon.</li></ul>
+<h2>8. References</h2><ul><li><code>docs/specs/kachi-icon-set-v2.html</code> · <code>docs/diagnostics/icon-set-v2-inventory-2026-09-13.md</code> · <code>docs/specs/kachi-capability-groups.html</code> (G1 board).</li></ul>
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<h3>Pass 1 — 2026-09-13 (off-car, máy ảo <code>clusternav10</code> 1920×1080 @240dpi, APK release 1.42/43 KHÔNG bump)</h3>
+<p><b>Tệp đổi</b>: <code>CarFrames.kt</code> (mới, 155) · <code>TyreBoardView.kt</code> (272→307) · <code>RadarBoardView.kt</code> (168→189) · <code>SideBoardView.kt</code> (262→311) · <code>CarFramesSourceContractTest.kt</code> (mới, 8 bài) · <code>app/build.gradle.kts</code> (+1 dependency).</p>
+<p><b>Test</b>: <code>:app:testDebugUnitTest :core:test</code> = <b>2355 công bố / 0 đỏ</b>. Mọi thành viên công khai của <code>CarFrames</code> đều có chỗ gọi ngoài định nghĩa (grep, CLAUDE.md §8).</p>
+
+<h4>[ĐO] Ảnh máy ảo — 5 ảnh, đo bằng PIL (ngưỡng mực > 110/255)</h4>
+<table><tr><th>ảnh</th><th>hộp mực thân xe (px)</th><th>tỉ lệ w/h</th><th>ghi chú</th></tr>
+<tr><td><code>u9_one_tyres.png</code> (1 ô)</td><td>256 × 418</td><td>0.612</td><td>nét khung đo được <b>12 px</b> = 8 dp (sàn 2 dp không chạm)</td></tr>
+<tr><td><code>u9_two_tyre_radar.png</code> (2 cột, ô trái)</td><td>210 × 340</td><td>0.618</td><td>ô giá trị rộng 214 px, khe tới bánh 28 px</td></tr>
+<tr><td><code>u9_one_radar.png</code> (1 ô)</td><td>151 × 244</td><td>0.619</td><td>8 thanh vùng nguyên vị trí</td></tr>
+<tr><td><code>u9_two_tyre_radar.png</code> (2 cột, ô phải)</td><td>152 × 244</td><td>0.623</td><td>—</td></tr>
+<tr><td><code>u9_one_adas.png</code> (1 ô)</td><td>341 × 560</td><td>0.609</td><td>4 hàng mỗi bên, hàng 1 (y 249) và hàng 4 (y 676) đều nằm trong thân xe (y 182–742)</td></tr>
+</table>
+<p>Tỉ lệ đường tâm của icon = 9.6 / 15.7 = <b>0.611</b>. Bốn cỡ đo được nằm trong <b>0.609 – 0.623</b> (chênh đến từ bề nét cộng vào hộp mực) ⇒ <b>một chiếc xe ở bốn cỡ</b>, không phải bốn hình khác nhau.</p>
+
+<h4>[ĐO] Ô giá trị canh theo bánh (bảng lốp)</h4>
+<table><tr><th>ảnh</th><th>tâm bánh TT (y)</th><th>tâm ô TT (y)</th><th>lệch</th><th>khoảng cách 2 hàng bánh</th><th>chiều cao ô</th></tr>
+<tr><td>1 ô</td><td>368.5</td><td>368.5</td><td><b>0 px</b></td><td>175.5</td><td>159 (thừa 16.5)</td></tr>
+<tr><td>2 cột</td><td>384.5</td><td>385.0</td><td><b>0.5 px</b></td><td>142.5</td><td>126 (thừa 16.5)</td></tr>
+</table>
+<p>Đây là thứ bản trước <b>không</b> bảo đảm được: ô đứng ở <code>cy ± bodyH×0.26</code> còn vệt bánh vẽ ở chỗ khác, hai con số chỉ tình cờ gần nhau. Nay cả hai đọc từ <b>cùng một</b> <code>Matrix</code>.</p>
+
+<h4>[SOÁT ẢNH] — tôi đọc lại 5 ảnh, nói được bộ phận nào</h4>
+<ul>
+<li><b>Bánh nào</b>: đọc được cả 4. Bánh là bốn khối bo góc <b>nằm ngoài</b> thân, hai bên × hai hàng; ô <code>TT/TP/ST/SP</code> đứng ngay cạnh đúng bánh của nó ở cùng độ cao.</li>
+<li><b>Kính nào</b>: đọc được 2 — cung trên (kính lái, ngắn hơn, ở đoạn thân thuôn) và cung dưới (kính hậu, cong ngược). Đây là chi tiết bản roundRect+line cũ <b>không có</b> (nó chỉ có một vạch thẳng).</li>
+<li><b>Vùng radar nào</b>: đọc được 4 trước / 4 sau theo vị trí trên–dưới thân xe; xe ở giữa nên "trước/sau" là hình học chứ không phải quy ước.</li>
+<li><b>Bên nào (ADAS)</b>: đọc được — 4 hàng trái, 4 hàng phải, đều nằm trong chiều cao thân xe.</li>
+<li><b>Chưa đọc được</b>: <b>cửa</b> và <b>cốp</b> — không bảng nào vẽ chúng (xem §4.6). Với <i>"mở cửa, mở cốp"</i> mà owner nêu, phần đó <b>còn nợ</b>.</li>
+</ul>
+
+<h4>Giới hạn của lượt đo này</h4>
+<ul>
+<li>[CHƯA BIẾT] Màu trạng thái trên bánh (đỏ/hổ phách) <b>chưa thấy trên ảnh</b>: máy ảo không có dữ liệu xe, cả 4 bánh ở <code>UNKNOWN</code> ⇒ màu <code>MUT2</code>. Dự án cấm bơm dữ liệu giả (<code>CarDataAdapter</code>: <i>"off-car → null ⇒ UI '—', KHÔNG demo"</i>) nên không có đường nào ra màu đó off-car. Cần xe thật hoặc một lượt đo riêng.</li>
+<li>[ĐO] Hình chỉ kiểm ở chủ đề TỐI. Bảng màu đi qua <code>KachiTheme</code> nên chủ đề sáng không có mã riêng, nhưng cũng chưa có ảnh.</li>
+<li>Trạng thái prefs máy ảo đã bị đổi để dựng ảnh (<code>/data/data/com.byd.launcher/shared_prefs/kachi_workspace.xml</code>, hiện đang là 2 cột Lốp+Cảm biến đỗ). Xoá tệp đó là về mặc định.</li>
+</ul>
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-13 · soát viên cấp cao (Opus 5), phạm vi = U9 + U10 + U11 (diff chưa commit)</h3>
+<p class="muted">Đọc: spec này (R1–R6) · dòng U9/U10/U11 của <code>docs/PROJECT-BACKLOG.md</code> · <code>CarFrames.kt</code> · ba <code>*BoardView</code> · <code>PickerBadge</code>/<code>ControlTileFactory</code>/<code>GroupTileViews</code> · <code>LocalDeviceShell</code>/<code>UpdateChecker</code> · bytecode <code>dadb-2.0.0.jar</code> và <code>androidx.core-1.19.0.aar</code>. Kết quả: <b>APPROVED</b> sau 2 bản vá.</p>
+
+<h4>Kiểm scope — R1–R6</h4>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Bằng chứng</th><th></th></tr>
+<tr><td>R1</td><td>Ba bảng dùng CÙNG khung xe, nét không mảnh hơn 1.6dp</td><td>cả ba gọi <code>CarFrames.fit</code> + <code>topFrame</code>; sàn nét <code>maxOf(m*0.018, Sp.STROKE)</code> ở cả ba; <code>CarFramesSourceContractTest</code> so path hai chiều với <code>res/drawable</code></td><td class="ok">✅</td></tr>
+<tr><td>R2</td><td>Vùng tô = màu trạng thái, luật quyết định ở <code>:core</code> không đổi</td><td>bánh tô bằng <code>colorFor(status)</code>; <code>git diff</code> không chạm <code>:core</code>; <code>TyreBoard</code>/<code>GroupBoard.sidePlan</code> nguyên vẹn</td><td class="ok">✅</td></tr>
+<tr><td>R3</td><td>Số đứng cạnh bộ phận, cỡ chữ có sàn</td><td>ô giá trị canh theo <code>mapRect(wheelBounds)</code>; [ĐO] ảnh: lệch tâm bánh 0–0.5&nbsp;px</td><td class="ok">✅</td></tr>
+<tr><td>R4</td><td>Ảnh máy ảo 1 ô + 2 cột</td><td>5 ảnh (§9); soát lại độc lập ở lượt này: đọc được 4 bánh · 2 vạch kính · 4 vùng trước/4 sau · 4 hàng mỗi bên ADAS</td><td class="ok">✅</td></tr>
+<tr><td>R5</td><td>Test khoá "một nguồn path"</td><td>8 bài <code>CarFramesSourceContractTest</code>, có cả chiều cấm tệp khác giữ chuỗi path</td><td class="ok">✅</td></tr>
+<tr><td>R6</td><td>Theo chủ đề, không màu riêng</td><td><code>ThemePaletteContractTest</code> phủ sẵn thư mục <code>launcher/</code>; <code>CarFrames</code> không có màu</td><td class="ok">✅</td></tr>
+</table>
+<p><b>Nợ đã ghi, KHÔNG phải scope gap</b>: vùng tô cửa/cốp/ca-pô (§4.6 nói rõ lý do hoãn) · màu bánh [CHƯA BIẾT] off-car · chưa có ảnh chủ đề sáng. Cả ba đã nằm trong dòng U9 của backlog.</p>
+
+<h4>Phát hiện + bản vá</h4>
+<table>
+<tr><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td><span class="tag">P1</span></td><td><b>Dấu "chưa kiểm" còn bề mặt THỨ BA vẫn hổ phách.</b> [ĐO] <code>u9_two_tyre_radar.png</code>: sau U10, thanh nút đã xám nhưng góc tiêu đề ô nhóm <i>Lốp</i>/<i>Cảm biến đỗ</i> vẫn sáng hổ phách. Nguồn = <code>GroupTileView.header</code>, đọc CHÍNH nguồn sự thật ấy (<code>GroupBoardModel.needsBadge = cells.any{…} || actions.any{…}</code> ⇒ <code>EvidenceTier.needsBadge</code>) ⇒ cùng ngữ nghĩa, không phải cảnh báo thật (cảnh báo thật của ô nhóm đi đường <code>GroupTone</code>).</td><td><b>Đã vá</b>: <code>header</code> gọi <code>PickerBadge.dot(context)</code>; gỡ import <code>GradientDrawable</code> thừa. Bài canh mới <code>CapabilityTileWiringContractTest.cham chua kiem o dau o NHOM…</code> cắt đúng thân <code>header(</code> (để hổ phách của <code>GroupTone.WARN</code> vẫn hợp lệ). Đã thử làm ĐỎ: hoàn nguyên chấm hổ phách ⇒ đỏ.</td></tr>
+<tr><td><span class="tag p1">P2</span></td><td><b>U11 tách tới "kênh vs pm" rồi gộp lại bên trong "kênh".</b> Cả 5 <code>LocalShellFailure</code> ra cùng một câu <i>"xem Cài đặt › Hệ thống &amp; quyền"</i>. Ca hay gặp nhất của OTA là <code>AWAITING_APPROVAL</code> — hộp thoại <i>"Cho phép gỡ lỗi USB?"</i> đang bung ngay trên màn đó ⇒ chỉ sai hẳn chỗ, đúng họ bệnh U11 sinh ra để chữa. <code>AssistantLauncher.failureMessage</code> đã nói đúng việc cho cùng phân loại này từ 2026-08-24.</td><td><b>Đã vá</b>: <code>UpdateChecker.channelRemedy(reason, vi)</code> — <code>AWAITING_APPROVAL</code>/<code>AUTH_REJECTED</code> ⇒ <i>bấm "Cho phép/Allow" (tích "luôn cho phép") … rồi cài lại</i>; ba lý do còn lại giữ nguyên câu cũ. Mã lý do vẫn nằm trong câu. Test mới + đã thử làm ĐỎ.</td></tr>
+<tr><td><span class="tag p2">P3</span></td><td>Bề mặt thứ TƯ của cùng dấu: <code>WidgetViews.badgeView</code> (chip CHỮ "chưa kiểm", <code>AMBER</code>+<code>AMBER_SOFT</code>). Trình bày khác (có chữ, có nền) nên hạ giọng nó là quyết định thiết kế, không phải lỗi ⇒ <b>không đổi</b>, ghi vào backlog U10.</td><td>ghi nhận</td></tr>
+<tr><td><span class="tag p2">P3</span></td><td>Hai bản sao nhỏ ở tầng shell: (a) cặp overload <code>Dadb.create(host,port,keys[,0,timeout])</code> lặp ở <code>installApk</code> và <code>DadbLoopbackConnector.open</code>; (b) hai bảng chữ cho cùng <code>LocalShellFailure</code> (<code>AssistantLauncher.failureMessage</code> vs <code>channelRemedy</code>) — câu chữ khác nhau có lý do (trợ lý vs cài đặt) nên không gom được nguyên văn.</td><td>ghi nhận (backlog U11)</td></tr>
+<tr><td><span class="tag p2">P3</span></td><td><code>androidx.core:core:1.19.0</code> vào APK <b>nguyên bản</b> (classes.jar 1.64&nbsp;MB) vì <code>isMinifyEnabled = false</code> ở cả hai buildType — đổi lấy một hàm tĩnh. [ĐO] <code>:app:assembleDebug</code> vẫn chạy, APK 15.9&nbsp;MB.</td><td>ghi nhận (backlog U9)</td></tr>
+</table>
+
+<h4>Ba câu hỏi được đặt riêng cho lượt soát này</h4>
+<ul>
+<li><b><code>supportsFeature("shell_v2")</code> chèn TRƯỚC lần cài — có đảo đường đang chạy tốt không (CLAUDE.md §6)?</b> <b>KHÔNG.</b> [ĐO] bytecode <code>dadb-2.0.0</code>: <code>Dadb$Companion.create</code> chỉ <code>new DadbImpl(...)</code> (không I/O); <code>DadbImpl.supportsFeature</code> = <code>connection().supportsFeature(f)</code>, mà <code>connection()</code> là chỗ nối+bắt tay <b>lười</b> mà <code>install</code> vốn đã gọi, và kết quả được nhớ vào field <code>connection</code>; <code>AdbConnection.supportsFeature</code> chỉ tra <code>Set</code> trong bộ nhớ. ⇒ chuỗi gói tin trên dây <b>không đổi một byte</b>, không thêm vòng chờ; nó chỉ kéo chỗ HỎNG ra trước để phân loại được. Cùng cách <code>DadbConnection.handshake()</code> đã dùng từ 2026-08-24.</li>
+<li><b><code>by lazy</code> parse path trên luồng UI lần đầu — chấp nhận được không?</b> Có. Sáu chuỗi ngắn, parse <b>một lần cho cả tiến trình</b> (<code>lazy</code> mặc định SYNCHRONIZED, cả ba bảng cùng luồng UI). <code>CarFrames</code> là <code>object</code> chỉ giữ <code>Path</code>/<code>RectF</code> — <b>không giữ Context ⇒ không leak</b>. Trong <code>onDraw</code>: <code>set</code>/<code>transform</code>/<code>mapRect</code>/<code>mapRadius</code> đều ghi vào đối tượng field ⇒ <b>0 cấp phát</b>, và bài canh <code>khong cap phat Matrix Path RectF trong onDraw</code> khoá lại.</li>
+<li><b><code>SideBoardView</code> suy bề rộng từ chiều cao — ô hẹp có tràn không?</b> Không tràn: trần <code>BODY_W_MAX = 0.40</code> chặn, và hai cột dữ liệu luôn còn <code>≥ (0.5 − 0.20 − PAD)·w</code>. Hệ quả duy nhất: ô <b>gần vuông</b> làm <code>bodyH</code> co lại ⇒ <code>sidePlan</code> nhận sức chứa nhỏ hơn (ô 2 cột máy ảo 925×780: 609 vs 623&nbsp;px = <b>−2,5%</b>, không rơi hàng nào). Năm bố cục hiện có đều là ô NGANG nên không chạm ca xấu. [SUY] từ số học, chưa đo riêng.</li>
+</ul>
+
+<h4>Tech freshness (Context7 + bytecode)</h4>
+<table>
+<tr><th>Thư viện</th><th>Đang dùng</th><th>Mới nhất</th><th>Kết luận</th></tr>
+<tr><td><code>androidx.core:core</code></td><td>1.19.0</td><td>1.19.0 (Context7 <i>developer.android.com/jetpack/androidx/releases/core</i>, đọc 2026-09-13)</td><td class="ok">OK — latest stable. [ĐO] <code>javap</code> trên aar đã tải: <code>PathParser.createPathFromPathData(String): Path</code> là <b>public, không deprecated</b>. [ĐO] cây phụ thuộc: <code>androidx.core:core</code> <b>chưa từng có</b> trong đồ thị trước lượt này (không có <code>-&gt;</code> nâng cấp ở nút nào) ⇒ không kéo theo bản nào của thư viện khác.</td></tr>
+<tr><td><code>dev.mobile:dadb</code></td><td>2.0.0</td><td>2.0.0</td><td class="ok">OK — <code>InstallResult</code> (<code>Success</code>/<code>Failure</code>) đúng chữ ký đang dùng; đường cũ <code>install(); true</code> vứt giá trị trả về là một khẳng định SAI thật sự, vá của U11 đúng.</td></tr>
+</table>
+
+<h4>Kiểm chất lượng</h4>
+<ul>
+<li>[ĐO] <code>./gradlew :app:testDebugUnitTest :core:test :car-integration:test :vehicle-contracts:test :offcar-planner:test --rerun-tasks --continue</code> ⇒ <b>2522 bài / 0 đỏ</b> (app 885 · core 1472 · car-integration 44 · offcar-planner 99 · vehicle-contracts 22). Trước vá: 2520/0.</li>
+<li>[ĐO] Hàm/thành viên mới đều có chỗ gọi production (CLAUDE.md §8): <code>topFrame</code> 3 · <code>wheel(</code> 1 · <code>wheelBounds</code> 1 · <code>wheelRowGap</code> 1 · <code>frameBounds</code> 4 · <code>fit(</code> 3 · <code>PickerBadge.dot(</code> 2 · <code>installMessage</code>/<code>pmReason</code>/<code>channelRemedy</code> đều ≥1.</li>
+<li>[ĐO] <code>:app:assembleDebug</code> xanh với dependency mới (APK 15.9&nbsp;MB).</li>
+<li>[ĐO] Cả hai bài canh mới đã được <b>thử làm ĐỎ</b> (gỡ dòng vá ⇒ 2 đỏ; khôi phục ⇒ xanh) — không phải test mù.</li>
+<li>Tệp đều dưới trần 500 dòng: <code>ControlTileFactory</code> 500 (chạm trần, không tăng) · <code>GroupTileViews</code> 493 · <code>UpdateChecker</code> 226 · <code>CarFrames</code> 152.</li>
+<li>Hai tệp seal T11 (<code>res/layout/activity_main.xml</code>, <code>res/values/strings.xml</code>) <b>không bị chạm</b>.</li>
+</ul>
+<p><b>Verdict: APPROVED</b> — 100% deliverable R1–R6 có mã + dây nối + bài canh; 2 lỗi [P1]/[P2] đã vá và khoá bằng test; 3 mục [P3] đã vào backlog. Còn lại là phần chờ XE (màu bánh thật) và phần owner đã biết là nợ (cửa/cốp).</p>
+</div></body>
+</html>

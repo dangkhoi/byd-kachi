@@ -26,6 +26,10 @@ class CapabilityTileWiringContractTest {
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val workspace by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
     private val drawer by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
+    /** Nơi duy nhất quyết định hình dạng dấu "chưa kiểm trên xe" (U7·R6 → U10 gom nốt thanh nút vào đây). */
+    private val picker by lazy { code("src/main/java/com/byd/clusternav/launcher/PickerBadge.kt") }
+    /** Ô NHÓM (widget board) — bề mặt thứ ba từng tự vẽ chấm "chưa kiểm" của riêng nó. */
+    private val groupTile by lazy { code("src/main/java/com/byd/clusternav/launcher/GroupTileViews.kt") }
     /** Nhóm "Màn hình chính" của màn Cài đặt (S1·T3) — lưới khả năng nằm ở đây. */
     private val bars by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt") }
 
@@ -116,6 +120,60 @@ class CapabilityTileWiringContractTest {
             .forEach { assertFalse(dock.contains(it), "$it phải nằm ở bộ dựng chung, không còn trong thanh nút") }
         assertTrue(dock.contains("CapabilityKind.WRITE"), "thanh nút phải phân loại khả năng trước khi dựng ô")
         assertTrue(dock.contains("CapabilityKind.READ"), "thanh nút phải dựng được cả ô ĐỌC (R2 chiều một)")
+    }
+
+    /**
+     * ═══ U10 — DẤU *"CHƯA KIỂM TRÊN XE"* CHỈ CÓ **MỘT** GIỌNG TRÊN CẢ HAI BỀ MẶT ══════════════════
+     *
+     * ## Bệnh bài này khoá
+     * U7·R6 hạ chấm của **bộ chọn** từ hổ phách (màu CẢNH BÁO) xuống [KachiTheme.MUT2], vì chỉ 21/195 mã ở mức
+     * PROVEN ⇒ gần như ô nào cũng mang dấu, và một dấu mà 9/10 ô đều có thì nó thành hoa văn báo động. Nhưng
+     * [ControlTileFactory.withBadge] — đường vẽ của **thanh nút** và **ô giữa màn** — tự vẽ chấm của riêng nó nên
+     * bị bỏ sót: cùng một sự thật, hai giọng, ở hai bề mặt người dùng nhìn thấy cạnh nhau.
+     *
+     * ## Vì sao khoá "cùng một hàm vẽ", không phải "cùng một chuỗi màu"
+     * Khoá chuỗi `MUT2` ở hai nơi vẫn cho phép hai bản sao tồn tại — lần sau R6 đổi lần nữa thì lại sót đúng chỗ
+     * này. Khoá LỜI GỌI chung ([PickerBadge.dot]) mới chặn được nguyên nhân: chỉ còn một chỗ quyết định màu + hình.
+     */
+    @Test
+    fun `cham chua kiem tren xe cua thanh nut dung CHUNG cach ve voi bo chon`() {
+        val badge = SourceRoots.body(factory, "private fun withBadge(")
+        assertFalse(
+            badge.contains("AMBER"),
+            "hổ phách là màu CẢNH BÁO mà dấu này hiện trên gần như mọi ô ⇒ cả thanh nút đọc thành 'toàn lỗi' (U7·R6)",
+        )
+        assertTrue(badge.contains("PickerBadge.dot("), "phải gọi chung hàm vẽ của bộ chọn, không tự vẽ bản thứ hai")
+        val dot = SourceRoots.body(picker, "fun dot(")
+        assertTrue(dot.contains("KachiTheme.MUT2"), "chấm dùng mực mờ nhất của bảng màu")
+        assertFalse(picker.contains("KachiTheme.AMBER"), "và nơi quyết định duy nhất đó không được quay lại hổ phách")
+    }
+
+    /**
+     * ═══ U10 (soát senior 2026-09-13) — BỀ MẶT THỨ BA: ĐẦU Ô NHÓM ═══════════════════════════════════
+     *
+     * ## Vì sao bài trên chưa đủ
+     * [ĐO] ảnh máy ảo bố cục 2 cột sau khi U10 đã vá thanh nút: hai ô nhóm *Lốp* / *Cảm biến đỗ* **vẫn** sáng một
+     * chấm hổ phách ở góc tiêu đề, cạnh đúng thanh nút vừa được hạ giọng. Nguồn là `GroupTileView.header` — bản sao
+     * thứ BA của cùng một quyết định, và nó đọc CHÍNH nguồn sự thật ấy
+     * (`GroupBoardModel.needsBadge = cells.any{…} || actions.any{…}` ⇒ [EvidenceTier.needsBadge]), tức cùng ngữ
+     * nghĩa *"chưa kiểm trên xe"*, KHÔNG phải cảnh báo thật.
+     *
+     * ## Ranh giới bài này KHÔNG chạm
+     * Ô nhóm vẫn được dùng hổ phách cho **cảnh báo thật** ([GroupTone.WARN] ở `tint`/`toneFill`/`toneStroke`) —
+     * nên phép kiểm cắt đúng thân `header(`, không quét cả tệp.
+     */
+    @Test
+    fun `cham chua kiem o dau o NHOM cung mot giong voi thanh nut`() {
+        val head = SourceRoots.body(groupTile, "private fun header(")
+        assertFalse(
+            head.contains("AMBER"),
+            "đầu ô nhóm còn chấm hổ phách — cùng sự thật 'chưa kiểm' mà nói to hơn hai bề mặt kia (U7·R6)",
+        )
+        assertTrue(head.contains("PickerBadge.dot("), "phải gọi chung hàm vẽ, không tự dựng hình tròn thứ ba")
+        assertTrue(
+            groupTile.contains("GroupTone.WARN -> KachiTheme.AMBER"),
+            "và CẢNH BÁO THẬT của ô nhóm vẫn giữ hổ phách — bài này chỉ hạ giọng dấu 'chưa kiểm'",
+        )
     }
 
     // ── R2 chiều hai: hành động trong ô giữa màn ──────────────────────────────────────────────────

@@ -32,8 +32,8 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *  • [actionTile] — **HÀNH ĐỘNG** (bấm được), render theo [ControlKind]: TOGGLE · STEP · COVER · SELECT · BUTTON.
  *  • [readTile] — **ĐỌC** (KHÔNG bấm): icon + nhãn + số + đơn vị, cập nhật tại chỗ qua [ReadTile.bind].
  *
- * Tier OVERDRIVE/DASHCAST ⇒ chấm amber "chưa kiểm trên xe" (cả hai loại). **KHÔNG gate an toàn** — mọi ô bấm được
- * bất kể tốc độ/số (owner bỏ gate 2026-09-10).
+ * Tier OVERDRIVE/DASHCAST ⇒ chấm mờ "chưa kiểm trên xe" (cả hai loại; U10 — vẽ bằng [PickerBadge.dot], xem
+ * [withBadge]). **KHÔNG gate an toàn** — mọi ô bấm được bất kể tốc độ/số (owner bỏ gate 2026-09-10).
  */
 class ControlTileFactory(
     private val ctx: Context,
@@ -378,12 +378,19 @@ class ControlTileFactory(
         v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiTheme.card(ctx, size.radius, KachiTheme.TILE)
     }
 
-    /** Bọc ô + chấm amber góc trên-phải cho tier "chưa kiểm trên xe" (OVERDRIVE/DASHCAST). */
+    /**
+     * Bọc ô + chấm *"chưa kiểm trên xe"* ở góc trên-phải (tier OVERDRIVE/DASHCAST).
+     *
+     * ## ⚠ U10 — chấm vẽ bằng [PickerBadge.dot], KHÔNG còn [KachiTheme.AMBER]
+     * U7·R6 đã hạ chấm của **bộ chọn** xuống mực mờ vì hổ phách là màu CẢNH BÁO mà dấu này hiện trên gần như mọi ô
+     * (chỉ 21/195 mã ở mức PROVEN) ⇒ cả trang đọc thành "toàn lỗi". Chỗ này bị bỏ sót nên thanh nút vẫn sáng hổ
+     * phách: cùng một sự thật, hai giọng, ở hai bề mặt nhìn thấy nhau. Nay cả hai gọi chung một hàm vẽ. **Cỡ** giữ
+     * [KachiSpace.DOT] (8dp) chứ không lấy tỉ lệ icon như bộ chọn: chấm ở đây dán vào góc **Ô** (84×86dp) nên icon/5
+     * (= 4dp với [TileSize.DOCK]) sẽ vô hình; trần R6 *"≤ 8% ô"* vẫn thừa chỗ (π·4² ≈ 50dp² / 7224dp² ⇒ **0,7%**).
+     */
     private fun withBadge(content: LinearLayout): View = FrameLayout(ctx).apply {
         addView(content, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-        addView(View(ctx).apply {
-            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c(KachiTheme.AMBER)) }
-        }, FrameLayout.LayoutParams(dpi(ctx, Sp.DOT), dpi(ctx, Sp.DOT), Gravity.TOP or Gravity.END).also {
+        addView(PickerBadge.dot(ctx), FrameLayout.LayoutParams(dpi(ctx, Sp.DOT), dpi(ctx, Sp.DOT), Gravity.TOP or Gravity.END).also {
             it.topMargin = dpi(ctx, Sp.S); it.marginEnd = dpi(ctx, Sp.S)
         })
     }

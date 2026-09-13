@@ -41,8 +41,8 @@ android {
         applicationId = "com.byd.launcher"
         minSdk = 29
         targetSdk = 37
-        versionCode = 43
-        versionName = "1.42"
+        versionCode = 44
+        versionName = "1.43"
 
         // DIAG build flag — a DIAGNOSTIC log-collection build for a teammate to drive-test VietMap/Waze.
         // Default FALSE so the normal RELEASE build stays byte-identical (A8/D3: verbose logging default OFF —
@@ -200,6 +200,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
+
+    // — U9 `CarFrames`: đọc CHUỖI path SVG của bộ icon v2 thành `android.graphics.Path` —
+    // `android.util.PathParser` của nền tảng là @hide (không gọi được từ app, và đã từng đổi chữ ký giữa các đời
+    // ROM) ⇒ đường duy nhất còn lại là bản AndroidX. Version 1.19.0 = latest stable (Google Maven group-index đọc
+    // 2026-09-13); `androidx.core.graphics.PathParser.createPathFromPathData` là API CÔNG KHAI của gói này.
+    implementation("androidx.core:core:1.19.0")
 
     // — JVM unit + property tests (off-device, chạy bằng ./gradlew testDebugUnitTest) —
     testImplementation(platform("org.junit:junit-bom:6.1.2"))

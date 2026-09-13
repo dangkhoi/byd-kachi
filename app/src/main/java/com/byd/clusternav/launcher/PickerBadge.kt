@@ -75,12 +75,24 @@ object PickerBadge {
         return FrameLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(size, size)
             addView(img, FrameLayout.LayoutParams(size, size))
-            addView(View(ctx).apply {
-                // MUT2 = mực mờ nhất của bảng màu. KHÔNG dùng AMBER nữa: xem KDoc lớp — hổ phách là màu cảnh báo,
-                // mà ở đây 9/10 ô mang dấu nên cả trang đọc thành "toàn lỗi".
-                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c(KachiTheme.MUT2)) }
-            }, FrameLayout.LayoutParams(d, d, Gravity.TOP or Gravity.END))
+            addView(dot(ctx), FrameLayout.LayoutParams(d, d, Gravity.TOP or Gravity.END))
         }
+    }
+
+    /**
+     * CHÍNH cái chấm — hình tròn, màu [KachiTheme.MUT2]. **Cỡ do bên gọi đặt bằng `LayoutParams`**, vì mỗi bề mặt
+     * có một ô khác cỡ (icon 32/44dp ở bộ chọn · ô nút 84×86dp ở thanh nút).
+     *
+     * ## U10 — vì sao hàm này phải tồn tại thay vì mỗi nơi tự vẽ một hình tròn
+     * R6 hạ chấm từ hổ phách xuống [KachiTheme.MUT2] cho **bộ chọn**, nhưng [ControlTileFactory.withBadge] (thanh
+     * nút + ô giữa màn) vẫn tự vẽ một chấm hổ phách của riêng nó ⇒ **cùng một sự thật** (*"mã này chưa kiểm trên
+     * xe"*) nói bằng **hai giọng** ở hai bề mặt cạnh nhau, và giọng to hơn lại là giọng đã bị bác. Đúng bẫy "hai
+     * bản sao của một quyết định" mà [PickerBadge] sinh ra để gom. Nay màu + hình chỉ còn MỘT chỗ quyết định.
+     */
+    fun dot(ctx: Context): View = View(ctx).apply {
+        // MUT2 = mực mờ nhất của bảng màu. KHÔNG dùng AMBER: xem KDoc lớp — hổ phách là màu cảnh báo, mà dấu này
+        // hiện trên 9/10 ô nên cả trang đọc thành "toàn lỗi".
+        background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c(KachiTheme.MUT2)) }
     }
 
     /**

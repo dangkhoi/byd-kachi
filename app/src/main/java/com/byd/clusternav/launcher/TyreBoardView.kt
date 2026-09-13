@@ -3,10 +3,13 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.util.TypedValue
 import android.view.View
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * BẢNG ÁP SUẤT LỐP 4 BÁNH (W4 · vẽ lại ở lượt kiểm toán UX 2026-09-12) — hình xe nhìn từ trên, **mỗi bánh một ô
@@ -28,6 +31,13 @@ import android.view.View
  * Khuôn mới bám nguyên [RadarBoardView] (bảng `BOARD` thứ hai của dự án, và là bảng mà kiểm toán gọi là đúng nhất):
  * **thân xe ở giữa · các ô giá trị áp sát thân theo đúng vị trí không gian · một dòng chân bảng**. Hai bảng `BOARD`
  * nhìn ra ngay là cùng một họ.
+ *
+ * ## U9 (2026-09-13) — hình xe nay là CHÍNH path của bộ icon v2
+ * Thân + hai vạch kính + bốn bánh lấy từ [CarFrames] (chuỗi path chép nguyên văn từ script sinh icon U7), thay
+ * cho `drawRoundRect` + `drawLine` + bốn vệt bo góc tự vẽ. Hai hệ quả đo được:
+ *  • bảng lớn và icon 24dp là **một chiếc xe** — trước đó là hai hình khác nhau cạnh nhau trên cùng màn;
+ *  • bánh thành **vùng tô mang màu trạng thái** đúng chỗ bánh thật (thò ra ngoài thân), và ô giá trị bám vào
+ *    hộp bao của chính cái bánh ấy chứ không vào mép thân ⇒ liên hệ "số này là bánh nào" do hình học bảo đảm.
  *
  * ## Quy ước vẽ (giữ nguyên từ bản W4 — phần này vốn đã đúng)
  *  • Mọi `Paint` cấp phát MỘT LẦN ở field, màu phân giải MỘT LẦN — KHÔNG cấp phát/parse trong [onDraw].
@@ -58,6 +68,9 @@ class TyreBoardView(context: Context) : View(context) {
         // MUT2 (không phải LINE ~9% trắng): [ĐO] đọc ảnh máy ảo cho thấy viền LINE chỉ chênh nền 21/255 ⇒ hình xe
         // gần như tan vào nền, người xem chỉ thấy 4 con số rời rạc.
         style = Paint.Style.STROKE; color = Color.parseColor(KachiTheme.MUT2)
+        // U9 — khung xe nay là path của bộ icon v2 ([CarFrames]): đầu/khớp nét TRÒN để mũi xe và hai vạch kính ra
+        // đúng hình như icon 24dp (bộ icon khai `strokeLineCap/Join="round"` ở mọi tệp).
+        strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
     private val tyrePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
@@ -86,6 +99,22 @@ class TyreBoardView(context: Context) : View(context) {
     }
     private val body = RectF()
     private val cell = RectF()
+
+    // ── U9 · hình xe dùng chung với bộ icon v2 ([CarFrames]) ────────────────────────────────────────────────
+    // Cả bốn thứ dưới đây cấp phát MỘT LẦN ở field, đúng luật "không cấp phát trong onDraw" của KDoc lớp:
+    // `Matrix`/`Path`/`RectF` là đối tượng, và onDraw chạy theo nhịp trạng thái xe.
+    private val carMatrix = Matrix()
+
+    /** Bản chép để biến hình — KHÔNG bao giờ `transform` thẳng vào path dùng chung của [CarFrames]. */
+    private val carPath = Path()
+    private val srcBox = RectF()
+    private val wheelBox = RectF()
+
+    /**
+     * SÀN nét khung xe quy ra pixel — R1 (*"không mảnh hơn 1.6dp tương đương"*). Lấy [KachiSpace.STROKE] (2dp)
+     * chứ không đẻ một số riêng: 2dp là bậc "nét" của thang, và nó ≥ 1.6dp nên thoả sàn ở mọi mật độ.
+     */
+    private val strokeFloorPx = Sp.dpf(context, Sp.STROKE)
 
     // Màu PHÂN GIẢI MỘT LẦN. `Color.parseColor` cắt chuỗi + parse số mỗi lần gọi; [onDraw] chạy đều đặn theo nhịp
     // trạng thái xe ⇒ để trong onDraw là rác bộ nhớ đúng chỗ KDoc trên hứa là không có.
@@ -142,14 +171,37 @@ class TyreBoardView(context: Context) : View(context) {
         if (w <= 0f || h <= 0f) return
         val m = minOf(w, h)
 
-        outline.strokeWidth = m * 0.018f
+        outline.strokeWidth = maxOf(m * 0.018f, strokeFloorPx)
         cellStroke.strokeWidth = m * 0.014f
-        bigP.textSize = m * 0.150f
-        unitP.textSize = m * 0.068f
+        // ── U9 · HÌNH XE = path của bộ icon v2, phóng giữ tỉ lệ ────────────────────────────────────────────
+        // Thân xe (KHÔNG kể bánh) được phóng vào đúng khung `body` mà bản trước vẽ `drawRoundRect` — nên bố cục
+        // ngang đã duyệt (thân hẹp, bề ngang dành cho bốn ô giá trị) giữ nguyên; bốn bánh **thò ra ngoài** thân
+        // đúng như trên icon, và chúng mới là thứ ô giá trị bám vào.
+        val bodyW = w * 0.24f
+        val bodyH = h * 0.58f
+        val cy = h * 0.45f
+        body.set((w - bodyW) / 2f, cy - bodyH / 2f, (w + bodyW) / 2f, cy + bodyH / 2f)
+        // Chừa nửa nét mỗi phía: `Path` là ĐƯỜNG TÂM nét, không phải mép mực ⇒ không chừa thì mũi xe bị ô cắt cụt.
+        body.inset(outline.strokeWidth / 2f, outline.strokeWidth / 2f)
+        CarFrames.frameBounds(srcBox)
+        CarFrames.fit(srcBox, body, carMatrix)
+        carPath.set(CarFrames.topFrame)
+        carPath.transform(carMatrix)
+        canvas.drawPath(carPath, outline)
+
+        // Ô giá trị cao bao nhiêu là do CHÍNH hình xe quyết: nó phải lọt giữa hai hàng bánh, nếu không hai ô của
+        // cùng một bên chồng lên nhau ở ô hẹp. `mapRadius` trả đúng hệ số phóng vì ma trận giữ tỉ lệ.
+        val wheelSpan = carMatrix.mapRadius(CarFrames.wheelRowGap)
+        val cellH = minOf(h * 0.24f, wheelSpan - m * 0.035f)
+
+        // Cỡ chữ: tỉ lệ cạnh ô như trước, **nhưng không được cao hơn ô chứa nó**. Ở ô gần vuông, thân xe hẹp ⇒
+        // hai hàng bánh gần nhau ⇒ ô thấp; giữ nguyên `m * 0.150` ở đó là chữ tràn ra ngoài ô giá trị.
+        bigP.textSize = minOf(m * 0.150f, cellH * 0.58f)
+        unitP.textSize = bigP.textSize * 0.45f
         // Dòng phụ = **cỡ NHÃN**, nhỏ hơn số 3.5 lần. [ĐO] vòng đầu tôi để 0.062 (46px với ô này) ⇒ chữ viết tắt
         // vị trí vẫn ra mực **cao 28px** trong khi giá trị off-car chỉ là dấu gạch dày 11px — tức thứ bậc VẪN đảo
         // đúng như kiểm toán đo được ở bản trước. Hạ về 0.042 (31px) cho nó đọc ra là một chú thích.
-        subP.textSize = m * 0.042f
+        subP.textSize = minOf(m * 0.042f, cellH * 0.22f)
         // ⚠ [SOÁT UI 2026-09-12] Dòng KẾT LUẬN (verdict) — gồm câu no-data "chưa đọc được áp suất · nhiệt chưa kiểm"
         // off-car — có TRẦN tuyệt đối. `m * 0.072` một mình cho ~43px ở ô Lốp lớn ⇒ câu "chưa có dữ liệu" thành chữ
         // TO NHẤT màn, to hơn cả tiêu đề nhóm (đảo thứ bậc). Trần theo sp (bất biến ô) giữ nó ở cỡ một câu kết luận;
@@ -162,53 +214,36 @@ class TyreBoardView(context: Context) : View(context) {
         // Nên trần có SÀN: kết luận không bao giờ nhỏ hơn chú thích nó kết luận về.
         midP.textSize = maxOf(minOf(m * 0.072f, verdictCapPx), subP.textSize)
 
-        // Thân xe THUÔN DỌC + vạch kính lái — cùng hình với [RadarBoardView] để hai bảng BOARD là một họ. Thân HẸP
-        // (0.20w) vì phần lớn bề ngang nay thuộc về bốn ô giá trị: chúng chứa số + đơn vị + dòng phụ.
-        val bodyW = w * 0.24f
-        val bodyH = h * 0.58f
-        val cy = h * 0.45f
-        body.set((w - bodyW) / 2f, cy - bodyH / 2f, (w + bodyW) / 2f, cy + bodyH / 2f)
-        val r = bodyW * 0.34f
-        canvas.drawRoundRect(body, r, r, outline)
-        canvas.drawLine(
-            body.left + bodyW * 0.14f, body.top + bodyH * 0.18f,
-            body.right - bodyW * 0.14f, body.top + bodyH * 0.18f, outline,
-        )
-
-        // Bốn ô giá trị ÁP SÁT thân xe: hai cột (trái/phải thân) × hai hàng (trước/sau). Khoảng cách tới thân là
-        // `gap` — nhỏ có chủ ý, vì chính khoảng cách này là thứ nói "ô này là bánh đó" (bản trước để 158px nên
+        // Bốn ô giá trị ÁP SÁT **chính cái bánh** nó nói về: hai cột (trái/phải) × hai hàng (trước/sau). Khoảng
+        // cách `gap` nhỏ có chủ ý, vì chính khoảng cách này là thứ nói "ô này là bánh đó" (bản trước để 158px nên
         // liên hệ đó mất).
         val gap = m * 0.045f
         val pad = w * 0.025f
-        val cellH = h * 0.24f
-        val topY = cy - bodyH * 0.26f
-        val botY = cy + bodyH * 0.26f
 
         // Chưa có dữ liệu (off-car) ⇒ vẫn vẽ đủ 4 ô với "—" để bố cục không nhảy khi số về. Dùng CHÍNH toạ độ ở
         // trên (không hardcode lại) ⇒ hai nhánh không thể lệch nhau khi chỉnh bố cục.
         val rows = if (readings.size < 4) PLACEHOLDER_CORNERS else readings.map { it.corner }
         rows.forEachIndexed { i, corner ->
-            val left = corner == TyreCorner.FRONT_LEFT || corner == TyreCorner.REAR_LEFT
-            val front = corner == TyreCorner.FRONT_LEFT || corner == TyreCorner.FRONT_RIGHT
-            val cyc = if (front) topY else botY
-            if (left) cell.set(pad, cyc - cellH / 2f, body.left - gap, cyc + cellH / 2f)
-            else cell.set(body.right + gap, cyc - cellH / 2f, w - pad, cyc + cellH / 2f)
+            // Vị trí ô ĐO TỪ HÌNH, không suy từ tên góc: bánh vẽ ở đâu thì ô giá trị đứng cạnh đúng ở đó. Chép tay
+            // "trước-trái ⇒ trên-trái" là chỗ duy nhất lệch được giữa hình và số (kiểm kê U7 §2: bốn quy ước hậu
+            // tố khác nhau cho cùng một góc xe — bảng sẽ vẫn vẽ đủ bốn ô, chỉ là gắn nhầm bánh).
+            CarFrames.wheelBounds(corner, wheelBox)
+            carMatrix.mapRect(wheelBox)
+            val cyc = wheelBox.centerY()
+            if (wheelBox.centerX() < w / 2f) cell.set(pad, cyc - cellH / 2f, wheelBox.left - gap, cyc + cellH / 2f)
+            else cell.set(wheelBox.right + gap, cyc - cellH / 2f, w - pad, cyc + cellH / 2f)
             val rd = readings.getOrNull(i)
             drawCell(canvas, m, corner, rd, values.getOrNull(i), temps.getOrNull(i))
-            drawWheelMark(canvas, m, left, cyc, colorFor(rd?.status ?: TyreStatus.UNKNOWN))
+            // Bánh = VÙNG TÔ mang màu trạng thái — đúng ngữ pháp của bộ icon v2 (*nét = vật thể, vùng tô = bộ phận
+            // đang được nói tới*), và bánh sai nhìn ra ngay trên hình xe trước khi kịp đọc con số.
+            tyrePaint.color = colorFor(rd?.status ?: TyreStatus.UNKNOWN)
+            carPath.set(CarFrames.wheel(corner))
+            carPath.transform(carMatrix)
+            canvas.drawPath(carPath, tyrePaint)
         }
 
         midP.color = colMut
         canvas.drawText(verdict, w / 2f, h * 0.965f, midP)
-    }
-
-    /** Vệt bánh xe trên mép thân — gợi hình, và mang màu trạng thái để bánh sai nhìn ra ngay trên hình xe. */
-    private fun drawWheelMark(canvas: Canvas, m: Float, left: Boolean, cy: Float, color: Int) {
-        tyrePaint.color = color
-        val tw = m * 0.035f
-        val th = m * 0.115f
-        val x = if (left) body.left - tw * 0.55f else body.right - tw * 0.45f
-        canvas.drawRoundRect(x, cy - th / 2f, x + tw, cy + th / 2f, tw / 2f, tw / 2f, tyrePaint)
     }
 
     /**
