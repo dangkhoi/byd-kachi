@@ -3,8 +3,9 @@
   ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
   Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
   NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  VỊ TRÍ CỬA SỔ TRỜI — khung ô nóc NÉT + tấm kính đã trượt về sau (tô) ⇒ HỞ KHE, + mũi tên MỨC.
-  [ĐO Pass 1] `sunroof_state` và `sunroof_pos` trước trùng nhau 0 pixel khác biệt.
+  VỊ TRÍ CỬA SỔ TRỜI — ô nóc NÉT + khe hở TÔ ở mép trước (kính đã trượt) + MŨI TÊN ĐÔI dọc xe.
+  [ĐO Pass 1] trước trùng `sunroof_state` 0 pixel; [ĐO Pass 3] bản lượt 2 bị đọc thành ghế trẻ em
+  vì có khối tô giữa khoang — bản này không còn khối nào ở giữa khoang.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
@@ -12,15 +13,17 @@
     <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
+    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M10.60,9.30 L13.40,9.30 A1.00,1.00 0 0 1 14.40,10.30 L14.40,14.30 A1.00,1.00 0 0 1 13.40,15.30 L10.60,15.30 A1.00,1.00 0 0 1 9.60,14.30 L9.60,10.30 A1.00,1.00 0 0 1 10.60,9.30 Z"
+    <path android:pathData="M10.80,8.80 L13.20,8.80 A0.80,0.80 0 0 1 14.00,9.60 L14.00,12.00 A0.80,0.80 0 0 1 13.20,12.80 L10.80,12.80 A0.80,0.80 0 0 1 10.00,12.00 L10.00,9.60 A0.80,0.80 0 0 1 10.80,8.80 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M11.00,12.50 L13.00,12.50 A0.70,0.70 0 0 1 13.70,13.20 L13.70,13.90 A0.70,0.70 0 0 1 13.00,14.60 L11.00,14.60 A0.70,0.70 0 0 1 10.30,13.90 L10.30,13.20 A0.70,0.70 0 0 1 11.00,12.50 Z"
+    <path android:pathData="M11.20,9.60 L12.80,9.60 A0.40,0.40 0 0 1 13.20,10.00 L13.20,10.50 A0.40,0.40 0 0 1 12.80,10.90 L11.20,10.90 A0.40,0.40 0 0 1 10.80,10.50 L10.80,10.00 A0.40,0.40 0 0 1 11.20,9.60 Z"
         android:fillColor="#FFFFFF" />
-    <path android:pathData="M12,11.9 L12,10.3 M11.05,11.25 L12,10.2 L12.95,11.25"
+    <path android:pathData="M12,16.4 L12,17.6"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M12.00,14.90 L13.34,16.39 L10.66,16.39 Z M12.00,19.10 L10.66,17.61 L13.34,17.61 Z"
+        android:fillColor="#FFFFFF" />
 </vector>

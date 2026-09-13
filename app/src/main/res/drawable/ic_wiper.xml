@@ -3,7 +3,9 @@
   ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
   Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
   NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  GẠT MƯA — kính lái nhìn từ trước + hai cần gạt.
+  GẠT MƯA — khung TRƯỚC + hai CUNG QUÉT SONG SONG trên kính lái, mỗi cung một LƯỠI GẠT chéo ở đầu.
+  [ĐO ảnh dựng 48px] thử ba cách: hai cung ĐỐI XỨNG (đọc ra 'ria mép/cánh chim'), hai cung
+  SONG SONG ngả phải (đọc ra gạt mưa), song song dài chạm trụ A (dính mép). Chọn cách giữa.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
@@ -11,13 +13,19 @@
     <path android:pathData="M4.4,16.9 L4.4,9.9 L6.6,4.9 L17.4,4.9 L19.6,9.9 L19.6,16.9 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.0,9.9 L18.0,9.9"
+    <path android:pathData="M6.0,9.3 C9.2,10.5 14.8,10.5 18.0,9.3"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M7.4,15.9 L9.5,7.1 M13.2,15.9 L15.3,7.1"
+    <path android:pathData="M8.20,10.20 C8.80,9.20 9.40,8.40 10.20,7.60"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.5,11.5 L11.2,12.4 M14.3,11.5 L17.0,12.4"
+    <path android:pathData="M10.20,7.60 L12.20,6.70"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M12.60,10.20 C13.20,9.20 13.80,8.40 14.60,7.60"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M14.60,7.60 L16.60,6.70"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

@@ -3,7 +3,8 @@
   ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
   Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
   NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  SẤY KÍNH SAU — khung NHÌN TỪ SAU + ba SÓNG NHIỆT trên mặt kính hậu.
+  SẤY KÍNH SAU — khung NHÌN TỪ SAU (đèn hậu dài ngang + biển số) + SÓNG NHIỆT trên kính hậu.
+  Vạch kính hậu bỏ đi vì sóng nhiệt vẽ ngay TRÊN tấm kính đó (hai nét cách 0.2 thì dính).
   [ĐO Pass 1] `defrost_rear` trước dùng chung ic-defrost với sấy trước ⇒ hai ô y hệt nhau.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -12,12 +13,10 @@
     <path android:pathData="M4.4,16.9 L4.4,9.9 L6.6,4.9 L17.4,4.9 L19.6,9.9 L19.6,16.9 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.0,9.9 L18.0,9.9"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.7,14.2 L14.3,14.2 L14.3,16.2 L9.7,16.2 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M7.00,11.20 L17.00,11.20 A0.80,0.80 0 0 1 17.80,12.00 L17.80,12.10 A0.80,0.80 0 0 1 17.00,12.90 L7.00,12.90 A0.80,0.80 0 0 1 6.20,12.10 L6.20,12.00 A0.80,0.80 0 0 1 7.00,11.20 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M10.00,13.90 L14.00,13.90 A0.40,0.40 0 0 1 14.40,14.30 L14.40,15.10 A0.40,0.40 0 0 1 14.00,15.50 L10.00,15.50 A0.40,0.40 0 0 1 9.60,15.10 L9.60,14.30 A0.40,0.40 0 0 1 10.00,13.90 Z"
+        android:fillColor="#FFFFFF" />
     <path android:pathData="M7.8,6.6 C9.1,5.8 10.2,7.4 11.5,6.6 C12.8,5.8 13.9,7.4 15.2,6.6"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />

@@ -11,7 +11,7 @@
     <path android:pathData="M4.4,16.9 L4.4,9.9 L6.6,4.9 L17.4,4.9 L19.6,9.9 L19.6,16.9 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.0,9.9 L18.0,9.9"
+    <path android:pathData="M6.0,9.3 C9.2,10.5 14.8,10.5 18.0,9.3"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
     <path android:pathData="M6.40,14.70 L7.80,14.70 A0.60,0.60 0 0 1 8.40,15.30 L8.40,15.70 A0.60,0.60 0 0 1 7.80,16.30 L6.40,16.30 A0.60,0.60 0 0 1 5.80,15.70 L5.80,15.30 A0.60,0.60 0 0 1 6.40,14.70 Z"

@@ -13,10 +13,10 @@
     <path android:pathData="M4.4,16.9 L4.4,9.9 L6.6,4.9 L17.4,4.9 L19.6,9.9 L19.6,16.9 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.0,9.9 L18.0,9.9"
+    <path android:pathData="M6.0,9.3 C9.2,10.5 14.8,10.5 18.0,9.3"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.20,11.30 L8.00,11.30 A0.80,0.80 0 0 1 8.80,12.10 L8.80,12.90 A0.80,0.80 0 0 1 8.00,13.70 L6.20,13.70 A0.80,0.80 0 0 1 5.40,12.90 L5.40,12.10 A0.80,0.80 0 0 1 6.20,11.30 Z"
+    <path android:pathData="M5.40,12.50 C6.41,10.83 7.99,10.83 9.00,12.50 C7.99,14.17 6.41,14.17 5.40,12.50 Z"
         android:fillColor="#FFFFFF" />
     <path android:pathData="M5.4,18.9 L3.2,21.1 M8.8,18.9 L6.6,21.1 M12.2,18.9 L10.0,21.1"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"

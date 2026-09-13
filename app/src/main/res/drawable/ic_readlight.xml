@@ -3,7 +3,8 @@
   ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
   Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
   NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  ĐÈN ĐỌC — hai đèn trần khoang trước, mỗi đèn hai tia.
+  ĐÈN ĐỌC — đèn trần GIỮA trục xe: hộp đèn gắn trần + CHÙM SÁNG HÌNH NÓN hắt xuống.
+  [ĐO Pass 5] bản hai chỏm ở hai ghế trước bị đọc thành "người ngồi hàng trước".
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
@@ -14,9 +15,8 @@
     <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M10.20,8.82 A1.08,1.08 0 1 1 10.20,10.98 A1.08,1.08 0 1 1 10.20,8.82 Z M13.80,8.82 A1.08,1.08 0 1 1 13.80,10.98 A1.08,1.08 0 1 1 13.80,8.82 Z"
+    <path android:pathData="M10.95,9.60 L13.05,9.60 A0.45,0.45 0 0 1 13.50,10.05 L13.50,10.55 A0.45,0.45 0 0 1 13.05,11.00 L10.95,11.00 A0.45,0.45 0 0 1 10.50,10.55 L10.50,10.05 A0.45,0.45 0 0 1 10.95,9.60 Z"
         android:fillColor="#FFFFFF" />
-    <path android:pathData="M10.2,11.7 L10.2,13.2 M13.8,11.7 L13.8,13.2"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M11.00,11.60 L13.00,11.60 L14.40,15.40 L9.60,15.40 Z"
+        android:fillColor="#FFFFFF" />
 </vector>

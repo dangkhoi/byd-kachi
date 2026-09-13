@@ -3,7 +3,7 @@
   ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
   Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
   NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  ĐÈN VIỀN CABIN — hai dải viền chạy suốt khoang.
+  ĐÈN VIỀN CABIN (tất cả) — hào quang hắt vào khoang ở CẢ hai nửa, không ký hiệu đại lượng.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
@@ -11,11 +11,11 @@
     <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
+    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.15,8.50 L9.15,8.50 A0.55,0.55 0 0 1 9.70,9.05 L9.70,11.65 A0.55,0.55 0 0 1 9.15,12.20 L9.15,12.20 A0.55,0.55 0 0 1 8.60,11.65 L8.60,9.05 A0.55,0.55 0 0 1 9.15,8.50 Z M14.85,8.50 L14.85,8.50 A0.55,0.55 0 0 1 15.40,9.05 L15.40,11.65 A0.55,0.55 0 0 1 14.85,12.20 L14.85,12.20 A0.55,0.55 0 0 1 14.30,11.65 L14.30,9.05 A0.55,0.55 0 0 1 14.85,8.50 Z"
+    <path android:pathData="M9.10,9.85 L11.50,10.70 L9.10,11.55 Z M14.90,9.85 L12.50,10.70 L14.90,11.55 Z"
         android:fillColor="#FFFFFF" />
-    <path android:pathData="M9.15,12.80 L9.15,12.80 A0.55,0.55 0 0 1 9.70,13.35 L9.70,15.85 A0.55,0.55 0 0 1 9.15,16.40 L9.15,16.40 A0.55,0.55 0 0 1 8.60,15.85 L8.60,13.35 A0.55,0.55 0 0 1 9.15,12.80 Z M14.85,12.80 L14.85,12.80 A0.55,0.55 0 0 1 15.40,13.35 L15.40,15.85 A0.55,0.55 0 0 1 14.85,16.40 L14.85,16.40 A0.55,0.55 0 0 1 14.30,15.85 L14.30,13.35 A0.55,0.55 0 0 1 14.85,12.80 Z"
+    <path android:pathData="M9.10,16.45 L11.50,17.30 L9.10,18.15 Z M14.90,16.45 L12.50,17.30 L14.90,18.15 Z"
         android:fillColor="#FFFFFF" />
 </vector>
