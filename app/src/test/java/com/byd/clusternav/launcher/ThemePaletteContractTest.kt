@@ -156,7 +156,6 @@ class ThemePaletteContractTest {
         "tile" to ALL_INKS,
         "slot" to ALL_INKS,
         "chipOff" to ALL_INKS,
-        "headBg" to listOf("ink", "mut"),
         "emptyFill" to listOf("ink", "mut"),
         // Nền nút bước −/+ và vùng radar tắt. Chỉ chữ chính nằm trên nó; vùng radar không có chữ nào.
         "dim" to listOf("ink"),
@@ -460,7 +459,7 @@ class ThemePaletteContractTest {
         val ALL_INKS = listOf("ink", "ink2", "mut", "mut2", "icon", "accentInk", "green", "amber", "red", "cyan", "orange", "slate")
 
         /** Vai NỀN — thứ chữ nằm lên. */
-        val SURFACE_ROLES = listOf("bg", "card", "card2", "panel", "field", "cell", "tile", "slot", "chipOff", "headBg", "emptyFill", "dim")
+        val SURFACE_ROLES = listOf("bg", "card", "card2", "panel", "field", "cell", "tile", "slot", "chipOff", "emptyFill", "dim")
 
         /** Vai màu mang NGHĨA của dữ liệu (ổn · chưa kiểm · cảnh báo · không khí · nhạc · trung tính · nhấn). */
         val MEANING_ROLES = listOf("green", "amber", "red", "cyan", "orange", "slate", "accent", "accent2")

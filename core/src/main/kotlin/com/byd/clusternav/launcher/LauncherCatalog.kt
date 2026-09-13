@@ -158,10 +158,41 @@ data class CapabilityPick(
      * `LangCoverageTest` báo ra để người dịch sửa chữ, chứ không tự vá bằng gợi ý loại.
      */
     override val displayLabel: String
-        get() {
-            val base = Strings.pick(label, labelEn)
-            return if (label in CapabilityCatalog.collidingLabels()) "$base · $kindHint" else base
-        }
+        get() = Strings.pick(label, labelEn)
+
+    /**
+     * ═══ U6 · GỢI Ý LOẠI RA KHỎI NHÃN CHÍNH ═══════════════════════════════════════════════════════════════════
+     *
+     * Gợi ý loại của ô này — `""` khi nhãn KHÔNG trùng (phần lớn ô), `"xem"`/`"bấm"`/`"nhóm"`/`"thẻ"` khi trùng.
+     *
+     * ## Vì sao tách khỏi [displayLabel]
+     * [ĐO] soát ảnh 2026-09-12/13: owner đọc được trên lưới các nhãn *"Charge target · view"*, *"Speed · view"*,
+     * *"Drive mode · press"*, *"Negative ions · view"* — và gọi đúng tên vấn đề: đó là **thuật ngữ nội bộ lọt vào
+     * tên thứ người dùng đang chọn**. Tên một khả năng là *"Mục tiêu sạc"*; *"xem"* là **loại** của ô, không phải
+     * một phần của tên. Nhét loại vào nhãn còn ăn mất bề ngang của chính cái tên (nhãn ô chỉ 2 dòng, chữ bị cắt
+     * đúng chỗ cần đọc) và làm nhãn tiếng Anh đọc như lỗi dịch.
+     *
+     * Nhãn giờ là nhãn; loại xuống **dòng phụ** ([displaySub]) với cỡ chữ nhỏ hơn — cùng chỗ nhóm đang nói *"gồm
+     * gì"*. Phép **phân biệt** hai ô trùng tên không mất đi, nó chỉ chuyển từ một dòng sang hai dòng, nên bài canh
+     * *"0 nhãn hiển thị còn trùng"* nay so **CẶP (nhãn, dòng phụ)** thay vì so mỗi nhãn.
+     *
+     * ⚠ Phép **phát hiện trùng vẫn chạy trên nhãn tiếng Việt** ([CapabilityCatalog.collidingLabels] đọc `label`):
+     * tiếng Việt là nhãn GỐC, và tập trùng của nó là tập đã được kiểm/khoá bằng test. Nếu đổi sang so nhãn hiện tại
+     * thì tập trùng sẽ **đổi theo ngôn ngữ** ⇒ cùng một màn hình lại có/không gợi ý loại tuỳ ngôn ngữ. Bản dịch nào
+     * làm sinh ra trùng MỚI thì `LangCoverageTest` báo ra để người dịch sửa chữ, chứ không tự vá bằng gợi ý loại.
+     */
+    val typeHint: String get() = if (label in CapabilityCatalog.collidingLabels()) kindHint else ""
+
+    /**
+     * DÒNG PHỤ để hiển thị: gợi ý loại (khi trùng) · nội dung nhóm (khi là nhóm). Rỗng với hầu hết ô rời.
+     *
+     * Ghép bằng `·` đúng như dấu cũ từng dùng trong nhãn, nên với ô nhóm trùng tên thì người đọc thấy
+     * *"nhóm · 4 mục"* — một dòng nói cả loại lẫn nội dung, không phải hai dòng chồng nhau.
+     *
+     * ⚠ [sub] (trường dữ liệu) vẫn CHỈ nhóm mới có: bài canh *"chỉ NHÓM có dòng phụ"* đọc trường đó, và nó vẫn
+     * đúng — thứ thêm ở đây là phần TRÌNH BÀY, tính lúc vẽ, không ghi vào bộ đăng ký.
+     */
+    val displaySub: String get() = listOf(typeHint, sub).filter { it.isNotEmpty() }.joinToString(" · ")
 
     /**
      * Gợi ý loại, chỉ dùng khi nhãn bị trùng. Thứ tự xét quan trọng: **nhóm trước, rồi widget dựng tay**, vì cả hai
@@ -192,6 +223,25 @@ data class CapabilityPick(
  * Thứ tự tra: widget dựng tay → telemetry → control (xác định, không phụ thuộc việc không-trùng ở trên).
  */
 object CapabilityCatalog {
+
+    /**
+     * ═══ U6 · MÃ CÓ THẬT NHƯNG **KHÔNG BÀY** Ở MÀN CHỌN ═══════════════════════════════════════════════════════
+     *
+     * Mã → lý do cố ý không bày. Cùng khuôn [SettingsCatalog.NOT_SETTINGS]: có danh sách thì phân biệt được
+     * *"cố ý ẩn"* với *"quên nối"*; không có danh sách thì mọi mục vắng mặt đều trông như lỗi.
+     *
+     * ## ⚠⚠ ẨN KHỎI BỘ CHỌN ≠ XOÁ MÃ
+     * Mã vẫn tra ra được qua [pick]/[kindOf] — **bắt buộc**, vì mã là KHOÁ LƯU BỀN của người dùng: ai đã đặt ô này
+     * từ bản trước thì ô đó phải tiếp tục vẽ ra bình thường. Xoá dòng registry (hoặc đổi mã) sẽ làm ô của họ thành
+     * mã lạ ⇒ biến mất không báo. Vì thế chỗ lọc duy nhất là [all] — cửa mà **mọi** màn chọn đi qua (ngăn kéo ·
+     * mục Nhóm · lựa chọn thanh trạng thái), chứ không phải xoá ở registry.
+     */
+    val HIDDEN_FROM_PICKER: Map<String, String> = mapOf(
+        "temp_unit" to
+            "[ĐO ảnh 2026-09-12] ô \"Đơn vị nhiệt\" trong lưới dữ liệu xe nói ĐÚNG cái mà hàng \"đơn vị nhiệt độ\" " +
+                "ở Hiển thị & đơn vị đã nói — và hàng kia còn ĐỔI được, ô này chỉ xem. Hai chỗ cho một thứ thì " +
+                "người dùng bấm nhầm chỗ không đổi được. Giữ mã để ô ai đã đặt vẫn chạy.",
+    )
 
     /** [CapabilityKind] của [id], hoặc `null` nếu mã không thuộc bộ đăng ký nào (mã cũ đã xoá / rác trong prefs). */
     fun kindOf(id: String): CapabilityKind? = when {
@@ -281,8 +331,17 @@ object CapabilityCatalog {
      *
      * Nhóm đứng ĐẦU là yêu cầu §4.2 (*"màn chọn xếp Nhóm lên trước"*) — đặt nó ở đây thay vì để mỗi màn chọn tự sắp
      * nghĩa là cả ngăn kéo lẫn màn Cài đặt tự đúng, và không thể có hai màn sắp khác nhau.
+     *
+     * U6: [HIDDEN_FROM_PICKER] bị lọc ở ĐÂY — một cửa cho mọi màn chọn. Lọc ở từng màn là bản sao thứ hai của cùng
+     * một quyết định, và bản sao đó sẽ lệch (dự án đã trả giá đúng kiểu này với `unitPrefs` ×4, `customLayout` ×2).
      */
-    fun all(): List<CapabilityPick> = buildList {
+    fun all(): List<CapabilityPick> = allIncludingHidden().filterNot { it.id in HIDDEN_FROM_PICKER }
+
+    /**
+     * Như [all] nhưng KHÔNG lọc [HIDDEN_FROM_PICKER] — chỉ dùng cho phép kiểm/kê toàn bộ (test đếm mã, quét nhãn).
+     * Màn chọn KHÔNG được gọi hàm này; ô đã đặt sẵn thì đi qua [pick] chứ không qua danh sách.
+     */
+    fun allIncludingHidden(): List<CapabilityPick> = buildList {
         CapabilityGroups.ALL.forEach {
             add(groupPick(it))
         }

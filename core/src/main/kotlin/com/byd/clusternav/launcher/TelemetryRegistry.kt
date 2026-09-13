@@ -162,11 +162,21 @@ object TelemetryRegistry {
         t("drift_mode", "Chế độ drift", "Drift mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "681574694"),
 
         // ── A3. Khí hậu / không khí ──────────────────────────────────────────────────────────────
-        t("pm25_level", "Mức bụi PM2.5", "PM2.5 level", "", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Level"),
-        // ⚠ Nhãn Anh TRÙNG nhãn Việt — cố ý: PM2.5 là ký hiệu ngành, dịch thành câu dài sẽ sai chuẩn (spec §6 OQ2).
-        // Có tên trong danh sách cho phép của `LangCoverageTest`.
-        t("pm25_value", "PM2.5", "PM2.5", "µg/m³", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Value"),
-        t("pm25_online", "Cảm biến PM2.5", "PM2.5 sensor", "", CLIMATE, BADGE, PROVEN, "BYDAutoPM2p5Device.getPM2p5OnlineState"),
+        // ⚠⚠ [U6 · ĐO ảnh 2026-09-12] BA Ô GẦN TRÙNG TÊN — "PM2.5 level" · "PM2.5" · "PM2.5 sensor" nằm cạnh nhau
+        // trong lưới, khác nhau đúng một chữ ở CUỐI (chỗ bị cắt trước nhất trong ô 2 dòng). Ba mã này đo ba thứ
+        // KHÁC HẲN nhau, nên tên phải nói ra điều đó ở ĐẦU chuỗi:
+        //   • getPM2p5Level      → thang mức 1..6 = "bụi đang ở mức nào"              ⇒ MỨC BỤI MỊN
+        //   • getPM2p5Value      → trị số µg/m³                                       ⇒ BỤI MỊN PM2.5 (giữ ký hiệu)
+        //   • getPM2p5OnlineState→ cảm biến còn sống không (nói về THIẾT BỊ)          ⇒ CẢM BIẾN BỤI MỊN
+        // Ký hiệu "PM2.5" không mất: nó ở đúng chỗ nó là ký hiệu (trị số) và ở nhãn ngắn của chip.
+        // ⚠ KHÔNG đặt tên là "Chất lượng không khí"/"Air quality": widget dựng tay `w_pm25` đã mang đúng tên đó
+        // (`LangCoverageTest.ban dich khong sinh ra nhan trung MOI` bắt được ngay lần chạy đầu — cái ô THẺ và cái
+        // ô SỐ THÔ là hai thứ người dùng đặt được cạnh nhau).
+        t("pm25_level", "Mức bụi mịn", "Dust level", "", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Level"),
+        // ⚠ Nhãn ngắn Anh TRÙNG nhãn ngắn Việt — cố ý: PM2.5 là ký hiệu ngành, dịch thành câu dài sẽ sai chuẩn
+        // (spec §6 OQ2). Có tên trong danh sách cho phép của `LangCoverageTest`.
+        t("pm25_value", "Bụi mịn PM2.5", "Fine dust PM2.5", "µg/m³", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Value", short = "PM2.5", shortEn = "PM2.5"),
+        t("pm25_online", "Cảm biến bụi mịn", "Fine dust sensor", "", CLIMATE, BADGE, PROVEN, "BYDAutoPM2p5Device.getPM2p5OnlineState", short = "Cảm biến", shortEn = "Sensor"),
         t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, OVERDRIVE, "1031798832"),
         t("inside_temp", "Nhiệt cài đặt", "Set temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getTemprature", short = "Trong xe", shortEn = "In car"),
         t("ext_temp", "Nhiệt ngoài xe", "Outside temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getOutCarTemperature"),

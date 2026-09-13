@@ -11,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.system.PackageQueries
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -34,7 +35,7 @@ class AppDrawerApps(private val context: Context, private val onPickApp: (String
     fun load(): List<Item> {
         val pm = context.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        return pm.queryIntentActivities(intent, 0)
+        return PackageQueries.queryActivities(pm, intent)
             .mapNotNull { ri ->
                 val pkg = ri.activityInfo?.packageName ?: return@mapNotNull null
                 Triple(pkg, ri.loadLabel(pm).toString(), ri.loadIcon(pm))

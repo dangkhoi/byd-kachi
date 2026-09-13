@@ -52,7 +52,7 @@ class SlotHeadParityContractTest {
     @Test
     fun `khong con nut dong, ten hay thanh nen o dai dau o`() {
         assertFalse(overlay.contains("\"ic-close\""), "OverlayHeads không còn nút ✕ (owner: chỉ 1 nút ⇄)")
-        assertFalse(overlay.contains("HEAD_BG"), "OverlayHeads không còn thanh nền đục")
+        assertFalse(overlay.contains("HEAD_BG"), "OverlayHeads không còn thanh nền đục (vai `headBg` đã xoá khỏi bảng màu — D2a)")
         assertFalse(overlay.contains("onClose"), "Head không còn callback đóng")
         assertFalse(overlay.contains("TextView"), "OverlayHeads không còn nhãn tên app")
         assertFalse(windows.contains("onClose ="), "LauncherWindows không còn nối nút ✕ vào Head")
@@ -62,12 +62,12 @@ class SlotHeadParityContractTest {
     fun `dai phu trai het be rong o, cao SLOT_HEAD_CLEAR, nut o giua`() {
         assertTrue(overlay.contains("hd.width, h, hd.left, hd.top"), "dải phủ trải hết bề rộng ô (che caption freeform của hệ)")
         assertTrue(overlay.contains("SlotSwapButton.overlayHeightPx("), "cao lấy từ SlotSwapButton (= SLOT_HEAD_CLEAR)")
-        assertFalse(overlay.contains("Sp.HEAD_BAR"), "không còn cao thanh HEAD_BAR")
+        assertFalse(overlay.contains("Sp.HEAD_BAR"), "không còn cao thanh HEAD_BAR (hằng đã xoá khỏi KachiSpace — D2a)")
         assertTrue(overlay.contains("(hd.appTop - hd.top) + caption") && overlay.contains("Sp.CAPTION_COVER"),
             "dải phải phủ HẾT caption của hệ: từ mép trên ô tới mép trên cửa sổ app + CAPTION_COVER ([ĐO] máy ảo caption 42dp)")
         val strip = button.substring(button.indexOf("fun strip("))
         assertTrue(strip.contains("centered(context, onTap)") && strip.contains("KachiTheme.CELL"),
-            "strip = centered + nền màu KHUNG Ô (không phải HEAD_BG thanh tiêu đề)")
+            "strip = centered + nền màu KHUNG Ô (không phải vai nền thanh tiêu đề cũ)")
     }
 
     @Test

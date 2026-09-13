@@ -100,7 +100,8 @@ class PermissionPreflightWiringContractTest {
         // tham số và test bắt ngay: nó nói RỘNG hơn missingCore ⇒ launcher ồn hơn thiết kế.
         assertTrue(fn.contains("notice(coreOnly = true)"),
             "thiếu mục nhỏ mà báo mỗi lần mở là nhiễu — đúng thứ việc này đi dọn")
-        assertTrue(fn.contains("if (msg != null)"), "đủ (hoặc chỉ thiếu mục nhỏ) ⇒ im lặng")
+        // ⚠ Mốc là "if (msg != null" KHÔNG có ngoặc đóng: U8b thêm vế thứ hai (cổng một-lần) vào cùng câu `if`.
+        assertTrue(fn.contains("if (msg != null"), "đủ (hoặc chỉ thiếu mục nhỏ) ⇒ im lặng")
     }
 
     /**
@@ -122,6 +123,31 @@ class PermissionPreflightWiringContractTest {
         assertTrue(fn.contains("rep.missing.forEach"), "ca THIẾU phải liệt kê đích danh")
         assertTrue(panel_caller.contains("permissions = {"), "chỗ gọi phải truyền đường đọc báo cáo vào")
         assertTrue(panel_caller.contains("PermissionPreflight.check("), "và đường đó phải là vòng kiểm thật")
+    }
+
+    /**
+     * **U8b — thông báo thiếu quyền chỉ nổ MỘT LẦN mỗi phiên tiến trình.**
+     *
+     * [ĐO] máy ảo 2026-09-13: toast *"Kênh điều khiển cửa sổ…"* nổ mỗi lần mở Home, che thanh nút xe ~3 giây
+     * (`LENGTH_LONG`). Trên xe, mỗi lần thoát app là một lần mở lại Home ⇒ một câu đúng lặp N lần thành nhiễu.
+     *
+     * Bài này canh CẢ HAI nửa của cách chữa, vì bỏ nửa nào cũng hỏng:
+     *  - **có cổng** ⇒ không nhiễu; và cổng là **cờ RAM** (chết theo tiến trình), KHÔNG phải prefs — ghi prefs sẽ
+     *    làm câu này im vĩnh viễn kể cả khi ROM cập nhật thu hồi quyền thật.
+     *  - **vẫn còn chỗ xem đầy đủ** ⇒ *Cài đặt › Hệ thống & quyền* liệt kê từng mục thiếu (bài
+     *    `nhom He thong la cho xem DU buc tranh…` phía trên canh nội dung trang đó).
+     */
+    @Test
+    fun `thong bao thieu quyen chi no MOT LAN moi phien tien trinh`() {
+        val fn = SourceRoots.body(pre, "fun runAndReport(")
+        assertTrue(fn.contains("noticeShown.getAndSet(true)"),
+            "toast phải qua cổng một-lần; không có cổng thì nó nổ mỗi lần mở Home (U8b)")
+        assertTrue(fn.contains("msg != null &&"),
+            "cờ chỉ được bật khi THẬT SỰ có câu để nói — bật sớm sẽ nuốt mất lần thiếu quyền xuất hiện muộn")
+        assertTrue(pre.contains("private val noticeShown = AtomicBoolean(false)"),
+            "cờ phải là AtomicBoolean trong object (runAndReport chạy trên thread nền, 2 Activity có thể cùng gọi)")
+        assertFalse(SourceRoots.body(pre, "fun runAndReport(").contains("getSharedPreferences"),
+            "cổng phải là cờ RAM: ghi prefs sẽ làm câu này im vĩnh viễn kể cả khi quyền bị thu hồi thật")
     }
 
     @Test

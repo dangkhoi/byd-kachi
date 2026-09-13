@@ -176,9 +176,6 @@ object KachiSpace {
     // Đây là cỡ của những khối CỤ THỂ, không tái sử dụng. Khai ở đây (chứ không để số trần tại chỗ) để mọi
     // con số dp của launcher nằm đúng một tệp — đó mới là "một nguồn duy nhất".
 
-    /** Chiều cao thanh đầu ô (che caption cửa sổ freeform + chứa nút ⇄/✕). */
-    const val HEAD_BAR = 34
-
     /**
      * **CHIỀU CAO MỘT DÒNG DỮ LIỆU ĐỌC** trong ô nhóm (72dp = 108px @1.5×).
      *

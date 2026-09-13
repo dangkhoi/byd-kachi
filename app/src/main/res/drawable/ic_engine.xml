@@ -1,0 +1,18 @@
+<!--
+  MÁY XĂNG (khối máy + nắp xi-lanh + ống) — cho `engine_rpm`.
+  [U6] Trên xe DM-i có CẢ mô-tơ điện lẫn máy xăng: vòng tua MÁY phải khác vòng tua MÔ-TƠ, không thì hai con số
+  cạnh nhau không biết cái nào của cái gì. Trước đây `engine_rpm` mang hình đồng hồ tốc.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M6.4,9.6 L17.6,9.6 A1.4,1.4 0 0 1 19,11 L19,16.4 A1.4,1.4 0 0 1 17.6,17.8 L6.4,17.8 A1.4,1.4 0 0 1 5,16.4 L5,11 A1.4,1.4 0 0 1 6.4,9.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M8.4,9.6 L8.4,6.2 L14.4,6.2 L14.4,9.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M19,13 L21,13 M5,13 L3,13"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

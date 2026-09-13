@@ -104,4 +104,75 @@ class TopStripTest {
         val spec = TelemetryRegistry.ALL.first { it.short == null }
         assertEquals(spec.label, spec.shortLabel, "chưa khai nhãn ngắn ⇒ phải lùi về nhãn đầy, không rỗng")
     }
+
+    // ── Soát U6 (2026-09-13): hai lỗ mà bộ bài cũ không chạm tới ────────────────────────────────────
+
+    /**
+     * **KHÔNG hai ô nào trên cùng một màn chọn được mang chữ y hệt nhau** — kể cả 3 chip dựng sẵn.
+     *
+     * ## Lỗ mà bài này bịt
+     * `CapabilityCatalogTest.sau khi phan biet thi KHONG con O nao trung nhau` chạy trên
+     * [CapabilityCatalog.all] — mà 3 chip TỔNG HỢP **không có dòng registry nào**, chúng được dựng ngay trong
+     * [TopStripConfig.choices]. Nên chúng nằm ngoài cả phép so đó lẫn [CapabilityCatalog.collidingLabels] (⇒ không
+     * ô nào được gợi ý loại để phân biệt).
+     *
+     * [ĐO] soát U6: đổi `pm25_value` từ `"PM2.5"` sang `"Bụi mịn PM2.5"` làm nó **trùng khít** nhãn của chip dựng
+     * sẵn `chip_pm25` — hai dòng chữ y hệt nhau, cả VI lẫn EN, trong cùng hộp thoại *"Thêm chip khác…"*
+     * (`TopStripPicker.openMore` bày phẳng `choices()`, **không** vẽ dòng phụ ⇒ `displaySub` không cứu được ở đây).
+     * Hai dòng đó trỏ vào hai việc khác nhau: chip đổi mức 1–6 thành CHỮ, datum là TRỊ SỐ µg/m³.
+     *
+     * So **cả hai ngôn ngữ**: nhãn Anh là chuỗi riêng, trùng ở một bên không suy ra trùng ở bên kia.
+     */
+    @Test
+    fun `hai o tren cung mot man chon khong duoc mang chu y het nhau`() {
+        try {
+            listOf(Lang.VI, Lang.EN).forEach { lang ->
+                Strings.current = lang
+                val dup = TopStripConfig.choices()
+                    .groupBy { it.displayLabel }
+                    .filterValues { it.size > 1 }
+                    .map { (label, g) -> "$label → " + g.map { it.id } }
+                assertEquals(
+                    emptyList<String>(), dup,
+                    "hai ô cùng chữ trong hộp thoại chọn chip ($lang) ⇒ người dùng bấm nhầm và không biết mình " +
+                        "vừa bấm cái nào — hộp thoại này bày PHẲNG, không có dòng phụ để cứu",
+                )
+            }
+        } finally {
+            Strings.current = Lang.VI
+        }
+    }
+
+    /**
+     * **Chip đã đặt từ bản trước phải còn đường GỠ**, kể cả khi mã của nó đã bị ẩn khỏi bộ chọn (U6
+     * [CapabilityCatalog.HIDDEN_FROM_PICKER]).
+     *
+     * [decode] cố ý GIỮ mã ẩn (nó lọc bằng [TopStripConfig.isChippable], không bằng danh sách) — đúng thiết kế: khoá
+     * lưu bền của người dùng không được biến mất. Nhưng nếu hàng *"đang bật"* của màn chọn cũng dựng từ [choices]
+     * thì chip ấy **hiện trên thanh mà không còn ô nào để bấm tắt**: một trạng thái không có đường ra. Đó là lý do
+     * [TopStripConfig.shown] tồn tại tách khỏi [choices].
+     */
+    @Test
+    fun `chip mang ma da an van co o de bam go`() {
+        val hidden = CapabilityCatalog.HIDDEN_FROM_PICKER.keys.firstOrNull { TopStripConfig.isChippable(it) }
+        assertTrue(hidden != null, "tiền đề: có ít nhất một mã vừa bị ẩn vừa đặt được lên thanh trên")
+        val cfg = TopStripConfig.decode(hidden + "," + TopStripConfig.PM25)
+        assertTrue(cfg.has(hidden!!), "decode phải GIỮ mã đã ẩn — nó là khoá lưu bền của người dùng")
+        assertTrue(
+            TopStripConfig.choices().none { it.id == hidden },
+            "tiền đề: mã ẩn KHÔNG được bày ra để đặt thêm",
+        )
+        assertTrue(
+            TopStripConfig.shown(cfg).any { it.id == hidden },
+            "…nhưng hàng 'đang bật' PHẢI bày nó, không thì chip này không bao giờ gỡ được nữa",
+        )
+        // Và không được đẻ ra ô thừa: chỉ thêm đúng những mã đang bật mà `choices()` bỏ sót.
+        val ids = TopStripConfig.shown(cfg).map { it.id }
+        assertEquals(ids.distinct(), ids, "một mã hai ô ⇒ bảng tra `tiles[id]` bị ghi đè (đúng lỗi RW0)")
+        assertTrue(
+            TopStripConfig.shown(TopStripConfig.DEFAULT).map { it.id }.toSet() ==
+                TopStripConfig.choices().filter { it.id in TopStripConfig.BUILT_IN }.map { it.id }.toSet(),
+            "cấu hình mặc định (toàn chip dựng sẵn) không được mọc thêm ô nào",
+        )
+    }
 }

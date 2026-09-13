@@ -140,4 +140,37 @@ class StepTouchTargetContractTest {
             "nhả chốt ở CẢ UP LẪN CANCEL — quên CANCEL thì cử chỉ bị hệ thống cắt sẽ để lại vùng dính vĩnh viễn",
         )
     }
+
+    /**
+     * ⚠ **Vùng chạm mở rộng phải HIỆN RA VỚI TALKBACK** (backlog D2d).
+     *
+     * TalkBack không đi qua [android.view.TouchDelegate.onTouchEvent]; nó hỏi cây trợ năng, và cây đó chỉ thấy
+     * vùng mở rộng khi delegate trả [android.view.accessibility.AccessibilityNodeInfo.TouchDelegateInfo]. Lớp
+     * `SplitDelegate` truyền `Rect()` **RỖNG** cho ctor cơ sở (bộ định tuyến thật là danh sách `zones`), nên nếu
+     * không override thì info mặc định dựng từ khung rỗng ⇒ với người dùng trợ năng, đích chạm vẫn là 20×32dp
+     * như trước bản vá — tức R7 không có tác dụng với đúng nhóm cần nó nhất.
+     *
+     * [ĐO] `javap` trên `android.jar` của `compileSdk = 37`: `TouchDelegate.getTouchDelegateInfo()` và
+     * `TouchDelegateInfo(java.util.Map<Region, View>)` — cả hai **API 29**, `minSdk = 29` ⇒ cấm rẽ nhánh SDK ở đây
+     * (rẽ nhánh thừa là nói dối rằng có ROM không chạy được đường này).
+     */
+    @Test
+    fun `TalkBack phai thay duoc vung cham mo rong`() {
+        assertTrue(
+            helper.contains("override fun getTouchDelegateInfo()"),
+            "SplitDelegate phải khai vùng chạm cho cây trợ năng — không có thì TalkBack vẫn thấy nút 20×32dp",
+        )
+        assertTrue(
+            Regex("""AccessibilityNodeInfo\.TouchDelegateInfo\(zones\.associate""").containsMatchIn(helper),
+            "info phải dựng từ CHÍNH danh sách zones đang định tuyến cú chạm — dựng từ nguồn khác là hai sự thật",
+        )
+        assertTrue(
+            helper.contains("Region(it.bounds)"),
+            "khoá của map là Region bọc đúng khung vùng (ctor nhận Map<Region, View>)",
+        )
+        assertFalse(
+            Regex("""SDK_INT""").containsMatchIn(helper),
+            "API 29 mà minSdk 29 ⇒ không được rẽ nhánh SDK",
+        )
+    }
 }

@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.util.Log
 import com.byd.clusternav.NavNotificationListener
 import com.byd.clusternav.modules.navaccess.NavAccessibilityService
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * VÒNG KIỂM QUYỀN — phần chạm Android (P8). Quyết định nằm ở `:core` ([LauncherRequirements]); file này chỉ làm
@@ -25,6 +26,27 @@ import com.byd.clusternav.modules.navaccess.NavAccessibilityService
 object PermissionPreflight {
 
     private const val TAG = "Preflight"
+
+    /**
+     * ⚠ **THÔNG BÁO THIẾU QUYỀN CHỈ NỔ MỘT LẦN MỖI PHIÊN TIẾN TRÌNH** (backlog U8b).
+     *
+     * [ĐO] máy ảo 2026-09-13: toast *"Kênh điều khiển cửa sổ… / Window control channel…"* nổ **mỗi lần mở Home** và
+     * che thanh nút xe ~3 giây (`Toast.LENGTH_LONG`). Trên xe, Home được mở lại rất nhiều lần trong một chuyến (mỗi
+     * lần thoát app là một lần), nên một câu đúng lặp N lần thành nhiễu — đúng thứ việc P8 sinh ra để dọn.
+     *
+     * **Cờ RAM, KHÔNG prefs — có chủ ý.** Thiếu quyền là trạng thái **của phiên tiến trình này**: khởi động lại đầu
+     * xe (hoặc launcher bị hệ thống thu hồi) là đúng lúc phải nói lại, vì cấu hình có thể đã đổi. Ghi prefs sẽ làm
+     * câu này im vĩnh viễn kể cả sau khi ROM bị cập nhật thu hồi quyền — thà nhiễu một lần mỗi khởi động còn hơn
+     * im lặng khi tính năng lõi thật sự hỏng. Đây cũng là lý do §5 CLAUDE.md phân biệt cờ RAM với state ghi ra
+     * ngoài: cái này CHẾT theo tiến trình là đúng, không cần đường trả lại.
+     *
+     * Người dùng vẫn xem được **đầy đủ, bất cứ lúc nào** ở *Cài đặt › Hệ thống & quyền* — trang đó liệt kê từng mục
+     * thiếu kèm "mất gì" ([SettingsSections.system], canh bởi `PermissionPreflightWiringContractTest`).
+     *
+     * [AtomicBoolean] chứ không phải `var`: [runAndReport] chạy trên thread NỀN và hai Activity có thể cùng khởi
+     * động (Home + màn ClusterNav cũ) ⇒ `getAndSet` là chốt duy nhất đảm bảo đúng MỘT lượt hiện.
+     */
+    private val noticeShown = AtomicBoolean(false)
 
     /**
      * Đọc trạng thái 6 điều kiện → báo cáo. **Không** cấp gì, **không** mở kênh shell.
@@ -221,7 +243,9 @@ object PermissionPreflight {
         // `fixedAtBoot` chỉ có TEST gọi ⇒ chúng là mã chết ở sản phẩm, và tệ hơn: câu chữ người dùng đọc lại nằm ở
         // tầng UI nên hai bên có thể nói khác nhau. Nay một nguồn duy nhất, và mã kia hết chết.
         val msg = after.notice(coreOnly = true)   // chỉ mục làm mất tính năng lõi — mục nhỏ để bảng Tuỳ biến nói
-        if (msg != null) {
+        // U8b: một lần mỗi phiên tiến trình. `getAndSet` chỉ bật cờ khi THẬT SỰ có câu để nói — thiếu quyền xuất
+        // hiện muộn (người dùng thu quyền giữa chuyến) vẫn được báo đúng một lần, thay vì bị cờ "đã nói" nuốt mất.
+        if (msg != null && !noticeShown.getAndSet(true)) {
             activity.runOnUiThread { runCatching { Toast.makeText(activity, msg, Toast.LENGTH_LONG).show() } }
         }
     }

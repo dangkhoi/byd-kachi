@@ -34,8 +34,13 @@ class CapabilityCatalogTest {
         // chỉ cập nhật con số kỳ vọng cho đúng số nguồn hiện tại.
         val total = CapabilityGroups.ALL.size + WidgetRegistry.ALL.size + TelemetryRegistry.ALL.size +
             ControlRegistry.ALL.size + ActionMacros.ALL.size
-        assertEquals(total, CapabilityCatalog.all().size, "gộp không được làm mất hay nhân đôi mục nào")
-        CapabilityCatalog.all().forEach { p ->
+        assertEquals(total, CapabilityCatalog.allIncludingHidden().size, "gộp không được làm mất hay nhân đôi mục nào")
+        // U6: `all()` = bản kê ĐẦY ĐỦ trừ đúng những mã cố ý ẩn khỏi màn chọn — không được trừ thêm gì khác.
+        assertEquals(
+            total - CapabilityCatalog.HIDDEN_FROM_PICKER.size, CapabilityCatalog.all().size,
+            "màn chọn mất mục ngoài danh sách ẩn có lý do",
+        )
+        CapabilityCatalog.allIncludingHidden().forEach { p ->
             assertNotNull(CapabilityCatalog.kindOf(p.id), "mã ${p.id} phải phân loại được")
             assertNotNull(CapabilityCatalog.pick(p.id), "mã ${p.id} phải tra cứu được")
         }
@@ -103,13 +108,43 @@ class CapabilityCatalogTest {
     // ── Nhãn trùng giữa ĐỌC và HÀNH ĐỘNG (lộ ra từ khi gói 2 gộp hai loại vào MỘT lưới) ──────────
 
     @Test
-    fun `sau khi phan biet thi KHONG con nhan nao trung nhau`() {
+    fun `sau khi phan biet thi KHONG con O nao trung nhau`() {
         // Đây là phép kiểm mạnh nhất: [ĐO] 2026-09-11 có 18 nhãn trùng giữa mục ĐỌC và HÀNH ĐỘNG (vd hai ô đều ghi
         // "Kính trước-trái": một để XEM độ mở %, một để BẤM đóng/mở). Trước gói 2 chúng ở hai màn khác nhau nên
         // trùng không sao; nay nằm cạnh nhau trong cùng lưới ⇒ người dùng không phân biệt được.
-        val shown = CapabilityCatalog.all().map { it.displayLabel }
-        val dup = shown.groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
-        assertEquals(emptyList<String>(), dup, "còn nhãn hiển thị bị trùng ⇒ người dùng không phân biệt được ô nào")
+        //
+        // ⚠ U6 đổi ĐƠN VỊ SO SÁNH, không nới lỏng luật: gợi ý loại đã rời khỏi nhãn chính xuống DÒNG PHỤ (owner đọc
+        // được "Charge target · view" trên ảnh và gọi đúng tên — thuật ngữ nội bộ trong tên khả năng). Thứ người
+        // dùng nhìn thấy ở một ô nay là CẶP (nhãn, dòng phụ), nên phép "không hai ô nào giống hệt nhau" phải chạy
+        // trên đúng cặp đó. So mỗi nhãn sẽ đỏ với 18 cặp vừa được chữa đúng cách; so cặp vẫn bắt được ca thật.
+        val shown = CapabilityCatalog.all().map { it.displayLabel to it.displaySub }
+        val dup = shown.groupBy { it }.filterValues { it.size > 1 }.keys.map { "${it.first} / ${it.second}" }.sorted()
+        assertEquals(emptyList<String>(), dup, "còn Ô hiển thị y hệt nhau ⇒ người dùng không phân biệt được ô nào")
+    }
+
+    /**
+     * Và gợi ý loại KHÔNG được quay lại nằm trong nhãn chính (U6).
+     *
+     * Bài này canh **nguyên nhân**, không canh đúng bốn chữ: bất kỳ nhãn hiển thị nào mang dấu ` · ` rồi kết bằng một
+     * trong bốn gợi ý loại đều là dấu hiệu cơ chế cũ bò trở lại.
+     */
+    @Test
+    fun `goi y loai KHONG nam trong nhan chinh`() {
+        val hints = setOf("xem", "bấm", "nhóm", "thẻ", "view", "press", "group", "card")
+        // ⚠ `try/finally`: [Strings.current] là biến TOÀN CỤC dùng chung cả JVM test. Trả về VI ở dòng cuối thân hàm
+        // thì một assert đỏ sẽ ném TRƯỚC khi tới đó ⇒ mọi bài chạy sau trong cùng JVM đọc nhãn tiếng Anh và đỏ theo
+        // dây chuyền, che mất lỗi thật. Dọn trong `finally` để bài đỏ chỉ tố cáo đúng một thứ.
+        try {
+            listOf(Lang.VI, Lang.EN).forEach { lang ->
+                Strings.current = lang
+                val leaked = CapabilityCatalog.allIncludingHidden()
+                    .map { it.displayLabel }
+                    .filter { l -> hints.any { l.endsWith(" · $it") } }
+                assertEquals(emptyList<String>(), leaked, "gợi ý loại lọt vào NHÃN CHÍNH ($lang) — nó thuộc dòng phụ")
+            }
+        } finally {
+            Strings.current = Lang.VI
+        }
     }
 
     @Test
@@ -119,24 +154,53 @@ class CapabilityCatalogTest {
         // Luật thật cần khoá: CHỖ TRÙNG thì có gợi ý loại, CHỖ KHÔNG TRÙNG thì nhãn giữ nguyên.
         val colliding = CapabilityCatalog.collidingLabels()
 
-        // Chỗ TRÙNG: phải có gợi ý loại
+        // Chỗ TRÙNG: hai ô cùng TÊN, phân biệt bằng DÒNG PHỤ (U6 — trước đây gợi ý nằm trong nhãn)
         val readWin = CapabilityCatalog.pick("window_lf")!!
         val writeWin = CapabilityCatalog.pick("win_lf")!!
-        assertEquals("Kính trước-trái · xem", readWin.displayLabel)
-        assertEquals("Kính trước-trái · bấm", writeWin.displayLabel)
+        assertEquals("Kính trước-trái", readWin.displayLabel, "nhãn chính là TÊN, không mang loại")
+        assertEquals("Kính trước-trái", writeWin.displayLabel)
+        assertEquals("xem", readWin.displaySub)
+        assertEquals("bấm", writeWin.displaySub)
 
-        // Chỗ KHÔNG trùng: giữ NGUYÊN nhãn, không thêm nhiễu cho cả 187 mục
+        // Chỗ KHÔNG trùng: giữ NGUYÊN nhãn, KHÔNG thêm dòng phụ cho cả 187 mục
         val soc = CapabilityCatalog.pick("soc")!!
         assertEquals(soc.label, soc.displayLabel, "nhãn không trùng thì không được thêm gì")
+        assertEquals("", soc.displaySub, "ô không trùng tên thì không được mọc thêm một dòng chữ")
         assertFalse("Pin (SOC)" in colliding)
     }
 
     @Test
-    fun `nhan goc KHONG bi doi - chi doi nhan HIEN THI`() {
+    fun `nhan goc KHONG bi doi - goi y loai la chuyen TRINH BAY`() {
         // Nhãn gốc là dữ liệu; gợi ý loại chỉ là chuyện trình bày. Trộn hai thứ sẽ làm bẩn bộ đăng ký.
+        // U6: chỗ trình bày đó nay là `displaySub`, và `sub` (TRƯỜNG dữ liệu) vẫn rỗng với mọi mục rời.
         val w = CapabilityCatalog.pick("window_lf")!!
         assertEquals("Kính trước-trái", w.label, "nhãn GỐC phải nguyên vẹn")
-        assertNotEquals(w.label, w.displayLabel, "nhãn HIỂN THỊ mới là cái mang gợi ý")
+        assertEquals(w.label, w.displayLabel, "nhãn hiển thị = TÊN, gợi ý không được chen vào")
+        assertEquals("", w.sub, "gợi ý loại KHÔNG được ghi vào trường dữ liệu")
+        assertEquals("xem", w.displaySub, "nó chỉ xuất hiện ở tầng trình bày")
+    }
+
+    // ── U6: mã ẩn khỏi bộ chọn nhưng KHOÁ LƯU vẫn sống ──────────────────────────────────────────
+
+    @Test
+    fun `ma an khoi bo chon van tra cuu duoc - khoa luu ben khong duoc mat`() {
+        assertTrue(CapabilityCatalog.HIDDEN_FROM_PICKER.isNotEmpty(), "tiền đề: đang có mã cố ý ẩn")
+        CapabilityCatalog.HIDDEN_FROM_PICKER.forEach { (id, why) ->
+            assertNotNull(
+                CapabilityCatalog.pick(id),
+                "ẩn khỏi màn chọn KHÔNG được làm mất mã: ô người dùng đã đặt từ bản trước phải tiếp tục vẽ ($id)",
+            )
+            assertNotNull(CapabilityCatalog.kindOf(id), "mã ẩn vẫn phải phân loại được ($id)")
+            assertTrue(why.length >= 20, "$id: ẩn một mục thì phải nói được VÌ SAO, không thì đây là chỗ xoá lén")
+            assertTrue(
+                CapabilityCatalog.all().none { it.id == id },
+                "$id vẫn lọt vào danh sách màn chọn — lọc phải nằm ở CỬA DUY NHẤT là `all()`",
+            )
+            assertTrue(
+                CapabilityCatalog.allIncludingHidden().any { it.id == id },
+                "$id phải còn trong bản kê ĐẦY ĐỦ (nếu không thì không phép kiểm nào còn thấy nó)",
+            )
+        }
     }
 
     @Test

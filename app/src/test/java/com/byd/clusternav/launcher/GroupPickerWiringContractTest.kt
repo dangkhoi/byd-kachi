@@ -144,8 +144,10 @@ class GroupPickerWiringContractTest {
 
     @Test
     fun `o nhom hien dong phu o CA HAI man chon`() {
+        // U6: đọc `displaySub` chứ không đọc `sub` GỐC — cùng một dòng chữ nay chở thêm gợi ý loại ("xem"/"bấm")
+        // vừa được chuyển ra khỏi NHÃN CHÍNH, và `displaySub` là chỗ duy nhất ghép hai mảnh đó (ở `:core`).
         assertTrue(
-            drawer.contains("pick.sub"),
+            drawer.contains("pick.displaySub"),
             "ngăn kéo phải hiện dòng phụ của nhóm — không thì người dùng thấy ô 'Lốp' mà vẫn phải đoán bên trong có gì",
         )
         // ⚠ T4 · R-UI (m): nhánh "lưới của màn Cài đặt" đã bỏ — `CapabilityGridSection` bị XOÁ cùng lúc với lưới
@@ -154,7 +156,7 @@ class GroupPickerWiringContractTest {
         listOf("drawer" to drawer).forEach { (who, src) ->
             assertFalse(src.contains(".reads.size"), "$who không được tự đếm thành viên")
             assertFalse(src.contains(".writes.size"), "$who không được tự đếm nút")
-            assertFalse(src.contains("contentLine"), "$who chỉ đọc pick.sub, phép ghép nằm ở :core")
+            assertFalse(src.contains("contentLine"), "$who chỉ đọc pick.displaySub, phép ghép nằm ở :core")
         }
     }
 

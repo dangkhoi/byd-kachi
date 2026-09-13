@@ -139,6 +139,7 @@ sẽ làm bẩn dữ liệu, và test khoá điều đó.</p>
 
 <h3>Còn tồn (đã đo, không che)</h3>
 <ul>
+<li><b>Đợt 2 (U6) — 2026-09-13</b>: từ soát ảnh Settings/ngăn kéo 2026-09-12/13 ([ĐO] 8–9/28 ô Năng lượng cùng glyph tia sét, 6 cùng con đường, rpm/mô-men mang glyph ắc-quy, nhãn lộ "· view/· press", 3 ô PM2.5 gần trùng, ô "Temperature unit" trùng hàng đơn vị). Tách icon theo khái niệm (23 tệp mới + vẽ lại <code>ic_motor</code>), gợi ý loại rời nhãn chính sang dòng phụ <code>displaySub</code>, 3 nhãn PM2.5 theo nghĩa thật, <code>HIDDEN_FROM_PICKER</code> ẩn mã trùng khỏi bộ chọn (khoá lưu bền giữ). Icon phân biệt 34 → 56; ENERGY 32 ô/15 hình/max 3 · DRIVETRAIN 19/12/3 · CLIMATE 23/12/3. Bài <code>CapabilityIconsDiversityTest</code> ghim trần ≤3 ô/hình cho 3 nhóm + trần đo được của 5 nhóm chưa chạm (U7).</li>
   <li><b>Icon phân biệt theo HỌ, chưa theo từng ô.</b> Tia sét vẫn dùng cho <b>11 ô</b> trong nhóm năng lượng (đang sạc / công suất sạc / điện áp cell / tiêu thụ…). Đi từ "vô dụng" lên "hữu dụng ở mức phân loại họ".</li>
   <li><b>Cặp đối lập chưa phân biệt</b>: "Nhiệt cell cao" và "Nhiệt cell thấp" cùng một nhiệt kế; "Còn (giờ)" và "Còn (phút)" cùng một đồng hồ. Đây đúng là chỗ icon <b>đáng lẽ giúp nhất</b>. Cách làm: ghép mũi tên lên/xuống, hoặc tách tia sét thành các biến thể.</li>
   <li><b>Nhãn hàng cuối bị viewport cắt ~4px</b> ở đáy bảng (mất dấu thanh dưới). Lỗi bố cục bảng, không phải lỗi icon.</li>
@@ -160,6 +161,9 @@ sẽ làm bẩn dữ liệu, và test khoá điều đó.</p>
 <h2>9. Nhật ký triển khai</h2>
 <p><b>Quyết định:</b></p>
 <ul>
+  <li><b>2026-09-13 · U6 — gợi ý loại rời nhãn chính.</b> <code>displayLabel</code> = tên, <code>displaySub</code> = dòng phụ 10sp; test "0 nhãn hiển thị còn trùng" so CẶP (nhãn, dòng phụ). Bài mới "ô xem và nút cùng việc phải cùng hình" bắt ngay lỗi "Drive mode" một nơi núm chọn một nơi cần số.</li>
+  <li><b>2026-09-13 · U6 — ẩn "Temperature unit"</b> bằng <code>CapabilityCatalog.HIDDEN_FROM_PICKER</code> lọc ở cửa duy nhất <code>all()</code>; <code>pick()</code> vẫn tra ⇒ ô đã đặt vẫn chạy, chỉ không bày ra để chọn thêm. Không đổi ID.</li>
+  <li><b>2026-09-13 · U6 — còn tồn có số (U7)</b>: LIGHTS 14 ô cùng bóng đèn · SAFETY 9 cùng sóng radar · BODY 10 cùng kính · TYRES/IDENTITY 4 — khác biệt là GÓC/VỊ TRÍ ⇒ owner chốt có vẽ icon-theo-góc không. Bảng <code>pendingCeiling</code> ghim trần hiện tại, tự rữa hai chiều.</li>
   <li><b>Nối lại icon đã có trước khi vẽ mới.</b> [ĐO] 59 tệp tồn tại mà chỉ 29 được nối ⇒ phần lớn việc là nối, chỉ 6 khái niệm thật sự thiếu icon.</li>
   <li><b>Bảng tra riêng, không sửa 123 dòng registry</b> — cùng lối với lớp đơn vị ở gói 2. Thêm mục mới mà chưa khai icon thì tự lùi về icon nhóm, không bao giờ ra ô trống.</li>
   <li><b>Gợi ý loại chỉ thêm ở chỗ trùng.</b> Thêm cho cả 187 mục là nhiễu.</li>
@@ -171,6 +175,7 @@ bắt ra ca <b>cùng loại</b> mà tôi không nghĩ tới. Đã tổng quát h
 từng ca bỏ sót.</p>
 
 <h2>10. Reviewer Log</h2>
+<p><b>Pass U6 — 2026-09-13</b> · senior review chung với D2 (chi tiết ở <code>kachi-settings-ia-v2.html</code> §10 Pass 6 + backlog U6). [ĐO] :core + :app 0 đỏ sau đợt 2; ảnh máy ảo ngăn kéo Energy/Drivetrain/Climate: không glyph nào dùng cho &gt;3 ô.</p>
 <p class="muted">Chưa có lượt soát độc lập cho U1 — tác nhân soát hỏng 2 lần trong phiên này (lỗi kết nối, rồi hệ
 thống quá tải). Phần xác minh bằng mắt (đọc ảnh máy ảo) thì <b>đã có tác nhân độc lập</b> làm và nó chính là chỗ tìm
 ra hai lỗi ngoài icon (nhãn trùng · nhãn hàng cuối bị cắt).</p>

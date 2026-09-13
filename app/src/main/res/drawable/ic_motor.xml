@@ -1,18 +1,24 @@
 <!--
-  MÔ-TƠ ĐIỆN (vỏ mô-tơ + trục + tia điện) — cho "Công suất mô-tơ" và họ `motor_*`.
+  MÔ-TƠ ĐIỆN (vỏ tròn + rô-to + trục) — cho `motor_power`.
   [KIỂM TOÁN UX mục 4d] Trước đây họ `motor_` tra ra `ic_speed` (ĐỒNG HỒ TỐC ĐỘ) ⇒ "công suất mô-tơ" trông như một
-  số tốc độ. Công suất và tốc độ là hai đại lượng khác nhau, dùng chung icon là mời người đọc hiểu sai.
+  số tốc độ.
+  [U6 · ĐO ảnh 2026-09-12] Bản vá đó lại vẽ mô-tơ thành một HỘP BO GÓC CÓ CỰC LỒI BÊN PHẢI — ở cỡ ô 40dp nó đọc ra
+  đúng là CỤC ẮC-QUY (owner báo: "3 ô rpm/mô-men dùng glyph ắc-quy"). Nay vẽ theo hình tròn của rô-to: không có
+  hình dạng nào của bộ icon này còn lẫn với pin được nữa.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4.4,8.4 L14,8.4 A1.6,1.6 0 0 1 15.6,10 L15.6,15.6 A1.6,1.6 0 0 1 14,17.2 L4.4,17.2 A1.6,1.6 0 0 1 2.8,15.6 L2.8,10 A1.6,1.6 0 0 1 4.4,8.4 Z"
+    <path android:pathData="M4.4,12 a7.6,7.6 0 1 0 15.2,0 a7.6,7.6 0 1 0 -15.2,0"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M15.6,12.8 L19.2,12.8 M6.4,8.4 L6.4,6 M12,8.4 L12,6"
+    <path android:pathData="M9.2,12 a2.8,2.8 0 1 0 5.6,0 a2.8,2.8 0 1 0 -5.6,0"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M18.4,5.6 L15.6,9.6 L19.2,9.6 L17.2,13.2"
+    <path android:pathData="M6.7,6.7 L8.7,8.7 M17.3,6.7 L15.3,8.7 M6.7,17.3 L8.7,15.3 M17.3,17.3 L15.3,15.3"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M19.6,12 L21.4,12"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

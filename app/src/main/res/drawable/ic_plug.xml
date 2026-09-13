@@ -1,0 +1,17 @@
+<!--
+  ĐẦU/CỔNG SẠC (súng sạc: hai chân + thân + dây) — cho `charging_state` (trạng thái phiên sạc ở cổng).
+  [U6] Trạng thái CỔNG khác với công suất đang nạp; trước đây cả hai đều là tia sét.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M9.4,3.4 L9.4,6.6 M14.6,3.4 L14.6,6.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M7.4,6.6 L16.6,6.6 L16.6,10.6 A4.6,4.6 0 0 1 7.4,10.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M12,15.2 L12,20.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

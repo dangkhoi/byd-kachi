@@ -221,9 +221,9 @@ class LauncherI18nContractTest {
             "`TelemetryView` — `TelemetryReadout.of` điền `spec.displayLabel` vào đó, nên nhãn đã theo ngôn ngữ",
         "item.label" to "tên ứng dụng từ `PackageManager` — do HỆ THỐNG dịch, không phải chuỗi của dự án",
         "it.label," to "tên ứng dụng từ `PackageManager` (dựng `GridItem`) — cùng lý do `item.label`",
-        "pick.sub" to
-            "câu \"nhóm này gồm gì\" — `CapabilityCatalog` điền từ `CapabilityGroup.contentLine`, và câu đó đã " +
-                "dựng bằng `displaySub` + `Strings.t` ở `:core`",
+        // U6 đã bỏ mục `"pick.sub"`: ngăn kéo nay đọc `pick.displaySub` (gợi ý loại + câu "gồm gì"), tức nó KHÔNG
+        // còn chạm vào trường gốc nữa nên không cần được tha. Danh sách này phải tự rữa — giữ một dòng không còn ai
+        // khớp là để dành sẵn một lỗ hổng cho lần sau.
         "def.args.size" to
             "SỐ LƯỢNG lựa chọn, không phải chữ — `displayArgs` lùi về `args` khi lệch số phần tử nên đếm trên `args` " +
                 "là con số ổn định duy nhất; dùng `displayArgs.size` sẽ nói cùng con số nhưng che mất ý *đếm*",

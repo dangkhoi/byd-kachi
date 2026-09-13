@@ -252,4 +252,78 @@ class IconStyleContractTest {
             "danh sách hợp đồng ở :app lệch với CapabilityGroups ở :core",
         )
     }
+
+    // ── 7. MỌI tên `ic-…` (không chỉ icon nhóm) phải tra ra một drawable có thật ────────────────────
+
+    /**
+     * Dòng bảng tra đã có nhưng **không ai truyền tên đó nữa** → lý do giữ lại.
+     *
+     * Giữ khuôn [orphanPending]: một dòng chết trong bảng `when` không gây lỗi gì thấy được, nên cách duy nhất để nó
+     * không tích lại là bắt nó **hiện tên ra kèm lý do**.
+     */
+    private val unusedMapping: Map<String, String> = mapOf(
+        "ic-close" to
+            "nút ✕ của thanh đầu ô đã gỡ ở S2 (owner: \"chỉ 1 nút ⇄\"); giữ dòng này để `ic_close.xml` không thành " +
+                "tệp mồ côi, và để bày lại nút đóng ở đâu đó là có sẵn đúng hình",
+    )
+
+    /**
+     * ═══ KHÔNG TÊN `ic-…` NÀO ĐƯỢC TRA RA **0** ═══════════════════════════════════════════════════════════════
+     *
+     * Bài `moi icon nhom cua core tra ra duoc mot drawable that` phía trên chỉ phủ **12 icon NHÓM**. Tên của 123
+     * datum · 64 nút · 9 widget · 4 gói lệnh thì không bài nào phủ — mà `KachiTheme.iconRes` kết bằng `else -> 0`,
+     * nên một tên gõ sai (`"ic-temp-out"` ↔ tệp `ic_temp_out.xml`) **không ném gì cả**: `ImageView` chỉ đơn giản
+     * không được thêm vào ô. Đúng họ "sai IM LẶNG" mà tệp này sinh ra để chặn.
+     *
+     * U6 thêm **23 tên mới trong một lượt** — đó là lúc rủi ro gõ sai cao nhất, và cũng là lúc phải khoá lại.
+     *
+     * Quét theo cùng lệ [SourceRoots.codeOf]: **bỏ chú thích** trước khi tìm, vì KDoc của chính bảng tra và của
+     * `CapabilityIcons` nhắc tên icon dày đặc — quét thô sẽ đếm cả văn xuôi.
+     */
+    @Test
+    fun `moi ten icon dung trong ma tra ra duoc mot drawable that`() {
+        val table = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiTheme.kt")
+        val mapped: Map<String, String> = Regex("\"(ic-[a-z0-9-]+)\"\\s*->\\s*R\\.drawable\\.(\\w+)")
+            .findAll(table).associate { it.groupValues[1] to it.groupValues[2] }
+        assertTrue(mapped.size > 50) { "chỉ đọc được ${mapped.size} dòng bảng tra — bài đang quét vùng sai" }
+
+        val files = icons().map { it.first.removeSuffix(".xml") }.toSet()
+        assertEquals(
+            emptyList<String>(),
+            mapped.filterValues { it !in files }.map { (n, d) -> "$n → $d.xml (không có tệp)" },
+            "bảng tra trỏ vào drawable không tồn tại ⇒ lỗi biên dịch hoặc ô trống",
+        )
+
+        // Tên được TRUYỀN VÀO `iconRes` — gom từ mã của cả ba module, trừ chính bảng tra (nó là đích, không phải nguồn).
+        val used = mutableMapOf<String, MutableList<String>>()
+        SourceRoots.moduleSourceRoots().forEach { root ->
+            root.toFile().walkTopDown()
+                .filter { it.isFile && it.name.endsWith(".kt") && it.name != "KachiTheme.kt" }
+                .forEach { file ->
+                    val code = file.readText()
+                        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
+                        .lines().joinToString("\n") { it.substringBefore("//") }
+                    Regex("\"(ic-[a-z0-9-]+)\"").findAll(code).forEach { m ->
+                        used.getOrPut(m.groupValues[1]) { mutableListOf() } += file.name
+                    }
+                }
+        }
+        assertTrue(used.size > 50) { "chỉ thấy ${used.size} tên icon được dùng — bài đang quét vùng sai" }
+
+        assertEquals(
+            emptyList<String>(),
+            used.filterKeys { it !in mapped }.map { (n, where) -> "$n (dùng ở ${where.distinct()})" },
+            "tên icon KHÔNG có dòng trong KachiTheme.iconRes ⇒ `else -> 0` ⇒ ô mất icon mà KHÔNG lỗi gì",
+        )
+
+        // Chiều ngược, tự rữa hai chiều như [orphanPending]: dòng bảng tra không ai truyền tên tới nữa.
+        val dead = mapped.keys.filterNot { it in used || it in unusedMapping }
+        assertEquals(emptyList<String>(), dead, "dòng bảng tra đã chết — xoá, hoặc khai vào unusedMapping kèm lý do")
+        val revived = unusedMapping.keys.filter { it in used }
+        assertEquals(emptyList<String>(), revived, "đã có chỗ dùng lại, bỏ khỏi unusedMapping")
+        unusedMapping.forEach { (n, why) ->
+            assertTrue(n in mapped) { "$n không còn trong bảng tra — bỏ khỏi unusedMapping" }
+            assertTrue(why.length >= 20) { "$n: lý do giữ dòng chết quá mỏng" }
+        }
+    }
 }

@@ -1,0 +1,21 @@
+<!--
+  TẦM HOẠT ĐỘNG (mũi tên chạy tới lá cờ đích) — cho `ev_range_km` · `fuel_range_km` · `batt_range_bodywork`.
+  [U6] "Còn đi được bao xa" KHÁC "đã đi được bao xa": trước đây cả sáu mục quãng đường đều mang ic_road, nên tầm
+  chạy và odo trông y hệt. Ở đây cờ đích = giới hạn còn tới được; ic_road giữ nghĩa quãng đường ĐÃ đi.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M3.6,17 L16,17"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M13.8,14.8 L16,17 L13.8,19.2"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M18.4,4.6 L18.4,12.8"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M18.4,5.2 L13.4,7.2 L18.4,9.2 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

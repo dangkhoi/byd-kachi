@@ -1,0 +1,18 @@
+<!--
+  ĐIỆN ÁP CELL PIN (dãy cell + tia sét) — cho `cell_v_high` · `cell_v_low`.
+  [U6] Cùng họ hình với ic_cell_temp (dãy cell) nhưng đại lượng khác: tia sét = điện áp, nhiệt kế = nhiệt độ.
+  Trước đây điện áp cell mang tia sét TRẦN, lẫn với 8 mục sạc khác.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M3.4,6.4 L12.6,6.4 M3.4,17.6 L12.6,17.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M4.6,8.4 L4.6,15.6 M8,8.4 L8,15.6 M11.4,8.4 L11.4,15.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M19.6,6 L16.2,10.6 L19,10.6 L16.8,15.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

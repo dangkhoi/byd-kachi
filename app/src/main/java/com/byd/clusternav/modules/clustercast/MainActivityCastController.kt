@@ -18,6 +18,7 @@ import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.system.PackageQueries
 
 /**
  * Cast control panel in Home activity — simplified architecture only.
@@ -193,7 +194,7 @@ internal class MainActivityCastController(private val activity: Activity) {
 
     private fun showAppPicker(slot: ClusterSlotSide?) {
         val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val resolveInfos = activity.packageManager.queryIntentActivities(launchIntent, 0)
+        val resolveInfos = PackageQueries.queryActivities(activity.packageManager, launchIntent)
         val excluded = setOf(activity.packageName, "com.android.launcher", "com.android.launcher3")
         val apps = resolveInfos
             .filter { it.activityInfo.packageName !in excluded }

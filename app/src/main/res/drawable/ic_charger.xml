@@ -1,0 +1,20 @@
+<!--
+  BỘ SẠC / TRỤ SẠC (thùng máy + tia sét + vòi) — cho `charger_work_state` (trạng thái của BỘ SẠC, không phải của xe).
+  [U6] Tách khỏi ic_plug: một cái nói về đầu cắm trên xe, một cái nói về thiết bị sạc bên ngoài.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M5,4.6 L13,4.6 A1.4,1.4 0 0 1 14.4,6 L14.4,19.4 L3.6,19.4 L3.6,6 A1.4,1.4 0 0 1 5,4.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6.2,8 L11.8,8"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M10.6,10.8 L7.8,14.2 L10.2,14.2 L8.8,17"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M14.4,10 L17.6,10 A1.6,1.6 0 0 1 19.2,11.6 L19.2,16.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

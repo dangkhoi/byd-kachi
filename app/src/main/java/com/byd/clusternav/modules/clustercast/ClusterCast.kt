@@ -3,6 +3,7 @@ package com.byd.clusternav.modules.clustercast
 import android.content.Context
 import android.content.Intent
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.system.PackageQueries
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -309,7 +310,7 @@ object ClusterCast {
         val pm = ctx.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         return runCatching {
-            pm.queryIntentActivities(intent, 0)
+            PackageQueries.queryActivities(pm, intent)
                 .map { AppInfo(it.loadLabel(pm).toString(), it.activityInfo.packageName, runCatching { it.loadIcon(pm) }.getOrNull()) }
                 .distinctBy { it.pkg }
                 .sortedBy { it.label.lowercase() }

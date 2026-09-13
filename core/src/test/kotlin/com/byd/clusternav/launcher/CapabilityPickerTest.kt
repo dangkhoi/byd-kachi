@@ -73,7 +73,11 @@ class CapabilityPickerTest {
             "phép lọc chỉ được bỏ mã NHÓM, không bỏ gì khác",
         )
         // Đếm tuyệt đối: mục rời có nhóm hiển thị = 212 khả năng − 12 nhóm − 9 widget dựng tay (không thuộc lĩnh vực).
-        assertEquals(123 + 64 + 4, after.size, "mục rời theo lĩnh vực phải còn nguyên 123 đọc + 64 nút + 4 gói lệnh")
+        // U6: trừ các mã cố ý ẩn khỏi màn chọn (có lý do, tra cứu vẫn được — xem `HIDDEN_FROM_PICKER`).
+        assertEquals(
+            123 + 64 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
+            "mục rời theo lĩnh vực phải còn nguyên 123 đọc + 64 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
+        )
     }
 
     @Test
@@ -150,6 +154,17 @@ class CapabilityPickerTest {
         val singles = CapabilityCatalog.byDomain().flatMap { CapabilityPicker.singlesOf(it.second) }
         val noisy = singles.filter { it.sub.isNotEmpty() }.map { it.id }
         assertEquals(emptyList<String>(), noisy, "mục rời không cần dòng phụ (nhãn của nó đã tự nói): $noisy")
+        // U6: dòng phụ HIỂN THỊ thì mục rời được phép có — nhưng CHỈ ở đúng những ô trùng tên, không phải cả lưới.
+        val withDisplaySub = singles.filter { it.displaySub.isNotEmpty() }
+        assertTrue(
+            withDisplaySub.all { it.label in CapabilityCatalog.collidingLabels() },
+            "mục rời mọc dòng phụ mà tên KHÔNG trùng: ${withDisplaySub.filterNot { it.label in CapabilityCatalog.collidingLabels() }.map { it.id }}",
+        )
+        assertTrue(
+            withDisplaySub.size < singles.size / 4,
+            "quá nhiều ô có dòng phụ (${withDisplaySub.size}/${singles.size}) — lưới ô 40dp sẽ cao thêm một dòng " +
+                "ở khắp nơi, đúng chỗ đang chật",
+        )
         assertTrue(
             WidgetRegistry.ALL.mapNotNull { CapabilityCatalog.pick(it.id) }.all { it.sub.isEmpty() },
             "widget dựng tay cũng không có dòng phụ",

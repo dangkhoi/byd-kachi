@@ -10,6 +10,7 @@ import com.byd.clusternav.R
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastPrefs
+import com.byd.clusternav.system.PackageQueries
 
 /**
  * Encapsulates the autostart switch/spinner SETUP UI only.
@@ -79,7 +80,7 @@ internal class CastAutostart(
 
     private fun populateAutoStartSpinner(spinner: Spinner, slot: String) {
         val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val resolveInfos = activity.packageManager.queryIntentActivities(launchIntent, 0)
+        val resolveInfos = PackageQueries.queryActivities(activity.packageManager, launchIntent)
         val excluded = setOf(activity.packageName, "com.android.launcher", "com.android.launcher3")
         // R2 (#3): a launcher/home must never be an autostart target either — same guard the bubble
         // dispatcher uses for tap-cast. AppMover.isLauncher catches Dudu + any *launcher* id beyond

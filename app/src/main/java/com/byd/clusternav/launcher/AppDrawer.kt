@@ -391,18 +391,18 @@ class AppDrawer(
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(iconWithBadge(KachiTheme.iconRes(pick.icon), pick.needsBadge))
             addView(TextView(context).apply {
-                // Hai loại nằm cùng một lưới ⇒ PHẢI dùng displayLabel: [ĐO] 18 nhãn trùng nhau giữa ô XEM và ô BẤM
-                // (vd hai ô đều ghi "Kính trước-trái"). Nhãn gốc không đổi, gợi ý chỉ thêm ở chỗ trùng.
+                // Nhãn = TÊN của khả năng, không mang gợi ý loại (U6): loại xuống dòng phụ bên dưới. [ĐO] ảnh
+                // 2026-09-12 owner đọc được "Charge target · view" trên lưới — thuật ngữ nội bộ lọt vào tên.
                 text = pick.displayLabel; setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)   // [type scale] ô lưới mật độ cao, ngoài 5 bậc
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
-            // Dòng phụ nói ô này GỒM GÌ — chỉ NHÓM có (mục rời để rỗng, nhãn của chúng đã tự nói hết). Không có dòng
-            // này thì người dùng thấy ô "Lốp" mà vẫn phải đoán bên trong có gì.
+            // Dòng phụ nói ô này GỒM GÌ (nhóm) và/hoặc thuộc LOẠI gì khi tên bị trùng (U6 — `displaySub`). Mục rời
+            // tên không trùng vẫn để rỗng: [ĐO] 88/123 datum, thêm một dòng cho tất cả là làm chật đúng chỗ đang chật.
             // ⚠ T5 (thang khoảng cách/cỡ chữ): 10sp là số TÔI TỰ CHỌN — nhãn ở trên là 11.5sp, dòng phụ phải nhỏ hơn
             // để đọc ra thứ bậc. Mọi dpi() ở đây là số ĐÃ dùng sẵn trong chính ô này, không thêm số mới.
-            if (pick.sub.isNotEmpty()) addView(TextView(context).apply {
-                text = pick.sub; setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)   // [type scale] ô lưới mật độ cao, ngoài 5 bậc
+            if (pick.displaySub.isNotEmpty()) addView(TextView(context).apply {
+                text = pick.displaySub; setTextColor(c(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)   // [type scale] ô lưới mật độ cao, ngoài 5 bậc
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS), 0)
             })

@@ -1,0 +1,18 @@
+<!--
+  LỌC KHÔNG KHÍ (phin lọc + luồng khí qua) — cho nút `pm25` (Lọc bụi) và `pm25_clean_now` (Lọc ngay).
+  [U6] Chiếc lá nay chỉ còn nghĩa ION ÂM (`anion_state` + nút `anion`); máy lọc là một THIẾT BỊ, và trước đây bốn
+  ô khí sạch trong nhóm Khí hậu đều mang cùng một chiếc lá.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M7.6,4.8 L16.4,4.8 A1.4,1.4 0 0 1 17.8,6.2 L17.8,17.8 A1.4,1.4 0 0 1 16.4,19.2 L7.6,19.2 A1.4,1.4 0 0 1 6.2,17.8 L6.2,6.2 A1.4,1.4 0 0 1 7.6,4.8 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M9,7.6 L9,16.4 M12,7.6 L12,16.4 M15,7.6 L15,16.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M3,12 L5.4,12 M18.6,12 L21,12"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

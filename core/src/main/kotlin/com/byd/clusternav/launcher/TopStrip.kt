@@ -95,8 +95,14 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
         fun choices(): List<CapabilityPick> = buildList {
             // U5 · T2: ba chip TỔNG HỢP không có dòng registry nào để treo `labelEn` vào ⇒ dựng [CapabilityPick] với
             // nhãn Việt + `labelEn` ngay tại chỗ, đúng cùng cơ chế như mọi mục khác (xem KDoc [Strings]).
-            add(CapabilityPick(PM25, "Bụi mịn PM2.5", "ic-leaf", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE,
-                labelEn = "Fine dust PM2.5"))
+            // ⚠⚠ **KHÔNG đặt lại tên này thành "Bụi mịn PM2.5"** — đó là tên của datum `pm25_value` từ U6, và hai
+            // dòng ấy đứng CẠNH NHAU trong chính hộp thoại "Thêm chip khác…" ([TopStripPicker.openMore] bày phẳng
+            // `choices()`, không vẽ dòng phụ). [ĐO] soát U6: đổi `pm25_value` từ "PM2.5" sang "Bụi mịn PM2.5" đã làm
+            // hộp thoại có **hai dòng chữ y hệt** (cả VI lẫn EN) trỏ vào hai việc khác nhau — chip này đổi mức 1–6
+            // thành CHỮ ("PM2.5 · Tốt"), datum kia là TRỊ SỐ µg/m³. Tên ở đây phải nói đúng thứ nó hiện: một lời
+            // nhận xét về không khí trong xe. Bài canh: `TopStripTest.hai o tren cung mot man chon…`.
+            add(CapabilityPick(PM25, "Không khí trong xe", "ic-leaf", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE,
+                labelEn = "Cabin air quality"))
             add(CapabilityPick(TEMP, "Nhiệt độ ngoài", "ic-fan", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE,
                 labelEn = "Outside temperature"))
             add(CapabilityPick(ENERGY, "Pin và tầm chạy", "ic-bolt", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.ENERGY,
@@ -105,6 +111,23 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
             // luật ở [isChippable] chặt thêm (G1 loại NHÓM) thì màn chọn vẫn bày ra thứ mà [setEnabled] sẽ từ chối —
             // người dùng bấm mà không có gì xảy ra. Một luật, một chỗ.
             addAll(CapabilityCatalog.all().filter { !it.curated && isChippable(it.id) })
+        }
+
+        /**
+         * Ô mà màn chọn phải bày ở hàng **"đang bật"**: 3 chip dựng sẵn + mọi mã [cfg] đang bật — **kể cả mã đã ẩn
+         * khỏi [CapabilityCatalog.all]**.
+         *
+         * ## Vì sao không dùng thẳng [choices] như trước
+         * U6 thêm [CapabilityCatalog.HIDDEN_FROM_PICKER] (lọc ở `all()`), và [decode] **giữ** mã ẩn đó vì nó đi qua
+         * [isChippable] chứ không qua danh sách — đúng như thiết kế (khoá lưu bền của người dùng không được mất).
+         * Nhưng nếu hàng "đang bật" cũng dựng từ [choices] thì chip đặt từ bản trước **vẫn hiện trên thanh mà không
+         * còn ô nào để bấm gỡ**: một trạng thái không có đường ra. Thêm ở đây, KHÔNG thêm vào [choices] — hộp thoại
+         * "Thêm chip khác…" vẫn phải im lặng về mã đã ẩn, vì bày lại chính là đường mời đặt thêm.
+         */
+        fun shown(cfg: TopStripConfig): List<CapabilityPick> {
+            val base = choices().filter { it.id in BUILT_IN || cfg.has(it.id) }
+            val ids = base.mapTo(mutableSetOf()) { it.id }
+            return base + cfg.ids.filterNot { it in ids }.mapNotNull { CapabilityCatalog.pick(it) }
         }
 
         /** `"a,b,c"` → cấu hình. Chuỗi rỗng/lỗi ⇒ mặc định (không để thanh trên trắng vì một dòng prefs hỏng). */

@@ -60,7 +60,6 @@ object KachiTheme {
     val SLOT: String get() = palette.slot
     val BAR: String get() = palette.bar
     val BAR_TOP: String get() = palette.barTop
-    val HEAD_BG: String get() = palette.headBg
     val LINE: String get() = palette.line
     val LINE_STRONG: String get() = palette.lineStrong
     val GRID_LINE: String get() = palette.gridLine
@@ -83,7 +82,6 @@ object KachiTheme {
     val TILE_ON_LINE: String get() = palette.tileOnLine
     val SCRIM_PANEL: String get() = palette.scrimPanel
     val SCRIM_BTN: String get() = palette.scrimBtn
-    val SCRIM_BTN2: String get() = palette.scrimBtn2
     val WIDGET_BACKING: String get() = palette.widgetBacking
     val WALL_SCRIM: String get() = palette.wallScrim
     val SCRIM_HEAD: String get() = palette.scrimHead
@@ -216,6 +214,36 @@ object KachiTheme {
         "ic-mirror" -> R.drawable.ic_mirror
         "ic-drive" -> R.drawable.ic_drive
         "ic-adas" -> R.drawable.ic_adas
+        // ── [U6 · ĐO ảnh 2026-09-12] 18 icon MỚI: tách theo KHÁI NIỆM trong 3 nhóm dày nhất ───────────
+        // Bệnh đo được: nhóm Năng lượng có 9/28 ô cùng glyph tia sét và 6/28 cùng glyph con đường; nhóm Động lực có
+        // 6/14 ô cùng đồng hồ tốc; nhóm Khí hậu có 5/12 ô cùng nhiệt kế và 4/12 cùng chiếc lá. Icon trùng ở mật độ
+        // đó thì nó không còn giúp phân biệt gì — người dùng phải đọc chữ trong ô 40dp (mà chữ thì bị cắt).
+        // Lý do của TỪNG hình ghi trong chính tệp XML (đó là chỗ người sửa icon sẽ đọc).
+        "ic-battery-charging" -> R.drawable.ic_battery_charging
+        "ic-plug" -> R.drawable.ic_plug
+        "ic-charger" -> R.drawable.ic_charger
+        "ic-consumption" -> R.drawable.ic_consumption
+        "ic-range" -> R.drawable.ic_range
+        "ic-cell-temp" -> R.drawable.ic_cell_temp
+        "ic-cell-volt" -> R.drawable.ic_cell_volt
+        "ic-pedal" -> R.drawable.ic_pedal
+        "ic-brake" -> R.drawable.ic_brake
+        "ic-slope" -> R.drawable.ic_slope
+        "ic-rpm" -> R.drawable.ic_rpm
+        "ic-torque" -> R.drawable.ic_torque
+        "ic-engine" -> R.drawable.ic_engine
+        "ic-mode" -> R.drawable.ic_mode
+        "ic-dust" -> R.drawable.ic_dust
+        "ic-sensor" -> R.drawable.ic_sensor
+        "ic-coolant" -> R.drawable.ic_coolant
+        "ic-alert" -> R.drawable.ic_alert
+        // 4 tên dưới dùng cho CẢ mục đọc lẫn NÚT cùng khái niệm (mục tiêu sạc · nhiệt ngoài · điều hoà · lọc khí):
+        // hai ô cùng một việc thì phải cùng một hình, phần "xem hay bấm" đã nằm ở dòng phụ (U6).
+        "ic-target" -> R.drawable.ic_target
+        "ic-temp-out" -> R.drawable.ic_temp_out
+        "ic-ac" -> R.drawable.ic_ac
+        "ic-filter" -> R.drawable.ic_filter
+        "ic-drift" -> R.drawable.ic_drift
         // Tên icon dùng lại tệp đã có (trước đây chưa được map nên tra ra 0 = ô trống icon)
         "ic-clock" -> R.drawable.ic_clock_g
         "ic-turn-left" -> R.drawable.ic_turn_left

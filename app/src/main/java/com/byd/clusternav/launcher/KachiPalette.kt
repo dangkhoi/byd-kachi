@@ -50,7 +50,6 @@ package com.byd.clusternav.launcher
  * @property slot nền thẻ ô làm việc ở màn chính.
  * @property bar nền thanh nút xe (có kênh trong suốt để thấy nền sau nó).
  * @property barTop nền thanh trạng thái trên.
- * @property headBg nền nhãn nổi trên app đang chiếu.
  * @property line viền mảnh trang trí.
  * @property lineStrong viền KẾT CẤU (thanh, thẻ ô làm việc) — vai duy nhất bắt buộc ≥ 3:1 ở CẢ hai bảng.
  * @property gridLine lưới của trình vẽ bố cục.
@@ -83,8 +82,6 @@ package com.byd.clusternav.launcher
  *   dùng chữ TRẮNG. [ĐO] 2026-09-12 `emulator-5554`, widget đồng hồ trên bảng SÁNG: ô chỉ còn **0.15%** điểm mực tối,
  *   chữ giờ gần như biến mất (trắng trên nền sáng). Launcher **không thể** sửa màu RemoteViews của app khác, nên cách
  *   duy nhất là tự bảo đảm một nền tối phía sau. Widget nào tự vẽ nền đục thì lớp này bị che — không ảnh hưởng gì.
- * @property scrimBtn2 nền nút ⇄/✕ trên thanh nhãn app — khác [scrimBtn] ở chỗ nó nằm trên [headBg] ĐỤC (launcher
- *   biết màu đó), nên nó THEO chủ đề và glyph dùng [ink].
  * @property wallScrim màu lớp **làm tối ảnh nền** (U4) — **KHÔNG theo chủ đề, và đó là một quyết định, không phải
  *   bỏ sót.** Ba lý do, xếp theo sức nặng:
  *   1. **Nhãn nói "Làm tối ảnh" / "Dim the photo".** Cho nó hoá trắng ở bảng sáng là nhãn hứa một việc mà mã làm
@@ -126,7 +123,6 @@ data class KachiPalette(
     val slot: String,
     val bar: String,
     val barTop: String,
-    val headBg: String,
     val line: String,
     val lineStrong: String,
     val gridLine: String,
@@ -149,7 +145,6 @@ data class KachiPalette(
     val tileOnLine: String,
     val scrimPanel: String,
     val scrimBtn: String,
-    val scrimBtn2: String,
     val widgetBacking: String,
     val wallScrim: String,
     val scrimHead: String,
@@ -199,7 +194,6 @@ data class KachiPalette(
             slot = "#171a20",
             bar = "#d915191f",
             barTop = "#990a0d13",
-            headBg = "#0f1520",
             line = "#17ffffff",
             lineStrong = "#59ffffff",
             gridLine = "#22ffffff",
@@ -222,7 +216,6 @@ data class KachiPalette(
             tileOnLine = "#8c4c7dff",
             scrimPanel = "#ff070a11",
             scrimBtn = "#80000000",
-            scrimBtn2 = "#33000000",
             widgetBacking = "#171a20",
             wallScrim = "#000000",
             scrimHead = "#8c000000",
@@ -270,7 +263,6 @@ data class KachiPalette(
             slot = "#ffffff",
             bar = "#d9ffffff",
             barTop = "#e6ffffff",
-            headBg = "#ffffff",
             line = "#788698",
             lineStrong = "#667487",
             gridLine = "#aab5c6",
@@ -293,7 +285,6 @@ data class KachiPalette(
             tileOnLine = "#b32f5ae0",
             scrimPanel = "#ff10151d",
             scrimBtn = "#80000000",
-            scrimBtn2 = "#1f000000",
             widgetBacking = "#171a20",
             wallScrim = "#000000",
             scrimHead = "#d9ffffff",

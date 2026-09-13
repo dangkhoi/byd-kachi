@@ -13,7 +13,8 @@ package com.byd.clusternav.launcher
  *
  * ## Vì sao cơ chế của RW0 KHÔNG tự phủ ca này
  * Dự án đã gặp đúng bệnh này với **18 nhãn trùng** ở gói 2 và chữa bằng gợi ý loại (`· xem` / `· bấm` / `· thẻ` /
- * `· nhóm` — xem [CapabilityPick.displayLabel]). Nhưng cơ chế đó đọc [CapabilityCatalog], tức chỉ biết những mục
+ * `· nhóm` — xem [CapabilityPick.typeHint]; từ U6 gợi ý đó nằm ở DÒNG PHỤ, không nằm trong nhãn chính). Nhưng cơ
+ * chế đó đọc [CapabilityCatalog], tức chỉ biết những mục
  * **của dự án**. Nhãn ở đây do **hệ thống** trả về từ app khác, không có mục nào trong bất kỳ registry ⇒ nó nằm ngoài
  * tầm của phép đó. Cùng bệnh, hai nguồn dữ liệu ⇒ phải có phép riêng, nhưng **giữ đúng khuôn**: chỉ thêm gợi ý **ở
  * chỗ trùng** (thêm cho mọi mục là nhiễu), và dấu ngăn là `·` như mọi chỗ khác.

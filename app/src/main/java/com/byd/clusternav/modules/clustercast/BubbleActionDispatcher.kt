@@ -10,6 +10,7 @@ import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
+import com.byd.clusternav.system.PackageQueries
 
 /**
  * Dispatches single-icon bubble gestures to the simplified Cast coordinator (R5 / #7).
@@ -133,8 +134,8 @@ internal class BubbleActionDispatcher(
      * screen; excluding only the default let a non-default launcher slip through.
      */
     private fun homePackages(): Set<String> = runCatching {
-        context.packageManager.queryIntentActivities(
-            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0,
+        PackageQueries.queryActivities(
+            context.packageManager, Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
         ).mapNotNull { it.activityInfo?.packageName }.toSet()
     }.getOrElse { emptySet() }
 

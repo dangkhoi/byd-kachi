@@ -1,9 +1,11 @@
 package com.byd.clusternav.launcher
 
 import android.graphics.Rect
+import android.graphics.Region
 import android.view.MotionEvent
 import android.view.TouchDelegate
 import android.view.View
+import android.view.accessibility.AccessibilityNodeInfo
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -126,5 +128,30 @@ object StepTouchTarget {
             }
             return handled
         }
+
+        /**
+         * ⚠ **TalkBack không dùng [onTouchEvent]** — nó hỏi cây trợ năng, và cây đó chỉ biết vùng chạm mở rộng nếu
+         * delegate khai ra ở đây. Không override ⇒ `TouchDelegate` cơ sở trả về info dựng từ `Rect()` RỖNG mà lớp
+         * này truyền cho ctor (nó phải rỗng: bộ định tuyến thật là [zones], xem KDoc lớp) ⇒ với người dùng trợ năng
+         * vùng chạm vẫn là **20×32dp** như trước bản vá, tức cả `StepTouchTarget` không có tác dụng với họ.
+         *
+         * [ĐO] chữ ký, đọc thẳng `android.jar` của `compileSdk = 37` (CLAUDE.md §3, không dựa trí nhớ):
+         * `TouchDelegate.getTouchDelegateInfo()` → `AccessibilityNodeInfo$TouchDelegateInfo`, và
+         * `TouchDelegateInfo(java.util.Map<Region, View>)` là ctor công khai duy nhất. Cả hai **API 29**, mà
+         * `minSdk = 29` ⇒ **không cần rẽ nhánh SDK**.
+         *
+         * Thứ tự [zones] được giữ (`associate` trả `LinkedHashMap`): trái (−) trước, phải (+) sau — cùng thứ tự
+         * người dùng trợ năng nghe khi duyệt ô.
+         *
+         * **Dựng MỘT lần** (`by lazy`) đúng như bản cơ sở của nền tảng làm (`TouchDelegate` nhớ vào `mTouchDelegateInfo`):
+         * `View.onInitializeAccessibilityNodeInfo` gọi hàm này **mỗi lần** dựng một nút trợ năng cho ô, mà
+         * [android.graphics.Region] là đối tượng có phần cấp phát NATIVE. Nhớ được là vì delegate **bất biến** —
+         * [zones] là `val` và mỗi lượt bố cục [attach] dựng hẳn một `SplitDelegate` mới thay vì sửa cái cũ.
+         */
+        private val info: AccessibilityNodeInfo.TouchDelegateInfo by lazy {
+            AccessibilityNodeInfo.TouchDelegateInfo(zones.associate { Region(it.bounds) to it.target })
+        }
+
+        override fun getTouchDelegateInfo(): AccessibilityNodeInfo.TouchDelegateInfo = info
     }
 }

@@ -25,9 +25,11 @@ class CapabilityIconsTest {
             "Icon theo khái niệm phải phân biệt ÍT NHẤT gấp đôi cách cũ (theo nhóm). " +
                 "Đang có: theo nhóm=$byDomainOnly · theo khái niệm=$byConcept",
         )
+        // U6 nâng sàn: 34 → 56 icon phân biệt (18 hình mới cho 3 nhóm dày nhất). Sàn là số ĐO ĐƯỢC, không phải số
+        // mong muốn — nó chỉ được đi lên.
         assertTrue(
-            byConcept >= 29,
-            "sàn đã đạt được là 29 icon phân biệt — tụt xuống dưới là hồi quy (đang có $byConcept). " +
+            byConcept >= 56,
+            "sàn đã đạt được là 56 icon phân biệt — tụt xuống dưới là hồi quy (đang có $byConcept). " +
                 "Thêm icon thì NÂNG số này lên, đừng hạ.",
         )
     }
@@ -79,7 +81,7 @@ class CapabilityIconsTest {
     fun `nhung khai niem nang nhat da co icon rieng`() {
         // Các họ nhiều mục nhất — nếu chúng vẫn dùng icon nhóm thì việc này coi như chưa làm gì
         mapOf(
-            "soc" to "ic-battery", "ev_range_km" to "ic-road", "odometer" to "ic-road",
+            "soc" to "ic-battery", "ev_range_km" to "ic-range", "odometer" to "ic-road",
             "seatbelt_driver" to "ic-seatbelt", "bsd_fl_alarm" to "ic-radar", "gps_lat" to "ic-gps",
             "steering_deg" to "ic-steering", "cabin_temp" to "ic-temp", "window_lf" to "ic-window",
             "door_lf" to "ic-door",

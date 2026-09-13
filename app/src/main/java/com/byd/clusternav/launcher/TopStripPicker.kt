@@ -75,7 +75,10 @@ class TopStripPicker(
     private fun rebuild() {
         grid.removeAllViews()
         tiles.clear()
-        val shown = TopStripConfig.choices().filter { it.id in TopStripConfig.BUILT_IN || strip.has(it.id) }
+        // `shown()` chứ không phải `choices().filter{…}`: từ U6 có mã CỐ Ý ẨN khỏi `choices()` mà `decode()` vẫn giữ
+        // (khoá lưu bền không được mất). Lọc trên `choices()` thì chip đặt từ bản trước hiện trên thanh nhưng không
+        // còn ô nào để bấm gỡ — xem KDoc [TopStripConfig.shown].
+        val shown = TopStripConfig.shown(strip)
         // `cols =` dạng THAM SỐ TÊN, không truyền theo vị trí: `PickGridColumnContractTest` quét chính chuỗi
         // `cols = <nguồn>` để chốt hai màn chọn cùng một nguồn số cột — truyền theo vị trí thì bài canh mù.
         CapabilityTileGrid.rows(context, grid, shown.size, cols = CapabilityPicker.COLS) { i -> tile(shown[i]) }

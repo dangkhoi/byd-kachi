@@ -272,7 +272,10 @@ class CapabilityGroupsTest {
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
         assertEquals(
-            123 + 64 + 9 + 4 + CapabilityGroups.ALL.size, CapabilityCatalog.all().size,
+            // U6: `all()` là thứ MÀN CHỌN bày ra nên nó trừ đi các mã cố ý ẩn ([CapabilityCatalog.HIDDEN_FROM_PICKER]);
+            // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
+            123 + 64 + 9 + 4 + CapabilityGroups.ALL.size - CapabilityCatalog.HIDDEN_FROM_PICKER.size,
+            CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",
         )
     }

@@ -1,0 +1,18 @@
+<!--
+  NHIỆT CELL PIN (dãy cell + nhiệt kế) — cho `cell_temp_high` · `cell_temp_low` · `cell_temp_avg`.
+  [U6] Nhiệt của CELL khác nhiệt của cả gói pin (`batt_temp` giữ ic_temp): trước đây bốn mục dùng chung một nhiệt kế.
+  Dãy vạch bên trái = các cell trong gói; nhiệt kế bên phải = đại lượng đang đo.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M3.4,6.4 L12.6,6.4 M3.4,17.6 L12.6,17.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M4.6,8.4 L4.6,15.6 M8,8.4 L8,15.6 M11.4,8.4 L11.4,15.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M17.6,4.6 A1.5,1.5 0 0 1 19.1,6.1 L19.1,12.4 A2.7,2.7 0 1 1 16.1,12.4 L16.1,6.1 A1.5,1.5 0 0 1 17.6,4.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

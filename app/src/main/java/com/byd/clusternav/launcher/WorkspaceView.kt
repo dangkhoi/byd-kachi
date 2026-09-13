@@ -332,9 +332,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     /**
      * Khung trong suốt bọc nút ⇄ **nổi** ở đầu ô.
      *
-     * Cao [Sp.SLOT_HEAD_CLEAR] (không phải [Sp.HEAD_BAR]): nó phải chứa nổi `XS + ICON_L + XS`. Trước T5 khung
-     * cao 34dp trong khi nút chiếm 34dp ⇒ **không còn chỗ thở**, và độ hở của nội dung widget lại là 30dp ⇒
-     * nội dung bị đè. Hai con số ở hai tệp khác nhau, nên không bài test nào bắt được.
+     * Cao [Sp.SLOT_HEAD_CLEAR]: nó phải chứa nổi `XS + ICON_L + XS`. Trước T5 khung cao 34dp (hằng `HEAD_BAR`
+     * của thanh đầu ô cũ, nay đã xoá cùng thanh đó — D2a) trong khi nút chiếm 34dp ⇒ **không còn chỗ thở**, và
+     * độ hở của nội dung widget lại là 30dp ⇒ nội dung bị đè. Hai con số ở hai tệp khác nhau, nên không bài test
+     * nào bắt được.
      *
      * ⚠ **Đích chạm 32dp — DƯỚI mức [Sp.TOUCH], có lý do**: nút này **nổi ĐÈ lên nội dung** ô (khác nút của
      * [OverlayHeads] nằm trong thanh riêng). Nới lên 48dp buộc độ hở lên 56dp, tức mọi ô widget mất 56dp chiều

@@ -85,9 +85,11 @@ class CapabilityIconMeaningTest {
             .filterNot { GroupBoard.of(it, CarStatus()).iconsDistinguish }
             .map { it.id }
         assertEquals(
+            // U6 gỡ `g_climate` khỏi danh sách: sau khi tách bụi/cảm biến/nước làm mát/điều hoà, các ô con của
+            // nhóm Khí hậu đã phân biệt được bằng icon. Danh sách TỰ RỮA — đây đúng là chiều nó phải rữa.
             listOf(
                 "g_tyres", "g_windows", "g_doors", "g_lights", "g_ambient",
-                "g_adas", "g_occupants", "g_climate", "g_battery", "g_trip",
+                "g_adas", "g_occupants", "g_battery", "g_trip",
             ),
             blind,
             "danh sách nhóm mà icon ô con KHÔNG phân biệt được đã đổi — cập nhật danh sách và xem lại bộ vẽ",

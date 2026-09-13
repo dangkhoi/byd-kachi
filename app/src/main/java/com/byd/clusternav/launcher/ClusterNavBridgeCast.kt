@@ -13,6 +13,7 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.system.PackageQueries
 
 /**
  * ═══ Nửa "Chiếu màn lên cụm" của [ClusterNavBridge] ═════════════════════════════════════════════
@@ -228,7 +229,7 @@ private fun ClusterNavBridge.launcherApps(excludeLaunchers: Boolean): List<Pair<
     val pm = app.packageManager
     val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
     val excluded = setOf(app.packageName, "com.android.launcher", "com.android.launcher3")
-    pm.queryIntentActivities(launchIntent, 0)
+    PackageQueries.queryActivities(pm, launchIntent)
         .filter { it.activityInfo.packageName !in excluded }
         .filter { !excludeLaunchers || !AppMover.isLauncher(it.activityInfo.packageName) }
         .map { it.loadLabel(pm).toString() to it.activityInfo.packageName }

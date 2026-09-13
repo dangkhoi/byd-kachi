@@ -1,0 +1,15 @@
+<!--
+  NHIỆT NƯỚC LÀM MÁT (nhiệt kế trên sóng nước) — cho `coolant_temp`. Đây là ký hiệu chuẩn trên táp-lô.
+  [U6] Nước làm mát là mạch của ĐỘNG CƠ, không phải nhiệt không khí trong cabin — nhưng trước đây nó dùng chung
+  nhiệt kế với nhiệt trong/ngoài/cài đặt, thành bốn ô y hệt nhau trong nhóm Khí hậu.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M12,3.8 A1.6,1.6 0 0 1 13.6,5.4 L13.6,11 A2.8,2.8 0 1 1 10.4,11 L10.4,5.4 A1.6,1.6 0 0 1 12,3.8 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M4.2,19.4 C5.7,18 7.2,20.8 8.7,19.4 C10.2,18 11.7,20.8 13.2,19.4 C14.7,18 16.2,20.8 17.7,19.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

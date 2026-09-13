@@ -6,6 +6,7 @@ import com.byd.clusternav.modules.clustercast.model.*
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Drawable
+import com.byd.clusternav.system.PackageQueries
 import java.util.Collections
 
 /** One bounded immutable presentation entry. Icon failure degrades only [iconState]. */
@@ -48,7 +49,7 @@ class CastAppCatalog(
         val favorites = favorites()
         val protectedPackages = protectedPackages()
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val resolved = runCatching { app.packageManager.queryIntentActivities(intent, 0) }
+        val resolved = runCatching { PackageQueries.queryActivities(app.packageManager, intent) }
             .getOrDefault(emptyList())
         val entries = resolved.mapNotNull { info ->
             runCatching {
