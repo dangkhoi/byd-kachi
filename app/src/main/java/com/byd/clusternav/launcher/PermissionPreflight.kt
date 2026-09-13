@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.system.PackageQueries
 import android.content.ComponentName
 import android.content.Context
 import android.widget.Toast
@@ -198,7 +199,7 @@ object PermissionPreflight {
      */
     private fun isDefaultHome(ctx: Context): Boolean? = runCatching {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        val res = ctx.packageManager.resolveActivity(intent, 0) ?: return null
+        val res = PackageQueries.resolveActivity(ctx.packageManager, intent) ?: return null
         res.activityInfo?.packageName == ctx.packageName
     }.getOrNull()
 

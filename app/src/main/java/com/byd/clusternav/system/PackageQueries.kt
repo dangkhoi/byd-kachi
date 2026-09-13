@@ -1,12 +1,13 @@
 package com.byd.clusternav.system
 
 import android.content.Intent
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Build
 
 /**
- * ═══ MỘT CỬA DUY NHẤT ĐỂ HỎI `PackageManager` DANH SÁCH ACTIVITY ═════════════════════════════════════════════
+ * ═══ MỘT CỬA DUY NHẤT ĐỂ HỎI `PackageManager` (danh sách activity · phân giải activity · thông tin gói) ═══════
  *
  * `PackageManager.queryIntentActivities(Intent, Int)` được **tài liệu Android đánh dấu deprecated từ API 33**
  * (Tiramisu); bản thay thế là `queryIntentActivities(Intent, PackageManager.ResolveInfoFlags)` với
@@ -39,7 +40,21 @@ import android.os.Build
  * `PackageQueriesContractTest` khoá lại: **không tệp nào ngoài tệp này được gọi thẳng `queryIntentActivities(`**.
  *
  * Không bọc `runCatching` ở đây — chỗ gọi nào cần chịu lỗi thì tự bọc (và mấy chỗ đó đang bọc sẵn); nuốt lỗi
- * ở tầng dùng chung sẽ biến "ROM từ chối" thành "không có app nào" mà không ai thấy.
+ * ở tầng dùng chung sẽ biến "ROM từ chối" thành "không có app nào" mà không ai thấy. NGOẠI LỆ DUY NHẤT là
+ * [packageInfo] bắt `NameNotFoundException` — ngoại lệ đó KHÔNG phải lỗi, nó chính là câu trả lời "gói chưa
+ * cài" của nền tảng (javap bên dưới: chỉ `getPackageInfo` khai `throws`). Ngoại lệ khác vẫn ném lên.
+ *
+ * ## [ĐO] chữ ký hai API thêm ở D3(a) — cùng `android.jar` compileSdk 37, cùng cách đọc
+ * ```
+ * javap … android.content.pm.PackageManager | grep -E 'resolveActivity|getPackageInfo'
+ *   public          PackageInfo getPackageInfo(String, PackageManager$PackageInfoFlags) throws NameNotFoundException;
+ *   public abstract PackageInfo getPackageInfo(String, int)                            throws NameNotFoundException;
+ *   public          ResolveInfo resolveActivity(Intent, PackageManager$ResolveInfoFlags);
+ *   public abstract ResolveInfo resolveActivity(Intent, int);
+ * javap … 'android.content.pm.PackageManager$PackageInfoFlags'
+ *   public static android.content.pm.PackageManager$PackageInfoFlags of(long);
+ * ```
+ * ⇒ `resolveActivity` KHÔNG khai ngoại lệ (chỉ trả `null`), nên [resolveActivity] không cần `try`.
  */
 object PackageQueries {
 
@@ -59,4 +74,38 @@ object PackageQueries {
     @Suppress("DEPRECATION")
     private fun legacy(pm: PackageManager, intent: Intent, flags: Int): List<ResolveInfo> =
         pm.queryIntentActivities(intent, flags)
+
+    /**
+     * D3(a) — cùng cửa với [queryActivities]: `resolveActivity` có overload `ResolveInfoFlags` từ API 33.
+     * Trả `null` khi không có activity nào nhận [intent] (đúng hợp đồng nền tảng).
+     */
+    fun resolveActivity(pm: PackageManager, intent: Intent, flags: Int = 0): ResolveInfo? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.resolveActivity(intent, PackageManager.ResolveInfoFlags.of(flags.toLong()))
+        } else {
+            legacyResolve(pm, intent, flags)
+        }
+
+    /**
+     * D3(a) — `getPackageInfo` có overload `PackageInfoFlags` từ API 33. Trả `null` khi gói **không cài**
+     * ([PackageManager.NameNotFoundException]) — mọi chỗ gọi cũ đều chỉ hỏi "có cài không / phiên bản gì", nên
+     * một giá trị `null` thay cho `runCatching { … }.isSuccess` là đủ và không nuốt ngoại lệ khác.
+     */
+    fun packageInfo(pm: PackageManager, packageName: String, flags: Int = 0): PackageInfo? = try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
+        } else {
+            legacyPackageInfo(pm, packageName, flags)
+        }
+    } catch (_: PackageManager.NameNotFoundException) {
+        null
+    }
+
+    @Suppress("DEPRECATION")
+    private fun legacyResolve(pm: PackageManager, intent: Intent, flags: Int): ResolveInfo? =
+        pm.resolveActivity(intent, flags)
+
+    @Suppress("DEPRECATION")
+    private fun legacyPackageInfo(pm: PackageManager, packageName: String, flags: Int): PackageInfo =
+        pm.getPackageInfo(packageName, flags)
 }

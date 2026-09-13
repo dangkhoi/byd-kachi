@@ -44,6 +44,34 @@ class PackageQueriesContractTest {
             "phải đi qua PackageQueries.queryActivities(pm, intent) — API (Intent, Int) deprecated từ API 33")
     }
 
+    /**
+     * D3(a) — cùng cửa cho `resolveActivity` / `getPackageInfo` (cả hai có overload `*Flags` từ API 33).
+     * Ngoại lệ DUY NHẤT: `MainActivity.kt:83` — tệp bị wiring test ghim source, không sửa (spec IA v2 §2). Đường dẫn
+     * tương đối tính từ gốc module (`SourceRoots.moduleSourceRoots`), không có tiền tố `main/java`.
+     *
+     * ⚠ Khuôn bắt theo **hàm**, KHÔNG theo tên biến nhận: bản đầu chỉ khớp `packageManager.`/`pm.` nên một chỗ gọi
+     * viết `val manager = ctx.packageManager; manager.getPackageInfo(…)` sẽ lọt — đúng kiểu "chỗ gọi thứ tám viết
+     * ngày mai" mà bài này đi chặn. Hai lookbehind trừ ra hai thứ hợp lệ: chính helper (`PackageQueries.…`) và
+     * `Intent.resolveActivity(pm)` — API của **Intent**, không phải PackageManager, không thuộc phạm vi
+     * (`VietMapWidgetBridge.kt:170` đang dùng).
+     */
+    @Test
+    fun `KHONG file nao ngoai helper goi thang resolveActivity hay getPackageInfo cua PackageManager`() {
+        val direct = Regex("""(?<!PackageQueries)(?<![Ii]ntent)\.(resolveActivity|getPackageInfo)\(""")
+        val allowed = setOf("com/byd/clusternav/MainActivity.kt")
+        val offenders = kotlinSources().filter { (name, code) -> direct.containsMatchIn(code) && name !in allowed }.map { it.first }
+        assertEquals(emptyList<String>(), offenders, "phải đi qua PackageQueries.resolveActivity / packageInfo")
+        assertTrue(kotlinSources().any { (name, code) -> name in allowed && direct.containsMatchIn(code) },
+            "ngoại lệ MainActivity phải còn thật — hết thì bỏ khỏi allowed cho khỏi rữa")
+    }
+
+    @Test
+    fun `resolveActivity va packageInfo cua helper deu co cho goi that`() {
+        val src = kotlinSources()
+        assertTrue(src.any { (_, code) -> code.contains("PackageQueries.resolveActivity(") }, "resolveActivity chưa ai gọi")
+        assertTrue(src.count { (_, code) -> code.contains("PackageQueries.packageInfo(") } >= 5, "packageInfo phải thay ≥5 chỗ gọi cũ")
+    }
+
     /** Helper viết ra mà không ai gọi là mã chết (CLAUDE.md §8). Đếm chỗ gọi thật, ngoài chính nó. */
     @Test
     fun `helper phai co du 7 cho goi that`() {
@@ -65,7 +93,8 @@ class PackageQueriesContractTest {
                     val code = file.readText()
                         .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
                         .lines().joinToString("\n") { it.substringBefore("//") }
-                    root.relativize(file.toPath()).toString() to code
+                    // '/' cứng: trên Windows `relativize` trả '\\' ⇒ allow-list so tên tệp sẽ trượt (CLAUDE.md §5 cross-platform).
+                    root.relativize(file.toPath()).toString().replace('\\', '/') to code
                 }
                 .toList()
         }

@@ -1,5 +1,6 @@
 package com.byd.clusternav.vietmapwidget
 
+import com.byd.clusternav.system.PackageQueries
 import com.byd.clusternav.navigation.NavApps
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
@@ -7,8 +8,6 @@ import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -456,15 +455,10 @@ class VietMapWidgetBridge private constructor(context: Context) {
     // --- Utility ---
     private fun providerInfo(slot: VietMapWidgetSlot): AppWidgetProviderInfo? =
         manager.installedProviders.firstOrNull { it.provider == slot.component }
-    private fun providerVersion(): String? = try {
-        val info = if (Build.VERSION.SDK_INT >= 33) {
-            appContext.packageManager.getPackageInfo(VIETMAP_PACKAGE, PackageManager.PackageInfoFlags.of(0))
-        } else {
-            @Suppress("DEPRECATION")
-            appContext.packageManager.getPackageInfo(VIETMAP_PACKAGE, 0)
-        }
-        info.versionName
-    } catch (_: PackageManager.NameNotFoundException) { null }
+    // D3(a): rẽ nhánh API 33 + bắt NameNotFound nay nằm ở một cửa PackageQueries (trước đây tệp này tự rẽ — bản gốc
+    // của khuôn đó). Gói không cài ⇒ null.
+    private fun providerVersion(): String? =
+        PackageQueries.packageInfo(appContext.packageManager, VIETMAP_PACKAGE)?.versionName
     private fun deleteAllocatedId(appWidgetId: Int) {
         try {
             host.deleteAppWidgetId(appWidgetId)

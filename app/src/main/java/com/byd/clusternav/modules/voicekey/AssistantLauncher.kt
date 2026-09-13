@@ -1,5 +1,6 @@
 package com.byd.clusternav.modules.voicekey
 
+import com.byd.clusternav.system.PackageQueries
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
@@ -236,7 +237,9 @@ object AssistantLauncher {
         val app = ctx.applicationContext
         val pm = app.packageManager
         val missing = listOf(PKG_GSA to "Google (googlequicksearchbox)", PKG_BARD to "Gemini (com.google.android.apps.bard)")
-            .filter { runCatching { pm.getPackageInfo(it.first, 0) }.isFailure }
+            // Đường cũ `runCatching { … }.isFailure` coi MỌI ngoại lệ là "thiếu app" và dừng sớm có thông báo.
+            // Giữ nguyên: hàm này chạy trong `Thread { }` TRẦN ở MainActivity:964 ⇒ ngoại lệ lọt ra là giết tiến trình.
+            .filter { runCatching { PackageQueries.packageInfo(pm, it.first) }.getOrNull() == null }
             .map { it.second }
         if (missing.isNotEmpty()) {
             Log.w(TAG, "setSystemAssistant: thiếu app bắt buộc: $missing")

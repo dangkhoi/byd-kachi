@@ -83,7 +83,9 @@ class CastAppCatalog(
     fun snapshot(packageName: String, connectedPhoneSession: Boolean?): CastManualTargetSnapshot =
         CastManualTargetSnapshot(
             evidence(packageName, connectedPhoneSession),
-            installed = runCatching { app.packageManager.getPackageInfo(packageName, 0) }.isSuccess,
+            // Ngoại lệ nền tảng (binder chết) ⇒ "chưa cài", y như `runCatching { … }.isSuccess` của đường cũ;
+            // `PackageQueries.packageInfo` tự nó chỉ nuốt NameNotFound.
+            installed = runCatching { PackageQueries.packageInfo(app.packageManager, packageName) }.getOrNull() != null,
             hasLauncher = app.packageManager.getLaunchIntentForPackage(packageName) != null,
         )
 

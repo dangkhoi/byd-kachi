@@ -1,5 +1,6 @@
 package com.byd.clusternav
 
+import com.byd.clusternav.system.PackageQueries
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellRetry
 import android.content.Context
@@ -39,7 +40,10 @@ object UpdateChecker {
 
     /** Phiên bản đang cài (đọc từ máy — nhất quán với phần còn lại của app). */
     fun currentVersion(ctx: Context): String =
-        runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull() ?: "?"
+        // `packageInfo` chỉ nuốt NameNotFound. Đường cũ nuốt MỌI ngoại lệ (kể cả RuntimeException mà
+        // `ApplicationPackageManager` ném lại khi binder chết) — giữ nguyên lớp chắn đó: đọc phiên bản KHÔNG
+        // bao giờ được làm ngã màn hình trên xe đang chạy (CLAUDE.md §6 — không đảo đường đã chạy tốt).
+        runCatching { PackageQueries.packageInfo(ctx.packageManager, ctx.packageName) }.getOrNull()?.versionName ?: "?"
 
     /**
      * Hỏi GitHub xem có bản mới không. CHẠY TRÊN LUỒNG NỀN (có I/O mạng) — đừng gọi trên main thread.

@@ -685,7 +685,7 @@ object ClusterCast {
         val f = runCatching {
             val dir = java.io.File(app.getExternalFilesDir(null), "castlog").apply { mkdirs() }
             dir.listFiles()?.sortedBy { it.lastModified() }?.dropLast(4)?.forEach { runCatching { it.delete() } }
-            val ver = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).versionName }.getOrNull() ?: "x"
+            val ver = PackageQueries.packageInfo(app.packageManager, app.packageName)?.versionName ?: "x"
             java.io.File(dir, "cast_${tag}_v${ver}_${System.currentTimeMillis()}.txt").also {
                 it.appendText("### cast-log $tag · v$ver · " +
                     java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date()) + " ###\n")
