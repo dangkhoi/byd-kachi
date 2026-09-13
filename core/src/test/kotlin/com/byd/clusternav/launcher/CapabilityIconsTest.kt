@@ -57,17 +57,20 @@ class CapabilityIconsTest {
         val p = CapabilityIcons.forTelemetry("tyre_p_fl", Domain.TYRES)
         val t = CapabilityIcons.forTelemetry("tyre_t_fl", Domain.TYRES)
         assertNotEquals(p, t, "áp suất và nhiệt độ là hai thứ khác nhau ⇒ icon phải khác")
-        assertEquals("ic-tire", p)
-        assertEquals("ic-temp", t)
+        // U7: hai hình nay đều dựng trên KHUNG XE nhìn từ trên, khác nhau ở đại lượng (bánh tô đặc vs bánh tô
+        // đặc + nhiệt kế) VÀ mang luôn vị trí bánh trong tên. Trước U7 là "ic-tire"/"ic-temp" — đúng về khái
+        // niệm nhưng bốn bánh vẫn chung một hình, tức ô "Lốp TT" và "Lốp SP" trông y hệt nhau.
+        assertEquals("ic-car-top-tyre-fl", p)
+        assertEquals("ic-car-top-tyre-temp-fl", t)
     }
 
     @Test
     fun `tien to dai phai duoc khop TRUOC tien to ngan`() {
         // "tyre_t_" và "tyre_p_" cùng bắt đầu bằng "tyre_"; nếu bảng tra xếp sai thứ tự thì nhiệt lốp sẽ ra icon lốp.
-        assertEquals("ic-temp", CapabilityIcons.forTelemetry("tyre_t_rr", Domain.TYRES))
-        assertEquals("ic-light", CapabilityIcons.forTelemetry("light_low_beam", Domain.LIGHTS))
-        assertEquals("ic-turn-left", CapabilityIcons.forTelemetry("light_left_turn", Domain.LIGHTS))
-        assertEquals("ic-turn-right", CapabilityIcons.forTelemetry("light_right_turn", Domain.LIGHTS))
+        assertEquals("ic-car-top-tyre-temp-rr", CapabilityIcons.forTelemetry("tyre_t_rr", Domain.TYRES))
+        assertEquals("ic-car-front-lowbeam", CapabilityIcons.forTelemetry("light_low_beam", Domain.LIGHTS))
+        assertEquals("ic-car-front-turn-l", CapabilityIcons.forTelemetry("light_left_turn", Domain.LIGHTS))
+        assertEquals("ic-car-front-turn-r", CapabilityIcons.forTelemetry("light_right_turn", Domain.LIGHTS))
     }
 
     @Test
@@ -82,9 +85,12 @@ class CapabilityIconsTest {
         // Các họ nhiều mục nhất — nếu chúng vẫn dùng icon nhóm thì việc này coi như chưa làm gì
         mapOf(
             "soc" to "ic-battery", "ev_range_km" to "ic-range", "odometer" to "ic-road",
-            "seatbelt_driver" to "ic-seatbelt", "bsd_fl_alarm" to "ic-radar", "gps_lat" to "ic-gps",
-            "steering_deg" to "ic-steering", "cabin_temp" to "ic-temp", "window_lf" to "ic-window",
-            "door_lf" to "ic-door",
+            // U7 — sáu họ dưới đây đổi từ "một hình cho cả họ" sang "một hình cho mỗi VỊ TRÍ"; đó là toàn bộ
+            // điểm của lượt này, nên số ghim ở đây đổi theo (xem CapabilityIconPositionTest).
+            "seatbelt_driver" to "ic-car-top-belt-fl", "bsd_fl_alarm" to "ic-car-top-bsd-l",
+            "gps_lat" to "ic-gps-lat",
+            "steering_deg" to "ic-steering", "cabin_temp" to "ic-temp",
+            "window_lf" to "ic-car-top-window-lf", "door_lf" to "ic-car-top-door-lf",
         ).forEach { (id, expected) ->
             val spec = TelemetryRegistry.byId(id)
             assertTrue(spec != null, "tiền đề: mục $id phải tồn tại trong registry")

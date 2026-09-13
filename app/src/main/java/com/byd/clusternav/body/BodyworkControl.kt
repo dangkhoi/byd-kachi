@@ -15,7 +15,7 @@ import com.byd.clusternav.modules.hal.BydHal
  * có HAL → `device()` trả null → log rồi return, KHÔNG ném, KHÔNG crash (bộ test off-car dựa vào điều này).
  * Mỗi lời gọi có [Log] tag "Bodywork" (method/args/rc) để owner xác minh trên xe bằng `logcat -s Bodywork`.
  *
- * ⚠ KHÔNG UI, KHÔNG layout, CHƯA wire vào MainActivity ở phiên này. Gate an toàn (mở cửa/cốp khi đang chạy =
+ * ⚠ KHÔNG UI, KHÔNG layout, CHƯA wire vào màn nào ở phiên này. Gate an toàn (mở cửa/cốp khi đang chạy =
  * rủi ro → chặn theo tốc độ / số P) là **quyết định của owner** khi ráp UI sau. [windowPermitted] có sẵn để
  * đọc quyền điều khiển của xe trước khi ghi.
  */

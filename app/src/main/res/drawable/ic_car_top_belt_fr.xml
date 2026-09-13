@@ -1,0 +1,22 @@
+<!--
+  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
+  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
+  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
+  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
+  DÂY AN TOÀN FR — ghế TÔ + hai đoạn dây LỘ RA hai đầu ghế.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M13.40,9.20 L14.80,9.20 A0.60,0.60 0 0 1 15.40,9.80 L15.40,10.80 A0.60,0.60 0 0 1 14.80,11.40 L13.40,11.40 A0.60,0.60 0 0 1 12.80,10.80 L12.80,9.80 A0.60,0.60 0 0 1 13.40,9.20 Z M13.45,11.70 L14.75,11.70 A0.45,0.45 0 0 1 15.20,12.15 L15.20,12.25 A0.45,0.45 0 0 1 14.75,12.70 L13.45,12.70 A0.45,0.45 0 0 1 13.00,12.25 L13.00,12.15 A0.45,0.45 0 0 1 13.45,11.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M12.05,8.50 L13.40,9.70 M14.80,12.10 L16.15,13.30"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

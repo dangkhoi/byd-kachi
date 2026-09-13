@@ -83,8 +83,17 @@ class HomePanels(
 
     // ── Màn Cài đặt (S1) ────────────────────────────────────────────────────────────────────────
 
-    fun openSettings() {
-        if (settingsPanel != null) return
+    /**
+     * Mở màn Cài đặt; [group] khác `null` ⇒ mở thẳng nhóm đó (S3 · R1: bong bóng "Cấu hình" → *Chiếu cụm*).
+     *
+     * Đang mở sẵn thì **chỉ đổi nhóm**, không dựng lại bảng: bảng giữ 10 trang đã dựng và cả chỗ đang cuộn của
+     * chúng ([SettingsPanel.pages]) — dựng lại vì một cú bấm từ bong bóng là vứt hết chỗ đó đi.
+     */
+    fun openSettings(group: SettingsGroup? = null) {
+        settingsPanel?.let { open ->
+            group?.let { open.show(it) }
+            return
+        }
         val deps = SettingsDeps(
             state = state,
             // P8: đọc MỚI mỗi lượt dựng trang — quyền có thể vừa được tự cấp xong ở nhịp khởi động.
@@ -117,6 +126,7 @@ class HomePanels(
         )
         val panel = SettingsPanel(activity, deps) { closeSettings() }
         settingsPanel = panel
+        group?.let { panel.show(it) }
         rootFrame.addView(
             panel,
             FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT),

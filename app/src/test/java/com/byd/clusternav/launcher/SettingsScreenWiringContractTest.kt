@@ -408,7 +408,7 @@ class SettingsScreenWiringContractTest {
         assertTrue(rows.contains("fun note(") && rows.contains("fun button("), "hai hàng dùng chung mới")
         // Và đường mở bảng vẽ phải ĐÓNG màn Cài đặt trước: hai lớp phủ chồng nhau thì Back mất nghĩa.
         assertTrue(
-            SourceRoots.body(panels, "fun openSettings()").contains("closeSettings(); openLayoutEditor()"),
+            SourceRoots.body(panels, "fun openSettings(group: SettingsGroup? = null)").contains("closeSettings(); openLayoutEditor()"),
             "mở bảng vẽ phải đóng màn Cài đặt trước",
         )
     }

@@ -8,16 +8,19 @@ import org.junit.jupiter.api.Test
 /**
  * WIRING contract for 1.21 Item 1 — HEADLESS auto-start (owner 2026-08-15, docs/diagnostics/plan-1.21.md).
  *
- * On boot the app must do its setup WITHOUT foregrounding MainActivity on the main display (bonus: dodges
- * the dudu size-compat letterbox). The runtime needs Android (BroadcastReceiver, Service, SharedPreferences,
- * View), so — like [CastEnableToggleContractTest] and [NavCastUiWiringContractTest] — this locks the wiring
- * by reading the source across the whole boundary:
+ * On boot the app must do its setup WITHOUT foregrounding a screen on the main display (bonus: dodges the
+ * dudu size-compat letterbox). The runtime needs Android (BroadcastReceiver, Service, SharedPreferences,
+ * View), so this locks the wiring by reading the source across the whole boundary:
  *   Prefs (default-ON toggle) → RebindReceiver (gates launchHome → BootSetupService, both boot entries) →
  *   BootSetupService (startForeground-first, enabled-gated grant + cluster-lane re-assert, always stops) →
- *   manifest (exported=false specialUse) → MainActivity + both layouts (the user toggle).
+ *   manifest (exported=false specialUse) → Kachi Settings › Hệ thống (the user toggle).
  *
- * ADDITIVE: the MainActivity.onCreate boot-setup (grant + cluster-lane) is UNCHANGED — it stays for the
- * user-opens-app case. Auto-cast (FloatingBubbleService via castBootWork) is untouched by all of the above.
+ * ADDITIVE: auto-cast (FloatingBubbleService via castBootWork) is untouched by all of the above.
+ *
+ * ⚠ 2026-09-13 (S3): the old ClusterNav screen — which carried a second copy of the boot setup for the
+ * user-opens-app case — was removed (`docs/specs/kachi-remove-legacy-screen.html`). Everything it asserted on
+ * every open now has to come from one of the TWO boot branches, which is what
+ * [`ca hai nhanh boot deu ep ba khoa khong co nut`] locks.
  */
 class HeadlessAutostartContractTest {
 
@@ -43,10 +46,10 @@ class HeadlessAutostartContractTest {
     private val prefs by lazy { read(app("src/main/java/com/byd/clusternav/Prefs.kt")) }
     private val receiver by lazy { read(app("src/main/java/com/byd/clusternav/RebindReceiver.kt")) }
     private val bootSetup by lazy { read(app("src/main/java/com/byd/clusternav/BootSetupService.kt")) }
-    private val mainActivity by lazy { read(app("src/main/java/com/byd/clusternav/MainActivity.kt")) }
+    /** Công tắc + chuỗi setup "mở app" nay ở Kachi Settings › Hệ thống và cầu — màn cũ gỡ 2026-09-13 (S3). */
+    private val section by lazy { read(app("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt")) }
+    private val navBridge by lazy { read(app("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")) }
     private val manifest by lazy { read(app("src/main/AndroidManifest.xml")) }
-    private val layoutNarrow by lazy { read(app("src/main/res/layout/activity_main.xml")) }
-    private val layoutWide by lazy { read(app("src/main/res/layout-w960dp/activity_main.xml")) }
 
     // ── Prefs: default-ON toggle ─────────────────────────────────────────────
     @Test
@@ -60,6 +63,33 @@ class HeadlessAutostartContractTest {
             prefs.contains("fun setHeadlessAutostart(ctx: Context, v: Boolean)") &&
                 prefs.contains("putBoolean(\"headless_autostart\""),
             "setter persists the flag",
+        )
+    }
+
+    /**
+     * ⚠ S3 (soát 2026-09-13) — ba khoá `HIDDEN_KEYS` không có nút (`hud` ép false · `interpolate`/`acc_booster`
+     * ép true) trước đây được màn ClusterNav cũ ghi đè **mỗi lần mở app**. Màn đó đã gỡ, nên nơi ghi duy nhất
+     * còn lại là lúc nổ máy — mà lúc nổ máy có **HAI** nhánh: bật *"Tự khởi động nền"* → [BootSetupService],
+     * tắt → `launchHome`. Chỉ đặt ở một nhánh thì máy dùng nhánh kia đóng băng giá trị cũ vĩnh viễn: với
+     * `interpolate=false` (bản 2026-07-13 từng ép TẮT) là cụm mất phần bù cự ly theo tốc độ, đúng triệu chứng
+     * *"cụm trễ khi tới ngã rẽ"* — một hồi quy câm, không báo lỗi gì.
+     */
+    @Test
+    fun `ca hai nhanh boot deu ep ba khoa khong co nut`() {
+        val forced = functionBody(bootSetup, "fun forcedPrefs(ctx: Context)")
+        assertTrue(forced.contains("Prefs.setHud(ctx, false)"), "hud ép FALSE — không có nút bật, output chưa có thật")
+        assertTrue(forced.contains("Prefs.setInterpolate(ctx, true)"), "interpolate ép TRUE — di cư máy từng bị ép tắt")
+        assertTrue(forced.contains("Prefs.setAccBooster(ctx, true)"), "acc_booster ép TRUE — bộ đọc màn GMaps")
+        // Nhánh HEADLESS (toggle BẬT).
+        assertTrue(
+            bootSetup.contains("forcedPrefs(applicationContext)"),
+            "nhánh headless phải gọi forcedPrefs trong chuỗi setup nền",
+        )
+        // Nhánh KHÔNG headless (toggle TẮT) — đây là nhánh KHÔNG chạy BootSetupService.
+        assertTrue(
+            functionBody(receiver, "private fun launchHome(context: Context)")
+                .contains("BootSetupService.forcedPrefs("),
+            "tắt \"Tự khởi động nền\" thì không có dịch vụ nào chạy ⇒ launchHome phải tự ép ba khoá đó",
         )
     }
 
@@ -153,25 +183,23 @@ class HeadlessAutostartContractTest {
         )
     }
 
-    // ── MainActivity + layouts: the user toggle ─────────────────────────────
+    // ── Bề mặt người dùng: ô tick ở Kachi Settings › Hệ thống ───────────────
+    //
+    // Tới 2026-09-13 hai bài dưới đọc `MainActivity` + hai biến thể `activity_main.xml` (ô tick
+    // `cb_headless_autostart`). Màn đó đã gỡ (S3 · R1) ⇒ ô tick chỉ còn ở nhóm *Hệ thống* của Kachi Settings,
+    // dựng bằng mã và ghi qua cầu.
     @Test
-    fun `main activity wires the headless autostart checkbox`() {
-        assertTrue(mainActivity.contains("R.id.cb_headless_autostart"), "checkbox bound in onCreate")
-        assertTrue(mainActivity.contains("Prefs.headlessAutostart(this)"), "reads the current pref for isChecked")
-        assertTrue(mainActivity.contains("Prefs.setHeadlessAutostart(this,"), "persists the flag on toggle")
+    fun `the system settings group wires the headless autostart switch through the bridge`() {
+        assertTrue(section.contains("deps.bridge.headlessAutostart()"), "reads the current pref for the tick")
+        assertTrue(section.contains("deps.bridge.setHeadlessAutostart("), "persists the flag on toggle")
+        assertTrue(navBridge.contains("Prefs.setHeadlessAutostart(app, on)"), "the bridge writes the real key")
     }
 
     @Test
-    fun `both layouts carry the headless autostart checkbox`() {
-        for ((name, xml) in listOf("narrow" to layoutNarrow, "wide" to layoutWide)) {
-            assertTrue(xml.contains("@+id/cb_headless_autostart"), "$name: headless-autostart checkbox present")
-        }
-    }
-
-    @Test
-    fun `main activity boot setup stays additive`() {
-        // Relocating to BootSetupService must NOT remove the user-opens-app setup in MainActivity.onCreate.
-        assertTrue(mainActivity.contains("NavConnect.grantAccessibility("), "onCreate path still self-grants accessibility")
-        assertTrue(mainActivity.contains("NavigationOutputTarget.CLUSTER_LANE"), "onCreate path still re-asserts cluster-lane")
+    fun `the app-open setup survived the screen removal`() {
+        // Relocating to BootSetupService must NOT lose the setup that used to run when the user opened the app:
+        // self-grant + cluster-lane re-assert now live on the Nav master switch in the bridge (same order).
+        assertTrue(navBridge.contains("NavConnect.grantAccessibility("), "the nav switch still self-grants accessibility")
+        assertTrue(navBridge.contains("NavigationOutputTarget.CLUSTER_LANE"), "the nav switch still re-asserts cluster-lane")
     }
 }

@@ -10,7 +10,8 @@ class DeadReckonRetirementTest {
     @Test
     fun `active product has exactly two tracks and no DR or mock provider wiring`() {
         val manifest = app("src/main/AndroidManifest.xml").toFile().readText()
-        val home = app("src/main/java/com/byd/clusternav/MainActivity.kt").toFile().readText()
+        // Màn chính của app nay là Kachi (màn ClusterNav cũ gỡ 2026-09-13 — S3 · R1).
+        val home = app("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt").toFile().readText()
         val receiver = app("src/main/java/com/byd/clusternav/RebindReceiver.kt").toFile().readText()
         val prefs = app("src/main/java/com/byd/clusternav/Prefs.kt").toFile().readText()
         listOf(manifest, home, receiver, prefs).forEach { text ->
@@ -20,9 +21,11 @@ class DeadReckonRetirementTest {
             assertFalse(text.contains("ACCESS_MOCK_LOCATION"))
         }
         assertFalse(prefs.contains("gpsAuto"))
-        val layout = app("src/main/res/layout/activity_main.xml").toFile().readText()
-        assertTrue(layout.contains("Navigation + HUD"))
-        assertTrue(layout.contains("Cluster Cast"))
+        // Hai nhánh sản phẩm phải còn nguyên TÊN trên bề mặt người dùng. Trước 2026-09-13 bài này đọc nhãn
+        // trong `activity_main.xml`; nhãn nay ở tài nguyên của Kachi (`strings_kachi.xml`, cả hai ngôn ngữ).
+        val labels = app("src/main/res/values-en/strings_kachi.xml").toFile().readText()
+        assertTrue(labels.contains("Navigation + HUD"))
+        assertTrue(labels.contains("Cluster cast"))
     }
 
     @Test

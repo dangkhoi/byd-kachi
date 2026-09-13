@@ -16,6 +16,7 @@ import com.byd.clusternav.VmOverlayPosition
 import com.byd.clusternav.comfort.Pm25FilterApplier
 import com.byd.clusternav.comfort.SeatComfort
 import com.byd.clusternav.comfort.SeatComfortApplier
+import com.byd.clusternav.modules.clustercast.ClusterNavLaneWidget
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
 import com.byd.clusternav.navigation.NavSourceLabels
@@ -52,6 +53,11 @@ import com.byd.clusternav.speedbadge.BadgeLayout
  *  - Mọi hàm "trạng thái" trả **mã / dữ liệu thô** ([NavSourceView], [VoiceKeyStatus],
  *    `NavigationOutputStatus`, `SimpleCastState`, tên gói, mã phím) — không trả câu.
  *
+ *
+ * ⚠ **2026-09-13 — màn cũ đã GỠ HẲN** (`docs/specs/kachi-remove-legacy-screen.html` R1/R3). Mọi chỉ dẫn
+ * `MainActivity.kt:<dòng>` dưới đây là **vết lịch sử**, không phải một tệp còn đọc được: chúng trỏ vào bản trước
+ * commit gỡ màn (tra bằng `git log -- app/src/main/java/com/byd/clusternav/MainActivity.kt`). Giữ số dòng vì đó là
+ * cách duy nhất còn lại để so hành vi của cầu với bản gốc; cầu nay là **nguồn duy nhất** của những hành vi đó.
  * Phần Cast và phần Phím nằm ở `ClusterNavBridgeCast.kt` / `ClusterNavBridgeKeys.kt` dưới dạng hàm
  * mở rộng của CHÍNH lớp này (giữ bề mặt phẳng `bridge.castFull(...)`, mà mỗi tệp vẫn dưới trần LOC).
  */
@@ -189,6 +195,20 @@ class ClusterNavBridge(
      */
     fun navOutputStatus(): NavigationOutputStatus? =
         runCatching { NavRepository.snapshot(app).clusterLane.status }.getOrNull()
+
+    /**
+     * Kết quả op-39 ("Giữa + ETA" trên cụm) mà widget vừa công bố — trả **enum thô**, tầng Settings tra
+     * câu trong tài nguyên.
+     *
+     * Chuyển từ `NavClusterOp39Status` (đã gỡ 2026-09-13 cùng màn cũ): lớp đó chỉ làm đúng hai việc —
+     * `findViewById(R.id.txt_cluster_op39_status)` rồi đọc [ClusterNavLaneWidget.status]. Việc thứ nhất
+     * là hình (nay là một `statusRow` ở nhóm *Dẫn đường*), việc thứ hai là đây.
+     *
+     * CHỈ ĐỌC: nó phản chiếu kết quả của lớp khác, không tự gửi lệnh nào — đúng như KDoc bản gốc ghi
+     * ("never touches Cast state and issues no shell command").
+     */
+    fun clusterOp39(): ClusterNavLaneWidget.Op39Status =
+        runCatching { ClusterNavLaneWidget.status }.getOrDefault(ClusterNavLaneWidget.Op39Status.IDLE)
 
     /** Lặp lại `MainActivity.kt:781–785` (đọc thẳng secure setting — mọi app đọc được, không cần dadb). */
     fun notificationAccessGranted(): Boolean = hasSecureComponent(
@@ -448,8 +468,9 @@ class ClusterNavBridge(
         UpdateFlow.start(activity) { text, _ -> ui(Runnable { onText(text) }) }
     }
 
-    /** Mở màn ClusterNav cũ ("nâng cao/chẩn đoán") — intent TƯỜNG MINH, spec §4.1 nhóm 9. */
-    fun openLegacyScreen() = launch(com.byd.clusternav.MainActivity::class.java)
+    // ⚠ `openLegacyScreen()` đã XOÁ 2026-09-13 cùng màn ClusterNav cũ (S3 · R1). Mục catalog
+    // `system_advanced_screen` và nút "Màn nâng cao" ở nhóm *Hệ thống* biến mất theo — mọi cấu hình của màn đó
+    // nay ở nhóm *Dẫn đường* / *Chiếu cụm* / *Phím vô-lăng* / *Tiện nghi xe*, ghi cùng khoá qua chính cầu này.
 
     /** "Dữ liệu VietMap" — lặp lại `MainActivity.kt:281–283`. */
     fun openVietMapData() = launch(com.byd.clusternav.vietmapwidget.VietMapWidgetDiagActivity::class.java)

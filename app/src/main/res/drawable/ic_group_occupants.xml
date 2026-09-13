@@ -1,21 +1,25 @@
 <!--
-  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm NGƯỜI NGỒI (dây an toàn, phát hiện người, trẻ trên xe).
-  HAI người ngồi. Cố ý KHÁC ic_seat (một ghế) và ic_seatbelt (một dây) vì nhóm nói về những AI đang ở trên xe.
-  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
+  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
+  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
+  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
+  NHÓM NGƯỜI NGỒI — bốn ghế tô đặc.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M6.8,9 A1.8,1.8 0 1 1 10.4,9 A1.8,1.8 0 1 1 6.8,9 Z"
+    <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M5.6,18.4 C5.6,15.4 6.9,13.8 8.6,13.8 C10.3,13.8 11.6,15.4 11.6,18.4"
+    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M13.6,9 A1.8,1.8 0 1 1 17.2,9 A1.8,1.8 0 1 1 13.6,9 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M12.4,18.4 C12.4,15.4 13.7,13.8 15.4,13.8 C17.1,13.8 18.4,15.4 18.4,18.4"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M9.20,9.20 L10.60,9.20 A0.60,0.60 0 0 1 11.20,9.80 L11.20,10.80 A0.60,0.60 0 0 1 10.60,11.40 L9.20,11.40 A0.60,0.60 0 0 1 8.60,10.80 L8.60,9.80 A0.60,0.60 0 0 1 9.20,9.20 Z M9.25,11.70 L10.55,11.70 A0.45,0.45 0 0 1 11.00,12.15 L11.00,12.25 A0.45,0.45 0 0 1 10.55,12.70 L9.25,12.70 A0.45,0.45 0 0 1 8.80,12.25 L8.80,12.15 A0.45,0.45 0 0 1 9.25,11.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M13.40,9.20 L14.80,9.20 A0.60,0.60 0 0 1 15.40,9.80 L15.40,10.80 A0.60,0.60 0 0 1 14.80,11.40 L13.40,11.40 A0.60,0.60 0 0 1 12.80,10.80 L12.80,9.80 A0.60,0.60 0 0 1 13.40,9.20 Z M13.45,11.70 L14.75,11.70 A0.45,0.45 0 0 1 15.20,12.15 L15.20,12.25 A0.45,0.45 0 0 1 14.75,12.70 L13.45,12.70 A0.45,0.45 0 0 1 13.00,12.25 L13.00,12.15 A0.45,0.45 0 0 1 13.45,11.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M9.20,13.20 L10.60,13.20 A0.60,0.60 0 0 1 11.20,13.80 L11.20,14.80 A0.60,0.60 0 0 1 10.60,15.40 L9.20,15.40 A0.60,0.60 0 0 1 8.60,14.80 L8.60,13.80 A0.60,0.60 0 0 1 9.20,13.20 Z M9.25,15.70 L10.55,15.70 A0.45,0.45 0 0 1 11.00,16.15 L11.00,16.25 A0.45,0.45 0 0 1 10.55,16.70 L9.25,16.70 A0.45,0.45 0 0 1 8.80,16.25 L8.80,16.15 A0.45,0.45 0 0 1 9.25,15.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M13.40,13.20 L14.80,13.20 A0.60,0.60 0 0 1 15.40,13.80 L15.40,14.80 A0.60,0.60 0 0 1 14.80,15.40 L13.40,15.40 A0.60,0.60 0 0 1 12.80,14.80 L12.80,13.80 A0.60,0.60 0 0 1 13.40,13.20 Z M13.45,15.70 L14.75,15.70 A0.45,0.45 0 0 1 15.20,16.15 L15.20,16.25 A0.45,0.45 0 0 1 14.75,16.70 L13.45,16.70 A0.45,0.45 0 0 1 13.00,16.25 L13.00,16.15 A0.45,0.45 0 0 1 13.45,15.70 Z"
+        android:fillColor="#FFFFFF" />
 </vector>

@@ -198,7 +198,9 @@ class AppDrawer(
     private fun groupSection(body: LinearLayout) {
         body.addView(sectionLabel(CapabilityPicker.GROUPS_TITLE))
         body.addView(note(CapabilityPicker.GROUPS_NOTE))
-        addPickGrid(body, CapabilityPicker.groupPicks(), cols = COLS_TILE)
+        val groups = CapabilityPicker.groupPicks()
+        PickerBadge.unverifiedNote(context, groups)?.let { body.addView(note(it)) }
+        addPickGrid(body, groups, cols = COLS_TILE)
     }
 
     /**
@@ -216,7 +218,10 @@ class AppDrawer(
             // ⇒ `widgetTiles[id]` bị ghi đè ⇒ chỉ ô sau được tô sáng (đúng lỗi RW0 đã ghi).
             body.addView(sectionLabel(domain.displayLabel).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
             CapabilityPicker.groupHint(picks).takeIf { it.isNotEmpty() }?.let { body.addView(note(it)) }
-            addPickGrid(body, CapabilityPicker.singlesOf(picks), cols = COLS_TILE)
+            val singles = CapabilityPicker.singlesOf(picks)
+            // U7 · R6: nói MỘT câu cho cả lĩnh vực thay vì 19 chấm hổ phách rải khắp lưới (xem [PickerBadge]).
+            PickerBadge.unverifiedNote(context, singles)?.let { body.addView(note(it)) }
+            addPickGrid(body, singles, cols = COLS_TILE)
         }
     }
 
@@ -389,7 +394,7 @@ class AppDrawer(
             // hàng, nếu căn giữa dọc thì ô có dòng phụ đẩy icon/nhãn xuống ~10px lệch với ô cùng hàng.
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
-            addView(iconWithBadge(KachiTheme.iconRes(pick.icon), pick.needsBadge))
+            addView(PickerBadge.icon(context, KachiTheme.iconRes(pick.icon), pick.needsBadge, Sp.ICON_XL))
             addView(TextView(context).apply {
                 // Nhãn = TÊN của khả năng, không mang gợi ý loại (U6): loại xuống dòng phụ bên dưới. [ĐO] ảnh
                 // 2026-09-12 owner đọc được "Charge target · view" trên lưới — thuật ngữ nội bộ lọt vào tên.
@@ -414,25 +419,12 @@ class AppDrawer(
     }
 
     /**
-     * Icon của một ô chọn, kèm chấm "chưa kiểm trên xe" **DÁN VÀO GÓC ICON**.
+     * ⚠ U7 · R6 — hàm `iconWithBadge` CŨ đã dời sang [PickerBadge.icon].
      *
-     * ## ⚠ [KIỂM TOÁN UX mục 6] Chấm trước đây thả nổi ở góc THẺ
-     * Ô nhóm rộng ~583px mà icon chỉ 66px và nằm giữa ô, nên chấm ở góc trên-phải thẻ cách icon **~268px** — và ô
-     * chưa chọn thì **không có nền thẻ** để cái góc đó thuộc về, nên chấm trông như một hạt bụi trên màn. Dán vào
-     * góc icon thì khoảng cách còn 0 và mắt ghép ngay được "dấu này nói về mục này".
+     * Không phải dọn cho gọn: [TopStripPicker] bày **đúng những ô ấy** mà lại **không** vẽ chấm nào, tức cùng một
+     * mã thì hai màn nói hai điều khác nhau về độ tin cậy của nó. Gom về một nơi là cách duy nhất để hai màn không
+     * lệch tiếp — cùng lẽ với [CapabilityPicker.COLS].
      */
-    private fun iconWithBadge(res: Int, needsBadge: Boolean): View {
-        val size = dpi(context, Sp.ICON_XL)
-        val img = ImageView(context).apply { if (res != 0) { setImageResource(res); setColorFilter(c(KachiTheme.INK)) } }
-        if (!needsBadge) return img.apply { layoutParams = LinearLayout.LayoutParams(size, size) }
-        return FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(size, size)
-            addView(img, FrameLayout.LayoutParams(size, size))
-            addView(View(context).apply {
-                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c(KachiTheme.AMBER)) }
-            }, FrameLayout.LayoutParams(dpi(context, Sp.DOT), dpi(context, Sp.DOT), Gravity.TOP or Gravity.END))
-        }
-    }
 
     private fun applyTileState(id: String) {
         val tile = widgetTiles[id] ?: return

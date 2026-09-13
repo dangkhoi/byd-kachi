@@ -17,6 +17,11 @@ import com.byd.clusternav.navigation.NavReadChannel
  * không có câu nào phải dời chỗ.
  *
  * ## KDoc = hợp đồng dịch
+ *
+ * ⚠ **2026-09-13 — màn cũ đã GỠ HẲN** (`docs/specs/kachi-remove-legacy-screen.html` R1/R3). Mọi chỉ dẫn
+ * `MainActivity.kt:<dòng>` dưới đây là **vết lịch sử**, không phải một tệp còn đọc được: chúng trỏ vào bản trước
+ * commit gỡ màn (tra bằng `git log -- app/src/main/java/com/byd/clusternav/MainActivity.kt`). Giữ số dòng vì đó là
+ * cách duy nhất còn lại để so hành vi của cầu với bản gốc; cầu nay là **nguồn duy nhất** của những hành vi đó.
  * Mỗi giá trị dưới đây ghi **nguyên văn VI/EN của màn cũ** kèm dòng gốc. T4 chép đúng hai câu đó vào
  * `strings_kachi.xml` / `values-en/strings_kachi.xml` — hai màn phải nói **cùng một lời**, nếu không
  * người dùng thấy hai câu khác nhau cho cùng một việc.

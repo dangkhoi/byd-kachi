@@ -77,9 +77,13 @@ class BubbleGestureContractTest {
     }
 
     @Test
-    fun `Cau hinh builds a MainActivity intent with NEW_TASK and starts it`() {
+    fun `Cau hinh opens Kachi straight on the Cluster-cast settings group`() {
+        // Tới 2026-09-13 nút này mở `MainActivity` (màn ClusterNav cũ). Màn đó đã gỡ (S3 · R1) ⇒ nó mở Kachi,
+        // KÈM extra chọn nhóm: rơi xuống màn chính rồi tự đi tìm là ba cú chạm thừa cho cùng một việc.
         val openConfig = body(dispatcher, "fun openConfig()")
-        assertTrue(openConfig.contains("MainActivity::class.java"), "opens MainActivity")
+        assertTrue(openConfig.contains("KachiHomeActivity::class.java"), "opens Kachi")
+        assertTrue(openConfig.contains("EXTRA_OPEN_SETTINGS_GROUP"), "mang theo nhóm Cài đặt cần mở")
+        assertTrue(openConfig.contains("SettingsGroup.CAST.id"), "và nhóm đó là *Chiếu cụm*")
         assertTrue(openConfig.contains("FLAG_ACTIVITY_NEW_TASK"), "with NEW_TASK (Service has no task)")
         assertTrue(openConfig.contains("startActivity("), "actually starts it")
     }

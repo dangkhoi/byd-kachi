@@ -402,9 +402,44 @@
     <string name="kachi_check_update">Check for updates</string>
     <string name="kachi_nav_stop">Stop all navigation</string>
     <string name="kachi_sub_advanced">Advanced</string>
-    <string name="kachi_open_legacy">ClusterNav screen (old build, for comparison)</string>
     <string name="kachi_vietmap_data">VietMap data</string>
 
     <!-- ── IA v2 nhóm 10 — miễn trừ trách nhiệm, chuyển từ hộp thoại một-lần của màn cũ (MainActivity:620–635) ── -->
     <string name="kachi_about_disclaimer">Disclaimer: this is a personal experiment, NOT affiliated with BYD. It comes with no warranty of driving safety, compatibility or reliability. Install and use at your own risk.</string>
+
+    <!-- ══ S3 · legacy ClusterNav screen removed (docs/specs/kachi-remove-legacy-screen.html) ═══════ -->
+
+    <!-- R2(c) — first-launch disclaimer, wording of the old screen's dialog (MainActivity:620–635). -->
+    <string name="kachi_disclaimer_title">Disclaimer</string>
+    <string name="kachi_disclaimer_body">Kachi is a personal experiment, NOT affiliated with BYD. It comes with no warranty of driving safety, compatibility, or reliability. Install and use at your own risk.</string>
+    <string name="kachi_disclaimer_ok">I understand</string>
+
+    <!-- R2(d) — op-39 cluster status line (moved off NavClusterOp39Status, now deleted). -->
+    <string name="kachi_nav_op39_idle">Centre + ETA: waiting for navigation</string>
+    <string name="kachi_nav_op39_asserted">Centre + ETA: showing on the cluster</string>
+    <string name="kachi_nav_op39_gated">Centre + ETA: Cast on — navigation yields the cluster</string>
+    <string name="kachi_nav_op39_unreachable">Centre + ETA: command not delivered (check the 5555 link)</string>
+
+    <!-- R2(b) — caption under the cluster preview in the Cast group. -->
+    <string name="kachi_cast_preview_split">%1$s · %2$s (%3$d:%4$d)</string>
+
+    <!-- R2(a) — frame and DPI of the slot being cast (moved off CastGeometryEditor, now deleted). -->
+    <string name="kachi_sub_cast_geometry">Frame and DPI (while casting)</string>
+    <string name="kachi_cast_geom_slot">Slot being edited</string>
+    <string name="kachi_cast_geom_left">Left</string>
+    <string name="kachi_cast_geom_right">Right</string>
+    <string name="kachi_cast_geom_edge_left">Left edge</string>
+    <string name="kachi_cast_geom_edge_top">Top edge</string>
+    <string name="kachi_cast_geom_edge_right">Right edge</string>
+    <string name="kachi_cast_geom_edge_bottom">Bottom edge</string>
+    <string name="kachi_cast_geom_dpi">Cluster DPI</string>
+    <string name="kachi_cast_geom_dpi_note">DPI applies to the WHOLE cluster, not to one slot (a wm density limit on Android 10).</string>
+    <string name="kachi_cast_geom_reset">Reset frame</string>
+
+    <!-- U7 · R6 — see values/strings_kachi.xml for why the badge changed from "bright amber on
+         almost every tile" to "dim dot + one line per group". -->
+    <plurals name="kachi_picker_unverified_n">
+        <item quantity="one">%1$d item not yet checked on the car</item>
+        <item quantity="other">%1$d items not yet checked on the car</item>
+    </plurals>
 </resources>

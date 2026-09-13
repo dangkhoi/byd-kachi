@@ -15,7 +15,7 @@ import android.content.Context
  * The remaining verbose consumers are all valid GMaps diagnostics ([NavNotifLog], [NavNotifRawLog],
  * ManeuverSignature notes) plus the [DiagStorageCap] periodic sweep. The source of truth is
  * [Prefs.navVerboseLog]; [init] refreshes this mirror at the app entry points that always run
- * (MainActivity.onCreate, NavNotificationListener.onListenerConnected).
+ * (KachiApplication/BootSetupService lúc khởi động, NavNotificationListener.onListenerConnected).
  */
 object NavLog {
     @Volatile

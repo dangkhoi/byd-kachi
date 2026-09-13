@@ -164,7 +164,6 @@ object KachiTheme {
     fun iconRes(icon: String): Int = when (icon) {
         "ic-lock" -> R.drawable.ic_lock
         "ic-window" -> R.drawable.ic_window
-        "ic-trunk" -> R.drawable.ic_trunk
         "ic-readlight" -> R.drawable.ic_readlight
         "ic-leaf" -> R.drawable.ic_leaf
         "ic-seat" -> R.drawable.ic_seat
@@ -174,7 +173,6 @@ object KachiTheme {
         "ic-cam" -> R.drawable.ic_cam
         "ic-door" -> R.drawable.ic_door
         "ic-hood" -> R.drawable.ic_hood
-        "ic-sunroof" -> R.drawable.ic_sunroof
         "ic-light" -> R.drawable.ic_light
         "ic-recirc" -> R.drawable.ic_recirc
         "ic-volume" -> R.drawable.ic_volume
@@ -194,9 +192,6 @@ object KachiTheme {
         // U1: 6 icon MỚI cho khái niệm xuất hiện nhiều mà trước đây không có icon nào gần nghĩa
         "ic-road" -> R.drawable.ic_road
         "ic-battery" -> R.drawable.ic_battery
-        "ic-seatbelt" -> R.drawable.ic_seatbelt
-        "ic-radar" -> R.drawable.ic_radar
-        "ic-gps" -> R.drawable.ic_gps
         "ic-steering" -> R.drawable.ic_steering
         // [SOÁT P3] 3 tên icon TRƯỚC ĐÂY KHÔNG được map ⇒ 13/64 nút lùi về icon NHÓM: 2 nút gương mang hình
         // KÍNH (sai nghĩa), 3 nút chế độ lái và 8 nút hỗ trợ lái mang hình lưới (không gợi nghĩa gì).
@@ -211,9 +206,7 @@ object KachiTheme {
         "ic-fuel" -> R.drawable.ic_fuel
         "ic-motor" -> R.drawable.ic_motor
         "ic-shield" -> R.drawable.ic_shield
-        "ic-mirror" -> R.drawable.ic_mirror
         "ic-drive" -> R.drawable.ic_drive
-        "ic-adas" -> R.drawable.ic_adas
         // ── [U6 · ĐO ảnh 2026-09-12] 18 icon MỚI: tách theo KHÁI NIỆM trong 3 nhóm dày nhất ───────────
         // Bệnh đo được: nhóm Năng lượng có 9/28 ô cùng glyph tia sét và 6/28 cùng glyph con đường; nhóm Động lực có
         // 6/14 ô cùng đồng hồ tốc; nhóm Khí hậu có 5/12 ô cùng nhiệt kế và 4/12 cùng chiếc lá. Icon trùng ở mật độ
@@ -246,8 +239,82 @@ object KachiTheme {
         "ic-drift" -> R.drawable.ic_drift
         // Tên icon dùng lại tệp đã có (trước đây chưa được map nên tra ra 0 = ô trống icon)
         "ic-clock" -> R.drawable.ic_clock_g
-        "ic-turn-left" -> R.drawable.ic_turn_left
-        "ic-turn-right" -> R.drawable.ic_turn_right
+        // ══ U7 · BỘ HÌNH XE THEO VỊ TRÍ (spec docs/specs/kachi-icon-set-v2.html) ═════════════════════
+        // Ba KHUNG dùng chung (top · front · rear) + VÙNG TÔ là bộ phận đang được nói tới. Tên tệp mang
+        // luôn khung + bộ phận + vị trí (`ic_car_top_door_lf`) nên đọc bảng này là đọc được cả nghĩa.
+        // ⚠ Chín dòng đã bị GỠ ở lượt này (`ic-trunk` · `ic-sunroof` · `ic-mirror` · `ic-seatbelt` ·
+        // `ic-radar` · `ic-gps` · `ic-adas` · `ic-turn-left` · `ic-turn-right`): năm tệp đầu được hình xe
+        // thay 1:1 nên xoá luôn tệp; bốn tên sau chỉ chết TÊN, còn TỆP vẫn sống (ic_adas là icon nhóm
+        // ADAS, hai ic_turn_* là mũi tên rẽ của màn dẫn đường) — nên không xoá tệp, chỉ xoá dòng tra.
+        "ic-car-top-door-lf" -> R.drawable.ic_car_top_door_lf
+        "ic-car-top-door-rf" -> R.drawable.ic_car_top_door_rf
+        "ic-car-top-door-lr" -> R.drawable.ic_car_top_door_lr
+        "ic-car-top-door-rr" -> R.drawable.ic_car_top_door_rr
+        "ic-car-top-door-all" -> R.drawable.ic_car_top_door_all
+        "ic-car-top-window-lf" -> R.drawable.ic_car_top_window_lf
+        "ic-car-top-window-rf" -> R.drawable.ic_car_top_window_rf
+        "ic-car-top-window-lr" -> R.drawable.ic_car_top_window_lr
+        "ic-car-top-window-rr" -> R.drawable.ic_car_top_window_rr
+        "ic-car-top-window-all" -> R.drawable.ic_car_top_window_all
+        "ic-car-top-window-rain" -> R.drawable.ic_car_top_window_rain
+        "ic-car-top-tyre-fl" -> R.drawable.ic_car_top_tyre_fl
+        "ic-car-top-tyre-fr" -> R.drawable.ic_car_top_tyre_fr
+        "ic-car-top-tyre-rl" -> R.drawable.ic_car_top_tyre_rl
+        "ic-car-top-tyre-rr" -> R.drawable.ic_car_top_tyre_rr
+        "ic-car-top-tyre-temp-fl" -> R.drawable.ic_car_top_tyre_temp_fl
+        "ic-car-top-tyre-temp-fr" -> R.drawable.ic_car_top_tyre_temp_fr
+        "ic-car-top-tyre-temp-rl" -> R.drawable.ic_car_top_tyre_temp_rl
+        "ic-car-top-tyre-temp-rr" -> R.drawable.ic_car_top_tyre_temp_rr
+        "ic-car-top-seat-fl" -> R.drawable.ic_car_top_seat_fl
+        "ic-car-top-belt-fl" -> R.drawable.ic_car_top_belt_fl
+        "ic-car-top-belt-fr" -> R.drawable.ic_car_top_belt_fr
+        "ic-car-top-occupant-fl" -> R.drawable.ic_car_top_occupant_fl
+        "ic-car-top-occupant-fr" -> R.drawable.ic_car_top_occupant_fr
+        "ic-car-top-occupant-rear" -> R.drawable.ic_car_top_occupant_rear
+        "ic-car-top-mirror" -> R.drawable.ic_car_top_mirror
+        "ic-car-top-trunk" -> R.drawable.ic_car_top_trunk
+        "ic-car-top-trunk-pos" -> R.drawable.ic_car_top_trunk_pos
+        "ic-car-top-hood" -> R.drawable.ic_car_top_hood
+        "ic-car-top-sunroof" -> R.drawable.ic_car_top_sunroof
+        "ic-car-top-sunroof-pos" -> R.drawable.ic_car_top_sunroof_pos
+        "ic-car-top-sunshade" -> R.drawable.ic_car_top_sunshade
+        "ic-car-top-lock" -> R.drawable.ic_car_top_lock
+        "ic-car-top-ambient" -> R.drawable.ic_car_top_ambient
+        "ic-car-top-ambient-color-front" -> R.drawable.ic_car_top_ambient_color_front
+        "ic-car-top-ambient-color-rear" -> R.drawable.ic_car_top_ambient_color_rear
+        "ic-car-top-ambient-bright-front" -> R.drawable.ic_car_top_ambient_bright_front
+        "ic-car-top-ambient-bright-rear" -> R.drawable.ic_car_top_ambient_bright_rear
+        "ic-car-top-ambient-music" -> R.drawable.ic_car_top_ambient_music
+        "ic-car-top-bsd-l" -> R.drawable.ic_car_top_bsd_l
+        "ic-car-top-bsd-r" -> R.drawable.ic_car_top_bsd_r
+        "ic-car-top-lca-l" -> R.drawable.ic_car_top_lca_l
+        "ic-car-top-lca-r" -> R.drawable.ic_car_top_lca_r
+        "ic-car-top-rcta-l" -> R.drawable.ic_car_top_rcta_l
+        "ic-car-top-rcta-r" -> R.drawable.ic_car_top_rcta_r
+        "ic-car-top-rcta-all" -> R.drawable.ic_car_top_rcta_all
+        "ic-car-top-dow-l" -> R.drawable.ic_car_top_dow_l
+        "ic-car-top-dow-r" -> R.drawable.ic_car_top_dow_r
+        "ic-car-top-dow-all" -> R.drawable.ic_car_top_dow_all
+        "ic-car-top-lane" -> R.drawable.ic_car_top_lane
+        "ic-car-top-park-all" -> R.drawable.ic_car_top_park_all
+        "ic-car-front-lowbeam" -> R.drawable.ic_car_front_lowbeam
+        "ic-car-front-highbeam" -> R.drawable.ic_car_front_highbeam
+        "ic-car-front-fog" -> R.drawable.ic_car_front_fog
+        "ic-car-front-drl" -> R.drawable.ic_car_front_drl
+        "ic-car-front-turn-l" -> R.drawable.ic_car_front_turn_l
+        "ic-car-front-turn-r" -> R.drawable.ic_car_front_turn_r
+        "ic-car-front-sidelight" -> R.drawable.ic_car_front_sidelight
+        "ic-car-front-headlight-mode" -> R.drawable.ic_car_front_headlight_mode
+        "ic-car-front-fcw" -> R.drawable.ic_car_front_fcw
+        "ic-car-rear-fog" -> R.drawable.ic_car_rear_fog
+        "ic-car-rear-defrost" -> R.drawable.ic_car_rear_defrost
+        // Bốn thành phần của MỘT toạ độ, nhưng là bốn đại lượng khác nhau ⇒ bốn hình (U7 · OQ1: mục
+        // "nằm trên xe" mới vẽ hình xe, đại lượng đo thì giữ glyph trừu tượng — cùng nét, cùng ô).
+        "ic-gps-lat" -> R.drawable.ic_gps_lat
+        "ic-gps-lon" -> R.drawable.ic_gps_lon
+        "ic-gps-alt" -> R.drawable.ic_gps_alt
+        "ic-gps-heading" -> R.drawable.ic_gps_heading
+        "ic-sign" -> R.drawable.ic_sign
         // ── T2: 12 ICON NHÓM (spec kachi-capability-groups §4.1) ───────────────────────────────────────
         // Đây là ĐẦU `:app` của giao kèo tên icon cho nhóm khả năng: `CapabilityGroups` (T1, `:core`) khai
         // `icon = "ic-group-…"`, bảng này dịch sang `R.drawable`. Tên là HỢP ĐỒNG giữa hai module — đổi một bên mà

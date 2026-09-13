@@ -12,7 +12,8 @@ import com.byd.clusternav.navigation.NavApps
 /**
  * Auto-start VietMap để widget/notification có nguồn speed-limit (badge cụm mirror). Dùng chung cho 2 case:
  *  • BOOT headless ([BootSetupService]) → sau khi start, VỀ HOME (không đè launcher; app mình vốn không foreground).
- *  • Mở app ([MainActivity.onCreate]) → sau khi start, đưa ClusterNav lại TRƯỚC (user đang xem app mình).
+ *  • Mở app / bật công tắc badge-bong bóng ([com.byd.clusternav.launcher.ClusterNavBridge]) → sau khi start,
+ *    đưa app mình lại TRƯỚC (user đang xem nó). Màn ClusterNav cũ — chỗ gọi trước 2026-09-13 — đã gỡ.
  *
  * SỬA 2 bug on-car (2026-08-21): (1) guard cũ dùng runningAppProcesses (Android 10+ chỉ thấy process mình → luôn
  * relaunch); nay dùng `pidof` qua dadb (uid shell, tin cậy cross-app) → CHỈ start khi CHƯA chạy. (2) không để VietMap
@@ -27,7 +28,7 @@ object VietMapAutostart {
     // Bug: [runNow] không có dedup/cooldown; bóng bật ⇒ mỗi onCreate (mở app · recreate khi
     // đổi ngôn ngữ/giao diện · auto-open lúc boot) chạy "launch VietMap → sleep 1500 → trả ClusterNav" ⇒
     // VietMap nhảy foreground rồi lùi = "loop flash" owner thấy. Vá bằng 3 lớp: (a) cooldown + in-flight ở đây;
-    // (b) bỏ launch nếu VietMap ĐÃ foreground (trong [runNow]); (c) không gọi lúc recreate (MainActivity gate).
+    // (b) bỏ launch nếu VietMap ĐÃ foreground (trong [runNow]); (c) không gọi lúc dựng lại màn (gate ở chỗ gọi).
     /** Khoảng cách tối thiểu giữa 2 lần autostart. Trong cửa sổ này (recreate/mở lại nhanh) ⇒ KHÔNG launch lại. */
     const val COOLDOWN_MS = 30_000L
     private val inFlight = java.util.concurrent.atomic.AtomicBoolean(false)

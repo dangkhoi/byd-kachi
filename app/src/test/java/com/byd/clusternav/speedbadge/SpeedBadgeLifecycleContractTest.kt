@@ -11,19 +11,19 @@ import org.junit.jupiter.api.Test
  *
  * The overlay runtime needs Android (WindowManager / DisplayManager / Handler / Looper) and this project has
  * no Robolectric, so — exactly like [com.byd.clusternav.SpeedSignSourceLifecycleTest] and
- * [com.byd.clusternav.CastEnableToggleContractTest] — the fix is pinned by reading the source across the whole
- * boundary: overlay (idempotent init + retry + DisplayListener + teardown + enabled gate) → Prefs default →
- * owner toggle handler → controller switch wiring → both layouts. On-car visual checks live in the note.
+ * [com.byd.clusternav.launcher.ClusterNavBridgeWiringContractTest] — the fix is pinned by reading the source
+ * across the whole boundary: overlay (idempotent init + retry + DisplayListener + teardown + enabled gate) →
+ * Prefs default → owner toggle handler → the bridge + the Nav settings group (the old ClusterNav screen and its
+ * two layout variants were removed on 2026-09-13). On-car visual checks live in the note.
  */
 class SpeedBadgeLifecycleContractTest {
 
     private val overlay = SourceRoots.text("src/main/java/com/byd/clusternav/speedbadge/SpeedBadgeOverlay.kt")
     private val prefs = SourceRoots.text("src/main/java/com/byd/clusternav/Prefs.kt")
     private val owner = SourceRoots.text("src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt")
-    private val controller =
-        SourceRoots.text("src/main/java/com/byd/clusternav/modules/clustercast/BadgePlacementController.kt")
-    private val layoutNarrow = SourceRoots.text("src/main/res/layout/activity_main.xml")
-    private val layoutWide = SourceRoots.text("src/main/res/layout-w960dp/activity_main.xml")
+    /** Công tắc badge nay ở nhóm *Dẫn đường* của Kachi Settings — màn cũ gỡ 2026-09-13 (S3 · R1/R3). */
+    private val bridge = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")
+    private val section = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt")
 
     // ── overlay: no permanent degrade, idempotent + retryable init ───────────
     @Test
@@ -99,26 +99,14 @@ class SpeedBadgeLifecycleContractTest {
         assertTrue(owner.contains("badgeOverlay.applyEnabled()"), "handler re-evaluates the ONE shared overlay")
     }
 
-    // ── controller + layouts: the Switch is wired and present in BOTH layouts ─
+    // ── bề mặt người dùng: ô tick ở Kachi Settings đi qua cầu ────────────────
     @Test
-    fun `controller wires the badge switch to Prefs and the overlay`() {
-        assertTrue(controller.contains("R.id.switch_badge_enabled"), "controller binds the switch id")
-        assertTrue(controller.contains("Prefs.setBadgeEnabled(activity, checked)"), "toggle persists the flag")
-        assertTrue(controller.contains("onBadgeEnabledChanged()"), "toggle refreshes the overlay")
-        assertTrue(
-            controller.indexOf("setOnCheckedChangeListener(null)") < controller.indexOf("isChecked = Prefs.badgeEnabled(activity)"),
-            "listener detached before restoring persisted state (no spurious toggle on open)",
-        )
-    }
-
-    @Test
-    fun `both layouts carry the badge on-off switch defaulting checked`() {
-        for ((name, xml) in listOf("narrow" to layoutNarrow, "wide" to layoutWide)) {
-            assertTrue(xml.contains("@+id/switch_badge_enabled"), "$name: badge switch present")
-            val idx = xml.indexOf("@+id/switch_badge_enabled")
-            val decl = xml.substring(idx, minOf(idx + 400, xml.length))
-            assertTrue(decl.contains("android:checked=\"true\""), "$name: badge switch defaults ON")
-        }
+    fun `the badge switch reaches Prefs and the overlay through the bridge`() {
+        // Tới 2026-09-13 bài này đọc `BadgePlacementController` + hai biến thể `activity_main.xml`. Cả ba đã gỡ
+        // cùng màn cũ (S3), nên công tắc chỉ còn một đường: section Dẫn đường → cầu → Prefs + overlay.
+        assertTrue(section.contains("bridge.setBadgeEnabled("), "the Nav settings group carries the switch")
+        assertTrue(bridge.contains("Prefs.setBadgeEnabled(app, on)"), "the toggle persists the flag")
+        assertTrue(bridge.contains("onBadgeEnabledChanged()"), "the toggle refreshes the shared overlay")
     }
 
     private fun functionBody(source: String, signature: String): String {

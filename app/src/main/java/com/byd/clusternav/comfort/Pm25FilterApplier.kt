@@ -26,7 +26,8 @@ import com.byd.clusternav.modules.hal.BydHal
  *   — nên gọi SAU đường chính + log **DEBUG** (không phải lỗi). Lọc vẫn chạy; chỉ popup nhắc lọc có thể còn hiện.
  *
  * ── Vòng đời ─────────────────────────────────────────────────────────────────────────────────────
- *  • [applyOnStart] — gọi lúc mở app (MainActivity.onCreate) và boot nền (BootSetupService). Công tắc TẮT ⇒
+ *  • [applyOnStart] — gọi lúc boot nền (BootSetupService; trước 2026-09-13 còn gọi từ màn ClusterNav cũ, đã
+ *    gỡ). Công tắc TẮT ⇒
  *    no-op. BẬT ⇒ chạy NỀN, ngủ ~5 s (khớp SeatComfortApplier: chờ cabin/HAL sẵn sàng) rồi bật lọc + poll.
  *  • [enable] (bật lọc + khởi poll) / [disable] (tắt lọc + dừng poll) — cho công tắc UI (không delay, chạy nền).
  *  • [cleanNow] — nút "Lọc ngay": bắn lọc-ngay MỘT LẦN, KHÔNG gate công tắc (chủ động lọc bất kể auto).

@@ -3,27 +3,31 @@ package com.byd.clusternav
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import com.byd.clusternav.modules.navaccess.NavAccessibilitySource
 import com.byd.clusternav.navigation.NavigationOutputTarget
+import com.byd.clusternav.navigation.SpeedSignOutput
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
  * HEADLESS boot setup (1.21 Item 1). Short-lived foreground service started by [RebindReceiver] on
  * BOOT_COMPLETED / MY_PACKAGE_REPLACED when "Tự khởi động nền" ([Prefs.headlessAutostart]) is ON, so the
- * app performs its boot setup WITHOUT foregrounding [MainActivity] on the main display (bonus: dodges the
- * dudu size-compat letterbox — MainActivity never auto-foregrounds).
+ * app performs its boot setup WITHOUT foregrounding any screen (bonus: dodges the dudu size-compat
+ * letterbox — no activity auto-foregrounds on boot).
  *
- * Relocates the ONLY boot-setup that was tied to MainActivity.onCreate:
+ * Relocates the ONLY boot-setup that was tied to the old ClusterNav screen's onCreate (that screen was
+ * removed 2026-09-13 — docs/specs/kachi-remove-legacy-screen.html; what is left of it lives here and in
+ * [com.byd.clusternav.launcher.ClusterNavBridge]):
  *   1. accessibility grant + force-bind ([NavConnect.grantAccessibility] — includes the 1.20 force-bind), and
  *   2. re-assert the cluster-lane output ([NavRepository.setOutputEnabled] CLUSTER_LANE=true) — covers an
  *      OLD persisted `lane=false` pref for a user who upgraded and never opens the app in headless mode
- *      (MainActivity's Prefs.setLane(true) migration would otherwise never run for them).
- * Both are ADDITIVE and idempotent; MainActivity.onCreate keeps the same setup for the user-opens-app case.
+ *      (the old screen's Prefs.setLane(true) migration would otherwise never run for them).
+ * Both are ADDITIVE and idempotent; the same setup also runs from the Nav master switch in the bridge.
  *
  * NOT touched here (already headless): the nav pipeline (NavNotificationListener.onListenerConnected →
  * NavRepository.setPermission(GRANTED) → connect()) and auto-cast (the cast bubble service is the sole
@@ -62,6 +66,13 @@ class BootSetupService : Service() {
                         latch.await(GRANT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                     }
                 }
+                // S3 (2026-09-13) — HUD kính lái ép TẮT, chuyển từ `MainActivity.onCreate` (màn cũ đã gỡ:
+                // docs/specs/kachi-remove-legacy-screen.html R2). Khoá `hud` mặc định FALSE và KHÔNG còn nơi nào
+                // ghi TRUE, nhưng máy đã từng bật ở bản trước 08 thì pref đó còn nguyên — mà đường ép tắt duy
+                // nhất trước đây là mở màn cũ. Ép ở đây: boot chạy mỗi lần nổ máy, tức mỗi chuyến.
+                forcedPrefs(applicationContext)
+                NavRepository.setOutputEnabled(applicationContext, NavigationOutputTarget.HUD, false)
+                NavigationSpeedSignOwner.get(applicationContext).onOutputEnabled(SpeedSignOutput.HUD, false)
                 if (Prefs.enabled(applicationContext)) {
                     // Re-assert the cluster-lane output (belt-and-suspenders for an old lane=false pref). Nav+HUD only.
                     NavRepository.setOutputEnabled(
@@ -84,13 +95,15 @@ class BootSetupService : Service() {
                 // (tier OVERDRIVE) ⇒ có thể xe không nhận; đặt SAU 2 bộ đã proven để nếu nó hỏng thì không
                 // ảnh hưởng ghế/lọc bụi.
                 com.byd.clusternav.comfort.RecircApplier.applyOnStart(applicationContext)
-                // F4e boot (owner 08-25): boot headless KHÔNG mở MainActivity ⇒ onCreate không chạy ⇒ trợ lý
+                // F4e boot (owner 08-25): boot headless KHÔNG mở màn nào ⇒ trợ lý
                 // hệ thống chưa được đặt = Gemini ⇒ hold-mic → keyevent 231 route sai. Đặt luôn ở đây NẾU có
                 // binding Gemini, để hold-mic → Gemini ready NGAY sau nổ máy mà KHÔNG cần mở app (owner
                 // 08-25: "kể cả khởi động nền hay full app đều enable service gemini lên là OK").
                 // retry NONE: boot owner KHÔNG ở màn hình để bấm "Cho phép gỡ lỗi USB" ⇒ MỘT lần, không chờ
-                // ~31s (tránh treo boot — F6). Hỏng (chưa cấp quyền) ⇒ bỏ; owner mở app lần đầu thì
-                // MainActivity.onCreate re-apply với AWAIT_ADB_APPROVAL (có mặt owner để cấp quyền).
+                // ~31s (tránh treo boot — F6). Hỏng (chưa cấp quyền) ⇒ bỏ; owner bấm *Cài đặt › Phím vô-lăng ›
+                // Kiểm tra / Sửa ngay* thì `ClusterNavBridge.checkFix` re-apply với AWAIT_ADB_APPROVAL (đường này
+                // trước 2026-09-13 nằm ở `MainActivity.onCreate`; nay là một VIỆC do người dùng bấm, đúng lúc họ
+                // đang ở trước màn xe để bấm "Cho phép gỡ lỗi USB").
                 if (com.byd.clusternav.modules.voicekey.AssistantLauncher.hasGeminiBinding(applicationContext)) {
                     val err = com.byd.clusternav.modules.voicekey.AssistantLauncher.setSystemAssistant(
                         applicationContext, com.byd.clusternav.carexec.LocalShellRetry.NONE,
@@ -134,6 +147,31 @@ class BootSetupService : Service() {
     }
 
     companion object {
+        /**
+         * Ba khoá **ép giá trị mỗi lần nổ máy** — ba khoá `HIDDEN_KEYS` không có nút nào trên giao diện
+         * (`SettingsCatalogClusterNav.HIDDEN_KEYS`: `hud` ép false, `interpolate`/`acc_booster` ép true).
+         *
+         * ## Vì sao phải còn một nơi ghi, không thể dựa vào giá trị mặc định
+         * Cả ba đều có mặc định ĐÚNG (`hud` = false, hai khoá kia = true), nên máy cài mới không cần gì. Nhưng
+         * máy CŨ thì đã có giá trị ghi trong prefs: `hud=true` từ thời còn ô tích `cb_hud`, và
+         * `interpolate/acc_booster=false` từ bản 2026-07-13 từng ép TẮT. Đường "di cư" duy nhất cho hai nhóm đó
+         * là màn ClusterNav cũ ghi đè mỗi lần mở — mà màn đó **đã gỡ 2026-09-13**
+         * (`docs/specs/kachi-remove-legacy-screen.html` R2). Bỏ luôn việc ghi thì hai khoá kia đóng băng ở
+         * `false` vĩnh viễn trên chính những máy đó: `ClusterBroadcaster` tắt phần bù cự ly theo tốc độ và
+         * `NavAccessibilityService` tắt bộ đọc màn GMaps ⇒ đúng triệu chứng *"cụm trễ khi tới ngã rẽ"*.
+         *
+         * ## Vì sao gọi từ HAI chỗ
+         * Dịch vụ này CHỈ chạy khi *"Tự khởi động nền"* BẬT ([Prefs.headlessAutostart], mặc định bật). Khi người
+         * dùng TẮT nó, [RebindReceiver] mở thẳng màn chính thay vì gọi dịch vụ này — nên nhánh đó gọi hàm này
+         * trực tiếp. Thuần SharedPreferences (không đụng nav runtime) nên chạy trong `onReceive` cũng rẻ; phần
+         * áp lại OUTPUT thì vẫn ở lại luồng nền của dịch vụ này, nơi nó vốn thuộc về.
+         */
+        fun forcedPrefs(ctx: Context) {
+            Prefs.setHud(ctx, false)
+            Prefs.setInterpolate(ctx, true)
+            Prefs.setAccBooster(ctx, true)
+        }
+
         private const val TAG = "BootSetup"
         // Distinct from the cast bubble service (1042) / CastAutomationService so the two can coexist on boot.
         private const val NOTIFICATION_ID = 1043

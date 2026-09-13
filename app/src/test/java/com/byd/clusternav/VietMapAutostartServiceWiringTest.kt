@@ -3,6 +3,7 @@ package com.byd.clusternav
 import com.byd.clusternav.testsupport.KotlinSource
 import java.nio.file.Files
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -30,8 +31,8 @@ class VietMapAutostartServiceWiringTest {
 
     private val boot by lazy { readSrc("BootSetupService.kt") }
     private val service by lazy { readSrc("VietMapAutostartService.kt") }
-    private val main by lazy { readSrc("MainActivity.kt") }
-    private val badge by lazy { readSrc("modules/clustercast/BadgePlacementController.kt") }
+    /** Hai công tắc badge/bong bóng nay ở cầu Kachi (`BadgePlacementController` + màn cũ đã gỡ 2026-09-13). */
+    private val bridge by lazy { readSrc("launcher/ClusterNavBridge.kt") }
     private val autostart by lazy { readSrc("VietMapAutostart.kt") }
     private val manifest by lazy { app("src/main/AndroidManifest.xml").toFile().readText() }
 
@@ -57,8 +58,12 @@ class VietMapAutostartServiceWiringTest {
 
     @Test
     fun `mo app + bat toggle bong + toggle badge deu di qua service`() {
-        assertTrue(main.contains("VietMapAutostartService.startForAppOpen("), "MainActivity phải start service (mở app + toggle bóng)")
-        assertTrue(badge.contains("VietMapAutostartService.startForAppOpen("), "BadgePlacementController phải start service khi bật badge")
+        // Trước 2026-09-13: `MainActivity` (mở app + toggle bóng) và `BadgePlacementController` (toggle badge).
+        // Cả hai đã gỡ cùng màn cũ (S3 · R1) ⇒ cả hai công tắc nay đi qua MỘT cầu, và bài canh đúng chỗ đó.
+        assertEquals(
+            2, Regex("""VietMapAutostartService\.startForAppOpen\(""").findAll(bridge).count(),
+            "cầu phải start service ở CẢ HAI công tắc (bật badge · bật bong bóng VietMap)",
+        )
         // ensureRunning đã bị gỡ (code chết) — không call site nào còn dùng.
         assertFalse(autostart.contains("fun ensureRunning("), "ensureRunning phải được gỡ (không còn call site)")
     }

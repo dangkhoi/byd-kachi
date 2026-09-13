@@ -31,7 +31,7 @@ class CastAutomationService : Service() {
          * Post-unlock boot entry — now a no-op.
          *
          * 2026-08-03: V2 automation removed. Simplified Cast handles auto-start via
-         * SimpleCastPrefs.autoStartEnabled() in MainActivityCastController.onCreate().
+         * SimpleCastPrefs.autoStartEnabled() (the old screen's cast controller, removed 2026-09-13).
          */
         @Suppress("unused", "UNUSED_PARAMETER")
         fun recordAndEnqueue(context: Context): Any? {

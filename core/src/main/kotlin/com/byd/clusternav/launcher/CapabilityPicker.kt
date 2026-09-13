@@ -93,6 +93,17 @@ object CapabilityPicker {
     fun singlesOf(picks: List<CapabilityPick>): List<CapabilityPick> = picks.filterNot { it.group }
 
     /**
+     * SỐ Ô *"chưa kiểm trên xe"* trong một khối ô (U7 · R6).
+     *
+     * Ở `:core` chứ không ở tầng vẽ vì **hai** bề mặt cần đúng con số này ([AppDrawer] · [TopStripPicker]) — cùng
+     * lý do [COLS] nằm ở đây. Chỗ vẽ chỉ việc đổ số vào chuỗi tài nguyên (VI/EN), không tự đếm lại.
+     *
+     * Đếm trên [CapabilityPick.needsBadge] — tức vẫn là [EvidenceTier.needsBadge], **một** nguồn sự thật. R6 chỉ
+     * đổi cách NÓI (chấm mờ + một dòng cho cả nhóm) chứ không đổi cách TÍNH.
+     */
+    fun unverifiedCount(picks: List<CapabilityPick>): Int = picks.count { it.needsBadge }
+
+    /**
      * GỢI Ý: trong danh sách mục rời này, những mục nào **đã có sẵn** trong nhóm nào.
      *
      * Trả `""` nếu không mục nào thuộc nhóm ⇒ chỗ gọi không vẽ gì (im lặng khi không có gì để nói — cùng luật với

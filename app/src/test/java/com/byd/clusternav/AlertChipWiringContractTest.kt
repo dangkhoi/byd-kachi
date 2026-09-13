@@ -14,7 +14,9 @@ class AlertChipWiringContractTest {
     private val listener = SourceRoots.text("src/main/java/com/byd/clusternav/NavNotificationListener.kt")
     private val owner = SourceRoots.text("src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt")
     private val overlay = SourceRoots.text("src/main/java/com/byd/clusternav/speedbadge/SpeedBadgeOverlay.kt")
-    private val controller = SourceRoots.text("src/main/java/com/byd/clusternav/modules/clustercast/BadgePlacementController.kt")
+    /** Công tắc chip nay ở cầu Kachi — `BadgePlacementController` + màn cũ đã gỡ 2026-09-13 (S3 · R3). */
+    private val bridge = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")
+    private val section = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt")
     private val prefs = SourceRoots.text("src/main/java/com/byd/clusternav/Prefs.kt")
 
     @Test
@@ -54,15 +56,13 @@ class AlertChipWiringContractTest {
     }
 
     @Test
-    fun `toggle UI o CA HAI layout + binding`() {
-        // Cả hai biến thể layout phải khai id (bài học F3 P0 — xe render layout-w960dp).
-        val portrait = SourceRoots.text("src/main/res/layout/activity_main.xml")
-        val wide = SourceRoots.text("src/main/res/layout-w960dp/activity_main.xml")
-        assertTrue(portrait.contains("@+id/switch_alert_chip"), "layout portrait thiếu switch_alert_chip")
-        assertTrue(wide.contains("@+id/switch_alert_chip"), "layout-w960dp (xe render) thiếu switch_alert_chip")
-        assertTrue(controller.contains("R.id.switch_alert_chip"), "controller phải bind switch")
-        assertTrue(controller.contains("Prefs.setShowAlertChip("), "toggle phải lưu prefs")
-        assertTrue(controller.contains("onAlertChipEnabledChanged("), "toggle phải re-evaluate overlay")
+    fun `toggle UI co that va di qua cau`() {
+        // Tới 2026-09-13 bài này canh hai biến thể `activity_main.xml` + `BadgePlacementController` (bài học F3
+        // P0: xe render bản `layout-w960dp`). Màn cũ đã gỡ ⇒ công tắc chỉ còn MỘT bề mặt: nhóm *Dẫn đường* của
+        // Kachi Settings, dựng bằng mã (không XML) và ghi qua cầu — nên bài canh đúng hai mắt xích đó.
+        assertTrue(section.contains("bridge.setAlertChip("), "section Dẫn đường phải có ô tick gọi cầu")
+        assertTrue(bridge.contains("Prefs.setShowAlertChip("), "cầu phải lưu prefs")
+        assertTrue(bridge.contains("onAlertChipEnabledChanged("), "cầu phải re-evaluate overlay")
     }
 
     @Test

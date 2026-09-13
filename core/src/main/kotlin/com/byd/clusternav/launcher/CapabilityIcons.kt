@@ -89,17 +89,66 @@ object CapabilityIcons {
         // U6: ba mục này trước đây lùi về icon LĨNH VỰC của Thân xe = hình KÍNH CỬA ⇒ "Cảnh báo khẩn" và "Mẫu xe"
         // trông y hệt bốn ô kính. Đây là icon SAI NGHĨA, không chỉ là icon trùng.
         "power_level" to "ic-bolt", "vehicle_type" to "ic-car", "emergency_alarm" to "ic-alert",
-        "tailgate_status" to "ic-trunk", "tailgate_position" to "ic-trunk",
-        "sunroof_state" to "ic-sunroof", "sunroof_pos" to "ic-sunroof", "sunshade_pct" to "ic-sunroof",
-        "wiper_state" to "ic-wiper", "mirror_fold" to "ic-swap",
+        // U7 lượt 2 · [ĐO bài mù Pass 1] hai cặp này trước dùng CHUNG một hình: `sunroof_state` ↔ `sunroof_pos`
+        // khác nhau 0 pixel, `tailgate_status` ↔ `tailgate_position` khác 2% — mà chúng nằm KỀ NHAU trong
+        // nhóm Thân xe. Nay: ô TRẠNG THÁI = nắp/tấm kín liền khối; ô VỊ TRÍ = hé mở + mũi tên mức.
+        "tailgate_status" to "ic-car-top-trunk", "tailgate_position" to "ic-car-top-trunk-pos",
+        "sunroof_state" to "ic-car-top-sunroof", "sunroof_pos" to "ic-car-top-sunroof-pos",
+        "sunshade_pct" to "ic-car-top-sunshade",
+        "wiper_state" to "ic-wiper", "mirror_fold" to "ic-car-top-mirror",
+        // U7 · BỐN CỬA và BỐN KÍNH — mã đã mang vị trí (`_lf`/`_rf`/`_lr`/`_rr`), nay HÌNH cũng mang.
+        // Cửa vẽ VẠT CỬA MỞ RA NGOÀI thân; kính vẽ THANH KÍNH TRONG vách ⇒ hai họ không lẫn nhau.
+        "door_lf" to "ic-car-top-door-lf", "door_rf" to "ic-car-top-door-rf",
+        "door_lr" to "ic-car-top-door-lr", "door_rr" to "ic-car-top-door-rr",
+        "window_lf" to "ic-car-top-window-lf", "window_rf" to "ic-car-top-window-rf",
+        "window_lr" to "ic-car-top-window-lr", "window_rr" to "ic-car-top-window-rr",
+        // ── Đèn (U7) — MỖI LOẠI MỘT HÌNH THẬT, không chỉ đổi nhãn (R2) ──
+        // Trước U7: 7 đèn ngoài + 5 mục đèn viền dùng chung ĐÚNG HAI hình (bóng đèn · đèn đọc) ⇒ 14 ô
+        // cùng một glyph trong một nhóm. Nay mỗi loại có chùm sáng riêng trên khung xe nhìn TỪ TRƯỚC
+        // (pha thẳng · cốt chúc xuống · sương mù có vệt sương · ban ngày là dải mảnh · xi-nhan là mũi
+        // tên ở đúng góc), còn đèn viền nằm trên khung nhìn TỪ TRÊN vì nó ở trong khoang.
+        "light_low_beam" to "ic-car-front-lowbeam", "light_high_beam" to "ic-car-front-highbeam",
+        "light_front_fog" to "ic-car-front-fog", "light_rear_fog" to "ic-car-rear-fog",
+        "light_left_turn" to "ic-car-front-turn-l", "light_right_turn" to "ic-car-front-turn-r",
+        "light_side" to "ic-car-front-sidelight", "light_drl" to "ic-car-front-drl",
+        "headlight_feedback" to "ic-car-front-headlight-mode",
+        "ambient_enabled" to "ic-car-top-ambient",
+        "ambient_front_color" to "ic-car-top-ambient-color-front",
+        "ambient_rear_color" to "ic-car-top-ambient-color-rear",
+        // Màu vẽ dải LIỀN KHỐI, độ sáng vẽ dải CHIA NẤC — cùng vị trí nhưng khác hình, vì đây là hai
+        // đại lượng khác nhau của cùng một dải (R2: khác biệt phải ở HÌNH, không chỉ ở nhãn).
+        "ambient_front_brightness" to "ic-car-top-ambient-bright-front",
+        "ambient_rear_brightness" to "ic-car-top-ambient-bright-rear",
         // ── An toàn ──
-        "radar_zones" to "ic-radar", "radar_volume" to "ic-volume",
-        "child_presence" to "ic-seat", "oms_driver" to "ic-seat", "oms_passenger" to "ic-seat",
+        // U7: 9 cảnh báo vùng trước đây dùng chung MỘT sóng radar. Nay vùng cảm biến được vẽ ĐÚNG CHỖ
+        // trên khung xe nhìn từ trên: điểm mù = hai vòng sóng ở hông sau; chuyển làn = mũi tên cong rời
+        // thân; cắt ngang sau = mũi tên chạy ngang sau đuôi; mở cửa = vạt cửa + xe tới từ phía sau.
+        "bsd_fl_alarm" to "ic-car-top-bsd-l", "bsd_fr_alarm" to "ic-car-top-bsd-r",
+        "lca_left" to "ic-car-top-lca-l", "lca_right" to "ic-car-top-lca-r",
+        "rcta_left" to "ic-car-top-rcta-l", "rcta_right" to "ic-car-top-rcta-r",
+        "dow_left" to "ic-car-top-dow-l", "dow_right" to "ic-car-top-dow-r",
+        "seatbelt_driver" to "ic-car-top-belt-fl", "seatbelt_passenger" to "ic-car-top-belt-fr",
+        "radar_zones" to "ic-car-top-park-all", "radar_volume" to "ic-volume",
+        // Ghế nào có người: vẽ NGƯỜI (đầu + vai nhìn từ trên) ở đúng ghế, không vẽ cái ghế —
+        // ba mục này trước đây cùng một hình ghế nên không nói được "ai đang ngồi đâu".
+        "child_presence" to "ic-car-top-occupant-rear",
+        "oms_driver" to "ic-car-top-occupant-fl", "oms_passenger" to "ic-car-top-occupant-fr",
         "speed_limit_warning" to "ic-speed",
         // ESP có ký hiệu chuẩn trên táp-lô; trước đây nó lùi về icon nhóm AN TOÀN = hình lưới ⊞ (mục 4a).
         "esp_state" to "ic-esp",
         "volt_12v" to "ic-bolt", "volt_12v_level" to "ic-bolt",
+        // ── Lốp (U7) — vị trí bánh nằm trong mã, nay nằm cả trong hình ──
+        // Áp suất: ba bánh kia là NÉT, bánh đang nói tới TÔ ĐẶC. Nhiệt: bánh đó TÔ + nhiệt kế giữa xe.
+        "tyre_p_fl" to "ic-car-top-tyre-fl", "tyre_p_fr" to "ic-car-top-tyre-fr",
+        "tyre_p_rl" to "ic-car-top-tyre-rl", "tyre_p_rr" to "ic-car-top-tyre-rr",
+        "tyre_t_fl" to "ic-car-top-tyre-temp-fl", "tyre_t_fr" to "ic-car-top-tyre-temp-fr",
+        "tyre_t_rl" to "ic-car-top-tyre-temp-rl", "tyre_t_rr" to "ic-car-top-tyre-temp-rr",
         // ── Danh tính ──
+        // U7: bốn mục GPS trước đây cùng một hình ghim vị trí. Chúng là bốn ĐẠI LƯỢNG khác nhau nên
+        // tách theo đúng thứ chúng đo: vĩ tuyến (ngang) · kinh tuyến (dọc) · cao độ (núi + thước) ·
+        // hướng (kim la bàn). Đây KHÔNG phải nhóm "nằm trên xe" nên giữ glyph trừu tượng (OQ1).
+        "gps_lat" to "ic-gps-lat", "gps_lon" to "ic-gps-lon",
+        "gps_elevation" to "ic-gps-alt", "gps_heading" to "ic-gps-heading",
         "key_bluetooth" to "ic-lock",
         "oil_level" to "ic-hood", "engine_coolant_level" to "ic-hood", "engine_code" to "ic-hood",
     )
@@ -109,21 +158,13 @@ object CapabilityIcons {
      * Thứ tự QUAN TRỌNG: tiền tố dài đứng trước (nhiệt lốp phải khớp trước áp suất lốp).
      */
     private val PREFIX: List<Pair<String, String>> = listOf(
-        "tyre_t_" to "ic-temp",          // nhiệt lốp → icon nhiệt (KHÁC áp suất — đó là điểm của việc này)
-        "tyre_p_" to "ic-tire",
-        "window_" to "ic-window",
-        "door_" to "ic-door",
-        "seatbelt_" to "ic-seatbelt",
-        "light_left_turn" to "ic-turn-left",
-        "light_right_turn" to "ic-turn-right",
-        "light_" to "ic-light",
-        "ambient_" to "ic-readlight",     // đèn viền ≠ đèn ngoài
-        "headlight_" to "ic-light",
-        "gps_" to "ic-gps",
+        // ⚠ U7 GỠ 15 TIỀN TỐ Ở ĐÂY (lốp · kính · cửa · dây an toàn · đèn · đèn viền · GPS · ADAS).
+        // Tiền tố là công cụ để nói "cả HỌ này cùng một hình" — đúng khi khác biệt nằm ở KHÁI NIỆM.
+        // Nhưng ở các họ đó khác biệt nằm ở VỊ TRÍ, nên gộp theo tiền tố chính là thứ tạo ra "14 ô
+        // cùng một bóng đèn". Nay mỗi mã tra thẳng ra hình mang đúng vị trí của nó (bảng EXACT ở trên).
         // U6: bụi mịn là thứ được ĐO, chiếc lá là thứ đang LÀM (lọc/ion) — trước đây cả bốn mục cùng chiếc lá.
         // `pm25_online` nói về THIẾT BỊ (cảm biến còn sống không) nên nó tách khỏi cả hai, khớp TRƯỚC tiền tố chung.
         "pm25_online" to "ic-sensor", "pm25_" to "ic-dust",
-        "bsd_" to "ic-radar", "lca_" to "ic-radar", "rcta_" to "ic-radar", "dow_" to "ic-radar",
         // [KIỂM TOÁN UX mục 4d] Công suất mô-tơ KHÔNG phải tốc độ ⇒ không dùng icon đồng hồ tốc.
         // U6: và vòng tua / mô-men KHÔNG phải công suất — ba đại lượng khác nhau của cùng một mô-tơ. Tiền tố dài
         // đứng trước tiền tố ngắn (`motor_front_rpm` phải khớp trước `motor_`), cùng luật đã dùng cho lốp.

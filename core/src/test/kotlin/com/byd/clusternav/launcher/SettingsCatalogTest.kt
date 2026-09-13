@@ -59,10 +59,11 @@ class SettingsCatalogTest {
             SettingsCatalog.GROUPS.none { it.id == "clusternav" },
             "nhóm 'clusternav' phải biến mất — giữ nó lại nghĩa là vẫn còn hai màn cấu hình",
         )
-        assertEquals(
-            SettingsGroup.SYSTEM,
-            SettingsCatalog.ENTRIES.first { it.id == "system_advanced_screen" }.group,
-            "đường mở màn cũ ở lại, nhưng là một MỤC của Hệ thống chứ không phải một nhóm",
+        // S3 (2026-09-13): màn cũ bị GỠ HẲN ⇒ mục mở nó cũng biến mất. Bài canh chiều "không mọc lại": một mục
+        // trỏ tới một màn không còn tồn tại là một nút bấm-không-làm-gì trên màn xe.
+        assertTrue(
+            SettingsCatalog.ENTRIES.none { it.id == "system_advanced_screen" || it.id == "clusternav_open" },
+            "không còn mục nào mở màn ClusterNav cũ — màn đó đã gỡ (kachi-remove-legacy-screen.html R1)",
         )
     }
 
@@ -242,12 +243,12 @@ class SettingsCatalogTest {
                 "home_scene_save", "home_grid_editor",
                 // IA v2: mọi HÀNH ĐỘNG của màn ClusterNav (§4.3, cột "API ghi") — chúng bấm là chạy, không lưu gì.
                 "nav_reconnect", "cast_actions", "cast_rescue", "keys_check", "car_pm25_clean",
-                "system_permissions", "system_update", "system_nav_stop", "system_advanced_screen",
+                "system_permissions", "system_update", "system_nav_stop",
                 "system_vietmap_data", "system_diagnostics",
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "mười lăm mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười bốn mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

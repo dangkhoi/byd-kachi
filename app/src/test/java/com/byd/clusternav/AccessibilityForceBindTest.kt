@@ -23,7 +23,10 @@ class AccessibilityForceBindTest {
     }
 
     private val navConnect by lazy { app("src/main/java/com/byd/clusternav/NavConnect.kt").toFile().readText() }
-    private val mainActivity by lazy { app("src/main/java/com/byd/clusternav/MainActivity.kt").toFile().readText() }
+    /** Công tắc "Nút vật lý → app/trợ lý" nay ở cầu Kachi — màn cũ đã gỡ 2026-09-13 (S3 · R1). */
+    private val bridgeKeys by lazy {
+        app("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeKeys.kt").toFile().readText()
+    }
 
     @Test
     fun `NavConnect verifies bound over dumpsys and force-rebinds via the pure logic`() {
@@ -133,15 +136,15 @@ class AccessibilityForceBindTest {
 
     @Test
     fun `voice-key toggle ON resets the grant so it recovers after reboot without a restart`() {
-        // MainActivity wiring: turning 'Nút vật lý' OFF→ON must call the RESET entry (not the plain grant) so a
-        // hung single-flight is cleared and the key bind is force-re-requested — recovering the post-reboot
-        // enabled-but-not-bound state without an app restart.
+        // Wiring of the toggle (Kachi Settings › Phím vô-lăng → ClusterNavBridge): turning 'Nút vật lý' OFF→ON
+        // must call the RESET entry (not the plain grant) so a hung single-flight is cleared and the key bind is
+        // force-re-requested — recovering the post-reboot enabled-but-not-bound state without an app restart.
         assertTrue(
-            mainActivity.contains("NavConnect.grantAccessibility(applicationContext, reset = true)"),
+            bridgeKeys.contains("NavConnect.grantAccessibility(app, reset = true)"),
             "the voice-key switch OFF→ON calls grantAccessibility(reset = true) to reset + force-rebind",
         )
         assertTrue(
-            mainActivity.contains("Prefs.setVoiceKeyEnabled(this, on)"),
+            bridgeKeys.contains("Prefs.setVoiceKeyEnabled(app, on)"),
             "the toggle still persists the enabled pref",
         )
     }

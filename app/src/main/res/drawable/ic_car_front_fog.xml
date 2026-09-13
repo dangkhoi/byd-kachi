@@ -1,0 +1,27 @@
+<!--
+  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
+  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
+  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
+  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
+  ĐÈN SƯƠNG MÙ TRƯỚC — đèn DƯỚI CẢN (thấp, sát mép vỏ) + tia thấp bị VỆT SƯƠNG cắt ngang.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M4.4,16.9 L4.4,9.9 L6.6,4.9 L17.4,4.9 L19.6,9.9 L19.6,16.9 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6.0,9.9 L18.0,9.9"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6.40,14.70 L7.80,14.70 A0.60,0.60 0 0 1 8.40,15.30 L8.40,15.70 A0.60,0.60 0 0 1 7.80,16.30 L6.40,16.30 A0.60,0.60 0 0 1 5.80,15.70 L5.80,15.30 A0.60,0.60 0 0 1 6.40,14.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M16.20,14.70 L17.60,14.70 A0.60,0.60 0 0 1 18.20,15.30 L18.20,15.70 A0.60,0.60 0 0 1 17.60,16.30 L16.20,16.30 A0.60,0.60 0 0 1 15.60,15.70 L15.60,15.30 A0.60,0.60 0 0 1 16.20,14.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M3.2,20.0 L11.6,20.0"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M14.6,18.2 C13.2,19.1 15.2,20.0 13.8,20.9"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

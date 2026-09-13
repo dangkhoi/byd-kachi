@@ -35,26 +35,24 @@ class CapabilityIconsDiversityTest {
      * Bảng **tự rữa theo hai chiều**: chữa được một nhóm mà quên hạ số ở đây thì bài ĐỎ (chiều "đã tốt hơn số
      * ghim"), và làm xấu đi thì cũng ĐỎ. Không có đường đi nào để một hồi quy trượt qua im lặng.
      */
-    private val pendingCeiling: Map<Domain, Pair<Int, String>> = mapOf(
-        Domain.TYRES to (4 to
-            "4 bánh × (áp suất · nhiệt) — vị trí bánh mới là thứ phân biệt, và nó đã nằm trong nhãn ngắn " +
-                "(\"Lốp TT\"/\"Lốp TP\"). Icon theo góc bánh là việc của một hình có ĐÁNH DẤU GÓC, chưa vẽ."),
-        Domain.BODY to (10 to
-            "4 kính + 4 cửa — cùng lý do bốn bánh: phân biệt nằm ở GÓC, không ở khái niệm. U6 chỉ vá 3 ô " +
-                "SAI NGHĨA của nhóm này (nguồn xe · mẫu xe · cảnh báo khẩn từng mang hình KÍNH CỬA)."),
-        Domain.LIGHTS to (14 to
-            "7 đèn ngoài dùng chung một bóng đèn, 5 mục đèn viền dùng chung một hình — nhóm này chưa được soát " +
-                "ảnh, để đợt sau làm cùng lúc cả đèn lẫn màu/độ sáng viền (U7)."),
-        Domain.SAFETY to (9 to
-            "9 cảnh báo vùng (điểm mù · chuyển làn · cắt ngang · mở cửa · cảm biến đỗ) dùng chung sóng radar. " +
-                "Bảng nhóm ADAS đã vẽ theo PHÍA nên ở đó icon không phải thứ phân biệt; lưới chọn thì vẫn rối."),
-        Domain.IDENTITY to (4 to
-            "4 mục GPS (vĩ/kinh/cao độ/hướng) cùng một hình định vị — đây là 4 thành phần của MỘT toạ độ, tách " +
-                "hình cho từng thành phần có thể còn khó đọc hơn. Cần owner chốt trước khi vẽ."),
-    )
+    private val pendingCeiling: Map<Domain, Pair<Int, String>> = mapOf()
 
-    /** Nhóm mà U6 đã chữa — áp trần cứng, không có ngoại lệ nào. */
-    private val doneDomains = listOf(Domain.ENERGY, Domain.DRIVETRAIN, Domain.CLIMATE)
+    /**
+     * Nhóm đã chữa — áp trần cứng, không có ngoại lệ nào.
+     *
+     * ## U7: danh sách này nay là **TOÀN BỘ 8 lĩnh vực**, và [pendingCeiling] rỗng
+     * U6 chữa ba nhóm dày nhất và ghi nợ năm nhóm còn lại; cả năm đều quá trần vì cùng MỘT lý do: khác biệt của
+     * chúng nằm ở **VỊ TRÍ** (bánh nào · cửa nào · đèn nào · vùng cảm biến nào · thành phần toạ độ nào), mà icon
+     * theo khái niệm thì không nói được vị trí. U7 vẽ bộ hình XE theo vị trí nên cái nợ đó tan chứ không phải
+     * được tha: mỗi mã có vị trí nay tra ra một hình mang đúng vị trí ấy (xem [CapabilityIcons] · bài
+     * `ma co vi tri thi hinh cung phai co vi tri do`).
+     *
+     * ⚠ [pendingCeiling] rỗng thì bài `nhom chua chua phai ghim dung tran do duoc` không lặp lần nào — nên phép
+     * canh thật sự nằm ở bài trần CỨNG bên dưới, và nó nay phủ cả 8 lĩnh vực. Đừng đưa một lĩnh vực ngược lại vào
+     * danh sách nợ để "cho xanh": bài `moi nhom deu duoc noi toi` bắt mọi lĩnh vực phải nằm ở đúng một trong hai
+     * danh sách, và ghi nợ thì phải viết được lý do.
+     */
+    private val doneDomains = Domain.TELEMETRY
 
     /**
      * Icon → mã, đếm trên **đúng những ô bộ chọn bày ra** trong nhóm này.
@@ -92,7 +90,12 @@ class CapabilityIconsDiversityTest {
      */
     @Test
     fun `ba nhom da chua giu duoc so hinh da dat`() {
-        val floor = mapOf(Domain.ENERGY to 15, Domain.DRIVETRAIN to 12, Domain.CLIMATE to 12)
+        // Sàn = số hình ĐO ĐƯỢC sau lượt vá gần nhất, không phải số mong muốn. Chỉ được đi LÊN.
+        val floor = mapOf(
+            Domain.ENERGY to 15, Domain.DRIVETRAIN to 12, Domain.CLIMATE to 12,
+            // U7 — năm lĩnh vực còn lại, sau khi bộ hình xe theo vị trí thay cho gộp-theo-tiền-tố.
+            Domain.TYRES to 8, Domain.BODY to 26, Domain.LIGHTS to 16, Domain.SAFETY to 24, Domain.IDENTITY to 7,
+        )
         assertEquals(doneDomains.toSet(), floor.keys, "sàn phải phủ đúng các nhóm đã chữa")
         floor.forEach { (d, min) ->
             val use = shownIconUse(d)

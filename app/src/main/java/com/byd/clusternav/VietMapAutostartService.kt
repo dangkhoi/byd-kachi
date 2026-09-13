@@ -26,8 +26,9 @@ import android.util.Log
  * nhiều lần (boot + mở app + bật toggle trong 30 s) thì chỉ MỘT lần `runNow` đi qua gate, các lần còn lại
  * return ngay và service tự dừng.
  *
- * Never exported. Start từ context đang foreground/FGS ([BootSetupService], [MainActivity]) nên hợp lệ mọi
- * phiên bản (không dính hạn background-FGS-start của Android 12+).
+ * Never exported. Start từ context đang foreground/FGS ([BootSetupService], hoặc màn chính Kachi) nên hợp lệ
+ * mọi phiên bản (không dính hạn background-FGS-start của Android 12+). `MainActivity` — chỗ gọi thứ hai cho tới
+ * 2026-09-13 — đã gỡ cùng màn ClusterNav cũ (docs/specs/kachi-remove-legacy-screen.html R1).
  */
 class VietMapAutostartService : Service() {
 

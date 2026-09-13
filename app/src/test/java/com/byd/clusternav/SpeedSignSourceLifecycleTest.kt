@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Test
 class SpeedSignSourceLifecycleTest {
     private val listener = SourceRoots.text("src/main/java/com/byd/clusternav/NavNotificationListener.kt")
     private val owner = SourceRoots.text("src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt")
-    private val main = SourceRoots.text("src/main/java/com/byd/clusternav/MainActivity.kt")
+    /** Công tắc/đầu ra nay đi qua cầu Kachi + boot-setup — màn ClusterNav cũ đã gỡ 2026-09-13 (S3 · R1). */
+    private val navBridge = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")
+    private val boot = SourceRoots.text("src/main/java/com/byd/clusternav/BootSetupService.kt")
     private val prefs = SourceRoots.text("src/main/java/com/byd/clusternav/Prefs.kt")
     private val bridge = SourceRoots.text("src/main/java/com/byd/clusternav/vietmapwidget/VietMapWidgetBridge.kt")
 
@@ -90,23 +92,29 @@ class SpeedSignSourceLifecycleTest {
 
     @Test
     fun `existing controls only feed master source and output events with typed Prefs mapping`() {
-        assertTrue(main.contains("speedSign.onMasterEnabled(enabled)"))
-        assertTrue(main.contains("speedSign.onSourceSelected(Prefs.speedLimitSource"))
+        // Tới 2026-09-13 các assert này đọc `MainActivity`. Màn đó đã gỡ (S3 · R1) ⇒ cùng những sự kiện ấy nay
+        // phát từ hai chỗ: công tắc "Dẫn đường + HUD" trong cầu Kachi, và `BootSetupService` (mỗi lần nổ máy).
+        assertTrue(navBridge.contains("speedSign.onMasterEnabled(on)"))
+        assertTrue(owner.contains("onSourceSelected(Prefs.speedLimitSource"))
         // Owner 2026-08-11: cluster-lane output (incl. its speed-sign CLUSTER output) follows the
         // master switch now — cb_lane removed — so it is enabled with the master (constant `true` on
         // enable), not a separate checkbox listener's `enabled`.
-        assertTrue(main.contains("speedSign.onOutputEnabled(SpeedSignOutput.CLUSTER, true)"))
+        assertTrue(navBridge.contains("speedSign.onOutputEnabled(SpeedSignOutput.CLUSTER, true)"))
         // R1 (#6, docs/specs/cast-nav-ux-release-v104.html): the nav→HUD output toggle is hidden and
-        // force-disabled once at init — there is no user-driven HUD-enable path anymore, so the
-        // control feeds a constant `false` (not the old `enabled` from a checkbox listener).
-        assertTrue(main.contains("speedSign.onOutputEnabled(SpeedSignOutput.HUD, false)"))
+        // force-disabled — there is no user-driven HUD-enable path anymore, so the control feeds a constant
+        // `false`. Chỗ ép tắt đó chuyển sang boot-setup cùng lúc màn cũ bị gỡ (chạy mỗi lần nổ máy).
+        assertTrue(boot.contains("onOutputEnabled(SpeedSignOutput.HUD, false)"))
+        // `forcedPrefs` gom ba khoá không-có-nút vào một chỗ để CẢ HAI nhánh boot cùng gọi (xem
+        // `HeadlessAutostartContractTest.ca hai nhanh boot deu ep ba khoa khong co nut`); ở đây chỉ chốt rằng
+        // chuỗi boot-setup có gọi nó, và nó thật sự ép `hud` về false.
+        assertTrue(boot.contains("forcedPrefs(applicationContext)"))
+        assertTrue(boot.contains("Prefs.setHud(ctx, false)"))
         assertTrue(prefs.contains("fun speedLimitSource(ctx: Context): SpeedLimitSource"))
         // 08-22: nguồn tốc độ KHÔNG còn là lựa chọn — chỉ widget VietMap. Selector + prefs key đã gỡ.
         assertFalse(prefs.contains("fun setSpeedSource"), "setter nguồn tốc độ phải đã gỡ")
         assertFalse(prefs.contains("K_SPEED_SOURCE"), "khoá prefs nguồn tốc độ phải đã gỡ")
-        assertFalse(main.contains("spinner_speed_source"), "spinner nguồn tốc độ phải đã gỡ khỏi UI")
-        assertFalse(main.contains("SignCandidateGateway"))
-        assertFalse(main.contains("vehicleTest"))
+        assertFalse(navBridge.contains("SignCandidateGateway"))
+        assertFalse(navBridge.contains("vehicleTest"))
     }
 
     private fun functionBody(source: String, signature: String): String {

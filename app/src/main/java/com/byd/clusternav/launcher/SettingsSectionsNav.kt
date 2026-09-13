@@ -5,6 +5,7 @@ import android.widget.LinearLayout
 import com.byd.clusternav.R
 import com.byd.clusternav.VmBubblePlacementView
 import com.byd.clusternav.modules.clustercast.BadgePlacementView
+import com.byd.clusternav.modules.clustercast.ClusterNavLaneWidget
 import com.byd.clusternav.navigation.NavReadChannel
 import com.byd.clusternav.navigation.NavigationOutputStatus
 import com.byd.clusternav.launcher.KachiSpace as Sp
@@ -39,6 +40,15 @@ class SettingsNavSection(
     private lateinit var sourceRow: SettingsRows.StatusRow
     private lateinit var outputRow: SettingsRows.StatusRow
 
+    /**
+     * Dòng op-39 "cụm đang hiện gì" (R2d) — chuyển từ `NavClusterOp39Status` của màn cũ (đã gỡ 2026-09-13).
+     *
+     * Nó KHÁC [outputRow]: [outputRow] nói *"ta gửi được chưa"* (phía mình), dòng này nói *"cụm có nhận không,
+     * hay đang nhường chỗ cho Cast"* (phía cụm). Hai câu trả lời khác nhau cho cùng một triệu chứng "cụm trống",
+     * và chính vì lẫn hai thứ đó mà phiên chẩn đoán 08-12 đi sai hướng — nên giữ đủ hai dòng.
+     */
+    private lateinit var op39Row: SettingsRows.StatusRow
+
     /** Hai stepper vị trí biển báo + khung kéo-thả — giữ tham chiếu để ba bề mặt nói CÙNG một toạ độ. */
     private var badgeX: SettingsRows.Stepper? = null
     private var badgeY: SettingsRows.Stepper? = null
@@ -72,8 +82,10 @@ class SettingsNavSection(
 
         sourceRow = rows.statusRow(KachiTheme.MUT2, "")
         outputRow = rows.statusRow(KachiTheme.MUT2, "")
+        op39Row = rows.statusRow(KachiTheme.MUT2, "")
         body.addView(sourceRow.view)
         body.addView(outputRow.view)
+        body.addView(op39Row.view)
         refreshStatus()
 
         body.addView(rows.chipRow(
@@ -133,6 +145,29 @@ class SettingsNavSection(
         }
         val status = bridge.navOutputStatus()
         outputRow.update(outputColour(status), context.getString(R.string.kachi_nav_output, outputLabel(status)))
+        val op39 = bridge.clusterOp39()
+        op39Row.update(op39Colour(op39), context.getString(op39Label(op39)))
+    }
+
+    /**
+     * Bốn kết quả op-39 → bốn câu, chép nguyên nghĩa của `NavClusterOp39Status.refresh` (đã gỡ).
+     *
+     * `when` vét cạn trên enum: thêm một kết quả ở nhánh cast mà quên câu ở đây là **không biên dịch được**, chứ
+     * không phải một dòng trống trên màn xe.
+     */
+    private fun op39Label(status: ClusterNavLaneWidget.Op39Status): Int = when (status) {
+        ClusterNavLaneWidget.Op39Status.IDLE -> R.string.kachi_nav_op39_idle
+        ClusterNavLaneWidget.Op39Status.ASSERTED -> R.string.kachi_nav_op39_asserted
+        ClusterNavLaneWidget.Op39Status.GATED_CAST -> R.string.kachi_nav_op39_gated
+        ClusterNavLaneWidget.Op39Status.SHELL_UNREACHABLE -> R.string.kachi_nav_op39_unreachable
+    }
+
+    /** Cùng bảng màu với bản cũ: xanh = đang hiện · hổ phách = nhường Cast · đỏ = không gửi được · xám = chờ. */
+    private fun op39Colour(status: ClusterNavLaneWidget.Op39Status): String = when (status) {
+        ClusterNavLaneWidget.Op39Status.ASSERTED -> KachiTheme.GREEN
+        ClusterNavLaneWidget.Op39Status.GATED_CAST -> KachiTheme.AMBER
+        ClusterNavLaneWidget.Op39Status.SHELL_UNREACHABLE -> KachiTheme.RED
+        ClusterNavLaneWidget.Op39Status.IDLE -> KachiTheme.MUT2
     }
 
     /** Kênh đọc của nguồn — `UNKNOWN` trả chuỗi rỗng để câu không có cái ngoặc trống. */

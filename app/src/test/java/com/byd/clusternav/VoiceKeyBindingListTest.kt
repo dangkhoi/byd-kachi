@@ -44,10 +44,16 @@ class VoiceKeyBindingListTest {
     private val serviceSrc: String by lazy {
         KotlinSource.stripComments(SourceRoots.text("src/main/java/com/byd/clusternav/modules/navaccess/NavAccessibilityService.kt"))
     }
-    private val mainSrc: String by lazy {
-        KotlinSource.stripComments(SourceRoots.text("src/main/java/com/byd/clusternav/MainActivity.kt"))
+    /**
+     * Bề mặt "gán phím" nay là nhóm *Phím vô-lăng* của Kachi Settings + cầu — màn ClusterNav cũ (và cả hai
+     * biến thể `activity_main.xml` mang dropdown/`btn_voicekey_add`) đã gỡ 2026-09-13 (S3 · R1).
+     */
+    private val keysSection: String by lazy {
+        KotlinSource.stripComments(SourceRoots.text("src/main/java/com/byd/clusternav/launcher/SettingsSectionsKeys.kt"))
     }
-    private val layout: String by lazy { SourceRoots.text("src/main/res/layout/activity_main.xml") }
+    private val keysBridge: String by lazy {
+        KotlinSource.stripComments(SourceRoots.text("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeKeys.kt"))
+    }
 
     // ── Ô NHỚ GIẢ: đúng một chuỗi JSON, y như khoá `voicekey_bindings` trong SharedPreferences ──────
     private class FakeStore(var json: String? = null) {
@@ -241,39 +247,43 @@ class VoiceKeyBindingListTest {
      * contains trần và ĐÃ BỊ BẮT bằng phép thử làm-đỏ: đổi `btn_voicekey_add` → `btn_voicekey_addnew` đồng
      * bộ ở cả layout lẫn code thì test VẪN XANH, vì tên cũ là tiền tố của tên mới. Đúng nghĩa "test mù".
      */
-    /*
-     * ⚠ Test này chỉ đọc BẢN DỌC. Bất biến "id phải có ở MỌI biến thể layout (kể cả `layout-w960dp` mà đầu
-     * xe thật render)" nằm ở `LayoutVariantIdParityTest` — đừng coi test này là đủ để chặn lỗi thiếu view.
-     */
     @Test
     fun `man hinh co du chon nut chon app Them gan danh sach va nut xoa`() {
+        // Tới 2026-09-13: sáu `@+id/...` trong `activity_main.xml` (+ `LayoutVariantIdParityTest` canh bản
+        // `layout-w960dp`). Màn đó đã gỡ; cùng SÁU việc ấy nay là các hàng dựng bằng mã ở nhóm *Phím vô-lăng*.
         listOf(
-            "spinner_voicekey_button", "spinner_voicekey_target", "btn_voicekey_add",
-            "list_voicekey_bindings", "txt_voicekey_empty", "btn_voicekey_learn",
-        ).forEach { assertTrue(layout.contains("@+id/$it\""), "thiếu @+id/$it trong activity_main.xml") }
-
-        val row = SourceRoots.text("src/main/res/layout/row_voicekey_binding.xml")
-        assertTrue(row.contains("@+id/txt_binding_label\""))
-        assertTrue(row.contains("@+id/btn_binding_remove\""), "mỗi dòng phải có nút xoá (yêu cầu của owner)")
+            "bridge.buttonOptions()" to "chọn NÚT",
+            "bridge.targetOptions()" to "chọn APP/đích",
+            "bridge.addBinding(" to "Thêm gán",
+            "bridge.bindings()" to "danh sách đã gán",
+            "bridge.removeBinding(" to "nút Xoá của từng dòng",
+            "bridge.startLearn" to "học phím mới",
+        ).forEach { (token, what) ->
+            assertTrue(token in keysSection, "thiếu `$token` — mất bề mặt \"$what\" ở nhóm Phím vô-lăng")
+        }
     }
 
-    /** Nút "Thêm gán" phải GHI vào đúng danh sách, và vẽ lại danh sách ngay để owner thấy dòng vừa thêm. */
+    /** Nút "Thêm gán" phải GHI vào đúng danh sách, và báo khi ghi đè. */
     @Test
     fun `nut Them gan ghi vao danh sach va ve lai ngay`() {
-        val block = mainSrc.substringAfter("R.id.btn_voicekey_add").substringBefore("VoiceKeyLearnBus.setListener")
-        assertTrue(block.contains("Prefs.addVoiceKeyBinding(this, kc, target.second)"), "nút Thêm phải ghi vào danh sách")
-        assertTrue(block.contains("rebuildVoiceKeyBindingList()"), "thêm xong phải hiện dòng mới ngay")
-        assertTrue(block.contains("replaced"), "phải báo cho owner khi ghi đè — cấm im lặng")
-        assertTrue(block.contains("isGeminiVoiceSpec"), "công thức đặt trợ lý hệ thống phải theo sang nút Thêm")
+        assertTrue(
+            "Prefs.addVoiceKeyBinding(app, keyCode, targetSpec)" in keysBridge,
+            "nút Thêm phải ghi vào danh sách (một nguồn chân lý: `voicekey_bindings`)",
+        )
+        assertTrue("replaced" in keysBridge, "phải báo cho owner khi ghi đè — cấm im lặng")
+        assertTrue("isGeminiVoiceSpec" in keysBridge, "công thức đặt trợ lý hệ thống phải theo sang nút Thêm")
+        assertTrue("rebuildBindings" in keysSection, "thêm xong phải hiện dòng mới ngay")
     }
 
     /** Danh sách trên màn hình phải vẽ TỪ `Prefs.voiceKeyBindings` — cùng nguồn mà service nghe theo. */
     @Test
     fun `danh sach tren man hinh ve tu dung nguon service nghe`() {
-        val body = mainSrc.substringAfter("private fun rebuildVoiceKeyBindingList()").substringBefore("\n    private fun ")
-        assertTrue(body.contains("Prefs.voiceKeyBindings(this)"), "vẽ từ nguồn khác = màn hình nói dối")
-        assertTrue(body.contains("Prefs.removeVoiceKeyBinding(this@MainActivity, b.keyCode)"), "nút xoá trên dòng phải xoá thật")
-        assertTrue(body.contains("R.id.txt_voicekey_empty"), "rỗng phải nói rõ là KHÔNG có gì chạy")
+        assertTrue("Prefs.voiceKeyBindings(app)" in keysBridge, "vẽ từ nguồn khác = màn hình nói dối")
+        assertTrue("Prefs.removeVoiceKeyBinding(app, keyCode)" in keysBridge, "nút xoá trên dòng phải xoá thật")
+        assertTrue(
+            "kachi_keys_no_bindings" in keysSection,
+            "danh sách rỗng phải nói rõ là KHÔNG có gì chạy (chuỗi qua tài nguyên, không chữ cứng)",
+        )
     }
 
     /**
@@ -282,8 +292,8 @@ class VoiceKeyBindingListTest {
      */
     @Test
     fun `chon dropdown khong con ghi cau hinh`() {
-        assertFalse(mainSrc.contains("Prefs.setVoiceKeyCode("), "chọn nút không được ghi cấu hình")
-        assertFalse(mainSrc.contains("Prefs.setVoiceKeyTargetSpec("), "chọn app không được ghi cấu hình")
+        assertFalse(keysSection.contains("Prefs.setVoiceKeyCode("), "chọn nút không được ghi cấu hình")
+        assertFalse(keysBridge.contains("Prefs.setVoiceKeyTargetSpec("), "chọn app không được ghi cấu hình")
         assertFalse(prefsSrc.contains("fun setVoiceKeyCode("), "hàm ghi cặp cũ phải bỏ, tránh hai nguồn chân lý")
         assertFalse(prefsSrc.contains("fun setVoiceKeyTargetSpec("), "hàm ghi cặp cũ phải bỏ, tránh hai nguồn chân lý")
     }

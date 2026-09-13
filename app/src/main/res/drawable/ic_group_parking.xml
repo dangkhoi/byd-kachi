@@ -1,25 +1,25 @@
 <!--
-  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm CẢM BIẾN ĐỖ (8 vùng radar + âm lượng).
-  Xe ở giữa + TÁM vạch vùng quanh xe (3 trước · 3 sau · 2 hông) — đúng "8 zone radar" mà WidgetShape.BOARD ghi.
-  ⚠ Bản đầu vẽ 4 cung sóng trước/sau: khi ĐỌC ẢNH RENDER thì chúng xếp thành hình CUỘN DÂY, không ai đọc ra là
-  cảm biến. Bài test phong cách KHÔNG bắt được lỗi đó — chỉ mở ảnh ra xem mới thấy.
-  ⚠ Bản thứ hai để thân xe gần VUÔNG (7.2×6) ⇒ đọc ảnh thấy giống con CHIP hơn giống xe. Nay thân CAO hơn RỘNG
-  (5.2×6.8) như xe nhìn từ trên, khe thân–vạch giữ đủ 2.4 ở cả bốn phía.
-  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
+  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
+  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
+  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
+  NHÓM CẢM BIẾN ĐỖ — mắt cảm biến quanh cả bốn phía.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M10.4,8.6 L13.6,8.6 A1.6,1.6 0 0 1 15.2,10.2 L15.2,13.8 A1.6,1.6 0 0 1 13.6,15.4 L10.4,15.4 A1.6,1.6 0 0 1 8.8,13.8 L8.8,10.2 A1.6,1.6 0 0 1 10.4,8.6 Z"
+    <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.8,6.2 L9.8,4.6 M12,6 L12,4.2 M14.2,6.2 L14.2,4.6"
+    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.8,17.8 L9.8,19.4 M12,18 L12,19.8 M14.2,17.8 L14.2,19.4"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M7,12 L5.4,12 M17,12 L18.6,12"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M9.50,4.86 A0.64,0.64 0 1 1 9.50,6.14 A0.64,0.64 0 1 1 9.50,4.86 Z M11.15,4.86 A0.64,0.64 0 1 1 11.15,6.14 A0.64,0.64 0 1 1 11.15,4.86 Z M12.85,4.86 A0.64,0.64 0 1 1 12.85,6.14 A0.64,0.64 0 1 1 12.85,4.86 Z M14.50,4.86 A0.64,0.64 0 1 1 14.50,6.14 A0.64,0.64 0 1 1 14.50,4.86 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M9.50,18.36 A0.64,0.64 0 1 1 9.50,19.64 A0.64,0.64 0 1 1 9.50,18.36 Z M11.15,18.36 A0.64,0.64 0 1 1 11.15,19.64 A0.64,0.64 0 1 1 11.15,18.36 Z M12.85,18.36 A0.64,0.64 0 1 1 12.85,19.64 A0.64,0.64 0 1 1 12.85,18.36 Z M14.50,18.36 A0.64,0.64 0 1 1 14.50,19.64 A0.64,0.64 0 1 1 14.50,18.36 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M8.50,8.16 A0.64,0.64 0 1 1 8.50,9.44 A0.64,0.64 0 1 1 8.50,8.16 Z M8.50,10.36 A0.64,0.64 0 1 1 8.50,11.64 A0.64,0.64 0 1 1 8.50,10.36 Z M8.50,12.56 A0.64,0.64 0 1 1 8.50,13.84 A0.64,0.64 0 1 1 8.50,12.56 Z M8.50,14.76 A0.64,0.64 0 1 1 8.50,16.04 A0.64,0.64 0 1 1 8.50,14.76 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M15.50,8.16 A0.64,0.64 0 1 1 15.50,9.44 A0.64,0.64 0 1 1 15.50,8.16 Z M15.50,10.36 A0.64,0.64 0 1 1 15.50,11.64 A0.64,0.64 0 1 1 15.50,10.36 Z M15.50,12.56 A0.64,0.64 0 1 1 15.50,13.84 A0.64,0.64 0 1 1 15.50,12.56 Z M15.50,14.76 A0.64,0.64 0 1 1 15.50,16.04 A0.64,0.64 0 1 1 15.50,14.76 Z"
+        android:fillColor="#FFFFFF" />
 </vector>

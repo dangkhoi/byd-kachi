@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.SystemClock
 import android.service.notification.NotificationListenerService
 import android.util.Log
+import com.byd.clusternav.launcher.KachiHomeActivity
 
 /**
  * SELF-HEAL nav listener — auto-rebind KHÔNG cần mở app / không cần disallow→allow tay.
@@ -34,7 +35,7 @@ class RebindReceiver : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED -> {
                 scheduleWatchdog(context)
                 // 1.21 Item 1 (owner): HEADLESS auto-start — do the boot setup in a background
-                // foreground-service (BootSetupService) WITHOUT foregrounding MainActivity on the main
+                // foreground-service (BootSetupService) WITHOUT foregrounding any screen on the main
                 // display (also dodges the dudu size-compat letterbox). Toggle defaults ON; when OFF, fall
                 // back to the 1.14 I5 behaviour (auto-open Home on start). Auto-cast (castBootWork below) is
                 // unchanged either way — the bubble/cast track is already headless and self-driven.
@@ -120,12 +121,14 @@ class RebindReceiver : BroadcastReceiver() {
     }
 
     /**
-     * 1.21 Item 1: start the short-lived headless [BootSetupService] instead of foregrounding
-     * MainActivity. A foreground service (not a plain [launchHome]) because the relocated accessibility
+     * 1.21 Item 1: start the short-lived headless [BootSetupService] instead of foregrounding a screen.
+     * A foreground service (not a plain [launchHome]) because the relocated accessibility
      * grant + force-bind takes ~3–5 s over dadb — longer than a BroadcastReceiver's execution budget — so
      * it needs the FGS to keep the process alive. Best-effort: startForegroundService can throw in some
      * background-start-restricted states, so it is wrapped; the nav pipeline + auto-cast still self-heal via
-     * their own headless paths (listener bind, castBootWork), and MainActivity re-does the setup if opened.
+     * their own headless paths (listener bind, castBootWork), and the same setup re-runs when the app is
+     * opened (the old ClusterNav screen carried it until it was removed on 2026-09-13; it now lives in
+     * [BootSetupService] and [com.byd.clusternav.launcher.KachiHomeActivity]'s startup path).
      */
     private fun startBootSetup(context: Context) {
         runCatching {
@@ -142,17 +145,24 @@ class RebindReceiver : BroadcastReceiver() {
      * activity-start needs the SYSTEM_ALERT_WINDOW exemption, so this may be a no-op if the overlay grant is
      * absent — it never throws.
      *
-     * NOTE (IA v2, 2026-09-13 — docs/specs/kachi-settings-ia-v2.html R1): the launcher intent now resolves to
-     * `launcher.KachiHomeActivity` (CATEGORY_LAUNCHER moved there; one icon per APK), so this opens the Kachi
-     * home screen rather than the old ClusterNav screen. Intended — and it only fires when the
-     * `headless_autostart` toggle is OFF; the default-ON path still starts [BootSetupService] with no UI.
+     * NOTE (S3, 2026-09-13 — docs/specs/kachi-remove-legacy-screen.html R1): the launcher intent resolves to
+     * [KachiHomeActivity], and so does the fallback below — the old ClusterNav screen was removed on
+     * 2026-09-13, so Kachi is the only screen this can open. It only fires when the `headless_autostart`
+     * toggle is OFF; the default-ON path still starts [BootSetupService] with no UI.
+     *
+     * NOTE 2 (S3 · soát 2026-09-13): nhánh này là nhánh KHÔNG chạy [BootSetupService], nên nó phải tự gọi
+     * [BootSetupService.forcedPrefs] — ba khoá ép-mỗi-lần-nổ-máy (`hud`=false · `interpolate`/`acc_booster`=true)
+     * trước 2026-09-13 do màn ClusterNav cũ ghi đè mỗi lần mở; gỡ màn mà chỉ đặt lại ở nhánh headless thì máy
+     * nào TẮT *"Tự khởi động nền"* sẽ đóng băng giá trị cũ vĩnh viễn (xem KDoc của hàm đó).
      */
     private fun launchHome(context: Context) {
+        runCatching { BootSetupService.forcedPrefs(context.applicationContext) }
+            .onFailure { Log.w(TAG, "forced prefs failed", it) }
         runCatching {
             val app = context.applicationContext
             val launch = app.packageManager.getLaunchIntentForPackage(app.packageName)
                 ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                ?: Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                ?: Intent(app, KachiHomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             app.startActivity(launch)
             Log.i(TAG, "launch Home requested")
         }.onFailure { Log.e(TAG, "launch Home failed", it) }

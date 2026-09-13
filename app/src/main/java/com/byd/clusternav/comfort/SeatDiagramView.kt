@@ -20,7 +20,8 @@ import com.byd.clusternav.R
  * rows (`seat0_group`…`seat3_l2`) with a single glanceable, chữ-ký component: chạm ghế để đổi mức.
  *
  * FRAMEWORK-only custom View (no AppCompat / Material) drawn with [Canvas]. Pure UI — it holds NO HAL / prefs
- * coupling; the owner ([com.byd.clusternav.MainActivity.setupSeatComfortControls]) seeds it from
+ * coupling; the owner (`SettingsSectionsCar` in Kachi Settings — the old ClusterNav screen was removed
+ * 2026-09-13) seeds it from
  * [Prefs.seatComfortLevel]/[Prefs.seatComfortMode] and, on [onSeatLevelChanged], persists to
  * [Prefs.seatComfortLevel] + calls [SeatComfortApplier.applyNow] — the SAME persistence + apply behaviour the
  * radios had, so the feature is intact.

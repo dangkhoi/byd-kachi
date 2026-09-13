@@ -259,7 +259,8 @@ class DiagActivity : Activity() {
 
     // ─── Check-for-update status sink ────────────────────────────────────────
     // The interactive check → confirm → download → install flow lives in the shared [UpdateFlow]
-    // helper (invoked by the button above and by MainActivity). This screen only renders status.
+    // helper (invoked by the button above; the old ClusterNav screen, its second caller, was removed
+    // 2026-09-13). This screen only renders status.
     private fun setStatus(text: String, warn: Boolean = false) {
         status.text = text
         status.setTextColor(if (warn) Color.rgb(176, 0, 32) else Color.rgb(0, 105, 92))

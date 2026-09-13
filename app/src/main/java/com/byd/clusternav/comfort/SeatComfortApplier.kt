@@ -16,7 +16,8 @@ import com.byd.clusternav.modules.hal.BydHal
  * **1-based** (1..4) + state **1=Tắt/2=Mức1/3=Mức2**. Đường AC + raw-id + `HAL_VALUE` đã bỏ hẳn.
  *
  * ── Vòng đời ─────────────────────────────────────────────────────────────────────────────────────
- *  • [applyOnStart] — gọi lúc mở app (MainActivity.onCreate) và lúc boot nền (BootSetupService). Nếu công
+ *  • [applyOnStart] — gọi lúc boot nền (BootSetupService; màn ClusterNav cũ, chỗ gọi thứ hai trước
+ *    2026-09-13, đã gỡ). Nếu công
  *    tắc ghế TẮT → no-op. Nếu BẬT → chạy NỀN, ngủ ~5 s (chờ HAL/cabin sẵn sàng sau khởi động) rồi ghi từng
  *    ghế có mức ≠ Tắt. Chỉ ghi method của mode đang chọn (mát ↔ sưởi loại trừ nhau ở MCU).
  *  • [applyNow] — áp lại MỌI ghế có mức ≠ Tắt cho mode hiện tại (dùng khi ĐỔI CHẾ ĐỘ mát↔sưởi).

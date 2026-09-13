@@ -23,7 +23,6 @@ class ClusterNavBridgeCastKeysWiringContractTest {
     private val BRIDGE = "src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt"
     private val CAST = "src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeCast.kt"
     private val KEYS = "src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeKeys.kt"
-    private val MAIN = "src/main/java/com/byd/clusternav/MainActivity.kt"
 
     /** MÃ đã bỏ chú thích — mọi phép "phải/không được chứa chuỗi X" đều chạy trên bản này. */
     private fun bridge() = SourceRoots.codeOf(BRIDGE)
@@ -119,7 +118,7 @@ class ClusterNavBridgeCastKeysWiringContractTest {
         val deep = body(cast(), "fun ClusterNavBridge.deepRescue(")
         assertTrue("openProjection" !in deep, "dọn sạch cụm TUYỆT ĐỐI không mở lại chiếu — mở lại là giành cụm tiếp")
         assertTrue(
-            "CastDeepRescueAction.CONFLICT_PACKAGES" in deep,
+            "CAST_CONFLICT_PACKAGES" in deep,
             "danh sách app tranh chấp phải DÙNG CHUNG hằng gốc, không chép tay (hai bản sẽ trôi khỏi nhau)",
         )
         listOf("am force-stop", "wm size reset", "wm density reset", "wm overscan reset").forEach {
@@ -192,18 +191,25 @@ class ClusterNavBridgeCastKeysWiringContractTest {
     }
 
     /**
-     * Bảng preset mã phím phải trùng KHÍT màn cũ — **đúng mã, đúng thứ tự**. Lệch một mã là hai màn
-     * cho hai danh sách nút khác nhau cho cùng một chiếc xe.
+     * Bảng preset mã phím — **đúng mã, đúng thứ tự**, ghim bằng danh sách chữ số.
+     *
+     * Tới 2026-09-13 bài này so bảng của cầu với `MainActivity.voiceKeyPresets()` (hai bản sao phải
+     * trùng khít). Màn cũ đã gỡ ⇒ cầu là bản DUY NHẤT, nên bài chuyển sang ghim thẳng chín mã: chúng
+     * là **mã phím vật lý của xe** ([ĐO] on-car 2026-08-13 cho `328` — nút mic vô-lăng nhấn-giữ), không
+     * phải lựa chọn tuỳ ý. Sửa một con số ở đây là đổi nút mà người dùng đang bấm ngoài đường, nên nó
+     * phải trả giá bằng một dòng test đỏ.
+     *
+     * Thứ tự cũng bị ghim: nó là thứ tự hiện trong danh sách chọn nút ở *Cài đặt › Phím vô-lăng*.
      */
     @Test
-    fun `bang preset ma phim trung khit man cu`() {
-        val old = Regex("""\bto (\d+)\b""")
-            .findAll(body(SourceRoots.codeOf(MAIN), "private fun voiceKeyPresets(): List<Pair<String, Int>>"))
-            .map { it.groupValues[1] }.toList()
-        val new = Regex("""\d+""")
+    fun `bang preset ma phim ghim dung chin ma va dung thu tu`() {
+        val codes = Regex("""\d+""")
             .findAll(body(keys(), "fun ClusterNavBridge.buttonPresetCodes(): List<Int>"))
             .map { it.value }.toList()
-        assertEquals(old, new, "preset mã phím của cầu phải trùng khít `MainActivity.voiceKeyPresets()`")
+        assertEquals(
+            listOf("328", "231", "219", "85", "88", "87", "79", "5", "84"), codes,
+            "preset mã phím (mic vô-lăng 328 đứng đầu) — đổi mã/thứ tự là đổi nút người dùng đang bấm",
+        )
     }
 
     /**

@@ -345,8 +345,15 @@ class FloatingBubbleService : Service() {
                 NotificationChannel(channel, "Cluster Cast", NotificationManager.IMPORTANCE_LOW),
             )
         }
+        // Chạm thông báo ⇒ mở thẳng nhóm *Chiếu cụm* của Kachi Settings (S3 · R1). Màn ClusterNav cũ — đích của
+        // PendingIntent này trước 2026-09-13 — đã gỡ; "điều khiển" mà câu chữ nói tới nay nằm đúng ở nhóm đó.
         val pending = PendingIntent.getActivity(
-            this, 0, Intent(this, com.byd.clusternav.MainActivity::class.java),
+            this, 0,
+            Intent(this, com.byd.clusternav.launcher.KachiHomeActivity::class.java)
+                .putExtra(
+                    com.byd.clusternav.launcher.EXTRA_OPEN_SETTINGS_GROUP,
+                    com.byd.clusternav.launcher.SettingsGroup.CAST.id,
+                ),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         @Suppress("DEPRECATION")

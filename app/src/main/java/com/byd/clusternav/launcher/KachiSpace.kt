@@ -389,6 +389,16 @@ object KachiSpace {
     /** Đồng hồ PM2.5 — một cung tròn + một con số; cao hơn nữa chỉ là chỗ trống. */
     const val EMBED_S = 120
 
+    /**
+     * Ô xem trước cụm ở nhóm *Chiếu cụm* (S3 · R2b).
+     *
+     * Thấp hơn hẳn hai bậc trên vì nó **không có gì bên trong để nhìn**: một mặt cụm bo góc, một vạch chia, một
+     * dòng tên app. [ĐO] ảnh máy ảo 2026-09-13 ở bậc `EMBED_S`: ô cao 120dp trải hết bề rộng thẻ đọc ra như một
+     * mảng màu trống, không như một cụm đồng hồ thu nhỏ. Tỉ lệ cụm thật là 1920×720 (2.67:1) nên ở bề rộng thẻ
+     * ~1350px thì 72dp đã cao hơn tỉ lệ đó — đủ để nhận ra hình, không thừa chỗ.
+     */
+    const val EMBED_PREVIEW = 72
+
     /** Ảnh bìa nhạc (vuông). */
     const val ART = 80
 

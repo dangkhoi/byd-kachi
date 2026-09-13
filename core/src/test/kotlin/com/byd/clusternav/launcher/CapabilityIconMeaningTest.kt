@@ -87,10 +87,11 @@ class CapabilityIconMeaningTest {
         assertEquals(
             // U6 gỡ `g_climate` khỏi danh sách: sau khi tách bụi/cảm biến/nước làm mát/điều hoà, các ô con của
             // nhóm Khí hậu đã phân biệt được bằng icon. Danh sách TỰ RỮA — đây đúng là chiều nó phải rữa.
-            listOf(
-                "g_tyres", "g_windows", "g_doors", "g_lights", "g_ambient",
-                "g_adas", "g_occupants", "g_battery", "g_trip",
-            ),
+            // U7 gỡ BẢY nhóm khỏi danh sách (`g_tyres` · `g_windows` · `g_doors` · `g_lights` · `g_ambient` ·
+            // `g_adas` · `g_occupants`): cả bảy "mù icon" vì cùng một lý do — ô con của chúng khác nhau ở VỊ
+            // TRÍ, mà icon theo khái niệm không nói được vị trí. Bộ hình xe theo vị trí chữa đúng chỗ đó, nên
+            // đây là chiều danh sách PHẢI rữa. Còn lại hai nhóm mà ô con khác nhau ở ĐẠI LƯỢNG chứ không ở chỗ.
+            listOf("g_battery", "g_trip"),
             blind,
             "danh sách nhóm mà icon ô con KHÔNG phân biệt được đã đổi — cập nhật danh sách và xem lại bộ vẽ",
         )
@@ -156,7 +157,9 @@ class CapabilityIconMeaningTest {
      */
     @Test
     fun `lop cua mot banh va lop cua ca nhom la hai muc rieng`() {
-        assertEquals("ic-tire", icon("tyre_p_fl"), "áp suất một bánh dùng icon MỘT bánh")
+        // U7: cả hai nay cùng dựng trên KHUNG XE nhìn từ trên — đúng nghĩa "cùng họ" mà KDoc trên đòi, và
+        // khác nhau ở đúng chỗ phải khác: một bánh TÔ ĐẶC (nói "bánh nào") vs CẢ BỐN bánh tô (nói "cả cụm").
+        assertEquals("ic-car-top-tyre-fl", icon("tyre_p_fl"), "áp suất một bánh: khung xe + ĐÚNG bánh đó tô đặc")
         assertEquals("ic-group-tyres", CapabilityGroups.TYRES.icon, "nhóm dùng icon cả xe + 4 bánh")
         assertNotEquals(icon("tyre_p_fl"), CapabilityGroups.TYRES.icon)
     }

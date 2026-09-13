@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
-import com.byd.clusternav.modules.clustercast.CastDeepRescueAction
 import com.byd.clusternav.modules.clustercast.DisplayParse
 import com.byd.clusternav.modules.clustercast.FloatingBubbleService
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
@@ -22,6 +21,11 @@ import com.byd.clusternav.system.PackageQueries
  * [ClusterNavBridge]** để bề mặt vẫn phẳng (`bridge.castFull(pkg)`) — Kotlin không có partial class,
  * còn tách thành lớp con thì section phải biết hai vật, trái với N2 ("một cầu duy nhất").
  *
+ *
+ * ⚠ **2026-09-13 — màn cũ đã GỠ HẲN** (`docs/specs/kachi-remove-legacy-screen.html` R1/R3). Mọi chỉ dẫn
+ * `MainActivity.kt:<dòng>` dưới đây là **vết lịch sử**, không phải một tệp còn đọc được: chúng trỏ vào bản trước
+ * commit gỡ màn (tra bằng `git log -- app/src/main/java/com/byd/clusternav/MainActivity.kt`). Giữ số dòng vì đó là
+ * cách duy nhất còn lại để so hành vi của cầu với bản gốc; cầu nay là **nguồn duy nhất** của những hành vi đó.
  * Mọi hàm lặp lại `CastEnableSwitch.kt` / `CastSplitRatioButtons.kt` / `CastAutostart.kt` /
  * `MainActivityCastController.kt` — có ghi dòng gốc ở từng KDoc.
  */
@@ -41,7 +45,7 @@ fun ClusterNavBridge.castEnabled(): Boolean = coordinator.prefs.castEnabled()
  *    → toast "Đã bật Cluster Cast".
  *  - **TẮT** → persist → `dispatch(Stop())` → `closeProjection()` → `stopService(...)` → toast.
  *    "Đứng xuống và KHÔNG mở lại" — đây là lựa chọn của người dùng, nên KHÔNG force-stop ai như
- *    `CastDeepRescueAction` (xem [deepRescue]).
+ *    `CastDeepRescueAction` cũ làm (xem [deepRescue]).
  *
  * Ba lời gọi shell tự xếp hàng trên executor nối tiếp của coordinator ⇒ không chạy trên luồng vẽ.
  */
@@ -154,12 +158,20 @@ fun ClusterNavBridge.restoreCluster() {
 }
 
 /**
- * "Dọn sạch cụm (gỡ kẹt DashCast)" — lặp lại `CastDeepRescueAction.kt:71–98`.
+ * App chiếu cụm dùng CHUNG API với ClusterNav — nguồn xung đột đã biết (findings + navopen spoof
+ * `com.byd.dashcast`).
  *
- * ⚠ **KHÔNG gọi lại được lớp gốc**: `CastDeepRescueAction.bind(button)` nhận `android.widget.Button`
- * và `execute()` là private ⇒ cầu này không giữ View nên phải chép lại **ba bước** của nó. Danh sách
- * app tranh chấp thì DÙNG CHUNG hằng gốc ([CastDeepRescueAction.CONFLICT_PACKAGES]) để hai đường
- * không trôi khỏi nhau.
+ * Chuyển về đây 2026-09-13 cùng lúc `CastDeepRescueAction` bị xoá (S3 · R3): hằng này từng nằm ở lớp đó và cầu
+ * chỉ mượn lại để hai đường không trôi khỏi nhau. Nay chỉ còn **một** đường, nên hằng đi theo nó — chứ không để
+ * lại một tệp 105 dòng chỉ để giữ hai chuỗi.
+ */
+internal val CAST_CONFLICT_PACKAGES = listOf("com.byd.dashcast", "com.xdja.clusterdemo")
+
+/**
+ * "Dọn sạch cụm (gỡ kẹt DashCast)" — lặp lại `CastDeepRescueAction.kt:71–98` (lớp đó đã gỡ 2026-09-13; đây là
+ * đường DUY NHẤT còn lại của việc này).
+ *
+ * Ba bước, đúng thứ tự của bản gốc: đứng hẳn xuống → force-stop bên tranh chấp → reset VD cụm.
  *
  * [onConfirm] = hộp xác nhận của tầng UI (lớp gốc tự dựng `AlertDialog`; bridge không dựng View).
  * Chỉ chạy khi tầng UI gọi lại `proceed()`. [onDone] nhận **danh sách gói đã force-stop** (rỗng =
@@ -182,7 +194,7 @@ fun ClusterNavBridge.deepRescue(
             runCatching { app.stopService(Intent(app, FloatingBubbleService::class.java)) }
 
             // 2. Force-stop bên tranh chấp để nó thôi giật lại cụm.
-            val stopped = CastDeepRescueAction.CONFLICT_PACKAGES.filter { pkg ->
+            val stopped = CAST_CONFLICT_PACKAGES.filter { pkg ->
                 runCatching { coordinator.executeShell("am force-stop $pkg").success }.getOrDefault(false)
             }
 

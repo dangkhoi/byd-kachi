@@ -1,0 +1,14 @@
+<!--
+  U7 · HƯỚNG — kim la bàn (đầu kim TÔ là hướng đang đi).
+  Chuẩn bộ icon: khung 24×24 · hình trong ô quang học 20×20 · nét 1.6 · đầu/khớp nét tròn ·
+  KHÔNG giữ màu riêng (chỗ dùng tint). NÉT = vật thể, VÙNG TÔ = phần đang được nói tới.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M12,3.6 A8.4,8.4 0 1 1 11.99,3.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M12,5.0 L14.9,12.0 L12,19.0 L9.1,12.0 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

@@ -200,12 +200,9 @@ internal object SettingsCatalogEntries {
         SettingsEntry("system_update", SettingsGroup.SYSTEM, "Kiểm tra cập nhật", labelEn = "Check for updates"),
         // btn_nav_stop · dừng mọi output dẫn đường — VIỆC LÀM
         SettingsEntry("system_nav_stop", SettingsGroup.SYSTEM, "Dừng toàn bộ dẫn đường", labelEn = "Stop all navigation"),
-        // Mở `MainActivity` (màn ClusterNav cũ, nay hạ cấp thành màn nâng cao/đối chiếu — OQ1) — VIỆC LÀM.
-        // Thay cho mục `clusternav_open` của IA v1: nhóm CLUSTERNAV biến mất, dòng mở màn cũ ở lại.
-        SettingsEntry(
-            "system_advanced_screen", SettingsGroup.SYSTEM, "Màn nâng cao (ClusterNav)",
-            labelEn = "Advanced screen (ClusterNav)",
-        ),
+        // ⚠ `system_advanced_screen` (mở màn ClusterNav cũ) đã XOÁ 2026-09-13 — màn đó bị gỡ hẳn
+        // (docs/specs/kachi-remove-legacy-screen.html R1, đóng OQ1 của IA v2). Không có mục thay thế: mọi cấu
+        // hình của nó đã nằm ở các nhóm nav/cast/keys/car từ IA v2 và ghi đúng cùng khoá.
         // btn_vietmap_widget_diag · kiểm dữ liệu/widget VietMap — VIỆC LÀM
         SettingsEntry("system_vietmap_data", SettingsGroup.SYSTEM, "Dữ liệu VietMap", labelEn = "VietMap data"),
         // cast_diagnostics · ClusterDiag/DiagActivity — VIỆC LÀM

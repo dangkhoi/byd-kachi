@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
  * ═══ R2 · §4.3 — **MỌI MỤC CỦA DANH MỤC ĐỀU CÓ MỘT ĐIỀU KHIỂN THẬT** ═════════════════════════════════════════
  *
  * Tách khỏi [SettingsScreenWiringContractTest] (backlog D2c: tệp đó 547 dòng, quá trần 500 của CLAUDE.md §4.1).
- * Ranh giới cắt chọn ở đây vì bảng 56 mục là **một loại bài khác** với phần còn lại: phần kia canh *hình dạng dây
+ * Ranh giới cắt chọn ở đây vì bảng 55 mục là **một loại bài khác** với phần còn lại: phần kia canh *hình dạng dây
  * nối* của vỏ màn (rail, back, một-cửa-vào, không-ghi-bền), còn bài này là **bảng đối chiếu dữ liệu** giữa danh mục
- * `:core` và các tệp section của `:app` — nó dài vì có 56 hàng, và nó sẽ còn dài thêm mỗi lần IA nhận mục mới.
+ * `:core` và các tệp section của `:app` — nó dài vì có 55 hàng, và nó sẽ còn dài thêm mỗi lần IA nhận mục mới.
  * Trộn hai loại trong một tệp nghĩa là mỗi lần thêm một mục cài đặt lại đẩy tệp kia gần trần hơn.
  *
  * Toàn bộ assert giữ NGUYÊN văn từ bản gộp — đây là lượt tách tệp, không phải lượt sửa luật.
@@ -33,7 +33,7 @@ class SettingsCatalogControlContractTest {
      *
      * `SettingsCoverageContractTest` trả lời chiều thứ nhất: *mọi khoá lưu bền đều thuộc một nhóm của danh mục*.
      * Nó **không thể** trả lời chiều thứ hai, và chiều thứ hai mới là thứ người dùng thấy: *mỗi mục của danh mục có
-     * thật một điều khiển trên màn hay không*. Danh mục khai 56 mục; một mục khai rồi mà không ai dựng control thì
+     * thật một điều khiển trên màn hay không*. Danh mục khai 55 mục; một mục khai rồi mà không ai dựng control thì
      * rail vẫn nói "nhóm này có N mục" còn trang thì thiếu — và không có gì đỏ.
      *
      * ## Cách khoá: BẢNG mã mục → dấu vết trong tệp section
@@ -109,7 +109,6 @@ class SettingsCatalogControlContractTest {
             "system_headless_autostart" to ("SettingsSections" to "deps.bridge.setHeadlessAutostart("),
             "system_update" to ("SettingsSections" to "deps.bridge.checkUpdate"),
             "system_nav_stop" to ("SettingsSections" to "deps.bridge.navStop()"),
-            "system_advanced_screen" to ("SettingsSections" to "deps.bridge.openLegacyScreen()"),
             "system_vietmap_data" to ("SettingsSections" to "deps.bridge.openVietMapData()"),
             "system_diagnostics" to ("SettingsSections" to "deps.bridge.openDiagnostics()"),
             // ── 10 · Giới thiệu ──

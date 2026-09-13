@@ -34,7 +34,6 @@ class ClusterNavBridgeWiringContractTest {
     private val CAST = "src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeCast.kt"
     private val KEYS = "src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeKeys.kt"
     private val MSG = "src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeMsg.kt"
-    private val MAIN = "src/main/java/com/byd/clusternav/MainActivity.kt"
 
     /** MÃ đã bỏ chú thích — mọi phép "phải/không được chứa chuỗi X" đều chạy trên bản này. */
     private fun bridge() = SourceRoots.codeOf(BRIDGE)
@@ -282,19 +281,18 @@ class ClusterNavBridgeWiringContractTest {
     }
 
     /**
-     * N3: **KHÔNG sửa `MainActivity.kt`** (và hai tệp byte-seal T11). Đợt gộp này cố ý "dựng lại trong
-     * Kachi, cùng khoá" thay vì trích hàm ra, chính vì sửa màn cũ = phá niêm phong hoặc viết lại chục
-     * wiring test cho một màn sắp hạ cấp (spec §9).
+     * S3 (2026-09-13): `MainActivity.kt` đã bị **xoá** cùng cả màn cũ, nên nó rời khỏi danh sách này —
+     * hai tệp tài nguyên byte-seal T11 thì Ở LẠI trên đĩa như hiện vật và vẫn không được đụng một byte
+     * (spec `kachi-remove-legacy-screen.html` R5; `LegacyScreenAbsenceContractTest` canh hash của chúng).
      */
     @Test
-    fun `khong dung vao man cu va hai tep niem phong`() {
+    fun `khong dung vao hai tep niem phong`() {
         val sealed = listOf(
-            "app/src/main/java/com/byd/clusternav/MainActivity.kt",
             "app/src/main/res/layout/activity_main.xml",
             "app/src/main/res/values/strings.xml",
         )
         // Gốc repo = thư mục tổ tiên gần nhất có `.git` (working dir của test tuỳ module — xem SourceRoots).
-        val root = generateSequence(SourceRoots.path(MAIN).toAbsolutePath()) { it.parent }
+        val root = generateSequence(SourceRoots.path(BRIDGE).toAbsolutePath()) { it.parent }
             .firstOrNull { java.nio.file.Files.exists(it.resolve(".git")) }
             ?: return  // không phải checkout git (CI tarball) ⇒ bỏ qua, các bài khác vẫn canh
 
@@ -306,7 +304,7 @@ class ClusterNavBridgeWiringContractTest {
 
         assertTrue(
             out.isBlank(),
-            "T2 KHÔNG được sửa màn cũ / tệp niêm phong, nhưng `git diff` thấy:\n$out",
+            "hai tệp niêm phong T11 KHÔNG được sửa, nhưng `git diff` thấy:\n$out",
         )
     }
 }

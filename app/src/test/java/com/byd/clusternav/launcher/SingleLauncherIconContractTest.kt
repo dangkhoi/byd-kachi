@@ -55,10 +55,16 @@ class SingleLauncherIconContractTest {
         assertTrue(home.contains("android.intent.category.HOME"), "và vẫn là HOME")
     }
 
+    /**
+     * Màn ClusterNav cũ: IA v2 (09-12) chỉ gỡ `CATEGORY_LAUNCHER` của nó; S3 (09-13) gỡ hẳn cả activity.
+     * Bài canh chiều "không mọc lại một icon thứ hai" — chi tiết vắng mặt ở [LegacyScreenAbsenceContractTest].
+     */
     @Test
-    fun `man ClusterNav cu khong con LAUNCHER nhung van exported cho intent tuong minh`() {
-        val main = activityBlock(".MainActivity")
-        assertFalse(main.contains(LAUNCHER), "MainActivity không được có icon riêng (R1: một icon, một app)")
-        assertTrue(main.contains("android:exported=\"true\""), "MainActivity vẫn phải exported cho RebindReceiver/UpdateRelaunch/Settings › Nâng cao")
+    fun `man ClusterNav cu khong con trong manifest`() {
+        val noComments = manifest.replace(Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL), "")
+        assertFalse(
+            noComments.contains("android:name=\".MainActivity\""),
+            "màn cũ đã gỡ 2026-09-13 — khai lại nó là quay về hai bề mặt cấu hình song song",
+        )
     }
 }

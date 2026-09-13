@@ -12,7 +12,8 @@ import com.byd.clusternav.R
 /**
  * PM2.5 GAUGE — a circular arc gauge for the fine-dust level (Level-2 cockpit UI, task
  * `ui-visual-upgrade-l2`, ref `docs/specs/ui-visual-upgrade-l2.html` `.gauge`). FRAMEWORK-only custom View
- * drawn with [Canvas]. Pure UI — no HAL / prefs coupling; the owner ([com.byd.clusternav.MainActivity.refreshPm25Level])
+ * drawn with [Canvas]. Pure UI — no HAL / prefs coupling; the owner (`SettingsSectionsCar`; the old
+ * ClusterNav screen was removed 2026-09-13)
  * reads the level on a background thread via [Pm25FilterApplier.readLevel] and calls [setLevel] on the main
  * thread. [Pm25Filter] (core) stays UNCHANGED — this only maps its 0..6 scale to an arc fraction, colour and
  * the bilingual-neutral Vietnamese label ([Pm25Filter.levelLabelVi]).

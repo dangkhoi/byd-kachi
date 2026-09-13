@@ -332,17 +332,27 @@ object WidgetViews {
         return TyreBoardView(ctx).apply { set(readings, values, unit, temps, footer) }
     }
 
-    /** Ô nhỏ (lưới nhiều widget trong 1 ô): khoảng cao–thấp + màu theo [TyreBoard.anyAlert]. */
+    /**
+     * Ô nhỏ (lưới nhiều widget trong 1 ô): khoảng cao–thấp + màu theo [TyreBoard.anyAlert].
+     *
+     * ⚠ U7 — hình ở đây là **`ic-group-tyres` (khung xe + BỐN bánh tô)**, không phải `ic-tire` (MỘT bánh):
+     * ô này gộp số của cả bốn bánh, nên hình một bánh nói sai nội dung. [ĐO] ảnh máy ảo 2026-09-13: ô
+     * *"Tyre pressure (bar)"* giữa màn mang glyph một bánh trong khi nó đang tóm tắt cả bộ.
+     * `ic-tire` vẫn sống — nó là hình lùi-về của lĩnh vực Lốp (`WidgetCatalog.iconFor`).
+     *
+     * Lấy tên hình từ **[CapabilityGroups.TYRES]** chứ không gõ chuỗi: nhóm Lốp là chỗ DUY NHẤT định nghĩa
+     * "hình của cả bộ lốp", nên đổi hình ở đó là mọi bề mặt đổi theo — không có bản sao thứ hai phải nhớ sửa.
+     */
     private fun tyreMini(ctx: Context, car: CarStatus, units: UnitPrefs): View {
         val readings = TyreBoard.readings(car.tyres)
         val known = readings.mapNotNull { it.pressureKpa }
         val unit = units.unitFor(Quantity.PRESSURE)
-        if (known.isEmpty()) return miniCard(ctx, "ic-tire", "—", unit, KachiTheme.INK, false, dim = true)
+        if (known.isEmpty()) return miniCard(ctx, CapabilityGroups.TYRES.icon, "—", unit, KachiTheme.INK, false, dim = true)
         val lo = formatPressure(known.min(), units)
         val hi = formatPressure(known.max(), units)
         val text = if (lo == hi) lo else "$lo–$hi"
         val alert = readings.any { it.status.alert }
-        return miniCard(ctx, "ic-tire", text, unit, if (alert) KachiTheme.AMBER else KachiTheme.INK, false)
+        return miniCard(ctx, CapabilityGroups.TYRES.icon, text, unit, if (alert) KachiTheme.AMBER else KachiTheme.INK, false)
     }
 
     /**
@@ -479,7 +489,7 @@ object WidgetViews {
                 cell("ic-leaf", ug?.let { "${it}µg" } ?: "—", "PM2.5 " + (lvl?.let { pm(ctx, it) } ?: ""), KachiTheme.CYAN),
             ), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(rowOf(
-                cell("ic-tire", tText ?: "—", ctx.getString(R.string.kachi_tyre_pressure_unit, tUnit),
+                cell(CapabilityGroups.TYRES.icon, tText ?: "—", ctx.getString(R.string.kachi_tyre_pressure_unit, tUnit),
                     if (tRead.any { it.status.alert }) KachiTheme.AMBER else KachiTheme.INK),
                 cell("ic-music", data.media?.title ?: "—", data.media?.artist ?: "", KachiTheme.INK),
             ), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))

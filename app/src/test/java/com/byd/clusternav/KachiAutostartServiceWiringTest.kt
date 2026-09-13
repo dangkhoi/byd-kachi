@@ -33,7 +33,6 @@ class KachiAutostartServiceWiringTest {
     private val service by lazy { readSrc("KachiAutostartService.kt") }
     private val autostart by lazy { readSrc("KachiAutostart.kt") }
     private val boot by lazy { readSrc("BootSetupService.kt") }
-    private val main by lazy { readSrc("MainActivity.kt") }
     private val home by lazy { readSrc("launcher/KachiHomeActivity.kt") }
     private val windows by lazy { readSrc("launcher/LauncherWindows.kt") }
     private val prefs by lazy { readSrc("launcher/WorkspacePrefs.kt") }
@@ -74,7 +73,8 @@ class KachiAutostartServiceWiringTest {
     fun `service is the only place calling runBoot`() {
         assertTrue(service.contains("KachiAutostart.runBoot("), "KachiAutostartService must call KachiAutostart.runBoot on its worker")
         assertFalse(boot.contains("KachiAutostart.runBoot("), "BootSetupService must NOT call runBoot directly")
-        assertFalse(main.contains("KachiAutostart.runBoot("), "MainActivity must NOT call runBoot directly")
+        // (Trước 2026-09-13 bài này cũng canh `MainActivity` không gọi runBoot; màn đó đã gỡ — S3 · R1 — nên
+        // chỉ còn hai chỗ có thể gọi nhầm là receiver boot và dịch vụ boot-setup, cả hai đã canh ở trên.)
         assertFalse(receiver.contains("KachiAutostart.runBoot("), "RebindReceiver goes through the service, not runBoot")
     }
 

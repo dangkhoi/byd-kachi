@@ -29,12 +29,14 @@ class ClusterPreviewView @JvmOverloads constructor(
     defStyleAttr: Int = 0,
 ) : View(context, attrs, defStyleAttr) {
 
-    private val bg = context.getColor(R.color.cluster_face)              // recessed cluster face
-    private val border = context.getColor(R.color.hairline_strong)       // face border
-    private val leftTint = context.getColor(R.color.cluster_tint_left)   // ~16% blue left half
-    private val rightTint = context.getColor(R.color.cluster_tint_right) // ~14% purple right half
-    private val divider = context.getColor(R.color.accent_blue)          // split divider
-    private val inkLabel = context.getColor(R.color.text_tertiary)       // caption
+    // ── Màu: mặc định lấy từ bảng của nhánh ClusterNav; `var` chứ không `val` vì một HOST có bảng màu riêng
+    //    ghi đè qua [setPalette] — cùng lối [com.byd.clusternav.comfort.SeatDiagramView] đã mở sẵn. ────────────
+    private var bg = context.getColor(R.color.cluster_face)              // recessed cluster face
+    private var border = context.getColor(R.color.hairline_strong)       // face border
+    private var leftTint = context.getColor(R.color.cluster_tint_left)   // ~16% blue left half
+    private var rightTint = context.getColor(R.color.cluster_tint_right) // ~14% purple right half
+    private var divider = context.getColor(R.color.accent_blue)          // split divider
+    private var inkLabel = context.getColor(R.color.text_tertiary)       // caption
 
     private val density = resources.displayMetrics.density
     private fun dp(v: Float) = v * density
@@ -45,14 +47,23 @@ class ClusterPreviewView @JvmOverloads constructor(
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; color = divider
-    }
-    private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER; color = inkLabel
-    }
+    private val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val clip = Path()
     private val rect = RectF()
+
+    /**
+     * Override the palette — for a host that owns its own light/dark switch (Kachi Settings).
+     *
+     * [ĐO] ảnh máy ảo 2026-09-13: máy ở chế độ SÁNG + Kachi ở chế độ TỐI ⇒ hai nửa cụm (`cluster_tint_*` của
+     * bảng cũ) vẽ ra hai mảng xanh/tím **nhạt** chiếm hết bề rộng thẻ — hình sáng duy nhất trên một trang tối,
+     * và đọc ra như một lỗi vẽ chứ không như một cụm đồng hồ thu nhỏ. Cùng bệnh, cùng thuốc như
+     * `SeatDiagramView.setPalette`: view giữ HÌNH, host cấp MÀU.
+     */
+    fun setPalette(face: Int, line: Int, left: Int, right: Int, split: Int, ink: Int) {
+        bg = face; border = line; leftTint = left; rightTint = right; divider = split; inkLabel = ink
+        invalidate()
+    }
 
     /** Show a split cluster: [leftFraction] is the LEFT app's share (clamped 0.05..0.95); [label] optional. */
     fun setSplit(leftFraction: Float, label: String?) {
@@ -105,6 +116,7 @@ class ClusterPreviewView @JvmOverloads constructor(
             fillPaint.color = rightTint
             canvas.drawRect(splitX, 0f, w, h, fillPaint)
             dividerPaint.strokeWidth = stroke
+            dividerPaint.color = divider
             canvas.drawLine(splitX, 0f, splitX, h, dividerPaint)
         }
         canvas.restoreToCount(save)
@@ -118,6 +130,7 @@ class ClusterPreviewView @JvmOverloads constructor(
         val text = label
         if (!text.isNullOrEmpty()) {
             labelPaint.textSize = minOf(h * 0.22f, dp(11f))   // v1.34 (FIX 2): text cap restored to v1.32
+            labelPaint.color = inkLabel
             val fm = labelPaint.fontMetrics
             canvas.drawText(text, w / 2f, h / 2f - (fm.ascent + fm.descent) / 2f, labelPaint)
         }

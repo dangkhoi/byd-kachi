@@ -19,7 +19,11 @@ data class WidgetDef(
 object WidgetRegistry {
     val ALL: List<WidgetDef> = listOf(
         WidgetDef("w_energy", "Năng lượng",          "ic-bolt",  WidgetKind.CAR, "Energy"),
-        WidgetDef("w_tire",   "Áp suất lốp",         "ic-tire",  WidgetKind.CAR, "Tyre pressure"),
+        // U7: thẻ này vẽ CẢ BỐN bánh (TyreBoardView) nên nó là một ô TỔNG HỢP — mang đúng hình mà nhóm Lốp
+        // mang (khung xe + bốn bánh tô), không phải hình MỘT bánh. [ĐO] ảnh máy ảo 2026-09-13: để `ic-tire`
+        // thì ô "Áp suất lốp" giữa màn nói "một bánh" trong khi nội dung nó bày ra là bốn bánh.
+        // `ic-tire` vẫn sống: nó là hình lùi-về của lĩnh vực Lốp (`WidgetCatalog.iconFor`).
+        WidgetDef("w_tire",   "Áp suất lốp",         "ic-group-tyres", WidgetKind.CAR, "Tyre pressure"),
         WidgetDef("w_pm25",   "Không khí",           "ic-leaf",  WidgetKind.CAR, "Air quality"),
         WidgetDef("w_clock",  "Đồng hồ + thời tiết", "ic-sun",   WidgetKind.LOCAL, "Clock + weather"),
         WidgetDef("w_media",  "Đang phát",           "ic-music", WidgetKind.LOCAL, "Now playing"),

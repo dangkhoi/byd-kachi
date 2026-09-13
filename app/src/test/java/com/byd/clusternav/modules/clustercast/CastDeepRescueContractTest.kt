@@ -10,6 +10,10 @@ import org.junit.jupiter.api.Test
  * glue (AlertDialog, shell I/O, stopService) so — like [BubbleGestureContractTest] — it is locked by
  * reading the source. On-car proof (recovering an actual DashCast jam) is noted for the owner; the
  * conflict is NOT reproduced off-car (reflash risk).
+ *
+ * ⚠ 2026-09-13 (S3 · R3): `CastDeepRescueAction` (bản của màn ClusterNav cũ) đã xoá cùng màn đó. Việc này nay
+ * có **một** đường duy nhất: `ClusterNavBridge.deepRescue` + nút ở nhóm *Chiếu cụm*, còn câu tổng kết (GỠ
+ * DashCast + tắt/mở lại nguồn) do tầng Settings ghép từ tài nguyên — nên bài đọc ba tệp đó thay vì lớp cũ.
  */
 class CastDeepRescueContractTest {
 
@@ -19,23 +23,40 @@ class CastDeepRescueContractTest {
     }
 
     private fun source(relative: String): String =
-        app("src/main/java/com/byd/clusternav/modules/clustercast/$relative").toFile().readText()
+        app("src/main/java/com/byd/clusternav/$relative").toFile().readText()
 
-    private val action by lazy { source("CastDeepRescueAction.kt") }
-    private val controller by lazy { source("MainActivityCastController.kt") }
+    private val castBridge by lazy { source("launcher/ClusterNavBridgeCast.kt") }
+
+    /**
+     * CHỈ thân `deepRescue` — không phải cả tệp. Tệp cầu còn giữ đường cứu hộ THƯỜNG (`restoreCluster`, CÓ mở
+     * lại chiếu sau 2 s); quét cả tệp thì assert "không được mở lại" luôn xanh vì nó thấy `openProjection` của
+     * hàm kia — đúng kiểu "quét tràn = test giả" mà `SourceRoots.body` sinh ra để chặn.
+     */
+    private val action by lazy {
+        com.byd.clusternav.testsupport.SourceRoots.body(
+            com.byd.clusternav.testsupport.KotlinSource.stripComments(castBridge),
+            "fun ClusterNavBridge.deepRescue(",
+        )
+    }
+    private val section by lazy { source("launcher/SettingsSectionsCast.kt") }
+    private val stringsVi by lazy { app("src/main/res/values/strings_kachi.xml").toFile().readText() }
+    private val stringsEn by lazy { app("src/main/res/values-en/strings_kachi.xml").toFile().readText() }
 
     @Test
     fun `force-stops DashCast and the xdja cluster helper`() {
         assertTrue(action.contains("am force-stop"), "force-stops the conflicting app")
-        assertTrue(action.contains("com.byd.dashcast"), "targets DashCast")
-        assertTrue(action.contains("com.xdja.clusterdemo"), "targets the xdja cluster helper")
+        // Hai gói nằm ở hằng dùng chung `CAST_CONFLICT_PACKAGES` (cùng tệp) — chuyển về đó 2026-09-13 khi
+        // `CastDeepRescueAction` bị xoá, để chỉ còn MỘT danh sách.
+        assertTrue(action.contains("CAST_CONFLICT_PACKAGES"), "dùng hằng dùng chung, không chép tay")
+        assertTrue(castBridge.contains("com.byd.dashcast"), "targets DashCast")
+        assertTrue(castBridge.contains("com.xdja.clusterdemo"), "targets the xdja cluster helper")
     }
 
     @Test
     fun `stands our own cast fully down and does NOT reopen the projection`() {
         assertTrue(action.contains("SimpleCastIntent.Stop()"), "stops our own cast")
         assertTrue(action.contains("closeProjection()"), "closes our projection")
-        assertTrue(action.contains("stopOwnServices()"), "stops our own bubble service")
+        assertTrue(action.contains("app.stopService(Intent(app, FloatingBubbleService"), "stops our own bubble service")
         assertTrue(!action.contains("openProjection"), "does NOT reopen (leave the cluster on native gauges)")
     }
 
@@ -50,14 +71,21 @@ class CastDeepRescueContractTest {
 
     @Test
     fun `is honest — never promises firmware-level recovery`() {
-        assertTrue(action.contains("power-cycle"), "final message tells the user to power-cycle")
-        assertTrue(action.contains("UNINSTALL DashCast") || action.contains("GỠ DashCast"), "tells the user to uninstall DashCast")
+        // Câu tổng kết nay là tài nguyên (cầu không mang chữ — xem KDoc BridgeMsg), nên bài đọc CẢ HAI bản dịch:
+        // bỏ sót một bản là chỉ người dùng ngôn ngữ kia mất lời cảnh báo, và không ai soát bản đó thấy.
+        assertTrue(stringsEn.contains("power-cycle"), "final message tells the user to power-cycle (EN)")
+        assertTrue(stringsVi.contains("tắt/mở lại nguồn xe"), "final message tells the user to power-cycle (VI)")
+        assertTrue(stringsEn.contains("UNINSTALL DashCast"), "tells the user to uninstall DashCast (EN)")
+        assertTrue(stringsVi.contains("GỠ DashCast"), "tells the user to uninstall DashCast (VI)")
     }
 
     @Test
-    fun `controller constructs and binds the deep-rescue button`() {
-        assertTrue(controller.contains("CastDeepRescueAction("), "controller constructs the action")
-        assertTrue(controller.contains("R.id.cast_deep_rescue"), "binds the deep-rescue button")
-        assertTrue(controller.contains("FloatingBubbleService"), "stopOwnServices targets the bubble service")
+    fun `the cast settings group carries the deep-rescue button behind a confirmation`() {
+        assertTrue(section.contains("bridge.deepRescue("), "the Cluster-cast group calls the bridge action")
+        assertTrue(section.contains("SettingsDialogs.confirm("), "asks again — force-stopping other apps is not undoable")
+        assertTrue(
+            section.indexOf("R.string.kachi_cast_deep_confirm") > 0,
+            "the confirmation says what is about to happen (resource, both languages)",
+        )
     }
 }

@@ -66,22 +66,12 @@
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
             android:label="ClusterNav Projection" />
 
-        <!-- resizeableActivity + configChanges + landscape: tránh size-compat (letterbox đen + scale) khi mở
-             dưới launcher tuỳ biến / DPI khác (vd dudu) — mirror ClusterNavActivity. VERIFY on-car (câu B): mở
-             Chẩn đoán xem còn size-compat không. Nếu dudu chạy app trong khung KHÔNG landscape → cân nhắc bỏ
-             screenOrientation. Xem docs/diagnostics/dudu-mainactivity-sizecompat-2026-08-14.md. -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:screenOrientation="landscape"
-            android:resizeableActivity="true"
-            android:configChanges="orientation|screenSize|screenLayout|density|smallestScreenSize|keyboardHidden">
-            <!-- IA v2 (2026-09-12, docs/specs/kachi-settings-ia-v2.html R1): KHÔNG còn LAUNCHER — màn này là "màn
-                 nâng cao" mở từ Kachi Settings (Hệ thống › Nâng cao) và từ các intent tường minh (RebindReceiver,
-                 UpdateRelaunch, menu bong bóng). Icon duy nhất của APK nằm ở KachiHomeActivity. exported giữ vì
-                 các đường gọi tường minh từ dịch vụ/uid shell vẫn cần. -->
-        </activity>
+        <!-- ⚠ `.MainActivity` (màn ClusterNav cũ) đã GỠ 2026-09-13 — docs/specs/kachi-remove-legacy-screen.html
+             R1. Mọi intent tường minh từng trỏ tới nó (RebindReceiver, UpdateRelaunch, thông báo của
+             FloatingBubbleService, menu bong bóng › Cấu hình) nay trỏ `.launcher.KachiHomeActivity`, kèm extra
+             `open_settings_group` khi có nhóm Cài đặt tương ứng. Bài `LegacyScreenAbsenceContractTest` canh
+             chiều "không mọc lại". Ghi chú size-compat cũ (dudu) đi theo màn đó:
+             docs/diagnostics/dudu-mainactivity-sizecompat-2026-08-14.md. -->
 
         <!-- Kachi HOME (P1) + LAUNCHER (IA v2): màn hình chính launcher và cũng là ICON DUY NHẤT của APK trong ngăn
              kéo (SingleLauncherIconContractTest khoá: đúng một category LAUNCHER trong manifest chính, ở activity này).
@@ -137,7 +127,7 @@
         </service>
 
         <!-- 1.21 Item 1: HEADLESS boot setup — relocates the accessibility grant + force-bind and the
-             cluster-lane re-assert off MainActivity so boot doesn't foreground the app (né size-compat dudu).
+             cluster-lane re-assert off any screen so boot doesn't foreground the app (né size-compat dudu).
              Short-lived; started by RebindReceiver when "Tự khởi động nền" is ON. Never exported. -->
         <service
             android:name=".BootSetupService"
@@ -150,7 +140,7 @@
 
         <!-- B3 (2026-09-07): auto-start VietMap chạy ĐỘC LẬP (foreground service riêng) — KHÔNG block chuỗi
              boot-setup (ghế / lọc bụi / nav / voice-key) vì nhánh bóng nay POLL tới khi VietMap vào map (tuỳ
-             network). Short-lived; started by BootSetupService (boot) / MainActivity (mở app · bật toggle bóng).
+             network). Short-lived; started by BootSetupService (boot) / ClusterNavBridge (bật badge · bóng).
              Never exported. -->
         <service
             android:name=".VietMapAutostartService"

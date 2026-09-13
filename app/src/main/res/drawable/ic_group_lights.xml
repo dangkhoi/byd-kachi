@@ -1,15 +1,28 @@
 <!--
-  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm ĐÈN (pha, cos, sương mù, xi-nhan, đèn ngày).
-  Mặt trước xe + HAI đèn sáng. Cố ý KHÁC ic_light (một chóa đèn + 3 tia = một đèn) vì nhóm nói về cả dàn đèn.
-  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
+  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
+  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
+  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
+  NHÓM ĐÈN — cả cụm đèn trước sáng + chùm dưới cản.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M5,17.6 L6.4,10.4 C6.6,9.2 7.4,8.6 8.6,8.6 L15.4,8.6 C16.6,8.6 17.4,9.2 17.6,10.4 L19,17.6 Z"
+    <path android:pathData="M4.4,16.9 L4.4,9.9 L6.6,4.9 L17.4,4.9 L19.6,9.9 L19.6,16.9 Z"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M7.4,14.6 L9.6,14.6 M14.4,14.6 L16.6,14.6"
+    <path android:pathData="M6.0,9.9 L18.0,9.9"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6.20,11.30 L8.00,11.30 A0.80,0.80 0 0 1 8.80,12.10 L8.80,12.90 A0.80,0.80 0 0 1 8.00,13.70 L6.20,13.70 A0.80,0.80 0 0 1 5.40,12.90 L5.40,12.10 A0.80,0.80 0 0 1 6.20,11.30 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M16.00,11.30 L17.80,11.30 A0.80,0.80 0 0 1 18.60,12.10 L18.60,12.90 A0.80,0.80 0 0 1 17.80,13.70 L16.00,13.70 A0.80,0.80 0 0 1 15.20,12.90 L15.20,12.10 A0.80,0.80 0 0 1 16.00,11.30 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M6.40,14.70 L7.80,14.70 A0.60,0.60 0 0 1 8.40,15.30 L8.40,15.70 A0.60,0.60 0 0 1 7.80,16.30 L6.40,16.30 A0.60,0.60 0 0 1 5.80,15.70 L5.80,15.30 A0.60,0.60 0 0 1 6.40,14.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M16.20,14.70 L17.60,14.70 A0.60,0.60 0 0 1 18.20,15.30 L18.20,15.70 A0.60,0.60 0 0 1 17.60,16.30 L16.20,16.30 A0.60,0.60 0 0 1 15.60,15.70 L15.60,15.30 A0.60,0.60 0 0 1 16.20,14.70 Z"
+        android:fillColor="#FFFFFF" />
+    <path android:pathData="M4.4,18.9 L11.0,18.9 M4.4,21.2 L11.0,21.2"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

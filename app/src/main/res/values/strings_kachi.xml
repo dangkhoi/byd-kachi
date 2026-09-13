@@ -414,9 +414,47 @@
     <string name="kachi_check_update">Kiểm tra cập nhật</string>
     <string name="kachi_nav_stop">Dừng toàn bộ dẫn đường</string>
     <string name="kachi_sub_advanced">Nâng cao</string>
-    <string name="kachi_open_legacy">Màn ClusterNav (bản cũ, để đối chiếu)</string>
     <string name="kachi_vietmap_data">Dữ liệu VietMap</string>
 
     <!-- ── IA v2 nhóm 10 — miễn trừ trách nhiệm, chuyển từ hộp thoại một-lần của màn cũ (MainActivity:620–635) ── -->
     <string name="kachi_about_disclaimer">Miễn trừ trách nhiệm: đây là thử nghiệm cá nhân, KHÔNG liên kết với BYD. Không có bảo đảm nào về an toàn lái xe, tương thích hay độ ổn định. Cài và dùng với rủi ro của riêng bạn.</string>
+
+    <!-- ══ S3 · gỡ màn ClusterNav cũ (docs/specs/kachi-remove-legacy-screen.html) ═══════════════════ -->
+
+    <!-- R2(c) — miễn trừ trách nhiệm LẦN ĐẦU MỞ APP. Câu chữ của hộp thoại màn cũ (MainActivity:620–635),
+         đổi đúng MỘT từ: tên app "ClusterNav" → "Kachi" (màn cũ đã gỡ, người dùng chỉ còn thấy tên này). -->
+    <string name="kachi_disclaimer_title">Miễn trừ trách nhiệm</string>
+    <string name="kachi_disclaimer_body">Kachi là thử nghiệm cá nhân, KHÔNG liên kết với BYD. Không có bảo đảm về an toàn lái xe, tương thích hay độ ổn định. Cài và dùng với rủi ro của riêng bạn.</string>
+    <string name="kachi_disclaimer_ok">Tôi hiểu</string>
+
+    <!-- R2(d) — dòng trạng thái op-39 trên cụm (chuyển từ NavClusterOp39Status, đã gỡ). -->
+    <string name="kachi_nav_op39_idle">Giữa + ETA: chờ dẫn đường</string>
+    <string name="kachi_nav_op39_asserted">Giữa + ETA: đang hiện trên cụm</string>
+    <string name="kachi_nav_op39_gated">Giữa + ETA: Cast đang bật — nav nhường cụm</string>
+    <string name="kachi_nav_op39_unreachable">Giữa + ETA: chưa gửi được lệnh (kiểm tra kết nối 5555)</string>
+
+    <!-- R2(b) — nhãn dưới ô xem trước cụm ở nhóm Chiếu cụm. -->
+    <string name="kachi_cast_preview_split">%1$s · %2$s (%3$d:%4$d)</string>
+
+    <!-- R2(a) — khung &amp; DPI của ô đang chiếu (chuyển từ CastGeometryEditor, đã gỡ). -->
+    <string name="kachi_sub_cast_geometry">Khung và DPI (khi đang chiếu)</string>
+    <string name="kachi_cast_geom_slot">Ô đang chỉnh</string>
+    <string name="kachi_cast_geom_left">Trái</string>
+    <string name="kachi_cast_geom_right">Phải</string>
+    <string name="kachi_cast_geom_edge_left">Mép trái</string>
+    <string name="kachi_cast_geom_edge_top">Mép trên</string>
+    <string name="kachi_cast_geom_edge_right">Mép phải</string>
+    <string name="kachi_cast_geom_edge_bottom">Mép dưới</string>
+    <string name="kachi_cast_geom_dpi">DPI cụm</string>
+    <string name="kachi_cast_geom_dpi_note">DPI áp cho CẢ cụm, không riêng một ô (giới hạn của wm density trên Android 10).</string>
+    <string name="kachi_cast_geom_reset">Đặt lại khung</string>
+
+    <!-- ══ U7 · R6 — dấu "chưa kiểm trên xe" đảo chiều (spec kachi-icon-set-v2 §3 R6) ══
+         [ĐO] chỉ 21/195 mã ở mức PROVEN ⇒ gần như MỌI ô mang một chấm hổ phách sáng ở góc icon: một dấu mà
+         9/10 ô đều có thì nó thành hoa văn nền, mà lại mang màu CẢNH BÁO nên cả trang đọc như trang lỗi.
+         Nay chấm hạ giọng (mực mờ nhất, 1/5 cạnh icon) và CON SỐ chuyển thành một dòng cho cả nhóm. -->
+    <plurals name="kachi_picker_unverified_n">
+        <!-- Tiếng Việt không phân biệt số ít/số nhiều ⇒ chỉ cần `other` (cùng lệ với kachi_drawer_place_n). -->
+        <item quantity="other">%1$d mục chưa kiểm trên xe</item>
+    </plurals>
 </resources>

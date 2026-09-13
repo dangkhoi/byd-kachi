@@ -268,10 +268,10 @@ class SettingsSections(
         body.addView(rows.button(context.getString(R.string.kachi_nav_stop)) { deps.bridge.navStop() })
 
         // ── Nâng cao ──
-        // Màn ClusterNav cũ nay là **màn nâng cao/đối chiếu** (spec §4.1 nhóm 9 · OQ1), không còn icon riêng trong
-        // ngăn kéo app. Giữ đường mở nó để còn so hai bề mặt trên xe thật trước khi gỡ hẳn.
+        // ⚠ Dòng "Màn nâng cao (ClusterNav)" đã XOÁ 2026-09-13: màn cũ bị gỡ hẳn (S3 · R1 —
+        // docs/specs/kachi-remove-legacy-screen.html). Hai mục còn lại là hai màn CHẨN ĐOÁN thật, không phải
+        // hai bề mặt cấu hình song song — nên mục này vẫn có nghĩa.
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_advanced)))
-        body.addView(rows.button(context.getString(R.string.kachi_open_legacy)) { deps.bridge.openLegacyScreen() })
         body.addView(rows.button(context.getString(R.string.kachi_vietmap_data)) { deps.bridge.openVietMapData() })
         body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { deps.bridge.openDiagnostics() })
     }

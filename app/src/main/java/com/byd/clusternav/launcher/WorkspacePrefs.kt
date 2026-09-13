@@ -148,7 +148,7 @@ class WorkspacePrefs(context: Context) {
      * ## Đây là SAI LỆCH CÓ CHỦ Ý so với spec §3.1, và lý do quan trọng hơn câu chữ của spec
      * Spec ghi *"`WorkspacePrefs` khoá `lang`"*. Làm đúng chữ đó thì trong **một APK** sẽ có **hai** công tắc ngôn
      * ngữ: một của launcher (`kachi_workspace/lang`) và một của màn ClusterNav (`clusternav_lang/lang`, đang có
-     * selector `seg_language` và được `MainActivity`/`ClusterNavActivity`/`BilingualLabels` đọc). Hai công tắc cho
+     * selector `seg_language` của màn ClusterNav cũ, nay đã gỡ; `ClusterNavActivity` vẫn đọc). Hai công tắc cho
      * **một** câu hỏi *"người ngồi đây đọc thứ tiếng nào"* chính là **bẫy hai-bản-sao** mà dự án đã trả giá bốn lần
      * (`customLayout` · `unitPrefs` ×4 bản · `wallpaper` · và chính `themeMode` trước T1). Biểu hiện ở đây sẽ rất khó
      * chối: chọn English trong Cài đặt Kachi rồi bấm "Mở màn ClusterNav" thì màn đó **vẫn tiếng Việt**.

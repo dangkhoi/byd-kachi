@@ -11,6 +11,11 @@ import com.byd.clusternav.voicekey.VoiceKeyBinding
  * ═══ Nửa "Phím vô-lăng → app/trợ lý" của [ClusterNavBridge] ═════════════════════════════════════
  *
  * Hàm mở rộng của [ClusterNavBridge] (lý do tách tệp + vì sao không tách lớp: xem đầu
+ *
+ * ⚠ **2026-09-13 — màn cũ đã GỠ HẲN** (`docs/specs/kachi-remove-legacy-screen.html` R1/R3). Mọi chỉ dẫn
+ * `MainActivity.kt:<dòng>` dưới đây là **vết lịch sử**, không phải một tệp còn đọc được: chúng trỏ vào bản trước
+ * commit gỡ màn (tra bằng `git log -- app/src/main/java/com/byd/clusternav/MainActivity.kt`). Giữ số dòng vì đó là
+ * cách duy nhất còn lại để so hành vi của cầu với bản gốc; cầu nay là **nguồn duy nhất** của những hành vi đó.
  * `ClusterNavBridgeCast.kt`). Lặp lại `MainActivity.kt:707–975` — từng hàm ghi dòng gốc.
  */
 
@@ -56,6 +61,7 @@ fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit =
  */
 fun ClusterNavBridge.checkFix(onDone: (Boolean) -> Unit = {}) {
     toast(BridgeMsg.CHECKING)
+    reapplyGeminiAssistant()
     NavConnect.grantAccessibility(app, reset = true) { ok ->
         ui(
             Runnable {
@@ -241,3 +247,32 @@ fun ClusterNavBridge.targetOptions(): List<TargetOption> = listOf(
  */
 fun ClusterNavBridge.defaultLearnName(code: Int): String =
     android.view.KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_").replace('_', ' ')
+
+/**
+ * Đặt lại trợ lý hệ thống = Google/Gemini nếu đang có gán trỏ Gemini — **F4e**, chuyển từ
+ * `MainActivity.maybeReapplyGeminiAssistant()` (màn cũ đã gỡ 2026-09-13).
+ *
+ * ## Vì sao nó phải còn tồn tại ở đâu đó
+ * [ĐO] owner 2026-08-25: *"mở app lên, nhấn hold mic không work, xoá record binding gemini đi add lại thì nó
+ * mới active lại assistant default rồi mới work"*. Đích Gemini đi `keyevent 231` — mã đó route tới **trợ lý hệ
+ * thống**, nên chỉ ra Gemini khi `setSystemAssistant` đã chạy. Recipe đó chạy ở nút "Thêm gán" (khi cấu hình
+ * đổi) và ở boot với retry `NONE`; nếu boot hỏng vì chưa ai bấm "Cho phép gỡ lỗi USB" thì phải có một đường
+ * thứ hai, có mặt người dùng.
+ *
+ * ## Vì sao gắn vào [checkFix] chứ không vào lúc mở màn chính
+ * Màn cũ chạy nó trong `onCreate`. Kachi là **launcher**: `onCreate` của nó chạy mỗi lần về màn chính, và
+ * recipe này đi dadb chờ tới ~31 s (`AWAIT_ADB_APPROVAL`) — nối vào đó là một lời gọi dadb bất ngờ mỗi lần bấm
+ * Home. [checkFix] là nút *"Kiểm tra / Sửa ngay"* của nhóm *Phím vô-lăng*: đúng lúc người dùng đang nói "nút
+ * của tôi không chạy", và họ đang đứng trước màn xe để bấm hộp thoại cấp quyền.
+ *
+ * Chạy NỀN (không chặn luồng vẽ) và chỉ khi có gán Gemini — owner chỉ dùng Kiki thì KHÔNG đụng dadb.
+ */
+internal fun ClusterNavBridge.reapplyGeminiAssistant() {
+    if (!AssistantLauncher.hasGeminiBinding(app)) return
+    Thread({
+        val err = runCatching {
+            AssistantLauncher.setSystemAssistant(app, com.byd.clusternav.carexec.LocalShellRetry.AWAIT_ADB_APPROVAL)
+        }.getOrElse { it.message.orEmpty() }
+        if (err.isNotEmpty()) android.util.Log.w("ClusterNavBridge", "re-apply Gemini assistant: $err")
+    }, "bridge-gemini-reapply").start()
+}

@@ -1,8 +1,12 @@
 package com.byd.clusternav.launcher
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.Intent
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.Toast
+import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
 
 /**
@@ -126,3 +130,90 @@ internal fun homePanels(
     goImmersive = goImmersive,
     onPanelsChanged = onPanelsChanged,
 )
+
+// ══ S3 — hai việc của màn ClusterNav cũ, nay thuộc màn chính ═════════════════════════════════════════════════════
+//
+// Spec `docs/specs/kachi-remove-legacy-screen.html` R1/R2(c). Chúng ở đây chứ không ở [KachiHomeActivity] vì cùng
+// một lý do với [homePanels]: Activity đang sát trần 500 dòng (CLAUDE.md §4.1), còn hai khối này chỉ cần *một*
+// Activity bất kỳ + [HomePanels], không đọc field riêng nào của màn.
+
+/** Khoá extra "mở Cài đặt đúng nhóm nào" — giá trị là `SettingsGroup.id` (vd `"cast"`). */
+const val EXTRA_OPEN_SETTINGS_GROUP = "open_settings_group"
+
+/**
+ * Hộp thoại **miễn trừ trách nhiệm lần đầu mở app** — chuyển nguyên từ `MainActivity.maybeShowDisclaimer`
+ * (đã gỡ 2026-09-13), **cùng khoá bền** `disclaimer_shown` ([Prefs.disclaimerShown]) nên máy đã hiện một lần ở
+ * màn cũ thì không hiện lại sau khi cập nhật (spec R6: không mất trạng thái người dùng).
+ *
+ * ## Cờ đặt TRƯỚC `show()`, đúng như bản cũ
+ * Đặt sau thì một lần xoay màn / dựng lại Activity trong lúc hộp thoại đang mở là hiện lại lần hai. Người dùng
+ * đọc xong một câu pháp lý rồi thấy nó quay lại thì lần sau họ bấm cho xong — mất luôn mục đích của nó.
+ *
+ * Câu chữ đầy đủ vẫn ĐỌC LẠI ĐƯỢC bất cứ lúc nào ở *Cài đặt › Giới thiệu* (`kachi_about_disclaimer`): hộp thoại
+ * một-lần trả lời câu hỏi *"đã báo chưa"*, còn dòng ở About trả lời *"cái này là gì"* — hai câu hỏi khác nhau.
+ */
+internal fun Activity.maybeShowDisclaimer() {
+    if (isFinishing || isDestroyed || Prefs.disclaimerShown(this)) return
+    Prefs.setDisclaimerShown(this, true)
+    AlertDialog.Builder(this)
+        .setTitle(getString(R.string.kachi_disclaimer_title))
+        .setMessage(getString(R.string.kachi_disclaimer_body))
+        .setPositiveButton(getString(R.string.kachi_disclaimer_ok), null)
+        .show()
+}
+
+/**
+ * Intent mang [EXTRA_OPEN_SETTINGS_GROUP] ⇒ mở thẳng nhóm Cài đặt đó (bong bóng cast › *Cấu hình* → *Chiếu cụm*).
+ *
+ * ## Vì sao **xoá** extra sau khi dùng
+ * `KachiHomeActivity` là `singleTask`: Intent này ở lại làm `getIntent()` của màn. Không xoá thì mỗi lần hệ
+ * thống dựng lại màn (đổi chủ đề, đổi ngôn ngữ, low-memory) người dùng lại bị ném vào màn Cài đặt — một cú bấm
+ * từ tháng trước bật lên lúc họ chỉ muốn về màn chính.
+ *
+ * Id lạ (gói khác gửi bừa, hoặc nhóm đã đổi tên) ⇒ **không làm gì**: mở nhầm một nhóm còn khó hiểu hơn là ở
+ * nguyên màn chính.
+ */
+internal fun Activity.openSettingsGroup(intent: Intent?, panels: HomePanels) {
+    val id = intent?.getStringExtra(EXTRA_OPEN_SETTINGS_GROUP) ?: return
+    intent.removeExtra(EXTRA_OPEN_SETTINGS_GROUP)
+    SettingsCatalog.GROUPS.firstOrNull { it.id == id }?.let { panels.openSettings(it) }
+}
+
+/**
+ * Chế độ toàn màn "dính" cho màn chính — tách khỏi [KachiHomeActivity] (trần 500 dòng) vì nó là **thao tác cửa
+ * sổ thuần**: không đọc field nào của màn, và ba chỗ gọi (mở màn, lấy lại tiêu điểm, mở/đóng bảng phủ) đều chỉ
+ * cần một Activity.
+ */
+@Suppress("DEPRECATION")
+internal fun Activity.goImmersiveWindow() {
+    window.decorView.systemUiVisibility = (
+        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN
+            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        )
+}
+
+/**
+ * Bật lại **nút nổi chiếu cụm** khi màn chính lên, nếu Cluster Cast đang bật và quyền overlay đã có —
+ * chuyển từ `MainActivity.onResume` (màn cũ đã gỡ 2026-09-13).
+ *
+ * ## Vì sao đường tự chữa này phải sống tiếp
+ * Nút nổi là **lối vào chính** của việc chiếu trên xe. Dịch vụ của nó có thể chết mà không ai biết (hệ thống
+ * thu hồi, force-stop, một bản cập nhật). Đường bật duy nhất còn lại là bật/tắt lại công tắc trong Cài đặt —
+ * nghĩa là người dùng phải ĐOÁN ra cách chữa. Màn cũ chữa việc đó bằng "mở app là bóng quay lại"; ở đây là
+ * "về màn chính là bóng quay lại", rẻ hơn và cùng ý.
+ *
+ * Hai cổng, đúng thứ tự của bản cũ: `castEnabled` (không tự dựng gì khi người dùng đã tắt Cast) rồi
+ * `canDrawOverlays` (thiếu quyền thì service chỉ khởi động để tự tắt). `startForegroundService` bọc
+ * `runCatching`: nền bị chặn khởi động dịch vụ ở vài trạng thái, và đây là việc **tuỳ chọn**.
+ */
+internal fun Activity.ensureCastBubble(bridge: ClusterNavBridge) {
+    if (!runCatching { bridge.castEnabled() }.getOrDefault(false)) return
+    if (!android.provider.Settings.canDrawOverlays(this)) return
+    runCatching {
+        startForegroundService(
+            Intent(this, com.byd.clusternav.modules.clustercast.FloatingBubbleService::class.java),
+        )
+    }
+}

@@ -46,8 +46,11 @@ class PackageQueriesContractTest {
 
     /**
      * D3(a) — cùng cửa cho `resolveActivity` / `getPackageInfo` (cả hai có overload `*Flags` từ API 33).
-     * Ngoại lệ DUY NHẤT: `MainActivity.kt:83` — tệp bị wiring test ghim source, không sửa (spec IA v2 §2). Đường dẫn
-     * tương đối tính từ gốc module (`SourceRoots.moduleSourceRoots`), không có tiền tố `main/java`.
+     *
+     * ⚠ 2026-09-13: danh sách ngoại lệ nay **RỖNG**. Ngoại lệ duy nhất từng có là `MainActivity.kt:83` — nó tồn
+     * tại vì tệp đó bị wiring test ghim source nên không sửa được (spec IA v2 §2); màn cũ đã gỡ (S3 · R1) nên
+     * lý do đó biến mất cùng nó. Giữ danh sách (và bài canh chống-rữa bên dưới) để lần sau ai cần một ngoại lệ
+     * thì phải VIẾT RA lý do, thay vì thêm im lặng.
      *
      * ⚠ Khuôn bắt theo **hàm**, KHÔNG theo tên biến nhận: bản đầu chỉ khớp `packageManager.`/`pm.` nên một chỗ gọi
      * viết `val manager = ctx.packageManager; manager.getPackageInfo(…)` sẽ lọt — đúng kiểu "chỗ gọi thứ tám viết
@@ -58,11 +61,13 @@ class PackageQueriesContractTest {
     @Test
     fun `KHONG file nao ngoai helper goi thang resolveActivity hay getPackageInfo cua PackageManager`() {
         val direct = Regex("""(?<!PackageQueries)(?<![Ii]ntent)\.(resolveActivity|getPackageInfo)\(""")
-        val allowed = setOf("com/byd/clusternav/MainActivity.kt")
+        val allowed = emptySet<String>()
         val offenders = kotlinSources().filter { (name, code) -> direct.containsMatchIn(code) && name !in allowed }.map { it.first }
         assertEquals(emptyList<String>(), offenders, "phải đi qua PackageQueries.resolveActivity / packageInfo")
-        assertTrue(kotlinSources().any { (name, code) -> name in allowed && direct.containsMatchIn(code) },
-            "ngoại lệ MainActivity phải còn thật — hết thì bỏ khỏi allowed cho khỏi rữa")
+        assertTrue(
+            allowed.all { name -> kotlinSources().any { (n, code) -> n == name && direct.containsMatchIn(code) } },
+            "mỗi ngoại lệ phải còn THẬT trong cây — hết thì bỏ khỏi allowed cho khỏi rữa",
+        )
     }
 
     @Test
@@ -74,9 +79,11 @@ class PackageQueriesContractTest {
 
     /** Helper viết ra mà không ai gọi là mã chết (CLAUDE.md §8). Đếm chỗ gọi thật, ngoài chính nó. */
     @Test
-    fun `helper phai co du 7 cho goi that`() {
+    fun `helper phai co du 5 cho goi that`() {
+        // D2b đếm 7. Hai chỗ biến mất 2026-09-13 cùng màn ClusterNav cũ (`MainActivity`, `CastAutostart`) —
+        // danh sách app "chiếu được" / "tự chiếu" nay chỉ còn một bản, trong cầu (S3 · R1/R3).
         val callers = kotlinSources().filter { (_, code) -> code.contains("PackageQueries.queryActivities(") }.map { it.first }
-        assertEquals(7, callers.size, "7 chỗ gọi của D2b phải đều đi qua helper; thấy: $callers")
+        assertEquals(5, callers.size, "mọi chỗ gọi phải đi qua helper; thấy: $callers")
     }
 
     /**

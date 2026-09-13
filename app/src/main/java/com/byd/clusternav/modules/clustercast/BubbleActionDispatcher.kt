@@ -22,7 +22,7 @@ import com.byd.clusternav.system.PackageQueries
  *  - [onTap] — TOGGLE full: Idle → cast the foreground FULL (with the launcher guard); casting
  *    (full or split) → return everything (slot-less `Stop`).
  *  - [onSubmenuAction] — long-press submenu: Trái/Phải TOGGLE that half (return it if it is already
- *    cast, else cast the foreground into it), Cấu hình opens [com.byd.clusternav.MainActivity].
+ *    cast, else cast the foreground into it), Cấu hình opens Kachi Settings › Cluster cast.
  *
  * The caller ([FloatingBubbleService]) invokes the cast paths on the tap executor (token-guarded,
  * off the main thread) because [detectForeground] performs shell I/O.
@@ -90,15 +90,26 @@ internal class BubbleActionDispatcher(
     }
 
     /**
-     * Open [com.byd.clusternav.MainActivity] from the bubble (submenu → Cấu hình). Started with
-     * [Intent.FLAG_ACTIVITY_NEW_TASK] because a Service context has no task of its own. Posted to the
-     * main thread so it is safe to call from the tap executor or a view click.
+     * Open Kachi from the bubble (submenu → Cấu hình), landing **straight on Settings › Cluster cast**.
+     *
+     * Before 2026-09-13 this opened `MainActivity` (the old ClusterNav screen, now removed —
+     * docs/specs/kachi-remove-legacy-screen.html R1). Dropping the user on the Kachi home screen instead
+     * would cost three more taps to reach the same controls, so the intent carries
+     * [com.byd.clusternav.launcher.EXTRA_OPEN_SETTINGS_GROUP]; an unknown id is ignored on the other side,
+     * so a stale caller can never land somewhere surprising.
+     *
+     * Started with [Intent.FLAG_ACTIVITY_NEW_TASK] because a Service context has no task of its own.
+     * Posted to the main thread so it is safe to call from the tap executor or a view click.
      */
     fun openConfig() {
         handler.post {
             runCatching {
                 context.startActivity(
-                    Intent(context, com.byd.clusternav.MainActivity::class.java)
+                    Intent(context, com.byd.clusternav.launcher.KachiHomeActivity::class.java)
+                        .putExtra(
+                            com.byd.clusternav.launcher.EXTRA_OPEN_SETTINGS_GROUP,
+                            com.byd.clusternav.launcher.SettingsGroup.CAST.id,
+                        )
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 )
             }

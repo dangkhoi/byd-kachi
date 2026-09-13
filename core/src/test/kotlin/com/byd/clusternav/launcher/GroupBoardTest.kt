@@ -465,11 +465,12 @@ class GroupBoardTest {
             g.id to GroupBoard.of(g, CarStatus()).actionIconsDistinguish
         }
         assertEquals(
-            mapOf("g_windows" to false, "g_doors" to true, "g_lights" to true),
+            mapOf("g_windows" to true, "g_doors" to true, "g_lights" to true),
             verdict,
-            "nhóm Kính có 4/6 nút cùng icon cửa kính ⇒ icon KHÔNG phân biệt được (bỏ đi, lấy lại 30px bề cao cho " +
-                "hàng nút); nhóm Cửa & khoang lặp tối đa 2 lần ⇒ vẫn giữ icon; nhóm Đèn sau bản vá P1-1 (bỏ `headl` " +
-                "vì trùng byte với `headlight_mode`) cũng chỉ còn lặp 2 ⇒ [ĐO] icon phân biệt được trở lại",
+            "[ĐO] sau U7 cả ba nhóm có nút đều phân biệt được bằng icon. Nhóm *Kính* ĐỔI CHIỀU `false → true`: " +
+                "bốn nút kính trước đây cùng mang `ic-window` (4/6 ô một hình ⇒ icon vô nghĩa ⇒ bỏ để lấy lại " +
+                "30px bề cao), nay mỗi nút mang hình xe với ĐÚNG ô kính của nó tô đặc ⇒ lặp tối đa 1. Đây đúng " +
+                "chiều mà luật này mong đợi: khi icon nói được điều gì thì hàng nút vẽ icon trở lại",
         )
         // Và luật phải dùng CHUNG trần với ô con XEM — hai trần khác nhau cho cùng một câu hỏi là bẫy hai-bản-sao.
         val m = GroupBoard.of(CapabilityGroups.WINDOWS, CarStatus())

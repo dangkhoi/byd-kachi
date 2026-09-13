@@ -62,7 +62,8 @@ object AssistantLauncher {
 
     /**
      * Có ít nhất MỘT binding phím trỏ Gemini không? Dùng để gate việc re-apply trợ lý hệ thống lúc mở app
-     * (`MainActivity`) và lúc boot (`BootSetupService`) — owner CHỈ dùng Kiki / app thường thì trả false ⇒
+     * (nút *Kiểm tra / Sửa ngay* của Kachi Settings) và lúc boot (`BootSetupService`) — owner CHỈ dùng Kiki /
+     * app thường thì trả false ⇒
      * KHÔNG đụng dadb. Đọc lỗi ⇒ false (degrade-safe, không đoán).
      */
     fun hasGeminiBinding(ctx: Context): Boolean = runCatching {
@@ -238,7 +239,7 @@ object AssistantLauncher {
         val pm = app.packageManager
         val missing = listOf(PKG_GSA to "Google (googlequicksearchbox)", PKG_BARD to "Gemini (com.google.android.apps.bard)")
             // Đường cũ `runCatching { … }.isFailure` coi MỌI ngoại lệ là "thiếu app" và dừng sớm có thông báo.
-            // Giữ nguyên: hàm này chạy trong `Thread { }` TRẦN ở MainActivity:964 ⇒ ngoại lệ lọt ra là giết tiến trình.
+            // Giữ nguyên: hàm này chạy trong `Thread { }` TRẦN ở chỗ gọi ⇒ ngoại lệ lọt ra là giết tiến trình.
             .filter { runCatching { PackageQueries.packageInfo(pm, it.first) }.getOrNull() == null }
             .map { it.second }
         if (missing.isNotEmpty()) {

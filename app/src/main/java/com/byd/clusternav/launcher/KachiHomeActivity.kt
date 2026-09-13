@@ -5,7 +5,6 @@ import android.app.Activity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -265,6 +264,16 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 PermissionPreflight.runAndReport(this, shellUsable = false, sh = null)
             }
         }
+
+        // S3 — hai việc chuyển từ màn cũ (đã gỡ 2026-09-13); thân hàm ở [KachiHomeWiring].
+        maybeShowDisclaimer()
+        openSettingsGroup(intent, panels)
+    }
+
+    /** `singleTask` ⇒ lời gọi thứ hai về ĐÂY, không phải [onCreate] (bấm bong bóng khi Kachi đang mở sẵn). */
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        openSettingsGroup(intent, panels)
     }
 
     /**
@@ -413,7 +422,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     override fun onResume() {
         super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        goImmersive(); topStrip.updateClock(); wallpaper.reload(); handler.post(tick)
+        goImmersive(); topStrip.updateClock(); wallpaper.reload(); handler.post(tick); ensureCastBubble(bridge)
         // [SOÁT P2-4] Runnable CÓ TÊN để `onDestroy` gỡ được. Trước đây là lambda vô danh nên không có cách nào
         // huỷ, mà nó lại dựng cửa sổ overlay ⇒ chạy sau khi màn chết là giữ view + giữ activity.
         workspace.removeCallbacks(overlayHeadsKick)
@@ -423,13 +432,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     /** Dựng dải header nổi sau khi cây view đã có kích thước thật (mở màn xong). */
     private val overlayHeadsKick = Runnable { if (!destroyed) windows.updateOverlayHeads() }
 
-    @Suppress("DEPRECATION")
-    private fun goImmersive() {
-        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
-    }
+    /** Toàn màn "dính" — cờ cửa sổ nằm ở [goImmersiveWindow] (trần 500 dòng; xem KDoc ở đó). */
+    private fun goImmersive() = goImmersiveWindow()
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus); if (hasFocus) goImmersive()
