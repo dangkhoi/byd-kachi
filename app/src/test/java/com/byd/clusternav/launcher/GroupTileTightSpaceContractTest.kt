@@ -103,6 +103,51 @@ class GroupTileTightSpaceContractTest {
         )
     }
 
+    /**
+     * ⚠⚠ **Bảng `BOARD` CÓ NÚT: thân ô phải lấy `weight`, và khoảng thở phải biến mất.**
+     *
+     * [SOÁT U9 pha 2] Cùng một bệnh với bài trên (*hàng nút bị cắt đáy, im lặng*), nhưng đi **đường khác** nên bài
+     * trên không phủ: ở đó thứ tranh chỗ là lưới đọc (co được ⇒ chữa bằng đo hai lượt + [ReadGrid.trimBy]); ở đây
+     * thứ tranh chỗ là một **ô vẽ Canvas** — nó không có `trimBy`, và `View.getDefaultSize` trả TRỌN `specSize` khi
+     * spec là `AT_MOST`, nên một bảng khai `MATCH_PARENT` trong thân `WRAP` báo cao **hết phần còn lại** và đẩy hàng
+     * nút ra ngoài lề rồi bị cha cắt — không ném, không log. Đúng cái bẫy `View` trơ đã ăn mất cả dải mục đọc
+     * (`o chen cho trong khong duoc khai WRAP`, `GroupTileWiringContractTest`).
+     *
+     * Cách chữa duy nhất đo được: cho thân ô `weight` ⇒ `LinearLayout` đo hàng nút (chi phí **CỐ ĐỊNH**) trước rồi
+     * chỉ chia **phần dư** cho bảng. Bảng Canvas co tới 0 mà không mất gì phải bấm; hàng nút thì không co được.
+     *
+     * Ba nửa của cách chữa, cả ba phải còn: (a) nhận diện đúng ca (`BOARD` **và** có nút — nhóm *Cửa & khoang*, nhóm
+     * `BOARD` đầu tiên có nút); (b) thân ô lấy `weight` **thay cho** `WRAP`; (c) khoảng thở `weight` **không** được
+     * thêm nữa ở ca đó (hai `weight` cùng lúc ⇒ bảng chỉ còn một nửa chỗ mà chẳng để làm gì).
+     *
+     * [ĐO] `u9b_open_two4.png` (2 cột, có dữ liệu): viền dưới thẻ `y = 869`, ô nút cao nhất (*Rèm*, hai nút phụ) hết
+     * mực ở `y = 851` ⇒ còn **18 px** lề dưới. Gỡ `weight` ⇒ quay lại đúng bệnh cắt-đáy của nhóm *Kính*.
+     */
+    @Test
+    fun `bang BOARD co nut thi than o lay weight, khong lay WRAP`() {
+        val fn = SourceRoots.body(tiles, "fun bind(")
+        assertTrue(
+            Regex("""val boardWithActions = model\.shape == WidgetShape\.BOARD && model\.hasActions""")
+                .containsMatchIn(fn),
+            "phải nhận diện đúng ca BOARD-có-nút — hình thôi chưa đủ, và có-nút thôi cũng chưa đủ",
+        )
+        assertTrue(
+            Regex("""addView\(bodyHolder, if \(boardWithActions\) LayoutParams\(MATCH, 0, 1f\)""")
+                .containsMatchIn(fn),
+            "thân ô BOARD-có-nút phải lấy `weight` (cao 0 + 1f); để `WRAP` là ô vẽ Canvas nuốt trọn chỗ còn lại " +
+                "rồi hàng nút bị cắt IM LẶNG",
+        )
+        assertTrue(
+            Regex("""if \(!boardWithActions\) addView\(View\(context\), LayoutParams\(MATCH, 0, 1f\)\)""")
+                .containsMatchIn(fn),
+            "khoảng thở chỉ dành cho ca thân `WRAP` — thêm `weight` thứ hai là chia đôi chỗ của bảng mà không để " +
+                "làm gì",
+        )
+        assertTrue(
+            fn.contains("if (model.hasActions) addView(actionsRow("),
+            "hàng nút vẫn dựng theo `hasActions` — nó CHƯA BAO GIỜ phụ thuộc vào hình, thứ từng thiếu là CHỖ",
+        )
+    }
 
     /**
      * Ô trong hàng nút của nhóm dùng cỡ **hẹp** ([TileSize.GROUP]) — nhãn NGẮN + nút phụ xếp DỌC.

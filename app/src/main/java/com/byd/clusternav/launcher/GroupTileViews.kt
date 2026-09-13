@@ -41,14 +41,17 @@ class GroupTileView(context: Context) : LinearLayout(context) {
      */
     private val binders = LinkedHashMap<String, CellBinder>()
     private val bodyHolder = FrameLayout(context)
-    private var radar: RadarBoardView? = null
-    private var sideBoard: SideBoardView? = null
+
+    /** Sổ đăng ký bảng `BOARD` (dựng + đổ dữ liệu tại chỗ) — xem KDoc [GroupBoardBinder]. */
+    private val boards = GroupBoardBinder()
 
     /**
      * Lưới ô con ĐANG dựng — thứ duy nhất trong ô này **nhường chỗ được** (xem [onMeasure]).
      *
-     * `null` với nhóm BOARD (bảng tự vẽ, không có lưới) ⇒ ở đó không có gì nhường, mà cũng không cần: bất biến của
-     * [CapabilityGroups] là nhóm BOARD **không có nút**, nên không có ai tranh chỗ.
+     * `null` với nhóm BOARD (bảng tự vẽ, không có lưới) ⇒ ở đó không có gì nhường. Từ U9 pha 2 nhóm BOARD **có thể
+     * có nút** (*Cửa & khoang*), nên chỗ cho hàng nút được lo bằng cách khác: thân ô nhận `weight` để `LinearLayout`
+     * đo hàng nút — chi phí CỐ ĐỊNH — trước rồi mới chia phần dư cho bảng (xem [bind]). Bảng Canvas co được tới 0 mà
+     * không mất gì phải bấm; lưới chữ thì không, nên hai ca cần hai cách.
      */
     private var readGrid: ReadGrid? = null
 
@@ -63,7 +66,7 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         val model = GroupBoard.of(id, data.car, data.units) ?: return false
         groupId = id
         tyreBoardPort = tyreBoard
-        removeAllViews(); binders.clear(); radar = null; sideBoard = null; readGrid = null
+        removeAllViews(); binders.clear(); readGrid = null
         bodyHolder.removeAllViews()
 
         addView(header(model), LayoutParams(MATCH, WRAP))
@@ -73,9 +76,18 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         // **0.31% mực** (4 nhãn + 4 dấu gạch) = **64% chiều cao ô** cho gần như không thông tin nào. Nay thân cao
         // đúng nội dung (mỗi dòng dữ liệu [Sp.READ_ROW], kẹp lại khi ô hẹp — xem [ReadGrid]), còn phần dư đi vào
         // **khoảng thở** bên dưới ⇒ hàng nút nằm ở đáy ô, đúng chỗ ngón tay tìm tới.
-        addView(bodyHolder, LayoutParams(MATCH, WRAP))
+        //
+        // ⚠⚠ U9 pha 2 — NGOẠI LỆ: bảng `BOARD` **có nút** thì thân ô lấy `weight` thay vì `WRAP`.
+        // Một ô vẽ Canvas trơ khai `MATCH_PARENT` báo cao **trọn** phần còn lại (`View.getDefaultSize` trả nguyên
+        // `specSize` khi spec là `AT_MOST` — đúng cái bẫy đã ăn mất cả dải mục đọc ở [actionsRow]), nên với nhóm
+        // *Cửa & khoang* nó sẽ nuốt hết chỗ và đẩy hàng nút ra ngoài lề rồi bị cắt, **không ném, không log**. Cho
+        // thân `weight` thì `LinearLayout` đo hàng nút (chi phí CỐ ĐỊNH) trước và chỉ chia **phần dư** cho bảng.
+        val boardWithActions = model.shape == WidgetShape.BOARD && model.hasActions
+        addView(bodyHolder, if (boardWithActions) LayoutParams(MATCH, 0, 1f) else LayoutParams(MATCH, WRAP))
         buildBody(model, data)
-        addView(View(context), LayoutParams(MATCH, 0, 1f))
+        // Khoảng thở đẩy hàng nút xuống đáy ô — không cần khi thân đã ăn phần dư bằng `weight` (hai `weight` cùng lúc
+        // thì bảng chỉ còn một nửa chỗ mà chẳng để làm gì).
+        if (!boardWithActions) addView(View(context), LayoutParams(MATCH, 0, 1f))
         // Hàng nút dựng MỘT LẦN. [refresh] không chạm ⇒ cú bấm không bị cắt giữa chuỗi MotionEvent.
         if (model.hasActions) addView(actionsRow(context, model, data), LayoutParams(MATCH, WRAP))
         return true
@@ -123,20 +135,11 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         val id = groupId ?: return false
         val model = GroupBoard.of(id, data.car, data.units) ?: return false
         model.cells.forEach { cell -> binders[cell.id]?.bind(cell) }
-        val rv = radar
-        val sv = sideBoard
-        when {
-            // Bảng radar: giữ NGUYÊN ô vẽ, chỉ đổ mức mới (Paint đã cấp phát sẵn trong nó).
-            rv != null -> rv.set(GroupBoard.radarLevels(data.car), boardFooter(model))
-            // Bảng cảnh báo hai bên: cùng lối — đổ dữ liệu, không dựng lại ô vẽ.
-            sv != null -> fillSideBoard(sv, model)
-            // Bảng lốp đến từ cổng ngoài nên ở đây không có đường đổ dữ liệu vào ô vẽ đã dựng ⇒ thay ô vẽ. An toàn vì
-            // bộ vẽ BOARD là **bản vẽ thuần**: không trạng thái chạm, không vòng quay, và nhóm BOARD **không thể có
-            // nút** (bất biến bị [CapabilityGroups] chốt lúc nạp lớp: nút chỉ ở STRIP).
-            // ⚠ Nợ nhỏ ghi lại cho chặng sau: cách này cấp phát một ô vẽ mỗi nhịp. Chữa được khi bộ dựng bảng lốp có
-            // đường "đổ dữ liệu vào ô vẽ đã có"; không làm ở T3 vì tách nó ra sẽ nhân đôi phần ghép 4 danh sách song
-            // song đang bị test khoá (`Goi2FeatureWiringContractTest`).
-            model.shape == WidgetShape.BOARD -> { bodyHolder.removeAllViews(); buildBody(model, data) }
+        // Bảng nào có đường đổ dữ liệu thì giữ NGUYÊN ô vẽ (Paint đã cấp phát sẵn trong nó); chỉ bảng lốp phải thay
+        // ô vẽ, và chỉ nhóm lốp — nhóm KHÔNG có nút — mới đi vào nhánh đó (xem KDoc [GroupBoardBinder.refill]).
+        if (model.shape == WidgetShape.BOARD && !boards.refill(model, data.car)) {
+            bodyHolder.removeAllViews()
+            buildBody(model, data)
         }
         return true
     }
@@ -186,42 +189,11 @@ class GroupTileView(context: Context) : LinearLayout(context) {
     }
 
     /**
-     * **BOARD** — lưới theo hình học thật của xe. Lốp đi qua cổng ngoài (bảng đã có); cảm biến đỗ là 8 vùng quanh xe.
-     *
-     * Nhóm BOARD nào chưa có bảng riêng thì lùi về dải STRIP — thà xếp hàng ngang còn hơn ô trống.
+     * **BOARD** — bảng theo hình học thật của xe; nhóm nào chưa có bảng riêng thì lùi về dải STRIP (thà xếp hàng
+     * ngang còn hơn ô trống). Phép chọn + đường đổ dữ liệu nằm ở [GroupBoardBinder].
      */
-    private fun boardBody(m: GroupBoardModel, data: WidgetData): View = when (m.id) {
-        CapabilityGroups.TYRES.id -> tyreBoardPort?.invoke(context, data) ?: stripBody(m)
-        CapabilityGroups.PARKING.id -> RadarBoardView(context)
-            .also { radar = it; it.set(GroupBoard.radarLevels(data.car), boardFooter(m)) }
-        // Cảnh báo hai bên xe: xếp theo PHÍA thay vì xếp thành dải tám ô cùng icon (kiểm toán mục 4c).
-        CapabilityGroups.ADAS.id -> SideBoardView(context).also { sideBoard = it; fillSideBoard(it, m) }
-        else -> stripBody(m)
-    }
-
-    /**
-     * Đổ dữ liệu cho [SideBoardView] — một chỗ duy nhất, dùng cho cả [bind] lẫn [refresh].
-     *
-     * Truyền **cả model** vì phép chọn *"ô hẹp thì hiện cái gì"* cần biết mọi ô con và chỉ chạy được khi đã biết bề
-     * cao ⇒ nó nằm trong ô vẽ (xem KDoc [SideBoardView]). Chỗ này vẫn dựng dòng chân như trước, bằng CÙNG hàm với
-     * bảng radar — không có bản thứ hai của quy ước lead/rest.
-     */
-    private fun fillSideBoard(v: SideBoardView, m: GroupBoardModel) =
-        v.set(m, m.centreCells.joinToString("   ") { "${it.label} · ${it.value}" })
-
-    /**
-     * Chân bảng BOARD = **các ô con mà bảng KHÔNG vẽ**.
-     *
-     * Quy ước: bảng vẽ ô con ĐẦU (8 mức vùng), phần còn lại ([GroupBoardModel.rest]) xuống dòng chân — cùng quy ước
-     * lead/rest với thẻ CARD, nên không cần viết tay mã `radar_volume` ở đây (luật 2 của KDoc [GroupTiles]).
-     *
-     * ⚠ [SOÁT G1 · b2] Luôn ghi `nhãn · giá trị`, kể cả khi chưa đọc được. Bản trước bỏ hẳn phần giá trị khi
-     * `!available` ⇒ off-car chân bảng chỉ có chữ *"Âm lượng CB"* trơ trọi, không dấu gạch — người xem không biết
-     * là *chưa đọc được* hay *không có số để hiển thị*. [GroupCell.value] đã trả `"—"` đúng trong ca đó, nên chỉ
-     * cần thôi rẽ nhánh: một đường, một cách nói.
-     */
-    private fun boardFooter(m: GroupBoardModel): String =
-        m.rest.joinToString("   ") { "${it.label} · ${it.value}" }
+    private fun boardBody(m: GroupBoardModel, data: WidgetData): View =
+        boards.build(context, m, data, tyreBoardPort) { stripBody(m) }
 
     /**
      * **STRIP** — dải ô con: icon + nhãn ngắn + trạng thái, ô con **sáng lên** khi đang bật / đang cảnh báo.

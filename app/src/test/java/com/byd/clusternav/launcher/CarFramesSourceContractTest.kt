@@ -36,8 +36,15 @@ class CarFramesSourceContractTest {
 
     private val frames by lazy { code("src/main/java/com/byd/clusternav/launcher/CarFrames.kt") }
 
-    /** Ba bảng `BOARD` vẽ bằng Canvas — chúng là toàn bộ chỗ từng tự vẽ thân xe. */
-    private val boardFiles = listOf("TyreBoardView.kt", "RadarBoardView.kt", "SideBoardView.kt")
+    /**
+     * Các bảng `BOARD` vẽ bằng Canvas — chúng là toàn bộ chỗ từng (hoặc có thể) tự vẽ thân xe.
+     *
+     * `DoorBoardView.kt` vào danh sách ở U9 pha 2: nó ra đời SAU [CarFrames] nên chưa bao giờ "tự vẽ", nhưng mọi bất
+     * biến còn lại (sàn nét · phóng giữ tỉ lệ · không cấp phát trong `onDraw` · chép path trước khi biến hình) áp
+     * cho nó y hệt — bỏ nó ra ngoài là để một bảng sống ngoài tầm bài canh.
+     */
+    private val boardFiles =
+        listOf("TyreBoardView.kt", "RadarBoardView.kt", "SideBoardView.kt", "DoorBoardView.kt")
 
     private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
@@ -206,14 +213,87 @@ class CarFramesSourceContractTest {
         }
     }
 
+    // ── 4 · U9 pha 2: bộ phận mở được — đủ, và KHÔNG có hằng nào không ai gọi ──────────────────────────────
+
+    /**
+     * Mọi [CarPart] mà `:core` biết đều phải có **hình** trong [CarFrames].
+     *
+     * Thiếu một mục thì `CarFrames.part()` trả `null` và bảng **im lặng bỏ qua** đúng bộ phận đó — người lái thấy
+     * một chiếc xe không có cửa sổ trời và không có gì báo. Đọc enum từ chính source của `:core` (không chép tám tên
+     * vào đây) để thêm một bộ phận ở `:core` mà quên hình là đỏ ngay.
+     */
+    @Test
+    fun `moi bo phan cua core deu co hinh trong CarFrames`() {
+        val core = code("src/main/java/com/byd/clusternav/launcher/GroupBoardModel.kt")
+        val body = SourceRoots.body(core, "enum class CarPart")
+        val parts = Regex("""\b([A-Z][A-Z_0-9]{2,})\b""").findAll(body).map { it.groupValues[1] }.toSet()
+        assertTrue(parts.size >= EXPECTED_PARTS, "đọc hụt enum CarPart (thấy $parts)")
+        // Quét cả tệp (đã bỏ chú thích): `CarFrames` chỉ nhắc `CarPart.` ở đúng bảng ánh xạ, và `SourceRoots.body`
+        // không cắt được một `val` gán bằng `mapOf(…)` (nó nuốt cặp ngoặc rồi đi tìm dấu `=` kế tiếp).
+        parts.forEach {
+            assertTrue(
+                frames.contains("CarPart.$it"),
+                "CarFrames thiếu hình của bộ phận $it ⇒ bảng bỏ qua nó, im lặng",
+            )
+        }
+    }
+
+    /**
+     * ⚠⚠ **Mọi thành viên công khai của [CarFrames] phải có ÍT NHẤT một chỗ gọi** — CLAUDE.md §8.
+     *
+     * KDoc của `CarFrames` tự đặt ra luật này (*"một hằng không ai gọi thì không bài canh nào phát hiện được khi nó
+     * trôi khỏi icon"*) nhưng trước U9 pha 2 **không có gì kiểm nó**. Dự án đã trả giá đúng chỗ này một lần:
+     * `CastShell.evictVd` viết cẩn thận, compile sạch, và **chưa từng được gọi lần nào**.
+     */
+    @Test
+    fun `moi thanh vien cong khai cua CarFrames deu co cho goi`() {
+        val api = Regex("""\n    (?:fun|val) (\w+)""").findAll(frames).map { it.groupValues[1] }.toSet()
+        assertTrue(api.size >= EXPECTED_API, "đọc hụt API của CarFrames (thấy $api)")
+        val callers = Files.list(SourceRoots.path("src/main/java/com/byd/clusternav/launcher")).use { stream ->
+            stream.map { it.fileName.toString() }
+                .filter { it.endsWith(".kt") && it != "CarFrames.kt" }
+                .toList()
+        }.joinToString("\n") { boardCode(it) }
+        api.forEach {
+            assertTrue(callers.contains("CarFrames.$it"), "CarFrames.$it không có chỗ gọi nào ⇒ hình trôi mà không ai thấy")
+        }
+    }
+
+    /**
+     * Bảng cửa phóng theo khung **THÂN + bộ phận**, không phóng theo thân không.
+     *
+     * [ĐO] vạt cửa mở ra tới `x 3.9 … 20.1` trong khi thân chỉ `7.5 … 16.5` ⇒ phóng theo [CarFrames.frameBounds] sẽ
+     * cắt cụt đúng bốn thứ mà bảng đó sinh ra để hiện.
+     */
+    @Test
+    fun `bang cua phong theo khung co ca bo phan`() {
+        val draw = SourceRoots.body(boardCode("DoorBoardView.kt"), "override fun onDraw")
+        assertTrue(draw.contains("CarFrames.openFrameBounds("), "bảng cửa phải lấy khung kèm vạt cửa")
+        assertFalse(draw.contains("CarFrames.frameBounds("), "phóng theo thân không thôi sẽ cắt cụt bốn vạt cửa")
+    }
+
     private companion object {
         val PATH_DATA = Regex("""android:pathData="([^"]+)"""")
 
         /** Chuỗi path SVG viết trong mã Kotlin: nháy kép, bắt đầu bằng lệnh `M`. */
         val LITERAL = Regex(""""(M[0-9][^"]*)"""")
 
-        /** Thân + hai vạch kính (một chuỗi) + 4 bánh = 6 chuỗi tối thiểu. */
-        const val EXPECTED_PATHS = 6
+        /**
+         * Thân + hai vạch kính (một chuỗi) + 4 bánh = 6 (U9 pha 1), + 4 vạt cửa · cốp · nóc · 2 mảnh rèm · gương
+         * = **15** (U9 pha 2).
+         */
+        const val EXPECTED_PATHS = 15
+
+        /** 4 cửa + cốp + nóc + rèm + gương — số bộ phận mở được mà `:core` khai ở `CarPart`. */
+        const val EXPECTED_PARTS = 8
+
+        /**
+         * Số thành viên công khai TỐI THIỂU của `CarFrames` — chặn ca mẫu regex đọc hụt rồi bài xanh trơn.
+         *
+         * Hiện có 9: `topFrame` · `wheelRowGap` · `wheel` · `wheelBounds` · `frameBounds` · `fit` · `part` ·
+         * `partBounds` · `openFrameBounds`.
+         */
+        const val EXPECTED_API = 9
 
         /**
          * Hậu tố tên tệp icon của từng góc — quy ước **TPMS** (`fl·fr·rl·rr`).

@@ -235,3 +235,70 @@ data class SideBoardPlan(
     val hidden: Int,
     val summary: String?,
 )
+
+/**
+ * BỘ PHẬN MỞ ĐƯỢC của thân xe — khoá **hình học** của bảng *Cửa & khoang* (U9 pha 2).
+ *
+ * ## Vì sao enum ở `:core` chứ không để tầng vẽ tự suy từ mã datum
+ * Biết `door_lf` là **vạt cửa trước-trái** là kiến thức về mã datum, cùng họ với việc biết `bsd_fl_alarm` nằm bên
+ * trái ([GroupSide]). `GroupTileWiringContractTest` cấm tầng vẽ nhắc tới mã thành viên (`"door_"`) chính vì mỗi lần
+ * chép một mã sang `:app` là dựng thêm một bản sao phải giữ đồng bộ bằng trí nhớ. Enum này là chỗ nối: `:core` nói
+ * *"bộ phận nào"*, `:app` tra ra path của **đúng** bộ phận đó trong bộ icon v2.
+ *
+ * ⚠ Hậu tố theo quy ước **THÂN XE** (`lf · rf · lr · rr`), KHÔNG phải quy ước TPMS (`fl · fr · rl · rr`) mà
+ * [TyreCorner] dùng. Kiểm kê U7 §2 đã ghi: bộ đăng ký có tới bốn quy ước hậu tố cho cùng một góc xe, và đổi chỗ
+ * giữa chúng là lỗi **im lặng** — bảng vẫn vẽ đủ bốn vạt, chỉ là vạt sau-trái mang trạng thái của cửa trước-trái.
+ * Tên hằng ở đây bám đúng chữ trong mã datum để chỗ nối đọc ra được bằng mắt.
+ */
+enum class CarPart {
+    DOOR_LF, DOOR_RF, DOOR_LR, DOOR_RR, TAILGATE, SUNROOF, SUNSHADE, MIRROR;
+
+    /**
+     * Có phải một trong **bốn cửa** không.
+     *
+     * Dòng kết luận đếm cửa riêng (*"2 cửa mở"*) và kể tên các khoang còn lại (*"Cốp · Mở"*): bốn cửa là **một loại**
+     * nên đếm là đủ, còn cốp/nóc/rèm/gương mỗi thứ một nghĩa nên đếm gộp sẽ ra một câu vô nghĩa (*"3 thứ đang mở"*).
+     */
+    val isDoor: Boolean
+        get() = this == DOOR_LF || this == DOOR_RF || this == DOOR_LR || this == DOOR_RR
+}
+
+/**
+ * Trạng thái ĐÃ QUYẾT ĐỊNH của một bộ phận trên bảng *Cửa & khoang* — `:app` chỉ vẽ, không phán xét.
+ *
+ * @property label nhãn ngắn của datum chính ([GroupCell.label]) — dùng cho dòng kết luận.
+ * @property value giá trị đọc được, ưu tiên bản **có số** (cốp/nóc có cả trạng thái lẫn phần trăm) — dùng cho dòng
+ *   kết luận, nên nó mang cả đơn vị (xem [GroupCell.value]).
+ * @property note nhãn NGẮN vẽ ngay cạnh bộ phận, **chỉ khi bộ phận có số** (rèm %, nóc %, cốp %); rỗng với bốn cửa
+ *   và gương vì chúng chỉ có đóng/mở — vẽ chữ *"Mở"* lên vạt cửa đã tô màu là nói hai lần một điều.
+ * @property tone sắc thái NẶNG NHẤT trong các datum của bộ phận (cốp có hai: trạng thái ALERT + phần trăm ACTIVE).
+ * @property open bộ phận có **đang khác trạng thái nghỉ** không ⇒ `:app` vẽ VÙNG TÔ. Quyết ở đây chứ không để tầng
+ *   vẽ suy từ [tone]: *"tô khi nào"* là một câu hỏi về dữ liệu (gương **gập** cũng là "đang khác", dù gập không phải
+ *   là "mở"), và câu trả lời phải nằm cùng chỗ với luật sắc thái để hai thứ không lệch nhau.
+ * @property available đã đọc được chưa. Off-car là ca **thường** ⇒ `:app` làm mờ nét, KHÔNG bịa trạng thái đóng.
+ */
+data class CarPartState(
+    val part: CarPart,
+    val label: String,
+    val value: String,
+    val note: String,
+    val tone: GroupTone,
+    val open: Boolean,
+    val available: Boolean,
+)
+
+/**
+ * KẾ HOẠCH TRÌNH BÀY của bảng *Cửa & khoang* — cùng lối [SideBoardPlan]: quyết định ở `:core`, vẽ ở `:app`.
+ *
+ * Khác [SideBoardPlan] ở chỗ **không phụ thuộc bề cao ô**: bảng này vẽ theo hình học thật của xe (vạt cửa ở đúng góc
+ * xe), nên không có phép "bớt hàng cho vừa" — bộ phận nào cũng phải ở đúng chỗ của nó, hoặc cả bảng thu nhỏ lại.
+ *
+ * @property parts đúng thứ tự khai của [CarPart] và chỉ gồm bộ phận **có datum trong nhóm** (nhóm khác gọi nhầm thì
+ *   được danh sách rỗng chứ không phải một bảng vẽ bừa).
+ * @property footer dòng KẾT LUẬN (*"Tất cả đã đóng"* / *"2 cửa mở"* / *"chưa đọc được"*) — câu này phân biệt
+ *   *"đã đọc, đóng hết"* với *"chưa đọc được"*, đúng chỗ mà [GroupBoard.sidePlan] đã phải vá một lần.
+ */
+data class DoorBoardPlan(
+    val parts: List<CarPartState>,
+    val footer: String,
+)

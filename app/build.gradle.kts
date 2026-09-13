@@ -41,8 +41,8 @@ android {
         applicationId = "com.byd.launcher"
         minSdk = 29
         targetSdk = 37
-        versionCode = 44
-        versionName = "1.43"
+        versionCode = 45
+        versionName = "1.44"
 
         // DIAG build flag — a DIAGNOSTIC log-collection build for a teammate to drive-test VietMap/Waze.
         // Default FALSE so the normal RELEASE build stays byte-identical (A8/D3: verbose logging default OFF —

@@ -98,12 +98,30 @@ class CapabilityGroupsTest {
         assertEquals(WidgetShape.STRIP, win.shape)
     }
 
+    /**
+     * ## ⚠ U9 pha 2 — luật NỚI từ `STRIP` sang `STRIP + BOARD`, và đây là lý do (không phải "nới cho xanh")
+     * Nhóm *Cửa & khoang* đổi sang [WidgetShape.BOARD] để vẽ hình xe (owner 2026-09-13). Hàng nút chưa bao giờ phụ
+     * thuộc vào hình — `GroupTileView.bind` chỉ hỏi `model.hasActions`; thứ từng thiếu là **chỗ**, vì ô vẽ Canvas
+     * khai `MATCH_PARENT` nuốt trọn phần cao còn lại. Pha 2 chữa bằng `weight` cho thân ô BOARD-có-nút ⇒
+     * `LinearLayout` đo hàng nút (chi phí CỐ ĐỊNH) trước.
+     *
+     * [WidgetShape.CARD] **vẫn** đứng ngoài: chưa nhóm nào cần, và không có ảnh chụp nào chứng minh hàng nút còn
+     * nguyên ở đó.
+     */
     @Test
-    fun `chi nhom STRIP moi mang nut - vi hai bo ve kia khong co hang nut`() {
-        // §4.3: hàng nút chỉ tồn tại trong bộ vẽ STRIP. Nút khai vào BOARD/CARD sẽ vẽ ra rồi không ai chạm được —
-        // đúng họ lỗi "vẽ được ≠ đặt được" của RW0, và nó im lặng.
-        val wrong = CapabilityGroups.ALL.filter { it.hasWrites && it.shape != WidgetShape.STRIP }.map { it.id }
+    fun `chi nhom co hang nut moi mang nut - vi bo ve CARD khong co hang nut`() {
+        val wrong = CapabilityGroups.ALL
+            .filter { it.hasWrites && it.shape !in CapabilityGroups.SHAPES_WITH_ACTIONS }.map { it.id }
         assertEquals(emptyList<String>(), wrong, "nhóm này khai nút nhưng bộ vẽ của nó không có chỗ đặt nút")
+        assertEquals(
+            setOf(WidgetShape.STRIP, WidgetShape.BOARD), CapabilityGroups.SHAPES_WITH_ACTIONS,
+            "thêm một hình vào danh sách có-hàng-nút là một quyết định về BỐ CỤC — phải có chỗ đo được cho hàng nút " +
+                "trước, không phải nới luật cho xanh",
+        )
+        assertEquals(
+            WidgetShape.BOARD, CapabilityGroups.DOORS.shape,
+            "U9 pha 2: *Cửa & khoang* phải là BOARD (hình xe), không quay về dải STRIP mười ô chữ giống nhau",
+        )
         assertEquals(
             listOf("g_windows", "g_doors", "g_lights"),
             CapabilityGroups.ALL.filter { it.hasWrites }.map { it.id },

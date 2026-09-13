@@ -34,10 +34,14 @@ import androidx.core.graphics.PathParser
  *    `ThemePaletteContractTest` phủ luôn tệp này vì bài đó quét cả thư mục `launcher/`).
  *
  * ## Bộ phận nào có ở đây, bộ phận nào chưa
- * Chỉ có **khung TRÊN + 4 bánh** — đúng những gì ba bảng đang vẽ. Khung TRƯỚC/SAU và các vùng tô cửa · kính ·
- * cốp · ca-pô **cố ý chưa đưa vào**: một hằng không ai gọi thì không bài canh nào phát hiện được khi nó trôi
- * khỏi icon (CLAUDE.md §8 — "compile xanh không có nghĩa là code chạy"). Bảng nào cần tới bộ phận nào thì chép
- * chuỗi tương ứng từ script sinh icon vào đây **cùng lượt** với chỗ dùng nó.
+ * Khung TRÊN + 4 bánh (U9 pha 1) + **8 bộ phận mở được** của thân xe (U9 pha 2, cho [DoorBoardView]) — đúng những
+ * gì bốn bảng đang vẽ, không hơn. Khung TRƯỚC/SAU, ô kính và ca-pô **cố ý chưa đưa vào**: một hằng không ai gọi thì
+ * không bài canh nào phát hiện được khi nó trôi khỏi icon (CLAUDE.md §8 — "compile xanh không có nghĩa là code
+ * chạy"), và `CarFramesSourceContractTest` khoá đúng điều đó bằng cách đòi **mọi** hằng ở đây phải có chỗ gọi.
+ *
+ * ⚠ Ca-pô có icon (`ic_car_top_hood.xml`) nhưng KHÔNG vào đây: nhóm *Cửa & khoang* không có datum nào đọc nắp
+ * ca-pô (`CarStatus.Body` không có field, `hood` chỉ là một NÚT ở [ControlRegistry] và cũng không thuộc nhóm) ⇒
+ * vẽ nó ra là vẽ một bộ phận **vĩnh viễn chưa đọc được**, tức bảng tự bịa thêm nội dung không có trong model.
  */
 internal object CarFrames {
 
@@ -54,6 +58,50 @@ internal object CarFrames {
     private const val WHEEL_FR = "M19.50,6.80 L19.70,6.80 A1.20,1.20 0 0 1 20.90,8.00 L20.90,10.20 A1.20,1.20 0 0 1 19.70,11.40 L19.50,11.40 A1.20,1.20 0 0 1 18.30,10.20 L18.30,8.00 A1.20,1.20 0 0 1 19.50,6.80 Z"
     private const val WHEEL_RL = "M4.30,13.60 L4.50,13.60 A1.20,1.20 0 0 1 5.70,14.80 L5.70,17.00 A1.20,1.20 0 0 1 4.50,18.20 L4.30,18.20 A1.20,1.20 0 0 1 3.10,17.00 L3.10,14.80 A1.20,1.20 0 0 1 4.30,13.60 Z"
     private const val WHEEL_RR = "M19.50,13.60 L19.70,13.60 A1.20,1.20 0 0 1 20.90,14.80 L20.90,17.00 A1.20,1.20 0 0 1 19.70,18.20 L19.50,18.20 A1.20,1.20 0 0 1 18.30,17.00 L18.30,14.80 A1.20,1.20 0 0 1 19.50,13.60 Z"
+
+    // ── U9 pha 2 · BỘ PHẬN MỞ ĐƯỢC (bảng *Cửa & khoang*) — cũng chép NGUYÊN VĂN từ `gen_car4.py` ────────────
+    // Vạt cửa: hằng `FLAP` (4 mục). Cốp/nóc/rèm/gương: các ô `ic_car_top_trunk` · `ic_car_top_sunroof` ·
+    // `ic_car_top_sunshade` · `ic_car_top_mirror`. Hậu tố cửa theo quy ước THÂN XE `lf·rf·lr·rr` — KHÔNG phải
+    // `fl·fr·rl·rr` của TPMS ở trên (kiểm kê U7 §2); enum [CarPart] của `:core` giữ hộ chỗ nối đó.
+
+    /** Vạt CỬA TRƯỚC-TRÁI mở ra ngoài thân, đúng góc bản lề. */
+    private const val FLAP_LF = "M7.55,9.1 L3.9,10.4 L3.9,13.1 L7.35,12.5 Z"
+    private const val FLAP_RF = "M16.45,9.1 L20.1,10.4 L20.1,13.1 L16.65,12.5 Z"
+    private const val FLAP_LR = "M7.35,13.9 L3.9,15.2 L3.9,17.9 L7.6,17.3 Z"
+    private const val FLAP_RR = "M16.65,13.9 L20.1,15.2 L20.1,17.9 L16.4,17.3 Z"
+
+    /** Nắp cốp — mảng đuôi xe, nằm TRONG thân. */
+    private const val TRUNK = "M9.80,17.30 L14.20,17.30 A0.90,0.90 0 0 1 15.10,18.20 L15.10,18.60 A0.90,0.90 0 0 1 14.20,19.50 L9.80,19.50 A0.90,0.90 0 0 1 8.90,18.60 L8.90,18.20 A0.90,0.90 0 0 1 9.80,17.30 Z"
+
+    /** Ô cửa sổ trời trên nóc. */
+    private const val SUNROOF = "M10.60,9.30 L13.40,9.30 A1.00,1.00 0 0 1 14.40,10.30 L14.40,14.30 A1.00,1.00 0 0 1 13.40,15.30 L10.60,15.30 A1.00,1.00 0 0 1 9.60,14.30 L9.60,10.30 A1.00,1.00 0 0 1 10.60,9.30 Z"
+
+    /** Rèm che nắng, mảnh 1: THANH CUỘN ở mép trước nóc. */
+    private const val SHADE_ROLL = "M9.85,9.90 L14.15,9.90 A0.55,0.55 0 0 1 14.70,10.45 L14.70,10.55 A0.55,0.55 0 0 1 14.15,11.10 L9.85,11.10 A0.55,0.55 0 0 1 9.30,10.55 L9.30,10.45 A0.55,0.55 0 0 1 9.85,9.90 Z"
+
+    /** Rèm che nắng, mảnh 2: TẤM PHỦ + hai NẾP GẤP khoét rỗng (⇒ phải tô kiểu `EVEN_ODD`, xem [partPaths]). */
+    private const val SHADE_SHEET = "M10.20,11.60 L13.80,11.60 A0.50,0.50 0 0 1 14.30,12.10 L14.30,15.50 A0.50,0.50 0 0 1 13.80,16.00 L10.20,16.00 A0.50,0.50 0 0 1 9.70,15.50 L9.70,12.10 A0.50,0.50 0 0 1 10.20,11.60 Z M10.65,12.80 L13.35,12.80 A0.25,0.25 0 0 1 13.60,13.05 L13.60,13.15 A0.25,0.25 0 0 1 13.35,13.40 L10.65,13.40 A0.25,0.25 0 0 1 10.40,13.15 L10.40,13.05 A0.25,0.25 0 0 1 10.65,12.80 Z M10.65,14.20 L13.35,14.20 A0.25,0.25 0 0 1 13.60,14.45 L13.60,14.55 A0.25,0.25 0 0 1 13.35,14.80 L10.65,14.80 A0.25,0.25 0 0 1 10.40,14.55 L10.40,14.45 A0.25,0.25 0 0 1 10.65,14.20 Z"
+
+    /** Hai tai gương chiếu hậu — một chuỗi, hai nhánh `M` (trái rồi phải). */
+    private const val MIRROR = "M7.6,8.9 L4.7,9.7 L7.4,10.9 Z M16.4,8.9 L19.3,9.7 L16.6,10.9 Z"
+
+    /**
+     * Bộ phận ↔ các mảnh path của nó, khoá theo [CarPart] của `:core`.
+     *
+     * Một bộ phận có thể gồm **nhiều mảnh** (rèm = thanh cuộn + tấm phủ) — đúng như trong tệp icon, nơi chúng là hai
+     * thẻ `<path>` riêng. Gộp chúng thành MỘT [Path] ở đây thay vì để bảng vẽ hai lần: một bộ phận là một trạng thái,
+     * nên nó phải là một lượt tô với một màu, không thể có nửa mảnh mang màu khác.
+     */
+    private val PARTS: Map<CarPart, List<String>> = mapOf(
+        CarPart.DOOR_LF to listOf(FLAP_LF),
+        CarPart.DOOR_RF to listOf(FLAP_RF),
+        CarPart.DOOR_LR to listOf(FLAP_LR),
+        CarPart.DOOR_RR to listOf(FLAP_RR),
+        CarPart.TAILGATE to listOf(TRUNK),
+        CarPart.SUNROOF to listOf(SUNROOF),
+        CarPart.SUNSHADE to listOf(SHADE_ROLL, SHADE_SHEET),
+        CarPart.MIRROR to listOf(MIRROR),
+    )
 
     /**
      * Bốn bánh, khoá theo [TyreCorner] của `:core` — **không** theo bốn chữ `fl/fr/rl/rr` của tên tệp icon.
@@ -88,7 +136,37 @@ internal object CarFrames {
 
     private val wheelPaths: Map<TyreCorner, Path> by lazy { WHEELS.mapValues { parse(it.value) } }
 
+    /**
+     * Path của từng bộ phận — đọc MỘT LẦN, và tô kiểu **EVEN_ODD**.
+     *
+     * `EVEN_ODD` chứ không để mặc định `WINDING`: tấm rèm ([SHADE_SHEET]) khai hai nếp gấp là hai vòng **nằm trong**
+     * vòng ngoài, và tệp icon tương ứng khai `android:fillType="evenOdd"` — với `WINDING` hai nếp đó bị tô đặc, tức
+     * rèm mất đúng chi tiết đã cứu nó khỏi bị đọc nhầm thành mặt kính ở Pass 5 của U7. Các bộ phận còn lại không có
+     * vòng lồng nhau nên hai kiểu tô cho kết quả **y hệt** ⇒ đặt chung một kiểu là an toàn và bớt một nhánh.
+     */
+    private val partPaths: Map<CarPart, Path> by lazy {
+        PARTS.mapValues { (_, pieces) ->
+            Path().also { p ->
+                pieces.forEach { p.addPath(parse(it)) }
+                p.fillType = Path.FillType.EVEN_ODD
+            }
+        }
+    }
+
+    private val partBoxes: Map<CarPart, RectF> by lazy { partPaths.mapValues { boundsOf(it.value) } }
+
     private val frameBox: RectF by lazy { boundsOf(bodyPath) }
+
+    /**
+     * Hộp bao **THÂN + MỌI bộ phận** (hệ icon) — thứ mà bảng cửa phóng vào ô.
+     *
+     * Khác [frameBounds] (chỉ thân): vạt cửa mở **ra ngoài** thân tới `x 3.9 … 20.1`, nên phóng theo thân sẽ cắt cụt
+     * đúng bốn thứ mà bảng đó sinh ra để hiện. Đo bằng phép hợp các hộp bao thật, **không** viết tay bốn số: đổi hình
+     * vạt cửa ở script sinh icon là khung tự theo.
+     */
+    private val openBox: RectF by lazy {
+        RectF(frameBox).also { r -> partBoxes.values.forEach { r.union(it) } }
+    }
 
     private val wheelBoxes: Map<TyreCorner, RectF> by lazy { wheelPaths.mapValues { boundsOf(it.value) } }
 
@@ -104,6 +182,27 @@ internal object CarFrames {
 
     /** Vùng tô của một bánh — [Path] dùng chung, xem luật "chỉ đọc" ở KDoc lớp. */
     fun wheel(corner: TyreCorner): Path = wheelPaths.getValue(corner)
+
+    /**
+     * Vùng tô của một bộ phận mở được — [Path] dùng chung, xem luật "chỉ đọc" ở KDoc lớp.
+     *
+     * Trả `null` (không ném) khi `:core` biết một bộ phận mà bộ icon chưa có hình: chỗ gọi bỏ qua bộ phận đó thay vì
+     * làm sập cả launcher trên xe. Có bài canh đòi ánh xạ phải **đủ** mọi [CarPart], nên nhánh `null` là lưới an
+     * toàn chứ không phải chỗ để im lặng bỏ sót.
+     */
+    fun part(p: CarPart): Path? = partPaths[p]
+
+    /** Hộp bao của một bộ phận (hệ icon) — chỗ đặt nhãn `%` bám theo chính bộ phận ấy. */
+    fun partBounds(p: CarPart, out: RectF): Boolean {
+        val box = partBoxes[p] ?: return false
+        out.set(box)
+        return true
+    }
+
+    /** Hộp bao THÂN + mọi bộ phận (xem [openBox]) — khung mà bảng cửa phóng vào ô. */
+    fun openFrameBounds(out: RectF) {
+        out.set(openBox)
+    }
 
     /** Hộp bao của một bánh **trong hệ toạ độ icon**; chỗ gọi tự `Matrix.mapRect` sang hệ màn hình. */
     fun wheelBounds(corner: TyreCorner, out: RectF) {

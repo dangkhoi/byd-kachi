@@ -51,6 +51,34 @@ object GroupBoard {
         TyreCorner.REAR_RIGHT to "tyre_p_rr",
     )
 
+    /**
+     * Bộ phận thân xe ↔ mã datum — bảng nối DUY NHẤT giữa [CarPart] (hình học) và bộ đăng ký (dữ liệu).
+     *
+     * Đặt ở đây, cùng chỗ với [TYRE_PRESSURE_BY_CORNER], vì cùng một vai: nhóm nói bằng **mã datum** còn bảng vẽ nói
+     * bằng **bộ phận**, và phải có đúng MỘT chỗ nối hai cách gọi đó. Chép nó sang `:app` là dựng bản sao thứ hai —
+     * có test cấm (`GroupTileWiringContractTest`: tầng vẽ không được chứa `"door_"`).
+     *
+     * ⚠ Hậu tố thân xe `lf · rf · lr · rr` (KHÔNG phải `fl · fr · rl · rr` của TPMS) — xem KDoc [CarPart].
+     */
+    private val DOOR_PARTS: List<DoorPartSpec> = listOf(
+        DoorPartSpec(CarPart.DOOR_LF, "door_lf"),
+        DoorPartSpec(CarPart.DOOR_RF, "door_rf"),
+        DoorPartSpec(CarPart.DOOR_LR, "door_lr"),
+        DoorPartSpec(CarPart.DOOR_RR, "door_rr"),
+        DoorPartSpec(CarPart.TAILGATE, "tailgate_status", "tailgate_position"),
+        DoorPartSpec(CarPart.SUNROOF, "sunroof_state", "sunroof_pos"),
+        // Rèm chỉ có MỘT datum, và nó đã là phần trăm ⇒ vừa là trạng thái vừa là số.
+        DoorPartSpec(CarPart.SUNSHADE, "sunshade_pct", "sunshade_pct"),
+        DoorPartSpec(CarPart.MIRROR, "mirror_fold"),
+    )
+
+    /**
+     * @property stateId datum nói bộ phận đang ĐÓNG hay MỞ.
+     * @property posId datum nói MỞ BAO NHIÊU (`null` nếu bộ phận không có số). Được phép trùng [stateId] khi datum
+     *   duy nhất của bộ phận vốn đã là phần trăm (rèm).
+     */
+    private data class DoorPartSpec(val part: CarPart, val stateId: String, val posId: String? = null)
+
     /** Model cho nhóm [id], hoặc `null` nếu mã không phải nhóm (⇒ chỗ gọi suy giảm an toàn, KHÔNG sập). */
     fun of(id: String, status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT): GroupBoardModel? =
         CapabilityGroups.byId(id)?.let { of(it, status, units) }
@@ -155,6 +183,91 @@ object GroupBoard {
             if (read == 0) Strings.t("$total cảm biến · chưa đọc được", "$total sensors · not read yet")
             else Strings.t("Không có cảnh báo · $total cảm biến", "No alerts · $total sensors")
         return SideBoardPlan(emptyList(), emptyList(), hidden = total, summary = summary)
+    }
+
+    /**
+     * Kế hoạch cho bảng **Cửa & khoang** (U9 pha 2) — bộ phận nào đang mở, tô sắc thái nào, kết luận là câu gì.
+     *
+     * ## Vì sao ở `:core` chứ không ở ô vẽ
+     * Cùng lý do [sidePlan] và [TyreBoard.verdict]: *"cửa nào đang mở"* và *"nói câu gì về chúng"* là quyết định về
+     * DỮ LIỆU, kiểm được off-car; còn *"vẽ vạt cửa ở góc nào"* mới là việc của Canvas. Ô vẽ ở `:app` thậm chí **không
+     * được phép** nhắc tới mã `door_lf` — `GroupTileWiringContractTest` cấm đúng điều đó, nên chỗ nối phải là
+     * [CarPart].
+     *
+     * ## Hai datum cho MỘT bộ phận là chuyện thường, và phải gộp
+     * Cốp có `tailgate_status` (mở/đóng) **và** `tailgate_position` (%); nóc có `sunroof_state` **và** `sunroof_pos`.
+     * Vẽ chúng thành hai vùng tô riêng thì cùng một nắp cốp hiện hai lần với hai màu. Gộp: sắc thái lấy cái **nặng
+     * nhất** ([worst]), số hiển thị lấy cái **có số**.
+     *
+     * ⚠ Nhóm không có datum nào của một bộ phận ⇒ bộ phận đó **không vào danh sách** (không vẽ), chứ không vào với
+     * trạng thái "chưa đọc": hai câu đó khác nhau — *"xe này không có cửa sổ trời"* và *"chưa đọc được cửa sổ trời"*.
+     */
+    fun doorPlan(m: GroupBoardModel): DoorBoardPlan {
+        val byId = m.cells.associateBy { it.id }
+        val parts = DOOR_PARTS.mapNotNull { spec ->
+            val st = byId[spec.stateId] ?: return@mapNotNull null
+            val pos = spec.posId?.let { byId[it] }
+            val tone = worst(st.tone, pos?.tone)
+            CarPartState(
+                part = spec.part,
+                label = st.label,
+                // Ưu tiên bản CÓ SỐ: "30 %" nói được nhiều hơn "Mở", và khi chưa đọc được phần trăm thì vẫn còn
+                // trạng thái đóng/mở để nói — không rơi về "—" chỉ vì một trong hai datum im lặng.
+                value = if (pos != null && pos.available) pos.value else st.value,
+                note = pos?.takeIf { it.available }?.value.orEmpty(),
+                tone = tone,
+                // "Đang khác trạng thái nghỉ" = có sắc thái. Gương GẬP cũng rơi vào đây dù gập không phải là "mở" —
+                // xem KDoc [CarPartState.open] về việc quyết định này phải ở cùng chỗ với luật sắc thái.
+                open = tone != GroupTone.NEUTRAL,
+                available = st.available || pos?.available == true,
+            )
+        }
+        return DoorBoardPlan(parts, doorVerdict(parts))
+    }
+
+    /**
+     * Dòng KẾT LUẬN của bảng cửa — trả lời thẳng câu *"xe tôi kín chưa?"*.
+     *
+     * Ba điều nó phải phân biệt, và cả ba đều là chỗ dự án đã trả giá ở bảng khác:
+     *  • **đã đọc, đóng hết** ≠ **chưa đọc được gì** — off-car mọi field là `null`, nói *"tất cả đã đóng"* ở đó là
+     *    hứa một điều chưa kiểm (đúng lỗi [sidePlan] đã phải vá);
+     *  • **đóng hết nhưng còn bộ phận chưa đọc** — vẫn phải kể ra con số, không được im lặng làm tròn thành "đóng hết";
+     *  • bốn cửa thì **đếm**, các khoang còn lại thì **kể tên kèm giá trị** (xem [CarPart.isDoor]).
+     */
+    private fun doorVerdict(parts: List<CarPartState>): String {
+        if (parts.isEmpty()) return ""
+        if (parts.none { it.available }) {
+            return Strings.t("${parts.size} bộ phận · chưa đọc được", "${parts.size} parts · not read yet")
+        }
+        val unread = parts.count { !it.available }
+        val doors = parts.count { it.part.isDoor && it.open }
+        val others = parts.filter { !it.part.isDoor && it.open }
+        if (doors == 0 && others.isEmpty()) {
+            return if (unread == 0) Strings.t("Tất cả đã đóng", "All closed")
+            else Strings.t("Đã đóng · $unread chưa đọc được", "Closed · $unread not read yet")
+        }
+        return buildList {
+            if (doors > 0) {
+                add(Strings.t("$doors cửa mở", "$doors ${if (doors == 1) "door" else "doors"} open"))
+            }
+            others.forEach { add("${it.label} · ${it.value}") }
+            if (unread > 0) add(Strings.t("$unread chưa đọc được", "$unread not read yet"))
+        }.joinToString("   ")
+    }
+
+    /**
+     * Sắc thái NẶNG hơn trong hai cái.
+     *
+     * Viết thẳng bốn nhánh chứ **không** so `ordinal`: thứ tự khai của [GroupTone] không hề hứa là thang nặng-nhẹ
+     * (khác [EvidenceTier], nơi giao kèo đó được ghi ra và có test khoá), nên dựa vào nó là dựng một phụ thuộc ngầm
+     * mà ngày ai chèn thêm một sắc thái vào giữa sẽ vỡ **im lặng** — và vỡ theo chiều tệ nhất: mất cảnh báo.
+     */
+    private fun worst(a: GroupTone, b: GroupTone?): GroupTone = when {
+        b == null -> a
+        a == GroupTone.ALERT || b == GroupTone.ALERT -> GroupTone.ALERT
+        a == GroupTone.WARN || b == GroupTone.WARN -> GroupTone.WARN
+        a == GroupTone.ACTIVE || b == GroupTone.ACTIVE -> GroupTone.ACTIVE
+        else -> GroupTone.NEUTRAL
     }
 
     // ── Dựng ô con ──────────────────────────────────────────────────────────────────────────────────────

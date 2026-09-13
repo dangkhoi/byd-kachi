@@ -44,10 +44,14 @@ class GroupTileWiringContractTest {
         "src/main/java/com/byd/clusternav/launcher/GroupTiles.kt",
         "src/main/java/com/byd/clusternav/launcher/GroupTileViews.kt",
         "src/main/java/com/byd/clusternav/launcher/GroupTileParts.kt",
+        // U9 pha 2: sổ đăng ký bảng BOARD (chọn ô vẽ + đổ dữ liệu tại chỗ), tách ra khi `GroupTileViews.kt` chạm
+        // trần 500 dòng. Nó gọi `GroupBoard.` ⇒ là một phần tầng vẽ nhóm ⇒ phải nằm trong tầm mọi assertFalse dưới.
+        "src/main/java/com/byd/clusternav/launcher/GroupBoardBinder.kt",
     )
     private val tiles by lazy { tileFiles.joinToString("\n") { code(it) } }
     private val radar by lazy { code("src/main/java/com/byd/clusternav/launcher/RadarBoardView.kt") }
     private val side by lazy { code("src/main/java/com/byd/clusternav/launcher/SideBoardView.kt") }
+    private val door by lazy { code("src/main/java/com/byd/clusternav/launcher/DoorBoardView.kt") }
     /**
      * Phần `:core` của ô nhóm = **HAI tệp** nối lại (`GroupBoard.kt` phần quyết định + `GroupBoardModel.kt` các kiểu).
      *
@@ -82,6 +86,9 @@ class GroupTileWiringContractTest {
             "SideBoardView.kt" to
                 "ô vẽ Canvas của nhóm ADAS — đã quét riêng qua `side` (nó hỏi `GroupBoard.sidePlan` để biết ô hẹp thì " +
                     "hiện cái gì, đúng lối `RadarBoardView` hỏi `GroupBoard.radarTone`)",
+            "DoorBoardView.kt" to
+                "ô vẽ Canvas của nhóm *Cửa & khoang* (U9 pha 2) — đã quét riêng qua `door` (nó hỏi " +
+                    "`GroupBoard.doorPlan` để biết bộ phận nào đang mở, đúng lối `SideBoardView` hỏi `sidePlan`)",
             "ControlDockView.kt" to "thanh nút: chỉ hỏi tóm tắt — đã quét riêng trong GroupPickerWiringContractTest",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->
@@ -201,9 +208,16 @@ class GroupTileWiringContractTest {
             "bộ vẽ nhóm KHÔNG được tự dựng bảng lốp — nó nhận qua cổng vào (lambda) từ WidgetViews",
         )
         assertFalse(tiles.contains("TyreBoard.readings("), "và không tự đọc lại 4 bánh")
-        val body = SourceRoots.body(tiles, "private fun boardBody(")
-        assertTrue(body.contains("tyreBoardPort"), "bảng lốp đến từ cổng vào")
-        assertTrue(body.contains("CapabilityGroups.TYRES.id"), "nhận nhóm Lốp bằng mã của CHÍNH nhóm đó")
+        assertTrue(
+            SourceRoots.body(tiles, "private fun boardBody(").contains("tyreBoardPort"),
+            "bảng lốp đến từ cổng vào",
+        )
+        // U9 pha 2: phép CHỌN bảng dời sang `GroupBoardBinder.build` (xem KDoc tệp đó) — quét đúng vùng mới, không
+        // quét cả `tiles` (quét tràn = bài canh giả, xem KDoc SourceRoots.body).
+        val pick = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/GroupBoardBinder.kt"), "fun build(")
+        assertTrue(pick.contains("tyreBoard?.invoke("), "bảng lốp vẫn đến từ cổng vào, không dựng tại chỗ")
+        assertTrue(pick.contains("CapabilityGroups.TYRES.id"), "nhận nhóm Lốp bằng mã của CHÍNH nhóm đó")
+        assertTrue(pick.contains("CapabilityGroups.DOORS.id"), "và nhóm Cửa & khoang cũng vậy (U9 pha 2)")
         // Chỗ gọi phải truyền đúng bộ dựng đang chạy (một bản duy nhất).
         assertTrue(
             SourceRoots.body(widgets, "fun build(").contains("tyreBoard(c, d)"),
@@ -266,7 +280,12 @@ class GroupTileWiringContractTest {
                 assertFalse(tiles.contains(it), "tầng vẽ nhóm chép tay mã thành viên: $it")
                 assertFalse(radar.contains(it), "ô vẽ radar chép tay mã thành viên: $it")
                 assertFalse(side.contains(it), "ô vẽ sơ đồ bên chép tay mã thành viên: $it")
+                // ⚠ Bảng cửa là chỗ CÁM DỖ NHẤT của luật này: nó vẽ đúng bốn vạt cửa, nên viết thẳng `"door_lf"` để
+                // tra trạng thái là cách "nhanh" hiển nhiên. Chỗ nối đúng là enum [CarPart] ở `:core`.
+                assertFalse(door.contains(it), "ô vẽ bảng cửa chép tay mã thành viên: $it")
             }
+        assertTrue(door.contains("GroupBoard.doorPlan("), "bảng cửa phải HỎI :core bộ phận nào đang mở")
+        assertTrue(door.contains("CarPart."), "và nối bằng enum bộ phận, không bằng mã datum")
     }
 
     @Test

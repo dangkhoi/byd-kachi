@@ -110,13 +110,31 @@ class CapabilityIconMeaningTest {
     /**
      * Nhóm có nút thì bộ vẽ vốn đã bỏ icon (cần bề cao cho hàng nút), nên ba nhóm kính/cửa/đèn KHÔNG hiện icon
      * trùng — bài này ghim đúng điều đó để đừng ai "sửa" bằng cách bật icon trở lại.
+     *
+     * ## ⚠ U9 pha 2 — *Cửa & khoang* rời STRIP, và điều đó KHÔNG nới lỏng kết luận
+     * Nhóm cửa nay là [WidgetShape.BOARD] (vẽ hình xe). Bộ vẽ BOARD **cũng** không hiện icon ô con — nó vẽ theo vị
+     * trí — nên câu trả lời cho *"ô con của ba nhóm này có hiện icon trùng không"* vẫn là **không**, chỉ khác đường
+     * đi tới. Vì thế bài này chuyển từ *"phải là STRIP"* sang *"phải là một hình mà bộ vẽ KHÔNG hiện icon ô con"*:
+     * đó mới là điều nó thật sự quan tâm, và bản cũ chỉ đúng nhờ trùng hợp rằng lúc đó ba nhóm đều là STRIP.
      */
     @Test
     fun `nhom co nut thi khong hien icon o con`() {
         listOf(CapabilityGroups.WINDOWS, CapabilityGroups.DOORS, CapabilityGroups.LIGHTS).forEach {
             assertTrue(it.hasWrites, "${it.id} phải có nút — đó là lý do bộ vẽ bỏ icon ô con")
-            assertEquals(WidgetShape.STRIP, it.shape, "nhóm có nút BẮT BUỘC là STRIP (bất biến của dự án)")
+            assertTrue(
+                it.shape in CapabilityGroups.SHAPES_WITH_ACTIONS,
+                "${it.id} có nút mà bộ vẽ của nó không có hàng nút ⇒ nút vẽ ra rồi không ai chạm được",
+            )
+            assertTrue(
+                it.shape == WidgetShape.STRIP || it.shape == WidgetShape.BOARD,
+                "${it.id}: chỉ hai bộ vẽ này KHÔNG hiện icon cho từng ô con (STRIP-có-nút bỏ icon, BOARD vẽ theo " +
+                    "vị trí) — hình khác là icon trùng hiện trở lại",
+            )
         }
+        assertEquals(
+            WidgetShape.BOARD, CapabilityGroups.DOORS.shape,
+            "U9 pha 2: nhóm cửa vẽ hình xe; trả nó về dải là quay lại mười ô chữ giống hệt nhau",
+        )
     }
 
     /** Và nhóm ADAS phải ở dạng BOARD — ghim đúng bản vá, để không ai lặng lẽ trả nó về dải. */

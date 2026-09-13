@@ -26,9 +26,9 @@ package com.byd.clusternav.launcher
  * ## Vì sao chỉ 3 nhóm có nút (§4.3 + OQ1)
  * [WINDOWS] · [DOORS] · [LIGHTS] mang nút vì chúng là thứ người ta **làm**, và trạng thái của chúng vô nghĩa nếu
  * không sửa được (thấy kính mở 40% mà không đóng được thì để làm gì). Chín nhóm còn lại là thứ người ta **xem**:
- * lốp, radar, pin, chuyến đi không có gì để bấm. Bất biến này bị chốt trong [init] — nút chỉ được ở nhóm
- * [WidgetShape.STRIP], vì hai bộ vẽ kia (BOARD/CARD) **không có hàng nút**, nên nút khai vào đó sẽ **vẽ ra rồi
- * không ai chạm tới được** — đúng họ lỗi *"vẽ được ≠ đặt được"* mà RW0 vừa dọn.
+ * lốp, radar, pin, chuyến đi không có gì để bấm. Bất biến này bị chốt trong [init] — nút chỉ được ở nhóm có bộ vẽ
+ * mang hàng nút ([SHAPES_WITH_ACTIONS] = STRIP + BOARD từ U9 pha 2), vì bộ vẽ CARD **không có hàng nút**, nên nút
+ * khai vào đó sẽ **vẽ ra rồi không ai chạm tới được** — đúng họ lỗi *"vẽ được ≠ đặt được"* mà RW0 vừa dọn.
  *
  * ## Vì sao nhóm là [CapabilityKind.READ] trong [CapabilityCatalog]
  * Xem KDoc tại [CapabilityCatalog.kindOf]. Tóm lại: bản chất một nhóm là **cái để xem** (kể cả [WINDOWS], nội dung
@@ -98,10 +98,18 @@ object CapabilityGroups {
      *
      * `lock` và `door` cùng có mặt vì chúng KHÁC nhau sau bản vá P0 2026-09-11: `lock` là công tắc khoá/mở-khoá,
      * `door` là nút BẤM một chiều "mở khoá cửa". Trước bản vá chúng gửi cùng một byte cho hai nghĩa đối nghịch.
+     *
+     * ## U9 pha 2 — STRIP ⇒ [WidgetShape.BOARD] (owner 2026-09-13: *"vẽ hình xe cho những chức năng tổng hợp"*)
+     * Câu nhóm này hỏi — *"xe tôi kín chưa?"* — là một câu về **không gian**: người lái cần biết cửa NÀO mở, không
+     * phải *"có 1 cảnh báo"*. Dải STRIP trả lời sai loại câu hỏi: [ĐO] 10 ô con cùng một icon cửa (xem
+     * [GroupBoardModel.iconsDistinguish]) nên bộ vẽ đã phải **bỏ icon**, còn lại mười ô chữ giống nhau xếp hai hàng.
+     * Bảng BOARD (`DoorBoardView`) đặt mỗi bộ phận đúng chỗ của nó trên hình xe — cùng lối [TYRES] và [ADAS] đã đi.
+     *
+     * Nhóm này vì thế là nhóm BOARD **đầu tiên có nút** — xem [SHAPES_WITH_ACTIONS] về chỗ cho hàng nút.
      */
     val DOORS = CapabilityGroup(
         id = "g_doors", label = "Cửa & khoang", labelEn = "Doors & openings",
-        icon = "ic-group-doors", domain = Domain.BODY, shape = WidgetShape.STRIP,
+        icon = "ic-group-doors", domain = Domain.BODY, shape = WidgetShape.BOARD,
         reads = listOf(
             "door_lf", "door_rf", "door_lr", "door_rr",
             "tailgate_status", "tailgate_position",
@@ -289,6 +297,21 @@ object CapabilityGroups {
      */
     val SHAPES: Set<WidgetShape> = setOf(WidgetShape.BOARD, WidgetShape.STRIP, WidgetShape.CARD)
 
+    /**
+     * Bộ vẽ **có hàng nút** ở đáy ô (§4.3 + U9 pha 2).
+     *
+     * ## ⚠ Vì sao [WidgetShape.BOARD] vào được danh sách này từ U9 pha 2 (trước đó chỉ [WidgetShape.STRIP])
+     * Hàng nút do `GroupTileView.bind` dựng và nó **chưa bao giờ** phụ thuộc vào hình — điều kiện luôn là
+     * `model.hasActions`. Thứ từng thiếu là **chỗ**: bộ vẽ BOARD là một `Canvas` xin `MATCH_PARENT`, nên nó nuốt trọn
+     * phần cao còn lại và hàng nút bị đẩy ra ngoài rồi cắt (đúng bệnh [ĐO] 2026-09-12 của nhóm *Kính*). Pha 2 chữa
+     * bằng cách cho thân ô BOARD-có-nút nhận `weight`: `LinearLayout` đo hàng nút (chi phí CỐ ĐỊNH) trước rồi mới
+     * chia phần dư cho bảng — bảng co, nút không bao giờ mất.
+     *
+     * [WidgetShape.CARD] vẫn đứng ngoài: chưa nhóm nào cần, và thêm một hình vào đây mà không có ảnh chụp chứng minh
+     * hàng nút còn nguyên thì đúng là kiểu "nới luật cho xanh" mà bất biến này sinh ra để chặn.
+     */
+    val SHAPES_WITH_ACTIONS: Set<WidgetShape> = setOf(WidgetShape.STRIP, WidgetShape.BOARD)
+
     fun byId(id: String): CapabilityGroup? = ALL.firstOrNull { it.id == id }
 
     /** Nhóm theo [Domain] (thứ tự enum), domain không có nhóm thì không xuất hiện. */
@@ -437,11 +460,12 @@ object CapabilityGroups {
             "thành viên BẤM phải là nút có thật trong ControlRegistry hoặc gói lệnh trong ActionMacros: $badWrites"
         }
 
-        // Nút chỉ có hàng để đứng trong bộ vẽ STRIP (§4.3). Khai nút vào BOARD/CARD = nút vẽ ra rồi không ai chạm
-        // được — đúng họ lỗi "vẽ được ≠ đặt được" của RW0, và nó im lặng.
-        val writesOnWrongShape = ALL.filter { it.hasWrites && it.shape != WidgetShape.STRIP }.map { it.id }
+        // Nút phải có HÀNG để đứng. Khai nút vào một bộ vẽ không có hàng nút = nút vẽ ra rồi không ai chạm được —
+        // đúng họ lỗi "vẽ được ≠ đặt được" của RW0, và nó im lặng.
+        val writesOnWrongShape = ALL.filter { it.hasWrites && it.shape !in SHAPES_WITH_ACTIONS }.map { it.id }
         require(writesOnWrongShape.isEmpty()) {
-            "chỉ nhóm STRIP có hàng nút; nhóm này khai nút nhưng bộ vẽ không có chỗ đặt: $writesOnWrongShape"
+            "bộ vẽ ${SHAPES_WITH_ACTIONS.joinToString("/")} mới có hàng nút; nhóm này khai nút nhưng bộ vẽ của nó " +
+                "không có chỗ đặt: $writesOnWrongShape"
         }
 
         // Một mã không được vừa là XEM vừa là BẤM trong CÙNG một nhóm: hai ô con giống nhau, một cái hiện số một cái
