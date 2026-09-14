@@ -129,6 +129,13 @@ class LayeringRulesTest {
         // Gọi `KachiTheme.applyTheme`, mà `KachiTheme` import android.graphics.Color ⇒ KHÔNG chuyển được sang :core.
         // Nó "thuần" chỉ vì phép đo soi `import android` + vài tên lớp Android, không soi phụ thuộc bắc cầu.
         "ThemeHost.kt" to "phụ thuộc KachiTheme (Android) qua lời gọi, không chuyển được sang :core",
+        // V1 pha NGHE: cửa DUY NHẤT mở kết nối HTTPS (cập nhật APK + tải mô hình nhận dạng). Nó "thuần" theo phép
+        // đo ở đây vì `java.net` là JVM chứ không phải `android.*` — nhưng nó **làm I/O ra mạng thật**, mà `:core`
+        // là tầng quyết định phải kiểm được off-car **không chạm mạng**. Đẩy nó xuống `:core` là mở đường cho một
+        // bài kiểm `:core` nào đó lặng lẽ gọi ra Internet, và một bộ test off-car đi hỏi mạng thì nó không còn là
+        // off-car nữa. (Đối chiếu: `VoskWordList` ở `:core` chỉ **phân tích** một `InputStream` do chỗ gọi đưa
+        // vào — không tự mở gì, nên nó thuộc về bên kia ranh giới.)
+        "HttpConn.kt" to "làm I/O ra mạng thật — :core phải kiểm được off-car mà không chạm mạng",
     )
 
     @Test

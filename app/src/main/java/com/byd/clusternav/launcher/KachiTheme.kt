@@ -251,6 +251,10 @@ object KachiTheme {
         //    đây sẽ cho một ô xanh lạc giữa thanh nút.
         "ic-apps" -> R.drawable.ic_grid
         "ic-settings" -> R.drawable.ic_gear
+        // V1 pha NGHE — `ic_mic` vẽ MỚI theo chuẩn bộ v2 (nét 1.6, ô quang học 20×20). KHÔNG dùng `ic_mic_g`
+        // đang có: tệp đó thuộc màn ClusterNav cũ (ô cockpit `activity_main.xml`), mang màu riêng và tỉ lệ khác
+        // — đặt nó cạnh `ic_grid`/`ic_gear` trên cùng một thanh là thấy ngay hai bộ hình.
+        "ic-mic" -> R.drawable.ic_mic
         // ══ U7 · BỘ HÌNH XE THEO VỊ TRÍ (spec docs/specs/kachi-icon-set-v2.html) ═════════════════════
         // Ba KHUNG dùng chung (top · front · rear) + VÙNG TÔ là bộ phận đang được nói tới. Tên tệp mang
         // luôn khung + bộ phận + vị trí (`ic_car_top_door_lf`) nên đọc bảng này là đọc được cả nghĩa.

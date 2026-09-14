@@ -42,12 +42,19 @@ class SlotHeadParityContractTest {
 
     @Test
     fun `hinh nut chi khai o mot cho`() {
-        // Hình = icon ic-swap + OVAL + viền STROKE. Chỉ SlotSwapButton được khai; hai đường không được tự vẽ lại.
-        assertTrue(button.contains("\"ic-swap\"") && button.contains("GradientDrawable.OVAL") && button.contains("Sp.STROKE"))
+        // Hình = CHỈ icon ic-swap, không nền oval, không viền (owner 2026-09-14: "kín đáo, nhỏ gọn, không khung viền").
+        // Chỉ SlotSwapButton được khai; hai đường không được tự vẽ lại.
+        assertTrue(button.contains("\"ic-swap\""))
+        val build = button.substring(button.indexOf("fun build("), button.indexOf("fun centered("))
+        assertFalse(build.contains("GradientDrawable.OVAL") || build.contains("setStroke("), "nút ⇄ không còn nền oval/viền — owner 2026-09-14")
+        assertTrue(build.contains("Sp.ICON_S") || centeredIcon(button), "hình nút nhỏ (ICON_S 20dp), đích chạm vẫn TOUCH")
         listOf("OverlayHeads.kt" to overlay, "WorkspaceView.kt" to workspace).forEach { (name, src) ->
             assertFalse(src.contains("\"ic-swap\""), "$name không được tự vẽ icon ⇄ — dùng SlotSwapButton")
         }
     }
+
+    private fun centeredIcon(src: String): Boolean =
+        src.substring(src.indexOf("fun centered(")).contains("Sp.ICON_S), KachiTheme.dpi(context, Sp.ICON_S)")
 
     @Test
     fun `khong con nut dong, ten hay thanh nen o dai dau o`() {
@@ -75,7 +82,11 @@ class SlotHeadParityContractTest {
         val activity = code("KachiHomeActivity.kt")
         assertTrue(activity.contains("drawerOpen = { drawerController.isOpen() || panels.settingsOpen() || panels.layoutOpen() }"),
             "OverlayHeads phải coi bảng Cài đặt/bảng vẽ như ngăn kéo: đang mở ⇒ ẩn nút nổi")
-        assertTrue(activity.contains("onPanelsChanged = { windows.updateOverlayHeads() }"), "mở/đóng bảng phải kích cập nhật nút nổi")
+        // Soát Pass 2 (2026-09-14): cổng này nay còn kích thêm `topStrip.refreshVoicePill()` (nút mic soi lại điều
+        // kiện sau khi màn Cài đặt đóng). Bài canh vì thế đọc ĐÚNG tính chất của nó — cổng có gọi cập nhật nút nổi
+        // hay không — thay vì so nguyên một dòng, thứ sẽ đỏ mỗi lần ai đó nối thêm một việc chính đáng vào cùng cổng.
+        val onPanels = Regex("""onPanelsChanged = \{([^}]*)\}""").find(activity)?.groupValues?.get(1).orEmpty()
+        assertTrue(onPanels.contains("windows.updateOverlayHeads()"), "mở/đóng bảng phải kích cập nhật nút nổi")
         val panels = code("HomePanels.kt")
         assertTrue(panels.split("onPanelsChanged()").size - 1 >= 4, "openSettings/closeSettings/openLayoutEditor/closeLayoutEditor đều báo")
     }

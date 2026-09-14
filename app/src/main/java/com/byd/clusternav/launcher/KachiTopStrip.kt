@@ -48,6 +48,19 @@ class KachiTopStrip(
     private val onOpenSettings: () -> Unit,
     private val onProfileTap: () -> Unit,
     private val onOpenAppList: () -> Unit = {},   // U3: lối vào "Mở ứng dụng" (mở app toàn màn, không gắn ô)
+    /**
+     * V1 pha NGHE (R12 b) — chạm nút mic. CÙNG lambda mà ô *Nói với xe* trên thanh nút dùng
+     * (`KachiHomeWiring.controlDock`), không đường thứ hai.
+     */
+    private val onVoice: () -> Unit = {},
+    /**
+     * Có vẽ nút mic không — hỏi **mỗi lần dựng**, không nhận một `Boolean` chụp sẵn.
+     *
+     * Hai điều kiện, và cả hai đổi được sau khi thanh này đã dựng: người dùng bật/tắt ở *Cài đặt › Thanh trạng
+     * thái*, và **mô hình đã tải hay chưa**. Vẽ một nút mic trên máy chưa có mô hình là hứa một việc mà bấm vào
+     * chỉ nhận được câu *"chưa tải mô hình"* — thà chưa có nút.
+     */
+    private val voicePillEnabled: () -> Boolean = { false },
 ) {
     private lateinit var clock: TextView
     private lateinit var dateText: TextView
@@ -86,11 +99,35 @@ class KachiTopStrip(
             addOnLayoutChangeListener { _, l, _, r, _, ol, _, or, _ -> if (r - l != or - ol) fitChips() }
         }
         strip.addView(chipRow, LinearLayout.LayoutParams(0, WRAP, 1f))
+        // V1 pha NGHE — nút mic đứng TRƯỚC "Ứng dụng": nói là lối tắt tới mọi thứ mà ba pill kia bày ra từng
+        // cái một, nên nó đứng đầu hàng. Chỉ-icon + đích chạm [Sp.TOUCH] y như hai pill kia (xem [pill]).
+        //
+        // [SOÁT Pass 2 · P2] Luôn GẮN, ẩn/hiện bằng `visibility` — xem [refreshVoicePill].
+        voicePill = pill("ic-mic", R.string.kachi_pill_voice, false) { onVoice() }
+            .also { strip.addView(it, pillLp()) }
+        refreshVoicePill()
         strip.addView(pill("ic-apps", R.string.kachi_pill_apps, false) { onOpenAppList() }, pillLp())   // U3: mở app toàn màn
         strip.addView(pill("ic-settings", R.string.kachi_pill_settings, true) { onOpenSettings() }, pillLp())
         strip.addView(profileChip(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.SLOT_GAP) })
         refreshChips(CarStatus())
         return strip
+    }
+
+    /** Nút mic — giữ tham chiếu vì nó ẩn/hiện theo hai thứ đổi được lúc đang chạy (xem [refreshVoicePill]). */
+    private var voicePill: View? = null
+
+    /**
+     * Ẩn/hiện nút mic theo [voicePillEnabled] — gọi lại mỗi khi lớp phủ Cài đặt đóng/mở và mỗi lần màn quay lại.
+     *
+     * ## [SOÁT Pass 2 · P2] Vì sao không thể quyết một lần lúc dựng
+     * [view] là `by lazy` ⇒ thanh trên dựng **một lần cho mỗi vòng đời màn chính**. Nhưng hai điều kiện của nút
+     * mic đều đổi được **sau** lúc dựng, và đổi ngay trong màn Cài đặt đang phủ lên chính thanh này: người dùng
+     * bấm *Tải mô hình tiếng Việt* (xong sau ~1 phút), hoặc gạt công tắc *Nút mic* ở **Thanh trạng thái**. Quyết
+     * một lần lúc dựng thì cả hai thao tác đó **không đổi gì trên màn** cho tới lần dựng lại màn chính — tức
+     * đúng hình dạng "bấm nút mà màn hình không đổi gì" mà P9 đã trả giá một lần (bố cục sẵn).
+     */
+    fun refreshVoicePill() {
+        voicePill?.visibility = if (voicePillEnabled()) View.VISIBLE else View.GONE
     }
 
     private fun pillLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.S) }

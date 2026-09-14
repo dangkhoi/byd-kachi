@@ -49,9 +49,25 @@ object LauncherActions {
     /** Mở màn **Cài đặt** của launcher — cùng đường với nút *Cài đặt* ở thanh trên (S1: MỘT cửa vào cấu hình). */
     const val SETTINGS = "launcher_settings"
 
+    /**
+     * V1 pha NGHE (R12) — mở **phiên nghe** của Kachi: bấm-để-nói, nhận dạng tại máy, không gửi gì ra mạng.
+     *
+     * ## Vì sao nó là một hành động LAUNCHER, không phải một nút xe
+     * Cùng lý do với hai mã trên (xem KDoc lớp): nó không chạm `CarControlPort` một chút nào — nó bật micro của
+     * chính đầu xe rồi đẩy câu nghe được vào **đúng đường mà một cú chạm đang đi**. Cho nó một `bindingKey` HAL
+     * là khai một thứ không tồn tại.
+     *
+     * ## Vì sao mã tách rời khỏi đích phím vô-lăng
+     * Cùng một việc, hai lối vào, nhưng **hai không gian mã khác nhau**: mã này sống trong danh mục khả năng
+     * (đặt được lên thanh nút), còn `Prefs.VK_TARGET_KACHI_VOICE` sống trong bảng gán phím cùng chỗ với tên gói
+     * app. Gộp chúng thành một chuỗi sẽ bắt một trong hai bảng phải hiểu quy ước của bảng kia.
+     */
+    const val VOICE = "launcher_voice"
+
     val ALL: List<LauncherActionDef> = listOf(
         LauncherActionDef(APPS, "Ứng dụng", "ic-apps", labelEn = "Apps"),
         LauncherActionDef(SETTINGS, "Cài đặt", "ic-settings", labelEn = "Settings"),
+        LauncherActionDef(VOICE, "Nói với xe", "ic-mic", labelEn = "Talk to car"),
     )
 
     fun byId(id: String): LauncherActionDef? = ALL.firstOrNull { it.id == id }

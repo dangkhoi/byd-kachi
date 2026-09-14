@@ -133,6 +133,30 @@ object Prefs {
     // 1.20: phát KEYCODE_VOICE_ASSIST (231) qua dadb shell (như app 8hare) → route tới trợ lý hệ thống.
     // Sạch hơn ACTION_ASSIST (không chooser, không nhầm intent). Chọn target này cũng đặt trợ lý hệ thống = Google/Gemini.
     const val VK_TARGET_GEMINI_KEY = "__VOICEKEY231__"
+
+    /**
+     * V1 pha NGHE — đích *"Kachi nghe"*: phím vô-lăng mở **phiên nghe của chính Kachi**, không mở app nào.
+     *
+     * ## Vì sao là một sentinel THỨ TƯ, không phải tên gói của chính mình
+     * Đặt `com.byd.launcher` làm đích thì [com.byd.clusternav.modules.voicekey.AssistantLauncher] sẽ đi nhánh
+     * "mở app theo launch-intent" — tức về màn chính và **không** nghe gì. Ý nghĩa *"mở phiên nghe"* không phải
+     * là *"mở app Kachi"*, nên nó phải có mã riêng, đúng như ba sentinel kia.
+     *
+     * ⚠ **KHÔNG** đổi [VK_TARGET_DEFAULT]: nút 328 trên vô-lăng owner vẫn thuộc Kiki và đang chạy tốt
+     * (CLAUDE.md §6 — không đảo đường đã chạy tốt ngoài hiện trường). Đây chỉ là một dòng **thêm vào danh sách
+     * chọn**; ai muốn đổi thì tự gán.
+     */
+    const val VK_TARGET_KACHI_VOICE = "__KACHI_VOICE__"
+
+    // ─── V1 pha NGHE: nút mic trên thanh trạng thái ─────────────────────────────────────────────
+    // Khoá THEO XE (không theo hồ sơ), cùng họ với `headless_autostart` ở trên: nó phụ thuộc thứ thuộc về
+    // MÁY — mô hình nhận dạng đã tải hay chưa — chứ không phụ thuộc người đang lái. Mặc định BẬT: thanh trên
+    // chỉ vẽ nút này khi mô hình đã có (xem `KachiTopStrip.voicePill`), nên trên máy chưa tải nó vô hình,
+    // còn trên máy đã tải thì người ta vừa chủ động tải xong — giấu đi mới là bất ngờ.
+    private const val K_VOICE_PILL = "voice_mic_pill"
+
+    fun voiceMicPill(ctx: Context): Boolean = sp(ctx).getBoolean(K_VOICE_PILL, true)
+    fun setVoiceMicPill(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VOICE_PILL, v).apply()
     const val VK_TARGET_DEFAULT = "ai.zalo.kiki.car"           // mặc định Kiki (khớp default cũ 0=Kiki)
 
     fun voiceKeyEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_ENABLED, false)

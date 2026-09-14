@@ -43,7 +43,29 @@ class SettingsBarsSection(
         // không có hai câu nói hai kiểu về cùng một luật.
         body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
         stripPicker.section(body)
+        voicePill(body)
         dock(body)
+    }
+
+    /**
+     * V1 pha NGHE (R12 b) — công tắc **nút mic** trên thanh trạng thái.
+     *
+     * ## Vì sao nó nằm ở nhóm này chứ không ở nhóm giọng nói
+     * Câu hỏi mà công tắc này trả lời là *"thanh trên có bao nhiêu nút"*, không phải *"Kachi nghe thế nào"* —
+     * cùng loại với chọn chip và chọn viền thanh nút ngay cạnh. Đặt nó cạnh hàng tải mô hình sẽ trộn một lựa
+     * chọn **bố cục** vào một hàng **cài đặt kỹ thuật**.
+     *
+     * ## Vì sao hàng vẫn hiện khi chưa tải mô hình
+     * Thanh trên tự giấu nút mic nếu chưa có mô hình (`KachiHomeActivity`), nên công tắc này là *"khi có thì
+     * hiện hay không"*. Giấu luôn cả công tắc sẽ làm người vừa tải mô hình xong không hiểu vì sao nút không ra,
+     * và không có chỗ nào để tìm. Câu mô tả nói thẳng điều kiện đó.
+     */
+    private fun voicePill(body: LinearLayout) {
+        body.addView(rows.checkRow(
+            on = deps.bridge.voiceMicPill(),
+            title = context.getString(R.string.kachi_voice_pill_title),
+            sub = context.getString(R.string.kachi_voice_pill_sub),
+        ) { on -> deps.bridge.setVoiceMicPill(on) })
     }
 
     /**

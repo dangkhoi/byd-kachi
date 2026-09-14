@@ -8,8 +8,7 @@ import com.byd.clusternav.carexec.LocalShellRetry
 import android.content.Context
 import org.json.JSONArray
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
+import com.byd.clusternav.net.HttpConn
 
 /**
  * KIỂM TRA & TẢI BẢN CẬP NHẬT từ GitHub — không cần server riêng, không thư viện ngoài.
@@ -94,10 +93,10 @@ object UpdateChecker {
         val dir = File(ctx.applicationContext.filesDir, "update").apply { mkdirs() }
         dir.listFiles()?.forEach { runCatching { it.delete() } }   // chỉ giữ 1 bản đang tải
         val out = File(dir, url.substringAfterLast('/').ifBlank { "update.apk" })
-        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 15000; readTimeout = 60000; instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "ClusterNav-Updater")
-        }
+        // Một cửa duy nhất mở kết nối (CLAUDE.md §4.1 DRY) — cùng thiết lập với đường tải mô hình nhận dạng
+        // của V1 pha NGHE. Thời hạn/chuyển hướng/nhãn giữ NGUYÊN như bản đang chạy trên xe; chỗ này chỉ đổi
+        // NƠI KHAI chúng, không đổi giá trị nào (CLAUDE.md §6 — không đảo đường đã chạy tốt).
+        val conn = HttpConn.open(url, readTimeoutMs = 60_000)
         conn.inputStream.use { input ->
             val total = conn.contentLength
             out.outputStream().use { output ->
@@ -202,11 +201,7 @@ object UpdateChecker {
     // ── nội bộ ──
 
     private fun httpGet(url: String): String? {
-        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 15000; readTimeout = 20000
-            setRequestProperty("User-Agent", "ClusterNav-Updater")
-            setRequestProperty("Accept", "application/vnd.github+json")
-        }
+        val conn = HttpConn.open(url, readTimeoutMs = 20_000, accept = "application/vnd.github+json")
         return try {
             if (conn.responseCode !in 200..299) null
             else conn.inputStream.bufferedReader().use { it.readText() }

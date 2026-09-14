@@ -100,7 +100,8 @@ class LangCoverageTest {
         assertEquals(9, Domain.values().size)
         assertEquals(7, Quantity.values().size)
         assertEquals(4, TyreCorner.values().size)
-        assertEquals(6, LauncherRequirements.ALL.size)
+        // V1 pha NGHE: +1 — `microphone` (quyền micro, tự cấp bằng `pm grant`).
+        assertEquals(7, LauncherRequirements.ALL.size)
         Domain.values().forEach { assertTrue(it.labelEn.isNotBlank(), "Domain.${it.name} thiếu nhãn EN") }
         Quantity.values().forEach { assertTrue(it.labelEn.isNotBlank(), "Quantity.${it.name} thiếu nhãn EN") }
         TyreCorner.values().forEach {
@@ -122,7 +123,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 304`() {
+    fun `tong so nhan co ban EN dung 306`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -132,7 +133,8 @@ class LangCoverageTest {
         // cảnh +2 mục hồ sơ.
         // S4 · R12: +2 hành động launcher ([LauncherActions]) — chúng mang [Localized] nên PHẢI nằm trong tầm quét
         // này, không thì một bộ đăng ký mới có nhãn chưa dịch mà không bài nào thấy.
-        assertEquals(304, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // V1 pha NGHE: +2 — `launcher_voice` *"Nói với xe" · "Talk to car"* và điều kiện `microphone`.
+        assertEquals(306, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

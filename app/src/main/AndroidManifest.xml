@@ -13,6 +13,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Nút nổi (bubble) đưa GMaps lên cluster: vẽ overlay trên app khác + foreground service giữ nút sống. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- V1 pha NGHE (R13) — micro cho phiên "bấm-để-nói". Nhận dạng chạy TẠI MÁY (Vosk, mô hình trong
+         filesDir); âm thanh KHÔNG rời khỏi tiến trình: `VoiceCommandWiringContractTest` cấm mọi socket/HTTP
+         trong tệp `Voice*`. Đây là quyền RUNTIME nên app tự cấp qua kênh dadb loopback
+         (`pm grant … RECORD_AUDIO`, cùng đường với ba quyền kiểu ADB khác — xem `PermissionPreflight`);
+         thiếu thì phiên nghe nói rõ lý do thay vì im lặng.
+         `android.hardware.microphone` khai `required=false`: đầu xe nào không có mic thì app vẫn cài được,
+         chỉ mất đúng tính năng này. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <!-- liệt kê app cho picker "Chiếu app lên cụm". API29 không lọc; thêm để chắc trên API30+ (app sideload cá nhân). -->
     <!-- Personal sideloaded app manager intentionally enumerates the full installed catalog. -->

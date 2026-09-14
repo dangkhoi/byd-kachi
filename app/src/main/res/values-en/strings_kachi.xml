@@ -356,6 +356,7 @@
     <string name="kachi_key_target_assist">System default assistant</string>
     <string name="kachi_key_target_gemini">System assistant via hard key (Gemini · 231)</string>
     <string name="kachi_key_target_recognizer">Speech recognizer</string>
+    <string name="kachi_key_target_kachi_voice">Kachi listens (on-device)</string>
 
     <!-- ── IA v2 nhóm 8 — Tiện nghi xe (SettingsCarSection): ghế + bụi mịn nhận từ màn ClusterNav ── -->
     <string name="kachi_sub_seat">Seat cooling / heating</string>
@@ -428,7 +429,7 @@
 
     <!-- ══ V1 · text command trial (docs/specs/kachi-voice-command.html R6) ══════════════════════════ -->
     <string name="kachi_voice_title">Type a command (voice trial)</string>
-    <string name="kachi_voice_note">No microphone yet: the listening layer is waiting for on-car measurements. Type the sentence exactly as you would say it — e.g. “turn on reading light”, “set temperature 22”, “close all”, “show battery”, “open Settings”.</string>
+    <string name="kachi_voice_note">Type a sentence exactly as you would say it, to see what the parser understands — e.g. “turn on reading light”, “set temperature 22”, “close all”, “show battery”, “open Settings”. To actually speak, use the “Talk to car” tile on the control bar or the mic button on the top bar.</string>
     <string name="kachi_voice_hint">Say something to the car…</string>
     <string name="kachi_voice_run">Run command</string>
     <string name="kachi_voice_idle">Nothing run yet.</string>
@@ -436,4 +437,35 @@
     <string name="kachi_voice_confirm_title">Confirm</string>
     <string name="kachi_voice_confirm_yes">Yes</string>
     <string name="kachi_voice_confirm_no">Cancel</string>
+    <!-- ═══ V1 listening phase (R9–R14) — spoken session, on-device model, WAV probe ═══ -->
+    <string name="kachi_voice_listening">Listening…</string>
+    <string name="kachi_voice_preparing">Getting ready…</string>
+    <string name="kachi_voice_heard">Heard</string>
+    <string name="kachi_voice_cancel_hint">Tap outside or press Back to cancel</string>
+    <string name="kachi_voice_no_mic">No microphone permission</string>
+    <string name="kachi_voice_no_model">Recognition model not downloaded</string>
+    <string name="kachi_voice_engine_failed">The recogniser could not start</string>
+    <string name="kachi_voice_nothing_heard">Didn\'t catch that</string>
+    <string name="kachi_voice_open_settings">Open Settings</string>
+    <string name="kachi_voice_listen_not_here">A listening session starts from the home screen (the “Talk to car” tile or the mic button on the top bar), not from this trial box.</string>
+    <string name="kachi_voice_model_title">Speech recognition (on-device)</string>
+    <string name="kachi_voice_model_absent">Not installed. The Vietnamese model (%1$s) has to be downloaded once; after that speech is recognised on the car itself and never leaves it.</string>
+    <string name="kachi_voice_model_ready">%1$s installed · %2$d words · %3$s on disk</string>
+    <string name="kachi_voice_model_get">Download the Vietnamese model</string>
+    <string name="kachi_voice_model_remove">Remove the model</string>
+    <string name="kachi_voice_model_working">Working…</string>
+    <string name="kachi_voice_model_downloading">Downloading… %1$d%%</string>
+    <string name="kachi_voice_model_downloading_unknown">Downloading…</string>
+    <string name="kachi_voice_model_verifying">Checking the package (sha256)…</string>
+    <string name="kachi_voice_model_extracting">Unpacking…</string>
+    <string name="kachi_voice_model_failed">Failed: %1$s</string>
+    <string name="kachi_voice_wav_try">Recognise a test WAV file</string>
+    <string name="kachi_voice_wav_running">Recognising the test file…</string>
+    <string name="kachi_voice_wav_heard">WAV heard: %1$s</string>
+    <string name="kachi_voice_wav_nothing">No words recognised in %1$s</string>
+    <string name="kachi_voice_wav_failed">Could not run: %1$s</string>
+    <string name="kachi_voice_wav_where">Put kachi-voice-test.wav (16 kHz · mono · 16-bit PCM) in one of: %1$s</string>
+    <string name="kachi_pill_voice">Talk to car</string>
+    <string name="kachi_voice_pill_title">Mic button on the status bar</string>
+    <string name="kachi_voice_pill_sub">Speak a command quickly, next to Apps and Settings</string>
 </resources>

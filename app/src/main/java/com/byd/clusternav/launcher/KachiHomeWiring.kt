@@ -6,8 +6,16 @@ import android.content.Intent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.byd.clusternav.AppContainer
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.voice.VoiceSession
+import kotlinx.coroutines.launch
+import com.byd.clusternav.launcher.voice.VoiceWiring
 
 /**
  * ═══ NỐI DÂY của composition-root — phần KHÔNG cần biết gì về nội tại [KachiHomeActivity] ══════════════════════
@@ -166,12 +174,15 @@ internal fun Activity.controlDock(
     control: CarControlPort,
     openAppList: () -> Unit,
     openSettings: () -> Unit,
+    /** V1 pha NGHE — ô *Nói với xe*. CÙNG lambda mà nút mic trên thanh trên dùng, không đường thứ hai. */
+    onVoice: () -> Unit,
 ): ControlDockView = ControlDockView(this).apply {
     this.control = control
     onLauncherAction = { id ->
         when (id) {
             LauncherActions.APPS -> openAppList()
             LauncherActions.SETTINGS -> openSettings()
+            LauncherActions.VOICE -> onVoice()
             else -> Unit
         }
     }
@@ -225,6 +236,65 @@ internal fun Activity.openSettingsGroup(intent: Intent?, panels: HomePanels) {
     SettingsCatalog.GROUPS.firstOrNull { it.id == id }?.let { panels.openSettings(it) }
 }
 
+/** V1 pha NGHE — khoá extra "vừa mở màn chính thì mở luôn một phiên nghe" (đích phím vô-lăng *Kachi nghe*). */
+const val EXTRA_START_VOICE = "start_voice"
+
+/**
+ * Dựng [VoiceSession] cho màn chính — **một** phiên cho cả ba lối vào (ô *Nói với xe* · nút mic trên thanh trên ·
+ * phím vô-lăng), vì ba lối ấy là ba cách gọi cùng một việc.
+ *
+ * Ở đây chứ không ở [KachiHomeActivity] vì cùng lý do với [homePanels]: màn chính đã sát trần 500 dòng
+ * (CLAUDE.md §4.1), còn khối này chỉ **chuyển tiếp** năm đường đã có, không đọc field riêng nào của màn.
+ *
+ * Bộ dây đi qua `VoiceWiring.dispatcher` — cùng bộ mà ô *"Gõ lệnh chữ"* dùng. Xem KDoc `VoiceWiring` về vì sao
+ * bề mặt thứ hai **không** được chép lại mười lambda.
+ */
+internal fun Activity.voiceSession(
+    state: () -> HomeUiState,
+    openAppList: () -> Unit,
+    openSettings: () -> Unit,
+    onSwitchProfile: (String) -> Unit,
+    openPermissions: () -> Unit,
+): VoiceSession {
+    lateinit var session: VoiceSession
+    session = VoiceSession(
+        ctx = this,
+        profiles = { state().profiles },
+        appsByLabel = { VoiceWiring.appsByLabel(this) },
+        dispatcher = { say, confirm ->
+            VoiceWiring.dispatcher(
+                ctx = this,
+                state = state,
+                appsByLabel = { VoiceWiring.appsByLabel(this) },
+                openApp = { pkg -> AppOpener(this).openByIntent(pkg) },
+                openAppList = openAppList,
+                openSettings = openSettings,
+                onSwitchProfile = onSwitchProfile,
+                // Nói *"nói với xe"* trong một phiên nghe ⇒ mở phiên tiếp theo. `VoiceSession` tự chặn phiên
+                // chồng phiên (chốt `running`), nên chỗ này không phải biết gì thêm.
+                onListen = { session.start() },
+                confirm = confirm,
+                say = say,
+            )
+        },
+        openPermissions = openPermissions,
+    )
+    return session
+}
+
+/**
+ * Intent mang [EXTRA_START_VOICE] ⇒ mở ngay một phiên nghe.
+ *
+ * **Xoá extra sau khi dùng**, cùng lý do đã ghi ở [openSettingsGroup]: màn chính là `singleTask`, intent này ở
+ * lại làm `getIntent()` của màn — không xoá thì mỗi lần hệ thống dựng lại màn (đổi chủ đề, đổi ngôn ngữ,
+ * low-memory) là micro tự bật lên một lần nữa. Trên một chiếc xe đang chạy, đó là thứ không ai giải thích được.
+ */
+internal fun Activity.startVoiceIfRequested(intent: Intent?, session: VoiceSession) {
+    if (intent?.getBooleanExtra(EXTRA_START_VOICE, false) != true) return
+    intent.removeExtra(EXTRA_START_VOICE)
+    session.start()
+}
+
 /**
  * Chế độ toàn màn "dính" cho màn chính — tách khỏi [KachiHomeActivity] (trần 500 dòng) vì nó là **thao tác cửa
  * sổ thuần**: không đọc field nào của màn, và ba chỗ gọi (mở màn, lấy lại tiêu điểm, mở/đóng bảng phủ) đều chỉ
@@ -261,5 +331,41 @@ internal fun Activity.ensureCastBubble(bridge: ClusterNavBridge) {
         startForegroundService(
             Intent(this, com.byd.clusternav.modules.clustercast.FloatingBubbleService::class.java),
         )
+    }
+}
+
+/**
+ * Hai vòng THU của màn chính, tách khỏi [KachiHomeActivity] (trần 500 dòng — CLAUDE.md §4.1).
+ *
+ *  1. **state của ViewModel → [render]** (một chiều, view-only);
+ *  2. **trạng thái xe LIVE** → bơm vào VM → state đổi → cũng ra [render].
+ *
+ * Cả hai bọc trong `repeatOnLifecycle(STARTED)` nên tự huỷ khi màn xuống dưới STARTED — đó là tính chất phải giữ
+ * khi đọc lại khối này: `carStatusRepository` poll 2 nhịp, chạy tiếp lúc màn khuất là poll HAL suốt chuyến mà
+ * không ai thấy. `finally { stop() }` là chỗ giữ lời hứa ấy, kể cả khi vòng thu bị huỷ giữa chừng.
+ *
+ * Không phải hàm mở rộng của `Activity`: nó chỉ cần một [LifecycleOwner] (và màn chính tự quản một
+ * `LifecycleRegistry` riêng vì kế thừa `android.app.Activity`), nên khai đúng thứ nó cần.
+ */
+internal fun collectHome(
+    owner: LifecycleOwner,
+    viewModel: HomeViewModel,
+    container: AppContainer,
+    render: (HomeUiState) -> Unit,
+) {
+    owner.lifecycleScope.launch {
+        owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.uiState.collect { render(it) }
+        }
+    }
+    owner.lifecycleScope.launch {
+        owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            container.carStatusRepository.start()
+            try {
+                container.carStatusRepository.status.collect { viewModel.setCarStatus(it) }
+            } finally {
+                container.carStatusRepository.stop()
+            }
+        }
     }
 }

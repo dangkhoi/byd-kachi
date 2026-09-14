@@ -51,6 +51,9 @@ object AssistantLauncher {
     /** Trợ lý hệ thống qua phím cứng: phát KEYCODE_VOICE_ASSIST (231) qua dadb — như app 8hare. */
     const val TARGET_GEMINI_KEY = Prefs.VK_TARGET_GEMINI_KEY
 
+    /** V1 pha NGHE — phiên nghe của CHÍNH Kachi (nhận dạng tại máy). Xem [launchKachiVoice]. */
+    const val TARGET_KACHI_VOICE = Prefs.VK_TARGET_KACHI_VOICE
+
     private const val PKG_BARD = "com.google.android.apps.bard"                 // app Gemini
     private const val PKG_GSA  = "com.google.android.googlequicksearchbox"      // app Google (host voice service)
     private const val GSA_ASSIST = "$PKG_GSA/com.google.android.voiceinteraction.GsaVoiceInteractionService"
@@ -72,6 +75,8 @@ object AssistantLauncher {
 
     /** @param spec package name của app, hoặc [TARGET_ASSIST]/[TARGET_RECOGNIZER]/[TARGET_GEMINI_KEY]. */
     fun launch(ctx: Context, spec: String): Boolean {
+        // V1 pha NGHE: đích của CHÍNH Kachi — không mở app nào, mở một phiên nghe. Xem [launchKachiVoice].
+        if (spec == TARGET_KACHI_VOICE) return launchKachiVoice(ctx)
         // Gemini/Google chỉ có nghĩa dạng ASSISTANT (voice). Mở app home = vô dụng (bug 1.19). → route keyevent 231.
         if (isGeminiVoiceSpec(spec)) return launchViaVoiceAssistKey(ctx)
         val app = ctx.applicationContext
@@ -97,6 +102,31 @@ object AssistantLauncher {
         }
         Log.e(TAG, "no activity handled target=$spec")
         return false
+    }
+
+    /**
+     * V1 pha NGHE — mở **phiên nghe của Kachi** qua màn chính.
+     *
+     * ## Vì sao đi vòng qua Activity thay vì bật micro ngay tại đây
+     * Chỗ gọi là [com.byd.clusternav.modules.navaccess.NavAccessibilityService] — một **dịch vụ**, không có
+     * Activity, không có ViewModel. Mà cầu `VoiceDispatcher` cần đúng những đường mà một cú chạm dùng: mở ngăn
+     * kéo, mở màn Cài đặt, đổi hồ sơ qua intent của ViewModel. Dựng một bộ dây thứ hai "dành cho dịch vụ" là
+     * đúng thứ KDoc `VoiceDispatcher` cấm — và bộ dây thứ hai ấy sẽ lệch.
+     *
+     * Đưa màn chính lên trước rồi để nó mở phiên thì chỉ có **một** bộ dây, và người lái cũng thấy được tấm chữ
+     * ngay cả khi trước đó đang ở app khác. `SINGLE_TOP` + `CLEAR_TOP`: màn chính là `singleTask`, nên cờ này
+     * làm intent rơi vào `onNewIntent` của **màn đang có** thay vì dựng thêm một màn nữa.
+     */
+    private fun launchKachiVoice(ctx: Context): Boolean {
+        val app = ctx.applicationContext
+        val intent = Intent(app, com.byd.clusternav.launcher.KachiHomeActivity::class.java)
+            .putExtra(com.byd.clusternav.launcher.EXTRA_START_VOICE, true)
+            .addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP,
+            )
+        val ok = runCatching { app.startActivity(intent); true }.getOrDefault(false)
+        Log.i(TAG, "mở phiên nghe của Kachi: ok=$ok")
+        return ok
     }
 
     /**

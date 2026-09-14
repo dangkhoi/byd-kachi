@@ -120,6 +120,60 @@ object VoiceLexicon {
     /** Sentinel: "thấp nhất" — chỗ gọi thay bằng `ControlDef.min`. */
     const val MIN = Int.MIN_VALUE
 
+    /**
+     * MỌI từ có thể tham gia một con số (đã bỏ dấu) — gom từ chính các bảng mà [readNumber] tra.
+     *
+     * ## Vì sao phải phơi ra, và vì sao là một phép GOM chứ không một danh sách mới
+     * Tầng nghe (`VoicePhrases`) phải khai với bộ nhận dạng *"những từ này là số"*, nếu không thì *"đặt nhiệt độ
+     * hai mươi hai"* không bao giờ nghe ra được — mà đó là dạng câu hay dùng nhất sau bật/tắt. Chép tay một bảng
+     * thứ hai ở tầng nghe là đúng họ lỗi mà [VoiceSynonyms] sinh ra để chặn: thêm *"hăm"* ở đây mà quên bên kia
+     * thì nói được khi gõ, không nói được khi nói — **im lặng**, không ai đỏ.
+     *
+     * ⇒ Gom từ đúng sáu bảng riêng mà [readNumber] đang tra, cộng hai từ hàng chục đứng một mình. Thêm một cách
+     * đọc số ở trên là tầng nghe **tự** biết, không phải sửa gì.
+     */
+    val NUMBER_WORDS: Set<String> = buildSet {
+        addAll(VI_UNITS.keys); addAll(VI_AFTER_TEN.keys); addAll(VI_TENS_SHORT.keys)
+        addAll(EN_UNITS.keys); addAll(EN_TENS.keys)
+        add(HAM); add("muoi")
+        MAX_PHRASES.forEach { addAll(it) }; MIN_PHRASES.forEach { addAll(it) }
+    }
+
+    /**
+     * Cụm ĐỒNG Ý / TỪ CHỐI cho hộp xác nhận ([VoiceRisk.CONFIRM]) — bỏ dấu, khớp NGUYÊN cụm.
+     *
+     * ## Vì sao câu trả lời cho hộp xác nhận lại ở `:core`
+     * Hộp xác nhận là `AlertDialog` của `:app`, nhưng *"đồng ý"* / *"huỷ"* là **tiếng Việt**, cùng loại việc với
+     * mọi thứ khác trong tệp này. Để ở `:app` thì tầng nghe và các bài kiểm off-car không chạm được — mà đây đúng
+     * là chỗ phải kiểm kỹ: trả lời nhầm một hộp *"mở khoá toàn xe?"* là hậu quả không hoàn lại được.
+     *
+     * ⚠ Danh sách CỐ Ý ngắn và **không** có từ một âm tiết mơ hồ (`"ok"` thì nhận, `"ừ"`/`"vâng"` bỏ dấu ra `u`/
+     * `vang` — trùng tiếng đệm và trùng chữ *"vàng"*). Nghe nhầm một tiếng ậm ừ thành *"đồng ý"* là đúng thứ mà
+     * cổng xác nhận sinh ra để chặn; thà hỏi lại còn hơn tự trả lời hộ người lái.
+     */
+    val CONFIRM_YES: List<List<String>> =
+        listOf(listOf("dong", "y"), listOf("xac", "nhan"), listOf("ok"), listOf("yes"), listOf("confirm"))
+
+    /** Cụm TỪ CHỐI — xem KDoc [CONFIRM_YES]. */
+    val CONFIRM_NO: List<List<String>> =
+        listOf(listOf("huy"), listOf("huy", "bo"), listOf("khong"), listOf("thoi"), listOf("no"), listOf("cancel"))
+
+    /**
+     * Câu [text] có phải là câu trả lời cho một hộp xác nhận không: `true` = đồng ý · `false` = huỷ · `null` =
+     * không phải câu trả lời (⇒ chỗ gọi để nguyên hộp, KHÔNG đoán).
+     *
+     * Chỉ nhận khi cả câu **đúng bằng** một cụm: *"đồng ý"* là trả lời, còn *"đồng ý rồi bật đèn"* thì không —
+     * một câu dài đứng trước hộp xác nhận nhiều khả năng là người lái đang nói việc khác, và đoán sai ở đây
+     * nghĩa là tự bấm "Đồng ý" hộ họ.
+     */
+    fun confirmAnswer(text: String): Boolean? {
+        val t = tokenize(text).map { it.norm }.filterNot { it in FILLERS }
+        if (t.isEmpty()) return null
+        if (CONFIRM_YES.any { it == t }) return true
+        if (CONFIRM_NO.any { it == t }) return false
+        return null
+    }
+
     /** Kết quả đọc số: [value] (hoặc [MAX]/[MIN]) và số từ đã ăn. */
     data class Num(val value: Int, val consumed: Int)
 

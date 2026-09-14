@@ -54,6 +54,11 @@ class TopStripSurfaceContractTest {
         "onProfileTap" to "active_profile",      // chip hồ sơ — "đang ở hồ sơ nào" phải thấy liên tục
         "onOpenSettings" to null,                // mở màn Cài đặt: không tự đổi gì
         "onOpenAppList" to null,                 // U3 mở app toàn màn: không phải cấu hình
+        // V1 pha NGHE (R12 b) — mở một PHIÊN NGHE. Vào bảng này được vì nó giống hệt hai cổng `null` ở trên về
+        // mặt §4.5: **không chạm một khoá lưu bền nào**, chỉ mở một bề mặt rồi đóng lại. Và nó không phải một
+        // "bề mặt cấu hình lỉ tỉ" thứ tư — nó là lối tắt tới chính những việc mà hai cổng kia mở ra từng cái một.
+        // Công tắc bật/tắt của nó nằm ở Cài đặt › Thanh trạng thái, đúng chỗ mọi lựa chọn thanh trên đang ở.
+        "onVoice" to null,
     )
 
     @Test
@@ -63,8 +68,9 @@ class TopStripSurfaceContractTest {
         assertEquals(
             gates.keys.toSortedSet(), found,
             "cổng vào của thanh trên đã đổi. Mỗi bề mặt bấm được cần một callback, nên một cổng MỚI nghĩa là một bề " +
-                "mặt mới trên thanh trên. Sau S4 · R7 chỉ còn ${gates.keys}: hồ sơ (phải thấy liên tục) + hai lối mở " +
-                "màn. Cấu hình khác thuộc màn Cài đặt — xem KDoc SettingsCatalog.TOP_STRIP_ALLOWED_KEYS",
+                "mặt mới trên thanh trên. Sau S4 · R7 + V1 pha NGHE chỉ còn ${gates.keys}: hồ sơ (phải thấy liên " +
+                "tục) + hai lối mở màn + lối nói. Cấu hình khác thuộc màn Cài đặt — xem KDoc " +
+                "SettingsCatalog.TOP_STRIP_ALLOWED_KEYS",
         )
     }
 
@@ -189,20 +195,21 @@ class TopStripSurfaceContractTest {
      * Danh sách pill — lớp chặn cho ca *"pill mới dùng LẠI callback cũ"*, mà bài bảng-cổng không thể thấy.
      */
     @Test
-    fun `thanh tren chi con hai pill va khong pill nao doi cau hinh tai cho`() {
+    fun `thanh tren chi con ba pill va khong pill nao doi cau hinh tai cho`() {
         val fn = SourceRoots.body(strip, "private fun build()")
         // U5·T3 — nhãn pill nay đến từ tài nguyên (`getString`), nên phép đếm đọc MÃ KHOÁ thay vì đọc chữ. Tính chất
         // được canh KHÔNG đổi: đúng hai pill, đúng thứ tự đó, và không pill nào đổi cấu hình tại chỗ.
         val pills = Regex("""pill\([^)]*?R\.string\.(\w+)""").findAll(fn).map { it.groupValues[1] }.toList()
         assertEquals(
-            listOf("kachi_pill_apps", "kachi_pill_settings"), pills,
-            "thanh trên chỉ được có hai pill: 'Ứng dụng' (mở app) và 'Cài đặt' (MỘT cửa vào cấu hình). Thêm pill nào " +
-                "cũng là thêm một bề mặt lỉ tỉ — pill 'Thanh' vừa bị bỏ đúng vì lý do đó",
+            listOf("kachi_pill_voice", "kachi_pill_apps", "kachi_pill_settings"), pills,
+            "thanh trên chỉ được có ba pill: 'Nói với xe' (V1 pha NGHE — lối tắt tới mọi việc), 'Ứng dụng' (mở app) " +
+                "và 'Cài đặt' (MỘT cửa vào cấu hình). Thêm pill nào nữa cũng là thêm một bề mặt lỉ tỉ — pill " +
+                "'Thanh' vừa bị bỏ đúng vì lý do đó. Thứ tự cũng được canh: nút nói đứng đầu.",
         )
     }
 
     /**
-     * ═══ S4 · R12 (a) — HAI PILL CHỈ CÒN **ICON** ════════════════════════════════════════════════════════════
+     * ═══ S4 · R12 (a) — MỌI PILL CHỈ CÒN **ICON** (V1 pha NGHE thêm pill thứ ba, cùng luật) ════════════════════════════════════════════════════════════
      *
      * Owner 2026-09-14: *"đổi chữ Ứng Dụng, Cài Đặt thành icon luôn cho gọn"*. Ba tính chất, và cả ba đều là chỗ
      * mà một bản vá "cho gọn" dễ làm hỏng:
@@ -214,7 +221,7 @@ class TopStripSurfaceContractTest {
      *     ⇒ phải khai cả `minimumWidth` lẫn `minimumHeight` bằng [KachiSpace.TOUCH].
      */
     @Test
-    fun `hai pill thanh tren chi con icon, chu chuyen sang contentDescription`() {
+    fun `ba pill thanh tren chi con icon, chu chuyen sang contentDescription`() {
         val fn = SourceRoots.body(strip, "private fun pill(")
         assertFalse(
             Regex("""\btext\s*=""").containsMatchIn(fn),
@@ -229,9 +236,10 @@ class TopStripSurfaceContractTest {
         // Và hai lời gọi vẫn truyền đúng hai khoá chuỗi cũ (không đẻ thêm khoá `*_desc` song song).
         val build = SourceRoots.body(strip, "private fun build()")
         assertEquals(
-            listOf("ic-apps", "ic-settings"),
+            listOf("ic-mic", "ic-apps", "ic-settings"),
             Regex("pill\\(\"([a-z-]+)\"").findAll(build).map { it.groupValues[1] }.toList(),
-            "đúng hai pill, mỗi cái một hình có sẵn trong bộ (không vẽ hình mới)",
+            "đúng ba pill, mỗi cái một hình của bộ icon v2 (`ic_mic` vẽ mới theo chuẩn — KHÔNG dùng `ic_mic_g` " +
+                "của màn ClusterNav cũ, nó mang màu riêng và tỉ lệ khác)",
         )
     }
 

@@ -230,7 +230,8 @@ fun ClusterNavBridge.removeCustomButton(code: Int) {
  *  - `Prefs.VK_TARGET_ASSIST` "Trợ lý mặc định hệ thống" · "System default assistant";
  *  - `Prefs.VK_TARGET_GEMINI_KEY` "Trợ lý qua phím cứng (Gemini · 231)" · "System assistant via hard
  *    key (Gemini · 231)";
- *  - `Prefs.VK_TARGET_RECOGNIZER` "Nhận dạng giọng nói" · "Speech recognizer".
+ *  - `Prefs.VK_TARGET_RECOGNIZER` "Nhận dạng giọng nói" · "Speech recognizer";
+ *  - `Prefs.VK_TARGET_KACHI_VOICE` "Kachi nghe" · "Kachi listens" (V1 pha NGHE — phiên nghe tại máy).
  *
  * App thường mang `appLabel` = tên do **hệ thống** dịch (`PackageManager`), không phải chữ của dự án.
  */
@@ -238,6 +239,10 @@ fun ClusterNavBridge.targetOptions(): List<TargetOption> = listOf(
     TargetOption(Prefs.VK_TARGET_ASSIST),
     TargetOption(Prefs.VK_TARGET_GEMINI_KEY),
     TargetOption(Prefs.VK_TARGET_RECOGNIZER),
+    // V1 pha NGHE — đích THỨ TƯ: phiên nghe của chính Kachi. Đặt **cuối** khối sentinel có chủ ý: thứ tự khai
+    // là thứ `SettingsSectionsKeys.sentinelLabel` tra nhãn theo (xem KDoc hàm đó), nên chèn vào giữa sẽ đổi
+    // nhãn của ba dòng đang chạy. Thêm vào cuối thì ba dòng cũ giữ nguyên chỉ số — và giữ nguyên nhãn.
+    TargetOption(Prefs.VK_TARGET_KACHI_VOICE),
 ) + ClusterCast.listInstalledApps(app).map { (label, pkg) -> TargetOption(pkg, label) }
 
 /**
@@ -276,3 +281,22 @@ internal fun ClusterNavBridge.reapplyGeminiAssistant() {
         if (err.isNotEmpty()) android.util.Log.w("ClusterNavBridge", "re-apply Gemini assistant: $err")
     }, "bridge-gemini-reapply").start()
 }
+
+/**
+ * V1 pha NGHE — có vẽ **nút mic** trên thanh trạng thái không.
+ *
+ * Đi qua cầu này (chứ không để `SettingsBarsSection` gọi thẳng [Prefs]) vì đúng một lý do kiến trúc: tầng vẽ của
+ * launcher **không mở cửa riêng vào nơi lưu bền** — mọi khoá THEO XE đã đi qua cầu từ `recircOnStart` tới
+ * `headlessAutostart`, và một ngoại lệ là chỗ ngoại lệ thứ hai bắt đầu.
+ *
+ * Khoá theo XE, không theo hồ sơ: nó phụ thuộc **mô hình đã tải hay chưa** — thứ thuộc về máy, không thuộc về
+ * người đang lái (xem KDoc [Prefs.voiceMicPill]).
+ *
+ * ⚠ [SOÁT Pass 2 · P2] Khai ở tệp mở rộng này chứ không ở `ClusterNavBridge.kt`: tệp đó đã 491 dòng trước pha
+ * NGHE, thêm hai hàm vào là vượt trần 500 (CLAUDE.md §4.1 · spec R-nf4). Hành vi không đổi — vẫn là đúng hai lời
+ * gọi [Prefs] qua `app` của cầu.
+ */
+internal fun ClusterNavBridge.voiceMicPill(): Boolean = Prefs.voiceMicPill(app)
+
+/** Xem [voiceMicPill]. */
+internal fun ClusterNavBridge.setVoiceMicPill(on: Boolean) = Prefs.setVoiceMicPill(app, on)

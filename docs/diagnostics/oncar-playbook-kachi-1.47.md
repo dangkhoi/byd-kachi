@@ -91,7 +91,7 @@ scripts/vehicle/kachi/10-baseline.sh <ip-xe>:5555
 
 1. adb vào được xe chưa;
 2. **Kachi đang cài bản nào** (versionName + versionCode, đọc từ máy — không đoán);
-3. xe đời nào (`ro.product.model` · `ro.build.version.release` — DL3 ≈ Android 10, DL5 ≈ Android 12);
+3. xe đời nào (`ro.product.model` · `ro.build.version.release` — DL3 ≈ Android 10, DL5 ≈ Android 12) và **ABI CPU** (`ro.product.cpu.abilist` — APK 1.49 chỉ đóng `arm64-v8a` + `armeabi-v7a` cho Vosk; [CHƯA BIẾT] đời DiLink nào là 32-bit);
 4. **VD cụm là display mấy** (ĐO qua `dumpsys display`, khớp `fission|xdja`; không lấy cờ RAM).
 
 `10-baseline.sh` chụp: `am stack list` · `dumpsys window windows` · focus · `dumpsys activity activities` ·

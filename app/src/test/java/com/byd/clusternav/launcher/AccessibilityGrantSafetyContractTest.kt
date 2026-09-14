@@ -81,10 +81,42 @@ class AccessibilityGrantSafetyContractTest {
         )
     }
 
+    /**
+     * `pm grant` được phép, nhưng phải **hẹp hết mức**: đúng gói của chính app, đúng MỘT quyền, viết thẳng ra.
+     *
+     * ## Vì sao luật đổi (V1 pha NGHE, 2026-09-14)
+     * Bản trước cấm thẳng chuỗi `"pm grant"`. Lúc ấy vòng kiểm chỉ có ba quyền kiểu ADB, nên lệnh cấm là một
+     * phép **xấp xỉ** cho ý *"đừng leo quyền"* và nó không tốn gì. Pha NGHE cần `RECORD_AUDIO` — một quyền
+     * RUNTIME mà `pm grant` là cách cấp **hẹp nhất có thể** (nêu đích danh gói + đích danh một quyền), hẹp hơn
+     * hẳn `appops set … allow` mà bài này vẫn cho qua. Giữ lệnh cấm thì hoặc phải bỏ tính năng, hoặc phải đi
+     * đường vòng tệ hơn.
+     *
+     * Nên phép xấp xỉ được thay bằng phép kiểm **đúng ý**: mọi `pm grant` phải khớp khuôn dưới. Mất lệnh cấm,
+     * nhưng KHÔNG mất phạm vi bảo vệ — `pm grant $PKG android.permission.*` với dấu sao, với gói khác, hay với
+     * một quyền dựng từ biến vẫn đỏ.
+     */
+    @Test
+    fun `moi lenh pm grant phai neu dich danh goi cua minh va dung mot quyen`() {
+        val grants = Regex("""pm grant [^"]*""").findAll(pre).map { it.value.trim() }.toList()
+        grants.forEach { cmd ->
+            assertTrue(
+                // Chuỗi THƯỜNG, không raw: trong raw string `\` không phải ký tự thoát nên `$PKG` sẽ bị hiểu
+                // là nội suy biến (không biên dịch được). `\\$` = một dấu `$` theo nghĩa đen trong regex.
+                Regex("^pm grant \\\$PKG android\\.permission\\.[A-Z_]+\$").matches(cmd),
+                "lệnh `$cmd` phải đúng khuôn `pm grant \$PKG android.permission.<TÊN>` — đích danh gói của " +
+                    "CHÍNH app và đúng một quyền viết thẳng; không dấu sao, không ghép từ biến",
+            )
+        }
+        assertTrue(
+            grants.any { it.endsWith("RECORD_AUDIO") },
+            "V1 pha NGHE cấp quyền micro bằng đường này; mất nó là phiên nghe câm mà không ai biết vì sao",
+        )
+    }
+
     @Test
     fun `khong cap quyen rong hon can thiet`() {
         // Mọi lệnh cấp phải nhắm ĐÚNG gói của chính app; không dấu sao, không grant-all, không leo quyền.
-        listOf("pm grant", "appops set * ", "--uid", "reset_all", "su -c", "allow-all").forEach {
+        listOf("appops set * ", "--uid", "reset_all", "su -c", "allow-all").forEach {
             assertFalse(pre.contains(it), "lệnh cấp quá rộng: '$it'")
         }
         // Lệnh dùng hằng số nội suy (`$PKG`) nên phải kiểm HAI thứ: lệnh nhắm vào hằng số đó, và hằng số đó ĐÚNG là

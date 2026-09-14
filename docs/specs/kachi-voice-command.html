@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>V1 — Điều khiển bằng lời: tầng chữ → hành động (pha off-car)</title>
+<title>V1 — Điều khiển bằng lời: chữ + nghe (Vosk tại máy)</title>
 <style>
 :root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
 @media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
@@ -52,15 +52,17 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <body><div class="wrap">
 
 <h1>V1 — Điều khiển bằng lời: tầng <b>chữ → hành động</b> (pha off-car)</h1>
-<p class="muted">Slug: <code>kachi-voice-command</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: pha off-car ĐÃ LÀM · tầng tiếng CHỜ SỐ ĐO TRÊN XE</span></p>
+<p class="muted">Slug: <code>kachi-voice-command</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: pha CHỮ ✅ · pha NGHE ✅ off-car (1.49) · TTS vẫn CHƯA BIẾT</span></p>
 <p class="muted">Owner: dangkhoi · Tuân thủ <code>CLAUDE.md</code> §2 (tách mức bằng chứng) · §7 (generic, không case-by-case) · §8 (kiểm hàm mới có được gọi không) · §10 (test khoá bài học) · §14 (tính năng mới đi 4 tầng, shell thật trước) và <code>.kiro/steering/*</code>.</p>
 
 <div class="card">
-<b>Một câu tóm tắt.</b> Pha này làm <b>duy nhất</b> tầng <i>chuỗi chữ → ý định → hành động</i> trên những khả năng <b>đã nối dây sẵn</b> (65 nút · 123 datum · 4 gói lệnh · 2 hành động launcher · hồ sơ · nhạc · mở app), cộng một <b>đường thử bằng chữ</b> trong Cài đặt. <b>Không</b> có micro, ASR, TTS hay wake word — tầng 1 của §14 (số đo trên xe) chưa xanh.
+<b>Một câu tóm tắt.</b> <b>Pha CHỮ</b> (R1–R8) làm tầng <i>chuỗi chữ → ý định → hành động</i> trên những khả năng <b>đã nối dây sẵn</b> (65 nút · 123 datum · 4 gói lệnh · 3 hành động launcher · hồ sơ · nhạc · mở app), cộng một <b>đường thử bằng chữ</b> trong Cài đặt. <b>Pha NGHE</b> (R9–R14, bản 1.49) cắm một bộ nhận dạng <b>chạy tại máy</b> (Vosk + mô hình tiếng Việt 32 MB tải riêng, <b>ràng bằng ngữ pháp sinh từ chính danh mục</b>) vào <b>trước</b> bộ hiểu ý đã có — vào là micro, ra vẫn là <i>đúng chuỗi chữ</i> mà ô “Gõ lệnh chữ” đưa xuống, nên <b>không một dòng nào</b> của pha chữ phải viết lại. Trả lời bằng <b>âm báo + chữ</b>; <b>chưa</b> TTS (giọng nói tiếng Việt trên xe còn <b>[CHƯA BIẾT]</b>).
 </div>
 
 <h2>1. Changelog</h2>
+<p><b>Soát Pass 2 — 2026-09-14</b> (senior review, CLAUDE.md §5): 7 phát hiện [P1]–[P2] đã vá tại chỗ — phiên nghe chết theo màn chính · chốt một-lượt-tải · trần 500 dòng (523→478, 506→491) · nút mic hiện ngay sau khi tải mô hình · kiểm chỗ trống trước khi tải · chốt HTTPS sau chuyển hướng · từ điển thôi đọc lại trên luồng vẽ. Xem §10.</p>
 <ul>
+<li><b>Pass 2 — 2026-09-14 · PHA NGHE</b> (R9–R14, bản <b>1.49 / versionCode 50</b>): Vosk <code>0.3.47</code> tại máy + mô hình <code>vosk-model-small-vn-0.4</code> <b>tải riêng</b> (32 MB, sha256 ghim) · ngữ pháp <b>sinh từ danh mục</b> và <b>tra ngược qua từ điển của chính mô hình</b> (2.037 mục off-car) · phiên <i>bấm-để-nói</i> với trần 8 s, tấm chữ ở góc màn, âm báo, tiêu điểm âm thanh <code>MAY_DUCK</code> · ba lối vào (ô <i>Nói với xe</i> · nút mic thanh trên · đích phím vô-lăng <i>Kachi nghe</i>) · quyền <code>RECORD_AUDIO</code> vào vòng kiểm và <b>tự cấp</b> bằng <code>pm grant</code>. <b>Hai bug tự bắt trên máy ảo</b> (magic bảng ký hiệu FST đoán sai · <code>readNBytes</code> là API Java 9) — xem §9. Owner 2026-09-14 miễn cổng §14 cho riêng mục micro.</li>
 <li><b>Pass 1 — 2026-09-14</b> (senior review, CLAUDE.md §5): 8 phát hiện [P0]–[P2] đã vá tại chỗ — cổng xác nhận nay <b>dừng cả chuỗi</b> (OQ4 đã chốt) · số nói rút gọn (<i>“hai lăm”</i>) không còn rơi về <code>min</code> · lệnh nhạc hết báo “✓” khi không có phiên · từ vựng dựng <b>một lần</b> · câu trả lời nói ra <i>“chưa kiểm trên xe”</i> · bốn câu đời thường hiểu thêm được. Xem §10.</li>
 <li><b>Pass 0 — 2026-09-14</b>: Khởi tạo spec + làm xong pha off-car (R1–R7). Sinh ra từ backlog <b>V1</b> và từ RE <code>docs/diagnostics/kiki-car-RE-2026-09-14.md</code> (phương án C đã chốt). R8 khai rõ phần <b>không</b> làm và điều kiện mở khoá.</li>
 </ul>
@@ -107,7 +109,19 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><b>R5.</b> Câu phản hồi <b>song ngữ dựng ở <code>:core</code></b>, gọi tên khả năng bằng <code>displayLabel</code> của chính bộ đăng ký.</li>
 <li><b>R6.</b> Đường thử: hàng <b>“Gõ lệnh chữ (thử giọng nói)”</b> ở <i>Cài đặt › Hệ thống &amp; quyền › Nâng cao</i> → nhập câu → parser → thi hành qua <b>đúng đường hiện có</b> → hiện câu phản hồi. <b>AC:</b> mọi nhánh ý định có đích thật, 0 TODO/stub.</li>
 <li><b>R7.</b> Test ≥120 ca thuần: 44 mẫu câu Kiki chuyển thể + <b>mọi</b> nút/datum/gói/launcher ít nhất một câu VI + tiếng Anh cơ bản; bài canh độ phủ <b>sinh từ registry</b>; không nhận nhầm 3 cặp nhãn lồng nhau (L-RE2).</li>
-<li><b>R8.</b> <b>KHÔNG</b> làm ở pha này: micro · ASR · TTS · wake word · LLM dự phòng. Điều kiện mở khoá: playbook §2.14 (4 phép đo) + K1–K3 xanh, có bằng chứng lưu trong <code>docs/diagnostics/</code>.</li>
+<li><b>R8.</b> <i>(pha CHỮ — đã MỞ một phần ở Pass 2)</i> Pha chữ không làm micro/ASR/TTS/wake word/LLM. <b>Cổng đã mở cho micro + ASR tại máy</b> — owner 2026-09-14: <i>“Kiki nó chạy được, Gemini chạy được trên xe thì app mình cũng chạy được, đâu cần chứng minh gì nữa”</i> ⇒ micro cho app thường coi là <b>[ĐO]</b> qua Kiki (app thường, <code>AudioSource.MIC</code>, chạy trên xe owner — <code>docs/diagnostics/kiki-car-RE-2026-09-14.md</code>), và Kiki chạy ONNX wake word + VAD tại máy ⇒ suy ra inference tại máy khả thi. <b>Vẫn đóng</b>: TTS tiếng Việt · wake word · LLM · <code>text_command</code> sang Kiki (xem §4.4).</li>
+
+<li><b>R9. Mô hình tải RIÊNG, không đóng vào APK.</b> <code>vosk-model-small-vn-0.4</code> (Apache-2.0) tải một lần từ URL <b>trần</b> của alphacephei, có URL lùi; <b>ghim sha256 + kích thước</b>; giải nén vào <code>filesDir/vosk/&lt;tên&gt;</code> với luật <b>chống leo thư mục</b>; tiến trình hiện trong Cài đặt; hỏng thì <b>xoá + nói ra</b>; có đường <b>gỡ</b>. AC: mô hình chưa đủ tệp ⇒ không bao giờ được coi là sẵn sàng.</li>
+
+<li><b>R10. Nhận dạng CÓ NGỮ PHÁP, sinh từ danh mục.</b> <code>VoiceGrammar.phrases(vocabulary, profiles, apps)</code> (<code>:core</code>, thuần) sinh danh sách cụm cho <code>Recognizer(model, 16000f, grammarJson)</code>: nhãn 4 bộ đăng ký + từ đồng nghĩa + số 0–99 bằng chữ + liên từ + từ xác nhận + <code>[unk]</code>. Chữ <b>CÓ DẤU</b>, và cách viết có dấu <b>tra ngược qua từ điển của chính mô hình</b> — không chép tay một bảng nào. AC: mọi mục ngữ pháp phải nằm trong từ điển mô hình (Vosk <b>bỏ lặng lẽ</b> từ ngoài từ điển — <code>recognizer.cc:340-347</code>); mọi nút/datum/gói/launcher có ≥1 cụm nói được.</li>
+
+<li><b>R11. Phiên nghe “bấm-để-nói”.</b> <code>AudioRecord</code> 16 kHz mono PCM16 (<code>VOICE_RECOGNITION</code>, lùi <code>MIC</code>) · endpoint của Vosk + <b>trần cứng 8 s</b> · tấm chữ nhỏ ở góc màn (đang nghe · chữ partial · câu trả lời) · âm báo đầu/cuối (<code>ToneGenerator</code>, <b>không</b> TTS) · huỷ khi chạm ra ngoài / Back · <b>không tắt nhạc</b>, chỉ xin <code>AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK</code>. AC: một phiên tại một thời điểm; cổng CONFIRM nhận <i>“đồng ý”/“huỷ”</i> bằng lời <b>hoặc</b> bằng nút, và <b>mặc định là KHÔNG</b>.</li>
+
+<li><b>R12. Ba lối vào, một bộ dây.</b> (a) hành động launcher <code>launcher_voice</code> <i>“Nói với xe”</i> đặt được lên thanh nút; (b) <b>nút mic</b> ở thanh trên cạnh Ứng dụng/Cài đặt (chỉ-icon, đích chạm 48dp), bật/tắt ở <i>Cài đặt › Thanh trạng thái</i>, chỉ hiện khi mô hình đã tải; (c) đích phím vô-lăng <code>__KACHI_VOICE__</code> <i>“Kachi nghe”</i> trong bộ gán phím. AC: cả ba gọi <b>cùng một</b> <code>VoiceSession</code>; mặc định phím <b>không đổi</b> (nút 328 vẫn thuộc Kiki — CLAUDE.md §6).</li>
+
+<li><b>R13. Quyền micro đi đúng đường của dự án.</b> <code>RECORD_AUDIO</code> vào manifest + vào <code>LauncherRequirements</code>, <b>tự cấp</b> qua kênh dadb (<code>pm grant</code>) như ba quyền kiểu ADB khác; thiếu ⇒ tấm chữ nói rõ + nút mở <i>Cài đặt › Hệ thống &amp; quyền</i>. AC: <b>không</b> <code>coreFeature</code> (thiếu micro không làm mất tính năng lõi ⇒ không nổ toast mỗi lần mở Home).</li>
+
+<li><b>R14. Bài canh phạm vi MỚI + đường chứng minh không cần micro.</b> Bài canh cũ (<i>“chưa có mic”</i>) đổi thành: ASR chỉ trong tệp <code>Voice*</code>; <b>cấm</b> <code>SpeechRecognizer</code>/<code>TextToSpeech</code>/<code>MediaRecorder(</code>; <b>cấm mọi đường ra mạng</b> trong tệp <code>Voice*</code> (trừ đúng cửa <code>HttpConn</code> của <code>VoiceModelStore</code>); chỉ <b>một</b> tệp được mở micro. Cộng nút <i>“Nhận dạng tệp WAV thử”</i> đẩy một tệp WAV 16 kHz mono qua <b>đúng</b> <code>VoiceRecognizer</code> mà micro dùng.</li>
 </ul>
 <h3>Phi chức năng</h3>
 <ul>
@@ -183,17 +197,75 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><b>Context7:</b> không dùng thư viện/framework mới — toàn bộ pha này là Kotlin thuần + khối đã có trong repo (Android SDK chỉ ở <code>EditText</code>/<code>AlertDialog</code>/<code>PackageManager</code>, đều qua helper sẵn có). Việc verify version sẽ cần ở pha ASR (Vosk / sherpa-onnx) — <b>chưa tới</b>.</li>
 </ul>
 
-<h3>4.4 Ranh giới R8 — cái gì CHƯA làm và vì sao</h3>
+<h3>4.5 Pha NGHE — micro đi vào ở đâu, và vì sao không đụng gì phía dưới</h3>
+
+<div class="flow">
+  <div class="fnode"><b>Micro</b><span>AudioRecord 16 kHz<br>VOICE_RECOGNITION → MIC</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceCapture</b><span>:app · trần 8 s · âm báo<br>focus MAY_DUCK</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceRecognizer</b><span>Vosk 0.3.47 tại máy<br>ràng bằng ngữ pháp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>chuỗi CHỮ</b><span>“bật đèn đọc”</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>chuỗi CHỮ</b><span>từ micro <i>hoặc</i> từ bàn phím</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceIntentParser</b><span>:core · KHÔNG ĐỔI<br>(pha chữ, R1–R7)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceDispatcher</b><span>:app · KHÔNG ĐỔI<br>trừ 1 nhánh launcher_voice</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>đường đã có</b><span>nút xe · gói · nhạc · app</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--accent)"></span> khối MỚI của pha nghe</span>
+  <span class="sw"><span class="box"></span> khối của pha chữ — không sửa một dòng</span>
+</div>
+
+<p><b>Ranh giới là “một chuỗi chữ”.</b> Đó là lý do pha chữ làm trước được, và là lý do bật micro lên không phải viết
+lại gì: bộ nhận dạng chỉ thay <i>nguồn</i> của chuỗi, không thay <i>nghĩa</i> của nó. Bài canh
+<code>VoiceCommandWiringContractTest.app khong tu dung bang tu khoa thu hai</code> vẫn đòi <b>đúng một</b> chỗ gọi
+<code>VoiceIntentParser.parse(</code> trong cả <code>:app</code>.</p>
+
+<h4>Thư viện — version đã kiểm 2026-09-14 (rule global §1.1)</h4>
 <table>
-<tr><th>Thứ</th><th>Trạng thái</th><th>Điều kiện mở khoá</th></tr>
-<tr><td>Micro / <code>AudioRecord</code> từ app thường</td><td><span class="pill block">chưa</span></td><td>playbook §2.14 phép đo 1</td></tr>
-<tr><td><code>SpeechRecognizer</code> / GMS</td><td><span class="pill block">chưa</span></td><td>playbook §2.14 phép đo 2</td></tr>
-<tr><td>TTS tiếng Việt</td><td><span class="pill block">chưa</span></td><td>playbook §2.14 phép đo 3 (<code>Read.aloud</code> đã giữ sẵn ý định)</td></tr>
-<tr><td>ASR tại máy (Vosk / sherpa-onnx), wake word</td><td><span class="pill block">chưa</span></td><td>§2.14 phép đo 4 (CPU/RAM DiLink3) — ngân sách tham chiếu: 11.9 MB, 1 luồng, cửa sổ 640 ms</td></tr>
+<tr><th>Thư viện</th><th>Version dùng</th><th>Nguồn kiểm</th><th>Ghi chú</th></tr>
+<tr><td><code>com.alphacephei:vosk-android</code></td><td><b>0.3.47</b> <span class="pill ok">latest stable</span></td><td>Context7 <code>/alphacep/vosk-api</code> + Maven Central <code>search.maven.org</code> group <code>com.alphacephei</code></td><td>AAR 12,3 MB · <code>libvosk.so</code> cho 4 ABI. <code>vosk-api-kotlin 0.4.0-alpha0</code> <b>có tồn tại nhưng còn alpha</b> ⇒ không lấy vào đường điều khiển xe.</td></tr>
+<tr><td><code>net.java.dev.jna:jna@aar</code></td><td><b>5.17.0</b> <span class="pill ok">latest stable</span></td><td>Maven Central</td><td>POM của Vosk ghim 5.13.0; nâng lên 5.17.0 (tương thích ngược ở lớp <code>Pointer</code>/<code>PointerType</code> mà Vosk dùng).</td></tr>
+<tr><td>Mô hình <code>vosk-model-small-vn-0.4</code></td><td>gói <b>33.656.337 B</b> · giải ra <b>53.290.365 B</b> · sha256 <code>efe5c849…d622e5</code></td><td><code>curl -L</code> + <code>shasum -a 256</code> + <code>unzip -l</code>, máy soạn thảo</td><td>Apache-2.0. WER 15,70 (Vivos). <b>Không</b> đóng vào APK.</td></tr>
+</table>
+<p><b>API đã kiểm bằng <code>javap</code> trên chính AAR đã tải</b> (không dựa trí nhớ — CLAUDE.md §3):
+<code>Model(String)</code> · <code>Recognizer(Model, float, String grammar)</code> · <code>acceptWaveForm(short[], int)</code> ·
+<code>getPartialResult()</code> · <code>getResult()</code> · <code>getFinalResult()</code> · <code>LibVosk.setLogLevel(LogLevel)</code>.
+<b>KHÔNG</b> dùng <code>SpeechService</code>/<code>SpeechStreamService</code> của gói: chúng tự dựng <code>AudioRecord</code> +
+luồng riêng <i>bên trong thư viện</i>, tức đường ghi âm nằm ngoài tầm bài canh “không ra mạng”, ngoài trần 8 s và ngoài
+chốt tiêu điểm âm thanh.</p>
+
+<h4>Hai sự thật ĐO được về mô hình, quyết định cả thiết kế ngữ pháp</h4>
+<table>
+<tr><th>Mức</th><th>Sự thật</th><th>Hệ quả</th></tr>
+<tr><td><b>ĐÃ ĐO</b></td><td>Gói mô hình có <b>14 tệp và KHÔNG có <code>graph/words.txt</code></b>; từ điển <b>nhúng trong <code>graph/Gr.fst</code></b> (flags = 3, bảng tên <code>exp/chain/tdnn/lgraph/words.txt</code>, <b>19.529 mục</b>).</td><td>Phải tự đọc bảng ký hiệu OpenFst ra (<code>VoskWordList</code>), rồi ghi lại thành <code>graph/words.txt</code> cạnh mô hình. Đúng ca mà <code>model.cc:306-307</code> lường trước.</td></tr>
+<tr><td><b>ĐÃ ĐO</b></td><td>Từ điển là chữ <b>CÓ DẤU</b> (<code>đèn</code> · <code>bật</code> · <code>tắt</code> · <code>nhiệt</code> · <code>độ</code>), và có sẵn mục <code>[unk]</code>.</td><td>Ngữ pháp phải viết có dấu. Nhưng <code>VoiceSynonyms</code>/bảng động từ khai <b>không dấu</b> (hợp đồng của tầng chữ) ⇒ dựng cách viết có dấu bằng cách <b>tra ngược qua chính từ điển</b>, và cho <b>mọi thanh điệu</b> của một âm vào dạng từ đơn. Sai thanh — điểm yếu lớn nhất của mô hình 32 MB — hết làm hỏng câu lệnh, vì <code>VoiceIntentParser</code> bỏ dấu ở đầu bên kia.</td></tr>
+</table>
+
+<h3>4.4 Ranh giới — cái gì ĐÃ mở, cái gì CÒN đóng và vì sao</h3>
+<table>
+<tr><th>Thứ</th><th>Trạng thái</th><th>Căn cứ / điều kiện mở khoá</th></tr>
+<tr><td>Micro / <code>AudioRecord</code> từ app thường</td><td><span class="pill ok">ĐÃ MỞ (1.49)</span></td><td><b>[ĐO] gián tiếp</b>: Kiki Car là <b>app thường</b> và giữ micro mở trên chính đầu xe owner. Owner 2026-09-14 miễn cổng §14 cho riêng mục này. Đường đi: <code>VoiceCapture</code>.</td></tr>
+<tr><td>ASR <b>tại máy</b> (Vosk + ngữ pháp đóng)</td><td><span class="pill ok">ĐÃ MỞ (1.49)</span></td><td><b>[ĐO]</b> Kiki chạy ONNX wake word + VAD tại máy ⇒ inference tại máy khả thi. Ngân sách thật vẫn <b>chưa đo trên xe</b> — xem T17.</td></tr>
+<tr><td><code>SpeechRecognizer</code> / GMS</td><td><span class="pill block">CẤM</span></td><td><b>Không phải “chưa”, mà là “không”</b>: nó cần mạng + dịch vụ Google. Điều khiển xe không được phụ thuộc 4G (RE Kiki §2.1). Bài canh R14 chặn.</td></tr>
+<tr><td>TTS tiếng Việt</td><td><span class="pill block">chưa</span></td><td><b>[CHƯA BIẾT]</b> — chưa đo trên xe. Phản hồi hiện tại: <b>âm báo + chữ</b>. <code>Read.aloud</code> vẫn giữ sẵn ý định cho ngày đo xong.</td></tr>
+<tr><td>Wake word (“Kachi ơi”)</td><td><span class="pill block">chưa</span></td><td>Nghe thường trực = micro mở suốt chuyến trong một <b>launcher</b>. Cần quyết định của owner + đo CPU/pin, không phải một bản vá.</td></tr>
 <tr><td>Chuyển tiếp câu sang Kiki (<code>text_command</code>)</td><td><span class="pill block">chưa</span></td><td><b>K2</b> — extra nội bộ không tài liệu, hiệu lực mới ở mức <b>[SUY]</b></td></tr>
 <tr><td>LLM dự phòng</td><td><span class="pill block">chưa</span></td><td>quyết định của owner; và chỉ được ĐỀ XUẤT, không tự thi hành</td></tr>
 </table>
-<p>Bài canh <code>VoiceCommandWiringContractTest.chua co mic ASR TTS wake word trong pha nay</code> quét mọi tệp <code>Voice*.kt</code> của 3 module và <b>đỏ</b> nếu một trong các tên trên xuất hiện — cộng một bài canh manifest không xin <code>RECORD_AUDIO</code>.</p>
+<p><b>Bài canh phạm vi đã ĐỔI CÂU HỎI, không mất phạm vi</b> (R14): thay vì <i>“chưa có mic”</i>, nay
+<code>VoiceCommandWiringContractTest</code> quét mọi tệp <code>Voice*.kt</code> của 3 module và đỏ nếu
+(a) có <code>SpeechRecognizer</code>/<code>RecognitionListener</code>/<code>TextToSpeech</code>/<code>MediaRecorder(</code>,
+(b) có <b>bất kỳ</b> đường ra mạng (<code>Socket</code>/<code>WebSocket</code>/<code>OkHttp</code>/<code>URL(</code>…),
+(c) có <b>hơn một</b> tệp mở <code>AudioRecord</code>, hoặc (d) manifest <b>không</b> xin <code>RECORD_AUDIO</code>.
+Đường tải mô hình là ngoại lệ <b>đúng</b> và hẹp: nó chỉ tải <i>xuống</i> một tệp đã ghim sha256, qua cửa
+<code>HttpConn</code> duy nhất (chỉ HTTPS).</p>
 
 <h2>5. Tasks (DAG)</h2>
 <table>
@@ -206,23 +278,52 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <tr><td>T6</td><td>Hàng gõ lệnh trong Cài đặt › Hệ thống › Nâng cao + hộp xác nhận + chuỗi VI/EN</td><td><code>app/…/launcher/VoiceTextConsole.kt</code> · <code>SettingsSections.kt</code> · <code>res/values{,-en}/strings_kachi.xml</code></td><td><span class="pill ok">xong</span></td></tr>
 <tr><td>T7</td><td>Nối 3 cổng mới (<code>openAppList</code> · <code>openAppByPackage</code> · <code>openSettingsGroup</code>)</td><td><code>SettingsPanel.kt</code> · <code>HomePanels.kt</code> · <code>KachiHomeWiring.kt</code> · <code>KachiHomeActivity.kt</code></td><td><span class="pill ok">xong</span></td></tr>
 <tr><td>T8</td><td>Test: ca thuần + độ phủ sinh từ registry + dây nối</td><td><code>VoiceIntentParserTest.kt</code> · <code>VoiceGrammarCoverageTest.kt</code> · <code>VoiceCommandWiringContractTest.kt</code></td><td><span class="pill ok">xong</span></td></tr>
-<tr><td>T9</td><td>Tầng 1 trên xe: §2.14 (4 phép đo) + K1–K3 → rồi mới mở R8</td><td><code>docs/diagnostics/carlog-kachi-*</code></td><td><span class="pill wait">🚗 chờ xe</span></td></tr>
-<tr><td>T10</td><td>Senior review (Opus) + security scan trước commit</td><td>—</td><td><span class="pill wait">chờ</span></td></tr>
+<tr><td>T9</td><td><s>Tầng 1 trên xe trước khi mở R8</s> — owner miễn cổng cho micro/ASR tại máy (2026-09-14)</td><td>—</td><td><span class="pill ok">đã quyết</span></td></tr>
+<tr><td colspan="4" style="padding-top:14px"><b>PHA NGHE (Pass 2 · R9–R14)</b></td></tr>
+<tr><td>T11</td><td>Bản kê gói mô hình + luật chống leo thư mục + đọc bảng ký hiệu OpenFst (<code>:core</code>, thuần)</td><td><code>core/…/voice/VoiceModelManifest.kt</code> · <code>VoskWordList.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T12</td><td>Ngữ pháp sinh từ danh mục + tra ngược qua từ điển mô hình</td><td><code>core/…/voice/VoicePhrases.kt</code> · <code>VoiceGrammar.phrases()</code> · <code>VoiceLexicon</code> (+<code>NUMBER_WORDS</code>, <code>confirmAnswer</code>)</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T13</td><td>Tải · kiểm sha256 · giải nén · rút từ điển · gỡ</td><td><code>app/…/voice/VoiceModelStore.kt</code> · <code>net/HttpConn.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T14</td><td>Bộ nhận dạng + cache mô hình cho cả tiến trình</td><td><code>app/…/voice/VoiceRecognizer.kt</code> (<code>VoiceEngine</code>)</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T15</td><td>Phiên nghe: micro · trần 8 s · tấm chữ · âm báo · cổng xác nhận bằng lời</td><td><code>app/…/voice/VoiceCapture.kt</code> · <code>VoiceSession.kt</code> · <code>VoiceOverlay.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T16</td><td>Ba lối vào + quyền + Cài đặt + icon <code>ic_mic</code> + chuỗi VI/EN</td><td><code>LauncherActions.kt</code> · <code>KachiTopStrip.kt</code> · <code>KachiHomeWiring.kt</code> · <code>KachiHomeActivity.kt</code> · <code>AssistantLauncher.kt</code> · <code>Prefs.kt</code> · <code>PermissionPreflight.kt</code> · <code>LauncherRequirements.kt</code> · <code>VoiceModelSettings.kt</code> · <code>SettingsSectionsBars.kt</code> · <code>res/drawable/ic_mic.xml</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T17</td><td>Đường chứng minh không cần micro (WAV) + bài canh phạm vi MỚI</td><td><code>app/…/voice/VoiceWavProbe.kt</code> · <code>VoiceCommandWiringContractTest.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T18</td><td><b>Trên xe</b>: đo độ chính xác thật (giọng người, tiếng ồn xe chạy), CPU/RAM/pin của một phiên, và độ trễ lần nói đầu</td><td><code>docs/diagnostics/carlog-kachi-*</code></td><td><span class="pill wait">🚗 chờ xe</span></td></tr>
+<tr><td>T19</td><td>Senior review (Opus) + security scan trước commit</td><td>—</td><td><span class="pill wait">chờ</span></td></tr>
 </table>
 
 <h2>6. Verification</h2>
 <ul>
-<li><b>V-unit</b> (chạy lại sau soát 2026-09-14, <code>:app:testDebugUnitTest :core:test :car-integration:test :vehicle-contracts:test :offcar-planner:test --continue</code>): <b>2471 test (core+app) / 0 đỏ</b>, cả 5 module 0 đỏ.
+<li><b>V-unit</b> (chạy lại sau pha NGHE 2026-09-14, <code>:app:testDebugUnitTest :core:test :car-integration:test :vehicle-contracts:test :offcar-planner:test --continue</code>): <b>2500 test (core 1574 + app 926) / 0 đỏ</b>, cả 5 module 0 đỏ.
   <ul>
   <li><code>VoiceIntentParserTest</code> — 23 bài, ~110 câu: 44 mẫu Kiki chuyển thể · 5 kiểu <code>ControlKind</code> · 3 cặp L-RE2 · nhãn trùng ĐỌC↔BẤM · câu ghép · không dấu/hoa thường/dấu câu · câu trả lời song ngữ.</li>
   <li><code>VoiceGrammarCoverageTest</code> — 38 bài, <b>194 ca sinh từ registry</b> (65 nút × 2 + 123 datum + 4 gói + 2 launcher) + 64 ca tiếng Anh + số bằng chữ + bảng an toàn + hai chốt an toàn của chính từ vựng.</li>
   <li><code>VoiceDispatcherSafetyTest</code> (<code>:app</code>, <b>thêm ở Pass 1</b>) — 6 bài dựng <code>VoiceDispatcher</code> <b>thật</b> (lớp này không chạm <code>android.*</code> trên đường đi của một nút xe): vế sau KHÔNG chạy trước khi vế CONFIRM được đồng ý · huỷ thì dừng hẳn + nói ra còn mấy vế · hai vế CONFIRM hỏi lần lượt · việc thường chạy thẳng · lệnh tương đối cộng vào mức đang dùng · <code>preview</code> không thi hành gì.</li>
-<li><code>VoiceCommandWiringContractTest</code> (<code>:app</code>) — 9 bài: 9 nhánh ý định có đích thật · từng nhánh đi đúng đường đã có · lệnh tương đối cộng vào mức đang dùng · hàng nằm đúng mục Nâng cao · 3 cổng nối thật tới Activity · <b>chưa có mic/ASR/TTS</b> · manifest không xin <code>RECORD_AUDIO</code> · <code>:app</code> không dựng bảng từ khoá thứ hai.</li>
+<li><code>VoiceCommandWiringContractTest</code> (<code>:app</code>, <b>viết lại ở Pass 2</b>) — <b>17 bài</b>: 9 nhánh ý định có đích thật · từng nhánh đi đúng đường đã có · hàng nằm đúng mục Nâng cao · 4 cổng nối thật tới Activity · <b>không ASR trên máy chủ / không TTS / không ghi âm ra tệp</b> · <b>không tệp <code>Voice*</code> nào ra mạng</b> · bộ nhận dạng là Vosk tại máy <b>có ràng ngữ pháp</b> · <b>đúng một</b> tệp mở micro · manifest <b>có</b> <code>RECORD_AUDIO</code> + micro <code>required=false</code> · ba lối vào phiên nghe nối thật · nút mic gate bởi mô hình đã tải · quyền micro trong vòng kiểm và tự cấp được · mô hình ghim sha + có đường gỡ · phiên nghe có trần 8 s và cổng xác nhận mặc định KHÔNG · <code>:app</code> không dựng bảng từ khoá thứ hai.</li>
+  <li><code>VoiceGrammarPhrasesTest</code> (<code>:core</code>, <b>Pass 2</b>) — 9 bài chạy trên <b>từ điển THẬT</b> (19.529 mục rút từ <code>graph/Gr.fst</code>, commit làm test resource): mô hình dùng chữ CÓ DẤU và có <code>[unk]</code> · mọi mục là chữ thường/không trùng · <code>[unk]</code> đứng cuối · <b>mọi từ trong mọi mục đều có trong từ điển mô hình</b> · <b>mọi</b> nút/datum/gói/launcher có ≥1 cụm nói được · mọi <i>ý nghĩa</i> động từ nói được · hồ sơ/app vào ngữ pháp và từ lạ bị loại <b>cả cụm</b> · <b>số cụm ghim</b> (330 giữ / 269 loại / 2.037 mục) · JSON thoát dấu nháy.</li>
+  <li><code>VoiceModelManifestTest</code> (<code>:core</code>, <b>Pass 2</b>) — 9 bài: sha/cỡ đúng phép đo · chỉ nhận gói khớp <b>cả hai</b> · nguồn HTTPS + có đường lùi · <b>8 hình dạng “zip slip” bị từ chối</b> · mục hợp lệ được nhận · mọi tệp bắt buộc là đường dẫn an toàn · đọc đúng bảng ký hiệu ĐẦU RA khi tệp có cả hai bảng · không có bảng đầu ra ⇒ rỗng · tệp lạ/cụt ⇒ ném · <b>đọc được 64 KiB đầu của <code>Gr.fst</code> THẬT</b> (bài hồi quy khoá lỗi magic, xem §9).</li>
   </ul>
 </li>
 <li><b>V-callsite</b> (CLAUDE.md §8): mọi lớp mới đều có ≥1 chỗ gọi ngoài định nghĩa — <code>VoiceIntentParser</code> 6 · <code>VoiceGrammar</code> 15 · <code>VoiceReply</code> 21 · <code>VoiceRiskTable</code> 3 · <code>VoiceLexicon</code> 19 · <code>VoiceDispatcher</code> 3 · <code>VoiceTextConsole</code> 3.</li>
-<li><b>V-size</b>: tệp lớn nhất <code>VoiceIntentParser.kt</code> <b>340</b> dòng (trần 500); <code>VoiceDispatcher.kt</code> 267 · <code>VoiceGrammar.kt</code> 287.</li>
+<li><b>V-size</b>: mọi tệp mới của pha nghe dưới trần 500 — <code>VoiceModelStore.kt</code> 303 · <code>VoiceSession.kt</code> 258 · <code>VoiceOverlay.kt</code> ~180 · <code>VoiceCapture.kt</code> ~180 · <code>VoiceWavProbe.kt</code> ~190 · <code>VoskWordList.kt</code> ~175 · <code>VoicePhrases.kt</code> ~200. <b>Nợ đã trả ở Pass 2</b> (soát 2026-09-14): <code>KachiHomeActivity.kt</code> 523 → <b>478</b> (tách <code>KachiHomeSlots.kt</code> 88 + <code>collectHome</code> sang <code>KachiHomeWiring.kt</code> 371) và <code>ClusterNavBridge.kt</code> 506 → <b>491</b> (hai hàm công tắc nút mic sang <code>ClusterNavBridgeKeys.kt</code>). Bài canh <code>VoiceCommandWiringContractTest.pha NGHE khong day tep nao qua tran 500 dong</code> khoá lại.</li>
+<li><b>V-callsite pha nghe</b> (CLAUDE.md §8): <code>VoiceModelStore</code> 9 · <code>VoiceRecognizer</code> 3 · <code>VoiceEngine</code> 3 · <code>VoiceCapture</code> 3 · <code>VoiceOverlay</code> 6 · <code>VoiceSession</code> 5 · <code>VoiceWavProbe</code> 3 · <code>VoskWordList</code> 2 · <code>VoicePhrases</code> 3 · <code>HttpConn</code> 3 — mỗi lớp có ≥1 chỗ gọi ngoài định nghĩa.</li>
 <li><b>V-oncar</b> <span class="pill wait">chưa chạy</span>: mở <i>Cài đặt › Hệ thống &amp; quyền › Nâng cao › Gõ lệnh chữ</i>, gõ lần lượt 10 câu ở §6.1, chụp màn hình. Kỳ vọng: dòng <code>→</code> nói đúng việc, dòng <code>✓</code>/<code>✗</code> nói xe có nhận không. Hoàn tác: mọi câu đều đảo lại được bằng câu ngược; 4 việc CONFIRM có hộp hỏi.</li>
+<li><b>V-emu pha NGHE</b> <span class="pill ok">[ĐO] 2026-09-14, bản 1.49 (50), <code>sdk_gphone64_arm64</code> API 29</span> — <b>đường đi đầy đủ chạy thật</b>:
+  <ul>
+  <li><b>Tải mô hình</b>: bấm <i>Tải mô hình tiếng Việt</i> → “Đang tải… %” → “Đang kiểm gói (sha256)…” → “Đang giải nén…” → <code>KachiVoiceModel: mô hình sẵn sàng: …/vosk/vosk-model-small-vn-0.4 (<b>19529 từ</b>)</code>; hàng Cài đặt đổi thành <b>“Đã cài vosk-model-small-vn-0.4 · 19529 từ · 51 MB trên đĩa”</b>, nút thành <i>Gỡ mô hình</i>.</li>
+  <li><b>Đường HỎNG cũng đúng</b>: lượt chạy khi máy ảo mất DNS cho ra <code>nguồn https://alphacephei.com/… hỏng: lỗi mạng: Unable to resolve host</code> rồi thử <b>nguồn lùi</b>, rồi dọn sạch và hiện lại “Chưa cài” — không để lại thư mục nửa vời.</li>
+  <li><b>Ngữ pháp trên máy</b>: <code>KachiVoiceRec: ngữ pháp: <b>2069 mục</b> (cụm giữ <b>334</b>, bỏ 278, từ mô hình không có 174)</code> — nhiều hơn con số off-car (2.037/330) đúng bằng phần <b>app đã cài</b> của máy đó.</li>
+  <li><b>Nạp mô hình</b>: 114–125 ms (mmap) ⇒ lần nói đầu không phải chờ.</li>
+  <li><b>Nhận dạng WAV thật</b> (3 tệp <code>say -v Linh</code>, 16 kHz mono PCM16):
+    <pre>“bật đèn đọc”                → nghe “mật đèn đọc”        → Chưa rõ cần làm gì  (từ chối đúng)
+“đặt nhiệt độ hai mươi hai”  → nghe “đặt nhiệt độ hái mươi hai” → <b>Đặt Nhiệt độ = 22</b>  ✓
+“mở khoá cửa rồi bật đèn đọc”→ nghe “mở khoá cửa dối mặc đèn đọc” → <b>Bấm Mở khoá cửa</b> (vế 1)</pre>
+    Ca thứ hai là <b>bằng chứng cho thiết kế nở-thanh-điệu</b>: mô hình nghe <i>“hái”</i>, <code>VoiceLexicon.deaccent</code> đưa về <code>hai</code> ⇒ số 22 đúng.</li>
+  <li><b>Phiên nghe thật</b>: bấm nút mic trên thanh trên → <code>micro mở bằng nguồn 6 (VOICE_RECOGNITION)</code>, tấm chữ <b>“Đang nghe… / Chạm ra ngoài hoặc bấm Back để huỷ”</b> hiện ở góc dưới-phải, endpoint của Vosk tự chốt sau ~5,4 s im lặng (không cần chạm trần 8 s), tấm chữ tự biến sau khi nói <i>“Không nghe rõ”</i>.</li>
+  <li><b>Ba lối vào</b>: nút mic <b>chỉ hiện</b> sau khi mô hình đã cài (trước đó vắng, đúng thiết kế) · ô <i>Nói với xe</i> có trong bộ chọn nút thanh · đích <b>“Kachi nghe (tại máy)”</b> có trong danh sách gán phím, ngay sau ba sentinel cũ, và <b>không</b> đổi mặc định nào.</li>
+  <li><b>Quyền</b>: <code>pm grant com.byd.launcher android.permission.RECORD_AUDIO</code> → trang Cài đặt báo <i>“Đủ quyền — không thiếu gì”</i>.</li>
+  </ul>
+</li>
+<li><b>V-oncar pha NGHE</b> <span class="pill wait">🚗 chưa chạy</span> (T18): nói 10 câu §6.1 <b>bằng giọng thật</b>, xe đứng yên rồi xe chạy ~60 km/h (tiếng ồn lốp + gió); đo <code>dumpsys cpuinfo</code>/<code>meminfo</code> trong một phiên; đo độ trễ từ lúc bấm tới lúc có chữ. Hoàn tác: gỡ mô hình trong Cài đặt là về đúng trạng thái trước.</li>
 <li><b>V-lifecycle</b>: mở Cài đặt → gõ → chạy → đổi nhóm → quay lại (trang được nhớ, sổ phản hồi giữ nguyên) → đóng bảng → mở lại (sổ trống, bảng app nạp lại).</li>
 </ul>
 <h3>6.1 Mười câu để gõ trên xe</h3>
@@ -256,6 +357,82 @@ bật đèn đọc và tắt đèn pha        → Bật Đèn đọc · Tắt Đ
 </ul>
 
 <h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<h3>Pass 2 — pha NGHE (2026-09-14)</h3>
+<ul>
+<li><b>quyết định — cắm bộ nghe vào TRƯỚC bộ hiểu ý, không viết lại gì phía dưới.</b> Ranh giới đã chọn ở pha chữ
+(“vào là một chuỗi chữ”) hoá ra đủ: toàn bộ <code>:core</code> của pha chữ <b>không sửa một dòng nào</b> vì tầng
+nghe, và <code>VoiceDispatcher</code> chỉ thêm đúng một nhánh (<code>launcher_voice</code>) — thêm vì có một
+<i>hành động</i> mới, không phải vì có micro. File: <code>app/…/voice/*</code>.</li>
+
+<li><b>[ĐO] mô hình KHÔNG có <code>graph/words.txt</code>.</b> Giải nén gói đã băm sha256: 14 tệp, không có
+<code>words.txt</code>. Suýt kết luận “mô hình hỏng”. Đọc <code>vosk-api/src/model.cc</code> (CLAUDE.md §3 —
+fetch source, không dựa trí nhớ) thấy dòng 306-307 lấy <code>g_fst_-&gt;OutputSymbols()</code> <b>trước</b> khi
+tìm tệp. Phân tích header <code>Gr.fst</code>: <code>flags = 3</code>, bảng <b>19.529 mục</b> nhúng sẵn. ⇒ viết
+<code>VoskWordList</code> đọc bảng ấy ra. Cùng lượt đó đọc <code>recognizer.cc:340-347</code> và biết thêm một
+sự thật quyết định cả thiết kế: <b>từ ngoài từ điển bị Vosk bỏ LẶNG LẼ</b>, chỉ một dòng <code>KALDI_WARN</code>
+trong log native.</li>
+
+<li><b>trade-off — nở THANH ĐIỆU thay vì chép một bảng chữ có dấu.</b> Từ điển mô hình có dấu, còn
+<code>VoiceSynonyms</code> + bảng động từ của pha chữ khai <b>không dấu</b> (đó là hợp đồng của chúng). Cách dễ là
+chép tay một bảng <i>“bat → bật”</i> — tức bản sao thứ hai của từ vựng, đúng họ lỗi dự án đã trả giá bốn lần.
+Cách đã chọn: gom từ điển mô hình theo <b>dạng đã bỏ dấu</b> rồi hỏi ngược. <b>Được</b> nhiều hơn dự tính: mọi
+cách viết (<code>bạt · bát · bắt · bật</code>) đều vào ngữ pháp, nên <b>nghe sai thanh không còn làm hỏng câu
+lệnh</b> — và [ĐO] trên máy ảo đúng ca đó xảy ra thật (<i>“hái mươi hai”</i> → 22). <b>Mất</b>: ngữ pháp to hơn
+(2.037 thay vì ~700 mục) — chấp nhận, LM bigram của Vosk dựng trong vài chục ms.</li>
+
+<li><b>[ĐO] 11 khả năng trước đó GÕ ĐƯỢC MÀ KHÔNG NÓI ĐƯỢC.</b> Chạy phép đo độ phủ lần đầu trên từ điển thật:
+<code>EV / HEV</code> · <code>iTAC</code> · <code>AVH</code> · <code>Tiêu thụ 50km</code> · <code>Sạc %</code> ·
+<code>SOH</code> · <code>Chế độ drift</code> · <code>PM2.5</code> · <code>MCU</code> · <code>12V</code> ×2 —
+toàn nhãn mang <b>chữ viết tắt / chữ số</b>, thứ mà một mô hình tiếng Việt không có từ nào để nghe. Cái thiếu ấy
+<b>im lặng</b>. Cách sửa <b>không</b> phải nới bài canh mà là thêm một cách gọi thuần Việt vào
+<code>VoiceSynonyms</code> (<i>“chế độ động cơ”</i> · <i>“giữ phanh”</i> · <i>“nồng độ bụi mịn”</i> · <i>“ắc
+quy”</i>…) — cũng là cách người ta nói ngoài đời. Sau khi thêm: <b>0 khả năng câm</b>.</li>
+
+<li><b>bug tự gây, tự bắt (1) — hằng magic ĐOÁN, và bài kiểm tự chứng minh mình đúng.</b>
+<code>SYMBOL_TABLE_MAGIC</code> bản đầu là <code>0x7EB2FDB4</code> (đổi chỗ hai nibble của magic FST). <b>Cả ba
+bài kiểm vẫn XANH</b>, vì chúng dựng tệp FST giả bằng <b>chính cái hằng sai ấy</b> — một vòng khép kín. Nó chỉ lộ
+ra khi mô hình thật tải xong trên máy ảo: <code>bảng ký hiệu sai magic=0x7eb2fb74</code>. Cách sửa: đặt đúng
+<code>0x7EB2FB74</code> <b>và</b> thêm bài hồi quy đọc <b>64 KiB byte thật</b> cắt từ chính <code>Gr.fst</code>
+(CLAUDE.md §10). Bài học rộng hơn: <i>một bài kiểm dựng dữ liệu bằng cùng hằng số mà nó đang kiểm thì nó không
+kiểm gì cả.</i></li>
+
+<li><b>bug tự gây, tự bắt (2) — <code>InputStream.readNBytes</code> là API Java 9.</b> Biên dịch <b>sạch</b> với
+<code>compileSdk 37</code> rồi ngã lúc chạy trên <code>minSdk 29</code>:
+<code>NoSuchMethodError: No virtual method readNBytes([BII)I</code>. Android chỉ có nó từ API 33. Cùng họ với
+CLAUDE.md §3 (tin trí nhớ về nền tảng), chỉ khác là nền tảng ở đây là JDK chứ không phải AOSP. Cách sửa: vòng
+<code>read</code> tự viết (<code>readAtMost</code>/<code>skipExactly</code>) — và nhân tiện đúng hơn, vì
+<code>read</code> được phép trả ít hơn yêu cầu ngay cả khi luồng còn dữ liệu.</li>
+
+<li><b>[ĐO] APK 9,06 MB → 26,8 MB.</b> <code>vosk-android-0.3.47.aar</code> chở <code>libvosk.so</code> cho <b>4
+ABI</b> = 36,5 MB. Chở cả bốn thì OTA (tải qua mạng 4G của xe) bắt người dùng tải thêm 19 MB x86 mà không đầu xe
+nào chạy được. Giữ <code>arm64-v8a</code> + <code>armeabi-v7a</code>: máy ảo và dump xe đều arm64, nhưng các đời
+DiLink cũ <b>chưa được đo</b> và CLAUDE.md §7 cấm chốt theo một đời xe — 8 MB rẻ hơn một dòng xe câm không báo
+lỗi.</li>
+
+<li><b>hai bài canh cũ phải ĐỔI CÂU HỎI, không được bỏ.</b> (a) <code>VoiceCommandWiringContractTest</code> cấm
+<code>AudioRecord</code> vì pha ấy chưa có micro ⇒ nay cấm <i>ASR trên máy chủ · TTS · mọi đường ra mạng trong
+tệp <code>Voice*</code> · hơn một tệp mở micro</i>. (b)
+<code>AccessibilityGrantSafetyContractTest</code> cấm thẳng chuỗi <code>"pm grant"</code> như một <b>phép xấp
+xỉ</b> cho ý <i>“đừng leo quyền”</i> ⇒ nay kiểm <b>đúng ý</b>: mọi <code>pm grant</code> phải khớp khuôn
+<code>pm grant $PKG android.permission.&lt;TÊN&gt;</code>. Cả hai lần, phạm vi bảo vệ <b>giữ nguyên</b>, chỉ câu
+hỏi hẹp lại cho đúng.</li>
+
+<li><b>luật lặp ⇒ viết thành mã.</b> <code>LauncherI18nContractTest.allowed</code> có 10 mục cùng một lý do
+(<i>“nhật ký (Log.w) — không hiện trên màn”</i>). Pha nghe thêm ~44 chuỗi cùng loại. Chép cả 44 vào đó là làm
+danh sách phình gấp bốn cho một lý do duy nhất ⇒ dạy bộ quét nhận <b>cấu trúc</b>
+(<code>Log.*</code> · <code>throw …(</code> · <code>Lang.t(</code>), có đếm ngoặc để bắt cả lời gọi nhiều dòng.</li>
+
+<li><b>nợ ghi lại → ĐÃ TRẢ ở soát Pass 2 (cùng ngày).</b> <code>KachiHomeActivity.kt</code> lên <b>523</b> dòng
+(trần 500 — nó đã 501 trước lượt này) và <code>ClusterNavBridge.kt</code> lên <b>506</b> (từ 491 — chính pha này đẩy
+nó qua trần, lúc đầu không ai ghi nhận). Soát Pass 2 tách <b>theo vai</b>, 0 đổi hành vi: glue intent theo-ô →
+<code>KachiHomeSlots.kt</code>, hai vòng thu → <code>collectHome</code> ở <code>KachiHomeWiring.kt</code>, hai hàm
+công tắc nút mic → <code>ClusterNavBridgeKeys.kt</code> ⇒ <b>478</b> / <b>491</b>. Bài học được khoá bằng bài canh
+<code>pha NGHE khong day tep nao qua tran 500 dong</code>: trần chỉ giữ được nếu có máy đếm hộ — một dòng “ghi lại
+làm nợ” thì lượt sau sẽ ghi tiếp.</li>
+</ul>
+
+<h3>Pass 0–1 — pha CHỮ (2026-09-14)</h3>
+
 <ul>
 <li><b>2026-09-14 · quyết định</b> — <b>Bắt đầu từ tầng chữ, không từ tầng tiếng.</b> §14 cấm code cho khả năng chưa đo; nhưng tầng chữ chỉ gọi lại đường đã chạy nên không vướng cổng đó, và nó là thứ <b>không phải viết lại</b> khi ASR về. <i>File:</i> toàn bộ <code>voice/</code>.</li>
 <li><b>2026-09-14 · bug tự gây, tự bắt</b> — <b>Từ đệm nuốt mất nhãn thật.</b> Bản đầu của <code>VoiceLexicon.FILLERS</code> có <code>"cai"</code>, <code>"cua"</code>, <code>"the"</code>, <code>"toi"</code>. Sau khi bỏ dấu chúng trùng tiền tố của “<b>cài</b> đặt”, “<b>cửa</b> sổ trời”, “<b>thể</b> thao”, “<b>tối</b> đa” ⇒ ba nhãn đó <b>không bao giờ khớp được nữa</b>, im lặng. <i>Cách sửa:</i> rút <code>FILLERS</code> còn 9 từ không đụng nhãn nào + thêm bài canh <code>khong tu dem nao la tien to cua mot cum trong tu vung</code> (<code>VoiceGrammarCoverageTest</code>) quét bằng máy.</li>
@@ -266,9 +443,134 @@ bật đèn đọc và tắt đèn pha        → Bật Đèn đọc · Tắt Đ
 <li><b>2026-09-14 · hai phép đếm phải sửa</b> — <code>PackageQueriesContractTest</code> (5→6 chỗ gọi) và <code>LauncherActionTileWiringContractTest</code> (2→3 chỗ gọi <code>drawerController.openAppList()</code>). Cả hai <b>giữ nguyên tính chất được bảo vệ</b> (một cửa duy nhất tới <code>PackageManager</code>; không ai tự dựng lối riêng tới ngăn kéo) và đều ghi lý do ngay tại chỗ sửa.</li>
 <li><b>2026-09-14 · bẫy soạn thảo</b> — Hai lần compile hỏng vì viết <code>*/</code> bên trong KDoc (<code>res/values*/…</code>, <code>*"sạc"*/*"xăng"*</code>) ⇒ đóng comment sớm. Ghi lại vì nó tốn đúng hai vòng build.</li>
 <li><b>V-emu 2026-09-14 (bản 1.48/49, máy ảo)</b> [ĐO]: ô "Gõ lệnh chữ" ở Cài đặt › Hệ thống & quyền › Nâng cao; câu không dấu <code>dat nhiet do hai lam va bat den doc roi xem pin</code> → "Đặt Nhiệt độ = 25 · Bật Đèn đọc · …" (số nói rút gọn "hai lăm" = 25 đúng sau vá P1); câu <code>mo khoa cua va bat den doc</code> → hộp "Xác nhận: Bấm Mở khoá cửa — chưa kiểm trên xe? mở khoá toàn xe — nghe nhầm một câu là xe mở khoá giữa bãi đỗ", vế sau CHƯA chạy khi hộp còn mở (P0 đã vá). APK không xin RECORD_AUDIO (aapt2 = 0).</li>
+<li><b>V-emu 2026-09-14 17:51 (bản 1.49/50 SAU 7 vá Pass 2, máy ảo arm64)</b> [ĐO]: nạp mô hình 118 ms; ngữ pháp 2069 mục (cụm giữ 334 · bỏ 278 · 174 từ không có trong mô hình); pill mic hiện khi mô hình đã cài; chạm pill ⇒ overlay "Đang nghe… Chạm ra ngoài hoặc bấm Back để huỷ", micro nguồn 6, endpoint ~5.4 s, tự đóng; WAV probe (giọng macOS Linh "mở khoá cửa và bật đèn đọc") ⇒ nghe "mở khoá cửa dối mặc đèn đọc" ⇒ ý "Bấm Mở khoá cửa" (đúng vế 1; "và bật" nghe nhầm phụ âm ⇒ vế 2 rơi — đúng loại lỗi cần đo bằng giọng thật trên xe, T18). Nút ⇄ (U14) chỉ icon nhỏ, không viền. Cài đặt › Hệ thống › "Nhận dạng giọng nói (tại máy)": Đã cài vosk-model-small-vn-0.4 · 19529 từ · 51 MB · nút Gỡ mô hình.</li>
 </ul>
 
 <h2>10. Reviewer Log</h2>
+
+<h3>Pass 2 — 2026-09-14 (pha NGHE) <span class="pill ok">đã vá + chạy lại xanh</span></h3>
+<p class="muted">Senior review theo CLAUDE.md §5 (phạm vi: toàn bộ thay đổi chưa commit của pha NGHE R9–R14 + nút ⇄
+U14). Kết luận scope: <b>R9–R14 ✅ đủ</b> — mỗi yêu cầu có mã, có bài canh, và có đường người dùng chạm tới thật.
+<b>Bảy phát hiện, tất cả đã vá tại chỗ</b>; ba phát hiện có bài canh mới, và cả ba đã được <b>thử làm ĐỎ</b>
+(gỡ dòng vá → test đỏ → khôi phục → xanh).</p>
+
+<table>
+<tr><th>#</th><th>Phát hiện</th><th>Vá</th></tr>
+
+<tr><td><span class="tag">P1</span></td>
+    <td><b>Phiên nghe KHÔNG chết theo màn chính.</b> <code>VoiceOverlay</code> là cửa sổ
+        <code>TYPE_APPLICATION_OVERLAY</code> — đúng loại mà <code>onDestroy</code> đã phải đóng tay cho
+        <code>DrawerController</code> (“cửa sổ đó sống tiếp, rò rỉ view + giữ activity”). Không ai tắt phiên ⇒ sau khi
+        màn huỷ vẫn còn một cửa sổ <b>phủ toàn màn ăn mọi cú chạm</b>, một <code>AudioRecord</code> đang mở tới 8 s, và
+        một <code>VoiceDispatcher</code> trỏ vào activity đã chết.</td>
+    <td><code>VoiceSession.stop()</code> (huỷ + đóng ngay, không đợi trần) + gọi trong <code>onDestroy</code> cạnh
+        <code>drawerController.close()</code>. Giữ chính <code>Lazy</code> để hỏi <code>isInitialized()</code> — chạm
+        vào <code>voice</code> ở đó khi chưa ai nói lần nào sẽ <b>dựng</b> một phiên ngay lúc màn đang chết.
+        <b>Kèm theo — khe do chính bản vá này mở ra</b>: một khi huỷ đóng được phiên sớm thì luồng nền CŨ có thể còn
+        chạy trong lúc người lái đã bấm mic lần nữa, và nó sẽ đóng tấm chữ của <b>phiên mới</b>. Thêm <b>số thế hệ</b>
+        (<code>generation</code> + <code>stale()</code>): mọi việc nền mang số phiên sinh ra nó và im lặng rút lui khi
+        số ấy đã cũ — vẽ, đóng, thi hành đều đi qua cổng đó. Và một dòng nữa ở đầu <code>rec.use</code>: huỷ trong lúc
+        đang dựng bộ nhận dạng thì <b>không mở micro nữa</b> (trước đó vẫn kịp một tiếng bíp).</td></tr>
+
+<tr><td><span class="tag">P1</span></td>
+    <td><b>Tải mô hình chạy được HAI lượt song song.</b> Nút trong Cài đặt tự khoá lúc đang tải, nhưng nó chỉ là một
+        <code>TextView</code> của <i>trang đang dựng</i>: đóng màn Cài đặt rồi mở lại (hoặc một lượt
+        <code>invalidateSettings</code> do đổi hồ sơ) cho ra một nút <b>mới, bật sẵn</b> trong khi luồng cũ còn chạy ⇒
+        hai luồng cùng ghi một <code>model.zip</code> rồi <code>remove()</code> của nhau — 64 MB mạng 4G, cả hai đều
+        hỏng sha.</td>
+    <td>Chốt một-lượt ở <b>tầng kho</b> (<code>VoiceModelStore.installing</code>, <code>compareAndSet</code> +
+        <code>finally</code>), không ở tầng vẽ: bề mặt thứ hai nào gọi <code>install</code> cũng được bảo vệ mà không
+        phải nhớ.</td></tr>
+
+<tr><td><span class="tag">P1</span></td>
+    <td><b>Tệp vượt trần 500 dòng</b> (CLAUDE.md §4.1 · R-nf4): <code>KachiHomeActivity.kt</code> <b>523</b> (nợ đã ghi
+        ở §9) và <code>ClusterNavBridge.kt</code> <b>506</b> — tệp thứ hai vốn 491 dòng, chính pha NGHE đẩy nó qua trần
+        và điều đó chưa ai ghi nhận.</td>
+    <td>Tách <b>theo vai</b>, 0 đổi hành vi: glue intent theo-ô → <code>KachiHomeSlots.kt</code> (88) · hai vòng thu →
+        <code>collectHome</code> ở <code>KachiHomeWiring.kt</code> · hai hàm công tắc nút mic → tệp mở rộng
+        <code>ClusterNavBridgeKeys.kt</code>. Kết quả <b>478</b> / <b>491</b>, có bài canh giữ trần cho đúng những tệp
+        pha này chạm.</td></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b>Nút mic chỉ hiện sau khi dựng lại màn chính.</b> <code>KachiTopStrip.view</code> là <code>by lazy</code> ⇒
+        thanh trên dựng một lần cho mỗi vòng đời màn. Nhưng cả hai điều kiện của nút mic đổi được <b>ngay trong màn Cài
+        đặt đang phủ lên nó</b>: vừa tải xong mô hình 32 MB, hoặc vừa gạt công tắc <i>Nút mic</i>. Cả hai thao tác ấy
+        trước bản vá <b>không đổi gì trên màn</b> — đúng hình dạng “bấm nút mà màn hình không đổi gì” mà P9 đã trả giá.</td>
+    <td>Nút luôn được GẮN, ẩn/hiện bằng <code>visibility</code> qua <code>KachiTopStrip.refreshVoicePill()</code>; gọi
+        lại ở <code>onPanelsChanged</code> (lớp phủ Cài đặt đóng/mở) và <code>onResume</code>.</td></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b>Không hỏi chỗ trống trước khi tải.</b> Một lượt cài giữ <b>cả hai</b> bản cùng lúc (gói 32 MB +
+        51 MB đã giải ra). Hết đĩa giữa chừng trên đầu xe cho ra một câu <code>ENOSPC</code> của libc — sau khi đã tải
+        xong 32 MB qua mạng 4G.</td>
+    <td><code>spaceError()</code> hỏi <code>filesDir.usableSpace</code> trước, ngưỡng = gói + phần giải ra + 20 MB thở,
+        và nói thẳng <i>“máy còn N MB, cần khoảng M MB”</i>. <code>usableSpace</code> trả 0 (ROM không đọc được) ⇒
+        <b>không chặn</b> — không ai bị cấm cài vì một phép đo không có.</td></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b>Chốt HTTPS chỉ chốt địa chỉ ta GÕ VÀO.</b> <code>HttpConn</code> kiểm chuỗi URL rồi bật
+        <code>instanceFollowRedirects</code>; cả hai nguồn đều trả 302 sang CDN. Việc tầng HTTP của Android không tự đi
+        từ <code>https</code> sang <code>http</code> là hành vi của <b>thư viện</b>, không phải lời hứa của dự án.</td>
+    <td>Sau khi có mã trả lời, kiểm lại <code>conn.url.protocol</code> — rơi sang <code>http</code> thì từ chối, nói rõ
+        lý do. (Băm sha256 vẫn giữ nguyên: nó chặn ca khác — nội dung bị đổi ở chính máy chủ.)</td></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b>Từ điển 19.529 dòng đọc lại trên LUỒNG VẼ.</b> <code>VoiceModelStore.words()</code> đọc tệp mỗi lần hỏi —
+        chấp nhận được ở luồng nghe, nhưng <code>VoiceModelSettings.statusText()</code> gọi nó khi <b>dựng trang Nâng
+        cao</b> và ở mỗi bước <code>Done</code> của lượt tải, cả hai trên luồng vẽ.</td>
+    <td>Nhớ lại theo <b>dấu vết tệp</b> (<code>đường dẫn|lastModified|length</code>), không theo một cờ boolean: gỡ rồi
+        cài lại cho ra tệp khác, và một bộ đệm không biết điều đó sẽ phục vụ từ điển của mô hình đã xoá.
+        <code>remove()</code> dọn bộ đệm.</td></tr>
+</table>
+
+<h3>Pass 2 — phần KHÔNG vá (ghi lại, chờ đo trên xe / chờ owner)</h3>
+<ul>
+<li><span class="tag">P2</span> <b>[CHƯA BIẾT] phím vô-lăng “Kachi nghe” kéo màn chính lên trước.</b>
+  <code>AssistantLauncher.launchKachiVoice</code> mở <code>KachiHomeActivity</code> (<code>SINGLE_TOP|CLEAR_TOP</code>)
+  để dùng đúng một bộ dây. Tấm chữ là cửa sổ hệ thống nên <b>không</b> cần màn chính ở tiền cảnh; nhưng việc kéo
+  launcher lên trước trong lúc một app đang chiếm ô (freeform / Android Auto) chưa có phép đo nào. Đo ở buổi test xe
+  (T18): nói khi đang cắm AA/CarPlay, xem ô có bị đẩy xuống không. Không tự sửa vì mọi cách khác (giữ một tham chiếu
+  tĩnh tới Activity sống) đều là một đường sống lâu hơn màn — thứ CLAUDE.md §5 dặn tránh.</li>
+<li><span class="tag">P2</span> <b>Huỷ giữa chừng lượt tải 32 MB</b> chưa có (đóng màn Cài đặt thì luồng vẫn chạy tới
+  hết). Chốt một-lượt ở trên đã chặn ca tệ nhất (hai lượt chồng nhau); một nút “Dừng tải” là việc riêng — đã vào
+  backlog.</li>
+<li><span class="tag">P3</span> <code>VoiceModelSettings</code> giữ hai <code>TextView</code> của trang Cài đặt suốt
+  lượt tải (~30–60 s). Có giới hạn thời gian và trang đóng thì <code>post</code> rơi vào hư không, nên chỉ là giữ chỗ
+  tạm, không phải rò rỉ vĩnh viễn.</li>
+<li><span class="tag">P3</span> <b>Quyết định đã ghi</b>: KHÔNG nhả <code>Model</code> khi máy thiếu bộ nhớ. 53 MB ấy là
+  <b>mmap tệp</b> — nhân tự thu hồi từng trang khi máy chật; nhả ở tầng Kotlin trả lại ít hơn con số gợi ý mà bắt lần
+  bấm mic kế tiếp dựng lại đồ thị ([ĐO] máy ảo 114–125 ms). Đường nhả vẫn có và vẫn được gọi khi người dùng <b>gỡ</b>
+  mô hình. Lý do nằm trong KDoc <code>VoiceEngine</code>.</li>
+</ul>
+
+<h3>Pass 2 — kiểm lại sau khi vá</h3>
+<ul>
+<li><b>Test</b> <span class="pill ok">[ĐO] 2026-09-14</span>: <code>:app:testDebugUnitTest :core:test
+  :car-integration:test :vehicle-contracts:test :offcar-planner:test --rerun-tasks --continue</code> → <b>0 đỏ</b>
+  (app 1839 + core 1575 + car-integration 44 + vehicle-contracts 22 + offcar-planner 99).</li>
+<li><b>Bài canh mới</b> (3, đều đã thử làm ĐỎ): phiên nghe chết theo màn chính &amp; huỷ được khi không còn vòng nghe ·
+  tải mô hình có chốt một-lượt + kiểm chỗ trống + chốt HTTPS sau chuyển hướng · pha NGHE không đẩy tệp nào qua trần 500.</li>
+<li><b>§8 chỗ gọi</b>: mọi thứ mới có ≥1 chỗ gọi ngoài định nghĩa — <code>stop()</code> 1 (<code>onDestroy</code>) ·
+  <code>whileCapturing</code> 2 · <code>spaceError</code> 1 · <code>installing</code> 2 · <code>refreshVoicePill</code> 3 ·
+  <code>KachiHomeSlots</code> 6 · <code>collectHome</code> 1.</li>
+<li><b>§4.1 kích thước</b>: tệp lớn nhất trong phạm vi pha này là <code>KachiHomeActivity.kt</code> 478 (trần 500).
+  <b>i18n</b>: <code>LauncherI18nContractTest</code> xanh — mọi câu mới đi qua <code>Lang.t(</code> hoặc
+  <code>throw …(</code>.</li>
+<li><b>ABI</b> [SUY] <code>abiFilters</code> bỏ x86 là đúng: dump firmware trong <code>docs/diagnostics/hud-sign-re/</code>
+  chỉ thấy thư viện <code>*_arm64-v8a</code> của chính cụm đồng hồ, máy ảo là <code>sdk_gphone64_arm64</code>.
+  <b>[CHƯA BIẾT]</b> có đời DiLink nào 32-bit — vì thế <code>armeabi-v7a</code> ở lại (playbook 1.47 §94 đã ghi phép đo
+  <code>ro.product.cpu.abilist</code> cần chạy trên xe). <b>ProGuard</b>: <code>isMinifyEnabled = false</code> ở cả hai
+  build type ⇒ JNA/Vosk không bị đổi tên.</li>
+<li><b>U14 nút ⇄</b>: chỉ icon <code>ic-swap</code> 20 dp màu MUT, không nền/không viền; đích chạm vẫn
+  <code>TOUCH × SLOT_HEAD_CLEAR</code>; dải nền ở <code>strip()</code> giữ nguyên (nó che caption của cửa sổ freeform —
+  chức năng, không phải trang trí). Hai bài canh đã đổi câu hỏi đúng chiều, không mất phạm vi.</li>
+</ul>
+
+<p class="muted">⚠ <b>Số hiệu bản build</b> (CLAUDE.md §9): 1.49 (50) <b>chưa đăng kênh OTA và chưa giao cho owner</b> (<code>apk/</code> vẫn là 1.48) ⇒ không bump ở lượt soát này. Nhưng mọi số đo <b>V-emu</b> ở §6 lấy trên bản build <b>TRƯỚC</b> bảy bản vá này — phải <b>dựng lại APK</b> trước khi giao, và đo lại phiên nghe trên bản mới dựng nếu muốn giữ nhãn [ĐO].</p>
+
+<p><b>Verdict Pass 2: APPROVED</b> — scope R9–R14 đủ, 0 test đỏ, không còn phát hiện [P0]–[P2] nào chưa vá.
+Còn lại đúng một cổng thật: <b>T18 — đo trên xe</b> (độ chính xác giọng thật + tiếng ồn, CPU/RAM một phiên, độ trễ lần
+nói đầu, và ca “phím vô-lăng lúc đang chiếu app trong ô”).</p>
 
 <h3>Pass 1 — 2026-09-14 <span class="pill ok">đã vá + chạy lại xanh</span></h3>
 <p class="muted">Senior review theo CLAUDE.md §5 (phạm vi: toàn bộ thay đổi chưa commit của V1 pha off-car).

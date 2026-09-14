@@ -370,6 +370,7 @@
     <string name="kachi_key_target_assist">Trợ lý mặc định hệ thống</string>
     <string name="kachi_key_target_gemini">Trợ lý qua phím cứng (Gemini · 231)</string>
     <string name="kachi_key_target_recognizer">Nhận dạng giọng nói</string>
+    <string name="kachi_key_target_kachi_voice">Kachi nghe (tại máy)</string>
 
     <!-- ── IA v2 nhóm 8 — Tiện nghi xe (SettingsCarSection): ghế + bụi mịn nhận từ màn ClusterNav ── -->
     <string name="kachi_sub_seat">Ghế mát / sưởi</string>
@@ -445,7 +446,7 @@
 
     <!-- ══ V1 · đường thử lệnh bằng CHỮ (docs/specs/kachi-voice-command.html R6) ═════════════════════ -->
     <string name="kachi_voice_title">Gõ lệnh chữ (thử giọng nói)</string>
-    <string name="kachi_voice_note">Chưa có micro: phần NGHE còn chờ số đo trên xe. Gõ câu đúng như khi nói — ví dụ: “bật đèn đọc”, “đặt nhiệt độ 22”, “đóng hết kính”, “xem pin”, “mở Cài đặt”.</string>
+    <string name="kachi_voice_note">Gõ câu đúng như khi nói, để đo xem máy hiểu gì — ví dụ: “bật đèn đọc”, “đặt nhiệt độ 22”, “đóng hết kính”, “xem pin”, “mở Cài đặt”. Muốn NÓI thì dùng ô “Nói với xe” trên thanh nút hoặc nút mic ở thanh trên.</string>
     <string name="kachi_voice_hint">Nói gì với xe…</string>
     <string name="kachi_voice_run">Chạy câu lệnh</string>
     <string name="kachi_voice_idle">Chưa chạy câu nào.</string>
@@ -453,4 +454,35 @@
     <string name="kachi_voice_confirm_title">Xác nhận</string>
     <string name="kachi_voice_confirm_yes">Đồng ý</string>
     <string name="kachi_voice_confirm_no">Huỷ</string>
+    <!-- ═══ V1 pha NGHE (R9–R14) — phiên nói, mô hình tại máy, đường thử WAV ═══ -->
+    <string name="kachi_voice_listening">Đang nghe…</string>
+    <string name="kachi_voice_preparing">Đang chuẩn bị…</string>
+    <string name="kachi_voice_heard">Đã nghe</string>
+    <string name="kachi_voice_cancel_hint">Chạm ra ngoài hoặc bấm Back để huỷ</string>
+    <string name="kachi_voice_no_mic">Chưa có quyền micro</string>
+    <string name="kachi_voice_no_model">Chưa tải mô hình nhận dạng</string>
+    <string name="kachi_voice_engine_failed">Bộ nhận dạng không khởi động được</string>
+    <string name="kachi_voice_nothing_heard">Không nghe rõ</string>
+    <string name="kachi_voice_open_settings">Mở Cài đặt</string>
+    <string name="kachi_voice_listen_not_here">Phiên nghe mở ở màn chính (ô “Nói với xe” hoặc nút mic trên thanh trên), không mở từ ô thử này.</string>
+    <string name="kachi_voice_model_title">Nhận dạng giọng nói (tại máy)</string>
+    <string name="kachi_voice_model_absent">Chưa cài. Cần tải mô hình tiếng Việt %1$s một lần; sau đó tiếng nói được nhận dạng ngay trên xe, không gửi ra mạng.</string>
+    <string name="kachi_voice_model_ready">Đã cài %1$s · %2$d từ · %3$s trên đĩa</string>
+    <string name="kachi_voice_model_get">Tải mô hình tiếng Việt</string>
+    <string name="kachi_voice_model_remove">Gỡ mô hình</string>
+    <string name="kachi_voice_model_working">Đang làm…</string>
+    <string name="kachi_voice_model_downloading">Đang tải… %1$d%%</string>
+    <string name="kachi_voice_model_downloading_unknown">Đang tải…</string>
+    <string name="kachi_voice_model_verifying">Đang kiểm gói (sha256)…</string>
+    <string name="kachi_voice_model_extracting">Đang giải nén…</string>
+    <string name="kachi_voice_model_failed">Hỏng: %1$s</string>
+    <string name="kachi_voice_wav_try">Nhận dạng tệp WAV thử</string>
+    <string name="kachi_voice_wav_running">Đang nhận dạng tệp thử…</string>
+    <string name="kachi_voice_wav_heard">WAV nghe được: %1$s</string>
+    <string name="kachi_voice_wav_nothing">Không nghe ra chữ nào trong %1$s</string>
+    <string name="kachi_voice_wav_failed">Không chạy được: %1$s</string>
+    <string name="kachi_voice_wav_where">Đặt tệp kachi-voice-test.wav (16 kHz · 1 kênh · PCM 16-bit) ở một trong: %1$s</string>
+    <string name="kachi_pill_voice">Nói với xe</string>
+    <string name="kachi_voice_pill_title">Nút mic trên thanh trạng thái</string>
+    <string name="kachi_voice_pill_sub">Nói nhanh một câu lệnh, cạnh Ứng dụng và Cài đặt</string>
 </resources>

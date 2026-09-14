@@ -72,13 +72,56 @@ class LauncherI18nContractTest {
                 "mà KHÔNG có gì báo lỗi. Xem KDoc `HomeUiState.DEFAULT_PROFILE`",
     )
 
+    /**
+     * ═══ CHUỖI CHẨN ĐOÁN CHO NGƯỜI PHÁT TRIỂN — nhận ra bằng **cấu trúc**, không bằng danh sách tay ═════════
+     *
+     * V1 pha NGHE thêm sáu tệp `Voice*` với ~44 dòng nhật ký/ngoại lệ tiếng Việt. Chép cả 44 mảnh vào [allowed]
+     * là làm danh sách ấy phình gấp bốn cho một nhóm tệp duy nhất — và mỗi mục sẽ mang đúng một lý do:
+     * *"nhật ký (Log.w) — không hiện trên màn"*, y hệt 10 mục đã có ở đó. Khi một danh sách-kèm-lý-do bắt đầu
+     * lặp lại cùng một lý do thì lý do ấy là một **LUẬT**, và luật thì phải viết thành mã.
+     *
+     * Bốn cấu trúc dưới đây **không bao giờ** là chữ trên màn:
+     *  • `Log.*` — nhật ký; dự án cố ý KHÔNG dịch nó (xem KDoc `PermissionReport.logLine`: hai lần đo phải so
+     *    được với nhau, nên log của máy tiếng Anh và máy tiếng Việt phải giống hệt);
+     *  • `throw …(` / `error(` / `require(` / `check(` — thông điệp ngoại lệ, cũng là nhật ký;
+     *  • `Lang.t(vi, en)` — **đã** là cặp song ngữ; đó chính là cơ chế mà bài này đòi, nên bắt nó là bắt nhầm.
+     *
+     * Phép nhận có tính tới lời gọi **nhiều dòng**: đếm ngoặc để biết lời gọi kết thúc ở đâu, thay vì chỉ soi
+     * đúng dòng mang dấu hiệu (bản soi-một-dòng bỏ lọt mọi `Lang.t(` xuống dòng — tức mở một lỗ im lặng).
+     */
+    private val DIAGNOSTIC_CALL = Regex("""(\bLog\.[a-z]+\(|\bthrow \w+\(|\berror\(|\brequire\(|\bcheck\(|\bLang\.t\()""")
+
+    /** Chỉ số dòng nằm TRONG một lời gọi chẩn đoán (kể cả phần xuống dòng của nó). */
+    private fun diagnosticLines(src: String): Set<Int> {
+        val out = HashSet<Int>()
+        var depth = 0
+        src.lines().forEachIndexed { i, line ->
+            if (depth > 0) {
+                out.add(i)
+                depth += line.count { it == '(' } - line.count { it == ')' }
+                if (depth < 0) depth = 0
+            } else if (DIAGNOSTIC_CALL.containsMatchIn(line)) {
+                out.add(i)
+                val start = DIAGNOSTIC_CALL.find(line)!!.range.last
+                depth = line.substring(start).let { t -> t.count { it == '(' } - t.count { it == ')' } }
+                if (depth < 0) depth = 0
+            }
+        }
+        return out
+    }
+
     @Test
     fun `0 chuoi tieng Viet viet cung trong tang ve launcher`() {
         val offenders = mutableListOf<String>()
         launcherSources().forEach { f ->
-            literals(code(f)).forEach { lit ->
-                if (VN.containsMatchIn(lit) && allowed.keys.none { it in lit }) {
-                    offenders += "${f.fileName}: \"$lit\""
+            val src = code(f)
+            val diag = diagnosticLines(src)
+            src.lines().forEachIndexed { i, line ->
+                if (i in diag) return@forEachIndexed
+                literals(line).forEach { lit ->
+                    if (VN.containsMatchIn(lit) && allowed.keys.none { it in lit }) {
+                        offenders += "${f.fileName}: \"$lit\""
+                    }
                 }
             }
         }
@@ -314,8 +357,9 @@ class LauncherI18nContractTest {
         // Mã icon tra trong `KachiTheme.iconRes` — định danh tài nguyên, không phải chữ cho người đọc.
         // S4 · R12 thêm `ic-apps`/`ic-settings`: hai pill của thanh trên nay CHỈ có icon, và tên hình được truyền
         // thẳng vào `pill(...)` (chữ đã chuyển sang `contentDescription` lấy từ `R.string`).
+        // V1 pha NGHE thêm `ic-mic`: nút thứ ba của thanh trên, cùng khuôn chỉ-icon với hai nút kia.
         *listOf("ic-sun", "ic-grid", "ic-bolt", "ic-leaf", "ic-speed", "ic-tire", "ic-music", "ic-lock",
-            "ic-apps", "ic-settings")
+            "ic-apps", "ic-settings", "ic-mic")
             .map { it to "mã icon tra trong `KachiTheme.iconRes`, không phải chữ" }.toTypedArray(),
         // Ký hiệu đơn vị SI + tên chuẩn của chỉ số bụi — viết y hệt ở mọi ngôn ngữ, dịch là làm sai.
         *listOf("km/h", " km/h", " km", "µg", "µg · ", "µg/m³", "PM2.5 · ", "PM2.5 ")

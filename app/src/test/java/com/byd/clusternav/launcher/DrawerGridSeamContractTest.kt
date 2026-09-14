@@ -181,16 +181,15 @@ class DrawerGridSeamContractTest {
     // ══ (4) R-UI (f) — nút ⇄ nổi phải nhìn ra được ════════════════════════════════════════════════════════
 
     @Test
-    fun `nut swap noi vien 2dp`() {
-        // 2026-09-13: hình nút ⇄ dời về SlotSwapButton (dùng chung nhúng + freeform, SlotHeadParityContractTest) —
-        // viền vẫn phải là Sp.STROKE, chỉ đổi CHỖ khai.
+    fun `nut swap noi khong con vien - kin dao theo owner 2026-09-14`() {
+        // 2026-09-13: viền Sp.STROKE (2dp) từng là câu trả lời cho "ruột nút chỉ hơn nền 1.19:1". 2026-09-14 owner
+        // đảo chiều: *"nút switch app trên khung làm kín đáo, nhỏ gọn, không cần khung viền, border gì"* ⇒ hình là
+        // CHỈ icon nhỏ tô màu mờ; tách khỏi nền bằng chính nét icon, không bằng viền. Đích chạm 48dp không đổi
+        // (SlotHeadParityContractTest.`dich cham nut swap la TOUCH…`).
         val fn = SourceRoots.body(code("SlotSwapButton.kt"), "fun build(context: Context, onTap: () -> Unit): ImageView")
-        assertTrue(
-            fn.contains("setStroke(KachiTheme.dpi(context, Sp.STROKE)"),
-            "viền nút ⇄ phải là Sp.STROKE (2dp): ở 1dp [ĐO] ruột nút chỉ hơn nền ô 1.19:1, dưới mức 1.5:1 mà một " +
-                "đường phân giới cần để mắt tách được hình khỏi nền",
-        )
-        assertFalse(fn.contains("Sp.HAIRLINE"), "1dp là trị số vừa bị soát ảnh bác — không quay lại")
-        assertTrue(KachiSpace.STROKE > KachiSpace.HAIRLINE, "và STROKE phải thật sự dày hơn HAIRLINE")
+        assertFalse(fn.contains("setStroke("), "nút ⇄ không còn viền — owner 2026-09-14")
+        assertFalse(fn.contains("GradientDrawable.OVAL"), "nút ⇄ không còn nền oval — owner 2026-09-14")
+        assertTrue(fn.contains("background = null"), "nền phải TƯỜNG MINH là null, không để ImageView tự kế thừa nền nào")
+        assertTrue(fn.contains("KachiTheme.MUT"), "icon tô màu mờ (MUT) — kín đáo, không phải ON_ACCENT trắng nổi")
     }
 }

@@ -19,30 +19,29 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * lỗi ngẫu nhiên, mà là đường nào thắng lúc mở. Một bộ dựng ở đây ⇒ hai đường không thể lệch nhau nữa
  * (`SlotHeadParityContractTest` khoá).
  *
- * Hình: tròn [Sp.ICON_L], scrim [KachiTheme.SCRIM_BTN] + viền [Sp.STROKE] màu [KachiTheme.ON_ACCENT] (soát ảnh pha 2:
- * ruột chỉ hơn nền ô 1.19:1 ⇒ phải có viền 2dp mới tách khỏi nền), icon `ic-swap` tô [KachiTheme.ON_ACCENT]. Không
- * theo chủ đề — nó nằm trên pixel của app đang chiếu.
+ * Hình (2026-09-14, owner: "kín đáo, nhỏ gọn, không khung viền"): CHỈ icon `ic-swap` [Sp.ICON_S] tô [KachiTheme.MUT],
+ * không nền, không viền. Bản trước (tròn ICON_L + scrim + viền STROKE) nổi như một nút bấm giữa ô. Đích chạm vẫn
+ * TOUCH×SLOT_HEAD_CLEAR ở [centered]; ở [strip] dải nền màu KHUNG Ô vẫn giữ vì nó che caption của cửa sổ freeform
+ * (chức năng, không phải trang trí).
  */
 object SlotSwapButton {
 
-    /** Nút trần (chưa có cha) — [ICON_L]×[ICON_L]. */
+    /**
+     * Nút ⇄ KÍN ĐÁO — owner 2026-09-14: *"cái nút switch app trên khung làm kín đáo, nhỏ gọn, không cần khung viền,
+     * border gì"*. Trước: icon 32dp trên nền oval SCRIM_BTN + viền STROKE trắng — nổi như một nút bấm giữa ô. Nay:
+     * **chỉ icon** [Sp.ICON_S] tô màu MUT (mờ), không nền, không viền. Đích chạm KHÔNG đổi (khung TOUCH×SLOT_HEAD_CLEAR
+     * ở [centered]) — nhỏ là hình, không phải chỗ bấm.
+     */
     fun build(context: Context, onTap: () -> Unit): ImageView = ImageView(context).apply {
         val r = KachiTheme.iconRes("ic-swap")
-        if (r != 0) { setImageResource(r); setColorFilter(Color.parseColor(KachiTheme.ON_ACCENT)) }
-        setPadding(KachiTheme.dpi(context, Sp.S), KachiTheme.dpi(context, Sp.S), KachiTheme.dpi(context, Sp.S), KachiTheme.dpi(context, Sp.S))
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL; setColor(Color.parseColor(KachiTheme.SCRIM_BTN))
-            setStroke(KachiTheme.dpi(context, Sp.STROKE), Color.parseColor(KachiTheme.ON_ACCENT))
-        }
+        if (r != 0) { setImageResource(r); setColorFilter(Color.parseColor(KachiTheme.MUT)) }
+        scaleType = ImageView.ScaleType.FIT_CENTER
+        background = null
         setOnClickListener { onTap() }
     }
 
-    /**
-     * Nút đặt trong một khung TRONG SUỐT, canh giữa trên cùng, cách mép trên [Sp.XS] — đúng hình học mà
-     * [WorkspaceView.slotHead] đã được owner duyệt bằng ảnh. Khung cao [Sp.SLOT_HEAD_CLEAR] (= XS + ICON_L + XS).
-     */
     fun centered(context: Context, onTap: () -> Unit): FrameLayout = FrameLayout(context).apply {
-        // Đích chạm: nút VẼ 32dp (hình đã duyệt) nhưng vùng CHẠM là khung TOUCH×SLOT_HEAD_CLEAR quanh nó — soát ảnh
+        // Đích chạm: hình VẼ 20dp nhưng vùng CHẠM là khung TOUCH×SLOT_HEAD_CLEAR quanh nó — soát ảnh
         // v2 [ĐO] ⌀48px = 32dp < 48dp. Khung trong suốt nhận chạm, nút bên trong không nhận (clickable=false) để một
         // cú chạm không rơi vào hai lớp.
         val visual = build(context) {}.apply { isClickable = false; isFocusable = false }
@@ -51,8 +50,8 @@ object SlotSwapButton {
             setOnClickListener { onTap() }
             addView(
                 visual,
-                FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.ICON_L), KachiTheme.dpi(context, Sp.ICON_L), Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-                    .also { it.topMargin = KachiTheme.dpi(context, Sp.XS) },
+                // Hình 20dp ([Sp.ICON_S]) canh giữa theo cả hai chiều trong khung chạm — nhỏ gọn, không viền (owner 2026-09-14).
+                FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.ICON_S), KachiTheme.dpi(context, Sp.ICON_S), Gravity.CENTER),
             )
         }
         addView(

@@ -25,8 +25,13 @@ import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
  */
 object VoiceIntentParser {
 
-    /** Liên từ nối hai lệnh trong một câu ([ĐO] RE Kiki §7c #42: *"… và …"* là tính năng hạng nhất). */
-    private val CONNECTORS = setOf("va", "roi", "and", "then")
+    /**
+     * Liên từ nối hai lệnh trong một câu ([ĐO] RE Kiki §7c #42: *"… và …"* là tính năng hạng nhất).
+     *
+     * `internal` từ pha NGHE: [VoicePhrases] phải khai bốn từ này với bộ nhận dạng, nếu không thì câu ghép
+     * **nghe** được từng vế mà mất đúng cái từ nối chúng. Đọc lại ở đây thay vì chép sang đó — chép là để lệch.
+     */
+    internal val CONNECTORS = setOf("va", "roi", "and", "then")
 
     /**
      * Phân tích một câu, trả về **danh sách** ý định theo đúng thứ tự nói (R3).

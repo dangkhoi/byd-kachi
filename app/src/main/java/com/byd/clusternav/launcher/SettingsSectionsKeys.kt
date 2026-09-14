@@ -258,7 +258,7 @@ class SettingsKeysSection(
         targets.firstOrNull { it.spec == spec }?.let { targetOptionLabel(it, targets) } ?: spec
 
     /**
-     * Tên ba mục đặc biệt, tra theo **THỨ TỰ KHAI** của `ClusterNavBridge.targetOptions()` chứ không so chuỗi
+     * Tên các mục đặc biệt (ba mục cũ + *"Kachi nghe"* của V1 pha NGHE), tra theo **THỨ TỰ KHAI** của `ClusterNavBridge.targetOptions()` chứ không so chuỗi
      * `"__ASSIST__"`.
      *
      * ## Vì sao không so chuỗi
@@ -274,6 +274,7 @@ class SettingsKeysSection(
             0 -> context.getString(R.string.kachi_key_target_assist)
             1 -> context.getString(R.string.kachi_key_target_gemini)
             2 -> context.getString(R.string.kachi_key_target_recognizer)
+            3 -> context.getString(R.string.kachi_key_target_kachi_voice)
             else -> spec
         }
     }

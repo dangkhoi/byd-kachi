@@ -243,9 +243,27 @@ object LauncherRequirements {
         userActionEn = "Press the HOME button, then pick Kachi in the system chooser",
     )
 
+    /**
+     * V1 pha NGHE — **micro**. Quyền RUNTIME, nhưng cấp được y như ba quyền kiểu ADB kia: `pm grant` qua kênh
+     * dadb loopback (uid shell) ⇒ [FixBy.SELF], không phải hộp hỏi quyền.
+     *
+     * ## Vì sao KHÔNG phải `coreFeature`
+     * Thiếu micro thì Kachi **vẫn là một launcher đầy đủ**: mọi nút vẫn bấm được, mọi app vẫn vào ô. Chỉ mất một
+     * lối tắt. Gắn `coreFeature = true` sẽ làm toast ở màn chính nổ trên mọi đầu xe không có micro (và trên máy
+     * ảo) — đúng loại nhiễu mà vòng kiểm P8 sinh ra để dọn (xem KDoc `PermissionPreflight.noticeShown`).
+     */
+    val MICROPHONE = LauncherRequirement(
+        id = "microphone",
+        label = "Micro",
+        losesWhatIfMissing = "không nói được với xe (ô \"Nói với xe\" và nút mic)",
+        fixBy = FixBy.SELF,
+        labelEn = "Microphone",
+        losesWhatIfMissingEn = "you cannot talk to the car (the \"Talk to car\" tile and the mic button)",
+    )
+
     /** Thứ tự khai = thứ tự hiện cho người dùng. */
     val ALL: List<LauncherRequirement> = listOf(
-        SHELL_CHANNEL, FREEFORM, DEFAULT_HOME, OVERLAY, NOTIFICATION_LISTENER, ACCESSIBILITY,
+        SHELL_CHANNEL, FREEFORM, DEFAULT_HOME, OVERLAY, NOTIFICATION_LISTENER, ACCESSIBILITY, MICROPHONE,
     )
 
     fun byId(id: String): LauncherRequirement? = ALL.firstOrNull { it.id == id }

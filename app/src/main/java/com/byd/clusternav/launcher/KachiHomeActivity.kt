@@ -15,10 +15,9 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.AppContainer
-import kotlinx.coroutines.launch
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.voice.VoiceModelStore
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -73,7 +72,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // V1 · R6 — hai đường mà đường thử lệnh bằng chữ dùng; CÙNG lambda với thanh nút và ngăn kéo.
             openAppList = { drawerController.openAppList() },
             openAppByPackage = { pkg -> appOpener.openByIntent(pkg) },
-            onPanelsChanged = { windows.updateOverlayHeads() },   // nút ⇄ nổi ẩn khi Cài đặt/bảng vẽ mở
+            // Lớp phủ đóng/mở ⇒ nút ⇄ nổi ẩn đi, và nút mic soi lại điều kiện ([KachiTopStrip.refreshVoicePill]:
+            // mô hình có thể vừa tải xong / công tắc vừa gạt, ngay trong màn Cài đặt vừa đóng).
+            onPanelsChanged = { windows.updateOverlayHeads(); topStrip.refreshVoicePill() },
         )
     }
 
@@ -101,6 +102,40 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     /** T4 — chủ DUY NHẤT của widget Android bên thứ ba (host + id + bind-grant). Xem `AppWidgetSlotHost`. */
     private val appWidgets by lazy { AppWidgetSlotHost(this, { shell }, { submitBg(it) }, { drawerController.say(it) }) }
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
+
+    /**
+     * Glue intent theo-ô (gắn app/widget · mở · xoá · đổi chỗ) — thân ở [KachiHomeSlots] (trần 500 dòng). Nhận
+     * `windows`/`drawerController` qua lambda: chúng `lateinit`, chỉ có sau khi `onCreate` dựng xong.
+     */
+    private val slots: KachiHomeSlots by lazy {
+        KachiHomeSlots(
+            viewModel = viewModel,
+            container = container,
+            windows = { windows },
+            drawer = { drawerController },
+            appOpener = appOpener,
+            shell = { shell },
+            submitBg = { block -> submitBg(block) },
+        )
+    }
+
+    /**
+     * V1 pha NGHE — MỘT phiên nghe cho cả ba lối vào; khối nối dây ở [voiceSession] (trần 500 dòng).
+     *
+     * Giữ chính `Lazy` (không chỉ giá trị) để [onDestroy] hỏi được `isInitialized()`: chạm vào `voice` ở đó khi
+     * chưa ai mở phiên nào sẽ **dựng** một phiên ngay lúc màn đang chết — thứ chỉ để rồi vứt đi.
+     */
+    private val voiceLazy = lazy {
+        voiceSession(
+            state = { viewModel.uiState.value },
+            openAppList = { drawerController.openAppList() },
+            openSettings = { panels.openSettings() },
+            onSwitchProfile = { name -> viewModel.switchProfile(name) },
+            openPermissions = { panels.openSettings(SettingsGroup.SYSTEM) },
+        )
+    }
+    private val voice: com.byd.clusternav.launcher.voice.VoiceSession by voiceLazy
+
     /**
      * Lựa chọn đang hiệu lực — **đọc từ nguồn sự thật duy nhất** ([HomeViewModel.uiState]), KHÔNG giữ bản sao.
      *
@@ -157,6 +192,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // Cài đặt › Hồ sơ tài xế bằng đúng đường mở Cài đặt đã có, không mở đường thứ hai.
             onProfileTap = { profileChip.picker { panels.openSettings(SettingsGroup.PROFILES) } },
             onOpenAppList = { drawerController.openAppList() },   // U3: mở app toàn màn (không gắn ô)
+            onVoice = { voice.start() },                         // V1 pha NGHE — cùng lambda với ô *Nói với xe*
+            voicePillEnabled = { Prefs.voiceMicPill(this) && VoiceModelStore.isReady(this) },
         )
 
         val content = LinearLayout(this).apply {
@@ -174,9 +211,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // đã chọn (vd psi) sẽ phải chịu thêm một lượt dựng lại ô widget mỗi lần mở HOME mà không được gì.
             setUnitPrefs(unitPrefs)
             onSlotTap = { drawerController.open(it) }
-            onSlotClear = { clearSlot(it) }
-            onSlotSwap = { a, b -> swapSlots(a, b) }
-            onAppOpen = { reopenApp(it) }
+            onSlotClear = { slots.clearSlot(it) }
+            onSlotSwap = { a, b -> slots.swapSlots(a, b) }
+            onAppOpen = { slots.reopenApp(it) }
         }
         windows = LauncherWindows(
             this, workspace, winExec,
@@ -186,7 +223,12 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onSlotSwap = { drawerController.open(it) },
         )
         // S4 · R12 — ô loại LAUNCHER trên thanh nút đi ĐÚNG hai đường của thanh trên (xem [Activity.controlDock]).
-        dock = controlDock(container.carControl, { drawerController.openAppList() }, { panels.openSettings() })
+        dock = controlDock(
+            container.carControl,
+            { drawerController.openAppList() },
+            { panels.openSettings() },
+            { voice.start() },
+        )
 
         mainArea = LinearLayout(this)
         DockAreaLayout.apply(mainArea, workspace, dock, viewModel.uiState.value.dock, resources.displayMetrics.density)
@@ -203,34 +245,17 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             currentWidgets = { (viewModel.uiState.value.slots.getOrNull(it) as? SlotContent.Widget)?.ids ?: emptyList() },
             onClearOverlays = { windows.clearOverlays() },
             onOverlayHeads = { windows.updateOverlayHeads() },
-            onPickApp = { idx, pkg -> assignApp(idx, pkg) },
-            onPickWidgets = { idx, ids -> assignWidgets(idx, ids) },
-            onOpenApp = { pkg -> openAppFullscreen(pkg) },                        // U3
+            onPickApp = { idx, pkg -> slots.assignApp(idx, pkg) },
+            onPickWidgets = { idx, ids -> slots.assignWidgets(idx, ids) },
+            onOpenApp = { pkg -> slots.openAppFullscreen(pkg) },                        // U3
             recentApps = { container.workspaceRepository.recentApps() },
             appWidgetPicks = { idx ->        // T4: ràng buộc xong mới ghi vào ô; thất bại ⇒ bảng tự nói, ô không đổi
                 appWidgets.picks { i -> appWidgets.bind(i) { c -> c?.let { drawerController.close(); viewModel.assignAppWidget(idx, it) } } }
             },
         )
 
-        // Thu NGUỒN SỰ THẬT: mọi thay đổi state → render (view-only). repeatOnLifecycle huỷ khi < STARTED.
-        lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { render(it) }
-            }
-        }
-
-        // Thu TRẠNG THÁI XE LIVE: poll 2 nhịp (start khi STARTED, stop khi < STARTED) → bơm vào VM (một chiều) →
-        // uiState.carStatus đổi → render → widget/chip cập nhật. Off-car mọi field null ⇒ "—".
-        lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                container.carStatusRepository.start()
-                try {
-                    container.carStatusRepository.status.collect { viewModel.setCarStatus(it) }
-                } finally {
-                    container.carStatusRepository.stop()
-                }
-            }
-        }
+        // Hai vòng thu (state của VM + trạng thái xe LIVE) — thân ở [collectHome] (trần 500 dòng).
+        collectHome(this, viewModel, container) { render(it) }
 
         // Nối shell dadb (localhost:5555) nền → ShellAppLauncher reflow như xe; dispatcher + ShellTransport + daemon do AppContainer sở hữu.
         val dadb = DadbShell(this)
@@ -273,12 +298,14 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // S3 — hai việc chuyển từ màn cũ (đã gỡ 2026-09-13); thân hàm ở [KachiHomeWiring].
         maybeShowDisclaimer()
         openSettingsGroup(intent, panels)
+        startVoiceIfRequested(intent, voice)
     }
 
     /** `singleTask` ⇒ lời gọi thứ hai về ĐÂY, không phải [onCreate] (bấm bong bóng khi Kachi đang mở sẵn). */
     override fun onNewIntent(intent: android.content.Intent?) {
         super.onNewIntent(intent)
         openSettingsGroup(intent, panels)
+        startVoiceIfRequested(intent, voice)
     }
 
     /**
@@ -329,62 +356,6 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         windows.updateOverlayHeads()
     }
 
-    // ── Glue intent theo-ô: intent VM (state+persist, một chiều) + side-effect cửa sổ (registry + windows) ──
-    private fun assignApp(index: Int, pkg: String) {
-        drawerController.close()
-        val prev = viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App
-        viewModel.assignApp(index, pkg)                                       // state+persist → collector: workspace.render
-        val d = container.windowDispatcher
-        if (prev != null && prev.pkg != pkg) d.remove(prev.pkg)               // ô thay app khác → gỡ app cũ khỏi registry
-        d.place(pkg, 0, index)                                                // app mới chiếm ô index trên display 0
-        windows.placeApp(pkg, index, fresh = true)
-    }
-
-    private fun assignWidgets(index: Int, ids: List<String>) {
-        drawerController.close()
-        viewModel.assignWidgets(index, ids)   // state+persist → collector: workspace.render
-    }
-
-    private fun reopenApp(index: Int) {
-        (viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App)?.let { windows.placeApp(it.pkg, index) }
-    }
-
-    /**
-     * U3 — mở [pkg] **toàn màn** (đường "mở app kiểu thường"): KHÔNG ghi vào ô, KHÔNG đổi bố cục đã lưu, KHÔNG ghi
-     * sổ vị trí ô. Bấm HOME là về Kachi (Kachi là HOME).
-     *
-     * Thứ tự do SỐ ĐO quyết định (xem bảng ở [AppOpener]): thử **đường API** trên thread chính trước (đo được là
-     * tốt bằng-hoặc-hơn); chỉ khi nó thất bại mới dùng **đường shell** trên thread nền (dadb chặn).
-     * Ghi nhận "gần đây" trước để lần mở ngăn kéo sau đã thấy.
-     */
-    private fun openAppFullscreen(pkg: String) {
-        drawerController.close()
-        runCatching { container.workspaceRepository.touchRecentApp(pkg) }
-        if (appOpener.openByIntent(pkg)) return
-        val sh = shell ?: return
-        submitBg { appOpener.openByShell(pkg, sh) }
-    }
-
-    private fun clearSlot(index: Int) {
-        val cur = viewModel.uiState.value
-        (cur.slots.getOrNull(index) as? SlotContent.App)?.let { app ->
-            windows.closeApp(app.pkg)
-            container.windowDispatcher.remove(app.pkg)   // ô đóng → gỡ vị trí (bất biến MỘT-VỊ-TRÍ)
-        }
-        viewModel.clearSlot(index)   // state+persist → collector: workspace.render + updateOverlayHeads
-    }
-
-    /** Kéo-thả đổi chỗ 2 ô (widget/app). */
-    private fun swapSlots(a: Int, b: Int) {
-        val cur = viewModel.uiState.value
-        if (a !in cur.slots.indices || b !in cur.slots.indices) return
-        viewModel.swapSlots(a, b)   // state+persist → collector: workspace.render
-        val ns = viewModel.uiState.value
-        val d = container.windowDispatcher   // 2 ô đổi chỗ → cập nhật lại index vị trí của app (nếu có) ở mỗi ô
-        (ns.slots.getOrNull(a) as? SlotContent.App)?.let { d.place(it.pkg, 0, a) }
-        (ns.slots.getOrNull(b) as? SlotContent.App)?.let { d.place(it.pkg, 0, b) }
-    }
-
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
         // [SOÁT P3] Bảng vẽ bố cục từng bị bỏ sót ở đây: mở nó ra rồi bấm Back là **không có gì xảy ra** (Back của
@@ -424,6 +395,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onResume() {
         super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         goImmersive(); topStrip.updateClock(); wallpaper.reload(); handler.post(tick); ensureCastBubble(bridge)
+        topStrip.refreshVoicePill()   // V1 pha NGHE: mô hình có thể vừa được tải/gỡ ở một màn khác
         // [SOÁT P2-4] Runnable CÓ TÊN để `onDestroy` gỡ được. Trước đây là lambda vô danh nên không có cách nào
         // huỷ, mà nó lại dựng cửa sổ overlay ⇒ chạy sau khi màn chết là giữ view + giữ activity.
         workspace.removeCallbacks(overlayHeadsKick)
@@ -458,6 +430,11 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // cùng activity. Không đóng ở đây thì cửa sổ đó sống tiếp (rò rỉ view + giữ activity), và một cái chạm vào
         // nó sẽ chạy vào `winExec` ĐÃ shutdown (RejectedExecutionException) hoặc mở activity từ activity đã huỷ.
         drawerController.close()
+        // [SOÁT Pass 2 · P1] Tấm chữ của phiên nghe là **cùng loại cửa sổ** với ngăn kéo ngay trên
+        // (`TYPE_APPLICATION_OVERLAY`) ⇒ cùng lý do: không đóng tay thì nó sống tiếp sau khi màn chết, ăn mọi cú
+        // chạm toàn màn, và giữ cả micro đang mở lẫn một `VoiceDispatcher` trỏ vào activity đã huỷ.
+        // Hỏi `isInitialized` để không DỰNG một phiên nghe ngay lúc đang huỷ màn (xem KDoc [voiceLazy]).
+        if (voiceLazy.isInitialized()) voice.stop()
         // [SOÁT S1 · P3] `HomePanels.closeAll()` tự nhận là "gọi lúc huỷ màn (lớp phủ giữ view là giữ activity)"
         // nhưng [ĐO] nó KHÔNG có chỗ gọi nào — mã chết + một câu KDoc nói sai. Nối vào đây: màn Cài đặt giữ 7 trang
         // đã dựng (trang "Màn hình chính" một mình là 187 ô) nên nhả sớm là việc đúng, và từ nay câu KDoc thành thật.

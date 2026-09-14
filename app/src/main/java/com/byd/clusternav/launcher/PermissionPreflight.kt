@@ -64,6 +64,7 @@ object PermissionPreflight {
                 LauncherRequirements.FREEFORM.id -> freeformEnabled(ctx)
                 LauncherRequirements.SHELL_CHANNEL.id -> shellUsable
                 LauncherRequirements.DEFAULT_HOME.id -> isDefaultHome(ctx)
+                LauncherRequirements.MICROPHONE.id -> micGranted(ctx)
                 else -> null
             }
         }
@@ -96,6 +97,10 @@ object PermissionPreflight {
         LauncherRequirements.NOTIFICATION_LISTENER.id ->
             "cmd notification allow_listener ${flat(NavNotificationListener::class.java.name)}"
         LauncherRequirements.OVERLAY.id -> "appops set $PKG SYSTEM_ALERT_WINDOW allow"
+        // V1 pha NGHE — quyền RUNTIME, nhưng `pm grant` từ uid shell cấp được mà không cần hộp hỏi quyền. Đây là
+        // ĐÚNG đường mà máy ảo cũng dùng (`adb shell pm grant com.byd.launcher android.permission.RECORD_AUDIO`),
+        // nên thứ chạy trên bàn và thứ chạy trên xe là một câu lệnh, không phải hai.
+        LauncherRequirements.MICROPHONE.id -> "pm grant $PKG android.permission.RECORD_AUDIO"
         // ⚠ FREEFORM cố ý KHÔNG có lệnh ở đây. Cờ cửa sổ tự do là **trạng thái BỀN**, và dự án có luật
         // **một-nơi-ghi-duy-nhất** (`FreeformSeedPolicy` ở `:core system/`); phía launcher KHÔNG được ghi trực tiếp.
         // Guard `PersistentWindowStateWriterGuardTest` đã bắt đúng lúc tôi viết lệnh thô vào đây.
@@ -188,6 +193,18 @@ object PermissionPreflight {
 
     /** Bọc `runCatching`: [ĐO] có ROM thiếu hẳn API này (code cũ đã bọc vì lý do đó). */
     private fun overlayGranted(ctx: Context): Boolean? = runCatching { Settings.canDrawOverlays(ctx) }.getOrNull()
+
+    /**
+     * Quyền micro.
+     *
+     * `checkSelfPermission` là API của `Context`, luôn có từ API 23 ⇒ khác với năm mục kia, ca *"không đọc
+     * được"* ở đây không tồn tại. Vẫn bọc `runCatching` cho đồng nhất với cả nhóm (và với ROM đã từng thiếu API
+     * ở những chỗ tưởng như chắc chắn — xem [overlayGranted]).
+     */
+    private fun micGranted(ctx: Context): Boolean? = runCatching {
+        ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    }.getOrNull()
 
     private fun freeformEnabled(ctx: Context): Boolean? = runCatching {
         Settings.Global.getInt(ctx.contentResolver, "enable_freeform_support", 0) == 1

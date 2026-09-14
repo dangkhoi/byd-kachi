@@ -57,7 +57,8 @@ class CapabilityCatalogTest {
      */
     @Test
     fun `hanh dong launcher la loai rieng - PROVEN, khong badge, khong linh vuc`() {
-        assertEquals(2, LauncherActions.ALL.size, "đúng hai hành động đầu tiên: Ứng dụng · Cài đặt")
+        // V1 pha NGHE (R12): +1 — *Nói với xe*. Con số ghim ở đây là bản kê "launcher làm được mấy việc\n        // KHÔNG chạm vào xe"; thêm một việc mà không đọc lại bốn tính chất dưới là cách để một ô mới lọt lên\n        // chip 24dp hoặc mang dấu cảnh báo nói sai.
+        assertEquals(3, LauncherActions.ALL.size, "ba hành động: Ứng dụng · Cài đặt · Nói với xe")
         LauncherActions.ALL.forEach { a ->
             assertEquals(CapabilityKind.LAUNCHER, CapabilityCatalog.kindOf(a.id), "${a.id} phải là loại LAUNCHER")
             assertFalse(CapabilityCatalog.isWrite(a.id), "KHÔNG được coi là hành động ghi vào XE")

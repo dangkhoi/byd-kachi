@@ -1,0 +1,20 @@
+<!-- U7 · bộ icon v2 — MICRO ("Nói với xe", V1 pha NGHE).
+     Ba khối của một micro cầm tay, cùng ngôn ngữ với `ic_music`/`ic_cast`: nét 1.6, đầu/khớp tròn, không tô.
+     LỀ QUANG HỌC (R3): hộp bao kể cả nửa nét là x 5.2–18.8 · y 2.3–21.7 ⇒ nằm gọn trong ô 20×20 (2..22), cạnh
+     lớn 19.4 ≥ 16 (R4). Micro là glyph CAO-HẸP: phủ gần hết chiều dọc là đúng tỉ lệ khối của nó, không phải tràn. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <!-- Thân micro: viên nang bo tròn hai đầu (y 3.1 → 15.1). -->
+    <path android:pathData="M9.2,5.9a2.8,2.8 0 0 1 5.6,0v6.4a2.8,2.8 0 0 1 -5.6,0z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <!-- Gọng đỡ: nửa cung ôm dưới thân. -->
+    <path android:pathData="M6,12.1L6,12.9A6,6 0 0 0 18,12.9L18,12.1"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <!-- Chân + đế. -->
+    <path android:pathData="M12,18.9L12,20.9M8.4,20.9L15.6,20.9"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

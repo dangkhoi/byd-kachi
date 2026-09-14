@@ -74,6 +74,15 @@ object VoiceSynonyms {
         "target_soc_set" to listOf("muc tieu sac", "gioi han phan tram sac"),
         "start_charging" to listOf("sac xe", "bat dau sac", "start charge"),
         "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now"),
+        // ── Pha NGHE (R10): nhãn có CHỮ VIẾT TẮT / CHỮ SỐ thì mô hình tiếng Việt không có từ để nghe ──
+        // [ĐO] 2026-09-14, từ điển `vosk-model-small-vn-0.4` (19.529 mục): `ev` · `hev` · `itac` · `avh` đều
+        // KHÔNG có mặt ⇒ ba nút này trước đó **gõ được mà không nói được**, và cái thiếu ấy im lặng. Thêm một
+        // cách gọi thuần Việt là cách sửa đúng: nó cũng là cách người ta nói ngoài đời, không phải một mẹo cho
+        // bộ nhận dạng. Bài canh `VoiceGrammarPhrasesTest.moi kha nang deu co it nhat mot cum noi duoc` đòi
+        // MỌI dòng registry phải có ít nhất một cụm nói được, nên thêm nhãn viết tắt mới là nó đỏ ngay.
+        "powertrain_mode" to listOf("che do dong co", "xang dien", "che do nang luong"),
+        "itac" to listOf("kiem soat mo men", "kiem soat luc keo"),
+        "avh" to listOf("giu phanh", "giu phanh tu dong"),
     )
 
     /** Cách nói thêm cho THÔNG TIN ĐỌC (`TelemetryRegistry`). */
@@ -88,6 +97,19 @@ object VoiceSynonyms {
         "tyre_p_fr" to listOf("ap suat lop truoc phai"),
         "tyre_p_rl" to listOf("ap suat lop sau trai"),
         "tyre_p_rr" to listOf("ap suat lop sau phai"),
+        // ── Pha NGHE (R10) — cùng lý do với khối cuối của [CONTROL]: nhãn mang `PM2.5` · `SOH` · `MCU` · `12V` ·
+        // `50km` · `%` · `drift`, mà mô hình tiếng Việt không có từ nào trong số đó. [ĐO] 2026-09-14.
+        // ⚠ `pm25_value` KHÔNG lấy cụm `"bui min"` — cụm ấy đã thuộc `pm25_level` (mức 0–3) ở trên; hai datum
+        // khác nhau mà cùng một cách gọi thì câu *"xem bụi mịn"* trở thành xổ số. `nong do` là chữ phân biệt
+        // đúng nghĩa: một bên là MỨC, bên kia là NỒNG ĐỘ µg/m³.
+        "pm25_value" to listOf("nong do bui min"),
+        "soh_oem" to listOf("suc khoe pin", "do chai pin"),
+        "charging_pct" to listOf("phan tram sac"),
+        "consumption_50km" to listOf("muc tieu thu", "tieu thu dien"),
+        "drift_mode" to listOf("che do truot"),
+        "mcu_status" to listOf("trang thai nguon"),
+        "volt_12v" to listOf("ac quy", "dien ap ac quy"),
+        "volt_12v_level" to listOf("muc ac quy"),
     )
 
     /** Cụm chỉ **loại đối tượng**, không chỉ một mã — dùng để gỡ nghĩa cho động từ quá tải (RE Kiki §7c: *"Mở"*). */
@@ -284,4 +306,22 @@ object VoiceGrammar {
      */
     fun matchAt(t: List<VoiceLexicon.Token>, i: Int, terms: List<VoiceTerm>): List<VoiceTerm> =
         terms.filter { VoiceLexicon.phraseAt(t, i, it.words) }
+
+    /**
+     * ═══ PHA NGHE · cùng danh mục này, nhưng viết cho **bộ nhận dạng** ════════════════════════════════════════
+     *
+     * [terms] trả từ vựng **đã bỏ dấu** để so khớp chữ; [phrases] trả cùng nội dung đó ở dạng **có dấu** mà mô
+     * hình nhận dạng hiểu được. Hai đầu ra, **một nguồn** (4 bộ đăng ký + [VoiceSynonyms] + danh sách động) — nên
+     * thêm một dòng registry là vừa gõ được vừa nói được, không phải sửa hai chỗ.
+     *
+     * Cách biến không-dấu thành có-dấu **không** phải một bảng chép tay: nó tra ngược qua chính từ điển của mô
+     * hình. Xem [VoicePhrases] — đó là chỗ giải thích đầy đủ, và là chỗ có bài canh.
+     *
+     * @param vocabulary từ điển mô hình ([VoskWordList.readOutputSymbols]).
+     */
+    fun phrases(
+        vocabulary: Set<String>,
+        profiles: List<String> = emptyList(),
+        apps: List<String> = emptyList(),
+    ): VoicePhraseSet = VoicePhrases.build(vocabulary, profiles, apps)
 }

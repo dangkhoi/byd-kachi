@@ -19,6 +19,13 @@ import org.junit.jupiter.api.Test
 class OpenAppWiringContractTest {
 
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
+
+    /**
+     * Glue intent theo-ô — **đã dời** khỏi màn chính sang [KachiHomeSlots] ở soát Pass 2 (2026-09-14) để màn chính
+     * về dưới trần 500 dòng (CLAUDE.md §4.1). Chỉ đổi CHỖ KHAI: tính chất mà hai bài dưới canh (đường API đi trước
+     * đường shell · mở toàn màn không chạm ô) giữ nguyên từng dòng, nên bài canh chỉ đổi tệp nó đọc.
+     */
+    private val slots by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeSlots.kt") }
     private val view by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
     private val windows by lazy { code("src/main/java/com/byd/clusternav/launcher/LauncherWindows.kt") }
     private val drawer by lazy { code("src/main/java/com/byd/clusternav/launcher/DrawerController.kt") }
@@ -85,7 +92,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `mo toan man KHONG ghi trang thai o va KHONG ghi so vi tri o`() {
-        val fn = SourceRoots.body(activity, "private fun openAppFullscreen(")
+        val fn = SourceRoots.body(slots, "fun openAppFullscreen(")
         assertTrue(fn.contains("appOpener.openByIntent("), "phải gọi đường API")
         assertTrue(fn.contains("touchRecentApp("), "phải ghi nhận app gần đây")
         listOf("viewModel.assignApp", "viewModel.setPreset", ".place(", "windows.placeApp").forEach {
@@ -95,7 +102,7 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `duong API di TRUOC duong shell (theo so do), va shell chay tren thread NEN`() {
-        val fn = SourceRoots.body(activity, "private fun openAppFullscreen(")
+        val fn = SourceRoots.body(slots, "fun openAppFullscreen(")
         val intentAt = fn.indexOf("appOpener.openByIntent(")
         val shellAt = fn.indexOf("appOpener.openByShell(")
         assertTrue(intentAt > 0 && shellAt > 0, "phải có cả hai đường")

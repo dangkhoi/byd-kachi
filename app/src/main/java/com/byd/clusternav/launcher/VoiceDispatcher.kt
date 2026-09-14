@@ -24,9 +24,14 @@ import com.byd.clusternav.navigation.NavApps
  * Dựng một đường riêng cho giọng nói là cách chắc chắn để hai bề mặt lệch nhau (ô "Đèn đọc" vẫn sáng sau khi nói
  * *"tắt đèn đọc"*) — đúng lỗi mà `ControlTileState.shared` sinh ra để chặn.
  *
- * ## KHÔNG có mic, KHÔNG có ASR, KHÔNG có TTS ở đây (R8)
- * Vào là **chữ**, ra là **chữ**. Tầng tiếng chờ số đo trên xe (playbook §2.14 + K1–K3, CLAUDE.md §14). Nhờ ranh
- * giới đó, mọi thứ trong tệp này kiểm được off-car và sẽ **không phải viết lại** khi tầng tiếng bật lên.
+ * ## Vào là **CHỮ**, và pha NGHE không đổi điều đó (R9–R14)
+ * Từ 1.49 Kachi đã nghe được (`launcher/voice/VoiceSession`), nhưng ranh giới giữ nguyên: micro và bộ nhận dạng
+ * nằm **trên** lớp này và chỉ đưa xuống một chuỗi chữ — đúng chuỗi mà ô *"Gõ lệnh chữ"* đưa xuống. Nhờ vậy lời
+ * hứa cũ thành hiện thực đúng như đã viết: tầng tiếng bật lên mà **không một dòng nào** trong tệp này phải viết
+ * lại, và mọi bài kiểm của nó vẫn chạy off-car.
+ *
+ * Ra vẫn là **chữ + âm báo**, chưa có TTS: giọng nói tiếng Việt tại máy còn [CHƯA BIẾT] trên xe này (spec §4.4).
+ * [VoiceIntent.Read.aloud] vẫn giữ sẵn ý định *"đọc to"* cho ngày đo xong.
  */
 class VoiceDispatcher(
     private val control: () -> CarControlPort,
@@ -38,6 +43,18 @@ class VoiceDispatcher(
     private val openAppList: () -> Unit,
     private val openSettings: () -> Unit,
     private val onSwitchProfile: (String) -> Unit,
+    /**
+     * V1 pha NGHE — mở một **phiên nghe** ([LauncherActions.VOICE]).
+     *
+     * ⚠ KHÔNG có giá trị mặc định, có chủ ý: mã `launcher_voice` đặt được lên thanh nút như mọi khả năng khác,
+     * nên một chỗ gọi quên nối sẽ cho ra một ô **bấm không ra gì** — đúng hình dạng `CastShell.evictVd` mà
+     * CLAUDE.md §8 nói tới, chỉ khác là lần này người dùng thấy nó trên màn hình. Bắt buộc truyền thì chỗ quên
+     * **không biên dịch được**.
+     *
+     * Từ trong một phiên nghe mà lại nói *"nói với xe"* thì đây là đường mở phiên tiếp theo; `VoiceSession` tự
+     * chặn phiên chồng phiên bằng chốt `running`, nên chỗ này không cần biết gì về điều đó.
+     */
+    private val onListen: () -> Unit,
     /**
      * Hỏi lại trước khi bắn ([VoiceRisk.CONFIRM]): `(câu hỏi, đồng ý, huỷ)`.
      *
@@ -185,6 +202,7 @@ class VoiceDispatcher(
         when (i.id) {
             LauncherActions.APPS -> openAppList()
             LauncherActions.SETTINGS -> openSettings()
+            LauncherActions.VOICE -> onListen()
             // Mã launcher tương lai mà bản này chưa biết: im lặng mở nhầm một màn còn tệ hơn nói thẳng là chưa có.
             else -> { say(VoiceReply.failed(i)); return }
         }

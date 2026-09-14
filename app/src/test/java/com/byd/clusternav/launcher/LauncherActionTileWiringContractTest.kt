@@ -83,27 +83,38 @@ class LauncherActionTileWiringContractTest {
     // ══ (3) Nối về ĐÚNG đường của thanh trên ══════════════════════════════════════════════════════════════
 
     @Test
-    fun `cu bam noi ve dung hai duong ma thanh tren dang dung`() {
+    fun `cu bam noi ve dung ba duong ma thanh tren dang dung`() {
         val fn = SourceRoots.body(wiring, "internal fun Activity.controlDock(")
         assertTrue(fn.contains("LauncherActions.APPS -> openAppList()"), "mã Ứng dụng phải mở ngăn kéo")
         assertTrue(fn.contains("LauncherActions.SETTINGS -> openSettings()"), "mã Cài đặt phải mở màn Cài đặt")
+        // V1 pha NGHE: mã thứ ba. Nó vào đây chứ không vào `ControlDockView` vì đúng lý do đã ghi ở KDoc
+        // `controlDock` — thanh nút là view thuần, nó biết "ô này loại LAUNCHER" nhưng không được biết
+        // "launcher_voice nghĩa là mở micro".
+        assertTrue(fn.contains("LauncherActions.VOICE -> onVoice()"), "mã Nói với xe phải mở phiên nghe")
         assertTrue(fn.contains("else -> Unit"), "mã launcher lạ ⇒ không làm gì; mở nhầm một màn còn khó hiểu hơn")
 
-        // Và Activity truyền vào ĐÚNG hai biểu thức mà thanh trên đang dùng — so từng chữ, vì đây chính là chỗ một
+        // Và Activity truyền vào ĐÚNG ba biểu thức mà thanh trên đang dùng — so từng chữ, vì đây chính là chỗ một
         // "đường thứ hai" (vd `startActivity(...)` riêng cho Cài đặt) sẽ len vào mà không ai thấy.
-        assertTrue(
-            activity.contains("controlDock(container.carControl, { drawerController.openAppList() }, " +
-                "{ panels.openSettings() })"),
-            "thanh nút phải nhận CHÍNH hai lambda của thanh trên",
-        )
+        listOf(
+            "{ drawerController.openAppList() }," to "ngăn kéo",
+            "{ panels.openSettings() }," to "màn Cài đặt",
+            "{ voice.start() }," to "phiên nghe",
+        ).forEach { (expr, what) ->
+            assertTrue(
+                activity.contains(expr),
+                "thanh nút phải nhận CHÍNH lambda mà thanh trên dùng cho $what (`$expr`)",
+            )
+        }
         assertTrue(strip.contains("onOpenAppList"), "tiền đề: thanh trên vẫn có lối Ứng dụng")
         // BA bề mặt, MỘT biểu thức: thanh trên · thanh nút · đường thử lệnh bằng chữ (V1 · R6, 2026-09-14).
         // Phép đếm này canh *"không ai tự dựng một lối riêng tới ngăn kéo"*, chứ không canh số bề mặt — và nó vẫn
         // canh được điều đó vì nó so **nguyên biểu thức**: một đường thứ hai sẽ trông khác (vd `startActivity(...)`
         // hoặc `drawerController.open(...)`) nên không lọt vào con số này. Thêm một bề mặt ⇒ sửa số Ở ĐÂY kèm lý do.
         assertEquals(
-            3, Regex(Regex.escape("drawerController.openAppList()")).findAll(activity).count(),
-            "ba chỗ gọi: thanh trên + thanh nút + đường thử lệnh chữ. Khác đi là đã mọc một đường riêng",
+            4, Regex(Regex.escape("drawerController.openAppList()")).findAll(activity).count(),
+            // V1 pha NGHE: 3 → 4. Bề mặt thứ tư là **phiên NGHE** (`voiceSession(openAppList = …)`): nói *"mở ứng
+            // dụng"* phải mở đúng cái ngăn kéo mà một cú chạm mở, không phải một bảng app thứ hai.
+            "bốn chỗ gọi: thanh trên + thanh nút + đường thử lệnh chữ + phiên nghe. Khác đi là đã mọc một đường riêng",
         )
     }
 
@@ -134,6 +145,9 @@ class LauncherActionTileWiringContractTest {
         val launcherAt = dockBranch.indexOf("CapabilityPicker.launcherPicks()")
         val groupAt = dockBranch.indexOf("groupSection(body)")
         assertTrue(launcherAt in 0 until groupAt, "để nó ở cuối thì phải cuộn qua trọn 187 ô mới đặt được nút Ứng dụng")
-        assertEquals(2, LauncherActions.ALL.size, "khối này cố ý NHỎ — thêm mục thì phải xét lại chỗ đứng của nó")
+        // V1 pha NGHE: 2 → 3 (`launcher_voice`). Con số ghim ở đây là một lời nhắc *"khối này cố ý NHỎ"*: nó đứng
+        // TRƯỚC 187 ô khả năng trong bộ chọn, nên mỗi mục thêm vào là một hàng đẩy lưới xuống. Ba mục vẫn là một
+        // hàng; mục thứ tư thì phải xét lại chỗ đứng của cả khối, không được lặng lẽ nâng số.
+        assertEquals(3, LauncherActions.ALL.size, "khối này cố ý NHỎ — thêm mục thì phải xét lại chỗ đứng của nó")
     }
 }

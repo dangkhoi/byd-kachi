@@ -9,12 +9,12 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.byd.clusternav.AppContainer
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.voice.VoiceReply
-import com.byd.clusternav.system.PackageQueries
+import com.byd.clusternav.launcher.voice.VoiceWavProbe
+import com.byd.clusternav.launcher.voice.VoiceWiring
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -43,17 +43,13 @@ class VoiceTextConsole(
     private val deps: SettingsDeps,
 ) {
 
-    /** Nhãn app → tên gói, nạp MỘT lần cho mỗi lần dựng trang (mở màn Cài đặt lại thì nạp lại). */
-    private val appsByLabel: Map<String, String> by lazy {
-        val pm = context.packageManager
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        PackageQueries.queryActivities(pm, intent)
-            .mapNotNull { ri ->
-                val pkg = ri.activityInfo?.packageName ?: return@mapNotNull null
-                ri.loadLabel(pm).toString() to pkg
-            }
-            .toMap()
-    }
+    /**
+     * Nhãn app → tên gói, nạp MỘT lần cho mỗi lần dựng trang (mở màn Cài đặt lại thì nạp lại).
+     *
+     * Đi qua [VoiceWiring.appsByLabel] — cùng bảng mà phiên NGHE dùng. Hai bề mặt tự dò `PackageManager` theo
+     * hai cách là hai danh sách app có thể lệch, tức gõ mở được một app mà nói thì không.
+     */
+    private val appsByLabel: Map<String, String> by lazy { VoiceWiring.appsByLabel(context) }
 
     fun build(body: LinearLayout) {
         body.addView(rows.note(context.getString(R.string.kachi_voice_note)))
@@ -97,6 +93,32 @@ class VoiceTextConsole(
             }
         })
         body.addView(out)
+
+        // ── R14 · đường chứng minh KHÔNG cần micro ───────────────────────────────────────────────
+        // Cùng [VoiceRecognizer] mà phiên nghe thật dùng, chỉ đổi nguồn mẫu: một tệp WAV thay cho micro. Xem
+        // KDoc [VoiceWavProbe] về vì sao nó không phải "mã cho demo" mà là đường đo duy nhất chạy được trên
+        // máy ảo và trên xe lúc đang cắm CarPlay (WiFi tắt ⇒ adb ngoài không vào, CLAUDE.md §11).
+        body.addView(rows.button(context.getString(R.string.kachi_voice_wav_try)) {
+            log.add(context.getString(R.string.kachi_voice_wav_running))
+            Thread({
+                val r = VoiceWavProbe.run(context, deps.state().profiles, appsByLabel.keys.toList())
+                out.post {
+                    when {
+                        r.error != null -> {
+                            log.add(context.getString(R.string.kachi_voice_wav_failed, r.error))
+                            log.add(context.getString(R.string.kachi_voice_wav_where, VoiceWavProbe.whereToPut(context)))
+                        }
+                        r.heard.isBlank() -> log.add(context.getString(R.string.kachi_voice_wav_nothing, r.path))
+                        else -> {
+                            log.add(context.getString(R.string.kachi_voice_wav_heard, r.heard))
+                            // Hiện luôn Ý ĐỊNH: câu hỏi thật không phải "nghe ra chữ gì" mà "chữ ấy có thành
+                            // việc không". Chỉ PHÂN TÍCH, không thi hành — đây là phép đo, không phải lệnh.
+                            dispatcher.preview(r.heard).forEach { log.add(ARROW + VoiceReply.preview(it)) }
+                        }
+                    }
+                }
+            }, "KachiWavProbe").start()
+        })
     }
 
     /**
@@ -117,15 +139,17 @@ class VoiceTextConsole(
      * Dựng cầu sang các đường đang chạy. Mọi lambda ở đây trỏ tới **đúng** thứ mà một cú chạm dùng — xem KDoc
      * [VoiceDispatcher] về vì sao không được có đường thứ hai.
      */
-    private fun dispatcher(say: (String) -> Unit): VoiceDispatcher = VoiceDispatcher(
-        control = { AppContainer.get(context).carControl },
+    private fun dispatcher(say: (String) -> Unit): VoiceDispatcher = VoiceWiring.dispatcher(
+        ctx = context,
         state = deps.state,
-        media = { MediaBridge(context) },
         appsByLabel = { appsByLabel },
         openApp = { pkg -> deps.openAppByPackage(pkg) },
         openAppList = deps.openAppList,
         openSettings = { deps.openSettingsGroup(SettingsGroup.SYSTEM) },
         onSwitchProfile = deps.onSwitchProfile,
+        // Ô THỬ BẰNG CHỮ cố ý KHÔNG mở phiên nghe: gõ *"nói với xe"* ở đây rồi bung một tấm chữ đè lên màn
+        // Cài đặt là hai bề mặt chồng nhau. Nói ra là chưa làm gì, còn hơn làm một việc người gõ không chờ.
+        onListen = { say(context.getString(R.string.kachi_voice_listen_not_here)) },
         confirm = { question, onYes, onNo -> ask(question, onYes, onNo) },
         say = say,
     )

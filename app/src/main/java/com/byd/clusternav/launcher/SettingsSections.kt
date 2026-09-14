@@ -330,6 +330,9 @@ class SettingsSections(
         body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { deps.bridge.openDiagnostics() })
         // V1 · R6 — đường thử lệnh bằng CHỮ. Đặt ở "Nâng cao" cạnh hai màn chẩn đoán kia vì nó cùng loại: một chỗ
         // ĐO, không phải một bề mặt cấu hình (xem KDoc [VoiceTextConsole] về vì sao không cho nó một nhóm riêng).
+        // V1 pha NGHE · R9 — hàng tải mô hình đứng TRƯỚC ô gõ thử: đó là thứ tự làm việc thật (tải cái tai,
+        // rồi thử cái đầu), và đặt sau thì người dùng gõ thử xong mới phát hiện mình chưa nói được.
+        com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows).build(body)
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
         VoiceTextConsole(context, rows, deps).build(body)
     }

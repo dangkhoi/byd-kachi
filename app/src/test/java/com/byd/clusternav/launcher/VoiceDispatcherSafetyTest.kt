@@ -46,6 +46,9 @@ class VoiceDispatcherSafetyTest {
         val ask = Ask()
         val said = ArrayList<String>()
         val profiles = ArrayList<String>()
+
+        /** Số lần câu lệnh yêu cầu mở một phiên NGHE (V1 pha nghe · `launcher_voice`). */
+        var listens = 0
         val dispatcher = VoiceDispatcher(
             control = { port },
             state = { HomeUiState(profiles = listOf("Mặc định", "Vợ")) },
@@ -55,6 +58,7 @@ class VoiceDispatcherSafetyTest {
             openAppList = {},
             openSettings = {},
             onSwitchProfile = { profiles += it },
+            onListen = { listens++ },
             confirm = { q, y, n -> ask.onConfirm(q, y, n) },
             say = { said += it },
             // Gói lệnh chạy NGAY trên thread gọi — bài cần kết quả tất định, không cần đo tính đa luồng.
@@ -138,5 +142,31 @@ class VoiceDispatcherSafetyTest {
         assertEquals(emptyList<String>(), r.port.fired)
         assertEquals(emptyList<String>(), r.ask.asked)
         assertEquals(emptyList<String>(), r.said)
+    }
+
+    // ══ 4 · V1 pha NGHE — `launcher_voice` là một việc THẬT, không phải một mã trơ ═════════════════════════
+
+    /**
+     * Nói *"nói với xe"* phải mở một phiên nghe.
+     *
+     * Bài này chạy [VoiceDispatcher] **thật** (lớp này không chạm `android.*` trên đường đi của một hành động
+     * launcher), nên nó canh đúng thứ mà một phép quét nguồn không canh được: mã `launcher_voice` đi tới đúng
+     * lambda, đúng **một** lần, và không rơi vào nhánh `else -> failed` như một mã lạ.
+     */
+    @Test
+    fun `noi voi xe mo dung mot phien nghe`() {
+        val r = Rig()
+        r.dispatcher.submit("nói với xe")
+        assertEquals(1, r.listens, "câu `nói với xe` phải mở đúng một phiên nghe")
+        assertTrue(r.said.isNotEmpty(), "phải nói lại là đã làm gì")
+    }
+
+    /** Và nó nối được vào câu ghép như mọi việc khác — thứ tự nói là thứ tự làm. */
+    @Test
+    fun `noi voi xe ghep duoc vao cau ghep`() {
+        val r = Rig()
+        r.dispatcher.submit("bật đèn đọc rồi nói với xe")
+        assertEquals(1, r.listens)
+        assertTrue(r.port.fired.any { it.contains("readl") }, "vế đầu vẫn phải chạy: ${r.port.fired}")
     }
 }

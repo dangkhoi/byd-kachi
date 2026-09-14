@@ -48,7 +48,7 @@ k_cap "00-package-signature.txt" "dumpsys package $KACHI_PKG | grep -iE 'signatu
 # ── 2. Danh tính xe ─────────────────────────────────────────────────────────────────────────
 k_hr; echo "[2] Danh tính xe (ROM / đời DiLink)"
 k_cap "00-getprop.txt" "getprop"
-for p in ro.product.model ro.product.name ro.product.device ro.build.version.release ro.build.version.sdk ro.build.fingerprint ro.build.display.id; do
+for p in ro.product.model ro.product.name ro.product.device ro.product.cpu.abi ro.product.cpu.abilist ro.build.version.release ro.build.version.sdk ro.build.fingerprint ro.build.display.id; do
   v="$(k_sh "getprop $p" 2>/dev/null | tr -d '\r')"
   printf '  %-28s %s\n' "$p" "${v:-?}"
   printf '%s=%s\n' "$p" "${v:-}" >> "$OUT/connect.txt"
