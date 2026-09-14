@@ -58,7 +58,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 </head>
 <body><div class="wrap">
 <h1>Kachi — Camera 360: phím vô-lăng đổi góc theo ngữ cảnh (W5)</h1>
-<p class="muted">Slug: <code>kachi-camera-context-keys</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: SPEC off-car 2026-09-13 — CODE CHỜ ĐO TRÊN XE (CLAUDE.md §14 tầng 1)</span> · Chủ: KhoiPD</p>
+<p class="muted">Slug: <code>kachi-camera-context-keys</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: SPEC off-car 2026-09-13 — CODE CHỜ ĐO TRÊN XE (CLAUDE.md §14 tầng 1)</span> · Chủ: dangkhoi</p>
 <h2>1. Changelog</h2><ul><li><b>Pass 0 — 2026-09-13</b>: Viết spec + kịch bản đo trên xe. Không code (owner hỏi "chỉnh camera bằng phím cứng đã làm chưa" — trả lời: chưa, vì chưa có mã phím thật).</li></ul>
 <h2>2. Context</h2>
 <p>Đã có: nút <code>cam</code> (bật/tắt camera 360, feature 3001) và <code>camera_view</code> (SELECT Trước/Sau/Trái/Phải/Rộng, cùng feature 3001, xem <code>ControlRegistry.kt</code>); bộ gán phím vô-lăng ở Settings › Phím vô-lăng: bắt phím qua <code>NavAccessibilityService.onKeyEvent</code> → <code>VoiceKeyMatcher</code> (:core, thuần) → bắn đích theo <code>VoiceKeyBinding(keyCode, targetSpec)</code>; "Học phím mới" qua <code>VoiceKeyLearnBus</code>.</p>

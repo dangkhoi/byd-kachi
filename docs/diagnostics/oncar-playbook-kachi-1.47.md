@@ -1,6 +1,6 @@
 # PLAYBOOK LÊN XE — Kachi 1.47 (48)
 
-> **Loại**: Diagnostics (on-car playbook) · **Trạng thái**: Current · **Cập nhật**: 2026-09-14 · **Chủ**: KhoiPD
+> **Loại**: Diagnostics (on-car playbook) · **Trạng thái**: Current · **Cập nhật**: 2026-09-14 · **Chủ**: dangkhoi
 > **Mục đích**: lên xe là BẮT ĐẦU ĐO NGAY — không phải mở code ra dò xem tính năng nằm ở đâu.
 > **Bộ script đi kèm**: `scripts/vehicle/kachi/` (chạy `run-all.sh`, hoặc từng bước một).
 > **Bằng chứng đổ về**: `docs/diagnostics/carlog-kachi-<ngày>-<giờ>/` (đã nằm trong `.gitignore`).

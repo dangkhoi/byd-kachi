@@ -5,7 +5,7 @@
 > (cửa · kính · lốp · ghế · gương · xi-nhan · điểm mù · cảm biến đỗ · đèn viền trước/sau…), **loại đèn**, và
 > **vùng ADAS**, cùng ánh xạ sang *khung xe nào* (top/front/rear) và *vùng nào được tô*. Đây là đầu vào T1 của
 > spec `docs/specs/kachi-icon-set-v2.html`; T2 (vẽ) và T3 (bảng tra) đọc thẳng từ bảng này.
-> **Spec**: `docs/specs/kachi-icon-set-v2.html` · **Owner**: KhoiPD
+> **Spec**: `docs/specs/kachi-icon-set-v2.html` · **Owner**: dangkhoi
 
 > **(EN)** Inventory of every capability id that carries a POSITION, mapped to one of three shared car frames
 > (top / front / rear) and the region that gets filled. Input for the U7 positional icon set.
