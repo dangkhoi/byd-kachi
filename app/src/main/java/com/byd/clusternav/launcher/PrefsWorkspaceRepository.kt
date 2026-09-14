@@ -159,6 +159,8 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
 
     override fun setGridLayout(layout: GridLayout?) = prefs.setGridLayout(layout)
 
+    override fun profileLayout(name: String): Pair<LayoutPreset?, Int> = prefs.profileLayout(name)
+
     override fun topStrip(): TopStripConfig = prefs.topStrip()
 
     override fun setTopStrip(config: TopStripConfig) = prefs.setTopStrip(config)

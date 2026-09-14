@@ -64,6 +64,19 @@ interface WorkspaceRepository {
     /** P9 — lưu bố cục tự vẽ. `null` = bỏ, quay về bố cục sẵn. */
     fun setGridLayout(layout: GridLayout?) {}
 
+    /**
+     * Bố cục **đang hiệu lực** + số ô có nội dung của hồ sơ [name] — cho thẻ hồ sơ ở Cài đặt nói ra hồ sơ đó giữ gì
+     * (owner 2026-09-14: *"chưa thấy hồ sơ nó gắn với bố cục chỗ nào?"*). `null` preset = hồ sơ đó đang dùng **tự vẽ**.
+     *
+     * ⚠ Đây là **đường đọc bền của một hồ sơ KHÔNG phải hồ sơ đang dùng**, nên nó không thể lấy từ [HomeUiState] —
+     * state chỉ mang dữ liệu của hồ sơ đang dùng. Nó vẫn phải đi qua cổng dữ liệu này chứ không mở một cửa
+     * `WorkspacePrefs` thứ hai ở tầng UI: bài học [SOÁT P1-1] (*"đường đọc bền nằm trong tầng UI"* ⇒ hai đường song
+     * song) và luật R6 *tầng UI 0 lần chạm nơi lưu*.
+     *
+     * Có thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa.
+     */
+    fun profileLayout(name: String): Pair<LayoutPreset?, Int> = LayoutPreset.THREE to 0
+
     fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.DEFAULT
 
     /** Ghi bền lựa chọn hình nền. Mặc định: không lưu (bản giả). */

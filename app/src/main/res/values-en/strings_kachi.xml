@@ -99,8 +99,9 @@
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
     <string name="kachi_profiles_note">Each profile keeps its OWN layout, slot contents, button bar and chips. Tap a profile to switch to it — the avatar on the top bar can switch too, but creating and deleting happen only here.</string>
     <string name="kachi_profiles_add">Add profile…</string>
-    <string name="kachi_profile_active">In use</string>
-    <string name="kachi_profile_tap_switch">Tap to switch to this profile</string>
+    <string name="kachi_profile_sub_active">In use · %1$s</string>
+    <string name="kachi_profile_sub_switch">%1$s · tap to switch to this profile</string>
+    <string name="kachi_home_profile_note">Every setting in this group is saved for profile «%1$s» alone — switch to another profile in Driver profiles and the layout, slot contents, chips and button bar all change with it.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->

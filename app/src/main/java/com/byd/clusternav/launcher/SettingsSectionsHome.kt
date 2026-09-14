@@ -23,6 +23,9 @@ class SettingsHomeSection(
 ) {
 
     fun build(body: LinearLayout) {
+        // Owner 2026-09-14: mọi thứ ở nhóm này (cảnh · bố cục · ô) lưu THEO HỒ SƠ đang dùng — nói ra ngay đầu trang,
+        // vì rail chỉ ghi "Hồ sơ tài xế" ở một nhóm khác và không ai nhìn thấy mối gắn.
+        body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
         SettingsSceneSection(context, rows, deps).build(body)
         layout(body)
         wallpaper(body)

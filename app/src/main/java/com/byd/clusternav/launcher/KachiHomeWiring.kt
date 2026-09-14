@@ -123,6 +123,9 @@ internal fun homePanels(
     onLangMode = { m -> viewModel.setLangMode(m) },     // U5·T3 — đọc-để-vẽ ở [LangHost.wrap]
     onAutostart = { on -> viewModel.setAutostart(on) },
     onSwitchProfile = { name -> viewModel.switchProfile(name) },
+    // Owner 2026-09-14 "chưa thấy hồ sơ gắn với bố cục chỗ nào": thẻ hồ sơ hỏi tóm tắt của TỪNG hồ sơ theo tên.
+    // Đọc-để-vẽ, đi qua ViewModel như mọi đường khác (tầng UI không tự mở cửa vào nơi lưu — R6).
+    profileSummary = { name -> viewModel.profileSummary(name) },
     onAddProfile = onAddProfile,                 // dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai
     onDeleteProfile = { name -> viewModel.deleteProfile(name) },
     scenes = scenes,                             // P7/P6 — lưu/gọi/nổ-máy/đổi-tên/xoá cảnh

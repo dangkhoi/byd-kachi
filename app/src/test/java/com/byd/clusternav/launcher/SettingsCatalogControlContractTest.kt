@@ -66,7 +66,7 @@ class SettingsCatalogControlContractTest {
             "display_lang" to ("SettingsSections" to "deps.onLangMode("),
             // ── 4 · Hồ sơ tài xế ──
             "profiles_list" to ("SettingsSections" to "deps.onSwitchProfile("),
-            "profiles_active" to ("SettingsSections" to "R.string.kachi_profile_active"),
+            "profiles_active" to ("SettingsSections" to "R.string.kachi_profile_sub_active"),
             // ── 5 · Dẫn đường & cụm đồng hồ ──
             "nav_enabled" to ("SettingsSectionsNav" to "bridge.setNavEnabled("),
             "nav_cluster_mode" to ("SettingsSectionsNav" to "bridge.setClusterMode("),

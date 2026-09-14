@@ -193,7 +193,9 @@ class SettingsSections(
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
                     })
                     addView(TextView(context).apply {
-                        text = context.getString(if (active) R.string.kachi_profile_active else R.string.kachi_profile_tap_switch)
+                        // Owner 2026-09-14: hồ sơ phải NÓI RA nó giữ bố cục gì — trước đây chỉ có "Đang dùng"/"Chạm để đổi".
+                        val sum = deps.profileSummary(name)
+                        text = context.getString(if (active) R.string.kachi_profile_sub_active else R.string.kachi_profile_sub_switch, sum)
                         setTextColor(c(if (active) KachiTheme.GREEN else KachiTheme.MUT))
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
                     })

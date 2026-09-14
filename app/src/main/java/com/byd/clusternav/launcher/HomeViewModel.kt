@@ -100,6 +100,18 @@ class HomeViewModel(
 
     fun deleteProfile(name: String) = reload { repository.deleteProfile(name) }
 
+    /**
+     * Câu tóm tắt bố cục của MỘT hồ sơ (owner 2026-09-14) — **đọc**, không đổi state, không ghi bền.
+     *
+     * Ở đây chứ không ở tầng UI vì nó phải đọc **hồ sơ KHÔNG đang dùng**: [HomeUiState] chỉ mang hồ sơ đang dùng, nên
+     * chỗ vẽ sẽ bị cám dỗ tự mở một `WorkspacePrefs` thứ hai — đúng đường đọc bền đi vòng mà [SOÁT P1-1] đã dọn. Câu
+     * chữ do `:core` ([ProfileNames.summary]) gấp, nên nó kiểm được off-car ở cả hai thứ tiếng.
+     */
+    fun profileSummary(name: String): String {
+        val (preset, filled) = repository.profileLayout(name)
+        return ProfileNames.summary(preset, filled)
+    }
+
     // ── Runtime host capability (không bền) ─────────────────────────────────────
     /** Cập nhật cờ nhúng (dadb loopback nối được / ROM platform-signed). Chỉ runtime, KHÔNG ghi bền. */
     fun setEmbedded(embedded: Boolean) = _uiState.update { it.copy(embedded = embedded) }

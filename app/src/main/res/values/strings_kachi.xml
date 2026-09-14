@@ -109,8 +109,9 @@
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
     <string name="kachi_profiles_note">Mỗi hồ sơ giữ bố cục, nội dung ô, thanh nút và chip RIÊNG. Chạm một hồ sơ để đổi sang nó — avatar ở thanh trên cũng đổi được, nhưng tạo và xoá thì chỉ ở đây.</string>
     <string name="kachi_profiles_add">Thêm hồ sơ…</string>
-    <string name="kachi_profile_active">Đang dùng</string>
-    <string name="kachi_profile_tap_switch">Chạm để đổi sang hồ sơ này</string>
+    <string name="kachi_profile_sub_active">Đang dùng · %1$s</string>
+    <string name="kachi_profile_sub_switch">%1$s · chạm để đổi sang hồ sơ này</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở nhóm này lưu riêng cho hồ sơ «%1$s» — đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip và thanh nút đều đổi theo.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->

@@ -40,4 +40,20 @@ object ProfileNames {
 
     /** Chữ đầu cho avatar thanh trên — theo **nhãn** (nên máy tiếng Anh hiện `D`, không phải `M`). */
     fun initial(name: String): String = display(name).take(1).uppercase()
+
+    /**
+     * Tóm tắt bố cục của MỘT hồ sơ — owner 2026-09-14: *"chưa thấy hồ sơ nó gắn với bố cục chỗ nào?"*.
+     *
+     * Mối gắn là thật ([ĐO] mọi khoá bố cục/ô/thanh nút/cảnh lưu dưới tiền tố `<tên hồ sơ>__`) nhưng trước đây
+     * KHÔNG câu nào trong giao diện nói ra. Câu này đặt cạnh tên hồ sơ để người dùng thấy ngay hồ sơ đó đang giữ
+     * bố cục gì. `preset == null` = hồ sơ dùng bố cục tự vẽ.
+     */
+    fun summary(preset: LayoutPreset?, filledSlots: Int): String {
+        val layout = preset?.label ?: Strings.t("Tự vẽ", "Custom")
+        // ⚠ Số ít/số nhiều của tiếng Anh phải làm BẰNG TAY ở `:core` (không có `Context` nên không có
+        // `getQuantityString`) — cùng lỗi mà `finding #18` đã bắt một lần ở `layoutSummary`: bản một-chuỗi in
+        // *"1 slots filled"*. Tiếng Việt không chia số nên một câu là đủ.
+        val en = if (filledSlots == 1) "1 slot filled" else "$filledSlots slots filled"
+        return Strings.t("$layout · $filledSlots ô có nội dung", "$layout · $en")
+    }
 }

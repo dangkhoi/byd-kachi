@@ -102,6 +102,27 @@ class WorkspacePrefs(context: Context) {
         }
     }
 
+    /**
+     * Bố cục **ĐANG HIỆU LỰC** + số ô có nội dung của hồ sơ [name] (KHÔNG phải hồ sơ đang dùng) — cho thẻ hồ sơ ở
+     * Cài đặt nói ra hồ sơ đó giữ gì. Đọc theo tiền tố tên như [widgetIdsOtherProfiles]. `null` = **tự vẽ**.
+     *
+     * ## ⚠ Vì sao hỏi [EffectiveLayout], KHÔNG phải "có khung là tự vẽ"
+     * Bố cục tự vẽ **lưu rồi mà không dùng được** (đè nhau · nhiều khung hơn trần ô — ca có thật khi hạ cấp bản) bị
+     * màn hình **LÙI về bố cục sẵn**. Trả "Tự vẽ" ở đây thì thẻ hồ sơ và màn hình nói hai chuyện khác nhau — đúng lỗi
+     * mà KDoc [EffectiveLayout.highlightedPreset] đã phải dọn một lần cho dải chip bố cục.
+     *
+     * Số ô cũng đếm theo bố cục đang hiệu lực ([EffectiveLayout.slotCount]), không theo trần ô: nội dung còn sót ở ô
+     * thứ 5 của một bố cục 2 ô **không hiện ra ở đâu cả**, kể nó vào là báo một con số người dùng không thấy.
+     */
+    fun profileLayout(name: String): Pair<LayoutPreset?, Int> {
+        val custom = grid(name)
+        val preset = runCatching { LayoutPreset.valueOf(sp.getString("${name}__preset", LayoutPreset.THREE.name)!!) }
+            .getOrDefault(LayoutPreset.THREE)
+        val shown = EffectiveLayout.slotCount(preset, custom).coerceAtMost(WorkspaceState.SLOT_CAP)
+        val filled = (0 until shown).count { decode(sp.getString("${name}__slot_$it", "") ?: "") != SlotContent.Empty }
+        return EffectiveLayout.highlightedPreset(preset, custom) to filled
+    }
+
     // ── Workspace (theo hồ sơ) ──
     fun load(): WorkspaceState {
         val preset = runCatching { LayoutPreset.valueOf(sp.getString(key("preset"), LayoutPreset.THREE.name)!!) }
@@ -216,8 +237,15 @@ class WorkspacePrefs(context: Context) {
         sp.edit().putString(key("top_strip"), TopStripConfig.encode(config)).apply()
     }
 
-    fun gridLayout(): GridLayout {
-        val raw = WorkspaceGrid.decode(sp.getString(key(K_GRID), null))
+    fun gridLayout(): GridLayout = grid(activeProfile())
+
+    /**
+     * Bố cục tự vẽ của **một hồ sơ bất kỳ**, đã lọc ở cửa vào — MỘT phép đọc cho cả [gridLayout] (hồ sơ đang dùng) và
+     * [profileLayout] (hồ sơ khác). Hai bản lọc riêng là cách chắc chắn để thẻ hồ sơ và màn hình lệch nhau khi ai đó
+     * sửa một trong hai (cùng họ với bẫy hai-bản-sao đã ghi ở KDoc [PROFILE_SUFFIXES]).
+     */
+    private fun grid(name: String): GridLayout {
+        val raw = WorkspaceGrid.decode(sp.getString("${name}__$K_GRID", null))
         val sane = raw.frames.filter {
             it.cols in WorkspaceGrid.MIN_COLS..WorkspaceGrid.COLS &&
                 it.rows in WorkspaceGrid.MIN_ROWS..WorkspaceGrid.ROWS &&

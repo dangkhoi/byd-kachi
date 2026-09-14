@@ -38,6 +38,8 @@ class SettingsBarsSection(
     private var pickButton: TextView? = null
 
     fun build(body: LinearLayout) {
+        // Chip + thanh nút cũng lưu THEO HỒ SƠ — cùng câu với nhóm Màn hình chính (owner 2026-09-14).
+        body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
         stripPicker.section(body)
         dock(body)
     }

@@ -74,6 +74,8 @@ class SettingsDeps(
     val onSwitchProfile: (String) -> Unit,
     val onAddProfile: () -> Unit,
     val onDeleteProfile: (String) -> Unit,
+    /** Câu tóm tắt bố cục của một hồ sơ (tên gốc) — thẻ hồ sơ nói ra nó giữ gì (owner 2026-09-14). */
+    val profileSummary: (String) -> String,
     /**
      * P7 + P6 — bộ việc làm với **cảnh**. Một tham số thay vì năm lambda: xem KDoc [SceneActions] (và
      * [KachiHomeActivity] đang đúng trần 500 dòng).

@@ -9,8 +9,8 @@
 > Bilingual: user-facing sections are Vietnamese first, then English. Per-version changelog entries stay in English, with a one-line Vietnamese intro.
 
 > [!CAUTION]
-> **(VI) KACHI LAUNCHER — bản hiện tại: `1.45` (versionCode 46, 2026-09-14)** — `com.byd.launcher`, MỘT icon "Kachi" duy nhất (LAUNCHER = KachiHomeActivity), mọi cấu hình ClusterNav đã gộp vào Kachi Settings (10 nhóm); màn ClusterNav cũ chỉ còn là "màn nâng cao" mở từ Hệ thống › Nâng cao. Dòng dưới là trạng thái nền tảng ClusterNav 2.0 kế thừa.
-> **(EN) KACHI LAUNCHER — current: `1.45` (versionCode 46, 2026-09-14)** — `com.byd.launcher`, a single "Kachi" icon (LAUNCHER = KachiHomeActivity); every ClusterNav setting now lives in Kachi Settings (10 groups); the old ClusterNav screen is an "advanced screen" opened from System › Advanced. The lines below describe the inherited ClusterNav 2.0 baseline.
+> **(VI) KACHI LAUNCHER — bản hiện tại: `1.46` (versionCode 47, 2026-09-14)** — `com.byd.launcher`, MỘT icon "Kachi" duy nhất (LAUNCHER = KachiHomeActivity), mọi cấu hình ClusterNav đã gộp vào Kachi Settings (10 nhóm); màn ClusterNav cũ chỉ còn là "màn nâng cao" mở từ Hệ thống › Nâng cao. Dòng dưới là trạng thái nền tảng ClusterNav 2.0 kế thừa.
+> **(EN) KACHI LAUNCHER — current: `1.46` (versionCode 47, 2026-09-14)** — `com.byd.launcher`, a single "Kachi" icon (LAUNCHER = KachiHomeActivity); every ClusterNav setting now lives in Kachi Settings (10 groups); the old ClusterNav screen is an "advanced screen" opened from System › Advanced. The lines below describe the inherited ClusterNav 2.0 baseline.
 >
 > **(VI) OTA của Kachi (L2, 2026-09-13):** app tự dò `apk/Kachi-<ver>-release.apk` trên `main` của repo này (`dangkhoi/byd-kachi`) và cài qua dadb loopback — xem `apk/README.md`. Khoá ký RIÊNG của Kachi (keystore ngoài repo, `keystore.properties` gitignored); bản cài trước 1.41 phải gỡ rồi cài tay một lần.
 > **(EN) Kachi OTA (L2, 2026-09-13):** the app polls `apk/Kachi-<ver>-release.apk` on this repo's `main` (`dangkhoi/byd-kachi`) and installs over the dadb loopback — see `apk/README.md`. Kachi has its own signing key; builds installed before 1.41 must be uninstalled once.

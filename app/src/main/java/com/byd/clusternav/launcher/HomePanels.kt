@@ -40,6 +40,8 @@ class HomePanels(
     private val onSwitchProfile: (String) -> Unit,
     private val onAddProfile: () -> Unit,
     private val onDeleteProfile: (String) -> Unit,
+    /** Tóm tắt bố cục của MỘT hồ sơ (theo tên) cho thẻ hồ sơ ở Cài đặt — đọc-để-vẽ, qua ViewModel. */
+    private val profileSummary: (String) -> String,
     private val scenes: SceneActions,
     private val shellUsable: () -> Boolean,
     private val goImmersive: () -> Unit,
@@ -120,6 +122,8 @@ class HomePanels(
             onSwitchProfile = { name -> onSwitchProfile(name) },
             onAddProfile = onAddProfile,
             onDeleteProfile = { name -> onDeleteProfile(name) },
+            // Owner 2026-09-14 "chưa thấy hồ sơ gắn với bố cục chỗ nào": thẻ hồ sơ nói ra bố cục của TỪNG hồ sơ.
+            profileSummary = profileSummary,
             // P7/P6: chuyển thẳng bộ việc làm với cảnh (hộp thoại nhập tên nằm trong `SceneController`, cùng khuôn
             // với `ProfileBar.addDialog` — không dựng hộp thoại thứ hai cho cùng việc "hỏi một cái tên").
             scenes = scenes,
