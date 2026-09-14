@@ -298,6 +298,7 @@
     <string name="kachi_bubble_enabled_title">Show the VietMap bubble on the cluster</string>
     <string name="kachi_bubble_enabled_sub">The small turn-by-turn box drawn by the modified VietMap build.</string>
     <string name="kachi_bubble_need_cast">The position only moves while the cluster is casting — it is still saved, but the cluster will not follow yet.</string>
+    <string name="kachi_bubble_need_toggle">Turn on the bubble switch above to adjust the position.</string>
     <string name="kachi_bubble_pos_x">Bubble position — across</string>
     <string name="kachi_bubble_pos_y">Bubble position — down</string>
     <string name="kachi_bubble_drag_hint">Drag the box inside the frame to place the bubble on the cluster.</string>

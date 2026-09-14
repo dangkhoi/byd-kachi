@@ -342,8 +342,29 @@ class SettingsRows(private val context: Context) {
         /** Thẻ để `addView(...)` — lề stack đã nằm sẵn trên nó. */
         val view: View,
         private val value: TextView,
+        private val minus: View,
+        private val plus: View,
     ) {
         fun setValue(text: String) { value.text = text }
+
+        /**
+         * KHOÁ/MỞ hàng — đặt cờ lên cả [view] **và** hai nút −/+.
+         *
+         * ## ⚠⚠ Vì sao chỗ gọi KHÔNG được tự viết `stepper.view.isEnabled = false`
+         * [ĐO] AOSP `android-10.0.0_r47`:
+         *  • `core/java/android/view/View.java:10873–10876` — `setEnabled` chỉ `setFlags(… ENABLED_MASK)` cho
+         *    CHÍNH view đó, không hề đệ quy xuống con;
+         *  • `core/java/android/view/ViewGroup.java` **không** override `setEnabled`, và `dispatchTouchEvent` của
+         *    nó không đọc cờ enabled lần nào ⇒ cha bị tắt vẫn phát chạm xuống con;
+         *  • `View.java:14764–14771` — nhánh `DISABLED` nằm trong `onTouchEvent` của **view bị tắt**, nên chỉ
+         *    khoá được đúng view đó.
+         *
+         * ⇒ tắt mỗi hàng `LinearLayout` là **khoá giả**: nhìn mờ đi (alpha lan xuống con lúc VẼ) nhưng hai nút
+         * con vẫn nhận click và vẫn ghi prefs. Guard phải đặt ở tầng THI HÀNH — đúng CLAUDE.md §5.
+         */
+        var isEnabled: Boolean
+            get() = view.isEnabled
+            set(on) { view.isEnabled = on; minus.isEnabled = on; plus.isEnabled = on }
     }
 
     /**
@@ -365,15 +386,19 @@ class SettingsRows(private val context: Context) {
             minWidth = dpi(context, Sp.TOUCH)
             setPadding(dpi(context, Sp.S), 0, dpi(context, Sp.S), 0)
         }
+        // Hai nút giữ lại làm tham chiếu (không dựng thẳng trong `addView`) vì [Stepper.isEnabled] phải khoá được
+        // ĐÚNG hai view này — xem KDoc ở đó về việc cờ enabled của cha không lan xuống con.
+        val minus = squareButton("−", onMinus)
+        val plus = squareButton("+", onPlus)
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             layoutParams = stackLp()
             addView(rowLabel(label))
-            addView(squareButton("−", onMinus))
+            addView(minus)
             addView(value)
-            addView(squareButton("+", onPlus))
+            addView(plus)
         }
-        return Stepper(row, value)
+        return Stepper(row, value, minus, plus)
     }
 
     /** Ô nút vuông [KachiSpace.TOUCH]² của [stepperRow] — cùng nền/đích chạm với [button], chỉ bo tròn hết cỡ. */

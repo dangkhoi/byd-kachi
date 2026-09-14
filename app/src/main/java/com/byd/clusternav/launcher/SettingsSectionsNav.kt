@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import android.view.View
 import android.widget.LinearLayout
 import com.byd.clusternav.R
 import com.byd.clusternav.VmBubblePlacementView
@@ -57,6 +58,7 @@ class SettingsNavSection(
     private var bubbleX: SettingsRows.Stepper? = null
     private var bubbleY: SettingsRows.Stepper? = null
     private var bubbleView: VmBubblePlacementView? = null
+    private var bubbleHint: android.widget.TextView? = null
 
     fun build(body: LinearLayout) {
         nav(body)
@@ -292,10 +294,16 @@ class SettingsNavSection(
     /**
      * Công tắc + vị trí (stepper + kéo-thả), cùng khuôn với biển báo.
      *
-     * ⚠ Câu nhắc *"chỉnh được khi đang chiếu"* chỉ hiện khi `bridge.vmBubbleAdjustable()` = false: [ĐO]
-     * `VmOverlayPosition.setAbsoluteTopLeft` **vẫn ghi prefs** nhưng chỉ bắn broadcast khi cast đang bật, nên
-     * lúc cụm chưa chiếu thì kéo xong không thấy gì đổi trên cụm. Nói ra một câu rẻ hơn nhiều so với để người
-     * dùng nghĩ tính năng hỏng — đúng luật *"cú bấm không có tác dụng thì phải nói lý do"*.
+     * ## ⚠⚠ Bộ chỉnh vị trí LUÔN HIỆN — owner 2026-09-14: *"bóng vietmap sao mất chỗ cấu hình vị trí trên cụm rồi"*
+     * Bản IA v2 (09-12) ẩn hẳn stepper + khung kéo-thả khi `bridge.vmBubbleAdjustable()` = false (chỉ để lại một câu),
+     * viện lý do R4 (nhóm dài 2.68 màn). Hệ quả [ĐO]: chưa bật *Chiếu màn lên cụm* (hoặc chưa bật công tắc bong bóng)
+     * thì người dùng KHÔNG THẤY chỗ cấu hình đâu — đọc thành "mất tính năng", không đọc thành "đang chờ chiếu".
+     * Màn cũ (`MainActivity.refreshVmOverlayPanel`) làm đúng hơn: panel luôn có, **mờ 40 % + khoá** khi chưa chỉnh được,
+     * và câu nhắc nói đúng điều kiện còn thiếu (bật công tắc / bật chiếu). Khôi phục đúng hành vi đó.
+     *
+     * Điều kiện chỉnh không đổi: công tắc BẬT **và** cast BẬT — vì `VmOverlayPosition.setAbsoluteTopLeft` vẫn ghi
+     * prefs nhưng chỉ bắn broadcast khi cast đang bật, kéo lúc chưa chiếu là kéo vào khoảng không.
+     * Đổi công tắc ⇒ áp lại cổng ngay ([applyBubbleGate]), không chờ mở lại trang.
      */
     private fun bubble(body: LinearLayout) {
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_bubble)))
@@ -303,16 +311,7 @@ class SettingsNavSection(
             on = bridge.vmBubbleEnabled(),
             title = context.getString(R.string.kachi_bubble_enabled_title),
             sub = context.getString(R.string.kachi_bubble_enabled_sub),
-        ) { on -> bridge.setVmBubbleEnabled(on) })
-        // ⚠⚠ [R4 · ĐO] Nhóm này dài **2.68 màn cuộn** (trần R4 là 2), và phần dài nhất là bộ chỉnh vị trí bong bóng
-        // — thứ mà lúc CHƯA CHIẾU thì kéo xong **không thấy gì đổi** (`VmOverlayPosition.setAbsoluteTopLeft` ghi
-        // prefs nhưng chỉ bắn broadcast khi cast đang bật). Nên khi chưa chiếu: chỉ công tắc + một câu nói rõ vì
-        // sao. Đây là cắt thứ KHÔNG DÙNG ĐƯỢC ở trạng thái hiện tại, không phải bỏ tính năng: bật chiếu lên là
-        // toàn bộ bộ chỉnh trở lại (trang Cài đặt dựng lại theo lượt mở — xem KDoc lớp về "đọc lại, không chụp").
-        if (!bridge.vmBubbleAdjustable()) {
-            body.addView(rows.note(context.getString(R.string.kachi_bubble_need_cast)))
-            return
-        }
+        ) { on -> bridge.setVmBubbleEnabled(on); applyBubbleGate() })
 
         val (bx, by) = bridge.vmBubblePos()
         bubbleX = rows.stepperRow(
@@ -336,7 +335,48 @@ class SettingsNavSection(
             syncBubble()
         }).also { it.setBubbleTopLeftCluster(bx, by) }
         body.addView(rows.embed(bubbleView!!, Sp.EMBED_M))
-        body.addView(rows.note(context.getString(R.string.kachi_bubble_drag_hint)))
+        bubbleHint = rows.note("")
+        body.addView(bubbleHint!!)
+        applyBubbleGate()
+
+        // ⚠⚠ Cổng còn bám CAST, mà công tắc Cast nằm ở NHÓM KHÁC của cùng bảng Cài đặt — và trang này được
+        // **nhớ lại** (`SettingsPanel.pages`: đổi nhóm chỉ tháo/gắn lại view, KHÔNG dựng lại). Chỉ áp cổng lúc
+        // dựng + lúc đổi công tắc thì: bật Chiếu ở nhóm Cast → quay lại đây vẫn thấy mờ + khoá + câu nhắc SAI,
+        // không có cách nào mở ra trong cùng lượt mở bảng. Màn cũ né được vì `refreshVmOverlayPanel` chạy mỗi
+        // nhịp 1 s; ở đây rẻ hơn và không cần vòng lặp: đọc lại đúng lúc trang được gắn vào cửa sổ.
+        body.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) = applyBubbleGate()
+            override fun onViewDetachedFromWindow(v: View) = Unit
+        })
+    }
+
+    /**
+     * Cổng chỉnh bong bóng — lặp lại `MainActivity.refreshVmOverlayPanel` (màn cũ): mờ + khoá khi chưa chỉnh được,
+     * câu nhắc nói đúng điều kiện còn thiếu. Stepper chỉ khoá phần bấm; số vẫn đọc được (vị trí đã lưu là thật).
+     *
+     * ## ⚠ Khoá đi qua [SettingsRows.Stepper.isEnabled], KHÔNG phải `stepper.view.isEnabled`
+     * [ĐO] AOSP `android-10.0.0_r47` `View.java:10873–10876` + `ViewGroup.java` (không override `setEnabled`,
+     * `dispatchTouchEvent` không đọc cờ enabled): tắt hàng `LinearLayout` **không** khoá hai nút −/+ bên trong —
+     * chúng vẫn nhận click và `nudgeBubble` vẫn ghi prefs. Chi tiết ở KDoc [SettingsRows.Stepper.isEnabled].
+     * [VmBubblePlacementView.onTouchEvent] thì tự chặn theo `isEnabled` nên đặt thẳng lên nó là đủ.
+     */
+    private fun applyBubbleGate() {
+        val enabled = bridge.vmBubbleEnabled()
+        val adjustable = bridge.vmBubbleAdjustable()
+        val alpha = if (adjustable) 1f else GATE_ALPHA
+        listOf(bubbleX, bubbleY).forEach { s ->
+            s?.isEnabled = adjustable
+            s?.view?.alpha = alpha
+        }
+        bubbleView?.isEnabled = adjustable
+        bubbleView?.alpha = alpha
+        bubbleHint?.text = context.getString(
+            when {
+                !enabled -> R.string.kachi_bubble_need_toggle
+                !adjustable -> R.string.kachi_bubble_need_cast
+                else -> R.string.kachi_bubble_drag_hint
+            },
+        )
     }
 
     private fun nudgeBubble(dx: Int, dy: Int) {
@@ -362,5 +402,8 @@ class SettingsNavSection(
          * GIỮA, một màn khác hẳn. 10px ≈ 0.5% bề ngang cụm: đủ nhỏ để canh, đủ lớn để không phải bấm 50 lần.
          */
         const val STEP_PX = 10
+
+        /** Độ mờ của bộ chỉnh khi chưa chỉnh được — cùng số với màn cũ (`alpha = 0.4f`). */
+        const val GATE_ALPHA = 0.4f
     }
 }

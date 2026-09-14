@@ -310,6 +310,7 @@
     <string name="kachi_bubble_enabled_title">Hiện bong bóng VietMap trên cụm</string>
     <string name="kachi_bubble_enabled_sub">Ô chỉ đường thu nhỏ do bản VietMap sửa đổi vẽ.</string>
     <string name="kachi_bubble_need_cast">Chỉ đổi được chỗ khi cụm đang chiếu — chưa chiếu thì giá trị vẫn lưu, nhưng cụm chưa đổi theo.</string>
+    <string name="kachi_bubble_need_toggle">Bật công tắc bong bóng ở trên để chỉnh vị trí.</string>
     <string name="kachi_bubble_pos_x">Vị trí bong bóng — ngang</string>
     <string name="kachi_bubble_pos_y">Vị trí bong bóng — dọc</string>
     <string name="kachi_bubble_drag_hint">Kéo ô trong khung để đặt chỗ cho bong bóng trên cụm.</string>

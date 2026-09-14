@@ -106,7 +106,13 @@ class VmBubblePlacementView(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (!isEnabled) return false
+        // ⚠ Khoá GIỮA cú kéo (cast tắt / công tắc tắt trong lúc ngón tay còn trên khung) phải huỷ luôn cú kéo đó:
+        // nếu chỉ `return false`, cờ [dragging] còn kẹt `true`, và lần mở khoá sau một `ACTION_MOVE` lạc (không có
+        // `ACTION_DOWN` nào trước) sẽ nhảy bong bóng theo ngón tay rồi ghi prefs. Cờ trạng thái phải chết cùng cổng.
+        if (!isEnabled) {
+            dragging = false
+            return false
+        }
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 if (!insideProxy(event.x, event.y)) return false
