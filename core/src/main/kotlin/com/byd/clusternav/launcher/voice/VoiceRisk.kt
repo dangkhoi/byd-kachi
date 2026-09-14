@@ -77,8 +77,28 @@ object VoiceRiskTable {
                 VoiceRisk.NORMAL
             }
         is VoiceIntent.Macro -> if (intent.id in MACRO_IDS) VoiceRisk.CONFIRM else VoiceRisk.NORMAL
+        // V1.1 (R16) — TỪ VỰNG MỞ luôn hỏi lại. Xem KDoc [openVocab].
+        is VoiceIntent.Nav -> openVocab(intent.query)
+        is VoiceIntent.Media -> if (intent.op == VoiceMediaOp.QUERY) openVocab(intent.query) else VoiceRisk.NORMAL
         else -> VoiceRisk.NORMAL
     }
+
+    /**
+     * Tên bài / điểm đến ⇒ [VoiceRisk.CONFIRM], **khác** mọi việc khác trong bảng này.
+     *
+     * ## Vì sao một việc VÔ HẠI lại phải hỏi lại
+     * Ba dòng trên hỏi vì **hậu quả** không đảo lại được (xe mở khoá, kính hạ hết). Dòng này hỏi vì **nguồn**:
+     * từ 1.50 phần đuôi của câu do bộ nhận dạng **TỰ DO** đọc ra (R16 — không ngữ pháp, không tập đóng), tức
+     * chính xác kém hơn hẳn phần còn lại của câu. Máy nghe *"Diễm Xưa"* thành *"điểm xưa"* thì:
+     *  • nếu là bài hát — app mở nhầm kết quả, người lái phải sửa tay **giữa lúc đang lái**;
+     *  • nếu là điểm đến — [ĐO] Google Maps/Waze **bắt đầu dẫn đường luôn** (`navigate=yes`), tức xe được chỉ
+     *    sang một hướng khác mà không ai kịp đọc.
+     * Một cú chạm "Đồng ý" sau khi nghe máy đọc lại *"Tìm bài «Diễm Xưa» trên YouTube Music"* rẻ hơn hẳn cả hai.
+     *
+     * Câu rỗng thì không có gì để đọc lại ⇒ [VoiceRisk.NORMAL] (*"phát nhạc"* vẫn là một cú chạm như trước).
+     */
+    private fun openVocab(query: String): VoiceRisk =
+        if (query.isBlank()) VoiceRisk.NORMAL else VoiceRisk.CONFIRM
 
     /** Vì sao việc này phải hỏi lại — hiện thẳng trong hộp xác nhận, không giấu trong mã. */
     fun reason(intent: VoiceIntent): String? = when (intent) {
@@ -93,6 +113,18 @@ object VoiceRiskTable {
         } else {
             null
         }
+        is VoiceIntent.Nav -> openVocabReason(intent.query)
+        is VoiceIntent.Media -> if (intent.op == VoiceMediaOp.QUERY) openVocabReason(intent.query) else null
         else -> null
+    }
+
+    /** Lý do cho dòng TỪ VỰNG MỞ — xem KDoc [openVocab]. */
+    private fun openVocabReason(query: String): String? = if (query.isBlank()) {
+        null
+    } else {
+        Strings.t(
+            "đoạn trong ngoặc do nhận dạng tự do đọc ra — kém chính xác hơn phần còn lại của câu",
+            "the quoted part came from free-form recognition — less accurate than the rest",
+        )
     }
 }

@@ -64,6 +64,18 @@ class MediaBridge(context: Context) {
      * cũng không có gì báo. Tự dò một lần ở [tx] sửa gốc cho **mọi** chỗ gọi thay vì bắt từng chỗ nhớ gọi [read]
      * trước; giá trị trả về cho phép chỗ gọi nói thật ("chưa có phiên nhạc nào") thay vì báo một dấu ✓ rỗng.
      */
+    /**
+     * Gói của phiên nhạc **đang** được điều khiển, hoặc `null` khi chưa thấy phiên nào.
+     *
+     * V1.1 — câu *"phát bài X"* (không nêu app) phải đi vào **app người ta đang nghe**, chứ không vào một app
+     * mặc định nào đó: mở YouTube Music đè lên Spotify đang phát là hai luồng nhạc cùng lúc. Tự dò một lần nếu
+     * chưa ai gọi [read] — cùng lý do với [tx], xem KDoc ở đó.
+     */
+    fun activePackage(): String? = runCatching {
+        if (active == null) read()
+        active?.packageName
+    }.getOrNull()
+
     fun play(): Boolean = tx { it.play() }
     fun pause(): Boolean = tx { it.pause() }
     fun next(): Boolean = tx { it.skipToNext() }

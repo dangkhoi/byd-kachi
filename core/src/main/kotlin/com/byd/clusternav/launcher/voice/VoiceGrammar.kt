@@ -117,6 +117,38 @@ object VoiceSynonyms {
 
     /** Cụm mở đầu một ĐIỂM ĐẾN (đứng sau một động từ không phải NAV, vd *"tìm đường tới …"*). */
     val NAV_WORDS: List<String> = listOf("duong den", "duong toi", "destination")
+
+    /**
+     * ═══ V1.1 · CÁCH NÓI TÊN **APP ĐÍCH** ([VoiceAppTargets]) — khai MỘT chỗ, như mọi cách nói khác ═══════════
+     *
+     * Spec R17(d). Cùng hợp đồng với [CONTROL]/[TELEMETRY]: **không dấu, chữ thường**, và cụm nào không dùng được
+     * thì lộ ra bằng số đo chứ không bằng suy đoán.
+     *
+     * ## [ĐO] 2026-09-14 — từ điển `vosk-model-small-vn-0.4` (19.529 mục) **không** có mọi tên thương hiệu
+     * Tra ngược từng từ: `youtube` ✓ · `music` ✓ · `google` ✓ · `map` ✓ · `yt` ✓ · `ô` ✓ — nhưng `maps` ✗ ·
+     * `waze` ✗ · `spotify` ✗ · `zing` ✗ · `mp3` ✗ · `vietmap` ✗. Cụm chứa một từ ✗ bị [VoicePhrases] loại **cả
+     * cụm** (đúng thiết kế), nên mỗi app phải có ít nhất một cách nói mà mô hình đọc nổi:
+     *  • *"google maps"* ✗ ⇒ thêm **"google map"** ✓ và **"ban do google"** ✓ (cách người Việt hay nói hơn);
+     *  • *"waze"* ✗ ⇒ thêm **"quay"** — chính là âm Việt *"quây"* mà người ta vẫn gọi app này (`quay`/`quây`/
+     *    `quẩy` đều có trong từ điển, và [VoicePhrases] nở cả họ thanh điệu nên nói thanh nào cũng nhận);
+     *  • *"vietmap"* ✗ ⇒ thêm **"viet map"** ✓✓ (hai từ rời);
+     *  • *"spotify"* · *"zing mp3"* ✗ và **không có âm Việt nào tự nhiên** ⇒ chấp nhận: hai app này **gõ được mà
+     *    chưa nói được**, con số ghi ở §9 spec. Bịa ra một cách viết theo âm (*"sờ pô ti phi"*) là bịa một cách
+     *    nói không ai dùng — tệ hơn là nói thẳng rằng chưa nói được.
+     *
+     * ⚠ Các cụm này CỐ Ý **không** vào từ vựng chung ([VoiceGrammar.terms]): chúng chỉ được tra ở đúng một vị trí
+     * — ngay sau cụm đánh dấu *"bằng / trên / với"* (xem [VoiceIntentParser.appAfterMarker]). Thả *"quay"* hay
+     * *"youtube"* vào từ vựng chung là đổi cách hiểu của những câu đang chạy tốt (*"quay lại bài"* là lệnh PREV).
+     */
+    val APP_TARGETS: Map<String, List<String>> = mapOf(
+        VoiceAppTargets.YT_MUSIC to listOf("youtube music", "yt music", "nhac youtube", "youtube nhac"),
+        VoiceAppTargets.YOUTUBE to listOf("youtube", "yt"),
+        VoiceAppTargets.SPOTIFY to listOf("spotify"),
+        VoiceAppTargets.ZING to listOf("zing mp3", "zing"),
+        VoiceAppTargets.GMAPS to listOf("google map", "google maps", "ban do google", "google"),
+        VoiceAppTargets.WAZE to listOf("waze", "quay"),
+        VoiceAppTargets.VIETMAP to listOf("viet map", "vietmap"),
+    )
 }
 
 /**
@@ -185,6 +217,9 @@ object VoiceGrammar {
         listOf("disable") to VoiceVerb.OFF,
         listOf("mo") to VoiceVerb.OPEN,
         listOf("open") to VoiceVerb.OPEN,
+        // V1.1 — *"đưa YouTube vào ô số 2"*. Người ta nói *"đưa … vào …"* nhiều hơn *"mở … vào …"* khi ý là
+        // GẮN chứ không phải MỞ. Không đụng nhãn nào: không cụm nào trong từ vựng bắt đầu bằng `dua`.
+        listOf("dua") to VoiceVerb.OPEN,
         listOf("dong") to VoiceVerb.CLOSE,
         listOf("close") to VoiceVerb.CLOSE,
         listOf("tang") to VoiceVerb.UP,
@@ -318,10 +353,13 @@ object VoiceGrammar {
      * hình. Xem [VoicePhrases] — đó là chỗ giải thích đầy đủ, và là chỗ có bài canh.
      *
      * @param vocabulary từ điển mô hình ([VoskWordList.readOutputSymbols]).
+     * @param installed TÊN GÓI đang có trên máy — quyết định tên [VoiceAppTargets] nào được khai với bộ nhận
+     *   dạng. Rỗng ⇒ không khai tên app đích nào (xem `VoicePhrases.labelPhrases`).
      */
     fun phrases(
         vocabulary: Set<String>,
         profiles: List<String> = emptyList(),
         apps: List<String> = emptyList(),
-    ): VoicePhraseSet = VoicePhrases.build(vocabulary, profiles, apps)
+        installed: Set<String> = emptySet(),
+    ): VoicePhraseSet = VoicePhrases.build(vocabulary, profiles, apps, installed)
 }

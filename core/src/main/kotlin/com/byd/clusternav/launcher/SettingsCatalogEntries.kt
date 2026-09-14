@@ -218,6 +218,14 @@ internal object SettingsCatalogEntries {
         SettingsEntry("system_vietmap_data", SettingsGroup.SYSTEM, "Dữ liệu VietMap", labelEn = "VietMap data"),
         // cast_diagnostics · ClusterDiag/DiagActivity — VIỆC LÀM
         SettingsEntry("system_diagnostics", SettingsGroup.SYSTEM, "Chẩn đoán và nhật ký", labelEn = "Diagnostics and logs"),
+        // T-BRIDGE · `KachiTestBridge` — công tắc mở **cầu kiểm thử qua adb** (docs/specs/kachi-test-bridge.html).
+        // ⚠ Khoá `test_bridge_until` là TRANSIENT, không phải một sở thích: nó tự hết hạn sau 60 phút và chết theo
+        // lần nổ máy (xem `TestBridgeWindow`). Đứng ở "Nâng cao" cạnh hai màn chẩn đoán vì cùng loại — một chỗ ĐO,
+        // không phải một bề mặt cấu hình.
+        SettingsEntry(
+            "system_test_bridge", SettingsGroup.SYSTEM, "Chế độ kiểm thử qua adb",
+            "test_bridge_until", "ADB test mode",
+        ),
 
         // ── Giới thiệu ──
         SettingsEntry("about_version", SettingsGroup.ABOUT, "Phiên bản và giấy phép", labelEn = "Version and licence"),

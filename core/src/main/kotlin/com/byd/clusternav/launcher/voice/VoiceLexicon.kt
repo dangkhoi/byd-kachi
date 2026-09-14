@@ -266,4 +266,41 @@ object VoiceLexicon {
         listOf("bao", "nhieu"), listOf("the", "nao"), listOf("ra", "sao"),
         listOf("how", "much"), listOf("how", "many"),
     )
+
+    // ── V1.1 · Ô TRÊN MÀN HÌNH (*"mở YouTube vào ô số 2"*) ───────────────────────────────────────
+
+    /**
+     * Từ mở đầu một mệnh đề chỉ Ô: *"…vào **ô** số 2"* / EN *"…in **slot** 2"*.
+     *
+     * ⚠ `"o"` là một từ **một chữ cái** sau khi bỏ dấu (`ô` → `o`), nên nó CHỈ được tra ở đúng một chỗ: phần đuôi
+     * **sau** một tên app đã khớp ([VoiceIntentParser.slotAt]). Quét nó ở giữa câu bất kỳ là mời mọi tiếng
+     * *"ờ / ồ / ô"* biến thành một chỉ số ô.
+     */
+    val SLOT_HEADS: Set<String> = setOf("o", "slot")
+
+    /**
+     * Từ đệm giữa [SLOT_HEADS] và con số — *"ô **số** hai"*, *"ô **thứ** hai"*, EN *"slot **number** 2"*.
+     *
+     * Bỏ qua chúng chứ không bắt buộc có: người ta nói cả *"vào ô 2"* lẫn *"vào ô số 2"*, và bắt một trong hai
+     * là làm câu kia câm mà không ai biết vì sao.
+     */
+    val SLOT_ORDINALS: Set<String> = setOf("so", "thu", "number")
+
+    /**
+     * MỌI từ có thể tham gia một mệnh đề chỉ ô — gom để tầng NGHE khai đủ với bộ nhận dạng.
+     *
+     * Cùng lý do với [NUMBER_WORDS]: thiếu một từ ở đây thì câu *"mở YouTube vào ô số hai"* **gõ được mà không
+     * nói được**, và cái thiếu ấy im lặng. `vao`/`in` không tham gia phép đọc số (bộ phân tích bỏ qua chúng như
+     * mọi từ lạ) nhưng **phải** có trong ngữ pháp, không thì người nói đúng câu vẫn không được nghe ra.
+     */
+    val SLOT_WORDS: Set<String> = SLOT_HEADS + SLOT_ORDINALS + setOf("vao", "in", "into")
+
+    /**
+     * Cụm đánh dấu *"…**bằng** &lt;app&gt;"* — mở đầu phần CHỌN APP ở cuối một câu nhạc/dẫn đường.
+     *
+     * ⚠ Cố ý **không** có `"o"`/`"tai"`: chúng quá ngắn và quá thường. Và cụm này chỉ có nghĩa khi **ngay sau nó
+     * là một tên app đã biết, và tên ấy đứng ở CUỐI câu** ([VoiceIntentParser.appAfterMarker]) — nếu không thì
+     * một điểm đến như *"cầu Bằng Lăng"* sẽ bị cắt đôi.
+     */
+    val BY_APP_MARKERS: Set<String> = setOf("bang", "tren", "voi", "qua", "with", "on", "using")
 }

@@ -145,6 +145,18 @@ else
   fi
 fi
 
+# ── 4. Giá trị datum QUA CẦU KIỂM THỬ (nếu cầu trả) ────────────────────────────────────────
+# [ĐO từ source] giá trị datum chỉ đọc được TRONG tiến trình app (`BydHalGateway`→`BydHal`, reflection)
+# — KHÔNG có đường shell nào đọc hộ. Cầu kiểm thử chạy TRONG app nên nó là đường duy nhất lấy được số
+# này bằng máy thay vì bằng mắt. Cầu im ⇒ vẫn phải đọc trên màn và điền tay (đó là đường gốc).
+k_hr; echo "[4] Thử lấy giá trị datum qua cầu kiểm thử (lệnh state)"
+if k_test state; then
+  k_say "JSON ở $K_TEST_JSON — nếu nó có mục datum, chép thẳng vào cột 'Giá trị đo' của 20-datums.md"
+  k_todo "Đối chiếu vài dòng với số HIỆN TRÊN MÀN: lệch ⇒ báo ngay, đó là lỗi tầng đọc chứ không phải HAL"
+else
+  k_todo 'Đọc giá trị bằng MẮT trên thẻ ô / bộ chọn ô rồi điền 20-datums.md (màn hiện — ⇒ ghi null)'
+fi
+
 k_hr
 echo "XONG bước 2. Bảng cần điền tay: $OUT/20-datums.md"
 k_note "20-datums: đã sinh bảng đo datum/control"

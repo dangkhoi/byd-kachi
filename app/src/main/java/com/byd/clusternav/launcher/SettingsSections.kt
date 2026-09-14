@@ -13,6 +13,7 @@ import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.testbridge.TestBridgeStore
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -328,6 +329,7 @@ class SettingsSections(
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_advanced)))
         body.addView(rows.button(context.getString(R.string.kachi_vietmap_data)) { deps.bridge.openVietMapData() })
         body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { deps.bridge.openDiagnostics() })
+        testBridge(body)
         // V1 · R6 — đường thử lệnh bằng CHỮ. Đặt ở "Nâng cao" cạnh hai màn chẩn đoán kia vì nó cùng loại: một chỗ
         // ĐO, không phải một bề mặt cấu hình (xem KDoc [VoiceTextConsole] về vì sao không cho nó một nhóm riêng).
         // V1 pha NGHE · R9 — hàng tải mô hình đứng TRƯỚC ô gõ thử: đó là thứ tự làm việc thật (tải cái tai,
@@ -335,6 +337,36 @@ class SettingsSections(
         com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows).build(body)
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
         VoiceTextConsole(context, rows, deps).build(body)
+    }
+
+    /**
+     * T-BRIDGE — công tắc **Chế độ kiểm thử qua adb** (`docs/specs/kachi-test-bridge.html` R2).
+     *
+     * ## Vì sao công tắc này chỉ có ở ĐÂY, và vì sao nó phải là một ô tick chứ không phải một nút
+     * Receiver của cầu kiểm thử là `exported` (uid shell không gửi được vào receiver non-exported — [ĐO] 09-14),
+     * nên **cái duy nhất** đứng giữa nó và chiếc xe là công tắc này. Nó phải:
+     *  • bật được bằng TAY, bởi người **đang ngồi trong xe** — không có lệnh `enable` nào qua broadcast, vì một
+     *    cửa mở được từ xa thì chủ xe không có cách nào biết mình đã mở;
+     *  • **nói ra** cái nó mở (câu phụ liệt kê đúng bốn việc mà cầu làm được), không phải một nhãn kỹ thuật;
+     *  • **tự đóng** — 60 phút hoặc một lần tắt máy ([com.byd.clusternav.launcher.testbridge.TestBridgeWindow]).
+     *
+     * Ô tick chứ không phải nút *"Mở 60 phút"*: người dùng cần **thấy** nó đang bật, và cần tắt được ngay. Một
+     * nút thì trạng thái "đang mở" không có chỗ nào hiện ra.
+     *
+     * ⚠ Câu phụ đọc **giá trị lúc dựng trang**. Gạt xong mà không đóng/mở lại bảng thì số phút chưa đổi — chấp
+     * nhận được ở một màn chẩn đoán, và ghi ra đây để người sau không tưởng là lỗi.
+     */
+    private fun testBridge(body: LinearLayout) {
+        val left = TestBridgeStore.remainingMinutes(context)
+        body.addView(rows.checkRow(
+            on = left > 0,
+            title = context.getString(R.string.kachi_test_bridge_title),
+            sub = if (left > 0) {
+                context.getString(R.string.kachi_test_bridge_sub_on, left)
+            } else {
+                context.getString(R.string.kachi_test_bridge_sub_off)
+            },
+        ) { on -> if (on) TestBridgeStore.enable(context) else TestBridgeStore.disable(context) })
     }
 
     // ── Dẫn đường · Cụm · Phím ───────────────────────────────────────────────────────────────────

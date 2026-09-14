@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# 40-ota.sh — L2: KÊNH OTA trên xe thật (bản đang cài → 1.47).
+# 40-ota.sh — L2: KÊNH OTA trên xe thật (bản đang cài → bản đích ĐỌC TỪ apk/, không hằng số).
 #
 # Đường OTA của Kachi (`UpdateChecker.kt`): hỏi GitHub Contents API thư mục `apk` nhánh `main` của
 # repo `dangkhoi/byd-kachi`, tìm `Kachi-<ver>-release.apk` mới hơn bản đang cài, tải, rồi cài qua
 # **dadb loopback** (`pm install -r`) — KHÔNG qua trình cài đặt hệ thống.
 # ⇒ Ba thứ phải đúng cùng lúc: (1) xe có mạng ra GitHub, (2) adbd loopback 5555 sống,
 #   (3) bản đang cài ký CÙNG khoá Kachi (từ 1.41). Sai (3) ⇒ pm từ chối, phải gỡ + cài tay MỘT lần.
+#
+# ⚠ CLAUDE.md §9 — "mỗi bản build đã báo cho user = một số hiệu riêng, KHÔNG BAO GIỜ đoán".
+#   Bản đích vì thế đọc từ TÊN TỆP `apk/Kachi-*-release.apk` trong repo, không viết cứng trong script:
+#   một hằng `1.47` sót lại sau ba lần bump là đúng cái bẫy mà §9 sinh ra để chặn.
 #
 # DÙNG:  scripts/vehicle/kachi/40-ota.sh [<ip-xe>:5555]
 set -uo pipefail
@@ -16,11 +20,25 @@ REPO="${KACHI_OTA_REPO:-dangkhoi/byd-kachi}"
 BRANCH="${KACHI_OTA_BRANCH:-main}"
 echo "carlog: $OUT · xe: $TARGET · kênh: $REPO@$BRANCH/apk"; k_hr
 
+# ── A0. Bản ĐÍCH — đọc từ tên tệp trong apk/ của repo ───────────────────────────────────────
+ROOT="$(k_root)"
+APK_FILE="$(ls -1 "$ROOT"/apk/Kachi-*-release.apk 2>/dev/null | sed 's/.*\///' \
+  | sed -n 's/^Kachi-\([0-9][0-9.]*\)-release\.apk$/\1 &/p' \
+  | sort -t. -k1,1n -k2,2n -k3,3n | tail -1 | awk '{print $2}')"
+WANT="$(printf '%s' "${APK_FILE:-}" | sed -n 's/^Kachi-\([0-9][0-9.]*\)-release\.apk$/\1/p')"
+if [ -n "$WANT" ]; then
+  k_ok "bản đích trong repo: apk/$APK_FILE  (phiên bản $WANT)"
+else
+  k_warn "apk/ KHÔNG có tệp nào đúng khuôn Kachi-<ver>-release.apk ⇒ không biết bản đích."
+  k_say "Dựng rồi chép vào apk/ trước khi lên xe: ./gradlew :app:assembleRelease"
+  k_say "  cp app/build/outputs/apk/release/app-release.apk apk/Kachi-<ver>-release.apk"
+fi
+
 # ── A. Bản đang cài (đọc từ máy — §9) ───────────────────────────────────────────────────────
 echo "[A] Bản đang cài trên xe"
 CUR="$(k_installed_version)"; CURC="$(k_installed_code)"
 if [ -z "$CUR" ]; then
-  k_bad "$KACHI_PKG chưa cài. Cài tay MỘT lần: adb -s $TARGET install -r apk/Kachi-1.47-release.apk"
+  k_bad "$KACHI_PKG chưa cài. Cài tay MỘT lần: adb -s $TARGET install -r apk/${APK_FILE:-Kachi-<ver>-release.apk}"
   k_say "(nếu báo INSTALL_FAILED_UPDATE_INCOMPATIBLE: bản cũ ký khoá khác ⇒ gỡ rồi cài lại —"
   k_say " gỡ là MẤT prefs, nên chụp cấu hình trước.)"
 else
@@ -80,6 +98,7 @@ k_say "'luôn cho phép'), nếu không đường cài đứng im mà không bá
 # ── D. Chạy thật (ĐỔI STATE: cài đè app) ────────────────────────────────────────────────────
 k_hr; echo "[D] Chạy thật"
 k_say "Đường trong app: Cài đặt › Hệ thống & quyền › Bảo trì › **Kiểm tra cập nhật**"
+[ -n "$WANT" ] && k_say "Kỳ vọng sau bước này: versionName = $WANT (bản trong apk/ của repo)"
 if k_confirm "mở thẳng nhóm Hệ thống & quyền trên xe (đổi app tiền cảnh)" "bấm Home trên xe" read; then
   k_sh "am start -n $KACHI_HOME_COMP --es open_settings_group system" >/dev/null 2>&1 || true
 fi
@@ -94,7 +113,10 @@ NEW="$(k_installed_version)"; NEWC="$(k_installed_code)"
   echo "after=${NEW:-absent} (${NEWC:-?})"
   echo "channel_repo=$REPO branch=$BRANCH"
 } > "$OUT/40-ota-result.txt"
-if [ -n "$NEW" ] && [ "$NEW" != "${CUR:-}" ]; then k_ok "versionName $CUR → $NEW  ⇒ OTA CHẠY THẬT TRÊN XE"
+{ echo "want=${WANT:-?} (apk/${APK_FILE:-?})"; } >> "$OUT/40-ota-result.txt"
+if [ -n "$NEW" ] && [ "$NEW" != "${CUR:-}" ]; then
+  k_ok "versionName $CUR → $NEW  ⇒ OTA CHẠY THẬT TRÊN XE"
+  [ -n "$WANT" ] && [ "$NEW" != "$WANT" ] && k_warn "nhưng KHÔNG bằng bản đích $WANT — kênh đăng bản khác apk/ của repo?"
 elif [ -n "$NEW" ]; then k_warn "versionName không đổi ($NEW) — ghi rõ lý do (đã mới nhất / cài hụt / chưa bấm)"
 else k_bad "sau bước này app không còn đọc được versionName — kiểm ngay"; fi
 

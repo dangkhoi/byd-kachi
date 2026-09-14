@@ -47,8 +47,8 @@ object VoiceReply {
         is VoiceIntent.Launcher -> Strings.t("Mở ", "Open ") + labelOf(i.id)
         is VoiceIntent.Profile -> Strings.t("Đổi sang hồ sơ ", "Switch to profile ") + ProfileNames.display(i.name)
         is VoiceIntent.Read -> Strings.t("Xem ", "Show ") + labelOf(i.datumId)
-        is VoiceIntent.Nav -> Strings.t("Dẫn đường tới ", "Navigate to ") + i.query
-        is VoiceIntent.OpenApp -> Strings.t("Mở ứng dụng ", "Open app ") + i.appName
+        is VoiceIntent.Nav -> Strings.t("Dẫn đường tới ", "Navigate to ") + i.query + by(i.app)
+        is VoiceIntent.OpenApp -> Strings.t("Mở ứng dụng ", "Open app ") + i.appName + inSlot(i.slot)
         is VoiceIntent.Media -> mediaPreview(i)
         is VoiceIntent.Unknown -> unknown(i)
     }
@@ -76,12 +76,22 @@ object VoiceReply {
     }
 
     private fun mediaPreview(i: VoiceIntent.Media): String = when (i.op) {
-        VoiceMediaOp.PLAY -> Strings.t("Phát nhạc", "Play")
+        VoiceMediaOp.PLAY -> Strings.t("Phát nhạc", "Play") + by(i.app)
         VoiceMediaOp.PAUSE -> Strings.t("Dừng nhạc", "Pause")
         VoiceMediaOp.NEXT -> Strings.t("Bài tiếp theo", "Next track")
         VoiceMediaOp.PREV -> Strings.t("Bài trước", "Previous track")
-        VoiceMediaOp.QUERY -> Strings.t("Phát ", "Play ") + i.query
+        // V1.1 — đọc lại tên bài trong ngoặc kép nhọn. Phần này do nhận dạng **tự do** đọc ra (R16), tức chỗ dễ
+        // sai nhất trong cả câu; để nó lẫn vào câu trơn thì người nghe không biết máy đang hỏi về đoạn nào.
+        VoiceMediaOp.QUERY -> Strings.t("Tìm bài ", "Search ") + "«" + i.query + "»" + by(i.app)
     }
+
+    /** Đuôi *"bằng &lt;app&gt;"* — rỗng khi câu không nêu app. */
+    private fun by(appKey: String?): String =
+        appKey?.let { Strings.t(" trên ", " on ") + VoiceAppTargets.labelOf(it) } ?: ""
+
+    /** Đuôi *"vào ô N"* — rỗng khi câu không nêu ô. Số giữ **đúng như người ta nói** (1-based). */
+    private fun inSlot(slot: Int?): String =
+        slot?.let { Strings.t(" vào ô $it", " in slot $it") } ?: ""
 
     /** Việc đã làm xong. */
     fun done(i: VoiceIntent): String = "✓ " + preview(i) + unverified(i)
@@ -156,6 +166,97 @@ object VoiceReply {
         "Kachi không tìm bài hát offline — mở app nhạc rồi nói lại ở đó",
         "Kachi does not search songs offline — open a music app and ask there",
     ))
+
+    // ═══ V1.1 · Ô + APP ĐÍCH ═════════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Câu nêu một ô **không có trong bố cục đang dùng**.
+     *
+     * Nói ra **con số thật** thay vì *"số ô không hợp lệ"*: người lái không nhớ bố cục hiện tại có mấy ô, và câu
+     * trả lời biết điều đó. Đây cũng là chỗ duy nhất trong cả đường lệnh mà số ô thật được kiểm — `:core` cố ý
+     * không kẹp (xem KDoc [VoiceIntent.OpenApp.slot]).
+     */
+    fun slotOutOfRange(i: VoiceIntent, slotCount: Int): String = failed(i, Strings.t(
+        "bố cục hiện chỉ có $slotCount ô",
+        "the current layout only has $slotCount slot(s)",
+    ))
+
+    /** Câu nêu đích danh một app mà xe **chưa cài**. Nói tên app, không nói tên gói. */
+    fun appNotInstalled(i: VoiceIntent, appKey: String): String =
+        failed(i, Strings.t("chưa cài ${VoiceAppTargets.labelOf(appKey)} trên xe", "${VoiceAppTargets.labelOf(appKey)} is not installed"))
+
+    /** Không có app nhạc nào trong bảng đích có mặt trên xe. */
+    fun noMusicApp(i: VoiceIntent): String = failed(i, Strings.t(
+        "chưa có app nhạc nào trên xe",
+        "no music app on this car",
+    ))
+
+    /**
+     * Đã **giao chuỗi chữ** cho app đích. Đuôi câu nói đúng thứ [ĐO] được, không hơn.
+     *
+     * [ĐO] máy ảo 2026-09-14: YT Music mở đúng màn kết quả nhưng **dừng ở nút Play** — không tự phát. Báo
+     * *"✓ Tìm bài «X» trên YouTube Music"* rồi im là để người lái ngồi chờ một bài hát không bao giờ kêu.
+     */
+    fun handedOver(i: VoiceIntent, target: VoiceAppTarget): String {
+        val tail = when {
+            target.evidence == VoiceAppEvidence.UNKNOWN -> Strings.t(
+                "chưa kiểm cửa nhận chữ của ${target.label}",
+                "${target.label}'s hand-over door is not verified yet",
+            )
+            target.kind == VoiceAppKind.MUSIC -> Strings.t(
+                "đã mở kết quả tìm — bấm Play để phát",
+                "search results opened — press Play",
+            )
+            else -> return done(i)
+        }
+        return done(i) + " — " + tail
+    }
+
+    /**
+     * *"Đang tra…"* — nói ra trước một lượt chờ có thể mất vài giây (giải tên địa điểm thành toạ độ).
+     *
+     * Im lặng ở đây là ca tệ nhất của cả đường lệnh: người lái vừa nói xong, màn hình không đổi gì, và họ sẽ nói
+     * lại lần hai — trong khi lượt thứ nhất vẫn đang chạy.
+     */
+    fun resolving(i: VoiceIntent): String = preview(i) + " — " + Strings.t("đang tra điểm đến…", "looking the place up…")
+
+    /**
+     * Đọc lại **tên nơi mà bên tra cứu trả về** trước khi bắn.
+     *
+     * Tên ấy KHÁC câu người ta nói (*"chợ bến thành"* → *"Chợ Bến Thành"*, hoặc một nơi trùng tên ở tỉnh khác),
+     * và từ đây là app dẫn đường **bắt đầu dẫn luôn**. Một cú chạm để xác nhận rẻ hơn ba mươi cây số sai hướng.
+     */
+    fun confirmPlace(i: VoiceIntent, target: VoiceAppTarget, place: String): String = Strings.t(
+        "Dẫn đường tới «$place» trên ${target.label}?",
+        "Navigate to «$place» on ${target.label}?",
+    ) + "\n" + Strings.t(
+        "tên này do bên tra cứu trả về, không phải nguyên văn câu vừa nói",
+        "this name came from the lookup service, not from what you said",
+    )
+
+    /**
+     * App đích **không có cửa nào** nhận điểm đến ⇒ chỉ mở được app.
+     *
+     * [ĐO] VietMap Live 3.4.0 (máy ảo 2026-09-14): không đăng ký `geo:`, `vietmaplive://` không mang tham số.
+     * Đây là một kết luận đã đo, nên câu trả lời nói thẳng *"gõ tay trong app"* thay vì hứa lần sau sẽ được.
+     */
+    fun navOpenedNoHandover(i: VoiceIntent, target: VoiceAppTarget): String = done(i) + " — " + Strings.t(
+        "${target.label} chưa nhận điểm đến bằng giọng; gõ tay trong app",
+        "${target.label} takes no destination from outside; type it in the app",
+    )
+
+    /**
+     * **Không tra ra được điểm đến** (mất mạng, máy chủ tra cứu im, tên không có trong dữ liệu) ⇒ mở app trơn.
+     *
+     * [SOÁT Pass 3 · P2] Tách khỏi [navOpenedNoHandover] vì hai câu nói hai chuyện khác hẳn: câu kia là *"app
+     * này không có cửa"* (một kết luận **đã đo**, đúng mãi), còn câu này là *"lượt tra cứu vừa rồi hỏng"* (thử
+     * lại có thể được). Dùng chung một câu là đổ lỗi cho app về một lần mất sóng — và người lái sẽ thôi không
+     * bao giờ thử lại nữa.
+     */
+    fun navNoPlace(i: VoiceIntent, target: VoiceAppTarget): String = done(i) + " — " + Strings.t(
+        "chưa tra được điểm đến (mạng?), mới chỉ mở ${target.label}",
+        "could not look the place up (network?) — only opened ${target.label}",
+    )
 
     /** App có tên nhưng không mở được (đã gỡ, hoặc ROM chặn mở từ launcher). */
     fun cannotOpen(i: VoiceIntent): String = failed(i, Strings.t("không mở được", "could not open"))

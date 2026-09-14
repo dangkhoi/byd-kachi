@@ -47,6 +47,7 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 4 — 2026-09-14</b>: <b>H2 — vá hai lỗi vòng đời của ô chiếu app</b> (phát hiện ở <code>docs/diagnostics/waze-into-slot-research-2026-09-14.md</code> §5): <b>rò màn ảo</b> (đo được 4 <code>kachi-slot-*</code> cho 2 ô) và <b>khung đóng băng</b> (app chết, ô vẫn giữ khung cuối). Thêm sở hữu màn ảo <b>theo Ô</b> (<code>SlotVdLedger</code> :core + <code>SlotVdOwner</code> :app) và nhịp đo sống/chết dùng chung (<code>SlotLiveness</code> :core + <code>SlotLiveProbe</code> :app). [ĐO] sau vá trên <code>emulator-5554</code>: <b>2 màn ảo cho 2 ô</b>, ổn định qua khởi động lại / dựng lại ô; ô chết hiện nhãn <i>"App đã đóng — chạm để mở lại"</i> và chạm mở lại được. Chi tiết §9.</li>
 <li><b>Pass 3 — 2026-09-10</b>: <b>Senior review (độc lập) — APPROVED</b>. Đủ phạm vi 10/10 yêu cầu · khớp 7/7 mặt tiếp giáp · vá <b>3 [P2] + 1 [P3]</b> (rào bộ nhớ cho kênh shell · rò rỉ cửa sổ ngăn kéo lúc huỷ activity · một Drawable dùng cho hai ô lưới · index tài liệu lệch) + 2 test khoá bản vá ⇒ đủ 5 module <b>2343 test / 0 lỗi</b>. Ba nợ 🚗 ghi tường minh, xem §10.</li>
 <li><b>Pass 2 — 2026-09-10</b>: <b>Implement xong off-car</b>. Đủ 5 module <b>2339 test / 0 lỗi</b> (+37 so với mốc 2302), APK dựng sạch, đo E2E trên máy ảo đạt cả 3 ca. <b>Một sai lệch spec đã sửa theo số đo</b>: thứ tự hai đường mở toàn màn bị ĐẢO (xem §9).</li>
 <li><b>Pass 1 — 2026-09-10</b>: Owner chốt 5 câu hỏi mở → OQ1 duyệt (nút "Ứng dụng" trên thanh trên) · OQ2 KHÔNG thêm nút phóng to · OQ3 KHÔNG cần tự chiếu lại · OQ4 giữ U2 ở mức tối thiểu · OQ5 CÓ danh sách gần đây.</li>
@@ -312,7 +313,127 @@ WorkspaceRenderPlan.decide(
 <li><b>App từ chối màn phụ</b> (Waze/Maps) vẫn là giới hạn cũ, không thuộc gói này. Tài liệu Android xác nhận độc lập: app thường không được mở lên màn riêng tư (§4.5).</li>
 </ul>
 
+<h3>2026-09-14 · H2 — vòng đời màn ảo của ô + kênh im lặng phải nói</h3>
+<div class="card">
+<p><b>Hai lỗi, đều [ĐO]</b> (nguồn: <code>docs/diagnostics/waze-into-slot-research-2026-09-14.md</code> §5, đo lại trên <code>emulator-5554</code> ngày 2026-09-14):</p>
+<table>
+<tr><th>Lỗi</th><th>Bằng chứng trước vá</th><th>Gốc rễ</th></tr>
+<tr>
+  <td><b>Rò màn ảo</b></td>
+  <td><code>dumpsys display</code> có <b>4</b> thiết bị <code>kachi-slot-*</code> (2 cái <code>state OFF</code>, tem thời gian cách nhau 24,5 s) cho <b>2</b> ô App; cùng lúc <code>dumpsys activity activities</code> có <b>4</b> <code>KachiHomeActivity</code> (t790 · t796 · t810 mang cờ <code>f</code> = đang kết thúc, t816 đang chạy)</td>
+  <td>Đường giải phóng DUY NHẤT là <code>View.onDetachedFromWindow</code>. Một màn Kachi "đang kết thúc" giữ cây view bao lâu là quyền của hệ điều hành ⇒ màn ảo của nó sống chồng lên màn ảo của màn Kachi mới. Ngoài ra <code>ViewGroup.removeView</code> chỉ tháo con khi cây view <b>đang gắn cửa sổ</b> (<code>mAttachInfo != null</code>)</td>
+</tr>
+<tr>
+  <td><b>Khung đóng băng</b></td>
+  <td><code>am force-stop</code> app trong ô ⇒ <code>SurfaceView</code> giữ nguyên khung hình cuối, ô trông còn sống, chạm không có gì xảy ra</td>
+  <td>Màn ảo và mặt vẽ vẫn còn khi task chết ⇒ <b>không có tín hiệu hệ thống nào</b> bắn về host. Phải ĐO mới biết</td>
+</tr>
+</table>
+
+<p><b>Vá — bất biến mới: mỗi ô nhiều nhất MỘT màn ảo sống.</b></p>
+<ul>
+<li><code>core/.../launcher/SlotVdLedger.kt</code> (thuần, generic) — sổ sở hữu theo <b>ô</b>, không theo view: ai <code>adopt</code> một ô thì màn ảo cũ của chính ô đó (<b>kể cả của chủ khác</b> = màn Kachi đời trước) được trả về để giải phóng. <code>release</code>/<code>releaseOwner</code> idempotent.</li>
+<li><code>app/.../launcher/SlotVdOwner.kt</code> — bản DUY NHẤT cho cả tiến trình (chủ sở hữu nằm trong một màn Kachi thì không thấy màn ảo của màn Kachi kia ⇒ không thể dọn). Ghi nhật ký tag <code>KachiVd</code> cả hai chiều tạo/giải phóng, kèm tên VD để đối chiếu với <code>dumpsys display</code>.</li>
+<li><code>VdAppHost.release()</code> idempotent, gọi từ <b>mọi</b> đường: <code>WorkspaceView</code> nhả tường minh TRƯỚC khi tháo view (đổi nội dung ô · dựng lại tất cả · workspace rời cửa sổ), <code>KachiHomeActivity.onDestroy</code> nhả cả cây, <code>onDetachedFromWindow</code> giữ làm lưới an toàn. Host đã nhả thì <b>không được tạo màn ảo mới</b>.</li>
+<li>Tên VD nay mang chỉ số ô: <code>kachi-slot-&lt;ô&gt;-&lt;tem thời gian&gt;</code>.</li>
+</ul>
+
+<p><b>Vá — kênh im lặng phải nói.</b> <code>core/.../launcher/SlotLiveness.kt</code> giữ luật quyết định (chưa từng thấy sống ⇒ KHÔNG kết luận — ca "app chưa bao giờ vào được ô" là <b>H1</b>, không phải H2; phải hụt 2 nhịp liên tiếp mới kết luận; mỗi cái chết báo đúng một lần). <code>app/.../launcher/SlotLiveProbe.kt</code> chạy <b>một</b> lệnh <code>am stack list</code> cho <b>mọi</b> ô, 5 s/nhịp, và tắt hẳn khi không ô nào cần đo. Mất task ⇒ giấu mặt vẽ (khung cuối biến mất, lộ thẻ icon+tên) + nhãn <i>"App đã đóng — chạm để mở lại"</i> (<code>kachi_slot_app_closed</code>, VI + EN), chạm là mở lại ngay trong ô.</p>
+
+<p><b>[ĐO] sau vá</b> (<code>emulator-5554</code>, Kachi <b>1.53</b> <code>versionCode=54</code>, 2 ô App = ô 0 Waze · ô 3 Google Maps):</p>
+<table>
+<tr><th>Phép đo</th><th>Trước vá</th><th>Sau vá</th></tr>
+<tr><td><code>dumpsys display</code> — số <code>kachi-slot-*</code> khác nhau</td><td><b>4</b> cho 2 ô (lúc hai đời màn Kachi cùng sống)</td><td><b>2</b> — ổn định qua mở lại app · force-stop + mở lại · vòng mở app toàn màn rồi về HOME</td></tr>
+<tr><td>force-stop Kachi rồi mở lại</td><td>2 (tên mới, bản cũ để lại rác khi có đời chồng)</td><td>0 → <b>2</b>, kèm nhật ký <code>KachiVd: tạo màn ảo kachi-slot-0-… · đang sống 1/2</code></td></tr>
+<tr><td><code>am force-stop</code> app trong ô</td><td>ô giữ khung hình cuối (trông còn sống)</td><td>nhật ký <code>… không còn task trên display 33 ⇒ app đã đóng</code> sau ~10 s; ô hiện icon+tên + nhãn "App đã đóng — chạm để mở lại"; chạm ⇒ app mở lại (task mới)</td></tr>
+</table>
+
+<p><b>Bài canh</b>: <code>:core</code> <code>SlotVdLedgerTest</code> (bộ đếm — khoá đúng ca "4 màn ảo cho 2 ô") · <code>SlotLivenessTest</code>; <code>:app</code> <code>SlotHostingLifecycleContractTest</code> — quét <b>toàn cây</b>: tệp nào gọi <code>createVirtualDisplay</code> thì phải có cặp <code>SlotVdOwner.adopt</code>/<code>release</code>, và mọi đường thay/đóng/dựng-lại phải nhả TRƯỚC khi tháo view.</p>
+
+<p><b>Còn mở (không thuộc H2)</b>: ô mà app <b>chưa bao giờ</b> lên được màn ảo (Waze — xem H1) hiện vẫn là ô <b>đen</b>, vì luật [SlotLiveness] cố ý không kết luận khi chưa từng thấy sống. Nói ra cho ca đó là việc của đường lùi H1 (đang chờ đo trên xe).</p>
+</div>
+
 <h2>10. Reviewer Log</h2>
+
+<h3>Pass H2 — 2026-09-14 · Senior review vòng đời ô chiếu app <span class="pill ok">đã vá + chạy lại xanh</span></h3>
+<p class="muted">Phạm vi: toàn bộ thay đổi H2 chưa commit — <code>SlotVdLedger</code>/<code>SlotLiveness</code>
+(<code>:core</code>), <code>SlotVdOwner</code>/<code>SlotLiveProbe</code> (<code>:app</code>),
+<code>VdAppHost</code>, <code>WorkspaceView</code>, <code>KachiHomeActivity</code>, 3 bài kiểm mới. Kết luận
+scope: <b>H2·1 (rò màn ảo) ✅ · H2·2 (khung đóng băng) ✅</b>. <b>[ĐO]</b> 5 module <b>3.670 bài / 0 đỏ</b>.</p>
+
+<p><b>Đã soát và ĐẠT (không phải vá):</b> mọi đường <code>removeView</code>/<code>removeAllViews</code> của
+<code>WorkspaceView</code> có nhả trước khi tháo — đường thứ ba (<code>rebuildWidgetSlots</code>) không cần vì nó
+chỉ dựng lại ô <b>Widget</b> (<code>content !is SlotContent.Widget → continue</code>), không ô nào ở đó giữ
+<code>VdAppHost</code>; host đã nhả thì <code>surfaceChanged</code> <b>không</b> tạo màn ảo mới
+(<code>if (released) return</code>); <code>force-stop</code> lúc nhả chỉ nhắm <b>gói của chính ô đó</b>
+(CLAUDE.md §4 — phạm vi tường minh), và đây không phải hành vi mới (đường cũ <code>onDetachedFromWindow</code> đã
+làm đúng thế); <b>đường cast cụm không bị đụng</b> — chỉ <code>VdAppHost</code> gọi
+<code>createVirtualDisplay</code> trong cả cây (đã quét), cụm là display vật lý 1 và không có mục nào trong sổ,
+nên <code>releaseOwner</code> không thể chạm tới nó; luật <i>“chưa từng thấy sống ⇒ không kết luận”</i> đúng cho
+ca Waze (ô đen thuộc H1, không bị dán nhầm nhãn “App đã đóng”); nhãn mở lại đi <code>reopen()</code> nên mở lại
+<b>đúng ô đó</b>, không dựng lại view, không tạo VD mới.</p>
+
+<table>
+<tr><th>#</th><th>Phát hiện</th><th>Vá</th></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b>Nhịp đo chạy tiếp khi màn chính đã khuất.</b> KDoc <code>SlotLiveProbe</code> nói nhịp đo dùng “một
+        luồng nền riêng, không dùng <code>winExec</code>” — nhưng luồng nền riêng <b>không</b> có nghĩa là không
+        tranh chấp: mọi lệnh shell của app xếp hàng trên <b>MỘT</b> chủ duy nhất
+        (<code>ShellTransport</code> = một <code>PrioritySerialExecutor</code> + một kết nối dadb), nên mỗi nhịp
+        vẫn chiếm chỗ trong CÙNG hàng đợi với lệnh đặt cửa sổ (lệnh loại này chặn tới ~3 s). Và màn Kachi
+        <b>không chết</b> khi người dùng mở một app toàn màn (view còn gắn, ô còn đăng ký) ⇒ app đốt một lượt dadb
+        mỗi 5 giây <b>suốt chuyến đi</b> cho một dữ liệu không ai nhìn.</td>
+    <td><code>SlotLiveProbe.pause()</code>/<code>resume()</code> nối vào <code>onStop</code>/<code>onStart</code>
+        của màn chính; ticker dừng hẳn khi khuất, danh sách ô <b>giữ nguyên</b> (xoá thì mỗi lần quay về là một
+        chu kỳ đo mới và ô chết trong lúc khuất không bao giờ được kết luận). Đếm bằng
+        <b>số màn đang hiện</b> chứ không một cờ trần: thứ tự vòng đời là
+        <code>A.onPause → B.onStart → A.onStop</code>, nên cờ trần sẽ bị màn CŨ tắt <b>sau khi</b> màn MỚI bật —
+        và đúng ca “bốn <code>KachiHomeActivity</code> cùng sống” của chính H2 là ca làm nhịp đo chết vĩnh viễn.
+        KDoc lớp viết lại cho đúng nơi tranh chấp thật. Bài canh
+        <code>SlotHostingLifecycleContractTest.man khuat thi ngung nhip do…</code>.</td></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b><code>SlotLiveness.reset()</code> / <code>hasSeenAlive()</code> không có chỗ gọi nào trong mã sản
+        phẩm</b> (CLAUDE.md §8 — <code>CastShell.evictVd</code> lần thứ hai), và KDoc lớp còn nói
+        <i>“chỉ <code>reset</code> mới cho phép chu kỳ đo mới”</i> — mô tả một cơ chế <b>không tồn tại</b>: đường
+        mở lại thật dựng một <code>Sub</code> mới, tức một <code>SlotLiveness</code> mới.</td>
+    <td>Gỡ cả hai hàm; KDoc viết lại theo đúng đường chạy thật.
+        <code>SlotLivenessTest.mo lai thi bat dau chu ky do moi</code> nay khoá đúng hành vi ấy (bản mới quay về
+        luật “chưa từng thấy sống”, và chu kỳ mới vẫn báo được cái chết thứ hai).</td></tr>
+</table>
+
+<p><b>[ĐO] 2026-09-14 20:0x trên <code>emulator-5554</code> (bản vá đã cài, Kachi 1.53/54, ô 0 = Waze ·
+ô 3 = Google Maps)</b> — đo đúng thứ bản vá hứa, không suy từ mã:</p>
+<table>
+<tr><th>Bước</th><th>Quan sát</th></tr>
+<tr><td>Mở lại Kachi, chờ 18 s</td><td><code>dumpsys display</code>: <b>đúng 2</b> <code>kachi-slot-*</code> cho 2 ô;
+    không ô nào mang nhãn “App đã đóng”.</td></tr>
+<tr><td>Đẩy Kachi xuống nền (mở Cài đặt) → <code>am force-stop com.google.android.apps.maps</code> → chờ <b>25 s</b>
+    (đủ 5 nhịp nếu nhịp đo còn chạy)</td><td>Màn Kachi vẫn sống. <b>Không</b> kết luận nào được đưa ra —
+    nhịp đo đã ngưng đúng như <code>pause()</code> hứa.</td></tr>
+<tr><td>Quay lại Kachi, đo ở <b>t+2 s</b></td><td><code>uiautomator dump</code>: <b>chưa</b> có nhãn “App đã đóng”
+    — chu kỳ đo mới vừa bắt đầu, chưa đủ 2 nhịp hụt.</td></tr>
+<tr><td>Đo tiếp ở <b>t+18 s</b></td><td>Nhãn <b>“App đã đóng — chạm để mở lại”</b> hiện đúng ô 3
+    (<code>bounds=[969,498][1896,870]</code>, <code>clickable=true</code>).</td></tr>
+<tr><td>Chạm nhãn, chờ 12 s</td><td>Nhãn biến mất, Google Maps chạy lại, và <code>dumpsys display</code> vẫn
+    <b>đúng 2</b> <code>kachi-slot-*</code> <b>với nguyên hai tên cũ</b> — mở lại dùng lại đúng màn ảo của ô,
+    không sinh thêm cái nào.</td></tr>
+</table>
+<p class="muted">Ghi chú đo: bản <b>release</b> không đẩy nhật ký <code>KachiVd</code> ra <code>logcat</code>, nên
+phép đo này đọc <b>trạng thái người dùng thấy</b> (<code>uiautomator dump</code> + <code>dumpsys display</code>)
+thay cho log — mạnh hơn, vì nó kiểm đúng thứ người lái nhìn.</p>
+
+<h3>Pass H2 — phần KHÔNG vá (ghi lại)</h3>
+<ul>
+<li><b>[P3] Ô mà app CHƯA BAO GIỜ lên được màn ảo vẫn là ô đen</b> — đúng thiết kế (<code>SlotLiveness</code> cố
+ý không kết luận khi chưa từng thấy sống), và nói ra cho ca đó là việc của đường lùi <b>H1</b>. Không đụng ở đây.</li>
+<li><b>[P3] Bài canh của H2 là quét mã nguồn</b> (không dựng được <code>View</code>/<code>VirtualDisplay</code>
+trong JVM thuần), nên chúng khoá <b>hình dạng mã</b> chứ không khoá hành vi. Phần quyết định thuần đã có bộ đếm
+riêng ở <code>:core</code>; phần còn lại phải đo trên máy/xe — đã có số đo máy ảo ở §9, còn <b>🚗 chưa đo trên
+xe</b>.</li>
+</ul>
+
 
 <h3>Pass 1 — 2026-09-10 · Senior review (độc lập, tự vá) <span class="pill ok">APPROVED</span></h3>
 <p class="muted">Phạm vi soát: 15 file của gói 1 (3 mới ở <code>:core</code>, 1 mới + 8 sửa ở <code>:app</code>, 3 test mới) + đọc ĐỒNG THỜI cả hai đầu của 7 chỗ ghép. Đo lại đủ 5 module.</p>

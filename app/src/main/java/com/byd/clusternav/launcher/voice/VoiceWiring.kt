@@ -2,6 +2,8 @@ package com.byd.clusternav.launcher.voice
 
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import com.byd.clusternav.AppContainer
 import com.byd.clusternav.launcher.HomeUiState
 import com.byd.clusternav.launcher.MediaBridge
@@ -60,6 +62,12 @@ object VoiceWiring {
         onListen: () -> Unit,
         confirm: (String, () -> Unit, () -> Unit) -> Unit,
         say: (String) -> Unit,
+        /**
+         * V1.1 — gắn app vào ô. Mặc định **từ chối** (trả `false`), có chủ ý: bề mặt nào không nối được đường
+         * ngăn kéo thì phải nói *"không gắn được"* chứ không được lặng lẽ mở app toàn màn — người ta đã nói rõ
+         * là *"vào ô số 2"*, làm một việc khác mà báo ✓ là nói dối. Xem `VoiceDispatcher.assignAppToSlot`.
+         */
+        assignAppToSlot: (Int, String) -> Boolean = { _, _ -> false },
     ): VoiceDispatcher = VoiceDispatcher(
         control = { AppContainer.get(ctx).carControl },
         state = state,
@@ -72,5 +80,13 @@ object VoiceWiring {
         onListen = onListen,
         confirm = confirm,
         say = say,
+        assignAppToSlot = assignAppToSlot,
+        // V1.1 — ba đường của bảng đích. Dựng ở ĐÂY, không ở hai bề mặt: xem KDoc lớp (một bộ dây, một chỗ khai).
+        sendToApp = { handoff -> VoiceAppIntents.send(ctx, handoff) },
+        geocode = { place -> VoiceGeocoder.resolve(ctx, place) },
+        mediaPackage = { MediaBridge(ctx).activePackage() },
+        onUi = { block ->
+            if (Looper.myLooper() == Looper.getMainLooper()) block() else Handler(Looper.getMainLooper()).post(block)
+        },
     )
 }

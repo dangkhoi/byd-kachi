@@ -114,6 +114,8 @@ internal fun homePanels(
     openAppList: () -> Unit,
     /** V1 · R6 — mở một app theo tên gói. */
     openAppByPackage: (String) -> Boolean,
+    /** V1.1 — gắn app vào một ô; CÙNG lambda mà ngăn kéo dùng. */
+    assignAppToSlot: (Int, String) -> Boolean,
 ): HomePanels = HomePanels(
     activity = activity,
     rootFrame = rootFrame,
@@ -150,6 +152,7 @@ internal fun homePanels(
     goImmersive = goImmersive,
     openAppList = openAppList,
     openAppByPackage = openAppByPackage,
+    assignAppToSlot = assignAppToSlot,
     onPanelsChanged = onPanelsChanged,
 )
 
@@ -255,6 +258,8 @@ internal fun Activity.voiceSession(
     openSettings: () -> Unit,
     onSwitchProfile: (String) -> Unit,
     openPermissions: () -> Unit,
+    /** V1.1 — *"mở YouTube vào ô số 2"*. CÙNG lambda mà ngăn kéo dùng (`KachiHomeSlots.assignApp`). */
+    assignAppToSlot: (Int, String) -> Boolean,
 ): VoiceSession {
     lateinit var session: VoiceSession
     session = VoiceSession(
@@ -275,6 +280,7 @@ internal fun Activity.voiceSession(
                 onListen = { session.start() },
                 confirm = confirm,
                 say = say,
+                assignAppToSlot = assignAppToSlot,
             )
         },
         openPermissions = openPermissions,

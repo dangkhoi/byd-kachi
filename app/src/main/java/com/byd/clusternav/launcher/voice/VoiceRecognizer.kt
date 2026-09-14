@@ -61,6 +61,24 @@ class VoiceRecognizer private constructor(
     /** Chữ còn lại khi phiên bị cắt ngang (hết 8 giây / người dùng thả tay). */
     fun finalResult(): String = text(runCatching { recognizer.finalResult }.getOrNull(), "text")
 
+    /**
+     * Giải mã **cả một khúc PCM đã thu sẵn** (không phải luồng micro) và trả chữ cuối cùng.
+     *
+     * Dùng cho lượt 2 của [VoiceOpenVocab]: cùng bộ nhận dạng, cùng nhịp 200 ms như micro đẩy, chỉ khác nguồn.
+     * **CHẶN** ⇒ luồng nền.
+     */
+    fun decodeAll(pcm: ShortArray, length: Int): String {
+        var at = 0
+        val chunk = VoiceCapture.SAMPLE_RATE / 5
+        while (at < length) {
+            val n = minOf(chunk, length - at)
+            val block = if (at == 0 && n == pcm.size) pcm else pcm.copyOfRange(at, at + n)
+            if (accept(block, n)) return result()
+            at += n
+        }
+        return finalResult()
+    }
+
     override fun close() {
         runCatching { recognizer.close() }.onFailure { Log.w(TAG, "đóng recognizer hỏng", it) }
     }
@@ -91,9 +109,14 @@ class VoiceRecognizer private constructor(
          * ⚠ Ngữ pháp rỗng bị từ chối **cố ý**: `Recognizer` với danh sách rỗng quay về giải mã tự do 19.529 từ
          * — đúng thứ ta vừa bỏ công tránh, và nó hỏng **im lặng** (vẫn chạy, chỉ là nghe ra linh tinh).
          */
-        fun open(ctx: Context, profiles: List<String>, apps: List<String>): VoiceRecognizer? {
+        fun open(
+            ctx: Context,
+            profiles: List<String>,
+            apps: List<String>,
+            installed: Set<String> = emptySet(),
+        ): VoiceRecognizer? {
             val model = VoiceEngine.model(ctx) ?: return null
-            val grammar = VoiceGrammar.phrases(VoiceModelStore.words(ctx), profiles, apps)
+            val grammar = VoiceGrammar.phrases(VoiceModelStore.words(ctx), profiles, apps, installed)
             if (grammar.phrasesKept == 0) {
                 Log.w(TAG, "ngữ pháp rỗng — từ chối mở phiên (${grammar.logLine()})")
                 return null
@@ -101,6 +124,29 @@ class VoiceRecognizer private constructor(
             Log.i(TAG, grammar.logLine())
             return runCatching { VoiceRecognizer(Recognizer(model, SAMPLE_RATE, grammar.json()), grammar) }
                 .onFailure { Log.e(TAG, "không dựng được recognizer", it) }
+                .getOrNull()
+        }
+
+        /**
+         * ═══ V1.1 · Bộ nhận dạng **TỰ DO** (không ngữ pháp) — chỉ cho LƯỢT 2 ══════════════════════════════
+         *
+         * Spec **R16**. `Recognizer(model, 16000f)` giải mã trên cả từ điển 19.529 từ của mô hình.
+         *
+         * ## Đây KHÔNG phải nới lỏng cam kết *"ràng bằng ngữ pháp"* — nó vẫn nguyên vẹn
+         * Lượt 1 (thứ quyết định **làm gì với xe**) vẫn ràng bằng tập đóng, và điều đó không đổi một chữ: một
+         * câu lệnh không bao giờ được dựng từ bộ giải mã này. Cái nó đọc là **phần đuôi từ vựng mở** — tên bài
+         * hát, điểm đến — thứ mà theo định nghĩa không nằm trong tập đóng nào, và thứ mà Kachi **không tự thi
+         * hành**: nó chuyển nguyên văn cho app đích, sau một cổng CONFIRM bắt buộc ([VoiceRiskTable]).
+         *
+         * Ba chốt giữ cho nó không lan ra: gọi từ **đúng một** chỗ ([VoiceSession.freeTail]), chỉ chạy khi
+         * [VoiceOpenVocab.triggerOf] khác `null`, và chỉ chạy trên một **mảng PCM đã đóng** (không micro).
+         *
+         * **CHẶN** (dựng đồ thị giải mã) ⇒ luồng nền.
+         */
+        fun openFree(ctx: Context): VoiceRecognizer? {
+            val model = VoiceEngine.model(ctx) ?: return null
+            return runCatching { VoiceRecognizer(Recognizer(model, SAMPLE_RATE), VoicePhraseSet(emptyList(), 0, emptyList(), emptyList())) }
+                .onFailure { Log.e(TAG, "không dựng được recognizer tự do", it) }
                 .getOrNull()
         }
     }

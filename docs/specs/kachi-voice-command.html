@@ -57,11 +57,21 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 
 <div class="card">
 <b>Một câu tóm tắt.</b> <b>Pha CHỮ</b> (R1–R8) làm tầng <i>chuỗi chữ → ý định → hành động</i> trên những khả năng <b>đã nối dây sẵn</b> (65 nút · 123 datum · 4 gói lệnh · 3 hành động launcher · hồ sơ · nhạc · mở app), cộng một <b>đường thử bằng chữ</b> trong Cài đặt. <b>Pha NGHE</b> (R9–R14, bản 1.49) cắm một bộ nhận dạng <b>chạy tại máy</b> (Vosk + mô hình tiếng Việt 32 MB tải riêng, <b>ràng bằng ngữ pháp sinh từ chính danh mục</b>) vào <b>trước</b> bộ hiểu ý đã có — vào là micro, ra vẫn là <i>đúng chuỗi chữ</i> mà ô “Gõ lệnh chữ” đưa xuống, nên <b>không một dòng nào</b> của pha chữ phải viết lại. Trả lời bằng <b>âm báo + chữ</b>; <b>chưa</b> TTS (giọng nói tiếng Việt trên xe còn <b>[CHƯA BIẾT]</b>).
+<b>V1.1</b> (R15–R17, bản 1.53) thêm đúng ba thứ owner hỏi: <b>mở app vào một Ô</b> · <b>tên bài / điểm đến</b> đọc bằng
+<b>lượt nhận dạng thứ hai</b> (tự do, trên chính khúc tiếng vừa thu) · và <b>giao cho đúng app</b> (<i>“bằng YT Music”</i>,
+<i>“bằng VietMap”</i>) qua một <b>bảng đích có mức bằng chứng từng dòng</b>.
 </div>
 
 <h2>1. Changelog</h2>
 <p><b>Soát Pass 2 — 2026-09-14</b> (senior review, CLAUDE.md §5): 7 phát hiện [P1]–[P2] đã vá tại chỗ — phiên nghe chết theo màn chính · chốt một-lượt-tải · trần 500 dòng (523→478, 506→491) · nút mic hiện ngay sau khi tải mô hình · kiểm chỗ trống trước khi tải · chốt HTTPS sau chuyển hướng · từ điển thôi đọc lại trên luồng vẽ. Xem §10.</p>
 <ul>
+<li><b>Pass 3 — 2026-09-14 · V1.1 “NÓI ĐƯỢC TÊN”</b> (R15–R17, bản <b>1.53 / versionCode 54</b>): ba câu hỏi của owner
+(<i>“mở nhạc bằng YT Music/YouTube, dẫn đường bằng GMaps/VietMap/Waze”</i> · <i>“mở YouTube vào ô số 2”</i>) nay
+chạy thật. <b>R15</b> ô: <code>OpenApp(appName, slot)</code> đi <b>đúng đường ngăn kéo</b> (<code>KachiHomeSlots.assignApp</code>),
+ô ngoài bố cục thì nói ra số ô thật. <b>R16</b> nhận dạng <b>hai lượt</b>: lượt 1 ngữ pháp (như cũ), lượt 2 <b>tự do</b>
+trên đúng khúc PCM đã thu, chỉ chạy sau một <i>cụm kích hoạt</i> — và cổng chạy ấy đã phải <b>sửa theo phép đo</b>
+(xem §9). <b>R17</b> bảng đích <code>VoiceAppTargets</code> (<code>:core</code>, thuần): 4 app nhạc + 3 app dẫn đường,
+mỗi dòng kèm <b>mức bằng chứng</b>. Từ vựng mở nay <b>luôn hỏi lại</b> trước khi giao (đọc lại tên bài / điểm đến).</li>
 <li><b>Pass 2 — 2026-09-14 · PHA NGHE</b> (R9–R14, bản <b>1.49 / versionCode 50</b>): Vosk <code>0.3.47</code> tại máy + mô hình <code>vosk-model-small-vn-0.4</code> <b>tải riêng</b> (32 MB, sha256 ghim) · ngữ pháp <b>sinh từ danh mục</b> và <b>tra ngược qua từ điển của chính mô hình</b> (2.037 mục off-car) · phiên <i>bấm-để-nói</i> với trần 8 s, tấm chữ ở góc màn, âm báo, tiêu điểm âm thanh <code>MAY_DUCK</code> · ba lối vào (ô <i>Nói với xe</i> · nút mic thanh trên · đích phím vô-lăng <i>Kachi nghe</i>) · quyền <code>RECORD_AUDIO</code> vào vòng kiểm và <b>tự cấp</b> bằng <code>pm grant</code>. <b>Hai bug tự bắt trên máy ảo</b> (magic bảng ký hiệu FST đoán sai · <code>readNBytes</code> là API Java 9) — xem §9. Owner 2026-09-14 miễn cổng §14 cho riêng mục micro.</li>
 <li><b>Pass 1 — 2026-09-14</b> (senior review, CLAUDE.md §5): 8 phát hiện [P0]–[P2] đã vá tại chỗ — cổng xác nhận nay <b>dừng cả chuỗi</b> (OQ4 đã chốt) · số nói rút gọn (<i>“hai lăm”</i>) không còn rơi về <code>min</code> · lệnh nhạc hết báo “✓” khi không có phiên · từ vựng dựng <b>một lần</b> · câu trả lời nói ra <i>“chưa kiểm trên xe”</i> · bốn câu đời thường hiểu thêm được. Xem §10.</li>
 <li><b>Pass 0 — 2026-09-14</b>: Khởi tạo spec + làm xong pha off-car (R1–R7). Sinh ra từ backlog <b>V1</b> và từ RE <code>docs/diagnostics/kiki-car-RE-2026-09-14.md</code> (phương án C đã chốt). R8 khai rõ phần <b>không</b> làm và điều kiện mở khoá.</li>
@@ -122,6 +132,12 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><b>R13. Quyền micro đi đúng đường của dự án.</b> <code>RECORD_AUDIO</code> vào manifest + vào <code>LauncherRequirements</code>, <b>tự cấp</b> qua kênh dadb (<code>pm grant</code>) như ba quyền kiểu ADB khác; thiếu ⇒ tấm chữ nói rõ + nút mở <i>Cài đặt › Hệ thống &amp; quyền</i>. AC: <b>không</b> <code>coreFeature</code> (thiếu micro không làm mất tính năng lõi ⇒ không nổ toast mỗi lần mở Home).</li>
 
 <li><b>R14. Bài canh phạm vi MỚI + đường chứng minh không cần micro.</b> Bài canh cũ (<i>“chưa có mic”</i>) đổi thành: ASR chỉ trong tệp <code>Voice*</code>; <b>cấm</b> <code>SpeechRecognizer</code>/<code>TextToSpeech</code>/<code>MediaRecorder(</code>; <b>cấm mọi đường ra mạng</b> trong tệp <code>Voice*</code> (trừ đúng cửa <code>HttpConn</code> của <code>VoiceModelStore</code>); chỉ <b>một</b> tệp được mở micro. Cộng nút <i>“Nhận dạng tệp WAV thử”</i> đẩy một tệp WAV 16 kHz mono qua <b>đúng</b> <code>VoiceRecognizer</code> mà micro dùng.</li>
+
+<li><b>R15. Mở app <u>vào một Ô</u>.</b> <code>VoiceIntent.OpenApp(appName, slot: Int?)</code>; ngữ pháp <i>“mở/đưa &lt;app&gt; vào ô &lt;số&gt;”</i> · <i>“ô thứ N”</i> · EN <i>“open X in slot N”</i>. Số giữ <b>đúng như người ta nói</b> (1-based, không kẹp ở <code>:core</code>). Thi hành đi <b>đúng đường của ngăn kéo</b> (<code>KachiHomeSlots.assignApp</code> — state + sổ vị trí + đặt cửa sổ), <b>không</b> mở đường thứ hai. <b>AC:</b> ô không có trong bố cục đang dùng ⇒ câu trả lời nêu <b>số ô thật</b> (<i>“bố cục hiện chỉ có N ô”</i>) và <b>không làm gì khác</b>; không nêu ô ⇒ hành vi 1.49 (mở toàn màn) không đổi.</li>
+
+<li><b>R16. Nhận dạng HAI LƯỢT cho từ vựng mở.</b> Lượt 1 = bộ nhận dạng <b>ngữ pháp</b> (như 1.49). Nếu câu có một <b>cụm kích hoạt</b> (<i>“phát bài/nhạc”</i> · <i>“mở/tìm/nghe bài”</i> · <i>“dẫn/chỉ đường tới/đến”</i> · <i>“đi tới/đến”</i> · EN <i>play</i> · <i>navigate to</i>) <b>và còn từ đứng sau</b>, thì lượt 2 = bộ nhận dạng <b>TỰ DO</b> (cùng <code>Model</code>, không ngữ pháp, dựng lười) chạy trên <b>đúng khúc PCM đã thu</b> (giữ trong RAM, trần 9 s ≈ 288 KB) để đọc phần đuôi. Đuôi vào <code>Media(QUERY, text)</code> / <code>Nav(text)</code>. <b>AC:</b> câu lệnh xe (không có cụm kích hoạt) <b>không tốn lượt giải mã nào</b>; lượt 2 <b>không</b> mở micro lần nữa; hỏng ở bất kỳ đâu ⇒ lùi về bản ngữ pháp; <b>tiếng không ra mạng</b> (bài canh R14 giữ nguyên). Từ vựng mở ⇒ <b>luôn CONFIRM</b>: máy đọc lại <i>“Tìm bài «X» trên YouTube Music?”</i> trước khi giao.</li>
+
+<li><b>R17. Bảng đích <code>VoiceAppTargets</code> (<code>:core</code> thuần) + mệnh đề <i>“bằng &lt;app&gt;”</i>.</b> Nhạc = {YT Music · YouTube · Spotify · Zing MP3}; dẫn đường = {Google Maps · Waze · VietMap}. Mỗi dòng mô tả bằng <b>dữ liệu</b> (<code>VoiceLaunch.Action</code> / <code>Uri</code> / <code>OpenOnly</code> + đường <b>toạ độ</b> riêng) kèm <b>mức bằng chứng</b> (<code>MEASURED</code> / <code>AWAITING_CAR</code> / <code>UNKNOWN</code>) — đổi một phép đo = đổi <b>một dòng dữ liệu</b>, không sửa mã. Gói dẫn đường lấy từ roster <code>NavApps</code> (không chép tên gói). Câu có <i>“bằng &lt;app&gt;”</i> ⇒ chọn app đó; không có ⇒ nhạc lấy <b>phiên đang phát</b> rồi mới tới thứ tự bảng, dẫn đường lấy thứ tự <code>NavApps</code> đã có. <b>AC:</b> mọi ý-định giao việc phải <code>setPackage</code> (không bung hộp <i>“Open with”</i> giữa lúc lái); app được gọi tên mà chưa cài ⇒ nói <i>“chưa cài &lt;tên&gt;”</i>, <b>không</b> lặng lẽ đổi app; app không có cửa nhận chữ ⇒ mở app + <b>nói rõ</b>, không có dấu ✓ rỗng. <b>Không thêm một setting mới nào.</b></li>
 </ul>
 <h3>Phi chức năng</h3>
 <ul>
@@ -256,6 +272,7 @@ chốt tiêu điểm âm thanh.</p>
 <tr><td><code>SpeechRecognizer</code> / GMS</td><td><span class="pill block">CẤM</span></td><td><b>Không phải “chưa”, mà là “không”</b>: nó cần mạng + dịch vụ Google. Điều khiển xe không được phụ thuộc 4G (RE Kiki §2.1). Bài canh R14 chặn.</td></tr>
 <tr><td>TTS tiếng Việt</td><td><span class="pill block">chưa</span></td><td><b>[CHƯA BIẾT]</b> — chưa đo trên xe. Phản hồi hiện tại: <b>âm báo + chữ</b>. <code>Read.aloud</code> vẫn giữ sẵn ý định cho ngày đo xong.</td></tr>
 <tr><td>Wake word (“Kachi ơi”)</td><td><span class="pill block">chưa</span></td><td>Nghe thường trực = micro mở suốt chuyến trong một <b>launcher</b>. Cần quyết định của owner + đo CPU/pin, không phải một bản vá.</td></tr>
+<tr><td>Gửi <b>tên địa điểm</b> ra máy chủ tra cứu toạ độ (<code>VoiceGeocoder</code>)</td><td><span class="pill ok">ĐÃ MỞ (1.53)</span></td><td>Ngoại lệ mạng <b>thứ hai</b>, hẹp và có bài canh: đi ra là <b>một chuỗi tên địa điểm</b>, không một mẫu âm thanh nào; qua đúng cửa <code>HttpConn</code> (chỉ HTTPS), chỉ GET, <b>chỉ khi</b> app đích không nhận chữ ([ĐO] VietMap), và <b>giữ đúng nhịp điều khoản máy chủ</b> (≤ 1 yêu cầu/giây — thêm ở soát Pass 3). Máy trước (<code>Geocoder.isPresent()</code>), mạng sau.</td></tr>
 <tr><td>Chuyển tiếp câu sang Kiki (<code>text_command</code>)</td><td><span class="pill block">chưa</span></td><td><b>K2</b> — extra nội bộ không tài liệu, hiệu lực mới ở mức <b>[SUY]</b></td></tr>
 <tr><td>LLM dự phòng</td><td><span class="pill block">chưa</span></td><td>quyết định của owner; và chỉ được ĐỀ XUẤT, không tự thi hành</td></tr>
 </table>
@@ -289,6 +306,13 @@ chốt tiêu điểm âm thanh.</p>
 <tr><td>T17</td><td>Đường chứng minh không cần micro (WAV) + bài canh phạm vi MỚI</td><td><code>app/…/voice/VoiceWavProbe.kt</code> · <code>VoiceCommandWiringContractTest.kt</code></td><td><span class="pill ok">xong</span></td></tr>
 <tr><td>T18</td><td><b>Trên xe</b>: đo độ chính xác thật (giọng người, tiếng ồn xe chạy), CPU/RAM/pin của một phiên, và độ trễ lần nói đầu</td><td><code>docs/diagnostics/carlog-kachi-*</code></td><td><span class="pill wait">🚗 chờ xe</span></td></tr>
 <tr><td>T19</td><td>Senior review (Opus) + security scan trước commit</td><td>—</td><td><span class="pill wait">chờ</span></td></tr>
+<tr><td colspan="4" style="padding-top:14px"><b>V1.1 · NÓI ĐƯỢC TÊN (Pass 3 · R15–R17)</b></td></tr>
+<tr><td>T20</td><td>Ô trong ý định + ngữ pháp <i>“vào ô số N”</i> + từ đồng nghĩa app đích</td><td><code>core/…/voice/VoiceIntent.kt</code> · <code>VoiceLexicon.kt</code> (<code>SLOT_*</code>, <code>BY_APP_MARKERS</code>) · <code>VoiceGrammar.kt</code> (<code>VoiceSynonyms.APP_TARGETS</code>, động từ <i>“đưa”</i>) · <code>VoiceIntentParser.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T21</td><td>Bảng đích + đường giao chữ/toạ độ (dữ liệu, <code>:core</code>)</td><td><code>core/…/voice/VoiceAppTargets.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T22</td><td>Ghép hai lượt nhận dạng (thuần) + bộ nhận dạng tự do + giữ PCM</td><td><code>core/…/voice/VoiceOpenVocab.kt</code> · <code>app/…/voice/VoiceRecognizer.kt</code> (<code>openFree</code>, <code>decodeAll</code>) · <code>VoiceCapture.kt</code> (<code>Heard</code>) · <code>VoiceSession.kt</code> (<code>freeTail</code>) · <code>VoiceWavProbe.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T23</td><td>Thi hành: ô qua đường ngăn kéo · chọn app · giao chữ/toạ độ · tra toạ độ</td><td><code>app/…/VoiceDispatcher.kt</code> · <code>voice/VoiceAppIntents.kt</code> · <code>voice/VoiceGeocoder.kt</code> · <code>voice/VoiceWiring.kt</code> · <code>MediaBridge.kt</code> (<code>activePackage</code>) · <code>KachiHomeWiring.kt</code> · <code>KachiHomeActivity.kt</code> · <code>HomePanels.kt</code> · <code>SettingsPanel.kt</code> · <code>VoiceTextConsole.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T24</td><td>Test: phân tích ô + app đích · bảng đích · ghép hai lượt · hành vi thi hành · bài canh dây nối mới</td><td><code>VoiceSlotAndTargetParseTest.kt</code> · <code>VoiceAppTargetsTest.kt</code> · <code>VoiceOpenVocabTest.kt</code> · <code>VoiceHandoverTest.kt</code> · <code>VoiceCommandWiringContractTest.kt</code> · <code>VoiceGrammarPhrasesTest.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T25</td><td><b>Trên xe</b>: nói thật bằng giọng người — lượt 2 có chạy không, đuôi đọc ra gì; VietMap deep link có dẫn đường thật không; GMaps <code>google.navigation:ll=</code></td><td><code>docs/diagnostics/carlog-kachi-*</code></td><td><span class="pill wait">🚗 chờ xe</span></td></tr>
 </table>
 
 <h2>6. Verification</h2>
@@ -357,6 +381,72 @@ bật đèn đọc và tắt đèn pha        → Bật Đèn đọc · Tắt Đ
 </ul>
 
 <h2>9. Nhật ký triển khai (Implementation Log)</h2>
+
+<h3>Pass 3 — V1.1 “nói được tên” (2026-09-14)</h3>
+<ul>
+<li><b>[ĐO] phép đo bác bỏ thiết kế — cổng của lượt 2 KHÔNG phải <code>[unk]</code>.</b> Bản đầu của R16 chạy lượt
+tự do khi bản ngữ pháp có <code>[unk]</code> (lý lẽ: <i>“thứ ngoài tập đóng rơi vào <code>[unk]</code>”</i>). Chạy
+WAV probe trên máy ảo (câu <i>“phát bài Diễm Xưa bằng YouTube Music”</i>) cho ra
+<code>"phát lài diếm sơ bằng mu yt"</code> — <b>không một <code>[unk]</code> nào</b>, dù cả phần đuôi đều ngoài
+tập đóng: bộ giải mã có ràng buộc <b>luôn tìm được một đường đi</b> qua ~2.000 mục và ép phần lạ thành từ gần
+giống nhất. Nếu ship bản đầu, R16 <b>chết ngay</b> mà mọi bài kiểm dựng tay vẫn xanh — đúng con bệnh CLAUDE.md
+§14. Cổng đã đổi sang <b>hình dạng câu</b> (có cụm kích hoạt <b>và</b> còn từ đứng sau), và ca đo được khoá lại
+thành một bài (<code>VoiceOpenVocabTest.chay luot 2 ngay ca khi ban ngu phap khong co unk nao</code>).</li>
+
+<li><b>[ĐO] mô hình tiếng Việt không đọc nổi mọi tên thương hiệu.</b> Tra ngược từ điển 19.529 mục:
+<code>youtube</code> ✓ · <code>music</code> ✓ · <code>google</code> ✓ · <code>map</code> ✓ · <code>yt</code> ✓ ·
+<code>ô</code> ✓ — nhưng <code>maps</code> ✗ · <code>waze</code> ✗ · <code>spotify</code> ✗ · <code>zing</code> ✗ ·
+<code>mp3</code> ✗ · <code>vietmap</code> ✗. Cách sửa đúng là <b>thêm cách gọi thuần Việt</b>, không phải bịa một
+lối viết theo âm: <i>“google map”</i> / <i>“bản đồ google”</i> · <i>“quây”</i> (Waze) · <i>“việt map”</i>.
+<b>Chấp nhận và ghi ra</b>: <b>Spotify và Zing MP3 gõ được mà chưa nói được</b> — không có âm Việt nào tự nhiên
+cho hai tên ấy, và bịa một cách nói không ai dùng thì tệ hơn là nói thẳng. Khoá bằng
+<code>VoiceGrammarPhrasesTest.do lai nhung ten app ma mo hinh khong doc noi</code>.</li>
+
+<li><b>[ĐO] bảng đích dò bằng <code>am start</code> thô trên máy ảo</b> (tầng 1 của §14, không suy từ manifest):
+YT Music <b>bắt buộc</b> <code>extra.focus</code> (thiếu ⇒ chỉ mở màn Home — hỏng im lặng) · Google Maps đi
+<code>geo:0,0?q=</code> (bản trên máy ảo chặn <code>google.navigation:</code> bằng màn <i>Update</i>) · Waze
+<code>waze://?q=…&amp;navigate=yes</code> resolve đúng · <b>VietMap không có cửa CHỮ nào</b>. Mức bằng chứng
+từng dòng nằm ngay trong bảng.</li>
+
+<li><b>[ĐO] VietMap nhận TOẠ ĐỘ — đọc ra từ nguồn Kiki đã decompile</b> (CLAUDE.md §12: dùng nguồn RE có sẵn
+trước khi đoán). <code>../jadx-kiki/sources/p449vq/AbstractC8122l.java:600</code> và
+<code>p478x/C8454u.java:226</code>: <code>ACTION_VIEW</code> + <code>setPackage("vn.vietmap.live")</code> +
+<code>vietmaplive://companion/navigation?lat=…&amp;lng=…&amp;poiName=…</code>; Kiki geocode ở máy chủ của họ. ⇒
+thêm <code>VoiceGeocoder</code> (<code>Geocoder</code> của máy trước, Nominatim sau). Thử deep link trên máy ảo:
+VietMap <b>lên tiền cảnh</b> nhưng không thấy tuyến vì máy ảo <b>không có GPS fix</b> ⇒ mức
+<b><code>AWAITING_CAR</code></b> (chờ xe), không phải <i>chưa biết</i> — owner xác nhận Kiki mở dẫn đường VietMap
+chạy trên xe.</li>
+
+<li><b>quyết định — KHÔNG đảo đường đang chạy tốt (CLAUDE.md §6).</b> Google Maps và Waze có đường <b>chữ</b> đã
+đo chạy, nên chúng <b>giữ nguyên đường chữ</b> dù bảng đã có sẵn đường toạ độ; đường toạ độ chỉ vào cuộc với app
+<b>không có</b> cửa chữ (hôm nay là VietMap). Hệ quả phụ có lợi: hai app kia <b>không tốn lượt mạng nào</b>. Khoá
+bằng <code>VoiceAppTargetsTest.app co cua chu giu nguyen duong chu du da co toa do</code>.</li>
+
+<li><b>quyết định — từ vựng mở LUÔN hỏi lại</b> (<code>VoiceRiskTable</code>). Ba dòng cũ hỏi vì <i>hậu quả</i>
+(xe mở khoá, kính hạ hết); dòng này hỏi vì <i>nguồn</i>: phần đuôi do bộ nhận dạng <b>tự do</b> đọc ra, kém chính
+xác hơn hẳn phần còn lại — và [ĐO] Google Maps/Waze <b>bắt đầu dẫn luôn</b> (<code>navigate=yes</code>). Với
+VietMap còn một cổng thứ hai: đọc lại <b>tên POI mà bên tra cứu trả về</b> (khác câu người ta nói).</li>
+
+<li><b>ngoại lệ mạng thứ hai, hẹp và có bài canh.</b> <code>VoiceGeocoder</code> gửi đi <b>một chuỗi tên địa
+điểm</b> (không một mẫu âm thanh nào), qua đúng cửa <code>HttpConn</code>, chỉ GET, và chỉ khi app đích không
+nhận chữ. Bài canh mới đòi: đúng <b>hai</b> tệp <code>Voice*</code> được có <code>HttpConn</code>, và tệp tra cứu
+<b>không được chạm</b> <code>AudioRecord</code>/<code>ShortArray</code>/<code>Recognizer</code>.</li>
+
+<li><b>số ngữ pháp:</b> 2.037 → <b>2.058 mục</b> off-car (+21 từ đơn: động từ <i>“đưa”</i> + hai bảng
+<code>SLOT_WORDS</code>/<code>BY_APP_MARKERS</code> nở theo thanh điệu). Tên app đích <b>chỉ</b> vào ngữ pháp khi
+app ấy có trên máy — cùng luật với danh sách app đã cài.</li>
+
+<li><b>[ĐO] WAV probe trên máy ảo (giọng tổng hợp <code>say -v Linh</code>) — và giới hạn của chính phép đo này.</b>
+<code>“mở youtube vào ô số hai”</code> → <code>"mú tuan vào ô số hai"</code>: <b>mệnh đề ô nghe đúng nguyên vẹn</b>
+(R15 xanh trên thiết bị), nhưng động từ + tên app thì không. <code>“phát bài diễm xưa bằng youtube music”</code> →
+<code>"phát lài diếm sơ bằng mu yt"</code> (đọc chậm còn tệ hơn: <code>"mày diếm sơ bằng mu dí"</code>).
+<code>“dẫn đường tới chợ bến thành bằng google maps”</code> → <code>"dĩnh đường tự trợ biển thành bằng chieu má"</code>.
+⇒ <b>cụm kích hoạt cũng bị nghe nhầm</b>, nên <b>lượt 2 chưa chạy được lần nào trên thiết bị</b>: R16 mới chỉ xanh
+<b>off-car</b> (bài kiểm thuần). Kết luận đúng mức: giọng <b>tổng hợp</b> của macOS không phải một phép đo hợp lệ
+cho một mô hình luyện trên <b>giọng người</b> — T25 phải đo bằng giọng thật trên xe. <b>[CHƯA ĐO]</b> đường
+micro → lượt 2 → app đích, đầu-tới-cuối.</li>
+</ul>
+
 <h3>Pass 2 — pha NGHE (2026-09-14)</h3>
 <ul>
 <li><b>quyết định — cắm bộ nghe vào TRƯỚC bộ hiểu ý, không viết lại gì phía dưới.</b> Ranh giới đã chọn ở pha chữ
@@ -447,6 +537,91 @@ làm nợ” thì lượt sau sẽ ghi tiếp.</li>
 </ul>
 
 <h2>10. Reviewer Log</h2>
+
+<h3>Pass 3 — 2026-09-14 (V1.1 “nói được tên”, R15–R17) <span class="pill ok">đã vá + chạy lại xanh</span></h3>
+<p class="muted">Senior review theo CLAUDE.md §5 (phạm vi: toàn bộ thay đổi chưa commit của V1.1 — 4 tệp mới ở
+<code>:app</code>/<code>:core</code>, 16 tệp sửa, 5 bài kiểm mới). Kết luận scope: <b>R15 · R16 · R17 ✅ đủ</b> —
+mỗi yêu cầu có mã, có bài canh, và có đường người dùng chạm tới thật (ô Ứng dụng ↔ ngăn kéo ↔ phiên nghe ↔ ô
+“Gõ lệnh chữ”). <b>Bốn phát hiện đã vá</b>, ba trong số đó có bài canh mới và cả ba đã được <b>thử làm ĐỎ</b>
+(gỡ dòng vá → test đỏ → khôi phục → xanh). <b>[ĐO]</b> 5 module <b>3.670 bài / 0 đỏ</b>
+(<code>./gradlew :app:testDebugUnitTest :core:test :car-integration:test :vehicle-contracts:test
+:offcar-planner:test --rerun-tasks --continue</code>).</p>
+
+<table>
+<tr><th>#</th><th>Phát hiện</th><th>Vá</th></tr>
+
+<tr><td><span class="tag">P1</span></td>
+    <td><b>Cổng hỏi-lại VỀ MUỘN mở thêm một lượt nghe.</b> Tới 1.49 mọi lượt <code>confirm</code> xảy ra
+        <b>đồng bộ</b> trong <code>VoiceSession.execute</code>, tức chắc chắn còn trong phiên. R17 mở một đường bất
+        đồng bộ: điểm đến cho app chỉ-nhận-toạ-độ đi <b>tra cứu mạng</b> (tới ~20 s: 15 s nối + 5 s đọc) rồi MỚI
+        hỏi lại. Trong khoảng ấy người lái có thể đã huỷ phiên, rời màn chính, hoặc <b>bấm nói lần nữa</b> — lúc đó
+        lượt cũ về muộn sẽ đặt lại <code>pendingConfirm</code> của phiên ĐANG chạy (câu “đồng ý” rơi vào việc CŨ),
+        vẽ câu hỏi cũ đè lên tấm chữ mới, và mở <code>AudioRecord</code> <b>thứ hai</b> trong lúc micro của phiên
+        mới còn đang mở — đúng hazard đã ghi ở KDoc <code>VoiceSession.cancel</code>.</td>
+    <td><code>execute</code> ghim <b>số thế hệ</b> tại lúc thi hành và bọc cổng hỏi lại:
+        <code>if (stale(my) || overlay == null) onNo() else confirm(…)</code> — phiên đã qua ⇒ coi như
+        <b>KHÔNG</b> (cùng mặc định với hết giờ / nghe không rõ). Bài canh
+        <code>VoiceCommandWiringContractTest.hoi lai ve muon…</code>.</td></tr>
+
+<tr><td><span class="tag">P1</span></td>
+    <td><b><code>AlertDialog.show()</code> trên một màn đã huỷ.</b> Cùng đường bất đồng bộ trên, nhưng ở bề mặt
+        “Gõ lệnh chữ”: <code>VoiceTextConsole.ask</code> bung hộp thoại trên <code>context</code> của activity.
+        Trước V1.1 hộp luôn bung <b>ngay trong</b> cú bấm <i>Chạy</i>; nay nó bung sau một lượt mạng, và nếu người
+        dùng đã đóng bảng Cài đặt / rời màn chính thì đó là <code>BadTokenException</code> — <b>một launcher không
+        được chết vì một hộp thoại</b>.</td>
+    <td>Hỏi <code>isFinishing/isDestroyed</code> trước, bọc <code>show()</code> trong
+        <code>runCatching</code>, và <b>luôn trả lời</b> <code>onNo()</code> khi không bung được — nuốt cả hai
+        lambda là treo nửa cuối câu ghép vĩnh viễn (luật đã ghi ở KDoc <code>VoiceDispatcher.confirm</code>).</td></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b>Câu trả lời đổ lỗi cho app về một lần mất sóng.</b> Tra cứu hỏng (mất mạng / máy chủ im / tên không có
+        trong dữ liệu) đi chung một câu với <i>“app này không có cửa nhận điểm đến”</i>. Hai chuyện khác hẳn: cái
+        sau là kết luận <b>đã đo</b> (đúng mãi), cái trước là một lượt mạng hỏng (thử lại có thể được) — và người
+        lái nghe câu sai sẽ thôi không bao giờ thử lại.</td>
+    <td><code>VoiceReply.navNoPlace</code> (<i>“chưa tra được điểm đến (mạng?), mới chỉ mở &lt;app&gt;”</i>, VI+EN)
+        và <code>runNav</code> dùng nó cho nhánh <code>coords == null</code>. Bài canh
+        <code>VoiceHandoverTest.khong tra duoc toa do … LA DO TRA CUU</code> so <b>đúng chuỗi</b> và đòi nó khác
+        <code>navOpenedNoHandover</code>.</td></tr>
+
+<tr><td><span class="tag">P2</span></td>
+    <td><b>Điều khoản Nominatim (≤ 1 yêu cầu/giây) không được mã nào giữ.</b> Một người lái nói một câu thì không
+        vượt trần, nhưng một cổng kỹ thuật không được dựa vào <i>“người dùng chắc không làm thế”</i>: ô “Gõ lệnh
+        chữ” bấm liên tiếp, hoặc một câu ghép hai vế dẫn đường, là đủ — và cái giá (chặn IP) rơi vào <b>cả xe, cho
+        mọi lượt sau</b>.</td>
+    <td><code>VoiceGeocoder.throttle()</code> giữ khoảng cách tối thiểu 1.000 ms giữa hai lượt hỏi máy chủ (chờ,
+        không bỏ lượt — nhịp chờ đã có câu <i>“đang tra điểm đến…”</i> che). Chốt cứng của ngoại lệ mạng nay là
+        <b>bốn</b>, ghi ở KDoc lớp.</td></tr>
+
+<tr><td><span class="tag">P3</span></td>
+    <td><b>Hằng <code>UA_ACCEPT</code> mang một câu KDoc nói nó là User-Agent</b> — nó là <code>Accept</code>. UA
+        thật do cửa HTTPS duy nhất của dự án đặt cho mọi lượt ra mạng (<code>ClusterNav-Updater</code>). Một chú
+        thích nói sai về thứ đang gửi ra ngoài là đúng loại “tài liệu tự lừa mình” mà CLAUDE.md §2 cấm.</td>
+    <td>Đổi tên thành <code>ACCEPT_JSON</code> + viết lại KDoc nói đúng nơi UA được đặt.</td></tr>
+
+<tr><td><span class="tag">P3</span></td>
+    <td><b>Hai mẩu mã chết / nói sai về chính nó.</b> <code>VoiceOpenVocab.endsWith</code> không có chỗ gọi nào;
+        vòng <code>for (len in LONGEST_SPOKEN downTo 1)</code> trong <code>appAfterMarker</code> chỉ có <b>một</b>
+        lần lặp thoả điều kiện (mệnh đề đã buộc chạm cuối câu) nên câu KDoc <i>“dãy dài nhất thắng”</i> mô tả một
+        cơ chế không tồn tại.</td>
+    <td>Gỡ <code>endsWith</code>; thay vòng lặp bằng một phép kiểm độ dài + trần
+        <code>LONGEST_SPOKEN</code>; KDoc viết lại theo đúng thứ mã làm.</td></tr>
+</table>
+
+<h3>Pass 3 — phần KHÔNG vá (ghi lại)</h3>
+<ul>
+<li><b>[P3] Hai cổng hỏi lại cho MỘT câu dẫn đường tới VietMap.</b> Từ vựng mở ⇒ <code>VoiceRiskTable</code> hỏi
+lần một (R16 AC), rồi sau lượt tra cứu <code>confirmPlace</code> hỏi lần hai (R17). Hai cú chạm giữa lúc lái cho
+một câu nói. Cả hai đều có lý do riêng và đều nằm trong AC đã duyệt, nên <b>không tự gộp</b> — gộp là một quyết
+định về an toàn, thuộc owner. Hướng nếu owner muốn: bỏ cổng thứ nhất <b>chỉ</b> khi đích cần toạ độ (vì cổng thứ
+hai đọc lại đúng tên sẽ dẫn tới, tức chặt hơn cổng thứ nhất).</li>
+<li><b>[P3] Bài canh mạng quét cả CHÚ THÍCH.</b> <code>voiceSources()</code> đọc nguyên văn tệp, nên chỉ <i>nhắc
+tên</i> cửa HTTPS trong một KDoc là bài <i>“chỉ hai tệp Voice* được ra mạng”</i> đỏ (đã gặp trong chính lượt soát
+này). Giữ nguyên có chủ ý: cùng helper ấy còn đếm dòng cho trần 500, mà bỏ chú thích ra khỏi phép đếm là <b>nới</b>
+trần. Ai viết KDoc trong tệp <code>Voice*</code> thì tránh gọi tên lớp cửa mạng.</li>
+<li><b>[CHƯA ĐO] lượt 2 đầu-tới-cuối bằng giọng thật</b> — giữ nguyên kết luận của phiên trước: giọng tổng hợp
+<code>say -v Linh</code> nghe nhầm cả cụm kích hoạt nên lượt 2 chưa chạy được lần nào trên thiết bị (T25).</li>
+</ul>
+
 
 <h3>Pass 2 — 2026-09-14 (pha NGHE) <span class="pill ok">đã vá + chạy lại xanh</span></h3>
 <p class="muted">Senior review theo CLAUDE.md §5 (phạm vi: toàn bộ thay đổi chưa commit của pha NGHE R9–R14 + nút ⇄

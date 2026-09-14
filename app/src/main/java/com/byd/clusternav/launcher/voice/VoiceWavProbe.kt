@@ -33,8 +33,23 @@ object VoiceWavProbe {
     /** Tên tệp thử — một tên, nhiều chỗ tìm (xem [candidates]). */
     const val FILE_NAME = "kachi-voice-test.wav"
 
-    /** Kết quả một lượt thử. */
-    data class Result(val path: String, val heard: String, val error: String?)
+    /**
+     * Kết quả một lượt thử.
+     *
+     * @property heard câu **cuối cùng** (đã ghép lượt 2 nếu có) — đúng chuỗi mà phiên nghe thật đưa xuống bộ
+     *   phân tích.
+     * @property grammarText chữ của riêng lượt 1 (còn `[unk]`), `""` khi hỏng. Phơi ra vì phép đo cần thấy **cả
+     *   hai** lượt: *"ngữ pháp nghe ra gì"* và *"tự do đọc thêm được gì"* là hai câu hỏi khác nhau, và trộn
+     *   chúng vào một dòng là mất đúng thứ cần đo.
+     * @property freeText chữ của lượt 2, `""` khi lượt 2 không chạy.
+     */
+    data class Result(
+        val path: String,
+        val heard: String,
+        val error: String?,
+        val grammarText: String = "",
+        val freeText: String = "",
+    )
 
     /** Trần cho khối `fmt ` — WAVE_FORMAT_EXTENSIBLE dài 40 byte; dài hơn nữa là tệp lạ, bỏ qua phần dư. */
     private const val MAX_FMT_BYTES = 64
@@ -66,39 +81,53 @@ object VoiceWavProbe {
      *
      * @param profiles · [apps] cùng danh sách động mà phiên nghe thật dùng ⇒ phép đo nói về đúng ngữ pháp thật.
      */
-    fun run(ctx: Context, profiles: List<String>, apps: List<String>): Result {
+    fun run(ctx: Context, profiles: List<String>, apps: List<String>, installed: Set<String> = emptySet()): Result {
         val file = findFile(ctx)
             ?: return Result("", "", Lang.t("không thấy tệp $FILE_NAME", "no $FILE_NAME found"))
-        val rec = VoiceRecognizer.open(ctx, profiles, apps)
+        val rec = VoiceRecognizer.open(ctx, profiles, apps, installed)
             ?: return Result(file.absolutePath, "", Lang.t("mô hình chưa sẵn sàng", "model not ready"))
-        return rec.use {
-            runCatching { Result(file.absolutePath, decode(file, it), null) }
-                .onFailure { t -> Log.w(TAG, "đọc WAV hỏng", t) }
-                .getOrElse { t -> Result(file.absolutePath, "", t.message ?: t.javaClass.simpleName) }
-        }
+        return runCatching {
+            val pcm = readPcm(file)
+            val grammarText = rec.use { it.decodeAll(pcm.first, pcm.second) }
+            // ĐÚNG hai lượt như phiên nghe thật (R16) — phép đo phải đi qua cùng con đường, không phải một
+            // đường rút gọn; nếu không thì nó không nói gì về phiên thật (xem KDoc lớp).
+            val free = if (VoiceOpenVocab.triggerOf(grammarText) == null) {
+                ""
+            } else {
+                VoiceRecognizer.openFree(ctx)?.use { it.decodeAll(pcm.first, pcm.second) }.orEmpty()
+            }
+            val merged = VoiceOpenVocab.merge(grammarText, free)
+            Result(file.absolutePath, merged.text, null, grammarText, free)
+        }.onFailure { t -> Log.w(TAG, "đọc WAV hỏng", t) }
+            .getOrElse { t -> Result(file.absolutePath, "", t.message ?: t.javaClass.simpleName) }
     }
 
-    /** Đọc phần `data` của WAV rồi đẩy qua [rec] theo từng khối 200 ms — y hệt nhịp mà micro đẩy. */
-    private fun decode(file: File, rec: VoiceRecognizer): String {
+    /**
+     * Đọc phần `data` của WAV thành PCM16 trong RAM — trần [VoiceCapture.MAX_KEPT_SAMPLES], **cùng trần** với
+     * khúc tiếng mà micro giữ lại, để phép đo không bao giờ nói về một khúc dài hơn thứ phiên thật xử lý được.
+     *
+     * @return mảng mẫu + số mẫu thật sự đọc được.
+     */
+    private fun readPcm(file: File): Pair<ShortArray, Int> {
+        val out = ShortArray(VoiceCapture.MAX_KEPT_SAMPLES)
+        var at = 0
         file.inputStream().buffered().use { input ->
-            val dataBytes = readHeader(input)
-            val chunk = ShortArray(VoiceCapture.SAMPLE_RATE / 5)
-            val raw = ByteArray(chunk.size * 2)
-            var left = dataBytes
-            while (left > 0) {
+            var left = readHeader(input)
+            val raw = ByteArray(VoiceCapture.SAMPLE_RATE / 5 * 2)
+            while (left > 0 && at < out.size) {
                 val want = minOf(raw.size.toLong(), left).toInt()
                 val n = input.readAtMost(raw, want)
                 if (n <= 0) break
-                val samples = n / 2
+                val samples = minOf(n / 2, out.size - at)
                 for (i in 0 until samples) {
                     // WAV PCM là little-endian có dấu.
-                    chunk[i] = ((raw[2 * i].toInt() and 0xFF) or (raw[2 * i + 1].toInt() shl 8)).toShort()
+                    out[at + i] = ((raw[2 * i].toInt() and 0xFF) or (raw[2 * i + 1].toInt() shl 8)).toShort()
                 }
-                if (rec.accept(chunk, samples)) return rec.result()
+                at += samples
                 left -= n
             }
         }
-        return rec.finalResult()
+        return out to at
     }
 
     /**

@@ -388,6 +388,11 @@
     <string name="kachi_sub_advanced">Advanced</string>
     <string name="kachi_vietmap_data">VietMap data</string>
 
+    <!-- ── T-BRIDGE — the adb test bridge (docs/specs/kachi-test-bridge.html). ── -->
+    <string name="kachi_test_bridge_title">ADB test mode</string>
+    <string name="kachi_test_bridge_sub_off">Lets a computer connected over adb send test commands to Kachi (say a phrase, switch profile, put an app in a slot, read the state). Only turn this on while you are in the car and testing. It switches itself off after 60 minutes and after the engine is switched off.</string>
+    <string name="kachi_test_bridge_sub_on">On — %1$d minutes left. Every command that arrives is written to the log and to Kachi\'s test folder.</string>
+
     <!-- ── IA v2 nhóm 10 — miễn trừ trách nhiệm, chuyển từ hộp thoại một-lần của màn cũ (MainActivity:620–635) ── -->
     <string name="kachi_about_disclaimer">Disclaimer: this is a personal experiment, NOT affiliated with BYD. It comes with no warranty of driving safety, compatibility or reliability. Install and use at your own risk.</string>
 
@@ -468,4 +473,5 @@
     <string name="kachi_pill_voice">Talk to car</string>
     <string name="kachi_voice_pill_title">Mic button on the status bar</string>
     <string name="kachi_voice_pill_sub">Speak a command quickly, next to Apps and Settings</string>
+    <string name="kachi_slot_app_closed">App closed — tap to reopen</string>
 </resources>

@@ -70,6 +70,8 @@ class HomePanels(
     private val openAppList: () -> Unit = {},
     /** V1 · R6 — mở một app theo tên gói (đường `AppOpener.openByIntent`). */
     private val openAppByPackage: (String) -> Boolean = { false },
+    /** V1.1 — gắn app vào ô (đường `KachiHomeSlots.assignApp` mà ngăn kéo dùng). */
+    private val assignAppToSlot: (Int, String) -> Boolean = { _, _ -> false },
     /** Báo "có lớp phủ nào đang mở" đổi — để nút ⇄ nổi (OverlayHeads) ẩn/hiện theo (không đè lên bảng Cài đặt). */
     private val onPanelsChanged: () -> Unit = {},
 ) {
@@ -157,6 +159,7 @@ class HomePanels(
             // V1 · R6 — ba cổng cho đường thử lệnh bằng chữ; xem KDoc [SettingsDeps.openAppList].
             openAppList = openAppList,
             openAppByPackage = openAppByPackage,
+            assignAppToSlot = assignAppToSlot,
             openSettingsGroup = { g -> openSettings(g) },
         )
         val panel = SettingsPanel(activity, deps) { closeSettings() }

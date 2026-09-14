@@ -23,9 +23,25 @@ k_cap "90-am-stack-final.txt" "am stack list"
 k_cap "90-window-displays-final.txt" "dumpsys window displays"
 k_cap "90-package-final.txt" "dumpsys package $KACHI_PKG"
 
-echo; echo "[B] Kéo tệp app tự ghi (diag của ClusterDiag + castlog)"
+echo; echo "[A2] H2 · màn ảo của ô — kachi-vd.txt (bất biến: MỖI Ô nhiều nhất MỘT màn ảo sống)"
+{
+  echo "# kachi-vd.txt — $(date +%FT%T%z) · xe $TARGET · Kachi $(k_installed_version)"
+  echo "# Cách đọc: số dòng 'kachi-slot-*' DUY NHẤT phải BẰNG số ô App đang có trên Home."
+  echo "# Nhiều hơn ⇒ rò màn ảo (đúng bug H2·1, [ĐO] máy ảo: 4 VD cho 2 ô)."
+  echo; echo "== tên màn ảo đang có =="
+  k_sh "dumpsys display | grep -o 'kachi-slot-[0-9]*' | sort -u" 2>&1
+  echo; echo "== đếm =="
+  k_sh "dumpsys display | grep -o 'kachi-slot-[0-9]*' | sort -u | wc -l" 2>&1
+  echo; echo "== số màn Kachi đang sống (cờ f = đang kết thúc) =="
+  k_sh "dumpsys activity activities | grep -c KachiHomeActivity" 2>&1
+  echo; echo "== nhật ký KachiVd (tạo/giải phóng màn ảo) =="
+  k_adb logcat -d -v time -s KachiVd 2>&1 | tail -80
+} > "$OUT/kachi-vd.txt" 2>&1
+k_say "→ kachi-vd.txt ($(wc -l < "$OUT/kachi-vd.txt" | tr -d ' ') dòng)"
+
+echo; echo "[B] Kéo tệp app tự ghi (diag của ClusterDiag + castlog + JSON của cầu kiểm thử)"
 mkdir -p "$OUT/from-car"
-for d in diag castlog; do
+for d in diag castlog test; do
   if k_adb pull "/sdcard/Android/data/$KACHI_PKG/files/$d" "$OUT/from-car/" >/dev/null 2>&1; then
     k_ok "kéo được $d/ ($(find "$OUT/from-car/$d" -type f 2>/dev/null | wc -l | tr -d ' ') tệp)"
   else
@@ -33,6 +49,21 @@ for d in diag castlog; do
     k_unk "DL5 (Android 12): nếu chặn, lấy bằng app Quản lý tệp trên xe rồi chép qua USB"
   fi
 done
+
+echo; echo "[B2] Ba tệp bằng chứng MỚI của bộ 1.53 — có mặt chưa?"
+for f in voice-capability.txt voice-accuracy.csv kachi-vd.txt; do
+  if [ -s "$OUT/$f" ]; then
+    k_ok "$f  ($(wc -l < "$OUT/$f" | tr -d ' ') dòng)"
+  else
+    k_warn "THIẾU $f — chạy 70-voice.sh (hai tệp đầu) / chạy lại bước [A2] ở trên (tệp cuối)"
+    k_note "THIẾU bằng chứng: $f"
+  fi
+done
+if [ -s "$OUT/voice-accuracy.csv" ]; then
+  T="$(($(wc -l < "$OUT/voice-accuracy.csv" | tr -d ' ') - 1))"
+  Y="$(grep -c '"Y"' "$OUT/voice-accuracy.csv" 2>/dev/null | tr -d ' ')"
+  k_say "   giọng thật: ${Y:-0}/${T:-0} câu đúng — con số này quyết định nhánh §4 của playbook"
+fi
 
 echo; echo "[C] Biên bản"
 VER="$(k_installed_version)"; CODE="$(k_installed_code)"
@@ -88,6 +119,18 @@ README="$OUT/README.md"
 | 28 | X1: tắt chiếu trả đồng hồ về sạch | X1 | ☐ đạt ☐ hỏng | 60-am-stack-after.txt | |
 | 29 | D-emu: app từ chối màn phụ vào được ô? | D-emu | ☐ vào ô ☐ nhảy toàn màn ☐ chưa thử | ảnh | |
 | 30 | 10 datum NEEDS_CAR đọc ra số | W1 | ____/10 | 20-datums.md §1 | |
+| 31 | V1: mô hình giọng tải xong trên MẠNG XE (19529 từ) | V1/R9 | ☐ đạt ☐ hỏng ☐ chưa thử | ảnh hàng Cài đặt | ____ phút |
+| 32 | V1: tỉ lệ nghe đúng — xe TẮT MÁY | T18 | ____/10 | voice-accuracy.csv | |
+| 33 | V1: tỉ lệ nghe đúng — NỔ MÁY + điều hoà | T18 | ____/10 | voice-accuracy.csv | |
+| 34 | V1: tỉ lệ nghe đúng — ĐANG LĂN BÁNH | T18 | ____/5 | voice-accuracy.csv | |
+| 35 | V1: độ trễ trung vị mic-mở → có chữ | T18 | ____ ms | voice-accuracy.csv | |
+| 36 | V1.1: lượt 2 đọc ra tên bài / điểm đến | T25 | ☐ có ☐ không ☐ chưa đo | 70-logcat-utterances.txt | |
+| 37 | V1.1: VietMap \`vietmaplive://\` DẪN ĐƯỜNG thật | T25 | ☐ có tuyến ☐ chỉ mở app ☐ chưa đo | ảnh | |
+| 38 | V1.1: GMaps \`google.navigation:ll=\` trên bản của xe | T25 | ☐ chạy ☐ hỏng ☐ chưa đo | ảnh | |
+| 39 | H2: số \`kachi-slot-*\` = số ô App (không rò màn ảo) | H2·1 | ☐ đúng ☐ RÒ (___ VD / ___ ô) | kachi-vd.txt | |
+| 40 | H2: app trong ô bị giết ⇒ nhãn "App đã đóng" ≤ 10 s | H2·2 | ☐ đạt ☐ hỏng ☐ chưa thử | ảnh + kachi-vd.txt | |
+| 41 | H1: Kachi chạy uid nào (system ⇒ bỏ hẳn H1) | H1 | ____ | h1-waze-slot.txt | |
+| 42 | U14: nút ⇄ trên ô — kín đáo, vẫn bấm trúng khi xe xóc | U14 | ☐ đạt ☐ hỏng | ảnh | |
 
 ## 2. Lỗi gặp (mỗi lỗi một dòng, kèm bằng chứng)
 | # | Triệu chứng | Lặp lại được? | Tệp/ảnh | Mức | Nghi nguyên nhân (ghi rõ [SUY]/[ĐOÁN]) |
@@ -95,6 +138,7 @@ README="$OUT/README.md"
 | 1 | | | | | |
 
 ## 3. Thứ CHƯA ĐO ĐƯỢC (và vì sao)
+> Ô trống ở bảng trên = CHƯA ĐO. Chép xuống đây kèm lý do, đừng để người đọc sau tự đoán.
 - 
 
 ## 4. Việc phải làm sau buổi (đưa vào PROJECT-BACKLOG)

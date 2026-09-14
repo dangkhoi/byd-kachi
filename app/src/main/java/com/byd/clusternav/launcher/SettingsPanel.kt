@@ -105,6 +105,13 @@ class SettingsDeps(
     val openAppList: () -> Unit,
     /** Mở một app theo TÊN GÓI (đường `AppOpener.openByIntent` mà ngăn kéo đang dùng). `false` = không mở được. */
     val openAppByPackage: (String) -> Boolean,
+    /**
+     * V1.1 — gắn một app vào ô (*"mở YouTube vào ô số 2"* gõ thử ở đây cũng phải chạy thật).
+     *
+     * Đường của ngăn kéo (`KachiHomeSlots.assignApp`), **không** phải `viewModel.assignApp` trần — xem KDoc
+     * `VoiceDispatcher.assignAppToSlot`.
+     */
+    val assignAppToSlot: (Int, String) -> Boolean,
     /** Nhảy màn Cài đặt sang một nhóm khác (bảng đang mở thì chỉ đổi nhóm — xem `HomePanels.openSettings`). */
     val openSettingsGroup: (SettingsGroup) -> Unit,
 )

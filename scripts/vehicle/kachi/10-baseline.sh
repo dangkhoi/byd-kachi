@@ -10,7 +10,10 @@ set -uo pipefail
 . "$(dirname "$0")/_common.sh"
 
 OUT="$(k_out)"; TARGET="$(k_target "${1:-}")" || exit 4; export KACHI_TARGET="$TARGET"
+trap 'k_log_stop' EXIT
 echo "carlog: $OUT · xe: $TARGET"; k_hr
+k_log_start 10                 # logcat nền chạy suốt bước (owner 2026-09-14: "log liếc các loại")
+k_state_snap 10 before         # mốc gốc để mọi bước sau diff ngược lại được
 
 # ── A. Khung hệ thống ───────────────────────────────────────────────────────────────────────
 echo "[A] Khung hệ thống (chỉ đọc)"
@@ -73,8 +76,25 @@ if k_confirm "mở màn Kachi › Cài đặt › Hệ thống & quyền (đổi
   k_adb exec-out screencap -p > "$OUT/10-screen-settings-system.png" 2>/dev/null || true
   [ -s "$OUT/10-screen-settings-system.png" ] || rm -f "$OUT/10-screen-settings-system.png"
   k_ok "đã mở (ảnh: 10-screen-settings-system.png) — đây là nơi có Kiểm tra cập nhật + Chẩn đoán"
+  k_shot 10 "Cài đặt › Hệ thống & quyền"
   k_logcat_slice "10-logcat-preflight.txt" Preflight KACHI Kachi
 fi
+
+# ── G. Cầu kiểm thử — bật một lần đầu buổi, mọi bước sau dùng chung ─────────────────────────
+echo; k_hr; echo "[G] Cầu kiểm thử qua adb (thay cho input-tap theo toạ độ — xem _common.sh)"
+if k_test_gate; then
+  k_timed "cầu: state"  k_test state
+  k_timed "cầu: prefs"  k_test prefs
+  k_timed "cầu: diag"   k_test diag
+  k_say "Ba tệp JSON trên là ẢNH CHỤP GỐC của cấu hình — mọi bước sau so ngược về đây."
+else
+  k_unk "không có cầu ⇒ cấu hình gốc chỉ còn bằng ẢNH CHỤP MÀN (bản release không run-as được prefs)"
+  k_todo "Chụp màn TỪNG NHÓM Cài đặt — đó là bản sao lưu THẬT của buổi này (playbook §0.3)"
+fi
+
+k_state_snap 10 after
+k_state_diff 10
+k_log_stop
 
 k_hr
 echo "XONG bước 1. Tiếp: 20-datums.sh (đọc dữ liệu xe) — vẫn là bước ĐỌC."

@@ -98,6 +98,7 @@ object VoicePhrases {
         vocabulary: Set<String>,
         profiles: List<String> = emptyList(),
         apps: List<String> = emptyList(),
+        installed: Set<String> = emptySet(),
     ): VoicePhraseSet {
         val spellings = index(vocabulary)
         val phrases = LinkedHashSet<String>()
@@ -106,7 +107,7 @@ object VoicePhrases {
         val unknown = LinkedHashSet<String>()
 
         // ── (1) Cụm NHIỀU TỪ dựng từ nhãn: nhãn đã CÓ DẤU sẵn, chỉ cần soi xem mô hình có đủ từ không ──
-        labelPhrases(profiles, apps).forEach { raw ->
+        labelPhrases(profiles, apps, installed).forEach { raw ->
             val words = words(raw)
             if (words.isEmpty()) return@forEach
             val mapped = words.map { w -> resolve(w, vocabulary, spellings) }
@@ -181,7 +182,7 @@ object VoicePhrases {
      * `args`/`argsEn` của nút SELECT cũng vào đây: *"chỉnh chế độ đèn pha sang **auto**"* không nói được nếu
      * *"auto"* không có trong ngữ pháp.
      */
-    private fun labelPhrases(profiles: List<String>, apps: List<String>): List<String> {
+    private fun labelPhrases(profiles: List<String>, apps: List<String>, installed: Set<String>): List<String> {
         val out = ArrayList<String>(1024)
         ControlRegistry.ALL.forEach { c ->
             out.add(c.label); c.labelEn?.let(out::add); c.short?.let(out::add); c.shortEn?.let(out::add)
@@ -198,6 +199,12 @@ object VoicePhrases {
         out.addAll(VoiceSynonyms.NAV_WORDS)
         out.addAll(profiles)
         out.addAll(apps)
+        // V1.1 — tên APP ĐÍCH (*"…bằng YouTube Music"*), **chỉ khi app ấy có trên máy**.
+        //
+        // Cùng luật với danh sách app ở trên: ngữ pháp chỉ khai thứ gọi được. Khai *"spotify"* trên một chiếc xe
+        // không cài Spotify là mở thêm một đường cho bộ giải mã nghe nhầm vào một app không tồn tại — mà nó
+        // KHÔNG đổi lại được gì, vì câu ấy rồi cũng chỉ nhận được câu trả lời "chưa cài".
+        VoiceAppTargets.ALL.filter { it.packageIn(installed) != null }.forEach { out.addAll(it.spoken) }
         return out
     }
 
@@ -214,6 +221,9 @@ object VoicePhrases {
         out.addAll(VoiceLexicon.NUMBER_WORDS)
         out.addAll(VoiceLexicon.FILLERS)
         VoiceLexicon.READ_TAILS.forEach { out.addAll(it) }
+        // V1.1 — *"…vào ô số hai"*. Thiếu một từ ở đây thì câu gõ được mà **không nói được**, im lặng.
+        out.addAll(VoiceLexicon.SLOT_WORDS)
+        out.addAll(VoiceLexicon.BY_APP_MARKERS)
         VoiceLexicon.CONFIRM_YES.forEach { out.addAll(it) }
         VoiceLexicon.CONFIRM_NO.forEach { out.addAll(it) }
         return out

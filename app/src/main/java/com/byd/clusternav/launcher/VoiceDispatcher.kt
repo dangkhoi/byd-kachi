@@ -5,6 +5,9 @@ import com.byd.clusternav.launcher.voice.VoiceIntent
 import com.byd.clusternav.launcher.voice.VoiceIntentParser
 import com.byd.clusternav.launcher.voice.VoiceMediaOp
 import com.byd.clusternav.launcher.voice.VoiceReply
+import com.byd.clusternav.launcher.voice.VoiceAppIntents
+import com.byd.clusternav.launcher.voice.VoiceAppTarget
+import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.launcher.voice.VoiceRisk
 import com.byd.clusternav.launcher.voice.VoiceRiskTable
 import com.byd.clusternav.navigation.NavApps
@@ -64,6 +67,29 @@ class VoiceDispatcher(
     private val confirm: (String, () -> Unit, () -> Unit) -> Unit,
     /** Nói một câu cho người dùng (hôm nay: hiện chữ). */
     private val say: (String) -> Unit,
+    /**
+     * V1.1 — gắn một app vào **ô số [slot]** (0-based). `true` = đã gắn.
+     *
+     * ⚠ Phải là **chính** lambda mà ngăn kéo dùng khi người ta chọn app cho một ô (`KachiHomeSlots.assignApp`),
+     * không phải một `viewModel.assignApp` gọi thẳng: đường của ngăn kéo còn làm hai việc nữa mà state không
+     * làm hộ được — gỡ app cũ khỏi sổ vị trí (`windowDispatcher.remove`) và đặt cửa sổ app mới vào đúng khung ô
+     * (`LauncherWindows.placeApp`). Bỏ một trong hai là lỗi *"ô thay app khác mà app cũ còn nguyên trong sổ vị
+     * trí"* đã có thật (xem KDoc `KachiHomeSlots`).
+     */
+    private val assignAppToSlot: (Int, String) -> Boolean,
+    /** V1.1 — giao một chuỗi chữ/toạ độ cho app đích ([VoiceAppIntents.send]). `true` = đã bắn đi được. */
+    private val sendToApp: (VoiceAppIntents.Handoff) -> Boolean,
+    /** V1.1 — tên địa điểm → toạ độ; **CHẶN** ⇒ lớp này luôn gọi trong [background]. `null` = không giải được. */
+    private val geocode: (String) -> VoiceAppIntents.Coords?,
+    /** V1.1 — gói của phiên nhạc ĐANG chạy (`MediaBridge.activePackage`), `null` khi chưa có phiên nào. */
+    private val mediaPackage: () -> String?,
+    /**
+     * V1.1 — đẩy một việc về luồng VẼ. Cần vì đường điểm-đến-cần-toạ-độ phải: chạy nền (mạng) → **hỏi lại**
+     * (hộp thoại/tấm chữ) → bắn ý-định (`startActivity`). Hai việc sau chỉ làm được trên luồng vẽ.
+     *
+     * Mặc định chạy thẳng: bài kiểm thuần cần thứ tự tất định, và nó không có `Looper` nào.
+     */
+    private val onUi: (() -> Unit) -> Unit = { it() },
     /** Chạy một việc dài trên thread NỀN (gói lệnh) — tách ra để test/đo được, mặc định là một Thread. */
     private val background: (() -> Unit) -> Unit = { block -> Thread(block, "KachiVoice").start() },
 ) {
@@ -135,7 +161,7 @@ class VoiceDispatcher(
             is VoiceIntent.Profile -> { onSwitchProfile(intent.name); say(VoiceReply.done(intent)) }
             is VoiceIntent.Read -> runRead(intent)
             is VoiceIntent.Nav -> runNav(intent, labels)
-            is VoiceIntent.Media -> runMedia(intent)
+            is VoiceIntent.Media -> runMedia(intent, labels)
             is VoiceIntent.OpenApp -> runOpenApp(intent, labels)
             is VoiceIntent.Unknown -> say(VoiceReply.unknown(intent))
         }
@@ -222,36 +248,120 @@ class VoiceDispatcher(
         )
     }
 
+    // ══ V1.1 · TỪ VỰNG MỞ → APP ĐÍCH ════════════════════════════════════════════════════════════
+
     /**
-     * Dẫn đường — **mở app, KHÔNG hứa chuyển điểm đến**.
+     * Dẫn đường.
      *
-     * [ĐO] `docs/diagnostics/kiki-car-RE-2026-09-14.md` §8.2: điểm đến là **từ vựng mở**, phần việc đã chốt cho
-     * Kiki (phương án C). Đường đẩy một câu chữ sang Kiki (`text_command`) mới ở mức **[SUY]** và phải chốt bằng
-     * phép đo **K2 trên xe** — CLAUDE.md §14 cấm viết code cho một khả năng chưa có bằng chứng shell. Nên ở đây ta
-     * làm đúng phần chắc chắn: mở app dẫn đường đang có, và **nói rõ** phần chưa làm được thay vì im lặng.
+     * ## Cái gì đã đổi ở 1.50, và vì sao nó KHÔNG phá ranh giới cũ
+     * Tới 1.49 nhánh này chỉ **mở app** rồi nói thẳng là chưa chuyển được điểm đến — đúng với bằng chứng có lúc
+     * đó. Owner 2026-09-14 hỏi lại, và [ĐO] trên máy ảo + nguồn Kiki cho thấy ba app đều **có cửa** (bảng
+     * [VoiceAppTargets]). Ranh giới phương án C không đổi một chữ: Kachi vẫn **không tìm đường, không hiểu địa
+     * điểm** — nó chuyển nguyên văn chuỗi chữ (hoặc cặp toạ độ) cho app dẫn đường rồi đứng ra ngoài.
+     *
+     * Ba đường ra, mỗi đường nói một câu khác nhau vì chúng **là** ba chuyện khác nhau:
+     *  • app đích nhận CHỮ (Google Maps · Waze) ⇒ bắn thẳng;
+     *  • app đích chỉ nhận TOẠ ĐỘ (VietMap) ⇒ giải toạ độ ở luồng nền, **đọc lại tên nơi giải ra** rồi mới bắn;
+     *  • không giải được / không ai nhận ⇒ mở app trơn và **nói rõ là chưa giao được** (không có dấu ✓ rỗng).
      */
     private fun runNav(i: VoiceIntent.Nav, labels: Map<String, String>) {
         val installed = labels.values.toSet()
-        val pkg = NAV_PREFERENCE.firstOrNull { it in installed }
-        if (pkg == null || !openApp(pkg)) {
-            say(VoiceReply.noNavApp(i))
-            return
+        val asked = i.app
+        val target = pickNav(asked, installed)
+        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noNavApp(i)); return }
+        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return }
+
+        if (!target.needsCoords) { deliver(i, target, pkg, i.query, null); return }
+        // Cần toạ độ ⇒ lượt mạng/dịch vụ: **luồng nền**, và người lái phải biết là máy đang làm gì.
+        say(VoiceReply.resolving(i))
+        background {
+            val coords = runCatching { geocode(i.query) }.getOrNull()
+            onUi {
+                // [SOÁT Pass 3 · P2] Tra cứu hỏng ≠ *"app không có cửa"*. Nói đúng cái vừa xảy ra, xem
+                // [VoiceReply.navNoPlace] — dùng chung một câu là đổ lỗi cho app về một lần mất sóng.
+                if (coords == null) {
+                    say(if (openApp(pkg)) VoiceReply.navNoPlace(i, target) else VoiceReply.cannotOpen(i))
+                    return@onUi
+                }
+                // Tên do bên giải trả về KHÁC câu người ta nói (*"chợ bến thành"* → *"Chợ Bến Thành"*, hoặc một
+                // nơi trùng tên). Đọc lại rồi mới bắn — cùng lý do với cổng CONFIRM của từ vựng mở.
+                confirm(
+                    VoiceReply.confirmPlace(i, target, coords.place),
+                    { deliver(i, target, pkg, coords.place, coords) },
+                    { say(VoiceReply.cancelled(i, 0)) },
+                )
+            }
         }
-        say(VoiceReply.navOpenedWithoutDestination(i))
+    }
+
+    /** Nhạc — cùng hình dạng với [runNav], trừ việc không có app nhạc nào cần toạ độ. */
+    private fun runMedia(i: VoiceIntent.Media, labels: Map<String, String>) {
+        if (i.op != VoiceMediaOp.QUERY) { runTransport(i); return }
+        val installed = labels.values.toSet()
+        val asked = i.app
+        val target = pickMusic(asked, installed)
+        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noMusicApp(i)); return }
+        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return }
+        deliver(i, target, pkg, i.query, null)
+    }
+
+    /** Bắn một lượt giao việc và nói đúng thứ đã xảy ra. */
+    private fun deliver(
+        i: VoiceIntent,
+        target: VoiceAppTarget,
+        pkg: String,
+        query: String,
+        coords: VoiceAppIntents.Coords?,
+    ) {
+        val launch = target.destinationLaunch(coords != null)
+        val ok = launch != null && sendToApp(
+            VoiceAppIntents.Handoff(pkg, launch, query, coords, target.fallback),
+        )
+        if (ok) { say(VoiceReply.handedOver(i, target)); return }
+        openPlain(i, target, pkg)
+    }
+
+    /** Không giao được chữ ⇒ vẫn **mở app** (đó là phần chắc chắn làm được) rồi nói ra phần chưa làm được. */
+    private fun openPlain(i: VoiceIntent, target: VoiceAppTarget, pkg: String) {
+        say(if (openApp(pkg)) VoiceReply.navOpenedNoHandover(i, target) else VoiceReply.cannotOpen(i))
     }
 
     /**
-     * Nhạc.
+     * Chọn app dẫn đường.
+     *
+     * Câu nêu đích danh ⇒ đúng app đó (không có nó thì nói *"chưa cài"*, **không** lặng lẽ đổi sang app khác —
+     * người ta nói *"bằng Waze"* là có lý do). Không nêu ⇒ [NAV_PREFERENCE], tức thứ tự đã có từ 1.49.
+     */
+    private fun pickNav(key: String?, installed: Set<String>): VoiceAppTarget? {
+        VoiceAppTargets.byKey(key)?.let { return it.takeIf { t -> t.packageIn(installed) != null } }
+        return NAV_PREFERENCE.firstNotNullOfOrNull { pkg ->
+            VoiceAppTargets.NAV.firstOrNull { pkg in it.packages && it.packageIn(installed) != null }
+        }
+    }
+
+    /**
+     * Chọn app nhạc: **phiên đang phát trước**, rồi mới tới thứ tự của bảng.
+     *
+     * Owner 2026-09-14 nói *"mở nhạc bằng yt music, youtube"* — tức app là một lựa chọn, không phải một hằng số.
+     * Khi câu không nêu app thì đích đúng nhất là **app người ta đang nghe**: mở YouTube Music đè lên Spotify
+     * đang phát là hai luồng nhạc cùng lúc, và đó là thứ người lái phải dừng xe mới dẹp được.
+     */
+    private fun pickMusic(key: String?, installed: Set<String>): VoiceAppTarget? {
+        VoiceAppTargets.byKey(key)?.let { return it.takeIf { t -> t.packageIn(installed) != null } }
+        val playing = runCatching { mediaPackage() }.getOrNull()
+        VoiceAppTargets.MUSIC.firstOrNull { playing != null && playing in it.packages }?.let { return it }
+        return VoiceAppTargets.MUSIC.firstOrNull { it.packageIn(installed) != null }
+    }
+
+    /**
+     * Nhạc — phần TRANSPORT (phát / dừng / bài tiếp / bài trước).
      *
      * ## [SOÁT P1] Vì sao phải đọc kết quả của transport, không bắn rồi báo "✓"
-     * [MediaBridge] chỉ điều khiển được **phiên đang hoạt động** mà nó đã thấy; chưa ai thấy phiên nào thì mọi lệnh
-     * transport là no-op **im lặng** (KDoc `MediaBridge`: degrade-safe). Bản đầu bắn xong báo `✓ Phát nhạc` bất kể
-     * có phiên hay không — tức nói dối đúng cái ca hay gặp nhất (chưa cấp quyền notification-listener, hoặc chưa
-     * app nhạc nào mở). Nay `play/pause/next/prev` trả `Boolean`, và câu trả lời nói đúng thứ đã xảy ra.
+     * [MediaBridge] chỉ điều khiển được **phiên đang hoạt động** mà nó đã thấy; chưa ai thấy phiên nào thì mọi
+     * lệnh transport là no-op **im lặng** (KDoc `MediaBridge`: degrade-safe). Bản đầu bắn xong báo `✓ Phát nhạc`
+     * bất kể có phiên hay không — tức nói dối đúng cái ca hay gặp nhất.
      */
-    private fun runMedia(i: VoiceIntent.Media) {
-        // Tên bài / ca sĩ / thể loại = từ vựng MỞ. Nói thẳng là không làm offline, KHÔNG đoán bừa một bài.
-        if (i.op == VoiceMediaOp.QUERY) { say(VoiceReply.openVocabMedia(i)); return }
+    private fun runTransport(i: VoiceIntent.Media) {
         val bridge = media()
         val ok = when (i.op) {
             VoiceMediaOp.PLAY -> bridge.play()
@@ -263,10 +373,25 @@ class VoiceDispatcher(
         say(if (ok) VoiceReply.done(i) else VoiceReply.noMediaSession(i))
     }
 
+    /**
+     * Mở app — và từ 1.50, mở **vào một ô** nếu câu nêu ô (*"mở YouTube vào ô số 2"*).
+     *
+     * Số ô kiểm ở ĐÂY chứ không ở `:core`: chỉ tầng này biết bố cục đang dùng có mấy ô (bố cục tự vẽ đổi được
+     * giữa hai câu nói). Ngoài dải ⇒ nói ra **con số thật**, xem [VoiceReply.slotOutOfRange].
+     */
     private fun runOpenApp(i: VoiceIntent.OpenApp, labels: Map<String, String>) {
         val pkg = labels[i.appName]
-        val ok = pkg != null && openApp(pkg)
-        say(if (ok) VoiceReply.done(i) else VoiceReply.cannotOpen(i))
+        if (pkg == null) { say(VoiceReply.cannotOpen(i)); return }
+        val slot = i.slot
+        if (slot == null) {
+            say(if (openApp(pkg)) VoiceReply.done(i) else VoiceReply.cannotOpen(i))
+            return
+        }
+        val st = state()
+        val count = EffectiveLayout.slotCount(st.workspace.preset, st.customLayout)
+        if (slot !in 1..count) { say(VoiceReply.slotOutOfRange(i, count)); return }
+        // 1-based (như người ta nói) → 0-based (như mảng ô). Phép đổi nằm ở ĐÚNG MỘT chỗ, là chỗ này.
+        say(if (assignAppToSlot(slot - 1, pkg)) VoiceReply.done(i) else VoiceReply.cannotOpen(i))
     }
 
     private companion object {

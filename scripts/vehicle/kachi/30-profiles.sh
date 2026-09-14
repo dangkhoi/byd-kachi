@@ -16,11 +16,18 @@ set -uo pipefail
 
 OUT="$(k_out)"; TARGET="$(k_target "${1:-}")" || exit 4; export KACHI_TARGET="$TARGET"
 TAGS="ClusterNavReapply SeatComfort Pm25Filter VmOverlayPos NavigationSpeedSign NavRepository ClusterNavBridge RecircOnStart"
+trap 'k_log_stop' EXIT
 echo "carlog: $OUT · xe: $TARGET"; k_hr
+k_log_start 30
+k_state_snap 30 before
+BRIDGE=1; k_test_gate || BRIDGE=0
 
 # ── A. V-mig — xe này CÓ CẢNH cũ không, migration ra hồ sơ đúng chưa ────────────────────────
 echo "[A] V-mig · migration cảnh → hồ sơ (chỉ quan sát UI — prefs nằm ở /data/data, bản release"
 echo "    KHÔNG debuggable nên không run-as được)"
+if [ "$BRIDGE" = "1" ] && k_timed "cầu: profiles" k_test profiles; then
+  k_say "Danh sách hồ sơ do CHÍNH APP nói ra (không phải đọc ảnh) — lưu ở $K_TEST_JSON"
+fi
 k_todo "Mở Kachi › Cài đặt › Hồ sơ tài xế. Ghi lại DANH SÁCH hồ sơ đang có."
 k_todo "Nếu xe từng chạy bản ≤1.46 và có cảnh: mỗi cảnh phải thành MỘT hồ sơ cùng tên, và"
 k_todo "hồ sơ 'nổ máy' phải trỏ đúng cảnh khởi động cũ. Thiếu = FAIL, ghi tên cảnh đã mất."
@@ -37,14 +44,32 @@ k_logcat_slice "30-logcat-before.txt" $TAGS
 k_adb exec-out screencap -p > "$OUT/30-screen-before.png" 2>/dev/null || true
 [ -s "$OUT/30-screen-before.png" ] || rm -f "$OUT/30-screen-before.png"
 
+# Ảnh chụp cấu hình TRƯỚC khi đổi — bằng máy, không bằng trí nhớ người chạy.
+[ "$BRIDGE" = "1" ] && k_test prefs >/dev/null 2>&1 && k_say "prefs trước: $K_TEST_JSON"
+
 T0_HOST="$(date +%s)"
 T0_DEV="$(k_sh 'date +%s' 2>/dev/null | tr -d '\r')"
-k_pause "CHẠM chip hồ sơ trên thanh trên → chọn hồ sơ KHÁC. Bấm Enter NGAY sau khi chạm"
+# Đường TỰ ĐỘNG: cầu đổi hồ sơ ⇒ không phụ thuộc người chạm đúng chip (và không `input tap` toạ độ).
+# Đường TAY vẫn giữ nguyên bên dưới: cầu chưa có trên bản đang cài thì bước này KHÔNG được đứng lại.
+SWITCHED=0
+if [ "$BRIDGE" = "1" ]; then
+  printf '  Tên hồ sơ muốn đổi SANG (Enter để tự chạm bằng tay): '
+  read -r PNAME < /dev/tty
+  if [ -n "${PNAME:-}" ] && k_confirm "đổi hồ sơ sang «$PNAME» qua cầu kiểm thử (áp 8 applier THẬT lên xe)" \
+       "chạy lại lệnh này với tên hồ sơ CŨ, hoặc chạm chip hồ sơ cũ trên thanh trên"; then
+    k_timed "cầu: profile «$PNAME»" k_test profile --es name "$PNAME" && SWITCHED=1
+  fi
+fi
+if [ "$SWITCHED" = "0" ]; then
+  k_pause "CHẠM chip hồ sơ trên thanh trên → chọn hồ sơ KHÁC. Bấm Enter NGAY sau khi chạm"
+fi
 T1_HOST="$(date +%s)"
 k_say "chờ 4 giây cho applier chạy xong…"
 k_adb shell "sleep 4" >/dev/null 2>&1 || true
 k_adb exec-out screencap -p > "$OUT/30-screen-after.png" 2>/dev/null || true
 [ -s "$OUT/30-screen-after.png" ] || rm -f "$OUT/30-screen-after.png"
+k_shot 30 "sau khi đổi hồ sơ"
+[ "$BRIDGE" = "1" ] && k_test prefs >/dev/null 2>&1 && k_say "prefs sau: $K_TEST_JSON (so với tệp prefs trước ⇒ khoá nào ĐI THEO hồ sơ)"
 # shellcheck disable=SC2086
 k_logcat_slice "30-logcat-after.txt" $TAGS
 
@@ -108,5 +133,8 @@ if k_confirm "TẮT MÁY XE hẳn (rút chìa/khoá nguồn) rồi nổ lại �
   k_todo "Kỳ vọng: đúng HỒ SƠ NỔ MÁY · app vào đúng ô · thanh nút đúng · không hộp thoại lạ."
 fi
 
-k_hr; echo "XONG bước 3. Tiếp: 40-ota.sh"
+k_state_snap 30 after
+k_state_diff 30
+k_log_stop
+k_hr; echo "XONG bước 3. Tiếp: 50-keys.sh (40-ota.sh đã chạy trước bước này trong run-all)"
 k_note "30-profiles: đã đo V-switch (+ V-mig/P7 nếu owner chạy)"

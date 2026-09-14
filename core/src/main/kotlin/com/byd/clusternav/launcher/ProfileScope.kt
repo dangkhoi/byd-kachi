@@ -155,6 +155,11 @@ object ProfileScope {
             "S4 · R1 — dữ liệu CẢNH đời cũ. Chỉ còn sống tới lượt chuyển đổi một lần ([ScenesMigration]); sau đó " +
                 "khoá này bị xoá khỏi đĩa cùng khái niệm 'cảnh'",
         "boot_scene" to "S4 · R1 — con trỏ cảnh lúc nổ máy đời cũ; [ScenesMigration] đổi nó thành `boot_profile`",
+        "test_bridge_until" to
+            "T-BRIDGE — cửa sổ 60 phút của chế độ kiểm thử qua adb (`TestBridgeWindow`). Cùng họ `voicekey_learn`: " +
+                "một cờ BẬT-MỘT-LẦN rồi tự tắt, không phải lựa chọn để nhớ. Theo hồ sơ thì đổi hồ sơ là mở lại " +
+                "một cửa điều khiển mà không ai bấm gì; theo xe thì sai nghĩa (nó không phải cấu hình của xe) và " +
+                "còn mời người sau bỏ luôn phép hết hạn",
     )
 
     /**

@@ -1,0 +1,10 @@
+# WAV đối chứng cho 70-voice.sh — SINH LÚC CHẠY, KHÔNG commit.
+# Lý do: chúng là dữ liệu đo dùng một lần, và một thư mục tệp tiếng trong repo public là thứ
+# không ai soát lại được. 70-voice.sh tự sinh bằng `say -v Linh` + `afconvert` trên Mac.
+#
+#   say -v Linh -o /tmp/k.aiff "bật đèn đọc"
+#   afconvert -f WAVE -d LEI16@16000 -c 1 /tmp/k.aiff 01-bat-den-doc.wav
+#
+# Khuôn BẮT BUỘC (VoiceWavProbe.readHeader từ chối mọi khuôn khác): PCM không nén · 1 kênh · 16000 Hz · 16-bit.
+*.wav
+*.aiff

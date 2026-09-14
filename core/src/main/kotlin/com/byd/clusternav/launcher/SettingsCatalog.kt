@@ -150,6 +150,11 @@ object SettingsCatalog {
         "clusternav_state" to
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (cố ý không đổi tên: nó là trạng thái " +
                 "đã nằm trên đĩa của máy đang chạy). Chỉ chứa `freeform_state`",
+        "kachi_test_bridge" to
+            "T-BRIDGE — chỉ chứa `test_bridge_until`, công tắc PHIÊN của cầu kiểm thử qua adb. Cố ý ĐỂ RIÊNG khỏi " +
+                "`kachi_workspace`: tệp đó đi theo hồ sơ (chụp–áp, nhân bản, xoá hồ sơ) còn cái này thì **không " +
+                "được** đi đâu cả — một cửa mở-60-phút mà bị chép sang hồ sơ khác, hoặc sống lại qua một lượt áp " +
+                "ảnh chụp, là đúng thứ mà cửa sổ thời gian sinh ra để chặn (`TestBridgeWindow`)",
     )
 
     /**

@@ -61,6 +61,12 @@ class VoiceDispatcherSafetyTest {
             onListen = { listens++ },
             confirm = { q, y, n -> ask.onConfirm(q, y, n) },
             say = { said += it },
+            // V1.1 — bốn cổng mới; bài này không chạm tới chúng, nên chúng **nổ** nếu bị chạm. Một lambda trả
+            // giá trị giả sẽ làm bài xanh trong khi một ý định đi nhầm đường.
+            assignAppToSlot = { _, _ -> error("bài này không gắn app vào ô") },
+            sendToApp = { error("bài này không giao việc cho app đích") },
+            geocode = { error("bài này không tra toạ độ") },
+            mediaPackage = { null },
             // Gói lệnh chạy NGAY trên thread gọi — bài cần kết quả tất định, không cần đo tính đa luồng.
             background = { it() },
         )

@@ -273,10 +273,14 @@ class SettingsScreenWiringContractTest {
         // Chỗ ĐỌC `themeMode` trong MÃ (đã bỏ chú thích — lần đầu S1 quét thô và bài đỏ vì chính KDoc nhắc tên nó).
         // Ba chỗ, mỗi chỗ một vai: nạp/ghi bền · người đọc-để-vẽ · nút bấm.
         val readers = appSources { it.contains(".themeMode") }
+        // T-BRIDGE thêm chỗ đọc thứ TƯ và nó KHÔNG phá hình dạng một chiều: `TestBridgeState` chỉ **chép** giá
+        // trị từ `HomeUiState` ra JSON cho lệnh `state` của cầu kiểm thử — không ghi bền, không vẽ, không giữ bản
+        // sao. Giữ nó trong danh sách ghim (thay vì nới phép quét) để chỗ đọc thứ NĂM vẫn phải giải trình.
         assertEquals(
-            listOf("PrefsWorkspaceRepository.kt", "SettingsSections.kt", "ThemeHost.kt"), readers,
+            listOf("PrefsWorkspaceRepository.kt", "SettingsSections.kt", "TestBridgeState.kt", "ThemeHost.kt"),
+            readers,
             "đường một chiều của chủ đề đã đổi hình: lưu bền (PrefsWorkspaceRepository) → đọc-để-vẽ (ThemeHost) → " +
-                "nút bấm (SettingsSections). Chỗ đọc hiện tại: $readers",
+                "nút bấm (SettingsSections) → ảnh chụp chẩn đoán chỉ-đọc (TestBridgeState). Chỗ đọc hiện tại: $readers",
         )
         assertTrue(
             appSources { it.contains("isNight(") }.isNotEmpty(),

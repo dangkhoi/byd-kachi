@@ -90,7 +90,42 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private var displayedStatus = CarStatus()
     private val slotViews = ArrayList<View>()
 
+    /**
+     * H2·1 — DANH TÍNH CHỦ SỞ HỮU màn ảo của cây workspace này. Hai màn Kachi cùng sống (màn cũ "đang kết thúc"
+     * chưa tháo view) là ca [ĐO] đã làm rò 4 màn ảo cho 2 ô; [SlotVdOwner] phân biệt chúng bằng chuỗi này.
+     */
+    private val hostOwner = "ws@${System.identityHashCode(this)}"
+
     init { rebuild() }
+
+    /**
+     * Nhả màn ảo của ô [i] **trước** khi tháo view của ô đó.
+     *
+     * Vì sao không phó mặc `onDetachedFromWindow` của [VdAppHost] (đường cũ, vẫn giữ làm lưới an toàn):
+     * `ViewGroup.removeView` CHỈ gọi `dispatchDetachedFromWindow` khi cây view **đang gắn cửa sổ**
+     * (`view.mAttachInfo != null`) — tháo ô lúc workspace đã rời cửa sổ là một màn ảo không ai nhả. Gọi tường
+     * minh ở đây thì việc nhả không còn phụ thuộc trạng thái gắn/tháo của cây view. Idempotent.
+     */
+    private fun releaseSlotHost(i: Int) {
+        val slot = slotViews.getOrNull(i) as? ViewGroup ?: return
+        for (k in 0 until slot.childCount) (slot.getChildAt(k) as? VdAppHost)?.release()
+    }
+
+    /**
+     * Nhả MỌI màn ảo của cây này (dựng lại tất cả · workspace tháo · màn chính huỷ). Idempotent.
+     *
+     * Hai lớp: đi qua từng ô đang có view (đường thường), rồi **quét theo CHỦ** ở [SlotVdOwner] — bắt nốt màn ảo
+     * của một host đã rời cây view mà chưa kịp nhả. Không đụng ô mà một cây workspace khác đã nhận.
+     */
+    fun releaseAppHosts() {
+        for (i in slotViews.indices) releaseSlotHost(i)
+        SlotVdOwner.releaseOwner(hostOwner)
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        releaseAppHosts()
+    }
 
     /**
      * Áp trạng thái [s] lên view (was `setState`). PURE VIEW: chỉ RENDER — KHÔNG giữ nguồn sự thật.
@@ -146,6 +181,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 if (onlyValues && nc is SlotContent.Widget &&
                     WidgetViews.refreshRead(slotViews[i], widgetData()) > 0
                 ) return@forEach
+                releaseSlotHost(i)          // ô đổi nội dung ⇒ nhả màn ảo của ô TRƯỚC khi tháo view
                 removeView(slotViews[i])
                 val v = makeSlot(i, nc)
                 addView(v); slotViews[i] = v
@@ -213,6 +249,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     private fun rebuild() {
         mediaCache = null      // lượt dựng lại cũng là một lượt mới ⇒ đọc nhạc lại đúng một lần
+        releaseAppHosts()      // dựng lại TẤT CẢ ⇒ nhả màn ảo cũ trước, không để hai đời ô cùng giữ VD
         removeAllViews(); slotViews.clear()
         for (i in 0 until EffectiveLayout.slotCount(displayed.preset, customLayout)) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
@@ -294,7 +331,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.addView(appCard(content.pkg), mm)                       // fallback phía sau (hiện nếu nhúng lỗi)
                 val sh = shell
                 if (sh != null) {
-                    val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd, inputClient)  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag; chạm qua input-daemon (fallback `input -d`)
+                    val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd, inputClient, slot = index, owner = hostOwner)  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag; chạm qua input-daemon (fallback `input -d`)
                     fl.addView(host, mm); host.bind(content.pkg, sh)
                 } else if (SlotAppHost.embeddingUsable(context)) {
                     val host = SlotAppHost(context, dp(Sp.RADIUS_L).toFloat())

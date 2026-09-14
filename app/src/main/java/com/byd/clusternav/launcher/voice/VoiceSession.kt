@@ -136,7 +136,7 @@ class VoiceSession(
             if (!VoiceModelStore.isReady(ctx)) { fail(my, R.string.kachi_voice_no_model, openSettingsAction = true); return }
 
             val labels = appsByLabel()
-            val rec = VoiceRecognizer.open(ctx, profiles(), labels.keys.toList())
+            val rec = VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet())
             if (rec == null) { fail(my, R.string.kachi_voice_engine_failed, openSettingsAction = true); return }
 
             rec.use {
@@ -147,14 +147,17 @@ class VoiceSession(
                 // `whileCapturing` KHÔNG nhận tham số ⇒ `it` bên trong vẫn là recognizer của `rec.use` (một
                 // lambda không tham số không dựng `it` riêng, nên không che `it` của lambda ngoài).
                 val heard = whileCapturing {
-                    capture.listen(it, MAX_LISTEN_MS, cancelled::get) { partial ->
+                    capture.listen(it, MAX_LISTEN_MS, cancelled::get, keepPcm = true) { partial ->
                         post { if (!stale(my)) overlay?.render(R.string.kachi_voice_listening, partial) }
                     }
                 }
                 if (cancelled.get() || stale(my)) { closeIfMine(my); return }
-                Log.i(TAG, "nghe được: \"$heard\"")
-                if (heard.isBlank()) { fail(my, R.string.kachi_voice_nothing_heard, openSettingsAction = false); return }
-                post { if (!stale(my)) execute(heard) }
+                Log.i(TAG, "lượt 1 (ngữ pháp) nghe được: \"${heard.text}\"")
+                // LƯỢT 2 — chỉ chạy khi lượt 1 có cụm MỞ TỪ VỰNG; xem KDoc [freeTail] và [VoiceOpenVocab].
+                val sentence = freeTail(heard)
+                if (cancelled.get() || stale(my)) { closeIfMine(my); return }
+                if (sentence.isBlank()) { fail(my, R.string.kachi_voice_nothing_heard, openSettingsAction = false); return }
+                post { if (!stale(my)) execute(sentence) }
             }
         } catch (t: Throwable) {
             // Một launcher KHÔNG được chết vì tính năng phụ: mã native của Kaldi có thể ném `Error`.
@@ -163,16 +166,64 @@ class VoiceSession(
         }
     }
 
+    /**
+     * ═══ V1.1 · LƯỢT 2 — bộ giải mã **TỰ DO** trên đúng khúc tiếng vừa thu (R16) ══════════════════════════
+     *
+     * **CHẶN** ⇒ gọi trên luồng nền (nó đang ở trong `runSession`).
+     *
+     * ## Điều kiện chạy — hai vế, và bài canh đọc được cả hai từ mã
+     * Chỉ chạy khi [VoiceOpenVocab.triggerOf] khác `null`, tức lượt 1 nghe ra *"&lt;cụm kích hoạt&gt; `[unk]`…"*.
+     * Câu lệnh xe thường (*"bật đèn đọc"*) không có `[unk]` nào ⇒ **không tốn lượt giải mã nào**, và cũng không
+     * có một chuỗi tự do kém chính xác nào len được vào đường điều khiển xe.
+     *
+     * Hỏng ở bất kỳ đâu (không dựng được bộ giải mã, không nghe ra đuôi) ⇒ **lùi về bản ngữ pháp** đã bỏ `[unk]`.
+     * Người lái nhận được *"Phát nhạc"* thay vì *"Tìm bài «Diễm Xưa»"* — ít hơn, nhưng không sai.
+     *
+     * @return câu hoàn chỉnh để đưa xuống [VoiceDispatcher].
+     */
+    private fun freeTail(heard: VoiceCapture.Heard): String {
+        val plain = VoiceOpenVocab.stripUnk(heard.text)
+        val trigger = VoiceOpenVocab.triggerOf(heard.text) ?: return plain
+        if (heard.samples <= 0) return plain
+        val t0 = System.currentTimeMillis()
+        val free = runCatching {
+            VoiceRecognizer.openFree(ctx)?.use { it.decodeAll(heard.pcm, heard.samples) }
+        }.onFailure { Log.w(TAG, "lượt 2 hỏng", it) }.getOrNull().orEmpty()
+        val merged = VoiceOpenVocab.merge(heard.text, free)
+        Log.i(
+            TAG,
+            "lượt 2 (tự do) sau cụm \"${trigger.joinToString(" ")}\" trong ${System.currentTimeMillis() - t0} ms: " +
+                "\"$free\" ⇒ \"${merged.text}\"",
+        )
+        return merged.text.ifBlank { plain }
+    }
+
     /** Việc nền này có còn thuộc phiên đang chạy không — xem KDoc [generation]. */
     private fun stale(my: Int): Boolean = my != generation.get()
 
     private fun closeIfMine(my: Int) { if (!stale(my)) close() }
 
-    /** Thi hành câu vừa nghe — trên luồng VẼ, vì [VoiceDispatcher] đụng tới view/hộp thoại. */
+    /**
+     * Thi hành câu vừa nghe — trên luồng VẼ, vì [VoiceDispatcher] đụng tới view/hộp thoại.
+     *
+     * ## [SOÁT Pass 3 · P1] Vì sao cổng hỏi-lại phải có khoá THẾ HỆ ở đây
+     * Tới 1.49 mọi lượt [confirm] đều xảy ra **đồng bộ** trong lời gọi này, tức chắc chắn còn trong phiên. V1.1
+     * mở một đường mới: câu dẫn đường tới một app chỉ nhận toạ độ đi **tra cứu mạng** rồi mới hỏi lại — có thể
+     * mất tới ~20 s (cửa mạng của dự án: 15 s nối + 5 s đọc). Trong khoảng ấy người lái hoàn toàn có thể đã huỷ phiên,
+     * rời màn chính, hoặc **bấm nói lần nữa**. Không có khoá này thì lượt tra cứu cũ về muộn sẽ: đặt lại
+     * `pendingConfirm` của phiên ĐANG chạy (câu trả lời "đồng ý" của người dùng rơi vào việc CŨ), vẽ câu hỏi cũ
+     * đè lên tấm chữ mới, và **mở thêm một `AudioRecord` thứ hai** trong lúc micro của phiên mới còn đang mở —
+     * đúng cái hazard đã ghi ở KDoc [cancel].
+     *
+     * Phiên đã qua ⇒ coi như **KHÔNG** (cùng mặc định với hết giờ / nghe không rõ, xem KDoc [confirm]).
+     */
     private fun execute(heard: String) {
+        val my = generation.get()
         val d = dispatcher(
             { line -> post { overlay?.render(R.string.kachi_voice_heard, line) } },
-            { question, onYes, onNo -> confirm(question, onYes, onNo) },
+            { question, onYes, onNo ->
+                if (stale(my) || overlay == null) onNo() else confirm(question, onYes, onNo)
+            },
         )
         val intents = d.preview(heard)
         overlay?.render(R.string.kachi_voice_heard, heard)
@@ -216,11 +267,12 @@ class VoiceSession(
     private fun listenForConfirm(answered: AtomicBoolean, my: Int) {
         val heard = runCatching {
             val labels = appsByLabel()
-            VoiceRecognizer.open(ctx, profiles(), labels.keys.toList())?.use {
+            VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet())?.use {
                 whileCapturing {
+                    // `keepPcm = false`: lượt này chỉ bắt *"đồng ý"/"huỷ"* — không bao giờ cần lượt giải mã thứ hai.
                     capture.listen(it, CONFIRM_LISTEN_MS, { cancelled.get() || answered.get() || stale(my) }) { partial ->
                         post { if (!stale(my)) overlay?.render(R.string.kachi_voice_confirm_title, partial) }
-                    }
+                    }.text
                 }
             }.orEmpty()
         }.onFailure { Log.w(TAG, "lượt nghe xác nhận hỏng", it) }.getOrDefault("")

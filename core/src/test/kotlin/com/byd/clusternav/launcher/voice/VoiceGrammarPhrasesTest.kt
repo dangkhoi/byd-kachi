@@ -166,6 +166,61 @@ class VoiceGrammarPhrasesTest {
         assertFalse(withDyn.entries.any { it.contains("qzz") }, "không được để nửa cụm lọt vào")
     }
 
+    // ══ (2b) V1.1 — TÊN APP ĐÍCH ════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Tên app đích chỉ vào ngữ pháp **khi app ấy có trên máy** — cùng luật với danh sách app đã cài.
+     *
+     * Khai *"spotify"* trên một chiếc xe không cài Spotify là mở thêm một đường cho bộ giải mã nghe nhầm vào một
+     * app không tồn tại, mà không đổi lại được gì: câu ấy rồi cũng chỉ nhận được câu trả lời *"chưa cài"*.
+     */
+    @Test
+    fun `ten app dich chi vao ngu phap khi app do co tren may`() {
+        val none = VoiceGrammar.phrases(vocabulary)
+        assertFalse(none.entries.any { VoiceLexicon.deaccent(it) == "youtube music" },
+            "chưa khai app nào cài mà tên app đích đã vào ngữ pháp")
+
+        val withYt = VoiceGrammar.phrases(
+            vocabulary,
+            apps = listOf("YouTube Music"),
+            installed = setOf("com.google.android.apps.youtube.music"),
+        )
+        assertTrue(withYt.entries.any { VoiceLexicon.deaccent(it) == "youtube music" },
+            "app đã cài mà tên nó vẫn không nói được")
+    }
+
+    /**
+     * **[ĐO] mô hình tiếng Việt KHÔNG có mọi tên thương hiệu** — con số này là một phép đo, không phải một lỗi.
+     *
+     * Từ điển 19.529 mục có `youtube` · `music` · `google` · `map` · `yt` nhưng **không** có `maps` · `waze` ·
+     * `spotify` · `zing` · `mp3` · `vietmap`. Hệ quả đã chấp nhận và ghi ở §9 spec: Spotify và Zing MP3 **gõ
+     * được mà chưa nói được**; Google Maps · Waze · VietMap thì có cách nói thay thế nên vẫn nói được.
+     *
+     * Ngày đổi mô hình, bài này đỏ và người đọc biết ngay phải xem lại chỗ nào.
+     */
+    @Test
+    fun `do lai nhung ten app ma mo hinh khong doc noi`() {
+        val all = VoiceAppTargets.ALL.map { it.packages.first() }.toSet()
+        val set = VoiceGrammar.phrases(vocabulary, installed = all)
+        val sayable = set.entries.map { VoiceLexicon.deaccent(it) }.toSet()
+
+        listOf(VoiceAppTargets.YT_MUSIC, VoiceAppTargets.YOUTUBE, VoiceAppTargets.GMAPS,
+            VoiceAppTargets.WAZE, VoiceAppTargets.VIETMAP).forEach { key ->
+            val target = VoiceAppTargets.byKey(key)!!
+            assertTrue(
+                target.spoken.any { it in sayable },
+                "app `$key` không có cách nói nào mô hình đọc nổi — thêm một cách gọi thuần Việt vào VoiceSynonyms.APP_TARGETS",
+            )
+        }
+        listOf(VoiceAppTargets.SPOTIFY, VoiceAppTargets.ZING).forEach { key ->
+            val target = VoiceAppTargets.byKey(key)!!
+            assertFalse(
+                target.spoken.any { it in sayable },
+                "app `$key` NAY đã nói được — tin tốt: cập nhật §9 spec và gỡ nó khỏi danh sách này",
+            )
+        }
+    }
+
     // ══ (3) Con số — khoá lại phép đo 2026-09-14 ═════════════════════════════════════════════════════════
 
     /**
@@ -207,7 +262,16 @@ class VoiceGrammarPhrasesTest {
          */
         const val EXPECTED_PHRASES_DROPPED = 269
 
-        /** [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`. */
-        const val EXPECTED_ENTRIES = 2037
+        /**
+         * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
+         *
+         * 2026-09-14 · V1.1: **2037 → 2058** (+21). Toàn bộ phần thêm là **từ đơn**: 8 cách viết của động từ
+         * mới *"đưa"* (*"đưa YouTube vào ô 2"*), cộng hai bảng mới —
+         * [VoiceLexicon.SLOT_WORDS] (*"ô · số · thứ · vào · slot · in · into"*) và
+         * [VoiceLexicon.BY_APP_MARKERS] (*"bằng · trên · với · qua · with · on · using"*), nở theo thanh điệu.
+         * Số **cụm** không đổi: tên app đích chỉ vào ngữ pháp khi app ấy **có trên máy** (`installed`), mà bài
+         * này cố ý gọi với danh sách rỗng — xem `ten app dich chi vao ngu phap khi app do co tren may`.
+         */
+        const val EXPECTED_ENTRIES = 2058
     }
 }

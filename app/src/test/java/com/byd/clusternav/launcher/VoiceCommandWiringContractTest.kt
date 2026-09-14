@@ -50,7 +50,7 @@ class VoiceCommandWiringContractTest {
             "is VoiceIntent.Profile ->" to "onSwitchProfile(intent.name)",
             "is VoiceIntent.Read ->" to "runRead(intent)",
             "is VoiceIntent.Nav ->" to "runNav(intent, labels)",
-            "is VoiceIntent.Media ->" to "runMedia(intent)",
+            "is VoiceIntent.Media ->" to "runMedia(intent, labels)",
             "is VoiceIntent.OpenApp ->" to "runOpenApp(intent, labels)",
             "is VoiceIntent.Unknown ->" to "VoiceReply.unknown(intent)",
         ).forEach { (branch, target) ->
@@ -74,7 +74,39 @@ class VoiceCommandWiringContractTest {
             "bridge.play()" to "lệnh phát phải là transport của MediaSession",
             "LauncherActions.APPS" to "hành động launcher phải tra theo mã của `:core`",
             "NavApps" to "app dẫn đường phải lấy từ roster dùng chung, không viết cứng tên gói",
+            // V1.1 — hai đường mới, cùng một luật: dùng lại đường đã có, không dựng cơ chế thứ hai.
+            "assignAppToSlot(" to "gắn app vào ô phải đi đường của NGĂN KÉO, không gọi thẳng ViewModel",
+            "VoiceAppTargets" to "app đích phải tra từ bảng ở `:core`, không rẽ nhánh theo tên gói",
         ).forEach { (needle, why) -> assertTrue(dispatcher.contains(needle), why) }
+        assertFalse(dispatcher.contains("viewModel."),
+            "cầu giọng nói KHÔNG được cầm ViewModel — mọi thứ đi qua lambda mà một cú chạm đang dùng")
+    }
+
+    /**
+     * **V1.1 (R15) — *"mở YouTube vào ô số 2"* đi ĐÚNG đường mà ngăn kéo dùng.**
+     *
+     * Đây là bài chống một đường thứ hai tới ô. `KachiHomeSlots.assignApp` làm ba việc, không phải một: ghi state
+     * (qua ViewModel), gỡ app cũ khỏi sổ vị trí, và đặt cửa sổ app mới vào khung ô. Gọi thẳng
+     * `viewModel.assignApp` sẽ chỉ làm việc đầu — ô đổi app mà cửa sổ cũ còn nguyên, đúng lỗi đã có thật.
+     */
+    @Test
+    fun `duong gan app vao o la dung duong cua ngan keo`() {
+        assertTrue(
+            activity.contains("assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true }"),
+            "Activity phải truyền CHÍNH `slots.assignApp` — cùng hàm mà `onPickApp` của ngăn kéo gọi",
+        )
+        assertTrue(activity.contains("onPickApp = { idx, pkg -> slots.assignApp(idx, pkg) }"),
+            "…và ngăn kéo vẫn phải dùng đúng hàm ấy (nếu dòng này đổi, dòng trên không còn là *cùng đường*)")
+        assertTrue(wiring.contains("assignAppToSlot = assignAppToSlot"),
+            "khối nối dây phải chuyển tiếp xuống cả phiên NGHE lẫn bảng Cài đặt")
+        assertTrue(console.contains("assignAppToSlot = deps.assignAppToSlot"),
+            "ô *Gõ lệnh chữ* cũng phải gắn thật vào ô, không được mở toàn màn thay thế")
+
+        val fn = SourceRoots.body(dispatcher, "private fun runOpenApp(")
+        assertTrue(fn.contains("EffectiveLayout.slotCount("),
+            "số ô phải đọc từ bố cục ĐANG dùng (bố cục tự vẽ đổi được giữa hai câu), không phải một hằng")
+        assertTrue(fn.contains("assignAppToSlot(slot - 1, pkg)"),
+            "phép đổi 1-based (người nói) → 0-based (mảng ô) phải nằm ở ĐÚNG một chỗ, là chỗ này")
     }
 
     /** Lệnh *"tăng/giảm"* phải cộng vào mức ĐANG dùng — `:core` cố ý không biết mức đó. */
@@ -182,6 +214,27 @@ class VoiceCommandWiringContractTest {
             "cửa tải mô hình chỉ được ĐỌC xuống, không gửi gì lên")
     }
 
+    /**
+     * **V1.1 — NGOẠI LỆ MẠNG THỨ HAI, và nó phải ở lại đúng kích cỡ hiện tại.**
+     *
+     * [VoiceGeocoder] gửi một **tên địa điểm** đi để lấy về toạ độ ([ĐO] VietMap chỉ nhận toạ độ — nguồn Kiki,
+     * xem KDoc `VoiceAppTargets`). Lời hứa *"tiếng nói không rời khỏi xe"* vẫn nguyên: thứ đi ra là cùng loại
+     * chữ mà người ta gõ vào ô tìm kiếm bản đồ mười lần một ngày. Bài này khoá đúng ba chốt của KDoc lớp ấy —
+     * ngày ai đó gửi thêm gì khác, hoặc gửi từ một tệp khác, nó đỏ.
+     */
+    @Test
+    fun `chi dung mot cua mang cho tra cuu dia diem, va no khong cham toi tieng`() {
+        val geo = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceGeocoder.kt")
+        assertTrue(geo.contains("HttpConn.open("), "phải đi qua cửa HTTPS duy nhất của dự án")
+        assertFalse(geo.contains("outputStream"), "chỉ GET — không gửi thân yêu cầu nào")
+        listOf("AudioRecord", "ShortArray", "pcm", "Recognizer").forEach {
+            assertFalse(geo.contains(it), "lớp tra cứu địa điểm chạm tới tiếng (`$it`) — hai việc này phải tách hẳn")
+        }
+        // Và chỉ ĐÚNG hai tệp Voice* được phép có `HttpConn`: tải mô hình (xuống) + tra cứu địa điểm (chữ).
+        val users = voiceSources().filter { (_, src) -> src.contains("HttpConn") }.map { it.first }.sorted()
+        assertEquals(listOf("VoiceGeocoder.kt", "VoiceModelStore.kt"), users, "có tệp Voice* thứ ba ra mạng: $users")
+    }
+
     /** Và bộ nhận dạng phải là **Vosk tại máy**, ràng bằng ngữ pháp — không phải giải mã tự do. */
     @Test
     fun `bo nhan dang la Vosk tai may va co rang ngu phap`() {
@@ -193,6 +246,71 @@ class VoiceCommandWiringContractTest {
             "ngữ pháp rỗng phải bị TỪ CHỐI: Vosk lặng lẽ quay về giải mã tự do, không báo lỗi nào")
         assertFalse(rec.contains("SpeechService") || rec.contains("SpeechStreamService"),
             "KHÔNG dùng vòng ghi âm của thư viện — nó nằm ngoài trần 8 s và ngoài tầm bài canh mạng")
+    }
+
+    /**
+     * **V1.1 (R16) — bộ giải mã TỰ DO tồn tại, nhưng chỉ cho LƯỢT 2 và chỉ sau một cụm kích hoạt.**
+     *
+     * Cam kết *"lượt 1 ràng bằng ngữ pháp"* không đổi một chữ: câu lệnh xe vẫn dựng từ tập đóng. Cái bài này
+     * khoá là **điều kiện chạy** của lượt 2 — nếu ai đó gỡ cổng `VoiceOpenVocab.triggerOf` thì mọi câu nói sẽ
+     * đi qua một bộ giải mã 19.529 từ, tức đúng thứ pha NGHE bỏ công tránh, mà **không có gì báo**.
+     */
+    @Test
+    fun `bo giai ma tu do chi chay o luot 2, sau mot cum kich hoat`() {
+        val rec = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceRecognizer.kt")
+        assertTrue(rec.contains("fun openFree("), "R16 cần một bộ giải mã tự do cho phần đuôi từ vựng mở")
+        assertTrue(rec.contains("Recognizer(model, SAMPLE_RATE)"), "bộ giải mã tự do dựng KHÔNG kèm ngữ pháp")
+
+        val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
+        val fn = SourceRoots.body(session, "private fun freeTail(")
+        assertTrue(
+            fn.indexOf("VoiceOpenVocab.triggerOf(") in 0 until fn.indexOf("VoiceRecognizer.openFree("),
+            "phải hỏi cụm kích hoạt TRƯỚC khi dựng bộ giải mã tự do — thứ tự này chính là cái cổng",
+        )
+        assertTrue(fn.contains("?: return plain"), "không có cụm kích hoạt ⇒ lùi về bản ngữ pháp, không chạy lượt 2")
+        assertTrue(fn.contains("heard.pcm"), "lượt 2 chạy trên khúc PCM ĐÃ THU, không mở micro lần nữa")
+
+        // Chỉ hai chỗ được gọi: phiên nghe thật và đường đo bằng WAV (phải đi cùng một con đường — R14).
+        val users = voiceSources().filter { (_, src) -> src.contains("openFree(") }.map { it.first }.sorted()
+        assertEquals(listOf("VoiceRecognizer.kt", "VoiceSession.kt", "VoiceWavProbe.kt"), users,
+            "bộ giải mã tự do bị gọi ở chỗ lạ: $users")
+    }
+
+    /**
+     * **[SOÁT Pass 3 · P1] — cổng hỏi-lại VỀ MUỘN không được mở thêm một lượt nghe.**
+     *
+     * Tới 1.49 mọi lượt `confirm` xảy ra **đồng bộ** trong `execute`, tức chắc chắn còn trong phiên. V1.1 mở một
+     * đường bất đồng bộ: câu dẫn đường tới app chỉ-nhận-toạ-độ đi tra cứu mạng (tới ~20 s với `HttpConn`) rồi
+     * MỚI hỏi lại. Không có khoá thế hệ thì lượt về muộn sẽ đặt lại `pendingConfirm` của phiên đang chạy, vẽ câu
+     * hỏi cũ đè lên tấm chữ mới, và mở `AudioRecord` **thứ hai** trong lúc micro phiên mới còn đang mở.
+     */
+    @Test
+    fun `hoi lai ve muon sau khi phien da qua thi khong mo them luot nghe`() {
+        val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
+        val fn = SourceRoots.body(session, "private fun execute(")
+        assertTrue("val my = generation.get()" in fn, "phải ghim THẾ HỆ của phiên tại lúc thi hành")
+        assertTrue(
+            "if (stale(my) || overlay == null) onNo() else confirm(question, onYes, onNo)" in fn,
+            "phiên đã qua / tấm chữ đã đóng ⇒ trả lời KHÔNG, tuyệt đối không mở thêm một lượt nghe xác nhận",
+        )
+    }
+
+    /**
+     * **V1.1 (R17) — mọi ý-định giao cho app đích phải `setPackage`.**
+     *
+     * [ĐO] máy ảo 2026-09-14: cả Google Maps lẫn Waze đều bắt `geo:`, nên một ý-định trần bung hộp *"Open with"*.
+     * Giữa lúc lái, một hộp chọn app còn tệ hơn không làm gì.
+     */
+    @Test
+    fun `y dinh giao cho app dich luon co setPackage`() {
+        val intents = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceAppIntents.kt")
+        val fn = SourceRoots.body(intents, "fun build(")
+        assertTrue(fn.contains("setPackage(pkg)"), "nhánh action phải ghim gói")
+        assertTrue(fn.contains(".setPackage(pkg)"), "nhánh URI phải ghim gói")
+        assertTrue(intents.contains("FLAG_ACTIVITY_NEW_TASK"), "mở từ launcher cần NEW_TASK")
+        assertFalse(intents.contains("CLEAR_TOP"),
+            "[ĐO] VietMap là singleTask — CLEAR_TOP là đụng vào ngăn xếp app khác mà chưa kiểm được hậu quả")
+        assertTrue(intents.contains("resolveActivity("), "hỏi trước khi bắn, để còn lùi sang đường dự phòng")
     }
 
     /** Tệp chạm micro phải đúng MỘT — hai chỗ mở `AudioRecord` là hai câu trả lời cho "mic đang bật tới bao giờ". */

@@ -113,6 +113,9 @@ class SettingsCatalogControlContractTest {
             "system_nav_stop" to ("SettingsSections" to "deps.bridge.navStop()"),
             "system_vietmap_data" to ("SettingsSections" to "deps.bridge.openVietMapData()"),
             "system_diagnostics" to ("SettingsSections" to "deps.bridge.openDiagnostics()"),
+            // T-BRIDGE — công tắc "Chế độ kiểm thử qua adb" (docs/specs/kachi-test-bridge.html). Control là ô tick
+            // ghi thẳng vào `TestBridgeStore`: khoá này là trạng thái PHIÊN (tự hết hạn), không đi qua ViewModel.
+            "system_test_bridge" to ("SettingsSections" to "TestBridgeStore.enable("),
             // ── 10 · Giới thiệu ──
             "about_version" to ("SettingsSections" to "R.string.kachi_about_version"),
             "about_disclaimer" to ("SettingsSections" to "R.string.kachi_about_disclaimer"),

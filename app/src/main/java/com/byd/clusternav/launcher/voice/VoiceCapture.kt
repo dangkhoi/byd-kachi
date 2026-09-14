@@ -46,24 +46,52 @@ internal class VoiceCapture(private val ctx: Context) {
         ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
     /**
+     * Chữ nghe được + **khúc PCM đã thu** của chính lượt ấy.
+     *
+     * ## Vì sao giữ lại tiếng, trong một dự án mà cả một bài canh sinh ra để tiếng KHÔNG rời khỏi xe
+     * V1.1 cần một lượt giải mã **thứ hai** (tự do, không ngữ pháp) trên đúng khúc tiếng vừa nghe, để đọc ra tên
+     * bài / điểm đến — xem KDoc [VoiceOpenVocab]. Khúc ấy:
+     *  • sống **trong RAM của tiến trình**, không tệp, không mạng (bài canh R14 vẫn nguyên hiệu lực);
+     *  • có **trần cứng** [MAX_KEPT_SAMPLES] = 9 giây ≈ 288 KB, dài hơn trần một phiên
+     *    (`VoiceSession.MAX_LISTEN_MS` = 8 s) đúng một giây để không cắt cụt câu cuối;
+     *  • chết cùng lượt nghe — không có trường nào của lớp này giữ nó lại.
+     */
+    data class Heard(val text: String, val pcm: ShortArray, val samples: Int) {
+        // `data class` mang `ShortArray` ⇒ `equals`/`hashCode` sinh sẵn so theo THAM CHIẾU. Khai lại tường minh
+        // để không ai vô tình dựa vào một phép so sai; lớp này không bao giờ cần so bằng.
+        override fun equals(other: Any?): Boolean = this === other
+        override fun hashCode(): Int = System.identityHashCode(this)
+    }
+
+    /**
      * Nghe MỘT lượt: mở micro, đẩy từng khối vào [rec], dừng khi Vosk chốt câu / hết [maxMs] / [cancelled].
      *
-     * **CHẶN** ⇒ luồng nền. Trả chữ nghe được (có thể rỗng).
+     * **CHẶN** ⇒ luồng nền. Trả chữ nghe được (có thể rỗng) kèm khúc PCM — xem [Heard].
      *
      * @param onPartial chữ đang nghe dở — gọi **trên luồng nền**, chỗ gọi tự đẩy lên luồng vẽ.
      * @param cancelled hỏi mỗi vòng; `true` ⇒ dừng ngay và trả phần đã nghe.
+     * @param keepPcm giữ lại khúc tiếng hay không. `false` cho lượt nghe câu *"đồng ý/huỷ"* — nó không bao giờ
+     *   cần lượt giải mã thứ hai, nên giữ tiếng ở đó là giữ một thứ không ai dùng.
      */
-    @Suppress("ReturnCount")
-    fun listen(rec: VoiceRecognizer, maxMs: Long, cancelled: () -> Boolean, onPartial: (String) -> Unit): String {
-        val record = openRecord() ?: return ""
+    @Suppress("ReturnCount", "LongParameterList")
+    fun listen(
+        rec: VoiceRecognizer,
+        maxMs: Long,
+        cancelled: () -> Boolean,
+        keepPcm: Boolean = false,
+        onPartial: (String) -> Unit,
+    ): Heard {
+        val kept = if (keepPcm) ShortArray(MAX_KEPT_SAMPLES) else EMPTY
+        var keptN = 0
+        val record = openRecord() ?: return Heard("", kept, keptN)
         val focus = requestFocus()
         try {
             runCatching { record.startRecording() }.onFailure {
-                Log.w(TAG, "startRecording hỏng", it); return ""
+                Log.w(TAG, "startRecording hỏng", it); return Heard("", kept, keptN)
             }
             if (record.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
                 Log.w(TAG, "micro không vào được trạng thái ghi — ROM từ chối?")
-                return ""
+                return Heard("", kept, keptN)
             }
             tone(ToneGenerator.TONE_PROP_BEEP, TONE_START_MS)
             val buf = ShortArray(CHUNK_SAMPLES)
@@ -77,11 +105,17 @@ internal class VoiceCapture(private val ctx: Context) {
                     if (n < 0) { Log.w(TAG, "đọc micro trả $n — dừng phiên"); break }
                     continue
                 }
-                if (rec.accept(buf, n)) return rec.result()
+                // Chép TRƯỚC khi giải mã: `accept` có thể chốt câu và thoát ngay ở dòng dưới.
+                if (keepPcm && keptN < kept.size) {
+                    val room = minOf(n, kept.size - keptN)
+                    System.arraycopy(buf, 0, kept, keptN, room)
+                    keptN += room
+                }
+                if (rec.accept(buf, n)) return Heard(rec.result(), kept, keptN)
                 val p = rec.partial()
                 if (p.isNotEmpty() && p != lastPartial) { lastPartial = p; onPartial(p) }
             }
-            return rec.finalResult()
+            return Heard(rec.finalResult(), kept, keptN)
         } finally {
             runCatching { record.stop() }
             runCatching { record.release() }
@@ -166,6 +200,17 @@ internal class VoiceCapture(private val ctx: Context) {
 
         /** 200 ms mỗi khối: đủ lớn để không gọi `read` liên tục, đủ nhỏ để chữ partial hiện gần như tức thì. */
         private const val CHUNK_SAMPLES = SAMPLE_RATE / 5
+
+        /**
+         * Trần khúc tiếng giữ lại cho lượt giải mã thứ hai — **9 giây** (≈ 288 KB PCM16 @16 kHz).
+         *
+         * Dài hơn trần một phiên (`VoiceSession.MAX_LISTEN_MS` = 8 s) đúng một giây: trần phiên đếm theo đồng hồ
+         * treo tường còn mảng này đếm theo mẫu, và hai thứ đó không bao giờ khớp tuyệt đối.
+         */
+        const val MAX_KEPT_SAMPLES = SAMPLE_RATE * 9
+
+        /** Không cấp phát gì khi chỗ gọi không cần tiếng (lượt nghe *"đồng ý/huỷ"*). */
+        private val EMPTY = ShortArray(0)
 
         private const val TONE_VOLUME = 70
         private const val TONE_START_MS = 90

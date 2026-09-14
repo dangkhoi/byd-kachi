@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cầu kiểm thử qua adb (T-BRIDGE) — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Cầu kiểm thử qua adb (T-BRIDGE)</h1>
+<p class="muted">Slug: <code>kachi-test-bridge</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{project-context,documentation-and-backlog,product-team-workflow,trace-den-tan-cung,conversation-protocol}.md</code> và <code>CLAUDE.md</code> §2 §4 §5 §8 §10 §11 §15.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-14</b>: Khởi tạo + implement. Owner: <i>“sẽ adb vào xe, nên chuẩn bị toàn bộ script test automation trên xe thông qua adb, log liếc các loại”</i>. Đã dựng receiver + 13 lệnh + công tắc 60 phút; 5 module 0 đỏ; [ĐO] máy ảo <code>emulator-5554</code> trên bản 1.53 (54).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Mọi lượt kiểm thử Kachi tới nay là <b>chạm tay trên màn</b>: mở Cài đặt, gõ một câu vào ô <i>Gõ lệnh chữ</i>, kéo app vào ô, chụp màn gửi về. Trên bàn thì chậm; trên xe thì vừa chậm vừa nguy hiểm. CLAUDE.md §15 đã phải viết hẳn một mục vì một phiên đi “mò UI như user” hơn chục vòng trong khi adb và source đều nằm sẵn trong tay.</p>
+<p>Cái còn thiếu không phải là <i>quyền</i> (adb đã vào được) mà là một <b>bề mặt lệnh</b>: adb chạy được <code>am</code>/<code>dumpsys</code>, nhưng nó không gọi được vào <b>bên trong</b> launcher đang chạy — không đổi được hồ sơ, không gắn app vào ô, không đọc được <code>HomeUiState</code>. Ba thứ đó chỉ tồn tại trong tiến trình Kachi.</p>
+<div class="card"><b>Ràng buộc / cổng:</b>
+<ul>
+<li><b>[ĐO] 2026-09-14</b> — uid shell (2000) <b>không</b> gửi được vào <code>BroadcastReceiver</code> khai <code>exported="false"</code>. Cùng họ với ca đã ghi trong manifest từ 2026-07-20 (<code>.ClusterNavActivity</code> phải <code>exported=true</code> vì ROM BYD enforce export-check cho shell-uid).</li>
+<li><code>onReceive</code> <b>không</b> có <code>getCallingUid</code> ⇒ receiver không phân biệt được “shell gửi” với “app khác gửi”. Vậy <code>exported</code> = mọi app trên xe bắn vào được, và phải có cổng khác.</li>
+<li>Không thêm quyền manifest mới. Không chạm display 1. Không bump version (1.53/54 — chưa báo APK mới cho owner).</li>
+<li>Các tệp <code>voice/*</code>, <code>VdAppHost</code>, <code>WorkspaceView</code>, <code>SlotLive*</code> đang có người khác sửa ⇒ chỉ được <b>gọi</b> qua API công khai, không sửa.</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b>. Một <code>BroadcastReceiver</code> <code>exported</code> nhận lệnh: <code>am broadcast -a &lt;pkg&gt;.TEST -p &lt;pkg&gt; --es cmd &lt;tên&gt;</code>. <i>AC</i>: <code>am broadcast</code> in thẳng JSON kết quả ra terminal (<code>setResultData</code>) và trả <code>result=0</code> khi thành công, <code>result=1</code> khi lỗi.</li>
+<li><b>R2</b>. Cổng: mọi lệnh chỉ chạy khi công tắc <b>“Chế độ kiểm thử qua adb”</b> đang bật. Công tắc <b>chỉ</b> bật/tắt được ở <i>Cài đặt › Hệ thống &amp; quyền › Nâng cao</i>, kèm câu cảnh báo; <b>tự tắt</b> sau 60 phút và <b>chết theo lần nổ máy</b>. <i>AC</i>: tắt ⇒ mọi lệnh trả <code>{"ok":false,…,"error":"test_mode_off"}</code>, không nhánh nào chạy.</li>
+<li><b>R3</b>. Bộ phân tích lệnh (tên + extra) là <b>hàm thuần</b> ở <code>:core</code>, kiểm off-device. <i>AC</i>: thiếu đối số ⇒ mã lỗi <b>nêu đích danh tên đối số</b>; số ô &lt; 1 và tệp prefs lạ bị từ chối.</li>
+<li><b>R4</b>. Mỗi lượt chạy trả lời ở <b>ba</b> chỗ: <code>setResultData</code> · tệp <code>files/test/&lt;mốc&gt;-&lt;lệnh&gt;.json</code> · một dòng <code>logcat -s KachiTest</code>. Mọi lời đáp có <code>ok</code>, <code>cmd</code>, <code>ms</code>.</li>
+<li><b>R5</b>. Cổng CONFIRM: việc mức <code>VoiceRisk.CONFIRM</code> <b>bị từ chối</b> và trả về nguyên văn câu hỏi trong <code>needs_confirm</code>; chỉ chạy khi lệnh nói rõ <code>--ez auto_confirm true</code>, và lúc đó phải ghi một dòng <code>AUTO-CONFIRM</code> kèm câu hỏi vào nhật ký.</li>
+<li><b>R6</b>. Mọi lệnh đi qua <b>đúng đường mà một cú chạm đi</b> (VoiceDispatcher · KachiHomeSlots · HomeViewModel · ClusterNavBridge). Không đường thứ hai, không lệnh shell thô.</li>
+<li><b>R7</b>. Lệnh <code>state</code> trả về ảnh chụp launcher: phiên bản · hồ sơ · bố cục + 6 ô · thanh nút · chip · theme/units/lang · màn ảo <code>kachi-slot-*</code> đang sống · quyền · mô hình giọng · <code>cast_enabled</code> · kênh shell.</li>
+<li><b>R8</b>. Lệnh <code>prefs</code> đọc <b>chỉ đọc</b> một tệp prefs trong danh sách cho phép (lấy từ <code>SettingsCatalog</code>), và <b>che</b> giá trị của khoá có tên nghi mang bí mật.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b>. Không quyền manifest mới; không chạm display ≥ 1; không nhánh nào gọi tầng chiếu cụm.</li>
+<li><b>R-nf2</b>. Trần một lượt chạy 20 s (dưới trần 60 s của hàng đợi broadcast nền) — hết giờ phải là <b>lời đáp</b> <code>timeout</code>, không phải im lặng.</li>
+<li><b>R-nf3</b>. Mọi tệp ≤ 500 dòng (CLAUDE.md §4.1). 5 module 0 đỏ.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Đường đi của một lệnh</h3>
+<div class="flow">
+  <div class="fnode"><b>adb</b><span>am broadcast</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>KachiTestBridge</b><span>receiver (exported)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Cổng</b><span>TestBridgeStore.isOn</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>TestBridgeCommands</b><span>:core · thuần</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>TestBridgeHooks</b><span>móc của màn chính</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Đường ĐÃ CÓ</b><span>Dispatcher · Slots · ViewModel</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+</div>
+
+<h3>4.2 Bốn lớp đứng giữa một receiver <code>exported</code> và chiếc xe</h3>
+<div class="layers">
+  <div class="layer"><div class="node"><b>1 · Công tắc</b><span>người TRONG xe bật · 60 phút · chết theo lần nổ máy · không bật được từ xa</span></div></div>
+  <div class="layer"><div class="node"><b>2 · Không đường thứ hai</b><span>mọi lệnh đi qua đúng đường của một cú chạm</span></div></div>
+  <div class="layer"><div class="node"><b>3 · Cổng CONFIRM</b><span>mặc định TỪ CHỐI · <code>auto_confirm</code> phải nói rõ · luôn ghi nhật ký</span></div></div>
+  <div class="layer"><div class="node"><b>4 · Dấu vết</b><span>logcat <code>KachiTest</code> + tệp JSON · không lệnh nào chạy im lặng</span></div></div>
+</div>
+
+<h3>4.3 Cửa sổ thời gian — vì sao MỘT khoá, không hai</h3>
+<p>Khoá <code>test_bridge_until</code> (tệp prefs riêng <code>kachi_test_bridge</code>) giữ chuỗi <code>"&lt;mốc nổ máy&gt;:&lt;hạn dùng&gt;"</code>. Hai khoá tách rời (<code>…_enabled</code> + <code>…_until</code>) dựng được một trạng thái vô nghĩa: bật mà không có hạn. Một chuỗi thì hai nửa không thể lệch.</p>
+<p><i>Mốc nổ máy</i> = <code>currentTimeMillis − elapsedRealtime</code>: gần như hằng số trong một lần nổ máy, nhảy hẳn sau khi khởi động lại. Ba phép đóng, kiểm ở <code>TestBridgeWindowTest</code>:</p>
+<table>
+<tr><th>Ca</th><th>Kết quả</th><th>Vì sao</th></tr>
+<tr><td>quá 60 phút</td><td>ĐÓNG</td><td>một công tắc sống mãi là một cổng vào thường trực</td></tr>
+<tr><td>đã khởi động lại</td><td>ĐÓNG</td><td>mốc nổ máy lệch &gt; 5 s ⇒ không cùng một lần nổ máy</td></tr>
+<tr><td>đồng hồ bị vặn lùi</td><td>ĐÓNG</td><td>hạn xa hơn cả cửa sổ ⇒ giá trị không đáng tin, không kéo dài</td></tr>
+<tr><td>giá trị hỏng / vắng</td><td>ĐÓNG</td><td>mặc định fail-safe, không ném</td></tr>
+</table>
+<p>Tệp prefs <b>riêng</b>, cố ý không nằm trong <code>kachi_workspace</code>: tệp đó đi theo hồ sơ (chụp–áp · nhân bản · xoá), mà một cửa mở-60-phút thì không được đi đâu cả.</p>
+
+<h3>4.4 Bảng lệnh</h3>
+<table>
+<tr><th>Lệnh</th><th>Extra</th><th>Đi qua</th><th>Trả về (ngoài <code>ok/cmd/ms</code>)</th></tr>
+<tr><td><code>say</code></td><td><code>--es text</code> · <code>--ez auto_confirm</code></td><td><code>VoiceDispatcher.preview + execute</code></td><td><code>said</code> · <code>intents[]</code> · <code>replies[]</code> · <code>needs_confirm[]</code></td></tr>
+<tr><td><code>wav</code></td><td><code>--es path</code> (tuỳ chọn)</td><td><code>VoiceWavProbe.run</code> (chép tệp vào đúng chỗ dò)</td><td><code>path</code> · <code>heard</code> · <code>grammar</code> · <code>free</code> · <code>intents[]</code> · <code>where</code></td></tr>
+<tr><td><code>listen</code></td><td>—</td><td><code>VoiceSession.start</code></td><td><code>started</code> · <code>outcome</code> (đọc <code>logcat -s KachiVoice</code>)</td></tr>
+<tr><td><code>state</code></td><td>—</td><td><code>HomeUiState</code> + <code>DisplayManager</code> + <code>PermissionPreflight</code></td><td>ảnh chụp đầy đủ (R7)</td></tr>
+<tr><td><code>profiles</code></td><td>—</td><td><code>HomeUiState</code></td><td><code>active</code> · <code>all[]</code></td></tr>
+<tr><td><code>profile</code></td><td><code>--es name</code></td><td><code>HomeViewModel.switchProfile</code></td><td><code>active</code>; lạ ⇒ <code>unknown_profile</code> + <code>all[]</code></td></tr>
+<tr><td><code>preset</code></td><td><code>--es name</code></td><td><code>HomeViewModel.setPreset</code></td><td><code>preset</code> · <code>slot_count</code>; lạ ⇒ <code>unknown_preset</code> + <code>all[]</code></td></tr>
+<tr><td><code>slot</code></td><td><code>--ei n</code> (1-based) · <code>--es pkg</code></td><td><code>KachiHomeSlots.assignApp</code></td><td><code>assigned</code> · <code>content</code>; ngoài dải ⇒ <code>slot_out_of_range</code> + <code>slot_count</code></td></tr>
+<tr><td><code>slot_clear</code></td><td><code>--ei n</code></td><td><code>KachiHomeSlots.clearSlot</code></td><td><code>content</code></td></tr>
+<tr><td><code>open</code></td><td><code>--es pkg</code></td><td><code>KachiHomeSlots.openAppFullscreen</code></td><td><code>requested</code> (<b>không</b> hứa “đã lên màn” — đó là câu hỏi của <code>am stack list</code>)</td></tr>
+<tr><td><code>prefs</code></td><td><code>--es file</code></td><td><code>SharedPreferences</code> (chỉ đọc, lọc khoá nhạy cảm)</td><td><code>values{}</code>; tệp lạ ⇒ <code>bad_prefs_file</code></td></tr>
+<tr><td><code>reapply</code></td><td>—</td><td><code>ClusterNavBridge.reapplyAll</code></td><td><code>reapplied</code></td></tr>
+<tr><td><code>diag</code></td><td>—</td><td><code>ClusterDiag.capture</code></td><td><code>file</code> · <code>summary</code>; chưa có kênh shell ⇒ <code>no_shell_channel</code></td></tr>
+</table>
+<p class="muted"><b>⚠ Dấu nháy:</b> <code>adb shell</code> tự cắt chuỗi theo khoảng trắng. Câu nhiều từ phải nháy <b>hai lớp</b>:</p>
+<pre>adb shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd say --es text "'bật đèn đọc'"</pre>
+<p class="muted">[ĐO] không nháy hai lớp thì chỉ chữ đầu tới nơi (<code>"said":"bật"</code>) — và lời đáp vẫn <code>ok:true</code>, nên lỗi này im lặng nếu không đọc kỹ.</p>
+
+<h3>4.5 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Cổng CONFIRM mặc định TỪ CHỐI, không hiện hộp thoại</b> — sai lệch có chủ ý so với hai bề mặt kia (ô Gõ lệnh chữ · phiên nghe). Một broadcast <b>không có ai ngồi trước màn</b>: bung hộp thoại là đè một câu hỏi lên thứ người lái đang nhìn rồi chờ một cú chạm mà script không thực hiện được ⇒ hết giờ, và lượt đo báo <code>timeout</code> thay vì báo đúng việc. Từ chối thì script nhận nguyên văn câu hỏi và chạy lại với <code>--ez auto_confirm true</code> nếu thật sự muốn.</li>
+<li><b>Bật CHỈ qua UI</b> — không có lệnh <code>enable</code> kể cả kèm mã xác nhận. Một cửa mở được từ xa thì chủ xe không có cách nào biết mình đã mở.</li>
+<li><b>Lượt tháo móc nối vào vòng đời nền tảng</b> (<code>ActivityLifecycleCallbacks</code>) chứ không phải một lời gọi ở <code>onDestroy</code>: cặp gắn/tháo nằm hai chỗ là một nửa sẽ bị quên (CLAUDE.md §8 — <code>CastShell.evictVd</code>, <code>HomePanels.closeAll</code>).</li>
+<li><b>Bộ ghi JSON tự viết (~40 dòng, <code>:core</code>)</b> thay vì <code>org.json</code>: <code>org.json</code> của <code>android.jar</code> ném <code>Stub!</code> nên khuôn JSON chỉ kiểm được trên máy; bản thuần thì <code>:core:test</code> khoá được.</li>
+<li><b>Context7</b>: không thư viện mới — chỉ Android SDK (<code>BroadcastReceiver.goAsync</code> · <code>DisplayManager</code> · <code>SharedPreferences</code>) và các khối đã có trong repo. Không cần verify version.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Bộ ghi JSON thuần + bài kiểm khuôn/escape</td><td><code>core/…/testbridge/TestBridgeJson.kt</code> + <code>TestBridgeJsonTest</code></td></tr>
+<tr><td>T2</td><td>Danh mục lệnh + bộ phân tích extra (thuần) + bài kiểm đi hết bảng</td><td><code>core/…/testbridge/TestBridgeCommand.kt</code> + <code>TestBridgeCommandTest</code></td></tr>
+<tr><td>T3</td><td>Cửa sổ thời gian (hết hạn · reboot · đồng hồ) + bài kiểm 3 tính chất</td><td><code>core/…/testbridge/TestBridgeWindow.kt</code> + <code>TestBridgeWindowTest</code></td></tr>
+<tr><td>T4</td><td>Khai khoá + tệp prefs + phạm vi vào danh mục <code>:core</code></td><td><code>SettingsCatalog.kt</code> · <code>SettingsCatalogEntries.kt</code> · <code>ProfileScope.kt</code></td></tr>
+<tr><td>T5</td><td>Công tắc phiên (đọc/ghi một khoá, tệp riêng)</td><td><code>app/…/testbridge/TestBridgeStore.kt</code></td></tr>
+<tr><td>T6</td><td>Móc của màn chính + gắn/tháo theo vòng đời</td><td><code>app/…/testbridge/TestBridgeHooks.kt</code> · <code>KachiHomeActivity.kt</code> (1 dòng)</td></tr>
+<tr><td>T7</td><td>Lời đáp một-lần ba-nơi (result · tệp · log)</td><td><code>app/…/testbridge/TestBridgeReply.kt</code></td></tr>
+<tr><td>T8</td><td>Ảnh chụp trạng thái + đọc prefs có lọc</td><td><code>app/…/testbridge/TestBridgeState.kt</code></td></tr>
+<tr><td>T9</td><td>Receiver + 13 nhánh lệnh</td><td><code>app/…/testbridge/KachiTestBridge.kt</code> · <code>AndroidManifest.xml</code></td></tr>
+<tr><td>T10</td><td>Công tắc ở Cài đặt + chuỗi VI/EN</td><td><code>SettingsSections.kt</code> · <code>strings_kachi.xml</code> ×2</td></tr>
+<tr><td>T11</td><td>Bài canh an toàn (cổng · auto-confirm · vùng cấm · trần dòng · tên VD)</td><td><code>app/…/TestBridgeSafetyContractTest.kt</code></td></tr>
+<tr><td>T12</td><td>Senior review + security scan + build 5 module</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> — <code>:core:test</code> + <code>:app:testDebugUnitTest</code> + <code>test</code> (5 module) <span class="ok">xanh</span>, <code>assembleRelease</code> + <code>lintVitalRelease</code> pass. Ca chính khoá bằng: <code>TestBridgeWindowTest</code> (3 tính chất của cổng), <code>TestBridgeCommandTest</code> (đi hết bảng lệnh × ca thiếu từng đối số), <code>TestBridgeSafetyContractTest</code> (cổng đứng trước lượt phân tích · <code>AUTO-CONFIRM</code> có dấu vết · không chạm cụm/shell thô · ≤ 500 dòng · tiền tố tên màn ảo còn khớp <code>VdAppHost</code>).</li>
+<li><b>V-emulator [ĐO] 2026-09-14</b> — <code>emulator-5554</code>, bản 1.53 (54), <code>install -r</code> (giữ dữ liệu), Kachi đang ở tiền cảnh:
+<ul>
+<li>tắt công tắc ⇒ <code>result=1 … "error":"test_mode_off"</code>;</li>
+<li>bật bằng <b>một cú chạm</b> ở <i>Cài đặt › Hệ thống &amp; quyền › Nâng cao</i> (mở bằng <code>--es open_settings_group system</code>); câu phụ đổi thành <i>“Đang mở — còn 56 phút”</i>;</li>
+<li><code>state</code> ra đủ 11 nhóm trường, gồm <code>slot_displays:["kachi-slot-1-…","kachi-slot-3-…"]</code> và <code>permissions.log_line:"đủ quyền"</code>;</li>
+<li><code>say "bật đèn đọc"</code> ⇒ <code>intents:[{kind:"Control",preview:"Bật Đèn đọc"}]</code>, <code>replies:["✗ … xe không nhận lệnh"]</code> (máy ảo không có xe);</li>
+<li><code>say "mở khoá cửa"</code> ⇒ <code>needs_confirm</code> mang nguyên văn câu hỏi, <b>không</b> chạy; thêm <code>--ez auto_confirm true</code> ⇒ chạy, và logcat có <code>AUTO-CONFIRM: Bấm Mở khoá cửa — chưa kiểm trên xe?</code>;</li>
+<li><code>slot 2 com.google.android.youtube</code> ⇒ <code>content:"app:com.google.android.youtube"</code>; <code>slot 9</code> ⇒ <code>slot_out_of_range · slot_count:4</code>;</li>
+<li><code>profile "Mặc định"</code> ⇒ <code>active:"Mặc định"</code>; tên lạ ⇒ <code>unknown_profile</code> + danh sách;</li>
+<li><code>preset TWO_COL</code> ⇒ <code>slot_count:2</code>; <code>prefs simple_cast_prefs</code> ⇒ 4 khoá; tệp lạ ⇒ <code>bad_prefs_file</code>;</li>
+<li><code>wav</code> ⇒ đọc tệp thử đang có, trả <code>heard</code> + <code>intents</code>; <code>--es path</code> tệp không có ⇒ <code>wav_not_found</code>;</li>
+<li><code>listen</code> ⇒ tấm chữ <i>“Đang chuẩn bị…”</i> hiện lên (ảnh chụp), lời đáp về ngay;</li>
+<li><code>reapply</code> ⇒ <code>reapplied:true</code>; <code>diag</code> ⇒ tệp <code>files/diag/diag-…txt</code> + tóm tắt;</li>
+<li>25 tệp JSON trong <code>/sdcard/Android/data/com.byd.launcher/files/test/</code>; tắt công tắc lại ⇒ <code>test_mode_off</code>.</li>
+</ul></li>
+<li><b>V-oncar</b> — <span class="pill wait">chưa chạy</span>. Cần trên xe thật: (a) bắn từ máy ngoài qua <code>adb connect</code> (chứng minh uid shell của ROM BYD gửi được vào receiver <code>exported</code> — máy ảo mới chỉ chứng minh với shell của emulator); (b) <code>say</code> một lệnh xe THẬT và đọc <code>replies</code> có <code>✓</code>; (c) khởi động lại bằng <b>nút nguồn vật lý</b> rồi bắn lại ⇒ phải ra <code>test_mode_off</code> (tính chất “chết theo lần nổ máy”, hôm nay mới khoá bằng unit test).</li>
+<li><b>V-lifecycle</b> — bật → dùng → hết 60 phút/tắt máy → đóng; màn chính chưa lên ⇒ <code>home_not_running</code> (trừ <code>prefs</code>, cố ý chạy được để chẩn đoán đúng ca “launcher không lên”).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b>. Kết quả của <code>listen</code> ghi ra tệp khi phiên kết thúc? — <span class="muted">[CHƯA BIẾT] <code>VoiceSession</code> không phơi sự kiện “phiên đã xong” qua API công khai, mà tệp đó đang có người khác sửa. Hôm nay lời đáp về ngay và chỉ đường sang <code>logcat -s KachiVoice</code>. Mở khoá: thêm một callback <code>onFinished</code> cho <code>VoiceSession</code> sau khi lượt vá voice/* xong.</span></li>
+<li><b>OQ2</b>. Tiền tố tên màn ảo <code>kachi-slot-</code> đang là <b>bản sao</b> giữa <code>VdAppHost</code> và <code>TestBridgeState</code> — <span class="muted">tạm chấp nhận, có bài canh giữ hai bên khớp. Gộp về một hằng ở <code>:core</code> khi <code>VdAppHost</code> hết người sửa.</span></li>
+<li><b>OQ3</b>. Cửa sổ 60 phút có đủ cho một buổi test dài không? — <span class="muted">bật lại là gia hạn, nhưng phải với tay lên màn. Chờ owner chốt sau lượt dùng thật.</span></li>
+<li><b>OQ4</b>. Câu phụ của công tắc đọc giá trị <b>lúc dựng trang</b> ⇒ gạt xong số phút chưa đổi cho tới khi mở lại bảng — <span class="muted">chấp nhận ở một màn chẩn đoán; sửa nếu owner thấy vướng.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/testbridge/</code> — 5 tệp (<code>KachiTestBridge</code> · <code>TestBridgeHooks</code> · <code>TestBridgeReply</code> · <code>TestBridgeState</code> · <code>TestBridgeStore</code>).</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/testbridge/</code> — <code>TestBridgeCommand</code> · <code>TestBridgeJson</code> · <code>TestBridgeWindow</code>.</li>
+<li><code>app/src/main/AndroidManifest.xml</code> — <code>&lt;receiver .launcher.testbridge.KachiTestBridge exported="true"&gt;</code>, action <code>${applicationId}.TEST</code>.</li>
+<li><code>docs/specs/kachi-voice-command.html</code> — R6 (đường chữ) · R11 (phiên nghe) · R14 (WAV probe): ba đường mà cầu này gọi lại nguyên vẹn.</li>
+<li><code>CLAUDE.md</code> §4 (phạm vi tường minh của lệnh đổi state) · §5 (state ngoài tiến trình phải có đường trả lại) · §8 (hàm mới phải có chỗ gọi) · §11 (app tự chụp, không bắt user gõ adb) · §15 (debug bằng dữ liệu, không mò UI).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-14 · quyết định</b> — cổng CONFIRM <b>từ chối</b> thay vì hiện hộp thoại (lý do đầy đủ ở §4.5). Lệch với gợi ý ban đầu của task; đã ghi vào §R5 cho khớp code.</li>
+<li><b>2026-09-14 · quyết định</b> — bỏ <code>detachTestBridge()</code> ở <code>onDestroy</code>, chuyển sang <code>ActivityLifecycleCallbacks</code> tự gỡ. Phụ: giữ <code>KachiHomeActivity</code> đúng 500 dòng (trần §4.1) thay vì 502.</li>
+<li><b>2026-09-14 · trade-off</b> — <code>wav --es path</code> phục vụ bằng cách <b>chép</b> tệp vào chỗ <code>VoiceWavProbe</code> dò, thay vì mở đường đọc thứ hai. Được: phép đo đi đúng con đường mã của phiên nghe thật. Mất: một lượt chép ≤ 16 MB.</li>
+<li><b>2026-09-14 · sai lệch spec</b> — khoá đặt tên <code>test_bridge_until</code> (một chuỗi) chứ không phải <code>test_bridge_enabled</code> + mốc thời gian rời (§4.3).</li>
+<li><b>2026-09-14 · bug lúc đo</b> — <code>--es text "bật đèn đọc"</code> chỉ tới <code>"bật"</code>: <code>adb shell</code> cắt theo khoảng trắng, không phải lỗi cầu. Cách xử: tài liệu hoá nháy hai lớp (§4.4). Đây đúng loại lỗi <b>im lặng</b> vì lời đáp vẫn <code>ok:true</code>.</li>
+<li><b>2026-09-14 · số ghim phải cập nhật</b> — thêm một mục danh mục ⇒ <code>LangCoverageTest</code> 54→55 mục và 306→307 nhãn; <code>SettingsCatalogControlContractTest</code> + <code>SettingsScreenWiringContractTest</code> nhận thêm một dòng (chỗ đọc <code>themeMode</code> thứ tư là ảnh chụp <b>chỉ đọc</b>, không phải bản sao thứ hai).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-14 (senior review, nhanh · an toàn là chính)</h3>
+<ul>
+<li><b>[P0] <code>--es pkg</code> chạm tới một đoạn shell</b> — <code>open</code>/<code>slot</code> truyền thẳng chuỗi
+  <code>pkg</code> xuống <code>AppOpener.openByShell</code> → <code>FreeformLaunch.resolveCmd</code>
+  (<code>cmd package resolve-activity … $pkg</code>) chạy qua dadb. Gói <b>không cài</b> thì
+  <code>openByIntent</code> trả <code>false</code> ⇒ rơi đúng xuống nhánh shell, nên một chuỗi kiểu
+  <code>x; &lt;lệnh khác&gt;</code> thành lệnh chạy thật (cần chế độ kiểm thử đang bật).
+  <b>Đã vá</b>: cổng <code>installed(app, pkg)</code> (qua <code>PackageQueries.packageInfo</code>, helper bắt buộc
+  của repo) đứng trước cả hai lệnh; sai ⇒ <code>unknown_pkg</code>. Generic, không danh sách tên gói (§7).</li>
+<li><b>[P1] gói extra lạ giết launcher</b> — <code>readExtras</code> bung gói của một tiến trình khác; một
+  <code>Parcelable</code> không có lớp trong app ném <code>BadParcelableException</code> ngay ở
+  <code>hasExtra</code>, và ném trong <code>onReceive</code> = <b>launcher chết</b> — kể cả khi công tắc TẮT.
+  <b>Đã vá</b>: bọc cả thân hàm (<code>readExtrasOrThrow</code>).</li>
+<li><b>[P1] tệp kết quả không có trần</b> — mọi lượt nhận đều ghi một tệp <code>files/test/*.json</code>, kể cả lượt
+  bị từ chối <code>test_mode_off</code> ⇒ một app bất kỳ trên xe làm đầy bộ nhớ mà không cần chế độ kiểm thử.
+  <b>Đã vá</b>: <code>TestBridgeReply.prune</code> giữ <code>KEEP = 50</code> tệp mới nhất.</li>
+<li><b>Đã kiểm, không đổi</b>: cổng <code>TestBridgeStore.isOn</code> đứng trước cả <code>parse</code> lẫn mọi nhánh
+  (không rò <code>state</code>/<code>prefs</code> khi tắt); <code>prefs</code> chỉ đọc tệp trong danh mục và che
+  khoá nhạy cảm theo <b>đoạn</b> tên; <code>auto_confirm</code> chỉ sống trong cầu + luôn ghi
+  <code>AUTO-CONFIRM</code>; không nhánh nào chạm <code>CastShell</code>/display ≥ 1/lệnh shell thô;
+  <code>TestBridgeWindow</code> chết theo mốc nổ máy (±5 s) và từ chối hạn &gt; cửa sổ; <code>wav</code>/<code>diag</code>
+  chạy ở luồng nền; <code>home_not_running</code> trả lời thay vì ném.</li>
+<li><b>Ghi lại, chưa vá</b>:
+  <ul>
+    <li>[P2] <code>stageWav</code> chép được <b>bất kỳ</b> tệp mà app đọc được vào thư mục ngoài (chặn <code>..</code>
+      nhưng không chặn đường tuyệt đối) — lộ thông tin nhỏ, chỉ trong cửa sổ 60 phút.</li>
+    <li>[P2] <code>state</code> chạy <code>PermissionPreflight.check</code> trên luồng chính của receiver.</li>
+    <li>[P3] <code>armTimeout</code> giữ <code>reply</code> đủ 20 s cả khi lệnh đã xong sớm.</li>
+    <li>[P3] <code>isSensitive</code> so theo đoạn ⇒ <code>apikey</code> (không có gạch) lọt lưới.</li>
+  </ul></li>
+<li><b>Bài canh thêm</b> (<code>TestBridgeSafetyContractTest</code>): cổng <code>installed</code> cho mọi lệnh mang
+  <code>pkg</code> · <code>readExtras</code> bọc <code>runCatching</code> · trần số tệp kết quả.</li>
+<li><b>Kết quả</b>: <code>:core:test</code> + <code>:app:testDebugUnitTest</code> — 0 đỏ. <code>KachiTestBridge.kt</code>
+  490 dòng, <code>KachiHomeActivity.kt</code> 500 (đều dưới/đúng trần §4.1). <b>Verdict: APPROVED</b> sau vá.</li>
+</ul>
+
+</div></body>
+</html>

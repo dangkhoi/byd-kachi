@@ -200,6 +200,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- T-BRIDGE (docs/specs/kachi-test-bridge.html): cầu kiểm thử qua adb.
+             exported=true BẮT BUỘC — [ĐO] uid shell (2000) KHÔNG gửi được vào receiver non-exported
+             (SecurityException), cùng họ với ca `am start` ở `.ClusterNavActivity` đã ghi 2026-07-20.
+             ⚠ Vì exported nên mọi app trên xe bắn vào được; cổng thật là công tắc "Chế độ kiểm thử qua adb"
+             (Cài đặt › Hệ thống & quyền › Nâng cao) — tự tắt sau 60 phút, chết theo lần nổ máy, KHÔNG bật được
+             bằng broadcast. Tắt ⇒ mọi lệnh trả `test_mode_off` và không nhánh nào chạy (KachiTestBridge).
+             Action dùng ${applicationId} để tên gói là MỘT nguồn cho cả manifest lẫn KachiTestBridge.action(). -->
+        <receiver
+            android:name=".launcher.testbridge.KachiTestBridge"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="${applicationId}.TEST" />
+            </intent-filter>
+        </receiver>
+
         <!-- MODULE navaccess (booster): đọc UI GMaps trên màn -> tinh chỉnh cự ly tới rẽ. User tự bật trong
              Cài đặt > Hỗ trợ. Xoá module navaccess → xoá dòng <service> này + res/xml/nav_accessibility_config.xml. -->
         <service

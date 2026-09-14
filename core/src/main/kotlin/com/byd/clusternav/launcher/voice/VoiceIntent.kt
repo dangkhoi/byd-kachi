@@ -61,11 +61,24 @@ sealed interface VoiceIntent {
      *
      * [ĐO] RE Kiki §8.2: ranh giới đã chốt (phương án C) là *"điểm đến do Kiki lo"*. Kachi giữ ý định này để còn
      * **mở đúng app dẫn đường** và nói ra rằng điểm đến chưa được chuyển giao — im lặng hoặc "không hiểu" đều sai.
+     *
+     * ## V1.1 — [app] là **mã đích** trong [VoiceAppTargets], không phải tên gói
+     * Owner 2026-09-14 hỏi *"dẫn đường bằng gmaps, vietmap, waze"* ⇒ câu nói có quyền chọn app. Nhưng `:core`
+     * KHÔNG được biết tên gói nào (CLAUDE.md §7), và nhãn app thì đổi theo bản cài. Mã đích (`gmaps`/`waze`/
+     * `vietmap`) là lớp ở giữa: nó ổn định, tra được bằng test thuần, và bảng [VoiceAppTargets] là chỗ DUY NHẤT
+     * biết mã ấy ứng với gói nào + mở bằng ý-định nào.
      */
-    data class Nav(val query: String) : VoiceIntent
+    data class Nav(val query: String, val app: String? = null) : VoiceIntent
 
-    /** Điều khiển phát nhạc. [query] chỉ có nghĩa với [VoiceMediaOp.QUERY] (tên bài/ca sĩ/thể loại — từ vựng mở). */
-    data class Media(val op: VoiceMediaOp, val query: String = "") : VoiceIntent
+    /**
+     * Điều khiển phát nhạc. [query] chỉ có nghĩa với [VoiceMediaOp.QUERY] (tên bài/ca sĩ/thể loại — từ vựng mở).
+     *
+     * @property app **mã đích** trong [VoiceAppTargets] khi câu có nêu *"bằng &lt;app&gt;"* (`ytmusic` · `youtube` …),
+     *   `null` = *"app nào cũng được"* ⇒ tầng thi hành tự chọn (phiên nhạc đang chạy, rồi tới app đã cài).
+     *   ⚠ Là **mã đích**, KHÔNG phải nhãn app của hệ thống: nhãn thì đổi theo ngôn ngữ máy và theo bản cài, còn
+     *   mã thì là hợp đồng giữa `:core` và bảng đích — thứ duy nhất viết được test off-car.
+     */
+    data class Media(val op: VoiceMediaOp, val query: String = "", val app: String? = null) : VoiceIntent
 
     /**
      * Mở một ứng dụng theo TÊN người dùng nói (tập đóng: tên lấy từ danh sách app đã cài, truyền vào lúc phân tích).
@@ -74,8 +87,17 @@ sealed interface VoiceIntent {
      * core` quét mọi lần đọc `.label` ở `:app` để bắt chỗ dùng nhãn GỐC (luôn tiếng Việt) thay cho `displayLabel`.
      * Tên app thì do `PackageManager` cấp — hệ thống đã dịch sẵn, không thuộc diện đó — nên đặt tên khác để bài canh
      * kia khỏi phải mang thêm một mục loại trừ, tức khỏi phải mở thêm một lỗ.
+     *
+     * ## V1.1 — [slot] = **số ô người dùng NÓI** (1-based), `null` khi câu không nêu ô
+     * Owner 2026-09-14: *"có voice command mở youtube vào ô số 2 được không"*. Số ở đây giữ nguyên như người ta
+     * nói (*"ô số hai"* ⇒ `2`), **không** đổi sang chỉ số mảng ở `:core` và **không** kẹp về số ô đang có:
+     *  • đổi sang 0-based tại đây thì mọi câu trả lời (*"bố cục hiện chỉ có 4 ô"*) phải cộng lại 1 — hai phép
+     *    quy đổi ngược chiều nằm ở hai tầng là chỗ sinh lỗi lệch-một kinh điển;
+     *  • kẹp tại đây thì *"mở youtube vào ô số chín"* lặng lẽ thành ô 6 — máy **làm một việc khác** việc được
+     *    bảo, đúng họ lỗi mà `VoiceLexicon.VI_TENS_SHORT` đã phải chữa. Số ô thật chỉ tầng biết-bố-cục mới
+     *    biết (`EffectiveLayout.slotCount`), nên nó kiểm và nó nói ra.
      */
-    data class OpenApp(val appName: String) : VoiceIntent
+    data class OpenApp(val appName: String, val slot: Int? = null) : VoiceIntent
 
     /** Không hiểu. [text] giữ nguyên câu gốc để màn thử + nhật ký còn nói được *"không hiểu CÁI GÌ"*. */
     data class Unknown(val reason: VoiceUnknownReason, val text: String) : VoiceIntent

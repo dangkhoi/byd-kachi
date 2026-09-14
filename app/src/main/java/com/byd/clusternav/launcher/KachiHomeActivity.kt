@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import com.byd.clusternav.AppContainer
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.testbridge.attachTestBridge
 import com.byd.clusternav.launcher.voice.VoiceModelStore
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -72,6 +73,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // V1 · R6 — hai đường mà đường thử lệnh bằng chữ dùng; CÙNG lambda với thanh nút và ngăn kéo.
             openAppList = { drawerController.openAppList() },
             openAppByPackage = { pkg -> appOpener.openByIntent(pkg) },
+            assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true },
             // Lớp phủ đóng/mở ⇒ nút ⇄ nổi ẩn đi, và nút mic soi lại điều kiện ([KachiTopStrip.refreshVoicePill]:
             // mô hình có thể vừa tải xong / công tắc vừa gạt, ngay trong màn Cài đặt vừa đóng).
             onPanelsChanged = { windows.updateOverlayHeads(); topStrip.refreshVoicePill() },
@@ -132,6 +134,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             openSettings = { panels.openSettings() },
             onSwitchProfile = { name -> viewModel.switchProfile(name) },
             openPermissions = { panels.openSettings(SettingsGroup.SYSTEM) },
+            // V1.1 — CÙNG đường mà ngăn kéo dùng khi người ta chọn app cho một ô.
+            assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true },
         )
     }
     private val voice: com.byd.clusternav.launcher.voice.VoiceSession by voiceLazy
@@ -299,6 +303,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         maybeShowDisclaimer()
         openSettingsGroup(intent, panels)
         startVoiceIfRequested(intent, voice)
+        // T-BRIDGE — móc cho cầu kiểm thử qua adb; lượt tháo tự nối theo vòng đời (xem KDoc `attachTestBridge`).
+        // Gắn móc KHÔNG mở cửa nào: mọi lệnh vẫn bị chặn bởi công tắc ở Cài đặt (`KachiTestBridge`).
+        attachTestBridge(viewModel, { slots }, { voice }, { drawerController }, { panels }, { shell })
     }
 
     /** `singleTask` ⇒ lời gọi thứ hai về ĐÂY, không phải [onCreate] (bấm bong bóng khi Kachi đang mở sẵn). */
@@ -390,7 +397,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      */
     private fun applyCustomLayout(layout: GridLayout?) = viewModel.setCustomLayout(layout)
 
-    override fun onStart() { super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START); appWidgets.startListening() }
+    override fun onStart() {
+        super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START); appWidgets.startListening()
+        SlotLiveProbe.resume()   // H2·2 — màn hiện lại thì đo tiếp (xem [onStop])
+    }
 
     override fun onResume() {
         super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
@@ -414,7 +424,15 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     override fun onPause() { super.onPause(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE); handler.removeCallbacks(tick) }
 
-    override fun onStop() { super.onStop(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP); appWidgets.stopListening() }
+    /**
+     * [SOÁT Pass H2 · P2] Màn khuất ⇒ **ngưng nhịp đo ô**: mở một app toàn màn thì màn chính KHÔNG chết (view
+     * còn gắn, ô còn đăng ký) ⇒ không ngưng là đốt một lượt dadb mỗi 5 giây suốt chuyến, xếp hàng trên CÙNG chủ
+     * `ShellTransport` với lệnh đặt cửa sổ. Danh sách ô giữ nguyên — xem KDoc [SlotLiveProbe.pause].
+     */
+    override fun onStop() {
+        super.onStop(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP); appWidgets.stopListening()
+        SlotLiveProbe.pause()
+    }
 
     override fun onDestroy() {
         super.onDestroy(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -440,6 +458,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // đã dựng (trang "Màn hình chính" một mình là 187 ô) nên nhả sớm là việc đúng, và từ nay câu KDoc thành thật.
         panels.closeAll()
         wallpaper.release()   // U4: nhả ảnh nền, không để giữ bộ nhớ sau khi màn đã huỷ
+        // H2·1 [ĐO 2026-09-14]: `dumpsys display` có 4 `kachi-slot-*` cho 2 ô vì màn Kachi đời trước mang cờ "đang
+        // kết thúc" mà view chưa tháo ⇒ màn ảo của nó sống tiếp. Nhả TƯỜNG MINH ở đây thay vì chờ `onDetachedFromWindow`
+        // — vòng đời tài nguyên hệ thống không được treo vào một sự kiện mà hệ điều hành có quyền hoãn.
+        workspace.releaseAppHosts()
         winExec.shutdownNow(); ioExec.shutdownNow(); windows.clearOverlays()
     }
 

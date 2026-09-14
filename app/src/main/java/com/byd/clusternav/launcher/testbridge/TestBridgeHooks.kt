@@ -1,0 +1,173 @@
+package com.byd.clusternav.launcher.testbridge
+
+import android.app.Activity
+import android.app.Application
+import android.os.Bundle
+import android.util.Log
+import com.byd.clusternav.launcher.AppOpener
+import com.byd.clusternav.launcher.ClusterNavBridge
+import com.byd.clusternav.launcher.DrawerController
+import com.byd.clusternav.launcher.HomePanels
+import com.byd.clusternav.launcher.HomeUiState
+import com.byd.clusternav.launcher.HomeViewModel
+import com.byd.clusternav.launcher.KachiHomeSlots
+import com.byd.clusternav.launcher.LayoutPreset
+import com.byd.clusternav.launcher.SettingsGroup
+import com.byd.clusternav.launcher.VoiceDispatcher
+import com.byd.clusternav.launcher.clusterNavBridge
+import com.byd.clusternav.launcher.voice.VoiceSession
+import com.byd.clusternav.launcher.voice.VoiceWiring
+
+/**
+ * ═══ T-BRIDGE · MÓC CỦA MÀN CHÍNH — thứ DUY NHẤT nối receiver với launcher đang chạy ══════════════════════════
+ *
+ * Spec `docs/specs/kachi-test-bridge.html` R6.
+ *
+ * ## Vì sao phải có một lớp móc, thay vì cho receiver tự dựng lấy
+ * Một `BroadcastReceiver` không có gì cả: không `HomeViewModel`, không cây view, không `KachiHomeSlots`. Nó dựng
+ * lại được `VoiceDispatcher` (chỉ cần `Context`), nhưng **không** dựng lại được ba thứ mà cầu kiểm thử tồn tại
+ * để chạm tới: gắn app vào ô (`KachiHomeSlots.assignApp` còn phải ghi sổ vị trí + đặt khung cửa sổ), mở một
+ * phiên nghe (`VoiceSession` là **một** phiên cho cả tiến trình), và đọc `HomeUiState` đang hiển thị. Tự dựng
+ * bản thứ hai của chúng chính là "đường thứ hai" mà KDoc [VoiceDispatcher] cấm — và ở đây bản thứ hai còn tệ
+ * hơn: nó sẽ đổi state mà **màn hình không biết**, tức lượt đo nói một đằng màn hình hiện một nẻo.
+ *
+ * ⇒ Màn chính **gắn** móc lúc dựng ([Activity.attachTestBridge]); lượt **tháo** tự nối theo vòng đời nền tảng.
+ * Màn chưa chạy ⇒ [KachiTestHooks.get] trả `null` ⇒ lệnh trả lỗi `home_not_running` thay vì âm thầm không làm gì.
+ *
+ * Mọi lambda ở đây trỏ tới **đúng** thứ mà một cú chạm dùng — không có ngoại lệ nào.
+ */
+internal class TestBridgeHooks(
+    /** Ai gắn móc này — để [KachiTestHooks.detach] không cho màn CŨ gỡ móc của màn MỚI (hai màn Kachi chồng nhau). */
+    val owner: Activity,
+    /** Activity còn sống, `null` khi đang đóng — chỗ gọi phải hỏi lại mỗi lần, không chụp sẵn. */
+    val activity: () -> Activity?,
+    val state: () -> HomeUiState,
+    /** Dựng cầu giọng nói với `say`/`confirm` của chính lượt đo — CÙNG bộ dây mà ô "Gõ lệnh chữ" dùng. */
+    val dispatcher: (
+        say: (String) -> Unit,
+        confirm: (String, () -> Unit, () -> Unit) -> Unit,
+    ) -> VoiceDispatcher,
+    /** Gắn app vào ô (0-based) — đường của ngăn kéo, xem KDoc `VoiceDispatcher.assignAppToSlot`. */
+    val assignAppToSlot: (Int, String) -> Boolean,
+    /** Xoá nội dung một ô (0-based) — đường của ngăn kéo (`KachiHomeSlots.clearSlot`). */
+    val clearSlot: (Int) -> Unit,
+    /** Mở app TOÀN MÀN (`KachiHomeSlots.openAppFullscreen`) — không ghi vào ô, không đổi bố cục. */
+    val openApp: (String) -> Unit,
+    val switchProfile: (String) -> Unit,
+    val setPreset: (LayoutPreset) -> Unit,
+    /** Mở một phiên nghe thật — CÙNG đường mà nút mic trên thanh trên dùng. */
+    val listen: () -> Unit,
+    /** Kênh shell (dadb) đã dò được chưa — chỉ ĐỌC, cầu này không tự chạy lệnh shell nào. */
+    val shellUsable: () -> Boolean,
+    /** Cầu ClusterNav (cho lệnh `reapply`). */
+    val bridge: () -> ClusterNavBridge,
+)
+
+/**
+ * Bản móc DUY NHẤT của cả tiến trình.
+ *
+ * `object` chứ không phải field của màn: receiver được nền tảng dựng **mới tinh** cho mỗi broadcast, nên nó
+ * không có cách nào giữ tham chiếu tới màn. Cùng hình dạng `SlotVdOwner` (một chủ sở hữu cho cả tiến trình), và
+ * cùng lý do: thứ cần nhìn thấy nhau nằm ở hai vòng đời khác nhau.
+ */
+internal object KachiTestHooks {
+
+    private const val TAG = "KachiTest"
+
+    @Volatile
+    private var current: TestBridgeHooks? = null
+
+    fun get(): TestBridgeHooks? = current
+
+    fun attach(hooks: TestBridgeHooks) {
+        current = hooks
+        Log.i(TAG, "hooks attached")
+    }
+
+    /**
+     * Gỡ móc — **chỉ khi** [owner] đúng là chủ đang giữ.
+     *
+     * ⚠ [ĐO] hình dạng này đã có thật ở `SlotVdOwner`: màn Kachi cũ mang cờ "đang kết thúc" nhưng `onDestroy` của
+     * nó chạy **sau** `onCreate` của màn mới. So chủ sở hữu thì lượt huỷ muộn đó không gỡ mất móc vừa gắn — không
+     * so thì cầu kiểm thử chết im lặng đúng sau một lần đổi chủ đề/ngôn ngữ (hai ca dựng lại màn).
+     */
+    fun detach(owner: Activity) {
+        if (current?.owner === owner) {
+            current = null
+            Log.i(TAG, "hooks detached")
+        }
+    }
+}
+
+/**
+ * Gắn móc cho màn chính. Gọi ở `onCreate` — và **chỉ** ở đó: đường tháo tự nối bên trong (xem dưới).
+ *
+ * ## Vì sao KHÔNG có một `detachTestBridge()` để gọi ở `onDestroy`
+ * Một cặp gắn/tháo mà hai nửa nằm ở hai chỗ là một nửa sẽ bị quên — dự án đã có đúng ca đó (`CastShell.evictVd`
+ * mất call site, CLAUDE.md §8; và `HomePanels.closeAll()` sống nhiều phiên không ai gọi). Ở đây cái bị quên là
+ * một móc trỏ vào Activity đã huỷ, tức cầu kiểm thử sẽ *"chạy"* mà đổi state của một màn không còn trên màn
+ * hình. Nối lượt tháo vào **vòng đời của nền tảng** thì không có chỗ nào để quên.
+ *
+ * Nhận **lambda** cho `slots`/`voice`/`shell` chứ không nhận giá trị: cả ba đều là `lazy`/`@Volatile` của màn
+ * chính, và chạm vào chúng ngay lúc `onCreate` sẽ **dựng sẵn** một `VoiceSession` (mô hình giọng, micro) cho một
+ * chuyến xe có thể không ai nói câu nào.
+ */
+internal fun Activity.attachTestBridge(
+    viewModel: HomeViewModel,
+    slots: () -> KachiHomeSlots,
+    voice: () -> VoiceSession,
+    drawer: () -> DrawerController,
+    panels: () -> HomePanels,
+    shell: () -> ((String) -> String)?,
+) {
+    val hooks =
+        TestBridgeHooks(
+            owner = this,
+            activity = { if (isFinishing || isDestroyed) null else this },
+            state = { viewModel.uiState.value },
+            dispatcher = { say, confirm ->
+                VoiceWiring.dispatcher(
+                    ctx = this,
+                    state = { viewModel.uiState.value },
+                    appsByLabel = { VoiceWiring.appsByLabel(this) },
+                    // CHÍNH lambda mà phiên nghe dùng (`KachiHomeWiring.voiceSession`) — không phải
+                    // `openAppFullscreen`: hai đường đó khác nhau thật (đường này trả về CÓ mở được hay không,
+                    // và câu trả lời đó đi thẳng vào lời đáp cho người nói).
+                    openApp = { pkg -> AppOpener(this).openByIntent(pkg) },
+                    openAppList = { drawer().openAppList() },
+                    openSettings = { panels().openSettings(SettingsGroup.SYSTEM) },
+                    onSwitchProfile = { name -> viewModel.switchProfile(name) },
+                    onListen = { voice().start() },
+                    confirm = confirm,
+                    say = say,
+                    assignAppToSlot = { index, pkg -> slots().assignApp(index, pkg); true },
+                )
+            },
+            assignAppToSlot = { index, pkg -> slots().assignApp(index, pkg); true },
+            clearSlot = { index -> slots().clearSlot(index) },
+            openApp = { pkg -> slots().openAppFullscreen(pkg) },
+            switchProfile = { name -> viewModel.switchProfile(name) },
+            setPreset = { preset -> viewModel.setPreset(preset) },
+            listen = { voice().start() },
+            shellUsable = { shell() != null },
+            bridge = { clusterNavBridge() },
+        )
+    KachiTestHooks.attach(hooks)
+    val host = application
+    host.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
+        override fun onActivityDestroyed(activity: Activity) {
+            if (activity !== hooks.owner) return
+            // Tự gỡ CẢ hai thứ: lượt theo dõi vòng đời và móc. Giữ lại bộ theo dõi là giữ một tham chiếu tới
+            // Activity đã huỷ trong `Application` — thứ sống tới hết tiến trình.
+            host.unregisterActivityLifecycleCallbacks(this)
+            KachiTestHooks.detach(activity)
+        }
+
+        override fun onActivityCreated(activity: Activity, state: Bundle?) = Unit
+        override fun onActivityStarted(activity: Activity) = Unit
+        override fun onActivityResumed(activity: Activity) = Unit
+        override fun onActivityPaused(activity: Activity) = Unit
+        override fun onActivityStopped(activity: Activity) = Unit
+        override fun onActivitySaveInstanceState(activity: Activity, state: Bundle) = Unit
+    })
+}

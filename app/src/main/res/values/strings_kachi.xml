@@ -402,6 +402,12 @@
     <string name="kachi_sub_advanced">Nâng cao</string>
     <string name="kachi_vietmap_data">Dữ liệu VietMap</string>
 
+    <!-- ── T-BRIDGE — cầu kiểm thử qua adb (docs/specs/kachi-test-bridge.html). Câu chữ phải NÓI THẲNG cái được
+         mở ra: đây là công tắc duy nhất đứng giữa một receiver exported và cái xe. ── -->
+    <string name="kachi_test_bridge_title">Chế độ kiểm thử qua adb</string>
+    <string name="kachi_test_bridge_sub_off">Cho phép máy tính nối bằng adb gửi lệnh thử vào Kachi (nói một câu, đổi hồ sơ, gắn app vào ô, đọc trạng thái). Chỉ bật khi bạn đang ngồi trong xe và đang cần thử. Tự tắt sau 60 phút và sau khi tắt máy.</string>
+    <string name="kachi_test_bridge_sub_on">Đang mở — còn %1$d phút. Lệnh gửi vào đều được ghi lại trong nhật ký và trong thư mục test của Kachi.</string>
+
     <!-- ── IA v2 nhóm 10 — miễn trừ trách nhiệm, chuyển từ hộp thoại một-lần của màn cũ (MainActivity:620–635) ── -->
     <string name="kachi_about_disclaimer">Miễn trừ trách nhiệm: đây là thử nghiệm cá nhân, KHÔNG liên kết với BYD. Không có bảo đảm nào về an toàn lái xe, tương thích hay độ ổn định. Cài và dùng với rủi ro của riêng bạn.</string>
 
@@ -485,4 +491,5 @@
     <string name="kachi_pill_voice">Nói với xe</string>
     <string name="kachi_voice_pill_title">Nút mic trên thanh trạng thái</string>
     <string name="kachi_voice_pill_sub">Nói nhanh một câu lệnh, cạnh Ứng dụng và Cài đặt</string>
+    <string name="kachi_slot_app_closed">App đã đóng — chạm để mở lại</string>
 </resources>

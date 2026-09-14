@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -101,7 +102,9 @@ class VoiceTextConsole(
         body.addView(rows.button(context.getString(R.string.kachi_voice_wav_try)) {
             log.add(context.getString(R.string.kachi_voice_wav_running))
             Thread({
-                val r = VoiceWavProbe.run(context, deps.state().profiles, appsByLabel.keys.toList())
+                val r = VoiceWavProbe.run(
+                    context, deps.state().profiles, appsByLabel.keys.toList(), appsByLabel.values.toSet(),
+                )
                 out.post {
                     when {
                         r.error != null -> {
@@ -111,6 +114,11 @@ class VoiceTextConsole(
                         r.heard.isBlank() -> log.add(context.getString(R.string.kachi_voice_wav_nothing, r.path))
                         else -> {
                             log.add(context.getString(R.string.kachi_voice_wav_heard, r.heard))
+                            // R16 — phơi CẢ HAI lượt: *"ngữ pháp nghe ra gì"* và *"tự do đọc thêm được gì"* là
+                            // hai câu hỏi khác nhau. Chỉ hiện khi lượt 2 có chạy, để ca thường không rối mắt.
+                            if (r.freeText.isNotBlank()) {
+                                log.add(ARROW + r.grammarText + "  |  " + r.freeText)
+                            }
                             // Hiện luôn Ý ĐỊNH: câu hỏi thật không phải "nghe ra chữ gì" mà "chữ ấy có thành
                             // việc không". Chỉ PHÂN TÍCH, không thi hành — đây là phép đo, không phải lệnh.
                             dispatcher.preview(r.heard).forEach { log.add(ARROW + VoiceReply.preview(it)) }
@@ -152,6 +160,8 @@ class VoiceTextConsole(
         onListen = { say(context.getString(R.string.kachi_voice_listen_not_here)) },
         confirm = { question, onYes, onNo -> ask(question, onYes, onNo) },
         say = say,
+        // V1.1 — *"mở YouTube vào ô số 2"* gõ ở đây phải gắn thật vào ô, qua ĐÚNG đường của ngăn kéo.
+        assignAppToSlot = deps.assignAppToSlot,
     )
 
     /**
@@ -161,17 +171,29 @@ class VoiceTextConsole(
      * `VoiceDispatcher` đang **chờ đúng một** trong hai lambda để biết có đi tiếp các vế sau hay không — nuốt mất
      * đường thoát đó là treo nửa cuối câu ghép không lời giải thích. `single` chặn gọi cả hai khi người dùng bấm
      * Huỷ (nút Huỷ ⇒ `onCancel` cũng nổ theo trên một số ROM).
+     *
+     * ## [SOÁT Pass 3 · P1] Vì sao phải hỏi màn còn sống không TRƯỚC khi `show()`
+     * Tới 1.49 hộp này luôn bung **ngay trong** cú bấm *"Chạy"*, tức chắc chắn màn còn đó. V1.1 mở một đường
+     * hỏi lại **về muộn**: câu dẫn đường tới app chỉ-nhận-toạ-độ đi tra cứu mạng trước (tới ~20 s), và
+     * trong khoảng ấy người dùng có thể đã đóng bảng Cài đặt hoặc rời màn chính. `show()` trên
+     * một activity đã huỷ là `BadTokenException` — **một launcher không được chết vì một hộp thoại**. Màn đã đi
+     * ⇒ coi như **KHÔNG** (cùng mặc định với bấm ra ngoài hộp).
      */
     private fun ask(question: String, onYes: () -> Unit, onNo: () -> Unit) {
         var answered = false
         fun single(block: () -> Unit) { if (!answered) { answered = true; block() } }
-        AlertDialog.Builder(context)
-            .setTitle(R.string.kachi_voice_confirm_title)
-            .setMessage(question)
-            .setPositiveButton(R.string.kachi_voice_confirm_yes) { _, _ -> single(onYes) }
-            .setNegativeButton(R.string.kachi_voice_confirm_no) { _, _ -> single(onNo) }
-            .setOnCancelListener { single(onNo) }
-            .show()
+        val host = context as? Activity
+        if (host != null && (host.isFinishing || host.isDestroyed)) { single(onNo); return }
+        val shown = runCatching {
+            AlertDialog.Builder(context)
+                .setTitle(R.string.kachi_voice_confirm_title)
+                .setMessage(question)
+                .setPositiveButton(R.string.kachi_voice_confirm_yes) { _, _ -> single(onYes) }
+                .setNegativeButton(R.string.kachi_voice_confirm_no) { _, _ -> single(onNo) }
+                .setOnCancelListener { single(onNo) }
+                .show()
+        }.isSuccess
+        if (!shown) single(onNo)   // không bung được hộp ⇒ vẫn phải trả lời, nếu không nửa cuối câu ghép treo
     }
 
     private companion object {
