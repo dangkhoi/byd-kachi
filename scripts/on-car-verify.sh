@@ -19,7 +19,9 @@ set -uo pipefail
 
 ADB="${ADB:-adb}"
 DEV="${1:-${ADB_TARGET:-}}"
-PKG="com.byd.clusternav"
+# PKG tham số hoá 2026-09-14 (KHÔNG đổi hành vi): mặc định vẫn ClusterNav như cũ; bộ script Kachi
+# gọi lại tệp này với PKG=com.byd.launcher (scripts/vehicle/kachi/60-cast.sh).
+PKG="${PKG:-com.byd.clusternav}"
 OUT="${OUT_DIR:-./on-car-verify-$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$OUT"
 
