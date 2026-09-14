@@ -328,6 +328,10 @@ class SettingsSections(
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_advanced)))
         body.addView(rows.button(context.getString(R.string.kachi_vietmap_data)) { deps.bridge.openVietMapData() })
         body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { deps.bridge.openDiagnostics() })
+        // V1 · R6 — đường thử lệnh bằng CHỮ. Đặt ở "Nâng cao" cạnh hai màn chẩn đoán kia vì nó cùng loại: một chỗ
+        // ĐO, không phải một bề mặt cấu hình (xem KDoc [VoiceTextConsole] về vì sao không cho nó một nhóm riêng).
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
+        VoiceTextConsole(context, rows, deps).build(body)
     }
 
     // ── Dẫn đường · Cụm · Phím ───────────────────────────────────────────────────────────────────

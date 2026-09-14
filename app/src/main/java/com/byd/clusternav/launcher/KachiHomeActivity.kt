@@ -70,6 +70,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             },
             shellUsable = { shell != null },
             goImmersive = { goImmersive() },
+            // V1 · R6 — hai đường mà đường thử lệnh bằng chữ dùng; CÙNG lambda với thanh nút và ngăn kéo.
+            openAppList = { drawerController.openAppList() },
+            openAppByPackage = { pkg -> appOpener.openByIntent(pkg) },
             onPanelsChanged = { windows.updateOverlayHeads() },   // nút ⇄ nổi ẩn khi Cài đặt/bảng vẽ mở
         )
     }

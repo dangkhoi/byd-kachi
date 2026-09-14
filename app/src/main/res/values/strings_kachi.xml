@@ -442,4 +442,15 @@
         <!-- Tiếng Việt không phân biệt số ít/số nhiều ⇒ chỉ cần `other` (cùng lệ với kachi_drawer_place_n). -->
         <item quantity="other">%1$d mục chưa kiểm trên xe</item>
     </plurals>
+
+    <!-- ══ V1 · đường thử lệnh bằng CHỮ (docs/specs/kachi-voice-command.html R6) ═════════════════════ -->
+    <string name="kachi_voice_title">Gõ lệnh chữ (thử giọng nói)</string>
+    <string name="kachi_voice_note">Chưa có micro: phần NGHE còn chờ số đo trên xe. Gõ câu đúng như khi nói — ví dụ: “bật đèn đọc”, “đặt nhiệt độ 22”, “đóng hết kính”, “xem pin”, “mở Cài đặt”.</string>
+    <string name="kachi_voice_hint">Nói gì với xe…</string>
+    <string name="kachi_voice_run">Chạy câu lệnh</string>
+    <string name="kachi_voice_idle">Chưa chạy câu nào.</string>
+    <string name="kachi_voice_empty">Chưa gõ gì.</string>
+    <string name="kachi_voice_confirm_title">Xác nhận</string>
+    <string name="kachi_voice_confirm_yes">Đồng ý</string>
+    <string name="kachi_voice_confirm_no">Huỷ</string>
 </resources>

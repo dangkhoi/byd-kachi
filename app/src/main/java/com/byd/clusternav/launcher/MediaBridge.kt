@@ -55,10 +55,19 @@ class MediaBridge(context: Context) {
         return toSnapshot(chosen)
     }
 
-    fun play() = tx { it.play() }
-    fun pause() = tx { it.pause() }
-    fun next() = tx { it.skipToNext() }
-    fun prev() = tx { it.skipToPrevious() }
+    /**
+     * Transport — trả `true` khi lệnh **thật sự** tới được một phiên nhạc.
+     *
+     * ## [SOÁT P1] Vì sao trả `Boolean` và vì sao [tx] tự `read()` khi chưa có phiên
+     * [active] chỉ được đặt trong [read] (nhịp cập nhật của widget nhạc). Chỗ gọi nào cầm một [MediaBridge] **mới**
+     * và bấm transport ngay — đúng hình dạng của [VoiceDispatcher] — sẽ bắn vào `null` và **không có gì xảy ra**,
+     * cũng không có gì báo. Tự dò một lần ở [tx] sửa gốc cho **mọi** chỗ gọi thay vì bắt từng chỗ nhớ gọi [read]
+     * trước; giá trị trả về cho phép chỗ gọi nói thật ("chưa có phiên nhạc nào") thay vì báo một dấu ✓ rỗng.
+     */
+    fun play(): Boolean = tx { it.play() }
+    fun pause(): Boolean = tx { it.pause() }
+    fun next(): Boolean = tx { it.skipToNext() }
+    fun prev(): Boolean = tx { it.skipToPrevious() }
 
     /**
      * Chuyển một **mã hành động** của widget nhạc (`w_media`) thành lệnh transport. Mã lạ ⇒ không làm gì.
@@ -76,9 +85,12 @@ class MediaBridge(context: Context) {
         }
     }
 
-    private fun tx(block: (MediaController.TransportControls) -> Unit) {
-        runCatching { active?.transportControls?.let(block) }
-    }
+    private fun tx(block: (MediaController.TransportControls) -> Unit): Boolean = runCatching {
+        if (active == null) read()          // chưa ai dò phiên lần nào (vd cầu giọng nói) — dò đúng một lần
+        val controls = active?.transportControls ?: return false
+        block(controls)
+        true
+    }.getOrDefault(false)
 
     private fun activeControllers(): List<MediaController>? = runCatching {
         val msm = app.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return null

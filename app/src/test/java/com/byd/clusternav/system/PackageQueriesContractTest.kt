@@ -79,11 +79,15 @@ class PackageQueriesContractTest {
 
     /** Helper viết ra mà không ai gọi là mã chết (CLAUDE.md §8). Đếm chỗ gọi thật, ngoài chính nó. */
     @Test
-    fun `helper phai co du 5 cho goi that`() {
+    fun `helper phai co du 6 cho goi that`() {
         // D2b đếm 7. Hai chỗ biến mất 2026-09-13 cùng màn ClusterNav cũ (`MainActivity`, `CastAutostart`) —
         // danh sách app "chiếu được" / "tự chiếu" nay chỉ còn một bản, trong cầu (S3 · R1/R3).
+        // +1 từ 2026-09-14 (V1 · R6): `VoiceTextConsole` dựng bảng *nhãn app → tên gói* cho bộ phân tích câu lệnh.
+        // Nó KHÔNG dùng lại `AppDrawerApps.load()` vì hàm đó nạp cả **icon** của từng app (`ri.loadIcon`) — công
+        // việc nặng nhất của ngăn kéo — trong khi ở đây chỉ cần hai chuỗi. Đi qua đúng helper này là đủ để giữ
+        // tính chất mà bài canh bảo vệ: một cửa duy nhất tới `PackageManager`.
         val callers = kotlinSources().filter { (_, code) -> code.contains("PackageQueries.queryActivities(") }.map { it.first }
-        assertEquals(5, callers.size, "mọi chỗ gọi phải đi qua helper; thấy: $callers")
+        assertEquals(6, callers.size, "mọi chỗ gọi phải đi qua helper; thấy: $callers")
     }
 
     /**

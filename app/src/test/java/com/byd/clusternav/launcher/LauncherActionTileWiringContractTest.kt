@@ -97,9 +97,13 @@ class LauncherActionTileWiringContractTest {
             "thanh nút phải nhận CHÍNH hai lambda của thanh trên",
         )
         assertTrue(strip.contains("onOpenAppList"), "tiền đề: thanh trên vẫn có lối Ứng dụng")
+        // BA bề mặt, MỘT biểu thức: thanh trên · thanh nút · đường thử lệnh bằng chữ (V1 · R6, 2026-09-14).
+        // Phép đếm này canh *"không ai tự dựng một lối riêng tới ngăn kéo"*, chứ không canh số bề mặt — và nó vẫn
+        // canh được điều đó vì nó so **nguyên biểu thức**: một đường thứ hai sẽ trông khác (vd `startActivity(...)`
+        // hoặc `drawerController.open(...)`) nên không lọt vào con số này. Thêm một bề mặt ⇒ sửa số Ở ĐÂY kèm lý do.
         assertEquals(
-            2, Regex(Regex.escape("drawerController.openAppList()")).findAll(activity).count(),
-            "đúng hai chỗ gọi: thanh trên + thanh nút. Nhiều hơn là đã mọc một đường thứ ba",
+            3, Regex(Regex.escape("drawerController.openAppList()")).findAll(activity).count(),
+            "ba chỗ gọi: thanh trên + thanh nút + đường thử lệnh chữ. Khác đi là đã mọc một đường riêng",
         )
     }
 

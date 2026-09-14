@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V1 — Điều khiển bằng lời: tầng chữ → hành động (pha off-car)</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>V1 — Điều khiển bằng lời: tầng <b>chữ → hành động</b> (pha off-car)</h1>
+<p class="muted">Slug: <code>kachi-voice-command</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: pha off-car ĐÃ LÀM · tầng tiếng CHỜ SỐ ĐO TRÊN XE</span></p>
+<p class="muted">Owner: KhoiPD · Tuân thủ <code>CLAUDE.md</code> §2 (tách mức bằng chứng) · §7 (generic, không case-by-case) · §8 (kiểm hàm mới có được gọi không) · §10 (test khoá bài học) · §14 (tính năng mới đi 4 tầng, shell thật trước) và <code>.kiro/steering/*</code>.</p>
+
+<div class="card">
+<b>Một câu tóm tắt.</b> Pha này làm <b>duy nhất</b> tầng <i>chuỗi chữ → ý định → hành động</i> trên những khả năng <b>đã nối dây sẵn</b> (65 nút · 123 datum · 4 gói lệnh · 2 hành động launcher · hồ sơ · nhạc · mở app), cộng một <b>đường thử bằng chữ</b> trong Cài đặt. <b>Không</b> có micro, ASR, TTS hay wake word — tầng 1 của §14 (số đo trên xe) chưa xanh.
+</div>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-09-14</b> (senior review, CLAUDE.md §5): 8 phát hiện [P0]–[P2] đã vá tại chỗ — cổng xác nhận nay <b>dừng cả chuỗi</b> (OQ4 đã chốt) · số nói rút gọn (<i>“hai lăm”</i>) không còn rơi về <code>min</code> · lệnh nhạc hết báo “✓” khi không có phiên · từ vựng dựng <b>một lần</b> · câu trả lời nói ra <i>“chưa kiểm trên xe”</i> · bốn câu đời thường hiểu thêm được. Xem §10.</li>
+<li><b>Pass 0 — 2026-09-14</b>: Khởi tạo spec + làm xong pha off-car (R1–R7). Sinh ra từ backlog <b>V1</b> và từ RE <code>docs/diagnostics/kiki-car-RE-2026-09-14.md</code> (phương án C đã chốt). R8 khai rõ phần <b>không</b> làm và điều kiện mở khoá.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Owner muốn gì</h3>
+<p>Owner 2026-09-14: <i>“voice command cho tất cả các chức năng của app, thêm cả dẫn đường, mở nhạc”</i>. Backlog dòng <b>V1</b>.</p>
+
+<h3>2.2 Ba sự thật ĐÃ ĐO quyết định hình dạng bài toán</h3>
+<table>
+<tr><th>Mức</th><th>Sự thật</th><th>Nguồn</th></tr>
+<tr><td><span class="pill ok">ĐÃ ĐO</span></td><td>Kiki Car (Zalo AI, 26.08) <b>không</b> nhận dạng tại máy: <code>assets/tokens.txt</code> dài đúng <b>19 byte</b> (<code>&lt;blk&gt;/i/k/o</code>), chỉ đủ đánh vần “Kiki ơi”. ASR + NLU + TTS đều trên mây.</td><td>RE §2.1</td></tr>
+<tr><td><span class="pill ok">ĐÃ ĐO</span></td><td>Kiki <b>0 hit</b> <code>byd</code>/<code>dilink</code>, không <code>android.car</code>, không <code>CarPropertyManager</code> ⇒ 65 nút + 123 datum + hành động launcher <b>bắt buộc Kachi tự làm</b>.</td><td>RE §0.2, §7(b)</td></tr>
+<tr><td><span class="pill ok">ĐÃ ĐO</span></td><td>Kiki không khai <code>RecognitionService</code>/<code>VoiceInteractionService</code>; binder autowake chỉ <i>mở + nghe</i>, <b>không trả kết quả về</b> ⇒ không dùng Kiki làm front-end ASR/NLU.</td><td>RE §1.2, §7(a)</td></tr>
+<tr><td><span class="pill">CHƯA BIẾT</span></td><td>Ngân sách mic / ASR / TTS / CPU trên xe owner. Bốn phép đo playbook §2.14 + ba phép đo K1–K3 <b>chưa chạy</b>.</td><td>backlog V1 · playbook</td></tr>
+</table>
+
+<h3>2.3 Cổng / phụ thuộc</h3>
+<div class="card"><b>Cổng:</b> CLAUDE.md §14 — tính năng MỚI phải qua 4 tầng theo thứ tự, tầng 1 là <b>shell/adb thô trên xe thật</b>. Tầng tiếng (mic/ASR/TTS/wake word) <b>chưa có một phép đo nào</b> ⇒ <b>cấm</b> viết code cho nó ở pha này.<br>
+<b>Nhưng</b> tầng <i>chữ → hành động</i> <b>không</b> là tính năng mới theo nghĩa đó: nó chỉ gọi lại các đường <b>đã nối dây và đã chạy trên xe</b> (applier nút, <code>MacroRunner</code>, <code>MediaBridge</code>, <code>AppOpener</code>, intent đổi hồ sơ). Không có cơ chế mới nào cần chứng minh bằng shell ⇒ làm được ngay, và làm xong thì <b>không phải viết lại</b> khi tầng tiếng bật lên.</div>
+
+<h3>2.4 Phương án đã chốt (C — chia đôi việc)</h3>
+<div class="flow">
+  <div class="fnode"><b>Kachi</b><span>tập ĐÓNG, offline</span></div>
+  <div class="arrow">◀</div>
+  <div class="fnode" style="background:rgba(0,113,227,.08)"><b>ranh giới</b><span>theo LOẠI từ vựng</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Kiki (nút mic 328)</b><span>từ vựng MỞ, cần mây</span></div>
+</div>
+<table>
+<tr><th>Miền</th><th>Ai lo</th><th>Vì sao</th></tr>
+<tr><td>65 nút xe · 123 datum · gói lệnh · hồ sơ · bố cục · chiếu cụm · mở app đã biết tên</td><td><b>Kachi</b></td><td>Kiki không chạm được BYD; và điều khiển xe không được phụ thuộc 4G</td></tr>
+<tr><td>Tên bài hát · ca sĩ · điểm đến · hỏi đáp · tin tức</td><td><b>Kiki</b></td><td>từ vựng mở ⇒ cần mây; Kiki đang chạy tốt trên xe owner (CLAUDE.md §6: không đảo thứ đang chạy tốt)</td></tr>
+</table>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1.</b> Một <b>bộ phân tích ý định tất định</b> ở <code>:core</code>: chuỗi chữ đã chuẩn hoá (thường · bỏ dấu · số bằng chữ → số) → <code>VoiceIntent</code> (sealed): <code>Control(id, value?, relative)</code> · <code>Macro(id)</code> · <code>Launcher(id)</code> · <code>Profile(name)</code> · <code>Read(datumId, aloud)</code> · <code>Nav(query)</code> · <code>Media(op, query)</code> · <code>OpenApp(appName)</code> · <code>Unknown(reason, text)</code>. <b>AC:</b> thuần Kotlin, 0 <code>android.*</code>, kiểm 100% off-car.</li>
+<li><b>R2.</b> Ngữ pháp <b>SINH từ danh mục</b>: từ vựng dựng mỗi lần gọi từ 4 bộ đăng ký (nhãn VI + EN + nhãn ngắn), <b>không chép tay một nhãn nào</b>; từ đồng nghĩa khai <b>một chỗ</b> (<code>VoiceSynonyms</code>). Bộ động từ nhỏ: bật · tắt · mở · đóng · tăng · giảm · đặt · chỉnh · xem · đọc · chuyển · dẫn đường tới · phát · dừng · tiếp. <b>“Mở” phân biệt bằng KIỂU ĐỐI TƯỢNG</b> (cửa/kính/cốp = nút · app = mở app · Cài đặt = launcher · nhạc = phát). <b>AC:</b> thêm một dòng registry ⇒ nói được ngay, không sửa mã ngữ pháp.</li>
+<li><b>R3.</b> Lệnh ghép nối bằng <code>và</code>/<code>rồi</code> → <b>danh sách</b> ý định theo đúng thứ tự nói. <b>AC:</b> chỉ tách khi <b>mọi</b> vế hiểu được, ngược lại trả nguyên câu (ca “và” nằm trong tên bài hát).</li>
+<li><b>R4.</b> Bảng an toàn <code>VoiceRisk</code>: <b>CONFIRM</b> cho mở khoá · hạ hết kính · dừng chiếu cụm · đổi hồ sơ; <b>SAFE</b> cho đọc; <b>NORMAL</b> cho phần còn lại. <b>AC:</b> mỗi việc CONFIRM có <b>lý do đọc được</b> hiện trong hộp hỏi.</li>
+<li><b>R5.</b> Câu phản hồi <b>song ngữ dựng ở <code>:core</code></b>, gọi tên khả năng bằng <code>displayLabel</code> của chính bộ đăng ký.</li>
+<li><b>R6.</b> Đường thử: hàng <b>“Gõ lệnh chữ (thử giọng nói)”</b> ở <i>Cài đặt › Hệ thống &amp; quyền › Nâng cao</i> → nhập câu → parser → thi hành qua <b>đúng đường hiện có</b> → hiện câu phản hồi. <b>AC:</b> mọi nhánh ý định có đích thật, 0 TODO/stub.</li>
+<li><b>R7.</b> Test ≥120 ca thuần: 44 mẫu câu Kiki chuyển thể + <b>mọi</b> nút/datum/gói/launcher ít nhất một câu VI + tiếng Anh cơ bản; bài canh độ phủ <b>sinh từ registry</b>; không nhận nhầm 3 cặp nhãn lồng nhau (L-RE2).</li>
+<li><b>R8.</b> <b>KHÔNG</b> làm ở pha này: micro · ASR · TTS · wake word · LLM dự phòng. Điều kiện mở khoá: playbook §2.14 (4 phép đo) + K1–K3 xanh, có bằng chứng lưu trong <code>docs/diagnostics/</code>.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1.</b> Tầng UI <b>0 lần</b> ghi bền trực tiếp — đổi hồ sơ đi qua intent của <code>HomeViewModel</code>.</li>
+<li><b>R-nf2.</b> Không đường thứ hai: mỗi nhánh dùng lại <b>chính</b> lambda/hàm mà một cú chạm đang dùng.</li>
+<li><b>R-nf3.</b> Không hardcode tên gói (CLAUDE.md §7): app lấy từ danh sách đã cài, app dẫn đường lấy từ roster <code>NavApps</code>.</li>
+<li><b>R-nf4.</b> Mỗi tệp ≤ 500 dòng.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Luồng: một câu chữ đi qua đâu</h3>
+<div class="layers">
+  <div class="layer"><div class="node" style="background:rgba(0,113,227,.10)"><b>Hàng “Gõ lệnh chữ”</b><span>:app · VoiceTextConsole · Cài đặt › Hệ thống › Nâng cao</span></div></div>
+  <div class="layer"><div class="node"><b>VoiceLexicon</b><span>tách từ · bỏ dấu · số chữ→số</span></div><div class="node"><b>VoiceGrammar</b><span>từ vựng SINH từ 4 registry + VoiceSynonyms</span></div></div>
+  <div class="layer"><div class="node" style="background:rgba(0,113,227,.10)"><b>VoiceIntentParser</b><span>:core thuần · động từ × KIỂU ĐỐI TƯỢNG → VoiceIntent</span></div></div>
+  <div class="layer"><div class="node"><b>VoiceRiskTable</b><span>SAFE / NORMAL / CONFIRM</span></div><div class="node"><b>VoiceReply</b><span>câu xác nhận · lỗi · song ngữ</span></div></div>
+  <div class="layer"><div class="node" style="background:rgba(0,113,227,.10)"><b>VoiceDispatcher</b><span>:app · CHỈ là cầu, không phải tầng điều khiển thứ hai</span></div></div>
+  <div class="layer">
+    <div class="node"><b>actByKind</b><span>+ ControlTileState.shared</span></div>
+    <div class="node"><b>MacroRunner</b><span>thread nền</span></div>
+    <div class="node"><b>LauncherActions</b><span>ngăn kéo · Cài đặt</span></div>
+    <div class="node"><b>HomeViewModel</b><span>đổi hồ sơ</span></div>
+    <div class="node"><b>TelemetryReadout</b><span>đọc số</span></div>
+    <div class="node"><b>MediaBridge</b><span>MediaSession</span></div>
+    <div class="node"><b>AppOpener</b><span>mở app / app dẫn đường</span></div>
+  </div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối đã có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới của V1</span>
+</div>
+
+<h3>4.2 Ba luật giải nhập nhằng — không luật nào là <code>if (id == "…")</code></h3>
+<div class="diagram">
+<svg viewBox="0 0 720 210" role="img" aria-label="Ba luật giải nhập nhằng">
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
+  <rect x="8" y="14" width="200" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="108" y="38" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">1 · dãy DÀI nhất thắng</text>
+  <text x="108" y="58" text-anchor="middle" font-size="11.5" fill="var(--muted)">“chế độ đèn pha” ⊃ “đèn pha”</text>
+  <rect x="260" y="14" width="200" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="360" y="38" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">2 · loại ĐỘNG TỪ chọn</text>
+  <text x="360" y="58" text-anchor="middle" font-size="11.5" fill="var(--muted)">xem → datum · mở → nút</text>
+  <rect x="512" y="14" width="200" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="612" y="38" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">3 · cả câu là TÊN việc</text>
+  <text x="612" y="58" text-anchor="middle" font-size="11.5" fill="var(--muted)">“Mở hết kính” → gói lệnh</text>
+  <line x1="108" y1="76" x2="108" y2="108" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="360" y1="76" x2="360" y2="108" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="612" y1="76" x2="612" y2="108" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="8" y="116" width="200" height="72" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="108" y="140" text-anchor="middle" font-size="12" fill="var(--fg)">giải 3 cặp L-RE2</text>
+  <text x="108" y="160" text-anchor="middle" font-size="11" fill="var(--muted)">cam/camera_view</text>
+  <text x="108" y="176" text-anchor="middle" font-size="11" fill="var(--muted)">headl/headlight_mode</text>
+  <rect x="260" y="116" width="200" height="72" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="360" y="140" text-anchor="middle" font-size="12" fill="var(--fg)">giải 18 nhãn trùng</text>
+  <text x="360" y="160" text-anchor="middle" font-size="11" fill="var(--muted)">ĐỌC ↔ HÀNH ĐỘNG</text>
+  <text x="360" y="176" text-anchor="middle" font-size="11" fill="var(--muted)">collidingLabels()</text>
+  <rect x="512" y="116" width="200" height="72" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="612" y="140" text-anchor="middle" font-size="12" fill="var(--fg)">gói thắng nút cùng tên</text>
+  <text x="612" y="160" text-anchor="middle" font-size="11" fill="var(--muted)">4 nút ĐÃ CHẠY TRÊN XE</text>
+  <text x="612" y="176" text-anchor="middle" font-size="11" fill="var(--muted)">&gt; windows_all CHƯA KIỂM</text>
+</svg>
+</div>
+
+<h3>4.3 Quyết định thiết kế</h3>
+<ul>
+<li><b>Từ vựng SINH, không chép.</b> <code>VoiceGrammar.terms()</code> đọc <code>ControlRegistry</code> · <code>TelemetryRegistry</code> · <code>ActionMacros</code> · <code>LauncherActions</code> + danh sách động (hồ sơ, app đã cài). Bản sao thứ hai của nhãn là họ lỗi đã trả giá 4 lần trong repo này (<code>unitPrefs</code> ×4, <code>customLayout</code> ×2).</li>
+<li><b><code>Control.relative</code> tồn tại vì <code>:core</code> không được đoán.</b> <i>“Tăng gió”</i> chỉ có nghĩa khi biết gió đang ở mức nào — mức đó nằm ở <code>ControlTileState.shared</code> (<code>:app</code>). Bịa một mốc (vd <code>ControlDef.value</code>) sẽ <b>giảm</b> đúng lúc người ta bảo tăng.</li>
+<li><b>Từ ĐỆM phải ít, và có bài canh.</b> Bỏ dấu xong tiếng Việt đụng nhau nặng: <code>cái</code>=<code>cài</code>, <code>của</code>=<code>cửa</code>, <code>thể</code>=<code>thế</code>, <code>tối</code>=<code>tôi</code>. Bản đầu của <code>FILLERS</code> có đúng ba từ như vậy và nó <b>nuốt mất</b> “cài đặt”, “cửa sổ trời”, “thể thao” — im lặng. Nay có bài <code>khong tu dem nao la tien to cua mot cum trong tu vung</code> quét bằng máy.</li>
+<li><b>Quét “cách hiểu ĐẦU TIÊN có nghĩa”</b>, không phải “cụm khớp đầu tiên”: datum <code>gear</code> mang nhãn <i>“Số”</i> nên <i>“chuyển sang hồ sơ Vợ”</i> khớp “số” ở giữa câu rồi tắc. Đi tiếp tới cách hiểu hợp với động từ thì ca đó tự giải, không cần danh sách từ cấm.</li>
+<li><b>Điểm đến KHÔNG đem so với từ vựng xe.</b> <i>“Chỉ đường đến trạm sạc”</i> chứa cụm của nút <code>start_charging</code>. Sau động từ NAV, cả phần đuôi là dữ liệu người dùng.</li>
+<li><b>Câu trả lời ở <code>:core</code>, không ở <code>:app</code>.</b> Chúng ghép <b>nhãn của bộ đăng ký</b> vào giữa; để ở <code>:app</code> thì tầng vẽ phải tra lại 4 registry (4 đường tra thứ hai), và <code>LauncherI18nContractTest</code> cấm chuỗi tiếng Việt viết cứng ở <code>:app</code>.</li>
+<li><b>Context7:</b> không dùng thư viện/framework mới — toàn bộ pha này là Kotlin thuần + khối đã có trong repo (Android SDK chỉ ở <code>EditText</code>/<code>AlertDialog</code>/<code>PackageManager</code>, đều qua helper sẵn có). Việc verify version sẽ cần ở pha ASR (Vosk / sherpa-onnx) — <b>chưa tới</b>.</li>
+</ul>
+
+<h3>4.4 Ranh giới R8 — cái gì CHƯA làm và vì sao</h3>
+<table>
+<tr><th>Thứ</th><th>Trạng thái</th><th>Điều kiện mở khoá</th></tr>
+<tr><td>Micro / <code>AudioRecord</code> từ app thường</td><td><span class="pill block">chưa</span></td><td>playbook §2.14 phép đo 1</td></tr>
+<tr><td><code>SpeechRecognizer</code> / GMS</td><td><span class="pill block">chưa</span></td><td>playbook §2.14 phép đo 2</td></tr>
+<tr><td>TTS tiếng Việt</td><td><span class="pill block">chưa</span></td><td>playbook §2.14 phép đo 3 (<code>Read.aloud</code> đã giữ sẵn ý định)</td></tr>
+<tr><td>ASR tại máy (Vosk / sherpa-onnx), wake word</td><td><span class="pill block">chưa</span></td><td>§2.14 phép đo 4 (CPU/RAM DiLink3) — ngân sách tham chiếu: 11.9 MB, 1 luồng, cửa sổ 640 ms</td></tr>
+<tr><td>Chuyển tiếp câu sang Kiki (<code>text_command</code>)</td><td><span class="pill block">chưa</span></td><td><b>K2</b> — extra nội bộ không tài liệu, hiệu lực mới ở mức <b>[SUY]</b></td></tr>
+<tr><td>LLM dự phòng</td><td><span class="pill block">chưa</span></td><td>quyết định của owner; và chỉ được ĐỀ XUẤT, không tự thi hành</td></tr>
+</table>
+<p>Bài canh <code>VoiceCommandWiringContractTest.chua co mic ASR TTS wake word trong pha nay</code> quét mọi tệp <code>Voice*.kt</code> của 3 module và <b>đỏ</b> nếu một trong các tên trên xuất hiện — cộng một bài canh manifest không xin <code>RECORD_AUDIO</code>.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Mô hình ý định + mức rủi ro + câu trả lời (<code>:core</code>)</td><td><code>core/…/launcher/voice/VoiceIntent.kt</code> · <code>VoiceRisk.kt</code> · <code>VoiceReply.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T2</td><td>Chuẩn hoá chữ + đọc số bằng chữ</td><td><code>core/…/voice/VoiceLexicon.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T3</td><td>Từ vựng sinh từ registry + từ đồng nghĩa một chỗ</td><td><code>core/…/voice/VoiceGrammar.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T4</td><td>Bộ phân tích tất định + tách câu ghép</td><td><code>core/…/voice/VoiceIntentParser.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T5</td><td>Cầu sang các đường đã có</td><td><code>app/…/launcher/VoiceDispatcher.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T6</td><td>Hàng gõ lệnh trong Cài đặt › Hệ thống › Nâng cao + hộp xác nhận + chuỗi VI/EN</td><td><code>app/…/launcher/VoiceTextConsole.kt</code> · <code>SettingsSections.kt</code> · <code>res/values{,-en}/strings_kachi.xml</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T7</td><td>Nối 3 cổng mới (<code>openAppList</code> · <code>openAppByPackage</code> · <code>openSettingsGroup</code>)</td><td><code>SettingsPanel.kt</code> · <code>HomePanels.kt</code> · <code>KachiHomeWiring.kt</code> · <code>KachiHomeActivity.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T8</td><td>Test: ca thuần + độ phủ sinh từ registry + dây nối</td><td><code>VoiceIntentParserTest.kt</code> · <code>VoiceGrammarCoverageTest.kt</code> · <code>VoiceCommandWiringContractTest.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T9</td><td>Tầng 1 trên xe: §2.14 (4 phép đo) + K1–K3 → rồi mới mở R8</td><td><code>docs/diagnostics/carlog-kachi-*</code></td><td><span class="pill wait">🚗 chờ xe</span></td></tr>
+<tr><td>T10</td><td>Senior review (Opus) + security scan trước commit</td><td>—</td><td><span class="pill wait">chờ</span></td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> (chạy lại sau soát 2026-09-14, <code>:app:testDebugUnitTest :core:test :car-integration:test :vehicle-contracts:test :offcar-planner:test --continue</code>): <b>2471 test (core+app) / 0 đỏ</b>, cả 5 module 0 đỏ.
+  <ul>
+  <li><code>VoiceIntentParserTest</code> — 23 bài, ~110 câu: 44 mẫu Kiki chuyển thể · 5 kiểu <code>ControlKind</code> · 3 cặp L-RE2 · nhãn trùng ĐỌC↔BẤM · câu ghép · không dấu/hoa thường/dấu câu · câu trả lời song ngữ.</li>
+  <li><code>VoiceGrammarCoverageTest</code> — 38 bài, <b>194 ca sinh từ registry</b> (65 nút × 2 + 123 datum + 4 gói + 2 launcher) + 64 ca tiếng Anh + số bằng chữ + bảng an toàn + hai chốt an toàn của chính từ vựng.</li>
+  <li><code>VoiceDispatcherSafetyTest</code> (<code>:app</code>, <b>thêm ở Pass 1</b>) — 6 bài dựng <code>VoiceDispatcher</code> <b>thật</b> (lớp này không chạm <code>android.*</code> trên đường đi của một nút xe): vế sau KHÔNG chạy trước khi vế CONFIRM được đồng ý · huỷ thì dừng hẳn + nói ra còn mấy vế · hai vế CONFIRM hỏi lần lượt · việc thường chạy thẳng · lệnh tương đối cộng vào mức đang dùng · <code>preview</code> không thi hành gì.</li>
+<li><code>VoiceCommandWiringContractTest</code> (<code>:app</code>) — 9 bài: 9 nhánh ý định có đích thật · từng nhánh đi đúng đường đã có · lệnh tương đối cộng vào mức đang dùng · hàng nằm đúng mục Nâng cao · 3 cổng nối thật tới Activity · <b>chưa có mic/ASR/TTS</b> · manifest không xin <code>RECORD_AUDIO</code> · <code>:app</code> không dựng bảng từ khoá thứ hai.</li>
+  </ul>
+</li>
+<li><b>V-callsite</b> (CLAUDE.md §8): mọi lớp mới đều có ≥1 chỗ gọi ngoài định nghĩa — <code>VoiceIntentParser</code> 6 · <code>VoiceGrammar</code> 15 · <code>VoiceReply</code> 21 · <code>VoiceRiskTable</code> 3 · <code>VoiceLexicon</code> 19 · <code>VoiceDispatcher</code> 3 · <code>VoiceTextConsole</code> 3.</li>
+<li><b>V-size</b>: tệp lớn nhất <code>VoiceIntentParser.kt</code> <b>340</b> dòng (trần 500); <code>VoiceDispatcher.kt</code> 267 · <code>VoiceGrammar.kt</code> 287.</li>
+<li><b>V-oncar</b> <span class="pill wait">chưa chạy</span>: mở <i>Cài đặt › Hệ thống &amp; quyền › Nâng cao › Gõ lệnh chữ</i>, gõ lần lượt 10 câu ở §6.1, chụp màn hình. Kỳ vọng: dòng <code>→</code> nói đúng việc, dòng <code>✓</code>/<code>✗</code> nói xe có nhận không. Hoàn tác: mọi câu đều đảo lại được bằng câu ngược; 4 việc CONFIRM có hộp hỏi.</li>
+<li><b>V-lifecycle</b>: mở Cài đặt → gõ → chạy → đổi nhóm → quay lại (trang được nhớ, sổ phản hồi giữ nguyên) → đóng bảng → mở lại (sổ trống, bảng app nạp lại).</li>
+</ul>
+<h3>6.1 Mười câu để gõ trên xe</h3>
+<pre>bật đèn đọc                       → Bật Đèn đọc
+đặt nhiệt độ hai mươi hai         → Đặt Nhiệt độ = 22
+tăng âm lượng tối đa              → Đặt Âm lượng = 30
+đóng hết kính                     → Chạy gói Đóng hết kính
+mở khoá cửa                       → (hỏi lại) Bấm Mở khoá cửa
+xem pin                           → Pin (SOC): …
+pin còn bao nhiêu                 → Pin (SOC): …
+chỉnh chế độ đèn pha sang auto    → Chế độ đèn pha: Auto
+mở ứng dụng VTV Go                → Mở ứng dụng VTV Go
+bật đèn đọc và tắt đèn pha        → Bật Đèn đọc · Tắt Đèn pha</pre>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1.</b> Nhóm khả năng (<code>CapabilityGroups</code>, 12 nhóm) <b>chưa</b> nằm trong từ vựng — <i>“xem áp suất lốp”</i> (cả 4 bánh) hiện chưa đọc được, phải nói từng bánh. Thêm nhóm cần một <code>VoiceIntent.ReadGroup</code> và một đường đọc bảng. — <span class="muted">chờ owner: có cần không?</span></li>
+<li><b>OQ2.</b> Nút nào kích hoạt phiên nghe của Kachi khi tầng tiếng bật? Nút mic 328 đang thuộc Kiki và <b>đang chạy tốt</b> (CLAUDE.md §6). — <span class="muted">chờ số đo W5 (đo phím) + quyết định owner</span></li>
+<li><b>OQ3.</b> Có đọc to (TTS) hay chỉ hiện chữ? <code>Read.aloud</code> đã phân biệt sẵn hai ý định. — <span class="muted">chờ playbook §2.14 phép đo 3</span></li>
+<li><b>OQ4. <span class="pill ok">đã chốt — soát 2026-09-14</span></b> Câu ghép có một vế CONFIRM ⇒ <b>dừng cả chuỗi tại vế đó</b>: đồng ý thì chạy vế đó rồi mới đi tiếp; huỷ thì dừng hẳn và nói ra còn mấy vế không chạy. Lý do bỏ luật cũ (mượn của <code>MacroRunner</code>): các bước trong một gói lệnh đã được owner duyệt sẵn lúc khai gói, còn các vế của một câu ghép là thứ vừa <i>nghe được</i> — mà vế phải hỏi lại đứng đó chính vì có thể đã nghe nhầm. <i>“Mở khoá cửa rồi mở hết kính”</i> nghe nhầm một lần là xe mở toang trong lúc người lái mới đang đọc câu hỏi cho vế đầu. Khoá bằng <code>VoiceDispatcherSafetyTest</code> (bài chạy thật, không quét nguồn).</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/kiki-car-RE-2026-09-14.md</code> — §1.2 (binder không trả kết quả) · §2.1 (tokens.txt 19 byte) · §2.3 (bảng ngắt câu 6.0/1.5/15.0 s) · §7(b) (Kachi bắt buộc tự làm) · <b>§7(c) 44 mẫu câu</b> · §8.2 (ba phương án, chọn C) · §8.3 (K1–K3).</li>
+<li><code>docs/PROJECT-BACKLOG.md</code> — dòng <b>V1</b> (hướng + 4 số đo) · dòng <b>L-RE2</b> (3 cặp nhãn lồng nhau).</li>
+<li><code>docs/specs/kachi-profiles-are-everything.html</code> — R12 (<code>LauncherActions</code>, ô loại LAUNCHER) · S4 (hồ sơ giữ tất cả ⇒ đổi hồ sơ là việc CONFIRM).</li>
+<li><code>docs/specs/kachi-action-macros.html</code> — <code>MacroRunner</code>, luật “một bước hỏng không giết cả gói”, mức bằng chứng = thấp nhất trong các bước.</li>
+<li><code>docs/specs/kachi-settings-ia-v2.html</code> — 10 nhóm Cài đặt; mục <i>Nâng cao</i> của nhóm <i>Hệ thống &amp; quyền</i>.</li>
+<li>Mã: <code>core/…/launcher/voice/*.kt</code> · <code>app/…/launcher/VoiceDispatcher.kt</code> · <code>VoiceTextConsole.kt</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-14 · quyết định</b> — <b>Bắt đầu từ tầng chữ, không từ tầng tiếng.</b> §14 cấm code cho khả năng chưa đo; nhưng tầng chữ chỉ gọi lại đường đã chạy nên không vướng cổng đó, và nó là thứ <b>không phải viết lại</b> khi ASR về. <i>File:</i> toàn bộ <code>voice/</code>.</li>
+<li><b>2026-09-14 · bug tự gây, tự bắt</b> — <b>Từ đệm nuốt mất nhãn thật.</b> Bản đầu của <code>VoiceLexicon.FILLERS</code> có <code>"cai"</code>, <code>"cua"</code>, <code>"the"</code>, <code>"toi"</code>. Sau khi bỏ dấu chúng trùng tiền tố của “<b>cài</b> đặt”, “<b>cửa</b> sổ trời”, “<b>thể</b> thao”, “<b>tối</b> đa” ⇒ ba nhãn đó <b>không bao giờ khớp được nữa</b>, im lặng. <i>Cách sửa:</i> rút <code>FILLERS</code> còn 9 từ không đụng nhãn nào + thêm bài canh <code>khong tu dem nao la tien to cua mot cum trong tu vung</code> (<code>VoiceGrammarCoverageTest</code>) quét bằng máy.</li>
+<li><b>2026-09-14 · bug</b> — <b>“chuyển sang hồ sơ Vợ” không hiểu.</b> Datum <code>gear</code> mang nhãn <i>“Số”</i>, khớp ngay chữ “sơ” ở giữa câu rồi kết luận MISMATCH, tên hồ sơ đứng sau không bao giờ được xét. <i>Cách sửa:</i> quét <b>“cách hiểu đầu tiên CÓ NGHĨA”</b> thay vì “cụm khớp đầu tiên” (<code>VoiceIntentParser.parseTokens</code>) — không cần danh sách từ cấm.</li>
+<li><b>2026-09-14 · trade-off</b> — <b>“Mở hết kính” ra GÓI LỆNH, không ra nút <code>windows_all</code>.</b> Luật “cả câu là TÊN của việc” chọn cụm dài hơn. Được: gói gồm 4 nút <b>đã chạy thật trên xe</b>, còn <code>windows_all</code> ở mức CHƯA KIỂM. Mất: không gọi thẳng được nút gộp bằng lời — chấp nhận, nút đó vẫn bấm được trên thanh.</li>
+<li><b>2026-09-14 · sai lệch spec (nhỏ)</b> — Spec ban đầu ghi <code>OpenApp(label)</code>; thực tế đặt tên trường là <code>appName</code>. Lý do: <code>LauncherI18nContractTest</code> quét mọi lần đọc <code>.label</code> ở <code>:app</code>, và tên app do <code>PackageManager</code> cấp thì không thuộc diện đó — đổi tên trường rẻ hơn mở một mục loại trừ trong bài canh kia.</li>
+<li><b>2026-09-14 · sai lệch spec (nhỏ)</b> — Spec ghi <code>Control(id, value?)</code>; thực tế thêm <code>relative: Int = 0</code>. Lý do ở §4.3.</li>
+<li><b>2026-09-14 · hai phép đếm phải sửa</b> — <code>PackageQueriesContractTest</code> (5→6 chỗ gọi) và <code>LauncherActionTileWiringContractTest</code> (2→3 chỗ gọi <code>drawerController.openAppList()</code>). Cả hai <b>giữ nguyên tính chất được bảo vệ</b> (một cửa duy nhất tới <code>PackageManager</code>; không ai tự dựng lối riêng tới ngăn kéo) và đều ghi lý do ngay tại chỗ sửa.</li>
+<li><b>2026-09-14 · bẫy soạn thảo</b> — Hai lần compile hỏng vì viết <code>*/</code> bên trong KDoc (<code>res/values*/…</code>, <code>*"sạc"*/*"xăng"*</code>) ⇒ đóng comment sớm. Ghi lại vì nó tốn đúng hai vòng build.</li>
+<li><b>V-emu 2026-09-14 (bản 1.48/49, máy ảo)</b> [ĐO]: ô "Gõ lệnh chữ" ở Cài đặt › Hệ thống & quyền › Nâng cao; câu không dấu <code>dat nhiet do hai lam va bat den doc roi xem pin</code> → "Đặt Nhiệt độ = 25 · Bật Đèn đọc · …" (số nói rút gọn "hai lăm" = 25 đúng sau vá P1); câu <code>mo khoa cua va bat den doc</code> → hộp "Xác nhận: Bấm Mở khoá cửa — chưa kiểm trên xe? mở khoá toàn xe — nghe nhầm một câu là xe mở khoá giữa bãi đỗ", vế sau CHƯA chạy khi hộp còn mở (P0 đã vá). APK không xin RECORD_AUDIO (aapt2 = 0).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-14 <span class="pill ok">đã vá + chạy lại xanh</span></h3>
+<p class="muted">Senior review theo CLAUDE.md §5 (phạm vi: toàn bộ thay đổi chưa commit của V1 pha off-car).
+Kết luận scope: <b>R1–R8 ✅ đủ</b> — mỗi yêu cầu có mã, có bài canh, và có đường người dùng chạm tới thật qua ô
+<i>“Gõ lệnh chữ”</i>. Tám phát hiện, <b>tất cả đã vá tại chỗ</b>, không phát hiện nào chỉ ghi lại rồi để đó.</p>
+
+<table>
+<tr><th>#</th><th>Phát hiện</th><th>Vá</th></tr>
+<tr><td><span class="tag">P0</span></td>
+    <td><b>Câu ghép bắn vế sau trong lúc hộp hỏi còn mở</b> (OQ4). <i>“Mở khoá cửa và mở hết kính”</i> hạ hết kính
+        <b>trước</b> khi người lái kịp trả lời cho vế mở khoá — tức cổng xác nhận chỉ bảo vệ đúng một vế, còn vế nguy
+        hiểm đứng sau nó thì không ai chặn.</td>
+    <td><code>VoiceDispatcher.runFrom</code>: dừng cả chuỗi tại vế CONFIRM; đồng ý ⇒ chạy vế đó rồi đi tiếp; huỷ ⇒
+        dừng hẳn + <code>VoiceReply.cancelled</code> nói còn mấy vế không chạy. Hộp hỏi nay báo cả đường thoát
+        (<code>setOnCancelListener</code>) — nuốt nó là treo nửa cuối câu. Khoá bằng <code>VoiceDispatcherSafetyTest</code>.</td></tr>
+<tr><td><span class="tag p1">P1</span></td>
+    <td><b>Số nói rút gọn đọc hụt rồi bị <code>clamp</code> về <code>min</code></b>: <i>“đặt nhiệt độ hai lăm”</i> ra
+        <b>17 °C</b> (lạnh nhất) và vẫn báo “✓”. Câu không hiểu thì người ta nói lại; câu hiểu <b>sai</b> thì không.</td>
+    <td><code>VoiceLexicon</code>: <code>VI_TENS_SHORT</code> (<i>“hai lăm”</i> 25 · <i>“ba mốt”</i> 31 · <i>“hai tư”</i> 24)
+        + <i>“hăm …”</i> = 2x. Cố ý <b>không</b> nhận <i>“băm”</i> (bỏ dấu = <code>bam</code>, trùng hệt <b>“bấm”</b>) và
+        không nhận <i>“hai linh”</i>.</td></tr>
+<tr><td><span class="tag p1">P1</span></td>
+    <td><b>Lệnh nhạc báo “✓” khi chẳng có gì xảy ra.</b> <code>MediaBridge</code> chỉ điều khiển phiên nó đã thấy qua
+        <code>read()</code>; cầu giọng nói dựng một <code>MediaBridge</code> <b>mới</b> mỗi lần ⇒ transport bắn vào
+        <code>null</code>, im lặng.</td>
+    <td><code>MediaBridge.tx</code> tự <code>read()</code> một lần khi chưa có phiên và trả <code>Boolean</code>;
+        <code>runMedia</code> đọc kết quả → <code>VoiceReply.noMediaSession</code> (<i>“chưa có phiên nhạc nào”</i>).
+        Sửa ở cầu nên <b>mọi</b> chỗ gọi được hưởng, không phải nhớ gọi <code>read()</code> trước.</td></tr>
+<tr><td><span class="tag p1">P1</span></td>
+    <td><b>Từ vựng ~600 cụm dựng lại mỗi câu</b>, ngay trên thread giao diện (mỗi cụm một <code>Regex.split</code> +
+        một <code>Normalizer</code> NFD), trong khi danh mục là hằng số. Còn bị dựng <b>hai lần</b> cho một lần bấm
+        (xem trước + thi hành) — hai kết quả có thể lệch nhau.</td>
+    <td><code>VoiceGrammar.STATIC_HEAD/STATIC_TAIL/STATIC_SORTED</code> <code>by lazy</code> (đồng bộ sẵn ⇒ an toàn đa
+        luồng); chỉ hồ sơ/app dựng mỗi lần. <code>VoiceDispatcher.execute(intents)</code> chạy <b>chính</b> danh sách
+        vừa hiện. Thứ tự ghép giữ nguyên (nó là luật phân xử khi hai cụm dài bằng nhau) + bài canh chống rò rỉ giữa hai
+        lần gọi.</td></tr>
+<tr><td><span class="tag p2">P2</span></td>
+    <td><b>Nút “chưa kiểm trên xe” bắn mà câu trả lời không nói gì.</b> Trên thanh nút còn có <b>dấu</b> để nhìn; ở đây
+        chỉ có một chữ “✓” trơn — hứa hộ một nút chưa từng chạy thật.</td>
+    <td><code>VoiceReply.unverified</code> (đọc <code>CarCapabilities.needsBadge</code> / <code>ActionMacro.needsBadge</code>
+        — <b>cùng</b> luật với badge của UI, không dựng luật thứ hai): đuôi <i>“— chưa kiểm trên xe”</i> vào cả câu “✓”
+        lẫn hộp hỏi lại. <b>Vẫn bắn</b> như nút bấm: chặn theo mức bằng chứng là cho giọng nói một luật khác cho cùng
+        cái nút, mà cũng không an toàn hơn (thứ nguy hiểm nằm ở <code>VoiceRiskTable</code>).</td></tr>
+<tr><td><span class="tag p2">P2</span></td>
+    <td><b>Bốn câu đời thường không hiểu được</b> (thử 10 câu, 4 đỏ theo 4 kiểu khác nhau): <i>“mở cửa sổ”</i> → MISMATCH
+        (cụm <i>“sổ”</i> khớp nhãn <b>“Số”</b> của datum <code>gear</code>) · <i>“mở kính”</i> → không trỏ tới đâu ·
+        <i>“bài tiếp”</i> → NO_VERB · <i>“dừng chiếu”</i> → NO_OBJECT.</td>
+    <td>Mỗi kiểu một dòng ở <b>một chỗ</b>, không dòng nào là <code>if (id == "…")</code>: <code>VoiceSynonyms</code>
+        thêm <code>kinh/cua so/windows</code> → <code>windows_all</code> (việc CONFIRM ⇒ người lái thấy đúng hộp
+        <i>“hạ HẾT 4 kính?”</i> trước khi có gì xảy ra) và <code>chieu</code> → <code>cast</code>;
+        <code>VoiceGrammar.VERBS</code> thêm <i>“bài tiếp”</i>. Luật <b>dãy dài nhất thắng</b> giữ nguyên mọi cụm dài hơn
+        (kiểm bằng bài <i>“cụm kính ngắn không nuốt cụm kính dài”</i>).</td></tr>
+<tr><td><span class="tag p2">P2</span></td>
+    <td><b>Cụm hỏi chỉ nhận ở CUỐI câu</b> ⇒ <i>“pin còn bao nhiêu”</i> hiểu được mà <i>“còn bao nhiêu pin”</i> thì câm —
+        cùng một câu hỏi, đảo trật tự là im.</td>
+    <td><code>VoiceIntentParser.askAt</code>: cắt cụm hỏi ở <b>bất kỳ đâu</b> rồi đọc phần còn lại. Năm cụm trong
+        <code>READ_TAILS</code> đều là cụm hỏi thuần nên không nuốt câu ra lệnh nào; hai ca ngoài tập đóng
+        (<i>“12 x 15 bằng bao nhiêu”</i>, <i>“Thời tiết hôm nay thế nào”</i>) vẫn Unknown, có bài canh riêng.</td></tr>
+<tr><td><span class="tag p2">P2</span></td>
+    <td><b>Huỷ hộp hỏi lại thì im lặng</b> — người dùng không biết nửa sau của câu có chạy hay không.</td>
+    <td><code>VoiceReply.cancelled(i, remaining)</code> + <code>setOnCancelListener</code> (bấm ra ngoài / Back cũng là
+        “không đồng ý”), có chốt <code>single</code> để không gọi cả hai nhánh.</td></tr>
+</table>
+
+<h3>Pass 1 — phần KHÔNG vá (ghi lại, chờ owner)</h3>
+<ul>
+<li><span class="tag p2">P3</span> <i>“bật đèn”</i> / <i>“tắt hết đèn”</i>: Kachi không có nút “mọi đèn” ⇒ Unknown là
+  <b>đúng</b> (nói thẳng còn hơn tự chọn một cái đèn). Ngày có gói lệnh “tắt hết đèn”, câu này tự hiểu được vì từ vựng
+  <b>sinh</b> từ registry. Có bài canh giữ đúng hành vi này.</li>
+<li><span class="tag p2">P3</span> <i>“về bố cục 2 cột”</i>: bố cục chưa nằm trong tập đóng của giọng nói — họ hàng với
+  OQ1 (nhóm khả năng). Cần <code>VoiceIntent</code> mới ⇒ quyết định của owner, không tự thêm.</li>
+<li><span class="tag p2">P3</span> <code>VoiceGrammar.matchAt</code> vẫn quét tuyến tính cả 600 cụm cho từng vị trí từ
+  (~3–6 nghìn phép so sánh rẻ mỗi câu). Đủ nhanh cho một câu gõ tay; nếu tầng tiếng về và phải phân tích liên tục thì
+  đánh chỉ mục theo <b>từ đầu</b> là bước tiếp theo.</li>
+<li><span class="tag p2">P3</span> Tiếng: <code>VoiceReply</code> đã sẵn sàng cho TTS (chuỗi tử tế, có
+  <code>Read.aloud</code>) — vẫn khoá theo R8 tới khi §2.14 + K1–K3 xanh.</li>
+</ul>
+
+<h3>Pass 1 — kiểm lại sau khi vá</h3>
+<ul>
+<li><b>Test</b>: <code>:app:testDebugUnitTest :core:test :car-integration:test :vehicle-contracts:test
+  :offcar-planner:test --continue</code> → <b>0 đỏ</b> (core+app 2471 ca; +16 ca so với trước soát).</li>
+<li><b>§8 chỗ gọi</b>: mọi hàm mới có ≥1 chỗ gọi ngoài định nghĩa — <code>execute</code> · <code>cancelled</code> ·
+  <code>noMediaSession</code> · <code>unverified</code> · <code>askAt</code> · <code>STATIC_*</code> ·
+  <code>VI_TENS_SHORT</code>.</li>
+<li><b>§4.1 kích thước</b>: tệp lớn nhất 340 dòng (trần 500). <b>i18n</b>: <code>LauncherI18nContractTest</code> xanh,
+  không chuỗi tiếng Việt viết cứng nào thêm ở <code>:app</code> (mọi câu mới nằm ở <code>:core</code> hoặc
+  <code>strings_kachi.xml</code>).</li>
+<li><b>Bài canh phải sửa theo</b>: <code>VoiceCommandWiringContractTest</code> đổi mốc <code>media().play()</code> →
+  <code>val bridge = media()</code> + <code>bridge.play()</code>. Tính chất được bảo vệ <b>không đổi</b> (nhạc vẫn phải
+  đi qua <code>MediaBridge</code>), lý do ghi ngay tại chỗ sửa.</li>
+<li><b>Chưa làm được off-car</b>: mọi lệnh xe là no-op ⇒ phần “✓/✗ xe có nhận không” vẫn phải đo trên xe
+  (V-oncar §6 + T9). Bản vá này <b>không</b> đụng tầng tiếng (R8 còn nguyên, bài canh R8 vẫn xanh).</li>
+</ul>
+<p><b>Verdict Pass 1: APPROVED</b> — scope R1–R8 đủ, 0 test đỏ, không còn phát hiện [P0]–[P2] nào chưa vá. Còn lại đúng
+một cổng thật sự: <b>T9 — đo trên xe</b> (§2.14 + K1–K3), chưa mở được ở bàn làm việc.</p>
+
+</div></body>
+</html>

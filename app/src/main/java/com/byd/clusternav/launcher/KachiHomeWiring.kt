@@ -102,6 +102,10 @@ internal fun homePanels(
     shellUsable: () -> Boolean,
     goImmersive: () -> Unit,
     onPanelsChanged: () -> Unit,
+    /** V1 · R6 — mở ngăn kéo; CÙNG lambda mà [controlDock] nhận, không dựng đường thứ hai. */
+    openAppList: () -> Unit,
+    /** V1 · R6 — mở một app theo tên gói. */
+    openAppByPackage: (String) -> Boolean,
 ): HomePanels = HomePanels(
     activity = activity,
     rootFrame = rootFrame,
@@ -136,6 +140,8 @@ internal fun homePanels(
     onBootProfile = { name -> viewModel.setBootProfile(name) },
     shellUsable = shellUsable,
     goImmersive = goImmersive,
+    openAppList = openAppList,
+    openAppByPackage = openAppByPackage,
     onPanelsChanged = onPanelsChanged,
 )
 

@@ -425,4 +425,15 @@
         <item quantity="one">%1$d item not yet checked on the car</item>
         <item quantity="other">%1$d items not yet checked on the car</item>
     </plurals>
+
+    <!-- ══ V1 · text command trial (docs/specs/kachi-voice-command.html R6) ══════════════════════════ -->
+    <string name="kachi_voice_title">Type a command (voice trial)</string>
+    <string name="kachi_voice_note">No microphone yet: the listening layer is waiting for on-car measurements. Type the sentence exactly as you would say it — e.g. “turn on reading light”, “set temperature 22”, “close all”, “show battery”, “open Settings”.</string>
+    <string name="kachi_voice_hint">Say something to the car…</string>
+    <string name="kachi_voice_run">Run command</string>
+    <string name="kachi_voice_idle">Nothing run yet.</string>
+    <string name="kachi_voice_empty">Nothing typed.</string>
+    <string name="kachi_voice_confirm_title">Confirm</string>
+    <string name="kachi_voice_confirm_yes">Yes</string>
+    <string name="kachi_voice_confirm_no">Cancel</string>
 </resources>

@@ -1,0 +1,215 @@
+package com.byd.clusternav.launcher.voice
+
+/**
+ * ═══ V1 · CHUẨN HOÁ CHỮ + ĐỌC SỐ ═════════════════════════════════════════════════════════════════════════════
+ *
+ * Tầng "chữ thô → chuỗi từ so khớp được" — tách khỏi [VoiceGrammar] (vốn nói về *từ vựng của xe*) vì đây là việc
+ * của **tiếng Việt**, không phải của xe: nó đúng y như vậy dù bộ đăng ký có đổi hay không.
+ *
+ * Thuần Kotlin (`:core`, cấm `android.*`). `java.text.Normalizer` là JVM, không phải Android — cùng lệ với
+ * `java.util.Locale` mà `TelemetryReadout` đang dùng.
+ */
+object VoiceLexicon {
+
+    /**
+     * Một từ trong câu: [raw] giữ NGUYÊN VĂN (để trả lại tên bài hát/điểm đến đúng chữ hoa và dấu), [norm] là bản
+     * đã bỏ dấu + chữ thường (để so khớp).
+     *
+     * ## Vì sao phải giữ cả hai chứ không chuẩn hoá một lần rồi quên bản gốc
+     * [ĐO] mẫu câu Kiki §7(c): *"Mở bài Nồng nàn Hà Nội"*, *"Chỉ đường đến chợ Bến Thành"*. Phần đuôi của những câu
+     * đó là **dữ liệu của người dùng**, phải đi tiếp nguyên văn tới app nhạc/dẫn đường. Trả về `"nong nan ha noi"`
+     * là tự tay làm hỏng chính thứ mình vừa nhận.
+     */
+    data class Token(val raw: String, val norm: String)
+
+    /** Ký tự được coi là ngắt từ (mọi thứ không phải chữ/số). Dấu `%` giữ lại vì nó là ĐƠN VỊ, không phải dấu câu. */
+    private val SPLIT = Regex("[^\\p{L}\\p{N}%]+")
+
+    /** Cắt câu thành từ, giữ song song bản gốc và bản chuẩn hoá. Từ rỗng bị loại. */
+    fun tokenize(text: String): List<Token> =
+        text.split(SPLIT).filter { it.isNotBlank() }.map { Token(it, deaccent(it)) }
+
+    /**
+     * Bỏ dấu + chữ thường: `"Nhiệt độ"` → `"nhiet do"`.
+     *
+     * ## Vì sao bỏ dấu là BẮT BUỘC, không phải tiện tay
+     * Chuỗi vào tầng này có ba nguồn khác nhau và **không nguồn nào đảm bảo dấu**: bàn phím xe (người ta gõ nhanh,
+     * thường không dấu), tương lai là ASR (bảng token của một mô hình nhỏ hiếm khi phủ đủ 134 tổ hợp dấu tiếng
+     * Việt), và nhật ký/kịch bản test. So khớp có dấu thì *"bat den doc"* trượt sạch, mà đó lại là cách gõ phổ biến
+     * nhất trên xe.
+     *
+     * `Normalizer` NFD tách được dấu thanh/dấu mũ, **nhưng không tách `đ`** (nó là một chữ cái riêng, không phải
+     * `d` + dấu) ⇒ phải thay tay, không thì *"đèn"* → *"den"* hỏng thành *"đen"* và mọi nhãn có `đ` đều trượt.
+     */
+    fun deaccent(s: String): String {
+        val lower = s.lowercase()
+        val nfd = java.text.Normalizer.normalize(lower, java.text.Normalizer.Form.NFD)
+        val sb = StringBuilder(nfd.length)
+        for (ch in nfd) {
+            when {
+                ch == 'đ' -> sb.append('d')
+                // Dải dấu kết hợp (combining diacritical marks) — bỏ hẳn.
+                ch.code in 0x0300..0x036F -> Unit
+                else -> sb.append(ch)
+            }
+        }
+        return sb.toString()
+    }
+
+    // ── SỐ BẰNG CHỮ → SỐ ─────────────────────────────────────────────────────────────────────────
+
+    private val VI_UNITS = mapOf(
+        "khong" to 0, "mot" to 1, "hai" to 2, "ba" to 3, "bon" to 4, "nam" to 5,
+        "sau" to 6, "bay" to 7, "tam" to 8, "chin" to 9,
+    )
+
+    /**
+     * Biến thể của hàng đơn vị **khi đứng sau `mươi`** — tiếng Việt đổi từ, không đổi số: 21 = *"hai mươi mốt"*,
+     * 24 = *"hai mươi tư"*, 25 = *"hai mươi lăm"*. Thiếu bảng này thì *"đặt nhiệt độ hai mươi tư"* không đọc được,
+     * mà 24 °C là mức người ta nói hằng ngày.
+     */
+    private val VI_AFTER_TEN = mapOf("mot" to 1, "tu" to 4, "lam" to 5, "linh" to 0, "le" to 0)
+
+    /**
+     * Hàng đơn vị **chỉ có nghĩa khi đi sau hàng chục** — dùng cho lối nói rút gọn *"hai lăm"* = 25, *"ba mốt"* =
+     * 31, *"hai tư"* = 24 (bỏ hẳn chữ *"mươi"*, cách nói thường ngày hơn cả bản đầy đủ).
+     *
+     * ## [SOÁT P1] Vì sao đây là lỗi phải chữa, không phải "chưa hỗ trợ"
+     * Thiếu bảng này thì *"đặt nhiệt độ hai lăm"* đọc ra số **2**, rồi `ControlDef.clamp` kéo nó về `min` = **17 °C**
+     * — tức máy **làm sai một việc** và vẫn báo *"✓ Đặt Nhiệt độ = 17"*. Một câu không hiểu được thì người ta nói
+     * lại; một câu hiểu SAI thành số lạnh nhất thì không ai kịp nhận ra trước khi xe lạnh ngắt.
+     *
+     * ⚠ Cố ý **không** nhận `linh`/`le` ở đây: *"hai linh"* không phải một con số (nó là nửa của *"hai linh năm"* =
+     * 205), nhận vào sẽ đẻ ra 20 từ một câu chưa nói xong.
+     */
+    private val VI_TENS_SHORT = mapOf("mot" to 1, "tu" to 4, "lam" to 5)
+
+    /**
+     * *"hăm"* = **hai mươi** rút gọn (*"hăm bốn"* = 24, *"hăm lăm"* = 25, *"hăm mốt"* = 21).
+     *
+     * ⚠ KHÔNG thêm *"băm"* (= ba mươi) vào đây: bỏ dấu xong nó là `"bam"`, trùng hệt **"bấm"** — một từ người ta
+     * dùng để *ra lệnh*. Đổi một động từ thành con số là đúng họ lỗi mà [FILLERS] đã phải rút ngắn vì nó.
+     */
+    private const val HAM = "ham"
+
+    private val EN_UNITS = mapOf(
+        "zero" to 0, "one" to 1, "two" to 2, "three" to 3, "four" to 4, "five" to 5,
+        "six" to 6, "seven" to 7, "eight" to 8, "nine" to 9, "ten" to 10, "eleven" to 11,
+        "twelve" to 12, "thirteen" to 13, "fourteen" to 14, "fifteen" to 15, "sixteen" to 16,
+        "seventeen" to 17, "eighteen" to 18, "nineteen" to 19,
+    )
+
+    private val EN_TENS = mapOf(
+        "twenty" to 20, "thirty" to 30, "forty" to 40, "fifty" to 50,
+        "sixty" to 60, "seventy" to 70, "eighty" to 80, "ninety" to 90,
+    )
+
+    /**
+     * Cụm nghĩa là "hết cỡ" / "thấp nhất" — trả [MAX] / [MIN] để chỗ gọi kẹp theo `ControlDef.min/max`.
+     *
+     * ⚠ Khai bằng **chuỗi từ**, không phải một từ: sau khi bỏ dấu thì *"tối"* (đa) và *"tôi"* (đại từ, nằm trong
+     * [FILLERS]) **trùng hệt nhau** = `"toi"`. Chỉ nhận khi có đủ từ thứ hai (`toi da`) thì hai nghĩa mới tách được;
+     * bắt một từ là *"bật đèn cho tôi"* biến thành *"bật đèn hết cỡ"*.
+     */
+    private val MAX_PHRASES = listOf(listOf("toi", "da"), listOf("het", "co"), listOf("max"), listOf("maximum"))
+    private val MIN_PHRASES = listOf(listOf("toi", "thieu"), listOf("nho", "nhat"), listOf("min"), listOf("minimum"))
+
+    /** Sentinel: "hết cỡ" — chỗ gọi thay bằng `ControlDef.max`. */
+    const val MAX = Int.MAX_VALUE
+
+    /** Sentinel: "thấp nhất" — chỗ gọi thay bằng `ControlDef.min`. */
+    const val MIN = Int.MIN_VALUE
+
+    /** Kết quả đọc số: [value] (hoặc [MAX]/[MIN]) và số từ đã ăn. */
+    data class Num(val value: Int, val consumed: Int)
+
+    /**
+     * Đọc một con số bắt đầu tại [i] trong [t]. Trả `null` nếu chỗ đó không phải số.
+     *
+     * Nhận: chữ số thuần (`"22"`, `"80%"`), số bằng chữ tiếng Việt tới 99 (*"hai mươi hai"*, *"ba mươi mốt"*,
+     * *"mười"*), tiếng Anh tới 99 (*"twenty two"*, `"twenty-two"` đã thành hai từ sau [tokenize]), và các cụm
+     * "hết cỡ / tối đa / tối thiểu".
+     */
+    @Suppress("ReturnCount")
+    fun readNumber(t: List<Token>, i: Int): Num? {
+        if (i !in t.indices) return null
+        val w = t[i].norm
+
+        // "tối đa" / "tối thiểu" / "hết cỡ" — khớp NGUYÊN cụm (xem KDoc [MAX_PHRASES]).
+        MAX_PHRASES.firstOrNull { phraseAt(t, i, it) }?.let { return Num(MAX, it.size) }
+        MIN_PHRASES.firstOrNull { phraseAt(t, i, it) }?.let { return Num(MIN, it.size) }
+
+        // Chữ số thuần (cho phép hậu tố % hoặc đơn vị dính liền bị bỏ bởi tokenize).
+        val digits = w.trimEnd('%')
+        digits.toIntOrNull()?.let { return Num(it, 1) }
+
+        // Tiếng Anh.
+        EN_UNITS[w]?.let { return Num(it, 1) }
+        EN_TENS[w]?.let { tens ->
+            val next = t.getOrNull(i + 1)?.norm
+            val unit = EN_UNITS[next]
+            return if (unit != null && unit < 10) Num(tens + unit, 2) else Num(tens, 1)
+        }
+
+        // Tiếng Việt rút gọn: "hăm <đơn vị>" = 21..29 (xem KDoc [HAM]).
+        if (w == HAM) {
+            val next = t.getOrNull(i + 1)?.norm
+            val add = next?.let { VI_AFTER_TEN[it] ?: VI_UNITS[it] }
+            return if (add != null) Num(20 + add, 2) else Num(20, 1)
+        }
+
+        // Tiếng Việt: "mười" đứng đầu = 10..19.
+        if (w == "muoi") {
+            val next = t.getOrNull(i + 1)?.norm
+            val unit = next?.let { VI_AFTER_TEN[it] ?: VI_UNITS[it] }
+            return if (unit != null) Num(10 + unit, 2) else Num(10, 1)
+        }
+
+        // Tiếng Việt: "<đơn vị> mươi [<đơn vị>]" = 20..99; "<đơn vị>" đơn lẻ = 0..9.
+        val unit = VI_UNITS[w] ?: return null
+        if (t.getOrNull(i + 1)?.norm == "muoi") {
+            val tail = t.getOrNull(i + 2)?.norm
+            val add = tail?.let { VI_AFTER_TEN[it] ?: VI_UNITS[it] }
+            return if (add != null) Num(unit * 10 + add, 3) else Num(unit * 10, 2)
+        }
+        // Rút gọn: "<đơn vị> mốt/tư/lăm" = 21/24/25… (xem KDoc [VI_TENS_SHORT]). Chỉ áp khi hàng chục ≥ 2 vì
+        // *"một lăm"* không ai nói (số 15 là *"mười lăm"*, đã bắt ở nhánh trên).
+        if (unit >= 2) {
+            VI_TENS_SHORT[t.getOrNull(i + 1)?.norm]?.let { return Num(unit * 10 + it, 2) }
+        }
+        return Num(unit, 1)
+    }
+
+    /** Cụm [words] có nằm đúng tại vị trí [i] của [t] không. */
+    fun phraseAt(t: List<Token>, i: Int, words: List<String>): Boolean =
+        words.indices.all { k -> t.getOrNull(i + k)?.norm == words[k] }
+
+    /**
+     * Từ ĐỆM bỏ qua ở đầu câu và ngay sau động từ.
+     *
+     * ## ⚠⚠ Danh sách này phải NGẮN, và mỗi từ phải qua được bài canh tiền tố
+     * Bỏ dấu xong thì tiếng Việt **đụng nhau rất nhiều**: `"cái"` = `"cài"` (⇒ nuốt mất *"cài đặt"*), `"của"` =
+     * `"cửa"` (⇒ nuốt mất *"cửa sổ trời"*), `"thể"` = `"thế"` = `"the"` (⇒ nuốt mất *"thể thao"*), `"tối"` =
+     * `"tôi"`. Một từ đệm trùng **tiền tố** của một cụm trong từ vựng sẽ làm cụm đó **không bao giờ khớp được
+     * nữa** — im lặng, không ai đỏ. Vì thế `VoiceGrammarCoverageTest.khong tu dem nao la tien to cua mot cum
+     * trong tu vung` quét bằng máy: thêm một từ đệm ăn mất một nhãn ⇒ test ĐỎ ngay.
+     */
+    val FILLERS: Set<String> = setOf(
+        "kachi", "oi", "hay", "giup", "gium", "vui", "long", "please", "just",
+    )
+
+    /**
+     * Cụm HỎI — gặp là chuyển cả câu thành lệnh ĐỌC, cắt cụm này ra rồi đọc phần còn lại
+     * (`VoiceIntentParser.askAt`).
+     *
+     * [ĐO] mẫu câu Kiki §7(c) #31/#38/#41 đều có hình dạng `<X> hôm nay/bao nhiêu/thế nào?` — người Việt hỏi xe
+     * bằng cụm hỏi chứ không bằng động từ đứng đầu. Không có bảng này thì *"pin còn bao nhiêu"* rơi vào NO_VERB.
+     *
+     * ⚠ Tên cũ là *"đuôi"* vì bản đầu chỉ nhận ở CUỐI câu — nay nhận ở **bất kỳ đâu** (*"còn bao nhiêu pin"* cũng
+     * là câu hỏi). Giữ nguyên tên hằng để khỏi đụng các chỗ đang đọc nó; ý nghĩa thì đọc ở đây.
+     */
+    val READ_TAILS: List<List<String>> = listOf(
+        listOf("bao", "nhieu"), listOf("the", "nao"), listOf("ra", "sao"),
+        listOf("how", "much"), listOf("how", "many"),
+    )
+}

@@ -63,6 +63,13 @@ class HomePanels(
     private val onBootProfile: (String?) -> Unit = {},
     private val shellUsable: () -> Boolean,
     private val goImmersive: () -> Unit,
+    /**
+     * V1 · R6 — mở NGĂN KÉO ứng dụng. Cùng lambda mà thanh nút đang dùng (`KachiHomeWiring.controlDock`), chuyển
+     * thẳng xuống [SettingsDeps.openAppList]; lớp này không tự biết ngăn kéo nằm ở đâu.
+     */
+    private val openAppList: () -> Unit = {},
+    /** V1 · R6 — mở một app theo tên gói (đường `AppOpener.openByIntent`). */
+    private val openAppByPackage: (String) -> Boolean = { false },
     /** Báo "có lớp phủ nào đang mở" đổi — để nút ⇄ nổi (OverlayHeads) ẩn/hiện theo (không đè lên bảng Cài đặt). */
     private val onPanelsChanged: () -> Unit = {},
 ) {
@@ -147,6 +154,10 @@ class HomePanels(
             onBootProfile = { name -> onBootProfile(name) },
             // Owner 2026-09-14 "chưa thấy hồ sơ gắn với bố cục chỗ nào": thẻ hồ sơ nói ra bố cục của TỪNG hồ sơ.
             profileSummary = profileSummary,
+            // V1 · R6 — ba cổng cho đường thử lệnh bằng chữ; xem KDoc [SettingsDeps.openAppList].
+            openAppList = openAppList,
+            openAppByPackage = openAppByPackage,
+            openSettingsGroup = { g -> openSettings(g) },
         )
         val panel = SettingsPanel(activity, deps) { closeSettings() }
         settingsPanel = panel

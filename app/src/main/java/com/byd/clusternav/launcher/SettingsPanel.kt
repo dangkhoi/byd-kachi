@@ -95,6 +95,18 @@ class SettingsDeps(
     val onBootProfile: (String?) -> Unit,
     /** Câu tóm tắt bố cục của một hồ sơ (tên gốc) — thẻ hồ sơ nói ra nó giữ gì (owner 2026-09-14). */
     val profileSummary: (String) -> String,
+    /**
+     * V1 · R6 — ba cổng mà **đường thử lệnh bằng chữ** ([VoiceTextConsole]) cần, và chỉ nó cần.
+     *
+     * Chúng là ba **đường đã có sẵn** (mở ngăn kéo · mở một app theo gói · nhảy sang một nhóm Cài đặt), trước đây
+     * chỉ Activity với `HomePanels` chạm tới. Nối qua đây thay vì cho màn Cài đặt tự dựng lại: một đường thứ hai
+     * tới ngăn kéo là đúng thứ mà KDoc `KachiHomeWiring.controlDock` giải thích vì sao phải tránh.
+     */
+    val openAppList: () -> Unit,
+    /** Mở một app theo TÊN GÓI (đường `AppOpener.openByIntent` mà ngăn kéo đang dùng). `false` = không mở được. */
+    val openAppByPackage: (String) -> Boolean,
+    /** Nhảy màn Cài đặt sang một nhóm khác (bảng đang mở thì chỉ đổi nhóm — xem `HomePanels.openSettings`). */
+    val openSettingsGroup: (SettingsGroup) -> Unit,
 )
 
 /**
