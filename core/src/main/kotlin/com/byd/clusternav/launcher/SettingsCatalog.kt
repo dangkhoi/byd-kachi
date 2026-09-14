@@ -134,6 +134,14 @@ object SettingsCatalog {
                 "nó về 0 khi tiến trình chết. Một lựa chọn mà máy tự đổi sau lưng thì không phải cấu hình; vòng kiểm " +
                 "quyền tự bật lại mỗi lần mở launcher",
         )
+        put(
+            "sherpa_model_id",
+            "trạng thái THEO-MÁY, không phải cấu hình theo hồ sơ — là mã mô hình ASR đã TẢI VỀ máy NÀY (`VoiceModelStore`, " +
+                "tệp `kachi_voice`). Việc chọn/tải mô hình làm TRỰC TIẾP trên màn Cài đặt giọng nói (`VoiceModelSettings`, " +
+                "có nút tải + tiến độ), không phải một dòng bật/tắt trong nhóm cài đặt; bày nó ra như một dòng thường thì " +
+                "người dùng đổi được sang mã mô hình chưa tải về và làm hỏng đường nhận giọng. Theo máy như OTA/chẩn đoán, " +
+                "KHÔNG đi theo hồ sơ (chép hồ sơ sang xe khác không mang theo tệp mô hình 78 MB)",
+        )
     }
 
     /**
@@ -155,6 +163,11 @@ object SettingsCatalog {
                 "`kachi_workspace`: tệp đó đi theo hồ sơ (chụp–áp, nhân bản, xoá hồ sơ) còn cái này thì **không " +
                 "được** đi đâu cả — một cửa mở-60-phút mà bị chép sang hồ sơ khác, hoặc sống lại qua một lượt áp " +
                 "ảnh chụp, là đúng thứ mà cửa sổ thời gian sinh ra để chặn (`TestBridgeWindow`)",
+        "kachi_voice" to
+            "Giọng nói — chỉ chứa `sherpa_model_id` (mã mô hình ASR đã tải về máy NÀY, xem `VoiceModelStore`). Cố ý ĐỂ " +
+                "RIÊNG khỏi `kachi_workspace`: nó là trạng thái THEO-MÁY (mô hình 78 MB nằm trên đĩa máy này), KHÔNG đi " +
+                "theo hồ sơ — chép/áp một hồ sơ sang xe khác không được kéo theo lựa chọn mô hình vì tệp mô hình có thể " +
+                "chưa tải ở xe kia. Cùng lẽ với `kachi_test_bridge`: tệp theo-máy thì không nằm trong tệp theo-hồ-sơ",
     )
 
     /**

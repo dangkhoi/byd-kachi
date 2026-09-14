@@ -7,243 +7,204 @@ import com.byd.clusternav.net.HttpConn
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
-import java.util.zip.ZipInputStream
 
 /**
- * ═══ V1 pha NGHE · TẢI · KIỂM · GIẢI NÉN MÔ HÌNH NHẬN DẠNG ═══════════════════════════════════════════════════
+ * ═══ V2 pha NGHE · TẢI · KIỂM mô hình sherpa-onnx (NHIỀU tệp rời) ════════════════════════════════════════════
  *
- * Spec `docs/specs/kachi-voice-command.html` **R9**. Bản kê (URL · sha256 · cỡ · tệp bắt buộc · luật chống leo
- * thư mục) nằm ở `:core` ([VoiceModelManifest]) và có bài canh off-car; tệp này chỉ **thi hành**.
+ * Spec `docs/specs/kachi-voice-engine-v2.html` §Design. Bản kê (URL · sha256 · cỡ từng tệp · model A/B) nằm ở
+ * `:core` ([SherpaModelCatalog]) và có bài canh off-car; tệp này chỉ **thi hành**. Thay bản Vosk (một gói zip)
+ * bằng đường **nhiều tệp ONNX rời** — không giải nén, mỗi tệp tự mang sha256 + kích thước.
  *
- * ## Bốn tính chất, mỗi cái chữa một ca đã thấy trong dự án
- *  1. **Không bao giờ để lại một thư mục nửa vời.** Giải nén vào [TMP_DIR] rồi mới đổi tên sang thư mục thật.
- *     Tiến trình bị giết giữa chừng (chuyện thường trên đầu xe) chỉ để lại rác trong `.tmp`, còn thư mục mô hình
- *     thì hoặc chưa có, hoặc đủ. Ca "có thư mục mà thiếu ruột" làm Vosk ngã bằng `KALDI_ERR` **trong mã native**
- *     — không `try/catch` Kotlin nào đỡ được trên vài ROM.
- *  2. **Băm TRONG lúc tải, không băm lại sau.** Tệp 32 MB; đọc lại lượt thứ hai là tốn gấp đôi I/O trên bộ nhớ
- *     của đầu xe. `DigestInputStream` cho cả hai kết quả trong một lượt.
- *  3. **Hỏng thì XOÁ rồi nói ra.** Giữ lại một gói hỏng để "lần sau thử tiếp" nghe hợp lý cho tới khi nó chiếm
- *     32 MB vĩnh viễn trên một máy 16 GB và không ai biết tại sao. Cũng là lý do [remove] có mặt.
- *  4. **Từ điển rút MỘT lần rồi ghi cạnh mô hình.** `graph/Gr.fst` nặng 25 MB; đọc header của nó mỗi lần mở
- *     phiên nghe là đọc thừa. Ghi ra `graph/words.txt` — đúng chỗ và đúng tên mà Vosk sẽ tự tìm nếu về sau ta
- *     đổi sang mô hình có sẵn tệp ấy ([VoiceModelManifest.WORDS_FILE]).
+ * ## Bốn tính chất giữ nguyên tinh thần R9
+ *  1. **Không để lại thư mục nửa vời.** Tải vào [TMP_DIR] rồi mới đổi tên sang thư mục thật. Tiến trình bị giết
+ *     giữa chừng chỉ để rác trong `.staging`; thư mục mô hình hoặc chưa có, hoặc đủ tệp — onnxruntime không ngã
+ *     bằng lỗi native khó bắt.
+ *  2. **Băm TRONG lúc tải.** `DigestInputStream`-kiểu: đọc một lượt vừa ghi vừa băm, so ngay với bản ghim.
+ *  3. **Hỏng thì XOÁ rồi nói ra.** Không giữ tệp cụt chiếm chỗ.
+ *  4. **Từ chối model chưa ghim.** [SherpaModel.downloadable] = false (vd bản gated chưa mirror) ⇒ báo lý do,
+ *     KHÔNG tải mù (fail-safe — CLAUDE.md §4.1).
  *
- * ⚠ Mọi hàm có I/O ở đây **chặn** ⇒ chỗ gọi chịu trách nhiệm chạy trên luồng nền (xem `VoiceModelSettings`).
+ * ⚠ Mọi hàm có I/O ở đây **chặn** ⇒ chỗ gọi chạy trên luồng nền (xem [VoiceModelSettings]).
  */
 object VoiceModelStore {
 
     private const val TAG = "KachiVoiceModel"
 
-    /** Thư mục dựng dở — đổi tên sang thư mục thật ở bước cuối. Dấu `.` đầu để nó không bị nhầm là mô hình. */
-    private const val TMP_DIR = "vosk/.staging"
+    /** Thư mục dựng dở — đổi tên sang thư mục thật ở bước cuối. Dấu `.` đầu để không bị nhầm là mô hình. */
+    private const val TMP_DIR = "sherpa/.staging"
 
-    /** Thời hạn một lượt đọc khi tải mô hình. Dài hơn đọc JSON vì mỗi lượt là một khối 64 KB qua mạng xe. */
     private const val READ_TIMEOUT_MS = 60_000
-
     private const val MB = 1024L * 1024L
+    private const val SPACE_MARGIN_BYTES = 40L * MB
 
-    /** Chỗ thở phải còn lại SAU khi cài xong — xem [spaceError]. */
-    private const val SPACE_MARGIN_BYTES = 20L * 1024L * 1024L
-
-    /** Tiến trình cài mô hình — một dòng chữ cho người dùng, không phải một enum để máy đọc. */
+    /** Tiến trình cài mô hình — một dòng chữ cho người dùng. Giữ nguyên các nhánh để chữ trong Cài đặt khỏi đổi. */
     sealed interface Step {
         /** Đang tải; [percent] = `-1` khi máy chủ không nói tổng cỡ. */
         data class Downloading(val percent: Int) : Step
         object Verifying : Step
         object Extracting : Step
-        /** Xong. [words] = số từ trong từ điển mô hình — con số duy nhất chứng minh mô hình dùng được thật. */
-        data class Done(val words: Int) : Step
+        /** Xong — [files] = số tệp đã đặt đúng chỗ. */
+        data class Done(val files: Int) : Step
         data class Failed(val reason: String) : Step
     }
 
-    /** Thư mục mô hình đã cài. */
-    fun dir(ctx: Context): File = File(ctx.applicationContext.filesDir, VoiceModelManifest.DIR)
+    /** Model đang chọn (A/B) — lưu ở prefs riêng, mặc định bản license-sạch tải-được ([SherpaModelCatalog.DEFAULT_ID]). */
+    fun selected(ctx: Context): SherpaModelCatalog.SherpaModel =
+        SherpaModelCatalog.byId(prefs(ctx).getString(KEY_MODEL, null))
 
-    /**
-     * Mô hình đã sẵn sàng chưa — kiểm **từng tệp bắt buộc**, không chỉ kiểm thư mục có tồn tại.
-     *
-     * Xem KDoc lớp, tính chất (1): một thư mục thiếu ruột là cách chắc chắn nhất để ngã trong mã native.
-     */
-    fun isReady(ctx: Context): Boolean {
-        val root = dir(ctx)
-        if (!root.isDirectory) return false
-        return VoiceModelManifest.REQUIRED_FILES.all { File(root, it).isFile } &&
-            File(root, VoiceModelManifest.WORDS_FILE).isFile
+    /** Đổi model đang chọn (Cài đặt A/B). Không tải — chỉ ghi lựa chọn; lần bật mic sau nạp bản mới nếu đã cài. */
+    fun select(ctx: Context, id: String) {
+        prefs(ctx).edit().putString(KEY_MODEL, id).apply()
     }
 
-    /** Cỡ thật đang chiếm trên đĩa (byte) — để màn Cài đặt nói đúng con số, không đọc lại [VoiceModelManifest]. */
+    /** Thư mục mô hình đang chọn. */
+    fun dir(ctx: Context): File = File(ctx.applicationContext.filesDir, selected(ctx).dir)
+
+    /** Đường dẫn tuyệt đối một tệp thành phần trong thư mục mô hình đang chọn. */
+    fun filePath(ctx: Context, name: String): String = File(dir(ctx), name).absolutePath
+
+    /**
+     * Mô hình đang chọn đã sẵn sàng chưa — kiểm **từng tệp** (tồn tại + khác rỗng), không chỉ kiểm thư mục.
+     * Một thư mục thiếu tệp là cách chắc chắn nhất để onnxruntime ngã trong mã native.
+     */
+    fun isReady(ctx: Context): Boolean {
+        val model = selected(ctx)
+        val root = dir(ctx)
+        if (!root.isDirectory) return false
+        return model.files.all { File(root, it.name).let { f -> f.isFile && f.length() > 0L } }
+    }
+
+    /** Cỡ thật đang chiếm trên đĩa (byte) cho model đang chọn. */
     fun sizeOnDisk(ctx: Context): Long =
         dir(ctx).walkTopDown().filter { it.isFile }.sumOf { it.length() }
 
-    /**
-     * Từ điển mô hình. Rỗng ⇒ chưa cài hoặc tệp hỏng (chỗ gọi **không** được bật mic — xem
-     * [VoicePhrases.build]).
-     *
-     * ## [SOÁT Pass 2 · P2] Nhớ lại giữa các lần gọi, và khoá nhớ là **dấu vết tệp**
-     * 19.529 dòng được đọc lại ở mọi chỗ hỏi: mỗi lần mở một phiên nghe (luồng nền — không sao), **và** mỗi lần
-     * dựng trang *Nâng cao* của Cài đặt cùng mỗi bước `Done` của lượt tải (`VoiceModelSettings.statusText`) —
-     * hai chỗ sau chạy trên **luồng vẽ**. Nhớ theo `đường dẫn|lastModified|length` chứ không theo một cờ boolean:
-     * gỡ rồi cài lại cho ra một tệp khác, và một bộ nhớ đệm không tự biết điều đó sẽ phục vụ từ điển của mô hình
-     * đã xoá.
-     */
-    fun words(ctx: Context): Set<String> {
-        val f = File(dir(ctx), VoiceModelManifest.WORDS_FILE)
-        if (!f.isFile) { cached = null; return emptySet() }
-        val stamp = "${f.absolutePath}|${f.lastModified()}|${f.length()}"
-        cached?.let { if (it.first == stamp) return it.second }
-        val words = runCatching { f.bufferedReader().useLines { seq -> seq.filter { it.isNotBlank() }.toSet() } }
-            .onFailure { Log.w(TAG, "đọc từ điển hỏng", it) }
-            .getOrDefault(emptySet())
-        if (words.isNotEmpty()) cached = stamp to words
-        return words
-    }
-
-    /** Từ điển đã đọc + dấu vết của tệp sinh ra nó. `@Volatile`: đọc từ luồng vẽ lẫn luồng nghe. */
-    @Volatile private var cached: Pair<String, Set<String>>? = null
-
-    /** Gỡ mô hình (và mọi rác dựng dở). Trả `true` nếu sau lệnh này trên đĩa không còn gì. */
+    /** Gỡ mô hình đang chọn (và mọi rác dựng dở). Trả `true` nếu sau lệnh này thư mục model không còn. */
     fun remove(ctx: Context): Boolean {
         val files = ctx.applicationContext.filesDir
-        cached = null                                 // từ điển trong bộ nhớ thuộc về tệp sắp bị xoá
-        val ok = File(files, VoiceModelManifest.DIR).deleteRecursively()
+        val ok = dir(ctx).deleteRecursively()
         File(files, TMP_DIR).deleteRecursively()
         return ok
     }
 
     /**
-     * Tải · kiểm · giải nén. **CHẶN** — gọi trên luồng nền.
-     *
-     * Thử lần lượt mọi URL trong [VoiceModelManifest.URLS]: nguồn đầu chết thì đi nguồn sau, và **mọi** nguồn
-     * đều phải qua đúng một phép kiểm sha256 (một đường lùi dễ dãi hơn đường chính là một lỗ, không phải một
-     * đường lùi).
+     * Tải · kiểm từng tệp · đặt vào chỗ. **CHẶN** — gọi trên luồng nền.
      */
     @Suppress("ReturnCount")
     fun install(ctx: Context, onStep: (Step) -> Unit) {
         val app = ctx.applicationContext
-        if (isReady(app)) { onStep(Step.Done(words(app).size)); return }
-        // [SOÁT Pass 2 · P1] MỘT lượt cài tại một thời điểm. Nút trong Cài đặt tự khoá lúc đang chạy, nhưng nó
-        // chỉ là một `TextView` của **trang đang dựng**: đóng màn Cài đặt rồi mở lại (hoặc một lượt
-        // `invalidateSettings` do đổi hồ sơ) cho ra một nút MỚI, bật sẵn, trong khi luồng cũ vẫn đang tải. Hai
-        // luồng cùng ghi `model.zip` rồi cùng `remove()` của nhau = hai lượt tải 32 MB, cả hai đều hỏng sha.
+        val model = selected(app)
+        if (isReady(app)) { onStep(Step.Done(model.files.size)); return }
+        if (!model.downloadable) {
+            onStep(Step.Failed(Lang.t(
+                "mô hình '${model.label}' chưa có nguồn tải (chờ mirror) — chọn bản khác",
+                "model '${model.label}' has no download source yet (awaiting mirror) — pick another",
+            )))
+            return
+        }
         if (!installing.compareAndSet(false, true)) {
             onStep(Step.Failed(Lang.t("đang cài rồi — đợi lượt này xong", "an install is already running")))
             return
         }
         try {
-            spaceError(app)?.let { onStep(Step.Failed(it)); return }
-            remove(app)                               // dọn rác của lần hỏng trước TRƯỚC khi chiếm thêm 32 MB
-            val staging = File(app.filesDir, TMP_DIR)
-            val zip = File(staging, "model.zip")
-            staging.mkdirs()
-            var lastError: String = Lang.t("không có nguồn nào", "no source available")
-            for (url in VoiceModelManifest.URLS) {
-                val err = tryOne(app, url, zip, staging, onStep)
-                if (err == null) { onStep(Step.Done(words(app).size)); return }
-                Log.w(TAG, "nguồn $url hỏng: $err")
-                lastError = err
-            }
+            spaceError(app, model)?.let { onStep(Step.Failed(it)); return }
             remove(app)
-            onStep(Step.Failed(lastError))
+            val staging = File(app.filesDir, TMP_DIR)
+            val out = File(staging, model.id)
+            out.deleteRecursively(); out.mkdirs()
+
+            val total = model.totalBytes
+            var done = 0L
+            for (mf in model.files) {
+                val safe = requireSafe(mf.name) ?: run {
+                    onStep(Step.Failed(Lang.t(
+                        "tên tệp không hợp lệ: ${mf.name}", "invalid file name: ${mf.name}",
+                    ))); return
+                }
+                val target = File(out, safe)
+                val err = fetch(mf, target, total, done, onStep)
+                if (err != null) { out.deleteRecursively(); onStep(Step.Failed(err)); return }
+                done += mf.bytes
+            }
+
+            onStep(Step.Verifying)
+            val missing = model.files.filterNot { File(out, it.name).let { f -> f.isFile && f.length() > 0L } }
+            if (missing.isNotEmpty()) {
+                out.deleteRecursively()
+                onStep(Step.Failed(Lang.t("thiếu tệp: ${missing.first().name}", "missing ${missing.first().name}")))
+                return
+            }
+
+            onStep(Step.Extracting)   // "đang hoàn tất" — đổi tên là bước làm mô hình "xuất hiện"
+            val dest = dir(app)
+            dest.parentFile?.mkdirs()
+            dest.deleteRecursively()
+            if (!out.renameTo(dest)) {
+                out.deleteRecursively()
+                onStep(Step.Failed(Lang.t("không chuyển được thư mục mô hình", "could not move the model folder")))
+                return
+            }
+            staging.deleteRecursively()
+            Log.i(TAG, "mô hình sẵn sàng: ${dest.absolutePath} (${model.files.size} tệp)")
+            onStep(Step.Done(model.files.size))
         } finally {
             installing.set(false)
         }
     }
 
-    /** Chốt "một lượt cài tại một thời điểm" — xem [install]. */
     private val installing = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    /**
-     * Câu lỗi nếu đĩa không đủ chỗ, `null` nếu đủ.
-     *
-     * ## [SOÁT Pass 2 · P2] Vì sao phải hỏi TRƯỚC, không để `IOException` tự nói
-     * Một lượt cài giữ **cả hai** bản cùng lúc: gói nén 32 MB trong `.staging` và 51 MB đã giải ra cạnh nó (gói
-     * chỉ bị xoá sau khi giải nén xong). Hết chỗ giữa chừng trên đầu xe thì thứ người dùng nhận được là một câu
-     * `ENOSPC` bằng tiếng Anh của libc sau khi đã tải xong 32 MB qua mạng 4G — mất tiền, mất mười phút, và không
-     * ai biết phải xoá gì. Hỏi trước tốn một lời gọi `usableSpace`.
-     *
-     * Ngưỡng = gói + phần giải ra + [SPACE_MARGIN_BYTES] (chỗ thở cho nhật ký/prefs của chính app trong lúc tải).
-     */
-    private fun spaceError(app: Context): String? {
-        val need = VoiceModelManifest.ZIP_BYTES + VoiceModelManifest.UNPACKED_BYTES + SPACE_MARGIN_BYTES
+    /** Tên tệp an toàn (§4.1) — một đoạn tên thuần, không `/ \ : .. .`. */
+    private fun requireSafe(name: String): String? {
+        if (name.isBlank() || name == "." || name == "..") return null
+        if (name.any { it == '/' || it == '\\' || it == ':' }) return null
+        return name
+    }
+
+    private fun spaceError(app: Context, model: SherpaModelCatalog.SherpaModel): String? {
+        val need = model.totalBytes + SPACE_MARGIN_BYTES
         val free = runCatching { app.filesDir.usableSpace }.getOrDefault(0L)
-        // `0` cũng là thứ một ROM trả khi không đọc được ⇒ không chặn người dùng vì một phép đo không có.
         if (free <= 0L || free >= need) return null
-        val needMb = need / MB
-        val freeMb = free / MB
         return Lang.t(
-            "máy còn $freeMb MB, cần khoảng $needMb MB — xoá bớt rồi thử lại",
-            "only $freeMb MB free, about $needMb MB needed — free some space and retry",
+            "máy còn ${free / MB} MB, cần khoảng ${need / MB} MB — xoá bớt rồi thử lại",
+            "only ${free / MB} MB free, about ${need / MB} MB needed — free some space and retry",
         )
     }
 
-    /** Một nguồn. Trả `null` khi xong, hoặc câu lỗi đọc được. */
+    /** Tải một tệp thành phần, băm trong lúc tải, so với bản ghim. Trả `null` khi xong, hoặc câu lỗi. */
     @Suppress("ReturnCount")
-    private fun tryOne(ctx: Context, url: String, zip: File, staging: File, onStep: (Step) -> Unit): String? {
-        onStep(Step.Downloading(0))
-        val got = runCatching { download(url, zip, onStep) }
-            .getOrElse { return Lang.t("lỗi mạng: ${it.message}", "network error: ${it.message}") }
-            ?: return Lang.t("máy chủ từ chối", "server refused")
-
-        onStep(Step.Verifying)
-        if (!VoiceModelManifest.matches(got.sha256, got.bytes)) {
-            zip.delete()
+    private fun fetch(
+        mf: SherpaModelCatalog.ModelFile,
+        target: File,
+        totalAll: Long,
+        doneBefore: Long,
+        onStep: (Step) -> Unit,
+    ): String? {
+        if (!mf.pinned) return Lang.t("tệp ${mf.name} chưa ghim sha256/cỡ", "${mf.name} is not pinned")
+        onStep(Step.Downloading(if (totalAll > 0) ((doneBefore * 100) / totalAll).toInt() else -1))
+        val got = runCatching { download(mf.url, target, totalAll, doneBefore, onStep) }
+            .getOrElse { return Lang.t("lỗi mạng ${mf.name}: ${it.message}", "network error ${mf.name}: ${it.message}") }
+            ?: return Lang.t("máy chủ từ chối ${mf.name}", "server refused ${mf.name}")
+        if (got.bytes != mf.bytes || !got.sha256.equals(mf.sha256, ignoreCase = true)) {
+            target.delete()
             return Lang.t(
-                "gói tải về không khớp bản đã ghim (${got.bytes} byte, sha ${got.sha256.take(12)}…)",
-                "downloaded package does not match the pinned one (${got.bytes} bytes, sha ${got.sha256.take(12)}…)",
+                "tệp ${mf.name} không khớp bản ghim (${got.bytes} byte, sha ${got.sha256.take(12)}…)",
+                "${mf.name} does not match pin (${got.bytes} bytes, sha ${got.sha256.take(12)}…)",
             )
         }
-
-        onStep(Step.Extracting)
-        val out = File(staging, VoiceModelManifest.ID)
-        out.deleteRecursively()
-        runCatching { unzip(zip, out) }
-            .onFailure { return Lang.t("giải nén hỏng: ${it.message}", "unpack failed: ${it.message}") }
-        zip.delete()
-
-        val missing = VoiceModelManifest.REQUIRED_FILES.filterNot { File(out, it).isFile }
-        if (missing.isNotEmpty()) {
-            out.deleteRecursively()
-            return Lang.t("gói thiếu tệp: ${missing.first()}", "package is missing ${missing.first()}")
-        }
-
-        val words = runCatching { readWords(out) }
-            .getOrElse { return Lang.t("không đọc được từ điển: ${it.message}", "cannot read vocabulary: ${it.message}") }
-        if (words.isEmpty()) {
-            out.deleteRecursively()
-            return Lang.t("mô hình không có từ điển dùng được", "model carries no usable vocabulary")
-        }
-        File(out, VoiceModelManifest.WORDS_FILE).writeText(words.joinToString("\n"))
-
-        val dest = dir(ctx)
-        dest.parentFile?.mkdirs()
-        dest.deleteRecursively()
-        // Đổi tên là bước DUY NHẤT làm mô hình "xuất hiện" — xem KDoc lớp, tính chất (1).
-        if (!out.renameTo(dest)) {
-            out.deleteRecursively()
-            return Lang.t("không chuyển được thư mục mô hình", "could not move the model folder")
-        }
-        staging.deleteRecursively()
-        Log.i(TAG, "mô hình sẵn sàng: ${dest.absolutePath} (${words.size} từ)")
         return null
     }
 
     private data class Downloaded(val bytes: Long, val sha256: String)
 
-    /** Tải một tệp, **băm trong lúc tải**. `null` = máy chủ trả mã lỗi. */
-    private fun download(url: String, out: File, onStep: (Step) -> Unit): Downloaded? {
+    /** Tải một tệp, băm trong lúc tải; báo % theo tổng của cả bộ. `null` = máy chủ trả mã lỗi. */
+    private fun download(url: String, out: File, totalAll: Long, doneBefore: Long, onStep: (Step) -> Unit): Downloaded? {
         val conn = HttpConn.open(url, READ_TIMEOUT_MS)
         try {
             if (conn.responseCode !in 200..299) return null
-            // [SOÁT Pass 2 · P2] `HttpConn` chốt HTTPS ở địa chỉ ta GÕ VÀO; dòng này chốt địa chỉ ta THỰC SỰ đọc.
-            // Cả hai nguồn đều trả 302 sang CDN (`instanceFollowRedirects = true`), và tuy tầng HTTP của Android
-            // không tự đi từ https sang http, đó là hành vi của **thư viện** — không phải một lời hứa của dự án.
-            // Kiểm lại bằng `conn.url` biến nó thành lời hứa của dự án.
-            // (Chữ nghĩa ở đây cố ý tránh tên lớp `java.net` — bài canh "không tệp Voice* nào ra mạng" quét theo
-            // chuỗi, và nó đúng khi bắt cả một dòng chú thích: chỗ duy nhất được mở kết nối là `HttpConn`.)
+            // Chốt HTTPS ở địa chỉ THỰC SỰ đọc (cả hai nguồn 302 sang CDN) — xem KDoc bản Vosk cũ.
             if (!conn.url.protocol.equals("https", ignoreCase = true)) {
                 throw IOException("máy chủ chuyển hướng sang ${conn.url.protocol}:// — từ chối")
             }
-            val total = conn.contentLengthLong
             val digest = MessageDigest.getInstance("SHA-256")
             var read = 0L
             var lastPercent = -2
@@ -257,9 +218,7 @@ object VoiceModelStore {
                         output.write(buf, 0, n)
                         digest.update(buf, 0, n)
                         read += n
-                        // Chỉ báo khi con số ĐỔI: `onStep` đi thẳng lên luồng vẽ, gọi nó 500 lần/giây là tự
-                        // làm nghẽn màn hình bằng chính cái thanh tiến trình đang vẽ.
-                        val pct = if (total > 0) ((read * 100) / total).toInt() else -1
+                        val pct = if (totalAll > 0) (((doneBefore + read) * 100) / totalAll).toInt() else -1
                         if (pct != lastPercent) { lastPercent = pct; onStep(Step.Downloading(pct)) }
                     }
                 }
@@ -270,36 +229,8 @@ object VoiceModelStore {
         }
     }
 
-    /**
-     * Giải nén vào [dest].
-     *
-     * ⚠ Mỗi mục đi qua [VoiceModelManifest.safeEntryPath] — tên mục trong một gói tải từ Internet **là dữ liệu
-     * của người khác** (CLAUDE.md §4.1). Mục không hợp lệ bị **bỏ qua có ghi nhật ký**, không làm hỏng cả lượt:
-     * gói thật có mục thư mục (kết thúc `/`) mà ta không cần tạo riêng.
-     */
-    private fun unzip(zip: File, dest: File) {
-        val root = dest.canonicalFile
-        ZipInputStream(zip.inputStream().buffered()).use { zin ->
-            while (true) {
-                val entry = zin.nextEntry ?: break
-                val rel = VoiceModelManifest.safeEntryPath(entry.name)
-                if (rel == null) {
-                    if (!entry.isDirectory) Log.w(TAG, "bỏ mục không hợp lệ trong gói: ${entry.name}")
-                    zin.closeEntry(); continue
-                }
-                val target = File(root, rel).canonicalFile
-                // Lớp chắn THỨ HAI: dù luật ở `:core` có sơ hở, đường dẫn thật vẫn phải nằm dưới thư mục mô hình.
-                if (!target.path.startsWith(root.path + File.separator)) {
-                    throw IOException("mục `${entry.name}` trỏ ra ngoài thư mục mô hình")
-                }
-                target.parentFile?.mkdirs()
-                target.outputStream().buffered().use { zin.copyTo(it, 64 * 1024) }
-                zin.closeEntry()
-            }
-        }
-    }
-
-    /** Rút từ điển ra khỏi `graph/Gr.fst` — xem [VoskWordList] về vì sao mô hình này không có `words.txt`. */
-    private fun readWords(modelDir: File): List<String> =
-        File(modelDir, VoiceModelManifest.GRAPH_FST).inputStream().use { VoskWordList.readOutputSymbols(it) }
+    private const val PREFS = "kachi_voice"
+    private const val KEY_MODEL = "sherpa_model_id"
+    private fun prefs(ctx: Context) =
+        ctx.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

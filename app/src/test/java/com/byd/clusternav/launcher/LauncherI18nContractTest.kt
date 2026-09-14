@@ -264,6 +264,10 @@ class LauncherI18nContractTest {
             "`TelemetryView` — `TelemetryReadout.of` điền `spec.displayLabel` vào đó, nên nhãn đã theo ngôn ngữ",
         "item.label" to "tên ứng dụng từ `PackageManager` — do HỆ THỐNG dịch, không phải chuỗi của dự án",
         "it.label," to "tên ứng dụng từ `PackageManager` (dựng `GridItem`) — cùng lý do `item.label`",
+        "model.label" to
+            "`SherpaModel.label` là TÊN RIÊNG của mô hình ASR (vd \"Zipformer VN (Apache-2.0, 70k h)\"), một danh " +
+                "hiệu sản phẩm/giấy phép — KHÔNG phải `Localized.label` VI-gốc cần dịch. Cùng loại với `item.label` " +
+                "(tên ứng dụng): danh từ riêng, không đổi theo ngôn ngữ giao diện",
         // U6 đã bỏ mục `"pick.sub"`: ngăn kéo nay đọc `pick.displaySub` (gợi ý loại + câu "gồm gì"), tức nó KHÔNG
         // còn chạm vào trường gốc nữa nên không cần được tha. Danh sách này phải tự rữa — giữ một dòng không còn ai
         // khớp là để dành sẵn một lỗ hổng cho lần sau.

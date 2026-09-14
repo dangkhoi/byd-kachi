@@ -13,7 +13,7 @@ class SimpleCastCoordinator(
     private val mover: AppMover,
     val prefs: SimpleCastPrefs,
     private val shell: SimpleCastShell,
-    private val displayId: Int,
+    displayId: Int,
     private val castTimeoutMs: Long = 15_000L,
     private val stopTimeoutMs: Long = 5_000L,
     // This app's own installed package, injected from :app (BuildConfig.APPLICATION_ID). Default keeps the
@@ -21,6 +21,12 @@ class SimpleCastCoordinator(
     // placeholder launch target the correct isolated app.
     private val selfPackage: String = "com.byd.clusternav",
 ) {
+    // ── Cluster display id — id SỐNG, dò động (X2) ────────────────────────────
+    // Seed = giá trị dựng (prefs.lastDisplayId ?: fallback), nhưng KHÔNG tin nó: openProjection() dò lại thật
+    // (dumpsys display → fission/xdja) rồi ghi đè + persist. CLAUDE.md §5 (kiểm bằng sự thật, không cờ RAM) +
+    // §7 (generic, không hardcode). Mọi tham chiếu `displayId` bên dưới đọc thuộc tính SỐNG này.
+    @Volatile private var displayId: Int = displayId
+
     private val executor = BoundedCastExecutor(
         castTimeoutMs = castTimeoutMs,
         stopTimeoutMs = stopTimeoutMs,
@@ -37,8 +43,19 @@ class SimpleCastCoordinator(
         println("[SimpleCast] $msg")
     }
 
-    /** Owns freeform task resize + per-app profile persistence/restore (R4/R5/R6). */
-    private val geometry = CastGeometryController(shell, prefs, displayId) { msg -> log(msg) }
+    /** Owns freeform task resize + per-app profile persistence/restore (R4/R5/R6). Đọc displayId SỐNG qua provider. */
+    private val geometry = CastGeometryController(shell, prefs, { displayId }) { msg -> log(msg) }
+
+    /**
+     * X2 — dò id display CỤM thật (generic: fission/xdja qua [ClusterDisplayResolver], KHÔNG hardcode 1/2) và
+     * ghi đè [displayId] SỐNG + persist ([SimpleCastPrefs.saveLastDisplayId]) để tiến trình sau + đường geometry
+     * ([CastGeometryController] đọc `prefs.lastDisplayId()`) cùng nhắm đúng màn. Chạy trên executor nền của
+     * coordinator (KHÔNG bao giờ trên luồng vẽ — shell I/O). Best-effort: dò hụt thì GIỮ giá trị hiện tại.
+     */
+    private fun detectClusterDisplay() {
+        val resolved = ClusterDisplayResolver.detectAndPersist(shell, displayId) { prefs.saveLastDisplayId(it) }
+        if (resolved != displayId) { log("cluster display: $displayId → $resolved (dò fission/xdja)"); displayId = resolved }
+    }
 
     // TRIAL watchdog state (owner 2026-08-14): re-pin a cast app that an external trigger (e.g. Kiki
     // starting GMaps navigation) pulled off the cluster. Debounce + cooldown so driving is never
@@ -91,6 +108,10 @@ class SimpleCastCoordinator(
                 else -> return@submit // already open/opening/casting/stopping/closing
             }
             setState(SimpleCastState.Opening)
+
+            // X2 — dò display cụm THẬT trước khi bất kỳ `wm …/am start --display` nào chạy (nếu không, tất cả
+            // nhắm sai màn khi cụm ≠ 1). Native VD cụm tồn tại sẵn từ boot nên dò được ngay, không cần castSeq.
+            detectClusterDisplay()
 
             if (!prefs.dozeWhitelistApplied()) {
                 shell.execute("cmd deviceidle whitelist +vn.vietmap.live")

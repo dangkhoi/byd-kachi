@@ -41,8 +41,8 @@ android {
         applicationId = "com.byd.launcher"
         minSdk = 29
         targetSdk = 37
-        versionCode = 55
-        versionName = "1.54"
+        versionCode = 56
+        versionName = "1.55"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:
@@ -68,6 +68,15 @@ android {
         // (self-grants, self-component names, cast self-exclusion). Enables true app isolation from the
         // legacy com.byd.clusternav app while keeping the internal code namespace unchanged.
         buildConfig = true
+    }
+
+    // V2 pha NGHE · sherpa-onnx AAR chở 4 thư viện native/ABI: libsherpa-onnx-jni.so + libonnxruntime.so (đường
+    // Kotlin JNI DÙNG) và libsherpa-onnx-c-api.so + libsherpa-onnx-cxx-api.so (cho consumer C/C++ — ta KHÔNG dùng).
+    // [ĐO] loại c-api+cxx-api tiết kiệm ~8 MB (arm64 4,3+0,4 · armv7 3,1+0,3). Giữ jni + onnxruntime.
+    packaging {
+        jniLibs {
+            excludes += setOf("**/libsherpa-onnx-c-api.so", "**/libsherpa-onnx-cxx-api.so")
+        }
     }
 
     signingConfigs {
@@ -217,22 +226,21 @@ dependencies {
     // 2026-09-13); `androidx.core.graphics.PathParser.createPathFromPathData` là API CÔNG KHAI của gói này.
     implementation("androidx.core:core:1.19.0")
 
-    // ─── V1 pha NGHE · NHẬN DẠNG TIẾNG NÓI TẠI MÁY (Vosk) ─────────────────────────────────────────────
-    // Version kiểm 2026-09-14 (rule global §1.1): Context7 `/alphacep/vosk-api` + Maven Central
-    // `search.maven.org` group `com.alphacephei` ⇒ **0.3.47 là bản ỔN ĐỊNH mới nhất** (`vosk-api-kotlin`
-    // 0.4.0-alpha0 có tồn tại nhưng còn alpha — dự án cần chạy 5+ năm, không lấy alpha vào đường điều khiển xe).
-    // API dùng đều là API HIỆN HÀNH, đọc từ `javap` trên chính AAR đã tải: `Model(String)` ·
-    // `Recognizer(Model, float, String grammar)` · `acceptWaveForm(short[], int)` · `getPartialResult()` ·
-    // `getResult()` · `getFinalResult()` · `LibVosk.setLogLevel(LogLevel)`. KHÔNG dùng `SpeechService` /
-    // `SpeechStreamService` của gói: chúng tự dựng `AudioRecord` + thread riêng, tức một đường ghi âm thứ hai
-    // nằm ngoài tầm với của bài canh "không gửi audio ra mạng" và của trần 8 s (xem `VoiceSession`).
+    // ─── V2 pha NGHE · NHẬN DẠNG TIẾNG NÓI TẠI MÁY (sherpa-onnx, thay Vosk) ───────────────────────────
+    // Vì sao đổi: Vosk small-vn (32 MB, ngữ pháp FST cứng) trên xe thật NÓI CẢ CÂU RA 1 TỪ — gốc bệnh là
+    // model quá nhỏ + giải mã ràng FST. V2 chuyển sang sherpa-onnx OfflineRecognizer + Zipformer-vi
+    // (transducer, giải mã TỰ DO + contextual biasing từ nhãn control) — xem `SherpaModelManifest`,
+    // `VoiceRecognizer` (đã viết lại), spec `docs/specs/kachi-voice-engine-v2.html`.
     //
-    // `@aar` + JNA khai TƯỜNG MINH: đó là cách chính Vosk hướng dẫn, và nó giữ cho phụ thuộc bắc cầu không kéo
-    // thêm gì. POM của vosk-android ghim `jna:5.13.0@aar`; ta nâng lên **5.17.0** (latest stable trên Maven
-    // Central 2026-09-14) — JNA giữ tương thích ngược ở lớp `Pointer`/`PointerType` mà Vosk dùng, và bản mới
-    // vá vài lỗi nạp thư viện native trên Android 12+.
-    implementation("com.alphacephei:vosk-android:0.3.47@aar")
-    implementation("net.java.dev.jna:jna:5.17.0@aar")
+    // Version kiểm 2026-09-14 (rule global §1.1): Context7 `/k2-fsa/sherpa-onnx` ⇒ **v1.13.8 latest stable**;
+    // engine Apache-2.0. Chỉ phát hành qua JitPack (khai group ở `settings.gradle.kts`). AAR chở native cho
+    // 4 ABI (libsherpa-onnx-jni.so + libonnxruntime.so); `abiFilters` ở trên đã lọc còn arm64-v8a + armeabi-v7a.
+    // API HIỆN HÀNH (Context7 + java-api README): `OfflineRecognizer(OfflineRecognizerConfig)` ·
+    // `OfflineTransducerModelConfig(encoder,decoder,joiner)` · `OfflineModelConfig(transducer,tokens,...)` ·
+    // `createStream()` · `OfflineStream.acceptWaveform(float[], int sampleRate)` · `decode(stream)` ·
+    // `getResult(stream).getText()`. KHÔNG dùng lớp mic/VAD tự-dựng-AudioRecord của gói — Kachi giữ
+    // `AudioRecord` cho mình (`VoiceCapture`) để đường ghi âm nằm trong tầm bài canh "không gửi audio ra mạng".
+    implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8")
 
     // — JVM unit + property tests (off-device, chạy bằng ./gradlew testDebugUnitTest) —
     testImplementation(platform("org.junit:junit-bom:6.1.2"))

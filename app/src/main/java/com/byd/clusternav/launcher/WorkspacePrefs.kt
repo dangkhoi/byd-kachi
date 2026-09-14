@@ -68,6 +68,19 @@ class WorkspacePrefs(context: Context) {
     }
 
     /**
+     * S5 — **giữ Kachi làm màn hình chính khi nổ máy**. Theo **XE** ([ProfileScope.DEVICE_KEYS]), không tiền tố hồ
+     * sơ: màn hình chính là thuộc tính của cả xe, không của một tài xế.
+     *
+     * ⚠ Mặc định **TẮT**: đặt HOME của cả xe (`cmd package set-home-activity`) là đổi state hệ thống, không được tự
+     * làm sau lưng người dùng (CLAUDE.md §4). Đường CHÍNH để thành HOME là **nút trong Cài đặt**
+     * ([ClusterNavBridge.setDefaultHome]); công tắc này chỉ cho đường khởi động nguội đặt lại **một lần** nếu ROM
+     * reset HOME sau reboot ([SUY] — chưa đo, chờ P7). [com.byd.clusternav.KachiAutostart] đọc cờ này.
+     */
+    fun keepHomeOnBoot(): Boolean = sp.getBoolean(K_KEEP_HOME_ON_BOOT, false)
+
+    fun setKeepHomeOnBoot(on: Boolean) { sp.edit().putBoolean(K_KEEP_HOME_ON_BOOT, on).apply() }
+
+    /**
      * Thêm một hồ sơ và chuyển sang nó. Tên trùng hồ sơ đã có ⇒ chỉ chuyển sang, không tạo thêm.
      *
      * ## ⚠ [SOÁT P2-2] Hồ sơ MỚI phải bắt đầu TRỐNG — kể cả trên máy đã chạy bản cũ
@@ -197,13 +210,15 @@ class WorkspacePrefs(context: Context) {
             .getOrDefault(DockEdge.BOTTOM)
         val enabled = sp.getString(key("dock_enabled"), null)?.split(",")?.filter { it.isNotBlank() }
             ?: ControlRegistry.defaultEnabledIds()
-        return DockConfig(edge, enabled)
+        val visible = sp.getBoolean(key("dock_visible"), true)   // S1b — vắng = hiện (giữ hành vi cũ)
+        return DockConfig(edge, enabled, visible)
     }
 
     fun saveDock(c: DockConfig) {
         sp.edit()
             .putString(key("dock_edge"), c.edge.name)
             .putString(key("dock_enabled"), c.enabled.joinToString(","))
+            .putBoolean(key("dock_visible"), c.visible)
             .apply()
     }
 
@@ -396,6 +411,9 @@ class WorkspacePrefs(context: Context) {
 
         /** S4 · R6 — hồ sơ lúc nổ máy (`null`/vắng = hồ sơ dùng gần nhất). Lý do "theo xe" ở [ProfileScope.DEVICE_KEYS]. */
         internal const val K_BOOT_PROFILE = "boot_profile"
+
+        /** S5 — "giữ Kachi làm màn hình chính khi nổ máy". Theo XE (không tiền tố) — lý do ở [ProfileScope.DEVICE_KEYS]. */
+        internal const val K_KEEP_HOME_ON_BOOT = "keep_home_on_boot"
 
         /**
          * S4 · R2 — dấu *"đã chuyển cảnh sang hồ sơ"*, đặt MỘT lần cho cả máy ([migrateScenesOnce]).

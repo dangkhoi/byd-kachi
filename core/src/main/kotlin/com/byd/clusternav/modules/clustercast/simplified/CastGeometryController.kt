@@ -14,9 +14,12 @@ package com.byd.clusternav.modules.clustercast.simplified
 internal class CastGeometryController(
     private val shell: SimpleCastShell,
     private val prefs: SimpleCastPrefs,
-    private val displayId: Int,
+    // X2 — provider (KHÔNG phải Int cố định): id display cụm được dò động ở coordinator và có thể đổi trong
+    // phiên, nên geometry phải đọc giá trị SỐNG mỗi lần dùng thay vì chụp lúc dựng.
+    private val displayIdProvider: () -> Int,
     private val log: (String) -> Unit = { println("[CastGeometry] $it") },
 ) {
+    private val displayId: Int get() = displayIdProvider()
 
     /** Find the taskId for [pkg], preferring the cluster display. Null if not found. */
     fun findTaskIdForPkg(pkg: String): String? {

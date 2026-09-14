@@ -54,7 +54,7 @@ class ProfileScopeTest {
     @Test
     fun `bo cuc o thanh nut chip va lua chon ca nhan deu THEO HO SO`() {
         listOf(
-            "preset", "grid_layout", "dock_edge", "dock_enabled", "top_strip", "slot_0", "slot_5",
+            "preset", "grid_layout", "dock_edge", "dock_enabled", "dock_visible", "top_strip", "slot_0", "slot_5",
             "theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang",
         ).forEach { assertEquals(ProfileScope.Scope.PROFILE, ProfileScope.scopeOf(it), "khoá $it") }
     }

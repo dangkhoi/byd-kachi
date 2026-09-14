@@ -209,6 +209,7 @@ private fun WorkspacePrefs.writeRecord(e: SharedPreferences.Editor, source: Stri
     record.workspace.slots.forEachIndexed { i, c -> e.putString(keyOf(name, "slot_$i"), SlotCodec.encode(c)) }
     e.putString(keyOf(name, "dock_edge"), record.dock.edge.name)
     e.putString(keyOf(name, "dock_enabled"), record.dock.enabled.joinToString(","))
+    e.putBoolean(keyOf(name, "dock_visible"), record.dock.visible)   // S1b — ẩn/hiện thanh theo hồ sơ
     val grid = record.grid
     if (grid == null || grid.frames.isEmpty()) e.remove(keyOf(name, "grid_layout"))
     else e.putString(keyOf(name, "grid_layout"), WorkspaceGrid.encode(grid))

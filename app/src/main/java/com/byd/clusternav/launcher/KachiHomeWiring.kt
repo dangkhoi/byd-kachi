@@ -108,6 +108,8 @@ internal fun homePanels(
     onWallpaperChanged: (WallpaperPrefs) -> Unit,
     onUnitsChanged: (UnitPrefs) -> Unit,
     shellUsable: () -> Boolean,
+    /** F4 — hệ thống đang hỏi *"Cho phép gỡ lỗi USB?"* (lý do ĐÃ phân loại, xem [ShellChannelGate]). */
+    shellAwaiting: () -> Boolean,
     goImmersive: () -> Unit,
     onPanelsChanged: () -> Unit,
     /** V1 · R6 — mở ngăn kéo; CÙNG lambda mà [controlDock] nhận, không dựng đường thứ hai. */
@@ -149,6 +151,7 @@ internal fun homePanels(
     bootProfile = { viewModel.uiState.value.bootProfile },
     onBootProfile = { name -> viewModel.setBootProfile(name) },
     shellUsable = shellUsable,
+    shellAwaiting = shellAwaiting,
     goImmersive = goImmersive,
     openAppList = openAppList,
     openAppByPackage = openAppByPackage,
@@ -374,4 +377,53 @@ internal fun collectHome(
             }
         }
     }
+}
+
+/**
+ * ═══ F4 — NỐI KÊNH SHELL SAU KHI LƯỢT DÒ ĐÃ XANH ════════════════════════════════════════════════════════════
+ *
+ * Đây là **nguyên khối** đã chạy tốt trước F4 (`if (dadb.probe()) { … } else { … }`), chỉ **dời chỗ** khỏi
+ * [KachiHomeActivity] vì trần 500 dòng (CLAUDE.md §4.1) — cùng lý do với [homePanels]/[collectHome]. Không đổi một
+ * bước nào: cùng thứ tự, cùng lệnh, cùng hai nhánh (CLAUDE.md §6 — đường đang chạy tốt ngoài hiện trường thì không
+ * đụng vì một suy luận).
+ *
+ * Cổng [ShellChannelGate] chỉ quyết định **KHI NÀO** gọi hàm này; nó không viết lại hàm này.
+ *
+ * ⚠ CHẶN — chạy trên thread nền (`KachiHomeActivity.submitBg`); phần chạm view tự nhảy về luồng chính.
+ *
+ * @param onSeam gán kênh shell + bộ mở app của màn chính (hai field `@Volatile` riêng của Activity).
+ */
+internal fun Activity.bringUpShellChannel(
+    dadb: DadbShell,
+    seam: (String) -> String,
+    workspace: WorkspaceView,
+    viewModel: HomeViewModel,
+    container: AppContainer,
+    onSeam: ((String) -> String) -> Unit,
+) {
+    if (!dadb.probe()) {
+        // Không có kênh shell: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng biết vì
+        // sao app không vào được ô, thay vì ngồi đoán.
+        PermissionPreflight.runAndReport(this, shellUsable = false, sh = null)
+        return
+    }
+    onSeam(seam)
+    runCatching { seam("appops set com.byd.launcher SYSTEM_ALERT_WINDOW allow") }  // vẽ dải header nổi lên app freeform
+    val dispatcher = container.windowDispatcher
+    runOnUiThread {
+        // GẮN NGUYÊN KHỐI (P-bug2): 1 lời gọi mang đủ kênh shell + kênh chạm + đăng ký/gỡ màn ảo, rồi WorkspaceView
+        // tự dựng lại các ô App MỘT LẦN để gắn bộ chiếu. Trước đây đoạn này gán rời 4 field xong gọi
+        // `workspace.render(...)`, nhưng render so theo NỘI DUNG nên ô App "không đổi" ⇒ không dựng lại ⇒ app trong
+        // ô chỉ hiện sau khi người dùng đổi bố cục.
+        workspace.applyEmbedSeam(
+            shell = seam,
+            inputClient = container.inputDaemonClient,   // daemon do AppContainer sở hữu, tiêm vào
+            registerVd = dispatcher::registerLauncherVirtualDisplay,   // VD ô thuộc LAUNCHER → ownership cho phép
+            unregisterVd = dispatcher::unregisterLauncherVirtualDisplay,
+            state = viewModel.uiState.value.workspace,
+            status = viewModel.uiState.value.carStatus,
+        )
+        viewModel.setEmbedded(true)   // dadb nối được → nhúng (giữ embedded khớp getter)
+    }
+    PermissionPreflight.runAndReport(this, shellUsable = true, sh = seam)
 }

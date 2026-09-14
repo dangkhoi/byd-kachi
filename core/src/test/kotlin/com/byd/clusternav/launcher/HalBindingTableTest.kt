@@ -128,4 +128,58 @@ class HalBindingTableTest {
     @Test fun `write unknown id returns null`() {
         assertNull(HalBindingTable(FakeHalGateway(namedRc = 0L)).write("khong_ton_tai", 1))
     }
+
+    // ── describeWrite: mô tả THUẦN đường ghi cho cầu kiểm thử (grab-list §9) ────────────────────────────
+    @Test fun `describeWrite named-method gives named label plus derived device`() {
+        val (route, device) = HalBindingTable.describeWrite(ControlRegistry.byId("win_lf")!!)
+        assertEquals("named:setBodyWindowCtrlState", route)
+        assertEquals("android.hardware.bydauto.bodywork.BYDAutoBodyworkDevice", device)
+    }
+
+    @Test fun `describeWrite feature-id gives hex label plus device by domain`() {
+        // fan `501219340` (0x1de0000c) domain CLIMATE → BYDAutoAcDevice; đúng cái owner thấy CHẠY trên xe.
+        val (route, device) = HalBindingTable.describeWrite(ControlRegistry.byId("fan")!!)
+        assertEquals("feature:0x1de0000c", route)
+        assertEquals("android.hardware.bydauto.ac.BYDAutoAcDevice", device)
+        // đèn đọc `1330643002` (0x4f50003a): domain LIGHTS route thô tới BYDAutoLightDevice (1004) là SAI —
+        // [ĐO] RE 2026-09-14 §4 chứng minh SET_INSIDE_LIGHT_STATE_SET thuộc SETTING (1023), nên `checkDeviceFeatures`
+        // trả sentinel ("no permission … device 1004"). Bản vá đặt `halDevice = "BYDAutoSettingDevice"` ⇒ route đúng.
+        val (r2, d2) = HalBindingTable.describeWrite(ControlRegistry.byId("readl")!!)
+        assertEquals("feature:0x4f50003a", r2)
+        assertEquals("android.hardware.bydauto.setting.BYDAutoSettingDevice", d2)
+        // ion âm `1337982994`: Domain.CLIMATE route thô tới AC (1000) là SAI — thuộc PM2P5 (1008); override sửa.
+        val (r3, d3) = HalBindingTable.describeWrite(ControlRegistry.byId("anion")!!)
+        assertEquals("android.hardware.bydauto.pm2p5.BYDAutoPM2p5Device", d3)
+        assertEquals("feature:0x4fc00012", r3)
+    }
+
+    @Test fun `temp binds real setAcTemperature with (type,value,tempSource,unit) args`() {
+        // [ĐO] RE 2026-09-14 §1/§5a: `setTemprature` không tồn tại → reflection trượt. Setter thật 4-arg.
+        val gw = FakeHalGateway(namedRc = 0L)
+        HalBindingTable(gw).write("temp", 22)
+        assertEquals("setAcTemperature", gw.namedCalls[0].method)
+        assertEquals(listOf(0, 22, 0, 1), gw.namedCalls[0].args)   // lái=0 · 22°C · tempSource=0 · unit=1 (Celsius)
+    }
+
+    @Test fun `describeWrite local and none`() {
+        assertEquals("local:AudioManager.setStreamVolume" to "AudioManager", HalBindingTable.describeWrite(ControlRegistry.byId("vol")!!))
+        // hood = BODYWORK_CMD_HOOD (UPPER_SNAKE command) → chưa map.
+        assertEquals("none" to "", HalBindingTable.describeWrite(ControlRegistry.byId("hood")!!))
+    }
+
+    @Test fun `describeWrite covers every control without throwing`() {
+        // Mọi mã phải mô tả được (không NPE domain nào) — khoá lại khi thêm domain/mã mới.
+        ControlRegistry.ALL.forEach { def ->
+            val (route, _) = HalBindingTable.describeWrite(def)
+            assertTrue(route.isNotBlank(), "route rỗng cho ${def.id}")
+        }
+    }
+
+    @Test fun `defaultPrimary is on-open-press for toggle-cover-button, default-value for step, zero for select`() {
+        assertEquals(1, HalBindingTable.defaultPrimary(ControlRegistry.byId("readl")!!))       // TOGGLE
+        assertEquals(1, HalBindingTable.defaultPrimary(ControlRegistry.byId("win_lf")!!))      // COVER
+        assertEquals(1, HalBindingTable.defaultPrimary(ControlRegistry.byId("pm25_clean_now")!!)) // BUTTON
+        assertEquals(22, HalBindingTable.defaultPrimary(ControlRegistry.byId("temp")!!))       // STEP def.value
+        assertEquals(0, HalBindingTable.defaultPrimary(ControlRegistry.byId("drive_mode")!!))  // SELECT
+    }
 }

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Engine V2 — sherpa-onnx — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Voice Engine V2 — thay tầng NGHE Vosk → sherpa-onnx</h1>
+<p class="muted">Slug: <code>kachi-voice-engine-v2</code> · Branch <code>main</code> · <span class="pill ok">Off-device: PASS (~87% intent)</span> <span class="pill wait">On-car: chờ đo</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,documentation-and-backlog}.md</code> + CLAUDE.md §1.1/§2/§8/§14. Version thư viện verify qua <b>Context7</b> (§4.3).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-09-14</b>: Khởi tạo + implement. Owner: <i>"làm luôn voice, thử 1-2 options, làm đến khi chạy được OK thì chốt"</i>. Chốt model A = Zipformer-vi Apache (proof off-car 87%), model B = hataphu MIT (gated, chờ mirror). Đã thay engine trong app, build xanh.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Vosk small-vn (32 MB, ràng ngữ pháp FST) trên xe thật <b>nói cả câu ra một từ</b> — [ĐO trên xe]. [ĐO đọc source] gốc bệnh: model quá nhỏ + giải mã ràng FST cứng. Pha CHỮ→Ý (<code>VoiceIntentParser</code>/<code>VoiceDispatcher</code>/<code>VoiceGrammar</code> ở <code>:core</code>) đã xong ở V1 và <b>không đổi</b> — chỉ thay thứ <b>sinh ra chuỗi chữ</b>. Nghiên cứu 9 hướng: <code>docs/diagnostics/vn-stt-ondevice-research-2026-09-14.md</code>.</p>
+<div class="card"><b>Cổng / phụ thuộc:</b> Giấy phép model phải sạch (CLAUDE.md §1.1) TRƯỚC khi code — đã chốt (§4.2). Proof engine tầng-1 (CLAUDE.md §14) TRƯỚC khi nối dây — đã đo (<code>docs/diagnostics/vn-stt-sherpa-emulator-eval-2026-09-14.md</code>). Số thật trên xe (A10 RTF, mic 4 kênh, giọng thật) vẫn <b>[CHƯA BIẾT]</b> — xem §6/§7.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li>R1. Thay <code>VoiceRecognizer</code> (Vosk) bằng sherpa-onnx <code>OfflineRecognizer</code> (Zipformer transducer), <b>giữ nguyên</b> API lớp/hàm để không đổi call-site (<code>VoiceSession</code>/<code>VoiceCapture</code>/<code>VoiceWavProbe</code>). Đầu ra vẫn là <b>chuỗi chữ</b> vào <code>VoiceIntentParser</code>.</li>
+<li>R2. Giải mã <b>TỰ DO</b> (không FST) + <b>contextual biasing</b> (hotwords) từ nhãn control ⇒ nghe được câu bất kỳ nhưng vẫn kéo về đúng lệnh. AC: ≥70% intent đúng trên 15 câu <code>say -v Linh</code> — <b>đạt 87%</b> (§6).</li>
+<li>R3. <b>2 model chọn ở Cài đặt</b> (A/B trên xe). Mặc định model license-sạch tải được ngay.</li>
+<li>R4. Model <b>tải riêng</b> (không đóng vào APK), ghim <b>từng tệp</b> sha256+size, HTTPS, chống zip-slip/tên xấu, giải nén/rename atomic.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Off-device testable ở <code>:core</code> (catalog/hotwords thuần Kotlin). Chỉ <code>VoiceModelStore</code> ra mạng (tải model) — bài canh "audio không ra mạng" giữ nguyên.</li>
+<li>R-nf2. Giữ trần thu 8–9 s, tone đầu/cuối, overlay, cổng CONFIRM mặc-định-KHÔNG, phiên bấm-để-nói như V1.</li>
+<li>R-nf3. Fail-safe: model chưa ghim / thiếu tệp / sai băm ⇒ từ chối nạp TRƯỚC, không để onnxruntime ngã bằng lỗi native.</li>
+<li>R-nf4. Tệp ≤ 500 LOC; không <code>os.getenv</code> rải rác; DRY (một nguồn model duy nhất).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng dữ liệu (thay đúng một tầng)</h3>
+<div class="flow">
+  <div class="fnode"><b>Mic</b><span>VoiceCapture</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>PCM buffer</b><span>đệm cả lượt</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>SherpaRecognizer</b><span>OfflineRecognizer<br>giải mã tự do + biasing</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>String</b><span>chuỗi chữ</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceDispatcher</b><span>→ VoiceIntentParser (:core)</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối V1 giữ nguyên</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối đổi/mới V2</span>
+</div>
+<p><b>Khác cơ chế Vosk (streaming) ⇒ sherpa (offline):</b> Vosk chốt câu bằng endpoint giữa luồng (<code>accept()→true</code>). Offline transducer không có endpoint giữa luồng ⇒ <code>VoiceCapture</code> đệm PCM cả lượt (trần 8–9 s / thả tay) rồi <b>decode một lần</b> (<code>decodeAll</code>). Endpoint bằng <b>trần + thả tay</b> ở phiên bấm-để-nói; sherpa silero-VAD endpointing là hạng mục mở (§7).</p>
+
+<h3>4.2 Model + giấy phép (đọc LICENSE thật 2026-09-14 — CLAUDE.md §1.1)</h3>
+<table>
+<tr><th>Model</th><th>Nguồn</th><th>License</th><th>Ship?</th><th>Ghi chú</th></tr>
+<tr><td><b>A · Zipformer-vi 70k h</b> (mặc định)</td><td><code>csukuangfj/sherpa-onnx-zipformer-vi-2025-04-20</code></td><td class="ok"><b>Apache-2.0</b> (weight nguồn <code>zzasdf/viet_iter3_pseudo_label</code>)</td><td class="ok">✅ tải trực tiếp</td><td>fp32 (~266 MB). Off-car 87% intent với biasing.</td></tr>
+<tr><td><b>B · Zipformer-vi telephony</b> (owner ưu tiên)</td><td><code>hataphu/zipformer-k2-rnn-lm-vi</code></td><td class="ok"><b>MIT</b></td><td class="warn">⚠ GATED (HTTP 401)</td><td>WER 5.73% VLSP / 13.36% telephony ⇒ hợp mic xe. int8. <b>Cần mirror lên kênh OTA + ghim sha256</b> rồi mới bật.</td></tr>
+<tr><td>hynt Zipformer-30M</td><td><code>hynt/Zipformer-30M-RNNT-6000h</code></td><td class="warn">CC-BY-NC-ND-4.0</td><td class="warn">✗ CẤM</td><td>Phi thương mại + cấm phái sinh.</td></tr>
+<tr><td>Dự phòng (Whisper)</td><td><code>vinai/PhoWhisper-base</code></td><td class="ok">BSD-3</td><td>—</td><td>Chỉ dùng nếu cả A/B hỏng (không streaming, nặng hơn).</td></tr>
+</table>
+
+<h3>4.3 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Context7</b> <code>/k2-fsa/sherpa-onnx</code> (2026-09-14): sherpa-onnx <b>v1.13.8</b> (latest stable). Android AAR qua <b>JitPack</b> <code>com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8</code> (engine Apache-2.0; bundle 4 ABI). API hiện hành: data class <code>OfflineRecognizerConfig(featConfig, modelConfig, decodingMethod, hotwordsFile, hotwordsScore)</code>, <code>OfflineModelConfig(transducer, tokens, modelingUnit, bpeVocab)</code>, <code>OfflineTransducerModelConfig(encoder, decoder, joiner)</code>; <code>createStream() · acceptWaveform(FloatArray, sr) · decode · getResult(stream).text</code>. <code>assetManager=null</code> ⇒ nạp từ đường dẫn tuyệt đối (model tải về filesDir).</li>
+<li><b>Biasing</b>: <code>modified_beam_search</code> + <code>hotwordsScore=3.0</code>; hotwords sinh từ nhãn control (HOA có dấu, lọc chữ số/tên app) — <code>SherpaHotwords</code>. Cần <code>modelingUnit="bpe"</code> + <code>bpeVocab</code> = bảng piece+score xuất từ <code>bpe.model</code> (asset), <b>KHÔNG</b> nhận <code>bpe.model</code> thô (bẫy §Impl Log).</li>
+<li><b>abiFilters</b> giữ arm64-v8a + armeabi-v7a; <code>packaging{ jniLibs.excludes }</code> loại <code>libsherpa-onnx-c-api/cxx-api.so</code> (chỉ cần JNI), tiết kiệm ~8 MB.</li>
+<li><b>Giữ Vosk tạm hay bỏ?</b> Dep Vosk đã gỡ khỏi build; <code>VoiceModelManifest</code>/<code>VoskWordList</code>/<code>VoiceGrammar.phrases</code> còn compile nhưng <b>chết cho production</b> — để consolidator quyết xoá hẳn SAU khi sherpa verify trên xe (tránh xoá mù trước khi có A/B thật).</li>
+</ul>
+
+<h3>4.4 Cấu trúc APK (native)</h3>
+<div class="layers">
+  <div class="layer"><div class="node"><b>APK</b><span>mã + native .so</span></div></div>
+  <div class="layer">
+    <div class="node"><b>arm64-v8a</b><span>onnxruntime 21.2 MB<br>jni 4.6 MB</span></div>
+    <div class="node"><b>armeabi-v7a</b><span>onnxruntime 14.6 MB<br>jni 3.3 MB</span></div>
+    <div class="node"><b>Model (A/B)</b><span>TẢI RIÊNG<br>không trong APK</span></div>
+  </div>
+</div>
+<p class="muted">[ĐO] APK Vosk 1.54 = 26,8 MB → sherpa ~53 MB (native +~40 MB, <code>libonnxruntime.so</code> chiếm phần lớn). Model ~266 MB fp32 tải riêng như Vosk.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>JitPack repo (group-scoped) + swap dep Vosk→sherpa AAR v1.13.8 + packaging excludes</td><td><code>settings.gradle.kts</code>, <code>app/build.gradle.kts</code></td><td class="ok">✅</td></tr>
+<tr><td>T2</td><td>Bảng model (2 model, ghim từng tệp, license, downloadable) + test</td><td><code>core/.../voice/SherpaModelCatalog.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T3</td><td>Hotwords normalize (HOA+dấu+lọc) + test; biasing từ nhãn control</td><td><code>core/.../voice/SherpaHotwords.kt</code>, <code>SherpaBiasing.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T4</td><td>SherpaRecognizer + engine (OfflineRecognizer; buffer→decode; giữ API)</td><td><code>app/.../voice/VoiceRecognizer.kt</code></td><td class="ok">✅ compile</td></tr>
+<tr><td>T5</td><td>Model store đa-tệp (per-file sha256/size, HTTPS, safe-name, atomic, A/B select)</td><td><code>app/.../voice/VoiceModelStore.kt</code></td><td class="ok">✅ compile</td></tr>
+<tr><td>T6</td><td>bpe_vocab asset (piece+score) + copy sang filesDir lúc nạp</td><td><code>app/src/main/assets/voice/zipformer-vi-2025-04-20.bpe_vocab.txt</code></td><td class="ok">✅</td></tr>
+<tr><td>T7</td><td>Sửa test khoá Vosk → sherpa</td><td><code>app/.../VoiceCommandWiringContractTest.kt</code></td><td class="ok">✅ xanh</td></tr>
+<tr><td>T8</td><td>Nút A/B đổi model ở Cài đặt (storage đã có; switch UI chưa dựng)</td><td><code>app/.../voice/VoiceModelSettings.kt</code></td><td class="warn">◻ một phần</td></tr>
+<tr><td>T9</td><td>Emulator E2E (cài + push model + WAV bridge)</td><td>—</td><td class="warn">◻ chờ</td></tr>
+<tr><td>T10</td><td>On-car A/B + giọng thật + A10 RTF; mirror model B</td><td>—</td><td class="warn">◻ chờ xe</td></tr>
+<tr><td>T11</td><td>Bump version + senior review (§5) + security scan (§6)</td><td>—</td><td class="warn">◻ ở gộp 1.55</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit <span class="pill ok">PASS</span>: <code>:core:test</code> (SherpaModelCatalog/Hotwords) xanh; <code>:app:compileReleaseKotlin</code> xanh; <code>VoiceCommandWiringContractTest</code> (Vosk→sherpa) xanh; <code>:app:assembleRelease</code> ký được (~53 MB).</li>
+<li>V-offdevice <span class="pill ok">PASS</span>: 15 câu <code>say -v Linh</code>, beam+biasing <b>13/15 (~87%) ≥ 70%</b>; over-trigger safe. Bằng chứng: <code>docs/diagnostics/vn-stt-sherpa-emulator-eval-2026-09-14.md</code>.</li>
+<li>V-oncar <span class="pill wait">CHỜ</span>: A10 RTF, mic 4 kênh, giọng thật + ồn đường (playbook T18/T25); A/B model A vs B. <b>Reboot bằng nút nguồn vật lý</b> nếu kịch bản cần.</li>
+<li>V-lifecycle: tải model → nạp → nghe → gỡ → cài lại; degrade khi chưa cài model (phase nghe báo "chưa sẵn sàng", launcher không chết).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. <b>Model B (hataphu) gated</b> — mirror lên kênh OTA <code>byd-kachi</code> rồi ghim sha256/bytes? <span class="muted">chờ owner + máy có HF auth.</span></li>
+<li>OQ2. <b>fp32 → int8</b> cho model A (giảm ~266 MB tải, cải thiện A10 RTF) — tự lượng hoá hay chờ bản chính thức? <span class="muted">chờ số A10 RTF.</span></li>
+<li>OQ3. <b>silero-VAD endpointing</b> thay trần cứng (auto ngắt khi hết tiếng) — thêm ~2 MB model. <span class="muted">chờ, không chặn.</span></li>
+<li>OQ4. <b>Xoá hẳn Vosk</b> (<code>VoiceModelManifest</code>/<code>VoskWordList</code>) sau khi sherpa verify xe? <span class="muted">quyết ở gộp 1.55.</span></li>
+<li>OQ5. <b>arm64-only</b> (bỏ armeabi-v7a, giảm ~18 MB) nếu không đời DiLink nào 32-bit? <span class="muted">§7 CLAUDE.md cấm khoá 1 đời mù — cần owner.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Nghiên cứu-gốc: <code>docs/diagnostics/vn-stt-ondevice-research-2026-09-14.md</code></li>
+<li>Bằng chứng off-device: <code>docs/diagnostics/vn-stt-sherpa-emulator-eval-2026-09-14.md</code></li>
+<li>Engine: <code>github.com/k2-fsa/sherpa-onnx</code> (Apache-2.0); AAR JitPack <code>com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8</code></li>
+<li>Model A: <code>huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-2025-04-20</code> (weight <code>zzasdf/viet_iter3_pseudo_label</code> Apache-2.0)</li>
+<li>Model B: <code>huggingface.co/hataphu/zipformer-k2-rnn-lm-vi</code> (MIT, gated)</li>
+<li>Code: <code>app/.../voice/VoiceRecognizer.kt</code>, <code>VoiceModelStore.kt</code>; <code>core/.../voice/SherpaModelCatalog.kt</code>, <code>SherpaHotwords.kt</code>, <code>SherpaBiasing.kt</code></li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-14 · quyết định</b> — Model A = Zipformer-vi Apache (tải được + proof 87%) làm mặc định thay vì hataphu (owner ưu tiên nhưng <b>gated 401</b> ⇒ chưa tải/ghim được). B khai sẵn <code>downloadable=false</code> để bật là chạy khi mirror xong.</li>
+<li><b>2026-09-14 · bug bắt được (CLAUDE.md §8)</b> — <code>bpeVocab="bpe.model"</code> (thô) làm sherpa 1.13.8 bỏ hotwords im lặng ("Each line should contain two items") ⇒ biasing không ăn ⇒ rơi 87%→67% (dưới sàn). Sửa: ship bảng piece+score xuất từ sentencepiece làm asset <code>voice/&lt;id&gt;.bpe_vocab.txt</code>, engine chép sang filesDir lúc nạp; verify off-device ăn.</li>
+<li><b>2026-09-14 · cơ chế đổi</b> — Vosk streaming endpoint → offline one-shot decode: <code>VoiceCapture</code> đệm PCM cả lượt rồi <code>decodeAll</code>. Trần 8–9 s + thả tay làm endpoint; silero-VAD để sau.</li>
+<li><b>2026-09-14 · trade-off</b> — native +~40 MB (<code>libonnxruntime.so</code>); loại c-api/cxx-api <code>.so</code> tiết kiệm ~8 MB. Model 266 MB fp32 tải riêng.</li>
+<li><b>2026-09-14 · DRY</b> — trùng <code>SherpaModelCatalog</code> vs <code>SherpaModelManifest</code> do làm song song ⇒ hợp nhất về <b>một</b> nguồn (<code>SherpaModelCatalog</code>), gỡ bản kia.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Tag finding <code>[P0]–[P3]</code>; verdict APPROVED/INCOMPLETE.</p>
+<ul>
+<li><b>Pass 1 — 2026-09-14</b>: chưa qua senior review (Opus) chính thức — dời sang gộp 1.55 (CLAUDE.md §5) cùng bump version + security scan (§6). Verdict tạm: <b>off-device PASS, on-car INCOMPLETE</b> (chờ T9/T10).</li>
+</ul>
+
+</div></body>
+</html>

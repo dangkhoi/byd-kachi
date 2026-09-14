@@ -46,7 +46,7 @@ object ProfileScope {
      * `scenes`/`boot_scene` đã bỏ theo R1).
      */
     val LAUNCHER_LAYOUT_SUFFIXES: List<String> =
-        listOf("preset", "dock_edge", "dock_enabled", "top_strip", "grid_layout")
+        listOf("preset", "dock_edge", "dock_enabled", "dock_visible", "top_strip", "grid_layout")
 
     /**
      * S4 · R3(a) — khoá TRƯỚC ĐÂY chung cả máy, nay **theo hồ sơ**.
@@ -98,6 +98,13 @@ object ProfileScope {
                 "chạy lại một lượt chuyển đổi trên dữ liệu đã chuyển rồi",
         )
         put(
+            "keep_home_on_boot",
+            "S5 — 'giữ Kachi làm màn hình chính khi nổ máy'. Màn hình chính là thuộc tính của **cả xe** (một " +
+                "`cmd package set-home-activity` cho user 0), không phải lựa chọn của một tài xế: chép nó theo hồ " +
+                "sơ thì đổi hồ sơ lại đi đặt/không-đặt HOME của cả máy. Cùng họ `boot_profile`/`cast_enabled` — " +
+                "quyết định mức máy, không mức người",
+        )
+        put(
             "recent_apps",
             "lịch sử mở app của cả xe (đã khai ở [SettingsCatalog.NOT_SETTINGS] là trạng thái dùng, không phải " +
                 "cấu hình) — xoá một hồ sơ mà mất lịch sử của cả xe là lỗi tệ hơn lỗi đang vá",
@@ -107,6 +114,12 @@ object ProfileScope {
             "R4 — số hiệu màn cụm ĐO ĐƯỢC của chính chiếc xe này (`SimpleCastRuntime`), không phải lựa chọn",
         )
         put("doze_whitelist_applied", "trạng thái máy: đã xin miễn doze cho tiến trình chưa — thuộc máy, không thuộc người")
+        put(
+            "sherpa_model_id",
+            "mã mô hình ASR đã TẢI VỀ máy NÀY (`VoiceModelStore`, tệp `kachi_voice`) — theo XE, không theo người: " +
+                "tệp mô hình 78 MB nằm trên đĩa của chính xe này, chép hồ sơ sang xe khác thì mô hình có thể chưa tải " +
+                "ở đó. Cùng họ `last_display_id`/OTA — trạng thái mức máy. Cũng khai ở [SettingsCatalog.NOT_SETTINGS]",
+        )
         put(
             "freeform_state",
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (lý do đầy đủ ở " +

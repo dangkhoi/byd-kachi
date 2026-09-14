@@ -28,8 +28,19 @@ class BydHalGateway(context: Context) : HalGateway {
     override fun getter(deviceFqn: String, method: String, arg: Int?): String? =
         runCatching { device(deviceFqn)?.let { BydHal.callGetter(it, method, arg) } }.getOrNull()
 
-    override fun namedInt(deviceFqn: String, method: String, args: IntArray): Long? =
-        runCatching { device(deviceFqn)?.let { parseRc(BydHal.callNamedInt(it, method, *args)) } }.getOrNull()
+    /**
+     * Ghi named-method + **ghi trộm** câu chữ THẬT vào [HalWriteProbe] cho cầu kiểm thử (spec §9).
+     *
+     * `callNamedInt` trả `"rc=<v>"` khi gọi được, hoặc chuỗi ngoại lệ ([BydHal.root]) khi ROM thiếu method / HAL
+     * chặn — chính chuỗi này bị [parseRc] nuốt (trả null) nên phải chụp TRƯỚC. Off-car (`device()` null) ghi
+     * `"off_car"`. Đây là quan sát bị động trên cùng đường ghi, KHÔNG mở đường thứ hai (xem KDoc [HalWriteProbe]).
+     */
+    override fun namedInt(deviceFqn: String, method: String, args: IntArray): Long? = runCatching {
+        val dev = device(deviceFqn) ?: run { HalWriteProbe.record(deviceFqn, method, OFF_CAR); return null }
+        val raw = BydHal.callNamedInt(dev, method, *args)
+        HalWriteProbe.record(deviceFqn, method, raw)
+        parseRc(raw)
+    }.getOrNull()
 
     override fun featureGet(deviceFqn: String, id: Int): String? = runCatching {
         val dev = device(deviceFqn) ?: return null
@@ -37,14 +48,21 @@ class BydHalGateway(context: Context) : HalGateway {
         BydHal.readValue(BydHal.tryGet(dev, id))
     }.getOrNull()
 
+    /** Ghi feature-id + ghi trộm kết quả vào [HalWriteProbe] (bắt cả `rc=…` lẫn ngoại lệ "no permission …"). */
     override fun featureSet(deviceFqn: String, id: Int, value: Int): Long? = runCatching {
-        val dev = device(deviceFqn) ?: return null
-        (BydHal.setInt(dev, id, value) as? Int)?.toLong()
+        val label = "0x%08x".format(id)
+        val dev = device(deviceFqn) ?: run { HalWriteProbe.record(deviceFqn, label, OFF_CAR); return null }
+        val raw = runCatching { "rc=${BydHal.setInt(dev, id, value)}" }.getOrElse { BydHal.root(it) }
+        HalWriteProbe.record(deviceFqn, label, raw)
+        parseRc(raw)
     }.getOrNull()
 
     // Car-setting: đường ghi/đọc setting BYD chưa proven trên trim → để null (grab-list §9). Off-car null anyway.
     override fun settingGet(key: String): String? = null
-    override fun settingSet(key: String, value: Int): Long? = null
+    override fun settingSet(key: String, value: Int): Long? {
+        HalWriteProbe.record("", "setting:$key", SETTING_UNSUPPORTED)
+        return null
+    }
 
     override fun localGet(target: String, method: String, arg: Int?): String? = runCatching {
         when (target) {
@@ -56,20 +74,24 @@ class BydHalGateway(context: Context) : HalGateway {
         }
     }.getOrNull()
 
-    override fun localSet(target: String, method: String, args: IntArray): Boolean = runCatching {
-        when (target) {
-            "AudioManager" -> when (method) {
-                "setStreamVolume" -> {
-                    val am = audio() ?: return false
-                    am.setStreamVolume(AudioManager.STREAM_MUSIC, args.firstOrNull() ?: 0, 0)
-                    true
+    override fun localSet(target: String, method: String, args: IntArray): Boolean {
+        val ok = runCatching {
+            when (target) {
+                "AudioManager" -> when (method) {
+                    "setStreamVolume" -> {
+                        val am = audio() ?: return@runCatching false
+                        am.setStreamVolume(AudioManager.STREAM_MUSIC, args.firstOrNull() ?: 0, 0)
+                        true
+                    }
+                    else -> false
                 }
+                // AutoContainer = cast/HUD → do SimpleCastRuntime sở hữu, KHÔNG wire ở đây.
                 else -> false
             }
-            // AutoContainer = cast/HUD → do SimpleCastRuntime sở hữu, KHÔNG wire ở đây.
-            else -> false
-        }
-    }.getOrDefault(false)
+        }.getOrDefault(false)
+        HalWriteProbe.record(target, method, if (ok) "rc=0" else OFF_CAR)
+        return ok
+    }
 
     private fun audio(): AudioManager? =
         runCatching { app.getSystemService(Context.AUDIO_SERVICE) as? AudioManager }.getOrNull()
@@ -77,4 +99,12 @@ class BydHalGateway(context: Context) : HalGateway {
     /** BydHal.callNamedInt trả "rc=<v>" (kể cả rc lỗi) hoặc chuỗi lỗi (không có "rc="). → Long? */
     private fun parseRc(s: String): Long? =
         if (s.startsWith("rc=")) s.removePrefix("rc=").trim().toLongOrNull() else null
+
+    private companion object {
+        /** [HalWriteProbe] ghi khi `device()` null (emulator / ngoài xe) — cầu kiểm thử đọc thành `hal_line`. */
+        const val OFF_CAR = "off_car"
+
+        /** Đường car-setting chưa proven trên trim (grab-list §9). */
+        const val SETTING_UNSUPPORTED = "setting_unsupported"
+    }
 }

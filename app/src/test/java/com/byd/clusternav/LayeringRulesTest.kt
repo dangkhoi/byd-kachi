@@ -136,6 +136,11 @@ class LayeringRulesTest {
         // off-car nữa. (Đối chiếu: `VoskWordList` ở `:core` chỉ **phân tích** một `InputStream` do chỗ gọi đưa
         // vào — không tự mở gì, nên nó thuộc về bên kia ranh giới.)
         "HttpConn.kt" to "làm I/O ra mạng thật — :core phải kiểm được off-car mà không chạm mạng",
+        // S5: hàm mở rộng của `ClusterNavBridge` (Android/Context-bound) cho "màn hình chính". "Thuần" theo phép đo
+        // ở đây chỉ vì nó không `import android.*` trực tiếp và không nhắc chữ Context — nhưng nó gọi `AdbKeys`,
+        // `LocalDeviceShell`, `WorkspacePrefs`, `DefaultHome` (đều thuộc :app/:car-integration) và mở rộng một lớp
+        // giữ Context. Không chuyển được sang :core — cùng lẽ với `ThemeHost.kt`.
+        "ClusterNavBridgeHome.kt" to "hàm mở rộng ClusterNavBridge (Context-bound) — gọi AdbKeys/LocalDeviceShell/WorkspacePrefs",
     )
 
     @Test

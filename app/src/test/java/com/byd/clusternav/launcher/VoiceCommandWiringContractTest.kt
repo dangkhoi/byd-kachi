@@ -235,17 +235,17 @@ class VoiceCommandWiringContractTest {
         assertEquals(listOf("VoiceGeocoder.kt", "VoiceModelStore.kt"), users, "có tệp Voice* thứ ba ra mạng: $users")
     }
 
-    /** Và bộ nhận dạng phải là **Vosk tại máy**, ràng bằng ngữ pháp — không phải giải mã tự do. */
+    /** Và bộ nhận dạng phải là **sherpa-onnx tại máy**, giải mã tự do + biasing — không gửi tiếng ra mạng. */
     @Test
-    fun `bo nhan dang la Vosk tai may va co rang ngu phap`() {
+    fun `bo nhan dang la sherpa tai may, giai ma tu do co biasing`() {
         val rec = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceRecognizer.kt")
-        assertTrue(rec.contains("org.vosk.Model"), "phải dùng `org.vosk.Model` (tại máy)")
-        assertTrue(rec.contains("Recognizer(model, SAMPLE_RATE, grammar.json())"),
-            "phải dựng Recognizer KÈM ngữ pháp — thiếu nó là giải mã tự do 19.529 từ, đúng thứ pha này tránh")
-        assertTrue(rec.contains("grammar.phrasesKept == 0"),
-            "ngữ pháp rỗng phải bị TỪ CHỐI: Vosk lặng lẽ quay về giải mã tự do, không báo lỗi nào")
-        assertFalse(rec.contains("SpeechService") || rec.contains("SpeechStreamService"),
-            "KHÔNG dùng vòng ghi âm của thư viện — nó nằm ngoài trần 8 s và ngoài tầm bài canh mạng")
+        assertTrue(rec.contains("com.k2fsa.sherpa.onnx.OfflineRecognizer"), "phải dùng sherpa-onnx `OfflineRecognizer` (tại máy)")
+        assertTrue(rec.contains("createStream(hotwords)"),
+            "phải bơm hotwords per-stream — đó là biasing kéo giải mã tự do về tập lệnh (thay ngữ pháp FST của Vosk)")
+        assertTrue(rec.contains("SherpaBiasing.hotwordsFile()"),
+            "hotwords phải sinh từ danh mục control ([SherpaBiasing]) — cùng NGUỒN với tầng chữ")
+        assertFalse(rec.contains("AudioRecord"),
+            "bộ nhận dạng KHÔNG tự mở micro — micro chỉ ở [VoiceCapture] (trong trần 8 s + tầm bài canh mạng)")
     }
 
     /**
@@ -259,7 +259,7 @@ class VoiceCommandWiringContractTest {
     fun `bo giai ma tu do chi chay o luot 2, sau mot cum kich hoat`() {
         val rec = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceRecognizer.kt")
         assertTrue(rec.contains("fun openFree("), "R16 cần một bộ giải mã tự do cho phần đuôi từ vựng mở")
-        assertTrue(rec.contains("Recognizer(model, SAMPLE_RATE)"), "bộ giải mã tự do dựng KHÔNG kèm ngữ pháp")
+        assertTrue(rec.contains("VoiceRecognizer(rec, \"\")"), "bộ giải mã tự do dựng KHÔNG kèm hotwords (biasing rỗng)")
 
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
         val fn = SourceRoots.body(session, "private fun freeTail(")
@@ -386,11 +386,11 @@ class VoiceCommandWiringContractTest {
     @Test
     fun `mo hinh tai rieng co ghim sha va co duong go`() {
         val store = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelStore.kt")
-        assertTrue(store.contains("VoiceModelManifest.matches(got.sha256, got.bytes)"),
-            "gói tải về phải qua CẢ hai phép kiểm (sha256 + cỡ) trước khi giải nén")
-        assertTrue(store.contains("VoiceModelManifest.safeEntryPath(entry.name)"),
-            "mỗi mục trong gói phải qua luật chống leo thư mục (CLAUDE.md §4.1)")
-        assertTrue(store.contains("fun remove("), "phải có đường GỠ — 53 MB không được ở lại vĩnh viễn")
+        assertTrue(store.contains("got.bytes != mf.bytes") && store.contains("got.sha256.equals(mf.sha256"),
+            "MỖI tệp tải về phải qua CẢ hai phép kiểm (sha256 + cỡ) trước khi đặt vào chỗ")
+        assertTrue(store.contains("requireSafe("),
+            "tên MỖI tệp (từ mạng) phải qua luật chống leo thư mục (CLAUDE.md §4.1)")
+        assertTrue(store.contains("fun remove("), "phải có đường GỠ — vài trăm MB không được ở lại vĩnh viễn")
         val settings = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt")
         assertTrue(settings.contains("VoiceModelStore.install(context)"), "màn Cài đặt phải gọi đường cài THẬT")
         assertTrue(settings.contains("VoiceEngine.release()"),

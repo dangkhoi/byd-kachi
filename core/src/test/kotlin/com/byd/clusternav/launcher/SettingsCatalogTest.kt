@@ -25,7 +25,7 @@ class SettingsCatalogTest {
     // Đúng bộ khoá mà spec §4.1 nói phải có chủ. Viết tay ở đây để bài test còn nói được điều gì đó độc lập với
     // bộ quét — bài quét mã nguồn phía dưới mới là bài chống rữa.
     private val mustBeOwned = listOf(
-        "preset", "grid_layout", "wallpaper_prefs", "top_strip", "dock_enabled", "dock_edge",
+        "preset", "grid_layout", "wallpaper_prefs", "top_strip", "dock_enabled", "dock_edge", "dock_visible",
         "unit_prefs", "profiles", "active_profile", "theme_mode", "launcher_autostart",
         "recirc_on_start_enabled",
     )
@@ -246,12 +246,17 @@ class SettingsCatalogTest {
                 "profiles_add",
                 // IA v2: mọi HÀNH ĐỘNG của màn ClusterNav (§4.3, cột "API ghi") — chúng bấm là chạy, không lưu gì.
                 "nav_reconnect", "cast_actions", "cast_rescue", "keys_check", "car_pm25_clean",
-                "system_permissions", "system_update", "system_nav_stop",
+                "system_permissions",
+                // S5 — nút "Đặt Kachi làm màn hình chính" là VIỆC LÀM (gọi `cmd package set-home-activity`), không
+                // lưu khoá nào; trạng thái đọc live từ PackageManager. Công tắc `system_keep_home_on_boot` thì CÓ
+                // khoá (`keep_home_on_boot`) nên KHÔNG nằm ở đây.
+                "system_default_home",
+                "system_update", "system_nav_stop",
                 "system_vietmap_data", "system_diagnostics",
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "mười bốn mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười lăm mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

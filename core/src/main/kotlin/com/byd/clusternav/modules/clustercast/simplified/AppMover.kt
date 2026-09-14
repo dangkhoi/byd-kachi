@@ -59,22 +59,89 @@ class AppMover(
             AppType.NORMAL -> {
                 // Resolve launcher activity component (proven pattern from CastPlacementCommands)
                 val component = activity ?: resolveLauncherComponent(pkg) ?: "$pkg/.MainActivity"
-                // Fresh launch with freeform on cluster display
+                // R1 — fresh launch with freeform on cluster display.
                 // NOTE: do NOT use --activity-clear-task — it kills the existing task and on
-                // Android 10 BYD the new task fails to land on display 1.
+                // Android 10 BYD the new task fails to land on the cluster.
                 // force_resizable_activities=1 must be set (checked/set on vehicle).
                 val launchCmd = "am start -a android.intent.action.MAIN" +
                     " -c android.intent.category.LAUNCHER" +
                     " --display $displayId --windowingMode 5" +
                     " -n '$component'"
                 val result = shell.execute(launchCmd)
-                if (!result.success) return null
-                // Fit to cluster viewport after landing (give 1s for task to land)
+                // Give the task ~1s to land, THEN verify by truth (`am stack list`) — never trust the
+                // am-start exit code alone. X2 (measured DiLink3.0 2026-09-14): `am start --display <VD>`
+                // onto a virtual display OWNED BY ANOTHER UID (cluster = com.xdja.containerservice) is
+                // rejected by SafeActivityOptions.checkPermissions ("Permission Denial ... launchDisplayId"),
+                // OR ActivityStarter silently re-targets display 0 — either way the app is left on display 0.
                 sleepMs(1000)
+                if (findTaskIdOnDisplay(pkg, displayId) == null) {
+                    val denied = launchWasDenied(result)
+                    log("cast R1 did not land $pkg on display $displayId (${if (denied) "Permission Denial" else "redirected/absent"}) → R2 move-stack fallback")
+                    if (!moveStackToCluster(pkg, displayId, launchCmd)) {
+                        log("cast FAIL: R1 (am start) + R2 (move-stack) both failed to place $pkg on display $displayId")
+                        return null
+                    }
+                }
+                // Fit to cluster viewport after landing.
                 fitToCluster(pkg, displayId, slotSide, leftPercent)
                 -1  // success, taskId not tracked for normal apps
             }
         }
+    }
+
+    /**
+     * R2 (X2) — bê stack của [pkg] (đang bị bỏ lại trên display 0 sau khi R1 `am start --display` bị
+     * Permission Denial / redirect) lên VD cụm bằng `am display move-stack <stackId> <VD>`.
+     *
+     * Đây là đường proven trên xe trong `ClusterCast.placeLadder` R2: move-stack đi thẳng
+     * ATMS.moveStackToDisplay → ActivityStack.reparent (KHÔNG qua ActivityStarter/SafeActivityOptions),
+     * nên reparent VÔ ĐIỀU KIỆN — vượt qua đúng cái gate `launchDisplayId` chặn R1. Sau khi reparent, bắn
+     * lại [reissueCmd] để ép composite (task đã ở trên VD nên không thể bị kéo ngược về display 0).
+     *
+     * @return true nếu SAU move-stack app đã bám VD (kiểm bằng `am stack list`), else false.
+     */
+    private fun moveStackToCluster(pkg: String, displayId: Int, reissueCmd: String): Boolean {
+        val list = shell.execute("am stack list")
+        if (!list.success) { log("move-stack: am stack list failed"); return false }
+        // Ưu tiên stack của app trên display 0 (nơi R1 bị đẩy về); nếu không thấy, lấy stack bất kỳ của app
+        // KHÔNG nằm sẵn trên VD (tránh move-stack chính nó).
+        val stackId = CastStackParser.findStackIdForPkg(list.stdout, pkg, 0)
+            ?: findStackIdForPkgAnyDisplayExcept(list.stdout, pkg, displayId)
+        if (stackId == null) { log("move-stack: no stack hosting $pkg off the cluster to move"); return false }
+        val out = shell.execute("am display move-stack $stackId $displayId")
+        if (moveStackRejected(out)) { log("move-stack rejected: ${out.stderr.take(120)}${out.stdout.take(120)}"); return false }
+        // Ép composite: task đã ở VD nên am start không kéo được về 0.
+        shell.execute(reissueCmd)
+        sleepMs(700)
+        return findTaskIdOnDisplay(pkg, displayId) != null
+    }
+
+    /** Stack id của [pkg] trên display bất kỳ TRỪ [exceptDisplayId]; null nếu không có. */
+    private fun findStackIdForPkgAnyDisplayExcept(amOutput: String, pkg: String, exceptDisplayId: Int): Int? {
+        for (d in parseDisplayIds(amOutput)) {
+            if (d == exceptDisplayId) continue
+            CastStackParser.findStackIdForPkg(amOutput, pkg, d)?.let { return it }
+        }
+        return null
+    }
+
+    private fun parseDisplayIds(amOutput: String): List<Int> =
+        Regex("""displayId=(\d+)""").findAll(amOutput).mapNotNull { it.groupValues[1].toIntOrNull() }.distinct().toList()
+
+    /** R1 bị SafeActivityOptions từ chối (VD của uid khác)? Đọc cả stdout lẫn stderr (am in Permission Denial ra cả 2). */
+    private fun launchWasDenied(result: ShellResult): Boolean {
+        val text = (result.stdout + "\n" + result.stderr)
+        return text.contains("Permission Denial", ignoreCase = true) ||
+            (text.contains("SecurityException") && text.contains("launchDisplayId"))
+    }
+
+    /** `am display move-stack` bị framework từ chối (không tồn tại stack / reparent ném). */
+    private fun moveStackRejected(result: ShellResult): Boolean {
+        if (!result.success) return true
+        val text = (result.stdout + "\n" + result.stderr)
+        return text.contains("Exception", ignoreCase = true) ||
+            text.contains("Error", ignoreCase = true) ||
+            text.contains("no stack", ignoreCase = true)
     }
 
     /**

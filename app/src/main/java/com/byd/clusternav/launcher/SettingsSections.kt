@@ -11,6 +11,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.R
+import com.byd.clusternav.carexec.LocalSetHomeOutcome
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.testbridge.TestBridgeStore
@@ -296,6 +297,9 @@ class SettingsSections(
             rep.missing.forEach { body.addView(rows.permissionRow(it, rep)) }
         }
 
+        // ── Màn hình chính (S5) ──
+        homeScreen(body)
+
         // ── Khởi động: HAI công tắc, hai NGHĨA khác nhau (IA v2 · R3) ──
         // [ĐO] kiểm kê 2026-09-12: `launcher_autostart` mở **màn hình** Kachi làm home, còn `headless_autostart`
         // chạy **dịch vụ** dẫn đường/cụm ở nền. Hai màn cũ đặt chúng ở hai nơi với câu chữ gần giống nhau ⇒ trông
@@ -337,6 +341,74 @@ class SettingsSections(
         com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows).build(body)
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
         VoiceTextConsole(context, rows, deps).build(body)
+    }
+
+    /**
+     * S5 — **MÀN HÌNH CHÍNH**: dòng trạng thái + nút *Đặt Kachi làm màn hình chính* + công tắc *giữ khi nổ máy*.
+     *
+     * ## Vì sao cần nút này (owner 2026-09-14)
+     * ROM BYD **không hiện hộp chọn HOME** khi bấm nút Home ⇒ không có đường tay nào để chọn launcher. Nút này gọi
+     * `cmd package set-home-activity` qua dadb uid-shell ([ĐO] DiLink3.0 ⇒ `Success`), đường mà cầu đã sở hữu.
+     *
+     * ## Ba tính chất
+     *  • Trạng thái ĐỌC không cần shell ([ClusterNavBridge.isDefaultHome]/[currentHomePackage]) — xanh khi Kachi đã
+     *    là HOME, hổ phách kèm tên gói hệ thống đang dùng khi chưa.
+     *  • Nút **ẩn khi đã là home** (task item 2) — không mời bấm lại một việc đã xong; đổi chữ *"Đang đặt…"* lúc chạy.
+     *  • Đặt xong ⇒ post kết quả về luồng vẽ ([ClusterNavBridge.setDefaultHome] tự chạy nền): Ok cập nhật trạng thái
+     *    xanh + ẩn nút; NoShellChannel chỉ sang hàng *Kênh điều khiển cửa sổ* ở trên; Failed hiện output resolve.
+     */
+    private fun homeScreen(body: LinearLayout) {
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sec_home_screen)))
+
+        val isHome = deps.bridge.isDefaultHome()
+        val status = rows.statusRow(
+            if (isHome) KachiTheme.GREEN else KachiTheme.AMBER,
+            if (isHome) {
+                context.getString(R.string.kachi_home_is_default)
+            } else {
+                val pkg = deps.bridge.currentHomePackage() ?: context.getString(R.string.kachi_home_unknown_pkg)
+                context.getString(R.string.kachi_home_not_default, pkg)
+            },
+        )
+        body.addView(status.view)
+
+        // Câu kết quả sau khi bấm — rỗng/ẩn tới khi có kết quả (một dòng, không phải toast: người đọc cần đọc kỹ).
+        val result = rows.note("").also { it.visibility = View.GONE }
+        val setBtn = rows.button(context.getString(R.string.kachi_home_set)) {} as TextView
+        setBtn.visibility = if (isHome) View.GONE else View.VISIBLE
+        setBtn.setOnClickListener {
+            setBtn.isEnabled = false
+            setBtn.text = context.getString(R.string.kachi_home_setting)
+            deps.bridge.setDefaultHome { outcome ->
+                result.visibility = View.VISIBLE
+                when (outcome) {
+                    is LocalSetHomeOutcome.Ok -> {
+                        status.update(KachiTheme.GREEN, context.getString(R.string.kachi_home_is_default))
+                        result.text = context.getString(R.string.kachi_home_result_ok)
+                        setBtn.visibility = View.GONE
+                    }
+                    is LocalSetHomeOutcome.NoShellChannel -> {
+                        result.text = context.getString(R.string.kachi_home_result_no_shell)
+                        setBtn.isEnabled = true
+                        setBtn.text = context.getString(R.string.kachi_home_set)
+                    }
+                    is LocalSetHomeOutcome.Failed -> {
+                        result.text = context.getString(R.string.kachi_home_result_failed, outcome.resolveOutput)
+                        setBtn.isEnabled = true
+                        setBtn.text = context.getString(R.string.kachi_home_set)
+                    }
+                }
+            }
+        }
+        body.addView(setBtn)
+        body.addView(result)
+
+        // Công tắc "giữ khi nổ máy" (theo XE, mặc định TẮT) — đặt lại HOME một lần lúc khởi động nếu ROM reset.
+        body.addView(rows.checkRow(
+            on = deps.bridge.keepHomeOnBoot(),
+            title = context.getString(R.string.kachi_keep_home_boot_title),
+            sub = context.getString(R.string.kachi_keep_home_boot_sub),
+        ) { on -> deps.bridge.setKeepHomeOnBoot(on) })
     }
 
     /**

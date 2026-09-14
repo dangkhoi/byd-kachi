@@ -75,17 +75,19 @@ class VoiceModelSettings(
         if (VoiceModelStore.isReady(context)) R.string.kachi_voice_model_remove else R.string.kachi_voice_model_get,
     )
 
-    private fun statusText(): String =
-        if (!VoiceModelStore.isReady(context)) {
-            context.getString(R.string.kachi_voice_model_absent, mb(VoiceModelManifest.ZIP_BYTES))
+    private fun statusText(): String {
+        val model = VoiceModelStore.selected(context)
+        return if (!VoiceModelStore.isReady(context)) {
+            context.getString(R.string.kachi_voice_model_absent, mb(model.totalBytes))
         } else {
             context.getString(
                 R.string.kachi_voice_model_ready,
-                VoiceModelManifest.ID,
-                VoiceModelStore.words(context).size,
+                model.label,
+                model.files.size,
                 mb(VoiceModelStore.sizeOnDisk(context)),
             )
         }
+    }
 
     private fun stepText(step: VoiceModelStore.Step): String = when (step) {
         is VoiceModelStore.Step.Downloading ->

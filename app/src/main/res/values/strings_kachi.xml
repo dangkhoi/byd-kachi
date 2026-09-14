@@ -99,6 +99,10 @@
     <string name="kachi_perm_core">%1$s — ảnh hưởng tính năng chính</string>
     <string name="kachi_perm_loses">Thiếu thì: %1$s</string>
 
+    <!-- ── F4 — dải nhắc khi hệ thống đang hỏi "Cho phép gỡ lỗi USB?" (ShellChannelGate) ── -->
+    <string name="kachi_shell_approval_msg">Hệ thống đang hỏi \"Cho phép gỡ lỗi USB?\" — tích \"Luôn cho phép\" rồi bấm OK để Kachi đưa app vào ô được.</string>
+    <string name="kachi_shell_approval_retry">Thử lại</string>
+
     <!-- ── SettingsSections — Hiển thị & đơn vị ── -->
     <string name="kachi_sec_units">Đơn vị hiển thị</string>
     <string name="kachi_sec_theme">Giao diện sáng/tối</string>
@@ -127,9 +131,21 @@
     <string name="kachi_sec_permissions">Quyền</string>
     <string name="kachi_perm_all_ok">Đủ quyền — không thiếu gì. Kachi tự xin lại mỗi lần mở nếu hệ thống thu hồi.</string>
     <string name="kachi_perm_some_missing">Kachi tự xin lại phần tự xin được; phần còn lại nói rõ việc cần làm.</string>
+    <!-- S5 — Màn hình chính -->
+    <string name="kachi_sec_home_screen">Màn hình chính</string>
+    <string name="kachi_home_is_default">Kachi đang là màn hình chính.</string>
+    <string name="kachi_home_not_default">Chưa — hệ thống đang dùng %1$s.</string>
+    <string name="kachi_home_unknown_pkg">(không đọc được)</string>
+    <string name="kachi_home_set">Đặt Kachi làm màn hình chính</string>
+    <string name="kachi_home_setting">Đang đặt…</string>
+    <string name="kachi_home_result_ok">Đã đặt — bấm Home để về Kachi.</string>
+    <string name="kachi_home_result_no_shell">Cần kênh shell — xem hàng \"Kênh điều khiển cửa sổ\" ở trên.</string>
+    <string name="kachi_home_result_failed">Đã chạy lệnh nhưng hệ thống vẫn chưa nhận Kachi: %1$s</string>
+    <string name="kachi_keep_home_boot_title">Giữ Kachi làm màn hình chính khi nổ máy</string>
+    <string name="kachi_keep_home_boot_sub">Nổ máy thì đặt lại Kachi làm màn hình chính một lần nếu hệ thống đã đổi. Mặc định tắt.</string>
     <string name="kachi_sec_boot">Khởi động</string>
     <string name="kachi_autostart_title">Tự mở khi nổ máy</string>
-    <string name="kachi_autostart_sub">Nổ máy là Kachi tự dựng lại ô và đặt mình làm màn hình chính. Tắt thì phải mở tay.</string>
+    <string name="kachi_autostart_sub">Nổ máy là Kachi tự dựng lại ô. Việc đặt làm màn hình chính nằm ở mục \"Màn hình chính\" phía trên. Tắt thì phải mở tay.</string>
 
     <!-- ── SettingsSections — ClusterNav · Giới thiệu ── -->
     <string name="kachi_about_tagline">Kachi — màn hình chính cho xe BYD DiLink.</string>
@@ -155,6 +171,8 @@
     <string name="kachi_wall_fit">Cách phủ</string>
     <string name="kachi_wall_dim">Làm tối ảnh</string>
     <string name="kachi_sec_dock">Thanh nút xe</string>
+    <string name="kachi_dock_visible_title">Hiện thanh nút xe</string>
+    <string name="kachi_dock_visible_sub">Tắt để ẩn thanh nút; các khung lấp trọn màn hình</string>
     <string name="kachi_dock_edge">Viền đặt thanh</string>
     <string name="kachi_dock_note">Chạm một ô để thêm hoặc bớt nút khỏi thanh.</string>
     <string name="kachi_dock_warn">⚠ Nhóm An toàn/Động lực/Giải trí đổi hành vi lái — tự dùng tự chịu.</string>

@@ -57,6 +57,7 @@ class SettingsCatalogControlContractTest {
             "home_wallpaper" to ("SettingsSectionsHome" to "deps.onWallpaper("),
             // ── 2 · Thanh trạng thái & thanh nút ──
             "bars_top_strip" to ("SettingsSectionsBars" to "stripPicker.section("),
+            "bars_dock_visible" to ("SettingsSectionsBars" to "dock.withVisible("),
             "bars_dock_edge" to ("SettingsSectionsBars" to "deps.onDockEdge("),
             "bars_dock_items" to ("SettingsSectionsBars" to "deps.openDockPicker("),
             // ── 3 · Hiển thị & đơn vị ──
@@ -109,6 +110,9 @@ class SettingsCatalogControlContractTest {
             "system_permissions" to ("SettingsSections" to "rows.permissionRow("),
             "system_autostart" to ("SettingsSections" to "deps.onAutostart("),
             "system_headless_autostart" to ("SettingsSections" to "deps.bridge.setHeadlessAutostart("),
+            // S5 — nút Đặt Kachi làm màn hình chính (ROM không hiện hộp chọn HOME) + công tắc giữ khi nổ máy.
+            "system_default_home" to ("SettingsSections" to "deps.bridge.setDefaultHome"),
+            "system_keep_home_on_boot" to ("SettingsSections" to "deps.bridge.setKeepHomeOnBoot("),
             "system_update" to ("SettingsSections" to "deps.bridge.checkUpdate"),
             "system_nav_stop" to ("SettingsSections" to "deps.bridge.navStop()"),
             "system_vietmap_data" to ("SettingsSections" to "deps.bridge.openVietMapData()"),

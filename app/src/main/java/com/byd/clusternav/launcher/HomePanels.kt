@@ -62,6 +62,9 @@ class HomePanels(
     private val bootProfile: () -> String? = { null },
     private val onBootProfile: (String?) -> Unit = {},
     private val shellUsable: () -> Boolean,
+    /** F4 — hệ thống đang hỏi *"Cho phép gỡ lỗi USB?"*: hàng quyền phải nói việc NGƯỜI DÙNG làm, không nói
+     * "hạn chế môi trường" ([ĐO] xe 2026-09-14 nói sai đúng ca này). Xem [ShellChannelGate]. */
+    private val shellAwaiting: () -> Boolean,
     private val goImmersive: () -> Unit,
     /**
      * V1 · R6 — mở NGĂN KÉO ứng dụng. Cùng lambda mà thanh nút đang dùng (`KachiHomeWiring.controlDock`), chuyển
@@ -126,7 +129,9 @@ class HomePanels(
         val deps = SettingsDeps(
             state = state,
             // P8: đọc MỚI mỗi lượt dựng trang — quyền có thể vừa được tự cấp xong ở nhịp khởi động.
-            permissions = { PermissionPreflight.check(activity, shellUsable = shellUsable()) },
+            permissions = {
+                PermissionPreflight.check(activity, shellUsable = shellUsable(), awaitingApproval = shellAwaiting())
+            },
             // U4: nói CHỖ bỏ ảnh vào — người dùng không có cách nào tự đoán, và màn chọn tệp của hệ thống bị khoá trên xe.
             wallpaperFolderHint = WallpaperStore.folderHint(activity),
             // IA v2 · N2: một cầu, không bọc lại thành lambda (xem KDoc [SettingsDeps.bridge]).

@@ -43,12 +43,14 @@ object SimpleCastRuntime {
             shell = shell,
             log = { message -> android.util.Log.i("SimpleCast", "AppMover: $message") },
         )
-        // Display ID 1 is the cluster on BYD DiLink3 (measured on vehicle).
-        // A saved ID remains authoritative; do not guess from display dimensions.
+        // Cluster display id — SEED only (X2). KHÔNG dò shell ở đây: create() chạy lười trên luồng GỌI ĐẦU
+        // TIÊN (có thể là main thread, vd bridge.castEnabled()), nên shell dadb ở đây = NetworkOnMainThread/ANR.
+        // Seed = saved (prefs) hoặc 1 (phao). [SimpleCastCoordinator.openProjection] dò LẠI thật trên executor
+        // nền (dumpsys → fission/xdja) rồi ghi đè + persist — đó mới là nguồn sự thật. Đừng hardcode ở caller.
         val savedDisplayId = prefs.lastDisplayId()
         val displayId = savedDisplayId ?: 1
-        val displaySource = if (savedDisplayId != null) "saved" else "measured default"
-        android.util.Log.i("SimpleCast", "Cluster display = $displayId (source=$displaySource)")
+        val displaySource = if (savedDisplayId != null) "saved" else "seed(1) — refined live in openProjection"
+        android.util.Log.i("SimpleCast", "Cluster display seed = $displayId (source=$displaySource)")
         return SimpleCastCoordinator(projection, configurator, mover, prefs, shell, displayId, selfPackage = com.byd.clusternav.BuildConfig.APPLICATION_ID)
     }
 

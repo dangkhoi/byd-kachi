@@ -82,14 +82,16 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 55 muc`() {
+    fun `moi muc cai dat co nhan EN — 10 nhom va 58 muc`() {
         assertEquals(10, SettingsCatalog.GROUPS.size)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
         // màn cũ gỡ hẳn), rồi S4 · R1/R6: **−3** mục cảnh (`home_scenes` · `home_scene_boot` · `home_scene_save`)
         // **+2** mục hồ sơ (`profiles_boot` · `profiles_add`), rồi T-BRIDGE **+1** (`system_test_bridge` — công
-        // tắc chế độ kiểm thử qua adb, docs/specs/kachi-test-bridge.html).
-        assertEquals(55, SettingsCatalog.ENTRIES.size)
+        // tắc chế độ kiểm thử qua adb, docs/specs/kachi-test-bridge.html), rồi S5 **+2** (`system_default_home` —
+        // nút Đặt Kachi làm màn hình chính, và `system_keep_home_on_boot` — công tắc giữ khi nổ máy).
+        // S1b (2026-09-14): **+1** (`bars_dock_visible` — công tắc ẩn/hiện thanh nút xe).
+        assertEquals(58, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -136,7 +138,8 @@ class LangCoverageTest {
         // này, không thì một bộ đăng ký mới có nhãn chưa dịch mà không bài nào thấy.
         // V1 pha NGHE: +2 — `launcher_voice` *"Nói với xe" · "Talk to car"* và điều kiện `microphone`.
         // T-BRIDGE: +1 — mục `system_test_bridge` (công tắc "Chế độ kiểm thử qua adb").
-        assertEquals(307, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // S5: +2 — `system_default_home` (nút Đặt Kachi làm màn hình chính) + `system_keep_home_on_boot` (công tắc).
+        assertEquals(310, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

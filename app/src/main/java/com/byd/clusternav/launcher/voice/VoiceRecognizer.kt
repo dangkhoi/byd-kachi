@@ -2,208 +2,224 @@ package com.byd.clusternav.launcher.voice
 
 import android.content.Context
 import android.util.Log
-import org.json.JSONObject
-import org.vosk.LibVosk
-import org.vosk.LogLevel
-import org.vosk.Model
-import org.vosk.Recognizer
+import com.k2fsa.sherpa.onnx.FeatureConfig
+import com.k2fsa.sherpa.onnx.OfflineModelConfig
+import com.k2fsa.sherpa.onnx.OfflineRecognizer
+import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
+import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
+import java.io.File
 
 /**
- * ═══ V1 pha NGHE · BỘ NHẬN DẠNG — VOSK, **TẠI MÁY**, RÀNG BẰNG NGỮ PHÁP ══════════════════════════════════════
+ * ═══ V2 pha NGHE · BỘ NHẬN DẠNG — sherpa-onnx OfflineRecognizer, **TẠI MÁY**, GIẢI MÃ TỰ DO + BIASING ════════
  *
- * Spec `docs/specs/kachi-voice-command.html` **R10 · R11**. Thư viện: `com.alphacephei:vosk-android:0.3.47`
- * (bản ổn định mới nhất, kiểm 2026-09-14 — xem ghi chú version trong `app/build.gradle.kts`).
+ * Spec `docs/specs/kachi-voice-engine-v2.html`. Thay Vosk (`org.vosk`): Vosk ràng **ngữ pháp FST cứng** + mô hình
+ * 32 MB ⇒ trên xe nói cả câu ra một từ. V2 dùng Zipformer-vi (transducer) giải mã **tự do**, rồi kéo về đúng tập
+ * lệnh bằng **hotwords/contextual biasing** ([SherpaBiasing] + [SherpaHotwords]).
  *
- * ## Vì sao KHÔNG dùng `SpeechService`/`SpeechStreamService` của chính gói Vosk
- * Hai lớp đó tự dựng `AudioRecord` + luồng riêng bên trong thư viện. Nghĩa là đường ghi âm nằm **ngoài** tệp
- * `Voice*` của dự án ⇒ nằm ngoài tầm bài canh *"không tệp Voice\* nào mở socket"*, ngoài trần 8 giây, và ngoài
- * chốt tiêu điểm âm thanh. Trên một chiếc xe đang chạy, *"micro đang bật tới bao giờ"* phải là câu trả lời được
- * bằng cách đọc mã của dự án, không phải bằng cách đọc mã của thư viện. Nên Kachi giữ `AudioRecord` cho mình
- * ([VoiceSession]) và chỉ dùng đúng phần lõi: [Model] + [Recognizer].
+ * ## Vì sao GIỮ nguyên `AudioRecord` của dự án ([VoiceCapture]), chỉ đổi lõi giải mã
+ * Cùng lý do như bản Vosk: đường ghi âm phải nằm TRONG tệp `Voice*` để bài canh *"không tệp Voice\* nào ra
+ * mạng"* + trần 8 giây + chốt tiêu điểm còn hiệu lực. sherpa cũng có lớp mic/VAD tự dựng `AudioRecord` — KHÔNG
+ * dùng, vì lý do đó.
  *
- * ## Ngữ pháp, không phải từ vựng mở
- * `Recognizer(model, 16000f, grammarJson)` ràng bộ giải mã vào **tập đóng** của Kachi (xem [VoicePhrases]).
- * Ba cái được, tất cả đều đo được:
- *  • **đúng hơn** — mô hình 32 MB giải mã tự do trên tiếng Việt có WER 15,7 % (README của mô hình); ràng vào
- *    ~2.000 mục thì không gian tìm kiếm nhỏ hơn hàng nghìn lần;
- *  • **nhanh hơn** — LM bigram dựng từ danh sách, không phải LM 19.529 từ;
- *  • **an toàn hơn** — thứ ngoài tập đóng rơi vào `[unk]` rồi thành *"không hiểu"*, thay vì bị **ép** thành một
- *    câu lệnh gần giống. Trên xe, "không hiểu" là câu trả lời đúng; "đoán bừa rồi mở khoá" thì không.
+ * ## OFFLINE, không streaming: [accept] GOM, [result] mới giải mã
+ * `OfflineRecognizer` giải mã cả một khúc một lần (không có "chốt câu giữa dòng" như Vosk). Nên [accept] chỉ
+ * **gom** PCM và luôn trả `false`; [VoiceCapture] chạy tới trần 8 s / người dùng thả tay rồi gọi [finalResult]
+ * — chỗ giải mã thật sự xảy ra. [decodeAll] giải mã thẳng một khúc đã thu (lượt 2 tự do). Hợp đồng với
+ * [VoiceCapture] không đổi một dòng. (Endpoint theo VAD của sherpa = hạng mục mở, xem spec §Open Questions.)
  *
- * ## Vòng đời: mô hình nạp MỘT lần cho cả tiến trình
- * [Model] mmap ~53 MB và mất vài giây để dựng đồ thị. Nạp lại ở mỗi lần bấm mic là mỗi lần bấm mic chờ vài
- * giây — tức tính năng coi như hỏng. [VoiceEngine] giữ nó; [Recognizer] thì dựng mới mỗi phiên vì ngữ pháp phụ
- * thuộc **danh sách động** (hồ sơ tài xế, app đã cài) và danh sách ấy đổi được giữa hai lần nói.
+ * ## Vòng đời: recognizer nạp MỘT lần cho cả tiến trình ([VoiceEngine])
+ * Encoder ONNX (fp32) hàng trăm MB, dựng phiên mất vài giây ⇒ không nạp lại mỗi lần bấm mic. Biasing **động** đi
+ * qua `createStream(hotwords)` per-phiên, KHÔNG phải dựng lại recognizer ([ĐO] off-car: per-stream hotwords ăn).
  */
 class VoiceRecognizer private constructor(
-    private val recognizer: Recognizer,
-    /** Ngữ pháp đang áp — phơi ra để màn Cài đặt/nhật ký nói được con số thật, không phải "đã sẵn sàng". */
-    val grammar: VoicePhraseSet,
+    private val recognizer: OfflineRecognizer,
+    /** Hotwords cho phiên này (HOA có dấu, một dòng một cụm). Rỗng ⇒ không biasing (lượt tự do / thiếu bpe vocab). */
+    private val hotwords: String,
 ) : AutoCloseable {
 
+    // Gom PCM giữa các [accept]; giải mã một lần ở [result]/[finalResult]. Trần ~10 s để chặn rò bộ nhớ.
+    private val buffer = ShortArray(MAX_SAMPLES)
+    private var filled = 0
+
     /**
-     * Nạp một khối PCM 16-bit mono 16 kHz.
-     *
-     * @return `true` khi Vosk **chốt câu** (nó tự nhận ra người nói đã ngừng — bảng ngắt câu nằm trong
-     *   `conf/model.conf` của mô hình: `rule2 0.5s · rule3 1.0s · rule4 2.0s`). Chỗ gọi lấy [result] rồi dừng.
+     * Gom một khối PCM 16-bit mono 16 kHz. **Luôn** trả `false`: mô hình offline không chốt câu giữa dòng —
+     * [VoiceCapture] dừng theo trần thời gian / người dùng thả tay rồi lấy [finalResult].
      */
-    fun accept(buffer: ShortArray, length: Int): Boolean =
-        runCatching { recognizer.acceptWaveForm(buffer, length) }
-            .onFailure { Log.w(TAG, "acceptWaveForm hỏng", it) }
-            .getOrDefault(false)
+    fun accept(buffer: ShortArray, length: Int): Boolean {
+        if (filled >= this.buffer.size) return false
+        val room = minOf(length, this.buffer.size - filled)
+        System.arraycopy(buffer, 0, this.buffer, filled, room)
+        filled += room
+        return false
+    }
 
-    /** Chữ đang nghe dở (vẽ lên overlay để người nói thấy máy đang theo kịp). */
-    fun partial(): String = text(runCatching { recognizer.partialResult }.getOrNull(), "partial")
+    /** Không có "chữ đang nghe dở" ở mô hình offline — overlay chỉ hiện trạng thái đang nghe. */
+    fun partial(): String = ""
 
-    /** Chữ của câu vừa chốt. */
-    fun result(): String = text(runCatching { recognizer.result }.getOrNull(), "text")
+    /** Chữ của khúc đã gom. */
+    fun result(): String = decode(buffer, filled)
 
-    /** Chữ còn lại khi phiên bị cắt ngang (hết 8 giây / người dùng thả tay). */
-    fun finalResult(): String = text(runCatching { recognizer.finalResult }.getOrNull(), "text")
+    /** Giống [result] — mô hình offline chỉ có một kết quả cuối. */
+    fun finalResult(): String = decode(buffer, filled)
 
     /**
-     * Giải mã **cả một khúc PCM đã thu sẵn** (không phải luồng micro) và trả chữ cuối cùng.
-     *
-     * Dùng cho lượt 2 của [VoiceOpenVocab]: cùng bộ nhận dạng, cùng nhịp 200 ms như micro đẩy, chỉ khác nguồn.
+     * Giải mã **cả một khúc PCM đã thu sẵn** và trả chữ (thường hoá). Dùng cho lượt 2 của [VoiceOpenVocab].
      * **CHẶN** ⇒ luồng nền.
      */
-    fun decodeAll(pcm: ShortArray, length: Int): String {
-        var at = 0
-        val chunk = VoiceCapture.SAMPLE_RATE / 5
-        while (at < length) {
-            val n = minOf(chunk, length - at)
-            val block = if (at == 0 && n == pcm.size) pcm else pcm.copyOfRange(at, at + n)
-            if (accept(block, n)) return result()
-            at += n
-        }
-        return finalResult()
-    }
-
-    override fun close() {
-        runCatching { recognizer.close() }.onFailure { Log.w(TAG, "đóng recognizer hỏng", it) }
-    }
+    fun decodeAll(pcm: ShortArray, length: Int): String = decode(pcm, length)
 
     /**
-     * Lấy đúng một trường chuỗi trong JSON của Vosk.
+     * Một lượt giải mã: PCM16 → float [-1,1) → stream (+hotwords nếu có) → text.
      *
-     * Bọc `runCatching` vì đây là **chuỗi từ mã native**: một bản Vosk tương lai đổi khuôn JSON sẽ làm
-     * `JSONObject` ném ngay giữa lúc người lái đang nói. Trả chuỗi rỗng ⇒ phiên nghe kết thúc bằng *"không
-     * nghe rõ"*, thay vì bằng một hộp thoại sập ứng dụng launcher.
+     * Mô hình VN xuất **CHỮ HOA CÓ DẤU**; [VoiceIntentParser] làm việc trên chữ **thường đã bỏ dấu** — nên hạ
+     * chữ ở đây, giữ đúng hợp đồng chuỗi mà tầng chữ (Vosk trước đây) vẫn nhận.
      */
-    private fun text(json: String?, key: String): String =
-        runCatching { JSONObject(json ?: return "").optString(key).trim() }
-            .onFailure { Log.w(TAG, "JSON của Vosk không đọc được: $json", it) }
-            .getOrDefault("")
+    private fun decode(pcm: ShortArray, length: Int): String {
+        if (length <= 0) return ""
+        val n = minOf(length, pcm.size)
+        val samples = FloatArray(n) { pcm[it] / 32768f }
+        return runCatching {
+            val stream = if (hotwords.isNotEmpty()) recognizer.createStream(hotwords) else recognizer.createStream()
+            try {
+                stream.acceptWaveform(samples, SAMPLE_RATE_INT)
+                recognizer.decode(stream)
+                recognizer.getResult(stream).text.trim().lowercase()
+            } finally {
+                runCatching { stream.release() }
+            }
+        }.onFailure { Log.w(TAG, "giải mã hỏng", it) }.getOrDefault("")
+    }
+
+    /** Đóng phiên — chỉ quên khúc PCM; KHÔNG đóng recognizer chung (nó sống cả tiến trình, [VoiceEngine] giữ). */
+    override fun close() { filled = 0 }
 
     companion object {
         private const val TAG = "KachiVoiceRec"
 
-        /** Tần số lấy mẫu — cùng số với [VoiceSession] và với mô hình (`conf/mfcc.conf`). */
+        /** Tần số lấy mẫu — cùng số với [VoiceCapture.SAMPLE_RATE] và mô hình (fbank 16 kHz). */
         const val SAMPLE_RATE = 16_000f
+        private const val SAMPLE_RATE_INT = 16_000
+
+        /** Trần khúc gom: 10 s @16 kHz. Dài hơn trần một phiên (8 s) để không cắt cụt câu cuối. */
+        private const val MAX_SAMPLES = SAMPLE_RATE_INT * 10
 
         /**
-         * Mở một phiên nhận dạng, hoặc `null` nếu mô hình chưa sẵn sàng / ngữ pháp rỗng.
+         * Mở phiên nhận dạng RÀNG lệnh, hoặc `null` nếu mô hình chưa sẵn sàng. **CHẶN** ⇒ luồng nền.
          *
-         * **CHẶN** (dựng đồ thị giải mã) ⇒ gọi trên luồng nền.
-         *
-         * ⚠ Ngữ pháp rỗng bị từ chối **cố ý**: `Recognizer` với danh sách rỗng quay về giải mã tự do 19.529 từ
-         * — đúng thứ ta vừa bỏ công tránh, và nó hỏng **im lặng** (vẫn chạy, chỉ là nghe ra linh tinh).
+         * Biasing lấy từ **tập control tĩnh** ([SherpaBiasing]) — tên hồ sơ/app KHÔNG bias (mô hình VN không phát
+         * ra token tiếng Anh; [VoiceIntentParser] khớp nhãn app lo). Chỉ bias khi engine có bpe vocab.
          */
+        @Suppress("UNUSED_PARAMETER")
         fun open(
             ctx: Context,
             profiles: List<String>,
             apps: List<String>,
             installed: Set<String> = emptySet(),
         ): VoiceRecognizer? {
-            val model = VoiceEngine.model(ctx) ?: return null
-            val grammar = VoiceGrammar.phrases(VoiceModelStore.words(ctx), profiles, apps, installed)
-            if (grammar.phrasesKept == 0) {
-                Log.w(TAG, "ngữ pháp rỗng — từ chối mở phiên (${grammar.logLine()})")
-                return null
-            }
-            Log.i(TAG, grammar.logLine())
-            return runCatching { VoiceRecognizer(Recognizer(model, SAMPLE_RATE, grammar.json()), grammar) }
-                .onFailure { Log.e(TAG, "không dựng được recognizer", it) }
-                .getOrNull()
+            val rec = VoiceEngine.recognizer(ctx) ?: return null
+            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile() else ""
+            return VoiceRecognizer(rec, hot)
         }
 
         /**
-         * ═══ V1.1 · Bộ nhận dạng **TỰ DO** (không ngữ pháp) — chỉ cho LƯỢT 2 ══════════════════════════════
-         *
-         * Spec **R16**. `Recognizer(model, 16000f)` giải mã trên cả từ điển 19.529 từ của mô hình.
-         *
-         * ## Đây KHÔNG phải nới lỏng cam kết *"ràng bằng ngữ pháp"* — nó vẫn nguyên vẹn
-         * Lượt 1 (thứ quyết định **làm gì với xe**) vẫn ràng bằng tập đóng, và điều đó không đổi một chữ: một
-         * câu lệnh không bao giờ được dựng từ bộ giải mã này. Cái nó đọc là **phần đuôi từ vựng mở** — tên bài
-         * hát, điểm đến — thứ mà theo định nghĩa không nằm trong tập đóng nào, và thứ mà Kachi **không tự thi
-         * hành**: nó chuyển nguyên văn cho app đích, sau một cổng CONFIRM bắt buộc ([VoiceRiskTable]).
-         *
-         * Ba chốt giữ cho nó không lan ra: gọi từ **đúng một** chỗ ([VoiceSession.freeTail]), chỉ chạy khi
-         * [VoiceOpenVocab.triggerOf] khác `null`, và chỉ chạy trên một **mảng PCM đã đóng** (không micro).
-         *
-         * **CHẶN** (dựng đồ thị giải mã) ⇒ luồng nền.
+         * Bộ nhận dạng **TỰ DO** (không biasing) — cho LƯỢT 2 ([VoiceOpenVocab]): đọc tên bài/điểm đến, thứ
+         * không nằm trong tập đóng. Cùng recognizer chung, chỉ khác: không truyền hotwords.
          */
         fun openFree(ctx: Context): VoiceRecognizer? {
-            val model = VoiceEngine.model(ctx) ?: return null
-            return runCatching { VoiceRecognizer(Recognizer(model, SAMPLE_RATE), VoicePhraseSet(emptyList(), 0, emptyList(), emptyList())) }
-                .onFailure { Log.e(TAG, "không dựng được recognizer tự do", it) }
-                .getOrNull()
+            val rec = VoiceEngine.recognizer(ctx) ?: return null
+            return VoiceRecognizer(rec, "")
         }
     }
 }
 
 /**
- * Giữ [Model] cho cả tiến trình — xem KDoc *"Vòng đời"* ở [VoiceRecognizer].
+ * Giữ [OfflineRecognizer] cho cả tiến trình — encoder ONNX nặng, dựng vài giây, không nạp lại mỗi phiên.
  *
- * `@Volatile` + `synchronized`: hai lối vào có thể bấm gần nhau (pill mic trên thanh trên và ô *Nói với xe* trên
- * thanh nút), và nạp mô hình hai lần là mmap 53 MB hai lần.
- *
- * ## [SOÁT Pass 2] Quyết định: KHÔNG nhả mô hình khi máy thiếu bộ nhớ (`onTrimMemory`)
- * Cân nhắc rồi bỏ, có lý do đo được: 53 MB ấy là **mmap tệp**, không phải vùng nhớ ẩn danh — nhân đã có quyền
- * thu hồi từng trang khi máy chật mà không cần ai xin, nên "nhả" ở tầng Kotlin không trả lại nhiều như con số
- * gợi ý. Đổi lại, nhả rồi thì lần bấm mic kế tiếp phải dựng lại đồ thị giải mã ([ĐO] máy ảo 114–125 ms, trên đầu
- * xe chưa đo) đúng lúc người lái vừa bấm và đang chờ. Đường nhả vẫn tồn tại và vẫn có chỗ gọi — [release] được
- * gọi khi người dùng **gỡ** mô hình, ca duy nhất mà tệp dưới tay Vosk thật sự biến mất.
+ * `@Volatile` + `synchronized`: hai lối vào mic có thể bấm gần nhau. Recognizer dựng cho **một** model id; đổi
+ * lựa chọn A/B ([VoiceModelStore.select]) ⇒ [release] rồi lần sau dựng lại bản mới.
  */
 object VoiceEngine {
 
     private const val TAG = "KachiVoiceEngine"
 
-    @Volatile private var model: Model? = null
+    @Volatile private var recognizer: OfflineRecognizer? = null
+    @Volatile private var builtFor: String? = null
+    @Volatile private var biasing = false
 
-    /** Mô hình đã nạp, nạp nếu chưa. `null` = chưa cài / hỏng. **CHẶN** ⇒ luồng nền. */
-    fun model(ctx: Context): Model? {
-        model?.let { return it }
+    /** Recognizer cho model đang chọn, nạp nếu chưa / dựng lại nếu đổi model. `null` = chưa cài / hỏng. */
+    fun recognizer(ctx: Context): OfflineRecognizer? {
+        val model = VoiceModelStore.selected(ctx)
+        recognizer?.let { if (builtFor == model.id) return it }
         return synchronized(this) {
-            model ?: load(ctx.applicationContext)?.also { model = it }
+            recognizer?.let { if (builtFor == model.id) return it else release() }
+            build(ctx.applicationContext, model)?.also { recognizer = it; builtFor = model.id }
         }
     }
 
-    /**
-     * Trả mô hình về hệ thống — gọi khi người dùng **gỡ** mô hình trong Cài đặt.
-     *
-     * Không có hàm này thì thư mục bị xoá nhưng mã native vẫn giữ các tệp đã mmap: người dùng bấm "Gỡ", thấy
-     * "đã gỡ", mà bộ nhớ không trả lại và lần cài sau nạp nhầm mô hình cũ còn trong tay Vosk.
-     */
+    /** Engine hiện tại có bật được biasing không (đã nạp bpe vocab). Đọc sau [recognizer]. */
+    fun biasingReady(): Boolean = biasing
+
+    /** Trả recognizer về hệ thống — gọi khi người dùng **gỡ** / **đổi** mô hình. */
     fun release() = synchronized(this) {
-        model?.let { runCatching { it.close() }.onFailure { t -> Log.w(TAG, "đóng model hỏng", t) } }
-        model = null
+        recognizer?.let { runCatching { it.release() }.onFailure { t -> Log.w(TAG, "đóng recognizer hỏng", t) } }
+        recognizer = null; builtFor = null; biasing = false
     }
 
-    /** Mô hình đang nằm sẵn trong bộ nhớ chưa (để màn Cài đặt nói *"lần nói đầu sẽ hơi chậm"*). */
-    fun loaded(): Boolean = model != null
+    /** Mô hình đang nằm sẵn trong bộ nhớ chưa (để Cài đặt nói *"lần nói đầu sẽ hơi chậm"*). */
+    fun loaded(): Boolean = recognizer != null
 
-    private fun load(ctx: Context): Model? {
+    private fun build(ctx: Context, model: SherpaModelCatalog.SherpaModel): OfflineRecognizer? {
         if (!VoiceModelStore.isReady(ctx)) return null
-        // Vosk in rất nhiều dòng ở mức INFO cho mỗi lần nạp; trên xe nhật ký đó chỉ làm trôi mất dòng của mình.
-        runCatching { LibVosk.setLogLevel(LogLevel.WARNINGS) }
-        val path = VoiceModelStore.dir(ctx).absolutePath
+        val dir = VoiceModelStore.dir(ctx)
         val t0 = System.currentTimeMillis()
-        return runCatching { Model(path) }
-            .onSuccess { Log.i(TAG, "nạp mô hình $path trong ${System.currentTimeMillis() - t0} ms") }
-            // `Model` ném `IOException`, nhưng lỗi nặng của Kaldi thoát ra dạng `Error`/`UnsatisfiedLinkError`
-            // (thiếu ABI) ⇒ bắt `Throwable`: một launcher không được chết vì một tính năng phụ.
-            .onFailure { Log.e(TAG, "không nạp được mô hình $path", it) }
+        val bpeVocabPath = copyBpeVocabAsset(ctx, model)
+        biasing = bpeVocabPath.isNotEmpty()
+
+        val transducer = OfflineTransducerModelConfig().apply {
+            encoder = File(dir, model.encoder).absolutePath
+            decoder = File(dir, model.decoder).absolutePath
+            joiner = File(dir, model.joiner).absolutePath
+        }
+        val mc = OfflineModelConfig().apply {
+            this.transducer = transducer
+            tokens = File(dir, model.tokens).absolutePath
+            numThreads = 2
+            debug = false
+            provider = "cpu"
+            if (biasing) { modelingUnit = SherpaModelCatalog.MODELING_UNIT; bpeVocab = bpeVocabPath }
+        }
+        val config = OfflineRecognizerConfig().apply {
+            featConfig = FeatureConfig().apply {
+                sampleRate = 16_000   // fbank 16 kHz, 80 chiều — cùng số với mô hình VN
+                featureDim = 80
+            }
+            modelConfig = mc
+            decodingMethod = model.decodingMethod
+            hotwordsScore = SherpaModelCatalog.HOTWORDS_SCORE
+            maxActivePaths = 4
+        }
+        return runCatching { OfflineRecognizer(assetManager = null, config = config) }
+            .onSuccess { Log.i(TAG, "nạp sherpa ${model.id} trong ${System.currentTimeMillis() - t0} ms (biasing=$biasing)") }
+            .onFailure { Log.e(TAG, "không nạp được sherpa ${model.id}", it) }
             .getOrNull()
+    }
+
+    /**
+     * Chép bảng BPE piece+score (asset `voice/<id>.bpe_vocab.txt`) vào `filesDir` để dùng làm `bpeVocab`.
+     *
+     * ⚠ [ĐO] off-car 2026-09-14: sherpa **KHÔNG** nhận thẳng `bpe.model` (sentencepiece nhị phân) làm `bpeVocab`
+     * ("Each line should contain two items") — phải là bảng **piece score** xuất bằng sentencepiece lúc build.
+     * Bảng này đóng theo APK (nhỏ ~55 KB), không tải mạng. Không có asset ⇒ trả "" ⇒ chạy không biasing.
+     */
+    private fun copyBpeVocabAsset(ctx: Context, model: SherpaModelCatalog.SherpaModel): String {
+        val assetName = "voice/${model.id}.bpe_vocab.txt"
+        val dest = File(VoiceModelStore.dir(ctx), "bpe_vocab.txt")
+        return runCatching {
+            if (!dest.isFile || dest.length() == 0L) {
+                dest.parentFile?.mkdirs()
+                ctx.assets.open(assetName).use { input -> dest.outputStream().use { input.copyTo(it) } }
+            }
+            dest.absolutePath
+        }.onFailure { Log.i(TAG, "không có bpe vocab cho ${model.id} — chạy không biasing") }.getOrDefault("")
     }
 }

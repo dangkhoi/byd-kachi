@@ -89,13 +89,21 @@ class SpeedBadgeOverlay(private val appContext: Context) : AutoCloseable {
     // cluster 1920×720 when the real size can't be read, so placement math never divides by a bogus extent.
     private var clusterW = 1920
     private var clusterH = 720
+    // The display the overlay ACTUALLY attached to — resolved at init (id 1 on-car; a PRESENTATION display such as
+    // 2 off-car or on a car whose cluster is not display 1, e.g. the DiLink3 fission cluster). The lifecycle listener
+    // gates on THIS, not the constant, so re-attach works when the cluster is not display 1. Until the first
+    // successful init it holds the on-car default [CLUSTER_DISPLAY_ID] so behaviour there is byte-unchanged.
+    private var resolvedDisplayId = CLUSTER_DISPLAY_ID
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
-            if (displayId != CLUSTER_DISPLAY_ID) return
+            // Any display appearing while we are NOT initialized may be the cluster (its id is not known ahead of
+            // time on cars where the cluster is not display 1). initOverlay() resolves the right one itself and is
+            // idempotent + cheap, so re-try on any add until attached.
+            if (clusterWm != null && displayId != resolvedDisplayId) return
             handler.post {
                 initOverlay()
-                // If a value is pending, re-show it now that display 1 is back (respects the enabled gate).
+                // If a value is pending, re-show it now that the cluster display is back (respects the enabled gate).
                 lastSpeedKph?.let { doShow(it, lastSignType) }
                 lastUpcomingLimit?.let { doSetUpcoming(it, lastUpcomingDist, lastUpcomingText) }
                 if (lastAlertShow) doSetAlert(lastAlertLimit, lastAlertText, lastAlertIcon)
@@ -103,7 +111,7 @@ class SpeedBadgeOverlay(private val appContext: Context) : AutoCloseable {
         }
 
         override fun onDisplayRemoved(displayId: Int) {
-            if (displayId != CLUSTER_DISPLAY_ID) return
+            if (displayId != resolvedDisplayId) return
             handler.post { teardown() }
         }
 
@@ -164,7 +172,8 @@ class SpeedBadgeOverlay(private val appContext: Context) : AutoCloseable {
             val view = SpeedBadgeView(clusterCtx)
             clusterWm = wm
             badgeView = view
-            Log.i(TAG, "overlay initialized for display $CLUSTER_DISPLAY_ID (${clusterW}x$clusterH)")
+            resolvedDisplayId = display.displayId   // track the display we attached to (may be ≠ 1 on this car)
+            Log.i(TAG, "overlay initialized for display ${display.displayId} (${clusterW}x$clusterH)")
         }.onFailure { Log.w(TAG, "initOverlay failed: ${it.message}") }
     }
 

@@ -46,6 +46,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <h2>1. Changelog</h2>
 <table>
 <tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>1</td><td>2026-09-14</td><td><b>F4</b> — lần mở đầu trên xe: hộp <i>"Cho phép gỡ lỗi USB?"</i> bị chính màn Kachi đè chết ([ĐO] <code>carlog-kachi-20260914-2044</code>). Thêm <b>cổng lần dò đầu</b> (hoãn tới sau khung hình đầu · thử lại 20 s không giới hạn · dải nhắc) và <b>phân biệt CHỜ-NGƯỜI-DÙNG với HẠN-CHẾ-MÔI-TRƯỜNG</b> ở hàng quyền. Xem §9.</td></tr>
 <tr><td>0</td><td>2026-09-11</td><td>Lập thiết kế sau khi ĐO hiện trạng: 6 điều kiện launcher phụ thuộc, đang kiểm rải rác ở <b>5 chỗ</b>, không có nơi tập trung. Xác minh API kiểm qua Context7 (dùng lại cách dự án đang dùng, không phát minh).</td></tr>
 </table>
 
@@ -280,6 +281,147 @@ dòng đó</b> thay vì giữ code không ai chạy tới. Bài học: thử ph�
   <li>Số đo thu hồi quyền làm bằng <b>tắt hẳn app</b>, chưa đo bằng <b>khởi động lại máy</b> (xem §6).</li>
   <li><s>Phép "không ghi đè trợ năng của app khác" chỉ được khoá bằng test logic.</s> <b>ĐÃ ĐÓNG</b> — dựng sẵn một service của app khác rồi đo: nó được giữ nguyên (xem §6).</li>
   <li><b>Chưa có lượt soát độc lập</b> — tác nhân soát hỏng nhiều lần trong hai phiên gần đây.</li>
+</ul>
+
+<h3>Phiên 2026-09-14 (tối) — F4: hộp "Cho phép gỡ lỗi USB?" bị chính màn Kachi đè chết</h3>
+
+<div class="card">
+<b>[ĐO] xe BYD DiLink3.0, 2026-09-14</b> — <code>docs/diagnostics/carlog-kachi-20260914-2044/session-findings.md</code>
++ <code>logcat-10.txt</code>:
+<ul>
+  <li><code>20:49:12</code> Kachi cài xong và mở. Màn chính vừa <code>onCreate</code> đã nối dadb
+      <code>localhost:5555</code> bằng <b>khoá mới sinh</b> ⇒ hệ thống bung <code>UsbDebuggingActivity</code>.</li>
+  <li><code>20:49:16.986</code> <code>WindowManager: removeWindow … UsbDebuggingActivity</code> — <b>đúng lúc</b>
+      <code>KachiHomeActivity</code> resume toàn màn ⇒ hộp thoại <b>chết trước khi người lái thấy</b>.</li>
+  <li>Ổ cắm <code>127.0.0.1:40794→5555</code> ở <code>ESTABLISHED</code>, <code>Recv-Q</code> 24→48 = phiên dadb
+      <b>treo</b> chờ một câu trả lời không bao giờ tới.</li>
+  <li>Hàng quyền <i>"Kênh điều khiển cửa sổ"</i> hiện <b>"Hạn chế của môi trường"</b> — <b>sai</b>: môi trường không
+      hạn chế gì, hệ thống đang <b>chờ người dùng bấm</b>. Overlay/notification/accessibility/mic vì thế đều chưa cấp.</li>
+  <li>Sau khi owner tự tích <i>"Luôn cho phép"</i> (lúc Kachi đã đứng yên) ⇒ <b>mọi quyền tự cấp thành công</b> —
+      đây là bằng chứng cơ chế, không phải suy luận.</li>
+</ul>
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 860 260" role="img" aria-label="Trước và sau F4: thời điểm dò kênh shell lần đầu">
+  <defs><marker id="f4ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+    <path d="M0,0 L9,4.5 L0,9 z" fill="var(--muted)"/></marker></defs>
+
+  <text x="8" y="18" font-size="12" font-weight="700" fill="var(--warn)">TRƯỚC (bệnh)</text>
+  <line x1="8" y1="70" x2="852" y2="70" stroke="var(--line)" stroke-width="2" marker-end="url(#f4ar)"/>
+  <rect x="8" y="34" width="150" height="28" rx="8" fill="var(--card)" stroke="var(--line)"/>
+  <text x="83" y="52" font-size="12" text-anchor="middle" fill="var(--fg)">onCreate → dò dadb</text>
+  <rect x="190" y="34" width="190" height="28" rx="8" fill="var(--card)" stroke="var(--warn)"/>
+  <text x="285" y="52" font-size="12" text-anchor="middle" fill="var(--warn)">hộp thoại hệ thống bung</text>
+  <rect x="412" y="34" width="230" height="28" rx="8" fill="var(--card)" stroke="var(--warn)"/>
+  <text x="527" y="52" font-size="12" text-anchor="middle" fill="var(--warn)">resume toàn màn → removeWindow</text>
+  <rect x="674" y="34" width="170" height="28" rx="8" fill="var(--card)" stroke="var(--warn)"/>
+  <text x="759" y="52" font-size="12" text-anchor="middle" fill="var(--warn)">socket kẹt · im lặng mãi</text>
+
+  <text x="8" y="120" font-size="12" font-weight="700" fill="var(--ok)">SAU (bản vá)</text>
+  <line x1="8" y1="172" x2="852" y2="172" stroke="var(--line)" stroke-width="2" marker-end="url(#f4ar)"/>
+  <rect x="8" y="136" width="128" height="28" rx="8" fill="var(--card)" stroke="var(--line)"/>
+  <text x="72" y="154" font-size="12" text-anchor="middle" fill="var(--fg)">onCreate → arm()</text>
+  <rect x="150" y="136" width="196" height="28" rx="8" fill="var(--card)" stroke="var(--line)"/>
+  <text x="248" y="154" font-size="12" text-anchor="middle" fill="var(--fg)">khung đầu + tiêu điểm + 1,5 s</text>
+  <rect x="360" y="136" width="120" height="28" rx="8" fill="var(--card)" stroke="var(--accent)"/>
+  <text x="420" y="154" font-size="12" text-anchor="middle" fill="var(--accent)">dò (hạn đọc 6 s)</text>
+  <rect x="494" y="136" width="180" height="28" rx="8" fill="var(--card)" stroke="var(--ok)"/>
+  <text x="584" y="154" font-size="12" text-anchor="middle" fill="var(--ok)">hộp thoại nổi TRÊN Kachi</text>
+  <rect x="688" y="136" width="156" height="28" rx="8" fill="var(--card)" stroke="var(--ok)"/>
+  <text x="766" y="154" font-size="12" text-anchor="middle" fill="var(--ok)">tích "Luôn cho phép"</text>
+
+  <path d="M420 164 L420 205 L360 205" fill="none" stroke="var(--muted)" stroke-dasharray="4 3" marker-end="url(#f4ar)"/>
+  <text x="430" y="222" font-size="11.5" fill="var(--muted)">chưa bấm ⇒ dải nhắc + thử lại mỗi 20 s (không giới hạn, dừng ở onStop)</text>
+  <path d="M766 164 L766 196" fill="none" stroke="var(--muted)" marker-end="url(#f4ar)"/>
+  <text x="852" y="222" font-size="11.5" text-anchor="end" fill="var(--ok)">kênh lên ⇒ dải biến mất · tự cấp quyền chạy ngay</text>
+</svg>
+</div>
+
+<p><b>Bản vá — bốn mảnh, mỗi mảnh một tầng:</b></p>
+<table>
+<tr><th>Tầng</th><th>Làm gì</th><th>Vì sao đúng chỗ đó</th></tr>
+<tr>
+  <td><code>:car-integration</code><br><code>carexec/FirstOpenApprovalPolicy.kt</code></td>
+  <td><b>Chính sách THUẦN</b> của lần mở đầu: <code>SETTLE_MS = 1.500</code> · <code>RETRY_EVERY_MS = 20.000</code> ·
+      <code>PROBE</code> (1 lần thử, hạn đọc 6 s, ép bắt tay, không tự lặp) · <code>step()</code> phân ba nhánh ·
+      <code>attemptAllowed()</code>.</td>
+  <td>Quyết định là logic thuần ⇒ test off-car. <b>KHÔNG</b> dùng lại <code>AWAIT_ADB_APPROVAL</code> của F2: cái kia
+      chờ ~31 s <b>rồi bỏ cuộc</b> (đúng cho cú bấm phím mic đang cũ dần), còn ở đây bỏ cuộc là <b>quay lại đúng bệnh</b>.
+      Mọi bên gọi cũ của <code>LocalShellRetry</code> không đổi một byte (CLAUDE.md §6).</td>
+</tr>
+<tr>
+  <td><code>:core</code><br><code>LauncherRequirements.kt</code></td>
+  <td><code>SHELL_CHANNEL_AWAITING_APPROVAL</code> = <code>SHELL_CHANNEL.copy(fixBy = USER, userAction = …)</code>;
+      <code>check(awaitingShellApproval = …)</code> chỉ thay dòng đó khi mục <b>đang thiếu</b>.</td>
+  <td>Vẫn là <b>một</b> điều kiện (cùng <code>id</code>, cùng nhãn, cùng "mất gì") — chỉ khác <b>ai sửa được</b>, mà điều
+      đó là <b>lý do đo được lúc chạy</b>. Khai rời sẽ có hai nhãn phải dịch song song và hai chỗ để lệch nhau. Nó
+      <b>không</b> nằm trong <code>ALL</code>: bảng ALL nói <i>launcher cần gì</i>, không nói <i>đang hỏng kiểu gì</i>.</td>
+</tr>
+<tr>
+  <td><code>:app</code><br><code>launcher/ShellChannelGate.kt</code></td>
+  <td>Hoãn lần dò đầu (<code>decorView.post</code> + <code>onWindowFocusChanged(true)</code> +
+      <code>postDelayed(1.500)</code>) · vòng thử lại <b>không giới hạn số lần</b>, dừng ở <code>onStop</code> ·
+      dải nhắc + nút <i>Thử lại</i> · <code>ShellApprovalProbe</code> (một phiên <code>LocalDeviceShell</code> rời).</td>
+  <td>Mốc phải là <b>sự kiện thật của vòng đời cửa sổ</b>, không phải một giấc ngủ cứng — vì chính lượt resume/vẽ đó là
+      thứ gỡ hộp thoại đi. Lượt dò <b>không</b> đi qua <code>ShellTransport</code>: nó tái dùng kết nối và
+      <b>không có hạn đọc</b> ⇒ đúng thứ làm luồng nền treo vĩnh viễn khi adbd im lặng.</td>
+</tr>
+<tr>
+  <td><code>:app</code><br><code>PermissionPreflight</code> · <code>HomePanels</code></td>
+  <td><code>check/runAndReport(awaitingApproval)</code>: vẫn kiểm + vẫn ghi nhật ký, nhưng <b>nén toast</b>; bảng
+      <i>Hệ thống &amp; quyền</i> đọc cờ từ chính cổng.</td>
+  <td>Dải nhắc đã nói câu <b>cụ thể hơn</b> (<i>tích "Luôn cho phép" rồi OK</i>); toast chung
+      <i>"app không vào được ô"</i> cùng lúc là nhiễu — đúng thứ U8b vừa dọn.</td>
+</tr>
+</table>
+
+<p><b>Ba quyết định có chủ ý (ghi ra để khỏi tranh luận lại):</b></p>
+<table>
+<tr><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td><code>AUTH_REJECTED</code> <b>KHÔNG</b> vào nhánh "đang chờ người bấm"</td>
+    <td>Nó cũng là "chưa được cấp quyền", nhưng máy đã <b>trả lời</b> (từ chối) chứ không im lặng. Gộp vào ⇒ cứ 20 s lại
+        dựng một hộp thoại cho người vừa bấm <i>Từ chối</i>. Lý do ĐÃ ĐO trên xe là <code>AWAITING_APPROVAL</code>
+        (adbd im lặng, <code>Recv-Q</code> dâng) — chỉ dùng lý do đã phân loại được (CLAUDE.md §2).</td></tr>
+<tr><td>Mất <b>tiêu điểm cửa sổ</b> ⇒ bỏ lượt dò (không bỏ cuộc)</td>
+    <td>Mất tiêu điểm = một cửa sổ khác đang ở trên, và ở ca này rất có thể chính là hộp thoại ta vừa dựng. Mở thêm kết
+        nối lúc ấy là dựng hộp thoại <b>chồng</b> lên cái người dùng đang đọc dở — trong khi "mở lại kết nối lúc hộp
+        thoại đang treo có bung thêm hộp nữa không" vẫn là <b>[CHƯA BIẾT]</b> từ F2 §4.3.</td></tr>
+<tr><td>Nhánh <b>môi trường</b> chỉ báo <b>một lần</b>, không lặp</td>
+    <td>Giữ đúng hành vi trước F4 (một lượt dò lúc mở màn). Cổng 5555 câm thì 20 s nữa cũng câm; lặp chỉ tốn kênh.</td></tr>
+</table>
+
+<p><b>Test (5 module, 0 đỏ)</b> — mỗi bài đã <b>thử làm ĐỎ</b>:</p>
+<table>
+<tr><th>Bài</th><th>Khoá gì</th><th>Thử phá ⇒ kết quả</th></tr>
+<tr><td><code>car-integration/…/FirstOpenApprovalPolicyTest</code> (12)</td>
+    <td>Phân loại ba nhánh · hạn đọc &lt; nhịp thử lại · <code>attempts = 1</code> (mỗi lượt = <b>một kết nối mới</b>,
+        đóng phiên cũ) · chính sách F2 giữ nguyên · lượt dò thành công = <code>open → handshake → 1 lệnh → close</code>.</td>
+    <td>Gộp <code>AUTH_REJECTED</code> vào nhánh chờ ⇒ <b>2/12 đỏ</b></td></tr>
+<tr><td><code>app/…/ShellApprovalWiringContractTest</code> (15)</td>
+    <td>Hoãn lần dò đầu neo vào <code>decorView.post</code>/tiêu điểm (cấm <code>Thread.sleep</code>) · dừng ở
+        <code>onStop</code>/<code>onDestroy</code> · thử lại không đếm số lần · lượt dò không đi qua
+        <code>ShellTransport</code>/<code>Dadb.create</code> · dải nhắc không chặn thao tác (không
+        <code>MATCH_PARENT</code>/<code>setOnTouchListener</code>/<code>WindowManager</code>) · chữ ở <code>res</code>
+        VI+EN · hàng quyền đổi sang <code>FixBy.USER</code> · đường phím mic (F2) và đường nền (F6) không bị kéo theo.</td>
+    <td>Bỏ <code>shellGate.onHidden()</code> ở <code>onStop</code> · bỏ hẹn lượt sau · bỏ nén toast ⇒ <b>3/15 đỏ</b>
+        (đúng ba bài tương ứng)</td></tr>
+</table>
+<p class="muted">Hai bài canh cũ được cập nhật theo <b>chỗ mã dời tới</b> (không nới lỏng):
+<code>OpenAppWiringContractTest</code> và <code>PermissionPreflightWiringContractTest</code> nay quét
+<code>KachiHomeWiring.bringUpShellChannel</code> — khối <code>if (dadb.probe())</code> dời khỏi
+<code>KachiHomeActivity</code> vì trần 500 dòng, <b>không đổi một bước nào</b>.</p>
+
+<p><b>Còn mở (cần xe):</b></p>
+<ul>
+  <li>🚗 <b>Chưa verify trên xe</b> — cả bản vá này mới chỉ xanh off-car. Phép đo chốt: cài bản mới lên xe <b>chưa có
+      khoá adb</b> (hoặc xoá <code>/data/misc/adb/adb_keys</code> rồi mở lại), xem hộp thoại có <b>sống</b> qua lượt
+      resume của Kachi không, và dải nhắc có biến mất sau khi tích <i>Luôn cho phép</i> không.</li>
+  <li>[CHƯA BIẾT] mở kết nối mới <b>trong lúc</b> hộp thoại đang treo có bung thêm hộp thoại nữa không (F2 §5). Bản vá
+      né bằng cổng tiêu điểm, nhưng chưa ai đo.</li>
+  <li>[CHƯA BIẾT] ROM DiLink có trả <code>AUTH</code> ngay (⇒ <code>AUTH_REJECTED</code>) thay vì im lặng ở một số ca
+      không. Nếu có, phải xem lại quyết định "AUTH_REJECTED = môi trường".</li>
+  <li>Dải nhắc neo <b>đáy màn</b>: nếu người dùng đặt thanh nút xe ở viền dưới thì hai thứ gần nhau — chưa đo trên xe.</li>
 </ul>
 
 <h2>10. Reviewer Log</h2>

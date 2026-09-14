@@ -14,6 +14,12 @@ package com.byd.clusternav.launcher.testbridge
  * @property file tên tệp prefs (`prefs`), đã kiểm nằm trong danh sách cho phép.
  * @property slot số ô **1-based** đúng như người ta nói/gõ (`slot` · `slot_clear`); phép đổi sang 0-based nằm ở
  *   tầng thi hành, đúng một chỗ (cùng luật `VoiceDispatcher.runOpenApp`).
+ * @property id mã một control trong `ControlRegistry` (`ctl`). **KHÔNG** kiểm tồn tại ở tầng phân tích (cùng luật
+ *   `pkg`/`profile`/`preset`): danh mục control nằm ở `:core` nhưng phép kiểm ngữ nghĩa dồn về tầng thi hành để
+ *   một lời đáp có thể liệt kê mã hợp lệ khi gõ sai — xem KDoc `KachiTestBridge.runCtl`.
+ * @property v giá trị chính của control (`ctl` · `--ei v`): TOGGLE/COVER 1/0 · STEP giá trị · SELECT chỉ số ·
+ *   BUTTON bỏ qua. **null = không truyền** ⇒ tầng thi hành chọn mặc định theo kind (bật/mở/bấm) — khác hẳn `0`
+ *   (tắt/đóng), nên phải là `Int?` chứ không ép về `0` ở đây.
  * @property autoConfirm `--ez auto_confirm true` — xem KDoc [TestBridgeCommands.EXTRA_AUTO_CONFIRM].
  */
 data class TestBridgeCommand(
@@ -24,6 +30,8 @@ data class TestBridgeCommand(
     val arg: String = "",
     val file: String = "",
     val slot: Int = 0,
+    val id: String = "",
+    val v: Int? = null,
     val autoConfirm: Boolean = false,
 )
 
@@ -67,6 +75,12 @@ object TestBridgeCommands {
     const val EXTRA_FILE = "file"
     const val EXTRA_SLOT = "n"
 
+    /** `--es id <controlId>` — mã một control trong `ControlRegistry` cho lệnh [CTL]. */
+    const val EXTRA_ID = "id"
+
+    /** `--ei v <value>` — giá trị chính của control cho lệnh [CTL] (tuỳ chọn; vắng ⇒ mặc định theo kind). */
+    const val EXTRA_V = "v"
+
     /**
      * `--ez auto_confirm true` — **chỉ** có tác dụng khi chế độ kiểm thử đang bật (bản thân cả cầu này cũng vậy).
      *
@@ -91,6 +105,9 @@ object TestBridgeCommands {
     const val PREFS = "prefs"
     const val REAPPLY = "reapply"
     const val DIAG = "diag"
+
+    /** Bắn MỘT control theo mã registry, đi qua ĐÚNG applier mà một cú chạm ô nút đi (`CarControlPort`). */
+    const val CTL = "ctl"
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────
 
@@ -126,6 +143,7 @@ object TestBridgeCommands {
         Spec(PREFS, listOf(EXTRA_FILE)),
         Spec(REAPPLY, emptyList()),
         Spec(DIAG, emptyList()),
+        Spec(CTL, listOf(EXTRA_ID), listOf(EXTRA_V, EXTRA_AUTO_CONFIRM)),
     )
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
@@ -172,6 +190,9 @@ object TestBridgeCommands {
                 arg = (extras[EXTRA_ARG] as? String).orEmpty().trim(),
                 file = file,
                 slot = slot,
+                id = (extras[EXTRA_ID] as? String).orEmpty().trim(),
+                // `as? Int` giữ nguyên null khi `--ei v` vắng ⇒ tầng thi hành phân biệt "không truyền" với `0`.
+                v = extras[EXTRA_V] as? Int,
                 autoConfirm = extras[EXTRA_AUTO_CONFIRM] as? Boolean ?: false,
             ),
         )

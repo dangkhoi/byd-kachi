@@ -29,6 +29,9 @@ class PermissionPreflightWiringContractTest {
     /** Chỗ GỌI màn Cài đặt — tách khỏi Activity sang [HomePanels] (Activity vượt trần 500 dòng). */
     private val panel_caller by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
 
+    /** F4 — khối nối kênh shell (hai nhánh có/không có kênh) nay ở đây, xem `bringUpShellChannel`. */
+    private val wiring by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt") }
+
     // ── C4: đọc thì KHÔNG mở kênh shell ──────────────────────────────────────────────────────────
 
     @Test
@@ -85,9 +88,13 @@ class PermissionPreflightWiringContractTest {
     @Test
     fun `van kiem quyen ngay ca khi KHONG co kenh shell`() {
         // Không có kênh shell là đúng ca người dùng cần biết NHẤT (app không vào được ô).
-        assertTrue(act.contains("runAndReport(this, shellUsable = false"),
+        // F4 (2026-09-14): hai nhánh này đã **dời** sang `KachiHomeWiring.bringUpShellChannel` (trần 500 dòng),
+        // và màn chính có thêm nhánh thứ ba — báo cáo khi CHƯA có kênh, kèm cờ "đang hỏi người dùng".
+        assertTrue(wiring.contains("runAndReport(this, shellUsable = false"),
             "nhánh không có kênh shell vẫn phải chạy vòng kiểm")
-        assertTrue(act.contains("runAndReport(this, shellUsable = true"), "nhánh có kênh shell cũng phải chạy")
+        assertTrue(wiring.contains("runAndReport(this, shellUsable = true"), "nhánh có kênh shell cũng phải chạy")
+        assertTrue(act.contains("PermissionPreflight.runAndReport(this, false, null, awaitingApproval = awaiting)"),
+            "ca 'hệ thống đang hỏi Cho phép gỡ lỗi USB' cũng phải chạy vòng kiểm (đọc trạng thái KHÔNG cần shell)")
     }
 
     // ── R2/R3: đủ thì im lặng, thiếu thì nói rõ ──────────────────────────────────────────────────

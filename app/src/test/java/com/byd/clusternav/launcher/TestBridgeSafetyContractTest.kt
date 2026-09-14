@@ -36,6 +36,17 @@ class TestBridgeSafetyContractTest {
 
     private val manifest by lazy { SourceRoots.text("src/main/AndroidManifest.xml") }
 
+    /**
+     * Đọc một tệp ở GỐC repo (vd `scripts/…`) — [SourceRoots] chỉ biết cây source của module, còn `:app:test` chạy
+     * với cwd = thư mục module nên script nằm ở `../`. Thử vài mức cha cho chắc (module / gốc repo).
+     */
+    private fun repoText(rel: String): String {
+        val tries = listOf(rel, "../$rel", "../../$rel").map(java.nio.file.Paths::get)
+        val hit = tries.firstOrNull { java.nio.file.Files.exists(it) }
+            ?: error("không tìm thấy $rel; đã thử: ${tries.joinToString()}")
+        return hit.toFile().readText()
+    }
+
     // ── (1) Khai báo ở manifest ─────────────────────────────────────────────────────────────────
 
     @Test
@@ -217,6 +228,80 @@ class TestBridgeSafetyContractTest {
             code("TestBridgeState.kt").contains("VD_NAME_PREFIX = \"kachi-slot-\""),
             "tiền tố ở `TestBridgeState` phải khớp `VdAppHost`",
         )
+    }
+
+    // ── (5) Lệnh `ctl` — bắn control qua ĐÚNG applier + cổng CONFIRM ─────────────────────────────
+
+    /** `ctl` đi qua cổng port [hooks.control] (applier), KHÔNG dựng adapter thứ hai / không tự gọi HAL. */
+    @Test
+    fun `ctl ban control qua dung applier port`() {
+        val src = code("TestBridgeCtl.kt")
+        assertTrue(src.contains("hooks.control("), "ctl phải bắn qua `hooks.control` = cổng CarControlAdapter.actByKind")
+        // Không được import/gọi thẳng gateway/BydHal (đường thứ hai xuống xe).
+        listOf("BydHalGateway", "BydHal.", "CarControlAdapter(").forEach { token ->
+            assertTrue(!src.contains(token), "TestBridgeCtl KHÔNG được chạm `$token` — phải đi qua port đã tiêm")
+        }
+    }
+
+    /** Câu chữ HAL đọc TRONG tiến trình (HalWriteProbe), KHÔNG spawn `logcat`/tiến trình con. */
+    @Test
+    fun `ctl doc ket qua HAL trong tien trinh khong spawn logcat`() {
+        val src = code("TestBridgeCtl.kt")
+        assertTrue(src.contains("HalWriteProbe.clear()"), "phải xoá sổ TRƯỚC khi bắn")
+        assertTrue(src.contains("HalWriteProbe.last"), "phải đọc kết quả ghi từ sổ trong tiến trình")
+        listOf("logcat", "ProcessBuilder", "Runtime.getRuntime").forEach { token ->
+            assertTrue(!src.contains(token), "TestBridgeCtl KHÔNG được spawn tiến trình (`$token`) — đọc trong tiến trình")
+        }
+    }
+
+    /** Control mở/khoá thân xe bị cổng CONFIRM chặn (auto_confirm), có dấu AUTO-CONFIRM. */
+    @Test
+    fun `ctl co cong CONFIRM cho control mo khoa than xe`() {
+        val src = code("TestBridgeCtl.kt")
+        assertTrue(src.contains("CtlSafetyPolicy.needsConfirm("), "ctl phải hỏi CtlSafetyPolicy trước khi bắn")
+        val at = src.indexOf("CtlSafetyPolicy.needsConfirm(")
+        val branch = src.substring(at, (at + 500).coerceAtMost(src.length))
+        assertTrue(branch.contains("autoConfirm"), "phải TỪ CHỐI khi thiếu auto_confirm")
+        assertTrue(branch.contains("AUTO-CONFIRM"), "việc mức CONFIRM phải để dấu grep được trong logcat")
+    }
+
+    /** Sổ ghi HAL chỉ được điền ở tầng gateway (một chỗ), không rải rác. */
+    @Test
+    fun `HalWriteProbe chi ghi tu BydHalGateway`() {
+        val gw = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/BydHalGateway.kt")
+        assertTrue(gw.contains("HalWriteProbe.record("), "gateway phải ghi kết quả mỗi lượt write control")
+    }
+
+    // ── (6) Script sweep tôn trọng DENYLIST ─────────────────────────────────────────────────────
+
+    /**
+     * `71-hal-sweep.sh` phải mang DENYLIST đúng tập [CtlSafetyPolicy.CONFIRM_REQUIRED] và pha WRITE phải bỏ qua nó.
+     *
+     * Đây là bài canh "hai tầng không lệch nhau": policy ở `:core` là nguồn, script bash phải liệt kê CÙNG tập —
+     * một mã mở-thân-xe lọt khỏi denylist của script là một lượt sweep tự mở cửa xe.
+     */
+    @Test
+    fun `script sweep co denylist khop policy`() {
+        val script = repoText("scripts/vehicle/kachi/71-hal-sweep.sh")
+        // Lấy ĐÚNG giá trị biến `DENYLIST="…"` — không quét cả tệp: `lock`/`door`/`window` còn xuất hiện trong
+        // chú thích, nên khớp-ở-bất-kỳ-đâu sẽ vẫn xanh dù dòng DENYLIST bị bỏ sót một mã ⇒ sweep tự mở cửa xe.
+        val declared = Regex("""DENYLIST="([^"]*)"""").find(script)
+            ?.groupValues?.get(1)?.trim()?.split(Regex("""\s+"""))?.filter { it.isNotEmpty() }?.toSet()
+        assertTrue(declared != null && declared.isNotEmpty(), "script phải khai biến DENYLIST=\"…\"")
+        val policy = com.byd.clusternav.launcher.CtlSafetyPolicy.CONFIRM_REQUIRED
+        // Hai chiều: script không thiếu mã policy (thiếu ⇒ sweep tự bắn control mở thân xe), và không dư mã lạ.
+        assertEquals(
+            policy, declared,
+            "DENYLIST của script phải KHỚP HỆT CtlSafetyPolicy.CONFIRM_REQUIRED (thiếu ${policy - declared!!}, dư ${declared - policy})",
+        )
+    }
+
+    @Test
+    fun `script sweep chi chay khi test-mode va bash-n sach`() {
+        val script = repoText("scripts/vehicle/kachi/71-hal-sweep.sh")
+        assertTrue(script.contains("k_test_gate") || script.contains("k_test_alive"),
+            "script phải qua cổng chế độ kiểm thử trước khi bắn")
+        assertTrue(script.contains("_common.sh"), "script phải dùng nền chung _common.sh")
     }
 
     /** Mọi lượt chạy đều để lại dấu: một dòng nhật ký lúc NHẬN và một dòng lúc TRẢ LỜI. */

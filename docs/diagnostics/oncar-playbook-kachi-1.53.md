@@ -201,6 +201,7 @@ ro của chúng thấp hơn bước chiếu-cụm. Số hiệu giữ nguyên th�
 | 2.15 | H1 — Waze/app có activity trung chuyển vào ô | đọc + 1 lần mở app | tay |
 | 2.16 | **V1 — GIỌNG NÓI THẬT trong xe (T18/T25)** | ghi nhẹ + **pha 3 khi xe lăn bánh** | `70-voice.sh` |
 | 2.17 | **H2 — vòng đời màn ảo của ô** | trung bình | `90-collect.sh` [A2] + tay |
+| 2.18 | **HAL grab-list — quét TỪNG control (id↔route↔device↔nhận/chặn)** | **ghi vào THÂN XE** (có denylist) | `71-hal-sweep.sh` |
 | 2.12 | **X1/ARCH-🚗 — sống chung chiếu-cụm** | **cao nhất** | `60-cast.sh` |
 | 2.13 | D-emu — app từ chối màn phụ | trung bình | tay |
 
@@ -423,6 +424,25 @@ Màn cũ đã **gỡ hẳn** (spec `kachi-remove-legacy-screen.html`). Bốn th�
 - **Hoàn tác**: **TẮT CHIẾU → TRẢ ĐỒNG HỒ**. Cụm kẹt ⇒ tắt máy xe rồi nổ lại (và ghi đúng chuỗi thao tác đã dẫn
   tới kẹt — đó là dữ liệu quý nhất của cả buổi).
 
+#### 2.12.X2 🚗 — Regression cast: chiếu app KHÔNG lên cụm (bản sửa off-car 2026-09-14, CHỜ ĐO)
+
+> Bối cảnh [ĐO] phiên tối 14/09 (`docs/diagnostics/carlog-kachi-20260914-2044/session-findings.md §X2`): cụm =
+> **display 2** `fission_bg_xdja`, mà SimpleCast hardcode `--display 1` + không có đường lùi khi VD của uid khác
+> chặn `am start` (`Permission Denial … launchDisplayId`). Đã sửa: dò display động (fission/xdja) + rơi về
+> `am display move-stack` (đường proven ClusterCast R2). **Chưa đo trên xe** — buổi kế xác nhận:
+
+- **Dò display**: bật Cast → `logcat -s SimpleCast` phải thấy dòng `cluster display: 1 → 2 (dò fission/xdja)`
+  (hoặc số cụm thật). Nếu vẫn `= 1` mà cụm là 2 ⇒ lệnh dò hỏng — chụp `dumpsys display | grep -iE 'Display [0-9]+:|fission|xdja'`.
+- **Chiếu lên được**: Kachi › Cài đặt › Chiếu màn lên cụm → chiếu VietMap (hoặc Maps). Kỳ vọng: app hiện **trên
+  cụm**, `am stack list` có task của app trên `displayId=2` (KHÔNG còn nằm lại display 0). Nếu am-start bị chặn,
+  log phải có `cast R1 did not land … → R2 move-stack fallback` rồi `am display move-stack <stack> 2`.
+- **Geometry + bóng VietMap tự hiện**: sau khi cast bám VD, mục **khung/DPI** (§2.11a) phải hiện nút chỉnh, và
+  bộ chỉnh **bóng VietMap** (§2.7) mở khoá. Cả hai gate theo state cast ⇒ chỉ lên khi cast THẬT bám VD.
+- **SpeedBadge (audit đi kèm)**: `dumpsys display` — ghi lại **display 1 có tồn tại không**. Biển báo tốc độ
+  (`SpeedBadgeOverlay`) còn hardcode `CLUSTER_DISPLAY_ID=1` (fallback PRESENTATION cứu khi display 1 vắng). Nếu
+  display 1 TỒN TẠI nhưng ≠ cụm ⇒ badge gắn nhầm màn → cần sửa (mở việc mới, không nằm trong X2 code lần này).
+- **Hoàn tác**: TẮT CHIẾU → TRẢ ĐỒNG HỒ (như §2.12).
+
 ### 2.13 — D-emu · App TỪ CHỐI màn phụ
 
 - **Mục tiêu**: đóng mục [GIỚI HẠN] chỉ verify được trên xe. Trên máy ảo, Waze/Maps báo *"does not support launch
@@ -623,6 +643,67 @@ adb shell am force-stop <gói app đang nằm trong ô>
   chạm không mở lại được, hoặc nhịp vẫn chạy khi màn khuất.
 - **Mang về**: `kachi-vd.txt` (do `90-collect.sh` mục [A2] sinh) · ảnh ô trước/sau khi force-stop · `logcat -s KachiVd`.
 - **Hoàn tác**: chạm vào ô để mở lại app; không có gì ghi ra ngoài hệ thống.
+
+### 2.18 — HAL grab-list · QUÉT TỪNG CONTROL (id↔route↔device↔nhận/chặn) — `71-hal-sweep.sh`
+
+> **Vì sao có bước này** ([ĐO] 2026-09-14): HAL write **KHÔNG all-or-nothing** — named-method
+> (`setBodyWindowCtrlState`/`setAutoCleanAirState`/`setSeatVentilatingState`) CHẠY; feature-id có cái chạy (gió
+> `1de0000c`) cái chặn (đèn đọc `0x4f50003a` device 1004 *“no permission”*); AC nhiệt độ *“xe không nhận lệnh”*.
+> Phải đo **TỪNG** control rồi ghi lại — đây chính là grab-list §9 của spec `kachi-test-bridge.html`.
+
+**Điều kiện**: cầu kiểm thử SỐNG (bật *Cài đặt › Hệ thống & quyền › Nâng cao › Chế độ kiểm thử qua adb* — §1.1).
+Không có cầu ⇒ script tự dừng (không có đường tay cho việc bắn 60+ control).
+
+**Cách chạy**:
+```
+scripts/vehicle/kachi/71-hal-sweep.sh <ip-xe>:5555          # hỏi hiệu-quả-vật-lý (Y/N) sau mỗi control
+AUTO=1  scripts/vehicle/kachi/71-hal-sweep.sh <ip-xe>:5555   # chỉ ghi accepted+hal_line, không hỏi
+SKIP="fan temp" …                                           # bỏ thêm vài control
+```
+Cơ chế: mỗi control bắn qua cầu lệnh `ctl` (đi ĐÚNG applier `CarControlAdapter.actByKind`), đọc kết quả HAL
+**trong tiến trình** (`HalWriteProbe`). CSV `carlog/hal-sweep.csv` cột: `id · label · route · device · value ·
+accepted · hal_line · ghi_chu_owner`. TOGGLE tự bật→tắt để khôi phục.
+
+**⚠ DENYLIST (không bao giờ tự bắn — owner tự bấm tay)**: `lock, door, trunk, hood, sunroof, sunshade, window,
+windows_all, win_lf/rf/lr/rr` (= `CtlSafetyPolicy.CONFIRM_REQUIRED`). Đây là control mở/khoá **thân xe**; bắn mù
+qua broadcast là hạ kính / mở cửa khi đang lăn bánh.
+
+- **Pass**: CSV có đủ 64 dòng; cột `route`/`device` khớp `ControlRegistry`; control CHẠY thật (owner nhìn mắt)
+  ⇒ `accepted:true` + `hal_line:rc=0`; control bị chặn ⇒ `hal_line` mang chuỗi *“no permission…”*.
+- **Fail / cần điều tra**: `accepted:true` mà xe KHÔNG phản ứng (rc=0 no-op âm thầm) — ghi vào cột `ghi_chu_owner`;
+  hoặc `route:none` (control chưa map — cần đóng bindingKey trong grab-list §9).
+- **Mang về**: `carlog/hal-sweep.csv` → cập nhật `ControlRegistry.bindingKey`/`domain` theo cột route/device thật.
+- **Hoàn tác**: TOGGLE đã tự khôi phục; STEP/SELECT owner tự chỉnh lại; control denylist chưa bao giờ bị chạm.
+- **[ĐO] emulator-5554 (1.54/55)**: script chạy trọn — 64 control, bắn 52, bỏ 12 denylist; off-car mọi dòng
+  `accepted:False · hal_line:off_car` (chứng minh cơ chế; giá trị THẬT phải đo trên xe).
+
+### 2.19 — S5 · ĐẶT KACHI LÀM MÀN HÌNH CHÍNH + sống qua reboot (TẦNG 1 §14 đã xanh, giờ verify UI + P7)
+
+- **Mục tiêu**: (a) nút *Đặt Kachi làm màn hình chính* trong app chạy đúng đường đã proven; (b) **P7** — HOME
+  có **sống qua reboot vật lý** không (quyết định công tắc *giữ khi nổ máy* có cần bật mặc định hay không).
+- **Bằng chứng đã có [ĐO] DiLink3.0 2026-09-14 (shell thô, tầng 1)**:
+  ```
+  # component đích (thay bằng applicationId thật nếu khác)
+  COMP=com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity
+  cmd package set-home-activity "$COMP"                                             # ⇒ Success
+  cmd package resolve-activity --brief -a android.intent.action.MAIN \
+      -c android.intent.category.HOME                                              # ⇒ $COMP (hoặc packageName=com.byd.launcher)
+  # bấm nút Home vật lý → Kachi lên
+  ```
+  Lệnh chạy từ shell uid 2000; kênh dadb loopback của app chạy **cùng uid** ⇒ nút trong app dùng đúng đường này.
+- **Bước UI**: mở **Cài đặt › Hệ thống & quyền › Màn hình chính**. Nếu dòng trạng thái hổ phách *"Chưa — hệ
+  thống đang dùng &lt;gói&gt;"* ⇒ bấm **Đặt Kachi làm màn hình chính**. Kỳ vọng: nút đổi *"Đang đặt…"* rồi câu
+  *"Đã đặt — bấm Home để về Kachi"*, dòng trạng thái chuyển xanh, nút biến mất. Kênh shell chưa cấp ⇒ câu *"Cần
+  kênh shell — xem hàng Kênh điều khiển cửa sổ ở trên"* (cấp "Cho phép gỡ lỗi USB" rồi thử lại).
+- **P7 — reboot vật lý**: đặt HOME xong → **tắt máy bằng nút nguồn** (không `am`/`reboot` mềm) → nổ lại → bấm Home.
+  - Kachi vẫn lên ⇒ ROM GIỮ HOME qua reboot ⇒ công tắc *giữ khi nổ máy* để **mặc định TẮT** là đúng.
+  - Kachi KHÔNG lên (ROM reset về launcher gốc) ⇒ bật công tắc *Giữ Kachi làm màn hình chính khi nổ máy* rồi
+    reboot lại; kỳ vọng lần này Kachi lên (đường khởi động `KachiAutostart` đặt lại HOME một lần). Ghi kết quả.
+- **Pass**: nút đặt được HOME (resolve khớp), bấm Home về Kachi; ghi rõ HOME có/không sống qua reboot.
+- **Fail / điều tra**: `set-home-activity` in `Success` mà `resolve-activity` vẫn launcher khác ⇒ chép nguyên
+  output resolve (app cũng hiện nó ở câu *Failed*); hoặc một launcher khác giành lại HOME sau vài giây.
+- **Mang về**: output hai lệnh trên (trước/sau), ảnh hàng *Màn hình chính*, kết quả reboot vật lý (câu trả lời P7).
+- **Hoàn tác**: đặt lại launcher cũ nếu owner muốn: `cmd package set-home-activity <gói-launcher-cũ>/<activity>`.
 
 ## 3. THÔNG TIN BẮT BUỘC MANG VỀ
 

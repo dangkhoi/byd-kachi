@@ -57,6 +57,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <h2>1. Changelog</h2>
 <ul>
 <li><b>Pass 0 — 2026-09-14</b>: Khởi tạo + implement. Owner: <i>“sẽ adb vào xe, nên chuẩn bị toàn bộ script test automation trên xe thông qua adb, log liếc các loại”</i>. Đã dựng receiver + 13 lệnh + công tắc 60 phút; 5 module 0 đỏ; [ĐO] máy ảo <code>emulator-5554</code> trên bản 1.53 (54).</li>
+<li><b>Pass 1 — 2026-09-14</b>: Thêm lệnh <b><code>ctl</code></b> (bắn MỘT control theo mã registry) + <b>§9 grab-list HAL</b> (R9). Owner: <i>“làm sao test full và ghi nhận lại”</i>. Đi qua đúng applier <code>CarControlAdapter.actByKind</code>, đọc kết quả HAL trong tiến trình qua <code>HalWriteProbe</code> (route · device · accepted · hal_line), cổng CONFIRM cho control mở/khoá thân xe (<code>CtlSafetyPolicy</code>). Kèm script <code>scripts/vehicle/kachi/71-hal-sweep.sh</code>. [ĐO] <code>emulator-5554</code> bản 1.54 (55): 64 control quét ra route/device đúng, off-car ⇒ <code>accepted:false · hal_line:off_car</code>.</li>
 </ul>
 
 <h2>2. Context</h2>
@@ -81,6 +82,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><b>R6</b>. Mọi lệnh đi qua <b>đúng đường mà một cú chạm đi</b> (VoiceDispatcher · KachiHomeSlots · HomeViewModel · ClusterNavBridge). Không đường thứ hai, không lệnh shell thô.</li>
 <li><b>R7</b>. Lệnh <code>state</code> trả về ảnh chụp launcher: phiên bản · hồ sơ · bố cục + 6 ô · thanh nút · chip · theme/units/lang · màn ảo <code>kachi-slot-*</code> đang sống · quyền · mô hình giọng · <code>cast_enabled</code> · kênh shell.</li>
 <li><b>R8</b>. Lệnh <code>prefs</code> đọc <b>chỉ đọc</b> một tệp prefs trong danh sách cho phép (lấy từ <code>SettingsCatalog</code>), và <b>che</b> giá trị của khoá có tên nghi mang bí mật.</li>
+<li><b>R9</b> <i>(§9 grab-list HAL — Pass 1)</i>. Lệnh <code>ctl</code> bắn MỘT control theo mã registry (<code>--es id &lt;controlId&gt; [--ei v &lt;value&gt;] [--ez auto_confirm true]</code>) đi qua <b>đúng applier</b> <code>CarControlPort.actByKind</code> (không đường thứ hai), và trả về <b>grab-list</b> của control đó: <code>{id, label, kind, v, route, device, accepted, hal_line, reply}</code>. <i>AC</i>: (a) <code>route</code>/<code>device</code> suy THUẦN từ <code>bindingKey</code>+<code>domain</code> (kiểm off-car ở <code>:core</code>), <code>route</code> = <code>named:setX</code> · <code>feature:0x..</code> · <code>local:..</code> · <code>setting:..</code> · <code>none</code>; (b) <code>hal_line</code> đọc <b>trong tiến trình</b> (<code>HalWriteProbe</code> tại tầng gateway — KHÔNG spawn <code>logcat</code>): <code>rc=0</code> / chuỗi ngoại lệ <i>“no permission…”</i> / <code>off_car</code>; (c) <code>accepted</code> suy từ rc hợp lệ khác sentinel; (d) control <b>mở/khoá thân xe</b> (<code>CtlSafetyPolicy.CONFIRM_REQUIRED</code>: <code>lock,door,trunk,hood,sunroof,sunshade,window,windows_all,win_*</code>) bị <b>từ chối</b> (<code>needs_confirm</code>) trừ khi có <code>--ez auto_confirm true</code>; (e) mã lạ ⇒ <code>unknown_control</code> + danh sách mã hợp lệ; (f) tệp kết quả <code>files/test/&lt;mốc&gt;-ctl_&lt;id&gt;.json</code>.</li>
 </ul>
 <h3>Phi chức năng</h3>
 <ul>
@@ -142,6 +144,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <tr><td><code>slot</code></td><td><code>--ei n</code> (1-based) · <code>--es pkg</code></td><td><code>KachiHomeSlots.assignApp</code></td><td><code>assigned</code> · <code>content</code>; ngoài dải ⇒ <code>slot_out_of_range</code> + <code>slot_count</code></td></tr>
 <tr><td><code>slot_clear</code></td><td><code>--ei n</code></td><td><code>KachiHomeSlots.clearSlot</code></td><td><code>content</code></td></tr>
 <tr><td><code>open</code></td><td><code>--es pkg</code></td><td><code>KachiHomeSlots.openAppFullscreen</code></td><td><code>requested</code> (<b>không</b> hứa “đã lên màn” — đó là câu hỏi của <code>am stack list</code>)</td></tr>
+<tr><td><code>ctl</code></td><td><code>--es id</code> · <code>--ei v</code> (tuỳ chọn) · <code>--ez auto_confirm</code></td><td><code>CarControlPort.actByKind</code> → <code>HalBindingTable.write</code> → <code>BydHalGateway</code> (kết quả đọc trộm qua <code>HalWriteProbe</code>)</td><td><code>id·label·kind·v·route·device·accepted·hal_line·reply</code>; mã lạ ⇒ <code>unknown_control</code>+danh sách; mở/khoá thân xe thiếu cờ ⇒ <code>needs_confirm</code></td></tr>
 <tr><td><code>prefs</code></td><td><code>--es file</code></td><td><code>SharedPreferences</code> (chỉ đọc, lọc khoá nhạy cảm)</td><td><code>values{}</code>; tệp lạ ⇒ <code>bad_prefs_file</code></td></tr>
 <tr><td><code>reapply</code></td><td>—</td><td><code>ClusterNavBridge.reapplyAll</code></td><td><code>reapplied</code></td></tr>
 <tr><td><code>diag</code></td><td>—</td><td><code>ClusterDiag.capture</code></td><td><code>file</code> · <code>summary</code>; chưa có kênh shell ⇒ <code>no_shell_channel</code></td></tr>
@@ -194,6 +197,13 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><code>listen</code> ⇒ tấm chữ <i>“Đang chuẩn bị…”</i> hiện lên (ảnh chụp), lời đáp về ngay;</li>
 <li><code>reapply</code> ⇒ <code>reapplied:true</code>; <code>diag</code> ⇒ tệp <code>files/diag/diag-…txt</code> + tóm tắt;</li>
 <li>25 tệp JSON trong <code>/sdcard/Android/data/com.byd.launcher/files/test/</code>; tắt công tắc lại ⇒ <code>test_mode_off</code>.</li>
+</ul></li>
+<li><b>V-emulator-ctl [ĐO] 2026-09-14 · Pass 1</b> — <code>emulator-5554</code>, debug 1.54 (55), test-mode bật qua prefs (<code>run-as</code>), Kachi tiền cảnh:
+<ul>
+<li><code>ctl --es id readl</code> ⇒ <code>route:"feature:0x4f50003a" · device:"…light.BYDAutoLightDevice" · accepted:false · hal_line:"off_car"</code> (đúng thiết bị mà xe thật báo <i>“no permission”</i>);</li>
+<li><code>ctl --es id fan --ei v 5</code> ⇒ <code>route:"feature:0x1de0000c" · device:"…ac.BYDAutoAcDevice" · v:5</code> (đúng feature gió mà owner thấy CHẠY trên xe);</li>
+<li><code>ctl --es id pm25</code> ⇒ <code>route:"named:setAutoCleanAirState"</code>; <code>ctl --es id door</code> ⇒ <code>needs_confirm</code> + hint, thêm <code>--ez auto_confirm true</code> ⇒ chạy (logcat có <code>AUTO-CONFIRM: ctl door</code>); mã lạ ⇒ <code>unknown_control</code>;</li>
+<li><code>scripts/vehicle/kachi/71-hal-sweep.sh</code> (AUTO=1): đọc 64 control từ <code>:core</code>, bắn 52, bỏ 12 denylist, ghi <code>hal-sweep.csv</code> (cột <code>id·label·route·device·value·accepted·hal_line·ghi_chu_owner</code>). Off-car mọi dòng <code>accepted:False · hal_line:off_car</code> — trên xe cột này sẽ là <code>rc=0</code>/permission-error.</li>
 </ul></li>
 <li><b>V-oncar</b> — <span class="pill wait">chưa chạy</span>. Cần trên xe thật: (a) bắn từ máy ngoài qua <code>adb connect</code> (chứng minh uid shell của ROM BYD gửi được vào receiver <code>exported</code> — máy ảo mới chỉ chứng minh với shell của emulator); (b) <code>say</code> một lệnh xe THẬT và đọc <code>replies</code> có <code>✓</code>; (c) khởi động lại bằng <b>nút nguồn vật lý</b> rồi bắn lại ⇒ phải ra <code>test_mode_off</code> (tính chất “chết theo lần nổ máy”, hôm nay mới khoá bằng unit test).</li>
 <li><b>V-lifecycle</b> — bật → dùng → hết 60 phút/tắt máy → đóng; màn chính chưa lên ⇒ <code>home_not_running</code> (trừ <code>prefs</code>, cố ý chạy được để chẩn đoán đúng ca “launcher không lên”).</li>

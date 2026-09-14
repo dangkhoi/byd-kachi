@@ -228,19 +228,48 @@ object LauncherRequirements {
     )
 
     /**
+     * ═══ F4 — CÙNG điều kiện [SHELL_CHANNEL], nhưng khi ĐÃ BIẾT hệ thống đang hỏi người dùng ══════════════════
+     *
+     * [ĐO] xe DiLink3.0 2026-09-14: lần mở đầu, hàng quyền hiện *"Hạn chế của môi trường, không phải lỗi của app"*
+     * — **sai**. Môi trường không hạn chế gì cả: adbd đang **im lặng chờ** người lái bấm "Cho phép gỡ lỗi USB?"
+     * (ổ cắm `ESTABLISHED`, `Recv-Q` dâng 24→48). Một câu "không ai sửa được" đặt đúng vào lúc người dùng sửa được
+     * **bằng một cú tích** là câu tệ nhất có thể nói.
+     *
+     * ## Vì sao `copy()` chứ không khai một điều kiện thứ hai
+     * Đây **vẫn là một điều kiện** (cùng [id], cùng nhãn, cùng "mất gì") — chỉ khác **AI sửa được**, mà điều đó
+     * phụ thuộc lý do hỏng ĐO ĐƯỢC lúc chạy chứ không phải một dòng registry mới. Khai rời sẽ có hai nhãn phải dịch
+     * song song và hai chỗ để lệch nhau; `copy()` giữ nguồn duy nhất. Nó cũng **không** nằm trong [ALL]: bảng ALL là
+     * *"launcher cần những gì"*, không phải *"đang hỏng kiểu gì"*.
+     *
+     * Chỉ [check] (với `awaitingShellApproval = true`) mới thay [SHELL_CHANNEL] bằng dòng này, và chỉ khi mục đó
+     * đang **thiếu** — đủ rồi thì không có gì để nói.
+     */
+    val SHELL_CHANNEL_AWAITING_APPROVAL = SHELL_CHANNEL.copy(
+        fixBy = FixBy.USER,
+        userAction = "Hệ thống đang hỏi \"Cho phép gỡ lỗi USB?\" — tích \"Luôn cho phép\" rồi OK",
+        userActionEn = "The system is asking \"Allow USB debugging?\" — tick \"Always allow\", then OK",
+    )
+
+    /**
      * Là màn hình chính. **KHÔNG** khai cách sửa là "mở màn cài đặt" — [ĐO] màn cài đặt hệ thống trên xe bị khoá
-     * (chỉ nhận *"Hệ thống IVI không hỗ trợ hoạt động này"*). Cách dùng được: bấm nút HOME rồi chọn Kachi ở hộp
-     * chọn của hệ thống.
+     * (chỉ nhận *"Hệ thống IVI không hỗ trợ hoạt động này"*).
+     *
+     * ## ⚠ S5 — vì sao KHÔNG còn "bấm nút HOME rồi chọn Kachi"
+     * [ĐO] owner 2026-09-14 xe DiLink3.0: bấm nút Home **không hiện hộp chọn HOME** (ROM BYD nuốt bộ chọn), nên câu
+     * cũ chỉ dẫn tới một cửa không tồn tại. Cách dùng được: app tự chạy `cmd package set-home-activity` qua dadb
+     * uid-shell ([ĐO] ⇒ `Success`). Nút *Đặt Kachi làm màn hình chính* ở **Cài đặt › Hệ thống & quyền › Màn hình
+     * chính** gọi đúng đường đó. Vẫn [FixBy.USER] (không tự đặt HOME của cả xe sau lưng người dùng — CLAUDE.md §4:
+     * đổi state hệ thống phải tường minh + có người đồng ý), chỉ đổi **việc người dùng cần làm** cho đúng ROM này.
      */
     val DEFAULT_HOME = LauncherRequirement(
         id = "default_home",
         label = "Là màn hình chính",
         losesWhatIfMissing = "bấm HOME không về Kachi",
         fixBy = FixBy.USER,
-        userAction = "Bấm nút HOME rồi chọn Kachi trong hộp chọn của hệ thống",
+        userAction = "Vào Cài đặt › Hệ thống & quyền › Màn hình chính rồi bấm \"Đặt Kachi làm màn hình chính\"",
         labelEn = "Set as home screen",
         losesWhatIfMissingEn = "pressing HOME does not come back to Kachi",
-        userActionEn = "Press the HOME button, then pick Kachi in the system chooser",
+        userActionEn = "Open Settings › System & permissions › Home screen, then tap \"Set Kachi as home screen\"",
     )
 
     /**
@@ -271,13 +300,20 @@ object LauncherRequirements {
     /**
      * Dựng báo cáo từ hàm đọc trạng thái. [read] do `:app` cung cấp (đọc cấu hình hệ thống thật); trả `null` nghĩa là
      * **không đọc được** ⇒ [RequirementState.UNKNOWN], KHÔNG suy ra là thiếu.
+     *
+     * @param awaitingShellApproval F4 — tầng dưới **đã phân loại được** rằng kênh shell hỏng vì hệ thống đang hỏi
+     *   *"Cho phép gỡ lỗi USB?"* (`LocalShellFailure.AWAITING_APPROVAL`), chứ không phải vì môi trường. Chỉ lúc đó
+     *   hàng kênh shell mới đổi sang [SHELL_CHANNEL_AWAITING_APPROVAL] (việc của NGƯỜI DÙNG). Mặc định `false` =
+     *   nguyên hành vi cũ; **cấm** bật cờ này theo phỏng đoán — CLAUDE.md §2: chưa phân loại được thì nói "chưa
+     *   biết", không nói một lý do nghe hợp lý.
      */
-    fun check(read: (LauncherRequirement) -> Boolean?): PermissionReport =
+    fun check(awaitingShellApproval: Boolean = false, read: (LauncherRequirement) -> Boolean?): PermissionReport =
         PermissionReport(
             ALL.map { req ->
                 val v = runCatching { read(req) }.getOrNull()
                 RequirementResult(
-                    req,
+                    if (awaitingShellApproval && req.id == SHELL_CHANNEL.id && v == false)
+                        SHELL_CHANNEL_AWAITING_APPROVAL else req,
                     when (v) {
                         true -> RequirementState.OK
                         false -> RequirementState.MISSING

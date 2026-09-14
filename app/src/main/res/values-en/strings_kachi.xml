@@ -89,6 +89,10 @@
     <string name="kachi_perm_core">%1$s — affects a core feature</string>
     <string name="kachi_perm_loses">Without it: %1$s</string>
 
+    <!-- ── F4 — first-open ADB approval strip (ShellChannelGate) ── -->
+    <string name="kachi_shell_approval_msg">The system is asking \"Allow USB debugging?\" — tick \"Always allow\", then OK, so Kachi can put apps into slots.</string>
+    <string name="kachi_shell_approval_retry">Retry</string>
+
     <!-- ── SettingsSections — Hiển thị & đơn vị ── -->
     <string name="kachi_sec_units">Display units</string>
     <string name="kachi_sec_theme">Light / dark theme</string>
@@ -117,9 +121,21 @@
     <string name="kachi_sec_permissions">Permissions</string>
     <string name="kachi_perm_all_ok">All permissions granted. Kachi re-requests them every time it opens, in case the system revoked them.</string>
     <string name="kachi_perm_some_missing">Kachi re-requests what it can; the rest states exactly what you need to do.</string>
+    <!-- S5 — Home screen -->
+    <string name="kachi_sec_home_screen">Home screen</string>
+    <string name="kachi_home_is_default">Kachi is the home screen.</string>
+    <string name="kachi_home_not_default">Not yet — the system is using %1$s.</string>
+    <string name="kachi_home_unknown_pkg">(unreadable)</string>
+    <string name="kachi_home_set">Set Kachi as home screen</string>
+    <string name="kachi_home_setting">Setting…</string>
+    <string name="kachi_home_result_ok">Done — press Home to return to Kachi.</string>
+    <string name="kachi_home_result_no_shell">Needs the shell channel — see the \"Window control channel\" row above.</string>
+    <string name="kachi_home_result_failed">The command ran but the system still isn\'t using Kachi: %1$s</string>
+    <string name="kachi_keep_home_boot_title">Keep Kachi as home screen on engine start</string>
+    <string name="kachi_keep_home_boot_sub">On engine start, reassert Kachi as the home screen once if the system changed it. Off by default.</string>
     <string name="kachi_sec_boot">Start-up</string>
     <string name="kachi_autostart_title">Open on engine start</string>
-    <string name="kachi_autostart_sub">On engine start Kachi rebuilds its slots and makes itself the home screen. Switched off, you open it by hand.</string>
+    <string name="kachi_autostart_sub">On engine start Kachi rebuilds its slots. Setting it as the home screen lives in the \"Home screen\" section above. Switched off, you open it by hand.</string>
 
     <!-- ── SettingsSections — ClusterNav · Giới thiệu ── -->
     <string name="kachi_about_tagline">Kachi — a home screen for BYD DiLink cars.</string>
@@ -146,6 +162,8 @@
     <string name="kachi_wall_fit">Fit</string>
     <string name="kachi_wall_dim">Dim the photo</string>
     <string name="kachi_sec_dock">Car button bar</string>
+    <string name="kachi_dock_visible_title">Show the car button bar</string>
+    <string name="kachi_dock_visible_sub">Turn off to hide the bar; the frames fill the whole screen</string>
     <string name="kachi_dock_edge">Bar edge</string>
     <string name="kachi_dock_note">Tap a tile to add or remove a button from the bar.</string>
     <string name="kachi_dock_warn">⚠ Safety / Drivetrain / Entertainment groups change car behaviour.</string>

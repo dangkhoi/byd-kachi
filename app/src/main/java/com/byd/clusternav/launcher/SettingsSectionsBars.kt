@@ -76,6 +76,13 @@ class SettingsBarsSection(
      */
     private fun dock(body: LinearLayout) {
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_dock)))
+        // S1b — ẩn/hiện thanh. Đặt onDockConfig (không thêm callback mới): giữ nguyên viền + nút đã chọn, chỉ đổi cờ
+        // hiện. Đường ghi bền đi qua HomeViewModel.setDockConfig → saveDock như đổi nút.
+        body.addView(rows.checkRow(
+            on = deps.state().dock.visible,
+            title = context.getString(R.string.kachi_dock_visible_title),
+            sub = context.getString(R.string.kachi_dock_visible_sub),
+        ) { on -> deps.onDockConfig(deps.state().dock.withVisible(on)) })
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_dock_edge),
             DockEdge.values().map { it.name to it.label },

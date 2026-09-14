@@ -1,5 +1,6 @@
 package com.byd.clusternav.carexec
 
+import com.byd.clusternav.launcher.HomeActivityCmd
 import dadb.AdbKeyPair
 import dadb.Dadb
 import dadb.InstallResult
@@ -55,6 +56,29 @@ sealed interface LocalInstallOutcome {
 
     /** Kênh lên rồi, `pm install` từ chối. [pmOutput] = output thô của pm (có thể rỗng nếu pm câm). */
     data class PmRejected(val pmOutput: String) : LocalInstallOutcome
+}
+
+/**
+ * ═══ S5 — KẾT QUẢ đặt màn hình chính, tách theo ĐIỂM HỎNG (khớp mẫu [LocalInstallOutcome]) ════════════════════
+ *
+ * Spec `docs/specs/kachi-settings-ia-v2.html` §9 (S5). Hai nguyên nhân hỏng cần hai VIỆC PHẢI LÀM khác nhau — cùng
+ * bài học U11 với `pm install`:
+ *  • [NoShellChannel] — hỏng **trước khi** `cmd package` chạy: không mở/bắt tay được phiên tới `localhost:5555`
+ *    (chưa cấp "Cho phép gỡ lỗi USB", cổng 5555 chưa bật). Việc cần làm nằm ở KÊNH SHELL (hàng *Kênh điều khiển
+ *    cửa sổ*), không phải ở HOME.
+ *  • [Failed] — kênh ĐÃ lên, `set-home-activity` chạy nhưng đọc lại `resolve-activity` **vẫn không phải Kachi**.
+ *    [resolveOutput] là output thật của resolve để chẩn đoán (ROM chặn? một launcher khác giành lại?).
+ */
+sealed interface LocalSetHomeOutcome {
+
+    /** `set-home-activity` chạy và `resolve-activity` xác nhận HOME đã là component đích. */
+    object Ok : LocalSetHomeOutcome
+
+    /** Không mở được kênh shell tới `localhost:5555` — lệnh chưa từng chạy. */
+    data class NoShellChannel(val reason: LocalShellFailure) : LocalSetHomeOutcome
+
+    /** Lệnh chạy rồi nhưng đọc lại HOME vẫn khác — [resolveOutput] = output thô của resolve-activity. */
+    data class Failed(val resolveOutput: String) : LocalSetHomeOutcome
 }
 
 object LocalDeviceShell {
@@ -195,6 +219,43 @@ object LocalDeviceShell {
                 onFailure = { LocalInstallOutcome.NoShellChannel(LocalShellFailures.classify(it)) },
             )
         }
+    }
+
+    /**
+     * S5 — đặt [component] làm màn hình chính, rồi ĐỌC LẠI để xác nhận (khớp mẫu [installApk]).
+     *
+     * Một phiên, hai lệnh: `cmd package set-home-activity <component>` rồi [HomeActivityCmd.RESOLVE]. Xác nhận bằng
+     * [HomeActivityCmd.isHome] thay vì tin `set` trả `Success` — trên xe thật đường phục hồi phải **đo** kết quả,
+     * không suy từ một dòng output (CLAUDE.md §2/§8). ROM BYD không hiện hộp chọn HOME khi bấm Home, nên đây là
+     * đường đặt được duy nhất ([ĐO] DiLink3.0 2026-09-14, xem [HomeActivityCmd]).
+     *
+     * [retry] mặc định [LocalShellRetry.BACKGROUND_READ_CAP] = chụp mũ chống-treo 30 s (không thử lại): owner đang
+     * bấm nút trong Cài đặt nhưng đây vẫn là thread nền, và một socket câm không được treo vòng đời. Kênh chưa cấp
+     * "Cho phép gỡ lỗi USB" ⇒ [LocalShellFailure.AWAITING_APPROVAL] ⇒ [LocalSetHomeOutcome.NoShellChannel].
+     */
+    fun setHomeActivity(
+        keys: AdbKeyPair,
+        component: String,
+        retry: LocalShellRetry = LocalShellRetry.BACKGROUND_READ_CAP,
+    ): LocalSetHomeOutcome = mapSetHome(sessionResult(keys, retry) { sh -> setHomeBlock(component, sh) })
+
+    /**
+     * Chuỗi lệnh của một lượt đặt HOME: `set-home-activity` rồi ĐỌC LẠI. Tách ra `internal` để test off-car khoá
+     * **đúng thứ tự lệnh + phép xác nhận** mà không cần thiết bị (chỉ tiêm một `sh` giả).
+     *
+     * @return `(đã là HOME chưa, output resolve đã trim)`.
+     */
+    internal fun setHomeBlock(component: String, sh: (String) -> LocalShellText): Pair<Boolean, String> {
+        sh(HomeActivityCmd.set(component))
+        val resolved = sh(HomeActivityCmd.RESOLVE).output
+        return HomeActivityCmd.isHome(resolved, component) to resolved.trim()
+    }
+
+    /** Kết quả phiên → [LocalSetHomeOutcome] (thuần, khoá off-car). Xem KDoc [LocalSetHomeOutcome] về ba nhánh. */
+    internal fun mapSetHome(result: LocalShellResult<Pair<Boolean, String>>): LocalSetHomeOutcome = when (result) {
+        is LocalShellResult.Ok ->
+            if (result.value.first) LocalSetHomeOutcome.Ok else LocalSetHomeOutcome.Failed(result.value.second)
+        is LocalShellResult.Failed -> LocalSetHomeOutcome.NoShellChannel(result.reason)
     }
 
     /**

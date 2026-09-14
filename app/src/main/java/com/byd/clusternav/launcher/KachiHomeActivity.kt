@@ -69,6 +69,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs, viewModel.uiState.value.topStrip)
             },
             shellUsable = { shell != null },
+            shellAwaiting = { shellGate.awaitingApproval },   // F4 — hàng quyền nói ĐÚNG ai sửa được
             goImmersive = { goImmersive() },
             // V1 · R6 — hai đường mà đường thử lệnh bằng chữ dùng; CÙNG lambda với thanh nút và ngăn kéo.
             openAppList = { drawerController.openAppList() },
@@ -156,6 +157,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     // @Volatile (cùng lý do `appLauncher` ngay trên): GHI ở thread nền `winExec` (dò dadb), ĐỌC ở thread CHÍNH
     // (openAppFullscreen · reflow · placeApp). Không có nó thì main có thể thấy mãi `null` ⇒ đường shell im lặng mất.
     @Volatile private var shell: ((String) -> String)? = null
+    /** F4 — cổng lần dò kênh shell đầu tiên (hoãn · thử lại · dải nhắc). Dựng ở [onCreate], xem [ShellChannelGate]. */
+    private lateinit var shellGate: ShellChannelGate
     // dadb → app render lên VirtualDisplay trong ô (Dudu) hoặc ROM platform-signed → ActivityView; cả 2 bỏ freeform + overlay header.
     private val embedding get() = shell != null || SlotAppHost.embeddingUsable(this)
     private val winExec = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -202,7 +205,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.M))
+            // S1b — owner 2026-09-14: lề ngoài **bằng nhau ở cả 4 cạnh màn** (trước: trái/phải 16, trên 4, dưới 12 —
+            // lệch nhau). Một giá trị [Sp.L] cho cả bốn cạnh ⇒ khung nội dung cách đều mọi mép.
+            setPadding(dp(Sp.L), dp(Sp.L), dp(Sp.L), dp(Sp.L))
         }
         content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, WRAP))
         topStrip.setProfile(viewModel.uiState.value.activeProfile)   // tên + chữ cái của chip, ngay từ lượt dựng
@@ -236,7 +241,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         mainArea = LinearLayout(this)
         DockAreaLayout.apply(mainArea, workspace, dock, viewModel.uiState.value.dock, resources.displayMetrics.density)
-        content.addView(mainArea, LinearLayout.LayoutParams(MATCH, 0, 1f).also { it.topMargin = dp(Sp.M) })
+        // Khe strip ↔ lưới ô = khe giữa các ô ([Sp.SLOT_GAP], nay 9) để nhịp trong màn nhất quán sau khi owner kéo về 75%.
+        content.addView(mainArea, LinearLayout.LayoutParams(MATCH, 0, 1f).also { it.topMargin = dp(Sp.SLOT_GAP) })
 
         rootFrame = FrameLayout(this)
         wall = WallView(this)
@@ -272,32 +278,21 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         workspace.setCustomLayout(customLayout)
         windows.seedLocations()
         val seam = dispatcher.launcherSeam()
-        submitBg {
-            if (dadb.probe()) {
-                shell = seam; appLauncher = ShellAppLauncher(seam)
-                runCatching { seam("appops set com.byd.launcher SYSTEM_ALERT_WINDOW allow") }  // để vẽ dải header nổi lên app freeform
-                runOnUiThread {
-                    // GẮN NGUYÊN KHỐI (P-bug2): 1 lời gọi mang đủ kênh shell + kênh chạm + đăng ký/gỡ màn ảo, rồi
-                    // WorkspaceView tự dựng lại các ô App MỘT LẦN để gắn bộ chiếu. Trước đây đoạn này gán rời 4
-                    // field xong gọi `workspace.render(...)`, nhưng render so theo NỘI DUNG nên ô App "không đổi"
-                    // ⇒ không dựng lại ⇒ app trong ô chỉ hiện sau khi người dùng đổi bố cục.
-                    workspace.applyEmbedSeam(
-                        shell = seam,
-                        inputClient = container.inputDaemonClient,   // daemon do AppContainer sở hữu, tiêm vào
-                        registerVd = dispatcher::registerLauncherVirtualDisplay,   // VD ô thuộc LAUNCHER → ownership cho phép
-                        unregisterVd = dispatcher::unregisterLauncherVirtualDisplay,
-                        state = viewModel.uiState.value.workspace,
-                        status = viewModel.uiState.value.carStatus,
-                    )
-                    viewModel.setEmbedded(true)                                               // dadb nối được → nhúng (giữ embedded khớp getter)
+        // F4 — lần dò dadb ĐẦU TIÊN đi qua cổng [ShellChannelGate]: hoãn tới khi khung đầu đã vẽ + yên, rồi thử lại
+        // đều đặn trong lúc màn còn hiện. Khối `if (dadb.probe())` bên dưới là NGUYÊN đường cũ, không sửa gì.
+        shellGate = ShellChannelGate(
+            activity = this, host = rootFrame, handler = handler, submitBg = { block -> submitBg(block) },
+            // Thân ở [Activity.bringUpShellChannel] (trần 500 dòng) — nguyên đường cũ, không sửa một bước nào.
+            onChannelUp = {
+                bringUpShellChannel(dadb, seam, workspace, viewModel, container) { s ->
+                    shell = s; appLauncher = ShellAppLauncher(s)
                 }
-                PermissionPreflight.runAndReport(this, shellUsable = true, sh = seam)
-            } else {
-                // Không có kênh shell: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng
-                // biết vì sao app không vào được ô, thay vì ngồi đoán.
-                PermissionPreflight.runAndReport(this, shellUsable = false, sh = null)
-            }
-        }
+            },
+            // Chưa có kênh: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng biết vì sao
+            // app không vào được ô. `awaiting` = hệ thống đang hỏi ⇒ dải nhắc nói, toast im (xem `runAndReport`).
+            onReport = { awaiting -> PermissionPreflight.runAndReport(this, false, null, awaitingApproval = awaiting) },
+        )
+        shellGate.arm()
 
         // S3 — hai việc chuyển từ màn cũ (đã gỡ 2026-09-13); thân hàm ở [KachiHomeWiring].
         maybeShowDisclaimer()
@@ -305,7 +300,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         startVoiceIfRequested(intent, voice)
         // T-BRIDGE — móc cho cầu kiểm thử qua adb; lượt tháo tự nối theo vòng đời (xem KDoc `attachTestBridge`).
         // Gắn móc KHÔNG mở cửa nào: mọi lệnh vẫn bị chặn bởi công tắc ở Cài đặt (`KachiTestBridge`).
-        attachTestBridge(viewModel, { slots }, { voice }, { drawerController }, { panels }, { shell })
+        attachTestBridge(viewModel, { slots }, { voice }, { drawerController }, { panels }, { shell }, container.carControl)
     }
 
     /** `singleTask` ⇒ lời gọi thứ hai về ĐÂY, không phải [onCreate] (bấm bong bóng khi Kachi đang mở sẵn). */
@@ -337,9 +332,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // ⚠ S4 · R7 — KHÔNG còn dải nút bố cục trên thanh trên nên ở đây không còn gì để tô sáng. Ô đang sáng của
         // bố cục sẵn nay chỉ nằm trong Cài đặt › Màn hình chính, và trang đó tự dựng lại khi state đổi.
         if (prev?.dock != state.dock) {
-            val edgeChanged = prev != null && prev.dock.edge != state.dock.edge
+            // Dựng lại cây bố cục khi ĐỔI VIỀN hoặc ĐỔI cờ ẩn/hiện (S1b): cả hai đều đổi vị trí/việc gắn của
+            // thanh nút trong `mainArea`, mà `dock.setConfig` chỉ đổi nút BÊN TRONG thanh, không gắn/tháo thanh.
+            // Thiếu nhánh `visible` thì bật/tắt "Hiện thanh nút" không có tác dụng tới khi đổi viền/dựng lại màn.
+            val layoutChanged = prev != null &&
+                (prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible)
             dock.setConfig(state.dock)
-            if (edgeChanged) DockAreaLayout.apply(mainArea, workspace, dock, state.dock, resources.displayMetrics.density)
+            if (layoutChanged) DockAreaLayout.apply(mainArea, workspace, dock, state.dock, resources.displayMetrics.density)
         }
         // Đổi/thêm/xoá hồ sơ nạp lại TOÀN BỘ state ⇒ trang đã dựng của màn Cài đặt (nếu đang mở) trở nên cũ. Đi theo
         // đường một chiều: state đổi → render → bảng dựng lại. ⚠ phải xét CẢ `profiles`: xoá một hồ sơ KHÔNG phải hồ
@@ -358,7 +357,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             workspace.setCustomLayout(state.customLayout)
             windows.reflow()
         }
-        if (prev != null && (prev.preset != state.preset || prev.dock.edge != state.dock.edge)) windows.reflow()
+        // Ẩn/hiện thanh (S1b) cũng đổi KÍCH THƯỚC vùng ô (ẩn ⇒ ô lấp trọn màn), nên cửa sổ app đặt trong ô phải đặt
+        // lại theo khung mới — cùng lý do đổi viền/bố cục.
+        if (prev != null &&
+            (prev.preset != state.preset || prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible)
+        ) {
+            windows.reflow()
+        }
         shownState = state
         windows.updateOverlayHeads()
     }
@@ -400,6 +405,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onStart() {
         super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START); appWidgets.startListening()
         SlotLiveProbe.resume()   // H2·2 — màn hiện lại thì đo tiếp (xem [onStop])
+        shellGate.onShown()      // F4 — màn hiện lại thì vòng dò kênh shell chạy tiếp
     }
 
     override fun onResume() {
@@ -420,6 +426,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus); if (hasFocus) goImmersive()
+        shellGate.onFocus(hasFocus)   // F4 — mất tiêu điểm = hộp thoại hệ thống đang ở trên ⇒ không dò chồng lên
     }
 
     override fun onPause() { super.onPause(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE); handler.removeCallbacks(tick) }
@@ -432,6 +439,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onStop() {
         super.onStop(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP); appWidgets.stopListening()
         SlotLiveProbe.pause()
+        shellGate.onHidden()     // F4 — màn khuất ⇒ dừng vòng dò (không dựng hộp thoại lên app người lái đang dùng)
     }
 
     override fun onDestroy() {
@@ -441,6 +449,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // lại thì một lượt đã hẹn có thể chen vào giữa và nộp việc cho executor vừa tắt (RejectedExecutionException,
         // không ai bắt) hoặc dựng cửa sổ overlay bằng WindowManager của activity đã chết.
         destroyed = true
+        shellGate.onHidden()   // F4 — gỡ lượt dò đã hẹn TRƯỚC khi tắt thread nền (cùng lý do khối ngay trên)
         workspace.removeCallbacks(overlayHeadsKick)
         handler.removeCallbacksAndMessages(null)
         windows.cancelPending()

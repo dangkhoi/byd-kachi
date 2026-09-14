@@ -35,7 +35,7 @@ class HalBindingTable(private val gateway: HalGateway) {
         val spec = specOf(id) ?: return null
         val raw = when (val r = routeOf(spec.first)) {
             is BindingRoute.NamedMethod -> gateway.getter(r.fqn, r.method, readArg(id))
-            is BindingRoute.Feature -> gateway.featureGet(featureDeviceFqn(spec.second), r.id)
+            is BindingRoute.Feature -> gateway.featureGet(featureDeviceFor(id, spec.second), r.id)
             is BindingRoute.Setting -> gateway.settingGet(r.key)
             is BindingRoute.Local -> gateway.localGet(r.target, r.method, readArg(id))
             BindingRoute.None -> null
@@ -75,7 +75,7 @@ class HalBindingTable(private val gateway: HalGateway) {
         val args = writeArgs(def, primary)
         return when (val r = routeOf(def.bindingKey)) {
             is BindingRoute.NamedMethod -> gateway.namedInt(r.fqn, r.method, args)
-            is BindingRoute.Feature -> gateway.featureSet(featureDeviceFqn(def.domain), r.id, args.firstOrNull() ?: primary)
+            is BindingRoute.Feature -> gateway.featureSet(featureDeviceFor(def), r.id, args.firstOrNull() ?: primary)
             is BindingRoute.Setting -> gateway.settingSet(r.key, args.firstOrNull() ?: primary)
             is BindingRoute.Local -> if (gateway.localSet(r.target, r.method, args)) 0L else null
             BindingRoute.None -> null
@@ -101,19 +101,15 @@ class HalBindingTable(private val gateway: HalGateway) {
     }
 
     /** FQN thiết bị cho đường feature-id, chọn theo [Domain] (best-effort — id↔device chính xác = grab-list §9). */
-    private fun featureDeviceFqn(domain: Domain): String = deviceFqn(
-        when (domain) {
-            Domain.ENERGY -> "BYDAutoStatisticDevice"
-            Domain.DRIVETRAIN -> "BYDAutoSettingDevice"
-            Domain.CLIMATE -> "BYDAutoAcDevice"
-            Domain.TYRES -> "BYDAutoInstrumentDevice"
-            Domain.BODY -> "BYDAutoBodyworkDevice"
-            Domain.LIGHTS -> "BYDAutoLightDevice"
-            Domain.SAFETY -> "BYDAutoADASDevice"
-            Domain.IDENTITY -> "BYDAutoBodyworkDevice"
-            Domain.INFOTAINMENT -> "BYDAutoSettingDevice"
-        }
-    )
+    private fun featureDeviceFqn(domain: Domain): String = Companion.featureDeviceFqn(domain)
+
+    /** FQN thiết bị feature-id cho một [def]: ưu tiên ghi đè [ControlDef.halDevice], nếu không thì theo [Domain]. */
+    private fun featureDeviceFor(def: ControlDef): String =
+        def.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(def.domain)
+
+    /** Như trên nhưng tra theo [id] (đường ĐỌC chỉ có `id` + domain); telemetry-only id lùi về theo [domain]. */
+    private fun featureDeviceFor(id: String, domain: Domain): String =
+        ControlRegistry.byId(id)?.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(domain)
 
     companion object {
         /** rc HAL khi feature KHÔNG provision trên trim (= `Int.MIN_VALUE + 1000`). Đo lặp trên xe owner. */
@@ -160,6 +156,9 @@ class HalBindingTable(private val gateway: HalGateway) {
             "win_lf" -> intArrayOf(1, primary); "win_rf" -> intArrayOf(2, primary)
             "win_lr" -> intArrayOf(3, primary); "win_rr" -> intArrayOf(4, primary)
             "windows_all" -> intArrayOf(primary, primary, primary, primary)
+            // [ĐO] RE 2026-09-14 §1/§5a: `setAcTemperature(type, value, tempSource, unit)` — lái=0, value=°C thô,
+            // tempSource=0, unit=1 (Celsius). Vd 22°C → setAcTemperature(0,22,0,1). Thay `setTemprature` (không tồn tại).
+            "temp" -> intArrayOf(0, primary, 0, 1)
             "window" -> intArrayOf(1, primary)
             "trunk" -> intArrayOf(if (primary > 0) 1 else 2)
             "lock" -> intArrayOf(if (primary > 0) 2 else 1)     // khoá = 2 · mở khoá = 1
@@ -195,6 +194,53 @@ class HalBindingTable(private val gateway: HalGateway) {
             }
             if (bindingKey.matches(Regex("[a-z][a-z0-9_]*"))) return BindingRoute.Setting(bindingKey)
             return BindingRoute.None
+        }
+
+        /**
+         * FQN thiết bị cho đường feature-id, chọn theo [Domain] (best-effort — id↔device chính xác = grab-list §9).
+         * Tách khỏi instance để [describeWrite] mô tả được đường ghi **thuần** (không cần gateway/xe) cho cầu kiểm thử.
+         */
+        fun featureDeviceFqn(domain: Domain): String = deviceFqn(
+            when (domain) {
+                Domain.ENERGY -> "BYDAutoStatisticDevice"
+                Domain.DRIVETRAIN -> "BYDAutoSettingDevice"
+                Domain.CLIMATE -> "BYDAutoAcDevice"
+                Domain.TYRES -> "BYDAutoInstrumentDevice"
+                Domain.BODY -> "BYDAutoBodyworkDevice"
+                Domain.LIGHTS -> "BYDAutoLightDevice"
+                Domain.SAFETY -> "BYDAutoADASDevice"
+                Domain.IDENTITY -> "BYDAutoBodyworkDevice"
+                Domain.INFOTAINMENT -> "BYDAutoSettingDevice"
+            },
+        )
+
+        /**
+         * Mô tả THUẦN đường GHI của một control cho cầu kiểm thử — KHÔNG chạm gateway/xe, nên tính được off-car và
+         * khoá bằng test ở `:core`. Trả (nhãn route, FQN thiết bị) đúng như [write] sẽ định tuyến:
+         *  • named-method → `"named:<method>"`, device = FQN suy ra từ prefix;
+         *  • feature-id   → `"feature:0x%08x"`, device = [featureDeviceFqn] theo [ControlDef.domain];
+         *  • car-setting  → `"setting:<key>"`, device = "";
+         *  • local        → `"local:<target>.<method>"`, device = target;
+         *  • chưa map      → `"none"`, device = "" (command-wrapper / id chưa chắc — grab-list §9).
+         */
+        fun describeWrite(def: ControlDef): Pair<String, String> = when (val r = routeOf(def.bindingKey)) {
+            is BindingRoute.NamedMethod -> "named:${r.method}" to r.fqn
+            is BindingRoute.Feature -> "feature:0x%08x".format(r.id) to
+                (def.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(def.domain))
+            is BindingRoute.Setting -> "setting:${r.key}" to ""
+            is BindingRoute.Local -> "local:${r.target}.${r.method}" to r.target
+            BindingRoute.None -> "none" to ""
+        }
+
+        /**
+         * Tham số CHÍNH (primary) cho một control theo [ControlDef.kind] khi cầu kiểm thử KHÔNG truyền `--ei v`.
+         * TOGGLE/COVER/BUTTON → 1 (bật/mở/bấm — mặt "làm việc" của nút); STEP → giá trị mặc định của nút;
+         * SELECT → 0 (lựa chọn đầu). Truyền `v` thì dùng thẳng `v` (đã clamp cho STEP ở [ControlDef.clamp]).
+         */
+        fun defaultPrimary(def: ControlDef): Int = when (def.kind) {
+            ControlKind.STEP -> def.value
+            ControlKind.SELECT -> 0
+            ControlKind.TOGGLE, ControlKind.COVER, ControlKind.BUTTON -> 1
         }
 
         /** FQN thiết bị BYDAuto từ tên đơn giản: `BYDAutoPM2p5Device` → `android.hardware.bydauto.pm2p5.BYDAutoPM2p5Device`. */

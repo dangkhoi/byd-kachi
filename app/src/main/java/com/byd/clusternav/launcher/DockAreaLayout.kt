@@ -21,6 +21,12 @@ object DockAreaLayout {
         (workspace.parent as? ViewGroup)?.removeView(workspace)
         (dock.parent as? ViewGroup)?.removeView(dock)
         mainArea.removeAllViews()
+        // S1b — thanh ẩn: vùng ô lấp trọn màn, KHÔNG gắn dock (giữ nguyên viền/nút đã chọn trong cfg để hiện lại).
+        if (!cfg.visible) {
+            mainArea.orientation = LinearLayout.VERTICAL
+            mainArea.addView(workspace, LinearLayout.LayoutParams(MATCH, MATCH))
+            return
+        }
         val vertical = !cfg.isVertical()
         mainArea.orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
         val wsLp = if (vertical) LinearLayout.LayoutParams(MATCH, 0, 1f) else LinearLayout.LayoutParams(0, MATCH, 1f)

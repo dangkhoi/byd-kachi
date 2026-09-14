@@ -3,8 +3,9 @@ package com.byd.clusternav
 import android.content.Context
 import android.util.Log
 import com.byd.clusternav.launcher.AutostartGate
+import com.byd.clusternav.launcher.DefaultHome
 import com.byd.clusternav.launcher.FreeformLaunch
-import com.byd.clusternav.launcher.KachiHomeActivity
+import com.byd.clusternav.launcher.HomeActivityCmd
 import com.byd.clusternav.launcher.LauncherBootPlan
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.system.FreeformSeedStore
@@ -22,8 +23,9 @@ import com.byd.clusternav.system.FreeformSeedStore
  * restored state. So this object does ONLY the setup a service can do:
  *   1. seed the freeform boot flags via the SINGLE sanctioned writer ([FreeformSeedStore.forLauncher] →
  *      [com.byd.clusternav.system.FreeformSeedPolicy.ensureSeed]) — respects the terminal FF_USER_REMOVED marker;
- *   2. ensure Kachi is the current HOME activity (`cmd package set-home-activity`, only if not already) so the
- *      system launches it on boot;
+ *   2. S5 — reassert Kachi as the current HOME activity (`cmd package set-home-activity`, only if not already)
+ *      ONLY when the user opted into "keep home on boot" ([WorkspacePrefs.keepHomeOnBoot], default OFF); the
+ *      primary way to become HOME is the Settings button (`ClusterNavBridge.setDefaultHome`);
  *   3. compute + log the cast-coordination boot plan ([LauncherBootPlan]) — surface-independent (the actual mount
  *      is the Activity's job, and the slot-seed path skips cast-owned apps too);
  *   4. ensure the HOME Activity is up (`am start` the HOME component) so it restores + mounts the saved slots —
@@ -55,8 +57,6 @@ object KachiAutostart {
     /** Test-only: reset the process-global gate between tests. */
     internal fun resetGateForTest() = gate.reset()
 
-    /** The HOME component "applicationId/fully-qualified-activity" (e.g. `com.byd.launcher/…KachiHomeActivity`). */
-    private fun homeComponent(app: Context): String = "${app.packageName}/${KachiHomeActivity::class.java.name}"
 
     /**
      * BLOCKING (runs on [KachiAutostartService]'s background thread — the FGS keeps the process alive while the
@@ -77,14 +77,23 @@ object KachiAutostart {
             runCatching {
                 val container = AppContainer.get(app)
                 val seam = container.windowDispatcher.launcherSeam()
-                val comp = homeComponent(app)
+                val comp = DefaultHome.component(app)
 
                 // (1) Seed the freeform boot flags via the ONE sanctioned writer (respects FF_USER_REMOVED).
                 val seeded = FreeformSeedStore.forLauncher(app) { Log.i(TAG, it) }.ensureSeed()
                 Log.i(TAG, "freeform seed ensured (wrote=$seeded — false = user removed / already handled by marker)")
 
-                // (2) Ensure Kachi is the HOME activity — only if it is not already (idempotent, avoids a redundant write each boot).
-                ensureHomeActivity(seam, comp)
+                // (2) S5 — Reassert Kachi as the HOME activity ONLY if the user opted into "keep home on boot"
+                //     (default OFF). Setting the WHOLE CAR's default HOME on every boot is a system-state change and
+                //     must be explicit-scope + user-consented (CLAUDE.md §4) — the primary path is the Settings
+                //     button. This boot reassert is a best-effort convenience for ROMs that reset HOME after reboot
+                //     ([SUY] — chưa đo, chờ P7). `am start` in (4) still brings Kachi UP regardless; that only STARTS
+                //     the launcher, it does not make it the default HOME.
+                if (WorkspacePrefs(app).keepHomeOnBoot()) {
+                    ensureHomeActivity(seam, comp)
+                } else {
+                    Log.i(TAG, "keep-home-on-boot OFF (default) — not reasserting default HOME on boot")
+                }
 
                 // (3) Cast-coordination decision (surface-independent): what the launcher owns vs what cast owns.
                 logBootPlan(container)
@@ -106,16 +115,13 @@ object KachiAutostart {
      * we attempt the set (also a no-op via the dead seam) — never throws.
      */
     private fun ensureHomeActivity(seam: (String) -> String, comp: String) {
-        val current = runCatching {
-            FreeformLaunch.parseComponent(
-                seam("cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME"),
-            )
-        }.getOrNull()
+        // S5 — cùng chuỗi lệnh với đường Cài đặt (`HomeActivityCmd`) để hai đường không lệch một byte (DRY §4.1).
+        val current = runCatching { FreeformLaunch.parseComponent(seam(HomeActivityCmd.RESOLVE)) }.getOrNull()
         if (current == comp) {
             Log.i(TAG, "Kachi already the HOME activity ($comp) — skip set-home")
             return
         }
-        seam("cmd package set-home-activity $comp")
+        seam(HomeActivityCmd.set(comp))
         Log.i(TAG, "set Kachi as HOME activity (was ${current ?: "unresolved"})")
     }
 

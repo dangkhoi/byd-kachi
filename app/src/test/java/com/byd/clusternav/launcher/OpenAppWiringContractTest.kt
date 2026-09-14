@@ -21,6 +21,13 @@ class OpenAppWiringContractTest {
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
 
     /**
+     * F4 (2026-09-14): khối "nối kênh sau khi dò xanh" đã **dời** khỏi [KachiHomeActivity] sang
+     * `KachiHomeWiring.bringUpShellChannel` (trần 500 dòng) — cùng các bước, cùng thứ tự, chỉ khác chỗ đứng.
+     * Bài canh đi theo mã, không đi theo tệp cũ.
+     */
+    private val wiring by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt") }
+
+    /**
      * Glue intent theo-ô — **đã dời** khỏi màn chính sang [KachiHomeSlots] ở soát Pass 2 (2026-09-14) để màn chính
      * về dưới trần 500 dòng (CLAUDE.md §4.1). Chỉ đổi CHỖ KHAI: tính chất mà hai bài dưới canh (đường API đi trước
      * đường shell · mở toàn màn không chạm ô) giữ nguyên từng dòng, nên bài canh chỉ đổi tệp nó đọc.
@@ -67,7 +74,8 @@ class OpenAppWiringContractTest {
 
     @Test
     fun `nhanh do-kenh-thanh-cong goi applyEmbedSeam va KHONG goi render tran`() {
-        val block = SourceRoots.body(activity, "if (dadb.probe())")
+        val block = SourceRoots.body(wiring, "internal fun Activity.bringUpShellChannel(")
+        assertFalse(activity.contains("dadb.probe()"), "màn chính không còn tự dò — lượt dò đầu do [ShellChannelGate] hẹn (F4)")
         assertTrue(block.contains("workspace.applyEmbedSeam("), "phải gọi applyEmbedSeam")
         assertFalse(
             block.contains("workspace.render("),

@@ -26,11 +26,7 @@ import java.util.Locale
  * ═══ T-BRIDGE · CẦU KIỂM THỬ QUA adb ═════════════════════════════════════════════════════════════════════════
  *
  * Spec `docs/specs/kachi-test-bridge.html`. Owner 2026-09-14: *"sẽ adb vào xe, nên chuẩn bị toàn bộ script test
- * automation trên xe thông qua adb"*.
- *
- * ```
- * adb shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd state
- * ```
+ * automation trên xe thông qua adb"*. Ví dụ: `am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd state`.
  *
  * ## Vì sao `exported="true"` — và bốn thứ bù lại
  * [ĐO] nghiên cứu 09-14: uid shell (2000) **không** gửi được vào một receiver `exported=false` (`SecurityException`),
@@ -49,16 +45,14 @@ import java.util.Locale
  *     Không có lệnh nào chạy im lặng.
  *
  * ## Cái cầu này KHÔNG làm
- * Không chạm **display 1** (màn cụm trước mặt người lái) dưới bất kỳ hình thức nào, và không có nhánh nào gọi
- * tầng chiếu-cụm. `LauncherWindowingGuardTest` canh chiều đó cho cả thư mục `launcher/`;
- * `TestBridgeSafetyContractTest` canh riêng cho cầu này.
+ * Không chạm **display 1** (màn cụm) và không gọi tầng chiếu-cụm — `TestBridgeSafetyContractTest` canh riêng.
  */
 class KachiTestBridge : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         val app = context.applicationContext
         val extras = readExtras(intent)
-        val reply = TestBridgeReply(app, goAsync(), fileTag(extras[TestBridgeCommands.EXTRA_CMD] as? String))
+        val reply = TestBridgeReply(app, goAsync(), fileTagFor(extras))
         Log.i(TAG, "cmd " + describe(extras))
         when {
             intent?.action != action() -> reply.fail(ERR_BAD_ACTION)
@@ -99,6 +93,10 @@ class KachiTestBridge : BroadcastReceiver() {
             runCatching { intent.getIntExtra(TestBridgeCommands.EXTRA_SLOT, 0) }
                 .getOrNull()?.let { out[TestBridgeCommands.EXTRA_SLOT] = it }
         }
+        if (intent.hasExtra(TestBridgeCommands.EXTRA_V)) {
+            runCatching { intent.getIntExtra(TestBridgeCommands.EXTRA_V, 0) }
+                .getOrNull()?.let { out[TestBridgeCommands.EXTRA_V] = it }
+        }
         if (intent.hasExtra(TestBridgeCommands.EXTRA_AUTO_CONFIRM)) {
             runCatching { intent.getBooleanExtra(TestBridgeCommands.EXTRA_AUTO_CONFIRM, false) }
                 .getOrNull()?.let { out[TestBridgeCommands.EXTRA_AUTO_CONFIRM] = it }
@@ -118,6 +116,13 @@ class KachiTestBridge : BroadcastReceiver() {
      */
     private fun fileTag(raw: String?): String =
         raw.orEmpty().filter { it.isLetterOrDigit() || it == '_' }.take(TAG_CAP).ifEmpty { UNNAMED }
+
+    /** Nhãn tệp — `ctl` nối thêm mã control (`ctl_win_lf`) để buổi quét HAL nhận ra tệp nào của control nào. */
+    private fun fileTagFor(extras: Map<String, Any?>): String {
+        val base = fileTag(extras[TestBridgeCommands.EXTRA_CMD] as? String)
+        val id = (extras[TestBridgeCommands.EXTRA_ID] as? String)?.filter { it.isLetterOrDigit() || it == '_' }
+        return if (base == TestBridgeCommands.CTL && !id.isNullOrEmpty()) "${base}_$id".take(TAG_CAP) else base
+    }
 
     // ── Điều phối ────────────────────────────────────────────────────────────────────────────────
 
@@ -148,6 +153,8 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.SLOT -> runSlot(app, cmd, hooks, reply)
             TestBridgeCommands.SLOT_CLEAR -> runSlotClear(cmd, hooks, reply)
             TestBridgeCommands.OPEN -> runOpen(app, cmd, hooks, reply)
+            // Thân ở [TestBridgeCtl] (trần 500 dòng, CLAUDE.md §4.1) — cùng cách tách với `state`→[TestBridgeState].
+            TestBridgeCommands.CTL -> TestBridgeCtl.run(cmd, hooks, reply)
             TestBridgeCommands.REAPPLY -> runReapply(hooks, reply)
             TestBridgeCommands.DIAG -> runDiag(app, hooks, reply)
             else -> reply.fail(TestBridgeCommands.ERR_UNKNOWN_CMD)
@@ -464,6 +471,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.EXTRA_PKG,
             TestBridgeCommands.EXTRA_ARG,
             TestBridgeCommands.EXTRA_FILE,
+            TestBridgeCommands.EXTRA_ID,
         )
 
         // ── Mã lỗi riêng của tầng này (ASCII, không dịch — xem `TestBridgeParse.Err`) ────────────

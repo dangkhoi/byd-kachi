@@ -64,6 +64,7 @@ internal object TestBridgeState {
                 "bars" to TestBridgeJson.Raw(
                     TestBridgeJson.obj(
                         "dock_edge" to s.dock.edge.name,
+                        "dock_visible" to s.dock.visible,
                         "dock" to TestBridgeJson.Raw(TestBridgeJson.arr(s.dock.enabled)),
                         "chips" to TestBridgeJson.Raw(TestBridgeJson.arr(s.topStrip.ids)),
                     ),

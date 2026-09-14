@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.testbridge
 import com.byd.clusternav.launcher.SettingsCatalog
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -183,6 +184,57 @@ class TestBridgeCommandTest {
         // Phép đổi 1-based → 0-based nằm ở ĐÚNG MỘT chỗ (tầng thi hành). Trừ ở cả hai nơi là lệch một ô.
         assertEquals(2, cmd.slot)
         assertEquals("com.google.android.youtube", cmd.pkg)
+    }
+
+    // ── ctl (bắn một control) ───────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `ctl can id, thieu id bao dung ten doi so`() {
+        assertEquals(
+            TestBridgeCommands.ERR_MISSING + TestBridgeCommands.EXTRA_ID,
+            err(TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL),
+        )
+    }
+
+    @Test
+    fun `ctl KHONG kiem id ton tai o tang phan tich, de tang thi hanh liet ke ma hop le`() {
+        // Cùng luật `pkg`/`profile`: phép kiểm ngữ nghĩa dồn về tầng thi hành (runCtl) để lời đáp liệt kê được.
+        val cmd = ok(TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL, TestBridgeCommands.EXTRA_ID to "readl")
+        assertEquals("readl", cmd.id)
+        assertNull(cmd.v, "không truyền v ⇒ null, để tầng thi hành chọn mặc định theo kind")
+        assertTrue(!cmd.autoConfirm)
+    }
+
+    @Test
+    fun `ctl v la null khi vang, giu nguyen so khi truyen ke ca 0`() {
+        assertEquals(
+            0,
+            ok(
+                TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL,
+                TestBridgeCommands.EXTRA_ID to "win_lf",
+                TestBridgeCommands.EXTRA_V to 0,
+            ).v,
+            "v=0 (đóng) phải giữ 0, KHÔNG bị coi là 'không truyền'",
+        )
+        assertEquals(
+            3,
+            ok(
+                TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL,
+                TestBridgeCommands.EXTRA_ID to "drive_mode",
+                TestBridgeCommands.EXTRA_V to 3,
+            ).v,
+        )
+    }
+
+    @Test
+    fun `ctl auto_confirm doc duoc`() {
+        assertTrue(
+            ok(
+                TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL,
+                TestBridgeCommands.EXTRA_ID to "door",
+                TestBridgeCommands.EXTRA_AUTO_CONFIRM to true,
+            ).autoConfirm,
+        )
     }
 
     @Test

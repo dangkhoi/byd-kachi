@@ -1,10 +1,8 @@
 package com.byd.clusternav.launcher
 
-import com.byd.clusternav.system.PackageQueries
 import android.content.ComponentName
 import android.content.Context
 import android.widget.Toast
-import android.content.Intent
 import android.provider.Settings
 import android.util.Log
 import com.byd.clusternav.NavNotificationListener
@@ -54,9 +52,12 @@ object PermissionPreflight {
      *
      * @param shellUsable kênh shell có dùng được không — chỗ gọi truyền vào (activity đã biết, khỏi dò lại).
      *   `null` = chưa dò xong ⇒ mục đó thành "chưa đọc được", không bị coi là thiếu.
+     * @param awaitingApproval F4 — vòng dò đã **phân loại được** rằng kênh shell hỏng vì hệ thống đang hỏi
+     *   *"Cho phép gỡ lỗi USB?"*. Chỉ truyền `true` từ lý do đã phân loại (`LocalShellFailure.AWAITING_APPROVAL`),
+     *   không bao giờ từ phỏng đoán — xem KDoc [LauncherRequirements.check].
      */
-    fun check(ctx: Context, shellUsable: Boolean?): PermissionReport =
-        LauncherRequirements.check { req ->
+    fun check(ctx: Context, shellUsable: Boolean?, awaitingApproval: Boolean = false): PermissionReport =
+        LauncherRequirements.check(awaitingShellApproval = awaitingApproval) { req ->
             when (req.id) {
                 LauncherRequirements.NOTIFICATION_LISTENER.id -> notificationListenerGranted(ctx)
                 LauncherRequirements.ACCESSIBILITY.id -> accessibilityGranted(ctx)
@@ -213,12 +214,11 @@ object PermissionPreflight {
     /**
      * Kachi có đang là màn hình chính không. So gói của activity mà hệ thống chọn cho ý-định HOME.
      * Trả `null` nếu không phân giải được (không kết luận là thiếu).
+     *
+     * S5 — đi qua [DefaultHome.isCurrent] (nguồn ĐỌC duy nhất, cùng dùng với `ClusterNavBridge` + `KachiAutostart`),
+     * không tự dựng lại lời gọi `resolveActivity` ở đây (DRY — CLAUDE.md §4.1).
      */
-    private fun isDefaultHome(ctx: Context): Boolean? = runCatching {
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        val res = PackageQueries.resolveActivity(ctx.packageManager, intent) ?: return null
-        res.activityInfo?.packageName == ctx.packageName
-    }.getOrNull()
+    private fun isDefaultHome(ctx: Context): Boolean? = DefaultHome.isCurrent(ctx)
 
     private fun flat(cls: String) = "$PKG/$cls"
 
@@ -232,9 +232,19 @@ object PermissionPreflight {
      * khối tách ra để về đúng trần (khối kia là hình nền → `WallpaperController`).
      *
      * Chạy trên thread NỀN (chỗ gọi lo): mọi lệnh cấp quyền đi qua kênh shell, chặn.
+     *
+     * @param awaitingApproval F4 — hệ thống đang hỏi *"Cho phép gỡ lỗi USB?"* (lý do ĐÃ phân loại). Báo cáo vẫn
+     *   chạy và vẫn vào nhật ký, nhưng **toast bị nén**: dải nhắc ở màn chính ([ShellChannelGate]) đang nói đúng
+     *   câu cần nói (*"tích Luôn cho phép rồi OK"*), còn toast chỉ nói được câu chung *"app không vào được ô"*.
+     *   Hai câu cùng lúc cho cùng một sự việc là nhiễu — đúng thứ P8 sinh ra để dọn (xem [noticeShown]).
      */
-    fun runAndReport(activity: android.app.Activity, shellUsable: Boolean, sh: ((String) -> String)?) {
-        val before = check(activity, shellUsable)
+    fun runAndReport(
+        activity: android.app.Activity,
+        shellUsable: Boolean,
+        sh: ((String) -> String)?,
+        awaitingApproval: Boolean = false,
+    ) {
+        val before = check(activity, shellUsable, awaitingApproval)
         Log.i("Preflight", before.logLine())
 
         // Tự cấp: chỉ khi CÓ kênh shell và thật sự đang thiếu (đọc thì không cần shell, cấp thì cần).
@@ -251,19 +261,20 @@ object PermissionPreflight {
                     accessibilityGrantCommands(cur, flagOn).forEach { sh(it) }
                 }
             }
-            Log.i("Preflight", "sau khi tự cấp: " + check(activity, shellUsable).logLine())
+            Log.i("Preflight", "sau khi tự cấp: " + check(activity, shellUsable, awaitingApproval).logLine())
         }
 
         // Chỉ NÓI khi thiếu thứ làm mất TÍNH NĂNG LÕI (app vào ô). Thiếu mục nhỏ mà báo mỗi lần mở là nhiễu —
         // đúng thứ việc này đi dọn. Danh sách đầy đủ nằm trong bảng Tuỳ biến.
-        val after = check(activity, shellUsable)
+        val after = check(activity, shellUsable, awaitingApproval)
         // [SOÁT P3] Dùng `notice()` của :core thay vì tự ghép chuỗi ở đây. Trước đây `notice()`/`needsUser`/
         // `fixedAtBoot` chỉ có TEST gọi ⇒ chúng là mã chết ở sản phẩm, và tệ hơn: câu chữ người dùng đọc lại nằm ở
         // tầng UI nên hai bên có thể nói khác nhau. Nay một nguồn duy nhất, và mã kia hết chết.
         val msg = after.notice(coreOnly = true)   // chỉ mục làm mất tính năng lõi — mục nhỏ để bảng Tuỳ biến nói
         // U8b: một lần mỗi phiên tiến trình. `getAndSet` chỉ bật cờ khi THẬT SỰ có câu để nói — thiếu quyền xuất
         // hiện muộn (người dùng thu quyền giữa chuyến) vẫn được báo đúng một lần, thay vì bị cờ "đã nói" nuốt mất.
-        if (msg != null && !noticeShown.getAndSet(true)) {
+        // F4: đang hỏi người dùng ⇒ dải nhắc ở màn chính là chỗ nói, không phải toast (xem KDoc tham số).
+        if (msg != null && !awaitingApproval && !noticeShown.getAndSet(true)) {
             activity.runOnUiThread { runCatching { Toast.makeText(activity, msg, Toast.LENGTH_LONG).show() } }
         }
     }

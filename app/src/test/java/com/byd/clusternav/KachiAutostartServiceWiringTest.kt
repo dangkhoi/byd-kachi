@@ -97,10 +97,22 @@ class KachiAutostartServiceWiringTest {
     }
 
     @Test
-    fun `runBoot ensures Kachi is the HOME activity idempotently`() {
-        assertTrue(autostart.contains("cmd package set-home-activity"), "sets Kachi as HOME via cmd package set-home-activity")
-        assertTrue(autostart.contains("resolve-activity"), "reads current HOME first (idempotent: only set if not already)")
-        assertTrue(autostart.contains("android.intent.category.HOME"), "queries the HOME category")
+    fun `runBoot reasserts HOME idempotently via the shared command builder`() {
+        // S5 — chuỗi lệnh chuyển sang HomeActivityCmd (:core) để đường Cài đặt + đường khởi động dùng chung (DRY).
+        assertTrue(autostart.contains("HomeActivityCmd.set("), "sets Kachi as HOME via the shared HomeActivityCmd.set builder")
+        assertTrue(autostart.contains("HomeActivityCmd.RESOLVE"), "reads current HOME first (idempotent: only set if not already)")
+        assertTrue(autostart.contains("FreeformLaunch.parseComponent("), "parses the resolved HOME component before comparing")
+    }
+
+    @Test
+    fun `runBoot reasserts HOME only when the user opted into keep-home-on-boot`() {
+        // S5 — đặt HOME của CẢ XE lúc nổ máy là đổi state hệ thống ⇒ phải gác sau công tắc (mặc định TẮT, CLAUDE.md §4).
+        // Đường CHÍNH để thành HOME là nút trong Cài đặt (ClusterNavBridge.setDefaultHome).
+        assertTrue(
+            autostart.contains("keepHomeOnBoot()"),
+            "the boot set-home must be gated behind WorkspacePrefs.keepHomeOnBoot (default OFF)",
+        )
+        assertTrue(prefs.contains("fun keepHomeOnBoot()"), "the keep-home-on-boot pref lives in WorkspacePrefs (per-vehicle)")
     }
 
     @Test

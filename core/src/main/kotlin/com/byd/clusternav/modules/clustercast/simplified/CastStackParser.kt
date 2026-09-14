@@ -197,6 +197,34 @@ object CastStackParser {
     }
 
     /**
+     * Stack id của stack ĐANG chứa task của [pkg] trên [displayId] (khớp gói CHÍNH XÁC, có escape).
+     * Null nếu không có. Dùng cho đường R2 move-stack (X2): khi `am start --display <VD>` bị
+     * SafeActivityOptions Permission Denial (VD của uid khác) HOẶC bị ActivityStarter âm thầm nhắm lại
+     * display 0, app nằm lại display 0 — cần biết stack id của nó để `am display move-stack <stackId> <VD>`
+     * (đường proven trong `ClusterCast.placeLadder` R2, bypass ActivityStarter/checkPermissions).
+     *
+     * Ghép theo Stack header (`Stack id=<S> ... displayId=<D>`) rồi kiểm task-line trong block đó khớp [pkg].
+     */
+    fun findStackIdForPkg(amOutput: String, pkg: String, displayId: Int): Int? {
+        val escapedPkg = Regex.escape(pkg)
+        val taskRegex = Regex("""taskId=\d+:\s*$escapedPkg/""")
+        var currentStackId = -1
+        var currentDisplayId = -1
+        for (line in amOutput.lines()) {
+            val sm = STACK_HEADER_WITH_ID.find(line)
+            if (sm != null) {
+                currentStackId = sm.groupValues[1].toIntOrNull() ?: -1
+                currentDisplayId = sm.groupValues[2].toIntOrNull() ?: -1
+                continue
+            }
+            if (currentDisplayId == displayId && currentStackId >= 0 && taskRegex.containsMatchIn(line)) {
+                return currentStackId
+            }
+        }
+        return null
+    }
+
+    /**
      * Find a usable target stack on display 0 (non-home, id > 0).
      */
     fun findTargetStackOnDisplay0(amOutput: String): Int? {
@@ -209,5 +237,7 @@ object CastStackParser {
     }
 
     private val STACK_HEADER = Regex("""Stack id=\d+.*displayId=(\d+)""")
+    /** Như [STACK_HEADER] nhưng CAPTURE cả stack id (group 1) lẫn display id (group 2). */
+    private val STACK_HEADER_WITH_ID = Regex("""Stack id=(\d+).*displayId=(\d+)""")
     private val TASK_LINE = Regex("""taskId=(\d+):\s*(\S+)""")
 }

@@ -163,6 +163,55 @@ class LauncherRequirementsTest {
         assertTrue(r.notice()!!.contains("cửa sổ tự do"))
     }
 
+    // ── F4: "đang hỏi người dùng" KHÁC "hạn chế môi trường" ──────────────────────────────────────
+
+    /**
+     * [ĐO] xe DiLink3.0 2026-09-14: lần mở đầu, hàng *Kênh điều khiển cửa sổ* hiện **"Hạn chế của môi trường"** —
+     * sai. adbd đang **im lặng chờ** người lái bấm *"Cho phép gỡ lỗi USB?"* (ổ cắm `ESTABLISHED`, `Recv-Q` 24→48),
+     * tức người dùng sửa được **bằng một cú tích**. Câu "không ai sửa được" đặt đúng vào lúc đó là câu tệ nhất.
+     */
+    @Test
+    fun `dang hoi nguoi dung thi kenh shell la viec cua NGUOI DUNG, khong phai moi truong`() {
+        val r = LauncherRequirements.check(awaitingShellApproval = true) { req -> req.id != "shell" }
+        assertTrue("shell" in r.needsUser.map { it.id }, "phải là việc của NGƯỜI DÙNG")
+        assertTrue(r.environment.isEmpty(), "và KHÔNG còn bị gọi là hạn chế môi trường")
+        val row = r.needsUser.first { it.id == "shell" }
+        assertNotNull(row.userAction, "phải nói việc cần làm")
+        assertTrue(row.userAction!!.contains("Luôn cho phép"), "phải nhắc tích ô 'luôn cho phép'")
+        assertNotNull(row.userActionEn, "câu việc-cần-làm phải có bản EN")
+        assertFalse(
+            row.userActionEn!!.any { it in "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ" },
+            "bản EN còn dấu tiếng Việt (dịch nửa vời)",
+        )
+    }
+
+    @Test
+    fun `bien the giu nguyen ma, nhan va cau mat-gi cua dieu kien goc`() {
+        val base = LauncherRequirements.SHELL_CHANNEL
+        val variant = LauncherRequirements.SHELL_CHANNEL_AWAITING_APPROVAL
+        assertEquals(base.id, variant.id, "vẫn là MỘT điều kiện — đổi mã là đổi thứ mà nhật ký/test chỉ đích danh")
+        assertEquals(base.label, variant.label)
+        assertEquals(base.losesWhatIfMissing, variant.losesWhatIfMissing)
+        assertEquals(base.coreFeature, variant.coreFeature)
+        assertFalse(variant in LauncherRequirements.ALL, "bảng ALL nói launcher CẦN gì, không nói đang HỎNG kiểu gì")
+    }
+
+    @Test
+    fun `co dang-hoi KHONG duoc doi gi khi kenh shell dang DU`() {
+        // Kênh lên rồi thì không có gì để nói — cờ đang-hỏi lúc đó chỉ có thể là tàn dư của một lượt dò cũ.
+        val r = LauncherRequirements.check(awaitingShellApproval = true) { true }
+        assertTrue(r.allOk)
+        assertTrue(r.needsUser.isEmpty())
+        assertNull(r.notice(), "đủ thì IM LẶNG")
+    }
+
+    @Test
+    fun `mac dinh KHONG bat co - moi ben goi cu giu nguyen hanh vi`() {
+        val r = report("shell")
+        assertTrue("shell" in r.environment.map { it.id }, "không bật cờ ⇒ vẫn là hạn chế môi trường như trước F4")
+        assertTrue(r.needsUser.none { it.id == "shell" })
+    }
+
     @Test
     fun `tra muc theo ma`() {
         assertNotNull(LauncherRequirements.byId("shell"))

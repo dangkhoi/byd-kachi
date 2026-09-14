@@ -48,6 +48,9 @@ internal object SettingsCatalogEntries {
         // Viền TRƯỚC danh sách nút: thứ tự khai ở đây LÀ thứ tự hiện ra, và mục "nút trên thanh" là lưới 123 ô. Khai
         // ngược lại thì muốn đổi viền phải cuộn qua hết lưới — thứ tự danh mục phải là thứ tự dùng được, không chỉ
         // là thứ tự nghe hợp lý khi đọc danh sách.
+        // S1b — ẩn/hiện thanh nút. TRƯỚC danh sách nút + viền vì "có hiện không" là câu hỏi đầu tiên; ẩn rồi thì
+        // viền/nút bên dưới không còn tác dụng ngay, nhưng vẫn để lộ ra để đặt sẵn cho lần hiện lại.
+        SettingsEntry("bars_dock_visible", SettingsGroup.BARS, "Hiện thanh nút xe", "dock_visible", "Show the car bar"),
         SettingsEntry("bars_dock_edge", SettingsGroup.BARS, "Viền đặt thanh nút", "dock_edge", "Button bar edge"),
         SettingsEntry("bars_dock_items", SettingsGroup.BARS, "Nút trên thanh nút xe", "dock_enabled", "Buttons on the car bar"),
 
@@ -206,6 +209,19 @@ internal object SettingsCatalogEntries {
         SettingsEntry(
             "system_headless_autostart", SettingsGroup.SYSTEM, "Chạy dịch vụ nền khi nổ máy",
             "headless_autostart", "Run background service on engine start",
+        ),
+        // ── Màn hình chính (S5) ──
+        // btn_set_home · ClusterNavBridge.setDefaultHome — VIỆC LÀM (không lưu khoá): ROM BYD KHÔNG hiện hộp chọn
+        // HOME khi bấm nút Home, nên đây là đường đặt được duy nhất. Nút gọi `cmd package set-home-activity` qua
+        // dadb uid-shell ([ĐO] DiLink3.0 2026-09-14 ⇒ Success). Trạng thái ("đang là"/"chưa — hệ thống dùng <gói>")
+        // ĐỌC qua PackageQueries, không shell.
+        SettingsEntry("system_default_home", SettingsGroup.SYSTEM, "Màn hình chính", labelEn = "Home screen"),
+        // cb_keep_home_on_boot · ClusterNavBridge.setKeepHomeOnBoot. Nổ máy thì đặt lại HOME một lần nếu ROM reset
+        // (mặc định TẮT — [SUY] chưa đo ROM có reset không, chờ P7 trên xe). Khoá `keep_home_on_boot` là **theo XE**
+        // ([ProfileScope.DEVICE_KEYS]): màn hình chính là thuộc tính của cả xe, không phải của một tài xế.
+        SettingsEntry(
+            "system_keep_home_on_boot", SettingsGroup.SYSTEM, "Giữ Kachi làm màn hình chính khi nổ máy",
+            "keep_home_on_boot", "Keep Kachi as home screen on engine start",
         ),
         // btn_check_update · VIỆC LÀM
         SettingsEntry("system_update", SettingsGroup.SYSTEM, "Kiểm tra cập nhật", labelEn = "Check for updates"),

@@ -50,12 +50,17 @@ class SpeedBadgeLifecycleContractTest {
         assertTrue(overlay.contains("registerDisplayListener(displayListener, handler)"), "listener registered on the main handler")
         assertTrue(overlay.contains("unregisterDisplayListener(displayListener)"), "listener unregistered on close")
         val added = functionBody(overlay, "override fun onDisplayAdded(displayId: Int)")
-        assertTrue(added.contains("if (displayId != CLUSTER_DISPLAY_ID) return"), "add gated on display 1")
+        // 2026-09-14: gate is no longer pinned to the constant 1. This car's cluster is display 2 (fission_bg_xdja),
+        // so before we are attached ANY add may be the cluster (initOverlay resolves the right one); once attached we
+        // only re-init when OUR display re-appears. Tracks `resolvedDisplayId`, not a hardcoded id.
+        assertTrue(added.contains("if (clusterWm != null && displayId != resolvedDisplayId) return"), "add tracks resolved display")
         assertTrue(added.contains("initOverlay()"), "onDisplayAdded re-initializes")
         assertTrue(added.contains("lastSpeedKph?.let { doShow("), "onDisplayAdded re-shows the pending value")
         val removed = functionBody(overlay, "override fun onDisplayRemoved(displayId: Int)")
-        assertTrue(removed.contains("if (displayId != CLUSTER_DISPLAY_ID) return"), "remove gated on display 1")
+        assertTrue(removed.contains("if (displayId != resolvedDisplayId) return"), "remove gated on the resolved display")
         assertTrue(removed.contains("teardown()"), "onDisplayRemoved tears down")
+        // The resolved id is captured at init from the display actually attached to (may be ≠ 1 on this car).
+        assertTrue(overlay.contains("resolvedDisplayId = display.displayId"), "init records the resolved display id")
     }
 
     @Test

@@ -55,6 +55,20 @@ data class ControlDef(
     val domain: Domain = Domain.CLIMATE,
     val tier: EvidenceTier = EvidenceTier.OVERDRIVE,
     val bindingKey: String = "",
+    /**
+     * Ghi ĐÈ thiết bị BYDAuto cho đường **feature-id** — tên lớp đơn giản (vd `"BYDAutoSettingDevice"`,
+     * `"BYDAutoPM2p5Device"`). `null` ⇒ chọn thiết bị theo [domain] như cũ ([HalBindingTable.featureDeviceFqn]).
+     *
+     * ## Vì sao là DỮ LIỆU ở đây chứ không phải `if (id == …)` trong bảng nối (CLAUDE.md §7)
+     * [ĐO] RE `docs/diagnostics/byd-hal-permission-RE-2026-09-14.md` §4: feature-id của BYD **nằm rải trên các
+     * thiết bị KHÔNG khớp Domain của UI** — đèn đọc/nhớ-ghế/giới-hạn-sạc thuộc **SETTING (1023)**, ion thuộc
+     * **PM2P5 (1008)** — nên map thô Domain→thiết bị route sai, `checkDeviceFeatures` trả sentinel (KHÔNG phải
+     * cổng chữ ký). Khác biệt id↔thiết bị là **dữ liệu tra được từ `BYDAutoDeviceFeaturesMap`**, nên nó phải sống
+     * như một trường của control, không phải một nhánh rẽ theo tên trong code định tuyến. Còn ở mức **cần kiểm
+     * trên xe** (playbook HAL-sweep) — cổng chữ ký của thiết bị đích với các miền đã đo (AC/SETTING/PM2P5) tin cậy
+     * cao, nhưng lệnh có thật sự tới xe hay không thì sweep mai xác nhận.
+     */
+    val halDevice: String? = null,
     val args: List<String> = emptyList(),
     /** Nhãn tiếng Anh (U5 · T2) — tham số mặc định, xem KDoc [Strings] về vì sao nhãn là DỮ LIỆU ở `:core`. */
     override val labelEn: String? = null,
@@ -116,8 +130,18 @@ data class ControlDef(
 data class DockConfig(
     val edge: DockEdge = DockEdge.BOTTOM,
     val enabled: List<String> = ControlRegistry.defaultEnabledIds(),
+    /**
+     * S1b (owner 2026-09-14: *"thêm chức năng cho ẩn hiện thanh luôn nhé, bên cạnh việc đặt ở trên dưới trái phải"*).
+     * `false` ⇒ thanh nút KHÔNG hiện, vùng ô lấp trọn màn (xem [DockAreaLayout]). Là **lựa chọn tách khỏi [edge]**
+     * (không phải viền thứ 5): ẩn rồi hiện lại giữ nguyên viền đã chọn thay vì quên mất về BOTTOM. Theo hồ sơ
+     * ([ProfileScope] `dock_visible`) như [edge].
+     */
+    val visible: Boolean = true,
 ) {
     fun withEdge(e: DockEdge): DockConfig = copy(edge = e)
+
+    /** Ẩn/hiện thanh nút — giữ nguyên [edge] và [enabled] để hiện lại đúng chỗ cũ. */
+    fun withVisible(v: Boolean): DockConfig = copy(visible = v)
 
     /**
      * Bật/tắt một **khả năng** trong thanh.
@@ -160,6 +184,9 @@ object ControlRegistry {
             labelEn = "Tailgate"),
         ControlDef("readl", "Đèn đọc", "ic-readlight", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643002",
+            // [ĐO] RE 2026-09-14 §4: feature 0x4f50003a (SET_INSIDE_LIGHT_STATE_SET) thuộc SETTING(1023), KHÔNG phải
+            // LIGHT(1004) mà Domain.LIGHTS route tới ⇒ route đèn cabin sang SETTING (cần sweep xe xác nhận).
+            halDevice = "BYDAutoSettingDevice",
             labelEn = "Reading light"),
         ControlDef("pm25", "Lọc bụi", "ic-filter", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setAutoCleanAirState",
@@ -168,7 +195,9 @@ object ControlRegistry {
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
             labelEn = "Seat ventilation"),
         ControlDef("temp", "Nhiệt độ", "ic-temp", ControlKind.STEP, enabledByDefault = true, value = 22, min = 17, max = 33, step = 1,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoAcDevice.setTemprature",
+            // [ĐO] RE 2026-09-14 §1/§5a: `setTemprature` KHÔNG tồn tại trong HAL ⇒ reflection trượt, không lệnh nào
+            // tới xe. Setter thật là `setAcTemperature(type, value, tempSource, unit)` — args ở HalBindingTable.writeArgs.
+            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoAcDevice.setAcTemperature",
             labelEn = "Temperature"),
         ControlDef("fan", "Gió", "ic-fan", ControlKind.STEP, enabledByDefault = true, value = 4, min = 0, max = 7, step = 1,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219340",
@@ -228,6 +257,9 @@ object ControlRegistry {
             labelEn = "Rear defrost"),
         ControlDef("anion", "Ion âm", "ic-leaf", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1337982994",
+            // [ĐO] RE 2026-09-14 §4: PM25_ANION_STATE_SET thuộc PM2P5(1008), KHÔNG phải AC(1000) mà Domain.CLIMATE
+            // route tới. `setAutoCleanAirState` (PM2P5_SET) đã chạy trên xe ⇒ cổng chữ ký PM2P5 tin cậy cao.
+            halDevice = "BYDAutoPM2p5Device",
             labelEn = "Negative ions"),
         ControlDef("steer_heat", "Sưởi vô-lăng", "ic-seat", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setSteeringWheelHeatingState",
@@ -282,6 +314,8 @@ object ControlRegistry {
             labelEn = "Fold mirrors"),
         ControlDef("seat_memory", "Nhớ ghế lái", "ic-car-top-seat-fl", ControlKind.BUTTON,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276186678",
+            // [ĐO] RE 2026-09-14 §4: SET_LF_MEMORY_LOCATION_SET thuộc SETTING(1023), KHÔNG phải BODYWORK(1001).
+            halDevice = "BYDAutoSettingDevice",
             labelEn = "Driver seat memory"),
         // Đèn
         ControlDef("ambient_power", "Đèn viền cabin", "ic-car-top-ambient", ControlKind.TOGGLE,
@@ -332,6 +366,9 @@ object ControlRegistry {
             labelEn = "Charge target"),
         ControlDef("charge_cap", "Giới hạn sạc", "ic-battery-charging", ControlKind.TOGGLE,
             domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376132",
+            // [ĐO] RE 2026-09-14 §4: SETTING_AC_CHARGING_CURRENT_LIMIT_STATUS_SET thuộc SETTING(1023), KHÔNG phải
+            // STATISTIC(1014) mà Domain.ENERGY route tới.
+            halDevice = "BYDAutoSettingDevice",
             labelEn = "Charge limit"),
         ControlDef("wireless_charge", "Sạc không dây", "ic-charger", ControlKind.TOGGLE,
             domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1312817218",

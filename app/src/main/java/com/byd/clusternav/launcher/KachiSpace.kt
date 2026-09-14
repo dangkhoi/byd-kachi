@@ -265,9 +265,11 @@ object KachiSpace {
      * mắc nhiều lần. Lệch một chỗ thì **màn hình vẽ ô theo lưới mới trong khi cửa sổ app đặt theo lưới cũ** =
      * hình dạng P-bug2 (app nằm lệch khỏi ô). Đặt tên riêng để không ai sửa lẻ một chỗ.
      *
-     * Giá trị = [M]: nó là *khe giữa hai thẻ*, đúng vai trò của bậc đó.
+     * Giá trị = **9** (ngoài thang): owner 2026-09-14 *"chỉnh margin giữa các khung bé lại chút, tầm 75% hiện tại"*.
+     * 75% của [M] (12) = 9 — khe giữa các ô hẹp lại một nhịp mà vẫn thấy rõ đường chia. Ngoài thang có chủ đích: đây
+     * là con số owner chốt theo cảm nhận trên xe, không phải một bậc của thang dp.
      */
-    const val SLOT_GAP = M
+    const val SLOT_GAP = 9
 
     /**
      * Thụt cửa sổ app vào trong ô (trái/phải/dưới).
@@ -275,8 +277,11 @@ object KachiSpace {
      * Bằng [SLOT_GAP] là **cố ý**: nhờ vậy rãnh quanh cửa sổ app trông liền một nhịp với rãnh giữa các ô. Nhưng
      * đây là **vai trò khác** ([SLOT_GAP] là khoảng cách *giữa hai ô*, còn đây là lề *bên trong một ô*) nên có
      * tên riêng — để sau này muốn app sát viền hơn thì sửa được mà không xê dịch cả lưới.
+     *
+     * Từ 2026-09-14 bám thẳng [SLOT_GAP] (nay = 9) thay vì chép giá trị [M]: giữ đúng lời hứa "rãnh quanh app
+     * trông liền một nhịp với rãnh giữa các ô" khi owner kéo khe ô về 75%.
      */
-    const val SLOT_APP_INSET = M
+    const val SLOT_APP_INSET = SLOT_GAP
 
     /**
      * **Bề rộng TỐI THIỂU của cột nhãn** trong một hàng cài đặt (nhãn bên trái · điều khiển bên phải).
