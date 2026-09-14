@@ -363,6 +363,12 @@ Màn cũ đã **gỡ hẳn** (spec `kachi-remove-legacy-screen.html`). Bốn th�
   nếu không có TTS VI ⇒ phản hồi bằng âm báo + chữ; CPU < 4 lõi hoặc RAM trống < 500 MB ⇒ dùng mô hình Vosk nhỏ + ngữ pháp.
 - **Mang về**: `carlog/voice-capability.txt` (gộp output trên) + 1 ảnh màn ghi âm. **Hoàn tác**: không có (chỉ đọc).
 
+- **K1–K3 (Kiki, xem `kiki-car-RE-2026-09-14.md` §8 — lệnh nguyên văn ở đó)**: K1 bản Kiki + trạng thái giấy phép
+  trên xe (`dumpsys package ai.zalo.kiki.car | grep version`); **K2** chốt dấu hỏi lớn nhất: `am start` vào
+  `CarMainActivity` với extra `text_command` có thi hành lệnh chữ thật không (đọc §8.2 trước — chỉ lệnh vô hại
+  như "mấy giờ rồi"); K3 `KikiAutoWakeService` (action `ai.zalo.kiki.car.autowake`) có bật được từ ngoài không.
+  Mang về: `carlog/kiki-K1K2K3.txt` + ảnh màn Kiki sau K2.
+
 ## 3. THÔNG TIN BẮT BUỘC MANG VỀ
 
 | # | Thông tin | Lấy bằng | Tệp đích (trong `carlog-kachi-*`) |
