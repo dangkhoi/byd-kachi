@@ -343,6 +343,26 @@ Màn cũ đã **gỡ hẳn** (spec `kachi-remove-legacy-screen.html`). Bốn th�
 
 ---
 
+### 2.14 — V1 · Đo năng lực GIỌNG NÓI của đầu xe (ĐỌC, 10 phút — tầng 1 của CLAUDE.md §14 cho voice command)
+
+- **Mục tiêu**: 4 số đo quyết định hướng V1 (xem backlog V1): app thường ghi âm được không · có dịch vụ nhận dạng
+  giọng của hệ thống không · có TTS tiếng Việt không · CPU/RAM còn bao nhiêu cho ASR tại máy.
+- **Bước** (adb, chỉ đọc):
+  ```bash
+  adb shell "pm list packages | grep -i 'google\|gms\|speech\|tts\|iflytek\|baidu\|byd.*voice'"
+  adb shell settings get secure voice_recognition_service
+  adb shell settings get secure tts_default_synth; adb shell "pm list packages | grep tts"
+  adb shell dumpsys media.audio_flinger | grep -i -A3 "input\|record"     # có input stream/mic nào cho app thường không
+  adb shell dumpsys audio | grep -i "mic\|record\|input"
+  adb shell "cat /proc/cpuinfo | grep -c processor; cat /proc/meminfo | head -3"
+  adb shell dumpsys package com.byd.launcher | grep -i "RECORD_AUDIO"          # quyền có xin/cấp được không (bản 1.47 CHƯA xin)
+  ```
+- **Thao tác tay**: mở app Ghi âm/Recorder có sẵn (nếu có) nói 3 giây rồi phát lại ⇒ mic hoạt động cho app thường
+  [ĐO]; giữ nút mic vô-lăng khi Kachi ở tiền cảnh ⇒ `logcat -s NavAccess` phải thấy keycode (đã proven).
+- **Kỳ vọng / ghi nhận**: từng dòng `[ĐO]` có/không; nếu không có RecognitionService ⇒ chỉ còn đường ASR tại máy (Vosk);
+  nếu không có TTS VI ⇒ phản hồi bằng âm báo + chữ; CPU < 4 lõi hoặc RAM trống < 500 MB ⇒ dùng mô hình Vosk nhỏ + ngữ pháp.
+- **Mang về**: `carlog/voice-capability.txt` (gộp output trên) + 1 ảnh màn ghi âm. **Hoàn tác**: không có (chỉ đọc).
+
 ## 3. THÔNG TIN BẮT BUỘC MANG VỀ
 
 | # | Thông tin | Lấy bằng | Tệp đích (trong `carlog-kachi-*`) |
