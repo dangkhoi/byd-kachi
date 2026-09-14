@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
  * ═══ R2 · §4.3 — **MỌI MỤC CỦA DANH MỤC ĐỀU CÓ MỘT ĐIỀU KHIỂN THẬT** ═════════════════════════════════════════
  *
  * Tách khỏi [SettingsScreenWiringContractTest] (backlog D2c: tệp đó 547 dòng, quá trần 500 của CLAUDE.md §4.1).
- * Ranh giới cắt chọn ở đây vì bảng 55 mục là **một loại bài khác** với phần còn lại: phần kia canh *hình dạng dây
+ * Ranh giới cắt chọn ở đây vì bảng mục-→-control là **một loại bài khác** với phần còn lại: phần kia canh *hình dạng dây
  * nối* của vỏ màn (rail, back, một-cửa-vào, không-ghi-bền), còn bài này là **bảng đối chiếu dữ liệu** giữa danh mục
- * `:core` và các tệp section của `:app` — nó dài vì có 55 hàng, và nó sẽ còn dài thêm mỗi lần IA nhận mục mới.
+ * `:core` và các tệp section của `:app` — nó dài vì có một hàng cho mỗi mục của danh mục, và nó sẽ còn dài thêm mỗi lần IA nhận mục mới.
  * Trộn hai loại trong một tệp nghĩa là mỗi lần thêm một mục cài đặt lại đẩy tệp kia gần trần hơn.
  *
  * Toàn bộ assert giữ NGUYÊN văn từ bản gộp — đây là lượt tách tệp, không phải lượt sửa luật.
@@ -21,7 +21,6 @@ class SettingsCatalogControlContractTest {
 
     private val sections by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
     private val home by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
-    private val scenes by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSceneSection.kt") }
     private val bars by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt") }
     private val nav by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt") }
     private val cast by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCast.kt") }
@@ -33,7 +32,7 @@ class SettingsCatalogControlContractTest {
      *
      * `SettingsCoverageContractTest` trả lời chiều thứ nhất: *mọi khoá lưu bền đều thuộc một nhóm của danh mục*.
      * Nó **không thể** trả lời chiều thứ hai, và chiều thứ hai mới là thứ người dùng thấy: *mỗi mục của danh mục có
-     * thật một điều khiển trên màn hay không*. Danh mục khai 55 mục; một mục khai rồi mà không ai dựng control thì
+     * thật một điều khiển trên màn hay không*. Danh mục khai vài chục mục; một mục khai rồi mà không ai dựng control thì
      * rail vẫn nói "nhóm này có N mục" còn trang thì thiếu — và không có gì đỏ.
      *
      * ## Cách khoá: BẢNG mã mục → dấu vết trong tệp section
@@ -49,9 +48,9 @@ class SettingsCatalogControlContractTest {
     fun `moi muc cua danh muc deu co it nhat mot control`() {
         val controls: Map<String, Pair<String, String>> = mapOf(
             // ── 1 · Màn hình chính ──
-            "home_scenes" to ("SettingsSceneSection" to "book.scenes.forEach"),
-            "home_scene_boot" to ("SettingsSceneSection" to "deps.scenes.setBoot("),
-            "home_scene_save" to ("SettingsSceneSection" to "deps.scenes.save()"),
+            // ⚠ S4 · R1 — ba dòng "cảnh" (`home_scenes` · `home_scene_boot` · `home_scene_save`) đã XOÁ cùng lúc với
+            // ba mục đó ở `:core` và cùng với `SettingsSceneSection`. Chiều thứ hai của bài này (mã trong bảng mà
+            // danh mục không còn ⇒ đỏ) chính là thứ bắt phải xoá ở đây, không để bảng canh một thứ đã bỏ.
             "home_preset" to ("SettingsSectionsHome" to "deps.onPreset("),
             "home_grid" to ("SettingsSectionsHome" to "EffectiveLayout.highlightedPreset("),
             "home_grid_editor" to ("SettingsSectionsHome" to "deps.onOpenLayoutEditor()"),
@@ -67,6 +66,9 @@ class SettingsCatalogControlContractTest {
             // ── 4 · Hồ sơ tài xế ──
             "profiles_list" to ("SettingsSections" to "deps.onSwitchProfile("),
             "profiles_active" to ("SettingsSections" to "R.string.kachi_profile_sub_active"),
+            // S4 · R6/R8 — hai mục THAY cho "cảnh lúc nổ máy" và cho nút "Thêm hồ sơ…" trắng.
+            "profiles_boot" to ("SettingsSections" to "deps.onBootProfile("),
+            "profiles_add" to ("SettingsSections" to "deps.onDuplicateProfile("),
             // ── 5 · Dẫn đường & cụm đồng hồ ──
             "nav_enabled" to ("SettingsSectionsNav" to "bridge.setNavEnabled("),
             "nav_cluster_mode" to ("SettingsSectionsNav" to "bridge.setClusterMode("),
@@ -118,7 +120,6 @@ class SettingsCatalogControlContractTest {
         val sources = mapOf(
             "SettingsSections" to sections,
             "SettingsSectionsHome" to home,
-            "SettingsSceneSection" to scenes,
             "SettingsSectionsBars" to bars,
             "SettingsSectionsNav" to nav,
             "SettingsSectionsCast" to cast,

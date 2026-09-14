@@ -42,8 +42,8 @@ enum class SettingsGroup(
     val subEn: String,
 ) : Localized {
     HOME(
-        "home", "Màn hình chính", "Cảnh, bố cục và hình nền",
-        "Home screen", "Scenes, layout and wallpaper",
+        "home", "Màn hình chính", "Bố cục và hình nền",
+        "Home screen", "Layout and wallpaper",
     ),
     BARS(
         "bars", "Thanh trạng thái & thanh nút", "Chip trên đỉnh và thanh nút xe",

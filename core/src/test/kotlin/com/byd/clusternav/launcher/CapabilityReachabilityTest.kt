@@ -30,7 +30,11 @@ class CapabilityReachabilityTest {
     private fun reachable(): Set<String> =
         CapabilityPicker.groupPicks().map { it.id }.toSet() +
             CapabilityCatalog.byDomain().flatMap { it.second }.map { it.id }.toSet() +
-            WidgetRegistry.ALL.map { it.id }.toSet()
+            WidgetRegistry.ALL.map { it.id }.toSet() +
+            // S4 · R12: hành động của chính launcher khai `domain = null` ⇒ `byDomain()` KHÔNG bày chúng (cố ý).
+            // Đường tới chúng là khối riêng của bộ chọn nút thanh xe — kể nguồn đó ra ở đây, đúng cùng lý do đã
+            // phải kể `groupPicks()` khi G1 lọc nhóm khỏi lĩnh vực: nếu không, bài đỏ ĐÚNG nhưng vì lý do SAI.
+            CapabilityPicker.launcherPicks().map { it.id }.toSet()
 
     @Test
     fun `moi kha nang deu co duong dat vao o`() {
@@ -68,6 +72,31 @@ class CapabilityReachabilityTest {
         assertEquals(
             CapabilityGroups.ALL.size, firstSection.size,
             "mục đầu phải bày ĐÚNG các nhóm, không thêm không bớt",
+        )
+    }
+
+    /**
+     * S4 · R12 — hai hành động launcher phải đặt được, và đặt được ĐÚNG MỘT chỗ: khối Launcher của bộ chọn nút.
+     *
+     * Cùng bài học "vẽ được ≠ đặt được": `ControlDockView` nay dựng được ô loại [CapabilityKind.LAUNCHER], nhưng
+     * nếu bộ chọn không bày khối đó thì người dùng không có nút nào để đưa chúng lên thanh.
+     */
+    @Test
+    fun `hai hanh dong launcher deu dat duoc va chi o khoi Launcher`() {
+        val reach = reachable()
+        val section = CapabilityPicker.launcherPicks().map { it.id }
+        LauncherActions.ALL.forEach { a ->
+            assertTrue(a.id in reach, "hành động '${a.label}' (${a.id}) không có đường đặt vào thanh nút")
+            assertTrue(a.id in section, "phải nằm trong khối Launcher, không rải vào lĩnh vực của xe")
+            assertEquals(CapabilityKind.LAUNCHER, CapabilityCatalog.kindOf(a.id), "phải phân loại là LAUNCHER")
+        }
+        assertEquals(LauncherActions.ALL.size, section.size, "khối Launcher bày ĐÚNG các hành động đó, không thêm")
+        // Và chúng KHÔNG được lọt vào lĩnh vực của xe — ở đó chúng sẽ có ô THỨ HAI (bảng `mã → view` bị ghi đè,
+        // đúng lỗi RW0 mà `CapabilityPicker.singlesOf` đang chặn cho NHÓM).
+        val inDomains = CapabilityCatalog.byDomain().flatMap { it.second }.map { it.id }
+        assertTrue(
+            LauncherActions.ALL.none { it.id in inDomains },
+            "hành động launcher không thuộc lĩnh vực nào của xe ⇒ không được xuất hiện trong byDomain()",
         )
     }
 

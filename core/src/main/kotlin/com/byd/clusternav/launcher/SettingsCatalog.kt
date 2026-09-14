@@ -162,16 +162,19 @@ object SettingsCatalog {
      * được ai. Đưa giới hạn thành **dữ liệu** thì `TopStripSurfaceContractTest` kiểm được bằng máy, và ai muốn nới
      * phải sửa `:core` — tức phải viết lý do ở đây, cạnh hai lý do dưới.
      *
-     * Chỉ hai khoá, và cả hai đều **không phải để cấu hình**:
-     *  • `preset` — 5 nút bố cục là cách đổi bố cục **hằng ngày**; bắt mở Cài đặt để đổi là làm launcher tệ hơn, và
-     *    nó là bề mặt owner đã duyệt từ prototype. Cả hai bề mặt đi **cùng một** intent `setPreset`.
-     *  • `active_profile` — avatar trả lời *"đang ở hồ sơ nào"*, thông tin phải thấy **liên tục**; chạm để đổi là hệ
-     *    quả của việc đã hiện nó ra. Việc *tạo/xoá* hồ sơ thì đã chuyển hẳn vào Cài đặt.
+     * Còn **đúng một** khoá, và nó không phải để cấu hình:
+     *  • `active_profile` — chip hồ sơ trả lời *"đang ở hồ sơ nào"*, thông tin phải thấy **liên tục**; chạm để mở bộ
+     *    chọn là hệ quả của việc đã hiện nó ra. Việc *tạo/xoá* hồ sơ thì đã chuyển hẳn vào Cài đặt.
+     *
+     * ## ⚠ S4 · R7 — `preset` đã RỜI khỏi đây (2026-09-14)
+     * Trước S4 thanh trên có 5 nút bố cục sẵn, và lý do giữ chúng là *"đổi bố cục hằng ngày"*. Owner bỏ chúng vì từ
+     * S4 một **hồ sơ** đã mang cả bố cục (R3) ⇒ đổi bố cục hằng ngày = đổi hồ sơ, và hai bề mặt cùng làm một việc là
+     * đúng thứ IA v2 đang dọn. Đường chọn bố cục sẵn nay chỉ còn ở *Cài đặt › Màn hình chính*.
      *
      * `dock_edge` **không** ở đây: nó là lựa chọn đặt-một-lần, và xoay vòng 4 viền còn là hình dạng sai (bấm ba lần
      * mới tới viền mình muốn, ô đang sáng thì không nói gì). Cài đặt → Màn hình chính đặt thẳng từng viền.
      */
-    val TOP_STRIP_ALLOWED_KEYS: Set<String> = setOf("preset", "active_profile")
+    val TOP_STRIP_ALLOWED_KEYS: Set<String> = setOf("active_profile")
 
     /** Mục của một nhóm, theo thứ tự khai. */
     fun entriesOf(group: SettingsGroup): List<SettingsEntry> = ENTRIES.filter { it.group == group }

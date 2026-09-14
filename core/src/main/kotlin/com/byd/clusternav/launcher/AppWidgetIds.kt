@@ -20,7 +20,8 @@ package com.byd.clusternav.launcher
  *
  * ## ⚠⚠ Và ca đã LỌT hai lần: "còn dùng" bị hỏi HẸP HƠN sự thật
  * Cả hai lỗi mất-widget-vĩnh-viễn của tính năng này đều KHÔNG nằm ở nhánh code mà ở **phạm vi dữ liệu** được hỏi:
- *  1. hỏi bố cục mà không hỏi **cảnh đã lưu** ⇒ gọi lại cảnh ra thẻ "app đã bị gỡ" (KDoc [idsIn] cho `SceneBook`);
+ *  1. hỏi bố cục mà không hỏi **dữ liệu cảnh đời cũ chưa chuyển** ⇒ widget trong cảnh ra thẻ "app đã bị gỡ" (KDoc
+ *     [idsInLegacyScenes]);
  *  2. hỏi hồ sơ đang dùng mà không hỏi **hồ sơ khác** ⇒ đổi hồ sơ là xoá widget của hồ sơ kia (KDoc [idsInStored]).
  *
  * Hai lần cùng một hình dạng: bài canh chứng minh *"có gọi đúng hàm"* nhưng không hỏi *"hàm có thấy đủ dữ liệu"*.
@@ -40,9 +41,11 @@ object AppWidgetIds {
         state.slots.filterIsInstance<SlotContent.AppWidget>().map { it.widgetId }.toSet()
 
     /**
-     * Mọi id mà **các cảnh đã lưu** đang giữ ([SceneBook]).
+     * Mọi id mà **dữ liệu CẢNH đời cũ còn nằm trên đĩa** đang giữ (chuỗi khoá `<hồ sơ>__scenes`, dạng
+     * `SceneBook.encode`). S4 · R1 đã bỏ khái niệm cảnh, nhưng chuỗi đó vẫn nằm trên đĩa của xe đang chạy **cho tới
+     * khi** [ScenesMigration] chuyển xong — nên trong cửa sổ đó id trong cảnh vẫn phải tính là *"còn dùng"*.
      *
-     * ## ⚠⚠ [ĐO] Thiếu hàm này thì "widget trong cảnh" chết ngay lần đổi cảnh đầu tiên
+     * ## ⚠⚠ [ĐO] Thiếu hàm này thì "widget trong cảnh" chết ngay lần khởi động đầu tiên của bản mới
      * Cảnh lưu **nguyên nội dung ô**, kể cả ô widget bên thứ ba — tức nó lưu chính con số id. Nhưng id là thứ nền
      * tảng cấp và **không cấp lại được**: `deleteAppWidgetId(651)` rồi thì không có cách nào làm cho 651 sống lại.
      * Đo trên `emulator-5554` (bản trước bản vá): đặt widget đồng hồ vào ô ⇒ lưu cảnh *CoWidget* ⇒ đổi ô đó sang một
@@ -50,10 +53,12 @@ object AppWidgetIds {
      * *"widget của com.google.android.deskclock không còn — app đã bị gỡ hoặc bị tắt"* trong khi app **vẫn còn nguyên
      * trên máy**. Tức launcher tự xoá widget của người dùng rồi báo sai nguyên nhân.
      *
-     * ⇒ "Còn ai dùng" phải tính trên **cả** bố cục đang sống **lẫn** mọi cảnh đã lưu — xem [used].
+     * ⇒ "Còn ai dùng" phải tính trên **cả** bố cục đang sống **lẫn** dữ liệu cảnh chưa chuyển — xem [idsInStored].
+     * Sau khi [ScenesMigration] chạy, mỗi cảnh đã thành một hồ sơ nên id của nó đi vào vế *"hồ sơ tài xế khác"* của
+     * [used] một cách tự nhiên; hàm này chỉ còn là lưới an toàn cho dữ liệu chưa chuyển.
      */
-    fun idsIn(book: SceneBook): Set<Int> =
-        book.scenes.flatMapTo(mutableSetOf()) { scene -> idsIn(scene.workspaceState()) }
+    fun idsInLegacyScenes(scenesRaw: String?): Set<Int> =
+        ScenesMigration.parse(scenesRaw).flatMapTo(mutableSetOf()) { idsIn(it.workspace) }
 
     /**
      * Mọi id nằm trong dữ liệu ĐÃ LƯU của **một** hồ sơ — đọc từ chính hai chuỗi mà `WorkspacePrefs` giữ.
@@ -74,18 +79,20 @@ object AppWidgetIds {
      * kiểm được off-car). Phía Android chỉ còn việc đọc chuỗi ra khỏi SharedPreferences.
      *
      * @param slotRaw chuỗi đã lưu của từng ô (`slot_0`..`slot_N`), đúng dạng [SlotCodec].
-     * @param scenesRaw chuỗi sổ cảnh đã lưu, đúng dạng [SceneBook.encode]; `null`/rỗng = hồ sơ chưa có cảnh nào.
+     * @param scenesRaw chuỗi sổ cảnh ĐỜI CŨ còn trên đĩa (dạng `SceneBook.encode`); `null`/rỗng = đã chuyển xong
+     *   hoặc hồ sơ chưa từng có cảnh nào. Xem [idsInLegacyScenes].
      */
     fun idsInStored(slotRaw: List<String>, scenesRaw: String?): Set<Int> {
         val slots = slotRaw.map { SlotCodec.decode(it) }
             .filterIsInstance<SlotContent.AppWidget>()
             .map { it.widgetId }
-        // `bootRaw = null`: con trỏ cảnh khởi động không giữ id nào, và truyền nó vào chỉ thêm một đường sai.
-        return slots.toSet() + idsIn(SceneBook.decode(scenesRaw, null))
+        // Con trỏ cảnh khởi động không giữ id nào ⇒ không cần truyền vào, và truyền chỉ thêm một đường sai.
+        return slots.toSet() + idsInLegacyScenes(scenesRaw)
     }
 
     /**
-     * Id còn **ĐANG ĐƯỢC DÙNG** theo [state]: bố cục đang sống ∪ mọi cảnh đã lưu ∪ **mọi hồ sơ tài xế KHÁC**.
+     * Id còn **ĐANG ĐƯỢC DÙNG** theo [state]: bố cục đang sống ∪ **mọi hồ sơ tài xế KHÁC** (S4 · R1: vế "mọi cảnh đã
+     * lưu" biến mất cùng khái niệm cảnh — cảnh nay LÀ hồ sơ, nên nó đã nằm trong vế thứ hai).
      *
      * Đây là **định nghĩa duy nhất** của "còn dùng" trong toàn bộ tính năng. [orphaned] và [unused] đều đọc nó, nên
      * không có đường nào trả lời câu hỏi đó theo một cách hẹp hơn — và đó là chủ ý: **hai** phiên bản hẹp hơn đã
@@ -98,14 +105,14 @@ object AppWidgetIds {
      * có bài canh riêng đòi đúng điều đó — mặc định `emptySet()` chỉ để test khỏi phải khai khi ca đó không liên quan.
      */
     fun used(state: HomeUiState): Set<Int> =
-        idsIn(state.workspace) + idsIn(state.scenes) + state.widgetIdsOtherProfiles
+        idsIn(state.workspace) + state.widgetIdsOtherProfiles
 
     /**
      * Id có ở [old] mà KHÔNG còn ở [new] ⇒ phải gọi `deleteAppWidgetId`.
      *
-     * Nhận [HomeUiState] (không phải [WorkspaceState]) vì phép này phải thấy **cả** sổ cảnh: nhờ vậy một lời gọi phủ
-     * đủ bốn đường đổi — đổi/xoá nội dung ô, **gọi cảnh**, và **xoá cảnh** (ca cuối chỉ đổi sổ cảnh, bố cục không đổi
-     * một ô nào, nên bản chỉ-xét-bố-cục sẽ bỏ sót ⇒ id rác sống mãi).
+     * Nhận [HomeUiState] (không phải [WorkspaceState]) vì phép này phải thấy **cả** id của hồ sơ khác: nhờ vậy một
+     * lời gọi phủ đủ các đường đổi — đổi/xoá nội dung ô và **đổi hồ sơ** (ca sau không đổi ô nào của hồ sơ cũ, nên
+     * bản chỉ-xét-bố-cục sẽ xoá oan widget của hồ sơ kia — [SOÁT P0-1]).
      *
      * Trả về tập rỗng khi không có gì để thu hồi (chỗ gọi khỏi phải kiểm trước).
      */
@@ -126,7 +133,7 @@ object AppWidgetIds {
      * phía**: một bài đóng đúng hành vi này (bố cục rỗng ⇒ mọi id thành rác) để người đọc sau thấy ngay, và một bài
      * canh phía Android đòi lượt dọn phải nằm SAU lượt nạp.
      *
-     * ⚠ Đọc [used] — id nằm trong một **cảnh đã lưu** vẫn đang được dùng dù bố cục hiện tại không có nó.
+     * ⚠ Đọc [used] — id nằm ở **hồ sơ tài xế khác** vẫn đang được dùng dù bố cục hiện tại không có nó.
      */
     fun unused(allocated: Set<Int>, state: HomeUiState): Set<Int> = allocated - used(state)
 }

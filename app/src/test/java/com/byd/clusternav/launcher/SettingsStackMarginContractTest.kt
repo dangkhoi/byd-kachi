@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test
  * ## ⚠⚠ Vì sao bài này tồn tại — một lời hứa từng KHÔNG có ai canh
  * KDoc của `SettingsRows.stackLp` viết *"Chỗ gọi KHÔNG được truyền lp riêng khi `addView` … đó là điều test khoá
  * canh"*, nhưng [ĐO] lượt soát 2026-09-12: **không có bài nào** quét điều đó, và ngay lúc đó `SettingsSceneSection`
+ * (tệp nay đã xoá cùng khái niệm "cảnh", S4 · R1)
  * **đang vi phạm** (truyền `wrapLp()` cho `rows.button(…)` ⇒ nút nhận lề dưới `Sp.M` thay vì `Sp.S` như hai nút cùng
  * họ). Đúng họ "bài canh là TRANG TRÍ / lời hứa đúng nhờ may mắn dữ liệu" mà dự án đã trả giá nhiều lần — nên luật
  * này nay được khoá bằng MÁY, ở **hai chiều** (component phải tự đặt lề · chỗ gọi không được ghi đè).
@@ -21,13 +22,13 @@ import org.junit.jupiter.api.Test
  * ## Giới hạn đã biết — nói ra, không giả vờ phủ hết
  * Chiều "chỗ gọi" chỉ bắt dạng TRỰC TIẾP `addView(rows.xxx(…), lp)`. Dạng gián tiếp (`val v = rows.note(…)` rồi
  * `addView(v, lp)`) cần theo dõi luồng dữ liệu nên bài này không bắt; [ĐO] hiện 100% chỗ gọi là dạng trực tiếp
- * (`SettingsSections` · `SettingsSectionsHome` · `SettingsSceneSection`), còn dạng gián tiếp hiện có đều `addView(v)`
+ * (`SettingsSections` · `SettingsSectionsHome`), còn dạng gián tiếp hiện có đều `addView(v)`
  * một tham số.
  */
 class SettingsStackMarginContractTest {
 
     private val surfaces = listOf(
-        "SettingsSections.kt", "SettingsSectionsHome.kt", "SettingsSceneSection.kt",
+        "SettingsSections.kt", "SettingsSectionsHome.kt",
         // T4 · IA v2 — năm section mới. Chúng gọi `rows.*` dày đặc nên đây đúng là chỗ dễ tái phạm "tự chèn
         // khoảng cách" nhất; để ngoài phạm vi thì luật lề STACK chỉ còn đúng ở ba tệp cũ.
         "SettingsSectionsBars.kt", "SettingsSectionsNav.kt", "SettingsSectionsCast.kt",

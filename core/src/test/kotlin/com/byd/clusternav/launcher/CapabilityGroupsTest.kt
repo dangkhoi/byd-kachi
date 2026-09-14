@@ -292,7 +292,10 @@ class CapabilityGroupsTest {
         assertEquals(
             // U6: `all()` là thứ MÀN CHỌN bày ra nên nó trừ đi các mã cố ý ẩn ([CapabilityCatalog.HIDDEN_FROM_PICKER]);
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
-            123 + 64 + 9 + 4 + CapabilityGroups.ALL.size - CapabilityCatalog.HIDDEN_FROM_PICKER.size,
+            // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
+            // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
+            123 + 64 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+                CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",
         )

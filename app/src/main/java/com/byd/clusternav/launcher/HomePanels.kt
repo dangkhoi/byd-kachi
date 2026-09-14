@@ -14,9 +14,13 @@ import android.widget.FrameLayout
  * không gọi một hàm nào của nó.
  *
  * @param onApplyLayout ghi bố cục tự vẽ vào nguồn sự thật (`null` = quay về bố cục sẵn).
- * @param onPreset chọn bố cục sẵn — **cùng** đường với 5 nút ở thanh trên (§4.5: nhiều bề mặt, một đường).
+ * @param onPreset chọn bố cục sẵn. S4 · R7 gỡ 5 nút bố cục khỏi thanh trên, nên đây là bề mặt DUY NHẤT của nó —
+ *   intent thì giữ nguyên (`KachiHomeActivity.selectPreset`), chỉ bớt một chỗ gọi.
  * @param onWallpaper / [onUnitPrefs] intent lưu + áp lại tương ứng.
- * @param onAddProfile mở hộp thoại tạo hồ sơ — dùng LẠI `ProfileBar.addDialog()`, không dựng hộp thoại thứ hai.
+ * @param onDuplicateProfile S4 · R8 — tạo hồ sơ mới là **bản sao của hồ sơ đang dùng** (nhận tên mới). Hộp thoại
+ *   hỏi tên do màn Cài đặt dựng bằng `SettingsDialogs.askName`, không phải ở đây.
+ * @param bootProfile / [onBootProfile] S4 · R6 — hồ sơ áp lúc nổ máy (`null` = hồ sơ dùng gần nhất, đúng giao kèo
+ *   `WorkspaceRepository.bootProfile`).
  * @param shellUsable có kênh shell hay không — để bảng quyền nói đúng bức tranh.
  * @param goImmersive khôi phục chế độ toàn màn sau khi lớp phủ đóng (bàn phím/dialog làm mất cờ).
  */
@@ -38,11 +42,25 @@ class HomePanels(
     private val onLangMode: (LangMode) -> Unit,
     private val onAutostart: (Boolean) -> Unit,
     private val onSwitchProfile: (String) -> Unit,
-    private val onAddProfile: () -> Unit,
+    /**
+     * S4 · R8 — tạo hồ sơ mới là **bản sao** của hồ sơ đang dùng. Nối ở `KachiHomeWiring.homePanels(...)` →
+     * `HomeViewModel.duplicateProfile` → `WorkspaceRepository.duplicateProfile`.
+     *
+     * ⚠ Thân mặc định rỗng **cố ý giữ lại** sau khi đã nối: nó là thứ cho phép một bản dựng thử/một chỗ gọi khác
+     * không phải khai cổng này. Nhưng mặc định rỗng cũng đúng hình dạng của một **nút chết** (bấm không lỗi, không
+     * đổi gì, không ai đỏ — bài học `CastShell.evictVd`), nên `SettingsScreenWiringContractTest.ba lambda ho so moi
+     * phai duoc noi that` canh đúng điều đó ở `KachiHomeWiring`.
+     */
+    private val onDuplicateProfile: (String) -> Unit = {},
     private val onDeleteProfile: (String) -> Unit,
     /** Tóm tắt bố cục của MỘT hồ sơ (theo tên) cho thẻ hồ sơ ở Cài đặt — đọc-để-vẽ, qua ViewModel. */
     private val profileSummary: (String) -> String,
-    private val scenes: SceneActions,
+    /**
+     * S4 · R6 — hồ sơ áp lúc nổ máy; `null` = *"hồ sơ dùng gần nhất"*. Đọc từ `HomeUiState.bootProfile` (đã nạp
+     * trong `load()`), ghi qua `HomeViewModel.setBootProfile`. Mặc định rỗng: xem KDoc [onDuplicateProfile].
+     */
+    private val bootProfile: () -> String? = { null },
+    private val onBootProfile: (String?) -> Unit = {},
     private val shellUsable: () -> Boolean,
     private val goImmersive: () -> Unit,
     /** Báo "có lớp phủ nào đang mở" đổi — để nút ⇄ nổi (OverlayHeads) ẩn/hiện theo (không đè lên bảng Cài đặt). */
@@ -120,13 +138,15 @@ class HomePanels(
             onLangMode = { m -> onLangMode(m) },
             onAutostart = { on -> onAutostart(on) },
             onSwitchProfile = { name -> onSwitchProfile(name) },
-            onAddProfile = onAddProfile,
+            // S4 · R8 — "thêm hồ sơ" nay là NHÂN BẢN hồ sơ đang dùng; hộp thoại hỏi tên nằm trong màn Cài đặt
+            // (`SettingsDialogs.askName`), lớp này chỉ nối hai đầu dây.
+            onDuplicateProfile = { name -> onDuplicateProfile(name) },
             onDeleteProfile = { name -> onDeleteProfile(name) },
+            // S4 · R6 — hồ sơ lúc nổ máy (theo XE, không theo hồ sơ — R4).
+            bootProfile = bootProfile,
+            onBootProfile = { name -> onBootProfile(name) },
             // Owner 2026-09-14 "chưa thấy hồ sơ gắn với bố cục chỗ nào": thẻ hồ sơ nói ra bố cục của TỪNG hồ sơ.
             profileSummary = profileSummary,
-            // P7/P6: chuyển thẳng bộ việc làm với cảnh (hộp thoại nhập tên nằm trong `SceneController`, cùng khuôn
-            // với `ProfileBar.addDialog` — không dựng hộp thoại thứ hai cho cùng việc "hỏi một cái tên").
-            scenes = scenes,
         )
         val panel = SettingsPanel(activity, deps) { closeSettings() }
         settingsPanel = panel

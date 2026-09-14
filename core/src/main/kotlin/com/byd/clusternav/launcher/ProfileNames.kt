@@ -48,12 +48,24 @@ object ProfileNames {
      * KHÔNG câu nào trong giao diện nói ra. Câu này đặt cạnh tên hồ sơ để người dùng thấy ngay hồ sơ đó đang giữ
      * bố cục gì. `preset == null` = hồ sơ dùng bố cục tự vẽ.
      */
-    fun summary(preset: LayoutPreset?, filledSlots: Int): String {
+    fun summary(
+        preset: LayoutPreset?,
+        filledSlots: Int,
+        theme: ThemeMode? = null,
+        autostart: Boolean? = null,
+    ): String {
         val layout = preset?.label ?: Strings.t("Tự vẽ", "Custom")
         // ⚠ Số ít/số nhiều của tiếng Anh phải làm BẰNG TAY ở `:core` (không có `Context` nên không có
         // `getQuantityString`) — cùng lỗi mà `finding #18` đã bắt một lần ở `layoutSummary`: bản một-chuỗi in
         // *"1 slots filled"*. Tiếng Việt không chia số nên một câu là đủ.
         val en = if (filledSlots == 1) "1 slot filled" else "$filledSlots slots filled"
-        return Strings.t("$layout · $filledSlots ô có nội dung", "$layout · $en")
+        val parts = mutableListOf(Strings.t("$layout · $filledSlots ô có nội dung", "$layout · $en"))
+        // S4 · R8 — hồ sơ nay giữ CẢ chủ đề và cờ tự mở, nên câu tóm tắt phải nói ra: owner 2026-09-14 hỏi đúng câu
+        // *"chưa thấy hồ sơ nó gắn với bố cục chỗ nào?"* cho phần bố cục, và từ S4 phần "giữ những gì" rộng hơn hẳn.
+        // ⚠ Cả hai tham số là TUỲ CHỌN và mặc định `null` = **không biết** (chỗ gọi chưa đọc được giá trị của hồ sơ
+        // đó) — khác hẳn "biết và bằng mặc định". Bịa ra một giá trị ở đây thì thẻ hồ sơ nói sai một cách tự tin.
+        theme?.let { parts += it.label() }
+        if (autostart == true) parts += Strings.t("Tự mở", "Auto-start")
+        return parts.joinToString(" · ")
     }
 }

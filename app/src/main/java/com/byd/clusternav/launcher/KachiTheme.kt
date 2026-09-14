@@ -239,6 +239,18 @@ object KachiTheme {
         "ic-drift" -> R.drawable.ic_drift
         // Tên icon dùng lại tệp đã có (trước đây chưa được map nên tra ra 0 = ô trống icon)
         "ic-clock" -> R.drawable.ic_clock_g
+        // ── S4 · R12 · hai hành động của CHÍNH launcher ([LauncherActions]) ───────────────────────────
+        // KHÔNG vẽ hình mới: cả hai khái niệm đã có tệp đúng nghĩa trong bộ.
+        //  • `ic-apps` → `ic_grid` (⊞ bốn ô). Đây KHÔNG phá luật *"⊞ chỉ còn nghĩa bảng tổng hợp"*
+        //    (`CapabilityIconMeaningTest`): luật đó nói về **khả năng của XE** — mọi datum/nút/lĩnh vực từng lùi về
+        //    ⊞ đã được gỡ. Ở đây ⊞ mang nghĩa gốc của nó trên mọi launcher Android: *lưới ứng dụng*. Hai chỗ dùng
+        //    không bao giờ đứng cạnh nhau trong một danh sách: `w_board` có `domain = null` nên không vào bộ chọn
+        //    nút, còn khối Launcher chỉ hiện ở chế độ chọn-nút-thanh-xe.
+        //  • `ic-settings` → `ic_gear` (bánh răng THẬT — [ĐO] ảnh 2026-09-14: `ic_sys_g` là mặt trời 8 tia, đọc thành "độ sáng"; nét trắng 1.6 như cả bộ). `ic_menu_config.xml` cũng là bánh răng
+        //    nhưng GIỮ MÀU xanh thương hiệu (nó vẽ thẳng cho bảng con nút nổi Cast, không qua bước tint) ⇒ dùng nó ở
+        //    đây sẽ cho một ô xanh lạc giữa thanh nút.
+        "ic-apps" -> R.drawable.ic_grid
+        "ic-settings" -> R.drawable.ic_gear
         // ══ U7 · BỘ HÌNH XE THEO VỊ TRÍ (spec docs/specs/kachi-icon-set-v2.html) ═════════════════════
         // Ba KHUNG dùng chung (top · front · rear) + VÙNG TÔ là bộ phận đang được nói tới. Tên tệp mang
         // luôn khung + bộ phận + vị trí (`ic_car_top_door_lf`) nên đọc bảng này là đọc được cả nghĩa.

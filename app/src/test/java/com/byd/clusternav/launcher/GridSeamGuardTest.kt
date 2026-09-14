@@ -122,28 +122,34 @@ class GridSeamGuardTest {
     }
 
     /**
-     * Dải bố-cục-sẵn ở thanh trên cũng phải hỏi **nguồn duy nhất**, không tự suy ra bằng `customLayout != null`.
+     * Dải bố-cục-sẵn phải hỏi **nguồn duy nhất**, không tự suy ra bằng `customLayout != null`.
      *
      * Đây là chỗ thứ BẢY từng tự suy ra bố cục đang hiệu lực (sáu chỗ kia đã dọn ở P9). Tự suy ra thì bố cục tự vẽ
      * **lưu rồi mà không dùng được** (đè nhau / vượt trần ô — có thật khi hạ cấp bản) làm màn vẽ bố cục sẵn trong
      * khi bộ chọn không sáng ô nào. Hàm thuần [EffectiveLayout.highlightedPreset] có test riêng ở `:core`.
+     *
+     * ## ⚠ S4 · R7 — bài **đổi bề mặt**, giữ nguyên luật
+     * Dải chip bố cục đã **rời khỏi thanh trên** (owner 2026-09-14: *"bỏ luôn các nút đổi bố cục trên header"*), nên
+     * `render()` của màn chính không còn gì để tô sáng — nó không "quên", nó **không còn bề mặt**. Bề mặt duy nhất
+     * nay là *Cài đặt › Màn hình chính*, và luật thì y nguyên: chip nào sáng do [EffectiveLayout.highlightedPreset]
+     * quyết, không do chỗ vẽ tự suy. Giữ bài (đổi chỗ quét) thay vì xoá — xoá là mất luôn lưới canh của chỗ thứ bảy.
      */
     @Test
     fun `o preset sang di qua nguon duy nhat, khong suy ra tai cho`() {
-        val act = code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
-        val render = body(act, "private fun render(state: HomeUiState)")
+        val home = code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt")
         assertTrue(
-            render.contains("EffectiveLayout.highlightedPreset("),
-            "render phải lấy ô preset sáng từ EffectiveLayout (nguồn duy nhất), không tự suy ra",
-        )
-        val i = render.indexOf("EffectiveLayout.highlightedPreset(")
-        assertTrue(
-            render.substring(i).contains("topStrip.selectPreset("),
-            "và phải đẩy chính giá trị đó xuống thanh trên",
+            home.contains("EffectiveLayout.highlightedPreset("),
+            "dải chip bố cục ở Cài đặt phải lấy ô sáng từ EffectiveLayout (nguồn duy nhất), không tự suy ra",
         )
         assertEquals(
-            0, Regex("""selectPreset\(\s*(?:if\s*\(|state\.preset\s*\))""").findAll(render).count(),
+            0, Regex("""highlightedPreset\(\s*(?:if\s*\(|LayoutPreset\.)""").findAll(home).count(),
             "KHÔNG được dựng lại quyết định 'ô nào sáng' ngay tại chỗ gọi",
+        )
+        // Và màn chính KHÔNG được mọc lại một bề mặt thứ hai: S4 · R7 đã gỡ dải nút bố cục khỏi thanh trên.
+        val act = code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
+        assertEquals(
+            0, Regex("""topStrip\.selectPreset\(""").findAll(act).count(),
+            "thanh trên KHÔNG còn dải bố cục sẵn (S4 · R7) ⇒ không được đẩy ô sáng xuống đó nữa",
         )
     }
 

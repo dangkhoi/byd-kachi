@@ -34,7 +34,6 @@ class SettingsScreenWiringContractTest {
     private val sections by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
     private val home by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
     private val wiring by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt") }
-    private val scenes by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSceneSection.kt") }
     private val bars by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt") }
     private val nav by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt") }
     private val cast by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCast.kt") }
@@ -47,7 +46,7 @@ class SettingsScreenWiringContractTest {
     private val vm by lazy { code("src/main/java/com/byd/clusternav/launcher/HomeViewModel.kt") }
     private val repo by lazy { code("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt") }
     private val prefs by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt") }
-    private val profileBar by lazy { code("src/main/java/com/byd/clusternav/launcher/ProfileBar.kt") }
+    private val profileChip by lazy { code("src/main/java/com/byd/clusternav/launcher/ProfileChip.kt") }
 
     // ── R1 · vỏ màn: rail lấy từ danh mục, trang được nhớ lại ────────────────────────────────────
 
@@ -116,7 +115,7 @@ class SettingsScreenWiringContractTest {
     fun `man Cai dat KHONG ghi ben truc tiep`() {
         mapOf(
             "SettingsPanel" to panel, "SettingsSections" to sections, "SettingsSectionsHome" to home,
-            "SettingsSceneSection" to scenes, "SettingsSectionsBars" to bars, "SettingsSectionsNav" to nav,
+            "SettingsSectionsBars" to bars, "SettingsSectionsNav" to nav,
             "SettingsSectionsCast" to cast, "SettingsSectionsKeys" to keys, "SettingsSectionsCar" to car,
         ).forEach {
             (name, src) ->
@@ -148,33 +147,44 @@ class SettingsScreenWiringContractTest {
         )
     }
 
+    /**
+     * ⚠⚠ **BÀI CANH ĐẢO CHIỀU — §4.5 gài, S4 · R7 đảo.** Giữ nguyên lịch sử thay vì viết một bài mới, đúng lối đã
+     * làm với bài nút gạt sáng/tối bên dưới.
+     *
+     * **Chiều CŨ (§4.5)**: 5 nút bố cục *ở lại* thanh trên vì "đổi bố cục là việc hằng ngày, và là bề mặt owner đã
+     * duyệt từ prototype". **Chiều MỚI (S4)**: hồ sơ giữ TẤT CẢ ⇒ việc hằng ngày là đổi **cả bộ**, nên nút bố cục
+     * rời khỏi thanh trên (owner 2026-09-14: *"bỏ luôn các nút đổi bố cục trên header"*). Pill "Ứng dụng" thì vẫn ở
+     * lại — nó không phải cấu hình.
+     */
     @Test
-    fun `5 nut bo cuc va pill Ung dung O LAI thanh tren (sai lech co chu y)`() {
-        // §4.5: bố cục đúng là cấu hình, nhưng 5 nút đó là cách đổi nhanh đang dùng hằng ngày và là bề mặt owner đã
-        // duyệt từ prototype. Giữ nút, đồng thời bày đủ bố cục trong Cài đặt.
-        val seg = SourceRoots.body(strip, "private fun buildSegmented()")
+    fun `5 nut bo cuc DA ROI thanh tren nhung pill Ung dung o lai`() {
         listOf("ic_layout_1", "ic_layout_2c", "ic_layout_2r", "ic_layout_3", "ic_layout_4").forEach {
-            assertTrue(seg.contains(it), "nút bố cục '$it' phải còn ở thanh trên")
+            assertFalse(strip.contains(it), "nút bố cục '$it' phải hết khỏi thanh trên (S4 · R7)")
         }
         assertTrue(
             SourceRoots.body(strip, "private fun build()").contains("R.string.kachi_pill_apps"),
-            "pill 'Ứng dụng' (U3) cũng cố ý ở lại",
+            "pill 'Ứng dụng' (U3) cố ý ở lại — nó mở app, không đổi cấu hình",
         )
+        assertTrue(home.contains("deps.onPreset("), "và Cài đặt → Màn hình chính phải bày đủ bố cục sẵn")
     }
 
     @Test
-    fun `avatar ho so con chạm-de-doi nhung het giu-de-tao`() {
-        val fn = SourceRoots.body(strip, "private fun profileAvatar()")
+    fun `chip ho so con chạm-de-doi nhung het giu-de-tao`() {
+        val fn = SourceRoots.body(strip, "private fun profileChip()")
         assertTrue(fn.contains("onProfileTap()"), "chạm để đổi hồ sơ phải còn — đang ở hồ sơ nào phải thấy liên tục")
         assertFalse(
             fn.contains("setOnLongClickListener"),
             "§4.5: tạo hồ sơ chuyển vào Cài đặt; giữ cả hai đường tạo là hai chỗ phải sửa và sẽ lệch nhau",
         )
         assertFalse(strip.contains("onProfileLongPress"), "cổng giữ-để-tạo phải bị gỡ hẳn, không để treo")
-        assertTrue(sections.contains("deps.onAddProfile()"), "đường tạo hồ sơ nay ở nhóm Hồ sơ tài xế")
+        // S4 · R7 — chip phải nói CẢ TÊN, không chỉ chữ cái: hai hồ sơ "Đi làm"/"Đường trường" cùng chữ `Đ`, mà từ
+        // R3 một cú đổi hồ sơ kéo theo cả màn hình.
+        assertTrue(fn.contains("profileNameView"), "chip phải hiện TÊN hồ sơ, không chỉ chữ cái đầu")
+        assertTrue(strip.contains("fun setProfile("), "và phải có đường đổ tên đó vào chip khi state đổi")
+        assertTrue(sections.contains("deps.onDuplicateProfile("), "đường tạo hồ sơ nay ở nhóm Hồ sơ tài xế")
         assertTrue(
-            activity.contains("onAddProfile = { profileBar.addDialog() }"),
-            "và nó dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai",
+            sections.contains("SettingsDialogs.askName("),
+            "và nó dùng LẠI hộp thoại hỏi-tên dùng chung, không dựng bản thứ hai",
         )
     }
 
@@ -193,8 +203,10 @@ class SettingsScreenWiringContractTest {
     @Test
     fun `chon bo cuc san chi co MOT duong`() {
         assertTrue(activity.contains("private fun selectPreset("), "phải có đúng một hàm chọn bố cục sẵn")
-        assertTrue(activity.contains("onSelectPreset = { selectPreset(it) }"), "thanh trên đi qua nó")
-        assertTrue(activity.contains("onPreset = { p -> selectPreset(p) }"), "màn Cài đặt cũng đi qua nó")
+        // S4 · R7 — bề mặt thứ hai (5 nút ở thanh trên) đã gỡ, nên cổng `onSelectPreset` cũng phải hết: để lại một
+        // cổng không ai nối là lời mời dựng lại hàng nút đó.
+        assertFalse(activity.contains("onSelectPreset"), "cổng chọn bố cục của thanh trên phải bị gỡ hẳn")
+        assertTrue(activity.contains("onPreset = { p -> selectPreset(p) }"), "màn Cài đặt là đường DUY NHẤT tới nó")
         assertEquals(
             1, Regex("""viewModel\.setPreset\(""").findAll(activity).count(),
             "đúng MỘT chỗ gọi intent đặt bố cục — hai chỗ là hai bản sao của hành vi 'chọn bố cục sẵn thì bỏ bố " +
@@ -309,20 +321,20 @@ class SettingsScreenWiringContractTest {
      * có một hồ sơ — mà đó là trạng thái của **mọi máy mới cài** (một hồ sơ "Mặc định") ⇒ trong ca thường gặp nhất,
      * đường tạo thứ hai còn nguyên.
      *
-     * Bài này khoá đúng chỗ bài `avatar ho so...` phía trên **không thể** thấy: nó chỉ soi hàm dựng avatar, còn
-     * đường tạo thì nằm sau một nhánh trong lớp khác.
+     * **S4 · R7 đóng hẳn họ lỗi này**: `cycle()` không còn tồn tại, và [ProfileChip.picker] — thứ thay nó — chỉ có
+     * đúng hai kết cục: đổi sang một hồ sơ ĐÃ CÓ, hoặc mở màn Cài đặt. Không có nhánh nào dựng hộp thoại. Bài này
+     * canh đúng tính chất đó, ở chỗ bài `chip ho so...` phía trên không thể thấy (nó chỉ soi hàm dựng chip).
      */
     @Test
     fun `duong tao ho so CHI con o man Cai dat`() {
-        val fn = SourceRoots.body(profileBar, "fun cycle()")
+        val fn = SourceRoots.body(profileChip, "fun picker(")
         assertFalse(
-            fn.contains("addDialog("),
-            "§4.5: chạm avatar KHÔNG được mở hộp thoại tạo — máy mới cài có đúng một hồ sơ nên nhánh đó là đường " +
-                "tạo thứ hai trong ca thường gặp nhất",
+            fn.contains("AlertDialog") || fn.contains("askName("),
+            "bộ chọn ở thanh trên KHÔNG được dựng hộp thoại tạo — tạo hồ sơ chỉ ở Cài đặt (§4.5)",
         )
-        assertTrue(fn.contains("toast("), "cú chạm không đổi được hồ sơ thì phải NÓI chỗ tạo, không im lặng")
-        assertTrue(profileBar.contains("fun addDialog()"), "hộp thoại tạo vẫn phải còn — Cài đặt dùng LẠI nó")
-        assertTrue(sections.contains("deps.onAddProfile()"), "và đường duy nhất tới nó là nhóm Hồ sơ tài xế")
+        assertTrue(fn.contains("onManage()"), "nhưng phải có lối SANG chỗ tạo, không thì cú chạm thành ngõ cụt")
+        assertTrue(fn.contains("viewModel.switchProfile("), "và việc chính của nó là đổi hồ sơ, qua intent ViewModel")
+        assertTrue(sections.contains("deps.onDuplicateProfile("), "đường tạo duy nhất là nhóm Hồ sơ tài xế")
     }
 
     @Test
@@ -411,6 +423,31 @@ class SettingsScreenWiringContractTest {
             SourceRoots.body(panels, "fun openSettings(group: SettingsGroup? = null)").contains("closeSettings(); openLayoutEditor()"),
             "mở bảng vẽ phải đóng màn Cài đặt trước",
         )
+    }
+
+    /**
+     * S4 · R6/R8 — ba lambda hồ sơ MỚI của [SettingsDeps] phải được nối THẬT ở `KachiHomeWiring`.
+     *
+     * [HomePanels] để chúng có **thân mặc định rỗng** cho lượt T3 (agent đó không sở hữu `KachiHomeWiring`), và một
+     * mặc định rỗng là đúng hình dạng của nút chết: bấm không lỗi, không đổi gì, không ai đỏ. CLAUDE.md §8 —
+     * `CastShell.evictVd` đã dạy đúng bài này. Bài test là thứ duy nhất biến "TODO" thành một việc bắt buộc.
+     */
+    @Test
+    fun `ba lambda ho so moi phai duoc noi that khong con mac dinh rong`() {
+        mapOf(
+            "onDuplicateProfile" to "thêm hồ sơ = bản sao hồ sơ đang dùng (R8)",
+            "bootProfile" to "đọc hồ sơ lúc nổ máy (R6)",
+            "onBootProfile" to "ghi hồ sơ lúc nổ máy (R6)",
+        ).forEach { (gate, what) ->
+            assertTrue(
+                Regex("""\b$gate\s*=""").containsMatchIn(wiring),
+                "KachiHomeWiring chưa nối '$gate' — $what. HomePanels đang để mặc định rỗng ⇒ điều khiển đó là NÚT " +
+                    "CHẾT trên màn Cài đặt",
+            )
+        }
+        assertTrue(vm.contains("fun duplicateProfile("), "và intent nhân bản hồ sơ phải tồn tại ở ViewModel")
+        assertTrue(repo.contains("override fun bootProfile("), "cùng đường đọc/ghi bền ở repository")
+        assertTrue(repo.contains("override fun setBootProfile("), "cùng đường đọc/ghi bền ở repository")
     }
 
     @Test

@@ -104,6 +104,23 @@ enum class CapabilityKind {
     READ,
     /** Hành động ghi vào xe — bấm được. Nguồn: [ControlRegistry]. */
     WRITE,
+
+    /**
+     * ═══ S4 · R12 — HÀNH ĐỘNG CỦA CHÍNH LAUNCHER ═════════════════════════════════════════════════════════
+     *
+     * Bấm được, nhưng **KHÔNG gửi gì xuống xe**: mở ngăn kéo ứng dụng, mở màn Cài đặt. Nguồn: [LauncherActions].
+     *
+     * ## Vì sao phải là giá trị thứ BA, dù KDoc [CapabilityCatalog.kindOf] từng viết *"KHÔNG thêm giá trị thứ ba"*
+     * Câu cấm đó viết cho ca **NHÓM khả năng** (G1) và lý do của nó là: nhóm vốn là thứ để XEM, nên gán cho nó một
+     * loại mới sẽ làm `else -> "bấm"` ở [CapabilityPick.kindHint] và nhánh hai-chiều của `ControlDockView` âm thầm
+     * hiểu sai. Ca này **ngược lại**: đây thật sự là thứ để BẤM, chỉ khác đích đến (launcher thay vì xe). Gán tạm
+     * nó vào [WRITE] mới là cái bẫy — `ControlDockView` sẽ đi tìm [ControlDef]/[ActionMacro] cho mã đó, không thấy,
+     * rồi **không vẽ gì cả mà cũng không báo lỗi** (đúng nhánh đã phải vá cho gói lệnh ở W2).
+     *
+     * Hệ quả phải chặn ở CHỖ CỦA NÓ, y như G1: thanh trên chỉ nhận [READ] nên loại này bị
+     * [TopStripConfig.isChippable] từ chối do cấu tạo — không cần bóp méo loại ở đây.
+     */
+    LAUNCHER,
 }
 
 /**
@@ -206,6 +223,9 @@ data class CapabilityPick(
             group -> Strings.t("nhóm", "group")
             curated -> Strings.t("thẻ", "card")
             kind == CapabilityKind.READ -> Strings.t("xem", "view")
+            // S4 · R12 — [CapabilityKind.LAUNCHER] cố ý rơi vào nhánh này cùng [CapabilityKind.WRITE]: gợi ý loại
+            // chỉ hiện khi NHÃN BỊ TRÙNG, và câu nó phải trả lời là *"ô này xem hay bấm"* — "Ứng dụng" là thứ để
+            // BẤM. Thêm một gợi ý thứ năm ("launcher") sẽ nói về ĐÍCH ĐẾN, không phải về cách dùng ô.
             else -> Strings.t("bấm", "press")
         }
 }
@@ -268,6 +288,9 @@ object CapabilityCatalog {
         // W2: GÓI LỆNH cũng là HÀNH ĐỘNG (nó tác động vào xe), nên tự động đặt được ở cả 3 vùng như mọi nút khác
         // — không cần code đặt-chỗ mới. Đây là giá trị cụ thể của nền RW0.
         ActionMacros.byId(id) != null -> CapabilityKind.WRITE
+        // S4 · R12: hành động của CHÍNH launcher (mở ngăn kéo / mở Cài đặt). Nhờ trả về một loại RIÊNG, thanh nút
+        // biết dựng ô bấm mà KHÔNG đi tìm một [ControlDef] không hề tồn tại, và không có lệnh nào chạm vào xe.
+        LauncherActions.byId(id) != null -> CapabilityKind.LAUNCHER
         else -> null
     }
 
@@ -294,8 +317,21 @@ object CapabilityCatalog {
             return CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain,
                 labelEn = it.labelEn)
         }
+        LauncherActions.byId(id)?.let { return launcherPick(it) }
         return null
     }
+
+    /**
+     * Hành động launcher → một khả năng chọn được. **Một chỗ duy nhất** ([pick] và [allIncludingHidden] cùng đi qua
+     * đây) — cùng lý do với [groupPick]: hai chỗ dựng cùng một [CapabilityPick] thì thêm một thuộc tính là sửa hai
+     * nơi, và nơi thứ hai luôn là nơi bị quên.
+     *
+     * [EvidenceTier.PROVEN] + `domain = null` là hai quyết định, không phải hai chỗ trống — lý do ở KDoc
+     * [LauncherActions].
+     */
+    private fun launcherPick(a: LauncherActionDef): CapabilityPick = CapabilityPick(
+        a.id, a.label, a.icon, EvidenceTier.PROVEN, CapabilityKind.LAUNCHER, null, labelEn = a.labelEn,
+    )
 
     /**
      * NHÓM → một khả năng chọn được. **Một chỗ duy nhất**: [pick] và [all] đều đi qua đây.
@@ -361,6 +397,9 @@ object CapabilityCatalog {
             add(CapabilityPick(it.id, it.label, it.icon, it.tier(), CapabilityKind.WRITE, it.domain,
                 labelEn = it.labelEn))
         }
+        // S4 · R12 — ĐỨNG CUỐI, cố ý: đây là việc của launcher, không phải khả năng của xe. Bộ chọn bày chúng ở
+        // khối RIÊNG ([LauncherActions.SECTION_TITLE]) chứ không qua [byDomain] (chúng `domain = null`).
+        LauncherActions.ALL.forEach { add(launcherPick(it)) }
     }
 
     /**
@@ -392,7 +431,8 @@ object CapabilityCatalog {
         // nguồn khác mà không bên nào được gợi ý loại ⇒ hai ô hiện chữ y hệt nhau.
         (CapabilityGroups.ALL.map { it.label } + WidgetRegistry.ALL.map { it.label } +
             TelemetryRegistry.ALL.map { it.label } +
-            ControlRegistry.ALL.map { it.label } + ActionMacros.ALL.map { it.label })
+            ControlRegistry.ALL.map { it.label } + ActionMacros.ALL.map { it.label } +
+            LauncherActions.ALL.map { it.label })
             .groupBy { it }.filterValues { it.size > 1 }.keys
     }
 
@@ -409,6 +449,9 @@ object CapabilityCatalog {
         val t = TelemetryRegistry.ALL.map { it.id }
         val c = ControlRegistry.ALL.map { it.id }
         val m = ActionMacros.ALL.map { it.id }
-        return (g + w + t + c + m).groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
+        // S4 · R12 thêm nguồn thứ SÁU (hành động launcher). Tiền tố `launcher_` hôm nay chắc chắn không trùng, nhưng
+        // đưa vào phép kiểm mới biến điều đó thành BẢO ĐẢM — y như lý do G1 đã được thêm vào đây.
+        val l = LauncherActions.ALL.map { it.id }
+        return (g + w + t + c + m + l).groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
     }
 }

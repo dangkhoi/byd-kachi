@@ -28,6 +28,15 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
 class ControlDockView(context: Context) : LinearLayout(context) {
 
     var control: CarControlPort = NoCar
+
+    /**
+     * S4 · R12 — cú bấm một ô [CapabilityKind.LAUNCHER] (`launcher_apps` / `launcher_settings`).
+     *
+     * Mặc định **no-op** để mọi chỗ dựng cũ (kể cả test) không phải sửa; chỗ nối thật là
+     * [Activity.controlDock] ở `KachiHomeWiring`, và nó gọi ĐÚNG hai đường mà thanh trên đang dùng
+     * (`drawerController.openAppList()` · `panels.openSettings()`) — không mở đường thứ hai.
+     */
+    var onLauncherAction: (String) -> Unit = {}
     private var config = ControlRegistry.defaultDock()
     // Trạng thái xe + lựa chọn đơn vị: CHỈ dùng cho ô ĐỌC. Bơm từ Activity (một chiều, từ HomeUiState.carStatus).
     private var carStatus: CarStatus = CarStatus()
@@ -86,6 +95,13 @@ class ControlDockView(context: Context) : LinearLayout(context) {
                     tile.bind(readout(id))
                     readTiles[id] = tile
                     addView(sized(tile.view))
+                }
+                // S4 · R12: việc của CHÍNH launcher — ô vẽ như một cái nút, nhưng cú bấm đi ra ngoài qua
+                // [onLauncherAction] chứ không xuống [control]. Nhánh riêng (không gộp vào WRITE) vì gộp thì
+                // `ControlRegistry.byId` trả null, `ActionMacros.byId` cũng null ⇒ ô **không được thêm vào thanh**
+                // mà cũng không báo gì — đúng lỗi "bật vào thanh rồi tưởng hỏng" đã phải vá cho gói lệnh ở W2.
+                CapabilityKind.LAUNCHER -> CapabilityCatalog.pick(id)?.let { pick ->
+                    addView(sized(tiles.launcherTile(pick) { onLauncherAction(id) }))
                 }
                 null -> Unit   // mã lạ (rác prefs / mã đã xoá) → bỏ qua, KHÔNG sập
             }

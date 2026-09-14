@@ -32,8 +32,10 @@ class CapabilityCatalogTest {
         // W2 thêm nguồn thứ TƯ: gói lệnh (cũng là HÀNH ĐỘNG). G1 thêm nguồn thứ NĂM: NHÓM khả năng (đọc — xem KDoc
         // [CapabilityCatalog.kindOf]). Ý định của phép kiểm không đổi — gộp không được làm MẤT hay NHÂN ĐÔI mục nào;
         // chỉ cập nhật con số kỳ vọng cho đúng số nguồn hiện tại.
+        // S4 · R12 thêm nguồn thứ SÁU: hành động của CHÍNH launcher ([LauncherActions]) — bấm được nhưng không
+        // gửi gì xuống xe. Ý định phép kiểm không đổi: gộp không được làm MẤT hay NHÂN ĐÔI mục nào.
         val total = CapabilityGroups.ALL.size + WidgetRegistry.ALL.size + TelemetryRegistry.ALL.size +
-            ControlRegistry.ALL.size + ActionMacros.ALL.size
+            ControlRegistry.ALL.size + ActionMacros.ALL.size + LauncherActions.ALL.size
         assertEquals(total, CapabilityCatalog.allIncludingHidden().size, "gộp không được làm mất hay nhân đôi mục nào")
         // U6: `all()` = bản kê ĐẦY ĐỦ trừ đúng những mã cố ý ẩn khỏi màn chọn — không được trừ thêm gì khác.
         assertEquals(
@@ -43,6 +45,30 @@ class CapabilityCatalogTest {
         CapabilityCatalog.allIncludingHidden().forEach { p ->
             assertNotNull(CapabilityCatalog.kindOf(p.id), "mã ${p.id} phải phân loại được")
             assertNotNull(CapabilityCatalog.pick(p.id), "mã ${p.id} phải tra cứu được")
+        }
+    }
+
+    /**
+     * S4 · R12 — hành động của launcher: loại RIÊNG, PROVEN, không badge, không lĩnh vực.
+     *
+     * Bốn tính chất này là **hợp đồng với ba tầng vẽ** (thanh nút dựng ô bấm · bộ chọn bày khối riêng · thanh trên
+     * từ chối). Đổi một cái ở đây mà không đổi ở đó thì sai IM LẶNG: ô không hiện, hoặc hiện kèm một dấu cảnh báo
+     * nói sai, hoặc lọt lên chip 24dp.
+     */
+    @Test
+    fun `hanh dong launcher la loai rieng - PROVEN, khong badge, khong linh vuc`() {
+        assertEquals(2, LauncherActions.ALL.size, "đúng hai hành động đầu tiên: Ứng dụng · Cài đặt")
+        LauncherActions.ALL.forEach { a ->
+            assertEquals(CapabilityKind.LAUNCHER, CapabilityCatalog.kindOf(a.id), "${a.id} phải là loại LAUNCHER")
+            assertFalse(CapabilityCatalog.isWrite(a.id), "KHÔNG được coi là hành động ghi vào XE")
+            val pick = CapabilityCatalog.pick(a.id)
+            assertNotNull(pick, "${a.id} phải tra ra được như một khả năng")
+            assertEquals(EvidenceTier.PROVEN, pick!!.tier, "đường mở ngăn kéo/Cài đặt là đường dùng hằng ngày")
+            assertFalse(pick.needsBadge, "không được mang dấu 'chưa kiểm trên xe'")
+            assertNull(pick.domain, "không thuộc lĩnh vực nào của xe ⇒ byDomain() không bày")
+            assertEquals(a.label, pick.label, "nhãn chảy từ bộ đăng ký, không gõ lại ở catalog")
+            assertEquals(a.labelEn, pick.labelEn, "nhãn EN cũng vậy")
+            assertTrue(a.id.startsWith("launcher_"), "tiền tố `launcher_` để đọc mã là biết nó không chạm vào xe")
         }
     }
 

@@ -85,8 +85,8 @@ internal fun bridgeMsgRes(msg: BridgeMsg): Int = when (msg) {
  *
  * Mọi tham số ở đây đều là thứ mà Activity **không thể** tự suy ra: hai đường đổi bố cục đi kèm tác dụng phụ
  * ([onApplyLayout]/[onPreset] phải bỏ bố cục còn lại), hai đường phải áp lại NGAY lên view đang hiện
- * ([onWallpaperChanged]/[onUnitsChanged]), hộp thoại tạo hồ sơ dùng lại của `ProfileBar`, và bộ chọn nút thanh xe
- * nằm ở [DrawerController]. Phần còn lại chỉ là `viewModel.<intent>` nên nó ở đây, không ở Activity.
+ * ([onWallpaperChanged]/[onUnitsChanged]), và bộ chọn nút thanh xe nằm ở [DrawerController]. Phần còn lại chỉ là
+ * `viewModel.<intent>` nên nó ở đây, không ở Activity.
  */
 @Suppress("LongParameterList")
 internal fun homePanels(
@@ -94,13 +94,11 @@ internal fun homePanels(
     rootFrame: FrameLayout,
     viewModel: HomeViewModel,
     bridge: ClusterNavBridge,
-    scenes: SceneActions,
     openDockPicker: (Set<String>, (Set<String>) -> Unit) -> Unit,
     onApplyLayout: (GridLayout?) -> Unit,
     onPreset: (LayoutPreset) -> Unit,
     onWallpaperChanged: (WallpaperPrefs) -> Unit,
     onUnitsChanged: (UnitPrefs) -> Unit,
-    onAddProfile: () -> Unit,
     shellUsable: () -> Boolean,
     goImmersive: () -> Unit,
     onPanelsChanged: () -> Unit,
@@ -126,13 +124,52 @@ internal fun homePanels(
     // Owner 2026-09-14 "chưa thấy hồ sơ gắn với bố cục chỗ nào": thẻ hồ sơ hỏi tóm tắt của TỪNG hồ sơ theo tên.
     // Đọc-để-vẽ, đi qua ViewModel như mọi đường khác (tầng UI không tự mở cửa vào nơi lưu — R6).
     profileSummary = { name -> viewModel.profileSummary(name) },
-    onAddProfile = onAddProfile,                 // dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai
+    // S4 · R8 — "Thêm hồ sơ" nay là NHÂN BẢN hồ sơ đang dùng. Hộp thoại hỏi tên nằm trong màn Cài đặt
+    // (`SettingsDialogs.askName`); ở đây chỉ còn intent, đúng khuôn mọi lambda khác của khối này.
+    onDuplicateProfile = { name -> viewModel.duplicateProfile(name) },
     onDeleteProfile = { name -> viewModel.deleteProfile(name) },
-    scenes = scenes,                             // P7/P6 — lưu/gọi/nổ-máy/đổi-tên/xoá cảnh
+    // S4 · R6 — hồ sơ lúc nổ máy. ĐỌC từ state chứ không mở một cửa `WorkspaceRepository` thứ hai ở tầng UI:
+    // `load()` đã nạp `bootProfile` vào `HomeUiState` (khoá theo XE, không đổi khi đổi hồ sơ), nên đọc ở đây là
+    // đọc **cùng một giá trị** mà màn hình đang vẽ — còn gọi thẳng repository là dựng đường đọc bền thứ hai, đúng
+    // thứ [SOÁT P1-1] đã dọn. Đường GHI cũng đi qua intent như mọi thứ khác (một chiều).
+    bootProfile = { viewModel.uiState.value.bootProfile },
+    onBootProfile = { name -> viewModel.setBootProfile(name) },
     shellUsable = shellUsable,
     goImmersive = goImmersive,
     onPanelsChanged = onPanelsChanged,
 )
+
+/**
+ * ═══ S4 · R12 — THANH NÚT XE, KÈM ĐƯỜNG CHO Ô LOẠI **LAUNCHER** ══════════════════════════════════════════════
+ *
+ * Dựng [ControlDockView] và nối [ControlDockView.onLauncherAction] về **đúng hai đường mà thanh trên đang dùng**.
+ *
+ * ## Vì sao ở đây chứ không ở Activity
+ * Cùng lý do [homePanels]: `KachiHomeActivity` đang ở 497/500 dòng (CLAUDE.md §4.1), mà khối này không đọc field
+ * riêng nào của màn — nó chỉ cần một [Activity], một cổng điều khiển xe và hai lambda.
+ *
+ * ## ⚠⚠ Vì sao `when` nằm ở ĐÂY chứ không ở [ControlDockView]
+ * Thanh nút là **view thuần**: nó biết *"ô này là loại LAUNCHER"* nhưng không được biết *"launcher_apps nghĩa là
+ * mở ngăn kéo"* — biết điều đó là nó tự có một đường thứ hai tới ngăn kéo, và đường ấy sẽ lệch với thanh trên
+ * đúng lúc ai đó sửa một bên (R12: *"cùng đường với thanh trên, không đường thứ hai"*). Ở đây thì cả hai bề mặt
+ * gọi cùng một biểu thức.
+ *
+ * Mã lạ ⇒ **không làm gì**: mã launcher tương lai mà bản này chưa biết thì im lặng còn hơn mở nhầm một màn.
+ */
+internal fun Activity.controlDock(
+    control: CarControlPort,
+    openAppList: () -> Unit,
+    openSettings: () -> Unit,
+): ControlDockView = ControlDockView(this).apply {
+    this.control = control
+    onLauncherAction = { id ->
+        when (id) {
+            LauncherActions.APPS -> openAppList()
+            LauncherActions.SETTINGS -> openSettings()
+            else -> Unit
+        }
+    }
+}
 
 // ══ S3 — hai việc của màn ClusterNav cũ, nay thuộc màn chính ═════════════════════════════════════════════════════
 //

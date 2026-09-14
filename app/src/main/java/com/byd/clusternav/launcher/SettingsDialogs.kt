@@ -69,7 +69,8 @@ internal object SettingsDialogs {
 
     /**
      * Hỏi một cái TÊN (đặt tên nút vừa học). Ô nhập điền sẵn [initial] và **bôi chọn hết** để gõ đè được ngay —
-     * cùng khuôn `ProfileBar.addDialog()`/`SceneController`, không dựng hộp thoại thứ hai cho cùng một việc.
+     * cùng khuôn với mọi chỗ khác hỏi tên. S4 · R8 — nút *"Thêm hồ sơ (bản sao…)"* của nhóm Hồ sơ tài xế nay cũng
+     * gọi CHÍNH hàm này (`ProfileBar.addDialog()` — bản dựng `AlertDialog` thứ hai — đã xoá cùng `ProfileBar`).
      *
      * Tên trắng ⇒ lùi về [initial] chứ không từ chối im lặng: người dùng vừa bấm một nút vật lý xong, bỏ công đó
      * đi vì một ô trống là mất cả phiên học.

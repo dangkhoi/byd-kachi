@@ -16,6 +16,25 @@ data class ChipView(val text: String, val icon: String?, val tone: ChipTone, val
 enum class ChipTone { NEUTRAL, ENERGY }
 
 /**
+ * MỘT KHỐI của màn chọn chip — xem [TopStripConfig.picks].
+ *
+ * Cố ý **không mang tiêu đề dạng chuỗi**: tiêu đề của khối lĩnh vực là [Domain.displayLabel] (đã có ở `:core`),
+ * còn tiêu đề khối *"đang bật"* phải kèm con số `N/${TopStripConfig.CAP}` nên nó là một chuỗi **tài nguyên** của
+ * `:app` (VI/EN). Dựng sẵn một chuỗi ở đây là ép `:core` giữ bản sao thứ hai của cùng một câu.
+ *
+ * @property on khối *"đang bật"* (đúng một khối, luôn đứng đầu).
+ * @property domain lĩnh vực của khối; `null` ⇒ khối *"đang bật"* ([on]) hoặc khối mục chưa xếp lĩnh vực.
+ * @property picks các ô của khối — mỗi mã chỉ xuất hiện ở **một** khối (xem cảnh báo `tiles[id]` ở [TopStripConfig.picks]).
+ * @property open mặc định mở hay gấp. Tầng vẽ giữ trạng thái của phiên, giá trị ban đầu quyết ở `:core`.
+ */
+data class ChipSection(
+    val on: Boolean,
+    val domain: Domain?,
+    val picks: List<CapabilityPick>,
+    val open: Boolean,
+)
+
+/**
  * CẤU HÌNH THANH TRÊN — danh sách khả năng hiện thành chip, thứ tự = thứ tự hiển thị.
  *
  * Đây là **vùng thứ ba** của RW0 ("đặt được ở thanh trên / ô giữa màn / thanh tác vụ"). Trước 2026-09-11 thanh trên là
@@ -55,8 +74,22 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
     fun has(id: String): Boolean = id in ids
 
     companion object {
-        /** Trần chip. Thanh trên còn phải chứa đồng hồ + ngày + chọn bố cục + hồ sơ; quá 4 chip là tràn. */
-        const val CAP = 4
+        /**
+         * TRẦN CHIP — **8** từ S4 · R11 (owner 2026-09-14: *"hiện chỉ cho chọn 3 trong khi có thể chọn nhiều hơn"*).
+         *
+         * ## Vì sao 4 → 8, và vì sao con số này không còn là "chỗ trống chia cho bề rộng một chip"
+         * Trần cũ (4) được đặt khi thanh trên còn mang **5 nút bố cục**; R7 gỡ hàng nút đó ⇒ thanh trên trống thêm
+         * một quãng rộng. Nhưng điều đổi hẳn cách chọn con số là bản vá đi kèm ở tầng vẽ
+         * (`KachiTopStrip.fitChips`): chip nay **tự co + cắt "…"** theo bề rộng còn lại, nên vượt trần không còn
+         * nghĩa là *tràn đè lên nút bên phải* — nó chỉ nghĩa là *mỗi chip đọc được ít chữ hơn*.
+         *
+         * [SUY] theo số ở 1920px (chưa [ĐO] ảnh — việc của S4 · T4): thanh trên trừ lề + đồng hồ/ngày + ba vật bên
+         * phải (chip hồ sơ · Ứng dụng · Cài đặt) còn ≈ 1240dp cho hàng chip ⇒ 8 chip ≈ **155dp/chip**, đủ cho
+         * `"Lốp TT · 2.4 bar"` (≈ 160dp, cắt đuôi một chút) và thừa cho `"82% · 418 km"`. 12 chip thì còn ≈ 103dp
+         * ⇒ phần lớn chip chỉ còn nhãn cụt, tức thanh trên **có chữ mà không đọc được** — tệ hơn là không bày.
+         * Vì thế trần vẫn tồn tại, chỉ đổi số; nó là trần **đọc được**, không còn là trần *vừa khung*.
+         */
+        const val CAP = 8
 
         /** Ba chip TỔNG HỢP dựng sẵn — xem [TopStripChips]. */
         const val PM25 = "chip_pm25"
@@ -87,6 +120,10 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
          * nhóm thành một cái nút đơn và mất hết thành viên (xem KDoc [CapabilityCatalog.kindOf]). Hạn chế là của
          * thanh trên, nên nó phải nằm trong thanh trên.
          */
+        // ⚠ S4 · R12 — [CapabilityKind.LAUNCHER] cũng bị từ chối ở đây, và **do cấu tạo**: điều kiện là
+        // "== READ", không phải "!= WRITE". Viết theo chiều phủ định thì mỗi loại khả năng mới lại lọt lên thanh
+        // trên cho tới khi có ai nhớ ra phải chặn — chiều khẳng định thì loại mới mặc định KHÔNG lọt.
+        // Bài canh: `TopStripTest.hanh dong cua launcher KHONG len duoc thanh tren`.
         fun isChippable(id: String): Boolean =
             id in BUILT_IN ||
                 (CapabilityCatalog.kindOf(id) == CapabilityKind.READ && CapabilityGroups.byId(id) == null)
@@ -96,9 +133,9 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
             // U5 · T2: ba chip TỔNG HỢP không có dòng registry nào để treo `labelEn` vào ⇒ dựng [CapabilityPick] với
             // nhãn Việt + `labelEn` ngay tại chỗ, đúng cùng cơ chế như mọi mục khác (xem KDoc [Strings]).
             // ⚠⚠ **KHÔNG đặt lại tên này thành "Bụi mịn PM2.5"** — đó là tên của datum `pm25_value` từ U6, và hai
-            // dòng ấy đứng CẠNH NHAU trong chính hộp thoại "Thêm chip khác…" ([TopStripPicker.openMore] bày phẳng
-            // `choices()`, không vẽ dòng phụ). [ĐO] soát U6: đổi `pm25_value` từ "PM2.5" sang "Bụi mịn PM2.5" đã làm
-            // hộp thoại có **hai dòng chữ y hệt** (cả VI lẫn EN) trỏ vào hai việc khác nhau — chip này đổi mức 1–6
+            // dòng ấy đứng CẠNH NHAU trong CÙNG khối "Khí hậu & không khí" của màn chọn ([picks] xếp theo [Domain],
+            // ô chỉ có nhãn — không vẽ dòng phụ). [ĐO] soát U6: đổi `pm25_value` từ "PM2.5" sang "Bụi mịn PM2.5" đã
+            // làm màn chọn có **hai ô chữ y hệt** (cả VI lẫn EN) trỏ vào hai việc khác nhau — chip này đổi mức 1–6
             // thành CHỮ ("PM2.5 · Tốt"), datum kia là TRỊ SỐ µg/m³. Tên ở đây phải nói đúng thứ nó hiện: một lời
             // nhận xét về không khí trong xe. Bài canh: `TopStripTest.hai o tren cung mot man chon…`.
             add(CapabilityPick(PM25, "Không khí trong xe", "ic-leaf", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.CLIMATE,
@@ -114,20 +151,51 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
         }
 
         /**
-         * Ô mà màn chọn phải bày ở hàng **"đang bật"**: 3 chip dựng sẵn + mọi mã [cfg] đang bật — **kể cả mã đã ẩn
-         * khỏi [CapabilityCatalog.all]**.
+         * MÀN CHỌN CHIP theo **KHỐI**: khối *"đang bật"* trước, rồi mỗi [Domain] một khối (S4 · R11 c).
          *
-         * ## Vì sao không dùng thẳng [choices] như trước
-         * U6 thêm [CapabilityCatalog.HIDDEN_FROM_PICKER] (lọc ở `all()`), và [decode] **giữ** mã ẩn đó vì nó đi qua
-         * [isChippable] chứ không qua danh sách — đúng như thiết kế (khoá lưu bền của người dùng không được mất).
-         * Nhưng nếu hàng "đang bật" cũng dựng từ [choices] thì chip đặt từ bản trước **vẫn hiện trên thanh mà không
-         * còn ô nào để bấm gỡ**: một trạng thái không có đường ra. Thêm ở đây, KHÔNG thêm vào [choices] — hộp thoại
-         * "Thêm chip khác…" vẫn phải im lặng về mã đã ẩn, vì bày lại chính là đường mời đặt thêm.
+         * ## Vì sao bày theo khối chứ không phải một danh sách phẳng
+         * Tới U6 màn chọn chỉ bày **3 chip dựng sẵn + chip đang bật** (≤ 7 ô); muốn đặt một datum bất kỳ thì phải
+         * biết có một nút *"Thêm chip khác…"* mở một hộp thoại **phẳng 120+ dòng**. Owner 2026-09-14: *"hiện chỉ
+         * cho chọn 3 trong khi có thể chọn nhiều hơn"* — tức thứ hụt không phải cái trần, mà là **thứ nhìn thấy
+         * được**. Một danh sách phẳng 120 dòng thì bày ra cũng như không; xếp theo lĩnh vực thì mỗi khối là một
+         * câu hỏi người dùng thật sự có (*"xe còn bao nhiêu pin"*, *"lốp thế nào"*), và R4 (mỗi nhóm ≤ 2 màn cuộn)
+         * còn giữ được nhờ tầng vẽ gấp/mở từng khối.
+         *
+         * ## Ba tính chất mà chỗ gọi được dựa vào (có test khoá từng cái)
+         *  1. **Mỗi mã đúng MỘT ô.** Cả hai màn chọn giữ bảng tra `tiles[id] → view` để tô ô đang bật; một mã hai ô
+         *     thì `tiles[id]` bị ghi đè và ô trước nói sai cấu hình (đúng lỗi RW0, và là lý do
+         *     [CapabilityPicker.singlesOf] tồn tại). Vì thế mục đang bật bị **trừ khỏi** khối lĩnh vực của nó.
+         *  2. **Chip mang mã đã ẩn vẫn có ô để GỠ.** U6 thêm [CapabilityCatalog.HIDDEN_FROM_PICKER] (lọc ở `all()`)
+         *     còn [decode] **giữ** mã ẩn vì nó lọc bằng [isChippable] chứ không bằng danh sách — đúng thiết kế
+         *     (khoá lưu bền của người dùng không được mất). Nếu khối *"đang bật"* cũng dựng từ [choices] thì chip
+         *     ấy hiện trên thanh mà **không còn ô nào để bấm gỡ**: một trạng thái không có đường ra. Nên khối này
+         *     tra thẳng [CapabilityCatalog.pick] cho mã mà [choices] bỏ sót — và chỉ ở đây, [choices] vẫn phải im
+         *     lặng về mã đã ẩn (bày lại chính là đường mời đặt thêm).
+         *  3. **[ChipSection.open] là một LUẬT, không phải trạng thái.** Mặc định mở đúng những lĩnh vực đang có
+         *     chip trên thanh — nơi người dùng nhiều khả năng muốn thêm cái kế bên. Tầng vẽ giữ trạng thái gấp/mở
+         *     của phiên, nhưng giá trị **ban đầu** quyết ở đây để kiểm được off-car.
          */
-        fun shown(cfg: TopStripConfig): List<CapabilityPick> {
-            val base = choices().filter { it.id in BUILT_IN || cfg.has(it.id) }
-            val ids = base.mapTo(mutableSetOf()) { it.id }
-            return base + cfg.ids.filterNot { it in ids }.mapNotNull { CapabilityCatalog.pick(it) }
+        fun picks(cfg: TopStripConfig): List<ChipSection> {
+            val all = choices()
+            val byId = all.associateBy { it.id }
+            // Theo ĐÚNG thứ tự chip trên thanh, không theo thứ tự bộ đăng ký: khối này là ảnh của thanh trên.
+            val on = cfg.ids.mapNotNull { byId[it] ?: CapabilityCatalog.pick(it) }
+            val onIds = on.mapTo(mutableSetOf()) { it.id }
+            // [ĐO] ảnh máy ảo 2026-09-14 (T4): mặc định mở lĩnh vực đang có chip ⇒ với 3 chip sẵn là Năng lượng (28 ô)
+            // + Khí hậu (11 ô) mở cùng lúc, trang dài quá trần R4 (≤2 màn cuộn). Nay MỌI lĩnh vực gấp sẵn; khối
+            // "đang bật" luôn mở nên câu "thanh trên đang có gì" vẫn trả lời ngay; muốn thêm thì mở đúng lĩnh vực.
+            return buildList {
+                add(ChipSection(on = true, domain = null, picks = on, open = true))
+                Domain.values().forEach { d ->
+                    val rest = all.filter { it.domain == d && it.id !in onIds }
+                    if (rest.isNotEmpty()) add(ChipSection(false, d, rest, open = false))
+                }
+                // Mục ĐỌC chưa xếp lĩnh vực: hôm nay là danh sách RỖNG (mọi datum đều khai [Domain], widget dựng tay
+                // thì `curated` nên [choices] đã loại). Vẫn dựng khối cuối thay vì bỏ im lặng — thêm một mục đọc
+                // không-lĩnh-vực về sau thì nó phải hiện ra ở đâu đó, chứ không biến mất khỏi màn chọn.
+                val loose = all.filter { it.domain == null && it.id !in onIds }
+                if (loose.isNotEmpty()) add(ChipSection(false, null, loose, open = true))
+            }
         }
 
         /** `"a,b,c"` → cấu hình. Chuỗi rỗng/lỗi ⇒ mặc định (không để thanh trên trắng vì một dòng prefs hỏng). */

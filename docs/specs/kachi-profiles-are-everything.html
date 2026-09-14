@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi — Hồ sơ là tất cả (S4)</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Kachi — Hồ sơ tài xế là TẤT CẢ: gộp cảnh, mọi cấu hình theo hồ sơ, thanh trên chỉ còn đổi hồ sơ (S4)</h1>
+<p class="muted">Slug: <code>kachi-profiles-are-everything</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: DONE off-car 2026-09-14 — 1.47 (48) đăng OTA; chờ xe: V-switch applier thật</span> · Chủ: KhoiPD</p>
+<h2>1. Changelog</h2><ul><li><b>Pass 0 — 2026-09-14</b>: Owner: <em>"có cảnh rồi có hồ sơ nữa hơi khó hiểu… profile cover bố cục, các cấu hình tất cả mọi thứ, app tự khởi động… mỗi người lái khác nhau hoặc tình huống khác nhau thì switch profile là OK, bỏ luôn các nút đổi bố cục trên header"</em>. Khởi tạo spec.</li></ul>
+<h2>2. Context</h2>
+<p>Hiện có HAI khái niệm "bộ cấu hình có tên": <b>hồ sơ</b> (P5: bố cục · ô · thanh nút · chip · lưới · cảnh) và <b>cảnh</b> (P7/P6 <code>SceneBook</code>: bố cục + ô + thanh nút, có "cảnh lúc nổ máy"). Backlog P7 đã ghi <em>"đọc kỹ hai dòng thì chúng là CÙNG một khái niệm"</em>. Ngoài ra nhiều thứ còn <b>chung cả máy</b>: chủ đề, đơn vị, hình nền, ngôn ngữ, tự khởi động, và toàn bộ cấu hình ClusterNav (dẫn đường/biển báo/bong bóng/phím vô-lăng/tiện nghi/tự chiếu). Thanh trên có 5 nút bố cục sẵn + avatar xoay vòng hồ sơ.</p>
+<p>[ĐO] Khoá theo hồ sơ hiện tại: <code>WorkspacePrefs.PROFILE_SUFFIXES</code> = preset · dock_edge · dock_enabled · top_strip · grid_layout · scenes · boot_scene · slot_0..5. Khoá chung: theme_mode · unit_prefs · wallpaper_prefs · recent_apps · launcher_autostart · lang (tệp <code>clusternav_lang</code>) · theme_choice (<code>clusternav_theme</code>). ClusterNav: 22 khoá ở <code>clusternav_prefs</code> + 7 ở <code>simple_cast_prefs</code> (danh sách <code>SettingsCatalogClusterNav.KEYS</code>), đọc trực tiếp bởi dịch vụ (NavAccessibilityService, FloatingBubbleService, VietMapAutostart…).</p>
+<h2>3. Requirements</h2><ul>
+<li><b>R1 Một khái niệm</b>: bỏ hẳn "cảnh". <code>SceneBook</code>, <code>SceneController</code>, <code>SettingsSceneSection</code>, mục "Cảnh"/"Cảnh lúc nổ máy" trong danh mục, khoá <code>scenes</code>/<code>boot_scene</code> đều gỡ (CLAUDE.md §8: không để mã mồ côi).</li>
+<li><b>R2 Chuyển dữ liệu không mất</b>: lần đầu chạy bản mới, mỗi cảnh đã lưu → một hồ sơ cùng tên (trùng tên thì thêm hậu tố " 2"); nội dung = bố cục/ô/thanh nút của cảnh, các phần khác chép từ hồ sơ đang dùng; "cảnh lúc nổ máy" → "hồ sơ lúc nổ máy". Chạy MỘT lần (dấu <code>migrated_scenes_v1</code>), thuần ở <code>:core</code>, có test.</li>
+<li><b>R3 Hồ sơ giữ TẤT CẢ lựa chọn người dùng</b>: (a) launcher: bố cục · ô · lưới · thanh nút · chip · <b>hình nền · chủ đề · đơn vị · ngôn ngữ · tự mở Kachi khi nổ máy</b>; (b) ClusterNav: mọi khoá trong <code>SettingsCatalogClusterNav.KEYS</code> TRỪ danh sách theo-xe ở R4 và cờ tạm <code>voicekey_learn</code>. Danh sách theo-hồ-sơ và theo-xe khai <b>một chỗ</b> ở <code>:core</code> (<code>ProfileScope</code>) và có bài canh: mọi <code>SettingsEntry.prefKey</code> phải nằm ở đúng một trong hai danh sách — thêm mục mới mà không xếp loại thì đỏ.</li>
+<li><b>R4 Theo xe, KHÔNG theo hồ sơ</b> (phần cứng/hệ thống): quyền · kênh shell · cập nhật OTA · chẩn đoán · dữ liệu VietMap · khung/DPI/hình học khi chiếu (simple_cast_prefs trừ các khoá tự chiếu và tỉ lệ chia đôi) · <code>recent_apps</code> · danh sách hồ sơ và hồ sơ đang dùng. Lý do ghi ở KDoc từng khoá.</li>
+<li><b>R5 Đổi hồ sơ = áp cả bộ ngay</b>: cơ chế <b>chụp–áp</b> (snapshot): trước khi rời hồ sơ A, chụp giá trị hiện tại của mọi khoá R3(b) vào <code>A__cn__&lt;tệp&gt;.&lt;khoá&gt;</code> (giữ kiểu Boolean/Int/Long/Float/String/Set — codec thuần <code>PrefSnapshot</code>, test); rồi ghi bộ của B vào đúng tệp prefs ClusterNav; B chưa có bộ ⇒ giữ nguyên giá trị hiện tại (hồ sơ mới = bản sao của hiện tại). Sau khi ghi, gọi <b>đúng các applier đã có</b> qua <code>ClusterNavBridge</code> (không đường thứ hai) để dịch vụ đang chạy nhận cấu hình mới; agent phải liệt kê từng khoá có consumer sống (dịch vụ) và cách nó nhận đổi ([ĐO] từ source), khoá nào chưa có đường áp thì ghi [CHƯA BIẾT] + backlog.</li>
+<li><b>R6 Hồ sơ lúc nổ máy</b>: chọn ở nhóm Hồ sơ; mặc định "hồ sơ dùng gần nhất". Thay cho cảnh lúc nổ máy; đường khởi động nguội hiện có (<code>KachiAutostart</code>) chuyển hồ sơ trước khi dựng ô.</li>
+<li><b>R7 Thanh trên</b>: bỏ 5 nút bố cục sẵn. Avatar → <b>chip tên hồ sơ</b> (chữ cái + tên, chạm mở bộ chọn: danh sách hồ sơ + "Quản lý hồ sơ…" → Cài đặt › Hồ sơ). Bỏ xoay vòng bằng chạm (<code>ProfileBar.cycle</code>). Còn lại: Apps · Cài đặt. Đường chọn bố cục sẵn chỉ còn ở Cài đặt › Màn hình chính.</li>
+<li><b>R8 Nhóm Hồ sơ tài xế</b>: danh sách (tóm tắt U13 mở rộng: bố cục · chủ đề · tự khởi động) · hồ sơ lúc nổ máy · "Thêm hồ sơ (bản sao của hồ sơ đang dùng)" · Xoá (luật hiện có). Câu đầu nhóm Màn hình chính/Thanh nút (U13) mở rộng thành "mọi thiết lập ở Cài đặt (trừ nhóm Hệ thống, Chiếu-hình-học, Giới thiệu) lưu cho hồ sơ «X»".</li>
+<li><b>R9 Test</b>: <code>:core</code> thuần cho ProfileScope · PrefSnapshot · migration; bài canh: không còn <code>LayoutPreset</code> ở thanh trên; không còn chữ Scene/cảnh trong mã sản phẩm (trừ ghi chú lịch sử); ProfileKeysWiringContractTest cập nhật; i18n; SettingsCoverage. 5 module 0 đỏ.</li>
+<li><b>R11 Chip thanh trên nhiều hơn</b> (owner 2026-09-14: <em>"hiện chỉ cho chọn 3 trong khi có thể chọn nhiều hơn, bổ sung nhé"</em>): [ĐO] trần <code>TopStripConfig.CAP = 4</code>, mặc định 3 chip, mọi mục ĐỌC đều chippable qua "Thêm chip khác…" nhưng màn chọn chỉ bày 3 chip sẵn. Sau R7 thanh trên trống thêm ≈370 px ⇒ (a) CAP 4 → <b>8</b>; (b) thanh trên co chip/cắt "…" khi hết chỗ, không tràn ra ngoài Apps/Cài đặt — [ĐO] ảnh máy ảo 8 chip; (c) màn chọn bày <b>mọi mục đọc theo nhóm</b> (Domain) với dấu chưa-kiểm như ngăn kéo, đang bật lên đầu; giữ luật chỉ-đọc. Test: TopStripTest CAP, bài canh không tràn (đo bề rộng tối thiểu), SettingsCoverage.</li>
+<li><b>R12 Thanh trên gọn + "Ứng dụng" trên thanh nút</b> (owner 2026-09-14: <em>"đổi chữ Ứng Dụng, Cài Đặt thành icon luôn cho gọn, thêm cho chọn Ứng Dụng ở chỗ chọn nút cho Thanh"</em>): (a) hai nút <b>Ứng dụng</b>/<b>Cài đặt</b> ở thanh trên chỉ còn icon (đích chạm ≥ Sp.TOUCH, <code>contentDescription</code> song ngữ, cùng icon với ngăn kéo/ic-settings); (b) danh mục thêm loại <code>CapabilityKind.LAUNCHER</code> — hành động của launcher, không bắn lệnh xe, tier PROVEN, không chấm chưa-kiểm, KHÔNG chippable ở thanh trên; mục đầu: <code>launcher_apps</code> "Ứng dụng" (mở ngăn kéo) và <code>launcher_settings</code> "Cài đặt"; chọn được ở bộ chọn nút thanh xe (nhóm riêng "Launcher"), vẽ như nút thường; <code>ControlDockView</code> nhận <code>onLauncherAction(id)</code> nối về KachiHomeActivity (mở ngăn kéo/mở Cài đặt — cùng đường với thanh trên, không đường thứ hai). Test: DockSelection nhận LAUNCHER; TopStrip từ chối LAUNCHER; bài canh thanh trên không còn chữ Apps/Settings; i18n.</li>
+<li><b>R10 Không làm</b> (ghi backlog): tự đổi hồ sơ theo người lái thật (chìa/ghế nhớ — cần xe); đổi hồ sơ bằng phím vô-lăng (có thể sau, qua bộ gán phím hiện có).</li></ul>
+<h2>4. Design</h2>
+<div class="flow"><div class="fnode">Chip hồ sơ (thanh trên) / Cài đặt › Hồ sơ</div><div class="fnode">HomeViewModel.switchProfile</div><div class="fnode">WorkspaceRepository.switchProfile: chụp A → ghi B (launcher keys + cn snapshot)</div><div class="fnode">ClusterNavBridge.reapplyAll()</div><div class="fnode">dịch vụ ClusterNav nhận cấu hình mới</div></div>
+<ul><li><b>ProfileScope (:core)</b> <span class="pill ok">T1 xong</span> — <code>core/…/launcher/ProfileScope.kt</code>. API thật: <code>enum Scope { PROFILE, DEVICE, TRANSIENT, UNKNOWN }</code> · <code>scopeOf(prefKey): Scope</code> · <code>isProfileScoped(prefKey): Boolean</code> · <code>unclassified(keys): Set&lt;String&gt;</code> (rỗng = đủ) · <code>LAUNCHER_SUFFIXES: List&lt;String&gt;</code> (bố cục/ô/thanh nút + theme_mode · unit_prefs · wallpaper_prefs · launcher_autostart · lang + <code>slot_0..SLOT_CAP−1</code> + hậu tố ảnh chụp — <b>sinh bằng mã</b>) · <code>CLUSTERNAV_KEYS: Map&lt;tệp, List&lt;khoá&gt;&gt;</code> · <code>CLUSTERNAV_PROFILE_KEYS: Set&lt;String&gt;</code> · <code>DEVICE_KEYS</code> / <code>DEVICE_KEY_PREFIXES</code> / <code>TRANSIENT_KEYS</code> / <code>PROFILE_KEY_PREFIXES</code> / <code>LAUNCHER_OWNED_CLUSTERNAV_KEYS</code> (đều <code>Map&lt;khoá, lý do&gt;</code>) · <code>SNAPSHOT_INFIX = "__cn__"</code> · <code>snapshotSuffix(tệp)</code> · <code>SNAPSHOT_SUFFIXES</code>.
+<br>⚠ Ba quyết định đáng ghi: (a) có <b>mức thứ ba</b> TRANSIENT — <code>voicekey_learn</code> (cờ học phím bật-một-lần; chép theo hồ sơ ⇒ đổi hồ sơ là máy vào chế độ học) và <code>scenes</code>/<code>boot_scene</code> (dữ liệu đời cũ, chỉ sống tới lượt chuyển đổi); (b) khoá chưa xếp loại trả <code>UNKNOWN</code> chứ không đoán — <code>ProfileScopeTest</code> biến nó thành đỏ; (c) <code>lang</code> <b>không</b> đi qua ảnh chụp (đã là hậu tố theo hồ sơ) ⇒ tránh bẫy hai-bản-sao, bản trong <code>clusternav_lang</code> chỉ là bản PHÁT cho <code>attachBaseContext</code>.</li>
+<li><b>Phạm vi khoá — bảng chốt (T1 đo từ mã, không từ văn xuôi)</b>:
+<table><tr><th>Mức</th><th>Gồm</th><th>Lý do</th></tr>
+<tr><td>PROFILE</td><td>preset · grid_layout · dock_edge · dock_enabled · top_strip · slot_0..5 · theme_mode · unit_prefs · wallpaper_prefs · launcher_autostart · lang · <b>toàn bộ 28 khoá ClusterNav còn lại</b> (nav · biển báo · bong bóng · phím vô-lăng · tiện nghi · <b>6/7 khoá simple_cast_prefs</b> — 5 khoá tự chiếu + <code>split_ratio_left_pct</code>; <code>cast_enabled</code> <b>KHÔNG</b>, xem DEVICE) · <code>theme_choice</code></td><td>lựa chọn của MỘT người lái</td></tr>
+<tr><td>DEVICE</td><td>profiles · active_profile · boot_profile · migrated_scenes_v1 · <code>cast_enabled</code> (Pass 1 review) · recent_apps · last_display_id · doze_whitelist_applied · freeform_state · enable_freeform_support · force_resizable_activities · enabled_accessibility_services · accessibility_enabled · tiền tố <code>config_size_</code>/<code>config_overscan_</code>/<code>config_density_</code>/<code>config_bounds_</code></td><td>phần cứng · hệ thống · chính bộ máy hồ sơ</td></tr>
+<tr><td>TRANSIENT</td><td>voicekey_learn · scenes · boot_scene</td><td>cờ tạm / dữ liệu đời cũ — không chép, không giữ</td></tr></table></li>
+<li><b>PrefSnapshot (:core)</b> <span class="pill ok">T1 xong</span> — <code>core/…/launcher/PrefSnapshot.kt</code>. <code>encode(Map&lt;String, Any?&gt;): String</code> / <code>decode(String?): Map&lt;String, Any?&gt;</code>. Một chuỗi cho MỘT tệp prefs, lưu ở <code>&lt;hồ sơ&gt;__cn__&lt;tệp&gt;</code> (hậu tố sinh bằng <code>ProfileScope.snapshotSuffix</code>, đã có trong <code>LAUNCHER_SUFFIXES</code> ⇒ xoá hồ sơ là xoá cả ảnh chụp). Dạng lưu tự đọc được: mỗi dòng <code>&lt;thẻ kiểu&gt;|&lt;khoá&gt;|&lt;giá trị&gt;</code>, thẻ <code>b i l f s S E n</code> (bool · int · long · float · chuỗi · tập · tập rỗng · null).
+<br>⚠ <b>Vì sao giữ kiểu là bắt buộc</b>: <code>getBoolean</code> trên giá trị ghi bằng <code>putString</code> <b>ném</b> <code>ClassCastException</code>, và chỗ đọc là dịch vụ đang chạy trên xe ⇒ mất kiểu không hỏng lúc đổi hồ sơ mà hỏng <b>trên đường</b>. Hai ca đã làm bài canh đỏ ngay lần chạy đầu và nay bị khoá lại: <code>emptySet()</code> vs <code>setOf("")</code> (⇒ thẻ <code>E</code> riêng) và chuỗi chứa đúng hai ký tự <code>\</code>+<code>n</code> (⇒ escape <code>\\</code> đi đầu lúc mã hoá, cuối lúc giải mã). Dữ liệu hỏng ⇒ bỏ đúng dòng đó, KHÔNG ném (nguồn là đĩa, sửa tay được).</li>
+<li><b>ScenesMigration (:core)</b> <span class="pill ok">T1 xong</span> — <code>core/…/launcher/ScenesMigration.kt</code>. <code>plan(scenesRaw: String?, bootSceneId: String?, activeProfile: String, existingNames: List&lt;String&gt;): Plan</code> với <code>Plan(newProfiles: List&lt;ProfileRecord&gt;, bootProfile: String?)</code> + <code>Plan.empty</code> / <code>Plan.NOTHING</code>; <code>ProfileRecord(name, workspace: WorkspaceState, dock: DockConfig, grid: GridLayout?)</code> (top-level, T2/T3 dùng chung); phụ trợ <code>parse(scenesRaw): List&lt;ProfileRecord&gt;</code> · <code>sanitiseName</code> · <code>NAME_MAX = 24</code> · <code>LEGACY_CAP = 8</code>. <code>:app</code> chỉ áp kế hoạch (chép phần còn lại từ hồ sơ đang dùng) rồi đặt dấu <code>migrated_scenes_v1</code>.
+<br>⚠ <b>Tự giải mã, KHÔNG gọi <code>SceneBook.decode</code></b>: <code>SceneBook</code> bị xoá ở T2, mà chuỗi cảnh thì ở lại trên đĩa xe mãi mãi ⇒ phép đọc nó phải sống ở chỗ còn lại. Bản chép giữ đủ bốn ca tự-chữa của bản cũ (sai số trường ⇒ bỏ bản ghi · enum lạ ⇒ lùi mặc định, không bỏ cả cảnh · mã trùng ⇒ giữ bản đầu · thanh nút rỗng ⇒ giữ rỗng). <code>ScenesMigrationTest</code> giữ <b>chuỗi fixture literal</b> + một bài đối chiếu nó với <code>SceneBook.encode</code> hôm nay (bài đó chết cùng <code>SceneBook</code> ở T2, đúng ý đồ).</li>
+<li><b>Widget bên thứ ba trong cửa sổ chưa chuyển</b>: <code>AppWidgetIds.used</code> bỏ vế "mọi cảnh đã lưu" (cảnh nay LÀ hồ sơ ⇒ đã nằm ở vế <code>widgetIdsOtherProfiles</code>), nhưng <code>idsInStored(slotRaw, scenesRaw)</code> vẫn đọc chuỗi cảnh cũ qua <code>idsInLegacyScenes</code> — nếu không, lượt khởi động ĐẦU TIÊN của bản mới thu hồi id widget trong cảnh <b>vĩnh viễn</b>, tức chính lượt nâng cấp làm mất dữ liệu.</li>
+<li><b>Khoá chung cũ → theo hồ sơ</b>: đọc theo hồ sơ, thiếu thì lùi về khoá chung cũ (một lần, rồi ghi sang hồ sơ) — không mất lựa chọn hiện có.</li>
+<li><b>Thanh trên</b>: <code>ProfileChip</code> thay <code>ProfileBar</code>; bộ chọn dùng khuôn dialog hiện có (<code>SettingsDialogs</code>). <code>KachiTopStrip</code> bỏ hàng nút preset; bài canh <code>TopStripSurfaceContractTest</code> cập nhật.</li></ul>
+<h2>5. Tasks (DAG)</h2><table><tr><th>#</th><th>Task</th><th>Chủ tệp</th></tr>
+<tr><td>T1</td><td>:core ProfileScope · PrefSnapshot · ScenesMigration · HomeUiState bỏ sceneBook/bootScene · WorkspaceRepository: bootProfile/setBootProfile/duplicateProfile/profileSnapshot API (mặc định) · test</td><td>core/</td></tr>
+<tr><td>T2</td><td>:app dữ liệu + gỡ cảnh: WorkspacePrefs (khoá theo hồ sơ mới + lùi khoá cũ + cn snapshot + boot_profile), PrefsWorkspaceRepository.switchProfile chụp–áp + bridge.reapplyAll, migration runner, gỡ SceneController/SettingsSceneSection/scene trong HomeViewModel/KachiHomeActivity/KachiHomeWiring/KachiAutostart, ProfileKeysWiringContractTest, HomeViewModelTest</td><td>WorkspacePrefs · PrefsWorkspaceRepository · HomeViewModel · KachiHomeActivity · KachiHomeWiring · KachiAutostart · ClusterNavBridge (reapplyAll) · Scene*</td></tr>
+<tr><td>T3</td><td>UI: ProfileChip + bộ chọn, KachiTopStrip bỏ preset, nhóm Hồ sơ (boot profile · thêm = bản sao · tóm tắt mở rộng), danh mục (bỏ home_scenes/home_scene_boot, thêm profiles_boot/profiles_add), SettingsDeps (bỏ scenes, thêm bootProfile), chuỗi VI/EN, bài canh</td><td>ProfileBar/ProfileChip · KachiTopStrip · SettingsSections · SettingsSectionsHome/Bars (câu U13) · SettingsPanel · SettingsCatalogEntries · SettingsDialogs · strings</td></tr>
+<tr><td>T5</td><td>R11: CAP 8 + thanh trên co/cắt + màn chọn theo nhóm (sau T3, cùng tệp KachiTopStrip/TopStripPicker/TopStrip.kt)</td><td>TopStrip.kt (:core) · KachiTopStrip · TopStripPicker · TopStripTest</td></tr>
+<tr><td>T6</td><td>R12: icon-only Apps/Cài đặt ở thanh trên + CapabilityKind.LAUNCHER (launcher_apps/launcher_settings) trên thanh nút — sau T2+T3</td><td>KachiTopStrip · LauncherCatalog/CapabilityCatalog (:core) · DockSelection · ControlDockView · ControlTileFactory · DrawerController (bộ chọn) · KachiHomeWiring (nối)</td></tr>
+<tr><td>T4</td><td>Consolidate: 5 module 0 đỏ · ảnh máy ảo (khi owner không dùng) · senior review · scan · 1.47</td><td>—</td></tr></table>
+<h2>6. Verification</h2><ul><li>V-unit 5 module 0 đỏ; V-mig: fixture cảnh thật (định dạng SceneBook.encode hiện tại) → hồ sơ đúng tên/đúng nội dung; V-switch: chuyển hồ sơ đổi chủ đề + biển báo + phím vô-lăng, đọc lại prefs ClusterNav [ĐO]; V-emu: thanh trên không còn nút bố cục, chip hồ sơ mở bộ chọn.</li></ul>
+<h2>7. Open Questions</h2><ul><li>OQ1. Đổi hồ sơ bằng phím vô-lăng (qua bộ gán phím hiện có) — làm sau nếu owner muốn.</li><li>OQ2. <b>ĐÃ CHỐT (Pass 1 review, 2026-09-14): <code>cast_enabled</code> theo XE.</b> Lý do là an toàn, không phải sở thích — mọi cổng đọc khoá đều LIVE (<code>ClusterNavLaneWidget.kt:110</code> nhịp thông báo · <code>NavRepository.kt:215</code> mỗi khung · <code>FloatingBubbleService.kt:170</code> mỗi lượt start), nên đổi giá trị mà không mở/đóng projection cho ra cụm <b>hai chủ</b>: bật→tắt ⇒ <code>decide()</code> chuyển GATED_CAST → ASSERT và op 39 ghi đè lên cụm trong khi phiên chiếu vẫn chạy; tắt→bật ⇒ HUD thôi ghi mặt cụm mà không có phiên chiếu nào thay chỗ ⇒ cụm trống. Còn áp THẬT (<code>setCastEnabled</code>) thì một cú chạm chip hồ sơ làm cụm trước mặt người lái tối đi/sáng lên. <b>Mở lại theo hồ sơ</b> khi có đường áp gác theo *phiên chiếu không chạy* — owner quyết, backlog <code>S4-OQ2</code>.</li></ul>
+<h2>8. References</h2><ul><li>docs/specs/kachi-scenes-and-widgets.html (P7/P6 — phần cảnh bị thay thế) · kachi-settings-ia-v2.html §4.5 (5 nút bố cục ở thanh trên — bị thay) · docs/PROJECT-BACKLOG.md S4/U13</li></ul>
+<h2>9. Nhật ký triển khai</h2>
+<h3>T1 — <code>:core</code> thuần (2026-09-14)</h3>
+<p class="muted">Chủ tệp: <code>ProfileScope.kt</code> · <code>PrefSnapshot.kt</code> · <code>ScenesMigration.kt</code> · <code>HomeUiState.kt</code> · <code>WorkspaceRepository.kt</code> · <code>AppWidgetIds.kt</code> · <code>ProfileNames.kt</code> + test của chúng. Không chạm <code>:app</code>.</p>
+<ul>
+<li><b>Ba lớp mới</b> (API đầy đủ ở §4): <code>ProfileScope</code> 243 dòng · <code>PrefSnapshot</code> 174 · <code>ScenesMigration</code> 166. Bài canh R3 là <code>ProfileScopeTest</code>: mọi <code>SettingsEntry.prefKey</code>, mọi khoá <code>SettingsCatalogClusterNav.KEYS</code> <b>và</b> mọi khoá <code>SettingsCatalog.NOT_SETTINGS</code> phải có phạm vi ≠ <code>UNKNOWN</code> ⇒ thêm mục mới mà quên xếp loại là đỏ tại chỗ khai.</li>
+<li><b>Sinh bằng mã, không chép tay</b> (đã có bài canh riêng cho từng cái): <code>slot_*</code> theo <code>WorkspaceState.SLOT_CAP</code> · hậu tố ảnh chụp theo <code>CLUSTERNAV_KEYS</code> · bảng ảnh chụp = <code>SettingsCatalog.CLUSTERNAV_KEYS</code> − DEVICE − TRANSIENT − khoá launcher đã sở hữu. Thêm bài canh <em>"khoá theo xe không bao giờ nằm trong hậu tố theo hồ sơ"</em> — nếu lọt, xoá một hồ sơ sẽ xoá luôn lựa chọn của cả xe.</li>
+<li><b><code>HomeUiState</code></b>: bỏ <code>scenes: SceneBook</code>; thêm <code>bootProfile: String?</code> (<code>null</code> = hồ sơ gần nhất). <b><code>WorkspaceRepository</code></b>: bỏ <code>sceneBook()</code>/<code>setSceneBook()</code>; thêm ba cổng có thân mặc định — <code>bootProfile(): String?</code> · <code>setBootProfile(name: String?)</code> · <code>duplicateProfile(name: String): HomeUiState</code> (mặc định uỷ quyền <code>addProfile</code>). Chữ ký wallpaper/theme/units/lang/autostart giữ nguyên. [ĐO] T3 đã gọi đúng ba cổng này (<code>HomePanels.kt</code>, <code>SettingsPanel.kt</code>) ⇒ khớp, không phải sửa.</li>
+<li><b><code>ProfileNames.summary</code></b> mở rộng: <code>summary(preset, filledSlots, theme: ThemeMode? = null, autostart: Boolean? = null)</code>. <code>null</code> = <b>chưa biết</b> (khác "biết và bằng mặc định") ⇒ không bịa chữ nào; <code>autostart = false</code> cũng không in gì (thêm <em>"No auto-start"</em> vào mọi thẻ chỉ làm loãng). Ba bài cũ giữ nguyên vì tham số là tuỳ chọn.</li>
+<li><b>Chệch có chủ ý so với giao việc</b>: <code>SceneBook.kt</code> + <code>SceneBookTest</code> <b>giữ lại</b>, chỉ gắn <code>@Deprecated("S4 · R1 …")</code> (kể cả <code>withScene</code>) — <code>:app</code> còn 3 chỗ tham chiếu (<code>HomeViewModel</code>, <code>PrefsWorkspaceRepository</code>, <code>SceneWiringContractTest</code>) nên T2 xoá cả cụm trong một lượt. Đổi lại, <code>:core</code> <b>không còn phụ thuộc</b> <code>SceneBook</code>: <code>AppWidgetIds</code> đã chuyển sang <code>ScenesMigration.parse</code> ⇒ T2 xoá được tệp mà không phải sửa lớp nào khác.</li>
+<li><b>Kết quả</b>: <code>:core:test</code> — 46 bài MỚI (<code>ProfileScopeTest</code> 17 · <code>ScenesMigrationTest</code> 17 · <code>PrefSnapshotTest</code> 12) + <code>ProfileNamesSummaryTest</code> 3→5 + <code>AppWidgetIdsTest</code> viết lại khối cảnh (21 bài) — <b>0 đỏ</b> ở mọi tệp T1 chạm. Mọi tệp ≤ 500 dòng.</li>
+<li><b>Còn mở cho T2</b>: (1) <code>ProfileScope</code>/<code>PrefSnapshot</code>/<code>ScenesMigration</code> chưa có chỗ gọi ở <code>:app</code> (đúng kế hoạch — T2 nối); (2) <code>WorkspacePrefs.PROFILE_SUFFIXES</code> phải <b>đọc thẳng</b> <code>ProfileScope.LAUNCHER_SUFFIXES</code>, không viết lại danh sách; (3) thứ tự lượt nâng cấp: chạy <code>ScenesMigration</code> <b>TRƯỚC</b> lượt dọn rác widget đầu tiên, nếu không thì lưới an toàn <code>idsInLegacyScenes</code> là thứ duy nhất giữ id — nó chỉ đúng khi <code>widgetIdsOtherProfiles</code> thật sự đọc chuỗi <code>scenes</code> cũ; (4) R5 còn đòi liệt kê từng khoá có consumer sống + cách nó nhận đổi ([ĐO] từ source) — chưa làm ở T1.</li>
+</ul>
+<h3>T3 — UI <code>:app</code> (2026-09-14)</h3>
+<p class="muted">Chủ tệp: thanh trên · bộ chọn hồ sơ · nhóm Hồ sơ ở Cài đặt · danh mục mục hồ sơ · chuỗi VI/EN · bài canh liên quan. Không chạm <code>WorkspacePrefs</code> / <code>PrefsWorkspaceRepository</code> / <code>HomeViewModel</code> / <code>KachiHomeActivity</code> / <code>KachiHomeWiring</code> / <code>KachiAutostart</code> / <code>Scene*</code> (T1 · T2).</p>
+<h4>R7 — thanh trên</h4>
+<ul>
+<li><code>KachiTopStrip.kt</code>: gỡ cổng <code>onSelectPreset</code>, hàng <code>buildSegmented()</code> (5 icon <code>ic_layout_*</code>), bảng <code>presetCells</code> và <code>selectPreset()</code>. Không còn một tham chiếu <code>LayoutPreset</code> nào trong tệp.</li>
+<li>Avatar một-chữ-cái → <b>chip hồ sơ</b> <code>profileChip()</code>: vòng tròn chữ cái (<code>Sp.ICON_L</code>) + tên hồ sơ (<code>maxLines=1</code>, kẹp <code>Sp.LABEL_COL</code>, <code>…</code>), cả chip cao ≥ <code>Sp.TOUCH</code>, nền <code>KachiTheme.pill</code>. <code>setProfileInitial(name)</code> → <code>setProfile(name)</code> (đổi cả chữ cái, tên và <code>contentDescription</code>).</li>
+<li><code>ProfileBar.kt</code> <b>xoá</b> → <code>ProfileChip.kt</code>. <code>cycle()</code> (xoay vòng hồ sơ) và <code>addDialog()</code> (hộp thoại tạo thứ hai) đều bỏ; còn đúng <code>picker(onManage)</code> — danh sách hồ sơ (hồ sơ đang dùng có dấu <em>"· đang dùng"</em>) + mục cuối <em>"Quản lý hồ sơ…"</em>. Dùng lại <code>SettingsDialogs.pick</code>, không dựng <code>AlertDialog</code> thứ hai.</li>
+</ul>
+<h4>R8 — nhóm Hồ sơ tài xế + câu đầu nhóm</h4>
+<ul>
+<li><code>SettingsSections.profiles()</code>: thẻ hồ sơ (giữ nguyên tóm tắt U13 + luật ẩn nút Xoá) → <code>bootProfile()</code> (chipRow <em>"Gần nhất"</em> + từng hồ sơ, sentinel <code>__LAST__</code> ở tầng chip ↔ <code>null</code> ở tầng dữ liệu, khớp <code>WorkspaceRepository.bootProfile()</code> của T1) → <code>addProfile()</code> (nút <em>"Thêm hồ sơ (bản sao của «X»)"</em> → <code>SettingsDialogs.askName</code> điền sẵn <em>"Bản sao của «X»"</em> → <code>deps.onDuplicateProfile(name)</code>).</li>
+<li><code>kachi_home_profile_note</code> (dùng chung cho nhóm Màn hình chính và Thanh nút) mở rộng: <em>"Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền, khung hình khi chiếu lên cụm, và Giới thiệu — đều lưu cho hồ sơ «X»"</em>.</li>
+<li><code>SettingsSectionsHome</code>: bỏ lời gọi <code>SettingsSceneSection(...)</code>; nhóm Màn hình chính còn bố cục + hình nền. KDoc §4.5 (<em>"5 nút bố cục ở lại thanh trên"</em>) viết lại thành <em>"đây là bề mặt chọn bố cục DUY NHẤT"</em>.</li>
+</ul>
+<h4>Danh mục · SettingsDeps · chuỗi</h4>
+<ul>
+<li><code>SettingsCatalogEntries.kt</code> (<code>:core</code>): xoá <code>home_scenes</code> (khoá <code>scenes</code>), <code>home_scene_boot</code> (khoá <code>boot_scene</code>) và <code>home_scene_save</code>; thêm <code>profiles_boot</code> (khoá <code>boot_profile</code>, theo XE — R4) và <code>profiles_add</code> (không khoá).</li>
+<li><code>SettingsDeps</code>: bỏ <code>onAddProfile</code> và <code>scenes: SceneActions</code>; thêm <code>onDuplicateProfile(String)</code>, <code>bootProfile(): String?</code>, <code>onBootProfile(String?)</code>. <code>HomePanels</code> nối ba lambda đó với mặc định rỗng + <b>TODO S4·T2 nối</b> (T3 không sở hữu <code>KachiHomeWiring</code>).</li>
+<li>Chuỗi VI/EN: thêm <code>kachi_profile_chip_desc · _pick_title · _pick_active · _manage · _none · _copy_of · kachi_sec_boot_profile · kachi_row_boot_profile · kachi_profile_boot_last · kachi_boot_profile_note</code>; <code>kachi_profiles_add</code> nhận <code>%1$s</code>; xoá <code>kachi_profile_only_one · kachi_profile_name_hint · kachi_create</code> (chỗ gọi duy nhất là <code>ProfileBar</code>). Hai tệp cùng tập khoá, 0 khoá mồ côi, 0 chuỗi Việt trong <code>values-en/</code> (kiểm bằng script + <code>:app:processDebugResources</code> xanh).</li>
+</ul>
+<h4>Bài canh</h4>
+<ul>
+<li><code>TopStripSurfaceContractTest</code>: bảng cổng bỏ <code>onSelectPreset</code>; <code>thanh tren chi con ghi ben khoa active_profile</code> (assert đúng <code>{active_profile}</code> + không vượt <code>TOP_STRIP_ALLOWED_KEYS</code>); <b>mới</b> <code>thanh tren khong con mot mau LayoutPreset nao</code> (quét <code>LayoutPreset</code> · <code>ic_layout_</code> · <code>selectPreset</code> · <code>buildSegmented</code> ở cả <code>KachiTopStrip</code> lẫn <code>ProfileChip</code>, và đòi Cài đặt còn <code>deps.onPreset(</code>); <b>mới</b> <code>khong con duong xoay vong ho so - ProfileBar da xoa</code>.</li>
+<li><code>SettingsScreenWiringContractTest</code>: bài <code>5 nut bo cuc … O LAI</code> <b>đảo chiều</b> thành <code>5 nut bo cuc DA ROI thanh tren</code>; <code>avatar ho so…</code> → <code>chip ho so…</code>; <code>duong tao ho so CHI con o man Cai dat</code> viết lại quanh <code>ProfileChip.picker</code>; <code>chon bo cuc san chi co MOT duong</code> nay đòi <code>onSelectPreset</code> KHÔNG còn trong Activity; bỏ nguồn <code>SettingsSceneSection.kt</code>.</li>
+<li><code>SettingsCatalogControlContractTest</code>: bỏ ba hàng cảnh + nguồn <code>SettingsSceneSection</code>; thêm <code>profiles_boot → deps.onBootProfile(</code> và <code>profiles_add → deps.onDuplicateProfile(</code>.</li>
+<li><code>SettingsCoverageContractTest</code> <b>không đổi</b> — nó đối chiếu danh mục với khoá quét được từ mã, nên nó tự đỏ cho tới khi T2 gỡ <code>scenes</code>/<code>boot_scene</code> và thêm <code>boot_profile</code> vào <code>WorkspacePrefs</code>. Đó là đúng vai của nó.</li>
+</ul>
+<h4>Còn mở (việc của T2/T4)</h4>
+<ul>
+<li><b>T2 · KachiHomeActivity</b>: <code>profileBar = ProfileBar(this, viewModel)</code> → <code>ProfileChip(...)</code>; bỏ <code>onSelectPreset = …</code>; <code>onProfileTap = { profileChip.picker { panels.openSettings(SettingsGroup.PROFILES) } }</code>; <code>setProfileInitial(…)</code> → <code>setProfile(…)</code> (2 chỗ); bỏ <code>topStrip.selectPreset(presetLit)</code> (và <code>presetLit</code>); bỏ <code>onAddProfile = { profileBar.addDialog() }</code>.</li>
+<li><b>T2 · KachiHomeWiring</b>: bỏ tham số <code>onAddProfile</code> và <code>scenes</code>; truyền <code>onDuplicateProfile = { n -&gt; viewModel.duplicateProfile(n) }</code>, <code>bootProfile = { … }</code>, <code>onBootProfile = { … }</code> vào <code>HomePanels</code> (thay ba mặc định rỗng).</li>
+<li><b>T2 · chuỗi cảnh</b>: khi <code>SettingsSceneSection</code>/<code>SceneController</code> bị xoá, 22 khoá <code>kachi_sec_scenes · kachi_scenes_* · kachi_scene_*</code> (và <code>kachi_cancel</code> nếu không còn chỗ gọi) thành mồ côi ⇒ <code>LauncherI18nContractTest</code> đỏ; xoá ở CẢ <code>values/</code> và <code>values-en/</code>.</li>
+<li><b>T2/T4 · bài canh nhắc tên tệp cảnh</b>: <code>SettingsStackMarginContractTest</code> và <code>TypeScaleContractTest</code> liệt kê <code>SettingsSceneSection.kt</code> trong danh sách quét; <code>SceneWiringContractTest</code> xoá cả bài.</li>
+<li><b>T4 · <code>:core</code></b>: bỏ <code>"preset"</code> khỏi <code>SettingsCatalog.TOP_STRIP_ALLOWED_KEYS</code> + sửa KDoc của nó (T3 không sở hữu <code>SettingsCatalog.kt</code>), rồi đổi assert trong <code>TopStripSurfaceContractTest</code> về phép so bằng.</li>
+<li><b>T4 · máy ảo</b>: chưa chụp ảnh (owner đang dùng máy ảo). Cần xác nhận bằng mắt: thanh trên không còn hàng nút bố cục, chip hồ sơ hiện tên, chạm mở bộ chọn, và nhóm Hồ sơ có đủ ba phần.</li>
+</ul>
+<h3>T5 — R11: trần 8 · thanh trên tự co · màn chọn theo lĩnh vực (2026-09-14)</h3>
+<p class="muted">Chủ tệp: <code>core/…/launcher/TopStrip.kt</code> (+<code>TopStripTest</code>) · <code>app/…/KachiTopStrip.kt</code> · <code>app/…/TopStripPicker.kt</code> (+<code>TopStripWiringContractTest</code>) · khoá <code>kachi_topstrip_*</code> ở <code>strings_kachi.xml</code> VI/EN. Không chạm tệp của T2/T3.</p>
+<h4>(a) Trần 4 → 8, ghim ở <code>:core</code></h4>
+<ul>
+<li><code>TopStripConfig.CAP = 8</code>. Con số đi vào <b>ba</b> chỗ ở <code>:app</code> (câu chú thích màn chọn · câu nhắc "đầy rồi" · phép chia bề rộng của <code>fitChips</code>) nên nó ở <code>:core</code> và có bài khoá riêng — đổi trần phải là sửa đổi có chủ ý.</li>
+<li><b>Mặc định KHÔNG đổi</b>: vẫn đúng 3 chip của bản viết cứng cũ (bài canh đầu tiên của <code>TopStripTest</code> giữ nguyên). Nới trần không phải giấy phép đổi thứ owner đang thấy.</li>
+<li>Vì sao 8 chứ không 12 — [SUY] ở 1920px: phần còn lại cho hàng chip ≈ 1240dp ⇒ 8 chip ≈ <b>155dp/chip</b> (đủ cho <code>"Lốp TT · 2.4 bar"</code>, thừa cho <code>"82% · 418 km"</code>); 12 chip còn ≈ 103dp ⇒ phần lớn chip chỉ còn nhãn cụt. Trần nay là trần <b>đọc được</b>, không còn là trần <em>vừa khung</em>. <b>[ĐO] ảnh 8 chip thuộc T4</b> — chưa chụp.</li>
+</ul>
+<h4>(b) Thanh trên tự co, không tràn</h4>
+<ul>
+<li><b>Gốc của tràn</b>: thanh có một <code>View</code> đệm riêng mang <code>weight=1</code> còn hàng chip là <code>WRAP_CONTENT</code>. <code>LinearLayout</code> đo hàng chip <em>trước</em> ba vật bên phải ⇒ 8 chip ăn hết bề rộng và <em>Ứng dụng · Cài đặt · chip hồ sơ</em> bị ép/đẩy khỏi mép.</li>
+<li><b>Bản vá</b>: bỏ View đệm, hàng chip <b>chính là</b> phần co giãn (<code>LinearLayout.LayoutParams(0, WRAP, 1f)</code>, chip căn <code>END</code>). Mọi vật khác lấy bề rộng tự nhiên trước ⇒ <code>chipRow.width</code> <b>chính là</b> công thức của R11 (<code>strip − đồng hồ/ngày − chip hồ sơ/Apps/Cài đặt − lề</code>) do bố cục tự tính. Không tự cộng trừ lại: cộng tay là đọc <code>width</code> của những view <em>có thể đã bị ép</em>, tức đo lại chính triệu chứng.</li>
+<li><code>fitChips()</code>: <code>cap = room/n − dp(Sp.S)</code> (lề mỗi chip), sàn <code>dp(Sp.ICON_M)</code>; áp <code>maxWidth</code> cho từng chip. Chip vốn đã <code>maxLines=1</code> + <code>ellipsize=END</code>, icon giữ nguyên. Chia <b>đều</b> chứ không theo độ dài chữ: chia theo chữ thì mép chip nhảy mỗi giây khi số đổi.</li>
+<li><b>Không cấp phát trong vòng tick</b> (giữ bản vá P2-9): <code>fitChips</code> là số học thuần; gọi khi <em>số chip</em> đổi và khi bề rộng hàng đổi (<code>addOnLayoutChangeListener</code>, có so cũ↔mới nên không tự kích lại chính mình); chốt <code>cap == chipCap</code> chặn <code>requestLayout()</code> thừa.</li>
+<li>Dọn kèm: <code>KachiTopStrip.conv()</code> là <b>bản sao chết</b> của <code>TopStripChips.conv</code> ở <code>:core</code>, không có chỗ gọi nào — xoá (CLAUDE.md §8).</li>
+</ul>
+<h4>(c) Màn chọn bày ĐỦ theo lĩnh vực</h4>
+<ul>
+<li><code>:core</code> thêm <code>ChipSection(on, domain, picks, open)</code> + <code>TopStripConfig.picks(cfg)</code>; <code>shown()</code> <b>xoá</b> (chỗ gọi duy nhất chuyển sang <code>picks</code> — không để hàm mồ côi). Khối <em>"đang bật"</em> đứng đầu theo đúng thứ tự chip trên thanh, rồi mỗi <code>Domain</code> một khối; mục đang bật bị <b>trừ khỏi</b> khối lĩnh vực (một mã hai ô ⇒ <code>tiles[id]</code> bị ghi đè — đúng lỗi RW0).</li>
+<li>Mã đã ẩn khỏi bộ chọn (<code>HIDDEN_FROM_PICKER</code>) mà người dùng đang bật vẫn có ô ở khối <em>"đang bật"</em> (tra thẳng <code>CapabilityCatalog.pick</code>) — giữ nguyên tính chất U6: chip đặt từ bản trước phải còn đường gỡ.</li>
+<li><code>TopStripPicker</code>: mỗi <code>Domain</code> là một <code>rows.subHeader</code> bấm mở/đóng (▾/▸ + số mục, đích chạm ≥ <code>Sp.TOUCH</code>); khối <em>"đang bật"</em> mang con số <b>N/8</b> (<code>kachi_topstrip_count</code>) và không gấp. Dấu <em>"chưa kiểm trên xe"</em> vẫn qua <code>PickerBadge</code> như ngăn kéo; dòng đếm "chưa kiểm" tính trên <b>toàn</b> danh sách.</li>
+<li><b>Chọn cách gấp, và vì sao</b> (R4 — mỗi nhóm ≤ 2 màn cuộn): bày phẳng 123 ô là ~31 hàng, một mình mục này đã dài gấp đôi cả nhóm. Ô <b>tìm kiếm</b> cần bàn phím giữa lúc lái và không trả lời được câu <em>"có những gì"</em>; <b>phân trang</b> làm mất dấu vị trí. Gấp theo lĩnh vực giữ được cả hai: 9 dòng tiêu đề kèm số mục cho cái nhìn tổng, mở đúng chỗ cần. Mặc định mở lĩnh vực <b>đang có chip trên thanh</b> (luật ở <code>:core</code>, kiểm off-car) ⇒ với cấu hình mặc định là Khí hậu + Năng lượng ≈ 40 ô ≈ 10 hàng. <b>Cần mắt ở T4</b>: nếu ảnh cho thấy vẫn dài quá, lùi về "mặc định gấp hết" là đổi một dòng ở <code>picks()</code>.</li>
+<li><b>Bỏ nút "Thêm chip khác…"</b> (đã hết nghĩa — danh sách nó bày nay nằm thẳng trên trang, cùng <code>toggle</code>): xoá <code>openMore()</code> và ba khoá <code>kachi_topstrip_more/_on/_none</code> ở <b>cả hai</b> tệp tài nguyên (để lại = khoá mồ côi ⇒ <code>LauncherI18nContractTest</code> đỏ). Thêm <code>kachi_topstrip_count</code> VI/EN, cùng tham số định dạng.</li>
+</ul>
+<h4>Bài canh</h4>
+<ul>
+<li><code>TopStripTest</code> (<code>:core</code>) 10 → <b>14</b> bài: trần = 8 + mặc định vẫn 3 chip · màn chọn bày <b>đủ</b> (tổng ô = <code>choices()</code>, và mỗi mã đúng một ô) · khối "đang bật" đứng đầu đúng thứ tự chip · mặc định mở đúng lĩnh vực đang có chip · mã đã ẩn vẫn gỡ được. Bài <em>"hai ô trên cùng một màn chọn…"</em> giữ nguyên (ca PM2.5 nay <b>nặng hơn</b>: hai ô đó cùng lĩnh vực nên đứng cạnh nhau).</li>
+<li><code>TopStripWiringContractTest</code> (<code>:app</code>, quét mã): <em>"đường đặt datum bất kỳ"</em> đổi phép kiểm từ <em>"có nút Thêm chip khác không"</em> sang <em>"trang có dựng từ <code>picks()</code> không"</em> + cấm <code>openMore</code>/hộp thoại phẳng mọc lại; bài mới <em>"thanh trên không tràn"</em> khoá đúng ba mảnh: hàng chip là phần co giãn · trần bề rộng đến từ <b>phép chia</b> · chữ vượt trần thì cắt <code>…</code>.</li>
+</ul>
+<h4>Trạng thái &amp; việc còn mở</h4>
+<ul>
+<li><code>:core:test</code> <b>1506 bài, 0 đỏ</b> (TopStripTest 14/14).</li>
+<li><code>:app</code> <b>chưa compile được</b> — <code>:app:compileDebugKotlin</code> đỏ ở <code>KachiHomeActivity</code> · <code>KachiHomeWiring</code> · <code>PrefsWorkspaceRepository</code> (T2 đang dở: <code>ProfileBar</code>/<code>SceneBook</code> đã xoá, chỗ gọi chưa sửa). <b>Không lỗi nào ở ba tệp của T5</b> trong cùng lượt phân tích, và tài nguyên biên dịch xanh (<code>R.string.kachi_topstrip_count</code> giải được). Bài canh <code>:app</code> của T5 <b>chưa chạy lần nào</b> ⇒ T4 phải chạy lại sau khi T2 xanh.</li>
+<li>T4 · máy ảo: [ĐO] ảnh thanh trên <b>8 chip</b> (kiểm chip cắt <code>…</code> và ba vật bên phải còn nguyên mép) + ảnh màn chọn chip (độ dài trang với hai lĩnh vực mở sẵn).</li>
+</ul>
+<h3>T2 — <code>:app</code> dữ liệu + gỡ cảnh + nối dây (2026-09-14)</h3>
+<p><b>Chủ tệp</b>: <code>WorkspacePrefs</code> · <code>WorkspacePrefsProfile</code> (mới) · <code>PrefsWorkspaceRepository</code> ·
+<code>ClusterNavBridgeReapply</code> (mới) · <code>HomeViewModel</code> · <code>KachiHomeActivity</code> · <code>KachiHomeWiring</code> ·
+<code>Scene*</code> (xoá) + bài canh của chúng. Không chạm <code>KachiTopStrip</code>/<code>TopStripPicker</code>/<code>TopStrip.kt</code>/
+<code>ControlDockView</code>/<code>ControlTileFactory</code>/<code>DockSelection</code> (T5/T6).</p>
+
+<h4>Khoá theo hồ sơ — <code>WorkspacePrefs</code> (451 dòng) + <code>WorkspacePrefsProfile.kt</code> (223)</h4>
+<p><code>PROFILE_SUFFIXES</code> nay là <b>một dòng</b>: <code>= ProfileScope.LAUNCHER_SUFFIXES</code> (không <code>+</code>, không
+<code>filter</code> — mọi phép biến đổi ở đây là một danh sách thứ hai mà <code>ProfileScopeTest</code> không nhìn thấy). Phép ghép tiền tố
+gom về <b>đúng một</b> hàm <code>keyOf(profile, suffix)</code>; <code>key(suffix)</code> chỉ là <code>keyOf(activeProfile(), …)</code>.
+<code>theme_mode</code> · <code>unit_prefs</code> · <code>wallpaper_prefs</code> · <code>launcher_autostart</code> đọc qua
+<code>profileString</code>/<code>profileBoolean</code>: chưa có khoá theo hồ sơ ⇒ <b>lùi khoá chung cũ một lần rồi ghi sang hồ sơ</b>, và
+<b>KHÔNG xoá khoá cũ</b> — xoá ngay sau hồ sơ đầu tiên thì hồ sơ thứ hai lại về mặc định, tức đúng cái lỗi đang chữa chỉ chậm một nhịp.
+<code>lang</code> cùng luật, khác chỗ lưu: nguồn là <code>&lt;hồ sơ&gt;__lang</code>, <code>clusternav_lang</code> chỉ là <b>bản phát</b> qua
+<code>broadcastLang()</code> (một chiều, một chỗ ghi duy nhất).</p>
+<p>Ảnh chụp ClusterNav: <code>snapshotClusterNav(profile)</code> đọc <code>sp.all</code> của từng tệp trong
+<code>ProfileScope.CLUSTERNAV_KEYS</code> → <code>associateWith</code> (<b>giữ cả khoá VẮNG dưới dạng <code>null</code></b>) →
+<code>PrefSnapshot.encode</code> → khoá <code>&lt;hồ sơ&gt;__cn__&lt;tệp&gt;</code>; <code>applyClusterNav(profile)</code> giải mã rồi ghi
+<b>đúng kiểu</b> vào tệp prefs thật, <code>null</code> ⇒ <code>remove</code>, hồ sơ chưa có ảnh ⇒ giữ nguyên.
+⚠ Nửa dễ quên nhất là khoá vắng: bỏ qua nó thì A→B→A làm A thừa hưởng vĩnh viễn một lựa chọn của B, không có đường quay lại.</p>
+
+<h4>Lượt đổi hồ sơ (R5) — thứ tự LÀ hợp đồng</h4>
+<p><code>switchProfile</code>: chụp A → <code>setActiveProfile(B)</code> → áp B → <code>broadcastLang()</code> →
+<code>bridge.reapplyAll()</code> → <code>load()</code>. Bài canh <code>doi ho so chup A truoc, dat con tro, roi ap B, roi goi lai applier</code>
+so <b>vị trí</b> chứ không chỉ "có gọi không". <code>duplicateProfile</code> chép mọi hậu tố + ảnh cn từ hồ sơ đang dùng trong
+<b>một <code>Editor</code></b> (chụp ảnh nguồn TRƯỚC khi chép — ảnh cũ thì bản sao khác bản gốc ngay lúc ra đời).
+Lượt nâng cấp <code>migrateScenesOnce()</code> chạy ở <code>init</code> của repository (trước lượt <code>load()</code> đầu), cũng
+<b>một <code>Editor</code></b> cho cả dữ liệu + <code>boot_profile</code> + dấu + xoá khoá cảnh cũ — tách hai lượt ghi thì một lần chết máy
+giữa chừng sẽ nhân bản cảnh thành <i>"Đi làm 2"</i>, <i>"Đi làm 3"</i>… mỗi lần khởi động.</p>
+<p>⚠ Thứ tự so với lượt dọn rác widget: <code>widgetIdsOtherProfiles</code> <b>vẫn đọc</b> <code>&lt;hồ sơ&gt;__scenes</code>
+(<code>LEGACY_SCENES</code>) — đó là thứ DUY NHẤT giữ id widget của cảnh trước khi chuyển xong; sau lượt chuyển, khoá đã bị xoá nên phép đọc
+trả <code>null</code> và vế tự tắt.</p>
+
+<h4>R5 — bảng consumer/khoá <span class="pill">[ĐO] đọc source 2026-09-14</span></h4>
+<p><b>Phát hiện nền</b>: <b>0 chỗ nào</b> trong <code>app/src/main</code> · <code>core/</code> · <code>car-integration/</code> ·
+<code>vehicle-contracts/</code> · <code>offcar-planner/</code> đăng ký <code>registerOnSharedPreferenceChangeListener</code> ⇒ ghi prefs xong là
+<b>đúng trên đĩa mà không có gì đang chạy biết</b>. Đó là lý do <code>reapplyAll</code> tồn tại.</p>
+<table>
+<tr><th>Khoá</th><th>Consumer sống (file:line)</th><th>Đọc lúc nào</th><th>reapply gọi gì</th></tr>
+<tr><td><code>enabled</code></td><td><code>NavNotificationListener.kt:167</code> · <code>NavAccessibilityService.kt:118</code></td><td>mỗi thông báo / mỗi phím</td><td><code>speedSign.onMasterEnabled(...)</code> — <b>cố ý bỏ</b> khúc xin quyền của <code>setNavEnabled</code> (dadb, chờ ~31 s, có thể bật hộp thoại USB debugging)</td></tr>
+<tr><td><code>nav_cluster_screen_mode</code></td><td><code>NavigationHudOwner.kt:87</code></td><td>mỗi khung HUD</td><td><code>NavRepository.reapplyClusterMode(app)</code></td></tr>
+<tr><td><code>marquee</code></td><td><code>ClusterBroadcaster.kt:129</code></td><td>mỗi khung + nhịp tim</td><td>— (tự áp ở nhịp kế)</td></tr>
+<tr><td><code>badge_enabled</code></td><td><code>SpeedBadgeOverlay.kt:185</code></td><td>mỗi lượt hiện badge</td><td><code>speedSign.onBadgeEnabledChanged()</code> — <b>cố ý bỏ</b> <code>VietMapAutostartService.startForAppOpen</code> (nó MỞ một app)</td></tr>
+<tr><td><code>show_upcoming_badge</code></td><td><code>NavNotificationListener.kt:227</code></td><td>mỗi thông báo</td><td><code>speedSign.onUpcomingBadgeEnabledChanged()</code></td></tr>
+<tr><td><code>show_alert_chip</code></td><td><code>NavNotificationListener.kt:247</code></td><td>mỗi thông báo</td><td><code>speedSign.onAlertChipEnabledChanged()</code></td></tr>
+<tr><td><code>badge_size_dp</code> · <code>badge_center_x/y</code></td><td><code>SpeedBadgeOverlay.kt:286,288</code></td><td>mỗi lượt hiện/làm tươi</td><td><code>speedSign.debugRefreshBadgeLayout()</code></td></tr>
+<tr><td><code>vm_bubble_x/y</code></td><td><code>VmOverlayPosition.kt:82-90</code> → broadcast sang <code>vn.vietmap.live</code></td><td>lúc ghi + lúc bong bóng dựng lại</td><td><code>VmOverlayPosition.applyOnOpen(app)</code> (tự no-op khi Cast chưa live)</td></tr>
+<tr><td><code>vm_bubble_enabled</code></td><td><code>VietMapAutostart.kt:139</code></td><td>mỗi quyết định autostart</td><td>— (bật thì đường cũ mở app; tắt <b>không có</b> đường "ẩn" nào — VietMap tự giữ cửa sổ của nó)</td></tr>
+<tr><td><code>voicekey_enabled</code> · <code>voicekey_bindings</code></td><td><code>NavAccessibilityService.kt:91,95</code></td><td>mỗi phím vật lý</td><td>— (tự áp)</td></tr>
+<tr><td><code>voicekey_custom_buttons</code></td><td><code>ClusterNavBridgeKeys.kt:159,162</code></td><td>chỉ lúc màn Cài đặt dựng</td><td>— (<b>không có consumer sống</b>)</td></tr>
+<tr><td><code>seat_comfort_enabled</code> · <code>seat_comfort_mode</code> · <code>seat_level_0</code></td><td><code>SeatComfortApplier.kt:56,87,108</code></td><td>mỗi lượt apply</td><td><code>SeatComfortApplier.applyNow(app)</code> (tự gate theo công tắc chính)</td></tr>
+<tr><td><code>pm25_filter_enabled</code></td><td><code>Pm25FilterApplier.kt:181,185</code> (vòng lọc đang chạy)</td><td>boot + vòng poll</td><td><code>Pm25FilterApplier.enable/disable(app)</code> — phải gọi CẢ nhánh tắt, không thì vòng lọc chạy tiếp theo hồ sơ vừa rời</td></tr>
+<tr><td><code>recirc_on_start_enabled</code></td><td><code>RecircApplier.kt:46</code> ← <code>BootSetupService.kt:97</code></td><td>một lần mỗi lần nổ máy</td><td>— <b>cố ý</b>: <code>applyNowAsync</code> KHÔNG gate (<code>RecircApplier.kt:56-58</code>) ⇒ gọi nó là bật quạt lấy gió trong mỗi lần đổi hồ sơ</td></tr>
+<tr><td><code>headless_autostart</code></td><td><code>RebindReceiver.kt:42,64</code></td><td>một lần mỗi BOOT_COMPLETED</td><td>— (không có dịch vụ nào để báo)</td></tr>
+<tr><td><code>cast_enabled</code></td><td><code>ClusterNavLaneWidget.kt:111</code> · <code>NavRepository.kt:215</code> · <code>VmOverlayPosition.kt:69</code></td><td>nhịp thông báo / mỗi khung</td><td>— <b>cố ý</b>: <code>setCastEnabled</code> mở/đóng projection + start/stop <code>FloatingBubbleService</code> ⇒ cụm trước mặt người lái tối đi/sáng lên vì một cú chạm chip. <b>Backlog S4-OQ2</b>. <b>↪ Pass 1 review (§10) đã chuyển khoá này sang theo XE</b> — hàng này giữ lại làm lịch sử của T2.</td></tr>
+<tr><td><code>split_ratio_left_pct</code></td><td><code>SimpleCastCoordinator.kt:304,449,605</code></td><td>mỗi lượt dispatch cast</td><td>— (tự áp)</td></tr>
+<tr><td>5 khoá <code>autostart_*</code></td><td><code>FloatingBubbleService.kt:422-423,448,462-463</code></td><td>MỘT lần ở <code>onCreate</code></td><td>— <b>cố ý</b>: "tự chiếu <i>khi nổ máy</i>" mà áp lúc đổi hồ sơ là bung một app lên cụm xe đang chạy</td></tr>
+<tr><td><code>theme_choice</code></td><td><code>ThemeMode.kt:44</code> ← <code>attachBaseContext</code> của 4 Activity</td><td>mỗi lần Activity dựng</td><td>— (KDoc <code>ThemeMode.kt:47</code>: caller phải tự <code>recreate()</code>; lần mở sau đã đúng)</td></tr>
+</table>
+<p class="warn">[CHƯA BIẾT] <code>seat_level_1..3</code> <b>chưa theo hồ sơ được</b>: <code>SettingsCatalogClusterNav.KEYS</code> chỉ khai
+<code>seat_level_0</code> (ba ghế kia nằm dưới tiền tố dựng động), mà <code>ProfileScope.CLUSTERNAV_KEYS</code> sinh <b>bằng mã</b> từ bảng đó
+⇒ ảnh chụp chỉ mang ghế 0. Không vá lén ở <code>WorkspacePrefsProfile</code> (nới tay ở đó là mở lại đúng cái cửa <code>ProfileScope</code>
+sinh ra để đóng) — <b>backlog S4-SEAT</b>.</p>
+
+<h4>Gỡ cảnh (R1)</h4>
+<p>Xoá: <code>SceneController.kt</code> · <code>SettingsSceneSection.kt</code> · <code>SceneWiringContractTest.kt</code> ·
+<code>SceneBook.kt</code> + <code>SceneBookTest.kt</code> (<code>:core</code>) · 4 intent cảnh trong <code>HomeViewModel</code> ·
+<code>sceneBook/setSceneBook</code> ở cả interface lẫn bản thật · 23 chuỗi <code>kachi_scene*</code>/<code>kachi_sec_scenes</code>/
+<code>kachi_cancel</code> ở <b>cả hai</b> tệp strings · 5 icon <code>ic_layout_*.xml</code> (mồ côi sau khi T3 gỡ dải nút bố cục —
+<code>IconStyleContractTest</code> bắt đúng ngay).</p>
+<p>⚠ <b>Không mất bài học</b>: bài <i>"không loại ô nào mã hoá ra ký tự ngăn cấu trúc của chuỗi cảnh"</i> chuyển từ
+<code>SceneBookTest</code> sang <code>ScenesMigrationTest</code> (thêm <code>ScenesMigration.RESERVED</code>). Chuỗi cảnh còn nằm trên đĩa xe
+<b>mãi mãi</b>, nên luật đó vẫn phải sống — chỉ khác là nay mất trong lượt chuyển đổi thay vì lúc gọi cảnh.</p>
+
+<h4>Nối dây T3 + hai bài canh đảo chiều</h4>
+<p><code>KachiHomeActivity</code>: <code>ProfileBar</code> → <code>ProfileChip</code>; <code>onProfileTap = { profileChip.picker { panels.openSettings(SettingsGroup.PROFILES) } }</code>;
+<code>setProfileInitial</code> → <code>setProfile</code> (2 chỗ); bỏ <code>onSelectPreset</code> + <code>topStrip.selectPreset(presetLit)</code>;
+<code>prev.scenes</code> → <code>prev.bootProfile</code> trong <code>render</code>. <code>KachiHomeWiring</code>: ba lambda thật
+(<code>onDuplicateProfile</code> → <code>viewModel.duplicateProfile</code>; <code>bootProfile</code> → <code>viewModel.uiState.value.bootProfile</code>;
+<code>onBootProfile</code> → <code>viewModel.setBootProfile</code>).</p>
+<p><b>Chệch có chủ ý so với giao việc</b>: giao việc ghi <code>bootProfile → repository.bootProfile()</code>, T2 đi <b>qua ViewModel/state</b>.
+Lý do: <code>load()</code> đã nạp <code>bootProfile</code> vào <code>HomeUiState</code>, nên đọc thẳng repository ở <code>KachiHomeWiring</code>
+là mở <b>đường đọc bền thứ hai ở tầng UI</b> ([SOÁT P1-1]) và hai bề mặt có thể lệch nhau. Bài canh của T3 chỉ đòi hai cổng có mặt +
+<code>override fun bootProfile/setBootProfile</code> ở repository — cả ba đều đúng, và <code>render</code> nay dựng lại trang Cài đặt khi
+<code>bootProfile</code> đổi.</p>
+<p>Hai bài canh <b>đảo chiều</b> (giữ lịch sử, không viết bài mới):
+<code>GridSeamGuardTest.o preset sang di qua nguon duy nhat</code> chuyển chỗ quét từ <code>render()</code> sang
+<code>SettingsSectionsHome</code> + đòi <code>topStrip.selectPreset(</code> <b>bằng 0</b>;
+<code>LauncherLocaleContractTest</code> từ <i>"cấm khoá <code>lang</code> thứ hai"</i> thành <i>"một NGUỒN + một BẢN PHÁT, một chiều"</i>
+(1 chỗ ghi <code>ClusterNavLang.setChoice</code> = <code>broadcastLang</code>; 1 chỗ đọc ngược = lượt lùi một lần; <code>switchProfile</code>
+phải phát lại).</p>
+
+<h4>Kết quả</h4>
+<ul>
+<li><b>5 module 0 đỏ</b>: <code>./gradlew test testDebugUnitTest --continue</code> xanh; <code>:app:assembleDebug</code> xanh (tài nguyên sau khi xoá 23 chuỗi + 5 icon).</li>
+<li><code>:core:test</code> — vá 4 bài ghim số do danh mục T3 đổi (<code>SettingsCatalogTest</code> ×2 · <code>LangCoverageTest</code> ×2: 55→<b>54</b> mục, 303→<b>302</b> nhãn = −3 mục cảnh +2 mục hồ sơ).</li>
+<li><code>:app</code> — 35 lỗi compile của T3 về <b>0</b>; 7 bài đỏ đã vá; <code>ProfileKeysWiringContractTest</code> <b>10/10</b> (3 bài MỚI khoá ba bài học: thứ tự chụp–áp · lượt chuyển chạy ở <code>init</code> · ảnh chụp giữ khoá vắng + giữ kiểu).</li>
+<li>Mọi tệp ≤ 500 dòng (<code>KachiHomeActivity</code> 497 · <code>WorkspacePrefs</code> 451). §8: mọi hàm mới có ≥1 chỗ gọi (grep đã chạy).</li>
+</ul>
+
+<h4>Còn mở (việc của T4/owner)</h4>
+<ul>
+<li><b>S4-OQ2</b> (backlog): đổi hồ sơ KHÔNG tự bật/tắt phiên chiếu đang chạy — owner chốt (a) giữ · (b) áp ngay · (c) hỏi xác nhận. <b>↪ Pass 1 review chốt (a′): khoá về theo XE</b> (§7 OQ2 · §10) — an toàn nhất trong ba, và mở lại được khi có đường áp gác theo phiên chiếu.</li>
+<li><b>S4-SEAT</b> (backlog): <code>seat_level_1..3</code> chưa theo hồ sơ (cần khai khoá đi kèm ở <code>SettingsCatalogClusterNav</code>).</li>
+<li><b>Chưa đo trên máy/xe</b> — mọi kết luận trên là [ĐO] <b>từ source</b>, không phải từ một lượt chạy thật. V-switch (đổi hồ sơ đổi chủ đề + biển báo + phím vô-lăng, đọc lại prefs ClusterNav) và V-mig (fixture cảnh thật → hồ sơ) <b>chưa chạy</b>: owner đang dùng máy ảo.</li>
+<li><code>reapplyAll</code> chạy trên <b>luồng gọi</b> (main). Mọi applier bên trong tự đẩy việc nặng sang thread nền (<code>SeatComfortApplier</code>/<code>Pm25FilterApplier</code> tự <code>Thread{}</code>), nhưng chưa đo độ trễ thật của cú chạm đổi hồ sơ trên xe.</li>
+</ul>
+
+<h3>T6 — R12: hai nút thanh trên còn ICON · <code>CapabilityKind.LAUNCHER</code> trên thanh nút (2026-09-14)</h3>
+<p class="muted">Chủ tệp: <code>core/…/LauncherActions.kt</code> (mới) · <code>LauncherCatalog.kt</code> · <code>CapabilityPicker.kt</code> ·
+<code>TopStrip.kt</code> (chỉ KDoc) · <code>app/…/KachiTopStrip.kt</code> · <code>KachiTheme.kt</code> · <code>ControlTileFactory.kt</code> ·
+<code>ControlTileState.kt</code> (tách ra) · <code>ControlDockView.kt</code> · <code>AppDrawer.kt</code> · <code>KachiHomeWiring.kt</code> ·
+<code>KachiHomeActivity.kt</code> (1 dòng). Không chạm tệp dữ liệu của T2 hay nhóm Cài đặt của T3.</p>
+
+<h4>(a) Thanh trên: "Ứng dụng" · "Cài đặt" chỉ còn icon</h4>
+<ul>
+<li><code>pill(text, primary, onClick)</code> → <code>pill(icon, descRes, primary, onClick)</code>, <code>TextView</code> → <code>ImageView</code>.
+Hình lấy qua bảng tra dùng chung <code>KachiTheme.iconRes</code>: <code>ic-apps</code> → <code>ic_grid.xml</code> (⊞ bốn ô) ·
+<code>ic-settings</code> → <code>ic_sys_g.xml</code> (bánh răng, nét trắng 1.6 đúng chuẩn bộ icon). <b>Không vẽ hình mới</b> —
+<code>ic_menu_config.xml</code> cũng là bánh răng nhưng giữ màu xanh thương hiệu (nó vẽ thẳng cho bảng con nút nổi Cast, không qua bước tint)
+nên dùng nó sẽ cho một ô xanh lạc giữa thanh.</li>
+<li><b>Chữ không mất, nó đổi vai</b>: <code>contentDescription</code> lấy <b>đúng hai khoá cũ</b> <code>kachi_pill_apps</code>/<code>kachi_pill_settings</code>
+(VI+EN đã có sẵn) thay vì đẻ thêm khoá <code>*_desc</code> — hai chuỗi cho cùng một cái tên sẽ lệch nhau ở đúng lần ai đó sửa một chỗ.
+Nhờ giữ khoá, ba bài canh cũ đọc theo mã khoá (<code>TopStripSurfaceContractTest</code> · <code>SettingsScreenWiringContractTest</code> ·
+<code>OpenAppWiringContractTest</code>) vẫn đúng nguyên ý mà không phải nới.</li>
+<li><b>Đích chạm phải khai theo CẢ HAI chiều</b>: T5 mới nới pill lên <code>Sp.TOUCH</code> bằng <code>minimumHeight</code>, nhưng bỏ chữ thì
+bề <b>ngang</b> tụt xuống cỡ hình (20dp) — nên thêm <code>minimumWidth</code>, và <code>CENTER_INSIDE</code> để vùng chạm to hơn hình
+<b>là cố ý</b>, không phóng hình lên lấp đầy.</li>
+<li>Chỗ lấy lại: ≈ 200dp bề ngang về tay hàng chip — R11 (b) đã giao trọn phần còn lại cho <code>fitChips</code> chia đều, nên với 8 chip
+đó là ≈ <b>25dp/chip</b>. <b>[ĐO] ảnh máy ảo vẫn nợ</b> (thuộc T4).</li>
+</ul>
+
+<h4>(b) <code>:core</code> — loại khả năng thứ BA</h4>
+<ul>
+<li><b><code>LauncherActions.kt</code></b> (58 dòng): <code>LauncherActionDef(id, label, icon, labelEn)</code> · <code>APPS = "launcher_apps"</code> ·
+<code>SETTINGS = "launcher_settings"</code> · <code>ALL</code> · <code>byId</code>. <b>Bộ đăng ký thứ sáu</b>, không phải một nút trong
+<code>ControlRegistry</code>: mọi mã ở đó bắn lệnh qua <code>CarControlPort</code> và mang <code>bindingKey</code> HAL — nhét hai việc của
+launcher vào đó là gửi <code>press("launcher_apps")</code> xuống phần cứng.</li>
+<li><code>CapabilityKind.<b>LAUNCHER</b></code>. KDoc <code>kindOf</code> từng viết <em>"KHÔNG thêm giá trị thứ ba"</em> — câu đó viết cho ca
+<b>NHÓM</b> (G1), nơi loại mới sẽ làm ô nhóm biến thành một cái nút. Ca này ngược lại: nó thật sự là thứ để BẤM, chỉ khác đích đến. Gán tạm vào
+<code>WRITE</code> mới là bẫy — <code>ControlDockView</code> đi tìm <code>ControlDef</code>/<code>ActionMacro</code>, không thấy, rồi
+<b>không vẽ gì mà cũng không báo</b> (đúng nhánh đã phải vá cho gói lệnh ở W2).</li>
+<li><code>pick</code>/<code>allIncludingHidden</code> đi qua <b>một</b> hàm <code>launcherPick</code> (cùng lệ <code>groupPick</code>); tier
+<code>PROVEN</code> ⇒ <b>không chấm chưa-kiểm</b>; <code>domain = null</code> ⇒ <code>byDomain()</code> không bày (⇒ ngăn kéo gán-ô không thể
+vô tình nhặt được, không cần thêm phép lọc nào ở đó). <code>collisions()</code> và <code>collidingLabels()</code> nhận thêm nguồn thứ sáu —
+để "hôm nay không trùng" thành <b>bảo đảm</b>.</li>
+<li><code>CapabilityPicker.launcherPicks()</code> + <code>LAUNCHER_TITLE</code>/<code>LAUNCHER_NOTE</code> (song ngữ): lọc theo <b>loại</b>,
+không kê tay hai mã ⇒ thêm hành động launcher về sau là tự có ô.</li>
+<li><b>Thanh trên từ chối do CẤU TẠO</b>: <code>TopStripConfig.isChippable</code> hỏi <em>"có phải mục ĐỌC không"</em> chứ không hỏi
+<em>"có phải nút không"</em>, nên loại MỚI mặc định không lọt. Chỉ thêm KDoc + bài canh, <b>không sửa điều kiện</b>.</li>
+</ul>
+
+<h4>(c) <code>:app</code> — ô trên thanh nút, và nó đi về đâu</h4>
+<ul>
+<li><code>ControlTileFactory.launcherTile(pick, onTap)</code>: dựng như ô <code>BUTTON</code> (icon + nhãn 2 dòng + nháy nền 220ms — cùng con số
+<code>tileButton</code> để hai ô cạnh nhau không nháy hai nhịp), nhưng <b>không</b> <code>control()</code> và <b>không</b> <code>withBadge</code>.</li>
+<li><b>Tách <code>ControlTileState</code> ra tệp riêng</b>: <code>ControlTileFactory.kt</code> đang ở <b>đúng</b> 500 dòng. Cắt theo VAI như lệ
+<code>ReadTile.kt</code> — trạng thái (nhiều ô cùng đọc/ghi, sống lâu hơn mọi View) vs bộ dựng. Còn 487 + 57 dòng.
+<code>ActionMacroWiringContractTest</code> cắt vùng theo tệp nên đổi đường dẫn trong CÙNG lượt (không đổi thì <code>SourceRoots.body</code> nổ — đúng ý đồ của nó).</li>
+<li><code>ControlDockView</code>: nhánh <code>CapabilityKind.LAUNCHER</code> → <code>tiles.launcherTile(pick) { onLauncherAction(id) }</code>.
+Thanh nút <b>không được biết</b> <code>launcher_apps</code> nghĩa là gì (bài canh cấm luôn cả chuỗi đó trong tệp) — biết nghĩa là nó tự có
+đường thứ hai tới ngăn kéo, và đường ấy sẽ lệch với thanh trên.</li>
+<li>Chỗ dịch mã → việc nằm ở <code>KachiHomeWiring.Activity.controlDock(control, openAppList, openSettings)</code>; Activity đổi <b>đúng một dòng</b>
+(497 → 498) và truyền <b>chính</b> hai lambda của thanh trên: <code>{ drawerController.openAppList() }</code> · <code>{ panels.openSettings() }</code>.
+Bài canh đếm <code>drawerController.openAppList()</code> phải <b>đúng 2</b> chỗ trong Activity.</li>
+<li><b>Bộ chọn nút</b> (<code>AppDrawer.Mode.PICK_DOCK</code>): thêm khối <b>Launcher</b> <b>đứng đầu</b>, dựng từ
+<code>CapabilityPicker.launcherPicks()</code> + <code>CapabilityTileGrid</code> như mọi khối khác. Đứng đầu vì nó chỉ <b>2 ô</b> (nửa hàng, không
+đẩy mục Nhóm xuống theo nghĩa có thật), còn để cuối thì phải cuộn qua trọn 187 ô mới đặt được nút <em>Ứng dụng</em> — đúng bệnh §4.2 sinh ra để chữa,
+ở đầu kia của trang. Chế độ gán-ô <b>không</b> có khối này.</li>
+</ul>
+
+<h4>Bài canh</h4>
+<ul>
+<li><b>Mới</b> — <code>:core</code>: <code>TopStripTest.hanh dong cua launcher KHONG len duoc thanh tren</code> ·
+<code>CapabilityCatalogTest.hanh dong launcher la loai rieng</code> (PROVEN · không badge · <code>domain = null</code> · nhãn chảy từ registry) ·
+<code>CapabilityReachabilityTest.hai hanh dong launcher deu dat duoc va chi o khoi Launcher</code>.
+<code>:app</code>: <code>LauncherActionTileWiringContractTest</code> (6 bài) · <code>TopStripSurfaceContractTest.hai pill … chi con icon</code> ·
+<code>DockPickerContractTest.thanh nut nhan hanh dong cua launcher</code> (chạy thật <code>DockSelection.apply</code>, cả chiều bật lẫn chiều tắt).</li>
+<li><b>Cập nhật vì đổi dữ liệu</b> (không nới ý định, chỉ kể thêm nguồn thứ sáu): <code>CapabilityCatalogTest</code> tổng mã ·
+<code>CapabilityGroupsTest.khong muc roi nao bi xoa</code> · <code>LangCoverageTest</code> 302 → <b>304</b> nhãn (+ hai nhãn mới vào cả phép quét
+"bản dịch không sinh nhãn trùng MỚI") · <code>CapabilityReachabilityTest.reachable()</code> ·
+<code>LauncherI18nContractTest.uiLiteralAllowed</code> (+<code>ic-apps</code>/<code>ic-settings</code>, mã icon không phải chữ) ·
+<code>ActionMacroWiringContractTest</code> (đường dẫn tệp trạng thái).</li>
+<li><b>Đã thử làm ĐỎ</b> [ĐO]: gỡ nhánh <code>LAUNCHER</code> ở <code>ControlDockView</code> ⇒ 1 đỏ; đổi <code>isChippable</code> sang chiều phủ định
+(<code>!= WRITE</code>) ⇒ 3 đỏ; bỏ <code>minimumWidth</code> của pill ⇒ 1 đỏ. Cả ba khôi phục lại xanh.</li>
+</ul>
+
+<h4>Trạng thái &amp; việc còn mở</h4>
+<ul>
+<li>[ĐO] <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew :core:test :app:testDebugUnitTest --rerun-tasks --continue</code> →
+<code>:core</code> <b>1509 bài</b>, <code>:app</code> <b>898 bài</b>, <b>0 đỏ</b> (trước T6: 1506 / 890).</li>
+<li>Mọi tệp chạm tới ≤ 500 dòng: <code>KachiHomeActivity</code> <b>498</b> · <code>AppDrawer</code> <b>498</b> ·
+<code>ControlTileFactory</code> <b>487</b> · <code>LauncherCatalog</code> <b>457</b> · <code>KachiTopStrip</code> <b>293</b>.</li>
+<li><b>Chưa đo trên máy ảo/xe</b> (việc của T4): thanh trên với hai icon (kiểm vùng chạm thật + chip được thêm chỗ), và khối Launcher trong
+bộ chọn nút (kiểm hai ô hiện đúng hình, bấm lên thanh rồi bấm ô đó mở đúng ngăn kéo/Cài đặt).</li>
+<li><b>Không làm, có chủ ý</b>: hành động launcher KHÔNG đặt được vào ô giữa màn (ngăn kéo gán-ô không bày) và KHÔNG lên thanh trên. Nếu owner muốn
+một trong hai, đó là quyết định sản phẩm mới — ghi ở KDoc <code>CapabilityPicker.launcherPicks</code>.</li>
+<li><b>T4 — Consolidate (2026-09-14, 12:58–13:10)</b>: bản release 1.47 (48) cài đè máy ảo (giữ dữ liệu) ⇒ <b>[ĐO] migration chạy trên prefs thật</b>: cảnh "trip" của owner thành hồ sơ «trip», được chọn làm hồ sơ lúc nổ máy, launcher resume không lỗi (logcat sạch, `KachiAutostart` boot plan theo hồ sơ). [ĐO] ảnh: thanh trên = 3 chip + hai icon + chip «T trip» (không còn 5 nút bố cục); bộ chọn hồ sơ (Mặc định · trip · Quản lý hồ sơ…); nhóm Thanh nút: "ĐANG BẬT · 3/8" + 9 lĩnh vực gấp; bộ chọn nút có khối Launcher (Ứng dụng · Cài đặt); thêm ô "Ứng dụng" vào thanh ⇒ chạm mở ngăn kéo. <b>Ba vá tại T4</b>: (1) icon Cài đặt `ic_sys_g` là MẶT TRỜI 8 tia (đọc thành "độ sáng") ⇒ vẽ `ic_gear.xml` bánh răng 8 răng (R 9.0/7.0, lọt ô quang học — `IconGeometryContractTest` bắt bản đầu R 9.6); (2) rail "Cảnh, bố cục và hình nền" ⇒ "Bố cục và hình nền" (VI/EN) + hai comment cảnh trong strings; (3) màn chọn chip mở sẵn Năng lượng (28) + Khí hậu (11) ⇒ dài quá R4 ⇒ mọi lĩnh vực gấp sẵn (`TopStrip.picks`, test đổi theo). 5 module <b>3485/0</b> (--rerun-tasks). Chưa đo: V-switch trên xe (applier thật), độ trễ đổi hồ sơ trên xe. Ghi chú: thanh nút của hồ sơ «trip» trên máy ảo nay có thêm ô "Ứng dụng" (do lượt kiểm) — owner bỏ ở bộ chọn nếu không muốn.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-14 (senior review + vá, rule global §5)</h3>
+<p class="muted">Phạm vi: toàn bộ <code>git status --short</code> + <code>git diff HEAD</code> của S4 (T1·T2·T3·T5·T6, gồm tệp đã xoá).
+Nền: <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew :app:testDebugUnitTest :core:test :car-integration:test
+:vehicle-contracts:test :offcar-planner:test --rerun-tasks --continue</code> → [ĐO] <b>2572 bài, 0 đỏ</b> trước vá;
+<b>2575 bài, 0 đỏ</b> sau vá (+1 <code>:core</code>, +2 <code>:app</code>).</p>
+
+<h4>Scope R1–R12</h4>
+<p>✅ đủ 12 yêu cầu có mã + dây nối + bài canh + đường người dùng chạm tới. Không còn <code>TODO S4</code>, không còn
+tham chiếu <code>Scene*</code>/<code>ic_layout_*</code>/<code>LayoutPreset</code> ở thanh trên trong mã sản phẩm (grep 0);
+mọi tệp S4 chạm ≤ 500 dòng; mọi hàm mới có ≥ 1 chỗ gọi production.</p>
+
+<h4>Vá đã áp</h4>
+<ul>
+<li><b>[P1] OQ2 — <code>cast_enabled</code> chuyển sang theo XE</b> (<code>ProfileScope.DEVICE_KEYS</code>). Chi tiết ở §7 OQ2.
+Ngắn gọn: khoá theo hồ sơ + không có đường áp an toàn = cụm <b>hai chủ</b> khi đang lăn bánh (cả hai chiều bật/tắt).
+Bài canh mới <code>ProfileScopeTest.cong tac chinh cua phien chieu la THEO XE — OQ2</code>; đã thử làm ĐỎ [ĐO].</li>
+<li><b>[P2] Lượt ÁP không lọc theo <code>ProfileScope</code></b> — <code>applyClusterNav</code> ghi <b>mọi</b> khoá có trong
+chuỗi ảnh chụp, kể cả khoá nay đã xếp lại sang theo-XE. Ảnh chụp sống trên đĩa lâu hơn bảng phân loại ⇒ quyết định
+"khoá này thuộc cả xe" chỉ có hiệu lực trên máy mới cài (đúng ca <code>cast_enabled</code> vừa chuyển). Vá:
+<code>PrefSnapshot.decode(raw).filterKeys { it in keys }</code>. Bài canh
+<code>ProfileKeysWiringContractTest.luot ap loc theo ProfileScope…</code>; đã thử làm ĐỎ [ĐO].</li>
+<li><b>[P2] <code>migrateScenesOnce</code> làm MẤT cảnh khi hai hồ sơ có cảnh trùng tên</b> — mọi lượt
+<code>ScenesMigration.plan</code> đều nhận cùng <code>profiles()</code>, nên hai hồ sơ cùng có cảnh <i>"Đi làm"</i> gấp ra
+cùng một tên và vòng ghi bỏ bản thứ hai (<code>record.name in names</code>) ⇒ mất hẳn một cảnh ở đúng lượt nâng cấp, im
+lặng, trong khi R2 đòi hậu tố <code>" 2"</code>. Vá: dồn tên đã lấy qua từng hồ sơ (<code>existingNames = taken</code>).</li>
+<li><b>[P2] Ảnh chụp CŨ bị chép vào hồ sơ vừa chuyển</b> — <code>writeRecord</code> chép <code>&lt;nguồn&gt;__cn__*</code> mà
+ảnh đó chỉ được làm mới lúc RỜI hồ sơ ⇒ hồ sơ mới ra đời mang cấu hình ClusterNav của một lần đổi hồ sơ trong quá khứ, không
+phải "chép từ hồ sơ đang dùng" như R2. Vá: <code>snapshotClusterNav(active)</code> trước khi chép (chỉ khi thật sự có hồ sơ
+mới). Cả hai vá này khoá bằng <code>ProfileKeysWiringContractTest.luot chuyen don ten da lay va chup lai anh truoc khi chep</code>;
+đã thử làm ĐỎ [ĐO].</li>
+<li><b>[P2] KDoc nói ngược mã</b> — <code>WorkspaceRepository</code> (<code>unitPrefs</code>/<code>wallpaperPrefs</code>/
+<code>autostart</code>/<code>langMode</code>) và <code>WorkspacePrefs</code> (bốn dòng tiêu đề khối) vẫn ghi <i>"CHUNG mọi hồ
+sơ"</i> trong khi R3(a) vừa cho chúng theo hồ sơ. Doc mồ côi kiểu này là thứ lần sau có người đọc rồi tin (R2.4). Đã viết lại.</li>
+</ul>
+
+<h4>Soát trọng tâm — kết luận có bằng chứng</h4>
+<ul>
+<li><b>(a) An toàn dữ liệu khi nâng cấp</b>: ✅ <code>migrateScenesOnce</code> chạy một lần (<code>migrated_scenes_v1</code> đặt
+trong <b>cùng</b> <code>Editor</code> với dữ liệu), không ném với prefs rỗng/hỏng (<code>plan()</code> trả
+<code>Plan.NOTHING</code>, <code>PrefSnapshot.decode</code> bỏ dòng hỏng chứ không ném), khoá chung cũ lùi đúng MỘT lần và
+<b>không xoá</b> (<code>profileString</code>/<code>profileBoolean</code>), id widget trong cảnh chưa chuyển vẫn được
+<code>widgetIdsOtherProfiles</code> → <code>idsInLegacyScenes</code> giữ. Hai lỗ đã vá ở trên.</li>
+<li><b>(b) Chụp–áp</b>: ✅ ghi đúng tệp + đúng kiểu + khoá vắng ⇒ <code>remove</code>; hồ sơ chưa có ảnh ⇒ không chạm tệp;
+thứ tự chụp-A → con trỏ → áp-B → <code>reapplyAll</code> đúng và có bài canh so vị trí. Tác dụng phụ nguy hiểm duy nhất là
+<code>cast_enabled</code> — đã xử lý ở [P1].</li>
+<li><b>(c) Thread</b>: ✅ [ĐO] đọc từng applier — biển báo <code>handler.post</code> (<code>SpeedBadgeOverlay.kt:183,208,234,311</code>),
+HUD <code>worker.submit</code> (<code>NavigationHudOwner.kt:278</code>), ghế/lọc bụi tự <code>Thread{}</code>
+(<code>SeatComfortApplier.kt:58</code> · <code>Pm25FilterApplier.kt:79,89</code>), bong bóng chỉ <code>sendBroadcast</code>.
+Phần chạy đồng bộ trên luồng gọi là vài lượt đọc <code>SharedPreferences</code> (RAM sau lần nạp đầu) — <b>không</b> có shell/dadb,
+<b>không</b> có chờ. Khởi động nguội chỉ đổi hồ sơ khi <code>boot_profile</code> khác hồ sơ đang dùng.
+[CHƯA BIẾT] độ trễ thật của cú chạm trên xe — V-switch thuộc T4.</li>
+<li><b>(d) Thanh trên</b>: ✅ hàng chip là phần co giãn (<code>LayoutParams(0, WRAP, 1f)</code>) nên ba vật bên phải lấy bề rộng
+tự nhiên TRƯỚC ⇒ không thể bị đẩy khỏi mép; <code>fitChips</code> chia <code>room/n − dp(S)</code> nên tổng bề rộng chip ≤ chỗ
+còn lại (sàn <code>ICON_M</code> chỉ chạm tới ở bề rộng phi thực tế, và khi đó phần thừa bị chính <code>chipRow</code> cắt, không
+lấn ai). Hai pill có <code>minimumWidth</code> + <code>minimumHeight</code> = <code>Sp.TOUCH</code>.
+<code>ProfileChip.picker</code> mở đúng và "Quản lý hồ sơ…" đi <code>SettingsGroup.PROFILES</code>.</li>
+<li><b>(e) Thanh nút</b>: ✅ nhánh <code>LAUNCHER</code> không chạm <code>control</code>, không <code>withBadge</code>; phép dịch
+mã → việc nằm ở <code>KachiHomeWiring.controlDock</code> (view không biết <code>launcher_apps</code> nghĩa là gì);
+<code>DockSelection</code> giữ thứ tự; bộ chọn có khối Launcher; <code>duplicateActiveProfile</code> chép
+<code>dock_enabled</code> nên bản sao giữ cả ô launcher.</li>
+<li><b>(f) Xoá sạch cảnh</b>: ✅ grep mã sản phẩm — 0 <code>SceneBook</code>/<code>SceneController</code>/
+<code>SettingsSceneSection</code>/<code>ic_layout_</code>; chỗ còn chữ "scene" đều là <b>khoá đời cũ trên đĩa</b>
+(<code>LEGACY_SCENES</code>, lưới an toàn widget) hoặc KDoc lịch sử. i18n/catalog/coverage xanh.</li>
+<li><b>(g)</b>: ✅ mọi tệp S4 chạm ≤ 500 dòng (lớn nhất: <code>KachiHomeActivity</code> 498 · <code>AppDrawer</code> 498 ·
+<code>ControlTileFactory</code> 487 · <code>WorkspacePrefs</code> 451); §8 — mọi hàm mới có ≥ 1 chỗ gọi.</li>
+</ul>
+
+<h4>Còn lại, KHÔNG vá (ghi để owner quyết)</h4>
+<ul>
+<li>[P3] <code>SettingsSections.BOOT_LAST_CODE = "__LAST__"</code> va được với một hồ sơ do người dùng đặt đúng tên đó (chip
+"Gần nhất" thắng). Rẻ nhất là lọc tên đó ở <code>addProfile</code> nếu owner thấy đáng.</li>
+<li>[P3] <code>ProfileChip.picker</code> chụp <code>uiState.value</code> trước khi mở hộp thoại; state đổi trong lúc hộp thoại
+mở thì chỉ số có thể cũ. Ca chỉ đạt được khi một đường khác đổi hồ sơ cùng lúc.</li>
+<li>[P3] KDoc <code>PrefSnapshot</code> còn trỏ <code>[SceneBook]</code> (lớp đã xoá) — liên kết chết, không ảnh hưởng biên dịch.</li>
+<li>[P2 · backlog <code>S4-SEAT</code>] <code>seat_level_1..3</code> vẫn chưa theo hồ sơ — đúng như T2 đã ghi, phải khai khoá đi
+kèm ở <code>SettingsCatalogClusterNav</code> trước.</li>
+<li>Chưa đo trên máy ảo/xe: V-emu · V-switch · V-mig vẫn là việc của T4.</li>
+</ul>
+
+<h4>Verdict</h4>
+<p><b>APPROVED cho phần off-car</b> (R1–R12 đủ, 5 module 0 đỏ, 4 vá đã khoá bằng bài canh đã-thử-làm-đỏ) — <b>chưa</b> phải
+"xong" theo P5: còn V-emu/V-switch/V-mig trên máy thật và bump 1.47.</p>
+</div></body>
+</html>

@@ -24,16 +24,12 @@ internal object SettingsCatalogEntries {
      */
     private fun LAUNCHER(): List<SettingsEntry> = listOf(
         // ── Màn hình chính ──
-        // ── CẢNH đứng ĐẦU nhóm, trước từng phần rời ──
-        // Một cảnh là **cả bộ** những gì các mục dưới đây đặt riêng lẻ (bố cục + nội dung ô + thanh nút), nên nó
-        // thuộc đúng nhóm này chứ không phải một nhóm mới: gộp-và-các-phần phải nằm cạnh nhau, không thì người dùng
-        // chỉnh bố cục ở đây rồi phải đi tìm chỗ khác để lưu lại. Đặt TRƯỚC vì gọi lại một cảnh là việc làm **thường
-        // xuyên nhất** ở trang này, còn đi chỉnh từng phần thì thưa hơn — thứ tự danh mục là thứ tự dùng được.
-        SettingsEntry("home_scenes", SettingsGroup.HOME, "Cảnh đã lưu", "scenes", "Saved scenes"),
-        SettingsEntry("home_scene_boot", SettingsGroup.HOME, "Cảnh lúc nổ máy", "boot_scene", "Scene on engine start"),
-        // Không lưu gì: đây là NÚT lưu trạng thái đang dùng thành cảnh. Cảnh lưu ra thì nằm ở "home_scenes" phía
-        // trên — một khoá, một chủ (cùng lối với "home_grid_editor" và "home_grid").
-        SettingsEntry("home_scene_save", SettingsGroup.HOME, "Lưu cảnh hiện tại…", labelEn = "Save current scene…"),
+        // ⚠⚠ S4 · R1 — BA MỤC "CẢNH" ĐÃ XOÁ khỏi đây: `home_scenes` (khoá `scenes`), `home_scene_boot` (khoá
+        // `boot_scene`) và `home_scene_save` (nút lưu, không khoá). Owner 2026-09-14: *"có cảnh rồi có hồ sơ nữa hơi
+        // khó hiểu"* — và backlog P7 đã ghi hai dòng đó tả **cùng một** khái niệm. Chức năng lên cấp chứ không mất:
+        // mỗi cảnh cũ thành một hồ sơ cùng tên (R2, `ScenesMigration` ở `:core`), còn "cảnh lúc nổ máy" thành
+        // "profiles_boot" dưới nhóm Hồ sơ tài xế (R6). Hai khoá `scenes`/`boot_scene` bị gỡ khỏi `WorkspacePrefs`
+        // cùng lượt, nên `SettingsCoverageContractTest` không còn khoá nào mồ côi.
         SettingsEntry("home_preset", SettingsGroup.HOME, "Bố cục sẵn", "preset", "Preset layout"),
         SettingsEntry("home_grid", SettingsGroup.HOME, "Bố cục tự vẽ", "grid_layout", "Custom layout"),
         // Không lưu gì: đây là NÚT mở bảng vẽ. Bố cục vẽ ra thì lưu ở "home_grid" phía trên — một khoá, một chủ.
@@ -67,8 +63,23 @@ internal object SettingsCatalogEntries {
         SettingsEntry("display_lang", SettingsGroup.DISPLAY, "Ngôn ngữ", "lang", "Language"),
 
         // ── Hồ sơ tài xế ──
+        // S4 · R3: từ đây một hồ sơ giữ **tất cả** lựa chọn của người dùng (xem `ProfileScope`), nên nhóm này không
+        // còn là "một danh sách tên" mà là chỗ đổi cả bộ cấu hình. Thứ tự khai = thứ tự hiện ra: danh sách (việc
+        // hằng ngày) → hồ sơ lúc nổ máy (đặt một lần) → thêm hồ sơ (hiếm hơn nữa).
         SettingsEntry("profiles_list", SettingsGroup.PROFILES, "Danh sách hồ sơ", "profiles", "Profile list"),
         SettingsEntry("profiles_active", SettingsGroup.PROFILES, "Hồ sơ đang dùng", "active_profile", "Active profile"),
+        // S4 · R6 — thay cho "home_scene_boot". ⚠ Khoá `boot_profile` là khoá **theo XE**, không mang tiền tố hồ sơ
+        // (R4): nó trả lời *"máy lên bằng hồ sơ nào"*, nên cất nó bên trong một hồ sơ là vòng tròn. Rỗng = "hồ sơ
+        // dùng gần nhất" (mặc định), tức giữ nguyên hành vi trước S4.
+        SettingsEntry(
+            "profiles_boot", SettingsGroup.PROFILES, "Hồ sơ lúc nổ máy", "boot_profile", "Profile on engine start",
+        ),
+        // Không lưu gì: đây là NÚT tạo. Danh sách hồ sơ thì nằm ở "profiles_list" phía trên — một khoá, một chủ
+        // (cùng lối với "home_grid_editor" và "home_grid"). ⚠ Nhãn nói rõ **bản sao**: từ R3 một hồ sơ trắng nghĩa
+        // là mất sạch mọi thứ người dùng đã chỉnh, nên "thêm" ở đây luôn là nhân bản hồ sơ đang dùng (R8).
+        SettingsEntry(
+            "profiles_add", SettingsGroup.PROFILES, "Thêm hồ sơ (bản sao)", labelEn = "Add profile (a copy)",
+        ),
     )
 
     // ── Phía CLUSTERNAV: khoá nằm trong `clusternav_prefs` / `simple_cast_prefs` ─────────────────

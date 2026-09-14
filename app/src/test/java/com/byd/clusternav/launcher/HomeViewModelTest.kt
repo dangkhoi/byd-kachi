@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -40,8 +41,8 @@ class HomeViewModelTest {
             return base.copy(
                 activeProfile = active, profiles = profileList.toList(), themeMode = theme, embedded = false,
                 autostart = autostartStore,
-                // P7/P6: sổ cảnh cũng ở chỗ giữ RIÊNG (khoá riêng, không qua persist) — mô phỏng đúng nơi lưu thật.
-                scenes = sceneStore,
+                // S4 · R6: hồ sơ lúc nổ máy giữ RIÊNG (khoá theo XE, không qua persist) — mô phỏng đúng nơi lưu thật.
+                bootProfile = bootStore,
             )
         }
 
@@ -65,6 +66,19 @@ class HomeViewModelTest {
             return load()
         }
 
+        /**
+         * S4 · R8 — bản giả chép state của hồ sơ đang dùng sang tên mới, đúng nghĩa *"thêm hồ sơ = bản sao"*. Thân
+         * mặc định của cổng này uỷ quyền [addProfile] (hồ sơ TRỐNG), nên nếu không ghi đè ở đây thì bài
+         * `duplicateProfile chep cau hinh` sẽ xanh vì lý do sai.
+         */
+        override fun duplicateProfile(name: String): HomeUiState {
+            val source = store[active] ?: HomeUiState(activeProfile = active)
+            if (name !in profileList) profileList.add(name)
+            store[name] = source.copy(activeProfile = name)
+            active = name
+            return load()
+        }
+
         override fun deleteProfile(name: String): HomeUiState {
             if (profileList.size > 1) {
                 profileList.remove(name)
@@ -84,17 +98,17 @@ class HomeViewModelTest {
         override fun setAutostart(on: Boolean) { autostartStore = on }
 
         /**
-         * P7/P6 — sổ cảnh. Giữ riêng như [autostartStore] vì nó nằm ở **khoá riêng** (không đi qua [persist]), đúng
-         * như nơi lưu thật: quên nửa "ghi bền" của một intent cảnh sẽ làm cảnh biến mất khi mở lại, im lặng.
+         * S4 · R6 — hồ sơ lúc nổ máy. Giữ riêng như [autostartStore] vì nó nằm ở **khoá theo XE** (không đi qua
+         * [persist]): quên nửa "ghi bền" của intent đó thì lựa chọn biến mất khi mở lại, im lặng.
          */
-        var sceneStore: SceneBook = SceneBook.EMPTY; private set
-        var sceneWrites = 0; private set
+        var bootStore: String? = null; private set
+        var bootWrites = 0; private set
         var layoutWrites = 0; private set
         var lastLayout: GridLayout? = null; private set
 
-        override fun sceneBook(): SceneBook = sceneStore
+        override fun bootProfile(): String? = bootStore
 
-        override fun setSceneBook(book: SceneBook) { sceneStore = book; sceneWrites++ }
+        override fun setBootProfile(name: String?) { bootStore = name; bootWrites++ }
 
         override fun setGridLayout(layout: GridLayout?) { lastLayout = layout; layoutWrites++ }
     }
@@ -320,7 +334,7 @@ class HomeViewModelTest {
         assertFalse(vm2.uiState.value.autostart, "lượt nạp mới phải thấy cờ đã lưu, không về mặc định")
     }
 
-    // ── P7 + P6 · CẢNH — hành vi thật của bốn intent ─────────────────────────────────────────────
+    // ── S4 · R6/R8 · HỒ SƠ — hai intent mới (thay bốn intent CẢNH đã gỡ ở R1) ───────────────────
 
     private fun liveState() = HomeUiState(
         workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.waze"), SlotContent.Widget("w_board")),
@@ -328,95 +342,48 @@ class HomeViewModelTest {
         customLayout = GridLayout(listOf(GridFrame(0, 0, 6, 6), GridFrame(6, 0, 6, 6))),
     )
 
-    @Test fun `saveScene chup trang thai dang dung va ghi ben`() = runTest {
+    /**
+     * S4 · R8 — *"thêm hồ sơ"* nay là **bản sao của hồ sơ đang dùng**, không phải một hồ sơ trống.
+     *
+     * Owner 2026-09-14: hồ sơ giữ *tất cả*, nên một hồ sơ mới trống là thứ không ai muốn dựng — phải sửa lại từ
+     * đầu chủ đề · đơn vị · hình nền · thanh nút · toàn bộ cấu hình ClusterNav.
+     */
+    @Test fun `duplicateProfile chep cau hinh cua ho so dang dung va chuyen sang no`() = runTest {
         val fake = repo(liveState())
         val vm = HomeViewModel(fake)
-        vm.saveScene("Đi làm")
-        val scene = vm.uiState.value.scenes.byName("Đi làm")
-        assertEquals(LayoutPreset.QUAD, scene!!.preset)
-        assertEquals(SlotContent.App("com.waze"), scene.slots[0])
-        assertEquals(DockEdge.RIGHT, scene.dock.edge)
-        assertEquals("0,0,6,6;6,0,6,6", scene.gridLayout, "phải chụp cả bố cục tự vẽ")
-        assertEquals(1, fake.sceneWrites, "state và ghi bền phải đi trong MỘT lượt")
-        assertEquals(scene, fake.sceneStore.byName("Đi làm"), "và phải ghi qua cổng dữ liệu")
-    }
-
-    @Test fun `applyScene dua bo cuc, o va thanh nut ve dung canh`() = runTest {
-        val fake = repo(liveState())
-        val vm = HomeViewModel(fake)
-        vm.saveScene("Gốc")
-        // Đổi sang thứ khác hẳn, rồi gọi lại cảnh.
-        vm.setPreset(LayoutPreset.ONE)
-        vm.assignWidgets(0, listOf("w_pm25"))
-        vm.setDockEdge(DockEdge.TOP)
-        vm.setCustomLayout(null)
-        vm.applyScene(vm.uiState.value.scenes.byName("Gốc")!!.id)
+        vm.duplicateProfile("Bản sao")
         val s = vm.uiState.value
-        assertEquals(LayoutPreset.QUAD, s.preset)
-        assertEquals(SlotContent.App("com.waze"), s.slots[0])
-        assertEquals(DockEdge.RIGHT, s.dock.edge)
-        assertEquals(listOf("lock"), s.dock.enabled)
-        assertEquals(GridLayout(listOf(GridFrame(0, 0, 6, 6), GridFrame(6, 0, 6, 6))), s.customLayout)
-        assertEquals(s.customLayout, fake.lastLayout, "bố cục nằm ở khoá RIÊNG ⇒ phải ghi riêng, không qua persist")
+        assertEquals("Bản sao", s.activeProfile, "phải chuyển sang hồ sơ vừa tạo")
+        assertTrue("Bản sao" in s.profiles)
+        assertEquals(LayoutPreset.QUAD, s.preset, "bố cục phải giống hồ sơ nguồn")
+        assertEquals(SlotContent.App("com.waze"), s.slots[0], "nội dung ô phải giống hồ sơ nguồn")
+        assertEquals(DockEdge.RIGHT, s.dock.edge, "thanh nút phải giống hồ sơ nguồn")
     }
 
     /**
-     * ⚠ **R4 (C5)**: gọi cảnh là **MỘT** lượt state đổi, không phải ba. Ba lượt nghĩa là ba lần render với trạng thái
-     * trung gian, và một trạng thái trung gian có số ô khác là đủ để bộ quyết định trả "dựng lại tất cả" ⇒ app đang
-     * chiếu trong ô bị nhả/gắn lại.
+     * S4 · R6 — hồ sơ lúc nổ máy: state + ghi bền trong MỘT lượt, và **không** đi qua `persist` (khoá theo XE).
+     *
+     * Bài này khoá đúng nửa dễ quên: quên `repository.setBootProfile` thì màn Cài đặt hiện đúng chip vừa chọn nhưng
+     * mở lại app là mất — im lặng, đúng họ lỗi mà `setAutostart` đã phải học một lần.
      */
-    @Test fun `applyScene chi phat DUNG MOT lan state doi`() = runTest {
+    @Test fun `setBootProfile ghi state va ghi ben trong MOT luot`() = runTest {
         val fake = repo(liveState())
         val vm = HomeViewModel(fake)
-        vm.saveScene("Gốc")
-        val id = vm.uiState.value.scenes.byName("Gốc")!!.id
-        vm.setPreset(LayoutPreset.ONE)
-        vm.uiState.test {
-            awaitItem()                       // trạng thái hiện tại
-            vm.applyScene(id)
-            val applied = awaitItem()
-            assertEquals(LayoutPreset.QUAD, applied.preset)
-            assertEquals(DockEdge.RIGHT, applied.dock.edge, "bố cục VÀ thanh nút phải về trong CÙNG một lượt phát")
-            expectNoEvents()                  // không có lượt phát thứ hai
-        }
+        val persistBefore = fake.persistCount
+        vm.setBootProfile("Đi làm")
+        assertEquals("Đi làm", vm.uiState.value.bootProfile)
+        assertEquals("Đi làm", fake.bootStore, "phải ghi bền, không thì mở lại là mất")
+        assertEquals(1, fake.bootWrites, "state và ghi bền đi trong MỘT lượt")
+        assertEquals(persistBefore, fake.persistCount, "khoá theo XE ⇒ KHÔNG đi qua persist (persist ghi theo hồ sơ)")
+        vm.setBootProfile(null)
+        assertNull(vm.uiState.value.bootProfile, "null = quay về 'hồ sơ dùng gần nhất'")
+        assertNull(fake.bootStore)
     }
 
-    @Test fun `applyScene voi ma la thi khong lam gi`() = runTest {
+    /** Khoá theo XE ⇒ lượt nạp mới phải thấy nó (mở lại app là lựa chọn còn đó). */
+    @Test fun `ho so luc no may nap lai dung gia tri da luu`() = runTest {
         val fake = repo(liveState())
-        val vm = HomeViewModel(fake)
-        val before = vm.uiState.value
-        vm.applyScene("s7")
-        assertEquals(before, vm.uiState.value)
-        assertEquals(0, fake.layoutWrites, "mã lạ không được ghi gì")
-    }
-
-    @Test fun `setBootScene va deleteScene ghi ben, xoa thi dau tu bo`() = runTest {
-        val fake = repo(liveState())
-        val vm = HomeViewModel(fake)
-        vm.saveScene("A")
-        val id = vm.uiState.value.scenes.byName("A")!!.id
-        vm.setBootScene(id)
-        assertEquals(id, vm.uiState.value.scenes.bootSceneId)
-        assertEquals(id, fake.sceneStore.bootSceneId, "dấu nổ máy phải lưu bền, không thì mở lại là mất")
-        vm.deleteScene(id)
-        assertTrue(vm.uiState.value.scenes.scenes.isEmpty())
-        assertEquals(null, fake.sceneStore.bootSceneId, "xoá cảnh đang là cảnh nổ máy ⇒ dấu tự bỏ")
-    }
-
-    @Test fun `renameScene doi ten va ghi ben`() = runTest {
-        val fake = repo(liveState())
-        val vm = HomeViewModel(fake)
-        vm.saveScene("Cũ")
-        val id = vm.uiState.value.scenes.byName("Cũ")!!.id
-        vm.renameScene(id, "Mới")
-        assertEquals("Mới", vm.uiState.value.scenes.byId(id)!!.name)
-        assertEquals("Mới", fake.sceneStore.byId(id)!!.name)
-    }
-
-    /** Sổ cảnh nằm ở khoá riêng ⇒ lượt nạp mới phải thấy nó (mở lại app là cảnh còn đó). */
-    @Test fun `so canh nap lai dung gia tri da luu`() = runTest {
-        val fake = repo(liveState())
-        HomeViewModel(fake).saveScene("Đi xa")
-        assertEquals("Đi xa", HomeViewModel(fake).uiState.value.scenes.scenes.single().name)
+        HomeViewModel(fake).setBootProfile("Đi xa")
+        assertEquals("Đi xa", HomeViewModel(fake).uiState.value.bootProfile)
     }
 }

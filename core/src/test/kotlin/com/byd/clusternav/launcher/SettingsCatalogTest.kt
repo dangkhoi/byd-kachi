@@ -238,9 +238,12 @@ class SettingsCatalogTest {
         val noKey = SettingsCatalog.ENTRIES.filter { it.prefKey == null }.map { it.id }
         assertEquals(
             listOf(
-                // P7/P6: nút "Lưu cảnh hiện tại…" là một VIỆC LÀM; cảnh lưu ra thì nằm ở khoá của `home_scenes`
-                // (một khoá, một chủ — cùng lối với cặp `home_grid_editor` / `home_grid`).
-                "home_scene_save", "home_grid_editor",
+                // `home_grid_editor` = nút mở bảng vẽ (VIỆC LÀM); bố cục vẽ ra nằm ở khoá của `home_grid`
+                // (một khoá, một chủ). ⚠ S4 · R1: "home_scene_save" đã XOÁ cùng khái niệm cảnh.
+                "home_grid_editor",
+                // S4 · R8 — "Thêm hồ sơ (bản sao của «X»)" là một VIỆC LÀM: nó tạo ra một bộ khoá MỚI mang tiền tố
+                // tên hồ sơ, chứ bản thân nút không lưu giá trị nào.
+                "profiles_add",
                 // IA v2: mọi HÀNH ĐỘNG của màn ClusterNav (§4.3, cột "API ghi") — chúng bấm là chạy, không lưu gì.
                 "nav_reconnect", "cast_actions", "cast_rescue", "keys_check", "car_pm25_clean",
                 "system_permissions", "system_update", "system_nav_stop",
@@ -258,12 +261,10 @@ class SettingsCatalogTest {
     /**
      * Thứ tự trong nhóm "Màn hình chính": **cả bộ trước, rồi khung ra nội dung**.
      *
-     * ⚠ P7/P6 **mở rộng** luật cũ, không bỏ nó. Luật cũ là *"bố cục trước, rồi mới tới thứ nằm trong nó"* và nó vẫn
-     * được chốt nguyên vẹn ở phép so thứ hai dưới đây. Cảnh chen lên đầu vì nó không phải một *phần* của bố cục mà là
-     * **cả bộ** (bố cục + nội dung ô + thanh nút), và vì gọi lại một cảnh là việc làm **thường xuyên nhất** ở trang
-     * này — để nó sau mục thanh nút thì phải cuộn qua **lưới 187 ô** mới tới, tức "gọi lại nhanh" mất nghĩa. Cùng lập
-     * luận đã đặt "viền thanh nút" trước lưới 187 ô: thứ tự danh mục là thứ tự **dùng được**, không phải thứ tự nghe
-     * hợp lý khi đọc danh sách.
+     * ⚠ S4 · R1 **trả luật này về bản gốc**: ba mục cảnh (`home_scenes` · `home_scene_boot` · `home_scene_save`) đã
+     * xoá, nên "cả bộ" không còn đứng trước — *"cả bộ"* nay là chính **hồ sơ tài xế**, và nó có nhóm riêng
+     * ([SettingsGroup.PROFILES]) chứ không chen vào trang Màn hình chính. Luật còn lại đúng như trước P7: **bố cục
+     * trước, rồi mới tới thứ nằm trong nó**.
      */
     @Test
     fun `entriesOf phu het ENTRIES va giu thu tu khai`() {
@@ -274,14 +275,13 @@ class SettingsCatalogTest {
         )
         val home = SettingsCatalog.entriesOf(SettingsGroup.HOME).map { it.id }
         assertEquals(
-            listOf("home_scenes", "home_scene_boot", "home_scene_save"),
-            home.take(3),
-            "cả bộ (cảnh) đứng trước các phần rời — nó là đường tắt của mọi thứ bên dưới",
-        )
-        assertEquals(
             listOf("home_preset", "home_grid", "home_grid_editor"),
-            home.drop(3).take(3),
+            home.take(3),
             "trong nhóm đi từ khung ra nội dung: bố cục trước, rồi mới tới thứ nằm trong nó",
+        )
+        assertTrue(
+            home.none { it.startsWith("home_scene") },
+            "S4 · R1 — không còn mục 'cảnh' nào; cả bộ nay là HỒ SƠ và nó có nhóm riêng",
         )
     }
 }

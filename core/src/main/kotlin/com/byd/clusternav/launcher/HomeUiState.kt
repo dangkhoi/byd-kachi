@@ -25,6 +25,18 @@ data class HomeUiState(
     val topStrip: TopStripConfig = TopStripConfig.DEFAULT,
     val activeProfile: String = DEFAULT_PROFILE,
     val profiles: List<String> = listOf(DEFAULT_PROFILE),
+    /**
+     * S4 · R6 — **hồ sơ lúc nổ máy**, `null` = *"hồ sơ dùng gần nhất"* (mặc định).
+     *
+     * Thay cho `bootScene` của P7: một khái niệm, không hai (R1). Ở trong state vì **màn Cài đặt render nó** — đúng
+     * luật đã trả giá bốn lần (`customLayout` · `unitPrefs` ×4 · `wallpaper` · `themeMode`): thứ gì được vẽ thì phải
+     * nằm trong nguồn sự thật, không thì bề mặt cấu hình và màn hình lệch nhau mà không ai biết.
+     *
+     * ⚠ Có thể **treo** (trỏ tới hồ sơ đã xoá) nếu ai đó dựng bằng `copy`; nơi lưu bền tự gỡ con trỏ treo lúc đọc,
+     * cùng luật `SceneBook.normalised()` cũ — một con trỏ treo thì launcher nổ máy lên với hồ sơ mặc định mà không
+     * ai hiểu vì sao.
+     */
+    val bootProfile: String? = null,
     val themeMode: ThemeMode = ThemeMode.NIGHT,
     /**
      * U5 · T3 — NGÔN NGỮ launcher. Mặc định [LangMode.AUTO] ("Theo xe", §6 OQ1): xe của owner đặt tiếng Việt nên
@@ -63,19 +75,6 @@ data class HomeUiState(
     /** Lựa chọn HÌNH NỀN (U4). Cùng lý do: state được render thì phải nằm trong nguồn sự thật. */
     val wallpaper: WallpaperPrefs = WallpaperPrefs.DEFAULT,
     /**
-     * SỔ CẢNH của hồ sơ đang dùng (P7 + P6) — danh sách cảnh + cảnh lúc nổ máy. Xem [SceneBook].
-     *
-     * Ở trong state vì **màn Cài đặt render nó** (danh sách cảnh, dấu "nổ máy", trạng thái đủ trần). Đúng luật đã trả
-     * giá bốn lần: thứ gì được vẽ thì phải nằm trong nguồn sự thật, không thì bề mặt cấu hình và màn hình lệch nhau
-     * mà không ai biết.
-     *
-     * ⚠ Nó **không** tham gia vào phép quyết định dựng lại ô: [WorkspaceRenderPlanner] nhận [WorkspaceState], không
-     * nhận [HomeUiState]. Nhờ vậy thêm trường này KHÔNG đụng phép chứng minh tương-đương hơn 1000 tổ hợp đang khoá
-     * hành vi của bộ đó — và đó cũng là lý do *áp* một cảnh không thể tự làm app trong ô mở lại (R4): việc áp chỉ
-     * ghi `workspace`/`dock`/`customLayout`, rồi bộ quyết định so **nội dung ô** như mọi lần.
-     */
-    val scenes: SceneBook = SceneBook.EMPTY,
-    /**
      * **Tự mở khi nổ máy** (S1·T4) — cờ cho `KachiAutostart.runBoot`.
      *
      * ## [ĐO] vì sao nó vào state chứ chỉ là một dòng đọc prefs
@@ -105,7 +104,7 @@ data class HomeUiState(
      * **KIỂU**: hai chỗ gọi đã nhận `HomeUiState`, nên không có cách nào hỏi "còn ai dùng" mà bỏ sót vế này. Thêm
      * tham số thì mỗi chỗ gọi mới lại là một chỗ có thể quên — đúng hình dạng đã để lọt lỗi này hai lần.
      *
-     * ⚠ **KHÔNG gồm hồ sơ đang dùng.** Hồ sơ đang dùng đã nằm ở [workspace] + [scenes] (bản trong bộ nhớ, luôn mới
+     * ⚠ **KHÔNG gồm hồ sơ đang dùng.** Hồ sơ đang dùng đã nằm ở [workspace] (bản trong bộ nhớ, luôn mới
      * hơn đĩa). Gộp cả nó vào đây thì ảnh chụp lúc `load()` sẽ **bảo vệ vĩnh viễn** một id mà người dùng vừa bỏ khỏi ô
      * ⇒ id rác sống mãi. Ảnh chụp là đủ vì dữ liệu hồ sơ khác chỉ đổi khi hồ sơ đó **được chọn**, mà lúc đó `load()`
      * chạy lại.

@@ -82,12 +82,13 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 55 muc`() {
+    fun `moi muc cai dat co nhan EN — 10 nhom va 54 muc`() {
         assertEquals(10, SettingsCatalog.GROUPS.size)
-        // 55 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
-        // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2) và trừ tiếp `system_advanced_screen`
-        // (S3 2026-09-13: màn cũ gỡ hẳn ⇒ không còn gì để mở).
-        assertEquals(55, SettingsCatalog.ENTRIES.size)
+        // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
+        // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
+        // màn cũ gỡ hẳn), rồi S4 · R1/R6: **−3** mục cảnh (`home_scenes` · `home_scene_boot` · `home_scene_save`)
+        // **+2** mục hồ sơ (`profiles_boot` · `profiles_add`).
+        assertEquals(54, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -121,14 +122,17 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 303`() {
+    fun `tong so nhan co ban EN dung 304`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
-            LauncherRequirements.ALL
-        // 303 = 265 + 3 nhóm mới (nav · cast · keys — `bars` bù cho `clusternav` bị bỏ) + 36 mục mới của IA v2,
-        // trừ 1 mục `system_advanced_screen` gỡ cùng màn ClusterNav cũ (S3 · 2026-09-13).
-        assertEquals(303, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+            LauncherRequirements.ALL + LauncherActions.ALL
+        // 302 = 265 + 3 nhóm mới (nav · cast · keys — `bars` bù cho `clusternav` bị bỏ) + 36 mục mới của IA v2,
+        // trừ 1 mục `system_advanced_screen` gỡ cùng màn ClusterNav cũ (S3 · 2026-09-13), rồi S4 · R1/R6 −3 mục
+        // cảnh +2 mục hồ sơ.
+        // S4 · R12: +2 hành động launcher ([LauncherActions]) — chúng mang [Localized] nên PHẢI nằm trong tầm quét
+        // này, không thì một bộ đăng ký mới có nhãn chưa dịch mà không bài nào thấy.
+        assertEquals(304, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -240,7 +244,8 @@ class LangCoverageTest {
             WidgetRegistry.ALL.map { it.id to (it.label to it.labelEn) } +
             TelemetryRegistry.ALL.map { it.id to (it.label to it.labelEn) } +
             ControlRegistry.ALL.map { it.id to (it.label to it.labelEn) } +
-            ActionMacros.ALL.map { it.id to (it.label to it.labelEn) }
+            ActionMacros.ALL.map { it.id to (it.label to it.labelEn) } +
+            LauncherActions.ALL.map { it.id to (it.label to it.labelEn) }
         val newlyColliding = rows
             .groupBy { it.second.second ?: it.second.first }         // gom theo nhãn EN thực dùng
             .filterValues { group -> group.size > 1 && group.map { it.second.first }.distinct().size > 1 }

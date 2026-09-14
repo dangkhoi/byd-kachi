@@ -4,8 +4,20 @@ import android.content.Context
 import com.byd.clusternav.Lang as ClusterNavLang
 
 /**
- * Lưu/khôi phục [WorkspaceState] + [DockConfig] theo HỒ SƠ TÀI XẾ (profile) + [ThemeMode] (chung), qua SharedPreferences.
- * Mỗi hồ sơ = một bố cục + thanh điều khiển riêng (khoá key theo tên hồ sơ). Off-car test được (thuần prefs).
+ * Lưu/khôi phục **mọi lựa chọn của người dùng theo HỒ SƠ TÀI XẾ** qua SharedPreferences (tệp `kachi_workspace`).
+ *
+ * ## S4 · R3 — "hồ sơ giữ TẤT CẢ", không còn khoá chung cả máy nào là cấu hình
+ * Trước S4 một hồ sơ chỉ giữ bố cục · ô · thanh nút · chip, còn chủ đề · đơn vị · hình nền · ngôn ngữ · tự-mở nằm
+ * **chung cả máy**, và toàn bộ cấu hình ClusterNav thì không ai chép. Owner 2026-09-14: *"profile cover bố cục, các
+ * cấu hình tất cả mọi thứ"*. Nay:
+ *  • hậu tố theo hồ sơ = [ProfileScope.LAUNCHER_SUFFIXES] (khai một chỗ ở `:core`, có bài canh);
+ *  • cấu hình ClusterNav đi theo hồ sơ bằng **ảnh chụp** (`WorkspacePrefsProfile.kt`: [snapshotClusterNav] /
+ *    [applyClusterNav]);
+ *  • khoá còn lại chung cả xe (`profiles` · `active_profile` · `boot_profile` · `recent_apps` · dấu chuyển đổi) đều
+ *    có lý do ghi tại chỗ ở [ProfileScope.DEVICE_KEYS].
+ *
+ * Off-car test được phần thuần (khoá/danh sách ở `:core`); phần cần `Context` thì có bài canh quét **mã nguồn**
+ * (`ProfileKeysWiringContractTest`).
  *
  * ⚠ Import có tên (`as ClusterNavLang`): `:core` cũng có một `Lang` (enum thuần `VI`/`EN`) và tệp này dùng **cả hai** —
  * [LangMode] của `:core` là kiểu trên đường dây, `ClusterNavLang` là chỗ lưu. Hai tên khác nhau thì không lẫn được; để
@@ -13,10 +25,19 @@ import com.byd.clusternav.Lang as ClusterNavLang
  * kiểu sai nếu chữ ký trùng.
  */
 class WorkspacePrefs(context: Context) {
-    private val sp = context.getSharedPreferences("kachi_workspace", Context.MODE_PRIVATE)
+    /**
+     * ⚠ `internal`, không `private`: [snapshotClusterNav]/[applyClusterNav]/[migrateScenesOnce] là **hàm mở rộng của
+     * chính lớp này** nằm ở `WorkspacePrefsProfile.kt` (trần 500 dòng — cùng cách `ClusterNavBridge` đã tách phần
+     * Cast/Phím). Chúng phải ghi vào **đúng một** `SharedPreferences` với mọi hàm ở đây; mở tệp lần thứ hai ở lớp
+     * khác là dựng **cửa thứ hai** vào cùng chỗ lưu, đúng thứ [SOÁT P1-1] đã dọn.
+     */
+    internal val sp = context.getSharedPreferences("kachi_workspace", Context.MODE_PRIVATE)
 
-    /** Cần cho đường ngôn ngữ: chỗ lưu ngôn ngữ là tệp prefs của ClusterNav, mở qua `Context` chứ không qua [sp]. */
-    private val appCtx = context.applicationContext
+    /**
+     * Cần cho đường ngôn ngữ (chỗ lưu là tệp prefs của ClusterNav) **và** cho ảnh chụp cấu hình ClusterNav
+     * ([applyClusterNav] mở từng tệp trong [ProfileScope.CLUSTERNAV_KEYS]) — cả hai đi qua `Context`, không qua [sp].
+     */
+    internal val appCtx = context.applicationContext
 
     // ── Hồ sơ tài xế ──
     fun profiles(): List<String> =
@@ -28,11 +49,30 @@ class WorkspacePrefs(context: Context) {
     fun setActiveProfile(name: String) { sp.edit().putString(K_ACTIVE, name).apply() }
 
     /**
+     * S4 · R6 — **hồ sơ lúc nổ máy**; `null` = *"hồ sơ dùng gần nhất"*.
+     *
+     * Theo **XE** ([ProfileScope.DEVICE_KEYS]), không mang tiền tố hồ sơ: nó CHỌN hồ sơ nên phải đọc được **trước
+     * khi** biết hồ sơ nào (đúng ca `active_profile`).
+     *
+     * ⚠ **Gỡ con trỏ treo ngay tại cửa ra**: tên trỏ tới một hồ sơ đã xoá ⇒ trả `null`, đúng luật *"con trỏ treo thì
+     * tự bỏ"* mà sổ cảnh của P7 đã phải học. Không làm ở đây thì màn Cài đặt hiện một hồ sơ không tồn tại, còn
+     * đường khởi động nguội lại lên bằng hồ sơ mặc định — hai bề mặt nói hai chuyện và không ai hiểu vì sao.
+     */
+    fun bootProfile(): String? = sp.getString(K_BOOT_PROFILE, null)?.takeIf { it in profiles() }
+
+    /** Ghi bền hồ sơ lúc nổ máy; `null`/tên lạ ⇒ **xoá khoá** (đọc lại không phải phân biệt "rỗng" với "chưa có"). */
+    fun setBootProfile(name: String?) {
+        sp.edit().apply {
+            if (name == null || name !in profiles()) remove(K_BOOT_PROFILE) else putString(K_BOOT_PROFILE, name)
+        }.apply()
+    }
+
+    /**
      * Thêm một hồ sơ và chuyển sang nó. Tên trùng hồ sơ đã có ⇒ chỉ chuyển sang, không tạo thêm.
      *
      * ## ⚠ [SOÁT P2-2] Hồ sơ MỚI phải bắt đầu TRỐNG — kể cả trên máy đã chạy bản cũ
      * [deleteProfile] nay dọn sạch khoá, nhưng **máy đang chạy trên xe thì không**: mọi hồ sơ từng bị xoá bằng bản cũ
-     * còn để lại nguyên `<tên>__slot_*`, `__scenes`… trên đĩa. Đặt lại đúng cái tên đó sẽ nạp cấu hình của một hồ sơ
+     * còn để lại nguyên `<tên>__slot_*`, `<tên>__theme_mode`… trên đĩa. Đặt lại đúng cái tên đó sẽ nạp cấu hình của một hồ sơ
      * người dùng tưởng đã xoá — trong đó có thể có `aw:<id>` mà id đã bị thu hồi ⇒ ô ra thẻ *"app đã bị gỡ"* dù app
      * còn nguyên. Dọn ở đây làm ca đó tự lành, không cần lượt di dữ liệu nào.
      */
@@ -52,7 +92,7 @@ class WorkspacePrefs(context: Context) {
      *
      * ## ⚠⚠ [SOÁT P2-2] Bản cũ chỉ sửa hai khoá danh sách, để lại toàn bộ dữ liệu hồ sơ
      * Nó cập nhật `profiles` + `active_profile` rồi dừng, nên `<tên>__preset`, `<tên>__slot_0..5`, `<tên>__dock_*`,
-     * `<tên>__top_strip`, `<tên>__grid_layout`, `<tên>__scenes`, `<tên>__boot_scene` **vẫn nằm nguyên trên đĩa**. Hai
+     * `<tên>__top_strip`, `<tên>__grid_layout`, `<tên>__cn__*` **vẫn nằm nguyên trên đĩa**. Hai
      * hậu quả, cái sau nặng hơn:
      *  1. tệp prefs phình vô hạn (xoá/tạo hồ sơ bao nhiêu lần cũng không bao giờ thu lại);
      *  2. [addProfile] KHÔNG kiểm khoá cũ ⇒ đặt lại **đúng cái tên vừa xoá** thì hồ sơ "mới" nạp nguyên cấu hình cũ,
@@ -74,7 +114,15 @@ class WorkspacePrefs(context: Context) {
         e.apply()
     }
 
-    private fun key(suffix: String) = "${activeProfile()}__$suffix"
+    internal fun key(suffix: String) = keyOf(activeProfile(), suffix)
+
+    /**
+     * Khoá của **một hồ sơ bất kỳ** — ĐÚNG MỘT chỗ trong dự án ghép tiền tố tên hồ sơ vào hậu tố.
+     *
+     * Ghép tay ở chỗ thứ hai là cách chắc chắn để một bên dùng `__` còn bên kia dùng `_` (và lỗi đó **im lặng**: khoá
+     * mới đơn giản là rỗng ⇒ cấu hình "về mặc định" mà không ai biết vì sao).
+     */
+    internal fun keyOf(profile: String, suffix: String) = "${profile}__$suffix"
 
     /**
      * Mọi khoá thuộc hồ sơ [name] — **một chỗ duy nhất** khai danh sách này.
@@ -83,7 +131,7 @@ class WorkspacePrefs(context: Context) {
      * thêm một khoá theo-hồ-sơ rồi chỉ cập nhật một trong hai chỗ — và cả hai lỗi đều **im lặng** (khoá mồ côi / id
      * widget bị xoá oan). Có bài canh đòi mọi lời gọi `key("…")` trong tệp này phải có mặt trong [PROFILE_SUFFIXES].
      */
-    private fun profileKeys(name: String): List<String> = PROFILE_SUFFIXES.map { "${name}__$it" }
+    internal fun profileKeys(name: String): List<String> = PROFILE_SUFFIXES.map { keyOf(name, it) }
 
     /**
      * [SOÁT P0-1] Id widget bên thứ ba đang bị **các hồ sơ KHÁC** giữ (bỏ hồ sơ đang dùng — xem KDoc
@@ -96,8 +144,12 @@ class WorkspacePrefs(context: Context) {
         val active = activeProfile()
         return profiles().filter { it != active }.flatMapTo(mutableSetOf()) { p ->
             AppWidgetIds.idsInStored(
-                slotRaw = (0 until WorkspaceState.SLOT_CAP).map { sp.getString("${p}__slot_$it", "") ?: "" },
-                scenesRaw = sp.getString("${p}__$K_SCENES", null),
+                slotRaw = (0 until WorkspaceState.SLOT_CAP).map { sp.getString(keyOf(p, "slot_$it"), "") ?: "" },
+                // ⚠⚠ S4 · R2 — vẫn đọc chuỗi CẢNH đời cũ, và đó không phải mã thừa. Trong cửa sổ *"bản mới đã cài
+                // nhưng `migrateScenesOnce` chưa chạy"* thì id widget của một cảnh **chỉ còn nằm ở đây**; bỏ vế này
+                // là để lượt dọn rác đầu tiên của bản mới thu hồi chúng **vĩnh viễn** — tức chính lượt nâng cấp làm
+                // mất dữ liệu. Sau khi chuyển xong, khoá này đã bị xoá nên phép đọc trả `null` và vế tự tắt.
+                scenesRaw = sp.getString(keyOf(p, LEGACY_SCENES), null),
             )
         }
     }
@@ -116,10 +168,10 @@ class WorkspacePrefs(context: Context) {
      */
     fun profileLayout(name: String): Pair<LayoutPreset?, Int> {
         val custom = grid(name)
-        val preset = runCatching { LayoutPreset.valueOf(sp.getString("${name}__preset", LayoutPreset.THREE.name)!!) }
+        val preset = runCatching { LayoutPreset.valueOf(sp.getString(keyOf(name, "preset"), LayoutPreset.THREE.name)!!) }
             .getOrDefault(LayoutPreset.THREE)
         val shown = EffectiveLayout.slotCount(preset, custom).coerceAtMost(WorkspaceState.SLOT_CAP)
-        val filled = (0 until shown).count { decode(sp.getString("${name}__slot_$it", "") ?: "") != SlotContent.Empty }
+        val filled = (0 until shown).count { decode(sp.getString(keyOf(name, "slot_$it"), "") ?: "") != SlotContent.Empty }
         return EffectiveLayout.highlightedPreset(preset, custom) to filled
     }
 
@@ -155,13 +207,14 @@ class WorkspacePrefs(context: Context) {
             .apply()
     }
 
-    // ── Theme (chung mọi hồ sơ) ──
+    // ── Theme (S4 · R3a — nay THEO HỒ SƠ; xem [profileString] về đường lùi khoá chung cũ) ──
     fun themeMode(): ThemeMode =
-        runCatching { ThemeMode.valueOf(sp.getString(K_THEME, ThemeMode.NIGHT.name)!!) }.getOrDefault(ThemeMode.NIGHT)
+        runCatching { ThemeMode.valueOf(profileString(K_THEME) ?: ThemeMode.NIGHT.name) }
+            .getOrDefault(ThemeMode.NIGHT)
 
-    fun setThemeMode(m: ThemeMode) { sp.edit().putString(K_THEME, m.name).apply() }
+    fun setThemeMode(m: ThemeMode) { sp.edit().putString(key(K_THEME), m.name).apply() }
 
-    // ── Ngôn ngữ (chung mọi hồ sơ) — U5 · T3 ──
+    // ── Ngôn ngữ (S4 · R3a — nay THEO HỒ SƠ; nguồn là `<hồ sơ>__lang`, xem [broadcastLang]) — U5 · T3 ──
     /**
      * ⚠⚠ **KHÔNG có khoá `lang` trong tệp `kachi_workspace`** — hai hàm này **uỷ quyền** sang chỗ lưu ngôn ngữ đã
      * tồn tại của ClusterNav ([com.byd.clusternav.Lang], tệp `clusternav_lang`, khoá `lang`).
@@ -188,17 +241,40 @@ class WorkspacePrefs(context: Context) {
      * bền trực tiếp*. Cho `SettingsSections` gọi `Lang.setChoice` thì tầng UI lại ghi thẳng xuống đĩa — đúng thứ RW0
      * vừa dọn xong.
      */
-    fun langMode(): LangMode = LangMode.of(ClusterNavLang.choice(appCtx).code)
+    fun langMode(): LangMode {
+        val k = key(K_LANG)
+        sp.getString(k, null)?.let { return LangMode.of(it) }
+        // Lùi MỘT lần về chỗ lưu chung cũ rồi ghi sang hồ sơ: người đang dùng English không được mất lựa chọn đó chỉ
+        // vì bản mới chia khoá theo hồ sơ (cùng luật [profileString], chỉ khác chỗ lưu).
+        val legacy = LangMode.of(ClusterNavLang.choice(appCtx).code)
+        sp.edit().putString(k, legacy.code).apply()
+        return legacy
+    }
 
-    fun setLangMode(mode: LangMode) =
+    fun setLangMode(mode: LangMode) {
+        sp.edit().putString(key(K_LANG), mode.code).apply()
+        broadcastLang(mode)
+    }
+
+    /**
+     * Phát lựa chọn ngôn ngữ của hồ sơ đang dùng sang chỗ lưu **dùng chung cả APK** (`clusternav_lang`).
+     *
+     * ⚠ Hai chỗ lưu, nhưng KHÔNG phải bẫy hai-bản-sao: bản theo hồ sơ (`<hồ sơ>__lang`) là **nguồn sự thật**, bản kia
+     * chỉ là **bản PHÁT** cho `attachBaseContext` của màn ClusterNav đọc (nó không biết hồ sơ là gì). Một chiều, luôn
+     * ghi từ nguồn sang bản phát, không bao giờ ngược lại — xem [ProfileScope.LAUNCHER_OWNED_CLUSTERNAV_KEYS].
+     *
+     * Gọi từ [setLangMode] **và** từ lượt đổi hồ sơ (`PrefsWorkspaceRepository.switchProfile`): thiếu lời gọi thứ hai
+     * thì đổi sang một hồ sơ dùng English mà màn ClusterNav vẫn tiếng Việt.
+     */
+    internal fun broadcastLang(mode: LangMode = langMode()) =
         ClusterNavLang.setChoice(appCtx, ClusterNavLang.Choice.entries.first { it.code == mode.code })
 
-    // ── Launcher auto-start (chung mọi hồ sơ) — B6 ──
+    // ── Launcher auto-start (S4 · R3a — nay THEO HỒ SƠ; xem [profileBoolean] về đường lùi khoá chung cũ) — B6 ──
     // Nổ máy → Kachi tự làm setup KHÔNG cần bung view (seed freeform + đặt HOME + đảm bảo HOME lên để khôi phục ô).
     // Kill-switch của người dùng; MẶC ĐỊNH BẬT (launcher nên tự sẵn sàng). [com.byd.clusternav.KachiAutostart] đọc cờ này.
-    fun launcherAutostart(): Boolean = sp.getBoolean(K_AUTOSTART, true)
+    fun launcherAutostart(): Boolean = profileBoolean(K_AUTOSTART, true)
 
-    fun setLauncherAutostart(on: Boolean) { sp.edit().putBoolean(K_AUTOSTART, on).apply() }
+    fun setLauncherAutostart(on: Boolean) { sp.edit().putBoolean(key(K_AUTOSTART), on).apply() }
 
     // ── App mở gần đây (chung mọi hồ sơ) — U3 ──
     // CHUNG chứ không theo hồ sơ: đây là lịch sử dùng máy, không phải bố cục của một tài xế (cùng cách với theme).
@@ -208,15 +284,16 @@ class WorkspacePrefs(context: Context) {
         sp.edit().putString(K_RECENT, RecentApps.encode(RecentApps.touch(recentApps(), pkg))).apply()
     }
 
-    // ── Đơn vị hiển thị (chung mọi hồ sơ) — RW0/R11 ──
-    // CHUNG chứ không theo hồ sơ: đơn vị là thói quen của người ĐỌC (cùng cách với theme). Chuỗi rỗng/rác ⇒ mặc định.
-    fun unitPrefs(): UnitPrefs = UnitPrefs.decode(sp.getString(K_UNITS, null))
+    // ── Đơn vị hiển thị (S4 · R3a — nay THEO HỒ SƠ) — RW0/R11 ──
+    // Owner 2026-09-14 "profile cover ... tất cả mọi thứ": đơn vị là lựa chọn của MỘT người lái, nên nó đi theo hồ
+    // sơ như chủ đề/hình nền. Đường lùi khoá chung cũ ở [profileString]. Chuỗi rỗng/rác ⇒ mặc định.
+    fun unitPrefs(): UnitPrefs = UnitPrefs.decode(profileString(K_UNITS))
 
-    fun setUnitPrefs(prefs: UnitPrefs) { sp.edit().putString(K_UNITS, prefs.encode()).apply() }
+    fun setUnitPrefs(prefs: UnitPrefs) { sp.edit().putString(key(K_UNITS), prefs.encode()).apply() }
 
     /**
-     * U4 — hình nền + trình chiếu. CHUNG mọi hồ sơ: hình nền là thứ nhìn thấy cả màn, không phải thuộc tính của một
-     * hồ sơ (cùng lối với giao diện sáng/tối và đơn vị).
+     * U4 — hình nền + trình chiếu. S4 · R3a: **theo HỒ SƠ** (cùng lối với chủ đề, đơn vị, ngôn ngữ) — đường lùi
+     * khoá chung cũ ở [profileString], nên lựa chọn đang có trên xe không mất khi cập nhật.
      */
     /** Bố cục tự vẽ của hồ sơ đang dùng. Rỗng = chưa vẽ ⇒ dùng bố cục sẵn. */
     /**
@@ -245,7 +322,7 @@ class WorkspacePrefs(context: Context) {
      * sửa một trong hai (cùng họ với bẫy hai-bản-sao đã ghi ở KDoc [PROFILE_SUFFIXES]).
      */
     private fun grid(name: String): GridLayout {
-        val raw = WorkspaceGrid.decode(sp.getString("${name}__$K_GRID", null))
+        val raw = WorkspaceGrid.decode(sp.getString(keyOf(name, K_GRID), null))
         val sane = raw.frames.filter {
             it.cols in WorkspaceGrid.MIN_COLS..WorkspaceGrid.COLS &&
                 it.rows in WorkspaceGrid.MIN_ROWS..WorkspaceGrid.ROWS &&
@@ -262,35 +339,46 @@ class WorkspacePrefs(context: Context) {
         }.apply()
     }
 
-    fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.decode(sp.getString(K_WALL, null))
+    fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.decode(profileString(K_WALL))
 
-    fun setWallpaperPrefs(prefs: WallpaperPrefs) { sp.edit().putString(K_WALL, prefs.encode()).apply() }
+    fun setWallpaperPrefs(prefs: WallpaperPrefs) { sp.edit().putString(key(K_WALL), prefs.encode()).apply() }
+
+    // ── S4 · R3(a) — LÙI về khoá chung cũ, đúng MỘT lần, rồi ghi sang hồ sơ ──────────────────────
 
     /**
-     * P7 + P6 — **SỔ CẢNH**, lưu THEO HỒ SƠ (mỗi tài xế có bộ cảnh riêng, giống bố cục và thanh nút).
+     * Giá trị chuỗi theo hồ sơ; **chưa có ⇒ lùi về khoá chung cũ** (cùng tên, không tiền tố) rồi ghi sang hồ sơ.
      *
-     * ## Vì sao HAI khoá, không phải một
-     * `scenes` = danh sách; `boot_scene` = mã cảnh lúc nổ máy. Chúng là **hai câu hỏi khác nhau** của người dùng
-     * (*"tôi có những cảnh nào"* vs *"cái nào lên lúc nổ máy"*) nên mỗi câu có một mục riêng trong [SettingsCatalog] —
-     * gộp vào một khoá thì một trong hai mục sẽ phải khai `prefKey = null`, tức chỗ lưu của nó biến mất khỏi tầm kiểm
-     * của bài test phủ khoá.
+     * ## Vì sao phải lùi, chứ không chỉ đọc mặc định
+     * Bốn khoá này (`theme_mode` · `unit_prefs` · `wallpaper_prefs` · `launcher_autostart`) **đã nằm trên đĩa của xe
+     * đang chạy** dưới dạng khoá chung cả máy. Bản mới đọc theo hồ sơ mà không lùi thì lượt mở app đầu tiên sau khi
+     * cập nhật sẽ nói *"chưa chọn gì"* — tức người dùng mất sạch lựa chọn giao diện/đơn vị/hình nền của mình, im
+     * lặng, và không có đường lấy lại (giá trị cũ vẫn ở đó nhưng không ai đọc nữa).
      *
-     * Cái giá của hai khoá là **lệch nhau được**: `boot_scene` có thể trỏ tới cảnh đã bị xoá khỏi `scenes`. Giá đó trả
-     * bằng máy chứ không bằng lời hứa — [SceneBook.decode] nhận cả hai chuỗi và **tự gỡ** con trỏ treo ngay tại cửa
-     * vào, nên phần còn lại của app không bao giờ thấy trạng thái lệch.
+     * ## Vì sao GHI sang hồ sơ ngay, và vì sao KHÔNG xoá khoá cũ
+     * Ghi ngay ⇒ mọi lượt đọc sau chỉ còn một đường, và [snapshotClusterNav]/[duplicateProfile] thấy đủ dữ liệu. Giữ
+     * khoá cũ ⇒ **mọi** hồ sơ đã có đều thừa hưởng đúng lựa chọn đó ở lần đọc đầu của nó (nếu xoá ngay sau hồ sơ đầu
+     * tiên thì hồ sơ thứ hai lại về mặc định — đúng cái lỗi đang chữa, chỉ chậm hơn một nhịp).
+     *
+     * Kiểu sai trên đĩa (người dùng sửa tay, hoặc bản cũ ghi kiểu khác) ⇒ coi như chưa có: `getString` trên một khoá
+     * ghi bằng `putBoolean` **ném** `ClassCastException`, và launcher không được sập vì một byte hỏng.
      */
-    fun sceneBook(): SceneBook =
-        SceneBook.decode(sp.getString(key(K_SCENES), null), sp.getString(key(K_BOOT_SCENE), null))
-
-    fun setSceneBook(book: SceneBook) {
-        val clean = book.normalised()
-        sp.edit().apply {
-            putString(key(K_SCENES), SceneBook.encode(clean))
-            // Bỏ dấu ⇒ XOÁ khoá thay vì ghi chuỗi rỗng: đọc lại sẽ không phải phân biệt "rỗng" với "chưa có".
-            if (clean.bootSceneId == null) remove(key(K_BOOT_SCENE)) else putString(key(K_BOOT_SCENE), clean.bootSceneId)
-        }.apply()
+    private fun profileString(suffix: String): String? {
+        val k = key(suffix)
+        if (sp.contains(k)) return sp.getString(k, null)
+        val legacy = runCatching { sp.getString(suffix, null) }.getOrNull() ?: return null
+        sp.edit().putString(k, legacy).apply()
+        return legacy
     }
 
+    /** [profileString] cho giá trị `Boolean` (`launcher_autostart`). Cùng luật, cùng lý do. */
+    private fun profileBoolean(suffix: String, def: Boolean): Boolean {
+        val k = key(suffix)
+        if (sp.contains(k)) return sp.getBoolean(k, def)
+        if (!sp.contains(suffix)) return def
+        val legacy = runCatching { sp.getBoolean(suffix, def) }.getOrDefault(def)
+        sp.edit().putBoolean(k, legacy).apply()
+        return legacy
+    }
 
     // ⚠ Phép mã hoá nội dung ô đã chuyển sang `:core` ([SlotCodec]) khi cảnh (P7/P6) cần lưu **cùng** dạng đó. Để
     // lại hai bản ở hai nơi là cách chắc chắn để cảnh đọc ra nội dung ô khác với thứ người dùng đã lưu — cùng họ với
@@ -301,47 +389,64 @@ class WorkspacePrefs(context: Context) {
 
     companion object {
         const val DEFAULT_PROFILE = "Mặc định"
-        private const val K_PROFILES = "profiles"
-        private const val K_ACTIVE = "active_profile"
+
+        // ── Khoá theo XE (R4) — KHÔNG mang tiền tố hồ sơ ────────────────────────────────────────
+        internal const val K_PROFILES = "profiles"
+        internal const val K_ACTIVE = "active_profile"
+
+        /** S4 · R6 — hồ sơ lúc nổ máy (`null`/vắng = hồ sơ dùng gần nhất). Lý do "theo xe" ở [ProfileScope.DEVICE_KEYS]. */
+        internal const val K_BOOT_PROFILE = "boot_profile"
+
+        /**
+         * S4 · R2 — dấu *"đã chuyển cảnh sang hồ sơ"*, đặt MỘT lần cho cả máy ([migrateScenesOnce]).
+         *
+         * Theo **xe** chứ không theo hồ sơ: để nó theo hồ sơ thì mỗi hồ sơ mới lại chạy lại một lượt chuyển đổi trên
+         * dữ liệu đã chuyển rồi ⇒ nhân bản cảnh cũ thành `"Đi làm 2"`, `"Đi làm 3"`… mỗi lần thêm hồ sơ.
+         */
+        internal const val K_MIGRATED_SCENES = "migrated_scenes_v1"
+
+        private const val K_RECENT = "recent_apps"
+
+        // ── Hậu tố theo HỒ SƠ (R3) — luôn đi qua [key]/[keyOf] ──────────────────────────────────
         private const val K_THEME = "theme_mode"
         private const val K_AUTOSTART = "launcher_autostart"
-        private const val K_RECENT = "recent_apps"
         private const val K_UNITS = "unit_prefs"
         private const val K_WALL = "wallpaper_prefs"
+        private const val K_LANG = "lang"
 
-    /**
-     * P9 — bố cục tự vẽ, lưu THEO HỒ SƠ (mỗi tài xế có bố cục riêng, giống thanh nút). Chuỗi tự đọc được
-     * (`0,0,7,4;7,0,5,6`) để cứu bằng tay được nếu cần.
-     */
-    private const val K_GRID = "grid_layout"
+        /**
+         * P9 — bố cục tự vẽ, lưu THEO HỒ SƠ (mỗi tài xế một bố cục, giống thanh nút). Chuỗi tự đọc được
+         * (`0,0,7,4;7,0,5,6`) để cứu bằng tay được nếu cần.
+         */
+        private const val K_GRID = "grid_layout"
 
-    /**
-     * P7 + P6 — sổ cảnh + cảnh lúc nổ máy, cả hai lưu THEO HỒ SƠ. Xem KDoc [sceneBook] về việc **vì sao hai khoá**.
-     *
-     * ⚠ Cả hai phải khai trong [SettingsCatalog] (mỗi khoá một mục), không thì `SettingsCoverageContractTest` đỏ với
-     * đúng câu *"khoá lưu bền chưa được gom vào nhóm nào"* — đó là phép kiểm của R2 và nó đối chiếu với **mã nguồn**,
-     * nên không có cách nào thêm một khoá lặng lẽ.
-     */
-    private const val K_SCENES = "scenes"
-    private const val K_BOOT_SCENE = "boot_scene"
+        // ── Khoá ĐỜI CŨ, chỉ còn ĐỌC (S4 · R1 đã bỏ khái niệm "cảnh") ───────────────────────────
 
-    /**
-     * ⚠⚠ [SOÁT P2-2] **MỌI hậu tố khoá theo-hồ-sơ, khai ĐÚNG MỘT LẦN.**
-     *
-     * Đây là danh sách mà [deleteProfile] dùng để dọn sạch và [widgetIdsOtherProfiles] dùng để dò. Hai chỗ đó **không
-     * được** tự viết lại danh sách: thêm một khoá theo-hồ-sơ ở bản sau mà chỉ cập nhật một trong hai nơi thì hoặc là
-     * khoá mồ côi sống mãi, hoặc là id widget của hồ sơ khác bị xoá oan — cả hai đều im lặng.
-     *
-     * `slot_*` phải sinh theo [WorkspaceState.SLOT_CAP], không chép tay: trần ô đã đổi một lần (4 → 6) và chỗ nào
-     * chép tay con số đó thì lần đổi sau sẽ bỏ sót hai ô cuối.
-     *
-     * ⚠ Chỉ khoá THEO HỒ SƠ. Khoá chung cả máy (`theme_mode`, `unit_prefs`, `wallpaper_prefs`, `recent_apps`,
-     * `launcher_autostart`, `profiles`, `active_profile`) **KHÔNG** được có ở đây — xoá một hồ sơ mà mất luôn lựa chọn
-     * đơn vị của cả xe là một lỗi tệ hơn lỗi đang vá. Có bài canh đòi đúng điều đó.
-     */
-    val PROFILE_SUFFIXES: List<String> = buildList {
-        addAll(listOf("preset", "dock_edge", "dock_enabled", "top_strip", K_GRID, K_SCENES, K_BOOT_SCENE))
-        addAll((0 until WorkspaceState.SLOT_CAP).map { "slot_$it" })
-    }
+        /**
+         * Hậu tố `<hồ sơ>__scenes` / `<hồ sơ>__boot_scene` của P7/P6.
+         *
+         * ⚠ Còn ở đây vì **đĩa của xe đang chạy còn chúng**, không phải vì app còn dùng: [widgetIdsOtherProfiles] đọc
+         * `scenes` làm lưới an toàn cho id widget, và [migrateScenesOnce] đọc cả hai đúng một lần rồi xoá. Chúng KHÔNG
+         * nằm trong [PROFILE_SUFFIXES] (chúng là [ProfileScope.Scope.TRANSIENT]) nên không đi theo hồ sơ nào, không
+         * được chép khi nhân bản, và không sống quá lượt chuyển đổi.
+         */
+        internal const val LEGACY_SCENES = "scenes"
+        internal const val LEGACY_BOOT_SCENE = "boot_scene"
+
+        /**
+         * ⚠⚠ **MỌI hậu tố khoá theo-hồ-sơ** — đọc THẲNG từ [ProfileScope.LAUNCHER_SUFFIXES] (`:core`), không viết lại.
+         *
+         * ## Vì sao danh sách chuyển hẳn sang `:core` ở S4
+         * Trước S4 nó là một `buildList` ngay tại đây, và văn xuôi *"chỉ khoá theo hồ sơ"* là thứ duy nhất canh nó.
+         * S4 · R3 làm danh sách dài gấp đôi (thêm chủ đề · đơn vị · hình nền · ngôn ngữ · tự-mở + một hậu tố **ảnh
+         * chụp** cho mỗi tệp prefs ClusterNav) và thêm một bảng đối xứng *"khoá theo XE"* — hai danh sách phải khớp
+         * nhau tuyệt đối, mà phép kiểm đó chỉ chạy được ở `:core` (off-car). [ProfileScope] giữ cả hai, sinh `slot_*`
+         * theo [WorkspaceState.SLOT_CAP] và hậu tố ảnh chụp theo [ProfileScope.CLUSTERNAV_KEYS], và `ProfileScopeTest`
+         * đòi **mọi** khoá lưu bền đã khai trong mã phải rơi vào đúng một bảng.
+         *
+         * Viết lại danh sách ở đây (kể cả "chép cho gọn") là mở lại đúng cái cửa đó: [deleteProfile] sẽ để khoá mồ
+         * côi, [widgetIdsOtherProfiles] sẽ dò thiếu — cả hai **im lặng**.
+         */
+        val PROFILE_SUFFIXES: List<String> = ProfileScope.LAUNCHER_SUFFIXES
     }
 }

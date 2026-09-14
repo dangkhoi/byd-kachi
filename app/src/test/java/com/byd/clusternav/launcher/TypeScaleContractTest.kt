@@ -37,7 +37,7 @@ class TypeScaleContractTest {
      * lệ) KHÔNG ở đây — cỡ của chúng là ngoại lệ có lý do (mật độ / hình học), KHÔNG phải bậc chữ giao diện.
      */
     private val SURFACES = listOf(
-        "SettingsSections.kt", "SettingsSectionsHome.kt", "SettingsSceneSection.kt",
+        "SettingsSections.kt", "SettingsSectionsHome.kt",
         "SettingsPanel.kt", "TopStripPicker.kt", "SettingsRows.kt",
         "AppDrawer.kt", "KachiTopStrip.kt", "OverlayHeads.kt", "WorkspaceView.kt", "LayoutEditorPanel.kt",
         // T6 tách phần danh sách app ra khỏi `AppDrawer` (trần 500 dòng). Tệp mới vẽ chữ ⇒ phải ở trong bài canh

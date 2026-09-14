@@ -75,6 +75,27 @@ class DockPickerContractTest {
         assertEquals(emptyList<String>(), DockSelection.apply(DockConfig(enabled = listOf("lock")), emptySet()).enabled)
     }
 
+    /**
+     * S4 · R12 — **thanh nút NHẬN hành động của launcher**, đi qua đúng đường cũ.
+     *
+     * [DockSelection.apply] không biết gì về loại khả năng (cố ý — "mã nào vào được thanh" chỉ có MỘT chỗ trả lời
+     * là `DockConfig.setEnabled`), nên bài này chạy thật để chứng minh cổng đó đã mở cho loại thứ ba: `setEnabled`
+     * hỏi `CapabilityCatalog.kindOf(id) == null`, mà `kindOf` nay trả [CapabilityKind.LAUNCHER] cho hai mã này.
+     * Không có phép chạy này thì một lần siết cổng thành `kindOf(id) != WRITE` sẽ làm nút *Ứng dụng* im lặng biến
+     * mất khỏi thanh của người đã đặt nó.
+     */
+    @Test
+    fun `thanh nut nhan hanh dong cua launcher`() {
+        val base = DockConfig(enabled = listOf("lock"))
+        val out = DockSelection.apply(base, setOf("lock", LauncherActions.APPS, LauncherActions.SETTINGS))
+        assertEquals(
+            listOf("lock", LauncherActions.APPS, LauncherActions.SETTINGS), out.enabled,
+            "hai mã launcher phải vào được thanh, nối vào CUỐI theo thứ tự catalog",
+        )
+        // Và bỏ tích vẫn gỡ được (chiều TẮT không được quên loại mới).
+        assertEquals(listOf("lock"), DockSelection.apply(out, setOf("lock")).enabled)
+    }
+
     /** Mã lạ vẫn bị `DockConfig.setEnabled` từ chối — [DockSelection] KHÔNG được nhân bản phép kiểm đó. */
     @Test
     fun `ma la khong vao duoc thanh`() {

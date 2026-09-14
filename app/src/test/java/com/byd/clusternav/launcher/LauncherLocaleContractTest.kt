@@ -69,27 +69,50 @@ class LauncherLocaleContractTest {
     }
 
     /**
-     * Một chỗ lưu ngôn ngữ cho CẢ APK: `WorkspacePrefs` uỷ quyền sang `com.byd.clusternav.Lang` (tệp
-     * `clusternav_lang`), KHÔNG mở khoá `lang` thứ hai trong `kachi_workspace`.
+     * ═══ MỘT NGUỒN SỰ THẬT cho ngôn ngữ — **bài đảo chiều ở S4 · R3(a)**, giữ nguyên lịch sử ═══════════════════
      *
-     * Hai công tắc cho một câu hỏi *"người ngồi đây đọc thứ tiếng nào"* sẽ biểu hiện thành: chọn English ở Cài đặt
-     * Kachi rồi mở màn ClusterNav thì màn đó **vẫn tiếng Việt**.
+     * **Chiều CŨ (U5 · T3)**: ngôn ngữ CHUNG cả máy, chỗ lưu là `clusternav_lang` của ClusterNav, và bài này **cấm**
+     * mở khoá `lang` thứ hai trong `kachi_workspace`. Lý do: hai công tắc cho một câu hỏi *"người ngồi đây đọc thứ
+     * tiếng nào"* sẽ biểu hiện thành *chọn English ở Cài đặt Kachi rồi mở màn ClusterNav thì màn đó vẫn tiếng Việt*.
      *
-     * [ĐO] máy ảo 2026-09-12 (soát độc lập): chọn "Tiếng Việt" trong Cài đặt Kachi ⇒ tệp **`clusternav_lang.xml`**
-     * (của ClusterNav, không phải `kachi_workspace.xml`) nhận `<string name="lang">vi</string>` ⇒ chỗ lưu dùng chung
-     * là thật, không chỉ là ý định trong KDoc.
+     * **Chiều MỚI (S4 · R3a)**: hồ sơ giữ TẤT CẢ, và ngôn ngữ là *lựa chọn của một người lái* chứ không phải của
+     * chiếc xe ⇒ nguồn sự thật chuyển về `<hồ sơ>__lang`. Nhưng **bệnh cũ không được phép quay lại**, nên luật đổi
+     * hình chứ không nới: hai chỗ lưu được phép tồn tại **chỉ khi** chúng là *nguồn* và *bản phát*, một chiều, và
+     * chiều đó đi qua **đúng một hàm**.
+     *
+     * Ba điều bài này chốt, và cả ba đều là thứ làm bệnh cũ sống lại nếu thiếu:
+     *  1. `ClusterNavLang.setChoice` chỉ được gọi ở **một** chỗ (`broadcastLang`) — hai chỗ ghi là hai đường phát,
+     *     và đường nào quên gọi thì màn ClusterNav lệch ngôn ngữ với launcher;
+     *  2. lượt **đổi hồ sơ** phải phát lại (`PrefsWorkspaceRepository.switchProfile` gọi `broadcastLang`) — thiếu nó
+     *     thì đúng triệu chứng cũ quay lại, chỉ đổi cách kích hoạt (đổi hồ sơ thay vì chọn ngôn ngữ);
+     *  3. chiều ĐỌC không bao giờ ngược: `ClusterNavLang.choice` chỉ được đọc trong `langMode()` và chỉ để **lùi một
+     *     lần** cho máy đã chạy bản cũ (nếu không, người đang dùng English mất lựa chọn khi cập nhật).
      */
     @Test
-    fun `mot cho luu ngon ngu cho ca APK`() {
+    fun `mot nguon su that cho ngon ngu, clusternav_lang chi la ban phat`() {
         val prefs = code(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt"))
-        assertTrue(
-            prefs.contains("ClusterNavLang.choice(") && prefs.contains("ClusterNavLang.setChoice("),
-            "`WorkspacePrefs.langMode/setLangMode` phải UỶ QUYỀN sang chỗ lưu ngôn ngữ của ClusterNav",
+        val repo = code(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt"))
+        assertEquals(
+            1, Regex("""ClusterNavLang\.setChoice\(""").findAll(prefs).count(),
+            "đường PHÁT sang `clusternav_lang` phải có đúng MỘT chỗ ghi (`broadcastLang`)",
         )
-        assertFalse(
-            Regex("""K_LANG|putString\(\s*"lang"""").containsMatchIn(prefs),
-            "KHÔNG được mở khoá `lang` thứ hai trong `kachi_workspace` — đó là bẫy hai-bản-sao mà dự án đã trả giá " +
-                "bốn lần (customLayout · unitPrefs ×4 · wallpaper · themeMode)",
+        assertTrue(
+            SourceRoots.body(prefs, "internal fun broadcastLang(").contains("ClusterNavLang.setChoice("),
+            "và chỗ ghi đó phải chính là `broadcastLang` — tên hàm nói ra nó là bản phát, không phải chỗ nhớ",
+        )
+        assertEquals(
+            1, Regex("""ClusterNavLang\.choice\(""").findAll(prefs).count(),
+            "chiều ĐỌC ngược chỉ được có đúng một chỗ: lượt lùi MỘT LẦN trong `langMode()` cho máy đã chạy bản cũ",
+        )
+        assertTrue(
+            SourceRoots.body(repo, "override fun switchProfile(name: String): HomeUiState")
+                .contains("prefs.broadcastLang()"),
+            "đổi hồ sơ PHẢI phát lại ngôn ngữ — thiếu nó thì hồ sơ dùng English mà màn ClusterNav vẫn tiếng Việt " +
+                "(đúng triệu chứng U5 đã chữa, chỉ đổi cách kích hoạt)",
+        )
+        assertTrue(
+            Regex("""putString\(key\(K_LANG\)""").containsMatchIn(prefs),
+            "nguồn sự thật phải là khoá THEO HỒ SƠ `<hồ sơ>__lang` (S4 · R3a)",
         )
     }
 

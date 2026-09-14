@@ -151,7 +151,9 @@ class KachiAutostartServiceWiringTest {
     @Test
     fun `workspace prefs declares launcher autostart defaulting to true`() {
         assertTrue(prefs.contains("fun launcherAutostart(): Boolean"), "getter declared")
-        assertTrue(prefs.contains("getBoolean(K_AUTOSTART, true)"), "defaults ON (true)")
+        // S4 · R3(a): the flag is now per-profile, read through `profileBoolean` (which falls back once to the old
+        // device-wide key so nobody loses their choice on upgrade). The default itself is unchanged: ON.
+        assertTrue(prefs.contains("profileBoolean(K_AUTOSTART, true)"), "defaults ON (true)")
         assertTrue(prefs.contains("fun setLauncherAutostart(on: Boolean)"), "setter present")
     }
 

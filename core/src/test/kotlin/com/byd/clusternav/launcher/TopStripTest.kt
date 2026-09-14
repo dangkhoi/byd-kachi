@@ -76,6 +76,29 @@ class TopStripTest {
         assertTrue(TopStripConfig.choices().none { it.kind == CapabilityKind.WRITE }, "màn chọn cũng không được bày nút")
     }
 
+    /**
+     * S4 · R12 — **hành động của launcher cũng KHÔNG lên được thanh trên**, và bị chặn do CẤU TẠO.
+     *
+     * [TopStripConfig.isChippable] hỏi *"có phải mục ĐỌC không"*, chứ không hỏi *"có phải nút không"*. Nhờ chiều
+     * khẳng định đó, loại khả năng MỚI mặc định bị từ chối; viết theo chiều phủ định (`!= WRITE`) thì mỗi loại
+     * mới lại lọt lên thanh trên cho tới khi có ai nhớ ra phải chặn — và chip 24dp vẫn là một đích chạm quá nhỏ,
+     * dù cú bấm đi tới launcher hay tới xe.
+     */
+    @Test
+    fun `hanh dong cua launcher KHONG len duoc thanh tren`() {
+        val cfg = TopStripConfig(listOf(TopStripConfig.PM25))
+        LauncherActions.ALL.forEach { a ->
+            assertEquals(CapabilityKind.LAUNCHER, CapabilityCatalog.kindOf(a.id), "tiền đề: ${a.id} là loại LAUNCHER")
+            assertFalse(TopStripConfig.isChippable(a.id), "${a.id} không được coi là chip được")
+            assertEquals(cfg, cfg.setEnabled(a.id, true), "${a.id} KHÔNG được lên thanh trên")
+        }
+        assertTrue(
+            TopStripConfig.choices().none { it.kind == CapabilityKind.LAUNCHER },
+            "màn chọn chip cũng không được bày chúng — bày ra thứ `setEnabled` sẽ từ chối là để người dùng bấm " +
+                "vào chỗ không có gì xảy ra",
+        )
+    }
+
     @Test
     fun `day tran thi bo qua chu khong day mot chip khac ra`() {
         var cfg = TopStripConfig(emptyList())
@@ -117,9 +140,10 @@ class TopStripTest {
      * ô nào được gợi ý loại để phân biệt).
      *
      * [ĐO] soát U6: đổi `pm25_value` từ `"PM2.5"` sang `"Bụi mịn PM2.5"` làm nó **trùng khít** nhãn của chip dựng
-     * sẵn `chip_pm25` — hai dòng chữ y hệt nhau, cả VI lẫn EN, trong cùng hộp thoại *"Thêm chip khác…"*
-     * (`TopStripPicker.openMore` bày phẳng `choices()`, **không** vẽ dòng phụ ⇒ `displaySub` không cứu được ở đây).
-     * Hai dòng đó trỏ vào hai việc khác nhau: chip đổi mức 1–6 thành CHỮ, datum là TRỊ SỐ µg/m³.
+     * sẵn `chip_pm25` — hai ô chữ y hệt nhau, cả VI lẫn EN. S4 · R11 làm ca này **nặng hơn** chứ không nhẹ đi: cả
+     * hai mã đều thuộc [Domain.CLIMATE] nên từ nay chúng nằm CẠNH NHAU trong cùng một khối của [TopStripConfig.picks]
+     * (ô chỉ có nhãn, **không** vẽ dòng phụ ⇒ `displaySub` không cứu được ở đây).
+     * Hai ô đó trỏ vào hai việc khác nhau: chip đổi mức 1–6 thành CHỮ, datum là TRỊ SỐ µg/m³.
      *
      * So **cả hai ngôn ngữ**: nhãn Anh là chuỗi riêng, trùng ở một bên không suy ra trùng ở bên kia.
      */
@@ -134,8 +158,8 @@ class TopStripTest {
                     .map { (label, g) -> "$label → " + g.map { it.id } }
                 assertEquals(
                     emptyList<String>(), dup,
-                    "hai ô cùng chữ trong hộp thoại chọn chip ($lang) ⇒ người dùng bấm nhầm và không biết mình " +
-                        "vừa bấm cái nào — hộp thoại này bày PHẲNG, không có dòng phụ để cứu",
+                    "hai ô cùng chữ trong màn chọn chip ($lang) ⇒ người dùng bấm nhầm và không biết mình " +
+                        "vừa bấm cái nào — ô ở đây chỉ có nhãn, không có dòng phụ để cứu",
                 )
             }
         } finally {
@@ -143,14 +167,87 @@ class TopStripTest {
         }
     }
 
+    // ── S4 · R11 (2026-09-14): trần 8 + màn chọn bày MỌI mục đọc theo lĩnh vực ──────────────────────
+
+    /**
+     * **Trần = 8**, ghim tại `:core` chứ không ở tầng vẽ.
+     *
+     * Con số này đi vào **ba** chỗ ở `:app` (câu chú thích màn chọn · câu nhắc khi đầy · phép chia bề rộng chip của
+     * `KachiTopStrip.fitChips`). Khoá nó ở đây nghĩa là ba chỗ đó không thể lệch nhau, và đổi trần là một sửa đổi
+     * **có chủ ý** (bài này đỏ) chứ không phải một con số ai đó nới lúc vá giao diện — xem lý do ở KDoc [TopStripConfig.CAP].
+     */
+    @Test
+    fun `tran chip la 8 - khoa o core`() {
+        assertEquals(8, TopStripConfig.CAP, "S4 · R11 (a): 4 → 8 sau khi R7 gỡ 5 nút bố cục khỏi thanh trên")
+        assertTrue(
+            TopStripConfig.DEFAULT.ids.size < TopStripConfig.CAP,
+            "nới trần KHÔNG được kéo theo mặc định: ai không sửa gì vẫn phải thấy đúng 3 chip cũ",
+        )
+    }
+
+    /**
+     * Màn chọn bày **ĐỦ** mọi thứ đặt được — và mỗi mã **đúng một ô**.
+     *
+     * ## Lỗ mà bài này bịt
+     * Tới U6 màn chọn bày ≤ 7 ô, phần còn lại giấu sau nút *"Thêm chip khác…"* (một hộp thoại phẳng 120 dòng). R11
+     * bỏ hộp thoại đó và bày thẳng theo lĩnh vực ⇒ phép kiểm đúng không còn là *"có nút kia không"* mà là **tổng số
+     * ô = tổng số mã đặt được**. Thiếu một khối (vd quên [Domain] mới) thì mã của khối đó biến mất khỏi màn chọn mà
+     * không có gì báo — đúng loại hụt chỉ phép đếm mới thấy.
+     *
+     * Phép đếm thứ hai (mỗi mã một ô) khoá lỗi RW0: cả hai màn chọn giữ bảng tra `tiles[id]`, một mã hai ô thì bảng
+     * bị ghi đè và ô trước nói sai cấu hình.
+     */
+    @Test
+    fun `man chon bay du moi muc dat duoc va moi ma dung mot o`() {
+        val cfg = TopStripConfig.DEFAULT.setEnabled("tyre_p_fl", true)
+        val ids = TopStripConfig.picks(cfg).flatMap { it.picks }.map { it.id }
+        assertEquals(ids.distinct(), ids, "một mã hai ô ⇒ bảng tra `tiles[id]` bị ghi đè (đúng lỗi RW0)")
+        assertEquals(
+            TopStripConfig.choices().map { it.id }.toSet(), ids.toSet(),
+            "màn chọn phải bày ĐỦ mọi mã đặt được — không còn hộp thoại 'Thêm chip khác…' để giấu phần thiếu",
+        )
+        assertTrue(ids.size > 100, "…và đó là cả trăm mục đọc, không phải 7 ô như trước R11: ${ids.size}")
+    }
+
+    /** Khối *"đang bật"* đứng ĐẦU và giữ đúng thứ tự chip trên thanh — nó là ảnh của thanh trên, không phải một tập. */
+    @Test
+    fun `khoi dang bat dung dau va theo dung thu tu chip tren thanh`() {
+        val cfg = TopStripConfig(listOf(TopStripConfig.ENERGY, "tyre_p_fl", TopStripConfig.PM25))
+        val first = TopStripConfig.picks(cfg).first()
+        assertTrue(first.on, "khối đầu phải là khối 'đang bật'")
+        assertTrue(first.open, "khối 'đang bật' không bao giờ gấp — nó là thứ trả lời 'thanh trên đang có gì'")
+        assertEquals(cfg.ids, first.picks.map { it.id }, "thứ tự ô phải bằng thứ tự chip, không phải thứ tự đăng ký")
+        // …và không mã nào của nó còn ở khối lĩnh vực (xem lỗi `tiles[id]` ở bài trên).
+        val rest = TopStripConfig.picks(cfg).drop(1).flatMap { it.picks }.map { it.id }
+        assertTrue(cfg.ids.none { it in rest }, "mục đang bật KHÔNG được lặp lại ở khối lĩnh vực")
+    }
+
+    /**
+     * Khối lĩnh vực mặc định **mở khi đang có chip của nó trên thanh**, gấp khi không.
+     *
+     * Lý do là R4 (*mỗi nhóm ≤ 2 màn cuộn*): bày phẳng 123 ô là ~31 hàng, một mình nó đã dài hơn cả nhóm. Gấp theo
+     * lĩnh vực đưa màn chọn về ~9 dòng tiêu đề + hai khối mở. Mở đúng lĩnh vực đang dùng vì đó là nơi người dùng
+     * nhiều khả năng muốn thêm cái kế bên (đang xem 1 lốp thì thường muốn xem lốp thứ hai).
+     */
+    @Test
+    fun `khoi linh vuc mac dinh GAP het - R4`() {
+        // [ĐO] T4 2026-09-14: mở sẵn lĩnh vực đang có chip làm trang dài quá 2 màn (Năng lượng 28 + Khí hậu 11 ô).
+        val cfg = TopStripConfig(listOf("tyre_p_fl"))
+        val sections = TopStripConfig.picks(cfg)
+        assertTrue(sections.first().on && sections.first().open, "khối 'đang bật' luôn mở")
+        assertTrue(sections.filter { !it.on && it.domain != null }.all { !it.open }, "mọi lĩnh vực gấp sẵn, kể cả lĩnh vực đang có chip")
+        val def = TopStripConfig.picks(TopStripConfig.DEFAULT).filter { !it.on && it.domain != null && it.open }
+        assertTrue(def.isEmpty(), "mặc định của dự án cũng gấp hết — R4 ≤ 2 màn cuộn")
+    }
+
     /**
      * **Chip đã đặt từ bản trước phải còn đường GỠ**, kể cả khi mã của nó đã bị ẩn khỏi bộ chọn (U6
      * [CapabilityCatalog.HIDDEN_FROM_PICKER]).
      *
      * [decode] cố ý GIỮ mã ẩn (nó lọc bằng [TopStripConfig.isChippable], không bằng danh sách) — đúng thiết kế: khoá
-     * lưu bền của người dùng không được biến mất. Nhưng nếu hàng *"đang bật"* của màn chọn cũng dựng từ [choices]
+     * lưu bền của người dùng không được biến mất. Nhưng nếu khối *"đang bật"* của màn chọn cũng dựng từ [choices]
      * thì chip ấy **hiện trên thanh mà không còn ô nào để bấm tắt**: một trạng thái không có đường ra. Đó là lý do
-     * [TopStripConfig.shown] tồn tại tách khỏi [choices].
+     * khối đó tra thẳng [CapabilityCatalog.pick] thay vì lọc trên [choices].
      */
     @Test
     fun `chip mang ma da an van co o de bam go`() {
@@ -163,16 +260,11 @@ class TopStripTest {
             "tiền đề: mã ẩn KHÔNG được bày ra để đặt thêm",
         )
         assertTrue(
-            TopStripConfig.shown(cfg).any { it.id == hidden },
-            "…nhưng hàng 'đang bật' PHẢI bày nó, không thì chip này không bao giờ gỡ được nữa",
+            TopStripConfig.picks(cfg).first().picks.any { it.id == hidden },
+            "…nhưng khối 'đang bật' PHẢI bày nó, không thì chip này không bao giờ gỡ được nữa",
         )
-        // Và không được đẻ ra ô thừa: chỉ thêm đúng những mã đang bật mà `choices()` bỏ sót.
-        val ids = TopStripConfig.shown(cfg).map { it.id }
-        assertEquals(ids.distinct(), ids, "một mã hai ô ⇒ bảng tra `tiles[id]` bị ghi đè (đúng lỗi RW0)")
-        assertTrue(
-            TopStripConfig.shown(TopStripConfig.DEFAULT).map { it.id }.toSet() ==
-                TopStripConfig.choices().filter { it.id in TopStripConfig.BUILT_IN }.map { it.id }.toSet(),
-            "cấu hình mặc định (toàn chip dựng sẵn) không được mọc thêm ô nào",
-        )
+        // Và không được đẻ ra ô thừa ở khối lĩnh vực (mã ẩn vẫn phải im lặng ở đó).
+        val rest = TopStripConfig.picks(cfg).drop(1).flatMap { it.picks }.map { it.id }
+        assertTrue(hidden !in rest, "mã đã ẩn chỉ được hiện ở khối 'đang bật', không phải một lời mời đặt thêm")
     }
 }

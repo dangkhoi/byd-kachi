@@ -69,12 +69,14 @@
     <string name="kachi_photos_hint">Put photos in the Kachi photo folder</string>
 
     <!-- ── ProfileBar — avatar hồ sơ tài xế ── -->
-    <string name="kachi_profile_only_one">Only one profile — add profiles in Settings → Driver profiles</string>
+    <string name="kachi_profile_chip_desc">Current profile: %1$s. Tap to switch profile.</string>
+    <string name="kachi_profile_pick_title">Switch driver profile</string>
+    <string name="kachi_profile_pick_active">%1$s · in use</string>
+    <string name="kachi_profile_manage">Manage profiles…</string>
+    <string name="kachi_profile_none">No profiles yet — open Settings → Driver profiles to add one.</string>
     <string name="kachi_profile_switched">Profile: %1$s</string>
-    <string name="kachi_profile_name_hint">Profile name (e.g. Motorway)</string>
     <string name="kachi_profile_new_title">New profile</string>
-    <string name="kachi_create">Create</string>
-    <string name="kachi_cancel">Cancel</string>
+    <string name="kachi_profile_copy_of">Copy of %1$s</string>
 
     <!-- ── SettingsPanel — vỏ màn Cài đặt ── -->
     <string name="kachi_done">Done</string>
@@ -97,11 +99,15 @@
     <string name="kachi_lang_note">"By car" follows the system language: a Vietnamese system gets Vietnamese, anything else gets English. Changing the language rebuilds the screen once.</string>
 
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
-    <string name="kachi_profiles_note">Each profile keeps its OWN layout, slot contents, button bar and chips. Tap a profile to switch to it — the avatar on the top bar can switch too, but creating and deleting happen only here.</string>
-    <string name="kachi_profiles_add">Add profile…</string>
+    <string name="kachi_profiles_note">Each profile keeps its OWN copy of nearly everything: layout, slot contents, button bar, chips, wallpaper, theme, units, language and even the navigation settings. Tap a profile to switch to it — the profile chip on the top bar switches too, but creating and deleting happen only here.</string>
+    <string name="kachi_profiles_add">Add profile (a copy of %1$s)</string>
     <string name="kachi_profile_sub_active">In use · %1$s</string>
     <string name="kachi_profile_sub_switch">%1$s · tap to switch to this profile</string>
-    <string name="kachi_home_profile_note">Every setting in this group is saved for profile «%1$s» alone — switch to another profile in Driver profiles and the layout, slot contents, chips and button bar all change with it.</string>
+    <string name="kachi_sec_boot_profile">Profile on engine start</string>
+    <string name="kachi_row_boot_profile">Start up with</string>
+    <string name="kachi_profile_boot_last">Last used</string>
+    <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions, the cluster casting geometry, and About — is saved for profile «%1$s». Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units all change with it.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -121,29 +127,6 @@
     <string name="kachi_about_package">Package name: %1$s</string>
     <string name="kachi_about_licence">MIT licence. A personal experiment, NOT affiliated with BYD.</string>
 
-    <!-- ── SettingsSceneSection — Cảnh (P7 + P6) ── -->
-    <string name="kachi_sec_scenes">Scenes</string>
-    <string name="kachi_scenes_note">A scene holds the layout, each slot\'s content and the car button bar. Tap a scene name to recall it. Wallpaper, status-bar chips, units and theme do NOT change with a scene.</string>
-    <string name="kachi_scenes_empty">No scenes yet. Arrange the screen the way you want it, then tap \"Save current scene…\".</string>
-    <string name="kachi_scenes_count">%1$d of %2$d scenes</string>
-    <string name="kachi_scenes_full">You already have %1$d scenes — remove one before saving another.</string>
-    <string name="kachi_scene_save">Save current scene…</string>
-    <string name="kachi_scene_save_title">Save scene</string>
-    <string name="kachi_scene_rename_title">Rename scene</string>
-    <string name="kachi_scene_name_hint">Scene name (e.g. Commute)</string>
-    <string name="kachi_scene_confirm">Save</string>
-    <string name="kachi_scene_rename">Rename</string>
-    <string name="kachi_scene_boot_mark">On start</string>
-    <string name="kachi_scene_boot_on">Comes up on engine start</string>
-    <string name="kachi_scene_tap_recall">Tap to recall</string>
-    <string name="kachi_scene_boot_contract">The launcher will come up in the \"%1$s\" scene every time it starts — any arrangement you have not saved as a scene will be replaced. Tap \"On start\" again to clear it.</string>
-    <string name="kachi_scene_boot_none">No scene on engine start — the launcher comes up with the arrangement you left.</string>
-    <string name="kachi_scene_boot_cleared">Cleared the scene on engine start</string>
-    <string name="kachi_scene_saved">Saved the \"%1$s\" scene</string>
-    <string name="kachi_scene_applied">Recalled the \"%1$s\" scene</string>
-    <string name="kachi_scene_deleted">Deleted the \"%1$s\" scene</string>
-    <string name="kachi_scene_name_empty">A scene needs a name</string>
-    <string name="kachi_scene_name_taken">There is already a scene named \"%1$s\"</string>
 
     <!-- ── SettingsSectionsHome — Màn hình chính ── -->
     <string name="kachi_sec_layout">Screen layout</string>
@@ -253,9 +236,7 @@
     <string name="kachi_diagnostics">Diagnostics and logs</string>
 
     <!-- ── IA v2 nhóm 2 — Thanh trạng thái & thanh nút (SettingsBarsSection · TopStripPicker) ── -->
-    <string name="kachi_topstrip_more">Add another chip…</string>
-    <string name="kachi_topstrip_on">✓ %1$s</string>
-    <string name="kachi_topstrip_none">This build has nothing that can go on the status bar yet.</string>
+    <string name="kachi_topstrip_count">On now · %1$d/%2$d</string>
     <string name="kachi_dock_pick_n">Choose bar buttons… (%1$d on)</string>
 
     <!-- ── IA v2 · R-UI (o) — chip thứ sáu của hàng bố cục: luôn có ĐÚNG một chip sáng ── -->

@@ -6,15 +6,22 @@ import android.widget.LinearLayout
 import com.byd.clusternav.R
 
 /**
- * Nội dung nhóm **"Màn hình chính"** của màn Cài đặt — cảnh · bố cục · hình nền.
+ * Nội dung nhóm **"Màn hình chính"** của màn Cài đặt — bố cục · hình nền.
  *
  * ## ⚠⚠ T4 · nhóm này vừa NGẮN ĐI HAI PHẦN BA — IA v2 · R-UI (a)(m)
  * Bản S1 gom bốn mảng và [ĐO ảnh 2026-09-12] dài **10.5 màn cuộn** (nhóm ngắn nhất: 0.18 — chênh 58×). Chip thanh
  * trạng thái + thanh nút xe đã rời sang [SettingsBarsSection], và lưới 123 ô thì bỏ hẳn khỏi Settings (mở bộ chọn
- * của ngăn kéo thay thế). Còn lại đúng ba mảng trả lời cùng một câu hỏi: *"màn chính trông thế nào"*.
+ * của ngăn kéo thay thế). Sau S4 (mục cảnh rời đi, xem ngay dưới) còn đúng **hai** mảng trả lời cùng một câu
+ * hỏi: *"màn chính trông thế nào"*.
  *
- * Thứ tự theo [SettingsCatalog.entriesOf] cho [SettingsGroup.HOME]: **cảnh** (cả bộ) → bố cục → hình nền. Cảnh
- * đứng đầu vì gọi lại một cảnh là việc thường xuyên nhất ở trang này.
+ * ## ⚠⚠ S4 · R1 — MỤC "CẢNH" ĐÃ RỜI KHỎI ĐÂY HẲN
+ * P7/P6 đặt *cảnh* đứng đầu trang này (cả bộ bố cục + ô + thanh nút, có cả "cảnh lúc nổ máy"). S4 bỏ hẳn khái niệm
+ * đó: owner 2026-09-14 *"có cảnh rồi có hồ sơ nữa hơi khó hiểu"*, và backlog P7 đã ghi *"đọc kỹ hai dòng thì chúng
+ * là CÙNG một khái niệm"*. Chức năng không mất — nó **lên cấp**: mỗi cảnh cũ thành một hồ sơ cùng tên (R2, chuyển
+ * dữ liệu ở `:core`), còn "cảnh lúc nổ máy" thành "hồ sơ lúc nổ máy" ở nhóm Hồ sơ tài xế (R6).
+ *
+ * Thứ tự theo [SettingsCatalog.entriesOf] cho [SettingsGroup.HOME]: bố cục → hình nền — từ **khung** ra **nội
+ * dung**, vì chọn bố cục trước thì các lựa chọn sau mới có nghĩa.
  */
 class SettingsHomeSection(
     private val context: Context,
@@ -23,10 +30,11 @@ class SettingsHomeSection(
 ) {
 
     fun build(body: LinearLayout) {
-        // Owner 2026-09-14: mọi thứ ở nhóm này (cảnh · bố cục · ô) lưu THEO HỒ SƠ đang dùng — nói ra ngay đầu trang,
-        // vì rail chỉ ghi "Hồ sơ tài xế" ở một nhóm khác và không ai nhìn thấy mối gắn.
+        // Owner 2026-09-14: mọi thứ ở nhóm này lưu THEO HỒ SƠ đang dùng — nói ra ngay đầu trang, vì rail chỉ ghi
+        // "Hồ sơ tài xế" ở một nhóm khác và không ai nhìn thấy mối gắn. S4 · R8 nới câu đó ra CẢ màn Cài đặt (trừ
+        // ba nhóm theo-xe), vì từ R3 hồ sơ giữ tất cả — câu chỉ nói "nhóm này" sẽ làm người đọc tưởng chủ đề/đơn vị
+        // ở nhóm khác là chung cho cả máy.
         body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
-        SettingsSceneSection(context, rows, deps).build(body)
         layout(body)
         wallpaper(body)
     }
@@ -45,8 +53,11 @@ class SettingsHomeSection(
      * Chip nào sáng do [EffectiveLayout.highlightedPreset] quyết (`null` ⇒ đang dùng tự vẽ) — cùng nguồn với thứ
      * màn hình THẬT SỰ vẽ, nên bố cục tự vẽ *lưu rồi mà không dùng được* vẫn sáng đúng ô bố cục sẵn đang thay nó.
      *
-     * §4.5 — 5 nút bố cục **ở lại thanh trên** (đổi bố cục là việc hằng ngày); cả hai bề mặt đi qua **cùng một**
-     * đường [SettingsDeps.onPreset] ⇒ không có bản sao thứ hai của hành vi "chọn bố cục sẵn thì bỏ bố cục tự vẽ".
+     * ## ⚠ S4 · R7 — ĐÂY LÀ BỀ MẶT CHỌN BỐ CỤC **DUY NHẤT**
+     * §4.5 của IA v2 giữ 5 nút bố cục ở thanh trên làm bề mặt thứ hai (*"đổi bố cục là việc hằng ngày"*). S4 gỡ chúng
+     * (owner: *"bỏ luôn các nút đổi bố cục trên header"*) vì việc hằng ngày nay là **đổi hồ sơ** — cả bộ, một cú
+     * chạm. Hàng chip dưới đây vì thế là chỗ duy nhất chọn bố cục sẵn; intent [SettingsDeps.onPreset] KHÔNG đổi, nên
+     * hành vi "chọn bố cục sẵn thì bỏ bố cục tự vẽ" vẫn nằm ở đúng một chỗ như trước.
      */
     private fun layout(body: LinearLayout) {
         val s = deps.state()

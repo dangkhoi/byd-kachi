@@ -37,8 +37,8 @@ interface WorkspaceRepository {
     fun touchRecentApp(pkg: String) {}
 
     /**
-     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13) — CHUNG mọi hồ sơ tài xế: đơn vị là thói quen của người ĐỌC, không
-     * phải của một hồ sơ (cùng lối với giao diện sáng/tối).
+     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13). S4 · R3a: **theo HỒ SƠ** ([ProfileScope.LAUNCHER_PERSONAL_SUFFIXES])
+     * — đơn vị là lựa chọn của MỘT người lái, cùng lối với chủ đề/hình nền/ngôn ngữ.
      *
      * Giống [recentApps]: CỐ Ý **không** nằm trong [HomeUiState]. Nó chỉ đổi khi người dùng vào chọn, nên nhét vào
      * state sẽ bắt cả HOME so-sánh-lại mỗi nhịp trạng thái xe mà chẳng được gì. Có thân MẶC ĐỊNH ⇒ bản giả
@@ -55,7 +55,7 @@ interface WorkspaceRepository {
     fun setUnitPrefs(prefs: UnitPrefs) {}
 
     /**
-     * U4 — hình nền + trình chiếu. CHUNG mọi hồ sơ (hình nền nhìn thấy cả màn, không thuộc một hồ sơ).
+     * U4 — hình nền + trình chiếu. S4 · R3a: **theo HỒ SƠ** ([ProfileScope.LAUNCHER_PERSONAL_SUFFIXES]).
      * Có thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa.
      */
     /** P9 — bố cục tự vẽ. Thân mặc định = chưa vẽ, để bản giả trong test không phải sửa. */
@@ -83,8 +83,8 @@ interface WorkspaceRepository {
     fun setWallpaperPrefs(prefs: WallpaperPrefs) {}
 
     /**
-     * S1·T4 — **tự mở khi nổ máy** (cờ đọc bởi `KachiAutostart.runBoot`). CHUNG mọi hồ sơ: đây là hành vi của cả
-     * máy, không phải của một tài xế (cùng lối với giao diện sáng/tối và đơn vị).
+     * S1·T4 — **tự mở khi nổ máy** (cờ đọc bởi `KachiAutostart.runBoot`). S4 · R3a: **theo HỒ SƠ**
+     * ([ProfileScope.LAUNCHER_PERSONAL_SUFFIXES]) — một tài xế muốn Kachi tự lên, người kia thì không.
      *
      * Mặc định `true` để KHỚP mặc định của nơi lưu bền — bản giả trong test không phải sửa, và quan trọng hơn: hai
      * mặc định lệch nhau thì ô tick nói sai trước cả khi có gì được ghi.
@@ -95,8 +95,8 @@ interface WorkspaceRepository {
     fun setAutostart(on: Boolean) {}
 
     /**
-     * U5 · T3 — NGÔN NGỮ launcher, CHUNG mọi hồ sơ tài xế: ngôn ngữ là thuộc tính của người **đọc màn hình**, không
-     * của một hồ sơ xe (cùng lối với giao diện sáng/tối và đơn vị).
+     * U5 · T3 — NGÔN NGỮ launcher. S4 · R3a: **theo HỒ SƠ** — ngôn ngữ là thuộc tính của người **đọc màn hình**, và
+     * từ S4 thì "người đọc" chính là hồ sơ đang dùng (nguồn `<hồ sơ>__lang`, bản phát ở `clusternav_lang`).
      *
      * Thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa, và mặc định [LangMode.AUTO] **khớp** mặc định của
      * nơi lưu bền — hai mặc định lệch nhau thì bộ chọn nói sai trước cả khi có gì được ghi (bài học của cờ tự-mở).
@@ -107,18 +107,35 @@ interface WorkspaceRepository {
     fun setLangMode(mode: LangMode) {}
 
     /**
-     * P7 + P6 — **SỔ CẢNH** của hồ sơ đang chọn (danh sách cảnh + cảnh lúc nổ máy). Xem [SceneBook].
+     * S4 · R6 — **hồ sơ lúc nổ máy**, `null` = *"hồ sơ dùng gần nhất"*. Thay cho `sceneBook()`/`setSceneBook()` của
+     * P7/P6 (R1: bỏ hẳn khái niệm cảnh).
      *
-     * Theo **hồ sơ** (khác `unitPrefs`/`themeMode`/`langMode` là chung cả máy): cảnh là cách bố trí của một người,
-     * cùng lối với bố cục ([gridLayout]) và thanh nút. Nhờ vậy ca **đổi hồ sơ** tự đúng — `switchProfile` gọi lại
-     * `load()` nên sổ cảnh của hồ sơ mới được nạp cùng lúc với mọi thứ khác.
+     * Theo **XE**, không theo hồ sơ ([ProfileScope.DEVICE_KEYS]): nó CHỌN hồ sơ nên phải đọc được **trước khi** biết
+     * hồ sơ nào — để nó trong hồ sơ là đệ quy, đúng ca `active_profile`.
      *
-     * Thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa, và mặc định [SceneBook.EMPTY] **khớp** mặc định
-     * của nơi lưu bền (chưa lưu gì ⇒ sổ rỗng) — hai mặc định lệch nhau thì màn Cài đặt nói sai trước cả khi có gì
-     * được ghi (bài học của cờ tự-mở).
+     * ⚠ Bản thi hành phải **gỡ con trỏ treo** (trỏ tới hồ sơ đã xoá) lúc đọc, cùng luật `SceneBook.normalised()` cũ:
+     * một con trỏ treo thì launcher nổ máy lên với hồ sơ mặc định mà không ai hiểu vì sao.
+     *
+     * Thân MẶC ĐỊNH ⇒ bản giả in-memory trong test không phải sửa, và `null` **khớp** mặc định của nơi lưu bền
+     * (chưa chọn gì ⇒ dùng hồ sơ gần nhất) — hai mặc định lệch nhau thì màn Cài đặt nói sai trước cả khi có gì được
+     * ghi (bài học của cờ tự-mở).
      */
-    fun sceneBook(): SceneBook = SceneBook.EMPTY
+    fun bootProfile(): String? = null
 
-    /** Ghi bền sổ cảnh. Mặc định: không lưu (bản giả). */
-    fun setSceneBook(book: SceneBook) {}
+    /** Ghi bền hồ sơ lúc nổ máy; `null` = bỏ chọn (quay về "hồ sơ gần nhất"). Mặc định: không lưu (bản giả). */
+    fun setBootProfile(name: String?) {}
+
+    /**
+     * S4 · R8 — **Thêm hồ sơ = BẢN SAO của hồ sơ đang dùng**, rồi đặt làm hồ sơ đang chọn.
+     *
+     * ## Vì sao là một hàm riêng chứ không để UI gọi [addProfile] rồi chép tay
+     * R5 nói hồ sơ mới *"chưa có bộ ⇒ giữ nguyên giá trị hiện tại"*, tức **bản sao** là hành vi đúng của cả hai
+     * đường. Nhưng phép chép phải chạm tới **mọi** hậu tố của [ProfileScope.LAUNCHER_SUFFIXES] cộng ảnh chụp
+     * ClusterNav — để tầng UI làm việc đó là mở lại đúng cái cửa mà luật *"tầng UI 0 lần chạm nơi lưu"* đã đóng, và
+     * là chỗ chắc chắn sẽ bỏ sót một hậu tố ở bản sau.
+     *
+     * Thân MẶC ĐỊNH = [addProfile] (hồ sơ trống): bản giả in-memory trong test không phải sửa, và ca xấu nhất của
+     * mặc định này là *"hồ sơ mới trống"* — khó chịu nhưng không mất dữ liệu của ai.
+     */
+    fun duplicateProfile(name: String): HomeUiState = addProfile(name)
 }

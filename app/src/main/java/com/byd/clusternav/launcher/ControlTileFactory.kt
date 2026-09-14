@@ -262,6 +262,41 @@ class ControlTileFactory(
         return if (macro.needsBadge()) withBadge(tile) else tile
     }
 
+    // ── HÀNH ĐỘNG CỦA LAUNCHER (S4 · R12) ───────────────────────────────────────────────────────────────
+    /**
+     * Ô cho một [CapabilityKind.LAUNCHER] — **trông y như ô [ControlKind.BUTTON]**, nhưng cú bấm đi vào [onTap]
+     * (mở ngăn kéo / mở Cài đặt) chứ KHÔNG vào [control].
+     *
+     * Ba khác biệt so với [actionTile], cả ba đều có lý do:
+     *  • **Không qua [CarControlPort]**: mã này không có dòng nào trong [ControlRegistry]; bắn `press` xuống cổng xe
+     *    là gửi một lệnh không tồn tại tới phần cứng.
+     *  • **Không chấm "chưa kiểm"**: tier luôn [EvidenceTier.PROVEN] (xem KDoc [LauncherActions]) ⇒ không gọi
+     *    [withBadge]. Dấu đó nói *"lệnh xe này chưa chạy thật"* — dán lên nút mở ngăn kéo là nói sai.
+     *  • **Không giữ trạng thái bật/tắt**: nó là cú bấm một phát, nên chỉ nháy sáng 220 ms như [tileButton] rồi trả
+     *    nền về. Dùng lại đúng con số của [tileButton] để hai ô cạnh nhau không nháy hai nhịp khác nhau.
+     */
+    fun launcherTile(pick: CapabilityPick, onTap: () -> Unit): View {
+        val tile = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
+        }
+        val r = KachiTheme.iconRes(pick.icon)
+        val icon = ImageView(ctx).apply { if (r != 0) setImageResource(r) }
+        if (icons) tile.addView(icon, LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp)))
+        val label = TextView(ctx).apply {
+            text = pick.displayLabel; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp)
+            gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+        }
+        tile.addView(reserveTwoLines(label))
+        applyBg(tile, false); tint(icon, label, true)
+        tile.setOnClickListener {
+            applyBg(tile, true); tint(icon, label, true)
+            onTap()
+            tile.postDelayed({ applyBg(tile, false); tint(icon, label, true) }, 220)   // nháy sáng momentary
+        }
+        return tile
+    }
+
     // ── ĐỌC ─────────────────────────────────────────────────────────────────────────────────────────────
     /**
      * Ô CHỈ-XEM cho [pick]: icon + nhãn + số + đơn vị. **KHÔNG gắn `setOnClickListener`** — thông tin đọc không
@@ -449,52 +484,4 @@ enum class TileSize(
      * [DOCK] — thu chữ ở một ô còn hẹp hơn thanh nút là đi ngược chuẩn đọc được của G1.
      */
     GROUP(Sp.ICON_XS, 11.5f, 15f, 12.5f, Sp.XS, Sp.RADIUS_M, narrow = true),
-}
-
-/**
- * Trạng thái ô nút mà UI tự giữ (lạc quan): bật/tắt · giá trị −/+ · lựa chọn đang chọn.
- *
- * Vì sao có [shared]: cùng một nút giờ đặt được ở **hai vùng** (thanh nút và ô giữa màn). Nếu mỗi vùng giữ một bảng
- * riêng thì bật "lấy gió trong" ở ô giữa màn xong nhìn sang thanh nút vẫn thấy tắt — hai bề mặt nói hai điều về
- * MỘT cái xe. Một bảng dùng chung cho cả tiến trình khớp với thực tế (chỉ có một cái xe) và không tốn gì.
- *
- * ⚠ Đây KHÔNG phải trạng thái đọc từ xe (phần lớn nút không có đường đọc lại) — nó chỉ là "tôi vừa bấm cái này".
- */
-class ControlTileState {
-    // ConcurrentHashMap, KHÔNG phải HashMap: gói lệnh (W2) ghi trạng thái từ **thread nền** (xem `macroTile`) trong
-    // khi thread chính đang đọc để vẽ ô ⇒ HashMap ở đây là tranh chấp dữ liệu thật. Đổi sang map đồng thời là cách
-    // rẻ nhất và không đổi API.
-    private val on = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
-    private val values = java.util.concurrent.ConcurrentHashMap<String, Int>()
-    private val selIndex = java.util.concurrent.ConcurrentHashMap<String, Int>()
-
-    init { ControlRegistry.ALL.forEach { on[it.id] = it.onByDefault; values[it.id] = it.value } }
-
-    fun isOn(id: String): Boolean = on[id] == true
-    fun setOn(id: String, v: Boolean) { on[id] = v }
-    fun value(def: ControlDef): Int = values[def.id] ?: def.value
-    fun setValue(id: String, v: Int) { values[id] = v }
-    fun sel(id: String): Int = selIndex[id] ?: 0
-    fun setSel(id: String, i: Int) { selIndex[id] = i }
-
-    /**
-     * Chốt "gói lệnh này đang chạy" — **dùng chung theo mã gói, KHÔNG theo View**.
-     *
-     * ## ⚠ [SOÁT P1-1] Vì sao không để cờ trong View
-     * Bản trước giữ `AtomicBoolean` **bên trong** ô (`macroTile`). Trên xe, trạng thái xe đổi mỗi giây và ô TRỘN
-     * (có mục đọc + gói lệnh) bị **dựng lại** theo nhịp đó ⇒ ô mới có cờ mới `false` ⇒ người dùng bấm lần hai trong
-     * lúc lượt một còn đang chạy ⇒ **hai lượt "đóng hết kính" chạy chồng nhau**, đúng thứ cờ này sinh ra để chặn.
-     * Chốt theo mã gói thì dựng lại bao nhiêu lần cũng không mở được cửa thứ hai.
-     */
-    fun beginRun(id: String): Boolean = running.putIfAbsent(id, true) == null
-
-    /** Nhả chốt. PHẢI gọi trong `finally`, trên chính thread đang chạy gói. */
-    fun endRun(id: String) { running.remove(id) }
-
-    private val running = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
-
-    companion object {
-        /** Bảng dùng chung mọi vùng trong cùng tiến trình. */
-        val shared = ControlTileState()
-    }
 }

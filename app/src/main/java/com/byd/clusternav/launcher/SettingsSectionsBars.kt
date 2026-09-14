@@ -38,7 +38,9 @@ class SettingsBarsSection(
     private var pickButton: TextView? = null
 
     fun build(body: LinearLayout) {
-        // Chip + thanh nút cũng lưu THEO HỒ SƠ — cùng câu với nhóm Màn hình chính (owner 2026-09-14).
+        // Chip + thanh nút cũng lưu THEO HỒ SƠ — cùng câu với nhóm Màn hình chính (owner 2026-09-14). S4 · R8 nới
+        // câu đó thành "mọi thiết lập ở Cài đặt trừ ba nhóm theo-xe": dùng CHUNG một chuỗi cho cả hai nhóm nên
+        // không có hai câu nói hai kiểu về cùng một luật.
         body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
         stripPicker.section(body)
         dock(body)

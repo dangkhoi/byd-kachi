@@ -34,10 +34,24 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *  2. **Hàng ô đi qua [CapabilityTileGrid] với [CapabilityPicker.COLS]**: bản cũ tự xếp **5** cột trong khi lưới
  *     kia 4 cột — hai hệ lưới khác nhau trong CÙNG một vùng cuộn (findings #14, [P2]), và khe ngang/dọc = 0 nên ô
  *     dính nhau (findings #15).
- *  3. **Nút "Thêm chip khác…"** ([openMore]): lối GIỮ-ô-ở-lưới-123 đã mất cùng lưới đó khi R-UI (m) bỏ lưới khỏi
- *     Settings. Không có đường thay thế thì người dùng **mất hẳn** khả năng đưa một datum bất kỳ lên thanh trạng
- *     thái (R8 *"không tính năng nào mất"*), nên đường đó nay là một hộp thoại danh sách — cùng bộ dữ liệu
- *     [TopStripConfig.choices], cùng [toggle], không thêm một lưới thứ hai vào trang.
+ *  3. ~~Nút *"Thêm chip khác…"*~~ — **đã bỏ ở S4 · T5**, xem mục ngay dưới.
+ *
+ * ## ⚠⚠ S4 · R11 (c) — BÀY ĐỦ THEO LĨNH VỰC, HỘP THOẠI *"THÊM CHIP KHÁC…"* ĐÃ BỎ
+ * Tới U6 màn này bày **3 chip dựng sẵn + chip đang bật** (≤ 7 ô) rồi giấu 120+ mục đọc còn lại sau một nút mở
+ * **hộp thoại phẳng**. Owner 2026-09-14: *"hiện chỉ cho chọn 3 trong khi có thể chọn nhiều hơn"* — thứ hụt không
+ * phải cái trần (trần là 4, và hộp thoại vẫn đặt được mọi datum) mà là **thứ nhìn thấy được**. Nay
+ * [TopStripConfig.picks] bày **mọi** mục đặt được, xếp theo [Domain], mỗi lĩnh vực một khối gấp/mở được.
+ *
+ * Bỏ hộp thoại đó KHÔNG mất đường nào: nó bày đúng cùng một danh sách, qua đúng cùng [toggle] — nay danh sách ấy
+ * nằm thẳng trên trang. Ba chuỗi riêng của nó (`kachi_topstrip_more/_on/_none`) đã xoá khỏi cả hai tệp tài nguyên;
+ * để lại là ba khoá mồ côi (`LauncherI18nContractTest` đỏ).
+ *
+ * ## Vì sao GẤP theo lĩnh vực, không bày phẳng 123 ô
+ * R4: *mỗi nhóm Cài đặt ≤ 2 màn cuộn*. Bày phẳng là ~31 hàng ô — một mình mục chọn chip đã dài gấp đôi cả nhóm.
+ * Hai lối gọn khác đều tệ hơn: **ô tìm kiếm** cần bàn phím giữa lúc lái (và không trả lời được câu *"có những gì"*),
+ * **phân trang** làm người dùng mất dấu vị trí. Gấp theo lĩnh vực giữ được cả hai thứ cần: nhìn một lượt thấy hết
+ * *loại* thông tin có thể đặt (9 dòng tiêu đề, mỗi dòng kèm số mục), mở đúng chỗ mình cần. Mặc định mở những lĩnh
+ * vực **đang có chip trên thanh** — luật đó thuộc `:core` ([ChipSection.open]) để kiểm được off-car.
  */
 class TopStripPicker(
     private val context: Context,
@@ -49,6 +63,15 @@ class TopStripPicker(
     private val tiles = HashMap<String, View>()
 
     /**
+     * Lĩnh vực người dùng đã tự mở/gấp trong **phiên này**, đè lên mặc định của [ChipSection.open].
+     *
+     * `null` = chưa động tới ⇒ theo mặc định của `:core`. Giữ theo [Domain] chứ không theo chỉ số khối: [rebuild]
+     * dựng lại danh sách khối sau mỗi cú bấm (một mục vừa bật sẽ **rời** khối lĩnh vực sang khối *"đang bật"*),
+     * nên chỉ số khối đổi nghĩa giữa hai lượt — giữ theo chỉ số thì bấm một ô là mấy khối khác tự đóng/mở.
+     */
+    private val folded = HashMap<Domain, Boolean>()
+
+    /**
      * Dòng *"N mục chưa kiểm trên xe"* (U7 · R6) — giữ tham chiếu vì [rebuild] đổi CHÍNH danh sách mà nó đếm.
      *
      * ⚠ [SOÁT S3/U7 2026-09-13] Bản đầu chỉ thêm dòng này một lần trong [section]: bấm thêm/bỏ một chip là lưới
@@ -57,7 +80,7 @@ class TopStripPicker(
      */
     private var unverifiedRow: TextView? = null
 
-    /** Hàng ô — giữ để [toggle] từ hộp thoại còn dựng lại được đúng khối này, không dựng lại cả trang. */
+    /** Khối ô — giữ để [toggle] còn dựng lại được đúng khối này, không dựng lại cả trang. */
     private val grid = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
 
     fun has(id: String): Boolean = strip.has(id)
@@ -66,10 +89,7 @@ class TopStripPicker(
      * RW0 vùng thứ ba — chọn chip cho thanh trạng thái trên.
      *
      * **Chỉ nhận mục ĐỌC** — lý do (đích chạm 24dp là quá nhỏ để bắn lệnh xe + thanh trên là dòng trạng thái) ghi ở
-     * KDoc [TopStripConfig]. Không phải bỏ sót.
-     *
-     * **Chỉ bày 3 chip dựng sẵn + chip đang chọn** (≤ 7 ô) chứ không bày cả 123 datum: trang này cố ý ngắn (R4 —
-     * mỗi nhóm ≤ 2 màn cuộn). Muốn đặt một datum bất kỳ thì bấm **Thêm chip khác…** ngay dưới.
+     * KDoc [TopStripConfig]. Không phải bỏ sót; R11 nới *số lượng* chứ không nới *loại*.
      */
     fun section(parent: LinearLayout) {
         parent.addView(rows.sectionLabel(context.getString(R.string.kachi_topstrip_title)))
@@ -79,49 +99,69 @@ class TopStripPicker(
         unverifiedRow = rows.note("").also { parent.addView(it) }
         parent.addView(grid)
         rebuild()
-        parent.addView(rows.button(context.getString(R.string.kachi_topstrip_more)) { openMore() })
-    }
-
-    /** Dựng lại hàng ô từ cấu hình hiện tại (chip vừa thêm từ hộp thoại phải hiện ra ngay). */
-    private fun rebuild() {
-        grid.removeAllViews()
-        tiles.clear()
-        // `shown()` chứ không phải `choices().filter{…}`: từ U6 có mã CỐ Ý ẨN khỏi `choices()` mà `decode()` vẫn giữ
-        // (khoá lưu bền không được mất). Lọc trên `choices()` thì chip đặt từ bản trước hiện trên thanh nhưng không
-        // còn ô nào để bấm gỡ — xem KDoc [TopStripConfig.shown].
-        val shown = TopStripConfig.shown(strip)
-        // Con số đọc lại từ CHÍNH `shown` vừa tính — không phải từ một ảnh chụp lúc dựng trang.
-        unverifiedRow?.let { row ->
-            val note = PickerBadge.unverifiedNote(context, shown)
-            row.text = note.orEmpty()
-            row.visibility = if (note == null) View.GONE else View.VISIBLE
-        }
-        // `cols =` dạng THAM SỐ TÊN, không truyền theo vị trí: `PickGridColumnContractTest` quét chính chuỗi
-        // `cols = <nguồn>` để chốt hai màn chọn cùng một nguồn số cột — truyền theo vị trí thì bài canh mù.
-        CapabilityTileGrid.rows(context, grid, shown.size, cols = CapabilityPicker.COLS) { i -> tile(shown[i]) }
     }
 
     /**
-     * Hộp thoại "đặt một datum BẤT KỲ lên thanh trạng thái" — thay cho lối GIỮ một ô ở lưới 123 (đã bỏ khỏi Settings).
+     * Dựng lại toàn bộ các khối từ cấu hình hiện tại (chip vừa bật phải nhảy lên khối *"đang bật"* ngay).
      *
-     * Danh sách bày **mọi** thứ đặt được ([TopStripConfig.choices] — chính hàm mà [section] lọc), có dấu ✓ trước mục
-     * đang bật để một danh sách dài vẫn đọc được trạng thái. Chọn một mục = [toggle] nó, tức cùng một đường với chạm
-     * ô ở trên (kể cả câu nhắc khi đã đầy trần).
+     * Dựng lại **cả** danh sách thay vì chỉ tô lại ô vừa bấm là có chủ ý: một cú bấm **chuyển ô sang khối khác**
+     * (bật ⇒ rời lĩnh vực, lên đầu; tắt ⇒ về lại lĩnh vực), và con số `N/CAP` cùng dòng *"chưa kiểm"* đều đổi
+     * theo. Tô tại chỗ thì ba thứ đó lệch nhau — đúng lỗi đã đo ở dòng "chưa kiểm" hồi U7.
      */
-    private fun openMore() {
-        val all = TopStripConfig.choices()
-        SettingsDialogs.pick(
-            context,
-            context.getString(R.string.kachi_topstrip_more),
-            all.map {
-                if (strip.has(it.id)) context.getString(R.string.kachi_topstrip_on, it.displayLabel)
-                else it.displayLabel
-            },
-            context.getString(R.string.kachi_topstrip_none),
-        ) { index ->
-            toggle(all[index].id)
+    private fun rebuild() {
+        grid.removeAllViews()
+        tiles.clear()
+        val sections = TopStripConfig.picks(strip)
+        // Con số đọc lại từ CHÍNH danh sách vừa tính — không phải từ một ảnh chụp lúc dựng trang. Đếm trên MỌI ô
+        // đang bày (cả khối đang gấp): câu này nói về danh sách, không nói về phần đang nhìn thấy.
+        unverifiedRow?.let { row ->
+            val note = PickerBadge.unverifiedNote(context, sections.flatMap { it.picks })
+            row.text = note.orEmpty()
+            row.visibility = if (note == null) View.GONE else View.VISIBLE
+        }
+        sections.forEach { block(it) }
+    }
+
+    /** Một khối: tiêu đề (bấm để gấp/mở, trừ khối *"đang bật"*) + lưới ô nếu đang mở. */
+    private fun block(s: ChipSection) {
+        val open = if (s.on) true else s.domain?.let { folded[it] } ?: s.open
+        grid.addView(header(s, open))
+        if (!open) return
+        // `cols =` dạng THAM SỐ TÊN, không truyền theo vị trí: `PickGridColumnContractTest` quét chính chuỗi
+        // `cols = <nguồn>` để chốt hai màn chọn cùng một nguồn số cột — truyền theo vị trí thì bài canh mù.
+        CapabilityTileGrid.rows(context, grid, s.picks.size, cols = CapabilityPicker.COLS) { i -> tile(s.picks[i]) }
+    }
+
+    /**
+     * Tiêu đề một khối.
+     *
+     * Khối *"đang bật"* mang con số **`N/CAP`** — nó trả lời câu hỏi hay gặp nhất ở màn này (*"còn đặt thêm được
+     * mấy cái?"*) ngay tại chỗ người dùng đang nhìn, thay vì bắt đếm ô. Khối lĩnh vực mang **số mục** và một dấu
+     * ▸/▾: khối gấp mà không nói có bao nhiêu thì người dùng không biết có đáng mở hay không.
+     *
+     * ⚠ Dấu gấp/mở là **ký hiệu**, không phải chữ (nên không đi qua `getString`) — `LauncherI18nContractTest` chỉ
+     * bắt literal có CHỮ CÁI, đúng ranh giới đó.
+     */
+    private fun header(s: ChipSection, open: Boolean): View {
+        // Biến cục bộ: [ChipSection.domain] là thuộc tính công khai của MODULE KHÁC (`:core`) nên Kotlin không ép
+        // kiểu thông minh được ở nhánh `!= null` — gán ra đây một lần thay vì rải `!!`.
+        val d = s.domain
+        val title = when {
+            s.on -> context.getString(R.string.kachi_topstrip_count, strip.ids.size, TopStripConfig.CAP)
+            d != null -> (if (open) "▾  " else "▸  ") + d.displayLabel + "  ·  " + s.picks.size
+            else -> CapabilityPicker.SINGLES_TITLE + "  ·  " + s.picks.size
+        }
+        val v = rows.subHeader(title)
+        if (s.on || d == null) return v
+        // Đích chạm: cả dòng tiêu đề, cao ≥ [Sp.TOUCH] — một dòng chữ cao ~20dp là đích chạm dưới chuẩn, mà đây là
+        // cú bấm duy nhất để tới 120+ mục còn lại.
+        v.minHeight = dpi(context, Sp.TOUCH)
+        v.gravity = Gravity.CENTER_VERTICAL
+        v.setOnClickListener {
+            folded[d] = !open
             rebuild()
         }
+        return v
     }
 
     /** Ô chọn chip — dựng riêng, sự kiện riêng, bảng riêng (xem cảnh báo ở KDoc lớp). */
@@ -163,7 +203,9 @@ class TopStripPicker(
         }
         strip = next
         onToggle(id, on)
-        paint(id)
+        // Ô vừa bấm ĐỔI KHỐI (bật ⇒ lên khối "đang bật", tắt ⇒ về lĩnh vực của nó) nên tô lại tại chỗ là chưa đủ —
+        // xem KDoc [rebuild].
+        rebuild()
     }
 
     private fun paint(id: String) {

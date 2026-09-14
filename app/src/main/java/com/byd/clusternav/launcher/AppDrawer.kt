@@ -117,6 +117,12 @@ class AppDrawer(
             // ĐÚNG tập ô mà màn Cài đặt bày cho thanh nút, cùng thứ tự — không chép danh sách, cả hai đường đi qua
             // `CapabilityPicker`/`CapabilityCatalog` ở `:core`. KHÔNG có widget dựng tay / widget app khác / danh sách
             // app: `DockConfig.setEnabled` chỉ nhận mã trong `CapabilityCatalog` ⇒ bày chúng ở đây là bày nút chết.
+            // S4 · R12 — khối **Launcher** (2 ô: Ứng dụng · Cài đặt) đứng ĐẦU, và CHỈ có ở chế độ này. Nguồn vẫn
+            // là `:core` như mọi khối khác (không chép danh sách mã thứ hai); vì sao đứng đầu và vì sao chế độ
+            // gán-ô không có nó: KDoc [CapabilityPicker.launcherPicks] + [LauncherActions].
+            body.addView(sectionLabel(CapabilityPicker.LAUNCHER_TITLE))
+            body.addView(note(CapabilityPicker.LAUNCHER_NOTE))
+            addPickGrid(body, CapabilityPicker.launcherPicks(), cols = COLS_TILE)
             groupSection(body); singlesSection(body)
         } else if (assign) {
             groupSection(body)

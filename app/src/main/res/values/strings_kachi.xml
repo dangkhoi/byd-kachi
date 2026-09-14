@@ -78,13 +78,15 @@
     <string name="kachi_photos_none">Chưa có ảnh</string>
     <string name="kachi_photos_hint">Bỏ ảnh vào thư mục ảnh của Kachi</string>
 
-    <!-- ── ProfileBar — avatar hồ sơ tài xế ── -->
-    <string name="kachi_profile_only_one">Chỉ có một hồ sơ — thêm hồ sơ ở Cài đặt → Hồ sơ tài xế</string>
+    <!-- ── ProfileChip — chip hồ sơ ở thanh trên (S4 · R7) ── -->
+    <string name="kachi_profile_chip_desc">Hồ sơ đang dùng: %1$s. Chạm để đổi hồ sơ.</string>
+    <string name="kachi_profile_pick_title">Đổi hồ sơ tài xế</string>
+    <string name="kachi_profile_pick_active">%1$s · đang dùng</string>
+    <string name="kachi_profile_manage">Quản lý hồ sơ…</string>
+    <string name="kachi_profile_none">Chưa có hồ sơ nào — mở Cài đặt → Hồ sơ tài xế để thêm.</string>
     <string name="kachi_profile_switched">Hồ sơ: %1$s</string>
-    <string name="kachi_profile_name_hint">Tên hồ sơ (vd: Đường trường)</string>
     <string name="kachi_profile_new_title">Hồ sơ mới</string>
-    <string name="kachi_create">Tạo</string>
-    <string name="kachi_cancel">Huỷ</string>
+    <string name="kachi_profile_copy_of">Bản sao của %1$s</string>
 
     <!-- ── SettingsPanel — vỏ màn Cài đặt ── -->
     <string name="kachi_done">Xong</string>
@@ -107,11 +109,15 @@
     <string name="kachi_lang_note">"Theo xe" = theo ngôn ngữ của máy: máy tiếng Việt thì tiếng Việt, còn lại tiếng Anh. Đổi ngôn ngữ thì màn hình dựng lại một lượt.</string>
 
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
-    <string name="kachi_profiles_note">Mỗi hồ sơ giữ bố cục, nội dung ô, thanh nút và chip RIÊNG. Chạm một hồ sơ để đổi sang nó — avatar ở thanh trên cũng đổi được, nhưng tạo và xoá thì chỉ ở đây.</string>
-    <string name="kachi_profiles_add">Thêm hồ sơ…</string>
+    <string name="kachi_profiles_note">Mỗi hồ sơ giữ RIÊNG gần như mọi thứ: bố cục, nội dung ô, thanh nút, chip, hình nền, giao diện, đơn vị, ngôn ngữ và cả cấu hình dẫn đường. Chạm một hồ sơ để đổi sang nó — chip hồ sơ ở thanh trên cũng đổi được, nhưng tạo và xoá thì chỉ ở đây.</string>
+    <string name="kachi_profiles_add">Thêm hồ sơ (bản sao của %1$s)</string>
     <string name="kachi_profile_sub_active">Đang dùng · %1$s</string>
     <string name="kachi_profile_sub_switch">%1$s · chạm để đổi sang hồ sơ này</string>
-    <string name="kachi_home_profile_note">Mọi thiết lập ở nhóm này lưu riêng cho hồ sơ «%1$s» — đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip và thanh nút đều đổi theo.</string>
+    <string name="kachi_sec_boot_profile">Hồ sơ lúc nổ máy</string>
+    <string name="kachi_row_boot_profile">Lên bằng hồ sơ</string>
+    <string name="kachi_profile_boot_last">Gần nhất</string>
+    <string name="kachi_boot_profile_note">"Gần nhất" = lên đúng hồ sơ bạn đang dùng lúc tắt máy. Chọn một hồ sơ cụ thể thì mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, kể cả khi chuyến trước bạn đã đổi sang hồ sơ khác.</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền, khung hình khi chiếu lên cụm, và Giới thiệu — đều lưu cho hồ sơ «%1$s». Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đều đổi theo.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -131,29 +137,6 @@
     <string name="kachi_about_package">Tên gói: %1$s</string>
     <string name="kachi_about_licence">Giấy phép MIT. Thử nghiệm cá nhân, KHÔNG liên kết với BYD.</string>
 
-    <!-- ── SettingsSceneSection — Cảnh (P7 + P6) ── -->
-    <string name="kachi_sec_scenes">Cảnh</string>
-    <string name="kachi_scenes_note">Một cảnh gồm bố cục, nội dung từng ô và thanh nút xe. Chạm tên một cảnh để gọi lại. Hình nền, chip thanh trạng thái, đơn vị và giao diện KHÔNG đổi theo cảnh.</string>
-    <string name="kachi_scenes_empty">Chưa có cảnh nào. Bố trí màn hình theo ý bạn rồi bấm \"Lưu cảnh hiện tại…\".</string>
-    <string name="kachi_scenes_count">%1$d/%2$d cảnh</string>
-    <string name="kachi_scenes_full">Đã đủ %1$d cảnh — xoá một cảnh trước khi lưu thêm.</string>
-    <string name="kachi_scene_save">Lưu cảnh hiện tại…</string>
-    <string name="kachi_scene_save_title">Lưu cảnh</string>
-    <string name="kachi_scene_rename_title">Đổi tên cảnh</string>
-    <string name="kachi_scene_name_hint">Tên cảnh (vd: Đi làm)</string>
-    <string name="kachi_scene_confirm">Lưu</string>
-    <string name="kachi_scene_rename">Đổi tên</string>
-    <string name="kachi_scene_boot_mark">Nổ máy</string>
-    <string name="kachi_scene_boot_on">Lên lúc nổ máy</string>
-    <string name="kachi_scene_tap_recall">Chạm để gọi lại</string>
-    <string name="kachi_scene_boot_contract">Launcher sẽ lên bằng cảnh \"%1$s\" mỗi lần khởi động — cách bố trí chưa lưu thành cảnh sẽ bị thay. Chạm \"Nổ máy\" lần nữa để bỏ dấu.</string>
-    <string name="kachi_scene_boot_none">Chưa chọn cảnh lúc nổ máy — launcher lên đúng cách bố trí lúc bạn tắt máy.</string>
-    <string name="kachi_scene_boot_cleared">Đã bỏ cảnh lúc nổ máy</string>
-    <string name="kachi_scene_saved">Đã lưu cảnh \"%1$s\"</string>
-    <string name="kachi_scene_applied">Đã gọi cảnh \"%1$s\"</string>
-    <string name="kachi_scene_deleted">Đã xoá cảnh \"%1$s\"</string>
-    <string name="kachi_scene_name_empty">Cảnh cần một cái tên</string>
-    <string name="kachi_scene_name_taken">Đã có cảnh tên \"%1$s\"</string>
 
     <!-- ── SettingsSectionsHome — Màn hình chính ── -->
     <string name="kachi_sec_layout">Bố cục màn hình</string>
@@ -265,9 +248,9 @@
     <string name="kachi_diagnostics">Chẩn đoán và nhật ký</string>
 
     <!-- ── IA v2 nhóm 2 — Thanh trạng thái & thanh nút (SettingsBarsSection · TopStripPicker) ── -->
-    <string name="kachi_topstrip_more">Thêm chip khác…</string>
-    <string name="kachi_topstrip_on">✓ %1$s</string>
-    <string name="kachi_topstrip_none">Bản này chưa có thông tin nào đặt lên thanh trạng thái được.</string>
+    <!-- S4 · R11 (c): ba khoá kachi_topstrip_more/_on/_none đã xoá cùng hộp thoại "Thêm chip khác…" —
+         màn chọn nay bày thẳng mọi mục đọc theo lĩnh vực (TopStripPicker). -->
+    <string name="kachi_topstrip_count">Đang bật · %1$d/%2$d</string>
     <string name="kachi_dock_pick_n">Chọn nút trên thanh… (%1$d đang bật)</string>
 
     <!-- ── IA v2 · R-UI (o) — chip thứ sáu của hàng bố cục: luôn có ĐÚNG một chip sáng ── -->

@@ -9,14 +9,42 @@ import android.content.Context
  * Áp quy tắc bố cục mặc định (3 widget) khi hồ sơ trống — chuyển logic `initialState()` cũ từ Activity vào tầng dữ liệu,
  * để [HomeViewModel] chỉ cần `load()`.
  *
- * ⚠ **Một ngoại lệ có chủ ý cho luật "không ghi bền lúc load"**: lượt `load()` ĐẦU TIÊN của tiến trình áp **cảnh lúc
- * nổ máy** (P7) và ghi bền kết quả. Lý do đầy đủ ở KDoc [load]; tóm lại là áp cảnh mà không ghi thì màn hình và đĩa
- * nói hai chuyện khác nhau. Mọi lượt `load()` sau (đổi/thêm/xoá hồ sơ) **chỉ đọc**, như trước.
+ * ⚠ **Một ngoại lệ có chủ ý cho luật "không ghi bền lúc load"**: lượt `load()` ĐẦU TIÊN của tiến trình áp **hồ sơ lúc
+ * nổ máy** (S4 · R6, thay cho "cảnh lúc nổ máy" của P7) — mà áp một hồ sơ **là** một lượt `switchProfile` thật, có
+ * chụp–áp. Lý do đầy đủ ở KDoc [load]. Mọi lượt `load()` sau (đổi/thêm/xoá hồ sơ) **chỉ đọc**, như trước.
  */
 class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
 
     private val app = context.applicationContext
     private val prefs = WorkspacePrefs(app)
+
+    /**
+     * Cầu sang các **applier** của ClusterNav — dùng cho ĐÚNG một việc: [reapplyAll] sau lượt đổi hồ sơ (R5).
+     *
+     * ## Vì sao dựng một cầu ở tầng dữ liệu, chứ không nhận cầu của màn hình
+     * [ClusterNavBridge] là **facade không trạng thái** trên `Prefs`/`SimpleCastRuntime` (đều process-singleton), và
+     * mỗi Activity vốn đã tự dựng một cái (`Activity.clusterNavBridge()`), nên "một instance duy nhất" chưa bao giờ là
+     * bất biến của nó — *một đường đi* mới là. Nhận cầu từ ngoài vào thì lượt đổi hồ sơ **chỉ áp được khi có màn hình
+     * đang mở**, mà đường khởi động nguội ([KachiAutostart]) đổi hồ sơ lúc chưa có Activity nào.
+     *
+     * `toast` rỗng là **cố ý**: đây là lượt áp lại **im lặng** của một hành động người dùng đã thấy kết quả (họ vừa
+     * chọn hồ sơ). Bắn 6–8 toast "đã bật dẫn đường"/"đang cấp quyền" cho một cú chạm là làm người lái phải đọc.
+     */
+    private val bridge: ClusterNavBridge by lazy {
+        ClusterNavBridge(app, toast = {}, ui = { r -> android.os.Handler(android.os.Looper.getMainLooper()).post(r) })
+    }
+
+    /**
+     * ⚠⚠ S4 · R2 — lượt chuyển **cảnh → hồ sơ** chạy ở `init`, tức **trước** lượt [load] đầu tiên của tiến trình.
+     *
+     * Thứ tự này không phải cho gọn: lượt dọn rác widget bên thứ ba (`AppWidgetIds.orphaned` →
+     * `AppWidgetSlotHost.reclaim`) chạy ở nhịp render đầu tiên, và trước khi chuyển đổi xong thì id widget của một
+     * cảnh **chỉ còn nằm trong chuỗi `<hồ sơ>__scenes`**. Để lượt dọn đi trước là để chính lượt nâng cấp **xoá vĩnh
+     * viễn** widget của người dùng — xem KDoc [WorkspacePrefs.migrateScenesOnce] và `AppWidgetIds.idsInLegacyScenes`.
+     */
+    init {
+        prefs.migrateScenesOnce()
+    }
 
     /**
      * Lượt [load] ĐẦU TIÊN của tiến trình này đã đi qua chưa — đây là cách nhận ra *"launcher vừa khởi động nguội"*.
@@ -87,8 +115,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             // U5·T3: nạp cùng lượt ⇒ bộ chọn ngôn ngữ mở ra là thấy đúng lựa chọn đang lưu. `LangHost` giải nghĩa ra
             // `Strings.current` từ giá trị này (nó cần locale của máy nên không giải được ở `:core`).
             langMode = prefs.langMode(),
-            // P7/P6: sổ cảnh nạp cùng lượt ⇒ ca ĐỔI HỒ SƠ tự đúng (mỗi hồ sơ một bộ cảnh + một cảnh khởi động).
-            scenes = prefs.sceneBook(),
+            // S4 · R6: hồ sơ lúc nổ máy nạp cùng lượt ⇒ nhóm Hồ sơ ở Cài đặt vẽ đúng chip đang chọn mà không phải
+            // mở một đường đọc bền thứ hai ở tầng UI. Theo XE nên nó KHÔNG đổi khi đổi hồ sơ — nạp lại vẫn đúng.
+            bootProfile = prefs.bootProfile(),
             // ⚠⚠ [SOÁT P0-1] BẮT BUỘC nạp ở đây, và bắt buộc ở CHÍNH lượt này. Id widget là của HOST (mọi hồ sơ)
             // trong khi mọi trường trên là của riêng hồ sơ đang dùng ⇒ thiếu dòng này thì `AppWidgetIds.used` trả lời
             // hẹp hơn sự thật và lượt thu hồi id đi **xoá vĩnh viễn** widget của hồ sơ khác ([ĐO] emulator: đổi hồ sơ
@@ -96,15 +125,15 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             // `deleteProfile` đều gọi lại `load()` nên ảnh chụp này luôn khớp hồ sơ đang dùng.
             widgetIdsOtherProfiles = prefs.widgetIdsOtherProfiles(),
         )
-        // Lượt `load()` thứ hai trở đi là ĐỔI/THÊM/XOÁ HỒ SƠ, không phải khởi động ⇒ **không** áp cảnh. Thiếu cờ này
-        // thì bấm sang hồ sơ B sẽ bị cảnh khởi động của B ghi đè ngay lên bố cục vừa nạp của B.
+        // Lượt `load()` thứ hai trở đi là ĐỔI/THÊM/XOÁ HỒ SƠ, không phải khởi động ⇒ **không** áp lại hồ sơ nổ máy.
+        // Thiếu cờ này thì bấm sang hồ sơ B sẽ bị hồ sơ nổ máy kéo ngược về ngay lập tức — một nút không bấm được.
         if (coldStartDone) return base
         coldStartDone = true
-        val boot = base.scenes.bootScene() ?: return base
-        val applied = base.withScene(boot)
-        persist(applied)
-        setGridLayout(applied.customLayout)   // bố cục ở khoá RIÊNG, không nằm trong persist()
-        return applied
+        // Đã đang ở đúng hồ sơ đó ⇒ không làm gì: `switchProfile` sang chính nó vẫn kéo theo một lượt chụp–áp +
+        // `reapplyAll` (R5), tức mỗi lần mở launcher lại đập lại toàn bộ cấu hình ClusterNav mà không được gì.
+        val boot = base.bootProfile ?: return base
+        if (boot == base.activeProfile) return base
+        return switchProfile(boot)
     }
 
     override fun persist(state: HomeUiState) {
@@ -130,10 +159,41 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         }
     }
 
+    /**
+     * ═══ S4 · R5 — ĐỔI HỒ SƠ = **CHỤP A → ĐẶT CON TRỎ → ÁP B → GỌI LẠI APPLIER**, đúng thứ tự đó ═══════════════
+     *
+     * Bốn bước, và **thứ tự là một phần của hợp đồng**:
+     *  1. **chụp A** — giá trị ClusterNav đang nằm trên đĩa là của hồ sơ A. Chụp SAU khi đổi con trỏ thì ảnh của A bị
+     *     ghi vào ô của B; chụp thiếu thì mọi thứ A vừa chỉnh biến mất ngay lần quay lại đầu tiên.
+     *  2. **đặt con trỏ** — mọi khoá theo hồ sơ đọc qua `key()` nên bước này phải đứng trước bước 3 và 4.
+     *  3. **áp B** — ghi ảnh của B vào đúng tệp prefs dịch vụ đang đọc; B chưa có ảnh ⇒ **giữ nguyên** (hồ sơ mới =
+     *     bản sao của hiện tại, R5).
+     *  4. **gọi lại applier** — [ĐO] **không một dịch vụ nào** trong dự án đăng ký
+     *     `registerOnSharedPreferenceChangeListener` (grep toàn `app/src/main`, 0 kết quả), nên ghi prefs xong là
+     *     xong *trên đĩa* mà **không có gì đang chạy biết**. [ClusterNavBridge.reapplyAll] gọi đúng các applier đã
+     *     có — không dựng cơ chế thứ hai (CLAUDE.md §6: không đảo thứ tự/cơ chế đang chạy tốt trên xe).
+     *
+     * Ngôn ngữ phát lại ở [WorkspacePrefs.broadcastLang]: bản theo hồ sơ là nguồn, `clusternav_lang` là bản phát cho
+     * `attachBaseContext` của màn ClusterNav — thiếu bước này thì hồ sơ dùng English mà màn kia vẫn tiếng Việt.
+     */
     override fun switchProfile(name: String): HomeUiState {
+        prefs.snapshotClusterNav(prefs.activeProfile())
         prefs.setActiveProfile(name)
+        prefs.applyClusterNav(name)
+        prefs.broadcastLang()
+        bridge.reapplyAll()
         return load()
     }
+
+    /** S4 · R8 — hồ sơ mới là **bản sao** của hồ sơ đang dùng (chép mọi hậu tố + ảnh chụp ClusterNav). */
+    override fun duplicateProfile(name: String): HomeUiState {
+        prefs.duplicateActiveProfile(name)
+        return load()
+    }
+
+    override fun bootProfile(): String? = prefs.bootProfile()
+
+    override fun setBootProfile(name: String?) = prefs.setBootProfile(name)
 
     override fun addProfile(name: String): HomeUiState {
         prefs.addProfile(name)
@@ -176,10 +236,6 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun langMode(): LangMode = prefs.langMode()
 
     override fun setLangMode(mode: LangMode) = prefs.setLangMode(mode)
-
-    override fun sceneBook(): SceneBook = prefs.sceneBook()
-
-    override fun setSceneBook(book: SceneBook) = prefs.setSceneBook(book)
 
     /** Hồ sơ trống (mọi ô Empty) → bố cục mặc định 3 widget (khớp `initialState()` cũ của KachiHomeActivity). */
     private fun defaultIfEmpty(ws: WorkspaceState): WorkspaceState =

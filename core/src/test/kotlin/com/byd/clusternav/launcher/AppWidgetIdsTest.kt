@@ -19,14 +19,17 @@ class AppWidgetIdsTest {
 
     /**
      * Trạng thái đầy đủ — [AppWidgetIds.orphaned]/[AppWidgetIds.unused] nhận [HomeUiState] chứ không phải
-     * [WorkspaceState], vì "còn ai dùng" phải tính **cả sổ cảnh** (xem KDoc [AppWidgetIds.used]).
+     * [WorkspaceState], vì "còn ai dùng" phải tính **cả id của hồ sơ tài xế khác** (xem KDoc [AppWidgetIds.used]).
      */
-    private fun ui(ws: WorkspaceState, scenes: SceneBook = SceneBook.EMPTY, others: Set<Int> = emptySet()) =
-        HomeUiState(workspace = ws, scenes = scenes, widgetIdsOtherProfiles = others)
+    private fun ui(ws: WorkspaceState, others: Set<Int> = emptySet()) =
+        HomeUiState(workspace = ws, widgetIdsOtherProfiles = others)
 
-    /** Một sổ cảnh giữ đúng những ô [contents] (dùng để chốt "id trong cảnh vẫn đang dùng"). */
-    private fun sceneHolding(vararg contents: SlotContent): SceneBook =
-        SceneBook.EMPTY.saved("Cảnh", ui(state(*contents)))
+    /**
+     * Chuỗi cảnh ĐỜI CŨ giữ đúng những ô [contents] — dạng `<mã>|<tên>|<preset>|<lưới>|<ô;…>|<viền>|<nút,…>`,
+     * literal để vẫn chạy sau khi T2 xoá `SceneBook` (cùng lý do đã ghi ở `ScenesMigrationTest`).
+     */
+    private fun legacyScenesRaw(vararg contents: SlotContent): String =
+        "s1|Cảnh|QUAD||" + contents.joinToString(";") { SlotCodec.encode(it) } + "|BOTTOM|lock"
 
     // ── Thu hồi id ────────────────────────────────────────────────────────────────
 
@@ -110,7 +113,7 @@ class AppWidgetIdsTest {
         assertEquals(setOf(11, 12), AppWidgetIds.unused(setOf(11, 12), ui(empty)))
     }
 
-    // ── Id nằm trong CẢNH ĐÃ LƯU vẫn đang được dùng ───────────────────────────────
+    // ── Id nằm trong dữ liệu CẢNH ĐỜI CŨ chưa chuyển vẫn đang được dùng (S4 · R2) ─
 
     /**
      * ⚠⚠ **CA CỦA GIAO ĐIỂM HAI TÍNH NĂNG — đo được trên xe-ảo trước khi vá.**
@@ -118,59 +121,31 @@ class AppWidgetIdsTest {
      * Cảnh lưu **nguyên nội dung ô**, tức lưu chính con số id; mà id thì `deleteAppWidgetId` xong là **không cấp lại
      * được**. [ĐO] `emulator-5554` bản trước bản vá: đặt widget đồng hồ vào ô ⇒ lưu cảnh ⇒ đổi ô đó sang một app ⇒
      * `dumpsys appwidget` cho thấy **id 651 đã bị xoá** ⇒ gọi lại cảnh thì ô hiện *"widget của
-     * com.google.android.deskclock không còn — app đã bị gỡ hoặc bị tắt"* trong khi app **vẫn còn nguyên**. Tức
-     * launcher tự xoá widget của người dùng rồi báo sai nguyên nhân.
-     */
-    @Test
-    fun `id nam trong canh da luu thi KHONG duoc thu hoi du bo cuc bo no`() {
-        val scenes = sceneHolding(aw(11))
-        val old = ui(state(aw(11)), scenes)
-        val new = ui(state(SlotContent.App("com.waze")), scenes)   // bố cục bỏ widget, cảnh vẫn giữ
-        assertEquals(
-            emptySet<Int>(), AppWidgetIds.orphaned(old, new),
-            "gọi lại cảnh sẽ ra thẻ 'widget không còn' nếu id bị xoá ở đây — mà app thì vẫn còn trên máy",
-        )
-    }
-
-    /** Và lượt dọn rác lúc khởi động cũng phải thấy cảnh, không thì nó xoá ngay lần mở app kế tiếp. */
-    @Test
-    fun `don rac luc khoi dong khong xoa id ma canh dang giu`() {
-        val loaded = ui(state(SlotContent.Empty), sceneHolding(aw(11)))
-        assertEquals(setOf(12), AppWidgetIds.unused(setOf(11, 12), loaded))
-        assertEquals(setOf(11), AppWidgetIds.used(loaded), "id của cảnh phải được tính là ĐANG DÙNG")
-    }
-
-    /**
-     * XOÁ một cảnh là đường **duy nhất** nhả id mà bố cục KHÔNG đổi một ô nào.
+     * com.google.android.deskclock không còn — app đã bị gỡ hoặc bị tắt"* trong khi app **vẫn còn nguyên**.
      *
-     * Bản chỉ-xét-bố-cục sẽ trả tập rỗng ở ca này ⇒ id sống mãi, nhà cung cấp cứ đẩy cập nhật cho một ô không còn ai
-     * xem — đúng thứ đắt nhất mà [AppWidgetIds] sinh ra để chặn.
+     * S4 · R1 bỏ khái niệm cảnh, nhưng **chuỗi cảnh vẫn nằm trên đĩa của xe đang chạy** cho tới khi
+     * [ScenesMigration] chuyển xong. Trong cửa sổ đó `WorkspacePrefs.widgetIdsOtherProfiles` phải đọc nó qua
+     * [AppWidgetIds.idsInStored] — không thì lượt khởi động ĐẦU TIÊN của bản mới xoá sạch widget trong cảnh, tức
+     * chính lượt nâng cấp làm mất dữ liệu.
      */
     @Test
-    fun `xoa canh giu id thi id do thanh rac`() {
-        val ws = state(SlotContent.Widget("w_board"))               // bố cục KHÔNG hề có widget bên thứ ba
-        val old = ui(ws, sceneHolding(aw(11)))
-        val new = ui(ws, SceneBook.EMPTY)
-        assertEquals(setOf(11), AppWidgetIds.orphaned(old, new), "xoá cảnh cuối cùng giữ id ⇒ phải thu hồi")
+    fun `id trong chuoi canh doi cu chua chuyen van tinh la dang dung`() {
+        val raw = legacyScenesRaw(aw(11))
+        assertEquals(setOf(11), AppWidgetIds.idsInLegacyScenes(raw))
+        assertEquals(setOf(11), AppWidgetIds.idsInStored(List(WorkspaceState.SLOT_CAP) { "" }, raw))
+
+        // …và khi đã đọc ra thì nó đi vào state qua vế "hồ sơ khác" ⇒ lượt dọn rác lúc khởi động KHÔNG chạm nó.
+        val loaded = ui(state(SlotContent.Empty), others = setOf(11))
+        assertEquals(setOf(12), AppWidgetIds.unused(setOf(11, 12), loaded))
+        assertEquals(setOf(11), AppWidgetIds.used(loaded), "id chưa chuyển phải được tính là ĐANG DÙNG")
     }
 
-    /** Hai cảnh cùng giữ một id: xoá một cảnh thì id **vẫn đang dùng**. */
+    /** Cảnh không có widget bên thứ ba ⇒ không sinh id nào; chuỗi rỗng/rác cũng vậy, và KHÔNG ném. */
     @Test
-    fun `hai canh cung giu mot id thi xoa mot canh khong thu hoi`() {
-        val two = SceneBook.EMPTY
-            .saved("A", ui(state(aw(11))))
-            .saved("B", ui(state(aw(11))))
-        val ws = state(SlotContent.Empty)
-        assertEquals(setOf(11), AppWidgetIds.idsIn(two))
-        assertEquals(emptySet<Int>(), AppWidgetIds.orphaned(ui(ws, two), ui(ws, two.removed("s1"))))
-        assertEquals(setOf(11), AppWidgetIds.orphaned(ui(ws, two), ui(ws, SceneBook.EMPTY)))
-    }
-
-    @Test
-    fun `so canh khong co widget nao thi khong sinh id`() {
-        val book = sceneHolding(SlotContent.App("com.x"), SlotContent.Widget("w_board"))
-        assertEquals(emptySet<Int>(), AppWidgetIds.idsIn(book))
-        assertEquals(emptySet<Int>(), AppWidgetIds.idsIn(SceneBook.EMPTY))
+    fun `chuoi canh khong co widget nao thi khong sinh id`() {
+        val raw = legacyScenesRaw(SlotContent.App("com.x"), SlotContent.Widget("w_board"))
+        assertEquals(emptySet<Int>(), AppWidgetIds.idsInLegacyScenes(raw))
+        assertEquals(emptySet<Int>(), AppWidgetIds.idsInLegacyScenes(""))
     }
 
     // ── HỒ SƠ TÀI XẾ KHÁC: id của họ KHÔNG được thu hồi (SOÁT P0-1) ────────────────
@@ -184,7 +159,7 @@ class AppWidgetIdsTest {
      * **vẫn còn cài** (`pm list packages -d` đếm 0 = không bị tắt). `force-stop` rồi mở lại vẫn vậy ⇒ **vĩnh viễn**,
      * và còn **báo sai nguyên nhân**.
      *
-     * Gốc: `WorkspacePrefs.key()` = `"<hồ sơ>__<hậu tố>"`, nên `workspace`/`scenes` trong [HomeUiState] **chỉ** của hồ
+     * Gốc: `WorkspacePrefs.key()` = `"<hồ sơ>__<hậu tố>"`, nên `workspace` trong [HomeUiState] **chỉ** của hồ
      * sơ đang dùng — trong khi id widget là của **HOST** (mọi hồ sơ). Lỗi ở **KIỂU DỮ LIỆU**, không ở nhánh code: bài
      * canh cũ chứng minh *"có gọi đúng hàm với cả hai state"* mà không hỏi *"hàm có thấy đủ dữ liệu chưa"*.
      *
@@ -246,8 +221,8 @@ class AppWidgetIdsTest {
         val slots = listOf("", "aw:654@com.x/.W", "app:com.waze", "widget:w_board", "aw:655@com.y/.W", "")
         assertEquals(setOf(654, 655), AppWidgetIds.idsInStored(slots, null))
 
-        // Cảnh đã lưu của hồ sơ đó cũng giữ id — cùng lý do như hồ sơ đang dùng.
-        val scenes = SceneBook.encode(SceneBook.EMPTY.saved("Cảnh", ui(state(aw(700)))))
+        // Chuỗi cảnh đời cũ của hồ sơ đó cũng giữ id — cùng lý do như hồ sơ đang dùng (xem khối trên).
+        val scenes = legacyScenesRaw(aw(700))
         assertEquals(setOf(654, 655, 700), AppWidgetIds.idsInStored(slots, scenes))
         assertEquals(setOf(700), AppWidgetIds.idsInStored(List(6) { "" }, scenes))
     }
@@ -271,9 +246,9 @@ class AppWidgetIdsTest {
     /**
      * Dạng lưu là `aw:<id>@<provider>`.
      *
-     * ⚠ Dấu ngăn là `@`, **KHÔNG** phải `|`: chuỗi này được nhúng vào chuỗi lưu của [SceneBook], nơi `|` ngăn TRƯỜNG.
+     * ⚠ Dấu ngăn là `@`, **KHÔNG** phải `|`: chuỗi này từng được nhúng vào chuỗi lưu của cảnh, nơi `|` ngăn TRƯỜNG.
      * Bản đầu dùng `|` và [ĐO] trên `emulator-5554` cho thấy nó làm **mất cảnh trong im lặng** (bản ghi ra 8 trường
-     * thay vì 7 ⇒ `decode` bỏ cả cảnh). Luật đó được canh ở `SceneBookTest` cho MỌI loại ô.
+     * thay vì 7 ⇒ `decode` bỏ cả cảnh). Luật đó vẫn canh được ở `ScenesMigrationTest` cho dữ liệu chưa chuyển.
      */
     @Test
     fun `dang luu la aw id a-móc provider`() {

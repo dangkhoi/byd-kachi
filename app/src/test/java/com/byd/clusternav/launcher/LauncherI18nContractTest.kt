@@ -312,7 +312,10 @@ class LauncherI18nContractTest {
         "EEEE, dd/MM" to "mẫu định dạng ngày của SimpleDateFormat; NGÔN NGỮ do `LangHost.locale()` quyết định",
         "dd/MM" to "mẫu định dạng ngày (không có tên thứ nên không phụ thuộc ngôn ngữ)",
         // Mã icon tra trong `KachiTheme.iconRes` — định danh tài nguyên, không phải chữ cho người đọc.
-        *listOf("ic-sun", "ic-grid", "ic-bolt", "ic-leaf", "ic-speed", "ic-tire", "ic-music", "ic-lock")
+        // S4 · R12 thêm `ic-apps`/`ic-settings`: hai pill của thanh trên nay CHỈ có icon, và tên hình được truyền
+        // thẳng vào `pill(...)` (chữ đã chuyển sang `contentDescription` lấy từ `R.string`).
+        *listOf("ic-sun", "ic-grid", "ic-bolt", "ic-leaf", "ic-speed", "ic-tire", "ic-music", "ic-lock",
+            "ic-apps", "ic-settings")
             .map { it to "mã icon tra trong `KachiTheme.iconRes`, không phải chữ" }.toTypedArray(),
         // Ký hiệu đơn vị SI + tên chuẩn của chỉ số bụi — viết y hệt ở mọi ngôn ngữ, dịch là làm sai.
         *listOf("km/h", " km/h", " km", "µg", "µg · ", "µg/m³", "PM2.5 · ", "PM2.5 ")

@@ -145,12 +145,19 @@ class SettingsSections(
 
     // ── Hồ sơ tài xế ─────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Nhóm **Hồ sơ tài xế** (S4 · R8): thẻ từng hồ sơ → **hồ sơ lúc nổ máy** → **thêm hồ sơ (bản sao)**.
+     *
+     * Thứ tự đó là thứ tự khai ở [SettingsCatalogEntries] (`profiles_list` · `profiles_active` · `profiles_boot` ·
+     * `profiles_add`) — thứ tự danh mục phải là thứ tự dùng được: đổi hồ sơ là việc hằng ngày, chọn hồ sơ lúc nổ máy
+     * là việc đặt-một-lần, tạo hồ sơ mới thì hiếm hơn nữa.
+     *
+     * ⚠ [SOÁT ẢNH 2026-09-12 · finding #21] KHÔNG có `sectionLabel` cho phần danh sách: rail bên trái đã ghi
+     * "Hồ sơ tài xế" ở bậc SECTION, lặp đúng chữ đó làm tiêu đề đầu trang là hai lần trả lời cùng một câu hỏi. Hai
+     * mục *dưới* danh sách thì CÓ tiêu đề phụ — từ S4 trang này có ba phần, nên chúng thật sự chia trang.
+     */
     private fun profiles(body: LinearLayout) {
         val s = deps.state()
-        // ⚠ [SOÁT ẢNH 2026-09-12 · finding #21] KHÔNG có `sectionLabel` ở đây. Rail bên trái đã ghi "Hồ sơ tài xế"
-        // ở bậc SECTION; lặp đúng chữ đó làm tiêu đề đầu trang là hai lần trả lời cùng một câu hỏi, và [ĐO] nó đẩy
-        // nội dung thật xuống dưới một màn hình vốn chỉ dài 0.35 màn. Nhóm nhiều mục thì tiêu đề mục CÓ nghĩa (nó
-        // chia trang); nhóm một mục thì không.
         body.addView(rows.note(context.getString(R.string.kachi_profiles_note)))
         s.profiles.forEach { name ->
             body.addView(
@@ -160,7 +167,52 @@ class SettingsSections(
                 ).also { it.bottomMargin = dpi(context, Sp.S) },
             )
         }
-        body.addView(rows.button(context.getString(R.string.kachi_profiles_add)) { deps.onAddProfile() })
+        bootProfile(body, s)
+        addProfile(body, s)
+    }
+
+    /**
+     * S4 · R6 — **hồ sơ lúc nổ máy**: "Gần nhất" + từng hồ sơ.
+     *
+     * Thay cho *"cảnh lúc nổ máy"* của P7 (R1 bỏ hẳn khái niệm cảnh). Mặc định là [BOOT_LAST_CODE] — *"hồ sơ dùng
+     * gần nhất"*, tức **giữ nguyên hành vi cũ**: tắt máy ở hồ sơ nào thì nổ máy lên bằng hồ sơ đó. Một mặc định
+     * "hồ sơ X" sẽ âm thầm vứt bỏ lựa chọn của chuyến trước.
+     *
+     * `null` ở tầng dữ liệu ↔ sentinel [BOOT_LAST_CODE] ở tầng chip: [SettingsRows.chipRow] so **mã chuỗi** để biết
+     * chip nào sáng nên nó không nhận `null` được, mà một chuỗi rỗng thì va với "chưa đặt gì". Sentinel hai gạch
+     * dưới — cùng khuôn `__CUSTOM__` của [SettingsHomeSection] và `Prefs.VK_TARGET_*`, không phát minh khuôn mới.
+     */
+    private fun bootProfile(body: LinearLayout, s: HomeUiState) {
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sec_boot_profile)))
+        val options = listOf(BOOT_LAST_CODE to context.getString(R.string.kachi_profile_boot_last)) +
+            s.profiles.map { it to ProfileNames.display(it) }
+        body.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_row_boot_profile),
+            options = options,
+            current = deps.bootProfile() ?: BOOT_LAST_CODE,
+        ) { code -> deps.onBootProfile(if (code == BOOT_LAST_CODE) null else code) })
+        body.addView(rows.note(context.getString(R.string.kachi_boot_profile_note)))
+    }
+
+    /**
+     * S4 · R8 — **thêm hồ sơ = BẢN SAO của hồ sơ đang dùng**, và nhãn nút nói thẳng điều đó.
+     *
+     * Nút cũ ghi "Thêm hồ sơ…" rồi mở một hồ sơ TRẮNG. Từ R3 hồ sơ giữ tất cả lựa chọn, nên hồ sơ trắng nghĩa là
+     * người dùng vừa bấm một nút và nhận về một màn hình mặc định hoàn toàn — phải chỉnh lại từ đầu chỉ để đổi một
+     * chi tiết. Bản sao là điểm xuất phát đúng, và cái tên đề sẵn *"Bản sao của «X»"* nói ra nó vừa chép từ đâu.
+     *
+     * Hộp thoại hỏi tên dùng [SettingsDialogs.askName] — khuôn "hỏi một cái tên" dùng chung của dự án, không dựng
+     * bản thứ hai (KDoc [SettingsDialogs] nói vì sao).
+     */
+    private fun addProfile(body: LinearLayout, s: HomeUiState) {
+        val active = ProfileNames.display(s.activeProfile)
+        body.addView(rows.button(context.getString(R.string.kachi_profiles_add, active)) {
+            SettingsDialogs.askName(
+                context,
+                context.getString(R.string.kachi_profile_new_title),
+                context.getString(R.string.kachi_profile_copy_of, active),
+            ) { name -> deps.onDuplicateProfile(name) }
+        })
     }
 
     /**
@@ -310,4 +362,16 @@ class SettingsSections(
     // hồ sơ, và nhánh đó biến mất khi nút Xoá chuyển sang "chỉ dựng khi xoá được thật". Kotlin không báo lỗi cho hàm
     // private không ai gọi, nên nó sẽ ở lại im lặng — đúng loại nợ mà dự án đã phải đi dọn (`cycleDockEdge`,
     // `LauncherRequirements.notice`). Cần nói một câu ở màn Cài đặt thì dựng lại một dòng, KHÔNG để hàm chờ sẵn.
+
+    private companion object {
+        /**
+         * Mã của chip **"Gần nhất"** (không ghim hồ sơ nào lúc nổ máy).
+         *
+         * Ở tầng dữ liệu ca này là `null` ([WorkspaceRepository.bootProfile]) — nơi lưu cần phân biệt *"chưa chọn"*
+         * với *"chọn hồ sơ tên X"*, và tên hồ sơ do người dùng đặt nên không được đụng phải một tên dành riêng.
+         * [SettingsRows.chipRow] thì so **mã chuỗi** nên nó không nhận `null` được. Hai lớp, hai cách biểu diễn,
+         * quy đổi ở ĐÚNG một chỗ ([bootProfile]) — không để `null` và sentinel cùng chạy qua nhiều tầng.
+         */
+        const val BOOT_LAST_CODE = "__LAST__"
+    }
 }

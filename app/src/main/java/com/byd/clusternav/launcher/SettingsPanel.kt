@@ -32,9 +32,9 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * @param permissions báo cáo vòng kiểm quyền (P8) — đọc lúc dựng trang, không giữ ảnh chụp cũ.
  * @param wallpaperFolderHint chỗ bỏ ảnh vào; người dùng không có cách nào tự đoán và màn chọn tệp của hệ thống bị
  *   khoá trên xe.
- * @param onAddProfile mở hộp thoại tạo hồ sơ. **Cố ý là lambda dùng LẠI `ProfileBar.addDialog()`** thay vì dựng hộp
- *   thoại thứ hai ở đây: hai bản dựng hộp thoại là hai chỗ phải sửa và sẽ lệch nhau (§4.5 dùng đúng lập luận này
- *   cho 5 nút bố cục ở thanh trên — nhiều bề mặt được, nhưng phải đi **cùng một** đường).
+ * @param onDuplicateProfile tạo hồ sơ mới là **bản sao của hồ sơ đang dùng** (S4 · R8). Hộp thoại hỏi tên dùng
+ *   [SettingsDialogs.askName] — khuôn "hỏi một cái tên" dùng chung, không dựng bản thứ hai (§4.5 dùng đúng lập luận
+ *   này: nhiều bề mặt được, nhưng phải đi **cùng một** đường).
  */
 class SettingsDeps(
     val state: () -> HomeUiState,
@@ -72,15 +72,29 @@ class SettingsDeps(
     val onLangMode: (LangMode) -> Unit,
     val onAutostart: (Boolean) -> Unit,
     val onSwitchProfile: (String) -> Unit,
-    val onAddProfile: () -> Unit,
+    /**
+     * S4 · R8 — tạo hồ sơ mới **bằng cách nhân bản hồ sơ đang dùng**, nhận TÊN mới.
+     *
+     * Không phải "tạo hồ sơ trắng": từ R3 một hồ sơ giữ tất cả lựa chọn, nên hồ sơ trắng sẽ dựng lên một màn hình
+     * mặc định hoàn toàn — người dùng vừa mất mọi thứ họ đã chỉnh và phải làm lại từ đầu chỉ để đổi một chi tiết.
+     * Bản sao là điểm xuất phát đúng: sửa phần khác đi, giữ phần giống nhau.
+     */
+    val onDuplicateProfile: (String) -> Unit,
     val onDeleteProfile: (String) -> Unit,
+    /**
+     * S4 · R6 — hồ sơ sẽ được áp lúc **nổ máy**; `null` = *"hồ sơ dùng gần nhất"* (mặc định).
+     *
+     * `null` chứ không phải chuỗi rỗng: đó là giao kèo của [WorkspaceRepository.bootProfile] ở `:core`, và hai cách
+     * biểu diễn cho cùng một ý nghĩa là chỗ bản sao thứ hai sẽ lệch. Tầng chip thì cần một **mã chuỗi**, nên phép
+     * quy đổi `null ↔ __LAST__` nằm ở ĐÚNG một chỗ ([SettingsSections.BOOT_LAST_CODE]).
+     *
+     * Đọc qua lambda chứ không qua [state]: đây là lựa chọn **theo xe** (R4 — nó CHỌN hồ sơ nên phải đọc được trước
+     * khi biết hồ sơ nào), nên nó không thuộc `HomeUiState` của hồ sơ đang dùng.
+     */
+    val bootProfile: () -> String?,
+    val onBootProfile: (String?) -> Unit,
     /** Câu tóm tắt bố cục của một hồ sơ (tên gốc) — thẻ hồ sơ nói ra nó giữ gì (owner 2026-09-14). */
     val profileSummary: (String) -> String,
-    /**
-     * P7 + P6 — bộ việc làm với **cảnh**. Một tham số thay vì năm lambda: xem KDoc [SceneActions] (và
-     * [KachiHomeActivity] đang đúng trần 500 dòng).
-     */
-    val scenes: SceneActions,
 )
 
 /**

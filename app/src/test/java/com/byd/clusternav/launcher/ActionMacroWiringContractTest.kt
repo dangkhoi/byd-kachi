@@ -43,6 +43,14 @@ class ActionMacroWiringContractTest {
     }
 
     private val factory by lazy { code("src/main/java/com/byd/clusternav/launcher/ControlTileFactory.kt") }
+
+    /**
+     * Bảng trạng thái dùng chung — **tệp RIÊNG từ S4 · R12** (`ControlTileFactory.kt` chạm trần 500 dòng khi thêm ô
+     * loại LAUNCHER, xem đầu `ControlTileState.kt`). Ba phép kiểm bên dưới cắt vùng theo tệp, nên đường dẫn phải đi
+     * theo chỗ mã thật sự nằm; để nguyên đường cũ thì `SourceRoots.body` `require` hỏng và bài NỔ — đúng ý đồ của
+     * nó (nổ còn hơn âm thầm quét cả file, xem KDoc [body]).
+     */
+    private val tileState by lazy { code("src/main/java/com/byd/clusternav/launcher/ControlTileState.kt") }
     private val dock by lazy { code("src/main/java/com/byd/clusternav/launcher/ControlDockView.kt") }
     private val widgets by lazy { code("src/main/java/com/byd/clusternav/launcher/WidgetViews.kt") }
     private val board by lazy { code("src/main/java/com/byd/clusternav/launcher/TyreBoardView.kt") }
@@ -93,11 +101,11 @@ class ActionMacroWiringContractTest {
         // lượt một còn chạy ⇒ hai lượt "đóng hết kính" chồng nhau, đúng thứ chốt này sinh ra để chặn.
         assertFalse(macroTile.contains("AtomicBoolean("),
             "cờ KHÔNG được tạo trong thân ô — ô dựng lại là mất cờ")
-        assertTrue(factory.contains("fun beginRun(") && factory.contains("fun endRun("),
+        assertTrue(tileState.contains("fun beginRun(") && tileState.contains("fun endRun("),
             "chốt phải nằm ở ControlTileState (bảng dùng chung, theo mã gói)")
         // `beginRun` là hàm một-biểu-thức (không có ngoặc thân) ⇒ soi ngay dòng khai, không dùng helper đếm ngoặc.
         assertTrue(
-            Regex("""fun beginRun\([^)]*\)[^\n]*putIfAbsent""").containsMatchIn(factory),
+            Regex("""fun beginRun\([^)]*\)[^\n]*putIfAbsent""").containsMatchIn(tileState),
             "chốt phải là phép đặt-nếu-chưa-có nguyên tử (putIfAbsent), không phải đọc-rồi-ghi hai bước",
         )
     }
@@ -137,7 +145,7 @@ class ActionMacroWiringContractTest {
     fun `bang trang thai dung chung phai an toan da luong`() {
         // [SOÁT] bản cũ viết `assertFalse(cóHashMap && !cóConcurrentHashMap)` ⇒ chỉ cần MỘT map là ConcurrentHashMap
         // thì assert LUÔN qua, dù hai map còn lại là HashMap thường. Nay kiểm TỪNG map một.
-        val state = SourceRoots.body(factory, "class ControlTileState")
+        val state = SourceRoots.body(tileState, "class ControlTileState")
         val maps = Regex("""private val (\w+) = ([\w.]*Map)<""").findAll(state)
             .map { it.groupValues[1] to it.groupValues[2] }.toList()
         assertTrue(maps.size >= 4, "phải có ít nhất 4 bảng (bật/tắt · giá trị · lựa chọn · chốt đang chạy): $maps")

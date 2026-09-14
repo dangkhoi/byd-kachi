@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.SourceRoots
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -68,22 +69,67 @@ class TopStripWiringContractTest {
     @Test
     fun `nguoi dung co duong sua danh sach chip`() {
         assertTrue(panel.contains("stripPicker.section("), "màn Cài đặt phải bày mục chọn chip")
-        assertTrue(picker.contains("TopStripConfig.choices()"), "màn chọn phải lấy từ `:core`, không tự liệt kê")
-        // ⚠⚠ T4 · R-UI (m) — ĐƯỜNG ĐẶT DATUM BẤT KỲ ĐÃ ĐỔI HÌNH, KHÔNG BIẾN MẤT.
-        // Trước đây nó là **GIỮ một ô ở lưới 123 ô** trong màn Cài đặt (`CapabilityGridSection.setOnLongClickListener`
-        // → `onChipToggle` → bộ chọn). Lưới đó nay bỏ khỏi Settings (bộ chọn của ngăn kéo thay thế) nên lối GIỮ mất
-        // theo. Nếu không có đường thay thế thì người dùng **mất hẳn** khả năng đưa một datum bất kỳ lên thanh trạng
-        // thái (R8 *"không tính năng nào mất"*) — đúng loại hụt mà chỉ bài canh này thấy được.
-        // Đường mới: nút "Thêm chip khác…" mở hộp thoại danh sách trên CHÍNH `TopStripConfig.choices()`, rồi đi qua
-        // CÙNG `toggle` với chạm ô (kể cả câu nhắc khi đã đầy trần).
-        assertTrue(picker.contains("fun openMore()"), "phải có đường đưa datum BẤT KỲ lên thanh trên")
+        assertTrue(picker.contains("TopStripConfig.choices()") || picker.contains("TopStripConfig.picks("),
+            "màn chọn phải lấy từ `:core`, không tự liệt kê")
+        // ⚠⚠ S4 · R11 (c) — ĐƯỜNG ĐẶT DATUM BẤT KỲ ĐỔI HÌNH LẦN THỨ HAI, VẪN KHÔNG BIẾN MẤT.
+        // Lịch sử của đúng một tính năng (*"đặt MỘT datum bất kỳ lên thanh trên"*): T4 · R-UI (m) bỏ lưới 123 ô
+        // khỏi Settings ⇒ lối GIỮ-ô mất theo ⇒ thay bằng nút "Thêm chip khác…" mở hộp thoại **phẳng**. R11 bỏ nốt
+        // hộp thoại đó vì nó **giấu** danh sách (owner: *"hiện chỉ cho chọn 3 trong khi có thể chọn nhiều hơn"*) —
+        // và thay bằng chính danh sách ấy bày thẳng trên trang, xếp theo lĩnh vực.
+        // Phép kiểm vì thế cũng đổi: không hỏi *"có nút kia không"* nữa mà hỏi **"trang có bày HẾT không"**.
         assertTrue(
-            SourceRoots.body(picker, "private fun openMore()").contains("toggle(all[index].id)"),
-            "đường đó phải đi qua CÙNG một `toggle` với chạm ô — hai đường riêng thì luật trần/loại mục sẽ lệch",
+            SourceRoots.body(picker, "private fun rebuild()").contains("TopStripConfig.picks(strip)"),
+            "màn chọn phải dựng từ `TopStripConfig.picks` — hàm bày ĐỦ mọi mục đọc theo lĩnh vực (bài canh phép " +
+                "đếm thật nằm ở `:core`: TopStripTest.man chon bay du moi muc dat duoc…)",
         )
+        assertFalse(
+            picker.contains("openMore"),
+            "hộp thoại 'Thêm chip khác…' phải hết hẳn, không để mã chết: danh sách nó bày nay nằm thẳng trên trang",
+        )
+        assertFalse(
+            picker.contains("SettingsDialogs.pick("),
+            "…và không được thay bằng một hộp thoại phẳng khác — 120 dòng trong một danh sách một cột là đúng thứ " +
+                "R11 (c) bỏ đi",
+        )
+        // Gấp/mở phải đi theo LUẬT của `:core`, không phải một mặc định viết tay ở tầng vẽ (R4: nhóm ≤ 2 màn cuộn).
+        assertTrue(picker.contains("s.open"), "mặc định gấp/mở của mỗi lĩnh vực phải đọc từ ChipSection.open")
+    }
+
+    /**
+     * S4 · R11 (b) — **THANH TRÊN KHÔNG TRÀN**, dù có tới [TopStripConfig.CAP] chip.
+     *
+     * ## Vì sao canh bằng cách đọc mã chứ không đo pixel
+     * Bề rộng thật chỉ có trên máy (test này chạy off-device, không có `Activity` nào để đo). Nhưng thứ quyết định
+     * *có tràn hay không* là **hình dạng của bố cục**, và cái đó đọc được: (1) hàng chip là phần co giãn nên mọi
+     * vật khác lấy bề rộng tự nhiên TRƯỚC, (2) mỗi chip nhận một trần bề rộng từ **phép chia** phần còn lại, (3)
+     * chữ vượt trần thì cắt `…` chứ không đẩy ô rộng ra. Thiếu bất kỳ mảnh nào trong ba mảnh đó là tràn quay lại.
+     * Phần [ĐO] (ảnh máy ảo 8 chip) thuộc S4 · T4 — bài này chặn đường lùi, không thay cho con mắt.
+     */
+    @Test
+    fun `thanh tren khong tran - chip co tran be rong tu phep chia va cat duoi`() {
+        val build = SourceRoots.body(strip, "private fun build()")
         assertTrue(
-            SourceRoots.body(picker, "private fun openMore()").contains("TopStripConfig.choices()"),
-            "và phải bày TOÀN BỘ danh sách của `:core`, không phải một danh sách rút gọn viết tay",
+            build.contains("strip.addView(chipRow, LinearLayout.LayoutParams(0, WRAP, 1f))"),
+            "hàng chip phải LÀ phần co giãn của thanh (0dp + weight 1): sắp kiểu cũ (đệm riêng mang weight, hàng " +
+                "chip WRAP) thì LinearLayout đo hàng chip TRƯỚC ba vật bên phải ⇒ 8 chip đẩy 'Ứng dụng'/'Cài đặt'/" +
+                "chip hồ sơ ra khỏi mép",
+        )
+        val fit = SourceRoots.body(strip, "private fun fitChips()")
+        assertTrue(fit.contains("chipRow.width"), "bề rộng còn lại phải đọc từ bố cục thật, không tự cộng trừ lại")
+        assertTrue(Regex("""room\s*/\s*n""").containsMatchIn(fit), "trần mỗi chip = phép CHIA ĐỀU phần còn lại")
+        assertTrue(fit.contains("maxWidth = cap"), "…và phải thật sự áp vào chip (`maxWidth`)")
+        // Không cấp phát trong vòng tick: `fitChips` chạy theo nhịp trạng thái xe khi số chip đổi, và theo mỗi lượt
+        // bố cục. Tra drawable / dựng paint ở đây là mở lại đúng việc mà bản vá P2-9 vừa dọn.
+        listOf("getDrawable", "Paint(", "GradientDrawable").forEach {
+            assertFalse(fit.contains(it), "fitChips cấp phát '$it' — nó chạy theo nhịp, phải là số học thuần")
+        }
+        val chip = SourceRoots.body(strip, "private fun chip(")
+        assertTrue(chip.contains("maxLines = 1"), "chip một dòng")
+        assertTrue(chip.contains("TruncateAt.END"), "chữ dài phải cắt '…' — không cắt thì trần bề rộng chỉ CẮT CỤT ô")
+        // Trần số chip chỉ có MỘT nguồn (`:core`), kể cả ở tầng vẽ: câu nhắc "đầy rồi" và câu chú thích cùng đọc nó.
+        assertTrue(
+            Regex("""TopStripConfig\.CAP\b""").findAll(picker).count() >= 2,
+            "cả câu chú thích lẫn câu nhắc-đầy của màn chọn phải đọc TopStripConfig.CAP, không viết số 8 tại chỗ",
         )
     }
 

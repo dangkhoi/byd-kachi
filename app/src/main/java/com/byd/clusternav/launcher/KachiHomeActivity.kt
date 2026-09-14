@@ -30,7 +30,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * (`repeatOnLifecycle(STARTED)`) → [render] áp state lên view; user event → INTENT (một chiều).
  *
  * B5b: composition-root MỎNG. Đồ thị phụ thuộc + VM lấy từ [AppContainer]. Dựng-view tách thành đơn vị cohesive:
- * [KachiTopStrip] · [DrawerController] · [ProfileBar] · [DockAreaLayout] · [LauncherWindows]. Activity còn: lấy VM +
+ * [KachiTopStrip] · [DrawerController] · [ProfileChip] · [DockAreaLayout] · [LauncherWindows]. Activity còn: lấy VM +
  * collect → [render] + glue lifecycle + glue intent theo-ô. Tự quản [LifecycleOwner] + [ViewModelStoreOwner] vì kế
  * thừa `android.app.Activity` (không có androidx `ComponentActivity`/`by viewModels()` — thêm sẽ là phụ thuộc mới).
  */
@@ -55,9 +55,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private val panels: HomePanels by lazy {
         homePanels(
             activity = this, rootFrame = rootFrame, viewModel = viewModel, bridge = bridge,
-            scenes = sceneController, openDockPicker = { sel, apply -> drawerController.openDockPicker(sel, apply) },
+            openDockPicker = { sel, apply -> drawerController.openDockPicker(sel, apply) },
             onApplyLayout = { l -> applyCustomLayout(l) },
-            onPreset = { p -> selectPreset(p) },          // CÙNG đường với 5 nút bố cục ở thanh trên (§4.5)
+            // S4 · R7 gỡ 5 nút bố cục khỏi thanh trên ⇒ đây là bề mặt DUY NHẤT chọn bố cục sẵn (intent giữ nguyên).
+            onPreset = { p -> selectPreset(p) },
             onWallpaperChanged = { p ->
                 viewModel.setWallpaperPrefs(p); wallpaper.reload()   // state + lưu bền; reload đọc lại từ state
             },
@@ -67,7 +68,6 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 workspace.setUnitPrefs(prefs)
                 topStrip.refreshChips(viewModel.uiState.value.carStatus, prefs, viewModel.uiState.value.topStrip)
             },
-            onAddProfile = { profileBar.addDialog() },    // dùng LẠI hộp thoại có sẵn, không dựng bản thứ hai
             shellUsable = { shell != null },
             goImmersive = { goImmersive() },
             onPanelsChanged = { windows.updateOverlayHeads() },   // nút ⇄ nổi ẩn khi Cài đặt/bảng vẽ mở
@@ -90,8 +90,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         )
     }
     private lateinit var drawerController: DrawerController
-    private lateinit var profileBar: ProfileBar
-    private val sceneController by lazy { SceneController(this, viewModel) }   // P7/P6 (xem [SceneActions])
+    /** S4 · R7 — bộ chọn hồ sơ sau cú chạm chip hồ sơ (thay `ProfileBar`: hết xoay vòng, hết hộp thoại tạo thứ hai). */
+    private lateinit var profileChip: ProfileChip
     private lateinit var mainArea: LinearLayout
     private lateinit var rootFrame: FrameLayout
     private val media by lazy { MediaBridge(this) }        // đọc nhạc live cho w_media + transport
@@ -142,16 +142,17 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         viewModel = ViewModelProvider(
             this, container.homeViewModelFactory(embedded = SlotAppHost.embeddingUsable(this)),
         )[HomeViewModel::class.java]
-        profileBar = ProfileBar(this, viewModel)
+        profileChip = ProfileChip(this, viewModel)
         ThemeHost.sync(viewModel.uiState.value)   // T1 — bảng màu phải có TRƯỚC khi dựng view (xem [ThemeHost])
         topStrip = KachiTopStrip(
             this,
-            onSelectPreset = { selectPreset(it) },
-            // ⚠ KHÔNG thêm cổng cấu hình nào nữa vào đây: thanh trên chỉ được chạm `preset` + `active_profile`
-            // (§4.5 / [SettingsCatalog.TOP_STRIP_ALLOWED_KEYS]). Pill "Thanh" (xoay vòng viền thanh nút, ghi bền
-            // `dock_edge`) đã BỎ — Cài đặt → Màn hình chính đặt THẲNG từng viền.
+            // ⚠ KHÔNG thêm cổng cấu hình nào vào đây: thanh trên chỉ còn được chạm `active_profile`
+            // ([SettingsCatalog.TOP_STRIP_ALLOWED_KEYS]). Pill "Thanh" (xoay vòng viền thanh nút) đã bỏ ở S1, và
+            // S4 · R7 bỏ nốt hàng 5 nút bố cục — Cài đặt → Màn hình chính là bề mặt duy nhất của cả hai.
             onOpenSettings = { panels.openSettings() },   // S1: MỘT cửa vào cấu hình (gộp pill "Tuỳ biến" cũ)
-            onProfileTap = { profileBar.cycle() },
+            // Chạm chip = MỞ BỘ CHỌN (không xoay vòng — xem KDoc [ProfileChip]). Mục cuối của bộ chọn dẫn sang
+            // Cài đặt › Hồ sơ tài xế bằng đúng đường mở Cài đặt đã có, không mở đường thứ hai.
+            onProfileTap = { profileChip.picker { panels.openSettings(SettingsGroup.PROFILES) } },
             onOpenAppList = { drawerController.openAppList() },   // U3: mở app toàn màn (không gắn ô)
         )
 
@@ -160,7 +161,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.M))
         }
         content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, WRAP))
-        topStrip.setProfileInitial(viewModel.uiState.value.activeProfile)   // chữ đầu avatar ban đầu (parity onCreate cũ)
+        topStrip.setProfile(viewModel.uiState.value.activeProfile)   // tên + chữ cái của chip, ngay từ lượt dựng
 
         workspace = WorkspaceView(this).apply {
             mediaProvider = { media.read() }                          // nhạc live (Bitmap ở :app, ngoài state :core)
@@ -181,7 +182,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             shell = { shell }, appLauncher = { appLauncher }, dispatcher = { container.windowDispatcher },
             onSlotSwap = { drawerController.open(it) },
         )
-        dock = ControlDockView(this).apply { control = container.carControl }
+        // S4 · R12 — ô loại LAUNCHER trên thanh nút đi ĐÚNG hai đường của thanh trên (xem [Activity.controlDock]).
+        dock = controlDock(container.carControl, { drawerController.openAppList() }, { panels.openSettings() })
 
         mainArea = LinearLayout(this)
         DockAreaLayout.apply(mainArea, workspace, dock, viewModel.uiState.value.dock, resources.displayMetrics.density)
@@ -295,12 +297,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             dock.setCarStatus(state.carStatus, unitPrefs)
             workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
         }
-        // Ô preset nào sáng = bố cục ĐANG HIỆU LỰC, do `EffectiveLayout` trả lời (không suy ra tại chỗ — cùng luật
-        // với số ô / khung pixel, xem `GridSeamGuardTest`). So hai bên bằng chính giá trị sẽ tô ⇒ gọi lại đúng khi
-        // ô sáng đổi, kể cả ca "bỏ bố cục tự vẽ mà preset không đổi" (phải sáng lại preset).
-        val presetLit = EffectiveLayout.highlightedPreset(state.preset, state.customLayout)
-        if (prev == null || EffectiveLayout.highlightedPreset(prev.preset, prev.customLayout) != presetLit)
-            topStrip.selectPreset(presetLit)
+        // ⚠ S4 · R7 — KHÔNG còn dải nút bố cục trên thanh trên nên ở đây không còn gì để tô sáng. Ô đang sáng của
+        // bố cục sẵn nay chỉ nằm trong Cài đặt › Màn hình chính, và trang đó tự dựng lại khi state đổi.
         if (prev?.dock != state.dock) {
             val edgeChanged = prev != null && prev.dock.edge != state.dock.edge
             dock.setConfig(state.dock)
@@ -310,15 +308,15 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // đường một chiều: state đổi → render → bảng dựng lại. ⚠ phải xét CẢ `profiles`: xoá một hồ sơ KHÔNG phải hồ
         // sơ đang dùng thì `activeProfile` không đổi, và nếu chỉ xét nó thì danh sách trên màn vẫn còn hồ sơ vừa xoá.
         if (prev == null || prev.activeProfile != state.activeProfile || prev.profiles != state.profiles) {
-            topStrip.setProfileInitial(state.activeProfile)
+            topStrip.setProfile(state.activeProfile)
             panels.invalidateSettings()
         }
         // [SOÁT P1-1 kiến trúc] Bố cục tự vẽ đẩy xuống view ở ĐÚNG MỘT CHỖ: theo state, khi state đổi. Trước đây chỗ
         // này tự đọc lại repository khi đổi hồ sơ (đường đọc bền nằm trong tầng UI) còn việc đẩy xuống view thì ở hàm
         // khác ⇒ hai đường song song. Nay `load()`/`switchProfile()` đã nạp bố cục vào state nên ca đó tự đúng.
-        // P7/P6: sổ cảnh đổi ⇒ danh sách cảnh phải vẽ lại (trang Cài đặt được nhớ nên không tự dựng lại; thiếu dòng
-        // này thì lưu/xoá một cảnh là "màn hình không đổi gì" — họ lỗi của nút bố cục sẵn ở P9).
-        if (prev != null && prev.scenes != state.scenes) panels.invalidateSettings()
+        // S4 · R6: hồ sơ lúc nổ máy đổi ⇒ chip "Gần nhất/<tên>" phải vẽ lại (trang Cài đặt được nhớ nên không tự
+        // dựng lại; thiếu dòng này thì chọn hồ sơ nổ máy là "màn hình không đổi gì" — họ lỗi nút bố cục sẵn ở P9).
+        if (prev != null && prev.bootProfile != state.bootProfile) panels.invalidateSettings()
         if (prev?.customLayout != state.customLayout) {
             workspace.setCustomLayout(state.customLayout)
             windows.reflow()

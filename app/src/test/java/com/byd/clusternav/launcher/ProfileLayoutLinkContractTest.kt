@@ -39,7 +39,10 @@ class ProfileLayoutLinkContractTest {
         assertTrue(row.contains("deps.profileSummary(name)"), "thẻ hồ sơ phải hỏi tóm tắt theo TÊN hồ sơ")
         assertTrue(row.contains("kachi_profile_sub_active") && row.contains("kachi_profile_sub_switch"))
         val prefs = profileLayoutBody()
-        assertTrue(!prefs.contains("key(") && prefs.contains("\"\${name}__preset\""), "đọc theo tên hồ sơ, không qua key() của hồ sơ đang dùng")
+        // S4 · T2 — phép ghép tiền tố gom về `keyOf(profile, suffix)` (ĐÚNG MỘT chỗ dựng chuỗi `<hồ sơ>__<hậu tố>`).
+        // Luật thì không đổi: hàm này phải đọc theo TÊN được truyền vào, tuyệt đối không qua `key()` (hồ sơ ĐANG dùng)
+        // — nếu không, thẻ của hồ sơ B sẽ nói ra bố cục của hồ sơ A, và cả ba thẻ hiện cùng một câu.
+        assertTrue(!prefs.contains("key(") && prefs.contains("keyOf(name,"), "đọc theo tên hồ sơ, không qua key() của hồ sơ đang dùng")
     }
 
     private fun profileLayoutBody(): String =
