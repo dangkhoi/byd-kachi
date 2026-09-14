@@ -369,6 +369,15 @@ Màn cũ đã **gỡ hẳn** (spec `kachi-remove-legacy-screen.html`). Bốn th�
   như "mấy giờ rồi"); K3 `KikiAutoWakeService` (action `ai.zalo.kiki.car.autowake`) có bật được từ ngoài không.
   Mang về: `carlog/kiki-K1K2K3.txt` + ảnh màn Kiki sau K2.
 
+### 2.15 — H1 · Waze/app có activity trung chuyển vào ô (ĐỌC + 1 lần mở app — sau nghiên cứu 2026-09-14)
+
+- **Mục tiêu**: chốt 3 điều để quyết định đường lùi "màn ảo bị đẩy ⇒ cửa sổ tự do trên màn chính": (1) Kachi trên xe chạy uid nào
+  (`dumpsys package com.byd.launcher | grep userId` — nếu là system thì gate màn ảo bị bỏ qua, không cần đường lùi); (2) ROM DiLink
+  có cho cửa sổ tự do (`windowingMode 5`) trên display 0 không và `am task resize` có tác dụng không (DL5: [ĐO dashcast] no-op);
+  (3) Waze mở vào ô rồi có bị đẩy ra như máy ảo không.
+- **Bước**: 9 lệnh nguyên văn ở `waze-into-slot-research-2026-09-14.md` §7 (đọc trước; mọi lệnh `am` có hoàn tác `am force-stop`).
+- **Mang về**: `carlog/h1-waze-slot.txt` + logcat `ActivityTaskManager` quanh lúc mở + 1 ảnh. **Hoàn tác**: force-stop Waze, về Kachi.
+
 ## 3. THÔNG TIN BẮT BUỘC MANG VỀ
 
 | # | Thông tin | Lấy bằng | Tệp đích (trong `carlog-kachi-*`) |

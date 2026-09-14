@@ -58,6 +58,9 @@ Cài app từ Play emulator sang: `adb -s <play> shell pm path <pkg>` → `pull`
 Làm lại đúng quy trình: viết test (WorkspaceView không gắn host khi shell=null → gắn sau rebuildSlots) + senior review + verify on-car. **KHÔNG commit fix ad-hoc này.**
 
 ## Finding 4 — [ĐO][GIỚI HẠN] App thật từ chối display phụ → nhảy fullscreen (emulator không test được app-vào-ô cho nhóm này)
+
+> **⚠ SỬA SAI 2026-09-14 — phần "Nguyên nhân" của Finding 4 ĐÃ BỊ BÁC BỎ.** Triệu chứng (Waze nhảy fullscreen) là thật, nhưng quy kết *"app không khai hỗ trợ đa-màn + màn ảo PRIVATE"* **sai cả hai vế**: Waze khai `resizeableActivity=true`; cờ riêng-tư không nằm trên đường quyết định. Gate thật = `ActivityStackSupervisor.isCallerAllowedToLaunchOnDisplay` (`android-10.0.0_r47:1096-1106`) — **`FLAG_ALLOW_EMBEDDED` của activity ĐÍCH khi lời gọi đến từ uid CỦA APP**. Google Maps **ở lại màn ảo bình thường**. Xem `waze-into-slot-research-2026-09-14.md`.
+
 Sau khi VdAppHost gắn + launch, **Waze render THẬT nhưng bị đẩy FULLSCREEN trên display chính**, kèm toast **"App does not support launch on secondary displays"** (sub-agent đọc screenshot xác nhận). `force_resizable_activities=1` KHÔNG ép được trên emulator sideload.
 - **Nguyên nhân**: app không khai báo hỗ trợ đa-màn + VirtualDisplay của VdAppHost là **PRIVATE** (`FLAG_PRIVATE|FLAG_OWN_CONTENT_ONLY`), launcher sideload **không platform-signed** ⇒ launch app bất kỳ lên display phụ bị từ chối.
 - **Trên XE**: Kachi chạy như **launcher hệ thống platform-signed** (như Dudu) + display tin cậy ⇒ app host vào ô được. Đây là lý do P3.1 ghi "verify trên xe".
