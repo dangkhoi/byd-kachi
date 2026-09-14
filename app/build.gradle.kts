@@ -41,8 +41,8 @@ android {
         applicationId = "com.byd.launcher"
         minSdk = 29
         targetSdk = 37
-        versionCode = 54
-        versionName = "1.53"
+        versionCode = 55
+        versionName = "1.54"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

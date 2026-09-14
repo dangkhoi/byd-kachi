@@ -36,19 +36,25 @@ object TestBridgeStore {
 
     /** Cầu kiểm thử có đang mở không. Mọi nhánh lệnh đều hỏi hàm này TRƯỚC. */
     fun isOn(ctx: Context): Boolean =
-        TestBridgeWindow.isOn(stored(ctx), System.currentTimeMillis(), SystemClock.elapsedRealtime())
+        TestBridgeWindow.isOn(stored(ctx), bootId(), SystemClock.elapsedRealtime())
 
     /** Số phút còn lại (0 = đang tắt) — màn Cài đặt và JSON trả về cùng đọc con số này. */
     fun remainingMinutes(ctx: Context): Int =
-        TestBridgeWindow.remainingMinutes(stored(ctx), System.currentTimeMillis(), SystemClock.elapsedRealtime())
+        TestBridgeWindow.remainingMinutes(stored(ctx), bootId(), SystemClock.elapsedRealtime())
 
     /** Mở một cửa sổ mới **tính từ bây giờ** (bật lại khi đang bật = gia hạn, đúng thứ người test muốn). */
     fun enable(ctx: Context) {
-        val value = TestBridgeWindow.encode(System.currentTimeMillis(), SystemClock.elapsedRealtime())
+        val value = TestBridgeWindow.encode(bootId(), SystemClock.elapsedRealtime())
         sp(ctx).edit().putString(KEY_UNTIL, value).apply()
     }
 
     /** Đóng ngay. XOÁ khoá chứ không ghi một giá trị "đã tắt": đọc lại không phải phân biệt hai cách nói "không". */
+    /**
+     * Danh tính lần nổ máy — `/proc/sys/kernel/random/boot_id` (đổi mỗi lần boot, app thường đọc được). Không đọc được
+     * ⇒ chuỗi rỗng ⇒ cửa sổ luôn ĐÓNG (an toàn về phía tắt). [ĐO] xe DiLink3 14/09: đọc được, dạng UUID.
+     */
+    private fun bootId(): String = runCatching { java.io.File("/proc/sys/kernel/random/boot_id").readText().trim() }.getOrDefault("")
+
     fun disable(ctx: Context) {
         sp(ctx).edit().remove(KEY_UNTIL).apply()
     }

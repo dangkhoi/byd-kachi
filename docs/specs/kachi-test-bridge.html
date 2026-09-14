@@ -224,6 +224,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><b>2026-09-14 · sai lệch spec</b> — khoá đặt tên <code>test_bridge_until</code> (một chuỗi) chứ không phải <code>test_bridge_enabled</code> + mốc thời gian rời (§4.3).</li>
 <li><b>2026-09-14 · bug lúc đo</b> — <code>--es text "bật đèn đọc"</code> chỉ tới <code>"bật"</code>: <code>adb shell</code> cắt theo khoảng trắng, không phải lỗi cầu. Cách xử: tài liệu hoá nháy hai lớp (§4.4). Đây đúng loại lỗi <b>im lặng</b> vì lời đáp vẫn <code>ok:true</code>.</li>
 <li><b>2026-09-14 · số ghim phải cập nhật</b> — thêm một mục danh mục ⇒ <code>LangCoverageTest</code> 54→55 mục và 306→307 nhãn; <code>SettingsCatalogControlContractTest</code> + <code>SettingsScreenWiringContractTest</code> nhận thêm một dòng (chỗ đọc <code>themeMode</code> thứ tư là ảnh chụp <b>chỉ đọc</b>, không phải bản sao thứ hai).</li>
+<li><b>2026-09-14 21:15 — [ĐO] xe DiLink3.0 (1.53 cài qua adb)</b>: receiver nhận broadcast từ shell ROM BYD ✓ (trả <code>test_mode_off</code> khi công tắc tắt); NHƯNG owner bật công tắc mà cầu vẫn <code>test_mode_off</code> — bản đầu nhận diện lần nổ máy bằng <code>wall − uptime</code> (dung sai 5 s), đầu xe chỉnh giờ tường sau khi bật ⇒ mốc lệch ⇒ coi là khác boot ⇒ đóng. <b>Sửa (1.54)</b>: danh tính boot = <code>/proc/sys/kernel/random/boot_id</code>, hạn theo <code>elapsedRealtime</code>; giờ tường không còn tham gia. TestBridgeWindowTest viết lại (7 ca).</li>
 </ul>
 
 <h2>10. Reviewer Log</h2>

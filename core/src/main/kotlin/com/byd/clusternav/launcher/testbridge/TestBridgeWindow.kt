@@ -26,51 +26,36 @@ import kotlin.math.abs
  * mốc là cách rẻ nhất để biết *"có phải vẫn cùng một lần nổ máy không"* mà không cần lưu thêm gì.
  */
 object TestBridgeWindow {
-
-    /** Cửa sổ mở tối đa cho một lượt bật: 60 phút. */
     const val WINDOW_MS: Long = 60L * 60L * 1000L
-
-    /**
-     * Sai số cho phép của *mốc nổ máy* (5 giây).
-     *
-     * Không so bằng `==`: `giờ treo tường` và `thời gian máy đã chạy` đọc ở hai lời gọi khác nhau nên hiệu của
-     * chúng luôn lệch vài ms; và một lượt đồng bộ NTP nhỏ cũng đẩy nó đi vài giây. Rộng hơn nữa thì mất tính
-     * chất (2) — nhưng 5 giây thì không đủ cho một chu kỳ tắt–bật máy nào.
-     */
-    const val BOOT_TOLERANCE_MS: Long = 5_000L
-
     private const val SEP = ':'
 
-    /** Giá trị ghi xuống đĩa cho một lượt bật bắt đầu **ngay bây giờ**. */
-    fun encode(nowWallMs: Long, upMs: Long): String = "${nowWallMs - upMs}$SEP${nowWallMs + WINDOW_MS}"
-
     /**
-     * Còn lại bao nhiêu mili-giây, `0` = **đang tắt** (hết hạn · khác lần nổ máy · giá trị hỏng · đồng hồ nhảy).
+     * Giá trị lưu = `<bootId>:<upUntilMs>`.
      *
-     * Trả về số mili-giây chứ không phải `Boolean` vì bề mặt nào cũng cần con số: màn Cài đặt nói *"còn N phút"*,
-     * và JSON trả về cho script cũng ghi nó — *"đang bật"* mà không nói còn bao lâu thì lượt test dài sẽ đứt
-     * giữa chừng mà không ai hiểu vì sao.
+     * ## Vì sao KHÔNG dùng giờ tường (bản đầu 2026-09-14 dùng `wall − uptime` làm mốc nổ máy, dung sai 5 s)
+     * [ĐO] xe DiLink3 tối 14/09: owner bật công tắc, cầu vẫn trả `test_mode_off` — đầu xe chỉnh giờ tường (GPS/mạng)
+     * hơn 5 s sau khi bật ⇒ "mốc nổ máy" tính lại lệch ⇒ bị coi là khác lần nổ máy ⇒ tự tắt. Giờ tường trên xe không
+     * phải đại lượng ổn định. Nay: danh tính lần nổ máy = `bootId` (`/proc/sys/kernel/random/boot_id`, đổi mỗi lần
+     * boot), hạn = `elapsedRealtime` lúc bật + 60 phút — cả hai đều không phụ thuộc giờ tường.
      */
-    fun remainingMs(stored: String?, nowWallMs: Long, upMs: Long): Long {
+    fun encode(bootId: String, upMs: Long): String = "${bootId.trim()}$SEP${upMs + WINDOW_MS}"
+
+    fun remainingMs(stored: String?, bootId: String, upMs: Long): Long {
         val raw = stored?.trim().orEmpty()
-        val cut = raw.indexOf(SEP)
+        val cut = raw.lastIndexOf(SEP)
         if (cut <= 0) return 0
-        val boot = raw.substring(0, cut).toLongOrNull() ?: return 0
+        val boot = raw.substring(0, cut)
         val until = raw.substring(cut + 1).toLongOrNull() ?: return 0
-        // (2) khác lần nổ máy ⇒ coi như chưa bật, bất kể hạn còn bao lâu.
-        if (abs(boot - (nowWallMs - upMs)) > BOOT_TOLERANCE_MS) return 0
-        val left = until - nowWallMs
-        // (3) hạn xa hơn cả cửa sổ ⇒ đồng hồ đã bị vặn lùi (hoặc giá trị bị sửa tay) ⇒ đóng, không kéo dài.
-        if (left <= 0 || left > WINDOW_MS) return 0
+        if (boot != bootId.trim() || boot.isEmpty()) return 0          // khác lần nổ máy ⇒ chưa bật
+        val left = until - upMs
+        if (left <= 0 || left > WINDOW_MS) return 0                     // hết hạn, hoặc giá trị bị sửa tay
         return left
     }
 
-    /** Tiện đọc cho chỗ gọi chỉ cần biết mở hay đóng. */
-    fun isOn(stored: String?, nowWallMs: Long, upMs: Long): Boolean = remainingMs(stored, nowWallMs, upMs) > 0
+    fun isOn(stored: String?, bootId: String, upMs: Long): Boolean = remainingMs(stored, bootId, upMs) > 0
 
-    /** Số PHÚT còn lại, làm tròn LÊN — *"còn 0 phút"* trong khi cửa vẫn mở là câu nói sai. */
-    fun remainingMinutes(stored: String?, nowWallMs: Long, upMs: Long): Int {
-        val left = remainingMs(stored, nowWallMs, upMs)
+    fun remainingMinutes(stored: String?, bootId: String, upMs: Long): Int {
+        val left = remainingMs(stored, bootId, upMs)
         return if (left <= 0) 0 else ((left + 59_999L) / 60_000L).toInt()
     }
 }
