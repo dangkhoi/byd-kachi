@@ -91,6 +91,19 @@ data class HomeUiState(
      */
     val autostart: Boolean = true,
     /**
+     * **Sổ địa chỉ** của hồ sơ đang dùng (spec `docs/specs/kachi-voice-addresses.html` R1).
+     *
+     * ## Vì sao trong state chứ không là một lambda đọc riêng
+     * Hai chỗ đọc nó là màn Cài đặt (**vẽ** danh sách) và đường lệnh giọng nói (`VoiceDispatcher` tra sổ lúc thi
+     * hành). Cả hai đã cầm [HomeUiState] sẵn. Cho một trong hai tự mở `WorkspacePrefs` là dựng **đường đọc bền
+     * thứ hai** ở tầng trên — đúng thứ [SOÁT P1-1] đã dọn, và ở đây nó còn tệ hơn: hai đường đọc thì bảng Cài đặt
+     * có thể hiện một sổ, còn câu *"về nhà"* lại đi theo một sổ khác.
+     *
+     * Đường GHI vẫn một chiều như mọi khoá riêng (`HomeViewModel.setSavedPlaces` → repository), **không** qua
+     * `persist()`: khoá này nằm ngoài bộ khoá mà `persist` ghi, đúng khuôn [topStrip]/[unitPrefs].
+     */
+    val savedPlaces: List<SavedPlace> = emptyList(),
+    /**
      * ⚠⚠ [SOÁT P0-1] Id widget bên thứ ba đang bị **các hồ sơ tài xế KHÁC** giữ (đọc từ đĩa lúc [WorkspaceRepository.load]).
      *
      * ## Vì sao một trường "dữ liệu của người khác" lại nằm trong state của hồ sơ này

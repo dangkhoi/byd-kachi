@@ -1,0 +1,89 @@
+# MA TRẬN LỆNH GIỌNG NÓI — tầng T1 (chữ → ý định → thi hành) qua T-BRIDGE `say`
+# Cột: id | lop | cau | kind_mong_doi | chuoi_mong_doi_trong_preview | confirm(1=phải hỏi lại) | auto_confirm | side
+#  • kind_mong_doi: tên lớp VoiceIntent (Control/Macro/Launcher/Profile/Read/Nav/Media/OpenApp/Unknown),
+#    nhiều vế ngăn bằng dấu phẩy (câu ghép). "-" = không kiểm.
+#  • chuoi_mong_doi: chuỗi con phải có trong `preview` (nối mọi vế). "-" = không kiểm.
+#  • confirm: 1 ⇒ reply phải có `needs_confirm` KHÔNG rỗng và KHÔNG được thi hành.
+#  • side: "-" | resumed:<pkg> | slot:<n>:<pkg> | profile:<ten> | media
+#  • @PROFILE@ được harness thay bằng một hồ sơ có thật (đọc từ bridge `state`).
+# ── TOGGLE ──────────────────────────────────────────────────────────────────────────────────────
+t01	toggle	bật đèn đọc	Control	Bật Đèn đọc	0	0	-
+t02	toggle	tắt đèn đọc	Control	Tắt Đèn đọc	0	0	-
+t03	toggle	bật lọc bụi	Control	Bật Lọc bụi	0	0	-
+t04	toggle	tắt điều hoà	Control	Tắt Điều hoà	0	0	-
+t05	toggle	bật sưởi ghế	Control	Bật Ghế sưởi	0	0	-
+t06	toggle	mở cửa sổ trời	Control	Cửa sổ trời	0	0	-
+t07	toggle	khoá xe	Control	Khoá	0	0	-
+t08	toggle-confirm	tắt khoá xe	Control	Khoá	1	0	-
+t09	toggle-confirm	dừng chiếu cụm	Control	Chiếu cụm	1	0	-
+# ── COVER (kính) ────────────────────────────────────────────────────────────────────────────────
+t10	cover	mở kính trước trái	Control	Mở Kính trước-trái	0	0	-
+t11	cover	đóng kính trước trái	Control	Đóng Kính trước-trái	0	0	-
+t12	cover	mở kính bên lái	Control	Kính	0	0	-
+t13	cover-confirm	mở hết kính	Macro	Mở hết kính	1	0	-
+t14	macro	đóng hết kính	Macro	Đóng hết kính	0	0	-
+# ── STEP ────────────────────────────────────────────────────────────────────────────────────────
+t15	step	nhiệt độ hai mươi bốn độ	Control	Nhiệt độ = 24	0	0	-
+t16	step	đặt nhiệt độ 24 độ	Control	Nhiệt độ = 24	0	0	-
+t17	step	tăng gió	Control	Tăng Gió	0	0	-
+t18	step	giảm âm lượng	Control	Giảm Âm lượng	0	0	-
+t19	step	tăng âm lượng tối đa	Control	Âm lượng = 30	0	0	-
+t20	step	đặt độ sáng màn 8	Control	Độ sáng màn = 8	0	0	-
+# ── SELECT ──────────────────────────────────────────────────────────────────────────────────────
+t21	select	chế độ lái thể thao	Control	Chế độ lái	0	0	-
+t22	select	đặt chế độ lái eco	Control	Chế độ lái	0	0	-
+t23	select	màu đèn viền xanh lá	Control	Màu đèn viền	0	0	-
+# ── BUTTON ──────────────────────────────────────────────────────────────────────────────────────
+t24	button	lọc ngay	Control	Bấm Lọc ngay	0	0	-
+t25	button	sạc ngay	Control	Sạc ngay	0	0	-
+t26	button-confirm	mở khoá cửa	Control	Mở khoá cửa	1	0	-
+t27	button-confirm	mở khoá cửa	Control	Mở khoá cửa	0	1	-
+# ── MACRO ───────────────────────────────────────────────────────────────────────────────────────
+t28	macro	rời xe	Macro	Rời xe	0	0	-
+t29	macro	chạy gói mở cửa + đèn đọc	Macro	Mở cửa	0	1	-
+# ── LAUNCHER ────────────────────────────────────────────────────────────────────────────────────
+t30	launcher	mở cài đặt	Launcher	Cài đặt	0	0	-
+t31	launcher	mở ứng dụng	Launcher	Ứng dụng	0	0	-
+t32	launcher	nói với xe	Launcher	Nói với xe	0	0	-
+# ── ĐỌC THÔNG TIN ───────────────────────────────────────────────────────────────────────────────
+t33	read	xem pin	Read	-	0	0	-
+t34	read	pin còn bao nhiêu	Read	-	0	0	-
+t35	read	nhiệt độ ngoài trời bao nhiêu	Read	-	0	0	-
+t36	read	đọc tầm hoạt động	Read	-	0	0	-
+t37	read-mismatch	xem đèn đọc	Unknown	-	0	0	-
+# ── MỞ / ĐÓNG APP ───────────────────────────────────────────────────────────────────────────────
+t38	app	mở YouTube	OpenApp	YouTube	0	0	resumed:com.google.android.youtube
+t39	app	mở Maps	OpenApp	Maps	0	0	resumed:com.google.android.apps.maps
+t40	app	mở ứng dụng YouTube	OpenApp	YouTube	0	0	resumed:com.google.android.youtube
+t41	app-close	đóng YouTube	-	-	0	0	-
+t42	app-close	tắt YouTube	-	-	0	0	-
+t43	app-slot	đưa YouTube vào ô hai	OpenApp	ô 2	0	0	slot:2:com.google.android.youtube
+t44	app-slot	mở YouTube vào ô số 9	OpenApp	ô 9	0	0	-
+t45	app	mở bản đồ	-	-	0	0	-
+# ── NHẠC ────────────────────────────────────────────────────────────────────────────────────────
+t46	media	phát nhạc	Media	Phát nhạc	0	0	media
+t47	media	dừng nhạc	Media	Dừng nhạc	0	0	-
+t48	media	bài tiếp theo	Media	Bài tiếp	0	0	-
+t49	media	bài trước	Media	Bài trước	0	0	-
+t50	media	mở nhạc trên YouTube Music	Media	Phát nhạc	0	0	-
+t51	media-open-vocab	phát bài Diễm Xưa	Media	Diễm Xưa	1	0	-
+t52	media-open-vocab	mở bài Diễm Xưa trên YouTube Music	Media	YouTube Music	0	1	resumed:com.google.android.apps.youtube.music
+# ── DẪN ĐƯỜNG ───────────────────────────────────────────────────────────────────────────────────
+t53	nav	dẫn đường đến Bitexco	Nav	Bitexco	1	0	-
+t54	nav	dẫn đường tới chợ Bến Thành bằng Waze	Nav	Waze	0	1	resumed:com.waze
+t55	nav	chỉ đường đến sân bay bằng google map	Nav	Google Maps	1	0	-
+t56	nav	dẫn đường	Unknown	-	0	0	-
+# ── HỒ SƠ · BỐ CỤC ──────────────────────────────────────────────────────────────────────────────
+t57	profile	đổi sang hồ sơ @PROFILE@	Profile	@PROFILE@	1	0	-
+t58	profile	chuyển sang hồ sơ @PROFILE@	Profile	@PROFILE@	0	1	profile:@PROFILE@
+t59	layout	đổi bố cục 4 ô	-	-	0	0	-
+t60	layout	bố cục hai ô	-	-	0	0	-
+# ── CÂU GHÉP ────────────────────────────────────────────────────────────────────────────────────
+t61	compound	bật đèn đọc và tắt lọc bụi	Control,Control	Bật Đèn đọc	0	0	-
+t62	compound-confirm	mở khoá cửa rồi bật đèn đọc	Control,Control	Mở khoá cửa	1	0	-
+# ── CÂU ĐỜI THƯỜNG · CÂU SAI (phải ra Unknown đúng lý do) ───────────────────────────────────────
+t63	unknown	hôm nay trời đẹp quá	Unknown	-	0	0	-
+t64	unknown	kể cho tôi nghe một câu chuyện	Unknown	-	0	0	-
+t65	unknown	bật abcxyz	Unknown	-	0	0	-
+t66	unknown	kachi ơi	Unknown	-	0	0	-
+t67	unknown	xem xe	Unknown	-	0	0	-

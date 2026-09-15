@@ -77,6 +77,21 @@ interface WorkspaceRepository {
      */
     fun profileLayout(name: String): Pair<LayoutPreset?, Int> = LayoutPreset.THREE to 0
 
+    /**
+     * **Sổ địa chỉ** của hồ sơ đang dùng (spec `docs/specs/kachi-voice-addresses.html` R1) — khoá
+     * `<hồ sơ>__saved_places`, theo HỒ SƠ ([ProfileScope.LAUNCHER_PERSONAL_SUFFIXES]).
+     *
+     * Theo hồ sơ chứ không theo xe: *"nhà"* của người này không phải *"nhà"* của người kia, và đó chính là câu
+     * owner hỏi (2026-09-15: *"thêm vào hồ sơ địa chỉ nữa"*).
+     *
+     * Thân MẶC ĐỊNH (rỗng / không lưu) ⇒ bản giả in-memory trong test không phải sửa; rỗng cũng **khớp** mặc định
+     * của nơi lưu bền (chưa lưu gì) — hai mặc định lệch nhau thì màn Cài đặt nói sai trước cả khi có gì được ghi.
+     */
+    fun savedPlaces(): List<SavedPlace> = emptyList()
+
+    /** Ghi bền sổ địa chỉ (cả danh sách một lượt — phép thêm/sửa/xoá là hàm thuần ở [SavedPlaces]). */
+    fun setSavedPlaces(places: List<SavedPlace>) {}
+
     fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.DEFAULT
 
     /** Ghi bền lựa chọn hình nền. Mặc định: không lưu (bản giả). */

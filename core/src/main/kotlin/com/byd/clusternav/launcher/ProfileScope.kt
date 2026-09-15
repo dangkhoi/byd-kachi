@@ -54,13 +54,17 @@ object ProfileScope {
      * Owner: *"mỗi người lái khác nhau hoặc tình huống khác nhau thì switch profile là OK"*. Chủ đề/đơn vị/hình
      * nền/ngôn ngữ/tự-mở đều là *lựa chọn của một người*, nên để chung cả máy nghĩa là hồ sơ chỉ cover được một nửa.
      *
+     * `saved_places` (sổ địa chỉ, spec `kachi-voice-addresses.html` R1) vào đây cùng lẽ ấy, và còn rõ hơn: *"nhà"*
+     * của người này không phải *"nhà"* của người kia. Nó là **một chuỗi** cho cả sổ (không phải họ khoá
+     * `place_0..n`) nên không cần thêm tiền tố nào vào [PROFILE_KEY_PREFIXES] — xem §4.2 của spec.
+     *
      * ⚠ `lang` nằm ở **tệp khác** (`clusternav_lang`, dùng chung cho cả APK) nhưng vẫn là hậu tố theo hồ sơ ở đây:
      * bản theo hồ sơ là **nguồn sự thật**, còn khoá chung kia là chỗ mà `attachBaseContext` của ClusterNav đọc ⇒ đổi
      * hồ sơ thì ghi cả hai (cùng khuôn `theme_mode`/`theme_choice` đã có từ IA v2). Vì vậy `lang` **không** được đồng
      * thời nằm trong ảnh chụp ClusterNav — xem [LAUNCHER_OWNED_CLUSTERNAV_KEYS].
      */
     val LAUNCHER_PERSONAL_SUFFIXES: List<String> =
-        listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang")
+        listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang", "saved_places")
 
     /**
      * Khoá ClusterNav mà **phía launcher đã sở hữu** dưới một hậu tố riêng ⇒ KHÔNG đi qua ảnh chụp → lý do.

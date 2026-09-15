@@ -19,6 +19,19 @@ data class MediaSnapshot(
     val playing: Boolean,
 )
 
+/**
+ * Bốn lệnh TRANSPORT mà [VoiceDispatcher] cần — cùng lý do tồn tại với [MediaLike] ngay dưới: [MediaBridge] cầm
+ * `Context` nên không dựng được trong một bài kiểm JVM, mà *"lệnh nào đi transport, lệnh nào đi mở app"* lại đúng
+ * là thứ phải khoá ([ĐO] `emulator-voice-e2e-2026-09-15.md` §3 L2). Tách bốn hàm ra thì bài kiểm cấp một cầu giả
+ * được, còn đường thật vẫn là **một** ([MediaBridge]) — không có cơ chế thứ hai nào sinh ra ở đây.
+ */
+interface MediaTransport {
+    fun play(): Boolean
+    fun pause(): Boolean
+    fun next(): Boolean
+    fun prev(): Boolean
+}
+
 /** Trừu tượng 1 phiên nhạc — để [MediaBridge.pick]/[MediaBridge.toSnapshot] test được off-car (controller giả). */
 interface MediaLike {
     fun title(): String?
@@ -39,7 +52,7 @@ interface MediaLike {
  *
  * Test: [pick] (ưu tiên phiên đang phát) + [toSnapshot] (map field) là THUẦN, test bằng [MediaLike] giả.
  */
-class MediaBridge(context: Context) {
+class MediaBridge(context: Context) : MediaTransport {
 
     private val app: Context = context.applicationContext
 
@@ -76,10 +89,10 @@ class MediaBridge(context: Context) {
         active?.packageName
     }.getOrNull()
 
-    fun play(): Boolean = tx { it.play() }
-    fun pause(): Boolean = tx { it.pause() }
-    fun next(): Boolean = tx { it.skipToNext() }
-    fun prev(): Boolean = tx { it.skipToPrevious() }
+    override fun play(): Boolean = tx { it.play() }
+    override fun pause(): Boolean = tx { it.pause() }
+    override fun next(): Boolean = tx { it.skipToNext() }
+    override fun prev(): Boolean = tx { it.skipToPrevious() }
 
     /**
      * Chuyển một **mã hành động** của widget nhạc (`w_media`) thành lệnh transport. Mã lạ ⇒ không làm gì.

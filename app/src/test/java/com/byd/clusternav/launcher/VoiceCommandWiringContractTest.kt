@@ -36,7 +36,7 @@ class VoiceCommandWiringContractTest {
     // ══ (1) MỌI nhánh ý định có đích thật ═════════════════════════════════════════════════════════════════
 
     /**
-     * Chín nhánh của `VoiceIntent` (sealed ⇒ `when` exhaustive ở tầng Kotlin), và **mỗi nhánh phải chạm một
+     * MƯỜI nhánh của `VoiceIntent` (sealed ⇒ `when` exhaustive ở tầng Kotlin), và **mỗi nhánh phải chạm một
      * đường có thật**. Danh sách đích viết ra ở đây chính là bản kê *"giọng nói làm được gì"* — đọc bài này là
      * biết, không phải đi lần từng tệp.
      */
@@ -50,6 +50,10 @@ class VoiceCommandWiringContractTest {
             "is VoiceIntent.Profile ->" to "onSwitchProfile(intent.name)",
             "is VoiceIntent.Read ->" to "runRead(intent)",
             "is VoiceIntent.Nav ->" to "runNav(intent, labels)",
+            // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html R2) — nhánh THỨ MƯỜI. Nó phải có đích riêng chứ
+            // không gộp vào `runNav`: điểm đến ở đây là dữ liệu ĐÃ LƯU (không geocode, không hỏi lại) và app đích
+            // chọn theo dữ liệu của mục, không theo thứ tự ưu tiên trần.
+            "is VoiceIntent.NavigateSaved ->" to "runNavSaved(intent, labels)",
             "is VoiceIntent.Media ->" to "runMedia(intent, labels)",
             "is VoiceIntent.OpenApp ->" to "runOpenApp(intent, labels)",
             "is VoiceIntent.Unknown ->" to "VoiceReply.unknown(intent)",
@@ -168,24 +172,62 @@ class VoiceCommandWiringContractTest {
      *  • **`SpeechRecognizer` / `RecognitionListener`** — đường của Google, cần mạng và cần dịch vụ Google trên
      *    đầu xe. Cả hai đều là thứ Kachi cố ý không phụ thuộc (RE Kiki §2.1: điều khiển xe không được phụ thuộc
      *    4G). Có nó trong mã là tính năng **âm thầm** đổi từ tại-máy sang trên-mây.
-     *  • **`TextToSpeech`** — giọng nói tiếng Việt trên xe này còn [CHƯA BIẾT] (spec §4.4). Trả lời bằng âm báo
-     *    + chữ là quyết định đã ghi, không phải thứ ai đó tiện tay nâng cấp giữa một bản vá.
+     *  • ~~**`TextToSpeech`**~~ — **cổng này ĐÃ MỞ** (owner 2026-09-15: *"Sau khi làm xong việc thì có phản hồi
+     *    lại bằng voice cho user chưa?"*), và nó mở **đúng cách mà bài này đòi**: spec trước
+     *    (`docs/specs/kachi-voice-feedback.html`), mã sau. Lệnh cấm không biến mất mà **hẹp lại** — xem
+     *    [chi tiep tieng chi duoc mo o DUNG MOT TEP]: cấm **dựng** máy đọc ở bất kỳ tệp `Voice*` nào; tên lớp
+     *    trong KDoc thì không cấm (chặn cả tên là chặn nhầm đúng chỗ đang giải thích luật).
      *  • **`MediaRecorder(`** — ghi âm ra TỆP. Nhận dạng tại máy không cần một tệp âm thanh nào tồn tại; có tệp
      *    là có thứ để rò rỉ. Cấm **dựng** lớp đó, không cấm nhắc tên nó: `MediaRecorder.AudioSource.VOICE_RECOGNITION`
      *    chỉ là bảng hằng NGUỒN ÂM mà `AudioRecord` đọc — chặn cả tên là chặn nhầm đúng thứ ta muốn dùng.
      */
     @Test
-    fun `khong dung ASR tren may chu, khong TTS, khong ghi am ra tep`() {
-        val banned = listOf("SpeechRecognizer", "RecognitionListener", "TextToSpeech", "MediaRecorder(")
+    fun `khong dung ASR tren may chu, khong ghi am ra tep`() {
+        val banned = listOf("SpeechRecognizer", "RecognitionListener", "MediaRecorder(")
         voiceSources().forEach { (name, src) ->
             banned.forEach { token ->
                 assertFalse(
                     src.contains(token),
-                    "$name dùng `$token` — pha NGHE chốt là nhận dạng TẠI MÁY, trả lời bằng âm báo + chữ " +
-                        "(spec §4.4). Đổi quyết định đó phải sửa spec trước, không sửa mã trước.",
+                    "$name dùng `$token` — pha NGHE chốt là nhận dạng TẠI MÁY (spec §4.4). Đổi quyết định đó " +
+                        "phải sửa spec trước, không sửa mã trước.",
                 )
             }
         }
+    }
+
+    /**
+     * **Cổng ra TIẾNG chỉ được mở ở ĐÚNG MỘT TỆP** — spec `docs/specs/kachi-voice-feedback.html` R2.
+     *
+     * Bài này thay chỗ cho lệnh cấm `TextToSpeech` cũ, và nó **chặt hơn** chứ không lỏng hơn. Lệnh cấm cũ trả
+     * lời câu hỏi *"có đọc không"*; câu hỏi ấy owner đã trả lời rồi. Câu hỏi còn lại — và là câu dễ hỏng hơn —
+     * là *"đọc bằng mấy đường"*: hai tệp cùng dựng một `TextToSpeech` nghĩa là hai kết nối dịch vụ, hai lần xin
+     * tiêu điểm âm thanh, và hai câu phát chồng lên nhau mà **không tệp nào biết tệp kia tồn tại**. Đúng họ lỗi
+     * *"đường thứ hai"* mà KDoc `VoiceDispatcher`/`VoiceWiring` dựng ra để chặn.
+     *
+     * ⇒ Mọi tệp `Voice*` phải đi qua giao diện `VoiceSpeaker`; chỉ `AndroidTtsSpeaker.kt` (không mang tiền tố
+     * `Voice`, cố ý) được chạm thẳng API nền tảng. Tên lớp trong KDoc **không** bị chặn — chặn cả tên là chặn
+     * nhầm đúng chỗ đang giải thích luật.
+     */
+    @Test
+    fun `chi tiep tieng chi duoc mo o DUNG MOT TEP`() {
+        val banned = listOf("TextToSpeech(", "import android.speech.tts")
+        voiceSources().forEach { (name, src) ->
+            banned.forEach { token ->
+                assertFalse(
+                    src.contains(token),
+                    "$name chạm thẳng máy đọc của nền tảng (`$token`) — phải đi qua `VoiceSpeaker`; " +
+                        "đường ra tiếng chỉ được dựng ở `AndroidTtsSpeaker.kt`",
+                )
+            }
+        }
+        // Chốt ngược: tệp được phép phải THẬT SỰ còn đó và còn gác ngưỡng ngôn ngữ. Thiếu vế này thì ngày ai đó
+        // xoá `AndroidTtsSpeaker.kt`, bài trên vẫn xanh trong khi tính năng đã chết.
+        val speaker = code("src/main/java/com/byd/clusternav/launcher/voice/AndroidTtsSpeaker.kt")
+        assertTrue(speaker.contains("isLanguageAvailable"), "phải hỏi nền tảng có giọng vi-VN không, không đoán")
+        assertTrue(
+            speaker.contains("VoiceSpeakerSelector.LANG_AVAILABLE"),
+            "ngưỡng phải đọc từ luật thuần (kiểm off-car), không viết một con số trần ở tầng Android",
+        )
     }
 
     /**
@@ -242,7 +284,10 @@ class VoiceCommandWiringContractTest {
         assertTrue(rec.contains("com.k2fsa.sherpa.onnx.OfflineRecognizer"), "phải dùng sherpa-onnx `OfflineRecognizer` (tại máy)")
         assertTrue(rec.contains("createStream(hotwords)"),
             "phải bơm hotwords per-stream — đó là biasing kéo giải mã tự do về tập lệnh (thay ngữ pháp FST của Vosk)")
-        assertTrue(rec.contains("SherpaBiasing.hotwordsFile()"),
+        // ⚠ Needle bỏ dấu ngoặc ĐÓNG (A1, 2026-09-15): `hotwordsFile` nay nhận nhãn **sổ địa chỉ** của hồ sơ đang
+        // dùng (`hotwordsFile(places)` — docs/specs/kachi-voice-addresses.html R6). Tính chất bài canh KHÔNG đổi:
+        // hotwords vẫn phải sinh từ [SherpaBiasing], không phải một nguồn thứ hai.
+        assertTrue(rec.contains("SherpaBiasing.hotwordsFile("),
             "hotwords phải sinh từ danh mục control ([SherpaBiasing]) — cùng NGUỒN với tầng chữ")
         assertFalse(rec.contains("AudioRecord"),
             "bộ nhận dạng KHÔNG tự mở micro — micro chỉ ở [VoiceCapture] (trong trần 8 s + tầm bài canh mạng)")

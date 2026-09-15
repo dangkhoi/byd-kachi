@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phản hồi bằng GIỌNG sau khi thi hành lệnh — Kachi</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Phản hồi bằng GIỌNG sau khi thi hành lệnh</h1>
+<p class="muted">Slug: <code>kachi-voice-feedback</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> §1 · §2 (mức bằng chứng) · §7 (generic, cấm hardcode) · §10 (test khoá bài học) và <code>.kiro/steering/*.md</code>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-15</b>: Khởi tạo spec. Owner hỏi <i>“Con voice có phản hồi chưa? … ‘Đã tăng nhiệt độ lên 24, mức gió 3’ chẳng hạn?”</i>. Tới 1.63 câu trả lời chỉ là <b>chữ</b> trên <code>VoiceOverlay</code> + hai tiếng bíp — không có TTS. Spec voice V1 để R8 (TTS) ở trạng thái <i>“đóng — chưa biết engine”</i>; mục §2.3 dưới đây đã ĐO xong phần “engine nào”.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Hôm nay Kachi trả lời bằng cái gì</h3>
+<p>Đường lệnh đã chạy đủ và <b>đã có sẵn một câu tiếng Việt tử tế</b> ở cuối: <code>VoiceReply</code> (<code>:core</code>) dựng câu từ nhãn của chính bộ đăng ký, rồi <code>VoiceDispatcher</code> đẩy ra ngoài qua lambda <code>say</code>, và <code>VoiceSession.execute</code> vẽ nó lên <code>VoiceOverlay</code>. KDoc của <code>VoiceReply</code> đã ghi trước điều đó: <i>“Hôm nay ra CHỮ, mai ra TIẾNG — cùng một hàm”</i>. Nên phần <b>nội dung</b> câu nói không phải viết lại; chỉ thiếu <b>đường ra loa</b>.</p>
+
+<h3>2.2 Ba phép ĐO đã có, dùng làm cổng cho thiết kế</h3>
+<table>
+<tr><th>#</th><th>Phép đo (2026-09-15)</th><th>Kết quả</th><th>Hệ quả thiết kế</th></tr>
+<tr><td>Đ1</td><td><code>adb -s emulator-5554 shell pm list packages | grep -i tts</code> + <code>cmd package query-services -a android.intent.action.TTS_SERVICE</code></td><td><b>CÓ</b> <code>com.google.android.tts</code>, <code>GoogleTTSService</code> đang bật, <code>isDefault=true</code></td><td>Đường (a) tồn tại về nguyên tắc</td></tr>
+<tr><td>Đ2</td><td><code>adb shell su 0 ls -la /data/data/com.google.android.tts/app_voices</code> · <code>settings get secure tts_default_synth</code></td><td>Thư mục <b>RỖNG</b> (chỉ <code>.</code> và <code>..</code>), <code>app_patts</code> rỗng, <code>tts_default_synth</code> = <code>null</code>, locale máy <code>en-US</code></td><td><b>Có engine ≠ có giọng.</b> Ngưỡng phải là <code>isLanguageAvailable ≥ LANG_AVAILABLE</code>, xem R2a</td></tr>
+<tr><td>Đ3</td><td><code>unzip -l classes.jar | grep -i tts</code> + <code>strings jni/arm64-v8a/libsherpa-onnx-jni.so</code> trên chính AAR <code>sherpa-onnx v1.13.8</code> trong <code>~/.gradle/caches</code></td><td><b>CÓ</b> <code>OfflineTts</code>, <code>OfflineTtsConfig</code>, <code>OfflineTtsVitsModelConfig</code>, <code>GeneratedAudio</code> <b>và</b> các ký hiệu native <code>Java_com_k2fsa_sherpa_onnx_OfflineTts_newFromFile</code> / <code>_generateImpl</code> / <code>_getSampleRate</code></td><td>Đường (b) dùng được <b>không phải nâng phiên bản AAR</b>, không tốn thêm byte APK nào</td></tr>
+</table>
+<p class="muted">[CHƯA BIẾT] — chưa đo <code>isLanguageAvailable("vi-VN")</code> trên <b>xe thật</b> (DiLink 3/4/5). Đó là lý do §6 V-oncar tồn tại, và là lý do có cầu đo ở R6.</p>
+
+<h3>2.3 Gói giọng Việt offline — đã tải thật, đã băm thật</h3>
+<p>[ĐO] 2026-09-15, tải bằng <code>curl</code> từ bản phát hành <code>tts-models</code> của <code>k2-fsa/sherpa-onnx</code>:</p>
+<pre>vits-piper-vi_VN-vais1000-medium.tar.bz2
+  sha256 = fa1367710767d36ed5cf13b4a449e20c35ffd12791c2e47c2e64142bfa55551a
+  bytes  = 67 154 040
+  tar -tjf ⇒ 397 mục, trong đó 393 mục thuộc espeak-ng-data/ (18 MB)
+  vi_VN-vais1000-medium.onnx  = 63 149 198 B  (sha256 df1512ef…83b809f)
+  tokens.txt                  =        921 B
+  MODEL_CARD ⇒ dataset VAIS-1000, license CC-BY-4.0, 22 050 Hz, 1 speaker</pre>
+<div class="card"><b>Cổng / phụ thuộc:</b>
+<ul>
+<li><span class="warn">CHẶN pha 1</span> — gói giọng chỉ phát hành dạng <code>tar.bz2</code> kèm <b>thư mục</b> <code>espeak-ng-data</code> (Piper chuyển chữ→âm vị bằng espeak-ng; <code>onnx.json</code> khai <code>"espeak": {"voice": "vi"}</code>). <code>VoiceModelStore</code> hiện tải <b>từng tệp có ghim sha256</b> ⇒ không lắp vào được. ⇒ <code>SherpaTtsCatalog…downloadable = false</code>, chờ tầng giải nén (pha 2, T7).</li>
+<li>Hai gói vi_VN còn lại (<code>25hours_single-low</code>, <code>vivos-x_low</code>) tồn tại (HTTP 302) nhưng <b>chưa tải</b> ⇒ [CHƯA BIẾT] sha/giấy phép, không khai vào danh mục.</li>
+<li><code>vits-mms-vie</code> <b>không có</b> trên bản phát hành đó (HTTP 404) ⇒ không có đường né espeak-ng.</li>
+</ul>
+</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> — Sau MỖI lệnh (hoặc chuỗi lệnh), Kachi nói <b>một</b> câu xác nhận ngắn bằng tiếng Việt, ≤ <b>12 từ</b>. Chuỗi lệnh phải <b>gộp</b>: <i>“Đã đặt Nhiệt độ 24, đặt Quạt gió 3”</i>. <br><span class="muted">AC: <code>VoiceFeedbackPhraseTest</code> khoá từng luật — bỏ ký hiệu của mắt (<code>✓ ✗ « » = —</code>), gộp, trần từ, dòng tạm.</span></li>
+<li><b>R2</b> — Backend chọn theo <b>phép đo tại máy</b>, không theo tên xe/tên gói (CLAUDE.md §7):
+  <ul>
+  <li><b>R2a</b> — Android <code>TextToSpeech</code> khi <code>isLanguageAvailable(vi-VN) ≥ LANG_AVAILABLE (0)</code>. <b>−1 (LANG_MISSING_DATA) KHÔNG tính</b>: xem Đ2 — <code>speak()</code> vẫn trả <code>SUCCESS</code> mà không phát ra tiếng nào.</li>
+  <li><b>R2b</b> — sherpa-onnx <code>OfflineTts</code> khi gói VITS/Piper đã có đủ tệp trên đĩa (<b>kiểm trên đĩa</b>, không tin pref — CLAUDE.md §5).</li>
+  <li><b>R2c</b> — Không có đường nào ⇒ <b>degrade</b>: chữ + âm báo y như 1.63. Không ném, không hiện lỗi, không tắt tính năng nghe.</li>
+  </ul></li>
+<li><b>R3</b> — <b>Không nói đè lúc đang nghe.</b> Cổng gồm <b>hai</b> cờ: <code>capturing</code> (micro đang mở) <b>và</b> <code>confirmOpen</code> (hộp hỏi lại vừa mở — lượt nghe của nó bắt đầu vài ms SAU, nên <code>capturing</code> một mình còn <code>false</code> đúng ở khe nguy hiểm). Tiêu điểm âm thanh dùng <code>AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK</code> + <code>CONTENT_TYPE_SPEECH</code> — <b>gương</b> của <code>VoiceCapture.requestFocus</code>. Huỷ phiên ⇒ cắt câu đang đọc; màn chính chết ⇒ <code>shutdown()</code>.</li>
+<li><b>R4</b> <span class="pill">pha 2</span> — Công tắc <i>“Đọc phản hồi”</i> trong Cài đặt (mặc định BẬT khi có engine) + <i>“Ưu tiên giọng offline”</i>. Hoãn vì <code>SettingsSections*.kt</code> đang có agent khác sửa; hợp đồng đã chừa sẵn: <code>VoiceSpeakerRouter(ctx, preferOffline = { … })</code>.</li>
+<li><b>R5</b> <span class="pill">pha 2</span> — Câu xác nhận đọc lại <b>trạng thái THẬT</b> cho <code>ControlKind.STEP</code> (đọc HAL <i>sau</i> khi ghi: <i>“Đã tăng nhiệt độ lên 24”</i> thay vì lặp lại con số vừa gửi). Phụ thuộc <code>VoiceReply</code>/<code>VoiceDispatcher</code> đang có agent khác sửa. <b>Hợp đồng cần</b>: <code>VoiceDispatcher</code> gọi <code>say</code> với câu dựng từ giá trị <b>đọc lại</b>, không từ giá trị <b>đã gửi</b>; <code>VoiceFeedbackPhrase</code> không phải đổi gì (nó chỉ nhận chuỗi).</li>
+<li><b>R6</b> — Cầu kiểm thử: <code>state</code> của <code>KachiTestBridge</code> thêm khối <code>tts</code> để <b>một lệnh</b> trên xe là biết máy đang đọc bằng đường nào.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — <b>Không chặn luồng vẽ.</b> Một lượt tổng hợp offline mất hàng trăm ms; chặn ở <code>execute()</code> là đơ launcher trên xe đang lăn bánh.</li>
+<li><b>R-nf2</b> — <b>Không ném.</b> Mã native onnxruntime ném <code>Error</code> (<code>UnsatisfiedLinkError</code>, <code>OutOfMemoryError</code>) — bắt <code>Throwable</code>, cùng lý lẽ đã ghi ở <code>VoiceSession.runSession</code>.</li>
+<li><b>R-nf3</b> — <b>Kiểm off-car.</b> Luật chọn backend và luật dựng câu là hai thứ dễ sai nhất ⇒ cả hai nằm ở tầng thuần, không <code>import android.*</code>, test JVM không Robolectric.</li>
+<li><b>R-nf4</b> — <b>0 quyền mới</b>, 0 byte APK mới (AAR đã là dependency, xem Đ3), 0 thay đổi cho đường NGHE.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Đường đi của một câu trả lời</h3>
+<div class="diagram">
+<svg viewBox="0 0 880 300" role="img" aria-label="Luồng: VoiceDispatcher gom các dòng say, VoiceFeedbackPhrase gộp thành một câu, VoiceSpeakerRouter chọn backend, ra loa">
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="var(--accent)"/>
+    </marker>
+  </defs>
+  <g font-family="-apple-system,sans-serif" font-size="12.5" fill="var(--fg)">
+
+    <rect x="8" y="16" width="150" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="83" y="38" text-anchor="middle" font-size="13.5" font-weight="650">VoiceDispatcher</text>
+    <text x="83" y="56" text-anchor="middle" fill="var(--muted)">say(…) × N vế</text>
+
+    <rect x="8" y="106" width="150" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="83" y="128" text-anchor="middle" font-size="13.5" font-weight="650">VoiceOverlay</text>
+    <text x="83" y="146" text-anchor="middle" fill="var(--muted)">chữ — không đổi</text>
+
+    <rect x="196" y="16" width="168" height="148" rx="10" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+    <text x="280" y="40" text-anchor="middle" font-size="13.5" font-weight="650">VoiceSession</text>
+    <text x="280" y="60" text-anchor="middle" fill="var(--muted)">gom batch trong 1 lượt</text>
+    <text x="280" y="82" text-anchor="middle" fill="var(--muted)">cổng R3:</text>
+    <text x="280" y="100" text-anchor="middle" fill="var(--muted)">capturing ∨ confirmOpen</text>
+    <text x="280" y="122" text-anchor="middle" fill="var(--muted)">⇒ KHÔNG đọc</text>
+    <text x="280" y="146" text-anchor="middle" fill="var(--muted)">(hook duy nhất)</text>
+
+    <rect x="402" y="16" width="168" height="80" rx="10" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+    <text x="486" y="40" text-anchor="middle" font-size="13.5" font-weight="650">VoiceFeedbackPhrase</text>
+    <text x="486" y="58" text-anchor="middle" fill="var(--muted)">:core · thuần</text>
+    <text x="486" y="78" text-anchor="middle" fill="var(--muted)">N dòng → 1 câu ≤ 12 từ</text>
+
+    <rect x="402" y="120" width="168" height="80" rx="10" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+    <text x="486" y="144" text-anchor="middle" font-size="13.5" font-weight="650">VoiceSpeakerRouter</text>
+    <text x="486" y="162" text-anchor="middle" fill="var(--muted)">probe() mỗi câu</text>
+    <text x="486" y="182" text-anchor="middle" fill="var(--muted)">→ VoiceSpeakerSelector</text>
+
+    <rect x="612" y="8" width="168" height="62" rx="10" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+    <text x="696" y="30" text-anchor="middle" font-size="13.5" font-weight="650">AndroidTtsSpeaker</text>
+    <text x="696" y="48" text-anchor="middle" fill="var(--muted)">(a) vi-VN ≥ 0</text>
+    <text x="696" y="63" text-anchor="middle" fill="var(--muted)">0 MB đĩa / RAM</text>
+
+    <rect x="612" y="88" width="168" height="62" rx="10" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+    <text x="696" y="110" text-anchor="middle" font-size="13.5" font-weight="650">SherpaTtsSpeaker</text>
+    <text x="696" y="128" text-anchor="middle" fill="var(--muted)">(b) OfflineTts + AudioTrack</text>
+    <text x="696" y="143" text-anchor="middle" fill="var(--muted)">61 MB gói · chưa lắp</text>
+
+    <rect x="612" y="168" width="168" height="52" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="696" y="190" text-anchor="middle" font-size="13.5" font-weight="650">SilentSpeaker</text>
+    <text x="696" y="208" text-anchor="middle" fill="var(--muted)">(c) degrade — R2c</text>
+
+    <rect x="196" y="212" width="584" height="56" rx="10" fill="var(--card)" stroke="var(--line)"/>
+    <text x="488" y="234" text-anchor="middle" font-size="13.5" font-weight="650">Tiêu điểm âm thanh: AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK · CONTENT_TYPE_SPEECH</text>
+    <text x="488" y="254" text-anchor="middle" fill="var(--muted)">gương của VoiceCapture.requestFocus — nhạc chỉ nhỏ xuống, KHÔNG dừng</text>
+
+    <line x1="158" y1="45" x2="192" y2="45" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="228" y1="164" x2="228" y2="135" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)" transform="translate(0,0)"/>
+    <line x1="158" y1="135" x2="192" y2="135" stroke="var(--line)" stroke-width="2"/>
+    <line x1="364" y1="56" x2="398" y2="56" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="486" y1="96" x2="486" y2="116" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="570" y1="150" x2="608" y2="45" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="570" y1="158" x2="608" y2="119" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+    <line x1="570" y1="172" x2="608" y2="192" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+  </g>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (không sửa)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới của spec này</span>
+</div>
+
+<h3>4.2 Vì sao phải GỘP, chứ không đọc từng dòng <code>say</code></h3>
+<p>Một câu ghép làm <code>VoiceDispatcher.runFrom</code> gọi <code>say</code> <b>nhiều lần</b>. Mọi máy đọc đều <code>QUEUE_FLUSH</code> khi bị gọi lại ⇒ đọc nối đuôi thì người lái <b>chỉ nghe được nửa sau</b>. <code>VoiceSession.execute</code> gom các dòng vào một mảng <b>trong lượt</b>, rồi mở cổng (<code>flushed = true</code>) cho các dòng về muộn (đường tra cứu điểm đến mất tới ~20 s) đọc riêng.</p>
+
+<h3>4.3 Vì sao chọn backend LẠI ở mỗi câu</h3>
+<p>Cả hai phép đo đều đổi giữa chuyến, và đều theo hướng <i>“lúc dựng chưa có, lát nữa mới có”</i>: <code>TextToSpeech</code> khởi tạo <b>bất đồng bộ</b>, còn gói offline có thể vừa lắp xong ở màn Cài đặt. Chốt một lần lúc dựng nghĩa là một launcher khởi động xong trước máy đọc sẽ <b>im lặng tới hết chuyến</b>, không gì báo. Phép chọn rẻ: một <code>Int</code> + ba <code>File.exists</code>.</p>
+
+<h3>4.4 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Danh mục RIÊNG cho gói đọc</b> (<code>SherpaTtsCatalog</code>) thay vì thêm dòng vào <code>SherpaModelCatalog</code>: <code>ALL</code> của bảng kia là danh sách hiện trong <i>Cài đặt › Mô hình nhận dạng</i>; một gói TTS lọt vào đó là một lựa chọn vô nghĩa mà người dùng chọn được. Hai bảng, <b>một luật ghim</b>.</li>
+<li><b>Ghim cả gói nén</b> (<code>archiveSha256</code> + <code>archiveBytes</code>) chứ không ghim từng tệp: 397 mục thì ghim từng tệp là một bảng 397 dòng không ai duy trì nổi. Fail-safe giữ nguyên nếp của <code>HATAPHU_VI</code> — <b>chưa lắp được thì <code>downloadable = false</code></b>.</li>
+<li><b>Context7</b>: phụ thuộc mới = <b>0</b>. <code>com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8</code> đã được verify qua Context7 ở spec <code>kachi-voice-engine-v2</code> (2026-09-14, latest stable) và spec này <b>không</b> nâng phiên bản; API TTS dùng đến đã đối chiếu trực tiếp bằng <code>javap</code> trên chính AAR đó (Đ3) — bằng chứng mạnh hơn tài liệu. <code>android.speech.tts.TextToSpeech</code> là SDK nền tảng, không thuộc phạm vi Context7.</li>
+<li><b>API sherpa dùng đến</b> ([ĐO] <code>javap</code>): <code>OfflineTtsVitsModelConfig(model, lexicon, tokens, dataDir, dictDir, noiseScale, noiseScaleW, lengthScale)</code> → <code>OfflineTtsModelConfig(vits=…, numThreads, debug, provider)</code> → <code>OfflineTtsConfig(model=…)</code> → <code>OfflineTts(assetManager=null, config)</code> (nhánh <code>newFromFile</code>) → <code>generate(text, sid, speed): GeneratedAudio(samples: FloatArray, sampleRate: Int)</code>. Ba số <code>noise_scale 0.667 · noise_w 0.8 · length_scale 1</code> lấy từ <code>onnx.json</code> của chính gói — sherpa <b>không</b> tự đọc tệp ấy, mặc định của nó là số khác.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>TT</th></tr>
+<tr><td>T1</td><td>Đo engine đọc trên máy ảo + đo AAR có lớp/ký hiệu TTS + tải &amp; băm gói giọng Việt (Đ1–Đ3, §2.3)</td><td>—</td><td class="ok">DONE</td></tr>
+<tr><td>T2</td><td>Luật dựng câu đọc (thuần) + bài kiểm</td><td><code>core/…/voice/VoiceFeedbackPhrase.kt</code> · <code>core/…test…/VoiceFeedbackPhraseTest.kt</code></td><td class="ok">DONE</td></tr>
+<tr><td>T3</td><td>Danh mục gói giọng, ghim bằng số ĐO + bài kiểm fail-safe/giấy phép</td><td><code>core/…/voice/SherpaTtsCatalog.kt</code> · <code>…/SherpaTtsCatalogTest.kt</code></td><td class="ok">DONE</td></tr>
+<tr><td>T4</td><td>Giao diện máy đọc + luật chọn (thuần) + bài kiểm</td><td><code>app/…/voice/VoiceSpeaker.kt</code> · <code>VoiceSpeakerSelector.kt</code> · <code>app/…test…/VoiceSpeakerSelectorTest.kt</code></td><td class="ok">DONE</td></tr>
+<tr><td>T5</td><td>Hai backend + bộ định tuyến</td><td><code>AndroidTtsSpeaker.kt</code> · <code>SherpaTtsSpeaker.kt</code> · <code>VoiceSpeakerRouter.kt</code></td><td class="ok">DONE</td></tr>
+<tr><td>T6</td><td><b>Hook duy nhất</b>: gom <code>say</code> → gộp → đọc, kèm cổng R3 + nhả tài nguyên</td><td><code>app/…/voice/VoiceSession.kt</code></td><td class="ok">DONE</td></tr>
+<tr><td>T7</td><td>Cầu kiểm thử <code>state.tts</code> (R6)</td><td><code>app/…/testbridge/TestBridgeState.kt</code></td><td class="ok">DONE</td></tr>
+<tr><td>T8</td><td><span class="pill">pha 2</span> Tầng tải + <b>giải nén</b> <code>tar.bz2</code> cho gói giọng ⇒ mở <code>downloadable</code></td><td><code>VoiceModelStore</code>/<code>VoiceModelSideload</code> (đang có agent khác sửa)</td><td class="warn">TODO</td></tr>
+<tr><td>T9</td><td><span class="pill">pha 2</span> Công tắc R4 trong Cài đặt</td><td><code>SettingsSections*.kt</code> (đang có agent khác sửa)</td><td class="warn">TODO</td></tr>
+<tr><td>T10</td><td><span class="pill">pha 2</span> R5 — câu xác nhận đọc lại trạng thái THẬT</td><td><code>VoiceDispatcher.kt</code> · <code>VoiceReply.kt</code> (đang có agent khác sửa)</td><td class="warn">TODO</td></tr>
+<tr><td>T11</td><td>Build + chạy test (2 module)</td><td>—</td><td class="ok">DONE — [ĐO] 2026-09-15, xem §6</td></tr>
+<tr><td>T12</td><td>Senior review + security scan</td><td>—</td><td class="warn">TODO</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> <span class="pill ok">[ĐO] 2026-09-15</span> — <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew :core:test :app:testDebugUnitTest --rerun-tasks --continue</code>, đếm từ XML (<code>core/build/test-results/test/*.xml</code>, <code>app/build/test-results/testDebugUnitTest/*.xml</code>):
+<pre>core  182 XML · 1867 test · 4 đỏ  (cả 4 NGOÀI spec này — xem dưới)
+app   115 XML ·  948 test · 1 đỏ  (NGOÀI spec này)
+ba bộ của spec này: VoiceFeedbackPhraseTest 14/0 · SherpaTtsCatalogTest 7/0 · VoiceSpeakerSelectorTest 11/0  ⇒ 32/0</pre>
+5 bài đỏ đều thuộc nhánh <i>sổ địa chỉ</i> đang chạy song song, trong 4 tệp mà spec này <b>không chạm</b>: <code>SettingsCatalogEntries.kt</code> (<code>places_add</code> ⇒ <code>LangCoverageTest</code> 58→60 · 310→312, <code>SettingsCatalogTest</code>), <code>SherpaHotwords.kt</code> (<code>"Ô SỐ"</code> lọt qua bộ lọc chữ số), <code>VoiceRecognizer.kt</code>+<code>SherpaBiasing.kt</code> (<code>hotwordsFile()</code>).</li>
+<li><b>V-oncar</b> — trên xe thật, sau khi nói một câu bất kỳ:
+<pre>adb shell am broadcast -a &lt;action test-bridge&gt; -e cmd state   # đọc khối "tts"
+# kỳ vọng: measured=true; vi_status ∈ {-2,-1,0,1,2}; kind ∈ {ANDROID_TTS, SHERPA_OFFLINE, NONE}</pre>
+  Ba câu hỏi V-oncar phải trả lời: (1) DiLink 3/4/5 có giọng <code>vi-VN</code> không (số thô <code>vi_status</code>); (2) câu đọc có bị nhạc át không (kiểm ducking); (3) lượt nghe xác nhận có bị nghe thấy chính câu vừa đọc không (R3).</li>
+<li><b>V-lifecycle</b> — nói → nghe câu xác nhận → nói lại ngay giữa câu (phải cắt, không chồng) → huỷ phiên giữa câu (phải im ngay) → thoát màn chính (<code>shutdown</code>, không còn giữ tiêu điểm) → mở lại (đọc được tiếp).</li>
+<li><b>V-degrade</b> — máy KHÔNG có giọng (đúng trạng thái máy ảo hiện nay, Đ2): mọi hành vi phải <b>giống hệt 1.63</b> — chữ + hai tiếng bíp, không lỗi, không dòng đỏ.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — Gói giọng 67 MB tải qua 4G của xe: chấp nhận, hay mirror bản <b>int8</b>/<b>low</b> nhẹ hơn? <span class="muted">Chờ owner. Liên quan: kênh OTA <code>byd-kachi</code> đã dùng cho mô hình NGHE.</span></li>
+<li><b>OQ2</b> — Có được cắt <code>espeak-ng-data</code> còn riêng phần <code>vi</code> (18 MB → ~1 MB) không? <span class="muted">[CHƯA BIẾT] — chưa đo espeak-ng cần tối thiểu những tệp nào. Chốt bằng một lần chạy thử với thư mục đã tỉa.</span></li>
+<li><b>OQ3</b> — R4 đặt mặc định BẬT khi có engine: có đúng ý owner không, hay nên hỏi một lần ở lần nói đầu tiên? <span class="muted">Chờ owner.</span></li>
+<li><b>OQ4</b> — Câu hỏi của hộp <b>xác nhận</b> (<i>“Mở khoá cửa?”</i>) hiện <b>không</b> được đọc (R3 chặn, vì lượt nghe có/không mở ngay sau đó). Muốn đọc thì phải nối tiếp: đọc xong <i>rồi mới</i> mở micro — thêm ~2 s vào một cổng an toàn. <span class="muted">Chờ owner.</span></li>
+<li><b>OQ5</b> — <code>VoiceSpeakerRouter.last</code> là một ảnh chụp <b>tĩnh</b> (chỉ để báo cáo, CLAUDE.md §5 cho phép). Nếu sau này có hai <code>VoiceSession</code> cùng lúc thì nó chỉ nói về cái mới nhất. <span class="muted">Hôm nay không có ca đó (một phiên tại một thời điểm).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Owner 2026-09-15: <i>“Con voice có phản hồi chưa? … ‘Đã tăng nhiệt độ lên 24, mức gió 3’ chẳng hạn?”</i></li>
+<li><code>core/…/voice/VoiceReply.kt</code> — KDoc <i>“Hôm nay ra CHỮ, mai ra TIẾNG — cùng một hàm”</i> (R8 của <code>kachi-voice-command.html</code>).</li>
+<li><code>app/…/voice/VoiceCapture.kt:174-194</code> — <code>requestFocus</code>/<code>abandonFocus</code>, khuôn tiêu điểm âm thanh được soi gương ở đây.</li>
+<li><code>docs/specs/kachi-voice-engine-v2.html</code> — sherpa-onnx v1.13.8, luật ghim sha256 của <code>SherpaModelCatalog</code>.</li>
+<li><code>docs/specs/kachi-test-bridge.html</code> R4 — lệnh <code>state</code>, nơi khối <code>tts</code> nhập vào.</li>
+<li>AAR đã đo: <code>~/.gradle/caches/modules-2/files-2.1/com.github.k2-fsa.sherpa-onnx/sherpa-onnx/v1.13.8/…/sherpa-onnx-v1.13.8.aar</code>.</li>
+<li>Gói giọng: <code>https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-vi_VN-vais1000-medium.tar.bz2</code> (CC-BY-4.0, VAIS-1000).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-15 · quyết định</b> — Đặt luật dựng câu ở <code>:core</code> (<code>VoiceFeedbackPhrase</code>) thay vì biến đổi chuỗi ngay trong <code>VoiceSession</code>: <code>:app</code> không được chứa chuỗi tiếng Việt viết cứng (<code>LauncherI18nContractTest</code>), mà câu <i>“Đã …”</i>/<i>“Chưa …”</i> phải ghép vào giữa nhãn đến từ registry của <code>:core</code>. Cùng lý lẽ mà <code>VoiceReply</code> đã ghi ở KDoc của nó.</li>
+<li><b>2026-09-15 · quyết định</b> — <b>Không</b> sửa <code>VoiceReply.kt</code> (đang có agent khác sửa) dù về lâu dài câu đọc có thể sinh thẳng ở đó. Cái giá: một tầng biến đổi chuỗi nữa. Cái được: 0 write-conflict, và luật biến đổi trở thành thứ <b>kiểm được riêng</b>.</li>
+<li><b>2026-09-15 · trade-off</b> — Chọn <b>gộp trong lượt</b> (mảng + cờ <code>flushed</code>) thay vì một hàng đợi có hẹn giờ. Mất: dòng về muộn (tra cứu điểm đến) đọc riêng thành câu thứ hai. Được: không thêm một <code>Handler</code> sống lâu hơn phiên — đúng thứ CLAUDE.md §5 dặn tránh.</li>
+<li><b>2026-09-15 · bug chặn trước</b> — Bản đầu chỉ gác bằng <code>capturing</code>. Đọc lại <code>confirm()</code> thấy nó chạy <b>đồng bộ</b> trong <code>d.execute</code> còn lượt nghe của nó bắt đầu trên luồng nền <i>sau đó</i> ⇒ ở đúng khoảnh khắc <code>speakLines</code> chạy, <code>capturing</code> vẫn <code>false</code>. Thêm <code>confirmOpen</code> (<code>VoiceSession.kt</code>, đặt trong <code>confirm()</code>, xoá trong <code>pendingConfirm</code> + <code>close()</code>).</li>
+<li><b>2026-09-15 · bug chặn trước</b> — <code>listener</code> của <code>AndroidTtsSpeaker</code> ban đầu khai <b>sau</b> <code>tts</code>; thứ tự khởi tạo trường là thứ tự viết, nên một <code>onInit</code> về sớm sẽ đọc tham chiếu chưa gán. Đã dời lên trước <code>tts</code> (có ghi lý do tại chỗ).</li>
+<li><b>2026-09-15 · sai lệch spec</b> — Bản giao việc nói <i>“thêm entry model TTS vào <code>SherpaModelCatalog.kt</code>”</i>; thực tế mở <b>tệp mới</b> <code>SherpaTtsCatalog.kt</code>. Lý do ở §4.4 (danh mục NGHE là danh sách người dùng chọn được). §Design đã sửa cho khớp.</li>
+<li><b>2026-09-15 · sai lệch spec (bài canh bắt)</b> — <code>LayeringRulesTest</code> đỏ: <code>VoiceSpeaker.kt</code> + <code>VoiceSpeakerSelector.kt</code> là <b>tệp thuần đặt nhầm vào <code>:app</code></b> (*"nếu tăng thì file thuần mới đang bị đặt vào :app"*). Đã <b>chuyển cả hai sang <code>:core</code></b> (cùng package ⇒ 0 dòng import phải sửa) và chuyển <code>VoiceSpeakerSelectorTest</code> theo — bài kiểm phải nằm trong module nó quét (luật đã trả giá hai lần, xem KDoc <code>LauncherI18nContractTest</code>). §Design/§Tasks đã sửa cho khớp.</li>
+<li><b>2026-09-15 · bug (bài canh bắt)</b> — <code>LauncherLocaleContractTest</code> đỏ: <code>Locale("vi","VN")</code> viết cứng trong <code>AndroidTtsSpeaker</code> là <b>chỗ map ngôn ngữ→Locale thứ hai</b>. Đổi sang <code>LangHost.locale()</code> — và hoá ra đó cũng là bản sửa <b>đúng về hành vi</b>: xe đặt English nhận câu trả lời tiếng Anh (<code>VoiceReply</code> qua <code>Strings.t</code>), đọc chuỗi ấy bằng giọng Việt cho ra một thứ không ai nghe ra là tiếng gì. Đổi ngôn ngữ giữa chuyến không cần đường áp lại: <code>LangHost.changed</code> ⇒ <code>recreate()</code> ⇒ <code>onDestroy</code> ⇒ <code>VoiceSession.stop()</code> ⇒ <code>shutdown()</code>, phiên mới đọc lại locale.</li>
+<li><b>2026-09-15 · [ĐO] đã build + chạy test</b> — xem §6. Ba bộ của spec này <b>32/0</b>. <code>:core</code> biên dịch sạch, <code>:app</code> biên dịch sạch (chỉ warning deprecation sẵn có). 5 bài đỏ còn lại nằm ngoài vùng của spec này (nhánh <i>sổ địa chỉ</i>) — <b>không sửa</b>, đã báo coordinator.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-09-15</h3>
+<p class="muted">Senior review (rule global §5) trên toàn bộ cây chưa commit từ HEAD <code>9c5b679</code>. Scope checklist pha 1: <b>R1 ✅ · R2a ✅ · R2b ✅ (mã xong, gói giọng chưa lắp — xem §2.3) · R2c ✅ · R3 ✅ · R6 ✅</b>; <b>R4 · R5 = pha 2, TODO đúng như §5 khai</b>. T1–T7 ✅ · T11 ✅ · T8–T10 TODO · T12 = chính pass này.</p>
+<ul>
+<li><b>Ba lỗi vòng đời đã VÁ trong pass này</b> — cả ba nằm ở <code>SherpaTtsSpeaker</code>/<code>AndroidTtsSpeaker</code>, tức phần <b>không có bài canh JVM nào chạm tới được</b> (chúng cần thiết bị thật), nên chúng không thể lộ ra qua *"955 ca xanh"*:
+  <ul>
+  <li><span class="tag">P1</span> <code>SherpaTtsSpeaker.stop()</code> gọi <code>AudioTrack.release()</code> <b>từ luồng khác</b> trong lúc luồng <code>KachiSpeak</code> đang nằm trong <code>write(…, WRITE_BLOCKING)</code> của chính đối tượng ấy — use-after-free, cộng thêm một lần <code>release()</code> thứ hai ở khối <code>finally</code> của <code>play</code>. Đường vào rất thường: <code>VoiceSpeakerRouter.speak</code> gọi <code>stop()</code> trước <b>mỗi</b> câu, và <code>VoiceSession.cancel</code> cũng gọi. <b>Vá</b>: <code>stop()</code> chỉ <code>pause()</code> + <code>flush()</code> (đủ để <code>write</code> trả về); chủ sở hữu duy nhất của <code>release()</code> là <code>play</code>.</li>
+  <li><span class="tag">P1</span> <code>SherpaTtsSpeaker.play()</code> <code>release()</code> ngay sau <code>stop()</code>. <code>write</code> chỉ <b>chép</b> mẫu vào đệm, mà đệm ở đây được đặt đủ chứa <b>cả câu</b> (<code>bytes = max(minBuf, samples×4)</code>) ⇒ nó trả về khi loa mới phát vài ms, và <code>release()</code> cắt phần còn lại: gần như <b>cả câu không ra tiếng</b>. <b>Vá</b>: thêm <code>drain()</code> — chờ <code>playbackHeadPosition</code> chạy hết số khung đã ghi, trần = đúng thời lượng câu + 300 ms, và <code>stop()</code> (số thế hệ đổi) vẫn cắt được ngay.</li>
+  <li><span class="tag">P1</span> <code>SherpaTtsSpeaker.shutdown()</code> gọi <code>OfflineTts.release()</code> <b>từ luồng gọi</b> (luồng vẽ, trong <code>onDestroy</code>) trong khi worker có thể đang ở trong <code>generate()</code> — <code>shutdownNow()</code> chỉ đặt cờ ngắt, nó không kéo một luồng ra khỏi lời gọi native. <b>Vá</b>: xếp <code>releaseEngine()</code> lên chính worker rồi <code>shutdown()</code> (graceful) để việc ấy chắc chắn chạy sau lượt <code>generate</code> đang dở.</li>
+  </ul></li>
+<li><span class="tag p1">P2</span> <code>AndroidTtsSpeaker</code> — KDoc của <code>seq</code> hứa *"listener chỉ nhả tiêu điểm của đúng câu nó vừa đọc"*, nhưng <code>onDone</code>/<code>onStop</code>/<code>onError</code> nhả <b>vô điều kiện</b>. Với <code>QUEUE_FLUSH</code>, câu cũ bắn <code>onStop(interrupted = true)</code> <b>sau khi</b> câu mới đã xin tiêu điểm ⇒ nhạc bật to trở lại giữa câu xác nhận. <b>Vá</b>: <code>abandonIfCurrent(utteranceId)</code> so id với <code>seq</code> hiện hành (id rỗng ⇒ vẫn nhả, thà mất một lượt ducking còn hơn giữ tiêu điểm của cả xe).</li>
+<li><b>R3 (không nói đè lúc nghe)</b> — [ĐO nguồn] cổng hai cờ đúng như §4: <code>capturing</code> đặt trong <code>whileCapturing</code>, <code>confirmOpen</code> đặt trong <code>confirm()</code> và xoá ở <code>pendingConfirm</code> + <code>close()</code>. <code>speakLines</code> đọc cả hai trước khi nói. <code>execute</code> chạy trên luồng vẽ (<code>post { … execute(sentence) }</code> ở <code>runSession</code>) và <code>post</code> chạy thẳng khi đã ở luồng vẽ ⇒ <code>batch</code>/<code>flushed</code> không có đua luồng.</li>
+<li><b>R2c (degrade)</b> — [ĐO nguồn] mọi đường đều <code>runCatching</code>/<code>catch (t: Throwable)</code>; không engine ⇒ <code>SilentSpeaker</code> ⇒ <code>speak</code> trả <code>false</code> và không có gì xảy ra. Không thêm quyền, không thêm phụ thuộc ([ĐO] <code>git diff</code> hai tệp <code>build.gradle.kts</code> không có dòng <code>implementation</code> nào).</li>
+<li><b>Tech freshness</b> — <code>sherpa-onnx v1.13.8</code>: <b>không đổi phiên bản</b>, và API TTS dùng đến đã đối chiếu bằng <code>javap</code> trên chính AAR ấy (§4.4) ⇒ không cần Context7. <code>android.speech.tts.TextToSpeech</code>: API dùng (<code>speak</code> 4 tham số, <code>setAudioAttributes</code>, <code>UtteranceProgressListener.onError(id, code)</code>) đều là bản <b>hiện hành</b>; bản <code>onError(String)</code> một tham số là bản deprecated nhưng <b>bắt buộc</b> phải cài (lớp cha khai <code>abstract</code>) và đã được đánh dấu <code>@Deprecated</code> tại chỗ. <code>AudioFocusRequest</code> (API 26+) là đường mới, không phải <code>requestAudioFocus</code> cũ. <b>Không có API deprecated nào cần vá.</b></li>
+<li><b>Kiểm lại</b> — [ĐO] <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew :core:test :app:testDebugUnitTest --rerun-tasks --continue</code>, đếm từ XML: <code>:core</code> 185 tệp / <b>1 899</b> ca / <b>0 đỏ</b> · <code>:app</code> 116 tệp / <b>955</b> ca / <b>0 đỏ</b>. ⚠ <b>Bốn bản vá trên KHÔNG được bài canh nào che</b> — mức bằng chứng của chúng là <b>[SUY]</b> (đọc hợp đồng <code>AudioTrack</code>/<code>TextToSpeech</code>), không phải [ĐO]; phép đo thật là <b>V-oncar</b>.</li>
+<li><b>Verdict: APPROVED</b> cho pha 1 off-car. <b>NEEDS-ONCAR</b> (không chặn merge): ba câu hỏi của §6 V-oncar vẫn nguyên, và nay có thêm câu thứ tư — <b>nghe đủ trọn một câu offline</b> (bản vá <code>drain</code>) và <b>nói lại giữa câu không làm sập</b> (bản vá <code>stop</code>). Cả hai cần gói giọng đã lắp trên thiết bị, tức phụ thuộc T8 (pha 2).</li>
+</ul>
+
+</div></body>
+</html>

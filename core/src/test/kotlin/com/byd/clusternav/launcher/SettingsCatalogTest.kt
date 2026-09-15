@@ -244,6 +244,10 @@ class SettingsCatalogTest {
                 // S4 · R8 — "Thêm hồ sơ (bản sao của «X»)" là một VIỆC LÀM: nó tạo ra một bộ khoá MỚI mang tiền tố
                 // tên hồ sơ, chứ bản thân nút không lưu giá trị nào.
                 "profiles_add",
+                // A1 (docs/specs/kachi-voice-addresses.html) — "Thêm địa chỉ…" là một VIỆC LÀM: nó mở hộp nhập rồi
+                // ghi vào khoá của `places_list` (`saved_places`). Một khoá, một chủ — cùng lối `home_grid_editor`
+                // và `profiles_add` ngay trên.
+                "places_add",
                 // IA v2: mọi HÀNH ĐỘNG của màn ClusterNav (§4.3, cột "API ghi") — chúng bấm là chạy, không lưu gì.
                 "nav_reconnect", "cast_actions", "cast_rescue", "keys_check", "car_pm25_clean",
                 "system_permissions",
@@ -256,7 +260,7 @@ class SettingsCatalogTest {
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "mười lăm mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười sáu mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

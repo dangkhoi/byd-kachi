@@ -322,6 +322,29 @@ object VoiceAppTargets {
     /** Đích theo mã, `null` nếu mã lạ (bản sau xoá một dòng ⇒ ý định cũ còn trong hàng đợi không được làm sập). */
     fun byKey(key: String?): VoiceAppTarget? = key?.let { k -> ALL.firstOrNull { it.key == k } }
 
+    /**
+     * App dẫn đường **giao được điểm đến với đúng dữ liệu đang có** — spec `kachi-voice-addresses.html` R3.
+     *
+     * ## Vì sao phép chọn phải biết `hasCoords`
+     * [ĐO] bảng trên: VietMap là [VoiceLaunch.OpenOnly] ở đường CHỮ và chỉ có đường TOẠ ĐỘ. Mà VietMap đứng
+     * **đầu** thứ tự ưu tiên của xe owner (nó đang nuôi badge tốc độ). Nên chọn app trước rồi mới hỏi *"giao
+     * được không"* sẽ cho ra ca hay gặp nhất của sổ địa chỉ — một mục **chỉ có chữ** — rơi vào *"mở app trơn,
+     * gõ tay trong app"*, trong khi ngay dưới nó có Google Maps nhận được nguyên văn địa chỉ ấy.
+     *
+     * ⇒ Đi theo thứ tự ưu tiên, lấy app đầu tiên **giao được**; không app nào giao được thì trả app đầu tiên
+     * đang cài (chỗ gọi vẫn mở nó lên và **nói ra** phần chưa làm được — không bao giờ báo một dấu ✓ rỗng).
+     *
+     * @param preferredPackages thứ tự ưu tiên theo TÊN GÓI (`VoiceDispatcher.NAV_PREFERENCE`) — truyền vào chứ
+     *   không khai ở đây: roster gói là của [NavApps], và thứ tự là quyết định của tầng biết xe (CLAUDE.md §6).
+     */
+    fun navFor(hasCoords: Boolean, preferredPackages: List<String>, installed: Set<String>): VoiceAppTarget? {
+        val candidates = preferredPackages
+            .mapNotNull { pkg -> NAV.firstOrNull { pkg in it.packages } }
+            .filter { it.packageIn(installed) != null }
+            .distinct()
+        return candidates.firstOrNull { it.destinationLaunch(hasCoords) != null } ?: candidates.firstOrNull()
+    }
+
     /** Nhãn hiện cho người dùng của một mã; mã lạ ⇒ trả chính mã (cùng lệ [VoiceReply.labelOf]). */
     fun labelOf(key: String): String = byKey(key)?.label ?: key
 

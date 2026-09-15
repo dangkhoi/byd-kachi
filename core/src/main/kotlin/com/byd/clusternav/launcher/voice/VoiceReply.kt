@@ -48,6 +48,10 @@ object VoiceReply {
         is VoiceIntent.Profile -> Strings.t("Đổi sang hồ sơ ", "Switch to profile ") + ProfileNames.display(i.name)
         is VoiceIntent.Read -> Strings.t("Xem ", "Show ") + labelOf(i.datumId)
         is VoiceIntent.Nav -> Strings.t("Dẫn đường tới ", "Navigate to ") + i.query + by(i.app)
+        // Sổ địa chỉ: đọc **nhãn**, không đọc địa chỉ. Người lái nói *"về nhà"* thì câu trả lời phải nói *"Nhà"* —
+        // đọc lại nguyên dòng "123 Nguyễn Trãi, Hà Nội" là bắt họ đọc một thứ họ đã tự gõ và đã biết.
+        is VoiceIntent.NavigateSaved ->
+            Strings.t("Dẫn đường tới ", "Navigate to ") + VoicePlaces.displayLabel(i.placeName) + by(i.app)
         is VoiceIntent.OpenApp -> Strings.t("Mở ứng dụng ", "Open app ") + i.appName + inSlot(i.slot)
         is VoiceIntent.Media -> mediaPreview(i)
         is VoiceIntent.Unknown -> unknown(i)
@@ -190,6 +194,19 @@ object VoiceReply {
     fun appNotInstalled(i: VoiceIntent, appKey: String): String =
         failed(i, Strings.t("chưa cài ${VoiceAppTargets.labelOf(appKey)} trên xe", "${VoiceAppTargets.labelOf(appKey)} is not installed"))
 
+    /**
+     * *"Phát nhạc"* khi **chưa có phiên nhạc nào** ⇒ đã MỞ app nhạc, và nói rõ phần chưa làm được.
+     *
+     * [ĐO] `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §3 L2 (t46/t50): câu *"mở nhạc trên YouTube
+     * Music"* phân tích **đúng** (`app=ytmusic`) nhưng `runMedia` vứt trường `app` và rơi thẳng vào transport ⇒
+     * trả lời *"chưa có phiên nhạc nào"* và **không app nào lên màn**. Mở app là phần chắc chắn làm được; còn
+     * *"tự phát"* thì [ĐO] máy ảo 2026-09-14 cho thấy app dừng ở nút Play, nên câu này nói đúng thế.
+     */
+    fun musicAppOpened(i: VoiceIntent, target: VoiceAppTarget): String = done(i) + " — " + Strings.t(
+        "đã mở ${target.label}; chưa có phiên nhạc nào để điều khiển — bấm Play trong app",
+        "opened ${target.label}; no music session to control yet — press Play in the app",
+    )
+
     /** Không có app nhạc nào trong bảng đích có mặt trên xe. */
     fun noMusicApp(i: VoiceIntent): String = failed(i, Strings.t(
         "chưa có app nhạc nào trên xe",
@@ -266,6 +283,32 @@ object VoiceReply {
     /** App có tên nhưng không mở được (đã gỡ, hoặc ROM chặn mở từ launcher). */
     fun cannotOpen(i: VoiceIntent): String = failed(i, Strings.t("không mở được", "could not open"))
 
+    // ═══ SỔ ĐỊA CHỈ (spec `kachi-voice-addresses.html` R4) ════════════════════════════════════════════════════
+
+    /**
+     * Nhãn **chưa có trong sổ** của hồ sơ đang dùng.
+     *
+     * Nói ra **đúng nhãn còn thiếu và chỗ thêm nó**, không phải *"không hiểu"*: câu người lái vừa nói hoàn toàn
+     * hợp lệ, thứ thiếu là dữ liệu — mà đó là thứ họ bổ sung được trong mười giây. Một câu *"không hiểu"* ở đây
+     * làm người ta nói lại lần hai, lần ba cho một việc không bao giờ chạy được.
+     */
+    fun placeNotSaved(i: VoiceIntent, label: String): String = failed(i, Strings.t(
+        "chưa lưu địa chỉ «$label» — thêm ở Cài đặt › Dẫn đường › Sổ địa chỉ",
+        "no address saved for «$label» — add it in Settings › Navigation › Address book",
+    ))
+
+    /**
+     * Mục **chỉ có chữ** mà app đích lại chỉ nhận toạ độ ⇒ chỉ mở được app.
+     *
+     * [ĐO] VietMap Live 3.4.0 không có cửa nhận chữ ([VoiceLaunch.OpenOnly]). Tách khỏi [navOpenedNoHandover] vì
+     * ở đây lỗi **sửa được bằng một việc cụ thể**: thêm toạ độ cho mục đó (dán từ app bản đồ). Câu chung chung
+     * *"app này không nhận điểm đến"* thì đúng về cơ chế nhưng bỏ mất đúng phần người dùng làm được.
+     */
+    fun placeNeedsCoords(i: VoiceIntent, target: VoiceAppTarget): String = done(i) + " — " + Strings.t(
+        "${target.label} chỉ nhận toạ độ; thêm lat/lng cho mục này trong Sổ địa chỉ",
+        "${target.label} only takes coordinates — add lat/lng to this entry in the address book",
+    )
+
     /** Câu hỏi lại cho việc [VoiceRisk.CONFIRM] — kèm cả dấu *"chưa kiểm trên xe"* nếu có (xem [unverified]). */
     fun confirmQuestion(i: VoiceIntent): String {
         val why = VoiceRiskTable.reason(i)
@@ -306,6 +349,16 @@ object VoiceReply {
             VoiceUnknownReason.OPEN_VOCAB -> Strings.t(
                 "Phần này Kachi không tự làm offline (tên bài hát / điểm đến)",
                 "Kachi does not do this offline (song names / destinations)",
+            )
+            // Nói thẳng **chưa làm được** + đường làm được ngay. Trước 1.64 câu này lại MỞ app (xem
+            // [VoiceUnknownReason.APP_CLOSE]) — làm đúng việc ngược lại còn tệ hơn nói là chưa làm được.
+            VoiceUnknownReason.APP_CLOSE -> Strings.t(
+                "Chưa đóng được app bằng giọng — bấm phím Home, hoặc mở app khác đè lên",
+                "Closing an app by voice is not supported yet — press Home, or open another app over it",
+            )
+            VoiceUnknownReason.DROPPED_CLAUSE -> Strings.t(
+                "Đã bỏ qua vế không hiểu",
+                "Skipped a clause I did not understand",
             )
         }
         return if (u.text.isBlank()) head else "$head: \"${u.text}\""

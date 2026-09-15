@@ -37,6 +37,12 @@ class VoiceSession(
     private val profiles: () -> List<String>,
     /** Nhãn app → tên gói (danh sách động; CLAUDE.md §7 — không tên gói nào viết cứng). */
     private val appsByLabel: () -> Map<String, String>,
+    /**
+     * Nhãn trong **sổ địa chỉ** của hồ sơ đang dùng (spec `kachi-voice-addresses.html` R6) — đi vào hotwords để
+     * *"về nhà"* / *"đến công ty"* nghe ra được. Cũng ĐỔI được giữa hai lần nói (người dùng vừa thêm một mục),
+     * nên là lambda chứ không phải một danh sách chụp sẵn — cùng lẽ [profiles].
+     */
+    private val places: () -> List<String>,
     /** Dựng cầu sang các đường đã có. Nhận `say` + `confirm` của chính phiên này. */
     private val dispatcher: (
         say: (String) -> Unit,
@@ -50,11 +56,35 @@ class VoiceSession(
 
     private val ui = Handler(Looper.getMainLooper())
     private val capture = VoiceCapture(ctx)
+
+    /**
+     * ═══ V1 pha NÓI · đường ra TIẾNG (spec `kachi-voice-feedback.html` R2) ═══════════════════════
+     *
+     * Dựng **ngay lúc dựng phiên**, không `by lazy`: máy đọc của hệ thống khởi tạo bất đồng bộ (vài trăm ms tới
+     * vài giây trên đầu xe), nên dựng nó ở lần nói ĐẦU TIÊN nghĩa là đúng câu trả lời đầu tiên không ai nghe
+     * thấy — mà đó lại là câu người ta dùng để kết luận *"tính năng này không chạy"*.
+     *
+     * Không có giọng Việt nào trên máy ⇒ [VoiceSpeakerRouter] tự lùi về im lặng; xem [speakLines].
+     */
+    private val speaker: VoiceSpeaker = runCatching { VoiceSpeakerRouter(ctx) }
+        .onFailure { Log.w(TAG, "không dựng được đường ra tiếng — chỉ còn chữ", it) }
+        .getOrDefault(SilentSpeaker)
+
     private val running = AtomicBoolean(false)
     private val cancelled = AtomicBoolean(false)
 
     /** Micro có đang mở không — [cancel] đọc để biết ai chịu trách nhiệm đóng phiên (xem KDoc [cancel]). */
     private val capturing = AtomicBoolean(false)
+
+    /**
+     * Đang có một hộp **hỏi lại** mở, tức một lượt nghe thứ hai sắp/đang chạy (spec `kachi-voice-feedback.html` R3).
+     *
+     * ## Vì sao KHÔNG đủ nếu chỉ nhìn [capturing]
+     * [confirm] chạy **đồng bộ** bên trong `d.execute(intents)`, còn lượt nghe của nó bắt đầu trên luồng nền vài
+     * ms sau đó — nên ở đúng khoảnh khắc [speakLines] chạy, [capturing] **vẫn còn `false`** dù micro sắp mở.
+     * Đọc vào khe ấy là Kachi nói *"Đã mở khoá cửa?"* thẳng vào chính cái micro nó vừa mở để nghe *"đồng ý"*.
+     */
+    private val confirmOpen = AtomicBoolean(false)
 
     /**
      * Số thứ tự phiên. Mọi việc chạy trên luồng nền mang theo số của phiên sinh ra nó và **im lặng rút lui** nếu
@@ -104,6 +134,9 @@ class VoiceSession(
      */
     fun cancel() {
         cancelled.set(true)
+        // Người lái đã bỏ đi ⇒ câu xác nhận đang đọc dở **không còn nghĩa gì**. Cắt trước khi đụng tới tấm chữ:
+        // đường ra tiếng không dính gì tới luồng vẽ, và để nó nói nốt là để loa mô tả một việc người ta vừa huỷ.
+        runCatching { speaker.stop() }
         ui.post {
             // Hộp xác nhận đang mở thì huỷ **cũng là một câu trả lời**, và câu đó là KHÔNG.
             answerConfirm(false)
@@ -124,6 +157,10 @@ class VoiceSession(
         // Bỏ luôn số thế hệ: mọi việc nền còn treo của phiên này thành [stale] ⇒ không vẽ, không đóng, không thi
         // hành gì nữa. Đóng ngay ở đây được (khác [cancel]) vì không còn phiên nào để bàn giao — màn đang chết.
         generation.incrementAndGet()
+        // Nhả hẳn đường ra tiếng — cùng họ với `AudioRecord` ở KDoc trên: một `TextToSpeech` không `shutdown`
+        // giữ một kết nối dịch vụ sống lâu hơn cả màn hình đã chết, và một `AudioTrack` chưa `release` giữ luôn
+        // tiêu điểm âm thanh ⇒ nhạc của cả xe kẹt ở mức nhỏ mà không ai biết tại sao.
+        runCatching { speaker.shutdown() }
         ui.post { answerConfirm(false); close() }
     }
 
@@ -136,7 +173,7 @@ class VoiceSession(
             if (!VoiceModelStore.isReady(ctx)) { fail(my, R.string.kachi_voice_no_model, openSettingsAction = true); return }
 
             val labels = appsByLabel()
-            val rec = VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet())
+            val rec = VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet(), places())
             if (rec == null) { fail(my, R.string.kachi_voice_engine_failed, openSettingsAction = true); return }
 
             rec.use {
@@ -219,8 +256,22 @@ class VoiceSession(
      */
     private fun execute(heard: String) {
         val my = generation.get()
+        // ─── V1 pha NÓI (spec `kachi-voice-feedback.html` R1) ────────────────────────────────────
+        // Gom mọi dòng `say` của lượt này rồi đọc MỘT câu. Không gom thì một câu ghép ("đặt nhiệt độ 24 và gió
+        // mức 3") cho hai lượt `say` ⇒ hai lượt đọc nối đuôi, mà máy đọc nào cũng QUEUE_FLUSH khi bị gọi lại ⇒
+        // người lái chỉ nghe được nửa sau. Xem KDoc [VoiceFeedbackPhrase].
+        val batch = ArrayList<String>()
+        var flushed = false
         val d = dispatcher(
-            { line -> post { overlay?.render(R.string.kachi_voice_heard, line) } },
+            { line ->
+                post {
+                    overlay?.render(R.string.kachi_voice_heard, line)
+                    // Dòng về SAU khi đã đọc (đường tra cứu điểm đến mất tới ~20 s) thì đọc riêng — gom vào một
+                    // mảng không ai đọc nữa là im lặng đúng chỗ câu trả lời thật sự tới.
+                    if (stale(my)) return@post
+                    if (flushed) speakLines(listOf(line)) else batch.add(line)
+                }
+            },
             { question, onYes, onNo ->
                 if (stale(my) || overlay == null) onNo() else confirm(question, onYes, onNo)
             },
@@ -228,9 +279,31 @@ class VoiceSession(
         val intents = d.preview(heard)
         overlay?.render(R.string.kachi_voice_heard, heard)
         d.execute(intents)
+        // `say` chạy ĐỒNG BỘ bên trong `d.execute` cho mọi vế không phải tra mạng (cả hai đều trên luồng vẽ, và
+        // `post` chạy thẳng khi đã ở luồng vẽ) ⇒ tới đây [batch] đã đủ. Mở cổng cho các dòng về muộn.
+        flushed = true
+        speakLines(batch)
         // Tấm chữ ở lại [LINGER_MS] để đọc được câu trả lời rồi tự biến. Nếu một vế đang hỏi xác nhận thì
         // `confirm` đã dời hẹn giờ ra sau — xem [confirm].
         scheduleClose(LINGER_MS)
+    }
+
+    /**
+     * Đọc thành tiếng câu xác nhận — **R1 + R3** của spec `kachi-voice-feedback.html`.
+     *
+     * ## Vì sao [capturing] là cổng, không phải một tuỳ chọn
+     * Micro đang mở mà loa nói thì Kachi **nghe chính mình**: lượt nghe xác nhận (`listenForConfirm`) sẽ nhận
+     * được câu vừa đọc làm đầu vào. Đó không phải chuyện thẩm mỹ — cổng *"đồng ý / huỷ"* nhận nhầm một lần là
+     * một cánh cửa mở giữa bãi đỗ (xem KDoc [confirm]).
+     *
+     * Không có giọng nào trên máy ⇒ [VoiceSpeaker.speak] trả `false` và **không có gì xảy ra**: tấm chữ + âm báo
+     * vẫn y như 1.63 (R2c — degrade, không ném).
+     */
+    private fun speakLines(lines: List<String>) {
+        if (lines.isEmpty() || capturing.get() || confirmOpen.get()) return
+        val sentence = VoiceFeedbackPhrase.merge(lines) ?: return
+        runCatching { speaker.speak(sentence) }
+            .onFailure { Log.w(TAG, "không đọc được câu xác nhận", it) }
     }
 
     /**
@@ -246,9 +319,11 @@ class VoiceSession(
      */
     private fun confirm(question: String, onYes: () -> Unit, onNo: () -> Unit) {
         val answered = AtomicBoolean(false)
+        confirmOpen.set(true)
         pendingConfirm = { yes ->
             if (answered.compareAndSet(false, true)) {
                 pendingConfirm = {}
+                confirmOpen.set(false)
                 if (yes) onYes() else onNo()
                 scheduleClose(LINGER_MS)
             }
@@ -319,6 +394,10 @@ class VoiceSession(
     private fun close(): Unit = post {
         ui.removeCallbacks(closeTask)
         pendingConfirm = {}
+        // Hộp hỏi lại (nếu có) đã hết đời cùng tấm chữ ⇒ mở lại cổng đọc cho phiên sau. KHÔNG cắt câu đang đọc ở
+        // đây: tấm chữ tự biến sau [LINGER_MS] = 2,5 s, còn một câu ~12 từ đọc mất ~3–4 s — cắt là cụt đúng vế
+        // cuối ("…, 2 việc khác đã xong"), tức cụt đúng phần người lái cần.
+        confirmOpen.set(false)
         overlay?.dismiss()
         overlay = null
         running.set(false)

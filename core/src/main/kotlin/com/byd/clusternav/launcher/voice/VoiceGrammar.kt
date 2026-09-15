@@ -145,7 +145,12 @@ object VoiceSynonyms {
         VoiceAppTargets.YOUTUBE to listOf("youtube", "yt"),
         VoiceAppTargets.SPOTIFY to listOf("spotify"),
         VoiceAppTargets.ZING to listOf("zing mp3", "zing"),
-        VoiceAppTargets.GMAPS to listOf("google map", "google maps", "ban do google", "google"),
+        // [ĐO] `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §3 L6 (t45): *"mở bản đồ"* → `Unknown` trên
+        // máy có nhãn hệ thống tiếng Anh (*"Maps"*). *"bản đồ"* CHÍNH LÀ nhãn tiếng Việt của app này
+        // (`PackageManager` trả *"Bản đồ"* ở máy đặt tiếng Việt), nên đây không phải một biệt danh bịa ra — và
+        // nhãn thật vẫn được xét TRƯỚC (xem [VoiceIntentParser.appByTargetName]), nên máy nào có nhãn *"Bản đồ"*
+        // thì vẫn đi đường nhãn như cũ.
+        VoiceAppTargets.GMAPS to listOf("google map", "google maps", "ban do google", "ban do", "google"),
         VoiceAppTargets.WAZE to listOf("waze", "quay"),
         VoiceAppTargets.VIETMAP to listOf("viet map", "vietmap"),
     )
@@ -189,6 +194,12 @@ object VoiceGrammar {
         listOf("chi", "duong") to VoiceVerb.NAV,
         listOf("navigate", "to") to VoiceVerb.NAV,
         listOf("directions", "to") to VoiceVerb.NAV,
+        // ⚠⚠ *"về nhà"* · *"đi làm"* · *"đến công ty"* CỐ Ý **không** có mặt trong bảng này — xem
+        // [VoicePlaces.PLACE_VERBS]. Thêm `ve`/`di`/`den` vào đây là biến chúng thành động từ dẫn đường **vô điều
+        // kiện**, và [ĐO] ngay trong bộ test đang có: *"về bố cục 2 cột"* (một câu cố ý để NO_VERB, spec §7 OQ1)
+        // sẽ thành *"dẫn đường tới «bố cục 2 cột»"* — máy mở app bản đồ tìm một cái tên vô nghĩa thay vì nói thẳng
+        // là chưa làm được. Ba từ ấy quá thường để mang một nghĩa cố định; chúng chỉ có nghĩa dẫn đường khi phần
+        // đuôi **thật sự là một nơi trong sổ**, và đó đúng là điều kiện mà [VoicePlaces.PLACE_VERBS] gác.
         listOf("bai", "tiep", "theo") to VoiceVerb.NEXT,
         listOf("bai", "ke", "tiep") to VoiceVerb.NEXT,
         listOf("chuyen", "bai") to VoiceVerb.NEXT,
@@ -355,11 +366,14 @@ object VoiceGrammar {
      * @param vocabulary từ điển mô hình ([VoskWordList.readOutputSymbols]).
      * @param installed TÊN GÓI đang có trên máy — quyết định tên [VoiceAppTargets] nào được khai với bộ nhận
      *   dạng. Rỗng ⇒ không khai tên app đích nào (xem `VoicePhrases.labelPhrases`).
+     * @param places nhãn trong **sổ địa chỉ** của hồ sơ đang dùng (spec `kachi-voice-addresses.html` R6). Rỗng ⇒
+     *   không khai cách nói nào của sổ — cùng luật với [installed]: ngữ pháp chỉ khai thứ gọi được thật.
      */
     fun phrases(
         vocabulary: Set<String>,
         profiles: List<String> = emptyList(),
         apps: List<String> = emptyList(),
         installed: Set<String> = emptySet(),
-    ): VoicePhraseSet = VoicePhrases.build(vocabulary, profiles, apps, installed)
+        places: List<String> = emptyList(),
+    ): VoicePhraseSet = VoicePhrases.build(vocabulary, profiles, apps, installed, places)
 }

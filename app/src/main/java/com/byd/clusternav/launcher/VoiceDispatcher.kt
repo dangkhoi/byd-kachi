@@ -8,6 +8,7 @@ import com.byd.clusternav.launcher.voice.VoiceReply
 import com.byd.clusternav.launcher.voice.VoiceAppIntents
 import com.byd.clusternav.launcher.voice.VoiceAppTarget
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
+import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceRisk
 import com.byd.clusternav.launcher.voice.VoiceRiskTable
 import com.byd.clusternav.navigation.NavApps
@@ -39,7 +40,7 @@ import com.byd.clusternav.navigation.NavApps
 class VoiceDispatcher(
     private val control: () -> CarControlPort,
     private val state: () -> HomeUiState,
-    private val media: () -> MediaBridge,
+    private val media: () -> MediaTransport,
     /** Nhãn app → tên gói. Danh sách động (app đã cài) ⇒ KHÔNG gói nào bị viết cứng (CLAUDE.md §7). */
     private val appsByLabel: () -> Map<String, String>,
     private val openApp: (String) -> Boolean,
@@ -149,7 +150,15 @@ class VoiceDispatcher(
      * tức *"đã hiểu là…"* hiện một đằng mà thi hành một nẻo — thứ khó lần ra nhất vì màn hình nói nó hiểu đúng.
      */
     private fun parse(text: String, labels: Map<String, String>): List<VoiceIntent> =
-        VoiceIntentParser.parse(text, state().profiles, labels.keys.toList())
+        VoiceIntentParser.parse(
+            text,
+            state().profiles,
+            labels.keys.toList(),
+            // Sổ địa chỉ của hồ sơ ĐANG dùng (spec `kachi-voice-addresses.html` R2). Đọc từ state — cùng giá trị
+            // mà bảng Cài đặt đang vẽ; mở một cửa `WorkspacePrefs` thứ hai ở đây là dựng đường đọc bền song song
+            // ([SOÁT P1-1]), và hai đường thì màn hình hiện một sổ còn câu *"về nhà"* đi theo sổ khác.
+            VoicePlaces.labelsOf(state().savedPlaces),
+        )
 
     // ── Thi hành ─────────────────────────────────────────────────────────────────────────────────
 
@@ -161,6 +170,7 @@ class VoiceDispatcher(
             is VoiceIntent.Profile -> { onSwitchProfile(intent.name); say(VoiceReply.done(intent)) }
             is VoiceIntent.Read -> runRead(intent)
             is VoiceIntent.Nav -> runNav(intent, labels)
+            is VoiceIntent.NavigateSaved -> runNavSaved(intent, labels)
             is VoiceIntent.Media -> runMedia(intent, labels)
             is VoiceIntent.OpenApp -> runOpenApp(intent, labels)
             is VoiceIntent.Unknown -> say(VoiceReply.unknown(intent))
@@ -294,15 +304,89 @@ class VoiceDispatcher(
         }
     }
 
-    /** Nhạc — cùng hình dạng với [runNav], trừ việc không có app nhạc nào cần toạ độ. */
-    private fun runMedia(i: VoiceIntent.Media, labels: Map<String, String>) {
-        if (i.op != VoiceMediaOp.QUERY) { runTransport(i); return }
+    /**
+     * Dẫn đường tới một nơi **ĐÃ LƯU** (spec `docs/specs/kachi-voice-addresses.html` R3 · R4).
+     *
+     * ## Ba khác biệt so với [runNav], mỗi cái có lý do riêng
+     *  1. **Không geocode, không hộp đọc-lại.** Đường kia phải tra mạng rồi hỏi lại vì điểm đến do nhận dạng tự
+     *     do đọc ra. Ở đây dữ liệu là thứ chính người dùng đã gõ và đã có sẵn trên đĩa — thêm một lượt chờ mạng
+     *     và một cú chạm cho câu người ta nói mỗi ngày là làm hỏng đúng thứ tính năng này sinh ra để chữa.
+     *  2. **Chọn app theo DỮ LIỆU của mục**, không theo thứ tự ưu tiên trần ([VoiceAppTargets.navFor]): mục chỉ
+     *     có chữ mà đẩy vào VietMap (chỉ nhận toạ độ) là mở app rồi bảo người ta tự gõ, trong khi Google Maps
+     *     ngay dưới nhận được nguyên văn địa chỉ ấy.
+     *  3. **Tra sổ lúc THI HÀNH**, không lúc phân tích: ý định chỉ mang nhãn (xem KDoc
+     *     [VoiceIntent.NavigateSaved]) nên nếu người dùng vừa sửa địa chỉ xong, lượt này đi theo bản mới.
+     */
+    private fun runNavSaved(i: VoiceIntent.NavigateSaved, labels: Map<String, String>) {
+        val place = SavedPlaces.find(state().savedPlaces, i.placeName)
+        if (place == null) { say(VoiceReply.placeNotSaved(i, VoicePlaces.displayLabel(i.placeName))); return }
         val installed = labels.values.toSet()
         val asked = i.app
-        val target = pickMusic(asked, installed)
-        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noMusicApp(i)); return }
+        val target = if (asked != null) {
+            VoiceAppTargets.byKey(asked)?.takeIf { it.packageIn(installed) != null }
+        } else {
+            VoiceAppTargets.navFor(place.hasCoords, NAV_PREFERENCE, installed)
+        }
+        if (target == null) {
+            say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noNavApp(i))
+            return
+        }
         val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return }
+        // Mục KHÔNG toạ độ + app chỉ nhận toạ độ ⇒ mở app trơn, và nói ra **việc người dùng làm được** (thêm
+        // lat/lng) thay vì câu chung chung "app này không nhận điểm đến" — xem [VoiceReply.placeNeedsCoords].
+        if (!place.hasCoords && target.needsCoords) {
+            say(if (openApp(pkg)) VoiceReply.placeNeedsCoords(i, target) else VoiceReply.cannotOpen(i))
+            return
+        }
+        val coords = if (place.hasCoords) {
+            VoiceAppIntents.Coords(place.lat!!, place.lng!!, place.query)
+        } else {
+            null
+        }
+        deliver(i, target, pkg, place.query, coords)
+    }
+
+    /**
+     * Nhạc — cùng hình dạng với [runNav], trừ việc không có app nhạc nào cần toạ độ.
+     *
+     * ## [SOÁT P1] *"phát nhạc"* khi CHƯA CÓ PHIÊN NÀO ⇒ phải MỞ app, không phải báo lỗi
+     * [ĐO] `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §3 L2 (t46/t50): bản trước mở đầu bằng
+     * `if (i.op != QUERY) { runTransport(i); return }` ⇒ mọi lệnh không phải QUERY rơi thẳng vào transport và
+     * trường [VoiceIntent.Media.app] **bị vứt** — *"mở nhạc trên YouTube Music"* trả lời *"chưa có phiên nhạc"*
+     * mà không app nào lên màn. Luật mới: **PLAY** + (nêu đích danh app **hoặc** chưa có phiên) ⇒ mở app đó.
+     * PAUSE/NEXT/PREV giữ transport — ở đó *"chưa có phiên nhạc"* là câu ĐÚNG, và mở một app nhạc lên để "dừng"
+     * nó là làm việc khác hẳn việc được bảo.
+     */
+    private fun runMedia(i: VoiceIntent.Media, labels: Map<String, String>) {
+        if (i.op == VoiceMediaOp.QUERY) { runMediaQuery(i, labels); return }
+        val playing = runCatching { mediaPackage() }.getOrNull()
+        if (i.op == VoiceMediaOp.PLAY && (i.app != null || playing == null)) { runPlayInApp(i, labels, playing); return }
+        runTransport(i)
+    }
+
+    /** *"phát bài &lt;tên&gt;"* — giao chuỗi chữ cho app nhạc (từ vựng mở, R17). */
+    private fun runMediaQuery(i: VoiceIntent.Media, labels: Map<String, String>) {
+        val (target, pkg) = musicTarget(i, labels) ?: return
         deliver(i, target, pkg, i.query, null)
+    }
+
+    /**
+     * *"phát nhạc [trên &lt;app&gt;]"* — mở app nhạc rồi nói đúng thứ đã xảy ra. App đích **đang phát** ⇒ transport
+     * (bắn `play` vào chính phiên đó), không mở đè: mở lại app đang phát là một lượt chuyển màn thừa lúc đang lái.
+     */
+    private fun runPlayInApp(i: VoiceIntent.Media, labels: Map<String, String>, playing: String?) {
+        val (target, pkg) = musicTarget(i, labels) ?: return
+        if (playing == pkg) { runTransport(i); return }
+        say(if (openApp(pkg)) VoiceReply.musicAppOpened(i, target) else VoiceReply.cannotOpen(i))
+    }
+
+    /** App nhạc đích + gói của nó. `null` ⇒ **đã nói ra** lý do (chưa cài / không có app nhạc nào). */
+    private fun musicTarget(i: VoiceIntent.Media, labels: Map<String, String>): Pair<VoiceAppTarget, String>? {
+        val installed = labels.values.toSet(); val asked = i.app
+        val target = pickMusic(asked, installed)
+        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noMusicApp(i)); return null }
+        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return null }
+        return target to pkg
     }
 
     /** Bắn một lượt giao việc và nói đúng thứ đã xảy ra. */
@@ -380,8 +464,13 @@ class VoiceDispatcher(
      * giữa hai câu nói). Ngoài dải ⇒ nói ra **con số thật**, xem [VoiceReply.slotOutOfRange].
      */
     private fun runOpenApp(i: VoiceIntent.OpenApp, labels: Map<String, String>) {
-        val pkg = labels[i.appName]
-        if (pkg == null) { say(VoiceReply.cannotOpen(i)); return }
+        // Nhãn thật trước; chỉ câu gọi app bằng **cách nói tiếng Việt** mới tra bảng đích (§3 L6: *"mở bản đồ"*).
+        val key = i.appKey
+        val pkg = labels[i.appName] ?: key?.let { VoiceAppTargets.byKey(it)?.packageIn(labels.values.toSet()) }
+        if (pkg == null) {
+            say(if (key != null) VoiceReply.appNotInstalled(i, key) else VoiceReply.cannotOpen(i))
+            return
+        }
         val slot = i.slot
         if (slot == null) {
             say(if (openApp(pkg)) VoiceReply.done(i) else VoiceReply.cannotOpen(i))

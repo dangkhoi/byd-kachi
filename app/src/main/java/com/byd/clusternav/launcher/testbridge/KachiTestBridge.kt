@@ -5,12 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.launcher.EffectiveLayout
 import com.byd.clusternav.launcher.LayoutPreset
 import com.byd.clusternav.launcher.SlotCodec
 import com.byd.clusternav.launcher.reapplyAll
+import com.byd.clusternav.launcher.voice.VoiceIntent
 import com.byd.clusternav.launcher.voice.VoiceReply
 import com.byd.clusternav.modules.clustercast.ClusterDiag
 import com.byd.clusternav.system.PackageQueries
@@ -218,19 +220,60 @@ class KachiTestBridge : BroadcastReceiver() {
         )
         val intents = dispatcher.preview(cmd.text)
         dispatcher.execute(intents)
-        // Một số vế trả lời MUỘN (gói lệnh và câu dẫn đường chạy ở luồng nền). Nán lại một nhịp ngắn rồi mới
-        // chốt: trả lời ngay thì `replies` rỗng ở đúng những lệnh đáng đo nhất.
-        Handler(Looper.getMainLooper()).postDelayed({
-            reply.ok(
-                listOf(
-                    "said" to cmd.text,
-                    "auto_confirm" to cmd.autoConfirm,
-                    "intents" to TestBridgeJson.Raw(TestBridgeJson.arr(intents.map { previewOf(it) })),
-                    "replies" to TestBridgeJson.Raw(TestBridgeJson.arr(said.toList())),
-                    "needs_confirm" to TestBridgeJson.Raw(TestBridgeJson.arr(asked.toList())),
-                ),
-            )
-        }, GRACE_MS)
+        answerWhenSettled(cmd, intents, said, asked, reply)
+    }
+
+    /**
+     * Chốt lời đáp của `say` khi **việc đã xong**, không sau một hằng số — luật ở [TestBridgeSettle] (thuần, có
+     * bài canh); ở đây chỉ là nhịp hỏi lại trên luồng chính. Ảnh chụp danh sách phải nằm trong `synchronized(…)`:
+     * `Collections.synchronizedList` đòi tự khoá khi **duyệt**, mà bên ghi là luồng nền của gói lệnh / geocode.
+     */
+    private fun answerWhenSettled(
+        cmd: TestBridgeCommand,
+        intents: List<VoiceIntent>,
+        said: MutableList<String>,
+        asked: MutableList<String>,
+        reply: TestBridgeReply,
+    ) {
+        val handler = Handler(Looper.getMainLooper())
+        val start = SystemClock.uptimeMillis()
+        var seen = 0
+        var lastChange = start
+        val tick = object : Runnable {
+            override fun run() {
+                if (reply.isAnswered()) return // trần lượt (CAP_MS) đã trả lời thay — đừng chốt lần hai
+                val lines = synchronized(said) { ArrayList(said) }
+                val questions = synchronized(asked) { ArrayList(asked) }
+                val now = SystemClock.uptimeMillis()
+                val count = lines.size + questions.size
+                if (count != seen) {
+                    seen = count
+                    lastChange = now
+                }
+                val settled = TestBridgeSettle.done(
+                    elapsedMs = now - start,
+                    sinceChangeMs = now - lastChange,
+                    answered = count,
+                    expected = intents.size,
+                    lastInterim = TestBridgeSettle.interim(lines.lastOrNull().orEmpty()),
+                )
+                if (!settled) {
+                    handler.postDelayed(this, TestBridgeSettle.POLL_MS)
+                    return
+                }
+                reply.ok(
+                    listOf(
+                        "said" to cmd.text,
+                        "auto_confirm" to cmd.autoConfirm,
+                        "intents" to TestBridgeJson.Raw(TestBridgeJson.arr(intents.map { previewOf(it) })),
+                        "replies" to TestBridgeJson.Raw(TestBridgeJson.arr(lines)),
+                        "needs_confirm" to TestBridgeJson.Raw(TestBridgeJson.arr(questions)),
+                        "wait_ms" to (now - start),
+                    ),
+                )
+            }
+        }
+        handler.postDelayed(tick, TestBridgeSettle.POLL_MS)
     }
 
     // `runWav`/`stageWav` đã dời sang [TestBridgeWav] (trần 500 dòng). `previewOf` ở companion để cả `say` lẫn `wav` dùng.
@@ -395,8 +438,8 @@ class KachiTestBridge : BroadcastReceiver() {
         /** Trần một lượt chạy. Dưới hẳn trần 60 s của hàng đợi broadcast nền — hết giờ phải là LỜI ĐÁP, không phải im. */
         const val CAP_MS = 20_000L
 
-        /** Nhịp nán lại chờ câu trả lời về muộn của `say`. */
-        const val GRACE_MS = 700L
+        // Nhịp chờ của `say` nay ở [TestBridgeSettle] (hằng cũ `GRACE_MS = 700` làm gói lệnh/dẫn đường luôn
+        // trả `replies: []` — §3 L4, `docs/diagnostics/emulator-voice-e2e-2026-09-15.md`).
 
         /** Trần tệp WAV nhận qua `--es path` (16 MB ≈ 8 phút PCM16 16 kHz — dài hơn mọi câu lệnh). */
         const val MAX_WAV_BYTES = 16L * 1024L * 1024L

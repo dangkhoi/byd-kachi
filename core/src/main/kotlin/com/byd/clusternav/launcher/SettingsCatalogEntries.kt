@@ -83,6 +83,15 @@ internal object SettingsCatalogEntries {
         SettingsEntry(
             "profiles_add", SettingsGroup.PROFILES, "Thêm hồ sơ (bản sao)", labelEn = "Add profile (a copy)",
         ),
+
+        // ── Sổ địa chỉ (spec `kachi-voice-addresses.html`) — nằm trong nhóm DẪN ĐƯỜNG ──
+        // ⚠ Khoá ở phía LAUNCHER (`kachi_workspace`, theo hồ sơ) dù mục hiện trong nhóm [SettingsGroup.NAV] — đó là
+        // lý do hai dòng này khai ở đây chứ không ở khối CLUSTER_NAV bên dưới (khối đó toàn khoá của `Prefs`).
+        // Nhóm chọn theo **thứ người dùng đang nghĩ tới** (KDoc [SettingsGroup]), không theo tệp lưu: người ta vào
+        // *Dẫn đường* để sửa địa chỉ nhà, không vào *Hồ sơ tài xế* — dù sổ đi theo hồ sơ.
+        SettingsEntry("places_list", SettingsGroup.NAV, "Sổ địa chỉ", "saved_places", "Address book"),
+        // Không lưu gì: đây là NÚT thêm/sửa (một khoá, một chủ — cùng lối "home_grid_editor" / "profiles_add").
+        SettingsEntry("places_add", SettingsGroup.NAV, "Thêm địa chỉ…", labelEn = "Add an address…"),
     )
 
     // ── Phía CLUSTERNAV: khoá nằm trong `clusternav_prefs` / `simple_cast_prefs` ─────────────────

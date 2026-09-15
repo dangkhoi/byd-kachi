@@ -71,6 +71,32 @@ sealed interface VoiceIntent {
     data class Nav(val query: String, val app: String? = null) : VoiceIntent
 
     /**
+     * Dẫn đường tới một nơi **ĐÃ LƯU trong sổ địa chỉ của hồ sơ** (*"về nhà"* · *"đến công ty"* · *"đi &lt;nhãn&gt;"*).
+     *
+     * Spec `docs/specs/kachi-voice-addresses.html` R2. Khác [Nav] ở đúng chỗ quan trọng nhất: đây là **tập ĐÓNG**
+     * — nhãn đến từ sổ mà chính người dùng đã gõ, không từ nhận dạng tự do. Vì vậy nó cũng không đi qua cổng hỏi
+     * lại của từ vựng mở (xem [VoiceRiskTable.of]).
+     *
+     * ## Vì sao mang **nhãn**, không mang địa chỉ/toạ độ
+     * Một ý định là thứ đi qua hàng đợi: nó được dựng lúc phân tích và thi hành sau đó (màn thử hiện *"đã hiểu
+     * là…"* rồi mới chạy; câu ghép chạy từng vế; hộp xác nhận chen vào giữa). Chép nội dung sổ vào ý định là
+     * dựng **bản sao thứ hai** của một thứ lưu bền — đúng bẫy dự án đã trả giá bốn lần — và bản sao ấy sẽ cũ
+     * đúng vào lúc người dùng vừa sửa địa chỉ xong. Nhãn là thứ **duy nhất** ổn định giữa hai lượt, và tầng thi
+     * hành tra sổ bản MỚI.
+     *
+     * ⚠ Trường tên là [placeName], **không phải `label`** — cùng lý do [OpenApp.appName] và
+     * `VoiceAppIntents.Coords.place`: `LauncherI18nContractTest.tang ve khong doc nhan GOC cua core` quét mọi lần
+     * đọc `.label` ở `:app`, mà chuỗi này do **người dùng gõ** (không phải nhãn đã dịch của một bộ đăng ký) nên
+     * nó không thuộc diện đó. Đặt tên khác để bài canh kia khỏi phải mang thêm một mục loại trừ.
+     *
+     * @property placeName tên để tra `SavedPlaces.find`; có thể là tên CHUẨN (`VoicePlaces.HOME`) khi người dùng
+     *   chưa lưu gì — ca đó tầng thi hành nói thẳng *"chưa lưu"* (R4), không im lặng.
+     * @property app **mã đích** trong [VoiceAppTargets] khi câu nêu *"bằng &lt;app&gt;"*; `null` = để tầng thi hành
+     *   chọn theo **dữ liệu đang có** của mục (có toạ độ hay không — R3).
+     */
+    data class NavigateSaved(val placeName: String, val app: String? = null) : VoiceIntent
+
+    /**
      * Điều khiển phát nhạc. [query] chỉ có nghĩa với [VoiceMediaOp.QUERY] (tên bài/ca sĩ/thể loại — từ vựng mở).
      *
      * @property app **mã đích** trong [VoiceAppTargets] khi câu có nêu *"bằng &lt;app&gt;"* (`ytmusic` · `youtube` …),
@@ -96,8 +122,17 @@ sealed interface VoiceIntent {
      *  • kẹp tại đây thì *"mở youtube vào ô số chín"* lặng lẽ thành ô 6 — máy **làm một việc khác** việc được
      *    bảo, đúng họ lỗi mà `VoiceLexicon.VI_TENS_SHORT` đã phải chữa. Số ô thật chỉ tầng biết-bố-cục mới
      *    biết (`EffectiveLayout.slotCount`), nên nó kiểm và nó nói ra.
+     *
+     * ## [appKey] — **mã đích** khi câu gọi app bằng CÁCH NÓI TIẾNG VIỆT, không bằng nhãn hệ thống
+     * [ĐO] `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §3 L6 (t45): *"mở bản đồ"* → `Unknown`, trong khi
+     * *"mở Maps"* chạy — vì nhãn app do `PackageManager` cấp và trên máy đó nó là tiếng Anh. Nhãn thật vẫn được
+     * **ưu tiên**; chỉ khi không nhãn nào khớp thì [VoiceIntentParser] mới tra [VoiceSynonyms.APP_TARGETS] và
+     * đặt mã vào đây. Mang **mã** chứ không mang tên gói: `:core` không được biết gói nào (CLAUDE.md §7), và
+     * [appName] lúc đó là nhãn của bảng đích (*"Google Maps"*) nên câu trả lời vẫn đọc được.
+     *
+     * `null` = câu đã khớp một nhãn app thật ⇒ tầng thi hành tra [appName] như cũ.
      */
-    data class OpenApp(val appName: String, val slot: Int? = null) : VoiceIntent
+    data class OpenApp(val appName: String, val slot: Int? = null, val appKey: String? = null) : VoiceIntent
 
     /** Không hiểu. [text] giữ nguyên câu gốc để màn thử + nhật ký còn nói được *"không hiểu CÁI GÌ"*. */
     data class Unknown(val reason: VoiceUnknownReason, val text: String) : VoiceIntent
@@ -127,4 +162,27 @@ enum class VoiceUnknownReason {
 
     /** Thuộc **từ vựng mở** (bài hát/điểm đến/hỏi đáp) — Kachi cố ý không làm offline (phương án C). */
     OPEN_VOCAB,
+
+    /**
+     * *"đóng/tắt/dừng &lt;app&gt;"* — hiểu đúng câu, nhưng **chưa làm được**.
+     *
+     * [ĐO] `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §3 L1 (t41/t42): `đóng YouTube` trước đây ra
+     * `OpenApp` ⇒ máy **MỞ** app đó, tức làm đúng việc ngược lại. Nhánh APP của [VoiceIntentParser] dựng ý định
+     * mà không xét động từ (mọi nhánh khác đều xét).
+     *
+     * Vì sao là một lý do RIÊNG chứ không phải [MISMATCH]: câu *"đóng YouTube"* hoàn toàn hợp lệ với người nói,
+     * thứ thiếu là **cơ chế** phía dưới. Đóng một app thật (`am force-stop` / `am task`) là **cơ chế mới** ⇒
+     * CLAUDE.md §14 tầng 1 (đo bằng shell thô trên xe) trước khi viết một dòng `:core` nào — chưa đo thì câu
+     * trả lời phải nói thẳng là chưa làm được, không được mở app ra.
+     */
+    APP_CLOSE,
+
+    /**
+     * Câu ghép có một vế **không hiểu được** và cả câu đã được hiểu theo cách khác ⇒ vế đó bị bỏ.
+     *
+     * [ĐO] cùng tài liệu §3 L5: *"mở cửa và đèn đọc"* chỉ ra **một** ý định `Bật Đèn đọc`, không câu nào nói
+     * rằng vế *"mở cửa"* đã bị bỏ — người lái tưởng cả hai việc đã chạy. Ý định này đi **kèm** ý định thật (luôn
+     * đứng sau nó) để tầng trả lời nói thêm đúng một dòng.
+     */
+    DROPPED_CLAUSE,
 }

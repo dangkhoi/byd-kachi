@@ -82,7 +82,7 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 58 muc`() {
+    fun `moi muc cai dat co nhan EN — 10 nhom va 60 muc`() {
         assertEquals(10, SettingsCatalog.GROUPS.size)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
@@ -91,7 +91,10 @@ class LangCoverageTest {
         // tắc chế độ kiểm thử qua adb, docs/specs/kachi-test-bridge.html), rồi S5 **+2** (`system_default_home` —
         // nút Đặt Kachi làm màn hình chính, và `system_keep_home_on_boot` — công tắc giữ khi nổ máy).
         // S1b (2026-09-14): **+1** (`bars_dock_visible` — công tắc ẩn/hiện thanh nút xe).
-        assertEquals(58, SettingsCatalog.ENTRIES.size)
+        // A1 (2026-09-15, docs/specs/kachi-voice-addresses.html): **+2** — `places_list` (khoá `saved_places`) và
+        // `places_add` (nút, không khoá). Cả hai nằm ở nhóm NAV dù khoá thuộc phía launcher: nhóm chia theo thứ
+        // người dùng nghĩ tới, không theo tệp lưu (xem KDoc `SettingsGroup`).
+        assertEquals(60, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -126,7 +129,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 307`() {
+    fun `tong so nhan co ban EN dung 312`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -139,7 +142,10 @@ class LangCoverageTest {
         // V1 pha NGHE: +2 — `launcher_voice` *"Nói với xe" · "Talk to car"* và điều kiện `microphone`.
         // T-BRIDGE: +1 — mục `system_test_bridge` (công tắc "Chế độ kiểm thử qua adb").
         // S5: +2 — `system_default_home` (nút Đặt Kachi làm màn hình chính) + `system_keep_home_on_boot` (công tắc).
-        assertEquals(310, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // A1 (2026-09-15): +2 — `places_list` + `places_add` (sổ địa chỉ, docs/specs/kachi-voice-addresses.html).
+        // ⚠ TÊN BÀI đã lệch số từ trước lượt này (tên nói 307 trong khi ghim 310); nay đặt lại cho khớp (312) —
+        // một cái tên nói sai con số nó đang canh là chỗ người sau đọc rồi tin nhầm.
+        assertEquals(312, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sổ địa chỉ theo hồ sơ + voice dẫn đường — Kachi</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Sổ địa chỉ theo hồ sơ + voice dẫn đường tới địa chỉ đã lưu</h1>
+<p class="muted">Slug: <code>kachi-voice-addresses</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> §1 (spec trước) · §7 (generic, không case-by-case) · §10 (test khoá bài học) và <code>.kiro/steering/*.md</code>. Không dùng thư viện mới ⇒ không cần Context7 (xem §4.2).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-15</b>: Khởi tạo spec. Owner: <i>“Thêm vào hồ sơ địa chỉ nữa — công ty, nhà, whatever user lưu lại — để khi voice thì dẫn đúng đến địa chỉ đấy.”</i></li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Đường lệnh giọng nói V1.1 đã dẫn đường được (<code>VoiceIntent.Nav</code> → <code>VoiceAppTargets</code> → <code>VoiceAppIntents.send</code>), nhưng <b>điểm đến luôn là từ vựng MỞ</b>: người lái phải đọc nguyên tên địa điểm, và chuỗi đó do nhận dạng tự do đọc ra (kém chính xác nhất trong cả câu — đó là lý do <code>VoiceRiskTable</code> bắt hỏi lại). Hai điểm đến mà người ta đi <b>hằng ngày</b> — nhà và công ty — vì vậy đang là hai câu dài, hay nghe nhầm, và phải xác nhận mỗi lần.</p>
+<p>Sổ địa chỉ biến đúng hai (hoặc N) điểm đến ấy thành <b>tập ĐÓNG</b>: người dùng gõ một lần trong Cài đặt, sau đó nói <i>“về nhà”</i> / <i>“đến công ty”</i> / <i>“đi &lt;tên đã lưu&gt;</i>”.</p>
+
+<h3>2.1 Bằng chứng đã có (đọc để không làm sai)</h3>
+<table>
+<tr><th>Mức</th><th>Sự thật</th><th>Hệ quả cho spec này</th></tr>
+<tr><td><span class="pill ok">[ĐO]</span></td><td>Google Maps nhận <code>geo:0,0?q=&lt;text&gt;</code> + <code>setPackage</code> (máy ảo 2026-09-14) — <code>VoiceAppTargets.NAV</code></td><td>Địa chỉ dạng CHỮ đi được qua Google Maps, không cần toạ độ.</td></tr>
+<tr><td><span class="pill ok">[ĐO]</span></td><td>VietMap Live 3.4.0 <b>không có cửa nào</b> nhận chữ; chỉ <code>vietmaplive://companion/navigation?lat=…&amp;lng=…&amp;poiName=…</code></td><td>Mục địa chỉ phải cho phép <b>lat/lng tuỳ chọn</b>; không có toạ độ ⇒ VietMap không dùng được cho mục đó.</td></tr>
+<tr><td><span class="pill ok">[ĐO]</span></td><td><code>DeadReckonRetirementTest</code> cấm mọi quyền location trong manifest (quyết định an toàn đã chốt)</td><td><b>Cấm</b> “lưu vị trí hiện tại”. Toạ độ chỉ đến từ tay người dùng (dán từ Google Maps).</td></tr>
+<tr><td><span class="pill ok">[ĐO]</span></td><td>Hồ sơ giữ <b>tất cả</b> cấu hình (S4, <code>kachi-profiles-are-everything.html</code>); <code>ProfileScope</code> bắt mọi khoá lưu bền phải có phạm vi</td><td>Sổ địa chỉ là khoá <b>theo HỒ SƠ</b> — mỗi tài xế một nhà, một công ty.</td></tr>
+<tr><td><span class="pill">[SUY]</span></td><td>Pha nghe hiện dùng sherpa-onnx + hotwords tĩnh (<code>SherpaBiasing</code>); nhãn do người dùng đặt không được bias</td><td>Nhãn địa chỉ là <b>tiếng Việt có dấu</b> (“Nhà”, “Công ty”) ⇒ khác tên app tiếng Anh, bias được ⇒ đưa vào hotwords động.</td></tr>
+</table>
+
+<div class="card"><b>Cổng / phụ thuộc:</b> không có cổng cần xe. Toàn bộ cơ chế dùng lại đường <b>đã đo</b> của V1.1 (bảng <code>VoiceAppTargets</code> + <code>VoiceAppIntents.send</code>) ⇒ theo CLAUDE.md §14 đây <b>không</b> phải tính năng-mới-cần-đo-shell: nó là một <b>nguồn điểm đến mới</b> cho một đường giao việc đã chứng minh. Phần chưa chắc (VietMap có dẫn thật khi nhận lat/lng trên xe không) vẫn ở mức <code>AWAITING_CAR</code> đúng như hôm nay, spec này không nâng mức bằng chứng của nó.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Sổ địa chỉ theo hồ sơ.</b> Người dùng thêm / sửa / xoá mục địa chỉ trong Cài đặt. Mỗi mục: <b>nhãn</b> (bắt buộc, tự đặt), <b>văn bản địa chỉ</b> (bắt buộc), <b>lat/lng</b> (tuỳ chọn). Dữ liệu lưu bền theo <b>hồ sơ đang dùng</b> (đổi hồ sơ ⇒ đổi sổ; xoá/nhân bản hồ sơ ⇒ sổ đi theo). AC: thêm 1 mục → đóng/mở lại launcher → mục còn đó; đổi sang hồ sơ khác → sổ khác.</li>
+<li><b>R2 — Voice dẫn tới địa chỉ đã lưu.</b> Câu <i>“về nhà”</i>, <i>“đi về nhà”</i>, <i>“đến nhà”</i>, <i>“đến công ty”</i>, <i>“đi làm”</i>, <i>“đi &lt;nhãn&gt;”</i>, <i>“dẫn đường tới &lt;nhãn&gt;”</i> ⇒ <code>VoiceIntent.NavigateSaved</code>, KHÔNG phải <code>Nav</code> (từ vựng mở). AC: test parser cho từng dạng câu.</li>
+<li><b>R3 — Chọn app nav theo DỮ LIỆU đang có.</b> Mục có lat/lng ⇒ ưu tiên app dùng được toạ độ (VietMap đứng đầu <code>NAV_PREFERENCE</code>); mục chỉ có chữ ⇒ chọn app <b>nhận được chữ</b> (Google Maps <code>geo:</code>, Waze). Không bao giờ bắn một mục thiếu dữ liệu vào app không nhận được nó rồi báo ✓.</li>
+<li><b>R4 — Degrade nói rõ.</b> Nhãn chưa lưu ⇒ câu trả lời nói <b>đúng nhãn còn thiếu</b> + chỉ chỗ thêm (Cài đặt › Dẫn đường › Sổ địa chỉ), không im lặng và không rơi về “không hiểu”. Không có app nav nào ⇒ dùng lại câu <code>VoiceReply.noNavApp</code>.</li>
+<li><b>R5 — An toàn: 0 quyền location.</b> Không <code>LocationManager</code>, không <code>ACCESS_*_LOCATION</code>, không “lưu vị trí hiện tại”. Toạ độ chỉ nhập tay/dán. AC: <code>DeadReckonRetirementTest</code> vẫn xanh.</li>
+<li><b>R6 — Ngữ pháp động.</b> Nhãn đã lưu + cách nói dựng sẵn của nhãn đó đi vào ngữ pháp/biasing của pha nghe; nhãn CHƯA lưu thì KHÔNG khai (không mở đường cho bộ giải mã nghe nhầm vào một mục không tồn tại — cùng luật với tên app đích).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b>. Mọi logic (mô hình · mã hoá · khớp nhãn · chọn app) ở <code>:core</code> thuần ⇒ kiểm off-car. <code>:app</code> chỉ còn đọc/ghi prefs và vẽ.</li>
+<li><b>R-nf2</b>. Tầng UI <b>0 lần</b> ghi bền trực tiếp: UI → lambda <code>deps</code> → <code>HomeViewModel</code> → <code>WorkspaceRepository</code> → <code>WorkspacePrefs</code>.</li>
+<li><b>R-nf3</b>. Chuỗi tiếng Việt trong <code>:app</code> đi qua <code>R.string</code> (values + values-en) — <code>LauncherI18nContractTest</code>.</li>
+<li><b>R-nf4</b>. Mọi khoá lưu bền mới phải gom nhóm (<code>SettingsCatalog</code>) và có phạm vi (<code>ProfileScope</code>).</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Luồng dữ liệu</h3>
+<div class="flow">
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Cài đặt › Sổ địa chỉ</b><span>nhãn · địa chỉ · lat,lng</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>HomeViewModel</b><span>intent</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>WorkspacePrefs</b><span>&lt;hồ sơ&gt;__saved_places</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>HomeUiState</b><span>savedPlaces</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>Câu nói / câu gõ</b><span>“về nhà”</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>VoiceIntentParser</b><span>+ nhãn đã lưu</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>NavigateSaved(label)</b><span>tập ĐÓNG</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>VoiceAppTargets.navFor</b><span>hasCoords ⇒ app nào</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceAppIntents.send</b><span>đường đã đo</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+</div>
+
+<h3>4.2 Quyết định thiết kế</h3>
+<ul>
+<li><b>Nhãn KHÔNG vào từ vựng chung</b> (<code>VoiceGrammar.terms</code>). Chúng chỉ được tra ở đúng <b>một vị trí</b>: phần ĐUÔI sau động từ dẫn đường (chỗ mà hôm nay là điểm đến mở). Lý do đã ghi sẵn ở <code>VoiceIntentParser</code> nhánh (c): một điểm đến bất kỳ có thể chứa một cụm của xe (“trạm sạc”) — thả nhãn người dùng vào từ vựng chung là mở lại đúng cái cửa đó, chỉ ngược chiều (một nhãn “Bãi đỗ” sẽ cướp mọi câu có chữ “bãi đỗ”).</li>
+<li><b>Động từ nơi chốn là <span class="warn">CÓ ĐIỀU KIỆN</span>, khai riêng ở <code>VoicePlaces.PLACE_VERBS</code> — KHÔNG vào <code>VoiceGrammar.VERBS</code>.</b> Bảng động từ chung gán nghĩa <b>vô điều kiện</b>: <span class="pill ok">[ĐO]</span> thử cho <code>về</code> vào đó thì câu <i>“về bố cục 2 cột”</i> — mà <code>VoiceIntentParserTest</code> đang cố ý giữ ở <code>NO_VERB</code> (bố cục chưa nằm trong tập đóng) — lặng lẽ thành <i>“dẫn đường tới «bố cục 2 cột»”</i>: app bản đồ mở lên tìm một cái tên vô nghĩa. Cơ chế đã chọn: <code>về · đi · đến · tới · đi đến · đi tới · về tới</code> khớp ở <b>vị trí 0</b>, và chỉ ra <code>NavigateSaved</code> khi <b>toàn bộ phần đuôi</b> khớp một nơi trong sổ; không khớp ⇒ trả <code>null</code>, câu đi tiếp đúng đường cũ. Nhờ điều kiện đó, <code>tới</code>/<code>đến</code> vào được dù bỏ dấu chúng trùng “tôi”/“đèn” — và <i>“đèn đọc”</i> thì đã bị <code>headMatch</code> (nhãn nút dài hơn) giành trước.</li>
+<li><b>Hệ quả đáng giá</b>: ba con số đo của <code>VoiceGrammarPhrasesTest</code> <b>KHÔNG đổi</b> — không từ nào được thêm vào từ vựng tĩnh. Cách nói của sổ chỉ vào ngữ pháp/biasing khi có mục đã lưu (R6).</li>
+<li><b>Cách nói dựng sẵn (alias) là DỮ LIỆU, không phải <code>if</code></b>: <code>VoicePlaces.ALIASES</code> ánh xạ <i>cụm nói → nhãn chuẩn</i> (“làm”/“chỗ làm”/“cơ quan” → “Công ty”; “về nhà”/“nhà mình” → “Nhà”). Người dùng đặt nhãn khác thì nhãn ấy tự khớp bằng chính tên nó — không có nhánh nào theo tên riêng (CLAUDE.md §7).</li>
+<li><b>Nhãn chưa lưu vẫn ra <code>NavigateSaved</code></b> chứ không rơi về <code>Nav</code> văn bản. Vì <i>“về nhà”</i> mà chưa lưu thì bắn chữ “nhà” cho Google Maps là dẫn người ta tới một quán tên “Nhà” cách 12 km. Tầng thi hành tra sổ, không thấy ⇒ nói thẳng (R4).</li>
+<li><b>Rủi ro = NORMAL, không CONFIRM.</b> <code>VoiceRiskTable</code> bắt <code>Nav</code> hỏi lại vì <b>nguồn</b> (chuỗi do nhận dạng tự do đọc). <code>NavigateSaved</code> không có tính chất đó: nhãn đến từ một tập đóng do chính người dùng gõ, và địa chỉ thì họ đã đọc lại lúc lưu. Bắt xác nhận ở đây là thêm một cú chạm cho đúng câu người ta nói nhiều nhất.</li>
+<li><b>Một khoá, một chuỗi</b> (<code>&lt;hồ sơ&gt;__saved_places</code>) chứ không <code>place_0..place_n</code>: cùng lý do <code>top_strip</code>/<code>grid_layout</code> — họ khoá dựng động kéo theo một tiền tố nữa trong <code>ProfileScope</code> và một vòng xoá thủ công lúc xoá hồ sơ.</li>
+<li><b>Toạ độ nhập bằng MỘT ô “lat, lng”</b>, không hai ô: đó đúng dạng người ta <b>dán</b> từ Google Maps (<code>10.7769, 106.7009</code>). Phép tách + kiểm dải nằm ở <code>:core</code> (<code>SavedPlaces.parseCoords</code>), có test.</li>
+<li><b>Context7</b>: không dùng thư viện/framework mới — chỉ Android SDK (<code>AlertDialog</code>, <code>EditText</code>, <code>SharedPreferences</code>) và các khối đã có trong repo ⇒ không cần verify version.</li>
+</ul>
+
+<h3>4.3 Mô hình + mã hoá (<code>:core</code>)</h3>
+<pre>data class SavedPlace(label: String, query: String, lat: Double?, lng: Double?)
+
+// một mục một DÒNG, bốn trường ngăn bằng '|'  (lat/lng rỗng = không có)
+Nhà|123 Nguyễn Trãi, Hà Nội|21.0045|105.8412
+Công ty|Keangnam Landmark 72||</pre>
+<p>Ký tự <code>|</code> và xuống dòng bị <b>khử ngay ở cửa vào</b> (<code>SavedPlaces.sanitize</code>) — cùng cách <code>WorkspacePrefs.addProfile</code> khử <code>\r\n</code> khỏi tên hồ sơ. Dòng hỏng ⇒ <b>bỏ dòng đó</b>, không ném: chuỗi này đến từ đĩa và sửa tay được.</p>
+
+<h3>4.4 Chọn app dẫn đường theo dữ liệu (R3)</h3>
+<table>
+<tr><th>Mục</th><th>App được chọn</th><th>Đường bắn</th></tr>
+<tr><td>có lat/lng</td><td>ứng viên đầu tiên trong <code>NAV_PREFERENCE</code> <b>đang cài</b> mà giao được (VietMap → GMaps → Waze)</td><td><code>coord</code> URI, <code>poiName</code> = nhãn</td></tr>
+<tr><td>chỉ có chữ</td><td>ứng viên đầu tiên <b>nhận được chữ</b> (VietMap bị bỏ qua vì <code>OpenOnly</code>)</td><td><code>geo:0,0?q=&lt;địa chỉ&gt;</code></td></tr>
+<tr><td>câu nêu đích danh app</td><td>đúng app đó; không giao được ⇒ mở app trơn + nói rõ</td><td>theo bảng</td></tr>
+</table>
+<p>Phép chọn là hàm thuần <code>VoiceAppTargets.navFor(hasCoords, preferred, installed)</code> ⇒ kiểm off-car; <code>VoiceDispatcher</code> chỉ truyền <code>NAV_PREFERENCE</code> đang có vào.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Mô hình + codec + <code>parseCoords</code> + upsert/remove</td><td><code>core/…/launcher/SavedPlaces.kt</code> (+<code>SavedPlacesTest</code>)</td></tr>
+<tr><td>T2</td><td>Nhãn chuẩn + alias + khớp cụm nói</td><td><code>core/…/voice/VoicePlaces.kt</code></td></tr>
+<tr><td>T3</td><td><code>VoiceIntent.NavigateSaved</code> + parser (động từ về/đi/đến) + reply + risk</td><td><code>VoiceIntent.kt · VoiceIntentParser.kt · VoiceGrammar.kt · VoiceReply.kt · VoiceRisk.kt</code></td></tr>
+<tr><td>T4</td><td><code>VoiceAppTargets.navFor</code> (chọn app theo dữ liệu)</td><td><code>VoiceAppTargets.kt</code></td></tr>
+<tr><td>T5</td><td>Ngữ pháp/biasing động nạp nhãn đã lưu</td><td><code>VoicePhrases.kt · VoiceGrammar.kt · SherpaBiasing.kt</code></td></tr>
+<tr><td>T6</td><td>Lưu bền theo hồ sơ + phạm vi + danh mục cài đặt</td><td><code>ProfileScope.kt · SettingsCatalogEntries.kt · WorkspaceRepository.kt · HomeUiState.kt · WorkspacePrefs.kt · PrefsWorkspaceRepository.kt · HomeViewModel.kt</code></td></tr>
+<tr><td>T7</td><td>UI: danh sách + thêm/sửa/xoá + hộp thoại 3 trường</td><td><code>SettingsSectionsPlaces.kt · SettingsDialogs.kt · SettingsSections.kt · SettingsPanel.kt · HomePanels.kt · KachiHomeWiring.kt</code> + <code>strings_kachi.xml</code> ×2</td></tr>
+<tr><td>T8</td><td>Dispatch <code>NavigateSaved</code> → intent nav</td><td><code>VoiceDispatcher.kt · VoiceSession.kt · VoiceRecognizer.kt</code></td></tr>
+<tr><td>T9</td><td>Test hồi quy + cập nhật bài canh</td><td><code>core/…/VoicePlacesParseTest.kt</code>, các <code>*ContractTest</code></td></tr>
+<tr><td>T10</td><td>Senior review + security scan + build</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b>: <code>:core:test</code> + <code>:app:testDebugUnitTest</code> xanh. Case chính khoá bằng <code>SavedPlacesTest</code> (mã hoá, dòng hỏng, ký tự ngăn trong dữ liệu người dùng, dải lat/lng) và <code>VoicePlacesParseTest</code> (7 dạng câu, alias, nhãn chưa lưu, chọn app theo dữ liệu).</li>
+<li><b>V-lifecycle</b>: thêm → hiện trong danh sách → sửa → xoá → đổi hồ sơ (sổ khác) → nhân bản hồ sơ (sổ đi theo) → xoá hồ sơ (khoá bị dọn qua <code>profileKeys</code>).</li>
+<li><b>V-oncar</b> (chờ xe, KHÔNG chặn merge): nói <i>“về nhà”</i> với một mục có lat/lng ⇒ VietMap mở đúng tuyến (mức <code>AWAITING_CAR</code> của <code>coordEvidence</code> hôm nay); với mục chỉ có chữ ⇒ Google Maps mở đúng kết quả.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1.</b> Có nên cho nhập lat/lng bằng tay không? — <span class="muted">CHỌN: <b>có</b>, một ô “lat, lng” tuỳ chọn. Đó là cách DUY NHẤT có toạ độ mà không xin quyền location (R5), và VietMap chỉ nhận toạ độ. Nguồn toạ độ: mở Google Maps → giữ vào điểm → chép chuỗi “10.7769, 106.7009” → dán. Câu gợi ý này hiện ngay dưới ô nhập.</span></li>
+<li><b>OQ2.</b> Sổ địa chỉ nên là nhóm Cài đặt riêng hay nằm trong nhóm <i>Dẫn đường &amp; cụm đồng hồ</i>? — <span class="muted">CHỌN: nằm trong nhóm <b>Dẫn đường</b>, đặt ở ĐẦU trang. Thêm nhóm thứ 11 là đổi rail IA v2 (và một bài canh đang ghim con số 10) cho một tính năng một màn. Đặt ở đầu vì nó độc lập với công tắc dẫn đường — lập luận “công tắc chính đứng đầu” của <code>SettingsNavSection</code> chỉ nói về thứ tự giữa ba khối cụm với nhau.</span></li>
+<li><b>OQ3.</b> Trần số mục? — <span class="muted">CHỌN: 20. Đủ cho “nhà, công ty, trường con, nhà ngoại…”, và chặn một chuỗi prefs phình vô hạn. Vượt trần ⇒ nói ra, không cắt im lặng.</span></li>
+<li><b>OQ4.</b> Có nên đọc lại địa chỉ + hỏi xác nhận trước khi bắn không? — <span class="muted">KHÔNG (xem §4.2). Cần owner chốt nếu muốn khác.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-voice-command.html</code> R17 (bảng app đích), R16 (từ vựng mở).</li>
+<li><code>docs/specs/kachi-profiles-are-everything.html</code> R3–R5 (hồ sơ giữ tất cả).</li>
+<li><code>core/…/voice/VoiceAppTargets.kt</code> — bảng [ĐO] 2026-09-14 (GMaps <code>geo:</code>, VietMap <code>OpenOnly</code> + <code>coord</code>).</li>
+<li><code>core/…/launcher/ProfileScope.kt</code> — phạm vi khoá; <code>SettingsCatalog.kt</code> — gom nhóm.</li>
+<li>Memory <code>kachi-profiles-decision</code> (owner 2026-09-14: mọi cấu hình theo hồ sơ) · <code>kachi-voice-direction</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-15 · quyết định</b> — Nhãn đã lưu khớp ở <b>đuôi câu dẫn đường</b>, không phải một <code>VoiceTerm</code> trong từ vựng chung. Lý do đầy đủ ở §4.2; chỗ thi hành: <code>VoiceIntentParser.nav()</code>.</li>
+<li><b>2026-09-15 · quyết định</b> — <code>NavigateSaved</code> mang <b>nhãn</b>, không mang địa chỉ/toạ độ. <code>:core</code> không được giữ dữ liệu bền trong một ý định: hai lượt đọc sổ cách nhau (lúc phân tích ↔ lúc thi hành) thì tầng thi hành phải đọc bản MỚI, và nhãn là thứ duy nhất ổn định giữa hai lượt.</li>
+<li><b>2026-09-15 · “spec không work → đổi X”</b> — Bản đầu của §4.2 định thêm <code>về · đi · đến · đi đến</code> thẳng vào <code>VoiceGrammar.VERBS</code>. Đọc lại bộ test trước khi chạy thì thấy nó <b>phá một hành vi đang được cố ý khoá</b>: <code>VoiceIntentParserTest.hai cau con lai noi thang la chua lam duoc</code> giữ <i>“về bố cục 2 cột”</i> ở <code>NO_VERB</code>, và một động từ NAV vô điều kiện biến câu đó thành một điểm đến vô nghĩa. ⇒ Đổi sang <b>động từ có điều kiện</b> (<code>VoicePlaces.PLACE_VERBS</code>, gác bằng <code>match</code>), khai ngoài bảng chung. Được thêm: ba con số của <code>VoiceGrammarPhrasesTest</code> không phải đo lại, và <code>tới</code> (trùng “tôi”) dùng được.</li>
+<li><b>2026-09-15 · trade-off</b> — Cách nói dựng sẵn (“làm”, “cơ quan”…) chỉ vào <b>ngữ pháp/biasing</b> khi mục tương ứng ĐÃ lưu (R6). Được: không mở đường nghe nhầm vào mục không tồn tại. Mất: nói “về nhà” lúc sổ trống thì pha NGHE có thể không bắt được (pha GÕ vẫn trả đúng câu “chưa lưu”).</li>
+<li><b>2026-09-15 · sai lệch spec (đặt tên)</b> — §4.3 ban đầu ghi <code>SavedPlace(label, …)</code>; thực tế đặt <code>name</code>, và trường của ý-định là <code>NavigateSaved.placeName</code>. Lý do: <code>LauncherI18nContractTest.tang ve khong doc nhan GOC cua core</code> quét <b>mọi</b> lần đọc <code>.label</code> trong <code>:app</code> để bắt chỗ dùng nhãn GỐC của <code>:core</code> thay cho <code>displayLabel</code>. Tên nơi do người dùng gõ nên không thuộc diện đó — theo đúng tiền lệ <code>VoiceAppIntents.Coords.place</code> và <code>VoiceIntent.OpenApp.appName</code>, <b>đổi tên trường</b> thay vì thêm một mục loại trừ (thêm loại trừ là mở thêm một lỗ trên chính bài canh ấy).</li>
+<li><b>2026-09-15 · quyết định</b> — Dispatcher đọc sổ từ <code>state().savedPlaces</code> (đã có trong <code>HomeUiState</code>), KHÔNG thêm một lambda/cửa đọc bền thứ hai vào <code>VoiceWiring</code>.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-09-15</h3>
+<p class="muted">Senior review (rule global §5) trên toàn bộ cây chưa commit từ HEAD <code>9c5b679</code>. Scope checklist: <b>R1–R6 ✅</b>, <b>T1–T9 ✅</b>, T10 = chính pass này.</p>
+<ul>
+<li><b>Scope</b> — kiểm từng mục: mô hình/codec (<code>SavedPlaces</code>), khớp nhãn (<code>VoicePlaces</code>), ý định + rủi ro (<code>NavigateSaved</code> ⇒ <code>VoiceRisk.NORMAL</code>), chọn app theo dữ liệu (<code>VoiceAppTargets.navFor</code>), ngữ pháp/biasing động (<code>VoicePhrases.build(places)</code> · <code>SherpaBiasing.hotwordsFile(places)</code>), lưu bền theo hồ sơ (<code>saved_places</code> trong <code>LAUNCHER_PERSONAL_SUFFIXES</code>), UI (<i>Cài đặt › Dẫn đường › Sổ địa chỉ</i>, đứng đầu nhóm), dispatch (<code>runNavSaved</code>). [ĐO] grep call-site: <b>mọi</b> hàm/lớp mới có ≥ 1 chỗ gọi production (CLAUDE.md §8) — <code>navFor</code> 1 · <code>placeNotSaved</code> 1 · <code>placeNeedsCoords</code> 2 · <code>spokenPhrases</code> 3 · <code>setSavedPlaces</code> 2 · <code>askPlace</code> 2 · <code>SettingsPlacesSection</code> 2.</li>
+<li><b>R5 (0 quyền vị trí)</b> — [ĐO] <code>AndroidManifest.xml</code> không đổi một dòng nào, <code>grep -c LOCATION</code> = <b>0</b>; <code>DeadReckonRetirementTest</code> xanh.</li>
+<li><b>R6 / VoiceGrammarPhrasesTest</b> — [ĐO] ba con số của bài canh <b>không đổi</b>: <code>places</code> mặc định rỗng nên tập tĩnh y nguyên; cách nói của sổ chỉ vào ngữ pháp khi có mục đã lưu, đúng như §4.2 hứa.</li>
+<li><b>An toàn chuỗi người dùng</b> — [ĐO nguồn] địa chỉ đi qua <code>VoiceAppIntents.uri</code> với <code>Uri.encode(query)</code> + <code>setPackage(pkg)</code>; lat/lng luôn là <code>Double.toString</code> đã kẹp dải ở <code>SavedPlaces</code>. <b>Không có đường shell nào</b> trong nhánh này ⇒ không có chỗ chèn lệnh. Ký tự ngăn <code>|</code>/xuống dòng bị khử ở cửa vào (<code>sanitize</code>).</li>
+<li><b>Vá trong pass này</b> — <span class="tag p2">P2</span> <code>SettingsDialogs.kt</code>: KDoc của <code>askName</code> bị bỏ lại **trước** khối KDoc của <code>askPlace</code> (hai khối chồng nhau) ⇒ <code>askName</code> mất tài liệu và các tham chiếu <code>[initial]</code> trỏ nhầm hàm. Đã chuyển KDoc về đúng chỗ.</li>
+<li><b>Còn lại (không vá trong pass này, đã vào backlog)</b> — <span class="tag p2">P3</span> <code>WorkspacePrefs.kt</code> 481 → <b>504</b> dòng và <code>SettingsSections.kt</code> 495 → <b>501</b> dòng, tức batch này đẩy cả hai qua trần 500 (CLAUDE.md §4.1). Không tách ngay: tách hai tệp ấy là một refactor ngoài phạm vi spec và chạm vào tệp của hai nhánh khác cùng cây; bài canh trần 500 hiện chỉ quét cây <code>voice/</code>.</li>
+<li><b>Kiểm lại</b> — [ĐO] <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew :core:test :app:testDebugUnitTest --rerun-tasks --continue</code>, đếm từ XML: <code>:core</code> 185 tệp / <b>1 899</b> ca / <b>0 đỏ</b> · <code>:app</code> 116 tệp / <b>955</b> ca / <b>0 đỏ</b> (trước và sau vá đều đúng con số này).</li>
+<li><b>Verdict: APPROVED</b> cho phần off-car. <b>V-oncar vẫn NEEDS-ONCAR</b> (không chặn merge): *"về nhà"* với mục có lat/lng ⇒ VietMap dẫn thật — <code>coordEvidence</code> giữ nguyên mức AWAITING_CAR, pass này <b>không</b> nâng mức bằng chứng của nó.</li>
+</ul>
+
+</div></body>
+</html>

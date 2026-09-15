@@ -44,22 +44,79 @@ object VoiceIntentParser {
      * điều kiện sẽ cắt đôi tên bài và gửi đi một nửa. Luật "mọi vế phải hiểu được" tự xử lý ca đó (*"hoa dành
      * dành"* không có động từ ⇒ quay về nguyên câu) mà không phải biết bài hát nào tên có chữ "và".
      */
-    fun parse(text: String, profiles: List<String> = emptyList(), apps: List<String> = emptyList()): List<VoiceIntent> {
+    fun parse(
+        text: String,
+        profiles: List<String> = emptyList(),
+        apps: List<String> = emptyList(),
+        /**
+         * Nhãn trong **sổ địa chỉ của hồ sơ đang dùng** (`SavedPlaces`) — danh sách ĐỘNG, cùng họ [profiles]/[apps].
+         *
+         * ⚠ Chúng KHÔNG đi vào từ vựng chung: chỉ được tra ở vị trí điểm đến — xem KDoc [VoicePlaces].
+         */
+        places: List<String> = emptyList(),
+    ): List<VoiceIntent> {
         val terms = VoiceGrammar.terms(profiles, apps)
         val all = VoiceLexicon.tokenize(text)
         if (all.isEmpty()) return listOf(VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, text))
 
         val parts = splitOnConnectors(all)
         if (parts.size > 1) {
-            val each = parts.map { parseTokens(it, terms, text) }
+            val each = parts.map { parseTokens(it, terms, places, text) }
             if (each.none { it is VoiceIntent.Unknown }) return each
+            val whole = parseTokens(all, terms, places, text)
+            return listOf(whole) + droppedNote(parts, each, whole)
         }
-        return listOf(parseTokens(all, terms, text))
+        return listOf(parseTokens(all, terms, places, text))
+    }
+
+    /**
+     * Dòng *"đã bỏ qua «…»"* cho vế bị nuốt khi cả câu được hiểu theo cách khác — hoặc rỗng khi không có gì bị bỏ.
+     *
+     * ## Vì sao im lặng ở đây là ca tệ nhất ([ĐO] `emulator-voice-e2e-2026-09-15.md` §3 L5)
+     * *"mở cửa và đèn đọc"* → **một** ý định `Bật Đèn đọc`. Luật *"cách hiểu đầu tiên có nghĩa"* tìm thấy
+     * *"đèn đọc"* ở giữa câu và trả đúng một ý định — đúng theo mã, nhưng người lái vừa nói hai việc và chỉ một
+     * việc chạy, **không câu nào nói ra**. Họ sẽ tưởng cửa đã mở.
+     *
+     * ## Vì sao KHÔNG cảnh báo cho *"Mở bài Cỏ dại và hoa dành dành"*
+     * Ở câu đó vế thứ hai **nằm trong tên bài hát** — nó không bị bỏ, nó được dùng. Phép phân biệt không cần biết
+     * bài hát nào tên có chữ *"và"*: chỉ cần hỏi *"chuỗi của vế ấy có nằm trong phần **từ vựng mở** mà cả câu đã
+     * nhận không"* ([openPayload]). Có ⇒ im lặng; không ⇒ nói ra.
+     *
+     * Cả câu cũng không hiểu được (`whole` là [VoiceIntent.Unknown]) thì không thêm gì: lúc đó đã có sẵn một câu
+     * báo, thêm dòng thứ hai chỉ là nói hai lần về cùng một việc.
+     */
+    private fun droppedNote(
+        parts: List<List<Token>>,
+        each: List<VoiceIntent>,
+        whole: VoiceIntent,
+    ): List<VoiceIntent> {
+        if (whole is VoiceIntent.Unknown) return emptyList()
+        val used = VoiceLexicon.deaccent(openPayload(whole))
+        val dropped = parts.indices
+            .filter { each[it] is VoiceIntent.Unknown }
+            .map { VoiceTailClause.text(parts[it]) }
+            .filterNot { used.isNotEmpty() && used.contains(VoiceLexicon.deaccent(it)) }
+        if (dropped.isEmpty()) return emptyList()
+        return listOf(VoiceIntent.Unknown(VoiceUnknownReason.DROPPED_CLAUSE, dropped.joinToString(" / ")))
+    }
+
+    /** Phần **từ vựng mở** mà một ý định mang theo (tên bài / điểm đến / tên app), rỗng nếu không có. */
+    private fun openPayload(i: VoiceIntent): String = when (i) {
+        is VoiceIntent.Nav -> i.query
+        is VoiceIntent.Media -> i.query
+        is VoiceIntent.NavigateSaved -> i.placeName
+        is VoiceIntent.OpenApp -> i.appName
+        else -> ""
     }
 
     /** Phân tích MỘT vế (không tách tiếp) — cửa dùng cho test và cho chỗ đã tự tách. */
-    fun parseOne(text: String, profiles: List<String> = emptyList(), apps: List<String> = emptyList()): VoiceIntent =
-        parseTokens(VoiceLexicon.tokenize(text), VoiceGrammar.terms(profiles, apps), text)
+    fun parseOne(
+        text: String,
+        profiles: List<String> = emptyList(),
+        apps: List<String> = emptyList(),
+        places: List<String> = emptyList(),
+    ): VoiceIntent =
+        parseTokens(VoiceLexicon.tokenize(text), VoiceGrammar.terms(profiles, apps), places, text)
 
     private fun splitOnConnectors(t: List<Token>): List<List<Token>> {
         val out = ArrayList<List<Token>>()
@@ -77,7 +134,12 @@ object VoiceIntentParser {
     // ── Thân bộ phân tích ────────────────────────────────────────────────────────────────────────
 
     @Suppress("ReturnCount")
-    private fun parseTokens(raw: List<Token>, terms: List<VoiceTerm>, original: String): VoiceIntent {
+    private fun parseTokens(
+        raw: List<Token>,
+        terms: List<VoiceTerm>,
+        places: List<String>,
+        original: String,
+    ): VoiceIntent {
         val t = dropFillers(raw)
         if (t.isEmpty()) return VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, original)
 
@@ -101,8 +163,14 @@ object VoiceIntentParser {
         // nghĩa ngược. Luật: cụm khớp tại vị trí 0 mà **dài hơn** cụm động từ thì nó là tên của việc.
         headMatch(t, terms, verbHit?.first?.size ?: 0)?.let { head ->
             val after = dropFillers(t.subList(head.words.size, t.size))
-            return build(head, implicitVerb(head), aloud = false, after = after, terms = terms, original = original)
+            return build(head, implicitVerb(head), aloud = false, after, terms, places, original)
         }
+        // (b'') *"về nhà"* · *"đi làm"* · *"đến công ty"* — động từ CÓ ĐIỀU KIỆN của sổ địa chỉ.
+        //
+        // Đứng SAU [headMatch] có chủ ý: bỏ dấu thì *"đến"* = *"đèn"*, nên câu *"đèn đọc"* phải được nhãn nút
+        // (dài hơn) giành lấy trước. Và chỉ nhận khi **cả phần đuôi** là một nơi có thật — xem KDoc
+        // [VoicePlaces.PLACE_VERBS] về vì sao ba từ này không được vào bảng động từ chung.
+        savedPlace(t, places)?.let { return it }
         if (verbHit == null) return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
         val verb = verbHit.second
         val aloud = verbHit.first.any { it == "doc" || it == "read" || it == "nghe" }
@@ -110,7 +178,7 @@ object VoiceIntentParser {
 
         // (c) Điểm đến là từ vựng MỞ ⇒ KHÔNG đem so với từ vựng của xe. Một điểm đến bất kỳ có thể chứa đúng một
         //     cụm của xe (vd "trạm sạc") và khớp nó lên là biến câu dẫn đường thành lệnh sạc pin.
-        if (verb == VoiceVerb.NAV) return nav(rest, original)
+        if (verb == VoiceVerb.NAV) return nav(rest, places, original)
 
         // (d) Quét từ trái sang, lấy **cách hiểu ĐẦU TIÊN có nghĩa**.
         //
@@ -124,12 +192,34 @@ object VoiceIntentParser {
             if (cands.isNotEmpty()) {
                 val term = choose(cands, verb)
                 val after = dropFillers(rest.subList(i + term.words.size, rest.size))
-                val built = build(term, verb, aloud, after, terms, original)
+                val built = build(term, verb, aloud, after, terms, places, original)
                 if (built !is VoiceIntent.Unknown) return built
                 if (firstMiss == null) firstMiss = built
             }
         }
-        return firstMiss ?: noObject(verb, rest, original)
+        // (e) Chưa có cách hiểu nào CÓ NGHĨA ⇒ thử *cách gọi app bằng tiếng Việt* (*"mở bản đồ"*). Đứng sau (d)
+        //     nên nhãn app thật và mọi nhãn registry vẫn thắng — xem KDoc [spokenApp].
+        return VoiceTailClause.spokenApp(verb, rest, original) ?: firstMiss ?: noObject(verb, rest, original)
+    }
+
+    /**
+     * *"&lt;động từ nơi chốn&gt; &lt;nơi&gt;"* ⇒ [VoiceIntent.NavigateSaved], hoặc `null` khi câu **không** phải thế.
+     *
+     * Ba điều kiện, và điều kiện thứ ba là thứ làm cả cơ chế này an toàn:
+     *  1. động từ khớp tại **vị trí 0** (dài trước ngắn — *"đi đến"* thắng *"đi"*);
+     *  2. mệnh đề *"bằng &lt;app&gt;"* ở cuối được cắt ra trước, đúng như mọi câu dẫn đường khác;
+     *  3. **toàn bộ** phần còn lại phải khớp một nơi ([VoicePlaces.match]) — không khớp thì trả `null` và câu đi
+     *     tiếp y như chưa có gì xảy ra. Nhờ (3), *"về bố cục 2 cột"* vẫn là [VoiceUnknownReason.NO_VERB] như bộ
+     *     test đang đòi, mà không cần một danh sách từ cấm nào.
+     */
+    private fun savedPlace(t: List<Token>, places: List<String>): VoiceIntent? {
+        val verb = VoicePlaces.PLACE_VERB_WORDS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it) } ?: return null
+        val after = dropFillers(t.subList(verb.size, t.size))
+        if (after.isEmpty()) return null
+        val hit = VoiceTailClause.appAfterMarker(after, VoiceAppKind.NAV)
+        val body = if (hit == null) after else after.subList(0, hit.second)
+        val label = VoicePlaces.match(body.map { it.norm }, places) ?: return null
+        return VoiceIntent.NavigateSaved(label, hit?.first)
     }
 
     /**
@@ -183,11 +273,10 @@ object VoiceIntentParser {
         verb == VoiceVerb.PLAY && rest.isEmpty() -> VoiceIntent.Media(VoiceMediaOp.PLAY)
         verb == VoiceVerb.PAUSE && rest.isEmpty() -> VoiceIntent.Media(VoiceMediaOp.PAUSE)
         // "phát <cái gì đó không biết>" — đúng hình dạng "mở nhạc", chỉ thiếu từ đánh dấu. Coi là từ vựng mở.
-        verb == VoiceVerb.PLAY -> withTarget(rest, VoiceAppKind.MUSIC) { q, app ->
-            if (q.isEmpty()) VoiceIntent.Media(VoiceMediaOp.PLAY, app = app)
-            else VoiceIntent.Media(VoiceMediaOp.QUERY, q, app)
+        verb == VoiceVerb.PLAY -> VoiceTailClause.withTarget(rest, VoiceAppKind.MUSIC) { body, app ->
+            if (body.isEmpty()) VoiceIntent.Media(VoiceMediaOp.PLAY, app = app)
+            else VoiceIntent.Media(VoiceMediaOp.QUERY, VoiceTailClause.text(body), app)
         }
-        rest.isEmpty() -> VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
         else -> VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
     }
 
@@ -198,6 +287,7 @@ object VoiceIntentParser {
         aloud: Boolean,
         after: List<Token>,
         terms: List<VoiceTerm>,
+        places: List<String>,
         original: String,
     ): VoiceIntent =
         when (term.kind) {
@@ -217,106 +307,62 @@ object VoiceIntentParser {
             // tên đứng sau — và cái tên đó mới là thứ người ta muốn. Đuôi khớp một app đã cài ⇒ mở thẳng app đó.
             VoiceTermKind.LAUNCHER -> when {
                 !VoiceGrammar.isAction(verb) -> VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
-                else -> appInTail(after, terms)?.let { (app, tail) -> VoiceIntent.OpenApp(app, slotAt(tail)) }
-                    ?: VoiceIntent.Launcher(term.id)
+                else -> VoiceTailClause.appInTail(after, terms)?.let { (app, tail) ->
+                    if (VoiceTailClause.closesApp(verb)) VoiceIntent.Unknown(VoiceUnknownReason.APP_CLOSE, original)
+                    else VoiceIntent.OpenApp(app, VoiceTailClause.slotAt(tail))
+                } ?: VoiceIntent.Launcher(term.id)
             }
 
             VoiceTermKind.PROFILE -> VoiceIntent.Profile(term.id)
 
             // V1.1 — *"mở YouTube **vào ô số 2**"*: cái đuôi sau tên app quyết định app đi vào ô nào. Không có
             // đuôi ⇒ `null` ⇒ y như trước (mở toàn màn).
-            VoiceTermKind.APP -> VoiceIntent.OpenApp(term.id, slotAt(after))
+            //
+            // ⚠ Nhánh này CỐ Ý xét động từ (mọi nhánh khác đều xét): tới 1.63 nó dựng `OpenApp` cho **mọi** động
+            // từ, nên [ĐO] `đóng YouTube` / `tắt YouTube` lại **MỞ** YouTube — xem [VoiceUnknownReason.APP_CLOSE].
+            VoiceTermKind.APP ->
+                if (VoiceTailClause.closesApp(verb)) VoiceIntent.Unknown(VoiceUnknownReason.APP_CLOSE, original)
+                else VoiceIntent.OpenApp(term.id, VoiceTailClause.slotAt(after))
 
-            VoiceTermKind.NAV -> nav(after, original)
+            VoiceTermKind.NAV -> nav(after, places, original)
 
             VoiceTermKind.MEDIA -> media(verb, after, original)
         }
 
     /** *"nhạc"/"bài"* + động từ: có đuôi ⇒ tên bài/thể loại (từ vựng mở), không đuôi ⇒ lệnh phát đơn thuần. */
     private fun media(verb: VoiceVerb, after: List<Token>, original: String): VoiceIntent =
-        withTarget(after, VoiceAppKind.MUSIC) { q, app ->
+        VoiceTailClause.withTarget(after, VoiceAppKind.MUSIC) { body, app ->
             when (verb) {
                 VoiceVerb.PAUSE, VoiceVerb.OFF, VoiceVerb.CLOSE -> VoiceIntent.Media(VoiceMediaOp.PAUSE)
                 VoiceVerb.NEXT -> VoiceIntent.Media(VoiceMediaOp.NEXT)
                 VoiceVerb.PREV -> VoiceIntent.Media(VoiceMediaOp.PREV)
                 VoiceVerb.PLAY, VoiceVerb.OPEN, VoiceVerb.ON ->
-                    if (q.isEmpty()) VoiceIntent.Media(VoiceMediaOp.PLAY, app = app)
-                    else VoiceIntent.Media(VoiceMediaOp.QUERY, q, app)
+                    if (body.isEmpty()) VoiceIntent.Media(VoiceMediaOp.PLAY, app = app)
+                    else VoiceIntent.Media(VoiceMediaOp.QUERY, VoiceTailClause.text(body), app)
                 else -> VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
             }
         }
 
-    /** Dẫn đường: phần đuôi là ĐIỂM ĐẾN (từ vựng mở), trừ mệnh đề *"bằng &lt;app&gt;"* ở cuối nếu có. */
-    private fun nav(after: List<Token>, original: String): VoiceIntent =
-        withTarget(after, VoiceAppKind.NAV) { q, app ->
-            if (q.isEmpty()) VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
-            else VoiceIntent.Nav(q, app)
-        }
-
-    // ── V1.1 · hai mệnh đề đuôi: *"vào ô N"* và *"bằng <app>"* ───────────────────────────────────
-
     /**
-     * Số ô mà câu nêu ra trong phần đuôi [after] (*"vào ô số 2"* · *"ô thứ hai"* · *"in slot 2"*), hoặc `null`.
+     * Dẫn đường: phần đuôi là ĐIỂM ĐẾN, trừ mệnh đề *"bằng &lt;app&gt;"* ở cuối nếu có.
      *
-     * Trả về **đúng con số người ta nói** (1-based, chưa kẹp) — xem KDoc [VoiceIntent.OpenApp.slot] về vì sao
-     * không quy đổi và không kẹp ở tầng này.
+     * ## Nơi ĐÃ LƯU được xét TRƯỚC điểm đến mở, và chỉ ở đây
+     * Spec `kachi-voice-addresses.html` R2. Đây là **vị trí duy nhất** trong cả bộ phân tích tra sổ địa chỉ —
+     * xem KDoc [VoicePlaces] về vì sao nhãn người dùng không được vào từ vựng chung.
+     *
+     * Khớp một nơi ⇒ [VoiceIntent.NavigateSaved] **kể cả khi sổ trống** (cách nói dựng sẵn *"về nhà"* vẫn ra
+     * nhãn chuẩn): bắn chữ *"nhà"* cho app bản đồ là dẫn người ta tới một quán tên *"Nhà"* — máy làm một việc
+     * khác việc được bảo. Tầng thi hành tra sổ và nói thẳng nếu chưa lưu (R4).
      */
-    @Suppress("ReturnCount")
-    internal fun slotAt(after: List<Token>): Int? {
-        after.indices.forEach { i ->
-            if (after[i].norm !in VoiceLexicon.SLOT_HEADS) return@forEach
-            var j = i + 1
-            while (j < after.size && after[j].norm in VoiceLexicon.SLOT_ORDINALS) j++
-            val n = VoiceLexicon.readNumber(after, j) ?: return@forEach
-            // *"ô tối đa"* không phải một số ô; sentinel MIN/MAX chỉ có nghĩa với nút có dải giá trị.
-            if (n.value == VoiceLexicon.MAX || n.value == VoiceLexicon.MIN || n.value <= 0) return@forEach
-            return n.value
+    private fun nav(after: List<Token>, places: List<String>, original: String): VoiceIntent =
+        VoiceTailClause.withTarget(after, VoiceAppKind.NAV) { body, app ->
+            val saved = VoicePlaces.match(body.map { it.norm }, places)
+            when {
+                saved != null -> VoiceIntent.NavigateSaved(saved, app)
+                body.isEmpty() -> VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
+                else -> VoiceIntent.Nav(VoiceTailClause.text(body), app)
+            }
         }
-        return null
-    }
-
-    /**
-     * Cắt mệnh đề *"bằng &lt;app&gt;"* ở **cuối** [after], rồi dựng ý định bằng [make] với phần còn lại.
-     *
-     * ## Ba ràng buộc, mỗi cái chặn một cách hiểu sai
-     *  1. **Chỉ nhận ở CUỐI câu.** *"dẫn đường tới cầu Bằng Lăng"* có chữ *"bằng"* nằm giữa tên cầu; đòi mệnh đề
-     *     phải chạm cuối câu thì ca đó tự giải mà không cần biết cây cầu nào tên có chữ *"bằng"*.
-     *  2. **Chỉ nhận khi ngay sau là một app ĐÃ BIẾT.** *"…bằng xe máy"* không khớp đích nào ⇒ để nguyên trong
-     *     điểm đến. Đoán bừa ở đây là gửi một điểm đến thiếu chữ.
-     *  3. **Lấy trọn phần đuôi**, không cắt ngắn: *"…bằng youtube music"* phải khớp `ytmusic`, chứ không phải
-     *     khớp `youtube` rồi bỏ lại chữ *"music"* trong tên bài. Vì mệnh đề đã buộc chạm cuối câu (1), phần đuôi
-     *     chỉ có **đúng một** độ dài ⇒ không cần quét dài-xuống-ngắn, chỉ cần chặn trần [VoiceAppTargets.LONGEST_SPOKEN]
-     *     để không đem cả một tên bài mười chữ đi tra bảng.
-     */
-    private fun withTarget(
-        after: List<Token>,
-        kind: VoiceAppKind,
-        make: (String, String?) -> VoiceIntent,
-    ): VoiceIntent {
-        val hit = appAfterMarker(after, kind)
-        val body = if (hit == null) after else after.subList(0, hit.second)
-        return make(body.joinToString(" ") { it.raw }, hit?.first)
-    }
-
-    /**
-     * Mã đích + vị trí bắt đầu của mệnh đề *"bằng &lt;app&gt;"*, hoặc `null` khi câu không nêu app.
-     *
-     * Xem KDoc [withTarget] về ba ràng buộc, và KDoc [VoiceSynonyms.APP_TARGETS] về vì sao tên app đích **không**
-     * nằm trong từ vựng chung.
-     */
-    @Suppress("ReturnCount")
-    internal fun appAfterMarker(after: List<Token>, kind: VoiceAppKind): Pair<String, Int>? {
-        after.indices.forEach { i ->
-            if (after[i].norm !in VoiceLexicon.BY_APP_MARKERS) return@forEach
-            // (1) mệnh đề phải chạm CUỐI câu ⇒ phần đuôi chỉ có đúng một độ dài; (3) trần LONGEST_SPOKEN.
-            val len = after.size - i - 1
-            if (len !in 1..VoiceAppTargets.LONGEST_SPOKEN) return@forEach
-            val words = (i + 1 until after.size).map { after[it].norm }
-            val target = VoiceAppTargets.bySpoken(words, kind) ?: return@forEach
-            return target.key to i
-        }
-        return null
-    }
 
     // ── Nút: tính giá trị theo ControlKind ───────────────────────────────────────────────────────
 
@@ -381,19 +427,6 @@ object VoiceIntentParser {
         val n = firstNumber(after) ?: return null
         return n.takeIf { it in def.args.indices }
     }
-
-    /**
-     * Nhãn app đã cài trong phần đuôi + **phần còn lại sau nó**, hoặc `null`. Chỉ dùng cho ca
-     * [VoiceTermKind.LAUNCHER] ở trên.
-     *
-     * Trả luôn phần đuôi vì *"mở ứng dụng YouTube **vào ô số 2**"* cũng phải nhận ra ô — cùng câu, cùng ý, chỉ
-     * khác ở chỗ người ta nói thêm hai chữ *"ứng dụng"*. Trả mỗi cái tên thì nhánh này lặng lẽ mất mệnh đề ô.
-     */
-    private fun appInTail(after: List<Token>, terms: List<VoiceTerm>): Pair<String, List<Token>>? = after.indices
-        .firstNotNullOfOrNull { i ->
-            VoiceGrammar.matchAt(after, i, terms).firstOrNull { it.kind == VoiceTermKind.APP }
-                ?.let { it.id to after.subList(i + it.words.size, after.size) }
-        }
 
     private fun firstNumber(after: List<Token>): Int? {
         after.indices.forEach { i -> VoiceLexicon.readNumber(after, i)?.let { return it.value } }

@@ -118,9 +118,15 @@ class VoiceRecognizer private constructor(
             profiles: List<String>,
             apps: List<String>,
             installed: Set<String> = emptySet(),
+            /**
+             * Nhãn **sổ địa chỉ** của hồ sơ đang dùng (spec `kachi-voice-addresses.html` R6) — KHÁC tên hồ sơ/app
+             * ở trên: chúng là tiếng Việt đời thường (*"Nhà"*, *"Công ty"*) nên biasing kéo về được. Xem KDoc
+             * [SherpaBiasing.hotwordsFile].
+             */
+            places: List<String> = emptyList(),
         ): VoiceRecognizer? {
             val rec = VoiceEngine.recognizer(ctx) ?: return null
-            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile() else ""
+            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile(places) else ""
             return VoiceRecognizer(rec, hot)
         }
 

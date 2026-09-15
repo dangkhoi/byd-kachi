@@ -99,6 +99,7 @@ object VoicePhrases {
         profiles: List<String> = emptyList(),
         apps: List<String> = emptyList(),
         installed: Set<String> = emptySet(),
+        places: List<String> = emptyList(),
     ): VoicePhraseSet {
         val spellings = index(vocabulary)
         val phrases = LinkedHashSet<String>()
@@ -107,7 +108,7 @@ object VoicePhrases {
         val unknown = LinkedHashSet<String>()
 
         // ── (1) Cụm NHIỀU TỪ dựng từ nhãn: nhãn đã CÓ DẤU sẵn, chỉ cần soi xem mô hình có đủ từ không ──
-        labelPhrases(profiles, apps, installed).forEach { raw ->
+        labelPhrases(profiles, apps, installed, places).forEach { raw ->
             val words = words(raw)
             if (words.isEmpty()) return@forEach
             val mapped = words.map { w -> resolve(w, vocabulary, spellings) }
@@ -182,7 +183,12 @@ object VoicePhrases {
      * `args`/`argsEn` của nút SELECT cũng vào đây: *"chỉnh chế độ đèn pha sang **auto**"* không nói được nếu
      * *"auto"* không có trong ngữ pháp.
      */
-    private fun labelPhrases(profiles: List<String>, apps: List<String>, installed: Set<String>): List<String> {
+    private fun labelPhrases(
+        profiles: List<String>,
+        apps: List<String>,
+        installed: Set<String>,
+        places: List<String>,
+    ): List<String> {
         val out = ArrayList<String>(1024)
         ControlRegistry.ALL.forEach { c ->
             out.add(c.label); c.labelEn?.let(out::add); c.short?.let(out::add); c.shortEn?.let(out::add)
@@ -205,6 +211,9 @@ object VoicePhrases {
         // không cài Spotify là mở thêm một đường cho bộ giải mã nghe nhầm vào một app không tồn tại — mà nó
         // KHÔNG đổi lại được gì, vì câu ấy rồi cũng chỉ nhận được câu trả lời "chưa cài".
         VoiceAppTargets.ALL.filter { it.packageIn(installed) != null }.forEach { out.addAll(it.spoken) }
+        // Sổ địa chỉ (spec `kachi-voice-addresses.html` R6) — nhãn ĐÃ LƯU + cách nói dựng sẵn của nhãn chuẩn
+        // tương ứng. CÙNG luật với hai dòng trên: chỉ khai thứ gọi được thật; sổ trống ⇒ không khai gì.
+        out.addAll(VoicePlaces.spokenPhrases(places))
         return out
     }
 

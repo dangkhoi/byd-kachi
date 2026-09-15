@@ -79,6 +79,12 @@ object VoiceRiskTable {
         is VoiceIntent.Macro -> if (intent.id in MACRO_IDS) VoiceRisk.CONFIRM else VoiceRisk.NORMAL
         // V1.1 (R16) — TỪ VỰNG MỞ luôn hỏi lại. Xem KDoc [openVocab].
         is VoiceIntent.Nav -> openVocab(intent.query)
+        // Sổ địa chỉ (spec `kachi-voice-addresses.html` §4.2) — **KHÔNG** hỏi lại, và đó là một quyết định, không
+        // phải một chỗ bỏ sót. Ba dòng trên hỏi vì HẬU QUẢ không đảo được; dòng [Nav] hỏi vì NGUỒN (chuỗi do
+        // nhận dạng tự do đọc ra). [VoiceIntent.NavigateSaved] không có cả hai tính chất: nhãn đến từ một tập
+        // ĐÓNG mà chính người dùng đã gõ trong Cài đặt, địa chỉ thì họ đã đọc lại lúc lưu, và đi nhầm đường thì
+        // quay đầu được. Bắt xác nhận ở đây là thêm một cú chạm cho đúng câu người ta nói nhiều nhất mỗi ngày.
+        is VoiceIntent.NavigateSaved -> VoiceRisk.NORMAL
         is VoiceIntent.Media -> if (intent.op == VoiceMediaOp.QUERY) openVocab(intent.query) else VoiceRisk.NORMAL
         else -> VoiceRisk.NORMAL
     }

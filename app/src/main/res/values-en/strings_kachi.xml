@@ -260,6 +260,22 @@
     <!-- ── IA v2 · R-UI (o) — chip thứ sáu của hàng bố cục: luôn có ĐÚNG một chip sáng ── -->
     <string name="kachi_layout_custom_chip">Custom</string>
 
+    <!-- ── Sổ địa chỉ (SettingsPlacesSection) — docs/specs/kachi-voice-addresses.html ── -->
+    <string name="kachi_sec_places">Address book</string>
+    <string name="kachi_places_note">Save home, work… then say “go home”, “to the office”, “go to &lt;name&gt;”. The book follows the active profile.</string>
+    <string name="kachi_places_empty">No address saved yet.</string>
+    <string name="kachi_places_add">Add an address…</string>
+    <string name="kachi_places_edit">Edit address</string>
+    <string name="kachi_places_full">The book is full at %1$d entries — delete one first.</string>
+    <string name="kachi_places_need_fields">Both a name and an address are needed to save.</string>
+    <string name="kachi_places_has_coords">coordinates %1$s</string>
+    <string name="kachi_places_no_coords">no coordinates yet (VietMap needs them)</string>
+    <string name="kachi_places_hint_label">Name — for example Home, Work</string>
+    <string name="kachi_places_hint_address">Address</string>
+    <string name="kachi_places_hint_coords">Coordinates (optional) — 10.7769, 106.7009</string>
+    <string name="kachi_places_coords_note">With coordinates VietMap can route there too. To get them: open a map app, press and hold the spot, then copy the pair of numbers.</string>
+    <string name="kachi_edit">Edit</string>
+
     <!-- ── IA v2 nhóm 5 — Dẫn đường & cụm đồng hồ (SettingsNavSection) ── -->
     <string name="kachi_sec_nav">Navigation + HUD</string>
     <string name="kachi_nav_enabled_title">Navigation on the cluster</string>

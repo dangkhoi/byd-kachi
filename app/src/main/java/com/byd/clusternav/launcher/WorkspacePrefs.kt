@@ -368,6 +368,22 @@ class WorkspacePrefs(context: Context) {
 
     fun setWallpaperPrefs(prefs: WallpaperPrefs) { sp.edit().putString(key(K_WALL), prefs.encode()).apply() }
 
+    /**
+     * **Sổ địa chỉ** của hồ sơ đang dùng (spec `docs/specs/kachi-voice-addresses.html` R1).
+     *
+     * ⚠ Đọc thẳng `key(K_PLACES)`, **không** đi qua [profileString]: đường lùi-khoá-chung-cũ ở đó tồn tại cho bốn
+     * khoá **đã nằm trên đĩa** trước S4 (chủ đề · đơn vị · hình nền · tự-mở). Sổ địa chỉ là khoá MỚI hoàn toàn —
+     * không có bản chung nào để lùi về, và nếu cứ gọi thì phép `sp.contains(suffix)` lại đi hỏi một khoá không bao
+     * giờ tồn tại ở mọi lượt đọc.
+     *
+     * Chuỗi rỗng/rác ⇒ sổ rỗng (phép giải mã ở `:core` bỏ dòng hỏng, không ném — xem [SavedPlaces.decode]).
+     */
+    fun savedPlaces(): List<SavedPlace> = SavedPlaces.decode(sp.getString(key(K_PLACES), null))
+
+    fun setSavedPlaces(places: List<SavedPlace>) {
+        sp.edit().putString(key(K_PLACES), SavedPlaces.encode(places)).apply()
+    }
+
     // ── S4 · R3(a) — LÙI về khoá chung cũ, đúng MỘT lần, rồi ghi sang hồ sơ ──────────────────────
 
     /**
@@ -442,6 +458,13 @@ class WorkspacePrefs(context: Context) {
         private const val K_UNITS = "unit_prefs"
         private const val K_WALL = "wallpaper_prefs"
         private const val K_LANG = "lang"
+
+        /**
+         * Sổ địa chỉ — **một chuỗi cho cả sổ** (mỗi mục một dòng, xem [SavedPlaces]), không phải họ khoá
+         * `place_0..n`: một họ khoá dựng động kéo theo một tiền tố nữa trong [ProfileScope.PROFILE_KEY_PREFIXES]
+         * và một vòng xoá thủ công lúc xoá hồ sơ — cùng lý do `top_strip`/`grid_layout` là một chuỗi.
+         */
+        private const val K_PLACES = "saved_places"
 
         /**
          * P9 — bố cục tự vẽ, lưu THEO HỒ SƠ (mỗi tài xế một bố cục, giống thanh nút). Chuỗi tự đọc được

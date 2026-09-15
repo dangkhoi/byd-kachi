@@ -4,6 +4,8 @@ import android.app.AlertDialog
 import android.content.Context
 import android.text.InputType
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import com.byd.clusternav.R
 
 /**
@@ -32,17 +34,28 @@ internal object SettingsDialogs {
      */
     fun pick(context: Context, title: String, labels: List<String>, emptyText: String, onPick: (Int) -> Unit) {
         if (labels.isEmpty()) {
-            AlertDialog.Builder(context)
-                .setTitle(title)
-                .setMessage(emptyText)
-                .setPositiveButton(android.R.string.ok, null)
-                .show()
+            notice(context, title, emptyText)
             return
         }
         AlertDialog.Builder(context)
             .setTitle(title)
             .setItems(labels.toTypedArray()) { _, which -> onPick(which) }
             .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * **Nói một điều rồi thôi** — không có gì để chọn, không có gì để huỷ (danh sách rỗng · sổ đã đầy).
+     *
+     * Tách ra khỏi [pick] (nó vốn chứa nguyên khối này) vì nay có chỗ gọi thứ hai: một cú bấm **không có tác
+     * dụng** thì phải NÓI lý do — luật đã lập ở `TopStripPicker.toggle`. Để mỗi chỗ tự dựng một `AlertDialog`
+     * thông báo là mở lại đúng cánh cửa mà KDoc lớp này đóng.
+     */
+    fun notice(context: Context, title: String, message: String) {
+        AlertDialog.Builder(context)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
             .show()
     }
 
@@ -64,6 +77,73 @@ internal object SettingsDialogs {
             .setMessage(message)
             .setPositiveButton(confirmLabel) { _, _ -> onConfirm() }
             .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * Hỏi MỘT MỤC SỔ ĐỊA CHỈ: nhãn · địa chỉ · (tuỳ chọn) toạ độ — spec `docs/specs/kachi-voice-addresses.html` R1.
+     *
+     * ## Vì sao là hàm thứ tư ở đây chứ không phải một `AlertDialog` dựng trong section
+     * KDoc lớp cấm bản dựng thứ hai, và lý do vẫn đúng nguyên: ba quyết định (nút huỷ, nhãn nút lưu, kiểu bàn
+     * phím) phải giống mọi hộp khác. [askName] không dùng lại được vì nó chỉ có **một** ô — mà một mục địa chỉ
+     * thiếu bất kỳ trường nào trong hai trường đầu thì vừa không gọi được bằng giọng, vừa không dẫn đi đâu.
+     *
+     * ## Vì sao toạ độ là MỘT ô *"lat, lng"*, không phải hai ô
+     * Đó đúng dạng người ta **dán** từ app bản đồ (`10.7769, 106.7009`). Bắt tách tay là bắt người dùng làm một
+     * việc máy làm được, trên bàn phím ảo, trong xe. Phép tách + kiểm dải nằm ở `:core` ([SavedPlaces.parseCoords])
+     * nên nó kiểm được off-car; hộp này **không** kiểm gì, chỉ chuyển ba chuỗi đi (ô hỏng ⇒ mục không toạ độ).
+     *
+     * @param initial mục đang sửa, `null` = thêm mới (ba ô trống).
+     * @param onDelete đường XOÁ mục đang sửa (`null` khi thêm mới ⇒ không có nút xoá).
+     *   ⚠ Xoá nằm **trong hộp sửa** chứ không phải một nút thứ hai trên mỗi hàng danh sách: hàng danh sách trên
+     *   xe là nơi ngón tay lướt qua khi xe xóc, và một nút xoá không hoàn lại được ngay cạnh nút sửa là ca bấm
+     *   nhầm kinh điển. Vào hộp là đã nhìn thấy mình đang đứng ở mục nào.
+     */
+    fun askPlace(
+        context: Context,
+        title: String,
+        initial: SavedPlace?,
+        onDelete: (() -> Unit)? = null,
+        onOk: (label: String, address: String, coords: String) -> Unit,
+    ) {
+        fun field(value: String, hintRes: Int, capWords: Boolean) = EditText(context).apply {
+            setText(value)
+            hint = context.getString(hintRes)
+            inputType = InputType.TYPE_CLASS_TEXT or
+                (if (capWords) InputType.TYPE_TEXT_FLAG_CAP_WORDS else InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS)
+        }
+        val label = field(initial?.name.orEmpty(), R.string.kachi_places_hint_label, capWords = true)
+        val address = field(initial?.query.orEmpty(), R.string.kachi_places_hint_address, capWords = false)
+        val coords = field(
+            initial?.let { SavedPlaces.formatCoords(it) }.orEmpty(),
+            R.string.kachi_places_hint_coords,
+            capWords = false,
+        )
+        val pad = KachiTheme.dpi(context, KachiSpace.M)
+        val body = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad, pad, 0)
+            addView(label)
+            addView(address)
+            addView(coords)
+            addView(TextView(context).apply {
+                text = context.getString(R.string.kachi_places_coords_note)
+                setTextColor(KachiTheme.c(KachiTheme.MUT))
+                KachiType.apply(this, KachiType.CAPTION)
+            })
+        }
+        AlertDialog.Builder(context)
+            .setTitle(title)
+            .setView(body)
+            .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ ->
+                onOk(label.text.toString(), address.text.toString(), coords.text.toString())
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .also { builder ->
+                onDelete?.let { del ->
+                    builder.setNeutralButton(context.getString(R.string.kachi_delete)) { _, _ -> del() }
+                }
+            }
             .show()
     }
 

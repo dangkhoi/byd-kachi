@@ -39,6 +39,7 @@ class SettingsScreenWiringContractTest {
     private val cast by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCast.kt") }
     private val keys by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsKeys.kt") }
     private val car by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCar.kt") }
+    private val places by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsPlaces.kt") }
     private val rows by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsRows.kt") }
     private val panels by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
     private val strip by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiTopStrip.kt") }
@@ -117,6 +118,10 @@ class SettingsScreenWiringContractTest {
             "SettingsPanel" to panel, "SettingsSections" to sections, "SettingsSectionsHome" to home,
             "SettingsSectionsBars" to bars, "SettingsSectionsNav" to nav,
             "SettingsSectionsCast" to cast, "SettingsSectionsKeys" to keys, "SettingsSectionsCar" to car,
+            // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html) — section MỚI, và là section đầu tiên ghi một
+            // khoá **của launcher** (không phải của ClusterNav qua `bridge`), nên nó đúng là loại tệp mà bài này
+            // sinh ra để canh: mọi lượt ghi phải đi qua `deps.onSavedPlaces` → ViewModel.
+            "SettingsSectionsPlaces" to places,
         ).forEach {
             (name, src) ->
             listOf("WorkspacePrefs", "workspaceRepository", "getSharedPreferences", "Prefs.set").forEach { bad ->

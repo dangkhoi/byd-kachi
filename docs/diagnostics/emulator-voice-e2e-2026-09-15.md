@@ -1,0 +1,497 @@
+# E2E giọng nói trên máy ảo — TOÀN BỘ lớp lệnh, hai tầng (chữ + tiếng)
+
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-15 (**lượt 2 — bản 1.64**, xem §6) · **Loại**: Diagnostics (evidence, có số đo thật) ·
+> **Owner**: dangkhoi · **Spec**: `docs/specs/kachi-voice-command.html` · `docs/specs/kachi-voice-engine-v2.html` ·
+> `docs/specs/kachi-test-bridge.html` · **Kịch bản**: `scripts/emulator/voice-e2e.sh` + `voice-cases.tsv` +
+> `voice-wavgen.sh`
+
+**Quy ước mức bằng chứng** (CLAUDE.md §2 · `.kiro/steering/conversation-protocol.md`): `[ĐO]` = số đo trực tiếp ·
+`[SUY]` = suy luận khớp dữ kiện · `[CHƯA ĐO]` = chưa có phép đo.
+
+> ⚠ **Mức bằng chứng tối đa của tài liệu này**: mọi con số đo trên **máy ảo `emulator-5554` (Android 10 / API 29,
+> arm64, Google APIs)** với **giọng tổng hợp `say -v Linh`**. KHÔNG phải DiLink3, KHÔNG có HAL BYD, KHÔNG có mic
+> 4 kênh, KHÔNG có ồn đường. Vì vậy:
+> * mọi lệnh `Control` trả `✗ … xe không nhận lệnh` là **ĐÚNG** (không có xe để nhận) — thứ đo được ở đây là
+>   **ý định** (`intents`) + **câu trả lời** + **tác dụng phụ trong launcher**, không phải HAL;
+> * ba thứ tác dụng phụ đo được thật: app lên màn (`dumpsys activity activities`), ô đổi nội dung (bridge
+>   `state.layout.slots`), hồ sơ đổi (bridge `state.profile.active`);
+> * độ chính xác nghe (T2) là **thuộc tính của model** nên chuyển sang thiết bị khác giữ được; RTF thì KHÔNG.
+
+## 0. Bản đã đo
+
+| Mục | Giá trị |
+|---|---|
+| Máy | `emulator-5554` · `sdk_gphone64_arm64` · API 29 · arm64-v8a |
+| APK | `com.byd.launcher` **1.63 (versionCode 64)** bản **vehicleTest** (debuggable, ký khoá release) — `app/build/outputs/apk/vehicleTest/app-vehicleTest.apk` |
+| Lượt đối chứng | **cùng bộ ca chạy trước đó trên 1.60 release** (đường `adb root`): kết quả **trùng KHỚP TỪNG CA** (`diff` hai bảng chỉ khác chỗ cắt chuỗi) ⇒ mọi lỗi dưới đây **không phải** hồi quy của 1.63 |
+| Mô hình nghe | `zipformer-vi-2025-04-20` (sherpa-onnx, Apache-2.0) — 4 tệp, sha256 **khớp đúng bản ghim** `SherpaModelCatalog.ZIPFORMER_VI` |
+| Biasing | `biasing=true` [ĐO logcat `KachiVoiceEngine`], nạp engine **1 520 ms**, giải mã **~80–150 ms/câu** |
+| App đích có mặt | YouTube · YT Music · Google Maps · Waze · VietMap Live |
+| Hồ sơ | chỉ **một** (`Mặc định`) ⇒ ca đổi hồ sơ đổi sang chính nó (vẫn đo được cổng CONFIRM, xem T1 t57/t58) |
+
+⚠ **Sổ địa chỉ chưa có trong APK này**: [ĐO] `dẫn đường về nhà` trên 1.63 → `Nav(query="về nhà")` + hỏi lại
+(đường từ-vựng-mở cũ), `về nhà` / `đến công ty` → `Unknown(NO_VERB)`. Nhánh `VoiceIntent.NavigateSaved` +
+`SherpaBiasing.hotwordsFile(places)` đang nằm trong **cây làm việc chưa biên dịch vào bản này** ⇒ chưa đo được.
+
+## 1. Cách bật cầu kiểm thử và cách nạp mô hình (đã đo, tái lập được)
+
+**Chế độ kiểm thử** — `TestBridgeStore` (`app/.../testbridge/TestBridgeStore.kt:27,29`) cố ý **không có đường bật
+bằng broadcast**: tệp prefs `kachi_test_bridge`, khoá `test_bridge_until`, giá trị `"<boot_id>:<elapsedRealtime +
+60 phút>"` (`TestBridgeWindow.encode`). Script dựng lại đúng khuôn đó từ `/proc/sys/kernel/random/boot_id` +
+`/proc/uptime` (trừ 2 phút để không rơi vào nhánh *"giá trị bị sửa tay"* `left > WINDOW_MS`), `am force-stop`
+**trước** khi ghi (SharedPreferences giữ bản RAM), rồi mở lại màn chính. [ĐO] `test_mode_minutes_left = 58`.
+
+Hai đường ghi vào vùng dữ liệu app, script tự chọn:
+* `run-as com.byd.launcher` — bản **vehicleTest** debuggable; đường **duy nhất chạy được trên xe thật**.
+  [ĐO] đây là đường đã dùng cho bảng chính (1.63);
+* `adb root` + `cp` + `chown <uid>` + `restorecon` — máy ảo cho root ⇒ đo được **cả trên bản release** đang cài
+  mà không phải cài lại. [ĐO] đường này đã dùng cho lượt đối chứng 1.60. Cả hai cho **cùng một kết quả**.
+
+**Mô hình** (đường (b) trong yêu cầu): chép thẳng 4 tệp vào `files/sherpa/zipformer-vi-2025-04-20/` ⇒
+`VoiceModelStore.isReady()` = `true` **không cần bấm gì trong Cài đặt**; `bpe_vocab.txt` do chính app chép ra từ
+asset lúc nạp engine ([ĐO] có mặt, 55 006 byte). Đường (a) — `<ext>/sherpa/import/<model-id>/` +
+`VoiceModelSideload` — **chưa đo** trong lượt này (nó cần một cú bấm *"tải mô hình"* trong Cài đặt).
+
+sha256 4 tệp tải từ HuggingFace **khớp 100%** bản ghim trong `SherpaModelCatalog.ZIPFORMER_VI` [ĐO `shasum -a 256`].
+
+## 2. Kết quả
+
+Cột **kết quả** của T1 so với **kỳ vọng khai trong `voice-cases.tsv`**, không phải so với "đúng/sai theo cảm tính":
+mỗi ca chỉ kiểm thứ nó khai (kind · chuỗi trong preview · có/không hỏi lại · tác dụng phụ). Một ca `PASS` mà hành
+vi vẫn sai (vd *"đóng YouTube"* lại **mở** YouTube) thì nằm ở **§3 LỖI** — bảng chỉ nói *"máy làm đúng thứ nó
+đang được viết để làm"*.
+
+### T1 — chữ → ý định → thi hành (`say`)
+
+| id | lớp | câu | intent | reply | hỏi lại | tác dụng phụ | kết quả |
+|---|---|---|---|---|---|---|---|
+| t01 | toggle | bật đèn đọc | Control · Bật Đèn đọc | ✗ Bật Đèn đọc — xe không nhận lệnh |  | - | PASS |
+| t02 | toggle | tắt đèn đọc | Control · Tắt Đèn đọc | ✗ Tắt Đèn đọc — xe không nhận lệnh |  | - | PASS |
+| t03 | toggle | bật lọc bụi | Control · Bật Lọc bụi | ✗ Bật Lọc bụi — xe không nhận lệnh |  | - | PASS |
+| t04 | toggle | tắt điều hoà | Control · Tắt Điều hoà AUTO | ✗ Tắt Điều hoà AUTO — xe không nhận lệnh |  | - | PASS |
+| t05 | toggle | bật sưởi ghế | Control · Bật Ghế sưởi | ✗ Bật Ghế sưởi — xe không nhận lệnh |  | - | PASS |
+| t06 | toggle | mở cửa sổ trời | Control · Bật Cửa sổ trời | ✗ Bật Cửa sổ trời — xe không nhận lệnh |  | - | PASS |
+| t07 | toggle | khoá xe | Control · Bật Khoá / mở khoá | ✗ Bật Khoá / mở khoá — xe không nhận lệnh |  | - | PASS |
+| t08 | toggle-confirm | tắt khoá xe | Control · Tắt Khoá / mở khoá | ✗ Tắt Khoá / mở khoá — đã huỷ | Tắt Khoá / mở khoá — chưa kiểm trên xe? … | - | PASS |
+| t09 | toggle-confirm | dừng chiếu cụm | Control · Tắt Chiếu cụm | ✗ Tắt Chiếu cụm — đã huỷ | Tắt Chiếu cụm — chưa kiểm trên xe? ⏎ dừn… | - | PASS |
+| t10 | cover | mở kính trước trái | Control · Mở Kính trước-trái | ✗ Mở Kính trước-trái — xe không nhận lệnh |  | - | PASS |
+| t11 | cover | đóng kính trước trái | Control · Đóng Kính trước-trái | ✗ Đóng Kính trước-trái — xe không nhận lệnh |  | - | PASS |
+| t12 | cover | mở kính bên lái | Control · Mở Kính trước-trái | ✗ Mở Kính trước-trái — xe không nhận lệnh |  | - | PASS |
+| t13 | cover-confirm | mở hết kính | Macro · Chạy gói Mở hết kính | ✗ Chạy gói Mở hết kính — đã huỷ | Chạy gói Mở hết kính? ⏎ hạ hết kính | - | PASS |
+| t14 | macro | đóng hết kính | Macro · Chạy gói Đóng hết kính |  |  | - | PASS |
+| t15 | step | nhiệt độ hai mươi bốn độ | Control · Đặt Nhiệt độ = 24 | ✗ Đặt Nhiệt độ = 24 — xe không nhận lệnh |  | - | PASS |
+| t16 | step | đặt nhiệt độ 24 độ | Control · Đặt Nhiệt độ = 24 | ✗ Đặt Nhiệt độ = 24 — xe không nhận lệnh |  | - | PASS |
+| t17 | step | tăng gió | Control · Tăng Gió 1 nấc | ✗ Đặt Gió = 5 — xe không nhận lệnh |  | - | PASS |
+| t18 | step | giảm âm lượng | Control · Giảm Âm lượng 1 nấc | ✓ Đặt Âm lượng = 11 |  | - | PASS |
+| t19 | step | tăng âm lượng tối đa | Control · Đặt Âm lượng = 30 | ✓ Đặt Âm lượng = 30 |  | - | PASS |
+| t20 | step | đặt độ sáng màn 8 | Control · Đặt Độ sáng màn = 8 | ✗ Đặt Độ sáng màn = 8 — xe không nhận lệnh |  | - | PASS |
+| t21 | select | chế độ lái thể thao | Control · Chế độ lái: Thể thao | ✗ Chế độ lái: Thể thao — xe không nhận lệnh |  | - | PASS |
+| t22 | select | đặt chế độ lái eco | Control · Chế độ lái: Eco | ✗ Chế độ lái: Eco — xe không nhận lệnh |  | - | PASS |
+| t23 | select | màu đèn viền xanh lá | Control · Màu đèn viền: Xanh lá | ✗ Màu đèn viền: Xanh lá — xe không nhận lệnh |  | - | PASS |
+| t24 | button | lọc ngay | Control · Bấm Lọc ngay | ✗ Bấm Lọc ngay — xe không nhận lệnh |  | - | PASS |
+| t25 | button | sạc ngay | Control · Bấm Sạc ngay | ✗ Bấm Sạc ngay — xe không nhận lệnh |  | - | PASS |
+| t26 | button-confirm | mở khoá cửa | Control · Bấm Mở khoá cửa | ✗ Bấm Mở khoá cửa — đã huỷ | Bấm Mở khoá cửa — chưa kiểm trên xe? ⏎ m… | - | PASS |
+| t27 | button-confirm | mở khoá cửa | Control · Bấm Mở khoá cửa | ✗ Bấm Mở khoá cửa — xe không nhận lệnh |  | - | PASS |
+| t28 | macro | rời xe | Macro · Chạy gói Rời xe |  |  | - | PASS |
+| t29 | macro | chạy gói mở cửa + đèn đọc | Unknown · Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "chạy gói mở… | Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "chạy gói mở cửa + đèn… |  | - | **FAIL** — kind=Unknown (mong Macro) |
+| t30 | launcher | mở cài đặt | Launcher · Mở Cài đặt | ✓ Mở Cài đặt |  | - | PASS |
+| t31 | launcher | mở ứng dụng | Launcher · Mở Ứng dụng | ✓ Mở Ứng dụng |  | - | PASS |
+| t32 | launcher | nói với xe | Launcher · Mở Nói với xe | ✓ Mở Nói với xe |  | - | PASS |
+| t33 | read | xem pin | Read · Xem Pin (SOC) | Pin (SOC): chưa đọc được |  | - | PASS |
+| t34 | read | pin còn bao nhiêu | Read · Xem Pin (SOC) | Pin (SOC): chưa đọc được |  | - | PASS |
+| t35 | read | nhiệt độ ngoài trời bao nhiêu | Read · Xem Nhiệt ngoài xe | Nhiệt ngoài xe: chưa đọc được |  | - | PASS |
+| t36 | read | đọc tầm hoạt động | Read · Xem Tầm hoạt động EV | Tầm hoạt động EV: chưa đọc được |  | - | PASS |
+| t37 | read-mismatch | xem đèn đọc | Unknown · Việc đó không đi với thứ đó — thử nêu mức, hoặc đổi động từ:… | Việc đó không đi với thứ đó — thử nêu mức, hoặc đổi động từ: "xem đèn … |  | - | PASS |
+| t38 | app | mở YouTube | OpenApp · Mở ứng dụng YouTube | ✓ Mở ứng dụng YouTube |  | mResumedActivity: ActivityRecord{3973f1 u0 com… | PASS |
+| t39 | app | mở Maps | OpenApp · Mở ứng dụng Maps | ✓ Mở ứng dụng Maps |  | mResumedActivity: ActivityRecord{263e2ec u0 co… | PASS |
+| t40 | app | mở ứng dụng YouTube | OpenApp · Mở ứng dụng YouTube | ✓ Mở ứng dụng YouTube |  | mResumedActivity: ActivityRecord{3973f1 u0 com… | PASS |
+| t41 | app-close | đóng YouTube | OpenApp · Mở ứng dụng YouTube | ✓ Mở ứng dụng YouTube |  | - | PASS |
+| t42 | app-close | tắt YouTube | OpenApp · Mở ứng dụng YouTube | ✓ Mở ứng dụng YouTube |  | - | PASS |
+| t43 | app-slot | đưa YouTube vào ô hai | OpenApp · Mở ứng dụng YouTube vào ô 2 | ✓ Mở ứng dụng YouTube vào ô 2 |  | app:com.google.android.youtube | PASS |
+| t44 | app-slot | mở YouTube vào ô số 9 | OpenApp · Mở ứng dụng YouTube vào ô 9 | ✗ Mở ứng dụng YouTube vào ô 9 — bố cục hiện chỉ có 3 ô |  | - | PASS |
+| t45 | app | mở bản đồ | Unknown · Không tìm thấy thứ đó trong xe hay trong launcher: "mở bản đ… | Không tìm thấy thứ đó trong xe hay trong launcher: "mở bản đồ" |  | - | PASS |
+| t46 | media | phát nhạc | Media · Phát nhạc | ✗ Phát nhạc — chưa có phiên nhạc nào — mở app nhạc rồi nói lại |  | package=com.android.server.telecom | PASS |
+| t47 | media | dừng nhạc | Media · Dừng nhạc | ✗ Dừng nhạc — chưa có phiên nhạc nào — mở app nhạc rồi nói lại |  | - | PASS |
+| t48 | media | bài tiếp theo | Media · Bài tiếp theo | ✗ Bài tiếp theo — chưa có phiên nhạc nào — mở app nhạc rồi nói lại |  | - | PASS |
+| t49 | media | bài trước | Media · Bài trước | ✗ Bài trước — chưa có phiên nhạc nào — mở app nhạc rồi nói lại |  | - | PASS |
+| t50 | media | mở nhạc trên YouTube Music | Media · Phát nhạc trên YouTube Music | ✗ Phát nhạc trên YouTube Music — chưa có phiên nhạc nào — mở app nhạc … |  | - | PASS |
+| t51 | media-open-vocab | phát bài Diễm Xưa | Media · Tìm bài «Diễm Xưa» | ✗ Tìm bài «Diễm Xưa» — đã huỷ | Tìm bài «Diễm Xưa»? ⏎ đoạn trong ngoặc d… | - | PASS |
+| t52 | media-open-vocab | mở bài Diễm Xưa trên YouTube Music | Media · Tìm bài «Diễm Xưa» trên YouTube Music | ✓ Tìm bài «Diễm Xưa» trên YouTube Music — đã mở kết quả tìm — bấm Play… |  | mResumedActivity: ActivityRecord{1b11a9e u0 co… | PASS |
+| t53 | nav | dẫn đường đến Bitexco | Nav · Dẫn đường tới Bitexco | ✗ Dẫn đường tới Bitexco — đã huỷ | Dẫn đường tới Bitexco? ⏎ đoạn trong ngoặ… | - | PASS |
+| t54 | nav | dẫn đường tới chợ Bến Thành bằng Waze | Nav · Dẫn đường tới chợ Bến Thành trên Waze | ✓ Dẫn đường tới chợ Bến Thành trên Waze |  | mResumedActivity: ActivityRecord{7cb2b7a u0 co… | PASS |
+| t55 | nav | chỉ đường đến sân bay bằng google map | Nav · Dẫn đường tới sân bay trên Google Maps | ✗ Dẫn đường tới sân bay trên Google Maps — đã huỷ | Dẫn đường tới sân bay trên Google Maps? … | - | PASS |
+| t56 | nav | dẫn đường | Unknown · Không tìm thấy thứ đó trong xe hay trong launcher: "dẫn đườn… | Không tìm thấy thứ đó trong xe hay trong launcher: "dẫn đường" |  | - | PASS |
+| t57 | profile | đổi sang hồ sơ Mặc định | Profile · Đổi sang hồ sơ Mặc định | ✗ Đổi sang hồ sơ Mặc định — đã huỷ | Đổi sang hồ sơ Mặc định? ⏎ đổi hồ sơ tha… | - | PASS |
+| t58 | profile | chuyển sang hồ sơ Mặc định | Profile · Đổi sang hồ sơ Mặc định | ✓ Đổi sang hồ sơ Mặc định |  | Mặc định | PASS |
+| t59 | layout | đổi bố cục 4 ô | Unknown · Không tìm thấy thứ đó trong xe hay trong launcher: "đổi bố c… | Không tìm thấy thứ đó trong xe hay trong launcher: "đổi bố cục 4 ô" |  | - | PASS |
+| t60 | layout | bố cục hai ô | Unknown · Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "bố cục hai … | Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "bố cục hai ô" |  | - | PASS |
+| t61 | compound | bật đèn đọc và tắt lọc bụi | Control,Control · Bật Đèn đọc / Tắt Lọc bụi | ✗ Bật Đèn đọc — xe không nhận lệnh ⏎ ✗ Tắt Lọc bụi — xe không nhận lện… |  | - | PASS |
+| t62 | compound-confirm | mở khoá cửa rồi bật đèn đọc | Control,Control · Bấm Mở khoá cửa / Bật Đèn đọc | ✗ Bấm Mở khoá cửa — đã huỷ, 1 việc sau không chạy | Bấm Mở khoá cửa — chưa kiểm trên xe? ⏎ m… | - | PASS |
+| t63 | unknown | hôm nay trời đẹp quá | Unknown · Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "hôm nay trờ… | Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "hôm nay trời đẹp quá" |  | - | PASS |
+| t64 | unknown | kể cho tôi nghe một câu chuyện | Unknown · Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "kể cho tôi … | Chưa rõ cần làm gì — thử "bật…", "mở…", "xem…": "kể cho tôi nghe một c… |  | - | PASS |
+| t65 | unknown | bật abcxyz | Unknown · Không tìm thấy thứ đó trong xe hay trong launcher: "bật abcx… | Không tìm thấy thứ đó trong xe hay trong launcher: "bật abcxyz" |  | - | PASS |
+| t66 | unknown | kachi ơi | Unknown · Chưa có câu lệnh nào: "kachi ơi" | Chưa có câu lệnh nào: "kachi ơi" |  | - | PASS |
+| t67 | unknown | xem xe | Unknown · Không tìm thấy thứ đó trong xe hay trong launcher: "xem xe" | Không tìm thấy thứ đó trong xe hay trong launcher: "xem xe" |  | - | PASS |
+
+**T1: 66/67 PASS** (1 FAIL)
+
+### T2 — tiếng → nhận dạng → ý định (`wav`)
+
+| id | câu gốc | heard | ngữ pháp (lượt 1) | tự do (lượt 2) | intent | khớp |
+|---|---|---|---|---|---|---|
+| w01 | mở YouTube | mở youtube | mở youtube |  | OpenApp · Mở ứng dụng YouTube | ✅ |
+| w02 | bật đèn đọc | bật đèn đọc | bật đèn đọc |  | Control · Bật Đèn đọc | ✅ |
+| w03 | tắt đèn đọc | tắt đèn đọc | tắt đèn đọc |  | Control · Tắt Đèn đọc | ✅ |
+| w04 | mở kính trước trái | mở kín trước trái | mở kín trước trái |  | Unknown · Không tìm thấy thứ đó trong xe hay trong lau… | ≈ |
+| w05 | đóng kính trước trái | đóng kính trước trái | đóng kính trước trái |  | Control · Đóng Kính trước-trái | ✅ |
+| w06 | nhiệt độ hai mươi bốn độ | nhiệt độ hai mươi bốn độ | nhiệt độ hai mươi bốn độ |  | Control · Đặt Nhiệt độ = 24 | ✅ |
+| w07 | dẫn đường đến Bitexco | dẫn đường đến bico | dẫn đường đến bi eco | dẫn đường đến bico | Nav · Dẫn đường tới bico | ≈ |
+| w08 | phát nhạc | phát nhạc | phát nhạc |  | Media · Phát nhạc | ✅ |
+| w09 | dừng nhạc | rừng nhạc | rừng nhạc |  | Unknown · Chưa rõ cần làm gì — thử "bật…", "mở…", "xem… | ❌ |
+| w10 | đưa YouTube vào ô số hai | đưa youtube vào ô số hai | đưa youtube vào ô số hai |  | OpenApp · Mở ứng dụng YouTube vào ô 2 | ✅ |
+| w11 | mở khoá cửa | mở khóa cửa | mở khóa cửa |  | Control · Bấm Mở khoá cửa | ✅ |
+| w12 | xem pin | xem tin | xem tin |  | Unknown · Không tìm thấy thứ đó trong xe hay trong lau… | ❌ |
+| w13 | tăng âm lượng | tăng âm lượng | tăng âm lượng |  | Control · Tăng Âm lượng 1 nấc | ✅ |
+| w14 | giảm nhiệt độ | giảm nhiệt độ | giảm nhiệt độ |  | Control · Giảm Nhiệt độ 1 nấc | ✅ |
+| w15 | bật sưởi ghế | bật sưởi ghế | bật sưởi ghế |  | Control · Bật Ghế sưởi | ✅ |
+| w16 | đóng hết kính | đóng hết kính | đóng hết kính |  | Macro · Chạy gói Đóng hết kính | ✅ |
+| w17 | mở cài đặt | mở cài đặt | mở cài đặt |  | Launcher · Mở Cài đặt | ✅ |
+| w18 | bài tiếp theo | bài tiếp theo | bài tiếp theo |  | Media · Bài tiếp theo | ✅ |
+| w19 | chế độ lái thể thao | chế độ lái thể thao | chế độ lái thể thao |  | Control · Chế độ lái: Thể thao | ✅ |
+| w20 | lọc ngay | lọc ngay | lọc ngay |  | Control · Bấm Lọc ngay | ✅ |
+| w21 | hôm nay trời đẹp quá | hôm nay trời đẹp quá | hôm nay trời đẹp quá |  | Unknown · Chưa rõ cần làm gì — thử "bật…", "mở…", "xem… | ✅ |
+| w22 | pin còn bao nhiêu | còn bao nhiêu | còn bao nhiêu |  | Unknown · Không tìm thấy thứ đó trong xe hay trong lau… | ≈ |
+| w23 | bật lọc bụi và tắt đèn đọc | bật lọc bụi và tắt đèn đọc | bật lọc bụi và tắt đèn đọc |  | Control,Control · Bật Lọc bụi / Tắt Đèn đọc | ✅ |
+| w24 | dẫn đường tới chợ Bến Thành bằng Waze | dẫn đường tới chợ bến thành bằng loa e | dẫn đường tới chợ bến thành bằng l… | dẫn đường tới chợ bến th… | Nav · Dẫn đường tới chợ bến thành bằng loa e | ≈ |
+| w25 | đổi sang hồ sơ Chính | đổi sang hồ sơ chính | đổi sang hồ sơ chính |  | Unknown · Việc đó không đi với thứ đó — thử nêu mức, h… | ✅ |
+
+**T2: 19/25 nghe ĐÚNG NGUYÊN VĂN** (xem cột intent cho ca nghe lệch mà ý định vẫn đúng)
+
+**Đếm theo Ý ĐỊNH** (thứ thật sự quyết định máy có làm đúng việc không): **18/24 đúng hoàn toàn (75%)** · **2 đúng loại nhưng sai nội dung mở** (w07 điểm đến `bico`, w24 mất app đích `Waze` → `loa e`) · **4 sai** (w04 `kính`→`kín`, w09 `dừng`→`rừng`, w12 `pin`→`tin`, w22 rụng chữ `pin`) · **1 không tính** (w25 gọi hồ sơ *Chính* — máy ảo chỉ có hồ sơ *Mặc định*, lỗi của bộ ca). Cả 4 ca sai đều rơi đúng vào lỗ hotwords **L3** — xem §3.
+
+### Bốn phép đo thêm (ngoài ma trận — chạy tay qua bridge; [ĐO] trên 1.60, bộ ca chính đã cho thấy 1.60 ≡ 1.63)
+
+| Câu | Kết quả [ĐO] |
+|---|---|
+| `mở cửa + đèn đọc` | `Macro · Chạy gói Mở cửa + đèn đọc` · reply `Mở cửa + đèn đọc: xe không nhận lệnh nào` (ms=805) |
+| `mở cửa và đèn đọc` | **chỉ 1** intent `Control · Bật Đèn đọc` — vế *"mở cửa"* bị bỏ **im lặng** (xem L5) |
+| `dẫn đường đến Bitexco` + `auto_confirm` | reply *"đang tra điểm đến…"*, sau đó **VietMap Live lên màn** (`mResumedActivity: vn.vietmap.live/.MainActivity`); câu trả lời CUỐI không vào được lời đáp (xem L4) |
+| `tăng nhiệt độ 2 nấc` · `tắt máy lạnh` · `mở cốp` · `gạt mưa` · `mở nhạc` | đúng nút/ý định (`Nhiệt độ = 24` từ mốc 22 · `Điều hoà AUTO` · `Cốp sau` · `Gạt mưa` · `Phát nhạc`) |
+| `dẫn đường về nhà` · `về nhà` · `đến công ty` (trên **1.63**) | `Nav(query="về nhà")` + hỏi lại · `Unknown(NO_VERB)` · `Unknown(NO_VERB)` — sổ địa chỉ chưa có trong APK này |
+
+## 3. LỖI (mỗi lỗi: câu → kỳ vọng → thực tế → gốc → đề xuất)
+
+> ⚠ **Số trong mục này là của lượt 1 (bản 1.63) và KHÔNG được sửa.** Trạng thái sau khi vá nằm ở dòng
+> `[VÁ 1.64]` của từng mục và ở **§6** (bảng trước/sau của lượt đo lại).
+
+### [P1] L1 — *"đóng/tắt &lt;app&gt;"* lại **MỞ** app đó
+* **Câu**: `đóng YouTube` · `tắt YouTube` (T1 t41/t42).
+* **Kỳ vọng**: đóng app đang mở, hoặc ít nhất nói *"chưa làm được"*.
+* **Thực tế [ĐO]**: `OpenApp · Mở ứng dụng YouTube` → `✓ Mở ứng dụng YouTube` — máy làm **đúng việc ngược lại**.
+* **Gốc [ĐO nguồn]**: `core/.../voice/VoiceIntentParser.kt:228` — nhánh `VoiceTermKind.APP ->
+  VoiceIntent.OpenApp(term.id, slotAt(after))` dựng ý định **không xét động từ** (mọi nhánh khác đều xét:
+  CONTROL/MACRO/LAUNCHER đi qua `VoiceGrammar.isAction`); và `VoiceIntent` (`VoiceIntent.kt:22–104`) **không có**
+  nhánh đóng app.
+* **Đề xuất**: (a) vá tối thiểu, an toàn ngay: động từ `CLOSE`/`OFF`/`PAUSE` + đối tượng APP ⇒
+  `Unknown(MISMATCH)` — nói *"chưa đóng được app bằng giọng"* thay vì mở nó ra; (b) nếu owner muốn đóng thật:
+  đó là **cơ chế mới** ⇒ CLAUDE.md §14 tầng 1 (shell thô trên xe: `am force-stop` / `am task` có ăn trên ROM BYD
+  không) trước khi viết `:core`.
+* **[VÁ 1.64]** ĐÃ VÁ theo hướng (a) [ĐO lượt 2, t41/t42]: `đóng YouTube` · `tắt YouTube` ⇒ `Unknown(APP_CLOSE)`
+  → *"Chưa đóng được app bằng giọng — bấm phím Home, hoặc mở app khác đè lên"*; **không** app nào lên màn nữa.
+  Gốc vá: `VoiceIntentParser` nay xét động từ ở nhánh APP (và ở nhánh *"mở ứng dụng &lt;tên&gt;"*), lý do riêng
+  `VoiceUnknownReason.APP_CLOSE` để câu trả lời nói đúng việc. Đóng app THẬT vẫn là cơ chế mới ⇒ còn ở §14 tầng 1,
+  **chưa đo**.
+
+### [P1] L2 — *"phát nhạc trên YouTube Music"* không mở YT Music, báo *"chưa có phiên nhạc nào"*
+* **Câu**: `mở nhạc trên YouTube Music` (T1 t50), `phát nhạc` (t46).
+* **Kỳ vọng**: mở/đưa lệnh cho app nhạc được nêu đích danh.
+* **Thực tế [ĐO]**: ý định **đúng** (`Media · Phát nhạc trên YouTube Music`, tức `app=ytmusic` đã được phân tích
+  ra) nhưng reply `✗ … chưa có phiên nhạc nào — mở app nhạc rồi nói lại`; **không app nào lên màn**.
+* **Gốc [ĐO nguồn]**: `app/.../launcher/VoiceDispatcher.kt:299` — `runMedia` mở đầu bằng
+  `if (i.op != VoiceMediaOp.QUERY) { runTransport(i); return }`, tức mọi lệnh **không phải QUERY** rơi thẳng vào
+  transport và trường `i.app` bị **vứt**. `runTransport` (`:364–374`) chỉ gọi `MediaBridge`, mà `MediaBridge`
+  degrade-safe khi chưa có phiên ⇒ câu trả lời đúng theo mã, sai theo ý người nói.
+* **Đề xuất**: `op == PLAY` mà (`i.app != null` **hoặc** `mediaPackage() == null`) ⇒ đi đường `pickMusic` +
+  `openPlain`/`deliver` như nhánh QUERY, rồi mới transport. Giữ nguyên câu *"chưa có phiên nhạc"* cho ca
+  `PAUSE/NEXT/PREV` (ở đó nó đúng).
+* **[VÁ 1.64]** ĐÃ VÁ đúng đề xuất [ĐO lượt 2]: `phát nhạc` (t46) → `✓ Phát nhạc — đã mở YouTube Music; chưa có
+  phiên nhạc nào để điều khiển — bấm Play trong app`; `mở nhạc trên YouTube Music` (t50) → cùng dạng, và
+  [ĐO `dumpsys activity activities`] **YT Music thật sự lên màn**
+  (`com.google.android.apps.youtube.music/.activities.MusicActivity`). `dừng nhạc` (t47) giữ nguyên transport +
+  câu *"chưa có phiên nhạc nào"* — ở đó nó đúng. App đích ĐANG phát ⇒ vẫn transport, không mở đè.
+
+### [P2] L3 — biasing mất **50/187** nhãn vì một dấu câu ⇒ nghe sai đúng những từ hay dùng nhất
+* **Câu [ĐO T2]**: `xem pin` → nghe `xem tin` (w12, ra Unknown) · `mở kính trước trái` → `mở kín trước trái`
+  (w04, ra Unknown) · `dừng nhạc` → `rừng nhạc` (w09, ra Unknown).
+* **Gốc [ĐO nguồn + đếm bằng script]**: `core/.../voice/SherpaHotwords.kt` `normalize()` — nhánh
+  `else -> return null` **bỏ CẢ cụm** khi gặp một ký tự không phải chữ/khoảng trắng. Đếm trên danh mục:
+  **12/64** nhãn `ControlRegistry` (gồm cả bốn *"Kính trước-trái/phải"*, *"Khoá / mở khoá"*, *"EV / HEV"*) và
+  **38/123** nhãn `TelemetryRegistry` (gồm ***"Pin (SOC)"***, *"Áp lốp trước-trái"*…) **không bao giờ** thành
+  hotword. Thêm hai lỗ nữa: `SherpaBiasing.accentedControlPhrases()` **không** lấy `VoiceSynonyms.CONTROL/
+  TELEMETRY` — nơi chứa đúng các từ đời thường `pin` · `kính` · `cửa sổ` · `điều hoà` — và **không** lấy động từ
+  (`VoiceGrammar.VERBS`: *bật · tắt · mở · đóng · dừng · tăng · giảm*), tức chính từ bị nghe nhầm ở w09.
+* **Vì sao quan trọng**: `biasing=true` [ĐO logcat] nên nhìn từ ngoài mọi thứ "đang bật", mà ba từ trung tâm của
+  bộ lệnh vẫn sai. Con số **87% intent** của `vn-stt-sherpa-emulator-eval-2026-09-14.md` đo bằng **danh sách
+  hotword thủ công** (có `PIN`) ⇒ **không áp dụng** cho bản đang ship — đây là một chỗ `[ĐO]` cũ bị mang sang
+  làm bảo chứng cho một cấu hình khác (CLAUDE.md §14).
+* **Đề xuất**: trong `normalize`, thay ký tự không phải chữ bằng **khoảng trắng** (giữ nguyên luật loại chữ số);
+  và đưa `VoiceSynonyms.CONTROL/TELEMETRY` + `VoiceGrammar.VERBS` vào nguồn hotwords. Khoá bằng một bài canh
+  off-car: *"mọi cụm trong danh mục đều ra được ít nhất một hotword"* (cùng hình dạng bài canh
+  `VoiceGrammarPhrasesTest` đang có cho pha Vosk).
+* **[VÁ 1.64 — MỘT PHẦN]** [ĐO lượt 2]: lỗ **50/187 nhãn đã đóng hoàn toàn** (0 nhãn mất hotword), tập hotword
+  **408 → 623** dòng, và `PIN` · `KÍNH` · `KÍNH TRƯỚC TRÁI` · `DỪNG` · `NHẠC` **nay đều có mặt** (trước không có
+  cụm nào). Kết quả nghe: **w04 `mở kính trước trái` ĐÃ ĐÚNG** (trước: *"mở kín trước trái"* ⇒ Unknown).
+  **Nhưng w09 (`dừng`→*rừng*) và w12 (`pin`→*tin*) KHÔNG đổi** dù hotword đã có — xem §6.3, đó là một lỗ KHÁC
+  (hotword một-từ-ngắn không thắng được âm), chưa có kết luận gốc.
+
+### [P2] L4 — câu trả lời của **gói lệnh** và của **nav cần toạ độ** không bao giờ vào được lời đáp `say`
+* **Thực tế [ĐO]**: `đóng hết kính` → `replies: []` (ms=703) · `rời xe` → `replies: []` ·
+  `dẫn đường đến Bitexco --ez auto_confirm true` → chỉ có `"… đang tra điểm đến…"`. Ngược lại
+  `mở cửa + đèn đọc` (gói **không** có bước chờ) → có reply (ms=805).
+* **Gốc [ĐO nguồn]**: `app/.../testbridge/KachiTestBridge.kt:399` `GRACE_MS = 700` ms, trong khi `runMacro` chạy
+  `MacroRunner` trên luồng nền **có `Thread.sleep` giữa các bước** và `runNav` chờ geocode ở luồng nền
+  (`VoiceDispatcher.kt:276–294`). Trần cả lượt thì tận `CAP_MS = 20 000`, nên chỗ hụt là **nhịp chờ**, không
+  phải trần.
+* **Hậu quả**: mọi script đo (kể cả bộ này) **mù** với kết quả thật của đúng hai nhánh chạy nền — tức hai nhánh
+  dễ hỏng nhất lại là hai nhánh không quan sát được.
+* **Đề xuất**: chờ theo **việc** chứ không theo hằng số: `say` giữ `PendingResult` tới khi không còn vế nào đang
+  chạy (hoặc GRACE theo loại ý định: Macro/Nav ⇒ 5–8 s), trần vẫn `CAP_MS`.
+* **[VÁ 1.64]** ĐÃ VÁ theo hướng *chờ-theo-việc* (`TestBridgeSettle`, thuần `:core`, có bài canh): đủ số dòng so
+  với số ý định **và** lặng 300 ms ⇒ chốt; còn dòng TẠM (`…`) ⇒ chờ tới 12 s; trần khác 5 s; trần lượt vẫn
+  `CAP_MS = 20 s`. [ĐO lượt 2] `đóng hết kính` `replies: []` → **1 dòng** (`wait_ms` 1 749) · `rời xe` → **1
+  dòng** (2 823) · `dẫn đường đến Bitexco --ez auto_confirm true` → **2 dòng**, có cả câu CUỐI `✓ Dẫn đường tới
+  Bitexco` (1 474). Số ca `replies: []` trong 67 ca: **2 → 0**. Lệnh thường **nhanh hơn** nhịp cũ:
+  `wait_ms` ≈ 0,36–0,61 s thay vì 0,70 s cố định.
+
+### [P2] L5 — câu ghép: một vế không hiểu ⇒ vế đó bị bỏ **im lặng**
+* **Câu [ĐO]**: `mở cửa và đèn đọc` → **một** intent `Bật Đèn đọc`; không câu nào nói *"mở cửa"* đã bị bỏ.
+* **Gốc [ĐO nguồn]**: `VoiceIntentParser.kt:52–57` — tách theo liên từ, **chỉ nhận** khi mọi vế hiểu được, ngược
+  lại phân tích lại **nguyên câu**; lúc đó luật *"cách hiểu đầu tiên có nghĩa"* tìm thấy `đèn đọc` ở giữa câu và
+  trả đúng một ý định. Luật này sinh ra cho ca *"Mở bài Cỏ dại và hoa dành dành"* (đúng chỗ đó), nhưng ở đây nó
+  nuốt mất một mệnh đề.
+* **Đề xuất**: khi câu **có liên từ** mà bản phân tích cả-câu chỉ dùng một phần chuỗi, nói thêm một dòng
+  *"đã bỏ qua: «mở cửa»"* — im lặng ở đây là người lái tưởng cả hai việc đã chạy.
+* **[VÁ 1.64]** ĐÃ VÁ [ĐO lượt 2, chạy tay qua cầu]: `mở cửa và đèn đọc` ⇒ **2** ý định —
+  `Control · Bật Đèn đọc` + `Unknown · Đã bỏ qua vế không hiểu: "mở cửa"`, và cả hai dòng đều vào lời đáp.
+  Phân biệt với tên bài có chữ *"và"*: `Mở bài Cỏ dại và hoa dành dành` vẫn **1** ý định, không báo gì (vế ấy
+  nằm trong phần từ-vựng-mở mà cả câu đã nhận).
+
+### [P2] L6 — tên app là **nhãn hệ thống** ⇒ nhiều app *"gõ được mà không nói được"*
+* **Câu [ĐO]**: `mở bản đồ` → `Unknown` (máy ảo có nhãn tiếng Anh *"Maps"*); `mở Maps` → ✓.
+* **Gốc**: `VoiceWiring.appsByLabel` lấy `ri.loadLabel(pm)` (generic — đúng CLAUDE.md §7), nhưng không có lớp
+  *"cách gọi tiếng Việt"* cho `OpenApp`. Bảng `VoiceSynonyms.APP_TARGETS` **đã có** cách gọi tiếng Việt
+  (*"bản đồ google"*, *"viet map"*, *"quay"*…) nhưng cố ý chỉ tra ở mệnh đề *"bằng &lt;app&gt;"*
+  (`VoiceIntentParser.appAfterMarker`).
+* **Cộng hưởng với T2**: model VN **không phát ra** token tiếng Anh ([ĐO] eval 09-14 `youtube` → *"ô tường"*;
+  lượt này w01 `mở youtube` nghe ĐÚNG vì giọng TTS đọc theo âm Việt — **giọng thật có thể khác**).
+* **Đề xuất**: cho `OpenApp` tra thêm `APP_TARGETS` (một cụm → tên gói → nhãn), giữ nguyên ưu tiên nhãn thật.
+* **[VÁ 1.64]** ĐÃ VÁ đúng đề xuất [ĐO lượt 2, t45]: `mở bản đồ` ⇒ `OpenApp · Mở ứng dụng Google Maps` và
+  [ĐO `dumpsys`] **Google Maps thật sự lên màn** (`com.google.android.apps.maps/com.google.android.maps.MapsActivity`).
+  Nhãn thật vẫn thắng (`mở Maps` ⇒ nhãn *"Maps"* của máy); mệnh đề ô còn nguyên (`mở bản đồ vào ô số 2`);
+  app chưa cài ⇒ *"chưa cài &lt;tên&gt;"* thay vì *"không mở được"*.
+
+### [P3] L7 — **bố cục** chưa có ý định giọng nói
+`đổi bố cục 4 ô` · `bố cục hai ô` → `Unknown` [ĐO t59/t60]. `VoiceIntent` không có nhánh bố cục, `LauncherActions`
+chỉ có `APPS/SETTINGS/VOICE` — trong khi cầu kiểm thử **đã có** lệnh `preset` (`TestBridgeCommands.PRESET`) ⇒ khả
+năng có sẵn ở tầng dưới, chỉ thiếu đường từ câu nói. Spec `kachi-voice-command.html` chưa khai R nào cho việc này
+⇒ **quyết định của owner**, không tự thêm.
+
+### [P3] L8 — bẫy của chính harness (đã vá): `adb` nuốt `stdin` của vòng lặp
+Lượt chạy đầu chỉ thực hiện **1/67** ca rồi im. Gốc: `while read … done < cases.tsv` + `adb shell` bên trong —
+`adb` đọc hết stdin. Vá: đọc ca qua **fd 3** (`done 3< "$CASES"`) và `adbs() { "$ADB" … </dev/null; }`. Ghi lại vì
+mọi script adb có vòng lặp đều dính bẫy này, và triệu chứng của nó là *"chạy xanh nhưng thiếu việc"*.
+
+### [INFO] L9 — một ca trong ma trận sai từ đầu
+`chạy gói mở cửa + đèn đọc` → `Unknown(NO_VERB)`: *"chạy"* không nằm trong `VoiceGrammar.VERBS`. Câu gọi đúng tên
+gói (`mở cửa + đèn đọc`) chạy đúng. Đây là lỗi của bộ ca, **không** phải của sản phẩm — giữ lại trong bảng để
+lượt sau không "sửa" nhầm sản phẩm.
+
+## 4. [CHƯA ĐO] — và vì sao
+
+| Việc | Vì sao chưa đo | Cần gì để chốt |
+|---|---|---|
+| Transport nhạc với **phiên thật** (play/pause/next/prev có hiệu lực) | [ĐO] đã thử tạo phiên: mở `https://www.youtube.com/watch?v=…` → YouTube của máy ảo dừng ở **tường nâng cấp** (`NewVersionAvailableActivity`) ⇒ `dumpsys media_session` vẫn `have 0 sessions` (máy CÓ mạng: ping 8.8.8.8 = 39 ms). `MediaBridge` no-op ⇒ mọi reply là *"chưa có phiên nhạc nào"* (đúng theo mã) | một app nhạc phát được (bản YouTube/YT Music mới hơn), hoặc đo trên xe |
+| Đường side-load (a) `<ext>/sherpa/import/<id>/` + nút *"tải mô hình"* | lượt này dùng đường (b) (chép thẳng vào `filesDir`) cho tất định | một lượt bấm trong Cài đặt (UI) hoặc một entry gọi `VoiceModelStore.install` |
+| `--es cmd listen` (phiên mic thật) | máy ảo không có micro | xe thật (§11 CLAUDE.md) |
+| Câu trả lời CUỐI của nhánh nav cần toạ độ | rơi ngoài `GRACE_MS` (L4) | vá L4 rồi đo lại |
+| Sổ địa chỉ (`NavigateSaved`, biasing kèm nhãn địa chỉ) | chưa có trong APK 1.63 đã đo (còn trong cây làm việc) | build lại rồi chạy §5, một lệnh |
+| Giọng thật · ồn đường · mic 4 kênh · RTF trên A10 | thuộc phần xe | playbook §2.14 / K1–K3 |
+
+## 5. Chạy lại (một lệnh)
+
+```bash
+# 1) sinh WAV (macOS, giọng Linh) — ~25 câu, 16 kHz mono PCM16
+scripts/emulator/voice-wavgen.sh /tmp/kachi-voice-wav
+
+# 2) tải mô hình (4 tệp, ~270 MB) vào một thư mục bất kỳ; sha256 phải khớp SherpaModelCatalog.ZIPFORMER_VI
+BASE=https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-2025-04-20/resolve/main
+curl -sSL -o encoder.onnx "$BASE/encoder-epoch-12-avg-8.onnx"   # d566456163…
+curl -sSL -o decoder.onnx "$BASE/decoder-epoch-12-avg-8.onnx"   # d1d27cca84…
+curl -sSL -o joiner.onnx  "$BASE/joiner-epoch-12-avg-8.onnx"    # a186d4ddf0…
+curl -sSL -o tokens.txt   "$BASE/tokens.txt"                    # f536d03c2e…
+
+# 3) chạy cả hai tầng (tự bật chế độ kiểm thử, tự nạp mô hình nếu thiếu)
+scripts/emulator/voice-e2e.sh --serial emulator-5554 --apk apk/Kachi-<ver>-vehicleTest.apk \
+    --modeldir <thư mục 4 tệp> --wavdir /tmp/kachi-voice-wav --out /tmp/kachi-voice-e2e
+# chỉ một tầng:  --only say   |   --only wav
+```
+
+Bảng kết quả: `<out>/report.md`; dữ liệu thô từng ca: `<out>/t1-results.tsv`, `<out>/t2-results.tsv` (cột cuối là
+**nguyên văn JSON** mà cầu trả về, để lượt sau `diff` được).
+
+## 6. LƯỢT 2 — bản **1.64 (65)** sau khi vá L1 · L2 · L3 · L4 · L5 · L6
+
+[ĐO] cùng máy `emulator-5554`, **cùng bộ ca** (`voice-cases.tsv` 67 ca + 25 WAV cũ, không sinh lại tiếng), cùng
+mô hình đã nạp sẵn. Lệnh chạy y như §5, chỉ đổi `--apk` sang bản 1.64 và `--out /tmp/kachi-voice-e2e-164`.
+Số của **lượt 1 ở §2/§3 KHÔNG bị sửa** — bảng dưới là số MỚI đặt cạnh số cũ.
+
+### 6.1 Tổng quan trước/sau
+
+| Thước đo | 1.63 (lượt 1) | 1.64 (lượt 2) |
+|---|---|---|
+| T1 — ca PASS | 66/67 (1 FAIL: **t29**, lỗi của bộ ca — L9) | **66/67** (vẫn đúng ca t29 ấy, không ca nào mới đỏ) |
+| T1 — ca trả `replies: []` | **2** (`t14 đóng hết kính`, `t28 rời xe`) | **0** |
+| T2 — nghe đúng nguyên văn | 19/25 | **20/25** (thêm **w04**) |
+| T2 — ý định đúng hoàn toàn | 18/24 (75%) | **19/24 (79%)** |
+| Tập hotword sinh ra | **408** dòng | **623** dòng |
+| Nhãn danh mục KHÔNG ra hotword nào | **50/187** (12 control + 38 datum) | **0/187** |
+| `PIN` · `KÍNH` · `KÍNH TRƯỚC TRÁI` · `DỪNG` · `NHẠC` trong tập hotword | **không có cụm nào** | **có đủ 5** |
+
+### 6.2 Từng lỗi — trước → sau ([ĐO] nguyên văn lời đáp của cầu)
+
+| Lỗi | Câu | 1.63 | 1.64 |
+|---|---|---|---|
+| **[P1] L1** | `đóng YouTube` (t41) | `OpenApp` → `✓ Mở ứng dụng YouTube` (**làm ngược**) | `Unknown(APP_CLOSE)` → *"Chưa đóng được app bằng giọng — bấm phím Home, hoặc mở app khác đè lên"* |
+| **[P1] L2** | `mở nhạc trên YouTube Music` (t50) | `✗ … chưa có phiên nhạc nào`, **không app nào lên màn** | `✓ Phát nhạc trên YouTube Music — đã mở YouTube Music; chưa có phiên nhạc nào để điều khiển — bấm Play trong app` + [ĐO `dumpsys`] **`…youtube.music/.activities.MusicActivity` lên màn** |
+| **[P1] L2** | `dừng nhạc` (t47) | `✗ … chưa có phiên nhạc nào` | **giữ nguyên** (đúng: không có gì đang phát để dừng) |
+| **[P2] L3** | `mở kính trước trái` (w04) | nghe *"mở kín trước trái"* → `Unknown` | nghe **đúng** → `Control · Mở Kính trước-trái` |
+| **[P2] L3** | `xem pin` (w12) · `dừng nhạc` (w09) | *"xem tin"* · *"rừng nhạc"* | **KHÔNG đổi** — xem §6.3 |
+| **[P2] L4** | `đóng hết kính` (t14) | `replies: []` (ms=703) | `Đóng hết kính: xe không nhận lệnh nào` · `wait_ms=1 749` |
+| **[P2] L4** | `rời xe` (t28) | `replies: []` | `Rời xe: xe không nhận lệnh nào` · `wait_ms=2 823` |
+| **[P2] L4** | `dẫn đường đến Bitexco --ez auto_confirm true` | chỉ có dòng TẠM *"…đang tra điểm đến…"* | **2 dòng**: dòng TẠM + câu CUỐI `✓ Dẫn đường tới Bitexco` · `wait_ms=1 474` |
+| **[P2] L5** | `mở cửa và đèn đọc` | **1** ý định (`Bật Đèn đọc`), vế *"mở cửa"* bị bỏ **im lặng** | **2** ý định: `Bật Đèn đọc` + `Đã bỏ qua vế không hiểu: "mở cửa"` |
+| **[P2] L5** | `Mở bài Cỏ dại và hoa dành dành` | 1 ý định (đúng) | **1 ý định, không báo gì** (vế ấy nằm trong tên bài — luật phân biệt bằng phần từ-vựng-mở) |
+| **[P2] L6** | `mở bản đồ` (t45) | `Unknown` (*"không tìm thấy…"*) | `OpenApp · Mở ứng dụng Google Maps` + [ĐO `dumpsys`] **Google Maps lên màn**; `mở Maps` vẫn đi đường **nhãn thật** |
+
+**Nhịp chờ mới (L4)** — `say` nay trả thêm trường `wait_ms` (thời gian nán chờ thật): lệnh thường
+**0,36–0,61 s** (nhanh hơn hằng cũ 0,70 s), gói lệnh 1,7–2,8 s, nav cần toạ độ 1,5 s; trần lượt vẫn `CAP_MS`
+20 s và **không ca nào** chạm trần.
+
+### 6.3 [CHƯA BIẾT] — vì sao `pin` · `dừng` vẫn nghe sai dù ĐÃ là hotword
+
+[ĐO] w12 `xem pin` → *"xem tin"*, w09 `dừng nhạc` → *"rừng nhạc"*, w22 `pin còn bao nhiêu` → *"còn bao nhiêu"* —
+**giống hệt lượt 1**, trong khi cùng lượt ấy w04 (`KÍNH TRƯỚC TRÁI`, cụm **3 từ**) lại được kéo về đúng. Tức
+biasing **có ăn** (w04 là bằng chứng), nhưng không thắng ở **cụm một từ ngắn**.
+
+Ba dữ kiện đã có, KHÔNG được trộn với nhau:
+* [ĐO] tập hotword 1.64 **có** `PIN` và `DỪNG` (kiểm bằng bài canh `SherpaBiasingCoverageTest`);
+* [ĐO] `hotwords_score = 3.0`, `modeling_unit = bpe`, `biasing=true` (logcat `KachiVoiceEngine`) — **không đổi**
+  so với lượt 1;
+* [ĐO] `vn-stt-sherpa-emulator-eval-2026-09-14.md` §2 ca 06: cùng câu *"xem pin"*, cùng score 3.0, **biasing SỬA
+  được** — nhưng phép đo ấy chạy **trên macOS** với một **danh sách hotword thủ công nhỏ**, không phải 623 dòng.
+
+⇒ [SUY] hai giả thuyết còn lại, **chưa tách được**: (a) cụm một-từ-ngắn không đủ sức kéo so với âm thật của
+giọng TTS; (b) danh sách 623 dòng làm loãng/ganh nhau trong đồ thị ngữ cảnh. **Cách chốt (một phép đo)**: chạy
+sherpa-onnx trên host với **cùng 3 tệp WAV** và **hai** tệp hotword — (1) đúng 623 dòng của 1.64, (2) chỉ 3 dòng
+`PIN` / `XEM PIN` / `DỪNG NHẠC` — rồi so HYP. Kết quả quyết định bước sau: nếu (1) sai mà (2) đúng ⇒ vấn đề là
+**độ dài cụm** ⇒ thêm cụm **động từ + đối tượng** vào nguồn hotword; nếu cả hai sai ⇒ vấn đề nằm ở `score` /
+giọng, xử bằng phép đo giọng thật trên xe. **Chưa làm** vì host hiện không có model (266 MB) lẫn sherpa CLI.
+
+⚠ Ca canh vẫn xanh: **w21** *"hôm nay trời đẹp quá"* và **w25** nghe **đúng nguyên văn** ở 1.64 ⇒ 623 hotword
+(kể cả các từ đơn `MỞ` · `TRƯỚC` · `TIẾP`) **không** chèn lệnh vào câu thường.
+
+#### [ĐO host 2026-09-15] — phép đo chốt (a) vs (b), chạy trực tiếp sherpa-onnx trên macOS
+
+Chạy được cả 4 việc §6.3 để ngỏ ("chưa làm vì host không có model lẫn sherpa CLI"): cài `sherpa-onnx==1.13.8`
+(pip, venv tạm `/tmp/sherpa-venv`, KHÔNG đụng repo) — 4 tệp model (`encoder/decoder/joiner/tokens`, `zipformer-
+vi-2025-04-20`) đã có sẵn từ phiên trước trong scratchpad; `bpe_vocab.txt` lấy nguyên tệp asset thật
+`app/src/main/assets/voice/zipformer-vi-2025-04-20.bpe_vocab.txt` (không phải bản dựng lại).
+
+**Tệp hotword 623 dòng**: repo không cho chạy Gradle/kotlinc ở phép đo này, nên tái dựng bằng **script Python**
+đọc lại nguyên văn 4 bộ đăng ký (`ControlRegistry.kt`, `TelemetryRegistry.kt`, `ActionMacros.kt`,
+`LauncherActions.kt` — mọi `label/labelEn/short/shortEn/args/argsEn`, chép tay từng dòng) + `SherpaSpokenWords.kt`
+(`VERBS`/`ACCENTED` nguyên văn), rồi cài lại đúng luật `SherpaHotwords.normalize`/`phrasesOf` (tách theo
+`ALT_SEPARATORS`, bỏ token có số, `MIN_LEN=2`, HOA). Script:
+`build_hotwords.py` (scratchpad phiên này). **Độ khớp**: sinh ra đúng **623 dòng** — khớp CHÍNH XÁC con số đã đo
+trên xe ở bảng §6.1 — và có đủ `PIN`/`DỪNG`/`KÍNH`/`KÍNH TRƯỚC TRÁI`/`NHẠC` như dòng cuối bảng đó. Số dòng trùng
+tuyệt đối là bằng chứng gián tiếp mạnh rằng tái dựng khớp bản 1.64 thật (không phải chỉ "gần đúng"); rủi ro còn
+lại duy nhất là **thứ tự xuất hiện** giữa hai nhãn hiếm khi trùng ký tự sau chuẩn hoá — không ảnh hưởng phép đo
+vì `LinkedHashSet` khử trùng theo NỘI DUNG, không theo thứ tự.
+
+**Tham số recognizer** — khớp `VoiceRecognizer.kt`/`SherpaModelCatalog.kt`: `decoding_method=modified_beam_search`,
+`hotwords_score=3.0`, `modeling_unit=bpe`, `bpe_vocab=<asset thật>`, `num_threads=2`, `max_active_paths=4`,
+`sample_rate=16000`, `feature_dim=80`. Chạy `hotwords_score=5.0` thêm ở CỘT RIÊNG, chỉ để tham khảo (đề bài yêu
+cầu — không phải đề xuất đổi hằng số).
+
+**Ma trận** — 4 tệp hotword × 5 WAV, ở `hotwords_score=3.0` (script `run_matrix.py`, log đầy đủ
+`matrix_full_stdout.log`):
+
+| Tệp hotword | w09 `dừng nhạc` | w12 `xem pin` | w22 `pin còn bao nhiêu` | w04 `mở kính trước trái` | w21 (canh) |
+|---|---|---|---|---|---|
+| (không hotword) | ✗ *"rừng nhạc"* | ✗ *"xem tin"* | ✗ *"còn bao nhiêu"* | ✗ *"mở kín trước trái"* | ✓ |
+| chỉ 3 dòng `PIN`/`XEM PIN`/`DỪNG NHẠC` | **✓ đúng** | **✓ đúng** | ✗ *"còn bao nhiêu"* | ✗ *"mở kín trước trái"* | ✓ |
+| **đủ 623 dòng (1.64 thật)** | ✗ *"rừng nhạc"* | ✗ *"xem tin"* | ✗ *"còn bao nhiêu"* | ✓ đúng | ✓ |
+| 623 dòng **+ thêm** `XEM PIN`/`DỪNG NHẠC` | ✗ *"rừng nhạc"* | ✗ *"xem tin"* | ✗ *"còn bao nhiêu"* | ✓ đúng | ✓ |
+
+Tham khảo `hotwords_score=5.0` (KHÔNG phải đề xuất, chỉ để thấy xu hướng):
+
+| Tệp hotword | w09 | w12 | w22 | w04 |
+|---|---|---|---|---|
+| 3 dòng | ✓ đúng | ✓ đúng | ✗ | ✗ *"mở kín trước trái"* |
+| 623 dòng | ✓ đúng (đổi so với 3.0) | ✗ *"xem tin"* (KHÔNG đổi) | ✗ | ✓ đúng |
+| 623 + 2 cụm | ✓ đúng | ✗ *"xem tin"* | ✗ | ✓ đúng |
+
+**Kết luận [ĐO]** — tách rõ theo §2, KHÔNG trộn cơ chế với quy kết:
+
+1. **[ĐO]** Ở CÙNG `hotwords_score=3.0`, danh sách **3 dòng** sửa được `w09`/`w12` mà danh sách **623 dòng ĐANG
+   CHẠY TRÊN XE** thì KHÔNG (hàng 2 vs hàng 3 của bảng trên) ⇒ biến số quyết định KHÔNG PHẢI "hotword đó có tồn
+   tại trong tệp hay không" (`PIN`/`DỪNG` có mặt ở cả hai) mà là **kích thước/mật độ của cả tệp** — đúng giả
+   thuyết (b).
+2. **[ĐO]** Đây là bằng chứng **bác bỏ một phần** cách đọc rubric gốc của §6.3 ("(1) sai mà (2) đúng ⇒ vấn đề là
+   độ dài cụm ⇒ thêm cụm động từ + đối tượng"): hàng 4 của bảng **đã làm đúng việc đó** — thêm chính hai cụm
+   verb+object `XEM PIN`/`DỪNG NHẠC` vào NGUYÊN tệp 623 dòng — và **không sửa được gì cả** (giống hệt hàng 3).
+   Nếu nguyên nhân thuần là "cụm quá ngắn" (giả thuyết a), thêm đúng cụm dài hơn phải sửa được ngay khi nó đã có
+   mặt trong tệp — nhưng không. ⇒ **chỉ thêm cụm dài hơn KHÔNG đủ** một khi tệp đã lớn; phần thắng của `w04`
+   (cụm 3 từ `KÍNH TRƯỚC TRÁI`, đã có sẵn trong 623 dòng từ 1.64) cho thấy cụm dài *có* lợi thế kéo hơn cụm ngắn
+   **trong cùng một tệp lớn** (ủng hộ một phần giả thuyết a như một hiệu ứng PHỤ), nhưng lợi thế đó không đủ
+   thắng hiệu ứng loãng của (b) cho `xem pin`/`dừng nhạc`.
+3. **[ĐO]** Ở mức tham khảo `hotwords_score=5.0`: nâng score cho NGUYÊN tệp 623 dòng sửa được `w09` (không đổi
+   với 3 dòng) nhưng **vẫn không sửa `w12`** — nâng đều một hằng số bù được MỘT PHẦN hiệu ứng loãng, không hết,
+   và bù không đều giữa các câu (không phải hướng vá đáng tin — đúng lý do đề bài xếp mục này là tham khảo).
+
+⇒ **[SUY] hướng vá đúng theo bằng chứng**: (b) là nguyên nhân CHÍNH đo được, không phải (a) đơn thuần. Thêm cụm
+động từ+đối tượng vào `SherpaSpokenWords` (hướng rubric gốc đề xuất cho nhánh "(1) sai, (2) đúng") **đã được đo
+trực tiếp là không đủ** — vì nó vẫn nằm trong cùng tệp 623 dòng bị loãng. Hướng cần thử (CHƯA làm, ngoài phạm vi
+phép đo này — đổi hành vi cần spec + approve theo CLAUDE.md §1):
+   - giảm kích thước tệp hotword đưa vào MỘT phiên nghe (vd chỉ bias các cụm liên quan tới ngữ cảnh đang mở, thay
+     vì đổ nguyên 4 bộ đăng ký mỗi lần), hoặc
+   - tách hai tầng hotword: một tệp NHỎ ưu tiên cao (động từ + danh từ lõi hay dùng nhất, kiểu tệp 3 dòng đã đo ở
+     đây) cộng một tệp lớn ưu tiên thấp hơn cho phần còn lại — nếu sherpa-onnx hỗ trợ trọng số khác nhau theo
+     dòng (`hotwords_file` chỉ nhận MỘT `hotwords_score` cho cả tệp ở bản 1.13.8 — [ĐO] `OfflineRecognizer.
+     from_transducer.__doc__`; muốn trọng số riêng theo cụm phải kiểm API `boost` per-phrase nếu tồn tại ở bản
+     mới hơn, hoặc build FST hotword thủ công — CHƯA kiểm, ghi vào Open Questions).
+Không kết luận thêm gì về score 5.0 — đó là tham khảo, không phải đề xuất theo yêu cầu đề bài.
+
+**Script + log** (scratchpad phiên đo, không phải trong repo): `build_hotwords.py`, `run_matrix.py`,
+`matrix_full_stdout.log`, `hotwords_full_623.txt`, `hotwords_3lines.txt`, `hotwords_623_plus2.txt`.
+
+### 6.4 Còn lại sau lượt 2
+
+| Việc | Trạng thái |
+|---|---|
+| L3 phần `pin`/`dừng` (w09 · w12 · w22) | **còn** — [ĐO host 2026-09-15] ở §6.3 đã chốt: nguyên nhân CHÍNH là tệp 623 dòng làm loãng (giả thuyết b), không phải cụm quá ngắn đơn thuần; hướng vá (giảm/tách tầng hotword) chưa implement, cần spec riêng |
+| L7 bố cục bằng giọng nói (t59/t60) | **còn** — quyết định của owner (spec chưa khai R nào) |
+| w07 `Bitexco` · w24 `Waze` (tên riêng / tên app tiếng Anh) | **còn** — thuộc lỗ *"model VN không phát ra token tiếng Anh"* (§3 L6 + eval 09-14 §4), không phải lỗi mã |
+| t29 *"chạy gói …"* | **không sửa** — lỗi của bộ ca (L9), giữ nguyên để lượt sau không sửa nhầm sản phẩm |
+| Transport nhạc với **phiên thật** · mic thật · giọng thật | vẫn [CHƯA ĐO] — xem §4 |
+
+### 6.5 Mã đã đổi trong 1.64 (để lượt sau lần ngược được)
+
+`SherpaHotwords` (dấu câu = ngắt từ, chữ số bỏ theo **token**, `phrasesOf` trả nhiều hotword cho một nhãn) ·
+`SherpaSpokenWords` (**mới**: dạng CÓ DẤU của `VoiceSynonyms` + động từ) · `SherpaBiasing` ·
+`TestBridgeSettle` (**mới**, `:core`: chờ-theo-việc cho `say`) · `KachiTestBridge.runSay` ·
+`VoiceIntentParser` + `VoiceTailClause` (**mới**: mệnh đề đuôi + cách gọi app) · `VoiceIntent` (`APP_CLOSE` ·
+`DROPPED_CLAUSE` · `OpenApp.appKey`) · `VoiceReply` · `VoiceDispatcher` (`runMedia` tách nhánh PLAY) ·
+`MediaBridge` (interface `MediaTransport`) · `VoiceSynonyms.APP_TARGETS` (thêm cách nói *"bản đồ"*).
+Bài canh mới: `SherpaBiasingCoverageTest` · `TestBridgeSettleTest` · `VoiceE2EFix0915Test` ·
+`VoiceMediaOpenAppTest`. [ĐO] `:core` 1 899 ca / `:app` 955 ca — **0 đỏ**.

@@ -110,6 +110,11 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             customLayout = prefs.gridLayout().takeIf { it.frames.isNotEmpty() },
             unitPrefs = prefs.unitPrefs(),
             wallpaper = prefs.wallpaperPrefs(),
+            // Sổ địa chỉ (spec `kachi-voice-addresses.html` R1): nạp CÙNG lượt vì hai chỗ đọc nó — bảng Cài đặt
+            // (vẽ danh sách) và đường lệnh giọng nói (tra sổ lúc thi hành) — đều đọc `HomeUiState`. Nạp ở đây thì
+            // ca **đổi hồ sơ** tự đúng: `switchProfile` gọi lại `load()` nên sổ của hồ sơ mới về cùng lúc với mọi
+            // thứ khác, không phải nhớ nạp lại bằng tay ở tầng UI (bài học [SOÁT P1-1]).
+            savedPlaces = prefs.savedPlaces(),
             topStrip = prefs.topStrip(),
             // S1·T4: nạp cùng lượt với mọi thứ khác ⇒ mở lại màn Cài đặt là thấy đúng cờ đang lưu (bài học P1-1: nạp
             // bằng tay ở tầng UI thì sẽ có lần quên).
@@ -226,6 +231,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun topStrip(): TopStripConfig = prefs.topStrip()
 
     override fun setTopStrip(config: TopStripConfig) = prefs.setTopStrip(config)
+
+    override fun savedPlaces(): List<SavedPlace> = prefs.savedPlaces()
+
+    override fun setSavedPlaces(places: List<SavedPlace>) = prefs.setSavedPlaces(places)
 
     override fun wallpaperPrefs(): WallpaperPrefs = prefs.wallpaperPrefs()
 

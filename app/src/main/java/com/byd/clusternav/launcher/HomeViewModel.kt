@@ -168,6 +168,17 @@ class HomeViewModel(
     /** Bật/tắt một chip. Luật (trần 4 · chỉ nhận mục ĐỌC) nằm ở `:core`, đây chỉ chuyển tiếp. */
     fun toggleTopStrip(id: String, on: Boolean) = setTopStrip(_uiState.value.topStrip.setEnabled(id, on))
 
+    /**
+     * **Sổ địa chỉ** của hồ sơ đang dùng — state + lưu bền trong MỘT lượt, cùng khuôn mẫu [setTopStrip].
+     *
+     * Không đi qua [mutate]/`persist` vì khoá này nằm ngoài bộ khoá mà `persist` ghi (đúng như đơn vị, hình nền,
+     * chip thanh trên). Phép thêm/sửa/xoá là hàm thuần ở `:core` ([SavedPlaces]); ở đây chỉ nhận danh sách đã chốt.
+     */
+    fun setSavedPlaces(places: List<SavedPlace>) {
+        _uiState.update { it.copy(savedPlaces = places) }
+        repository.setSavedPlaces(places)
+    }
+
     /** Lựa chọn hình nền (U4). */
     fun setWallpaperPrefs(prefs: WallpaperPrefs) {
         _uiState.update { it.copy(wallpaper = prefs) }

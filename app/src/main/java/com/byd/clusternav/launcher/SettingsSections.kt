@@ -66,7 +66,13 @@ class SettingsSections(
             SettingsGroup.BARS -> SettingsBarsSection(context, rows, deps).build(body)
             SettingsGroup.DISPLAY -> display(body)
             SettingsGroup.PROFILES -> profiles(body)
-            SettingsGroup.NAV -> SettingsNavSection(context, rows, deps).build(body)
+            // Hai khối trong một nhóm, và thứ tự là một quyết định: **Sổ địa chỉ trước**, cấu hình cụm sau —
+            // lý do đầy đủ ở KDoc [SettingsPlacesSection] (sổ địa chỉ không phụ thuộc công tắc dẫn đường, và
+            // chôn nó dưới ~2,7 màn cuộn là chôn một tính năng dùng hằng ngày).
+            SettingsGroup.NAV -> {
+                SettingsPlacesSection(context, rows, deps).build(body)
+                SettingsNavSection(context, rows, deps).build(body)
+            }
             SettingsGroup.CAST -> SettingsCastSection(context, rows, deps).build(body)
             SettingsGroup.KEYS -> SettingsKeysSection(context, rows, deps).also { keysSection = it }.build(body)
             SettingsGroup.CAR -> SettingsCarSection(context, rows, deps).build(body)

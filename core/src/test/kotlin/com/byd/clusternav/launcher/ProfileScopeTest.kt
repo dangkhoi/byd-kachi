@@ -56,6 +56,9 @@ class ProfileScopeTest {
         listOf(
             "preset", "grid_layout", "dock_edge", "dock_enabled", "dock_visible", "top_strip", "slot_0", "slot_5",
             "theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang",
+            // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html R1): *"nhà"* của người này không phải *"nhà"* của
+            // người kia — khoá theo XE ở đây nghĩa là đổi hồ sơ mà câu *"về nhà"* vẫn dẫn về nhà người trước.
+            "saved_places",
         ).forEach { assertEquals(ProfileScope.Scope.PROFILE, ProfileScope.scopeOf(it), "khoá $it") }
     }
 

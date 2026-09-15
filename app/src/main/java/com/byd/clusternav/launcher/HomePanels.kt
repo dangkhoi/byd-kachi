@@ -40,6 +40,13 @@ class HomePanels(
     private val onTopStrip: (String, Boolean) -> Unit,
     private val onWallpaper: (WallpaperPrefs) -> Unit,
     private val onUnitPrefs: (UnitPrefs) -> Unit,
+    /**
+     * Sổ địa chỉ của hồ sơ đang dùng (spec `kachi-voice-addresses.html` R1) — nhận **cả danh sách** đã chốt.
+     *
+     * Không phải cặp `onAdd`/`onDelete`: phép thêm/sửa/xoá là hàm thuần ở `:core` ([SavedPlaces]), nên hai cổng
+     * riêng chỉ nhân đôi chỗ để lệch nhau (cùng lập luận [onDockConfig] — xem KDoc [SettingsDeps.onDockConfig]).
+     */
+    private val onSavedPlaces: (List<SavedPlace>) -> Unit,
     private val onThemeMode: (ThemeMode) -> Unit,
     private val onLangMode: (LangMode) -> Unit,
     private val onAutostart: (Boolean) -> Unit,
@@ -152,6 +159,8 @@ class HomePanels(
             readInfo = { id -> readInfo(id) },
             // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).
             onUnitPrefs = { prefs -> onUnitPrefs(prefs) },
+            // Sổ địa chỉ: một cổng, nhận cả danh sách đã chốt (xem KDoc [onSavedPlaces]).
+            onSavedPlaces = { list -> onSavedPlaces(list) },
             onThemeMode = { m -> onThemeMode(m) },
             onLangMode = { m -> onLangMode(m) },
             onAutostart = { on -> onAutostart(on) },

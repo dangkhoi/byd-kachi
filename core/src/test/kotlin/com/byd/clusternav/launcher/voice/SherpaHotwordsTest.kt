@@ -27,11 +27,23 @@ class SherpaHotwordsTest {
     }
 
     @Test
-    fun `rejects phrases with digits or punctuation or too short`() {
-        assertNull(SherpaHotwords.normalize("ô số 2"), "có chữ số ⇒ bỏ")
+    fun `rejects empty or too short, drops digit tokens, keeps the rest`() {
         assertNull(SherpaHotwords.normalize("a"), "một ký tự ⇒ bỏ")
         assertNull(SherpaHotwords.normalize("   "), "rỗng ⇒ bỏ")
-        assertNull(SherpaHotwords.normalize("nhiệt-độ"), "dấu câu lạ ⇒ bỏ cả cụm")
+        assertNull(SherpaHotwords.normalize("360"), "chỉ có chữ số ⇒ không còn gì để bias")
+        // [ĐO] emulator-voice-e2e-2026-09-15 §3 L3: luật cũ (`else -> return null`) vứt CẢ cụm khi gặp một dấu
+        // câu ⇒ 50/187 nhãn không bao giờ thành hotword. Nay dấu câu chỉ là NGẮT TỪ, chữ số bỏ theo TOKEN.
+        assertEquals("NHIỆT ĐỘ", SherpaHotwords.normalize("nhiệt-độ"), "gạch nối ⇒ ngắt từ, không giết cụm")
+        assertEquals("Ô SỐ", SherpaHotwords.normalize("ô số 2"), "bỏ token số, giữ phần chữ")
+        assertEquals("BỤI MỊN", SherpaHotwords.normalize("Bụi mịn PM2.5"))
+    }
+
+    @Test
+    fun `alternative separators split one label into several hotwords`() {
+        assertEquals(listOf("KHOÁ", "MỞ KHOÁ"), SherpaHotwords.phrasesOf("Khoá / mở khoá"))
+        assertEquals(listOf("PIN", "SOC"), SherpaHotwords.phrasesOf("Pin (SOC)"))
+        assertEquals(listOf("KÍNH TRƯỚC TRÁI"), SherpaHotwords.phrasesOf("Kính trước-trái"))
+        assertEquals(emptyList<String>(), SherpaHotwords.phrasesOf("2,5"))
     }
 
     @Test

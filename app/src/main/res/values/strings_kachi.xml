@@ -274,6 +274,22 @@
     <!-- ── IA v2 · R-UI (o) — chip thứ sáu của hàng bố cục: luôn có ĐÚNG một chip sáng ── -->
     <string name="kachi_layout_custom_chip">Tự vẽ</string>
 
+    <!-- ── Sổ địa chỉ (SettingsPlacesSection) — docs/specs/kachi-voice-addresses.html ── -->
+    <string name="kachi_sec_places">Sổ địa chỉ</string>
+    <string name="kachi_places_note">Lưu nhà, công ty… rồi nói “về nhà”, “đến công ty”, “đi &lt;tên&gt;”. Sổ đi theo hồ sơ đang dùng.</string>
+    <string name="kachi_places_empty">Chưa lưu địa chỉ nào.</string>
+    <string name="kachi_places_add">Thêm địa chỉ…</string>
+    <string name="kachi_places_edit">Sửa địa chỉ</string>
+    <string name="kachi_places_full">Sổ đã đủ %1$d mục — xoá bớt rồi thêm mới.</string>
+    <string name="kachi_places_need_fields">Cần cả tên gọi và địa chỉ thì mới lưu được.</string>
+    <string name="kachi_places_has_coords">toạ độ %1$s</string>
+    <string name="kachi_places_no_coords">chưa có toạ độ (VietMap cần toạ độ)</string>
+    <string name="kachi_places_hint_label">Tên gọi — ví dụ Nhà, Công ty</string>
+    <string name="kachi_places_hint_address">Địa chỉ</string>
+    <string name="kachi_places_hint_coords">Toạ độ (tuỳ chọn) — 10.7769, 106.7009</string>
+    <string name="kachi_places_coords_note">Có toạ độ thì dẫn được bằng VietMap. Lấy toạ độ: mở app bản đồ, giữ vào điểm đó rồi chép cặp số.</string>
+    <string name="kachi_edit">Sửa</string>
+
     <!-- ── IA v2 nhóm 5 — Dẫn đường & cụm đồng hồ (SettingsNavSection) ── -->
     <string name="kachi_sec_nav">Dẫn đường + HUD</string>
     <string name="kachi_nav_enabled_title">Dẫn đường lên cụm đồng hồ</string>

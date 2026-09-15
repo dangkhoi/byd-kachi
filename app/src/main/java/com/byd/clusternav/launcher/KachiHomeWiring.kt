@@ -13,6 +13,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.AppContainer
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceSession
 import kotlinx.coroutines.launch
 import com.byd.clusternav.launcher.voice.VoiceWiring
@@ -138,6 +139,9 @@ internal fun homePanels(
     onTopStrip = { id, on -> viewModel.toggleTopStrip(id, on) },
     onWallpaper = onWallpaperChanged,
     onUnitPrefs = onUnitsChanged,
+    // Sổ địa chỉ (spec `kachi-voice-addresses.html` R1) — intent thuần, KHÔNG ghi bền trực tiếp; đường đọc là
+    // `HomeUiState.savedPlaces` mà `load()` đã nạp (không mở cửa `WorkspacePrefs` thứ hai ở tầng UI).
+    onSavedPlaces = { places -> viewModel.setSavedPlaces(places) },
     onThemeMode = { m -> viewModel.setThemeMode(m) },   // T1 — đọc-để-vẽ ở [ThemeHost]; gương store ở repository
     onLangMode = { m -> viewModel.setLangMode(m) },     // U5·T3 — đọc-để-vẽ ở [LangHost.wrap]
     onAutostart = { on -> viewModel.setAutostart(on) },
@@ -274,6 +278,8 @@ internal fun Activity.voiceSession(
         ctx = this,
         profiles = { state().profiles },
         appsByLabel = { VoiceWiring.appsByLabel(this) },
+        // Sổ địa chỉ của hồ sơ ĐANG dùng — đọc từ state (đường đọc bền duy nhất), như `profiles` ngay trên.
+        places = { VoicePlaces.labelsOf(state().savedPlaces) },
         dispatcher = { say, confirm ->
             VoiceWiring.dispatcher(
                 ctx = this,

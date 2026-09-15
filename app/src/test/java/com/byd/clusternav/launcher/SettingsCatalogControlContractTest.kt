@@ -26,6 +26,7 @@ class SettingsCatalogControlContractTest {
     private val cast by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCast.kt") }
     private val keys by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsKeys.kt") }
     private val car by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCar.kt") }
+    private val places by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsPlaces.kt") }
 
     /**
      * ⚠⚠ **BÀI CANH CHÍNH CỦA IA v2 (R2 · §4.3)** — *"không cấu hình nào nằm ngoài"*.
@@ -83,6 +84,11 @@ class SettingsCatalogControlContractTest {
             "badge_center" to ("SettingsSectionsNav" to "bridge.setBadgeCenter("),
             "vm_bubble_enabled" to ("SettingsSectionsNav" to "bridge.setVmBubbleEnabled("),
             "vm_bubble_pos" to ("SettingsSectionsNav" to "bridge.setVmBubblePos("),
+            // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html) — cùng nhóm NAV nhưng ở **tệp section riêng**:
+            // `SettingsSectionsNav` đã 409 dòng, và hai khối không liên quan nhau (một bên là cấu hình cụm đọc
+            // `bridge`, một bên là dữ liệu của hồ sơ đi qua `deps`).
+            "places_list" to ("SettingsSectionsPlaces" to "deps.state().savedPlaces"),
+            "places_add" to ("SettingsSectionsPlaces" to "deps.onSavedPlaces("),
             // ── 6 · Chiếu màn lên cụm ──
             "cast_enabled" to ("SettingsSectionsCast" to "bridge.setCastEnabled("),
             "cast_split" to ("SettingsSectionsCast" to "bridge.setSplitPct("),
@@ -132,6 +138,7 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsCast" to cast,
             "SettingsSectionsKeys" to keys,
             "SettingsSectionsCar" to car,
+            "SettingsSectionsPlaces" to places,
         )
 
         val catalogIds = SettingsCatalog.ENTRIES.map { it.id }.toSet()

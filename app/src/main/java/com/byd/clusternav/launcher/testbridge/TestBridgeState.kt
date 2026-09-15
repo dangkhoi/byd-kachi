@@ -10,6 +10,8 @@ import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SlotCodec
 import com.byd.clusternav.launcher.UnitFormat
 import com.byd.clusternav.launcher.voice.VoiceModelStore
+import com.byd.clusternav.launcher.voice.VoiceSpeakerKind
+import com.byd.clusternav.launcher.voice.VoiceSpeakerRouter
 
 /**
  * ═══ T-BRIDGE · ẢNH CHỤP TRẠNG THÁI LAUNCHER, DẠNG JSON ══════════════════════════════════════════════════════
@@ -93,6 +95,7 @@ internal object TestBridgeState {
                         "bytes" to VoiceModelStore.sizeOnDisk(ctx),
                     ),
                 ),
+                "tts" to TestBridgeJson.Raw(tts()),
                 "cast_enabled" to castEnabled(ctx),
                 "test_mode_minutes_left" to TestBridgeStore.remainingMinutes(ctx),
             ),
@@ -138,6 +141,36 @@ internal object TestBridgeState {
                 .sorted()
         }.getOrDefault(emptyList())
     }
+
+    /**
+     * ═══ V1 pha NÓI · ĐƯỜNG RA TIẾNG ĐANG DÙNG (spec `kachi-voice-feedback.html` §6) ═══════════════════════
+     *
+     * Đọc **ảnh chụp phép đo gần nhất** của [VoiceSpeakerRouter], không tự dựng một `TextToSpeech` thứ hai: dựng
+     * nó là bất đồng bộ (vài trăm ms tới vài giây trên đầu xe) trong một lệnh phải trả lời ngay, nên lượt đo sẽ
+     * **luôn** báo "chưa sẵn sàng" dù máy đọc thật đang chạy tốt — tức một phép đo nói sai một cách có hệ thống.
+     *
+     * ⇒ `measured=false` nghĩa là **chưa có phiên nói nào** từ lần khởi động này, KHÔNG phải "máy không có
+     * giọng". Trên xe: nói một câu bất kỳ rồi mới đọc lệnh `state`.
+     *
+     * `vi_status` là số thô của `TextToSpeech.isLanguageAvailable` ([UNKNOWN_LANG] khi chưa biết) — giữ số thô
+     * vì phân biệt `LANG_MISSING_DATA` (−1, *có engine, thiếu gói giọng ⇒ tải là xong*) với `LANG_NOT_SUPPORTED`
+     * (−2, *engine này không bao giờ đọc được tiếng Việt ⇒ phải đổi engine hoặc dùng gói offline*) là khác biệt
+     * quyết định người ngồi trên xe phải làm gì tiếp.
+     */
+    private fun tts(): String {
+        val s = VoiceSpeakerRouter.lastSnapshot()
+        return TestBridgeJson.obj(
+            "measured" to (s != null),
+            "kind" to (s?.kind?.name ?: VoiceSpeakerKind.NONE.name),
+            "engine" to (s?.engine ?: ""),
+            "vi_status" to (s?.androidLangStatus ?: UNKNOWN_LANG),
+            "vi_available" to (s?.androidUsable ?: false),
+            "offline_voice_ready" to (s?.sherpaVoiceReady ?: false),
+        )
+    }
+
+    /** Chưa đo được `isLanguageAvailable`. Cố ý nằm NGOÀI dải thật của nền tảng (−2…2) để không lẫn với −2. */
+    private const val UNKNOWN_LANG = -99
 
     /** Vòng kiểm quyền — cùng báo cáo mà trang *Hệ thống & quyền* đang vẽ, KHÔNG đọc lại theo đường riêng. */
     private fun permissions(ctx: Context, shellUsable: Boolean): String {

@@ -75,6 +75,15 @@ class SettingsDeps(
     /** Đọc MỘT datum theo id → chuỗi hiển thị kèm đơn vị, hoặc `null` (off-car / chưa map). */
     val readInfo: (String) -> String?,
     val onUnitPrefs: (UnitPrefs) -> Unit,
+    /**
+     * **Sổ địa chỉ** của hồ sơ đang dùng (spec `docs/specs/kachi-voice-addresses.html` R1) — ghi **cả danh sách**
+     * đã chốt, không phải từng thao tác.
+     *
+     * Cùng lập luận [onDockConfig]: phép thêm/sửa/xoá là hàm thuần ở `:core` ([SavedPlaces.upsert]/[SavedPlaces.remove]),
+     * nên một cổng "đây là sổ mới" diễn tả đủ mọi thao tác; hai cổng riêng chỉ là hai chỗ để lệch nhau. Đọc thì
+     * lấy từ [state] (`savedPlaces`) — tầng UI không mở cửa vào nơi lưu.
+     */
+    val onSavedPlaces: (List<SavedPlace>) -> Unit,
     val onThemeMode: (ThemeMode) -> Unit,
     val onLangMode: (LangMode) -> Unit,
     val onAutostart: (Boolean) -> Unit,
