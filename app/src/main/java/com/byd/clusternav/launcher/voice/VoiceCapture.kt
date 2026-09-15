@@ -97,6 +97,12 @@ internal class VoiceCapture(private val ctx: Context) {
             val buf = ShortArray(CHUNK_SAMPLES)
             val deadline = System.currentTimeMillis() + maxMs
             var lastPartial = ""
+            // [ĐO bug voice 2026-09-15] Mức tín hiệu micro — chốt "câm/không nghe được" trên xe TRONG MỘT lượt nói:
+            // đỉnh gần 0 ⇒ mic không có tiếng (nguồn/ROM chặn); đỉnh kịch 32767 liên tục ⇒ méo/clip (nghi mic-array
+            // 4 kênh ghép sai); đỉnh vừa mà sherpa ra rỗng ⇒ chất lượng/định dạng. Không lưu gì, chỉ hai số.
+            var peak = 0
+            var sumSq = 0.0
+            var samples = 0L
             while (!cancelled() && System.currentTimeMillis() < deadline) {
                 val n = record.read(buf, 0, buf.size)
                 if (n <= 0) {
@@ -105,16 +111,19 @@ internal class VoiceCapture(private val ctx: Context) {
                     if (n < 0) { Log.w(TAG, "đọc micro trả $n — dừng phiên"); break }
                     continue
                 }
+                for (i in 0 until n) { val a = kotlin.math.abs(buf[i].toInt()); if (a > peak) peak = a; sumSq += a.toDouble() * a }
+                samples += n
                 // Chép TRƯỚC khi giải mã: `accept` có thể chốt câu và thoát ngay ở dòng dưới.
                 if (keepPcm && keptN < kept.size) {
                     val room = minOf(n, kept.size - keptN)
                     System.arraycopy(buf, 0, kept, keptN, room)
                     keptN += room
                 }
-                if (rec.accept(buf, n)) return Heard(rec.result(), kept, keptN)
+                if (rec.accept(buf, n)) { logLevel(peak, sumSq, samples); return Heard(rec.result(), kept, keptN) }
                 val p = rec.partial()
                 if (p.isNotEmpty() && p != lastPartial) { lastPartial = p; onPartial(p) }
             }
+            logLevel(peak, sumSq, samples)
             return Heard(rec.finalResult(), kept, keptN)
         } finally {
             runCatching { record.stop() }
@@ -122,6 +131,15 @@ internal class VoiceCapture(private val ctx: Context) {
             tone(ToneGenerator.TONE_PROP_ACK, TONE_END_MS)
             abandonFocus(focus)
         }
+    }
+
+    /**
+     * Ghi mức tín hiệu của một lượt nghe (bug voice 2026-09-15) — đỉnh biên độ + RMS, cả hai theo thang 0..32767.
+     * Một dòng, đọc được ngay trong logcat trên xe để phân biệt câm / clip / chất-lượng mà không cần lưu tệp.
+     */
+    private fun logLevel(peak: Int, sumSq: Double, samples: Long) {
+        val rms = if (samples > 0) kotlin.math.sqrt(sumSq / samples).toInt() else 0
+        Log.i(TAG, "mức micro: đỉnh $peak/32767 · rms $rms · $samples mẫu (${samples / 16}ms)")
     }
 
     /**

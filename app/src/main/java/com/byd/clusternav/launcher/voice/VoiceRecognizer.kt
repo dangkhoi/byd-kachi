@@ -84,6 +84,9 @@ class VoiceRecognizer private constructor(
                 stream.acceptWaveform(samples, SAMPLE_RATE_INT)
                 recognizer.decode(stream)
                 recognizer.getResult(stream).text.trim().lowercase()
+                    // [ĐO bug voice 2026-09-15] Chữ THÔ sherpa trả về (kể cả rỗng) — chốt "engine ra gì" trên xe:
+                    // rỗng khi mức micro có tiếng ⇒ lỗi âm thanh/định dạng, không phải NLU; có chữ nhưng sai ⇒ NLU/ngữ pháp.
+                    .also { Log.i(TAG, "sherpa ra: \"$it\" ($n mẫu)") }
             } finally {
                 runCatching { stream.release() }
             }

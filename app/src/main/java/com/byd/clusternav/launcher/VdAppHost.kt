@@ -93,10 +93,20 @@ class VdAppHost(
                     // "đã đóng" lại mọc thêm một `kachi-slot-*` không ai cầm).
                     if (released) return
                     val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-                    // 8 = OWN_CONTENT_ONLY (chỉ hiện app đặt lên VD, KHÔNG mirror display 0 → hết "gương đệ quy")
-                    // 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ). Shell mở app lên VD vẫn được (khác ActivityView bị chặn ở API startActivity, không phải ở cờ này).
+                    //   2 = PRESENTATION · 8 = OWN_CONTENT_ONLY (chỉ hiện app đặt lên VD, KHÔNG mirror display 0 →
+                    //       hết "gương đệ quy") · 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ).
+                    // ⚠⚠ PRESENTATION (2) — bản vá lỗi "YouTube/app co vào giữa, không full" (owner 2026-09-15).
+                    // [ĐO xe DL3]: màn ảo ô KHÔNG có cờ PRESENTATION là màn PRIVATE thường ⇒ nó **XOAY theo hướng
+                    // app yêu cầu**. YouTube (và app "kiểu điện thoại" khác) ở khung ~sw598dp đòi PORTRAIT ⇒ WM xoay
+                    // màn ảo 270° thành 748×1401 dọc; video 16:9 co vào bề ngang 748px rồi nằm giữa, hai bên đen.
+                    // [ĐO emulator 2026-09-15, cùng khung 1401×748@200dpi=sw598dp]: màn PRESENTATION **không xoay**
+                    // theo app ⇒ YouTube tự bày LANDSCAPE lấp đầy 1401×748 (ROTATION_0). Cờ này (từ API 19) là cách
+                    // khoá-hướng-ô DUY NHẤT chạy off-platform-sign trên Android 10 (`wm set-fix-to-user-rotation -d`
+                    // chỉ chắc từ API 30). ⚠ Vì màn ô nay là PRESENTATION, bộ dò màn-cụm của badge tốc độ phải LOẠI
+                    // các màn `kachi-slot-*` (xem `SpeedBadgeOverlay.resolveClusterDisplay`) kẻo badge bám nhầm vào ô.
+                    // Shell mở app lên VD vẫn được (đã đo YouTube lên màn PRESENTATION qua `am start --display`).
                     val name = "kachi-slot-$slot-${System.currentTimeMillis()}"
-                    val created = dm.createVirtualDisplay(name, w, ht, densityDpi, h.surface, 8 or 256)
+                    val created = dm.createVirtualDisplay(name, w, ht, densityDpi, h.surface, 2 or 8 or 256)
                     vd = created
                     dispW = w; dispH = ht          // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
                     // B2b: đăng ký display của VD (thuộc LAUNCHER) TRƯỚC maybeLaunch — nếu không, cổng ownership
