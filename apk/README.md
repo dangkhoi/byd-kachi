@@ -1,6 +1,6 @@
 # apk/ — kênh OTA của Kachi
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-13 · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-15 · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
 
 **(VI)** App trên xe (`UpdateChecker`) hỏi GitHub Contents API thư mục này trên nhánh `main` của repo `dangkhoi/byd-kachi`,
 tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang cài, tải về rồi cài qua dadb loopback (`pm install -r`)
@@ -16,14 +16,20 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - [ĐO 2026-09-13 17:04] Lần hai: 1.42 → 1.43 qua Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật — dialog "New version: v1.43" → cài → `versionName=1.43`, KachiHomeActivity resume.
 - [ĐO 2026-09-13] Đã kiểm end-to-end trên máy ảo: 1.41 → 1.42 (thấy bản mới, tải, cài qua dadb, tự mở lại sau 5 s). Máy ảo cần
   `adb tcpip 5555` + `adb reverse tcp:5555 tcp:5555` để app nối được loopback; xe thật có adbd mạng sẵn.
-- ⚠ **Từ 1.49 APK nặng ~27 MB** (trước đó ~9 MB): V1 pha NGHE mang `libvosk.so` cho **hai** ABI (`arm64-v8a` +
-  `armeabi-v7a`; x86/x86_64 đã lọc bỏ, −19 MB). OTA vẫn chạy đúng đường cũ, chỉ tải lâu hơn trên mạng 4G của xe.
-- ⚠ **Mô hình nhận dạng KHÔNG nằm trong APK.** `vosk-model-small-vn-0.4` (**32 MB** nén, **51 MB** trên đĩa,
-  Apache-2.0) tải riêng **một lần** từ `alphacephei.com` qua *Cài đặt › Hệ thống & quyền › Nâng cao › Nhận dạng giọng
-  nói (tại máy)*. Lý do: nhét vào APK thì **mỗi bản vá một dòng chữ** cũng bắt người dùng tải lại 32 MB. Gói được
-  ghim **sha256 + kích thước** (xem `VoiceModelManifest`), và có đường **gỡ** ngay cạnh nút tải.
-  - TODO(owner): tải `vosk-model-small-vn-0.4.zip` lên GitHub Release `model-vn-0.4` của repo này để có **đường lùi**
-    khi alphacephei chết. Tên tệp giữ NGUYÊN; sha256 phải khớp, không khớp thì app tự từ chối.
+- ⚠ **Từ 1.59 APK còn ~35 MB** ([ĐO] 53 MB ở 1.58 → 35 MB): V2 pha NGHE mang `libsherpa-onnx-jni.so` +
+  `libonnxruntime.so`. Từ 1.59 **chỉ chở `arm64-v8a`** (bỏ `armeabi-v7a`, −18 MB) — mọi dump xe chỉ thấy lib
+  arm64, đầu xe DiLink 3/4/5 (Android 10/12) đều SoC 64-bit. Nếu một đời DiLink 32-bit-only báo lỗi cài
+  `INSTALL_FAILED_NO_MATCHING_ABIS` → thêm lại `armeabi-v7a` trong `app/build.gradle.kts` (xem chú thích ở đó).
+- ⚠ **Mô hình nhận dạng KHÔNG nằm trong APK.** `zipformer-vi-2025-04-20` (sherpa-onnx, ~266 MB) tải riêng **một
+  lần** vào `filesDir/sherpa/` qua *Cài đặt › Hệ thống & quyền › Nâng cao › Nhận dạng giọng nói (tại máy)*. Lý do:
+  nhét vào APK thì **mỗi bản vá một dòng chữ** cũng bắt người dùng tải lại cả mô hình. Gói được ghim **sha256 +
+  kích thước** (xem `VoiceModelManifest`), và có đường **gỡ** ngay cạnh nút tải.
+- ⚠ **Cài tay báo "Fail in installation of desktop apps"**: xảy ra khi **CHÉP APK vào xe rồi TAP để cài** — trình
+  cài GUI của ROM DiLink từ chối một APK tap-vào trở thành app **launcher/home (desktop)**. Cách sửa CHẮC: cài
+  bằng **adb**, đừng tap → `adb install -r Kachi-<ver>-release.apk` (`pm install` bỏ qua cổng GUI này; đây cũng là
+  đường OTA dùng). Xem `docs/diagnostics/oncar-bugs-2026-09-15.md`.
+- ⚠ **(Trường hợp khác) signature mismatch**: nếu xe đang có bản Kachi ký **khoá khác** (bản trước 1.41 / debug),
+  đè lên sẽ `INSTALL_FAILED_UPDATE_INCOMPATIBLE` ⇒ `pm uninstall com.byd.launcher` một lần rồi cài lại.
 - Build: `./gradlew :app:assembleRelease` (cần `keystore.properties` ở gốc repo; thiếu ⇒ build release fail có chủ ý),
   rồi `cp app/build/outputs/apk/release/app-release.apk apk/Kachi-<ver>-release.apk`, commit + push lên `main`.
 

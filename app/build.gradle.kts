@@ -41,18 +41,26 @@ android {
         applicationId = "com.byd.launcher"
         minSdk = 29
         targetSdk = 37
-        versionCode = 59
-        versionName = "1.58"
+        versionCode = 60
+        versionName = "1.59"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:
         //   arm64-v8a 8,86 MB · armeabi-v7a 8,28 MB · x86 9,67 MB · x86_64 9,68 MB = 36,5 MB.
-        // Chở cả bốn thì APK 9,06 MB thành ~45 MB, mà kênh cập nhật là `apk/` trên GitHub, tải qua mạng 4G
-        // của xe (`UpdateChecker`) — tức mỗi bản vá một dòng chữ cũng bắt người dùng tải thêm 19 MB x86 mà
-        // KHÔNG đầu xe nào chạy được. [ĐO] dump xe trong `docs/diagnostics/` chỉ thấy thư viện `*_arm64-v8a`;
-        // máy ảo đang dùng là `sdk_gphone64_arm64`. Giữ `armeabi-v7a` vì các đời DiLink cũ chưa được ĐO —
-        // CLAUDE.md §7 cấm chốt theo một đời xe, và 8 MB rẻ hơn một dòng xe câm lặng không báo lỗi.
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+        // V2 pha NGHE dùng sherpa-onnx (không còn Vosk): AAR chở libsherpa-onnx-jni.so + libonnxruntime.so.
+        // [ĐO] 1.58 (cả arm64-v8a + armeabi-v7a) = 53 MB. Riêng armeabi-v7a chiếm ~17,9 MB (onnxruntime 14,6 +
+        //   jni 3,3). Kênh cập nhật là `apk/` trên GitHub, tải qua 4G của xe (`UpdateChecker`) ⇒ 17,9 MB đó
+        //   nhân cho mỗi bản vá, mỗi máy.
+        // Owner 2026-09-15 duyệt CHỈ arm64-v8a để bản tải còn ~35 MB (gửi anh em test qua mạng). Cơ sở:
+        //   [ĐO] DiLink3.0 (`docs/diagnostics/carlog-kachi-20260914-2044/00-getprop.txt`):
+        //   `ro.product.cpu.abi=arm64-v8a`, `abilist64=arm64-v8a` ⇒ primary ABI là 64-bit, nên APK arm64-only
+        //   CÀI + nạp lib arm64 chắc chắn được. (abilist còn `armeabi-v7a` nhưng đó chỉ là compat 32-bit THỨ
+        //   CẤP — arm64-only vẫn khớp qua primary, KHÔNG dính NO_MATCHING_ABIS.) Máy ảo `sdk_gphone64_arm64`
+        //   cũng arm64. [SUY] DiLink 4/5 (Android 12) cũng SoC 64-bit — chưa ĐO getprop từng đời.
+        // CLAUDE.md §7 (cấm chốt theo một đời xe): rủi ro CÒN LẠI = một đời DiLink 32-bit-only chưa từng ĐO sẽ
+        //   báo INSTALL_FAILED_NO_MATCHING_ABIS. [SUY] khả năng thấp (Android 10/12 automotive 32-bit-only gần
+        //   như không tồn tại). ĐIỀU KIỆN MỞ LẠI: nếu một anh em báo lỗi ABI khi cài → thêm "armeabi-v7a" lại đây.
+        ndk { abiFilters += listOf("arm64-v8a") }
 
         // DIAG build flag — a DIAGNOSTIC log-collection build for a teammate to drive-test VietMap/Waze.
         // Default FALSE so the normal RELEASE build stays byte-identical (A8/D3: verbose logging default OFF —
@@ -234,7 +242,7 @@ dependencies {
     //
     // Version kiểm 2026-09-14 (rule global §1.1): Context7 `/k2-fsa/sherpa-onnx` ⇒ **v1.13.8 latest stable**;
     // engine Apache-2.0. Chỉ phát hành qua JitPack (khai group ở `settings.gradle.kts`). AAR chở native cho
-    // 4 ABI (libsherpa-onnx-jni.so + libonnxruntime.so); `abiFilters` ở trên đã lọc còn arm64-v8a + armeabi-v7a.
+    // 4 ABI (libsherpa-onnx-jni.so + libonnxruntime.so); `abiFilters` ở trên đã lọc còn arm64-v8a (1.59).
     // API HIỆN HÀNH (Context7 + java-api README): `OfflineRecognizer(OfflineRecognizerConfig)` ·
     // `OfflineTransducerModelConfig(encoder,decoder,joiner)` · `OfflineModelConfig(transducer,tokens,...)` ·
     // `createStream()` · `OfflineStream.acceptWaveform(float[], int sampleRate)` · `decode(stream)` ·

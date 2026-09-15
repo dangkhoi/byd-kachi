@@ -67,3 +67,35 @@ Owner nói một câu vào mic xe → đọc 2 dòng log trên. Nếu đỉnh ~0
 
 ## Vật tư kéo về (off-car, scratchpad — KHÔNG commit)
 `youtube.apk` (182 MB), `gmaps.apk` (80 MB) — APK YouTube/GMaps của chính xe, để cài vào emulator test. ⚠ [ĐO] không cài đè được lên bản hệ thống của emulator (lệch chữ ký) ⇒ dùng bản YouTube sẵn của emulator để tái hiện cơ chế; APK xe để dành cho AVD sạch nếu cần đúng phiên bản.
+
+---
+
+## Lỗi cài của anh em — "Fail in installation of desktop apps" · và bản APK gọn 1.59
+
+- **Ngày:** 2026-09-15 · **Ai:** một anh em **chép APK vào xe rồi TAP để cài** (không phải `adb install`) → dialog xanh **"Fail in installation of desktop apps"**. Xe **Sealion 6**, **chưa từng cài Kachi**.
+- **Bối cảnh:** owner hỏi vì sao APK 53 MB (1.58) và nhờ dựng bản gọn gửi anh em test; đồng thời anh em báo lỗi cài trên.
+
+### Loại bỏ các giả thuyết SAI (nhờ owner chốt dữ kiện)
+Owner: *"xe nào cũng đều cài cùng firmware, đều đã adb rồi"* + *"chưa từng cài Kachi"* + *"tap apk trên xe … xong tap install"*. Từ đó:
+- **KHÔNG phải lệch chữ ký** — chưa từng có Kachi ⇒ không có gì để đè lệch. (Bỏ giả thuyết signature-mismatch ban đầu.)
+- **KHÔNG phải nền tảng / ABI / APK hỏng** — xe owner chạy **đúng APK này** bình thường, mà xe anh em **cùng firmware** ⇒ nếu do APK/nền tảng thì xe owner đã fail. APK cũng cài sạch trên máy ảo arm64 [ĐO].
+
+### Biến số THẬT = ĐƯỜNG CÀI, không phải đời xe [ĐO điều kiện + SUY cơ chế]
+- Owner cài qua **adb / OTA** (`pm install -r`) — **chạy**.
+- Anh em **TAP tệp APK trên màn xe** → đi qua **trình cài GUI của ROM** — **fail** với "Fail in installation of desktop apps".
+- ⇒ Khác biệt DUY NHẤT là **đường cài**. Trình cài GUI của DiLink có cổng chặn mà `pm install` KHÔNG đi qua.
+- [SUY] mạnh về **vì sao câu lỗi nói "desktop apps"**: Kachi khai mình là **app launcher/home (desktop)** (manifest có `category HOME`/`DEFAULT`). Trình cài GUI của ROM **từ chối cho một APK tap-vào trở thành app desktop/home** (bảo vệ màn hình chính); còn `pm install` bỏ qua kiểm tra đó. Chưa **[ĐO]** trực tiếp trên Sealion 6 (chưa adb vào máy anh em) — nhưng cách sửa CHẮC vì đường adb của owner chạy trên **cùng firmware**.
+
+### Cách sửa (chắc chắn — không cần đo thêm)
+**Cài bằng adb, đừng tap.** Xe đã bật adb sẵn:
+```
+adb connect <ip-xe>:5555          # đã kết nối rồi thì bỏ qua
+adb install -r Kachi-1.59-release.apk
+```
+`pm install` đi thẳng, bỏ qua cổng GUI ⇒ cài được như máy owner. Muốn biết chính xác trình GUI chặn vì lẽ gì thì đọc dòng `Failure [INSTALL_FAILED_...]` mà lệnh trên in ra — nhưng KHÔNG cần: adb install là xong.
+
+### Bản gọn 1.59 (đã dựng + kiểm) [ĐO 2026-09-15]
+- `app/build.gradle.kts`: `abiFilters` còn **`arm64-v8a`** (bỏ `armeabi-v7a`); version **1.59 (60)**. Cơ sở [ĐO]: `carlog-kachi-20260914-2044/00-getprop.txt` — DiLink3.0 `ro.product.cpu.abi=arm64-v8a` (primary 64-bit) ⇒ APK arm64-only cài + nạp lib chắc chắn được (primary khớp; `NO_MATCHING_ABIS` bất khả trên máy này). Sealion 6 là đời **mới hơn** ⇒ cũng 64-bit.
+- APK: **36 837 743 B (~35 MB)** ← 53 MB. Chỉ `arm64-v8a` (native 25,8 MB). `0` marker `TEST_`. Cert SHA-256 `9257499b…bb9917` (khớp kênh). targetSdk 37, minSdk 29.
+- Smoke máy ảo (`sdk_gphone64_arm64`): `install -r` **Success**, `KachiHomeActivity` resume, `versionName=1.59`, không FATAL/`UnsatisfiedLink`, log usage vẫn ghi ra thẻ.
+- Bản 35 MB cũng chép nhanh/ít đứt hơn 53 MB — phụ, không phải nguyên nhân chính (nguyên nhân là đường cài GUI).
