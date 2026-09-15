@@ -93,20 +93,15 @@ class VdAppHost(
                     // "đã đóng" lại mọc thêm một `kachi-slot-*` không ai cầm).
                     if (released) return
                     val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-                    //   2 = PRESENTATION · 8 = OWN_CONTENT_ONLY (chỉ hiện app đặt lên VD, KHÔNG mirror display 0 →
-                    //       hết "gương đệ quy") · 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ).
-                    // ⚠⚠ PRESENTATION (2) — bản vá lỗi "YouTube/app co vào giữa, không full" (owner 2026-09-15).
-                    // [ĐO xe DL3]: màn ảo ô KHÔNG có cờ PRESENTATION là màn PRIVATE thường ⇒ nó **XOAY theo hướng
-                    // app yêu cầu**. YouTube (và app "kiểu điện thoại" khác) ở khung ~sw598dp đòi PORTRAIT ⇒ WM xoay
-                    // màn ảo 270° thành 748×1401 dọc; video 16:9 co vào bề ngang 748px rồi nằm giữa, hai bên đen.
-                    // [ĐO emulator 2026-09-15, cùng khung 1401×748@200dpi=sw598dp]: màn PRESENTATION **không xoay**
-                    // theo app ⇒ YouTube tự bày LANDSCAPE lấp đầy 1401×748 (ROTATION_0). Cờ này (từ API 19) là cách
-                    // khoá-hướng-ô DUY NHẤT chạy off-platform-sign trên Android 10 (`wm set-fix-to-user-rotation -d`
-                    // chỉ chắc từ API 30). ⚠ Vì màn ô nay là PRESENTATION, bộ dò màn-cụm của badge tốc độ phải LOẠI
-                    // các màn `kachi-slot-*` (xem `SpeedBadgeOverlay.resolveClusterDisplay`) kẻo badge bám nhầm vào ô.
-                    // Shell mở app lên VD vẫn được (đã đo YouTube lên màn PRESENTATION qua `am start --display`).
+                    // 8 = OWN_CONTENT_ONLY (chỉ hiện app đặt lên VD, KHÔNG mirror display 0 → hết "gương đệ quy")
+                    // 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ). Shell mở app lên VD vẫn được.
+                    // ⚠⚠ KHÔNG dùng FLAG_PRESENTATION (2) để chống xoay dọc: [ĐO 2026-09-15 emulator+owner] màn ảo ô
+                    // mang PRESENTATION khiến app "tự relaunch" (như YouTube: Shell→WatchWhileActivity) coi màn ô là
+                    // ĐÍCH KHÔNG HỢP LỆ ⇒ nhảy về display 0, để lại ô **ĐEN THUI** — tệ hơn lỗi dọc ban đầu. Chống
+                    // xoay nay làm bằng `wm set-fix-to-user-rotation` qua shell SAU khi tạo VD (xem [maybeLaunch]) —
+                    // khoá hướng mà KHÔNG đổi cờ hiển thị nên không đổi đường composite (app vẫn vẽ vào ô như cũ).
                     val name = "kachi-slot-$slot-${System.currentTimeMillis()}"
-                    val created = dm.createVirtualDisplay(name, w, ht, densityDpi, h.surface, 2 or 8 or 256)
+                    val created = dm.createVirtualDisplay(name, w, ht, densityDpi, h.surface, 8 or 256)
                     vd = created
                     dispW = w; dispH = ht          // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
                     // B2b: đăng ký display của VD (thuộc LAUNCHER) TRƯỚC maybeLaunch — nếu không, cổng ownership
@@ -148,6 +143,15 @@ class VdAppHost(
             // an inline string. displayId = this host's OWN VirtualDisplay (a private secondary display for the
             // slot), NOT the cluster. Touch/force-stop lifecycle stays inline (moves to the input daemon in B4).
             val cmd = FreeformLaunch.launchOnDisplayCmd(comp, displayId, windowingMode = 1)
+            // ⚠ CHỐNG XOAY DỌC (bug "YouTube co vào giữa", owner 2026-09-15) — khoá màn ảo ô về hướng NGANG gốc
+            // TRƯỚC khi mở app, để app đòi portrait cũng không xoay được ô. Làm bằng `wm` qua shell (KHÔNG đổi cờ
+            // hiển thị VD ⇒ app vẫn vẽ vào ô, tránh lỗi ĐEN của FLAG_PRESENTATION). Best-effort: ROM thiếu lệnh
+            // (`-d` per-display có từ Android 10; nếu vắng thì trả chuỗi lỗi, không ném). Đặt cả hai cho chắc:
+            // `set-user-rotation lock 0` ghim giá trị, `set-fix-to-user-rotation enabled` để mọi app không xoay ô.
+            runCatching {
+                sh("wm set-user-rotation lock -d $displayId 0")           // ghim hướng ô = 0 (ngang gốc)
+                sh("wm set-fix-to-user-rotation -d $displayId enabled")   // mọi app KHÔNG xoay được ô
+            }
             sh("am force-stop $p")
             Thread.sleep(1000)     // đợi force-stop XONG hẳn → am start mở task MỚI trên VD, không tái dùng task fullscreen ở display 0 (bug gmail nhảy fullscreen)
             sh(cmd)                // mở ĐÚNG 1 lần trên VD — KHÔNG relaunch/di lần 2 (bỏ vòng retry gây nháy + làm app ô khác nhảy)

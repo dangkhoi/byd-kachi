@@ -26,15 +26,21 @@ Cửa sổ YouTube trên màn đó: `mBounds=Rect(0,0-748,1401)`, `mRotation=ROT
 Tạo màn overlay đúng khung xe (`settings put global overlay_display_devices "1401x748/200"` → displayId 50, có `FLAG_PRESENTATION`), rồi `am start --display 50` YouTube:
 - **Kết quả: YouTube LANDSCAPE, lấp đầy 1401×748, `mRotation=ROTATION_0`, config `land`** — ở CÙNG sw598dp mà màn ảo ô của xe bị dọc. Khác biệt DUY NHẤT là cờ PRESENTATION. ⇒ density KHÔNG phải nguyên nhân; **cờ PRESENTATION** mới quyết định xoay hay không.
 
-### Bản vá
-`VdAppHost.createVirtualDisplay(... , 2 or 8 or 256)` — thêm **`FLAG_PRESENTATION` (2)**. Màn PRESENTATION không xoay theo app ⇒ ô giữ hướng ngang, app tự bày landscape lấp đầy. Cờ này có từ API 19, chạy off-platform-sign trên Android 10 (khác `wm set-fix-to-user-rotation -d` chỉ chắc từ API 30).
+### Bản vá — HAI LẦN (lần đầu SAI, đã sửa)
 
-**Tương tác đã xử lý:** màn ô nay lọt vào `DISPLAY_CATEGORY_PRESENTATION`. `SpeedBadgeOverlay.resolveClusterDisplay` (bộ dò màn cụm cho badge tốc độ) nay **loại** các màn tên `kachi-slot-*` để badge không bám nhầm vào một ô. Màn cụm thật (fission/xdja) không mang tên đó.
+**❌ 1.56 (FLAG_PRESENTATION) — GÂY LỖI TỆ HƠN, ĐÃ GỠ.** Thêm `FLAG_PRESENTATION` (2) vào màn ảo ô để chống xoay. [ĐO emulator+owner 2026-09-15] màn ô mang PRESENTATION khiến app "tự relaunch" (YouTube: `Shell$HomeActivity`→`WatchWhileActivity`) coi màn ô là **đích không hợp lệ** ⇒ nhảy về display 0, để lại ô **ĐEN THUI** (owner: *"gmaps lên, yt đen thui"*). Tệ hơn lỗi dọc. GỠ hẳn.
 
-### Xác nhận E2E [ĐO emulator, bản đã vá]
-Đặt YouTube vào ô 0 (QUAD), mở Kachi: `dumpsys display` cho `kachi-slot-0` (displayId 51) nay có **`FLAG_PRESENTATION`**, giữ `rotation 0`, app `929 x 748`→landscape; ảnh chụp: YouTube render **ngang lấp đầy ô**. Trước vá (xe): dọc 748×1401, video giữa.
+**✅ 1.57 (khoá xoay bằng `wm`) — đúng.** Giữ màn ảo ô KHÔNG có cờ PRESENTATION (`8 or 256`) ⇒ app vẫn vẽ vào ô như cũ (hết đen). Chống xoay bằng shell SAU khi tạo VD, TRƯỚC khi mở app (`VdAppHost.maybeLaunch`):
+```
+wm set-user-rotation lock -d <slotDisplayId> 0
+wm set-fix-to-user-rotation -d <slotDisplayId> enabled
+```
+Khoá hướng màn ô = 0 (ngang) và bỏ qua mọi yêu cầu orientation của app — KHÔNG đổi cờ hiển thị nên không đổi đường composite (không đen). [ĐO emulator API 29 = ABI xe]: sau hai lệnh, WM state của **cả hai** màn ô = `mUserRotationMode=USER_ROTATION_LOCKED · mUserRotation=ROTATION_0 · mFixedToUserRotation=true`, VdAppHost tự áp. Lệnh `set-fix-to-user-rotation -d` nhận trên API 29 (không phải chỉ 30+ như tưởng ban đầu). SpeedBadge revert (bỏ lọc `kachi-slot`) vì màn ô hết là presentation.
 
-**Còn lại (xe):** xác nhận cuối trên chính xe DL3 phiên sau — cài 1.56, mở YouTube vào ô, xem video play có full ngang không.
+### Xác nhận
+- **[ĐO emulator]** Hết ĐEN: ô hiện thẻ icon app (không phải đen kịt) khi app không vẽ; màn ô khoá `rotation 0` landscape + `mFixedToUserRotation=true`. Maps chạy đúng trong ô.
+- **⚠ Emulator KHÔNG diễn được YouTube trong ô**: bản YouTube emulator có `Shell$HomeActivity` trampoline nhảy về display 0 (khác xe — trên xe `Shell$HomeActivity` **ở lại** ô, đó là nơi thấy lỗi dọc). Nên "video play full ngang trong ô" chỉ xác nhận cuối được trên **xe**.
+- **Còn lại (xe):** cài 1.57, mở YouTube vào ô, xem home feed + video có ngang lấp đầy ô không (khoá xoay đã áp ⇒ kỳ vọng ngang).
 
 ---
 

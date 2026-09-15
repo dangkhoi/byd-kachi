@@ -137,11 +137,7 @@ class SpeedBadgeOverlay(private val appContext: Context) : AutoCloseable {
     private fun resolveClusterDisplay(dm: DisplayManager): android.view.Display? =
         dm.getDisplay(CLUSTER_DISPLAY_ID)
             ?: runCatching {
-                // ⚠ LOẠI màn ô của launcher: từ 2026-09-15 `VdAppHost` tạo màn ảo ô với cờ PRESENTATION (chống xoay
-                // dọc — xem KDoc ở đó), nên chúng LỌT vào DISPLAY_CATEGORY_PRESENTATION. Không loại thì badge tốc độ
-                // có thể bám nhầm vào một ô app thay vì màn cụm. Màn cụm thật (fission/xdja) không mang tên `kachi-slot`.
-                dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-                    .firstOrNull { it.displayId != 0 && !it.name.startsWith("kachi-slot") }
+                dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).firstOrNull { it.displayId != 0 }
             }.getOrNull()
 
     /**
