@@ -3,10 +3,11 @@ package com.byd.clusternav.launcher
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
-import com.byd.clusternav.modules.clustercast.DisplayParse
 import com.byd.clusternav.modules.clustercast.FloatingBubbleService
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
+import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.modules.clustercast.simplified.CastProfile
+import com.byd.clusternav.modules.clustercast.simplified.ClusterDisplayResolver
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
@@ -199,9 +200,14 @@ fun ClusterNavBridge.deepRescue(
             }
 
             // 3. Reset VD cụm về mặc định (best-effort; đúng nguồn kẹt "rò state trên VD").
-            val vd = runCatching { DisplayParse.clusterDisplayId(coordinator.executeShell("dumpsys display").stdout) }
-                .getOrDefault(-1)
-            if (vd >= 0) {
+            // Qua ĐÚNG resolver có owner-guard (R2, 2026-09-15): cụm không bao giờ là VD của chính launcher (slot) và
+            // không bao giờ là display 0. `resolve` trả -1 khi hụt/guard ⇒ KHÔNG reset gì (trước đây `clusterDisplayId`
+            // thô + `>= 0` — lối duy nhất còn né guard, và `>= 0` sẽ reset màn GIỮA nếu parser lỡ trả 0). Feed nguyên
+            // `dumpsys display` (siêu tập của DETECT_CMD): parser lẫn guard đều đọc được, không phụ thuộc grep mới.
+            val vd = runCatching {
+                ClusterDisplayResolver.resolve(coordinator.executeShell("dumpsys display").stdout, BuildConfig.APPLICATION_ID)
+            }.getOrDefault(-1)
+            if (vd >= 1) {
                 runCatching { coordinator.executeShell("wm size reset -d $vd") }
                 runCatching { coordinator.executeShell("wm density reset -d $vd") }
                 runCatching { coordinator.executeShell("wm overscan reset -d $vd") }

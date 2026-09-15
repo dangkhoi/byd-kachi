@@ -94,13 +94,32 @@
             android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|screenLayout|density|smallestScreenSize|keyboardHidden"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+            <!-- CHỈ MAIN+LAUNCHER ở activity: Kachi CÀI NHƯ APP THƯỜNG. HOME nằm trên alias TẮT SẴN bên dưới.
+                 [ĐO on-car 2026-09-15] BYD packageinstaller (StopLauncherActivity/LAUNCHER_INSTALLER) chặn GUI-install
+                 app có HOME đang bật → Kachi (HOME bật sẵn) fail GUI, bỏ HOME thì cài được. Owner [ĐO] DuDu: "cài vào là
+                 app bình thường, sau đó chọn làm launcher mới hiện option chọn launcher3/DuDu" ⇒ HOME chỉ được BẬT lúc
+                 runtime (DefaultHome.enableHomeEntry) — khi đó hệ thống có ứng viên home mới → hộp chọn hiện. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Lối vào HOME của Kachi — alias TẮT SẴN (enabled=false), KHÔNG mang LAUNCHER (một icon duy nhất —
+             SingleLauncherIconContractTest). Bật bằng DefaultHome.enableHomeEntry() từ nút "Đặt làm màn hình chính"
+             (và re-apply sau nâng cấp nếu người dùng đã chọn). `cmd package set-home-activity` nhắm component alias này. -->
+        <activity-alias
+            android:name=".launcher.KachiHome"
+            android:targetActivity=".launcher.KachiHomeActivity"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- Card fallback (CHIẾM màn, MẤT đồng hồ) — chỉ dùng khi làn nav zin không lên.
              Launch qua `am start` (cờ display + component .ClusterNavActivity) từ uid shell/dadb 2000, KHÔNG in-process.
@@ -116,14 +135,18 @@
             android:theme="@style/ClusterTheme" />
 
 
+        <!-- ⚠ [ĐO xe 2026-09-15] KHÔNG thêm `<property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE">`
+             vào các service `specialUse` dưới đây. `<property>` là tag API 34; PackageParser CLIENT-SIDE của
+             `com.android.packageinstaller` trên Android 10 (xe DL3) KHÔNG hiểu ⇒ "Unknown element under <service>:
+             property" ⇒ trình cài GUI báo "Fail in installation of desktop apps" (log: PackageParser pid 27089).
+             `adb pm install` (parser server-side) bỏ qua nên vẫn cài được — đúng triệu chứng "adb được, GUI không".
+             Xe chạy ≤ Android 12 (API 31) nên property này (chỉ bắt buộc từ API 34) là thừa. Nếu lint đòi → suppress,
+             KHÔNG thêm lại property. -->
         <!-- Nút nổi (bubble): chạm đưa GMaps lên cluster. Foreground specialUse (không có type nào khớp hơn). -->
         <service
             android:name=".modules.clustercast.FloatingBubbleService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="cluster_map_bubble" />
         </service>
 
         <!-- Bounded visible host for one claimed boot auto-cast request (0.71). Never exported. -->
@@ -131,9 +154,6 @@
             android:name=".modules.clustercast.CastAutomationService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="cluster_cast_boot_automation" />
         </service>
 
         <!-- 1.21 Item 1: HEADLESS boot setup — relocates the accessibility grant + force-bind and the
@@ -143,9 +163,6 @@
             android:name=".BootSetupService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="boot_headless_setup" />
         </service>
 
         <!-- B3 (2026-09-07): auto-start VietMap chạy ĐỘC LẬP (foreground service riêng) — KHÔNG block chuỗi
@@ -156,9 +173,6 @@
             android:name=".VietMapAutostartService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="vietmap_autostart" />
         </service>
 
         <!-- B6 (launcher): Kachi auto-start — surface-INDEPENDENT boot orchestration (seed freeform + set-home +
@@ -169,9 +183,6 @@
             android:name=".KachiAutostartService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="kachi_launcher_autostart" />
         </service>
 
         <!-- VietMap HUD BLE bridge: removed — same-device BLE self-loopback not viable (2026-08-04) -->

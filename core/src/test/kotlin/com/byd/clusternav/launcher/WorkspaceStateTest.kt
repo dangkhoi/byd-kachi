@@ -52,6 +52,45 @@ class WorkspaceStateTest {
         assertSame(SlotContent.Empty, s.slots[1])
     }
 
+    // Owner 2026-09-15: chọn GMaps ở ô 1 rồi chọn lại GMaps ở ô 2 → GMaps hiện CẢ hai ô. Một app không được ở hai ô.
+    @Test fun `mot app mot o - dat app o o moi go khoi o cu`() {
+        val gmaps = "com.google.android.apps.maps"
+        val s = WorkspaceState()
+            .withSlot(0, SlotContent.App(gmaps))   // ô 1 = GMaps
+            .withSlot(1, SlotContent.App(gmaps))   // ô 2 cũng chọn GMaps ⇒ phải CHUYỂN, không nhân đôi
+        assertSame(SlotContent.Empty, s.slots[0], "ô cũ phải trống — không để lại app trùng")
+        assertEquals(SlotContent.App(gmaps), s.slots[1], "ô mới giữ GMaps")
+        assertEquals(1, s.slots.count { it is SlotContent.App && it.pkg == gmaps }, "GMaps chỉ được ở đúng 1 ô")
+    }
+
+    @Test fun `sanitized chua state cu co app trung o - giu o dau`() {
+        val gmaps = "com.google.android.apps.maps"
+        // Mô phỏng state NẠP từ prefs cũ: gmaps ở CẢ ô 0 và ô 1 (dựng thẳng qua constructor, không qua withSlot).
+        val dirty = WorkspaceState(slots = List(WorkspaceState.SLOT_CAP) { i ->
+            if (i == 0 || i == 1) SlotContent.App(gmaps) else SlotContent.Empty
+        })
+        val clean = dirty.sanitized()
+        assertEquals(SlotContent.App(gmaps), clean.slots[0], "giữ ô đầu (đang hiện cửa sổ thật)")
+        assertSame(SlotContent.Empty, clean.slots[1], "ô trùng sau về trống")
+        assertEquals(1, clean.slots.count { it is SlotContent.App && it.pkg == gmaps })
+    }
+
+    @Test fun `sanitized khong doi tham chieu khi khong co trung`() {
+        val s = WorkspaceState().withSlot(0, SlotContent.App("a")).withSlot(1, SlotContent.App("b"))
+        assertSame(s, s.sanitized(), "không trùng ⇒ trả chính nó")
+    }
+
+    @Test fun `mot app mot o - app khac khong bi anh huong`() {
+        val gmaps = "com.google.android.apps.maps"
+        val s = WorkspaceState()
+            .withSlot(0, SlotContent.App("com.youtube"))
+            .withSlot(1, SlotContent.App(gmaps))
+            .withSlot(2, SlotContent.App(gmaps))   // chuyển GMaps sang ô 3
+        assertEquals(SlotContent.App("com.youtube"), s.slots[0], "app KHÁC giữ nguyên")
+        assertSame(SlotContent.Empty, s.slots[1])
+        assertEquals(SlotContent.App(gmaps), s.slots[2])
+    }
+
     @Test fun `swap doi cho 2 o`() {
         val s = WorkspaceState()
             .withSlot(0, SlotContent.App("a"))

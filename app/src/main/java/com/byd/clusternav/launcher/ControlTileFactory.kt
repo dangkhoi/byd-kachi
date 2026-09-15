@@ -129,10 +129,13 @@ class ControlTileFactory(
     private fun tileCover(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {
         applyBg(tile, false); tint(icon, label, true)
         label.setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp - 1f); tile.addView(label)
-        val closeLbl = def.displayArgs.getOrElse(0) { ctx.getString(R.string.kachi_cover_close) }
-        val openLbl = def.displayArgs.getOrElse(1) { ctx.getString(R.string.kachi_cover_open) }
-        val close = miniBtn(closeLbl) { control().cover(def.id, false) }
-        val open = miniBtn(openLbl) { control().cover(def.id, true) }
+        // T7 (owner 2026-09-15 "nút mở 50%"): MỘT nút cho MỖI mức trong `displayArgs` (0=Đóng · 1=Mở · 2=Nửa…), bấm
+        // gửi ĐÚNG chỉ số mức qua `coverLevel` (kính 2→OPEN_HALF=4, rèm 2→50%). Control chỉ khai 2 mức (windows_all)
+        // vẫn ra đúng 2 nút Đóng/Mở như trước — generic theo dữ liệu registry, không hardcode "kính".
+        val labels = def.displayArgs.ifEmpty {
+            listOf(ctx.getString(R.string.kachi_cover_close), ctx.getString(R.string.kachi_cover_open))
+        }
+        val buttons = labels.mapIndexed { level, text -> miniBtn(text) { control().coverLevel(def.id, level) } }
         tile.addView(LinearLayout(ctx).apply {
             // ⚠⚠ [KIỂM TOÁN 2026-09-12 mục 3] XẾP DỌC ở ô HẸP.
             //
@@ -147,12 +150,13 @@ class ControlTileFactory(
             gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
             // ⚠ [ĐO] máy ảo: hai nút WRAP + lề trong S làm tổng bề ngang 84dp > 68dp dùng được của ô ⇒ nhãn
             // nút thứ hai bị cắt, "Mở" hiện thành "M". Cho hai nút CHIA ĐỀU bằng weight thì không thể tràn.
-            if (size.narrow) {
-                addView(close, LinearLayout.LayoutParams(MATCH, WRAP).also { it.bottomMargin = dpi(ctx, Sp.XS) })
-                addView(open, LinearLayout.LayoutParams(MATCH, WRAP))
-            } else {
-                addView(close, LinearLayout.LayoutParams(0, WRAP, 1f).also { it.marginEnd = dpi(ctx, Sp.XS) })
-                addView(open, LinearLayout.LayoutParams(0, WRAP, 1f))
+            buttons.forEachIndexed { i, b ->
+                val last = i == buttons.lastIndex
+                if (size.narrow) {
+                    addView(b, LinearLayout.LayoutParams(MATCH, WRAP).also { if (!last) it.bottomMargin = dpi(ctx, Sp.XS) })
+                } else {
+                    addView(b, LinearLayout.LayoutParams(0, WRAP, 1f).also { if (!last) it.marginEnd = dpi(ctx, Sp.XS) })
+                }
             }
         })
     }

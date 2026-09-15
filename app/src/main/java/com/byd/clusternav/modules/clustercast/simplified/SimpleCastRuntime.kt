@@ -45,12 +45,18 @@ object SimpleCastRuntime {
         )
         // Cluster display id — SEED only (X2). KHÔNG dò shell ở đây: create() chạy lười trên luồng GỌI ĐẦU
         // TIÊN (có thể là main thread, vd bridge.castEnabled()), nên shell dadb ở đây = NetworkOnMainThread/ANR.
-        // Seed = saved (prefs) hoặc 1 (phao). [SimpleCastCoordinator.openProjection] dò LẠI thật trên executor
-        // nền (dumpsys → fission/xdja) rồi ghi đè + persist — đó mới là nguồn sự thật. Đừng hardcode ở caller.
+        // Seed = saved (prefs) hoặc 1 (phao) — CHỈ để đọc/geometry. R1 (spec kachi-hal187-cast-remediation):
+        // KHÔNG lệnh đặt nào (`am start --display`, `wm … -d`, dọn VD) được dùng seed; coordinator chỉ đặt theo
+        // id dò LIVE sau khi mở projection ([SimpleCastCoordinator.openProjection] → ClusterDisplayResolver), dò
+        // hụt thì không đặt. [ĐO] 2026-09-15: seed 1 = kachi-slot-0 (VD của chính launcher), cụm thật = 2.
         val savedDisplayId = prefs.lastDisplayId()
         val displayId = savedDisplayId ?: 1
-        val displaySource = if (savedDisplayId != null) "saved" else "seed(1) — refined live in openProjection"
-        android.util.Log.i("SimpleCast", "Cluster display seed = $displayId (source=$displaySource)")
+        val displaySource = if (savedDisplayId != null) "saved" else "seed(1)"
+        android.util.Log.i(
+            "SimpleCast",
+            "Cluster display seed = $displayId (source=$displaySource) — NOT used for placement; " +
+                "live-resolved after projection open",
+        )
         return SimpleCastCoordinator(projection, configurator, mover, prefs, shell, displayId, selfPackage = com.byd.clusternav.BuildConfig.APPLICATION_ID)
     }
 

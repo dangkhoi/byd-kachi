@@ -30,11 +30,29 @@ class CarControlAdapterTest {
         assertEquals(listOf(1, 1), gw.namedCalls[0].args)
     }
 
+    /**
+     * T7 (owner 2026-09-15 "nút mở 50%"): mức 2 phải đi THẲNG xuống writeArgs thành WINDOW_OPEN_HALF=4 — qua cả
+     * `coverLevel()` (dock/CapTest bấm nút "Nửa") lẫn `act()`/actByKind (voice/gói lệnh). Nếu một đường nào gập mức
+     * về bool (`level > 0` ⇒ mở) thì nút "Nửa" sẽ MỞ HẾT — đúng lỗi phải khoá.
+     */
+    @Test fun `coverLevel 2 di thang xuong OPEN_HALF qua ca coverLevel lan act`() {
+        val gw = FakeHalGateway(namedRc = 0L)
+        val adapter = CarControlAdapter(HalBindingTable(gw))
+        assertTrue(adapter.coverLevel("win_lf", 2))
+        assertEquals(listOf(1, 4), gw.namedCalls[0].args, "coverLevel(2) → [cửa 1, OPEN_HALF=4], không phải mở hết")
+        assertTrue(adapter.act("win_lf", 2))
+        assertEquals(listOf(1, 4), gw.namedCalls[1].args, "act(2) qua actByKind cũng phải giữ mức, không gập về bool")
+        // 0/1 y như cũ — cover(bool) đi qua coverLevel nhưng byte không đổi.
+        assertTrue(adapter.cover("win_lf", false))
+        assertEquals(listOf(1, 2), gw.namedCalls[2].args, "cover(false) vẫn → CLOSE=2")
+    }
+
     @Test fun `select routes index for feature-id control`() {
         val gw = FakeHalGateway(featureRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
-        assertTrue(adapter.select("drive_mode", 2))   // drive_mode = feature 1272971280
-        assertEquals(1272971280, gw.featureSetCalls[0].id)
+        // ambient_color = feature 1276194864 (drive_mode từng đứng đây; nay là named `setOperationMode` — 2026-09-15).
+        assertTrue(adapter.select("ambient_color", 2))
+        assertEquals(1276194864, gw.featureSetCalls[0].id)
         assertEquals(2, gw.featureSetCalls[0].value)
     }
 

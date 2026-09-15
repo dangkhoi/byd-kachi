@@ -16,7 +16,10 @@ class CarControlAdapter(private val table: HalBindingTable) : CarControlPort {
 
     // ── Kind mới (Stage 3 renderer dùng) ────────────────────────────────────────────────────────────────
     /** COVER: mở/đóng (kính/nóc/rèm/cốp). */
-    override fun cover(id: String, open: Boolean): Boolean = ok(table.write(id, if (open) 1 else 0))
+    override fun cover(id: String, open: Boolean): Boolean = coverLevel(id, if (open) 1 else 0)
+
+    /** COVER theo mức (T7): mức đi THẲNG xuống `writeArgs` (kính 2→OPEN_HALF=4, rèm 2→50%). 0/1 = y như [cover]. */
+    override fun coverLevel(id: String, level: Int): Boolean = ok(table.write(id, level))
 
     /** SELECT: chọn lựa chọn thứ [index] (0-based, khớp [ControlDef.args]). */
     override fun select(id: String, index: Int): Boolean = ok(table.write(id, index))

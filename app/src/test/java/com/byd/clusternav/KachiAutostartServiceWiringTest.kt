@@ -113,6 +113,16 @@ class KachiAutostartServiceWiringTest {
             "the boot set-home must be gated behind WorkspacePrefs.keepHomeOnBoot (default OFF)",
         )
         assertTrue(prefs.contains("fun keepHomeOnBoot()"), "the keep-home-on-boot pref lives in WorkspacePrefs (per-vehicle)")
+        // 2026-09-15 (HOME-alias, DuDu-style): the ONLY other gate is `homeChosen()` — set solely when the user pressed
+        // "Đặt làm màn hình chính" and it succeeded. Re-asserting then RESTORES an expressed choice after an upgrade
+        // (the alias ships disabled, so without it Home falls back to launcher3) — still user-consented (CLAUDE.md §4),
+        // not a silent system change. Pin both the gate and that the alias is enabled BEFORE set-home.
+        assertTrue(autostart.contains("prefs.homeChosen()"), "boot set-home may also run when the user already chose Kachi as home")
+        assertTrue(prefs.contains("fun homeChosen()"), "the home-chosen marker lives in WorkspacePrefs next to keepHomeOnBoot")
+        assertTrue(
+            autostart.indexOf("DefaultHome.enableHomeEntry(") in 0 until autostart.indexOf("ensureHomeActivity(seam, comp)"),
+            "the disabled HOME alias must be enabled BEFORE set-home-activity targets it",
+        )
     }
 
     @Test
@@ -124,6 +134,20 @@ class KachiAutostartServiceWiringTest {
     @Test
     fun `runBoot ensures the HOME activity is up so it restores and mounts slots`() {
         assertTrue(autostart.contains("am start -n "), "launches the HOME component so the Activity restores + mounts saved slots")
+        // ⚠ [SOÁT 2026-09-15 · P1] `am start` must target the ALWAYS-ENABLED activity, never the HOME alias: the alias
+        // ships `enabled=false`, and `am start -n <disabled component>` fails with "Activity class … does not exist" —
+        // so a user who never pressed "Đặt làm màn hình chính" would get NO launcher after boot / MY_PACKAGE_REPLACED.
+        assertTrue(
+            autostart.contains("am start -n \$launchComp"),
+            "am start must use DefaultHome.launchComponent (KachiHomeActivity), not the disabled HOME alias",
+        )
+        assertTrue(autostart.contains("DefaultHome.launchComponent(app)"), "launch component comes from the single source")
+        val defaultHome = readSrc("launcher/DefaultHome.kt")
+        assertTrue(defaultHome.contains("fun launchComponent("), "DefaultHome owns BOTH components (home alias vs launch activity)")
+        assertTrue(
+            defaultHome.contains("KachiHomeActivity::class.java.name}\""),
+            "launchComponent points at KachiHomeActivity (MAIN+LAUNCHER, always enabled)",
+        )
     }
 
     @Test
@@ -176,7 +200,9 @@ class KachiAutostartServiceWiringTest {
             .find(manifest)?.value ?: error("KachiAutostartService declaration missing")
         assertTrue(decl.contains("android:exported=\"false\""), "must be exported=false")
         assertTrue(decl.contains("android:foregroundServiceType=\"specialUse\""), "declared as a specialUse FGS")
-        assertTrue(decl.contains("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"), "carries the special-use subtype property")
+        // [ĐO on-car 2026-09-15] `<property>` (API 34) làm Android 10 PackageParser từ chối cài ("Unknown element under
+        // <service>: property"). Bất biến mới: KHÔNG có <property> — xem HeadlessAutostartContractTest cùng lý do.
+        assertTrue(!decl.contains("<property"), "KHONG duoc co <property> duoi <service> — Android 10 tu choi cai")
     }
 
     @Test

@@ -333,6 +333,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // T4: thu hồi id ở ĐÚNG chỗ diff này ⇒ mọi đường đổi đều qua đây. CẢ state, vì "còn dùng" tính cả sổ cảnh.
         prev?.let { appWidgets.reclaim(it, state) }
         workspace.render(state.workspace, state.carStatus)
+        // R1/R2 (quality-review 2026-09-15): registry vị-trí-app là PROJECTION của state — reconcile MỖI render ở
+        // ĐÚNG MỘT chỗ, thay các lệnh d.place/d.remove sửa tay ở handler (nguồn drift "3 nguồn sự-thật"). Đọc-vẽ,
+        // không đổi state. `WorkspaceView.render` phía trên đã lo VdAppHost theo-ô; đây lo registry + evict app rời ô.
+        windows.reconcileLocations(state.workspace.slots)
         // ⚠ xét CẢ `topStrip`: thiếu nó thì đổi danh sách chip mà màn hình không đổi gì (off-car trạng thái xe gần như không đổi).
         if (prev == null || prev.carStatus != state.carStatus || prev.topStrip != state.topStrip) {
             topStrip.refreshChips(state.carStatus, unitPrefs, state.topStrip)

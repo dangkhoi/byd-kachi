@@ -349,9 +349,13 @@ class SettingsSections(
     /**
      * S5 — **MÀN HÌNH CHÍNH**: dòng trạng thái + nút *Đặt Kachi làm màn hình chính* + công tắc *giữ khi nổ máy*.
      *
-     * ## Vì sao cần nút này (owner 2026-09-14)
-     * ROM BYD **không hiện hộp chọn HOME** khi bấm nút Home ⇒ không có đường tay nào để chọn launcher. Nút này gọi
-     * `cmd package set-home-activity` qua dadb uid-shell ([ĐO] DiLink3.0 ⇒ `Success`), đường mà cầu đã sở hữu.
+     * ## Vì sao cần nút này (owner 2026-09-14 · sửa 2026-09-15)
+     * [ĐO 09-14] Bấm nút Home KHÔNG hiện hộp chọn khi Kachi đã có HOME **bật sẵn** từ lúc cài (không có "ứng viên mới").
+     * [ĐO 09-15, owner với DuDu] Hộp chọn launcher3/DuDu CÓ hiện — khi app **bật HOME lúc runtime** ("cài vào là app
+     * bình thường, chọn làm launcher mới hiện option"). ⇒ Nút này giờ đi 2 bước trong [ClusterNavBridge.setDefaultHome]:
+     * (1) [DefaultHome.enableHomeEntry] bật alias HOME (tắt sẵn để GUI-install không bị BYD chặn) — ROM có thể tự hiện
+     * hộp chọn; (2) `cmd package set-home-activity <alias>` qua dadb uid-shell ([ĐO] DiLink3.0 ⇒ `Success`) — fallback
+     * tất định nếu ROM không hiện. Ok ⇒ ghi marker `homeChosen` để KachiAutostart re-apply sau nâng cấp/boot.
      *
      * ## Ba tính chất
      *  • Trạng thái ĐỌC không cần shell ([ClusterNavBridge.isDefaultHome]/[currentHomePackage]) — xanh khi Kachi đã

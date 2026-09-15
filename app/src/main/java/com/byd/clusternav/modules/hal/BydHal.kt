@@ -174,7 +174,11 @@ object BydHal {
 
     /** Gọi getter tên [name] (0 hoặc 1 tham số int) qua reflection → chuỗi giá trị. null nếu không có/ném.
      *  ĐÂY là cách đọc THẬT trên ROM này (getCurrentSpeed(), getTyrePressureValue(area)...) — KHÔNG cần listener.
-     *  Method cache theo (class#name#arity) → hot-path (steering mỗi tick) khỏi scan getMethods() lại. */
+     *  Method cache theo (class#name#arity) → hot-path (steering mỗi tick) khỏi scan getMethods() lại.
+     *
+     *  Kết quả là MẢNG (`int[]`/`float[]`/`byte[]`/`Object[]`) → [arrayToStr], KHÔNG `toString()` (§B remediation
+     *  2026-09-15: `int[].toString()` = `"[I@hash"` → `coerceInt` null → UI "—" cho `getPM2p5Level/Value` [ĐO
+     *  `BYDAutoPM2p5Device.java:84,92` trả `int[]`], `getAllRadarProbeStates` [`BYDAutoRadarDevice.java:64`]). */
     private val getterCache = java.util.concurrent.ConcurrentHashMap<String, java.lang.reflect.Method>()
     fun callGetter(dev: Any, name: String, arg: Int? = null): String? {
         val key = "${dev.javaClass.name}#$name#${if (arg == null) 0 else 1}"
@@ -182,23 +186,102 @@ object BydHal {
             it.name == name && it.parameterTypes.size == (if (arg == null) 0 else 1) &&
                 (arg == null || it.parameterTypes[0] == Int::class.javaPrimitiveType)
         }?.also { getterCache[key] = it } ?: return null
-        return runCatching { (if (arg == null) m.invoke(dev) else m.invoke(dev, arg))?.toString() ?: "null" }.getOrNull()
+        return runCatching {
+            val r = if (arg == null) m.invoke(dev) else m.invoke(dev, arg)
+            when {
+                r == null -> "null"
+                r.javaClass.isArray -> arrayToStr(r)
+                else -> r.toString()
+            }
+        }.getOrNull()
+    }
+
+    /**
+     * Mảng (bất kỳ kiểu phần tử, qua `java.lang.reflect.Array`) → chuỗi ĐỌC ĐƯỢC cho tầng parse ở :core:
+     *  • **1 phần tử** → chỉ chuỗi phần tử đó (`"3"`), để `HalBindingTable.coerceInt` đọc thẳng — đây là dạng
+     *    ưu tiên cho các getter "mảng bọc 1 số" như `getPM2p5Level()[0]` (docs/diagnostics/byd-pm25-airclean-RE-2026-09-04.md).
+     *  • **≥2 phần tử** → `"[a, b, c]"` (khớp `Arrays.toString`, đúng dạng `HalBindingTable.readIntList` đã khai
+     *    `"[0, 1, 2,…]"` cho 8 vùng radar) — KHÔNG cắt còn `[0]` vì sẽ mất dữ liệu của consumer danh sách.
+     *  • **rỗng** → `"[]"`.
+     * ✔ `HalBindingTable.coerceInt`/`coerceDouble` (:core) ĐÃ lấy phần tử đầu của `"[a, b]"` (hàm `firstOfArray`),
+     * nên getter mảng ≥2 phần tử vẫn ra scalar đúng cho ô cần số; [readIntList] đọc trọn mảng.
+     *
+     * Phần tử `null` (mảng `Object[]`) → chuỗi `"null"`, KHÔNG ném: một ô rỗng không được làm mất cả lượt đọc.
+     */
+    fun arrayToStr(arr: Any): String {
+        val n = RArray.getLength(arr)
+        return when (n) {
+            0 -> "[]"
+            1 -> RArray.get(arr, 0)?.toString() ?: "null"
+            else -> (0 until n).joinToString(", ", "[", "]") { RArray.get(arr, it)?.toString() ?: "null" }
+        }
     }
 
     /** Đọc nhiều getter (tên, arg?) → list "name(arg)=value". Bỏ getter không có. */
     fun readGetters(dev: Any, specs: List<Pair<String, Int?>>): List<String> =
         specs.mapNotNull { (name, arg) -> callGetter(dev, name, arg)?.let { "$name${arg?.let { a -> "($a)" } ?: ""}=$it" } }
 
-    /** Device có get(int[]) đồng bộ không (đa số BYDAuto device KHÔNG — đọc qua listener). */
-    fun hasSyncGet(dev: Any): Boolean = dev.javaClass.methods.any {
-        it.name == "get" && it.parameterTypes.size == 1 && it.parameterTypes[0] == IntArray::class.java
+    // ── ĐỌC feature-id đồng bộ (§A remediation 2026-09-15) ────────────────────────────────────────────
+    // [ĐO từ source] API đọc feature THẬT của mọi device BYDAuto là **`get(int[] ids, Class<?> type)` 2-arg**
+    // (`../jadx-tmap/sources/android/hardware/bydauto/AbsBYDAutoDevice.java:84`) trả `BYDAutoEventValue`; app chạy
+    // được (OpenBYD) gọi `dev.get(new int[]{id}, Integer.TYPE).intValue`
+    // (`../jadx-openbyd/sources/com/sr/openbyd/proxy/CarControlImpl.java:239-240`). Bản cũ dò `get(int[])` 1-arg —
+    // KHÔNG TỒN TẠI → hasSyncGet=false cho MỌI device → mọi telemetry route Feature = "—".
+    private val getMethodCache = java.util.concurrent.ConcurrentHashMap<String, java.lang.reflect.Method>()
+    private fun getMethodOrNull(dev: Any): java.lang.reflect.Method? {
+        getMethodCache[dev.javaClass.name]?.let { return it }
+        return dev.javaClass.methods.firstOrNull {
+            it.name == "get" && it.parameterTypes.size == 2 &&
+                it.parameterTypes[0] == IntArray::class.java && it.parameterTypes[1] == Class::class.java
+        }?.also { getMethodCache[dev.javaClass.name] = it }
     }
 
-    /** Thử ĐỌC đồng bộ: nếu device có get(int[]) → gọi, trả kết quả (EventValue[]/EventValue). null nếu không có method/ném. */
-    fun tryGet(dev: Any, id: Int): Any? {
-        if (!hasSyncGet(dev)) return null
-        val get = dev.javaClass.methods.first { it.name == "get" && it.parameterTypes.size == 1 && it.parameterTypes[0] == IntArray::class.java }
-        return runCatching { get.invoke(dev, intArrayOf(id)) }.getOrNull()
+    /** Device có `get(int[], Class)` đồng bộ không (`AbsBYDAutoDevice.java:84` — mọi device kế thừa đều có). */
+    fun hasSyncGet(dev: Any): Boolean = getMethodOrNull(dev) != null
+
+    /**
+     * Thử ĐỌC đồng bộ 1 feature-id: `dev.get(intArrayOf(id), [type])` → trả object `BYDAutoEventValue` (đọc field
+     * qua [readValue]/[readFeature]). [type] = `Integer.TYPE` (mặc định — cách OpenBYD đọc) hoặc `Float.TYPE`.
+     * **Degrade-safe:** null nếu device không có method 2-arg / HAL ném / HAL trả null.
+     */
+    fun tryGet(dev: Any, id: Int, type: Class<*> = Integer.TYPE): Any? {
+        val get = getMethodOrNull(dev) ?: return null
+        return runCatching { get.invoke(dev, intArrayOf(id), type) }.getOrNull()
+    }
+
+    /** Sentinel "không có giá trị" của `BYDAutoEventValue` [ĐO `BYDAutoEventValue.java:5,7,12-13`]: HAL trả object
+     *  với field mặc định khi feature không provision — KHÔNG phải số đo ⇒ phải coi là unavailable, không đưa lên UI. */
+    const val EV_INVALID_INT = -999999999
+    const val EV_INVALID_FLOAT = -1.0E9f
+
+    /**
+     * ĐỌC 1 feature-id ra chuỗi `"int=<n> float=<f> buf=<len|->"` ([readValue]) cho tầng parse :core
+     * (`HalBindingTable.coerceInt` đọc `int=`, `coerceDouble` đọc `float=`). Đây là đường thuần (không Context)
+     * mà [com.byd.clusternav.launcher.BydHalGateway.featureGet] bọc — test off-car được bằng fake device.
+     * null khi: không có `get` 2-arg · HAL ném/trả null · object trả về không có field EventValue nào ·
+     * cả `intValue`/`floatValue` đều là sentinel [EV_INVALID_INT]/[EV_INVALID_FLOAT] và không có buffer.
+     *
+     * ⚠ [SOÁT 2026-09-15 · P1] Ô sentinel bị **rút khỏi chuỗi** (`int=-` / `float=-`), KHÔNG in số thô như
+     * [readValue]. Lý do: `BYDAutoEventValue` khởi tạo CẢ HAI field bằng sentinel, nên một feature kiểu float hợp lệ
+     * vẫn mang `intValue = -999999999`. In nguyên thì `HalBindingTable.coerceInt` (ưu tiên `int=`) đọc ra
+     * **-999999999** và ô hiện một con số BỊA — đúng cái bệnh "số vô nghĩa" mà §A sinh ra để chữa (bộ lọc sentinel
+     * của :core chỉ biết rc `-2147482648/-2147482645`, KHÔNG biết sentinel EventValue). Ô bị rút không khớp regex
+     * `int=(-?\d+)` / `float=(-?[0-9.]+)` ⇒ :core tự lùi sang ô còn lại.
+     */
+    fun readFeature(dev: Any, id: Int, type: Class<*> = Integer.TYPE): String? {
+        val ev = tryGet(dev, id, type) ?: return null
+        val item = if (ev.javaClass.isArray) (if (RArray.getLength(ev) > 0) RArray.get(ev, 0) else null) else ev
+        if (item == null) return null
+        val i = runCatching { item.javaClass.getField("intValue").getInt(item) }.getOrNull()
+        val f = runCatching { item.javaClass.getField("floatValue").getFloat(item) }.getOrNull()
+        val buf = runCatching { item.javaClass.getField("bufferDataValue").get(item) as? ByteArray }.getOrNull()
+        if (i == null && f == null && buf == null) return null
+        val intOk = i != null && i != EV_INVALID_INT
+        val floatOk = f != null && f != EV_INVALID_FLOAT
+        if (!intOk && !floatOk && buf == null) return null
+        return "int=${if (intOk) i.toString() else "-"}" +
+            " float=${if (floatOk) f.toString() else "-"}" +
+            " buf=${buf?.size ?: "-"}"
     }
 
     /** KIỂM CHỨNG GHI (cho self-test): set 1 feature int → (ok, chi tiết). ok=true nếu set() KHÔNG ném

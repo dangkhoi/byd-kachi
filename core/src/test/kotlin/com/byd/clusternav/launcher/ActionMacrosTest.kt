@@ -147,8 +147,9 @@ class ActionMacrosTest {
         )
         val proven = ActionMacro("m", "l", "i", Domain.BODY, listOf(MacroStep("win_lf", 1)))
         assertEquals(EvidenceTier.PROVEN, proven.tier(), "một bước PROVEN ⇒ gói PROVEN")
+        // `readl` = OVERDRIVE (`lock` từng đứng đây, nay NEEDS_CAR vì setter không có trong stub — remediation 2026-09-15).
         val withOverdrive = ActionMacro("m", "l", "i", Domain.BODY,
-            listOf(MacroStep("win_lf", 1), MacroStep("lock", 1)))
+            listOf(MacroStep("win_lf", 1), MacroStep("readl", 1)))
         assertEquals(EvidenceTier.OVERDRIVE, withOverdrive.tier(), "PROVEN + OVERDRIVE ⇒ OVERDRIVE")
     }
 

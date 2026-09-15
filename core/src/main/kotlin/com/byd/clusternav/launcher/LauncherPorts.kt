@@ -37,6 +37,13 @@ interface CarControlPort {
     fun step(id: String, value: Int): Boolean
     /** COVER mở (true) / đóng (false) kính·nóc·rèm·cốp. */
     fun cover(id: String, open: Boolean): Boolean
+    /**
+     * COVER theo MỨC (T7, owner 2026-09-15 "nút mở cửa 50%"): [level] = chỉ số trong `ControlDef.args`
+     * (0=Đóng · 1=Mở · 2=Nửa…). Mặc định gập về [cover] (0→đóng, ≥1→mở) nên MỌI impl cũ giữ nguyên hành vi;
+     * impl thật ([CarControlAdapter]) override để đưa thẳng mức xuống `HalBindingTable.writeArgs`
+     * (kính: 2→`WINDOW_OPEN_HALF`=4). Không đổi chữ ký [cover] — voice/dock cũ không phải sửa.
+     */
+    fun coverLevel(id: String, level: Int): Boolean = cover(id, level > 0)
     /** SELECT chọn lựa chọn thứ [index] (0-based, khớp `ControlDef.args`). */
     fun select(id: String, index: Int): Boolean
     /** BUTTON bấm-1-phát (lọc-ngay·nhớ-ghế·gập-gương·sạc-ngay). */
@@ -59,7 +66,8 @@ interface CarControlPort {
 fun CarControlPort.actByKind(id: String, arg: Int): Boolean = when (ControlRegistry.byId(id)?.kind) {
     ControlKind.TOGGLE -> toggle(id, arg > 0)
     ControlKind.STEP -> step(id, arg)
-    ControlKind.COVER -> cover(id, arg > 0)
+    // T7: đưa MỨC thô xuống (0/1 y như trước; 2=Nửa mới tới được writeArgs). Impl mặc định gập về cover(bool).
+    ControlKind.COVER -> coverLevel(id, arg)
     ControlKind.SELECT -> select(id, arg)
     ControlKind.BUTTON -> press(id)
     null -> false

@@ -21,6 +21,13 @@ package com.byd.clusternav.launcher.testbridge
  *   BUTTON bỏ qua. **null = không truyền** ⇒ tầng thi hành chọn mặc định theo kind (bật/mở/bấm) — khác hẳn `0`
  *   (tắt/đóng), nên phải là `Int?` chứ không ép về `0` ở đây.
  * @property autoConfirm `--ez auto_confirm true` — xem KDoc [TestBridgeCommands.EXTRA_AUTO_CONFIRM].
+ * @property dev tên ĐƠN GIẢN device BYDAuto cho lệnh `hal` (`BYDAutoBodyworkDevice`) — rỗng ⇒ tầng thi hành mặc
+ *   định `BYDAutoBodyworkDevice` (thân xe: kính/cửa/đèn/rèm). FQN đầy đủ dựng ở tầng thi hành qua
+ *   `HalBindingTable.deviceFqn` — MỘT converter, không viết cứng hai chỗ.
+ * @property method tên method HAL thô cho lệnh `hal` (`getWindowState` · `setBodyWindowCtrlState`). Bắt buộc.
+ * @property halArgs đối số int cho `hal`, phân tách bằng dấu phẩy (`"1"` · `"1,2"`). Getter 0-đối để rỗng.
+ * @property op `get` (đọc getter) hay `set` (ghi named-method) cho `hal`; rỗng ⇒ suy theo tiền tố `get` của
+ *   [method]. `set` là lượt GHI thân xe nên đi qua đúng cổng CONFIRM như `ctl` (cần `--ez auto_confirm true`).
  */
 data class TestBridgeCommand(
     val name: String,
@@ -33,6 +40,10 @@ data class TestBridgeCommand(
     val id: String = "",
     val v: Int? = null,
     val autoConfirm: Boolean = false,
+    val dev: String = "",
+    val method: String = "",
+    val halArgs: String = "",
+    val op: String = "",
 )
 
 /** Kết quả phân tích: hoặc một lệnh dùng được, hoặc một **mã lỗi ASCII** cho script đọc. */
@@ -81,6 +92,18 @@ object TestBridgeCommands {
     /** `--ei v <value>` — giá trị chính của control cho lệnh [CTL] (tuỳ chọn; vắng ⇒ mặc định theo kind). */
     const val EXTRA_V = "v"
 
+    /** `--es dev <simpleClass>` — device BYDAuto cho lệnh [HAL] (tuỳ chọn; vắng ⇒ `BYDAutoBodyworkDevice`). */
+    const val EXTRA_DEV = "dev"
+
+    /** `--es m <method>` — tên method HAL thô cho lệnh [HAL] (bắt buộc). */
+    const val EXTRA_METHOD = "m"
+
+    /** `--es args <csv-ints>` — đối số int (phân tách phẩy) cho lệnh [HAL]. */
+    const val EXTRA_HAL_ARGS = "args"
+
+    /** `--es op <get|set>` — kiểu thao tác cho lệnh [HAL] (tuỳ chọn; vắng ⇒ suy theo tiền tố `get`). */
+    const val EXTRA_OP = "op"
+
     /**
      * `--ez auto_confirm true` — **chỉ** có tác dụng khi chế độ kiểm thử đang bật (bản thân cả cầu này cũng vậy).
      *
@@ -108,6 +131,22 @@ object TestBridgeCommands {
 
     /** Bắn MỘT control theo mã registry, đi qua ĐÚNG applier mà một cú chạm ô nút đi (`CarControlPort`). */
     const val CTL = "ctl"
+
+    /**
+     * Gọi MỘT method HAL BYDAuto **thô** (đọc getter / ghi named-method) để CHẨN ĐOÁN cơ chế — không đi qua
+     * `ControlRegistry`. Sinh ra vì `ctl` chỉ bắn được value đã map (kính: mở=1/đóng=2) nên không đọc được
+     * `getWindowPermitState`/`getWindowState` cũng không thử được state khác (STOP=3…). Đúng tinh thần §14: một
+     * đầu dò shell-thô trên xe THẬT để chốt cơ chế trước khi mã hoá thành policy. Lượt GHI (`set`) chạm thân xe ⇒
+     * đi qua cổng CONFIRM y như `ctl` ([CtlSafetyPolicy] không áp được vì không có control-id, nên cổng nằm ở
+     * tầng thi hành `TestBridgeHal`).
+     */
+    const val HAL = "hal"
+
+    /**
+     * Quét MỘT LƯỢT: đọc raw MỌI telemetry (`readRaw`) + mô tả route MỌI control (KHÔNG bắn) → JSON trên thẻ.
+     * Thay cho việc bấm tay 187 mục trên xe (owner 2026-09-15). Chỉ-đọc ⇒ không cần confirm. `--es op info|ctl|all`.
+     */
+    const val SWEEP = "sweep"
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────
 
@@ -144,6 +183,8 @@ object TestBridgeCommands {
         Spec(REAPPLY, emptyList()),
         Spec(DIAG, emptyList()),
         Spec(CTL, listOf(EXTRA_ID), listOf(EXTRA_V, EXTRA_AUTO_CONFIRM)),
+        Spec(HAL, listOf(EXTRA_METHOD), listOf(EXTRA_DEV, EXTRA_HAL_ARGS, EXTRA_OP, EXTRA_AUTO_CONFIRM)),
+        Spec(SWEEP, emptyList(), listOf(EXTRA_OP)),
     )
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
@@ -194,6 +235,10 @@ object TestBridgeCommands {
                 // `as? Int` giữ nguyên null khi `--ei v` vắng ⇒ tầng thi hành phân biệt "không truyền" với `0`.
                 v = extras[EXTRA_V] as? Int,
                 autoConfirm = extras[EXTRA_AUTO_CONFIRM] as? Boolean ?: false,
+                dev = (extras[EXTRA_DEV] as? String).orEmpty().trim(),
+                method = (extras[EXTRA_METHOD] as? String).orEmpty().trim(),
+                halArgs = (extras[EXTRA_HAL_ARGS] as? String).orEmpty().trim(),
+                op = (extras[EXTRA_OP] as? String).orEmpty().trim().lowercase(),
             ),
         )
     }

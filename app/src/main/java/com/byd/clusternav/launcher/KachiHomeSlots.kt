@@ -33,12 +33,13 @@ internal class KachiHomeSlots(
 
     fun assignApp(index: Int, pkg: String) {
         drawer().close()
-        val prev = viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App
-        viewModel.assignApp(index, pkg)                                       // state+persist → collector: workspace.render
-        val d = container.windowDispatcher
-        if (prev != null && prev.pkg != pkg) d.remove(prev.pkg)               // ô thay app khác → gỡ app cũ khỏi registry
-        d.place(pkg, 0, index)                                                // app mới chiếm ô index trên display 0
-        windows().placeApp(pkg, index, fresh = true)
+        // MỘT-APP-MỘT-Ô + đúng vị trí đều do STATE lo (quality-review 2026-09-15, R1/R2): `viewModel.assignApp`
+        // → `WorkspaceState.withSlot` tự dedup (pkg chỉ còn ở [index], ô cũ → Empty). Collector `render(state)`:
+        //   • `workspace.render` dựng lại ô đổi nội-dung ⇒ `releaseSlotHost` nhả VdAppHost của ô cũ (hết khung-đóng-băng);
+        //   • `windows.reconcileLocations` cập nhật registry + evict app rời ô.
+        // Handler KHÔNG còn sửa tay registry (d.place/d.remove) — đó là nguồn drift "3 nguồn sự-thật" nay đã gỡ.
+        viewModel.assignApp(index, pkg)
+        windows().placeApp(pkg, index, fresh = true)   // đặt/di chuyển cửa sổ freeform (off-car); on-car VdAppHost do WorkspaceView
     }
 
     fun assignWidgets(index: Int, ids: List<String>) {
@@ -67,22 +68,15 @@ internal class KachiHomeSlots(
     }
 
     fun clearSlot(index: Int) {
-        val cur = viewModel.uiState.value
-        (cur.slots.getOrNull(index) as? SlotContent.App)?.let { app ->
-            windows().closeApp(app.pkg)
-            container.windowDispatcher.remove(app.pkg)   // ô đóng → gỡ vị trí (bất biến MỘT-VỊ-TRÍ)
-        }
-        viewModel.clearSlot(index)   // state+persist → collector: workspace.render + updateOverlayHeads
+        // Đóng cửa sổ NGAY cho phản hồi tức thì; registry do `reconcileLocations` (render) gỡ theo state (evict).
+        (viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App)?.let { windows().closeApp(it.pkg) }
+        viewModel.clearSlot(index)   // state+persist → collector: workspace.render + reconcileLocations
     }
 
-    /** Kéo-thả đổi chỗ 2 ô (widget/app). */
+    /** Kéo-thả đổi chỗ 2 ô (widget/app). Registry do `reconcileLocations` (render) cập nhật theo state mới. */
     fun swapSlots(a: Int, b: Int) {
         val cur = viewModel.uiState.value
         if (a !in cur.slots.indices || b !in cur.slots.indices) return
-        viewModel.swapSlots(a, b)   // state+persist → collector: workspace.render
-        val ns = viewModel.uiState.value
-        val d = container.windowDispatcher   // 2 ô đổi chỗ → cập nhật lại index vị trí của app (nếu có) ở mỗi ô
-        (ns.slots.getOrNull(a) as? SlotContent.App)?.let { d.place(it.pkg, 0, a) }
-        (ns.slots.getOrNull(b) as? SlotContent.App)?.let { d.place(it.pkg, 0, b) }
+        viewModel.swapSlots(a, b)   // state+persist → collector: workspace.render + reconcileLocations
     }
 }

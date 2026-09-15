@@ -105,6 +105,12 @@ object ProfileScope {
                 "quyết định mức máy, không mức người",
         )
         put(
+            "home_chosen",
+            "2026-09-15 HOME-alias — marker 'đã bấm Đặt làm màn hình chính thành công'. Cùng lý do với " +
+                "`keep_home_on_boot`: HOME là của **cả xe**, KachiAutostart đọc marker để bật lại alias + set-home sau " +
+                "nâng cấp; theo hồ sơ thì đổi hồ sơ lại quên/nhớ HOME của cả máy. Là NOT_SETTINGS nhưng vẫn phải có phạm vi",
+        )
+        put(
             "recent_apps",
             "lịch sử mở app của cả xe (đã khai ở [SettingsCatalog.NOT_SETTINGS] là trạng thái dùng, không phải " +
                 "cấu hình) — xoá một hồ sơ mà mất lịch sử của cả xe là lỗi tệ hơn lỗi đang vá",

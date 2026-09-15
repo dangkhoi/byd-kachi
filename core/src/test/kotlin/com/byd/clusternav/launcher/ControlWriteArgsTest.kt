@@ -52,8 +52,9 @@ class ControlWriteArgsTest {
      * nên khi ai đó tách được tham số thì phải xoá mục tương ứng khỏi đây.
      */
     private val COLLISION_PENDING_CAR = mapOf(
-        setOf("cam", "camera_view") to "feature-id 3001: bật camera vs chọn góc — cần dump tham số trên xe",
-        setOf("headl", "headlight_mode") to "feature-id 1276153912: bật đèn pha vs chọn chế độ — cần dump",
+        // 2026-09-15 (`docs/diagnostics/hal-binding-remediation-2026-09-15.md`) đã tách hai cặp khỏi đây:
+        //  • `cam`/`camera_view`: pseudo-id 3001 là bịa — nay `setAVMSwitchState` (ADAS) vs `setDisplayMode` (Panorama);
+        //  • `headl`/`headlight_mode`: id 1276153912 giữ cho `headlight_mode` (INSTRUMENT), `headl` gỡ id (NEEDS-ONCAR).
         setOf("brightness_gear", "hud_brightness") to "feature-id 1276174360: sáng màn vs sáng HUD — một trong hai SAI id",
     )
 
@@ -150,7 +151,7 @@ class ControlWriteArgsTest {
             emptyList<Set<String>>(), stale,
             "cặp này KHÔNG còn trùng tham số nữa ⇒ đã sửa được thì xoá khỏi COLLISION_PENDING_CAR",
         )
-        assertEquals(3, COLLISION_PENDING_CAR.size, "còn đúng 3 cặp nợ xe; thêm cặp mới phải là quyết định tường minh")
+        assertEquals(1, COLLISION_PENDING_CAR.size, "còn đúng 1 cặp nợ xe; thêm cặp mới phải là quyết định tường minh")
     }
 
     /**
@@ -184,12 +185,25 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(1, 2), args("seath", 1))
         assertArrayEquals(intArrayOf(2), args("steer_heat", 1))
         assertArrayEquals(intArrayOf(1), args("steer_heat", 0))
-        assertArrayEquals(intArrayOf(1, 1), args("win_lf", 1))
-        assertArrayEquals(intArrayOf(2, 0), args("win_rf", 0))
+        // Kính: enum WINDOW_* (mở=1/đóng=2). [ĐO xe 2026-09-15] đóng gửi 0 = no-op ⇒ phải là 2.
+        assertArrayEquals(intArrayOf(1, 1), args("win_lf", 1), "kính TT mở → [cửa 1, mở=1]")
+        assertArrayEquals(intArrayOf(1, 2), args("win_lf", 0), "kính TT đóng → [cửa 1, đóng=2] (KHÔNG phải 0)")
+        // T7 (owner 2026-09-15 "mở 50%"): mức 2 = WINDOW_OPEN_HALF=4 (BYDAutoBodyworkDevice.java:378) — cả 4 kính.
+        // NEEDS-ONCAR: hal set setBodyWindowCtrlState 1,4 → getWindowOpenPercent(1) ≈ 50.
+        assertArrayEquals(intArrayOf(1, 4), args("win_lf", 2), "kính TT NỬA → [cửa 1, OPEN_HALF=4]")
+        assertArrayEquals(intArrayOf(2, 4), args("win_rf", 2), "kính TP NỬA → [cửa 2, 4]")
+        assertArrayEquals(intArrayOf(3, 4), args("win_lr", 2), "kính ST NỬA → [cửa 3, 4]")
+        assertArrayEquals(intArrayOf(4, 4), args("win_rr", 2), "kính SP NỬA → [cửa 4, 4]")
+        // `windows_all` KHÔNG có mức nửa (setAllWindowState mỗi arg 0/1): mức 2 rơi về MỞ, và registry không khai "Nửa".
+        assertArrayEquals(intArrayOf(1, 1, 1, 1), args("windows_all", 2), "tất cả kính: không có nửa → mở")
+        assertEquals(2, com.byd.clusternav.launcher.ControlRegistry.byId("windows_all")!!.args.size, "windows_all không khai nút Nửa")
+        assertArrayEquals(intArrayOf(2, 2), args("win_rf", 0), "kính TP đóng → [cửa 2, đóng=2]")
         assertArrayEquals(intArrayOf(3, 1), args("win_lr", 1))
         assertArrayEquals(intArrayOf(4, 1), args("win_rr", 1))
         assertArrayEquals(intArrayOf(1, 1, 1, 1), args("windows_all", 1))
+        assertArrayEquals(intArrayOf(2, 2, 2, 2), args("windows_all", 0), "tất cả kính đóng → 4× đóng=2")
         assertArrayEquals(intArrayOf(1, 1), args("window", 1))
+        assertArrayEquals(intArrayOf(1, 2), args("window", 0), "kính lái đóng → [1, đóng=2]")
         assertArrayEquals(intArrayOf(1), args("trunk", 1))
         assertArrayEquals(intArrayOf(2), args("trunk", 0))
         assertArrayEquals(intArrayOf(1), args("pm25_clean_now", 1))
@@ -198,8 +212,106 @@ class ControlWriteArgsTest {
 
     @Test
     fun `ma khong co nhanh rieng van gui thang gia tri chinh`() {
-        val def = requireNotNull(ControlRegistry.byId("readl"))
+        // `defrost` (sấy kính, feature-id) không có nhánh riêng ⇒ else → gửi thẳng primary.
+        // (`drl` từng đứng đây; từ 2026-09-15 nó có enum riêng OPEN=1/CLOSE=2 — xem bài dưới.)
+        val def = requireNotNull(ControlRegistry.byId("defrost"))
         assertArrayEquals(intArrayOf(1), HalBindingTable.writeArgs(def, 1))
         assertArrayEquals(intArrayOf(0), HalBindingTable.writeArgs(def, 0))
+    }
+
+    // ── Bản vá binding 2026-09-15: enum ghi có nguồn stub (file:line ở HalBindingTable.writeArgs) ──────────
+    @Test fun `den ban ngay setDayTimeLightState OPEN=1 CLOSE=2`() {
+        assertEquals("BYDAutoLightDevice.setDayTimeLightState", ControlRegistry.byId("drl")!!.bindingKey)
+        assertArrayEquals(intArrayOf(1), args("drl", 1), "bật DRL → OPEN=1")
+        assertArrayEquals(intArrayOf(2), args("drl", 0), "tắt DRL → CLOSE=2 (KHÔNG phải 0)")
+    }
+
+    @Test fun `EV HEV setEnergyMode EV=1 HEV=3`() {
+        assertEquals("BYDAutoEnergyDevice.setEnergyMode", ControlRegistry.byId("powertrain_mode")!!.bindingKey)
+        assertArrayEquals(intArrayOf(1), args("powertrain_mode", 0), "args[0]=EV → ENERGY_MODE_EV=1")
+        assertArrayEquals(intArrayOf(3), args("powertrain_mode", 1), "args[1]=HEV → ENERGY_MODE_HEV=3 (KHÔNG phải index 1)")
+    }
+
+    @Test fun `che do lai setOperationMode map index UI sang enum`() {
+        val def = ControlRegistry.byId("drive_mode")!!
+        assertEquals("BYDAutoEnergyDevice.setOperationMode", def.bindingKey)
+        assertEquals(listOf("Thường", "Eco", "Thể thao", "Tuyết"), def.args, "thứ tự args là hợp đồng của map bên dưới")
+        assertArrayEquals(intArrayOf(3), args("drive_mode", 0), "Thường → NORMAL=3")
+        assertArrayEquals(intArrayOf(1), args("drive_mode", 1), "Eco → ECONOMY=1")
+        assertArrayEquals(intArrayOf(2), args("drive_mode", 2), "Thể thao → SPORT=2")
+        assertArrayEquals(intArrayOf(4), args("drive_mode", 3), "Tuyết → SNOW=4")
+        assertArrayEquals(intArrayOf(3), args("drive_mode", 9), "index lạ → NORMAL, không gửi số ngoài enum")
+    }
+
+    @Test fun `cua so troi setMoonRoofState mo=1 dong=2`() {
+        assertEquals("BYDAutoBodyworkDevice.setMoonRoofState", ControlRegistry.byId("sunroof")!!.bindingKey)
+        assertArrayEquals(intArrayOf(1), args("sunroof", 1))
+        assertArrayEquals(intArrayOf(2), args("sunroof", 0))
+    }
+
+    @Test fun `sac ngay setChargingMode luon IMMEDIATELY=1`() {
+        assertEquals("BYDAutoChargingDevice.setChargingMode", ControlRegistry.byId("start_charging")!!.bindingKey)
+        assertArrayEquals(intArrayOf(1), args("start_charging", 1))
+        assertArrayEquals(intArrayOf(1), args("start_charging", 0), "nút bấm không có mặt tắt")
+    }
+
+    @Test fun `muc tieu sac setChargeStopCapacityState enum roi khong phai phan tram tho`() {
+        assertEquals("BYDAutoChargingDevice.setChargeStopCapacityState", ControlRegistry.byId("target_soc_set")!!.bindingKey)
+        assertArrayEquals(intArrayOf(1), args("target_soc_set", 100))
+        assertArrayEquals(intArrayOf(2), args("target_soc_set", 90))
+        assertArrayEquals(intArrayOf(3), args("target_soc_set", 80), "80% → CHARGE_STOP_CAPACITY_80=3, KHÔNG gửi 80")
+        assertArrayEquals(intArrayOf(4), args("target_soc_set", 70))
+        assertArrayEquals(intArrayOf(5), args("target_soc_set", 60))
+        assertArrayEquals(intArrayOf(6), args("target_soc_set", 50))
+        // STEP bước 5 ⇒ có % lẻ: mốc gần nhất, hoà → mốc thấp; ngoài dải kẹp biên.
+        assertArrayEquals(intArrayOf(3), args("target_soc_set", 85), "85 hoà 80/90 → mốc THẤP (80=3)")
+        assertArrayEquals(intArrayOf(2), args("target_soc_set", 94), "94 → 90=2")
+        assertArrayEquals(intArrayOf(6), args("target_soc_set", 10), "dưới 50 → kẹp 50=6")
+        assertArrayEquals(intArrayOf(1), args("target_soc_set", 120), "trên 100 → kẹp 100=1")
+    }
+
+    @Test fun `sac khong day setWirelessChargingSwitchState ON=1 OFF=2`() {
+        assertEquals("BYDAutoChargingDevice.setWirelessChargingSwitchState", ControlRegistry.byId("wireless_charge")!!.bindingKey)
+        assertArrayEquals(intArrayOf(1), args("wireless_charge", 1))
+        assertArrayEquals(intArrayOf(2), args("wireless_charge", 0))
+    }
+
+    @Test fun `camera 360 setAVMSwitchState ON=2 OFF=1 va tach khoi camera_view`() {
+        assertEquals("BYDAutoADASDevice.setAVMSwitchState", ControlRegistry.byId("cam")!!.bindingKey)
+        assertArrayEquals(intArrayOf(2), args("cam", 1), "bật camera → AVM_FUNCTION_ON=2")
+        assertArrayEquals(intArrayOf(1), args("cam", 0), "tắt camera → AVM_FUNCTION_OFF=1")
+        assertEquals("BYDAutoPanoramaDevice.setDisplayMode", ControlRegistry.byId("camera_view")!!.bindingKey)
+        assertArrayEquals(intArrayOf(2), args("camera_view", 2), "góc camera gửi index thô (NEEDS-ONCAR map enum)")
+    }
+
+    @Test fun `headl bo id trung voi headlight_mode - hai nut khong con cung mot byte`() {
+        val headl = ControlRegistry.byId("headl")!!
+        val mode = ControlRegistry.byId("headlight_mode")!!
+        assertEquals("1276153912", mode.bindingKey, "headlight_mode giữ INSTRUMENT_HEADLIGHT_CONTROL_SET")
+        assertEquals("BYDAutoInstrumentDevice", mode.halDevice, "id thuộc INSTRUMENT(1007), không phải LIGHT")
+        assertTrue(headl.bindingKey != mode.bindingKey, "headl không được dùng chung id nữa")
+        assertEquals(BindingRoute.None, HalBindingTable.routeOf(headl.bindingKey), "headl NEEDS-ONCAR → None (không gửi mù)")
+        assertEquals(EvidenceTier.NEEDS_CAR, headl.tier)
+    }
+
+    @Test fun `khoa cua sua case ten lop DoorLock de khong ClassNotFound`() {
+        listOf("lock", "door").forEach { id ->
+            assertEquals("BYDAutoDoorLockDevice.setDoorLockState", ControlRegistry.byId(id)!!.bindingKey, id)
+        }
+        assertEquals(
+            "android.hardware.bydauto.doorlock.BYDAutoDoorLockDevice",
+            (HalBindingTable.routeOf(ControlRegistry.byId("lock")!!.bindingKey) as BindingRoute.NamedMethod).fqn,
+        )
+    }
+
+    // [ĐO xe 2026-09-15 + RE] hai control có enum RIÊNG, KHÔNG phải 0/1 (xem HalBindingTable.writeArgs):
+    //  • đèn đọc `readl` feature 0x4F50003A: INSIGHT_LIGHT_ON=2 / OFF=1 (cũ gửi 0/1 ⇒ on/off tay không ăn).
+    //  • rèm `sunshade` feature 0x4F500028 PERCENT_SET: mở=100% / đóng=0% (cũ gửi 1 ⇒ "mở chút xíu").
+    @Test fun `den doc va rem dung enum rieng khong phai 0 1`() {
+        assertArrayEquals(intArrayOf(2), args("readl", 1), "đèn đọc BẬT → ON=2")
+        assertArrayEquals(intArrayOf(1), args("readl", 0), "đèn đọc TẮT → OFF=1")
+        assertArrayEquals(intArrayOf(100), args("sunshade", 1), "rèm MỞ → 100%")
+        assertArrayEquals(intArrayOf(0), args("sunshade", 0), "rèm ĐÓNG → 0%")
+        assertArrayEquals(intArrayOf(50), args("sunshade", 2), "T7: rèm NỬA → 50% (đường percent, không enum)")
     }
 }

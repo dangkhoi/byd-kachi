@@ -11,6 +11,8 @@ class FakeHalGateway(
     private val namedRc: Long? = null,
     private val featureRc: Long? = null,
     private val localOk: Boolean = false,
+    /** method → (arg → giá trị) cho getter per-index (áp lốp 4 góc `getTyrePressureValue(area)`…); ưu tiên trước [getters]. */
+    private val gettersByArg: Map<String, Map<Int, String?>> = emptyMap(),
 ) : HalGateway {
 
     data class NamedCall(val fqn: String, val method: String, val args: List<Int>)
@@ -24,6 +26,7 @@ class FakeHalGateway(
 
     override fun getter(deviceFqn: String, method: String, arg: Int?): String? {
         getterArgs[method] = arg
+        gettersByArg[method]?.let { byArg -> if (arg != null) return byArg[arg] }
         return getters[method]
     }
 

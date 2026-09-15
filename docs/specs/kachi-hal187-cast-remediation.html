@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sửa cast cụm + RE/vá binding 187 chức năng — Kachi</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p0{background:#d70015}.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.bad{border-color:#d70015}.fnode.good{border-color:var(--ok)}.fnode.new{background:rgba(0,113,227,.12)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Sửa cast cụm + RE/vá binding 187 chức năng xe</h1>
+<p class="muted">Slug: <code>kachi-hal187-cast-remediation</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: Implement off-car XONG (review Pass 1 APPROVED, core 1806/0 · app 938/0) — CHỜ ON-CAR (cast · sweep · HOME-alias · YouTube) trước OTA</span></p>
+<p class="muted">Sinh từ chuyến on-car 2026-09-15. Owner: <i>"mất quá nhiều thời gian trên xe vô nghĩa quá"</i> → dời TOÀN BỘ việc RE 187 chức năng về <b>off-car</b>; lên xe chỉ để <b>xác nhận</b>, không mò.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-15</b>: Khởi tạo. Gộp 2 việc version tiếp: (A) sửa regression cast-cụm do refactor SimpleCast (P0), (B) RE off-car + vá binding cho 121/187 chức năng đang hỏng. Kèm nợ nhỏ: công cụ <code>sweep</code>, guard size-compat YouTube. Fix kính-đóng + CapTest 2 chiều đã làm (giữ lại).</li>
+</ul>
+
+<h2>2. Context</h2>
+<h3>Hai vấn đề THẬT (đều [ĐO] trên xe hôm nay)</h3>
+<p><b>(A) Cast qua cụm hỏng — regression P0.</b> Bản 1.61/1.62 (chứa refactor quality-review Pha 1-3: xoá <code>ClusterCast.kt</code>, thêm <code>SimpleCast</code> + <code>LauncherBootPlan.reconcile</code>) lần đầu chạy cast thật trên xe (sau reboot) đã đặt <code>ClusterBlackActivity</code> + app cast (GMaps) vào <b>display 1</b> (VD slot của launcher, <code>kachi-slot-0</code>) thay vì <b>display 2</b> (cụm thật <code>fission_bg_xdjaVirtualSurface</code>) → "cast vào giữa launcher". [ĐO] <code>ClusterDisplayResolver.resolve()</code>/<code>DisplayParse.clusterDisplayId</code> parse dump thật <b>ra đúng 2</b>; gốc là <b>TIMING</b>: boot log <code>Cluster display seed = 1</code> → seed=1 được dùng đặt ClusterBlack TRƯỚC khi refine sang 2.</p>
+<p><b>(B) 121/187 chức năng "chưa chạy / số vô nghĩa".</b> Công cụ "Kiểm tra từng nút xe" chấm <b>64 OK / 121 KHÔNG / 2 chưa</b>. Nhiều mục ĐỌC trả rỗng hoặc sai đơn vị; nhiều NÚT không tác dụng. Đây KHÔNG phải 121 bug riêng — chúng gom theo <b>device HAL</b> (charging/light/radar/tyre/bodywork…) và theo <b>loại lỗi</b> (chưa-map / sai-route / sai-scale / sai-enum / bị-chặn-chữ-ký / trim-không-có).</p>
+
+<div class="card"><b>Cổng / phụ thuộc:</b>
+<ul>
+<li><b>A trước B:</b> cast là an-toàn-vận-hành (màn cụm khi đang lái) → sửa + test A TRƯỚC. Refactor Pha 1-3 <b>không được OTA</b> tới khi cast được on-car-validate (memory <code>kachi-simplecast-regression</code>).</li>
+<li><b>B cần RE off-car xong TRƯỚC khi lên xe:</b> 6 subagent RE (theo device/domain) đang dựng bảng binding-đúng từ nguồn decompiled (<code>../jadx-*</code>, <code>BYDAutoFeatureIds</code>, OpenBYD <code>CarControlImpl</code>, <code>dashcast-src/CHANGELOG</code>). Kết quả → §Design bảng 4.2.</li>
+<li><b>Công cụ đo đã có:</b> T-BRIDGE lệnh <code>hal</code> (đọc getter + gọi named-method thô) — dùng để xác nhận từng binding trên xe bằng 1 lệnh, thay cho mò UI.</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 (P0).</b> Cast/ClusterBlack LUÔN nhắm display cụm THẬT (fission/xdja) — resolve <b>trước</b> mọi lần đặt, KHÔNG dùng seed để đặt. Acceptance: sau cast, <code>am stack list</code> cho task app ở display cụm (2), ClusterBlack không còn ở display slot; đo trên xe.</li>
+<li><b>R2 (P0).</b> Bất biến cứng: display cụm <b>không bao giờ</b> là VD do <code>com.byd.launcher</code> sở hữu (slot). Nếu resolve ra một slot-VD → từ chối + log, không đặt. Test off-car với fixture dump hôm nay.</li>
+<li><b>R3.</b> Với mỗi chức năng trong 187: binding (route + method/feature-id + scale + enum) khớp nguồn RE. Mục [X] có bằng chứng off-car → vá; mục cần đo → gắn <code>NEEDS-ONCAR</code> + đúng 1 lệnh <code>hal</code> để chốt; mục trim-không-có → ẩn/nhãn, không cố.</li>
+<li><b>R4.</b> Công cụ <code>sweep</code> (T-BRIDGE, chỉ-đọc): 1 broadcast đọc raw toàn bộ telemetry + route toàn bộ control → bảng phân loại, để mỗi lượt xe đo cạn không cần bấm tay.</li>
+<li><b>R5.</b> YouTube (và app fixed-orientation/non-resizable) không bị size-compat thu nhỏ trong ô: guard đo <code>mSizeCompatScale</code> sau launch, &lt;1 thì resize/recreate VD; nêu rõ điều kiện cần reboot nút nguồn.</li>
+<li><b>R6.</b> Giữ fix đã làm: kính-đóng (map đúng, đã đo) + CapTest 2 chiều (COVER/SELECT mỗi chiều 1 nút).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Mọi thứ RE/binding ở <code>:core</code> thuần → test off-car (CLAUDE §10). Parser cast dùng fixture dump THẬT.</li>
+<li>R-nf2. Degrade-safe: off-car mọi đường trả null/false, không ném. Cast guard đặt ở tầng <b>thi hành</b> (từ chối đặt lên display sai), không ở UI.</li>
+<li>R-nf3. Generic (CLAUDE §7): không hardcode tên gói/đời xe rải rác; khác biệt đời xe vào <code>ClusterProfile</code>.</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện song song với code.</p>
+
+<h3>4.1 (A) Cast display-targeting — sửa thứ tự resolve</h3>
+<p><b>Sai hiện tại:</b> đặt ClusterBlack/cast bằng <code>seed(1)</code> rồi mới refine.</p>
+<div class="flow">
+  <div class="fnode bad"><b>seed = 1</b><span>chưa refine</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>đặt ClusterBlack / cast → display 1</b><span>= slot VD (sai)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>refine sau</b><span>quá muộn</span></div>
+</div>
+<p><b>Đúng:</b> resolve LIVE trước, guard không-phải-slot, rồi mới đặt.</p>
+<div class="flow">
+  <div class="fnode new"><b>ClusterDisplayResolver.detect</b><span>dumpsys display</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>guard: owner≠com.byd.launcher</b><span>loại slot VD</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode good"><b>đặt → display 2 (fission)</b><span>cụm thật</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có</span><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span> khối mới/sửa</span></div>
+<ul>
+<li>Chèn resolve trước ClusterBlack placement trong boot flow (SimpleCastRuntime/Coordinator) — KHÔNG đặt lên currentId khi chưa detect.</li>
+<li>Thêm guard <code>DisplayParse.isSlotOwnedVd(dumpsysDisplay, id)</code>/hoặc kiểm owner uid: nếu display resolve ra là VD owner=<code>com.byd.launcher</code> → coi như CHƯA resolve (trả -1), không đặt.</li>
+<li>Test hồi quy: fixture <code>car-logs/</code> dump hôm nay (display 1=slot owner com.byd.launcher, display 2=fission) → khoá resolve→2 + guard loại 1.</li>
+</ul>
+
+<h3>4.2 (B) Bảng binding-đúng 187 — TỪ RE off-car</h3>
+<p class="muted">Điền từ 6 subagent RE (Energy · Drivetrain · Climate · Tyres+Body · Lights · Safety/ADAS+GPS/Infotainment). Mỗi dòng: id · bindingKey hiện · route hiện · method/feature-id ĐÚNG · scale/enum ĐÚNG · verdict · evidence. Verdict: BINDING-OK / WRONG-ROUTE / WRONG-SCALE / WRONG-ENUM / UNMAPPED / NEEDS-ONCAR / UNAVAILABLE-TRIM.</p>
+<p><b>RE xong (6 domain, 2026-09-15)</b> → <code>docs/diagnostics/hal-binding-remediation-2026-09-15.md</code>. 121 lỗi <b>gom về ~3 root-cause hạ tầng + ~50 vá off-car + ~40 mục cần 1 lượt sweep xe</b>:</p>
+<table>
+<tr><th>Nhóm</th><th>Số lượng (≈)</th><th>Nội dung</th></tr>
+<tr><td><b>Hạ tầng (đòn bẩy cao)</b></td><td>3 fix</td><td>§A đường đọc feature-id vỡ (<code>get(int[],Class)</code> 2-arg — mở khoá MỌI feature-read) · §B int[]→[0] · §C telemetry thiếu <code>halDevice</code></td></tr>
+<tr><td><b>Vá off-car (có source)</b></td><td>~50</td><td>method sai tên / route sai device / enum-scale sai — mỗi domain 1 test writeArgs·readArg</td></tr>
+<tr><td><b>NEEDS-ONCAR (1 sweep)</b></td><td>~40</td><td>feature-id "Overdrive" bị zero-hoá trong decompile / không có named → chốt bằng <code>hal</code> sweep 1 lượt</td></tr>
+<tr><td><b>GPS</b></td><td>4</td><td>không qua HAL → dùng Android <code>LocationManager</code></td></tr>
+<tr><td><b>UNAVAILABLE-TRIM?</b></td><td>~5</td><td>drift, ca-pô, nhiệt-lốp per-corner, âm-lượng-radar-đọc — xác nhận rồi ẩn/nhãn</td></tr>
+</table>
+<p class="muted"><b>§A</b> là phát hiện lớn nhất: <code>BydHal.hasSyncGet/tryGet</code> tìm <code>get(int[])</code> 1-arg (không tồn tại) → mọi feature-read trả null. API thật <code>get(int[],Class)</code> (<code>AbsBYDAutoDevice.java:84</code>, OpenBYD <code>CarControlImpl.java:239</code>). 1 fix mở khoá cả loạt.</p>
+<h3>4.3 (R4) Công cụ <code>sweep</code></h3>
+<ul>
+<li>Lệnh T-BRIDGE <code>sweep</code> (chỉ-đọc, không confirm): dựng <code>HalBindingTable(BydHalGateway)</code>, lặp <code>TelemetryRegistry.ALL</code> → <code>readRaw(id)</code>; <code>ControlRegistry.ALL</code> → <code>describeWrite</code>/<code>routeOf</code> (KHÔNG bắn). Trả JSON {id, route, value/raw} ra tệp thẻ. Chạy luồng nền (binder chặn).</li>
+</ul>
+<h3>4.4 (R5) YouTube — DENSITY-LEVER (đã đào sâu, [ĐO+SUY], đảo hướng cũ)</h3>
+<p><b>Gốc thật:</b> ô <code>kachi-slot-1</code> = 1401×748 @density <b>200</b> → <code>smallestWidthDp = 748×160/200 = <b>598.4dp</b></code> — <b>thiếu 1.6dp</b> so ngưỡng tablet 600dp ⇒ YouTube coi ô là ĐIỆN THOẠI ⇒ watch/player đòi <b>PORTRAIT</b> (fixed-orientation) khi <b>play</b> (feed không đòi). Display khoá landscape không xoay được ⇒ activity rơi <b>Size-Compat Mode</b> → pillarbox dải dọc giữa. Đây là chuỗi "bung→ngang→thu dọc" owner thấy.</p>
+<p><b>Vì sao 2 fix cũ trượt [ĐO source AOSP r47]:</b> (1) <code>wm set-fix-to-user-rotation</code> chỉ khoá xoay DISPLAY, không chạm fixed-orientation ACTIVITY → WM chuyển sang SCM cho riêng activity. (2) <code>force_resizable_activities=1</code> vô tác dụng: Android 10 <code>ActivityRecord.isResizeable()</code> KHÔNG đọc cờ này → SCM (<code>!isResizeable() &amp;&amp; isFixedOrientation()</code>) vẫn kích. (3) <code>wm set-ignore-orientation-request</code> = đúng bệnh nhưng Android 10 KHÔNG có (A12+/DL5).</p>
+<p><b>Fix (A) generic — density-lever:</b> đo <code>smallestWidthDp</code> của VD ô; nếu &lt;600 → hạ density (<code>newDpi = floor(minPx×160/600)</code>, vd 748→192=623dp) NGAY sau tạo VD, TRƯỚC <code>am start</code> (cạnh 2 lệnh <code>wm set-*-rotation</code>, <code>VdAppHost.kt:151-154</code>). YouTube chuyển layout tablet ⇒ không đòi portrait ⇒ hết SCM. Per-display, không đụng app khác; VD timestamp-name tự sạch (vẫn ghi marker §5). DL5 (A12): kiểm <code>ignore-orientation-request</code> → <code>ClusterProfile</code>.</p>
+<div class="card"><b>⚠ Kỳ vọng (nói thẳng, CLAUDE §2):</b> (A) làm <b>app đầy khung, hết dải dọc</b>; nhưng khung video 16:9 chỉ phủ kín pixel ở <b>fullscreen player</b> (một cú tap user, không ép generic được). Cần owner xác nhận "đầy khung" = app-fill, không phải video-full-pixel.</div>
+<p><b>Chốt trên xe (1 lượt):</b> khi bug hiện, đọc <code>mSizeCompatScale</code> trên ActivityRecord YouTube (xác nhận SCM); rồi <code>wm density 192 -d &lt;vd&gt;</code> + play lại → nếu đầy khung ⇒ (A) đúng, wire generic.</p>
+<h3>4.5 Context7</h3>
+<ul><li>Chỉ dùng Android SDK + HAL BYD (reflection) + khối đã có → không cần Context7.</li></ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1 <span class="tag p0">P0</span></td><td>Cast resolve-trước-đặt + guard loại slot-VD + test fixture dump hôm nay</td><td><code>SimpleCastRuntime/Coordinator.kt · ClusterDisplayResolver.kt · DisplayParse.kt(+Test)</code></td></tr>
+<tr><td>T2</td><td>Consolidate RE 187 → <code>hal-binding-remediation-2026-09-15.md</code> + bảng §4.2</td><td><code>docs/diagnostics/…md</code></td></tr>
+<tr><td>T3</td><td>Vá binding theo nhóm device (WRONG-ROUTE/SCALE/ENUM/UNMAPPED) + test off-car</td><td><code>HalBindingTable.kt · TelemetryRegistry.kt · ControlRegistry.kt(+Test)</code></td></tr>
+<tr><td>T4</td><td>Lệnh <code>sweep</code> (chỉ-đọc) + test parser</td><td><code>testbridge/TestBridgeSweep.kt · TestBridgeCommand.kt(+Test)</code></td></tr>
+<tr><td>T5</td><td>YouTube size-compat guard (đo sizeCompatScale → resize VD)</td><td><code>VdAppHost.kt · DisplayParse.kt(+Test)</code></td></tr>
+<tr><td>T7</td><td>Owner 2026-09-15: <b>nút "Mở 50%"</b> cho 4 kính (+ rèm). HAL có sẵn <code>WINDOW_OPEN_HALF=4</code> (<code>BYDAutoBodyworkDevice.java:378</code>) → <code>setBodyWindowCtrlState(w,4)</code>; rèm → percent 50. Thiết kế: kính đổi COVER→SELECT [Đóng·Mở·Nửa] → writeArgs index→{2,1,4}; dock tile/voice theo SELECT. Làm SAU T3 (tránh đè file agent binding). NEEDS-ONCAR 1 lệnh: <code>hal set setBodyWindowCtrlState 1,4</code> rồi <code>getWindowOpenPercent(1)</code> ≈ 50.</td><td><code>ControlRegistry.kt · HalBindingTable.kt · ControlTileFactory.kt · VoiceReply.kt(+Test)</code></td></tr>
+<tr><td>T6</td><td>Senior review + security scan + build; on-car: xác nhận cast + sweep chốt NEEDS-ONCAR; rồi OTA</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>:core</code>/<code>:app</code> xanh; cast resolve+guard khoá bằng test fixture dump 2026-09-15; binding sửa có test writeArgs/readArg.</li>
+<li>V-oncar (SAU khi off-car xanh): (1) cast app → task ở display cụm (2), ClusterBlack không ở slot; (2) chạy <code>sweep</code> → chốt các mục NEEDS-ONCAR bằng <code>hal get/set</code>; (3) YouTube trong ô đầy khung (cần reboot nút nguồn vật lý cho force_resizable).</li>
+<li>V-lifecycle: cast → return-to-main → cast lại; degrade off-car mọi đường null/false.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 (cần owner chốt).</b> Số phận refactor Pha 1-3 (SimpleCast/reconciler) đã regress cast: <b>(a)</b> sửa-tiếp T1 + bắt buộc on-car cast-validate trước OTA, hay <b>(b)</b> tách nhỏ (giữ reconciler-slot, hoãn phần cast)? — <span class="muted">đề xuất (a).</span></li>
+<li><b>OQ2.</b> Mục <code>UNAVAILABLE-TRIM</code> (phần cứng đời Sealion 6 không có): ẩn khỏi UI hay giữ + nhãn "không hỗ trợ"? — <span class="muted">chờ RE liệt kê.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Chuyến on-car: <code>docs/diagnostics/oncar-captest-results-2026-09-15.md</code> (mục CHỐT KÍNH-ĐÓNG + cast + YouTube).</li>
+<li>Regression cast: memory <code>kachi-simplecast-regression</code>; dump thật <code>car-logs/</code>; <code>ClusterDisplayResolver.kt</code>, <code>DisplayParse.clusterDisplayId</code>.</li>
+<li>RE brief + nguồn: <code>scratchpad/re-brief.md</code>; <code>../jadx-*</code>, <code>BYDAutoFeatureIds.java</code>, <code>../jadx-openbyd/.../CarControlImpl.java</code>, <code>../dashcast-src/CHANGELOG.md</code>.</li>
+<li>Doc RE nền: <code>bodywork-window-trunk-RE-2026-09-06.md</code>, <code>byd-hal-permission-RE-2026-09-14.md</code>, <code>byd-pm25-airclean-RE-2026-09-04.md</code>, <code>launcher-hal-re-overdrive-2026-09-08.md</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-15 · công cụ</b> — Thêm T-BRIDGE <code>hal</code> (đọc getter + gọi named-method thô, gated test-mode + auto_confirm khi ghi) để đo cast/kính tất định. <code>TestBridgeHal.kt</code>.</li>
+<li><b>2026-09-15 · bug→fix</b> — Kính "đóng không được": [ĐO] <code>setBodyWindowCtrlState(w,2)</code> đóng OK cả 4 kính (98%→0%). Gốc = CapTest chỉ gửi mở (<code>runArg=defaultPrimary=1</code>). Fix generic: <code>CapTestConsole.addRunButtons</code> — control ≥2 chiều mỗi chiều 1 nút.</li>
+<li><b>2026-09-15 · regression</b> — Cast rơi display 1 (slot) thay vì 2 (cụm): timing seed. → T1 đang implement (fix-forward (a), tự quyết — owner không phản đối, cast phải chạy dù chọn nhánh nào).</li>
+<li><b>2026-09-15 · công cụ (T4)</b> — Thêm T-BRIDGE <code>sweep</code> (<code>TestBridgeSweep.kt</code>, chỉ-đọc, luồng nền, không cần màn chính): 1 broadcast đọc <code>readRaw</code> mọi telemetry + <code>describeWrite</code> mọi control (không bắn) → <code>kachi-logs/sweep-&lt;stamp&gt;.json</code>. Thay bấm tay 187 mục. Không có cờ <code>auto_confirm</code> trong spec lệnh (test khoá) — không mở cổng ghi qua đường này.</li>
+<li><b>2026-09-15 · quyết định</b> — Owner: <i>"phải làm generic chứ không thể hỏi"</i> → YouTube đi density-lever tính theo cạnh ngắn của MỌI ô (không hỏi ô to/bé); ô quá nhỏ không đạt 600dp thì giữ density mặc định (không tệ hơn hiện tại) — ghi rõ trong <code>SlotDensity</code>. Implement song song 4 agent theo phân vùng file (§A/§B · binding registry · cast · YouTube).</li>
+<li><b>2026-09-15 · sai lệch-spec / manifest</b> — (1) <code>KachiTestBridge.kt</code> 514→456 dòng: dời <code>runWav/stageWav</code> sang <code>TestBridgeWav.kt</code>, <code>previewOf</code> lên companion (bài canh trần 500). (2) <code>&lt;property PROPERTY_SPECIAL_USE_FGS_SUBTYPE&gt;</code> giữ BỎ (Android 10 PackageParser từ chối cài, [ĐO]); 2 bài canh autostart đảo sang pin "KHÔNG có &lt;property&gt;" kèm lý do — không xoá test. (3) <b>Khôi phục <code>category.HOME</code></b> cho KachiHomeActivity: ý định sản phẩm (Home→Kachi) + bài canh <code>SingleLauncherIconContractTest</code>; GUI-install BYD vẫn chặn app HOME → thí nghiệm vendor-marker DuDu = <b>NEEDS-ONCAR</b> (marker chưa được ghi verbatim ở đâu — không thêm từ trí nhớ). ADB install không ảnh hưởng.</li>
+<li><b>2026-09-15 · GUI-install ⇄ HOME — giải quyết GENERIC bằng alias tắt sẵn (thay cho "vendor-marker" chưa trích được)</b> — Owner [ĐO] DuDu: <i>"cài vào là app bình thường, sau đó chọn làm launcher mới hiện option chọn launcher3/DuDu"</i> ⇒ HOME của DuDu KHÔNG bật lúc cài, bật lúc runtime (ứng viên home mới ⇒ hộp chọn). Khớp cả 2 phép đo Kachi (HOME bật sẵn → GUI chặn; bỏ HOME → cài được). Thiết kế: <code>KachiHomeActivity</code> chỉ MAIN+LAUNCHER (cài như app thường); HOME trên <code>&lt;activity-alias .launcher.KachiHome enabled=false&gt;</code> (không LAUNCHER — một icon); <code>DefaultHome.component()</code> → alias; <code>DefaultHome.enableHomeEntry()</code> bật alias làm BƯỚC 1 của "Đặt làm màn hình chính" rồi <code>set-home-activity</code> (fallback tất định). Marker <code>homeChosen</code> (WorkspacePrefs) → <code>KachiAutostart</code> re-apply sau nâng cấp/boot (alias mới tắt sẵn ⇒ không re-apply thì Home rơi launcher3). <b>Cost một lần:</b> người dùng bản cũ (1.59/1.62, HOME trên activity) sau nâng cấp phải bấm "Đặt làm màn hình chính" 1 lần (chưa có marker). <b>NEEDS-ONCAR:</b> (1) GUI-install bản alias PASS như DuDu; (2) bật alias có hiện hộp chọn không; (3) nâng cấp 1.62→mới rồi bấm nút → Home về Kachi. Bài canh <code>SingleLauncherIconContractTest</code> đảo sang pin alias (có lý do), thêm test alias.</li>
+<li><b>2026-09-15 · T7 "Mở 50%" (owner)</b> — Generic theo mức: <code>CarControlPort.coverLevel(id, level)</code> (default gập về <code>cover(bool)</code> → impl cũ không đổi), <code>actByKind</code> COVER → <code>coverLevel</code>, <code>CarControlAdapter.coverLevel</code> đưa mức thẳng xuống <code>writeArgs</code>; kính ×4 mức 2→<code>WINDOW_OPEN_HALF=4</code> (<code>BYDAutoBodyworkDevice.java:378</code>), rèm mức 2→50%; registry thêm arg "Nửa/Half" cho 4 kính + rèm (KHÔNG cho <code>windows_all</code> — <code>setAllWindowState(a,b,c,d)</code> nhận CÙNG enum WINDOW_* cho cả 4 ô, OpenBYD <code>CarControlImpl.java:1513-1515</code>, nhưng OPEN_HALF cả 4 kính chưa từng đo ⇒ không hứa); <code>tileCover</code> vẽ 1 nút/mức; CapTest tự có 3 nút (đã generic). Test: writeArgs 4 kính + rèm + windows_all-không-nửa. <b>NEEDS-ONCAR 1 lệnh:</b> <code>hal set setBodyWindowCtrlState 1,4</code> → <code>getWindowOpenPercent(1)</code> ≈ 50.</li>
+<li><b>2026-09-15 · R2 lối cuối — deepRescue</b> — <code>ClusterNavBridgeCast.deepRescue</code> từng dùng <code>DisplayParse.clusterDisplayId</code> thô + <code>vd &gt;= 0</code> (né owner-guard, và sẽ reset màn GIỮA nếu parser lỡ trả 0). Đổi sang <code>ClusterDisplayResolver.resolve(dumpsys, APPLICATION_ID)</code> + <code>&gt;= 1</code>; 2 bài canh đảo pin theo (có lý do). Cast agent đã tự loại <code>isPlacementSafe</code> (không call-site).</li>
+<li><b>2026-09-15 · Security scan trước commit (rule §6)</b> — (1) Quét toàn bộ diff + 13 file mới: <b>0 BLOCK · 2 WARN</b>: <code>car-logs2/</code> + <code>.kotlin/</code> chưa ignore → đã thêm <code>car-logs*/</code>, <code>.kotlin/</code> vào <code>.gitignore</code> (stage, xác nhận untracked sạch); lệnh <code>hal</code> gọi method HAL bất kỳ qua receiver <code>exported</code> → <b>chờ owner xác nhận</b> (rào: test-mode bật tay + tự tắt 60 phút + <code>auto_confirm</code> khi ghi; phương án siết thêm: công tắc "Cho phép HAL thô" riêng). (2) Quét delta sau bản vá reviewer: <b>CLEAN</b>. Không có KhoiPD/email/IP xe/serial/VIN thật/keystore trong bất kỳ file nào. <b>Chưa commit</b> tới khi owner trả lời WARN (2).</li>
+<li><b>2026-09-15 · GPS (4 mục) — BLOCKED-BY-DESIGN, đã REVERT thử wire</b> — HAL BYD không có getter toạ độ (<code>BYDAutoLocationDevice</code> chỉ setter). Đường duy nhất là Android <code>LocationManager</code> + quyền <code>ACCESS_FINE_LOCATION</code>. NHƯNG <code>DeadReckonRetirementTest.the shipped manifest requests no location or mock permission</code> pin "không xin quyền location nào" — quyết định an toàn có chủ đích sau sự cố Dead-Reckon suýt ghim GPS toàn xe (CLAUDE.md §3). Tôi đã lỡ thêm quyền + nhánh <code>localGet</code> rồi <b>revert</b> ngay khi đọc bài canh. Mở lại GPS = <b>quyết định của owner</b> (đảo một retirement an toàn), không phải tác dụng phụ của ô thông tin. Registry: 4 mục giữ route <code>None</code> + nhãn.</li>
+<li><b>2026-09-15 · R5/T5 density-lever</b> — Hàm thuần <code>core/…/launcher/SlotDensity.forTablet(shortSidePx, defaultDpi, floor=120, threshold=600)</code>: cạnh ngắn quy dp &lt; 600 ⇒ <code>floor(short×160/600)</code>; dưới sàn 120 ⇒ <b>giữ default</b> (không thể đạt tablet thì không hạ — không tệ hơn cũ). Áp ở <code>VdAppHost.slotDensity()</code> NGAY lúc <code>createVirtualDisplay</code> + <code>resize</code> (không qua <code>wm density</code> ⇒ không dính persistence §5). Sai lệch nhỏ so §4.4: công thức cho 748 → <b>199</b> (601.4dp), không phải 192 — hạ ít nhất đủ qua ngưỡng để UI gần cỡ cũ; 192 là mức đo tay on-car, cũng đạt. Log <code>[slot-density] slot=… short=… dpi=…→…</code>. Test <code>SlotDensityTest</code> (7 bài, fixture 748 từ xe). 2 lệnh <code>wm set-*-rotation</code> giữ nguyên vị trí (CLAUDE §6). [SUY] cần on-car chốt: play YouTube trong ô ⇒ đầy khung, <code>mSizeCompatScale</code> không xuất hiện.</li>
+<li><b>2026-09-15 · §A đường đọc feature-id</b> — [ĐO] API đọc thật = <code>get(int[], Class)</code> 2-arg trả <code>BYDAutoEventValue</code> (<code>AbsBYDAutoDevice.java:84</code>; OpenBYD <code>CarControlImpl.java:239-240</code> gọi <code>.get(new int[]{id}, Integer.TYPE).intValue</code>); code cũ dò <code>get(int[])</code> 1-arg không tồn tại ⇒ <code>hasSyncGet</code> false mọi device. Fix <code>BydHal.hasSyncGet/tryGet</code> (dò + cache method 2-arg, mặc định <code>Integer.TYPE</code>), thêm <code>BydHal.readFeature</code> thuần (lọc sentinel <code>INVAILD_INT=-999999999</code>/<code>INVALID_FLOAT</code> của <code>BYDAutoEventValue.java:5,7,12-13</code> → null, không đưa số bịa lên UI) để <code>BydHalGateway.featureGet</code> bọc và test off-car. Test: <code>BydHalFeatureGetTest</code> (fake device đúng chữ ký).</li>
+<li><b>2026-09-15 · §B getter trả mảng</b> — <code>BydHal.callGetter</code> gặp mảng → <code>arrayToStr</code>: 1 phần tử → chuỗi phần tử (<code>getPM2p5Level()[0]</code> → <code>coerceInt</code> đọc được); ≥2 phần tử → <code>"[a, b, c]"</code> (giữ đủ 8 vùng cho <code>readIntList</code>/<code>radar_zones</code>, không cắt <code>[0]</code>). ✔ <b>Đã đóng (review Pass 1)</b>: <code>HalBindingTable.coerceInt/coerceDouble</code> LẤY phần tử đầu của <code>"[a, b]"</code> (<code>firstOfArray</code>) ⇒ getter mảng ≥2 mà UI cần scalar đọc được; <code>readIntList</code> vẫn đọc trọn mảng. Độ dài mảng thật của <code>getPM2p5Level/Value</code> [CHƯA BIẾT] (log cũ chỉ thấy <code>PM2p5Level=1</code>); độ dài mảng thật của <code>getPM2p5Level/Value</code> [CHƯA BIẾT] (log cũ chỉ thấy <code>PM2p5Level=1</code>).</li>
+<li><b>2026-09-15 · T1 quyết định OQ1</b> — Chốt <b>fix-forward (a)</b>: giữ refactor SimpleCast, sửa T1 cho cast đúng; refactor vẫn <b>không OTA</b> tới khi cast được on-car-validate (V-oncar 1).</li>
+<li><b>2026-09-15 · T1 root-cause</b> — [ĐO source] <code>SimpleCastCoordinator.openProjection()</code> gọi <code>detectClusterDisplay()</code> <b>trước</b> <code>projection.open()</code>; đường proven cũ <code>ClusterCast.cast()</code> (git HEAD:471-478) dò <b>sau</b> chuỗi mở, lặp 16×500 ms. [SUY, khớp dump] Sau reboot VD fission chỉ được AutoContainer tạo khi mở projection ⇒ dò trước-mở hụt ⇒ <code>detectAndPersist</code> trả nguyên seed 1 (= <code>kachi-slot-0</code>) ⇒ <code>am start --display 1</code>. Parser đúng (fixture nguyên văn → 2); lỗi là <b>thứ tự + fallback</b>.</li>
+<li><b>2026-09-15 · T1 fix (R1)</b> — <code>ClusterDisplayResolver</code>: bỏ hẳn <code>savedId</code>/<code>fallback</code> (dò hụt ⇒ −1, không bao giờ trả seed); thêm <code>awaitAndPersist</code> (12×500 ms, sleep inject được). Coordinator: dò trước-mở chỉ để <em>dọn</em> VD cũ nếu có; dò <b>sau</b> profile 35 là nguồn sự thật cho <code>configurator.apply</code> + <code>am start ClusterBlack</code>; hụt ⇒ <code>projection.close</code> + Error, không đặt. <code>handleCastFull</code>/<code>handleCastSlot</code>/re-pin dò tươi ngay trước khi đặt. Field <code>liveDisplayId</code> (−1 = chưa xác minh) gác mọi <code>wm … -d</code>/dọn/reset qua <code>verifiedClusterDisplay()</code>; seed <code>displayId</code> chỉ còn cho geometry đọc. <code>SimpleCastRuntime</code> log seed ghi rõ "NOT used for placement".</li>
+<li><b>2026-09-15 · T1 fix (R2)</b> — <code>DisplayParse.ownedVirtualDisplayIds(dump, ownerPkg)</code>/<code>isOwnedVirtualDisplay</code>: nhận VD của chính launcher qua <code>uniqueId "virtual:&lt;pkg&gt;,…"</code> / <code>owner &lt;pkg&gt; (uid</code> (2 đường: dòng <code>DisplayInfo{…displayId N}</code>, và header + <code>mPrimaryDisplayDevice</code>); pkg = <code>selfPackage</code> (BuildConfig.APPLICATION_ID = <code>com.byd.launcher</code>), không hardcode ở core. <code>resolve()</code> trả −1 nếu id dò ra thuộc tập này. <code>DETECT_CMD</code> mở rộng grep thêm <code>virtual:</code> để một lệnh phục vụ cả parse lẫn guard (fixture chứng minh parse không đổi). <code>CastDisplayCleaner.cleanDisplay</code> từ chối id &lt; 1.</li>
+<li><b>2026-09-15 · T1 test</b> — Fixture nguyên văn <code>core/src/test/…/clustercast/CastDisplayFixtures2026_09_15.kt</code>. (a) <code>DisplayParseTest.clusterDisplayId tren grep that 2026-09-15 ra 2</code> + <code>ownedVirtualDisplayIds…</code>; (b) <code>ClusterDisplayResolverTest</code> (slot-1 owner launcher ⇒ không bao giờ 1; không fission ⇒ −1; guard theo tham số pkg; await lặp/bỏ cuộc); (c) <code>CastDisplayTargetingRegressionTest</code> (fake shell, seed 1: DETECT sau profile 35 trước ClusterBlack; mọi <code>-d/--display</code> = 2, không có 1; dò hụt ⇒ không đặt, trả đồng hồ). <code>FakeShell</code> tham số hoá <code>clusterDisplayId</code>/<code>selfPackage</code>/<code>clusterDetectOut</code>. Kết quả: core <code>clustercast.*</code> 269/269, app <code>*Cast*</code> 46/46. <b>Chưa on-car-validate</b> — bắt buộc trước OTA.</li>
+<li><b>2026-09-15 · binding batch (Off-car win, 6 domain + §C)</b> — Áp toàn bộ mục WRONG-ROUTE/WRONG-ENUM/WRONG-SCALE/UNMAPPED có source trong <code>hal-binding-remediation-2026-09-15.md</code> vào <code>TelemetryRegistry</code> / <code>ControlRegistry</code> / <code>HalBindingTable</code> (:core), mỗi dòng có file:line stub jadx-tmap. Đọc: 30 datum đổi sang getter thật (gear/energy/op_mode/slope, ac_wind/cycle/unit/anion, 4 áp lốp + 4 cửa + alarm, low/high beam, seatbelt×2 + oms_passenger, 10 mục năng lượng, volt_12v→Ota); <code>readArg</code> thêm 15 selector; <code>is_charging</code> = <code>getChargerWorkState()==2</code>; <code>charging_eta_*</code> lấy <code>[0]/[1]</code> của <code>getChargeRestTime()</code>; <code>ev_range_km</code> chặn sentinel 1000/1023. Ghi: drl/powertrain_mode/drive_mode/sunroof/start_charging/target_soc_set/wireless_charge/cam/camera_view/avh sang named-method với enum đúng (<code>writeArgs</code>). §C: <code>TelemetrySpec.halDevice</code> + <code>featureDeviceFor(spec)</code>. §B phía core: <code>coerceInt/Double</code> lấy phần tử đầu khi gateway trả mảng; <code>readIntList</code> từ chối token không phải số (<code>"[I@…"</code>).</li>
+<li><b>2026-09-15 · binding batch — quyết định</b> — (1) <code>headl</code>/<code>headlight_mode</code> trùng id 1276153912 (INSTRUMENT): giữ id cho <code>headlight_mode</code> + <code>halDevice=Instrument</code>, <code>headl</code> gỡ id → None + NEEDS_CAR (enum on/off chưa có nguồn; không gửi mù). (2) <code>lock</code>/<code>door</code>: sửa case <code>BYDAutoDoorLockDevice</code>, GIỮ named-method (không về None) để <code>HalWriteProbe</code> ghi được ngoại lệ thật trên xe — stub không có <code>setDoorLockState</code>, tier NEEDS_CAR. (3) <code>cell_v_high/low</code>, <code>batt_range_bodywork</code>: id gán nhầm nghĩa → khoá <code>UNMAPPED_*</code> (None), không đọc ra số sai. (4) <code>oms_driver</code>: enum PASSENGER của <code>getPassengerStatus</code> không có ghế lái (DEPUTY=1, hàng 2 = 2/3/4) → NEEDS-ONCAR, không bịa arg như doc gợi ý (1/2). (5) GPS: giữ <code>NaviInfo.*</code> → None, <code>LocationManager</code> KHÔNG vào <code>LOCAL_TARGETS</code> (BLOCKED-BY-DESIGN, xem mục GPS ở trên). (6) <code>camera_view</code>: enum <code>DISPLAY_MODE_*</code> không khớp 5 nhãn góc → gửi index thô, tier NEEDS_CAR.</li>
+<li><b>2026-09-15 · binding batch — test</b> — <code>BindingRemediationTest</code> (đọc: routeOf/readArg/device/coerce theo domain), <code>ControlWriteArgsTest</code> +10 bài enum ghi, <code>COLLISION_PENDING_CAR</code> 3→1 (cam/camera_view và headl/headlight_mode đã tách). Fixture đổi theo binding mới: <code>FakeHalGateway.gettersByArg</code>, <code>CarDataAdapterTest</code>, <code>CarControlAdapterTest</code> (ambient_color thay drive_mode), <code>ActionMacrosTest</code> (readl thay lock), <code>TelemetryReadoutTest</code> (getChargeRestTime trả mảng).</li>
+<li><b>2026-09-15 · sai lệch-spec (từ review Pass 1)</b> — 5 bản vá ngoài danh sách T1–T7, tất cả là <b>sửa lỗi của chính lượt này</b>, không thêm tính năng: (1) <code>DefaultHome.launchComponent()</code> tách khỏi <code>component()</code> — <code>am start</code> phải nhắm activity (luôn bật), không nhắm alias HOME đang TẮT; (2) <code>BydHal.readFeature</code> RÚT ô sentinel khỏi chuỗi thay vì in số thô; <code>coerceInt</code> thêm nhánh <code>float=</code>; (3) <code>openProjection</code> bọc try/catch để không kẹt <code>Opening</code> khi chạm hạn 15 s của executor; (4) <code>undoTargetDisplay()</code> — đường HOÀN TÁC (<code>wm</code> reset/dọn) dò TƯƠI một lần thay vì bỏ qua khi <code>liveDisplayId</code> chưa xác minh; (5) doc: 5 tệp mới (spec này + 4 diagnostics) được đưa vào <code>docs/README.md</code> + một mục <code>docs/PROJECT-BACKLOG.md</code> (R2.1 — doc mồ côi = không tồn tại).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-15 (senior review + patch, Opus)</h3>
+<p><b>Phạm vi:</b> toàn bộ <code>git status</code> (93 mục) — cast display-targeting · đường đọc HAL · registry binding · YouTube density · HOME-alias · T-BRIDGE <code>hal</code>/<code>sweep</code> · T7 · CapTest · reconciler cửa sổ (staged). <b>Verdict: APPROVED off-car</b> (mọi deliverable T1–T7/R1–R6 làm được off-car đã có code + call-site + test; phần còn lại là NEEDS-ONCAR đã ghi rõ). <b>KHÔNG được OTA</b> trước khi <code>oncar-verify-1.63</code> §1 (cast) PASS — đúng cổng spec §7 OQ1(a).</p>
+<p><b>Kiểm chứng nguồn (CLAUDE §3, đọc thẳng stub thay vì tin bảng):</b> <code>AbsBYDAutoDevice.get(int[],Class)</code> ✔ · <code>WINDOW_OPEN_FULL=1/CLOSE=2/OPEN_HALF=4</code> (:377/:373/:378) ✔ · <code>LIGHT_LOW_BEAM=2/HIGH_BEAM=3</code> ✔ · <code>TYRE_COMMAND_AREA_*=1..4</code> + <code>getTyrePressureValue(int)</code> ✔ · <code>CHARGE_STOP_CAPACITY_100=1…_50=6</code> ✔ · <code>getChargeRestTime(): int[]</code> ✔ · <code>ENERGY_MODE_EV=1/HEV=3</code> ✔ · <code>BODYWORK_CMD_STEERING_WHEEL_ANGEL=1</code> ✔ · <code>ALARM_STATE_OFF=0/ON=1</code> ✔.</p>
+<p><b>Phát hiện + bản vá (mọi mục đã tự vá trong lượt này):</b></p>
+<ul>
+<li><b>[P1] <code>am start</code> nhắm alias HOME đang TẮT</b> — <code>KachiAutostart.kt:80,107</code> dùng <code>DefaultHome.component()</code> (nay là alias <code>enabled=false</code>) cho CẢ <code>set-home-activity</code> lẫn bước (4) "đưa HOME lên". <code>am start -n &lt;component đang tắt&gt;</code> trả <i>Activity class … does not exist</i> ⇒ người chưa bấm "Đặt làm màn hình chính" thì sau mỗi boot/<code>MY_PACKAGE_REPLACED</code> <b>launcher không được đưa lên, ô không mount lại</b>. <b>Vá:</b> thêm <code>DefaultHome.launchComponent()</code> (<code>pkg/KachiHomeActivity</code>, luôn bật) và dùng ở bước (4); alias vẫn là đích của <code>set-home-activity</code>. Test: <code>KachiAutostartServiceWiringTest.runBoot ensures the HOME activity is up…</code> pin cả hai.</li>
+<li><b>[P1] sentinel <code>BYDAutoEventValue</code> lọt lên UI thành số bịa</b> — <code>readFeature</code> chỉ trả null khi CẢ hai ô đều sentinel, còn lại in nguyên qua <code>readValue</code>. Mà EventValue khởi tạo CẢ HAI field bằng sentinel ⇒ một feature float hợp lệ vẫn mang <code>intValue=-999999999</code>, và <code>coerceInt</code> (ưu tiên <code>int=</code>) đọc đúng con số đó lên ô (bộ lọc sentinel của :core chỉ biết rc <code>-2147482648/-2147482645</code>). <b>Vá:</b> <code>BydHal.readFeature</code> rút ô sentinel (<code>int=-</code>/<code>float=-</code>); <code>HalBindingTable.coerceInt</code> thêm nhánh lùi <code>float=</code> (làm tròn) để datum float-only vẫn đọc được. Test mới: <code>BydHalFeatureGetTest.readFeature strips the sentinel half…</code>.</li>
+<li><b>[P2] <code>openProjection</code> kẹt <code>Opening</code> vĩnh viễn</b> — chuỗi mở nay dài hơn (5 s profile + tối đa 6 s <code>awaitAndPersist</code> + 1 s ClusterBlack + 3 lượt <code>am stack list</code>) nên có thể chạm hạn cứng <code>castTimeoutMs=15 s</code>; <code>BoundedCastExecutor</code> khi đó <code>future.cancel(true)</code> ⇒ <code>InterruptedException</code> thoát khỏi block ⇒ state đứng ở <code>Opening</code>, mà <code>openProjection</code> chỉ chạy lại từ <code>Off</code>/<code>Error</code> ⇒ <b>cast chết tới khi khởi động lại tiến trình</b>. <b>Vá:</b> tách <code>openProjectionBody()</code> + bọc <code>try/catch (Throwable)</code> → <code>setError</code> (tự hồi Idle/Off sau 3 s), khôi phục cờ interrupt.</li>
+<li><b>[P2] đường HOÀN TÁC bỏ luôn khi chưa xác minh</b> — <code>closeProjection</code>/<code>closeProjectionSync</code>/<code>handleStop</code> gác bằng <code>verifiedClusterDisplay()</code>; một lần dò hụt (shell chớp) là bỏ luôn <code>configurator.reset</code>/<code>wm density reset</code>, mà <code>wm size/overscan/density</code> được WM ghi <code>display_settings.xml</code> theo <code>uniqueId</code> ⇒ <b>sống qua reboot</b> (CLAUDE §5). <b>Vá:</b> <code>undoTargetDisplay()</code> — dò TƯƠI một lần trước khi bỏ; vẫn qua owner-guard, hụt thì vẫn KHÔNG đặt gì (R1/R2 nguyên vẹn).</li>
+<li><b>[P2] doc mồ côi</b> — spec này + <code>hal-binding-remediation</code> + 2 playbook xe + <code>launcher-window-reconciler-rootcause</code> <b>không có trong</b> <code>docs/README.md</code>, và không có mục backlog nào (vi phạm <code>.kiro/steering/documentation-and-backlog.md</code> R2.1 / CLAUDE §16 — "doc mồ côi = không tồn tại"). <b>Vá:</b> thêm 2 dòng bảng Specs + 3 dòng bảng Diagnostics + 1 mục backlog 1.63.</li>
+<li><b>[P3] chú thích lệch mã</b> — (a) <code>writeArgs</code> ghi "<code>setAllWindowState</code> mỗi arg 0/1" trong khi mã gửi 1/2 (mã ĐÚNG: OpenBYD gọi <code>setAllWindowState(s,s,s,s)</code> cùng enum WINDOW_*) → sửa chú thích + §9; (b) KDoc <code>DefaultHome</code> trỏ <code>[isHomeEntryEnabled]</code> không tồn tại → thay bằng mục <code>launchComponent</code>; (c) <code>arrayToStr</code> cảnh báo nullable (<code>Object[]</code> có phần tử null ⇒ NPE nuốt cả lượt đọc) → <code>?.toString() ?: "null"</code>.</li>
+<li><b>[P3 · NEEDS-ONCAR mới] <code>setOperationMode</code> có HAI họ enum ngược nhau</b> — cùng lớp <code>BYDAutoEnergyDevice</code>: public <code>ENERGY_OPERATION_ECONOMY=1/SPORT=2/NORMAL=3/SNOW=4</code> (:24-32, ta đang dùng) và protected <code>ENERGY_OPERATION_MODE_NORMAL=1/ECO=2/SPORT=3</code> (:26-28). Chọn họ public là hợp lý (protected = nội bộ khung) nhưng đây là ĐỔI CHẾ ĐỘ LÁI ⇒ hạ mức bằng chứng xuống [SUY] + ghi 1 lệnh chốt vào mã (<code>hal set … setOperationMode 2</code> → <code>getOperationMode</code> phải trả 2).</li>
+</ul>
+<p><b>Ghi nhận (KHÔNG vá — nợ, ngoài phạm vi spec):</b></p>
+<ul>
+<li><b>[P2]</b> <code>SimpleCastCoordinator.kt</code> 750 dòng · <code>BydHal.kt</code> 634 dòng — vượt trần 500 (CLAUDE §4.1). Tách là refactor riêng, không trộn vào bản vá an-toàn-vận-hành này.</li>
+<li><b>[P2]</b> <code>KachiTestBridge</code> là receiver <code>exported=true</code> KHÔNG có <code>android:permission</code>; lệnh <code>hal</code> mới nâng trần "app bất kỳ trên xe làm được gì nếu chế độ kiểm thử đang bật" từ <i>một control trong registry</i> lên <i>một method HAL bất kỳ</i>. Cổng hiện có: chế độ kiểm thử bật tay + tự tắt 60 phút + <code>auto_confirm</code> cho lượt ghi. Đề xuất (owner chốt): thêm <code>android:permission</code> chữ ký hoặc kiểm gói gửi.</li>
+<li><b>[P3]</b> <code>ProjectionManager.open/close(displayId)</code> nhận tham số KHÔNG dùng ⇒ chỗ gọi truyền cả <code>-1</code> lẫn seed mà không ai thấy sai; <code>SimpleCastCoordinator.isFreeformAlive()</code> vẫn không có call-site sản phẩm (CLAUDE §8, có từ trước lượt này).</li>
+<li><b>[P3]</b> <code>CastDisplayFixtures2026_09_15.DETECT_OUT_WITH_SLOT</code> là bản GHÉP (nguyên văn chỉ có <code>DETECT_OUT</code> của lệnh grep CŨ + 2 dòng slot) — đã ghi đúng là "output kỳ vọng"; lượt xe tới nên dán nguyên văn output của <code>DETECT_CMD</code> mới đè lên.</li>
+</ul>
+<p><b>Test sau vá (đếm từ XML, chạy nối tiếp):</b> <code>:core</code> 1806/0 lỗi · <code>:app</code> 938/0 lỗi (+1 bài mới). Không sửa file nào ngoài phạm vi; không commit/push.</p>
+
+</div></body>
+</html>

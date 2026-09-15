@@ -159,12 +159,7 @@ class CapTestConsole(
         } else {
             if (item.needsConfirm) view.addView(hint(s(R.string.kachi_captest_warn_body), KachiTheme.RED))
             view.addView(feedback)
-            view.addView(rows.button(s(R.string.kachi_captest_run)) {
-                val ok = runCatching { deps.runAction(item.id, item.runArg) }.getOrDefault(false)
-                feedback.visibility = View.VISIBLE
-                feedback.text = s(if (ok) R.string.kachi_captest_sent else R.string.kachi_captest_notsent)
-                feedback.setTextColor(c(if (ok) KachiTheme.GREEN else KachiTheme.MUT))
-            })
+            addRunButtons(view, item, feedback)
         }
 
         val dialog = AlertDialog.Builder(context)
@@ -175,6 +170,36 @@ class CapTestConsole(
             .setNeutralButton(s(R.string.kachi_captest_skip)) { _, _ -> onDone?.invoke() }
             .create()
         dialog.show()
+    }
+
+    /**
+     * Nút Chạy cho một mục HÀNH ĐỘNG.
+     *
+     * ⚠ [ĐO xe 2026-09-15] Trước đây MỘT nút "Chạy" bắn `item.runArg = defaultPrimary` = **1 (mở/bật)** cho mọi
+     * control ⇒ với kính (COVER) chỉ bao giờ gửi được lệnh **MỞ**, chiều ĐÓNG không có đường test → owner tưởng
+     * *"kính đóng không được"* (thực tế `setBodyWindowCtrlState(w,2)` đóng tin cậy cả 4 kính — đo qua T-BRIDGE `hal`).
+     *
+     * Sửa GENERIC (CLAUDE.md §7, không hardcode tên gói): control khai từ **2 chiều/lựa chọn trở lên**
+     * ([ControlDef.displayArgs] ≥ 2 — kính "Đóng"/"Mở", SELECT nhiều mức) thì render **mỗi chiều một nút**, `arg` =
+     * chỉ số chiều (khớp `CarControlPort.actByKind`: COVER `arg>0`, SELECT = chỉ số). Control một chiều (BUTTON bấm,
+     * STEP một giá trị, TOGGLE không khai nhãn chiều) giữ nút "Chạy" đơn với `runArg` như cũ.
+     */
+    private fun addRunButtons(container: LinearLayout, item: CapTestItem, feedback: TextView) {
+        val dirs = ControlRegistry.byId(item.id)?.displayArgs ?: emptyList()
+        if (dirs.size >= 2) {
+            dirs.forEachIndexed { index, dirLabel ->
+                container.addView(rows.button(dirLabel) { fireAction(item, index, feedback) })
+            }
+        } else {
+            container.addView(rows.button(s(R.string.kachi_captest_run)) { fireAction(item, item.runArg, feedback) })
+        }
+    }
+
+    private fun fireAction(item: CapTestItem, arg: Int, feedback: TextView) {
+        val ok = runCatching { deps.runAction(item.id, arg) }.getOrDefault(false)
+        feedback.visibility = View.VISIBLE
+        feedback.text = s(if (ok) R.string.kachi_captest_sent else R.string.kachi_captest_notsent)
+        feedback.setTextColor(c(if (ok) KachiTheme.GREEN else KachiTheme.MUT))
     }
 
     private fun mark(id: String, verdict: CapTestVerdict, onDone: (() -> Unit)?) {

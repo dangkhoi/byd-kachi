@@ -39,9 +39,16 @@ fun ClusterNavBridge.currentHomePackage(): String? = DefaultHome.currentPackage(
  */
 fun ClusterNavBridge.setDefaultHome(onResult: (LocalSetHomeOutcome) -> Unit) {
     Thread({
+        // BƯỚC 1 (2026-09-15, DuDu-style): BẬT lối vào HOME (alias tắt sẵn để GUI-install không bị chặn). Bật xong hệ
+        // thống có ứng viên home mới ⇒ ROM có thể tự hiện hộp chọn launcher (owner [ĐO] DuDu). Không cần shell.
+        // BƯỚC 2: `set-home-activity` nhắm alias — fallback tất định nếu ROM không hiện hộp chọn (KDoc cũ [ĐO] DL3).
+        // Ghi marker `homeChosen` khi Ok để KachiAutostart re-apply sau nâng cấp (alias mới tắt sẵn ⇒ Home rơi về
+        // launcher3 nếu không re-apply — đường trả lại theo CLAUDE.md §5).
         val outcome = runCatching {
+            DefaultHome.enableHomeEntry(app)
             LocalDeviceShell.setHomeActivity(AdbKeys.ensure(app), DefaultHome.component(app))
         }.getOrElse { LocalSetHomeOutcome.NoShellChannel(LocalShellFailure.UNKNOWN) }
+        if (outcome is LocalSetHomeOutcome.Ok) runCatching { WorkspacePrefs(app).setHomeChosen(true) }
         ui(Runnable { onResult(outcome) })
     }, "bridge-set-home").start()
 }

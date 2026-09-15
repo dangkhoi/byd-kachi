@@ -65,6 +65,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <h2>1. Changelog</h2>
 <p><b>Soát Pass 2 — 2026-09-14</b> (senior review, CLAUDE.md §5): 7 phát hiện [P1]–[P2] đã vá tại chỗ — phiên nghe chết theo màn chính · chốt một-lượt-tải · trần 500 dòng (523→478, 506→491) · nút mic hiện ngay sau khi tải mô hình · kiểm chỗ trống trước khi tải · chốt HTTPS sau chuyển hướng · từ điển thôi đọc lại trên luồng vẽ. Xem §10.</p>
 <ul>
+<li><b>Pass 4 — 2026-09-15 · số đo ngữ pháp đổi theo T7 (spec <code>kachi-hal187-cast-remediation</code>)</b>: registry thêm arg <i>“Nửa/Half”</i> cho 4 kính + rèm (nút mở 50%) ⇒ <b>cụm bị loại 269 → 274 (+5)</b> = đúng 5 nhãn tiếng Anh <i>“Half”</i> (mô hình chỉ tiếng Việt). Cụm giữ 330 <b>không đổi</b>; <b>tổng mục 2058 → 2063 (+5)</b> = từ đơn MỚI <i>“nửa”</i> nở theo thanh điệu (cơ chế như <i>“đưa”</i> +21 ở V1.1). <code>VoiceGrammarPhrasesTest</code> cập nhật <code>EXPECTED_PHRASES_DROPPED=274</code> + <code>EXPECTED_ENTRIES=2063</code> theo phép đo, kèm KDoc. Giọng nói hiện <b>chưa</b> phát mức “nửa” (parser COVER chỉ 0/1) — chỉ nút/CapTest; mở sau nếu owner cần.</li>
 <li><b>Pass 3 — 2026-09-14 · V1.1 “NÓI ĐƯỢC TÊN”</b> (R15–R17, bản <b>1.53 / versionCode 54</b>): ba câu hỏi của owner
 (<i>“mở nhạc bằng YT Music/YouTube, dẫn đường bằng GMaps/VietMap/Waze”</i> · <i>“mở YouTube vào ô số 2”</i>) nay
 chạy thật. <b>R15</b> ô: <code>OpenApp(appName, slot)</code> đi <b>đúng đường ngăn kéo</b> (<code>KachiHomeSlots.assignApp</code>),

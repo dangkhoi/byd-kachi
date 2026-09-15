@@ -72,4 +72,31 @@ class LauncherBootPlanTest {
         }
         assertEquals(listOf(maps, spotify), asked, "castOwns queried once per app slot, in slot order")
     }
+
+    // ── reconcile() — quality-review 2026-09-15 R1/R2: cửa sổ suy ra từ state, có bước EVICT tường minh ──
+
+    @Test fun `reconcile evicts app whose slot state no longer holds it`() {
+        // Trước: maps ở ô 0 (đang hiện). Sau: state chuyển maps sang ô 1 (dedup ⇒ ô 0 trống).
+        // placedOnLauncher = {maps} (cửa sổ maps đang hiện). Desired giờ chỉ có maps@ô1.
+        val after = listOf(SlotContent.Empty, SlotContent.App(maps), SlotContent.Empty, SlotContent.Empty)
+        val r = LauncherBootPlan.reconcile(after, placedOnLauncher = setOf(maps)) { false }
+        assertEquals(listOf(LauncherBootPlan.SlotApp(1, maps)), r.mount, "maps phải có mặt ở ô 1")
+        assertTrue(r.evict.isEmpty(), "maps vẫn ở màn launcher (ô 1) ⇒ KHÔNG evict")
+    }
+
+    @Test fun `reconcile evicts an app removed from all slots`() {
+        // maps đang hiện nhưng state không còn ô nào giữ maps ⇒ phải GỠ cửa sổ (không chờ death-poll 10-15s).
+        val after = listOf(SlotContent.App(vietmap), SlotContent.Empty, SlotContent.Empty, SlotContent.Empty)
+        val r = LauncherBootPlan.reconcile(after, placedOnLauncher = setOf(maps, vietmap)) { false }
+        assertEquals(listOf(maps), r.evict, "maps không còn ô nào ⇒ evict")
+        assertEquals(listOf(LauncherBootPlan.SlotApp(0, vietmap)), r.mount)
+    }
+
+    @Test fun `reconcile does not evict a cast-owned app off the launcher`() {
+        // maps đang được cụm giữ (castOwns=true) ⇒ không mount, và KHÔNG có trong placedOnLauncher ⇒ không evict.
+        val after = listOf(SlotContent.App(maps), SlotContent.Empty, SlotContent.Empty, SlotContent.Empty)
+        val r = LauncherBootPlan.reconcile(after, placedOnLauncher = setOf(vietmap)) { it == maps }
+        assertTrue(r.mount.isEmpty(), "cast giữ maps ⇒ launcher không giành")
+        assertEquals(listOf(vietmap), r.evict, "vietmap không còn ô ⇒ evict; maps không bị đụng")
+    }
 }

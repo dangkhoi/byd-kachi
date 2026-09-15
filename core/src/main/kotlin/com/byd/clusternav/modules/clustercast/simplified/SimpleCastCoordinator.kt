@@ -20,12 +20,22 @@ class SimpleCastCoordinator(
     // legacy value for JVM tests; production passes com.byd.clusternav2 so cast self-exclusion + the black
     // placeholder launch target the correct isolated app.
     private val selfPackage: String = "com.byd.clusternav",
+    /** Ngủ giữa các lần dò VD cụm sau khi mở projection ([ClusterDisplayResolver.awaitAndPersist]) — test truyền `{}`. */
+    private val detectSleepMs: (Long) -> Unit = { Thread.sleep(it) },
 ) {
     // ── Cluster display id — id SỐNG, dò động (X2) ────────────────────────────
     // Seed = giá trị dựng (prefs.lastDisplayId ?: fallback), nhưng KHÔNG tin nó: openProjection() dò lại thật
     // (dumpsys display → fission/xdja) rồi ghi đè + persist. CLAUDE.md §5 (kiểm bằng sự thật, không cờ RAM) +
-    // §7 (generic, không hardcode). Mọi tham chiếu `displayId` bên dưới đọc thuộc tính SỐNG này.
+    // §7 (generic, không hardcode). `displayId` chỉ dùng cho ĐỌC/geometry (đã được ghi đè bằng id dò live).
     @Volatile private var displayId: Int = displayId
+
+    /**
+     * R1/R2 (spec `kachi-hal187-cast-remediation` §4.1): id cụm đã XÁC MINH LIVE trong tiến trình này
+     * ([ClusterDisplayResolver] — dumpsys + guard owner≠[selfPackage]). `-1` = chưa xác minh (hoặc lần dò gần nhất
+     * hụt) ⇒ CẤM mọi lệnh đặt (`am start --display`), `wm … -d`, dọn VD. KHÔNG BAO GIỜ rơi về seed: [ĐO] 2026-09-15
+     * seed 1 = `kachi-slot-0` (VD của chính launcher) ⇒ ClusterBlack + GMaps đặt vào ô launcher.
+     */
+    @Volatile private var liveDisplayId: Int = -1
 
     private val executor = BoundedCastExecutor(
         castTimeoutMs = castTimeoutMs,
@@ -48,13 +58,60 @@ class SimpleCastCoordinator(
 
     /**
      * X2 — dò id display CỤM thật (generic: fission/xdja qua [ClusterDisplayResolver], KHÔNG hardcode 1/2) và
-     * ghi đè [displayId] SỐNG + persist ([SimpleCastPrefs.saveLastDisplayId]) để tiến trình sau + đường geometry
-     * ([CastGeometryController] đọc `prefs.lastDisplayId()`) cùng nhắm đúng màn. Chạy trên executor nền của
-     * coordinator (KHÔNG bao giờ trên luồng vẽ — shell I/O). Best-effort: dò hụt thì GIỮ giá trị hiện tại.
+     * ghi đè [displayId]/[liveDisplayId] + persist ([SimpleCastPrefs.saveLastDisplayId]) để tiến trình sau + đường
+     * geometry ([CastGeometryController] đọc `prefs.lastDisplayId()`) cùng nhắm đúng màn. Chạy trên executor nền
+     * của coordinator (KHÔNG bao giờ trên luồng vẽ — shell I/O).
+     *
+     * R1: dò hụt (không thấy fission/xdja, shell lỗi, hoặc id là VD của launcher — R2) ⇒ trả `-1` VÀ đặt
+     * [liveDisplayId] = -1 để mọi lệnh đặt sau đó bị chặn. KHÔNG giữ giá trị cũ, KHÔNG rơi về seed.
+     * [awaitAfterOpen] = true ⇒ dò lặp ([ClusterDisplayResolver.awaitAndPersist]) vì VD cụm chỉ xuất hiện sau khi
+     * AutoContainer mở projection.
      */
-    private fun detectClusterDisplay() {
-        val resolved = ClusterDisplayResolver.detectAndPersist(shell, displayId) { prefs.saveLastDisplayId(it) }
-        if (resolved != displayId) { log("cluster display: $displayId → $resolved (dò fission/xdja)"); displayId = resolved }
+    private fun detectClusterDisplay(awaitAfterOpen: Boolean = false): Int {
+        val persist: (Int) -> Unit = { prefs.saveLastDisplayId(it) }
+        val resolved = if (awaitAfterOpen) {
+            ClusterDisplayResolver.awaitAndPersist(shell, selfPackage, sleepMs = detectSleepMs, persist = persist)
+        } else {
+            ClusterDisplayResolver.detectAndPersist(shell, selfPackage, persist)
+        }
+        if (resolved >= 1) {
+            if (resolved != displayId) log("cluster display: $displayId → $resolved (dò fission/xdja)")
+            displayId = resolved
+        } else {
+            log("cluster display: KHÔNG dò thấy fission/xdja (hoặc id là VD của $selfPackage) — không đặt gì (R1/R2)")
+        }
+        liveDisplayId = resolved
+        return resolved
+    }
+
+    /**
+     * Guard TẦNG THI HÀNH (CLAUDE §5, R2): id được phép nhận lệnh đặt/`wm -d` — [liveDisplayId] nếu đã xác minh,
+     * null nếu chưa. Caller nhận null PHẢI bỏ qua lệnh (log), không thay bằng seed.
+     */
+    private fun verifiedClusterDisplay(tag: String): Int? {
+        val id = liveDisplayId
+        if (id >= 1) return id
+        log("$tag: bỏ qua — display cụm chưa xác minh live (liveDisplayId=$id), không nhắm seed=$displayId")
+        return null
+    }
+
+    /**
+     * Như [verifiedClusterDisplay] nhưng cho đường **HOÀN TÁC** (đóng projection / reset density): nếu chưa xác minh
+     * thì dò TƯƠI một lần thay vì bỏ luôn.
+     *
+     * Vì sao ([SOÁT 2026-09-15 · P2], CLAUDE §5 "mỗi thứ đổi ra ngoài phải có đường trả lại"): `wm size/overscan/
+     * density` mà [DisplayConfigurator] đặt lên VD cụm được WM ghi vào `/data/system/display_settings.xml` theo
+     * `uniqueId` ⇒ **sống qua cả reboot**. Nếu lần dò gần nhất hụt (shell chớp) mà ta bỏ luôn bước reset thì cụm giữ
+     * override vĩnh viễn, chỉ còn `deepRescue` gỡ được. Dò tươi giữ nguyên bất biến R1/R2 (vẫn qua owner-guard, hụt
+     * thì vẫn KHÔNG đặt gì) mà tăng hẳn cơ hội hoàn tác đúng chỗ.
+     */
+    private fun undoTargetDisplay(tag: String): Int? {
+        val id = liveDisplayId
+        if (id >= 1) return id
+        val fresh = detectClusterDisplay()
+        if (fresh >= 1) return fresh
+        log("$tag: bỏ qua — dò lại vẫn không thấy VD cụm, không nhắm seed=$displayId")
+        return null
     }
 
     // TRIAL watchdog state (owner 2026-08-14): re-pin a cast app that an external trigger (e.g. Kiki
@@ -108,10 +165,29 @@ class SimpleCastCoordinator(
                 else -> return@submit // already open/opening/casting/stopping/closing
             }
             setState(SimpleCastState.Opening)
+            // ⚠ [SOÁT 2026-09-15 · P2] MỌI lối thoát bất thường phải rời khỏi `Opening`. Chuỗi mở nay dài hơn (5 s
+            // profile + tối đa 6 s dò lặp VD cụm) nên có thể chạm hạn cứng `castTimeoutMs` của
+            // [BoundedCastExecutor] ⇒ `future.cancel(true)` NGẮT thread giữa một `Thread.sleep` ⇒
+            // `InterruptedException` thoát khỏi block. Không bắt thì state kẹt `Opening` VĨNH VIỄN, mà
+            // `openProjection` chỉ chạy lại từ `Off`/`Error` ⇒ cast chết tới khi tiến trình khởi động lại.
+            // Bắt → `Error` (tự hồi về Idle/Off sau 3 s) ⇒ người dùng bấm lại được.
+            try {
+                openProjectionBody()
+            } catch (t: Throwable) {
+                if (t is InterruptedException) Thread.currentThread().interrupt()
+                log("openProjection ngắt/lỗi giữa chừng (${t.javaClass.simpleName}) — nhả state khỏi Opening")
+                setError("Projection open interrupted / Mở chiếu bị ngắt")
+            }
+        }
+    }
 
-            // X2 — dò display cụm THẬT trước khi bất kỳ `wm …/am start --display` nào chạy (nếu không, tất cả
-            // nhắm sai màn khi cụm ≠ 1). Native VD cụm tồn tại sẵn từ boot nên dò được ngay, không cần castSeq.
-            detectClusterDisplay()
+    /** Thân của [openProjection] — tách ra để mọi `return` sớm vẫn nằm trong `try` bắt-mọi-lối-thoát ở trên. */
+    private fun openProjectionBody() {
+        run {
+            // (1) Dò TRƯỚC khi mở — CHỈ để dọn VD cụm còn sót từ tiến trình trước (projection còn mở). Sau reboot
+            //     VD cụm chưa tồn tại (AutoContainer tạo khi mở projection) ⇒ hụt là bình thường ⇒ KHÔNG dọn, KHÔNG
+            //     đặt gì theo seed. [ĐO] 2026-09-15: bản cũ dọn + đặt theo seed 1 = `kachi-slot-0` của launcher.
+            val preOpenId = detectClusterDisplay()
 
             if (!prefs.dozeWhitelistApplied()) {
                 shell.execute("cmd deviceidle whitelist +vn.vietmap.live")
@@ -124,12 +200,23 @@ class SimpleCastCoordinator(
             // Idempotent — safe to run every open.
             geometry.ensureFreeformFlags()
 
-            cleanDisplay1()
-            configurator.apply(displayId, DisplayConfig.NORMAL_DEFAULT)
+            if (preOpenId >= 1) cleanDisplay(preOpenId)
 
             projection.resetState(false)
-            val ok = projection.open(displayId)
-            if (!ok) { setError("Projection open failed"); return@submit }
+            val ok = projection.open(preOpenId)
+            if (!ok) { setError("Projection open failed"); return@run }
+
+            // (2) Dò SAU khi mở — nguồn sự thật cho MỌI lệnh đặt bên dưới (R1). Đúng thứ tự đường proven cũ
+            //     (`ClusterCast.cast()` git HEAD:471-478: castSeq → lặp dò 16×500 ms → đặt app). Hụt ⇒ trả đồng hồ,
+            //     báo lỗi, KHÔNG đặt lên seed.
+            val vd = detectClusterDisplay(awaitAfterOpen = true)
+            if (vd < 1) {
+                log("openProjection: không dò thấy VD cụm sau khi mở → đóng projection, không đặt ClusterBlack")
+                projection.close(displayId)
+                setError("Cluster display not found / Không dò thấy màn cụm")
+                return@run
+            }
+            configurator.apply(vd, DisplayConfig.NORMAL_DEFAULT)
 
             // Launch + resize black placeholder to keep projection alive.
             // Component MUST be <installed applicationId>/<full class FQN>. The class FQN keeps the code
@@ -138,23 +225,23 @@ class SimpleCastCoordinator(
             // (selfPackage) → 'com.byd.clusternav2.modules...ClusterBlackActivity', a class that does NOT exist
             // (the registered component is 'com.byd.clusternav2/com.byd.clusternav.modules...ClusterBlackActivity').
             // So spell the class in full — never relative — for correct launch under the isolated app.
-            shell.execute("am start --display $displayId --windowingMode 5" +
+            shell.execute("am start --display $vd --windowingMode 5" +
                 " -n '$selfPackage/com.byd.clusternav.modules.clustercast.ClusterBlackActivity'")
             Thread.sleep(1000)
             val stackResult = shell.execute("am stack list")
             if (stackResult.success) {
-                val taskId = CastStackParser.findTaskId(stackResult.stdout, selfPackage, displayId)
-                    ?: CastStackParser.findTaskId(stackResult.stdout, "ClusterBlackActivity", displayId)
+                val taskId = CastStackParser.findTaskId(stackResult.stdout, selfPackage, vd)
+                    ?: CastStackParser.findTaskId(stackResult.stdout, "ClusterBlackActivity", vd)
                 if (taskId != null) shell.execute("am task resize $taskId 0 0 1920 720")
             }
 
-            // Adopt external app already on display 1 (e.g. CP from previous session)
+            // Adopt external app already on the cluster display (e.g. CP from previous session)
             val adoptResult = shell.execute("am stack list")
             var adopted = false
             if (adoptResult.success) {
                 val tasks = CastStackParser.parseTasks(adoptResult.stdout)
                 val ext = tasks.firstOrNull { t ->
-                    t.displayId == displayId && t.visible &&
+                    t.displayId == vd && t.visible &&
                         t.pkg != selfPackage && !t.pkg.startsWith("com.android.")
                 }
                 if (ext != null) {
@@ -171,8 +258,9 @@ class SimpleCastCoordinator(
         executor.submit("closeProjection") {
             // Return any active apps first (known state)
             returnAllApps()
-            // Safety net: also clean any unknown leftovers from display 1
-            cleanDisplay1()
+            // Safety net: also clean any unknown leftovers from the cluster display — CHỈ khi id đã xác minh
+            // live (R2): dọn theo seed có thể bê app trong Ô của launcher về display 0.
+            undoTargetDisplay("closeProjection.clean")?.let { cleanDisplay(it) }
             setState(SimpleCastState.Closing)
             val ok = projection.close(displayId)
             setState(if (ok) SimpleCastState.Off else SimpleCastState.Error("Projection close failed"))
@@ -220,6 +308,10 @@ class SimpleCastCoordinator(
             return // invalid transition — ignore
         }
 
+        // R1: dò LIVE ngay trước khi đặt (VD có thể đã bị tái tạo với id khác). Hụt/guard ⇒ từ chối, không đặt.
+        val vd = detectClusterDisplay()
+        if (vd < 1) { setError("Cast rejected: cluster display unresolved / chưa dò thấy màn cụm"); return }
+
         // R4: For protected apps, verify we will land in fullscreen stack (not freeform)
         if (intent.appType.isProtected && !geometry.verifyFullscreenStackAvailable()) {
             setError("Cast rejected: ${CastRejectReason.PROTECTED_FULLSCREEN_STACK_UNPROVEN}")
@@ -231,11 +323,11 @@ class SimpleCastCoordinator(
             returnApp(afterWait.targetPkg, afterWait.appType)
         }
 
-        // If app is ALREADY on display 1, just adopt state — don't re-cast (prevents infinite loop).
+        // If app is ALREADY on the cluster, just adopt state — don't re-cast (prevents infinite loop).
         // BUT still restore the saved size + DPI: previously this branch used a fresh NORMAL_DEFAULT
         // config and returned BEFORE applySavedProfile, so a resized app lost its size on every
         // re-cast where it happened to already be on the cluster (owner bug #1, 2026-08-12).
-        if (geometry.isAppOnDisplay(intent.pkg, displayId)) {
+        if (geometry.isAppOnDisplay(intent.pkg, vd)) {
             val adoptConfig = configurator.resolveConfig(intent.pkg, intent.appType, prefs)
             setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, adoptConfig))
             if (intent.appType == AppType.NORMAL) {
@@ -245,7 +337,7 @@ class SimpleCastCoordinator(
         }
 
         val config = configurator.resolveConfig(intent.pkg, intent.appType, prefs)
-        if (!configurator.apply(displayId, config)) {
+        if (!configurator.apply(vd, config)) {
             setError("Display config failed")
             return
         }
@@ -253,12 +345,12 @@ class SimpleCastCoordinator(
         val castTaskId = mover.castToCluster(
             pkg = intent.pkg,
             activity = null,
-            displayId = displayId,
+            displayId = vd,
             appType = intent.appType,
         )
         if (castTaskId != null) {
             // R3: Postcondition verification — use verifier instead of simple isAppOnDisplay
-            val outcome = verifier.verifyCastFull(intent.pkg, displayId)
+            val outcome = verifier.verifyCastFull(intent.pkg, vd)
             when (outcome) {
                 is CastMutationOutcome.Verified -> {
                     val savedTaskId = if (castTaskId > 0) castTaskId else outcome.taskId
@@ -309,6 +401,10 @@ class SimpleCastCoordinator(
             return // can only split from idle or existing split
         }
 
+        // R1: dò LIVE ngay trước khi đặt. Hụt/guard ⇒ từ chối, không đặt.
+        val vd = detectClusterDisplay()
+        if (vd < 1) { setError("Slot rejected: cluster display unresolved / chưa dò thấy màn cụm"); return }
+
         val config = configurator.resolveConfig(intent.pkg, AppType.NORMAL, prefs)
         val slot = SlotState(intent.pkg, config)
 
@@ -316,7 +412,7 @@ class SimpleCastCoordinator(
         if (afterWait is SimpleCastState.CastingSplit) {
             // Don't re-apply display config — would affect the existing app
         } else {
-            if (!configurator.apply(displayId, config)) {
+            if (!configurator.apply(vd, config)) {
                 setError("Display config failed for slot")
                 return
             }
@@ -326,7 +422,7 @@ class SimpleCastCoordinator(
         val ok = mover.castToCluster(
             pkg = intent.pkg,
             activity = null,
-            displayId = displayId,
+            displayId = vd,
             appType = AppType.NORMAL,
             slotSide = intent.side,
             leftPercent = leftPercent,
@@ -337,7 +433,7 @@ class SimpleCastCoordinator(
         }
 
         // R3: Postcondition verification for split
-        val outcome = verifier.verifyCastSplit(intent.pkg, displayId, intent.side)
+        val outcome = verifier.verifyCastSplit(intent.pkg, vd, intent.side)
         when (outcome) {
             is CastMutationOutcome.Verified -> {
                 val newState = when {
@@ -369,7 +465,7 @@ class SimpleCastCoordinator(
                 setState(SimpleCastState.Stopping)
                 returnApp(current.targetPkg, current.appType, current.taskId)
                 if (current.appType.isProtected) {
-                    shell.execute("wm density reset -d $displayId")
+                    undoTargetDisplay("stop.densityReset")?.let { shell.execute("wm density reset -d $it") }
                 } else {
                     refreshCluster()
                 }
@@ -426,12 +522,13 @@ class SimpleCastCoordinator(
         }
     }
 
-    private fun cleanDisplay1() = CastDisplayCleaner.cleanDisplay(shell, displayId)
+    /** Dọn task lạ khỏi VD cụm [vd] — caller PHẢI truyền id đã xác minh live (không bao giờ seed). */
+    private fun cleanDisplay(vd: Int) = CastDisplayCleaner.cleanDisplay(shell, vd)
 
     private fun closeProjectionSync() {
         returnAllApps()
-        // Reset display to defaults before closing — undo all wm changes
-        configurator.reset(displayId)
+        // Reset display to defaults before closing — undo all wm changes (chỉ trên id đã xác minh live, R2)
+        undoTargetDisplay("close.reset")?.let { configurator.reset(it) }
         setState(SimpleCastState.Closing)
         val ok = projection.close(displayId)
         if (ok) setState(SimpleCastState.Off) else setError("Close failed")
@@ -508,12 +605,14 @@ class SimpleCastCoordinator(
     // ─── Density control ──────────────────────────────────────────────────────
     /** @see CastDensityControl.set — persists ONLY on shell success (R6). */
     fun setDensity(dpi: Int?) = executor.submit("density") {
-        CastDensityControl.set(shell, prefs, displayId, dpi, (state as? SimpleCastState.CastingFull)?.targetPkg)
+        val vd = verifiedClusterDisplay("setDensity") ?: return@submit
+        CastDensityControl.set(shell, prefs, vd, dpi, (state as? SimpleCastState.CastingFull)?.targetPkg)
     }
 
     /** @see CastDensityControl.setForSplit — split DPI, persists the per-ratio profile on success (R4/#5). */
     fun setDensitySplit(dpi: Int?) = executor.submit("density-split") {
-        CastDensityControl.setForSplit(shell, prefs, displayId, dpi, state)
+        val vd = verifiedClusterDisplay("setDensitySplit") ?: return@submit
+        CastDensityControl.setForSplit(shell, prefs, vd, dpi, state)
     }
     /** Shutdown executor. Call on app destroy. */
     fun shutdown() {
@@ -612,10 +711,13 @@ class SimpleCastCoordinator(
             else -> emptyList()
         }
         if (expected.isEmpty()) return
+        // R1: re-pin cũng là ĐẶT ⇒ dò live trước; hụt ⇒ bỏ lượt này (watchdog sẽ thử lại ở tick sau).
+        val vd = detectClusterDisplay()
+        if (vd < 1) { log("repin: display cụm chưa xác minh — bỏ lượt"); return }
         val now = System.currentTimeMillis()
         for ((pkg, side) in expected) {
             if (pkg == selfPackage) continue
-            if (geometry.isAppOnDisplay(pkg, displayId)) { repinMissStreak.remove(pkg); continue }
+            if (geometry.isAppOnDisplay(pkg, vd)) { repinMissStreak.remove(pkg); continue }
             // Debounce: require MISSING on two consecutive probes (ignore transient parse gaps and the
             // split-second while Kiki's own launch is in flight).
             val streak = (repinMissStreak[pkg] ?: 0) + 1
@@ -625,7 +727,7 @@ class SimpleCastCoordinator(
             log("repin: $pkg escaped cluster → re-cast to slot=$side (keep running task/nav)")
             val leftPercent = prefs.splitRatioLeftPercent()
             val ok = mover.castToCluster(
-                pkg = pkg, activity = null, displayId = displayId,
+                pkg = pkg, activity = null, displayId = vd,
                 appType = AppType.NORMAL, slotSide = side, leftPercent = leftPercent,
             )
             repinCooldownUntil[pkg] = now + REPIN_COOLDOWN_MS

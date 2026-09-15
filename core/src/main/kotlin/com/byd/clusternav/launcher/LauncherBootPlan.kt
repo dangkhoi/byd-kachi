@@ -42,4 +42,31 @@ object LauncherBootPlan {
         val (skip, mount) = apps.partition { castOwns(it.pkg) }
         return Plan(mount = mount, skippedToCast = skip)
     }
+
+    /**
+     * Kết quả RECONCILE cửa sổ launcher với [WorkspaceState] (quality-review 2026-09-15, R1/R2).
+     *
+     * @property mount app cần CÓ MẶT ở ô của nó (đúng vị trí theo state). Applier đảm bảo hosted đúng ô.
+     * @property evict app đang hiện Ở MÀN LAUNCHER (display 0) mà state KHÔNG còn giữ ở ô nào ⇒ phải GỠ cửa sổ
+     *   (release VdAppHost / đóng freeform) + gỡ khỏi registry. Đây là bước thiếu lâu nay: bug "một app hai ô" =
+     *   app đã chuyển ô nhưng cửa sổ/host ở ô cũ không bị gỡ ngay (chờ death-poll 10-15s). Evict tường minh, không đợi.
+     */
+    data class Reconciliation(val mount: List<SlotApp>, val evict: List<String>)
+
+    /**
+     * PURE reconcile: từ [slots] (state = desired) + [placedOnLauncher] (pkg đang có cửa sổ Ở MÀN LAUNCHER, đọc
+     * từ registry `onDisplay(0)` hoặc `am stack list`) → tính app cần đặt (mount) + app cần gỡ (evict = đang hiện
+     * ở màn launcher nhưng không còn ô nào trong state giữ). [castOwns] loại app cast đang giữ khỏi mount (không
+     * giành với cụm). App cast (không nằm ở display launcher) KHÔNG bị evict bởi hàm này. Test off-car.
+     */
+    fun reconcile(
+        slots: List<SlotContent>,
+        placedOnLauncher: Set<String>,
+        castOwns: (String) -> Boolean,
+    ): Reconciliation {
+        val plan = plan(slots, castOwns)
+        val desired = plan.mount.map { it.pkg }.toSet()
+        val evict = placedOnLauncher.filter { it !in desired }
+        return Reconciliation(mount = plan.mount, evict = evict)
+    }
 }

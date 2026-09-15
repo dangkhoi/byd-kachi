@@ -64,8 +64,13 @@ object VoiceReply {
         return when (def.kind) {
             ControlKind.TOGGLE ->
                 if (i.value == 1) Strings.t("Bật ", "Turn on ") + name else Strings.t("Tắt ", "Turn off ") + name
-            ControlKind.COVER ->
-                if (i.value == 1) Strings.t("Mở ", "Open ") + name else Strings.t("Đóng ", "Close ") + name
+            ControlKind.COVER -> when {
+                i.value == 1 -> Strings.t("Mở ", "Open ") + name
+                // T7: mức ≥2 (Nửa…) đọc nhãn từ registry — giọng nói hiện không phát mức này, nhưng câu xem-trước
+                // (CapTest/dock) phải nói đúng thứ sẽ gửi, không nói "Mở" cho một lệnh "Nửa".
+                (i.value ?: 0) >= 2 && def.displayArgs.getOrNull(i.value!!) != null -> def.displayArgs[i.value!!] + " " + name
+                else -> Strings.t("Đóng ", "Close ") + name
+            }
             ControlKind.BUTTON -> Strings.t("Bấm ", "Press ") + name
             ControlKind.SELECT -> {
                 val arg = i.value?.let { def.displayArgs.getOrNull(it) }

@@ -12,8 +12,6 @@ import com.byd.clusternav.launcher.LayoutPreset
 import com.byd.clusternav.launcher.SlotCodec
 import com.byd.clusternav.launcher.reapplyAll
 import com.byd.clusternav.launcher.voice.VoiceReply
-import com.byd.clusternav.launcher.voice.VoiceWavProbe
-import com.byd.clusternav.launcher.voice.VoiceWiring
 import com.byd.clusternav.modules.clustercast.ClusterDiag
 import com.byd.clusternav.system.PackageQueries
 import java.io.File
@@ -133,6 +131,17 @@ class KachiTestBridge : BroadcastReceiver() {
             reply.ok("file" to cmd.file, "values" to TestBridgeState.prefsSnapshot(app, cmd.file))
             return
         }
+        // `hal` cũng KHÔNG cần màn chính: nó gọi thẳng gateway HAL (không đọc `HomeUiState`, không chạm ô/bố cục).
+        // Cho chạy khi launcher chưa lên là đúng thứ cần lúc chẩn đoán HAL độc lập với trạng thái UI.
+        if (cmd.name == TestBridgeCommands.HAL) {
+            TestBridgeHal.run(app, cmd, reply)
+            return
+        }
+        // `sweep` cũng thuần HAL (chỉ-đọc, luồng nền) — không cần màn chính. Thân ở [TestBridgeSweep].
+        if (cmd.name == TestBridgeCommands.SWEEP) {
+            TestBridgeSweep.run(app, cmd, reply)
+            return
+        }
         val hooks = KachiTestHooks.get()
         if (hooks == null) {
             reply.fail(ERR_NO_HOME)
@@ -142,7 +151,8 @@ class KachiTestBridge : BroadcastReceiver() {
         when (cmd.name) {
             TestBridgeCommands.STATE -> reply.ok("state" to TestBridgeState.build(app, hooks))
             TestBridgeCommands.SAY -> runSay(cmd, hooks, reply)
-            TestBridgeCommands.WAV -> runWav(app, cmd, hooks, reply)
+            // Thân ở [TestBridgeWav] (trần 500 dòng, CLAUDE.md §4.1) — cùng cách tách với `ctl`/`hal`/`sweep`.
+            TestBridgeCommands.WAV -> TestBridgeWav.run(app, cmd, hooks, reply)
             TestBridgeCommands.LISTEN -> runListen(hooks, reply)
             TestBridgeCommands.PROFILES -> reply.ok(
                 "active" to hooks.state().activeProfile,
@@ -155,6 +165,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.OPEN -> runOpen(app, cmd, hooks, reply)
             // Thân ở [TestBridgeCtl] (trần 500 dòng, CLAUDE.md §4.1) — cùng cách tách với `state`→[TestBridgeState].
             TestBridgeCommands.CTL -> TestBridgeCtl.run(cmd, hooks, reply)
+            // `hal` đã xử lý sớm (không cần hooks) — không thể tới đây.
             TestBridgeCommands.REAPPLY -> runReapply(hooks, reply)
             TestBridgeCommands.DIAG -> runDiag(app, hooks, reply)
             else -> reply.fail(TestBridgeCommands.ERR_UNKNOWN_CMD)
@@ -222,75 +233,7 @@ class KachiTestBridge : BroadcastReceiver() {
         }, GRACE_MS)
     }
 
-    /** Một ý định: **mã loại** (ổn định, để script so) + câu *"đã hiểu là…"* (cho người đọc). */
-    private fun previewOf(intent: com.byd.clusternav.launcher.voice.VoiceIntent): TestBridgeJson.Raw =
-        TestBridgeJson.Raw(
-            TestBridgeJson.obj(
-                "kind" to (intent::class.simpleName ?: UNNAMED),
-                "preview" to VoiceReply.preview(intent),
-            ),
-        )
-
-    /**
-     * Một tệp WAV đi qua **đúng** [VoiceWavProbe] mà ô *Thử bằng WAV* dùng (R14 của spec giọng nói).
-     *
-     * `--es path` được phục vụ bằng cách **chép** tệp vào đúng chỗ mà [VoiceWavProbe] dò (tên cố định
-     * [VoiceWavProbe.FILE_NAME] trong thư mục ngoài của riêng app). Chép chứ không mở một đường đọc thứ hai:
-     * đường đọc thứ hai sẽ không đi qua cùng phép kiểm khuôn WAV, và lúc đó phép đo nói về một con đường mã mà
-     * phiên nghe thật không dùng — đúng thứ KDoc [VoiceWavProbe] cấm.
-     */
-    private fun runWav(app: Context, cmd: TestBridgeCommand, hooks: TestBridgeHooks, reply: TestBridgeReply) {
-        Thread({
-            val stageError = stageWav(app, cmd.path)
-            if (stageError != null) {
-                reply.fail(stageError, "path" to cmd.path)
-                return@Thread
-            }
-            val apps = VoiceWiring.appsByLabel(app)
-            val probe = VoiceWavProbe.run(app, hooks.state().profiles, apps.keys.toList(), apps.values.toSet())
-            val intents = if (probe.heard.isBlank()) {
-                emptyList()
-            } else {
-                // CHỈ phân tích, KHÔNG thi hành: đây là một phép đo tai nghe, không phải một lệnh.
-                hooks.dispatcher({ }, { _, _, onNo -> onNo() }).preview(probe.heard)
-            }
-            reply.ok(
-                listOf(
-                    "path" to probe.path,
-                    "staged_from" to cmd.path.ifBlank { null },
-                    "heard" to probe.heard,
-                    "grammar" to probe.grammarText,
-                    "free" to probe.freeText,
-                    "probe_error" to probe.error,
-                    "where" to VoiceWavProbe.whereToPut(app),
-                    "intents" to TestBridgeJson.Raw(TestBridgeJson.arr(intents.map { previewOf(it) })),
-                ),
-            )
-        }, "KachiTestWav").start()
-    }
-
-    /**
-     * Chép tệp WAV do lệnh chỉ định vào chỗ [VoiceWavProbe] dò. Trả **mã lỗi** hoặc `null` khi xong/không cần.
-     *
-     * Ba phép kiểm, mỗi phép chặn một ca thật: đường dẫn có `..` (chuỗi này đến từ ngoài tiến trình), tệp không
-     * đọc được (gõ nhầm tên — hay gặp nhất), tệp quá lớn (đẩy nhầm một bản ghi dài làm đầy bộ nhớ xe). Tên tệp
-     * ĐÍCH là hằng của [VoiceWavProbe] nên không có phần nào của chuỗi vào được đường dẫn ghi.
-     */
-    private fun stageWav(app: Context, path: String): String? {
-        if (path.isBlank()) return null
-        if (path.contains("..")) return ERR_BAD_PATH
-        val src = File(path)
-        if (!src.isFile || !src.canRead()) return ERR_WAV_NOT_FOUND
-        if (src.length() > MAX_WAV_BYTES) return ERR_WAV_TOO_BIG
-        val dir = app.getExternalFilesDir(null) ?: app.filesDir
-        return runCatching {
-            src.copyTo(File(dir, VoiceWavProbe.FILE_NAME), overwrite = true)
-            null
-        }.getOrElse { t ->
-            Log.w(TAG, "chep WAV hong: ${t.javaClass.simpleName}")
-            ERR_WAV_COPY
-        }
-    }
+    // `runWav`/`stageWav` đã dời sang [TestBridgeWav] (trần 500 dòng). `previewOf` ở companion để cả `say` lẫn `wav` dùng.
 
     /**
      * Mở một phiên nghe thật — CÙNG đường mà nút mic dùng.
@@ -472,6 +415,10 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.EXTRA_ARG,
             TestBridgeCommands.EXTRA_FILE,
             TestBridgeCommands.EXTRA_ID,
+            TestBridgeCommands.EXTRA_DEV,
+            TestBridgeCommands.EXTRA_METHOD,
+            TestBridgeCommands.EXTRA_HAL_ARGS,
+            TestBridgeCommands.EXTRA_OP,
         )
 
         // ── Mã lỗi riêng của tầng này (ASCII, không dịch — xem `TestBridgeParse.Err`) ────────────
@@ -494,5 +441,14 @@ class KachiTestBridge : BroadcastReceiver() {
 
         /** Câu chỉ đường cho người đo — ASCII, cố ý KHÔNG dịch (nó là một lệnh để gõ, không phải chữ trên màn). */
         const val NOTE_LISTEN = "adb logcat -s KachiVoice"
+
+        /** Một ý định: **mã loại** (ổn định, để script so) + câu *"đã hiểu là…"* (cho người đọc). Dùng bởi `say` + [TestBridgeWav]. */
+        internal fun previewOf(intent: com.byd.clusternav.launcher.voice.VoiceIntent): TestBridgeJson.Raw =
+            TestBridgeJson.Raw(
+                TestBridgeJson.obj(
+                    "kind" to (intent::class.simpleName ?: UNNAMED),
+                    "preview" to VoiceReply.preview(intent),
+                ),
+            )
     }
 }

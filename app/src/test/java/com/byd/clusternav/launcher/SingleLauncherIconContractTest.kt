@@ -52,7 +52,29 @@ class SingleLauncherIconContractTest {
     fun `LAUNCHER nam o KachiHomeActivity - la icon duy nhat cua APK`() {
         val home = activityBlock(".launcher.KachiHomeActivity")
         assertTrue(home.contains(LAUNCHER), "KachiHomeActivity phải mang CATEGORY_LAUNCHER")
-        assertTrue(home.contains("android.intent.category.HOME"), "và vẫn là HOME")
+        // [ĐO on-car 2026-09-15] HOME bật sẵn ⇒ BYD packageinstaller chặn GUI-install. HOME dời sang alias TẮT SẴN
+        // (DuDu-style: cài như app thường, chọn làm launcher mới bật). Activity KHÔNG còn mang HOME.
+        assertFalse(home.contains("android.intent.category.HOME"), "HOME KHÔNG ở activity — nằm trên alias KachiHome tắt sẵn")
+    }
+
+    /**
+     * Lối vào HOME = `activity-alias` KachiHome: tắt sẵn (cài như app thường), trỏ KachiHomeActivity, mang HOME nhưng
+     * KHÔNG mang LAUNCHER (giữ một icon). Tên lớp phải khớp [DefaultHome.HOME_ALIAS_CLASS] — đích của `set-home-activity`.
+     */
+    @Test
+    fun `HOME nam tren activity-alias KachiHome tat san, khong mang LAUNCHER`() {
+        val noComments = manifest.replace(Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL), "")
+        val start = noComments.indexOf("android:name=\".launcher.KachiHome\"")
+        assertTrue(start >= 0, "manifest phải khai activity-alias .launcher.KachiHome")
+        val open = noComments.lastIndexOf("<activity-alias", start)
+        val close = noComments.indexOf("</activity-alias>", start)
+        assertTrue(open >= 0 && close > open, "khối <activity-alias> phải đóng đúng")
+        val alias = noComments.substring(open, close)
+        assertTrue(alias.contains("android:targetActivity=\".launcher.KachiHomeActivity\""), "alias trỏ KachiHomeActivity")
+        assertTrue(alias.contains("android:enabled=\"false\""), "alias TẮT SẴN — bật lúc runtime (DefaultHome.enableHomeEntry)")
+        assertTrue(alias.contains("android.intent.category.HOME"), "alias mang HOME")
+        assertFalse(alias.contains(LAUNCHER), "alias KHÔNG mang LAUNCHER — một icon duy nhất")
+        assertEquals("com.byd.clusternav.launcher.KachiHome", DefaultHome.HOME_ALIAS_CLASS, "tên lớp alias khớp manifest")
     }
 
     /**

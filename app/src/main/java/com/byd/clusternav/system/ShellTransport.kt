@@ -53,8 +53,18 @@ class ShellTransport private constructor(context: Context) {
     /** Structured result mirroring the dadb `AdbShellResponse` fields the consumers read. */
     data class Response(val exitCode: Int, val stdout: String, val stderr: String, val allOutput: String)
 
-    /** (Re)connect lazily and reuse the one connection. Runs ONLY on [owner]. */
-    private fun conn(): Dadb = db ?: Dadb.create("localhost", 5555, AdbKeys.ensure(ctx)).also { db = it }
+    /**
+     * (Re)connect lazily and reuse the one connection. Runs ONLY on [owner].
+     *
+     * ⚠ [P0-2 · quality-review 2026-09-15] TIMEOUT BẮT BUỘC. Overload 3-arg `Dadb.create(host,port,keys)` đặt
+     * connect+socket timeout = **0 = VÔ HẠN** ([ĐO] decompile dadb-2.0.0). Vì MỌI lệnh cửa sổ + cast dồn vào một
+     * worker nối tiếp chặn ở `Future.get()`, một `adbd` xe wedge giữa chừng (xóc/chớp nguồn/TCP nửa-mở) sẽ treo
+     * worker VĨNH VIỄN ⇒ đơ toàn bộ đặt-cửa-sổ + cast (kể cả STOP), im lặng, rò thread → OOM. Truyền timeout tường
+     * minh (đúng cách shell của runner đánh giá trong `car-integration` đã làm) ⇒ lệnh treo NHẢ sau ≤ socket-timeout,
+     * `exec` retry một lần rồi ném cho caller; worker được giải phóng thay vì chặn mãi.
+     */
+    private fun conn(): Dadb =
+        db ?: Dadb.create("localhost", 5555, AdbKeys.ensure(ctx), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS).also { db = it }
 
     private fun closeConn() { runCatching { db?.close() }; db = null }
 
@@ -87,15 +97,6 @@ class ShellTransport private constructor(context: Context) {
     /** true if the shell really runs (dadb connected + echoes back). */
     fun probe(): Boolean = runCatching { run("echo kachi_ok").contains("kachi_ok") }.getOrDefault(false)
 
-    /**
-     * LEGACY escape hatch for the (currently unreachable) [com.byd.clusternav.modules.clustercast.ClusterCast]
-     * cast()/stop()/reconcile paths, whose helper functions take the raw [Dadb]. The [block] runs on the single
-     * owner thread, so the shared connection is NEVER used concurrently — the same guarantee [exec] gives. New
-     * code MUST use [run]/[exec]/[seam]; this exists only to fold ClusterCast's `Dadb.create` sites onto the one
-     * owner WITHOUT a risky rewrite of proven-but-unreachable code, and is removed when ClusterCast is deleted.
-     */
-    fun <T> withConnection(block: (Dadb) -> T): T = onOwner(MutationPriority.NORMAL) { block(conn()) }
-
     /** Close the shared connection; the next command reconnects. */
     fun close() { onOwner(MutationPriority.NORMAL) { closeConn() } }
 
@@ -103,6 +104,10 @@ class ShellTransport private constructor(context: Context) {
     private fun <T> onOwner(priority: MutationPriority, body: () -> T): T = owner.submit(priority, body)
 
     companion object {
+        /** Timeout kết nối/đọc cho dadb (P0-2). Cùng giá trị proven của shell runner đánh giá trong `car-integration`. */
+        private const val CONNECT_TIMEOUT_MS = 3_000
+        private const val SOCKET_TIMEOUT_MS = 10_000
+
         /**
          * Dựng một [ShellTransport] mới cho [com.byd.clusternav.AppContainer] (chủ đồ thị DI). AppContainer giữ DUY
          * NHẤT một instance (lazy) → factory này chỉ được gọi một lần cho cả tiến trình.

@@ -105,3 +105,8 @@ apk/_archive-old-builds/
 scratchpad/
 .playwright-mcp/
 proto_quad.png
+car-logs/
+# Mọi thư mục log kéo từ xe (car-logs2/… do agent pull) — dump thật: serial/IP/usage log, KHÔNG commit.
+car-logs*/
+# Thư mục phiên của Kotlin compiler daemon (build artifact).
+.kotlin/

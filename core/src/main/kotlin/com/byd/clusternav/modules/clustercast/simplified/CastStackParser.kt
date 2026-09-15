@@ -181,15 +181,10 @@ object CastStackParser {
      * can return to the cast app or native gauges.
      */
     fun tasksToClean(amOutput: String, displayId: Int): List<ParsedTask> {
-        val skipExactPkgs = setOf(
-            "com.android.launcher3",
-            "com.android.systemui",
-            "com.byd.carplay.ui",
-        )
         return parseTasks(amOutput).filter { task ->
             task.displayId == displayId &&
                 !task.pkg.startsWith("com.android.") &&
-                task.pkg !in skipExactPkgs &&
+                task.pkg !in ProjectionApps.STACK_SKIP_PKGS &&
                 // Keep ONLY the black placeholder; every other ClusterNav activity on the cluster is
                 // a leak and must be evicted (bug b). Non-ClusterNav apps are unaffected.
                 !task.component.contains(CLUSTER_PLACEHOLDER_ACTIVITY)

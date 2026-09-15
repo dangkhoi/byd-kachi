@@ -122,7 +122,30 @@ data class WorkspaceState(
     /** Gán nội dung cho 1 ô (0 tới [SLOT_CAP]−1); index ngoài phạm vi → giữ nguyên. */
     fun withSlot(index: Int, content: SlotContent): WorkspaceState {
         if (index !in slots.indices) return this
-        return copy(slots = slots.toMutableList().also { it[index] = content })
+        return copy(slots = slots.toMutableList().also { m ->
+            // MỘT-APP-MỘT-Ô (owner 2026-09-15): đặt App(pkg) vào một ô thì GỠ pkg khỏi mọi ô KHÁC — một app không
+            // được hiện ở hai ô. Bất biến ở tầng MÔ HÌNH nên đúng cho MỌI đường (picker/voice/khôi phục/preset),
+            // không chỉ đường picker. (Teardown cửa sổ ô cũ do KachiHomeSlots.assignApp lo — model chỉ giữ state.)
+            if (content is SlotContent.App) {
+                for (i in m.indices) if (i != index && (m[i] as? SlotContent.App)?.pkg == content.pkg) m[i] = SlotContent.Empty
+            }
+            m[index] = content
+        })
+    }
+
+    /**
+     * Ép bất biến MỘT-APP-MỘT-Ô lên một trạng thái NẠP từ ngoài (prefs). Dữ liệu lưu TRƯỚC bản vá 2026-09-15 có
+     * thể đã có cùng app ở hai ô — [withSlot] chỉ chặn lượt gán MỚI, không tự chữa state cũ khi nạp (dựng thẳng
+     * qua constructor, không đi qua withSlot). Giữ lần xuất hiện ĐẦU (ô index thấp = ô đang hiện cửa sổ thật),
+     * xoá các ô trùng SAU về trống. Trả `this` nếu không có trùng (không đổi tham chiếu vô ích).
+     */
+    fun sanitized(): WorkspaceState {
+        val seen = HashSet<String>()
+        var changed = false
+        val out = slots.map { c ->
+            if (c is SlotContent.App && !seen.add(c.pkg)) { changed = true; SlotContent.Empty } else c
+        }
+        return if (changed) copy(slots = out) else this
     }
 
     /** Đổi preset (giữ nguyên gán ô theo chỉ số — ô ẩn vẫn nhớ). */

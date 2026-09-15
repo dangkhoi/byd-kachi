@@ -237,6 +237,55 @@ class TestBridgeCommandTest {
         )
     }
 
+    // ── hal (gọi method HAL thô — chẩn đoán) ────────────────────────────────────────────────────
+
+    @Test
+    fun `hal can method, thieu m bao dung ten doi so`() {
+        assertEquals(
+            TestBridgeCommands.ERR_MISSING + TestBridgeCommands.EXTRA_METHOD,
+            err(TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL),
+        )
+    }
+
+    @Test
+    fun `hal doc du dev method args op, op ha ve chu thuong`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+            TestBridgeCommands.EXTRA_DEV to " BYDAutoBodyworkDevice ",
+            TestBridgeCommands.EXTRA_METHOD to " setBodyWindowCtrlState ",
+            TestBridgeCommands.EXTRA_HAL_ARGS to "1,2",
+            TestBridgeCommands.EXTRA_OP to "SET",
+        )
+        assertEquals("BYDAutoBodyworkDevice", cmd.dev)
+        assertEquals("setBodyWindowCtrlState", cmd.method)
+        assertEquals("1,2", cmd.halArgs)
+        assertEquals("set", cmd.op, "op phải hạ về chữ thường để tầng thi hành so 'get'/'set' không phân biệt hoa/thường")
+    }
+
+    @Test
+    fun `hal khong bat buoc dev args op — de tang thi hanh mac dinh`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+            TestBridgeCommands.EXTRA_METHOD to "getWindowPermitState",
+        )
+        assertEquals("", cmd.dev, "vắng dev ⇒ rỗng, tầng thi hành chọn BYDAutoBodyworkDevice")
+        assertEquals("", cmd.halArgs, "getter 0-đối để rỗng")
+        assertEquals("", cmd.op, "vắng op ⇒ rỗng, tầng thi hành suy theo tiền tố get")
+    }
+
+    // ── sweep (quét raw một lượt — chỉ đọc) ─────────────────────────────────────────────────────
+
+    @Test
+    fun `sweep khong can doi so, op tuy chon ha ve chu thuong`() {
+        val all = ok(TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.SWEEP)
+        assertEquals("", all.op, "vắng op ⇒ rỗng, tầng thi hành quét CẢ telemetry + control")
+        val info = ok(TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.SWEEP, TestBridgeCommands.EXTRA_OP to "INFO")
+        assertEquals("info", info.op, "op hạ chữ thường để script gõ 'INFO'/'info' như nhau")
+        // Chỉ-đọc: KHÔNG có cờ auto_confirm trong spec — không được vô tình mở cổng ghi qua lệnh này.
+        val spec = TestBridgeCommands.SPECS.first { it.name == TestBridgeCommands.SWEEP }
+        assertTrue(TestBridgeCommands.EXTRA_AUTO_CONFIRM !in spec.optional && spec.required.isEmpty())
+    }
+
     @Test
     fun `khoang trang thua o ten hoi so va ten goi bi cat`() {
         val cmd = ok(

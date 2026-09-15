@@ -62,8 +62,8 @@ class TelemetryReadoutTest {
     }
 
     @Test fun `genuine NEEDS_CAR (GPS - binding None) van co case va tra dash`() {
-        // gps_lat/gps_elevation bindingKey = NaviInfo.* → BindingRoute.None → không có đường đọc → luôn "—".
-        // (of() vẫn KHÁC null vì id có trong registry — có case format, không phải khe trống.)
+        // gps_lat/gps_elevation bindingKey = NaviInfo.* → BindingRoute.None (BLOCKED-BY-DESIGN: quyền location đã
+        // retire) → không có đường đọc → luôn "—". (of() vẫn KHÁC null vì id có trong registry — có case format.)
         listOf("gps_lat", "gps_lon", "gps_elevation", "gps_heading", "target_soc").forEach { id ->
             val v = TelemetryReadout.of(id, CarStatus())
             assertTrue(v != null, "of($id) phải khác null (id trong registry)")
@@ -110,6 +110,8 @@ class TelemetryReadoutTest {
                 BindingRoute.None -> {}              // GPS/target_soc → không đường đọc
             }
         }
+        // `int[] getChargeRestTime()` trả mảng [giờ, phút] (gateway thật: BydHal.arrayToStr) — mục eta_min lấy [1].
+        getters["getChargeRestTime"] = "[1, 1]"
         val adapter = CarDataAdapter(
             HalBindingTable(FakeHalGateway(getters = getters, features = features, settings = settings)),
         )
@@ -146,6 +148,7 @@ class TelemetryReadoutTest {
                 else -> {}
             }
         }
+        getters["getChargeRestTime"] = "[1, 1]"   // mảng [giờ, phút] — xem bài FULL WIRE.
         val adapter = CarDataAdapter(
             HalBindingTable(FakeHalGateway(getters = getters, features = features, settings = settings)),
         )

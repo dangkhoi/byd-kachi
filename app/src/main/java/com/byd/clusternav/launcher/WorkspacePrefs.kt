@@ -78,6 +78,16 @@ class WorkspacePrefs(context: Context) {
      */
     fun keepHomeOnBoot(): Boolean = sp.getBoolean(K_KEEP_HOME_ON_BOOT, false)
 
+    /**
+     * Người dùng ĐÃ bấm "Đặt làm màn hình chính" thành công (2026-09-15, HOME-alias). Khác [keepHomeOnBoot] (opt-in
+     * "giữ home mỗi boot", mặc định TẮT): marker này là **lựa chọn đã bày tỏ** — lối vào HOME là alias tắt sẵn, sau
+     * nâng cấp alias mới lại tắt ⇒ Home rơi về launcher3 nếu không re-apply. KachiAutostart đọc marker để bật alias +
+     * `set-home-activity` lại (khôi phục lựa chọn của người dùng, không phải đổi state mới — CLAUDE.md §4/§5).
+     */
+    fun homeChosen(): Boolean = sp.getBoolean(K_HOME_CHOSEN, false)
+
+    fun setHomeChosen(on: Boolean) { sp.edit().putBoolean(K_HOME_CHOSEN, on).apply() }
+
     fun setKeepHomeOnBoot(on: Boolean) { sp.edit().putBoolean(K_KEEP_HOME_ON_BOOT, on).apply() }
 
     /**
@@ -414,6 +424,7 @@ class WorkspacePrefs(context: Context) {
 
         /** S5 — "giữ Kachi làm màn hình chính khi nổ máy". Theo XE (không tiền tố) — lý do ở [ProfileScope.DEVICE_KEYS]. */
         internal const val K_KEEP_HOME_ON_BOOT = "keep_home_on_boot"
+        internal const val K_HOME_CHOSEN = "home_chosen"
 
         /**
          * S4 · R2 — dấu *"đã chuyển cảnh sang hồ sơ"*, đặt MỘT lần cho cả máy ([migrateScenesOnce]).

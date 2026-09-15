@@ -18,8 +18,8 @@ package com.byd.clusternav.launcher
  *  (d) **local Android** `"AudioManager.setStreamVolume"` / `"AutoContainer.sendInfo"` → [HalGateway.localGet]/
  *      [localSet] (KHÔNG qua HAL BYDAuto). ⚠ AutoContainer (cast) KHÔNG wire ở đây — cast do
  *      `SimpleCastRuntime` sở hữu (ràng buộc: KHÔNG đụng logic cluster-cast).
- *  • **command-wrapper / id chưa chắc** (`"StartChargingNowCommand"`, `"ADAS_AVH_STATE"`, `"SET_DR_SOC_TARGET"`,
- *    `"BODYWORK_CMD_HOOD"`, `"NaviInfo.lat"`) → [BindingRoute.None] ⇒ unavailable (null) tới khi đóng grab-list §9.
+ *  • **command-wrapper / id chưa chắc** (`"BODYWORK_CMD_HOOD"`, `"INSTRUMENT_HEADLIGHT_ON_OFF"`, `"UNMAPPED_*"`) và
+ *    **GPS** `"NaviInfo.lat"` (BLOCKED-BY-DESIGN — xem [LOCAL_TARGETS]) → [BindingRoute.None] ⇒ unavailable (null).
  *
  * ── Degrade-safe (R9) ────────────────────────────────────────────────────────────────────────────────
  * Off-car / thiếu method / HAL ném → gateway trả null/false → đây trả `null` (đọc) / `null` rc (ghi) ⇒ UI "—".
@@ -30,7 +30,10 @@ class HalBindingTable(private val gateway: HalGateway) {
 
     // ── ĐỌC ──────────────────────────────────────────────────────────────────────────────────────────
 
-    /** Giá trị THÔ (chuỗi) của [id] hoặc null (unavailable/off-car/NEEDS_CAR/sentinel). */
+    /**
+     * Giá trị THÔ (chuỗi) của [id] hoặc null (unavailable/off-car/NEEDS_CAR/sentinel). Giá trị "không hợp lệ" riêng
+     * của từng getter ([INVALID_VALUES], vd tầm điện 1000/1023) cũng ⇒ null, để KHÔNG hiện số vô nghĩa lên ô.
+     */
     fun readRaw(id: String): String? {
         val spec = specOf(id) ?: return null
         val raw = when (val r = routeOf(spec.first)) {
@@ -40,27 +43,45 @@ class HalBindingTable(private val gateway: HalGateway) {
             is BindingRoute.Local -> gateway.localGet(r.target, r.method, readArg(id))
             BindingRoute.None -> null
         } ?: return null
-        return if (rawIsSentinel(raw)) null else raw
+        if (rawIsSentinel(raw)) return null
+        val invalid = INVALID_VALUES[id] ?: return raw
+        return if (coerceInt(raw)?.let { it in invalid } == true) null else raw
     }
 
-    /** [id] → Int (parse "int=.. float=.." của EventValue hoặc số thuần); sentinel/absent → null. */
-    fun readInt(id: String): Int? = coerceInt(readRaw(id))
+    /**
+     * [id] → Int (parse "int=.. float=.." của EventValue hoặc số thuần); sentinel/absent → null. Datum lấy MỘT phần tử
+     * của getter trả mảng ([ARRAY_INDEX], vd `getChargeRestTime()[0]`=giờ) đọc đúng chỉ số đó.
+     */
+    fun readInt(id: String): Int? {
+        val idx = ARRAY_INDEX[id] ?: return coerceInt(readRaw(id))
+        return readIntList(id)?.getOrNull(idx)
+    }
 
     /** [id] → Double (float= của EventValue hoặc số thuần). */
     fun readDouble(id: String): Double? = coerceDouble(readRaw(id))
 
-    /** [id] → Boolean (1/0, true/false, "on"/"off"). */
-    fun readBool(id: String): Boolean? = coerceBool(readRaw(id))
+    /**
+     * [id] → Boolean (1/0, true/false, "on"/"off"). Datum mà "đúng" là MỘT giá trị enum cụ thể ([BOOL_WHEN_EQUALS],
+     * vd đang sạc = `getChargerWorkState()==2`) so đúng giá trị đó thay vì `>0` (READY=1/FINISH=3 cũng >0 nhưng KHÔNG sạc).
+     */
+    fun readBool(id: String): Boolean? {
+        val eq = BOOL_WHEN_EQUALS[id] ?: return coerceBool(readRaw(id))
+        return coerceInt(readRaw(id))?.let { it == eq }
+    }
 
     /** [id] → chuỗi hiển thị (bỏ khoảng trắng thừa). */
     fun readString(id: String): String? = readRaw(id)?.trim()?.takeIf { it.isNotEmpty() && it != "null" }
 
-    /** [id] → danh sách Int (vd 8 vùng radar "[0, 1, 2,…]"); không parse được → null. */
+    /**
+     * [id] → danh sách Int (vd 8 vùng radar "[0, 1, 2,…]" — `BydHal.arrayToStr`); không parse được → null.
+     * MỌI token phải là số: `"[I@1a2b3c"` (toString mặc định của mảng) từng lọt qua regex-tìm-chữ-số thành `[1, 2, 3]`
+     * ⇒ số rác lên ô. Nay token lạ ⇒ null (unavailable), không đoán.
+     */
     fun readIntList(id: String): List<Int>? {
         val raw = readRaw(id) ?: return null
-        val nums = Regex("-?\\d+").findAll(raw.substringAfter('[', raw).substringBeforeLast(']'))
-            .mapNotNull { it.value.toIntOrNull() }.toList()
-        return nums.takeIf { it.isNotEmpty() }
+        val body = raw.trim().removePrefix("[").removeSuffix("]").trim()
+        if (body.isEmpty()) return null
+        return body.split(Regex("[,\\s]+")).map { it.toIntOrNull() ?: return null }
     }
 
     // ── GHI (control) ─────────────────────────────────────────────────────────────────────────────────
@@ -87,19 +108,6 @@ class HalBindingTable(private val gateway: HalGateway) {
         TelemetryRegistry.byId(id)?.let { it.bindingKey to it.domain }
             ?: ControlRegistry.byId(id)?.let { it.bindingKey to it.domain }
 
-    /**
-     * Arg int cho GETTER named-method theo hậu tố id (per-index): kính `getWindowOpenPercent(w)` w=1..4;
-     * đèn `getLightStatus(type)` (SIDE=1/L_TURN=4/R_TURN=5/F_FOG=6/R_FOG=7); nhiệt cabin `getTemprature(0)`.
-     * Còn lại → null (getter 0-arg).
-     */
-    private fun readArg(id: String): Int? = when (id) {
-        "window_lf" -> 1; "window_rf" -> 2; "window_lr" -> 3; "window_rr" -> 4
-        "light_side" -> 1; "light_left_turn" -> 4; "light_right_turn" -> 5
-        "light_front_fog" -> 6; "light_rear_fog" -> 7
-        "inside_temp" -> 0
-        else -> null
-    }
-
     /** FQN thiết bị cho đường feature-id, chọn theo [Domain] (best-effort — id↔device chính xác = grab-list §9). */
     private fun featureDeviceFqn(domain: Domain): String = Companion.featureDeviceFqn(domain)
 
@@ -107,11 +115,66 @@ class HalBindingTable(private val gateway: HalGateway) {
     private fun featureDeviceFor(def: ControlDef): String =
         def.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(def.domain)
 
-    /** Như trên nhưng tra theo [id] (đường ĐỌC chỉ có `id` + domain); telemetry-only id lùi về theo [domain]. */
+    /**
+     * Như trên nhưng tra theo [id] (đường ĐỌC): ưu tiên [TelemetrySpec.halDevice] (§C — thêm 2026-09-15), rồi
+     * [ControlDef.halDevice] (id vừa đọc vừa ghi), cuối cùng theo [domain].
+     */
     private fun featureDeviceFor(id: String, domain: Domain): String =
-        ControlRegistry.byId(id)?.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(domain)
+        TelemetryRegistry.byId(id)?.let { featureDeviceFor(it) }
+            ?: ControlRegistry.byId(id)?.halDevice?.let { deviceFqn(it) }
+            ?: featureDeviceFqn(domain)
 
     companion object {
+        /**
+         * Arg int cho GETTER named-method theo id (per-index) — THUẦN, khoá bằng `BindingRemediationTest`. Nguồn enum:
+         * stub `../jadx-tmap/sources/android/hardware/bydauto/` (file:line):
+         *  • kính `getWindowOpenPercent(w)` w=1..4;
+         *  • đèn `getLightStatus(type)` BYDAutoLightDevice.java — SIDE=1 · **LOW_BEAM=2 (:56) · HIGH_BEAM=3 (:49)** ·
+         *    L_TURN=4 · R_TURN=5 · F_FOG=6 · R_FOG=7;
+         *  • nhiệt cabin `getTemprature(0)`;
+         *  • áp lốp `getTyrePressureValue(area)` BYDAutoTyreDevice.java:27-30 — LF=1 · RF=2 · LR=3 · RR=4;
+         *  • cửa `getDoorState(area)` BYDAutoBodyworkDevice.java:172-176 — LF=1 · RF=2 · LR=3 · RR=4;
+         *  • vô-lăng `getSteeringWheelValue(BODYWORK_CMD_STEERING_WHEEL_ANGEL=1)` BYDAutoBodyworkDevice.java:178;
+         *  • dây an toàn `getSafetyBeltStatus(area)` BYDAutoSafetyBeltDevice.java:16/15 — MAIN=1 · DEPUTY=2;
+         *  • ghế phụ `getPassengerStatus(SAFETY_BELT_PASSENGER_DEPUTY=1)` BYDAutoSafetyBeltDevice.java:27.
+         * Còn lại → null (getter 0-arg; `getWheelSpeed()` là 0-arg — BYDAutoSpecialDevice.java:59).
+         */
+        fun readArg(id: String): Int? = when (id) {
+            "window_lf" -> 1; "window_rf" -> 2; "window_lr" -> 3; "window_rr" -> 4
+            "light_side" -> 1; "light_low_beam" -> 2; "light_high_beam" -> 3
+            "light_left_turn" -> 4; "light_right_turn" -> 5
+            "light_front_fog" -> 6; "light_rear_fog" -> 7
+            "inside_temp" -> 0
+            "tyre_p_fl" -> 1; "tyre_p_fr" -> 2; "tyre_p_rl" -> 3; "tyre_p_rr" -> 4
+            "door_lf" -> 1; "door_rf" -> 2; "door_lr" -> 3; "door_rr" -> 4
+            "steering_deg" -> 1
+            "seatbelt_driver" -> 1; "seatbelt_passenger" -> 2
+            "oms_passenger" -> 1
+            else -> null
+        }
+
+        /**
+         * Datum đọc MỘT phần tử của getter trả mảng: `int[] getChargeRestTime()` BYDAutoInstrumentDevice.java:1100 —
+         * [0]=giờ · [1]=phút. Gateway (`BydHal.arrayToStr`) trả "[h, m]" ⇒ [readIntList] rồi lấy chỉ số.
+         */
+        val ARRAY_INDEX: Map<String, Int> = mapOf("charging_eta_hour" to 0, "charging_eta_min" to 1)
+
+        /**
+         * Datum bool mà "đúng" = MỘT giá trị enum: đang sạc = `getChargerWorkState()==2` (READY1/START2/FINISH3/
+         * TERMINATE4 — `docs/diagnostics/hal-binding-remediation-2026-09-15.md` §Năng lượng).
+         */
+        val BOOL_WHEN_EQUALS: Map<String, Int> = mapOf("is_charging" to 2)
+
+        /**
+         * Giá trị "không hợp lệ" riêng từng getter ⇒ unavailable: tầm điện `getElecDrivingRangeValue` trả
+         * STATISTIC_ELEC_DRIVING_RANGE_INVALID=1000 / DEFAULT=1023 (BYDAutoStatisticDevice.java:56-57).
+         */
+        val INVALID_VALUES: Map<String, Set<Int>> = mapOf("ev_range_km" to setOf(1000, 1023))
+
+        /** FQN thiết bị feature-id cho một [spec] ĐỌC: ưu tiên [TelemetrySpec.halDevice], nếu không thì theo [Domain]. */
+        fun featureDeviceFor(spec: TelemetrySpec): String =
+            spec.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(spec.domain)
+
         /** rc HAL khi feature KHÔNG provision trên trim (= `Int.MIN_VALUE + 1000`). Đo lặp trên xe owner. */
         const val SENTINEL_NOT_PROVISIONED = -2147482648L
 
@@ -122,10 +185,18 @@ class HalBindingTable(private val gateway: HalGateway) {
         fun isSentinelRc(rc: Long?): Boolean = rc == SENTINEL_NOT_PROVISIONED || rc == SENTINEL_INVALID
 
         /**
+         * Tiền tố `bindingKey` đi đường [BindingRoute.Local] (Android, không qua HAL BYDAuto). `LocationManager` (GPS)
+         * CỐ Ý không có ở đây — BLOCKED-BY-DESIGN: quyền location đã retire (`DeadReckonRetirementTest` ở :app ghim
+         * manifest không xin quyền location), mở lại = quyết định owner.
+         */
+        val LOCAL_TARGETS: Set<String> = setOf("AudioManager", "AutoContainer")
+
+        /**
          * Tham số cuối cho GHI named-method (proven, nhiều arg). Còn lại 1 arg = [primary].
          *  • ghế mát/sưởi `setSeatVentilatingState/HeatingState(seatId,state)` → [1(lái), state 2/1] (bật→mức1/tắt);
          *  • sưởi vô-lăng `setSteeringWheelHeatingState(state)` → [2/1];
-         *  • kính từng cửa `setBodyWindowCtrlState(window,state)` → [index, 0/1]; tất cả kính → 4× state;
+         *  • kính từng cửa `setBodyWindowCtrlState(window,state)` → [index, mở=1/đóng=2] (enum WINDOW_*); tất cả kính → 4× state;
+         *  • rèm che nắng feature 0x4F500028 (PERCENT_SET) → [mở=100/đóng=0]; đèn đọc 0x4F50003A → [ON=2/OFF=1];
          *  • kính-nhị-phân "window" → cửa lái [1, state]; cốp `setHetchDoorStatus` → [open?1:close?2];
          *  • **khoá cửa `setDoorLockState(state)` → [khoá?2:mở?1]** (xem ⚠ dưới);
          *  • **mưa-tự-đóng-kính `setRainCloseWindow(state)` → [bật?1:tắt?2]**;
@@ -153,27 +224,87 @@ class HalBindingTable(private val gateway: HalGateway) {
         fun writeArgs(def: ControlDef, primary: Int): IntArray = when (def.id) {
             "seatc", "seath" -> intArrayOf(1, if (primary > 0) 2 else 1)
             "steer_heat" -> intArrayOf(if (primary > 0) 2 else 1)
-            "win_lf" -> intArrayOf(1, primary); "win_rf" -> intArrayOf(2, primary)
-            "win_lr" -> intArrayOf(3, primary); "win_rr" -> intArrayOf(4, primary)
-            "windows_all" -> intArrayOf(primary, primary, primary, primary)
+            // [ĐO xe 2026-09-15] kính MỞ được, ĐÓNG không. Gốc: state cũ = COVER primary (Đóng=0/Mở=1) — Mở gửi
+            // 1 (= WINDOW_OPEN_FULL, chạy), Đóng gửi 0 (= WINDOW_ENABLE/INVALID, KHÔNG phải đóng ⇒ no-op). Enum
+            // đúng của BYDAutoBodyworkDevice: WINDOW_OPEN_FULL=1 · WINDOW_CLOSE=2 · WINDOW_STOP=3 (jadx-tmap
+            // BYDAutoBodyworkDevice.java:367-381, DL3). ⇒ ánh xạ COVER: Mở(primary>0)→1, Đóng→2.
+            // T7 (owner 2026-09-15 "mở 50%"): mức 2 = WINDOW_OPEN_HALF=4 — enum THẬT cùng bảng CLOSE=2/OPEN_FULL=1 đã
+            // đo đúng cả 4 kính (jadx-tmap BYDAutoBodyworkDevice.java:378). 0/1 giữ nguyên. NEEDS-ONCAR (1 lệnh):
+            // `hal set setBodyWindowCtrlState 1,4` rồi `getWindowOpenPercent(1)` ≈ 50. `windows_all` KHÔNG khai mức 2:
+            // `setAllWindowState(a,b,c,d)` nhận CÙNG enum WINDOW_* cho cả 4 ô (OpenBYD gọi `setAllWindowState(s,s,s,s)`
+            // — CarControlImpl.java:1513-1515) nên 1/2 là đúng, nhưng OPEN_HALF cho cả 4 kính chưa từng đo ⇒ không hứa.
+            "win_lf" -> intArrayOf(1, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
+            "win_rf" -> intArrayOf(2, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
+            "win_lr" -> intArrayOf(3, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
+            "win_rr" -> intArrayOf(4, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
+            "windows_all" -> (if (primary > 0) 1 else 2).let { intArrayOf(it, it, it, it) }
             // [ĐO] RE 2026-09-14 §1/§5a: `setAcTemperature(type, value, tempSource, unit)` — lái=0, value=°C thô,
             // tempSource=0, unit=1 (Celsius). Vd 22°C → setAcTemperature(0,22,0,1). Thay `setTemprature` (không tồn tại).
             "temp" -> intArrayOf(0, primary, 0, 1)
-            "window" -> intArrayOf(1, primary)
+            "window" -> intArrayOf(1, if (primary > 0) 1 else 2)   // kính lái nhị-phân: cùng enum WINDOW_* (mở=1/đóng=2)
             "trunk" -> intArrayOf(if (primary > 0) 1 else 2)
             "lock" -> intArrayOf(if (primary > 0) 2 else 1)     // khoá = 2 · mở khoá = 1
             "door" -> intArrayOf(1)                             // NÚT BẤM một chiều: mở khoá (1), không có mặt tắt
             "rain_close" -> intArrayOf(if (primary > 0) 1 else 2)
+            // [ĐO xe 2026-09-15] rèm "bấm mở CHÚT XÍU". Gốc: feature 1330642984 = 0x4F500028
+            // BODYWORK_SUNSHADE_PANEL_PERCENT_SET — nhận PHẦN TRĂM 0..100, không phải 0/1. Gửi 1 = "mở 1%".
+            // ⇒ Mở=100%, Đóng=0% (carsettings Body.java:1653 · WINDOW_OPEN_PERCENT_MAX=100).
+            // T7: rèm đi đường PERCENT (0..100) nên mức 2 = 50 thẳng, không cần enum.
+            "sunshade" -> intArrayOf(when (primary) { 2 -> 50; else -> if (primary > 0) 100 else 0 })
+            // [ĐO xe 2026-09-15] đèn đọc on/off tay không ăn (chế-độ-theo-cửa thì ăn — feature KHÁC 0x4F500038).
+            // feature 1330643002 = 0x4F50003A SET_INSIDE_LIGHT_STATE_SET, enum INSIGHT_LIGHT_OFF=1 · ON=2
+            // (jadx-tmap BYDAutoSettingDevice.java:218-219, DL3). Cũ gửi 0/1 ⇒ không trúng ON=2. ⇒ ON=2, OFF=1.
+            "readl" -> intArrayOf(if (primary > 0) 2 else 1)
             "pm25_clean_now", "seat_memory" -> intArrayOf(1)
+            // ── Bản vá binding 2026-09-15 (`docs/diagnostics/hal-binding-remediation-2026-09-15.md`) — enum lấy từ stub
+            // `../jadx-tmap/sources/android/hardware/bydauto/`, KHÔNG phải 0/1:
+            // đèn ban ngày `setDayTimeLightState` — DAYTIME_LIGHT_OPEN=1 / CLOSE=2 (BYDAutoLightDevice.java:10/:8).
+            "drl" -> intArrayOf(if (primary > 0) 1 else 2)
+            // EV/HEV `setEnergyMode` — index args [EV, HEV] → ENERGY_MODE_EV=1 / HEV=3 (BYDAutoEnergyDevice.java:18/:21).
+            "powertrain_mode" -> intArrayOf(if (primary == 0) 1 else 3)
+            // chế độ lái `setOperationMode` — index args [Thường, Eco, Thể thao, Tuyết] → NORMAL=3 · ECONOMY=1 · SPORT=2 ·
+            // SNOW=4 (BYDAutoEnergyDevice.java:30/:24/:33/:32). Index lạ → NORMAL (không gửi số ngoài enum).
+            // ⚠ [SOÁT 2026-09-15 · NEEDS-ONCAR] CÙNG lớp còn một họ hằng **protected** ngược nhau
+            // (`ENERGY_OPERATION_MODE_NORMAL=1/ECO=2/SPORT=3`, :26-28). Ta chọn họ **public** `ENERGY_OPERATION_*` vì
+            // protected = nội bộ khung, app không gọi tới; nhưng đây là ĐỔI CHẾ ĐỘ LÁI khi xe đang chạy ⇒ chốt bằng
+            // 1 lệnh trước khi tin: `hal set --es dev BYDAutoEnergyDevice --es m setOperationMode --es args 2` rồi
+            // `hal get --es m getOperationMode` phải trả 2 (Thể thao), không phải 3.
+            "drive_mode" -> intArrayOf(when (primary) { 1 -> 1; 2 -> 2; 3 -> 4; else -> 3 })
+            // cửa sổ trời `setMoonRoofState` — cùng enum kính mở=1/đóng=2 (OpenBYD CarControlImpl.java:1503-1505).
+            "sunroof" -> intArrayOf(if (primary > 0) 1 else 2)
+            // sạc ngay `setChargingMode(CHARGE_MODE_IMMEDIATELY=1)` (BYDAutoChargingDevice.java:38) — nút bấm.
+            "start_charging" -> intArrayOf(1)
+            // mục tiêu sạc `setChargeStopCapacityState` — enum RỜI (BYDAutoChargingDevice.java:42-47), % → mốc gần nhất.
+            "target_soc_set" -> intArrayOf(chargeStopCapacityEnum(primary))
+            // sạc không dây `setWirelessChargingSwitchState` — CHARGE_WIRELESS_CHARGING_ON=1 / OFF=2 (:61/:60).
+            "wireless_charge" -> intArrayOf(if (primary > 0) 1 else 2)
+            // camera 360 `setAVMSwitchState` — AVM_FUNCTION_ON=2 / OFF=1 (BYDAutoADASDevice.java:35/:34).
+            "cam" -> intArrayOf(if (primary > 0) 2 else 1)
+            // NEEDS-ONCAR: `avh` `setAVHState` enum on/off chưa có nguồn ⇒ đi nhánh else (1/0) — chốt trên xe.
+            // NEEDS-ONCAR: `camera_view` `setDisplayMode` — gửi index thô, map nhãn↔DISPLAY_MODE_* chưa chốt.
             else -> intArrayOf(primary)
+        }
+
+        /** Các mốc % mà HAL nhận cho mục tiêu sạc (BYDAutoChargingDevice.java:42-47), tăng dần. */
+        private val CHARGE_STOP_MARKS = listOf(50, 60, 70, 80, 90, 100)
+
+        /**
+         * % mục tiêu sạc → enum `CHARGE_STOP_CAPACITY_*` (BYDAutoChargingDevice.java:42-47): 100→1 · 90→2 · 80→3 · 70→4 ·
+         * 60→5 · 50→6. Không phải % thô: gửi 80 = giá trị ngoài enum ⇒ xe bỏ qua. % lẻ → mốc GẦN NHẤT, hoà (85) → mốc
+         * THẤP hơn (an toàn cho pin); ngoài [50,100] kẹp vào biên. THUẦN — khoá bằng `BindingRemediationTest`.
+         */
+        fun chargeStopCapacityEnum(percent: Int): Int {
+            val p = percent.coerceIn(50, 100)
+            val nearest = CHARGE_STOP_MARKS.minBy { kotlin.math.abs(it - p) }   // minBy: hoà → phần tử ĐẦU = mốc thấp
+            return 6 - CHARGE_STOP_MARKS.indexOf(nearest)
         }
 
         /**
          * Phân loại `bindingKey` → [BindingRoute] (thuần, test được):
          *  • rỗng → [BindingRoute.None];
          *  • toàn số (có thể âm) → [BindingRoute.Feature];
-         *  • có `.`: tiền tố `BYDAuto…` → [NamedMethod] (FQN suy ra); `AudioManager`/`AutoContainer` → [Local];
-         *    còn lại (vd `NaviInfo`) → [None];
+         *  • có `.`: tiền tố `BYDAuto…` → [NamedMethod] (FQN suy ra); [LOCAL_TARGETS] → [Local]; còn lại (vd
+         *    `NaviInfo` — GPS, BLOCKED-BY-DESIGN) → [None];
          *  • lowercase snake (`unit_temperature`) → [Setting];
          *  • còn lại (UPPER_SNAKE / PascalCase command) → [None] (NEEDS_CAR grab-list).
          */
@@ -188,7 +319,7 @@ class HalBindingTable(private val gateway: HalGateway) {
                 val method = bindingKey.substring(dot + 1)
                 return when {
                     prefix.startsWith("BYDAuto") -> BindingRoute.NamedMethod(deviceFqn(prefix), method)
-                    prefix == "AudioManager" || prefix == "AutoContainer" -> BindingRoute.Local(prefix, method)
+                    prefix in LOCAL_TARGETS -> BindingRoute.Local(prefix, method)
                     else -> BindingRoute.None
                 }
             }
@@ -252,17 +383,33 @@ class HalBindingTable(private val gateway: HalGateway) {
         /** Chuỗi thô có phải sentinel không (feature-id đọc trả int=sentinel). */
         fun rawIsSentinel(raw: String): Boolean = coerceInt(raw)?.toLong().let { isSentinelRc(it) }
 
-        /** Parse Int từ chuỗi thô: ưu tiên `int=<n>` (EventValue), rồi số thuần / phần nguyên của số thực. */
+        /**
+         * Mảng từ gateway ("[a, b, …]" — `BydHal.arrayToStr`, ≥2 phần tử; 1 phần tử đã là số trần) → phần tử ĐẦU.
+         * [ĐO] §B remediation 2026-09-15: getter trả `int[]`/`byte[]` (PM2.5 value/level, wheel_speed…) từng ra
+         * `"[I@hash"` ⇒ "—". Không phải mảng → trả nguyên chuỗi. [readIntList] (radar 8 vùng) vẫn đọc cả mảng.
+         */
+        private fun firstOfArray(s: String): String =
+            if (s.startsWith("[")) s.removePrefix("[").substringBefore(',').substringBefore(']').trim() else s
+
+        /**
+         * Parse Int từ chuỗi thô: ưu tiên `int=<n>` (EventValue), rồi số thuần, rồi `float=<x>` làm tròn; mảng → [0].
+         *
+         * Nhánh `float=` [SOÁT 2026-09-15 · P1]: `BydHal.readFeature` **rút** ô sentinel ra khỏi chuỗi (`int=-`) vì
+         * `BYDAutoEventValue` khởi tạo cả hai field bằng sentinel — một feature kiểu float hợp lệ vẫn mang
+         * `intValue = -999999999`. Không có nhánh này thì mọi datum float-only (đọc bằng [readInt]) thành "—".
+         */
         fun coerceInt(raw: String?): Int? {
-            val s = raw?.trim() ?: return null
+            val s = raw?.trim()?.let(::firstOfArray) ?: return null
             Regex("int=(-?\\d+)").find(s)?.let { return it.groupValues[1].toIntOrNull() }
             s.toIntOrNull()?.let { return it }
+            Regex("float=(-?[0-9.]+)").find(s)?.groupValues?.get(1)?.toDoubleOrNull()
+                ?.let { if (it.isFinite()) return Math.round(it).toInt() }
             return s.toDoubleOrNull()?.let { if (it.isFinite()) Math.round(it).toInt() else null }
         }
 
-        /** Parse Double từ chuỗi thô: ưu tiên `float=<x>` (EventValue), rồi số thuần / `int=`. */
+        /** Parse Double từ chuỗi thô: ưu tiên `float=<x>` (EventValue), rồi số thuần / `int=`; mảng → [0]. */
         fun coerceDouble(raw: String?): Double? {
-            val s = raw?.trim() ?: return null
+            val s = raw?.trim()?.let(::firstOfArray) ?: return null
             Regex("float=(-?[0-9.]+)").find(s)?.let { return it.groupValues[1].toDoubleOrNull() }
             s.toDoubleOrNull()?.let { return it }
             return coerceInt(s)?.toDouble()

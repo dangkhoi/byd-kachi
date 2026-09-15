@@ -76,9 +76,9 @@ class AppMover(
                 sleepMs(1000)
                 if (findTaskIdOnDisplay(pkg, displayId) == null) {
                     val denied = launchWasDenied(result)
-                    log("cast R1 did not land $pkg on display $displayId (${if (denied) "Permission Denial" else "redirected/absent"}) → R2 move-stack fallback")
-                    if (!moveStackToCluster(pkg, displayId, launchCmd)) {
-                        log("cast FAIL: R1 (am start) + R2 (move-stack) both failed to place $pkg on display $displayId")
+                    log("cast R1 did not land $pkg on display $displayId (${if (denied) "Permission Denial" else "redirected/absent"}) → R2 move-task fallback")
+                    if (!moveTaskToCluster(pkg, displayId, launchCmd)) {
+                        log("cast FAIL: R1 (am start) + R2 (move-task) both failed to place $pkg on display $displayId")
                         return null
                     }
                 }
@@ -90,43 +90,32 @@ class AppMover(
     }
 
     /**
-     * R2 (X2) — bê stack của [pkg] (đang bị bỏ lại trên display 0 sau khi R1 `am start --display` bị
-     * Permission Denial / redirect) lên VD cụm bằng `am display move-stack <stackId> <VD>`.
+     * R2 (X2) — đưa app [pkg] (bị bỏ lại trên display 0 sau khi R1 `am start --display` bị Permission Denial /
+     * redirect) lên VD cụm bằng đường **AN TOÀN** `am stack move-task <taskId> <clusterStackId> true`.
      *
-     * Đây là đường proven trên xe trong `ClusterCast.placeLadder` R2: move-stack đi thẳng
-     * ATMS.moveStackToDisplay → ActivityStack.reparent (KHÔNG qua ActivityStarter/SafeActivityOptions),
-     * nên reparent VÔ ĐIỀU KIỆN — vượt qua đúng cái gate `launchDisplayId` chặn R1. Sau khi reparent, bắn
-     * lại [reissueCmd] để ép composite (task đã ở trên VD nên không thể bị kéo ngược về display 0).
+     * ⚠ [P0-1 · quality-review 2026-09-15] TRƯỚC ĐÂY dùng `am display move-stack` — chính repo CẤM bằng chữ:
+     * `CarExecClusterProjectionCatalog.kt:60-83` ghi lệnh này **treo system_server 3/3** trên DiLink3 (NPE
+     * `DisplayContent.moveStackToDisplay`, `TaskStack.mDisplayContent=null` khi vượt biên FREEFORM), phải rút cắm
+     * lại, Android 10 không patch; `CastShell.kt` cũng cấm ở mọi nhánh. KDoc cũ bảo "proven ClusterCast.placeLadder"
+     * nhưng ClusterCast là code **chết không chạy tới** ⇒ nhãn proven vô căn cứ. Nay dùng move-task như nhánh CP/AA
+     * (đã proven): chuyển TASK của app vào một stack ĐÃ nằm trên màn cụm (dựng freeform để giữ fit-to-slot).
+     * `true` = di chuyển cả các task phía trên trong stack nguồn cùng lên.
      *
-     * @return true nếu SAU move-stack app đã bám VD (kiểm bằng `am stack list`), else false.
+     * @return true nếu SAU move-task app đã bám VD (kiểm bằng `am stack list`), else false.
+     * 🚗 Cần verify trên xe ĐỖ (owner 2026-09-15: lên xe test trước khi push).
      */
-    private fun moveStackToCluster(pkg: String, displayId: Int, reissueCmd: String): Boolean {
-        val list = shell.execute("am stack list")
-        if (!list.success) { log("move-stack: am stack list failed"); return false }
-        // Ưu tiên stack của app trên display 0 (nơi R1 bị đẩy về); nếu không thấy, lấy stack bất kỳ của app
-        // KHÔNG nằm sẵn trên VD (tránh move-stack chính nó).
-        val stackId = CastStackParser.findStackIdForPkg(list.stdout, pkg, 0)
-            ?: findStackIdForPkgAnyDisplayExcept(list.stdout, pkg, displayId)
-        if (stackId == null) { log("move-stack: no stack hosting $pkg off the cluster to move"); return false }
-        val out = shell.execute("am display move-stack $stackId $displayId")
-        if (moveStackRejected(out)) { log("move-stack rejected: ${out.stderr.take(120)}${out.stdout.take(120)}"); return false }
+    private fun moveTaskToCluster(pkg: String, displayId: Int, reissueCmd: String): Boolean {
+        val taskId = findTaskId(pkg)
+        if (taskId == null) { log("move-task: no task hosting $pkg to move"); return false }
+        val clusterStackId = findOrCreateClusterStack(displayId, windowingMode = 5)
+        if (clusterStackId == null) { log("move-task: cannot find/create stack on display $displayId"); return false }
+        val out = shell.execute("am stack move-task $taskId $clusterStackId true")
+        if (!out.success) { log("move-task rejected: ${out.stderr.take(120)}${out.stdout.take(120)}"); return false }
         // Ép composite: task đã ở VD nên am start không kéo được về 0.
         shell.execute(reissueCmd)
         sleepMs(700)
         return findTaskIdOnDisplay(pkg, displayId) != null
     }
-
-    /** Stack id của [pkg] trên display bất kỳ TRỪ [exceptDisplayId]; null nếu không có. */
-    private fun findStackIdForPkgAnyDisplayExcept(amOutput: String, pkg: String, exceptDisplayId: Int): Int? {
-        for (d in parseDisplayIds(amOutput)) {
-            if (d == exceptDisplayId) continue
-            CastStackParser.findStackIdForPkg(amOutput, pkg, d)?.let { return it }
-        }
-        return null
-    }
-
-    private fun parseDisplayIds(amOutput: String): List<Int> =
-        Regex("""displayId=(\d+)""").findAll(amOutput).mapNotNull { it.groupValues[1].toIntOrNull() }.distinct().toList()
 
     /** R1 bị SafeActivityOptions từ chối (VD của uid khác)? Đọc cả stdout lẫn stderr (am in Permission Denial ra cả 2). */
     private fun launchWasDenied(result: ShellResult): Boolean {
@@ -135,33 +124,24 @@ class AppMover(
             (text.contains("SecurityException") && text.contains("launchDisplayId"))
     }
 
-    /** `am display move-stack` bị framework từ chối (không tồn tại stack / reparent ném). */
-    private fun moveStackRejected(result: ShellResult): Boolean {
-        if (!result.success) return true
-        val text = (result.stdout + "\n" + result.stderr)
-        return text.contains("Exception", ignoreCase = true) ||
-            text.contains("Error", ignoreCase = true) ||
-            text.contains("no stack", ignoreCase = true)
-    }
-
     /**
      * Find an existing stack on the cluster display (any mode).
      * If none exists, launch a lightweight activity in FULLSCREEN mode to create one.
      * CP/AA must be in fullscreen stack — freeform causes tiny bounds + crash on return.
      * The dummy activity gets displaced when CP/AA moves into the stack.
      */
-    private fun findOrCreateClusterStack(displayId: Int): Int? {
+    private fun findOrCreateClusterStack(displayId: Int, windowingMode: Int = 1): Int? {
         // First: check if a stack already exists on the display
         findStackOnDisplay(displayId)?.let {
-            log("CP: found existing stack $it on display $displayId")
+            log("cluster stack: found existing $it on display $displayId")
             return it
         }
-        // None exists — launch a FULLSCREEN activity to create the stack structure.
-        // windowingMode 1 (fullscreen) so CP inherits fullscreen mode, not freeform.
-        // Using settings as it's lightweight and exists on every BYD head unit.
-        log("CP: no stack on display $displayId, creating fullscreen stack via Settings")
+        // None exists — launch a lightweight activity (Settings, có trên mọi đầu xe BYD) để DỰNG cấu trúc stack
+        // trên màn cụm với [windowingMode] mong muốn: 1 = fullscreen (CP/AA), 5 = freeform (app thường — giữ được
+        // fit-to-slot mà fitToCluster làm sau). move-task sau đó đẩy Settings ra.
+        log("cluster stack: none on display $displayId, creating (mode=$windowingMode) via Settings")
         shell.execute(
-            "am start --display $displayId --windowingMode 1 -n 'com.android.settings/.Settings'"
+            "am start --display $displayId --windowingMode $windowingMode -n 'com.android.settings/.Settings'"
         )
         sleepMs(1500)
         // Stack now exists; CP/AA move-task will displace settings automatically.
@@ -428,43 +408,17 @@ class AppMover(
             "am start --display 0 --windowingMode 1 -f 0x20000000" +
                 " -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n '$component'"
 
-        /** Known CarPlay packages on BYD DiLink. */
-        private val CARPLAY_PACKAGES = setOf(
-            "com.byd.autolink.carplay",
-            "com.byd.carlife.carplay",
-            "com.byd.carplay.ui",
-        )
-
-        /** Known Android Auto packages on BYD DiLink. */
-        private val ANDROID_AUTO_PACKAGES = setOf(
-            "com.byd.autolink.androidauto",
-            "com.google.android.projection.gearhead",
-        )
-
-        /** Classifies a package into AppType. */
+        /**
+         * Phân loại app → [AppType]. Hằng/logic nay ở [ProjectionApps] (nguồn DUY NHẤT — Pha 3c). Đây giữ làm
+         * facade "authoritative" mà SimpleCast/bridge/bubble đang gọi (giữ API ổn định), chỉ uỷ quyền phân loại.
+         */
         fun classifyApp(pkg: String): AppType = when {
-            CARPLAY_PACKAGES.contains(pkg) || pkg.contains("carplay", ignoreCase = true) ->
-                AppType.CARPLAY
-            ANDROID_AUTO_PACKAGES.contains(pkg) || pkg.contains("android.auto", ignoreCase = true)
-                || pkg.contains("androidauto", ignoreCase = true) ->
-                AppType.ANDROID_AUTO
+            ProjectionApps.isCarPlay(pkg) -> AppType.CARPLAY
+            ProjectionApps.isAndroidAuto(pkg) -> AppType.ANDROID_AUTO
             else -> AppType.NORMAL
         }
 
-        /**
-         * True when [pkg] is a launcher / home-screen package that must never be cast to the
-         * cluster (#3, R2 — docs/specs/cast-nav-ux-release-v104.html). Casting a launcher moves the
-         * BYD Dudu home task off display 0 and freezes the main screen (owner-observed 2026-08).
-         *
-         * Pure string match (no PackageManager) so it can run in :core and be unit-tested off-car;
-         * the app layer UNIONs this with the runtime CATEGORY_HOME package list (which also catches
-         * OEM launchers whose id contains neither token). Matches:
-         *  - any id containing "launcher" (case-insensitive): com.android.launcher3, Nova, etc.
-         *  - the BYD Dudu home: prefix "com.byd.dudu" or any id containing "dudu".
-         */
-        fun isLauncher(pkg: String): Boolean {
-            val p = pkg.lowercase()
-            return p.contains("launcher") || p.startsWith("com.byd.dudu") || p.contains("dudu")
-        }
+        /** Launcher/home KHÔNG được chiếu (guard R2 #3). Uỷ quyền [ProjectionApps.isLauncher] (nguồn duy nhất). */
+        fun isLauncher(pkg: String): Boolean = ProjectionApps.isLauncher(pkg)
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -77,6 +78,8 @@ class VdAppHost(
     /** H2: khoá theo dõi ở [SlotLiveProbe] — riêng cho từng chủ×ô để hai màn Kachi không đạp lên nhau. */
     private val probeKey = "$owner#$slot"
 
+    private companion object { const val TAG = "VdAppHost" }
+
     /** H2: thẻ "app đã đóng — chạm để mở lại"; chỉ dựng khi thật sự cần (ô sống thì không tốn view nào). */
     private var closedCard: TextView? = null
 
@@ -101,7 +104,7 @@ class VdAppHost(
                     // xoay nay làm bằng `wm set-fix-to-user-rotation` qua shell SAU khi tạo VD (xem [maybeLaunch]) —
                     // khoá hướng mà KHÔNG đổi cờ hiển thị nên không đổi đường composite (app vẫn vẽ vào ô như cũ).
                     val name = "kachi-slot-$slot-${System.currentTimeMillis()}"
-                    val created = dm.createVirtualDisplay(name, w, ht, densityDpi, h.surface, 8 or 256)
+                    val created = dm.createVirtualDisplay(name, w, ht, slotDensity(w, ht), h.surface, 8 or 256)
                     vd = created
                     dispW = w; dispH = ht          // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
                     // B2b: đăng ký display của VD (thuộc LAUNCHER) TRƯỚC maybeLaunch — nếu không, cổng ownership
@@ -116,12 +119,31 @@ class VdAppHost(
                     maybeLaunch()
                 } else {
                     v.surface = h.surface
-                    v.resize(w, ht, densityDpi)
+                    v.resize(w, ht, slotDensity(w, ht))   // R5: cỡ ô đổi ⇒ tính lại đòn bẩy mật độ theo cạnh ngắn mới
                     dispW = w; dispH = ht          // B4: giữ cỡ VD đồng bộ để map toạ độ đúng sau resize
                 }
             }
             override fun surfaceDestroyed(h: SurfaceHolder) { vd?.surface = null }
         })
+    }
+
+    /**
+     * R5 · ĐÒN BẨY MẬT ĐỘ (generic, spec §4.4). Mật độ thật đặt cho màn ảo của ô = [SlotDensity.forTablet] theo
+     * **cạnh ngắn** của ô, để `smallestScreenWidthDp ≥ 600` ⇒ app có layout tablet không đòi portrait ⇒ không rơi
+     * size-compat (bug "YouTube co dải dọc giữa ô khi play", owner 2026-09-15). Truyền NGAY lúc
+     * `createVirtualDisplay`/`resize` (không qua `wm density` shell ⇒ không ghi `display_settings.xml`, không cần
+     * đường trả lại — CLAUDE §5). Không hỏi tên gói, không hỏi to/bé; ô đã ≥600dp thì giữ [densityDpi] nguyên.
+     * Kỳ vọng: app đầy khung; video 16:9 chỉ full-pixel ở fullscreen player. Log một dòng để đo trên xe.
+     */
+    private fun slotDensity(w: Int, h: Int): Int {
+        val short = minOf(w, h)
+        val dpi = SlotDensity.forTablet(short, densityDpi)
+        Log.i(
+            TAG,
+            "[slot-density] slot=$slot short=$short dpi=$densityDpi→$dpi" +
+                " (%.1fdp→%.1fdp)".format(SlotDensity.dpOf(short, densityDpi), SlotDensity.dpOf(short, dpi)),
+        )
+        return dpi
     }
 
     /** Bind the package + the uid-2000 shell seam; launches once the surface/VD is ready. */

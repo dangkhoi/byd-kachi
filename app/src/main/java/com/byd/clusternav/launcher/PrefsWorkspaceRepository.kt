@@ -95,7 +95,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
      */
     override fun load(): HomeUiState {
         val base = HomeUiState(
-            workspace = defaultIfEmpty(prefs.load()),
+            // `.sanitized()`: chữa state cũ đã lưu cùng app ở hai ô (trước bản vá MỘT-APP-MỘT-Ô 2026-09-15) —
+            // nạp thẳng qua constructor không đi qua withSlot nên phải ép bất biến ở đây, nếu không ô trùng vẫn hiện.
+            workspace = defaultIfEmpty(prefs.load().sanitized()),
             dock = prefs.loadDock(),
             activeProfile = prefs.activeProfile(),
             profiles = prefs.profiles(),

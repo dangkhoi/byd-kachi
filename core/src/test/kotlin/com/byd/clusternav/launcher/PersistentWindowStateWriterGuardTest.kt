@@ -90,7 +90,7 @@ class PersistentWindowStateWriterGuardTest {
                 "FreeformSeedPolicy.kt",      // ✅ SANCTIONED — :core system, sizeCmd() (the launcher/consolidation API).
                 "CastGeometryController.kt",  // ⏳ DEFERRED — :core cast, resizeFull() wm-size fallback. TODO(on-car).
                 "DisplayConfigurator.kt",     // ⏳ DEFERRED — :core cast, apply() per-app-type wm size. TODO(on-car).
-                "CastShell.kt",               // ⏳ DEFERRED — :app cast, forceDisplaySize(). TODO(on-car).
+                // CastShell.kt XOÁ (quality-review 2026-09-15 Pha 3 — orchestrator cast chết đã gỡ).
             ),
             writers,
             "wm-size writer set changed. Discovered=$writers. Cluster-geometry writes are DEFERRED (proven, " +
@@ -107,8 +107,7 @@ class PersistentWindowStateWriterGuardTest {
                 "CastGeometryController.kt",           // ⏳ DEFERRED — :core cast, applySavedProfile() density. TODO(on-car).
                 "DisplayConfigurator.kt",              // ⏳ DEFERRED — :core cast, apply() density. TODO(on-car).
                 "CastDensityControl.kt",               // ⏳ DEFERRED — :core cast, set()/setForSplit() density. TODO(on-car).
-                "CastShell.kt",                        // ⏳ DEFERRED — :app cast, forceDisplaySize() density. TODO(on-car).
-                "ClusterCast.kt",                      // ⏳ DEFERRED — :app cast, setDensityIfNeeded/applyScaleLive. TODO(on-car).
+                // CastShell.kt + ClusterCast.kt XOÁ (quality-review 2026-09-15 Pha 3 — orchestrator cast chết đã gỡ).
                 "CarExecClusterProjectionCatalog.kt",  // ⏳ DEFERRED — :core carexec, probe/operator catalog template. TODO(on-car).
             ),
             writers,

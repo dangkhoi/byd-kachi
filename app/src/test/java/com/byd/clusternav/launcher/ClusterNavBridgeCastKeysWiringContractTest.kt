@@ -133,8 +133,12 @@ class ClusterNavBridgeCastKeysWiringContractTest {
     @Test
     fun `reset VD chi chay khi do duoc display id`() {
         val deep = body(cast(), "fun ClusterNavBridge.deepRescue(")
-        assertTrue("DisplayParse.clusterDisplayId(" in deep, "phải ĐO display id từ dumpsys, không đoán")
-        assertTrue("if (vd >= 0)" in deep, "không đo được display thì KHÔNG chạy lệnh reset nào")
+        // 2026-09-15 R2 (cast rơi slot-VD display 1): đo qua ClusterDisplayResolver.resolve(out, selfPackage) — parser
+        // + owner-guard (cụm không bao giờ là VD của chính launcher); parser thô DisplayParse.clusterDisplayId né guard.
+        assertTrue("ClusterDisplayResolver.resolve(" in deep, "phải ĐO display id qua resolver có owner-guard, không đoán")
+        assertTrue("BuildConfig.APPLICATION_ID" in deep, "truyền gói của mình để guard loại slot-VD do launcher sở hữu")
+        assertTrue("DisplayParse.clusterDisplayId(" !in deep, "parser thô né owner-guard — cấm ở deepRescue")
+        assertTrue("if (vd >= 1)" in deep, "không đo được (-1) hoặc display 0 (màn giữa) thì KHÔNG chạy lệnh reset nào")
         assertTrue("-d \$vd" in deep, "mọi lệnh wm phải nhắm tường minh display vừa đo")
     }
 

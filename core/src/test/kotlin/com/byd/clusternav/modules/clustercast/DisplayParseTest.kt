@@ -1,7 +1,9 @@
 package com.byd.clusternav.modules.clustercast
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -72,5 +74,41 @@ class DisplayParseTest {
         assertEquals(200 to 320, DisplayParse.density(WM_DISPLAYS, 1))   // đã bị ép: base 200, gốc 320
         assertEquals(240 to 240, DisplayParse.density(WM_DISPLAYS, 0))   // chưa ép: không có base → đang == gốc
         assertNull(DisplayParse.density(WM_DISPLAYS, 9))
+    }
+
+    // ── Regression 2026-09-15: cast rơi display 1 (slot launcher) thay vì 2 (cụm) — spec kachi-hal187 R1/R2 ──
+
+    /** (a) Parser trên output THẬT của DETECT_CMD → 2, không phải 1 (lỗi là timing, không phải parser). */
+    @Test fun `clusterDisplayId tren grep that 2026-09-15 ra 2`() {
+        assertEquals(2, DisplayParse.clusterDisplayId(CastDisplayFixtures2026_09_15.DETECT_OUT))
+        // Thêm dòng slot-VD (grep mở rộng `virtual:`) không đổi kết quả.
+        assertEquals(2, DisplayParse.clusterDisplayId(CastDisplayFixtures2026_09_15.DETECT_OUT_WITH_SLOT))
+        // Chưa có fission (trước khi mở projection) → -1, KHÔNG bịa.
+        assertEquals(-1, DisplayParse.clusterDisplayId(CastDisplayFixtures2026_09_15.DETECT_OUT_SLOT_ONLY))
+    }
+
+    /** R2: nhận diện VD do chính launcher sở hữu (owner/uniqueId `virtual:<pkg>,`) — qua cả 2 đường (a)/(b). */
+    @Test fun `ownedVirtualDisplayIds nhan dien slot-VD cua launcher`() {
+        val pkg = CastDisplayFixtures2026_09_15.LAUNCHER_PKG
+        // (a) dòng DisplayInfo có sẵn displayId + uniqueId owner.
+        assertEquals(setOf(1), DisplayParse.ownedVirtualDisplayIds(CastDisplayFixtures2026_09_15.DETECT_OUT_WITH_SLOT, pkg))
+        // (b) dump đầy đủ: header `Display N:` + `mPrimaryDisplayDevice=<name>` với name của device owner=launcher.
+        val fullDump = """
+            |${CastDisplayFixtures2026_09_15.SLOT_DEVICE_LINE}
+            |  Display 0:
+            |    mPrimaryDisplayDevice=Built-in Screen
+            |  Display 1:
+            |    mPrimaryDisplayDevice=kachi-slot-0-1789473433259
+            |  Display 2:
+            |    mPrimaryDisplayDevice=fission_bg_xdjaVirtualSurface
+            |""".trimMargin()
+        assertEquals(setOf(1), DisplayParse.ownedVirtualDisplayIds(fullDump, pkg))
+        assertTrue(DisplayParse.isOwnedVirtualDisplay(fullDump, 1, pkg))
+        assertFalse(DisplayParse.isOwnedVirtualDisplay(fullDump, 2, pkg), "cụm fission không thuộc launcher")
+        // Gói khác / rỗng → không nhận gì (guard theo tham số, không hardcode tên gói).
+        assertEquals(emptySet<Int>(), DisplayParse.ownedVirtualDisplayIds(fullDump, "com.other.app"))
+        assertEquals(emptySet<Int>(), DisplayParse.ownedVirtualDisplayIds(fullDump, ""))
+        // Không có slot nào → rỗng.
+        assertEquals(emptySet<Int>(), DisplayParse.ownedVirtualDisplayIds(CastDisplayFixtures2026_09_15.DETECT_OUT, pkg))
     }
 }

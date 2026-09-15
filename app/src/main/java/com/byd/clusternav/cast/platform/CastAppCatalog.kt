@@ -1,4 +1,5 @@
 package com.byd.clusternav.cast.platform
+import com.byd.clusternav.modules.clustercast.simplified.ProjectionApps
 
 import com.byd.clusternav.modules.clustercast.AppScale
 import com.byd.clusternav.modules.clustercast.model.*
@@ -75,7 +76,7 @@ class CastAppCatalog(
     }
 
     fun evidence(packageName: String, connectedPhoneSession: Boolean? = null): TargetEvidence = TargetEvidence(
-        projectionComponent = PROJECTION_HINTS.any { packageName.lowercase().contains(it) },
+        projectionComponent = ProjectionApps.isProjectionComponent(packageName),
         connectedPhoneSession = connectedPhoneSession,
         userProtected = packageName in protectedPackages(),
     )
@@ -235,6 +236,5 @@ class CastAppCatalog(
     companion object {
         const val MIGRATION_VERSION = 2
         private val PACKAGE = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+")
-        private val PROJECTION_HINTS = listOf("projection.sink", "aapactivity", "aapvideo", "carplay", "androidauto")
     }
 }

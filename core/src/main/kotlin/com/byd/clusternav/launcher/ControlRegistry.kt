@@ -170,8 +170,12 @@ data class DockConfig(
 object ControlRegistry {
     val ALL: List<ControlDef> = listOf(
         // ── 20 nút GỐC (giữ nguyên id + thứ tự + cờ default; bổ sung domain/tier/bindingKey) ───────
+        // NEEDS-ONCAR: khoá cửa. [ĐO] stub `BYDAutoDoorLockDevice` (L hoa — cũ viết `Doorlock` ⇒ ClassNotFound) CHỈ có
+        // `getDoorLockStatus(int)` (BYDAutoDoorLockDevice.java:41), KHÔNG có `setDoorLockState`. Giữ named-method với
+        // tên lớp ĐÚNG để `HalWriteProbe` ghi lại đúng chuỗi ngoại lệ trên xe (bằng chứng cho grab-list) thay vì
+        // ClassNotFound vô nghĩa; setter khoá-ngay có thể không expose qua HAL app → chốt trên xe.
         ControlDef("lock", "Khoá / mở khoá", "ic-car-top-lock", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState",
+            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorLockDevice.setDoorLockState",
             labelEn = "Lock / unlock"),
         // ⚠ [ĐO] 2026-09-11: nút này TỪNG mang nhãn "Kính 50%" nhưng ghi ĐÚNG CÙNG lệnh với "win_lf"
         // (`setBodyWindowCtrlState(1, state)` — kính CỬA LÁI, chỉ đóng/mở, KHÔNG có nửa). Nhãn cũ hứa thứ xe không
@@ -206,23 +210,33 @@ object ControlRegistry {
         ControlDef("defrost", "Sấy kính", "ic-defrost", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219362",
             labelEn = "Defrost"),
+        // [ĐO] `setAVMSwitchState(int)` BYDAutoADASDevice.java:348 — AVM_FUNCTION_OFF=1 / ON=2 (:34-35); args ở
+        // HalBindingTable.writeArgs. Cũ pseudo-id `3001` không có trong BYDAutoFeatureIds (bịa) và trùng với camera_view.
         ControlDef("cam", "Camera 360", "ic-cam", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "3001",
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoADASDevice.setAVMSwitchState",
             labelEn = "360 camera"),
         // ⚠ [SOÁT P0 · vòng 2] TRƯỚC ĐÂY là TOGGLE nhãn "Mở cửa" — nghĩa là **tắt nó thì KHOÁ xe**, mà nhãn không
         // nói điều đó. Sau khi vá P0 (tắt = gửi 2 = khoá thật) thì đây lại đúng họ lỗi vừa dọn: "nhãn hứa việc A,
         // trạng thái kia làm việc B". Nút BẤM một chiều thì không có mặt-tắt để nói dối: bấm = mở khoá, hết.
+        // NEEDS-ONCAR: cùng setter chưa tồn tại như `lock` (xem chú thích ở đó) — chỉ sửa case tên lớp.
         ControlDef("door", "Mở khoá cửa", "ic-car-top-door-all", ControlKind.BUTTON,
-            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorlockDevice.setDoorLockState",
+            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorLockDevice.setDoorLockState",
             labelEn = "Unlock doors"),
+        // NEEDS-ONCAR: hood — nghiêng UNAVAILABLE (BODYWORK_CMD_DOOR_HOOD=5 chỉ là area ĐỌC, không có lệnh mở).
         ControlDef("hood", "Ca-pô", "ic-car-top-hood", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BODYWORK_CMD_HOOD",
             labelEn = "Bonnet"),
+        // [ĐO] `setMoonRoofState(int)` BYDAutoBodyworkDevice.java:587; OpenBYD gọi thật với state chung enum kính
+        // (CarControlImpl.java:1503-1505, windowId=5 → mở=1/đóng=2). Cũ `setSunroofState` KHÔNG tồn tại.
         ControlDef("sunroof", "Cửa sổ trời", "ic-car-top-sunroof", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setSunroofState",
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setMoonRoofState",
             labelEn = "Sunroof"),
+        // NEEDS-ONCAR: headl. [ĐO] feature 1276153912 = INSTRUMENT_HEADLIGHT_CONTROL_SET thuộc INSTRUMENT(1007), và
+        // `headlight_mode` (SELECT, phủ cả 4 trạng thái) đã giữ id đó. Enum on/off của id này chưa có nguồn nên KHÔNG
+        // thể tách byte an toàn ⇒ gỡ id khỏi nút này (khoá UPPER_SNAKE → BindingRoute.None) để hai nút không còn gửi
+        // cùng một byte cho hai nghĩa; chốt enum trên xe rồi mới nối lại.
         ControlDef("headl", "Đèn pha", "ic-car-front-highbeam", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153912",
+            domain = Domain.LIGHTS, tier = EvidenceTier.NEEDS_CAR, bindingKey = "INSTRUMENT_HEADLIGHT_ON_OFF",
             labelEn = "Headlights"),
         ControlDef("seath", "Ghế sưởi", "ic-seat", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
@@ -230,14 +244,17 @@ object ControlRegistry {
         ControlDef("recirc", "Lấy gió trong", "ic-recirc", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219355",
             labelEn = "Recirculation"),
+        // [ĐO] `setDayTimeLightState(int)` BYDAutoLightDevice.java:209 — DAYTIME_LIGHT_OPEN=1 / CLOSE=2 (:10/:8); args ở
+        // HalBindingTable.writeArgs. Cũ ghi feature 985661476 = hằng `_STATE` (đọc) ⇒ no-op.
         ControlDef("drl", "Đèn ban ngày", "ic-car-front-drl", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "985661476",
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoLightDevice.setDayTimeLightState",
             // `shortEn` vì nhãn Anh dài 20 ký tự — trong ô hàng nút của nhóm *Đèn* nó bị cắt thành `"Daytime
             // lights (D…"`. Bản Việt (12 ký tự, ba từ ngắn) tự ngắt dòng vừa nên không cần bản ngắn riêng.
             labelEn = "Daytime lights (DRL)", shortEn = "Daytime (DRL)"),
         ControlDef("vol", "Âm lượng", "ic-volume", ControlKind.STEP, value = 12, min = 0, max = 30, step = 1,
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.PROVEN, bindingKey = "AudioManager.setStreamVolume",
             labelEn = "Volume"),
+        // BINDING-OK: 321912848 = WIPER_FRONT_WIPER_LEVEL đúng id (caveat device-target — NEEDS-ONCAR).
         ControlDef("wiper", "Gạt mưa", "ic-wiper", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "321912848",
             labelEn = "Wipers"),
@@ -275,31 +292,32 @@ object ControlRegistry {
         // người dùng chỉ phải học một bộ viết tắt cho cả xe.
         ControlDef("win_lf", "Kính trước-trái", "ic-car-top-window-lf", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở"),
-            labelEn = "Window front-left", argsEn = listOf("Close", "Open"),
+            args = listOf("Đóng", "Mở", "Nửa"),   // T7: mức 2 = WINDOW_OPEN_HALF=4 (writeArgs)
+            labelEn = "Window front-left", argsEn = listOf("Close", "Open", "Half"),
             short = "Kính TT", shortEn = "Window FL"),
         ControlDef("win_rf", "Kính trước-phải", "ic-car-top-window-rf", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở"),
-            labelEn = "Window front-right", argsEn = listOf("Close", "Open"),
+            args = listOf("Đóng", "Mở", "Nửa"),
+            labelEn = "Window front-right", argsEn = listOf("Close", "Open", "Half"),
             short = "Kính TP", shortEn = "Window FR"),
         ControlDef("win_lr", "Kính sau-trái", "ic-car-top-window-lr", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở"),
-            labelEn = "Window rear-left", argsEn = listOf("Close", "Open"),
+            args = listOf("Đóng", "Mở", "Nửa"),
+            labelEn = "Window rear-left", argsEn = listOf("Close", "Open", "Half"),
             short = "Kính ST", shortEn = "Window RL"),
         ControlDef("win_rr", "Kính sau-phải", "ic-car-top-window-rr", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            args = listOf("Đóng", "Mở"),
-            labelEn = "Window rear-right", argsEn = listOf("Close", "Open"),
+            args = listOf("Đóng", "Mở", "Nửa"),
+            labelEn = "Window rear-right", argsEn = listOf("Close", "Open", "Half"),
             short = "Kính SP", shortEn = "Window RR"),
         ControlDef("windows_all", "Tất cả kính", "ic-car-top-window-all", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setAllWindowState",
             args = listOf("Đóng", "Mở"),
             labelEn = "All windows", argsEn = listOf("Close", "Open")),
         ControlDef("sunshade", "Rèm che nắng", "ic-car-top-sunshade", ControlKind.COVER,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở"),
-            labelEn = "Sunshade", argsEn = listOf("Close", "Open")),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở", "Nửa"),
+            labelEn = "Sunshade", argsEn = listOf("Close", "Open", "Half")),   // T7: mức 2 = 50% (đường percent)
+        // NEEDS-ONCAR: child_lock / mirror_auto / mirror_fold_btn — feature-id vô danh, không có named-method.
         ControlDef("child_lock", "Khoá trẻ em", "ic-lock", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276141584",
             labelEn = "Child lock"),
@@ -318,6 +336,7 @@ object ControlRegistry {
             halDevice = "BYDAutoSettingDevice",
             labelEn = "Driver seat memory"),
         // Đèn
+        // NEEDS-ONCAR: 4 nút ambient_* — device nghi SETTING(1023) atmosphere-lamp; scale nghi 0–100 (không 0–10), màu 31.
         ControlDef("ambient_power", "Đèn viền cabin", "ic-car-top-ambient", ControlKind.TOGGLE,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153924",
             // ⚠ Nhãn Anh phải TRÙNG với datum `ambient_enabled` **đúng như bản Việt trùng nhau** ("Đèn viền cabin"):
@@ -336,19 +355,26 @@ object ControlRegistry {
         ControlDef("ambient_music", "Đèn viền theo nhạc", "ic-car-top-ambient-music", ControlKind.TOGGLE,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "489701407",
             labelEn = "Ambient follows music"),
+        // [ĐO] 1276153912 = INSTRUMENT_HEADLIGHT_CONTROL_SET (BYDAutoFeatureIds.java) thuộc INSTRUMENT(1007) — Domain.LIGHTS
+        // route thô tới LIGHT(1004) là SAI ⇒ `halDevice` ghi đè. NEEDS-ONCAR: enum index↔giá trị (hiện gửi index thô).
         ControlDef("headlight_mode", "Chế độ đèn pha", "ic-car-front-headlight-mode", ControlKind.SELECT,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153912",
+            halDevice = "BYDAutoInstrumentDevice",
             args = listOf("Tắt", "Auto", "Đỗ", "Cốt"),
             labelEn = "Headlight mode", argsEn = listOf("Off", "Auto", "Parking", "Low beam")),
         // Drive / năng lượng / sạc
+        // [ĐO] `setOperationMode(int)` BYDAutoEnergyDevice.java:177 — ECONOMY=1/SPORT=2/NORMAL=3/SNOW=4 (:24-33); index UI
+        // → enum ở HalBindingTable.writeArgs (thứ tự `args` GIỮ NGUYÊN để không đụng bản dịch). Cũ feature 1272971280.
         ControlDef("drive_mode", "Chế độ lái", "ic-mode", ControlKind.SELECT,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "1272971280",
+            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoEnergyDevice.setOperationMode",
             args = listOf("Thường", "Eco", "Thể thao", "Tuyết"),
             labelEn = "Drive mode", argsEn = listOf("Normal", "Eco", "Sport", "Snow")),
         // ⚠ Nhãn Anh TRÙNG nhãn Việt: "EV / HEV" là ký hiệu ngành (và `args` cũng vậy) ⇒ có tên trong danh sách cho
         // phép của `LangCoverageTest`. Dịch thành "Electric / Hybrid" sẽ lệch với chữ trên táp-lô xe.
+        // [ĐO] `setEnergyMode(int)` BYDAutoEnergyDevice.java:173 — ENERGY_MODE_EV=1 / HEV=3 (:18/:21); map ở writeArgs.
+        // Cũ `setEnergyWorkMode` KHÔNG tồn tại.
         ControlDef("powertrain_mode", "EV / HEV", "ic-bolt", ControlKind.SELECT,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoEnergyDevice.setEnergyWorkMode",
+            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoEnergyDevice.setEnergyMode",
             args = listOf("EV", "HEV"),
             labelEn = "EV / HEV", argsEn = listOf("EV", "HEV")),
         ControlDef("regen_level", "Mức tái tạo", "ic-bolt", ControlKind.SELECT,
@@ -358,23 +384,31 @@ object ControlRegistry {
         ControlDef("itac", "iTAC (kiểm soát mô-men)", "ic-torque", ControlKind.TOGGLE,
             domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376094",
             labelEn = "iTAC (torque control)"),
+        // [ĐO] `setAVHState(int)` BYDAutoADASDevice.java:344 (cũ command-wrapper `ADAS_AVH_STATE` → None). NEEDS-ONCAR:
+        // enum on/off chưa có nguồn (stub chỉ có AUTO_HOLD_STATE1..4 = 0..3 protected, :26-29) ⇒ tạm gửi 1/0.
         ControlDef("avh", "Giữ phanh tự động (AVH)", "ic-brake", ControlKind.TOGGLE,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "ADAS_AVH_STATE",
+            domain = Domain.DRIVETRAIN, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoADASDevice.setAVHState",
             labelEn = "Auto hold (AVH)"),
+        // [ĐO] `setChargeStopCapacityState(int)` BYDAutoChargingDevice.java:426 — enum RỜI: 100→1, 90→2, 80→3, 70→4, 60→5,
+        // 50→6 (:42-47), KHÔNG phải % thô; % UI → mốc gần nhất → enum ở writeArgs. Cũ `SET_DR_SOC_TARGET` → None.
         ControlDef("target_soc_set", "Mục tiêu sạc", "ic-target", ControlKind.STEP, value = 80, min = 50, max = 100, step = 5,
-            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "SET_DR_SOC_TARGET",
+            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoChargingDevice.setChargeStopCapacityState",
             labelEn = "Charge target"),
+        // NEEDS-ONCAR: charge_cap — nghi `setChargeStopSwitchState` (OFF=1/ON=2); phân biệt với giới-hạn-dòng-AC trên xe.
         ControlDef("charge_cap", "Giới hạn sạc", "ic-battery-charging", ControlKind.TOGGLE,
             domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376132",
             // [ĐO] RE 2026-09-14 §4: SETTING_AC_CHARGING_CURRENT_LIMIT_STATUS_SET thuộc SETTING(1023), KHÔNG phải
             // STATISTIC(1014) mà Domain.ENERGY route tới.
             halDevice = "BYDAutoSettingDevice",
             labelEn = "Charge limit"),
+        // [ĐO] `setWirelessChargingSwitchState(int)` BYDAutoChargingDevice.java:458 — CHARGE_WIRELESS_CHARGING_ON=1 / OFF=2
+        // (:61/:60); args ở writeArgs. Cũ feature 1312817218 route Domain.ENERGY → Statistic (sai device).
         ControlDef("wireless_charge", "Sạc không dây", "ic-charger", ControlKind.TOGGLE,
-            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1312817218",
+            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoChargingDevice.setWirelessChargingSwitchState",
             labelEn = "Wireless charging"),
+        // [ĐO] `setChargingMode(int)` BYDAutoChargingDevice.java:438 — CHARGE_MODE_IMMEDIATELY=1 (:38); nút bấm luôn gửi [1].
         ControlDef("start_charging", "Sạc ngay", "ic-bolt", ControlKind.BUTTON,
-            domain = Domain.ENERGY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "StartChargingNowCommand",
+            domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoChargingDevice.setChargingMode",
             labelEn = "Charge now"),
         // ADAS (panel riêng — KHÔNG gate, owner tự chịu)
         ControlDef("adas_slw", "Cảnh báo quá tốc", "ic-speed", ControlKind.TOGGLE,
@@ -404,12 +438,16 @@ object ControlRegistry {
             domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324617778",
             labelEn = "Child presence detection"),
         // Giải trí / cụm / HUD
+        // NEEDS-ONCAR: screen_rotation (enum) / cluster_music (nghi INSTRUMENT_MUSIC_SOURCE 970981412).
         ControlDef("screen_rotation", "Xoay màn hình", "ic-cast", ControlKind.SELECT,
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643005",
             args = listOf("Ngang", "Dọc"),
             labelEn = "Screen rotation", argsEn = listOf("Landscape", "Portrait")),
+        // [ĐO] `setDisplayMode(int)` BYDAutoPanoramaDevice.java:265 (cũ pseudo-id 3001 bịa, trùng `cam`). NEEDS-ONCAR:
+        // enum DISPLAY_MODE_* (PANORAMA0/FULL_SCREEN1/WIDGET3/RF_REVERSE4/REVERSE5/3D_PANORAMA6, :46-51) KHÔNG khớp 5
+        // nhãn góc — tạm gửi index thô; chốt map nhãn↔enum trên xe trước khi hứa "Trước/Sau/Trái/Phải".
         ControlDef("camera_view", "Góc camera", "ic-cam", ControlKind.SELECT,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "3001",
+            domain = Domain.INFOTAINMENT, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoPanoramaDevice.setDisplayMode",
             args = listOf("Trước", "Sau", "Trái", "Phải", "Rộng"),
             labelEn = "Camera view", argsEn = listOf("Front", "Rear", "Left", "Right", "Wide")),
         ControlDef("cluster_music", "Nhạc trên cụm", "ic-music", ControlKind.TOGGLE,

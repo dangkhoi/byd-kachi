@@ -42,10 +42,14 @@ class BydHalGateway(context: Context) : HalGateway {
         parseRc(raw)
     }.getOrNull()
 
+    /**
+     * Đọc feature-id qua `get(int[], Class)` 2-arg [ĐO `AbsBYDAutoDevice.java:84`; OpenBYD `CarControlImpl.java:239-240`]
+     * — toàn bộ cơ chế (dò method, sentinel `INVAILD_INT`, rút `int=/float=`) nằm ở [BydHal.readFeature] để test
+     * off-car; đây chỉ resolve device. null = off-car / device không có get / HAL từ chối / giá trị sentinel.
+     */
     override fun featureGet(deviceFqn: String, id: Int): String? = runCatching {
         val dev = device(deviceFqn) ?: return null
-        if (!BydHal.hasSyncGet(dev)) return null
-        BydHal.readValue(BydHal.tryGet(dev, id))
+        BydHal.readFeature(dev, id)
     }.getOrNull()
 
     /** Ghi feature-id + ghi trộm kết quả vào [HalWriteProbe] (bắt cả `rc=…` lẫn ngoại lệ "no permission …"). */
@@ -70,6 +74,10 @@ class BydHalGateway(context: Context) : HalGateway {
                 "getStreamVolume" -> audio()?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toString()
                 else -> null
             }
+            // GPS (gps_lat/lon/altitude/heading): HAL BYD KHÔNG có getter toạ độ (`BYDAutoLocationDevice` chỉ setter —
+            // RE 2026-09-15). Đường duy nhất là Android LocationManager, nhưng `DeadReckonRetirementTest` PIN "manifest
+            // không xin quyền location nào" — quyết định an toàn sau sự cố suýt ghim GPS toàn xe (CLAUDE.md §3). ⇒ KHÔNG
+            // wire ở đây; 4 mục GPS = BLOCKED-BY-DESIGN, mở lại là quyết định của owner (ghi ở spec §9).
             else -> null
         }
     }.getOrNull()

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconcile STATE→WINDOW + rắn hoá shell/cast — remediation tận gốc</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p0{background:#d11}.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{background:rgba(0,113,227,.12);border-color:var(--accent)}
+.layer .node.bad{background:rgba(209,17,17,.10);border-color:#d11}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12);border-color:var(--accent)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Reconcile STATE→WINDOW + rắn hoá shell/cast — remediation tận gốc</h1>
+<p class="muted">Slug: <code>launcher-window-reconciler-rootcause</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Owner 2026-09-15: <i>"cần 1 lần review và fix rootcause, dài hạn, không phải vá chồng vá."</i> Spec này là bản vá ĐÚNG TẦNG cho lớp bug đã lộ (ô trùng app) + 2 lỗi hạ tầng P0, thay cho các bản vá tầng-state đã thử. Tuân thủ CLAUDE.md §1 (plan-first) · §7 (generic) · §14/§15 (đo thật).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-15</b>: Khởi tạo từ quality review 4-lượt (<code>docs/diagnostics/quality-review-2026-09-15.md</code>). Gốc chung của bug ô-trùng + "càng fix càng hỏng" = tầng STATE→WINDOW/cast mệnh lệnh, nhiều-nguồn-sự-thật, không reconcile.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Triệu chứng owner gặp:</b> (a) gán một app vào 2 ô ⇒ app hiện ở CẢ hai; vá 3 lần ở tầng state (<code>WorkspaceState.withSlot</code> dedup, <code>sanitized()</code>, <code>KachiHomeSlots.assignApp</code>) — test xanh, xe vẫn hỏng. (b) Cảm giác product ngày càng kém ổn định sau mỗi lần vá.</p>
+<p><b>Gốc rễ (từ review, [ĐO] file:line):</b></p>
+<ul>
+<li>Tile là hàm thuần của state; <b>task/cửa sổ THẬT thì KHÔNG</b>. Có <b>3 nguồn sự-thật</b> cho "app ở đâu": <code>WorkspaceState.slots</code> · task WindowManager thật (chỉ đổi bằng chuỗi <code>am</code>) · <code>AppLocationRegistry</code> (map sửa tay 4 chỗ). <code>grep reconcile</code> trong launcher = <b>0</b>.</li>
+<li>Bug ô-trùng sống ở tầng WINDOW, không phải state: app = 1 task; <code>am start --display</code> <b>di chuyển</b> task; <code>VdAppHost</code> ở ô cũ <b>vẽ khung đóng băng</b>, death-detection <b>polling ~10-15s</b> mới ẩn ⇒ hiện 2 ô. Không bản vá state nào chạm được surface GPU cũ. Cộng vector <code>openAppFullscreen</code> tạo task không state/registry.</li>
+<li><span class="tag p0">P0-1</span> cast wire lại lệnh repo CẤM: <code>am display move-stack</code> (<code>AppMover.kt:111</code>) — treo system_server 3/3 (DiLink3). <span class="tag p0">P0-2</span> <code>ShellTransport</code> không socket timeout (<code>Dadb.create</code> 3-arg = vô hạn) ⇒ 1 lệnh adbd treo đơ toàn bộ đặt-cửa-sổ + cast + rò thread.</li>
+<li>3 hệ cast chồng nhau (~7,150 LOC; <code>ClusterCast.kt</code> 1286 LOC chết-nhưng-còn-1-nhánh-gọi) ⇒ fix rơi vào bản chết/sống/platform — "động cơ" của càng-fix-càng-hỏng.</li>
+<li><b>Lỗ hổng test</b>: 0 test hành vi chạm WindowManager/HAL thật ⇒ model xanh 100% mà glue/teardown regress im lặng.</li>
+</ul>
+<div class="card"><b>Cổng / phụ thuộc:</b> (1) <b>Đo trên xe</b> 1 lượt <code>am stack list</code> lúc tái hiện bug ô-trùng để chốt vector THẬT (CLAUDE.md §14/§15) — làm SONG SONG Phase 2, không chặn thiết kế. (2) Working tree hiện có bản vá HAL (kính/rèm/đèn) + one-app-one-slot <b>chưa push</b>; review đánh giá chúng đúng-tầng ⇒ GIỮ, gộp vào remediation (không revert).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Rendering suy ra từ state qua MỘT bộ reconcile.</b> AC: tồn tại đúng một hàm nhận <code>WorkspaceState</code> → phát tập lệnh window tối thiểu; mọi handler sự-kiện (<code>assignApp/clearSlot/swap/openAppFullscreen</code>) chỉ đổi STATE, không tự gọi <code>am</code>/<code>placeApp</code>/<code>VdAppHost</code>.</li>
+<li><b>R2 — Một app một vị trí, được ép ở tầng WINDOW.</b> AC: gán app A (đang ở ô X) sang ô Y ⇒ reconciler phát bước <b>evict A khỏi display cũ</b> TRƯỚC khi đặt ở Y; không phụ thuộc 10-15s freeze-probe. Đo trên xe: sau gán, <code>am stack list</code> có đúng 1 task của A, ở đúng display của Y.</li>
+<li><b>R3 — Không lệnh shell cấm / không chặn vô hạn.</b> AC: <code>ShellTransport</code> có connect/read timeout (như <code>CarExecShell</code>); <code>Future.get</code> có deadline + đóng/nối-lại khi timeout; <b>0</b> chỗ dùng <code>am display move-stack</code> (thay bằng <code>am stack move-task</code>).</li>
+<li><b>R4 — Một hệ cast duy nhất.</b> AC: <code>ClusterCast</code> (1286 LOC) bị xoá sau khi chuyển <code>listInstalledApps</code> ra; SimpleCast là nguồn duy nhất; phân loại projection (CarPlay/AA) về <b>1</b> danh sách (gộp 4 bản hardcode).</li>
+<li><b>R5 — Test hành vi khoá lại.</b> AC: test (fake dispatcher/shell/appLauncher) khoá THỨ TỰ gọi của reconciler cho ca "chuyển app giữa 2 ô" (evict cũ → đặt mới); baseline on-car đọc <code>HalWriteProbe</code> cho vài control đã-verify.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Degrade-safe (§R9): off-car / thiếu shell ⇒ reconciler no-op an toàn, không ném.</li>
+<li>R-nf2. Thread model rõ: reconcile chạy trên <code>winExec</code> nối tiếp; guard <code>stopped/destroyed</code>; không spawn thread không-chặn per-tap.</li>
+<li>R-nf3. Reconciler thuần (planner ở <code>:core</code>) testable off-car; phần chạm WM (applier) tối thiểu, có seam giả để test hành vi.</li>
+<li>R-nf4. Không đảo đường đang chạy tốt ngoài hiện trường (§6): đường mới xuống cuối, tự đo actual (<code>am stack list</code>) rồi mới quyết.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Kiến trúc mục tiêu — một chiều state → reconcile → window</h3>
+<div class="flow">
+  <div class="fnode"><b>Handlers</b><span>assign/clear/swap</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>WorkspaceState</b><span>nguồn sự-thật DUY NHẤT</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>WindowPlan.desired()</b><span>:core thuần</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>WindowReconciler</b><span>diff desired vs actual</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>am / VdAppHost</b><span>lệnh tối thiểu</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span> hiện có (reuse)</span> <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span></div>
+
+<h3>4.2 Từ 3-nguồn-sự-thật (nay) → 1-nguồn + 2-projection (mục tiêu)</h3>
+<div class="layers">
+  <div class="layer"><div class="node" style="flex-basis:100%"><b>NAY — 3 nguồn song song, không reconcile</b></div></div>
+  <div class="layer">
+    <div class="node">WorkspaceState.slots<span>model (đã test)</span></div>
+    <div class="node bad">task WM thật<span>chỉ đổi bằng <code>am</code>, không ai đọc lại</span></div>
+    <div class="node bad">AppLocationRegistry<span>map sửa tay 4 chỗ, trôi</span></div>
+  </div>
+  <div class="layer"><div class="node new" style="flex-basis:100%"><b>MỤC TIÊU — state là nguồn; window + registry là PROJECTION của state (đọc actual để reconcile)</b></div></div>
+</div>
+
+<h3>4.3 Bộ reconcile — hợp đồng</h3>
+<ul>
+<li><b><code>WindowPlan.desired(state): Map&lt;Pkg, Location&gt;</code></b> (<code>:core</code>, thuần) — "app nào nên ở display/ô nào". Anh em với <code>WorkspaceRenderPlanner.decide</code> đã có cho tile.</li>
+<li><b><code>WindowReconciler.reconcile(desired, actual)</code></b> — <code>actual</code> ĐỌC TỪ <code>am stack list</code> (không từ map sửa tay). Phát tập <code>WindowMutation</code> tối thiểu: mỗi pkg đổi chủ ⇒ <b>evict khỏi display cũ</b> rồi đặt ở mới; pkg thừa ⇒ gỡ; pkg thiếu ⇒ đặt. Trên xe (embedding=true) đường thi hành là <code>VdAppHost</code>/<code>am</code>; off-car là freeform — cùng một plan.</li>
+<li><b>Gọi từ ĐÚNG MỘT chỗ</b>: collector <code>render(state)</code> (<code>KachiHomeActivity</code>). Handlers chỉ mutate state. Xoá các lệnh window mệnh-lệnh rải rác trong <code>KachiHomeSlots</code>/<code>LauncherWindows.reflow</code>.</li>
+<li><code>AppLocationRegistry</code> ⇒ projection (đọc từ state hoặc <code>am stack list</code>), thôi sửa tay ở <code>d.place/d.remove</code> 4 chỗ.</li>
+</ul>
+
+<h3>4.4 Quyết định thiết kế + Context7</h3>
+<ul>
+<li>Reconciler đọc <b>actual</b> từ <code>am stack list</code> (đã có parser <code>CastStackParser</code>/<code>StackParse</code>) — <b>tự đo, không tin map</b> (§5 CLAUDE.md: kiểm bằng sự thật, cờ chỉ để hiển thị).</li>
+<li>Tái dùng tối đa: <code>WorkspaceRenderPlanner</code> (tile), <code>SlotVdOwner</code>/<code>VdLease</code> (vòng đời VD, đã đúng), <code>PrioritySerialExecutor</code> (chỉ thêm timeout).</li>
+<li><b>Context7</b>: chỉ dùng Android SDK + khối nội bộ ⇒ không cần. (dadb 2.0.0 — API timeout đã xác nhận qua decompile ở review P0-2.)</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">Phân pha: mỗi pha để hệ thống ở trạng thái ĐÚNG, không phải band-aid. Owner chốt phạm vi ở approval gate (có thể dừng sau P1/P2).</p>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td><b>Pha 1 — Rắn hoá shell (P0-2/P0-3).</b> Thêm connect/read timeout vào <code>ShellTransport.conn()</code>; bọc <code>Future.get(deadline)</code> đóng/nối-lại khi timeout. Test: transport giả treo → không đơ vô hạn.</td><td><code>ShellTransport.kt</code>, <code>PrioritySerialExecutor.kt(+Test)</code></td></tr>
+<tr><td>T2</td><td><b>Pha 1 — Gỡ lệnh cấm (P0-1).</b> Đổi nhánh app-thường <code>am display move-stack</code>→<code>am stack move-task</code>; test khoá "không còn move-stack". Verify xe ĐỖ.</td><td><code>AppMover.kt(+Test)</code></td></tr>
+<tr><td>T3</td><td><b>Pha 2 — Planner thuần.</b> <code>WindowPlan.desired(state)</code> ở <code>:core</code> + test bảng.</td><td><code>core/.../WindowPlan.kt(+Test)</code></td></tr>
+<tr><td>T4</td><td><b>Pha 2 — Reconciler + applier seam.</b> <code>WindowReconciler.reconcile(desired, actual)</code> phát <code>WindowMutation</code> (gồm evict); actual từ <code>am stack list</code>. Interface applier để test giả.</td><td><code>core/.../WindowReconciler.kt(+Test)</code>, <code>app/.../WindowApplier.kt</code></td></tr>
+<tr><td>T5</td><td><b>Pha 2 — Nối vào 1 collector; handlers chỉ mutate state.</b> Bỏ lệnh window mệnh-lệnh trong <code>KachiHomeSlots.assignApp/clearSlot/swap</code> + <code>LauncherWindows.reflow</code>; <code>openAppFullscreen</code> đi qua state. Grep 0 call-site window ngoài reconciler.</td><td><code>KachiHomeSlots.kt</code>, <code>KachiHomeActivity.kt</code>, <code>LauncherWindows.kt</code></td></tr>
+<tr><td>T6</td><td><b>Pha 2 — Test hành vi (R5).</b> Fake dispatcher/windows: chuyển app 2 ô ⇒ khoá thứ tự evict-cũ → đặt-mới; <code>AppLocationRegistry</code> đúng 1 entry.</td><td><code>app/.../WindowReconcilerBehaviorTest.kt</code></td></tr>
+<tr><td>T7</td><td><b>Pha 3 — Gộp cast (R4).</b> Chuyển <code>listInstalledApps</code> ra khỏi <code>ClusterCast</code>; XOÁ <code>ClusterCast</code> + phụ trợ chết; gộp 4 danh sách projection → 1.</td><td><code>modules/clustercast/*</code>, <code>cast/platform/CastAppCatalog.kt</code></td></tr>
+<tr><td>T8</td><td><b>Pha 4 — Baseline HAL on-car (R5).</b> Đọc <code>HalWriteProbe</code> cho control đã-verify, đỏ nếu FQN/method/rc trôi.</td><td><code>car-integration/.../HalBaselineTest.kt</code></td></tr>
+<tr><td>T9</td><td>Senior review (Opus) + security scan + build 5 module + bump version + OTA.</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: 5 module xanh; case chính khoá bởi <code>WindowReconcilerBehaviorTest</code> (thứ tự evict) + <code>WindowPlanTest</code> + shell-timeout test.</li>
+<li>V-oncar (bắt buộc, §14/§15): (1) <code>am stack list</code> lúc tái hiện bug ô-trùng TRƯỚC khi vá (chốt vector) + SAU khi vá (đúng 1 task, đúng display). (2) P0-1: verify <code>am stack move-task</code> đưa app lên cụm không treo (xe ĐỖ). (3) adbd treo giả lập → launcher không đơ (timeout nhả).</li>
+<li>V-lifecycle: gán → chuyển ô → xoá ô → đổi preset → khôi phục sau khởi động; degrade off-car.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Vector THẬT owner trúng (freeze-probe VdAppHost / <code>openAppFullscreen</code> orphan / 2 activity) — <span class="muted">chốt bằng 1 <code>am stack list</code> trên xe; reconciler xử cả ba nên không chặn thiết kế.</span></li>
+<li>OQ2. Phạm vi "1 lần" owner muốn: dừng sau Pha 2 (fix xong bug ô-trùng + P0) hay làm trọn tới Pha 3 (gộp cast) + Pha 4 (test) trong cùng đợt? — <span class="muted">chờ owner chốt ở approval gate.</span></li>
+<li>OQ3. Giữ hay revert bản vá HAL/one-app-one-slot chưa push — <span class="muted">đề xuất GIỮ (review: đúng-tầng); one-app-one-slot state trở thành một phần của R2 (invariant model vẫn cần).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/quality-review-2026-09-15.md</code> — review 4-lượt (nguồn spec này).</li>
+<li>Slot bug root-cause: <code>WorkspaceState.kt</code>, <code>KachiHomeSlots.kt:34-93</code>, <code>LauncherWindows.kt:104-161</code>, <code>VdAppHost.kt:132-163</code>, <code>SlotLiveness.kt</code>, <code>AppLocationRegistry.kt</code>.</li>
+<li>P0: <code>AppMover.kt:111</code> vs <code>CarExecClusterProjectionCatalog.kt:60-83</code>/<code>CastShell.kt</code>; <code>ShellTransport.kt:57</code> vs <code>CarExecShell.kt:21-22</code>.</li>
+<li>Cast history: <code>docs/specs/cast-architecture-cleanup.html</code>, <code>cluster-cast-simplified.html</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-15 · Pha 1 XONG (T1+T2)</b> — <b>P0-2</b>: <code>ShellTransport.conn()</code> nay truyền <code>Dadb.create(host,port,keys,3_000,10_000)</code> (connect/socket timeout) thay overload 3-arg (vô hạn) ⇒ lệnh treo nhả sau ≤10s, worker không chặn mãi. <b>P0-1</b>: <code>AppMover.moveStackToCluster</code>→<code>moveTaskToCluster</code>, đổi <code>am display move-stack</code> (CẤM) sang <code>am stack move-task &lt;task&gt; &lt;clusterStack&gt; true</code> (giống nhánh CP/AA); <code>findOrCreateClusterStack</code> thêm tham số <code>windowingMode</code> (freeform=5 cho app thường để giữ fit); gỡ 3 hàm chết (<code>findStackIdForPkgAnyDisplayExcept</code>/<code>parseDisplayIds</code>/<code>moveStackRejected</code>). Test <code>AppMoverMoveStackFallbackTest</code> viết lại: khoá "dùng move-task" + "TUYỆT ĐỐI không move-stack". <b>Trade-off/sai-lệch</b>: hành vi fit của app-thường trong stack freeform mới <b>[CHƯA ĐO xe]</b> — nằm trong cổng on-car test trước push (OQ). 5 module: core xanh + app compile xanh.</li>
+<li><b>2026-09-15 · Pha 2 T3 XONG</b> — Phát hiện: <code>LauncherBootPlan.plan(slots,castOwns)</code> ĐÃ là "desired(state)" thuần, nhưng chỉ dùng lúc BOOT (<code>seedLocations</code>). Gốc bug = plan đó không phải thứ lái cửa sổ ở MỖI render. Thêm <code>LauncherBootPlan.reconcile(slots, placedOnLauncher, castOwns): Reconciliation(mount, evict)</code> — thuần, extend code sẵn (không dựng planner mới). <b>evict</b> = app đang hiện ở màn launcher mà state không còn ô nào giữ ⇒ đây là bước THIẾU (bug "một app hai ô" = ô cũ không gỡ ngay, chờ death-poll 10-15s). 3 test khoá: evict khi chuyển ô · evict khi gỡ khỏi mọi ô · không evict app cast đang giữ. Còn T4 (applier áp mount/evict ở render, đọc placed từ registry) · T5 (nối vào 1 collector, handlers chỉ đổi state, openAppFullscreen qua state) · T6 (test hành vi).</li>
+<li><b>2026-09-15 · Pha 2 T4+T5+T6 XONG</b> — <b>T4</b>: <code>LauncherWindows.reconcileLocations(slots)</code> — đọc placed từ <code>registry.onDisplay(0)</code>, <code>LauncherBootPlan.reconcile</code>, place mount + (remove+closeApp) evict. <b>T5</b>: gọi từ ĐÚNG MỘT chỗ — collector <code>render(state)</code> (<code>KachiHomeActivity.render</code> sau <code>workspace.render</code>); GỠ mọi lệnh registry sửa tay khỏi <code>KachiHomeSlots.assignApp</code> (bỏ d.remove/d.place + dedup thủ công — model <code>withSlot</code> + render lo), <code>clearSlot</code> (bỏ d.remove), <code>swapSlots</code> (bỏ 2 d.place) ⇒ registry là PROJECTION của state, một nguồn. <b>T6</b>: <code>WindowReconcileApplyTest</code> (:core thuần) khoá đường APPLY reconcile→registry: chuyển ô → 1 vị trí · gỡ khỏi mọi ô → evict · idempotent. 5 module xanh (app+core), assembleRelease + install máy ảo OK, resume không FATAL. <b>Sai-lệch spec</b>: <code>openAppFullscreen</code> KHÔNG ép qua state (nó là chế độ mở-ngoài-workspace có chủ ý, ép vào state sẽ đổi nghĩa) — vector orphan của nó [CHƯA ĐO] để lượt <code>am stack list</code> trên xe chốt. Window teardown on-car (releaseSlotHost) + off-car (evict→closeApp) đã phủ đường ô; evict force-stop cho orphan display-0 on-car chờ đo xe.</li>
+<li><b>2026-09-15 · Pha 3 XONG (gộp cast)</b> — <b>3a</b>: tách <code>ClusterCast.listInstalledApps</code> → <code>InstalledApps.launchable</code> (nhánh sống duy nhất) + rewire <code>ClusterNavBridgeKeys</code>. <b>3b</b>: XOÁ <code>ClusterCast.kt</code> (1286) + <code>CastShell.kt</code> (cặp chết phụ thuộc nhau) + 6 test chết (CastFlow/CastSwap/CastStress/SinkGuard/Wave1Safety/SizeCompat) + <code>FakeShell</code> mồ côi + <code>ShellTransport.withConnection</code> (escape hatch chết) = <b>~2719 LOC</b>. Compiler xác nhận không nhánh sống nào phụ thuộc. Cập nhật 3 guard test: writer-pin bỏ CastShell/ClusterCast · dời <code>StackParseTest</code>/<code>DisplayParseTest</code> sang :core (layering) · đổi <code>InstalledApps.Entry.label→name</code> (né false-positive i18n). <b>3c</b>: gộp phân loại chiếu-điện-thoại về MỘT nguồn <code>ProjectionApps</code> (:core) — <code>AppMover.classifyApp/isLauncher</code> uỷ quyền, <code>CastAppCatalog.PROJECTION_HINTS</code> + <code>CastStackParser.skipExactPkgs</code> tham chiếu; giữ y hành vi, 5 test khoá. <b>Net toàn spec tới giờ: −1896 LOC</b>. 5 module xanh.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-09-15 (senior review Opus, Pha 1–3)</h3>
+<p><b>Verdict: APPROVED</b> (code-complete, giữ chờ on-car). 39 files / −1896 LOC. Test <code>:app + :core</code> <b>2710 bài / 0 đỏ</b>. KHÔNG P0/P1.</p>
+<ul>
+<li><b>Reconciler SOUND</b>: thứ tự <code>workspace.render</code> → <code>reconcileLocations</code> đúng; <code>mount∩evict=∅</code>; không double-teardown (on-car releaseSlotHost / off-car closeApp trên hai đường rời); ca chuyển-ô xử đúng ở tầng cửa sổ; <code>onDisplay(0)</code> không đụng app cụm; <code>openAppFullscreen</code> không bị evict nhầm.</li>
+<li><b>P0-1</b> move-task = đúng verb CP/AA đã proven; <code>windowingMode=5</code> khớp đường normal-app chính. <b>P0-2</b> timeout đúng; wedged adbd nhả ≤~23s. <b>Cast deletion</b> CLEAN — 0 tham chiếu sống, autoCast migration-read còn nguyên, không orphan. <b>ProjectionApps</b> byte-identical. <b>Threading</b> safe.</li>
+<li><b>Findings (P2/P3, KHÔNG block, KHÔNG vá — đúng "one proper fix"):</b>
+  <ul>
+  <li><span class="tag p2">P2</span> Race registry↔cast do <code>mount</code> đặt lại display-0 mỗi render: một render chen giữa "cast quyết chiếu X" và "cast ghi X@display1" có thể tạm ghi đè X về display0 (registry-only, không nháy cửa sổ, tự sửa render sau). <b>Fix ĐÚNG = §4.3 đã hoãn: đọc <code>actual</code> từ <code>am stack list</code> thay registry — làm trong lượt on-car, KHÔNG nửa vời bây giờ.</b></li>
+  <li><span class="tag p2">P3</span> double closeApp off-car (idempotent) · churn map mỗi render (không đáng kể) · R1 handler còn gọi placeApp/closeApp trực tiếp (on-car vô hại — render state-driven; off-car mount vẫn mệnh lệnh, an toàn nhờ force-stop+reopen) · R3 không thêm <code>Future.get(deadline)</code> (chặn ở tầng socket — gốc, không phải triệu chứng).</li>
+  </ul></li>
+<li><b>Scope R1–R5 ✅</b> (kèm sai-lệch AC off-car đã ghi log). Còn: Pha 4 <code>HalBaselineTest</code> (owner có thể dừng sau Pha 3) + 4 cổng on-car (§14/§15).</li>
+<li><b>HAL writeArgs</b> giữ nguyên (owner-approved, on-car-gated) — ngoài scope patch.</li>
+</ul>
+
+</div></body>
+</html>

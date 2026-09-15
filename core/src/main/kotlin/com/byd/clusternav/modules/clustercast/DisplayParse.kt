@@ -172,4 +172,48 @@ object DisplayParse {
         }
         return -1
     }
+
+    private val RE_DEVICE_NAME = Regex("DisplayDeviceInfo\\{\"([^\"]+)\"")
+    private val RE_LOGICAL_ID = Regex("displayId (\\d+)")
+    private val RE_PRIMARY_DEVICE = Regex("mPrimaryDisplayDevice=(\\S+)")
+
+    /**
+     * Tập id logical-display của các VirtualDisplay do CHÍNH [ownerPkg] tạo (ô/slot của launcher — `kachi-slot-N`),
+     * đọc từ `dumpsys display` (bản đầy đủ HOẶC bản grep của `ClusterDisplayResolver.DETECT_CMD`).
+     *
+     * Vì sao (R2 spec `kachi-hal187-cast-remediation` · CLAUDE §5 guard ở tầng thi hành): [ĐO] xe 2026-09-15 sau
+     * reboot, display **1** = `kachi-slot-0` (`uniqueId="virtual:com.byd.launcher,10138,kachi-slot-0-…,0"`,
+     * `owner com.byd.launcher (uid 10138)`), display **2** = cụm `fission_bg_xdjaVirtualSurface`. Cast rơi về seed 1
+     * ⇒ ClusterBlack + GMaps đặt VÀO ô của launcher. Bất biến: cụm KHÔNG BAO GIỜ là VD của chính launcher, nên
+     * mọi id thuộc tập này phải bị từ chối trước `am start --display`/`wm … -d`.
+     *
+     * Nhận diện owner qua chuỗi `uniqueId` của VD (`virtual:<pkg>,<uid>,<name>,<n>` — format
+     * `VirtualDisplayAdapter.UNIQUE_ID_PREFIX + ownerPackageName + "," + ownerUid + "," + name + "," + n`) hoặc
+     * `owner <pkg> (uid`. Map tên → id qua 2 đường (cùng lúc, để bền với cả 2 dạng dump):
+     *   (a) dòng `DisplayInfo{"<name>, displayId N", uniqueId "virtual:<pkg>,…"` (có sẵn cả id lẫn owner);
+     *   (b) header `Display N:` + `mPrimaryDisplayDevice=<name>` với name ∈ tên device đã nhận là của [ownerPkg].
+     * [ownerPkg] do caller truyền (BuildConfig.APPLICATION_ID) — KHÔNG hardcode tên gói ở core (CLAUDE §7).
+     */
+    fun ownedVirtualDisplayIds(dump: String, ownerPkg: String): Set<Int> {
+        if (ownerPkg.isBlank()) return emptySet()
+        val ownerUnique = "virtual:$ownerPkg,"
+        val ownerTag = "owner $ownerPkg ("
+        val ownedNames = HashSet<String>()
+        val ids = HashSet<Int>()
+        var cur = -1
+        for (line in dump.lineSequence()) {
+            RE_DISPLAY_HDR.find(line)?.let { cur = it.groupValues[1].toIntOrNull() ?: cur }
+            val owned = line.contains(ownerUnique) || line.contains(ownerTag)
+            if (owned) {
+                RE_DEVICE_NAME.find(line)?.let { ownedNames += it.groupValues[1] }
+                RE_LOGICAL_ID.find(line)?.groupValues?.get(1)?.toIntOrNull()?.let { if (it >= 0) ids += it }   // (a)
+            }
+            if (cur >= 0) RE_PRIMARY_DEVICE.find(line)?.let { if (it.groupValues[1] in ownedNames) ids += cur }  // (b)
+        }
+        return ids
+    }
+
+    /** `true` khi [id] là VD do chính [ownerPkg] sở hữu (xem [ownedVirtualDisplayIds]) → KHÔNG được coi là cụm. */
+    fun isOwnedVirtualDisplay(dump: String, id: Int, ownerPkg: String): Boolean =
+        id in ownedVirtualDisplayIds(dump, ownerPkg)
 }

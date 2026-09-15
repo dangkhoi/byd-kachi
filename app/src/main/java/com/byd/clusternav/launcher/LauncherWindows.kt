@@ -46,6 +46,30 @@ class LauncherWindows(
             .mount.forEach { d.place(it.pkg, 0, it.slot) }
     }
 
+    /**
+     * RECONCILE registry vị trí app THEO STATE — gọi từ collector `render(state)` mỗi nhịp (quality-review
+     * 2026-09-15, R1/R2). Đây là bước biến registry thành **PROJECTION của state**, thay cho các lệnh
+     * `d.place`/`d.remove` sửa TAY rải rác ở handler (`KachiHomeSlots.assignApp/clearSlot/swap`) — nguồn drift
+     * của "3 nguồn sự-thật vị-trí-app".
+     *
+     *  • **mount** (từ [LauncherBootPlan.reconcile]) → `d.place(pkg,0,slot)`: registry khớp đúng ô của state.
+     *  • **evict** = app đang ở màn launcher (display 0) mà state KHÔNG còn ô nào giữ → `d.remove` + `closeApp`
+     *    (đóng cửa sổ freeform off-car; ô on-car do `WorkspaceView.releaseSlotHost` nhả theo diff state). App cụm
+     *    đang giữ (`!isCastable`) bị loại khỏi mount ⇒ launcher không giành với cụm; nó ở display cụm nên KHÔNG
+     *    lọt vào tập display-0 ⇒ KHÔNG bị evict.
+     *
+     * ⚠ [CHƯA ĐO xe] evict tường minh cho vector orphan on-car (`openAppFullscreen` để task ở display 0) cần
+     *   force-stop qua shell — chốt bằng lượt `am stack list` trên xe (cổng test-xe-trước-push). closeApp on-car là
+     *   no-op nên bước này hiện chỉ phủ off-car; ô on-car đã được state-dedup + releaseSlotHost xử.
+     */
+    fun reconcileLocations(slots: List<SlotContent>) {
+        val d = dispatcher() ?: return
+        val placedOnLauncher = d.locations.onDisplay(0).map { it.pkg }.toSet()
+        val r = LauncherBootPlan.reconcile(slots, placedOnLauncher) { pkg -> !d.locations.isCastable(pkg) }
+        r.mount.forEach { d.place(it.pkg, 0, it.slot) }
+        r.evict.forEach { pkg -> d.remove(pkg); closeApp(pkg) }
+    }
+
     fun clearOverlays() = overlayHeads.clear()
 
     /**

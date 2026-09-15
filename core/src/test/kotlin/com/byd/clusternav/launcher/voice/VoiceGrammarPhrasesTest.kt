@@ -259,8 +259,12 @@ class VoiceGrammarPhrasesTest {
          * vài nhãn Việt mang chữ viết tắt/chữ số đã có cách gọi thuần Việt đi kèm (*"Bụi mịn PM2.5"* vẫn nói
          * được qua *"nồng độ bụi mịn"*). Đây là hạn chế **của mô hình tiếng Việt**, không phải lỗi của Kachi:
          * nói lệnh bằng tiếng Anh trên xe này thì không nghe ra. Gõ vẫn được (tầng chữ không đụng tới mô hình).
+         *
+         * [ĐO] 2026-09-15 · T7 "nút mở 50%": **269 → 274 (+5)** = đúng 5 nhãn tiếng Anh *"Half"* thêm vào
+         * `win_lf/rf/lr/rr` + `sunshade` (bị loại như mọi nhãn Anh). Cụm giữ (330) KHÔNG đổi (*"Nửa"* là từ
+         * đơn, không tạo cụm nhiều từ). Tổng mục đổi — xem [EXPECTED_ENTRIES].
          */
-        const val EXPECTED_PHRASES_DROPPED = 269
+        const val EXPECTED_PHRASES_DROPPED = 274
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -272,6 +276,9 @@ class VoiceGrammarPhrasesTest {
          * Số **cụm** không đổi: tên app đích chỉ vào ngữ pháp khi app ấy **có trên máy** (`installed`), mà bài
          * này cố ý gọi với danh sách rỗng — xem `ten app dich chi vao ngu phap khi app do co tren may`.
          */
-        const val EXPECTED_ENTRIES = 2058
+        // [ĐO] 2026-09-15 · T7: **2058 → 2063 (+5)**. Từ đơn MỚI *"nửa"* (arg của 4 kính + rèm) nở theo thanh điệu
+        // — cùng cơ chế +21 của *"đưa"* ở V1.1. (Lần đo đầu chỉ lộ assertion "cụm loại"; mục này lộ ở lần đo 2 —
+        // đúng lý do bài khoá CẢ BA con số.)
+        const val EXPECTED_ENTRIES = 2063
     }
 }

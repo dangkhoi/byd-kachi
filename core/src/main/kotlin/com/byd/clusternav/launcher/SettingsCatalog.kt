@@ -88,6 +88,15 @@ object SettingsCatalog {
      * người thêm khoá phải trả lời câu *"đây là cấu hình hay là trạng thái máy"* bằng chữ.
      */
     val NOT_SETTINGS: Map<String, String> = buildMap {
+        // 2026-09-15 (HOME-alias): marker "người dùng ĐÃ bấm Đặt-làm-màn-hình-chính thành công" — lối vào HOME là
+        // activity-alias tắt sẵn (để BYD GUI-install không chặn), KachiAutostart đọc marker để bật alias + set-home
+        // lại sau nâng cấp. Là lựa chọn ĐÃ BÀY TỎ được ghi lại, không phải một công tắc để bật/tắt trong Cài đặt
+        // (công tắc thật là nút "Đặt làm màn hình chính" ở nhóm Hệ thống; `keep_home_on_boot` mới là cấu hình).
+        put(
+            "home_chosen",
+            "dấu vết lựa chọn đã bày tỏ (đã bấm Đặt làm màn hình chính), không phải cấu hình — dùng để khôi phục " +
+                "HOME sau nâng cấp; lên UI thì chỉ có một ô không có gì để chọn",
+        )
         put(
             "recent_apps",
             "trạng thái dùng, không phải cấu hình — là lịch sử mở app, người dùng không đặt và không sửa; " +

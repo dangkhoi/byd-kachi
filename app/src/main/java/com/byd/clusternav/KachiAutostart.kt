@@ -77,7 +77,11 @@ object KachiAutostart {
             runCatching {
                 val container = AppContainer.get(app)
                 val seam = container.windowDispatcher.launcherSeam()
-                val comp = DefaultHome.component(app)
+                val comp = DefaultHome.component(app)              // alias HOME — đích của `set-home-activity`
+                // ⚠ [SOÁT 2026-09-15 · P1] `am start` PHẢI nhắm activity (luôn bật), KHÔNG nhắm alias HOME: alias xuất
+                // xưởng `enabled=false` ⇒ `am start -n <alias>` trả "Activity class … does not exist" ⇒ người dùng chưa
+                // bấm "Đặt làm màn hình chính" thì sau boot/OTA launcher không được đưa lên, ô không mount lại.
+                val launchComp = DefaultHome.launchComponent(app)
 
                 // (1) Seed the freeform boot flags via the ONE sanctioned writer (respects FF_USER_REMOVED).
                 val seeded = FreeformSeedStore.forLauncher(app) { Log.i(TAG, it) }.ensureSeed()
@@ -89,10 +93,16 @@ object KachiAutostart {
                 //     button. This boot reassert is a best-effort convenience for ROMs that reset HOME after reboot
                 //     ([SUY] — chưa đo, chờ P7). `am start` in (4) still brings Kachi UP regardless; that only STARTS
                 //     the launcher, it does not make it the default HOME.
-                if (WorkspacePrefs(app).keepHomeOnBoot()) {
+                //     2026-09-15 (HOME-alias): cũng re-assert khi `homeChosen` — người dùng ĐÃ bấm "Đặt làm màn hình
+                //     chính"; lối vào HOME là alias tắt sẵn nên sau nâng cấp/boot phải BẬT alias trước rồi mới
+                //     `set-home-activity` (khôi phục lựa chọn đã bày tỏ, idempotent — không phải đổi state mới).
+                val prefs = WorkspacePrefs(app)
+                if (prefs.keepHomeOnBoot() || prefs.homeChosen()) {
+                    val enabled = DefaultHome.enableHomeEntry(app)
+                    Log.i(TAG, "home entry (alias) enabled=$enabled — reasserting HOME (keepOnBoot=${prefs.keepHomeOnBoot()} chosen=${prefs.homeChosen()})")
                     ensureHomeActivity(seam, comp)
                 } else {
-                    Log.i(TAG, "keep-home-on-boot OFF (default) — not reasserting default HOME on boot")
+                    Log.i(TAG, "keep-home-on-boot OFF + home not chosen — not reasserting default HOME on boot")
                 }
 
                 // (3) Cast-coordination decision (surface-independent): what the launcher owns vs what cast owns.
@@ -100,8 +110,8 @@ object KachiAutostart {
 
                 // (4) Ensure the HOME Activity is up so it restores + mounts the saved slots (Activity does the VD mounting).
                 //     Covers MY_PACKAGE_REPLACED (installer kills us, does not relaunch). No --display ⇒ gate ALLOWs.
-                seam("am start -n $comp")
-                Log.i(TAG, "requested HOME up ($comp) — Activity restores + mounts saved slots")
+                seam("am start -n $launchComp")
+                Log.i(TAG, "requested HOME up ($launchComp) — Activity restores + mounts saved slots")
             }.onFailure { Log.w(TAG, "kachi auto-start failed (degrade-safe, retried next trigger): ${it.message}") }
         } finally {
             finishRun()

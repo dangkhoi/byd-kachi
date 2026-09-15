@@ -2,7 +2,6 @@ package com.byd.clusternav.launcher
 
 import com.byd.clusternav.NavConnect
 import com.byd.clusternav.Prefs
-import com.byd.clusternav.modules.clustercast.ClusterCast
 import com.byd.clusternav.modules.voicekey.AssistantLauncher
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
 import com.byd.clusternav.voicekey.VoiceKeyBinding
@@ -222,7 +221,7 @@ fun ClusterNavBridge.removeCustomButton(code: Int) {
 
 /**
  * Lặp lại `MainActivity.kt:726–734` (`voiceKeyTargetSpecs`): ba mục đặc biệt ghim đầu rồi toàn bộ app
- * có launcher ([ClusterCast.listInstalledApps]). Một bảng duy nhất cho cả danh sách chọn lẫn nhãn từng
+ * có launcher ([InstalledApps.launchable]). Một bảng duy nhất cho cả danh sách chọn lẫn nhãn từng
  * dòng đã gán — hai nơi đọc khác bảng thì dòng đã gán hiện tên khác lúc chọn.
  *
  * Ba sentinel trả [TargetOption.appLabel] = `null`; tầng Settings tra tên theo [TargetOption.spec]
@@ -243,7 +242,7 @@ fun ClusterNavBridge.targetOptions(): List<TargetOption> = listOf(
     // là thứ `SettingsSectionsKeys.sentinelLabel` tra nhãn theo (xem KDoc hàm đó), nên chèn vào giữa sẽ đổi
     // nhãn của ba dòng đang chạy. Thêm vào cuối thì ba dòng cũ giữ nguyên chỉ số — và giữ nguyên nhãn.
     TargetOption(Prefs.VK_TARGET_KACHI_VOICE),
-) + ClusterCast.listInstalledApps(app).map { (label, pkg) -> TargetOption(pkg, label) }
+) + InstalledApps.launchable(app).map { TargetOption(it.pkg, it.name) }
 
 /**
  * Tên gợi ý cho nút vừa học, trước khi người dùng sửa — lặp lại `MainActivity.kt:812`

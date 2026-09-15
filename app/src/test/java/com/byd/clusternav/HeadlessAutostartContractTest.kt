@@ -177,10 +177,11 @@ class HeadlessAutostartContractTest {
             .find(manifest)?.value ?: error("BootSetupService declaration missing")
         assertTrue(decl.contains("android:exported=\"false\""), "BootSetupService must be exported=false")
         assertTrue(decl.contains("android:foregroundServiceType=\"specialUse\""), "declared as a specialUse FGS")
-        assertTrue(
-            decl.contains("android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"),
-            "carries the special-use subtype property (mirrors FloatingBubbleService)",
-        )
+        // [ĐO on-car 2026-09-15, DiLink3/Android 10] `<property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE">`
+        // (thẻ API 34) làm PackageParser Android 10 từ chối cài: "Unknown element under <service>: property" → GUI
+        // install FAIL. Đội xe chỉ chạy A10 (DL3) / A12 (DL5) — không có A14+ nào cần subtype. Bất biến MỚI: KHÔNG có
+        // `<property>` dưới <service>. (Bài canh trước pin "có property" theo targetSdk 34 — đã đảo có bằng chứng.)
+        assertTrue(!decl.contains("<property"), "KHONG duoc co <property> duoi <service> — Android 10 PackageParser tu choi cai")
     }
 
     // ── Bề mặt người dùng: ô tick ở Kachi Settings › Hệ thống ───────────────

@@ -13,10 +13,20 @@ class FakeShell : SimpleCastShell {
     var shouldFail = false
     /** Packages to simulate as already running (with taskIds) for am stack list. */
     val runningTasks = mutableMapOf<String, Int>()
-    /** When true, apps started on display 1 won't appear in subsequent stack list (simulates failed landing). */
+    /** When true, apps started on the cluster display won't appear in subsequent stack list (simulates failed landing). */
     var blockAppOnDisplay1 = false
     /** Commands containing any of these substrings will fail. */
     val failCommands = mutableListOf<String>()
+
+    /**
+     * Logical id của VD cụm giả lập (mặc định 1 = giá trị lịch sử của các test cũ). Regression 2026-09-15
+     * ([ĐO] cụm = display 2, display 1 = ô `kachi-slot-0` của launcher) dùng 2 + [clusterDetectOut] có dòng slot.
+     */
+    var clusterDisplayId = 1
+    /** Gói của chính launcher (khớp `selfPackage` truyền vào coordinator) — placeholder ClusterBlack không bị coi là app. */
+    var selfPackage = "com.byd.clusternav"
+    /** Output trả cho [ClusterDisplayResolver.DETECT_CMD]; null = dựng từ [clusterDisplayId] (dạng grep thật trên xe). */
+    var clusterDetectOut: String? = null
 
     init {
         // CP/AA are always already running when user requests cast (they're system apps)
@@ -35,16 +45,32 @@ class FakeShell : SimpleCastShell {
         if (command == "am stack list") {
             return ShellResult(0, fakeStackListOutput(), "")
         }
+        // Simulate `dumpsys display | grep …` — cluster VD detection (R1: coordinator resolves LIVE before placing)
+        if (command == ClusterDisplayResolver.DETECT_CMD) {
+            return ShellResult(0, clusterDetectOut ?: defaultDetectOut(), "")
+        }
         return ShellResult(0, "", "")
     }
 
-    /** Simulates am stack list with tasks on display 0 and a freeform stack on display 1. */
+    /** Dạng grep thật trên xe 2026-09-15 (fission = cụm), id thay bằng [clusterDisplayId]. */
+    private fun defaultDetectOut(): String = """
+        |  DisplayDeviceInfo{"fission_bg_xdjaVirtualSurface": uniqueId="virtual:com.xdja.containerservice,1000,fission_bg_xdjaVirtualSurface,0", 1920 x 720, modeId 3, defaultModeId 3, supportedModes [{id=3, width=1920, height=720, fps=60.0}], colorMode 0, supportedColorModes [0], HdrCapabilities null, density 320, 320.0 x 320.0 dpi, appVsyncOff 0, presDeadline 16666666, touch NONE, rotation 0, type VIRTUAL, state ON, owner com.xdja.containerservice (uid 1000), FLAG_PRESENTATION, FLAG_OWN_CONTENT_ONLY}
+        |    mUniqueId=virtual:com.xdja.containerservice,1000,fission_bg_xdjaVirtualSurface,0
+        |  Display 0:
+        |  Display $clusterDisplayId:
+        |    mPrimaryDisplayDevice=fission_bg_xdjaVirtualSurface
+        |    mBaseDisplayInfo=DisplayInfo{"fission_bg_xdjaVirtualSurface, displayId $clusterDisplayId", uniqueId "virtual:com.xdja.containerservice,1000,fission_bg_xdjaVirtualSurface,0", app 1920 x 720, real 1920 x 720, ...}
+        |""".trimMargin()
+
+    /** Simulates am stack list with tasks on display 0 and a freeform stack on the cluster display. */
     private fun fakeStackListOutput(): String {
         val sb = StringBuilder()
+        val d = clusterDisplayId
+        val onCluster = "--display $d"
         // Home stack on display 0
         sb.appendLine("Stack id=0 bounds=[0,0][1920,720] displayId=0 userId=0")
         sb.appendLine("  taskId=1: com.android.launcher3/com.android.launcher3.Launcher visible=true")
-        // Running tasks on display 0 (except those moved to display 1)
+        // Running tasks on display 0 (except those moved to the cluster)
         val movedTaskIds = history
             .filter { it.startsWith("am stack move-task") }
             .mapNotNull { Regex("""move-task\s+(\d+)""").find(it)?.groupValues?.get(1)?.toInt() }
@@ -54,37 +80,37 @@ class FakeShell : SimpleCastShell {
                 sb.appendLine("  taskId=$taskId: $pkg/.MainActivity visible=true")
             }
         }
-        // Apps on display 1: started with --display 1 OR moved there via move-task
+        // Apps on the cluster: started with --display <cluster> OR moved there via move-task
         if (blockAppOnDisplay1) {
-            // Simulate: apps don't appear on display 1 (postcondition will fail)
-            if (history.any { it.contains("--display 1") }) {
-                sb.appendLine("Stack id=2 bounds=[0,0][1920,720] displayId=1 userId=0")
-                sb.appendLine("  taskId=99: com.byd.clusternav/.modules.clustercast.ClusterBlackActivity visible=true")
+            // Simulate: apps don't appear on the cluster (postcondition will fail)
+            if (history.any { it.contains(onCluster) }) {
+                sb.appendLine("Stack id=2 bounds=[0,0][1920,720] displayId=$d userId=0")
+                sb.appendLine("  taskId=99: $selfPackage/.modules.clustercast.ClusterBlackActivity visible=true")
             }
             return sb.toString()
         }
-        val startedOnD1 = history
-            .filter { it.contains("--display 1") && it.startsWith("am start") }
+        val startedOnCluster = history
+            .filter { it.contains(onCluster) && it.startsWith("am start") }
             .mapNotNull { cmd ->
                 Regex("""-n\s+'?([^/']+)/""").find(cmd)?.groupValues?.get(1)
                     ?: Regex("""-n\s+'?(\S+)/""").find(cmd)?.groupValues?.get(1)?.removeSurrounding("'")
             }
             .distinct()
             .filter { it != "com.android.settings" }
-        val movedToD1 = movedTaskIds.mapNotNull { tid ->
+        val movedToCluster = movedTaskIds.mapNotNull { tid ->
             runningTasks.entries.firstOrNull { it.value == tid }?.key
         }
-        val allOnD1 = (startedOnD1 + movedToD1).distinct()
-        if (allOnD1.isNotEmpty() || history.any { it.contains("--display 1") }) {
-            sb.appendLine("Stack id=2 bounds=[0,0][1920,720] displayId=1 userId=0")
-            sb.appendLine("  taskId=99: com.byd.clusternav/.modules.clustercast.ClusterBlackActivity visible=true")
+        val allOnCluster = (startedOnCluster + movedToCluster).distinct()
+        if (allOnCluster.isNotEmpty() || history.any { it.contains(onCluster) }) {
+            sb.appendLine("Stack id=2 bounds=[0,0][1920,720] displayId=$d userId=0")
+            sb.appendLine("  taskId=99: $selfPackage/.modules.clustercast.ClusterBlackActivity visible=true")
             var tid = 100
-            for (pkg in allOnD1) {
+            for (pkg in allOnCluster) {
                 // The ClusterNav projection placeholder is already emitted above as taskId=99
                 // (ClusterBlackActivity). Launching it does NOT create a second MainActivity task on
                 // the cluster, so don't fabricate one — that stray would (correctly) be evicted by
                 // CastStackParser.tasksToClean and skew close/clean sequences (bug-b fix, 2026-08-12).
-                if (pkg == "com.byd.clusternav") continue
+                if (pkg == selfPackage) continue
                 sb.appendLine("  taskId=${tid++}: $pkg/.MainActivity visible=true")
             }
         }

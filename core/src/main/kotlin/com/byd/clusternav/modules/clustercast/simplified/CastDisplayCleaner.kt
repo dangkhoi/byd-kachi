@@ -18,6 +18,10 @@ internal object CastDisplayCleaner {
         displayId: Int,
         sleepMs: (Long) -> Unit = { Thread.sleep(it) },
     ) {
+        // Guard tầng thi hành (CLAUDE §4/§5): không bao giờ quét display 0 hay id chưa dò được. Caller phải truyền
+        // id cụm đã xác minh live (R1/R2 spec kachi-hal187-cast-remediation) — dọn nhầm VD ô của launcher = bê
+        // app trong ô về màn giữa.
+        if (displayId < 1) return
         val result = shell.execute("am stack list")
         if (!result.success) return
 

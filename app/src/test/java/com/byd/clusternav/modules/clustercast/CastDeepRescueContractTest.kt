@@ -62,7 +62,13 @@ class CastDeepRescueContractTest {
 
     @Test
     fun `resets the cluster virtual display to defaults`() {
-        assertTrue(action.contains("DisplayParse.clusterDisplayId"), "targets the cluster VD id")
+        // 2026-09-15 R2 (regression cast rơi slot-VD display 1): deepRescue KHÔNG được dùng parser thô nữa — phải qua
+        // ClusterDisplayResolver.resolve(out, selfPackage) có owner-guard (cụm không bao giờ là VD của chính launcher),
+        // và chỉ reset khi id >= 1 (không bao giờ display 0 = màn giữa).
+        assertTrue(action.contains("ClusterDisplayResolver.resolve("), "targets the cluster VD id VIA the owner-guarded resolver")
+        assertTrue(action.contains("BuildConfig.APPLICATION_ID"), "owner-guard: passes own package so a launcher-owned slot VD is never treated as the cluster")
+        assertTrue(!action.contains("DisplayParse.clusterDisplayId"), "raw parser bypasses the owner-guard — forbidden here")
+        assertTrue(action.contains("if (vd >= 1)"), "resets only a real cluster id (>= 1) — never display 0 / never -1")
         assertTrue(
             action.contains("wm size reset") && action.contains("wm density reset") && action.contains("wm overscan reset"),
             "resets VD size/density/overscan",
