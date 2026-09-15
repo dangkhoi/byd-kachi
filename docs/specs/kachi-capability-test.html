@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiểm tra từng nút xe</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Công cụ kiểm tra từng chức năng xe (Capability Test Tool)</h1>
+<p class="muted">Slug: <code>kachi-capability-test</code> · Branch <code>main</code> · <span class="pill">Trạng thái: Đã implement (1.58), chờ verify trên xe</span></p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-15</b>: Khởi tạo + implement. Owner: <i>"các thông tin, action trên xe chưa test → cần 1 tài liệu liệt kê toàn bộ + 1 chức năng test tool trong app, bấm chạy từng nút, popup diễn giải + nút Chạy + OK/Not OK, ghi log; thông tin thì chỉ hiện giá trị."</i></li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Xe có <b>123 thông tin (datum)</b> + <b>64 hành động (control)</b> nhưng chưa được soát cạn từng cái trên xe thật — nút nào chạy, nút nào chưa, thông tin nào đọc được. Hai bộ đăng ký <code>TelemetryRegistry</code> + <code>ControlRegistry</code> (:core) là nguồn sự thật; <code>HalBindingTable</code> đã định tuyến control→HAL và đọc datum; <code>CarControlAdapter.actByKind</code> chạy một hành động; <code>CtlSafetyPolicy.needsConfirm</code> đánh dấu nút thân xe. Còn thiếu: (a) diễn giải một dòng cho mỗi khả năng, (b) một bảng đi tuần tự có chấm điểm + lưu.</p>
+<div class="card"><b>Cổng / phụ thuộc:</b> Không chặn — chạy off-car được (action no-op → báo "không gửi được"; datum "—"). Kết quả THẬT chỉ có khi soát trên xe.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li>R1. Liệt kê <b>mọi</b> datum + control (dựng động từ 2 registry, không chép tay) — thêm nút mới tự có mặt.</li>
+<li>R2. Mỗi mục có <b>diễn giải một dòng</b> song ngữ VI/EN.</li>
+<li>R3. Mục <b>hành động</b>: popup "Đang test: X" + diễn giải + nút <b>Chạy</b> (gửi lệnh thật) → nút <b>OK</b> / <b>Không OK</b> → ghi log.</li>
+<li>R4. Mục <b>thông tin</b>: popup hiện diễn giải + <b>giá trị đọc được</b>; KHÔNG có nút Chạy.</li>
+<li>R5. Chạy <b>tuần tự</b> từ mục chưa soát đầu tiên, xong cái này sang cái kế; có thể chạm từng mục lẻ.</li>
+<li>R6. Kết quả <b>lưu bền</b> (OK / Không OK / chưa soát + thời điểm); <b>xuất báo cáo</b> chữ; <b>xoá</b> để soát lại.</li>
+<li>R7. Có <b>tài liệu</b> liệt kê toàn bộ (sinh từ cùng catalog) — <code>docs/diagnostics/kachi-capability-checklist.md</code>.</li>
+<li>R8. (owner 2026-09-15) <b>Ghi log ra THẺ NHỚ</b> (`getExternalFilesDir/kachi-logs/`, nhẹ head unit, `adb pull` không cần root): <code>captest-report.txt</code> (tự lưu mỗi lần chấm), <code>usage-*.log</code> (logcat của app suốt phiên), <code>snapshot-*.log</code> (chụp một phát). Hiện đường dẫn + lệnh pull trong app. Dọn bởi <code>DiagStorageCap</code>.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Nút thân xe (kính/cửa/cốp/ca-pô/nóc) hiện <b>cảnh báo an toàn</b> trước khi Chạy (không chặn cứng — owner tự chịu, tự quan sát).</li>
+<li>R-nf2. Mô hình + mã hoá log ở <code>:core</code> (thuần, test off-car). UI <code>:app</code> dùng <code>R.string</code> (bài canh i18n).</li>
+<li>R-nf3. Kết quả theo <b>XE</b> (tệp <code>kachi_captest</code>), KHÔNG theo hồ sơ.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng</h3>
+<div class="flow">
+  <div class="fnode"><b>2 Registry (:core)</b><span>123 datum + 64 control</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>CapabilityTestPlan</b><span>+ CapabilityDescriptions</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>CapTestConsole (:app)</b><span>list + popup + Chạy/OK/NotOK</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>CapTestStore</b><span>prefs kachi_captest</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> reuse (registry/HAL/actByKind)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> mới (plan/console/store/descriptions)</span>
+</div>
+<h3>4.2 Quyết định + Context7</h3>
+<ul>
+<li>Diễn giải để <b>tách</b> ở <code>CapabilityDescriptions</code> (:core), KHÔNG thêm field vào 2 registry — tránh đụng phép đếm nhãn tuyệt đối của chúng.</li>
+<li>Chạy hành động qua <code>CarControlPort.actByKind</code> (đường DUY NHẤT, định tuyến đúng kind); đọc datum qua <code>AppContainer.telemetryText</code> → cùng <code>HalBindingTable</code> widget dùng — không mở đường thứ hai.</li>
+<li>Chống VN-viết-cứng ở :app: nhãn/diễn giải song ngữ đã sẵn ở :core; báo cáo dựng ở :core bằng <code>Strings.t</code>; chrome UI qua <code>R.string</code> (25 chuỗi).</li>
+<li><b>Context7</b>: chỉ dùng Android SDK + khối đã có → không cần.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>Mô hình + plan + codec + report + summary (+test)</td><td><code>core/.../CapabilityTest.kt</code>, <code>CapabilityTestPlanTest.kt</code></td></tr>
+<tr><td>T2</td><td>187 diễn giải song ngữ</td><td><code>core/.../CapabilityDescriptions.kt</code></td></tr>
+<tr><td>T3</td><td>Lưu bền + xuất báo cáo</td><td><code>app/.../CapTestStore.kt</code></td></tr>
+<tr><td>T4</td><td>UI console (list + popup + tuần tự)</td><td><code>app/.../CapTestConsole.kt</code></td></tr>
+<tr><td>T5</td><td>Nối dây deps runAction/readInfo + đọc datum</td><td><code>SettingsPanel/HomePanels/KachiHomeWiring/KachiHomeActivity/AppContainer</code></td></tr>
+<tr><td>T6</td><td>Đăng ký khoá/tệp prefs + 25 chuỗi + đặt vào nhóm Hệ thống</td><td><code>SettingsCatalog/ProfileScope/strings_kachi/SettingsSections</code></td></tr>
+<tr><td>T7</td><td>Tài liệu liệt kê</td><td><code>docs/diagnostics/kachi-capability-checklist.md</code></td></tr>
+<tr><td>T8</td><td>Senior review + security scan + build + OTA</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>CapabilityTestPlanTest</code> khoá phủ-đủ (187), mọi mục có diễn giải, codec đi-về, đếm tổng kết; 5 module xanh.</li>
+<li>V-emu [ĐO 2026-09-15]: list gom theo domain + tag [tin]/[nút] + diễn giải + huy hiệu; popup "Testing: X" + Chạy → phản hồi off-car "Could not send" + OK/NotOK/Skip; log ghi <code>headlight_mode␁OK␁ts</code>.</li>
+<li>V-oncar (còn nợ): trên xe, mỗi hành động Chạy phải hiện "đã gửi", quan sát hiệu ứng thật, chấm OK/Không OK; mỗi thông tin hiện giá trị thật.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Có cần chặn (không chỉ cảnh báo) nút thân xe khi xe đang chạy? — <span class="muted">Hiện: cảnh báo, không chặn (owner tự chịu, giống panel ADAS).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/kachi-capability-checklist.md</code> · <code>core/.../CapabilityTest.kt</code> · <code>app/.../CapTestConsole.kt</code></li>
+<li>Reuse: <code>CarControlAdapter.actByKind</code> · <code>HalBindingTable</code> · <code>CtlSafetyPolicy</code> · <code>TelemetryRegistry</code>/<code>ControlRegistry</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-15 · quyết định</b> — Diễn giải tách ở <code>CapabilityDescriptions</code> (không sửa registry) để không đụng test đếm nhãn (57/58 mục, 307/310 nhãn).</li>
+<li><b>2026-09-15 · trade-off</b> — Console nằm trong nhóm Cài đặt › Hệ thống (như VoiceTextConsole) thay vì Activity riêng: tái dùng khung màn Cài đặt, đổi lại phải nối 2 deps (runAction/readInfo) xuyên HomePanels.</li>
+<li><b>2026-09-15 · bug đã xử</b> — (a) local <code>val text</code> che <code>TextView.text</code> trong apply → đổi tên <code>col</code>; (b) chuỗi VN + đọc nhãn GỐC trong report → chuyển report sang :core dùng <code>Strings.t</code> + <code>displayLabel</code>; (c) <code>dp()</code> nhận hằng ngoài thang → dùng % màn (px); (d) tệp prefs thứ ba → khai <code>kachi_captest</code>/<code>captest_results</code> ở SettingsCatalog + ProfileScope.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>Pass 1 — 2026-09-15: đang chạy (senior review + security scan trước OTA 1.58).</li>
+</ul>
+
+</div></body>
+</html>

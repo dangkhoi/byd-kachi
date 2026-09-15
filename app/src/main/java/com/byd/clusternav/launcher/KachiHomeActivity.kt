@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import com.byd.clusternav.AppContainer
+import com.byd.clusternav.DiagStorageCap
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.launcher.testbridge.attachTestBridge
 import com.byd.clusternav.launcher.voice.VoiceModelStore
@@ -75,6 +76,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             openAppList = { drawerController.openAppList() },
             openAppByPackage = { pkg -> appOpener.openByIntent(pkg) },
             assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true },
+            // Kiểm tra từng nút (owner 2026-09-15): chạy hành động qua cùng adapter điều khiển xe (`actByKind` định
+            // tuyến đúng cửa theo kind); đọc datum qua cùng bảng HAL mà widget dùng — không mở đường thứ hai.
+            runAction = { id, arg -> container.carControl.actByKind(id, arg) },
+            readInfo = { id -> container.telemetryText(id) },
             // Lớp phủ đóng/mở ⇒ nút ⇄ nổi ẩn đi, và nút mic soi lại điều kiện ([KachiTopStrip.refreshVoicePill]:
             // mô hình có thể vừa tải xong / công tắc vừa gạt, ngay trong màn Cài đặt vừa đóng).
             onPanelsChanged = { windows.updateOverlayHeads(); topStrip.refreshVoicePill() },
@@ -183,6 +188,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         container = AppContainer.get(this)
+        // Owner 2026-09-15: ghi logcat của app ra THẺ suốt phiên (nhẹ head unit, lấy về bằng adb pull) — để có ngữ
+        // cảnh khi patch lỗi trên xe. Idempotent + luồng nền daemon; DiagStorageCap dọn không cho phình.
+        runCatching { KachiLog.startCapture(this) }
+        // Backstop THẺ luôn-bật: prune cây external về CAP ngay lúc mở launcher (force). usage-<ts>.log dồn theo MỖI
+        // lần app khởi động; nếu chỉ dựa NavNotificationListener/verbose thì khi chưa cấp quyền nghe thông báo, log
+        // của launcher có thể phình không giới hạn. Off-thread + runCatching sẵn trong DiagStorageCap ⇒ an toàn.
+        runCatching { DiagStorageCap.enforce(this, force = true) }
         // VM = nguồn sự thật (nạp từ repository qua factory AppContainer). embedded ban đầu = khả năng ActivityView; this là ViewModelStoreOwner.
         viewModel = ViewModelProvider(
             this, container.homeViewModelFactory(embedded = SlotAppHost.embeddingUsable(this)),

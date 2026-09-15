@@ -118,6 +118,9 @@ internal fun homePanels(
     openAppByPackage: (String) -> Boolean,
     /** V1.1 — gắn app vào một ô; CÙNG lambda mà ngăn kéo dùng. */
     assignAppToSlot: (Int, String) -> Boolean,
+    /** Kiểm tra từng nút (owner 2026-09-15): chạy một hành động xe · đọc một datum. */
+    runAction: (String, Int) -> Boolean,
+    readInfo: (String) -> String?,
 ): HomePanels = HomePanels(
     activity = activity,
     rootFrame = rootFrame,
@@ -127,6 +130,8 @@ internal fun homePanels(
     // T6 · R-UI (m): tập người dùng vừa chốt đã được `DockSelection.apply` gấp thành cấu hình ở tầng Cài đặt;
     // ở đây chỉ còn một intent — **không** ghi bền trực tiếp (`GridSeamGuardTest.chi ViewModel duoc ghi ben`).
     onDockConfig = { config -> viewModel.setDockConfig(config) },
+    runAction = runAction,
+    readInfo = readInfo,
     onApplyLayout = onApplyLayout,
     onPreset = onPreset,                         // CÙNG đường với 5 nút bố cục ở thanh trên (§4.5)
     onDockEdge = { e -> viewModel.setDockEdge(e) },

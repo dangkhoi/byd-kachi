@@ -67,6 +67,13 @@ class SettingsDeps(
      */
     val onDockConfig: (DockConfig) -> Unit,
     val onDockEdge: (DockEdge) -> Unit,
+    /**
+     * Công cụ kiểm tra từng nút (owner 2026-09-15): chạy MỘT hành động xe theo id + tham số ([CarControlPort.actByKind]).
+     * Trả `true` nếu lệnh gửi được (off-car / chưa map ⇒ `false`). KHÔNG gate — người dùng tự chấm kết quả bằng mắt.
+     */
+    val runAction: (String, Int) -> Boolean,
+    /** Đọc MỘT datum theo id → chuỗi hiển thị kèm đơn vị, hoặc `null` (off-car / chưa map). */
+    val readInfo: (String) -> String?,
     val onUnitPrefs: (UnitPrefs) -> Unit,
     val onThemeMode: (ThemeMode) -> Unit,
     val onLangMode: (LangMode) -> Unit,

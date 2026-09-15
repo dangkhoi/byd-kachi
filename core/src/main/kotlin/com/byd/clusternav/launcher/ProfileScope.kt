@@ -115,6 +115,12 @@ object ProfileScope {
         )
         put("doze_whitelist_applied", "trạng thái máy: đã xin miễn doze cho tiến trình chưa — thuộc máy, không thuộc người")
         put(
+            "captest_results",
+            "nhật ký 'kiểm tra từng nút' (`CapTestStore`, tệp `kachi_captest`) — kết quả OK/Không OK khi soát trên " +
+                "xe NÀY. Theo XE, không theo người: chép hồ sơ sang xe khác không mang theo kết quả soát phần cứng. " +
+                "Cùng họ `last_display_id`/`sherpa_model_id` — trạng thái đo mức máy",
+        )
+        put(
             "sherpa_model_id",
             "mã mô hình ASR đã TẢI VỀ máy NÀY (`VoiceModelStore`, tệp `kachi_voice`) — theo XE, không theo người: " +
                 "tệp mô hình 78 MB nằm trên đĩa của chính xe này, chép hồ sơ sang xe khác thì mô hình có thể chưa tải " +

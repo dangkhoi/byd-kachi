@@ -32,6 +32,8 @@ class HomePanels(
     private val bridge: ClusterNavBridge,
     private val openDockPicker: (Set<String>, (Set<String>) -> Unit) -> Unit,
     private val onDockConfig: (DockConfig) -> Unit,
+    private val runAction: (String, Int) -> Boolean,
+    private val readInfo: (String) -> String?,
     private val onApplyLayout: (GridLayout?) -> Unit,
     private val onPreset: (LayoutPreset) -> Unit,
     private val onDockEdge: (DockEdge) -> Unit,
@@ -146,6 +148,8 @@ class HomePanels(
             openDockPicker = { selected, onApply -> openDockPicker(selected, onApply) },
             onDockConfig = { config -> onDockConfig(config) },
             onDockEdge = { e -> onDockEdge(e) },
+            runAction = { id, arg -> runAction(id, arg) },
+            readInfo = { id -> readInfo(id) },
             // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).
             onUnitPrefs = { prefs -> onUnitPrefs(prefs) },
             onThemeMode = { m -> onThemeMode(m) },

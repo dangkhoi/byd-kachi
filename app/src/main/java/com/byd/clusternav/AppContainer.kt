@@ -79,6 +79,16 @@ class AppContainer internal constructor(
     /** Cổng điều khiển xe (toggle/step/cover/select/press) — **KHÔNG gate**; off-car no-op (false). */
     val carControl: CarControlPort by lazy { CarControlAdapter(halBindingTable) }
 
+    /**
+     * Đọc MỘT datum theo id → chuỗi hiển thị kèm đơn vị (cho công cụ kiểm tra từng nút). `null` = off-car / chưa map.
+     * Đi qua đúng [HalBindingTable] mà widget/thanh trạng thái dùng — không mở đường đọc thứ hai.
+     */
+    fun telemetryText(id: String): String? {
+        val raw = halBindingTable.readString(id) ?: return null
+        val unit = com.byd.clusternav.launcher.TelemetryRegistry.byId(id)?.unit ?: ""
+        return if (unit.isBlank()) raw else "$raw $unit"
+    }
+
     /** Repo trạng thái xe LIVE: poll 2 nhịp → `StateFlow<CarStatus>` (nguồn cho UDF HOME; Activity collect qua repeatOnLifecycle). */
     val carStatusRepository: CarStatusRepository by lazy { CarStatusRepository(carDataAdapter, carScope) }
 

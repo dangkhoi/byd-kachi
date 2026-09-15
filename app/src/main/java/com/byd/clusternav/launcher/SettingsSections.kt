@@ -341,6 +341,9 @@ class SettingsSections(
         com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows).build(body)
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
         VoiceTextConsole(context, rows, deps).build(body)
+        // Owner 2026-09-15 — công cụ kiểm tra từng nút/thông tin xe, bấm chạy lần lượt, tự chấm OK/Không OK, ghi log.
+        // Cùng chỗ "Nâng cao" vì nó là bề mặt ĐO (soát trên xe), không phải cấu hình.
+        CapTestConsole(context, rows, deps).build(body)
     }
 
     /**

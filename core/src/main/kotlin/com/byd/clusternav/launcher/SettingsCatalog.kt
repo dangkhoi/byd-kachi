@@ -135,6 +135,12 @@ object SettingsCatalog {
                 "quyền tự bật lại mỗi lần mở launcher",
         )
         put(
+            "captest_results",
+            "trạng thái ĐO, không phải cấu hình — nhật ký công cụ 'kiểm tra từng nút' (`CapTestStore`, tệp " +
+                "`kachi_captest`): id nút → OK/Không OK + thời điểm. Là kết quả soát của CHIẾC XE này, người dùng " +
+                "không 'đặt' nó như một lựa chọn; bày ra như một dòng cài đặt thì vô nghĩa. Theo máy như OTA/chẩn đoán",
+        )
+        put(
             "sherpa_model_id",
             "trạng thái THEO-MÁY, không phải cấu hình theo hồ sơ — là mã mô hình ASR đã TẢI VỀ máy NÀY (`VoiceModelStore`, " +
                 "tệp `kachi_voice`). Việc chọn/tải mô hình làm TRỰC TIẾP trên màn Cài đặt giọng nói (`VoiceModelSettings`, " +
@@ -163,6 +169,10 @@ object SettingsCatalog {
                 "`kachi_workspace`: tệp đó đi theo hồ sơ (chụp–áp, nhân bản, xoá hồ sơ) còn cái này thì **không " +
                 "được** đi đâu cả — một cửa mở-60-phút mà bị chép sang hồ sơ khác, hoặc sống lại qua một lượt áp " +
                 "ảnh chụp, là đúng thứ mà cửa sổ thời gian sinh ra để chặn (`TestBridgeWindow`)",
+        "kachi_captest" to
+            "Kiểm tra từng nút (owner 2026-09-15) — chỉ chứa `captest_results`, nhật ký OK/Không OK khi soát cạn " +
+                "trên xe. Cố ý ĐỂ RIÊNG khỏi `kachi_workspace`: nó là trạng thái ĐO của chiếc xe này, KHÔNG đi theo " +
+                "hồ sơ (chép hồ sơ sang xe khác không mang theo kết quả soát). Cùng lẽ với `kachi_test_bridge`/`kachi_voice`",
         "kachi_voice" to
             "Giọng nói — chỉ chứa `sherpa_model_id` (mã mô hình ASR đã tải về máy NÀY, xem `VoiceModelStore`). Cố ý ĐỂ " +
                 "RIÊNG khỏi `kachi_workspace`: nó là trạng thái THEO-MÁY (mô hình 78 MB nằm trên đĩa máy này), KHÔNG đi " +
