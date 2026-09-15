@@ -401,6 +401,32 @@ class VoiceCommandWiringContractTest {
         )
     }
 
+    /**
+     * Đường **side-load** (xe không internet, owner 2026-09-15) phải CÒN ĐƯỢC GỌI và phải qua ĐÚNG phép kiểm của
+     * đường mạng. Năm bài JVM của `VoiceModelSideloadTest` kiểm phần thuần — nhưng chúng vẫn XANH nếu một lần viết
+     * lại `fetch`/`install` nuốt mất call site (đúng bệnh `CastShell.evictVd`, CLAUDE.md §8). Bài này khoá dây nối.
+     */
+    @Test
+    fun `duong side-load duoc goi that va khong am tham roi ve mang`() {
+        val store = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelStore.kt")
+        assertTrue(store.contains("VoiceModelSideload.candidate(importDir, safe)"),
+            "install phải hỏi tệp side-load bằng ĐÚNG tên đã qua requireSafe, không phải tên thô")
+        assertTrue(store.contains("VoiceModelSideload.IMPORT_SUBDIR") && store.contains("getExternalFilesDir"),
+            "thư mục đặt tệp phải là thư mục ngoài của app (adb push / USB), không phải một chỗ cần quyền")
+        assertTrue(store.contains("VoiceModelSideload.copyVerified("),
+            "có tệp side-load ⇒ fetch phải đi đường chép-và-băm, không có nhánh nhận tệp mà không kiểm")
+        val sideload = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSideload.kt")
+        assertTrue(sideload.contains("got.bytes != expectedBytes") &&
+            sideload.contains("got.sha256.equals(expectedSha256"),
+            "tệp chép từ USB phải qua CẢ hai phép kiểm (sha256 + cỡ) y như tệp tải từ mạng")
+        assertTrue(sideload.contains("out.delete()"),
+            "tệp side-load sai phải bị XOÁ — không để lại tệp hỏng cho bước Verifying/onnxruntime")
+        // Sai ⇒ báo thẳng. Nếu ai đó cho nó rơi về `download(...)` thì trên xe không mạng người chép USB sẽ chỉ
+        // thấy "lỗi mạng" và không bao giờ biết tệp mình chép sai.
+        assertFalse(sideload.contains("download("),
+            "lớp side-load KHÔNG được biết tới đường mạng — sai là báo sai, không âm thầm rơi về mạng")
+    }
+
     /** Phiên nghe có TRẦN thời gian, và hộp xác nhận mặc định là KHÔNG. */
     @Test
     fun `phien nghe co tran thoi gian va cong xac nhan mac dinh la KHONG`() {

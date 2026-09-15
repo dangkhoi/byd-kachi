@@ -72,16 +72,20 @@ Chép `app-release.apk` vào USB → cài bằng file manager BYD.
 ## 6b. VOICE "hoàn toàn không work" + LAG — ĐO trước khi đổ cho phần cứng (owner 2026-09-15)
 Fact đã đọc từ source (off-car): chạm vào ô đi `injectInputEvent` (**không** fork `input` mỗi sự kiện — `VdAppHost.kt:231`); voice cần quyền **`RECORD_AUDIO` runtime** (`VoiceCapture.kt:46`, thiếu ⇒ tấm chữ báo "thiếu quyền" 8 s rồi im); 2 poller nền qua dadb: `SlotLiveProbe` (1 `am stack list`/nhịp) + SimpleCast watchdog (`am stack list` ~4 s/lần — thấy trong logcat xe). Bisect 3 lệnh:
 ```
-# (a) quyền mic có được cấp chưa? (A10 = runtime; xe không có hộp thoại xin quyền)
-adb shell dumpsys package com.byd.launcher | grep -E "RECORD_AUDIO|granted=true|granted=false" | head
-#   chưa cấp → adb shell pm grant com.byd.launcher android.permission.RECORD_AUDIO   (PermissionPreflight:104 cũng in đúng lệnh này)
+# (a) MỘT lệnh: bridge `state` báo shell_usable + quyền còn THIẾU + voice_model (TestBridgeState:85-95)
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "shell_usable|missing|unknown|microphone|voice_model|ready"
+#   ⚠ ĐỌC ĐÚNG: `state` KHÔNG in "granted". Nó in `permissions.missing` / `permissions.unknown` (mã
+#   `LauncherRequirements.MICROPHONE.id` = "microphone"). VẮNG "microphone" trong hai mảng đó = ĐÃ cấp.
+#   `voice_model` chỉ có 2 khoá: `ready` (true/false) + `bytes` — không có khoá "loaded".
+#   mic chưa cấp → app TỰ cấp qua pm grant (PermissionPreflight:104) NHƯNG cần kênh shell (dadb loopback) sống:
+#   shell_usable=false ⇒ gốc là kênh shell, không phải mic. Cấp tay: adb shell pm grant com.byd.launcher android.permission.RECORD_AUDIO
 # (b) bộ nhận dạng + mô hình có chạy không — KHÔNG cần mic: đẩy 1 WAV qua ĐÚNG đường VoiceWavProbe
 adb push <câu-mẫu.wav> /sdcard/Download/kachi.wav
 adb shell "$B --es cmd wav --es path /sdcard/Download/kachi.wav"     # đọc heard/grammar/probe_error
 # (c) phiên nghe thật + log
 adb shell "$B --es cmd listen"; adb shell "logcat -d -s KachiVoice" | tail -30
 ```
-- (a) sai ⇒ **gốc là quyền**, không phải phần cứng. (b) nghe được ⇒ mô hình/CPU OK, lỗi ở mic/phím vô-lăng (đọc `AccessibilityForceBind`/key binding). (b) `probe_error` "chưa tải mô hình" ⇒ mô hình Vosk thiếu/lỗi tải. (b) chậm nhiều giây ⇒ mới nói tới CPU.
+- (a) sai ⇒ **gốc là quyền**, không phải phần cứng. (b) nghe được ⇒ mô hình/CPU OK, lỗi ở mic/phím vô-lăng (đọc `AccessibilityForceBind`/key binding). (b) `probe_error` "chưa tải mô hình" ⇒ mô hình **sherpa ONNX** (`zipformer-vi-2025-04-20`) chưa có — xe không internet thì đường tải mạng không bao giờ xong → dùng **side-load** (mục 6c). (b) chậm nhiều giây ⇒ mới nói tới CPU.
 
 **Lag chạm VietMap trong ô** — nghi **chạm lệch do size-compat** (app co lại nhưng toạ độ map cả ô), cùng gốc YouTube, KHÔNG phải lag:
 ```
@@ -96,6 +100,34 @@ adb shell dumpsys gfxinfo com.byd.launcher | grep -A12 "Janky"   # % khung giậ
 adb shell "logcat -d -s SimpleCast | grep -c 'am stack list'"    # số lần poll/phút — nếu cao ⇒ giảm nhịp/đổi sang event
 ```
 Ứng viên tối ưu (chỉ sau khi đo): gộp 2 poller `am stack list` thành 1 + kéo dài nhịp khi không cast; tắt `KachiLog` ghi logcat ra thẻ khi không ở chế độ kiểm thử; đo lại.
+
+## 6c. SIDE-LOAD mô hình voice (xe không internet) — T8, bản 1.63 batch 2
+`install()` giờ ưu tiên tệp đặt sẵn, kiểm **cùng sha256+bytes** với đường mạng (`VoiceModelSideload`). Model mặc định `zipformer-vi-2025-04-20`, 4 tệp **phải mang đúng tên đích**: `encoder.onnx · decoder.onnx · joiner.onnx · tokens.txt` (~266 MB; URL + sha256 + cỡ ghim trong `SherpaModelCatalog.ZIPFORMER_VI`).
+
+⚠ **Tên trên HuggingFace KHÁC tên đích** — tải về là `encoder-epoch-12-avg-8.onnx`, phải **đổi tên** thành `encoder.onnx` (tương tự decoder/joiner). Đặt sai tên ⇒ `candidate()` trả `null` ⇒ install im lặng quay về **đường mạng** ⇒ xe không internet thì trông y hệt "side-load không chạy".
+```
+# 1) trên máy tính — tải + ĐỔI TÊN (HF trả 302 sang CDN ⇒ cần -L)
+U=https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-2025-04-20/resolve/main
+curl -L -o encoder.onnx $U/encoder-epoch-12-avg-8.onnx
+curl -L -o decoder.onnx $U/decoder-epoch-12-avg-8.onnx
+curl -L -o joiner.onnx  $U/joiner-epoch-12-avg-8.onnx
+curl -L -o tokens.txt   $U/tokens.txt
+shasum -a 256 encoder.onnx decoder.onnx joiner.onnx tokens.txt   # so với sha ghim trong SherpaModelCatalog.kt
+# 2) tạo thư mục TRƯỚC rồi mới push (adb push nhiều tệp KHÔNG tự tạo thư mục đích)
+D=/sdcard/Android/data/com.byd.launcher/files/sherpa/import/zipformer-vi-2025-04-20
+adb shell mkdir -p $D
+adb push encoder.onnx decoder.onnx joiner.onnx tokens.txt $D/
+adb shell ls -l $D          # kỳ vọng ĐỦ 4 tệp, đúng tên, cỡ 261057692/5165084/4104465/25847
+# 3) trên xe: Cài đặt › Giọng nói › tải mô hình → install() thấy tệp side-load, KHÔNG chạm mạng
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "voice_model|ready|bytes"   # kỳ vọng ready:true
+# 4) xong thì trả lại chỗ (bản chép trong máy mới là bản dùng)
+adb shell rm -rf $D
+```
+- **Phải đủ cả 4 tệp.** Thiếu tệp nào thì RIÊNG tệp đó đi đường mạng (trộn theo từng tệp) — xe không mạng ⇒ cả lượt cài hỏng với câu "lỗi mạng &lt;tên tệp&gt;", đó là tệp bị thiếu/sai tên trong thư mục import.
+- Cần chỗ trống **~266 MB trong bộ nhớ trong** (chưa kể bản gốc còn nằm trên thẻ) — thiếu thì `install()` báo "máy còn … MB" trước khi chép.
+- Sai nội dung ⇒ báo thẳng "side-load … không khớp bản ghim" (không âm thầm rơi về mạng) → chép lại đúng tệp.
+- Thanh % chạy theo tổng byte đã chép (chung một bộ đếm với đường mạng) — đứng im nhiều phút mới là bất thường.
+- Xong ⇒ chạy lại 6b(b) `wav` để xác nhận nhận dạng chạy trên xe.
 
 ## 7. Sau khi 1 + 2 + 3 PASS
 → báo về: em chạy lại senior review + security scan (đã chạy off-car) với log thật → OTA 1.63. Mục FAIL: dán nguyên output — sửa đúng chỗ.

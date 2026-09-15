@@ -114,6 +114,10 @@ object VoiceModelStore {
 
             val total = model.totalBytes
             var done = 0L
+            // Side-load (owner 2026-09-15, xe không internet): tệp đặt sẵn ở `<ext>/sherpa/import/<model-id>/` được
+            // ưu tiên, qua CÙNG phép kiểm bytes+sha256 với đường mạng (xem [VoiceModelSideload]). Vắng thẻ ⇒ null ⇒ mạng.
+            val importDir = runCatching { app.getExternalFilesDir(null) }.getOrNull()
+                ?.let { File(it, "${VoiceModelSideload.IMPORT_SUBDIR}/${model.id}") }
             for (mf in model.files) {
                 val safe = requireSafe(mf.name) ?: run {
                     onStep(Step.Failed(Lang.t(
@@ -121,7 +125,7 @@ object VoiceModelStore {
                     ))); return
                 }
                 val target = File(out, safe)
-                val err = fetch(mf, target, total, done, onStep)
+                val err = fetch(mf, target, total, done, onStep, VoiceModelSideload.candidate(importDir, safe))
                 if (err != null) { out.deleteRecursively(); onStep(Step.Failed(err)); return }
                 done += mf.bytes
             }
@@ -178,9 +182,17 @@ object VoiceModelStore {
         totalAll: Long,
         doneBefore: Long,
         onStep: (Step) -> Unit,
+        sideload: File? = null,
     ): String? {
         if (!mf.pinned) return Lang.t("tệp ${mf.name} chưa ghim sha256/cỡ", "${mf.name} is not pinned")
         onStep(Step.Downloading(if (totalAll > 0) ((doneBefore * 100) / totalAll).toInt() else -1))
+        if (sideload != null) {
+            // Có tệp side-load ⇒ KHÔNG chạm mạng. Sai ⇒ báo thẳng (người chép USB cần biết), không rơi về mạng.
+            Log.i(TAG, "side-load ${mf.name} từ ${sideload.absolutePath}")
+            return VoiceModelSideload.copyVerified(
+                sideload, target, mf.bytes, mf.sha256, percentReporter(totalAll, doneBefore, onStep),
+            )
+        }
         val got = runCatching { download(mf.url, target, totalAll, doneBefore, onStep) }
             .getOrElse { return Lang.t("lỗi mạng ${mf.name}: ${it.message}", "network error ${mf.name}: ${it.message}") }
             ?: return Lang.t("máy chủ từ chối ${mf.name}", "server refused ${mf.name}")
@@ -196,6 +208,19 @@ object VoiceModelStore {
 
     private data class Downloaded(val bytes: Long, val sha256: String)
 
+    /**
+     * Một bộ báo nhịp `%` dùng CHUNG cho cả hai đường lấy tệp (mạng · side-load): nhận **tổng byte đã lấy của tệp
+     * đang chạy**, quy ra phần trăm của CẢ bộ rồi chỉ phát khi con số đổi (100 lần thay vì 4000 lần/tệp).
+     * Một bản duy nhất để hai đường không bao giờ báo lệch nhau (CLAUDE.md §4.1 DRY).
+     */
+    private fun percentReporter(totalAll: Long, doneBefore: Long, onStep: (Step) -> Unit): (Long) -> Unit {
+        var lastPercent = -2
+        return { read ->
+            val pct = if (totalAll > 0) (((doneBefore + read) * 100) / totalAll).toInt() else -1
+            if (pct != lastPercent) { lastPercent = pct; onStep(Step.Downloading(pct)) }
+        }
+    }
+
     /** Tải một tệp, băm trong lúc tải; báo % theo tổng của cả bộ. `null` = máy chủ trả mã lỗi. */
     private fun download(url: String, out: File, totalAll: Long, doneBefore: Long, onStep: (Step) -> Unit): Downloaded? {
         val conn = HttpConn.open(url, READ_TIMEOUT_MS)
@@ -207,7 +232,7 @@ object VoiceModelStore {
             }
             val digest = MessageDigest.getInstance("SHA-256")
             var read = 0L
-            var lastPercent = -2
+            val report = percentReporter(totalAll, doneBefore, onStep)
             out.parentFile?.mkdirs()
             conn.inputStream.use { input ->
                 out.outputStream().buffered().use { output ->
@@ -218,8 +243,7 @@ object VoiceModelStore {
                         output.write(buf, 0, n)
                         digest.update(buf, 0, n)
                         read += n
-                        val pct = if (totalAll > 0) (((doneBefore + read) * 100) / totalAll).toInt() else -1
-                        if (pct != lastPercent) { lastPercent = pct; onStep(Step.Downloading(pct)) }
+                        report(read)
                     }
                 }
             }
