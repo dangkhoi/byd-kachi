@@ -129,6 +129,21 @@ adb shell rm -rf $D
 - Thanh % chạy theo tổng byte đã chép (chung một bộ đếm với đường mạng) — đứng im nhiều phút mới là bất thường.
 - Xong ⇒ chạy lại 6b(b) `wav` để xác nhận nhận dạng chạy trên xe.
 
+## 6d. Thêm cho bản 1.64 (commit `e598925`) — 3 mục on-car mới, mỗi mục 1 lệnh
+Cài `app-release.apk` 1.64/65 (cùng khoá, `install -r`). Mọi thứ dưới đã xanh off-car + E2E emulator (`emulator-voice-e2e-2026-09-15.md` §6).
+```
+# (a) Phản hồi giọng: nói 1 câu bất kỳ rồi đọc khối tts — vi_status: 0/1 = có giọng vi (Android TTS đọc được);
+#     -1 = engine có, thiếu gói (tải là xong); -2 = engine không bao giờ đọc tiếng Việt → cần sherpa offline (pha 2)
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "tts|vi_status|engine|offline_voice"
+# (b) Sổ địa chỉ: Cài đặt › Dẫn đường › Sổ địa chỉ → thêm "Nhà" có "lat, lng" dán từ Google Maps → nói "về nhà"
+#     kỳ vọng: có toạ độ ⇒ VietMap mở đúng điểm (AWAITING_CAR — chưa ai đo VietMap nhận lat/lng thật); không toạ độ ⇒ Google Maps geo:
+adb shell "$B --es cmd say --es text 'về nhà'"          # đọc intents/replies; rồi am stack list | grep -iE "vietmap|maps"
+# (c) Voice sau vá: "đóng YouTube" phải KHÔNG mở app + câu hướng dẫn; "phát nhạc trên YouTube Music" phải mở app
+adb shell "$B --es cmd say --es text 'đóng YouTube'"; adb shell "$B --es cmd say --es text 'phát nhạc trên YouTube Music'"
+```
+- Biasing/hotword (nhãn 50→0 mất) và nhịp chờ bridge không cần xe — đã đo trên emulator.
+- Còn lỗ đã biết (không cần đo lại trên xe): từ đơn `pin`/`dừng` nghe sai do tệp hotword 623 dòng bị LOÃNG ([ĐO host]) → spec riêng "hotword theo ngữ cảnh".
+
 ## 7. Sau khi 1 + 2 + 3 PASS
 → báo về: em chạy lại senior review + security scan (đã chạy off-car) với log thật → OTA 1.63. Mục FAIL: dán nguyên output — sửa đúng chỗ.
 
