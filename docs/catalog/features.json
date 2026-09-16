@@ -1,0 +1,1416 @@
+[
+ {
+  "group": "Màn hình chính & ô",
+  "name": "5 bố cục sẵn — 1 ô · 2 cột · 2 hàng · 3 ô · 4 ô",
+  "desc": "Vào Cài đặt › Màn hình chính rồi chạm một chip trong hàng «Bố cục sẵn»: `ONE` (1 ô) · `TWO_COL` (2 cột) · `TWO_ROW` (2 hàng) · `THREE` (3 ô, cột trái chiếm 1.55/2.55) · `QUAD` (4 ô). Màn hình dựng lại ngay theo khung mới, nội dung ô nào giữ nguyên ô đó. Mặc định của máy là `THREE` với 3 widget (Bảng tổng hợp · Năng lượng · Không khí). 5 nút bố cục cũ trên THANH TRÊN đã bị bỏ hẳn ở S4 — dangkhoi chốt người dùng chỉ nên đổi HỒ SƠ, còn bố cục thuộc về hồ sơ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WorkspaceLayout.kt:9-14,24-31,48,54-101 · core/.../WorkspaceState.kt:207-212 · app/.../SettingsSectionsHome.kt:62-85 · app/.../KachiTopStrip.kt:30-36 (đã gỡ) · BACKLOG P1 ✅ 09-08",
+  "spec": "docs/specs/kachi-workspace-launcher.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Bố cục TỰ VẼ 12×6 — trình vẽ khung",
+  "desc": "Chạm chip «Tự vẽ» hoặc nút «Vẽ bố cục riêng…» để mở bảng vẽ: kéo giữa khung để dời, kéo góc dưới-phải để đổi cỡ, chạm để chọn; khung bám lưới 12 cột × 6 dòng, khung nào đè nhau thì tô ĐỎ. Nút Thêm / Xoá / Về bố cục sẵn / Lưu — nút Lưu bị CHẶN khi bố cục còn lỗi (đè nhau, ra ngoài lưới, nhỏ quá 2×1, vượt trần ô). Dòng chân bảng đếm số khung + số ô trống. Lưu bền dạng chuỗi `col,row,cols,rows;…`. Bố cục «3 ô» KHÔNG biểu diễn được trên lưới (cột trái = 7.294/12) nên lưới là CỘNG THÊM chứ không thay thế.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WorkspaceGrid.kt:32-40,45-90,105-106,134-143,177-216,236-287 · core/.../GridEditorLogic.kt:23-43 · app/.../GridEditorView.kt:26-176 · app/.../LayoutEditorPanel.kt:25-190 · app/.../HomePanels.kt:99-116 · BACKLOG P9 ✅ off-car 09-11 (3 bước), 🚗",
+  "spec": "docs/specs/kachi-dynamic-grid.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Trần 6 ô + nguồn bố cục DUY NHẤT (EffectiveLayout)",
+  "desc": "Trần số ô nâng 4 → 6 (1920×1080: 6 ô ⇒ ~640×360 còn đặt được app; 8 ô ⇒ ~480×270 vô dụng). `EffectiveLayout` là NGUỒN DUY NHẤT trả lời «bao nhiêu ô, ở đâu» cho cả màn chính lẫn bộ sắp cửa sổ app — trước đó có 6 chỗ tự suy ra và bỏ sót một chỗ là cửa sổ app đặt theo bố cục cũ. Có 3 luật lùi an toàn (dữ liệu hỏng · khung đè nhau · nhiều khung hơn trần ô) và một bài canh QUÉT MÃ NGUỒN cấm suy-ra-trực-tiếp.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../WorkspaceState.kt:186,196-201 · core/.../WorkspaceGrid.kt:236-287 · app/src/test/.../GridSeamGuardTest.kt · BACKLOG P9 bước 3",
+  "spec": "docs/specs/kachi-dynamic-grid.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Nội dung một ô — app thật / widget Kachi / widget app khác / nút hành động",
+  "desc": "Một ô chứa được 4 thứ: (a) `Empty` — thẻ nét đứt có dấu ＋, chạm mở ngăn kéo; (b) `App(pkg)` — một app THẬT chiếu vào ô; (c) `Widget(ids)` — 1..8 thẻ dựng tay xếp lưới trong ô; (d) `AppWidget(id@provider)` — widget Android của app khác. Nút HÀNH ĐỘNG và GÓI LỆNH không phải loại thứ 5: chúng nằm TRONG danh sách id của loại (c) và được vẽ thành nút bấm. Có bất biến MỘT-APP-MỘT-Ô: gán app vào ô mới thì nó tự bị gỡ khỏi mọi ô khác.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WorkspaceState.kt:4-30,44-108,126-133,142-149 · app/.../WidgetViews.kt:87,183,195-200 · app/.../WorkspaceView.kt:344-351,412-420",
+  "spec": "docs/specs/kachi-workspace-launcher.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Kéo-thả đổi chỗ hai ô",
+  "desc": "Nhấn giữ một ô có nội dung (Widget / AppWidget / App) rồi kéo thả lên ô khác ⇒ hai ô ĐỔI CHỖ cho nhau. Ô trống cố ý KHÔNG kéo được, nhưng MỌI ô đều nhận thả. Sổ vị trí cửa sổ được cập nhật bằng bộ reconcile lúc render chứ không sửa tay.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../WorkspaceView.kt:297,328,342,353-367 · app/.../KachiHomeActivity.kt:236 · app/.../KachiHomeSlots.kt:77-81 · core/.../WorkspaceState.kt:158-165 · BACKLOG P5 ✅ 09-09",
+  "spec": "docs/specs/kachi-workspace-launcher.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Nút «⇄» đổi app trên đầu ô + chạm để mở lại",
+  "desc": "Mỗi ô có một nút ⇄ nhỏ ở đầu ô (chỉ icon 20dp, KHÔNG viền, không nền — dangkhoi chốt «kín đáo, nhỏ gọn») — chạm là mở ngăn kéo cho đúng ô đó. Chạm vào thân ô đang chứa app thì mở lại app đó.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SlotSwapButton.kt:27-84 · app/.../WorkspaceView.kt:341,369-384,398-399 · app/.../KachiHomeSlots.kt:50-52 · BACKLOG U14 ✅ off-car 09-14, 🚗 (nhìn trên cụm/ô thật có tách khỏi pixel app không)",
+  "spec": "docs/specs/kachi-workspace-launcher.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Chiếu app THẬT vào ô — màn ảo `kachi-slot-<ô>-<mốc>`",
+  "desc": "Mỗi ô chứa app được cấp một MÀN ẢO riêng tên `kachi-slot-<số ô>-<mốc thời gian>` (cờ `OWN_CONTENT_ONLY | DESTROY_CONTENT_ON_REMOVAL`), app được `am start --display <vd>` vào đó rồi vẽ lên `SurfaceView` của ô — kiểu Dudu, không thanh tiêu đề, không viền đen. Cố ý KHÔNG dùng `FLAG_PRESENTATION`: bản 1.56 thêm cờ này làm YouTube tự nhảy về display 0 để lại Ô ĐEN THUI, đã gỡ. Chống xoay bằng `wm set-user-rotation lock -d <vd> 0` + `wm set-fix-to-user-rotation -d <vd> enabled` (1.57). Sổ sở hữu `SlotVdLedger` giữ đúng MỘT màn ảo sống cho mỗi ô, nhận/nhả qua nhiều đời Activity.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../VdAppHost.kt:79,101-107,117,122,138-147 · core/.../SlotVdLedger.kt:24-58 · app/.../SlotVdOwner.kt · oncar-bugs-2026-09-15.md §Lỗi 1 (1.56 SAI → 1.57 đúng) · BACKLOG H2 ✅ off-car 09-14 ([ĐO] 4 VD rò → đúng 2), 🚗",
+  "spec": "docs/specs/kachi-open-app-correctly.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Density-lever cho app «kiểu điện thoại» (YouTube co vào giữa)",
+  "desc": "Không có nút nào cho người dùng — máy tự đo. Ô 1401×748 @200dpi = 598.4 dp, thiếu đúng 1.6 dp so với mốc sw600dp ⇒ YouTube tự nhận mình là «điện thoại» và đòi dọc ⇒ video co vào giữa, hai bên đen. `SlotDensity.forTablet` HẠ dpi của riêng màn ảo ô vừa đủ để cạnh ngắn ≥ 600 dp (748 px ⇒ 199 dpi ⇒ 601 dp), có sàn 120 dpi và KHÔNG BAO GIỜ tăng. Vì chỉ chạm màn ảo của ô nên không dùng `wm density` ⇒ không dính chuyện ghi vào `display_settings.xml` sống qua reboot.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../SlotDensity.kt:6-13,27-28,34-68 · app/.../VdAppHost.kt:107,122 · app/.../WorkspaceView.kt:334 · oncar-verify-1.63-2026-09-15.md §4 (cổng PASS: app đầy khung, không `mSizeCompatScale`) · oncar-captest-results §YouTube scale",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "«App đã đóng — chạm để mở lại»",
+  "desc": "Khi app trong ô bị đóng/force-stop, trước đây ô giữ KHUNG ĐÓNG BĂNG (ảnh cũ đứng im). Nay một nhịp đo 5 giây (một lệnh `am stack list` cho MỌI ô) phát hiện task biến mất, giấu mặt vẽ và hiện nhãn «App đã đóng — chạm để mở lại»; chạm là app chạy lại NGAY trong ô, không sinh màn ảo mới. Luật đo là thuần: phải từng thấy sống mới được kết luận (nên ca Waze chưa bao giờ lên được VD không bị nhận nhầm), phải hụt 2 nhịp liên tiếp (~10 s), và chỉ báo ĐÚNG MỘT LẦN.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/src/main/res/values/strings_kachi.xml:528 (`kachi_slot_app_closed`) · app/.../VdAppHost.kt:43-45,84,201-221 · core/.../SlotLiveness.kt:27-52 · app/.../SlotLiveProbe.kt:33-136 · BACKLOG H2 [ĐO] máy ảo t+18 s nhãn hiện đúng ô",
+  "spec": "docs/specs/kachi-open-app-correctly.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Ô app CHƯA BAO GIỜ lên được màn ảo (Waze) — vẫn ĐEN",
+  "desc": "App có activity trung chuyển mở bằng uid riêng (Waze) bị `ActivityStackSupervisor.isCallerAllowedToLaunchOnDisplay` chặn vì màn ảo thuộc Kachi mà activity đích không khai `android:allowEmbedded` ⇒ cả task rơi về màn chính, ô để lại ĐEN. Đường lùi đã thiết kế (thăm task 6×400 ms, mất thì nhả VdAppHost rồi đi freeform trên display 0 + đầu ô nổi) nhưng CHƯA code vì phải đo trên xe trước: DL5 đã cắt `set-task-windowing-mode` và `task resize` trả 0 mà vô tác dụng.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🔨 đang dở",
+  "evidence": "BACKLOG H1 (📝 thiết kế xong, code chờ đo xe) + D-emu · docs/diagnostics/waze-into-slot-research-2026-09-14.md §3–§4 · [ĐO source android-10.0.0_r47 ActivityStackSupervisor.java:1096-1106]",
+  "spec": "docs/specs/kachi-open-app-correctly.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Mở app TOÀN MÀN (không vào ô)",
+  "desc": "Nút «Ứng dụng» trên thanh trên mở ngăn kéo ở chế độ mở-thường (bỏ hẳn mục widget) + có khối «Gần đây» (≤ 12 app, mới nhất trước, KHÔNG cần quyền truy-cập-sử-dụng vì màn cài đặt trên xe bị khoá). Chạm một app là mở toàn màn `[0,0][1920,1080]`; bố cục và nội dung ô KHÔNG đổi. Đường CHÍNH là intent (`setLaunchBounds(null)`), đường shell chỉ là lưới an toàn — thứ tự này đã bị ĐẢO theo số đo (đường shell từng đưa app về khung ô cũ = sai).",
+  "voice": [
+   "mở YouTube",
+   "mở Maps"
+  ],
+  "voice_reply": "✓ Mở ứng dụng YouTube",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../AppOpener.kt:11-22,32-60 · app/.../KachiHomeSlots.kt:62-68 · core/.../RecentApps.kt:6-41 · BACKLOG U3 ✅ off-car 09-10, 🚗",
+  "spec": "docs/specs/kachi-open-app-correctly.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Ngăn kéo app — 3 chế độ (đặt vào ô · mở thường · chọn nút cho thanh)",
+  "desc": "MỘT màn ngăn kéo, ba chế độ. (1) ASSIGN_SLOT (chạm ô trống hoặc nút ⇄): Nhóm khả năng → «Thẻ dựng tay» (chọn nhiều, trần 8) → từng mục đọc/hành động theo nhóm → «Widget của app khác» → «Ứng dụng». (2) OPEN_APP (nút «Ứng dụng»): «Gần đây» + «Tất cả», chạm là mở toàn màn. (3) PICK_DOCK (từ Cài đặt): khối «Launcher» (Ứng dụng · Cài đặt) → Nhóm → từng mục, KHÔNG có danh sách app, KHÔNG trần. Thanh quyết định dính đáy (ngoài vùng cuộn) hiện «Áp dụng (N)» và mọi thông báo — cố ý KHÔNG dùng toast vì cửa sổ overlay nằm TRÊN toast. Vượt trần thì NÓI RA chứ không im lặng bỏ qua.",
+  "voice": [
+   "mở ứng dụng"
+  ],
+  "voice_reply": "✓ Mở Ứng dụng",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../AppDrawer.kt:20-33,53,63,116-165,185-193,235-256,270-277,306-350,363,451,472-496 · app/.../DrawerController.kt:93-136 · app/.../AppDrawerApps.kt:35-84 · BACKLOG P2 ✅ 09-09, RW0 (d) ✅ 09-11 (ngăn kéo nay bày CẢ hành động + gói lệnh)",
+  "spec": "docs/specs/kachi-workspace-launcher.html"
+ },
+ {
+  "group": "Màn hình chính & ô",
+  "name": "Hình nền từ ảnh + trình chiếu",
+  "desc": "Mặc định TẮT ⇒ ai không dùng không thấy gì khác. Chép ảnh (.jpg/.jpeg/.png/.webp) vào thư mục RIÊNG của app (`<ext>/wallpapers/`, đường dẫn hiện ngay dưới hàng công tắc) — cố ý KHÔNG dùng màn chọn tệp của hệ thống vì [ĐO] màn đó bị khoá trên xe, và KHÔNG xin quyền lưu trữ nào. Bật công tắc rồi chỉnh: chu kỳ đổi ảnh (15 s · 30 s · 1 · 5 · 15 · 30 phút), cách phủ (Phủ kín / Vừa khung), làm tối ảnh (0/25/45/65 %, mặc định 45 để chữ còn đọc được). Thư mục được TẠO ngay cả khi tính năng đang tắt (chữa lỗi vòng-lặp-chết: phải bật mới có thư mục, mà không có ảnh thì bật vô nghĩa). Ảnh giải mã trên luồng nền, cỡ lấy theo MÀN HÌNH chứ không theo View.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../Slideshow.kt:14-19,22-30,36-89,102-130 · app/.../WallpaperStore.kt:30-46,62-112 · app/.../WallpaperController.kt:30-165 · app/.../WallView.kt:19-68 · app/.../SettingsSectionsHome.kt:107-119 · BACKLOG U4 ✅ off-car 09-11 ([ĐO] lưới còn vuông 192.00 vs 192.27, vòng tròn lệch chuẩn 0.53px, 0 pixel viền đen)",
+  "spec": "docs/specs/kachi-wallpaper.html"
+ },
+ {
+  "group": "Thanh nút",
+  "name": "Thanh nút xe đặt được ở 4 viền",
+  "desc": "Thanh nút đặt được ở viền Dưới / Trái / Phải / Trên — chọn THẲNG bằng chip ở Cài đặt › Thanh trạng thái & thanh nút (không phải bấm ba lần để xoay vòng như pill cũ trên thanh trên, pill đó đã bỏ). Viền ngang dùng bề dày `Sp.DOCK_THICK`, viền dọc dùng `Sp.DOCK_WIDE`. Khoá `dock_edge` lưu THEO HỒ SƠ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../ControlRegistry.kt:4-22,130-162 · app/.../DockAreaLayout.kt:19-41 · app/.../SettingsSectionsBars.kt:87-90 · core/.../ProfileScope.kt:49 · BACKLOG P3 ✅ 09-09",
+  "spec": "docs/specs/kachi-workspace-launcher.html"
+ },
+ {
+  "group": "Thanh nút",
+  "name": "Ẩn / hiện thanh nút (`dock_visible`)",
+  "desc": "Công tắc «Hiện thanh nút xe» ở Cài đặt. Tắt ⇒ vùng màn hình chính lấp đầy cả màn, thanh không được gắn vào, nhưng viền và danh sách nút đang bật được GIỮ NGUYÊN để bật lại là về chỗ cũ. Khoá không có = coi như ĐANG HIỆN. Lưu theo hồ sơ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../WorkspacePrefs.kt:223,231 · app/.../DockAreaLayout.kt:24-29 · app/.../SettingsSectionsBars.kt:83-85 · core/.../ProfileScope.kt:49 · BACKLOG (b) S1b gói 1.55, 🚗",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "Thanh nút",
+  "name": "Chọn nút trên thanh + thứ tự",
+  "desc": "Cài đặt › Thanh trạng thái & thanh nút › nút «Chọn nút trên thanh… (N đang bật)» mở CHÍNH ngăn kéo ở chế độ PICK_DOCK trên đúng tập ô mà màn Cài đặt bày. Chạm một ô để thêm/bớt. Phép gộp cố ý TẮT TRƯỚC rồi mới thêm id mới theo thứ tự danh mục, giữ nguyên thứ tự cũ (bỏ tick mà không tắt trước thì nút không bao giờ biến mất). Thanh vẽ được 3 loại ô: HÀNH ĐỘNG (nút xe hoặc gói lệnh), ĐỌC (giá trị sống, đổi số mà KHÔNG dựng lại cả thanh), và LAUNCHER (Ứng dụng / Cài đặt / Nói với xe). Id lạ thì bỏ qua chứ không sập.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../DockSelection.kt:15-42 · app/.../DrawerController.kt:93-105 · app/.../ControlDockView.kt:63-117 · app/.../ControlTileFactory.kt · app/.../ControlTileState.kt:20-56 · app/.../ReadTile.kt:19-39 · BACKLOG RW0 ✅ off-car 09-11 (3/3 vùng)",
+  "spec": "docs/specs/kachi-unified-capability-tile.html"
+ },
+ {
+  "group": "Thanh nút",
+  "name": "Chấm «chưa kiểm trên xe» trên nút",
+  "desc": "Nút nào chưa có bằng chứng chạy trên xe thì mang một chấm nhỏ màu mờ (`PickerBadge.dot`) — gom về MỘT hàm vẽ duy nhất dùng chung giữa thanh nút và bộ chọn, sau khi phát hiện chấm hổ phách cũ sáng ở 19/20 ô làm mất nghĩa.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../PickerBadge.kt · app/.../ControlTileFactory.kt (`withBadge`) · BACKLOG U10 ✅ off-car 2026-09-13",
+  "spec": "docs/specs/kachi-icon-set-v2.html"
+ },
+ {
+  "group": "Thanh trên",
+  "name": "Thanh trên — đồng hồ, chip đọc, mic, Ứng dụng, Cài đặt, chip hồ sơ",
+  "desc": "Từ trái sang: giờ + ngày · hàng chip thông tin · nút mic · nút «Ứng dụng» (chỉ icon) · nút «Cài đặt» (chỉ icon, tô nổi) · chip hồ sơ. Hàng chip đặt `0dp + weight 1` nên chip đông tới mấy cũng KHÔNG ép được mấy nút bên phải; chip tự chia đều phần rộng còn lại. Chip dựng MỘT LẦN, sau đó mỗi nhịp chỉ đổi CHỮ (trước đó dựng lại 3 chip + tra + tô drawable mỗi nhịp).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../KachiTopStrip.kt:80-84,87-101,106-111,136-162,186-200 · BACKLOG S4 R12 (Apps/Cài đặt icon-only) + gói vá P2 hiệu năng",
+  "spec": "docs/specs/kachi-profiles-are-everything.html"
+ },
+ {
+  "group": "Thanh trên",
+  "name": "Chip thanh trên — trần 8, CHỈ mục ĐỌC",
+  "desc": "Cài đặt › Thanh trạng thái › bộ chọn chip: khối «đang bật» luôn mở ở đầu, rồi mỗi Nhóm một khối gấp được, cuối cùng là khối các mục ĐỌC chưa gán. Trần 8 chip (nâng từ 4 ở S4·R11 — chip nay tự co chữ nên quá tải chỉ là «ít chữ đi», không phải đè nhau); đủ 8 rồi thì thêm nữa là BỎ QUA chứ không đá chip cũ ra. Chỉ nhận mục ĐỌC (viết bằng phép thử DƯƠNG `isChippable` để loại hành động mới không lọt vào): chip cao ~24dp, quá xa mức 48dp cho một đích chạm, mà một cú chạm lệch bắn lệnh xe (mở khoá cửa) thì không hoàn lại được. Ba chip gộp sẵn: `chip_pm25` · `chip_outside_temp` · `chip_energy` (cũng là mặc định). Mọi con số đều đi qua bộ đổi đơn vị.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../TopStrip.kt:30-35,43-47,49-72,92-129,178-210,222-280 · app/.../TopStripPicker.kt:56-226 · BACKLOG RW0 (b) ✅ 09-11 + S4 R11",
+  "spec": "docs/specs/kachi-unified-capability-tile.html"
+ },
+ {
+  "group": "Thanh trên",
+  "name": "Chip HỒ SƠ trên thanh trên (thay 5 nút bố cục cũ)",
+  "desc": "Chạm chip hồ sơ ở góc phải ⇒ hiện danh sách hồ sơ (hồ sơ đang dùng có dấu), chọn là đổi ngay; hàng cuối là «Quản lý hồ sơ…» mở thẳng Cài đặt › Hồ sơ tài xế. Là BỘ CHỌN chứ không xoay vòng. Khoá duy nhất thanh trên được phép chạm là `active_profile`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../ProfileChip.kt:50-84 · app/.../KachiTopStrip.kt:42-44,111 · app/.../KachiHomeActivity.kt:212 · BACKLOG S4 (thanh trên bỏ 5 nút bố cục, avatar → chip hồ sơ)",
+  "spec": "docs/specs/kachi-profiles-are-everything.html"
+ },
+ {
+  "group": "Thanh trên",
+  "name": "Nút MIC trên thanh trên",
+  "desc": "Chỉ hiện khi BẬT công tắc ở Cài đặt › Thanh trạng thái VÀ mô hình giọng nói đã tải xong; điều kiện được đo LẠI mỗi lần dựng (không phải dựng lại cả màn mới thấy nút). Chạm là mở phiên nghe — cùng một lambda với ô «Nói với xe» ở thanh nút.",
+  "voice": [
+   "(bấm mic rồi nói bất kỳ câu lệnh nào)"
+  ],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../KachiTopStrip.kt:106-108,117,129-131 · app/.../KachiHomeActivity.kt:214-215 · app/.../SettingsSectionsBars.kt:63-69",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Hồ sơ",
+  "name": "«Hồ sơ là tất cả» — mọi cấu hình đi theo hồ sơ",
+  "desc": "Mỗi hồ sơ giữ RIÊNG: bố cục (`preset`, `grid_layout`), nội dung từng ô (`slot_0..5`), thanh nút (`dock_edge`, `dock_enabled`, `dock_visible`), chip thanh trên (`top_strip`), và cả phần cá nhân: chủ đề, đơn vị, hình nền, tự khởi động, ngôn ngữ, sổ địa chỉ. Thêm nữa, TOÀN BỘ cấu hình ClusterNav được CHỤP lại khi rời hồ sơ và ÁP lại khi vào hồ sơ (ảnh chụp lưu dưới hậu tố `__cn__`). Khoá dựng bằng tiền tố `<tên hồ sơ>__<hậu tố>` ở ĐÚNG MỘT hàm. Cảnh (scenes) đã bị gộp hẳn vào hồ sơ, dữ liệu cũ chuyển một lần.",
+  "voice": [
+   "đổi sang hồ sơ Mặc định"
+  ],
+  "voice_reply": "hỏi lại rồi «✓ Đổi sang hồ sơ Mặc định»",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../ProfileScope.kt:42,48-49,66-67,204-239,251-288 · app/.../WorkspacePrefs.kt:140,148 · app/.../WorkspacePrefsProfile.kt:41-47,67-69,112-222 · core/.../PrefSnapshot.kt:34-155 · core/.../ScenesMigration.kt:36-176 · BACKLOG S4 ✅ off-car 09-14 (1.47/48), 🚗 (đổi hồ sơ áp applier thật + độ trễ)",
+  "spec": "docs/specs/kachi-profiles-are-everything.html"
+ },
+ {
+  "group": "Hồ sơ",
+  "name": "Tạo (bản sao) · xoá · đổi hồ sơ — KHÔNG có đổi tên",
+  "desc": "Cài đặt › Hồ sơ tài xế: nút «Thêm hồ sơ (bản sao của X)» hỏi tên (điền sẵn «Bản sao của X») rồi chép TOÀN BỘ giá trị của hồ sơ nguồn + ảnh chụp ClusterNav. Tên mới trùng một hồ sơ đã xoá thì mọi khoá cũ của tên đó bị XOÁ SẠCH trước, không kế thừa dữ liệu ma. «Xoá» chỉ hiện với hồ sơ KHÔNG đang dùng và khi còn hơn một hồ sơ; xoá hồ sơ đang dùng thì `active_profile` tự trỏ về hồ sơ đầu. ⚠ Dự án KHÔNG có đường ĐỔI TÊN hồ sơ — chỉ có tạo-bản-sao / xoá / đổi.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../WorkspacePrefs.kt:96-111,130-138 · app/.../WorkspacePrefsProfile.kt:112-222 · app/.../SettingsSections.kt:215-240 · core/.../ProfileNames.kt:38-70",
+  "spec": "docs/specs/kachi-profiles-are-everything.html"
+ },
+ {
+  "group": "Hồ sơ",
+  "name": "Hồ sơ lúc nổ máy (`boot_profile`)",
+  "desc": "Chip «Gần nhất» + mỗi hồ sơ một chip. «Gần nhất» = lên đúng hồ sơ đang dùng lúc tắt máy. Khoá lưu THEO XE (không theo hồ sơ — nếu không thì không ai đọc được nó lúc chưa biết dùng hồ sơ nào); trỏ tới hồ sơ đã xoá thì tự lành (lọc qua danh sách hồ sơ hiện có).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../WorkspacePrefs.kt:61-66 · core/.../ProfileScope.kt:95-98 · core/.../HomeUiState.kt:39 · app/.../SettingsSections.kt:193-203 · BACKLOG S4 R6",
+  "spec": "docs/specs/kachi-profiles-are-everything.html"
+ },
+ {
+  "group": "Hồ sơ",
+  "name": "Khoá THEO XE, không theo hồ sơ (DEVICE_KEYS)",
+  "desc": "17 khoá cố ý nằm ngoài hồ sơ, mỗi khoá có lý do ghi tại chỗ: `profiles` · `active_profile` · `boot_profile` · `migrated_scenes_v1` · `keep_home_on_boot` · `home_chosen` · `recent_apps` · `last_display_id` · `doze_whitelist_applied` · `captest_results` · `sherpa_model_id` · `freeform_state` · `cast_enabled` · `enable_freeform_support` · `force_resizable_activities` · `enabled_accessibility_services` · `accessibility_enabled`; cộng 4 tiền tố hình học chiếu (`config_size_/overscan_/density_/bounds_`). Bốn khoá TẠM (chết theo phiên): `voicekey_learn` · `scenes` · `boot_scene` · `test_bridge_until`. Có bài canh: khoá nào KHÔNG phân loại được là ĐỎ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../ProfileScope.kt:88-192,251-288 · BACKLOG S4-OQ2 (`cast_enabled` chốt theo XE 2026-09-14) · S4-SEAT (🔨 `seat_level_1..3` chưa theo hồ sơ)",
+  "spec": "docs/specs/kachi-profiles-are-everything.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Công tắc chủ «Bật Cluster Cast» (mặc định TẮT)",
+  "desc": "Cài đặt › Chiếu màn lên cụm › công tắc đầu tiên. BẬT ⇒ lưu khoá → mở projection (gọi AutoContainer theo dãy 30 → 16 → 35) → chạy dịch vụ bong bóng nổi → toast. TẮT ⇒ lưu → dừng chiếu → đóng projection → tắt dịch vụ. Mặc định FALSE (chế độ chỉ-dẫn-đường), khoá `cast_enabled` lưu THEO XE.",
+  "voice": [
+   "dừng chiếu cụm"
+  ],
+  "voice_reply": "hỏi lại «Tắt Chiếu cụm — chưa kiểm trên xe? ⏎ dừng chiếu cụm khi đang dẫn đường = mất màn chỉ đường giữa đường»",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../ClusterNavBridgeCast.kt:53-57 · core/.../simplified/ProjectionManager.kt:26,55 · core/.../simplified/SimpleCastModels.kt:307-315 · app/.../simplified/SimpleCastRuntime.kt:259-266 · BACKLOG S4-OQ2 (theo XE, chốt 2026-09-14)",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Chiếu app lên cụm — toàn cụm / nửa trái / nửa phải / dừng",
+  "desc": "Bốn nút ở Cài đặt › Chiếu ngay (hoặc bong bóng nổi). Chạm «Chiếu toàn cụm…» → chọn app → máy kiểm tra hợp lệ, DÒ LẠI màn cụm THẬT, áp cấu hình màn, dời app sang cụm, rồi XÁC MINH bằng `am stack list` mới đổi trạng thái (không tin cờ RAM). Đường CarPlay/Android Auto dùng `am stack move-task` + cỡ cố định (CarPlay 1422×800 overscan 10,-120,10,50; AA 1920×1080); app THƯỜNG dùng `am start --display <vd> --windowingMode 5`, nếu bị chặn quyền thì lùi về `am stack move-task <task> <stack> true`. Trạng thái có 8 mức (Off / Đang mở cụm / Sẵn sàng / Đang chiếu / Chia đôi / Đang trả app về / Đang đóng / Lỗi).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsCast.kt:198-220 · app/.../ClusterNavBridgeCast.kt:130-145 · core/.../simplified/SimpleCastCoordinator.kt:290-374,379-452 · core/.../simplified/AppMover.kt:22,41-118,225-267 · core/.../simplified/CastPostconditionVerifier.kt:15-102 · core/.../simplified/SimpleCastModels.kt:38-47,139-191 · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA)",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Cast rơi vào Ô LAUNCHER thay vì cụm — đã vá, chờ xe (P0)",
+  "desc": "[ĐO xe 2026-09-15] sau reboot, display 1 lại chính là `kachi-slot-0` (màn ảo của CHÍNH launcher), còn cụm thật là display 2 `fission_bg_xdja`. Bộ phân tích vẫn đúng; gốc là THỨ TỰ — dò màn cụm TRƯỚC khi mở projection (lúc đó VD cụm chưa tồn tại) ⇒ hụt ⇒ rơi về seed 1. Vá: bỏ HẲN đường lùi (hụt ⇒ −1), dò LẶP sau khi mở (12 lần × 500 ms), guard chủ sở hữu (`ownedVirtualDisplayIds` — cụm không bao giờ là VD của launcher), và `liveDisplayId` gác MỌI `am start --display` / `wm -d` / dọn VD, kể cả deepRescue.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../simplified/ClusterDisplayResolver.kt:23,33-38,46-71 · core/.../modules/clustercast/DisplayParse.kt:163,197,217 · core/.../simplified/SimpleCastCoordinator.kt:70,91,108 · BACKLOG (A) ✅ vá 🚗 chờ xe · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA)",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Bong bóng nổi + menu dài-chạm",
+  "desc": "Một mũi tên nav 52 dp không nền nổi trên màn (mờ 0.35 lúc rảnh, đậm 1.0 khi vừa chạm rồi mờ lại sau 2,5 s), kéo được và nhớ vị trí. CHẠM = bật/tắt chiếu app đang mở (đang rảnh → chiếu toàn cụm; đang chiếu → trả app về); màn hình chính KHÔNG cho chiếu (toast «Không cast màn hình chính»). NHẤN GIỮ = menu 3 dòng cố định thứ tự Trái / Phải / Cấu hình — chọn Trái/Phải là BẬT-TẮT ô đó, «Cấu hình» mở thẳng Cài đặt › Chiếu cụm. Dịch vụ còn chặn PiP của GMaps/YouTube trong lúc chạy và có nhịp 2 s tự ghim lại app bị kéo khỏi cụm.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../FloatingBubbleService.kt:38,111-129,137-140,218,244,255,288-314,376-391,419-492,498-511 · app/.../BubbleRenderer.kt:36,74-101 · app/.../BubbleSubmenuOverlay.kt:40,83-85 · core/.../simplified/BubbleGesturePlanner.kt:44,62-66,95 · app/.../BubbleActionDispatcher.kt:40,76,104-151 · app/.../BubbleGestureHandler.kt:48-129",
+  "spec": "docs/specs/cast-one-mode-and-three-zone-bubble.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Chỉnh KHUNG và DPI khi đang chiếu",
+  "desc": "Chỉ hiện khi đang có đích chiếu: chip chọn ô đang chỉnh (Trái/Phải khi chia đôi), 4 stepper nhích từng mép (Trái/Trên/Phải/Dưới), chip DPI cụm (320/240/160), nút «Đặt lại khung». Hình học chỉ được LƯU khi lệnh shell THÀNH CÔNG. Mỗi app có tới 19 hồ sơ hình học (FULL + 9 tỉ lệ × 2 bên). Đổi DPI đòi màn cụm đã được XÁC MINH sống.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsCast.kt:316-378 · app/.../ClusterNavBridgeGeometry.kt:40,50-183 · core/.../simplified/CastGeometryController.kt:14,37-133 · core/.../simplified/CastDensityControl.kt:17-50 · core/.../simplified/SimpleCastModels.kt:64-123 · BACKLOG X2/U12 🚗",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Tỉ lệ chia đôi 1:9 → 9:1, đổi SỐNG",
+  "desc": "Chip «Tỉ lệ chia đôi» 9 mức (10..90 bước 10). Đổi tỉ lệ trong lúc đang chiếu chia đôi thì cả hai ô được đặt lại cỡ TẠI CHỖ, không phải mở lại app.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsCast.kt:78-82 · app/.../ClusterNavBridgeCast.kt:70-84 · core/.../simplified/SimpleCastCoordinator.kt:582 · core/.../simplified/SimpleCastModels.kt:97",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Tự chiếu khi nổ máy (toàn cụm hoặc chia đôi)",
+  "desc": "Hai công tắc LOẠI TRỪ nhau + 3 nút chọn app (toàn cụm · nửa trái · nửa phải). Lúc nổ máy, dịch vụ bong bóng là NƠI DUY NHẤT lái việc này: nó tự mở projection với tối đa 5 lần thử × 3 s, chờ trạng thái Idle rồi mới chiếu; nhánh chia đôi chiếu TRÁI trước, chỉ khi xác minh được ô trái đã lên mới chiếu PHẢI. Danh sách app chọn được đã loại mọi launcher.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsCast.kt:109-172 · app/.../ClusterNavBridgeCast.kt:89-125,244 · app/.../FloatingBubbleService.kt:70-95,419-492 · core/.../simplified/ProjectionApps.kt:55",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "ClusterBlackActivity — tấm đen giữ cụm không tự đóng",
+  "desc": "Không phải thứ người dùng chạm: sau khi mở projection, một Activity đen toàn màn (giữ màn sáng) được bắn lên cụm rồi resize `0 0 1920 720`. Lý do: KHÔNG có nội dung trên cụm thì firmware OEM tự đóng projection. Đây cũng là thứ phải xuất hiện ở display CỤM chứ không phải ở ô launcher — là một trong hai điều kiện PASS của cổng P0 trước OTA.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../ClusterBlackActivity.kt:15-38 · AndroidManifest.xml:71-77 (exported, singleInstance, taskAffinity `com.byd.clusternav.cluster`) · core/.../simplified/SimpleCastCoordinator.kt:228-235 · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA)",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "«Trả cụm về đồng hồ» và «Dọn sạch cụm (gỡ kẹt DashCast)» — deepRescue",
+  "desc": "Hai nút ở khối Cứu hộ. «Trả cụm về đồng hồ» = dừng chiếu → đóng projection → MỞ LẠI sau 2 s. «Dọn sạch cụm» hỏi xác nhận trước, rồi: đứng hẳn xuống (dừng + đóng projection + tắt dịch vụ bong bóng, KHÔNG mở lại) → `am force-stop` hai gói tranh chấp (`com.byd.dashcast`, `com.xdja.clusterdemo`) → `wm size/density/overscan reset -d <vd>` trên màn cụm DÒ TƯƠI (chỉ khi vd ≥ 1). Câu tóm tắt cuối do màn Cài đặt ghép từ danh sách gói đã bị dừng.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsCast.kt:397-411 · app/.../ClusterNavBridgeCast.kt:154-214 · core/.../simplified/DisplayConfigurator.kt:49 · res/values/strings_kachi.xml:245",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Hoàn tác `wm` — vì override SỐNG QUA REBOOT",
+  "desc": "`wm size` / `wm overscan` / `wm density` được WM ghi vào `/data/system/display_settings.xml` theo uniqueId của màn ⇒ sống qua cả reboot. Nên đường hoàn tác KHÔNG được dựa vào lần dò cũ: nếu lần dò trước hụt thì `undoTargetDisplay` DÒ LẠI TƯƠI. Bỏ sót đường này là để lại một override vĩnh viễn mà chỉ deepRescue mới gỡ được.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../simplified/SimpleCastCoordinator.kt:99-108,263,468,531 · core/.../simplified/DisplayConfigurator.kt:49 · CLAUDE.md §5",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Dọn display trước khi mở / sau khi đóng cụm",
+  "desc": "`cleanDisplay` đưa MỌI task không-phải-hệ-thống trên màn cụm về display 0 (`am stack move-task … true`, có đường lùi `am start --display 0 --windowingMode 1`), rồi gọi AutoContainer op 18 → 0. Có guard cứng `displayId < 1 ⇒ không làm gì` — đúng bài học CLAUDE.md §4 (bản cũ bê MỌI stack có displayId ≥ 1 về 0 và làm đơ launcher Dudu tới mức phải khởi động lại đầu xe).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../simplified/CastDisplayCleaner.kt:16,24,36-67 · core/.../simplified/SimpleCastCoordinator.kt:203,263,526",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "ClusterProfile DL2/3/4/5 — khác biệt theo ĐỜI XE (hiện CHƯA được nối dây)",
+  "desc": "Lớp khai khác biệt giữa các đời DiLink: tên service AutoContainer là `AutoContainer` cho DL2/3/4 nhưng `auto_container` (chữ thường) cho DL5 — hardcode một cái là dòng xe kia CÂM LẶNG không báo lỗi. `SEAL_DL3`: 1920×720, dãy chiếu [30,16,35], dãy tháo [18,0], gợi ý tên VD `xdja`, có nút kiểu cong/phẳng. `DL5` (Android 12): dãy chiếu [16], gợi ý `fission`, `styleOps = null` ⇒ nút kiểu PHẢI ẨN; ROM DL5 đã cắt `cmd activity set-task-windowing-mode` và `task resize` trả 0 mà vô tác dụng. Có `GENERIC_FALLBACK` và cho người dùng ghi đè hồ sơ. ⚠ [ĐO] `ClusterProfile` hiện KHÔNG có nơi gọi nào trong `app/src/main` ngoài chính nó — đường chạy thật đang hardcode `AutoContainer` + 30/16/35 ở `ProjectionManager`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🔨 đang dở",
+  "evidence": "app/.../ClusterProfile.kt:18,26-33,43-58,67-104,113-187 · core/.../simplified/ProjectionManager.kt:26,55 · CLAUDE.md §7 · (nợ nối dây — chưa có mục backlog riêng)",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Watchdog ghim lại app bị kéo khỏi cụm",
+  "desc": "Khi một tác nhân ngoài (ví dụ Kiki mở GMaps dẫn đường) kéo app ra khỏi cụm, nhịp 2 s của dịch vụ bong bóng phát hiện và CHIẾU LẠI ô đó. Chống rung: phải hụt ở 2 nhịp liên tiếp, khoảng dò tối thiểu 4 s, và mỗi gói có thời gian nguội 10 s.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../simplified/SimpleCastCoordinator.kt:691-748 · app/.../FloatingBubbleService.kt:123",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Chiếu-cụm sống chung với launcher (X1/X2)",
+  "desc": "Bốn luật: chỉ MỘT chủ dadb (`ShellTransport`), cổng chủ quyền theo display, chỉ MỘT nơi ghi trạng thái bền, và một trọng tài task. Launcher chạy ở display 0 + màn ảo riêng cho từng ô, cast chạy trên màn cụm; launcher CẤM chạm màn của cast. ⚠ Đua density/windowing trên màn cụm = kẹt cả hai, phải nạp lại firmware.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🔨 đang dở",
+  "evidence": "BACKLOG X1 (🔨 launcher-side xong, còn cast-side) + X2 (✅ off-car 09-14, 🚗) · core/.../system/ (WindowMutation · DisplayOwnershipRegistry · AppLocationRegistry · PrioritySerialExecutor)",
+  "spec": "docs/specs/kachi-architecture.html"
+ },
+ {
+  "group": "Chiếu cụm",
+  "name": "Reconciler STATE → WINDOW (chữa «một app hai ô»)",
+  "desc": "Sổ vị-trí-app trở thành PHÉP CHIẾU của state chứ không phải nguồn thứ ba: `LauncherBootPlan.reconcile` + `LauncherWindows.reconcileLocations` chạy ở MỖI lần render và đẩy ra cả lệnh GỠ cửa sổ mà state không còn giữ. Kèm 2 vá P0 hạ tầng từ đợt quality review: gỡ `am display move-stack` (treo system_server 3/3) đổi sang `am stack move-task`, và thêm timeout nối/socket cho `ShellTransport` (`Dadb.create` 3-arg = chờ VÔ HẠN ⇒ một lệnh treo là đơ TOÀN BỘ đặt cửa sổ + cast). Đồng thời xoá `ClusterCast`/`CastShell` (~1,7k dòng mã chết) và gom phân loại app về `ProjectionApps`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../LauncherBootPlan.kt:18-62 · core/.../WorkspaceState.kt:126-149 · docs/diagnostics/quality-review-2026-09-15.md (2×P0) · docs/diagnostics/oncar-verify-remediation-2026-09-15.md §1–§2 (🚗 chưa đo)",
+  "spec": "docs/specs/launcher-window-reconciler-rootcause.html"
+ },
+ {
+  "group": "HOME / launcher mặc định",
+  "name": "HOME nằm ở activity-alias TẮT SẴN (để trình cài GUI của BYD không chặn)",
+  "desc": "APK ship ra có `activity-alias .launcher.KachiHome` khai MAIN + CATEGORY_HOME + DEFAULT nhưng `android:enabled=\"false\"`. Lý do [ĐO on-car 2026-09-15]: trình cài GUI của ROM BYD TỪ CHỐI một APK tap-vào mà HOME đã bật sẵn — đúng lỗi «Fail in installation of desktop apps» anh em gặp; DuDu cũng bật HOME lúc chạy chứ không khai sẵn. Icon LAUNCHER duy nhất của app vẫn là `KachiHomeActivity` (MAIN + DEFAULT + LAUNCHER).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/src/main/AndroidManifest.xml:89-122 (alias :112-122 `enabled=false`, lý do ghi ở :97-101,109-111) · app/.../DefaultHome.kt:36-49 · oncar-bugs-2026-09-15.md §Lỗi cài của anh em · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA) §0/§5",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "HOME / launcher mặc định",
+  "name": "Nút «Đặt Kachi làm màn hình chính»",
+  "desc": "Cài đặt › Hệ thống & quyền › Màn hình chính: hàng trạng thái (xanh «Kachi đang là màn hình chính» / hổ phách «Chưa — hệ thống đang dùng X»), rồi nút — ẨN khi đã là home. Bấm: (1) bật activity-alias để ROM có cơ hội hiện hộp chọn launcher của chính nó; (2) `cmd package set-home-activity <gói>/<alias>` qua kênh dadb (uid 2000), rồi ĐỌC LẠI `resolve-activity` để XÁC NHẬN chứ không tin chữ «Success». Ba nhánh kết quả nói rõ lý do: Ok / không có kênh shell / thất bại (kèm nguyên văn output). Thành công thì ghi marker `home_chosen`. [ĐO DiLink3.0 2026-09-14] ROM BYD KHÔNG hiện hộp chọn HOME khi bấm nút Home ⇒ đây là đường duy nhất tất định.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSections.kt:373-416 · app/.../ClusterNavBridgeHome.kt:27-66 · app/.../DefaultHome.kt:33-72 · core/.../HomeActivityCmd.kt:11-30 · BACKLOG S5 ✅ off-car 09-14, 🚗 P7 ([CHƯA BIẾT] HOME có sống qua reboot vật lý không)",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "HOME / launcher mặc định",
+  "name": "Marker `home_chosen` + công tắc `keep_home_on_boot`",
+  "desc": "`home_chosen` ghi lại việc NGƯỜI DÙNG đã chọn — cần vì mỗi lần nâng cấp APK thì alias lại bị tắt, phải áp lại. `keep_home_on_boot` (mặc định TẮT) là công tắc riêng ngay dưới nút: đổi HOME của cả xe là đổi trạng thái hệ thống nên phải tường minh. Lúc nổ máy, Kachi chỉ đặt lại HOME khi MỘT trong hai cờ này bật. Cả hai khoá lưu THEO XE.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../WorkspacePrefs.kt:70-91,442-443 · core/.../ProfileScope.kt:105,112 · app/.../KachiAutostart.kt:100-106 · app/.../SettingsSections.kt:420-424",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "HOME / launcher mặc định",
+  "name": "Tự mở Kachi khi nổ máy (`launcher_autostart`, mặc định BẬT)",
+  "desc": "Nổ máy → `RebindReceiver` gọi `KachiAutostartService` (dịch vụ tiền cảnh, thông báo «Đang chuẩn bị màn hình chính…») → `KachiAutostart` chạy tuần tự trên luồng nền: kiểm công tắc → cổng chống chạy chồng (in-flight + nguội 30 s) → gieo freeform → (chỉ khi `keep_home_on_boot` hoặc `home_chosen`) đặt lại HOME → lập kế hoạch ô (bỏ qua app mà cast đang giữ) → `am start -n <gói>/KachiHomeActivity` (dùng activity THẬT, KHÔNG dùng alias — alias tắt sẵn thì `am start` báo «does not exist»). Việc gắn app vào ô KHÔNG do dịch vụ làm (màn ảo buộc phải có Surface) mà do `KachiHomeActivity` làm khi nó dựng lại workspace.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../KachiAutostart.kt:43-148 · app/.../KachiAutostartService.kt:29-105 · app/.../RebindReceiver.kt:42-68,159-165 · core/.../AutostartGate.kt:22-59 · core/.../LauncherBootPlan.kt:18-62 · app/.../WorkspacePrefs.kt:300,457 · BACKLOG P7 (🔨 cấu hình ✅ off-car 2026-09-12, 🚗)",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "HOME / launcher mặc định",
+  "name": "Chạy dịch vụ nền khi nổ máy (`headless_autostart`) — KHÁC với autostart màn hình",
+  "desc": "Công tắc riêng: `launcher_autostart` đưa MÀN HÌNH Kachi lên; `headless_autostart` chạy các DỊCH VỤ nền (dẫn đường, cụm, phím thoại, ghế, lọc bụi, lấy gió trong, VietMap autostart) mà không cần màn. `BootSetupService` làm việc đó: xin + ép gắn trợ năng (chờ tối đa 8 s), ép một số prefs (tắt HUD, bật nội suy + acc_booster), bật lại làn cụm nếu Nav đang bật, rồi chạy các applier.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../BootSetupService.kt:46-124,169-178 · app/.../RebindReceiver.kt:42,64 · app/.../SettingsSections.kt:309-324",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "OTA",
+  "name": "Kênh cập nhật `apk/Kachi-<ver>-release.apk` trên `dangkhoi/byd-kachi`",
+  "desc": "App gọi GitHub Contents API đọc thư mục `apk/` trên nhánh `main` của repo `dangkhoi/byd-kachi`, lọc tên theo mẫu `(Kachi|ClusterNav)-<ver>-release.apk`, so phiên bản dạng số-chấm và lấy bản cao nhất. (Kênh từng trỏ nhầm `dangkhoi/byd-launcher`, sửa 2026-09-13 ở L2.) Khoá ký RIÊNG của Kachi từ bản 1.41 — bản cài bằng khoá cũ phải gỡ một lần.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../UpdateChecker.kt:28-60,67-68,204,212 · apk/README.md:5-14 · BACKLOG L2 ✅ 2026-09-13, 🚗",
+  "spec": ""
+ },
+ {
+  "group": "OTA",
+  "name": "«Kiểm tra cập nhật» → tải → cài qua dadb loopback → tự mở lại",
+  "desc": "Cài đặt › Hệ thống & quyền › Bảo trì › nút «Kiểm tra cập nhật» (chữ trên chính nút đó bị thay bằng trạng thái). Có bản mới ⇒ hộp thoại «Có bản mới: v<x> — Đang dùng v<y>. Tải v<x> và cài đè? App sẽ tự khởi động lại» với hai nút «Tải & cài» / «Để sau». Tải vào `filesDir/update/` (thư mục dọn sạch trước, chỉ giữ MỘT APK), hiện % theo byte. Cài bằng `pm install -r` qua dadb loopback `localhost:5555` ở uid 2000 ⇒ KHÔNG cần quyền `REQUEST_INSTALL_PACKAGES`, KHÔNG qua trình cài hệ thống. Báo thức mở lại app được đặt TRƯỚC khi cài (vì `-r` giết tiến trình giữa chừng), huỷ nếu cài hỏng. [ĐO] chạy thật trên máy ảo 1.41→1.42→1.43→1.44.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../SettingsSections.kt:330-332 · app/.../ClusterNavBridge.kt:462-468 · app/.../UpdateFlow.kt:14-67 · app/.../UpdateChecker.kt:92-136 · app/.../UpdateRelaunch.kt:12-57 · apk/README.md:15-18",
+  "spec": ""
+ },
+ {
+  "group": "OTA",
+  "name": "Thông điệp lỗi cài nói ĐÚNG nguyên nhân",
+  "desc": "Trước đây mọi thất bại đều ra một câu «cài thất bại (khác chữ ký/phiên bản?)» — kể cả khi kênh dadb không nối được. Nay kết quả có 3 loại: Ok · không có kênh shell (kèm LÝ DO và câu sửa RIÊNG cho từng lý do — ví dụ `AWAITING_APPROVAL` nói đúng nút «Cho phép/Allow» trên hộp gỡ lỗi USB đang bung ngay trên màn) · pm từ chối (kèm nguyên văn dòng Failure). Mọi trường hợp đều in đường dẫn APK đã tải. ⚠ [ĐO bytecode dadb-2.0.0] `Dadb.install` KHÔNG ném khi pm từ chối ⇒ đường cũ `install(); true` từng báo THÀNH CÔNG cho một lần pm từ chối.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../UpdateChecker.kt:129-199 · BACKLOG U11 ✅ off-car 2026-09-13 (nợ [P3]: hai bảng chữ cho cùng `LocalShellFailure`)",
+  "spec": ""
+ },
+ {
+  "group": "OTA",
+  "name": "Cài tay bằng adb, KHÔNG tap APK trên xe",
+  "desc": "[ĐO điều kiện + SUY cơ chế] Anh em chép APK vào xe rồi TAP để cài thì gặp dialog «Fail in installation of desktop apps»; dangkhoi cài qua adb/OTA trên CÙNG firmware thì chạy. Biến số thật là ĐƯỜNG CÀI: trình cài GUI của ROM có cổng chặn app khai mình là launcher/home mà `pm install` không đi qua. Cách sửa chắc: `adb install -r Kachi-<ver>-release.apk`. Đó cũng là lý do HOME chuyển sang activity-alias tắt sẵn (mục trên).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "apk/README.md:27-32 · oncar-bugs-2026-09-15.md §Lỗi cài của anh em · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA) §5 (🚗 xác nhận GUI-install sau khi có alias)",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "OTA",
+  "name": "APK gọn 35 MB (chỉ arm64-v8a)",
+  "desc": "dangkhoi hỏi vì sao APK 53 MB. Bỏ `armeabi-v7a`, chỉ giữ `arm64-v8a` ⇒ 53 MB → ~35 MB (native 25,8 MB). Cơ sở [ĐO]: dump xe chỉ thấy lib arm64, DiLink3.0 `ro.product.cpu.abi=arm64-v8a`, DiLink 3/4/5 đều SoC 64-bit. Mô hình giọng nói ~266 MB KHÔNG nằm trong APK (tải riêng vào `filesDir/sherpa/`). Điều kiện mở lại `armeabi-v7a`: nếu có máy báo `INSTALL_FAILED_NO_MATCHING_ABIS`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/build.gradle.kts (`abiFilters`) · apk/README.md:19-26 · oncar-bugs-2026-09-15.md §Bản gọn 1.59 · BACKLOG 📦 2026-09-15",
+  "spec": ""
+ },
+ {
+  "group": "Voice",
+  "name": "Tầng NGHE — sherpa-onnx + Zipformer-vi tại máy (không mạng, không API key)",
+  "desc": "Bấm-để-nói: mở phiên qua nút mic thanh trên / ô «Nói với xe» / phím vô-lăng gán «Kachi nghe». Mic mở nguồn VOICE_RECOGNITION 16 kHz (lùi về MIC nếu ROM trả AudioRecord chưa khởi tạo), trần cứng 8 giây, tấm chữ hiện ở góc màn, có âm báo đầu/cuối, xin tiêu điểm MAY_DUCK nên nhạc chỉ nhỏ đi chứ không tắt. Engine là sherpa-onnx OfflineRecognizer v1.13.8 (KHÔNG phải Vosk — Vosk đã bị thay vì nói cả câu ra một từ), giải mã TỰ DO rồi kéo về tập lệnh bằng contextual biasing.",
+  "voice": [
+   "bật đèn đọc",
+   "mở kính trước trái",
+   "xem pin"
+  ],
+  "voice_reply": "(tấm chữ hiện nguyên văn nghe được rồi tới câu trả lời của lệnh)",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "app/.../voice/VoiceCapture.kt:42,45,77 · app/.../voice/VoiceRecognizer.kt:34,116,150-218 · app/.../voice/VoiceSession.kt:34,108,411-429 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 T2 (20/25 nghe đúng ở 1.64; 22/25 ở 1.65) · oncar-bugs-2026-09-15 §Lỗi 2 (mic thật trên xe CHƯA chốt)",
+  "spec": "docs/specs/kachi-voice-engine-v2.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Tải / side-load mô hình giọng nói (266 MB)",
+  "desc": "Cài đặt › Hệ thống & quyền › Nâng cao › «Nhận dạng giọng nói (tại máy)»: nút tải mô hình, hiện ba pha riêng (tải / kiểm / giải nén) nên bước băm chậm không bị tưởng là treo; có nút gỡ. Mỗi tệp ONNX được ghim riêng sha256 + số byte (sherpa không có zip để ghim cả gói). Xe không internet thì chép 4 tệp `encoder.onnx · decoder.onnx · joiner.onnx · tokens.txt` vào `<ext>/sherpa/import/<id>/` qua USB/adb — `install()` ưu tiên tệp đặt sẵn, kiểm CÙNG sha256+bytes, sai thì báo thẳng chứ không âm thầm rơi về mạng.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../voice/VoiceModelSettings.kt:25,32 · app/.../voice/VoiceModelStore.kt:29,93 · app/.../voice/VoiceModelSideload.kt:21,37,52 · core/.../voice/SherpaModelCatalog.kt:32,94,138,159 · oncar-verify-1.63-2026-09-15.md §6c",
+  "spec": "docs/specs/kachi-voice-engine-v2.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hotword theo CỤM LỆNH (biasing) — cấm từ rời",
+  "desc": "Không phải thứ người dùng chạm: tệp hotword sinh từ 4 bộ đăng ký, mỗi dòng là một CỤM «động từ + đối tượng» có dấu, VIẾT HOA (mô hình VN phát ra token hoa có dấu). Từ rời bị cấm vì theo `context-graph.cc` của sherpa-onnx 1.13.8, khớp trọn một hotword sẽ đưa đồ thị về gốc ⇒ từ rời là tiền tố chặn cụm dài, và từ rời cuối câu cộng điểm cho đường sai («rừng nhạc»). Kết luận «tệp to làm loãng» của 09-15 đã bị [ĐO host 09-16] BÁC: 6 ma trận × 25 WAV cho thấy tệp 1440 dòng toàn cụm tốt nhất, thêm 39 động từ rời kéo 21 → 17/25. Tệp 623 → 1902 dòng; máy ảo 20 → 22/25; `createStream` 6,6 ms.",
+  "voice": [
+   "xem pin",
+   "dừng nhạc",
+   "chế độ lái thể thao"
+  ],
+  "voice_reply": "(3 câu này chính là bộ kiểm — trước vá nghe thành «xem tin» / «rừng nhạc» / mất đuôi)",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/SherpaPhraseHotwords.kt · core/.../voice/SherpaHotwords.kt (phraseFile/dropPrefixes/normalize) · core/.../voice/SherpaBiasing.kt:32 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §6.3 [ĐO host 2026-09-16] · scripts/voice/hotword-matrix.py · BACKLOG (D) V-HOTWORD-CTX ✅ 1.65 (66), 🚗 giọng thật chưa đo",
+  "spec": "docs/specs/kachi-voice-hotword-phrases.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Control (bật/tắt/mở/đóng/đặt/tăng/giảm/chọn/bấm)",
+  "desc": "Nói một câu điều khiển nút xe: động từ × KIỂU ĐỐI TƯỢNG (giải chuyện «Mở» quá tải). TOGGLE nhận bật/tắt, COVER nhận mở/đóng, STEP nhận «đặt X = n» hoặc «tăng/giảm» (±n nấc — :core cố ý KHÔNG tự quy ra tuyệt đối vì nó không biết mức hiện tại; `VoiceDispatcher.runControl` mới quy đổi), SELECT nhận tên mức, BUTTON nhận «bấm». Số nói bằng chữ và số rút gọn («hai lăm», «hăm bốn») đều hiểu. Thi hành đi ĐÚNG đường một cú chạm (`actByKind` + `ControlTileState.shared`), không có tầng điều khiển thứ hai.",
+  "voice": [
+   "bật đèn đọc",
+   "tắt điều hoà",
+   "mở kính trước trái",
+   "đóng kính trước trái",
+   "mở kính bên lái",
+   "đặt nhiệt độ 24 độ",
+   "nhiệt độ hai mươi bốn độ",
+   "tăng gió",
+   "giảm âm lượng",
+   "tăng âm lượng tối đa",
+   "đặt độ sáng màn 8",
+   "chế độ lái thể thao",
+   "đặt chế độ lái eco",
+   "màu đèn viền xanh lá",
+   "lọc ngay",
+   "sạc ngay"
+  ],
+  "voice_reply": "✓ <việc> (kèm « — chưa kiểm trên xe» nếu nút chưa verify) · ✗ <việc> — xe không nhận lệnh · ✗ <việc> — việc trước còn đang chạy",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:39 · core/.../voice/VoiceIntentParser.kt:137,262,370-419 · core/.../voice/VoiceReply.kt:60-85,106,134 · app/.../VoiceDispatcher.kt:40,166,186 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t01–t27 PASS",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Read (hỏi thông tin xe)",
+  "desc": "Hai dạng câu đều hiểu: động từ đứng đầu («xem pin», «đọc tầm hoạt động», «kiểm tra …») và cụm hỏi nằm ĐÂU CŨNG ĐƯỢC trong câu («pin còn bao nhiêu», «nhiệt độ ngoài trời bao nhiêu») — bộ phân tích cắt cụm hỏi ra rồi đọc lại phần còn lại. Động từ «đọc/nghe» bật cờ `aloud`, «xem/hiện» thì không. Trả lời là giá trị datum; chưa đọc được thì nói thẳng «chưa đọc được» chứ không bịa.",
+  "voice": [
+   "xem pin",
+   "pin còn bao nhiêu",
+   "nhiệt độ ngoài trời bao nhiêu",
+   "đọc tầm hoạt động"
+  ],
+  "voice_reply": "«Pin (SOC): chưa đọc được» (off-car) · khi có số thì đọc thẳng giá trị + đơn vị",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:57 · core/.../voice/VoiceIntentParser.kt:176,246,455 · core/.../voice/VoiceReply.kt:149 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t33–t36 PASS",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Macro (gói lệnh một câu chạy nhiều việc)",
+  "desc": "Nói thẳng tên gói là chạy cả gói: «rời xe» · «mở hết kính» · «đóng hết kính» · «mở cửa + đèn đọc». Tên gói THẮNG động từ khi cụm khớp ở đầu câu dài hơn cụm động từ («Mở hết kính» ra Macro chứ không phải nút `windows_all`). «Mở hết kính» nằm trong bảng bắt buộc CONFIRM. Một bước hỏng không giết cả gói; mức bằng chứng của gói = THẤP NHẤT trong các bước.",
+  "voice": [
+   "rời xe",
+   "mở hết kính",
+   "đóng hết kính",
+   "mở cửa + đèn đọc"
+  ],
+  "voice_reply": "«Đóng hết kính: xe không nhận lệnh nào» (off-car) · hỏi lại cho gói mở kính: «Chạy gói Mở hết kính? ⏎ hạ hết kính»",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:42 · core/.../voice/VoiceIntentParser.kt:232,302 · core/.../ActionMacros.kt:178-197 · core/.../voice/VoiceRisk.kt:60 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §6.2 (L4 vá: gói lệnh hết trả replies rỗng, wait_ms 1,7–2,8 s)",
+  "spec": "docs/specs/kachi-action-macros.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Launcher (mở Cài đặt / Ứng dụng / Nói với xe)",
+  "desc": "Ba hành động của chính launcher, không bắn lệnh nào xuống xe: «mở cài đặt» mở màn Cài đặt, «mở ứng dụng» mở ngăn kéo app, «nói với xe» mở lại một phiên nghe. Nhánh LAUNCHER kiểm mệnh đề đuôi trước: «mở ứng dụng YouTube» rơi sang OpenApp chứ không phải Launcher.",
+  "voice": [
+   "mở cài đặt",
+   "mở ứng dụng",
+   "nói với xe"
+  ],
+  "voice_reply": "✓ Mở Cài đặt · ✓ Mở Ứng dụng · ✓ Mở Nói với xe",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:45 · core/.../voice/VoiceIntentParser.kt:308-314 · core/.../LauncherActions.kt:44,67-71 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t30–t32 PASS",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Profile (đổi hồ sơ bằng giọng)",
+  "desc": "«đổi sang hồ sơ X» / «chuyển sang hồ sơ X» — mang TÊN THÔ của hồ sơ chứ không phải nhãn đã dịch. Luôn bắt buộc CONFIRM vì đổi hồ sơ thay toàn bộ bố cục, thanh nút, chip, chủ đề và cấu hình đang dùng. Thi hành qua intent của `HomeViewModel`, cùng đường với bộ chọn hồ sơ trên thanh trên.",
+  "voice": [
+   "đổi sang hồ sơ Mặc định",
+   "chuyển sang hồ sơ Mặc định"
+  ],
+  "voice_reply": "hỏi lại «Đổi sang hồ sơ Mặc định? ⏎ đổi hồ sơ thay toàn bộ bố cục và cấu hình đang dùng» → ✓ Đổi sang hồ sơ Mặc định",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:48 · core/.../voice/VoiceIntentParser.kt:316 · core/.../voice/VoiceRisk.kt:111 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t57/t58 PASS",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — OpenApp, kèm «vào ô số N»",
+  "desc": "«mở YouTube» mở app toàn màn; «đưa YouTube vào ô hai» / «mở YouTube vào ô số 2» đặt app vào ô, đi ĐÚNG đường của ngăn kéo (`KachiHomeSlots.assignApp` — state + sổ vị trí + đặt cửa sổ), không phải một đường thứ hai. Số ô giữ nguyên như người nói (1-based, KHÔNG clamp) — ô ngoài bố cục thì nói ra số ô THẬT. Nhãn thật từ PackageManager luôn thắng; nếu không khớp mới xét cách gọi thuần Việt («mở bản đồ» → Google Maps).",
+  "voice": [
+   "mở YouTube",
+   "mở ứng dụng YouTube",
+   "mở Maps",
+   "đưa YouTube vào ô hai",
+   "mở YouTube vào ô số 9",
+   "mở bản đồ"
+  ],
+  "voice_reply": "✓ Mở ứng dụng YouTube · ✓ Mở ứng dụng YouTube vào ô 2 · ✗ Mở ứng dụng YouTube vào ô 9 — bố cục hiện chỉ có 3 ô · ✗ … — chưa cài <app> trên xe",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:135 · core/.../voice/VoiceIntentParser.kt:323-325 · core/.../voice/VoiceTailClause.kt:27,105,122 · core/.../voice/VoiceReply.kt:102,188,194 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t38–t45 + §6.2 (L6 vá: «mở bản đồ» nay mở Google Maps thật)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — «đóng/tắt <app>»: hiểu nhưng CHƯA làm được (APP_CLOSE)",
+  "desc": "Trước 1.64 câu «đóng YouTube» lại MỞ YouTube (nhánh APP không xét động từ). Nay bộ phân tích nhận ra ý đóng app (động từ CLOSE/OFF/PAUSE + tên app) và trả Unknown(APP_CLOSE) kèm hướng dẫn, thay vì làm ngược. Đóng app bằng giọng vẫn CHƯA có.",
+  "voice": [
+   "đóng YouTube",
+   "tắt YouTube"
+  ],
+  "voice_reply": "«Chưa đóng được app bằng giọng — bấm phím Home, hoặc mở app khác đè lên: \"đóng YouTube\"»",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:178 · core/.../voice/VoiceTailClause.kt:118 · core/.../voice/VoiceReply.kt:334 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §3 [P1] L1 + §6.2 (vá ở 1.64)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Media (phát / dừng / bài tiếp / bài trước / tìm bài)",
+  "desc": "Điều khiển phiên nhạc đang chạy qua `MediaBridge`, và mở app nhạc đúng đích khi câu có «trên <app>». Tên bài là TỪ VỰNG MỞ nên đi qua lượt nhận dạng thứ hai và luôn phải CONFIRM. Nếu không có phiên nào đang phát thì nói thẳng chứ không báo «✓» khống (lỗi đã vá ở senior review Pass 1).",
+  "voice": [
+   "phát nhạc",
+   "dừng nhạc",
+   "bài tiếp theo",
+   "bài trước",
+   "mở nhạc trên YouTube Music",
+   "phát bài Diễm Xưa",
+   "mở bài Diễm Xưa trên YouTube Music"
+  ],
+  "voice_reply": "✗ Phát nhạc — chưa có phiên nhạc nào — mở app nhạc rồi nói lại · ✓ Phát nhạc trên YouTube Music — đã mở YouTube Music; chưa có phiên nhạc nào để điều khiển — bấm Play trong app · ✓ Tìm bài «Diễm Xưa» trên YouTube Music — đã mở kết quả tìm — bấm Play để phát",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:107,142 · core/.../voice/VoiceIntentParser.kt:270,333 · core/.../voice/VoiceReply.kt:87,168,174,205,211,222 · core/.../voice/VoiceAppTargets.kt:220 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §6.2 (L2 vá: YT Music lên màn thật, [ĐO] dumpsys)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Nav (dẫn đường tới điểm đến bất kỳ)",
+  "desc": "«dẫn đường tới X» / «chỉ đường đến X» / «tìm đường đến X», kèm đuôi tuỳ chọn «bằng/trên <app>». Điểm đến KHÔNG bao giờ bị đem đi khớp với từ vựng xe. Chọn app theo DỮ LIỆU: Google Maps nhận chữ qua `geo:0,0?q=`, Waze qua `waze://?q=…&navigate=yes` (đều [ĐO]), VietMap KHÔNG có cửa chữ — chỉ nhận TOẠ ĐỘ `vietmaplive://companion/navigation?lat&lng&poiName` ⇒ cần tra toạ độ (`VoiceGeocoder`: Geocoder của máy trước, Nominatim sau, giữ nhịp ≤ 1 req/s, chỉ gửi TÊN địa điểm, không gửi âm thanh). Điểm đến là từ vựng mở ⇒ luôn CONFIRM.",
+  "voice": [
+   "dẫn đường đến Bitexco",
+   "dẫn đường tới chợ Bến Thành bằng Waze",
+   "chỉ đường đến sân bay bằng google map"
+  ],
+  "voice_reply": "✓ Dẫn đường tới chợ Bến Thành trên Waze · «Dẫn đường tới Bitexco? ⏎ đoạn trong ngoặc do nhận dạng tự do đọc ra — kém chính xác hơn phần còn lại của câu» · ✗ … — chưa có app dẫn đường nào trên xe · ✓ … — chưa tra được điểm đến (mạng?), mới chỉ mở <app>",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:71 · core/.../voice/VoiceIntentParser.kt:357 · core/.../voice/VoiceAppTargets.kt:275,340 · app/.../voice/VoiceGeocoder.kt:39,84 · core/.../voice/VoiceReply.kt:153,162,243,265,278 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t53–t56 PASS · [CHƯA ĐO] VietMap nhận lat/lng thật (AWAITING_CAR)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — NavigateSaved («về nhà», «đến công ty»)",
+  "desc": "Tập ĐÓNG: chỉ khớp khi TOÀN BỘ phần đuôi là một mục trong sổ địa chỉ của hồ sơ. Động từ địa điểm («về · đi · đến · tới · đi đến · đi tới · về tới») cố ý KHÔNG nằm trong bảng động từ chung — [ĐO] nếu cho vào thì «về bố cục 2 cột» biến thành một điểm đến vô nghĩa. Intent mang NHÃN chứ không mang địa chỉ/toạ độ (bộ thi hành tra lại sổ tươi). Mức rủi ro NORMAL (không hỏi lại) vì tập đóng, do chính người dùng gõ vào, và đi nhầm thì quay đầu được.",
+  "voice": [
+   "về nhà",
+   "đến công ty",
+   "đi làm"
+  ],
+  "voice_reply": "✓ Dẫn đường tới Nhà trên <app> · ✗ … — chưa lưu địa chỉ «Nhà» — thêm ở Cài đặt › Dẫn đường › Sổ địa chỉ · ✓ … — <app> chỉ nhận toạ độ; thêm lat/lng cho mục này trong Sổ địa chỉ",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:97 · core/.../voice/VoiceIntentParser.kt:215,359 · core/.../voice/VoicePlaces.kt:32-49,76,86,107 · core/.../voice/VoiceRisk.kt:87 · core/.../voice/VoiceReply.kt:295,307 · BACKLOG A1 (✅ off-car + senior review Pass 1, 2026-09-15) · oncar-verify-1.63 §6d(b) chờ xe",
+  "spec": "docs/specs/kachi-voice-addresses.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Unknown: 7 lý do, mỗi lý do một câu gợi ý khác nhau",
+  "desc": "Máy không im lặng khi không hiểu — nó nói RÕ vì sao: EMPTY (chưa có câu lệnh nào) · NO_VERB (có đối tượng, thiếu động từ) · NO_OBJECT (có động từ, không thấy thứ đó) · MISMATCH (việc không đi với thứ — vd «xem đèn đọc») · OPEN_VOCAB (tên bài/điểm đến, không làm offline) · APP_CLOSE · DROPPED_CLAUSE (một vế của câu ghép bị bỏ).",
+  "voice": [
+   "hôm nay trời đẹp quá",
+   "kể cho tôi nghe một câu chuyện",
+   "bật abcxyz",
+   "kachi ơi",
+   "xem xe",
+   "xem đèn đọc",
+   "dẫn đường"
+  ],
+  "voice_reply": "«Chưa rõ cần làm gì — thử \"bật…\", \"mở…\", \"xem…\": \"hôm nay trời đẹp quá\"» · «Không tìm thấy thứ đó trong xe hay trong launcher: \"bật abcxyz\"» · «Việc đó không đi với thứ đó — thử nêu mức, hoặc đổi động từ: \"xem đèn đọc\"» · «Chưa có câu lệnh nào: \"kachi ơi\"»",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntent.kt:150-187 · core/.../voice/VoiceReply.kt:334 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t63–t67 PASS",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Câu ghép «và» / «rồi»",
+  "desc": "Một câu chạy nhiều việc theo thứ tự. Phép tách chỉ được CHẤP NHẬN khi MỌI vế đều hiểu được — nếu không thì đọc lại cả câu như một vế (đó là thứ cứu «Mở bài Cỏ dại và hoa dành dành», chữ «và» nằm trong tên bài). Vế không hiểu nay được NÓI RA («Đã bỏ qua vế không hiểu: …») thay vì bỏ im lặng như trước 1.64, trừ khi vế đó nằm gọn trong phần từ-vựng-mở của ý định thắng.",
+  "voice": [
+   "bật đèn đọc và tắt lọc bụi",
+   "mở khoá cửa rồi bật đèn đọc",
+   "bật lọc bụi và tắt đèn đọc",
+   "mở cửa và đèn đọc"
+  ],
+  "voice_reply": "«✗ Bật Đèn đọc — xe không nhận lệnh ⏎ ✗ Tắt Lọc bụi — xe không nhận lệnh» · «Đã bỏ qua vế không hiểu: \"mở cửa\"»",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceIntentParser.kt:34,47,65,88,104,121 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §3 [P2] L5 + §6.2 (vá 1.64)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Cổng CONFIRM — đúng 4 việc không hoàn lại được",
+  "desc": "Bấm nút thì tự nó đã là xác nhận, nhưng một CÂU có thể do nghe nhầm (người ngồi sau, radio, nhận dạng lệch) ⇒ chỉ 4 việc phải hỏi lại: mở khoá cửa (`door`) · TẮT khoá xe (`lock`=0, tắt khoá nghĩa là mở khoá) · hạ HẾT 4 kính (`windows_all`=1 và gói `mac_win_open_all`) · dừng chiếu cụm (`cast`=0). Cộng thêm: đổi hồ sơ, và mọi câu có từ-vựng-mở (tên bài/điểm đến). Hộp hỏi nhận trả lời bằng lời («đồng ý/xác nhận/ok/yes» — «huỷ/không/thôi/no/cancel»), nghe 5 giây, MẶC ĐỊNH LÀ KHÔNG; câu mơ hồ («ừ», «vâng») cố ý không nhận. Trong câu ghép, gặp vế CONFIRM là DỪNG cả chuỗi cho tới khi trả lời.",
+  "voice": [
+   "mở khoá cửa",
+   "tắt khoá xe",
+   "mở hết kính",
+   "dừng chiếu cụm",
+   "mở khoá cửa rồi bật đèn đọc"
+  ],
+  "voice_reply": "«Bấm Mở khoá cửa — chưa kiểm trên xe? ⏎ mở khoá toàn xe — nghe nhầm một câu là xe mở khoá giữa bãi đỗ» · huỷ → «✗ Bấm Mở khoá cửa — đã huỷ, 1 việc sau không chạy»",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceRisk.kt:11,39-60,69,106,110-128 · core/.../voice/VoiceLexicon.kt:154-169 · app/.../voice/VoiceSession.kt:423 · app/.../VoiceDispatcher.kt:124 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t08/t09/t13/t26/t62 PASS",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Lượt 2 — từ vựng mở (tên bài / điểm đến) nhận dạng TỰ DO trên chính khúc tiếng vừa thu",
+  "desc": "Lượt 1 chạy trên ngữ pháp đóng (chính xác cho lệnh xe); nếu câu có cụm kích hoạt kết thúc bằng một TỪ LOẠI («phát bài», «mở bài», «dẫn đường tới», «đi đến», «play»…) và còn ít nhất một từ phía sau, thì lượt 2 giải mã TỰ DO trên đúng khúc PCM đã giữ trong RAM (trần 9 s) rồi ghép: đầu câu lấy từ lượt 1, đuôi lấy từ lượt 2, và đuôi «bằng <app>» chỉ giữ khi khớp một app đã biết (nếu không thì đó là rác của bộ giải mã như «bằng mu yt»). ⚠ [ĐO] cổng chạy KHÔNG thể dựa vào ký hiệu `[unk]`: câu ngoài từ vựng cho ra «phát lài diếm sơ bằng mu yt» mà không một `[unk]` nào.",
+  "voice": [
+   "phát bài Diễm Xưa",
+   "dẫn đường đến Bitexco",
+   "mở bài Diễm Xưa trên YouTube Music"
+  ],
+  "voice_reply": "«Tìm bài «Diễm Xưa»? ⏎ đoạn trong ngoặc do nhận dạng tự do đọc ra — kém chính xác hơn phần còn lại của câu»",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../voice/VoiceOpenVocab.kt:52,76-90,92,100,122-188 · app/.../voice/VoiceSession.kt:233 · app/.../voice/VoiceRecognizer.kt:69,137 · BACKLOG V1 T25 ([CHƯA ĐO] lượt 2 đầu-cuối trên thiết bị, giọng tổng hợp bị nghe nhầm cụm kích hoạt)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Phản hồi bằng GIỌNG (pha 1) — Android TTS / sherpa TTS / lùi về chữ",
+  "desc": "Sau khi thi hành, N dòng trả lời của một lượt được GỘP thành MỘT câu ≤ 12 từ rồi đọc ra loa; bỏ các ký hiệu dành cho mắt (✓ ✗ « » = — ) vì máy đọc hoặc phát âm hoặc nuốt chúng khiến «thành công» nghe giống hệt «thất bại», và KHÔNG BAO GIỜ gộp vế hỏng dưới chữ «Đã». Backend chọn bằng PHÉP ĐO ở MỖI câu (không hardcode tên xe): (a) Android `TextToSpeech` khi `isLanguageAvailable(vi-VN) ≥ 0`, (b) sherpa-onnx `OfflineTts` khi gói giọng đã lắp, (c) lùi về chữ + âm báo. Không nói đè lúc đang nghe (hai cờ: đang thu ∨ hộp xác nhận đang mở).",
+  "voice": [],
+  "voice_reply": "(đọc lại chính câu trả lời của lệnh, gộp thành một câu ≤ 12 từ)",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "core/.../voice/VoiceFeedbackPhrase.kt · core/.../voice/VoiceSpeakerSelector.kt · app/.../voice/VoiceSpeakerRouter.kt:24,37,104 · app/.../voice/AndroidTtsSpeaker.kt:31-39,46,151 · app/.../voice/SherpaTtsSpeaker.kt:47 · BACKLOG V-TTS (✅ pha 1 off-car, test 32/0; 🚗 đo `isLanguageAvailable` trên DL3/4/5 qua bridge `state` khối tts)",
+  "spec": "docs/specs/kachi-voice-feedback.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Gói giọng đọc tiếng Việt offline (sherpa TTS) — chưa lắp được",
+  "desc": "AAR sherpa-onnx v1.13.8 ĐÃ chở sẵn lớp `OfflineTts` + ký hiệu native arm64 ⇒ không phải nâng phiên bản, không thêm byte APK. Nhưng gói giọng Piper `vi_VN-vais1000-medium` chỉ phát hành dạng `tar.bz2` 397 mục (393 mục là `espeak-ng-data/` 18 MB, bắt buộc vì Piper chuyển chữ→âm qua espeak-ng) và không có URL từng tệp ⇒ đường tải ghim-từng-tệp không dùng được ⇒ khai `downloadable=false` fail-safe, ghim sha256 + byte của CẢ kho (67 154 040 B, CC-BY-4.0, phải hiện attribution). Chờ tầng giải nén `tar.bz2` (T8 pha 2). Chép tay một thư mục vào máy thì chạy được ngay.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🔨 đang dở",
+  "evidence": "core/.../voice/SherpaTtsCatalog.kt:35,38,56,111,114 · BACKLOG V-TTS (nợ T8) · OQ chờ dangkhoi: 67 MB qua 4G? tỉa espeak còn `vi`? mặc định BẬT? có đọc câu xác nhận không?",
+  "spec": "docs/specs/kachi-voice-feedback.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Ba lối vào phiên nghe — nút mic thanh trên · ô «Nói với xe» · phím vô-lăng",
+  "desc": "Cả ba dùng CHUNG một `VoiceSession` (dựng lười trong `KachiHomeActivity`, nhả ở `onDestroy`). (1) Nút mic trên thanh trên — chỉ hiện khi bật công tắc ở Cài đặt › Thanh trạng thái, và hiện NGAY sau khi tải mô hình/gạt công tắc. (2) Ô/nút «Nói với xe» (`launcher_voice`) đặt được ở ô giữa màn hoặc thanh nút. (3) Phím vô-lăng gán đích «Kachi nghe» (`__KACHI_VOICE__`) — bắn intent kèm extra `EXTRA_START_VOICE`, mở phiên rồi GỠ extra ngay (màn chính là singleTask, không gỡ thì mỗi lần dựng lại sẽ mở mic). KHÔNG đổi mặc định nào — nút 328 vẫn thuộc Kiki.",
+  "voice": [
+   "nói với xe"
+  ],
+  "voice_reply": "✓ Mở Nói với xe",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../KachiTopStrip.kt:106,117,129 · app/.../KachiHomeActivity.kt:83,147,214,251,478 · app/.../KachiHomeWiring.kt:255,270-305,312 · app/.../modules/voicekey/AssistantLauncher.kt:55,79,123 · app/.../Prefs.kt:149 · BACKLOG V1 §6 (Kiki giữ nút 328 cho từ vựng mở)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "«Gõ lệnh chữ (thử giọng nói)» — bàn phím thay mic",
+  "desc": "Cài đặt › Hệ thống & quyền › Nâng cao: gõ một câu vào ô, bấm «Chạy câu lệnh» → đi ĐÚNG bộ phân tích + bộ thi hành của giọng nói rồi in câu trả lời ra ngay dưới. Có thêm nút «Nhận dạng tệp WAV thử». Tồn tại để tầng chữ không thành mã chết và để đo được ngữ pháp trên xe THẬT khi không có mic / chưa có mô hình / không có mạng.",
+  "voice": [
+   "(gõ bất kỳ câu nào trong các nhóm trên)"
+  ],
+  "voice_reply": "(in đúng chuỗi của VoiceReply)",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "app/.../VoiceTextConsole.kt:41,55,82,102,141,184 · app/.../voice/VoiceWiring.kt:28,36,54 (một chỗ khai dây duy nhất cho cả hai bề mặt)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Thử nhận dạng bằng tệp WAV (không cần mic)",
+  "desc": "Đẩy một tệp WAV PCM 16-bit mono 16 kHz vào máy rồi chạy — nó đi qua ĐÚNG `VoiceRecognizer` mà mic dùng. Sinh ra vì máy ảo không có mic và vì xe TẮT WiFi khi cắm CarPlay/Android Auto (đúng lúc cần dữ liệu nhất). Cố ý KHÔNG có bộ đổi tần số: thêm một tầng mà phiên thật không có thì đo sai.",
+  "voice": [],
+  "voice_reply": "(in heard / grammar / probe_error)",
+  "status": "✅ off-car (máy ảo/test) · 🚗 xe: 1.5x owner báo 'hoàn toàn không work', 1.63+ (side-load + hotword cụm) chưa đo lại trên xe",
+  "evidence": "app/.../voice/VoiceWavProbe.kt:29,73,84 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §5 (scripts/emulator/voice-e2e.sh: 67 ca `say` + 25 WAV TTS «Linh»)",
+  "spec": "docs/specs/kachi-voice-engine-v2.html"
+ },
+ {
+  "group": "Sổ địa chỉ",
+  "name": "Sổ địa chỉ theo hồ sơ (nhà · công ty · bất kỳ)",
+  "desc": "Cài đặt › Dẫn đường › Sổ địa chỉ: nút «Thêm địa chỉ…» mở hộp thoại nhập TÊN + VĂN BẢN ĐỊA CHỈ + (tuỳ chọn) «lat, lng» dán tay từ app bản đồ; nút «Sửa» trên mỗi dòng mở lại chính hộp đó, nút xoá nằm trong hộp. Dòng phụ nói rõ «toạ độ …» hay «chưa có toạ độ (VietMap cần toạ độ)». Trần 20 mục, vượt trần thì TỪ CHỐI THÊM chứ không cắt bớt. Toạ độ KHÔNG BAO GIỜ lấy từ máy — app không xin bất kỳ quyền location nào; nó chỉ đến từ chữ người dùng dán vào. Sổ lưu theo HỒ SƠ, một dòng một mục dạng `tên|địa chỉ|lat|lng`, ký tự `|` và xuống dòng được làm sạch NGAY LÚC NHẬP.",
+  "voice": [
+   "về nhà",
+   "đến công ty",
+   "đi làm"
+  ],
+  "voice_reply": "✓ Dẫn đường tới Nhà trên Google Maps · ✗ … — chưa lưu địa chỉ «Nhà» — thêm ở Cài đặt › Dẫn đường › Sổ địa chỉ",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../SavedPlaces.kt:8-25,30-38,62-203 · app/.../SettingsSectionsPlaces.kt:39-134 · core/.../ProfileScope.kt:67 · core/.../HomeUiState.kt:105 · BACKLOG A1 ✅ off-car + senior review Pass 1 (2026-09-15) · oncar-verify-1.63 §6d(b) 🚗",
+  "spec": "docs/specs/kachi-voice-addresses.html"
+ },
+ {
+  "group": "Sổ địa chỉ",
+  "name": "Chọn app dẫn đường theo DỮ LIỆU của từng mục",
+  "desc": "Không có thứ tự ưu tiên trần: mục CÓ toạ độ thì mở được VietMap (`vietmaplive://companion/navigation?lat&lng&poiName` — lấy từ giải mã Kiki, chưa ai đo trên xe thật ⇒ AWAITING_CAR); mục CHỈ CÓ CHỮ thì đi Google Maps `geo:0,0?q=` ([ĐO] máy ảo). Waze nhận chữ qua `waze://?q=…&navigate=yes` ([ĐO]).",
+  "voice": [],
+  "voice_reply": "✓ … — <app> chỉ nhận toạ độ; thêm lat/lng cho mục này trong Sổ địa chỉ",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../voice/VoiceAppTargets.kt:96,125,275-340 · core/.../voice/VoiceReply.kt:307 · oncar-verify-1.63 §6d(b) (AWAITING_CAR — chưa ai đo VietMap nhận lat/lng thật)",
+  "spec": "docs/specs/kachi-voice-addresses.html"
+ },
+ {
+  "group": "Dẫn đường",
+  "name": "Dẫn đường lên CỤM — làn zin + «Giữa + ETA»",
+  "desc": "Một nguồn dẫn đường có thẩm quyền duy nhất (trọng tài chọn giữa GMaps / Waze / VietMap) → một quyết định hướng rẽ trung lập → BA đầu ra mã hoá ĐỘC LẬP: làn zin của cụm (broadcast AMAP), khối «Giữa + ETA» của cụm (qua HAL, chỉ ghi khi Cast đang TẮT), và HUD kính lái. Bật/tắt ở Cài đặt › Dẫn đường & cụm đồng hồ › «Dẫn đường lên cụm đồng hồ»; chip «Chế độ hiện trên cụm» chọn Tắt / Bật «Giữa + ETA»; công tắc «Chạy chữ tên đường dài»; nút «Kết nối lại nguồn dẫn đường». Ba hàng trạng thái chỉ-đọc cho biết nguồn nào đang cấp, cụm đang ở trạng thái gì, và op-39 đã được khẳng định chưa.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe (nền ClusterNav 1.38 từng 🟢, Kachi 1.6x sau S2/S3 chưa đo lại)",
+  "evidence": "app/.../SettingsSectionsNav.kt:78-108,133-152 · .kiro/steering/project-context.md §1 · README.md §Tính năng (nền tảng ClusterNav 1.38 đã chạy ổn trên xe)",
+  "spec": "docs/specs/nav-input-output-architecture.html"
+ },
+ {
+  "group": "Dẫn đường",
+  "name": "op-39 «chỉ-dẫn-đường» — chỉ khẳng định khi Cast TẮT",
+  "desc": "Khi có dẫn đường đang chạy VÀ Cast đang tắt, Kachi gọi `service call AutoContainer 2 i32 1000 i32 39` để bật chế độ làn zin trên cụm, giữ 30 s rồi khẳng định lại, thử lại sau 4 s nếu hỏng. Trạng thái có 4 mức (IDLE / ASSERTED / GATED_CAST / SHELL_UNREACHABLE) và hiện thành một hàng trong Cài đặt › Dẫn đường.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe (nền ClusterNav 1.38 từng 🟢, Kachi 1.6x sau S2/S3 chưa đo lại)",
+  "evidence": "app/.../ClusterNavLaneWidget.kt:36-53,79-133 · app/.../ClusterNavBridge.kt:210 · app/.../SettingsSectionsNav.kt:160-172",
+  "spec": "docs/specs/nav-cluster-op39-selfdiagnose.html"
+ },
+ {
+  "group": "Dẫn đường",
+  "name": "Biển báo tốc độ trên cụm (+ giới hạn sắp tới + chip cảnh báo camera)",
+  "desc": "Ba công tắc độc lập: hiện biển báo tốc độ · hiện giới hạn SẮP TỚI · hiện chip cảnh báo camera (nguồn VietMap). Cỡ biển chọn theo chip «N dp». Vị trí chỉnh được BA CÁCH và cả ba luôn đồng bộ: 2 stepper ±10 px, một khung KÉO-THẢ ngay trong Cài đặt, và 4 vị trí đặt sẵn ở màn Chẩn đoán. Biển bám màn CỤM ĐỘNG (cụm xe này là display 2) chứ không còn hardcode display 1.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsNav.kt:215-275 · app/.../speedbadge/SpeedBadgeOverlay.kt · app/.../modules/clustercast/DiagActivity.kt:99-118 · BACKLOG (d) gói 1.55 (SpeedBadge bám màn cụm ĐỘNG), 🚗",
+  "spec": "docs/specs/upcoming-speed-limit-badge.html · docs/specs/speed-badge-placement-vietmap-logging.html"
+ },
+ {
+  "group": "Dẫn đường",
+  "name": "Bong bóng VietMap trên cụm + chỉnh vị trí",
+  "desc": "Công tắc «Hiện bong bóng VietMap trên cụm» + 2 stepper + khung kéo-thả; lệnh dời chỉ được bắn khi cast đang bật. Khi chưa đủ điều kiện, khối vẫn được DỰNG nhưng mờ 0.4 + khoá + một trong ba câu nhắc («Bật công tắc bong bóng ở trên…» / «Chỉ đổi được chỗ khi cụm đang chiếu…» / «Kéo ô trong khung…»). Lỗi «mất chỗ cấu hình vị trí» của dangkhoi chính là do bản IA v2 cho khối này return sớm ⇒ đã có bài canh cấm return sớm.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsNav.kt:309-339,363-380 · app/src/test/.../BubblePanelAlwaysVisibleContractTest.kt · BACKLOG U12 ✅ off-car 2026-09-14, 🚗 (kéo khi đang chiếu thật)",
+  "spec": "docs/specs/vietmap-overlay-position-ui.html"
+ },
+ {
+  "group": "Dẫn đường",
+  "name": "VietMap tự khởi động (silent) để dựng bong bóng",
+  "desc": "Dịch vụ riêng mở VietMap rồi ĐỢI tới khi VietMap thật sự là activity đang hiện liên tục ≥ 2,5 s (trần 25 s) mới hạ nó xuống nền — bản 1.36 ngủ cứng 1,5 s thì trên xe chưa kịp dựng bong bóng. Tách thành dịch vụ riêng để các việc khởi động khác không phải chờ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe (nền ClusterNav 1.38 từng 🟢, Kachi 1.6x sau S2/S3 chưa đo lại)",
+  "evidence": "app/.../VietMapAutostart.kt · app/.../VietMapAutostartService.kt · app/.../BootSetupService.kt:86 · README.md changelog 1.37",
+  "spec": "docs/specs/waze-vietmap-signal-revival.html"
+ },
+ {
+  "group": "Dẫn đường",
+  "name": "«Dừng toàn bộ dẫn đường»",
+  "desc": "Một nút ở Cài đặt › Hệ thống & quyền › Bảo trì — dừng mọi đầu ra dẫn đường đang chạy.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSections.kt:333 · app/.../ClusterNavBridge.kt (`navStop`)",
+  "spec": ""
+ },
+ {
+  "group": "Dẫn đường",
+  "name": "Bố cục bằng giọng nói — CHƯA có",
+  "desc": "«đổi bố cục 4 ô» / «bố cục hai ô» hiện trả Unknown. Đây là lỗ ĐÃ BIẾT ([P3] L7 của đợt E2E), spec chưa khai yêu cầu nào — chờ dangkhoi chốt có làm hay không.",
+  "voice": [
+   "đổi bố cục 4 ô",
+   "bố cục hai ô"
+  ],
+  "voice_reply": "«Không tìm thấy thứ đó trong xe hay trong launcher: \"đổi bố cục 4 ô\"» · «Chưa rõ cần làm gì — thử \"bật…\", \"mở…\", \"xem…\": \"bố cục hai ô\"»",
+  "status": "🔲 chưa làm",
+  "evidence": "docs/diagnostics/emulator-voice-e2e-2026-09-15.md §3 [P3] L7 + §6.4 · BACKLOG (D) «quyết định dangkhoi về L7»",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Năng lượng (`w_energy`)",
+  "desc": "Thẻ năng lượng/pin đọc từ HAL xe (off-car hiện «—»). Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Energy».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_energy`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Áp suất lốp (`w_tire`)",
+  "desc": "Bảng vẽ hình xe nhìn từ trên với CẢ BỐN bánh, mỗi bánh một số riêng, tự quyết định non/căng/lệch — dangkhoi: «không ai xem áp suất lốp 1 lốp cả». Icon cố ý lấy icon NHÓM chứ không phải một lốp. Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Tyre pressure».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_tire`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Không khí (`w_pm25`)",
+  "desc": "Chất lượng không khí cabin / mức bụi mịn PM2.5. Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Air quality».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_pm25`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Đồng hồ + thời tiết (`w_clock`)",
+  "desc": "Đồng hồ + thời tiết — thuần Android, không cần HAL. Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Clock + weather».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_clock`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Đang phát (`w_media`)",
+  "desc": "Bài đang phát của phiên nhạc hiện tại (qua MediaBridge). Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Now playing».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_media`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Trạng thái xe (`w_car`)",
+  "desc": "Tóm tắt trạng thái xe. Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Car status».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_car`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Tốc độ (`w_speed`)",
+  "desc": "Tốc độ xe. Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Speed».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_speed`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Bảng tổng hợp (`w_board`)",
+  "desc": "Bảng gộp nhiều số đo nhỏ (loại BOARD) — một trong 3 widget của bố cục mặc định. Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Overview board».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_board`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Trình chiếu ảnh (`w_photos`)",
+  "desc": "Trình chiếu ảnh lấy từ CÙNG thư mục với hình nền nhưng chạy ĐỘC LẬP (nền tắt vẫn chạy); có nhịp riêng, và là widget DUY NHẤT được miễn khỏi luật dựng-lại-theo-nhịp-trạng-thái. Đặt vào ô giữa màn qua ngăn kéo (mục «Thẻ dựng tay», chọn được nhiều, trần 8 thẻ một ô). Nhãn EN: «Photo slideshow».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../WidgetRegistry.kt:20-37 (`w_photos`) · app/.../WidgetViews.kt · app/.../AppDrawer.kt:127-154",
+  "spec": "docs/specs/kachi-w1-real-data.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Nút HÀNH ĐỘNG và GÓI LỆNH đặt được vào ô giữa màn",
+  "desc": "Ngoài 9 widget trên, ô giữa màn còn nhận id của nút xe (`ControlRegistry`) và của gói lệnh (`ActionMacros`) — chúng đi chung danh sách với widget và được `WidgetViews` vẽ thành nút bấm. ⚠ Trước 2026-09-11 (chiều-4), ngăn kéo CHỈ bày mục ĐỌC nên tuy `WidgetViews` vẽ được nút, người dùng KHÔNG có đường nào đặt nó vào ô (số đo «3 gói lệnh ở ô giữa màn» của phiên trước đạt được bằng gieo cấu hình bằng TAY). Nay ngăn kéo dùng CÙNG nguồn `CapabilityCatalog.byDomain()` với bảng Tuỳ biến.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../WidgetViews.kt:87,183,195-200 · app/.../AppDrawer.kt:127-154 · BACKLOG RW0 (d) ✅ off-car 09-11",
+  "spec": "docs/specs/kachi-unified-capability-tile.html"
+ },
+ {
+  "group": "Widget Android của app khác",
+  "name": "Nhúng widget Android của app bên thứ ba vào ô",
+  "desc": "Trong ngăn kéo (chế độ đặt-vào-ô) có khối «Widget của app khác» liệt kê mọi `AppWidgetProvider` máy có; chọn một cái là ô hiển thị RemoteViews của app đó. Máy chưa có widget nào thì khối vẫn hiện tiêu đề + câu «máy chưa có widget nào» chứ không biến mất im lặng. Lưu dạng `aw:<id>@<provider>`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../WorkspaceState.kt:29,44-108 · app/.../AppDrawer.kt:127-154 · app/.../AppWidgetSlotHost.kt · BACKLOG P6 (widget bên thứ ba ✅ off-car 2026-09-12)",
+  "spec": "docs/specs/kachi-scenes-and-widgets.html"
+ },
+ {
+  "group": "Widget Android của app khác",
+  "name": "Thu hồi id widget (chống «widget mất vĩnh viễn» và chống app cũ bắn cập nhật mãi)",
+  "desc": "Không có nút nào — nhưng đây là lớp giữ cho widget bên thứ ba không hỏng. Mỗi widget chiếm một id do hệ thống cấp; không trả lại thì nhà cung cấp cứ bắn cập nhật mãi (VietMap khai `updatePeriodMillis=100`). `AppWidgetIds` là NƠI DUY NHẤT định nghĩa «còn dùng» = ô của hồ sơ đang mở ∪ id của MỌI hồ sơ khác; `orphaned(cũ,mới)` mới được đem đi `deleteAppWidgetId`, và `unused` quét lúc khởi động những id hệ thống còn giữ mà không ai dùng. KDoc ghi lại HAI lần mất widget vĩnh viễn vì hỏi «còn dùng không» quá hẹp.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../AppWidgetIds.kt:31,40,60,85,107,119,138 · app/.../WorkspacePrefs.kt:166-175 · core/.../HomeUiState.kt:105-125",
+  "spec": "docs/specs/kachi-scenes-and-widgets.html"
+ },
+ {
+  "group": "Widget Android của app khác",
+  "name": "Phân biệt widget TRÙNG TÊN của cùng một app",
+  "desc": "[ĐO] hai provider của VietMap cùng tên «Cảnh báo», hai «Google Play Music». `AppWidgetLabels.titles` CHỈ với những nhãn bị trùng mới nối thêm « · <gợi ý>», và gợi ý chọn dạng NGẮN NHẤT còn phân biệt được (tên lớp rút gọn đã bỏ hậu tố nhiễu → tên lớp → tên gói → chuỗi provider đầy đủ).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../AppWidgetLabels.kt:29,32,39,53,62-69",
+  "spec": "docs/specs/kachi-scenes-and-widgets.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Màn Cài đặt Kachi — 10 nhóm, một cửa duy nhất",
+  "desc": "Chạm ô/nút «Cài đặt» trên thanh trên (hoặc nói «mở cài đặt») để mở màn Cài đặt toàn màn: cột trái là thanh 10 nhóm, cột phải là nội dung nhóm đang chọn, nút «Xong» ở góc phải để đóng. 10 nhóm theo thứ tự: Màn hình chính · Thanh trạng thái & thanh nút · Hiển thị & đơn vị · Hồ sơ tài xế · Dẫn đường & cụm đồng hồ · Chiếu màn lên cụm · Phím vô-lăng · Tiện nghi xe · Hệ thống & quyền · Giới thiệu. Mọi cấu hình của màn ClusterNav cũ đã dời hết vào đây (S2), màn cũ đã bị XOÁ hẳn ở S3. Nguồn duy nhất là `SettingsCatalog` ở :core, có bài canh quét 'không còn cấu hình lẻ tẻ'.",
+  "voice": [
+   "mở cài đặt"
+  ],
+  "voice_reply": "✓ Mở Cài đặt",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../launcher/SettingsPanel.kt:160,172,244-253,284-309 · core/.../SettingsCatalogGroups.kt:37-83 · app/.../SettingsSections.kt:55-86 · PROJECT-BACKLOG S2 (✅ off-car 2026-09-13, senior APPROVED, APK 1.39/40) · docs/README.md §5 dòng kachi-settings-ia-v2",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Màn hình chính» — bố cục sẵn, bố cục tự vẽ, hình nền",
+  "desc": "Trong Cài đặt › Màn hình chính: hàng chip «Bố cục sẵn» (5 bố cục + chip «Tự vẽ»), nút «Vẽ bố cục riêng…» mở trình vẽ lưới 12×6, rồi khối «Hình nền»: công tắc «Dùng ảnh làm hình nền», chip «Đổi ảnh mỗi» (chu kỳ trình chiếu), chip «Cách phủ», chip «Làm tối ảnh» (0/25/45/65%). Ba hàng sau bị ẩn khi công tắc hình nền tắt. Đầu nhóm có câu nhắc mọi thiết lập lưu cho hồ sơ đang dùng.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../SettingsSectionsHome.kt:37,64-84,108-143 · core/.../SettingsCatalogEntries.kt:33-37",
+  "spec": "docs/specs/kachi-wallpaper.html · docs/specs/kachi-dynamic-grid.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Thanh trạng thái & thanh nút»",
+  "desc": "Bộ chọn chip thanh trên (`TopStripPicker`), công tắc «Nút mic trên thanh trạng thái», rồi khối «Thanh nút xe»: công tắc «Hiện thanh nút xe» (khoá `dock_visible`), chip «Viền đặt thanh» chọn thẳng 1 trong 4 viền (Dưới/Trái/Phải/Trên), nút «Chọn nút trên thanh… (N đang bật)» mở ngăn kéo ở chế độ PICK_DOCK — chạm một ô để thêm/bớt nút. Có câu cảnh báo nhóm An toàn/Động lực/Giải trí đổi hành vi lái.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsBars.kt:44-45,63-69,78-98 · core/.../SettingsCatalogEntries.kt:47-55 · BACKLOG S1b (`dock_visible`, gói 1.55)",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Hiển thị & đơn vị» — đơn vị đo, sáng/tối, ngôn ngữ",
+  "desc": "Mỗi đại lượng có mặt trong `TelemetryRegistry` được một hàng chọn đơn vị riêng: Áp suất (bar/kPa/psi) · Nhiệt độ (°C/°F) · Khoảng cách (km/mile) · Tốc độ (km/h/mph) · Tiêu thụ điện (kWh/100km · km/kWh) · Mô-men xoắn · Chiều dài. Dưới đó chip «Bảng màu» (ThemeMode, ghi cả `theme_mode` lẫn `theme_choice` của ClusterNav) và chip «Chữ trên màn» (Theo xe / Tiếng Việt / English). «Tự động» = tối từ 18h đến 6h; «Theo xe» = theo ngôn ngữ máy.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../SettingsSections.kt:107-151 · core/.../Units.kt:36-44,206 · core/.../SettingsCatalogEntries.kt:58-66 · BACKLOG U5 + W-unit (✅ off-car 2026-09-12/09-10)",
+  "spec": "docs/specs/kachi-i18n-and-light-theme.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Hồ sơ tài xế» — danh sách, đổi, xoá, thêm bản sao, hồ sơ lúc nổ máy",
+  "desc": "Mỗi hồ sơ là một thẻ: tên + dòng phụ tóm tắt bố cục của chính nó («2 cột · 3 ô có nội dung»); chạm thẻ để đổi sang hồ sơ đó, nút «Xoá» chỉ hiện với hồ sơ KHÔNG đang dùng và khi còn hơn 1 hồ sơ. Nút «Thêm hồ sơ (bản sao của X)» hỏi tên rồi nhân bản toàn bộ cấu hình. Khối «Hồ sơ lúc nổ máy» có chip «Gần nhất» + mỗi hồ sơ một chip (khoá `boot_profile`, theo XE).",
+  "voice": [
+   "đổi sang hồ sơ Mặc định",
+   "chuyển sang hồ sơ Mặc định"
+  ],
+  "voice_reply": "✓ Đổi sang hồ sơ Mặc định (câu hỏi xác nhận: «Đổi sang hồ sơ Mặc định? ⏎ đổi hồ sơ thay toàn bộ bố cục và cấu hình đang dùng»)",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSections.kt:167-278 · core/.../SettingsCatalogEntries.kt:72-83 · BACKLOG S4 + U13 (✅ off-car 2026-09-14) · emulator-voice-e2e §2 t57/t58 PASS",
+  "spec": "docs/specs/kachi-profiles-are-everything.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Dẫn đường & cụm đồng hồ» — sổ địa chỉ + Nav/HUD + biển báo + bong bóng VietMap",
+  "desc": "Ba khối. (1) Sổ địa chỉ: danh sách mục đã lưu (tên + «toạ độ …» hoặc «chưa có toạ độ (VietMap cần toạ độ)»), nút «Thêm địa chỉ…», nút «Sửa» mở hộp thoại chứa cả nút xoá. (2) Dẫn đường + HUD: công tắc «Dẫn đường lên cụm đồng hồ», ba hàng trạng thái chỉ-đọc (nguồn / đầu ra cụm / op-39), chip «Chế độ hiện trên cụm» (Tắt / Bật «Giữa + ETA»), công tắc «Chạy chữ tên đường dài», nút «Kết nối lại nguồn dẫn đường». (3) Biển báo tốc độ: 3 công tắc (biển báo / giới hạn sắp tới / cảnh báo camera), chip «Cỡ biển báo», 2 stepper vị trí ±10 px và một khung KÉO-THẢ. (4) Bong bóng VietMap: công tắc + 2 stepper + khung kéo-thả; khi chưa đủ điều kiện thì khối vẫn DỰNG nhưng mờ 0.4 + khoá + câu nhắc (vá U12).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsPlaces.kt:39-134 · app/.../SettingsSectionsNav.kt:78-108,215-275,309-339,363-380 · core/.../SettingsCatalogEntries.kt:92-133 · BACKLOG U12 (✅ off-car 09-14, 🚗 kéo khi đang chiếu thật)",
+  "spec": "docs/specs/vietmap-overlay-position-ui.html · docs/specs/upcoming-speed-limit-badge.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Chiếu màn lên cụm» (Cài đặt)",
+  "desc": "Công tắc «Bật Cluster Cast» + chip «Tỉ lệ chia đôi» (9 mức 1:9–9:1). Khối «Tự chiếu khi nổ máy»: 2 công tắc loại trừ nhau (toàn cụm / chia đôi) + 3 nút chọn app (toàn cụm · nửa trái · nửa phải). Khối «Chiếu ngay»: ô xem trước cụm + hàng trạng thái (Tắt / Đang mở cụm… / Sẵn sàng / Đang chiếu: X / Chia đôi: X | Y / Đang trả app về… / Lỗi: X) + 4 nút (toàn cụm · nửa trái · nửa phải · Dừng chiếu). Khối «Khung và DPI (khi đang chiếu)» chỉ hiện khi đang có đích: 4 stepper mép + chip DPI + nút «Đặt lại khung». Khối «Cứu hộ»: «Trả cụm về đồng hồ», «Dọn sạch cụm (gỡ kẹt DashCast)» (có hộp xác nhận), «Chẩn đoán và nhật ký».",
+  "voice": [
+   "dừng chiếu cụm"
+  ],
+  "voice_reply": "✗ Tắt Chiếu cụm — đã huỷ (hỏi lại: «Tắt Chiếu cụm — chưa kiểm trên xe? ⏎ dừng chiếu cụm khi đang dẫn đường = mất màn chỉ đường giữa đường»)",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsCast.kt:58-64,69-82,100-138,180-204,317-342,397-423 · core/.../SettingsCatalogEntries.kt:137-165 · emulator-voice-e2e §2 t09 PASS",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Phím vô-lăng» — gán nút vật lý",
+  "desc": "Công tắc «Nhận nút vật lý» + hàng trạng thái ba mức (đang tắt / ĐANG HOẠT ĐỘNG ✓ / MẤT KẾT NỐI) + nút «Kiểm tra / Sửa ngay». Khối «Gán phím» liệt kê từng cặp nút→đích, mỗi dòng có nút «Xoá»; nút «Thêm gán…» đi 2 bước (Bước 1 chọn nút — Bước 2 chọn đích). Khối «Nút tự học»: danh sách nút đã học (hiện «mã phím N»), nút «Học phím mới…» chờ bấm nút thật rồi hỏi tên. Một trong các đích là «Kachi nghe (tại máy)» (`__KACHI_VOICE__`) — mở thẳng phiên nghe của Kachi.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSectionsKeys.kt:47-70,100-202,233-280 · app/.../modules/voicekey/AssistantLauncher.kt:55,79,123 · app/.../Prefs.kt:149 · core/.../SettingsCatalogEntries.kt:169-180",
+  "spec": "docs/specs/voicekey-rework-1.19.html · docs/specs/notif-grant-docs-voicekey-1.13.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Tiện nghi xe» — lấy gió trong, ghế mát/sưởi, lọc bụi mịn",
+  "desc": "Công tắc «Nổ máy thì tự lấy gió trong» (có ghi rõ ⚠ lệnh chưa kiểm trên xe) — bật là áp ngay. Khối ghế: công tắc «Tự chỉnh ghế theo nhiệt độ» + chip «Chế độ» (Làm mát / Sưởi) + sơ đồ ghế chạm-để-đổi-mức (tắt → mức 1 → mức 2), số ghế đọc động (2 ghế Seal / 4 ghế Han). Khối lọc bụi: công tắc «Tự lọc khi không khí bẩn» + hàng «Bụi mịn hiện tại: …» + đồng hồ vòng + nút «Lọc ngay một lượt» (chạy bất kể công tắc tự động).",
+  "voice": [
+   "bật lọc bụi",
+   "lọc ngay",
+   "bật sưởi ghế"
+  ],
+  "voice_reply": "✗ Bật Lọc bụi — xe không nhận lệnh · ✗ Bấm Lọc ngay — xe không nhận lệnh (off-car)",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "app/.../SettingsSectionsCar.kt:64-151 · core/.../SettingsCatalogEntries.kt:185-205 · oncar-captest-results-2026-09-15.md (lọc ngay ✅ trên xe; thông số PM2.5 ❌ → vá §B)",
+  "spec": "docs/specs/pm25-auto-filter.html · docs/specs/seat-comfort-auto.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Hệ thống & quyền»",
+  "desc": "Khối «Quyền»: nếu đủ thì một câu «Đủ quyền — không thiếu gì»; thiếu thì mỗi quyền một hàng có nút xin lại. Khối «Màn hình chính»: hàng trạng thái + nút «Đặt Kachi làm màn hình chính» (ẩn khi đã là home) + công tắc «Giữ Kachi làm màn hình chính khi nổ máy» (`keep_home_on_boot`, theo XE). Khối «Khởi động»: «Tự mở khi nổ máy» + «Chạy dịch vụ dẫn đường/cụm ở nền khi nổ máy». Khối «Bảo trì»: «Kiểm tra cập nhật» · «Dừng toàn bộ dẫn đường». Khối «Nâng cao»: «Dữ liệu VietMap» · «Chẩn đoán và nhật ký» · công tắc «Chế độ kiểm thử qua adb» (hiện «còn N phút») · mục tải mô hình giọng nói · «Gõ lệnh chữ (thử giọng nói)» · «Kiểm tra từng nút xe».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../SettingsSections.kt:296-353,373-425,444-455 · core/.../SettingsCatalogEntries.kt:209-250 · BACKLOG S5 (✅ off-car 09-14, 🚗 P7) · oncar-verify-1.63 §0",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Nhóm «Giới thiệu»",
+  "desc": "Năm dòng chỉ-đọc: «Kachi — màn hình chính cho xe BYD DiLink», «Phiên bản X (mã N)», «Tên gói: com.byd.launcher», «Giấy phép MIT. Thử nghiệm cá nhân, KHÔNG liên kết với BYD.», và đoạn miễn trừ trách nhiệm đầy đủ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../SettingsSections.kt:467-481 · core/.../SettingsCatalogEntries.kt:256-260",
+  "spec": "docs/specs/kachi-settings-ia-v2.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Bài canh «không còn cấu hình lẻ tẻ» + danh sách khoá KHÔNG-phải-cài-đặt",
+  "desc": "Không phải thứ người dùng chạm, nhưng là cơ chế giữ nhóm Cài đặt không rò: `SettingsCatalog` khai `NOT_SETTINGS` (home_chosen, recent_apps, slot_0..N, freeform_state, enable_freeform_support, force_resizable_activities, accessibility_*, captest_results, sherpa_model_id) kèm lý do tại chỗ, khai 5 tệp prefs của launcher + 4 tệp của ClusterNav, khoá đi kèm (badge_center_y, vm_bubble_y, theme_choice) và 6 khoá cố ý KHÔNG có UI (interpolate, acc_booster, lane, source_mode, anim_opt, hud). Có bất biến chạy lúc nạp lớp: không trùng id/khoá, không nhóm rỗng, bắt buộc nhãn EN, dòng phụ ≤ 60 ký tự. ⚠ Còn lệch: 5 bề mặt ĐANG VẼ mà không có mục trong danh mục (nút mic thanh trên · cả khối khung/DPI cast · tải mô hình giọng · Gõ lệnh chữ · Kiểm tra từng nút xe).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../SettingsCatalog.kt:90-190,214,252-336 · core/.../SettingsCatalogClusterNav.kt:44-119 · app/.../SettingsSections.kt:347-352 (bề mặt không có mục danh mục)",
+  "spec": "docs/specs/kachi-settings-screen.html"
+ },
+ {
+  "group": "Chẩn đoán",
+  "name": "«Kiểm tra từng nút xe» (CapTest) — 123 thông tin + 64 hành động",
+  "desc": "Cài đặt › Hệ thống & quyền › Nâng cao › «Kiểm tra từng nút xe»: bảng dựng ĐỘNG từ 3 bộ đăng ký + 187 diễn giải song ngữ, gom theo Nhóm, mỗi dòng gắn thẻ [THÔNG TIN] / [HÀNH ĐỘNG] và một huy hiệu kết quả (xanh OK / đỏ Không OK / mờ chưa thử). Bốn nút đầu màn: «▶ Bắt đầu / Tiếp tục» (đi tuần tự từ mục chưa thử đầu tiên) · «Xuất báo cáo» (lưu luôn ra thẻ rồi hiện) · «Chụp log ngay» · «Xoá kết quả». Chạm một mục mở popup «Đang test: X» + diễn giải: mục THÔNG TIN đọc giá trị trên luồng nền rồi hiện (HAL read là binder chặn, cấm chạy trên luồng vẽ); mục HÀNH ĐỘNG hiện nút chạy + cảnh báo an toàn với nút thân xe, rồi chấm OK / Không OK / Bỏ qua.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "app/.../CapTestConsole.kt:29,42-113,121-170,198-286 · app/.../CapTestStore.kt:12-48 · core/.../CapabilityDescriptions.kt · BACKLOG CAPTEST (1.58) · docs/diagnostics/oncar-captest-results-2026-09-15.md ([ĐO] lượt chạy thật trên xe 2026-09-15)",
+  "spec": "docs/specs/kachi-capability-test.html"
+ },
+ {
+  "group": "Chẩn đoán",
+  "name": "CapTest 2 CHIỀU — mỗi chiều một nút (vá bug công cụ)",
+  "desc": "Bản đầu chỉ có MỘT nút «Chạy» bắn `defaultPrimary` = 1 (mở) cho mọi nút loại COVER ⇒ với kính thì KHÔNG CÓ đường gửi lệnh đóng ⇒ dangkhoi báo «kính mở được không đóng được» trong khi HAL hoàn toàn đúng. Nay nút nào khai ≥ 2 chiều (`displayArgs`) thì vẽ MỖI CHIỀU MỘT NÚT («Đóng» / «Mở», hoặc từng mức của SELECT); nút một chiều giữ nút «▶ Chạy» đơn. Bản 1.62.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../CapTestConsole.kt:177-194 · docs/diagnostics/oncar-captest-results-2026-09-15.md §Root-cause thật: BUG CÔNG CỤ CapTest",
+  "spec": "docs/specs/kachi-capability-test.html"
+ },
+ {
+  "group": "Chẩn đoán",
+  "name": "T-BRIDGE — cầu kiểm thử qua adb, 16 lệnh",
+  "desc": "Một `BroadcastReceiver` exported nhận `am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd <lệnh>`. 16 lệnh: `say` (chạy câu lệnh chữ qua ĐÚNG đường VoiceDispatcher) · `wav` (đẩy tệp WAV qua bộ nhận dạng) · `listen` (mở phiên nghe thật) · `state` (ảnh chụp toàn trạng thái) · `profiles` · `profile` · `preset` · `slot` · `slot_clear` · `open` · `prefs` (dump một tệp prefs, redact khoá nhạy cảm) · `reapply` · `diag` · `ctl` (bắn MỘT nút xe + chụp dòng HAL thật) · `hal` (gọi getter/named-method HAL thô) · `sweep` (quét CẠN 187 mục chỉ-đọc rồi ghi JSON ra thẻ). Mỗi lượt trả JSON ở BA nơi cùng lúc: `setResultData` (in thẳng ra terminal), một tệp `files/test/<mốc>-<lệnh>.json` (giữ 50 tệp mới nhất), và một dòng `logcat -s KachiTest`. Trần cứng 20 s/lượt. Mọi lệnh đi qua ĐÚNG đường một cú chạm đi — không có đường thứ hai, không lệnh shell thô, không chạm display 1.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../testbridge/KachiTestBridge.kt:29,50-188,206-424,434-486 · core/.../testbridge/TestBridgeCommand.kt:77,118-188,203 · app/.../testbridge/{TestBridgeCtl,TestBridgeHal,TestBridgeSweep,TestBridgeWav,TestBridgeState,TestBridgeReply}.kt · core/.../testbridge/{TestBridgeJson,TestBridgeSettle,TestBridgeWindow}.kt · AndroidManifest.xml:221-227 · BACKLOG T-BRIDGE ✅ off-car 2026-09-14, 🚗",
+  "spec": "docs/specs/kachi-test-bridge.html"
+ },
+ {
+  "group": "Chẩn đoán",
+  "name": "`state` — ảnh chụp toàn trạng thái launcher trong MỘT lệnh",
+  "desc": "Trả JSON gồm: app (gói/phiên bản) · hồ sơ (đang dùng / tất cả / lúc nổ máy) · bố cục (preset, tự vẽ, số ô, nội dung từng ô) · thanh (viền, ẩn/hiện, nút, chip) · giao diện (chủ đề, ngôn ngữ, đơn vị) · hosting (đang nhúng không, kênh shell dùng được không, danh sách màn ảo ô đọc THẲNG từ `DisplayManager` chứ không tin cờ RAM) · quyền (đủ/thiếu/không rõ) · mô hình giọng (ready + bytes) · TTS (vi_status, engine, giọng offline) · `cast_enabled` · số phút còn lại của chế độ kiểm thử. Đây là lệnh bisect: một lượt là biết gốc lỗi nằm ở quyền, ở kênh shell hay ở mô hình.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../testbridge/TestBridgeState.kt:40,46-103,112-143,160-200,211-243 · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA) §6b (cách đọc ĐÚNG: `state` KHÔNG in \"granted\", nó in `permissions.missing`)",
+  "spec": "docs/specs/kachi-test-bridge.html"
+ },
+ {
+  "group": "Chẩn đoán",
+  "name": "`sweep` — chốt ~40 mục NEEDS-ONCAR bằng MỘT lệnh, không bấm tay 187 mục",
+  "desc": "Chỉ-đọc: gọi `readRaw` cho MỌI telemetry và mô tả route ghi cho MỌI control (KHÔNG bắn lệnh nào), rồi ghi `sweep-<mốc>.json` vào thư mục log trên thẻ và trả về đường dẫn + lệnh `adb pull`. Thay hẳn việc mở màn «Kiểm tra từng nút xe» bấm tay từng mục. Đây là công cụ chốt của đợt vá 187 binding.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../testbridge/TestBridgeSweep.kt:25-28,42-120 · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA) §2 · docs/diagnostics/hal-binding-remediation-2026-09-15.md §Kế hoạch vá bước 5",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chẩn đoán",
+  "name": "Màn Chẩn đoán cụm (DiagActivity) + `ClusterDiag.capture`",
+  "desc": "Cài đặt › Nâng cao › «Chẩn đoán và nhật ký» (cũng có ở khối Cứu hộ của Cast). Trong màn: «Làm mới» in trạng thái cast + kiến trúc + chi tiết từng trạng thái + khối prefs autostart; «Sao chép báo cáo»; «⬇ Kiểm tra cập nhật»; «Thử badge 50» / «Ẩn badge»; 4 vị trí đặt sẵn + chỉnh cỡ ±10 dp + X/Y ±20 px cho biển báo. `ClusterDiag.capture` chụp một loạt dump trong MỘT phiên shell (`dumpsys window displays` · `dumpsys display` · `am stack list` · `dumpsys window windows` · grep size-compat · `wm density/size -d <vd>` · cờ freeform), TỰ ĐO id màn cụm thay vì tin cờ RAM, và cảnh báo «⛔ CỤM CÓ N CỬA SỔ MỒ CÔI … chỉ tắt máy xe mới sạch» khi WM và AM lệch nhau. Kết luận được viết theo kiểu TỪ CHỐI KẾT LUẬN khi thiếu bằng chứng. Ghi ra `files/diag/diag-<mốc>.txt`, giữ 20 tệp mới nhất.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../DiagActivity.kt:26,49-118,145-245,269-277 · app/.../ClusterDiag.kt:19,22-45,51-158 · core/.../modules/clustercast/WmParse.kt:6-16,153",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Chẩn đoán",
+  "name": "Lấy log từ xe — app tự chụp, không bắt user gõ adb",
+  "desc": "Cắm CarPlay/Android Auto là đầu xe TẮT WiFi ⇒ adb từ ngoài không vào được, mà đó đúng lúc cần dữ liệu. Nên app tự ghi ra thẻ: `captest-report.txt` (ghi đè mỗi lần chấm điểm và mỗi lần «Xuất báo cáo») · `usage-<mốc>.log` (logcat của RIÊNG tiến trình Kachi suốt phiên, trần 8 MB) · `snapshot-<mốc>.log` (chụp cả buffer gần đây kể cả hệ thống). Đường dẫn + lệnh `adb pull …` hiện NGAY trong app để anh em chỉ cần chụp màn hình gửi về.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "app/.../KachiLog.kt:14-24,27-45,48,60-86 · app/.../CapTestConsole.kt:57-59,249 · CLAUDE.md §11 · BACKLOG CAPTEST «+ Log ra THẺ NHỚ»",
+  "spec": "docs/specs/kachi-capability-test.html"
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "KHÔNG xin bất kỳ quyền location nào (có bài canh GHIM manifest)",
+  "desc": "Sau sự cố Dead-Reckon suýt ghim GPS của cả xe ở một toạ độ đóng băng, mock-location và mọi quyền location bị RETIRE. `DeadReckonRetirementTest` ghim manifest KHÔNG được xin bất kỳ quyền location nào. Hệ quả có chủ đích: 4 mục GPS (`gps_lat/lon/elevation/heading`) là BLOCKED-BY-DESIGN — không đọc được qua HAL (`BYDAutoLocationDevice` chỉ có setter), mà đường duy nhất còn lại là `LocationManager` + `ACCESS_FINE_LOCATION`. Đã thử nối rồi REVERT 2026-09-15. Sổ địa chỉ vì thế chỉ nhận toạ độ DÁN TAY. Mở lại là quyết định của dangkhoi.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "❌ bỏ/blocked",
+  "evidence": "app/src/test/.../DeadReckonRetirementTest.kt · core/.../SavedPlaces.kt:16-19 · docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS · CLAUDE.md §3 · README.md §GPS Dead Reckon đã gỡ",
+  "spec": "docs/specs/dead-reckon-revalidation.html"
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "Chế độ kiểm thử qua adb — TỰ TẮT sau 60 phút, CHẾT theo lần nổ máy",
+  "desc": "Cầu T-BRIDGE là receiver EXPORTED nên cổng thật KHÔNG phải là cờ exported (uid shell không gửi được vào receiver non-exported, mà `onReceive` cũng không có `getCallingUid`). Cổng là một CÔNG TẮC ở Cài đặt › Hệ thống & quyền › Nâng cao: chỉ bật được BẰNG TAY TRONG XE, tự tắt sau 60 phút, và chết theo lần nổ máy. Lưu một chuỗi duy nhất `<bootId>:<hạn dùng>` — danh tính là `/proc/sys/kernel/random/boot_id` chứ KHÔNG phải đồng hồ tường, vì [ĐO DiLink3 2026-09-14] đầu xe chỉnh giờ lệch > 5 s sau khi bật làm mốc cũ trôi và cầu trả `test_mode_off`. Đọc không được bootId ⇒ cửa sổ luôn ĐÓNG. Giá trị sửa tay quá 60 phút cũng bị từ chối. Công tắc cố ý là CHECKBOX (không phải nút «Mở 60 phút») để người dùng THẤY nó đang bật và tắt được ngay.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../testbridge/TestBridgeWindow.kt:28-57 · app/.../testbridge/TestBridgeStore.kt:12-58 · app/.../SettingsSections.kt:427-455 · app/.../testbridge/KachiTestBridge.kt:59,468",
+  "spec": "docs/specs/kachi-test-bridge.html"
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "Cổng `auto_confirm` — mặc định TỪ CHỐI, không phải «bỏ qua mọi câu hỏi»",
+  "desc": "Cờ này nghĩa là «lượt chạy do MÁY lái, không ai ngồi trước màn» chứ không phải phím tắt bỏ xác nhận. Một việc mức CONFIRM mà KHÔNG có cờ thì bị TỪ CHỐI (trả nguyên văn câu hỏi vào trường `needs_confirm`), không âm thầm chạy. Khi có cờ, mỗi lần đều ghi `AUTO-CONFIRM: …` vào nhật ký. Áp cho `say`, `ctl`, `hal set`; `hal get` và `sweep` là chỉ-đọc nên không cần. Lý do: một broadcast KHÔNG được phép bung hộp thoại lên màn của người đang lái.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../testbridge/TestBridgeCommand.kt:107-114,172,185-186,237 · app/.../testbridge/KachiTestBridge.kt:196-224 · app/.../testbridge/TestBridgeCtl.kt:60-67 · app/.../testbridge/TestBridgeHal.kt:81-85 · core/.../CtlSafetyPolicy.kt",
+  "spec": "docs/specs/kachi-test-bridge.html"
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "Đọc extras của broadcast một cách phòng thủ + một-lần-trả-lời",
+  "desc": "Toàn bộ thân `readExtras` bọc `runCatching` vì một `Parcelable` lạ sẽ ném `BadParcelableException` và GIẾT launcher. Trả lời dùng chốt một-lần (`AtomicBoolean`): gọi `PendingResult.finish()` lần thứ hai cũng giết launcher. Tên khoá nhạy cảm (key/token/secret/password/credential/auth) bị thay bằng `[redacted]` khi dump prefs, và chỉ những tệp prefs trong danh sách cho phép mới dump được.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/.../testbridge/KachiTestBridge.kt:81-105 · app/.../testbridge/TestBridgeReply.kt:23-58,120-121 · app/.../testbridge/TestBridgeState.kt:226-243",
+  "spec": "docs/specs/kachi-test-bridge.html"
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "Vòng kiểm quyền lúc mở launcher — KHÔNG chặn launcher",
+  "desc": "Gom 6 điều kiện launcher phụ thuộc về MỘT chỗ (trước đó rải ở 5 chỗ). Đủ thì IM LẶNG; thiếu thì tự xin lại cái tự xin được và hiện đúng quyền còn thiếu ở Cài đặt › Quyền — nhưng KHÔNG chặn launcher (đây là màn hình chính của xe) và KHÔNG chỉ tới màn cài đặt hệ thống (màn đó khoá trên xe). Hàng quyền phân biệt «chờ người dùng» với «hạn chế môi trường». [ĐO] hệ thống TỰ THU HỒI quyền trợ năng khi tiến trình chết ⇒ vòng kiểm tự lành mỗi lần mở. F4: lần mở đầu trên xe, hộp «Cho phép gỡ lỗi USB?» bị chính màn Kachi đè chết ⇒ hoãn lần dò đầu + thử lại 20 s không giới hạn.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../PermissionPreflight.kt:104 · core/.../LauncherRequirements.kt · app/.../SettingsSections.kt:298-304 · BACKLOG P8 ✅ off-car 09-11 + F4 · docs/diagnostics/carlog-kachi-20260914-2044",
+  "spec": "docs/specs/kachi-permission-preflight.html"
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "Cổng an toàn của lệnh hệ thống: display nào · app nào · loại stack nào · hoàn tác ra sao",
+  "desc": "Guard cứng đặt ở TẦNG THI HÀNH chứ không ở UI: `cleanDisplay` từ chối `displayId < 1`; `ClusterDisplayResolver` trả −1 khi hụt thay vì rơi về seed; `liveDisplayId` gác MỌI `am start --display` / `wm -d`; `ownedVirtualDisplayIds` đảm bảo màn ảo của CHÍNH launcher không bao giờ bị nhận nhầm là cụm. Bài học gốc: bản cũ bê MỌI stack có displayId ≥ 1 về display 0 ⇒ kéo nhầm stack `home`/`pinned` ⇒ stack mồ côi ⇒ launcher không bao giờ được resume ⇒ chỉ còn khởi động lại đầu xe.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../simplified/CastDisplayCleaner.kt:24 · core/.../simplified/ClusterDisplayResolver.kt:46-49 · core/.../simplified/SimpleCastCoordinator.kt:91 · core/.../modules/clustercast/DisplayParse.kt:197,217 · CLAUDE.md §4 · app/src/test/.../StackParseTest.evictableOnVd* (test hồi quy khoá lỗi đơ launcher)",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "Release APK không export bề mặt kiểm thử nào của T10",
+  "desc": "Mọi bề mặt test/ghi-thiết-bị (bộ dò T10) chỉ nằm trong build type `vehicleTest`; release APK không export bề mặt nào như vậy (xác minh bằng `aapt2` trên chính bản build). Ứng viên `1.04` vẫn bị blocklist theo SHA-256 trong on-car guard vì nó từng export `TEST_ADAS_*`/`TEST_SPEED_LIMIT`, và không còn được giữ trong `apk/`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "README.md §TRẠNG THÁI HIỆN TẠI · app/src/test/.../BuildArtifactNamingTest.kt · docs/HISTORICAL-ARTIFACTS.md",
+  "spec": ""
+ },
+ {
+  "group": "Đa ngôn ngữ",
+  "name": "Việt / English — 3 chế độ (Theo xe · Tiếng Việt · English)",
+  "desc": "Cài đặt › Hiển thị & đơn vị › «Chữ trên màn». «Theo xe» = theo ngôn ngữ của máy (tiếng Việt → VI, mọi thứ khác kể cả không đọc được → EN). Đổi ngôn ngữ là dựng lại màn. Hai cơ chế chuỗi CÓ CHỦ Ý: dòng trong bộ đăng ký mang sẵn `labelEn/subEn/shortEn`, còn chuỗi ghép lúc chạy gọi `Strings.t(vi, en)` tại chỗ. `LangHost.wrap` (gọi từ `attachBaseContext`) đặt CẢ `Strings.current` CẢ locale của Context — thiếu một trong hai thì đầu xe locale Nhật sẽ ra nhãn `:core` tiếng Anh lẫn chữ màn hình tiếng Việt. Mã trên đĩa dùng CHUNG với ClusterNav nên phải khớp từng ký tự; nguồn sự thật là `<hồ sơ>__lang`, có nhân bản sang tệp `clusternav_lang`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../Lang.kt:15-20,30,42-85 · app/.../LangHost.kt:16-32,44-50,60,69 · app/.../WorkspacePrefs.kt:269-294 · core/.../ProfileScope.kt:61-80 · app/.../SettingsSections.kt:142-152 · BACKLOG U5 ✅ off-car 2026-09-12 (262 nhãn :core + 123 khoá tài nguyên :app)",
+  "spec": "docs/specs/kachi-i18n-and-light-theme.html"
+ },
+ {
+  "group": "Đa ngôn ngữ",
+  "name": "Chủ đề Sáng / Tối / Tự động",
+  "desc": "Cài đặt › Hiển thị & đơn vị › «Bảng màu». «Tự động» = tối từ 18h đến 6h. CHỈ MỘT chỗ trong cả `app/src/main` được gọi `applyTheme` (có bài canh đếm) — nó hoán bảng màu giữa `KachiPalette.DARK` và `LIGHT`; áp trước khi dựng view, đổi thì dựng lại Activity. Mặc định là TỐI. Ghi cả `theme_mode` (của Kachi) lẫn `theme_choice` (của ClusterNav) nên một công tắc điều khiển cả hai.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../ThemeMode.kt:7-27 · app/.../ThemeHost.kt:18-35 · app/.../KachiTheme.kt:26,36-37 · app/.../KachiPalette.kt:106,177,246 · core/.../HomeUiState.kt:40 · BACKLOG U5 (bảng màu SÁNG dùng được thật ⇒ nút chủ đề hết là nút chết)",
+  "spec": "docs/specs/kachi-i18n-and-light-theme.html"
+ },
+ {
+  "group": "Đa ngôn ngữ",
+  "name": "Người dùng CHỌN đơn vị (7 đại lượng)",
+  "desc": "dangkhoi: «mấy cái có đơn vị thì cho user chọn, đừng ép». 7 đại lượng, mỗi đại lượng một hàng chip, lựa chọn ĐẦU là mặc định: Áp suất bar/kPa/psi (bar trước cho khớp widget lốp đang hiện) · Nhiệt độ °C/°F · Khoảng cách km/mile · Tốc độ km/h/mph · Tiêu thụ điện kWh/100km · km/kWh · Mô-men Nm/lb·ft · Chiều dài m/ft. Số chữ số thập phân khai theo TỪNG đơn vị nên không bịa độ chính xác. Đơn vị không có lựa chọn (%, °, V, rpm, kW, µg/m³…) thì UI KHÔNG bày lựa chọn giả. Mọi chỗ hiển thị số đều phải đi qua `UnitFormat.apply`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "core/.../Units.kt:36-44,51,59-92,138-185 · app/.../SettingsSections.kt:109-114 · core/.../TopStrip.kt:262,275-280 · app/.../ControlDockView.kt:79 · BACKLOG W-unit ✅ off-car 09-10",
+  "spec": "docs/specs/kachi-unified-capability-tile.html"
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "KachiLog — ba loại tệp log ra thẻ nhớ, có trần dung lượng",
+  "desc": "`/sdcard/Android/data/com.byd.launcher/files/kachi-logs/`: `captest-report.txt`, `usage-<mốc>.log` (logcat của riêng tiến trình, trần 8 MB, chạy trên luồng daemon, flush từng dòng), `snapshot-<mốc>.log`. `sweep-<mốc>.json` của T-BRIDGE cũng rơi vào đây. Đặt ở bộ nhớ NGOÀI của app nên `adb pull` được mà không cần root, và gỡ app là sạch. dangkhoi yêu cầu GHI SUỐT PHIÊN nên cố ý KHÔNG gate theo chế độ kiểm thử.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "app/.../KachiLog.kt:14-24,27-45,60-86 · app/.../testbridge/TestBridgeSweep.kt:106,116-120 · BACKLOG (C) T8 VOICE/PERF («KHÔNG gate KachiLog — dangkhoi yêu cầu ghi suốt phiên»)",
+  "spec": "docs/specs/kachi-capability-test.html"
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "Trần dung lượng 150 MB tự dọn (DiagStorageCap)",
+  "desc": "Luôn bật cho cả cây tệp ngoài của app: cứ 60 giây (hoặc khi bị ép) thì gom tệp đệ quy, lên kế hoạch xoá CŨ-TRƯỚC bằng một bộ hoạch định THUẦN, xoá, dọn thư mục rỗng và ghi lại số MB đã giải phóng. Mỗi bước bọc `runCatching`. APK OTA nằm ở bộ nhớ TRONG (`filesDir/update`) nên KHÔNG BAO GIỜ là ứng viên bị xoá.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/src/main/java/com/byd/clusternav/DiagStorageCap.kt:28-93 · core/.../core/StorageCapPlanner.kt",
+  "spec": ""
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "Gói vá hiệu năng đã áp (đo trước, không đoán)",
+  "desc": "Năm chỗ [P2] đã sửa: widget trình chiếu giải mã ảnh trên LUỒNG CHÍNH → chuyển sang luồng nền chung có thẻ thế hệ · widget giải mã lượt đầu ở cỡ 1×1 → chờ có cỡ thật · `winExec` gộp lệnh cửa sổ (dadb chặn ~3 s) với I/O ảnh → tách hai cửa · `MediaBridge.read()` gọi mỗi ô mỗi nhịp (tới 6 lời gọi liên-tiến-trình/giây) → đọc MỘT LẦN mỗi lượt render · thanh trên dựng lại 3 chip mỗi nhịp → dựng một lần rồi chỉ đổi chữ. Nhịp đo ô (`SlotLiveProbe`) tạm dừng theo `onStop`/`onStart` và ĐẾM số màn đang hiện (cờ trần bị `A.onStop` tắt sau `B.onStart` ⇒ nhịp chết vĩnh viễn).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "docs/PROJECT-BACKLOG.md §gói vá (bảng P2/P3) · app/.../SlotLiveProbe.kt (pause/resume) · BACKLOG H2 SOÁT Pass H2",
+  "spec": ""
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "Đo hiệu năng trên xe — 3 số, 1 phút (CHƯA chạy)",
+  "desc": "dangkhoi báo «lag». Kỷ luật là ĐO TRƯỚC: `top -n 1 -m 12` (ai ăn CPU khi Kachi rảnh) · `dumpsys gfxinfo com.byd.launcher | grep -A12 Janky` (% khung giật) · `logcat -d -s SimpleCast | grep -c 'am stack list'` (số lần poll/phút). Ứng viên tối ưu CHỈ SAU KHI đo: gộp 2 poller `am stack list` (SlotLiveProbe 5 s + watchdog cast ~4 s) thành một, kéo dài nhịp khi không cast. Nghi ngờ hiện tại về «lag chạm VietMap trong ô» là CHẠM LỆCH do size-compat (cùng gốc YouTube) chứ không phải lag — chốt bằng `dumpsys activity activities | grep mSizeCompatScale`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🔲 chưa làm",
+  "evidence": "docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1 (cổng P0 phải PASS trước OTA) §6b (phần Lag + CPU) · docs/diagnostics/oncar-bugs-2026-09-15.md",
+  "spec": "docs/specs/kachi-hal187-cast-remediation.html"
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "Phiên bản hiện tại + kỷ luật bump",
+  "desc": "Bản trong cây làm việc: **1.65 (versionCode 66)**. Kênh OTA hiện đang giữ `apk/Kachi-1.64-release.apk`. Luật: sửa code sau khi đã báo APK cho dangkhoi thì PHẢI bump cả `versionCode` lẫn `versionName`, không tái dùng số cũ; và KHÔNG BAO GIỜ đoán xe đang chạy bản nào — đọc từ máy (`dumpsys package … versionName`) hoặc hỏi. Phiên bản phải hiện trong app (màn Giới thiệu), trong log phiên và trong tên tệp log.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "app/build.gradle.kts:44-45 · apk/ (Kachi-1.64-release.apk) · app/.../SettingsSections.kt:470-472 · CLAUDE.md §9",
+  "spec": ""
+ },
+ {
+  "group": "Bảo mật / an toàn",
+  "name": "W5 — Camera 360 + phím vô-lăng theo ngữ cảnh",
+  "desc": "Bấm phím vô-lăng khi đang lùi/đỗ mở camera 360 lên ô; theo ngữ cảnh xe. Mới có spec, code chờ mã phím thật đọc trên xe (CLAUDE.md §14: chứng minh shell thật trước).",
+  "voice": [],
+  "voice_reply": "—",
+  "status": "🔲 chưa làm (spec có, chờ mã phím thật trên xe)",
+  "evidence": "docs/PROJECT-BACKLOG.md W5",
+  "spec": ""
+ }
+]

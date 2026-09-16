@@ -53,6 +53,7 @@ khi index đang giữ bytes đúng — sau một `git reset` thì index == HEAD 
 | Doc | Mục đích | Trạng thái | Cập nhật |
 |-----|----------|-----------|----------|
 | [`PROJECT-BACKLOG.md`](PROJECT-BACKLOG.md) | Nguồn DUY NHẤT cho task **LAUNCHER** (gom theo 6 nhóm chủ đề + đề xuất thứ tự burn) | Current | 2026-09-10 |
+| [`kachi-feature-catalog.html`](kachi-feature-catalog.html) | **DANH MỤC TOÀN BỘ chức năng launcher — bảng: diễn giải · voice command · phản hồi (chuỗi thật `VoiceReply`) · status THẬT** (owner 2026-09-16: *"không sót chức năng nào, và status thực tế"*). 359 dòng = 64 nút + 123 thông tin + 4 gói + 3 hành động (**sinh bằng máy** từ 4 bộ đăng ký qua `FeatureCatalogDumpTest` → `core/build/catalog/registry.json`) + 129 chức năng ngoài registry (`docs/catalog/features.json`, mỗi dòng có evidence) + 191 status on-car theo id (`docs/catalog/status-by-id.json`: 🟢 10 · ⚠ 57 · 🚗 117 · ❌ 7). Dựng lại: `./gradlew :core:test --tests '*FeatureCatalogDumpTest*' && python3 scripts/docs/feature-catalog.py`. Luật: chưa đo trên xe thì KHÔNG ghi 🟢. | Current | 2026-09-16 |
 | [`archive/clusternav2-backlog-inherited-2026-09-10.md`](archive/clusternav2-backlog-inherited-2026-09-10.md) | Backlog ClusterNav 2.0 kế thừa — tách ra khi owner chốt "chỉ làm launcher"; ClusterNav = nền tảng DÙNG LẠI, KHÔNG track nữa | Archived | 2026-09-10 |
 
 ## 3) Rules / Steering
