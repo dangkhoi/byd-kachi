@@ -258,7 +258,10 @@ class VoiceGrammarPhrasesTest {
          * [VoiceLayouts.SPOKEN] (*"bố cục"*, 5 bố cục, *"đổi bố cục"*, *"chuyển bố cục"*). Cả 8 đều giữ được ⇒
          * mô hình có đủ mọi từ trong chúng; không cụm nào rơi vào [EXPECTED_PHRASES_DROPPED].
          */
-        const val EXPECTED_PHRASES_KEPT = 338
+        // [ĐO] 2026-09-16 · V3 R10 *"kính lái"*: **338 → 342 (+4)** = đúng 4 cách nói mới của `window`
+        // (`kinh lai` · `cua kinh lai` · `kinh tai xe` · `cua so lai`), cả bốn đều có dạng có dấu ở
+        // [SherpaSpokenWords] nên không cụm nào bị loại.
+        const val EXPECTED_PHRASES_KEPT = 342
 
         /**
          * [ĐO] 269 cụm bị loại — **gần như toàn bộ là nhãn tiếng ANH** (*"Reading light"*, *"Tyre FL"*…), cộng
@@ -295,6 +298,10 @@ class VoiceGrammarPhrasesTest {
         // Không có **cụm** nào mới (hai cụm `đúng rồi`/`làm đi` gồm toàn từ đã có ⇒ [EXPECTED_PHRASES_KEPT] giữ
         // nguyên); +8 là **từ đơn** mới của [VoiceLexicon.CONFIRM_YES] nở theo thanh điệu (`u` · `vang` · `co` ·
         // `duoc` · `dung` · `roi` · `lam` · `di` — mỗi từ chỉ cộng phần biến thể chưa ai khai).
-        const val EXPECTED_ENTRIES = 2110
+        //
+        // [ĐO] 2026-09-16 · V3 R10 (*"kính lái"*): **2110 → 2114 (+4)** = đúng 4 **cụm** mới của `window`
+        // ([EXPECTED_PHRASES_KEPT] 338 → 342); KHÔNG có từ đơn nào mới — `kinh`/`lai`/`cua`/`so`/`tai`/`xe`
+        // đều đã có sẵn trong từ vựng, nên phần nở theo thanh điệu không cộng thêm gì.
+        const val EXPECTED_ENTRIES = 2114
     }
 }

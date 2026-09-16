@@ -38,7 +38,10 @@ class HalBindingTable(private val gateway: HalGateway) {
         val spec = specOf(id) ?: return null
         val raw = when (val r = routeOf(spec.first)) {
             is BindingRoute.NamedMethod -> gateway.getter(r.fqn, r.method, readArg(id))
-            is BindingRoute.Feature -> gateway.featureGet(featureDeviceFor(id, spec.second), r.id)
+            is BindingRoute.Feature -> gateway.featureGet(deviceForFeature(r.id, id, spec.second), r.id)
+            // V3 · R11 — tên hằng: tra giá trị lúc chạy; không tra được ⇒ unavailable (KHÔNG đoán một con số).
+            is BindingRoute.FeatureName -> gateway.featureIdByName(r.constName)
+                ?.let { fid -> gateway.featureGet(deviceForFeature(fid, id, spec.second), fid) }
             is BindingRoute.Setting -> gateway.settingGet(r.key)
             is BindingRoute.Local -> gateway.localGet(r.target, r.method, readArg(id))
             BindingRoute.None -> null
@@ -96,7 +99,10 @@ class HalBindingTable(private val gateway: HalGateway) {
         val args = writeArgs(def, primary)
         return when (val r = routeOf(def.bindingKey)) {
             is BindingRoute.NamedMethod -> gateway.namedInt(r.fqn, r.method, args)
-            is BindingRoute.Feature -> gateway.featureSet(featureDeviceFor(def), r.id, args.firstOrNull() ?: primary)
+            is BindingRoute.Feature ->
+                gateway.featureSet(deviceForFeature(r.id, def), r.id, args.firstOrNull() ?: primary)
+            is BindingRoute.FeatureName -> gateway.featureIdByName(r.constName)
+                ?.let { fid -> gateway.featureSet(deviceForFeature(fid, def), fid, args.firstOrNull() ?: primary) }
             is BindingRoute.Setting -> gateway.settingSet(r.key, args.firstOrNull() ?: primary)
             is BindingRoute.Local -> if (gateway.localSet(r.target, r.method, args)) 0L else null
             BindingRoute.None -> null
@@ -123,6 +129,25 @@ class HalBindingTable(private val gateway: HalGateway) {
         TelemetryRegistry.byId(id)?.let { featureDeviceFor(it) }
             ?: ControlRegistry.byId(id)?.halDevice?.let { deviceFqn(it) }
             ?: featureDeviceFqn(domain)
+
+    /**
+     * ═══ V3 · R11(b) — HỎI FRAMEWORK feature-id này thuộc device nào, thay vì đoán theo [Domain] ═════════
+     *
+     * [ĐO nguồn fw-dl3] `BYDAutoDeviceFeaturesMap.getFeatureIdsFromDevice(int deviceType)` là **bảng thật** của
+     * chính chiếc xe: 50+ device (`1000` Ac … `1061` BigData), mỗi cái một `Set<Integer>`. Còn
+     * `AbsBYDAutoDevice.checkDeviceFeatures` từ chối đúng khi id **không** nằm trong set của device được gọi —
+     * tức câu *"gọi sai device"* trả lời được bằng máy, không cần đoán.
+     *
+     * Tầng dưới ([HalGateway.deviceForFeature]) trả `null` khi off-car / framework không có bảng ⇒ **lùi về**
+     * phép đoán cũ (`halDevice` khai tay, rồi [Domain]). Đó là chủ ý: bảng là một phép **cải thiện**, không phải
+     * một cổng — thiếu nó thì mọi thứ chạy y như 1.65, không có gì im lặng tắt đi.
+     */
+    private fun deviceForFeature(featureId: Int, id: String, domain: Domain): String =
+        gateway.deviceForFeature(featureId) ?: featureDeviceFor(id, domain)
+
+    /** Như trên, cho đường GHI (đã có sẵn [ControlDef]). */
+    private fun deviceForFeature(featureId: Int, def: ControlDef): String =
+        gateway.deviceForFeature(featureId) ?: featureDeviceFor(def)
 
     companion object {
         /**
@@ -318,6 +343,10 @@ class HalBindingTable(private val gateway: HalGateway) {
                 val prefix = bindingKey.substring(0, dot)
                 val method = bindingKey.substring(dot + 1)
                 return when {
+                    // ⚠ Phải xét TRƯỚC nhánh `BYDAuto…` ngay dưới: `BYDAutoFeatureIds` cũng bắt đầu bằng
+                    // "BYDAuto", và [deviceFqn] sẽ biến nó thành `android.hardware.bydauto.featureids.…` — một
+                    // lớp không tồn tại ⇒ mọi dòng bind-theo-tên im lặng trở thành "off-car".
+                    prefix == FEATURE_IDS_CLASS -> BindingRoute.FeatureName(method)
                     prefix.startsWith("BYDAuto") -> BindingRoute.NamedMethod(deviceFqn(prefix), method)
                     prefix in LOCAL_TARGETS -> BindingRoute.Local(prefix, method)
                     else -> BindingRoute.None
@@ -358,6 +387,10 @@ class HalBindingTable(private val gateway: HalGateway) {
             is BindingRoute.NamedMethod -> "named:${r.method}" to r.fqn
             is BindingRoute.Feature -> "feature:0x%08x".format(r.id) to
                 (def.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(def.domain))
+            // Mô tả THUẦN ⇒ **không** tra reflection ở đây (hàm này chạy được off-car, đó là cả điểm của nó):
+            // nói đúng rằng giá trị sẽ được tra lúc chạy, và device sẽ do bảng của framework quyết.
+            is BindingRoute.FeatureName -> "feature_name:${r.constName}" to
+                (def.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(def.domain))
             is BindingRoute.Setting -> "setting:${r.key}" to ""
             is BindingRoute.Local -> "local:${r.target}.${r.method}" to r.target
             BindingRoute.None -> "none" to ""
@@ -373,6 +406,20 @@ class HalBindingTable(private val gateway: HalGateway) {
             ControlKind.SELECT -> 0
             ControlKind.TOGGLE, ControlKind.COVER, ControlKind.BUTTON -> 1
         }
+
+        /**
+         * Tên lớp hằng feature-id của framework BYD. Tiền tố `bindingKey` cho đường [BindingRoute.FeatureName].
+         *
+         * FQN đầy đủ (`android.hardware.bydauto.BYDAutoFeatureIds`) dựng ở tầng thi hành — nó nằm **thẳng** trong
+         * package `bydauto`, không theo công thức `<seg>.<Class>` của [deviceFqn].
+         */
+        const val FEATURE_IDS_CLASS = "BYDAutoFeatureIds"
+
+        /** FQN của lớp hằng feature-id — một chỗ duy nhất dựng chuỗi này. */
+        const val FEATURE_IDS_FQN = "android.hardware.bydauto.$FEATURE_IDS_CLASS"
+
+        /** FQN của bảng feature→device của framework BYD ([HalGateway.deviceForFeature] dùng). */
+        const val FEATURES_MAP_FQN = "android.hardware.bydauto.BYDAutoDeviceFeaturesMap"
 
         /** FQN thiết bị BYDAuto từ tên đơn giản: `BYDAutoPM2p5Device` → `android.hardware.bydauto.pm2p5.BYDAutoPM2p5Device`. */
         fun deviceFqn(simpleClass: String): String {
@@ -425,52 +472,4 @@ class HalBindingTable(private val gateway: HalGateway) {
             }
         }
     }
-}
-
-/** Đường nối HAL đã phân loại cho một `bindingKey`. */
-sealed class BindingRoute {
-    /** named-method proven trên device BYDAuto ([fqn] = FQN đầy đủ). */
-    data class NamedMethod(val fqn: String, val method: String) : BindingRoute()
-
-    /** feature-id số (Overdrive raw) — ghi `set(int[]{id})` / đọc `get(int[]{id})`. */
-    data class Feature(val id: Int) : BindingRoute()
-
-    /** car-setting key. */
-    data class Setting(val key: String) : BindingRoute()
-
-    /** local Android (AudioManager / AutoContainer) — KHÔNG qua HAL BYDAuto. */
-    data class Local(val target: String, val method: String) : BindingRoute()
-
-    /** chưa map được (command-wrapper / id chưa chắc / GPS) → unavailable (grab-list §9). */
-    object None : BindingRoute()
-}
-
-/**
- * Trừu tượng thao tác HAL/local — để [HalBindingTable] test được off-car (gateway giả). Impl thật = [BydHalGateway]
- * (bọc [com.byd.clusternav.modules.hal.BydHal]). MỌI method degrade-safe: off-car/thiếu/ném → null/false.
- */
-interface HalGateway {
-    /** Đọc getter named-method (0/1 int arg) → chuỗi giá trị thô, null nếu không đọc được. */
-    fun getter(deviceFqn: String, method: String, arg: Int?): String?
-
-    /** Ghi named-method N int → rc (Long), null nếu off-car/thiếu method/ném. */
-    fun namedInt(deviceFqn: String, method: String, args: IntArray): Long?
-
-    /** Đọc feature-id (`get(int[]{id})`) → chuỗi giá trị (kiểu "int=.. float=.. buf=.."), null nếu không đọc. */
-    fun featureGet(deviceFqn: String, id: Int): String?
-
-    /** Ghi feature-id (`set(int[]{id}, EventValue.intValue)`) → rc (Long), null nếu off-car/ném. */
-    fun featureSet(deviceFqn: String, id: Int, value: Int): Long?
-
-    /** Đọc car-setting → chuỗi, null nếu chưa hỗ trợ. */
-    fun settingGet(key: String): String?
-
-    /** Ghi car-setting → rc/status (Long), null nếu chưa hỗ trợ. */
-    fun settingSet(key: String, value: Int): Long?
-
-    /** Đọc local (AudioManager…) → chuỗi, null nếu không có. */
-    fun localGet(target: String, method: String, arg: Int?): String?
-
-    /** Ghi local (AudioManager…) → true nếu thành công. AutoContainer (cast) KHÔNG wire ở đây → false. */
-    fun localSet(target: String, method: String, args: IntArray): Boolean
 }

@@ -9,6 +9,8 @@ import com.byd.clusternav.launcher.HomeUiState
 import com.byd.clusternav.launcher.MediaBridge
 import com.byd.clusternav.launcher.VoiceDispatcher
 import com.byd.clusternav.system.PackageQueries
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.voiceConfirmIds
 
 /**
  * ═══ V1 · MỘT CHỖ DỰNG CẦU `VoiceDispatcher` — HAI BỀ MẶT, MỘT BỘ DÂY ════════════════════════════════════════
@@ -85,6 +87,10 @@ object VoiceWiring {
         onSwitchProfile = onSwitchProfile,
         onListen = onListen,
         confirm = confirm,
+        // V3 · R7 — đọc lại prefs ở MỖI vế (lambda, không phải giá trị): người dùng vừa tích một ô trong Cài đặt
+        // thì câu ngay sau đó đã đi luật mới. `runCatching` + rỗng: không đọc được prefs thì hành vi đúng là
+        // **mặc định của owner** (không hỏi gì), không phải hỏi mọi thứ.
+        confirmIds = { runCatching { Prefs.voiceConfirmIds(ctx) }.getOrDefault(emptySet()) },
         say = say,
         assignAppToSlot = assignAppToSlot,
         onLayout = onLayout,

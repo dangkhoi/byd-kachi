@@ -90,14 +90,18 @@ class LauncherLocaleContractTest {
      */
     @Test
     fun `mot nguon su that cho ngon ngu, clusternav_lang chi la ban phat`() {
-        val prefs = code(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt"))
+        // ⚠ [SOÁT Pass 1 · 2026-09-16] Quét **CẢ HAI** tệp: ba hàm ngôn ngữ đã tách sang `WorkspacePrefsLang.kt`
+        // (trần 500 dòng, CLAUDE.md §4.1). Nối chuỗi rồi mới đếm ⇒ phép "đúng MỘT chỗ ghi" nay phủ cả hai tệp,
+        // tức bài canh MẠNH hơn trước chứ không phải được nới để đi qua lượt tách.
+        val prefs = code(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt")) +
+            "\n" + code(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsLang.kt"))
         val repo = code(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt"))
         assertEquals(
             1, Regex("""ClusterNavLang\.setChoice\(""").findAll(prefs).count(),
             "đường PHÁT sang `clusternav_lang` phải có đúng MỘT chỗ ghi (`broadcastLang`)",
         )
         assertTrue(
-            SourceRoots.body(prefs, "internal fun broadcastLang(").contains("ClusterNavLang.setChoice("),
+            SourceRoots.body(prefs, "internal fun WorkspacePrefs.broadcastLang(").contains("ClusterNavLang.setChoice("),
             "và chỗ ghi đó phải chính là `broadcastLang` — tên hàm nói ra nó là bản phát, không phải chỗ nhớ",
         )
         assertEquals(
@@ -111,7 +115,7 @@ class LauncherLocaleContractTest {
                 "(đúng triệu chứng U5 đã chữa, chỉ đổi cách kích hoạt)",
         )
         assertTrue(
-            Regex("""putString\(key\(K_LANG\)""").containsMatchIn(prefs),
+            Regex("""putString\(key\((?:WorkspacePrefs\.)?K_LANG\)""").containsMatchIn(prefs),
             "nguồn sự thật phải là khoá THEO HỒ SƠ `<hồ sơ>__lang` (S4 · R3a)",
         )
     }

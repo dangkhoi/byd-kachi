@@ -212,6 +212,18 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         return load()
     }
 
+    /**
+     * V3 · R13 — đổi tên hồ sơ. Phép DỜI khoá + ba con trỏ nằm ở `WorkspacePrefs.renameProfile`, phép kiểm thuần
+     * ở `ProfileRename` (`:core`) — ở đây chỉ uỷ quyền rồi nạp lại, đúng khuôn [addProfile]/[deleteProfile].
+     *
+     * Bị từ chối (tên rỗng/trùng) ⇒ `load()` trả nguyên trạng và màn Cài đặt tự thấy tên không đổi; câu giải
+     * thích do tầng vẽ nói, vì chỉ nó mới biết đang hỏi tên ở hộp thoại nào.
+     */
+    override fun renameProfile(old: String, new: String): HomeUiState {
+        prefs.renameProfile(old, new)
+        return load()
+    }
+
     override fun recentApps(): List<String> = prefs.recentApps()
 
     override fun touchRecentApp(pkg: String) = prefs.touchRecentApp(pkg)

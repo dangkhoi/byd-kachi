@@ -38,6 +38,7 @@ class HomePanels(
     private val onPreset: (LayoutPreset) -> Unit,
     private val onDockEdge: (DockEdge) -> Unit,
     private val onTopStrip: (String, Boolean) -> Unit,
+    private val onTopStripConfig: (TopStripConfig) -> Unit,
     private val onWallpaper: (WallpaperPrefs) -> Unit,
     private val onUnitPrefs: (UnitPrefs) -> Unit,
     /**
@@ -62,6 +63,7 @@ class HomePanels(
      */
     private val onDuplicateProfile: (String) -> Unit = {},
     private val onDeleteProfile: (String) -> Unit,
+    private val onRenameProfile: (String, String) -> Unit = { _, _ -> },
     /** Tóm tắt bố cục của MỘT hồ sơ (theo tên) cho thẻ hồ sơ ở Cài đặt — đọc-để-vẽ, qua ViewModel. */
     private val profileSummary: (String) -> String,
     /**
@@ -150,6 +152,7 @@ class HomePanels(
             onOpenLayoutEditor = { closeSettings(); openLayoutEditor() },
             onWallpaper = { p -> onWallpaper(p) },
             onTopStrip = { id, on -> onTopStrip(id, on) },
+            onTopStripConfig = { cfg -> onTopStripConfig(cfg) },
             // T6 · R-UI (m): một bộ chọn, hai lối vào. Bảng Cài đặt gấp tập đã chốt bằng `DockSelection.apply`
             // rồi đẩy xuống qua intent — lớp này không biết phép gấp đó, nó chỉ nối hai đầu dây.
             openDockPicker = { selected, onApply -> openDockPicker(selected, onApply) },
@@ -169,6 +172,7 @@ class HomePanels(
             // (`SettingsDialogs.askName`), lớp này chỉ nối hai đầu dây.
             onDuplicateProfile = { name -> onDuplicateProfile(name) },
             onDeleteProfile = { name -> onDeleteProfile(name) },
+            onRenameProfile = { old, new -> onRenameProfile(old, new) },
             // S4 · R6 — hồ sơ lúc nổ máy (theo XE, không theo hồ sơ — R4).
             bootProfile = bootProfile,
             onBootProfile = { name -> onBootProfile(name) },

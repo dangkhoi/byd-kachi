@@ -51,6 +51,8 @@ class TestBridgeCommandTest {
                 extras[key] = when (key) {
                     TestBridgeCommands.EXTRA_SLOT -> 2
                     TestBridgeCommands.EXTRA_FILE -> files.first()
+                    // `prefs_set` kiểm khoá ngay ở tầng phân tích (danh sách trắng) ⇒ một chuỗi bừa là `bad_prefs_key`.
+                    TestBridgeCommands.EXTRA_KEY -> TestBridgeCommands.WRITABLE_PREFS_KEYS.first()
                     else -> "x"
                 }
             }
@@ -294,5 +296,54 @@ class TestBridgeCommandTest {
         )
         assertEquals("Mặc định", cmd.arg)
         assertNotNull(cmd.name)
+    }
+
+    // ── prefs_set (ghi một khoá trong DANH SÁCH TRẮNG) — [SOÁT Pass 1 · 2026-09-16] ──────────────
+
+    @Test
+    fun `prefs_set chi nhan khoa trong danh sach trang`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.PREFS_SET,
+            TestBridgeCommands.EXTRA_KEY to "  voice_confirm_ids  ",
+            TestBridgeCommands.EXTRA_TEXT to "control:door",
+        )
+        assertEquals("voice_confirm_ids", cmd.key, "khoảng trắng thừa bị cắt như mọi extra chuỗi khác")
+        assertEquals("control:door", cmd.text)
+    }
+
+    /**
+     * ⚠ Cổng nằm ở TẦNG PHÂN TÍCH, không ở tầng thi hành: receiver là `exported=true` (mọi app trên xe bắn vào
+     * được — KDoc `KachiTestBridge`), nên một khoá lạ không bao giờ được dựng thành một lệnh "chạy được" rồi mới
+     * bị từ chối. Mã lỗi nối tên khoá để script biết mình gõ sai chỗ nào.
+     */
+    @Test
+    fun `prefs_set tu choi khoa la, va noi ro khoa nao`() {
+        val code = err(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.PREFS_SET,
+            TestBridgeCommands.EXTRA_KEY to "cast_enabled",
+            TestBridgeCommands.EXTRA_TEXT to "1",
+        )
+        assertEquals(TestBridgeCommands.ERR_BAD_PREFS_KEY + "cast_enabled", code)
+        // Thiếu hẳn `--es key` ⇒ báo THIẾU ĐỐI SỐ, không phải "khoá lạ" — hai lỗi khác nhau, hai cách sửa khác nhau.
+        assertEquals(
+            TestBridgeCommands.ERR_MISSING + TestBridgeCommands.EXTRA_KEY,
+            err(TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.PREFS_SET),
+        )
+    }
+
+    @Test
+    fun `prefs_set cho phep gia tri RONG — do la duong don ve mac dinh`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.PREFS_SET,
+            TestBridgeCommands.EXTRA_KEY to "voice_confirm_ids",
+        )
+        assertEquals("", cmd.text, "vắng `text` ⇒ rỗng ⇒ tập rỗng = *không hỏi gì cả* (mặc định owner)")
+    }
+
+    /** Danh sách trắng KHÔNG được chứa khoá của cast/cụm/phím — xem KDoc [TestBridgeCommands.PREFS_SET] (2). */
+    @Test
+    fun `danh sach trang chi co nam khoa, khong cham cast hay cum`() {
+        assertEquals(5, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
     }
 }

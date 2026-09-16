@@ -156,6 +156,21 @@ object VoiceEngine {
 
     private const val TAG = "KachiVoiceEngine"
 
+    /**
+     * V3 · R3 — tag DUY NHẤT cho mọi mốc giờ của đường giọng nói (`adb logcat -s KachiVoiceTiming`).
+     *
+     * Một tag riêng, không trộn vào [TAG]: [ĐO xe 2026-09-16] việc đo *"3,1 giây biến đi đâu"* phải lọc thủ công
+     * bốn tag khác nhau trên một máy đang chạy launcher + nav + cast. Một tag thì một lệnh `logcat` là ra cả
+     * chuỗi mốc, theo đúng thứ tự thật.
+     */
+    const val TIMING_TAG = "KachiVoiceTiming"
+
+    /** Hoãn trước khi nạp sẵn — xem KDoc [preload], tính chất (2). */
+    const val PRELOAD_DELAY_MS = 3_000L
+
+    private const val MIN_THREADS = 2
+    private const val MAX_THREADS = 4
+
     @Volatile private var recognizer: OfflineRecognizer? = null
     @Volatile private var builtFor: String? = null
     @Volatile private var biasing = false
@@ -182,6 +197,43 @@ object VoiceEngine {
     /** Mô hình đang nằm sẵn trong bộ nhớ chưa (để Cài đặt nói *"lần nói đầu sẽ hơi chậm"*). */
     fun loaded(): Boolean = recognizer != null
 
+    /**
+     * ═══ V3 · R4 — NẠP SẴN mô hình, **trên luồng nền, ưu tiên thấp** ═══════════════════════════════════════
+     *
+     * Spec `docs/specs/kachi-voice-fast-natural.html` R4. [ĐO xe 2026-09-16] lượt 09:30: **15 giây** từ lúc bấm
+     * phím tới lúc micro mở, và đó là *lần đầu sau khi mở app* — các lượt sau 0,2 s. Tức cái giá 15 s không
+     * thuộc về việc nghe, nó thuộc về việc **nạp encoder ONNX**, và nó rơi đúng vào lần người ta dùng thử đầu
+     * tiên (lần quyết định họ có dùng tiếp không).
+     *
+     * ## Ba tính chất, mỗi cái chữa một ca hỏng
+     *  1. **Luồng nền, ưu tiên thấp** — nạp mô hình ăn CPU hàng giây; chạy nó ở ưu tiên thường trong lúc launcher
+     *     đang dựng màn chính là đổi 15 s chờ mic lấy 15 s giật màn hình.
+     *  2. **Hoãn [PRELOAD_DELAY_MS]** — để lượt dựng màn chính, đo ô và mở app trong ô xong đã. Nạp ngay trong
+     *     `onCreate` là tranh CPU với đúng thứ người dùng đang nhìn.
+     *  3. **Không ném, không chặn** — chưa tải mô hình / máy hết RAM ⇒ [recognizer] trả `null` và đây im lặng rút
+     *     lui. Một tính năng phụ không được giết launcher (cùng luật `VoiceSession.runSession`).
+     *
+     * An toàn khi gọi nhiều lần: [recognizer] tự khoá `synchronized` và tự nhận ra mô hình đã nạp.
+     */
+    fun preload(ctx: Context, delayMs: Long = PRELOAD_DELAY_MS) {
+        val app = ctx.applicationContext
+        Thread({
+            runCatching {
+                if (delayMs > 0) Thread.sleep(delayMs)
+                if (!VoiceModelStore.isReady(app)) {
+                    Log.i(TAG, "nạp sẵn: chưa có mô hình trên đĩa — bỏ qua")
+                    return@runCatching
+                }
+                val t0 = System.currentTimeMillis()
+                val ok = recognizer(app) != null
+                Log.i(TIMING_TAG, "nạp sẵn mô hình ${System.currentTimeMillis() - t0} ms (ok=$ok)")
+            }.onFailure { Log.w(TAG, "nạp sẵn hỏng — lần bấm mic đầu sẽ nạp như cũ", it) }
+        }, "KachiVoicePreload").apply {
+            isDaemon = true
+            priority = Thread.MIN_PRIORITY
+        }.start()
+    }
+
     private fun build(ctx: Context, model: SherpaModelCatalog.SherpaModel): OfflineRecognizer? {
         if (!VoiceModelStore.isReady(ctx)) return null
         val dir = VoiceModelStore.dir(ctx)
@@ -197,7 +249,12 @@ object VoiceEngine {
         val mc = OfflineModelConfig().apply {
             this.transducer = transducer
             tokens = File(dir, model.tokens).absolutePath
-            numThreads = 2
+            // ═══ V3 · R5 — số LUỒNG giải mã theo máy, không phải hằng 2 ═══════════════════════════════
+            // [ĐO xe 2026-09-16] Qualcomm TRINKET **8 lõi** 1,8 GHz, mà giải mã một câu 8 s mất **2,35 s** với
+            // `numThreads = 2` viết cứng. Nửa số lõi là mức mà onnxruntime còn nở tuyến tính; kẹp trần 4 vì
+            // đây là launcher — 8 luồng giải mã ăn hết CPU của chính màn hình người lái đang nhìn, và lõi
+            // nhỏ (big.LITTLE) không cho thêm gì. Sàn 2 giữ nguyên hành vi cũ trên máy 2-4 lõi.
+            numThreads = threadsForDecode()
             debug = false
             provider = "cpu"
             if (biasing) { modelingUnit = SherpaModelCatalog.MODELING_UNIT; bpeVocab = bpeVocabPath }
@@ -213,10 +270,20 @@ object VoiceEngine {
             maxActivePaths = 4
         }
         return runCatching { OfflineRecognizer(assetManager = null, config = config) }
-            .onSuccess { Log.i(TAG, "nạp sherpa ${model.id} trong ${System.currentTimeMillis() - t0} ms (biasing=$biasing)") }
+            .onSuccess {
+                Log.i(
+                    TIMING_TAG,
+                    "nạp sherpa ${model.id} trong ${System.currentTimeMillis() - t0} ms " +
+                        "(biasing=$biasing · luồng=${mc.numThreads} · lõi=${Runtime.getRuntime().availableProcessors()})",
+                )
+            }
             .onFailure { Log.e(TAG, "không nạp được sherpa ${model.id}", it) }
             .getOrNull()
     }
+
+    /** `availableProcessors / 2`, kẹp [2, 4] — xem chú thích tại chỗ dùng. Tách hàm để đọc được trong nhật ký. */
+    private fun threadsForDecode(): Int =
+        (Runtime.getRuntime().availableProcessors() / 2).coerceIn(MIN_THREADS, MAX_THREADS)
 
     /**
      * Chép bảng BPE piece+score (asset `voice/<id>.bpe_vocab.txt`) vào `filesDir` để dùng làm `bpeVocab`.
@@ -226,7 +293,10 @@ object VoiceEngine {
      * Bảng này đóng theo APK (nhỏ ~55 KB), không tải mạng. Không có asset ⇒ trả "" ⇒ chạy không biasing.
      */
     private fun copyBpeVocabAsset(ctx: Context, model: SherpaModelCatalog.SherpaModel): String {
-        val assetName = "voice/${model.id}.bpe_vocab.txt"
+        // ⚠ Tên asset lấy từ [SherpaModelCatalog.SherpaModel.bpeVocab], **không** từ `model.id`: hai mô hình cùng
+        // một bản huấn luyện (fp32 / int8) dùng CHUNG một bảng BPE, và đóng hai bản 55 KB giống hệt vào APK là
+        // dựng bản sao thứ hai của cùng một bảng. Trước 1.66 trường `bpeVocab` tồn tại mà không ai đọc.
+        val assetName = "voice/${model.bpeVocab}"
         val dest = File(VoiceModelStore.dir(ctx), "bpe_vocab.txt")
         return runCatching {
             if (!dest.isFile || dest.length() == 0L) {

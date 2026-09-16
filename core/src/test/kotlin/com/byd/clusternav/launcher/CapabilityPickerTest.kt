@@ -83,7 +83,12 @@ class CapabilityPickerTest {
     @Test
     fun `muc roi van con ca HANH DONG - loc nhom khong lam mat nut hay goi lenh`() {
         val after = CapabilityCatalog.byDomain().flatMap { CapabilityPicker.singlesOf(it.second) }.map { it.id }.toSet()
-        val missingControls = ControlRegistry.ALL.map { it.id }.filterNot { it in after }
+        // V3 · R12 (1.66): mã trong [CapabilityCatalog.HIDDEN_FROM_PICKER] được TRỪ RA — `hood` ẩn vì owner xác
+        // nhận **xe không có nắp ca-pô điện** (2026-09-16 · B6). Trừ theo chính danh sách ấy (không chép tên
+        // `hood` vào đây) nên mục ẩn sau này tự được tính, và mục ẩn KHÔNG có lý do thì bài canh ở
+        // `CapabilityCatalogTest` đỏ trước.
+        val hidden = CapabilityCatalog.HIDDEN_FROM_PICKER.keys
+        val missingControls = ControlRegistry.ALL.map { it.id }.filterNot { it in after || it in hidden }
         assertEquals(emptyList<String>(), missingControls, "nút bị mất khỏi màn chọn: $missingControls")
         val missingMacros = ActionMacros.ALL.map { it.id }.filterNot { it in after }
         assertEquals(emptyList<String>(), missingMacros, "gói lệnh bị mất khỏi màn chọn: $missingMacros")

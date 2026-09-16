@@ -261,6 +261,17 @@ object CapabilityCatalog {
             "[ĐO ảnh 2026-09-12] ô \"Đơn vị nhiệt\" trong lưới dữ liệu xe nói ĐÚNG cái mà hàng \"đơn vị nhiệt độ\" " +
                 "ở Hiển thị & đơn vị đã nói — và hàng kia còn ĐỔI được, ô này chỉ xem. Hai chỗ cho một thứ thì " +
                 "người dùng bấm nhầm chỗ không đổi được. Giữ mã để ô ai đã đặt vẫn chạy.",
+        // V3 · R12 — owner 2026-09-16 (**B6**): *"xe không có nắp ca-pô"* (mở bằng tay, không có lệnh điện).
+        // Đây là ca ẨN vì **phần cứng không có**, khác ca `temp_unit` (ẩn vì trùng bề mặt) — nhưng cách chữa
+        // giống nhau và đó là điểm: bày một nút mà xe không bao giờ phản ứng thì người dùng bấm, không thấy gì,
+        // rồi kết luận *"app hỏng"*. RE cũ cũng đã nghi đúng (`BODYWORK_CMD_HOOD` chỉ là **area ĐỌC**, không có
+        // lệnh mở) — nay owner xác nhận bằng mắt.
+        // ⚠ KHÔNG xoá khỏi `ControlRegistry`: ô của ai đã đặt phải tiếp tục dựng được (`pick` vẫn tra ra), và một
+        // dòng registry biến mất là mọi bài canh đếm mã đỏ mà không ai biết vì sao.
+        "hood" to
+            "owner 2026-09-16 (B6): xe KHÔNG có nắp ca-pô điện — mở bằng tay. RE khớp: `BODYWORK_CMD_HOOD` là " +
+                "area ĐỌC, không có lệnh mở. Bày nút ra là hứa một việc xe không làm được; giữ mã để ô ai đã " +
+                "đặt vẫn chạy.",
     )
 
     /** [CapabilityKind] của [id], hoặc `null` nếu mã không thuộc bộ đăng ký nào (mã cũ đã xoá / rác trong prefs). */

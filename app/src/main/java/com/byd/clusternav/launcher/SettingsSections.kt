@@ -65,7 +65,7 @@ class SettingsSections(
             SettingsGroup.HOME -> SettingsHomeSection(context, rows, deps).build(body)
             SettingsGroup.BARS -> SettingsBarsSection(context, rows, deps).build(body)
             SettingsGroup.DISPLAY -> display(body)
-            SettingsGroup.PROFILES -> profiles(body)
+            SettingsGroup.PROFILES -> SettingsProfilesSection(context, rows, deps).build(body)
             // Hai khối trong một nhóm, và thứ tự là một quyết định: **Sổ địa chỉ trước**, cấu hình cụm sau —
             // lý do đầy đủ ở KDoc [SettingsPlacesSection] (sổ địa chỉ không phụ thuộc công tắc dẫn đường, và
             // chôn nó dưới ~2,7 màn cuộn là chôn một tính năng dùng hằng ngày).
@@ -152,130 +152,6 @@ class SettingsSections(
     }
 
     // ── Hồ sơ tài xế ─────────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Nhóm **Hồ sơ tài xế** (S4 · R8): thẻ từng hồ sơ → **hồ sơ lúc nổ máy** → **thêm hồ sơ (bản sao)**.
-     *
-     * Thứ tự đó là thứ tự khai ở [SettingsCatalogEntries] (`profiles_list` · `profiles_active` · `profiles_boot` ·
-     * `profiles_add`) — thứ tự danh mục phải là thứ tự dùng được: đổi hồ sơ là việc hằng ngày, chọn hồ sơ lúc nổ máy
-     * là việc đặt-một-lần, tạo hồ sơ mới thì hiếm hơn nữa.
-     *
-     * ⚠ [SOÁT ẢNH 2026-09-12 · finding #21] KHÔNG có `sectionLabel` cho phần danh sách: rail bên trái đã ghi
-     * "Hồ sơ tài xế" ở bậc SECTION, lặp đúng chữ đó làm tiêu đề đầu trang là hai lần trả lời cùng một câu hỏi. Hai
-     * mục *dưới* danh sách thì CÓ tiêu đề phụ — từ S4 trang này có ba phần, nên chúng thật sự chia trang.
-     */
-    private fun profiles(body: LinearLayout) {
-        val s = deps.state()
-        body.addView(rows.note(context.getString(R.string.kachi_profiles_note)))
-        s.profiles.forEach { name ->
-            body.addView(
-                profileRow(name, active = name == s.activeProfile, total = s.profiles.size),
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                ).also { it.bottomMargin = dpi(context, Sp.S) },
-            )
-        }
-        bootProfile(body, s)
-        addProfile(body, s)
-    }
-
-    /**
-     * S4 · R6 — **hồ sơ lúc nổ máy**: "Gần nhất" + từng hồ sơ.
-     *
-     * Thay cho *"cảnh lúc nổ máy"* của P7 (R1 bỏ hẳn khái niệm cảnh). Mặc định là [BOOT_LAST_CODE] — *"hồ sơ dùng
-     * gần nhất"*, tức **giữ nguyên hành vi cũ**: tắt máy ở hồ sơ nào thì nổ máy lên bằng hồ sơ đó. Một mặc định
-     * "hồ sơ X" sẽ âm thầm vứt bỏ lựa chọn của chuyến trước.
-     *
-     * `null` ở tầng dữ liệu ↔ sentinel [BOOT_LAST_CODE] ở tầng chip: [SettingsRows.chipRow] so **mã chuỗi** để biết
-     * chip nào sáng nên nó không nhận `null` được, mà một chuỗi rỗng thì va với "chưa đặt gì". Sentinel hai gạch
-     * dưới — cùng khuôn `__CUSTOM__` của [SettingsHomeSection] và `Prefs.VK_TARGET_*`, không phát minh khuôn mới.
-     */
-    private fun bootProfile(body: LinearLayout, s: HomeUiState) {
-        body.addView(rows.subHeader(context.getString(R.string.kachi_sec_boot_profile)))
-        val options = listOf(BOOT_LAST_CODE to context.getString(R.string.kachi_profile_boot_last)) +
-            s.profiles.map { it to ProfileNames.display(it) }
-        body.addView(rows.chipRow(
-            label = context.getString(R.string.kachi_row_boot_profile),
-            options = options,
-            current = deps.bootProfile() ?: BOOT_LAST_CODE,
-        ) { code -> deps.onBootProfile(if (code == BOOT_LAST_CODE) null else code) })
-        body.addView(rows.note(context.getString(R.string.kachi_boot_profile_note)))
-    }
-
-    /**
-     * S4 · R8 — **thêm hồ sơ = BẢN SAO của hồ sơ đang dùng**, và nhãn nút nói thẳng điều đó.
-     *
-     * Nút cũ ghi "Thêm hồ sơ…" rồi mở một hồ sơ TRẮNG. Từ R3 hồ sơ giữ tất cả lựa chọn, nên hồ sơ trắng nghĩa là
-     * người dùng vừa bấm một nút và nhận về một màn hình mặc định hoàn toàn — phải chỉnh lại từ đầu chỉ để đổi một
-     * chi tiết. Bản sao là điểm xuất phát đúng, và cái tên đề sẵn *"Bản sao của «X»"* nói ra nó vừa chép từ đâu.
-     *
-     * Hộp thoại hỏi tên dùng [SettingsDialogs.askName] — khuôn "hỏi một cái tên" dùng chung của dự án, không dựng
-     * bản thứ hai (KDoc [SettingsDialogs] nói vì sao).
-     */
-    private fun addProfile(body: LinearLayout, s: HomeUiState) {
-        val active = ProfileNames.display(s.activeProfile)
-        body.addView(rows.button(context.getString(R.string.kachi_profiles_add, active)) {
-            SettingsDialogs.askName(
-                context,
-                context.getString(R.string.kachi_profile_new_title),
-                context.getString(R.string.kachi_profile_copy_of, active),
-            ) { name -> deps.onDuplicateProfile(name) }
-        })
-    }
-
-    /**
-     * Một hồ sơ: tên + dấu "Đang dùng" + nút Xoá.
-     *
-     * ## Hai lối chặn xoá — và vì sao phải chặn ở UI
-     * [ĐO] `WorkspacePrefs.deleteProfile` mở đầu bằng `if (list.size <= 1 || name !in list) return` ⇒ **hồ sơ cuối
-     * cùng đã được chặn ở nơi lưu**. Nhưng xoá **hồ sơ đang dùng** thì nó *cho phép*, rồi âm thầm đổi hồ sơ đang
-     * dùng sang phần tử đầu danh sách — nghĩa là một cú chạm "Xoá" làm đổi luôn cả bố cục/thanh nút/chip đang thấy,
-     * mà không câu nào báo trước. Nên chặn ở đây.
-     *
-     * Cả hai ca đều **NÓI LÝ DO** chứ không làm mờ nút rồi im: bài học từ nút bố cục sẵn ở P9 — cú bấm không có tác
-     * dụng mà không giải thích thì người dùng tưởng app hỏng. **Thứ tự hai ca cũng quan trọng** — xem chú thích tại
-     * chỗ rẽ nhánh.
-     */
-    private fun profileRow(name: String, active: Boolean, total: Int): View =
-        LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
-            val p = dpi(context, Sp.M)
-            setPadding(p, p, p, p)
-            addView(
-                LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    addView(TextView(context).apply {
-                        // [SOÁT P3-4] NHÃN dịch được, KHOÁ giữ nguyên: `name` vẫn là tên gốc và vẫn là thứ đi vào
-                        // `switchProfile`/`onDeleteProfile` bên dưới. Xem KDoc [ProfileNames].
-                        text = ProfileNames.display(name); setTextColor(c(KachiTheme.INK)); typeface = Typeface.DEFAULT_BOLD
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
-                    })
-                    addView(TextView(context).apply {
-                        // Owner 2026-09-14: hồ sơ phải NÓI RA nó giữ bố cục gì — trước đây chỉ có "Đang dùng"/"Chạm để đổi".
-                        val sum = deps.profileSummary(name)
-                        text = context.getString(if (active) R.string.kachi_profile_sub_active else R.string.kachi_profile_sub_switch, sum)
-                        setTextColor(c(if (active) KachiTheme.GREEN else KachiTheme.MUT))
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
-                    })
-                },
-                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
-            )
-            // ⚠ [SOÁT UI 2026-09-12] Nút "Xoá" CHỈ dựng khi thực sự xoá được: KHÔNG phải hồ sơ đang dùng VÀ còn hồ
-            // sơ khác. Trước đây nút luôn hiện (chữ đỏ trần, cách tên ~1300px ở mép phải) rồi bấm ra toast "không xoá
-            // được" — một hành động nguy hiểm lại mời bấm nhầm trên màn xe. Ẩn hẳn khi không xoá được thì KHÔNG còn
-            // affordance để hiểu nhầm, nên không cần toast giải thích nữa (khác ca P9: ở đây không có kỳ vọng bị chặn
-            // im lặng — người dùng đơn giản không thấy nút). Lưới an toàn thật vẫn nằm ở `WorkspacePrefs.deleteProfile`.
-            if (!active && total > 1) addView(TextView(context).apply {
-                text = context.getString(R.string.kachi_delete); setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
-                typeface = Typeface.DEFAULT_BOLD
-                setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
-                background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.CLEAR, KachiTheme.RED)
-                setOnClickListener { deps.onDeleteProfile(name) }
-            })
-            if (!active) setOnClickListener { deps.onSwitchProfile(name) }
-        }
 
     // ── Tiện nghi xe ─────────────────────────────────────────────────────────────────────────────
     //
@@ -487,15 +363,4 @@ class SettingsSections(
     // private không ai gọi, nên nó sẽ ở lại im lặng — đúng loại nợ mà dự án đã phải đi dọn (`cycleDockEdge`,
     // `LauncherRequirements.notice`). Cần nói một câu ở màn Cài đặt thì dựng lại một dòng, KHÔNG để hàm chờ sẵn.
 
-    private companion object {
-        /**
-         * Mã của chip **"Gần nhất"** (không ghim hồ sơ nào lúc nổ máy).
-         *
-         * Ở tầng dữ liệu ca này là `null` ([WorkspaceRepository.bootProfile]) — nơi lưu cần phân biệt *"chưa chọn"*
-         * với *"chọn hồ sơ tên X"*, và tên hồ sơ do người dùng đặt nên không được đụng phải một tên dành riêng.
-         * [SettingsRows.chipRow] thì so **mã chuỗi** nên nó không nhận `null` được. Hai lớp, hai cách biểu diễn,
-         * quy đổi ở ĐÚNG một chỗ ([bootProfile]) — không để `null` và sentinel cùng chạy qua nhiều tầng.
-         */
-        const val BOOT_LAST_CODE = "__LAST__"
-    }
 }

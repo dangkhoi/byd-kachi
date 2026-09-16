@@ -46,7 +46,12 @@ object ProfileScope {
      * `scenes`/`boot_scene` đã bỏ theo R1).
      */
     val LAUNCHER_LAYOUT_SUFFIXES: List<String> =
-        listOf("preset", "dock_edge", "dock_enabled", "dock_visible", "top_strip", "grid_layout")
+        listOf(
+            "preset", "dock_edge", "dock_enabled", "dock_visible", "top_strip", "grid_layout",
+            // V3 · R14 (owner 2026-09-16) — *"cho cái toggle hiện text label"*. Theo hồ sơ như `top_strip` ngay
+            // cạnh: nó là một lựa chọn về **bố cục thanh trên**, và S4 đã chốt bố cục đi theo hồ sơ.
+            "top_strip_labels",
+        )
 
     /**
      * S4 · R3(a) — khoá TRƯỚC ĐÂY chung cả máy, nay **theo hồ sơ**.
@@ -165,6 +170,23 @@ object ProfileScope {
             "V1 pha NÓI · OQ4 — 'đọc câu hỏi xác nhận rồi mới mở micro'. Cùng lý do [voice_speak_replies]: nó chỉ " +
                 "có nghĩa khi MÁY NÀY có giọng, và nó gác một lượt mở micro — tức một tính chất của cái xe, không " +
                 "phải một sở thích đi theo người lái. Owner chốt 2026-09-16: mặc định TẮT, chưa lên UI",
+        )
+        put(
+            "voice_mic_source",
+            "V3 · R1 — nguồn micro thử TRƯỚC. Theo XE vì nó là một tính chất của **phần cứng và ROM của chính " +
+                "chiếc xe này** ([ĐO] nguồn 6 gần câm trên DiLink3.0), không phải sở thích của người lái; chép " +
+                "nó theo hồ sơ thì đổi hồ sơ là micro đổi độ nhạy mà không ai hiểu vì sao",
+        )
+        put(
+            "voice_confirm_ids",
+            "V3 · R7 — danh sách việc phải hỏi lại trước khi chạy. Theo XE: đây là một quyết định AN TOÀN về " +
+                "chính chiếc xe (owner chốt mặc định RỖNG 2026-09-16), và một hồ sơ chép sang xe khác không được " +
+                "mang theo lựa chọn 'không hỏi gì cả'. Cùng họ `cast_enabled` — quyết định mức máy, không mức người",
+        )
+        put(
+            "voice_follow_up_ms",
+            "V3 · R9 — quãng giữ micro cho câu tiếp. Cùng lý do [voice_mic_source]: nó là một hằng ĐO trên cabin " +
+                "này (ồn nền, khoảng cách mic), không phải một sở thích đi theo người lái",
         )
         put(
             "voice_prefer_offline",

@@ -58,6 +58,15 @@ object VoiceFeedbackPhrase {
     }
 
     /**
+     * Dòng này là dòng **tạm** (*"đang tra điểm đến…"*) — tức việc thật **chưa xong**, câu trả lời còn về sau.
+     *
+     * V3 · R9 dùng nó làm cổng cho hội thoại: giữ micro mở sau một lệnh còn đang tra mạng nghĩa là micro đóng
+     * trước khi người lái biết việc xong hay hỏng. Phơi ra thay vì để chỗ gọi tự so `"…"`: luật *"dấu ba chấm =
+     * tạm"* đã khai một lần ở đây, và một bản sao ở `:app` sẽ lệch đúng vào lần ai đó đổi ký tự.
+     */
+    fun isInterim(line: String): Boolean = kindOf(line) == Kind.INTERIM
+
+    /**
      * Bỏ dấu + đổi các ký hiệu **của mắt** thành thứ đọc lên nghe được.
      *
      * Bốn phép thay, mỗi phép chữa một thứ đã thấy trong chuỗi thật của [VoiceReply]:

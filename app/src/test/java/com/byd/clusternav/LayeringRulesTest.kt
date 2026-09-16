@@ -148,6 +148,11 @@ class LayeringRulesTest {
         // `ThemeHost.kt`/`ClusterNavBridgeHome.kt`. ⚠ `VoiceDispatcher.kt` không có ở đây vì nó nhắc chữ
         // `Context` (KDoc) nên phép đo không coi nó là thuần — một chi tiết của bộ quét, không phải một luật.
         "VoiceTargetDispatch.kt" to "nửa tách ra của VoiceDispatcher — cầu sang VoiceAppIntents/MediaBridge/HomeUiState của :app",
+        // [SOÁT Pass 1 · 2026-09-16] Ba hàm ngôn ngữ tách khỏi `WorkspacePrefs.kt` vì trần 500 dòng. "Thuần" theo
+        // phép đo ở đây chỉ vì nó không `import android.*` và không nhắc chữ `Context` — nhưng nó là **hàm mở rộng
+        // của `WorkspacePrefs`** (giữ `SharedPreferences` + `Context`) và gọi `ClusterNavLang` (prefs của ClusterNav).
+        // Chuyển sang `:core` là kéo cả hai thứ đó theo — cùng lẽ `ThemeHost.kt`/`ClusterNavBridgeHome.kt`.
+        "WorkspacePrefsLang.kt" to "hàm mở rộng WorkspacePrefs (SharedPreferences/Context-bound) — gọi ClusterNavLang",
     )
 
     @Test

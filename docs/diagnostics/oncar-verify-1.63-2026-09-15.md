@@ -248,6 +248,118 @@ adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "preset|custom"
 ```
 - ⚠ Đang dùng **bố cục tự vẽ** thì câu này **bỏ** bố cục tự vẽ (đúng như bấm chip ở Cài đặt) — kiểm `custom:false` sau lệnh.
 
+## 6g. Thêm cho **voice pha 3** — 1.66 (67): NHANH + TỰ NHIÊN · HAL theo TÊN HẰNG
+
+> Spec `docs/specs/kachi-voice-fast-natural.html`. Mọi mục dưới đây là thứ **chỉ đo được trên xe**; phần off-car
+> đã xanh (5 module 0 đỏ · E2E máy ảo T1 67/68 · T2 22/25).
+
+### (a) Sáu mốc giờ — MỘT lệnh logcat, không mò
+
+```bash
+adb shell logcat -c
+# … bấm phím vô-lăng, nói "bật đèn đọc", chờ trả lời xong …
+adb shell logcat -d -s KachiVoiceTiming:I | tail -30
+```
+Đọc theo thứ tự: `nạp sẵn mô hình … ms` (phải xuất hiện **sau ~3 s kể từ lúc mở app**, TRƯỚC khi bấm mic) →
+`mic mở sau … ms` → `ngắt câu: nen=… nguong=… tieng_bat_dau=… tieng_dut=… chot=…` → `nghe … ms` →
+`giải mã … ms (luồng=… lõi=…)` → `đóng mic: stop … ms · release … ms` → `nền: bíp … ms · nhả tiêu điểm … ms`.
+
+| Mục | 1.64 [ĐO 09-16] | Kỳ vọng 1.66 | Nếu KHÔNG đạt thì ghi gì |
+|---|---|---|---|
+| lần bấm mic đầu | **15 s** | < 1 s | dòng `nạp sẵn` có chạy không? `ok=false` ⇒ mô hình chưa tải |
+| nghe một câu 3 từ | 8,4 s (trần) | ≈ 1,5–2,5 s | dán nguyên dòng `ngắt câu:` — `nen`/`nguong` là hai số cần |
+| giải mã | 2,35 s | thấp hơn | dán `luồng=`/`lõi=` |
+| **lỗ 3,1 s** | 3,1 s × 4/4 | — | **thủ phạm là `stop` hay `release`?** dán dòng `đóng mic:` |
+
+- **OQ5** — hai hằng `tiếng ≥ 400 ms` / `im ≥ 800 ms` mới là **lý lẽ**, chưa đo trên giọng thật trong cabin.
+  Nói 10 câu, xem có câu nào bị **cắt giữa chừng** (`chot=` nhỏ hơn lúc bạn nói xong) hay **chờ lâu** không.
+
+### (b) Nguồn micro — đổi ngay trên xe, không build lại (OQ2, owner D5)
+
+*Cài đặt › Hệ thống & quyền › Nâng cao › Giọng nói › **Nguồn micro*** — bốn chip: Tự chọn · MIC (1) ·
+VOICE_COMMUNICATION (7) · VOICE_RECOGNITION (6).
+
+```bash
+# Với MỖI nguồn: nói 10 câu khi xe ĐANG CHẠY 60–80 km/h và ĐANG MỞ NHẠC, rồi đọc mức tín hiệu:
+adb shell logcat -d -s KachiVoiceMic:I | grep -E "micro mở bằng nguồn|mức micro" | tail -20
+```
+Ghi lại: nguồn nào · đỉnh · rms · sherpa nghe ra gì. [ĐO 09-16] nguồn 6 cho **đỉnh 136–255 · rms 30–50**
+(gần câm), nguồn 1 cho **đỉnh 4429 · rms 237**. Câu hỏi CÒN MỞ: nguồn 7 (có AEC/NS của ROM) có thắng nguồn 1
+khi có nhạc không.
+
+### (c) int8 vs fp32 — cùng một tệp WAV, hai con số (OQ1, owner D4)
+
+```bash
+# 1) đang chạy fp32 (máy đã cài) — đo trước:
+adb shell "$B --es cmd wav --es path /sdcard/Download/w02.wav"
+adb shell logcat -d -s KachiVoiceTiming:I | grep "giải mã" | tail -2
+# 2) Cài đặt › … › Nhận dạng giọng nói → chọn "Zipformer VN int8" → Tải (74 MB) → đo lại cùng tệp
+```
+So **hai số `giải mã`** và chữ nghe được. int8 nhỏ hơn 3,6 lần nhưng **[CHƯA BIẾT]** nó nhanh hay chậm hơn trên
+ARM không có dot-product 8-bit — đó chính là câu hỏi. Báo về cả hai số; đừng kết luận từ một số.
+
+### (d) Cổng xác nhận — mặc định KHÔNG hỏi gì cả (owner B1–B12)
+
+```bash
+adb shell "$B --es cmd say --es text 'mở khoá cửa'"   # kỳ vọng: CHẠY LUÔN, không có needs_confirm
+```
+Rồi bật đúng **một** ô: *Cài đặt › … › **Hỏi xác nhận trước khi chạy*** → tích *"Mở khoá cửa"* → nói lại câu đó
+bằng **micro** ⇒ phải hiện câu hỏi + mở micro nghe *"ừ"*. Đây là mục duy nhất của cổng này mà máy ảo không
+kiểm được (cầu kiểm thử không có đường ghi prefs).
+
+### (e) Hội thoại + hỏi lại (owner D1/D2) — chỉ đo bằng MICRO
+
+1. Nói *"bật đèn đọc"* → nghe câu trả lời → **đừng bấm gì**: tấm chữ phải chuyển sang *"Nói tiếp…"* và micro mở
+   lại **không có tiếng bíp**. Nói tiếp *"tắt đèn đọc"* ⇒ chạy luôn. Im 5 giây ⇒ tấm chữ tự biến, **không** có
+   câu báo lỗi nào.
+2. Nói **cụt**: *"bật"* ⇒ phải hỏi *"Bật gì?"* rồi nghe tiếp; trả lời *"đèn đọc"* ⇒ chạy. Nói *"mở kính"* ⇒ phải
+   hỏi *"Kính nào — …?"*. Hai lượt không hiểu ⇒ câu bỏ cuộc có **ví dụ**, không phải *"không hiểu"* lần ba.
+3. ⚠ Nói *"mở kính lái"* (R10) ⇒ phải là **MỘT** cửa kính, KHÔNG phải nút gộp 4 kính như 1.64.
+
+### (f) `featmap` — một lệnh, mở khoá mọi dòng bind còn ngờ (OQ3)
+
+```bash
+adb shell "$B --es cmd featmap"
+adb shell logcat -d -s KachiTest:I | tail -5      # đọc "file" + "names" + "devices"
+adb pull <đường dẫn file trong reply> ./featmap.json
+```
+Có tệp này thì tra được **off-car**: `ac_auto` · `mirror_fold_btn` · `ambient_power` (3 nút owner nói xe CÓ) và
+`drift_mode` · `ambient_front/rear_color` · `bsd_fl/fr_alarm` (5 datum mà số cũ **không tồn tại** trên ROM này).
+Kiểm nhanh tại chỗ: 7 datum vừa bind theo tên đã hết *"—"* chưa.
+
+```bash
+adb shell "$B --es cmd sweep --es op info"        # trip_km · trip_hours · motor_* · wiper_state phải có giá trị
+```
+
+### (g) Khoá / cốp qua `set()` generic — ĐẦU DÒ, có người nhìn, có hoàn tác
+
+[ĐO nguồn fw-dl3] `BYDAutoDoorLockDevice` **không có setter nào**; đường ghi duy nhất là
+`AbsBYDAutoDevice.set(int[], BYDAutoEventValue)` với `DOOR_LOCK_COMMAND_AREA_*` + `DOOR_LOCK_STATE_UNLOCK=1` /
+`LOCK=2`. Chưa ai thử.
+
+```bash
+# XE ĐANG ĐỖ, có người đứng nhìn. Thử KHOÁ trước (an toàn hơn mở khoá):
+adb shell "$B --es cmd hal --es op setev --es dev BYDAutoDoorLockDevice \
+  --es m Door.DOOR_LOCK_COMMAND_AREA_ALL --es args 2 --ez auto_confirm true"
+```
+- Tên hằng đúng lấy từ `featmap.json` ở (f) — đừng đoán. Đọc `reply`: `denied: no permission / wrong device` ⇒
+  sai device, `ok: HAL accepted` ⇒ **vẫn phải NHÌN xe** (rc=0 không có nghĩa là xe làm).
+- ⚠ `ControlRegistry` **không đổi**: đây là đầu dò. Đo xanh thì lượt sau mới sửa route.
+
+### (h) Bốn thứ của launcher
+
+```bash
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -E "chip_labels|active|boot"
+```
+- **Nhãn chip**: *Cài đặt › Thanh trạng thái & thanh nút › Hiện nhãn trên thanh trên* — tắt ⇒ chip còn **icon +
+  số**; `state.bars.chip_labels` = `false`. **Chụp màn hình trước/sau.**
+- **Đổi tên hồ sơ**: *Cài đặt › Hồ sơ tài xế* → *Đổi tên* → bố cục/ô/chip/cấu hình ClusterNav phải **giữ nguyên**.
+  Đặt trùng tên hồ sơ khác ⇒ phải hiện câu *"Không đổi được…"*, không im lặng.
+- **Ô/inset**: khởi động lại launcher **lúc thanh trên/dưới của ROM còn hiện**, mở YouTube vào một ô ⇒ **không
+  còn dải xám** ở trên (bug ảnh `carlog-0916/slot-insets-bug.png`). Kiểm:
+  `adb shell logcat -d | grep -E "slot-insets|slot-resize"`.
+- **`hood`**: nút *Ca-pô* phải **không còn** trong màn chọn nút (owner B6) — ô ai đã đặt sẵn thì vẫn dựng được.
+
 ## 7. Sau khi 1 + 2 + 3 PASS
 → báo về: em chạy lại senior review + security scan (đã chạy off-car) với log thật → OTA 1.63. Mục FAIL: dán nguyên output — sửa đúng chỗ.
 

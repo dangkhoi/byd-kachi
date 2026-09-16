@@ -498,6 +498,8 @@
     <string name="kachi_voice_listening">Đang nghe…</string>
     <string name="kachi_voice_preparing">Đang chuẩn bị…</string>
     <string name="kachi_voice_heard">Đã nghe</string>
+    <!-- V3 · R9 — tấm chữ khi micro còn mở cho câu tiếp (hội thoại, owner D1 2026-09-16) -->
+    <string name="kachi_voice_follow_up">Nói tiếp…</string>
     <string name="kachi_voice_cancel_hint">Chạm ra ngoài hoặc bấm Back để huỷ</string>
     <string name="kachi_voice_no_mic">Chưa có quyền micro</string>
     <string name="kachi_voice_no_model">Chưa tải mô hình nhận dạng</string>
@@ -533,6 +535,20 @@
     <string name="kachi_voice_wav_failed">Không chạy được: %1$s</string>
     <string name="kachi_voice_wav_where">Đặt tệp kachi-voice-test.wav (16 kHz · 1 kênh · PCM 16-bit) ở một trong: %1$s</string>
     <string name="kachi_pill_voice">Nói với xe</string>
+    <!-- V3 · R14 — công tắc nhãn chip thanh trên (owner 2026-09-16) -->
+    <string name="kachi_top_strip_labels_title">Hiện nhãn trên thanh trên</string>
+    <string name="kachi_top_strip_labels_sub">Tắt thì chip chỉ còn icon và con số — đỡ chật chỗ</string>
+    <!-- V3 · R7 — mục "Hỏi xác nhận trước khi chạy" + nguồn micro -->
+    <string name="kachi_voice_confirm_sec">Hỏi xác nhận trước khi chạy</string>
+    <string name="kachi_voice_confirm_note">Mặc định Kachi chạy luôn. Tích việc nào thì việc đó hỏi lại trước khi bắn.</string>
+    <string name="kachi_voice_ask_aloud_title">Đọc to câu hỏi xác nhận</string>
+    <string name="kachi_voice_ask_aloud_sub">Đọc xong mới mở micro — chỉ có tác dụng khi đã tích ít nhất một việc</string>
+    <string name="kachi_voice_mic_source">Nguồn micro</string>
+    <string name="kachi_voice_mic_source_auto">Tự chọn</string>
+    <string name="kachi_voice_mic_source_note">Đổi khi micro nghe kém. \"Tự chọn\" thử MIC trước, rồi tới nguồn có khử ồn.</string>
+    <!-- V3 · R13 — đổi tên hồ sơ -->
+    <string name="kachi_profile_rename">Đổi tên hồ sơ</string>
+    <string name="kachi_profile_rename_failed">Không đổi được — tên rỗng hoặc trùng hồ sơ khác</string>
     <string name="kachi_voice_pill_title">Nút mic trên thanh trạng thái</string>
     <string name="kachi_voice_pill_sub">Nói nhanh một câu lệnh, cạnh Ứng dụng và Cài đặt</string>
     <string name="kachi_slot_app_closed">App đã đóng — chạm để mở lại</string>

@@ -137,6 +137,7 @@ internal fun homePanels(
     onPreset = onPreset,                         // CÙNG đường với 5 nút bố cục ở thanh trên (§4.5)
     onDockEdge = { e -> viewModel.setDockEdge(e) },
     onTopStrip = { id, on -> viewModel.toggleTopStrip(id, on) },
+    onTopStripConfig = { cfg -> viewModel.setTopStrip(cfg) },
     onWallpaper = onWallpaperChanged,
     onUnitPrefs = onUnitsChanged,
     // Sổ địa chỉ (spec `kachi-voice-addresses.html` R1) — intent thuần, KHÔNG ghi bền trực tiếp; đường đọc là
@@ -153,6 +154,7 @@ internal fun homePanels(
     // (`SettingsDialogs.askName`); ở đây chỉ còn intent, đúng khuôn mọi lambda khác của khối này.
     onDuplicateProfile = { name -> viewModel.duplicateProfile(name) },
     onDeleteProfile = { name -> viewModel.deleteProfile(name) },
+    onRenameProfile = { old, new -> viewModel.renameProfile(old, new) },
     // S4 · R6 — hồ sơ lúc nổ máy. ĐỌC từ state chứ không mở một cửa `WorkspaceRepository` thứ hai ở tầng UI:
     // `load()` đã nạp `bootProfile` vào `HomeUiState` (khoá theo XE, không đổi khi đổi hồ sơ), nên đọc ở đây là
     // đọc **cùng một giá trị** mà màn hình đang vẽ — còn gọi thẳng repository là dựng đường đọc bền thứ hai, đúng

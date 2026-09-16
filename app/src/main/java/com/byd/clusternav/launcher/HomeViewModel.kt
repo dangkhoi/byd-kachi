@@ -110,6 +110,9 @@ class HomeViewModel(
 
     fun deleteProfile(name: String) = reload { repository.deleteProfile(name) }
 
+    /** V3 · R13 — đổi tên hồ sơ (owner E5). Cùng khuôn [addProfile]: uỷ quyền rồi nạp lại toàn bộ. */
+    fun renameProfile(old: String, new: String) = reload { repository.renameProfile(old, new) }
+
     /**
      * Câu tóm tắt bố cục của MỘT hồ sơ (owner 2026-09-14) — **đọc**, không đổi state, không ghi bền.
      *

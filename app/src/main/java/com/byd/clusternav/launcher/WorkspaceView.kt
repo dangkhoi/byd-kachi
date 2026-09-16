@@ -4,16 +4,11 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
-import android.util.TypedValue
 import android.view.DragEvent
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import com.byd.clusternav.R
 import com.byd.clusternav.system.inputd.InputDaemonClient
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -402,72 +397,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     // nay do [OverlayHeads] dựng, và ô widget chỉ có một nút ⇄ trong [slotHead]). Giữ lại thì T5 phải quyết cỡ
     // đích chạm cho hai hàm mà người dùng không bao giờ chạm tới được — cùng lối dọn với `cycleDockEdge` ở S1.
 
-    private fun placeholder(text: String) = TextView(context).apply {
-        this.text = text
-        setTextColor(Color.parseColor(KachiTheme.MUT))
-        KachiType.apply(this, KachiType.BODY)
-        gravity = Gravity.CENTER
-    }
-
-    /** Ô trống: viền đứt + dấu ＋ to + nhãn — rõ là "chỗ thêm app". */
-    private fun emptyAdd(): View = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-        addView(TextView(context).apply {
-            // [type scale] ngoại lệ: `＋` là KÝ HIỆU trang trí (dấu "thêm vào đây"), không phải chữ — cỡ của nó là
-            // hình học của ô trống, không phải một bậc chữ. Trần 32f = DISPLAY(28) sẽ nhỏ đi thấy rõ.
-            text = "＋"; setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f); gravity = Gravity.CENTER   // [type scale] glyph trang trí, ngoài 5 bậc
-        })
-        addView(TextView(context).apply {
-            text = context.getString(R.string.kachi_slot_open_app); setTextColor(Color.parseColor(KachiTheme.MUT)); KachiType.apply(this, KachiType.BODY)
-            gravity = Gravity.CENTER; setPadding(0, dp(Sp.XS), 0, 0)
-        })
-    }
-
-    /** Thẻ app trong ô: icon + tên thật (PackageManager). Trên xe app THẬT mở freeform vào ô; off-car hiện thẻ này. */
-    /**
-     * T4 — nền tối cố định phía sau widget bên thứ ba. Xem KDoc `KachiPalette.widgetBacking` về **vì sao không theo
-     * chủ đề**; ở đây chỉ là một lớp tô, cố ý KHÔNG có viền (viền của ô đã do chính ô vẽ).
-     */
-    private fun appWidgetBacking(): View = View(context).apply {
-        background = GradientDrawable().apply {
-            cornerRadius = dp(Sp.RADIUS_L).toFloat()
-            setColor(Color.parseColor(KachiTheme.WIDGET_BACKING))
-        }
-    }
-
-    /**
-     * T4 — thẻ hiện khi id widget đã CHẾT (app cung cấp bị gỡ / bị tắt).
-     *
-     * Bắt buộc phải có: `AppWidgetHost.createView` với id đã chết trả về một view **rỗng không báo lỗi**, nên nếu
-     * không chặn thì ô đó thành ô trống y như chưa gán gì — người dùng chỉ thấy widget của mình biến mất. Thẻ này nói
-     * **app nào** (nhờ provider được lưu cùng id) và chạm được để chọn lại.
-     */
-    private fun deadWidgetCard(content: SlotContent.AppWidget): View =
-        TextView(context).apply {
-            text = context.getString(R.string.kachi_appwidget_dead, appWidgetName?.invoke(content) ?: content.provider)
-            setTextColor(Color.parseColor(KachiTheme.MUT)); KachiType.apply(this, KachiType.BODY)
-            gravity = Gravity.CENTER
-            setPadding(dp(Sp.L), dp(Sp.SLOT_HEAD_CLEAR), dp(Sp.L), dp(Sp.L))
-        }
-
-    private fun appCard(pkg: String): View {
-        val col = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }
-        val pm = context.packageManager
-        try {
-            col.addView(ImageView(context).apply {
-                setImageDrawable(pm.getApplicationIcon(pkg))
-                layoutParams = LinearLayout.LayoutParams(dp(Sp.ICON_XXL), dp(Sp.ICON_XXL))
-            })
-            col.addView(TextView(context).apply {
-                text = pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0))
-                setTextColor(Color.parseColor(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
-                gravity = Gravity.CENTER; setPadding(0, dp(Sp.S), 0, 0)
-            })
-        } catch (e: Exception) {
-            col.addView(placeholder("▣  $pkg"))
-        }
-        return col
-    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
@@ -492,8 +421,43 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         for (i in slotViews.indices) {
             val rect = rects.getOrNull(i) ?: continue
             slotViews[i].layout(rect.left, rect.top, rect.right, rect.bottom)
+            pushSlotSize(i, rect.width, rect.height)
         }
     }
 
-    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+    /** V3 · R15 — đẩy cỡ ô THẬT xuống màn ảo; [VdAppHost.resize] no-op khi trùng cỡ ⇒ không phải cơ chế thứ hai. */
+    private fun pushSlotSize(i: Int, w: Int, h: Int) {
+        val slot = slotViews.getOrNull(i) as? ViewGroup ?: return
+        for (k in 0 until slot.childCount) (slot.getChildAt(k) as? VdAppHost)?.resize(w, h)
+    }
+
+    private var lastInsetSignature = Int.MIN_VALUE
+
+    /**
+     * ═══ V3 · R15 — inset đổi ⇒ ĐO LẠI ═══════════════════════════════════════════════════════════════════
+     *
+     * [ĐO xe 2026-09-16] `carlog-0916/slot-insets-bug.png`: lúc khởi động, thanh trên/dưới của ROM **còn hiện**,
+     * ô dựng theo khung đã co, và ảnh trong ô giữ khung hụt tới khi bấm Home lần nữa. Cờ `LAYOUT_STABLE |
+     * LAYOUT_FULLSCREEN` nói cửa sổ **được phép** trải hết màn, KHÔNG hứa rằng lượt bố trí **ĐẦU TIÊN** xảy ra
+     * sau khi ROM đã gỡ thanh — mà lượt đầu tiên chính là lượt dựng màn ảo của ô.
+     *
+     * ⚠ **Không tiêu thụ** inset, không đổi một pixel nào của phép bố trí: hàm này chỉ *nghe*. Trừ inset ra khỏi
+     * khung ô ở đây là đổi hành vi đang chạy tốt cho ba bố cục (CLAUDE.md §6 — đường mới xuống cuối).
+     */
+    override fun onApplyWindowInsets(insets: android.view.WindowInsets): android.view.WindowInsets {
+        val sig = (insets.systemWindowInsetTop * PRIME + insets.systemWindowInsetBottom) * PRIME +
+            insets.systemWindowInsetLeft * PRIME + insets.systemWindowInsetRight
+        if (sig != lastInsetSignature) {
+            lastInsetSignature = sig
+            android.util.Log.i("KachiWorkspace", "[slot-insets] inset đổi ⇒ đo lại ô (chữ ký $sig)")
+            requestLayout()
+        }
+        return super.onApplyWindowInsets(insets)
+    }
+
+    /** `internal` (không `private`) vì năm hàm dựng thẻ nay ở `WorkspaceViewCards.kt` — xem KDoc tệp ấy. */
+    internal fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    /** Số nguyên tố trộn chữ ký inset — chỉ cần *khác nhau thì khác*, không cần phân phối đẹp. */
+    private companion object { const val PRIME = 31 }
 }

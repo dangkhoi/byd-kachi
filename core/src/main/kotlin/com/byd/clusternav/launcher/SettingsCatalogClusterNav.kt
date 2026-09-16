@@ -67,6 +67,10 @@ internal object SettingsCatalogClusterNav {
             // V1 pha NÓI · R4 (spec `kachi-voice-feedback.html` T9) — hai công tắc của đường ra TIẾNG. Khoá nằm
             // cùng tệp với `voice_mic_pill` (cũng của `Prefs`), nên "cấu hình giọng nói ở đâu" có một câu trả lời.
             "voice_speak_replies", "voice_prefer_offline",
+            // V3 (spec `kachi-voice-fast-natural.html`) — ba khoá của đợt "nhanh + tự nhiên". `voice_ask_aloud`
+            // RỜI [HIDDEN_KEYS] sang đây ở 1.66: nó nay có hàng thật trong mục *"Hỏi xác nhận trước khi chạy"*,
+            // đúng như dòng lý do cũ đã hẹn (*"đi cùng batch chọn nút nào phải hỏi"*).
+            "voice_mic_source", "voice_confirm_ids", "voice_ask_aloud",
         ).forEach { put(it, "clusternav_prefs") }
         // ── simple_cast_prefs (SimpleCastRuntime.kt) ──
         listOf(
@@ -116,12 +120,12 @@ internal object SettingsCatalogClusterNav {
             "không có nút ở màn cũ — màn chỉ HIỆN nguồn đang dùng (txt_nav_source_active); chọn tay nguồn nào là " +
                 "việc của bộ trọng tài, không phải của người lái",
         "anim_opt" to "ép true — tối ưu hoạt ảnh cụm, không có nút ở màn cũ",
-        "voice_ask_aloud" to
-            "OQ4 — đọc to CÂU HỎI xác nhận rồi mới mở micro. Owner chốt 2026-09-16: **không** đọc câu hỏi (chỉ " +
-                "đọc phản hồi sau lệnh) ⇒ khoá này mặc định false và CHƯA lên UI. Không gỡ mã: đường ấy đã có " +
-                "hợp đồng + bài canh, và đây là một lựa chọn hành vi, không phải một cơ chế sai. Hàng trong Cài " +
-                "đặt đi cùng batch 'chọn nút nào phải hỏi lại' (backlog V-CONFIRM-UI) — lúc đó dòng này chuyển " +
-                "sang KEYS + một mục danh mục",
+        "voice_follow_up_ms" to
+            "V3 · R9 — quãng GIỮ MICRO sau khi trả lời xong, cho câu tiếp (owner D1: 5 giây). Không lên UI vì " +
+                "công tắc người dùng thật sự cần là *bật/tắt* hội thoại, còn con số thì là một hằng ĐO trên " +
+                "cabin này (đủ để nói tiếp, không đủ để nghe nhầm một câu của người ngồi cạnh). Bày một ô nhập " +
+                "mili-giây ra là mời đặt 30 000 và để micro mở suốt chuyến. Tắt hội thoại = đặt 0 qua cầu kiểm " +
+                "thử; nếu owner muốn một công tắc thật thì nó là một mục MỚI, không phải ô số này",
         "hud" to
             "ép false — HUD kính lái mới chỉ có vòng đời request/output, KHÔNG có đường ghi nội dung thật; bày nút " +
                 "ra là hứa một tính năng chưa tồn tại",

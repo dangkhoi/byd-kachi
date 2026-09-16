@@ -221,21 +221,64 @@ class VoiceGrammarCoverageTest {
 
     // ══ 7 · BẢNG AN TOÀN (R4) ══════════════════════════════════════════════════════════════════════════
 
+    /**
+     * ═══ V3 · R7 — MẶC ĐỊNH **KHÔNG HỎI GÌ CẢ** (owner chốt 2026-09-16) ══════════════════════════════
+     *
+     * Đây là bài canh của một **đổi hành vi**, không phải một bài canh bảng: tới 1.65 bốn dòng
+     * [VoiceRiskTable.CONTROL_RULES] + gói kính + đổi hồ sơ + điểm đến mở **luôn** hỏi lại. [ĐO xe 2026-09-16]
+     * cái giá thật: *"mở kính lái"* → nút gộp → hộp *"Hạ hết 4 kính?"* → 5,4 s chờ → người lái nói *"ừ"* → bị
+     * bỏ → **huỷ, không nói gì**. Owner: *"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì"*.
+     *
+     * Thử làm nó ĐỎ: bỏ tham số `confirmIds` ở `VoiceRiskTable.of` (quay lại bảng cứng) ⇒ nửa đầu bài này đỏ.
+     */
     @Test
-    fun `bon viec phai hoi lai, phan con lai thi khong`() {
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("door", null)))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("lock", 0)))
-        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("lock", 1)))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("windows_all", 1)))
-        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("windows_all", 0)))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("cast", 0)))
-        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("cast", 1)))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Macro("mac_win_open_all")))
-        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Macro("mac_leave")))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Profile("Vợ")))
+    fun `mac dinh KHONG hoi gi ca — tap rong thi moi viec la NORMAL`() {
+        listOf(
+            VoiceIntent.Control("door", null),
+            VoiceIntent.Control("lock", 0),
+            VoiceIntent.Control("windows_all", 1),
+            VoiceIntent.Control("cast", 0),
+            VoiceIntent.Control("trunk", 1),
+            VoiceIntent.Control("sunroof", 1),
+            VoiceIntent.Macro("mac_win_open_all"),
+            VoiceIntent.Profile("Vợ"),
+            VoiceIntent.Nav("Bitexco"),
+            VoiceIntent.Media(VoiceMediaOp.QUERY, "Diễm Xưa"),
+        ).forEach { i ->
+            assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(i), "mặc định phải CHẠY LUÔN: $i")
+        }
+        // Đọc vẫn là SAFE (không đổi gì ngoài màn hình) — cổng an toàn không liên quan tới nó.
         assertEquals(VoiceRisk.SAFE, VoiceRiskTable.of(VoiceIntent.Read("soc")))
-        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("readl", 1)))
-        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Media(VoiceMediaOp.PLAY)))
+    }
+
+    @Test
+    fun `bat mot ma thi DUNG ma do hoi lai, cac ma khac khong`() {
+        val only = setOf(VoiceRiskTable.PREFIX_CONTROL + "door")
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("door", null), only))
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("lock", 0), only))
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Profile("Vợ"), only))
+        // Giá trị KHÔNG vào mã: tích "Khoá xe" là tích cả hai chiều (xem KDoc [VoiceRiskTable.confirmId]).
+        val lock = setOf(VoiceRiskTable.PREFIX_CONTROL + "lock")
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("lock", 0), lock))
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("lock", 1), lock))
+        // Nút KHÔNG nằm trong bảng lý do thì không có mã ⇒ không bao giờ hỏi được, kể cả khi ai đó nhét mã lạ.
+        assertEquals(null, VoiceRiskTable.confirmId(VoiceIntent.Control("readl", 1)))
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("readl", 1), setOf("control:readl")))
+        // Sổ địa chỉ: tập ĐÓNG người dùng tự gõ ⇒ không có mã, không bật được (spec `kachi-voice-addresses` §4.2).
+        assertEquals(null, VoiceRiskTable.confirmId(VoiceIntent.NavigateSaved("Nhà")))
+    }
+
+    /** Mỗi mã bày ra trong Cài đặt phải có NHÃN + LÝ DO đọc được — một ô tích trống nghĩa là một ô không ai tích. */
+    @Test
+    fun `moi ma hoi-duoc deu co nhan va ly do`() {
+        val ids = VoiceRiskTable.askableIds()
+        assertTrue(ids.isNotEmpty(), "tiền đề: danh sách việc hỏi-được không rỗng")
+        assertEquals(ids.size, ids.distinct().size, "mã trùng ⇒ hai ô tích ghi đè nhau")
+        ids.forEach { id ->
+            val pair = VoiceRiskTable.askableLabel(id)
+            assertTrue(pair != null, "thiếu nhãn cho mã $id")
+            assertTrue(pair!!.first.isNotBlank() && pair.second.isNotBlank(), "nhãn/lý do rỗng cho $id")
+        }
     }
 
     /** Mọi việc phải hỏi lại đều phải nói được **vì sao** — hộp xác nhận không được là một cú chạm trống nghĩa. */

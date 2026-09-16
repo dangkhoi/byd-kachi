@@ -45,6 +45,12 @@ internal object SettingsCatalogEntries {
         // `home_scene_save` bị `SceneWiringContractTest` tra), nên đổi mã ở đây không phá dây nối nào. KHOÁ lưu bền
         // thì giữ nguyên (`top_strip`/`dock_edge`/`dock_enabled`) — đổi khoá là mất cấu hình của người đang dùng.
         SettingsEntry("bars_top_strip", SettingsGroup.BARS, "Chip thanh trạng thái", "top_strip", "Status-bar chips"),
+        // V3 · R14 (owner 2026-09-16) — *"chỉ hiện icon và chỉ số thôi, text nhiều chật chỗ"*. Đứng NGAY dưới
+        // mục chọn chip: nó nói về chính những chip vừa chọn, và chỗ duy nhất đọc được kết quả là thanh trên.
+        SettingsEntry(
+            "bars_top_strip_labels", SettingsGroup.BARS, "Hiện nhãn trên thanh trên",
+            "top_strip_labels", "Show chip labels",
+        ),
         // Viền TRƯỚC danh sách nút: thứ tự khai ở đây LÀ thứ tự hiện ra, và mục "nút trên thanh" là lưới 123 ô. Khai
         // ngược lại thì muốn đổi viền phải cuộn qua hết lưới — thứ tự danh mục phải là thứ tự dùng được, không chỉ
         // là thứ tự nghe hợp lý khi đọc danh sách.
@@ -234,6 +240,25 @@ internal object SettingsCatalogEntries {
         // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
         // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.
         SettingsEntry("voice_tts_pack", SettingsGroup.SYSTEM, "Giọng đọc offline", labelEn = "Offline voice pack"),
+        // ── V3 · "nhanh + tự nhiên" (spec `kachi-voice-fast-natural.html`) ──
+        // R7 — mục liệt kê MỌI việc có thể hỏi lại, mỗi việc một ô tích; mặc định KHÔNG tích cái nào (owner
+        // 2026-09-16: *"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì"*).
+        SettingsEntry(
+            "voice_confirm_ids", SettingsGroup.SYSTEM, "Hỏi xác nhận trước khi chạy",
+            "voice_confirm_ids", "Ask before running",
+        ),
+        // OQ4 — đứng NGAY dưới mục trên, vì nó chỉ có nghĩa khi có ít nhất một việc được tích: nó quyết định câu
+        // hỏi ấy có được ĐỌC LÊN hay chỉ hiện chữ.
+        SettingsEntry(
+            "voice_ask_aloud", SettingsGroup.SYSTEM, "Đọc to câu hỏi xác nhận",
+            "voice_ask_aloud", "Read confirmation questions aloud",
+        ),
+        // R1 — nguồn micro. Ở nhóm Hệ thống cạnh hàng *Nhận dạng giọng nói*: nó là một tính chất của PHẦN CỨNG
+        // xe này, không phải một sở thích; và nó tồn tại để đo được từng nguồn trên đường mà không build lại.
+        SettingsEntry(
+            "voice_mic_source", SettingsGroup.SYSTEM, "Nguồn micro",
+            "voice_mic_source", "Microphone source",
+        ),
         // ── Màn hình chính (S5) ──
         // btn_set_home · ClusterNavBridge.setDefaultHome — VIỆC LÀM (không lưu khoá): ROM BYD KHÔNG hiện hộp chọn
         // HOME khi bấm nút Home, nên đây là đường đặt được duy nhất. Nút gọi `cmd package set-home-activity` qua

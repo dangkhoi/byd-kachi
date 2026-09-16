@@ -13,7 +13,20 @@ class FakeHalGateway(
     private val localOk: Boolean = false,
     /** method → (arg → giá trị) cho getter per-index (áp lốp 4 góc `getTyrePressureValue(area)`…); ưu tiên trước [getters]. */
     private val gettersByArg: Map<String, Map<Int, String?>> = emptyMap(),
+    /**
+     * V3 · R11 — bảng giả *"tên hằng `BYDAutoFeatureIds` → số"* của một chiếc xe tưởng tượng.
+     *
+     * Có mặt để kiểm được đúng cái đã hỏng trên xe thật: cùng một tên hằng mang **hai số khác nhau** tuỳ cấu
+     * hình xe, nên bind-theo-số là sai từ gốc. Bảng này để bài test dựng ra hai "chiếc xe" mà không cần xe.
+     */
+    private val featureNames: Map<String, Int> = emptyMap(),
+    /** V3 · R11(b) — bảng giả *"feature-id → FQN device chứa nó"* (`BYDAutoDeviceFeaturesMap` của xe giả). */
+    private val featureDevices: Map<Int, String> = emptyMap(),
 ) : HalGateway {
+
+    override fun featureIdByName(constName: String): Int? = featureNames[constName]
+
+    override fun deviceForFeature(featureId: Int): String? = featureDevices[featureId]
 
     data class NamedCall(val fqn: String, val method: String, val args: List<Int>)
     data class FeatureCall(val fqn: String, val id: Int, val value: Int)
@@ -35,7 +48,14 @@ class FakeHalGateway(
         return namedRc
     }
 
-    override fun featureGet(deviceFqn: String, id: Int): String? = features[id]
+    /** Device của lượt [featureGet] gần nhất — chốt *"bảng của framework đã quyết device"* (V3 · R11 b). */
+    var lastFeatureGetDevice: String? = null
+        private set
+
+    override fun featureGet(deviceFqn: String, id: Int): String? {
+        lastFeatureGetDevice = deviceFqn
+        return features[id]
+    }
 
     override fun featureSet(deviceFqn: String, id: Int, value: Int): Long? {
         featureSetCalls.add(FeatureCall(deviceFqn, id, value))

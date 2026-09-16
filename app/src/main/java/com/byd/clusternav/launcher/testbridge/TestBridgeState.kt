@@ -71,6 +71,9 @@ internal object TestBridgeState {
                         "dock_visible" to s.dock.visible,
                         "dock" to TestBridgeJson.Raw(TestBridgeJson.arr(s.dock.enabled)),
                         "chips" to TestBridgeJson.Raw(TestBridgeJson.arr(s.topStrip.ids)),
+                        // V3 · R14 — công tắc nhãn chip. Phơi ra để E2E máy ảo chốt được *"tắt rồi thì chip còn
+                        // gì"* bằng một lượt `state`, thay vì so hai ảnh chụp bằng mắt.
+                        "chip_labels" to s.topStrip.showLabels,
                     ),
                 ),
                 "look" to TestBridgeJson.Raw(

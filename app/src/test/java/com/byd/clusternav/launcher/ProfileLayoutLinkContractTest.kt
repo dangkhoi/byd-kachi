@@ -35,7 +35,8 @@ class ProfileLayoutLinkContractTest {
 
     @Test
     fun `the ho so mang tom tat bo cuc cua chinh no`() {
-        val row = code("SettingsSections.kt").let { it.substring(it.indexOf("private fun profileRow(")) }
+        // ⚠ 1.66 — nhóm Hồ sơ tài xế nay ở tệp riêng `SettingsSectionsProfiles.kt` (xem KDoc lớp đó).
+        val row = code("SettingsSectionsProfiles.kt").let { it.substring(it.indexOf("private fun profileRow(")) }
         assertTrue(row.contains("deps.profileSummary(name)"), "thẻ hồ sơ phải hỏi tóm tắt theo TÊN hồ sơ")
         assertTrue(row.contains("kachi_profile_sub_active") && row.contains("kachi_profile_sub_switch"))
         val prefs = profileLayoutBody()

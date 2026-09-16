@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher.testbridge
 
 import android.content.Context
 import android.util.Log
+import com.byd.clusternav.launcher.BydFeatureIds
 import com.byd.clusternav.launcher.BydHalGateway
 import com.byd.clusternav.launcher.HalBindingTable
 import com.byd.clusternav.launcher.HalWriteProbe
@@ -42,9 +43,33 @@ internal object TestBridgeHal {
     /** `--es args` có phần tử không phải số nguyên — nối phần sai để người đo biết gõ nhầm chỗ nào. */
     const val ERR_BAD_ARGS = "bad_hal_args:"
 
+    /**
+     * `--es op setev` — ghi qua đường **generic** `AbsBYDAutoDevice.set(int[] ids, BYDAutoEventValue)`.
+     *
+     * ## Vì sao cần một op thứ ba, khi đã có `set`
+     * [ĐO nguồn fw-dl3 2026-09-16] `BYDAutoDoorLockDevice` **không có setter nào**: chỉ `getDoorLockStatus(area)`
+     * + các hằng `DOOR_LOCK_COMMAND_AREA_*` (960495668 · 70 · 72 · 74 · **76 = back**) và `DOOR_LOCK_STATE_UNLOCK=1` /
+     * `LOCK=2`, quyền `BYDAUTO_DOOR_LOCK_SET`. `BYDAutoBodyworkDevice` cũng **không có** `setHetchDoorStatus`
+     * (bản jadx-tmap cũ có; xe này không) — khớp với `NoSuchMethod` mà vòng action 09-16 ghi cho `door`/`lock`/
+     * `trunk`. ⇒ Đường ghi DUY NHẤT còn lại cho khoá/cốp là `set()` generic, và nó **chưa ai thử**.
+     *
+     * ## Đây là một ĐẦU DÒ, không phải một đường mặc định
+     * `ControlRegistry` **không đổi** một dòng nào: `lock`/`door`/`trunk` vẫn trỏ named-method như cũ. Đổi route
+     * mặc định dựa trên một giả thuyết chưa đo là đúng thứ CLAUDE.md §2 cấm. Op này tồn tại để lượt xe sau **đo**,
+     * rồi mới sửa route nếu đo xanh.
+     *
+     * Cú pháp: `--es op setev --es dev <Device> --es m <id thập phân | TÊN_HẰNG> --es args <giá trị>`;
+     * lượt GHI ⇒ vẫn qua cổng `--ez auto_confirm true` như mọi lượt `set`.
+     */
+    const val OP_SETEV = "setev"
+
+    /** `--es m` của `setev` không phải số và cũng không phải tên hằng có trên xe. */
+    const val ERR_BAD_FEATURE = "bad_feature:"
+
     fun run(app: Context, cmd: TestBridgeCommand, reply: TestBridgeReply) {
         val simpleDev = cmd.dev.ifBlank { DEFAULT_DEVICE }
         val fqn = HalBindingTable.deviceFqn(simpleDev)
+        if (cmd.op == OP_SETEV) { runSetEv(app, cmd, simpleDev, fqn, reply); return }
         val isGet = when (cmd.op) {
             "get" -> true
             "set" -> false
@@ -103,6 +128,60 @@ internal object TestBridgeHal {
                     halLine.contains("permission", ignoreCase = true) -> "denied: no permission"
                     halLine == "off_car" -> "unavailable: off-car/emulator"
                     rc != null -> "ok: HAL accepted (rc valid)"
+                    else -> "rejected: $halLine"
+                },
+            ),
+        )
+    }
+
+    /**
+     * Lượt `setev` — xem KDoc [OP_SETEV]. Cùng cổng CONFIRM và cùng giao thức đọc câu chữ HAL với lượt `set`.
+     *
+     * `--es m` nhận **cả hai** dạng: số thập phân (`960495676`) và tên hằng (`Door.DOOR_LOCK_COMMAND_AREA_BACK`).
+     * Tên hằng là dạng nên dùng — số thì đổi theo cấu hình xe (xem `BindingRoute.FeatureName`).
+     */
+    private fun runSetEv(
+        app: Context,
+        cmd: TestBridgeCommand,
+        simpleDev: String,
+        fqn: String,
+        reply: TestBridgeReply,
+    ) {
+        val featureId = cmd.method.toIntOrNull() ?: BydFeatureIds.idByName(cmd.method)
+        if (featureId == null) {
+            reply.fail(ERR_BAD_FEATURE + cmd.method)
+            return
+        }
+        val value = parseArgs(cmd.halArgs)?.firstOrNull()
+        if (value == null) {
+            reply.fail(ERR_BAD_ARGS + cmd.halArgs)
+            return
+        }
+        if (!cmd.autoConfirm) {
+            reply.fail(ERR_NEEDS_CONFIRM, "dev" to simpleDev, "feature" to cmd.method, "hint" to NOTE_CONFIRM)
+            return
+        }
+        Log.i(TestBridgeReply.TAG, "AUTO-CONFIRM: hal setev $simpleDev feature=$featureId value=$value")
+        val mark = HalWriteProbe.mark()
+        HalWriteProbe.clear()
+        val rc = BydHalGateway(app).featureSet(fqn, featureId, value)
+        val outcome = HalWriteProbe.last
+        val halLine = if (outcome != null && outcome.seq > mark) outcome.raw else TestBridgeCtl.HAL_UNMAPPED
+        reply.ok(
+            listOf(
+                "op" to OP_SETEV,
+                "dev" to simpleDev,
+                "fqn" to fqn,
+                "feature" to cmd.method,
+                "feature_id" to featureId,
+                "device_by_map" to (BydFeatureIds.deviceFqnForFeature(featureId) ?: ""),
+                "value" to value,
+                "rc" to (rc?.toString() ?: ""),
+                "hal_line" to halLine,
+                "reply" to when {
+                    halLine.contains("permission", ignoreCase = true) -> "denied: no permission / wrong device"
+                    halLine == "off_car" -> "unavailable: off-car/emulator"
+                    rc != null -> "ok: HAL accepted (rc valid) — owner phai NHIN xe co phan ung khong"
                     else -> "rejected: $halLine"
                 },
             ),

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi — Giọng nói pha 3: NHANH + TỰ NHIÊN — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi — Giọng nói pha 3: <b>NHANH</b> + <b>TỰ NHIÊN</b></h1>
+<p class="muted">Slug: <code>kachi-voice-fast-natural</code> · Branch <code>feat/voice-hotword-phrases</code> · Owner <code>dangkhoi</code> · Bản <code>1.66 (67)</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Nguồn sự thật: <code>docs/diagnostics/oncar-trace-2026-09-16.md</code> (lượt xe 09-16) · <code>docs/_handoff/owner-questions-2026-09-16.md</code> (quyết định owner, đầu file) · backlog <code>V-ONCAR-0916</code> + <code>OWNER-0916</code>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo spec + implement trong cùng phiên (§Design/§Tasks hoàn thiện song song với code, R2.6). Sinh từ lượt xe 09-16: voice <b>chạy được nhưng chậm và cứng</b> (15 s nạp mô hình · 8,4 s nghe cố định · 3,1 s lỗ đóng mic · cổng xác nhận bỏ tiếng <i>"ừ"</i> · <i>"kính lái"</i> thành 4 kính), cộng <b>12 datum sai device</b> mà gốc là <b>feature-id không cố định</b>.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>[ĐO xe 2026-09-16]</b> (DiLink3.0, Kachi 1.64): engine sherpa + mô hình + hiểu ý <b>đã chạy trên xe</b>. Ba thứ hỏng đều nằm ngoài phần "hiểu":</p>
+<table>
+<tr><th>Mốc [ĐO]</th><th>Số</th><th>Đọc ra là gì</th></tr>
+<tr><td>bấm phím → mic mở (lần đầu sau khi mở app)</td><td><b>15 s</b></td><td>nạp encoder ONNX fp32; các lượt sau 0,2 s</td></tr>
+<tr><td>mic mở → hết nghe</td><td><b>8,4 s</b> (trần)</td><td>mô hình offline không chốt câu giữa dòng ⇒ MỌI câu đều trả giá trần</td></tr>
+<tr><td>sherpa ra chữ → <code>lượt 1 nghe được</code></td><td><b>3,1 s</b> × 4/4 lượt</td><td>lỗ nằm trong <code>finally</code> của <code>VoiceCapture.listen</code> — chưa ai đo từng bước</td></tr>
+<tr><td>giải mã</td><td><b>2,35 s</b></td><td><code>numThreads = 2</code> viết cứng trên CPU <b>8 lõi</b></td></tr>
+<tr><td>nguồn mic 6 (<code>VOICE_RECOGNITION</code>)</td><td>đỉnh <b>136–255</b> · rms <b>30–50</b></td><td>gần câm 3/4 lượt; nguồn 1 (<code>MIC</code>, đúng nguồn Kiki) cho đỉnh <b>4429</b> · rms <b>237</b></td></tr>
+<tr><td>cổng xác nhận</td><td>chờ <b>5,4 s</b>, nghe <i>"ừ"</i> ⇒ <b>huỷ</b></td><td>câu đúng, nghe đúng, kết quả là <b>im lặng</b> sau 20 giây</td></tr>
+</table>
+<p><b>Quyết định của owner (09-16)</b> định hình cả pha này: <b>B1–B12 chạy luôn</b> (<i>"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì? cần document lại cái nào cần đồng ý để tôi chọn"</i>) · <b>B13</b> có mục Cài đặt tự chọn · <b>C3</b> đọc phản hồi · <b>D1</b> giữ mic 5 s · <b>D2</b> hỏi lại cho tới khi hiểu · <b>D4</b> thử int8 · <b>E5</b> cho đổi tên hồ sơ · <b>E6</b> xe CÓ 4 tính năng bị báo "absent on trim" ⇒ phải RE lại feature-id · <b>B6</b> xe không có nắp ca-pô.</p>
+<div class="card"><b>Cổng / phụ thuộc:</b> không có cổng chặn — mọi hạng mục dưới đây làm được off-car. Ba thứ <b>chỉ chốt được trên xe</b> đã tách ra §7 (OQ) và playbook §6g: tốc độ int8 trên ARM · nguồn mic nào thắng khi đang lái + mở nhạc · bốn nút "absent on trim" còn lại.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng — NHANH</h3>
+<ul>
+<li><b>R1</b> · Nguồn micro thử theo thứ tự <code>MIC(1) → VOICE_COMMUNICATION(7) → VOICE_RECOGNITION(6)</code>; pref <code>voice_mic_source</code> (0 = tự chọn) ép một nguồn lên <b>đầu</b> mà vẫn giữ đường lùi. <i>AC</i>: nhật ký ghi tên hằng Android của nguồn đã mở; <code>VoiceMicSourceTest</code> khoá thứ tự.</li>
+<li><b>R2</b> · Ngắt câu bằng <b>năng lượng</b>: nền = trung vị rms 300 ms đầu; "có tiếng" khi <code>rms &gt; max(3×nền, 120)</code>; chốt khi đã có tiếng ≥ 400 ms rồi im ≥ 800 ms. Trần phiên <b>không đổi</b> (8 s); lượt xác nhận 5 s → <b>4 s</b>. <i>AC</i>: <code>VoiceEndpointerTest</code> — 7 ca, gồm ca "ồn liên tục ⇒ không bao giờ chốt".</li>
+<li><b>R3</b> · Mốc giờ từng chặng dưới <b>một tag</b> <code>KachiVoiceTiming</code>: mic mở · nghe · giải mã · <b>từng bước đóng mic</b> (<code>stop</code>/<code>release</code>/bíp/nhả tiêu điểm). Bíp cuối + nhả tiêu điểm rời khỏi đường về của câu trả lời.</li>
+<li><b>R4</b> · <code>VoiceEngine.preload(ctx)</code> gọi từ <code>KachiApplication.onCreate</code> — luồng nền, <code>MIN_PRIORITY</code>, hoãn 3 s, im lặng rút lui khi chưa tải mô hình.</li>
+<li><b>R5</b> · <code>numThreads = (availableProcessors/2).coerceIn(2,4)</code>, ghi số lõi + số luồng vào nhật ký.</li>
+<li><b>R6</b> · Thêm mô hình <code>zipformer-vi-int8-2025-04-20</code> (74 MB, cùng bản huấn luyện, <b>dùng CHUNG</b> asset BPE) và đặt làm <b>mặc định cho máy cài mới</b>; máy đã có fp32 <b>giữ fp32</b> tới khi owner chọn.</li>
+</ul>
+<h3>Chức năng — TỰ NHIÊN</h3>
+<ul>
+<li><b>R7</b> · <b>Mặc định KHÔNG hỏi xác nhận gì cả.</b> <code>VoiceRiskTable.of(intent, confirmIds)</code> chỉ trả <code>CONFIRM</code> khi mã việc nằm trong tập <code>voice_confirm_ids</code> (device-level, mặc định RỖNG). Mục Cài đặt <i>"Hỏi xác nhận trước khi chạy"</i> bày danh sách <b>sinh từ bảng lý do</b>, mỗi mục một ô tích + lý do đọc được.</li>
+<li><b>R8</b> · Hỏi lại tới khi hiểu: <code>VoiceClarify</code> (<code>:core</code>) sinh câu hỏi theo lý do (<i>"Bật gì?"</i> · <i>"Kính nào — …?"</i> · <i>"Chưa rõ — nói lại giúp"</i>), <b>ghép</b> câu trả lời với ngữ cảnh, trần <b>2</b> lượt rồi bỏ cuộc lịch sự.</li>
+<li><b>R9</b> · Hội thoại: sau khi thi hành + <b>đọc xong</b> phản hồi, giữ mic mở <code>voice_follow_up_ms</code> (5 000) cho câu tiếp; tấm chữ ghi <i>"Nói tiếp…"</i>; <b>không bíp</b> đầu lượt; trần 5 lượt/phiên; không mở khi lệnh còn đang tra mạng hoặc đang có hộp xác nhận.</li>
+<li><b>R10</b> · Từ vựng: <code>window</code> += <code>kinh lai · cua kinh lai · kinh tai xe · cua so lai</code>; <code>windows_all</code> giữ <code>kinh</code>/<code>cua so</code> (owner: nói trống thì 4 kính chạy luôn).</li>
+</ul>
+<h3>Chức năng — HAL / launcher</h3>
+<ul>
+<li><b>R11</b> · <code>bindingKey</code> nhận dạng <b>tên hằng</b> <code>BYDAutoFeatureIds.&lt;Lớp&gt;.&lt;TÊN&gt;</code> → <code>BindingRoute.FeatureName</code>; <code>BydFeatureIds</code> tra <b>giá trị</b> và <b>device chứa nó</b> bằng reflection lúc chạy (cache theo phiên, thiếu tên ⇒ log một lần). Cầu kiểm thử thêm lệnh <code>featmap</code> đổ cả hai bảng ra JSON.</li>
+<li><b>R12</b> · Bốn nút "absent on trim": <code>child_lock</code> bind lại theo tên (tìm được); ba nút còn lại ghi NEEDS-ONCAR kèm lệnh chốt. Ẩn <code>hood</code> khỏi màn chọn (owner B6).</li>
+<li><b>R13</b> · Đổi tên hồ sơ: <code>ProfileRename</code> (<code>:core</code>, kiểm thuần) + <code>WorkspacePrefs.renameProfile</code> (DỜI khoá + ba con trỏ, một lượt <code>edit()</code>) + hàng trong Cài đặt › Hồ sơ.</li>
+<li><b>R14</b> · <code>TopStripConfig.showLabels</code> (mặc định bật, <b>theo hồ sơ</b>, khoá <code>top_strip_labels</code>): tắt ⇒ chip chỉ còn icon + giá trị; câu cho trình đọc màn hình <b>không đổi</b>. Bridge <code>state.bars.chip_labels</code>.</li>
+<li><b>R15</b> · Ô đo lại khi inset đổi: <code>WorkspaceView.onApplyWindowInsets</code> ⇒ bố trí lại ⇒ <code>VdAppHost.resize(w,h)</code> (một đường duy nhất, trùng cỡ thì không làm gì).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> · Mọi logic mới kiểm được <b>off-car</b>: bộ ngắt câu · câu hỏi lại · phép đổi tên · thứ tự nguồn mic · định tuyến tên hằng đều là hàm thuần ở <code>:core</code>.</li>
+<li><b>R-nf2</b> · <b>Degrade-safe</b>: không có framework BYD ⇒ tra tên trả <code>null</code> ⇒ lùi về phép đoán cũ; không có giọng ⇒ hội thoại vẫn chạy (mốc "đọc xong" là ngay lập tức); không đọc được prefs ⇒ dùng mặc định của owner.</li>
+<li><b>R-nf3</b> · Trần <b>500 dòng</b>/tệp giữ nguyên ⇒ tách <code>VoiceSessionTurns.kt</code> · <code>VoiceConfirmSettings.kt</code> · <code>SettingsSectionsProfiles.kt</code> · <code>TestBridgeFeatMap.kt</code>, và <code>WorkspacePrefs.renameProfile</code> đi vào tệp mở rộng đã có.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Đường một lượt nói — chỗ 1.66 chen vào</h3>
+<div class="flow">
+  <div class="fnode"><b>Phím / pill</b><span>VoiceSession.start</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Mô hình đã nạp sẵn</b><span>R4 · preload</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Mic: MIC trước</b><span>R1 · VoiceMicSource</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Ngắt câu</b><span>R2 · VoiceEndpointer</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Giải mã 4 luồng</b><span>R5</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>VoiceIntentParser</b><span>:core</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Hiểu?</b><span>R8 · VoiceClarify</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Cần hỏi?</b><span>R7 · voice_confirm_ids</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Thi hành + đọc</b><span>VoiceDispatcher</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Giữ mic 5 s</b><span>R9 · followUp</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới của 1.66</span>
+</div>
+
+<h3>4.2 Vì sao feature-id không cố định — và cách chữa GENERIC</h3>
+<p><b>[ĐO nguồn fw-dl3 2026-09-16]</b> — framework THẬT của xe, không phải bản <code>jadx-tmap</code> cũ:</p>
+<pre>// BYDAutoFeatureIds.java — hằng KHÔNG có giá trị lúc khai, gán trong static-init theo cấu hình xe
+public static final int ENGINE_FRONT_MOTOR_SPEED;
+...
+int i9 = 1141899272;
+if (!BYDAutoFeatureIds.isCanFD &amp;&amp; !BYDAutoFeatureIds.isToyota) { i9 = 1141901320; }
+ENGINE_FRONT_MOTOR_SPEED = i9;
+
+// BYDAutoDeviceFeaturesMap.java — bảng THẬT "device nào chứa id nào"
+public static Set&lt;Integer&gt; getFeatureIdsFromDevice(int deviceType) { ... }
+static { map.put(1000, AcMap...); map.put(1001, BodyworkMap...); ... map.put(1061, BigdataMap...); }</pre>
+<p>⇒ Số decimal chép từ một bản decompile chỉ đúng cho <b>một</b> cấu hình. Trên xe khác cấu hình nó <b>không tồn tại</b>, <code>AbsBYDAutoDevice.checkDeviceFeatures</code> từ chối, và 12 datum im lặng suốt 10 804 dòng log. Chữa bằng <b>bind theo tên</b> + <b>hỏi bảng của chính framework</b>, không bằng cách sửa 12 con số.</p>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>registry</b><span><code>"BYDAutoFeatureIds.Engine.ENGINE_POWER"</code></span></div>
+    <div class="node"><b>HalBindingTable.routeOf</b><span>→ <code>BindingRoute.FeatureName</code></span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>HalGateway.featureIdByName</b><span>tên → SỐ của chính xe này</span></div>
+    <div class="node"><b>HalGateway.deviceForFeature</b><span>số → DEVICE chứa nó</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>BydFeatureIds</b><span>reflection + cache phiên + log-một-lần</span></div>
+    <div class="node"><b>featmap (cầu kiểm thử)</b><span>đổ cả hai bảng ra JSON trên thẻ</span></div>
+  </div>
+</div>
+<p><b>Kết quả tra tên cho 12 datum</b> (fw-dl3, 2026-09-16):</p>
+<table>
+<tr><th>Datum</th><th>Số cũ</th><th>Tên hằng trên xe</th><th>Kết</th></tr>
+<tr><td><code>trip_km</code></td><td>1246801948</td><td><code>Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_MILEAGE</code></td><td class="ok">bind lại</td></tr>
+<tr><td><code>trip_hours</code></td><td>1246801938</td><td><code>Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_TIME</code></td><td class="ok">bind lại</td></tr>
+<tr><td><code>motor_power</code></td><td>339738656</td><td><code>Engine.ENGINE_POWER</code></td><td class="ok">bind lại</td></tr>
+<tr><td><code>motor_front_rpm</code></td><td>1141899272</td><td><code>Engine.ENGINE_FRONT_MOTOR_SPEED</code></td><td class="ok">bind lại</td></tr>
+<tr><td><code>motor_rear_rpm</code></td><td>621805576</td><td><code>Engine.ENGINE_REAR_MOTOR_SPEED</code></td><td class="ok">bind lại</td></tr>
+<tr><td><code>motor_front_torque</code></td><td>1141899288</td><td><code>Engine.ENGINE_FRONT_MOTOR_TORQUE</code></td><td class="ok">bind lại</td></tr>
+<tr><td><code>wiper_state</code></td><td>1196425226</td><td><b>= <code>WIPER_AREA_REAR_STATE</code></b> (gạt mưa SAU!) ⇒ bind <code>Wiper.WIPER_AREA_FRONT_STATE</code></td><td class="ok">sửa NGHĨA</td></tr>
+<tr><td><code>drift_mode</code></td><td>681574694</td><td>KHÔNG có hằng nào chứa <code>DRIFT</code>, số không xuất hiện</td><td class="warn">chờ featmap</td></tr>
+<tr><td><code>ambient_front/rear_color</code></td><td>1121976336/343</td><td>chỉ có <code>SET_ATMOSPHERE_LAMP_COLOR_{R,G,B}_VALUE_SET</code> — <b>ba kênh RỜI</b></td><td class="warn">đổi hình dạng</td></tr>
+<tr><td><code>bsd_fl/fr_alarm</code></td><td>1098907692/694</td><td>chỉ có <code>ADAS_BSD_STATE</code> — <b>một</b> trạng thái, không theo góc</td><td class="warn">đổi hình dạng</td></tr>
+</table>
+<p>Và 4 nút "absent on trim" (owner E6 xác nhận <b>xe CÓ</b>):</p>
+<table>
+<tr><th>Nút</th><th>Số cũ</th><th>fw-dl3</th><th>Kết</th></tr>
+<tr><td><code>child_lock</code></td><td>1276141584</td><td><code>Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET</code> — thuộc device <b>DOOR_LOCK (1041)</b>, không phải BODYWORK</td><td class="ok">bind lại</td></tr>
+<tr><td><code>ac_auto</code></td><td>1324355606</td><td>không có; ứng viên <code>Ac.AC_CTRL_MODE_SET</code> chưa chốt</td><td class="warn">NEEDS-ONCAR</td></tr>
+<tr><td><code>mirror_fold_btn</code></td><td>1276157992</td><td>không có lệnh gập TAY (chỉ <code>…FOLLOWUP_SWITCH</code> = gập theo khoá)</td><td class="warn">NEEDS-ONCAR</td></tr>
+<tr><td><code>ambient_power</code></td><td>1276153924</td><td>gần nhất <code>Setting.SET_ATMOSPHERE_LAMP_PANEL_STATE_SET</code> = <b>1276153872</b> (lệch 52)</td><td class="warn">NEEDS-ONCAR</td></tr>
+</table>
+
+<h3>4.3 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Ngắt câu bằng năng lượng, KHÔNG dùng VAD của sherpa</b>: <code>SileroVad</code> là một mô hình ONNX <b>thứ hai</b> phải tải + nạp + chạy trên cùng CPU đang chật (máy còn 56–94 MB trống). Câu hỏi cần trả lời chỉ là <i>"người ta còn đang nói không"</i> — mức năng lượng đủ, bằng số học nguyên, không cấp phát gì.</li>
+<li><b>Ngưỡng hai nửa</b> <code>max(3×nền, 120)</code>: phần nhân bám cabin lúc ấy (nhạc/điều hoà/tốc độ); phần sàn giữ ca <b>micro gần câm</b> mà chính lượt xe 09-16 đã đo (nền ≈ 40 ⇒ 3×nền = 120).</li>
+<li><b>Cổng xác nhận: đổi AI BẬT, không đổi cơ chế.</b> Bảng lý do, hộp hỏi, luật "im lặng không bao giờ là đồng ý", cổng <code>--ez auto_confirm</code> của cầu kiểm thử — giữ nguyên. Thứ đổi là mặc định (owner).</li>
+<li><b>Mặc định int8 nhưng KHÔNG cưỡng ép</b>: <code>VoiceModelStore.selected</code> khi pref trống thì dùng mô hình <b>đã nằm trên đĩa</b>; chỉ máy chưa có gì mới lấy mặc định. Đổi mặc định mà kéo theo một lượt tải 74 MB qua 4G trên xe đang chạy là quyết định thay người dùng.</li>
+<li><b>Bảng device là cải thiện, KHÔNG phải cổng</b>: <code>deviceForFeature</code> trả <code>null</code> ⇒ lùi về phép đoán theo <code>Domain</code> như 1.65. Biến nó thành cổng thì một ROM không có <code>BYDAutoDeviceFeaturesMap</code> sẽ làm câm hết telemetry (CLAUDE.md §3).</li>
+<li><b><code>setev</code> là ĐẦU DÒ, không phải route mặc định</b>: <code>ControlRegistry</code> không đổi một dòng cho <code>lock</code>/<code>door</code>/<code>trunk</code>. Đổi route dựa trên giả thuyết chưa đo là đúng thứ CLAUDE.md §2 cấm.</li>
+<li><b>Context7</b>: không thêm thư viện nào. sherpa-onnx (<code>numThreads</code>/<code>OfflineRecognizerConfig</code>), <code>AudioRecord</code>/<code>MediaRecorder.AudioSource</code>, <code>VirtualDisplay.resize</code>, <code>SharedPreferences</code> — tất cả là <b>Android SDK + AAR đã ghim</b> trong dự án, đã dùng từ 1.5x ⇒ không cần Context7 (đúng điều kiện miễn ở template §4.2).</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>R1 — thứ tự nguồn mic ở <code>:core</code> + pref + nhật ký</td><td><code>core/…/voice/VoiceMicSource.kt(+Test)</code> · <code>VoiceCapture.kt</code> · <code>Prefs.kt</code></td></tr>
+<tr><td>T2</td><td>R2 — bộ ngắt câu thuần + nối vào vòng nghe</td><td><code>core/…/voice/VoiceEndpointer.kt(+Test)</code> · <code>VoiceCapture.kt</code></td></tr>
+<tr><td>T3</td><td>R3 — tag mốc giờ + đo từng bước đóng mic + đẩy bíp/tiêu điểm sang nền</td><td><code>VoiceCapture.closeRecord</code> · <code>VoiceRecognizer.kt</code></td></tr>
+<tr><td>T4</td><td>R4/R5 — nạp sẵn mô hình + số luồng theo máy</td><td><code>VoiceRecognizer.kt</code> · <code>KachiApplication.kt</code></td></tr>
+<tr><td>T5</td><td>R6 — mô hình int8 + mặc định có điều kiện + asset BPE dùng chung</td><td><code>SherpaModelCatalog.kt(+Test)</code> · <code>VoiceModelStore.kt</code></td></tr>
+<tr><td>T6</td><td>R7 — tập <code>voice_confirm_ids</code> + mục Cài đặt + ẩn <code>hood</code></td><td><code>VoiceRisk.kt</code> · <code>VoiceConfirmSettings.kt</code> · <code>LauncherCatalog.kt</code> · <code>VoiceDispatcher.kt</code></td></tr>
+<tr><td>T7</td><td>R8 — hỏi lại + ghép ngữ cảnh</td><td><code>core/…/voice/VoiceClarify.kt(+Test)</code> · <code>VoiceSessionTurns.kt</code></td></tr>
+<tr><td>T8</td><td>R9 — hội thoại giữ mic + bốn cổng</td><td><code>VoiceSessionTurns.kt</code> · <code>VoiceSession.kt</code> · <code>VoiceFeedbackPhrase.isInterim</code></td></tr>
+<tr><td>T9</td><td>R10 — từ vựng <i>"kính lái"</i> (không dấu + có dấu)</td><td><code>VoiceGrammar.kt</code> · <code>SherpaSpokenWords.kt</code></td></tr>
+<tr><td>T10</td><td>R11 — route theo tên hằng + reflection + <code>featmap</code> + <code>setev</code></td><td><code>HalBindingTable.kt(+Test)</code> · <code>BydFeatureIds.kt</code> · <code>TestBridgeFeatMap.kt</code> · <code>TestBridgeHal.kt</code></td></tr>
+<tr><td>T11</td><td>R12 — bind lại 7 datum + <code>child_lock</code>; ghi NEEDS-ONCAR cho phần còn lại</td><td><code>TelemetryRegistry.kt</code> · <code>ControlRegistry.kt</code></td></tr>
+<tr><td>T12</td><td>R13 — đổi tên hồ sơ (core → prefs → repo → VM → UI)</td><td><code>ProfileRename.kt(+Test)</code> · <code>WorkspacePrefsProfile.kt</code> · <code>SettingsSectionsProfiles.kt</code></td></tr>
+<tr><td>T13</td><td>R14 — công tắc nhãn chip + bridge <code>chip_labels</code></td><td><code>TopStrip.kt(+Test)</code> · <code>SettingsSectionsBars.kt</code> · <code>TestBridgeState.kt</code></td></tr>
+<tr><td>T14</td><td>R15 — đo lại ô khi inset đổi</td><td><code>WorkspaceView.kt</code> · <code>VdAppHost.kt</code></td></tr>
+<tr><td>T15</td><td>Bump 1.66 (67) · E2E máy ảo · doc/backlog/index/catalog/playbook</td><td>—</td></tr>
+<tr><td>T16</td><td>Senior review (Opus) + security scan trước commit</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO 2026-09-16]: <code>:core</code> <b>1 972</b> ca · <code>:app</code> <b>976</b> ca · cả 5 module <b>0 đỏ</b> (<code>./gradlew test --rerun-tasks --continue</code>). Bài mới: <code>VoiceEndpointerTest</code> (7) · <code>VoiceClarifyTest</code> (7) · <code>ProfileRenameTest</code> (7) · <code>VoiceMicSourceTest</code> (5) · <code>HalFeatureNameTest</code> (7) · <code>TopStripTest</code> +5 · <code>VoiceGrammarCoverageTest</code> viết lại 3 bài cho mặc định mới · <code>VoiceFastNaturalWiringContractTest</code> (11, khoá <b>call site</b> của cả bảy cơ chế mới — CLAUDE.md §8).
+<br>↳ <b>[ĐO 2026-09-16 · sau Pass 1]</b> <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew test --rerun-tasks --continue</code>: <code>:core</code> <b>1 976</b> · <code>:app</code> debug <b>980</b> + vehicleTest <b>992</b> · <code>:car-integration</code> 61 · <code>:offcar-planner</code> 99 · <code>:vehicle-contracts</code> 22 = <b>4 130 ca · 0 đỏ</b>. Bài thêm ở Pass 1: <code>VoiceFastNaturalWiringContractTest</code> 11 → <b>15</b> (hai bộ đếm về 0 mỗi phiên · cổng micro của hội thoại · câu bỏ cuộc khi hết trần · <code>prefs_set</code> + bộ ca dùng nó) · <code>TestBridgeCommandTest</code> +4 (danh sách trắng <code>prefs_set</code>).</li>
+<li><b>V-e2e (máy ảo)</b> [ĐO 2026-09-16 · <b>sau lượt soát Pass 1</b>] <code>scripts/emulator/voice-e2e.sh --only all</code> trên bản <code>vehicleTest</code> đã vá: <b>T1 69/70</b> (đỏ duy nhất <code>t29</code> — lỗi của bộ ca từ 09-15, có sẵn từ trước) · <b>T2 22/25</b> nghe đúng nguyên văn. <b>8 ca <code>confirm</code> đã được TRẢ LẠI</b> (t08 t09 t13 t26 t51 t55 t57 t62): mỗi ca tự bật đúng mã của nó qua cột <code>prefs</code> mới (lệnh cầu <code>prefs_set</code>, danh sách trắng 5 khoá) rồi harness dọn sau ca — tức tầng E2E nay đo đúng thứ 1.66 đổi (*"tích một mã ⇒ đúng mã đó hỏi lại; không tích ⇒ chạy luôn"*), thay vì mất lớp canh. Thêm <code>t68</code> (tắt hội thoại <code>voice_follow_up_ms=0</code> không làm hỏng đường thi hành) và <code>t69</code> (R14: tắt nhãn chip ⇒ <code>state.bars.chip_labels=False</code> đọc từ chính nguồn màn hình vẽ — thay cho ảnh chụp mà Pass 0 chưa chụp). <code>t53</code> giữ <code>confirm=1</code> <b>không</b> cần <code>prefs</code> vì câu hỏi ở đó đến từ đường <b>khác</b> (đọc lại điểm đến vừa tra được).</li>
+<li><b>V-oncar</b> (playbook §6g — lượt xe sau): đo lại 6 mốc <code>KachiVoiceTiming</code> · bắn <b>từng nút</b> có người nhìn · 10 câu lúc đang lái + mở nhạc (đổi <i>Nguồn micro</i> giữa chừng) · <code>featmap</code> rồi tra 5 datum còn ngờ · thử <code>hal --es op setev</code> cho khoá/cốp · so tốc độ int8 vs fp32 bằng cùng một tệp WAV · tích <b>một</b> ô trong <i>Hỏi xác nhận</i> rồi nói để thấy câu hỏi.</li>
+<li><b>V-lifecycle</b>: đổi tên hồ sơ → bố cục/ô/chip/ảnh chụp ClusterNav giữ nguyên, <code>active_profile</code>/<code>boot_profile</code> đi theo; tắt nhãn chip → đổi hồ sơ → quay lại, lựa chọn còn nguyên (khoá theo hồ sơ).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> · Tốc độ giải mã <b>int8</b> trên ARM của đầu xe — nhỏ hơn nhưng vài nhân onnxruntime chạy quantize/dequantize chậm hơn fp32 trên CPU không có dot-product 8-bit. <span class="muted">[CHƯA BIẾT] — chốt bằng một lượt <code>wav</code> cùng tệp trên cả hai mô hình, đọc mốc <code>giải mã</code>.</span></li>
+<li><b>OQ2</b> · Nguồn micro nào thắng khi <b>đang lái + đang mở nhạc</b> (owner D5). <span class="muted">[CHƯA BIẾT] — hàng <i>Nguồn micro</i> có sẵn để đổi trên đường, không phải build lại.</span></li>
+<li><b>OQ3</b> · Ba nút còn lại (<code>ac_auto</code> · <code>mirror_fold_btn</code> · <code>ambient_power</code>) và 5 datum đổi hình dạng (<code>drift_mode</code> · 2 màu viền · 2 BSD). <span class="muted">[CHƯA BIẾT] — mở khoá bằng đúng một lượt <code>featmap</code>; sau đó tra được off-car.</span></li>
+<li><b>OQ4</b> · Lỗ <b>3,1 s</b>: <code>stop</code> hay <code>release</code>? <span class="muted">[CHƯA BIẾT] — 1.66 đo từng bước; bíp + nhả tiêu điểm đã rời khỏi đường về nên nếu lỗ còn thì nó thuộc hai cái kia.</span></li>
+<li><b>OQ5</b> · Hằng <code>MIN_SPEECH_MS = 400</code> / <code>HANGOVER_MS = 800</code> — chọn theo lý lẽ, chưa đo trên giọng thật trong cabin. <span class="muted">Chốt bằng 10 câu ở playbook §6g (đọc <code>ngắt câu: …</code> trong nhật ký).</span></li>
+<li><b>OQ6</b> · <code>child_lock</code> hằng nói rõ <b>LEFT</b>. Cần cả hai bên ⇒ đó là <b>hai</b> nút, không phải sửa dòng cũ. <span class="muted">Owner quyết sau khi nhìn thấy cửa nào khoá.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/oncar-trace-2026-09-16.md</code> — lượt xe 09-16 (mọi con số [ĐO] ở §2).</li>
+<li><code>docs/_handoff/owner-questions-2026-09-16.md</code> — quyết định owner A/B/C/D/E/F.</li>
+<li>fw-dl3 (framework THẬT của xe, scratchpad phiên): <code>BYDAutoFeatureIds.java</code> · <code>BYDAutoDeviceFeaturesMap.java</code> · <code>AbsBYDAutoDevice.java</code> · <code>bodywork/BYDAutoBodyworkDevice.java</code> · <code>doorlock/BYDAutoDoorLockDevice.java</code>.</li>
+<li>Spec liên quan: <code>kachi-voice-command.html</code> (R11 phiên nghe · R4 bảng an toàn) · <code>kachi-voice-feedback.html</code> (R1/R4/OQ4 đường ra tiếng) · <code>kachi-voice-engine-v2.html</code> (bảng mô hình) · <code>kachi-test-bridge.html</code> (cầu adb) · <code>kachi-profiles-are-everything.html</code> (S4 · phạm vi khoá).</li>
+<li>Luật: <code>CLAUDE.md</code> §2 (cơ chế vs quy kết) · §3 (đọc source trước) · §7 (generic, không case-by-case) · §8 (hàm mới phải có call site) · §14 (shell thô trước) · §4.1 (trần 500 dòng).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-16 · quyết định</b> — <b>Bind theo TÊN thay vì sửa 12 con số.</b> Đọc <code>fw-dl3</code> mới thấy hằng gán trong static-init theo <code>isCanFD</code>/<code>isToyota</code>. Sửa số là chữa triệu chứng cho <b>một</b> cấu hình; bind theo tên chữa cho mọi cấu hình, và còn để lại <code>featmap</code> cho lần sau.</li>
+<li><b>2026-09-16 · phát hiện ngoài dự kiến</b> — <code>wiper_state</code> đang trỏ <code>WIPER_AREA_<b>REAR</b>_STATE</code> trong khi nhãn là <i>"Gạt mưa"</i> (trước). Đây không phải "id vô danh" mà là <b>id của việc khác</b> — cùng họ lỗi <code>lock</code>/<code>door</code> một byte. Đã đổi sang <code>WIPER_AREA_FRONT_STATE</code>.</li>
+<li><b>2026-09-16 · bug &amp; cách xử</b> — <code>VoiceClarify</code> bản đầu hỏi <i>"Mở nào — Mô-men mô-tơ trước, Mở cửa cảnh báo trái, hay Mở cửa cảnh báo phải?"</i> cho câu <i>"mở kính"</i>: phép dò nhập nhằng bám vào chính <b>động từ</b> (<code>mo</code> là chữ mở đầu của hàng chục nhãn). Vá: bỏ qua token nằm trong <code>VERB_HEADS</code> — tập sinh từ <code>VoiceGrammar.VERBS</code>, không chép tay. Khoá bằng <code>VoiceClarifyTest</code>.</li>
+<li><b>2026-09-16 · trade-off</b> — <b>Bíp cuối + nhả tiêu điểm chuyển sang luồng nền</b>, còn <code>stop</code>/<code>release</code> ở lại đúng chỗ. Được: hai việc không ai chờ rời khỏi đường về của câu trả lời. Mất: nếu lỗ 3,1 s nằm ở <code>release</code> thì bản này chưa chữa — nhưng nó <b>đo</b> được, và đó là điều kiện để chữa đúng lần sau.</li>
+<li><b>2026-09-16 · sai lệch spec</b> — Brief nói thêm ca hội thoại/hỏi-lại vào <code>voice-cases.tsv</code>. <b>Không làm được</b>: cầu <code>say</code> đi qua <code>VoiceDispatcher</code>, còn hỏi-lại/hội thoại sống trong <code>VoiceSession</code> (phiên mic) — harness không chạm tới. Thay bằng: bài canh call-site ở <code>:app</code> + bài thuần ở <code>:core</code> + một bước tay ở playbook §6g.</li>
+<li><b>2026-09-16 · sai lệch spec</b> — 9 ca <code>confirm=1</code> của E2E phải về 0 vì mặc định đổi. Cầu kiểm thử <b>không có đường ghi prefs</b> nên tầng đó không dựng lại được tập <code>voice_confirm_ids</code>. Đã ghi lý do + hai chỗ canh thay thế vào đầu <code>voice-cases.tsv</code>; <code>t53</code> giữ 1 vì nó là <b>cổng khác</b>.</li>
+<li><b>2026-09-16 · quyết định</b> — <b>Tách tệp theo VAI, không theo dòng</b> (trần 500): <code>VoiceSessionTurns.kt</code> = "các lượt nghe NỐI của một phiên" (hỏi lại · hội thoại · cổng xác nhận) dưới dạng <b>hàm mở rộng</b> của chính <code>VoiceSession</code> — một lớp riêng sẽ phải mang bản sao của <code>generation</code>/<code>capturing</code>/<code>confirmOpen</code>, đúng ba trường mà ba lượt soát trước đã phải vá. <code>SettingsSectionsProfiles.kt</code> = một-tệp-một-nhóm như nav/cast/keys/bars.</li>
+<li><b>2026-09-16 · bug cũ lộ ra</b> — <code>VoiceEngine.copyBpeVocabAsset</code> dựng tên asset từ <code>model.id</code> nên trường <code>SherpaModel.bpeVocab</code> <b>chưa ai đọc</b>. Sửa để nó đọc <code>bpeVocab</code>: int8 và fp32 nay dùng chung một bảng 55 KB thay vì đóng hai bản giống hệt vào APK.</li>
+<li><b>2026-09-16 · bug cũ lộ ra</b> — <code>SherpaModelCatalog.byId</code> lùi về <code>ZIPFORMER_VI</code> <b>viết cứng</b>, tức <code>DEFAULT_ID</code> là một hằng không ai đọc. Nay <code>byId</code> lùi về <code>default()</code> ⇒ đổi mặc định là đổi hành vi thật.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-16</b>: chưa có pass review độc lập. Tự kiểm đã chạy: 5 module test xanh (0 đỏ mới) · grep call-site cho cả 7 cơ chế mới (≥1 chỗ gọi production mỗi cái) · trần 500 dòng xanh cho mọi tệp chạm tới · E2E máy ảo T1 67/68 · T2 22/25. <b>Chờ</b>: senior review (Opus, rule global §5) + security scan trước commit (§6).</li>
+<li><b>Pass 1 — 2026-09-16 (Opus senior review)</b> — verdict <b>APPROVED off-car</b> sau khi vá. <b>Scope</b>: 15/15 requirement R1–R15 có mã + call site production + bài canh; ba lỗ Pass 0 đã đóng (E2E mất lớp canh CONFIRM · ảnh chụp nhãn chip · hai tệp vượt trần 500).
+<ul>
+<li><b>[P1] Hai bộ đếm của V3 không bao giờ về 0.</b> <code>VoiceSession</code> sống theo <b>tiến trình</b>, còn <code>followUps</code> chỉ tăng và <code>clarifyRound</code> chỉ về 0 ở đường một câu được hiểu ⇒ một phiên dùng hết 5 lượt hội thoại tắt hội thoại cho <b>mọi phiên sau tới hết chuyến</b>; một phiên chết ở lượt hỏi thứ 2 tắt luôn đường hỏi-lại. Cả hai <b>im lặng</b> — đúng họ lỗi <code>CastShell.evictVd</code> (CLAUDE.md §8): mã còn nguyên, chỉ là không bao giờ chạy. <b>Vá</b>: đặt lại cả hai ở <code>start()</code>; khoá bằng <code>VoiceFastNaturalWiringContractTest</code>.</li>
+<li><b>[P2] E2E mất lớp canh CONFIRM</b> (Pass 0 tự ghi ở §9). <b>Vá</b>: lệnh cầu kiểm thử <code>prefs_set</code> — <b>danh sách trắng 5 khoá</b> (<code>voice_confirm_ids</code> · <code>voice_ask_aloud</code> · <code>voice_follow_up_ms</code> · <code>voice_mic_source</code> · <code>top_strip_labels</code>) khai ở <code>:core</code> và kiểm ngay ở <b>tầng phân tích</b> (receiver <code>exported=true</code> ⇒ không mở cửa ghi khoá tuỳ ý); <code>top_strip_labels</code> đi qua <b>đúng</b> lambda mà ô tích trong Cài đặt đi (<code>TestBridgeHooks.setTopStripLabels</code>), không ghi thẳng prefs dưới chân màn hình. Bộ ca có cột <code>prefs</code> mới; harness đặt trước ca, dọn sau ca, và dọn cả 5 khoá trong <code>trap</code> (CLAUDE.md §5).</li>
+<li><b>[P2] <code>followUp</code> thiếu cổng "micro đang mở".</b> <code>speakLines</code> bỏ qua lượt đọc ở vài ca ⇒ <code>onDone</code> bắn <b>ngay</b>, đồng bộ; <code>confirmOpen</code> chỉ bắt ca *"hộp xác nhận sắp mở"*. <b>Vá</b>: thêm <code>VoiceSession.micOpen()</code> (chỉ-đọc) vào danh sách cổng.</li>
+<li><b>[P2] <code>VoiceClarify.giveUp()</code> không bao giờ chạy ở đường hết trần.</b> <code>ask()</code> trả <code>null</code> ở <b>hai</b> ca khác hẳn nhau và Pass 0 gộp cả hai về <code>VoiceReply.unknown</code> ⇒ người lái nói ba lần, nghe ba câu cùng nghĩa. <b>Vá</b>: <code>clarifyGaveUp()</code> phân biệt hai ca bằng chính luật của <code>:core</code> (<code>ask(only, 0)</code>), không chép bảng lý do thứ hai.</li>
+<li><b>[P2] DEBT-500 đóng hai tệp</b>: <code>WorkspaceView</code> 533 → <b>463</b> (tách <code>WorkspaceViewCards.kt</code> — năm hàm dựng view con, không giữ trạng thái) · <code>WorkspacePrefs</code> 509 → <b>455</b> (tách <code>WorkspacePrefsLang.kt</code> — nhóm duy nhất KHÔNG lưu vào <code>kachi_workspace</code>). Ba bài canh trỏ vào chúng được <b>nối chuỗi cả hai tệp</b> (locale · theme · type-scale) nên phép "đúng MỘT chỗ ghi" nay <b>phủ rộng hơn</b> trước, không phải được nới.</li>
+<li><b>[P3]</b> Hộp đổi tên hồ sơ điền sẵn <b>nhãn đã dịch</b> ⇒ máy tiếng Anh bấm OK mà không sửa gì sẽ đổi khoá gốc <code>"Mặc định"</code> → <code>"Default"</code> và mất bản dịch vĩnh viễn (đúng ca KDoc <code>ProfileNames.display</code> cấm). <b>Vá</b>: không sửa gì ⇒ không làm gì. · <b>[P3]</b> <code>"…sau $VoiceSession.ASK_ALOUD_CAP_MS ms"</code> in ra đối tượng companion — sửa thành <code>${…}</code>. · <b>[P3]</b> hai khối KDoc mồ côi trong <code>VoiceSessionTurns.kt</code> — xoá.</li>
+<li><b>Tech freshness</b>: không thêm/nâng thư viện nào trong lượt soát. Mặt tiếp xúc bên ngoài vẫn là Android SDK 29 (<code>AudioRecord</code> · <code>MediaRecorder.AudioSource</code> · <code>VirtualDisplay.resize</code> · <code>SharedPreferences</code> · <code>WindowInsets.systemWindowInset*</code>) + sherpa-onnx AAR đã ghim. <code>systemWindowInset*</code> deprecated từ API 30 nhưng <b>đúng</b> API cho <code>compileSdk</code>/ROM của xe (Android 10/12); đường thay (<code>WindowInsets.getInsets(Type.systemBars())</code>) chỉ có từ API 30 ⇒ giữ, ghi lại ở đây thay vì đổi.</li>
+<li><b>Còn lại 🚗</b>: [P3] <code>VoiceEndpointer</code> đo nền trong 300 ms đầu — nếu người lái <b>đã nói</b> ngay lúc micro mở thì nền cao ⇒ ngưỡng cao ⇒ không bao giờ chốt ⇒ <b>lùi về đúng trần 8 s như 1.65</b> (an toàn, không cắt lời, chỉ là không nhanh hơn). Cố ý <b>không</b> kẹp trần nền trong lượt này: mọi cách kẹp đều đẩy ngưỡng xuống, tức đẩy về phía <i>cắt lời người lái</i> — hướng sai theo chính KDoc của lớp. Chốt bằng OQ5 (10 câu ở playbook §6g, đọc dòng <code>ngắt câu:</code>), rồi mới chỉnh hằng bằng số đo thật.</li>
+</ul></li>
+</ul>
+
+</div></body>
+</html>

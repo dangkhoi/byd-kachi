@@ -65,6 +65,13 @@ object VoiceSynonyms {
         // kèm dấu *"chưa kiểm trên xe"* (`windows_all` ở mức OVERDRIVE). Đoán một kính cụ thể mới là đoán mò.
         "windows_all" to listOf("het kinh", "toan bo kinh", "moi kinh", "every window",
             "kinh", "cua so", "cac cua so", "windows"),
+        // ═══ V3 · R10 — *"mở kính lái"*, câu [ĐO xe 2026-09-16] mà máy hiểu SAI ═══════════════════════
+        // Owner nói *"mở kính lái"*; sherpa nghe **đúng** (`"mở kính lái a lô một hai ba…"`), nhưng từ vựng
+        // không có cụm nào bắt đầu bằng `kinh lai` ⇒ luật dãy-dài-nhất chỉ còn `kinh` ⇒ trỏ về nút GỘP
+        // `windows_all` ⇒ hộp *"Hạ hết 4 kính?"*. Tức một câu chỉ về MỘT cửa kính lại thành lệnh cho bốn.
+        // Bốn cách nói dưới đây đều về đúng một cửa: kính bên người lái (`window` = kính lái nhị phân).
+        // `windows_all` GIỮ `"kinh"`/`"cua so"` — owner chốt cùng ngày: nói trống thì 4 kính chạy luôn, không hỏi.
+        "window" to listOf("kinh lai", "cua kinh lai", "kinh tai xe", "cua so lai"),
         "win_lf" to listOf("kinh ben lai", "kinh ghe lai"),
         "win_rf" to listOf("kinh ben phu", "kinh ghe phu"),
         "drive_mode" to listOf("che do chay", "kieu lai"),

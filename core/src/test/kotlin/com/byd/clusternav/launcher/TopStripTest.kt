@@ -267,4 +267,64 @@ class TopStripTest {
         val rest = TopStripConfig.picks(cfg).drop(1).flatMap { it.picks }.map { it.id }
         assertTrue(hidden !in rest, "mã đã ẩn chỉ được hiện ở khối 'đang bật', không phải một lời mời đặt thêm")
     }
+
+    // ══ V3 · R14 — CÔNG TẮC NHÃN CHIP (owner 2026-09-16) ═════════════════════════════════════════════════
+
+    /**
+     * Owner: *"chỉ hiện icon và chỉ số thôi, text nhiều chật chỗ, cho cái toggle hiện text label"*.
+     *
+     * Thử làm nó ĐỎ: bỏ `if (labels)` ở `TopStripChips.chip` ⇒ nửa sau của bài này đỏ ngay.
+     */
+    @Test
+    fun `tat nhan thi chip chi con icon va gia tri`() {
+        val on = TopStripChips.render(TopStripConfig.DEFAULT, full)
+        val off = TopStripChips.render(TopStripConfig.DEFAULT.copy(showLabels = false), full)
+        assertEquals(listOf("PM2.5 · Tốt", "24°C ngoài", "82% · 418 km"), on.map { it.text })
+        assertEquals(listOf("Tốt", "24°C", "82% · 418 km"), off.map { it.text })
+        // Icon KHÔNG được mất — nó là thứ duy nhất còn nói "chip này về cái gì".
+        assertEquals(on.map { it.icon }, off.map { it.icon })
+    }
+
+    @Test
+    fun `chip DATUM thuong cung bo nhan, giu nguyen don vi`() {
+        val cfg = TopStripConfig(listOf("tyre_p_fl"))
+        val st = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 240.0))
+        val on = TopStripChips.render(cfg, st).single().text
+        val off = TopStripChips.render(cfg.copy(showLabels = false), st).single().text
+        assertTrue(on.contains(" · "), "bật nhãn: '<nhãn ngắn> · <giá trị>' — nhận '$on'")
+        assertEquals(on.substringAfter(" · "), off, "tắt nhãn giữ NGUYÊN phần giá trị + đơn vị")
+    }
+
+    /**
+     * Câu cho trình đọc màn hình **luôn đầy đủ**, kể cả khi tắt nhãn.
+     *
+     * Tắt nhãn là một quyết định về chỗ trên thanh, không phải về nội dung: người không nhìn được màn hình mà
+     * nghe đúng hai chữ *"24 độ C"* thì mất hẳn thông tin *"của cái gì"*.
+     */
+    @Test
+    fun `tat nhan KHONG lam cut cau cho trinh doc man hinh`() {
+        val on = TopStripChips.render(TopStripConfig.DEFAULT, full)
+        val off = TopStripChips.render(TopStripConfig.DEFAULT.copy(showLabels = false), full)
+        assertEquals(on.map { it.desc }, off.map { it.desc })
+    }
+
+    @Test
+    fun `co nhan KHONG nam trong chuoi ma — chuoi cu tren dia van doc duoc`() {
+        // Chuỗi `top_strip` đã nằm trên đĩa của xe đang chạy; nhét thêm một ô lạ vào là bản cũ dựng chip rỗng.
+        val cfg = TopStripConfig(listOf(TopStripConfig.PM25), showLabels = false)
+        assertEquals("chip_pm25", TopStripConfig.encode(cfg), "cờ nhãn KHÔNG được lọt vào chuỗi mã")
+        assertFalse(TopStripConfig.decode("chip_pm25", showLabels = false).showLabels)
+        assertTrue(TopStripConfig.decode("chip_pm25").showLabels, "mặc định là CÓ nhãn (giữ nguyên bản cũ)")
+        // Chuỗi hỏng/rỗng vẫn phải giữ lựa chọn nhãn — không thì một dòng prefs hỏng kéo theo cả cách vẽ.
+        assertFalse(TopStripConfig.decode(null, showLabels = false).showLabels)
+        assertFalse(TopStripConfig.decode("", showLabels = false).showLabels)
+        assertFalse(TopStripConfig.decode("ma_khong_ton_tai", showLabels = false).showLabels)
+    }
+
+    @Test
+    fun `bat tat mot chip KHONG lam mat lua chon nhan`() {
+        val cfg = TopStripConfig(listOf(TopStripConfig.PM25), showLabels = false)
+        assertFalse(cfg.setEnabled(TopStripConfig.TEMP, true).showLabels)
+        assertFalse(cfg.setEnabled(TopStripConfig.PM25, false).showLabels)
+    }
 }

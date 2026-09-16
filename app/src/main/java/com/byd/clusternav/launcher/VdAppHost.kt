@@ -119,12 +119,40 @@ class VdAppHost(
                     maybeLaunch()
                 } else {
                     v.surface = h.surface
-                    v.resize(w, ht, slotDensity(w, ht))   // R5: cỡ ô đổi ⇒ tính lại đòn bẩy mật độ theo cạnh ngắn mới
-                    dispW = w; dispH = ht          // B4: giữ cỡ VD đồng bộ để map toạ độ đúng sau resize
+                    resize(w, ht)
                 }
             }
             override fun surfaceDestroyed(h: SurfaceHolder) { vd?.surface = null }
         })
+    }
+
+    /**
+     * ═══ V3 · R15 — ĐỔI CỠ màn ảo của ô, **một đường duy nhất** ═══════════════════════════════════════════
+     *
+     * ## Bệnh nó chữa — [ĐO xe 2026-09-16] `carlog-0916/slot-insets-bug.png`
+     * Lúc khởi động, khi thanh trên/dưới của ROM còn hiện, ô được đo theo khung **đã bị co**: màn ảo dựng đúng
+     * cỡ hụt ấy, app trong ô (YouTube) bố trí theo nó, và khi thanh ẩn đi thì ô rộng ra nhưng ảnh trong ô vẫn
+     * giữ khung cũ ⇒ **dải xám ở trên**. Bấm Home lần nữa (lúc thanh đã ẩn) thì đúng.
+     *
+     * ## Vì sao là một hàm có TÊN, không phải ba dòng trong `surfaceChanged`
+     * Từ 1.66 có **hai** thời điểm biết được cỡ ô đã đổi: `surfaceChanged` (đường cũ) và lượt bố trí lại do
+     * inset đổi ([WorkspaceView] — đường mới). Hai chỗ tự viết ba dòng giống nhau là bản sao thứ hai của một
+     * phép tính có **đòn bẩy mật độ** bên trong; một bên quên [slotDensity] là ô đó hiện chữ to gấp rưỡi ô bên
+     * cạnh mà không ai hiểu vì sao.
+     *
+     * **Trùng cỡ ⇒ không làm gì**: đây là điều khiến đường mới không phải "cơ chế thứ hai" mà chỉ là một cái
+     * kích thêm — gọi thừa bao nhiêu lần cũng vô hại, và `VirtualDisplay.resize` thì KHÔNG rẻ (nó đẩy một lượt
+     * đổi cấu hình vào app đang chạy trong ô).
+     */
+    fun resize(w: Int, h: Int) {
+        if (w <= 0 || h <= 0) return
+        if (w == dispW && h == dispH) return
+        val v = vd ?: return
+        Log.i(TAG, "[slot-resize] ô $slot ${dispW}x$dispH → ${w}x$h")
+        runCatching { v.resize(w, h, slotDensity(w, h)) }
+            .onFailure { Log.w(TAG, "[slot-resize] ô $slot hỏng", it) }
+        // B4: giữ cỡ VD đồng bộ để map toạ độ chạm đúng sau resize.
+        dispW = w; dispH = h
     }
 
     /**

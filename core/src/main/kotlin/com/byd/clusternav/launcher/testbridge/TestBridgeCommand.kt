@@ -28,6 +28,8 @@ package com.byd.clusternav.launcher.testbridge
  * @property halArgs đối số int cho `hal`, phân tách bằng dấu phẩy (`"1"` · `"1,2"`). Getter 0-đối để rỗng.
  * @property op `get` (đọc getter) hay `set` (ghi named-method) cho `hal`; rỗng ⇒ suy theo tiền tố `get` của
  *   [method]. `set` là lượt GHI thân xe nên đi qua đúng cổng CONFIRM như `ctl` (cần `--ez auto_confirm true`).
+ * @property key tên khoá prefs cho lệnh `prefs_set`, đã kiểm nằm trong [TestBridgeCommands.WRITABLE_PREFS_KEYS].
+ *   Giá trị đi trong [text] (một chuỗi cho MỌI kiểu — xem KDoc [TestBridgeCommands.PREFS_SET]).
  */
 data class TestBridgeCommand(
     val name: String,
@@ -44,6 +46,7 @@ data class TestBridgeCommand(
     val method: String = "",
     val halArgs: String = "",
     val op: String = "",
+    val key: String = "",
 )
 
 /** Kết quả phân tích: hoặc một lệnh dùng được, hoặc một **mã lỗi ASCII** cho script đọc. */
@@ -104,6 +107,9 @@ object TestBridgeCommands {
     /** `--es op <get|set>` — kiểu thao tác cho lệnh [HAL] (tuỳ chọn; vắng ⇒ suy theo tiền tố `get`). */
     const val EXTRA_OP = "op"
 
+    /** `--es key <tên khoá>` — khoá prefs cho lệnh [PREFS_SET] (bắt buộc, phải nằm trong [WRITABLE_PREFS_KEYS]). */
+    const val EXTRA_KEY = "key"
+
     /**
      * `--ez auto_confirm true` — **chỉ** có tác dụng khi chế độ kiểm thử đang bật (bản thân cả cầu này cũng vậy).
      *
@@ -148,6 +154,56 @@ object TestBridgeCommands {
      */
     const val SWEEP = "sweep"
 
+    /**
+     * V3 · R11(c) — đổ **bảng feature-id thật của chiếc xe này** (`BYDAutoFeatureIds` + `BYDAutoDeviceFeaturesMap`)
+     * ra JSON trên thẻ. Chỉ-đọc ⇒ không cần confirm, không đối số.
+     *
+     * Sinh ra sau [ĐO nguồn fw-dl3 2026-09-16]: hằng feature-id **không cố định** (gán theo `isCanFD`/`isToyota`
+     * lúc nạp lớp), nên bản decompile chỉ cho biết các *khả năng* — số THẬT chỉ chiếc xe biết. Một lượt lệnh này
+     * đổi *"mỗi dòng bind ngờ vực = một lượt lên xe"* thành *"tra off-car trong tệp JSON"*.
+     */
+    const val FEATMAP = "featmap"
+
+    /**
+     * ═══ [SOÁT Pass 1 · P2] GHI một khoá prefs trong **danh sách trắng** — chỉ chế độ kiểm thử ═══════════
+     *
+     * `am broadcast … --es cmd prefs_set --es key voice_confirm_ids --es text "control:door"`
+     *
+     * ## Vì sao lệnh này phải tồn tại
+     * 1.66 đổi mặc định của cổng xác nhận sang *"không hỏi gì cả"*, và tập việc-phải-hỏi (`voice_confirm_ids`)
+     * do người dùng tích trong Cài đặt. Cầu kiểm thử **không có đường ghi prefs** ⇒ 8 ca `confirm=1` của
+     * `voice-cases.tsv` phải bị hạ về 0 và **cả cổng an toàn quan trọng nhất của tính năng mất luôn lớp canh
+     * E2E** (ghi lại ở §9 của spec: *"cầu kiểm thử không có đường ghi prefs"*). Một lệnh ghi có danh sách trắng
+     * trả lại lớp canh ấy mà không mở một cửa chung vào SharedPreferences.
+     *
+     * ## Ba ràng buộc, và không cái nào là trang trí
+     *  1. **Danh sách trắng cứng** ([WRITABLE_PREFS_KEYS]) — khai ở `:core`, kiểm ngay trong [parse]. Không có
+     *     đường ghi *"khoá bất kỳ"*: receiver này `exported=true` (mọi app trên xe bắn vào được — KDoc
+     *     `KachiTestBridge`), nên một lệnh ghi tuỳ ý là một đường sửa cấu hình xe cho bất cứ app nào, ngay cả khi
+     *     nó vẫn phải qua công tắc chế độ kiểm thử.
+     *  2. **Chỉ khoá của đường GIỌNG NÓI + nhãn chip** — năm khoá, tất cả đều đảo lại được bằng một cú chạm trong
+     *     Cài đặt. Không có khoá nào chạm tới cast/cụm/phím vô-lăng.
+     *  3. **Giá trị là MỘT CHUỖI** cho mọi kiểu (`"1"`/`"0"` cho công tắc, số cho `int`, danh sách ngăn phẩy cho
+     *     tập). Tầng thi hành mới biết kiểu thật của từng khoá; nhét ba loại extra vào đây là ba đường phân tích
+     *     cho cùng một việc.
+     */
+    const val PREFS_SET = "prefs_set"
+
+    /**
+     * Khoá prefs mà [PREFS_SET] được phép ghi — **danh sách trắng**, xem KDoc [PREFS_SET] ràng buộc (1).
+     *
+     * Bốn khoá đầu là khoá THEO XE của đường giọng nói (`PrefsVoiceV3.kt` + `Prefs.voiceAskAloud`); khoá cuối là
+     * công tắc nhãn chip **theo hồ sơ** (`WorkspacePrefs.setTopStrip`) — đường duy nhất đo được R14 bằng máy thay
+     * vì bằng một ảnh chụp màn hình.
+     */
+    val WRITABLE_PREFS_KEYS: Set<String> = setOf(
+        "voice_confirm_ids",
+        "voice_ask_aloud",
+        "voice_follow_up_ms",
+        "voice_mic_source",
+        "top_strip_labels",
+    )
+
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────
 
     const val ERR_NO_CMD = "no_cmd"
@@ -157,6 +213,9 @@ object TestBridgeCommands {
     const val ERR_MISSING = "missing_extra:"
     const val ERR_BAD_SLOT = "bad_slot"
     const val ERR_BAD_PREFS_FILE = "bad_prefs_file"
+
+    /** `--es key` của [PREFS_SET] không nằm trong [WRITABLE_PREFS_KEYS] — nối tên khoá để script biết gõ sai đâu. */
+    const val ERR_BAD_PREFS_KEY = "bad_prefs_key:"
 
     /**
      * Một lệnh: cần extra gì, nhận thêm extra gì.
@@ -185,6 +244,10 @@ object TestBridgeCommands {
         Spec(CTL, listOf(EXTRA_ID), listOf(EXTRA_V, EXTRA_AUTO_CONFIRM)),
         Spec(HAL, listOf(EXTRA_METHOD), listOf(EXTRA_DEV, EXTRA_HAL_ARGS, EXTRA_OP, EXTRA_AUTO_CONFIRM)),
         Spec(SWEEP, emptyList(), listOf(EXTRA_OP)),
+        Spec(FEATMAP, emptyList()),
+        // `text` là **tuỳ chọn** có chủ ý: vắng ⇒ giá trị rỗng ⇒ *"trả khoá về mặc định"* (tập rỗng / tắt), đúng
+        // thứ `trap` của harness cần để dọn sau mỗi ca mà không phải biết mặc định của từng khoá.
+        Spec(PREFS_SET, listOf(EXTRA_KEY), listOf(EXTRA_TEXT)),
     )
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
@@ -222,6 +285,11 @@ object TestBridgeCommands {
         val file = (extras[EXTRA_FILE] as? String)?.trim().orEmpty()
         if (EXTRA_FILE in spec.required && file !in prefsFiles) return TestBridgeParse.Err(ERR_BAD_PREFS_FILE)
 
+        // Danh sách trắng kiểm ở TẦNG PHÂN TÍCH, không ở tầng thi hành: một khoá lạ không bao giờ được dựng
+        // thành một lệnh "chạy được" rồi mới bị từ chối — xem KDoc [PREFS_SET] ràng buộc (1).
+        val key = (extras[EXTRA_KEY] as? String)?.trim().orEmpty()
+        if (name == PREFS_SET && key !in WRITABLE_PREFS_KEYS) return TestBridgeParse.Err(ERR_BAD_PREFS_KEY + key)
+
         return TestBridgeParse.Ok(
             TestBridgeCommand(
                 name = name,
@@ -239,6 +307,7 @@ object TestBridgeCommands {
                 method = (extras[EXTRA_METHOD] as? String).orEmpty().trim(),
                 halArgs = (extras[EXTRA_HAL_ARGS] as? String).orEmpty().trim(),
                 op = (extras[EXTRA_OP] as? String).orEmpty().trim().lowercase(),
+                key = key,
             ),
         )
     }

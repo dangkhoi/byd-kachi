@@ -60,9 +60,25 @@ object VoiceModelStore {
         data class Failed(val reason: String) : Step
     }
 
-    /** Model NGHE đang chọn (A/B) — lưu ở prefs riêng, mặc định bản license-sạch tải-được. */
-    fun selected(ctx: Context): SherpaModelCatalog.SherpaModel =
-        SherpaModelCatalog.byId(prefs(ctx).getString(KEY_MODEL, null))
+    /**
+     * Model NGHE đang chọn (A/B) — lưu ở prefs riêng.
+     *
+     * ## ⚠ V3 · R6 — máy ĐÃ cài fp32 thì GIỮ fp32, dù mặc định đã đổi sang int8
+     * 1.66 đổi [SherpaModelCatalog.DEFAULT_ID] sang bản int8 (74 MB thay 266 MB — lý do ở KDoc
+     * [SherpaModelCatalog.ZIPFORMER_VI_INT8]). Nếu ở đây chỉ trả mặc định thì mọi xe đang chạy tốt với fp32 sẽ
+     * **mất mô hình trong một lượt cập nhật**: `isReady` soi thư mục của mô hình đang chọn, thấy trống, và người
+     * lái bấm mic ra câu *"chưa tải mô hình"* — kèm một lượt tải 74 MB qua 4G mà không ai xin.
+     *
+     * ⇒ Khi người dùng **chưa từng chọn** (pref trống): mô hình nào **đã nằm trên đĩa** thì dùng nó; không có cái
+     * nào thì mới lấy mặc định. Không ghi pref ở đây — lượt ghi duy nhất vẫn là [select] (một cú chạm của người
+     * dùng), để đường này không lặng lẽ chốt một lựa chọn thay họ.
+     */
+    fun selected(ctx: Context): SherpaModelCatalog.SherpaModel {
+        prefs(ctx).getString(KEY_MODEL, null)?.takeIf { it.isNotBlank() }?.let { return SherpaModelCatalog.byId(it) }
+        val default = SherpaModelCatalog.default()
+        if (isReady(ctx, default)) return default
+        return SherpaModelCatalog.ALL.firstOrNull { isReady(ctx, it) } ?: default
+    }
 
     /** Đổi model đang chọn (Cài đặt A/B). Không tải — chỉ ghi lựa chọn; lần bật mic sau nạp bản mới nếu đã cài. */
     fun select(ctx: Context, id: String) {

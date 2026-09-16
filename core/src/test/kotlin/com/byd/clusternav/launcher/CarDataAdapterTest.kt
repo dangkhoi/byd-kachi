@@ -29,9 +29,13 @@ class CarDataAdapterTest {
                 features = mapOf(
                     1031798832 to "24",    // cabin_temp
                     305135676 to "1",      // esp_state
-                    339738656 to "120",    // motor_power (fast)
+                    339738656 to "120",    // motor_power (fast) — số của xe giả, tra qua TÊN ở dưới
                     535834664 to "1",      // speed_limit_warning (fast)
                 ),
+                // V3 · R11 (1.66): `motor_power` nay bind theo **TÊN HẰNG** (`ENGINE_POWER`) vì số thật đổi theo
+                // cấu hình xe ([ĐO nguồn fw-dl3]: 339738656 khi CanFD · 353370144 Toyota · 1033203762 còn lại).
+                // Xe giả ở đây khai đúng một cấu hình; đường đọc phải đi qua phép tra tên rồi mới tới số.
+                featureNames = mapOf("Engine.ENGINE_POWER" to 339738656),
             ),
         ),
     )

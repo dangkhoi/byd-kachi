@@ -54,6 +54,14 @@ class SettingsDeps(
     val onWallpaper: (WallpaperPrefs) -> Unit,
     val onTopStrip: (String, Boolean) -> Unit,
     /**
+     * V3 · R14 — đặt **cả** cấu hình thanh trên một lượt (nay có hai phần: danh sách chip + cờ nhãn).
+     *
+     * Cùng lập luận [onDockConfig]: [onTopStrip] chỉ diễn tả được *"bật/tắt một mã"*, không diễn tả được
+     * *"đổi cách vẽ cả hàng"*. Thêm một cổng `onTopStripLabels(Boolean)` riêng là mở đường thứ hai tới cùng
+     * một chỗ lưu — mà chỗ lưu ấy ghi hai khoá trong MỘT lượt (`WorkspacePrefs.setTopStrip`).
+     */
+    val onTopStripConfig: (TopStripConfig) -> Unit,
+    /**
      * T6 · R-UI (m) — mở **bộ chọn của ngăn kéo** ở chế độ chọn nút thanh xe.
      * `(tập đang bật, gọi lại khi Áp dụng)`; xem hợp đồng ở [DrawerController.openDockPicker].
      */
@@ -97,6 +105,8 @@ class SettingsDeps(
      */
     val onDuplicateProfile: (String) -> Unit,
     val onDeleteProfile: (String) -> Unit,
+    /** V3 · R13 (owner E5) — đổi tên hồ sơ: `(tên cũ, tên mới)`. Phép kiểm ở `:core` ([ProfileRename]). */
+    val onRenameProfile: (String, String) -> Unit,
     /**
      * S4 · R6 — hồ sơ sẽ được áp lúc **nổ máy**; `null` = *"hồ sơ dùng gần nhất"* (mặc định).
      *

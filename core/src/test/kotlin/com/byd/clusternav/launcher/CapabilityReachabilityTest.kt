@@ -103,8 +103,13 @@ class CapabilityReachabilityTest {
     @Test
     fun `moi NUT deu dat duoc`() {
         val reach = reachable()
-        val missing = ControlRegistry.ALL.map { it.id }.filter { it !in reach }
+        // V3 · R12 (1.66): xem chú thích cùng ca ở `CapabilityPickerTest` — mã cố ý ẩn (`hood`: xe không có nắp
+        // ca-pô điện) không có đường ĐẶT MỚI, nhưng ô ai đã đặt vẫn dựng được (`CapabilityCatalog.pick`).
+        val hidden = CapabilityCatalog.HIDDEN_FROM_PICKER.keys
+        val missing = ControlRegistry.ALL.map { it.id }.filter { it !in reach && it !in hidden }
         assertTrue(missing.isEmpty(), "nút không có đường đặt vào ô: $missing")
+        // Vẫn phải tra ra được — ẩn khỏi màn CHỌN, không phải xoá khỏi danh mục.
+        hidden.forEach { id -> assertTrue(CapabilityCatalog.pick(id) != null, "mã ẩn $id phải còn tra được") }
     }
 
     @Test

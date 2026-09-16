@@ -63,6 +63,12 @@ internal class TestBridgeHooks(
     val control: (id: String, primary: Int) -> Boolean,
     val switchProfile: (String) -> Unit,
     val setPreset: (LayoutPreset) -> Unit,
+    /**
+     * V3 · R14 — bật/tắt **nhãn chip** thanh trên, qua ĐÚNG lambda mà ô tích trong Cài đặt đi
+     * (`HomeViewModel.setTopStrip`). Không ghi thẳng `WorkspacePrefs`: khoá này theo **hồ sơ** và đang nằm trong
+     * `HomeUiState` mà màn hình vẽ ⇒ ghi dưới chân màn hình là một phép đo nói một đằng, màn hiện một nẻo.
+     */
+    val setTopStripLabels: (Boolean) -> Unit,
     /** Mở một phiên nghe thật — CÙNG đường mà nút mic trên thanh trên dùng. */
     val listen: () -> Unit,
     /** Kênh shell (dadb) đã dò được chưa — chỉ ĐỌC, cầu này không tự chạy lệnh shell nào. */
@@ -164,6 +170,9 @@ internal fun Activity.attachTestBridge(
             control = { id, primary -> carControl.actByKind(id, primary) },
             switchProfile = { name -> viewModel.switchProfile(name) },
             setPreset = { preset -> viewModel.setPreset(preset) },
+            setTopStripLabels = { on ->
+                viewModel.setTopStrip(viewModel.uiState.value.topStrip.copy(showLabels = on))
+            },
             listen = { voice().start() },
             shellUsable = { shell() != null },
             bridge = { clusterNavBridge() },

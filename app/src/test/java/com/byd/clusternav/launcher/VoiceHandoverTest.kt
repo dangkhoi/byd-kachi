@@ -8,6 +8,7 @@ import com.byd.clusternav.launcher.voice.VoiceReply
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import com.byd.clusternav.launcher.voice.VoiceRiskTable
 
 /**
  * ═══ V1.1 · HÀNH VI của hai đường mới — Ô và APP ĐÍCH ════════════════════════════════════════════════════════
@@ -57,6 +58,10 @@ class VoiceHandoverTest {
             onSwitchProfile = {},
             onListen = {},
             confirm = { q, y, n -> asked += q; yes += y; no += n },
+            // ⚠ V3 · R7 (1.66): mặc định **không hỏi gì cả** (owner 2026-09-16). Bài này canh CƠ CHẾ của
+            // cổng hỏi-lại, nên nó bật MỌI mã hỏi-được — không thì mọi ca dưới đây chạy thẳng và bài
+            // trở thành một bài canh cho chính cái mặc định, không phải cho cổng.
+            confirmIds = { VoiceRiskTable.askableIds().toSet() },
             say = { said += it },
             assignAppToSlot = { slot, pkg -> assigned += slot to pkg; true },
             sendToApp = { h -> sent += h; true },

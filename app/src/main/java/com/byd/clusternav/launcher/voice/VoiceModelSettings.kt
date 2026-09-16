@@ -54,6 +54,9 @@ class VoiceModelSettings(
         modelRow(body)
         ttsRow(body)
         speakToggles(body)
+        // V3 · R7 — mục *"Hỏi xác nhận trước khi chạy"* + nguồn micro. Lớp RIÊNG (trần 500 dòng, CLAUDE.md §4.1)
+        // nhưng dựng **ở đây** để trang Cài đặt vẫn có đúng một khối "Giọng nói" liền mạch.
+        VoiceConfirmSettings(context, rows, deps).build(body)
     }
 
     // ── Cái TAI: mô hình nhận dạng (R9) ──────────────────────────────────────────────────────────

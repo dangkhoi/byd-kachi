@@ -346,7 +346,7 @@ class VoiceCommandWiringContractTest {
     @Test
     fun `hoi lai ve muon sau khi phien da qua thi khong mo them luot nghe`() {
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
-        val fn = SourceRoots.body(session, "private fun execute(")
+        val fn = SourceRoots.body(session, "internal fun execute(")
         assertTrue("val my = generation.get()" in fn, "phải ghim THẾ HỆ của phiên tại lúc thi hành")
         assertTrue(
             "if (stale(my) || overlay == null) onNo() else confirm(question, onYes, onNo)" in fn,
@@ -365,8 +365,11 @@ class VoiceCommandWiringContractTest {
      */
     @Test
     fun `cau hoi xac nhan doc xong moi mo micro, va het han thi van mo`() {
+        // ⚠ 1.66 — các lượt nghe NỐI của một phiên (hỏi lại R8 · hội thoại R9 · cổng xác nhận) đã rời sang
+        // `VoiceSessionTurns.kt` dưới dạng hàm mở rộng của chính [VoiceSession] (trần 500 dòng, CLAUDE.md §4.1).
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
-        val fn = SourceRoots.body(session, "private fun askAloudThenListen(")
+        val turns = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt")
+        val fn = SourceRoots.body(turns, "internal fun VoiceSession.askAloudThenListen(")
         assertTrue(fn.contains("speaker.speak(question) { openMic() }"),
             "micro phải mở TRONG mốc 'đọc xong' của chính câu hỏi, không phải ngay sau khi xếp câu")
         assertTrue(fn.contains("ASK_ALOUD_CAP_MS"),
@@ -391,8 +394,14 @@ class VoiceCommandWiringContractTest {
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
         assertTrue(session.contains("VoiceSpeakerRouter(ctx) { Prefs.voicePreferOffline(ctx) }"),
             "công tắc 'ưu tiên giọng offline' phải truyền dạng lambda để đọc lại ở MỖI câu")
-        assertTrue(SourceRoots.body(session, "private fun speakLines(").contains("if (!speakReplies()) return"),
-            "tắt 'Đọc phản hồi' phải chặn TRƯỚC khi gộp/tổng hợp câu, không phải sau")
+        // ⚠ 1.66: [speakLines] nay phải gọi `onDone` ở MỌI đường thoát (hội thoại R9 treo trên mốc đó), nên cổng
+        // không còn là một `return` trần. Thứ phải canh vẫn y nguyên — **THỨ TỰ**: công tắc chặn TRƯỚC phép gộp,
+        // vì một lượt Piper tốn hàng trăm ms CPU trên đầu xe cho một câu không ai nghe.
+        val body = SourceRoots.body(session, "internal fun speakLines(")
+        val gate = body.indexOf("!speakReplies()")
+        val merge = body.indexOf("VoiceFeedbackPhrase.merge(")
+        assertTrue(gate in 0 until merge, "tắt 'Đọc phản hồi' phải chặn TRƯỚC khi gộp/tổng hợp câu, không phải sau")
+        assertTrue(body.contains("onDone()"), "mọi đường thoát của speakLines phải gọi onDone — hội thoại chờ mốc đó")
         val settings = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt")
         assertTrue(settings.contains("deps.bridge.setVoiceSpeakReplies(") &&
             settings.contains("deps.bridge.setVoicePreferOffline("),
@@ -557,9 +566,11 @@ class VoiceCommandWiringContractTest {
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
         assertTrue(session.contains("MAX_LISTEN_MS = 8_000L"), "phải có trần cứng cho một phiên nghe")
         assertTrue(session.contains("capture.listen(it, MAX_LISTEN_MS"), "và trần đó phải được TRUYỀN vào vòng nghe")
-        assertTrue(session.contains("answerConfirm(answer == true)"),
+        // ⚠ 1.66 — lượt nghe "đồng ý/huỷ" nằm ở `VoiceSessionTurns.kt` (xem chú thích ở bài OQ4 phía trên).
+        val turns = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt")
+        assertTrue(turns.contains("answerConfirm(answer == true)"),
             "nghe không ra `đồng ý` ⇒ KHÔNG. Im lặng không bao giờ được hiểu là đồng ý.")
-        assertTrue(session.contains("VoiceLexicon.confirmAnswer("),
+        assertTrue(turns.contains("VoiceLexicon.confirmAnswer("),
             "câu trả lời có/không phải đọc bằng bảng ở `:core` (kiểm off-car), không bằng một `if` ở tầng vẽ")
         val capture = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCapture.kt")
         assertTrue(capture.contains("AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK"),

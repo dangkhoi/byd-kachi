@@ -147,8 +147,15 @@ class VoicePlacesParseTest {
      */
     @Test
     fun `noi da luu khong phai hoi lai`() {
+        // ⚠ V3 · R7 (1.66): mặc định **không hỏi gì cả** ⇒ cả hai là NORMAL. Điều bài này còn canh được là
+        // điểm khác biệt THẬT: nơi đã lưu **không có mã hỏi-được**, nên nó không bao giờ bật lên hỏi lại, kể
+        // cả khi owner tích hết mọi ô trong Cài đặt.
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(saved("về nhà")))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Nav("Bitexco")), "điểm đến MỞ thì vẫn hỏi")
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Nav("Bitexco")))
+        assertEquals(null, VoiceRiskTable.confirmId(saved("về nhà")), "sổ địa chỉ KHÔNG bật hỏi lại được")
+        val all = VoiceRiskTable.askableIds().toSet()
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Nav("Bitexco"), all), "điểm đến MỞ bật được")
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(saved("về nhà"), all), "nơi đã lưu thì không")
     }
 
     // ══ C · CHỌN APP THEO DỮ LIỆU CỦA MỤC (R3) ═══════════════════════════════════════════════════════════

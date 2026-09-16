@@ -101,19 +101,30 @@ class TelemetryReadoutTest {
         val getters = mutableMapOf<String, String?>()
         val features = mutableMapOf<Int, String?>()
         val settings = mutableMapOf<String, String?>()
+        val names = mutableMapOf<String, Int>()
         TelemetryRegistry.ALL.forEach { spec ->
             when (val r = HalBindingTable.routeOf(spec.bindingKey)) {
                 is BindingRoute.NamedMethod -> getters[r.method] = "1"
                 is BindingRoute.Feature -> features[r.id] = "1"
                 is BindingRoute.Setting -> settings[r.key] = "1"
                 is BindingRoute.Local -> {}          // không có telemetry Local
+                // V3 · R11 — bind theo TÊN HẰNG: xe giả cấp cho mỗi tên một số **tự đặt** rồi mồi giá trị vào
+                // số ấy. Đó chính là điều phải canh: giá trị KHÔNG được viết cứng trong registry nữa, nên
+                // đường đọc phải đi qua phép tra tên; ai gỡ phép tra đi thì mấy datum này lại ra "—".
+                is BindingRoute.FeatureName -> {
+                    val fake = fakeId(r.constName)
+                    names[r.constName] = fake
+                    features[fake] = "1"
+                }
                 BindingRoute.None -> {}              // GPS/target_soc → không đường đọc
             }
         }
         // `int[] getChargeRestTime()` trả mảng [giờ, phút] (gateway thật: BydHal.arrayToStr) — mục eta_min lấy [1].
         getters["getChargeRestTime"] = "[1, 1]"
         val adapter = CarDataAdapter(
-            HalBindingTable(FakeHalGateway(getters = getters, features = features, settings = settings)),
+            HalBindingTable(
+                FakeHalGateway(getters = getters, features = features, settings = settings, featureNames = names),
+            ),
         )
         val status = adapter.readSlow(adapter.readFast(CarStatus()))
 
@@ -140,17 +151,26 @@ class TelemetryReadoutTest {
         val getters = mutableMapOf<String, String?>()
         val features = mutableMapOf<Int, String?>()
         val settings = mutableMapOf<String, String?>()
+        val names = mutableMapOf<String, Int>()
         TelemetryRegistry.ALL.filter { it.tier.wired }.forEach { spec ->
             when (val r = HalBindingTable.routeOf(spec.bindingKey)) {
                 is BindingRoute.NamedMethod -> getters[r.method] = "1"
                 is BindingRoute.Feature -> features[r.id] = "1"
                 is BindingRoute.Setting -> settings[r.key] = "1"
+                // V3 · R11 — xem chú thích cùng ca ở bài FULL WIRE.
+                is BindingRoute.FeatureName -> {
+                    val fake = fakeId(r.constName)
+                    names[r.constName] = fake
+                    features[fake] = "1"
+                }
                 else -> {}
             }
         }
         getters["getChargeRestTime"] = "[1, 1]"   // mảng [giờ, phút] — xem bài FULL WIRE.
         val adapter = CarDataAdapter(
-            HalBindingTable(FakeHalGateway(getters = getters, features = features, settings = settings)),
+            HalBindingTable(
+                FakeHalGateway(getters = getters, features = features, settings = settings, featureNames = names),
+            ),
         )
         val status = adapter.readSlow(adapter.readFast(CarStatus()))
         TelemetryRegistry.ALL.filter { it.tier.wired }.forEach { spec ->
@@ -160,4 +180,12 @@ class TelemetryReadoutTest {
             )
         }
     }
+
+    /**
+     * Số feature giả cho một tên hằng — **ổn định theo tên**, và cố ý nằm ngoài dải id thật của bảng ở trên.
+     *
+     * Dùng `hashCode` chứ không phải một bộ đếm: bài test bơm bảng ở một chỗ và đọc ở chỗ khác, nên hai lượt
+     * phải ra cùng số. Dải âm (`or Int.MIN_VALUE`) thì không bao giờ đụng id thật nào đang khai trong registry.
+     */
+    private fun fakeId(constName: String): Int = constName.hashCode() or Int.MIN_VALUE
 }

@@ -98,6 +98,13 @@ TEST_MODE_ON=0
 cleanup() {
   local rc=$?
   if [ "$TEST_MODE_ON" = "1" ]; then
+    # [SOÁT Pass 1 · 2026-09-16] Trả 5 khoá `prefs_set` về mặc định TRƯỚC khi đóng cửa cầu: mỗi ca đã tự dọn
+    # phần của nó, nhưng một lượt chết giữa chừng (Ctrl-C, `die`) thì không — và để `voice_confirm_ids` còn
+    # một mã đang bật nghĩa là lượt chạy SAU đo nhầm một cổng đang mở sẵn. Cùng luật CLAUDE.md §5: đổi state
+    # ngoài tiến trình thì phải có đường trả lại, và đường đó phải chạy cả khi script chết.
+    reset_all_prefs || true
+  fi
+  if [ "$TEST_MODE_ON" = "1" ]; then
     "$ADB" -s "$SERIAL" shell am force-stop "$PKG" </dev/null >/dev/null 2>&1 || true
     "$ADB" -s "$SERIAL" shell "run-as $PKG rm -f shared_prefs/kachi_test_bridge.xml" </dev/null >/dev/null 2>&1 \
       || "$ADB" -s "$SERIAL" shell "rm -f /data/data/$PKG/shared_prefs/kachi_test_bridge.xml" </dev/null >/dev/null 2>&1 \
@@ -116,6 +123,64 @@ bridge() {
 }
 
 state_json() { bridge "--es cmd state"; }
+
+# ═══ prefs_set — đặt/dọn một khoá trong DANH SÁCH TRẮNG của cầu kiểm thử ═════════════════════════
+#
+# [SOÁT Pass 1 · 2026-09-16] Sinh ra để trả lại lớp canh E2E của cổng xác nhận: từ 1.66 mặc định là
+# *"không hỏi gì cả"*, nên một ca `confirm=1` chỉ có nghĩa khi nó **tự bật** mã của nó trước
+# (`TestBridgeCommands.WRITABLE_PREFS_KEYS` giữ danh sách trắng; không có đường ghi khoá tuỳ ý).
+prefs_set() {
+  local key=$1 value=${2:-} json
+  json="$(bridge "--es cmd prefs_set --es key $(shq "$key") --es text $(shq "$value")")"
+  case "$json" in
+    *'"ok":true'*) ;;
+    *) echo "  ⚠ prefs_set $key=$value KHÔNG ăn: $(printf '%s' "$json" | head -c 160)"; return 1;;
+  esac
+}
+
+# Mặc định của từng khoá — khai MỘT chỗ. Khác "chuỗi rỗng cho tất cả": `top_strip_labels` là công tắc nên
+# rỗng là một **giá trị sai** (cầu từ chối), còn `voice_follow_up_ms` mặc định là 5000 chứ không phải 0.
+prefs_default() {
+  case "$1" in
+    voice_confirm_ids) printf '';;
+    voice_ask_aloud) printf '0';;
+    voice_follow_up_ms) printf '5000';;
+    voice_mic_source) printf '0';;
+    top_strip_labels) printf '1';;
+    *) printf '';;
+  esac
+}
+
+PREFS_ALL="voice_confirm_ids voice_ask_aloud voice_follow_up_ms voice_mic_source top_strip_labels"
+reset_all_prefs() {
+  local k
+  for k in $PREFS_ALL; do prefs_set "$k" "$(prefs_default "$k")" >/dev/null 2>&1 || true; done
+}
+
+# Áp cột `prefs` của một ca ("-" = không làm gì). Dạng `k=v;k=v`.
+apply_case_prefs() {
+  local spec=$1 pair key value
+  case "$spec" in ''|'-') return 0;; esac
+  local IFS=';'
+  for pair in $spec; do
+    [ -n "$pair" ] || continue
+    key=${pair%%=*}; value=${pair#*=}
+    [ "$key" = "$pair" ] && value=""
+    prefs_set "$key" "$value" || true
+  done
+}
+
+# Trả các khoá của một ca về mặc định (chỉ những khoá ca đó đụng tới — rẻ hơn dọn cả 5 sau mỗi ca).
+reset_case_prefs() {
+  local spec=$1 pair key
+  case "$spec" in ''|'-') return 0;; esac
+  local IFS=';'
+  for pair in $spec; do
+    [ -n "$pair" ] || continue
+    key=${pair%%=*}
+    prefs_set "$key" "$(prefs_default "$key")" >/dev/null 2>&1 || true
+  done
+}
 
 # ── 0. Máy ảo + gói ─────────────────────────────────────────────────────────────────────────────
 require_emulator
@@ -190,6 +255,10 @@ enable_test_mode
 LEFT="$(state_json | python3 "$HERE/voice_e2e_json.py" get test_mode_minutes_left)"
 [ "${LEFT:-0}" -gt 0 ] 2>/dev/null || die "chế độ kiểm thử vẫn TẮT (còn $LEFT phút) — xem reply: $(state_json | head -c 400)"
 note "chế độ kiểm thử: còn $LEFT phút"
+# Nền sạch cho cả lượt chạy: một lượt trước chết giữa chừng có thể để lại một mã đang bật trong
+# `voice_confirm_ids` — và ca nào cũng đo *"mặc định không hỏi gì"*, nên nền bẩn làm hỏng cả bảng.
+reset_all_prefs
+note "prefs giọng nói + nhãn chip đã về mặc định"
 
 # ── 2. Mô hình sherpa (T2) ──────────────────────────────────────────────────────────────────────
 ensure_model() {
@@ -221,10 +290,12 @@ note "hồ sơ dùng cho ca đổi hồ sơ: ${PROFILE:-<không có>}"
 # ── 3. T1 ───────────────────────────────────────────────────────────────────────────────────────
 run_t1() {
   : > "$T1_TSV"
-  local id lop text kinds want conf auto side
-  while IFS=$'\t' read -r id lop text kinds want conf auto side <&3; do
+  local id lop text kinds want conf auto side prefs
+  while IFS=$'\t' read -r id lop text kinds want conf auto side prefs <&3; do
     case "${id:-}" in ''|'#'*) continue;; esac
     text="${text//@PROFILE@/$PROFILE}"; want="${want//@PROFILE@/$PROFILE}"; side="${side//@PROFILE@/$PROFILE}"
+    # Cột `prefs` đặt TRƯỚC lượt `say`: từ 1.66 một ca `confirm=1` chỉ hỏi lại khi mã của nó đang được bật.
+    apply_case_prefs "${prefs:--}"
     local args="--es cmd say --es text $(shq "$text")"
     [ "$auto" = "1" ] && args="$args --ez auto_confirm true"
     local json; json="$(bridge "$args")"
@@ -240,12 +311,19 @@ run_t1() {
       # L7 — bố cục bằng giọng nói: đọc PRESET ĐANG DÙNG từ chính bridge `state` (cùng nguồn mà màn hình vẽ),
       # không đoán qua ảnh chụp màn hình.
       preset:*) sidereal="$(state_json | python3 "$HERE/voice_e2e_json.py" get layout.preset)";;
+      # R14 — nhãn chip đọc từ CHÍNH nguồn màn hình vẽ (`HomeUiState.topStrip`), không phải từ prefs và
+      # không phải từ một ảnh chụp: `prefs_set top_strip_labels` đi qua đúng lambda mà ô tích trong Cài đặt đi.
+      chip_labels:*) sidereal="$(state_json | python3 "$HERE/voice_e2e_json.py" get bars.chip_labels)";;
       media) sidereal="$(adbs shell dumpsys media_session | grep -m1 -i 'package=' | tr -d '\r')";;
     esac
     # Sau mỗi ca mở app: đưa Kachi lên lại để ca sau còn móc (hooks sống theo Activity, không theo tiêu điểm).
     case "$side" in resumed:*) start_home;; esac
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-      "$id" "$lop" "$text" "$kinds" "$want" "$conf" "$side" "$sidereal" "$json" >> "$T1_TSV"
+    # Dọn NGAY sau ca: một mã còn bật sẽ làm ca kế tiếp (không khai `prefs`) bị hỏi lại ⇒ FAIL sai địa chỉ.
+    reset_case_prefs "${prefs:--}"
+    # ⚠ Cột `prefs` đi SAU `json` (cột thứ 10): `voice_e2e_json.py report` zip đúng 9 tên đầu, nên thêm ở
+    # cuối là không đụng tới bộ đọc — thêm ở giữa thì mọi cột lệch một chỗ, im lặng.
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$id" "$lop" "$text" "$kinds" "$want" "$conf" "$side" "$sidereal" "$json" "${prefs:--}" >> "$T1_TSV"
     echo "  [$id] $text"
   done 3< "$CASES"
 }

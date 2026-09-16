@@ -96,6 +96,11 @@ def _verdict(row, d):
         want = side.split(":", 1)[1]
         if (real or "").strip() != want:
             why.append("bố cục đang là %s (mong %s)" % (real or "∅", want))
+    elif side.startswith("chip_labels:"):
+        # R14 — `state.bars.chip_labels` (Python in bool ra "True"/"False"; bộ ca viết y hệt để so thẳng).
+        want = side.split(":", 1)[1]
+        if (real or "").strip() != want:
+            why.append("nhãn chip đang là %s (mong %s)" % (real or "∅", want))
     elif side.startswith("profile:"):
         want = side.split(":", 1)[1]
         if (real or "").strip() != want:

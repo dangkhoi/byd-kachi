@@ -199,6 +199,8 @@ object Prefs {
      * phải hỏi"*); tới lúc đó khoá này lên UI và ra khỏi [SettingsCatalog.CLUSTERNAV_HIDDEN_KEYS].
      */
     fun voiceAskAloud(ctx: Context): Boolean = sp(ctx).getBoolean(K_VOICE_ASK_ALOUD, false)
+    fun setVoiceAskAloud(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VOICE_ASK_ALOUD, v).apply()
+
     const val VK_TARGET_DEFAULT = "ai.zalo.kiki.car"           // mặc định Kiki (khớp default cũ 0=Kiki)
 
     fun voiceKeyEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_ENABLED, false)

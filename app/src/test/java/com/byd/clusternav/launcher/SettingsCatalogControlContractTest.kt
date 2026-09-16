@@ -28,12 +28,22 @@ class SettingsCatalogControlContractTest {
     private val car by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCar.kt") }
     private val places by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsPlaces.kt") }
 
+    /** ⚠ 1.66 — nhóm Hồ sơ tài xế tách khỏi `SettingsSections.kt` (một-tệp-một-nhóm + trần 500 dòng). */
+    private val profilesSection by lazy {
+        code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsProfiles.kt")
+    }
+
     /**
      * Khối *Giọng nói* của nhóm Hệ thống nằm ở `launcher/voice/` chứ không ở một `SettingsSections*.kt`: nó là
      * **một bề mặt cài đặt có việc nền** (tải 61 MB, băm, gỡ) và nó đứng cạnh chính lớp lưu gói mà nó điều khiển.
      * Bảng nguồn ở đây bám nơi control **thật sự** được dựng, không bám quy ước đặt tên tệp.
      */
     private val voice by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt") }
+
+    /** V3 · R7 — mục *"Hỏi xác nhận trước khi chạy"* + nguồn micro; tách tệp vì trần 500 dòng (CLAUDE.md §4.1). */
+    private val voiceConfirm by lazy {
+        code("src/main/java/com/byd/clusternav/launcher/voice/VoiceConfirmSettings.kt")
+    }
 
     /**
      * ⚠⚠ **BÀI CANH CHÍNH CỦA IA v2 (R2 · §4.3)** — *"không cấu hình nào nằm ngoài"*.
@@ -65,6 +75,8 @@ class SettingsCatalogControlContractTest {
             "home_wallpaper" to ("SettingsSectionsHome" to "deps.onWallpaper("),
             // ── 2 · Thanh trạng thái & thanh nút ──
             "bars_top_strip" to ("SettingsSectionsBars" to "stripPicker.section("),
+            // V3 · R14 (owner 2026-09-16) — công tắc nhãn chip; đi qua `onTopStripConfig` (đặt CẢ cấu hình).
+            "bars_top_strip_labels" to ("SettingsSectionsBars" to "deps.onTopStripConfig("),
             "bars_dock_visible" to ("SettingsSectionsBars" to "dock.withVisible("),
             "bars_dock_edge" to ("SettingsSectionsBars" to "deps.onDockEdge("),
             "bars_dock_items" to ("SettingsSectionsBars" to "deps.openDockPicker("),
@@ -73,11 +85,11 @@ class SettingsCatalogControlContractTest {
             "display_theme" to ("SettingsSections" to "deps.onThemeMode("),
             "display_lang" to ("SettingsSections" to "deps.onLangMode("),
             // ── 4 · Hồ sơ tài xế ──
-            "profiles_list" to ("SettingsSections" to "deps.onSwitchProfile("),
-            "profiles_active" to ("SettingsSections" to "R.string.kachi_profile_sub_active"),
+            "profiles_list" to ("SettingsSectionsProfiles" to "deps.onSwitchProfile("),
+            "profiles_active" to ("SettingsSectionsProfiles" to "R.string.kachi_profile_sub_active"),
             // S4 · R6/R8 — hai mục THAY cho "cảnh lúc nổ máy" và cho nút "Thêm hồ sơ…" trắng.
-            "profiles_boot" to ("SettingsSections" to "deps.onBootProfile("),
-            "profiles_add" to ("SettingsSections" to "deps.onDuplicateProfile("),
+            "profiles_boot" to ("SettingsSectionsProfiles" to "deps.onBootProfile("),
+            "profiles_add" to ("SettingsSectionsProfiles" to "deps.onDuplicateProfile("),
             // ── 5 · Dẫn đường & cụm đồng hồ ──
             "nav_enabled" to ("SettingsSectionsNav" to "bridge.setNavEnabled("),
             "nav_cluster_mode" to ("SettingsSectionsNav" to "bridge.setClusterMode("),
@@ -127,6 +139,11 @@ class SettingsCatalogControlContractTest {
             "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
             "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),
             "voice_tts_pack" to ("VoiceModelSettings" to "SherpaTtsCatalog.PIPER_VI_VAIS1000"),
+            // V3 · R7/R1 — mục "Hỏi xác nhận trước khi chạy" + nguồn micro. Ở tệp RIÊNG (trần 500 dòng) nhưng
+            // vẫn thuộc khối *Giọng nói*; bảng này bám nơi control **thật sự** được dựng, không bám tên tệp.
+            "voice_confirm_ids" to ("VoiceConfirmSettings" to "deps.bridge.setVoiceConfirmIds("),
+            "voice_ask_aloud" to ("VoiceConfirmSettings" to "deps.bridge.setVoiceAskAloud("),
+            "voice_mic_source" to ("VoiceConfirmSettings" to "deps.bridge.setVoiceMicSource("),
             // S5 — nút Đặt Kachi làm màn hình chính (ROM không hiện hộp chọn HOME) + công tắc giữ khi nổ máy.
             "system_default_home" to ("SettingsSections" to "deps.bridge.setDefaultHome"),
             "system_keep_home_on_boot" to ("SettingsSections" to "deps.bridge.setKeepHomeOnBoot("),
@@ -151,6 +168,8 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsCar" to car,
             "SettingsSectionsPlaces" to places,
             "VoiceModelSettings" to voice,
+            "VoiceConfirmSettings" to voiceConfirm,
+            "SettingsSectionsProfiles" to profilesSection,
         )
 
         val catalogIds = SettingsCatalog.ENTRIES.map { it.id }.toSet()

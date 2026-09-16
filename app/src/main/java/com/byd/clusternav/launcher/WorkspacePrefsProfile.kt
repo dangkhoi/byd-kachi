@@ -239,3 +239,48 @@ private fun copyValue(e: SharedPreferences.Editor, to: String, value: Any?) {
  */
 private fun WorkspacePrefs.clusterNavPrefs(file: String): SharedPreferences =
     appCtx.getSharedPreferences(file, Context.MODE_PRIVATE)
+
+/**
+ * ═══ S4 · ĐỔI TÊN một hồ sơ (owner 2026-09-16 · E5) ══════════════════════════════════════════════════
+ *
+ * Trả `true` khi đã đổi; `false` = bị [ProfileRename] từ chối (tên rỗng / trùng / hồ sơ không tồn tại) — chỗ
+ * gọi tự nói ra lý do, ở đây không đoán hộ.
+ *
+ * ## Vì sao **DỜI** từng khoá chứ không tạo mới rồi xoá cũ
+ * Tên hồ sơ là tiền tố của mọi khoá của nó. Xem KDoc [ProfileRename]: tạo-mới-rồi-xoá là mất trắng bố cục.
+ *
+ * ## Ba khoá **con trỏ** phải đi theo, và chúng là ba khoá THEO XE
+ * `active_profile` · `boot_profile` đều trỏ tới hồ sơ **bằng tên**; quên một cái là một con trỏ treo — hoặc
+ * launcher nạp một hồ sơ không tồn tại (màn trắng), hoặc lần nổ máy sau rơi về hồ sơ đầu danh sách mà không
+ * ai hiểu vì sao. Cả hai nằm ngoài [profileKeys] đúng theo [ProfileScope.DEVICE_KEYS], nên phải xử ở đây.
+ *
+ * Một `edit()` duy nhất ⇒ hoặc đổi trọn, hoặc không đổi gì. Hai lượt `apply()` là một khe mà một lần tắt máy
+ * giữa chừng để lại nửa bộ khoá mang tên cũ, nửa mang tên mới.
+ */
+fun WorkspacePrefs.renameProfile(old: String, new: String): Boolean {
+    val plan = (ProfileRename.plan(old, new, profiles()) as? ProfileRename.Result.Ok)?.plan ?: return false
+    if (plan.from == plan.to) return true
+    val e = sp.edit().putString(WorkspacePrefs.K_PROFILES, plan.profiles.joinToString("\n"))
+    plan.suffixes.forEach { suffix ->
+        val from = keyOf(plan.from, suffix)
+        val to = keyOf(plan.to, suffix)
+        // `all` là một ảnh chụp `Map<String, *>`; đọc kiểu qua nó rồi ghi lại đúng kiểu ấy là cách DUY NHẤT
+        // dời được một khoá mà không phải biết trước nó là chuỗi hay boolean (hậu tố nay có cả hai —
+        // `top_strip` là chuỗi, `top_strip_labels` là boolean, `dock_visible` cũng vậy).
+        when (val v = sp.all[from]) {
+            null -> e.remove(to)              // hồ sơ cũ chưa từng đặt khoá này ⇒ tên mới cũng không được có
+            is String -> e.putString(to, v)
+            is Boolean -> e.putBoolean(to, v)
+            is Int -> e.putInt(to, v)
+            is Long -> e.putLong(to, v)
+            is Float -> e.putFloat(to, v)
+            is Set<*> -> e.putStringSet(to, v.filterIsInstance<String>().toSet())
+            else -> Unit                      // kiểu lạ (không có trong mã hôm nay) ⇒ bỏ, không đoán
+        }
+        e.remove(from)
+    }
+    if (activeProfile() == plan.from) e.putString(WorkspacePrefs.K_ACTIVE, plan.to)
+    if (sp.getString(WorkspacePrefs.K_BOOT_PROFILE, null) == plan.from) e.putString(WorkspacePrefs.K_BOOT_PROFILE, plan.to)
+    e.apply()
+    return true
+}

@@ -156,14 +156,87 @@ object SherpaModelCatalog {
         bpeVocab = "zipformer-hataphu-vi.bpe_vocab.txt",
     )
 
-    /** Mọi mô hình, thứ tự hiện trong Cài đặt. */
-    val ALL: List<SherpaModel> = listOf(ZIPFORMER_VI, HATAPHU_VI)
+    /**
+     * A-int8 — **cùng mô hình [ZIPFORMER_VI], bản lượng hoá int8** (Apache-2.0, cùng tác giả, cùng tokens).
+     *
+     * ## Vì sao nó thành MẶC ĐỊNH của máy cài mới (V3 · R6)
+     * [ĐO xe 2026-09-16] `docs/diagnostics/oncar-trace-2026-09-16.md` §1: Kachi RSS **537 MB** (native heap 477 MB
+     * = encoder fp32), máy chỉ còn **56–94 MB** trống, và lần bật mic đầu mất **15 s** để nạp. [ĐO host] 25 tệp
+     * WAV: int8 ra **21/25 đúng ý định = y hệt fp32** ⇒ không đánh đổi độ chính xác nào đo được. Encoder 249 MB →
+     * **67,6 MB** (tổng tải 266 MB → **74 MB**).
+     *
+     * ⚠ **[CHƯA BIẾT]** tốc độ giải mã int8 trên ARM của đầu xe: int8 nhỏ hơn nhưng vài nhân onnxruntime chạy
+     * quantize/dequantize chậm hơn fp32 trên CPU không có dot-product 8-bit. Phép chốt nằm ở playbook §6g (một
+     * lượt `wav` cùng tệp trên cả hai mô hình, đọc mốc `sherpa ra:` trong logcat).
+     *
+     * ⚠ Máy **đã** cài fp32 thì GIỮ NGUYÊN fp32 cho tới khi owner tự chọn — xem `VoiceModelStore.selected`. Đổi
+     * mặc định mà kéo theo một lượt tải 74 MB qua 4G trên xe đang chạy là một quyết định thay người dùng.
+     *
+     * sha256 + kích thước [ĐO] 2026-09-16 (HF API `resolve/main` + `shasum -a 256` trên máy soạn thảo).
+     */
+    val ZIPFORMER_VI_INT8 = SherpaModel(
+        id = "zipformer-vi-int8-2025-04-20",
+        label = "Zipformer VN int8 (Apache-2.0, 74 MB)",
+        license = "Apache-2.0",
+        files = listOf(
+            ModelFile(
+                "encoder.int8.onnx",
+                "https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-int8-2025-04-20/resolve/main/" +
+                    "encoder-epoch-12-avg-8.int8.onnx",
+                "b3abdef7a660fea7faf5e076b3c7613b0fc98406707103784d018189bb522124",
+                70_876_129L,
+            ),
+            ModelFile(
+                "decoder.onnx",
+                "https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-int8-2025-04-20/resolve/main/" +
+                    "decoder-epoch-12-avg-8.onnx",
+                "d1d27cca84c824a8acf5ce6edf0f2c0880cfe295d2e69b95134de1707e1d9998",
+                5_165_084L,
+            ),
+            ModelFile(
+                "joiner.int8.onnx",
+                "https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-int8-2025-04-20/resolve/main/" +
+                    "joiner-epoch-12-avg-8.int8.onnx",
+                "38ec49e1c18e4feb0cad4de13e25c83a866cf56f4a66f22e8ff579d591a69a46",
+                1_033_417L,
+            ),
+            ModelFile(
+                "tokens.txt",
+                "https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-vi-int8-2025-04-20/resolve/main/tokens.txt",
+                "f536d03c2e95ebd2930cf0abec88e823bd17d3c1933da7ae6a82db3b80605e15",
+                25_847L,
+            ),
+        ),
+        encoder = "encoder.int8.onnx",
+        decoder = "decoder.onnx",
+        joiner = "joiner.int8.onnx",
+        tokens = "tokens.txt",
+        // ⚠ **CÙNG** asset BPE với [ZIPFORMER_VI]: hai mô hình là một bản huấn luyện, `tokens.txt` giống hệt tới
+        // từng byte (cùng sha256 ở trên). Đóng thêm một bản 55 KB thứ hai vào APK là dựng bản sao thứ hai của
+        // một bảng — đúng bẫy hai-bản-sao. Vì thế [VoiceEngine] tra asset theo [SherpaModel.bpeVocab], KHÔNG
+        // theo [SherpaModel.id].
+        bpeVocab = "zipformer-vi-2025-04-20.bpe_vocab.txt",
+    )
 
-    /** Mô hình mặc định — cái tải được + đã proo off-car. */
-    const val DEFAULT_ID = "zipformer-vi-2025-04-20"
+    /** Mọi mô hình, thứ tự hiện trong Cài đặt — bản mặc định đứng đầu. */
+    val ALL: List<SherpaModel> = listOf(ZIPFORMER_VI_INT8, ZIPFORMER_VI, HATAPHU_VI)
 
-    /** Tra mô hình theo id, hoặc mặc định nếu id lạ / rỗng (fail-safe cho pref cũ). */
-    fun byId(id: String?): SherpaModel = ALL.firstOrNull { it.id == id } ?: ZIPFORMER_VI
+    /**
+     * Mô hình mặc định cho **máy cài mới** — V3 · R6 đổi fp32 → int8 (owner **D4** 2026-09-16: *"thử int8 và mọi
+     * cách tới khi ngon"*). Lý do + số đo ở KDoc [ZIPFORMER_VI_INT8].
+     */
+    const val DEFAULT_ID = "zipformer-vi-int8-2025-04-20"
+
+    /** Mô hình mặc định (đối tượng). Một chỗ trả lời *"mặc định là cái nào"* — [byId] cũng lùi về đây. */
+    fun default(): SherpaModel = ALL.first { it.id == DEFAULT_ID }
+
+    /**
+     * Tra mô hình theo id, hoặc **mặc định** nếu id lạ / rỗng (fail-safe cho pref cũ).
+     *
+     * ⚠ Trước 1.66 hàm này lùi về [ZIPFORMER_VI] viết cứng, tức [DEFAULT_ID] là một hằng **không ai đọc** — đổi
+     * nó không đổi hành vi một dòng nào. Nay hai thứ là một.
+     */
+    fun byId(id: String?): SherpaModel = ALL.firstOrNull { it.id == id } ?: default()
 
     /**
      * Điểm biasing hotwords — [ĐO] off-car: score 3.0 sửa được `pin`/`tắt`/`âm lượng` mà KHÔNG chèn nhầm lệnh vào

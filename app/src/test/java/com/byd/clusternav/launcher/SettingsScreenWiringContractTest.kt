@@ -32,6 +32,15 @@ class SettingsScreenWiringContractTest {
 
     private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsPanel.kt") }
     private val sections by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
+
+    /**
+     * ⚠ 1.66 — nhóm **Hồ sơ tài xế** đã rời `SettingsSections.kt` sang tệp riêng (một-tệp-một-nhóm, như nav ·
+     * cast · keys · bars · car · places; và vì hàng *"Đổi tên"* của V3 · R13 đẩy tệp kia qua trần 500 dòng).
+     * Bài canh bám nơi control **thật sự** được dựng, không bám tên tệp cũ.
+     */
+    private val profilesSection by lazy {
+        code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsProfiles.kt")
+    }
     private val home by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsHome.kt") }
     private val wiring by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt") }
     private val bars by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt") }
@@ -186,9 +195,9 @@ class SettingsScreenWiringContractTest {
         // R3 một cú đổi hồ sơ kéo theo cả màn hình.
         assertTrue(fn.contains("profileNameView"), "chip phải hiện TÊN hồ sơ, không chỉ chữ cái đầu")
         assertTrue(strip.contains("fun setProfile("), "và phải có đường đổ tên đó vào chip khi state đổi")
-        assertTrue(sections.contains("deps.onDuplicateProfile("), "đường tạo hồ sơ nay ở nhóm Hồ sơ tài xế")
+        assertTrue(profilesSection.contains("deps.onDuplicateProfile("), "đường tạo hồ sơ nay ở nhóm Hồ sơ tài xế")
         assertTrue(
-            sections.contains("SettingsDialogs.askName("),
+            profilesSection.contains("SettingsDialogs.askName("),
             "và nó dùng LẠI hộp thoại hỏi-tên dùng chung, không dựng bản thứ hai",
         )
     }
@@ -343,12 +352,12 @@ class SettingsScreenWiringContractTest {
         )
         assertTrue(fn.contains("onManage()"), "nhưng phải có lối SANG chỗ tạo, không thì cú chạm thành ngõ cụt")
         assertTrue(fn.contains("viewModel.switchProfile("), "và việc chính của nó là đổi hồ sơ, qua intent ViewModel")
-        assertTrue(sections.contains("deps.onDuplicateProfile("), "đường tạo duy nhất là nhóm Hồ sơ tài xế")
+        assertTrue(profilesSection.contains("deps.onDuplicateProfile("), "đường tạo duy nhất là nhóm Hồ sơ tài xế")
     }
 
     @Test
     fun `nut xoa ho so chi hien khi thuc su xoa duoc`() {
-        val fn = SourceRoots.body(sections, "private fun profileRow(")
+        val fn = SourceRoots.body(profilesSection, "private fun profileRow(")
         // ⚠ [SOÁT UI 2026-09-12] ĐỔI giao kèo: trước đây nút Xoá LUÔN hiện rồi bấm ra toast chặn (bản cũ khoá
         // `active ->` / `total <= 1 ->` / `toast(`). Hành vi đúng hơn: nút Xoá CHỈ dựng khi thực sự xoá được — KHÔNG
         // phải hồ sơ đang dùng VÀ còn hồ sơ khác. Ẩn hẳn thì không có affordance để bấm nhầm trên màn xe, nên không

@@ -480,6 +480,8 @@
     <string name="kachi_voice_listening">Listening…</string>
     <string name="kachi_voice_preparing">Getting ready…</string>
     <string name="kachi_voice_heard">Heard</string>
+    <!-- V3 · R9 — overlay while the mic stays open for a follow-up command -->
+    <string name="kachi_voice_follow_up">Go ahead…</string>
     <string name="kachi_voice_cancel_hint">Tap outside or press Back to cancel</string>
     <string name="kachi_voice_no_mic">No microphone permission</string>
     <string name="kachi_voice_no_model">Recognition model not downloaded</string>
@@ -515,6 +517,20 @@
     <string name="kachi_voice_wav_failed">Could not run: %1$s</string>
     <string name="kachi_voice_wav_where">Put kachi-voice-test.wav (16 kHz · mono · 16-bit PCM) in one of: %1$s</string>
     <string name="kachi_pill_voice">Talk to car</string>
+    <!-- V3 · R14 — chip label toggle -->
+    <string name="kachi_top_strip_labels_title">Show chip labels</string>
+    <string name="kachi_top_strip_labels_sub">Off keeps just the icon and the number — more room on the bar</string>
+    <!-- V3 · R7 — "Ask before running" + microphone source -->
+    <string name="kachi_voice_confirm_sec">Ask before running</string>
+    <string name="kachi_voice_confirm_note">Kachi runs straight away by default. Tick anything you want it to ask about first.</string>
+    <string name="kachi_voice_ask_aloud_title">Read confirmation questions aloud</string>
+    <string name="kachi_voice_ask_aloud_sub">Speaks first, then opens the mic — only matters once something is ticked</string>
+    <string name="kachi_voice_mic_source">Microphone source</string>
+    <string name="kachi_voice_mic_source_auto">Automatic</string>
+    <string name="kachi_voice_mic_source_note">Change this if the mic hears poorly. \"Automatic\" tries MIC first, then the noise-cancelled source.</string>
+    <!-- V3 · R13 — rename a profile -->
+    <string name="kachi_profile_rename">Rename profile</string>
+    <string name="kachi_profile_rename_failed">Could not rename — the name is empty or already used</string>
     <string name="kachi_voice_pill_title">Mic button on the status bar</string>
     <string name="kachi_voice_pill_sub">Speak a command quickly, next to Apps and Settings</string>
     <string name="kachi_slot_app_closed">App closed — tap to reopen</string>

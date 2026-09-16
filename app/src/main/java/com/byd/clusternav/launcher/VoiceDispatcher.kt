@@ -63,6 +63,17 @@ class VoiceDispatcher(
      * Nuốt cả hai là treo phần còn lại của câu ghép vĩnh viễn (xem KDoc [submit]).
      */
     private val confirm: (String, () -> Unit, () -> Unit) -> Unit,
+    /**
+     * V3 · R7 — tập mã việc **đang được bật** để hỏi lại (`voice_confirm_ids`, mặc định RỖNG).
+     *
+     * Là **lambda** chứ không phải một giá trị: người dùng tích một ô trong Cài đặt rồi nói ngay câu sau, và
+     * `VoiceDispatcher` được dựng lại cho MỖI lượt nói nhưng cũng sống qua một câu ghép có hộp hỏi ở giữa. Đọc
+     * lại ở mỗi vế là cách duy nhất không giữ một bản chụp cũ — cùng lẽ với `appsByLabel`/`state`.
+     *
+     * Mặc định rỗng để mọi chỗ gọi trong bài test (và cầu kiểm thử) giữ nguyên nghĩa *"không hỏi gì cả"*, đúng
+     * mặc định owner chốt.
+     */
+    private val confirmIds: () -> Set<String> = { emptySet() },
     /** Nói một câu cho người dùng (hôm nay: hiện chữ). */
     private val say: (String) -> Unit,
     /**
@@ -152,7 +163,7 @@ class VoiceDispatcher(
         var i = from
         while (i < intents.size) {
             val intent = intents[i]
-            if (VoiceRiskTable.of(intent) == VoiceRisk.CONFIRM) {
+            if (VoiceRiskTable.of(intent, confirmIds()) == VoiceRisk.CONFIRM) {
                 val next = i + 1
                 val remaining = intents.size - next
                 confirm(

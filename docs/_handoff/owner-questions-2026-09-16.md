@@ -4,7 +4,7 @@
 > **B**: B1–B12 **chạy luôn** (không hỏi); B6 xe không có nắp ca-pô; **B13 có** — mục Cài đặt tự chọn nút nào hỏi.
 > **C1** nhận mọi từ đồng nghĩa YES (ừ/vâng/có/được/ok/đúng/làm đi…). **C2 không** đọc câu hỏi. **C3 có** đọc phản hồi ("đã bật đèn đọc, đã chỉnh gió mức 3, nhiệt độ 24 độ").
 > **D1** giữ mic 5 s. **D2** hỏi lại cho tới khi hiểu rồi làm. **D3** phải tải được trong app (OTA), không USB. **D4** thử int8 và mọi cách tới khi ngon. **D5** đo lúc lái + phải nhận được khi đang mở nhạc (Kiki/Gemini lọc tốt).
-> **E1** OK · **E2** hỏi rủi ro · **E3** nav lên cụm OK (🟢) · **E4** để optional · **E5** nên cho đổi tên hồ sơ · **E6** xe CÓ cả 4 tính năng ⇒ cần RE feature-id · **E7** không ép tiền tố, phải hiểu tự nhiên (đã giải thích: luật tiền tố chỉ là nội bộ biasing, không ràng buộc người nói).
+> **E1** OK · **E2** để nguyên lịch sử, không force-push (owner: "khỏi, mark done, tập trung sản phẩm") · **E3** nav lên cụm OK (🟢) · **E4** để optional · **E5** nên cho đổi tên hồ sơ · **E6** xe CÓ cả 4 tính năng ⇒ cần RE feature-id · **E7** không ép tiền tố, phải hiểu tự nhiên (đã giải thích: luật tiền tố chỉ là nội bộ biasing, không ràng buộc người nói).
 > **F1** OK.
 
 Trả lời ngắn ngay dưới mỗi mục (✅/❌, số, hoặc một dòng). Chưa chắc thì ghi "chưa biết" — tôi sẽ không suy diễn. Mục nào không trả lời = giữ mặc định đang ghi.

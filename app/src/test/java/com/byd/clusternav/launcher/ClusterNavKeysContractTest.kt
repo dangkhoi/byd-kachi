@@ -39,6 +39,12 @@ class ClusterNavKeysContractTest {
         "clusternav_prefs" to listOf(
             "src/main/java/com/byd/clusternav/Prefs.kt",
             "src/main/java/com/byd/clusternav/VmOverlayPosition.kt",
+            // ⚠ 1.66 — tệp THỨ BA mở cùng `clusternav_prefs`: ba khoá V3 của đường giọng nói
+            // (`voice_mic_source` · `voice_confirm_ids` · `voice_follow_up_ms`) nằm ở `PrefsVoiceV3.kt` dưới dạng
+            // **hàm mở rộng của chính [Prefs]** (trần 500 dòng, CLAUDE.md §4.1). Cùng tệp prefs, cùng bề mặt gọi
+            // — không phải một cửa thứ hai vào chỗ lưu; đó là lý do nó được đứng ở đây, và là điều bài canh này
+            // vẫn kiểm được (khoá phải tồn tại NGUYÊN VĂN trong một trong ba tệp).
+            "src/main/java/com/byd/clusternav/PrefsVoiceV3.kt",
         ),
         "simple_cast_prefs" to listOf(
             "src/main/java/com/byd/clusternav/modules/clustercast/simplified/SimpleCastRuntime.kt",
@@ -117,9 +123,11 @@ class ClusterNavKeysContractTest {
      */
     @Test
     fun `khoa co y khong len UI cung phai la khoa that`() {
-        val prefs = codeOf(SOURCES.getValue("clusternav_prefs").first())
+        // ⚠ 1.66 — quét CẢ BA tệp của `clusternav_prefs` (xem chú thích ở [SOURCES]), không chỉ tệp đầu: khoá ẩn
+        // `voice_follow_up_ms` khai ở `PrefsVoiceV3.kt`. Ghim tệp đầu là biến mọi lượt tách tệp hợp lệ thành đỏ giả.
+        val prefs = SOURCES.getValue("clusternav_prefs").joinToString("\n") { codeOf(it) }
         val ghosts = SettingsCatalog.CLUSTERNAV_HIDDEN_KEYS.keys.filterNot { declares(prefs, it) }
-        assertEquals(emptyList<String>(), ghosts, "khoá ẩn không tồn tại trong Prefs.kt — danh sách đang rữa")
+        assertEquals(emptyList<String>(), ghosts, "khoá ẩn không tồn tại trong họ tệp Prefs — danh sách đang rữa")
     }
 
     /** Tệp prefs đã khai mà không khoá nào dùng = rác tích lại, và nó nới lỏng bài canh cho lần sau. */

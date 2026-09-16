@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.app.Application
+import com.byd.clusternav.launcher.voice.VoiceEngine
 
 /**
  * Application của Kachi — điểm dựng [AppContainer] (đồ thị DI thủ công phía launcher) sớm nhất trong tiến trình,
@@ -13,5 +14,9 @@ class KachiApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         AppContainer.get(this)
+        // V3 · R4 — nạp sẵn mô hình NGHE trên luồng nền ưu tiên thấp, sau 3 s. Ở đây chứ không ở màn chính:
+        // tiến trình launcher sống suốt chuyến còn màn chính thì dựng lại nhiều lần, nên đặt ở activity là
+        // nạp lại một thứ đã nằm sẵn trong RAM. Hàm tự rút lui khi chưa tải mô hình — xem KDoc [VoiceEngine.preload].
+        VoiceEngine.preload(this)
     }
 }

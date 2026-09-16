@@ -364,7 +364,10 @@ class ThemePaletteContractTest {
         val r = ratio(KachiPalette.DARK.onAccent, KachiPalette.DARK.widgetBacking)
         assertTrue(r >= 4.5, "chữ trắng của widget trên nền này chỉ ${fmt(r)}:1 — widget sẽ không đọc được")
         // Tầng vẽ phải THẬT SỰ dùng nó ở nhánh widget bên thứ ba (khai một vai mà không ai vẽ = vai chết).
-        val view = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
+        // [SOÁT Pass 1 · 2026-09-16] Nền widget nay dựng ở `WorkspaceViewCards.kt` (tách vì trần 500 dòng), còn
+        // chỗ GẮN nó vào ô vẫn ở `WorkspaceView.kt`. Nối cả hai ⇒ bài canh vẫn đòi đủ **hai** vế (vẽ + gắn đúng lớp).
+        val view = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") +
+            "\n" + SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceViewCards.kt")
         assertTrue(
             "KachiTheme.WIDGET_BACKING" in view,
             "phải vẽ nền tối phía sau widget bên thứ ba, không thì bảng sáng làm widget mất chữ",

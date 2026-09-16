@@ -43,8 +43,24 @@ class SettingsBarsSection(
         // không có hai câu nói hai kiểu về cùng một luật.
         body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
         stripPicker.section(body)
+        chipLabels(body)
         voicePill(body)
         dock(body)
+    }
+
+    /**
+     * V3 · R14 — **hiện nhãn trên chip hay không** (owner 2026-09-16: *"chỉ hiện icon và chỉ số thôi, text nhiều
+     * chật chỗ, cho cái toggle hiện text label"*).
+     *
+     * Đứng ngay SAU bộ chọn chip vì nó nói về chính những chip vừa chọn. Đi qua [SettingsDeps.onTopStripConfig]
+     * (đặt cả cấu hình) chứ không qua một cổng boolean riêng — xem KDoc ở đó.
+     */
+    private fun chipLabels(body: LinearLayout) {
+        body.addView(rows.checkRow(
+            on = deps.state().topStrip.showLabels,
+            title = context.getString(R.string.kachi_top_strip_labels_title),
+            sub = context.getString(R.string.kachi_top_strip_labels_sub),
+        ) { on -> deps.onTopStripConfig(deps.state().topStrip.copy(showLabels = on)) })
     }
 
     /**

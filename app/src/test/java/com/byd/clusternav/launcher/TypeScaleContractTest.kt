@@ -40,6 +40,10 @@ class TypeScaleContractTest {
         "SettingsSections.kt", "SettingsSectionsHome.kt",
         "SettingsPanel.kt", "TopStripPicker.kt", "SettingsRows.kt",
         "AppDrawer.kt", "KachiTopStrip.kt", "OverlayHeads.kt", "WorkspaceView.kt", "LayoutEditorPanel.kt",
+        // [SOÁT Pass 1 · 2026-09-16] Năm hàm dựng thẻ trong ô tách khỏi `WorkspaceView.kt` (trần 500 dòng).
+        // Vào bài canh NGAY, cùng lý do `AppDrawerApps.kt`: một bề mặt đã áp design system không được rơi
+        // ra khỏi phạm vi chỉ vì đổi tên tệp — và glyph `＋` được miễn nằm đúng trong tệp mới này.
+        "WorkspaceViewCards.kt",
         // T6 tách phần danh sách app ra khỏi `AppDrawer` (trần 500 dòng). Tệp mới vẽ chữ ⇒ phải ở trong bài canh
         // NGAY, không thì một bề mặt đã áp design system tự rơi ra khỏi phạm vi chỉ vì đổi tên tệp.
         "AppDrawerApps.kt",
@@ -72,7 +76,7 @@ class TypeScaleContractTest {
      * Số dòng ĐANG được miễn — ghim lại, cùng lẽ với `SAME_ON_PURPOSE` (danh sách ngoại lệ phải là dữ liệu THẤY
      * ĐƯỢC, không phải thứ mọc thêm lặng lẽ).
      *
-     * 3 = 2 nhãn ô lưới mật độ cao ([AppDrawer] 11.5/10sp) + 1 glyph trang trí `＋` ([WorkspaceView] 32sp). Thêm
+     * 3 = 2 nhãn ô lưới mật độ cao ([AppDrawer] 11.5/10sp) + 1 glyph trang trí `＋` ([WorkspaceViewCards] 32sp). Thêm
      * một ngoại lệ thứ tư thì phải sửa con số này ⇒ nó hiện ra trong diff và người review phải đồng ý, thay vì một
      * dòng comment lọt qua.
      */

@@ -5,6 +5,11 @@ import com.byd.clusternav.Prefs
 import com.byd.clusternav.modules.voicekey.AssistantLauncher
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
 import com.byd.clusternav.voicekey.VoiceKeyBinding
+import com.byd.clusternav.setVoiceConfirmIds
+import com.byd.clusternav.setVoiceMicSource
+import com.byd.clusternav.voiceConfirmIds
+import com.byd.clusternav.voiceFollowUpMs
+import com.byd.clusternav.voiceMicSource
 
 /**
  * ═══ Nửa "Phím vô-lăng → app/trợ lý" của [ClusterNavBridge] ═════════════════════════════════════
@@ -317,3 +322,27 @@ internal fun ClusterNavBridge.voicePreferOffline(): Boolean = Prefs.voicePreferO
 
 /** Xem [voicePreferOffline]. */
 internal fun ClusterNavBridge.setVoicePreferOffline(on: Boolean) = Prefs.setVoicePreferOffline(app, on)
+
+/**
+ * ═══ V3 · R1/R7 — ba cửa mới của đường giọng nói (spec `kachi-voice-fast-natural.html`) ══════════════════════
+ *
+ * Cùng lý do với [voiceSpeakReplies]: tầng vẽ của launcher **không mở cửa riêng vào nơi lưu bền**, và cả ba khoá
+ * nằm cùng tệp `clusternav_prefs` với `voice_mic_pill` — nên câu *"cấu hình giọng nói nằm ở đâu"* vẫn có đúng
+ * một câu trả lời.
+ */
+internal fun ClusterNavBridge.voiceConfirmIds(): Set<String> = Prefs.voiceConfirmIds(app)
+
+/** Xem [voiceConfirmIds]. Tập RỖNG = *"không hỏi gì cả"*, đúng mặc định owner chốt 2026-09-16. */
+internal fun ClusterNavBridge.setVoiceConfirmIds(ids: Set<String>) = Prefs.setVoiceConfirmIds(app, ids)
+
+/** OQ4 — đọc to câu hỏi xác nhận rồi mới mở micro. Mặc định TẮT. */
+internal fun ClusterNavBridge.voiceAskAloud(): Boolean = Prefs.voiceAskAloud(app)
+
+/** Xem [voiceAskAloud]. */
+internal fun ClusterNavBridge.setVoiceAskAloud(on: Boolean) = Prefs.setVoiceAskAloud(app, on)
+
+/** R1 — nguồn micro thử TRƯỚC; `0` = để Kachi tự chọn. Xem `VoiceMicSource`. */
+internal fun ClusterNavBridge.voiceMicSource(): Int = Prefs.voiceMicSource(app)
+
+/** Xem [voiceMicSource]. */
+internal fun ClusterNavBridge.setVoiceMicSource(v: Int) = Prefs.setVoiceMicSource(app, v)

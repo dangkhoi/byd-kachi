@@ -264,6 +264,11 @@ object ControlRegistry {
 
         // ── MỞ RỘNG catalog §B (mặc định TẮT) ─────────────────────────────────────────────────────
         // Khí hậu
+        // ⚠ V3 · R12 [ĐO nguồn fw-dl3]: số 1324355606 KHÔNG có trong `BYDAutoFeatureIds` của xe này ⇒ đó là lý do
+        // lượt 09-16 trả sentinel "absent on trim" dù owner xác nhận **xe CÓ** điều hoà auto (E6). Hai ứng viên
+        // gần nhất — `Ac.AC_CTRL_MODE_SET` (đổi CHẾ ĐỘ điều hoà) và `Ac.AC_AUTOMATIC_BUTTON_TURNED_OFF` (một cờ
+        // ĐỌC) — **chưa cái nào chốt được**, và đoán sai ở đây là bắn một lệnh khí hậu lạ khi xe đang chạy.
+        // NEEDS-ONCAR (1 lệnh): `featmap` rồi tra tên mang nghĩa AUTO trong set của device AC (1000).
         ControlDef("ac_auto", "Điều hoà AUTO", "ic-ac", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324355606",
             labelEn = "A/C AUTO"),
@@ -318,8 +323,16 @@ object ControlRegistry {
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở", "Nửa"),
             labelEn = "Sunshade", argsEn = listOf("Close", "Open", "Half")),   // T7: mức 2 = 50% (đường percent)
         // NEEDS-ONCAR: child_lock / mirror_auto / mirror_fold_btn — feature-id vô danh, không có named-method.
+        // ═══ V3 · R12 — [ĐO nguồn fw-dl3 2026-09-16] id 1276141584 CÓ tên: `DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET`
+        // (lớp lồng `Door`, `BYDAutoFeatureIds.java:12954-12958`; giá trị thứ hai = 401664 khi Toyota không CanFD).
+        // Nó thuộc device **DOOR_LOCK (1041)**, KHÔNG phải BODYWORK — mà `Domain.BODY` lại đoán ra BODYWORK, nên
+        // lượt bắn 09-16 rơi vào `checkDeviceFeatures` và trả sentinel "absent on trim". Bind theo TÊN ⇒ device
+        // đích do `BYDAutoDeviceFeaturesMap` quyết, đúng gốc bệnh.
+        // ⚠ Tên nói rõ **LEFT**: đây là khoá trẻ em cửa TRÁI. Phải có cả hai bên thì đó là hai nút, không phải
+        // sửa dòng này — NEEDS-ONCAR (owner nhìn thấy cửa nào khoá khi bấm).
         ControlDef("child_lock", "Khoá trẻ em", "ic-lock", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276141584",
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE,
+            bindingKey = "BYDAutoFeatureIds.Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET",
             labelEn = "Child lock"),
         ControlDef("rain_close", "Tự đóng kính khi mưa", "ic-car-top-window-rain", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setRainCloseWindow",
@@ -327,6 +340,9 @@ object ControlRegistry {
         ControlDef("mirror_auto", "Gập gương khi khoá", "ic-car-top-mirror", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1081081882",
             labelEn = "Fold mirrors on lock"),
+        // ⚠ V3 · R12 [ĐO nguồn fw-dl3]: 1276157992 không có trong `BYDAutoFeatureIds`. Hằng gương duy nhất là
+        // `Setting.SET_CAR_EXTREARMIR_FOLLOWUP_SWITCH[_SET]` (gập THEO KHOÁ — đúng nút `mirror_auto` bên trên),
+        // **không có** lệnh gập TAY. NEEDS-ONCAR: `featmap` + tra set của device SETTING (1023).
         ControlDef("mirror_fold_btn", "Gập gương", "ic-car-top-mirror", ControlKind.BUTTON,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276157992",
             labelEn = "Fold mirrors"),
@@ -337,6 +353,10 @@ object ControlRegistry {
             labelEn = "Driver seat memory"),
         // Đèn
         // NEEDS-ONCAR: 4 nút ambient_* — device nghi SETTING(1023) atmosphere-lamp; scale nghi 0–100 (không 0–10), màu 31.
+        // ⚠ V3 · R12 [ĐO nguồn fw-dl3]: 1276153924 không có. Ứng viên **gần** nhất là
+        // `Setting.SET_ATMOSPHERE_LAMP_PANEL_STATE_SET` = **1276153872** (lệch 52) — gần tới mức nghi cùng họ,
+        // nhưng "gần" không phải "đúng", và đây là một lượt GHI vào đèn nội thất. NEEDS-ONCAR (1 lệnh, có người
+        // nhìn): `hal --es op set --es dev BYDAutoSettingDevice --es m set --es args …` sau khi có `featmap`.
         ControlDef("ambient_power", "Đèn viền cabin", "ic-car-top-ambient", ControlKind.TOGGLE,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153924",
             // ⚠ Nhãn Anh phải TRÙNG với datum `ambient_enabled` **đúng như bản Việt trùng nhau** ("Đèn viền cabin"):

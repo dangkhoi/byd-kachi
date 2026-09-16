@@ -126,23 +126,25 @@ class KachiTestBridge : BroadcastReceiver() {
 
     // ── Điều phối ────────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Năm lệnh **KHÔNG cần màn chính**, gom vào một `when` (trần 500 dòng — CLAUDE.md §4.1):
+     *  • `prefs` chỉ đọc đĩa ⇒ chạy được khi launcher chưa lên, đúng lúc cần chẩn đoán *"vì sao không lên"*;
+     *  • `hal` gọi thẳng gateway HAL (không đọc `HomeUiState`, không chạm ô/bố cục) — chẩn đoán HAL độc lập với UI;
+     *  • `sweep`/`featmap` cũng thuần HAL (chỉ-đọc, luồng nền);
+     *  • `prefs_set` ghi một khoá trong danh sách trắng; nó **nhận móc dưới dạng nullable** vì bốn khoá giọng nói
+     *    ghi thẳng prefs được, còn `top_strip_labels` thì phải đi qua màn chính (xem KDoc [TestBridgePrefsSet]).
+     */
     private fun dispatch(app: Context, cmd: TestBridgeCommand, reply: TestBridgeReply) {
-        // `prefs` là lệnh DUY NHẤT không cần màn chính: nó chỉ đọc đĩa. Cho nó chạy khi launcher chưa lên là
-        // đúng thứ cần lúc chẩn đoán *"vì sao launcher không lên"*.
-        if (cmd.name == TestBridgeCommands.PREFS) {
-            reply.ok("file" to cmd.file, "values" to TestBridgeState.prefsSnapshot(app, cmd.file))
-            return
-        }
-        // `hal` cũng KHÔNG cần màn chính: nó gọi thẳng gateway HAL (không đọc `HomeUiState`, không chạm ô/bố cục).
-        // Cho chạy khi launcher chưa lên là đúng thứ cần lúc chẩn đoán HAL độc lập với trạng thái UI.
-        if (cmd.name == TestBridgeCommands.HAL) {
-            TestBridgeHal.run(app, cmd, reply)
-            return
-        }
-        // `sweep` cũng thuần HAL (chỉ-đọc, luồng nền) — không cần màn chính. Thân ở [TestBridgeSweep].
-        if (cmd.name == TestBridgeCommands.SWEEP) {
-            TestBridgeSweep.run(app, cmd, reply)
-            return
+        when (cmd.name) {
+            TestBridgeCommands.PREFS -> {
+                reply.ok("file" to cmd.file, "values" to TestBridgeState.prefsSnapshot(app, cmd.file)); return
+            }
+            TestBridgeCommands.HAL -> { TestBridgeHal.run(app, cmd, reply); return }
+            TestBridgeCommands.SWEEP -> { TestBridgeSweep.run(app, cmd, reply); return }
+            TestBridgeCommands.FEATMAP -> { TestBridgeFeatMap.run(app, reply); return }
+            TestBridgeCommands.PREFS_SET -> {
+                TestBridgePrefsSet.run(app, cmd, KachiTestHooks.get(), reply); return
+            }
         }
         val hooks = KachiTestHooks.get()
         if (hooks == null) {
@@ -462,6 +464,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.EXTRA_METHOD,
             TestBridgeCommands.EXTRA_HAL_ARGS,
             TestBridgeCommands.EXTRA_OP,
+            TestBridgeCommands.EXTRA_KEY,
         )
 
         // ── Mã lỗi riêng của tầng này (ASCII, không dịch — xem `TestBridgeParse.Err`) ────────────

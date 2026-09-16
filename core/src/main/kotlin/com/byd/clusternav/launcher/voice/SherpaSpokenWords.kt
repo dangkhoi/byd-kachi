@@ -85,6 +85,12 @@ object SherpaSpokenWords {
         "kinh" to "kính",
         "cua so" to "cửa sổ",
         "cac cua so" to "các cửa sổ",
+        // V3 · R10 — bốn cách nói về KÍNH LÁI ([ĐO xe 2026-09-16]: owner nói *"mở kính lái"*, máy nghe đúng
+        // nhưng từ vựng không có cụm nào bắt đầu bằng `kinh lai` ⇒ rơi về nút gộp 4 kính).
+        "kinh lai" to "kính lái",
+        "cua kinh lai" to "cửa kính lái",
+        "kinh tai xe" to "kính tài xế",
+        "cua so lai" to "cửa sổ lái",
         "kinh ben lai" to "kính bên lái",
         "kinh ghe lai" to "kính ghế lái",
         "kinh ben phu" to "kính bên phụ",

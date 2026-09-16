@@ -25,6 +25,15 @@ interface WorkspaceRepository {
     fun deleteProfile(name: String): HomeUiState
 
     /**
+     * V3 · R13 (owner 2026-09-16 · **E5**) — đổi TÊN một hồ sơ, giữ nguyên mọi thứ nó đang mang.
+     *
+     * Mặc định **không làm gì** và trả state hiện tại: một kho dữ liệu chưa nối được đường dời khoá thì phải
+     * nói *"không đổi"* bằng cách trả nguyên trạng, chứ không được xoá/tạo gì — xem KDoc [ProfileRename] về
+     * việc vì sao tạo-mới-rồi-xoá-cũ là mất trắng bố cục.
+     */
+    fun renameProfile(old: String, new: String): HomeUiState = load()
+
+    /**
      * App **mở gần đây** (U3, đường mở-thường) — mới nhất trước. CỐ Ý **không** nằm trong [HomeUiState]: nó chỉ
      * được đọc lúc MỞ ngăn kéo, không tham gia render nên không phải "trạng thái màn hình"; đưa vào state sẽ ép
      * render lại cả HOME mỗi lần mở app mà không được gì.

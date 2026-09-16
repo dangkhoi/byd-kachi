@@ -141,13 +141,22 @@ object TelemetryRegistry {
         t("odometer", "Odo tổng", "Odometer", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getTotalMileageValue"),
         // BYDAutoStatisticDevice.java:167.
         t("ev_mileage_km", "Km chạy điện", "EV distance driven", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getEVMileageValue", shortEn = "EV distance"),
-        // NEEDS-ONCAR: trip_km/hours/kwh — 2 ứng viên named, chưa chốt scale phút-vs-giờ, Wh-vs-kWh.
-        t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, OVERDRIVE, "1246801948", short = "Quãng chuyến", shortEn = "Trip dist."),
-        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, OVERDRIVE, "1246801938"),
+        // ═══ V3 · R11 — bind theo TÊN HẰNG, giá trị tra lúc chạy (xem [BindingRoute.FeatureName]) ═══
+        // [ĐO nguồn fw-dl3 2026-09-16] `BYDAutoFeatureIds.java`: `INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_MILEAGE`
+        // = 1246801948 **chỉ khi** `isCanFD`; không CanFD thì 1230024732 (Toyota) hoặc 602471. Số cũ chép từ
+        // jadx-tmap là con số của MỘT cấu hình ⇒ trên xe khác cấu hình nó không tồn tại và HAL từ chối.
+        // Tên hằng thuộc lớp lồng `Instrument` ⇒ device đích do `BYDAutoDeviceFeaturesMap` quyết, không đoán.
+        // NEEDS-ONCAR (còn lại): scale phút-vs-giờ của DRIVE_TIME.
+        t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, OVERDRIVE,
+            "BYDAutoFeatureIds.Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_MILEAGE",
+            short = "Quãng chuyến", shortEn = "Trip dist."),
+        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, OVERDRIVE,
+            "BYDAutoFeatureIds.Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_TIME"),
         t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, OVERDRIVE, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
         t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh/100km", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),
-        // NEEDS-ONCAR: motor_power — feature-id mô-tơ bị zero-hoá trong decompile, cần id thật.
-        t("motor_power", "Công suất mô-tơ", "Motor power", "kW", ENERGY, GAUGE, OVERDRIVE, "339738656"),
+        // V3 · R11 — [ĐO nguồn fw-dl3] `ENGINE_POWER` = 339738656 (CanFD) / 353370144 (Toyota) / 1033203762.
+        t("motor_power", "Công suất mô-tơ", "Motor power", "kW", ENERGY, GAUGE, OVERDRIVE,
+            "BYDAutoFeatureIds.Engine.ENGINE_POWER"),
         // BYDAutoChargingDevice.java:252 — READY1/START2/FINISH3/TERMINATE4; "đang sạc" = ==2 (HalBindingTable.BOOL_WHEN_EQUALS).
         // Cũ `BYDAutoPowerDevice.isCharging` KHÔNG tồn tại.
         t("is_charging", "Đang sạc", "Charging", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoChargingDevice.getChargerWorkState"),
@@ -181,10 +190,14 @@ object TelemetryRegistry {
         t("speed", "Tốc độ", "Speed", "km/h", DRIVETRAIN, DIAL, PROVEN, "BYDAutoSpeedDevice.getCurrentSpeed"),
         t("accel_pct", "Chân ga", "Accelerator pedal", "%", DRIVETRAIN, GAUGE, OVERDRIVE, "BYDAutoSpeedDevice.getAccelerateDeepness", shortEn = "Accelerator"),
         t("brake_pct", "Chân phanh", "Brake pedal", "%", DRIVETRAIN, GAUGE, OVERDRIVE, "BYDAutoSpeedDevice.getBrakeDeepness"),
-        // NEEDS-ONCAR: motor_*_rpm / motor_front_torque — feature-id mô-tơ kéo zero-hoá trong decompile, cần id thật.
-        t("motor_front_rpm", "Vòng tua mô-tơ trước", "Front motor rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "1141899272", short = "Tua trước", shortEn = "Front rpm"),
-        t("motor_rear_rpm", "Vòng tua mô-tơ sau", "Rear motor rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "621805576", short = "Tua sau", shortEn = "Rear rpm"),
-        t("motor_front_torque", "Mô-men mô-tơ trước", "Front motor torque", "Nm", DRIVETRAIN, VALUE, OVERDRIVE, "1141899288", short = "Mô-men trước", shortEn = "Front torque"),
+        // V3 · R11 — [ĐO nguồn fw-dl3] ba hằng mô-tơ có THẬT, ở lớp lồng `Engine`, và mỗi cái mang HAI giá trị
+        // (vd `ENGINE_FRONT_MOTOR_SPEED` = 1141899272 hoặc **1141901320** khi không CanFD và không Toyota).
+        t("motor_front_rpm", "Vòng tua mô-tơ trước", "Front motor rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE,
+            "BYDAutoFeatureIds.Engine.ENGINE_FRONT_MOTOR_SPEED", short = "Tua trước", shortEn = "Front rpm"),
+        t("motor_rear_rpm", "Vòng tua mô-tơ sau", "Rear motor rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE,
+            "BYDAutoFeatureIds.Engine.ENGINE_REAR_MOTOR_SPEED", short = "Tua sau", shortEn = "Rear rpm"),
+        t("motor_front_torque", "Mô-men mô-tơ trước", "Front motor torque", "Nm", DRIVETRAIN, VALUE, OVERDRIVE,
+            "BYDAutoFeatureIds.Engine.ENGINE_FRONT_MOTOR_TORQUE", short = "Mô-men trước", shortEn = "Front torque"),
         t("engine_rpm", "Vòng tua máy xăng", "Engine rpm", "rpm", DRIVETRAIN, VALUE, OVERDRIVE, "BYDAutoEngineDevice.getEngineSpeed"),
         // `double getSteeringWheelValue(int)` BYDAutoBodyworkDevice.java:505 — cần selector BODYWORK_CMD_STEERING_WHEEL_ANGEL=1
         // (:178); HalBindingTable.readArg cấp. Trước thiếu arg ⇒ reflection không khớp chữ ký 1-arg ⇒ "—".
@@ -202,6 +215,10 @@ object TelemetryRegistry {
         // BYDAutoEnergyDevice.java:112 — STOP0/EV1/FORCE_EV2/HEV3/FUEL4/KEEP5 (:18-23). Cũ `getEnergyWorkMode` không tồn tại.
         t("energy_mode", "Chế độ năng lượng", "Energy mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoEnergyDevice.getEnergyMode"),
         // NEEDS-ONCAR: drift_mode — nghiêng UNAVAILABLE-TRIM (Sealion 6 DM-i không drift).
+        // ⚠ V3 · R11 [ĐO nguồn fw-dl3 2026-09-16]: **KHÔNG có hằng nào** chứa "DRIFT" trong `BYDAutoFeatureIds`
+        // của xe này, và số 681574694 cũng không xuất hiện ở đâu trong tệp. Tức id này không tồn tại trên ROM
+        // đang chạy — đó là lý do `checkDeviceFeatures` từ chối, và không có tên nào để bind sang. Giữ số cũ
+        // (vô hại: HAL trả sentinel ⇒ "—") và chờ bảng thật từ `featmap` để tra ngược theo NGHĨA.
         t("drift_mode", "Chế độ drift", "Drift mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "681574694"),
 
         // ── A3. Khí hậu / không khí ──────────────────────────────────────────────────────────────
@@ -271,7 +288,12 @@ object TelemetryRegistry {
         t("sunroof_pos", "Vị trí cửa sổ trời", "Sunroof position", "%", BODY, VALUE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofPosition", shortEn = "Sunroof pos"),
         t("sunshade_pct", "Rèm che nắng", "Sunshade", "%", BODY, VALUE, OVERDRIVE, "1101004816"),
         t("mirror_fold", "Gương chiếu hậu", "Door mirrors", "", BODY, BADGE, OVERDRIVE, "960495624"),
-        t("wiper_state", "Gạt mưa", "Wipers", "", BODY, BADGE, OVERDRIVE, "1196425226"),
+        // ⚠ V3 · R11 — [ĐO nguồn fw-dl3] số cũ **1196425226 = `WIPER_AREA_REAR_STATE`** (gạt mưa SAU), trong khi
+        // nhãn ở đây là *"Gạt mưa"* (trước). Đây không phải một id "vô danh" mà là một id **của việc khác** —
+        // đúng họ lỗi `lock`/`door` một byte. Nay bind tên `WIPER_AREA_FRONT_STATE` (= 1196425224 / 540287 /
+        // 1092616200 tuỳ cấu hình). Nếu owner muốn cả hai thì đó là MỘT datum mới, không phải sửa dòng này.
+        t("wiper_state", "Gạt mưa", "Wipers", "", BODY, BADGE, OVERDRIVE,
+            "BYDAutoFeatureIds.Wiper.WIPER_AREA_FRONT_STATE"),
         t("power_level", "Nguồn xe", "Vehicle power", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getPowerLevel"),
         t("vehicle_type", "Mẫu xe", "Vehicle model", "", BODY, VALUE, PROVEN, "BYDAutoBodyworkDevice.getType"),
         // BYDAutoBodyworkDevice.java:396 — ALARM_STATE_OFF=0/ON=1 (:156-157).
@@ -292,6 +314,10 @@ object TelemetryRegistry {
         // NEEDS-ONCAR: headlight_feedback + 8 mục ambient — device nghi SETTING(1023), scale nghi 0–100, màu 31.
         t("headlight_feedback", "Chế độ đèn pha", "Headlight mode", "", LIGHTS, BADGE, OVERDRIVE, "1011875880"),
         t("ambient_enabled", "Đèn viền cabin", "Cabin ambient light", "", LIGHTS, BADGE, OVERDRIVE, "1060110406", shortEn = "Ambient"),
+        // ⚠ V3 · R11 [ĐO nguồn fw-dl3]: hai số 1121976336/1121976343 KHÔNG có trong `BYDAutoFeatureIds`, và
+        // không hằng nào tên `*AMBIENT*COLOR*`. Họ hằng gần nhất là `SET_ATMOSPHERE_LAMP_COLOR_{R,G,B}_VALUE_SET`
+        // (ba kênh RỜI, thuộc device SETTING) — tức "màu viền" trên xe này **không phải một datum**, nó là ba.
+        // Đó là một thay đổi hình dạng, không phải một phép sửa id ⇒ chờ `featmap` + quyết định của owner.
         t("ambient_front_color", "Màu viền trước", "Ambient colour front", "", LIGHTS, VALUE, OVERDRIVE, "1121976336", shortEn = "Colour front"),
         t("ambient_rear_color", "Màu viền sau", "Ambient colour rear", "", LIGHTS, VALUE, OVERDRIVE, "1121976343", shortEn = "Colour rear"),
         t("ambient_front_brightness", "Độ sáng viền trước", "Ambient brightness front", "", LIGHTS, VALUE, OVERDRIVE, "1121976328", shortEn = "Bright front"),
@@ -312,6 +338,10 @@ object TelemetryRegistry {
         // trong dump; per-side không có getter (ADAS chỉ có aggregate, per-side qua listener event).
         t("child_presence", "Phát hiện trẻ em", "Child presence", "", SAFETY, BADGE, OVERDRIVE, "376438818"),
         t("speed_limit_warning", "Cảnh báo quá tốc", "Speed limit warning", "", SAFETY, BADGE, OVERDRIVE, "535834664", shortEn = "Over speed"),
+        // ⚠ V3 · R11 [ĐO nguồn fw-dl3]: `BYDAutoFeatureIds` có `ADAS_BSD_STATE` (= 1098907656) và
+        // `ADAS_BSD_STATE_HAL`/`_CONFIG`/`_SET`, nhưng **không có** hằng báo động theo TỪNG GÓC; hai số
+        // 1098907692/1098907694 không xuất hiện ở đâu. Cảnh báo điểm mù trên ROM này là MỘT trạng thái, không
+        // phải hai đèn trái/phải ⇒ lại là một thay đổi hình dạng, chờ `featmap` + owner.
         t("bsd_fl_alarm", "Điểm mù trước-trái", "Blind spot front-left", "", SAFETY, STRIP, OVERDRIVE, "1098907692", shortEn = "Blind spot L"),
         t("bsd_fr_alarm", "Điểm mù trước-phải", "Blind spot front-right", "", SAFETY, STRIP, OVERDRIVE, "1098907694", shortEn = "Blind spot R"),
         t("lca_left", "Chuyển làn trái", "Lane change left", "", SAFETY, STRIP, OVERDRIVE, "1098907664", shortEn = "Lane chg L"),

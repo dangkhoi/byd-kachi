@@ -18,9 +18,11 @@ class SherpaModelCatalogTest {
     // ══ (1) Mô hình mặc định tải được + đã ghim đủ ════════════════════════════════════════════════════════
 
     @Test
-    fun `default model is the Apache Zipformer-vi and is fully pinned`() {
+    fun `default model is the Apache Zipformer-vi int8 and is fully pinned`() {
+        // V3 · R6 (1.66): mặc định đổi fp32 → **int8** (266 MB → 74 MB; [ĐO host] 25 WAV cùng kết quả). Xe đã
+        // cài fp32 thì `VoiceModelStore.selected` giữ nguyên fp32 — luật ấy có bài canh ở `:app`.
         val m = SherpaModelCatalog.byId(SherpaModelCatalog.DEFAULT_ID)
-        assertEquals("zipformer-vi-2025-04-20", m.id)
+        assertEquals("zipformer-vi-int8-2025-04-20", m.id)
         assertEquals("Apache-2.0", m.license)
         assertTrue(m.downloadable, "mô hình mặc định PHẢI tải được (đã ghim mọi tệp)")
         m.files.forEach { f ->
@@ -31,7 +33,7 @@ class SherpaModelCatalogTest {
     }
 
     @Test
-    fun `default model names its four transducer files and total bytes sum them`() {
+    fun `fp32 model names its four transducer files and total bytes sum them`() {
         val m = SherpaModelCatalog.ZIPFORMER_VI
         listOf(m.encoder, m.decoder, m.joiner, m.tokens).forEach { name ->
             assertNotNull(m.file(name), "thiếu tệp thành phần $name trong danh sách tải")
@@ -68,15 +70,28 @@ class SherpaModelCatalogTest {
 
     @Test
     fun `byId falls back to default for unknown or blank id`() {
-        assertEquals(SherpaModelCatalog.ZIPFORMER_VI, SherpaModelCatalog.byId(null))
-        assertEquals(SherpaModelCatalog.ZIPFORMER_VI, SherpaModelCatalog.byId(""))
-        assertEquals(SherpaModelCatalog.ZIPFORMER_VI, SherpaModelCatalog.byId("khong-ton-tai"))
+        // ⚠ 1.66: `byId` lùi về [SherpaModelCatalog.default] (= DEFAULT_ID), KHÔNG còn lùi về `ZIPFORMER_VI`
+        // viết cứng — trước đó hằng DEFAULT_ID là một hằng **không ai đọc**, đổi nó không đổi hành vi dòng nào.
+        assertEquals(SherpaModelCatalog.default(), SherpaModelCatalog.byId(null))
+        assertEquals(SherpaModelCatalog.ZIPFORMER_VI_INT8, SherpaModelCatalog.byId(null))
+        assertEquals(SherpaModelCatalog.ZIPFORMER_VI_INT8, SherpaModelCatalog.byId(""))
+        assertEquals(SherpaModelCatalog.ZIPFORMER_VI_INT8, SherpaModelCatalog.byId("khong-ton-tai"))
+        assertEquals(SherpaModelCatalog.ZIPFORMER_VI, SherpaModelCatalog.byId("zipformer-vi-2025-04-20"))
         assertEquals(SherpaModelCatalog.HATAPHU_VI, SherpaModelCatalog.byId("zipformer-hataphu-vi"))
     }
 
     @Test
-    fun `catalog lists both models and no NC or ND licensed model is present`() {
-        assertEquals(2, SherpaModelCatalog.ALL.size)
+    fun `catalog lists all three models and no NC or ND licensed model is present`() {
+        // 1.66: **3** — fp32 · int8 (mặc định) · hataphu (có cổng, chưa mirror).
+        assertEquals(3, SherpaModelCatalog.ALL.size)
+        // int8 và fp32 là CÙNG một bản huấn luyện ⇒ phải dùng CHUNG một asset BPE; hai bản 55 KB giống hệt
+        // trong APK là bẫy hai-bản-sao, và `VoiceEngine` tra asset theo `bpeVocab` chính vì thế.
+        assertEquals(SherpaModelCatalog.ZIPFORMER_VI.bpeVocab, SherpaModelCatalog.ZIPFORMER_VI_INT8.bpeVocab)
+        assertEquals(
+            SherpaModelCatalog.ZIPFORMER_VI.file("tokens.txt")?.sha256,
+            SherpaModelCatalog.ZIPFORMER_VI_INT8.file("tokens.txt")?.sha256,
+            "cùng tokens ⇒ cùng sha256; lệch nghĩa là hai bản huấn luyện khác nhau và KHÔNG được chung bpe",
+        )
         assertTrue(SherpaModelCatalog.ALL.none { it.license.contains("NC", ignoreCase = true) })
         assertTrue(SherpaModelCatalog.ALL.none { it.license.contains("ND", ignoreCase = true) })
     }

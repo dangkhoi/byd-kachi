@@ -46,7 +46,25 @@ data class ChipSection(
  *  2. **Ngữ nghĩa**: thanh trên là dòng trạng thái nhìn-là-biết, không phải bảng điều khiển.
  * Nếu owner muốn chip bấm được thì đó là một quyết định riêng, cần đích chạm to hơn — KHÔNG lặng lẽ nới ở đây.
  */
-data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
+data class TopStripConfig(
+    val ids: List<String> = DEFAULT_IDS,
+    /**
+     * ═══ V3 · R14 — có vẽ **NHÃN** trên chip không (mặc định có) ═════════════════════════════════════════
+     *
+     * Owner 2026-09-16: *"chỉ ẩn icon và chỉ số thôi, text nhiều chật chỗ, cho cái toggle hiện text label"*. Tắt
+     * ⇒ chip chỉ còn **icon + giá trị (+đơn vị)** (`2.4 bar` thay `Lốp TT · 2.4 bar`).
+     *
+     * ## Vì sao là một trường của cấu hình, không phải một cờ vẽ ở `:app`
+     * Chữ trên chip do [TopStripChips] dựng ở `:core` (đó là lý do phép đổi đơn vị mới kiểm được off-car). Một cờ
+     * ở tầng vẽ sẽ phải **cắt chuỗi đã dựng** — tức đoán lại dấu `·` nằm ở đâu, trên một chuỗi mà chính `:core`
+     * vừa ghép. Đặt ở đây thì mỗi dạng chip tự biết bỏ phần nào, và có bài test.
+     *
+     * **Theo HỒ SƠ** như [ids] (S4 *"hồ sơ là tất cả"*), lưu ở khoá riêng `top_strip_labels` chứ không nhét vào
+     * chuỗi mã: chuỗi ấy đã nằm trên đĩa của xe đang chạy, và [decode] của mọi bản cũ đọc nó như một danh sách
+     * mã — thêm một ô lạ vào là bản cũ lọc nó đi (may) hoặc dựng một chip rỗng (rủi).
+     */
+    val showLabels: Boolean = true,
+) {
 
     init {
         // ⚠ Chốt ở CHÍNH LỚP, không chỉ ở [setEnabled]. Quét bảo mật trước commit nêu đúng: nếu cổng chỉ nằm ở
@@ -198,13 +216,19 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
             }
         }
 
-        /** `"a,b,c"` → cấu hình. Chuỗi rỗng/lỗi ⇒ mặc định (không để thanh trên trắng vì một dòng prefs hỏng). */
-        fun decode(s: String?): TopStripConfig {
-            val ids = s?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: return DEFAULT
-            if (ids.isEmpty()) return DEFAULT
+        /**
+         * `"a,b,c"` → cấu hình. Chuỗi rỗng/lỗi ⇒ mặc định (không để thanh trên trắng vì một dòng prefs hỏng).
+         *
+         * [showLabels] là **khoá riêng** (`top_strip_labels`), không nằm trong chuỗi này — xem KDoc
+         * [TopStripConfig.showLabels]. Nó đi vào qua tham số để nơi lưu bền chỉ đọc một lần rồi dựng một vật.
+         */
+        fun decode(s: String?, showLabels: Boolean = true): TopStripConfig {
+            val ids = s?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+                ?: return DEFAULT.copy(showLabels = showLabels)
+            if (ids.isEmpty()) return DEFAULT.copy(showLabels = showLabels)
             // Lọc mã không còn đặt được (bản sau xoá một datum / người dùng sửa tay) — im lặng bỏ MỤC, không bỏ cả dòng.
             val kept = ids.filter { isChippable(it) }.distinct().take(CAP)
-            return if (kept.isEmpty()) DEFAULT else TopStripConfig(kept)
+            return if (kept.isEmpty()) DEFAULT.copy(showLabels = showLabels) else TopStripConfig(kept, showLabels)
         }
 
         fun encode(c: TopStripConfig): String = c.ids.joinToString(",")
@@ -222,21 +246,31 @@ data class TopStripConfig(val ids: List<String> = DEFAULT_IDS) {
 object TopStripChips {
 
     fun render(cfg: TopStripConfig, status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT): List<ChipView> =
-        cfg.ids.mapNotNull { chip(it, status, units) }
+        cfg.ids.mapNotNull { chip(it, status, units, cfg.showLabels) }
 
-    private fun chip(id: String, status: CarStatus, units: UnitPrefs): ChipView? = when (id) {
+    /**
+     * ⚠ [ChipView.desc] (câu cho trình đọc màn hình) **luôn đầy đủ**, kể cả khi [labels] tắt.
+     *
+     * Tắt nhãn là một quyết định về **chỗ trên thanh**, không phải về nội dung: một chip chỉ còn `24°C` thì mắt
+     * người vẫn đọc được nhờ icon và vị trí, còn trình đọc màn hình thì phát ra đúng hai chữ *"24 độ C"* và người
+     * không nhìn được màn hình mất hẳn thông tin *"của cái gì"*.
+     */
+    private fun chip(id: String, status: CarStatus, units: UnitPrefs, labels: Boolean): ChipView? = when (id) {
         TopStripConfig.PM25 -> {
             val pm = status.climate.pm25Level?.let {
                 if (it <= 2) Strings.t("Tốt", "Good") else if (it <= 4) Strings.t("TB", "Fair") else Strings.t("Kém", "Poor")
             } ?: TelemetryView.PLACEHOLDER
-            ChipView("PM2.5 · $pm", "ic-leaf", ChipTone.NEUTRAL, Strings.t("Bụi mịn trong xe: $pm", "Fine dust in the car: $pm"))
+            ChipView(
+                if (labels) "PM2.5 · $pm" else pm, "ic-leaf", ChipTone.NEUTRAL,
+                Strings.t("Bụi mịn trong xe: $pm", "Fine dust in the car: $pm"),
+            )
         }
         TopStripConfig.TEMP -> {
             val u = units.unitFor(Quantity.TEMPERATURE)
             val t = status.climate.outsideTempC?.let { conv(it.toDouble(), Quantity.TEMPERATURE, units) }
                 ?: TelemetryView.PLACEHOLDER
             ChipView(
-                "$t$u " + Strings.t("ngoài", "outside"), null, ChipTone.NEUTRAL,
+                if (labels) "$t$u " + Strings.t("ngoài", "outside") else "$t$u", null, ChipTone.NEUTRAL,
                 Strings.t("Nhiệt độ ngoài xe $t$u", "Outside temperature $t$u"),
             )
         }
@@ -253,18 +287,18 @@ object TopStripChips {
                 ),
             )
         }
-        else -> datumChip(id, status, units)
+        else -> datumChip(id, status, units, labels)
     }
 
     /** Chip cho một datum thường: `"<nhãn ngắn> · <giá trị><đơn vị>"`, đi qua ĐÚNG lớp đơn vị như mọi bề mặt khác. */
-    private fun datumChip(id: String, status: CarStatus, units: UnitPrefs): ChipView? {
+    private fun datumChip(id: String, status: CarStatus, units: UnitPrefs, labels: Boolean): ChipView? {
         val spec = TelemetryRegistry.byId(id) ?: return null
         val view = TelemetryReadout.of(id, status)?.let { UnitFormat.apply(it, units) } ?: return null
         val value = view.displayWithUnit()
         return ChipView(
             // U5 · T2: nhãn ngắn THEO NGÔN NGỮ. Chip là bề mặt hẹp nhất của launcher nên nó cần đúng bản ngắn, không
             // phải nhãn đầy — lý do `shortEn` tồn tại.
-            text = "${spec.displayShortLabel} · $value",
+            text = if (labels) "${spec.displayShortLabel} · $value" else value,
             icon = CapabilityIcons.forTelemetry(spec.id, spec.domain),
             tone = ChipTone.NEUTRAL,
             desc = "${spec.displayLabel}: $value",

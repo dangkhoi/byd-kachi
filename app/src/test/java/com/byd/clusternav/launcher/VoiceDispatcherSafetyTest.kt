@@ -4,6 +4,7 @@ import com.byd.clusternav.launcher.voice.VoiceIntent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import com.byd.clusternav.launcher.voice.VoiceRiskTable
 
 /**
  * ═══ V1 · CỔNG XÁC NHẬN CỦA CÂU GHÉP — BÀI CHẠY THẬT, KHÔNG PHẢI QUÉT NGUỒN ════════════════════════════════════
@@ -60,6 +61,10 @@ class VoiceDispatcherSafetyTest {
             onSwitchProfile = { profiles += it },
             onListen = { listens++ },
             confirm = { q, y, n -> ask.onConfirm(q, y, n) },
+            // ⚠ V3 · R7 (1.66): mặc định **không hỏi gì cả** (owner 2026-09-16). Bài này canh CƠ CHẾ của
+            // cổng hỏi-lại, nên nó bật MỌI mã hỏi-được — không thì mọi ca dưới đây chạy thẳng và bài
+            // trở thành một bài canh cho chính cái mặc định, không phải cho cổng.
+            confirmIds = { VoiceRiskTable.askableIds().toSet() },
             say = { said += it },
             // V1.1 — bốn cổng mới; bài này không chạm tới chúng, nên chúng **nổ** nếu bị chạm. Một lambda trả
             // giá trị giả sẽ làm bài xanh trong khi một ý định đi nhầm đường.

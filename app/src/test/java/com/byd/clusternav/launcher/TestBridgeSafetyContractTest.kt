@@ -94,6 +94,28 @@ class TestBridgeSafetyContractTest {
         )
     }
 
+    /**
+     * Hai đường GHI thô của lệnh `hal` (`set` và `setev` — generic `AbsBYDAutoDevice.set`) đều phải đứng sau cổng
+     * `auto_confirm` và để lại dấu `AUTO-CONFIRM` trong nhật ký — cùng cổng với `ctl`/`say`. Bài canh cũ chỉ quét
+     * `KachiTestBridge.kt`; cổng của `hal` nằm ở `TestBridgeHal.kt` nên một lượt tách tệp có thể làm rơi nó im
+     * lặng (CLAUDE.md §8). Đề nghị của lượt scan bảo mật 2026-09-16.
+     */
+    @Test
+    fun `hal set va setev deu qua cong auto_confirm va ghi dau AUTO-CONFIRM`() {
+        val src = code("TestBridgeHal.kt")
+        val setEvStart = src.indexOf("private fun runSetEv(")
+        assertTrue(setEvStart > 0, "không còn `runSetEv` — đổi tên thì sửa bài canh CÓ CHỦ Ý")
+        val setPart = src.substring(0, setEvStart)
+        val setEvPart = src.substring(setEvStart)
+        for ((label, part) in listOf("hal set" to setPart, "hal setev" to setEvPart)) {
+            val gate = part.indexOf("!cmd.autoConfirm")
+            val log = part.indexOf("AUTO-CONFIRM: $label")
+            assertTrue(gate > 0, "$label: mất cổng `!cmd.autoConfirm` ⇒ ghi thân xe không cần xác nhận")
+            assertTrue(log > gate, "$label: dấu `AUTO-CONFIRM` phải đứng SAU cổng (ghi rồi mới log là log cho lệnh đã chạy)")
+            assertTrue(part.substring(gate, log).contains("ERR_NEEDS_CONFIRM"), "$label: thiếu lối từ chối `ERR_NEEDS_CONFIRM` giữa cổng và dấu")
+        }
+    }
+
     /** Không có đường BẬT nào ngoài màn Cài đặt: không lệnh `enable`, và receiver không gọi `TestBridgeStore.enable`. */
     @Test
     fun `khong co duong bat che do kiem thu tu xa`() {

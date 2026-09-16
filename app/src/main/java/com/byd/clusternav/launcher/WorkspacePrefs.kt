@@ -239,61 +239,6 @@ class WorkspacePrefs(context: Context) {
 
     fun setThemeMode(m: ThemeMode) { sp.edit().putString(key(K_THEME), m.name).apply() }
 
-    // ── Ngôn ngữ (S4 · R3a — nay THEO HỒ SƠ; nguồn là `<hồ sơ>__lang`, xem [broadcastLang]) — U5 · T3 ──
-    /**
-     * ⚠⚠ **KHÔNG có khoá `lang` trong tệp `kachi_workspace`** — hai hàm này **uỷ quyền** sang chỗ lưu ngôn ngữ đã
-     * tồn tại của ClusterNav ([com.byd.clusternav.Lang], tệp `clusternav_lang`, khoá `lang`).
-     *
-     * ## Đây là SAI LỆCH CÓ CHỦ Ý so với spec §3.1, và lý do quan trọng hơn câu chữ của spec
-     * Spec ghi *"`WorkspacePrefs` khoá `lang`"*. Làm đúng chữ đó thì trong **một APK** sẽ có **hai** công tắc ngôn
-     * ngữ: một của launcher (`kachi_workspace/lang`) và một của màn ClusterNav (`clusternav_lang/lang`, đang có
-     * selector `seg_language` của màn ClusterNav cũ, nay đã gỡ; `ClusterNavActivity` vẫn đọc). Hai công tắc cho
-     * **một** câu hỏi *"người ngồi đây đọc thứ tiếng nào"* chính là **bẫy hai-bản-sao** mà dự án đã trả giá bốn lần
-     * (`customLayout` · `unitPrefs` ×4 bản · `wallpaper` · và chính `themeMode` trước T1). Biểu hiện ở đây sẽ rất khó
-     * chối: chọn English trong Cài đặt Kachi rồi bấm "Mở màn ClusterNav" thì màn đó **vẫn tiếng Việt**.
-     *
-     * Nên chọn ngược lại: **một chỗ lưu, hai bề mặt đọc.** Chỗ lưu là chỗ đã có (`Lang`) vì
-     *  1. nó **đã** mang đúng ba giá trị cần thiết (`auto`/`vi`/`en`) và đã có phép đọc tương thích ngược;
-     *  2. màn ClusterNav đang **niêm phong** — không sửa được một dòng, nên chỗ lưu phải là chỗ nó đã đọc;
-     *  3. `Lang.setChoice` cập nhật luôn cache của nó ⇒ hai bề mặt không thể lệch, kể cả trong cùng một lượt chạy.
-     *
-     * Cái mất: khoá này không nằm trong tệp prefs chính của launcher. Bù lại bằng máy, không bằng lời —
-     * `SettingsCoverageContractTest` đã được **nới gốc quét** để đọc `Lang.kt`, nên `lang` và `clusternav_lang` đều
-     * phải khai trong [SettingsCatalog] (và khai sai thì đỏ hai chiều).
-     *
-     * ## Vì sao vẫn đi qua `WorkspacePrefs` chứ không cho tầng UI gọi thẳng `Lang`
-     * Để launcher chỉ có **MỘT** cửa đọc/ghi cấu hình (`repository` → `WorkspacePrefs`), đúng luật *tầng UI 0 lần ghi
-     * bền trực tiếp*. Cho `SettingsSections` gọi `Lang.setChoice` thì tầng UI lại ghi thẳng xuống đĩa — đúng thứ RW0
-     * vừa dọn xong.
-     */
-    fun langMode(): LangMode {
-        val k = key(K_LANG)
-        sp.getString(k, null)?.let { return LangMode.of(it) }
-        // Lùi MỘT lần về chỗ lưu chung cũ rồi ghi sang hồ sơ: người đang dùng English không được mất lựa chọn đó chỉ
-        // vì bản mới chia khoá theo hồ sơ (cùng luật [profileString], chỉ khác chỗ lưu).
-        val legacy = LangMode.of(ClusterNavLang.choice(appCtx).code)
-        sp.edit().putString(k, legacy.code).apply()
-        return legacy
-    }
-
-    fun setLangMode(mode: LangMode) {
-        sp.edit().putString(key(K_LANG), mode.code).apply()
-        broadcastLang(mode)
-    }
-
-    /**
-     * Phát lựa chọn ngôn ngữ của hồ sơ đang dùng sang chỗ lưu **dùng chung cả APK** (`clusternav_lang`).
-     *
-     * ⚠ Hai chỗ lưu, nhưng KHÔNG phải bẫy hai-bản-sao: bản theo hồ sơ (`<hồ sơ>__lang`) là **nguồn sự thật**, bản kia
-     * chỉ là **bản PHÁT** cho `attachBaseContext` của màn ClusterNav đọc (nó không biết hồ sơ là gì). Một chiều, luôn
-     * ghi từ nguồn sang bản phát, không bao giờ ngược lại — xem [ProfileScope.LAUNCHER_OWNED_CLUSTERNAV_KEYS].
-     *
-     * Gọi từ [setLangMode] **và** từ lượt đổi hồ sơ (`PrefsWorkspaceRepository.switchProfile`): thiếu lời gọi thứ hai
-     * thì đổi sang một hồ sơ dùng English mà màn ClusterNav vẫn tiếng Việt.
-     */
-    internal fun broadcastLang(mode: LangMode = langMode()) =
-        ClusterNavLang.setChoice(appCtx, ClusterNavLang.Choice.entries.first { it.code == mode.code })
-
     // ── Launcher auto-start (S4 · R3a — nay THEO HỒ SƠ; xem [profileBoolean] về đường lùi khoá chung cũ) — B6 ──
     // Nổ máy → Kachi tự làm setup KHÔNG cần bung view (seed freeform + đặt HOME + đảm bảo HOME lên để khôi phục ô).
     // Kill-switch của người dùng; MẶC ĐỊNH BẬT (launcher nên tự sẵn sàng). [com.byd.clusternav.KachiAutostart] đọc cờ này.
@@ -333,10 +278,15 @@ class WorkspacePrefs(context: Context) {
      * Cấu hình chip thanh trên (RW0 vùng thứ ba). Theo **hồ sơ** như thanh nút — hai tài xế thích hai bộ chip khác
      * nhau là chuyện thường. Chuỗi lưu là danh sách mã trần, đọc được bằng mắt để cứu tay khi cần.
      */
-    fun topStrip(): TopStripConfig = TopStripConfig.decode(sp.getString(key("top_strip"), null))
+    fun topStrip(): TopStripConfig =
+        TopStripConfig.decode(sp.getString(key("top_strip"), null), sp.getBoolean(key("top_strip_labels"), true))
 
+    /** Ghi cấu hình chip — **hai khoá, một lượt ghi**: không đường nào ghi được một nửa cấu hình. */
     fun setTopStrip(config: TopStripConfig) {
-        sp.edit().putString(key("top_strip"), TopStripConfig.encode(config)).apply()
+        sp.edit()
+            .putString(key("top_strip"), TopStripConfig.encode(config))
+            .putBoolean(key("top_strip_labels"), config.showLabels)
+            .apply()
     }
 
     fun gridLayout(): GridLayout = grid(activeProfile())
@@ -457,7 +407,8 @@ class WorkspacePrefs(context: Context) {
         private const val K_AUTOSTART = "launcher_autostart"
         private const val K_UNITS = "unit_prefs"
         private const val K_WALL = "wallpaper_prefs"
-        private const val K_LANG = "lang"
+        /** `internal` vì ba hàm ngôn ngữ nay ở `WorkspacePrefsLang.kt` (trần 500 dòng) — vẫn MỘT khoá, một chỗ khai. */
+        internal const val K_LANG = "lang"
 
         /**
          * Sổ địa chỉ — **một chuỗi cho cả sổ** (mỗi mục một dòng, xem [SavedPlaces]), không phải họ khoá
