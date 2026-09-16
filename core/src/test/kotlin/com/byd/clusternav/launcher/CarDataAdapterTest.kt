@@ -18,7 +18,6 @@ class CarDataAdapterTest {
                     "getAutoVIN" to "LGXCE4CB0N0000001",          // vin
                     "getPM2p5Level" to "2",                       // pm25_level
                     "getOutCarTemperature" to "26",               // ext_temp
-                    "getChargePercent" to "45",                   // charging_pct (Instrument, 2026-09-15)
                 ),
                 // Remediation 2026-09-15: áp lốp 4 góc qua MỘT getter `getTyrePressureValue(area)` (area 1..4), đèn cốt
                 // qua `getLightStatus(LOW_BEAM=2)` — cùng getter với 5 đèn khác nên fake phải trả theo arg.
@@ -42,7 +41,6 @@ class CarDataAdapterTest {
         val s = adapter().readSlow(CarStatus())
         assertEquals(82, s.energy.soc)
         assertEquals(418, s.energy.evRangeKm)
-        assertEquals(45, s.energy.chargingPct)
         assertEquals(24, s.climate.cabinTempC)
         assertEquals(240.0, s.tyres.pFlKpa)          // raw kPa in CarStatus
         assertEquals(98, s.body.windowLfPct)

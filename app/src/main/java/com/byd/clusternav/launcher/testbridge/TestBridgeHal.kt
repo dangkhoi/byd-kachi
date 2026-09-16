@@ -63,13 +63,37 @@ internal object TestBridgeHal {
      */
     const val OP_SETEV = "setev"
 
-    /** `--es m` của `setev` không phải số và cũng không phải tên hằng có trên xe. */
+    /**
+     * `--es op getid` — ĐỌC một feature-id qua đường **generic** `AbsBYDAutoDevice.get(int id)`.
+     *
+     * ## Vì sao op này phải tồn tại ([ĐO xe 2026-09-16], vệt mưa/sấy)
+     * Trước bản này `hal` **không có đường đọc theo feature-id**: `--es op get` chỉ nhận một **tên method**, nên
+     * `--es id` rơi thẳng vào `missing_extra:m`. Vệt mưa/sấy tắc đúng ở đó — `getWindscreenWiperRelayState()` trả
+     * **0 (INVALID)** suốt lúc owner đang gạt mưa thật, và bước tiếp theo là đọc thẳng `WIPER_FRONT_WIPER_LEVEL`
+     * (321912848) · `WIPER_AREA_FRONT_STATE` (540287) trên device 1046 — thứ chỉ đường generic đọc được.
+     *
+     * ## Nó là bản SOI GƯƠNG chỉ-đọc của [OP_SETEV], có chủ ý
+     * Cùng bộ giải tên (`toIntOrNull()` rồi [BydFeatureIds.idByName] — **một** bộ, không fork bộ thứ hai), cùng
+     * cách nói device, cùng khuôn lời đáp. Khác đúng hai điểm, và cả hai là hệ quả của *"chỉ đọc"*:
+     *  • **KHÔNG** qua cổng `auto_confirm` — nó không đổi một bit nào của xe (cùng luật lượt `get` ở dưới);
+     *  • **KHÔNG** cần `--es args`.
+     *
+     * Cú pháp: `--es op getid --es dev <Device> --es m <id thập phân | TÊN_HẰNG>`.
+     *
+     * ⚠ Lời đáp nói rõ giá trị đọc được có phải **sentinel** hay không ([HalBindingTable.isSentinelRc]): trên xe
+     * này một feature không có trên trim vẫn trả về *một con số*, và đọc `-2147482648` như một mức gạt mưa là
+     * đúng kiểu kết luận sai mà CLAUDE.md §2 gọi là trộn cơ chế với quy kết.
+     */
+    const val OP_GETID = "getid"
+
+    /** `--es m` của `setev`/`getid` không phải số và cũng không phải tên hằng có trên xe. */
     const val ERR_BAD_FEATURE = "bad_feature:"
 
     fun run(app: Context, cmd: TestBridgeCommand, reply: TestBridgeReply) {
         val simpleDev = cmd.dev.ifBlank { DEFAULT_DEVICE }
         val fqn = HalBindingTable.deviceFqn(simpleDev)
         if (cmd.op == OP_SETEV) { runSetEv(app, cmd, simpleDev, fqn, reply); return }
+        if (cmd.op == OP_GETID) { runGetId(app, cmd, simpleDev, fqn, reply); return }
         val isGet = when (cmd.op) {
             "get" -> true
             "set" -> false
@@ -183,6 +207,46 @@ internal object TestBridgeHal {
                     halLine == "off_car" -> "unavailable: off-car/emulator"
                     rc != null -> "ok: HAL accepted (rc valid) — owner phai NHIN xe co phan ung khong"
                     else -> "rejected: $halLine"
+                },
+            ),
+        )
+    }
+
+    /**
+     * Lượt `getid` — xem KDoc [OP_GETID]. **Chỉ đọc** ⇒ không cổng CONFIRM, không `HalWriteProbe` (không có lượt
+     * ghi nào để chụp câu chữ), không `--es args`.
+     */
+    private fun runGetId(
+        app: Context,
+        cmd: TestBridgeCommand,
+        simpleDev: String,
+        fqn: String,
+        reply: TestBridgeReply,
+    ) {
+        // MỘT bộ giải tên, dùng chung với `setev` — xem KDoc [OP_GETID]. Không fork bộ thứ hai.
+        val featureId = cmd.method.toIntOrNull() ?: BydFeatureIds.idByName(cmd.method)
+        if (featureId == null) {
+            reply.fail(ERR_BAD_FEATURE + cmd.method)
+            return
+        }
+        val raw = BydHalGateway(app).featureGet(fqn, featureId)
+        val sentinel = HalBindingTable.isSentinelRc(raw?.toLongOrNull())
+        reply.ok(
+            listOf(
+                "op" to OP_GETID,
+                "dev" to simpleDev,
+                "fqn" to fqn,
+                "feature" to cmd.method,
+                "feature_id" to featureId,
+                // Bản đồ feature→device của CHÍNH chiếc xe này: đọc nhầm device là ca hỏng hay gặp nhất, và
+                // dòng này cho người đo thấy ngay mình có đang hỏi đúng device không (xem lệnh `featmap`).
+                "device_by_map" to (BydFeatureIds.deviceFqnForFeature(featureId) ?: ""),
+                "value" to (raw ?: ""),
+                "sentinel" to sentinel,
+                "reply" to when {
+                    raw == null -> "unavailable: null (off-car / feature absent / no permission)"
+                    sentinel -> "unavailable: sentinel ($raw) — feature khong co tren trim nay"
+                    else -> "ok: read"
                 },
             ),
         )

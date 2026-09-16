@@ -147,7 +147,7 @@ class AppDrawer(
                 body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets_none)))
             } else {
                 body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets)))
-                apps.grid(body, appWidgetPicks.map { p -> AppDrawerApps.Item(APPWIDGET_PKG, p.title, p.icon, p.onTap) }, cols = COLS_TILE)
+                apps.grid(body, appWidgetPicks.map { p -> AppDrawerApps.Item(APPWIDGET_PKG, p.title, { p.icon }, p.onTap) }, cols = COLS_TILE)
             }
 
             // ── App (chạm đặt vào ô) ──

@@ -11,13 +11,18 @@ import android.widget.RemoteViews
 internal class VietMapAppWidgetHost(
     context: Context,
     hostId: Int,
-    private val onViewUpdated: (Int, AppWidgetHostView) -> Unit,
+    /**
+     * Thế hệ phiên nghe HIỆN TẠI, đọc ĐỒNG BỘ ngay trong `updateAppWidget` — tức TRƯỚC lượt `post` sang
+     * main-looper, đúng chỗ cửa sổ đua mở ra. Xem [VietMapAppWidgetHostView.updateAppWidget].
+     */
+    private val listenGeneration: () -> Long,
+    private val onViewUpdated: (Int, AppWidgetHostView, Long) -> Unit,
 ) : AppWidgetHost(context, hostId) {
     override fun onCreateView(
         context: Context,
         appWidgetId: Int,
         appWidget: AppWidgetProviderInfo,
-    ): AppWidgetHostView = VietMapAppWidgetHostView(context, onViewUpdated)
+    ): AppWidgetHostView = VietMapAppWidgetHostView(context, listenGeneration, onViewUpdated)
 }
 
 /**
@@ -26,12 +31,16 @@ internal class VietMapAppWidgetHost(
  */
 private class VietMapAppWidgetHostView(
     context: Context,
-    private val onViewUpdated: (Int, AppWidgetHostView) -> Unit,
+    private val listenGeneration: () -> Long,
+    private val onViewUpdated: (Int, AppWidgetHostView, Long) -> Unit,
 ) : AppWidgetHostView(context) {
     private val main = Handler(Looper.getMainLooper())
 
     override fun updateAppWidget(remoteViews: RemoteViews?) {
         super.updateAppWidget(remoteViews)
-        main.post { onViewUpdated(appWidgetId, this) }
+        // Chụp thế hệ TẠI ĐÂY, không phải trong lambda đã post: cầu có thể `stop()` rồi `start()` lại (++thế hệ)
+        // trong lúc khung này còn nằm trong hàng đợi main-looper, và đó đúng là lượt callback phải bị vứt.
+        val generation = listenGeneration()
+        main.post { onViewUpdated(appWidgetId, this, generation) }
     }
 }

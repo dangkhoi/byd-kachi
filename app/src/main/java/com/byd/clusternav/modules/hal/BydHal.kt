@@ -200,11 +200,11 @@ object BydHal {
      * Mảng (bất kỳ kiểu phần tử, qua `java.lang.reflect.Array`) → chuỗi ĐỌC ĐƯỢC cho tầng parse ở :core:
      *  • **1 phần tử** → chỉ chuỗi phần tử đó (`"3"`), để `HalBindingTable.coerceInt` đọc thẳng — đây là dạng
      *    ưu tiên cho các getter "mảng bọc 1 số" như `getPM2p5Level()[0]` (docs/diagnostics/byd-pm25-airclean-RE-2026-09-04.md).
-     *  • **≥2 phần tử** → `"[a, b, c]"` (khớp `Arrays.toString`, đúng dạng `HalBindingTable.readIntList` đã khai
-     *    `"[0, 1, 2,…]"` cho 8 vùng radar) — KHÔNG cắt còn `[0]` vì sẽ mất dữ liệu của consumer danh sách.
+     *  • **≥2 phần tử** → `"[a, b, c]"` (khớp `Arrays.toString`) — KHÔNG cắt còn `[0]` vì sẽ mất dữ liệu của
+     *    consumer danh sách; `HalBindingTable.coerceInt` tự lấy phần tử đầu khi ô chỉ cần một số.
      *  • **rỗng** → `"[]"`.
      * ✔ `HalBindingTable.coerceInt`/`coerceDouble` (:core) ĐÃ lấy phần tử đầu của `"[a, b]"` (hàm `firstOfArray`),
-     * nên getter mảng ≥2 phần tử vẫn ra scalar đúng cho ô cần số; [readIntList] đọc trọn mảng.
+     * nên getter mảng ≥2 phần tử vẫn ra scalar đúng cho ô cần số.
      *
      * Phần tử `null` (mảng `Object[]`) → chuỗi `"null"`, KHÔNG ném: một ô rỗng không được làm mất cả lượt đọc.
      */
@@ -625,9 +625,29 @@ object BydHal {
         }
     }
 
+    /** Trần độ sâu khi lần theo `cause` — cùng con số `carexec.LocalShellFailures.MAX_CAUSE_DEPTH`. */
+    private const val MAX_CAUSE_DEPTH = 8
+
+    /**
+     * Gốc của chuỗi `cause` → `"Class: message"`.
+     *
+     * ⚠ PHẢI chặn VÒNG, không chỉ chặn tự-trỏ. Bản cũ dừng ở `c.cause !== c`, tức chỉ bắt được vòng MỘT mắt
+     * xích; một vòng hai mắt xích (`a.cause = b; b.cause = a` — sinh ra khi một tầng bọc lại đúng cái lỗi nó
+     * vừa nhận, kiểu `AdbConnectException("handshake failed", e)` gặp lại chính `e`) làm vòng lặp chạy VĨNH
+     * VIỄN. Hàm này nằm trên đường ghi nav (`cachedSetInt`/`cachedSdk`, ~4 lần/giây) nên đơ ở đây = đơ luồng
+     * ghi HAL trên xe đang chạy. `carexec.LocalShellFailures.causeChain` đã chặn đúng cách từ trước — đây là
+     * cùng một lá chắn, đặt vào chỗ còn thiếu.
+     */
     fun root(t: Throwable): String {
         var c: Throwable = t
-        while (c.cause != null && c.cause !== c) c = c.cause!!
+        val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Throwable, Boolean>())
+        seen.add(c)
+        var depth = 0
+        while (depth++ < MAX_CAUSE_DEPTH) {
+            val next = c.cause ?: break
+            if (!seen.add(next)) break        // đã đi qua mắt xích này ⇒ chuỗi có vòng ⇒ dừng
+            c = next
+        }
         return "${c.javaClass.simpleName}: ${c.message}"
     }
 

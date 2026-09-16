@@ -55,6 +55,13 @@ def label(pkg):
     return PKG_LABEL.get(pkg, pkg or "(empty)")
 
 
+def cell(row, field):
+    """csv.DictReader fills MISSING trailing columns with None (restval), and a drive log truncated by
+    a power cut is exactly that. `row.get(field, "")` returns that None, so .strip()/.lower() on it
+    raised AttributeError and killed the whole analysis."""
+    return (row.get(field) or "")
+
+
 def trunc(s, n=70):
     s = (s or "").replace("\n", " ").strip()
     return s if len(s) <= n else s[: n - 1] + "…"
@@ -70,7 +77,7 @@ def analyze_pkg_stream(rows, text_fields, samples):
         distinct = set()
         sample_texts = []
         for r in rs:
-            joined = " | ".join(trunc(r.get(fld, ""), 90) for fld in text_fields if r.get(fld, "").strip())
+            joined = " | ".join(trunc(cell(r, fld), 90) for fld in text_fields if cell(r, fld).strip())
             if joined and joined not in distinct:
                 distinct.add(joined)
                 if len(sample_texts) < samples:
@@ -158,15 +165,15 @@ def main():
         by_pkg[r.get("pkg", "")].append(r)
     for p in sorted(by_pkg, key=lambda x: -len(by_pkg[x])):
         rs = by_pkg[p]
-        nav = sum(1 for r in rs if r.get("isNav", "").lower() == "true")
-        dist = sum(1 for r in rs if r.get("hasDist", "").lower() == "true")
+        nav = sum(1 for r in rs if cell(r, "isNav").lower() == "true")
+        dist = sum(1 for r in rs if cell(r, "hasDist").lower() == "true")
         distinct, samp = set(), []
         for r in rs:
-            key = trunc(r.get("title", ""), 45) + " || " + trunc(r.get("text", ""), 80)
+            key = trunc(cell(r, "title"), 45) + " || " + trunc(cell(r, "text"), 80)
             if key.strip(" |") and key not in distinct:
                 distinct.add(key)
                 if len(samp) < samples:
-                    samp.append((r.get("isNav", ""), r.get("hasDist", ""), key))
+                    samp.append((cell(r, "isNav"), cell(r, "hasDist"), key))
         print(f"\n  [{label(p)}] rows={len(rs)} isNav={nav} hasDist={dist} distinct={len(distinct)}")
         for isnav, hd, key in samp:
             print(f"      • (isNav={isnav},hasDist={hd}) {key}")

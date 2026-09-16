@@ -1,0 +1,24 @@
+{
+  "rules": [
+    {
+      "path": "app/src/main/**/*.kt",
+      "merge_system_rule": true,
+      "rule": "Kachi launcher :app (Android 10 head unit, runs while the car is moving — CLAUDE.md). Enforce ALL:\n## Lifecycle & threads\n- No blocking shell/HAL/file IO on the main thread (search for ShellTransport/dadb/`sh(` calls from View/Activity callbacks).\n- Every Thread/Executor/Handler.postDelayed created in a View/Service must have a shutdown/removeCallbacks path that is actually called (grep call sites — CLAUDE.md §8: a function with zero call sites is a defect).\n- release()/onDetachedFromWindow must be idempotent and must close the gates for pending retries (no re-arming after release).\n- No allocation of Drawable/Paint/Regex in onDraw or 1 Hz tick paths; Drawables must not be shared between views.\n- AlertDialog/Toast from background callbacks must be guarded by isFinishing/isDestroyed and posted to main.\n## System commands (CLAUDE.md §4/§5)\n- Any string interpolated into an `am`/`wm`/`input`/`pm`/`appops`/`settings` shell command must be allow-listed or validated (package names against a catalog/regex, ints via toInt, display ids >= 1). Flag raw interpolation as P2 even if the only current caller is trusted.\n- Every command that changes out-of-process state (wm density/overscan, appops, settings, task moves) must have a restore path that works after process death (marker in prefs before the change).\n## Evidence discipline\n- Kotlin KDoc in Vietnamese with [ĐO]/[SUY]/[ĐOÁN] tags is intentional; do not flag. But if a KDoc asserts a safety property the code does not hold, flag it.\n- Files > 500 LOC must be split before commit (CLAUDE.md §4.1)."
+    },
+    {
+      "path": "core/src/main/**/*.kt",
+      "merge_system_rule": true,
+      "rule": ":core is pure JVM (no android.* imports) and holds registries, policies and parsers. Enforce:\n- Registry completeness: any table keyed by ids (CarDataDemand, HalBindingTable, CapabilityIcons, VoiceSynonyms…) must cover every id family (controls, telemetry, macros, launcher actions); flag cross-registry gaps.\n- Codec/delimiter hygiene: encode must scrub every character decode splits on (\\n, \\r, tab, the SlotCodec separator); round-trip tests required.\n- Locale: String.format with %f/%x must pass Locale.US (logs and JSON are machine-parsed).\n- Regex must be compiled once (companion/private val), never per call on read/poll paths.\n- Executors: no Future whose exceptions are never observed; catch Throwable at worker boundaries and transition the state machine to an error state; shutdown() must have a call site.\n- Small fixed registries: do NOT recommend Sequence; do NOT recommend converting deliberate if-chains or enums with ordinal contracts (GroupBoard.worst, EvidenceTier) — those decisions are documented in KDoc.\n- Files > 500 LOC must be split (CLAUDE.md §4.1)."
+    },
+    {
+      "path": "scripts/**/*.sh",
+      "merge_system_rule": true,
+      "rule": "Bash scripts here run against a REAL CAR over adb (or the emulator). Enforce:\n- Any script that writes car state must: read the prior value, write, verify, and restore on exit/INT with a trap; a failed prior read must abort, not restore a literal.\n- Any state-changing sweep must go through the shared confirm gate (k_confirm / `--ez auto_confirm`) — AUTO=1 without a printed gate is P1.\n- macOS host: `timeout` does not exist; use the repo's watchdog idiom. `a && b || c` fall-through, `set -e` with pipelines, unquoted variables, zsh word-splitting are P2.\n- Emulator-only scripts must call require_emulator before anything that could reach a car.\n- Compare each script with the sibling that already does the same job correctly (hud-cluster-probe.sh restore idiom, listen-nav-signals.sh trap idiom, kachi/30|40|60 confirm idiom) and flag divergence.\n- No real IPs (write <ip-xe>), no usernames in paths, no VIN."
+    },
+    {
+      "path": "scripts/**/*.py",
+      "merge_system_rule": true,
+      "rule": "Python host tools (voice corpus, catalog generators, RE tooling). Enforce:\n- open() with encoding='utf-8' always (Vietnamese text; the RE pipeline exports LC_ALL=C).\n- No bare `except Exception: pass/return None` on data paths — count and report dropped items.\n- Generators that write committed files must be deterministic (no datetime.now() in output unless passed as an argument).\n- csv.DictReader rows may contain None for missing trailing fields — guard before .strip()/.lower().\n- Dict access by key from external data must handle missing keys with a clear error.\n- Vietnamese text must be NFC-normalised before comparison; keep norm() shared (vi_text.py)."
+    }
+  ]
+}

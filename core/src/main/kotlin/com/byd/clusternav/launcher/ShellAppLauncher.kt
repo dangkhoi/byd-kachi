@@ -15,7 +15,18 @@ class ShellAppLauncher(
     override fun isFreeformAvailable(): Boolean =
         sh("settings get global enable_freeform_support").trim() == "1"
 
+    /**
+     * ⚠ [pkg] đi THẲNG vào một chuỗi lệnh shell ([FreeformLaunch.resolveCmd] nội suy `$pkg` không có dấu nháy),
+     * và nó **không phải** lúc nào cũng đến từ danh sách app đã cài: ô workspace lưu bền dưới dạng `app:<gói>`
+     * (`SlotCodec`), mà KDoc của chính lớp đó ghi rõ *"chuỗi này đến từ đĩa và có thể bị sửa tay"*. Một tên gói
+     * có `;` hoặc `$(…)` vì thế chạy được lệnh tuỳ ý dưới shell uid 2000 — CLAUDE.md §4.1 (*user input → lệnh
+     * phải được làm sạch*). Tên gói Android hợp lệ chỉ gồm chữ/số/`_`/`.`, nên lọc theo đúng bộ ký tự ấy không
+     * từ chối một gói thật nào và giữ NGUYÊN byte của mọi chuỗi lệnh (golden test không đổi).
+     */
+    private fun safe(pkg: String): Boolean = pkg.matches(PKG)
+
     override fun openInSlot(pkg: String, slot: SlotRect): Boolean {
+        if (!safe(pkg)) return false
         val comp = FreeformLaunch.parseComponent(sh(FreeformLaunch.resolveCmd(pkg))) ?: return false
         sh(FreeformLaunch.launchCmd(comp))
         // Poll tới khi task bám display chính (thay sleep(900) mù — app nặng khởi động chậm hơn ⇒ resize trượt ⇒ kẹt fullscreen).
@@ -39,6 +50,7 @@ class ShellAppLauncher(
      * nhanh hơn nhiều). Nếu chưa có task / bị từ chối (đang fullscreen) → [openInSlot] (mở lại freeform rồi resize).
      */
     override fun moveToSlot(pkg: String, slot: SlotRect): Boolean {
+        if (!safe(pkg)) return false
         val stack = sh("am stack list")
         val taskId = FreeformLaunch.parseTaskIdOnDisplay(stack, pkg, FreeformLaunch.MAIN_DISPLAY)
             ?: FreeformLaunch.parseTaskId(stack, pkg)
@@ -49,9 +61,16 @@ class ShellAppLauncher(
     private fun rejected(out: String): Boolean =
         out.contains("Error", true) || out.contains("Exception", true) || out.contains("not allowed", true)
 
-    private companion object { const val POLL_TRIES = 12; const val POLL_STEP_MS = 250L }
+    private companion object {
+        const val POLL_TRIES = 12
+        const val POLL_STEP_MS = 250L
+
+        /** Tên gói Android hợp lệ — xem [safe]. */
+        val PKG = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)*")
+    }
 
     override fun closeSlot(pkg: String) {
+        if (!safe(pkg)) return
         val comp = FreeformLaunch.parseComponent(sh(FreeformLaunch.resolveCmd(pkg))) ?: return
         sh(FreeformLaunch.fullscreenCmd(comp))
     }

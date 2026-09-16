@@ -1,0 +1,105 @@
+package com.byd.clusternav.launcher.voice
+
+/**
+ * ═══ [P0 xe 2026-09-16] MỘT MICRO TẠI MỘT THỜI ĐIỂM, VÀ MỘT CẦU CHÌ THEO PHÚT ════════════════════════════════
+ *
+ * ## Bệnh nó chữa — [ĐO xe] `voice-1.68-real.txt`, 12 phút trên xe owner
+ * **309** lượt mở micro, trong khi chỉ có **7** dòng `lượt 1 (ngữ pháp)` — tức chỉ **7 phiên thật sự bắt đầu**,
+ * và **không một dòng** `"đã có một phiên nghe đang chạy"` nào (người lái không hề bấm lại). Hơn 300 lượt mở
+ * còn lại đến từ chính vòng hội thoại/hỏi-lại tự nuôi nhau: mô hình bịa ra `"ừ"` (102 lần) và `"ừm"` (102 lần)
+ * trong lúc gần như im lặng, mỗi chuỗi ấy được coi là một lượt nói và mở lại micro.
+ *
+ * Trần `MAX_FOLLOW_UPS = 5` **đã có** và vẫn bị vượt ~7–20 lần. [SUY, đọc mã] hai chỗ rò, và bản vá này không
+ * phụ thuộc vào việc chẩn đoán đúng chỗ nào:
+ *  1. đường **hỏi lại** (`askAgain` → `listenAgain`) cũng mở micro nhưng **không** đi qua bộ đếm `followUps`;
+ *  2. `VoiceSession.capturing` là **một** cờ cho cả tiến trình, đặt/xoá trong `whileCapturing` — hai lượt chồng
+ *     nhau thì lượt xong TRƯỚC xoá cờ cho cả hai, nên cổng `micOpen()` thôi canh. [ĐO] nhật ký có **4** dòng
+ *     `mic mở sau …` trong 300 ms (19:09:00.340/.446/.473/.495) rồi **4** kết quả `sherpa ra` mâu thuẫn nhau
+ *     (*"tắt đèn đọc tất cả cửa sổ"* vs *"tắt đèn tất cả cửa sổ"*).
+ *
+ * ## Vì sao chốt nằm ở ĐÂY chứ không ở `VoiceSession`
+ * Vì đây là chốt **cuối cùng trước phần cứng**: nó được xin ngay tại chỗ mở `AudioRecord` ([VoiceCapture]), nên
+ * mọi đường mở micro — lượt chính, hội thoại, hỏi lại, xác nhận, và **mọi đường ai đó thêm sau này** — đều đi
+ * qua nó mà không phải nhớ gọi thêm gì. Một chốt đặt ở tầng phiên chỉ canh được những đường mà tầng phiên biết;
+ * đúng hai chỗ rò ở trên là hai đường mà nó **không** biết. Cùng luật CLAUDE.md §5: *"guard cứng đặt ở tầng thi
+ * hành, không đặt ở tầng UI"*.
+ *
+ * ## Vì sao cầu chì theo phút, khi đã có chốt một-lượt
+ * Chốt một-lượt chặn **chồng lấn**; nó không chặn **nối đuôi**. Một vòng lặp tuần tự (mở → nghe → bịa ra `"ừ"` →
+ * mở lại) không bao giờ có hai micro cùng lúc mà vẫn ăn hết CPU — đúng thứ làm ô YouTube của owner không cuộn
+ * nổi. Cầu chì là lớp cuối: nó **không** biết gì về nguyên nhân, nên một lỗi tương lai chưa ai nghĩ ra cũng bị
+ * nó chặn. [ĐO] 309 lượt / 12 phút ≈ **26 lượt/phút**; trần [MAX_OPENS_PER_MINUTE] = 12 vẫn rộng gấp đôi một
+ * phiên hội thoại dài nhất hợp lệ (1 lượt chính + 5 lượt nối) mà đã chặn đứng con số 26.
+ *
+ * ## THUẦN có chủ ý — không `android.util.Log`, không `SystemClock`
+ * Lớp này là một máy trạng thái có đồng hồ, tức đúng thứ phải kiểm được bằng cách **bơm thời gian giả**. Nó trả
+ * về một [Grant] mô tả chuyện gì xảy ra và để [VoiceCapture] ghi nhật ký — chỗ đã có Android trong tay. Nhét
+ * `Log` vào đây là biến mọi bài kiểm thành bài cần Robolectric.
+ *
+ * ## Vì sao nằm ở `:core` chứ không cạnh [VoiceCapture]
+ * Nó **thuần** (không một dòng `android.*`), và `LayeringRulesTest` khoá đúng điều đó: *"số file thuần còn
+ * nằm trong `:app` chỉ được GIẢM"*. Một máy trạng thái có đồng hồ để ở `:app` nghĩa là bài kiểm của nó phải
+ * chạy qua Robolectric để chứng minh một thứ không liên quan gì tới Android. Vì ở `:core` nên `internal`
+ * không tới được `:app` — công khai, và cái giữ cho nó không bị gọi bừa là **chỗ gọi duy nhất** ngay trước
+ * `openRecord()` (bài canh `VoiceLoopGuardWiringContractTest` ghim số chỗ gọi ấy).
+ */
+object VoiceSingleFlight {
+
+    /** Trần số lượt mở micro trong một cửa sổ [WINDOW_MS] — xem KDoc lớp. */
+    const val MAX_OPENS_PER_MINUTE = 12
+
+    const val WINDOW_MS = 60_000L
+
+    /** Kết quả xin mở micro. */
+    sealed interface Grant {
+        /** Được mở. Chỗ gọi **phải** gọi [release] trong `finally`. */
+        object Ok : Grant
+
+        /** Đang có một lượt khác giữ micro — [holder] là nhãn của lượt ấy (để nhật ký nói được ai chắn ai). */
+        data class Busy(val holder: String) : Grant
+
+        /** Cầu chì: đã [opens] lượt trong cửa sổ vừa qua. */
+        data class Fused(val opens: Int) : Grant
+    }
+
+    private val lock = Any()
+    private var holder: String? = null
+
+    /** Mốc giờ của các lượt **đã được cấp**, cũ → mới. Chỉ giữ trong cửa sổ, nên nó không lớn quá [MAX_OPENS_PER_MINUTE]. */
+    private val opens = ArrayDeque<Long>()
+
+    /**
+     * Xin quyền mở micro.
+     *
+     * @param label nhãn lượt (`chinh` · `hoi-thoai` · `hoi-lai` · `xac-nhan`) — đi vào nhật ký khi bị chắn.
+     * @param nowMs đồng hồ, bơm được để kiểm off-device.
+     */
+    fun acquire(label: String, nowMs: Long = System.currentTimeMillis()): Grant = synchronized(lock) {
+        holder?.let { return Grant.Busy(it) }
+        trim(nowMs)
+        // ⚠ Cầu chì đếm lượt **ĐƯỢC CẤP**, không đếm lượt XIN. Đếm lượt xin thì một tràng bị chốt một-lượt chắn
+        // lại (tức đã vô hại) vẫn đốt hết hạn mức, và người lái mất micro vì một lỗi mà lớp trước đã chặn xong.
+        if (opens.size >= MAX_OPENS_PER_MINUTE) return Grant.Fused(opens.size)
+        opens.addLast(nowMs)
+        holder = label
+        return Grant.Ok
+    }
+
+    /** Nhả micro. An toàn khi gọi thừa (lượt bị chắn vẫn có thể chạy qua `finally` của chỗ gọi). */
+    fun release() = synchronized(lock) { holder = null }
+
+    /** Có lượt nào đang giữ micro không — chỉ để nhật ký/chẩn đoán, KHÔNG dùng làm cổng (xem KDoc lớp). */
+    fun busy(): Boolean = synchronized(lock) { holder != null }
+
+    /** Số lượt đã mở trong cửa sổ tính tới [nowMs]. */
+    fun opensInWindow(nowMs: Long = System.currentTimeMillis()): Int = synchronized(lock) { trim(nowMs); opens.size }
+
+    /** Xoá sạch trạng thái — **chỉ cho bài kiểm**; tiến trình thật không bao giờ cần. */
+    fun reset() = synchronized(lock) { holder = null; opens.clear() }
+
+    private fun trim(nowMs: Long) {
+        // `<=` chứ không `<`: một mốc đúng bằng mép cửa sổ đã ra ngoài cửa sổ. Dùng `<` thì trần thành 13 ở đúng
+        // nhịp đều đặn nhất — loại lệch-một mà không bài kiểm nào bắt được nếu chỉ thử các mốc ngẫu nhiên.
+        while (opens.isNotEmpty() && nowMs - opens.first() >= WINDOW_MS) opens.removeFirst()
+    }
+}

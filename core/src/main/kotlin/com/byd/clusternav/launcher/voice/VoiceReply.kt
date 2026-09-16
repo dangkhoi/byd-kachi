@@ -90,8 +90,13 @@ object VoiceReply {
     private fun mediaPreview(i: VoiceIntent.Media): String = when (i.op) {
         VoiceMediaOp.PLAY -> Strings.t("Phát nhạc", "Play") + by(i.app)
         VoiceMediaOp.PAUSE -> Strings.t("Dừng nhạc", "Pause")
-        VoiceMediaOp.NEXT -> Strings.t("Bài tiếp theo", "Next track")
-        VoiceMediaOp.PREV -> Strings.t("Bài trước", "Previous track")
+        // ⚠ [SOÁT chuỗi-lời-đáp 2026-09-17] Hai dòng này PHẢI là **cụm động từ**, không phải cụm danh từ.
+        // `VoiceFeedbackPhrase.merge` dựng câu đọc bằng cách ghép *"Đã "*/*"Chưa "* + thân dòng — cụm danh từ
+        // *"Bài tiếp theo"* vì thế ra *"Chưa bài tiếp theo, chưa có phiên nhạc nào"*, một câu không phải tiếng
+        // Việt. Mọi vai khác của `mediaPreview` (PLAY · PAUSE · QUERY) vốn đã là động từ; hai vai này là ngoại lệ
+        // duy nhất, và sửa **tại nguồn** đúng hơn là dạy tầng đọc nhận diện cụm danh từ (CLAUDE.md §7).
+        VoiceMediaOp.NEXT -> Strings.t("Chuyển bài tiếp theo", "Skip to the next track")
+        VoiceMediaOp.PREV -> Strings.t("Quay lại bài trước", "Go back to the previous track")
         // V1.1 — đọc lại tên bài trong ngoặc kép nhọn. Phần này do nhận dạng **tự do** đọc ra (R16), tức chỗ dễ
         // sai nhất trong cả câu; để nó lẫn vào câu trơn thì người nghe không biết máy đang hỏi về đoạn nào.
         VoiceMediaOp.QUERY -> Strings.t("Tìm bài ", "Search ") + "«" + i.query + "»" + by(i.app)
@@ -179,6 +184,28 @@ object VoiceReply {
     /** Xe chưa trả về số cho datum này (off-car là ca bình thường). */
     fun noReading(datumLabel: String): String =
         datumLabel + ": " + Strings.t("chưa đọc được", "no reading")
+
+    /**
+     * H4 — nút **có trên màn nhưng xe này không có đường điều khiển** (route sentinel / absent on trim).
+     *
+     * ## Vì sao câu này phải tồn tại, và vì sao phép QUYẾT ĐỊNH không nằm ở đây
+     * [ĐO xe 2026-09-16] `ac_auto`: owner xác nhận **xe CÓ** điều hoà auto, nhưng mã HAL khai trong registry
+     * (`1324355606`) không có trong `BYDAutoFeatureIds` của đời xe này ⇒ lượt gọi trả sentinel *"absent on trim"*
+     * (xem ghi chú ở `ControlRegistry.ac_auto`). Người lái nói *"bật điều hoà"* và **không thấy gì xảy ra** —
+     * tệ hơn cả một lời từ chối, vì họ sẽ nói lại lần hai, lần ba.
+     *
+     * `:core` **không thể** tự biết điều đó: sentinel là kết quả **lúc chạy** của tầng HAL. Nên ở đây chỉ có hai
+     * thứ thuần: [uncontrollable] (hình dạng của ca) và câu chữ. Ai trả lời được câu *"mã này có đường thật
+     * không"* thì người đó gọi — cùng lệ với `freshCar`/`confirmIds` của `VoiceWiring`.
+     *
+     * @param routeAbsent chỗ gọi trả `true` khi mã không có đường điều khiển trên **chiếc xe này**.
+     */
+    fun uncontrollable(i: VoiceIntent, routeAbsent: (String) -> Boolean): Boolean =
+        i is VoiceIntent.Control && routeAbsent(i.id)
+
+    /** Câu đi kèm [uncontrollable] — nói thẳng là *chiếc xe này*, không nói *"lỗi"* (nút vẫn đúng, xe mới thiếu). */
+    fun notOnThisCar(i: VoiceIntent): String =
+        failed(i, Strings.t("chưa điều khiển được trên xe này", "not controllable on this car"))
 
     /** Không có app dẫn đường nào trên máy. */
     fun noNavApp(i: VoiceIntent): String =

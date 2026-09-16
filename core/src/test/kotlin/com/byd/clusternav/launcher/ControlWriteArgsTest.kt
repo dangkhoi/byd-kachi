@@ -88,15 +88,9 @@ class ControlWriteArgsTest {
     }
 
     // ── Cùng họ: giá trị TẮT phải là giá trị xe hiểu, không phải 0 ───────────────────────────────
-
-    @Test
-    fun `mua tu dong kinh tat gui 2 chu khong phai 0`() {
-        assertArrayEquals(intArrayOf(1), args("rain_close", 1))
-        assertArrayEquals(
-            intArrayOf(2), args("rain_close", 0),
-            "tài liệu ghi ON=1/OFF=2; gửi 0 là giá trị không có trong tài liệu ⇒ xe bỏ qua, người dùng tưởng đã tắt",
-        )
-    }
+    // ⚠ (V) FEATURE-FILTER 2026-09-17: bài `mua tu dong kinh tat gui 2 chu khong phai 0` đã gỡ cùng nút
+    // `rain_close` (owner chấm NO). Luật *"giá trị TẮT là giá trị xe hiểu, không phải 0"* vẫn được khoá ở
+    // `den ban ngay setDayTimeLightState`, `readl`, `sunroof`, `wireless_charge` trong chính tệp này.
 
     // ── Luật chung: một lệnh xe, hai mã ⇒ tham số phải khác ─────────────────────────────────────
 
@@ -232,16 +226,8 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(3), args("powertrain_mode", 1), "args[1]=HEV → ENERGY_MODE_HEV=3 (KHÔNG phải index 1)")
     }
 
-    @Test fun `che do lai setOperationMode map index UI sang enum`() {
-        val def = ControlRegistry.byId("drive_mode")!!
-        assertEquals("BYDAutoEnergyDevice.setOperationMode", def.bindingKey)
-        assertEquals(listOf("Thường", "Eco", "Thể thao", "Tuyết"), def.args, "thứ tự args là hợp đồng của map bên dưới")
-        assertArrayEquals(intArrayOf(3), args("drive_mode", 0), "Thường → NORMAL=3")
-        assertArrayEquals(intArrayOf(1), args("drive_mode", 1), "Eco → ECONOMY=1")
-        assertArrayEquals(intArrayOf(2), args("drive_mode", 2), "Thể thao → SPORT=2")
-        assertArrayEquals(intArrayOf(4), args("drive_mode", 3), "Tuyết → SNOW=4")
-        assertArrayEquals(intArrayOf(3), args("drive_mode", 9), "index lạ → NORMAL, không gửi số ngoài enum")
-    }
+    // ⚠ (V) FEATURE-FILTER 2026-09-17: bài `che do lai setOperationMode map index UI sang enum` đã gỡ cùng nút
+    // `drive_mode` (owner chấm NO) — và cùng nhánh `writeArgs` của nó. Ô ĐỌC `op_mode` không đi qua writeArgs.
 
     @Test fun `cua so troi setMoonRoofState mo=1 dong=2`() {
         assertEquals("BYDAutoBodyworkDevice.setMoonRoofState", ControlRegistry.byId("sunroof")!!.bindingKey)
@@ -249,26 +235,10 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(2), args("sunroof", 0))
     }
 
-    @Test fun `sac ngay setChargingMode luon IMMEDIATELY=1`() {
-        assertEquals("BYDAutoChargingDevice.setChargingMode", ControlRegistry.byId("start_charging")!!.bindingKey)
-        assertArrayEquals(intArrayOf(1), args("start_charging", 1))
-        assertArrayEquals(intArrayOf(1), args("start_charging", 0), "nút bấm không có mặt tắt")
-    }
-
-    @Test fun `muc tieu sac setChargeStopCapacityState enum roi khong phai phan tram tho`() {
-        assertEquals("BYDAutoChargingDevice.setChargeStopCapacityState", ControlRegistry.byId("target_soc_set")!!.bindingKey)
-        assertArrayEquals(intArrayOf(1), args("target_soc_set", 100))
-        assertArrayEquals(intArrayOf(2), args("target_soc_set", 90))
-        assertArrayEquals(intArrayOf(3), args("target_soc_set", 80), "80% → CHARGE_STOP_CAPACITY_80=3, KHÔNG gửi 80")
-        assertArrayEquals(intArrayOf(4), args("target_soc_set", 70))
-        assertArrayEquals(intArrayOf(5), args("target_soc_set", 60))
-        assertArrayEquals(intArrayOf(6), args("target_soc_set", 50))
-        // STEP bước 5 ⇒ có % lẻ: mốc gần nhất, hoà → mốc thấp; ngoài dải kẹp biên.
-        assertArrayEquals(intArrayOf(3), args("target_soc_set", 85), "85 hoà 80/90 → mốc THẤP (80=3)")
-        assertArrayEquals(intArrayOf(2), args("target_soc_set", 94), "94 → 90=2")
-        assertArrayEquals(intArrayOf(6), args("target_soc_set", 10), "dưới 50 → kẹp 50=6")
-        assertArrayEquals(intArrayOf(1), args("target_soc_set", 120), "trên 100 → kẹp 100=1")
-    }
+    // ⚠ (V) FEATURE-FILTER 2026-09-17: hai bài `sac ngay setChargingMode luon IMMEDIATELY=1` và
+    // `muc tieu sac setChargeStopCapacityState enum roi khong phai phan tram tho` đã gỡ cùng hai nút
+    // `start_charging`/`target_soc_set` — và cùng hàm `chargeStopCapacityEnum` mà bài thứ hai khoá. `wireless_charge`
+    // (nút sạc DUY NHẤT còn lại, không thuộc danh sách NO) vẫn có bài ngay dưới.
 
     @Test fun `sac khong day setWirelessChargingSwitchState ON=1 OFF=2`() {
         assertEquals("BYDAutoChargingDevice.setWirelessChargingSwitchState", ControlRegistry.byId("wireless_charge")!!.bindingKey)

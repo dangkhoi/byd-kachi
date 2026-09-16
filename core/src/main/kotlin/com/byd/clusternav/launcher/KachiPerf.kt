@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -82,8 +83,15 @@ object KachiPerf {
         val absent = perMin(Counter.HAL_SKIP_ABSENT)
         val shell = perMin(Counter.SHELL_CMD)
         val logKb = perMin(Counter.LOG_BYTES) / 1024.0
-        return "cửa sổ ${elapsed / 1000}s · HAL đọc=%.0f/phút · bỏ-không-hiện=%.0f · bỏ-xe-không-có=%.0f · shell=%.1f/phút · log=%.1f KB/phút"
-            .format(read, offscreen, absent, shell, logKb)
+        // ⚠ `Locale.ROOT`: `String.format` không có locale dùng locale MẶC ĐỊNH của máy, mà xe của owner chạy
+        // `vi-VN` ⇒ `%.1f` in ra `1,5` thay vì `1.5`. Dòng này là **số đo** được chép vào `docs/diagnostics/perf-*`
+        // và so giữa hai lần chạy; đổi dấu thập phân theo ngôn ngữ máy là làm hai lần đo không so được với nhau.
+        // Cùng luật với [TelemetryReadout] (`Locale.US`) và [Units.format] (`Locale.ROOT`).
+        return String.format(
+            Locale.ROOT,
+            "cửa sổ %ds · HAL đọc=%.0f/phút · bỏ-không-hiện=%.0f · bỏ-xe-không-có=%.0f · shell=%.1f/phút · log=%.1f KB/phút",
+            elapsed / 1000, read, offscreen, absent, shell, logKb,
+        )
     }
 
     /** Nhịp báo cáo mặc định — một phút, đúng đơn vị mà mọi con số trong `docs/diagnostics/perf-*` dùng. */

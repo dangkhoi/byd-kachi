@@ -10,6 +10,8 @@ import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SlotCodec
 import com.byd.clusternav.launcher.UnitFormat
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.system.inputd.InputDaemonClient
+import com.byd.clusternav.launcher.voice.SherpaModelCatalog
 import com.byd.clusternav.launcher.voice.SherpaTtsCatalog
 import com.byd.clusternav.launcher.voice.VoiceModelStore
 import com.byd.clusternav.launcher.voice.VoiceSpeakerKind
@@ -93,13 +95,9 @@ internal object TestBridgeState {
                         "slot_displays" to TestBridgeJson.Raw(TestBridgeJson.arr(slotDisplays(ctx))),
                     ),
                 ),
+                "inputd" to TestBridgeJson.Raw(inputd(ctx)),
                 "permissions" to TestBridgeJson.Raw(permissions(ctx, shell)),
-                "voice_model" to TestBridgeJson.Raw(
-                    TestBridgeJson.obj(
-                        "ready" to VoiceModelStore.isReady(ctx),
-                        "bytes" to VoiceModelStore.sizeOnDisk(ctx),
-                    ),
-                ),
+                "voice_model" to TestBridgeJson.Raw(voiceModel(ctx)),
                 "tts" to TestBridgeJson.Raw(tts(ctx)),
                 "cast_enabled" to castEnabled(ctx),
                 "test_mode_minutes_left" to TestBridgeStore.remainingMinutes(ctx),
@@ -148,6 +146,40 @@ internal object TestBridgeState {
     }
 
     /**
+     * ═══ H6 — MÔ HÌNH NGHE: đang cài cái nào, nặng bao nhiêu, **có bản nhẹ hơn không** ══════════════════════
+     *
+     * ## Vì sao `bytes` một mình không đủ, và vì sao [ĐO xe 2026-09-16] chứng minh điều đó
+     * Lời đáp trên xe owner là `{"ready":true,"bytes":270408094}` — 270 MB, tức bản **fp32**. Nhưng con số ấy chỉ
+     * đọc ra được nếu người đọc thuộc lòng cỡ của từng gói; và ngày danh mục có ba gói thì nó không còn phân biệt
+     * được nữa. `id` trả lời thẳng câu hỏi thật (*"xe này đang chạy mô hình nào"*), và nó là **id ĐANG CHỌN**
+     * ([VoiceModelStore.selected]) chứ không phải [SherpaModelCatalog.DEFAULT_ID]: từ 1.66 hai thứ đó khác nhau
+     * đúng ở những máy đã cài fp32 từ trước — tức đúng những máy mà H6 sinh ra để phục vụ.
+     *
+     * `alt_available` tính từ **danh mục** ([SherpaModelCatalog.lighterThan]): *có* một gói tải được, nhẹ hơn gói
+     * đang chọn hay không. Không viết cứng *"có phải int8 không"*: thêm một gói nhẹ hơn nữa vào `ALL` là trường
+     * này tự đúng, và lượt đo xe sau đọc được *"đã đổi xong"* (`alt_available=false` sau khi đã sang bản nhẹ nhất)
+     * mà không phải sửa cầu.
+     */
+    private fun voiceModel(ctx: Context): String {
+        val model = runCatching { VoiceModelStore.selected(ctx) }.getOrNull()
+        return TestBridgeJson.obj(
+            "ready" to VoiceModelStore.isReady(ctx),
+            "id" to (model?.id ?: ""),
+            "label" to (model?.label ?: ""),
+            "bytes" to VoiceModelStore.sizeOnDisk(ctx),
+            "alt_available" to (model?.let { SherpaModelCatalog.lighterThan(it) } != null),
+            "alt_id" to (model?.let { SherpaModelCatalog.lighterThan(it)?.id } ?: ""),
+            "alt_bytes" to (model?.let { SherpaModelCatalog.lighterThan(it)?.totalBytes } ?: 0L),
+            // Giấy phép + ghi công của gói ĐANG chạy. Mặc định 1.69 mang **CC BY-NC-ND 4.0**, tức ghi công là
+            // nghĩa vụ; phơi ở đây để lượt đo trên xe **kiểm chứng được** rằng máy đang chạy đúng gói nào và
+            // dòng ghi công nào đi kèm — thay vì tin vào một dòng chữ trong kho mã mà không ai đối chiếu.
+            "license" to (model?.license ?: ""),
+            "attribution" to (model?.attribution ?: ""),
+            "source_url" to (model?.sourceUrl ?: ""),
+        )
+    }
+
+    /**
      * ═══ V1 pha NÓI · ĐƯỜNG RA TIẾNG ĐANG DÙNG (spec `kachi-voice-feedback.html` §6) ═══════════════════════
      *
      * Đọc **ảnh chụp phép đo gần nhất** của [VoiceSpeakerRouter], không tự dựng một `TextToSpeech` thứ hai: dựng
@@ -189,6 +221,36 @@ internal object TestBridgeState {
 
     /** Chưa đo được `isLanguageAvailable`. Cố ý nằm NGOÀI dải thật của nền tảng (−2…2) để không lẫn với −2. */
     private const val UNKNOWN_LANG = -99
+
+    /**
+     * ═══ 1.69 — DAEMON BƠM CHẠM: khoẻ không, hỏng vì gì, thử mấy lượt ════════════════════════════════════════
+     *
+     * ## Vì sao trường này phải có
+     * [ĐO xe 2026-09-16] (`docs/diagnostics/oncar-trace-2026-09-16b/README.md` §9.1): daemon **không lên lần
+     * nào**, và cách duy nhất biết được điều đó là **grep một dòng logcat** — tức phải kéo cả tệp `usage-*.log`
+     * về rồi mới trả lời được một câu hỏi yes/no. Ở đây nó là một lượt `state`, và nó mang theo cả **lý do**
+     * (câu chữ nguyên văn của nền tảng: *refused* ≠ *permission denied* — hai bệnh, hai cách chữa) lẫn **đường
+     * dẫn tệp nhật ký** của chính lượt khởi động ấy, để bước tiếp theo không phải đi tìm.
+     *
+     * Đọc **ảnh chụp** ([InputDaemonClient.lastSnapshot]), không dựng một client thứ hai: dựng client thứ hai là
+     * bắn thêm một lệnh `app_process` xuống kênh shell chỉ để hỏi một `boolean` — và câu trả lời sẽ nói về cái
+     * client vừa dựng, không phải về cái đang phục vụ những ô trên màn hình. Cùng khuôn [tts].
+     *
+     * `attempts = 0` và `last_error` rỗng ⇒ **chưa có lượt khởi động nào** từ lần mở app này (chưa ai chạm vào
+     * ô app), KHÔNG phải "daemon hỏng". `forced_off` là công tắc ẩn `inputd_disabled` — đọc từ prefs vì đó là
+     * sự thật trên đĩa, còn `last_error = disabled_by_pref` chỉ nói rằng công tắc ấy **đã có hiệu lực** trong
+     * tiến trình đang chạy (nó được đọc một lần lúc dựng, xem `AppContainer.buildInputDaemonClient`).
+     */
+    private fun inputd(ctx: Context): String {
+        val s = InputDaemonClient.lastSnapshot()
+        return TestBridgeJson.obj(
+            "healthy" to s.healthy,
+            "last_error" to s.lastError,
+            "attempts" to s.attempts,
+            "log" to s.logPath,
+            "forced_off" to runCatching { Prefs.inputdDisabled(ctx) }.getOrDefault(false),
+        )
+    }
 
     /** Vòng kiểm quyền — cùng báo cáo mà trang *Hệ thống & quyền* đang vẽ, KHÔNG đọc lại theo đường riêng. */
     private fun permissions(ctx: Context, shellUsable: Boolean): String {

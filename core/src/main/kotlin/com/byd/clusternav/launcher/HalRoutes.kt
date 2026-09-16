@@ -1,15 +1,61 @@
 package com.byd.clusternav.launcher
 
 /**
- * ═══ HAI KIỂU của tầng nối HAL: **ĐƯỜNG** đã phân loại và **CỬA** ra ngoài ══════════════════════════════════
+ * ═══ PHẦN **THUẦN** của tầng nối HAL: hợp đồng ra ngoài + phép phân giải đường đọc ═══════════════════════════
  *
  * Tách khỏi `HalBindingTable.kt` ở 1.66 (trần 500 dòng — CLAUDE.md §4.1) và tách theo đúng **vai**, không theo
- * số dòng: tệp kia là bộ **định tuyến + parse** (nó quyết `bindingKey` nào đi đường nào và đọc chuỗi thô ra số),
- * còn hai khai báo dưới đây là **hợp đồng** — thứ mà cả gateway thật ([BydHalGateway]) lẫn mọi gateway giả trong
- * bài kiểm đều phải khớp. Hai vai khác nhau thì đọc riêng dễ hơn đọc chung.
+ * số dòng: tệp kia là bộ **định tuyến + parse** *có gateway trong tay* (nó thật sự gọi xe), còn ở đây là những thứ
+ * **không chạm xe một lần nào**:
+ *  • [BindingRoute] + [HalGateway] — **hợp đồng** mà cả gateway thật ([BydHalGateway]) lẫn mọi gateway giả trong bài
+ *    kiểm đều phải khớp;
+ *  • [ReadPath] + [readPathOf] + [applyInverted] (H1 · T5, thêm 2026-09-16) — phép **phân giải đường ĐỌC** của một mã,
+ *    chỉ tra hai bộ đăng ký. Ở đây thì nó kiểm được off-car một mình, và `HalBindingTable.kt` không phải phình thêm.
  *
  * ⚠ Không đổi một dòng hành vi nào lúc tách: cùng package, cùng tên, cùng chữ ký.
  */
+
+/**
+ * ═══ H1 · ĐƯỜNG **ĐỌC** đã phân giải của một mã (datum HOẶC nút) — THUẦN, không chạm gateway ══════════════
+ *
+ * @property id mã **datum** thật sự được đọc (nút mượn đường đọc của datum) — dùng để tra `halDevice` và
+ *   `HalBindingTable.INVALID_VALUES`, nên phải là mã của datum chứ không phải của nút.
+ * @property key khoá binding của datum ấy · @property domain để chọn device cho đường feature-id ·
+ * @property arg tham số int của getter (`null` = getter 0-arg).
+ */
+data class ReadPath(val id: String, val key: String, val domain: Domain, val arg: Int?)
+
+/**
+ * Phân giải đường ĐỌC của [id] (spec `kachi-live-state-ux.html` §4.3 · T5).
+ *
+ * Datum → **y hệt 1.68** (khoá = `bindingKey`, tham số = `HalBindingTable.readArg` theo mã). Nút → khoá đọc là
+ * [ControlDef.readKey], mà đó là một **mã datum** ⇒ mượn nguyên đường đọc của datum ấy, nhờ vậy getter của xe chỉ được
+ * khai một chỗ duy nhất trong cả dự án ([TelemetryRegistry]). [ControlDef.readArg] ghi đè tham số khi nút cần **vùng
+ * khác** với datum (`temp` cần area 1, còn `inside_temp` khai 0 — xem KDoc ở đó).
+ *
+ * Nút chưa khai `readKey`, hoặc khai một mã datum không có thật ⇒ `null`. **KHÔNG lùi về `bindingKey`**: đó là khoá
+ * GHI, và đọc qua nó chính là gốc bệnh 1.66 (spec §2.2) — xem KDoc `HalBindingTable.readState`.
+ *
+ * Ở đây (`HalRoutes.kt`) chứ không trong bảng nối vì nó **thuần**: chỉ tra hai bộ đăng ký, không gọi HAL một lần nào —
+ * cùng vai với [BindingRoute] và [routeOf]; và `HalBindingTable.kt` đã chạm trần 500 dòng (CLAUDE.md §4.1).
+ */
+fun readPathOf(id: String): ReadPath? {
+    TelemetryRegistry.byId(id)?.let { return ReadPath(id, it.bindingKey, it.domain, HalBindingTable.readArg(id)) }
+    val def = ControlRegistry.byId(id) ?: return null
+    val datum = TelemetryRegistry.byId(def.readKey) ?: return null
+    return ReadPath(datum.id, datum.bindingKey, datum.domain, def.readArg ?: HalBindingTable.readArg(datum.id))
+}
+
+/**
+ * Áp [ControlDef.readInverted]: giá trị đọc → quy ước chung **"1 = đang bật"** (0 ⇒ 1, khác 0 ⇒ 0); `null` đi thẳng
+ * qua (*"chưa đọc được"* không có mặt đối nghịch nào để đảo).
+ *
+ * Hàm RIÊNG, không nhét thẳng vào `readState`, để kiểm được off-car **kể cả khi chưa nút nào khai cờ đó**: `ac_auto`
+ * (`getAcControlMode()`, `AC_CTRLMODE_AUTO = 0` — `ac/BYDAutoAcDevice.java:29-30`; [ĐO xe 2026-09-16] đọc ra 0 = AUTO
+ * đang bật) còn chờ datum, nên không tách thì cơ chế đảo nằm đó mà **không bài kiểm nào chạm tới** cho tới lượt T6 —
+ * đúng hình dạng `CastShell.evictVd` mà CLAUDE.md §8 nói tới.
+ */
+fun applyInverted(raw: Int?, inverted: Boolean): Int? =
+    if (raw == null || !inverted) raw else if (raw == 0) 1 else 0
 
 /** Đường nối HAL đã phân loại cho một `bindingKey`. */
 sealed class BindingRoute {
@@ -97,4 +143,38 @@ interface HalGateway {
      * (off-car / bảng không có / id không thuộc device nào). Xem `HalBindingTable.deviceForFeature`.
      */
     fun deviceForFeature(featureId: Int): String? = null
+
+    /**
+     * Máy này có **bảng feature-id thật** của framework BYD không.
+     *
+     * Mặc định `false` ⇒ off-car / máy ảo / mọi gateway giả trong bài kiểm đều nói *"không biết"*, và [featureAbsentOnCar]
+     * vì thế không bao giờ dám kết luận một nút là *"xe này không có"*. Xem KDoc ở đó.
+     */
+    fun featureMapAvailable(): Boolean = false
+}
+
+/**
+ * Nút này có đường GHI trỏ vào một feature-id mà **chiếc xe này không có** không?
+ *
+ * ## Vì sao câu hỏi tồn tại — [ĐO xe 2026-09-16] và phản hồi tester
+ * `ac_auto` khai feature `1324355606`, mà id đó **không nằm trong `BYDAutoFeatureIds` của xe owner**; owner thì
+ * xác nhận xe **CÓ** điều hoà auto. Nói *"điều hoà"* vì thế chỉ nhận lại một câu thất bại chung chung, giống hệt
+ * câu của một lỗi tạm thời — người lái không có cách nào biết là **chờ cũng vô ích**. Tester nêu đúng chỗ này:
+ * *"điều hoà với lọc bụi nó không hiểu là cái gì"*.
+ *
+ * ## Ba điều kiện, và điều kiện đầu là thứ giữ cho nó không nói bừa
+ *  1. **Bảng phải có thật** ([HalGateway.featureMapAvailable]). Thiếu vế này thì trên máy ảo mọi nút đều bị khai
+ *     là *"xe này không có"* — một câu sai theo kiểu làm người ta tin là xe hỏng.
+ *  2. Đường GHI phải **phân giải ra một feature-id** (số, hoặc tên hằng tra ra số). Đường named-method /
+ *     setting / local không đi qua bảng ấy nên không trả lời được ⇒ `false`.
+ *  3. Bảng có, id phân giải được, mà `deviceForFeature` vẫn `null` ⇒ **vắng thật**.
+ */
+fun featureAbsentOnCar(gateway: HalGateway, bindingKey: String): Boolean {
+    if (!gateway.featureMapAvailable()) return false
+    val fid = when (val r = HalBindingTable.routeOf(bindingKey)) {
+        is BindingRoute.Feature -> r.id
+        is BindingRoute.FeatureName -> gateway.featureIdByName(r.constName) ?: return false
+        else -> return false
+    }
+    return gateway.deviceForFeature(fid) == null
 }

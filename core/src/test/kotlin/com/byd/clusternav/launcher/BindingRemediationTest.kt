@@ -78,32 +78,17 @@ class BindingRemediationTest {
         assertEquals("BYDAutoStatisticDevice.getFuelDrivingRangeValue", key("fuel_range_km"))
         assertEquals("BYDAutoStatisticDevice.getFuelPercentageValue", key("fuel_pct"))
         assertEquals("BYDAutoStatisticDevice.getEVMileageValue", key("ev_mileage_km"))
-        assertEquals("BYDAutoInstrumentDevice.getChargePower", key("charge_power"))
-        assertEquals("BYDAutoInstrumentDevice.getChargePercent", key("charging_pct"))
-        assertEquals("BYDAutoChargingDevice.getChargingCapacity", key("charging_capacity_kwh"))
-        assertEquals("BYDAutoChargingDevice.getChargerWorkState", key("charger_work_state"))
-        assertEquals("BYDAutoChargingDevice.getChargerWorkState", key("charging_state"), "getChargeState KHÔNG tồn tại")
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: năm dòng SẠC (`charge_power` · `charging_pct` · `charging_capacity_kwh`
+        // · `charger_work_state` · `charging_state`) đã gỡ cùng datum — owner chấm NO cho cả cụm sạc.
         assertEquals("BYDAutoOtaDevice.getBatteryVoltage", key("volt_12v"), "Power không có getBatteryVoltage")
     }
 
-    @Test fun `dang sac = getChargerWorkState bang 2, khong phai lon hon 0`() {
-        assertEquals("BYDAutoChargingDevice.getChargerWorkState", key("is_charging"))
-        fun read(v: String) = HalBindingTable(FakeHalGateway(getters = mapOf("getChargerWorkState" to v))).readBool("is_charging")
-        assertEquals(true, read("2"), "START=2 → đang sạc")
-        assertEquals(false, read("1"), "READY=1 → chưa sạc (coerceBool cũ sẽ nói true)")
-        assertEquals(false, read("3"), "FINISH=3 → không sạc")
-        assertEquals(false, read("4"), "TERMINATE=4 → không sạc")
-        assertNull(read("rác"))
-    }
-
-    @Test fun `con gio con phut lay phan tu 0 va 1 cua getChargeRestTime`() {
-        assertEquals("BYDAutoInstrumentDevice.getChargeRestTime", key("charging_eta_hour"))
-        assertEquals("BYDAutoInstrumentDevice.getChargeRestTime", key("charging_eta_min"))
-        val table = HalBindingTable(FakeHalGateway(getters = mapOf("getChargeRestTime" to "[2, 35]")))   // BydHal.arrayToStr
-        assertEquals(2, table.readInt("charging_eta_hour"))
-        assertEquals(35, table.readInt("charging_eta_min"))
-        assertNull(HalBindingTable(FakeHalGateway(getters = mapOf("getChargeRestTime" to "[I@1a2b3c"))).readInt("charging_eta_min"))
-    }
+    // ⚠ (V) FEATURE-FILTER 2026-09-17 — hai bài đã GỠ cùng chủ của chúng (owner chấm NO cho cả cụm sạc):
+    //  • `dang sac = getChargerWorkState bang 2, khong phai lon hon 0` — khoá bảng `BOOL_WHEN_EQUALS` cho
+    //    `is_charging`; cả datum lẫn bảng đều không còn.
+    //  • `con gio con phut lay phan tu 0 va 1 cua getChargeRestTime` — khoá bảng `ARRAY_INDEX` cho
+    //    `charging_eta_hour`/`charging_eta_min`; cả hai datum lẫn bảng đều không còn.
+    // Hai cơ chế ấy nay không có chủ nào ⇒ đã xoá khỏi `HalReadTables`/`HalBindingTable`, không để bảng rỗng.
 
     @Test fun `tam dien sentinel 1000 1023 la khong hop le`() {
         fun read(v: String) = HalBindingTable(FakeHalGateway(getters = mapOf("getElecDrivingRangeValue" to v))).readInt("ev_range_km")
@@ -113,7 +98,8 @@ class BindingRemediationTest {
     }
 
     @Test fun `feature-id gan nham nghia bi go - cell_v va batt_range khong con doc ra so sai`() {
-        listOf("cell_v_high", "cell_v_low", "batt_range_bodywork").forEach { id ->
+        // ⚠ (V) 2026-09-17: `batt_range_bodywork` (thành viên thứ ba của bài này) đã gỡ — owner chấm NO.
+        listOf("cell_v_high", "cell_v_low").forEach { id ->
             assertTrue(key(id).isNotBlank(), "$id: bindingKey không rỗng (guard registry)")
             assertEquals(BindingRoute.None, HalBindingTable.routeOf(key(id)), "$id: id cũ = tầm xăng / tốc độ vô-lăng ⇒ None")
             assertEquals(EvidenceTier.NEEDS_CAR, TelemetryRegistry.byId(id)!!.tier, id)
@@ -152,9 +138,9 @@ class BindingRemediationTest {
         assertNull(HalBindingTable.coerceInt("[]"))
         assertNull(HalBindingTable.coerceInt("[I@6f2b958e"), "toString mặc định của mảng vẫn là rác, không đoán")
         assertEquals(7, HalBindingTable.coerceInt("7"), "1 phần tử gateway đã trả số trần")
-        // Getter trả mảng nhiều phần tử vẫn đọc được CẢ mảng (thời gian sạc còn lại `[giờ, phút]`).
-        val table = HalBindingTable(FakeHalGateway(getters = mapOf("getChargeRestTime" to "[2, 35]")))
-        assertEquals(listOf(2, 35), table.readIntList("charging_eta_hour"))
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: nửa sau của bài — `readIntList("charging_eta_hour")` trả `[2, 35]` —
+        // đã gỡ cùng `readIntList`/`ARRAY_INDEX` (chủ duy nhất của chúng là hai ô thời-gian-sạc owner chấm NO).
+        // Phần còn lại vẫn khoá đúng cái đang sống: gateway trả mảng ⇒ `coerceInt` lấy phần tử ĐẦU, rác vẫn ra null.
     }
 
     // ⚠ Bài `avh doi tu command-wrapper sang setAVHState` đã gỡ 2026-09-16 cùng nút `avh` (owner gỡ ADAS/an toàn).

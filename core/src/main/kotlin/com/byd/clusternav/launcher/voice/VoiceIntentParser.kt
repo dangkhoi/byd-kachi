@@ -55,19 +55,29 @@ object VoiceIntentParser {
          */
         places: List<String> = emptyList(),
     ): List<VoiceIntent> {
-        val terms = VoiceGrammar.terms(profiles, apps)
         val all = VoiceLexicon.tokenize(text)
         if (all.isEmpty()) return listOf(VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, text))
+        // H4 — cụm NGHE NHẦM chỉ bật khi CẢ CÂU có từ ngữ cảnh, nên phải tính trên `all`, không trên từng vế.
+        val terms = VoiceGrammar.plusMisheard(VoiceGrammar.terms(profiles, apps), all)
 
         val parts = splitOnConnectors(all)
         if (parts.size > 1) {
             val each = parts.map { parseTokens(it, terms, places, text) }
             if (each.none { it is VoiceIntent.Unknown }) return each
-            val whole = parseTokens(all, terms, places, text)
+            val whole = fuzzy(parseTokens(all, terms, places, text), all, terms, places, text)
             return listOf(whole) + droppedNote(parts, each, whole)
         }
-        return listOf(parseTokens(all, terms, places, text))
+        return listOf(fuzzy(parseTokens(all, terms, places, text), all, terms, places, text))
     }
+
+    /**
+     * H7 — câu không hiểu được thì thử **chữa lỗi chính tả** rồi đọc lại đúng một lần ([VoicePhoneticMatch]).
+     *
+     * Đứng sau tất cả: mọi luật V1 chạy trước, không đổi một dòng. Chỉ nhận khi lần đọc lại ra một ý định CÓ
+     * NGHĨA — không thì giữ nguyên câu báo cũ, kể cả **lý do** không hiểu (bài kiểm đang khoá lý do).
+     */
+    private fun fuzzy(got: VoiceIntent, t: List<Token>, terms: List<VoiceTerm>, p: List<String>, s: String) =
+        VoicePhoneticMatch.orRepair(got, t, terms) { parseTokens(it, terms, p, s) }
 
     /**
      * Dòng *"đã bỏ qua «…»"* cho vế bị nuốt khi cả câu được hiểu theo cách khác — hoặc rỗng khi không có gì bị bỏ.
@@ -115,8 +125,11 @@ object VoiceIntentParser {
         profiles: List<String> = emptyList(),
         apps: List<String> = emptyList(),
         places: List<String> = emptyList(),
-    ): VoiceIntent =
-        parseTokens(VoiceLexicon.tokenize(text), VoiceGrammar.terms(profiles, apps), places, text)
+    ): VoiceIntent {
+        val t = VoiceLexicon.tokenize(text)
+        val terms = VoiceGrammar.plusMisheard(VoiceGrammar.terms(profiles, apps), t)
+        return fuzzy(parseTokens(t, terms, places, text), t, terms, places, text)
+    }
 
     private fun splitOnConnectors(t: List<Token>): List<List<Token>> {
         val out = ArrayList<List<Token>>()
@@ -163,6 +176,8 @@ object VoiceIntentParser {
         // nghĩa ngược. Luật: cụm khớp tại vị trí 0 mà **dài hơn** cụm động từ thì nó là tên của việc.
         headMatch(t, terms, verbHit?.first?.size ?: 0)?.let { head ->
             val after = dropFillers(t.subList(head.words.size, t.size))
+            // ⚠ [SOÁT 1.69 · P1] Không động từ + cụm không đọc đuôi ⇒ KHÔNG phải lệnh (*"cốp xe bẩn quá"* từng ra **mở cốp**) — KDoc [VoiceGrammar.readsTail].
+            if (verbHit == null && after.isNotEmpty() && !VoiceGrammar.readsTail(head)) return@let
             return build(head, implicitVerb(head), aloud = false, after, terms, places, original)
         }
         // (b½) L7 — *"bố cục 2 cột"* / *"đổi sang bố cục 4 ô"* / *"về bố cục hai hàng"*.
@@ -193,11 +208,29 @@ object VoiceIntentParser {
         // thường ([ĐO] datum `gear` mang nhãn *"Số"* ⇒ *"chuyển sang hồ sơ Vợ"* khớp *"số"* ở giữa câu, rồi
         // "chuyển" + một datum = MISMATCH, và cái tên hồ sơ đứng ngay sau đó không bao giờ được xét tới).
         // Đi tiếp cho tới cách hiểu đầu tiên hợp với động từ thì ca đó tự giải, mà không phải liệt kê từ cấm.
+        // (c') H3 — cách gọi app ≥ 2 từ đứng NGAY SAU động từ thắng một nhãn NGẮN ở giữa câu. Chữa hai ca MỞ
+        //      NHẦM APP đo được trên máy ảo; toàn bộ lý do + ba cổng ở KDoc [VoiceTailClause.appAtHead].
+        VoiceTailClause.appAtHead(rest, terms, verb)?.let { return it }
         var firstMiss: VoiceIntent? = null
         rest.indices.forEach { i ->
             val cands = VoiceGrammar.matchAt(rest, i, terms)
             if (cands.isNotEmpty()) {
                 val term = choose(cands, verb)
+                // (d') H3 — **luật dãy dài nhất thắng áp cho cả TÊN APP**, không chỉ cho từ vựng chung.
+                //
+                // [ĐO xe 2026-09-16, tester 1.66]: *"Mở Google được mà Google Map chưa hiểu"*. Cơ chế: nhãn app
+                // đã cài *"Google"* là một cụm MỘT từ trong từ vựng, nên nó khớp tại vị trí 0 và trả ngay một ý
+                // định CÓ NGHĨA (`OpenApp("Google")`) — vòng quét dừng luôn, và cách nói HAI từ *"google map"*
+                // của [VoiceSynonyms.APP_TARGETS] không bao giờ được hỏi tới. Tức luật số 1 của [VoiceGrammar]
+                // (dài trước ngắn) đang bị hụt đúng ở ranh giới giữa hai bảng.
+                //
+                // Chỉ nhận khi cách nói **dài hơn hẳn** cụm vừa khớp ⇒ nhãn thật vẫn thắng khi hoà (*"mở
+                // google"* vẫn mở app Google), đúng cam kết ở KDoc [VoiceTailClause.spokenApp]. Và chỉ cho
+                // động từ MỞ/BẬT: *"đóng google map"* phải đi tiếp để ra [VoiceUnknownReason.APP_CLOSE], còn
+                // *"xem …"* thì đã có nhánh riêng — bẻ chúng về đây là đổi hành vi ngoài phạm vi phép đo.
+                if (VoiceGrammar.isAction(verb) && !VoiceTailClause.closesApp(verb)) {
+                    VoiceTailClause.appByTargetName(rest, i, term.words.size)?.let { return it }
+                }
                 val after = dropFillers(rest.subList(i + term.words.size, rest.size))
                 val built = build(term, verb, aloud, after, terms, places, original)
                 if (built !is VoiceIntent.Unknown) return built

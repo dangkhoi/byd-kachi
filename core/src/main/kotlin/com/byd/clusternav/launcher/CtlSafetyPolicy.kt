@@ -15,7 +15,7 @@ package com.byd.clusternav.launcher
  *
  * ## Vì sao là danh sách mã, không phải suy từ tier/domain
  * Có cân nhắc suy từ `tier == NEEDS_CAR` hoặc `domain == BODY`, nhưng cả hai đều **trật**: `win_lf` là `PROVEN`
- * (đã đo mở được) chứ không `NEEDS_CAR`, còn `BODY` gồm cả `wiper`/`mirror_fold_btn` (vô hại). Ranh giới thật là
+ * (đã đo mở được) chứ không `NEEDS_CAR`, còn `BODY` gồm cả `wiper` (vô hại). Ranh giới thật là
  * ngữ nghĩa "mở cửa/kính/nóc/cốp hay đổi khoá" — một tính chất của TỪNG mã, không suy được từ một trường phân
  * loại nào đang có. Liệt kê thẳng, và [DenylistCoverageTest] canh mọi mã ở đây đều là control THẬT.
  *

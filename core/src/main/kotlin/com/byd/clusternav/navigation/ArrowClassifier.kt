@@ -10,7 +10,6 @@ package com.byd.clusternav.navigation
  * Trả mã AMAP NEW_ICON (2 trái,3 phải,4 chếch trái,5 chếch phải,9 thẳng) hoặc null nếu quá mờ.
  */
 object ArrowClassifier {
-    private const val TAG = "ArrowClassifier"
     private const val THRESH_TURN = 0.14    // |off| ≥ -> rẽ hẳn (trái/phải)
     private const val THRESH_SLIGHT = 0.05  // |off| ≥ -> chếch
     private const val INK_ALPHA = 80
@@ -57,6 +56,4 @@ object ArrowClassifier {
         val r = (c ushr 16) and 0xff; val g = (c ushr 8) and 0xff; val b = c and 0xff
         return (r * 299 + g * 587 + b * 114) / 1000 > INK_LUM
     }
-
-    private fun fmt(d: Double): String = String.format(java.util.Locale.US, "%.3f", d)
 }

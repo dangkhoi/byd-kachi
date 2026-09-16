@@ -139,6 +139,15 @@ class SettingsCatalogControlContractTest {
             "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
             "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),
             "voice_tts_pack" to ("VoiceModelSettings" to "SherpaTtsCatalog.PIPER_VI_VAIS1000"),
+            // VOICE-HOTFIX 1.69 — ba mục mới, cùng tệp `VoiceModelSettings.kt` với khối Giọng nói còn lại.
+            // Dấu vết chọn theo đúng luật ở KDoc: **lời gọi thật**, không phải nhãn.
+            //  • `voice_keep_log` ghi prefs qua `Prefs.setVoiceKeepLog` (công tắc theo XE, không qua `deps.bridge`
+            //    vì nó không thuộc `HomeUiState` — cùng họ với bốn khoá giọng nói khác của `PrefsVoiceV3`);
+            //  • `voice_log_export` là VIỆC LÀM ⇒ dấu vết là chính lời gọi nén zip;
+            //  • `voice_model_light` chỉ hiện khi danh mục có gói nhẹ hơn ⇒ dấu vết là phép chọn ấy.
+            "voice_keep_log" to ("VoiceModelSettings" to "Prefs.setVoiceKeepLog("),
+            "voice_log_export" to ("VoiceModelSettings" to "VoiceUtteranceLog.exportZip("),
+            "voice_model_light" to ("VoiceModelSettings" to "SherpaModelCatalog.lighterThan("),
             // V3 · R7/R1 — mục "Hỏi xác nhận trước khi chạy" + nguồn micro. Ở tệp RIÊNG (trần 500 dòng) nhưng
             // vẫn thuộc khối *Giọng nói*; bảng này bám nơi control **thật sự** được dựng, không bám tên tệp.
             "voice_confirm_ids" to ("VoiceConfirmSettings" to "deps.bridge.setVoiceConfirmIds("),

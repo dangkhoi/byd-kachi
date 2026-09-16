@@ -27,7 +27,51 @@ object InputDaemonLaunch {
      *    world-readable). Prefix `CLASSPATH=` áp cho `nohup`, được kế thừa xuống `app_process`.
      *  • `/` = cmd-dir giả (đối số bắt buộc của app_process, như scrcpy) — lớp nạp từ `CLASSPATH`.
      *  • `nohup … &` + redirect = chạy nền, sống qua khi shell thoát ⇒ `ShellTransport.run` trả về ngay.
+     *
+     * ## 1.69 — hai tham số MỚI, và vì sao chúng tồn tại
+     * [ĐO xe 2026-09-16] (`docs/diagnostics/oncar-trace-2026-09-16b/README.md` §9.1): daemon **KHÔNG lên** trên xe
+     * ở mọi lần mở app, và **không ai biết vì sao** — vì đúng dòng lệnh này ném stderr vào `/dev/null`. Một cơ
+     * chế hỏng mà tự xoá bằng chứng hỏng của mình thì mỗi lượt xe lại bắt đầu từ con số không.
+     *  • [logPath] ⇒ stdout+stderr của daemon vào một tệp THẬT. Đường dẫn do `:app` truyền vào và nó nằm ở thư
+     *    mục log **ngoài thẻ** (`getExternalFilesDir/kachi-logs/`, xem `KachiLog`) — chỗ mà tiến trình shell
+     *    uid-2000 GHI ĐƯỢC. (Thư mục riêng của app `/data/data/<pkg>/files` là 0700 của app-uid; đổ redirect vào
+     *    đó là chính lệnh khởi động chết vì *Permission denied* ⇒ biến một đầu dò thành một hồi quy.)
+     *  • [useNohup] ⇒ biến thể KHÔNG `nohup`. [CHƯA BIẾT] toybox trên DL3 có `nohup` hay không; nếu không có thì
+     *    cả dòng lệnh chết ở từ đầu tiên. `… & ` một mình vẫn tách tiến trình khỏi phiên shell của dadb (dadb
+     *    không cấp tty nên không có SIGHUP để mà né) — chốt bằng `which nohup` ([hasNohup]) chứ không đoán.
+     *
+     * Mặc định của hàm giữ NGUYÊN chuỗi trước 1.69 (golden test `InputDaemonLaunchTest` khoá byte).
      */
-    fun launchCmd(apkPath: String, socketName: String = DEFAULT_SOCKET): String =
-        "CLASSPATH=$apkPath nohup app_process / $MAIN_CLASS $socketName </dev/null >/dev/null 2>&1 &"
+    fun launchCmd(
+        apkPath: String,
+        socketName: String = DEFAULT_SOCKET,
+        logPath: String? = null,
+        useNohup: Boolean = true,
+    ): String {
+        val runner = if (useNohup) "nohup app_process" else "app_process"
+        val out = logPath?.takeIf { it.isNotBlank() } ?: "/dev/null"
+        return "CLASSPATH=$apkPath $runner / $MAIN_CLASS $socketName </dev/null >$out 2>&1 &"
+    }
+
+    /**
+     * Lệnh dò `nohup`. Chạy MỘT lần mỗi tiến trình (kết quả nhớ ở `InputDaemonClient`).
+     *
+     * Trả về **một từ** (`yes`/`no`) thay vì đường dẫn, vì lượt dò phải đúng cả khi chính `which` không có trên
+     * ROM: khi đó vế `||` chạy và câu trả lời là `no` — chứ không phải một dòng lỗi mà bộ đọc phải đoán nghĩa.
+     */
+    const val WHICH_NOHUP: String = "which nohup >/dev/null 2>&1 && echo yes || echo no"
+
+    /**
+     * Máy đích có `nohup` không, đọc từ đầu ra của [WHICH_NOHUP]. PURE ⇒ test off-device.
+     *
+     * **Chỉ** `yes` mới là "có". Mọi đầu ra khác (rỗng · lỗi · shell không chạy được) ⇒ dùng biến thể `… &`:
+     * dadb không cấp tty nên không có SIGHUP để mà né, tức biến thể ấy không mất gì; còn đoán nhầm theo hướng
+     * *"chắc là có nohup"* thì cả dòng lệnh chết ngay ở **từ đầu tiên** và daemon không bao giờ lên — đúng triệu
+     * chứng đang phải điều tra trên xe ([CHƯA BIẾT] cho tới khi có tệp log).
+     */
+    fun hasNohup(probeOutput: String): Boolean =
+        probeOutput.lineSequence().map { it.trim() }.lastOrNull { it.isNotEmpty() } == "yes"
+
+    /** Tên tệp nhật ký của MỘT lượt khởi động daemon (đặt cạnh `usage-*.log` trong `kachi-logs/`). */
+    fun logFileName(stamp: Long): String = "inputd-$stamp.log"
 }

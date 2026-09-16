@@ -71,6 +71,32 @@ object SherpaModelCatalog {
         val tokens: String,
         val bpeVocab: String,
         val decodingMethod: String = "modified_beam_search",
+        /**
+         * Ghi công tác giả — **bắt buộc** với gói mang giấy phép họ BY (CC BY-*), tuỳ chọn với gói khác.
+         *
+         * Một trường dữ liệu chứ không phải một dòng chữ rải trong Cài đặt: cùng câu ấy phải xuất hiện ở **ba**
+         * chỗ (màn Cài đặt · `state.voice_model` · `voice/README.md`), và ba bản chép tay là ba bản sẽ lệch —
+         * lúc đó nghĩa vụ "ghi công" chỉ còn đúng ở chỗ không ai đọc.
+         */
+        val attribution: String = "",
+        /** URL nguồn để người dùng tự kiểm — đi kèm [attribution]. */
+        val sourceUrl: String = "",
+        /**
+         * Gói **THỬ NGHIỆM** — có mặt trong danh mục nhưng KHÔNG được tự đề nghị cho người dùng.
+         *
+         * ## Vì sao cần một cờ, thay vì xoá gói đi
+         * [ĐO 2026-09-16, giọng THẬT của owner — 30 câu × 3 lượt, giải mã trên host]: gói đang ship
+         * (`zipformer-vi` fp32 + hotword) đúng **≈ 28/30** ở lượt nói thường, còn `vi-30M-int8` sai **~7 câu**
+         * (*"xem pin"* → *"xem binh"* · *"bật ghế sưởi"* → *"bọc ghế sửi"* · *"mở quây"* → *"mở quay"* ·
+         * *"lọc bụi mịn"* → *"bộ mệnh"* · *"nhiệt độ"* → *"cuộc chiến nhiệt độ"* khi có ồn). Tức **corpus TTS đã
+         * đánh lừa**: nó chấm 30M cao hơn +1,8 điểm, còn giọng người thì ngược lại — đúng bài học §0 của
+         * `voice-stream-eval-2026-09-16.md` về việc giọng tổng hợp không thay được giọng thật.
+         *
+         * Xoá hẳn thì lần sau ai đó lại phải tải + ghim + đo lại từ đầu; giữ mà không gắn cờ thì [lighterThan]
+         * sẽ **tự đề nghị** nó (34 MB < 74 MB) và người dùng nhận một gói nghe kém hơn kèm chữ *"nhẹ hơn"*.
+         * Cờ này giữ được cả hai: dữ liệu còn đó, mà không ai bị đẩy vào nó.
+         */
+        val experimental: Boolean = false,
     ) : VoicePack {
         /** Thư mục con của `filesDir` chứa mô hình. */
         override val dir: String get() = "$DIR_ROOT/$id"
@@ -87,6 +113,10 @@ object SherpaModelCatalog {
 
     /** Gốc thư mục cho mọi mô hình sherpa (song song `vosk/` của [VoiceModelManifest]). */
     const val DIR_ROOT = "sherpa"
+
+    /** Gốc URL của gói 30M — một chỗ khai, bốn tệp nối tên vào (chép lại bốn lần là bốn chỗ gõ sai được). */
+    private const val HF_30M =
+        "https://huggingface.co/csukuangfj2/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09/resolve/main/"
 
     /**
      * A — Zipformer-vi 70k giờ (Apache-2.0). **Mặc định**: tải được ngay, đã proo off-car 87% intent với biasing
@@ -218,17 +248,139 @@ object SherpaModelCatalog {
         bpeVocab = "zipformer-vi-2025-04-20.bpe_vocab.txt",
     )
 
+    /**
+     * ═══ C — Zipformer **30M int8** (`hynt/Zipformer-30M-RNNT-6000h`) — MẶC ĐỊNH từ 1.69 ════════════════════
+     *
+     * ## ⚠⚠ GIẤY PHÉP: **CC BY-NC-ND 4.0** — và vì sao nó ở đây dù spec từng LOẠI nó
+     * `kachi-voice-engine-v2.html` (2026-09-14) loại `hynt/Zipformer-30M` đúng vì giấy phép này. Ngày
+     * **2026-09-16 owner quyết định ngược lại** cho dự án của mình: *"phi lợi nhuận, vui vẻ với anh em nên cũng
+     * ko quan trọng lắm về license đâu nhỉ"*. Đây là **quyết định của owner**, không phải của agent — đúng chỗ
+     * `voice-stream-eval-2026-09-16.md` §9 đã ghi là ranh giới (*"Quyết định dùng hay không là của owner"*).
+     * Ghi lại nguyên văn để lượt sau không tưởng ai đó lặng lẽ bỏ qua một ràng buộc đã chốt.
+     *
+     * Ba nghĩa vụ của giấy phép ấy, và cách bản này giữ:
+     *  • **BY (ghi công)** — tên tác giả + giấy phép + URL hiện ở *Cài đặt › Giọng nói › Về mô hình nghe*, ở
+     *    lời đáp `state.voice_model` của cầu kiểm thử, và ở `voice/README.md`. Xem [attribution].
+     *  • **NC (phi thương mại)** — điều kiện owner tự khẳng định cho dự án này.
+     *  • **ND (cấm phái sinh)** — **KHÔNG fine-tune, KHÔNG sửa** mô hình ở bất kỳ đâu; ship đúng bộ tệp int8 đã
+     *    công bố. ⚠ Việc dự án sinh `*.bpe_vocab.txt` **từ** `bpe.model` là một phép **đổi định dạng cho runtime**
+     *    (sherpa không nhận `bpe.model` nhị phân — xem [VoiceEngine.copyBpeVocabAsset]), không đụng tới trọng số.
+     *    Đó là **cách dự án hiểu** điều khoản ND, **không phải một kết luận pháp lý** — nếu cần chắc chắn thì hỏi
+     *    tác giả, và đó là việc của owner.
+     *  • Tệp mô hình **không đóng trong APK**: xe tải thẳng từ HF khi người dùng bấm, nên bản thân APK không phát
+     *    tán lại trọng số.
+     *
+     * ## Vì sao nó thành mặc định — [ĐO host] `voice-stream-eval-2026-09-16.md`
+     * WER tiếng Việt tốt hơn hẳn bản đang ship (model card: VLSP2025-PublicTest **7.97** · GigaSpeech2-Test
+     * **7.56**, ~6 000 giờ, tác giả nói nhất VLSP 2025), mà **tổng chỉ ~34 MB** — nhẹ hơn cả bản int8 74 MB của
+     * gói A. Tức nó thắng ở cả hai trục cùng lúc, chuyện hiếm.
+     *
+     * ⚠ Máy **đã** cài mô hình khác thì GIỮ NGUYÊN cho tới khi người dùng tự chọn ([VoiceModelStore.selected]) —
+     * cùng luật đã dựng cho lượt đổi fp32 → int8 ở 1.66.
+     *
+     * sha256 + kích thước **[ĐO] 2026-09-16** (tải thật + `shasum -a 256`).
+     */
+    val ZIPFORMER_VI_30M_INT8 = SherpaModel(
+        id = "zipformer-vi-30M-int8-2026-02-09",
+        label = "Zipformer VN 30M int8 — THỬ NGHIỆM, nghe kém hơn trên giọng thật (CC BY-NC-ND, 34 MB)",
+        license = "CC-BY-NC-ND-4.0",
+        files = listOf(
+            ModelFile(
+                "encoder.int8.onnx",
+                HF_30M + "encoder.int8.onnx",
+                "8ef5286dd427eb108055c2ddc1982aa31e544706072d5ea228729292dacade68",
+                27_699_063L,
+            ),
+            ModelFile(
+                "decoder.onnx",
+                HF_30M + "decoder.onnx",
+                "cf2aa385b82c9d5d40cd29c3188af52d0249b3b78f0d4b7eb84ad502d50c7e7f",
+                5_165_084L,
+            ),
+            ModelFile(
+                "joiner.int8.onnx",
+                HF_30M + "joiner.int8.onnx",
+                "7311d2e17b810ecea515d79c71cc4668af8759256a06fa01d27047772320c821",
+                1_033_417L,
+            ),
+            ModelFile(
+                "tokens.txt",
+                HF_30M + "tokens.txt",
+                "ca8171f8bbd516c050b627582f2125c8f5f1f6ed967ab41b0fa9aae2cf61b492",
+                23_238L,
+            ),
+        ),
+        encoder = "encoder.int8.onnx",
+        decoder = "decoder.onnx",
+        joiner = "joiner.int8.onnx",
+        tokens = "tokens.txt",
+        // ⚠⚠ BẢNG BPE **RIÊNG** — đây là cái bẫy im lặng nhất của lượt thêm mô hình này.
+        // [ĐO 2026-09-16] sinh bảng piece+score từ `bpe.model` của mô hình này (sentencepiece 0.2.2) rồi diff với
+        // bảng đang ship: cả hai đúng 2 000 mảnh, mà **1 997/2 000 dòng KHÁC nhau**. Dùng lại bảng cũ thì mọi cụm
+        // hotword bị mã hoá sai và sherpa **lặng lẽ bỏ** chúng ("Failed to encode some hotwords") — biasing trông
+        // như đang bật mà không làm gì. Tệp hotword (CHỮ HOA có dấu) thì dùng chung được; **bảng BPE thì không**.
+        bpeVocab = "zipformer-vi-30M-int8-2026-02-09.bpe_vocab.txt",
+        attribution = "hynt — Zipformer-30M-RNNT-6000h (CC BY-NC-ND 4.0), gói sherpa bởi csukuangfj2",
+        sourceUrl = "https://huggingface.co/hynt/Zipformer-30M-RNNT-6000h",
+        // ⚠ THỬ NGHIỆM — [ĐO giọng thật owner 2026-09-16] nghe KÉM hơn gói đang ship (~7 câu sai/30 so với
+        // ≈2). Xem KDoc [SherpaModel.experimental] và lịch sử ở [DEFAULT_ID]. Cờ này là thứ duy nhất giữ nó
+        // ra khỏi hàng *"chuyển sang mô hình nhẹ"* — bỏ cờ là người dùng bị đẩy sang nó vì nó nhẹ nhất.
+        experimental = true,
+    )
+
     /** Mọi mô hình, thứ tự hiện trong Cài đặt — bản mặc định đứng đầu. */
-    val ALL: List<SherpaModel> = listOf(ZIPFORMER_VI_INT8, ZIPFORMER_VI, HATAPHU_VI)
+    val ALL: List<SherpaModel> = listOf(ZIPFORMER_VI_30M_INT8, ZIPFORMER_VI_INT8, ZIPFORMER_VI, HATAPHU_VI)
 
     /**
-     * Mô hình mặc định cho **máy cài mới** — V3 · R6 đổi fp32 → int8 (owner **D4** 2026-09-16: *"thử int8 và mọi
-     * cách tới khi ngon"*). Lý do + số đo ở KDoc [ZIPFORMER_VI_INT8].
+     * Mô hình mặc định cho **máy cài mới**.
+     *
+     * Lịch sử hai lượt đổi, cùng ngày 2026-09-16 — ghi cả hai để không ai tưởng lượt sau xoá dấu lượt trước:
+     *  • **1.66** fp32 → int8 (owner **D4**: *"thử int8 và mọi cách tới khi ngon"*) — lý do ở [ZIPFORMER_VI_INT8].
+     *  • **1.69 (lượt đầu)** int8 → 30M int8 sau khi owner chốt về giấy phép — chấm bằng **corpus TTS**.
+     *  • **1.69 (ĐẢO LẠI, cùng ngày)** → **quay về `zipformer-vi-int8-2025-04-20`**. [ĐO giọng THẬT của owner,
+     *    30 câu × 3 lượt, giải mã trên host]: gói đang ship đúng **≈ 28/30** ở lượt nói thường, còn 30M sai
+     *    **~7 câu** (*"xem pin"* → *"xem binh"* · *"bật ghế sưởi"* → *"bọc ghế sửi"* · *"mở quây"* → *"mở quay"* ·
+     *    *"lọc bụi mịn"* → *"bộ mệnh"* · *"nhiệt độ"* → *"cuộc chiến nhiệt độ"* khi có ồn). Corpus TTS chấm 30M
+     *    **cao hơn +1,8 điểm** — tức nó **đã đánh lừa**, và đây là lần thứ hai trong cùng một ngày giọng tổng hợp
+     *    nói ngược với giọng người (xem §0 `voice-stream-eval-2026-09-16.md`). Gói 30M ở lại danh mục với cờ
+     *    [SherpaModel.experimental] để lần sau khỏi tải + ghim + đo lại từ đầu, nhưng **không ai bị đẩy vào nó**.
+     *
+     * ⚠ Chỉ áp cho **máy cài mới**: máy đã có mô hình thì [VoiceModelStore.selected] giữ nguyên bản cũ tới khi
+     * người dùng tự chạm hàng *"Chuyển sang mô hình nhẹ"*.
      */
     const val DEFAULT_ID = "zipformer-vi-int8-2025-04-20"
 
+    /**
+     * Mô hình có đòi **ghi công** không — tức giấy phép của nó thuộc họ `BY`.
+     *
+     * Suy từ chính chuỗi giấy phép, không phải một danh sách tên gói viết tay: thêm một gói CC BY nữa vào [ALL]
+     * là hàng ghi công tự hiện, không phải nhớ sửa thêm chỗ nào (CLAUDE.md §7).
+     */
+    fun requiresAttribution(model: SherpaModel): Boolean =
+        model.license.contains("BY", ignoreCase = true) && model.attribution.isNotBlank()
+
+    /** Mọi gói đang đòi ghi công — nguồn DUY NHẤT cho cả ba chỗ hiển thị. */
+    fun attributions(): List<SherpaModel> = ALL.filter { requiresAttribution(it) }
+
     /** Mô hình mặc định (đối tượng). Một chỗ trả lời *"mặc định là cái nào"* — [byId] cũng lùi về đây. */
-    fun default(): SherpaModel = ALL.first { it.id == DEFAULT_ID }
+    fun default(): SherpaModel = pickDefault(ALL, DEFAULT_ID)
+
+    /**
+     * [SOÁT 2026-09-16 · P3] Chọn mặc định **fail-safe**, cùng lối lùi với [byId].
+     *
+     * Bản trước là `ALL.first { it.id == DEFAULT_ID }` — `first{}` **ném** `NoSuchElementException` khi không
+     * khớp, trong khi [byId] ngay dưới lại `firstOrNull{} ?: default()`. Hai hàm cạnh nhau, cùng một câu hỏi,
+     * hai hành vi hỏng khác nhau. Hậu quả không nằm ở hôm nay (id đang khớp) mà ở ngày [DEFAULT_ID] được sửa —
+     * mà nó **đang được sửa trong chính nhánh này** (xem lịch sử 1.66→1.69 ở KDoc hằng): một ký tự gõ nhầm biến
+     * thành **crash ngay lượt mở voice đầu tiên, trên xe**, ở một đường mà mọi nhánh khác đều đã chọn degrade.
+     *
+     * Nhận [all] + [id] làm tham số chứ không đọc thẳng hằng: đó là cách duy nhất kiểm được ca "id lạ" off-car
+     * ([DEFAULT_ID] là `const`, không thể đặt sai trong bài kiểm). `all.first()` ở vế lùi vẫn đòi danh mục
+     * KHÔNG rỗng — một danh mục rỗng là lỗi lập trình, không phải trạng thái vận hành, và `SherpaModelCatalogTest`
+     * khoá lại điều đó.
+     */
+    internal fun pickDefault(all: List<SherpaModel>, id: String): SherpaModel =
+        all.firstOrNull { it.id == id } ?: all.first()
 
     /**
      * Tra mô hình theo id, hoặc **mặc định** nếu id lạ / rỗng (fail-safe cho pref cũ).
@@ -244,6 +396,45 @@ object SherpaModelCatalog {
      */
     const val HOTWORDS_SCORE = 3.0f
 
+    /**
+     * H5 — dải cho phép của núm `voice_hotword_score`. Mặc định vẫn là [HOTWORDS_SCORE] ⇒ **không đổi hành vi**.
+     *
+     * Dưới 2.0 thì biasing gần như không kéo được `pin`/`tắt`/`âm lượng` về (đúng thứ [ĐO] off-car đo được là
+     * score 3.0 mới sửa); trên 4.0 thì nó bắt đầu **chèn lệnh vào câu tự do** — *"hôm nay trời đẹp quá"* ra một
+     * cụm lệnh không ai nói. Hai đầu dải là hai kiểu hỏng khác nhau, nên cả hai đều phải có trần.
+     */
+    const val MIN_HOTWORDS_SCORE = 2.0f
+    const val MAX_HOTWORDS_SCORE = 4.0f
+
+    /**
+     * Bề rộng chùm của `modified_beam_search` (`OfflineRecognizerConfig.maxActivePaths`).
+     *
+     * ⚠ Trước H5 con số này là một literal `4` nằm trong `VoiceEngine.build` — tức **danh mục khai mọi tham số
+     * giải mã trừ đúng một cái**, và `scripts/voice/hotword-matrix.py` (chạy cùng tham số trên host) phải chép
+     * lại bằng tay. Nay một chỗ khai, hai bên đọc.
+     */
+    const val MAX_ACTIVE_PATHS = 4
+
+    /**
+     * H5 — hai giá trị được phép cho núm `voice_beam`. Chỉ hai, không phải một dải: beam là **chi phí nhân lên**
+     * ở mỗi khung giải mã, và [ĐO xe 2026-09-16] một câu 8 s đã mất 2,35 s để giải mã với beam 4. Cho một dải
+     * liên tục là mời người đo gõ `16` trên một chiếc xe đang chạy rồi kết luận nhầm rằng mô hình chậm.
+     */
+    val BEAM_CHOICES: Set<Int> = setOf(MAX_ACTIVE_PATHS, 8)
+
     /** Đơn vị mô hình cho hotwords — mô hình VN của sherpa là BPE (sentencepiece, 2000 token). */
     const val MODELING_UNIT = "bpe"
+
+    /**
+     * H6 — bản **nhẹ hơn** của gói đang cài, hoặc `null` khi không có bản nào nhẹ hơn (đã là bản nhẹ nhất, hoặc
+     * gói kia chưa mirror ⇒ chưa tải được).
+     *
+     * Đặt ở danh mục chứ không ở tầng vẽ: câu hỏi *"có bản nào nhẹ hơn không"* là câu hỏi về **dữ liệu của danh
+     * mục** (cỡ tệp + đã ghim chưa), và trả lời nó bằng một `if (id == "…int8…")` trong Cài đặt là viết cứng tên
+     * một mô hình vào tầng vẽ — đúng thứ CLAUDE.md §7 cấm. Thêm một gói nhẹ hơn nữa vào [ALL] là hàng Cài đặt tự
+     * đề nghị nó, không phải sửa thêm chỗ nào.
+     */
+    fun lighterThan(current: SherpaModel): SherpaModel? =
+        ALL.filter { it.id != current.id && it.downloadable && !it.experimental && it.totalBytes in 1 until current.totalBytes }
+            .minByOrNull { it.totalBytes }
 }

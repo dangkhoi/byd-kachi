@@ -65,8 +65,45 @@ interface CarControlPort {
      *
      * ⚠ **Đọc ngay sau khi ghi có thể trả giá trị CŨ** — xe chưa kịp áp và bắn lại lên bus. Đây là tính chất của
      * phần cứng, không phải của hàm này; tầng gọi (`VoiceDispatcher.runControl`) là chỗ xử lý, xem KDoc ở đó.
+     *
+     * H1 · T5: nay uỷ quyền về [readState] (đường đọc đi qua `ControlDef.readKey` — một **mã datum** — chứ không qua
+     * `bindingKey` là khoá GHI). Giữ tên cũ để mọi chỗ gọi 1.66 và mọi bản giả trong bài kiểm không phải sửa.
      */
     fun readStep(id: String): Int? = null
+
+    /**
+     * Nút này có đường điều khiển **trên CHIẾC XE NÀY** không. `true` = có, hoặc **không biết** (mặc định).
+     *
+     * ## Vì sao mặc định là `true`, không phải `false`
+     * Mặc định phải là *"cứ thử đi"*: [NoCar], mọi bản giả trong bài kiểm và máy ảo đều không có bảng feature-id
+     * của xe, nên một mặc định `false` sẽ khiến Kachi đọc to *"chưa điều khiển được trên xe này"* cho **mọi**
+     * nút ở khắp mọi nơi trừ đúng một chiếc xe — một câu sai, và sai theo kiểu làm người ta tin là xe hỏng.
+     *
+     * Chỉ [CarControlAdapter] trả `false`, và chỉ khi bảng thật **có mặt** mà id **vắng** trong đó (xem
+     * `featureAbsentOnCar`). Chỗ gọi dùng nó để đổi một câu thất bại chung chung thành một câu **có ích**:
+     * *"chờ cũng vô ích"* khác hẳn *"thử lại xem"*.
+     */
+    fun wiredOnThisCar(id: String): Boolean = true
+
+    /**
+     * ═══ H1 · T5 — GIÁ TRỊ THẬT của MỘT NÚT BẤT KỲ (không riêng [ControlKind.STEP]) ══════════════════════
+     *
+     * `null` = **chưa đọc được**: off-car · máy ảo · trim không provision · nút chưa có đường đọc. Chỗ gọi phải giữ
+     * nguyên hành vi 1.68 khi gặp `null` (lùi về mức đang nhớ trong RAM) — **không bịa số**.
+     *
+     * ## [ĐO] bệnh nó chữa — tester 1.66 *"điều hoà chỉnh lung tung, quất một phát như lò heo quay"*
+     * Lệnh **tương đối** (*"tăng gió"*) phải cộng vào **mức thật của xe**. Tới 1.68 nó cộng vào mặc định trong RAM
+     * (gió 4 · nhiệt 22), nên [ĐO xe 2026-09-16] xe đang **gió 1** mà nói *"tăng gió"* thì lệnh bắn đi là **5** — đúng
+     * cái *"quất một phát"* mà người dùng thấy. Đây là cổng để tầng trên hỏi xe trước khi tính.
+     *
+     * ## Ngân sách (⚠ [ĐO xe 1.68]: 33 lượt đọc HAL/phút · 27 shell/phút)
+     * Mỗi lượt gọi là **một** lượt đọc HAL, **theo yêu cầu**: một câu lệnh giọng nói, hoặc một cú chạm − / +. KHÔNG
+     * được gọi trong vòng vẽ, vòng poll, hay lúc dựng ô — làm thế là biến một phép đo thành một vòng lặp.
+     *
+     * Mặc định `null` (không override) có chủ ý, cùng lẽ với [readStep]: [NoCar], bản giả trong bài kiểm và máy ảo
+     * giữ NGUYÊN hành vi cũ mà không phải sửa một dòng nào — ở đó **không có** giá trị thật nào để đọc.
+     */
+    fun readState(id: String): Int? = null
 }
 
 /**

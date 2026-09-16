@@ -88,9 +88,38 @@ object VoiceFeedbackPhrase {
             .trim(',')
             .trim()
 
-    /** Chữ cái đầu về thường — *"Đã "* + *"Bật đèn"* thành *"Đã bật đèn"*, không phải *"Đã Bật đèn"*. */
-    internal fun decap(s: String): String =
-        if (s.isEmpty()) s else s.substring(0, 1).lowercase() + s.substring(1)
+    /**
+     * Chữ cái đầu về thường — *"Đã "* + *"Bật đèn"* thành *"Đã bật đèn"*, không phải *"Đã Bật đèn"*.
+     *
+     * ## ⚠ [SOÁT chuỗi-lời-đáp 2026-09-17] CHỮ VIẾT TẮT được MIỄN — và đó là một lỗi có thật, không phải phòng xa
+     * Nhãn nút `powertrain_mode` là **"EV / HEV"**. Hạ chữ đầu cho ra `"eV / HEV"`, mà
+     * [TtsPronunciation.spellOut] chỉ nhận chuỗi **toàn chữ HOA** ⇒ `"eV"` trượt khỏi đường đánh vần và rơi về
+     * cách đọc thô của Piper ⇒ người lái nghe *"Chưa eV / hát e vê…"* (một nửa câu đánh vần đúng, một nửa không).
+     * Hai tầng ở hai module khác nhau nên không bên nào một mình thấy được lỗi; bài canh
+     * `decap roi spellOut van danh van duoc chu viet tat` khoá đúng **cặp** đó.
+     *
+     * Luật: chỉ hạ chữ khi **từ đầu tiên không phải chữ viết tắt** (≥ 2 ký tự và mọi chữ cái đều HOA).
+     */
+    internal fun decap(s: String): String = when {
+        s.isEmpty() -> s
+        isAcronym(s.takeWhile { !it.isWhitespace() }) -> s
+        else -> s.substring(0, 1).lowercase() + s.substring(1)
+    }
+
+    /** Từ này là chữ viết tắt? (≥ 2 ký tự, có chữ cái, và mọi chữ cái đều HOA — `"EV"` · `"PM2.5"` · `"SOH)"`.) */
+    private fun isAcronym(w: String): Boolean =
+        w.length >= 2 && w.any { it.isLetter() } && w.all { !it.isLetter() || it.isUpperCase() }
+
+    /**
+     * Thân dòng đã **tự mang** lời dẫn *"Đã"* rồi? (vd [VoiceReply.doneActual] = *"Đã gửi Nhiệt độ 24 — xe báo 23"*.)
+     *
+     * ## [SOÁT chuỗi-lời-đáp 2026-09-17] — lỗi *"Đã đã gửi…"*
+     * [merge] ghép *"Đã "* vào trước mọi dòng OK. Dòng của `doneActual` đã bắt đầu bằng *"Đã gửi"* ⇒ câu đọc ra
+     * **"Đã đã gửi Nhiệt độ 24, xe báo 23"**. Kiểm bằng **nội dung** chứ không bằng một danh sách hàm được miễn:
+     * bất kỳ dòng nào mở đầu bằng chính lời dẫn ấy cũng không được nhận thêm một lời dẫn thứ hai.
+     */
+    private fun hasDoneLead(body: String): Boolean =
+        body.startsWith(Strings.t("Đã ", "Done: "), ignoreCase = true)
 
     private fun words(s: String): Int = s.split(' ', '\n', '\t').count { it.isNotBlank() }
 
@@ -116,9 +145,30 @@ object VoiceFeedbackPhrase {
         val bad = kept.filter { it.second != Kind.OK }
 
         if (bad.isEmpty()) {
-            val joined = ok.joinToString(", ") { decap(body(it.first)) }
-            val sentence = Strings.t("Đã ", "Done: ") + joined
-            return if (words(sentence) > MAX_WORDS) tooMany(ok.size) else sentence
+            val lead = Strings.t("Đã ", "Done: ")
+            val single = ok.singleOrNull()?.let { body(it.first) }
+            // Dòng đã tự mang lời dẫn ⇒ giữ NGUYÊN VĂN (kể cả chữ hoa đầu câu): `decap` ở đây sẽ cho ra
+            // *"đã gửi…"* — một câu mở đầu bằng chữ thường.
+            val sentence =
+                if (single != null && hasDoneLead(single)) single
+                // ⚠ [SOÁT 1.69 · P2] Nhánh NHIỀU dòng cũng phải kiểm, không chỉ nhánh một dòng. KDoc
+                // [hasDoneLead] hứa *"bất kỳ dòng nào mở đầu bằng chính lời dẫn ấy"*, nhưng tới lượt soát này
+                // phép kiểm chỉ chạy trên `ok.singleOrNull()` ⇒ hai vế mà một vế là [VoiceReply.doneActual]
+                // vẫn đọc ra **"Đã đã gửi Nhiệt độ 24, …"**. Hôm nay ca ấy khó tới (dòng đọc-lại về SAU
+                // `flushed` nên đi đường một-dòng) — tức đây là một bẫy **chờ sẵn**, không phải một lỗi đang
+                // kêu, và đó chính là loại mà lượt soát phải bắt. Gỡ lời dẫn rồi mới ghép: một lời dẫn cho cả
+                // câu, đúng như nhánh một-dòng.
+                else lead + ok.joinToString(", ") { p ->
+                    val b = body(p.first)
+                    decap(if (hasDoneLead(b)) b.substring(lead.length) else b)
+                }
+            // ⚠ [SOÁT chuỗi-lời-đáp 2026-09-17] MỘT dòng thì KHÔNG bao giờ lùi về câu đếm việc.
+            // `tooMany` ("Đã xong 1 việc") sinh ra cho ca **nhiều việc** — ở đó nó nói ngắn mà vẫn đủ. Với MỘT
+            // dòng nó nói **ít hơn hẳn** dòng gốc: [VoiceReply.doneActual] tồn tại để đọc ra HAI con số (đã gửi
+            // 24 · xe báo 23), và "Đã xong 1 việc" nuốt đúng hai con số ấy. Cắt theo từ như nhánh HỎNG bên dưới:
+            // mất phần đuôi còn hơn mất phần đầu.
+            if (words(sentence) <= MAX_WORDS) return sentence
+            return if (ok.size == 1) clampWords(sentence, MAX_WORDS) else tooMany(ok.size)
         }
 
         val head = bad.first()

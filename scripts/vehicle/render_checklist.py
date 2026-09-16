@@ -391,8 +391,14 @@ def main() -> int:
     total = sum(len(s["candidates"]) for s in steps)
     data_json = json.dumps({"steps": steps}, ensure_ascii=False).replace("</script>", "<\\/script>")
 
+    # Trang này được commit (docs/diagnostics/artifacts/carexec-checklist.html). Một dấu thời gian
+    # "bây giờ" làm mỗi lần dựng lại đẻ ra một diff dù ledger không đổi ⇒ không ai phân biệt được
+    # "dựng lại" với "verdict mới". SOURCE_DATE_EPOCH cho phép sinh lại y hệt.
+    import os
     from datetime import datetime, timezone
-    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    stamp = datetime.fromtimestamp(int(epoch), timezone.utc) if epoch else datetime.now(timezone.utc)
+    generated_at = stamp.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     html = (
         TEMPLATE

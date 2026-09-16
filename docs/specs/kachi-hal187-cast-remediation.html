@@ -49,9 +49,10 @@ ul{padding-left:22px}li{margin:3px 0}
   ảnh hưởng an toàn lái xe, dẹp hết toàn bộ HAL, nút, chức năng, widget, whatever, coi như chưa bao giờ tồn tại,
   người lái xe muốn chỉnh gì mấy này thì vào setting thật của xe làm"</i>. Xoá <b>10 nút</b> + <b>17 thông tin</b>
   + <b>3 nhóm</b> + <code>Domain.SAFETY</code> + <code>CarStatus.Safety</code> + 2 ô vẽ Canvas + 24 icon vector.
-  ⇒ <b>Con số "187" trong tên tệp và trong mọi mục dưới đây là LỊCH SỬ</b>; số thật hôm nay là
-  <b>167</b> = <b>54 nút · 106 thông tin · 4 gói · 3 hành động</b> <i>(2026-09-16 owner gỡ ADAS/an toàn — trước
-  đó 187)</i>. Tên tệp <b>giữ nguyên</b> (không đổi slug). Chi tiết + bằng chứng grep:
+  ⇒ <b>Con số "187" trong tên tệp và trong mọi mục dưới đây là LỊCH SỬ</b>; số ngay sau lượt đó (2026-09-16) là
+  <b>167</b> = <b>54 nút · 106 thông tin · 4 gói · 3 hành động</b>, và sau <b>(V) FEATURE-FILTER 2026-09-17</b>
+  <b>số thật hôm nay là 154</b> = <b>47 nút · 100 thông tin · 4 gói · 3 hành động</b> <i>(trước đó 167, trước nữa
+  187 — xem <code>docs/diagnostics/feature-filter-2026-09-16.md</code>)</i>. Tên tệp <b>giữ nguyên</b> (không đổi slug). Chi tiết + bằng chứng grep:
   <code>docs/diagnostics/adas-purge-2026-09-16.md</code>. Các mục §2–§9 bên dưới <b>không sửa số</b> — chúng ghi
   lại phép đo của chuyến xe 2026-09-15, và sửa số của một phép đo đã xảy ra là làm hỏng bằng chứng.</li>
 <li><b>Pass 0 — 2026-09-15</b>: Khởi tạo. Gộp 2 việc version tiếp: (A) sửa regression cast-cụm do refactor SimpleCast (P0), (B) RE off-car + vá binding cho 121/187 chức năng đang hỏng. Kèm nợ nhỏ: công cụ <code>sweep</code>, guard size-compat YouTube. Fix kính-đóng + CapTest 2 chiều đã làm (giữ lại).</li>
@@ -60,8 +61,10 @@ ul{padding-left:22px}li{margin:3px 0}
 <h2>2. Context</h2>
 <div class="card"><b>⚠ 2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher.</b> Mọi con số và mọi mục
 ADAS/an toàn từ đây xuống là <b>LỊCH SỬ ĐO</b> của chuyến xe 2026-09-15, giữ nguyên làm bằng chứng. Trạng thái
-hôm nay: <b>167 chức năng</b> (54 nút · 106 thông tin · 4 gói · 3 hành động) và <b>không còn</b> nút/datum
-ADAS/an toàn nào — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</div>
+lúc đó (2026-09-16): <b>167 chức năng</b> (54 nút · 106 thông tin · 4 gói · 3 hành động) và <b>không còn</b>
+nút/datum ADAS/an toàn nào — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.
+<br>⚠ <b>Trạng thái hôm nay (2026-09-17, sau (V) FEATURE-FILTER): 154 chức năng</b> = <b>47 nút · 100 thông tin ·
+4 gói · 3 hành động</b> — xem <code>docs/diagnostics/feature-filter-2026-09-16.md</code>.</div>
 <h3>Hai vấn đề THẬT (đều [ĐO] trên xe hôm nay)</h3>
 <p><b>(A) Cast qua cụm hỏng — regression P0.</b> Bản 1.61/1.62 (chứa refactor quality-review Pha 1-3: xoá <code>ClusterCast.kt</code>, thêm <code>SimpleCast</code> + <code>LauncherBootPlan.reconcile</code>) lần đầu chạy cast thật trên xe (sau reboot) đã đặt <code>ClusterBlackActivity</code> + app cast (GMaps) vào <b>display 1</b> (VD slot của launcher, <code>kachi-slot-0</code>) thay vì <b>display 2</b> (cụm thật <code>fission_bg_xdjaVirtualSurface</code>) → "cast vào giữa launcher". [ĐO] <code>ClusterDisplayResolver.resolve()</code>/<code>DisplayParse.clusterDisplayId</code> parse dump thật <b>ra đúng 2</b>; gốc là <b>TIMING</b>: boot log <code>Cluster display seed = 1</code> → seed=1 được dùng đặt ClusterBlack TRƯỚC khi refine sang 2.</p>
 <p><b>(B) 121/187 chức năng "chưa chạy / số vô nghĩa".</b> Công cụ "Kiểm tra từng nút xe" chấm <b>64 OK / 121 KHÔNG / 2 chưa</b>. Nhiều mục ĐỌC trả rỗng hoặc sai đơn vị; nhiều NÚT không tác dụng. Đây KHÔNG phải 121 bug riêng — chúng gom theo <b>device HAL</b> (charging/light/radar/tyre/bodywork…) và theo <b>loại lỗi</b> (chưa-map / sai-route / sai-scale / sai-enum / bị-chặn-chữ-ký / trim-không-có).</p>

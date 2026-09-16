@@ -360,6 +360,169 @@ adb shell "$B --es cmd state" | tr ',' '\n' | grep -E "chip_labels|active|boot"
   `adb shell logcat -d | grep -E "slot-insets|slot-resize"`.
 - **`hood`**: nút *Ca-pô* phải **không còn** trong màn chọn nút (owner B6) — ô ai đã đặt sẵn thì vẫn dựng được.
 
+### (i) VOICE-HOTFIX 1.69 — **[P0] vòng lặp hội thoại**: đọc MỘT dòng là biết đã chết hẳn chưa
+
+Bản 1.68 trên xe mở micro **309 lần trong 12 phút** từ chỉ **7** phiên thật, và ~200 lượt trong số đó giải mã
+chuỗi mô hình tự bịa (`"ừ"` 102 · `"ừm"` 102). Đó là thứ làm CPU bão hoà ⇒ **ô YouTube không cuộn nổi**. Sau
+bản vá, đếm lại đúng con số ấy:
+
+```bash
+adb logcat -c && echo "— giờ nói 5 câu bình thường, rồi ĐỂ YÊN 2 phút —"
+# ... nói xong, đợi 2 phút ...
+adb logcat -d -s KachiVoiceTiming KachiVoiceRec | grep -c "mic mở sau"      # kỳ vọng ≈ số câu + vài lượt nối
+adb logcat -d -s KachiVoiceRec | grep -c 'sherpa ra: "ừ'                    # kỳ vọng **0**
+adb logcat -d | grep -E "bỏ giải mã|chốt một-micro|cầu chì"                 # ba lớp chặn, có dòng là đang chạy
+```
+- `mic mở sau` **> 30 lần** trong 2 phút im lặng ⇒ vòng lặp CHƯA chết — gửi nguyên log về.
+- `cầu chì` nổ trong lúc dùng **bình thường** ⇒ trần 12 lượt/phút đặt chặt quá, báo lại (đừng tự nới trên xe).
+
+### (j) Bộ ngắt câu — ba con số mỗi lượt, và cái núm chỉnh được **không cần build**
+
+```bash
+adb logcat -d -s KachiVoiceTiming | grep -E "ngắt câu|hết trần"
+```
+Mỗi dòng nay in `nen=` · `nguong=` · `ngat_o=` · `tieng=` · `im=`. Đọc thế này:
+- `tieng_bat_dau=-1` ở một lượt người ta **có nói** ⇒ ngưỡng vẫn cao hơn giọng của người đó;
+- `nen=` lớn hơn ~90 ⇒ trần nền đang bị chạm (đúng chỗ bản vá kẹp lại).
+
+Chỉnh ngay trên xe, không build lại (kẹp `40..400`, mặc định 90 — nhỏ hơn = nhạy hơn):
+```bash
+B='-a com.byd.launcher.TEST_BRIDGE -n com.byd.launcher/.launcher.testbridge.KachiTestBridgeReceiver'
+adb shell "am broadcast $B --es cmd prefs_set --es key voice_endpoint_floor_cap --es text 60"
+adb shell "am broadcast $B --es cmd prefs_set --es key voice_endpoint_silence_ms --es text 1000"
+```
+Lời đáp có `read_back` — đọc nó, đừng tin lệnh đã chạy chỉ vì không báo lỗi.
+
+### (k) Xuất **nhật ký lượt nói** (WAV + JSON) — thứ chốt được mọi câu còn lại
+
+Đây là mục quan trọng nhất của chuyến này: host **không** trả lời được câu *"trên xe nghe đúng bao nhiêu %"*
+(giọng TTS ≠ giọng người, không có mic 4 kênh, không có ồn đường — §8.6 của `emulator-voice-e2e-2026-09-15.md`).
+Bản 1.69 tự ghi lại, chỉ cần lấy về:
+
+1. Nói **10–15 câu** như dùng thật (có cả câu tester kêu: *"lọc ngay"* · *"lọc bụi"* · *"điều hoà"* · *"Google Map"*),
+   nên có một lượt **đang mở nhạc** (owner chốt voice phải chạy được khi đang nghe nhạc).
+2. *Cài đặt › Voice › **Xuất nhật ký voice*** → nút hiện **đường dẫn thật**; hoặc bằng máy:
+   ```bash
+   adb shell "am broadcast $B --es cmd voice_dump"      # trả đường dẫn zip
+   adb pull <đường-dẫn-zip> /tmp/
+   ```
+3. Trên máy phát triển:
+   ```bash
+   python3 scripts/voice/replay-car-log.py /tmp/kachi-voice-<stamp>.zip --model <MODEL_DIR>
+   ```
+   ⇒ bảng **xe nghe ra gì** vs **host nghe ra gì** cho từng lượt. Chênh nhau = lỗi âm học của mic/cabin; giống
+   nhau mà vẫn sai = lỗi từ vựng (sửa bằng `VoiceSynonyms`, không cần đụng mô hình).
+
+⚠ Tiếng **chỉ nằm trên xe**: vòng 30 mục / 30 MB, tự xoá cái cũ, không có đường nào gửi đi. Tắt bằng
+*Cài đặt › Voice › Giữ nhật ký lượt nói*.
+
+### (l) `createStream` với tệp hotword 2 241 dòng — con số owner đang chờ
+
+Ngân sách owner chốt: **≤ 150 ms** trên đầu xe. Máy ảo đo được trung vị **~10 ms** (dải 7–13, lượt đầu 52) —
+nhưng máy ảo chạy trên x86 của máy phát triển, nên con số ấy **không** nói gì về ARM của xe.
+
+```bash
+adb logcat -d -s KachiVoiceRec | grep -o "createStream(hotwords) [0-9]* ms" | sort -n -k2 | tail -20
+```
+Vượt 150 ms ⇒ báo lại kèm con số; **đừng** tự cắt tệp hotword trên xe (cỡ tệp đã được đo là *không* phải biến
+số quyết định — xem `kachi-voice-hotword-phrases.html`).
+
+### (m) H1 — *"tăng gió"* nay phải cộng vào **số THẬT của xe**
+
+```bash
+adb shell "am broadcast $B --es cmd hal --es dev BYDAutoAcDevice --es m getAcWindLevel"   # đọc mức thật
+```
+Chỉnh gió **bằng màn BYD gốc** về một mức lạ (vd 1), rồi nói *"tăng gió"*: câu trả lời phải đọc ra **mức thật + 1**
+(vd *"Đặt Gió = 2"*), **không** phải 5. Trước bản vá nó luôn tính từ mặc định trong RAM (gió 4 · nhiệt 22) — đúng
+câu tester tả: *"quất một phát như lò heo quay"*. Làm lại với *"tăng nhiệt độ"*.
+
+⚠ Sáu nút **chưa** có đường đọc (`seatc` `seath` `defrost` `defrost_rear` `ac_auto` `vol`) — chúng vẫn tính từ
+bảng của Kachi. Đó là **đã biết**, không phải hỏng; xem backlog (M).
+
+### (n) `hal --es op getid` — đọc thẳng một feature-id (mở khoá mạch MƯA của (S))
+
+```bash
+adb shell "am broadcast $B --es cmd hal --es op getid --es dev BYDAutoWiperDevice --es m 321912848"
+adb shell "am broadcast $B --es cmd hal --es op getid --es dev BYDAutoWiperDevice --es m WIPER_AREA_FRONT_STATE"
+```
+Chỉ-đọc ⇒ **không** cần `auto_confirm`. Lời đáp có `sentinel` — `true` nghĩa là *feature không có trên trim này*,
+**đừng** đọc con số `-2147482648` như một mức gạt mưa. Chạy **trong lúc gạt mưa đang chạy**: `getWindscreenWiperRelayState`
+trả 0 suốt lượt đo 09-16 nên nó không dùng được, hai id trên là ứng viên thay.
+
+## 6h. CHẠM TRONG Ô — 1.69 (70): đọc nhật ký daemon mới · thử vuốt thật
+
+> Bệnh: [ĐO xe 09-16 §9.1] vuốt trong ô **không cuộn**, chỉ nhận tap, và tap **lệch**. Vá 1.69 = đường lùi theo
+> **cử chỉ** (một lệnh mỗi cử chỉ, toạ độ đã map, có `swipe`). Hai mục dưới đây trả lời hai câu khác nhau:
+> (g) *vì sao daemon không lên trên xe* — câu này 4 lượt xe rồi vẫn **[CHƯA BIẾT]**; (i) *vuốt đã chạy chưa*.
+
+### (g) Đọc NHẬT KÝ INPUTD mới — 3 lệnh, chốt được nguyên nhân
+
+Trước 1.69 lệnh khởi động daemon ném stderr vào `/dev/null` ⇒ không có gì để đọc. Nay có tệp thật, **cùng thư mục
+`usage-*.log`**, nên `adb pull` quen thuộc lấy luôn được.
+
+```bash
+# 1) Ảnh chụp một dòng — khoẻ không, hỏng vì gì, thử mấy lượt, log nằm đâu
+adb shell "am broadcast $B --es cmd state" | grep -o '"inputd":{[^}]*}'
+
+# 2) Nhật ký của CHÍNH daemon (stdout+stderr của app_process)
+adb shell ls -la /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ | grep inputd
+adb shell cat /sdcard/Android/data/com.byd.launcher/files/kachi-logs/inputd-<stamp>.log
+
+# 3) Nếu (2) nói "start localabstract:…" mà (1) vẫn không khoẻ ⇒ bệnh ở lượt NỐI, không ở lượt khởi:
+adb shell "logcat -d -b all | grep -i 'avc:' | grep kachi_input"
+```
+
+**Đọc kết quả** (cây quyết định, không đoán):
+
+| `state.inputd.last_error` | Nghĩa | Việc tiếp |
+|---|---|---|
+| `Permission denied` **và** có dòng `avc: denied { connectto } … tcontext=u:r:shell` | **sepolicy** chặn app nối tới socket của miền shell — giống hệt [ĐO máy ảo 2026-09-17]. Kiến trúc daemon **không dùng được** trên ROM enforcing | Đóng hướng daemon, đường lùi theo cử chỉ là đường chính thức. Báo về để gỡ mã daemon hoặc đổi hướng |
+| `Connection refused` ở **cả 25 lượt**, tệp log **rỗng/không có** | `app_process` không chạy được (CLASSPATH? SELinux `execute`?) | Chạy tay đúng dòng lệnh, xem stderr: `adb shell "CLASSPATH=$(pm path com.byd.launcher \| sed 's/package://') app_process / com.byd.clusternav.system.inputd.InputDaemonMain kachi_input"` |
+| tệp log có `bind failed: Address already in use` | daemon **cũ còn sống**, chỉ là không nối tới được | như hàng 1 |
+| `last_error` **rỗng** và `attempts=0` | chưa có cú chạm nào vào ô app từ lúc mở app | chạm vào ô app một cái rồi đọc lại |
+| `forced_off: true` | ai đó còn để công tắc ẩn `inputd_disabled` trên máy này | gỡ khoá đó rồi đo lại (xem cuối §6h) |
+
+Log client cũng in lý do **lượt đầu / mỗi lần lý do đổi / lượt cuối** (cố ý không in đủ 25 dòng — 1.67 vừa cắt log):
+```bash
+adb shell "logcat -d -v time -s Kachi/InputDaemonClient:* | tail -20"
+```
+
+### (i) VUỐT THẬT trong ô — cùng lệnh đã từng ra một cú tap
+
+Đặt một app có danh sách dài vào ô (YouTube, hoặc Cài đặt của xe), rồi chạy **đúng** phép đo của 09-16:
+
+```bash
+adb shell "am broadcast $B --es cmd slot --ei n 2 --es pkg com.google.android.youtube"   # hoặc app khác
+sleep 6
+adb exec-out screencap -p > /tmp/slot-before.png
+adb shell input swipe 1000 850 1000 350 400        # vào VÙNG Ô, không phải toàn màn
+sleep 2
+adb exec-out screencap -p > /tmp/slot-after.png
+```
+
+- **ĐẠT** = hai ảnh khác nhau vì **CUỘN** (không phải vì mở một video). [ĐO máy ảo 2026-09-17] ca này đã đạt.
+- **KHÔNG ĐẠT** nếu ảnh sau là một video/trang mới ⇒ vẫn đang bị hiểu thành tap: dán `state.inputd` + 20 dòng
+  `logcat -s Kachi/InputDaemonClient` + hai ảnh về.
+- Kiểm thêm **chạm đơn không bắn đôi**: chạm một hàng trong danh sách ⇒ mở **một** trang, không nhảy hai cấp.
+- Kiểm thêm **giữ lâu**: giữ ~1 s trên một mục ⇒ menu ngữ cảnh của app hiện ra (trước 1.69 không bao giờ hiện).
+
+**Ép đường lùi để so hai nhánh** (chỉ khi cần; nhớ gỡ sau — công tắc ẩn, không có nút nào trong Cài đặt):
+
+```bash
+# BẬT: force-stop → ghi → force-stop LẦN NỮA → start  (một lần force-stop là chưa đủ, tiến trình tự dựng lại)
+adb shell am force-stop com.byd.launcher; sleep 2
+adb shell "run-as com.byd.launcher sh -c \"sed -i 's|</map>|    <boolean name=\\\"inputd_disabled\\\" value=\\\"true\\\" />\\n</map>|' shared_prefs/clusternav_prefs.xml\""
+adb shell am force-stop com.byd.launcher; sleep 2
+adb shell am start -n com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity
+adb shell "am broadcast $B --es cmd state" | grep -o '"forced_off":[a-z]*'      # phải là true
+
+# GỠ (bắt buộc trước khi rời xe)
+adb shell am force-stop com.byd.launcher; sleep 2
+adb shell "run-as com.byd.launcher sed -i '/inputd_disabled/d' shared_prefs/clusternav_prefs.xml"
+adb shell am force-stop com.byd.launcher; sleep 2
+adb shell am start -n com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity
+```
+
 ## 7. Sau khi 1 + 2 + 3 PASS
 → báo về: em chạy lại senior review + security scan (đã chạy off-car) với log thật → OTA 1.63. Mục FAIL: dán nguyên output — sửa đúng chỗ.
 

@@ -301,7 +301,6 @@ object GroupBoard {
             "ac_on" -> active(s.climate.acOn)
             "ac_cycle" -> active(s.climate.recircOn)
             "anion_state" -> active(s.climate.anionOn)
-            "is_charging" -> active(s.energy.isCharging)
 
             // ── CẢNH BÁO ────────────────────────────────────────────────────────────────────
             "door_lf" -> alertIf(s.body.doorLfOpen)

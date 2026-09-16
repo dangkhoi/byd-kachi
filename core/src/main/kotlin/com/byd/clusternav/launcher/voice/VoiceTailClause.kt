@@ -118,13 +118,51 @@ internal object VoiceTailClause {
     internal fun closesApp(verb: VoiceVerb): Boolean =
         verb == VoiceVerb.CLOSE || verb == VoiceVerb.OFF || verb == VoiceVerb.PAUSE
 
-    /** Cụm mở đầu [rest] khớp một **cách nói** trong bảng đích ⇒ ý định mở app đó — xem KDoc [spokenApp]. */
-    internal fun appByTargetName(rest: List<Token>): VoiceIntent.OpenApp? {
-        val max = minOf(rest.size, VoiceAppTargets.LONGEST_SPOKEN)
-        for (len in max downTo 1) {
-            val words = rest.take(len).map { it.norm }
+    /**
+     * ═══ H3 · CÁCH GỌI APP **≥ 2 TỪ** ngay sau động từ THẮNG một nhãn NGẮN nằm giữa câu ══════════════════════
+     *
+     * ## Bệnh nó chữa — [ĐO máy ảo 2026-09-16], hai ca **MỞ NHẦM APP** (tệ hơn hẳn *"không hiểu"*)
+     *  • *"mở việt máp"* ⇒ mở **Google Maps**. `VoiceWiring.withPhonetics` sinh dạng đọc cho MỌI nhãn app đã
+     *    cài, nên nhãn *"Maps"* đẻ ra cụm MỘT từ `máp`, và cụm ấy đi vào **từ vựng chung**. Vòng quét (d) của
+     *    [VoiceIntentParser] đi từ trái sang: vị trí 0 (`việt`) không khớp gì, vị trí 1 khớp `máp` ⇒ trả ngay
+     *    một ý định *có nghĩa* rồi dừng. Cách gọi HAI từ *"việt máp"* của [VoiceSynonyms.APP_TARGETS] không bao
+     *    giờ được hỏi tới.
+     *  • *"mở bản đồ google"* ⇒ mở **Voice Search** (`googlequicksearchbox`), cùng cơ chế.
+     *
+     * Luật (d') mà H3 thêm **không** đỡ được hai ca này: nó chỉ so tại **cùng một vị trí**, còn ở đây cụm đáng
+     * thắng bắt đầu **sớm hơn** cụm bị khớp nhầm. Mà *"dãy dài nhất thắng"* là luật số 1 của [VoiceGrammar], nên
+     * nó phải được hỏi **trước khi** vòng quét kịp nhận một cụm ngắn ở giữa câu.
+     *
+     * ## Ba cổng, không cổng nào là trang trí
+     *  1. **Chỉ ở vị trí 0** (ngay sau động từ). Giữa câu đã có (d') và (e) lo; quét mù mọi vị trí ở đây là mở
+     *     lại đúng cánh cửa mà luật *"cách hiểu đầu tiên CÓ NGHĨA"* đóng lại.
+     *  2. **Phải dài hơn cụm từ-vựng khớp tại vị trí 0, và tối thiểu 2 từ** (`maxOf(atZero, 1)`). Nhờ sàn 2 từ,
+     *     một cách gọi MỘT từ không bao giờ cướp được nhãn app thật — *"mở google"* vẫn mở app *Google*, đúng
+     *     cam kết ở KDoc [spokenApp] (*"nhãn thật phải thắng"*).
+     *  3. **Chỉ động từ hành động, và không phải động từ đóng.** *"đóng google map"* vẫn phải ra
+     *     [VoiceUnknownReason.APP_CLOSE]; *"xem …"* đã có nhánh riêng.
+     */
+    internal fun appAtHead(rest: List<Token>, terms: List<VoiceTerm>, verb: VoiceVerb): VoiceIntent.OpenApp? {
+        if (!VoiceGrammar.isAction(verb) || closesApp(verb)) return null
+        val atZero = VoiceGrammar.matchAt(rest, 0, terms).maxOfOrNull { it.words.size } ?: 0
+        return appByTargetName(rest, 0, maxOf(atZero, 1))
+    }
+
+    /**
+     * Cụm bắt đầu tại [at] của [rest] khớp một **cách nói** trong bảng đích ⇒ ý định mở app đó.
+     *
+     * @param longerThan chỉ nhận cách nói dài **hơn** ngần này từ. Mặc định 0 = nhận mọi độ dài (đường (e) của
+     *   [VoiceIntentParser], nơi không còn ứng viên nào khác). Đường (d) truyền vào độ dài của cụm từ-vựng vừa
+     *   khớp, để luật **dãy dài nhất thắng** áp cho cả tên app — xem KDoc ở chỗ gọi.
+     */
+    internal fun appByTargetName(rest: List<Token>, at: Int = 0, longerThan: Int = 0): VoiceIntent.OpenApp? {
+        if (at >= rest.size) return null
+        val tail = rest.subList(at, rest.size)
+        val max = minOf(tail.size, VoiceAppTargets.LONGEST_SPOKEN)
+        for (len in max downTo longerThan + 1) {
+            val words = tail.take(len).map { it.norm }
             val target = VoiceAppTargets.bySpoken(words) ?: continue
-            return VoiceIntent.OpenApp(target.label, slotAt(rest.subList(len, rest.size)), appKey = target.key)
+            return VoiceIntent.OpenApp(target.label, slotAt(tail.subList(len, tail.size)), appKey = target.key)
         }
         return null
     }

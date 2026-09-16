@@ -110,3 +110,7 @@ car-logs/
 car-logs*/
 # Thư mục phiên của Kotlin compiler daemon (build artifact).
 .kotlin/
+
+# Giọng ghi âm của owner/anh em — dữ liệu cá nhân, chỉ giữ local (phát lại qua scripts/voice)
+voice/record/
+

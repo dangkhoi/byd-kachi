@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.launcher.ActionMacros
+import com.byd.clusternav.launcher.ControlKind
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.LauncherActions
 import com.byd.clusternav.launcher.Localized
@@ -17,150 +18,6 @@ enum class VoiceTermKind { CONTROL, TELEMETRY, MACRO, LAUNCHER, PROFILE, APP, ME
  * @property words các từ đã bỏ dấu (khớp theo dãy); dài hơn ⇒ được xét trước (xem [VoiceGrammar.matchAt]).
  */
 data class VoiceTerm(val words: List<String>, val kind: VoiceTermKind, val id: String)
-
-/**
- * ═══ V1 · TỪ ĐỒNG NGHĨA — KHAI **MỘT CHỖ** ════════════════════════════════════════════════════════════════════
- *
- * ## Vì sao ở đây mà không rải vào từng dòng registry
- * `ControlRegistry`/`TelemetryRegistry` là **hợp đồng với màn hình**: `label` là chữ hiện trên nút, và hàng trăm
- * bài test đang assert đúng chuỗi đó (KDoc `Localized.label`). Nhét thêm một danh sách "còn gọi là…" vào mỗi dòng
- * sẽ (a) làm 188 dòng dữ liệu phình ra vì một tính năng duy nhất dùng tới, và (b) mời người sau đặt cách-gọi-miệng
- * vào ô `label` cho tiện — tức đổi chữ trên nút. Ở đây thì nhãn vẫn là nhãn, cách nói là cách nói.
- *
- * ## Luật khai
- *  • **Chỉ khai cái mà nhãn KHÔNG phủ.** Nhãn *"Đèn đọc"* đã tự khớp, không cần khai lại — [VoiceGrammar] sinh cụm
- *    từ nhãn VI/EN/ngắn của **mọi** dòng (đó là điều kiện để bài canh độ phủ đòi *"mọi nút có ít nhất một câu"* có
- *    ý nghĩa: nó phải xanh **do sinh ra**, không do ai đó chép tay 65 dòng).
- *  • Viết **không dấu, chữ thường** — cùng dạng [VoiceLexicon.deaccent] trả về, để khỏi có hai luật chuẩn hoá.
- *  • Cụm trùng nhau giữa hai mã là **hợp lệ**: [VoiceIntentParser] chọn theo loại động từ (xem KDoc ở đó).
- */
-object VoiceSynonyms {
-
-    /** Cách nói thêm cho NÚT (`ControlRegistry`). */
-    val CONTROL: Map<String, List<String>> = mapOf(
-        "lock" to listOf("khoa xe", "khoa cua", "lock car", "central lock"),
-        "door" to listOf("mo khoa", "mo khoa xe", "mo khoa cua", "unlock", "unlock car"),
-        "trunk" to listOf("cop", "cop xe", "boot", "tailgate"),
-        "readl" to listOf("den trong xe", "den doc sach", "cabin light"),
-        "pm25" to listOf("loc bui", "loc khong khi", "air filter", "purifier"),
-        "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling"),
-        "seath" to listOf("suoi ghe", "ghe am"),
-        "temp" to listOf("nhiet do dieu hoa", "nhiet do trong xe", "cabin temperature"),
-        "fan" to listOf("quat", "quat gio", "toc do quat", "suc gio", "blower"),
-        "defrost" to listOf("say kinh truoc", "xa bang"),
-        "cam" to listOf("camera", "camera 360 do", "camera quanh xe"),
-        "sunroof" to listOf("noc xe", "cua noc", "cua so noc"),
-        "headl" to listOf("den chieu xa", "high beam"),
-        "recirc" to listOf("gio trong", "tuan hoan trong", "recirc"),
-        "vol" to listOf("tieng", "am thanh", "volume"),
-        "wiper" to listOf("can gat", "gat nuoc", "windscreen wiper"),
-        // [SOÁT P2] *"dừng chiếu"* — người ta bỏ chữ *"cụm"*. Một từ `chieu` là đủ vì luật **dãy dài nhất thắng**
-        // giữ nguyên mọi cụm dài hơn có chứa nó (*"chiếu cụm"*, *"đèn chiếu xa"*), nên không nuốt nhãn nào.
-        "cast" to listOf("chieu", "chieu len cum", "chieu man", "cast cluster"),
-        "ac_auto" to listOf("dieu hoa", "may lanh", "dieu hoa tu dong", "air con", "ac", "aircon"),
-        // [SOÁT P2] *"mở cửa sổ"* / *"mở kính"* — hai câu đời thường nhất về kính, trước đây **không** trỏ tới đâu:
-        // *"cửa"* không có trong từ vựng, còn *"sổ"* thì khớp nhãn *"Số"* của datum `gear` ⇒ ra MISMATCH (một câu
-        // báo lỗi sai chỗ). Trỏ về nút GỘP là lựa chọn an toàn nhất trong ba lựa chọn: nó thuộc diện CONFIRM
-        // (`VoiceRiskTable`) nên người lái thấy đúng hộp *"hạ HẾT 4 kính?"* trước khi có gì xảy ra, và câu trả lời
-        // kèm dấu *"chưa kiểm trên xe"* (`windows_all` ở mức OVERDRIVE). Đoán một kính cụ thể mới là đoán mò.
-        "windows_all" to listOf("het kinh", "toan bo kinh", "moi kinh", "every window",
-            "kinh", "cua so", "cac cua so", "windows"),
-        // ═══ V3 · R10 — *"mở kính lái"*, câu [ĐO xe 2026-09-16] mà máy hiểu SAI ═══════════════════════
-        // Owner nói *"mở kính lái"*; sherpa nghe **đúng** (`"mở kính lái a lô một hai ba…"`), nhưng từ vựng
-        // không có cụm nào bắt đầu bằng `kinh lai` ⇒ luật dãy-dài-nhất chỉ còn `kinh` ⇒ trỏ về nút GỘP
-        // `windows_all` ⇒ hộp *"Hạ hết 4 kính?"*. Tức một câu chỉ về MỘT cửa kính lại thành lệnh cho bốn.
-        // Bốn cách nói dưới đây đều về đúng một cửa: kính bên người lái (`window` = kính lái nhị phân).
-        // `windows_all` GIỮ `"kinh"`/`"cua so"` — owner chốt cùng ngày: nói trống thì 4 kính chạy luôn, không hỏi.
-        "window" to listOf("kinh lai", "cua kinh lai", "kinh tai xe", "cua so lai"),
-        "win_lf" to listOf("kinh ben lai", "kinh ghe lai"),
-        "win_rf" to listOf("kinh ben phu", "kinh ghe phu"),
-        "drive_mode" to listOf("che do chay", "kieu lai"),
-        "ambient_power" to listOf("den vien", "den noi that", "ambient"),
-        "ambient_color" to listOf("mau den noi that"),
-        "brightness_gear" to listOf("do sang man hinh", "sang man"),
-        "target_soc_set" to listOf("muc tieu sac", "gioi han phan tram sac"),
-        "start_charging" to listOf("sac xe", "bat dau sac", "start charge"),
-        "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now"),
-        // ── Pha NGHE (R10): nhãn có CHỮ VIẾT TẮT / CHỮ SỐ thì mô hình tiếng Việt không có từ để nghe ──
-        // [ĐO] 2026-09-14, từ điển `vosk-model-small-vn-0.4` (19.529 mục): `ev` · `hev` KHÔNG có mặt ⇒ nút này
-        // trước đó **gõ được mà không nói được**, và cái thiếu ấy im lặng. Thêm một cách gọi thuần Việt là cách
-        // sửa đúng: nó cũng là cách người ta nói ngoài đời, không phải một mẹo cho bộ nhận dạng. Bài canh
-        // `VoiceGrammarPhrasesTest.moi kha nang deu co it nhat mot cum noi duoc` đòi MỌI dòng registry phải có ít
-        // nhất một cụm nói được, nên thêm nhãn viết tắt mới là nó đỏ ngay.
-        // ⚠ Hai dòng `itac` / `avh` đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn (owner) — nút không còn tồn tại.
-        "powertrain_mode" to listOf("che do dong co", "xang dien", "che do nang luong"),
-    )
-
-    /** Cách nói thêm cho THÔNG TIN ĐỌC (`TelemetryRegistry`). */
-    val TELEMETRY: Map<String, List<String>> = mapOf(
-        "soc" to listOf("pin", "phan tram pin", "muc pin", "battery", "state of charge"),
-        "ev_range_km" to listOf("tam hoat dong", "di duoc bao xa", "con di duoc bao nhieu", "range"),
-        "speed" to listOf("dang chay bao nhieu", "van toc"),
-        "ext_temp" to listOf("nhiet do ngoai troi", "ngoai troi", "outside temperature"),
-        "pm25_level" to listOf("bui min", "chat luong khong khi", "air quality"),
-        "odometer" to listOf("so km da di", "odo", "mileage"),
-        "tyre_p_fl" to listOf("ap suat lop truoc trai"),
-        "tyre_p_fr" to listOf("ap suat lop truoc phai"),
-        "tyre_p_rl" to listOf("ap suat lop sau trai"),
-        "tyre_p_rr" to listOf("ap suat lop sau phai"),
-        // ── Pha NGHE (R10) — cùng lý do với khối cuối của [CONTROL]: nhãn mang `PM2.5` · `SOH` · `MCU` · `12V` ·
-        // `50km` · `%` · `drift`, mà mô hình tiếng Việt không có từ nào trong số đó. [ĐO] 2026-09-14.
-        // ⚠ `pm25_value` KHÔNG lấy cụm `"bui min"` — cụm ấy đã thuộc `pm25_level` (mức 0–3) ở trên; hai datum
-        // khác nhau mà cùng một cách gọi thì câu *"xem bụi mịn"* trở thành xổ số. `nong do` là chữ phân biệt
-        // đúng nghĩa: một bên là MỨC, bên kia là NỒNG ĐỘ µg/m³.
-        "pm25_value" to listOf("nong do bui min"),
-        "soh_oem" to listOf("suc khoe pin", "do chai pin"),
-        "charging_pct" to listOf("phan tram sac"),
-        "consumption_50km" to listOf("muc tieu thu", "tieu thu dien"),
-        "drift_mode" to listOf("che do truot"),
-        "mcu_status" to listOf("trang thai nguon"),
-        "volt_12v" to listOf("ac quy", "dien ap ac quy"),
-        "volt_12v_level" to listOf("muc ac quy"),
-    )
-
-    /** Cụm chỉ **loại đối tượng**, không chỉ một mã — dùng để gỡ nghĩa cho động từ quá tải (RE Kiki §7c: *"Mở"*). */
-    val MEDIA_WORDS: List<String> = listOf("bai hat", "bai", "nhac", "ca khuc", "song", "music", "track")
-
-    /** Cụm mở đầu một ĐIỂM ĐẾN (đứng sau một động từ không phải NAV, vd *"tìm đường tới …"*). */
-    val NAV_WORDS: List<String> = listOf("duong den", "duong toi", "destination")
-
-    /**
-     * ═══ V1.1 · CÁCH NÓI TÊN **APP ĐÍCH** ([VoiceAppTargets]) — khai MỘT chỗ, như mọi cách nói khác ═══════════
-     *
-     * Spec R17(d). Cùng hợp đồng với [CONTROL]/[TELEMETRY]: **không dấu, chữ thường**, và cụm nào không dùng được
-     * thì lộ ra bằng số đo chứ không bằng suy đoán.
-     *
-     * ## [ĐO] 2026-09-14 — từ điển `vosk-model-small-vn-0.4` (19.529 mục) **không** có mọi tên thương hiệu
-     * Tra ngược từng từ: `youtube` ✓ · `music` ✓ · `google` ✓ · `map` ✓ · `yt` ✓ · `ô` ✓ — nhưng `maps` ✗ ·
-     * `waze` ✗ · `spotify` ✗ · `zing` ✗ · `mp3` ✗ · `vietmap` ✗. Cụm chứa một từ ✗ bị [VoicePhrases] loại **cả
-     * cụm** (đúng thiết kế), nên mỗi app phải có ít nhất một cách nói mà mô hình đọc nổi:
-     *  • *"google maps"* ✗ ⇒ thêm **"google map"** ✓ và **"ban do google"** ✓ (cách người Việt hay nói hơn);
-     *  • *"waze"* ✗ ⇒ thêm **"quay"** — chính là âm Việt *"quây"* mà người ta vẫn gọi app này (`quay`/`quây`/
-     *    `quẩy` đều có trong từ điển, và [VoicePhrases] nở cả họ thanh điệu nên nói thanh nào cũng nhận);
-     *  • *"vietmap"* ✗ ⇒ thêm **"viet map"** ✓✓ (hai từ rời);
-     *  • *"spotify"* · *"zing mp3"* ✗ và **không có âm Việt nào tự nhiên** ⇒ chấp nhận: hai app này **gõ được mà
-     *    chưa nói được**, con số ghi ở §9 spec. Bịa ra một cách viết theo âm (*"sờ pô ti phi"*) là bịa một cách
-     *    nói không ai dùng — tệ hơn là nói thẳng rằng chưa nói được.
-     *
-     * ⚠ Các cụm này CỐ Ý **không** vào từ vựng chung ([VoiceGrammar.terms]): chúng chỉ được tra ở đúng một vị trí
-     * — ngay sau cụm đánh dấu *"bằng / trên / với"* (xem [VoiceIntentParser.appAfterMarker]). Thả *"quay"* hay
-     * *"youtube"* vào từ vựng chung là đổi cách hiểu của những câu đang chạy tốt (*"quay lại bài"* là lệnh PREV).
-     */
-    val APP_TARGETS: Map<String, List<String>> = mapOf(
-        VoiceAppTargets.YT_MUSIC to listOf("youtube music", "yt music", "nhac youtube", "youtube nhac"),
-        VoiceAppTargets.YOUTUBE to listOf("youtube", "yt"),
-        VoiceAppTargets.SPOTIFY to listOf("spotify"),
-        VoiceAppTargets.ZING to listOf("zing mp3", "zing"),
-        // [ĐO] `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §3 L6 (t45): *"mở bản đồ"* → `Unknown` trên
-        // máy có nhãn hệ thống tiếng Anh (*"Maps"*). *"bản đồ"* CHÍNH LÀ nhãn tiếng Việt của app này
-        // (`PackageManager` trả *"Bản đồ"* ở máy đặt tiếng Việt), nên đây không phải một biệt danh bịa ra — và
-        // nhãn thật vẫn được xét TRƯỚC (xem [VoiceIntentParser.appByTargetName]), nên máy nào có nhãn *"Bản đồ"*
-        // thì vẫn đi đường nhãn như cũ.
-        VoiceAppTargets.GMAPS to listOf("google map", "google maps", "ban do google", "ban do", "google"),
-        VoiceAppTargets.WAZE to listOf("waze", "quay"),
-        VoiceAppTargets.VIETMAP to listOf("viet map", "vietmap"),
-    )
-}
 
 /**
  * ═══ V1 · TỪ VỰNG **SINH TỪ BỘ ĐĂNG KÝ** ══════════════════════════════════════════════════════════════════════
@@ -276,6 +133,45 @@ object VoiceGrammar {
     fun isAction(v: VoiceVerb): Boolean = !isRead(v)
 
     /**
+     * ═══ [SOÁT 1.69 · P1] Cụm này có ĐỌC phần đuôi câu không ═════════════════════════════════════════════
+     *
+     * Trả lời đúng một câu hỏi: khi [VoiceIntentParser] dựng ý định cho cụm này, **phần câu còn lại phía sau
+     * nó có được nhìn tới không**. Đọc thẳng các nhánh của `VoiceIntentParser.build`/`.control`, không khai
+     * lại một bảng thứ hai (hai bản sao là hai bản sẽ lệch — CLAUDE.md §4.1).
+     *
+     * ## Bệnh nó chữa — [ĐO off-car 2026-09-17]
+     * Nhánh *"cả câu chính là TÊN của một việc"* gắn một **động từ ngầm** cho cụm khớp tại vị trí 0. Nhưng mã
+     * không hề đòi cụm ấy chiếm cả câu: chỉ cần câu **bắt đầu** bằng một cụm của bộ đăng ký là phần đuôi bị bỏ
+     * đi và một HÀNH ĐỘNG được bắn ra. Bộ đăng ký lại có **29** cụm MỘT từ hạng CONTROL/MACRO/LAUNCHER mà sau
+     * khi bỏ dấu trùng đúng tiếng Việt đời thường (`cop` · `kinh` · `gio` · `chieu` · `quat` · `tieng` · `ac`),
+     * cộng những nhãn hai từ vốn cũng là danh ngữ (*"cốp xe"*). Ba câu đo được, trên xe đang chạy:
+     *  • *"chiều nay mấy giờ về"* ⇒ `Control(cast, 1)` — một câu hỏi người nhà thành lệnh chiếu cụm;
+     *  • *"cốp xe bẩn quá"* ⇒ `Control(trunk, 1)` — **mở cốp**;
+     *  • *"kính bẩn quá"* ⇒ `Control(windows_all, 1)` — **hạ hết kính**.
+     *
+     * ## Vì sao cổng đóng ở ĐÚNG giao của hai điều kiện
+     * Chỗ gọi chỉ từ chối khi **không có động từ** *và* cụm **không đọc đuôi**. Có động từ thì người lái đã nói
+     * rõ mình muốn làm gì, đuôi thừa không đổi ý định ấy (*"mở hết kính ra"* vẫn chạy). Cụm có đọc đuôi thì
+     * đuôi đã là **đối số thật** và tự nó chứng minh câu là một lệnh — *"nhiệt độ hai mươi bốn độ"* (STEP tra
+     * số) · *"chế độ lái thể thao"* (SELECT tra nhãn) · *"ứng dụng VTV Go"* (LAUNCHER tra tên app). Siết rộng
+     * hơn thì ba họ câu ấy chết theo; siết hẹp hơn thì ba câu đo được ở trên vẫn bắn lệnh.
+     */
+    fun readsTail(term: VoiceTerm): Boolean = when (term.kind) {
+        // *"Mở ứng dụng VTV Go"* — đuôi quyết định app nào (nhánh LAUNCHER của `build`).
+        VoiceTermKind.LAUNCHER -> true
+        VoiceTermKind.CONTROL -> when (ControlRegistry.byId(term.id)?.kind) {
+            // SELECT tra nhãn lựa chọn trong đuôi; STEP tra con số. Cả hai tự trả MISMATCH khi đuôi không cho
+            // gì dùng được, nên chúng không bao giờ lặng lẽ bắn một hành động.
+            ControlKind.SELECT, ControlKind.STEP -> true
+            // TOGGLE · COVER · BUTTON: `control()` trả thẳng `Control(id, 1)` / `Control(id, null)` — `after`
+            // không xuất hiện một lần nào. Đây đúng là họ nút đụng THÂN XE (cốp · kính · khoá · nắp ca-pô).
+            else -> false
+        }
+        // MACRO: `build` trả thẳng `Macro(id)`, không nhìn `after`.
+        else -> false
+    }
+
+    /**
      * TOÀN BỘ từ vựng đối tượng, **sinh ra** từ 4 bộ đăng ký + [VoiceSynonyms] + danh sách động (hồ sơ, app).
      *
      * @param profiles tên hồ sơ tài xế đang có (`HomeUiState.profiles`) — danh sách **động**, không thể sinh từ
@@ -358,6 +254,26 @@ object VoiceGrammar {
      */
     fun matchAt(t: List<VoiceLexicon.Token>, i: Int, terms: List<VoiceTerm>): List<VoiceTerm> =
         terms.filter { VoiceLexicon.phraseAt(t, i, it.words) }
+
+    /**
+     * H4 — [terms] cộng thêm các cụm **nghe nhầm** mà câu [tokens] đủ NGỮ CẢNH để bật ([VoiceSynonyms.MISHEARD]).
+     *
+     * Điều kiện đọc trên **cả câu**, không đọc trên từng vị trí: nó trả lời câu hỏi *"câu này đang nói về lọc bụi
+     * chứ?"*, mà câu hỏi ấy không thể trả lời bằng một cửa sổ hai từ. Câu không có từ ngữ cảnh nào thì trả về
+     * **đúng** danh sách cũ (không cấp phát, không sắp xếp lại) — tức mọi câu đang chạy tốt không đụng tới.
+     */
+    fun plusMisheard(terms: List<VoiceTerm>, tokens: List<VoiceLexicon.Token>): List<VoiceTerm> {
+        val norms = tokens.mapTo(HashSet(tokens.size)) { it.norm }
+        val extra = VoiceSynonyms.MISHEARD
+            .filter { m -> m.context.any { it in norms } }
+            .map { VoiceTerm(it.words, kindOf(it.id), it.id) }
+        if (extra.isEmpty()) return terms
+        return (terms + extra).distinct().sortedByDescending { it.words.size }
+    }
+
+    /** Mã của [VoiceSynonyms.MISHEARD] là mã nút hay mã datum — hỏi thẳng bộ đăng ký, không khai loại hai lần. */
+    private fun kindOf(id: String): VoiceTermKind =
+        if (ControlRegistry.byId(id) != null) VoiceTermKind.CONTROL else VoiceTermKind.TELEMETRY
 
     /**
      * ═══ PHA NGHE · cùng danh mục này, nhưng viết cho **bộ nhận dạng** ════════════════════════════════════════

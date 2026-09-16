@@ -136,17 +136,19 @@ class VoiceIntentParserTest {
         "Đặt nhiệt độ 5" to VoiceIntent.Control("temp", 17),
     )
 
+    // ⚠ (V) FEATURE-FILTER 2026-09-17: hai ca `chế độ lái` (nút `drive_mode`) đã gỡ cùng nút — owner chấm NO.
+    // Ba ca còn lại vẫn khoá đúng luật "chọn theo NHÃN lựa chọn, không theo số thứ tự".
     @Test fun `SELECT chon theo nhan lua chon`() = expect(
-        "Chỉnh chế độ lái sang thể thao" to VoiceIntent.Control("drive_mode", 2),
-        "Đặt chế độ lái eco" to VoiceIntent.Control("drive_mode", 1),
+        "Chỉnh chế độ đèn pha sang auto" to VoiceIntent.Control("headlight_mode", 1),
         "Chỉnh góc camera sang sau" to VoiceIntent.Control("camera_view", 1),
         "Đặt màu đèn viền xanh lá" to VoiceIntent.Control("ambient_color", 2),
     )
 
+    // ⚠ (V) FEATURE-FILTER 2026-09-17: hai ca `Sạc ngay` (`start_charging`) và `Gập gương` (`mirror_fold_btn`)
+    // đã gỡ cùng hai nút — owner chấm NO.
     @Test fun `BUTTON bam mot phat`() = expect(
         "Lọc ngay" to VoiceIntent.Control("pm25_clean_now", null),
-        "Sạc ngay" to VoiceIntent.Control("start_charging", null),
-        "Gập gương" to VoiceIntent.Control("mirror_fold_btn", null),
+        "Nhớ ghế lái" to VoiceIntent.Control("seat_memory", null),
     )
 
     // ══ F · BA CẶP NHÃN LỒNG NHAU (backlog L-RE2) — luật "dãy dài nhất thắng" ══════════════════════════
@@ -387,6 +389,41 @@ class VoiceIntentParserTest {
         "dừng chiếu" to VoiceIntent.Control("cast", 0),
         "bật chiếu cụm" to VoiceIntent.Control("cast", 1),
         "bật đèn chiếu xa" to VoiceIntent.Control("headl", 1),
+    )
+
+    /**
+     * ═══ [SOÁT 1.69 · P1] Câu KHÔNG có động từ mà chỉ *bắt đầu* bằng một cái tên ⇒ **không phải một lệnh** ═══
+     *
+     * Bệnh: nhánh (b') của [VoiceIntentParser] gắn một **động từ ngầm** cho cụm khớp tại vị trí 0, còn phần
+     * đuôi thì các nhánh TOGGLE/COVER/BUTTON/MACRO của `build` **không hề đọc**. Cộng với 29 cụm MỘT từ trong
+     * bộ đăng ký trùng tiếng Việt đời thường sau khi bỏ dấu (`cop` · `kinh` · `gio` · `chieu` · `tieng`…),
+     * [ĐO off-car 2026-09-17] ba câu dưới đây từng ra **hành động thân xe**:
+     *  • *"chiều nay mấy giờ về"* ⇒ `Control(cast, 1)`
+     *  • *"cốp xe bẩn quá"* ⇒ `Control(trunk, 1)` — mở cốp trên xe đang chạy
+     *  • *"kính bẩn quá"* ⇒ `Control(windows_all, 1)` — hạ hết kính
+     *
+     * Bài này khoá đúng điều đó. Gỡ dòng `verbHit != null || after.isEmpty() || readsTail(head)` ở nhánh (b')
+     * thì ba dòng đầu đỏ ngay — đã thử, đúng ba giá trị ghi trên.
+     */
+    @Test fun `danh tu dau cau khong co dong tu KHONG duoc thanh hanh dong`() {
+        listOf("chiều nay mấy giờ về", "cốp xe bẩn quá", "kính bẩn quá", "tiếng gì lạ vậy").forEach {
+            val got = VoiceIntentParser.parseOne(it)
+            assertTrue(got is VoiceIntent.Unknown, "«$it» KHÔNG phải lệnh — phải là Unknown, ra: $got")
+        }
+    }
+
+    /**
+     * …và cổng trên KHÔNG được siết quá tay: ba họ câu dưới vẫn phải chạy y như trước.
+     *
+     * Cột chia: có động từ ⇒ luôn qua · tên chiếm cả câu ⇒ qua · cụm **có đọc đuôi** (STEP tra số, SELECT tra
+     * nhãn, LAUNCHER tra tên app) ⇒ qua, vì lúc ấy phần đuôi đã là đối số thật.
+     */
+    @Test fun `cong danh tu dau cau khong sieu qua tay`() = expect(
+        "chiếu cụm" to VoiceIntent.Control("cast", 1),          // tên chiếm cả câu
+        "cốp" to VoiceIntent.Control("trunk", 1),               // tên chiếm cả câu
+        "mở hết kính ra" to VoiceIntent.Macro("mac_win_open_all"), // có động từ ⇒ đuôi thừa không đổi ý định
+        "nhiệt độ hai mươi bốn độ" to VoiceIntent.Control("temp", 24), // STEP đọc đuôi
+        "gió mức ba" to VoiceIntent.Control("fan", 3),          // STEP đọc đuôi
     )
 
     @Test fun `cau phan hoi goi ten nut bang nhan cua bo dang ky`() {

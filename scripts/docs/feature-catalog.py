@@ -22,6 +22,16 @@ import json
 import os
 import sys
 
+
+def build_date() -> str:
+    """Ngày ghi vào tài liệu SINH RA. Tài liệu này được commit (docs/kachi-feature-catalog.html), nên
+    `date.today()` làm mỗi lần sinh lại đẻ ra một diff dù ba tệp nguồn không đổi — không phân biệt
+    được "dựng lại" với "nội dung đổi". SOURCE_DATE_EPOCH / --date cho phép sinh lại y hệt."""
+    epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    if epoch:
+        return dt.datetime.fromtimestamp(int(epoch), dt.timezone.utc).date().isoformat()
+    return dt.date.today().isoformat()
+
 TIER_VI = {
     "PROVEN": "🟢 đã chứng minh (đọc/ghi thật)",
     "OVERDRIVE": "🚗 binding từ RE, chờ xe",
@@ -100,7 +110,9 @@ def main():
     ap.add_argument("--features", default="docs/catalog/features.json")
     ap.add_argument("--status", default="docs/catalog/status-by-id.json")
     ap.add_argument("--out", default="docs/kachi-feature-catalog.html")
+    ap.add_argument("--date", default="", help="ngày ghi trong tài liệu (mặc định SOURCE_DATE_EPOCH, rồi hôm nay)")
     a = ap.parse_args()
+    generated_on = a.date or build_date()
     reg = json.load(open(a.registry, encoding="utf-8"))
     feats = json.load(open(a.features, encoding="utf-8")) if os.path.isfile(a.features) else []
     by_id = json.load(open(a.status, encoding="utf-8")) if os.path.isfile(a.status) else {}
@@ -128,7 +140,7 @@ th{{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;l
 .toc a{{margin-right:14px}}td:nth-child(2){{min-width:280px}}td:nth-child(3){{min-width:180px}}td:nth-child(4){{min-width:220px}}td:nth-child(5){{min-width:200px}}
 </style></head><body><div class="wrap">
 <h1>Kachi — Danh mục chức năng</h1>
-<p class="muted">Diễn giải · voice command · phản hồi · status THẬT. Sinh ngày {dt.date.today().isoformat()} bằng <code>scripts/docs/feature-catalog.py</code>
+<p class="muted">Diễn giải · voice command · phản hồi · status THẬT. Sinh ngày {generated_on} bằng <code>scripts/docs/feature-catalog.py</code>
 từ <code>registry.json</code> (dump máy từ 4 bộ đăng ký, {n_ctl} nút · {n_tel} thông tin · {n_mac} gói lệnh · {n_la} hành động) + <code>docs/catalog/features.json</code>
 ({len(feats)} chức năng ngoài registry) + <code>docs/catalog/status-by-id.json</code> ({len(by_id)} mục có kết quả on-car). Chủ: dangkhoi.</p>
 <div class="card"><b>Quy ước status</b>: 🟢 đã xác nhận trên xe · ⚠ chạy một phần trên xe · ❌ trên xe không tác dụng / bỏ theo thiết kế · 🚗 code xong, chờ xe · ✅ off-car (máy ảo/test) · 🔨 đang dở · 🔲 chưa làm.

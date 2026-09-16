@@ -54,7 +54,14 @@ class FloatingBubbleService : Service() {
     private var foregroundStarted = false
     /** One-shot: the overlay settings screen is launched at most once per service start. */
     private var overlayRequested = false
-    private val pipPreviousModes = mutableMapOf<String, String>()
+    /**
+     * ⚠ `ConcurrentHashMap`, KHÔNG phải `mutableMapOf`. Bản đồ này được GHI trên luồng `"pip-block"` và được
+     * DUYỆT + XOÁ trên luồng `"pip-restore"` mà [onDestroy] khởi — hai luồng rời nhau, không khoá. Một
+     * `forEach` chạy trong lúc luồng kia còn `put` ném `ConcurrentModificationException`, giết luồng restore
+     * GIỮA CHỪNG ⇒ `appops … PICTURE_IN_PICTURE deny` của GMaps/YouTube nằm lại VĨNH VIỄN (đổi state ra ngoài
+     * tiến trình, sống qua cả reboot — CLAUDE.md §5: mỗi thứ đổi ra ngoài phải có đường trả lại chạy được).
+     */
+    private val pipPreviousModes = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     /**
      * Autostart is driven by this service ONLY (sole driver, R1). [autoStartDispatched] is an
@@ -169,6 +176,15 @@ class FloatingBubbleService : Service() {
         if (!startForegroundOnce()) { stopSelf(startId); return START_NOT_STICKY }
         if (!castEnabledNow()) { stopSelf(startId); return START_NOT_STICKY }
         if (!requestOverlayIfMissing()) { stopSelf(startId); return START_NOT_STICKY }
+        // ⚠ [onCreate] có thể đã DỪNG SỚM (`castEnabledNow` false, hoặc chưa có quyền overlay) và `return`
+        // TRƯỚC khi dựng `renderer`/`gestureHandler`. Nếu cổng lật giữa `onCreate` và lượt này — owner vừa bấm
+        // "Cho phép" ở màn hệ thống mà [requestOverlayIfMissing] vừa mở, hoặc Cast vừa được bật — thì
+        // `showBubble()` deref lateinit ⇒ `UninitializedPropertyAccessException` ⇒ sập dịch vụ nổi.
+        // [onDestroy] đã canh đúng hai trường này (`::gestureHandler.isInitialized`); đường VÀO cũng phải canh.
+        if (!::renderer.isInitialized || !::gestureHandler.isInitialized) {
+            Log.w(TAG, "onStartCommand trước khi onCreate dựng xong — bỏ lượt dựng bong bóng (lượt start sau sẽ làm)")
+            return START_STICKY
+        }
         showBubble()
         return START_STICKY
     }
@@ -388,13 +404,21 @@ class FloatingBubbleService : Service() {
         }, "pip-block").start()
     }
 
+    /**
+     * Lấy RA danh sách cần trả lại TRƯỚC khi rời [onDestroy] (bằng `remove` nguyên tử, chạy trên luồng gọi),
+     * rồi mới phát lệnh trên luồng nền. Nhờ vậy: (a) không duyệt bản đồ dùng chung trong lúc luồng
+     * `"pip-block"` còn ghi, (b) mỗi gói được trả lại ĐÚNG MỘT lần, (c) một lệnh shell hỏng ở gói này không
+     * nuốt luôn gói còn lại — trước đây một ngoại lệ ở gói đầu bỏ mặc gói sau ở trạng thái `deny`.
+     */
     private fun restorePipForKnownApps(coordinator: SimpleCastCoordinator) {
+        val pending = PIP_BLOCK_PACKAGES.mapNotNull { pkg -> pipPreviousModes.remove(pkg)?.let { pkg to it } }
+        if (pending.isEmpty()) return
         Thread({
-            pipPreviousModes.forEach { (pkg, mode) ->
-                coordinator.executeShell("appops set $pkg PICTURE_IN_PICTURE $mode")
+            pending.forEach { (pkg, mode) ->
+                runCatching { coordinator.executeShell("appops set $pkg PICTURE_IN_PICTURE $mode") }
+                    .onFailure { Log.w(TAG, "restore PiP for $pkg failed", it) }
                 Log.i(TAG, "restored PiP for $pkg → $mode")
             }
-            pipPreviousModes.clear()
         }, "pip-restore").start()
     }
 

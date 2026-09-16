@@ -1,4 +1,18 @@
-# VISUAL-REFRESH P1 — bằng chứng đo (2026-09-16 · Kachi 1.68 · 69)
+# VISUAL-REFRESH P1 — bằng chứng đo (2026-09-16 · Kachi 1.68 · 69 → **Pass 5: 1.69 · 70**)
+
+> ⚠⚠ **PASS 5 (2026-09-17 · 1.69 · 70) — `after/` ĐÃ CHỤP LẠI LẦN THỨ HAI.** Owner nhìn 1.68 trên xe:
+> *"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top đấy nhé, bug rồi"*.
+> Hai lớp ánh sáng ở đỉnh thẻ (dải mờ dần 35 % + nét đỉnh ĐẶC 1–2dp) đã **gỡ hẳn** khỏi `KachiTheme.surface()`;
+> hai vai màu `surfEdge`/`surfOnEdge` xoá khỏi `KachiPalette`. Chiều nổi nay nằm hết trong **chuyển sắc dọc**
+> ([ĐO] đỉnh ÷ đáy **1.29×** ở bảng TỐI, xem `contrast-table.md`) + ba bậc nền→khay→thẻ + hairline; gradient và
+> **sắc lĩnh vực** ở thẻ lớn giữ nguyên. Chi tiết + lý do chọn *bỏ hẳn* thay vì *hạ ≤ 8 %*:
+> spec `../../specs/kachi-visual-refresh.html` §1 (Pass 5) và §9 mục 14–17.
+>
+> Bộ `after/` hôm nay là của **Pass 5**; `before/` vẫn là 1.67 · 68 (không chụp lại). Bảng số của mục 0 và mục 2
+> dưới đây là số **Pass 4** — giữ nguyên làm lịch sử đo; hai dòng đã hết đúng:
+> *mép sáng 3.06×* (nay **không còn lớp mép sáng**) và dòng `surfEdge trên surfFrom` của `contrast-table.md`
+> (nay là `surfFrom ÷ surfTo`).
+
 
 > ⚠ **Thư mục này đã được CHỤP LẠI ở lượt soát Pass 4** (cùng ngày, cùng số hiệu 1.68 · 69 — bản này chưa
 > đăng APK nào nên không phải tách số, CLAUDE.md §9). Thư mục `before/` **giữ nguyên** (bản 1.67 · 68);
@@ -62,6 +76,12 @@ Cùng một AVD · cùng hồ sơ *Mặc định* · cùng dữ liệu giả (xe
 ⚠ Ảnh `picker-climate-*` của Pass 4 có ô *Khí hậu & không khí* đang **BẬT** (chạm một cái rồi thoát, KHÔNG bấm
 *Áp dụng* ⇒ cấu hình không đổi) — để thấy tone ACTIVE cạnh tám ô NEUTRAL trong cùng một khung hình.
 
+⚠ **Pass 5 đổi hai thứ trong khung hình, ghi ra để không ai tưởng là hồi quy**: nội dung ô đặt lại đúng cặp
+của Pass 4 (ô0 = nhóm *Kính*, ô1 = nhóm *Khí hậu*) và `top_strip_labels=false`; nhóm *Khí hậu* nay **13 ô**
+(H1·T2 thêm 6 datum ở cùng gói 1.69) còn nhóm *Năng lượng* còn **6 ô** (lượt (V) FEATURE-FILTER gỡ 5 ô sạc)
+— cả hai là của **lượt khác**, không phải của Pass 5.
+
+**Nhìn cái gì (Pass 5)**: đỉnh mỗi tile/chip/ô bộ chọn **không còn một vạch sáng** nào; ngoài ra vẫn như cũ —
 **Nhìn cái gì**: có đọc ra **ba bậc** không (nền màn → khay ô làm việc → thẻ nội dung); khay có mang **sắc lĩnh
 vực** của nội dung không (ô *Khí hậu* ngả lam-xanh, ô *Kính* trung tính); thẻ có **lồi** khỏi khay không (chuyển
 sắc dọc + nét đỉnh + hairline); chữ còn đọc được không; ô đang chọn có **khác hẳn** ô chưa chọn không; ô lõm

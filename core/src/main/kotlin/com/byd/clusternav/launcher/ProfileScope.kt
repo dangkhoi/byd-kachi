@@ -189,6 +189,36 @@ object ProfileScope {
                 "này (ồn nền, khoảng cách mic), không phải một sở thích đi theo người lái",
         )
         put(
+            "voice_keep_log",
+            "H2 (1.69) — giữ nhật ký lượt nói. Theo XE: thứ nó ghi là TIẾNG trong cabin của chính chiếc xe này, " +
+                "và nó chiếm chỗ trên đĩa của chính máy này (vòng đệm 30 mục / 30 MB). Một hồ sơ chép sang xe " +
+                "khác không được mang theo quyết định 'ghi lại giọng người ngồi trong xe đó'",
+        )
+        put(
+            "voice_endpoint_silence_ms",
+            "V3 · R2 — im bao lâu thì chốt câu. Cùng lý do [voice_mic_source]: một hằng ĐO trên cabin này (mức " +
+                "ồn nền, khoảng cách mic), không phải sở thích đi theo người lái",
+        )
+        put(
+            "voice_endpoint_min_speech_ms",
+            "V3 · R2 — tối thiểu tiếng cộng dồn trước khi được phép chốt. Cùng lý do khoá trên",
+        )
+        put(
+            "voice_endpoint_floor_cap",
+            "[P0-2] trần mức nền của bộ ngắt câu. Rõ ràng là thuộc tính của PHẦN CỨNG + cabin xe này: nó tồn " +
+                "tại vì micro và tiếng bíp của chính máy này làm nhiễm cửa sổ đo nền ([ĐO xe 2026-09-16])",
+        )
+        put(
+            "voice_beam",
+            "V2 — bề rộng chùm giải mã. Theo XE vì nó là phép đổi chác với CPU của chính đầu máy này ([ĐO] " +
+                "Qualcomm TRINKET 8 lõi, một câu 8 s mất 2,35 s ở beam 4), không phải sở thích của người lái",
+        )
+        put(
+            "voice_hotword_score",
+            "V2 — điểm biasing hotwords. Cùng họ [voice_beam]/[voice_mic_source]: đo bằng tai trên cabin thật, " +
+                "và kết quả phụ thuộc micro + mức ồn của xe này chứ không phụ thuộc ai đang lái",
+        )
+        put(
             "voice_prefer_offline",
             "V1 pha NÓI · R4 — 'Ưu tiên giọng offline'. Cùng lý do [voice_speak_replies], và còn rõ hơn: nó chỉ " +
                 "có tác dụng khi **gói 61 MB đã nằm trên đĩa của chính xe này**, mà đĩa thì không đi theo hồ sơ",

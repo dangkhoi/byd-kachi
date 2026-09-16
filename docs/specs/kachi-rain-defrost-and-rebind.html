@@ -69,6 +69,13 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 1 — 2026-09-16 tối (đo trên xe, 15 phút — <code>docs/diagnostics/oncar-trace-2026-09-16b/</code>)</b>:
+[ĐO] <code>getWindscreenWiperRelayState()</code> = <b>0 suốt lúc owner gạt</b> ⇒ proxy rơ-le của §4 <b>không dùng được</b> trên xe này;
+ứng viên thay: <code>WIPER_FRONT_WIPER_LEVEL</code> (321912848) · <code>WIPER_AREA_FRONT_STATE</code> (540287) trên device Wiper (1046) và
+<code>Setting.SETTING_FRONT_RAIN_WIPER_SPEED</code> (1196425250) — không có method bọc ⇒ T-oncar-0 cần bridge <code>hal --es op getid</code> (mới).
+Gạt tự động = BẬT (1), tự đóng kính khi mưa = BẬT, cảm biến ẩm/nhiệt cabin = −1 (<b>không có</b> ⇒ bỏ nhánh ẩm). AC AUTO đọc được
+(<code>getAcControlMode</code>=0), sấy 0/0 online 1, <code>getDefrostRearConfig</code>=2; cốp: online 1, độ cao 80 %, <code>voiceCtlBackDoor</code>
+<b>chưa dò</b>. Ghế mát/sưởi getter ở <b>BYDAutoSettingDevice</b> (AC trả null) — sửa readKey của live-state.</li>
 <li><b>Pass 0 — 2026-09-16</b>: Khởi tạo. Nguồn: ba yêu cầu owner cùng ngày (§2.1: <i>xin quyền GPS</i> · <i>RE cốp + điều hoà AUTO</i> · <i>toggle tự sấy kính khi trời mưa</i>) + báo cáo <code>docs/diagnostics/oncar-captest-sealion6-2026-09-16.md</code> (xe thứ hai xác nhận <code>trunk</code>/<code>ac_auto</code>/<code>defrost_rear</code> vẫn hỏng) + RE framework.jar DL3 kéo cùng ngày (fw-dl3) cho toàn bộ đường thật của cốp · điều hoà AUTO · sấy kính · gạt mưa · cảm biến · vị trí.</li>
 </ul>
 

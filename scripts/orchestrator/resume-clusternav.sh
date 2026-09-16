@@ -32,8 +32,20 @@ if [ -f "$session_lock" ]; then
   rm -f "$session_lock"
 fi
 
-mkdir "$RUN_LOCK" 2>/dev/null || exit 0
-trap 'rmdir "$RUN_LOCK" 2>/dev/null || true' EXIT INT TERM
+# Khoa co pid + thu hoi khoa mo coi. Ban truoc chi `mkdir || exit 0`: mot lan bi SIGKILL la thu muc
+# khoa nam lai vinh vien va orchestrator im lang exit 0 mai mai — dung kieu hong am tham ma khoa
+# phien o tren (dong 27-33) da co cach xu ly.
+if ! mkdir "$RUN_LOCK" 2>/dev/null; then
+  lock_pid="$(cat "$RUN_LOCK/pid" 2>/dev/null || true)"
+  if [ -n "$lock_pid" ] && kill -0 "$lock_pid" 2>/dev/null; then
+    exit 0                       # dang co mot luot chay that
+  fi
+  printf '%s thu hoi khoa mo coi pid=%s\n' "$(date -u +%FT%TZ)" "${lock_pid:-?}" >> "$LOG_FILE"
+  rm -rf "$RUN_LOCK"
+  mkdir "$RUN_LOCK" 2>/dev/null || exit 0
+fi
+printf '%s\n' "$$" > "$RUN_LOCK/pid"
+trap 'rm -rf "$RUN_LOCK" 2>/dev/null || true' EXIT INT TERM
 
 prompt='Continue the approved autonomous ClusterNav off-car execution from docs/_handoff/AUTONOMOUS-RESUME.md and docs/_handoff/two-track-autonomous-progress.md. First inspect any partial side effects and current tests. Work in visible 3–5-file batches. Never reset, clean, switch branches, discard files, install, execute vehicle ADB/dadb tests, commit, push, merge, or touch historical APK bytes. Exactly one final authorized release-variant vehicle-test APK may be built only after full off-car validation and final exact-source closure. Update .kiro/runtime/orchestrator.state to WAITING_FOR_VEHICLE_TEST when the vehicle-ready handoff is complete.'
 

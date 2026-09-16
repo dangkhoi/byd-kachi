@@ -58,9 +58,29 @@ class VoiceFastNaturalWiringContractTest {
 
     @Test
     fun `bo ngat cau duoc NOI vao vong nghe, khong phai mot lop mo coi`() {
-        val fn = SourceRoots.body(capture, "fun listen(")
-        assertTrue(fn.contains("endpointer.accept(rmsChunk"), "phải đưa rms TỪNG KHỐI vào bộ ngắt")
-        assertTrue(fn.contains("VoiceEndpointer.Phase.ENDED"), "và phải DỪNG vòng nghe khi nó chốt")
+        // ⚠ 1.69: thân vòng nghe dời từ `listen(` sang `listenGranted(`. Không phải một lượt dọn dẹp — `listen(`
+        // nay chỉ còn làm một việc: **xin chốt một-micro** ([VoiceSingleFlight]) rồi nhả trong `finally`, vì
+        // [ĐO xe 2026-09-16] có 4 `AudioRecord` mở trong 300 ms. Tách ra để chốt không thể bị một đường thoát
+        // sớm nào nhảy qua. Bài này vì thế phải soi đúng thân mới, nếu không nó xanh trên một hàm rỗng.
+        // ⚠ 1.69 vòng hai (Silero VAD): vòng nghe không còn gọi thẳng `VoiceEndpointer` nữa mà gọi
+        // `VoiceTurnEndpoint` — MỘT bề mặt phủ cả hai đường (VAD chính · RMS lùi). Đó là chủ ý: để đường lùi đi
+        // qua **đúng** các lời gọi của đường chính thay vì mục rữa trong một nhánh `else` không ai chạy. Bài này
+        // vì thế soi lời gọi mới, và vẫn ghim đủ hai tính chất cũ: **từng khối** được đưa vào, và vòng nghe
+        // **dừng** khi bộ ngắt chốt.
+        val fn = SourceRoots.body(capture, "private fun listenGranted(")
+        assertTrue(
+            fn.contains("ep.accept(buf, n, rmsChunk"),
+            "phải đưa TỪNG KHỐI (cả mẫu thô cho VAD lẫn rms cho đường lùi) vào bộ ngắt",
+        )
+        assertTrue(
+            fn.contains("if (stop)") && fn.contains("break"),
+            "và phải DỪNG vòng nghe khi bộ ngắt chốt",
+        )
+        val turn = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceTurnEndpoint.kt")
+        assertTrue(
+            turn.contains("VoiceEndpointer.Phase.ENDED"),
+            "đường LÙI vẫn phải đọc `Phase.ENDED` của `VoiceEndpointer` — bỏ nó là bỏ luôn đường lùi",
+        )
         // Trần cứng của phiên vẫn còn: một cabin ồn liên tục không bao giờ cho ENDED (CLAUDE.md §3).
         assertTrue(session.contains("MAX_LISTEN_MS = 8_000L"), "trần cứng của phiên KHÔNG được bỏ")
     }

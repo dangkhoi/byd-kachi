@@ -41,12 +41,13 @@ class HalAbsentCacheTest {
 
     @Test
     fun `datum vang tam thoi quay lai duoc`() {
-        // Cắm sạc: "thời gian sạc còn lại" đọc ra số ⇒ cache phải QUÊN sạch, không giữ lại nhịp giãn cũ.
+        // Nổ máy xăng: "vòng tua máy xăng" đang câm bỗng đọc ra số ⇒ cache phải QUÊN sạch, không giữ nhịp giãn cũ.
+        // ((V) 2026-09-17: mẫu cũ là `charging_eta_min` — datum đó đã gỡ theo lệnh owner.)
         val c = HalAbsentCache(missesBeforeCold = 2, firstRetryMs = 60_000)
-        repeat(2) { c.record("charging_eta_min", got = false, nowMs = 0) }
-        assertFalse(c.shouldRead("charging_eta_min", 100))
-        c.record("charging_eta_min", got = true, nowMs = 60_001)
-        assertTrue(c.shouldRead("charging_eta_min", 60_002))
+        repeat(2) { c.record("engine_rpm", got = false, nowMs = 0) }
+        assertFalse(c.shouldRead("engine_rpm", 100))
+        c.record("engine_rpm", got = true, nowMs = 60_001)
+        assertTrue(c.shouldRead("engine_rpm", 60_002))
         assertEquals(0, c.coldCount(60_002))
     }
 

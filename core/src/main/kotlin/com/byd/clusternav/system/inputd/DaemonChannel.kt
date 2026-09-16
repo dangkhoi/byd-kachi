@@ -17,4 +17,16 @@ interface DaemonChannel {
 
     /** Đóng kênh (idempotent). */
     fun close()
+
+    /**
+     * Lý do của lượt [connect] hỏng gần nhất (1.69) — `null` khi chưa hỏng lần nào.
+     *
+     * Vì sao port phải mang thêm câu này: [connect] trả `Boolean`, nên sau 4 lượt xe câu trả lời cho *"vì sao
+     * daemon không lên"* vẫn là [CHƯA BIẾT] ([ĐO xe 2026-09-16] §9.1). *Connection refused* (daemon chưa mở
+     * socket) và *Permission denied* (SELinux chặn app-uid nối tới socket của shell-uid) là **hai bệnh khác
+     * nhau, hai cách chữa khác nhau** — và một `false` thì không phân biệt được.
+     *
+     * Mặc định `null` ⇒ kênh giả trong test không phải cài đặt gì thêm.
+     */
+    fun lastError(): String? = null
 }

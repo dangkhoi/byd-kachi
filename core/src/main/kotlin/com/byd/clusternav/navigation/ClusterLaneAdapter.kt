@@ -117,13 +117,17 @@ class BoundedNavigationOutputWorker(
                         interrupted.message
                     )
                 }
-            } catch (error: RuntimeException) {
+            } catch (error: Throwable) {
+                // Trước đây chỉ bắt RuntimeException: mọi Throwable khác (IOException do transport,
+                // LinkageError khi thiếu lớp…) bị FutureTask nuốt mà không ai `get()` ⇒ cổng kẹt ở
+                // EMITTING vĩnh viễn, không FAULT, không hiện RETRY_* cho người dùng.
                 updateIfCurrent(acceptedGeneration) {
                     status = NavigationOutputStatus.FAULT(
                         NavigationOutputFailureReason.DELIVERY_THROWN,
                         error.message
                     )
                 }
+                if (error is Error) throw error
             } finally {
                 deadlineRef.get()?.cancel(false)
                 val self = taskRef.get()

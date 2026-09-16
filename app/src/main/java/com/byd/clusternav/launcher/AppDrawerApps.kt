@@ -28,17 +28,27 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  */
 class AppDrawerApps(private val context: Context, private val onPickApp: (String) -> Unit) {
 
-    /** Một ô trong lưới app: gói (để tra hàng "Gần đây"), nhãn, icon, việc làm khi chạm. */
-    class Item(val pkg: String, val label: String, val iconDrawable: Drawable?, val onTap: () -> Unit)
+    /**
+     * Một ô trong lưới app: gói (để tra hàng "Gần đây"), nhãn, **cách lấy** icon, việc làm khi chạm.
+     *
+     * ## ⚠ [SOÁT OCR 2026-09-16 · P2] Icon là một HÀM, không phải một [Drawable] đã dựng sẵn
+     * `ri.loadIcon(pm)` mở tài nguyên + bung drawable (icon thích ứng trên API 29+ là **hai** lớp). Bản cũ gọi nó
+     * cho MỌI app ngay trong [load], mà [load] chạy trong `init` của [AppDrawer] — tức trên luồng vẽ, ngay trong
+     * cú chạm mở ngăn kéo. Trên đầu xe 60+ gói, đó là launcher đứng hình đúng lúc người dùng vừa bấm. Để nó ở
+     * dạng hàm thì [tile] gọi được trên luồng nền rồi gắn vào [ImageView] qua `post` — khung đầu của ngăn kéo
+     * không còn chờ một lượt bung icon nào.
+     */
+    class Item(val pkg: String, val label: String, val icon: () -> Drawable?, val onTap: () -> Unit)
 
-    /** Mọi app có màn khởi chạy, sắp theo nhãn. */
+    /** Mọi app có màn khởi chạy, sắp theo nhãn. NHÃN đọc ngay (rẻ), ICON để dành cho luồng nền — xem [Item]. */
     fun load(): List<Item> {
         val pm = context.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         return PackageQueries.queryActivities(pm, intent)
             .mapNotNull { ri ->
                 val pkg = ri.activityInfo?.packageName ?: return@mapNotNull null
-                Triple(pkg, ri.loadLabel(pm).toString(), ri.loadIcon(pm))
+                val icon: () -> Drawable? = { ri.loadIcon(pm) }
+                Triple(pkg, ri.loadLabel(pm).toString(), icon)
             }
             .distinctBy { it.first }
             .sortedBy { it.second.lowercase() }
@@ -53,9 +63,12 @@ class AppDrawerApps(private val context: Context, private val onPickApp: (String
         // callback (`setImageDrawable` gán view làm callback) và một bộ bounds/state; dùng chung cho 2 ImageView thì
         // view gắn sau chiếm callback ⇒ view trước có thể không vẽ lại / lệch trạng thái.
         return recentApps.mapNotNull { pkg ->
-            byPkg[pkg]?.let { Item(it.pkg, it.label, copyDrawable(it.iconDrawable), it.onTap) }
+            byPkg[pkg]?.let { Item(it.pkg, it.label, copyOf(it.icon), it.onTap) }
         }
     }
+
+    /** Bản sao độc lập, tính LƯỜI đúng như bản gốc — phép sao chỉ chạy khi luồng nền thật sự bung icon. */
+    private fun copyOf(icon: () -> Drawable?): () -> Drawable? = { copyDrawable(icon()) }
 
     /** Bản sao độc lập của [d] (chia sẻ constant-state nên rẻ). Không sao chép được → dùng lại bản gốc. */
     private fun copyDrawable(d: Drawable?): Drawable? =
@@ -73,8 +86,22 @@ class AppDrawerApps(private val context: Context, private val onPickApp: (String
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             setOnClickListener { item.onTap() }
             addView(ImageView(context).apply {
-                if (item.iconDrawable != null) setImageDrawable(item.iconDrawable)
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_XL), dpi(context, Sp.ICON_XL))
+                // Bung icon trên luồng nền rồi gắn về luồng vẽ — xem KDoc [Item]. Ô giữ nguyên KÍCH THƯỚC từ
+                // `layoutParams` nên icon về muộn KHÔNG làm lưới nhảy; hỏng/không có icon ⇒ ô trống, không ném.
+                //
+                // ⚠ [SOÁT 1.69 · P2] Gửi qua [MAIN] chứ KHÔNG phải `View.post` của chính ô này. Ngay lúc khối
+                // dưới được xếp hàng, ô còn **chưa có cha** (nó vừa được dựng, `addView` vào lưới xảy ra sau, và
+                // cả lưới chỉ gắn vào cửa sổ ở cuối lượt dựng ngăn kéo). `View.post` trên một view **chưa gắn**
+                // không đi qua Handler mà đẩy vào `mRunQueue` của view — một hàng đợi KHÔNG đồng bộ, được luồng
+                // vẽ rút ra ở `dispatchAttachedToWindow`. Ghi vào nó từ luồng nền là đua với chính lượt gắn ấy:
+                // nhẹ thì mất icon, nặng thì ném giữa lượt dựng ngăn kéo. Handler của main looper thì an toàn
+                // đa luồng theo hợp đồng, và `setImageDrawable` vẫn chạy trên đúng luồng vẽ.
+                val view = this
+                ICONS.execute {
+                    val d = runCatching { item.icon() }.getOrNull() ?: return@execute
+                    MAIN.post { view.setImageDrawable(d) }
+                }
             })
             addView(TextView(context).apply {
                 text = item.label; setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
@@ -82,4 +109,27 @@ class AppDrawerApps(private val context: Context, private val onPickApp: (String
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
         }
+
+    private companion object {
+        /**
+         * Luồng bung icon — **daemon**, hai luồng, dùng chung cho mọi lần mở ngăn kéo.
+         *
+         * Hai chứ không nhiều hơn: mỗi lượt là một chuyến IPC sang `PackageManager` rồi một lượt bung drawable,
+         * nên thêm luồng chỉ thêm tranh chấp binder. Daemon để nó không bao giờ giữ tiến trình sống (cùng khuôn
+         * với `SlotLiveProbe.io` / `PhotoWidgetView`).
+         */
+        private val ICONS: java.util.concurrent.ExecutorService =
+            java.util.concurrent.Executors.newFixedThreadPool(2) { r ->
+                Thread(r, "kachi-drawer-icons").apply { isDaemon = true }
+            }
+
+        /**
+         * Đường về luồng vẽ cho icon bung xong — xem ⚠ ở [tile] về vì sao không dùng `View.post`.
+         *
+         * `by lazy` chứ không khởi tạo sớm: một `Handler` dựng trong thân `companion` là lời gọi khung **lúc nạp
+         * lớp**, nên mọi bài kiểm JVM lỡ chạm tới lớp này sẽ chết ở `<clinit>` ("not mocked") thay vì ở chỗ nó
+         * thật sự cần Android. Lười thì nó chỉ dựng đúng lúc có một icon thật để gắn.
+         */
+        private val MAIN: android.os.Handler by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
+    }
 }

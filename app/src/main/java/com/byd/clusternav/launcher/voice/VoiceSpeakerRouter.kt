@@ -81,7 +81,12 @@ class VoiceSpeakerRouter(
         // Đường kia có thể còn đang đọc câu trước (người lái nói hai câu sát nhau trong lúc gói offline vừa lắp
         // xong ⇒ đổi đường giữa hai câu). Dừng cả hai rồi mới nói là một lệnh rẻ, và nó chặn ca hai giọng chồng.
         stop()
-        val ok = if (onDone == null) target.speak(text) else target.speak(text, onDone)
+        // §9 — CỬA DUY NHẤT đổi chữ Latin sang âm Việt, và nó nằm **sau** mọi bề mặt khác: tấm chữ, nhật ký và
+        // bảng tra clip đọc sẵn đều đã cầm [text] gốc từ trước. Đặt ở đây (không đặt trong từng máy đọc) vì cả
+        // hai đường đều là bộ phiên âm theo luật chính tả — rẽ nhánh theo `target.kind` là đúng thứ CLAUDE.md §7
+        // cấm, và nó sẽ lệch đúng vào ngày đường thứ ba được thêm vào.
+        val said = TtsPronunciation.normalise(text)
+        val ok = if (onDone == null) target.speak(said) else target.speak(said, onDone)
         if (!ok) Log.i(TAG, "đường ${target.kind} không đọc được câu — chỉ còn chữ trên tấm chữ")
         return ok
     }

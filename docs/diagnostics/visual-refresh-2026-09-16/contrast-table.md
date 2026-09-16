@@ -19,7 +19,7 @@
 | `surfOnFrom ÷ surfFrom` | bước sáng BẬT↔thường | 1.2 | **1.59** | ✅ |
 | `slot ÷ bg` + `lineStrong trên slot` | bậc 1 · khay ô làm việc trên nền màn (**bước ≥ 1.12 HOẶC viền ≥ 3.0**) | 1.12 / 3.0 | bước **1.14** · viền **3.19** | ✅ |
 | `surfFrom ÷ slot` | bậc 2 · thẻ nội dung trên khay | 1.15 | **1.19** | ✅ |
-| `surfEdge trên surfFrom` | mép sáng đọc ra là **mặt vát** (bảng SÁNG miễn: đỉnh đã trắng) | 2.20 | **3.06** | ✅ |
+| `surfFrom ÷ surfTo` | chuyển sắc DỌC = toàn bộ chiều nổi (bảng SÁNG miễn: đỉnh đã trắng) | 1.20 | **1.29** | ✅ |
 | `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **14.91** | ✅ |
 | `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **7.51** | ✅ |
 | `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **3.13** | ✅ |
@@ -59,7 +59,7 @@
 | `surfOnFrom ÷ surfFrom` | bước sáng BẬT↔thường | 1.2 | **1.75** | ✅ |
 | `slot ÷ bg` + `lineStrong trên slot` | bậc 1 · khay ô làm việc trên nền màn (**bước ≥ 1.12 HOẶC viền ≥ 3.0**) | 1.12 / 3.0 | bước **1.02** · viền **4.12** | ✅ |
 | `surfFrom ÷ slot` | bậc 2 · thẻ nội dung trên khay | 1.15 | **1.16** | ✅ |
-| `surfEdge trên surfFrom` | mép sáng đọc ra là **mặt vát** (bảng SÁNG miễn: đỉnh đã trắng) | 2.20 | **1.00** | ✅ |
+| `surfFrom ÷ surfTo` | chuyển sắc DỌC = toàn bộ chiều nổi (bảng SÁNG miễn: đỉnh đã trắng) | 1.20 | **1.11** | ✅ |
 | `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **15.72** | ✅ |
 | `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **5.26** | ✅ |
 | `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **4.20** | ✅ |

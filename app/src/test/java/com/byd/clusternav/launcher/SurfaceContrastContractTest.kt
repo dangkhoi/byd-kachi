@@ -122,22 +122,53 @@ class SurfaceContrastContractTest {
     }
 
     /**
-     * Mép sáng phải đọc ra là **mặt vát**, không phải *"hơi sáng ở trên"*.
+     * ═══ [SOÁT Pass 5 · 2026-09-17] ĐỈNH THẺ KHÔNG ĐƯỢC LÀ MỘT VẠCH ══════════════════════════════════════════
      *
-     * [ĐO] bản P1 đặt mép 18 % ⇒ đỉnh thẻ chỉ sáng hơn mặt thẻ **1.7×**, và trên ảnh máy ảo ở khoảng cách lái xe
-     * nó biến mất. Sàn 2.2× là mức mà mép còn đọc ra được khi thẻ đã mang thêm sắc lĩnh vực đè lên.
+     * **Bài này ĐẢO CHIỀU bài cũ** `mep sang du manh de doc ra mat vat o bang toi` (sàn ≥ 2.2×). Owner nhìn 1.68
+     * trên xe: *"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top đấy nhé, bug
+     * rồi"*. Pass 4 đã đẩy mép sáng lên 3.06× **đúng theo bài cũ** — tức là bài canh cũ đang khoá một điều sai.
+     * Ghi ra thay vì lặng lẽ xoá: đây là một hợp đồng bị đảo, không phải một bài bị nới.
      *
-     * ⚠ Bảng SÁNG được miễn, và việc miễn là một kết luận chứ không phải một lỗ hổng: đỉnh thẻ ở đó đã là trắng
-     * tinh, **không tồn tại** màu nào sáng hơn để hắt (xem KDoc [KachiPalette.surfEdge]).
+     * ## Khoá ở tầng CƠ CHẾ, không khoá ở tầng con số
+     * Một vạch 1–2dp ở đỉnh đọc ra là *vạch* ở **mọi** alpha — cái sai là **hình dạng**, không phải cường độ. Nên
+     * bài không hỏi *"mép mờ tới mức nào"* mà hỏi *"còn lớp nào ghim vào đỉnh không"*: quét thân
+     * [KachiTheme.surface] và đòi **không** còn `Gravity.TOP` / `setLayerHeight` / `setLayerGravity`, và bảng màu
+     * **không** còn vai `surfEdge`/`surfOnEdge`. Hạ alpha rồi giữ lớp đó lại thì bài vẫn đỏ — đúng ý muốn.
      */
     @Test
-    fun `mep sang du manh de doc ra mat vat o bang toi`() {
+    fun `khong con lop anh sang ghim o dinh be mat`() {
+        val body = SourceRoots.body(
+            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/KachiTheme.kt"), "fun surface(",
+        )
+        val banned = listOf("Gravity.TOP", "setLayerHeight(", "setLayerGravity(", "setLayerInset(")
+            .filter { it in body }
+        assertEquals(
+            emptyList<String>(), banned,
+            "surface() lại có lớp ghim vào ĐỈNH thẻ ⇒ vạch sáng quay lại (owner 2026-09-16 gọi nó là bug): $banned",
+        )
+        val roles = KachiPalette::class.java.declaredFields.map { it.name }
+        assertEquals(
+            emptyList<String>(), listOf("surfEdge", "surfOnEdge").filter { it in roles },
+            "vai mép sáng mọc lại ở bảng màu — Pass 5 gỡ hẳn, không hạ alpha (xem KDoc KachiPalette.surfTo)",
+        )
+    }
+
+    /**
+     * Và vì mép sáng đã đi, **chiều nổi nằm hết trong chuyển sắc** ⇒ chuyển sắc phải còn đủ mạnh để đọc ra.
+     *
+     * Con số đo được ghi thẳng vào bảng §6.4 (dòng `surfFrom ÷ surfTo`). Bảng SÁNG được miễn vì `#ffffff` ÷
+     * `#eff3f9` chỉ ~1.06× — ở đó chiều nổi do [KachiPalette.surfLine] gánh (bài
+     * `the chat lieu tach duoc khoi nen o ca hai bang` đã khoá đúng cơ chế đó), cùng lối miễn trừ có-lý-do của
+     * các bài trên.
+     */
+    @Test
+    fun `chuyen sac doc con du manh de thay the mep sang o bang toi`() {
         val p = KachiPalette.DARK
-        val top = over(p.surfFrom, p.bg)
-        val crest = ratio(over(p.surfEdge, top), top)
+        val step = ratio(over(p.surfFrom, p.bg), over(p.surfTo, p.bg))
         assertTrue(
-            crest >= 2.2,
-            "mép sáng bảng TỐI chỉ ${fmt(crest)}× mặt thẻ — dưới mức đọc ra được ở khoảng cách lái xe (cần ≥ 2.2)",
+            step >= 1.20,
+            "chuyển sắc thẻ bảng TỐI chỉ ${fmt(step)}× (cần ≥ 1.20): sau Pass 5 đây là TOÀN BỘ chiều nổi của thẻ, " +
+                "làm phẳng nó là trả màn hình về đúng mảng xám của lượt P1.",
         )
     }
 
@@ -165,23 +196,32 @@ class SurfaceContrastContractTest {
     }
 
     /**
-     * Mép sáng phải **sáng hơn** đỉnh gradient — hoặc vô hình một cách có chủ ý.
+     * **Nguồn sáng của cả hệ ở TRÊN** ⇒ đỉnh chuyển sắc không bao giờ được TỐI hơn đáy.
      *
-     * ⚠ Bản SÁNG: đỉnh thẻ đã là trắng, không còn chỗ nào sáng hơn ⇒ mép đo ra đúng 1.00 và **đó không phải lỗi**.
-     * Bài này vì thế chỉ đòi mép **không được TỐI hơn** nền nó nằm trên: mép tối = bóng đổ ngược chiều sáng, thứ
-     * làm cả hệ đọc sai chiều nổi/chìm.
+     * [SOÁT Pass 5] Bài cũ (`mep sang khong bao gio toi hon dinh gradient`) canh đúng tính chất này nhưng canh
+     * trên lớp mép sáng — lớp đó đã bị gỡ. Tính chất thì **không** mất theo: nó chuyển xuống chính cặp
+     * `surfFrom`/`surfTo` (và `surfOnFrom`/`surfOnTo`), nơi bây giờ chiều nổi thật sự nằm. Đảo chiều cặp này là
+     * đổ bóng ngược, và cả màn hình đọc sai nổi/chìm.
+     *
+     * ⚠ Bảng SÁNG cũng phải đạt: `#ffffff` ≥ `#eff3f9`. Không có miễn trừ ở đây vì đây là **chiều**, không phải
+     * **cường độ** — miễn trừ của bảng sáng ở các bài trên là về cường độ.
+     *
+     * ## ⚠ Cặp BẬT (`surfOnFrom`/`surfOnTo`) **không** nằm trong bài này — [ĐO], không phải bỏ sót
+     * Hai vai đó bán trong suốt và mang **mật độ sắc nhấn**, không mang ánh sáng: bảng TỐI đo ra đỉnh sáng hơn
+     * đáy (alpha 60 % → 35 % của một xanh sáng hơn nền), còn bảng SÁNG đo ra **ngược lại** (alpha 30 % → 20 % của
+     * một xanh TỐI hơn nền trắng ⇒ đỉnh đậm hơn). Ép cùng một chiều cho cả hai là ép đổi mã màu của trạng thái
+     * BẬT, việc đó có bài riêng canh (`chu tren the dang bat…`, `the dang bat khac the thuong…`) và không phải
+     * phạm vi của Pass 5.
      */
     @Test
-    fun `mep sang khong bao gio toi hon dinh gradient`() {
+    fun `dinh chuyen sac khong bao gio toi hon day`() {
         forEachPalette { name, p ->
-            listOf("surfEdge" to "surfFrom", "surfOnEdge" to "surfOnFrom").forEach { (edge, base) ->
-                val ground = over(role(p, base), p.bg)
-                val lit = over(role(p, edge), ground)
-                assertTrue(
-                    luminance(lit) >= luminance(ground),
-                    "$name: $edge làm $base TỐI đi ⇒ nó thành bóng đổ ngược chiều sáng (nguồn sáng của cả hệ ở TRÊN)",
-                )
-            }
+            val hi = over(p.surfFrom, p.bg)
+            val lo = over(p.surfTo, p.bg)
+            assertTrue(
+                luminance(hi) >= luminance(lo),
+                "$name: surfFrom TỐI hơn surfTo ⇒ chuyển sắc đổ ngược chiều sáng (nguồn sáng của cả hệ ở TRÊN)",
+            )
         }
     }
 
@@ -335,13 +375,18 @@ class SurfaceContrastContractTest {
                     "**${fmt(wellBorder)}** | ${if (wellStep >= 1.12 || wellBorder >= 3.0) "✅" else "❌"} |\n",
             )
             row("surfFrom ÷ slot", "bậc 2 · thẻ nội dung trên khay", 1.15, ratio(over(p.surfFrom, wellTop), wellTop))
-            // ⚠ Mép sáng của bảng SÁNG đo ra đúng 1.00 và đó KHÔNG phải lỗi (đỉnh thẻ đã là trắng tinh — không
-            //    tồn tại màu nào sáng hơn để hắt). Chấm ❌ ở đây là nói sai sự thật, y như với hairline bảng tối.
-            val crest = ratio(over(p.surfEdge, top), top)
-            val crestOk = crest >= 2.20 || p.surfFrom.equals("#ffffff", ignoreCase = true)
+            // ⚠ [SOÁT Pass 5] Dòng `surfEdge trên surfFrom` (mép sáng, sàn 2.20) ĐÃ BỎ cùng với chính lớp mép
+            //    sáng. Thay bằng chuyển sắc — sau Pass 5 đó là toàn bộ chiều nổi của thẻ. Bảng SÁNG miễn (đỉnh đã
+            //    trắng tinh, chiều nổi do surfLine gánh), đúng lối miễn trừ của hairline bảng tối.
+            val slope = ratio(top, bot)
+            // ⚠ [SOÁT 1.69 · P3] Miễn trừ đo bằng **ĐỘ SÁNG**, không so mã màu. Bản trước viết
+            // `p.surfFrom.equals("#ffffff")`: lý do miễn là *"đỉnh đã sáng hết cỡ nên không nâng thêm được"*,
+            // mà một mã màu thì không nói ra được lý do ấy — đổi đỉnh bảng sáng thành `#fefefe` là miễn trừ
+            // **bốc hơi im lặng** và bảng này đỏ ở một dòng chẳng ai hiểu vì sao. Đo thì nó tự đúng.
+            val slopeOk = slope >= 1.20 || luminance(top) >= 0.95
             out.append(
-                "| `surfEdge trên surfFrom` | mép sáng đọc ra là **mặt vát** (bảng SÁNG miễn: đỉnh đã trắng) " +
-                    "| 2.20 | **${fmt(crest)}** | ${if (crestOk) "✅" else "❌"} |\n",
+                "| `surfFrom ÷ surfTo` | chuyển sắc DỌC = toàn bộ chiều nổi (bảng SÁNG miễn: đỉnh đã trắng) " +
+                    "| 1.20 | **${fmt(slope)}** | ${if (slopeOk) "✅" else "❌"} |\n",
             )
             row("INK trên slot", "chữ ô nhóm, đỉnh khay", 4.5, ratio(p.ink, wellTop))
             row("MUT2 trên slotTo", "nhãn nhóm mờ nhất, đáy khay", 4.5, ratio(p.mut2, over(p.slotTo, p.bg)))

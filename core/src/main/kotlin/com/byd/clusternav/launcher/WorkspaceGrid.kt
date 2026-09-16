@@ -241,7 +241,7 @@ object EffectiveLayout {
 
     /** Số ô đang hiện. */
     fun slotCount(preset: LayoutPreset, custom: GridLayout?, cap: Int = WorkspaceState.SLOT_CAP): Int =
-        if (usable(custom, cap)) custom!!.frames.size else preset.slotCount
+        if (custom != null && usable(custom, cap)) custom.frames.size else preset.slotCount
 
     /**
      * Khung pixel của từng ô. Cùng thứ tự với ô nội dung ⇒ đổi bố cục thì app trong ô đi theo đúng thứ tự (giữ đúng
@@ -255,7 +255,7 @@ object EffectiveLayout {
         gap: Int = 0,
         cap: Int = WorkspaceState.SLOT_CAP,
     ): List<SlotRect> =
-        if (usable(custom, cap)) custom!!.slots(width, height, gap)
+        if (custom != null && usable(custom, cap)) custom.slots(width, height, gap)
         else WorkspaceLayout.slots(preset, width, height, gap)
 
     /**

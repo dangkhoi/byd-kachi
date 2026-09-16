@@ -190,11 +190,36 @@ object TestBridgeCommands {
     const val PREFS_SET = "prefs_set"
 
     /**
+     * ═══ H2 · ĐỔ NHẬT KÝ LƯỢT NÓI (`voice-log/`) RA MỘT TỆP ZIP TRÊN THẺ ════════════════════════════════════
+     *
+     * `am broadcast … --es cmd voice_dump` ⇒ lời đáp mang **đường dẫn tệp zip** để `adb pull` về máy soạn thảo.
+     *
+     * ## Vì sao là một lệnh của cầu, không chỉ một nút trong Cài đặt
+     * Nút trong Cài đặt là đường của NGƯỜI trên xe (chụp màn, gửi Zalo — CLAUDE.md §11). Lệnh này là đường của
+     * **máy**: một vòng đo E2E nói vài chục câu rồi muốn kéo cả chỗ tiếng ấy về host để chạy lại off-car
+     * (`scripts/voice/replay-car-log.py`) — bắt người đo bấm tay giữa vòng là làm hỏng chính phép đo. Cả hai đi
+     * qua **một** thân hàm (`VoiceUtteranceLog.exportZip`), không phải hai đường nén.
+     *
+     * Chỉ-ĐỌC đối với trạng thái XE — nhưng **xuất tiếng cabin (dữ liệu cá nhân) ra `Download/` công khai**, qua một
+     * receiver `exported=true` mà app nào trên đầu xe cũng gửi được ⇒ [SCAN §6 1.69, W5] lệnh này **đi qua cổng
+     * `auto_confirm`** như mọi lượt ghi thân xe: mức rủi ro ở đây là quyền riêng tư, không phải cơ khí. Không đối số.
+     */
+    const val VOICE_DUMP = "voice_dump"
+
+    /**
      * Khoá prefs mà [PREFS_SET] được phép ghi — **danh sách trắng**, xem KDoc [PREFS_SET] ràng buộc (1).
      *
-     * Bốn khoá đầu là khoá THEO XE của đường giọng nói (`PrefsVoiceV3.kt` + `Prefs.voiceAskAloud`); khoá cuối là
-     * công tắc nhãn chip **theo hồ sơ** (`WorkspacePrefs.setTopStrip`) — đường duy nhất đo được R14 bằng máy thay
-     * vì bằng một ảnh chụp màn hình.
+     * Bốn khoá đầu là khoá THEO XE của đường giọng nói (`PrefsVoiceV3.kt` + `Prefs.voiceAskAloud`); khoá
+     * `top_strip_labels` là công tắc nhãn chip **theo hồ sơ** (`WorkspacePrefs.setTopStrip`) — đường duy nhất đo
+     * được R14 bằng máy thay vì bằng một ảnh chụp màn hình.
+     *
+     * ## H5 (2026-09-16) — **bốn núm chỉnh bộ nghe**, tất cả đều mặc định = hằng đang chạy
+     * `voice_endpoint_silence_ms` · `voice_endpoint_min_speech_ms` ([VoiceEndpointer]) và `voice_beam` ·
+     * `voice_hotword_score` ([SherpaModelCatalog]). Chúng vào đây vì đúng câu hỏi chúng sinh ra để trả lời —
+     * *"cabin 80 km/h thì 800 ms im là sớm hay muộn"*, *"beam 8 có nghe ra hơn không"* — chỉ đo được bằng cách
+     * đổi giá trị **giữa hai lượt `wav`/`listen` trên xe**, tức bằng máy, không phải bằng một lượt build lại APK
+     * cho mỗi con số. Mặc định của cả bốn **bằng đúng hằng hôm nay** ⇒ danh sách này dài ra mà hành vi không đổi
+     * một ly; và cả bốn vẫn nằm trong đường GIỌNG NÓI, không chạm cast/cụm/phím (ràng buộc (2) của KDoc trên).
      */
     val WRITABLE_PREFS_KEYS: Set<String> = setOf(
         "voice_confirm_ids",
@@ -202,6 +227,17 @@ object TestBridgeCommands {
         "voice_follow_up_ms",
         "voice_mic_source",
         "top_strip_labels",
+        "voice_endpoint_silence_ms",
+        "voice_endpoint_min_speech_ms",
+        "voice_endpoint_floor_cap",
+        // Ba núm của Silero VAD — đường ngắt câu CHÍNH từ 1.69 (docs/diagnostics/voice-stream-eval-2026-09-16.md
+        // §8). Cùng lý do với ba khoá trên: bộ tham số chốt bằng lưới trên host, còn cabin thật thì chỉ đo được
+        // bằng cách đổi số **giữa hai lượt nói** trên xe.
+        "voice_vad_threshold",
+        "voice_vad_min_speech_ms",
+        "voice_vad_min_silence_ms",
+        "voice_beam",
+        "voice_hotword_score",
     )
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────
@@ -245,6 +281,7 @@ object TestBridgeCommands {
         Spec(HAL, listOf(EXTRA_METHOD), listOf(EXTRA_DEV, EXTRA_HAL_ARGS, EXTRA_OP, EXTRA_AUTO_CONFIRM)),
         Spec(SWEEP, emptyList(), listOf(EXTRA_OP)),
         Spec(FEATMAP, emptyList()),
+        Spec(VOICE_DUMP, emptyList(), listOf(EXTRA_AUTO_CONFIRM)),
         // `text` là **tuỳ chọn** có chủ ý: vắng ⇒ giá trị rỗng ⇒ *"trả khoá về mặc định"* (tập rỗng / tắt), đúng
         // thứ `trap` của harness cần để dọn sau mỗi ca mà không phải biết mặc định của từng khoá.
         Spec(PREFS_SET, listOf(EXTRA_KEY), listOf(EXTRA_TEXT)),

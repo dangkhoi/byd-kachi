@@ -66,11 +66,6 @@ object TelemetryReadout {
         "fuel_range_km" -> s.energy.fuelRangeKm?.toString()
         "odometer" -> s.energy.odometerKm?.toString()
         "motor_power" -> s.energy.motorPowerKw?.toString()
-        "is_charging" -> s.energy.isCharging?.let { yesNo(it) }
-        "charge_power" -> s.energy.chargePowerKw?.let { dec1(it) }
-        "charging_pct" -> s.energy.chargingPct?.toString()
-        "charging_eta_min" -> s.energy.chargingEtaMin?.toString()
-        "charging_capacity_kwh" -> s.energy.chargedKwh?.let { dec1(it) }
         "batt_temp" -> s.energy.battTempC?.toString()
         "soh_oem" -> s.energy.sohPct?.toString()
         "target_soc" -> s.energy.targetSoc?.toString()
@@ -80,10 +75,6 @@ object TelemetryReadout {
         "trip_hours" -> s.energy.tripHours?.let { dec1(it) }
         "trip_kwh" -> s.energy.tripKwh?.let { dec1(it) }
         "consumption_50km" -> s.energy.consumption50?.let { dec1(it) }
-        "charging_eta_hour" -> s.energy.chargingEtaHour?.toString()
-        "charging_state" -> s.energy.chargingState?.toString()
-        "charger_work_state" -> s.energy.chargerWorkState?.toString()
-        "batt_range_bodywork" -> s.energy.battRangeBodyworkKm?.toString()
         "cell_temp_high" -> s.energy.cellTempHighC?.toString()
         "cell_temp_low" -> s.energy.cellTempLowC?.toString()
         "cell_temp_avg" -> s.energy.cellTempAvgC?.toString()
@@ -104,7 +95,6 @@ object TelemetryReadout {
         "motor_front_torque" -> s.drivetrain.motorFrontTorqueNm?.toString()
         "engine_rpm" -> s.drivetrain.engineRpm?.toString()
         "wheel_speed" -> s.drivetrain.wheelSpeedKmh?.toString()
-        "drift_mode" -> s.drivetrain.driftMode?.let { onOff(it) }
 
         // ── A3. Khí hậu ─────────────────────────────────────────────────────────────────
         "pm25_level" -> s.climate.pm25Level?.toString()
@@ -119,6 +109,19 @@ object TelemetryReadout {
         "inside_temp" -> s.climate.setTempC?.toString()
         "coolant_temp" -> s.climate.coolantTempC?.toString()
         "temp_unit" -> s.climate.tempUnit
+        // H1 · T2 — ghế đọc ra MÃ mức của khung, phải đổi qua [ControlLevels] mới thành chữ người ta hiểu. Mã NGOÀI
+        // thang ⇒ null ⇒ ô hiện "—": thà nói *"chưa đọc được"* còn hơn làm tròn thành "Mức 1" (thang mới đứng trên
+        // MỘT điểm đo — TODO điểm thứ hai ghi ở [ControlLevels]).
+        "seat_vent_state" -> s.climate.seatVentRaw?.let { levelText("seatc", it) }
+        "seat_heat_state" -> s.climate.seatHeatRaw?.let { levelText("seath", it) }
+        "defrost_front_state" -> s.climate.defrostFrontOn?.let { onOff(it) }
+        "defrost_rear_state" -> s.climate.defrostRearOn?.let { onOff(it) }
+        // 0 = AUTO (`AC_CTRLMODE_AUTO`) — đảo Ở ĐÂY, và chỉ ở đây, cho bề mặt ĐỌC; nút `ac_auto` có đường riêng
+        // ([ControlDef.readInverted]) nên không chỗ nào đảo hai lần.
+        "ac_mode_auto" -> s.climate.acModeRaw?.let { if (it == 0) "AUTO" else Strings.t("Chỉnh tay", "Manual") }
+
+        // ── A9. Giải trí ────────────────────────────────────────────────────────────────
+        "media_vol" -> s.infotainment.mediaVolume?.toString()
 
         // ── A4. Lốp (kPa thô → hiển thị nguyên kPa) ───────────────────────────────────────
         "tyre_p_fl" -> s.tyres.pFlKpa?.let { dec0(it) }
@@ -167,13 +170,11 @@ object TelemetryReadout {
         "ambient_rear_brightness" -> s.lights.ambientRearBrightness?.toString()
 
         // ── A7. Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16) ───
-        "mcu_status" -> s.energy.mcuStatus?.toString()
         "volt_12v" -> s.energy.volt12v?.let { dec1(it) }
         "volt_12v_level" -> s.energy.volt12vLevel?.toString()
 
         // ── A8. Danh tính ───────────────────────────────────────────────────────────────
         "vin" -> s.identity.vin
-        "key_bluetooth" -> s.identity.keyState
         "engine_code" -> s.identity.engineCode
         "oil_level" -> s.identity.oilLevelPct?.toString()
         "gps_lat" -> s.identity.gpsLat?.let { dec5(it) }
@@ -201,6 +202,17 @@ object TelemetryReadout {
     private fun yesNo(b: Boolean) = if (b) Strings.t("Có", "Yes") else Strings.t("Không", "No")
     private fun onOff(b: Boolean) = if (b) Strings.t("Bật", "On") else Strings.t("Tắt", "Off")
     private fun openShut(b: Boolean) = if (b) Strings.t("Mở", "Open") else Strings.t("Đóng", "Closed")
+    /**
+     * Mã mức thô của khung → chữ *"Tắt" / "Mức n"*, hoặc `null` khi mã nằm NGOÀI thang của nút ấy (⇒ ô hiện "—").
+     *
+     * Tra bằng mã **NÚT** (`seatc`/`seath`) chứ không bằng mã datum: thang là tính chất của cái người ta bấm, và
+     * [ControlLevels] đã khai đúng một chỗ cho cả đường đọc lẫn đường ghi.
+     */
+    private fun levelText(controlId: String, raw: Int): String? =
+        ControlLevels.levelOf(controlId, raw)?.let {
+            if (it == 0) Strings.t("Tắt", "Off") else Strings.t("Mức $it", "Level $it")
+        }
+
     private fun dec0(d: Double) = Math.round(d).toString()
     private fun dec1(d: Double) = String.format(Locale.US, "%.1f", d)
     private fun dec2(d: Double) = String.format(Locale.US, "%.2f", d)

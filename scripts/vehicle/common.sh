@@ -160,6 +160,9 @@ new_evidence_dir() {
   root="$(vehicle_root)"
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
   EVIDENCE_DIR="${EVIDENCE_DIR:-$root/oncar-v2-$stamp}"
+  # Exported: matrix.sh reads it back through awk ENVIRON["EVIDENCE_DIR"] for the sign-off rows,
+  # and every helper that shells out expects the same directory.
+  export EVIDENCE_DIR
   mkdir -p "$EVIDENCE_DIR"
   chmod 700 "$EVIDENCE_DIR"
   echo "EVIDENCE_DIR=$EVIDENCE_DIR"

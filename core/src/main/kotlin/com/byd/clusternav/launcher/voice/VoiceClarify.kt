@@ -100,14 +100,22 @@ object VoiceClarify {
      * Trả nguyên [answer] khi nó **đã** chứa đủ ngữ cảnh (người ta trả lời cả câu: *"mở kính lái"*). Không kiểm
      * điều đó thì câu ghép thành *"mở mở kính lái"* — bộ phân tích đọc `mo` hai lần và rơi lại vào NO_OBJECT,
      * tức lượt hỏi làm mọi thứ tệ hơn đúng ở ca người dùng hợp tác nhất.
+     *
+     * ## [SOÁT 2026-09-16 · P3] Hai vế của phép so phải được **cắt từ cùng một cách**
+     * Bản trước so `VoiceLexicon.tokenize(a).map { it.norm }` (một phần tử = **một từ**) với
+     * `carry.map { deaccent(it) }` (một phần tử = **nguyên chuỗi**, còn nguyên khoảng trắng bên trong). Một phần
+     * tử [carry] nhiều từ vì thế **không bao giờ khớp** ⇒ vế đã có bị ghép lại lần nữa (*"mở kính mở kính lái"*).
+     * Hôm nay không ai thấy vì [carry] luôn là `listOf(verb)` một từ (:76-80) — nhưng đó là một **bất biến ngầm**
+     * không được ghi ở đâu và không được test nào giữ: đúng thứ hỏng im lặng ở lần ai đó mang theo cả cụm
+     * *"bật đèn"*. Nay cả hai vế đi qua **cùng** [VoiceLexicon.tokenize].
      */
     fun combine(carry: List<String>, answer: String): String {
         val a = answer.trim()
         if (a.isEmpty()) return carry.joinToString(" ")
         if (carry.isEmpty()) return a
         val answerNorms = VoiceLexicon.tokenize(a).map { it.norm }
-        val carryNorms = carry.map { VoiceLexicon.deaccent(it) }
-        if (answerNorms.take(carryNorms.size) == carryNorms) return a
+        val carryNorms = carry.flatMap { c -> VoiceLexicon.tokenize(c).map { it.norm } }
+        if (carryNorms.isNotEmpty() && answerNorms.take(carryNorms.size) == carryNorms) return a
         return (carry + a).joinToString(" ")
     }
 
@@ -130,6 +138,14 @@ object VoiceClarify {
                 .filter { it.words.size > 1 && it.words.first() == tk.norm && it.kind in ASKABLE }
                 .map { it.id }
                 .distinct()
+                // ⚠ Đọc lựa chọn theo THỨ TỰ DANH MỤC, không theo thứ tự [terms].
+                //
+                // [terms] xếp **cụm dài trước** (luật L-RE2 của [VoiceGrammar]) — một thứ tự đúng cho việc so
+                // khớp và vô nghĩa cho một câu hỏi. [ĐO off-car] *"lọc"* trước đây hỏi *"Lọc nào — Lọc ngay hay
+                // Lọc bụi?"*: `pm25_clean_now` lên trước chỉ vì nó tình cờ có một cách nói BA từ
+                // (*"lọc không khí ngay"*), không vì nó quan trọng hơn. Thứ tự danh mục là thứ tự các nút nằm
+                // trên màn hình, tức thứ tự người lái đã quen ⇒ *"Lọc bụi hay Lọc ngay?"*, đúng câu owner nêu.
+                .sortedBy { rank(it) }
             if (ids.size < 2) continue
             val labels = ids.mapNotNull { labelOf(it) }.distinct().take(MAX_CHOICES)
             if (labels.size < 2) continue
@@ -154,6 +170,21 @@ object VoiceClarify {
 
     private fun labelOf(id: String): String? =
         ControlRegistry.byId(id)?.displayLabel ?: TelemetryRegistry.byId(id)?.displayLabel
+
+    /**
+     * Vị trí của một mã trong danh mục — nút trước, datum sau; mã lạ xuống cuối.
+     *
+     * Sinh **một lần** từ chính hai bộ đăng ký (không chép tay một thứ tự thứ hai): thêm/đổi chỗ một dòng
+     * registry là câu hỏi tự đọc theo thứ tự mới.
+     */
+    private fun rank(id: String): Int = RANK[id] ?: Int.MAX_VALUE
+
+    private val RANK: Map<String, Int> by lazy {
+        val out = HashMap<String, Int>(ControlRegistry.ALL.size + TelemetryRegistry.ALL.size)
+        ControlRegistry.ALL.forEachIndexed { i, c -> out[c.id] = i }
+        TelemetryRegistry.ALL.forEachIndexed { i, t -> out.putIfAbsent(t.id, ControlRegistry.ALL.size + i) }
+        out
+    }
 
     private fun question(head: String, labels: List<String>): String {
         val list = when (labels.size) {

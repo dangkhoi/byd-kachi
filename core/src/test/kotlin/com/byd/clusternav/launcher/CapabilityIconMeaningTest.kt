@@ -156,7 +156,7 @@ class CapabilityIconMeaningTest {
         assertEquals("ic-motor", icon("motor_power"), "công suất ≠ tốc độ")
         // ⚠ Mốc `esp_state → ic-esp` đã gỡ 2026-09-16 cùng datum ESP (owner gỡ toàn bộ ADAS/an toàn).
         // Thay bằng một mốc cùng loại còn sống: nguồn MCU không được lùi về tia sét chung của lĩnh vực Năng lượng.
-        assertEquals("ic-sensor", icon("mcu_status"), "trạng thái THIẾT BỊ có hình riêng, không lùi về hình nhóm")
+        // ⚠ (V) 2026-09-17: ca `mcu_status → ic-sensor` đã gỡ cùng datum (owner chấm NO).
     }
 
     /**

@@ -47,6 +47,7 @@ echo "== push navopen =="; cap push "$JAR_LOCAL" /data/local/tmp/navopen.jar >/d
 echo "== SAVE originals =="
 O_SLA="$(read_val adas 38500022)";      echo "   SLA state    0x38500022 = ${O_SLA:-?}"
 O_FUS="$(read_val setting d61b6746)";   echo "   fusion sw    0xd61b6746 = ${O_FUS:-?}"
+O_ISLA="$(read_val adas 38500044)";     echo "   ISLA switch  0x38500044 = ${O_ISLA:-?}"
 O_VAL="$(read_val statistic 4B40001C)"; echo "   speed-limit  0x4B40001C = ${O_VAL:-?}"
 shot 00_before
 
@@ -75,8 +76,18 @@ inject 30_comboB_islaoff
 echo ">> LOOK again (./hud3_30_comboB_islaoff.png)."
 
 echo "== RESTORE =="
-[ -n "${O_FUS:-}" ] && nav setraw setting d61b6746 "$O_FUS" >/dev/null || nav setraw setting d61b6746 1 >/dev/null
-nav setraw adas 38500044 1 >/dev/null
-[ -n "${O_SLA:-}" ] && nav setraw adas 38500022 "$O_SLA" >/dev/null
-echo "   restored fusion=${O_FUS:-1}, ISLA=1, SLA=${O_SLA:-?}."
+# KHONG dung `a && b || c`: neu `nav setraw` tra khac 0 thi nhanh `||` ban de len gia tri mac dinh 1,
+# ghi de chinh gia tri vua luu. Va ISLA truoc day luon bi tra ve 1 du chua bao gio doc gia tri goc —
+# xe nao von tat ISLA se bi BAT len sau khi chay script nay.
+restore_one(){ # <dev> <id> <prior> <nhan>
+  if [ -n "$3" ]; then
+    nav setraw "$1" "$2" "$3" >/dev/null || echo "   ⚠ khoi phuc $4 (0x$2 -> $3) HUT — kiem tra bang tay/reboot xe"
+  else
+    echo "   ⚠ $4 (0x$2): khong doc duoc gia tri goc luc dau => KHONG ghi de. Reboot xe de sach."
+  fi
+}
+restore_one setting d61b6746 "${O_FUS:-}"  "fusion sw"
+restore_one adas    38500044 "${O_ISLA:-}" "ISLA switch"
+restore_one adas    38500022 "${O_SLA:-}"  "SLA state"
+echo "   restored fusion=${O_FUS:-<khong doi>}, ISLA=${O_ISLA:-<khong doi>}, SLA=${O_SLA:-<khong doi>}."
 echo "DONE #3. If the sign got messy, a head-unit reboot fully cleans it."

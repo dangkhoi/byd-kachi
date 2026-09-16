@@ -137,11 +137,14 @@ data class AppScale(
     fun nudgeEdge(w: Int, h: Int, edge: Edge, delta: Int): AppScale {
         val b = boundsOn(w, h)
         var l = b[0]; var t = b[1]; var r = b[2]; var bot = b[3]
+        // `coerceIn(min, max)` NÉM IllegalArgumentException khi min > max. Khung đã lưu trong prefs
+        // (AppScale.parse nhận số bất kỳ) hoặc màn hẹp hơn MIN_PX đều dựng được dải rỗng ⇒ crash khi
+        // người dùng bấm mũi tên chỉnh cạnh. Kẹp an toàn: dải rỗng thì giữ nguyên cạnh.
         when (edge) {
-            Edge.LEFT   -> l = (l + delta).coerceIn(0, r - MIN_PX)
-            Edge.RIGHT  -> r = (r + delta).coerceIn(l + MIN_PX, w)
-            Edge.TOP    -> t = (t + delta).coerceIn(0, bot - MIN_PX)
-            Edge.BOTTOM -> bot = (bot + delta).coerceIn(t + MIN_PX, h)
+            Edge.LEFT   -> l = clampEdge(l + delta, 0, r - MIN_PX, l)
+            Edge.RIGHT  -> r = clampEdge(r + delta, l + MIN_PX, w, r)
+            Edge.TOP    -> t = clampEdge(t + delta, 0, bot - MIN_PX, t)
+            Edge.BOTTOM -> bot = clampEdge(bot + delta, t + MIN_PX, h, bot)
         }
         return copy(rectL = l, rectT = t, rectR = r, rectB = bot)
     }
@@ -159,6 +162,10 @@ data class AppScale(
         val t = (b[1] + dy).coerceIn(0, (h - bh).coerceAtLeast(0))
         return copy(rectL = l, rectT = t, rectR = l + bw, rectB = t + bh)
     }
+
+    /** Kẹp [v] vào [min]..[max]; dải rỗng (min > max) ⇒ trả [fallback] thay vì ném. */
+    private fun clampEdge(v: Int, min: Int, max: Int, fallback: Int): Int =
+        if (min > max) fallback else v.coerceIn(min, max)
 
     /** 4 cạnh khung để chỉnh độc lập. */
     enum class Edge { LEFT, TOP, RIGHT, BOTTOM }

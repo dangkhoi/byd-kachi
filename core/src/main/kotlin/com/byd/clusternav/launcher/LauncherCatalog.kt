@@ -243,6 +243,18 @@ data class CapabilityPick(
  */
 object CapabilityCatalog {
 
+    /** Tám ô lốp LẺ — ẩn khỏi bộ chọn, xem [HIDDEN_FROM_PICKER]. */
+    private val TYRE_SINGLES = listOf(
+        "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
+        "tyre_t_fl", "tyre_t_fr", "tyre_t_rl", "tyre_t_rr",
+    )
+
+    private const val TYRE_SINGLE_WHY =
+        "owner 2026-09-16 (bảng feature.xlsx): \"riêng cái lốp (áp suất, nhiệt độ) thì chỉ gôm lại thành 1 " +
+            "widget có hình xe đẹp, hiện đủ thông tin rõ ràng\". Tám ô LẺ bày cạnh nhau là tám con số không " +
+            "nói được bánh nào ở đâu; nhóm `g_tyres` (hình xe) trả lời đúng câu đó. Ẩn ô lẻ khỏi bộ chọn, " +
+            "GIỮ datum: nhóm + widget đọc chúng, và ô của ai đã đặt từ bản trước vẫn chạy."
+
     /**
      * ═══ U6 · MÃ CÓ THẬT NHƯNG **KHÔNG BÀY** Ở MÀN CHỌN ═══════════════════════════════════════════════════════
      *
@@ -271,7 +283,11 @@ object CapabilityCatalog {
             "owner 2026-09-16 (B6): xe KHÔNG có nắp ca-pô điện — mở bằng tay. RE khớp: `BODYWORK_CMD_HOOD` là " +
                 "area ĐỌC, không có lệnh mở. Bày nút ra là hứa một việc xe không làm được; giữ mã để ô ai đã " +
                 "đặt vẫn chạy.",
-    )
+        // ── (V) FEATURE-FILTER 2026-09-17 · TÁM Ô LỐP LẺ ────────────────────────────────────────────────
+        // Ca thứ BA của bảng này: ẩn vì **có bề mặt tốt hơn cho cùng dữ liệu**, không phải vì trùng
+        // (`temp_unit`) hay vì thiếu phần cứng (`hood`). Datum GIỮ NGUYÊN trong `TelemetryRegistry` —
+        // nhóm `g_tyres` và widget `w_tire` đọc đúng tám mã này; xoá chúng là gỡ luôn cái widget owner muốn.
+    ) + TYRE_SINGLES.associateWith { TYRE_SINGLE_WHY }
 
     /** [CapabilityKind] của [id], hoặc `null` nếu mã không thuộc bộ đăng ký nào (mã cũ đã xoá / rác trong prefs). */
     fun kindOf(id: String): CapabilityKind? = when {

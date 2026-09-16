@@ -30,10 +30,10 @@ class CarStatusTest {
 
     // ⚠ Bài `radar zones la list nullable` đã gỡ 2026-09-16: cụm `CarStatus.Safety` và datum `radar_zones` không
     // còn tồn tại sau khi owner gỡ toàn bộ ADAS/an toàn; ba mục điện 12V/MCU đã dời sang [CarStatus.Energy].
-    @Test fun `dien 12V va nguon MCU nam o cum Energy`() {
-        val s = CarStatus().copy(energy = CarStatus.Energy(volt12v = 12.6, volt12vLevel = 2, mcuStatus = 1))
+    // ⚠ (V) FEATURE-FILTER 2026-09-17: `mcuStatus` đã xoá (owner chấm NO) ⇒ bài chỉ còn canh hai vai điện 12V.
+    @Test fun `dien 12V nam o cum Energy`() {
+        val s = CarStatus().copy(energy = CarStatus.Energy(volt12v = 12.6, volt12vLevel = 2))
         assertEquals(12.6, s.energy.volt12v)
         assertEquals(2, s.energy.volt12vLevel)
-        assertEquals(1, s.energy.mcuStatus)
     }
 }

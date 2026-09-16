@@ -123,7 +123,6 @@ class CarDataAdapter(
                 motorFrontTorqueNm = g.int("motor_front_torque", d.motorFrontTorqueNm),
                 engineRpm = g.int("engine_rpm", d.engineRpm),
                 wheelSpeedKmh = g.int("wheel_speed", d.wheelSpeedKmh),
-                driftMode = g.bool("drift_mode", d.driftMode),
             ),
             energy = prev.energy.copy(motorPowerKw = g.int("motor_power", prev.energy.motorPowerKw)),
         )
@@ -140,11 +139,6 @@ class CarDataAdapter(
                 evRangeKm = g.int("ev_range_km", e.evRangeKm),
                 fuelRangeKm = g.int("fuel_range_km", e.fuelRangeKm),
                 odometerKm = g.int("odometer", e.odometerKm),
-                isCharging = g.bool("is_charging", e.isCharging),
-                chargePowerKw = g.dbl("charge_power", e.chargePowerKw),
-                chargingPct = g.int("charging_pct", e.chargingPct),
-                chargingEtaMin = g.int("charging_eta_min", e.chargingEtaMin),
-                chargedKwh = g.dbl("charging_capacity_kwh", e.chargedKwh),
                 battTempC = g.int("batt_temp", e.battTempC),
                 sohPct = g.int("soh_oem", e.sohPct),
                 targetSoc = g.int("target_soc", e.targetSoc),
@@ -154,17 +148,12 @@ class CarDataAdapter(
                 tripHours = g.dbl("trip_hours", e.tripHours),
                 tripKwh = g.dbl("trip_kwh", e.tripKwh),
                 consumption50 = g.dbl("consumption_50km", e.consumption50),
-                chargingEtaHour = g.int("charging_eta_hour", e.chargingEtaHour),
-                chargingState = g.int("charging_state", e.chargingState),
-                chargerWorkState = g.int("charger_work_state", e.chargerWorkState),
-                battRangeBodyworkKm = g.int("batt_range_bodywork", e.battRangeBodyworkKm),
                 cellTempHighC = g.int("cell_temp_high", e.cellTempHighC),
                 cellTempLowC = g.int("cell_temp_low", e.cellTempLowC),
                 cellTempAvgC = g.int("cell_temp_avg", e.cellTempAvgC),
                 cellVHigh = g.dbl("cell_v_high", e.cellVHigh),
                 cellVLow = g.dbl("cell_v_low", e.cellVLow),
                 // Điện 12V + nguồn MCU — trước 2026-09-16 nằm ở cụm `Safety`, chuyển sang đây cùng lượt gỡ ADAS.
-                mcuStatus = g.int("mcu_status", e.mcuStatus),
                 volt12v = g.dbl("volt_12v", e.volt12v),
                 volt12vLevel = g.int("volt_12v_level", e.volt12vLevel),
             ),
@@ -181,6 +170,16 @@ class CarDataAdapter(
                 setTempC = g.int("inside_temp", c.setTempC),
                 coolantTempC = g.int("coolant_temp", c.coolantTempC),
                 tempUnit = g.str("temp_unit", c.tempUnit),
+                // H1 · T2 — năm getter [ĐO xe 2026-09-16]. Ba mục giữ mã THÔ (`seat*Raw`, `acModeRaw`): phép đổi
+                // (thang mức · đảo AUTO) làm ở chỗ HIỂN THỊ/chỗ đọc của nút, đúng MỘT lần — xem KDoc ở `CarStatus`.
+                // ⚠ Cả năm dòng phải truyền giá trị CŨ làm `prev`: [Gate.read] phân biệt *"ô không hiện"* (trả prev)
+                // với *"đọc không ra"* (trả null = ⚠). Truyền `null` rồi tự `?: cũ` ở ngoài là **xoá mất** phân biệt
+                // ấy — datum nguội sẽ đóng băng con số cuối thay vì hiện "—".
+                seatVentRaw = g.int("seat_vent_state", c.seatVentRaw),
+                seatHeatRaw = g.int("seat_heat_state", c.seatHeatRaw),
+                defrostFrontOn = g.bool("defrost_front_state", c.defrostFrontOn),
+                defrostRearOn = g.bool("defrost_rear_state", c.defrostRearOn),
+                acModeRaw = g.int("ac_mode_auto", c.acModeRaw),
             ),
             tyres = CarStatus.Tyres(
                 pFlKpa = g.dbl("tyre_p_fl", t.pFlKpa),
@@ -230,7 +229,6 @@ class CarDataAdapter(
             ),
             identity = CarStatus.Identity(
                 vin = g.str("vin", i.vin),
-                keyState = g.str("key_bluetooth", i.keyState),
                 engineCode = g.str("engine_code", i.engineCode),
                 oilLevelPct = g.int("oil_level", i.oilLevelPct),
                 gpsLat = g.dbl("gps_lat", i.gpsLat),
@@ -238,6 +236,11 @@ class CarDataAdapter(
                 engineCoolantLevel = g.int("engine_coolant_level", i.engineCoolantLevel),
                 gpsElevation = g.dbl("gps_elevation", i.gpsElevation),
                 gpsHeading = g.dbl("gps_heading", i.gpsHeading),
+            ),
+            // A9 — âm lượng Android (`AudioManager`), nhịp CHẬM: nó chỉ đổi khi người ta bấm, và đọc nó không tốn
+            // một lời gọi HAL nào nên không cần nhịp nhanh.
+            infotainment = CarStatus.Infotainment(
+                mediaVolume = g.int("media_vol", prev.infotainment.mediaVolume),
             ),
         )
     }

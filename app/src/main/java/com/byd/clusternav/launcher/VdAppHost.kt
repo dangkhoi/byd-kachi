@@ -9,12 +9,17 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.byd.clusternav.R
+import com.byd.clusternav.system.inputd.GestureFallback
 import com.byd.clusternav.system.inputd.InputDaemonClient
 import com.byd.clusternav.system.inputd.SlotTouchMapper
 import com.byd.clusternav.system.inputd.TouchRouter
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -73,12 +78,43 @@ class VdAppHost(
      * Đã nhả màn ảo chưa ⇒ mọi lời gọi [release] sau là no-op (một ô bị thay có thể gọi [release] rồi mới tháo
      * view). Khai ở đây, cùng các field khác, vì `init` đọc nó; luật idempotent xem KDoc [release].
      */
-    private var released = false
+    // ⚠ `@Volatile` (soát OCR): GHI trên luồng vẽ ([release] / [onDetachedFromWindow]), ĐỌC trên luồng mở app của
+    // [maybeLaunch]. Thiếu nó thì luồng nền có thể mãi thấy `false` và vẫn bắn `am start` cho một màn ảo đã nhả.
+    @Volatile private var released = false
 
     /** H2: khoá theo dõi ở [SlotLiveProbe] — riêng cho từng chủ×ô để hai màn Kachi không đạp lên nhau. */
     private val probeKey = "$owner#$slot"
 
-    private companion object { const val TAG = "VdAppHost" }
+    /**
+     * ═══ 1.69 · BỘ GOM CỬ CHỈ cho ĐƯỜNG LÙI ═════════════════════════════════════════════════════════════════
+     *
+     * Một bộ cho MỘT ô (mỗi ô một màn ảo, mỗi ô một chuỗi DOWN…UP riêng). Hai ngưỡng lấy từ [ViewConfiguration]
+     * **tại chỗ gọi** — `:core` không được biết mật độ màn hình của máy nào (CLAUDE.md §7).
+     */
+    private val gesture = GestureFallback(
+        touchSlopPx = ViewConfiguration.get(context).scaledTouchSlop,
+        longPressTimeoutMs = ViewConfiguration.getLongPressTimeout().toLong(),
+    )
+
+    private companion object {
+        const val TAG = "VdAppHost"
+
+        /**
+         * ⚠ [SOÁT OCR] MỘT luồng dùng chung cho đường LÙI của chạm — trước 1.69 mỗi `ACTION_DOWN`/`ACTION_UP`
+         * dựng **một `Thread` mới** (hai luồng mỗi cú chạm), mỗi luồng chạy một lệnh dadb CHẶN. Cuộn một danh
+         * sách trong ô là hàng chục luồng sinh-và-chết trong vài giây, tất cả xếp hàng sau CÙNG một chủ
+         * `ShellTransport` — thêm luồng không làm nhanh hơn, chỉ làm mọi bản chụp luồng trên xe khó đọc.
+         *
+         * Hàng đợi **có trần** + [ThreadPoolExecutor.DiscardPolicy]: khi kênh shell nghẽn, bỏ cú chạm MỚI là
+         * đúng — giữ nó lại chỉ để thi hành muộn vài giây thì app trong ô nhận một cú chạm ở chỗ người dùng đã
+         * rời mắt từ lâu. Điều tuyệt đối KHÔNG được làm là chặn luồng vẽ (nên không có `CallerRunsPolicy`).
+         */
+        val TOUCH_FALLBACK: ThreadPoolExecutor = ThreadPoolExecutor(
+            1, 1, 0L, TimeUnit.MILLISECONDS, ArrayBlockingQueue(16),
+            { r -> Thread(r, "kachi-slot-tap").apply { isDaemon = true } },
+            ThreadPoolExecutor.DiscardPolicy(),
+        )
+    }
 
     /** H2: thẻ "app đã đóng — chạm để mở lại"; chỉ dựng khi thật sự cần (ô sống thì không tốn view nào). */
     private var closedCard: TextView? = null
@@ -202,8 +238,15 @@ class VdAppHost(
                 sh("wm set-user-rotation lock -d $displayId 0")           // ghim hướng ô = 0 (ngang gốc)
                 sh("wm set-fix-to-user-rotation -d $displayId enabled")   // mọi app KHÔNG xoay được ô
             }
+            // ⚠ [SOÁT OCR] Ô có thể đã bị tháo TRONG lúc luồng này chạy (đổi bố cục · đổi hồ sơ · màn huỷ):
+            // `release()` đặt `released = true` và nhả `VirtualDisplay`, nhưng KHÔNG cắt được luồng này. Không
+            // kiểm ở đây thì `am force-stop` + `am start --display <id>` vẫn bắn cho một màn ảo KHÔNG CÒN TỒN
+            // TẠI — tức giết app của người dùng rồi mở lại nó ở một nơi không ai nhìn thấy. Kiểm ở ĐÚNG hai mốc:
+            // trước khi giết app, và sau giấc ngủ 1 giây (cửa sổ rộng nhất).
+            if (released) return@Thread
             sh("am force-stop $p")
             Thread.sleep(1000)     // đợi force-stop XONG hẳn → am start mở task MỚI trên VD, không tái dùng task fullscreen ở display 0 (bug gmail nhảy fullscreen)
+            if (released) return@Thread
             sh(cmd)                // mở ĐÚNG 1 lần trên VD — KHÔNG relaunch/di lần 2 (bỏ vòng retry gây nháy + làm app ô khác nhảy)
             runCatching { inputClient?.ensureStarted() }   // B4: hâm nóng daemon bơm chạm (lifecycle qua queue) — chạm sau mượt; không block
             // H2·2: từ đây mới bắt đầu ĐO "còn task trên màn ảo không". [SlotLiveness] không kết luận chết trước
@@ -255,36 +298,48 @@ class VdAppHost(
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     /**
-     * Forward touch into the VD. PRIMARY = the resident [InputDaemonClient] over its OWN socket
-     * (`injectInputEvent`, smooth, no per-event process spawn — the ~75ms/event `input` fork is gone). When the
-     * daemon is unavailable/unhealthy the tap FALLS BACK to the pre-B4 `input -d <display> tap x y`
-     * ([TouchRouter.fallbackTapCmd]) — BYTE-IDENTICAL to before, so touch never regresses when the daemon is off.
+     * ═══ ĐƯA CHẠM VÀO MÀN ẢO CỦA Ô — hai đường, và đường lùi nay hiểu CỬ CHỈ (1.69) ══════════════════════════
      *
-     * DOWN/UP fall back (double-fire preserved on the fallback, exactly as before); the daemon path injects a
-     * proper DOWN+UP (one tap, no double-fire). MOVE is daemon-only smoothness — the pre-B4 path had no MOVE
-     * handling, so when the daemon is off this is a no-op = identical to today. Touch NEVER rides the command queue.
+     * **Đường CHÍNH** = [InputDaemonClient] thường trú trên socket riêng (`injectInputEvent`: mượt, không spawn
+     * tiến trình mỗi sự kiện, không đi qua hàng đợi lệnh cửa sổ).
+     *
+     * **Đường LÙI** (daemon chưa/không lên) = [GestureFallback] gom DOWN…MOVE…UP rồi tại UP bắn **ĐÚNG MỘT**
+     * lệnh `input -d …` cho cả cử chỉ.
+     *
+     * ## Vì sao viết lại — [ĐO xe 2026-09-16] `docs/diagnostics/oncar-trace-2026-09-16b/README.md` §9.1
+     * Trên xe daemon **không lên lần nào**, nên đường lùi KHÔNG phải nhánh hiếm — nó là nhánh **duy nhất** đang
+     * chạy. Mà bản trước 1.69 bắn `tap` ở **cả** DOWN **lẫn** UP (⇒ hai cú tap cho một cú chạm: *"tap không
+     * chính xác"*), dùng toạ độ **thô của view** thay vì toạ độ đã map (⇒ lệch thêm khi ô ≠ cỡ màn ảo), và
+     * KHÔNG có nhánh nào cho MOVE (⇒ *"không lướt để scroll được"*, `input swipe` vào ô chỉ thành một cú tap).
+     *
+     * Ba thứ đó sửa ở đúng ba chỗ: một lệnh mỗi cử chỉ · toạ độ `dx,dy` đã map cho CẢ hai đường · `swipe` khi
+     * quãng vượt touch-slop.
      */
     override fun onTouchEvent(e: MotionEvent): Boolean {
         val v = vd ?: return false
         val sh = shell ?: return false
         val displayId = v.display.displayId
-        val x = e.x.toInt(); val y = e.y.toInt()
-        // View→display map. The VD is created at the surface size, so this is the identity today (daemon coords ==
-        // fallback coords); it only scales if the display size ever diverges from the view size.
-        val m = SlotTouchMapper.toDisplay(x, y, width, height, dispW, dispH)
+        // View→display map. The VD is created at the surface size, so this is the identity today; it only scales
+        // if the display size ever diverges from the view size. ⚠ CẢ HAI đường dùng chung toạ độ đã map — đường
+        // lùi cũ dùng `e.x/e.y` thô, và đó là nửa thứ hai của triệu chứng "tap lệch".
+        val m = SlotTouchMapper.toDisplay(e.x.toInt(), e.y.toInt(), width, height, dispW, dispH)
         val dx = m[0]; val dy = m[1]
-        when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP -> {
-                val routed = runCatching { inputClient?.sendTouch(displayId, e.actionMasked, dx, dy) ?: false }
-                    .getOrDefault(false)
-                if (TouchRouter.shouldFallback(routed)) {
-                    Thread { runCatching { sh(TouchRouter.fallbackTapCmd(displayId, x, y)) } }.start()
-                }
-            }
-            MotionEvent.ACTION_MOVE ->
-                // Daemon-only smoothness (drag/scroll); no fallback (pre-B4 had none → no-op when the daemon is off).
-                runCatching { inputClient?.sendTouch(displayId, MotionEvent.ACTION_MOVE, dx, dy) }
+        val action = e.actionMasked
+        val routed = when (action) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP,
+            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_CANCEL ->
+                runCatching { inputClient?.sendTouch(displayId, action, dx, dy) ?: false }.getOrDefault(false)
+            // Ngón thứ hai: daemon không nhận (khung dây chỉ mang một điểm), đường lùi cũng bỏ qua.
+            else -> false
         }
+        if (!TouchRouter.shouldFallback(routed)) {
+            // Daemon vừa nhận sự kiện này ⇒ bỏ cử chỉ đang gom ở đường lùi, nếu không một cử chỉ nửa-daemon
+            // nửa-shell sẽ bắn thêm một lệnh THỨ HAI cho cùng một cú chạm.
+            gesture.reset()
+            return true
+        }
+        val cmd = gesture.feed(action, displayId, dx, dy, e.eventTime, e.getPointerId(0))
+        if (cmd != null) runCatching { TOUCH_FALLBACK.execute { runCatching { sh(cmd) } } }
         return true
     }
 
@@ -300,6 +355,8 @@ class VdAppHost(
     fun release() {
         if (released) return
         released = true
+        // Ô đang bị nhả giữa một cử chỉ ⇒ bỏ luôn, đừng bắn lệnh chạm cho một màn ảo sắp biến mất.
+        gesture.reset()
         SlotLiveProbe.unwatch(probeKey)
         val p = pkg; val sh = shell
         if (p != null && sh != null) Thread { runCatching { sh("am force-stop $p") } }.start()

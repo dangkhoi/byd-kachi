@@ -123,14 +123,60 @@ class VoiceCommandWiringContractTest {
             "phép đổi 1-based (người nói) → 0-based (mảng ô) phải nằm ở ĐÚNG một chỗ, là chỗ này")
     }
 
-    /** Lệnh *"tăng/giảm"* phải cộng vào mức ĐANG dùng — `:core` cố ý không biết mức đó. */
+    /**
+     * Lệnh *"tăng/giảm"* phải cộng vào **số THẬT của xe**, và chỉ lùi về bảng của Kachi khi xe không trả lời.
+     *
+     * ## Bài này đã SIẾT ở 1.69 — và lý do siết là một phép đo, không phải một ý thích
+     * Tới 1.68 nó chỉ đòi mốc lấy từ `ControlTileState.shared`. Đúng so với 1.66 (bảng ấy ít ra còn nhớ những gì
+     * chính Kachi đã bấm), nhưng [ĐO xe 2026-09-16] cho thấy nó vẫn sai ở ca thường gặp nhất: bảng khởi tạo bằng
+     * `ControlDef.value` (gió **4** · nhiệt **22**) và **không hề biết** người lái vừa chỉnh gì trên màn BYD gốc,
+     * nên *"tăng gió"* lúc xe đang ở **gió 1** bắn ra **5** — đúng câu tester tả: *"quất một phát như lò heo quay"*.
+     *
+     * ⇒ Thứ tự bắt buộc: hỏi xe ([CarControlPort.readState]) **trước**, `st.value(def)` là **đường lùi**. Ghim cả
+     * hai vế: thiếu vế đầu thì bệnh cũ quay lại; thiếu vế sau thì máy ảo/off-car mất luôn hành vi 1.68 (bịa một
+     * con số còn tệ hơn dùng một con số cũ).
+     */
     @Test
-    fun `lenh tuong doi cong vao muc dang dung, khong lay mac dinh cua registry`() {
+    fun `lenh tuong doi cong vao so THAT cua xe, chi lui ve bang cua Kachi khi doc khong duoc`() {
         val fn = SourceRoots.body(dispatcher, "private fun runControl(")
         assertTrue(
-            fn.contains("st.value(def) + i.relative * def.step"),
-            "phải lấy mức đang hiển thị trong ControlTileState.shared; lấy `def.value` là mốc MẶC ĐỊNH của registry " +
-                "⇒ 'tăng gió' khi xe đang ở mức 7 sẽ thành GIẢM",
+            fn.contains("control().readState(def.id)"),
+            "phải HỎI XE trước khi cộng — đọc qua `ControlDef.readKey` (khoá ĐỌC), không phải `bindingKey` (khoá GHI)",
+        )
+        assertTrue(
+            fn.contains("?: st.value(def)"),
+            "đọc không được (`null`) thì phải lùi về mức đang hiển thị — đúng hành vi 1.68, không được bịa số",
+        )
+        assertTrue(
+            fn.contains("i.relative * def.step"),
+            "bước nhảy phải là `def.step` của chính nút đó, không phải một hằng 1",
+        )
+        assertTrue(fn.contains("def.clamp("), "giá trị mới phải kẹp bằng chính `ControlDef.clamp`")
+    }
+
+    /**
+     * ═══ [SOÁT 1.69 · P2] …và NỬA KIA của H1: cú **CHẠM** ô −/+ phải đi đúng đường ấy ══════════════════════
+     *
+     * H1 có hai bề mặt cho cùng một phép cộng: câu nói (`VoiceDispatcher.runControl`, bài ngay trên) và cú chạm
+     * (`ControlTileFactory.nudge`). Tới lượt soát này chỉ bề mặt thứ nhất được ghim. Bề mặt thứ hai mang **đúng
+     * cùng một bệnh** — mốc lấy từ `ControlTileState` là bảng lạc quan, không biết người lái vừa chỉnh gì trên
+     * màn BYD gốc — và nó là bề mặt người ta dùng nhiều hơn hẳn.
+     *
+     * Vì sao một bài canh chứ không tin vào mã đang đúng: `nudge` là **bốn dòng nằm giữa một hàm dựng view dài**,
+     * đúng hình dạng mà CLAUDE.md §8 kể (`CastShell.evictVd` mất call site vì một lượt thay theo dải dòng). Mất
+     * dòng `readState` ở đây thì compile vẫn xanh, bài đơn vị vẫn xanh, và **chỉ chiếc xe** biết.
+     */
+    @Test
+    fun `cham o cong tru cung cong vao so THAT cua xe`() {
+        val factory = code("src/main/java/com/byd/clusternav/launcher/ControlTileFactory.kt")
+        val fn = SourceRoots.body(factory, "fun nudge(")
+        assertTrue(
+            fn.contains("control().readState(def.id)"),
+            "cú chạm −/+ cũng phải HỎI XE trước khi cộng — cùng đường với câu nói (H1)",
+        )
+        assertTrue(
+            fn.contains("?: state.value(def)"),
+            "đọc không được (`null`) thì lùi về mức đang hiển thị — đúng hành vi 1.68, không bịa số",
         )
         assertTrue(fn.contains("def.clamp("), "giá trị mới phải kẹp bằng chính `ControlDef.clamp`")
     }

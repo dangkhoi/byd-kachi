@@ -118,12 +118,13 @@ package com.byd.clusternav.launcher
  *
  * @property surfFrom ĐỈNH chuyển sắc dọc của thẻ nội dung. Bản tối sáng hơn [bg] một bậc ([ĐO] 1.23×) nên thẻ tự
  *   lồi lên **không cần bóng đổ** — đúng ràng buộc 0 blur / 0 shadow / 0 elevation của R5 (GPU TRINKET).
- * @property surfTo ĐÁY chuyển sắc. Nguồn sáng đặt ở TRÊN, nhất quán với mép sáng [surfEdge] và (sau này) với hình
- *   xe ở P3 — một hướng sáng cho cả hệ thì mắt đọc ra "chất liệu", nhiều hướng thì đọc ra "lỗi".
- * @property surfEdge mép sáng 1dp ở **đỉnh** thẻ. Đây KHÔNG phải bóng đổ: nó là mặt vát hắt sáng, vẽ bằng một
- *   `GradientDrawable` mờ dần — 0 chi phí GPU thêm.
- *   ⚠ Bản SÁNG gần như vô hình (trắng trên trắng, [ĐO] 1.00:1) và **đó là đúng**: đỉnh thẻ trắng đã là chỗ sáng
- *   nhất rồi, không còn chỗ nào sáng hơn để hắt. Ở bản sáng việc "tách thẻ" do [surfLine] gánh (3.28:1).
+ * @property surfTo ĐÁY chuyển sắc. Nguồn sáng đặt ở TRÊN, và (sau này) nhất quán với hình xe ở P3 — một hướng
+ *   sáng cho cả hệ thì mắt đọc ra "chất liệu", nhiều hướng thì đọc ra "lỗi".
+ *   ⚠⚠ **Sau Pass 5 (2026-09-17) cặp [surfFrom]/[surfTo] là TOÀN BỘ chiều nổi của thẻ.** Hai vai `surfEdge` /
+ *   `surfOnEdge` (mép sáng ở đỉnh) đã bị **xoá**: owner nhìn 1.68 trên xe và gọi đúng tên *"làm bóng ở đầu mỗi
+ *   nút nhìn kỳ lắm … có 1 cái gạch trên top, bug rồi"*. Không hạ alpha mà bỏ hẳn — cái sai là **hình dạng**
+ *   (một hình chữ nhật 1–2dp ghim ở đỉnh luôn đọc ra là VẠCH), không phải cường độ. Vì thế chiều của chuyển sắc
+ *   này (đỉnh SÁNG hơn đáy) nay là một **hợp đồng** có bài canh, không còn là một lựa chọn thẩm mỹ.
  * @property surfLine hairline viền ngoài của thẻ chất liệu. Hai bảng dùng **hai cơ chế khác nhau**, y như [line]:
  *   bản TỐI tách thẻ bằng bước sáng (1.23×) nên hairline chỉ là nét trang trí; bản SÁNG bước sáng chỉ 1.13× ⇒
  *   hairline **bắt buộc** là viền thật (đo được 3.28:1 trên nền, 3.71:1 trên thẻ trắng).
@@ -132,13 +133,10 @@ package com.byd.clusternav.launcher
  *   được mà không phải đổi kích thước hay thêm hiệu ứng.
  *   ⚠ Chữ trên thẻ BẬT là [ink] (tối 10.76:1 · sáng 10.40:1), **không phải** [onAccent] — bản sáng trộn ra
  *   `#b5c3ef` nên chữ trắng ở đó chỉ 1.75:1. Đúng cái bẫy đã ghi ở [inkOnAccent].
- * @property surfOnEdge mép sáng của thẻ BẬT — **mang sắc nhấn**, nhưng vẫn phải SÁNG hơn nền nó nằm trên.
- *   [ĐO] bản đầu đặt bản sáng `#cc2f5ae0` (xanh nhấn đặc) theo phản xạ *"thẻ bật thì mép cũng nhấn"* ⇒ trên nền
- *   `#b5c3ef` nó **tối đi**, tức là một vệt bóng ở ĐỈNH thẻ — ngược hẳn nguồn sáng của cả hệ. Bản sáng nay dùng
- *   `#cce8eeff` (trắng ngả xanh): vẫn cùng họ nhấn, vẫn sáng hơn nền. Màu nhấn của trạng thái bật do **viền**
- *   ([accentLine]) và cả mặt gradient gánh, không phải do mép gánh.
+ *   ⚠ Màu nhấn của trạng thái BẬT do **viền** ([accentLine]) và cả mặt gradient gánh. Trước Pass 5 còn một vai
+ *   `surfOnEdge` (mép sáng mang sắc nhấn); nó đi cùng `surfEdge` khi mép sáng bị gỡ — xem [surfTo].
  * @property fieldSunken ô LÕM (ô nhập, rãnh, đoạn phân đoạn) — tối hơn mặt chứa nó một bậc và **giữ phẳng** (một
- *   tô đặc, không gradient, không mép sáng). Lõm và lồi phải khác nhau ở CƠ CHẾ, không chỉ ở con số.
+ *   tô đặc, không gradient). Lõm và lồi phải khác nhau ở CƠ CHẾ, không chỉ ở con số.
  * @property surfFromOverArt / @property surfToOverArt bản **BÁN TRONG SUỐT 80 %** của [surfFrom]/[surfTo], dành
  *   cho thẻ nằm TRÊN ẢNH NỀN (P1b — xem spec §4.10).
  *   Owner 2026-09-16 (kèm ảnh chụp trên xe): *"cái màu đen, xám của mình, khi nhét thêm hình nền vào, nó lại không
@@ -214,11 +212,9 @@ data class KachiPalette(
     val glow2: String,
     val surfFrom: String,
     val surfTo: String,
-    val surfEdge: String,
     val surfLine: String,
     val surfOnFrom: String,
     val surfOnTo: String,
-    val surfOnEdge: String,
     val fieldSunken: String,
     val surfFromOverArt: String,
     val surfToOverArt: String,
@@ -375,11 +371,9 @@ data class KachiPalette(
             //      · ô LÕM so với thẻ 1.23× → **1.39×** (và nay TỐI hơn cả nền màn)
             surfFrom = "#232a37",
             surfTo = "#0f131a",
-            surfEdge = "#59ffffff",
             surfLine = "#3dffffff",
             surfOnFrom = "#993f6ae0",
             surfOnTo = "#596b4ce6",
-            surfOnEdge = "#b34c7dff",
             fieldSunken = "#05080d",
             surfFromOverArt = "#cc232a37",
             surfToOverArt = "#cc0f131a",
@@ -462,15 +456,13 @@ data class KachiPalette(
             artTo = "#b91c37",
             glow1 = "#dbe6f7",
             glow2 = "#ece0f8",
-            // ── VISUAL-REFRESH P1. KHÔNG phải nghịch đảo của DARK: xem KDoc [surfEdge] (mép sáng vô hình ở bảng
-            //    sáng — và đó là ĐÚNG) và [surfLine] (bảng sáng bắt buộc có viền THẬT ≥ 3:1).
+            // ── VISUAL-REFRESH P1. KHÔNG phải nghịch đảo của DARK: xem KDoc [surfLine] (bảng sáng bắt buộc
+            //    có viền THẬT ≥ 3:1 vì bước sáng thẻ/nền ở đó chỉ 1.13×).
             surfFrom = "#ffffff",
             surfTo = "#eff3f9",
-            surfEdge = "#ccffffff",
             surfLine = "#788698",
             surfOnFrom = "#4c2f5ae0",
             surfOnTo = "#335b3ee0",
-            surfOnEdge = "#cce8eeff",
             fieldSunken = "#dfe5ee",
             surfFromOverArt = "#ccffffff",
             surfToOverArt = "#cceff3f9",

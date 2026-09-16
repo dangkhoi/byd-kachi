@@ -64,15 +64,19 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>2026-09-17 — (V) FEATURE-FILTER.</b> Owner gỡ thêm <b>19 mã chấm NO</b> (12 thông tin + 7 nút) và H1-T2 thêm
+  6 datum đường ĐỌC ⇒ số mục công cụ này đi qua <b>hôm nay là 100 thông tin + 47 hành động</b> <i>(trước đó
+  112 + 54 ở 1.69 · H1 T2; trước nữa 106 + 54; trước (N) ADAS-PURGE 2026-09-16 là 123 + 64)</i>. Bảng vẫn dựng
+  ĐỘNG từ registry nên không phải sửa code. Doc: <code>docs/diagnostics/feature-filter-2026-09-16.md</code>.</li>
 <li><b>2026-09-16 — ADAS/an toàn gỡ toàn bộ theo owner ((N) ADAS-PURGE).</b> Số mục công cụ này đi qua đổi:
-  <b>106 thông tin + 54 hành động</b> <i>(2026-09-16 owner gỡ ADAS/an toàn — trước đó 123 + 64)</i>. Bảng dựng
+  <b>106 thông tin + 54 hành động</b> <i>(số của lúc đó, 2026-09-16 — trước đó 123 + 64)</i>. Bảng dựng
   ĐỘNG từ registry nên <b>không phải sửa code</b>; chỉ con số trong tài liệu phải nói đúng. Doc:
   <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</li>
 <li><b>Pass 0 — 2026-09-15</b>: Khởi tạo + implement. Owner: <i>"các thông tin, action trên xe chưa test → cần 1 tài liệu liệt kê toàn bộ + 1 chức năng test tool trong app, bấm chạy từng nút, popup diễn giải + nút Chạy + OK/Not OK, ghi log; thông tin thì chỉ hiện giá trị."</i></li>
 </ul>
 
 <h2>2. Context</h2>
-<p>Xe có <b>106 thông tin (datum)</b> + <b>54 hành động (control)</b> <i>(2026-09-16 owner gỡ ADAS/an toàn — trước đó 123 + 64)</i> nhưng chưa được soát cạn từng cái trên xe thật — nút nào chạy, nút nào chưa, thông tin nào đọc được. Hai bộ đăng ký <code>TelemetryRegistry</code> + <code>ControlRegistry</code> (:core) là nguồn sự thật; <code>HalBindingTable</code> đã định tuyến control→HAL và đọc datum; <code>CarControlAdapter.actByKind</code> chạy một hành động; <code>CtlSafetyPolicy.needsConfirm</code> đánh dấu nút thân xe. Còn thiếu: (a) diễn giải một dòng cho mỗi khả năng, (b) một bảng đi tuần tự có chấm điểm + lưu.</p>
+<p>Xe có <b>100 thông tin (datum)</b> + <b>47 hành động (control)</b> <i>(đếm 2026-09-17 sau (V) FEATURE-FILTER — trước đó 112 + 54, rồi 106 + 54, và 123 + 64 trước (N) ADAS-PURGE 2026-09-16)</i> nhưng chưa được soát cạn từng cái trên xe thật — nút nào chạy, nút nào chưa, thông tin nào đọc được. Hai bộ đăng ký <code>TelemetryRegistry</code> + <code>ControlRegistry</code> (:core) là nguồn sự thật; <code>HalBindingTable</code> đã định tuyến control→HAL và đọc datum; <code>CarControlAdapter.actByKind</code> chạy một hành động; <code>CtlSafetyPolicy.needsConfirm</code> đánh dấu nút thân xe. Còn thiếu: (a) diễn giải một dòng cho mỗi khả năng, (b) một bảng đi tuần tự có chấm điểm + lưu.</p>
 <div class="card"><b>Cổng / phụ thuộc:</b> Không chặn — chạy off-car được (action no-op → báo "không gửi được"; datum "—"). Kết quả THẬT chỉ có khi soát trên xe.</div>
 
 <h2>3. Requirements</h2>

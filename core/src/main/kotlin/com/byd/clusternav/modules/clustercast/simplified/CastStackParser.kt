@@ -67,7 +67,7 @@ object CastStackParser {
                 continue
             }
             if (currentDisplayId == displayId && !currentStackPinned && line.contains("visible=true")) {
-                val taskMatch = Regex("""taskId=\d+:\s*([^/\s]+)/""").find(line)
+                val taskMatch = TASK_PKG.find(line)
                 val pkg = taskMatch?.groupValues?.get(1) ?: continue
                 if (pkg in excluded) continue
                 return pkg
@@ -235,4 +235,7 @@ object CastStackParser {
     /** Như [STACK_HEADER] nhưng CAPTURE cả stack id (group 1) lẫn display id (group 2). */
     private val STACK_HEADER_WITH_ID = Regex("""Stack id=(\d+).*displayId=(\d+)""")
     private val TASK_LINE = Regex("""taskId=(\d+):\s*(\S+)""")
+
+    /** Biên dịch một lần — [foreground] quét từng dòng. */
+    private val TASK_PKG = Regex("""taskId=\d+:\s*([^/\s]+)/""")
 }

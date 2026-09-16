@@ -41,7 +41,20 @@ echo "== SAVE originals (Setting 0x4C10E0xx + fusion) =="
 declare -a IDS=(4C10E023 4C10E025 4C10E03C 4C10E03A 4C10E015 4C10E01D 8e2fcdbf)
 declare -a NM=(HUD_switch HUD_mode HUD_mode_choice dyn_navi navi_screen map_sending nav_fusion)
 declare -a OLD=()
-for i in "${!IDS[@]}"; do v="$(read_val setting "${IDS[$i]}")"; OLD[$i]="$v"; echo "   ${NM[$i]} 0x${IDS[$i]} = ${v:-?}"; done
+UNREADABLE=""
+for i in "${!IDS[@]}"; do
+  v="$(read_val setting "${IDS[$i]}")"; OLD[$i]="$v"
+  echo "   ${NM[$i]} 0x${IDS[$i]} = ${v:-?}"
+  [ -n "$v" ] || UNREADABLE="$UNREADABLE ${NM[$i]}(0x${IDS[$i]})"
+done
+# CLAUDE.md §5: thu gi doi ra ngoai PHAI co duong tra lai. Doc hut mot id nghia la khong co duong
+# tra lai cho id do — truoc day script van ghi 1 len no roi bo qua buoc khoi phuc o cuoi, de lai
+# HUD switch / navi-screen / map-sending bat vinh vien tren xe.
+if [ -n "$UNREADABLE" ]; then
+  echo "FATAL: khong doc duoc gia tri goc cua:$UNREADABLE" >&2
+  echo "       => khong co duong hoan tac, tu choi ghi. Kiem navopen/quyen roi chay lai." >&2
+  exit 4
+fi
 echo "   (map CONFIG 0x38B00030, read-only coding): $(read_val instr 38B00030)"
 
 echo "== ENABLE HUD + nav surface =="
@@ -72,7 +85,9 @@ for m in 2 3; do nav setraw setting 4C10E025 "$m" >/dev/null; echo "   HUD mode=
 echo "== RESTORE =="
 for i in "${!IDS[@]}"; do
   ov="${OLD[$i]:-}"
-  if [ -n "$ov" ]; then nav setraw setting "${IDS[$i]}" "$ov" >/dev/null; fi
+  [ -n "$ov" ] || { echo "   ⚠ ${NM[$i]} khong co gia tri goc — BO QUA (reboot xe de sach)"; continue; }
+  nav setraw setting "${IDS[$i]}" "$ov" >/dev/null \
+    || echo "   ⚠ khoi phuc ${NM[$i]} (0x${IDS[$i]} -> $ov) HUT — reboot xe truoc khi lai"
 done
 echo "   restored Setting surface to saved values."
 echo "DONE #1. Reboot fully cleans if anything looks off."

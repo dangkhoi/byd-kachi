@@ -137,6 +137,95 @@ class VoiceFeedbackPhraseTest {
         )
     }
 
+    // ══ (4b) [SOÁT chuỗi-lời-đáp 2026-09-17] BỐN LỖI ĐỌC ĐƯỢC PHÁT HIỆN BẰNG CÁCH ĐỌC CHUỖI THẬT ═════════
+    //
+    // Cả bốn đều compile xanh và đều **chỉ nghe thấy được**, không nhìn thấy: chuỗi trên tấm chữ vẫn đúng.
+
+    /**
+     * [VoiceReply.doneActual] tự mang lời dẫn *"Đã gửi…"* ⇒ [VoiceFeedbackPhrase.merge] **không** được ghép thêm
+     * một chữ *"Đã"* nữa. Trước bản vá: *"Đã **đã** gửi Nhiệt độ 24, xe báo 23"*.
+     */
+    @Test
+    fun `dong da mang loi dan Da thi khong bi ghep them mot lan nua`() {
+        val s = VoiceFeedbackPhrase.merge(listOf("✓ Đã gửi Nhiệt độ 24 — xe báo 23"))
+        assertEquals("Đã gửi Nhiệt độ 24, xe báo 23", s)
+        assertFalse(s!!.contains("Đã đã", ignoreCase = true), "lời dẫn bị ghép hai lần")
+    }
+
+    /**
+     * ═══ [SOÁT 1.69 · P2] …và luật ấy áp cho CẢ ca NHIỀU dòng ═══════════════════════════════════════════
+     *
+     * KDoc `hasDoneLead` hứa kiểm bằng **nội dung** — *"bất kỳ dòng nào mở đầu bằng chính lời dẫn ấy"*. Nhưng
+     * tới lượt soát này phép kiểm chỉ chạy trên `ok.singleOrNull()`, nên hai vế mà một vế là
+     * [VoiceReply.doneActual] vẫn đọc ra *"Đã **đã** gửi Nhiệt độ 24, bật Đèn đọc"*. Gỡ hai dòng `if
+     * (hasDoneLead(b)) b.substring(lead.length)` trong [VoiceFeedbackPhrase.merge] ⇒ bài này đỏ ngay.
+     *
+     * Ca này hôm nay khó tới (dòng đọc-lại của `VoiceDispatcher` về SAU `flushed` nên đi đường một-dòng) —
+     * đó đúng là lý do phải khoá bằng bài kiểm: một bẫy chờ sẵn không tự kêu lên bao giờ.
+     */
+    @Test
+    fun `nhieu dong ma mot dong da mang loi dan thi cung khong ghep hai lan`() {
+        val s = VoiceFeedbackPhrase.merge(listOf("✓ Đã gửi Nhiệt độ 24 — xe báo 23", "✓ Bật Đèn đọc"))
+        assertFalse(s!!.contains("Đã đã", ignoreCase = true), "lời dẫn bị ghép hai lần: «$s»")
+        assertTrue(s.startsWith("Đã "), "vẫn phải có ĐÚNG MỘT lời dẫn cho cả câu: «$s»")
+    }
+
+    /**
+     * MỘT dòng quá trần thì **cắt theo từ**, KHÔNG lùi về *"Đã xong 1 việc"*.
+     *
+     * Câu đếm việc nói ít hơn hẳn dòng gốc khi chỉ có một việc — và đúng thứ nó nuốt mất là **hai con số** mà
+     * `doneActual` sinh ra để đọc. Bài `nhieu viec xong qua tran…` ở trên giữ nguyên hành vi cho ca nhiều việc.
+     */
+    @Test
+    fun `mot dong qua tran thi cat theo tu, khong lui ve cau dem viec`() {
+        val one = "✓ Đã gửi Đèn đọc hàng ghế sau bên trái phía trong cùng 24 — xe báo 23"
+        val s = VoiceFeedbackPhrase.merge(listOf(one))
+        assertNotNull(s)
+        assertFalse(s!!.startsWith("Đã xong"), "một việc mà nói \"Đã xong 1 việc\" là nói ít hơn chính dòng gốc")
+        assertTrue(s.contains("Đã gửi"), "phần ĐẦU (việc + con số đã gửi) phải sống sót: «$s»")
+        assertTrue(
+            s.split(' ').count { it.isNotBlank() } <= VoiceFeedbackPhrase.MAX_WORDS + 1,
+            "quá trần mà không cắt ⇒ câu dài đọc giữa lúc lái xe",
+        )
+    }
+
+    /**
+     * Vế HỎNG của nhạc phải ra một câu có **động từ**.
+     *
+     * Trước bản vá `mediaPreview` trả cụm danh từ *"Bài tiếp theo"* ⇒ câu đọc ra *"Chưa bài tiếp theo, chưa có
+     * phiên nhạc nào"*. Bài canh đi qua **chính** [VoiceReply.failed] chứ không dựng chuỗi tay — chuỗi tay thì
+     * sửa ở `VoiceReply` xong bài này vẫn xanh.
+     */
+    @Test
+    fun `ve hong cua nhac ra cau co dong tu`() {
+        listOf(VoiceMediaOp.NEXT, VoiceMediaOp.PREV).forEach { op ->
+            val line = VoiceReply.failed(VoiceIntent.Media(op), "chưa có phiên nhạc nào")
+            val s = VoiceFeedbackPhrase.merge(listOf(line))
+            assertNotNull(s, "$op")
+            assertTrue(s!!.startsWith("Chưa "), "$op: «$s»")
+            val afterLead = s.removePrefix("Chưa ").substringBefore(' ')
+            assertTrue(
+                afterLead in setOf("chuyển", "quay"),
+                "$op: sau \"Chưa \" phải là ĐỘNG TỪ, đang là «$afterLead» — câu ra: «$s»",
+            )
+        }
+    }
+
+    /**
+     * [VoiceFeedbackPhrase.decap] **rồi** [TtsPronunciation.spellOut] — cặp hai tầng, hai module.
+     *
+     * Nhãn `powertrain_mode` là *"EV / HEV"*. Hạ chữ đầu cho ra `"eV"`, mà `spellOut` chỉ nhận chuỗi toàn HOA ⇒
+     * chữ viết tắt trượt khỏi đường đánh vần và Piper đọc thô. Không bên nào một mình thấy được lỗi này.
+     */
+    @Test
+    fun `decap roi spellOut van danh van duoc chu viet tat`() {
+        val decapped = VoiceFeedbackPhrase.decap("EV / HEV")
+        assertEquals("EV / HEV", decapped, "chữ viết tắt KHÔNG được hạ chữ đầu")
+        assertEquals("e vê", TtsPronunciation.spellOut(decapped.substringBefore(' ')))
+        // …và luật cũ vẫn nguyên cho từ thường.
+        assertEquals("bật đèn đọc", VoiceFeedbackPhrase.decap("Bật đèn đọc"))
+    }
+
     // ══ (5) SONG NGỮ — câu đọc đi theo ngôn ngữ đang chọn ═════════════════════════════════════════════════
 
     @Test

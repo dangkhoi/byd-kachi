@@ -40,7 +40,7 @@ class TelemetryReadoutTest {
     @Test fun `bool format co ngu nghia`() {
         assertEquals("Bật", TelemetryReadout.of("ac_on", CarStatus(climate = CarStatus.Climate(acOn = true)))!!.display)
         assertEquals("Tắt", TelemetryReadout.of("ac_on", CarStatus(climate = CarStatus.Climate(acOn = false)))!!.display)
-        assertEquals("Có", TelemetryReadout.of("is_charging", CarStatus(energy = CarStatus.Energy(isCharging = true)))!!.display)
+        // ⚠ (V) 2026-09-17: ca `is_charging` ("Có") đã gỡ cùng datum; `door_lf` ngay dưới vẫn khoá nhánh yesNo/onOff.
         assertEquals("Mở", TelemetryReadout.of("door_lf", CarStatus(body = CarStatus.Body(doorLfOpen = true)))!!.display)
         assertEquals("Đóng", TelemetryReadout.of("tailgate_status", CarStatus(body = CarStatus.Body(tailgateOpen = false)))!!.display)
     }
@@ -97,12 +97,15 @@ class TelemetryReadoutTest {
         val features = mutableMapOf<Int, String?>()
         val settings = mutableMapOf<String, String?>()
         val names = mutableMapOf<String, Int>()
+        val locals = mutableMapOf<String, String?>()
         TelemetryRegistry.ALL.forEach { spec ->
             when (val r = HalBindingTable.routeOf(spec.bindingKey)) {
                 is BindingRoute.NamedMethod -> getters[r.method] = "1"
                 is BindingRoute.Feature -> features[r.id] = "1"
                 is BindingRoute.Setting -> settings[r.key] = "1"
-                is BindingRoute.Local -> {}          // không có telemetry Local
+                // H1 · T2 — nay CÓ telemetry Local (`media_vol` → `AudioManager.getStreamVolume`). Trước đây nhánh
+                // này rỗng kèm chú thích "không có telemetry Local"; bỏ quên nó thì ô âm lượng trống mà bài vẫn xanh.
+                is BindingRoute.Local -> locals[r.method] = "1"
                 // V3 · R11 — bind theo TÊN HẰNG: xe giả cấp cho mỗi tên một số **tự đặt** rồi mồi giá trị vào
                 // số ấy. Đó chính là điều phải canh: giá trị KHÔNG được viết cứng trong registry nữa, nên
                 // đường đọc phải đi qua phép tra tên; ai gỡ phép tra đi thì mấy datum này lại ra "—".
@@ -118,7 +121,10 @@ class TelemetryReadoutTest {
         getters["getChargeRestTime"] = "[1, 1]"
         val adapter = CarDataAdapter(
             HalBindingTable(
-                FakeHalGateway(getters = getters, features = features, settings = settings, featureNames = names),
+                FakeHalGateway(
+                    getters = getters, features = features, settings = settings,
+                    featureNames = names, locals = locals,
+                ),
             ),
         )
         val status = adapter.readSlow(adapter.readFast(CarStatus()))
@@ -147,11 +153,13 @@ class TelemetryReadoutTest {
         val features = mutableMapOf<Int, String?>()
         val settings = mutableMapOf<String, String?>()
         val names = mutableMapOf<String, Int>()
+        val locals = mutableMapOf<String, String?>()
         TelemetryRegistry.ALL.filter { it.tier.wired }.forEach { spec ->
             when (val r = HalBindingTable.routeOf(spec.bindingKey)) {
                 is BindingRoute.NamedMethod -> getters[r.method] = "1"
                 is BindingRoute.Feature -> features[r.id] = "1"
                 is BindingRoute.Setting -> settings[r.key] = "1"
+                is BindingRoute.Local -> locals[r.method] = "1"     // H1 · T2 — xem chú thích ở bài FULL WIRE
                 // V3 · R11 — xem chú thích cùng ca ở bài FULL WIRE.
                 is BindingRoute.FeatureName -> {
                     val fake = fakeId(r.constName)
@@ -164,7 +172,10 @@ class TelemetryReadoutTest {
         getters["getChargeRestTime"] = "[1, 1]"   // mảng [giờ, phút] — xem bài FULL WIRE.
         val adapter = CarDataAdapter(
             HalBindingTable(
-                FakeHalGateway(getters = getters, features = features, settings = settings, featureNames = names),
+                FakeHalGateway(
+                    getters = getters, features = features, settings = settings,
+                    featureNames = names, locals = locals,
+                ),
             ),
         )
         val status = adapter.readSlow(adapter.readFast(CarStatus()))

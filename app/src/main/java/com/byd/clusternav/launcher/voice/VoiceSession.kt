@@ -137,6 +137,10 @@ class VoiceSession(
     /** V3 · R9 — đã nối bao nhiêu lượt hội thoại trong phiên này (trần [MAX_FOLLOW_UPS]). */
     internal var followUps = 0
 
+    /** H2 — mốc + phần mô tả của lượt nói đang ghi; hai hàm dùng chúng ở `VoiceSessionTurns.kt`. `null` = tắt. */
+    internal var utteranceStamp: String? = null
+    internal var utteranceMeta: VoiceUtteranceLog.Meta? = null
+
     /** Bắt đầu nghe. Gọi từ luồng vẽ. Đang có phiên ⇒ **không làm gì** (xem KDoc lớp). */
     fun start() {
         if (!running.compareAndSet(false, true)) {
@@ -232,6 +236,9 @@ class VoiceSession(
                 Log.i(TAG, "lượt 1 (ngữ pháp) nghe được: \"${heard.text}\"")
                 // LƯỢT 2 — chỉ chạy khi lượt 1 có cụm MỞ TỪ VỰNG; xem KDoc [VoiceFreeTail] và [VoiceOpenVocab].
                 val sentence = VoiceFreeTail.decode(ctx, heard)
+                // H2 — ghi tiếng + số đo NGAY, trước mọi đường thoát dưới đây: ca *"nghe ra rỗng"* chính là ca
+                // đáng nghe lại nhất, và nó thoát ở dòng sau. Ghi chạy trên luồng nền (xem [VoiceUtteranceLog]).
+                logHeard(it, heard, sentence)
                 if (cancelled.get() || stale(my)) { closeIfMine(my); return }
                 if (sentence.isBlank()) { fail(my, R.string.kachi_voice_nothing_heard, openSettingsAction = false); return }
                 post { if (!stale(my)) execute(sentence) }
@@ -307,6 +314,9 @@ class VoiceSession(
         // Tấm chữ ở lại [LINGER_MS] để đọc được câu trả lời rồi tự biến. Nếu một vế đang hỏi xác nhận thì
         // `confirm` đã dời hẹn giờ ra sau — xem [confirm].
         scheduleClose(LINGER_MS)
+        // H2 — chốt tệp JSON của lượt này. TRƯỚC `clarifyRound = 0`: cờ *"lượt này có đi qua một vòng hỏi lại"*
+        // đọc chính bộ đếm ấy, và sau dòng dưới thì nó luôn bằng 0.
+        logDone(intents, batch)
         clarifyRound = 0
         speakLines(batch) { post { followUp(my, pending) } }
     }

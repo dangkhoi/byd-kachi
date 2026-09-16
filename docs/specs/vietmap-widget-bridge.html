@@ -178,5 +178,12 @@ html.dark{--bg:#08080a;--paper:#171719;--ink:#f5f5f7;--muted:#a1a1a6;--line:#383
 </div>
 <h2>Nhật ký triển khai (Implementation Log)</h2>
 <p><em>Back-fill 2026-08-21 (rule R2.6):</em> spec viết trước rule §Nhật ký, hoặc là spec lịch sử/đã đóng. Nhật ký chi tiết KHÔNG back-fill (tránh bịa lịch sử). Trạng thái + quyết định THỰC TẾ: xem <code>git log</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/diagnostics/</code>. Từ đây về sau, thay đổi liên quan spec này ghi §Nhật ký NGAY tại đây (atomic với code).</p>
+<h3>2026-09-16 — soát ngoài (OCR): cổng "thế hệ" của callback widget là MÃ CHẾT</h3>
+<ul>
+<li><b>[P2]</b> <code>VietMapWidgetBridge.onHostViewUpdated</code> mở đầu bằng <code>val callbackGeneration = listenerGeneration</code> rồi ba dòng sau kiểm <code>if (callbackGeneration != listenerGeneration)</code> — so một field với chính nó ⇒ điều kiện <b>không bao giờ đúng</b>. Đó là mã chết mang <b>hình dạng một lá chắn</b>: một lượt <code>RemoteViews</code> của phiên nghe CŨ, đến sau <code>stop()</code>/<code>start()</code>, vẫn ghi đè snapshot của phiên mới.</li>
+<li><b>Vá:</b> thế hệ được chụp <b>ĐỒNG BỘ trong <code>VietMapAppWidgetHostView.updateAppWidget</code></b> — tức TRƯỚC lượt <code>main.post</code>, đúng chỗ cửa sổ đua mở ra — rồi truyền xuống callback làm tham số. <code>VietMapAppWidgetHost</code> nhận thêm <code>listenGeneration: () -&gt; Long</code>; cầu truyền <code>{ listenerGeneration }</code>.</li>
+<li><b>Bài canh:</b> <code>OcrReviewContractTest.VietMap widget chup the he TRUOC luot post sang main-looper</code> — quét cả hai tệp, khoá THỨ TỰ (chụp trước <code>post</code>) và khoá việc <b>không</b> đọc lại field. Đã thử làm ĐỎ.</li>
+<li><b>[P2] TỪ CHỐI vá — <code>VietMapWidgetTextParser.composeSnapshot</code>:</b> soát báo <i>"snapshot gắn nhãn UNAVAILABLE/STALE vẫn mang giá trị giới hạn tốc độ"</i>. Đọc lại: <b>không phải lỗi</b> — <code>speedFreshness</code>/<code>alertsFreshness</code> là nguồn sự thật per-slot, <code>freshness</code> gộp chỉ là <i>"legacy combined field"</i> (KDoc <code>worst()</code> nói thẳng), và người tiêu thụ THẬT trên cụm (<code>NavNotificationListener.kt:211</code>) đã gate bằng <code>snapshot.speedFreshness == FRESH</code>. Ép rỗng payload khi gộp ≠ FRESH sẽ <b>xoá biển giới hạn tốc độ đang tươi</b> chỉ vì slot cảnh báo nguội ⇒ hồi quy trên dữ liệu an toàn. Việc còn lại (vào backlog): chốt hợp đồng với owner + thêm bài canh khoá <i>"gộp là legacy, người đọc phải dùng per-slot"</i>.</li>
+</ul>
 </body>
 </html>

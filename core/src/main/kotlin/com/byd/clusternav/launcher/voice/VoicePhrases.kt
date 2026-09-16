@@ -116,10 +116,13 @@ object VoicePhrases {
                 // Ghi lý do bằng NGUYÊN VĂN nhãn: một dòng "bỏ 37 cụm" không ai lần lại được là bỏ cái gì.
                 dropped.add(raw)
                 // Từ nào đọc được thì vẫn cho vào từ vựng đơn — nửa nhãn nhận ra được vẫn hơn không gì.
-                words.forEachIndexed { i, w -> if (mapped[i] != null) singles.add(mapped[i]!!) else unknown.add(deaccent(w)) }
+                words.forEachIndexed { i, w ->
+                    val m = mapped[i]
+                    if (m != null) singles.add(m) else unknown.add(deaccent(w))
+                }
                 return@forEach
             }
-            val phrase = mapped.joinToString(" ") { it!! }
+            val phrase = mapped.filterNotNull().joinToString(" ")   // mọi phần tử đã được kiểm non-null ở trên
             if (words.size > 1) phrases.add(phrase) else singles.add(phrase)
             // ⚠ Thêm MỌI cách viết của từng từ, không chỉ cách viết đã chọn cho cụm.
             //

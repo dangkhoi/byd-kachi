@@ -162,6 +162,9 @@ class BydHalGateway(context: Context) : HalGateway {
     /** V3 · R11(b) — id → device chứa nó, theo `BYDAutoDeviceFeaturesMap` của xe. `null` ⇒ chỗ gọi lùi về đoán. */
     override fun deviceForFeature(featureId: Int): String? = BydFeatureIds.deviceFqnForFeature(featureId)
 
+    /** Xem KDoc [BydFeatureIds.featureMapAvailable] — tách *"id vắng"* khỏi *"máy không có framework"*. */
+    override fun featureMapAvailable(): Boolean = BydFeatureIds.featureMapAvailable()
+
     private fun audio(): AudioManager? =
         runCatching { app.getSystemService(Context.AUDIO_SERVICE) as? AudioManager }.getOrNull()
 

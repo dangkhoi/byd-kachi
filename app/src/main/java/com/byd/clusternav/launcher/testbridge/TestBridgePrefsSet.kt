@@ -3,14 +3,33 @@ package com.byd.clusternav.launcher.testbridge
 import android.content.Context
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.launcher.WorkspacePrefs
+import com.byd.clusternav.launcher.voice.SherpaModelCatalog
+import com.byd.clusternav.launcher.voice.VoiceEndpointer
 import com.byd.clusternav.launcher.voice.VoiceMicSource
+import com.byd.clusternav.launcher.voice.VoiceVadTrim
 import com.byd.clusternav.launcher.voice.VoiceRiskTable
+import com.byd.clusternav.setVoiceBeam
 import com.byd.clusternav.setVoiceConfirmIds
+import com.byd.clusternav.setVoiceEndpointFloorCap
+import com.byd.clusternav.setVoiceEndpointMinSpeechMs
+import com.byd.clusternav.setVoiceEndpointSilenceMs
 import com.byd.clusternav.setVoiceFollowUpMs
+import com.byd.clusternav.setVoiceHotwordScore
+import com.byd.clusternav.setVoiceVadMinSilenceMs
+import com.byd.clusternav.setVoiceVadMinSpeechMs
+import com.byd.clusternav.setVoiceVadThreshold
 import com.byd.clusternav.setVoiceMicSource
+import com.byd.clusternav.voiceBeam
 import com.byd.clusternav.voiceConfirmIds
+import com.byd.clusternav.voiceEndpointFloorCap
+import com.byd.clusternav.voiceEndpointMinSpeechMs
+import com.byd.clusternav.voiceEndpointSilenceMs
 import com.byd.clusternav.voiceFollowUpMs
+import com.byd.clusternav.voiceHotwordScore
 import com.byd.clusternav.voiceMicSource
+import com.byd.clusternav.voiceVadMinSilenceMs
+import com.byd.clusternav.voiceVadMinSpeechMs
+import com.byd.clusternav.voiceVadThreshold
 
 /**
  * ═══ T-BRIDGE · LỆNH `prefs_set` — GHI một khoá trong danh sách trắng ════════════════════════════════════════
@@ -73,6 +92,38 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setVoiceFollowUpMs(app, it); it.toString() }
             "voice_mic_source" -> int(raw)?.takeIf { it in VoiceMicSource.CHOICES }
                 ?.let { Prefs.setVoiceMicSource(app, it); it.toString() }
+            // ═══ H5 — bốn núm chỉnh bộ nghe ═══════════════════════════════════════════════════════════
+            // Dải hợp lệ lấy từ `:core` ([VoiceEndpointer] · [SherpaModelCatalog]), KHÔNG viết số ở đây: đây là
+            // bản sao thứ hai của một con số nếu chép, và bản sao ấy sẽ lệch đúng vào lần ai đó nới dải. Ngoài
+            // dải ⇒ `bad_prefs_value:` (cùng khuôn `voice_follow_up_ms`), không kẹp im lặng — một ca E2E gõ 3000
+            // rồi được kẹp về 1500 sẽ PASS với một giá trị khác hẳn thứ nó tưởng mình đang đo.
+            "voice_endpoint_silence_ms" ->
+                int(raw)?.takeIf { it in VoiceEndpointer.MIN_HANGOVER_MS..VoiceEndpointer.MAX_HANGOVER_MS }
+                    ?.let { Prefs.setVoiceEndpointSilenceMs(app, it); it.toString() }
+            "voice_endpoint_min_speech_ms" ->
+                int(raw)?.takeIf { it in VoiceEndpointer.MIN_MIN_SPEECH_MS..VoiceEndpointer.MAX_MIN_SPEECH_MS }
+                    ?.let { Prefs.setVoiceEndpointMinSpeechMs(app, it); it.toString() }
+            // [P0-2] Trần nền của bộ ngắt câu — núm quan trọng nhất của lượt xe kế tiếp: nó là thứ quyết định
+            // một cabin ồn có bị đẩy ngưỡng ra khỏi tầm giọng nói hay không (xem KDoc [VoiceEndpointer]).
+            "voice_endpoint_floor_cap" ->
+                int(raw)?.takeIf { it in VoiceEndpointer.MIN_FLOOR_CAP..VoiceEndpointer.MAX_FLOOR_CAP }
+                    ?.let { Prefs.setVoiceEndpointFloorCap(app, it); it.toString() }
+            // Ba núm Silero VAD — dải ở `:core` ([VoiceVadTrim]); ngưỡng là xác suất 0..1 (Float), hai quãng
+            // thời gian là mili-giây (Int) đúng họ với mọi khoá thời gian khác của đường giọng nói.
+            "voice_vad_threshold" -> raw.toFloatOrNull()
+                ?.takeIf { it in VoiceVadTrim.MIN_THRESHOLD..VoiceVadTrim.MAX_THRESHOLD }
+                ?.let { Prefs.setVoiceVadThreshold(app, it); it.toString() }
+            "voice_vad_min_speech_ms" ->
+                int(raw)?.takeIf { it in VoiceVadTrim.MIN_MIN_SPEECH_MS..VoiceVadTrim.MAX_MIN_SPEECH_MS }
+                    ?.let { Prefs.setVoiceVadMinSpeechMs(app, it); it.toString() }
+            "voice_vad_min_silence_ms" ->
+                int(raw)?.takeIf { it in VoiceVadTrim.MIN_MIN_SILENCE_MS..VoiceVadTrim.MAX_MIN_SILENCE_MS }
+                    ?.let { Prefs.setVoiceVadMinSilenceMs(app, it); it.toString() }
+            "voice_beam" -> int(raw)?.takeIf { it in SherpaModelCatalog.BEAM_CHOICES }
+                ?.let { Prefs.setVoiceBeam(app, it); it.toString() }
+            "voice_hotword_score" -> raw.toFloatOrNull()
+                ?.takeIf { it in SherpaModelCatalog.MIN_HOTWORDS_SCORE..SherpaModelCatalog.MAX_HOTWORDS_SCORE }
+                ?.let { Prefs.setVoiceHotwordScore(app, it); it.toString() }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -101,6 +152,14 @@ internal object TestBridgePrefsSet {
             "voice_ask_aloud" -> Prefs.voiceAskAloud(app).toString()
             "voice_follow_up_ms" -> Prefs.voiceFollowUpMs(app).toString()
             "voice_mic_source" -> Prefs.voiceMicSource(app).toString()
+            "voice_endpoint_silence_ms" -> Prefs.voiceEndpointSilenceMs(app).toString()
+            "voice_endpoint_min_speech_ms" -> Prefs.voiceEndpointMinSpeechMs(app).toString()
+            "voice_endpoint_floor_cap" -> Prefs.voiceEndpointFloorCap(app).toString()
+            "voice_vad_threshold" -> Prefs.voiceVadThreshold(app).toString()
+            "voice_vad_min_speech_ms" -> Prefs.voiceVadMinSpeechMs(app).toString()
+            "voice_vad_min_silence_ms" -> Prefs.voiceVadMinSilenceMs(app).toString()
+            "voice_beam" -> Prefs.voiceBeam(app).toString()
+            "voice_hotword_score" -> Prefs.voiceHotwordScore(app).toString()
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""

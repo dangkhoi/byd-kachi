@@ -43,21 +43,16 @@ object CapabilityIcons {
         // U6: PIN chỉ còn nghĩa "trạng thái của gói pin" (mức · sức khoẻ · mức muốn sạc tới). Việc NẠP có hình
         // riêng (pin + tia sét) vì đó là một trạng thái khác hẳn, và trước đây nó lẫn vào cả hai phía.
         "soc" to "ic-battery", "soh_oem" to "ic-battery",
-        // MỤC TIÊU sạc là con số MONG MUỐN, không phải trạng thái hiện tại ⇒ vòng ngắm, không phải pin. Nút
-        // `target_soc_set` mang CÙNG hình (xem `ControlRegistry`): một khái niệm, một hình.
+        // MỤC TIÊU sạc là con số MONG MUỐN, không phải trạng thái hiện tại ⇒ vòng ngắm, không phải pin.
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `target_soc_set` đã xoá, chỉ còn ô ĐỌC `target_soc`.
         "target_soc" to "ic-target",
-        "charging_pct" to "ic-battery-charging", "is_charging" to "ic-battery-charging",
-        // Công suất tức thời (kW) và lượng đã nạp (kWh) là đại lượng ĐIỆN ⇒ giữ tia sét trần; hai TRẠNG THÁI thì
-        // tách hẳn: một cái nói về cổng trên xe, một cái nói về thiết bị sạc bên ngoài.
-        "charge_power" to "ic-bolt", "charging_capacity_kwh" to "ic-bolt",
-        "charging_state" to "ic-plug", "charger_work_state" to "ic-charger",
         "trip_kwh" to "ic-consumption", "consumption_50km" to "ic-consumption",
         // [KIỂM TOÁN UX mục 4d] Xăng KHÔNG dùng icon PIN: trên xe hybrid đó là hai bình chứa khác nhau.
         "fuel_pct" to "ic-fuel",
         // U6: "còn đi được bao xa" (tầm) ≠ "đã đi được bao xa" (odo/chuyến) — trước đây cả sáu cùng ic-road.
-        "ev_range_km" to "ic-range", "fuel_range_km" to "ic-range", "batt_range_bodywork" to "ic-range",
+        "ev_range_km" to "ic-range", "fuel_range_km" to "ic-range",
         "odometer" to "ic-road", "ev_mileage_km" to "ic-road", "trip_km" to "ic-road",
-        "trip_hours" to "ic-clock", "charging_eta_hour" to "ic-clock", "charging_eta_min" to "ic-clock",
+        "trip_hours" to "ic-clock",
         // U6: nhiệt/áp của CELL tách khỏi nhiệt của cả gói pin — dãy cell + đại lượng, hai hình cùng họ.
         "batt_temp" to "ic-temp",
         "cell_temp_high" to "ic-cell-temp", "cell_temp_low" to "ic-cell-temp", "cell_temp_avg" to "ic-cell-temp",
@@ -72,10 +67,11 @@ object CapabilityIcons {
         "gear" to "ic-drive",
         // ⚠ Ô XEM và NÚT của CÙNG một việc phải mang CÙNG một hình (U6): [ĐO] ảnh 2026-09-13 hai ô đều tên
         // "Drive mode" mà một cái là núm chọn, một cái là cần số — người dùng đọc ra hai việc khác nhau.
-        //   • chế độ lái  → núm chọn  (nút `drive_mode` cũng vậy)
+        //   • chế độ lái  → núm chọn
         //   • chế độ năng lượng → tia sét (nút `powertrain_mode` "EV / HEV" đã mang tia sét từ trước)
-        //   • drift → vệt trượt: khác nghĩa nhất trong ba, và tách nó ra thì hai cái kia vừa đủ trong ngưỡng
-        "op_mode" to "ic-mode", "energy_mode" to "ic-bolt", "drift_mode" to "ic-drift",
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `drive_mode` và ô `drift_mode` đã xoá; `op_mode` (ĐỌC) ở lại và
+        // nay là mục DUY NHẤT mang hình núm chọn trong lĩnh vực Động lực.
+        "op_mode" to "ic-mode", "energy_mode" to "ic-bolt",
         // ── Khí hậu: bụi ≠ nhiệt ≠ quạt ──
         // U6: nước làm mát là mạch ĐỘNG CƠ, không phải không khí cabin ⇒ ký hiệu nhiệt-kế-trên-sóng chuẩn táp-lô.
         // U6: nhóm Khí hậu có BỐN thứ đo bằng nhiệt kế (kể cả nút "Nhiệt độ") — cái duy nhất không nói về không
@@ -85,6 +81,16 @@ object CapabilityIcons {
         // U6: LÀM LẠNH (bông tuyết) ≠ QUẠT GIÓ — quạt vẫn chạy khi lạnh đã tắt. Nút `ac_auto` cùng hình với `ac_on`.
         "ac_on" to "ic-ac", "ac_wind" to "ic-fan", "ac_cycle" to "ic-recirc",
         "anion_state" to "ic-leaf",
+        // H1 · T2 — sáu ô ĐỌC mới. `ic-seat` đã mang ĐỦ ba ô bấm trong nhóm Khí hậu (`seatc` `seath` `steer_heat`)
+        // ⇒ chạm trần [MAX_PER_DOMAIN]; hai ô mức ghế vì thế lấy hình GHẾ THEO VỊ TRÍ (ghế lái — đúng `seatID` 1 mà
+        // getter đang đọc) và hình SƯỞI, chứ không nhồi thêm cái thứ tư vào hình cũ.
+        "seat_vent_state" to "ic-car-top-seat-fl", "seat_heat_state" to "ic-sun",
+        "defrost_front_state" to "ic-defrost", "defrost_rear_state" to "ic-car-rear-defrost",
+        // *"Chế độ"* — cùng hình với ô CHẾ ĐỘ khác của xe (`op_mode`), khác hẳn hình `ic-ac`
+        // của ô *"Điều hòa"* bật/tắt: hai câu hỏi khác nhau (đang AUTO hay tay ≠ lạnh đang chạy hay không).
+        "ac_mode_auto" to "ic-mode",
+        // A9 — âm lượng dùng chung hình với nút `vol` (cùng MỘT việc: xem và chỉnh).
+        "media_vol" to "ic-volume",
         // ── Thân xe ──
         // U6: ba mục này trước đây lùi về icon LĨNH VỰC của Thân xe = hình KÍNH CỬA ⇒ "Cảnh báo khẩn" và "Mẫu xe"
         // trông y hệt bốn ô kính. Đây là icon SAI NGHĨA, không chỉ là icon trùng.
@@ -123,7 +129,8 @@ object CapabilityIcons {
         // ⚠ Ba mục này chuyển từ `SAFETY` sang `ENERGY` cùng lượt gỡ, và tia sét trần thì **không còn chỗ**: [ĐO]
         // `CapabilityIconsDiversityTest` báo `ic-bolt ×6` trong lĩnh vực Năng lượng ngay lượt chạy đầu (trần là 3).
         // Nên mỗi mục lấy đúng hình của thứ nó đo: ĐIỆN ÁP (cùng họ với áp cell) · MỨC pin · THIẾT BỊ còn sống.
-        "volt_12v" to "ic-cell-volt", "volt_12v_level" to "ic-battery", "mcu_status" to "ic-sensor",
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: `mcu_status` (mục thứ ba của cụm này) đã xoá — owner chấm NO.
+        "volt_12v" to "ic-cell-volt", "volt_12v_level" to "ic-battery",
         // ── Lốp (U7) — vị trí bánh nằm trong mã, nay nằm cả trong hình ──
         // Áp suất: ba bánh kia là NÉT, bánh đang nói tới TÔ ĐẶC. Nhiệt: bánh đó TÔ + nhiệt kế giữa xe.
         "tyre_p_fl" to "ic-car-top-tyre-fl", "tyre_p_fr" to "ic-car-top-tyre-fr",
@@ -136,7 +143,6 @@ object CapabilityIcons {
         // hướng (kim la bàn). Đây KHÔNG phải nhóm "nằm trên xe" nên giữ glyph trừu tượng (OQ1).
         "gps_lat" to "ic-gps-lat", "gps_lon" to "ic-gps-lon",
         "gps_elevation" to "ic-gps-alt", "gps_heading" to "ic-gps-heading",
-        "key_bluetooth" to "ic-lock",
         "oil_level" to "ic-hood", "engine_coolant_level" to "ic-hood", "engine_code" to "ic-hood",
     )
 

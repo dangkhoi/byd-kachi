@@ -1,5 +1,5 @@
 <!--
-  TẦM HOẠT ĐỘNG (mũi tên chạy tới lá cờ đích) — cho `ev_range_km` · `fuel_range_km` · `batt_range_bodywork`.
+  TẦM HOẠT ĐỘNG (mũi tên chạy tới lá cờ đích) — cho `ev_range_km` · `fuel_range_km`.
   [U6] "Còn đi được bao xa" KHÁC "đã đi được bao xa": trước đây cả sáu mục quãng đường đều mang ic_road, nên tầm
   chạy và odo trông y hệt. Ở đây cờ đích = giới hạn còn tới được; ic_road giữ nghĩa quãng đường ĐÃ đi.
 -->

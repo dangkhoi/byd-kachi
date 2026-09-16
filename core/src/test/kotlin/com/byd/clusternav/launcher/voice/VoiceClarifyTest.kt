@@ -43,6 +43,27 @@ class VoiceClarifyTest {
         assertTrue(ask.question.count { it == ',' } + 1 >= 2 || ask.question.contains(" hay "), ask.question)
     }
 
+    /**
+     * ═══ H4 · *"lọc"* — câu owner nêu tên (2026-09-16, tester 1.66) ══════════════════════════════════════════
+     *
+     * *"nói 'lọc ngay' nó chả hiểu lọc cái gì, nó phải hỏi lại"*. Danh sách lựa chọn **sinh từ từ vựng**
+     * (`pm25` = *"Lọc bụi"* · `pm25_clean_now` = *"Lọc ngay"*), không có một dòng chữ nào viết cứng — đúng luật
+     * CLAUDE.md §7: thêm một nút bắt đầu bằng *"Lọc"* là câu hỏi tự dài ra.
+     *
+     * ⚠ Thứ tự đọc là thứ tự **DANH MỤC** (thứ tự nút trên màn), không phải thứ tự [VoiceGrammar.terms] (cụm dài
+     * trước). Trước bản vá, `pm25_clean_now` lên trước chỉ vì nó tình cờ có một cách nói BA từ
+     * (*"lọc không khí ngay"*) ⇒ câu hỏi đọc ngược: *"Lọc ngay hay Lọc bụi?"*.
+     */
+    @Test
+    fun `loc mot minh thi hoi Loc bui hay Loc ngay`() {
+        val parsed = VoiceIntentParser.parseOne("lọc")
+        assertTrue(parsed is VoiceIntent.Unknown, "phải là Unknown để có cửa hỏi lại, ra: $parsed")
+        val ask = VoiceClarify.ask(parsed as VoiceIntent.Unknown, round = 0)
+        assertNotNull(ask)
+        assertEquals("Lọc nào — Lọc bụi hay Lọc ngay?", ask!!.question)
+        assertEquals(emptyList<String>(), ask.carry, "không mang theo gì: cả câu mới có một từ")
+    }
+
     @Test
     fun `bon ly do CO Y khong hoi — hoi cung khong giup gi`() {
         listOf(
@@ -78,6 +99,24 @@ class VoiceClarifyTest {
         assertEquals("mở kính lái", VoiceClarify.combine(listOf("mở"), "mở kính lái"))
         // Nhận ra kể cả khi dấu khác nhau (chuẩn hoá bỏ dấu, cùng luật với bộ phân tích).
         assertEquals("Mở Kính Lái", VoiceClarify.combine(listOf("mở"), "Mở Kính Lái"))
+    }
+
+    /**
+     * [SOÁT 2026-09-16 · P3] Ngữ cảnh mang theo **nhiều từ** cũng phải nhận ra được.
+     *
+     * `combine` so vế mang theo với **từng token** của câu trả lời. Bản trước cắt hai vế bằng hai cách khác nhau
+     * (`deaccent` giữ nguyên khoảng trắng bên trong vs `tokenize` một-từ-một-phần-tử) nên một phần tử nhiều từ
+     * **không bao giờ khớp** ⇒ ghép lại lần nữa: *"bật đèn bật đèn đọc"*. Hôm nay `ask()` chỉ mang theo một từ
+     * (`listOf(verb)`), tức bất biến ngầm — bài này biến nó thành thứ có thể đổi mà không hỏng.
+     */
+    @Test
+    fun `ngu canh nhieu tu cung duoc nhan ra, khong bi ghep lai lan hai`() {
+        assertEquals("bật đèn đọc", VoiceClarify.combine(listOf("bật đèn"), "bật đèn đọc"))
+        assertEquals("bật đèn đọc", VoiceClarify.combine(listOf("bật", "đèn"), "bật đèn đọc"))
+        // Khác ngữ cảnh thì vẫn ghép — đừng "sửa" bằng cách nuốt luôn vế đã có.
+        assertEquals("bật đèn mở kính lái", VoiceClarify.combine(listOf("bật đèn"), "mở kính lái"))
+        // Và vế một từ (đường đang chạy thật) không đổi hành vi một li.
+        assertEquals("mở kính lái", VoiceClarify.combine(listOf("mở"), "mở kính lái"))
     }
 
     @Test

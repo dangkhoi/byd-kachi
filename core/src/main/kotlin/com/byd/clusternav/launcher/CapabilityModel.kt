@@ -24,7 +24,7 @@ enum class Domain(override val label: String, override val labelEn: String) : Lo
     LIGHTS("Đèn", "Lights"),
     // ⚠ 2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn chủ động khỏi launcher (*"người lái muốn chỉnh mấy cái này thì
     // vào setting thật của xe"*). Domain `SAFETY` vì thế **không còn tồn tại**: mọi datum/nút của nó đã xoá, ba mục
-    // điện 12V (`mcu_status` · `volt_12v` · `volt_12v_level`) chuyển sang [ENERGY] vì ắc-quy không phải hệ an toàn
+    // điện 12V (`volt_12v` · `volt_12v_level`) chuyển sang [ENERGY] vì ắc-quy không phải hệ an toàn
     // lái. Đừng dựng lại enum này để "gom tạm" thứ gì — nó là cổng duy nhất khiến ADAS không mọc lại.
     IDENTITY("Danh tính · khoá", "Identity · keys"),
     INFOTAINMENT("Giải trí · cụm · HUD", "Media · cluster · HUD");
@@ -85,10 +85,10 @@ enum class EvidenceTier {
      * Có cần badge "chưa kiểm trên xe" không = **mọi mức trừ [PROVEN]**.
      *
      * ## ⚠ [SOÁT P1-3] Vì sao KHÔNG viết `== OVERDRIVE || == DASHCAST`
-     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **các nút yếu nhất của cả bộ** (`door`, `hood`,
-     * `start_charging`) hiện ra **không có chấm cảnh báo** nào, trông y như nút đã chạy thật. Hai trong số đó
-     * (`hood`, `start_charging`) còn chưa có đường HAL nên chắc chắn không bao giờ ăn. Đúng chỗ ngược đời: mức
-     * tin cậy thấp nhất lại là mức duy nhất không được cảnh báo.
+     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **các nút yếu nhất của cả bộ** (`door`, `hood`) hiện ra
+     * **không có chấm cảnh báo** nào, trông y như nút đã chạy thật; `hood` còn chưa có đường HAL nên chắc chắn
+     * không bao giờ ăn. Đúng chỗ ngược đời: mức tin cậy thấp nhất lại là mức duy nhất không được cảnh báo.
+     * ([ĐO 2026-09-16] ví dụ thứ ba của câu này từng là `start_charging`; nút đó đã xoá ở lượt (V).)
      *
      * `ActionMacro.needsBadge()` đã dùng `tier() != PROVEN` và KDoc ở đó nói rõ lý do — nhưng chỉ áp cho gói lệnh,
      * không áp cho nút đơn. Nay hai bên cùng một luật.

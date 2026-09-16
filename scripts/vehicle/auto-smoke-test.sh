@@ -118,8 +118,11 @@ fi
 
 PACKAGE_DUMP="$EVIDENCE_DIR/package.txt"
 "${ADB[@]}" shell dumpsys package "$PACKAGE" > "$PACKAGE_DUMP" 2>&1 || true
-if grep -q "versionCode=${CANDIDATE_VERSION_CODE:-?}" "$PACKAGE_DUMP" \
-  && grep -q "versionName=${CANDIDATE_VERSION_NAME:-?}" "$PACKAGE_DUMP"; then
+# Anchored: a bare `grep -q versionCode=169` also matches an installed 1690, and
+# `versionName=1.6` matches 1.68, so the "installed package is the recorded candidate"
+# assertion could pass on a different build. CLAUDE.md §9 exists because of exactly that.
+if grep -qE "versionCode=${CANDIDATE_VERSION_CODE:-?}([^0-9]|\$)" "$PACKAGE_DUMP" \
+  && grep -qE "versionName=${CANDIDATE_VERSION_NAME:-?}([^0-9.]|\$)" "$PACKAGE_DUMP"; then
   ok "installed package version is ${CANDIDATE_VERSION_NAME:-?} (${CANDIDATE_VERSION_CODE:-?})"
 else
   bad "package missing or not the recorded candidate version ${CANDIDATE_VERSION_NAME:-?} (${CANDIDATE_VERSION_CODE:-?})"

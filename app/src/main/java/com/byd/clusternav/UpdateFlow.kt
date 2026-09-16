@@ -22,7 +22,26 @@ object UpdateFlow {
                 when {
                     r.error != null -> setStatus(Lang.t("lỗi: ${r.error}", "error: ${r.error}"), true)
                     !r.hasUpdate -> setStatus(Lang.t("đang ở bản mới nhất (v${r.current})", "up to date (v${r.current})"), false)
-                    else -> confirm(activity, r.current, r.latest!!, r.downloadUrl!!, setStatus)
+                    else -> {
+                        // ⚠ `hasUpdate == true` KHÔNG kéo theo `downloadUrl != null`: [UpdateChecker.check] đặt
+                        // `bestUrl = o.optString("download_url").takeIf { it.isNotBlank() }` (⇒ có thể null) trong
+                        // khi `hasUpdate` chỉ so PHIÊN BẢN. Một mục `apk/` mà GitHub trả `download_url` rỗng (submodule,
+                        // LFS pointer, file > 100 MB) làm `r.downloadUrl!!` ném NPE NGAY trên main thread — tức sập màn
+                        // đang mở trên xe đang chạy. Nói ra sự thật "kênh thiếu link tải" thay vì đoán một URL.
+                        val latest = r.latest
+                        val url = r.downloadUrl
+                        if (latest == null || url.isNullOrBlank()) {
+                            setStatus(
+                                Lang.t(
+                                    "có bản mới nhưng kênh không có link tải — thử lại sau",
+                                    "a new version exists but the channel has no download link — try again later",
+                                ),
+                                true,
+                            )
+                        } else {
+                            confirm(activity, r.current, latest, url, setStatus)
+                        }
+                    }
                 }
             }
         }, "update-check").start()

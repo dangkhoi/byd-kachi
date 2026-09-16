@@ -46,17 +46,18 @@ class LangCoverageTest {
     // ── 1 · ĐẾM TUYỆT ĐỐI: không mã nào thiếu nhãn EN ────────────────────────────────────────────
 
     @Test
-    fun `moi datum co nhan EN, dung 106 dong`() {
+    fun `moi datum co nhan EN, dung 100 dong`() {
         // 106 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 123).
-        assertEquals(106, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // 100 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 12 datum NO — trước đó 112).
+        assertEquals(100, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
 
     @Test
-    fun `moi nut co nhan EN, dung 54 nut`() {
-        // 54 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 64).
-        assertEquals(54, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+    fun `moi nut co nhan EN, dung 47 nut`() {
+        // 47 ((V) 2026-09-17 owner gỡ 7 nút NO — trước đó 54; trước 09-16 là 64).
+        assertEquals(47, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = ControlRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nút thiếu nhãn tiếng Anh: $missing")
     }
@@ -85,7 +86,7 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 67 muc`() {
+    fun `moi muc cai dat co nhan EN — 10 nhom va 70 muc`() {
         assertEquals(10, SettingsCatalog.GROUPS.size)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
@@ -100,7 +101,10 @@ class LangCoverageTest {
         // Voice pha 2 (2026-09-16, docs/specs/kachi-voice-feedback.html R4/T8): **+3** — `voice_speak_replies` và
         // `voice_prefer_offline` (hai khoá của `Prefs`, theo XE) + `voice_tts_pack` (nút tải gói giọng, không khoá).
         // V3 (1.66): +4 mục — `voice_confirm_ids` · `voice_ask_aloud` · `voice_mic_source` · `bars_top_strip_labels`.
-        assertEquals(67, SettingsCatalog.ENTRIES.size)
+        // H2/H6 (1.69): **+3** — `voice_keep_log` (ô tích giữ nhật ký lượt nói, khoá THEO XE), `voice_log_export`
+        // (nút nén `voice-log/` ra `Download/`, không khoá) và `voice_model_light` (hai nút đổi/gỡ mô hình nghe,
+        // không khoá — lựa chọn mô hình lưu ở tệp prefs riêng `kachi_voice` của `VoiceModelStore`).
+        assertEquals(70, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -136,7 +140,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 288`() {
+    fun `tong so nhan co ban EN dung 278`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -154,7 +158,14 @@ class LangCoverageTest {
         // một cái tên nói sai con số nó đang canh là chỗ người sau đọc rồi tin nhầm.
         // Voice pha 2 (2026-09-16): +3 — `voice_speak_replies` · `voice_prefer_offline` · `voice_tts_pack`.
         // 288 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 319).
-        assertEquals(288, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // VOICE-HOTFIX 1.69: **288 → 291 (+3)** = ba mục Cài đặt mới của đường giọng nói (`voice_keep_log` giữ
+        // nhật ký lượt nói · `voice_log_export` xuất zip · `voice_model_light` đổi sang mô hình int8). Cả ba đã
+        // có nhãn ở CẢ hai thứ tiếng — chính bài này là thứ ép điều đó, nên con số chỉ được ghim SAU khi dịch.
+        // H1 · T2 (2026-09-16): **291 → 297 (+6)** = sáu datum mới cho đường ĐỌC của nút (`seat_vent_state`
+        // `seat_heat_state` `defrost_front_state` `defrost_rear_state` `ac_mode_auto` `media_vol`). Cả sáu có nhãn
+        // ở CẢ hai thứ tiếng + nhãn ngắn — chính bài này ép điều đó, nên số chỉ được ghim SAU khi đã dịch.
+        // (V) FEATURE-FILTER (2026-09-17): **297 → 278 (−19)** = đúng 19 mã owner chấm NO (12 datum + 7 nút).
+        assertEquals(278, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -220,7 +231,8 @@ class LangCoverageTest {
         // 13 = 5 nút COVER kính/rèm (mỗi cái "Đóng"/"Mở") + 8 nút SELECT. ⚠ [ĐO] con số tôi ĐOÁN lúc viết bài này là
         // 11 và bài đỏ ngay — đúng việc nó sinh ra để làm, và là lời nhắc rằng đếm bằng mắt qua một tệp 355 dòng thì
         // sai. Giữ số đo, không giữ số đoán. 13 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 14 — nút SELECT `adas_lane` đã xoá).
-        assertEquals(13, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
+        // 12 ((V) 2026-09-17: nút SELECT `drive_mode` đã xoá — trước đó 13).
+        assertEquals(12, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
         val bad = withArgs.filter { it.argsEn.size != it.args.size }.map { "${it.id}(${it.args.size}≠${it.argsEn.size})" }
         assertTrue(bad.isEmpty(), "lựa chọn EN thiếu/lệch số phần tử — sẽ lùi về CẢ danh sách tiếng Việt: $bad")
     }
@@ -350,7 +362,9 @@ class LangCoverageTest {
         val res = MacroResult("mac_leave", listOf(MacroStepResult("win_lf", false)))
         assertEquals("Leaving the car: the car took no command", res.notice(ActionMacros.byId("mac_leave")!!.displayLabel))
         // Lựa chọn của nút SELECT cũng theo ngôn ngữ.
-        assertEquals("Sport", ControlTileLogic.selectLabel(ControlRegistry.byId("drive_mode")!!, 2))
+        // ⚠ (V) 2026-09-17: mốc cũ là `drive_mode`/"Sport" — nút đã gỡ. `regen_level` cùng loại SELECT, cùng có
+        //    bản dịch khác hẳn bản Việt (nên vẫn bắt được lỗi "quên đổi ngôn ngữ").
+        assertEquals("High", ControlTileLogic.selectLabel(ControlRegistry.byId("regen_level")!!, 1))
     }
 
     @Test
@@ -395,8 +409,8 @@ class LangCoverageTest {
             "EV" to "electric vehicle — lựa chọn của nút EV/HEV, không dịch",
             "HEV" to "hybrid electric vehicle — lựa chọn của nút EV/HEV, không dịch",
             "Auto" to "từ quốc tế, dùng y nguyên trong cả hai thứ tiếng ở chế độ đèn pha",
-            "Eco" to "tên chế độ lái do xe đặt, không dịch",
-            // ⚠ Ba mục "ESP" · "LDW" · "LDP" đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn — bài
+            // ⚠ Ba mục "ESP" · "LDW" · "LDP" đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn, và mục "Eco" đã gỡ
+            // (V) 2026-09-17 cùng nút `drive_mode` — bài
             // `moi muc trong danh sach cho phep trung deu co ly do, va deu dung toi` bắt ngay nếu để lại.
         )
 

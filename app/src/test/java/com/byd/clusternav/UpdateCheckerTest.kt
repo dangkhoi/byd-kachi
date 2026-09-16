@@ -110,6 +110,31 @@ class UpdateCheckerTest {
         assertEquals("pm không in gì", UpdateChecker.pmReason("   \n\n", vi = true), "pm câm cũng phải nói ra, không bịa nguyên nhân")
     }
 
+    // ── [SOÁT OCR 2026-09-16 · P1] OTA: "có bản mới" KHÔNG kéo theo "có link tải" ──────────────────
+    //
+    // [UpdateChecker.check] đặt `bestUrl = o.optString("download_url").takeIf { it.isNotBlank() }` — GitHub trả
+    // chuỗi rỗng cho submodule / con trỏ LFS / tệp > 100 MB — trong khi `hasUpdate` chỉ so PHIÊN BẢN. Bản cũ của
+    // [UpdateFlow.start] viết `r.downloadUrl!!` ⇒ NPE **trên main thread**, tức sập màn đang mở trên xe đang chạy.
+
+    /** Trạng thái "có bản mới mà thiếu link" là DỰNG ĐƯỢC — nên nó phải có đường đi, không phải một `!!`. */
+    @Test fun `co ban moi ma thieu link tai la trang thai hop le cua Result`() {
+        val r = UpdateChecker.Result(current = "1.68", latest = "1.69", downloadUrl = null, hasUpdate = true, error = null)
+        assertTrue(r.hasUpdate && r.downloadUrl == null, "hai trường này độc lập nhau — không có bất biến nào ghép chúng")
+    }
+
+    /**
+     * Bài quét NGUỒN: nhánh "có bản mới" của [UpdateFlow] không được `!!`, và phải NÓI RA khi kênh thiếu link.
+     *
+     * Quét nguồn vì [UpdateFlow.start] cần một `Activity` thật (dựng luồng + `runOnUiThread` + `AlertDialog`) nên
+     * không dựng được trong JVM thuần; thứ cần khoá lại là **hình dạng của nhánh**, và nó quét được.
+     */
+    @Test fun `UpdateFlow khong con bang bang tren downloadUrl`() {
+        val src = com.byd.clusternav.testsupport.SourceRoots.codeOf("src/main/java/com/byd/clusternav/UpdateFlow.kt")
+        assertFalse("r.downloadUrl!!" in src, "một `!!` ở đây là NPE trên main thread khi kênh thiếu link tải")
+        assertFalse("r.latest!!" in src, "cùng lý do: `latest` cũng chỉ là `String?`")
+        assertTrue("url.isNullOrBlank()" in src, "phải có nhánh kiểm link rỗng/null trước khi mở hộp xác nhận")
+    }
+
     /** Bản Anh phải là câu ANH thật, không phải tiếng Việt lọt lưới (cả hai câu mới của U11). */
     @Test fun `hai cau moi co ban tieng Anh`() {
         CoreStrings.current = CoreLang.EN

@@ -11,6 +11,7 @@ import com.byd.clusternav.launcher.CarStatusRepository
 import com.byd.clusternav.launcher.HalBindingTable
 import com.byd.clusternav.launcher.HalGateway
 import com.byd.clusternav.launcher.HomeViewModelFactory
+import com.byd.clusternav.launcher.KachiLog
 import com.byd.clusternav.launcher.PrefsWorkspaceRepository
 import com.byd.clusternav.launcher.WorkspaceRepository
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
@@ -151,9 +152,27 @@ class AppContainer internal constructor(
             carGatewayInit = { BydHalGateway(app) },
         )
 
+        /**
+         * ⚠ 1.69 — hai dây MỚI, cả hai đều là đầu dò cho bệnh *"chạm trong ô hỏng"*
+         * ([ĐO xe 2026-09-16] `docs/diagnostics/oncar-trace-2026-09-16b/README.md` §9.1):
+         *  • `logDir` = thư mục log **ngoài thẻ** của [KachiLog] — chỗ mà tiến trình shell uid-2000 GHI ĐƯỢC
+         *    (thư mục riêng `/data/data/<pkg>/files` là 0700 của app-uid; đổ redirect vào đó là chính lệnh khởi
+         *    động chết vì *Permission denied*). Nhờ nó stderr của daemon rơi vào `kachi-logs/inputd-<stamp>.log`,
+         *    cùng một lệnh `adb pull` với `usage-*.log`.
+         *  • `disabled` = công tắc ẩn `inputd_disabled`, đọc **MỘT lần** mỗi tiến trình: nó được hỏi trên mỗi cú
+         *    chạm, và một lượt đọc `SharedPreferences` mỗi sự kiện chạm là đúng kiểu chi phí mà 1.67 vừa dọn.
+         *    Đổi công tắc ⇒ khởi động lại app (ghi bằng `run-as` thì vốn đã phải force-stop trước).
+         */
         private fun buildInputDaemonClient(app: Context, dispatcher: WindowCommandDispatcher): InputDaemonClient? {
             val apk = runCatching { app.applicationInfo.sourceDir }.getOrNull()
-            return if (apk.isNullOrEmpty()) null else InputDaemonClient(apk, dispatcher.launcherSeam())
+            if (apk.isNullOrEmpty()) return null
+            val forced = runCatching { Prefs.inputdDisabled(app) }.getOrDefault(false)
+            return InputDaemonClient(
+                apkPath = apk,
+                launchShell = dispatcher.launcherSeam(),
+                logDir = { runCatching { KachiLog.dir(app)?.absolutePath }.getOrNull() },
+                disabled = { forced },
+            )
         }
     }
 }

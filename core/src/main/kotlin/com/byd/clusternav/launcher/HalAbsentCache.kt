@@ -57,16 +57,22 @@ class HalAbsentCache(
 
     /** Ghi nhận kết quả một lượt đọc [id]. [got] = có giá trị thật (không `null`). */
     fun record(id: String, got: Boolean, nowMs: Long) {
-        if (got) { entries.remove(id); return }
-        // `computeIfAbsent` chứ không `getOrPut`: bản Kotlin của `getOrPut` là **đọc rồi ghi**, hai luồng cùng
-        // vào sẽ dựng hai [Entry] và một trong hai lượt đếm biến mất ⇒ datum nguội muộn hơn khai báo.
-        val e = entries.computeIfAbsent(id) { Entry() }
-        synchronized(e) {
+        // ⚠ MỘT `compute` cho cả hai nhánh, không phải `remove` + `computeIfAbsent`/`synchronized(e)`.
+        // Bản cũ khoá trên CHÍNH [Entry], nên nhánh "đọc được ⇒ quên sạch" (`entries.remove`) chạy **ngoài**
+        // khoá đó: hai luồng (vòng poll + `refreshNow()` của giọng nói từ bản vá P1-1) gọi cùng một [id] có thể
+        // để lượt đếm rơi vào một [Entry] vừa bị gỡ khỏi bảng ⇒ lần trượt ấy biến mất, datum nguội muộn hơn khai
+        // báo. `ConcurrentHashMap.compute` giữ khoá của ĐÚNG ô đó suốt cả phép đọc-sửa-ghi nên cả hai nhánh
+        // cùng nằm trong một vùng loại trừ; hàm bên trong là số học thuần (không chặn, không gọi ngược vào bảng).
+        entries.compute(id) { _, prev ->
+            if (got) return@compute null
+            val e = prev ?: Entry()
             e.misses++
-            if (e.misses < missesBeforeCold) return
-            e.misses = 0
-            e.retryMs = if (e.retryMs == 0L) firstRetryMs else (e.retryMs * 2).coerceAtMost(maxRetryMs)
-            e.nextTryAt = nowMs + e.retryMs
+            if (e.misses >= missesBeforeCold) {
+                e.misses = 0
+                e.retryMs = if (e.retryMs == 0L) firstRetryMs else (e.retryMs * 2).coerceAtMost(maxRetryMs)
+                e.nextTryAt = nowMs + e.retryMs
+            }
+            e
         }
     }
 

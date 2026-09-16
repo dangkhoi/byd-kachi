@@ -51,13 +51,16 @@ object AppWidgetLabels {
      * dữ liệu vào đây đến từ ROM lạ nên vẫn có đáy: hết ứng viên thì trả chuỗi đầy đủ chứ không ném.
      */
     private fun hint(provider: String, siblings: List<String>): String {
-        val candidates = listOf(::shortClass, ::className, ::packageName, { p: String -> p })
-        candidates.forEach { pick ->
+        CANDIDATES.forEach { pick ->
             val mine = pick(provider)
             if (mine.isNotBlank() && siblings.count { pick(it) == mine } == 1) return mine
         }
         return provider
     }
+
+    /** Bậc gợi ý, từ NGẮN nhất tới đáy an toàn — dựng một lần, không phải mỗi lần có nhãn trùng. */
+    private val CANDIDATES: List<(String) -> String> =
+        listOf(::shortClass, ::className, ::packageName, { p: String -> p })
 
     private fun packageName(provider: String): String = provider.substringBefore('/')
 

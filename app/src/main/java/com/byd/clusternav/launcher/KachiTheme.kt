@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
-import android.view.Gravity
 import com.byd.clusternav.R
 
 /**
@@ -15,13 +14,13 @@ import com.byd.clusternav.R
  * `KachiTheme.SurfaceTone.ACTIVE` — cùng lối [ThemeMode]/[LayoutPreset] của `:core`.
  */
 enum class SurfaceTone {
-    /** Thẻ nội dung thường — chuyển sắc dọc + hairline + mép sáng. */
+    /** Thẻ nội dung thường — chuyển sắc dọc + hairline. (Pass 5 gỡ mép sáng/nét đỉnh, xem [KachiTheme.surface].) */
     NEUTRAL,
 
     /**
      * **KHAY** — thẻ ô làm việc ở màn chính, tức cái mặt mà [NEUTRAL] đứng lên (VISUAL-REFRESH P1 · soát Pass 4).
      *
-     * Cùng ba lớp với [NEUTRAL] nhưng lấy cặp [KachiTheme.SLOT]/[KachiTheme.SLOT_TO] (**tối hơn** thẻ nội dung một
+     * Cùng cách dựng với [NEUTRAL] nhưng lấy cặp [KachiTheme.SLOT]/[KachiTheme.SLOT_TO] (**tối hơn** thẻ nội dung một
      * bậc) và viền [KachiTheme.LINE_STRONG] — viền sáng rõ mà ô làm việc đã dùng từ prototype và đã chạy tốt trên
      * xe (CLAUDE.md §6: không đảo đường đang chạy tốt).
      *
@@ -31,10 +30,10 @@ enum class SurfaceTone {
      */
     WELL,
 
-    /** Thẻ/ô ĐANG BẬT — cùng ba lớp nhưng mang màu nhấn; chữ trên nó là `INK`, **không** phải `ON_ACCENT`. */
+    /** Thẻ/ô ĐANG BẬT — cùng cách dựng nhưng mang màu nhấn; chữ trên nó là `INK`, **không** phải `ON_ACCENT`. */
     ACTIVE,
 
-    /** Ô LÕM (nhập liệu, rãnh, đoạn phân đoạn) — một tô đặc tối hơn, **không** gradient, **không** mép sáng. */
+    /** Ô LÕM (nhập liệu, rãnh, đoạn phân đoạn) — một tô đặc tối hơn, **không** gradient. */
     SUNKEN,
 }
 
@@ -133,11 +132,9 @@ object KachiTheme {
     // ── VISUAL-REFRESH P1 · chất liệu bề mặt (KDoc của từng vai ở [KachiPalette]) ──
     val SURF_FROM: String get() = palette.surfFrom
     val SURF_TO: String get() = palette.surfTo
-    val SURF_EDGE: String get() = palette.surfEdge
     val SURF_LINE: String get() = palette.surfLine
     val SURF_ON_FROM: String get() = palette.surfOnFrom
     val SURF_ON_TO: String get() = palette.surfOnTo
-    val SURF_ON_EDGE: String get() = palette.surfOnEdge
     val FIELD_SUNKEN: String get() = palette.fieldSunken
     val SURF_FROM_OVER_ART: String get() = palette.surfFromOverArt
     val SURF_TO_OVER_ART: String get() = palette.surfToOverArt
@@ -173,9 +170,26 @@ object KachiTheme {
     /**
      * ═══ VISUAL-REFRESH P1 · T2 — BỀ MẶT CÓ CHẤT LIỆU ═══════════════════════════════════════════════════════
      *
-     * Thay một lớp tô phẳng bằng **ba–bốn lớp**: (0) chuyển sắc DỌC + hairline ngoài, (1) lớp sắc lĩnh vực nếu
-     * [domain] khác `null`, (2) dải mép sáng mờ dần ở ĐỈNH, (3) nét đỉnh ĐẶC 1–2dp. Thẻ lồi lên khỏi nền mà
-     * **không** bóng đổ.
+     * Thay một lớp tô phẳng bằng **một–hai lớp**: (0) chuyển sắc DỌC + hairline ngoài, (1) lớp sắc lĩnh vực nếu
+     * [domain] khác `null`. Thẻ lồi lên khỏi nền mà **không** bóng đổ.
+     *
+     * ## ⚠⚠ Pass 5 (2026-09-17) — GỠ mép sáng và nét đỉnh, KHÔNG phải hạ bớt
+     * Owner nhìn 1.68 trên xe: *"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top
+     * đấy nhé, bug rồi"*. Hai thứ bị gỡ là hai lớp Pass 4 thêm vào:
+     *  • **nét đỉnh ĐẶC** 1–2dp (`crisp`) — một hình chữ nhật tô đặc cao đúng 1–2dp nằm sát đỉnh. Ở mọi cỡ thẻ nó
+     *    đọc ra đúng một **VẠCH**, không đọc ra ánh sáng; đó chính là *"1 cái gạch trên top"* owner gọi là bug.
+     *  • **dải mép sáng** mờ dần (`edge`, trắng 35 %) — trên ô nhỏ (tile thanh nút, chip, ô bộ chọn 40–56dp) dải
+     *    cao 12dp chiếm ~1/4 chiều cao ô ⇒ đọc ra *"bóng ở đầu nút"*.
+     *
+     * **Quyết định thiết kế** (HMI tối cao cấp): chiều nổi do **chính chuyển sắc dọc** gánh (đỉnh sáng → đáy tối,
+     * bước 1.35× so với nền ở bảng TỐI) cộng ba bậc `nền → khay → thẻ` và hairline. Một vạch sáng cứng ở đỉnh là
+     * **specular**, và specular chỉ đúng khi bề mặt bo cạnh thật; ở đây nó là hình chữ nhật 1dp nên mắt đọc ra
+     * *đường viền hở*, không đọc ra *mặt vát*. Chọn **bỏ hẳn** thay vì hạ xuống 8 %: một vạch 1dp ở bất kỳ alpha
+     * nào vẫn là một vạch — cái sai là **hình dạng**, không phải cường độ. Hai vai màu `surfEdge`/`surfOnEdge` vì
+     * thế bị xoá khỏi [KachiPalette] chứ không để lại (CLAUDE.md §8: vai không ai dùng là vai chết).
+     *
+     * Bài canh đảo chiều theo: [SurfaceContrastContractTest] nay đòi **không còn** lớp ánh sáng ở đỉnh, và
+     * [SurfaceMaterialContractTest] đòi thân hàm này không còn `Gravity.TOP`/`setLayerHeight`.
      *
      * ## Vì sao không có bóng/blur/elevation — và vì sao có bài canh riêng
      * Đầu máy DiLink chạy GPU TRINKET. `setShadowLayer`/`BlurMaskFilter`/`RenderEffect` và `elevation` đều bắt GPU
@@ -186,6 +200,8 @@ object KachiTheme {
      * ## Vì sao chuyển sắc DỌC chứ không chéo
      * [gradient] đang dùng `TL_BR` (chéo) cho **nút/pill đang chọn**. Giữ chéo = nhận diện của *"cái đang được
      * chọn"*, dọc = nhận diện của *"bề mặt"* ⇒ hai vai không lẫn nhau. Đây là lý do chức năng, không phải sở thích.
+     * Sau Pass 5 nó còn gánh thêm một vai nữa: **nó là toàn bộ chiều nổi**, nên chiều của nó (đỉnh sáng hơn đáy)
+     * là một hợp đồng, không phải một lựa chọn — có bài canh riêng.
      *
      * ## ⚠ Mỗi lần gọi dựng một `Drawable` MỚI — cố ý
      * `Drawable` dùng chung giữa nhiều View thì chúng chia nhau **một** `ConstantState`: đổi bounds/alpha ở một ô là
@@ -194,8 +210,8 @@ object KachiTheme {
      *
      * @param tone [SurfaceTone.NEUTRAL] thẻ nội dung · [SurfaceTone.WELL] **khay** mà thẻ đứng lên (ô làm việc ở
      *   màn chính) · [SurfaceTone.ACTIVE] thẻ/ô đang bật (mang màu nhấn) · [SurfaceTone.SUNKEN] ô lõm — **giữ
-     *   phẳng**: một tô đặc, không gradient, không mép sáng. Lồi và lõm phải khác nhau ở CƠ CHẾ chứ không chỉ ở độ
-     *   sáng, nếu không thì hai vai đọc như một.
+     *   phẳng**: một tô đặc, không gradient. Lồi và lõm phải khác nhau ở CƠ CHẾ chứ không chỉ ở độ sáng, nếu
+     *   không thì hai vai đọc như một.
      * @param domain lĩnh vực của nội dung trong thẻ — thêm một lớp sắc rất nhạt để mắt tìm được vùng *trước khi*
      *   đọc chữ. `null` (mặc định) ⇒ không có lớp đó, không phải một màu mặc định.
      * @param overArtwork thẻ này nằm **trên ẢNH NỀN** ⇒ dùng bản bán trong suốt 80 % ([KachiPalette.surfFromOverArt])
@@ -203,8 +219,8 @@ object KachiTheme {
      *   đen, xám của mình, khi nhét thêm hình nền vào, nó lại không đẹp nữa"* — thẻ đục trên ảnh đọc ra thành
      *   **miếng vá**, không thành **cửa sổ**.
      *   ⚠ P1 **chưa chỗ nào bật cờ này** (mặc định `false` ⇒ hành vi hôm nay không đổi một pixel). Nó có sẵn để
-     *   P1b chỉ phải thêm **một lớp ảnh ở chỉ số 0** của [LayerDrawable] chứ không phải viết lại hàm này: thứ tự
-     *   lớp ở đây đánh theo `numberOfLayers - 1` chứ không theo số cứng, nên chèn thêm lớp đáy không lệch gì.
+     *   P1b chỉ phải thêm **một lớp ảnh ở chỉ số 0** của [LayerDrawable] chứ không phải viết lại hàm này — sau
+     *   Pass 5 chồng lớp chỉ còn `base` (+ tint) nên chèn lớp đáy càng không lệch gì.
      *   ⚠⚠ Và ghi ra chỗ CHƯA ĐỦ: ở 80 %, [ĐO] trên hai nền tệ nhất (trắng tinh / đen tuyền) [INK] còn 7.27:1
      *   (tối) và 10.17:1 (sáng) — đạt; nhưng [MUT] chỉ còn 3.15–3.91:1. P1b **phải** kèm lớp che 35–50 % hoặc
      *   chọn mực theo độ chói đo được của vùng ảnh dưới thẻ. Không có bước đó thì cờ này chưa dùng được thật.
@@ -236,38 +252,11 @@ object KachiTheme {
             cornerRadius = r
             setStroke(hair, c(if (active) ACCENT_LINE else if (well) LINE_STRONG else SURF_LINE))
         }
-        // Dải mép sáng cao đúng [KachiSpace.RADIUS_M]; bo góc trên không được vượt chiều cao dải, nếu không
-        // `GradientDrawable` tự kẹp bán kính và mép trông méo ở thẻ bo tròn nhiều (pill: radius = 999).
-        val edgeH = dpi(ctx, KachiSpace.RADIUS_M)
-        val topR = minOf(r, edgeH.toFloat())
-        val edgeColor = if (active) SURF_ON_EDGE else SURF_EDGE
-        val edge = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(c(edgeColor), c(CLEAR)),
-        ).apply { cornerRadii = floatArrayOf(topR, topR, topR, topR, 0f, 0f, 0f, 0f) }
-        // ⚠ [SOÁT Pass 4] NÉT ĐỈNH — dải mờ dần một mình đọc ra "hơi sáng ở trên", không đọc ra "mặt vát".
-        // Thêm một nét ĐẶC ở đúng đỉnh, dày 2dp trên thẻ LỚN (bán kính ≥ [KachiSpace.RADIUS_XL]) và 1dp trên ô
-        // nhỏ — ô 40dp mà kẻ 2dp thì nét chiếm 5 % chiều cao ô và đọc thành viền, không thành ánh sáng. Nét nằm
-        // ĐÈ lên đầu dải mờ nên hai lớp cộng alpha ⇒ đỉnh sáng gấp ~3.1× mặt thẻ, thấy được ở khoảng cách lái xe.
-        val crispH = if (radius >= KachiSpace.RADIUS_XL) hair * 2 else hair
-        val crisp = GradientDrawable().apply {
-            cornerRadii = floatArrayOf(topR, topR, topR, topR, 0f, 0f, 0f, 0f)
-            setColor(c(edgeColor))
-        }
+        // ⚠ Pass 5 — KHÔNG còn lớp ánh sáng ở đỉnh (xem KDoc). Chiều nổi nằm hết trong `base`: đỉnh sáng → đáy
+        // tối. Thêm bất cứ lớp nào cao vài dp ghim vào `Gravity.TOP` là dựng lại đúng cái vạch owner đã chê.
         val tint = domainTint(domain)
-        val layers: Array<Drawable> =
-            if (tint == CLEAR) arrayOf(base, edge, crisp)
-            else arrayOf(base, GradientDrawable().apply { cornerRadius = r; setColor(c(tint)) }, edge, crisp)
-        return LayerDrawable(layers).apply {
-            val top = numberOfLayers - 1
-            // Hai lớp ánh sáng đánh theo `numberOfLayers` chứ không theo số cứng — P1b chèn thêm lớp ảnh ở chỉ
-            // số 0 mà không lệch gì (xem KDoc [overArtwork]).
-            listOf(top to crispH, top - 1 to edgeH).forEach { (i, h) ->
-                setLayerInset(i, hair, hair, hair, 0)           // mép sáng nằm TRONG hairline, không đè lên nó
-                setLayerGravity(i, Gravity.TOP or Gravity.FILL_HORIZONTAL)
-                setLayerHeight(i, h)
-            }
-        }
+        if (tint == CLEAR) return base
+        return LayerDrawable(arrayOf(base, GradientDrawable().apply { cornerRadius = r; setColor(c(tint)) }))
     }
 
     /**
@@ -361,8 +350,9 @@ object KachiTheme {
         // 6/14 ô cùng đồng hồ tốc; nhóm Khí hậu có 5/12 ô cùng nhiệt kế và 4/12 cùng chiếc lá. Icon trùng ở mật độ
         // đó thì nó không còn giúp phân biệt gì — người dùng phải đọc chữ trong ô 40dp (mà chữ thì bị cắt).
         // Lý do của TỪNG hình ghi trong chính tệp XML (đó là chỗ người sửa icon sẽ đọc).
-        "ic-battery-charging" -> R.drawable.ic_battery_charging
-        "ic-plug" -> R.drawable.ic_plug
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: `ic-battery-charging` · `ic-plug` · `ic-drift` · `ic-car-top-window-rain`
+        // đã xoá (tên + tệp vector) — chủ duy nhất của chúng là 19 mã owner chấm NO. `ic-charger` ở lại vì nút
+        // `wireless_charge` (KHÔNG thuộc danh sách NO) vẫn dùng.
         "ic-charger" -> R.drawable.ic_charger
         "ic-consumption" -> R.drawable.ic_consumption
         "ic-range" -> R.drawable.ic_range
@@ -385,7 +375,6 @@ object KachiTheme {
         "ic-temp-out" -> R.drawable.ic_temp_out
         "ic-ac" -> R.drawable.ic_ac
         "ic-filter" -> R.drawable.ic_filter
-        "ic-drift" -> R.drawable.ic_drift
         // Tên icon dùng lại tệp đã có (trước đây chưa được map nên tra ra 0 = ô trống icon)
         "ic-clock" -> R.drawable.ic_clock_g
         // ── S4 · R12 · hai hành động của CHÍNH launcher ([LauncherActions]) ───────────────────────────
@@ -423,7 +412,6 @@ object KachiTheme {
         "ic-car-top-window-lr" -> R.drawable.ic_car_top_window_lr
         "ic-car-top-window-rr" -> R.drawable.ic_car_top_window_rr
         "ic-car-top-window-all" -> R.drawable.ic_car_top_window_all
-        "ic-car-top-window-rain" -> R.drawable.ic_car_top_window_rain
         "ic-car-top-tyre-fl" -> R.drawable.ic_car_top_tyre_fl
         "ic-car-top-tyre-fr" -> R.drawable.ic_car_top_tyre_fr
         "ic-car-top-tyre-rl" -> R.drawable.ic_car_top_tyre_rl

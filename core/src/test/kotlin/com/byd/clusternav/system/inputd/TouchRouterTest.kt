@@ -20,6 +20,17 @@ class TouchRouterTest {
         assertEquals("input -d 3 tap 1919 719", TouchRouter.fallbackTapCmd(3, 1919, 719))
     }
 
+    /**
+     * GOLDEN 1.69 — chuỗi VUỐT của đường lùi. Byte-khớp chính chuỗi mà phép đo tay trên xe đã chạy được
+     * ([ĐO xe 2026-09-16] §9.1: `adb shell input swipe 1000 850 1000 350 400`), nên nếu format trôi thì bài này
+     * đỏ TRƯỚC khi cú cuộn trong ô câm lần nữa.
+     */
+    @Test
+    fun `fallback swipe command is byte-exact (khop phep do tay tren xe)`() {
+        assertEquals("input -d 3 swipe 1000 850 1000 350 400", TouchRouter.fallbackSwipeCmd(3, 1000, 850, 1000, 350, 400L))
+        assertEquals("input -d 0 swipe 0 0 0 0 700", TouchRouter.fallbackSwipeCmd(0, 0, 0, 0, 0, 700L))
+    }
+
     @Test
     fun `shouldFallback is true exactly when the daemon did not take the event`() {
         assertTrue(TouchRouter.shouldFallback(daemonRouted = false), "daemon down → must fall back")

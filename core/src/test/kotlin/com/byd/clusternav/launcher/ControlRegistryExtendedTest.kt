@@ -27,7 +27,7 @@ class ControlRegistryExtendedTest {
         )
         // Nut moi KHONG duoc tu bat (giu dock mac dinh gon).
         assertTrue("wiper" !in ControlRegistry.defaultEnabledIds())
-        assertTrue("drive_mode" !in ControlRegistry.defaultEnabledIds())
+        assertTrue("powertrain_mode" !in ControlRegistry.defaultEnabledIds())   // (V) 2026-09-17: cũ là `drive_mode`
     }
 
     @Test fun `moi control bindingKey khong rong`() {

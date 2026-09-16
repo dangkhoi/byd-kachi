@@ -1,5 +1,5 @@
 <!--
-  NÚM CHỌN CHẾ ĐỘ (núm xoay + kim + ba nấc) — cho `op_mode` · `energy_mode` · `drift_mode`.
+  NÚM CHỌN CHẾ ĐỘ (núm xoay + kim + ba nấc) — cho `op_mode` · `ac_mode_auto`.
   [U6] `ic_drive` (sơ đồ số chữ H) nay chỉ còn nghĩa **cần số** (`gear`); trước đây bốn mục dùng chung nó nên
   "Số" và ba "chế độ" trông y hệt nhau. Chế độ là thứ CHỌN, nên vẽ cái núm chọn.
 -->

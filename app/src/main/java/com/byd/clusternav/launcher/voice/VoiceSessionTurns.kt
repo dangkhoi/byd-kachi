@@ -22,6 +22,74 @@ import com.byd.clusternav.voiceFollowUpMs
  * ấy là thứ ba lượt soát trước đã phải vá ba lần (`generation` · `capturing` · `confirmOpen`). Hàm mở rộng dùng
  * lại **đúng** các trường đó, nên không có khe nào để lệch.
  */
+// ── H2 — NHẬT KÝ LƯỢT NÓI: hai nửa của MỘT mục, ghi ở hai thì ────────────────────────────────
+
+/**
+ * ═══ Nửa ĐẦU — tiếng + mọi số đo đã biết NGAY khi nghe xong ══════════════════════════════════════════
+ *
+ * Gọi ngay sau lượt giải mã, **trước** mọi đường thoát của `runSession`: ca *"nghe ra rỗng"* thoát ở dòng kế tiếp
+ * và nó chính là ca đáng nghe lại nhất — một mục nhật ký chỉ ghi khi câu đã hiểu được thì nó ghi đúng những lượt
+ * không cần chẩn đoán gì.
+ *
+ * ## Vì sao ở đây, không ở trong [VoiceCapture]
+ * [VoiceCapture] biết tiếng nhưng **không** biết câu cuối cùng (lượt 2 tự do chạy sau nó), không biết mô hình nào
+ * đang chọn, không biết phiên có hỏi lại hay không. Ghi ở đó là ghi một nửa rồi phải mở một đường thứ hai để bù
+ * nửa kia — đúng thứ [VoiceUtteranceLog.update] đang làm, nhưng từ một chỗ không có gì để bù.
+ *
+ * Lớp gọi vẫn KHÔNG chặn: [VoiceUtteranceLog.record] chỉ chép khúc PCM rồi đẩy hết sang luồng nền của nó.
+ */
+internal fun VoiceSession.logHeard(rec: VoiceRecognizer, heard: VoiceCapture.Heard, sentence: String) {
+    val meta = VoiceUtteranceLog.Meta(
+        heard = heard.text,
+        sentence = sentence,
+        micSource = heard.micSource,
+        micSourceName = VoiceMicSource.sourceName(heard.micSource),
+        modelId = runCatching { VoiceModelStore.selected(ctx).id }.getOrDefault(""),
+        hotwords = runCatching { rec.hotwordLines() }.getOrDefault(0),
+        endpointMs = heard.endpointMs,
+        speechMs = heard.speechMs,
+        silenceMs = heard.silenceMs,
+        endpointFired = heard.endpointFired,
+        listenMs = heard.listenMs,
+        decodeMs = heard.decodeMs,
+    )
+    utteranceMeta = meta
+    utteranceStamp = runCatching { VoiceUtteranceLog.record(ctx, heard.pcm, heard.samples, meta) }
+        .onFailure { Log.w(VoiceSession.TAG, "không ghi được nhật ký lượt nói", it) }
+        .getOrNull()
+}
+
+/**
+ * ═══ Nửa SAU — ý định + câu trả lời, thứ chỉ biết được sau khi đã thi hành ════════════════════════════
+ *
+ * Ghi đè **đúng tệp JSON** của mốc đã tạo ở [logHeard]; tệp WAV không bị đụng tới.
+ *
+ * ⚠ Mốc bị **xoá khỏi phiên** ngay sau khi dùng. Một phiên có thể chạy nhiều lượt `execute` (hỏi lại · hội thoại),
+ * và chỉ lượt ĐẦU có tiếng được giữ (`keepPcm = true` — các lượt nối cố ý không giữ, xem KDoc [listenOnce]). Không
+ * xoá thì câu trả lời của lượt thứ ba sẽ được ghi đè lên mục mô tả **khúc tiếng của lượt thứ nhất** — một tệp JSON
+ * nói về một tệp WAV khác, tức đúng loại dữ liệu sai mà không ai phát hiện khi đọc lại ba tháng sau.
+ *
+ * `followUp` = *"phiên này ĐÃ nối ít nhất một lượt"*, không phải *"lượt này là lượt nối"*: bộ đếm tăng ở
+ * [followUp] sau khi câu trả lời đã đọc xong, nên tại đây nó còn là số của các lượt TRƯỚC — và đó đúng là thứ
+ * đáng biết khi nghe lại (*"khúc này nằm ở giữa một cuộc hội thoại"*).
+ */
+internal fun VoiceSession.logDone(intents: List<VoiceIntent>, replies: List<String>) {
+    val stamp = utteranceStamp ?: return
+    utteranceStamp = null
+    val base = utteranceMeta ?: VoiceUtteranceLog.Meta()
+    runCatching {
+        VoiceUtteranceLog.update(
+            ctx, stamp,
+            base.copy(
+                intents = intents.map { it::class.simpleName.orEmpty() },
+                replies = ArrayList(replies),
+                clarify = clarifyRound > 0,
+                followUp = followUps > 0,
+            ),
+        )
+    }.onFailure { Log.w(VoiceSession.TAG, "không cập nhật được nhật ký lượt nói", it) }
+}
+
 // ── V3 · R8 — hỏi lại tới khi hiểu ───────────────────────────────────────────────────────────
 
 /**
@@ -88,12 +156,28 @@ internal fun VoiceSession.askAgain(ask: VoiceClarify.Ask, my: Int) {
 
 private fun VoiceSession.listenAgain(ask: VoiceClarify.Ask, my: Int) {
     if (cancelled.get() || stale(my)) return
+    // ═══ [P0-1c] Lượt HỎI LẠI cũng là một lần mở micro ⇒ cũng phải tiêu một suất của trần phiên ═════════
+    // [ĐO xe 2026-09-16] 7 phiên thật sự bắt đầu mà có **309** lượt mở micro, dù `MAX_FOLLOW_UPS` = 5 đã tồn tại.
+    // [SUY, đọc mã] một trong hai chỗ rò là đây: đường hỏi-lại mở micro nhưng **không** đi qua `followUps`, nên
+    // nó là một hạn mức thứ hai chạy song song — và `execute` đặt `clarifyRound = 0` mỗi lượt đi lọt, nên hạn
+    // mức ấy tự nạp lại. Đếm chung một quỹ thì cả hai đường cộng lại vẫn không vượt được trần của phiên.
+    if (followUps >= VoiceSession.MAX_FOLLOW_UPS) {
+        Log.i(VoiceSession.TAG, "hết quỹ lượt nối của phiên — không hỏi lại nữa")
+        overlay?.render(R.string.kachi_voice_heard, VoiceClarify.giveUp())
+        scheduleClose(VoiceSession.LINGER_MS)
+        return
+    }
+    followUps++
     background {
-        val heard = listenOnce(my, VoiceSession.CLARIFY_LISTEN_MS, beep = false, hint = R.string.kachi_voice_listening)
+        val heard = listenOnce(
+            my, VoiceSession.CLARIFY_LISTEN_MS, beep = false,
+            hint = R.string.kachi_voice_listening, label = VoiceCapture.LABEL_CLARIFY,
+        )
         post {
             if (cancelled.get() || stale(my)) { closeIfMine(my); return@post }
             val joined = VoiceClarify.combine(ask.carry, heard)
-            if (heard.isBlank()) {
+            // [P0-1b] Rỗng **hoặc chỉ toàn từ đệm** ⇒ coi như không có câu trả lời. Xem KDoc [endsConversation].
+            if (endsConversation(heard)) {
                 overlay?.render(R.string.kachi_voice_heard, VoiceClarify.giveUp())
                 scheduleClose(VoiceSession.LINGER_MS)
             } else {
@@ -102,6 +186,29 @@ private fun VoiceSession.listenAgain(ask: VoiceClarify.Ask, my: Int) {
         }
     }
 }
+
+/**
+ * ═══ [P0-1b] Chuỗi này có KẾT THÚC cuộc hội thoại không ═══════════════════════════════════════════════
+ *
+ * `true` khi lượt nghe không mang một lượt nói thật nào: rỗng, hoặc **chỉ toàn từ đệm**.
+ *
+ * ## Vì sao "chỉ toàn từ đệm" phải bằng "im lặng"
+ * [ĐO xe 2026-09-16] trong 12 phút, mô hình trả về `"ừ"` **102 lần** và `"ừm"` **102 lần** — gần như toàn bộ
+ * ~250 lượt giải mã — trong lúc micro chỉ nghe thấy nền (rms 30–36). Đó là **ảo giác** của mô hình offline khi
+ * đưa vào gần như im lặng, không phải người lái nói. Mỗi chuỗi như thế mà được coi là một lượt nói sẽ: không
+ * `isBlank()`, nên vòng hội thoại mở lại micro; parse ra `Unknown`, nên Kachi nói *"không hiểu"*; rồi mở lại.
+ * Đó chính là vòng lặp đã làm ô YouTube của owner không cuộn nổi.
+ *
+ * ## ⚠ Vì sao hàm này KHÔNG được dùng ở lượt nghe XÁC NHẬN
+ * Một tiếng *"ừ"* đứng một mình là câu **ĐỒNG Ý hợp lệ** khi đang có hộp xác nhận chờ. `listenForConfirm` hỏi
+ * [VoiceLexicon.confirmAnswer] và chỉ hỏi nó — đảo thứ tự hai phép hỏi là bịt mất cổng an toàn quan trọng nhất
+ * của cả tính năng. KDoc [VoiceLexicon.isFillerOnly] ghi đúng ràng buộc này ở phía `:core`.
+ *
+ * Luật nằm ở `:core` ([VoiceLexicon.isFillerOnly], dựng trên tập `FILLERS` đã có) — ở đây chỉ là chỗ gọi, để
+ * bảng từ đệm không có bản sao thứ hai (CLAUDE.md §4.1).
+ */
+internal fun endsConversation(heard: String): Boolean =
+    heard.isBlank() || VoiceLexicon.isFillerOnly(heard)
 
 // ── V3 · R9 — HỘI THOẠI: giữ micro mở sau khi trả lời xong ───────────────────────────────────
 
@@ -130,12 +237,22 @@ internal fun VoiceSession.followUp(my: Int, pending: Boolean) {
     overlay?.render(R.string.kachi_voice_follow_up, "")
     scheduleClose(window.toLong() + VoiceSession.LINGER_MS)
     background {
-        val heard = listenOnce(my, window.toLong(), beep = false, hint = R.string.kachi_voice_follow_up)
+        val heard = listenOnce(
+            my, window.toLong(), beep = false,
+            hint = R.string.kachi_voice_follow_up, label = VoiceCapture.LABEL_FOLLOW_UP,
+        )
         post {
             if (cancelled.get() || stale(my)) { closeIfMine(my); return@post }
             // Hết giờ mà không ai nói ⇒ **đóng êm**: không câu báo lỗi, không tiếng gì. Đây là trạng thái
             // THƯỜNG của hội thoại (người ta nói xong một việc rồi thôi), không phải một lỗi để kể.
-            if (heard.isBlank()) close() else execute(heard)
+            // [P0-1b] *"Chỉ toàn từ đệm"* đi CÙNG nhánh với rỗng — xem KDoc [endsConversation]: đó là ảo giác
+            // của mô hình khi nghe im lặng, và coi nó là một lượt nói chính là nhiên liệu của vòng lặp.
+            if (endsConversation(heard)) {
+                if (heard.isNotBlank()) Log.i(VoiceSession.TAG, "lượt nối chỉ có từ đệm (\"$heard\") — đóng êm")
+                close()
+            } else {
+                execute(heard)
+            }
         }
     }
 }
@@ -146,11 +263,23 @@ internal fun VoiceSession.followUp(my: Int, pending: Boolean) {
  * Không giữ PCM: cả hai đường đều nhận câu **ngắn** trong tập đóng; lượt giải mã tự do (`VoiceFreeTail`) chỉ
  * cần cho tên bài/điểm đến, và một câu như vậy sẽ được nói ở một phiên đầy đủ chứ không phải trong 5 giây nối.
  */
-private fun VoiceSession.listenOnce(my: Int, maxMs: Long, beep: Boolean, hint: Int): String = runCatching {
+private fun VoiceSession.listenOnce(
+    my: Int,
+    maxMs: Long,
+    beep: Boolean,
+    hint: Int,
+    label: String,
+): String = runCatching {
     val labels = appsByLabel()
     VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet(), places())?.use {
         whileCapturing {
-            capture.listen(it, maxMs, { cancelled.get() || stale(my) }, keepPcm = false, beep = beep) { partial ->
+            capture.listen(
+                it, maxMs, { cancelled.get() || stale(my) }, keepPcm = false, beep = beep,
+                // [P0-1a] Mọi lượt NỐI đều bỏ giải mã khi không có tiếng nào. Ở đây im lặng là trạng thái
+                // THƯỜNG (người ta nói xong rồi thôi), nên một lượt giải mã 1,3–2 s chỉ để mô hình bịa ra
+                // `"ừ"` là vừa tốn CPU vừa là thứ nuôi vòng lặp — xem KDoc tham số `decodeOnlyIfSpeech`.
+                decodeOnlyIfSpeech = true, label = label,
+            ) { partial ->
                 post { if (!stale(my)) overlay?.render(hint, partial) }
             }.text
         }
@@ -226,7 +355,13 @@ private fun VoiceSession.listenForConfirm(answered: AtomicBoolean, my: Int) {
         VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet())?.use {
             whileCapturing {
                 // `keepPcm = false`: lượt này chỉ bắt *"đồng ý"/"huỷ"* — không bao giờ cần lượt giải mã thứ hai.
-                capture.listen(it, VoiceSession.CONFIRM_LISTEN_MS, { cancelled.get() || answered.get() || stale(my) }) { partial ->
+                // ⚠ `decodeOnlyIfSpeech = true` nhưng **KHÔNG** dùng [endsConversation] ở dưới: im lặng ở cổng
+                // xác nhận đã có sẵn nghĩa đúng (= KHÔNG, xem KDoc `confirm`), còn một tiếng *"ừ"* có tiếng thật
+                // thì vẫn phải tới được [VoiceLexicon.confirmAnswer] — nó là câu ĐỒNG ý hợp lệ duy nhất ở đây.
+                capture.listen(
+                    it, VoiceSession.CONFIRM_LISTEN_MS, { cancelled.get() || answered.get() || stale(my) },
+                    decodeOnlyIfSpeech = true, label = VoiceCapture.LABEL_CONFIRM,
+                ) { partial ->
                     post { if (!stale(my)) overlay?.render(R.string.kachi_voice_confirm_title, partial) }
                 }.text
             }

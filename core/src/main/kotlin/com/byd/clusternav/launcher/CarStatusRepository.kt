@@ -6,7 +6,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -38,8 +37,9 @@ interface CarStatusReader {
  * (mặc định 10s), CHẠY TRÊN [scope] (Stage 3 tiêm scope gắn vòng đời).
  *
  * ── Copy-based + đồng thời an toàn ─────────────────────────────────────────────────────────────────
- * Mỗi nhịp `_status.update { reader.readX(it) }` — [MutableStateFlow.update] cập nhật NGUYÊN TỬ (Context7:
- * "safe for concurrent use"), 2 vòng nhanh/chậm ghi các cụm field khác nhau nên gộp không mất dữ liệu.
+ * Mỗi nhịp đi qua [publish]: đọc MỘT lần dưới một khoá rồi phát. 2 vòng nhanh/chậm ghi các cụm field khác
+ * nhau nên gộp không mất dữ liệu. (KHÔNG dùng `MutableStateFlow.update` — nó gọi lại lambda khi có tranh chấp,
+ * mà lambda ở đây bắn cả một lượt đọc HAL; xem KDoc [publish].)
  *
  * ── Degrade-safe (R9) ──────────────────────────────────────────────────────────────────────────────
  * Đọc lỗi/ném (không nên, adapter đã null-safe) → GIỮ [CarStatus] cũ (`getOrDefault(prev)`), KHÔNG crash vòng.
@@ -59,6 +59,32 @@ class CarStatusRepository(
     private var fastJob: Job? = null
     private var slowJob: Job? = null
 
+    /**
+     * Khoá cho MỌI lượt đọc-rồi-phát. Xem [publish].
+     */
+    private val readLock = Any()
+
+    /**
+     * Đọc MỘT lần rồi phát — thay cho `_status.update { … }`.
+     *
+     * ## ⚠ Vì sao KHÔNG dùng [MutableStateFlow.update] ở đây
+     * `update` là một vòng **compare-and-set**: nó gọi LẠI lambda mỗi khi có người ghi chen vào giữa lúc nó
+     * đang tính giá trị mới. Lambda ở đây **không thuần** — nó bắn cả một lượt đọc HAL (18 datum ở nhịp nhanh,
+     * mỗi datum một binder IPC). Từ bản vá P1-1 thì đường **câu hỏi bằng giọng** gọi [refreshNow] trên luồng
+     * của nó, nên ba chỗ ghi cùng lúc là có thật; và vì một lượt đọc kéo dài gần bằng chính nhịp poll, cửa sổ
+     * chen nhau rộng đúng bằng thứ ta muốn tránh. Mỗi lần chen = **một lượt quét HAL thừa**, tức đúng cái tải
+     * mà H1 vừa cắt.
+     *
+     * Ở đây: một khoá duy nhất ⇒ [read] chạy đúng MỘT lần cho mỗi nhịp. Phép gộp hai vòng nhanh/chậm không đổi
+     * (vòng sau vẫn đọc `value` mới nhất của vòng trước), và `getOrDefault(prev)` vẫn giữ ảnh cũ khi đọc ném.
+     */
+    private fun publish(read: (CarStatus) -> CarStatus): CarStatus = synchronized(readLock) {
+        val prev = _status.value
+        val next = runCatching { read(prev) }.getOrDefault(prev)
+        _status.value = next
+        next
+    }
+
     /** Khởi 2 vòng poll (đọc NGAY 1 lần rồi mới delay → HOME có dữ liệu tức thì). Gọi lại = restart sạch. */
     fun start() {
         stop()
@@ -68,13 +94,13 @@ class CarStatusRepository(
                 // để không làm gì. Vẫn có một lượt hỏi lại mỗi [slowMs] nên khi người dùng kéo ô Tốc độ lên màn,
                 // nhịp nhanh sống lại trong vòng một nhịp chậm — không cần ai đánh thức nó.
                 if (!reader.fastNeeded()) { delay(slowMs); continue }
-                _status.update { runCatching { reader.readFast(it) }.getOrDefault(it) }
+                publish { reader.readFast(it) }
                 delay(fastMs)
             }
         }
         slowJob = scope.launch {
             while (isActive) {
-                _status.update { runCatching { reader.readSlow(it) }.getOrDefault(it) }
+                publish { reader.readSlow(it) }
                 delay(slowMs)
             }
         }
@@ -91,13 +117,10 @@ class CarStatusRepository(
      * 10 s nữa. Chi phí có trần rõ ràng — đúng tập nhu cầu đang ghim (vài datum), không phải cả 123 — vì chính
      * cổng H1 lọc bên trong [reader]. Chỗ gọi phải tự bảo đảm không gọi khi nhu cầu là `null` (= đọc hết).
      *
-     * Dùng `update`+`value` chứ không `updateAndGet`: [MutableStateFlow.update] đã nguyên tử, và `value` đọc
-     * ngay sau đó cho đúng ảnh mới nhất (một nhịp poll chen vào giữa chỉ làm nó **mới hơn**, không cũ đi).
+     * Đi qua [publish] như hai vòng poll: lượt đọc chạy đúng MỘT lần và không bị một nhịp poll chen vào giữa
+     * bắt tính lại (xem KDoc [publish]).
      */
-    fun refreshNow(): CarStatus {
-        _status.update { runCatching { reader.readSlow(reader.readFast(it)) }.getOrDefault(it) }
-        return _status.value
-    }
+    fun refreshNow(): CarStatus = publish { reader.readSlow(reader.readFast(it)) }
 
     /** Dừng poll (huỷ 2 job). Idempotent — gọi nhiều lần an toàn. */
     fun stop() {

@@ -348,7 +348,10 @@ run_t2() {
 
 case "$ONLY" in
   say) note "T1 (say)"; run_t1;;
-  wav) note "T2 (wav)"; [ "$MODEL_OK" = "1" ] && run_t2 || die "mô hình chưa sẵn sàng";;
+  # KHÔNG dùng `a && b || c`: run_t2 hụt (thiếu WAVDIR, push lỗi…) cũng rơi vào nhánh `||` và
+  # `die` báo nhầm nguyên nhân là "mô hình chưa sẵn sàng" — đúng loại chẩn đoán sai địa chỉ mà
+  # CLAUDE.md §2 cấm.
+  wav) note "T2 (wav)"; [ "$MODEL_OK" = "1" ] || die "mô hình chưa sẵn sàng"; run_t2;;
   all) note "T1 (say)"; run_t1; if [ "$MODEL_OK" = "1" ]; then note "T2 (wav)"; run_t2; else echo "⚠ bỏ T2: mô hình chưa sẵn sàng"; fi;;
   *) die "--only phải là say|wav|all";;
 esac

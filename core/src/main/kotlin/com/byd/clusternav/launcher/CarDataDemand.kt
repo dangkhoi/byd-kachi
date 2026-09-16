@@ -122,6 +122,12 @@ object CarDataDemand {
         // Nút BẤM (và gói lệnh) không bày số của xe: trạng thái bật/tắt của ô nút nằm trong RAM của chính nó
         // ([ControlTileState]), không đọc lại từ HAL. Bỏ qua, KHÔNG rơi về đọc-hết.
         if (ControlRegistry.byId(id) != null || ActionMacros.byId(id) != null) return true
+        // S4 · R12 — hành động của CHÍNH launcher (*Ứng dụng* · *Cài đặt* · *Nói với xe*) ĐẶT ĐƯỢC lên thanh nút:
+        // `DockConfig.setEnabled` nhận mọi mã có trong [CapabilityCatalog], và `DockPickerContractTest` khoá đúng
+        // ca đó. Chúng không chạm `CarControlPort` nên cũng không bày một con số nào của xe ⇒ bỏ qua như nút BẤM.
+        // ⚠ Thiếu dòng này thì chỉ cần MỘT ô *Ứng dụng* trên thanh nút là [of] trả `null` ⇒ cổng H1 tắt IM LẶNG
+        // và mọi nhịp poll quay lại đọc cả bảng datum — đúng 77 % tải HAL mà 1.67 vừa cắt.
+        if (LauncherActions.byId(id) != null) return true
         return false
     }
 
@@ -194,6 +200,6 @@ object CarDataDemand {
     val FAST_IDS: Set<String> = setOf(
         "speed", "accel_pct", "brake_pct", "motor_front_rpm", "steering_deg", "slope_deg",
         "gear", "op_mode", "energy_mode", "motor_rear_rpm", "motor_front_torque", "engine_rpm",
-        "wheel_speed", "drift_mode", "motor_power",
+        "wheel_speed", "motor_power",
     )
 }

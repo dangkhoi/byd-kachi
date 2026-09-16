@@ -96,12 +96,115 @@ object SherpaPhraseHotwords {
         // Sổ địa chỉ: *"về Nhà"* · *"đến Công ty"* · *"đi làm"* (bí danh nhiều từ của [VoicePlaces.ALIASES]).
         VoicePlaces.PLACE_VERBS.forEach { v -> places.forEach { out.add("$v $it") } }
         out.addAll(VoicePlaces.spokenPhrases(places))
+        // ═══ H3 · TÊN APP đọc theo âm Việt — *"MỞ GU GỒ MÁP"*, *"BẬT VIỆT MÁP"* ═════════════════════════
+        // [ĐO] `voice-mishear-2026-09-16.md` §3: loại ý định `app` đúng 12,8 % — thấp nhất bảng; §1 cho thấy
+        // đúng tệp hotword có thêm các cụm này (`hotwords-existing+proposed.txt`) kéo tổng 49,2 % → 52,1 % và
+        // riêng loại `app` 12,6 % → 20,6 %. Sinh từ [VoiceSynonyms.APP_TARGETS] qua [SherpaSpokenWords.ACCENTED]
+        // (tên tiếng Anh nằm ở `NO_VI_FORM` ⇒ tự rụng ở [accented], đúng luật *"mô hình VN không phát được"*).
+        //
+        // ⚠ Dòng **tên app đứng một mình** vẫn được sinh ra ở đây rồi bị [SherpaHotwords.dropAppNameLeading]
+        // loại ở tầng lọc — cố ý: tầng này chỉ nói *"cụm nào đáng bias"*, mọi luật LỌC nằm ở một chỗ duy nhất.
+        val appVerbs = forms(VoiceVerb.OPEN) + forms(VoiceVerb.ON)
+        accentedAppNames().filterNot { extendsAnotherApp(it) }.forEach { n ->
+            out.add(n)
+            if (!startsWithVerb(n)) appVerbs.forEach { v -> out.add("$v $n") }
+        }
         // L7 — bố cục: *"BỐ CỤC HAI CỘT"* · *"ĐỔI BỐ CỤC"*. Số viết bằng CHỮ (xem KDoc [VoiceLayouts.SPOKEN]);
         // dòng *"bố cục"* trần là **tiền tố** của năm dòng kia nên [SherpaHotwords.dropPrefixes] tự bỏ nó — đúng
         // luật tiền tố mà cả tệp này dựng lên để giữ.
         out.addAll(VoiceLayouts.SPOKEN)
         return out
     }
+
+    /**
+     * MỌI cách gọi app ở dạng đem đi so với một dòng hotword — nguồn cho [SherpaHotwords.dropAppNameLeading].
+     *
+     * Lấy **cả hai** dạng: bản có dấu (*"gu gồ máp"*) và bản khai gốc (*"youtube music"* — tên tiếng Anh không có
+     * dạng có dấu). Bản gốc không bao giờ trở thành một dòng hotword hôm nay (nó nằm ở [SherpaSpokenWords.NO_VI_FORM]
+     * nên [accented] bỏ), nhưng luật cấm phải tính cả nó: ngày ai đó khai một dạng có dấu cho *"youtube music"*
+     * thì cái bẫy phải đã bị chặn sẵn, không phải chờ đo lại mới phát hiện.
+     *
+     * ## ⚠ Trừ ra cách gọi app **cũng là chữ mở đầu của một cụm ĐỘNG TỪ** ([ĐO] lượt sinh tệp 2026-09-16)
+     * Bí danh của Waze là *"quay"* — đúng chữ mở đầu của cụm động từ `quay lại bài` (= lệnh BÀI TRƯỚC). Luật
+     * cấm-tên-app-đứng-đầu vì thế **xoá mất dòng `QUAY LẠI BÀI`**, và `SherpaBiasingCoverageTest` bắt được ngay
+     * (*"khai dạng có dấu mà không cụm nào mang nó"*). Đó là một luật an toàn ăn mất một lệnh có thật — đúng họ
+     * lỗi mà CLAUDE.md §6 cấm: đường mới không được phá đường cũ đang chạy.
+     *
+     * Phép trừ là **dữ liệu, không phải một tên bị viết cứng**: hỏi thẳng [VoiceGrammar.VERBS] xem dãy từ của
+     * cách gọi ấy có phải **tiền tố** của một cụm động từ nào không. Thêm một bí danh app trùng động từ mai sau
+     * thì nó tự được trừ; thêm một động từ mới trùng một bí danh cũng vậy.
+     */
+    fun appNames(): List<String> = VoiceSynonyms.APP_TARGETS.values.flatten()
+        .flatMap { listOfNotNull(SherpaSpokenWords.ACCENTED[it], it) }
+        .distinct()
+        .filterNot { clashesWithVerb(it) }
+
+    /**
+     * Cách gọi này có phải **tiền tố theo từ** của một cụm động từ đã khai không (*"quay"* ⊂ *"quay lại bài"*).
+     *
+     * So trên dạng **đã bỏ dấu**, vì [VoiceGrammar.VERBS] khai không dấu còn cách gọi app có cả hai dạng — hai
+     * bảng, một phép so, không có bảng chuẩn hoá thứ hai.
+     */
+    private fun clashesWithVerb(appName: String): Boolean {
+        val words = VoiceLexicon.tokenize(appName).map { it.norm }
+        if (words.isEmpty()) return false
+        return VoiceGrammar.VERBS.any { (verbWords, _) ->
+            verbWords.size >= words.size && verbWords.take(words.size) == words
+        }
+    }
+
+    /** Cách gọi app **có dạng đọc tiếng Việt** — phần đáng bias (xem KDoc [appNames] về phần còn lại). */
+    private fun accentedAppNames(): List<String> =
+        accented(VoiceSynonyms.APP_TARGETS.values.flatten()).distinct()
+
+    /**
+     * Cách gọi này có **nối dài** cách gọi của một app KHÁC không (*"youtube nhạc"* nối dài *"youtube"*)?
+     *
+     * ## Bẫy [ĐO] — máy ảo 2026-09-16, ca `w10` *"đưa YouTube vào ô số hai"*
+     * Lượt sinh tệp đầu tiên có khối tên app này làm `w10` tụt xuống **"đưa youtube"**, mất sạch mệnh đề ô — đúng
+     * ca mà `docs/diagnostics/emulator-voice-e2e-2026-09-15.md` §8.4 đã mô tả, chỉ khác hình dạng. Thủ phạm là ba
+     * dòng `MỞ/ĐƯA/BẬT YOUTUBE NHẠC` (sinh từ bí danh `youtube nhac` của **YT Music**): nghe xong `ĐƯA YOUTUBE`
+     * thì đồ thị ngữ cảnh đang đứng **GIỮA** một hotword, nên nó cộng điểm cho `NHẠC` và trừ mọi đường khác — kể
+     * cả `VÀO Ô SỐ HAI`. Người lái mất mệnh đề ô mà không có gì báo.
+     *
+     * ## Vì sao luật là *"app KHÁC"*, không phải *"mọi tiền tố"*
+     * Nếu cấm mọi tiền tố thì `gu gồ máp` (nối dài `gu gồ`) cũng rụng — và đó chính là cụm mà H3 sinh ra để thêm.
+     * Khác biệt THẬT nằm ở chỗ đồ thị dừng giữa chừng **dẫn tới đâu**: dừng ở `gu gồ` vẫn ra **Google Maps** (cùng
+     * một đích, vô hại), còn dừng ở `youtube` rồi bị kéo sang `nhạc` là đổi sang **một app khác** — hoặc, như
+     * `w10`, nuốt mất phần đuôi của câu. Nên phép so là *"hai bí danh này của cùng một `key` hay không"*, và nó
+     * đọc thẳng [VoiceSynonyms.APP_TARGETS] chứ không có danh sách ngoại lệ nào viết tay.
+     *
+     * ⚠ Chỉ chặn **bias**, không chặn hiểu: bí danh vẫn nằm nguyên trong [VoiceSynonyms.APP_TARGETS] nên câu
+     * *"mở du túp miu dích"* vẫn ra đúng YT Music ở tầng CHỮ ([ĐO] ca `t77` xanh) — nó chỉ không được cộng điểm
+     * ở tầng âm.
+     */
+    /**
+     * Cách gọi app **cố ý KHÔNG bias** — dạng công khai của [extendsAnotherApp], cho bài canh đọc.
+     *
+     * Có mặt để phép loại trừ là một **danh sách đọc được**, không phải một chỗ hụt im lặng: bài canh
+     * `SherpaBiasingCoverageTest` đòi mọi dạng có dấu phải nằm trong một cụm của tệp hotword, và nó phải phân
+     * biệt được *"hụt vì quên"* với *"vắng vì đã quyết"*. Thêm một bí danh nối dài app khác mai sau thì nó tự
+     * xuất hiện ở đây và bài canh tự biết.
+     */
+    fun notBiasedAppNames(): List<String> = accentedAppNames().filter { extendsAnotherApp(it) }
+
+    private fun extendsAnotherApp(accentedName: String): Boolean {
+        val key = ownerOf(accentedName) ?: return false
+        val words = VoiceLexicon.tokenize(accentedName).map { it.norm }
+        if (words.size < 2) return false
+        return VoiceSynonyms.APP_TARGETS.any { (otherKey, aliases) ->
+            otherKey != key && aliases.any { a ->
+                val w = VoiceLexicon.tokenize(a).map { it.norm }
+                w.isNotEmpty() && w.size < words.size && words.take(w.size) == w
+            }
+        }
+    }
+
+    /** Mã app sở hữu một cách gọi **có dấu** — tra ngược qua chính bảng bí danh, không có bảng thứ hai. */
+    private fun ownerOf(accentedName: String): String? =
+        VoiceSynonyms.APP_TARGETS.entries.firstOrNull { (_, aliases) ->
+            aliases.any { SherpaSpokenWords.ACCENTED[it] == accentedName }
+        }?.key
 
     /** Nhãn + nhãn ngắn + cách nói đời thường **có dấu** ([SherpaSpokenWords.ACCENTED]) của một nút/datum. */
     private fun nounsOf(label: String, short: String?, synonyms: List<String>?): List<String> =

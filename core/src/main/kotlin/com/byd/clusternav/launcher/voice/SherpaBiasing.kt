@@ -29,7 +29,7 @@ object SherpaBiasing {
      *   chữ số/ký tự lạ vẫn bị [SherpaHotwords.normalize] loại, nên không cần lọc thêm ở đây.
      */
     fun hotwordsFile(places: List<String> = emptyList()): String =
-        SherpaHotwords.phraseFile(SherpaPhraseHotwords.phrases(places))
+        SherpaHotwords.phraseFile(SherpaPhraseHotwords.phrases(places), SherpaPhraseHotwords.appNames())
 
     /*
      * ## Lịch sử — vì sao không còn `accentedControlPhrases()` (nhãn + động từ + danh từ RỜI)

@@ -199,20 +199,23 @@ class TopStripTest {
      */
     @Test
     fun `man chon bay du moi muc dat duoc va moi ma dung mot o`() {
-        val cfg = TopStripConfig.DEFAULT.setEnabled("tyre_p_fl", true)
+        // ⚠ (V) 2026-09-17: mã mẫu đổi `tyre_p_fl` → `batt_temp` — tám ô lốp lẻ nay ẩn khỏi bộ chọn, và khối
+        //    "đang bật" CỐ Ý vẫn bày mã ẩn (để còn gỡ được), nên dùng mã ẩn ở đây là so hai tập khác nhau.
+        val cfg = TopStripConfig.DEFAULT.setEnabled("batt_temp", true)
         val ids = TopStripConfig.picks(cfg).flatMap { it.picks }.map { it.id }
         assertEquals(ids.distinct(), ids, "một mã hai ô ⇒ bảng tra `tiles[id]` bị ghi đè (đúng lỗi RW0)")
         assertEquals(
             TopStripConfig.choices().map { it.id }.toSet(), ids.toSet(),
             "màn chọn phải bày ĐỦ mọi mã đặt được — không còn hộp thoại 'Thêm chip khác…' để giấu phần thiếu",
         )
-        assertTrue(ids.size > 100, "…và đó là cả trăm mục đọc, không phải 7 ô như trước R11: ${ids.size}")
+        // Sàn 100 → 88 sau (V) FEATURE-FILTER 2026-09-17 (12 datum xoá + 8 ô lốp ẩn ⇒ [ĐO] 94 ô).
+        assertTrue(ids.size > 88, "…và đó là gần trăm mục đọc, không phải 7 ô như trước R11: ${ids.size}")
     }
 
     /** Khối *"đang bật"* đứng ĐẦU và giữ đúng thứ tự chip trên thanh — nó là ảnh của thanh trên, không phải một tập. */
     @Test
     fun `khoi dang bat dung dau va theo dung thu tu chip tren thanh`() {
-        val cfg = TopStripConfig(listOf(TopStripConfig.ENERGY, "tyre_p_fl", TopStripConfig.PM25))
+        val cfg = TopStripConfig(listOf(TopStripConfig.ENERGY, "batt_temp", TopStripConfig.PM25))
         val first = TopStripConfig.picks(cfg).first()
         assertTrue(first.on, "khối đầu phải là khối 'đang bật'")
         assertTrue(first.open, "khối 'đang bật' không bao giờ gấp — nó là thứ trả lời 'thanh trên đang có gì'")

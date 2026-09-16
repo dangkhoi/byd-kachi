@@ -98,6 +98,24 @@ các widget chạy trên nền xám nhìn hơi chán quá</i>”</p>
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 5 — 2026-09-17 · OWNER NHÌN 1.68 TRÊN XE: GỠ MÉP SÁNG + NÉT ĐỈNH (1.69 · 70)</b>:
+owner, nguyên văn: <em>"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top đấy nhé,
+bug rồi"</em>. Hai lớp Pass 4 thêm vào đã bị <b>gỡ hẳn</b> khỏi <code>KachiTheme.surface()</code>:
+<b>(a)</b> nét đỉnh ĐẶC 1–2dp (<code>crisp</code>) — một hình chữ nhật tô đặc ghim ở đỉnh, ở mọi cỡ thẻ nó đọc ra
+đúng một <b>VẠCH</b>, đó chính là "cái gạch trên top"; <b>(b)</b> dải mép sáng mờ dần (<code>edge</code>, trắng
+35 %) — trên ô nhỏ (tile thanh nút, chip, ô bộ chọn 40–56dp) dải cao 12dp chiếm ~¼ chiều cao ô ⇒ đọc ra
+"bóng ở đầu nút". <b>Quyết định thiết kế</b> (HMI tối cao cấp): chọn <b>bỏ hẳn</b> thay vì hạ xuống ≤ 8 % — một
+vạch 1dp ở bất kỳ alpha nào vẫn là một vạch, cái sai là <b>hình dạng</b> chứ không phải cường độ. Chiều nổi nay do
+<b>chính chuyển sắc dọc</b> gánh (<span class="ev do">[ĐO]</span> đỉnh ÷ đáy <b>1.29×</b> ở bảng TỐI) cộng ba bậc
+nền→khay→thẻ và hairline; gradient + <b>sắc lĩnh vực</b> ở thẻ lớn <b>giữ nguyên</b>. Hai vai màu
+<code>surfEdge</code>/<code>surfOnEdge</code> <b>xoá khỏi</b> <code>KachiPalette</code> (CLAUDE.md §8: vai không ai
+dùng là vai chết) ⇒ <code>surface()</code> còn <b>1–2 lớp</b> thay vì 3–4. <b>Ba bài canh đảo chiều</b>, có ghi lý
+do tại chỗ: <code>SurfaceContrastContractTest</code> bỏ <i>"mép sáng ≥ 2.2×"</i> → <b>không được còn lớp ghim vào
+đỉnh</b> (quét thân hàm: cấm <code>Gravity.TOP</code>/<code>setLayerHeight</code>/<code>setLayerGravity</code>) +
+<b>chuyển sắc ≥ 1.20×</b> + <b>đỉnh không bao giờ tối hơn đáy</b>; <code>SurfaceMaterialContractTest</code> đổi ba
+khẳng định <i>"phải có"</i> thành <i>"không được có"</i>. Bảng <code>contrast-table.md</code> đổi dòng
+<code>surfEdge trên surfFrom</code> → <code>surfFrom ÷ surfTo</code>. Chụp lại <b>10 ảnh</b>
+<code>after/</code>. Test: core <b>2134</b>/0 · app <b>1095</b>/0.</li>
 <li><b>Pass 4 — 2026-09-16 · SOÁT + LƯỢT THIẾT KẾ ĐẬM TAY (vẫn 1.68 · 69 — chưa đăng APK nào)</b>:
 <span class="ev do">[ĐO]</span> P1 <b>không chạm</b> bề mặt lớn nhất màn hình — điểm ảnh giữa ô làm việc TRƯỚC và
 SAU P1 giống nhau <b>từng byte</b> (<code>(23,26,32)</code>), vì bảng rà 26 chỗ gọi đi từ chuỗi
@@ -337,7 +355,10 @@ Ràng buộc kỹ thuật duy nhất: hình vẫn phải đọc được trên c
 
 <h4>R2 — Dựng lại TOÀN BỘ bộ icon theo phong cách “luxury”, vẫn tint được</h4>
 <p>Phạm vi: <b>148 tệp</b> <code>ic_*.xml</code> sau ADAS-PURGE (§2.4), phủ <b>106 datum + 54 nút + 9 widget +
-9 nhóm</b> = <b>178 mục</b> có hình.</p>
+9 nhóm</b> = <b>178 mục</b> có hình.
+<br>⚠ <b>Cập nhật 2026-09-17 sau (V) FEATURE-FILTER</b> (con số trên giữ nguyên làm phạm vi đã chốt lúc viết):
+phạm vi thật hôm nay là <b>140 tệp</b> <code>ic_*.xml</code> trong <code>res/drawable/</code> (đếm bằng máy;
+4 icon mồ côi đã xoá cùng lượt), phủ <b>100 datum + 47 nút + 10 widget + 9 nhóm</b> = <b>166 mục</b> có hình.</p>
 <p><b>Phong cách mới — tự do sáng tạo, đứng vai người lái</b> (owner 2026-09-16: <i>“cho gradient hay làm sao cho đẹp
 được thì làm, không cần rule cấm gì đâu, thoả mái sáng tạo, đứng vai user mà design”</i>): icon được dùng <b>gradient</b>,
 <b>màu riêng</b> (họ màu theo lĩnh vực: khí hậu xanh-lam, năng lượng xanh-lục/hổ phách, đèn vàng ấm, thân xe bạc…),
@@ -1402,6 +1423,66 @@ phép tính, rồi một bản được sửa còn bản kia thì không) ⇒ t�
 <code>core/src/testFixtures/kotlin/com/byd/clusternav/testsupport/Wcag.kt</code>. <code>ThemePaletteContractTest</code>
 giảm 485 → <b>444</b> dòng, <code>SurfaceContrastContractTest</code> đứng riêng — cả hai dưới trần 500 của CLAUDE.md §4.1.</p>
 
+<h3 style="margin-top:2rem">Pass 5 — 2026-09-17 · owner nhìn 1.68 TRÊN XE (1.69 · 70)</h3>
+
+<h4>14 · "1 cái gạch trên top" — Pass 4 tự khoá một điều SAI vào bài canh</h4>
+<p>Owner, sau khi chạy 1.68 trên xe: <em>"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch
+trên top đấy nhé, bug rồi"</em>. Đây không phải một lỗi vẽ — nó là <b>đúng thứ Pass 4 cố ý làm mạnh lên</b>, và
+tệ hơn: Pass 4 còn <b>ghim nó vào ba bài canh</b> (<code>mép sáng ≥ 2.2×</code>, và hai khẳng định
+<code>Gravity.TOP</code>/<code>setLayerHeight</code> phải CÓ trong <code>surface()</code>). Tức nếu chỉ gỡ mã, bộ
+test sẽ đỏ và người sửa sau sẽ "sửa cho xanh" bằng cách trả cái vạch lại. Vì thế Pass 5 <b>đảo chiều bài canh
+trước</b>, rồi mới gỡ mã — và ghi lý do tại chỗ ở cả ba bài.</p>
+<p><b>Cơ chế</b> (đọc nguồn, không đoán): Pass 4 chồng hai lớp ánh sáng lên đỉnh thẻ —
+(1) <code>edge</code>: <code>GradientDrawable</code> dọc từ <code>surfEdge</code> (trắng <b>35 %</b> ở bảng TỐI)
+xuống trong suốt, cao <code>RADIUS_M</code> = 12dp; (2) <code>crisp</code>: một hình chữ nhật <b>tô ĐẶC</b> cùng
+màu, cao 1dp (ô nhỏ) hoặc 2dp (thẻ ≥ <code>RADIUS_XL</code>), đặt ĐÈ lên đầu lớp (1) nên hai alpha cộng lại.
+Kết quả đo được của Pass 4: đỉnh sáng gấp <b>3.06×</b> mặt thẻ. Trên một thẻ lớn điều đó đọc ra "mặt vát"; trên
+một tile 40dp thì dải 12dp chiếm <b>¼ chiều cao ô</b> và nét đặc 1dp nằm sát bo góc — mắt đọc ra <b>viền hở</b>,
+không đọc ra ánh sáng. Owner nhìn thấy cả hai và gọi đúng tên cả hai ("bóng ở đầu mỗi nút" = lớp 1,
+"1 cái gạch trên top" = lớp 2).</p>
+
+<h4>15 · Vì sao BỎ HẲN chứ không hạ xuống ≤ 8 %</h4>
+<p>Có hai đường chữa: (a) giữ lớp sáng, hạ alpha; (b) bỏ lớp sáng, để chuyển sắc gánh chiều nổi. Chọn <b>(b)</b>,
+và lý do là <b>hình dạng</b> chứ không phải cường độ: một hình chữ nhật cao 1–2dp ghim ở cạnh trên là một
+<b>đường</b> theo định nghĩa — hạ alpha chỉ làm nó thành một đường mờ hơn, không làm nó thôi là một đường. Specular
+thật chỉ đọc đúng khi bề mặt có cạnh vát thật; ở đây không có. HMI tối cao cấp (MBUX · iDrive · Polestar) dựng
+chiều nổi bằng <b>chuyển sắc mượt + hairline + bậc nền</b>, không bằng vạch specular — và cả ba thứ đó Kachi đã
+có sẵn từ Pass 4: <span class="ev do">[ĐO]</span> chuyển sắc thẻ đỉnh ÷ đáy <b>1.29×</b>, ba bậc
+nền→khay→thẻ <b>1.14× · 1.19×</b>, hairline <code>surfLine</code>. Gradient và <b>sắc lĩnh vực</b> ở thẻ lớn
+<b>không đụng tới</b> — đó là phần owner chưa từng chê, và CLAUDE.md §6 cấm đảo đường đang chạy tốt.</p>
+<p>Hệ quả phải ghi ra: hai vai <code>surfEdge</code>/<code>surfOnEdge</code> mất chủ ⇒ <b>xoá khỏi bảng màu</b>
+(để lại là dead code, CLAUDE.md §8), và <code>surface()</code> còn <b>1–2 lớp</b> (base + tint tuỳ chọn) thay vì
+3–4 — <b>rẻ hơn</b> cho GPU TRINKET, không đắt hơn.</p>
+
+<h4>16 · Ba bài canh ĐẢO CHIỀU — và vì sao phải đảo chứ không xoá</h4>
+<table><thead><tr><th>Bài</th><th>Pass 4 đòi</th><th>Pass 5 đòi</th></tr></thead><tbody>
+<tr><td><code>SurfaceContrastContractTest</code></td><td>mép sáng ≥ <b>2.20×</b> mặt thẻ (bảng TỐI)</td>
+<td><b>không còn</b> lớp ghim vào đỉnh: quét thân <code>surface()</code> cấm
+<code>Gravity.TOP</code>/<code>setLayerHeight(</code>/<code>setLayerGravity(</code>/<code>setLayerInset(</code>,
+và bảng màu không được có lại <code>surfEdge</code>/<code>surfOnEdge</code></td></tr>
+<tr><td>— (mới)</td><td>—</td><td>chuyển sắc thẻ <b>≥ 1.20×</b> ở bảng TỐI (sau Pass 5 nó là toàn bộ chiều nổi)</td></tr>
+<tr><td><code>mep sang khong bao gio toi hon dinh gradient</code></td><td>mép sáng không được tối hơn nền</td>
+<td>đổi tên → <code>dinh chuyen sac khong bao gio toi hon day</code>: tính chất "nguồn sáng ở TRÊN" chuyển xuống
+chính cặp <code>surfFrom</code>/<code>surfTo</code>. ⚠ Cặp BẬT <b>không</b> nằm trong bài —
+<span class="ev do">[ĐO]</span> bảng SÁNG có <code>surfOnFrom</code> ĐẬM hơn <code>surfOnTo</code> (alpha 30 %→20 %
+của một xanh tối hơn nền trắng); đó là <b>mật độ sắc nhấn</b>, không phải ánh sáng</td></tr>
+<tr><td><code>SurfaceMaterialContractTest</code></td><td><code>Gravity.TOP</code> · <code>setLayerHeight(</code> ·
+nét đỉnh <code>hair * 2</code> phải CÓ; <b>2</b> lớp <code>TOP_BOTTOM</code></td>
+<td>cả ba thành <b>điều cấm</b>; đúng <b>1</b> lớp <code>TOP_BOTTOM</code> và <b>0</b> lớp <code>TL_BR</code>
+(chéo vẫn là nhận diện riêng của "cái đang được chọn")</td></tr>
+</tbody></table>
+<p>Ghi ra thay vì xoá lặng: một bài canh đảo chiều là một <b>quyết định thiết kế đổi</b>, và lần sau phải đọc được
+vì sao — nếu không, người kế tiếp sẽ thấy "bài này từng đòi ngược lại" và tưởng có ai đó nới luật cho xanh.</p>
+
+<h4>17 · Ảnh <code>after/</code> chụp lại lần thứ hai (10 tệp)</h4>
+<p>Cùng ma trận, cùng AVD <code>emulator-5554</code> (API 29, 1920×1080), cùng hồ sơ <em>Mặc định</em>, cùng đường
+đi dữ-liệu-trước-UI của README §6. Khác biệt duy nhất so với bộ Pass 4: nội dung ô làm việc đặt lại đúng cặp cũ
+(ô0 = nhóm <em>Kính</em>, ô1 = nhóm <em>Khí hậu</em>) và <code>top_strip_labels=false</code> để khung hình so được.
+⚠ Nhóm <em>Khí hậu</em> nay bày <b>13 ô</b> (H1·T2 thêm 6 datum ở cùng gói 1.69) và nhóm <em>Năng lượng</em> còn
+<b>6 ô</b> (lượt (V) gỡ 5 ô sạc) — hai khác biệt đó là của <b>lượt khác</b>, không phải của Pass 5.
+<b>Nhìn cái gì</b>: đỉnh mỗi tile/chip/ô bộ chọn <b>không còn một vạch sáng</b>; thẻ vẫn tách được khỏi khay và
+khay vẫn tách được khỏi nền; ô <em>Khí hậu</em> đang BẬT vẫn nhìn ra ngay cạnh tám ô NEUTRAL.</p>
+
 <h3 style="margin-top:2rem">Soát Pass 4 — 2026-09-16 (cùng 1.68 · 69)</h3>
 
 <h4>10 · Bug — lượt rà theo TÊN HÀM bỏ sót bề mặt lớn nhất màn hình</h4>
@@ -1487,6 +1568,18 @@ một chỗ, và bài canh <code>nen khay the la ba bac nhin ra duoc</code> sẽ
 <h2>10. Reviewer Log</h2>
 <p class="muted">Append-only. Mỗi pass thêm một mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG overwrite lịch sử.
 Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<h3>Pass 5 — 2026-09-17 (final senior review 1.69)</h3>
+<p><b>Phạm vi</b>: lượt VISUAL Pass 5 (gỡ lớp <code>edge</code>/<code>crisp</code> khỏi <code>KachiTheme.surface()</code>, gỡ vai
+<code>surfEdge</code>/<code>surfOnEdge</code>, đảo chiều ba bài canh, 10 ảnh chụp lại) trong lô 1.69 chưa commit.
+Verdict <b>APPROVED</b> — <b>0 phát hiện [P0]/[P1]</b>.</p>
+<ul>
+<li><b>Giả thuyết [P1] đưa vào lượt soát đã BỊ BÁC bằng số đo</b>, ghi lại để lượt sau không dựng lại nó: nghi <i>"lớp mép sáng vừa gỡ là thứ DUY NHẤT phân biệt ô ĐANG BẬT ở bảng SÁNG"</i>. <span class="ev do">[ĐO]</span> bước sáng BẬT↔thường ở bảng SÁNG = <b>1.75×</b> (<code>contrast-table.md:59</code>; tính lại bằng tay ra 1.73×), do <b>nền accent trong suốt</b> (<code>KachiTheme.kt:246-247</code>) và <b>viền accent</b> (<code>:253</code>) gánh — hai cơ chế độc lập, cả hai có từ trước Pass 5. Chính lớp <code>edge</code> mới là thứ ~1.00:1 ở bảng sáng, tức nó chưa bao giờ là chiều phân biệt ở đó. Ghim cho cả hai bảng tại <code>SurfaceContrastContractTest.kt:54-66</code>.</li>
+<li><b>Bài canh thật sự ĐẢO CHIỀU, không bị làm rỗng.</b> Ba khẳng định <i>"phải CÓ"</i> của Pass 4 thành <i>"không được có"</i> (<code>Gravity.TOP</code> · <code>setLayerHeight(</code> · <code>setLayerGravity(</code> · <code>setLayerInset(</code> · <code>hair * 2</code>), và vai đã gỡ được canh bằng <b>reflection trên <code>declaredFields</code></b> — mọc lại là đỏ ngay cả khi chưa ai vẽ nó. Bất biến thay thế (<code>surfFrom ÷ surfTo ≥ 1.20</code>, đo được <b>1.29×</b> ở bảng TỐI) là một khẳng định thật, không phải hằng đúng.</li>
+<li><b>[P3 · đã vá] Miễn trừ của bảng SÁNG viết bằng MÃ MÀU.</b> <code>p.surfFrom.equals("#ffffff")</code> — lý do miễn là <i>"đỉnh đã sáng hết cỡ nên không nâng thêm được"</i>, mà một mã màu không nói ra được lý do ấy: đổi đỉnh thành <code>#fefefe</code> là miễn trừ <b>bốc hơi im lặng</b> và bảng đỏ ở một dòng không ai hiểu vì sao. Nay đo bằng độ sáng (<code>luminance(top) &gt;= 0.95</code>).</li>
+<li><b>Không có tham chiếu treo</b>: 4 drawable đã xoá (<code>ic_battery_charging</code> · <code>ic_plug</code> · <code>ic_drift</code> · <code>ic_car_top_window_rain</code>) không còn chỗ gọi nào trong <code>.kt</code>/<code>res</code>/chuỗi; vai <code>surfEdge</code>/<code>surfOnEdge</code> chỉ còn trong văn xuôi + bài canh. <code>surface()</code> nay trả <code>GradientDrawable</code> trần khi <code>domain == null</code> — <b>0</b> chỗ gọi nào ép kiểu <code>LayerDrawable</code> (đã quét 22 chỗ gọi).</li>
+<li><b>Nợ mang sang backlog, KHÔNG vá trong pass này</b> (ngoài phạm vi VISUAL, và vá ở đây là sửa mù): vai <code>scrimBtn</code> chết từ trước · 4 drawable mồ côi + 6 mục <code>colors.xml</code>/<code>integers.xml</code> mồ côi, tất cả đã mồ côi từ <code>HEAD</code> · ba tệp vốn đã quá 500 dòng bị lô này bồi thêm (<code>SimpleCastCoordinator</code> 764→784 · <code>BydHal</code> 634→654 · <code>FloatingBubbleService</code> 513→537).</li>
+</ul>
+
 <h3>Pass 4 — 2026-09-16 (senior review + lượt thiết kế)</h3>
 <p><b>Phạm vi</b>: toàn bộ lượt P1 chưa commit (<code>app/</code> · <code>core/</code> · spec ·
 <code>docs/diagnostics/visual-refresh-2026-09-16/</code>) so với <code>f63c349</code>. Reviewer được phép vá; KHÔNG

@@ -72,8 +72,20 @@ object VoiceGeocoder {
      */
     private const val MIN_GAP_MS = 1_000L
 
-    /** Mốc của lượt hỏi máy chủ gần nhất (mọi lượt đều ở luồng nền; chỉ cần thấy giá trị mới nhất). */
-    @Volatile private var lastOnlineAt = 0L
+    /**
+     * Mốc **sớm nhất** mà lượt hỏi TIẾP THEO được phép bắn (ms đồng hồ tường).
+     *
+     * ## [SOÁT 2026-09-16 · P3] Vì sao `AtomicLong` chứ không `@Volatile var`
+     * Bản trước giữ *mốc lượt gần nhất* trong một `@Volatile Long` rồi làm **đọc → ngủ → ghi**. `@Volatile` cho
+     * **thấy giá trị mới nhất**, KHÔNG cho **nguyên tử**: hai luồng nền (một vế dẫn đường + một lượt hỏi lại của
+     * cùng câu, hoặc hai lượt gõ liên tiếp ở ô *"Gõ lệnh chữ"*) cùng đọc được `wait <= 0` rồi cùng bắn **trong
+     * một giây** — đúng cái mà khoảng cách [MIN_GAP_MS] sinh ra để chặn, và Nominatim trả lời người vi phạm lặp
+     * lại bằng **403 cho cả IP**, tức hỏng cho **mọi lượt sau**, không chỉ lượt vi phạm.
+     *
+     * Nay mỗi lượt **giành một chỗ** bằng CAS: người thắng biết mốc của mình và tự đẩy mốc cho người kế tiếp lên
+     * thêm [MIN_GAP_MS]. Hai lượt đồng thời ⇒ hai chỗ cách nhau đúng một giây, không phải hai lượt cùng lúc.
+     */
+    private val nextOnlineAt = java.util.concurrent.atomic.AtomicLong(0L)
 
     /**
      * Giải [place] thành toạ độ. **CHẶN** (đụng mạng) ⇒ gọi trên luồng NỀN.
@@ -123,9 +135,23 @@ object VoiceGeocoder {
      * cùng lắm chậm hơn một nhịp, và nhịp ấy đã có câu *"đang tra điểm đến…"* che.
      */
     private fun throttle() {
-        val wait = MIN_GAP_MS - (System.currentTimeMillis() - lastOnlineAt)
-        if (wait in 1..MIN_GAP_MS) runCatching { Thread.sleep(wait) }
-        lastOnlineAt = System.currentTimeMillis()
+        val wait = claimSlot(System.currentTimeMillis()) - System.currentTimeMillis()
+        if (wait > 0) runCatching { Thread.sleep(wait) }
+    }
+
+    /**
+     * Giành **một chỗ** trong hàng ≤ 1 yêu cầu/giây; trả mốc (ms) mà lượt gọi này được phép bắn.
+     *
+     * `internal` + nhận [nowMs] làm tham số để bài kiểm off-car ép được ca hai luồng vào cùng một lúc mà không
+     * phải dựa vào đồng hồ tường. Vòng `while` là dạng CAS chuẩn: thua thì đọc lại mốc **mới** rồi thử lại, nên
+     * không lượt nào giành trùng chỗ của lượt khác.
+     */
+    internal fun claimSlot(nowMs: Long): Long {
+        while (true) {
+            val at = nextOnlineAt.get()
+            val slot = maxOf(nowMs, at)
+            if (nextOnlineAt.compareAndSet(at, slot + MIN_GAP_MS)) return slot
+        }
     }
 
     /**

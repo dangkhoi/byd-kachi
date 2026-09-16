@@ -22,6 +22,14 @@ class FakeHalGateway(
     private val featureNames: Map<String, Int> = emptyMap(),
     /** V3 · R11(b) — bảng giả *"feature-id → FQN device chứa nó"* (`BYDAutoDeviceFeaturesMap` của xe giả). */
     private val featureDevices: Map<Int, String> = emptyMap(),
+    /**
+     * H1 · T2 — giá trị đường [BindingRoute.Local] (Android, KHÔNG qua HAL BYDAuto), khoá theo **tên method**
+     * (`"getStreamVolume"`), cùng khuôn [getters].
+     *
+     * Thêm 2026-09-16 cùng datum `media_vol`: trước đó mọi gateway giả trả `null` cho `localGet`, nên một datum đi
+     * đường Local sẽ *"không bao giờ chảy giá trị"* trong bài FULL WIRE — một ô trống mà không bài nào giải thích.
+     */
+    private val locals: Map<String, String?> = emptyMap(),
 ) : HalGateway {
 
     override fun featureIdByName(constName: String): Int? = featureNames[constName]
@@ -64,7 +72,10 @@ class FakeHalGateway(
 
     override fun settingGet(key: String): String? = settings[key]
     override fun settingSet(key: String, value: Int): Long? = null
-    override fun localGet(target: String, method: String, arg: Int?): String? = null
+    override fun localGet(target: String, method: String, arg: Int?): String? {
+        getterArgs[method] = arg
+        return locals[method]
+    }
 
     override fun localSet(target: String, method: String, args: IntArray): Boolean {
         localCalls.add(LocalCall(target, method, args.toList()))

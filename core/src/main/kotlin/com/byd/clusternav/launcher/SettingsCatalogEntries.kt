@@ -259,6 +259,20 @@ internal object SettingsCatalogEntries {
             "voice_mic_source", SettingsGroup.SYSTEM, "Nguồn micro",
             "voice_mic_source", "Microphone source",
         ),
+        // ── H2/H6 (1.69) — nhật ký lượt nói + đổi mô hình nghe ──
+        // R-H2 — ô tích GIỮ NHẬT KÝ, mặc định BẬT (owner cần dữ liệu thật trên đường; off-car chỉ có 25 tệp TTS
+        // macOS, mà CLAUDE.md §2 đã ghi số đo trên tập ấy không nói gì về cabin thật). Tiếng nằm trong `filesDir`,
+        // không ra mạng, vòng đệm 30 mục / 30 MB — ba tính chất đo được từ mã, xem `VoiceUtteranceLog`.
+        SettingsEntry(
+            "voice_keep_log", SettingsGroup.SYSTEM, "Giữ nhật ký lượt nói",
+            "voice_keep_log", "Keep a log of what you say",
+        ),
+        // Không lưu khoá: đây là NÚT nén `voice-log/` ra `Download/` (cùng lối `voice_tts_pack`). Người dùng cắm
+        // USB chép hoặc gửi Zalo — đường DUY NHẤT tiếng rời khỏi xe, và nó luôn do một cú bấm của họ.
+        SettingsEntry("voice_log_export", SettingsGroup.SYSTEM, "Xuất nhật ký voice", labelEn = "Export the voice log"),
+        // Không lưu khoá: hai NÚT của H6 (chuyển sang mô hình nhẹ · gỡ bản nặng). Lựa chọn mô hình lưu ở tệp prefs
+        // RIÊNG của `VoiceModelStore` (`kachi_voice`), không phải `clusternav_prefs` — nên ở đây chỉ có mục UI.
+        SettingsEntry("voice_model_light", SettingsGroup.SYSTEM, "Mô hình nghe nhẹ (int8)", labelEn = "Light recognition model"),
         // ── Màn hình chính (S5) ──
         // btn_set_home · ClusterNavBridge.setDefaultHome — VIỆC LÀM (không lưu khoá): ROM BYD KHÔNG hiện hộp chọn
         // HOME khi bấm nút Home, nên đây là đường đặt được duy nhất. Nút gọi `cmd package set-home-activity` qua

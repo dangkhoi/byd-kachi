@@ -43,17 +43,35 @@ GUIDE_DOM=43F01010; GUIDE_OVR=1F701010     # mũi tên (CAN turn-id) domestic / 
 DIST_DOM=43F01018;  DIST_OVR=1F701018      # cự ly domestic / oversea
 
 NAVCP="CLASSPATH=/data/local/tmp/navopen.jar app_process /system/bin com.byd.navopen.NavOpen"
-nav(){ timeout 20 "$ADB" -s "$S" shell "$NAVCP $*" >/dev/null 2>&1; }
-sh_(){ timeout 20 "$ADB" -s "$S" shell "$*" >/dev/null 2>&1; }
-shot(){ sh_ "fission_screencap -d 0 -p /data/local/tmp/p.png"; timeout 20 "$ADB" -s "$S" pull /data/local/tmp/p.png "$OUT/$1" >/dev/null 2>&1; }
+# macOS KHONG co `timeout` (xem hud3-speedlimit.sh:10 + hud1-nav-hud.sh): dung watchdog tu dung,
+# giong `cap()` cua cac script anh em. Truoc day moi lenh navopen tra 127 am tham => ca luot quet
+# khong ghi gi ma van hoi nguoi dung mo ta anh cum.
+CAP="${CAP:-20}"
+cap(){ "$ADB" -s "$S" "$@" >/dev/null 2>&1 & local p=$!; ( sleep "$CAP"; kill -9 "$p" 2>/dev/null ) & local w=$!; wait "$p" 2>/dev/null; local rc=$?; kill -9 "$w" 2>/dev/null; return $rc; }
+nav(){ cap shell "$NAVCP $*"; }
+sh_(){ cap shell "$*"; }
+shot(){ sh_ "fission_screencap -d 0 -p /data/local/tmp/p.png"; cap pull /data/local/tmp/p.png "$OUT/$1"; }
+read_val(){ "$ADB" -s "$S" shell "$NAVCP getraw $1 $2" 2>/dev/null | sed -n 's/.*= *\(-\{0,1\}[0-9][0-9]*\).*/\1/p' | tail -1; }
 
 # Push navopen nếu có jar local; else giả định đã ở /data/local/tmp/navopen.jar (theo RE để lại trên xe).
 if [ -z "$JAR_LOCAL" ]; then for c in apks/navopen-v4.jar apks/navopen-v3.jar "$(dirname "$0")/../../apks/navopen-v4.jar"; do [ -f "$c" ] && { JAR_LOCAL="$c"; break; }; done; fi
 if [ -n "$JAR_LOCAL" ] && [ -f "$JAR_LOCAL" ]; then "$ADB" -s "$S" push "$JAR_LOCAL" /data/local/tmp/navopen.jar >/dev/null 2>&1 && echo "pushed navopen ($JAR_LOCAL)"; else echo "note: giả định navopen.jar đã ở /data/local/tmp/ trên xe"; fi
 echo "device=$S  section=$SECTION  out=$OUT  (Ctrl-C để dừng; reboot xe để xoá sạch)"
 
-activate(){ nav setraw instr "$STATUS" 2; nav setraw setting "$SCREEN" 3; }
-clear_nav(){ nav setraw instr "$STATUS" 4; }
+# Doc gia tri goc cua nav-screen TRUOC khi ghi, de con duong tra lai (CLAUDE.md §5).
+# Doc that bai => KHONG ghi `$SCREEN` (khong co duong hoan tac thi khong duoc doi).
+SCREEN_PRIOR="$(read_val setting "$SCREEN")"
+echo "nav-screen 0x$SCREEN goc = ${SCREEN_PRIOR:-<khong doc duoc>}"
+activate(){
+  nav setraw instr "$STATUS" 2
+  if [ -n "$SCREEN_PRIOR" ]; then nav setraw setting "$SCREEN" 3
+  else echo "   (bo qua ghi 0x$SCREEN: khong doc duoc gia tri goc => khong co duong hoan tac)"; fi
+}
+clear_nav(){
+  nav setraw instr "$STATUS" 4
+  [ -n "$SCREEN_PRIOR" ] && nav setraw setting "$SCREEN" "$SCREEN_PRIOR"
+  return 0
+}
 
 # capture: chụp cụm + log + dừng chờ mô tả. return 2 = bắn lại.
 capture(){ # $1=type $2=code $3=feature

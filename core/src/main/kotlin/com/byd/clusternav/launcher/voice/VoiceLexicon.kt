@@ -184,11 +184,37 @@ object VoiceLexicon {
      * nghĩa là tự bấm "Đồng ý" hộ họ.
      */
     fun confirmAnswer(text: String): Boolean? {
-        val t = tokenize(text).map { it.norm }.filterNot { it in FILLERS }
+        val raw = tokenize(text).map { it.norm }
+        // ⚠⚠ Xét bản CHƯA lọc tiếng đệm TRƯỚC. `"ừ"` vừa là câu ĐỒNG Ý (owner chốt 2026-09-16, KDoc [CONFIRM_YES])
+        // vừa là tiếng đệm mở đầu câu ([ĐO xe 2026-09-16] `"ừ bật đèn đọc"`) — hai vai khác nhau của cùng một
+        // chữ. Lọc trước rồi mới so thì chữ ấy biến mất và hộp xác nhận **im lặng bỏ qua** đúng câu trả lời tự
+        // nhiên nhất, tức làm hỏng lại chính cái owner vừa bắt sửa. Thứ tự này giữ CẢ HAI vai và **không đổi
+        // nghĩa** của một câu nào: bản đã lọc vẫn được xét ngay sau đó, y như trước.
+        if (raw.isNotEmpty()) {
+            if (CONFIRM_YES.any { it == raw }) return true
+            if (CONFIRM_NO.any { it == raw }) return false
+        }
+        val t = raw.filterNot { it in FILLERS }
         if (t.isEmpty()) return null
         if (CONFIRM_YES.any { it == t }) return true
         if (CONFIRM_NO.any { it == t }) return false
         return null
+    }
+
+    /**
+     * Chuỗi [text] **không mang một lượt nói thật nào**: rỗng, hoặc chỉ toàn [FILLERS].
+     *
+     * Sinh ra cho ca [ĐO xe 2026-09-16] mô hình *ảo giác* trong lúc gần như im lặng — nhật ký thật ghi `"ừ"` 102
+     * lần và `"ừm"` 102 lần liên tiếp. Mỗi chuỗi như thế mà được coi là một lượt nói sẽ **mở lại** một vòng hội
+     * thoại, tức một vòng lặp chạy mãi trong lúc người ta đang lái.
+     *
+     * ⚠⚠ **Chỗ gọi PHẢI hỏi [confirmAnswer] TRƯỚC.** Một tiếng *"ừ"* đứng một mình là câu ĐỒNG Ý hợp lệ khi (và
+     * chỉ khi) đang có hộp xác nhận chờ; hàm này không biết điều đó và cố ý không biết — nó chỉ trả lời câu hỏi
+     * *"chuỗi này có chữ nào mang nghĩa không"*. Đảo thứ tự hai phép hỏi là bịt mất cổng xác nhận.
+     */
+    fun isFillerOnly(text: String): Boolean {
+        val t = tokenize(text)
+        return t.isEmpty() || t.all { it.norm in FILLERS }
     }
 
     /** Kết quả đọc số: [value] (hoặc [MAX]/[MIN]) và số từ đã ăn. */
@@ -267,6 +293,11 @@ object VoiceLexicon {
      */
     val FILLERS: Set<String> = setOf(
         "kachi", "oi", "hay", "giup", "gium", "vui", "long", "please", "just",
+        // [ĐO xe 2026-09-16] nhật ký thật trên DL3 bản 1.68: `"ừ bật đèn đọc"` — tiếng ậm ừ mở đầu **lọt vào
+        // chuỗi chữ**, và vì `u` không phải tiếng đệm nên cả câu rơi vào NO_VERB: một lệnh nói đúng, hiểu sai.
+        // ⚠ `u` cũng là một cụm của [CONFIRM_YES]; hai vai ấy chỉ sống chung được nhờ thứ tự xét ở
+        // [confirmAnswer] (bản chưa lọc trước) — đọc KDoc ở đó trước khi đụng vào một trong hai danh sách.
+        "u", "um",
     )
 
     /**

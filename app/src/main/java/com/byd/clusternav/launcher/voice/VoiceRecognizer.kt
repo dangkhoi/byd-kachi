@@ -2,6 +2,9 @@ package com.byd.clusternav.launcher.voice
 
 import android.content.Context
 import android.util.Log
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.voiceBeam
+import com.byd.clusternav.voiceHotwordScore
 import com.k2fsa.sherpa.onnx.FeatureConfig
 import com.k2fsa.sherpa.onnx.OfflineModelConfig
 import com.k2fsa.sherpa.onnx.OfflineRecognizer
@@ -37,7 +40,7 @@ class VoiceRecognizer private constructor(
     private val hotwords: String,
 ) : AutoCloseable {
 
-    // Gom PCM giữa các [accept]; giải mã một lần ở [result]/[finalResult]. Trần ~10 s để chặn rò bộ nhớ.
+    // Gom PCM giữa các [accept]; giải mã một lần ở [finalResult]. Trần ~10 s để chặn rò bộ nhớ.
     private val buffer = ShortArray(MAX_SAMPLES)
     private var filled = 0
 
@@ -56,11 +59,43 @@ class VoiceRecognizer private constructor(
     /** Không có "chữ đang nghe dở" ở mô hình offline — overlay chỉ hiện trạng thái đang nghe. */
     fun partial(): String = ""
 
-    /** Chữ của khúc đã gom. */
-    fun result(): String = decode(buffer, filled)
+    /**
+     * H2 — **bao nhiêu cụm hotword** đang bơm vào phiên này (0 = chạy không biasing).
+     *
+     * Vào tệp JSON của [VoiceUtteranceLog] vì nó là biến số đổi nhiều nhất giữa hai bản build (1902 cụm ở
+     * `kachi-voice-hotword-phrases`, và bảng ấy còn đổi): chạy lại một tệp WAV cũ trên host mà không biết hôm ấy
+     * xe đang bias bao nhiêu cụm là so hai thứ khác nhau rồi kết luận về mô hình.
+     */
+    fun hotwordLines(): Int = if (hotwords.isEmpty()) 0 else hotwords.lineSequence().count { it.isNotBlank() }
 
-    /** Giống [result] — mô hình offline chỉ có một kết quả cuối. */
-    fun finalResult(): String = decode(buffer, filled)
+    /**
+     * ═══ Giải mã **CHỈ [limitSamples] mẫu ĐẦU** của khúc đã gom — đây là chỗ phép cắt đuôi thật sự xảy ra ═════
+     *
+     * Bằng chứng `docs/diagnostics/voice-stream-eval-2026-09-16.md` **§6**: cùng mô hình, cùng hotword, cùng câu,
+     * **chỉ đổi độ dài đuôi im lặng** ⇒ **22/25 → 6/25**. Đường đang chạy nạp nguyên cửa sổ tới trần, tức 2–3
+     * giây không phải tiếng nói vào mô hình ở mọi lượt ([ĐO xe] `chot=4200ms`, `tieng_dut` ở 1–2 s).
+     *
+     * ## Vì sao cắt Ở ĐÂY chứ không cắt lúc gom
+     * [accept] phải gom **đủ** cửa sổ: điểm hết tiếng chỉ biết được **sau** khi VAD chốt đoạn, mà lúc ấy các khối
+     * đầu đã vào bộ đệm từ lâu. Cắt lúc gom là phải đoán trước tương lai. Cắt lúc giải mã thì chỗ gọi đã có con
+     * số thật ([VoiceVadTrim.headTrimSamples]) và **một** bộ đệm vẫn phục vụ cả hai đường (VAD và RMS lùi).
+     *
+     * `limitSamples` âm / `0` ⇒ chuỗi rỗng; lớn hơn phần đã gom ⇒ kẹp về phần đã gom (không đọc rác ngoài vùng).
+     *
+     * ⚠ Bản **không tham số** đã bị gỡ ở 1.69: sau khi mọi chỗ gọi chuyển sang truyền điểm cắt, nó thành một hàm
+     * không ai gọi — và một `finalResult()` còn nằm đó là một đường **nạp nguyên cửa sổ** mời người sau gọi nhầm,
+     * tức mời rơi lại đúng bẫy §6. Bỏ nó đi thì phép cắt không còn cửa nào để bị đi vòng qua.
+     *
+     * ## ⚠ [SOÁT 1.69 · P2] Cánh cửa THỨ HAI, đóng cùng lượt: `result()` đã bị gỡ hẳn
+     * Tới bản soát này còn một `fun result()` (giải mã **nguyên** phần đã gom) với đúng một chỗ gọi: nhánh
+     * `if (rec.accept(...))` trong vòng đọc micro của [VoiceCapture]. Nhánh ấy **hôm nay không chạy** — [accept]
+     * là bộ gom của một mô hình OFFLINE nên nó luôn trả `false` — nên cửa ấy đóng *do hoàn cảnh*, không do thiết
+     * kế. Ngày ai đó đổi sang một bộ nhận dạng **streaming**, `accept` bắt đầu trả `true` và cả cửa sổ lại đi
+     * thẳng vào mô hình: độ trễ vẫn tốt (nên trông như không có gì hỏng) mà độ chính xác rơi đúng theo bảng §6
+     * ở trên. Nay nhánh ấy gọi chính hàm này với `ep.trimSamples(fed)`, và `result()` **không còn tồn tại** để
+     * ai đó gọi lại — `VoiceVadWiringContractTest` khoá cả hai vế.
+     */
+    fun finalResult(limitSamples: Int): String = decode(buffer, minOf(filled, maxOf(0, limitSamples)))
 
     /**
      * Giải mã **cả một khúc PCM đã thu sẵn** và trả chữ (thường hoá). Dùng cho lượt 2 của [VoiceOpenVocab].
@@ -175,6 +210,21 @@ object VoiceEngine {
     @Volatile private var builtFor: String? = null
     @Volatile private var biasing = false
 
+    /**
+     * ═══ H6 — LÝ DO lượt nạp sẵn gần nhất bị BỎ QUA, hoặc `null` nếu không bị ═══════════════════════════
+     *
+     * [VoicePreloadPolicy] đã quyết định đúng và đã ghi lý do vào logcat từ 1.67 — nhưng logcat là thứ chỉ người
+     * cầm adb đọc được, còn người ngồi trên xe thì chỉ thấy *"lần bấm mic đầu chờ 15 giây"* mà không có gì giải
+     * thích. Giữ lại câu ấy ở đây để hàng Cài đặt hiện nó thành một **ghi chú**.
+     *
+     * ⚠ Ghi chú, **không** phải một lượt tự đổi mô hình. Máy thiếu RAM là một dữ kiện; đổi sang gói nhẹ là một
+     * quyết định tốn 74 MB dữ liệu 4G trên một chiếc xe đang chạy — nó thuộc về người dùng (cùng luật
+     * `VoiceModelStore.selected`: máy đã cài fp32 thì GIỮ fp32 tới khi owner tự chọn).
+     */
+    @Volatile
+    var lastPreloadSkip: String? = null
+        private set
+
     /** Recognizer cho model đang chọn, nạp nếu chưa / dựng lại nếu đổi model. `null` = chưa cài / hỏng. */
     fun recognizer(ctx: Context): OfflineRecognizer? {
         val model = VoiceModelStore.selected(ctx)
@@ -232,10 +282,12 @@ object VoiceEngine {
                 }
                 val bytes = runCatching { VoiceModelStore.selected(app).totalBytes }.getOrDefault(0L)
                 if (!VoicePreloadPolicy.shouldPreload(mem.availMem, mem.lowMemory, bytes)) {
-                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${VoicePreloadPolicy.reason(mem.availMem, mem.lowMemory, bytes)}" +
-                        "; lần bấm mic đầu sẽ nạp như cũ")
+                    val why = VoicePreloadPolicy.reason(mem.availMem, mem.lowMemory, bytes)
+                    lastPreloadSkip = why
+                    Log.i(TAG, "nạp sẵn: BỎ QUA — $why; lần bấm mic đầu sẽ nạp như cũ")
                     return@runCatching
                 }
+                lastPreloadSkip = null
                 val t0 = System.currentTimeMillis()
                 val ok = recognizer(app) != null
                 Log.i(TIMING_TAG, "nạp sẵn mô hình ${System.currentTimeMillis() - t0} ms (ok=$ok)")
@@ -278,15 +330,23 @@ object VoiceEngine {
             }
             modelConfig = mc
             decodingMethod = model.decodingMethod
-            hotwordsScore = SherpaModelCatalog.HOTWORDS_SCORE
-            maxActivePaths = 4
+            // ═══ H5 — hai núm chỉnh, mặc định = HẰNG CŨ ⇒ không đổi hành vi ═══════════════════════════
+            // Trước bản này `maxActivePaths` là literal `4` ngay tại đây, tức tham số giải mã duy nhất KHÔNG nằm
+            // trong danh mục `:core` — và `scripts/voice/hotword-matrix.py` (chạy cùng cấu hình trên host) phải
+            // chép lại bằng tay. Nay cả hai đọc từ [SherpaModelCatalog], và người đo đổi được trên xe bằng
+            // `prefs_set` thay vì bằng một vòng build.
+            hotwordsScore = runCatching { Prefs.voiceHotwordScore(ctx) }
+                .getOrDefault(SherpaModelCatalog.HOTWORDS_SCORE)
+            maxActivePaths = runCatching { Prefs.voiceBeam(ctx) }
+                .getOrDefault(SherpaModelCatalog.MAX_ACTIVE_PATHS)
         }
         return runCatching { OfflineRecognizer(assetManager = null, config = config) }
             .onSuccess {
                 Log.i(
                     TIMING_TAG,
                     "nạp sherpa ${model.id} trong ${System.currentTimeMillis() - t0} ms " +
-                        "(biasing=$biasing · luồng=${mc.numThreads} · lõi=${Runtime.getRuntime().availableProcessors()})",
+                        "(biasing=$biasing · luồng=${mc.numThreads} · lõi=${Runtime.getRuntime().availableProcessors()}" +
+                        " · beam=${config.maxActivePaths} · diem_hotword=${config.hotwordsScore})",
                 )
             }
             .onFailure { Log.e(TAG, "không nạp được sherpa ${model.id}", it) }

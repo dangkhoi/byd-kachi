@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giọng Kachi bé — gói phát âm sẵn nhân bản từ giọng người thật</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Giọng Kachi bé — gói phát âm sẵn nhân bản từ giọng người thật</h1>
+<p class="muted">Slug: <code>kachi-voice-clone</code> · Branch <code>feat/voice-hotword-phrases</code> · Owner <code>dangkhoi</code> · <span class="pill ok">Cổng G1 đã mở 2026-09-17 (owner: <i>“Giọng bé ok đó”</i>)</span> <span class="pill wait">Xưởng + đóng gói đã chạy thông; lượt dựng 1 546 clip đang chạy nền</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{project-context,documentation-and-backlog,product-team-workflow,trace-den-tan-cung,conversation-protocol}.md</code> + <code>CLAUDE.md</code> §2 (tách <b>cơ chế</b> khỏi <b>quy kết</b>) và §14 (tính năng mới đi 4 tầng). Mọi khẳng định gắn <b>[ĐO] / [SUY] / [ĐOÁN] / [CHƯA BIẾT]</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo. Owner hỏi <i>“có thể dùng giọng con gái làm feedback voice được không?”</i> ⇒ thử nghiệm nhân bản giọng <b>chạy hoàn toàn trên máy soạn thảo</b> (Mac M5 Pro), sinh 6 mẫu để owner nghe duyệt, kèm thiết kế <b>gói phát âm sẵn</b> vì xe không chạy nổi bộ nhân bản. Owner chốt thêm cùng ngày: <i>“giọng bé được nhiều người nghe cũng vui… take it easy thôi”</i> ⇒ gói <b>phát hành công khai</b> qua kênh OTA như gói Piper, ai cài cũng chọn được. <b>Kết quả T1 (cùng ngày)</b>: 6 mẫu đã sinh, cosine giống giọng <b>0,678</b> (mốc cùng-người 0,864 · khác-người 0,262 · Piper 0,146), ASR đang ship đọc lại đúng nguyên văn <b>4/6</b> — §4.6.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Tới bản 1.69 tầng NÓI của Kachi có <b>ba</b> đường ra tiếng, khai ở <code>VoiceSpeaker</code> (<code>core/…/voice/VoiceSpeaker.kt</code>): <code>AndroidTtsSpeaker</code> (máy đọc của ROM) · <code>SherpaTtsSpeaker</code> (Piper VITS chạy ONNX tại chỗ, gói <code>voice/tts/piper-vi_VN-vais1000-medium/</code> 61 MB, CC-BY-4.0) · <code>SilentSpeaker</code>. Cả ba đều là <b>giọng máy</b>. Câu hỏi của owner là thêm một đường thứ tư: giọng <b>người thật</b> — giọng con gái owner.</p>
+
+<h3>2.1 Ba sự thật quyết định hình dạng thiết kế</h3>
+<ul>
+<li><b>[ĐO] host 2026-09-16</b> — nhân bản giọng tiếng Việt zero-shot chạy được trên máy soạn thảo: F5-TTS (bản fine-tune tiếng Việt) nạp mô hình ~5,4 GB, suy diễn flow-matching 32 bước + vocoder Vocos. Số đo cụ thể ở §4.6.</li>
+<li><b>[ĐO] cấu hình xe</b> — đầu máy DiLink chạy Android 10, CPU 8 lõi ARM, RAM chia cho cả launcher lẫn app nav. Mô hình nghe int8 <b>74 MB</b> đã phải tải riêng ngoài APK và mất ~15 s để nạp lần đầu (<code>kachi-voice-fast-natural.html</code>). ⇒ <b>[SUY, mức cao]</b> một mô hình 5,4 GB + vocoder không thể chạy trên xe; kể cả lượng tử hoá cũng còn quá lớn và quá chậm cho một câu trả lời phải bật ra trong ~300 ms.</li>
+<li><b>[ĐO] registry</b> — tập câu Kachi có thể nói là <b>ĐÓNG và ĐẾM ĐƯỢC</b>: mọi dòng trả lời sinh từ <code>core/build/catalog/registry.json</code> (<b>47 nút · 100 thông tin · 4 gói lệnh · 3 hành động launcher · 15 mục chung</b> — đếm 2026-09-17 sau (V) FEATURE-FILTER; trước đó 54 · 106 · 4 · 3 · 15) qua <code>VoiceReply</code>, rồi đi qua <b>đúng một</b> cửa <code>VoiceFeedbackPhrase.merge</code> trước khi tới máy đọc. Không có đường nào khác ra tiếng.</li>
+</ul>
+
+<p>Ba sự thật đó dẫn thẳng tới một kết luận: <b>không nhân bản giọng trên xe — nhân bản trên máy, rồi ship kết quả</b>. Xe chỉ việc <i>tra bảng và phát tệp</i>, việc rẻ nhất trong toàn bộ tầng NÓI.</p>
+
+<div class="card"><b>Cổng / phụ thuộc:</b>
+<ul>
+<li><b>G1 — owner nghe và duyệt 6 mẫu</b> (§4.6). <span class="pill ok">ĐÃ MỞ 2026-09-17 — owner: <i>“Giọng bé ok đó”</i></span> Chưa duyệt thì không sinh gói. Đây là cổng <b>thẩm mỹ</b>, máy không thay owner quyết được: cosine 0,9 vẫn có thể nghe ra “không giống bé”.</li>
+<li><b>G2 — owner xác nhận phát hành công khai</b>. Đã có: owner 2026-09-16 <i>“giọng bé được nhiều người nghe cũng vui… take it easy thôi”</i>. Ghi lại ở §4.8 vì đây là <b>quyết định của owner</b>, không phải của agent.</li>
+<li><b>G3 — bản thu gốc KHÔNG bao giờ vào repo.</b> <code>voice/record/</code> đã nằm trong <code>.gitignore</code>; bản thu 187 s và mọi bản cắt chỉ sống trong scratchpad của phiên. Cái được ship là <b>audio đã tổng hợp</b>, không phải giọng thu.</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Xưởng nhân bản chạy tại máy.</b> Một script trên host nhận (a) clip mẫu 6–12 s + bản chữ khớp, (b) danh sách chuỗi cần đọc, và sinh ra clip WAV cho từng chuỗi. <i>Acceptance</i>: chạy lại hai lần với cùng seed ra audio giống nhau; không có một byte nào rời khỏi máy (suy diễn tại chỗ, không API đám mây).</li>
+<li><b>R2 — Liệt kê ĐỦ tập câu.</b> Danh sách chuỗi cần đọc phải <b>sinh bằng máy</b> từ <code>registry.json</code> + mẫu trong <code>VoiceReply.kt</code>/<code>VoiceFeedbackPhrase.kt</code>, không chép tay dòng nào. <i>Acceptance</i>: một bài canh <code>:core</code> chạy lại phép liệt kê và <b>đỏ</b> khi registry mọc thêm một nhãn mà gói chưa có clip tương ứng.</li>
+<li><b>R3 — Gói ba tầng, tra theo chuỗi CHÍNH XÁC.</b> Tầng 1 câu cố định · tầng 2 số 0–999 · tầng 3 đuôi đơn vị + đầu câu có số (§4.3). <i>Acceptance</i>: mọi chuỗi mà <code>VoiceFeedbackPhrase.merge</code> sinh ra cho <b>một dòng</b> đều tra được, hoặc ghép được từ đúng ba mảnh.</li>
+<li><b>R4 — Trượt là im lặng tuyệt đối KHÔNG được xảy ra.</b> Tra không thấy ⇒ rơi xuống <code>SherpaTtsSpeaker</code> (Piper) đang có, rồi mới tới <code>AndroidTtsSpeaker</code>, rồi <code>SilentSpeaker</code>. <i>Acceptance</i>: bài canh đưa vào một chuỗi chắc chắn không có trong gói và khẳng định đường Piper được gọi.</li>
+<li><b>R5 — Gói đi đúng kênh đã có.</b> Gói nằm ở <code>voice/tts/kachi-giong-be-v1/</code> + bảng ghim <code>*.sha256.tsv</code>, cài qua <b>đúng</b> <code>VoicePack</code> + <code>VoiceModelStore</code> (tải từng tệp ghim sha256 · side-load USB · hỏi “đã lắp đủ chưa” · gỡ). <b>Cấm</b> viết bản sao thứ hai của tầng cài. <i>Acceptance</i>: không thêm lớp tải/giải nén nào; danh mục mới thực thi <code>VoicePack</code>.</li>
+<li><b>R6 — Chọn được, và KHÔNG tự đổi mặc định.</b> Hiện ở <i>Cài đặt › Giọng nói › Giọng đọc</i> như một lựa chọn ngang hàng (“Giọng Kachi bé”). Piper <b>vẫn là mặc định</b> cho tới khi owner tự chọn — đổi mặc định mà kéo theo một lượt tải qua 4G là quyết định thay người dùng (cùng luật đã áp cho model int8, <code>kachi-voice-fast-natural.html</code>).</li>
+<li><b>R7 — Ghi công + giấy phép hiện trong app.</b> Dòng ghi công của mô hình TTS đã dùng để sinh gói phải đọc từ <b>cùng một</b> trường dữ liệu với màn CREDITS, như <code>SherpaModelCatalog.attributions()</code> đang làm.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 — Không chặn luồng vẽ.</b> Tra bảng + đọc tệp + phát clip chạy trên luồng <code>KachiSpeak</code> đã có; hợp đồng <code>speak(text, onDone)</code> giữ nguyên ba vế (onDone gọi đúng một lần, trên luồng bất kỳ, kể cả khi trả <code>false</code>).</li>
+<li><b>R-nf2 — Nhanh hơn Piper, không chậm hơn.</b> Phát một clip đã nén là giải mã Opus + <code>AudioTrack</code>; <b>[SUY]</b> rẻ hơn suy diễn VITS (Piper trên host RTF 0,03 — trên ARM chậm hơn nhiều). Phải <b>[ĐO] trên xe</b> mới được ghi thành con số.</li>
+<li><b>R-nf3 — Off-car testable.</b> Phép liệt kê, luật tra bảng, luật ghép ba mảnh đều là Kotlin thuần ở <code>:core</code>.</li>
+<li><b>R-nf4 — Gói ≤ 10 MB.</b> Để tải qua 4G không thành một quyết định lớn. [ĐO] <b>9,3 MB</b> @32 kbps · <b>7,0 MB</b> @24 kbps — §4.4. Vẫn dưới trần; nếu owner muốn nhỏ hơn nữa thì 24 kbps là núm đầu tiên.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Hai pha tách hẳn: xưởng (host) và xe</h3>
+<p>Điểm mấu chốt của cả thiết kế: <b>cái đắt chạy một lần trên máy, cái rẻ chạy mỗi ngày trên xe.</b></p>
+<div class="diagram">
+<svg viewBox="0 0 860 300" role="img" aria-label="Sơ đồ hai pha: xưởng trên máy sinh gói clip, xe tra bảng và phát">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 z" fill="currentColor" style="color:var(--accent)"/>
+    </marker>
+  </defs>
+  <rect x="8" y="8" width="410" height="284" rx="14" fill="none" stroke="var(--line)" stroke-dasharray="5 4"/>
+  <text x="24" y="32" font-size="13" font-weight="700" fill="var(--muted)">PHA A · XƯỞNG (Mac, chạy MỘT lần)</text>
+  <rect x="442" y="8" width="410" height="284" rx="14" fill="none" stroke="var(--line)" stroke-dasharray="5 4"/>
+  <text x="458" y="32" font-size="13" font-weight="700" fill="var(--muted)">PHA B · XE (mỗi câu trả lời)</text>
+
+  <rect x="28" y="48" width="170" height="46" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="113" y="68" font-size="12.5" text-anchor="middle" fill="var(--fg)">Clip mẫu giọng bé</text>
+  <text x="113" y="84" font-size="11" text-anchor="middle" fill="var(--muted)">6–12 s + bản chữ khớp</text>
+
+  <rect x="228" y="48" width="170" height="46" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="313" y="68" font-size="12.5" text-anchor="middle" fill="var(--fg)">registry.json</text>
+  <text x="313" y="84" font-size="11" text-anchor="middle" fill="var(--muted)">liệt kê 1 546 chuỗi</text>
+
+  <rect x="28" y="124" width="370" height="50" rx="9" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+  <text x="213" y="145" font-size="13" font-weight="650" text-anchor="middle" fill="var(--fg)">F5-TTS tiếng Việt (nhân bản zero-shot)</text>
+  <text x="213" y="162" font-size="11" text-anchor="middle" fill="var(--muted)">suy diễn TẠI MÁY · không API đám mây · ~5,4 GB trọng số</text>
+
+  <rect x="28" y="204" width="370" height="50" rx="9" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+  <text x="213" y="225" font-size="13" font-weight="650" text-anchor="middle" fill="var(--fg)">Kiểm bằng máy rồi nén AAC 32 kbps</text>
+  <text x="213" y="242" font-size="11" text-anchor="middle" fill="var(--muted)">đọc lại từng clip bằng ASR đang ship · loại clip sai chữ</text>
+
+  <line x1="113" y1="94" x2="180" y2="122" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="313" y1="94" x2="246" y2="122" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="213" y1="174" x2="213" y2="202" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="398" y1="229" x2="470" y2="229" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <rect x="470" y="48" width="360" height="50" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="650" y="69" font-size="13" text-anchor="middle" fill="var(--fg)">VoiceFeedbackPhrase.merge → một câu</text>
+  <text x="650" y="86" font-size="11" text-anchor="middle" fill="var(--muted)">cửa DUY NHẤT ra tiếng, không đổi</text>
+
+  <rect x="470" y="124" width="360" height="50" rx="9" fill="rgba(0,113,227,.15)" stroke="var(--accent)"/>
+  <text x="650" y="145" font-size="13" font-weight="650" text-anchor="middle" fill="var(--fg)">ClipSpeaker — tra chuỗi CHÍNH XÁC</text>
+  <text x="650" y="162" font-size="11" text-anchor="middle" fill="var(--muted)">trúng ⇒ phát clip · hụt ⇒ nhường máy đọc kế</text>
+
+  <rect x="470" y="204" width="174" height="50" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="557" y="225" font-size="12.5" text-anchor="middle" fill="var(--fg)">Gói clip đã cài</text>
+  <text x="557" y="242" font-size="11" text-anchor="middle" fill="var(--muted)">1 546 tệp</text>
+
+  <rect x="656" y="204" width="174" height="50" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="743" y="225" font-size="12.5" text-anchor="middle" fill="var(--fg)">Piper (đã có)</text>
+  <text x="743" y="242" font-size="11" text-anchor="middle" fill="var(--muted)">đường lùi — không im lặng</text>
+
+  <line x1="650" y1="98" x2="650" y2="122" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="590" y1="174" x2="566" y2="202" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="710" y1="174" x2="734" y2="202" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (tái dùng)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+  <span class="sw">— nét liền = đường chính · nét đứt = đường lùi</span>
+</div>
+
+<h3>4.2 Vì sao KHÔNG nhân bản trên xe, và vì sao đó không phải một lời bỏ cuộc</h3>
+<p><code>trace-den-tan-cung.md</code> cấm bỏ tính năng vì khó. Ở đây <b>không bỏ gì cả</b>: owner muốn <i>nghe giọng bé khi xe trả lời</i>, và người lái nhận đúng thứ đó. Cái bị loại là <b>một cách làm</b> (chạy mô hình nhân bản trên đầu máy), không phải cái owner muốn.</p>
+<p>Ranh giới bằng chứng, theo <code>CLAUDE.md</code> §2:</p>
+<table>
+<tr><th>Khẳng định</th><th>Mức</th><th>Cách chốt nếu cần</th></tr>
+<tr><td>F5-TTS nhân bản được giọng bé từ ~12 s mẫu, chạy tại máy</td><td><b>[ĐO]</b> host 2026-09-16 — §4.6</td><td>đã có 6 mẫu WAV</td></tr>
+<tr><td>Xe không chạy nổi F5-TTS thời gian thực</td><td><b>[SUY]</b> mức cao (5,4 GB trọng số vs mô hình 74 MB đã mất ~15 s nạp)</td><td>chỉ cần đo nếu ai muốn cãi: chép trọng số lên xe và bấm giờ — <b>không đáng làm</b></td></tr>
+<tr><td>Tập câu Kachi nói ra là đóng, <b>1 546</b> clip phủ hết</td><td><b>[ĐO]</b> 2026-09-17 — liệt kê bằng máy từ registry, §4.4</td><td>bài canh R2 (T3, bản <code>:core</code>) giữ cho nó không lệch về sau</td></tr>
+<tr><td>Phát clip nhanh hơn suy diễn Piper trên ARM</td><td><b>[CHƯA BIẾT]</b></td><td>🚗 đo trên xe: mốc giờ <code>KachiVoiceTiming</code> đã có sẵn 6 chặng</td></tr>
+<tr><td>Ghép <i>đầu câu + số + đơn vị</i> nghe liền, không “cắt dán”</td><td><b>[CHƯA BIẾT]</b> — chưa nghe thử</td><td>T5: sinh 10 câu ghép, owner nghe; hụt ⇒ rơi về OQ2</td></tr>
+</table>
+
+<h3>4.3 Gói ba tầng — vì sao không phải một tầng, cũng không phải năm</h3>
+<p>Nếu liệt kê <b>nguyên câu</b> cho mọi thứ Kachi nói thì tầng thông tin nổ tung: <i>“Pin (SOC): 46 %”</i> nhân với 0–100, <i>“Tầm hoạt động EV: 257 km”</i> nhân với 0–999, nhân tiếp cho 106 nhãn thông tin. Nếu ngược lại, ghép <b>từng tiếng</b> thì câu nào cũng nghe như máy đọc số điện thoại. Chỗ đứng đúng nằm giữa:</p>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>Tầng 1 — câu trọn vẹn</b><span>244 clip · câu KHÔNG có số<br>“Đã bật đèn đọc” · “Chưa mở được cốp sau, xe không nhận lệnh”</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>Tầng 2 — số 0–999</b><span>1 000 clip<br>“hai mươi bốn” · “bốn mươi sáu” · “hai trăm năm mươi bảy”</span></div>
+    <div class="node"><b>Tầng 3a — đầu câu có số</b><span>210 clip<br>“Đã đặt nhiệt độ” · “Pin (SOC),” · “Đã tăng gió”</span></div>
+    <div class="node"><b>Tầng 3b — đuôi đơn vị</b><span>17 clip<br>“độ” · “phần trăm” · “ki lô mét” · “nấc”</span></div>
+  </div>
+</div>
+<p>Một câu có số phát ra bằng <b>ba clip nối liền</b> (đầu câu → số → đơn vị), crossfade 15 ms ở chỗ nối. Một câu không số phát bằng <b>một clip</b>. <b>[SUY]</b> phần lớn câu Kachi nói hằng ngày (bật/tắt/mở/đóng) rơi vào tầng 1 — tức nghe <b>liền mạch hoàn toàn</b>; chỗ ghép chỉ xuất hiện khi đọc số đo và đặt bậc.</p>
+
+<h3>4.4 Đếm thật — liệt kê bằng máy, không ước</h3>
+<p>[ĐO] 2026-09-16, chạy trên <code>core/build/catalog/registry.json</code> (54 nút · 106 thông tin · 4 gói · 3 launcher · 15 chung), qua cổng <code>VoiceFeedbackPhrase.body/merge</code> viết lại bằng Python đúng 4 phép thay của bản Kotlin. <b>Cả hai hằng đều là số đo, không phải ước</b>: nhịp đọc <b>4,04 âm tiết/s</b> (+0,25 s đệm) lấy từ chính 6 mẫu giọng bé đã sinh, và <b>4 344 byte/s</b> lấy từ chính 6 tệp AAC của chúng.</p>
+<table>
+<tr><th>Tầng</th><th>Clip</th><th>Tổng audio</th><th>AAC 32 kbps</th><th>AAC 24 kbps</th></tr>
+<tr><td>1 · câu cố định (không số)</td><td>244</td><td>496 s</td><td>2,15 MB</td><td>1,61 MB</td></tr>
+<tr><td>3a · đầu câu + đuôi của khung có số</td><td>210</td><td>262 s</td><td>1,14 MB</td><td>0,86 MB</td></tr>
+<tr><td>2 · số 0–999 đọc thành chữ</td><td>1 000</td><td>1 359 s</td><td>5,91 MB</td><td>4,43 MB</td></tr>
+<tr><td>3b · đuôi đơn vị</td><td>17</td><td>16 s</td><td>0,07 MB</td><td>0,05 MB</td></tr>
+<tr><td><b>TỔNG (bản ƯỚC 2026-09-16)</b></td><td><b>1 471</b></td><td><b>2 134 s ≈ 35,6 phút</b></td><td><b>9,3 MB</b></td><td><b>7,0 MB</b></td></tr>
+</table>
+
+<h4>Bản LIỆT KÊ BẰNG MÁY — 2026-09-17, thay hẳn bảng ước ở trên</h4>
+<p><code>scripts/voice/clone/enumerate-clips.py</code> đọc <code>registry.json</code> (47 nút · <b>100</b> dòng thông tin ·
+4 gói · 3 launcher · 15 chung) và dựng lại <b>đúng</b> <code>VoiceFeedbackPhrase.body/merge/decap/clampWords</code>.
+Chạy lại hai lần ra <b>cùng một</b> tệp; chạy lại sau khi registry đổi thì chỉ những chuỗi <b>thật sự mới</b> đổi mã.</p>
+<table>
+<tr><th>Tầng</th><th>Clip</th><th>Sinh ra từ đâu</th></tr>
+<tr><td>1 · <code>fixed</code> — câu trọn vẹn, không số</td><td><b>383</b></td><td>replyDone/replyFailed/replyPreview/replyNoReading/confirmQuestion + <code>notOnThisCar</code> mỗi nút + <code>busy</code> mỗi gói + 9 câu hằng của <code>VoiceReply.unknown</code>/<code>VoiceClarify</code></td></tr>
+<tr><td>3a · <code>head</code> — phần TRƯỚC con số</td><td><b>140</b></td><td>100 khung <i>“&lt;nhãn&gt;: {n} &lt;đơn vị&gt;”</i> + khung của 7 nút bậc (đặt · tăng/giảm nấc · <code>doneActual</code>)</td></tr>
+<tr><td>3b · <code>unit</code> — phần SAU con số</td><td><b>23</b></td><td>16 đơn vị của registry + <i>“nấc”</i> · <i>“ô”</i> · <i>“việc”</i> + các đuôi câu (<i>“, chưa kiểm trên xe”</i> · <i>“, xe không nhận lệnh”</i> · <i>“, xe báo”</i>)</td></tr>
+<tr><td>2 · <code>num</code> — số 0–999 đọc thành chữ</td><td><b>1 000</b></td><td><code>vi_text.vi_number</code></td></tr>
+<tr><td><b>TỔNG</b></td><td><b>1 546</b></td><td>cấu trúc đã kiểm: <b>100/100</b> khung đọc số đủ cả đầu lẫn đuôi · <b>0</b> khoá trùng giữa các tầng</td></tr>
+</table>
+<p><b>Cỡ gói — [ĐO] trên clip THẬT, không còn là ước.</b> Tốc độ nén đo trên 27 clip tầng <code>fixed</code> đã đóng: <b>305 224 byte / 69 s = 4 423 byte/s</b> — sát con số 4 344 byte/s mà bảng ước lấy từ 6 mẫu duyệt. Nhịp đọc đo theo tầng trên 49 clip đầu: <b>2,85 s</b> mỗi câu <code>fixed</code> · <b>1,03 s</b> mỗi <code>head</code> · <b>0,92 s</b> mỗi số. Nhân với số clip thật của từng tầng ⇒ <b>~2 157 s ≈ 36,0 phút</b> tiếng và <b>~9,5 MB</b> @32 kbps <i>trước</i> khi cắt lặng (bước đóng gói có cắt, nên con số cuối sẽ thấp hơn).<br>⇒ gói về đúng chỗ bảng ước đã đoán (35,6 phút · 9,3 MB), <b>dưới</b> trần 10 MB của R-nf4. Nếu con số cuối vượt, núm đầu tiên là <b>24 kbps</b> (<code>build-pack.py --bitrate 24000</code>, ~7,1 MB) — không phải cắt bớt clip.</p>
+<p class="muted">Chênh <b>+75</b> so với bản ước không phải sai số làm tròn — nó là ba nhóm câu <b>có thật</b> mà bản ước
+bỏ sót và hai nhóm bản ước tính thừa; chi tiết ở §9 (mục <i>“phép liệt kê chạy bằng máy”</i>).</p>
+<div class="card"><b>⚠ [ĐO] Định dạng chứa quan trọng hơn bitrate — hơn 1 600 tệp tí hon phóng đại phần đầu tệp.</b>
+Cùng một clip 0,75 s, cùng <code>-b 32000</code>: đóng trong <b><code>.m4a</code></b> ra <b>7 643 byte</b> (81 kbps thực!), đóng thô <b>ADTS <code>.aac</code></b> ra <b>3 680 byte</b> (39 kbps thực). Phần thừa là khối <code>moov</code> của MP4 — không đáng kể với một tệp nhạc 4 phút, nhưng nhân với 1 546 tệp thì nó là <b>~4 MB rác</b>, gần nửa gói. ⇒ gói dùng <b>ADTS AAC thô</b>.
+<br>⚠ <b>Giọng bé đọc chậm hơn Piper 1,4 lần</b> ([ĐO] cùng 6 câu: 13,39 s so với 9,89 s) ⇒ gói lớn hơn con số tính theo nhịp Piper đúng chừng ấy. Đây là lý do bảng trên dùng nhịp đo của <b>chính giọng sẽ ship</b>, không dùng nhịp của giọng khác.
+<br>Cùng nội dung ở WAV 16-bit 24 kHz là <b>102 MB</b> — nén không phải tối ưu vặt, nó là thứ giữ gói ở mức tải-qua-4G-không-phải-nghĩ (R-nf4).</div>
+
+<h3>4.5 Bố cục gói + tra bảng</h3>
+<pre>voice/tts/kachi-giong-be-v1/
+  manifest.json          # gói · mô hình TTS + giấy phép + đồng thuận · {id, text, tier, file, bytes, sha256, ms, say, asrOk}
+  LICENSE-NOTES.md       # ghi công 3 tầng + đồng thuận của owner (§4.8, R7)
+  index.tsv              # &lt;chuỗi chính xác&gt;\t&lt;đường dẫn clip&gt;\t&lt;ms&gt;   ← tầng 1 + 3a + 3b
+  num.tsv                # 0..999 \t num/&lt;n&gt;.aac \t &lt;ms&gt;
+  fixed/&lt;băm10&gt;.aac …    # 383 tệp  (ADTS AAC-LC 32 kbps, 24 kHz mono)
+  head/&lt;băm10&gt;.aac …     # 140 tệp
+  unit/&lt;băm10&gt;.aac …     # 23 tệp
+  num/0.aac … 999.aac    # 1 000 tệp
+voice/tts/kachi-giong-be-v1.sha256.tsv   # bảng ghim NGOÀI mã, đúng kiểu gói Piper</pre>
+<p><b>Tên tệp là BĂM của chính chuỗi</b> (<code>sha256(tier‖text)[:10]</code>), không phải số thứ tự — xem §9, mục
+2026-09-17: registry mọc thêm 6 dòng giữa lúc dựng gói, và với số thứ tự thì mọi mã sau chỗ chèn dịch một bậc, đủ để
+lượt dựng nối lại gán nhầm tệp WAV của câu này cho câu kia, <b>lặng lẽ</b>.</p>
+<p>Tra bảng là <b>so chuỗi chính xác sau khi chuẩn hoá NFC + gộp khoảng trắng</b> — cố ý <b>không</b> mờ hoá, không bỏ dấu, không so gần đúng. Lý do: một phép so gần đúng sẽ <i>gần trúng</i> vào đúng lúc nguy hiểm nhất, phát câu <i>“Đã mở khoá cửa”</i> cho một lượt thật ra đã hỏng. Trượt thì rơi xuống Piper — nghe khác giọng, nhưng <b>đúng</b>.</p>
+
+<div class="flow">
+  <div class="fnode"><b>câu đã gộp</b><span>từ merge()</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>index.tsv</b><span>trúng nguyên câu?</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>khung số</b><span>đầu + num + đơn vị?</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Piper</b><span>đường lùi</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>TTS của ROM</b><span>lùi tiếp</span></div>
+</div>
+
+<h3>4.6 Số đo thật của pha xưởng</h3>
+<p class="muted">[ĐO] 2026-09-16 trên Mac M5 Pro (16 lõi / 48 GB), suy diễn <b>hoàn toàn tại máy</b> (PyTorch MPS), không một byte nào rời máy.</p>
+<table>
+<tr><th>Hạng mục</th><th>Giá trị</th></tr>
+<tr><td>Bộ tổng hợp</td><td><code>f5-tts 1.1.22</code> · torch 2.14 (MPS) · vocoder Vocos mel-24 kHz · venv Python <b>3.12</b> (3.14 của máy không có bánh xe cho cây phụ thuộc này)</td></tr>
+<tr><td>Trọng số</td><td><code>toandev/F5-TTS-Vietnamese</code> — <code>model_latest.safetensors</code> <b>1,35 GB</b>, kiến trúc <code>F5TTS_Base</code>, bộ mã hoá chữ <code>char</code> (2 564 dòng), fine-tune trên <code>capleaf/viVoice</code>. Giấy phép <b>CC-BY-NC-4.0</b>.</td></tr>
+<tr><td>Clip mẫu</td><td><code>be-refB.wav</code> — <b>8,29 s</b>, ghép 3 đoạn sạch nhất của lượt đọc chậm (SNR 21–29 dB), kết bằng 0,35 s lặng. Bản chữ đối chiếu <b>kịch bản 30 câu</b>, không lấy thẳng chuỗi ASR.</td></tr>
+<tr><td>Thời gian</td><td>nạp mô hình <b>2–10 s</b> · tổng hợp <b>7–25 s/câu</b> (trung bình 14,7 s sau khi MPS ấm; lượt đầu 55 s/câu vì phải biên dịch nhân) ⇒ dựng cả gói mất <b>3–6 giờ</b> máy chạy một mình, làm <b>một lần</b>. [ĐO 2026-09-17] con số ấy chỉ đạt được nhờ <b>gộp lượt</b>: sinh riêng từng clip là ~16,7 s/clip (≈ 7,5 giờ cho 1 607 clip), gộp 4 mảnh một lượt là <b>6,1 s/clip</b> — vì mỗi lượt <code>infer</code> phải sinh lại cả clip mẫu 8,29 s dù câu cần đọc chỉ dài 1 s.</td></tr>
+<tr><td>Giống giọng (cosine, CAM++ 3D-Speaker)</td><td><b>0,678</b> trung bình 6 mẫu</td></tr>
+<tr><td>Nghe lại đúng chữ (ASR đang ship)</td><td><b>4/6</b> đúng nguyên văn tuyệt đối</td></tr>
+</table>
+<p><b>Con số cosine chỉ có nghĩa khi đặt cạnh hai mốc</b> — cùng người và khác người, đo bằng cùng bộ trích đặc trưng, cùng clip mẫu:</p>
+<table>
+<tr><th>So với clip mẫu của bé</th><th>cosine</th><th>Đọc thế nào</th></tr>
+<tr><td>Chính bé, đoạn <b>khác</b> trong cùng bản thu</td><td><b>0,864</b></td><td>trần thực tế — hai lần thu của cùng một người</td></tr>
+<tr><td><b>Giọng bé đã nhân bản</b> (6 mẫu)</td><td><b>0,678</b></td><td>ở giữa, <b>lệch hẳn về phía “cùng người”</b></td></tr>
+<tr><td>Chủ xe (người lớn), cùng kịch bản</td><td>0,262</td><td>mốc “khác người”</td></tr>
+<tr><td>Piper <code>vi_VN-vais1000</code> (đang ship)</td><td>0,146</td><td>giọng máy, khác hẳn</td></tr>
+</table>
+<p class="muted">⇒ [ĐO] phép nhân bản <b>có</b> bắt được chất giọng (0,678 ≫ 0,262 của một người thật khác), nhưng <b>chưa bằng</b> chính bé (0,864). Đây là con số máy chấm; cổng thật vẫn là tai owner (G1).</p>
+<h4>Ba lần chạy, và vì sao lần thứ nhất hỏng</h4>
+<table>
+<tr><th>Lượt</th><th>Clip mẫu</th><th>cosine</th><th>ASR đúng</th><th>Triệu chứng</th></tr>
+<tr><td>A</td><td>11,91 s (5 đoạn)</td><td>0,677</td><td><b>1/6</b></td><td>câu ngắn bị <b>mọc đuôi</b>: <i>“đã bật đèn đọc”</i> → <i>“đã bật đèn <b>quá</b>”</i> — đúng chữ cuối của clip mẫu (<i>“hôm nay trời đẹp quá”</i>)</td></tr>
+<tr><td><b>B</b></td><td><b>8,29 s (3 đoạn, kết bằng lặng)</b></td><td>0,639</td><td><b>4/6</b></td><td>hết mọc đuôi</td></tr>
+<tr><td>C/D</td><td>8,29 s, seed + dấu câu khác</td><td>0,636 / 0,634</td><td>3/6</td><td>dùng làm lượt dự phòng cho phép <b>chọn tốt nhất</b></td></tr>
+</table>
+<p><b>Cơ chế</b> (mức [SUY] mạnh, khớp mọi quan sát): F5-TTS ước lượng độ dài câu cần sinh theo tỉ lệ <i>độ dài chữ sinh / độ dài chữ mẫu</i> nhân với thời lượng clip mẫu, và <code>preprocess_ref_audio_text</code> <b>tự cắt</b> clip mẫu dài quá ~12 s mà <b>không</b> cắt bản chữ tương ứng. Clip 11,91 s nằm sát mép đó ⇒ chữ và tiếng lệch nhau ⇒ phần dư bị lấp bằng đuôi của chính clip mẫu. Clip 8,29 s không chạm mép ⇒ hết. <b>Cách chốt nếu ai muốn chắc</b>: chạy lại lượt A với clip mẫu 13 s và 9 s cùng một bản chữ, xem đuôi có mọc lại đúng ở bản dài không.</p>
+<p><b>Luật chọn bản</b> (chính là luật sẽ dùng khi dựng cả gói, V-pack): với mỗi câu, sinh nhiều lượt rồi lấy bản <b>(1) ASR đọc lại đúng nguyên văn</b>, hoà thì lấy <b>(2) cosine cao hơn</b>. Bộ 6 mẫu cuối chọn theo đúng luật đó: 2 bản từ lượt B, 3 từ C, 1 từ D.</p>
+<p><b>Hai câu ASR không trả đúng nguyên văn — đọc kỹ trước khi kết luận là lỗi giọng:</b></p>
+<ul>
+<li><i>“…hai trăm năm mươi bảy ki lô mét”</i> → ASR ra <code>KILOMET</code> (một từ, không dấu). Đây là <b>cách viết của bộ nhận dạng</b>, không phải bé đọc sai — cùng chỗ này bản Piper cũng ra <code>KILOMET</code>. <b>[SUY]</b> lỗi thuộc về trọng tài, không thuộc về clip.</li>
+<li><i>“Kachi chưa hiểu, anh nói lại giúp em <b>nhé</b>”</i> → nghe ra <i>“…nh<b>á</b>”</i> ở cả 3 lượt. Đây là <b>sai thật</b> (lệch thanh), và nó ổn định qua mọi seed ⇒ không chữa được bằng cách sinh lại. Đường chữa: đổi chính chuỗi trong <code>VoiceReply</code> thành <i>“nha”</i> (tiếng Việt nói vẫn tự nhiên), hoặc chấp nhận. Owner chốt.</li>
+</ul>
+<p class="muted">Đường dẫn 6 mẫu (ngoài repo, scratchpad của phiên): <code>voice-clone/final/NN_&lt;câu&gt;__A-giong-be.{wav,aac}</code> và bản Piper cùng câu <code>__B-piper.{wav,aac}</code>.</p>
+
+<h3>4.7 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Chọn F5-TTS thay vì viXTTS.</b> F5-TTS zero-shot chỉ cần một clip mẫu ngắn + bản chữ khớp, có nhiều bản fine-tune tiếng Việt công khai, và sinh ở 24 kHz. viXTTS (XTTS-v2) dùng giấy phép <i>Coqui Public Model License</i> (phi thương mại) và gói <code>TTS</code> của Coqui đã ngừng bảo trì — thêm một ràng buộc phiên bản Python cho một dự án phải sống 5 năm. Chi tiết bản đã dùng ở §4.6.</li>
+<li><b>Chọn bản <code>toandev</code> 1,35 GB thay vì <code>hynt</code> 5,4 GB.</b> <code>hynt/F5-TTS-Vietnamese-ViVoice</code> là bản nhiều người dùng nhất (2 648 lượt tải) nhưng chỉ phát hành <b>checkpoint huấn luyện đầy đủ 5,4 GB</b> (kèm trạng thái optimizer). <code>toandev</code> phát hành <b>safetensors chỉ-trọng-số 1,35 GB</b> của cùng kiến trúc <code>F5TTS_Base</code>, cùng bộ dữ liệu viVoice ⇒ tải nhanh gấp 4 và nạp thẳng. <b>Nếu owner thấy 6 mẫu chưa đủ giống</b>, đường leo tiếp là tải <code>hynt</code> 5,4 GB và so — chưa làm vì bản này đã qua ngưỡng nghe được.</li>
+<li><b>Bản <code>nst1511</code> bị loại sau khi tải.</b> Tệp tên <code>model-bin.pt</code> 1,5 GB <b>không phải</b> checkpoint PyTorch: [ĐO] nó là một <b>tar chứa 3 tệp ONNX</b> (<code>preprocess</code>/<code>transformer</code>/<code>decode</code>) + một thư mục WAV mẫu. Ghi ra đây để người sau không tải lại 1,5 GB rồi mới biết.</li>
+<li><b>Không đụng <code>VoiceFeedbackPhrase</code>.</b> Cửa ra tiếng giữ nguyên một cái. <code>ClipSpeaker</code> cắm vào <b>trước</b> chuỗi máy đọc hiện có, không thay chuỗi ấy — đúng luật <code>CLAUDE.md</code> §6 (<i>đường mới luôn xuống cuối, không đảo thứ tự đường đang chạy tốt</i>), chỉ khác ở chỗ đây là một <b>lựa chọn của người dùng</b> nên nó đứng đầu <b>chỉ khi</b> được chọn.</li>
+<li><b>ADTS AAC-LC 32 kbps mono 24 kHz, KHÔNG phải Opus.</b> Hai lý do, cả hai đều là số đo: (a) <b>[ĐO]</b> <code>afconvert</code> của macOS <b>không ghi nổi</b> Ogg/Opus ở 22,05 kHz (<code>ExtAudioFileWrite failed ('fmt?')</code>) — tức xưởng phải kéo thêm <code>opus-tools</code> để làm một việc mà bộ mã hoá có sẵn đã làm được; (b) AAC-LC là codec <b>bắt buộc</b> của mọi máy Android từ API 1, còn Opus tuy có từ API 21 vẫn là chỗ ROM hay bị cắt. Chọn AAC là bỏ một rủi ro <b>[CHƯA BIẾT]</b> mà không phải trả gì (§4.4: 7,6 MB).</li>
+<li><b>Context7</b>: cần verify trước khi code — <code>sherpa-onnx</code> (đường phát <code>AudioTrack</code> đã có, không đổi) và <b>khả năng giải mã Opus của <code>MediaCodec</code> trên API 29</b>. Phần xưởng (F5-TTS, PyTorch) chạy ngoài repo, không thành dependency của app nên không ràng buộc phiên bản lâu dài.</li>
+</ul>
+
+<h3>4.8 Riêng tư, đồng thuận, giấy phép</h3>
+<div class="card">
+<p><b>Đây là giọng một đứa trẻ, và gói sẽ phát công khai.</b> Owner là cha của bé và đã quyết định ngày 2026-09-16: <i>“giọng bé được nhiều người nghe cũng vui… take it easy thôi”</i> ⇒ gói phát hành công khai qua kênh OTA <code>dangkhoi/byd-kachi</code>, ai cài launcher cũng chọn được. Ba điều ghi thẳng ra đây để sau này không ai phải đoán:</p>
+<ul>
+<li><b>Cái được phát hành là audio đã tổng hợp, không phải bản thu.</b> Bản thu gốc (187 s) và mọi bản cắt ở lại máy owner; <code>voice/record/</code> đã <code>.gitignore</code>. Trọng số mô hình nhân bản <b>không</b> ship.</li>
+<li><b>Tên gói không mang tên thật của bé</b> — “Giọng Kachi bé” (<code>kachi-giong-be-v1</code>). Owner đổi tên sau lúc nào cũng được; chỉ cần đổi <code>label</code>, <code>id</code> giữ nguyên để không phá bảng ghim.</li>
+<li><b>Có đường rút.</b> Gói là một mục trong danh mục ⇒ gỡ khỏi repo + khỏi <code>ALL</code> là gói biến mất khỏi mọi bản cài sau. Bản đã tải về máy người khác thì <b>không thu hồi được</b> — sự thật này thuộc về quyết định của owner ở trên, không phải thứ thiết kế chữa được.</li>
+</ul>
+<p>Giấy phép: mô hình TTS dùng để sinh gói ghi ở §4.6 + <code>MANIFEST.json</code> + màn CREDITS (cùng một trường dữ liệu — R7). Mô hình đã dùng là <code>toandev/F5-TTS-Vietnamese</code> — <b>CC-BY-NC-4.0</b> (ghi công · <b>phi thương mại</b>, <b>không</b> có điều khoản chia-sẻ-tương-tự). Với một gói phát hành công khai <b>phi lợi nhuận</b>, điều kiện NC là thứ dự án này đã tự khẳng định một lần cho mô hình nghe (<code>voice/README.md</code>); còn việc <b>không</b> có SA nghĩa là gói <b>không</b> bị buộc mang lại đúng giấy phép ấy. Vẫn phải <b>ghi công</b>: tác giả bản fine-tune + F5-TTS gốc (<code>SWivid/F5-TTS</code>) + bộ dữ liệu <code>capleaf/viVoice</code>. Xem OQ1.</p>
+</div>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td><b>Xưởng — sinh 6 mẫu duyệt.</b> Clip mẫu (dài + ngắn), chạy nhân bản, chấm bằng máy (ASR đọc lại + cosine giọng), so cạnh Piper. <span class="pill ok">xong 2026-09-16</span></td><td><code>scratchpad/voice-clone/*.py</code> (ngoài repo)</td></tr>
+<tr><td>T2</td><td><b>Cổng G1</b> — owner nghe 6 mẫu, duyệt hoặc chỉnh. <span class="pill ok">xong 2026-09-17 — owner: <i>“Giọng bé ok đó”</i></span></td><td>—</td></tr>
+<tr><td>T3</td><td><b>Bộ liệt kê</b> — bản <b>Python chạy được</b> đã có: <code>enumerate-clips.py</code> dựng lại đúng <code>VoiceFeedbackPhrase</code> và sinh <b>1 546</b> chuỗi (§4.4). <span class="pill ok">xong (host)</span> · <span class="pill wait">còn: bản <code>:core</code> + bài canh đỏ khi registry mọc thêm nhãn (R2)</span></td><td><code>scripts/voice/clone/enumerate-clips.py</code> · <code>core/…/voice/VoiceClipInventory.kt(+Test)</code></td></tr>
+<tr><td>T4</td><td><b>Sinh gói</b> — <b>xưởng đã xong và đã đo</b>: nối lại được · seed theo băm nội dung clip · trọng tài ASR hai mức · gộp lượt · đóng ADTS AAC + <code>manifest.json</code>/<code>index.tsv</code>/<code>num.tsv</code> + bảng ghim sha256, chạy thông suốt đầu-tới-cuối. <b>Lượt dựng 1 546 clip thì CHƯA xong</b> — [ĐO] ~50 s/clip ở tầng <code>fixed</code> (tầng khó nhất) ⇒ còn nhiều giờ máy; tiến trình đang chạy nền, nối lại bằng đúng một lệnh (§5.1). <span class="pill ok">công cụ xong</span> <span class="pill wait">gói đang dựng</span></td><td><code>scripts/voice/clone/{synth-pack,build-pack,viclip,tts_pronunciation}.py</code> · <code>finish-pack.sh</code></td></tr>
+<tr><td>T5</td><td><b>Nghe thử chỗ ghép</b> — công cụ xong: 10 câu có số dựng bằng ba mảnh (crossfade 15 ms + cân RMS), <b>kèm bản đọc liền cùng câu</b> làm mốc, cả hai đều được ASR chấm. Chạy được ngay khi các mảnh <code>head</code>/<code>num</code>/<code>unit</code> đã sinh. Hụt ⇒ OQ2(a) đã có sẵn cờ <code>--whole-ranges</code> (+270 clip, đã thử chạy). <span class="pill ok">đã chạy 2026-09-17 — ghép <b>4/10</b> · đọc liền <b>6/10</b></span> <span class="pill wait">chờ tai owner (OQ2)</span></td><td><code>scripts/voice/clone/compose-check.py</code></td></tr>
+<tr><td>T6</td><td><b>Danh mục gói</b> — <code>KachiClipVoiceCatalog</code> thực thi <code>VoicePack</code>, ghim sha256 + bytes từng tệp, dòng ghi công.</td><td><code>core/…/voice/KachiClipVoiceCatalog.kt(+Test)</code></td></tr>
+<tr><td>T7</td><td><b><code>ClipSpeaker</code></b> — tra chuỗi chính xác · ghép ba mảnh · crossfade · <code>AudioTrack</code> · hợp đồng <code>speak(text, onDone)</code> ba vế · trượt ⇒ nhường máy đọc kế (R4).</td><td><code>app/…/voice/ClipSpeaker.kt</code> · <code>core/…/voice/VoiceSpeakerSelector.kt</code></td></tr>
+<tr><td>T8</td><td><b>UI + tải</b> — mục “Giọng Kachi bé” ở <i>Cài đặt › Giọng nói</i>, tải/side-load/gỡ qua <code>VoiceModelStore</code> đang có; <b>không</b> đổi mặc định (R6).</td><td><code>app/…/voice/VoiceModelSettings.kt</code></td></tr>
+<tr><td>T9</td><td><b>Đăng gói</b> — <code>voice/tts/kachi-giong-be-v1/</code> + <code>.sha256.tsv</code> vào repo OTA; cập nhật <code>voice/README.md</code> (bảng gói + ghi công).</td><td><code>voice/</code></td></tr>
+<tr><td>T10</td><td><b>🚗 Đo trên xe</b> — độ trễ phát clip vs Piper (<code>KachiVoiceTiming</code>) · ROM có giải mã Opus không · nghe trong cabin đang chạy.</td><td>—</td></tr>
+<tr><td>T12</td><td><b>(backlog, không chặn)</b> “Giọng Kachi bố” — bản thu 187 s của chính owner cùng 30 câu đã có sẵn trong cùng phiên thu ⇒ dựng gói thứ hai gần như miễn phí công, chỉ tốn giờ máy.</td><td>—</td></tr>
+<tr><td>T11</td><td>Senior review (Opus) + security scan + <code>./gradlew clean assembleRelease testDebugUnitTest</code> + bump version.</td><td>—</td></tr>
+</table>
+<p class="muted">Phụ thuộc: T1 → T2 → (T3 ∥ T4) → T5 → T6 → T7 → T8 → T9 → T10 → T11. T3 là cổng của T4 (không sinh gói trước khi danh sách chuỗi được khoá bằng bài canh).</p>
+
+<h3>5.1 Chạy lại xưởng — bốn lệnh, không cần đọc lại cả spec</h3>
+<p>Lượt dựng <b>nối lại được</b>: cứ chạy lại lệnh (2), nó bỏ qua mọi clip đã nghe-đúng và còn tệp. Ngắt giữa chừng
+bằng <kbd>Ctrl-C</kbd> hay tắt máy đều không mất gì ngoài clip đang dở.</p>
+<pre>export SP=&lt;scratchpad&gt;  REPO=&lt;repo&gt;        # SP giữ WAV thô + progress.tsv, KHÔNG vào repo
+
+# (1) liệt kê lại (chạy sau mỗi lần đổi chuỗi trả lời trong Kotlin — nhớ chạy FeatureCatalogDumpTest trước)
+python3 $REPO/scripts/voice/clone/enumerate-clips.py --out $SP/voice-clone/clips.tsv
+
+# (2) xưởng — vài giờ, nối lại được, một tiến trình (xem §9: hai tiến trình CHẬM hơn)
+TQDM_DISABLE=1 /tmp/tts-venv/bin/python $REPO/scripts/voice/clone/synth-pack.py \
+    --clips $SP/voice-clone/clips.tsv --out $SP/voice-clone/pack-wav
+
+# (3) đóng gói + nghiệm thu + T5, một lệnh (KHÔNG cần GPU)
+bash $REPO/scripts/voice/clone/finish-pack.sh          # thêm --allow-missing để xem gói giữa chừng
+
+# (4) chỉ sinh lại mấy clip còn lệch, nhiều lượt hơn — không dựng lại cả gói
+/tmp/tts-venv/bin/python $REPO/scripts/voice/clone/synth-pack.py --ids "fixed/abc123,num/42" ...</pre>
+<p><b>Trạng thái nằm ở hai chỗ, cả hai ngoài repo</b>: <code>$SP/voice-clone/pack-wav/*.wav</code> (audio thô) và
+<code>progress.tsv</code> (mỗi dòng: clip · seed · lượt · ASR nghe ra · đúng-chặt · đúng-tiếng · thời lượng · sinh
+bằng lượt gộp hay riêng). Gói trong repo là thứ <b>dựng lại được</b> từ hai thứ đó, nên xoá nó không mất giờ máy.</p>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> — <code>:core</code>: bài canh liệt kê (T3) khoá đúng số chuỗi registry sinh ra và đỏ khi registry đổi; bài canh tra bảng khoá <i>trúng nguyên câu</i> · <i>ghép ba mảnh</i> · <i>trượt ⇒ Piper</i> (R3/R4); bài canh danh mục khoá sha256 + tổng bytes (T6).</li>
+<li><b>V-pack</b> — <b>đọc lại TỪNG clip</b> bằng đúng bộ nhận dạng đang ship (zipformer-vi + hotword thật, cùng bản <code>sherpa-onnx 1.13.8</code>): đây là phép kiểm bằng máy duy nhất bắt được lỗi “mô hình đọc nuốt chữ” trên hơn 1 500 clip mà tai người không nghe hết nổi. <b>Hai mức</b>, và mức nào dùng vào việc gì thì nói rõ (§9): mức <b>nghe-đúng-tiếng</b> (bỏ dấu thanh) quyết định <b>có sinh lại không</b> — tối đa 3 lượt, mỗi lượt một seed + một nhịp đọc; mức <b>chặt</b> (giữ dấu) là con số <b>báo cáo</b>. Clip chỉ lệch dấu thanh <b>vẫn vào gói</b> nhưng bị <b>liệt kê đích danh</b> trong <code>manifest.json</code> (<code>asrOk=false · asrNear=true</code>) — giấu chúng đi thì tỉ lệ đẹp hơn mà gói tệ hơn.</li>
+<li><b>V-nghe</b> — owner nghe: 6 câu duyệt (T2, <span class="pill ok">đã duyệt</span>) + <b>10 CẶP</b> của T5 + 10 clip
+rút ngẫu nhiên từ gói.
+<br>T5 cố ý là <b>cặp</b>, không phải một bản: cùng một câu, <code>NN_ghep</code> (dựng từ ba mảnh) đặt cạnh
+<code>NN_lien</code> (đọc liền một hơi). Câu hỏi của OQ2 là <i>“chỗ ghép nghe có như cắt dán không”</i> — một câu hỏi
+<b>so sánh</b>, và không có bản đọc liền thì owner đang chấm một thứ không có mốc. Máy chấm thêm phần nó chấm được:
+tỉ lệ ASR đọc lại đúng của <b>cả hai</b> bản, chênh lệch giữa chúng chính là cái giá của phép ghép, đo bằng số.
+<br>10 clip rút ngẫu nhiên lấy theo <b>hạt cố định</b> (<code>--seed</code>) ⇒ chạy lại ra đúng 10 clip ấy, nên hai
+người nghe cùng một tập và một lượt nghe lại sau khi sửa là so được với lượt trước.</li>
+<li><b>V-lifecycle</b> — tải → chọn → nói → đổi sang Piper → gỡ gói → nói (phải ra tiếng Piper, <b>không</b> im lặng) → cài lại. Mất mạng giữa chừng ⇒ tệp cụt bị xoá, câu lỗi nói rõ tệp nào.</li>
+<li><b>V-oncar 🚗</b> — T10. Chưa đo thì trạng thái đúng là <b>[CHƯA BIẾT]</b>, không phải “chắc chạy”.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 — Giữ mô hình <code>toandev</code> (CC-BY-NC-4.0) hay đổi sang bản MIT/Apache?</b> Bản đang dùng là <b>phi thương mại</b> — hợp với một gói phát hành công khai phi lợi nhuận, và không có điều khoản chia-sẻ-tương-tự nên không ràng buộc gói. Bản <code>coutMinh/f5tts-vietnamese-finetuned</code> là <b>MIT</b> (tự do hẳn) nhưng chất lượng <b>[CHƯA BIẾT]</b> (68 lượt tải, model card trống) và nặng 5,4 GB. <i>Mặc định</i>: giữ <code>toandev</code>, ghi công đủ 3 tầng (bản fine-tune · F5-TTS gốc · bộ dữ liệu viVoice) trong <code>MANIFEST.json</code> + CREDITS. <span class="muted">(chờ owner)</span></li>
+<li><b>OQ4 — Chuỗi <i>“…giúp em nhé”</i> đổi thành <i>“nha”</i>?</b> <b>ĐÃ CHỐT — và chốt bằng một bài canh, không bằng một lần sửa chuỗi.</b> [ĐO 2026-09-17] chuỗi <i>“Kachi chưa hiểu, anh nói lại giúp em nhé”</i> <b>chưa bao giờ</b> có trong <code>VoiceReply</code> — nó là câu mẫu của lượt nghe thử T1. Cùng ngày, <code>TtsPronunciationTest.khong cau tra loi nao ket bang nhe</code> lên cây làm việc: nó <b>quét source</b> của <code>VoiceReply</code>/<code>VoiceClarify</code>/<code>VoicePhrases</code> và <b>đỏ</b> nếu còn một chuỗi nào chứa chữ <i>“nhé”</i>. Tức luật không nằm ở một dòng đã sửa (sửa xong rồi ai cũng thêm lại được) mà ở một bài canh — đúng lệ <code>CLAUDE.md</code> §10. <span class="pill ok">xong</span></li>
+<li><b>OQ2 — Chỗ ghép câu có số nghe được không?</b> <b>Công cụ quyết đã sẵn sàng, chỉ chờ mảnh + tai owner.</b>
+<code>compose-check.py</code> dựng 10 câu từ ba mảnh <b>và</b> bản đọc liền cùng câu, chấm cả hai bằng ASR rồi ghi
+WAV+AAC thành cặp <code>NN_ghep</code>/<code>NN_lien</code> — owner nghe cặp, máy đưa con số chênh lệch.
+<br>Nếu hụt, đường (a) <b>đã viết sẵn</b>: <code>enumerate-clips.py --whole-ranges</code> thêm nguyên câu cho mọi giá
+trị của <b>7 nút bậc</b> ([ĐO] <b>+270</b> clip ≈ +1,2 MB — nhiệt 17–33 · gió 0–7 · âm lượng 0–30 · 3 nút độ sáng
+0–10 · mục tiêu sạc 50–100 bước 5, cùng các câu <i>“tăng/giảm N nấc”</i> N=1…5).
+<br><b>⚠ Giới hạn của (a), nói rõ trước khi owner chọn</b>: nó chữa được <b>đặt bậc</b>, KHÔNG chữa được <b>đọc số
+đo</b> — <i>“Pin: 46 %”</i> là 100 nhãn × 0–999, đúng chỗ mà tầng ba sinh ra để tránh. Nếu chỗ ghép hụt ở câu đọc số
+thì lựa chọn thật là (b): câu có số rơi về Piper. <i>Mặc định</i>: (a). <span class="muted">(chờ T5)</span></li>
+
+<li><b>OQ3 — Có nói tên gói ra ngoài là giọng trẻ em không?</b> Mô tả trong Cài đặt nên ghi rõ đây là giọng người thật đã được đồng thuận, hay chỉ ghi “Giọng Kachi bé”. <i>Mặc định</i>: chỉ tên gói, thêm một dòng ghi công + đồng thuận ở màn CREDITS. <span class="muted">(chờ owner)</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-voice-feedback.html</code> — V1 pha NÓI: <code>VoiceSpeaker</code> ba đường, <code>VoiceFeedbackPhrase</code>, gói Piper, hợp đồng <code>VoicePack</code>/<code>VoiceModelStore</code>.</li>
+<li><code>docs/specs/kachi-voice-fast-natural.html</code> — mốc giờ <code>KachiVoiceTiming</code>; luật “đổi mặc định mà kéo theo lượt tải 4G là quyết định thay người dùng”.</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/voice/VoiceFeedbackPhrase.kt:78-133</code> — <code>body()</code> 4 phép thay + <code>merge()</code>; cổng mà bộ liệt kê T3 phải khớp từng ký tự.</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/voice/VoicePack.kt</code> · <code>SherpaTtsCatalog.kt</code> — hợp đồng cài gói + luật ghim sha256 (khuôn mẫu cho T6).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/VoiceDispatcher.kt:375-388</code> — đường đọc thông tin: câu nói là <code>&lt;nhãn&gt;: &lt;số&gt;&lt;đơn vị&gt;</code>, tức đúng khuôn ba mảnh của tầng 3.</li>
+<li><code>voice/README.md</code> — kênh OTA gói giọng + cách ghi công đang dùng cho mô hình CC-BY-NC-ND.</li>
+<li><code>scripts/voice/hotword-matrix.py</code> — bộ nhận dạng đang ship, dùng làm trọng tài cho V-pack.</li>
+<li><code>docs/diagnostics/voice-recording-campaign-2026-09-16.md</code> — đợt thu 30 câu × 3 lượt (nguồn của clip mẫu).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-16 · quyết định</b> — <b>Không</b> chạy nhân bản trên xe. Lý do ở §4.2; ranh giới bằng chứng ghi rõ [ĐO]/[SUY] để người sau không đọc nhầm một suy luận thành một phép đo (đúng bệnh <code>CLAUDE.md</code> §2 đã trả giá).</li>
+<li><b>2026-09-16 · trade-off</b> — Gói ba tầng đổi <b>độ liền mạch của câu có số</b> lấy <b>cỡ gói ≤ 8 MB</b>. Nếu owner không chịu được chỗ ghép thì OQ2(a) mua lại độ liền mạch bằng ~0,7 MB.</li>
+<li><b>2026-09-16 · sự thật ngược với dự đoán</b> — bản thu của bé bị ASR nghe lệch ở nhiều đoạn (<i>“pin”</i> → <code>BIN</code>, <i>“hạ kính”</i> → <code>HẠT KIÊNG</code>) vì hotword biasing kéo. ⇒ bản chữ của clip mẫu <b>không</b> lấy thẳng từ ASR mà đối chiếu với kịch bản 30 câu (bản thu của owner cùng kịch bản). Sau khi dựng xong, ASR đọc lại clip mẫu ra <b>đúng nguyên văn</b> — dùng chính phép đó làm trọng tài V-pack.</li>
+<li><b>2026-09-16 · bẫy công cụ (mất ~1 giờ)</b> — bộ tải song song tự viết coi <b>một lần <code>read()</code> trả rỗng là tải xong</b> ⇒ hụt <b>5 %</b> checkpoint 5,4 GB trong <b>im lặng</b>: tệp đúng kích thước, không một dòng lỗi, chỉ có 262 MB số 0 nằm giữa. <code>torch.load</code> báo <i>“archive is corrupted”</i> — và vá từng lỗ theo kiểu đập chuột <b>không bao giờ hội tụ</b> vì còn lỗ nhỏ hơn cửa sổ quét. Bài học đúng họ với <code>CLAUDE.md</code> §8 (<i>compile xanh ≠ code chạy</i>): <b>tải xong ≠ tải đủ</b>. Bản đã sửa (<code>pget2.py</code>) bắt buộc <b>HTTP 206</b>, đếm đủ byte từng dải, và <b>băm sha256 toàn tệp</b> đối chiếu giá trị HF công bố — cả ba đều phải có, thiếu cái nào cũng đủ để hỏng lặng lẽ. Đây là luật cho <code>build-clip-pack.py</code> (T4) khi nó tải trọng số.</li>
+<li><b>2026-09-16 · bẫy môi trường</b> — <code>torchaudio 2.11</code> đẩy việc đọc/ghi audio sang <code>torchcodec</code>, thứ cần FFmpeg dựng sẵn trên máy (máy này không có ⇒ <code>dlopen</code> hỏng). Xưởng chỉ đọc/ghi WAV PCM nên <b>thay hai hàm</b> <code>torchaudio.load/save</code> bằng bản <code>soundfile</code> trước khi <code>f5_tts</code> import — rẻ hơn cài cả FFmpeg và không đụng phần suy diễn. Ghi vào đây vì bước T4 sẽ gặp lại y hệt.</li>
+<li><b>2026-09-17 · cổng G1 MỞ</b> — owner nghe 6 mẫu và duyệt: <i>“Giọng bé ok đó”</i>. T2 xong ⇒ dựng gói thật.</li>
+
+<li><b>2026-09-17 · phép liệt kê chạy bằng máy, và số ra KHÁC bản ước</b> — <code>scripts/voice/clone/enumerate-clips.py</code>
+đọc <code>registry.json</code> + dựng lại <b>đúng</b> <code>VoiceFeedbackPhrase.body/merge/decap/clampWords</code> bằng Python.
+[ĐO] <b>1 607</b> clip chứ không phải 1 471 (con số của lượt liệt kê sáng 2026-09-17; chiều cùng ngày registry bị gỡ bớt khả năng ⇒ <b>1 546</b> — xem mục <i>“registry đổi LẦN NỮA”</i> dưới), vì bản ước ở §4.4 thiếu ba nhóm câu <b>có thật</b>: <code>replyPreview</code>
+của 112 dòng thông tin + 54 nút, <code>notOnThisCar</code> cho từng nút (ca <code>ac_auto</code> đã [ĐO] trên xe), và
+<code>busy</code> cho từng gói lệnh. Ngược lại, hai nhóm bị <b>loại</b> sau khi hỏi registry thay vì đoán:
+<code>cancelled</code> chỉ phát được sau một hộp hỏi lại ⇒ chỉ nút <code>VoiceRisk.CONFIRM</code> mới cần clip, mà sau
+lượt gỡ ADAS 2026-09-16 danh sách ấy <b>rỗng</b> (54 clip không đường nào phát ra = ~0,3 MB tải qua 4G vô ích); và các
+dòng <code>unknown_*</code> của bảng danh mục là <b>hiện vật của bảng</b> (<code>FeatureCatalogDumpTest</code> bơm một
+<code>VoiceIntent.Unknown</code> qua <code>failed()</code> cho đủ cột) sinh ra những câu không đường nào phát ra được —
+<i>“Chưa chưa rõ cần làm gì…”</i>.</li>
+
+<li><b>2026-09-17 · [ĐO] một lỗi THẬT của <code>VoiceReply.doneActual</code></b> — chuỗi trả về mở đầu bằng
+<code>"✓ Đã gửi …"</code>, rồi <code>merge</code> lại gắn thêm <i>“Đã ”</i> ⇒ câu đọc lên là <b><i>“Đã đã gửi Âm lượng 12,
+xe báo 11”</i></b>. Với nút có đuôi <i>“chưa kiểm trên xe”</i> thì câu vượt trần 12 từ và tụt hẳn xuống <i>“Đã xong 1
+việc”</i> — tức người lái <b>không bao giờ nghe được hai con số</b>, đúng thứ mà <code>doneActual</code> sinh ra để nói.
+Bộ liệt kê giữ nguyên chuỗi sai (gói phải tra trúng thứ <code>merge</code> thật sự sinh ra); chỗ sửa là bỏ hai chữ
+<i>“Đã gửi”</i> → <i>“gửi”</i> trong <code>VoiceReply.doneActual</code>, <b>ngoài phạm vi spec này</b>.</li>
+
+<li><b>2026-09-17 · mã clip đổi sang BĂM NỘI DUNG, không đánh số</b> — giữa lúc dựng gói, registry mọc từ 106 lên
+<b>112</b> dòng thông tin (một agent khác đang vá cùng cây làm việc). Với số thứ tự <code>fixed/0193</code> thì mọi mã
+sau chỗ chèn dịch một bậc ⇒ <code>progress.tsv</code> nối lại sẽ gán tệp WAV của câu A cho câu B — hỏng <b>lặng lẽ</b>.
+Nay mã là <code>sha256(tier‖text)[:10]</code>: câu không đổi giữ nguyên mã, registry mọc thêm thì chỉ clip <b>thật sự
+mới</b> phải sinh.</li>
+
+<li><b>2026-09-17 · gói clip đi qua ĐÚNG cổng phiên âm của cửa ra tiếng</b> — cùng ngày, <code>TtsPronunciation</code>
+(spec <code>kachi-voice-fast-natural.html</code> §9) lên cây làm việc với một bảng <i>chữ viết → cách đọc</i> <b>đã đo
+n=5</b> qua vòng Piper→ASR (<i>“Ka-chi”</i> 5/5 · <i>“Ka chi”</i> 0/5 · <i>“e vê”</i> 5/5 · <i>“e-vê”</i> 0/5). KDoc của
+nó nói thẳng: bảng clip của gói này khoá theo <b>chuỗi gốc</b>, còn phiên âm là việc của cửa ra tiếng. ⇒ xưởng
+<b>đọc bảng ấy ra từ chính tệp Kotlin</b> (<code>scripts/voice/clone/tts_pronunciation.py</code>, 31/31 vector của
+<code>TtsPronunciationTest</code> khớp, luỹ đẳng) thay vì tự nghĩ một phép đổi thứ hai — nếu không, cùng một câu sẽ nghe
+khác nhau giữa giọng bé và đường lùi Piper, và chỗ lệch đó không bài canh nào bắt.
+<br>Một chỗ cố ý lệch: <code>soundOut</code> (bảng âm tiếng Anh <code>VoiceAppPhonetics</code>) không port. [ĐO] quét cả
+1 607 chuỗi: mọi cụm Latin đều đã nằm trong <code>PHRASES</code> hoặc là viết tắt HOA mà <code>spellOut</code> phủ đúng
+⇒ khe này hiện <b>rỗng</b>.
+<br><b>⚠ Khe THẬT tìm thấy khi quét</b>: <code>TtsPronunciation.PHRASES</code> có <code>°c</code> và <code>độ c</code>
+nhưng <b>không có <code>°</code> trơn</b>, trong khi <b>5</b> dòng thông tin đang dùng đúng đơn vị ấy (góc/hướng). Gói vá
+tạm bằng một bảng một dòng; chỗ sửa thật là thêm <code>"°" to "độ"</code> vào bảng Kotlin.</li>
+
+<li><b>2026-09-17 · [ĐO] ba cái bẫy của F5 mà 6 mẫu duyệt chưa chạm tới</b> — sinh 6 câu dài thì không thấy, sinh
+1 600 mảnh ngắn thì thấy hết:
+<ul>
+<li><b>Câu ngắn bị bỏ đói thời lượng.</b> F5 ước độ dài theo <b>số byte</b> chữ
+(<code>utils_infer: duration = ref_len + ref_len/ref_bytes × gen_bytes</code>). <i>“Pin (SOC):”</i> có 11 byte ⇒ được cấp
+0,70 s cho một cụm đọc mất ~1,3 s; kết quả là <b>0,58 s</b> tiếng và ASR đọc lại thành <i>“À”</i>. Chữ Việt có dấu tốn
+2–3 byte/ký tự nên số byte <b>không</b> tỉ lệ với số tiếng. Vá: ép <code>fix_duration</code> theo <b>số âm tiết</b> với
+nhịp 4,04 âm tiết/s đo từ chính giọng bé, và <b>chỉ</b> khi phép âm tiết đòi dài hơn phép byte — câu dài giữ nguyên hành
+vi đã sinh ra 6 mẫu owner duyệt.</li>
+<li><b>Ép RỘNG TAY thì đuôi clip mẫu leo lên ĐẦU câu.</b> Lượt gộp nhiều câu, ép tổng ước + 0,32 s mỗi mối, cho ra một
+lượt mở đầu bằng <i>“mở cửa hậu”</i> — đúng ba chữ cuối của clip mẫu. Cùng một bệnh <b>mọc đuôi</b> của §4.6 nhưng ở
+đầu câu: thừa chỗ thì mô hình lấp bằng chính clip mẫu. ⇒ lượt gộp <b>không</b> ép thời lượng (đủ dài để phép byte chạy
+đúng); chỗ cần ép là câu ngắn, và câu ngắn đi đường sinh riêng.</li>
+<li><b>Bộ nhớ đệm MPS phình.</b> Không gọi <code>torch.mps.empty_cache()</code> thì thời gian một lượt bò từ
+<b>5,8 s lên 15,6 s sau 8 lượt</b>. Nhả sau mỗi lượt tốn vài ms.</li>
+</ul></li>
+
+<li><b>2026-09-17 · gộp lượt suy diễn — lãi 4× cho CÂU, không lãi cho SỐ</b> — [ĐO] một lượt <code>infer</code> tốn
+~20 s <b>bất kể câu dài hay ngắn</b>, vì mô hình sinh lại cả clip mẫu 8,29 s rồi mới cắt bỏ phần đầu: với 1 000 clip số
+(~1 s mỗi clip) thì <b>93 %</b> giờ máy là để sinh đi sinh lại cùng một clip mẫu. Gộp rồi cắt theo quãng lặng:
+<b>3/3</b> mảnh đúng khi gộp 3 <b>câu</b>; <b>4/8</b> khi gộp 8 <b>chữ số</b>; <b>2/6</b> khi gộp 6 số hàng chục. Cơ chế:
+mảnh càng ngắn thì một đường cắt lệch 50 ms càng ăn mất cả một tiếng, mà quãng lặng giữa hai chữ số lại là quãng ngắn
+nhất. ⇒ chỉ gộp hai tầng <b>câu</b> (<code>fixed</code>, <code>head</code>); số và đuôi đơn vị sinh riêng.</li>
+
+<li><b>2026-09-17 · <code>fix_duration</code> bị GỠ khỏi xưởng sau một phép A/B</b> — giả thuyết ban đầu (<i>“câu ngắn
+bị bỏ đói thời lượng ⇒ ép dài ra là xong”</i>) <b>sai</b>, và phép đo bác nó: A/B 10 câu × {ép · không ép} cho thấy ép
+<b>không</b> chữa được bệnh nuốt tiếng đầu (<i>“Bài tiếp theo”</i> mất chữ <i>“Bài”</i> ở <b>cả hai</b> chế độ) và còn
+<b>làm hỏng thêm</b> chỗ đang đúng (<i>“pin”</i>: không ép ⇒ ASR nghe đúng, ép ⇒ nghe <i>“PEN”</i>). Cơ chế [SUY, khớp
+mọi quan sát]: F5 cắt phần sinh ra tại một mốc <b>cố định</b> <code>ref_audio_len</code>; ép tổng số khung làm cả lượt
+dựng lệch khỏi mốc ấy, nên tiếng đầu rơi vào phần bị cắt bỏ. Núm đúng là <code>speed</code> — F5 chia nó vào
+<b>chính công thức ước độ dài</b> của mình, nên câu dài ra mà không lệch mốc cắt. Sweep {1,0 · 0,85 · 0,70} cho
+5/10 · 4/10 · 5/10: <b>không nhịp nào thắng</b> ⇒ giữ 1,0 (nhịp đã sinh ra 6 mẫu owner duyệt) và dùng ba nhịp
+làm <b>ba lượt sinh lại</b>, vì chúng hỏng ở những chỗ <b>khác nhau</b> (cùng câu <i>“Đã bật đèn đọc”</i>: 1,0 sai
+<i>“đọc”→“độc”</i>, 0,70 sửa được <i>“đọc”</i> nhưng sai <i>“Đã”→“Rã”</i>).</li>
+
+<li><b>2026-09-17 · trọng tài HAI MỨC, vì một mức làm hỏng cả phép đo lẫn giờ máy</b> — mức <b>chặt</b> (giữ dấu
+thanh) là con số <b>báo cáo</b>; mức <b>nghe-đúng-tiếng</b> (bỏ dấu thanh) là cổng quyết định <b>có sinh lại không</b>.
+Lý do: bộ nhận dạng viết dấu <b>không ổn định</b> cho cùng một tiếng — cùng clip <i>“ki-lô-mét”</i>, lượt này ghi
+<code>KI LÔ MÉT</code> lượt kia <code>KILOMET</code>; <i>“pê mờ”</i> nó ghi thẳng <code>PM</code>. Một mức duy nhất coi
+cả hai là sai ⇒ mỗi lần chấm sai đốt thêm <b>ba lượt sinh</b> cho một clip <b>không sai</b>.
+<b>Cái giá đã biết</b>: clip chỉ lệch <b>dấu thanh</b> (<i>“đọc”→“độc”</i>) nay được giữ thay vì sinh lại. Đó là một
+đánh đổi có chủ ý, không phải một chỗ sót: §4.6 đã [ĐO] rằng lệch thanh <b>ổn định qua mọi seed</b>, và danh sách các
+clip ấy nằm nguyên trong <code>manifest.json</code> (<code>asrOk=false · asrNear=true</code>) + báo cáo nghiệm thu, nên
+ai muốn đổi cán cân thì chạy lại đúng những clip đó với nhiều lượt hơn.</li>
+
+<li><b>2026-09-17 · T5 CHẠY THẬT — và con số nói ngược với câu hỏi ban đầu của OQ2</b> — 10 câu có số, mỗi câu
+dựng <b>hai</b> bản: ghép ba mảnh, và đọc liền một hơi. Trọng tài ASR đang ship:
+<b>ghép 4/10 · đọc liền 6/10</b>.
+<br>Đọc trần hai con số ấy thì kết luận là <i>“phép ghép mất 2/10”</i>. Nhưng đọc <b>từng cặp</b> thì bức tranh khác
+hẳn: trong 6 câu ghép hỏng, <b>4 câu hỏng y hệt ở bản đọc liền</b> (<i>“Tầm hoạt động e vê…”</i> ·
+<i>“…một nấc…”</i> · <i>“Áp lốp trước-phải… ki-lô-pa-xcan”</i> · <i>“ô-đô tổng…”</i>) ⇒ chúng hỏng vì <b>giọng/trọng
+tài</b>, không vì chỗ nối. Chỉ còn <b>hai</b> câu là lỗi của phép ghép, và cả hai đều truy ra <b>một mảnh hỏng</b>
+chứ không phải cái mối nối:
+<ul>
+<li><i>“pin bốn mươi sáu phần trăm”</i> — ghép nghe ra <b>VIN</b>, đọc liền nghe ra <b>PIN</b>. Mảnh đầu
+<code>head/“Pin (SOC):”</code> đọc một mình đã hỏng sẵn (ASR: <i>“BÊN”</i>).</li>
+<li><i>“Đã xong ba việc”</i> — ghép nghe ra <b>SONG BA VIỆC</b>, đọc liền <b>đúng</b>. Mảnh
+<code>head/“Đã xong”</code> đứng một mình cũng hỏng (ASR: <i>“SONG”</i>).</li>
+</ul>
+⇒ <b>[ĐO] Chỗ nối KHÔNG phải vấn đề chính; mảnh đầu câu NGẮN mới là.</b> Cả hai câu hỏng đều có mảnh đầu 1–2 tiếng,
+đúng loại clip mà F5 nuốt tiếng đầu (§9, mục <i>“ba cái bẫy”</i>). Hệ quả cho OQ2: liệt kê nguyên câu cho các dải
+bậc (đường (a)) <b>không chữa được</b> ca này, vì <i>“Pin: 46 %”</i> là câu <b>đọc số đo</b>, không phải đặt bậc.
+Đường chữa đúng là làm mảnh <code>head</code> ngắn đọc cho ra hồn — hoặc chấp nhận và để những khung ấy rơi về Piper.
+<b>Quyết định cuối vẫn là tai owner</b>: 10 cặp <code>NN_ghep</code>/<code>NN_lien</code> đã nằm ở
+<code>scratchpad/voice-clone/t5-compose/</code>.</li>
+
+<li><b>2026-09-17 · registry đổi LẦN NỮA giữa lượt dựng — và lần này có số đo cho thấy thiết kế mã băm đáng giá</b>
+— lúc 02:01 một agent khác gỡ bớt khả năng: <b>54 → 47</b> nút, <b>112 → 100</b> dòng thông tin. Liệt kê lại:
+<b>1 607 → 1 546</b> clip. Điểm quan trọng không phải con số mới mà là <b>ba con số của phép so</b>:
+<b>0</b> clip mới · <b>61</b> clip bị bỏ · <b>1 546</b> clip <b>giữ nguyên mã</b> ⇒ <b>mọi giờ máy đã bỏ ra vẫn dùng
+được</b>, lượt dựng nối lại đúng chỗ đang đứng (<i>“đã xong 26 · còn 1 520”</i>) và không sinh lại một clip nào.
+<br>Với mã đánh số thứ tự, cùng thay đổi ấy sẽ <b>dịch</b> mã của mọi clip sau chỗ bị gỡ — và vì `progress.tsv` khoá
+theo mã, lượt dựng sẽ gán tệp WAV của câu này cho câu kia, <b>im lặng</b>. Đây là lần thứ hai trong một phiên
+registry đổi dưới chân lượt dựng; lần đầu (00:08) mới chỉ là cảnh báo, lần này là phép thử thật.</li>
+
+<li><b>2026-09-17 · clip KHÔNG cứu được phải NGUỘI lại, nếu không nó chặn cả lượt dựng</b> — bảng chuỗi sắp theo
+thứ tự chữ cái, nên năm clip hỏng ổn định (<i>“Bài tiếp theo”</i> · <i>“Bố cục 2 cột”</i> · <i>“Bụi mịn…”</i> ·
+<i>“Chìa blu-tút…”</i> · <i>“Chưa bấm Nhớ ghế lái…”</i>) nằm ngay <b>đầu</b> danh sách. Luật nối lại ban đầu là
+<i>“clip nào chưa nghe-đúng thì làm lại”</i> ⇒ mỗi lần chạy lại, lượt dựng đâm thẳng vào đúng năm clip ấy, đốt mấy
+phút máy rồi mới đi tiếp; qua sáu lần nối lại là ~50 lượt suy diễn cho <b>không</b> clip nào.
+⇒ đếm <b>tổng số lượt đã thử qua mọi lần chạy</b> (đọc từ chính <code>progress.tsv</code>); quá
+<code>SETTLE = 4</code> thì giữ bản tốt nhất đã có và đi tiếp. Không mất gì im lặng: chúng vẫn vào gói, vẫn bị liệt kê
+đích danh trong <code>manifest.json</code>, và <code>--ids</code> sinh lại đúng chúng khi có ý tưởng mới.
+<br>Kèm theo một phép đổi rẻ: clip <b>đã từng hỏng xuống cuối hàng</b>. Thứ tự trong một tầng không ảnh hưởng kết quả
+(seed lấy theo <b>băm của clip</b>, không theo vị trí), nên đây thuần là chuyện lượt dựng nên tiêu mấy phút đầu vào
+việc gì — và tiêu vào clip chưa từng thử thì có ích hơn tiêu vào clip đã hỏng bốn lần.</li>
+
+<li><b>2026-09-17 · [ĐO] chạy HAI tiến trình song song trên MPS làm CHẬM ĐI, không nhanh lên</b> — giả thuyết: một
+lượt <code>infer</code> có phần GPU (F5) và phần CPU (ASR chấm lại), nên hai tiến trình xen kẽ nhau sẽ lấp được chỗ
+trống. Đo thật: cắt danh sách thành hai phần rời (<code>fixed,head,unit</code> · <code>num</code>) và chạy song song
+⇒ <b>0,71 clip/phút</b>, so với <b>1,27 clip/phút</b> của một tiến trình — <b>chậm 1,8 lần</b>. Bộ nhớ không phải lý
+do (2 × ~1 GB trên máy 52 GB, không swap); MPS xếp hàng nhân của hai tiến trình nên phần GPU vốn đã là nút cổ chai
+chỉ bị chia đôi, còn phần nạp/biên dịch nhân thì trả <b>hai lần</b>. ⇒ giữ <b>một</b> tiến trình.
+<br><i>Ghi lại vì đây là một tối ưu ai cũng sẽ nghĩ tới, và nó sai.</i></li>
+
+<li><b>2026-09-17 · [ĐO] <code>decap</code> của <code>merge</code> phá <code>spellOut</code> của <code>TtsPronunciation</code>
+— một lỗi ở CHỖ HAI MÔ-ĐUN GẶP NHAU, không mô-đun nào sai một mình</b> — nút <code>powertrain_mode</code> có nhãn
+<i>“EV / HEV”</i>. Câu trả lời hỏng đi qua <code>merge</code>: nó gắn <i>“Chưa ”</i> rồi <b>hạ chữ cái đầu</b>
+(<code>decap</code>, đúng việc của nó — <i>“Đã Bật đèn”</i> → <i>“Đã bật đèn”</i>) ⇒ chuỗi thành
+<i>“Chưa <b>eV</b> / HEV: EV…”</i>. Sang tới cửa ra tiếng, <code>TtsPronunciation.spellOut</code> chỉ nhận
+<b>chữ HOA toàn phần</b> (đúng việc của nó — <i>“pin”</i> viết thường là một TỪ, đánh vần nó ra <i>“pê-i-en”</i> là
+phá một câu đang đúng) ⇒ <code>eV</code> trượt, còn <code>HEV</code> thì trúng. Câu đọc lên thành
+<i>“Chưa <b>eV</b> / hát e vê: e vê…”</i> — nửa đánh vần, nửa không.
+<br>[ĐO] gói clip và đường lùi Piper <b>hỏng giống hệt nhau</b> (cùng đi qua một cổng), nên đây không phải lỗi <i>của
+gói</i>; nhưng nó là lỗi người lái nghe thấy. Chỗ sửa <b>ngoài phạm vi</b> spec này, và có hai đường: cho
+<code>spellOut</code> nhận cả dạng chữ đầu đã hạ khi phần còn lại là HOA, hoặc cho <code>decap</code> bỏ qua cụm viết
+tắt. Cần một bài canh cho <b>cặp</b> hai hàm, không phải cho từng hàm — mỗi hàm đọc riêng đều đúng.
+<br><b>Khe cùng họ</b>: <code>PHRASES</code> chưa có <code>"cell"</code>, trong khi <b>6</b> dòng thông tin dùng nó
+(<i>“Nhiệt cell TB”</i> → đọc ra <i>“Nhiệt cell tê bê”</i>, chữ <i>cell</i> để nguyên cho espeak đoán). [ĐO] bản Kotlin
+cũng để nguyên (<code>VoiceAppPhonetics.SYLLABLES</code> không có âm <code>cell</code>) ⇒ bản Python port khớp đúng
+hành vi hiện tại, không lệch; nhưng cả hai cùng đọc sai một chỗ.</li>
+
+<li><b>2026-09-17 · [ĐO] hai câu trả lời SAI NGỮ PHÁP lộ ra vì phải đọc to lên</b> — liệt kê bằng máy rồi đọc từng
+chuỗi làm hiện hai chỗ mà tầng CHỮ giấu được còn tầng TIẾNG thì không:
+<ul>
+<li><code>VoiceFeedbackPhrase.merge</code> gắn <i>“Chưa ”</i> vào đầu <b>mọi</b> dòng <code>✗</code>, kể cả dòng mà phần
+thân <b>không phải một cụm động từ</b>: <code>media_next</code> hỏng ra <i>“<b>Chưa bài tiếp theo</b>, xe không nhận
+lệnh”</i> (và <i>“Chưa bài trước…”</i>). Trên tấm chữ thì lướt qua được; đọc lên thì nó là một câu không ai nói.</li>
+<li><code>VoiceReply.doneActual</code> đã có sẵn chữ <i>“Đã gửi”</i> nên <code>merge</code> cho ra <i>“<b>Đã đã
+gửi</b>…”</i> (mục riêng ở dưới).</li>
+</ul>
+Cả hai <b>ngoài phạm vi</b> spec này — gói clip cố ý liệt kê <b>đúng</b> thứ <code>merge</code> sinh ra, vì đó là thứ
+nó phải tra trúng. Ghi ra đây để lượt sửa câu chữ tiếp theo có chỗ bắt đầu.</li>
+
+<li><b>2026-09-17 · ĐÍNH CHÍNH §4.6 — quãng lặng cuối clip mẫu KHÔNG phải cơ chế</b> — §4.6 ghi rằng clip mẫu B hơn A
+một phần vì nó <i>“kết bằng 0,35 s lặng”</i>. [ĐO source] <code>f5_tts/infer/utils_infer.py:348</code>:
+<code>aseg = remove_silence_edges(aseg) + AudioSegment.silent(duration=50)</code> — F5 <b>cắt sạch</b> lặng ở <b>cả
+hai</b> đầu clip mẫu rồi tự nối đúng <b>50 ms</b>. Tức 0,35 s ấy bị vứt trước khi mô hình nhìn thấy, và khác biệt thật
+giữa A và B chỉ còn là <b>độ dài</b> (11,91 s chạm mép tự-cắt ~12 s · 8,29 s không chạm). Đây đúng loại lỗi
+<code>CLAUDE.md</code> §2 cấm: một <b>quy kết</b> nghe hợp lý đi kèm một <b>cơ chế</b> đã chứng minh, nhưng bản thân nó
+chưa ai kiểm. Hệ quả thực dụng: <b>không</b> nới được quãng lặng ở clip mẫu để chữa bệnh nuốt tiếng đầu — 50 ms là
+hằng số trong mã F5.</li>
+
+<li><b>2026-09-17 · [ĐO] một cách chữa NGHE RẤT HỢP LÝ nhưng SAI — ghi lại để không ai thử lại</b> — bệnh nuốt tiếng
+đầu có một mẹo kinh điển: thêm một tiếng <b>vứt đi</b> ở đầu (<i>“Này. ” + câu</i>) rồi cắt bỏ, để nó hứng chỗ nối
+giữa clip mẫu và phần sinh ra. Kết quả trên 10 câu khó: <b>1/10</b> so với <b>5/10</b> của bản không mẹo — <b>tệ hơn
+hẳn</b>. Cơ chế: đường cắt luôn rơi <b>muộn</b>, ăn mất chữ đầu của chính câu cần giữ (<i>“Đã mở hết kính”</i> →
+<i>“kính”</i>; <i>“chín trăm chín mươi chín”</i> → <i>“chín mươi chín”</i>), và câu một tiếng thì không cắt nổi.
+⇒ bỏ. Đường đang dùng là <b>sinh lại</b> với seed + nhịp khác, vì các nhịp hỏng ở những chỗ khác nhau.</li>
+
+<li><b>2026-09-17 · cắt lượt gộp theo VỊ TRÍ MONG ĐỢI, không theo quãng lặng dài nhất</b> — câu như <i>“Chưa mở được
+cốp sau, xe không nhận lệnh”</i> có quãng nghỉ <b>bên trong</b> (dấu phẩy) dài hơn quãng giữa hai câu; luật
+<i>“lấy n−1 quãng dài nhất”</i> vì thế cắt vào giữa câu và bỏ mất một ranh giới thật. Nay mốc cắt ước theo <b>số byte
+chữ</b> của từng mảnh — chính đại lượng F5 dùng để chia thời lượng — rồi lấy quãng lặng gần mốc ấy nhất.</li>
+
+<li><b>2026-09-17 · trọng tài ASR bỏ qua CHỖ NGẮT TỪ, giữ DẤU THANH</b> — chỗ ngắt từ là <b>quy ước viết của bộ nhận
+dạng</b>, không phải thứ tai người nghe ra: nó ghi <code>KILOMET</code> nơi ta viết <i>“ki lô mét”</i>,
+<code>Ô ĐO TỔNG</code> nơi ta viết <i>“Odo tổng”</i> (cùng chỗ này bản Piper đang ship cũng ra <code>KILOMET</code> —
+§4.6). Chấm lỗi ở đó là <b>chấm trọng tài</b>, và mỗi lần chấm sai tốn thêm ba lượt sinh lại cho một clip vốn không sai.
+Dấu thanh thì <b>giữ</b>: <i>“nhé”</i> đọc ra <i>“nhá”</i> là lỗi thật (OQ4), và một phép so bỏ dấu sẽ nuốt mất đúng loại
+lỗi mà V-pack sinh ra để bắt.</li>
+
+<li><b>2026-09-17 · bẫy công cụ của chính phiên này — <code>pgrep -f</code> tự khớp vào mình</b> — mấy lượt “chờ cho
+tiến trình chạy xong rồi làm bước sau” dựng bằng <code>until ! pgrep -f "synth-pack.py"; do sleep; done</code>
+<b>treo vĩnh viễn</b>: dòng lệnh của chính con shell đang chờ có chứa chuỗi ấy, nên <code>pgrep</code> luôn tìm thấy
+<b>nó</b>. Mất ~10 phút cho một lượt chờ không bao giờ kết thúc. Mẹo ngoặc (<code>"[s]ynth-pack.py"</code>) chữa được
+ca đơn giản, nhưng hỏng lại ngay khi cùng dòng lệnh có thêm một chỗ viết đủ <code>synth-pack.py</code>.
+⇒ luật cho các bước nối nhau: <b>chờ theo DẤU VẾT trong tệp nhật ký</b> (<code>grep "^\[xong"</code>), đừng chờ theo
+bảng tiến trình. Nhật ký là thứ chính công việc kia ghi ra; bảng tiến trình có cả người đi hỏi ở trong.</li>
+
+<li><b>2026-09-17 · bẫy môi trường (mất ~5 phút)</b> — <code>sherpa-onnx</code> không có trong venv của F5 ⇒ xưởng không
+tự chấm được. Cài vào <code>/tmp/tts-venv</code> bằng <code>uv pip install</code> và <b>kiểm phiên bản khớp</b> bộ đang
+dùng ở venv kia (cả hai <b>1.13.8</b>) — trọng tài phải là <b>cùng một</b> bộ nhận dạng, không phải một bộ tương tự.</li>
+
+<li><i>(các mục sau điền trong lúc code T6–T11.)</i></li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

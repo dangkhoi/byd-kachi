@@ -50,7 +50,7 @@ class CarControlAdapterTest {
     @Test fun `select routes index for feature-id control`() {
         val gw = FakeHalGateway(featureRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
-        // ambient_color = feature 1276194864 (drive_mode từng đứng đây; nay là named `setOperationMode` — 2026-09-15).
+        // ambient_color = feature 1276194864 (drive_mode từng đứng đây; nút đó đã gỡ ở lượt (V) 2026-09-17).
         assertTrue(adapter.select("ambient_color", 2))
         assertEquals(1276194864, gw.featureSetCalls[0].id)
         assertEquals(2, gw.featureSetCalls[0].value)
@@ -68,7 +68,7 @@ class CarControlAdapterTest {
         val gw = FakeHalGateway(namedRc = 0L, featureRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
         assertTrue(adapter.act("lock", 1))            // TOGGLE (named)
-        assertTrue(adapter.act("drive_mode", 3))      // SELECT (feature)
+        assertTrue(adapter.act("headlight_mode", 3))  // SELECT (feature)
     }
 
     @Test fun `act uy quyen ve actByKind - COVER van dung args (window,state)`() {
@@ -95,19 +95,19 @@ class CarControlAdapterTest {
         assertTrue(p.actByKind("lock", 1))              // TOGGLE
         assertTrue(p.actByKind("fan", 5))               // STEP
         assertTrue(p.actByKind("win_lf", 1))            // COVER
-        assertTrue(p.actByKind("drive_mode", 2))        // SELECT
+        assertTrue(p.actByKind("headlight_mode", 2))    // SELECT
         assertEquals(
-            listOf("toggle(lock,true)", "step(fan,5)", "cover(win_lf,true)", "select(drive_mode,2)"),
+            listOf("toggle(lock,true)", "step(fan,5)", "cover(win_lf,true)", "select(headlight_mode,2)"),
             p.calls,
         )
     }
 
     @Test fun `buoc STEP va SELECT KHONG bi nen thanh 1-0`() {
         // Đây là lỗi thật đã vá: ô gói lệnh từng bắn MỌI bước qua toggle ⇒ `step(fan,5)` thành `toggle(fan,true)`
-        // (ghi 1 thay vì 5) và `select(drive_mode,2)` thành ghi 1.
+        // (ghi 1 thay vì 5) và `select(headlight_mode,2)` thành ghi 1.
         val p = RecordingPort()
-        p.actByKind("fan", 5); p.actByKind("drive_mode", 2)
-        assertEquals(listOf("step(fan,5)", "select(drive_mode,2)"), p.calls, "tham số phải đi nguyên vẹn")
+        p.actByKind("fan", 5); p.actByKind("headlight_mode", 2)
+        assertEquals(listOf("step(fan,5)", "select(headlight_mode,2)"), p.calls, "tham số phải đi nguyên vẹn")
     }
 
     @Test fun `buoc BUTTON van bam du arg bang 0`() {

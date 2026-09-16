@@ -19,10 +19,10 @@ class CtlSafetyPolicyTest {
         // Khoá theo NGỮ NGHĨA: mọi control mở/khoá cửa·kính·nóc·cốp·ca-pô phải cần xác nhận. Thêm một mã kính/cửa
         // mới mà quên đưa vào CONFIRM_REQUIRED sẽ làm bài này đỏ tại chỗ khai (CLAUDE.md §4 phạm vi tường minh).
         val bodyOpenKeywords = listOf("kính", "cửa", "nóc", "cửa sổ trời", "cốp", "ca-pô", "khoá")
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: `rain_close` và `mirror_auto` rời danh sách miễn trừ cùng chính hai
+        // nút đó (owner chấm NO) — giữ lại là nuôi một ngoại lệ không còn chủ.
         val exempt = setOf(
             "child_lock",       // khoá TRẺ EM — bật là an toàn hơn, không mở cabin
-            "rain_close",       // tự ĐÓNG kính khi mưa — không mở
-            "mirror_auto",      // gập gương KHI KHOÁ — không mở cabin
         )
         ControlRegistry.ALL.filter { def ->
             def.domain == Domain.BODY &&

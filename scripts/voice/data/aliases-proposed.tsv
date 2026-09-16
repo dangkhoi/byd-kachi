@@ -21,8 +21,6 @@ ac_on	xem điều hòa	3	hotword
 ambient_color	chuyển sang tím	3	synonym
 cabin_temp	nhiệt trong xe sao rồi	3	hotword
 camera_view	chuyển sang trước	3	synonym
-charging_eta_hour	còn mấy giờ nữa đầy sao rồi	3	hotword
-drive_mode	chuyển sang thể thao	3	synonym
 energy_mode	chế độ năng lượng thế nào	3	hotword
 headlight_feedback	chế độ đèn pha thế nào	3	hotword
 headlight_mode	chuyển sang đỗ	3	synonym
@@ -69,7 +67,6 @@ window_rr	xem kính sau phải	3	hotword
 ambient_enabled	xem đèn viền ca	2	clarify
 ambient_enabled	đèn viền ca	2	clarify
 anion_state	xem ai ôn âm	2	synonym
-batt_range_bodywork	xem tầm tin	2	synonym
 batt_temp	nhiệt độ tin thế nào	2	clarify
 cell_temp_avg	nhịp xe sao rồi	2	synonym
 cell_temp_avg	xem nhiệt	2	synonym
@@ -78,28 +75,18 @@ cell_temp_high	xem nhiệt cao	2	synonym
 cell_temp_low	nhiệt xe thấp thế nào	2	synonym
 cell_v_high	áp xe cao thế nào	2	synonym
 cell_v_low	áp xe thấp thế nào	2	synonym
-charging_eta_hour	xem còn mấy giờ nữa đầy	2	clarify
-charging_eta_min	còn mấy phút nữa đầy sao rồi	2	synonym
-charging_eta_min	xem còn mấy phút nữa đầy	2	synonym
 door	mở chốt cửa giúp mình với	2	synonym
-drift_mode	chế độ dốc sao rồi	2	clarify
-drift_mode	xem chế độ d	2	synonym
 energy_mode	xem chế độ năng lượng	2	clarify
 engine_rpm	vòng tua sang thế nào	2	synonym
 ev_mileage_km	xem trại điện	2	synonym
 headlight_feedback	xem chế độ đèn pha	2	clarify
 hood	bật ca	2	synonym
 hud_brightness	tăng độ sáng hu	2	synonym
-key_bluetooth	chìa blu	2	synonym
-key_bluetooth	xem chìa blus	2	synonym
 light_drl	xem đèn ban ngày	2	clarify
 light_high_beam	đèn pha thế nào	2	clarify
 light_left_turn	mc nhan trái	2	synonym
 lock	bật khóa	2	synonym
 mac_leave	bật tui xuống xe đây	2	synonym
-mirror_auto	bật gập vương khi khóa	2	synonym
-mirror_auto	ca chi tắt gập vương khi khóa đi	2	synonym
-mirror_fold_btn	cho tôi xếp kiến chiếu hậu nhé	2	clarify
 nav_saved	về nhà	2	synonym
 odometer	họ đo sao rồi	2	synonym
 open_app	lời du	2	synonym
@@ -166,10 +153,6 @@ anion_state	ai ôn âm thế nào	1	clarify
 anion_state	ai ơn âm thế nào	1	clarify
 anion_state	ion âm thế nào	1	clarify
 anion_state	theo ion âm	1	clarify
-batt_range_bodywork	thông tin sau rồi	1	clarify
-batt_range_bodywork	trong tuần	1	clarify
-batt_range_bodywork	tầm tin sao rồi	1	clarify
-batt_range_bodywork	tầm tin sau rồi	1	clarify
 batt_temp	nhiệt độ thế nào	1	clarify
 batt_temp	xem nhiệt độ kính	1	clarify
 brake_pct	chân trần vành	1	clarify
@@ -192,10 +175,6 @@ cell_v_low	chân elo tức	1	clarify
 cell_v_low	l thấp thế nào	1	clarify
 cell_v_low	xem áp se thấp	1	clarify
 cell_v_low	xem áp xe thấp	1	clarify
-charge_power	xem công suất giảm	1	clarify
-charging_eta_hour	sang còn mấy giờ nữa đầy	1	clarify
-charging_eta_min	còn mấy phút nữa đây	1	clarify
-charging_eta_min	còn mấy phút nữa đầy sau rồi	1	clarify
 child_lock	cac hi tắt khóa trẻ n	1	clarify
 cluster_music	bật nhạc trên	1	clarify
 cluster_music	caxi tắt nhạc trên cùng đi	1	clarify
@@ -205,8 +184,6 @@ defrost	ka chi tắt giấy tiếng đi	1	clarify
 defrost_rear	bật sấy kính	1	clarify
 defrost_rear	ka chi tắt giấy kính sau đi	1	clarify
 door	bà chốt cửa giúp mình với	1	clarify
-drift_mode	chế độ drif	1	clarify
-drift_mode	xem chế độ gì	1	clarify
 drl	bước đến ba ngày	1	clarify
 energy_mode	sang chế độ năng lượng	1	clarify
 engine_code	em ngã máy	1	clarify
@@ -240,9 +217,6 @@ hud_switch	he tri tắt hu kính lái đi	1	clarify
 hud_switch	kach tắt hô kính lái đi	1	clarify
 hud_switch	tất cả hi tắt hu kính lái đi	1	clarify
 inside_temp	can thiệp cài đặt	1	clarify
-is_charging	nhân sạc	1	clarify
-key_bluetooth	chia bl u thấy h thế nào	1	clarify
-key_bluetooth	xem chìa blu	1	clarify
 layout	ba bố cục một ô giùm cái	1	clarify
 layout	qua bố cục một ô dùng cái	1	clarify
 layout	qua bố cục một ô giùm cái	1	clarify
@@ -263,13 +237,7 @@ mac_leave	trời xanh	1	clarify
 mac_win_close_all	đóng hết hí	1	clarify
 mac_win_open_all	mở hết phí	1	clarify
 media_prev	ac ghi bài trước	1	clarify
-mirror_auto	ac hi tắt gập cường khi khóa đi	1	clarify
-mirror_auto	bạch cương hóa	1	clarify
 mirror_fold	vương chiếu hậu sao rồi	1	clarify
-mirror_fold_btn	cho tôi xếp kiến chiếu hộ nhé	1	clarify
-mirror_fold_btn	lập vương	1	clarify
-mirror_fold_btn	thắp hương	1	clarify
-mirror_fold_btn	vương	1	clarify
 motor_front_rpm	say vòng tù một thời trước	1	clarify
 motor_front_rpm	vòng tua mô rồi	1	clarify
 motor_front_torque	menuter trước dạo rồi	1	clarify
@@ -508,7 +476,6 @@ soh_oem	sức khỏe kim sao rồi	1	clarify
 soh_oem	sức khỏe thi sao rồi	1	clarify
 soh_oem	sức khỏe tin sao rồi	1	clarify
 soh_oem	xem sức tiền	1	clarify
-start_charging	mấy	1	clarify
 steer_heat	bật ruổi vô lăng	1	clarify
 steer_heat	áp rủi vô lăng	1	clarify
 sunroof_state	cửa sổ trời	1	clarify

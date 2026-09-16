@@ -4,7 +4,9 @@ import android.content.Context
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.BuildConfig
+import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
+import com.byd.clusternav.setVoiceKeepLog
 import com.byd.clusternav.launcher.SettingsDeps
 import com.byd.clusternav.launcher.SettingsRows
 import com.byd.clusternav.launcher.setVoicePreferOffline
@@ -52,8 +54,11 @@ class VoiceModelSettings(
 
     fun build(body: LinearLayout) {
         modelRow(body)
+        lightModelRows(body)
+        attributionRows(body)
         ttsRow(body)
         speakToggles(body)
+        logRows(body)
         // V3 · R7 — mục *"Hỏi xác nhận trước khi chạy"* + nguồn micro. Lớp RIÊNG (trần 500 dòng, CLAUDE.md §4.1)
         // nhưng dựng **ở đây** để trang Cài đặt vẫn có đúng một khối "Giọng nói" liền mạch.
         VoiceConfirmSettings(context, rows, deps).build(body)
@@ -115,6 +120,185 @@ class VoiceModelSettings(
                 mb(VoiceModelStore.sizeOnDisk(context)),
             )
         }
+    }
+
+    // ── H6 · Đổi sang MÔ HÌNH NHẸ, và gỡ bản nặng — HAI hàng, hai quyết định ─────────────────────
+
+    /**
+     * ═══ *"Chuyển sang mô hình nhẹ"* + *"Gỡ bản nặng"* — vì sao là hai nút chứ không một ═════════════════
+     *
+     * [ĐO xe 2026-09-16] `docs/diagnostics/oncar-trace-2026-09-16.md` §1: RSS của Kachi **537 MB** (native heap
+     * 477 MB = encoder fp32), máy còn **56–94 MB** trống, lần bật mic đầu mất **15 giây**. [ĐO bridge 2026-09-16]
+     * xe của owner trả `bytes: 270408094` ⇒ đúng bản fp32. [ĐO host] 25 tệp WAV: int8 ra **21/25 đúng ý định = y
+     * hệt fp32**. Tức đây là một lượt đổi gần như không mất gì và được lại vài trăm MB.
+     *
+     * ## Hai nút, vì đó là hai rủi ro ngược nhau xảy ra ở hai thời điểm khác nhau
+     *  1. **Tải + chuyển** là một lượt 74 MB qua mạng 4G của xe. Nó phải xong **hoàn toàn** rồi mới đổi lựa chọn:
+     *     [VoiceModelStore.install] chỉ báo `Done` sau khi cả bốn tệp đã qua sha256 + đã đổi tên nguyên tử vào
+     *     thư mục thật. Đổi `select` sớm hơn (vd ngay khi bấm) là để một chiếc xe mất sóng giữa chừng trỏ vào một
+     *     thư mục rỗng ⇒ lần bấm mic sau ra *"chưa tải mô hình"*, mà bản cũ vẫn còn nguyên trên đĩa.
+     *  2. **Gỡ bản nặng** là một lượt xoá **không hoàn tác được** (tải lại mất 266 MB). Người dùng chọn lúc nào
+     *     thu lại chỗ — không bao giờ tự xoá sau khi đổi. Đó cũng là đường lùi duy nhất nếu bản nhẹ nghe tệ hơn
+     *     trên cabin thật ([CHƯA BIẾT] — chưa ai đo tốc độ giải mã int8 trên ARM của đầu xe này).
+     *
+     * Hàng CHỈ hiện khi danh mục thật sự có một gói nhẹ hơn gói đang chọn ([SherpaModelCatalog.lighterThan]) —
+     * không viết cứng tên mô hình nào ở tầng vẽ (CLAUDE.md §7).
+     */
+    private fun lightModelRows(body: LinearLayout) {
+        val current = VoiceModelStore.selected(context)
+        val light = SherpaModelCatalog.lighterThan(current) ?: return
+        val status = rows.note(lightStatusText(current, light)) as TextView
+        body.addView(status)
+        // Ghi chú *"máy đã bỏ qua lượt nạp sẵn vì thiếu RAM"* — một DỮ KIỆN, không phải một lượt tự đổi mô hình.
+        VoiceEngine.lastPreloadSkip?.let {
+            body.addView(rows.note(context.getString(R.string.kachi_voice_model_preload_skipped, it)))
+        }
+        val action = rows.button(switchLabel(light)) {} as TextView
+        action.setOnClickListener { switchToLight(light, status, action) }
+        body.addView(action)
+        // Nút GỠ chỉ có nghĩa khi bản nặng vẫn còn nằm trên đĩa.
+        if (VoiceModelStore.isReady(context, current) && current.id != light.id) {
+            val dropLabel = context.getString(R.string.kachi_voice_model_drop_heavy, current.label)
+            val drop = rows.button(dropLabel) {} as TextView
+            drop.setOnClickListener { dropHeavy(current, light, status, drop) }
+            body.addView(drop)
+        }
+    }
+
+    private fun switchToLight(
+        light: SherpaModelCatalog.SherpaModel,
+        status: TextView,
+        action: TextView,
+    ) {
+        action.isEnabled = false
+        action.text = context.getString(R.string.kachi_voice_model_working)
+        background {
+            VoiceModelStore.install(context, light) { step ->
+                status.post { status.text = stepText(step) { lightDoneText(light) } }
+                if (step is VoiceModelStore.Step.Done) {
+                    // ⚠ CHỈ ở nhánh `Done` — xem KDoc [lightModelRows] rủi ro (1). `Done` tới sau khi cả bốn tệp
+                    // đã qua sha256 và thư mục đã đổi tên xong, nên từ đây `isReady` chắc chắn đúng.
+                    VoiceEngine.release()
+                    VoiceModelStore.select(context, light.id)
+                }
+                if (step is VoiceModelStore.Step.Done || step is VoiceModelStore.Step.Failed) {
+                    action.post { action.isEnabled = true; action.text = switchLabel(light) }
+                }
+            }
+        }
+    }
+
+    private fun dropHeavy(
+        heavy: SherpaModelCatalog.SherpaModel,
+        light: SherpaModelCatalog.SherpaModel,
+        status: TextView,
+        drop: TextView,
+    ) {
+        drop.isEnabled = false
+        background {
+            // Đang CHỌN bản nặng mà xoá nó là tự tay làm câm đường nghe ⇒ từ chối, nói rõ phải đổi trước. Kiểm ở
+            // tầng THI HÀNH (không chỉ ẩn nút): hàng được dựng một lần lúc mở Cài đặt, còn lựa chọn thì đổi được
+            // ở chính màn này giữa chừng (CLAUDE.md §5 — guard cứng đặt ở tầng thi hành).
+            if (VoiceModelStore.selected(context).id == heavy.id) {
+                status.post { status.text = context.getString(R.string.kachi_voice_model_drop_blocked, light.label) }
+                drop.post { drop.isEnabled = true }
+                return@background
+            }
+            VoiceModelStore.remove(context, heavy)
+            status.post { status.text = lightStatusText(VoiceModelStore.selected(context), light) }
+            drop.post { drop.isEnabled = true }
+        }
+    }
+
+    /** Nhãn nút *Chuyển sang mô hình nhẹ* — **một** chỗ dựng, vì nó được đặt lại sau mỗi lượt cài xong/hỏng. */
+    private fun switchLabel(light: SherpaModelCatalog.SherpaModel): String =
+        context.getString(R.string.kachi_voice_model_switch_light, mb(light.totalBytes))
+
+    /** Một dòng: mô hình đang dùng · cỡ của nó · RAM còn trống — ba con số quyết định có nên đổi hay không. */
+    private fun lightStatusText(current: SherpaModelCatalog.SherpaModel, light: SherpaModelCatalog.SherpaModel): String =
+        context.getString(
+            R.string.kachi_voice_model_current,
+            current.label,
+            mb(VoiceModelStore.sizeOnDisk(context, current).takeIf { it > 0 } ?: current.totalBytes),
+            mb(freeRamBytes()),
+            light.label,
+            mb(light.totalBytes),
+        )
+
+    private fun lightDoneText(light: SherpaModelCatalog.SherpaModel): String =
+        context.getString(R.string.kachi_voice_model_switched, light.label, mb(light.totalBytes))
+
+    /** RAM còn trống của **hệ thống** (không phải của tiến trình) — cùng con số [VoicePreloadPolicy] quyết bằng. */
+    private fun freeRamBytes(): Long = runCatching {
+        android.app.ActivityManager.MemoryInfo().also { mi ->
+            (context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager)?.getMemoryInfo(mi)
+        }.availMem
+    }.getOrDefault(0L)
+
+    // ── GHI CÔNG tác giả mô hình — nghĩa vụ của giấy phép, không phải một dòng trang trí ─────────
+
+    /**
+     * *"Về mô hình nghe"* — tên tác giả · giấy phép · URL, cho **mọi** gói trong danh mục đòi ghi công.
+     *
+     * ## Vì sao nó là một hàng THẬT trong Cài đặt, không phải một dòng trong README
+     * Mô hình mặc định từ 1.69 mang **CC BY-NC-ND 4.0**, và `BY` nghĩa là ghi công **ở nơi người dùng thấy**. Một
+     * dòng nằm trong `voice/README.md` của kho mã thì người ngồi trên xe không bao giờ đọc tới. Ba chỗ hiển thị
+     * (hàng này · `state.voice_model` · README) đều đọc **cùng một** trường dữ liệu
+     * ([SherpaModelCatalog.attributions]) nên chúng không thể lệch nhau.
+     *
+     * Duyệt theo danh mục chứ không viết cứng tên gói: thêm một gói CC BY nữa là hàng này tự dài ra (CLAUDE.md §7).
+     */
+    private fun attributionRows(body: LinearLayout) {
+        val credits = SherpaModelCatalog.attributions()
+        if (credits.isEmpty()) return
+        body.addView(rows.subHeader(context.getString(R.string.kachi_voice_model_credits_title)))
+        credits.forEach { m ->
+            body.addView(rows.note(
+                context.getString(R.string.kachi_voice_model_credits_line, m.label, m.attribution, m.license, m.sourceUrl),
+            ))
+        }
+    }
+
+    // ── H2 · NHẬT KÝ LƯỢT NÓI: một ô tích + một nút xuất ─────────────────────────────────────────
+
+    /**
+     * ═══ *"Giữ nhật ký lượt nói"* (BẬT sẵn) + *"Xuất nhật ký voice"* ══════════════════════════════════════
+     *
+     * ## Câu chữ phải nói ra chỗ tiếng NẰM Ở ĐÂU, không chỉ nói tính năng làm gì
+     * Đây là ô tích duy nhất trong cả app bật một thứ **ghi lại giọng người dùng**. Một dòng phụ kiểu *"giúp cải
+     * thiện nhận dạng"* là đúng chức năng mà không trả lời câu người ta thật sự hỏi. Nên dòng phụ nói thẳng hai
+     * việc: tiếng **chỉ lưu trên xe, không gửi đi**, và nó **tự xoá** sau 30 lượt / 30 MB. Cả hai đều là tính
+     * chất đo được từ mã ([VoiceUtteranceLog]), không phải một lời hứa suông.
+     *
+     * Nút *Xuất* nén ra `Download/` để người ta cắm USB chép, hoặc gửi Zalo — **một cú bấm**, không hướng dẫn ai
+     * gõ `adb` (CLAUDE.md §11). Nó đổi chữ thành đường dẫn thật khi xong: một nút im lặng sau vài giây nén là một
+     * nút người ta sẽ bấm lần thứ hai.
+     */
+    private fun logRows(body: LinearLayout) {
+        body.addView(rows.checkRow(
+            on = VoiceUtteranceLog.enabled(context),
+            title = context.getString(R.string.kachi_voice_log_title),
+            sub = context.getString(R.string.kachi_voice_log_sub, VoiceUtteranceLog.MAX_ENTRIES),
+        ) { on -> Prefs.setVoiceKeepLog(context, on) })
+        val export = rows.button(context.getString(R.string.kachi_voice_log_export)) {} as TextView
+        export.setOnClickListener {
+            export.isEnabled = false
+            export.text = context.getString(R.string.kachi_voice_model_working)
+            background {
+                // Nén hàng chục MB ⇒ luồng NỀN (cùng luật mọi hàng khác của lớp này); chạm view qua `post`.
+                val r = VoiceUtteranceLog.exportZip(context)
+                export.post {
+                    export.isEnabled = true
+                    export.text = when (r) {
+                        is VoiceUtteranceLog.Export.Ok ->
+                            context.getString(R.string.kachi_voice_log_exported, r.path, r.entries)
+                        is VoiceUtteranceLog.Export.Failed ->
+                            context.getString(R.string.kachi_voice_model_failed, r.reason)
+                    }
+                }
+            }
+        }
+        body.addView(export)
     }
 
     // ── Cái MIỆNG: gói giọng đọc offline (T8) ────────────────────────────────────────────────────

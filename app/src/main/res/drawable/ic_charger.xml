@@ -1,5 +1,6 @@
 <!--
-  BỘ SẠC / TRỤ SẠC (thùng máy + tia sét + vòi) — cho `charger_work_state` (trạng thái của BỘ SẠC, không phải của xe).
+  BỘ SẠC / TRỤ SẠC (thùng máy + tia sét + vòi) — cho nút `wireless_charge` (sạc không dây).
+  ((V) 2026-09-17: chủ cũ `charger_work_state` đã gỡ — owner chấm NO cho cả cụm ô sạc.)
   [U6] Tách khỏi ic_plug: một cái nói về đầu cắm trên xe, một cái nói về thiết bị sạc bên ngoài.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"

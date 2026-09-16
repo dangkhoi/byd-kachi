@@ -44,8 +44,14 @@ android {
         // VISUAL-REFRESH P1 (bề mặt + icon app hoa anh đào). 1.67 đã có 2 commit nhưng **chưa đăng APK nào**
         // ⇒ gộp P1 vào 1.68 để ship một lần (CLAUDE.md §9: mỗi bản ĐÃ BÁO cho owner = một số hiệu riêng; 1.67
         // chưa báo nên không phải giữ chỗ cho nó).
-        versionCode = 69
-        versionName = "1.68"
+        //
+        // VOICE-HOTFIX 2026-09-16 ⇒ **1.69 (70)**. Bản `vehicleTest` của 1.68 (69) đã **cài lên xe thật** của
+        // owner (commit 9edc828), nên theo CLAUDE.md §9 mọi thay đổi mã sau đó phải mang một số hiệu RIÊNG —
+        // tái dùng "1.68" là dựng lại đúng cảnh ba bản nội dung khác nhau cùng tên "v0.37" của phiên 21/07,
+        // và lần này còn tệ hơn vì một bản đã nằm trên xe đang chạy: mọi lượt chẩn đoán sau đó sẽ không biết
+        // mình đang nói về bản nào.
+        versionCode = 70
+        versionName = "1.69"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

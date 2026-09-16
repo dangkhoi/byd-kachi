@@ -122,6 +122,28 @@ class DrawerGridSeamContractTest {
         )
     }
 
+    /**
+     * ⚠ [SOÁT 1.69 · P2] Icon bung trên luồng nền phải về luồng vẽ qua **Handler của main looper**, KHÔNG qua
+     * `View.post` của chính ô.
+     *
+     * Bản vá "bung icon ngoài luồng vẽ" (soát OCR #42) xếp hàng lượt bung **ngay khi dựng ô**, lúc ô còn chưa có
+     * cha — cả lưới chỉ gắn vào cửa sổ ở cuối lượt dựng ngăn kéo. `View.post` trên một view **chưa gắn** không đi
+     * qua Handler mà đẩy vào `mRunQueue` của view: một hàng đợi KHÔNG đồng bộ, do luồng vẽ rút ra ở
+     * `dispatchAttachedToWindow`. Ghi vào nó từ luồng nền là đua với chính lượt gắn ấy — nhẹ thì mất icon, nặng
+     * thì ném giữa lượt mở ngăn kéo. Đổi `MAIN.post` về `post` thì ca này ĐỎ.
+     */
+    @Test
+    fun `icon bung o luong nen ve luong ve bang Handler chu khong bang View post`() {
+        val src = code("AppDrawerApps.kt")
+        assertTrue(src.contains("Looper.getMainLooper()"), "phải có đường về luồng vẽ bằng Handler của main looper")
+        val exec = SourceRoots.body(src, "ICONS.execute {")
+        assertTrue(exec.contains("MAIN.post"), "khối bung icon phải gửi kết quả qua MAIN.post — thấy: $exec")
+        assertFalse(
+            Regex("""(?<![A-Za-z.])post\s*\{""").containsMatchIn(exec),
+            "`View.post` trên ô CHƯA GẮN đẩy vào mRunQueue (không đồng bộ) ⇒ đua với lượt gắn: $exec",
+        )
+    }
+
     /** Ô trong lưới căn DỌC-TRÊN — căn giữa dọc làm icon ô nhãn ngắn tụt xuống lệch với ô cùng hàng. */
     @Test
     fun `o trong luoi can tren, khong can giua doc`() {

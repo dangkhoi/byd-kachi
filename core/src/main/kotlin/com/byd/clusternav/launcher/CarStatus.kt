@@ -16,19 +16,16 @@ data class CarStatus(
     val body: Body = Body(),
     val lights: Lights = Lights(),
     val identity: Identity = Identity(),
+    /** A9 — giải trí (Android, KHÔNG qua HAL BYDAuto). Xem [Infotainment]. */
+    val infotainment: Infotainment = Infotainment(),
 ) {
-    /** A1 — năng lượng / sạc / pin. */
+    /** A1 — năng lượng / pin (mọi ô SẠC đã gỡ ở lượt (V) 2026-09-17 — owner chấm NO). */
     data class Energy(
         val soc: Int? = null,
         val evRangeKm: Int? = null,
         val fuelRangeKm: Int? = null,
         val odometerKm: Int? = null,
         val motorPowerKw: Int? = null,
-        val isCharging: Boolean? = null,
-        val chargePowerKw: Double? = null,
-        val chargingPct: Int? = null,
-        val chargingEtaMin: Int? = null,
-        val chargedKwh: Double? = null,
         val battTempC: Int? = null,
         val sohPct: Int? = null,
         val targetSoc: Int? = null,
@@ -38,18 +35,13 @@ data class CarStatus(
         val tripHours: Double? = null,
         val tripKwh: Double? = null,
         val consumption50: Double? = null,
-        val chargingEtaHour: Int? = null,
-        val chargingState: Int? = null,
-        val chargerWorkState: Int? = null,
-        val battRangeBodyworkKm: Int? = null,
         val cellTempHighC: Int? = null,
         val cellTempLowC: Int? = null,
         val cellTempAvgC: Int? = null,
         val cellVHigh: Double? = null,
         val cellVLow: Double? = null,
         // ── Điện phụ 12V + nguồn máy — chuyển từ `Safety` sang đây 2026-09-16 khi owner gỡ toàn bộ ADAS/an toàn.
-        // Ắc-quy 12V và trạng thái nguồn MCU không phải hệ an toàn lái; chúng là câu hỏi về NĂNG LƯỢNG.
-        val mcuStatus: Int? = null,
+        // Ắc-quy 12V không phải hệ an toàn lái; nó là câu hỏi về NĂNG LƯỢNG. (`mcuStatus` xoá ở lượt (V).)
         val volt12v: Double? = null,
         val volt12vLevel: Int? = null,
     )
@@ -69,7 +61,6 @@ data class CarStatus(
         val motorFrontTorqueNm: Int? = null,
         val engineRpm: Int? = null,
         val wheelSpeedKmh: Int? = null,
-        val driftMode: Boolean? = null,
     )
 
     /** A3 — khí hậu / không khí. */
@@ -86,6 +77,27 @@ data class CarStatus(
         val setTempC: Int? = null,
         val coolantTempC: Int? = null,
         val tempUnit: String? = null,
+        /**
+         * H1 · T2 — mã mức THÔ của khung cho ghế mát/sưởi ([ĐO xe 2026-09-16] 3 ⇐ màn xe *"mức 2"*, 1 = tắt).
+         *
+         * Giữ **thô**, không đổi sẵn sang mức người dùng: phép đổi nằm ở [ControlLevels] (một bảng dữ liệu có TODO
+         * điểm đo thứ hai). Đổi ở đây thì con số đo được biến mất khỏi `CarStatus`, và lượt đo sau không còn gì để
+         * đối chiếu — đúng cái bẫy *"dữ liệu cũ thành [ĐO]"* mà CLAUDE.md §2 cấm.
+         */
+        val seatVentRaw: Int? = null,
+        val seatHeatRaw: Int? = null,
+        val defrostFrontOn: Boolean? = null,
+        val defrostRearOn: Boolean? = null,
+        /**
+         * Mã chế độ điều hoà THÔ: `getAcControlMode()` — `AC_CTRLMODE_AUTO = 0` / `_MANUAL = 1`
+         * (`ac/BYDAutoAcDevice.java:29-30`; [ĐO xe 2026-09-16] đọc ra 0 trong khi màn xe đang AUTO).
+         *
+         * Giữ **thô** thay vì một `Boolean` *"đang AUTO"* vì cùng lý do với [seatVentRaw], cộng một lý do nữa: phép
+         * đảo phải xảy ra **đúng một lần**. Nút `ac_auto` đã khai [ControlDef.readInverted] (đường đọc của NÚT đảo
+         * ở `HalBindingTable.readState`); nếu cụm này cũng cất sẵn dạng đã đảo thì bất cứ ai đọc chéo hai bề mặt
+         * cũng có nguy cơ đảo lần thứ hai và ô nói ngược.
+         */
+        val acModeRaw: Int? = null,
     )
 
     /** A4 — lốp (áp suất kPa + nhiệt °C). */
@@ -142,12 +154,20 @@ data class CarStatus(
 
     // ⚠ A7 (`Safety`) đã **xoá hẳn** 2026-09-16 cùng toàn bộ ADAS/an toàn chủ động (owner). Đừng dựng lại nhóm này:
     // dây an toàn · nhận diện người ngồi · trẻ em · quá tốc · điểm mù · chuyển làn · cắt ngang sau · cảnh báo mở cửa ·
-    // cảm biến đỗ · ESP đều KHÔNG còn trong launcher. Ba mục điện 12V/MCU đã dời sang [Energy].
+    // cảm biến đỗ · ESP đều KHÔNG còn trong launcher. Hai mục điện 12V đã dời sang [Energy].
+
+    /**
+     * A9 — giải trí. Cụm ĐẦU TIÊN không đến từ HAL BYDAuto: âm lượng là của Android
+     * (`AudioManager.getStreamVolume(STREAM_MUSIC)` — [BindingRoute.Local]). Đứng riêng chứ không ghép vào [Climate]
+     * hay [Identity] vì nguồn dữ liệu khác hẳn: nó còn đọc được khi HAL xe im lặng hoàn toàn (máy ảo, off-car).
+     */
+    data class Infotainment(
+        val mediaVolume: Int? = null,
+    )
 
     /** A8 — danh tính / khoá / máy. */
     data class Identity(
         val vin: String? = null,
-        val keyState: String? = null,
         val engineCode: String? = null,
         val oilLevelPct: Int? = null,
         val gpsLat: Double? = null,

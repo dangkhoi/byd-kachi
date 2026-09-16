@@ -77,7 +77,19 @@ fi
 # ── D. Pha WRITE có kiểm soát ────────────────────────────────────────────────────────────────
 k_hr; echo "[D] WRITE sweep — bắn từng control KHÔNG denylist, ghi accepted + hal_line"
 k_say "⚠ Mỗi control dưới đây ĐỔI STATE xe thật. TOGGLE sẽ tự bật rồi tắt lại để khôi phục."
+k_say "⚠ 'Khôi phục' của TOGGLE là ĐẶT VỀ 0, KHÔNG phải về giá trị trước sweep: control nào vốn đang"
+k_say "   BẬT (sưởi ghế · lọc bụi · đèn đọc…) sẽ bị TẮT sau lượt quét. Ghi lại trước khi chạy."
 [ "$AUTO" = "1" ] && k_say "(AUTO=1 — chỉ ghi accepted+hal_line, KHÔNG hỏi hiệu quả vật lý)"
+
+# CLAUDE.md §4 + KDoc `k_confirm` (_common.sh): MỌI lệnh đổi state hệ thống phải đi qua cổng xác nhận
+# và phải khai lệnh hoàn tác ngay bên cạnh. Mọi bước GHI khác của bộ này (30-profiles · 40-ota ·
+# 60-cast · 20-datums) đều có cổng; riêng vòng sweep này bắn 60+ control mà chỉ in một dòng cảnh báo,
+# và với AUTO=1 thì không hỏi gì cả. Một cổng cho CẢ vòng (không hỏi lại từng control).
+if ! k_confirm "bắn $NCTL control (trừ denylist) lên HAL xe thật — mỗi control đổi state một lần" \
+               "TOGGLE tự đặt về 0 sau mỗi ca (xem cảnh báo trên); STEP/SELECT owner chỉnh tay; đường cuối: tắt máy xe rồi nổ lại"; then
+  k_warn "bỏ qua WRITE sweep theo yêu cầu — chỉ còn pha READ ở trên."
+  k_log_stop; exit 0
+fi
 
 # CSV: một dòng tiêu đề, rồi mỗi control một dòng. Trường bọc nháy kép, nháy trong nhân đôi.
 csvq() { printf '"%s"' "$(printf '%s' "${1:-}" | sed 's/"/""/g')"; }

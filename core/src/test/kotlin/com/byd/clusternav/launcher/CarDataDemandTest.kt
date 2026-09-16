@@ -68,6 +68,32 @@ class CarDataDemandTest {
         assertTrue(d!!.isEmpty(), "ô nút giữ trạng thái trong RAM, không đọc lại HAL mỗi nhịp")
     }
 
+    /**
+     * [SOÁT OCR 2026-09-16 · P1] **Hành động của launcher trên thanh nút KHÔNG được tắt cổng H1.**
+     *
+     * `DockConfig.setEnabled` nhận mọi mã có trong [CapabilityCatalog], và [LauncherActions] là bộ đăng ký thứ
+     * SÁU (S4 · R12) — `DockPickerContractTest` khoá đúng ca người dùng đặt *Ứng dụng* · *Cài đặt* lên thanh nút.
+     * [CarDataDemand.expand] không biết bộ đăng ký ấy thì [CarDataDemand.of] trả `null` = *"đọc hết"*, tức cổng
+     * H1 tắt **im lặng** và mọi nhịp poll quay lại đọc cả bảng datum (đúng 77 % tải HAL mà 1.67 vừa cắt), đồng
+     * thời `needsFast(null)` = true bật lại cả vòng 1 Hz. Gương của `nut bam khong keo theo datum nao`.
+     */
+    @Test
+    fun `hanh dong launcher tren thanh nut khong keo theo datum nao`() {
+        LauncherActions.ALL.forEach { a ->
+            val d = CarDataDemand.of(state(dock = listOf(a.id)))
+            assertNotNull(d, "mã ${a.id} làm nhu cầu về null ⇒ cổng H1 tắt im lặng, đọc lại cả bảng datum")
+            assertTrue(d!!.isEmpty(), "${a.id} không chạm CarControlPort nên không bày một số nào của xe")
+            assertFalse(CarDataDemand.needsFast(d), "không có datum nhanh ⇒ vòng 1 Hz phải nằm im")
+        }
+    }
+
+    /** Ca THẬT của owner: một ô ĐỌC + nút *Ứng dụng* cùng trên thanh — nhu cầu vẫn đúng tập tối thiểu. */
+    @Test
+    fun `nut Ung dung dung canh mot o doc khong lam phinh nhu cau`() {
+        val d = CarDataDemand.of(state(dock = listOf("soc", LauncherActions.APPS)))
+        assertEquals(setOf("soc"), d)
+    }
+
     @Test
     fun `ma la khong tinh duoc thi doc het (fail-open)`() {
         // Một mã widget tương lai chưa khai ở CURATED ⇒ phải rơi về "đọc hết", KHÔNG được im lặng bỏ đọc.

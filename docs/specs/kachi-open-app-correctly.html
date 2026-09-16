@@ -47,6 +47,7 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 5 — 2026-09-17 · 1.69 (70)</b>: <b>Đường lùi của CHẠM hiểu cử chỉ</b> (§4.6) — chữa bệnh owner báo trên xe 1.68 (<i>“không lướt để scroll được, chỉ nhận tap, mà tap lại không chính xác”</i>). Máy trạng thái thuần <code>GestureFallback</code> ở <code>:core</code>: gom DOWN…MOVE…UP, tại UP phát <b>ĐÚNG MỘT</b> lệnh (<code>swipe</code> / <code>swipe</code> cùng-điểm cho giữ-lâu / <code>tap</code> một lần), toạ độ <b>đã map</b> thay vì <code>e.x/e.y</code> thô. Đồng thời mở <b>đầu dò</b> cho câu hỏi <i>“vì sao daemon bơm chạm không lên”</i> (nhật ký <code>kachi-logs/inputd-&lt;stamp&gt;.log</code> · lý do nguyên văn mỗi lượt nối · dò <code>nohup</code> · chờ 5 s) + cầu <code>state.inputd</code> + công tắc ẩn <code>inputd_disabled</code>. <b>[ĐO máy ảo]</b> vuốt vào ô ⇒ app trong ô <b>CUỘN</b>; và một phát hiện mới: daemon <b>có lên</b>, chỗ hỏng là lượt NỐI — <code>avc: denied { connectto } … tcontext=u:r:shell</code> (sepolicy). Chi tiết §4.6 + §9.</li>
 <li><b>Pass 4 — 2026-09-14</b>: <b>H2 — vá hai lỗi vòng đời của ô chiếu app</b> (phát hiện ở <code>docs/diagnostics/waze-into-slot-research-2026-09-14.md</code> §5): <b>rò màn ảo</b> (đo được 4 <code>kachi-slot-*</code> cho 2 ô) và <b>khung đóng băng</b> (app chết, ô vẫn giữ khung cuối). Thêm sở hữu màn ảo <b>theo Ô</b> (<code>SlotVdLedger</code> :core + <code>SlotVdOwner</code> :app) và nhịp đo sống/chết dùng chung (<code>SlotLiveness</code> :core + <code>SlotLiveProbe</code> :app). [ĐO] sau vá trên <code>emulator-5554</code>: <b>2 màn ảo cho 2 ô</b>, ổn định qua khởi động lại / dựng lại ô; ô chết hiện nhãn <i>"App đã đóng — chạm để mở lại"</i> và chạm mở lại được. Chi tiết §9.</li>
 <li><b>Pass 3 — 2026-09-10</b>: <b>Senior review (độc lập) — APPROVED</b>. Đủ phạm vi 10/10 yêu cầu · khớp 7/7 mặt tiếp giáp · vá <b>3 [P2] + 1 [P3]</b> (rào bộ nhớ cho kênh shell · rò rỉ cửa sổ ngăn kéo lúc huỷ activity · một Drawable dùng cho hai ô lưới · index tài liệu lệch) + 2 test khoá bản vá ⇒ đủ 5 module <b>2343 test / 0 lỗi</b>. Ba nợ 🚗 ghi tường minh, xem §10.</li>
 <li><b>Pass 2 — 2026-09-10</b>: <b>Implement xong off-car</b>. Đủ 5 module <b>2339 test / 0 lỗi</b> (+37 so với mốc 2302), APK dựng sạch, đo E2E trên máy ảo đạt cả 3 ca. <b>Một sai lệch spec đã sửa theo số đo</b>: thứ tự hai đường mở toàn màn bị ĐẢO (xem §9).</li>
@@ -221,6 +222,94 @@ WorkspaceRenderPlan.decide(
 <tr><td>Phụ thuộc mới?</td><td>—</td><td><b>Không thêm</b>. Chỉ Android SDK + khối đã có (thoả R-nf2). Bản androidx tương đương tồn tại nhưng không cần.</td></tr>
 </table>
 
+<h3>4.6 ĐƯỜNG LÙI CỦA CHẠM — vuốt trong ô (1.69)</h3>
+
+<div class="card"><b>Triệu chứng owner báo trên xe (1.68):</b> <i>“mở YouTube lên, không lướt để scroll được, nó chỉ nhận tap, mà tap thì nó lại không chính xác lắm”</i> — kèm <i>“CPU về ổn nhưng vẫn không scroll được đâu, đừng assumption do CPU lag”</i>.</div>
+
+<p><b>[ĐO xe 2026-09-16]</b> (<code>docs/diagnostics/oncar-trace-2026-09-16b/README.md</code> §9.1) — ba số đo, không suy diễn:</p>
+<ul>
+<li><code>adb shell input swipe 1000 850 1000 350 400</code> vào vùng ô ⇒ app nhận <b>một cú tap</b> (mở luôn một video). CPU Kachi <b>0–7 %</b> lúc đo ⇒ <b>không phải</b> nghẽn CPU.</li>
+<li>Mọi lần mở app đều in <code>I/Kachi/InputDaemonClient: daemon did not come up; staying on input -d fallback</code> ⇒ trên xe, <b>đường lùi không phải nhánh hiếm — nó là nhánh DUY NHẤT đang chạy</b>.</li>
+<li>Đọc mã: đường lùi trước 1.69 bắn <code>input -d &lt;id&gt; tap x y</code> cho <b>cả</b> DOWN <b>lẫn</b> UP (⇒ hai cú tap cho một cú chạm), dùng <code>e.x/e.y</code> <b>thô của view</b> thay vì toạ độ đã map, và <b>không có nhánh nào cho MOVE</b>.</li>
+</ul>
+
+<p><b>Cách sửa:</b> một máy trạng thái <b>thuần</b> ở <code>:core</code> (<code>GestureFallback</code>) gom cả cử chỉ rồi tại UP phát <b>đúng một</b> lệnh. Chuỗi lệnh do <code>TouchRouter</code> dựng (một chỗ duy nhất, golden-lock byte); ngưỡng <code>touchSlop</code>/<code>longPressTimeout</code> <b>tiêm từ <code>ViewConfiguration</code> tại chỗ gọi</b> — <code>:core</code> không được biết mật độ màn hình máy nào (CLAUDE.md §7).</p>
+
+<div class="diagram">
+<svg viewBox="0 0 780 300" role="img" aria-label="Máy trạng thái đường lùi của chạm: IDLE, TRACKING và ba nhánh lệnh tại UP">
+  <g font-family="-apple-system,sans-serif" font-size="12.5">
+    <rect x="30" y="20" width="150" height="46" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="105" y="40" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">IDLE</text>
+    <text x="105" y="56" text-anchor="middle" fill="var(--muted)">chưa có cử chỉ nào</text>
+
+    <line x1="180" y1="43" x2="288" y2="43" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#g)"/>
+    <text x="234" y="34" text-anchor="middle" fill="var(--muted)">DOWN(x0,y0,t0)</text>
+
+    <rect x="290" y="20" width="180" height="46" rx="10" fill="rgba(0,113,227,.10)" stroke="var(--accent)"/>
+    <text x="380" y="40" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--fg)">TRACKING</text>
+    <text x="380" y="56" text-anchor="middle" fill="var(--muted)">MOVE · ngón 2 bị BỎ QUA</text>
+
+    <path d="M470,32 q60,-22 60,11 q0,33 -60,11" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#g)"/>
+    <text x="560" y="47" fill="var(--muted)">MOVE</text>
+
+    <line x1="380" y1="66" x2="380" y2="104" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#g)"/>
+    <text x="392" y="90" fill="var(--muted)">UP(x1,y1,t1) ⇒ phát ĐÚNG MỘT lệnh</text>
+
+    <rect x="30" y="106" width="700" height="150" rx="12" fill="var(--bg)" stroke="var(--line)"/>
+
+    <rect x="46" y="120" width="216" height="58" rx="9" fill="rgba(0,113,227,.10)" stroke="var(--accent)"/>
+    <text x="154" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">quãng &gt; touchSlop</text>
+    <text x="154" y="157" text-anchor="middle" fill="var(--muted)">swipe x0 y0 x1 y1</text>
+    <text x="154" y="171" text-anchor="middle" fill="var(--muted)">max(60, t1−t0) ms</text>
+
+    <rect x="280" y="120" width="216" height="58" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="388" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">giữ &gt; longPressTimeout</text>
+    <text x="388" y="157" text-anchor="middle" fill="var(--muted)">swipe x y x y &lt;giữ&gt;</text>
+    <text x="388" y="171" text-anchor="middle" fill="var(--muted)">(cách duy nhất input diễn đạt “giữ”)</text>
+
+    <rect x="514" y="120" width="200" height="58" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="614" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">còn lại</text>
+    <text x="614" y="157" text-anchor="middle" fill="var(--muted)">tap x y — MỘT lần</text>
+    <text x="614" y="171" text-anchor="middle" fill="var(--muted)">(trước 1.69: hai lần)</text>
+
+    <text x="380" y="204" text-anchor="middle" fill="var(--muted)">toạ độ = SlotTouchMapper.toDisplay(…) — CẢ HAI đường dùng chung, không còn e.x/e.y thô</text>
+    <text x="380" y="226" text-anchor="middle" fill="var(--muted)">lệnh chạy trên MỘT bộ thi hành dùng chung (1 luồng “kachi-slot-tap”, hàng đợi trần 16, bỏ cú mới khi nghẽn)</text>
+    <text x="380" y="246" text-anchor="middle" fill="var(--muted)">CANCEL · ACTION_UP của ngón khác ⇒ KHÔNG phát lệnh nào</text>
+
+    <line x1="105" y1="66" x2="105" y2="276" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <line x1="105" y1="276" x2="368" y2="276" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="238" y="291" text-anchor="middle" fill="var(--muted)">CANCEL / release() ⇒ về IDLE, im lặng</text>
+  </g>
+  <defs><marker id="g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="var(--accent)"/></marker></defs>
+</svg>
+</div>
+
+<p>Ba chuỗi lệnh phát ra (golden-lock ở <code>TouchRouterTest</code>):</p>
+<pre>input -d &lt;display&gt; swipe &lt;x0&gt; &lt;y0&gt; &lt;x1&gt; &lt;y1&gt; &lt;max(60, t1−t0)&gt;   # vuốt
+input -d &lt;display&gt; swipe &lt;x0&gt; &lt;y0&gt; &lt;x0&gt; &lt;y0&gt; &lt;t1−t0&gt;             # giữ lâu
+input -d &lt;display&gt; tap   &lt;x0&gt; &lt;y0&gt;                                # chạm (MỘT lần)</pre>
+
+<h4>Vì sao daemon không lên — <b>nay đã đo được một nửa</b></h4>
+<p>Trước 1.69 câu hỏi này là <b>[CHƯA BIẾT]</b> suốt 4 lượt xe vì <code>InputDaemonLaunch.launchCmd</code> ném stderr vào <code>/dev/null</code>. 1.69 đổi bốn thứ, <b>không đoán nguyên nhân</b> mà chỉ sinh ra bằng chứng: (a) stdout/stderr của daemon ra <code>kachi-logs/inputd-&lt;stamp&gt;.log</code> (thư mục <b>ngoài thẻ</b> — chỗ mà tiến trình shell uid-2000 ghi được; thư mục riêng của app là 0700 app-uid, đổ redirect vào đó là chính lệnh khởi động chết vì <i>Permission denied</i>); (b) lý do <b>nguyên văn</b> của từng lượt nối (<code>DaemonChannel.lastError</code>); (c) dò <code>nohup</code> bằng <code>which</code> rồi mới chọn biến thể lệnh; (d) tổng thời gian chờ 1,44 s → <b>5 s</b>.</p>
+
+<p><b>[ĐO máy ảo 2026-09-17]</b> (<code>emulator-5554</code>, Android 10 <code>google_apis</code>, dadb loopback qua <code>adb reverse tcp:5555 tcp:5555</code>) — kết quả <b>không ai đoán trước</b>: daemon <b>LÊN BÌNH THƯỜNG</b> (<code>[Kachi/InputDaemon] start localabstract:kachi_input</code>, tiến trình <code>app_process</code> uid <code>shell</code> còn sống), <b>lượt NỐI mới là chỗ hỏng</b>:</p>
+<pre>avc: denied { connectto } for path=006B616368695F696E707574
+     scontext=u:r:untrusted_app:s0 tcontext=u:r:shell:s0
+     tclass=unix_stream_socket permissive=0 app=com.byd.launcher</pre>
+<p>⇒ <code>state.inputd.last_error = "IOException: Permission denied"</code> sau đủ 25 lượt. Đây là <b>luật sepolicy của nền tảng</b> (app không-tin-cậy không được <code>connectto</code> socket miền <code>shell</code>), không phải lỗi của mã. Hệ quả kiến trúc: <b>đường lùi là đường chịu tải thật</b>, không phải lưới an toàn — đúng như xe đang hành xử.</p>
+<p><b>[CHƯA BIẾT]</b> ROM DL3 của xe có cùng luật sepolicy ấy không. Triệu chứng trùng khớp nên <b>[ĐOÁN]</b> là có; chốt bằng <b>một</b> lượt đọc <code>state.inputd</code> + tệp <code>inputd-*.log</code> ở lượt xe sau (playbook §6h). Tới lúc đó, mọi câu về NGUYÊN NHÂN trên xe vẫn là [CHƯA BIẾT].</p>
+
+<h4>Công tắc ẩn <code>inputd_disabled</code></h4>
+<p>Ép đường lùi (không khởi daemon, không nối). Là một công tắc <b>ĐO</b>, không phải một lựa chọn của người dùng ⇒ nằm ở <code>SettingsCatalog.CLUSTERNAV_HIDDEN_KEYS</code>, không có bề mặt UI. Đọc <b>một lần</b> mỗi tiến trình (nó được hỏi trên mỗi cú chạm; một lượt đọc prefs mỗi sự kiện là đúng loại chi phí 1.67 vừa dọn) ⇒ đổi xong phải khởi động lại app.</p>
+
+<table>
+<tr><th>Nghiệm thu (máy ảo <code>emulator-5554</code>, 1.69 (70) vehicleTest)</th><th>Kết quả</th></tr>
+<tr><td><code>inputd_disabled=true</code> ⇒ <code>state.inputd.forced_off=true</code>, <code>attempts=0</code> (không một lệnh shell nào)</td><td><b>ĐẠT</b> [ĐO]</td></tr>
+<tr><td>Ô 2 chiếu Android Settings (màn ảo <code>kachi-slot-1-*</code>, 1872×461, displayId 2) · <code>adb shell input swipe 960 1000 960 700 400</code> vào vùng ô</td><td><b>ĐẠT</b> — app trong ô <b>CUỘN</b> (Network&amp;internet…Display ⇒ Battery…Accounts). Trên xe cùng thao tác này chỉ ra một cú tap.</td></tr>
+<tr><td>Daemon bật lại (mặc định) ⇒ vẫn cuộn được</td><td><b>ĐẠT</b> [ĐO] — trên máy ảo daemon không bao giờ khoẻ (sepolicy ở trên) nên nhánh chạy vẫn là đường lùi; đó là một <b>kết quả</b>, không phải một lượt chạy hỏng.</td></tr>
+<tr><td>Chạm đơn ⇒ <b>MỘT</b> lần mở, không bắn đôi</td><td><b>ĐẠT</b> [ĐO] — <code>input tap</code> vào một hàng ⇒ đúng một <code>SubSettings</code> trên ngăn xếp của ô.</td></tr>
+</table>
+
 <h2>5. Tasks (DAG)</h2>
 <table>
 <tr><th>#</th><th>Task</th><th>File</th><th>Phụ thuộc</th></tr>
@@ -284,6 +373,18 @@ WorkspaceRenderPlan.decide(
 
 <h2>9. Nhật ký triển khai (Implementation Log)</h2>
 <p class="muted">Ghi NGAY khi code (R2.6). Đây là chỗ spec phản ánh code THỰC TẾ, kể cả chỗ lệch kế hoạch.</p>
+
+<h3>2026-09-17 · 1.69 — đường lùi của chạm (quyết định · sai lệch · nợ)</h3>
+<ul>
+<li><b>Ngưỡng đo trên quãng ĐẦU→CUỐI, không phải quãng đã đi.</b> Chuẩn Android là <i>“vượt slop một lần là cuộn”</i>, nhưng lệnh phát ra chỉ mang được hai điểm: một cử chỉ đi xa rồi quay về chỗ cũ mà báo <code>swipe x0 y0 x0 y0</code> thì chính <code>input</code> lại diễn giải thành một cú <b>giữ</b> — nói dối theo một kiểu khác. Đo đúng cái lệnh sẽ nói ra là cách duy nhất để lệnh không mâu thuẫn với phép đo.</li>
+<li><b>Toạ độ tap/giữ lấy ở điểm DOWN</b> (không phải UP): trong phạm vi slop hai điểm chỉ khác vài pixel do rung tay, và lấy DOWN thì lệnh không phụ thuộc cái rung đó.</li>
+<li><b>Ngón thứ hai bị BỎ QUA, không huỷ cử chỉ.</b> <code>input</code> không diễn đạt được đa điểm chạm; huỷ luôn thì một cú chạm hờ của bàn tay cầm vô-lăng nuốt mất cú vuốt thật của ngón kia.</li>
+<li><b>Sai lệch brief (có chủ ý): KHÔNG in một dòng logcat cho mỗi lượt nối.</b> 25 lượt mỗi 3 s trên một xe mà daemon không bao giờ lên = ~500 dòng/phút — đúng loại log mà 1.67 vừa cắt ([ĐO xe] 79 KB/phút ra thẻ). Thay bằng: in lượt <b>đầu</b>, in mỗi khi <b>lý do đổi</b>, in lượt <b>cuối</b> (kèm tổng số lượt + đường dẫn tệp log); tổng số lượt và lý do cuối luôn đọc được qua <code>state.inputd</code>.</li>
+<li><b>Sai lệch brief (bắt buộc): nhật ký daemon ra thư mục NGOÀI THẺ</b> (<code>getExternalFilesDir/kachi-logs/</code>) chứ không phải <code>/data/data/&lt;pkg&gt;/files</code>. Thư mục riêng của app là <code>0700</code> app-uid; tiến trình shell uid-2000 không ghi được ⇒ chính lệnh khởi động chết vì <i>Permission denied</i> và một đầu dò biến thành một hồi quy. Chỗ mới là cùng thư mục <code>usage-*.log</code>, cùng một lệnh <code>adb pull</code>.</li>
+<li><b>Mặc định <code>nohup</code> đảo chiều:</b> chỉ dùng <code>nohup</code> khi lượt dò trả lời <b>đúng chữ</b> <code>yes</code>; mọi đầu ra khác (rỗng · lỗi · ROM không có <code>which</code>) ⇒ biến thể <code>… &amp;</code>. Lý do: dadb không cấp tty nên không có SIGHUP để né (biến thể kia không mất gì), còn đoán nhầm theo hướng <i>“chắc là có nohup”</i> thì cả dòng lệnh chết ngay ở <b>từ đầu tiên</b>. Đường cũ không phải đường “đang chạy tốt ngoài hiện trường” (CLAUDE.md §6) — nó là đường đã chứng minh là <b>hỏng</b>.</li>
+<li><b>Vá kèm từ lượt soát OCR</b> (cùng vùng mã, không mở rộng phạm vi): [P2] luồng mở app còn bắn <code>am force-stop</code> + <code>am start --display</code> <b>sau khi</b> màn ảo của ô đã nhả ⇒ thêm hai cổng <code>released</code> + <code>@Volatile</code>; [P2] hai <code>Thread</code> mới <b>mỗi cú chạm</b> ⇒ một bộ thi hành dùng chung; [P2] rò một file-descriptor mỗi lượt <code>connect()</code> hỏng; [P3] <code>ensureStarted</code> kiểm-rồi-đặt không nguyên tử ⇒ CAS; [P3] <code>close()</code> không dừng hai executor của chính nó.</li>
+<li><b>Nợ 🚗</b>: nguyên nhân daemon không lên <b>trên xe</b> vẫn [CHƯA BIẾT] — máy ảo cho một câu trả lời (sepolicy <code>connectto</code>), xe có thể khác. Một lượt đọc <code>state.inputd</code> + <code>inputd-*.log</code> là chốt được (playbook §6h).</li>
+</ul>
 
 <h3>2026-09-10 · Quyết định + lý do</h3>
 <ul>

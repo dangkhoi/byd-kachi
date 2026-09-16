@@ -88,7 +88,10 @@ class SherpaBiasingCoverageTest {
         val set = hotwords
         val prefixes = lines.filter { l -> set.any { it != l && it.startsWith("$l ") } }
         assertEquals(emptyList<String>(), prefixes, "dòng tiền tố chặn cụm dài hơn nó")
-        assertTrue("CHẾ ĐỘ LÁI THỂ THAO" in set); assertTrue("CHẾ ĐỘ LÁI" !in set)
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: ca ĐÃ ĐO cũ là cặp «CHẾ ĐỘ LÁI THỂ THAO» / «CHẾ ĐỘ LÁI» của nút
+        // `drive_mode` — nút đó đã gỡ theo lệnh owner. Cặp thay thế cùng CƠ CHẾ (nhãn nút SELECT + nhãn lựa
+        // chọn) và vẫn còn sống: `headlight_mode` + lựa chọn *Auto*.
+        assertTrue("CHẾ ĐỘ ĐÈN PHA AUTO" in set); assertTrue("CHẾ ĐỘ ĐÈN PHA" !in set)
     }
 
     @Test
@@ -126,8 +129,93 @@ class SherpaBiasingCoverageTest {
         // được sửa khi (và chỉ khi) chúng đứng thành cụm, không có từ rời bên cạnh.
         // `BẬT ĐIỀU HOÀ` cố ý KHÔNG có: nó là tiền tố của `BẬT ĐIỀU HOÀ TỰ ĐỘNG` (luật dropPrefixes) — `BẬT MÁY LẠNH` thay.
         // `MỞ CỬA SỔ` cũng là tiền tố (`MỞ CỬA SỔ NÓC`) ⇒ `MỞ CÁC CỬA SỔ` thay.
-        listOf("XEM PIN", "DỪNG NHẠC", "MỞ KÍNH TRƯỚC TRÁI", "TĂNG ÂM LƯỢNG", "MỞ KHOÁ CỬA", "BẬT MÁY LẠNH", "MỞ CÁC CỬA SỔ")
+        listOf("XEM PIN", "DỪNG NHẠC", "MỞ KÍNH TRƯỚC TRÁI", "TĂNG ÂM LƯỢNG", "BẬT MÁY LẠNH", "MỞ CÁC CỬA SỔ")
             .forEach { assertTrue(it in hotwords, "thiếu cụm «$it» — xem spec kachi-voice-hotword-phrases") }
+        // ⚠ *"mở khoá cửa"* chấp nhận CẢ HAI chỗ đặt dấu trong lúc chuyển tiếp (xem KDoc [luat dat dau…] dưới):
+        // [SherpaSpokenWords] đã đổi sang kiểu MỚI (`KHÓA`), nhãn `ControlRegistry.door` thì do agent khác sửa.
+        // Bài này khoá *"cụm ấy phải được bias"*, không khoá *"ai viết dấu ở đâu"*.
+        assertTrue(
+            "MỞ KHÓA CỬA" in hotwords || "MỞ KHOÁ CỬA" in hotwords,
+            "thiếu cụm «MỞ KHOÁ CỬA» / «MỞ KHÓA CỬA» — xem spec kachi-voice-hotword-phrases",
+        )
+    }
+
+    /**
+     * ═══ CHỖ ĐẶT DẤU THANH — `KHOÁ → KHÓA` · `HOÀ → HÒA` · `KHOẺ → KHỎE`, chỉ ở **âm tiết MỞ** ═══════════════
+     *
+     * [ĐO] `docs/diagnostics/voice-mishear-2026-09-16.md` §8: soát tệp `hotwords-phrases.txt` (1757 dòng) thấy
+     * **54 dòng** viết kiểu CŨ, và `tokens.txt` của mô hình **không có** `KHOÁ`/`HOÀ`/`KHOẺ` mà chỉ có dạng mới.
+     *
+     * ⚠⚠ Nói thẳng con số để không ai bán nhầm bản vá này: **KHÔNG đổi độ chính xác**. Cùng §1 của tài liệu ấy,
+     * `hotwords-tonefix.txt` cho **đúng** 935/1899 như `hotwords-phrases.txt` — tức giả thuyết *"sai chỗ đặt dấu
+     * ⇒ hotword vô hiệu"* đã **bị bác** (BPE vẫn ghép được từ mảnh). Đây là bản vá **chính tả**: viết đúng kiểu
+     * mà từ điển mô hình dùng, để lần sau không ai phải soát lại.
+     *
+     * ⚠ `HOÀN` · `NGOÀI` · `TOÀN` · `THOÁNG` là âm tiết **ĐÓNG** (còn phụ âm cuối) — ở đó cả hai quy ước đều đặt
+     * dấu trên `à`/`á`, nên chúng KHÔNG được đụng tới. Bài này canh đúng ranh giới ấy.
+     */
+    @Test
+    fun `luat dat dau chi ap cho am tiet MO, khong dung vao HOAN NGOAI TOAN`() {
+        val oldStyle = Regex("(khoá|hoà|khoẻ)(?![a-zà-ỹ])", RegexOption.IGNORE_CASE)
+        SherpaSpokenWords.ACCENTED.values.forEach { v ->
+            assertTrue(oldStyle.find(v) == null, "«$v» còn viết kiểu cũ ở âm tiết MỞ — đổi sang khóa/hòa/khỏe")
+        }
+        // Chốt ngược: âm tiết ĐÓNG vẫn phải giữ nguyên, nếu không bản vá đã đi quá tay.
+        assertEquals("tuần hoàn trong", SherpaSpokenWords.ACCENTED["tuan hoan trong"], "HOÀN là âm tiết đóng")
+        listOf("hoàn", "ngoài", "toàn", "thoáng").forEach {
+            assertTrue(oldStyle.find(it) == null, "«$it» là âm tiết ĐÓNG — luật không được đụng vào")
+        }
+    }
+
+    /**
+     * ═══ [SOÁT 1.69 · P3] …và luật ấy phải áp cho **NHÃN BỘ ĐĂNG KÝ**, không chỉ cho bảng [ACCENTED] ══════
+     *
+     * Bài trên quét `SherpaSpokenWords.ACCENTED`. Nhưng bảng hotword **sinh ra từ nhãn** của bốn bộ đăng ký —
+     * nên một nhãn mới viết `Khoá xe` sẽ đi thẳng vào tệp hotword mà bài trên không thấy gì. [ĐO 2026-09-17]
+     * nhãn hôm nay đã sạch (lượt sửa chính tả của 1.69 quét cả registry), nhưng *"sạch hôm nay"* không phải
+     * một bài canh — và đây đúng là loại lỗi **im lặng**: hotword vẫn sinh ra, biasing vẫn bật, chỉ là cụm ấy
+     * không bao giờ kéo được câu nào về. Ghi trong bộ nhớ dự án `kachi-voice-hotwords-accented`.
+     *
+     * Quét cả VI lẫn EN của cả bốn bộ; `labelEn`/nhãn Anh không chứa dấu nên chúng vô hại với biểu thức này.
+     */
+    @Test
+    fun `nhan bo dang ky cung theo luat dat dau moi`() {
+        val oldStyle = Regex("(khoá|hoà|khoẻ)(?![a-zà-ỹ])", RegexOption.IGNORE_CASE)
+        val labels = buildList<Pair<String, String>> {
+            ControlRegistry.ALL.forEach { add(it.id to it.label); add(it.id to it.short.orEmpty()) }
+            TelemetryRegistry.ALL.forEach { add(it.id to it.label); add(it.id to it.short.orEmpty()) }
+            ActionMacros.ALL.forEach { add(it.id to it.label) }
+            LauncherActions.ALL.forEach { add(it.id to it.label) }
+        }
+        labels.forEach { (id, label) ->
+            assertTrue(
+                oldStyle.find(label) == null,
+                "nhãn «$label» của `$id` viết kiểu cũ ở âm tiết MỞ — đổi sang khóa/hòa/khỏe, nếu không cụm " +
+                    "hotword sinh từ nhãn này sẽ không bao giờ kéo được câu nào về (im lặng, không ai đỏ)",
+            )
+        }
+    }
+
+    /**
+     * Cảnh báo (KHÔNG đỏ) — mỗi TỪ của mỗi hotword nên mã hoá được bằng token nguyên vẹn của `tokens.txt`.
+     *
+     * Đây là phép đo mà brief đòi, nhưng nó **không thể** là một bài đỏ: `tokens.txt` nằm trong gói mô hình
+     * (~80 MB) mà repo cố ý không giữ, và máy CI/host không có xe để rút ra. Nên bài này tự **bỏ qua** kèm một
+     * dòng nói rõ vì sao — im lặng xanh mới là thứ nguy hiểm. Đặt tệp vào `core/src/test/resources/voice/
+     * sherpa-tokens.txt` là nó tự chạy.
+     */
+    @Test
+    fun `canh bao chu khong do — hotword ma hoa duoc bang token nguyen ven`() {
+        val res = javaClass.classLoader.getResourceAsStream("voice/sherpa-tokens.txt")
+        if (res == null) {
+            println("[BỎ QUA] không có `voice/sherpa-tokens.txt` off-car ⇒ chưa soát được chỗ đặt dấu so với mô hình")
+            return
+        }
+        val tokens = res.bufferedReader().readLines()
+            .mapNotNull { it.trim().substringBefore(' ').removePrefix("▁").takeIf(String::isNotEmpty) }
+            .map { it.uppercase() }.toSet()
+        val unseen = lines.flatMap { it.split(' ') }.distinct().filterNot { it in tokens }
+        if (unseen.isNotEmpty()) println("[CẢNH BÁO] ${unseen.size} từ không phải token nguyên vẹn: ${unseen.take(20)}")
     }
 
     @Test
@@ -142,9 +230,18 @@ class SherpaBiasingCoverageTest {
 
     // ── [SherpaSpokenWords] không được lệch khỏi từ vựng thật ────────────────────────────────────
 
+    /**
+     * ⚠ H3 (2026-09-16) — [VoiceSynonyms.APP_TARGETS] nay **nằm trong** phép canh này.
+     *
+     * Trước đó nó là bảng duy nhất của [VoiceSynonyms] không bị soi, và chỗ hụt ấy không phải lý thuyết: bảy app
+     * đích có 14 cách nói mà **không cách nào** có dạng có dấu ⇒ không cách nào vào tệp hotword, trong khi [ĐO]
+     * `voice-mishear-2026-09-16.md` §3 nói loại ý định `app` là loại tệ nhất bảng (12,8 %). Đưa nó vào đây nghĩa
+     * là: thêm một cách gọi app mà quên khai dạng đọc ⇒ bài này ĐỎ, không im lặng.
+     */
     private fun synonymPhrases(): List<String> =
         VoiceSynonyms.CONTROL.values.flatten() +
             VoiceSynonyms.TELEMETRY.values.flatten() +
+            VoiceSynonyms.APP_TARGETS.values.flatten() +
             VoiceSynonyms.MEDIA_WORDS +
             VoiceSynonyms.NAV_WORDS
 
@@ -195,9 +292,29 @@ class SherpaBiasingCoverageTest {
     @Test
     fun `dang co dau cua dong tu va cach noi doi thuong deu nam TRONG mot cum cua tep hotwords`() {
         // Vòng 2: không còn là "có mặt như một dòng" (từ rời bị cấm) mà là "nằm trong ít nhất một cụm".
+        //
+        // ⚠ 1.69 — trừ ra **đúng** những cách gọi app mà [SherpaPhraseHotwords.notBiasedAppNames] nói là cố ý
+        // không bias (bí danh nối dài bí danh của một app KHÁC: *"youtube nhạc"* ⊃ *"youtube"*, *"bản đồ Việt"* ⊃
+        // *"bản đồ"*). [ĐO máy ảo] để chúng vào tệp làm ca `w10` (*"đưa YouTube vào ô số hai"*) tụt xuống
+        // *"đưa youtube"* — mất mệnh đề ô. Lý do đầy đủ ở KDoc hàm ấy.
+        //
+        // Trừ bằng **danh sách máy sinh**, không phải ba chuỗi viết tay: nếu mai có ai gỡ luật đó thì danh sách
+        // rỗng và bài này lại đòi đủ như cũ; nếu có thêm một bí danh cùng hình dạng thì nó tự được tha. Cái bài
+        // này vẫn canh được là *"quên khai"* — thứ duy nhất nó sinh ra để bắt.
+        val deliberate = SherpaPhraseHotwords.notBiasedAppNames()
+            .flatMap { SherpaHotwords.phrasesOf(it) }
+            .toSet()
         val missing = SherpaSpokenWords.ALL
             .flatMap { SherpaHotwords.phrasesOf(it) }
+            .filterNot { it in deliberate }
             .filterNot { p -> lines.any { containsWords(it, p) } }
         assertEquals(emptyList<String>(), missing, "khai dạng có dấu mà không cụm nào mang nó ⇒ hụt ở SherpaPhraseHotwords")
+        // Chiều ngược lại: danh sách trừ không được phép rữa thành một tấm chăn. Mỗi mục của nó phải THẬT SỰ
+        // vắng khỏi tệp — còn ở trong tệp mà vẫn nằm trong danh sách trừ nghĩa là luật đã đổi mà danh sách thì không.
+        val stillPresent = deliberate.filter { p -> lines.any { containsWords(it, p) } }
+        assertEquals(
+            emptyList<String>(), stillPresent,
+            "cụm khai là 'cố ý không bias' mà vẫn nằm trong tệp hotword ⇒ danh sách trừ đang nói dối",
+        )
     }
 }

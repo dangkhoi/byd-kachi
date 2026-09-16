@@ -71,6 +71,9 @@ internal object SettingsCatalogClusterNav {
             // RỜI [HIDDEN_KEYS] sang đây ở 1.66: nó nay có hàng thật trong mục *"Hỏi xác nhận trước khi chạy"*,
             // đúng như dòng lý do cũ đã hẹn (*"đi cùng batch chọn nút nào phải hỏi"*).
             "voice_mic_source", "voice_confirm_ids", "voice_ask_aloud",
+            // H2 (1.69) — công tắc giữ nhật ký lượt nói. Cùng tệp với mọi khoá giọng nói khác, nên câu hỏi
+            // *"cấu hình giọng nói nằm ở đâu"* vẫn có đúng MỘT câu trả lời.
+            "voice_keep_log",
         ).forEach { put(it, "clusternav_prefs") }
         // ── simple_cast_prefs (SimpleCastRuntime.kt) ──
         listOf(
@@ -129,5 +132,35 @@ internal object SettingsCatalogClusterNav {
         "hud" to
             "ép false — HUD kính lái mới chỉ có vòng đời request/output, KHÔNG có đường ghi nội dung thật; bày nút " +
                 "ra là hứa một tính năng chưa tồn tại",
+        "inputd_disabled" to
+            "1.69 — ép CHẠM trong ô đi đường lùi theo cử chỉ (tắt daemon bơm chạm). Là một công tắc ĐO, không " +
+                "phải một lựa chọn: nó chỉ tồn tại để máy ảo diễn được đúng nhánh mà xe đang mắc kẹt ([ĐO xe " +
+                "2026-09-16] daemon không lên lần nào). Bày ra UI là mời người dùng tự làm chạm của mình chậm " +
+                "đi mà không hiểu vì sao; chỗ đặt đúng của nó là `run-as` trên bản vehicleTest",
+        // ── H5 + [P0-2] (1.69) — NĂM núm chỉnh bộ nghe, cố ý KHÔNG lên UI ──
+        // Cùng lý do [voice_follow_up_ms]: chúng là hằng ĐO trên cabin, không phải sở thích. Chỗ chỉnh đúng của
+        // chúng là cầu kiểm thử (`prefs_set`, danh sách trắng) trong một lượt lên xe — đổi số, nói lại một câu,
+        // đọc `KachiVoiceTiming`. Bày năm ô nhập số ra màn Cài đặt của một chiếc xe đang chạy là mời người ta
+        // chỉnh mù rồi kết luận nhầm rằng mô hình kém.
+        "voice_endpoint_silence_ms" to
+            "V3 · R2 — im bao lâu thì chốt câu (600–1500 ms, mặc định 800 = hằng cũ). Đặt ngắn quá thì cắt giữa " +
+                "hai vế một câu ghép; dài quá thì người lái ngồi chờ. Chỉ đo được trên cabin thật đang chạy",
+        "voice_endpoint_min_speech_ms" to
+            "V3 · R2 — phải có ngần này tiếng cộng dồn mới được phép chốt (200–1000 ms, mặc định 400 = hằng cũ). " +
+                "Đây là cổng chặn 'chốt vì một tiếng cạch'; ngưỡng của nó phụ thuộc mức ồn cabin, không phụ " +
+                "thuộc người lái",
+        "voice_endpoint_floor_cap" to
+            "[P0-2] TRẦN của mức nền đo được (40–400, mặc định 90). Núm QUAN TRỌNG NHẤT của lượt xe kế tiếp: " +
+                "[ĐO xe 2026-09-16] một cửa sổ đo nền bị nhiễm bởi chính tiếng bíp của Kachi cho ra nền 531/602/" +
+                "888 (cá biệt 4317) trong khi giọng thật chỉ rms 206–627 ⇒ ngưỡng nằm TRÊN giọng và 189/300 lượt " +
+                "nghe không bao giờ nhận ra tiếng nói. Trần này giới hạn hậu quả; nới nó lên là mở lại đúng lỗi ấy",
+        "voice_beam" to
+            "V2 — bề rộng chùm giải mã sherpa (4 hoặc 8, mặc định 4 = hằng cũ). Beam là chi phí NHÂN LÊN ở mỗi " +
+                "khung: [ĐO xe] một câu 8 s đã mất 2,35 s để giải mã với beam 4. Cho một ô nhập tự do là mời gõ " +
+                "16 trên một chiếc xe đang chạy rồi kết luận nhầm rằng mô hình chậm",
+        "voice_hotword_score" to
+            "V2 — điểm biasing hotwords (2.0–4.0, mặc định 3.0 = hằng cũ). Hai đầu dải là hai kiểu hỏng khác " +
+                "nhau: thấp quá thì biasing không kéo được `pin`/`tắt`/`âm lượng` về, cao quá thì nó CHÈN lệnh " +
+                "vào câu tự do. Đúng thứ phải đo bằng tai trên cabin, không phải chọn bằng cảm giác trong Cài đặt",
     )
 }

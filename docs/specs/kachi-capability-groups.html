@@ -38,7 +38,8 @@ ul{padding-left:22px}li{margin:3px 0}
 <h2>1. Changelog</h2>
 <table>
 <tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
-<tr><td>—</td><td>2026-09-16</td><td>⚠ <b>Owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher</b> (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số trong spec này từ đây là <b>LỊCH SỬ</b>, giữ nguyên làm bằng chứng. Hôm nay: <b>167 chức năng</b> (54 nút · 106 thông tin · 4 gói · 3 hành động), <b>9 nhóm</b> (bỏ <code>g_adas</code> · <code>g_occupants</code> · <code>g_parking</code>), <b>không còn</b> nút/datum ADAS/an toàn nào và 24 icon vector của chúng đã xoá — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</td></tr>
+<tr><td>—</td><td>2026-09-16</td><td>⚠ <b>Owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher</b> (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số trong spec này từ đây là <b>LỊCH SỬ</b>, giữ nguyên làm bằng chứng. Lúc đó (2026-09-16): <b>167 chức năng</b> (54 nút · 106 thông tin · 4 gói · 3 hành động), <b>9 nhóm</b> (bỏ <code>g_adas</code> · <code>g_occupants</code> · <code>g_parking</code>), <b>không còn</b> nút/datum ADAS/an toàn nào và 24 icon vector của chúng đã xoá — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</td></tr>
+<tr><td>—</td><td>2026-09-17</td><td>⚠ <b>(V) FEATURE-FILTER 2026-09-17</b>: owner gỡ thêm <b>19 mã chấm NO</b> (12 thông tin + 7 nút — cụm SẠC, chế độ lái, gập gương, chế độ drift, trạng thái nguồn MCU, chìa Bluetooth, tự-đóng-kính-khi-mưa) và <b>ẩn 8 ô lốp lẻ</b> khỏi bộ chọn. Số hôm nay: <b>154 chức năng</b> = <b>47 nút · 100 thông tin · 4 gói · 3 hành động</b>; <code>status-by-id.json</code> <b>145</b> mục. Mọi con số cũ trong spec này là LỊCH SỬ — xem <code>docs/diagnostics/feature-filter-2026-09-16.md</code>.</td></tr>
 <tr><td>0</td><td>2026-09-11</td><td>Spec ban đầu. Ba việc: nhóm khả năng · thang khoảng cách · chuẩn hoá icon.</td></tr>
 </table>
 
@@ -70,7 +71,8 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h2>4. Design</h2>
 
-<h3>4.1 Nhóm — chốt 12 nhóm, thành viên là mã THẬT</h3>
+<h3>4.1 Nhóm — nay <b>9 nhóm</b> (trước đó 12), thành viên là mã THẬT</h3>
+<p class="muted">⚠ Ba dòng <b>An toàn · ADAS</b>, <b>Người ngồi</b>, <b>Cảm biến đỗ</b> dưới đây là <b>LỊCH SỬ</b> — <code>g_adas</code>/<code>g_occupants</code>/<code>g_parking</code> đã gỡ ở (N) ADAS-PURGE 2026-09-16, giữ lại làm bằng chứng thiết kế ban đầu. Danh sách hiện hành: <code>CapabilityGroups.ALL</code> = Lốp · Kính · Cửa &amp; khoang · Đèn · Đèn viền · Khí hậu · Năng lượng · Sức khoẻ pin · Chuyến đi.</p>
 <p>Nguyên tắc chọn nhóm: <b>một nhóm = một câu hỏi người lái thật sự hỏi</b>. "Lốp tôi ổn không?" chứ không phải "áp lốp trước-trái bao nhiêu".</p>
 <table>
 <tr><th>Nhóm</th><th>Kiểu vẽ</th><th>Thành viên (mã thật)</th></tr>
@@ -83,7 +85,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <tr><td><b>Người ngồi</b></td><td>STRIP</td><td><code>seatbelt_driver</code>/<code>seatbelt_passenger</code> · <code>oms_driver</code>/<code>oms_passenger</code> · <code>child_presence</code></td></tr>
 <tr><td><b>Cảm biến đỗ</b></td><td>BOARD</td><td><code>radar_zones</code> · <code>radar_volume</code> — đúng ca <code>WidgetShape.BOARD</code> đã ghi "8 zone radar"</td></tr>
 <tr><td><b>Khí hậu &amp; không khí</b></td><td>CARD</td><td><code>cabin_temp</code> · <code>inside_temp</code> · <code>ext_temp</code> · <code>ac_on</code> · <code>ac_wind</code> · <code>ac_cycle</code> · <code>pm25_level</code>/<code>pm25_value</code>/<code>pm25_online</code> · <code>anion_state</code></td></tr>
-<tr><td><b>Năng lượng &amp; sạc</b></td><td>CARD</td><td><code>soc</code> · <code>ev_range_km</code> · <code>fuel_range_km</code>/<code>fuel_pct</code> · <code>is_charging</code> · <code>charge_power</code> · <code>charging_pct</code> · <code>charging_eta_hour</code>/<code>min</code> · <code>motor_power</code></td></tr>
+<tr><td><b>Năng lượng</b></td><td>CARD</td><td><code>soc</code> · <code>ev_range_km</code> · <code>fuel_range_km</code> · <code>fuel_pct</code> · <code>consumption_50km</code> · <code>motor_power</code> — ⚠ đổi ở (V) FEATURE-FILTER 2026-09-17: nhãn <b>"Năng lượng &amp; sạc" → "Năng lượng"</b>, 5 thành viên cụm SẠC (<code>is_charging</code> · <code>charge_power</code> · <code>charging_pct</code> · <code>charging_eta_hour</code>/<code>min</code>) đã gỡ khỏi registry; <code>consumption_50km</code> vào thay. Nguồn: <code>CapabilityGroups.ENERGY</code></td></tr>
 <tr><td><b>Sức khoẻ pin</b></td><td>CARD</td><td><code>batt_temp</code> · <code>cell_temp_high</code>/<code>low</code>/<code>avg</code> · <code>cell_v_high</code>/<code>low</code> · <code>soh_oem</code> · <code>volt_12v</code>/<code>volt_12v_level</code></td></tr>
 <tr><td><b>Chuyến đi</b></td><td>CARD</td><td><code>trip_km</code> · <code>trip_hours</code> · <code>trip_kwh</code> · <code>consumption_50km</code> · <code>odometer</code> · <code>ev_mileage_km</code></td></tr>
 </table>

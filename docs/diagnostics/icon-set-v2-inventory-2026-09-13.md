@@ -10,6 +10,18 @@
 > **(EN)** Inventory of every capability id that carries a POSITION, mapped to one of three shared car frames
 > (top / front / rear) and the region that gets filled. Input for the U7 positional icon set.
 
+> ⚠ **BẢN KIỂM KÊ NGÀY 2026-09-13 — LỊCH SỬ, không phải danh mục hiện hành.** Hai lượt gỡ sau đó làm **30 dòng**
+> dưới đây trỏ vào mã **không còn tồn tại**; các dòng được GIỮ NGUYÊN làm bằng chứng kiểm kê, mỗi dòng có đánh dấu
+> tại chỗ:
+> - **(N) ADAS-PURGE 2026-09-16** — 25 dòng an toàn/ADAS (`seatbelt_*` · `oms_*` · `child_presence` ·
+>   `speed_limit_warning` · `bsd_*` · `lca_*` · `rcta_*` · `dow_*` · `radar_*` · `esp_state` · `adas_*`), kèm 24
+>   icon vector đã xoá. Xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+> - **(V) FEATURE-FILTER 2026-09-17** — 5 dòng: `rain_close` · `mirror_auto` · `mirror_fold_btn` · `mcu_status` ·
+>   `key_bluetooth`; icon mồ côi **`ic-car-top-window-rain`** (`ic_car_top_window_rain.xml`) đã xoá cùng lượt
+>   (`ic_*.xml` 144 → 140). Xem `docs/diagnostics/feature-filter-2026-09-16.md`.
+>
+> Danh mục hiện hành (2026-09-17): **154 mã** = 47 nút · 100 thông tin · 4 gói · 3 hành động.
+
 ## 0 · Kết luận một dòng
 
 [ĐO] 2026-09-13 — đo trên `CapabilityCatalog.all()` (ô bộ chọn thật sự bày ra, đã lọc mã cố ý ẩn):
@@ -109,9 +121,9 @@ ba path này ra một hằng dùng chung để bảng lớn và icon nhỏ là *
   windows_all                Tất cả kính                  bấm  ic-car-top-window-all            VỊ TRÍ
   sunshade                   Rèm che nắng                 bấm  ic-car-top-sunshade              
   child_lock                 Khoá trẻ em                  bấm  ic-lock                          
-  rain_close                 Tự đóng kính khi mưa         bấm  ic-car-top-window-rain           
-  mirror_auto                Gập gương khi khoá           bấm  ic-car-top-mirror                
-  mirror_fold_btn            Gập gương                    bấm  ic-car-top-mirror                
+  rain_close                 Tự đóng kính khi mưa         bấm  ic-car-top-window-rain   ← ĐÃ GỠ (V) 2026-09-17
+  mirror_auto                Gập gương khi khoá           bấm  ic-car-top-mirror   ← ĐÃ GỠ (V) 2026-09-17
+  mirror_fold_btn            Gập gương                    bấm  ic-car-top-mirror   ← ĐÃ GỠ (V) 2026-09-17
   seat_memory                Nhớ ghế lái                  bấm  ic-car-top-seat-fl               
 ## LIGHTS
   light_low_beam             Đèn cốt                      xem  ic-car-front-lowbeam             
@@ -137,37 +149,37 @@ ba path này ra một hằng dùng chung để bảng lớn và icon nhỏ là *
   ambient_music              Đèn viền theo nhạc           bấm  ic-car-top-ambient-music         
   headlight_mode             Chế độ đèn pha               bấm  ic-car-front-headlight-mode      
 ## SAFETY
-  seatbelt_driver            Dây an toàn lái              xem  ic-car-top-belt-fl               VỊ TRÍ
-  seatbelt_passenger         Dây an toàn phụ              xem  ic-car-top-belt-fr               VỊ TRÍ
-  oms_driver                 Nhận diện tài xế             xem  ic-car-top-occupant-fl           VỊ TRÍ
-  oms_passenger              Nhận diện ghế phụ            xem  ic-car-top-occupant-fr           VỊ TRÍ
-  child_presence             Phát hiện trẻ em             xem  ic-car-top-occupant-rear         
-  speed_limit_warning        Cảnh báo quá tốc             xem  ic-speed                         
-  bsd_fl_alarm               Điểm mù trước-trái           xem  ic-car-top-bsd-l                 VỊ TRÍ
-  bsd_fr_alarm               Điểm mù trước-phải           xem  ic-car-top-bsd-r                 VỊ TRÍ
-  lca_left                   Chuyển làn trái              xem  ic-car-top-lca-l                 VỊ TRÍ
-  lca_right                  Chuyển làn phải              xem  ic-car-top-lca-r                 VỊ TRÍ
-  rcta_left                  Cắt ngang sau trái           xem  ic-car-top-rcta-l                VỊ TRÍ
-  rcta_right                 Cắt ngang sau phải           xem  ic-car-top-rcta-r                VỊ TRÍ
-  dow_left                   Mở cửa cảnh báo trái         xem  ic-car-top-dow-l                 VỊ TRÍ
-  dow_right                  Mở cửa cảnh báo phải         xem  ic-car-top-dow-r                 VỊ TRÍ
-  radar_zones                Cảm biến đỗ (8 vùng)         xem  ic-car-top-park-all              
-  radar_volume               Âm lượng cảm biến            xem  ic-volume                        
-  esp_state                  Cân bằng điện tử (ESP)       xem  ic-esp                           
-  mcu_status                 Trạng thái nguồn (MCU)       xem  (lùi nhóm)                       
+  seatbelt_driver            Dây an toàn lái              xem  ic-car-top-belt-fl               VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  seatbelt_passenger         Dây an toàn phụ              xem  ic-car-top-belt-fr               VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  oms_driver                 Nhận diện tài xế             xem  ic-car-top-occupant-fl           VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  oms_passenger              Nhận diện ghế phụ            xem  ic-car-top-occupant-fr           VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  child_presence             Phát hiện trẻ em             xem  ic-car-top-occupant-rear   ← ĐÃ GỠ (N) 2026-09-16
+  speed_limit_warning        Cảnh báo quá tốc             xem  ic-speed   ← ĐÃ GỠ (N) 2026-09-16
+  bsd_fl_alarm               Điểm mù trước-trái           xem  ic-car-top-bsd-l                 VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  bsd_fr_alarm               Điểm mù trước-phải           xem  ic-car-top-bsd-r                 VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  lca_left                   Chuyển làn trái              xem  ic-car-top-lca-l                 VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  lca_right                  Chuyển làn phải              xem  ic-car-top-lca-r                 VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  rcta_left                  Cắt ngang sau trái           xem  ic-car-top-rcta-l                VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  rcta_right                 Cắt ngang sau phải           xem  ic-car-top-rcta-r                VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  dow_left                   Mở cửa cảnh báo trái         xem  ic-car-top-dow-l                 VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  dow_right                  Mở cửa cảnh báo phải         xem  ic-car-top-dow-r                 VỊ TRÍ   ← ĐÃ GỠ (N) 2026-09-16
+  radar_zones                Cảm biến đỗ (8 vùng)         xem  ic-car-top-park-all   ← ĐÃ GỠ (N) 2026-09-16
+  radar_volume               Âm lượng cảm biến            xem  ic-volume   ← ĐÃ GỠ (N) 2026-09-16
+  esp_state                  Cân bằng điện tử (ESP)       xem  ic-esp   ← ĐÃ GỠ (N) 2026-09-16
+  mcu_status                 Trạng thái nguồn (MCU)       xem  (lùi nhóm)   ← ĐÃ GỠ (V) 2026-09-17
   volt_12v                   Ắc-quy 12V                   xem  ic-bolt                          
   volt_12v_level             Mức ắc-quy 12V               xem  ic-bolt                          
-  adas_slw                   Cảnh báo quá tốc             bấm  ic-speed                         
-  adas_esp                   Cân bằng điện tử (ESP)       bấm  ic-esp                           
-  adas_tsr                   Nhận diện biển báo           bấm  ic-sign                          
-  adas_lane                  Hỗ trợ giữ làn               bấm  ic-car-top-lane                  
-  adas_fcw                   Cảnh báo va chạm trước       bấm  ic-car-front-fcw                 
-  adas_rcta                  Cắt ngang phía sau           bấm  ic-car-top-rcta-all              
-  adas_dow                   Cảnh báo mở cửa              bấm  ic-car-top-dow-all               
-  adas_cpd                   Phát hiện trẻ em             bấm  ic-car-top-occupant-rear         
+  adas_slw                   Cảnh báo quá tốc             bấm  ic-speed   ← ĐÃ GỠ (N) 2026-09-16
+  adas_esp                   Cân bằng điện tử (ESP)       bấm  ic-esp   ← ĐÃ GỠ (N) 2026-09-16
+  adas_tsr                   Nhận diện biển báo           bấm  ic-sign   ← ĐÃ GỠ (N) 2026-09-16
+  adas_lane                  Hỗ trợ giữ làn               bấm  ic-car-top-lane   ← ĐÃ GỠ (N) 2026-09-16
+  adas_fcw                   Cảnh báo va chạm trước       bấm  ic-car-front-fcw   ← ĐÃ GỠ (N) 2026-09-16
+  adas_rcta                  Cắt ngang phía sau           bấm  ic-car-top-rcta-all   ← ĐÃ GỠ (N) 2026-09-16
+  adas_dow                   Cảnh báo mở cửa              bấm  ic-car-top-dow-all   ← ĐÃ GỠ (N) 2026-09-16
+  adas_cpd                   Phát hiện trẻ em             bấm  ic-car-top-occupant-rear   ← ĐÃ GỠ (N) 2026-09-16
 ## IDENTITY
   vin                        Số VIN                       xem  (lùi nhóm)                       
-  key_bluetooth              Chìa Bluetooth               xem  ic-lock                          
+  key_bluetooth              Chìa Bluetooth               xem  ic-lock   ← ĐÃ GỠ (V) 2026-09-17
   engine_code                Mã máy                       xem  ic-hood                          
   engine_coolant_level       Mức nước làm mát             xem  ic-hood                          
   oil_level                  Mức dầu                      xem  ic-hood                          

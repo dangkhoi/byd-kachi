@@ -18,14 +18,18 @@
 #    (`prefs_set`, danh sách trắng ở `TestBridgeCommands.WRITABLE_PREFS_KEYS`). Giá trị rỗng = xoá/mặc định.
 #  • @PROFILE@ được harness thay bằng một hồ sơ có thật (đọc từ bridge `state`).
 # ── TOGGLE ──────────────────────────────────────────────────────────────────────────────────────
+# ⚠ (V) FEATURE-FILTER 2026-09-17 — ĐÃ BỎ 4 ca vì chính mã chúng nhắm tới đã bị owner chấm NO và xoá khỏi
+#   registry (không phải vì chúng đỏ): t21 `chế độ lái thể thao` · t22 `đặt chế độ lái eco` · t107
+#   `chế độ đá thể thao` (cả ba nhắm nút `drive_mode`) và t25 `sạc ngay` (nút `start_charging`).
+#   Tổng ca T1: 109 → 105. Id KHÔNG đánh số lại — id là khoá tra ngược về các lượt đo cũ.
 t01	toggle	bật đèn đọc	Control	Bật Đèn đọc	0	0	-	-
 t02	toggle	tắt đèn đọc	Control	Tắt Đèn đọc	0	0	-	-
 t03	toggle	bật lọc bụi	Control	Bật Lọc bụi	0	0	-	-
-t04	toggle	tắt điều hoà	Control	Tắt Điều hoà	0	0	-	-
+t04	toggle	tắt điều hoà	Control	Tắt Điều hòa	0	0	-	-
 t05	toggle	bật sưởi ghế	Control	Bật Ghế sưởi	0	0	-	-
 t06	toggle	mở cửa sổ trời	Control	Cửa sổ trời	0	0	-	-
-t07	toggle	khoá xe	Control	Khoá	0	0	-	-
-t08	toggle-confirm	tắt khoá xe	Control	Khoá	1	0	-	voice_confirm_ids=control:lock
+t07	toggle	khoá xe	Control	Khóa	0	0	-	-
+t08	toggle-confirm	tắt khoá xe	Control	Khóa	1	0	-	voice_confirm_ids=control:lock
 t09	toggle-confirm	dừng chiếu cụm	Control	Chiếu cụm	1	0	-	voice_confirm_ids=control:cast
 # ── COVER (kính) ────────────────────────────────────────────────────────────────────────────────
 t10	cover	mở kính trước trái	Control	Mở Kính trước-trái	0	0	-	-
@@ -41,14 +45,11 @@ t18	step	giảm âm lượng	Control	Giảm Âm lượng	0	0	-	-
 t19	step	tăng âm lượng tối đa	Control	Âm lượng = 30	0	0	-	-
 t20	step	đặt độ sáng màn 8	Control	Độ sáng màn = 8	0	0	-	-
 # ── SELECT ──────────────────────────────────────────────────────────────────────────────────────
-t21	select	chế độ lái thể thao	Control	Chế độ lái	0	0	-	-
-t22	select	đặt chế độ lái eco	Control	Chế độ lái	0	0	-	-
 t23	select	màu đèn viền xanh lá	Control	Màu đèn viền	0	0	-	-
 # ── BUTTON ──────────────────────────────────────────────────────────────────────────────────────
 t24	button	lọc ngay	Control	Bấm Lọc ngay	0	0	-	-
-t25	button	sạc ngay	Control	Sạc ngay	0	0	-	-
-t26	button-confirm	mở khoá cửa	Control	Mở khoá cửa	1	0	-	voice_confirm_ids=control:door
-t27	button-confirm	mở khoá cửa	Control	Mở khoá cửa	0	1	-	-
+t26	button-confirm	mở khoá cửa	Control	Mở khóa cửa	1	0	-	voice_confirm_ids=control:door
+t27	button-confirm	mở khoá cửa	Control	Mở khóa cửa	0	1	-	-
 # ── MACRO ───────────────────────────────────────────────────────────────────────────────────────
 t28	macro	rời xe	Macro	Rời xe	0	0	-	-
 t29	macro	chạy gói mở cửa + đèn đọc	Macro	Mở cửa	0	1	-	-
@@ -74,8 +75,8 @@ t45	app	mở bản đồ	-	-	0	0	-	-
 # ── NHẠC ────────────────────────────────────────────────────────────────────────────────────────
 t46	media	phát nhạc	Media	Phát nhạc	0	0	media	-
 t47	media	dừng nhạc	Media	Dừng nhạc	0	0	-	-
-t48	media	bài tiếp theo	Media	Bài tiếp	0	0	-	-
-t49	media	bài trước	Media	Bài trước	0	0	-	-
+t48	media	bài tiếp theo	Media	bài tiếp theo	0	0	-	-
+t49	media	bài trước	Media	bài trước	0	0	-	-
 t50	media	mở nhạc trên YouTube Music	Media	Phát nhạc	0	0	-	-
 t51	media-open-vocab	phát bài Diễm Xưa	Media	Diễm Xưa	1	0	-	voice_confirm_ids=media_query
 t52	media-open-vocab	mở bài Diễm Xưa trên YouTube Music	Media	YouTube Music	0	1	resumed:com.google.android.apps.youtube.music	-
@@ -92,7 +93,7 @@ t60	layout	bố cục hai ô	Layout	2 cột	0	0	preset:TWO_COL	-
 t60b	layout	về bố cục 2 hàng	Layout	2 hàng	0	0	preset:TWO_ROW	-
 # ── CÂU GHÉP ────────────────────────────────────────────────────────────────────────────────────
 t61	compound	bật đèn đọc và tắt lọc bụi	Control,Control	Bật Đèn đọc	0	0	-	-
-t62	compound-confirm	mở khoá cửa rồi bật đèn đọc	Control,Control	Mở khoá cửa	1	0	-	voice_confirm_ids=control:door
+t62	compound-confirm	mở khoá cửa rồi bật đèn đọc	Control,Control	Mở khóa cửa	1	0	-	voice_confirm_ids=control:door
 # ── CÂU ĐỜI THƯỜNG · CÂU SAI (phải ra Unknown đúng lý do) ───────────────────────────────────────
 t63	unknown	hôm nay trời đẹp quá	Unknown	-	0	0	-	-
 t64	unknown	kể cho tôi nghe một câu chuyện	Unknown	-	0	0	-	-
@@ -107,3 +108,71 @@ t68	follow-up-off	bật đèn đọc	Control	Bật Đèn đọc	0	0	-	voice_foll
 # t69: R14 — tắt nhãn chip rồi ĐỌC LẠI `state.bars.chip_labels`. Thay cho ảnh chụp màn hình mà bản 1.66
 #      đầu chưa chụp: một con số đọc từ cùng nguồn màn hình vẽ, không phải một tấm ảnh không ai trace lại được.
 t69	chip-labels	bật đèn đọc	Control	Bật Đèn đọc	0	0	chip_labels:False	top_strip_labels=0
+# ── VOICE-HOTFIX 1.69 (70) · 2026-09-16 — ca MỚI từ phản hồi tester trên xe + corpus VOICE-DATA ────────────
+# Vì sao thêm nguyên một khối: ba câu tester báo sai (*"điều hoà với lọc bụi nó không hiểu"*, *"nói «lọc ngay»
+# nó chả hiểu lọc cái gì"*, *"Mở Google được mà Google Map chưa hiểu"*) chưa có ca nào trong ma trận này canh
+# lại. [ĐO host `docs/diagnostics/voice-mishear-2026-09-16.md` §3] `app` là loại ý định YẾU NHẤT (12,6 %) và
+# §4 cho thấy giọng **Nam** 21,8 % so với `chung` 53,1 % ⇒ hai chỗ ấy phải có ca canh, không phải chờ xe.
+# ⚠ Tầng T1 đo CHỮ → Ý ĐỊNH. Nó KHÔNG đo bộ nhận dạng (đó là T2) — nên khối này canh đúng cái mà 1.68 hụt:
+#    *từ vựng*. Câu nào 1.68 nghe đúng chữ mà vẫn không ra ý định thì ở đây phải xanh.
+# ── Tên app đọc kiểu Việt (H3) ─────────────────────────────────────────────────────────────────
+t70	app-vi	mở gu gồ máp	OpenApp	Google Maps	0	0	resumed:com.google.android.apps.maps	-
+t71	app-vi	mở gu gồ mép	OpenApp	Google Maps	0	0	-	-
+t72	app-vi	mở google map	OpenApp	Google Maps	0	0	-	-
+t73	app-vi	mở du túp	OpenApp	-	0	0	resumed:com.google.android.youtube	-
+t74	app-vi	mở iu túp	OpenApp	-	0	0	resumed:com.google.android.youtube	-
+t75	app-vi	mở việt máp	OpenApp	VietMap	0	0	resumed:vn.vietmap.live	-
+t76	app-vi	mở quây	OpenApp	-	0	0	resumed:com.waze	-
+t77	app-vi	mở du túp miu dích	OpenApp	YouTube Music	0	0	-	-
+t78	app-vi	mở bản đồ google	OpenApp	Google Maps	0	0	resumed:com.google.android.apps.maps	-
+# t79/t80 — app KHÔNG cài trên máy ảo. Đo đúng câu trả lời *"chưa cài"* chứ không đo *"mở được"*: owner hỏi
+# thẳng *"mở app chatgpt có mở được không"*, và câu trả lời trung thực cho một máy không có app là phải NÓI RA.
+t79	app-phonetic	mở chát gi pi ti	-	-	0	0	-	-
+t80	app-phonetic	mở za lô	-	-	0	0	-	-
+# ── Ba câu tester báo sai (H4) ─────────────────────────────────────────────────────────────────
+t81	tester	bật điều hoà	Control	Điều hòa	0	0	-	-
+t82	tester	bật lọc bụi	Control	Lọc bụi	0	0	-	-
+# t83: *"lọc"* trần — ĐÚNG hành vi là HỎI LẠI (*"Lọc bụi hay Lọc ngay?"*). Lượt hỏi lại sống trong phiên MIC
+# (`VoiceSession`), cầu `say` không có micro ⇒ ở tầng này nó chỉ đo được rằng câu KHÔNG bị hiểu bừa thành một
+# lệnh nào đó. Đó mới là thứ nguy hiểm: đoán đại giữa *Lọc bụi* và *Lọc ngay* là bấm nhầm nút trên xe.
+t83	tester-clarify	lọc	Unknown	-	0	0	-	-
+# t84: chuỗi model THẬT nghe ra khi người ta nói *"lọc bụi"* ([ĐO] §5 bảng nghe nhầm, 3 lần). Có chữ *"bụi"*
+# làm ngữ cảnh ⇒ được phép quy về `pm25`.
+t84	tester-mishear	các bụi	Control	Lọc bụi	0	0	-	-
+# t85: *"đọc ngày"* ĐỨNG MỘT MÌNH phải **KHÔNG** thành lệnh lọc — `đọc` là động từ ĐỌC và `ngày` là từ đời
+# thường. Đây là ca canh cho chính bản vá: nới điều kiện ngữ cảnh ra là ca này đỏ.
+t85	tester-mishear	đọc ngày	Unknown	-	0	0	-	-
+# ── Giọng Nam (H3 phần từ vựng vùng miền) ──────────────────────────────────────────────────────
+t86	nam	bật kiếng lái lên	Control	Kính cửa lái	0	0	-	-
+t87	nam	mở cửa hậu	Control	Cốp sau	0	0	-	-
+t88	nam	tắt đèn nóc	Control	Đèn đọc	0	0	-	-
+t89	nam	mở máy lọc không khí	Control	Lọc bụi	0	0	-	-
+t90	nam	mở quạt ghế	Control	Ghế mát	0	0	-	-
+t91	nam	tăng nhiệt độ máy lạnh lên	Control	Nhiệt độ	0	0	-	-
+# ── Bước nhảy tương đối (H1) ───────────────────────────────────────────────────────────────────
+# ⚠ Máy ảo KHÔNG có HAL ⇒ `readState` trả null ⇒ mốc rơi về mức RAM, y như 1.68. Phép đo *"đọc số THẬT của xe
+# rồi mới cộng"* nằm ở bài `:core` `VoiceRelativeStepTest` (cổng giả trả 5 ⇒ ra 6), không đo được ở đây.
+# Ca này canh phần T1 đo được: câu vẫn ra ĐÚNG ý định tương đối sau khi đổi đường đọc.
+t92	step	giảm gió	Control	Giảm Gió	0	0	-	-
+t93	step	tăng nhiệt độ	Control	Tăng Nhiệt độ	0	0	-	-
+# ── H7 · CHỊU LỖI CHÍNH TẢ (1.69) ──────────────────────────────────────────────────────────────
+# Mỗi câu dưới đây là **chuỗi mô hình THẬT SỰ in ra** khi người thật nói, giải mã từ 5 bản thu
+# 2026-09-16 (`docs/diagnostics/voice-rec-2026-09-16/segments-*-shipping.json`) — không phải chuỗi
+# bịa ra cho đẹp bài. Owner: *"cốp với cấp khác gì nhau đâu"*. Cơ chế: `VoicePhoneticConfusions` +
+# `VoicePhoneticMatch`, chỉ chạy SAU khi đường khớp chính xác đã trượt (spec §4.4).
+# ⚠ Ca ÂM TÍNH của tầng này là t63–t67 + t85 đã có sẵn ở trên — đừng xoá chúng: một bộ chịu lỗi
+# nhận mọi thứ thì tệ hơn là không có.
+t94	misspell	mở cấp sau	Control	Cốp sau	0	0	-	-
+t95	misspell	ở cấp sau	Control	Cốp sau	0	0	-	-
+t96	misspell	mở góc sau	Control	Cốp sau	0	0	-	-
+t97	misspell	xem bên	Read	-	0	0	-	-
+t98	misspell	biên còn bao nhiêu	Read	-	0	0	-	-
+t99	misspell	bin còn bao nhiêu	Read	-	0	0	-	-
+t100	misspell	xem tin	Read	-	0	0	-	-
+t101	misspell	bằng ghế sưởi	Control	Ghế sưởi	0	0	-	-
+t102	misspell	bật ghế sửi	Control	Ghế sưởi	0	0	-	-
+t103	misspell	dần nhạc	Media	Dừng nhạc	0	0	-	-
+t104	misspell	mật độ hai mươi hai độ	Control	Nhiệt độ = 22	0	0	-	-
+t105	misspell	mở kim trước trái	Control	Kính trước-trái	0	0	-	-
+t106	misspell	mở kín trước trái	Control	Kính trước-trái	0	0	-	-
+t108	misspell	bật lọt bụi	Control	Lọc bụi	0	0	-	-

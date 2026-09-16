@@ -68,7 +68,10 @@ object TestBridgeJson {
                 c == '\n' -> sb.append("\\n")
                 c == '\r' -> sb.append("\\r")
                 c == '\t' -> sb.append("\\t")
-                c < ' ' -> sb.append("\\u").append("%04x".format(c.code))
+                // Locale.ROOT bắt buộc: `"%04x".format(x)` dùng locale MẶC ĐỊNH, ở locale chữ số không
+                // phải Latin (vd ar-SA nu=arab) sẽ sinh ra chữ số Ả Rập ⇒ JSON hỏng, `jq` bỏ cả lượt đo.
+                // Phần còn lại của repo (NavParse, ArrowClassifier) đã luôn nêu Locale tường minh.
+                c < ' ' -> sb.append("\\u").append(String.format(java.util.Locale.ROOT, "%04x", c.code))
                 else -> sb.append(c)
             }
         }

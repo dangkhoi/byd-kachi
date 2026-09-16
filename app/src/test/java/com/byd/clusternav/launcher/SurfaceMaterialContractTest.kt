@@ -110,7 +110,7 @@ class SurfaceMaterialContractTest {
      *
      * Lồi và lõm mà chỉ khác nhau ở độ sáng thì ở góc nhìn nghiêng trong cabin (màn 1920 nằm ngang, mắt người lái
      * ở trên) hai vai đọc như một. Nhánh SUNKEN vì thế trả về một `GradientDrawable` tô ĐẶC và **thoát sớm** —
-     * không chạm tới lớp mép sáng.
+     * không chạm tới chuyển sắc.
      */
     @Test
     fun `nhanh SUNKEN giu phang va thoat som`() {
@@ -123,23 +123,36 @@ class SurfaceMaterialContractTest {
         )
     }
 
-    /** Ba lớp của bề mặt lồi: gradient DỌC · (tuỳ chọn) sắc lĩnh vực · mép sáng ở ĐỈNH, gom bằng `LayerDrawable`. */
+    /**
+     * Bề mặt lồi: gradient DỌC + (tuỳ chọn) lớp sắc lĩnh vực gom bằng `LayerDrawable`.
+     *
+     * ## ⚠ [SOÁT Pass 5 · 2026-09-17] Bài này ĐẢO CHIỀU ba khẳng định của Pass 4
+     * Pass 4 đòi `Gravity.TOP` · `setLayerHeight(` · nét đỉnh `hair * 2` — tức là **khoá cái vạch vào chỗ**.
+     * Owner nhìn 1.68 trên xe: *"làm bóng ở đầu mỗi nút nhìn kỳ lắm … có 1 cái gạch trên top, bug rồi"*. Ba
+     * khẳng định ấy nay là **điều cấm**, không phải điều đòi. Ghi ra thay vì xoá lặng: một bài canh đảo chiều là
+     * một quyết định thiết kế đổi, và lần sau phải đọc được vì sao.
+     *
+     * Vẫn giữ: chuyển sắc phải DỌC (chéo `TL_BR` là nhận diện của *"cái đang được chọn"*), và phải gom bằng
+     * `LayerDrawable` chứ không vẽ tay trong `onDraw`.
+     */
     @Test
     fun `be mat loi co du lop va chuyen sac DOC`() {
         val body = SourceRoots.body(theme(), "fun surface(")
-        assertTrue("LayerDrawable(" in body, "ba lớp phải gom bằng LayerDrawable, không vẽ tay trong onDraw")
+        assertTrue("LayerDrawable(" in body, "lớp sắc lĩnh vực phải gom bằng LayerDrawable, không vẽ tay trong onDraw")
         assertEquals(
-            2, Regex("""Orientation\.TOP_BOTTOM""").findAll(body).count(),
-            "cả nền LẪN mép sáng phải là chuyển sắc DỌC. Chéo (TL_BR) là nhận diện của 'cái đang được chọn' " +
-                "(KachiTheme.gradient) — hai vai đó không được lẫn nhau.",
+            1, Regex("""Orientation\.TOP_BOTTOM""").findAll(body).count(),
+            "nền thẻ phải là ĐÚNG MỘT chuyển sắc DỌC. Chéo (TL_BR) là nhận diện của 'cái đang được chọn' " +
+                "(KachiTheme.gradient) — hai vai đó không được lẫn nhau; và lớp DỌC thứ hai nghĩa là mép sáng " +
+                "Pass 4 đã mọc lại.",
         )
-        assertTrue("Gravity.TOP" in body, "mép sáng phải nằm ở ĐỈNH (một nguồn sáng cho cả hệ)")
-        assertTrue("setLayerHeight(" in body, "mép sáng phải bị giới hạn chiều cao, không phủ cả thẻ")
-        // [SOÁT Pass 4] Dải mờ dần một mình chỉ đọc ra "hơi sáng ở trên". Nét ĐẶC ở đúng đỉnh mới cho ra mặt vát,
-        // và nó phải DÀY HƠN trên thẻ lớn — 2dp trên ô 40dp thì đọc thành viền, không thành ánh sáng.
-        assertTrue(
-            "KachiSpace.RADIUS_XL" in body && "hair * 2" in body,
-            "phải có nét đỉnh ĐẶC dày gấp đôi trên thẻ lớn (bán kính ≥ RADIUS_XL) — xem chú thích trong surface()",
+        assertEquals(
+            0, Regex("""Orientation\.TL_BR""").findAll(body).count(),
+            "bề mặt KHÔNG được dùng chuyển sắc chéo — đó là vai của KachiTheme.gradient (cái đang được chọn)",
+        )
+        val banned = listOf("Gravity.TOP", "setLayerHeight(", "setLayerGravity(", "hair * 2").filter { it in body }
+        assertEquals(
+            emptyList<String>(), banned,
+            "vạch sáng ở đỉnh thẻ mọc lại trong surface() (owner 2026-09-16 gọi đúng tên: 'bug rồi'): $banned",
         )
     }
 

@@ -134,6 +134,21 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
 
     private fun idOf(n: Int): String = ID_PREFIX + n
 
+    /**
+     * ⚠ [SOÁT OCR 2026-09-16] `onInit` về TRƯỚC khi hàm dựng gán xong [tts] — có thật, và im lặng.
+     *
+     * [tts] được dựng bằng `TextToSpeech(app) { onInit(it) }`: người nghe đã nằm trong tay nền tảng NGAY trong
+     * lời gọi hàm dựng, nên nếu dịch vụ đã nối sẵn thì `onInit` chạy **trước** khi giá trị trả về kịp vào field.
+     * Bản cũ gặp `tts == null` là `return` — không đặt [inited], không hẹn lại lần nào ⇒ đường máy đọc hệ thống
+     * chết CẢ PHIÊN mà không một dòng log nào nói vì sao. Ghi lại lượt đã lỡ rồi chạy nốt ở câu hỏi kế
+     * ([available] — cửa mà [speakInternal] và [VoiceSpeakerSelector] đều phải đi qua).
+     *
+     * ⚠⚠ Khai TRƯỚC [tts], không sau: thứ tự khởi tạo field của Kotlin chạy theo thứ tự KHAI, nên nếu ô này nằm
+     * dưới [tts] thì đúng lượt `onInit` đồng bộ ấy sẽ đọc phải một tham chiếu còn `null` ⇒ NPE bị `runCatching`
+     * của [tts] nuốt ⇒ mất luôn cả máy đọc. Đây là cùng lý do mà [inited]/[dead]/[langStatus] đứng trên đó.
+     */
+    private val initMissed = AtomicBoolean(false)
+
     private val tts: TextToSpeech? = runCatching {
         TextToSpeech(app) { status -> onInit(status) }
     }.onFailure { Log.w(TAG, "không dựng được máy đọc của hệ thống", it) }.getOrNull()
@@ -144,7 +159,20 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
             Log.w(TAG, "onInit trả $status — không có máy đọc dùng được")
             return
         }
+        val engine = tts
+        if (engine == null) { initMissed.set(true); return }
+        configure(engine)
+    }
+
+    /** Chạy nốt lượt cấu hình đã lỡ vì [tts] chưa kịp gán — xem KDoc [initMissed]. */
+    private fun catchUpInit() {
+        if (!initMissed.compareAndSet(true, false)) return
         val engine = tts ?: return
+        if (dead.get()) return
+        configure(engine)
+    }
+
+    private fun configure(engine: TextToSpeech) {
         val want = LangHost.locale()
         val st = runCatching { engine.isLanguageAvailable(want) }.getOrNull()
         langStatus.set(st)
@@ -172,7 +200,10 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
     /** Tên gói engine đang dùng — chỉ để báo cáo trên cầu kiểm thử. */
     fun engineName(): String? = runCatching { tts?.defaultEngine }.getOrNull()
 
-    override fun available(): Boolean = inited.get() && !dead.get()
+    override fun available(): Boolean {
+        catchUpInit()
+        return inited.get() && !dead.get()
+    }
 
     override fun speak(text: String): Boolean = speakInternal(text, null)
 

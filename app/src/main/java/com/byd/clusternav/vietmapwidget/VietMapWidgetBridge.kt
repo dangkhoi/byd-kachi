@@ -39,7 +39,7 @@ class VietMapWidgetBridge private constructor(context: Context) {
     private val prefs = VietMapWidgetPrefs(appContext)
     private val main = Handler(Looper.getMainLooper())
     private val extraction = VietMapWidgetExtraction(appContext)
-    private val host = VietMapAppWidgetHost(appContext, HOST_ID, ::onHostViewUpdated)
+    private val host = VietMapAppWidgetHost(appContext, HOST_ID, { listenerGeneration }, ::onHostViewUpdated)
     private val owners = linkedSetOf<VietMapWidgetOwner>()
     private val listeners = CopyOnWriteArraySet<ListenerEntry>()
     private val views = mutableMapOf<VietMapWidgetSlot, AppWidgetHostView>()
@@ -200,9 +200,14 @@ class VietMapWidgetBridge private constructor(context: Context) {
         Log.i(TAG, "widget bindings removed")
     }
     // --- Host callback (generation-bound) ---
-    private fun onHostViewUpdated(appWidgetId: Int, view: AppWidgetHostView) = onMain {
+    /**
+     * ⚠ [callbackGeneration] đến TỪ [VietMapAppWidgetHost] (chụp trong `updateAppWidget`, trước lượt post).
+     * Bản trước đọc `listenerGeneration` NGAY TRONG block này rồi so nó với chính nó ba dòng sau ⇒ điều kiện
+     * `callbackGeneration != listenerGeneration` KHÔNG BAO GIỜ đúng (mã chết mang hình dạng lá chắn) ⇒ một
+     * lượt RemoteViews của phiên nghe CŨ, đến sau `stop()`/`start()`, vẫn ghi đè snapshot của phiên mới.
+     */
+    private fun onHostViewUpdated(appWidgetId: Int, view: AppWidgetHostView, callbackGeneration: Long) = onMain {
         if (!listening) return@onMain
-        val callbackGeneration = listenerGeneration
         val slot = slotsById[appWidgetId] ?: return@onMain
         if (views[slot] !== view) return@onMain
         // Generation check: discard callbacks from prior listening sessions

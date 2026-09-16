@@ -1237,8 +1237,8 @@
  },
  {
   "group": "Chẩn đoán",
-  "name": "«Kiểm tra từng nút xe» (CapTest) — 106 thông tin + 54 hành động",
-  "desc": "Cài đặt › Hệ thống & quyền › Nâng cao › «Kiểm tra từng nút xe»: bảng dựng ĐỘNG từ 3 bộ đăng ký + 167 diễn giải song ngữ (2026-09-16 owner gỡ ADAS/an toàn — trước đó 187), gom theo Nhóm, mỗi dòng gắn thẻ [THÔNG TIN] / [HÀNH ĐỘNG] và một huy hiệu kết quả (xanh OK / đỏ Không OK / mờ chưa thử). Bốn nút đầu màn: «▶ Bắt đầu / Tiếp tục» (đi tuần tự từ mục chưa thử đầu tiên) · «Xuất báo cáo» (lưu luôn ra thẻ rồi hiện) · «Chụp log ngay» · «Xoá kết quả». Chạm một mục mở popup «Đang test: X» + diễn giải: mục THÔNG TIN đọc giá trị trên luồng nền rồi hiện (HAL read là binder chặn, cấm chạy trên luồng vẽ); mục HÀNH ĐỘNG hiện nút chạy + cảnh báo an toàn với nút thân xe, rồi chấm OK / Không OK / Bỏ qua.",
+  "name": "«Kiểm tra từng nút xe» (CapTest) — 100 thông tin + 47 hành động",
+  "desc": "Cài đặt › Hệ thống & quyền › Nâng cao › «Kiểm tra từng nút xe»: bảng dựng ĐỘNG từ 3 bộ đăng ký + 154 diễn giải song ngữ (2026-09-17 owner gỡ 19 mã chấm NO — trước đó 167; trước lượt gỡ ADAS/an toàn 2026-09-16 là 187), gom theo Nhóm, mỗi dòng gắn thẻ [THÔNG TIN] / [HÀNH ĐỘNG] và một huy hiệu kết quả (xanh OK / đỏ Không OK / mờ chưa thử). Bốn nút đầu màn: «▶ Bắt đầu / Tiếp tục» (đi tuần tự từ mục chưa thử đầu tiên) · «Xuất báo cáo» (lưu luôn ra thẻ rồi hiện) · «Chụp log ngay» · «Xoá kết quả». Chạm một mục mở popup «Đang test: X» + diễn giải: mục THÔNG TIN đọc giá trị trên luồng nền rồi hiện (HAL read là binder chặn, cấm chạy trên luồng vẽ); mục HÀNH ĐỘNG hiện nút chạy + cảnh báo an toàn với nút thân xe, rồi chấm OK / Không OK / Bỏ qua.",
   "voice": [],
   "voice_reply": "",
   "status": "🟢 đã xác nhận trên xe",
@@ -1258,7 +1258,7 @@
  {
   "group": "Chẩn đoán",
   "name": "T-BRIDGE — cầu kiểm thử qua adb, 16 lệnh",
-  "desc": "Một `BroadcastReceiver` exported nhận `am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd <lệnh>`. 16 lệnh: `say` (chạy câu lệnh chữ qua ĐÚNG đường VoiceDispatcher) · `wav` (đẩy tệp WAV qua bộ nhận dạng) · `listen` (mở phiên nghe thật) · `state` (ảnh chụp toàn trạng thái) · `profiles` · `profile` · `preset` · `slot` · `slot_clear` · `open` · `prefs` (dump một tệp prefs, redact khoá nhạy cảm) · `reapply` · `diag` · `ctl` (bắn MỘT nút xe + chụp dòng HAL thật) · `hal` (gọi getter/named-method HAL thô) · `sweep` (quét CẠN 167 mục chỉ-đọc rồi ghi JSON ra thẻ; 187 trước lượt gỡ ADAS/an toàn 2026-09-16). Mỗi lượt trả JSON ở BA nơi cùng lúc: `setResultData` (in thẳng ra terminal), một tệp `files/test/<mốc>-<lệnh>.json` (giữ 50 tệp mới nhất), và một dòng `logcat -s KachiTest`. Trần cứng 20 s/lượt. Mọi lệnh đi qua ĐÚNG đường một cú chạm đi — không có đường thứ hai, không lệnh shell thô, không chạm display 1.",
+  "desc": "Một `BroadcastReceiver` exported nhận `am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd <lệnh>`. 16 lệnh: `say` (chạy câu lệnh chữ qua ĐÚNG đường VoiceDispatcher) · `wav` (đẩy tệp WAV qua bộ nhận dạng) · `listen` (mở phiên nghe thật) · `state` (ảnh chụp toàn trạng thái) · `profiles` · `profile` · `preset` · `slot` · `slot_clear` · `open` · `prefs` (dump một tệp prefs, redact khoá nhạy cảm) · `reapply` · `diag` · `ctl` (bắn MỘT nút xe + chụp dòng HAL thật) · `hal` (gọi getter/named-method HAL thô) · `sweep` (quét CẠN 154 mục chỉ-đọc rồi ghi JSON ra thẻ; 167 trước lượt (V) FEATURE-FILTER 2026-09-17, 187 trước lượt gỡ ADAS/an toàn 2026-09-16). Mỗi lượt trả JSON ở BA nơi cùng lúc: `setResultData` (in thẳng ra terminal), một tệp `files/test/<mốc>-<lệnh>.json` (giữ 50 tệp mới nhất), và một dòng `logcat -s KachiTest`. Trần cứng 20 s/lượt. Mọi lệnh đi qua ĐÚNG đường một cú chạm đi — không có đường thứ hai, không lệnh shell thô, không chạm display 1.",
   "voice": [],
   "voice_reply": "",
   "status": "🚗 code xong chờ xe",
@@ -1277,8 +1277,8 @@
  },
  {
   "group": "Chẩn đoán",
-  "name": "`sweep` — chốt ~40 mục NEEDS-ONCAR bằng MỘT lệnh, không bấm tay 167 mục",
-  "desc": "Chỉ-đọc: gọi `readRaw` cho MỌI telemetry và mô tả route ghi cho MỌI control (KHÔNG bắn lệnh nào), rồi ghi `sweep-<mốc>.json` vào thư mục log trên thẻ và trả về đường dẫn + lệnh `adb pull`. Thay hẳn việc mở màn «Kiểm tra từng nút xe» bấm tay từng mục. Đây là công cụ chốt của đợt vá binding (187 mục lúc đo 2026-09-15; nay 167 sau lượt gỡ ADAS/an toàn 2026-09-16).",
+  "name": "`sweep` — chốt ~40 mục NEEDS-ONCAR bằng MỘT lệnh, không bấm tay 154 mục",
+  "desc": "Chỉ-đọc: gọi `readRaw` cho MỌI telemetry và mô tả route ghi cho MỌI control (KHÔNG bắn lệnh nào), rồi ghi `sweep-<mốc>.json` vào thư mục log trên thẻ và trả về đường dẫn + lệnh `adb pull`. Thay hẳn việc mở màn «Kiểm tra từng nút xe» bấm tay từng mục. Đây là công cụ chốt của đợt vá binding (187 mục lúc đo 2026-09-15; nay 154 sau lượt gỡ ADAS/an toàn 2026-09-16 và lượt (V) FEATURE-FILTER 2026-09-17).",
   "voice": [],
   "voice_reply": "",
   "status": "🚗 code xong chờ xe",

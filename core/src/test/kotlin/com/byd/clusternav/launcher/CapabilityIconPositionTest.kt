@@ -40,6 +40,13 @@ class CapabilityIconPositionTest {
         // `defrost_rear` ĐÃ RỜI danh sách này ở U7 lượt 2: nay có `ic-car-rear-defrost` (khung nhìn từ sau +
         // sóng nhiệt trên kính hậu) nên nó đi qua phép canh như mọi mã có vị trí khác — đúng cách danh sách
         // này phải "tự rữa" (trả nợ thì rời danh sách, không để lại dòng chết).
+        // H1 · T2: `defrost_front_state` — chữ "front" ở đây là KÍNH TRƯỚC (một trong hai tấm kính sấy được),
+        // không phải một GÓC của thân xe như `_fl`/`_rr`. Cặp sấy vẫn phân biệt được bằng hình: trước dùng
+        // `ic-defrost` (kính chắn gió + sóng nhiệt), sau dùng `ic-car-rear-defrost` (khung nhìn từ sau) — đúng cặp
+        // mà nút `defrost`/`defrost_rear` đang dùng, nên ô XEM và nút cùng một việc mang cùng một hình.
+        "defrost_front_state" to
+            "\"front\" = kính trước, không phải góc thân xe; cặp trước/sau đã khác hình (ic-defrost vs " +
+                "ic-car-rear-defrost) nên người dùng vẫn phân biệt được",
         "mac_win_open_all" to
             "gói lệnh: hình (ic_window_open) ĐÃ vẽ cả bốn ô kính trên khung xe + mũi tên hạ kính, chỉ tên tệp là " +
                 "tên cũ (giữ tên để khoá lưu bền của người dùng không đổi)",

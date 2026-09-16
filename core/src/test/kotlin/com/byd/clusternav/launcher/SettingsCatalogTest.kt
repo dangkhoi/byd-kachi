@@ -255,6 +255,12 @@ class SettingsCatalogTest {
                 // gói 61 MB: trạng thái đọc **từ đĩa** (`VoiceModelStore.isReady`), không có pref nào để nhớ.
                 // Hai công tắc đi kèm (`voice_speak_replies` · `voice_prefer_offline`) thì CÓ khoá nên không ở đây.
                 "voice_tts_pack",
+                // VOICE-HOTFIX 1.69 — hai VIỆC LÀM mới của đường giọng nói, cùng họ `voice_tts_pack`:
+                //  • `voice_log_export` nén thư mục `files/voice-log/` ra `Download/` rồi hiện đường dẫn — kết quả
+                //    là một TỆP, không có gì để nhớ. (Công tắc đi kèm `voice_keep_log` thì CÓ khoá nên không ở đây.)
+                //  • `voice_model_light` tải 4 tệp int8 rồi đổi `selected` — trạng thái đọc **từ đĩa** qua
+                //    `VoiceModelStore`, đúng như `voice_tts_pack`.
+                "voice_log_export", "voice_model_light",
                 // S5 — nút "Đặt Kachi làm màn hình chính" là VIỆC LÀM (gọi `cmd package set-home-activity`), không
                 // lưu khoá nào; trạng thái đọc live từ PackageManager. Công tắc `system_keep_home_on_boot` thì CÓ
                 // khoá (`keep_home_on_boot`) nên KHÔNG nằm ở đây.
@@ -264,7 +270,7 @@ class SettingsCatalogTest {
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "mười bảy mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười chín mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

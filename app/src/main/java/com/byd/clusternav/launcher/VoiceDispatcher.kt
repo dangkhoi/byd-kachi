@@ -5,6 +5,7 @@ import com.byd.clusternav.launcher.voice.VoiceIntent
 import com.byd.clusternav.launcher.voice.VoiceIntentParser
 import com.byd.clusternav.launcher.voice.VoiceReply
 import com.byd.clusternav.launcher.voice.VoiceAppIntents
+import com.byd.clusternav.launcher.voice.VoiceAppPhonetics
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceRisk
@@ -237,16 +238,30 @@ class VoiceDispatcher(
     /**
      * Một nút.
      *
-     * Lệnh **tương đối** (*"tăng gió"*) được quy về tuyệt đối **ở đây**, bằng mức đang hiển thị trong
-     * [ControlTileState.shared] — đúng bảng mà thanh nút và ô giữa màn đang đọc. `:core` cố ý không làm việc này
-     * (xem KDoc [VoiceIntent.Control.relative]): nó không biết xe đang ở mức nào.
+     * Lệnh **tương đối** (*"tăng gió"*) được quy về tuyệt đối **ở đây**. `:core` cố ý không làm việc này (xem KDoc
+     * [VoiceIntent.Control.relative]): nó không biết xe đang ở mức nào.
+     *
+     * ## ═══ H1 · MỐC để cộng phải là mức THẬT CỦA XE, không phải mức trong RAM ═════════════════════════════
+     * [ĐO] tester 1.66: *"điều hoà chỉnh lung tung, quất một phát như lò heo quay"*. Gốc: mốc lấy từ
+     * [ControlTileState.shared] — một bảng **lạc quan**, khởi tạo bằng `ControlDef.value` (gió **4** · nhiệt **22**) và
+     * chỉ đổi khi chính Kachi bấm. Người lái chỉnh gió ở màn BYD gốc thì bảng này không hề biết ⇒ [ĐO xe 2026-09-16]
+     * xe đang **gió 1**, nói *"tăng gió"*, Kachi tính 4 + 1 và bắn **5** — nhảy bốn nấc trong một câu.
+     *
+     * Nay hỏi xe trước ([CarControlPort.readState] — đi qua `ControlDef.readKey`, khoá ĐỌC, **không** phải `bindingKey`
+     * là khoá GHI). Đọc không được (`null`: off-car · máy ảo · nút chưa có đường đọc) ⇒ **lùi về đúng hành vi 1.68**,
+     * vì ở đó thật sự không có con số nào tốt hơn — và một con số bịa thì tệ hơn hẳn một con số cũ.
+     *
+     * Một lượt đọc cho MỘT câu lệnh, theo yêu cầu — không phải vòng poll (ngân sách [ĐO xe 1.68] 33 lượt đọc HAL/phút).
      */
     private fun runControl(i: VoiceIntent.Control) {
         val def = ControlRegistry.byId(i.id)
         if (def == null) { say(VoiceReply.failed(i)); return }
         val st = ControlTileState.shared
         val arg = when {
-            i.relative != 0 -> def.clamp(st.value(def) + i.relative * def.step)
+            i.relative != 0 -> {
+                val actual = runCatching { control().readState(def.id) }.getOrNull() ?: st.value(def)
+                def.clamp(actual + i.relative * def.step)
+            }
             else -> i.value ?: 1
         }
         val ok = runCatching { control().actByKind(def.id, arg) }.getOrDefault(false)
@@ -258,7 +273,23 @@ class VoiceDispatcher(
             else -> Unit
         }
         val shown = if (i.relative != 0) VoiceIntent.Control(def.id, arg) else i
-        if (!ok) { say(VoiceReply.failed(shown)); return }
+        if (!ok) {
+            // ═══ R5 (live-state) — *"hỏng lần này"* và *"xe này không có"* là HAI câu khác nhau ═════════
+            //
+            // [ĐO xe 2026-09-16] `ac_auto` khai feature `1324355606`, id đó **không nằm trong bảng của xe
+            // owner**, mà owner xác nhận xe **CÓ** điều hoà auto. Tới 1.68 cả hai ca đều ra đúng một câu
+            // (*"xe không nhận lệnh"*), nên người lái nói *"điều hoà"*, nghe báo hỏng, rồi **thử lại** — mãi.
+            // Tester nêu đúng chỗ này: *"điều hoà với lọc bụi nó không hiểu là cái gì"*.
+            //
+            // Phép phân biệt nằm ở tầng BIẾT XE (cổng điều khiển hỏi bảng feature-id thật); `:core` chỉ giữ
+            // **hình dạng** của ca và câu chữ ([VoiceReply.uncontrollable]). Không đọc được bảng ⇒
+            // `wiredOnThisCar` trả `true` ⇒ y nguyên câu cũ, không bao giờ đoán bừa là *"xe không có"*.
+            val absent = VoiceReply.uncontrollable(shown) { id ->
+                !runCatching { control().wiredOnThisCar(id) }.getOrDefault(true)
+            }
+            say(if (absent) VoiceReply.notOnThisCar(shown) else VoiceReply.failed(shown))
+            return
+        }
         if (def.kind == ControlKind.STEP) sayStepResult(shown, st) else say(VoiceReply.done(shown))
     }
 
@@ -376,17 +407,32 @@ class VoiceDispatcher(
             say(if (key != null) VoiceReply.appNotInstalled(i, key) else VoiceReply.cannotOpen(i))
             return
         }
+        // H3 · [ĐO máy ảo 2026-09-16, ca t73–t76] Câu khớp bằng **dạng ĐỌC** (*"mở du túp"*) mang theo đúng chuỗi
+        // đã khớp, nên câu trả lời đọc lên là *"Mở ứng dụng du túp"* — một cái tên người dùng chưa từng viết, và
+        // họ không có cách nào biết máy đã mở đúng app chưa. Từ khi owner chốt Kachi **đọc phản hồi thành tiếng**
+        // (D-C3) thì đó không còn là chuyện thẩm mỹ. Đổi lại đúng nhãn người dùng nhìn thấy trước khi nói.
+        val shown = displayName(pkg, labels)?.takeIf { it != i.appName }?.let { i.copy(appName = it) } ?: i
         val slot = i.slot
         if (slot == null) {
-            say(if (openApp(pkg)) VoiceReply.done(i) else VoiceReply.cannotOpen(i))
+            say(if (openApp(pkg)) VoiceReply.done(shown) else VoiceReply.cannotOpen(shown))
             return
         }
         val st = state()
         val count = EffectiveLayout.slotCount(st.workspace.preset, st.customLayout)
-        if (slot !in 1..count) { say(VoiceReply.slotOutOfRange(i, count)); return }
+        if (slot !in 1..count) { say(VoiceReply.slotOutOfRange(shown, count)); return }
         // 1-based (như người ta nói) → 0-based (như mảng ô). Phép đổi nằm ở ĐÚNG MỘT chỗ, là chỗ này.
-        say(if (assignAppToSlot(slot - 1, pkg)) VoiceReply.done(i) else VoiceReply.cannotOpen(i))
+        say(if (assignAppToSlot(slot - 1, pkg)) VoiceReply.done(shown) else VoiceReply.cannotOpen(shown))
     }
+
+    /**
+     * Nhãn **người dùng nhìn thấy** của một gói, chọn trong số mọi khoá cùng trỏ về nó.
+     *
+     * Phép chọn nằm ở `:core` ([VoiceAppPhonetics.canonicalLabel]) vì nó thuần và phải kiểm off-car; ở đây chỉ
+     * gom nhóm. `null` khi không khoá nào trỏ về gói ấy (đường bảng đích [VoiceAppTargets] — lúc đó tên hiện đã
+     * là nhãn chính thức của app rồi, không cần đổi).
+     */
+    private fun displayName(pkg: String, labels: Map<String, String>): String? =
+        VoiceAppPhonetics.canonicalLabel(labels.filterValues { it == pkg }.keys.toList())
 
     private companion object {
         const val TAG = "KachiVoice"

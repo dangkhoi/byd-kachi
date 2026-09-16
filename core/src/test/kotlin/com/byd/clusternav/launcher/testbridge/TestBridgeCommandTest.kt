@@ -222,7 +222,7 @@ class TestBridgeCommandTest {
             3,
             ok(
                 TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL,
-                TestBridgeCommands.EXTRA_ID to "drive_mode",
+                TestBridgeCommands.EXTRA_ID to "headlight_mode",
                 TestBridgeCommands.EXTRA_V to 3,
             ).v,
         )
@@ -340,10 +340,122 @@ class TestBridgeCommandTest {
         assertEquals("", cmd.text, "vắng `text` ⇒ rỗng ⇒ tập rỗng = *không hỏi gì cả* (mặc định owner)")
     }
 
-    /** Danh sách trắng KHÔNG được chứa khoá của cast/cụm/phím — xem KDoc [TestBridgeCommands.PREFS_SET] (2). */
+    /**
+     * Danh sách trắng KHÔNG được chứa khoá của cast/cụm/phím — xem KDoc [TestBridgeCommands.PREFS_SET] (2).
+     *
+     * ⚠ Con số **13** (trước H5 là 5): +3 núm Silero VAD (`voice_vad_*` — đường ngắt câu CHÍNH từ 1.69), +4 núm chỉnh bộ nghe (`voice_endpoint_silence_ms` ·
+     * `voice_endpoint_min_speech_ms` · `voice_beam` · `voice_hotword_score`) và +1 của bản vá [P0-2]
+     * (`voice_endpoint_floor_cap` — trần nền, xem KDoc `VoiceEndpointer`). Ghim con số chứ không chỉ ghim tính
+     * chất: một khoá **thêm vào mà không ai bàn** là đúng cách danh sách trắng nở ra cho tới khi nó không còn là
+     * một danh sách trắng nữa. Đổi số ở đây phải là một hành động có ý thức, kèm lý do ở dòng này.
+     */
     @Test
-    fun `danh sach trang chi co nam khoa, khong cham cast hay cum`() {
-        assertEquals(5, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+    fun `danh sach trang chi co muoi ba khoa, khong cham cast hay cum`() {
+        assertEquals(13, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
+        // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
+        assertTrue(
+            TestBridgeCommands.WRITABLE_PREFS_KEYS.all { it.startsWith("voice_") || it == "top_strip_labels" },
+            "khoá lạ lọt vào danh sách trắng: ${TestBridgeCommands.WRITABLE_PREFS_KEYS}",
+        )
+    }
+
+    // ══ H2 · lệnh `voice_dump` ════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * `voice_dump` phải là một lệnh THẬT trong bảng, **không đối số bắt buộc** — nó chỉ nén một thư mục ra thẻ.
+     *
+     * Đòi một đối số nào đó là bắt mọi script gõ thêm một thứ không mang thông tin gì; mà quên khai nó vào [SPECS]
+     * thì `parse` trả `unknown_cmd` và cả đường kéo tiếng về host im lặng không tồn tại (đúng bệnh CLAUDE.md §8:
+     * hàm viết xong mà không ai gọi).
+     */
+    @Test
+    fun `voice_dump la lenh that va khong doi doi so nao`() {
+        val cmd = ok(TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.VOICE_DUMP)
+        assertEquals(TestBridgeCommands.VOICE_DUMP, cmd.name)
+        val spec = TestBridgeCommands.SPECS.first { it.name == TestBridgeCommands.VOICE_DUMP }
+        assertTrue(spec.required.isEmpty(), "lệnh chỉ-đọc này không được đòi đối số: ${spec.required}")
+        // [SCAN §6 1.69, W5] Chỉ-ĐỌC với XE nhưng xuất TIẾNG CABIN ra `Download/` công khai qua receiver exported ⇒
+        // phải đi qua cổng `auto_confirm` (rủi ro quyền riêng tư). Bỏ cờ này là mở lại đường rò tiếng nói người lái.
+        assertTrue(
+            TestBridgeCommands.EXTRA_AUTO_CONFIRM in spec.optional,
+            "voice_dump xuất tiếng cabin ra Download — PHẢI mang cờ auto_confirm",
+        )
+        assertTrue(TestBridgeCommands.VOICE_DUMP in TestBridgeCommands.NAMES)
+    }
+
+    // ══ `hal --es op getid` — đường ĐỌC theo feature-id ═══════════════════════════════════════════════════
+
+    /**
+     * [ĐO xe 2026-09-16] Vệt mưa/sấy tắc vì `hal` không có đường đọc theo feature-id: `--es op get` chỉ nhận một
+     * **tên method**, nên `--es id` ra `missing_extra:m`. Bài này khoá lại hình dạng đã chốt: id/tên hằng đi
+     * trong `--es m` (đúng ô mà `setev` đã dùng), nên bộ phân tích không phải học thêm đối số nào.
+     */
+    @Test
+    fun `hal getid nhan id hoac ten hang trong --es m`() {
+        listOf("321912848", "WIPER_FRONT_WIPER_LEVEL").forEach { m ->
+            val cmd = ok(
+                TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+                TestBridgeCommands.EXTRA_OP to "getid",
+                TestBridgeCommands.EXTRA_DEV to "BYDAutoWiperDevice",
+                TestBridgeCommands.EXTRA_METHOD to m,
+            )
+            assertEquals("getid", cmd.op, "op phải giữ nguyên để tầng thi hành rẽ nhánh")
+            assertEquals(m, cmd.method)
+            assertEquals("BYDAutoWiperDevice", cmd.dev)
+            // Chỉ-ĐỌC ⇒ không mang cờ xác nhận. (Tầng thi hành cũng không hỏi tới nó — xem `TestBridgeHal`.)
+            assertTrue(!cmd.autoConfirm)
+        }
+    }
+
+    @Test
+    fun `hal getid van doi --es m nhu moi lenh hal khac`() {
+        assertEquals(
+            TestBridgeCommands.ERR_MISSING + TestBridgeCommands.EXTRA_METHOD,
+            err(
+                TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+                TestBridgeCommands.EXTRA_OP to "getid",
+            ),
+            "thiếu id/tên hằng phải báo THIẾU đúng tên ô, không phải một lệnh chạy được với id rỗng",
+        )
+    }
+
+    /** `--es op` được hạ chữ ở tầng phân tích ⇒ `GETID`/`GetId` vẫn rẽ đúng nhánh trên xe. */
+    @Test
+    fun `op duoc ha chu nen go HOA van chay`() {
+        val cmd = ok(
+            TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.HAL,
+            TestBridgeCommands.EXTRA_OP to "GetId",
+            TestBridgeCommands.EXTRA_METHOD to "540287",
+        )
+        assertEquals("getid", cmd.op)
+    }
+
+    // ══ H5 · năm núm chỉnh bộ nghe đi qua ĐÚNG cổng `prefs_set` ═══════════════════════════════════════════
+
+    /**
+     * Cả bốn khoá H5 phải **phân tích được** qua `prefs_set` (dải hợp lệ do tầng thi hành kẹp, xem
+     * `TestBridgePrefsSet`) — và đây là chỗ bắt ca *"thêm khoá vào danh sách trắng mà quên nối dây"*.
+     */
+    @Test
+    fun `moi num chinh bo nghe deu qua duoc cong prefs_set`() {
+        listOf(
+            "voice_endpoint_silence_ms" to "900",
+            "voice_endpoint_min_speech_ms" to "300",
+            "voice_endpoint_floor_cap" to "120",
+            "voice_vad_threshold" to "0.6",
+            "voice_vad_min_speech_ms" to "120",
+            "voice_vad_min_silence_ms" to "200",
+            "voice_beam" to "8",
+            "voice_hotword_score" to "2.5",
+        ).forEach { (key, value) ->
+            val cmd = ok(
+                TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.PREFS_SET,
+                TestBridgeCommands.EXTRA_KEY to key,
+                TestBridgeCommands.EXTRA_TEXT to value,
+            )
+            assertEquals(key, cmd.key)
+            assertEquals(value, cmd.text)
+        }
     }
 }

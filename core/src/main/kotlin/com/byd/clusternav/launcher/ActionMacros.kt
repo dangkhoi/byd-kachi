@@ -65,8 +65,9 @@ data class ActionMacro(
      * bị coi là yếu nhất một cách âm thầm. Thứ tự khai bị test khoá (`thu tu khai cua EvidenceTier LA thu hang`).
      */
     fun tier(): EvidenceTier {
-        val tiers = steps.mapNotNull { ControlRegistry.byId(it.controlId)?.tier }
-        return tiers.maxByOrNull { it.ordinal } ?: EvidenceTier.NEEDS_CAR
+        // `maxOrNull()` chứ không `maxByOrNull { it.ordinal }`: enum của Kotlin ĐÃ là `Comparable` theo đúng
+        // thứ tự khai, nên hàm chọn khoá chỉ nói lại một điều ngôn ngữ đã bảo đảm.
+        return steps.mapNotNull { ControlRegistry.byId(it.controlId)?.tier }.maxOrNull() ?: EvidenceTier.NEEDS_CAR
     }
 
     /**

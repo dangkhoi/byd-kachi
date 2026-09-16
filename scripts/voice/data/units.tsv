@@ -15,9 +15,6 @@ fan	so_lieu	mức 3
 vol	chung	mức mười hai
 vol	chung	mười lăm
 vol	so_lieu	mức 12
-target_soc_set	chung	tám mươi phần trăm
-target_soc_set	chung	chín mươi phần trăm
-target_soc_set	so_lieu	80 phần trăm
 brightness_gear	chung	mức năm
 brightness_gear	so_lieu	mức 5
 hud_brightness	chung	mức năm

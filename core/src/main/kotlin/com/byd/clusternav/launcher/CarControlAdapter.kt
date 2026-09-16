@@ -28,20 +28,33 @@ class CarControlAdapter(private val table: HalBindingTable) : CarControlPort {
     override fun press(id: String): Boolean = ok(table.write(id, 1))
 
     /**
-     * R5 — đọc lại giá trị THẬT của một nút STEP qua **đúng đường đọc** mà ô thông tin đang dùng
-     * ([HalBindingTable.readInt]).
-     *
-     * Không có đường đọc thứ hai: `readInt` đã lọc sentinel (`readRaw` trả `null` khi `rawIsSentinel`) và đã
-     * biết các ca đặc thù (`ARRAY_INDEX`, `float=` của `BYDAutoEventValue`, `INVALID_VALUES`). Tự gọi
-     * `gateway.getter` ở đây là dựng bản sao thứ hai của bốn luật ấy — và bản sao sẽ đọc ra
-     * `-999999999` rồi Kachi đọc to con số đó cho người lái nghe.
-     *
-     * `runCatching`: đường HAL đi qua reflection, một trim thiếu lớp là `ClassNotFoundException` — mà đây chỉ là
-     * một câu trả lời đẹp hơn, không đáng làm hỏng cả lệnh vừa gửi thành công.
+     * R5 — đọc lại giá trị THẬT của một nút STEP. Nay chỉ là [readState] **có thêm cổng kiểu**: giữ đúng lời hứa cũ
+     * *"R5 chỉ áp cho STEP"* mà `VoiceStepReadbackTest.nut khong phai STEP thi khong doc lai gi` đang khoá — một lượt
+     * HAL thừa mỗi lần bấm một nút bật/tắt là thứ ngân sách 33 lượt đọc/phút không gánh được.
      */
     override fun readStep(id: String): Int? =
-        if (ControlRegistry.byId(id)?.kind != ControlKind.STEP) null
-        else runCatching { table.readInt(id) }.getOrNull()
+        if (ControlRegistry.byId(id)?.kind != ControlKind.STEP) null else readState(id)
+
+    /**
+     * H1 · T5 — giá trị THẬT của một nút, qua **đúng đường đọc** mà ô thông tin đang dùng
+     * ([HalBindingTable.readState] → `ControlDef.readKey` → datum → `readInt`).
+     *
+     * Không có đường đọc thứ hai: `readInt` đã lọc sentinel (`readRaw` trả `null` khi `rawIsSentinel`) và đã biết các
+     * ca đặc thù (`float=` của `BYDAutoEventValue`, `INVALID_VALUES`). Tự gọi `gateway.getter` ở đây là
+     * dựng bản sao thứ hai của những luật ấy — và bản sao sẽ đọc ra `-999999999` rồi Kachi đọc to con số đó cho người
+     * lái nghe.
+     *
+     * `runCatching`: đường HAL đi qua reflection, một trim thiếu lớp là `ClassNotFoundException` — mà đây chỉ là một
+     * câu trả lời đẹp hơn, không đáng làm hỏng cả lệnh vừa gửi thành công.
+     */
+    override fun readState(id: String): Int? = runCatching { table.readState(id) }.getOrNull()
+
+    /**
+     * Xem KDoc [CarControlPort.wiredOnThisCar]. `runCatching`: đường HAL đi qua reflection, và đây chỉ là một
+     * câu trả lời đẹp hơn — không đáng làm hỏng một lệnh vừa gửi.
+     */
+    override fun wiredOnThisCar(id: String): Boolean =
+        runCatching { !table.featureAbsentOnCar(id) }.getOrDefault(true)
 
     /**
      * Định tuyến chung theo [ControlDef.kind] — cho UI gọi 1 điểm. [arg]: TOGGLE 1/0, STEP giá trị, COVER 1/0,

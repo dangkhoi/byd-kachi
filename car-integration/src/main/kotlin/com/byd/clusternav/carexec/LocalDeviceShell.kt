@@ -267,12 +267,23 @@ object LocalDeviceShell {
      * (tùy build). Trả true nếu phiên nối được (đã phát lệnh) — dấu hiệu thành công thật là lần
      * `bindAppWidgetIdIfAllowed()` thử lại sau đó, vì grantbind không in gì khi thành công.
      */
-    fun grantAppWidgetBind(keys: AdbKeyPair, pkg: String): Boolean =
-        runAll(
+    fun grantAppWidgetBind(keys: AdbKeyPair, pkg: String): Boolean {
+        // CLAUDE.md §4 — "nhắm đúng app nào? (allow-list, không phải 'mọi thứ trừ…')". [pkg] chảy THẲNG vào một
+        // lệnh chạy ở uid-2000 shell; một chuỗi mang khoảng trắng / `;` / `$(…)` / `&&` sẽ chạy thành lệnh KHÁC
+        // với quyền shell. Hôm nay chỗ gọi duy nhất truyền `packageName` của chính app, nhưng hàm này là API
+        // công khai của tầng transport — khuôn tên gói là cổng, không phải kỷ luật của bên gọi.
+        // Trả `false` (không `require`): bên gọi chạy trong `Thread { }` TRẦN (VietMapWidgetDiagActivity), nên
+        // một ngoại lệ lọt ra là giết tiến trình; `false` đã có nhánh xử lý sẵn (hiện hướng dẫn thủ công).
+        if (!PACKAGE_NAME.matches(pkg)) return false
+        return runAll(
             keys,
             listOf(
                 "appwidget grantbind --package $pkg --user 0",
                 "cmd appwidget grantbind --package $pkg --user 0",
             ),
         ) != null
+    }
+
+    /** Khuôn tên gói Android — cổng DUY NHẤT cho chuỗi bên-gọi-cấp đi thẳng vào một lệnh shell ở đây. */
+    private val PACKAGE_NAME = Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$")
 }

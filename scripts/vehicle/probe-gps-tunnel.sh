@@ -46,9 +46,14 @@ SERIES="$EVIDENCE_DIR/timeseries.tsv"
 printf 'iso_utc\telapsed_s\tlast_fix_age\tgnss_sv_used\tspeed_kmh\tnav_distance\n' > "$SERIES"
 
 started=$(date +%s)
-trap 'echo; echo "stopped by operator"' INT
+# Bash chay handler roi TIEP TUC vong lap, nen mot trap chi in chu khong dung duoc gi — Ctrl-C ma
+# script van chay tiep dung 600 s la trai voi cau huong dan o tren. Dat co roi break (cung khuon ma
+# listen-nav-signals.sh dung), de phan tong ket + SHA256SUMS o duoi van chay.
+STOP_REQUESTED=0
+trap 'STOP_REQUESTED=1; echo; echo "stopped by operator"' INT
 
 while :; do
+  [[ "$STOP_REQUESTED" -eq 0 ]] || break
   now=$(date +%s)
   elapsed=$(( now - started ))
   [[ "$elapsed" -lt "$DURATION" ]] || break

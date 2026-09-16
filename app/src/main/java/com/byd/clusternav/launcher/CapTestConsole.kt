@@ -245,17 +245,30 @@ class CapTestConsole(
             .setPositiveButton(android.R.string.ok, null).show()
     }
 
-    /** Chụp một phát toàn bộ logcat ra thẻ (luồng nền — exec logcat có thể chặn), rồi báo đường dẫn. */
+    /**
+     * Chụp một phát toàn bộ logcat ra thẻ (luồng nền — exec logcat có thể chặn), rồi báo đường dẫn.
+     *
+     * ## [SOÁT OCR 2026-09-16 · P2] Vì sao phải hỏi màn còn sống không TRƯỚC khi `show()`
+     * [KachiLog.snapshot] chạy `logcat -d` — CHẶN, đo được vài giây trên xe. Trong khoảng ấy người dùng đóng
+     * được bảng Cài đặt, hoặc đổi bảng màu (⇒ `recreate()`). `AlertDialog…show()` trên một activity đã huỷ ném
+     * `WindowManager.BadTokenException`, mà đây là luồng nền `post` về — không ai bắt ⇒ **sập launcher trên xe
+     * đang chạy**. Cùng lá chắn mà [VoiceTextConsole.ask] đã dựng cho đúng họ lỗi này: kiểm vòng đời rồi mới
+     * bung, và `runCatching` cho khe hở còn lại giữa phép kiểm và lời gọi.
+     */
     private fun snapshotLogs() {
         Thread({
             val f = KachiLog.snapshot(context)
             summaryView?.post {
-                AlertDialog.Builder(context)
-                    .setMessage(
-                        if (f != null) context.getString(R.string.kachi_captest_snapshot_done, f.absolutePath)
-                        else s(R.string.kachi_captest_value_none),
-                    )
-                    .setPositiveButton(android.R.string.ok, null).show()
+                val host = context as? android.app.Activity
+                if (host != null && (host.isFinishing || host.isDestroyed)) return@post
+                runCatching {
+                    AlertDialog.Builder(context)
+                        .setMessage(
+                            if (f != null) context.getString(R.string.kachi_captest_snapshot_done, f.absolutePath)
+                            else s(R.string.kachi_captest_value_none),
+                        )
+                        .setPositiveButton(android.R.string.ok, null).show()
+                }
             }
         }, "KachiLogSnap").start()
     }

@@ -1,6 +1,8 @@
 # Kachi MAXIMUM Capability Catalog — BYD DiLink telemetry + controls
 
-> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+> ⚠ **2026-09-17 — (V) FEATURE-FILTER**: owner gỡ thêm **19 mã chấm NO** (12 thông tin + 7 nút — cụm SẠC, chế độ lái, gập gương, chế độ drift, trạng thái nguồn MCU, chìa Bluetooth, tự-đóng-kính-khi-mưa) và **ẩn 8 ô lốp lẻ** khỏi bộ chọn. **Trạng thái hôm nay: 154 chức năng** = **47 nút · 100 thông tin · 4 gói · 3 hành động**; `status-by-id.json` **145** mục. Mọi con số dưới đây (kể cả banner ADAS-PURGE ngay dưới) là **LỊCH SỬ ĐO** — xem `docs/diagnostics/feature-filter-2026-09-16.md`.
+
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái lúc đó (2026-09-16): **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
 
 > **Status**: Current · **Date**: 2026-09-10 · **Type**: Diagnostics (RE capability harvest, cited to source symbol) ·
 > **Purpose**: The single, exhaustive menu of *everything a BYD DiLink launcher can read and actuate*, harvested from

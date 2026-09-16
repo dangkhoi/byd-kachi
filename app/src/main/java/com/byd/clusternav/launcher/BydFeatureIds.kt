@@ -74,6 +74,17 @@ object BydFeatureIds {
     }
 
     /**
+     * Framework của xe này có **bảng feature-id THẬT** không (`BYDAutoDeviceFeaturesMap`).
+     *
+     * ## Vì sao cần một câu hỏi riêng, thay vì nhìn [deviceFqnForFeature] trả `null`
+     * `null` ở đó có **hai** nghĩa trộn vào nhau: *"id này không có trên xe"* và *"máy này không có framework
+     * BYD nào cả"* (off-car, máy ảo, bài kiểm). Trộn hai nghĩa là đúng cách để Kachi đọc to *"chưa điều khiển
+     * được trên xe này"* cho **mọi** nút khi chạy trên máy ảo — một câu sai, và sai theo kiểu làm người ta tin
+     * là xe hỏng. Hàm này tách chúng ra: chỉ khi bảng **có thật** thì một `null` mới mang nghĩa *"vắng"*.
+     */
+    fun featureMapAvailable(): Boolean = featuresOf() != null
+
+    /**
      * Cầu kiểm thử `featmap` — đổ **toàn bộ** bảng thật của xe ra dạng thuần để ghi JSON.
      *
      * @return `names` = tên hằng → giá trị (cả lớp ngoài lẫn lớp lồng, tên lồng có tiền tố); `devices` = mã

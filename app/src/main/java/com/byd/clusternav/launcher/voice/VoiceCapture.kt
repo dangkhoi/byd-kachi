@@ -11,6 +11,9 @@ import android.media.AudioRecord
 import android.media.ToneGenerator
 import android.util.Log
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.voiceEndpointFloorCap
+import com.byd.clusternav.voiceEndpointMinSpeechMs
+import com.byd.clusternav.voiceEndpointSilenceMs
 import com.byd.clusternav.voiceMicSource
 
 /**
@@ -50,14 +53,39 @@ internal class VoiceCapture(private val ctx: Context) {
      * Chữ nghe được + **khúc PCM đã thu** của chính lượt ấy.
      *
      * ## Vì sao giữ lại tiếng, trong một dự án mà cả một bài canh sinh ra để tiếng KHÔNG rời khỏi xe
-     * V1.1 cần một lượt giải mã **thứ hai** (tự do, không ngữ pháp) trên đúng khúc tiếng vừa nghe, để đọc ra tên
-     * bài / điểm đến — xem KDoc [VoiceOpenVocab]. Khúc ấy:
-     *  • sống **trong RAM của tiến trình**, không tệp, không mạng (bài canh R14 vẫn nguyên hiệu lực);
-     *  • có **trần cứng** [MAX_KEPT_SAMPLES] = 9 giây ≈ 288 KB, dài hơn trần một phiên
-     *    (`VoiceSession.MAX_LISTEN_MS` = 8 s) đúng một giây để không cắt cụt câu cuối;
-     *  • chết cùng lượt nghe — không có trường nào của lớp này giữ nó lại.
+     * V1.1 cần một lượt giải mã **thứ hai** (tự do) trên đúng khúc tiếng vừa nghe, để đọc tên bài / điểm đến —
+     * xem KDoc [VoiceOpenVocab]. Khúc ấy sống **trong RAM của tiến trình** (không tệp, không mạng — bài canh R14
+     * vẫn nguyên hiệu lực), có **trần cứng** [MAX_KEPT_SAMPLES] = 9 giây ≈ 288 KB (dài hơn trần một phiên đúng
+     * một giây để không cắt cụt câu cuối), và chết cùng lượt nghe.
      */
-    data class Heard(val text: String, val pcm: ShortArray, val samples: Int) {
+    data class Heard(
+        val text: String,
+        val pcm: ShortArray,
+        val samples: Int,
+        /**
+         * ═══ H2/H5 — SỐ ĐO của chính lượt nghe này, đi kèm chữ ═══════════════════════════════════════
+         *
+         * Sáu trường dưới đây là thứ [VoiceUtteranceLog] ghi vào tệp JSON và thứ `KachiVoiceTiming` in ra. Chúng
+         * đi **cùng** kết quả chứ không nằm trong một ô nhớ dùng chung của lớp: một phiên có tới ba lượt nghe
+         * (chính · xác nhận · hội thoại) và hai trong ba chạy trên luồng nền chồng lấn với luồng vẽ — một trường
+         * `lastEndpointMs` của lớp sẽ bị lượt sau ghi đè trước khi lượt trước kịp được ghi ra tệp, và tệp JSON
+         * sẽ mô tả **lượt khác** với tệp WAV cạnh nó. Kiểu sai đó không có gì báo và không ai phát hiện ra khi
+         * đọc lại nhật ký ba tháng sau.
+         *
+         * Tất cả có **mặc định 0/false** để ba đường thoát sớm của [listen] (không mở được micro, ROM từ chối
+         * ghi, `startRecording` ném) không phải bịa ra một con số nào.
+         */
+        val endpointMs: Int = 0,
+        val speechMs: Int = 0,
+        val silenceMs: Int = 0,
+        /** `true` = bộ ngắt câu chốt; `false` = chạm trần cứng của phiên (hai ca rất khác nhau khi chỉnh núm). */
+        val endpointFired: Boolean = false,
+        /** Micro mở bao lâu (ms) · lượt giải mã mất bao lâu (ms). */
+        val listenMs: Long = 0L,
+        val decodeMs: Long = 0L,
+        /** Hằng `MediaRecorder.AudioSource` **thật sự** mở được (không phải cái được ưu tiên). */
+        val micSource: Int = 0,
+    ) {
         // `data class` mang `ShortArray` ⇒ `equals`/`hashCode` sinh sẵn so theo THAM CHIẾU. Khai lại tường minh
         // để không ai vô tình dựa vào một phép so sai; lớp này không bao giờ cần so bằng.
         override fun equals(other: Any?): Boolean = this === other
@@ -80,22 +108,83 @@ internal class VoiceCapture(private val ctx: Context) {
         maxMs: Long,
         cancelled: () -> Boolean,
         keepPcm: Boolean = false,
-        endpointer: VoiceEndpointer? = VoiceEndpointer(),
+        /**
+         * H5 — mặc định KHÔNG còn là `VoiceEndpointer()` trần mà là [endpointerFromPrefs]: hai ngưỡng của nó
+         * (`voice_endpoint_silence_ms` · `voice_endpoint_min_speech_ms`) chỉnh được trên xe. Mặc định của hai
+         * khoá ấy **bằng đúng** hai hằng cũ ⇒ máy chưa ai chỉnh chạy y hệt 1.68.
+         */
+        endpointer: VoiceEndpointer? = endpointerFromPrefs(),
         /**
          * V3 · R9 — có kêu tiếng bíp **đầu** lượt không.
          *
          * `false` cho lượt nối của hội thoại: tiếng bíp trả lời câu *"nó bắt đầu nghe chưa"* của một phiên do
          * người dùng vừa mở; trong một vòng hội thoại thì micro chỉ **chưa đóng**, và một tiếng bíp sau mỗi câu
-         * trả lời là thứ làm người ta tắt tính năng. Tiếng bíp CUỐI thì vẫn còn (nó là mốc *"tôi thôi nghe"*).
+         * trả lời là thứ làm người ta tắt tính năng.
+         *
+         * ⚠ Từ [P0-2] cờ này gác **cả tiếng bíp CUỐI** (xem [closeRecord]): [ĐO xe] nó mất tới **4955 ms** để
+         * phát xong, còn lượt nối mở micro ~50 ms sau khi đóng ⇒ bíp cũ rơi vào cửa sổ đo nền của lượt sau.
          */
         beep: Boolean = true,
+        /**
+         * [P0-1a] Chỉ giải mã khi bộ ngắt câu **đã từng nghe thấy tiếng**.
+         *
+         * `true` cho mọi lượt NỐI: [ĐO xe] 189/300 lượt không nghe thấy gì mà vẫn chạy giải mã 1,3–2 s để mô
+         * hình **bịa** ra `"ừ"`/`"ừm"` — chuỗi ấy lại mở lại micro. `false` cho lượt CHÍNH: người lái vừa bấm
+         * mic, nên im lặng ở đó là câu trả lời cần nói ra (*"Không nghe rõ"*), không phải lượt bỏ qua âm thầm.
+         */
+        decodeOnlyIfSpeech: Boolean = false,
+        /** Nhãn lượt cho chốt một-micro + nhật ký (`chinh` · `hoi-thoai` · `hoi-lai` · `xac-nhan`). */
+        label: String = LABEL_MAIN,
         onPartial: (String) -> Unit,
     ): Heard {
         val kept = if (keepPcm) ShortArray(MAX_KEPT_SAMPLES) else EMPTY
+        // ═══ [P0-1d/e] CHỐT MỘT-MICRO + CẦU CHÌ — trước cả `AudioRecord` ═══════════════════════════
+        // Đặt ở đây vì đây là chỗ CUỐI trước phần cứng: mọi đường mở micro (kể cả đường ai đó thêm sau này) đều
+        // đi qua, không phải nhớ gọi thêm gì. Xem KDoc [VoiceSingleFlight].
+        when (val grant = VoiceSingleFlight.acquire(label)) {
+            is VoiceSingleFlight.Grant.Busy -> {
+                Log.w(TAG, "chắn lượt '$label': micro đang thuộc lượt '${grant.holder}' — bỏ qua")
+                return Heard("", kept, 0)
+            }
+            is VoiceSingleFlight.Grant.Fused -> {
+                Log.w(
+                    TAG,
+                    "CẦU CHÌ: đã ${grant.opens} lượt mở micro trong 60 s (trần " +
+                        "${VoiceSingleFlight.MAX_OPENS_PER_MINUTE}) — từ chối lượt '$label'",
+                )
+                return Heard("", kept, 0)
+            }
+            VoiceSingleFlight.Grant.Ok -> Unit
+        }
+        try {
+            return listenGranted(rec, maxMs, cancelled, keepPcm, endpointer, beep, decodeOnlyIfSpeech, kept, onPartial)
+        } finally {
+            VoiceSingleFlight.release()
+        }
+    }
+
+    /** Thân thật của một lượt nghe, **sau khi** đã cầm chốt micro. Tách ra để `finally` nhả chốt không lẫn vào. */
+    @Suppress("ReturnCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod")
+    private fun listenGranted(
+        rec: VoiceRecognizer,
+        maxMs: Long,
+        cancelled: () -> Boolean,
+        keepPcm: Boolean,
+        endpointer: VoiceEndpointer?,
+        beep: Boolean,
+        decodeOnlyIfSpeech: Boolean,
+        kept: ShortArray,
+        onPartial: (String) -> Unit,
+    ): Heard {
         var keptN = 0
         val tOpen = System.currentTimeMillis()
-        val record = openRecord() ?: return Heard("", kept, keptN)
+        val opened = openRecord() ?: return Heard("", kept, keptN)
+        val record = opened.record
         val focus = requestFocus()
+        // Bộ ngắt câu của lượt này: Silero VAD nếu dựng được, lùi về bộ RMS (xem [VoiceTurnEndpoint]). Dựng SAU
+        // khi micro đã mở: nó tốn vài chục–vài trăm ms nạp ONNX, và trả cái giá ấy trước khi biết có mở được
+        // micro hay không là trả cho một lượt có thể không bao giờ chạy.
+        val ep = VoiceTurnEndpoint.open(ctx, endpointer)
         try {
             runCatching { record.startRecording() }.onFailure {
                 Log.w(TAG, "startRecording hỏng", it); return Heard("", kept, keptN)
@@ -105,17 +194,22 @@ internal class VoiceCapture(private val ctx: Context) {
                 return Heard("", kept, keptN)
             }
             Log.i(VoiceEngine.TIMING_TAG, "mic mở sau ${System.currentTimeMillis() - tOpen} ms")
-            if (beep) tone(ToneGenerator.TONE_PROP_BEEP, TONE_START_MS)
+            // [P0-2] Bíp **SAU** cửa sổ đo nền của đường lùi, không phải trước — lý do + số đo ở KDoc
+            // [VoiceTurnEndpoint.floorWindowOpen]. Đường VAD không có cửa sổ ấy nên nó bíp ngay như cũ.
+            var beepPending = beep
+            if (beepPending && !ep.floorWindowOpen()) { tone(ToneGenerator.TONE_PROP_BEEP, TONE_START_MS); beepPending = false }
             val buf = ShortArray(CHUNK_SAMPLES)
             val tListen = System.currentTimeMillis()
             val deadline = tListen + maxMs
             var lastPartial = ""
-            // [ĐO bug voice 2026-09-15] Mức tín hiệu micro — chốt "câm/không nghe được" trên xe TRONG MỘT lượt nói:
-            // đỉnh gần 0 ⇒ mic không có tiếng (nguồn/ROM chặn); đỉnh kịch 32767 liên tục ⇒ méo/clip (nghi mic-array
-            // 4 kênh ghép sai); đỉnh vừa mà sherpa ra rỗng ⇒ chất lượng/định dạng. Không lưu gì, chỉ hai số.
+            // [ĐO bug voice 2026-09-15] Mức tín hiệu micro — chốt "câm/không nghe được" TRONG MỘT lượt nói: đỉnh
+            // gần 0 ⇒ mic câm; đỉnh kịch 32767 liên tục ⇒ méo/clip; đỉnh vừa mà sherpa ra rỗng ⇒ định dạng.
             var peak = 0
             var sumSq = 0.0
             var samples = 0L
+            // Số mẫu đã đọc được trong cửa sổ — mốc để đổi mẫu ↔ ms và là trần trên của phép cắt đuôi.
+            // Tách khỏi `samples` (Long, dùng cho phép đo mức) vì phép cắt làm việc trên chỉ số mảng (Int).
+            var fed = 0
             var ended = false
             while (!cancelled() && System.currentTimeMillis() < deadline) {
                 val n = record.read(buf, 0, buf.size)
@@ -133,36 +227,82 @@ internal class VoiceCapture(private val ctx: Context) {
                 }
                 sumSq += chunkSq
                 samples += n
+                fed += n
                 // Chép TRƯỚC khi giải mã: `accept` có thể chốt câu và thoát ngay ở dòng dưới.
                 if (keepPcm && keptN < kept.size) {
                     val room = minOf(n, kept.size - keptN)
                     System.arraycopy(buf, 0, kept, keptN, room)
                     keptN += room
                 }
-                if (rec.accept(buf, n)) { logLevel(peak, sumSq, samples); return Heard(rec.result(), kept, keptN) }
-                // ═══ V3 · R2 — NGẮT CÂU khi người ta ngừng nói (xem KDoc [VoiceEndpointer]) ═══════════
-                // Đặt SAU `rec.accept` (khối đã vào bộ gom) và TRƯỚC `partial`: thoát ở đây thì khúc tiếng đã
-                // đầy đủ, `finalResult()` dưới kia giải mã đúng thứ vừa nói, không thiếu khối cuối.
-                if (endpointer != null) {
-                    val rmsChunk = kotlin.math.sqrt(chunkSq / n).toInt()
-                    if (endpointer.accept(rmsChunk, n * 1000 / SAMPLE_RATE) == VoiceEndpointer.Phase.ENDED) {
-                        Log.i(VoiceEngine.TIMING_TAG, "ngắt câu: ${endpointer.summary()}")
-                        ended = true
-                        break
-                    }
+                if (rec.accept(buf, n)) {
+                    logLevel(peak, sumSq, samples)
+                    return Heard(
+                        rec.finalResult(ep.trimSamples(fed)), kept, keptN,   // [SOÁT 1.69 · P2] xem KDoc `finalResult`
+                        speechMs = ep.speechEndMs() - maxOf(0, ep.speechStartMs()),
+                        listenMs = System.currentTimeMillis() - tListen,
+                        micSource = opened.source,
+                    )
+                }
+                // Ngắt câu — đặt SAU `rec.accept` (khối đã vào bộ gom) và TRƯỚC `partial`: thoát ở đây thì
+                // khúc tiếng đã đầy đủ, phép cắt + giải mã dưới kia làm việc trên đúng thứ vừa nói.
+                val rmsChunk = kotlin.math.sqrt(chunkSq / n).toInt()
+                val stop = ep.accept(buf, n, rmsChunk, n * 1000 / SAMPLE_RATE)
+                // Cửa sổ đo nền (chỉ đường LÙI có) đã đóng ⇒ giờ bíp mới an toàn — xem [P0-2] ở trên.
+                if (beepPending && !ep.floorWindowOpen()) {
+                    tone(ToneGenerator.TONE_PROP_BEEP, TONE_START_MS)
+                    beepPending = false
+                }
+                if (stop) {
+                    Log.i(VoiceEngine.TIMING_TAG, "ngắt câu: ${ep.summary(fed)}")
+                    ended = true
+                    break
                 }
                 val p = rec.partial()
                 if (p.isNotEmpty() && p != lastPartial) { lastPartial = p; onPartial(p) }
             }
-            if (!ended && endpointer != null) Log.i(VoiceEngine.TIMING_TAG, "hết trần: ${endpointer.summary()}")
-            Log.i(VoiceEngine.TIMING_TAG, "nghe ${System.currentTimeMillis() - tListen} ms")
+            // Chạm trần mà đoạn tiếng còn đang mở ⇒ chốt nốt, nếu không "nói dài" bị coi là "không ai nói".
+            if (!ended) { ep.flush(); Log.i(VoiceEngine.TIMING_TAG, "hết trần: ${ep.summary(fed)}") }
+            val listenMs = System.currentTimeMillis() - tListen
+            Log.i(VoiceEngine.TIMING_TAG, "nghe $listenMs ms")
             logLevel(peak, sumSq, samples)
+            val speechStart = ep.speechStartMs()
+            val speechEnd = ep.speechEndMs()
+            // ═══ [P0-1a] KHÔNG GIẢI MÃ một lượt chưa bao giờ nghe thấy tiếng ═══════════════════════════
+            // Đây là chỗ cắt ~200 lượt giải mã/12 phút và cắt luôn nhiên liệu của vòng lặp (xem KDoc tham số
+            // `decodeOnlyIfSpeech`). Câu trả lời rỗng ⇒ chỗ gọi đóng phiên êm, không có gì để "hiểu".
+            if (decodeOnlyIfSpeech && !ep.sawSpeech()) {
+                Log.i(VoiceEngine.TIMING_TAG, "bỏ giải mã: lượt này không có tiếng nào (${ep.summary(fed)})")
+                return Heard(
+                    "", kept, keptN, endpointFired = ended, listenMs = listenMs, micSource = opened.source,
+                )
+            }
+            // ═══ CẮT ĐUÔI (`head`) rồi mới giải mã — §6: đuôi im lặng kéo 22/25 xuống 6/25 ═══════════════
+            // `fed` = số mẫu đã đọc được trong cửa sổ; `trim` = tới HẾT đoạn tiếng cuối. Đường LÙI trả nguyên
+            // cửa sổ (xem KDoc [VoiceTurnEndpoint.trimSamples]) nên nhánh ấy giữ đúng hành vi 1.68.
+            val trim = ep.trimSamples(fed)
+            Log.i(
+                VoiceEngine.TIMING_TAG,
+                "cắt: tieng_bat_dau=${speechStart}ms tieng_dut=${speechEnd}ms " +
+                    "con_lai=${VoiceVadTrim.samplesToMs(trim, SAMPLE_RATE)}ms " +
+                    "(bo=${VoiceVadTrim.samplesToMs(fed - trim, SAMPLE_RATE)}ms · duong=${ep.route})",
+            )
             val tDecode = System.currentTimeMillis()
-            val text = rec.finalResult()
-            Log.i(VoiceEngine.TIMING_TAG, "giải mã ${System.currentTimeMillis() - tDecode} ms")
-            return Heard(text, kept, keptN)
+            val text = rec.finalResult(trim)
+            val decodeMs = System.currentTimeMillis() - tDecode
+            Log.i(VoiceEngine.TIMING_TAG, "giải mã $decodeMs ms")
+            return Heard(
+                text, kept, keptN,
+                endpointMs = VoiceVadTrim.samplesToMs(trim, SAMPLE_RATE),
+                speechMs = if (speechStart >= 0) speechEnd - speechStart else 0,
+                silenceMs = VoiceVadTrim.samplesToMs(fed - trim, SAMPLE_RATE),
+                endpointFired = ended,
+                listenMs = listenMs,
+                decodeMs = decodeMs,
+                micSource = opened.source,
+            )
         } finally {
-            closeRecord(record, focus)
+            ep.close()
+            closeRecord(record, focus, tailBeep = beep)
         }
     }
 
@@ -183,7 +323,7 @@ internal class VoiceCapture(private val ctx: Context) {
      *     liên quan tới câu họ vừa nói. `stop`/`release` thì **ở lại** đúng chỗ: chúng phải xong trước khi phiên
      *     sau mở `AudioRecord` thứ hai (hazard đã ghi ở KDoc `VoiceSession.cancel`).
      */
-    private fun closeRecord(record: AudioRecord, focus: AudioFocusRequest?) {
+    private fun closeRecord(record: AudioRecord, focus: AudioFocusRequest?, tailBeep: Boolean) {
         val t0 = System.currentTimeMillis()
         runCatching { record.stop() }
         val tStop = System.currentTimeMillis()
@@ -195,7 +335,15 @@ internal class VoiceCapture(private val ctx: Context) {
         )
         Thread({
             val t1 = System.currentTimeMillis()
-            tone(ToneGenerator.TONE_PROP_ACK, TONE_END_MS)
+            // ═══ [P0-2] Tiếng bíp CUỐI chỉ còn ở lượt CHÍNH ═══════════════════════════════════════════
+            // [ĐO xe 2026-09-16] luồng này mất tới **4955 ms** để phát xong một tiếng bíp 60 ms, trong khi lượt
+            // nối mở micro chỉ ~50 ms sau khi đóng ⇒ tiếng bíp của lượt TRƯỚC rơi thẳng vào cửa sổ đo nền của
+            // lượt SAU. Đó là nguồn nhiễm mà trần nền [VoiceEndpointer.FLOOR_CAP] chỉ *giới hạn hậu quả*; bịt
+            // nguồn thì tốt hơn giới hạn hậu quả.
+            // Vì sao gắn vào cùng cờ `beep` của đầu lượt: chúng mô tả **cùng một loại lượt**. Lượt chính (người
+            // lái vừa bấm) cần cả hai mốc "tôi bắt đầu"/"tôi thôi nghe"; lượt nối thì micro chỉ *chưa đóng*, và
+            // một tiếng bíp sau mỗi câu trả lời vốn đã là thứ làm người ta tắt tính năng (KDoc tham số `beep`).
+            if (tailBeep) tone(ToneGenerator.TONE_PROP_ACK, TONE_END_MS)
             val t2 = System.currentTimeMillis()
             abandonFocus(focus)
             Log.i(
@@ -221,7 +369,7 @@ internal class VoiceCapture(private val ctx: Context) {
      * mà luồng nghe của ta còn phải chạy giải mã Kaldi giữa hai lượt đọc. Thiếu chỗ đệm ⇒ mất mẫu ⇒ mất chữ,
      * và mất kiểu đó không có lỗi nào báo.
      */
-    private fun openRecord(): AudioRecord? {
+    private fun openRecord(): Opened? {
         val min = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val size = if (min > 0) min * 2 else CHUNK_SAMPLES * 2 * 8
         // V3 · R1 — thứ tự lấy từ `:core` ([VoiceMicSource]) + lựa chọn của người dùng. Xem KDoc ở đó để biết
@@ -233,7 +381,7 @@ internal class VoiceCapture(private val ctx: Context) {
             }.getOrNull() ?: continue
             if (r.state == AudioRecord.STATE_INITIALIZED) {
                 Log.i(TAG, "micro mở bằng nguồn ${VoiceMicSource.sourceName(source)} (đệm $size byte · pref=$pref)")
-                return r
+                return Opened(r, source)
             }
             Log.w(TAG, "nguồn $source dựng ra AudioRecord chưa khởi tạo — thử nguồn sau")
             runCatching { r.release() }
@@ -241,6 +389,31 @@ internal class VoiceCapture(private val ctx: Context) {
         Log.w(TAG, "không mở được micro bằng nguồn nào")
         return null
     }
+
+    /**
+     * Micro đã mở + **nguồn thật sự thắng**.
+     *
+     * H2 cần con số ấy trong tệp JSON, và nó không suy lại được từ prefs: `pref` chỉ nói *"thử cái này trước"*,
+     * còn vòng lùi ở trên có thể đã rơi sang nguồn thứ hai/thứ ba mà không có gì khác ghi lại. Đúng câu hỏi mà
+     * một buổi so *"vì sao lượt này nghe rõ, lượt kia câm"* phải trả lời được.
+     */
+    private data class Opened(val record: AudioRecord, val source: Int)
+
+    /**
+     * H5 — bộ ngắt câu dựng theo **prefs của chiếc xe này**.
+     *
+     * `:core` phải thuần nên nó KHÔNG đọc prefs; hai con số đi vào bằng tham số dựng, đúng chỗ này. `runCatching`
+     * + mặc định = hằng cũ: một lượt đọc prefs hỏng không được phép làm phiên nghe chạy **không** có bộ ngắt câu
+     * (tức lùi về cái giá cố định 8 giây cho mọi câu — xem KDoc [VoiceEndpointer]).
+     */
+    private fun endpointerFromPrefs(): VoiceEndpointer = VoiceEndpointer(
+        minSpeechMs = runCatching { Prefs.voiceEndpointMinSpeechMs(ctx) }
+            .getOrDefault(VoiceEndpointer.MIN_SPEECH_MS),
+        hangoverMs = runCatching { Prefs.voiceEndpointSilenceMs(ctx) }
+            .getOrDefault(VoiceEndpointer.HANGOVER_MS),
+        floorCap = runCatching { Prefs.voiceEndpointFloorCap(ctx) }
+            .getOrDefault(VoiceEndpointer.FLOOR_CAP),
+    )
 
     // ── tiêu điểm âm thanh ───────────────────────────────────────────────────────────────────────
 
@@ -288,18 +461,31 @@ internal class VoiceCapture(private val ctx: Context) {
     companion object {
         private const val TAG = "KachiVoiceMic"
 
+        /**
+         * Nhãn lượt cho [VoiceSingleFlight] — ASCII, cố ý không dịch: chúng chỉ đi vào logcat, và hai lượt đo
+         * trên hai máy khác ngôn ngữ phải grep được bằng MỘT chuỗi (cùng luật `PermissionReport.logLine`).
+         */
+        const val LABEL_MAIN = "chinh"
+        const val LABEL_FOLLOW_UP = "hoi-thoai"
+        const val LABEL_CLARIFY = "hoi-lai"
+        const val LABEL_CONFIRM = "xac-nhan"
+
         /** 16 kHz — cùng số với mô hình (`conf/mfcc.conf`) và với [VoiceRecognizer.SAMPLE_RATE]. */
         const val SAMPLE_RATE = 16_000
 
-        /** 200 ms mỗi khối: đủ lớn để không gọi `read` liên tục, đủ nhỏ để chữ partial hiện gần như tức thì. */
-        private const val CHUNK_SAMPLES = SAMPLE_RATE / 5
+        /**
+         * 200 ms mỗi khối: đủ lớn để không gọi `read` liên tục, đủ nhỏ để chữ partial hiện gần như tức thì.
+         *
+         * Công khai từ bản VAD: [VoiceWavProbe] nạp tệp WAV theo **đúng nhịp khối này** để phép đo giống phiên
+         * thật tới cả cách Silero nhìn dòng audio — nạp một phát cả tệp là đo một đường mà micro không đi.
+         */
+        const val CHUNK_SAMPLES = SAMPLE_RATE / 5
 
         /**
          * Trần khúc tiếng giữ lại cho lượt giải mã thứ hai — **9 giây** (≈ 288 KB PCM16 @16 kHz).
          *
          * Dài hơn trần một phiên (`VoiceSession.MAX_LISTEN_MS` = 8 s) đúng một giây: trần phiên đếm theo đồng hồ
-         * treo tường còn mảng này đếm theo mẫu, và hai thứ đó không bao giờ khớp tuyệt đối.
-         */
+         * treo tường còn mảng này đếm theo mẫu, hai thứ không bao giờ khớp tuyệt đối. */
         const val MAX_KEPT_SAMPLES = SAMPLE_RATE * 9
 
         /** Không cấp phát gì khi chỗ gọi không cần tiếng (lượt nghe *"đồng ý/huỷ"*). */

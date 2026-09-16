@@ -46,23 +46,33 @@ object CapabilityTileGrid {
      *  3. **Ô đồng cao do [UniformRow] tự đo hai pha**, KHÔNG nhờ `MATCH_PARENT` (xem cảnh báo dưới).
      */
     fun rows(context: Context, parent: LinearLayout, count: Int, cols: Int, tileAt: (Int) -> View) {
+        // ⚠ [SOÁT OCR 2026-09-16 · Null Safety] `cols <= 0` dừng ở ĐÂY, không ở `i % cols` (chia cho 0 ném
+        // `ArithmeticException` giữa lượt dựng màn) — một lưới 0 cột thì "không vẽ gì" mới là hành vi đúng.
+        // Và bỏ hai `!!` bên dưới: `row` là biến BẮT nên trình biên dịch không suy ra được non-null, và một
+        // `!!` ở đường dựng giao diện là một `NullPointerException` chờ sẵn cho mọi lượt sửa sau này.
+        if (count <= 0 || cols <= 0) return
         var row: UniformRow? = null
         repeat(count) { i ->
             val col = i % cols
-            if (col == 0) {
-                row = UniformRow(context)
-                parent.addView(
-                    row,
-                    LinearLayout.LayoutParams(MATCH, WRAP).also { it.bottomMargin = dpi(context, Sp.S) },
-                )
+            val target = if (col == 0) {
+                UniformRow(context).also { fresh ->
+                    row = fresh
+                    parent.addView(
+                        fresh,
+                        LinearLayout.LayoutParams(MATCH, WRAP).also { lp -> lp.bottomMargin = dpi(context, Sp.S) },
+                    )
+                }
+            } else {
+                row ?: return
             }
-            row!!.addView(tileAt(i), cellLp(context, WRAP, col, cols))
+            target.addView(tileAt(i), cellLp(context, WRAP, col, cols))
         }
         val rem = count % cols
+        val last = row ?: return
         // ⚠ Ô CHÈN cao ĐÚNG 0, không `WRAP_CONTENT`: một [View] trơ khai `WRAP_CONTENT` **giãn hết** dưới spec
         // `AT_MOST` (`getDefaultSize` trả trọn `specSize`) — dự án đã trả giá đúng bẫy này ở nhóm Đèn (9 ô con
         // không hiện một pixel). Cao 0 thì bẫy đó không còn cửa vào, và [UniformRow] cũng bỏ qua nó khi đồng cao.
-        if (rem != 0) repeat(cols - rem) { k -> row!!.addView(View(context), cellLp(context, 0, rem + k, cols)) }
+        if (rem != 0) repeat(cols - rem) { k -> last.addView(View(context), cellLp(context, 0, rem + k, cols)) }
     }
 
     /**

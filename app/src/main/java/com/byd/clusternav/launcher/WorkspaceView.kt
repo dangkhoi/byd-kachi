@@ -290,7 +290,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 // khúc TO ở đỉnh (owner báo: "widget bị che mất top 1 khúc lớn"), trong khi ô App không hề bị vì app
                 // render MATCH_PARENT còn nút chỉ nổi trên. Nay hai loại ô đồng nhất: nút nổi, khung giữ nguyên cỡ.
                 fl.addView(body, mm)
-                val first = content.ids.firstOrNull() ?: ""
                 fl.addView(slotHead(index), headLp())
                 fl.setOnClickListener { onSlotTap?.invoke(index) }
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }

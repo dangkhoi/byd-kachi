@@ -71,7 +71,7 @@ def parse(path, outdir):
 
     os.makedirs(outdir, exist_ok=True)
     corpus, filelist = [], []
-    stats = {'raw': 0, 'zlib': 0, 'zstd': 0}
+    stats = {'raw': 0, 'zlib': 0, 'zstd': 0, 'zlib_failed': 0}
 
     def read_blob(doff, flags):
         ln = u32(data, data_off + doff)
@@ -81,13 +81,17 @@ def parse(path, outdir):
             return None
         if flags & 0x01:  # zlib (Qt qCompress: 4-byte BE uncompressed size + stream)
             stats['zlib'] += 1
-            try:
-                return zlib.decompress(payload[4:])
-            except Exception:
+            for candidate in (payload[4:], payload):   # with, then without, Qt's length prefix
                 try:
-                    return zlib.decompress(payload)
-                except Exception:
-                    return None
+                    return zlib.decompress(candidate)
+                except zlib.error:
+                    continue
+            # Silently returning None dropped the resource from the corpus with no trace, so a
+            # grep that found nothing could not be told apart from a resource that failed to inflate.
+            stats['zlib_failed'] += 1
+            print('  WARN: zlib inflate failed at data offset %#x (%d bytes)' % (doff, ln),
+                  file=sys.stderr)
+            return None
         stats['raw'] += 1
         return payload
 
@@ -111,13 +115,17 @@ def parse(path, outdir):
             corpus.append((full, blob.decode('utf-8', 'replace')))
 
     walk(0, '')
-    print('  files=%d textfiles=%d raw=%d zlib=%d zstd=%d'
-          % (len(filelist), len(corpus), stats['raw'], stats['zlib'], stats['zstd']))
+    print('  files=%d textfiles=%d raw=%d zlib=%d zlib_failed=%d zstd=%d'
+          % (len(filelist), len(corpus), stats['raw'], stats['zlib'],
+             stats['zlib_failed'], stats['zstd']))
 
-    with open(os.path.join(outdir, '_corpus.txt'), 'w') as fo:
+    # encoding='utf-8' is required: the corpus holds QML/JS decoded from the bundle, so it carries
+    # non-ASCII. Without it Python uses the locale encoding and the write dies with
+    # UnicodeEncodeError under LC_ALL=C / POSIX (and on Windows cp1252).
+    with open(os.path.join(outdir, '_corpus.txt'), 'w', encoding='utf-8') as fo:
         for full, txt in corpus:
             fo.write('\n\n===== FILE: %s =====\n%s' % (full, txt))
-    with open(os.path.join(outdir, '_files.txt'), 'w') as fo:
+    with open(os.path.join(outdir, '_files.txt'), 'w', encoding='utf-8') as fo:
         fo.write('\n'.join(sorted(filelist)))
 
 

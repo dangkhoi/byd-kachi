@@ -1,0 +1,368 @@
+[
+ {
+  "n": 1,
+  "t0": 0.842,
+  "dur": 1.57,
+  "text": "CÂU MỘT LỌC NGAY"
+ },
+ {
+  "n": 2,
+  "t0": 3.658,
+  "dur": 0.674,
+  "text": "CÂU HAI"
+ },
+ {
+  "n": 3,
+  "t0": 5.034,
+  "dur": 0.994,
+  "text": "BẬT LỌC BỤI"
+ },
+ {
+  "n": 4,
+  "t0": 7.018,
+  "dur": 1.602,
+  "text": "CÂU BA ĐIỀU HÒA"
+ },
+ {
+  "n": 5,
+  "t0": 9.514,
+  "dur": 1.73,
+  "text": "BỐN MỞ GOOGLE MAP"
+ },
+ {
+  "n": 6,
+  "t0": 12.106,
+  "dur": 1.634,
+  "text": "NĂM BẬT ĐÈN ĐỌC"
+ },
+ {
+  "n": 7,
+  "t0": 14.602,
+  "dur": 1.602,
+  "text": "CÂU SÁU MỞ YOUTUBE"
+ },
+ {
+  "n": 8,
+  "t0": 16.97,
+  "dur": 1.57,
+  "text": "BẢY MỞ MÁY LẠNH"
+ },
+ {
+  "n": 9,
+  "t0": 19.434,
+  "dur": 2.882,
+  "text": "TÁM BẬT ĐIỀU HÒA HAI MƯƠI HAI ĐỘ"
+ },
+ {
+  "n": 10,
+  "t0": 23.114,
+  "dur": 2.466,
+  "text": "KHU CHÍN NHIỆT ĐỘ HAI MƯƠI BỐN ĐỘ"
+ },
+ {
+  "n": 11,
+  "t0": 26.474,
+  "dur": 1.474,
+  "text": "MƯỜI TĂNG GIÓ"
+ },
+ {
+  "n": 12,
+  "t0": 28.778,
+  "dur": 1.698,
+  "text": "MƯỜI MỘT GIẢM ÂM LƯỢNG"
+ },
+ {
+  "n": 13,
+  "t0": 31.146,
+  "dur": 2.114,
+  "text": "CÂU MƯỜI HAI MỞ KÍNH BÊN LÁI"
+ },
+ {
+  "n": 14,
+  "t0": 34.026,
+  "dur": 2.178,
+  "text": "CÂU MƯỜI BA HẠ KÍNH TRƯỚC TRÁI"
+ },
+ {
+  "n": 15,
+  "t0": 37.034,
+  "dur": 1.794,
+  "text": "MƯỜI BỐN ĐÓNG HẾT KÍNH"
+ },
+ {
+  "n": 16,
+  "t0": 39.434,
+  "dur": 1.922,
+  "text": "CON MƯỜI LĂM MỞ HẾT KÍNH GIÙM"
+ },
+ {
+  "n": 17,
+  "t0": 41.994,
+  "dur": 1.538,
+  "text": "CÂU MƯỜI SÁU XEM PIN"
+ },
+ {
+  "n": 18,
+  "t0": 44.234,
+  "dur": 1.922,
+  "text": "MƯỜI BẢY PIN CÒN BAO NHIÊU"
+ },
+ {
+  "n": 19,
+  "t0": 46.89,
+  "dur": 2.306,
+  "text": "MƯỜI TÁM CÙNG ĐI ĐƯỢC BAO XA"
+ },
+ {
+  "n": 20,
+  "t0": 49.834,
+  "dur": 2.658,
+  "text": "MƯỜI CHÍN XEM ÁP SUẤT LỐP TRƯỚC TRÁI"
+ },
+ {
+  "n": 21,
+  "t0": 53.098,
+  "dur": 1.89,
+  "text": "HAI MƯƠI BẬT GHẾ SƯỞI"
+ },
+ {
+  "n": 22,
+  "t0": 55.594,
+  "dur": 1.826,
+  "text": "HAI MỐT MỞ CỐP SAU"
+ },
+ {
+  "n": 23,
+  "t0": 58.058,
+  "dur": 1.826,
+  "text": "HAI HAI MỞ CỬA HẬU"
+ },
+ {
+  "n": 24,
+  "t0": 60.618,
+  "dur": 1.634,
+  "text": "CÂU HAI BA PHÁT NHẠC"
+ },
+ {
+  "n": 25,
+  "t0": 62.954,
+  "dur": 1.506,
+  "text": "CÂU HAI BỐN DỪNG NHẠC"
+ },
+ {
+  "n": 26,
+  "t0": 65.13,
+  "dur": 1.89,
+  "text": "CÂU HAI MƯƠI LĂM BÀI TIẾP THEO"
+ },
+ {
+  "n": 27,
+  "t0": 67.722,
+  "dur": 2.658,
+  "text": "CÂU HAI MƯƠI SÁU DẪN ĐƯỜNG ĐẾN CHỢ BẾN THÀNH"
+ },
+ {
+  "n": 28,
+  "t0": 71.114,
+  "dur": 1.634,
+  "text": "HAI MƯƠI BẢY MỞ"
+ },
+ {
+  "n": 29,
+  "t0": 73.418,
+  "dur": 1.634,
+  "text": "CÂU HAI MƯƠI TÁM MỞ YOUTUBE"
+ },
+ {
+  "n": 30,
+  "t0": 75.69,
+  "dur": 2.37,
+  "text": "CÂU HAI MƯƠI CHÍN CHẾ ĐỘ LÁI THỂ THAO"
+ },
+ {
+  "n": 31,
+  "t0": 78.762,
+  "dur": 2.178,
+  "text": "BA MƯƠI HÔM NAY TRỜI ĐẸP QUÁ"
+ },
+ {
+  "n": 32,
+  "t0": 85.162,
+  "dur": 3.106,
+  "text": "NHANH CÂU MỘT LỌC NGAY CÂU HAI LỌC BỤI MỊN"
+ },
+ {
+  "n": 33,
+  "t0": 88.874,
+  "dur": 2.562,
+  "text": "CÓ BA ĐIỀU HÒA CÓ BỐN MẪU MAP CÓ NĂM"
+ },
+ {
+  "n": 34,
+  "t0": 92.042,
+  "dur": 5.026,
+  "text": "ĐÈN ĐỌC CÂU SÁU MỞ BẢY MỞ MÁY LẠNH CÔ TÁM MỞ BẬT ĐIỀU HÒA HAI MƯƠI HAI ĐỘ"
+ },
+ {
+  "n": 35,
+  "t0": 97.61,
+  "dur": 1.57,
+  "text": "SỐ CHÍN NHIỆT ĐỘ HAI BỐN ĐỘ"
+ },
+ {
+  "n": 36,
+  "t0": 99.754,
+  "dur": 3.394,
+  "text": "CÂU MƯỜI TĂNG GIÓ MỘT GIẢM LƯỢNG CÂU HAI MƯỜI HAI"
+ },
+ {
+  "n": 37,
+  "t0": 103.754,
+  "dur": 4.674,
+  "text": "MỞ KÍNH BÊN LÁI MƯỜ KÍNH TRƯỚC TRÁI MƯỜI BỐN ĐÓNG MÁY KÍNH MƯỜI LĂM MỞ MÁY KÍNH GIÙM"
+ },
+ {
+  "n": 38,
+  "t0": 108.97,
+  "dur": 0.994,
+  "text": "SÁU XEM PHIM"
+ },
+ {
+  "n": 39,
+  "t0": 110.634,
+  "dur": 1.346,
+  "text": "RỒI BẢY BIÊN CÒN BAO NHIÊU"
+ },
+ {
+  "n": 40,
+  "t0": 112.522,
+  "dur": 4.642,
+  "text": "MƯỜI TÁM CÂU XA MƯỜI CHÍN SẼ ÁP SUẤT LỐP TRƯỚC TRÁI KHÔNG HAI MƯƠI BẬT SƯỞI"
+ },
+ {
+  "n": 41,
+  "t0": 117.706,
+  "dur": 2.466,
+  "text": "HAI MỐT MỞ CỐP SAU HAI MỞ CỬA HẬU"
+ },
+ {
+  "n": 42,
+  "t0": 120.682,
+  "dur": 2.306,
+  "text": "CON BA PHÁT NHẠC CON BỐN DỪNG NHẠC"
+ },
+ {
+  "n": 43,
+  "t0": 123.498,
+  "dur": 2.946,
+  "text": "BA MƯƠI LĂM BÀI TIẾP THEO BA MƯƠI SÁU DẪN ĐƯỜNG ĐẾN CHỢ BẾN THÀNH"
+ },
+ {
+  "n": 44,
+  "t0": 126.986,
+  "dur": 2.562,
+  "text": "HÂM BẢY MỞ QUÂY CÂU HÂM TÁM MỞ YOUTUBE"
+ },
+ {
+  "n": 45,
+  "t0": 130.026,
+  "dur": 3.554,
+  "text": "CON CHÍN CHẾ ĐỘ GÁI THỂ THAO CÂU MƯỜI HÔM NAY TRỜI ĐẸP QUÁ"
+ },
+ {
+  "n": 46,
+  "t0": 137.034,
+  "dur": 1.602,
+  "text": "VÒNG BA TIẾNG ỒN"
+ },
+ {
+  "n": 47,
+  "t0": 141.642,
+  "dur": 3.298,
+  "text": "CÂU MỘT LỌC NGAY CÂU HAI BẬT LỌC BỤI"
+ },
+ {
+  "n": 48,
+  "t0": 145.45,
+  "dur": 1.218,
+  "text": "BA ĐIỀU HÒA"
+ },
+ {
+  "n": 49,
+  "t0": 147.242,
+  "dur": 4.546,
+  "text": "CÂU BỐN MỞ GOOGLE MAP CÂU NĂM BẬT ĐÈN ĐỌC CÂU SÁU MỞ YOUTUBE"
+ },
+ {
+  "n": 50,
+  "t0": 152.522,
+  "dur": 1.634,
+  "text": "BẢY MÃ MÁY LẠNH"
+ },
+ {
+  "n": 51,
+  "t0": 155.018,
+  "dur": 2.018,
+  "text": "TÁM MẬT ĐỘ HAI MƯƠI HAI ĐỘ"
+ },
+ {
+  "n": 52,
+  "t0": 157.738,
+  "dur": 3.17,
+  "text": "CHÍN NHIỆT ĐỘ HAI MƯƠI BỐN ĐỘ MƯỜI TĂNG GIÓ"
+ },
+ {
+  "n": 53,
+  "t0": 161.45,
+  "dur": 7.234,
+  "text": "CÂU MỘT GIẢM ÂM LƯỢNG CÂU MƯỜI HAI MỞ KÍNH BÊN LÁI MƯỜ KÍNH TRƯỚC TRÁI BỐN"
+ },
+ {
+  "n": 54,
+  "t0": 169.162,
+  "dur": 1.41,
+  "text": "ĐÓNG HẾT KÍNH MƯỜI LĂM"
+ },
+ {
+  "n": 55,
+  "t0": 171.114,
+  "dur": 1.73,
+  "text": "MỞ HẾT KÍNH GIÙM CON MƯỜI SÁU"
+ },
+ {
+  "n": 56,
+  "t0": 173.418,
+  "dur": 1.122,
+  "text": "CHAMPING CHAMPING"
+ },
+ {
+  "n": 57,
+  "t0": 175.146,
+  "dur": 1.538,
+  "text": "TRĂM MƯỜI BẢY BIÊN CÒN BAO NHIÊU"
+ },
+ {
+  "n": 58,
+  "t0": 177.29,
+  "dur": 5.346,
+  "text": "CÂU MƯỜI TÁM CÒN ĐI ĐƯỢC BAO XA CÂU MƯỜI CHÍN SẼ XUẤT LỐP CHỐT TRÁI CÂU HAI MƯƠI BẰNG GHẾ SƯỞI"
+ },
+ {
+  "n": 59,
+  "t0": 183.21,
+  "dur": 7.81,
+  "text": "CÂU HĂM MỐ MỞ GÓC SAU CÂU HĂM HAI MỞ CỬA HẬU CÂU HĂM BA PHÁT NHẠC CÂU HĂM BỐN DỪNG NHẠC CÂU HÂM BÀI TIẾP THEO"
+ },
+ {
+  "n": 60,
+  "t0": 191.722,
+  "dur": 5.09,
+  "text": "HÂM SÁU DẪN ĐƯỜNG ĐẾN CHỢ BẾN THÀNH COM BẢY MỞ BA MƯƠI TÁM MỞ YOUTUBE"
+ },
+ {
+  "n": 61,
+  "t0": 197.29,
+  "dur": 3.254,
+  "text": "KHÔNG CHÍN CHẾ ĐỘ LÁI THỂ THAO CÂU BA MƯƠI KHÔNG ĐƯỢC CHẠY QUÁ"
+ }
+]

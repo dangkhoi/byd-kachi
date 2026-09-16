@@ -81,8 +81,11 @@ object CapabilityTestPlan {
         }
     }
 
-    /** Tổng số mục. */
-    fun total(): Int = items().size
+    /**
+     * Tổng số mục — đếm THẲNG trên hai bộ đăng ký thay vì dựng lại cả 190 [CapTestItem] (mỗi cái kéo theo một
+     * lượt tra [CapabilityDescriptions] + [CtlSafetyPolicy]) chỉ để lấy một con số.
+     */
+    fun total(): Int = TelemetryRegistry.ALL.size + ControlRegistry.ALL.size
 }
 
 /** Một dòng nhật ký chấm điểm. */
@@ -97,7 +100,16 @@ object CapTestCodec {
     private const val FS = "\t"
 
     fun encode(r: CapTestResult): String =
-        listOf(r.id, r.verdict.name, r.tsMillis.toString(), r.note.replace('\n', ' ').replace(FS, " ")).joinToString(FS)
+        listOf(r.id, r.verdict.name, r.tsMillis.toString(), scrub(r.note)).joinToString(FS)
+
+    /**
+     * ⚠ Phải lọc CẢ `\r`, không chỉ `\n`: [decodeAll] tách bản ghi bằng `lineSequence()`, và hàm đó coi `\r`,
+     * `\n` và `\r\n` **đều** là hết dòng. Một ghi chú dán từ máy Windows (hoặc từ một lần chép log) mang `\r`
+     * sẽ cắt bản ghi làm hai ⇒ nửa sau rớt ở `p.size < 3` và ghi chú bị cụt **trong im lặng** — đúng họ lỗi mà
+     * `SlotCodec.SEP` đã trả giá một lần.
+     */
+    private fun scrub(note: String): String =
+        note.replace('\n', ' ').replace('\r', ' ').replace(FS, " ")
 
     fun decode(line: String): CapTestResult? {
         val p = line.split(FS)

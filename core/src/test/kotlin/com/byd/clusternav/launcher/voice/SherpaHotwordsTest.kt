@@ -98,6 +98,41 @@ class SherpaHotwordsTest {
         )
     }
 
+    /**
+     * ═══ H3 · BẪY `YOUTUBE MUSIC` — dòng mở đầu bằng một TÊN APP nuốt mất phần đuôi ══════════════════════════
+     *
+     * Cùng cơ chế nguồn với luật tiền tố (sherpa-onnx `csrc/context-graph.cc` `ForwardOneStep`: khớp trọn một
+     * hotword ⇒ đồ thị về gốc), nhưng [dropPrefixes] **không** bắt được ca này: *"YOUTUBE MUSIC"* chỉ là tiền tố
+     * của một dòng khác khi dòng ấy có mặt trong tệp, mà *"vào ô số hai"* thì không bao giờ là hotword (số ô bị
+     * luật bỏ-token-chữ-số loại từ đầu). Kết quả: câu *"mở youtube music vào ô số hai"* mất mệnh đề ô — tức app
+     * mở toàn màn thay vì vào đúng ô người ta nói.
+     */
+    @Test
+    fun `dropAppNameLeading bo dong mo dau bang ten app, giu dong co dong tu dung truoc`() {
+        val apps = listOf("YouTube", "YouTube Music", "gu gồ máp")
+        val kept = SherpaHotwords.dropAppNameLeading(
+            listOf("YOUTUBE MUSIC", "MỞ YOUTUBE MUSIC", "YOUTUBE NHẠC", "GU GỒ MÁP", "MỞ GU GỒ MÁP", "MỞ CỬA SỔ"),
+            apps,
+        )
+        assertEquals(listOf("MỞ YOUTUBE MUSIC", "MỞ GU GỒ MÁP", "MỞ CỬA SỔ"), kept)
+        // Danh sách rỗng ⇒ không đụng gì (tên app do CHỖ GỌI cấp, tệp này không biết app nào — CLAUDE.md §7).
+        assertEquals(listOf("YOUTUBE MUSIC"), SherpaHotwords.dropAppNameLeading(listOf("YOUTUBE MUSIC"), emptyList()))
+        // Chỉ bỏ khi trùng **trọn từ**: *"YOUTUBER VIỆT"* không mở đầu bằng tên app nào.
+        assertEquals(
+            listOf("YOUTUBER VIỆT"),
+            SherpaHotwords.dropAppNameLeading(listOf("YOUTUBER VIỆT"), listOf("YouTube")),
+        )
+    }
+
+    @Test
+    fun `phraseFile ap ca hai bo loc — ten app dung tran khong con la mot dong`() {
+        val out = SherpaHotwords.phraseFile(
+            listOf("gu gồ máp", "mở gu gồ máp", "xem pin"),
+            listOf("gu gồ máp"),
+        )
+        assertEquals(listOf("MỞ GU GỒ MÁP", "XEM PIN"), out.trimEnd().split("\n"))
+    }
+
     @Test
     fun `english app names are dropped so parser not the bias handles them`() {
         // "youtube" là Latin thường model VN không phát ra ⇒ vẫn giữ (chữ cái) NHƯNG không nên gây lỗi;

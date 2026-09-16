@@ -85,9 +85,20 @@ class ActionMacroWiringContractTest {
 
     // ── R7: không chặn giao diện + chống bấm kép ─────────────────────────────────────────────────
 
+    /**
+     * [SOÁT 2026-09-16 · P3] Trước bản này ô dựng thẳng `Thread(…).start()` mỗi cú chạm — luồng **không phải
+     * daemon** (một gói đang ngủ giữa hai bước giữ tiến trình sống sau khi launcher đã dọn) và **không có trần**
+     * (`beginRun` chỉ chặn CÙNG một mã gói; hai gói khác nhau thì không gì chặn). Nay đi qua [MacroExec].
+     *
+     * Bài này vì thế đòi **đúng chỗ chạy nền dùng chung**, không còn đòi chữ `Thread(`. Còn chuyện chỗ ấy có
+     * **thật sự** daemon + có trần + không từ chối lượt nào hay không thì `MacroExecTest` ở `:core` đo bằng luồng
+     * thật — quét chuỗi ở đây mà khẳng định điều đó là nói hộ một phép đo mình không làm.
+     */
     @Test
     fun `goi lenh chay tren thread nen chu KHONG tren thread chinh`() {
-        assertTrue(macroTile.contains("Thread("), "gói có chờ giữa các bước ⇒ chạy trên thread chính sẽ treo giao diện")
+        assertTrue(macroTile.contains("MacroExec.submit("),
+            "gói có chờ giữa các bước ⇒ chạy trên thread chính sẽ treo giao diện; và phải qua chỗ chạy nền dùng chung")
+        assertFalse(macroTile.contains("Thread("), "KHÔNG dựng luồng riêng mỗi cú chạm — xem KDoc MacroExec")
         assertTrue(macroTile.contains("MacroRunner.run("), "phải dùng bộ chạy thuần, không tự viết vòng lặp")
         assertTrue(macroTile.contains("tile.post"), "cập nhật giao diện phải quay về thread chính")
     }

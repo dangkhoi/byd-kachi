@@ -15,6 +15,9 @@ object CarExecCommands {
 
     const val DEFAULT_LEDGER = "docs/refactor-car-execution/verdicts.tsv"
 
+    /** Biên dịch MỘT lần — [missingPlaceholders] gọi trong vòng lặp ba tầng (action × candidate × command). */
+    private val PLACEHOLDER = Regex("""\{[a-zA-Z]+\}""")
+
     fun steps(): String = buildString {
         CarExecCatalog.steps.forEach { step ->
             appendLine("${step.id}  [${step.feature}]  ${step.purpose}")
@@ -33,7 +36,7 @@ object CarExecCommands {
     fun resolve(command: String, values: Map<String, String>): String {
         var resolved = command
         values.forEach { (key, value) -> resolved = resolved.replace(key, value) }
-        val leftover = Regex("""\{[a-zA-Z]+\}""").find(resolved)
+        val leftover = PLACEHOLDER.find(resolved)
         require(leftover == null) { "thiếu giá trị cho ${leftover?.value} trong: $command" }
         return resolved
     }
@@ -164,8 +167,15 @@ object CarExecCommands {
             appendLine("${scenario.id} — chuỗi lệnh sẽ gửi (KHÔNG chạy gì)")
             appendLine()
             scenario.actions.forEachIndexed { index, action ->
-                val step = CarExecCatalog.step(action.stepId)!!
+                // KHÔNG `!!`: kịch bản trỏ tới stepId không còn trong catalog là lỗi dữ liệu, không phải
+                // lý do để sập cả lệnh `plan` (missingPlaceholders đã bỏ qua trường hợp này từ trước).
+                val step = CarExecCatalog.step(action.stepId)
                 appendLine("${index + 1}. ${action.stepId}  [${action.checkedBy}]  ${action.intent}")
+                if (step == null) {
+                    appendLine("     ! không có step ${action.stepId} trong catalog — bỏ qua")
+                    appendLine("     phải đúng: ${action.expect}")
+                    return@forEachIndexed
+                }
                 step.candidates.forEach { candidate ->
                     appendLine("     ~ ${candidate.id}")
                     candidate.commands.forEach { raw ->
@@ -195,7 +205,7 @@ object CarExecCommands {
             val step = CarExecCatalog.step(action.stepId) ?: return@forEach
             step.candidates.forEach { candidate ->
                 candidate.commands.forEach { command ->
-                    Regex("""\{[a-zA-Z]+\}""").findAll(command).forEach { match ->
+                    PLACEHOLDER.findAll(command).forEach { match ->
                         if (match.value !in values && match.value !in action.values) needed += match.value
                     }
                 }

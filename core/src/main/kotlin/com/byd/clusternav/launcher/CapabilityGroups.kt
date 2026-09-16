@@ -78,8 +78,8 @@ object CapabilityGroups {
      * *"Kính đóng hết chưa?"* — 4 phần trăm mở + 4 nút kính + 2 gói lệnh.
      *
      * Cố ý KHÔNG dùng nút `windows_all`: nó ở mức CHƯA KIỂM trên xe, còn `mac_win_open_all`/`mac_win_close_all` gộp
-     * 4 nút riêng **đều đã chạy thật** ⇒ khả năng ăn cao hơn (đúng lý do W2 dựng hai gói đó). `rain_close` cũng
-     * không vào đây: nó là **lựa chọn đặt-một-lần** ("tự đóng khi mưa"), không phải việc làm ngay lúc này.
+     * 4 nút riêng **đều đã chạy thật** ⇒ khả năng ăn cao hơn (đúng lý do W2 dựng hai gói đó).
+     * ⚠ (V) FEATURE-FILTER 2026-09-17: nút `rain_close` (tự đóng kính khi mưa) đã xoá hẳn khỏi registry.
      */
     val WINDOWS = CapabilityGroup(
         id = "g_windows", label = "Kính", labelEn = "Windows",
@@ -116,7 +116,9 @@ object CapabilityGroups {
             "tailgate_status", "tailgate_position",
             "sunroof_state", "sunroof_pos", "sunshade_pct", "mirror_fold",
         ),
-        writes = listOf("lock", "door", "trunk", "sunroof", "sunshade", "mirror_fold_btn"),
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `mirror_fold_btn` đã xoá ⇒ ô ĐỌC `mirror_fold` ở lại một mình
+        // (xem được gương đang gập hay chưa, không bấm được từ launcher).
+        writes = listOf("lock", "door", "trunk", "sunroof", "sunshade"),
         sub = "cửa, cốp, nóc, rèm, gương",
         subEn = "doors, tailgate, sunroof, sunshade, mirrors",
     )
@@ -188,24 +190,39 @@ object CapabilityGroups {
         reads = listOf(
             "cabin_temp", "inside_temp", "ext_temp",
             "ac_on", "ac_wind", "ac_cycle",
+            // H1 · T2 — ba ô mới, và ranh giới chọn theo **thiết bị đã đo được**, không theo cảm tính: cả ba đọc
+            // từ device **AC** (`getAcControlMode` · `getAcDefrostState`) nên chúng đúng là *"máy điều hoà đang
+            // làm gì"*. Hai ô ghế (`seat_vent_state` `seat_heat_state`) đọc từ device **Setting** — đó là tiện nghi
+            // của GHẾ, không phải không khí trong xe — nên để rời, đặt được như mọi mục rời khác. `media_vol` cũng
+            // rời, ở lĩnh vực Giải trí.
+            "ac_mode_auto", "defrost_front_state", "defrost_rear_state",
             "pm25_level", "pm25_value", "pm25_online", "anion_state",
         ),
         sub = "nhiệt trong/ngoài, điều hoà, bụi mịn",
         subEn = "inside/outside temperature, air conditioning, fine dust",
     )
 
-    /** *"Còn đi được bao xa, sạc còn lâu không?"* — pin, tầm chạy, xăng, công suất sạc và thời gian còn lại. */
+    /**
+     * *"Còn đi được bao xa?"* — pin, tầm chạy điện/xăng, mức xăng, mức tiêu thụ và công suất mô-tơ.
+     *
+     * ## ⚠ (V) FEATURE-FILTER 2026-09-17 — nửa SẠC của nhóm này đã đi
+     * Năm ô sạc (`is_charging` · `charge_power` · `charging_pct` · `charging_eta_hour` · `charging_eta_min`) bị
+     * owner chấm NO và xoá khỏi registry, nên nhóm mất **một nửa** số ô và cả vế sau của câu hỏi nó trả lời.
+     * Không để lại một nhóm bốn ô lệch: `consumption_50km` (*tiêu thụ 50 km gần nhất*) vào thay — nó trả lời
+     * đúng cùng một câu *"còn đi được bao xa"* mà `soc`/`ev_range_km` đang trả lời, chỉ ở mặt **tốc độ tiêu hao**.
+     * Nhãn bỏ chữ *"& sạc"* vì nhóm không còn bày một ô sạc nào; để nguyên nhãn cũ là nhãn hứa một việc mà nội
+     * dung không làm. Nhiệt cell / SOH / 12V vẫn ở nhóm [BATTERY_HEALTH] như trước, không dồn về đây.
+     */
     val ENERGY = CapabilityGroup(
-        id = "g_energy", label = "Năng lượng & sạc", labelEn = "Energy & charging",
+        id = "g_energy", label = "Năng lượng", labelEn = "Energy",
         icon = "ic-group-energy", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
         reads = listOf(
             "soc", "ev_range_km", "fuel_range_km", "fuel_pct",
-            "is_charging", "charge_power", "charging_pct",
-            "charging_eta_hour", "charging_eta_min", "motor_power",
+            "consumption_50km", "motor_power",
         ),
-        sub = "pin, tầm chạy, công suất sạc",
-        subEn = "battery, range, charge power",
+        sub = "pin, tầm chạy, mức tiêu thụ",
+        subEn = "battery, range, consumption",
     )
 
     /**
@@ -215,7 +232,7 @@ object CapabilityGroups {
      * lâu nữa*. Gộp làm một sẽ ra một thẻ 19 con số mà không trả lời rõ câu nào.
      */
     val BATTERY = CapabilityGroup(
-        id = "g_battery", label = "Sức khoẻ pin", labelEn = "Battery health",
+        id = "g_battery", label = "Sức khỏe pin", labelEn = "Battery health",
         icon = "ic-group-battery", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
         reads = listOf(

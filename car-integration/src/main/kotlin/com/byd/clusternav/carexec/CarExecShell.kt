@@ -33,6 +33,11 @@ class CarExecShell(
             val response = connection().shell(command)
             ShellOutcome(command, response.exitCode, (response.allOutput ?: "").trim(), System.currentTimeMillis() - started)
         }.getOrElse { failure ->
+            // VỨT phiên đã hỏng. [session] được cache và KHÔNG có đường tự lành: giữ lại một `Dadb` đã chết
+            // nghĩa là MỌI bước còn lại của `scenario <id> --run` hỏng với đúng một lỗi transport, và cái runner
+            // in ra không nói gì về XE — đúng kiểu "sửa nhầm bệnh" mà CLAUDE.md §2 cấm. Đóng ở đây ⇒ lệnh kế
+            // tự mở phiên mới, giống cách `ShellTransport.exec` tự lành sau một kết nối ôi.
+            close()
             ShellOutcome(command, -1, "${failure.javaClass.simpleName}: ${failure.message}", System.currentTimeMillis() - started)
         }
     }

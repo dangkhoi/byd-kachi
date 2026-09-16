@@ -271,6 +271,17 @@ class LauncherI18nContractTest {
         "pack.label" to
             "`VoicePack.label` — cùng lý do `model.label`, chỉ là dạng TỔNG QUÁT của nó (T8 gộp gói nghe + gói đọc " +
                 "vào một hợp đồng). Vẫn là tên riêng: \"Piper VN — VAIS-1000 (medium)\"",
+        // VOICE-HOTFIX 1.69 (H6 "đổi sang mô hình nhẹ") — BA cách gọi mới của **cùng** `SherpaModel.label`, nên
+        // cùng một lý do. Phải khai riêng vì phép dò ở dưới so theo CHUỖI CON: `"model.label"` không phủ được
+        // `model?.label` (dấu `?` chen vào) và cũng không phủ hai tên biến mới.
+        "current.label" to
+            "`SherpaModel.label` của gói ĐANG dùng (hàng \"Chuyển sang mô hình nhẹ\") — tên riêng, cùng lý do `model.label`",
+        "light.label" to
+            "`SherpaModel.label` của gói NHẸ hơn — tên riêng, cùng lý do `model.label`",
+        "model?.label" to
+            "cầu kiểm thử `state.voice_model.label`: một trường MÁY ĐỌC. Ở đây phải là tên riêng ỔN ĐỊNH, không " +
+                "được đổi theo ngôn ngữ giao diện — nếu không thì một phép đo chạy ở máy tiếng Anh và một phép đo " +
+                "ở máy tiếng Việt cho ra hai chuỗi khác nhau cho cùng một gói",
         "ttsPack.label" to
             "`SherpaTtsCatalog.TtsVoice.label` — tên riêng của gói giọng Piper, cùng lý do `model.label`",
         // U6 đã bỏ mục `"pick.sub"`: ngăn kéo nay đọc `pick.displaySub` (gợi ý loại + câu "gồm gì"), tức nó KHÔNG

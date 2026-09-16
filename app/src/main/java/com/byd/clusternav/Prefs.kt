@@ -473,6 +473,16 @@ object Prefs {
     fun recircOnStartEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_RECIRC_ON_START, false)
     fun setRecircOnStartEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_RECIRC_ON_START, v).apply()
 
+    // ─── Công tắc ẨN: ép đường lùi của CHẠM trong ô (1.69, spec kachi-open-app-correctly §4.6) ────
+    // MẶC ĐỊNH TẮT. Bật ⇒ `InputDaemonClient` KHÔNG khởi daemon bơm chạm và mọi cú chạm trong ô đi đường lùi
+    // theo cử chỉ (`GestureFallback` + `input -d`). Tồn tại vì một lý do DUY NHẤT: trên máy ảo daemon lên bình
+    // thường, nên nếu không ép được thì đúng cái nhánh mà XE đang mắc kẹt ([ĐO xe 2026-09-16] §9.1: daemon không
+    // lên lần nào) sẽ chỉ kiểm được bằng... một chiếc xe. Không có bề mặt UI (xem SettingsCatalog HIDDEN_KEYS) —
+    // đặt bằng `run-as` trên bản vehicleTest, đọc lại bằng cầu kiểm thử (`state.inputd` / `prefs`).
+    // Đọc MỘT lần mỗi tiến trình ở AppContainer ⇒ đổi xong phải khởi động lại app.
+    private const val K_INPUTD_DISABLED = "inputd_disabled"
+    fun inputdDisabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_INPUTD_DISABLED, false)
+
     // Toggle theo module (key namespaced "mod_" — không thể đụng các key lõi ở trên). Mặc định TẮT
     // (experiment phải bật tay). Key mồ côi sau khi xoá module = dead data vô hại, không cần dọn.
     fun moduleEnabled(ctx: Context, title: String): Boolean =

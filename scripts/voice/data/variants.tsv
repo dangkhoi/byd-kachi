@@ -400,22 +400,22 @@ cast	control_toggle	chung	ngan	đóng chiếu lên cụm
 cast	control_toggle	chung	dai	mở chiếu màn lên giúp mình
 cast	control_toggle	chung	ngan	bật chiếu lên cụm
 cast	control_toggle	chung	ngan	tắt chiếu màn
-ac_auto	control_toggle	chung	ngan	bật điều hoà auto
+ac_auto	control_toggle	chung	ngan	bật điều hòa auto
 ac_auto	control_toggle	chung	ngan	tắt điều hoà
 ac_auto	control_toggle	nam	ngan	bật máy lạnh lên
 ac_auto	control_toggle	chung	ngan	mở điều hoà tự động
 ac_auto	control_toggle	nam	than_mat	tắt máy lạnh tự động đi
-ac_auto	control_toggle	nam	than_mat	bật điều hoà auto giùm
+ac_auto	control_toggle	nam	than_mat	bật điều hòa auto giùm
 ac_auto	control_toggle	nam	than_mat	tắt điều hoà dùm cái
 ac_auto	control_toggle	nam	lich_su	làm ơn bật máy lạnh
 ac_auto	control_toggle	bac	lich_su	bật điều hoà tự động hộ tôi
 ac_auto	control_toggle	nam	than_mat	ê Kachi bật máy lạnh tự động
-ac_auto	control_toggle	chung	than_mat	ê Kachi tắt điều hoà auto đi
+ac_auto	control_toggle	chung	than_mat	ê Kachi tắt điều hòa auto đi
 ac_auto	control_toggle	chung	dai	cho tôi bật điều hoà nhé
 ac_auto	control_toggle	nam	dai	tắt máy lạnh giúp mình nhé
 ac_auto	control_toggle	nam	dai	bật giùm tôi cái điều hoà tự động
 ac_auto	control_toggle	nam	than_mat	bật cái máy lạnh tự động đi
-ac_auto	control_toggle	trung	than_mat	bật điều hoà auto hí
+ac_auto	control_toggle	trung	than_mat	bật điều hòa auto hí
 ac_auto	control_toggle	chung	ngan	đóng điều hoà
 ac_auto	control_toggle	nam	dai	mở máy lạnh lên giúp mình
 ac_auto	control_toggle	chung	ngan	bật điều hoà
@@ -620,84 +620,26 @@ sunshade	control_cover	chung	ngan	bật rèm nóc
 sunshade	control_cover	nam	ngan	tắt màn che nắng
 sunshade	control_cover	chung	ngan	mở rèm nóc
 sunshade	control_cover	nam	ngan	đóng màn che nắng
-child_lock	control_toggle	chung	ngan	bật khoá trẻ em
-child_lock	control_toggle	nam	ngan	tắt khoá con nít
-child_lock	control_toggle	bac	ngan	bật khoá trẻ em lên
-child_lock	control_toggle	nam	ngan	mở khoá con nít
+child_lock	control_toggle	chung	ngan	bật khóa trẻ em
+child_lock	control_toggle	chung	ngan	tắt khoá trẻ em
+child_lock	control_toggle	nam	ngan	bật khoá con nít lên
+child_lock	control_toggle	chung	ngan	mở khóa trẻ em
 child_lock	control_toggle	chung	than_mat	tắt khoá trẻ em đi
 child_lock	control_toggle	nam	than_mat	bật khoá con nít giùm
-child_lock	control_toggle	nam	than_mat	tắt khoá trẻ em dùm cái
-child_lock	control_toggle	nam	lich_su	làm ơn bật khoá con nít
-child_lock	control_toggle	bac	lich_su	bật khoá trẻ em hộ tôi
-child_lock	control_toggle	nam	than_mat	ê Kachi bật khoá con nít
+child_lock	control_toggle	nam	than_mat	tắt khóa trẻ em dùm cái
+child_lock	control_toggle	bac	lich_su	làm ơn bật khoá trẻ em
+child_lock	control_toggle	nam	lich_su	bật khoá con nít hộ tôi
+child_lock	control_toggle	chung	than_mat	ê Kachi bật khóa trẻ em
 child_lock	control_toggle	chung	than_mat	ê Kachi tắt khoá trẻ em đi
 child_lock	control_toggle	nam	dai	cho tôi bật khoá con nít nhé
-child_lock	control_toggle	chung	dai	tắt khoá trẻ em giúp mình nhé
-child_lock	control_toggle	nam	dai	bật giùm tôi cái khoá con nít
-child_lock	control_toggle	chung	than_mat	bật cái khoá trẻ em đi
-child_lock	control_toggle	nam	than_mat	bật khoá con nít hí
+child_lock	control_toggle	chung	dai	tắt khóa trẻ em giúp mình nhé
+child_lock	control_toggle	nam	dai	bật giùm tôi cái khoá trẻ em
+child_lock	control_toggle	nam	than_mat	bật cái khoá con nít đi
+child_lock	control_toggle	trung	than_mat	bật khóa trẻ em hí
 child_lock	control_toggle	chung	ngan	đóng khoá trẻ em
 child_lock	control_toggle	nam	dai	mở khoá con nít lên giúp mình
-child_lock	control_toggle	nam	ngan	bật khoá con nít
-child_lock	control_toggle	chung	ngan	tắt khoá trẻ em
-rain_close	control_toggle	chung	ngan	bật tự đóng kính khi mưa
-rain_close	control_toggle	chung	ngan	tắt tự đóng kính khi mưa
-rain_close	control_toggle	bac	ngan	bật tự đóng kính khi mưa lên
-rain_close	control_toggle	chung	ngan	mở tự đóng kính khi mưa
-rain_close	control_toggle	chung	than_mat	tắt tự đóng kính khi mưa đi
-rain_close	control_toggle	nam	than_mat	bật tự đóng kính khi mưa giùm
-rain_close	control_toggle	nam	than_mat	tắt tự đóng kính khi mưa dùm cái
-rain_close	control_toggle	bac	lich_su	làm ơn bật tự đóng kính khi mưa
-rain_close	control_toggle	bac	lich_su	bật tự đóng kính khi mưa hộ tôi
-rain_close	control_toggle	chung	than_mat	ê Kachi bật tự đóng kính khi mưa
-rain_close	control_toggle	chung	than_mat	ê Kachi tắt tự đóng kính khi mưa đi
-rain_close	control_toggle	chung	dai	cho tôi bật tự đóng kính khi mưa nhé
-rain_close	control_toggle	chung	dai	tắt tự đóng kính khi mưa giúp mình nhé
-rain_close	control_toggle	nam	dai	bật giùm tôi cái tự đóng kính khi mưa
-rain_close	control_toggle	chung	than_mat	bật cái tự đóng kính khi mưa đi
-rain_close	control_toggle	trung	than_mat	bật tự đóng kính khi mưa hí
-rain_close	control_toggle	chung	ngan	đóng tự đóng kính khi mưa
-rain_close	control_toggle	chung	dai	mở tự đóng kính khi mưa lên giúp mình
-mirror_auto	control_toggle	chung	ngan	bật gập gương khi khoá
-mirror_auto	control_toggle	chung	ngan	tắt tự gập gương
-mirror_auto	control_toggle	bac	ngan	bật gập gương khi khoá lên
-mirror_auto	control_toggle	chung	ngan	mở tự gập gương
-mirror_auto	control_toggle	chung	than_mat	tắt gập gương khi khoá đi
-mirror_auto	control_toggle	nam	than_mat	bật tự gập gương giùm
-mirror_auto	control_toggle	nam	than_mat	tắt gập gương khi khoá dùm cái
-mirror_auto	control_toggle	bac	lich_su	làm ơn bật tự gập gương
-mirror_auto	control_toggle	bac	lich_su	bật gập gương khi khoá hộ tôi
-mirror_auto	control_toggle	chung	than_mat	ê Kachi bật tự gập gương
-mirror_auto	control_toggle	chung	than_mat	ê Kachi tắt gập gương khi khoá đi
-mirror_auto	control_toggle	chung	dai	cho tôi bật tự gập gương nhé
-mirror_auto	control_toggle	chung	dai	tắt gập gương khi khoá giúp mình nhé
-mirror_auto	control_toggle	nam	dai	bật giùm tôi cái tự gập gương
-mirror_auto	control_toggle	chung	than_mat	bật cái gập gương khi khoá đi
-mirror_auto	control_toggle	trung	than_mat	bật tự gập gương hí
-mirror_auto	control_toggle	chung	ngan	đóng gập gương khi khoá
-mirror_auto	control_toggle	chung	dai	mở tự gập gương lên giúp mình
-mirror_auto	control_toggle	chung	ngan	bật tự gập gương
-mirror_auto	control_toggle	chung	ngan	tắt gập gương khi khoá
-mirror_fold_btn	control_button	chung	ngan	gập gương
-mirror_fold_btn	control_button	nam	than_mat	xếp kiếng chiếu hậu đi
-mirror_fold_btn	control_button	chung	ngan	bấm gập gương chiếu hậu
-mirror_fold_btn	control_button	chung	ngan	chạy gập gương
-mirror_fold_btn	control_button	nam	ngan	bật xếp kiếng chiếu hậu
-mirror_fold_btn	control_button	nam	than_mat	gập gương chiếu hậu giùm
-mirror_fold_btn	control_button	nam	than_mat	gập gương dùm cái
-mirror_fold_btn	control_button	nam	lich_su	làm ơn xếp kiếng chiếu hậu
-mirror_fold_btn	control_button	bac	lich_su	gập gương chiếu hậu hộ tôi
-mirror_fold_btn	control_button	chung	than_mat	ê Kachi gập gương
-mirror_fold_btn	control_button	nam	dai	cho tôi xếp kiếng chiếu hậu nhé
-mirror_fold_btn	control_button	chung	dai	gập gương chiếu hậu giúp mình với
-mirror_fold_btn	control_button	trung	than_mat	gập gương hí
-mirror_fold_btn	control_button	nam	ngan	mở xếp kiếng chiếu hậu
-mirror_fold_btn	control_button	nam	ngan	xếp kiếng chiếu hậu
-mirror_fold_btn	control_button	chung	than_mat	gập gương chiếu hậu đi
-mirror_fold_btn	control_button	chung	ngan	bấm gập gương
-mirror_fold_btn	control_button	nam	ngan	chạy xếp kiếng chiếu hậu
-mirror_fold_btn	control_button	chung	ngan	bật gập gương chiếu hậu
-mirror_fold_btn	control_button	nam	than_mat	gập gương giùm
+child_lock	control_toggle	chung	ngan	bật khoá trẻ em
+child_lock	control_toggle	nam	ngan	tắt khoá con nít
 seat_memory	control_button	chung	ngan	nhớ ghế lái
 seat_memory	control_button	chung	than_mat	lưu vị trí ghế đi
 seat_memory	control_button	chung	ngan	bấm nhớ ghế lái
@@ -818,26 +760,6 @@ headlight_mode	control_select	nam	than_mat	đổi chế độ đèn pha qua Tắ
 headlight_mode	control_select	nam	than_mat	đổi chế độ đèn pha qua Auto giùm
 headlight_mode	control_select	nam	than_mat	đổi chế độ đèn pha qua Đỗ giùm
 headlight_mode	control_select	nam	than_mat	đổi chế độ đèn pha qua Cốt giùm
-drive_mode	control_select	chung	ngan	chế độ lái Thường
-drive_mode	control_select	chung	ngan	chế độ lái Eco
-drive_mode	control_select	chung	ngan	chế độ lái Thể thao
-drive_mode	control_select	chung	ngan	chế độ lái Tuyết
-drive_mode	control_select	nam	ngan	đổi chế độ chạy sang Thường
-drive_mode	control_select	nam	ngan	đổi chế độ chạy sang Eco
-drive_mode	control_select	nam	ngan	đổi chế độ chạy sang Thể thao
-drive_mode	control_select	nam	ngan	đổi chế độ chạy sang Tuyết
-drive_mode	control_select	chung	than_mat	chuyển sang Thường
-drive_mode	control_select	chung	than_mat	chuyển sang Eco
-drive_mode	control_select	chung	than_mat	chuyển sang Thể thao
-drive_mode	control_select	chung	than_mat	chuyển sang Tuyết
-drive_mode	control_select	chung	ngan	đặt chế độ lái Thường
-drive_mode	control_select	chung	ngan	đặt chế độ lái Eco
-drive_mode	control_select	chung	ngan	đặt chế độ lái Thể thao
-drive_mode	control_select	chung	ngan	đặt chế độ lái Tuyết
-drive_mode	control_select	nam	than_mat	đổi chế độ chạy qua Thường giùm
-drive_mode	control_select	nam	than_mat	đổi chế độ chạy qua Eco giùm
-drive_mode	control_select	nam	than_mat	đổi chế độ chạy qua Thể thao giùm
-drive_mode	control_select	nam	than_mat	đổi chế độ chạy qua Tuyết giùm
 powertrain_mode	control_select	chung	ngan	chế độ động cơ EV
 powertrain_mode	control_select	chung	ngan	chế độ động cơ HEV
 powertrain_mode	control_select	chung	ngan	đổi chế độ năng lượng sang EV
@@ -878,46 +800,6 @@ regen_level	control_select	chung	ngan	chọn Tiêu chuẩn
 regen_level	control_select	chung	ngan	chọn Cao
 regen_level	control_select	chung	dai	đổi sang Tiêu chuẩn giúp mình
 regen_level	control_select	chung	dai	đổi sang Cao giúp mình
-target_soc_set	control_step	chung	ngan	tăng mục tiêu sạc
-target_soc_set	control_step	chung	ngan	giảm giới hạn phần trăm sạc
-target_soc_set	control_step	chung	than_mat	tăng mục tiêu sạc lên
-target_soc_set	control_step	chung	than_mat	giảm giới hạn phần trăm sạc xuống
-target_soc_set	control_step	bac	ngan	tăng mục tiêu sạc một nấc
-target_soc_set	control_step	nam	than_mat	giảm giới hạn phần trăm sạc giùm
-target_soc_set	control_step	nam	than_mat	tăng mục tiêu sạc dùm cái
-target_soc_set	control_step	bac	lich_su	làm ơn tăng giới hạn phần trăm sạc
-target_soc_set	control_step	bac	lich_su	giảm mục tiêu sạc hộ tôi
-target_soc_set	control_step	chung	than_mat	ê Kachi tăng giới hạn phần trăm sạc
-target_soc_set	control_step	chung	dai	cho mục tiêu sạc lên một chút
-target_soc_set	control_step	chung	dai	hạ giới hạn phần trăm sạc xuống một chút nhé
-target_soc_set	control_step	trung	than_mat	tăng mục tiêu sạc chút hí
-target_soc_set	control_step	chung	so_lieu	đặt giới hạn phần trăm sạc tám mươi phần trăm
-target_soc_set	control_step	chung	so_lieu	đặt giới hạn phần trăm sạc chín mươi phần trăm
-target_soc_set	control_step	chung	so_lieu	đặt giới hạn phần trăm sạc 80 phần trăm
-target_soc_set	control_step	chung	so_lieu	mục tiêu sạc tám mươi phần trăm
-target_soc_set	control_step	chung	so_lieu	mục tiêu sạc chín mươi phần trăm
-target_soc_set	control_step	chung	so_lieu	mục tiêu sạc 80 phần trăm
-target_soc_set	control_step	chung	so_lieu	chỉnh giới hạn phần trăm sạc về tám mươi phần trăm
-charge_cap	control_toggle	chung	ngan	bật giới hạn sạc
-charge_cap	control_toggle	chung	ngan	tắt chặn sạc đầy
-charge_cap	control_toggle	bac	ngan	bật giới hạn sạc lên
-charge_cap	control_toggle	chung	ngan	mở chặn sạc đầy
-charge_cap	control_toggle	chung	than_mat	tắt giới hạn sạc đi
-charge_cap	control_toggle	nam	than_mat	bật chặn sạc đầy giùm
-charge_cap	control_toggle	nam	than_mat	tắt giới hạn sạc dùm cái
-charge_cap	control_toggle	bac	lich_su	làm ơn bật chặn sạc đầy
-charge_cap	control_toggle	bac	lich_su	bật giới hạn sạc hộ tôi
-charge_cap	control_toggle	chung	than_mat	ê Kachi bật chặn sạc đầy
-charge_cap	control_toggle	chung	than_mat	ê Kachi tắt giới hạn sạc đi
-charge_cap	control_toggle	chung	dai	cho tôi bật chặn sạc đầy nhé
-charge_cap	control_toggle	chung	dai	tắt giới hạn sạc giúp mình nhé
-charge_cap	control_toggle	nam	dai	bật giùm tôi cái chặn sạc đầy
-charge_cap	control_toggle	chung	than_mat	bật cái giới hạn sạc đi
-charge_cap	control_toggle	trung	than_mat	bật chặn sạc đầy hí
-charge_cap	control_toggle	chung	ngan	đóng giới hạn sạc
-charge_cap	control_toggle	chung	dai	mở chặn sạc đầy lên giúp mình
-charge_cap	control_toggle	chung	ngan	bật chặn sạc đầy
-charge_cap	control_toggle	chung	ngan	tắt giới hạn sạc
 wireless_charge	control_toggle	chung	ngan	bật sạc không dây
 wireless_charge	control_toggle	nam	ngan	tắt sạc điện thoại
 wireless_charge	control_toggle	bac	ngan	bật sạc không dây lên
@@ -938,26 +820,6 @@ wireless_charge	control_toggle	chung	ngan	đóng sạc không dây
 wireless_charge	control_toggle	nam	dai	mở sạc điện thoại lên giúp mình
 wireless_charge	control_toggle	nam	ngan	bật sạc điện thoại
 wireless_charge	control_toggle	chung	ngan	tắt sạc không dây
-start_charging	control_button	chung	ngan	sạc ngay
-start_charging	control_button	chung	than_mat	bắt đầu sạc đi
-start_charging	control_button	nam	ngan	bấm sạc liền
-start_charging	control_button	chung	ngan	chạy sạc ngay
-start_charging	control_button	chung	ngan	bật bắt đầu sạc
-start_charging	control_button	nam	than_mat	sạc liền giùm
-start_charging	control_button	nam	than_mat	sạc ngay dùm cái
-start_charging	control_button	bac	lich_su	làm ơn bắt đầu sạc
-start_charging	control_button	nam	lich_su	sạc liền hộ tôi
-start_charging	control_button	chung	than_mat	ê Kachi sạc ngay
-start_charging	control_button	chung	dai	cho tôi bắt đầu sạc nhé
-start_charging	control_button	nam	dai	sạc liền giúp mình với
-start_charging	control_button	trung	than_mat	sạc ngay hí
-start_charging	control_button	chung	ngan	mở bắt đầu sạc
-start_charging	control_button	chung	ngan	bắt đầu sạc
-start_charging	control_button	nam	than_mat	sạc liền đi
-start_charging	control_button	chung	ngan	bấm sạc ngay
-start_charging	control_button	chung	ngan	chạy bắt đầu sạc
-start_charging	control_button	nam	ngan	bật sạc liền
-start_charging	control_button	nam	than_mat	sạc ngay giùm
 screen_rotation	control_select	chung	ngan	xoay màn hình Ngang
 screen_rotation	control_select	chung	ngan	xoay màn hình Dọc
 screen_rotation	control_select	chung	ngan	đổi hướng màn hình sang Ngang
@@ -1295,160 +1157,6 @@ motor_power	telemetry_read	chung	tieng_anh_viet	check công suất mô tơ giùm
 motor_power	telemetry_read	chung	dai	đọc to công suất mô tơ lên
 motor_power	telemetry_read	trung	than_mat	xem công suất mô tơ chút hè
 motor_power	telemetry_read	chung	dai	báo công suất mô tơ cho tôi
-is_charging	telemetry_read	chung	ngan	xem đang sạc
-is_charging	telemetry_read	chung	ngan	đọc đang sạc
-is_charging	telemetry_read	chung	ngan	kiểm tra đang sạc
-is_charging	telemetry_read	nam	than_mat	coi đang sạc
-is_charging	telemetry_read	nam	than_mat	coi đang sạc giùm
-is_charging	telemetry_read	chung	than_mat	xem đang sạc đi
-is_charging	telemetry_read	chung	ngan	cho xem đang sạc
-is_charging	telemetry_read	chung	dai	đang sạc bao nhiêu
-is_charging	telemetry_read	chung	dai	đang sạc còn bao nhiêu
-is_charging	telemetry_read	chung	dai	đang sạc thế nào
-is_charging	telemetry_read	nam	dai	đang sạc sao rồi
-is_charging	telemetry_read	bac	lich_su	làm ơn xem đang sạc
-is_charging	telemetry_read	bac	lich_su	cho hỏi đang sạc
-is_charging	telemetry_read	chung	than_mat	ê Kachi xem đang sạc
-is_charging	telemetry_read	chung	tieng_anh_viet	check đang sạc
-is_charging	telemetry_read	chung	tieng_anh_viet	check đang sạc giùm
-is_charging	telemetry_read	chung	dai	đọc to đang sạc lên
-is_charging	telemetry_read	trung	than_mat	xem đang sạc chút hè
-is_charging	telemetry_read	chung	dai	báo đang sạc cho tôi
-charge_power	telemetry_read	chung	ngan	xem công suất sạc
-charge_power	telemetry_read	chung	ngan	đọc công suất sạc
-charge_power	telemetry_read	chung	ngan	kiểm tra công suất sạc
-charge_power	telemetry_read	nam	than_mat	coi công suất sạc
-charge_power	telemetry_read	nam	than_mat	coi công suất sạc giùm
-charge_power	telemetry_read	chung	than_mat	xem công suất sạc đi
-charge_power	telemetry_read	chung	ngan	cho xem công suất sạc
-charge_power	telemetry_read	chung	dai	công suất sạc bao nhiêu
-charge_power	telemetry_read	chung	dai	công suất sạc còn bao nhiêu
-charge_power	telemetry_read	chung	dai	công suất sạc thế nào
-charge_power	telemetry_read	nam	dai	công suất sạc sao rồi
-charge_power	telemetry_read	bac	lich_su	làm ơn xem công suất sạc
-charge_power	telemetry_read	bac	lich_su	cho hỏi công suất sạc
-charge_power	telemetry_read	chung	than_mat	ê Kachi xem công suất sạc
-charge_power	telemetry_read	chung	tieng_anh_viet	check công suất sạc
-charge_power	telemetry_read	chung	tieng_anh_viet	check công suất sạc giùm
-charge_power	telemetry_read	chung	dai	đọc to công suất sạc lên
-charge_power	telemetry_read	trung	than_mat	xem công suất sạc chút hè
-charge_power	telemetry_read	chung	dai	báo công suất sạc cho tôi
-charging_pct	telemetry_read	chung	ngan	xem phần trăm sạc
-charging_pct	telemetry_read	chung	ngan	đọc phần trăm sạc
-charging_pct	telemetry_read	chung	ngan	kiểm tra phần trăm sạc
-charging_pct	telemetry_read	nam	than_mat	coi phần trăm sạc
-charging_pct	telemetry_read	nam	than_mat	coi phần trăm sạc giùm
-charging_pct	telemetry_read	chung	than_mat	xem phần trăm sạc đi
-charging_pct	telemetry_read	chung	ngan	cho xem phần trăm sạc
-charging_pct	telemetry_read	chung	dai	phần trăm sạc bao nhiêu
-charging_pct	telemetry_read	chung	dai	phần trăm sạc còn bao nhiêu
-charging_pct	telemetry_read	chung	dai	phần trăm sạc thế nào
-charging_pct	telemetry_read	nam	dai	phần trăm sạc sao rồi
-charging_pct	telemetry_read	bac	lich_su	làm ơn xem phần trăm sạc
-charging_pct	telemetry_read	bac	lich_su	cho hỏi phần trăm sạc
-charging_pct	telemetry_read	chung	than_mat	ê Kachi xem phần trăm sạc
-charging_pct	telemetry_read	chung	tieng_anh_viet	check phần trăm sạc
-charging_pct	telemetry_read	chung	tieng_anh_viet	check phần trăm sạc giùm
-charging_pct	telemetry_read	chung	dai	đọc to phần trăm sạc lên
-charging_pct	telemetry_read	trung	than_mat	xem phần trăm sạc chút hè
-charging_pct	telemetry_read	chung	dai	báo phần trăm sạc cho tôi
-charging_eta_hour	telemetry_read	chung	ngan	xem còn mấy giờ nữa đầy
-charging_eta_hour	telemetry_read	chung	ngan	đọc còn bao lâu nữa đầy pin
-charging_eta_hour	telemetry_read	chung	ngan	kiểm tra còn mấy giờ nữa đầy
-charging_eta_hour	telemetry_read	nam	than_mat	coi còn bao lâu nữa đầy pin
-charging_eta_hour	telemetry_read	nam	than_mat	coi còn mấy giờ nữa đầy giùm
-charging_eta_hour	telemetry_read	chung	than_mat	xem còn bao lâu nữa đầy pin đi
-charging_eta_hour	telemetry_read	chung	ngan	cho xem còn mấy giờ nữa đầy
-charging_eta_hour	telemetry_read	chung	dai	còn bao lâu nữa đầy pin bao nhiêu
-charging_eta_hour	telemetry_read	chung	dai	còn mấy giờ nữa đầy còn bao nhiêu
-charging_eta_hour	telemetry_read	chung	dai	còn bao lâu nữa đầy pin thế nào
-charging_eta_hour	telemetry_read	nam	dai	còn mấy giờ nữa đầy sao rồi
-charging_eta_hour	telemetry_read	bac	lich_su	làm ơn xem còn bao lâu nữa đầy pin
-charging_eta_hour	telemetry_read	bac	lich_su	cho hỏi còn mấy giờ nữa đầy
-charging_eta_hour	telemetry_read	chung	than_mat	ê Kachi xem còn bao lâu nữa đầy pin
-charging_eta_hour	telemetry_read	chung	tieng_anh_viet	check còn mấy giờ nữa đầy
-charging_eta_hour	telemetry_read	chung	tieng_anh_viet	check còn bao lâu nữa đầy pin giùm
-charging_eta_hour	telemetry_read	chung	dai	đọc to còn mấy giờ nữa đầy lên
-charging_eta_hour	telemetry_read	trung	than_mat	xem còn bao lâu nữa đầy pin chút hè
-charging_eta_hour	telemetry_read	chung	dai	báo còn mấy giờ nữa đầy cho tôi
-charging_eta_hour	telemetry_read	chung	ngan	xem còn bao lâu nữa đầy pin
-charging_eta_min	telemetry_read	chung	ngan	xem còn mấy phút nữa đầy
-charging_eta_min	telemetry_read	chung	ngan	đọc còn bao nhiêu phút nữa đầy
-charging_eta_min	telemetry_read	chung	ngan	kiểm tra còn mấy phút nữa đầy
-charging_eta_min	telemetry_read	nam	than_mat	coi còn bao nhiêu phút nữa đầy
-charging_eta_min	telemetry_read	nam	than_mat	coi còn mấy phút nữa đầy giùm
-charging_eta_min	telemetry_read	chung	than_mat	xem còn bao nhiêu phút nữa đầy đi
-charging_eta_min	telemetry_read	chung	ngan	cho xem còn mấy phút nữa đầy
-charging_eta_min	telemetry_read	chung	dai	còn bao nhiêu phút nữa đầy bao nhiêu
-charging_eta_min	telemetry_read	chung	dai	còn mấy phút nữa đầy còn bao nhiêu
-charging_eta_min	telemetry_read	chung	dai	còn bao nhiêu phút nữa đầy thế nào
-charging_eta_min	telemetry_read	nam	dai	còn mấy phút nữa đầy sao rồi
-charging_eta_min	telemetry_read	bac	lich_su	làm ơn xem còn bao nhiêu phút nữa đầy
-charging_eta_min	telemetry_read	bac	lich_su	cho hỏi còn mấy phút nữa đầy
-charging_eta_min	telemetry_read	chung	than_mat	ê Kachi xem còn bao nhiêu phút nữa đầy
-charging_eta_min	telemetry_read	chung	tieng_anh_viet	check còn mấy phút nữa đầy
-charging_eta_min	telemetry_read	chung	tieng_anh_viet	check còn bao nhiêu phút nữa đầy giùm
-charging_eta_min	telemetry_read	chung	dai	đọc to còn mấy phút nữa đầy lên
-charging_eta_min	telemetry_read	trung	than_mat	xem còn bao nhiêu phút nữa đầy chút hè
-charging_eta_min	telemetry_read	chung	dai	báo còn mấy phút nữa đầy cho tôi
-charging_eta_min	telemetry_read	chung	ngan	xem còn bao nhiêu phút nữa đầy
-charging_capacity_kwh	telemetry_read	chung	ngan	xem đã sạc phiên
-charging_capacity_kwh	telemetry_read	chung	ngan	đọc đã sạc phiên
-charging_capacity_kwh	telemetry_read	chung	ngan	kiểm tra đã sạc phiên
-charging_capacity_kwh	telemetry_read	nam	than_mat	coi đã sạc phiên
-charging_capacity_kwh	telemetry_read	nam	than_mat	coi đã sạc phiên giùm
-charging_capacity_kwh	telemetry_read	chung	than_mat	xem đã sạc phiên đi
-charging_capacity_kwh	telemetry_read	chung	ngan	cho xem đã sạc phiên
-charging_capacity_kwh	telemetry_read	chung	dai	đã sạc phiên bao nhiêu
-charging_capacity_kwh	telemetry_read	chung	dai	đã sạc phiên còn bao nhiêu
-charging_capacity_kwh	telemetry_read	chung	dai	đã sạc phiên thế nào
-charging_capacity_kwh	telemetry_read	nam	dai	đã sạc phiên sao rồi
-charging_capacity_kwh	telemetry_read	bac	lich_su	làm ơn xem đã sạc phiên
-charging_capacity_kwh	telemetry_read	bac	lich_su	cho hỏi đã sạc phiên
-charging_capacity_kwh	telemetry_read	chung	than_mat	ê Kachi xem đã sạc phiên
-charging_capacity_kwh	telemetry_read	chung	tieng_anh_viet	check đã sạc phiên
-charging_capacity_kwh	telemetry_read	chung	tieng_anh_viet	check đã sạc phiên giùm
-charging_capacity_kwh	telemetry_read	chung	dai	đọc to đã sạc phiên lên
-charging_capacity_kwh	telemetry_read	trung	than_mat	xem đã sạc phiên chút hè
-charging_capacity_kwh	telemetry_read	chung	dai	báo đã sạc phiên cho tôi
-charging_state	telemetry_read	chung	ngan	xem trạng thái sạc
-charging_state	telemetry_read	chung	ngan	đọc trạng thái sạc
-charging_state	telemetry_read	chung	ngan	kiểm tra trạng thái sạc
-charging_state	telemetry_read	nam	than_mat	coi trạng thái sạc
-charging_state	telemetry_read	nam	than_mat	coi trạng thái sạc giùm
-charging_state	telemetry_read	chung	than_mat	xem trạng thái sạc đi
-charging_state	telemetry_read	chung	ngan	cho xem trạng thái sạc
-charging_state	telemetry_read	chung	dai	trạng thái sạc bao nhiêu
-charging_state	telemetry_read	chung	dai	trạng thái sạc còn bao nhiêu
-charging_state	telemetry_read	chung	dai	trạng thái sạc thế nào
-charging_state	telemetry_read	nam	dai	trạng thái sạc sao rồi
-charging_state	telemetry_read	bac	lich_su	làm ơn xem trạng thái sạc
-charging_state	telemetry_read	bac	lich_su	cho hỏi trạng thái sạc
-charging_state	telemetry_read	chung	than_mat	ê Kachi xem trạng thái sạc
-charging_state	telemetry_read	chung	tieng_anh_viet	check trạng thái sạc
-charging_state	telemetry_read	chung	tieng_anh_viet	check trạng thái sạc giùm
-charging_state	telemetry_read	chung	dai	đọc to trạng thái sạc lên
-charging_state	telemetry_read	trung	than_mat	xem trạng thái sạc chút hè
-charging_state	telemetry_read	chung	dai	báo trạng thái sạc cho tôi
-charger_work_state	telemetry_read	chung	ngan	xem trạng thái bộ sạc
-charger_work_state	telemetry_read	chung	ngan	đọc trạng thái bộ sạc
-charger_work_state	telemetry_read	chung	ngan	kiểm tra trạng thái bộ sạc
-charger_work_state	telemetry_read	nam	than_mat	coi trạng thái bộ sạc
-charger_work_state	telemetry_read	nam	than_mat	coi trạng thái bộ sạc giùm
-charger_work_state	telemetry_read	chung	than_mat	xem trạng thái bộ sạc đi
-charger_work_state	telemetry_read	chung	ngan	cho xem trạng thái bộ sạc
-charger_work_state	telemetry_read	chung	dai	trạng thái bộ sạc bao nhiêu
-charger_work_state	telemetry_read	chung	dai	trạng thái bộ sạc còn bao nhiêu
-charger_work_state	telemetry_read	chung	dai	trạng thái bộ sạc thế nào
-charger_work_state	telemetry_read	nam	dai	trạng thái bộ sạc sao rồi
-charger_work_state	telemetry_read	bac	lich_su	làm ơn xem trạng thái bộ sạc
-charger_work_state	telemetry_read	bac	lich_su	cho hỏi trạng thái bộ sạc
-charger_work_state	telemetry_read	chung	than_mat	ê Kachi xem trạng thái bộ sạc
-charger_work_state	telemetry_read	chung	tieng_anh_viet	check trạng thái bộ sạc
-charger_work_state	telemetry_read	chung	tieng_anh_viet	check trạng thái bộ sạc giùm
-charger_work_state	telemetry_read	chung	dai	đọc to trạng thái bộ sạc lên
-charger_work_state	telemetry_read	trung	than_mat	xem trạng thái bộ sạc chút hè
-charger_work_state	telemetry_read	chung	dai	báo trạng thái bộ sạc cho tôi
 batt_temp	telemetry_read	chung	ngan	xem nhiệt độ pin
 batt_temp	telemetry_read	chung	ngan	đọc nhiệt độ pin
 batt_temp	telemetry_read	chung	ngan	kiểm tra nhiệt độ pin
@@ -1603,26 +1311,6 @@ target_soc	telemetry_read	chung	tieng_anh_viet	check mục tiêu sạc giùm
 target_soc	telemetry_read	chung	dai	đọc to mục tiêu sạc lên
 target_soc	telemetry_read	trung	than_mat	xem mục tiêu sạc chút hè
 target_soc	telemetry_read	chung	dai	báo mục tiêu sạc cho tôi
-batt_range_bodywork	telemetry_read	chung	ngan	xem tầm pin
-batt_range_bodywork	telemetry_read	chung	ngan	đọc thân xe
-batt_range_bodywork	telemetry_read	chung	ngan	kiểm tra tầm pin
-batt_range_bodywork	telemetry_read	nam	than_mat	coi thân xe
-batt_range_bodywork	telemetry_read	nam	than_mat	coi tầm pin giùm
-batt_range_bodywork	telemetry_read	chung	than_mat	xem thân xe đi
-batt_range_bodywork	telemetry_read	chung	ngan	cho xem tầm pin
-batt_range_bodywork	telemetry_read	chung	dai	thân xe bao nhiêu
-batt_range_bodywork	telemetry_read	chung	dai	tầm pin còn bao nhiêu
-batt_range_bodywork	telemetry_read	chung	dai	thân xe thế nào
-batt_range_bodywork	telemetry_read	nam	dai	tầm pin sao rồi
-batt_range_bodywork	telemetry_read	bac	lich_su	làm ơn xem thân xe
-batt_range_bodywork	telemetry_read	bac	lich_su	cho hỏi tầm pin
-batt_range_bodywork	telemetry_read	chung	than_mat	ê Kachi xem thân xe
-batt_range_bodywork	telemetry_read	chung	tieng_anh_viet	check tầm pin
-batt_range_bodywork	telemetry_read	chung	tieng_anh_viet	check thân xe giùm
-batt_range_bodywork	telemetry_read	chung	dai	đọc to tầm pin lên
-batt_range_bodywork	telemetry_read	trung	than_mat	xem thân xe chút hè
-batt_range_bodywork	telemetry_read	chung	dai	báo tầm pin cho tôi
-batt_range_bodywork	telemetry_read	chung	ngan	xem thân xe
 speed	telemetry_read	chung	ngan	xem tốc độ
 speed	telemetry_read	chung	ngan	đọc vận tốc
 speed	telemetry_read	nam	ngan	kiểm tra đang chạy bao nhiêu
@@ -1875,26 +1563,6 @@ energy_mode	telemetry_read	chung	tieng_anh_viet	check chế độ năng lượng
 energy_mode	telemetry_read	chung	dai	đọc to chế độ năng lượng lên
 energy_mode	telemetry_read	trung	than_mat	xem chế độ năng lượng chút hè
 energy_mode	telemetry_read	chung	dai	báo chế độ năng lượng cho tôi
-drift_mode	telemetry_read	chung	ngan	xem chế độ drift
-drift_mode	telemetry_read	chung	ngan	đọc chế độ trượt
-drift_mode	telemetry_read	chung	ngan	kiểm tra chế độ drift
-drift_mode	telemetry_read	nam	than_mat	coi chế độ trượt
-drift_mode	telemetry_read	nam	than_mat	coi chế độ drift giùm
-drift_mode	telemetry_read	chung	than_mat	xem chế độ trượt đi
-drift_mode	telemetry_read	chung	ngan	cho xem chế độ drift
-drift_mode	telemetry_read	chung	dai	chế độ trượt bao nhiêu
-drift_mode	telemetry_read	chung	dai	chế độ drift còn bao nhiêu
-drift_mode	telemetry_read	chung	dai	chế độ trượt thế nào
-drift_mode	telemetry_read	nam	dai	chế độ drift sao rồi
-drift_mode	telemetry_read	bac	lich_su	làm ơn xem chế độ trượt
-drift_mode	telemetry_read	bac	lich_su	cho hỏi chế độ drift
-drift_mode	telemetry_read	chung	than_mat	ê Kachi xem chế độ trượt
-drift_mode	telemetry_read	chung	tieng_anh_viet	check chế độ drift
-drift_mode	telemetry_read	chung	tieng_anh_viet	check chế độ trượt giùm
-drift_mode	telemetry_read	chung	dai	đọc to chế độ drift lên
-drift_mode	telemetry_read	trung	than_mat	xem chế độ trượt chút hè
-drift_mode	telemetry_read	chung	dai	báo chế độ drift cho tôi
-drift_mode	telemetry_read	chung	ngan	xem chế độ trượt
 pm25_level	telemetry_read	chung	ngan	xem mức bụi mịn
 pm25_level	telemetry_read	chung	ngan	đọc chất lượng không khí
 pm25_level	telemetry_read	chung	ngan	kiểm tra mức bụi mịn
@@ -2033,26 +1701,26 @@ coolant_temp	telemetry_read	chung	tieng_anh_viet	check nhiệt nước làm mát
 coolant_temp	telemetry_read	chung	dai	đọc to nhiệt nước làm mát lên
 coolant_temp	telemetry_read	trung	than_mat	xem nhiệt nước làm mát chút hè
 coolant_temp	telemetry_read	chung	dai	báo nhiệt nước làm mát cho tôi
-ac_on	telemetry_read	chung	ngan	xem điều hoà
-ac_on	telemetry_read	nam	ngan	đọc máy lạnh
-ac_on	telemetry_read	chung	ngan	kiểm tra điều hoà
-ac_on	telemetry_read	nam	than_mat	coi máy lạnh
+ac_on	telemetry_read	chung	ngan	xem điều hòa
+ac_on	telemetry_read	chung	ngan	đọc điều hoà
+ac_on	telemetry_read	nam	ngan	kiểm tra máy lạnh
+ac_on	telemetry_read	nam	than_mat	coi điều hòa
 ac_on	telemetry_read	nam	than_mat	coi điều hoà giùm
 ac_on	telemetry_read	nam	than_mat	xem máy lạnh đi
-ac_on	telemetry_read	chung	ngan	cho xem điều hoà
-ac_on	telemetry_read	nam	dai	máy lạnh bao nhiêu
-ac_on	telemetry_read	chung	dai	điều hoà còn bao nhiêu
-ac_on	telemetry_read	nam	dai	máy lạnh thế nào
+ac_on	telemetry_read	chung	ngan	cho xem điều hòa
+ac_on	telemetry_read	chung	dai	điều hoà bao nhiêu
+ac_on	telemetry_read	nam	dai	máy lạnh còn bao nhiêu
+ac_on	telemetry_read	chung	dai	điều hòa thế nào
 ac_on	telemetry_read	nam	dai	điều hoà sao rồi
 ac_on	telemetry_read	nam	lich_su	làm ơn xem máy lạnh
-ac_on	telemetry_read	bac	lich_su	cho hỏi điều hoà
-ac_on	telemetry_read	nam	than_mat	ê Kachi xem máy lạnh
-ac_on	telemetry_read	chung	tieng_anh_viet	check điều hoà
-ac_on	telemetry_read	nam	tieng_anh_viet	check máy lạnh giùm
+ac_on	telemetry_read	bac	lich_su	cho hỏi điều hòa
+ac_on	telemetry_read	chung	than_mat	ê Kachi xem điều hoà
+ac_on	telemetry_read	nam	tieng_anh_viet	check máy lạnh
+ac_on	telemetry_read	chung	tieng_anh_viet	check điều hòa giùm
 ac_on	telemetry_read	chung	dai	đọc to điều hoà lên
 ac_on	telemetry_read	nam	than_mat	xem máy lạnh chút hè
-ac_on	telemetry_read	chung	dai	báo điều hoà cho tôi
-ac_on	telemetry_read	nam	ngan	xem máy lạnh
+ac_on	telemetry_read	chung	dai	báo điều hòa cho tôi
+ac_on	telemetry_read	chung	ngan	xem điều hoà
 ac_wind	telemetry_read	chung	ngan	xem mức quạt gió
 ac_wind	telemetry_read	chung	ngan	đọc mức gió
 ac_wind	telemetry_read	chung	ngan	kiểm tra mức quạt gió
@@ -2130,6 +1798,105 @@ anion_state	telemetry_read	chung	tieng_anh_viet	check ion âm giùm
 anion_state	telemetry_read	chung	dai	đọc to ion âm lên
 anion_state	telemetry_read	trung	than_mat	xem ion âm chút hè
 anion_state	telemetry_read	chung	dai	báo ion âm cho tôi
+seat_vent_state	telemetry_read	chung	ngan	xem mức ghế mát
+seat_vent_state	telemetry_read	chung	ngan	đọc ghế mát
+seat_vent_state	telemetry_read	chung	ngan	kiểm tra mức ghế mát
+seat_vent_state	telemetry_read	nam	than_mat	coi ghế mát
+seat_vent_state	telemetry_read	nam	than_mat	coi mức ghế mát giùm
+seat_vent_state	telemetry_read	chung	than_mat	xem ghế mát đi
+seat_vent_state	telemetry_read	chung	ngan	cho xem mức ghế mát
+seat_vent_state	telemetry_read	chung	dai	ghế mát bao nhiêu
+seat_vent_state	telemetry_read	chung	dai	mức ghế mát còn bao nhiêu
+seat_vent_state	telemetry_read	chung	dai	ghế mát thế nào
+seat_vent_state	telemetry_read	nam	dai	mức ghế mát sao rồi
+seat_vent_state	telemetry_read	bac	lich_su	làm ơn xem ghế mát
+seat_vent_state	telemetry_read	bac	lich_su	cho hỏi mức ghế mát
+seat_vent_state	telemetry_read	chung	than_mat	ê Kachi xem ghế mát
+seat_vent_state	telemetry_read	chung	tieng_anh_viet	check mức ghế mát
+seat_vent_state	telemetry_read	chung	tieng_anh_viet	check ghế mát giùm
+seat_vent_state	telemetry_read	chung	dai	đọc to mức ghế mát lên
+seat_vent_state	telemetry_read	trung	than_mat	xem ghế mát chút hè
+seat_vent_state	telemetry_read	chung	dai	báo mức ghế mát cho tôi
+seat_vent_state	telemetry_read	chung	ngan	xem ghế mát
+seat_heat_state	telemetry_read	chung	ngan	xem mức ghế sưởi
+seat_heat_state	telemetry_read	chung	ngan	đọc ghế sưởi
+seat_heat_state	telemetry_read	chung	ngan	kiểm tra mức ghế sưởi
+seat_heat_state	telemetry_read	nam	than_mat	coi ghế sưởi
+seat_heat_state	telemetry_read	nam	than_mat	coi mức ghế sưởi giùm
+seat_heat_state	telemetry_read	chung	than_mat	xem ghế sưởi đi
+seat_heat_state	telemetry_read	chung	ngan	cho xem mức ghế sưởi
+seat_heat_state	telemetry_read	chung	dai	ghế sưởi bao nhiêu
+seat_heat_state	telemetry_read	chung	dai	mức ghế sưởi còn bao nhiêu
+seat_heat_state	telemetry_read	chung	dai	ghế sưởi thế nào
+seat_heat_state	telemetry_read	nam	dai	mức ghế sưởi sao rồi
+seat_heat_state	telemetry_read	bac	lich_su	làm ơn xem ghế sưởi
+seat_heat_state	telemetry_read	bac	lich_su	cho hỏi mức ghế sưởi
+seat_heat_state	telemetry_read	chung	than_mat	ê Kachi xem ghế sưởi
+seat_heat_state	telemetry_read	chung	tieng_anh_viet	check mức ghế sưởi
+seat_heat_state	telemetry_read	chung	tieng_anh_viet	check ghế sưởi giùm
+seat_heat_state	telemetry_read	chung	dai	đọc to mức ghế sưởi lên
+seat_heat_state	telemetry_read	trung	than_mat	xem ghế sưởi chút hè
+seat_heat_state	telemetry_read	chung	dai	báo mức ghế sưởi cho tôi
+seat_heat_state	telemetry_read	chung	ngan	xem ghế sưởi
+defrost_front_state	telemetry_read	chung	ngan	xem trạng thái sấy trước
+defrost_front_state	telemetry_read	chung	ngan	đọc sấy trước
+defrost_front_state	telemetry_read	chung	ngan	kiểm tra trạng thái sấy trước
+defrost_front_state	telemetry_read	nam	than_mat	coi sấy trước
+defrost_front_state	telemetry_read	nam	than_mat	coi trạng thái sấy trước giùm
+defrost_front_state	telemetry_read	chung	than_mat	xem sấy trước đi
+defrost_front_state	telemetry_read	chung	ngan	cho xem trạng thái sấy trước
+defrost_front_state	telemetry_read	chung	dai	sấy trước bao nhiêu
+defrost_front_state	telemetry_read	chung	dai	trạng thái sấy trước còn bao nhiêu
+defrost_front_state	telemetry_read	chung	dai	sấy trước thế nào
+defrost_front_state	telemetry_read	nam	dai	trạng thái sấy trước sao rồi
+defrost_front_state	telemetry_read	bac	lich_su	làm ơn xem sấy trước
+defrost_front_state	telemetry_read	bac	lich_su	cho hỏi trạng thái sấy trước
+defrost_front_state	telemetry_read	chung	than_mat	ê Kachi xem sấy trước
+defrost_front_state	telemetry_read	chung	tieng_anh_viet	check trạng thái sấy trước
+defrost_front_state	telemetry_read	chung	tieng_anh_viet	check sấy trước giùm
+defrost_front_state	telemetry_read	chung	dai	đọc to trạng thái sấy trước lên
+defrost_front_state	telemetry_read	trung	than_mat	xem sấy trước chút hè
+defrost_front_state	telemetry_read	chung	dai	báo trạng thái sấy trước cho tôi
+defrost_front_state	telemetry_read	chung	ngan	xem sấy trước
+defrost_rear_state	telemetry_read	chung	ngan	xem trạng thái sấy sau
+defrost_rear_state	telemetry_read	chung	ngan	đọc sấy sau
+defrost_rear_state	telemetry_read	chung	ngan	kiểm tra trạng thái sấy sau
+defrost_rear_state	telemetry_read	nam	than_mat	coi sấy sau
+defrost_rear_state	telemetry_read	nam	than_mat	coi trạng thái sấy sau giùm
+defrost_rear_state	telemetry_read	chung	than_mat	xem sấy sau đi
+defrost_rear_state	telemetry_read	chung	ngan	cho xem trạng thái sấy sau
+defrost_rear_state	telemetry_read	chung	dai	sấy sau bao nhiêu
+defrost_rear_state	telemetry_read	chung	dai	trạng thái sấy sau còn bao nhiêu
+defrost_rear_state	telemetry_read	chung	dai	sấy sau thế nào
+defrost_rear_state	telemetry_read	nam	dai	trạng thái sấy sau sao rồi
+defrost_rear_state	telemetry_read	bac	lich_su	làm ơn xem sấy sau
+defrost_rear_state	telemetry_read	bac	lich_su	cho hỏi trạng thái sấy sau
+defrost_rear_state	telemetry_read	chung	than_mat	ê Kachi xem sấy sau
+defrost_rear_state	telemetry_read	chung	tieng_anh_viet	check trạng thái sấy sau
+defrost_rear_state	telemetry_read	chung	tieng_anh_viet	check sấy sau giùm
+defrost_rear_state	telemetry_read	chung	dai	đọc to trạng thái sấy sau lên
+defrost_rear_state	telemetry_read	trung	than_mat	xem sấy sau chút hè
+defrost_rear_state	telemetry_read	chung	dai	báo trạng thái sấy sau cho tôi
+defrost_rear_state	telemetry_read	chung	ngan	xem sấy sau
+ac_mode_auto	telemetry_read	chung	ngan	xem chế độ điều hòa
+ac_mode_auto	telemetry_read	chung	ngan	đọc chế độ điều hòa
+ac_mode_auto	telemetry_read	chung	ngan	kiểm tra chế độ điều hòa
+ac_mode_auto	telemetry_read	nam	than_mat	coi chế độ điều hòa
+ac_mode_auto	telemetry_read	nam	than_mat	coi chế độ điều hòa giùm
+ac_mode_auto	telemetry_read	chung	than_mat	xem chế độ điều hòa đi
+ac_mode_auto	telemetry_read	chung	ngan	cho xem chế độ điều hòa
+ac_mode_auto	telemetry_read	chung	dai	chế độ điều hòa bao nhiêu
+ac_mode_auto	telemetry_read	chung	dai	chế độ điều hòa còn bao nhiêu
+ac_mode_auto	telemetry_read	chung	dai	chế độ điều hòa thế nào
+ac_mode_auto	telemetry_read	nam	dai	chế độ điều hòa sao rồi
+ac_mode_auto	telemetry_read	bac	lich_su	làm ơn xem chế độ điều hòa
+ac_mode_auto	telemetry_read	bac	lich_su	cho hỏi chế độ điều hòa
+ac_mode_auto	telemetry_read	chung	than_mat	ê Kachi xem chế độ điều hòa
+ac_mode_auto	telemetry_read	chung	tieng_anh_viet	check chế độ điều hòa
+ac_mode_auto	telemetry_read	chung	tieng_anh_viet	check chế độ điều hòa giùm
+ac_mode_auto	telemetry_read	chung	dai	đọc to chế độ điều hòa lên
+ac_mode_auto	telemetry_read	trung	than_mat	xem chế độ điều hòa chút hè
+ac_mode_auto	telemetry_read	chung	dai	báo chế độ điều hòa cho tôi
 tyre_p_fl	telemetry_read	chung	ngan	xem áp lốp trước trái
 tyre_p_fl	telemetry_read	chung	ngan	đọc áp suất lốp trước trái
 tyre_p_fl	telemetry_read	nam	ngan	kiểm tra hơi bánh trước trái
@@ -2898,25 +2665,6 @@ ambient_rear_brightness	telemetry_read	chung	tieng_anh_viet	check độ sáng vi
 ambient_rear_brightness	telemetry_read	chung	dai	đọc to độ sáng viền sau lên
 ambient_rear_brightness	telemetry_read	trung	than_mat	xem độ sáng viền sau chút hè
 ambient_rear_brightness	telemetry_read	chung	dai	báo độ sáng viền sau cho tôi
-mcu_status	telemetry_read	chung	ngan	xem trạng thái nguồn
-mcu_status	telemetry_read	chung	ngan	đọc trạng thái nguồn
-mcu_status	telemetry_read	chung	ngan	kiểm tra trạng thái nguồn
-mcu_status	telemetry_read	nam	than_mat	coi trạng thái nguồn
-mcu_status	telemetry_read	nam	than_mat	coi trạng thái nguồn giùm
-mcu_status	telemetry_read	chung	than_mat	xem trạng thái nguồn đi
-mcu_status	telemetry_read	chung	ngan	cho xem trạng thái nguồn
-mcu_status	telemetry_read	chung	dai	trạng thái nguồn bao nhiêu
-mcu_status	telemetry_read	chung	dai	trạng thái nguồn còn bao nhiêu
-mcu_status	telemetry_read	chung	dai	trạng thái nguồn thế nào
-mcu_status	telemetry_read	nam	dai	trạng thái nguồn sao rồi
-mcu_status	telemetry_read	bac	lich_su	làm ơn xem trạng thái nguồn
-mcu_status	telemetry_read	bac	lich_su	cho hỏi trạng thái nguồn
-mcu_status	telemetry_read	chung	than_mat	ê Kachi xem trạng thái nguồn
-mcu_status	telemetry_read	chung	tieng_anh_viet	check trạng thái nguồn
-mcu_status	telemetry_read	chung	tieng_anh_viet	check trạng thái nguồn giùm
-mcu_status	telemetry_read	chung	dai	đọc to trạng thái nguồn lên
-mcu_status	telemetry_read	trung	than_mat	xem trạng thái nguồn chút hè
-mcu_status	telemetry_read	chung	dai	báo trạng thái nguồn cho tôi
 volt_12v	telemetry_read	chung	ngan	xem ắc quy
 volt_12v	telemetry_read	chung	ngan	đọc điện áp ắc quy
 volt_12v	telemetry_read	nam	ngan	kiểm tra bình
@@ -2976,25 +2724,6 @@ vin	telemetry_read	chung	dai	đọc to số vin lên
 vin	telemetry_read	trung	than_mat	xem số khung chút hè
 vin	telemetry_read	chung	dai	báo số vin cho tôi
 vin	telemetry_read	chung	ngan	xem số khung
-key_bluetooth	telemetry_read	chung	ngan	xem chìa bluetooth
-key_bluetooth	telemetry_read	chung	ngan	đọc chìa bluetooth
-key_bluetooth	telemetry_read	chung	ngan	kiểm tra chìa bluetooth
-key_bluetooth	telemetry_read	nam	than_mat	coi chìa bluetooth
-key_bluetooth	telemetry_read	nam	than_mat	coi chìa bluetooth giùm
-key_bluetooth	telemetry_read	chung	than_mat	xem chìa bluetooth đi
-key_bluetooth	telemetry_read	chung	ngan	cho xem chìa bluetooth
-key_bluetooth	telemetry_read	chung	dai	chìa bluetooth bao nhiêu
-key_bluetooth	telemetry_read	chung	dai	chìa bluetooth còn bao nhiêu
-key_bluetooth	telemetry_read	chung	dai	chìa bluetooth thế nào
-key_bluetooth	telemetry_read	nam	dai	chìa bluetooth sao rồi
-key_bluetooth	telemetry_read	bac	lich_su	làm ơn xem chìa bluetooth
-key_bluetooth	telemetry_read	bac	lich_su	cho hỏi chìa bluetooth
-key_bluetooth	telemetry_read	chung	than_mat	ê Kachi xem chìa bluetooth
-key_bluetooth	telemetry_read	chung	tieng_anh_viet	check chìa bluetooth
-key_bluetooth	telemetry_read	chung	tieng_anh_viet	check chìa bluetooth giùm
-key_bluetooth	telemetry_read	chung	dai	đọc to chìa bluetooth lên
-key_bluetooth	telemetry_read	trung	than_mat	xem chìa bluetooth chút hè
-key_bluetooth	telemetry_read	chung	dai	báo chìa bluetooth cho tôi
 engine_code	telemetry_read	chung	ngan	xem mã máy
 engine_code	telemetry_read	chung	ngan	đọc mã máy
 engine_code	telemetry_read	chung	ngan	kiểm tra mã máy
@@ -3129,6 +2858,26 @@ gps_heading	telemetry_read	chung	dai	đọc to hướng lên
 gps_heading	telemetry_read	trung	than_mat	xem hướng đi chút hè
 gps_heading	telemetry_read	chung	dai	báo hướng cho tôi
 gps_heading	telemetry_read	chung	ngan	xem hướng đi
+media_vol	telemetry_read	chung	ngan	xem âm lượng giải trí
+media_vol	telemetry_read	chung	ngan	đọc âm lượng
+media_vol	telemetry_read	chung	ngan	kiểm tra âm lượng giải trí
+media_vol	telemetry_read	nam	than_mat	coi âm lượng
+media_vol	telemetry_read	nam	than_mat	coi âm lượng giải trí giùm
+media_vol	telemetry_read	chung	than_mat	xem âm lượng đi
+media_vol	telemetry_read	chung	ngan	cho xem âm lượng giải trí
+media_vol	telemetry_read	chung	dai	âm lượng bao nhiêu
+media_vol	telemetry_read	chung	dai	âm lượng giải trí còn bao nhiêu
+media_vol	telemetry_read	chung	dai	âm lượng thế nào
+media_vol	telemetry_read	nam	dai	âm lượng giải trí sao rồi
+media_vol	telemetry_read	bac	lich_su	làm ơn xem âm lượng
+media_vol	telemetry_read	bac	lich_su	cho hỏi âm lượng giải trí
+media_vol	telemetry_read	chung	than_mat	ê Kachi xem âm lượng
+media_vol	telemetry_read	chung	tieng_anh_viet	check âm lượng giải trí
+media_vol	telemetry_read	chung	tieng_anh_viet	check âm lượng giùm
+media_vol	telemetry_read	chung	dai	đọc to âm lượng giải trí lên
+media_vol	telemetry_read	trung	than_mat	xem âm lượng chút hè
+media_vol	telemetry_read	chung	dai	báo âm lượng giải trí cho tôi
+media_vol	telemetry_read	chung	ngan	xem âm lượng
 mac_win_open_all	macro	chung	ngan	mở hết kính
 mac_win_open_all	macro	nam	than_mat	mở hết kiếng đi
 mac_win_open_all	macro	chung	ngan	chạy hạ hết kính

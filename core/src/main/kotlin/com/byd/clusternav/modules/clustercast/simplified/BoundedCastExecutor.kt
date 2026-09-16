@@ -19,6 +19,11 @@ class BoundedCastExecutor(
     private val castTimeoutMs: Long = 15_000L,
     private val stopTimeoutMs: Long = 5_000L,
     private val onTimeout: ((String) -> Unit)? = null,
+    /**
+     * Gọi khi block ném exception. Mặc định in ra stderr — KHÔNG được nuốt im lặng: một lần nuốt là
+     * state machine kẹt ở Opening/Stopping mà không ai biết (không có Error, UI không nhả).
+     */
+    private val onFailure: ((String, Throwable) -> Unit)? = null,
 ) {
     private val executor = ThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -41,9 +46,7 @@ class BoundedCastExecutor(
      */
     fun submit(tag: String, block: () -> Unit): Boolean {
         if (isShutdown) return false
-        val future = executor.submit {
-            block()
-        }
+        val future = executor.submit { runGuarded(tag, block) }
         activeFuture.set(future)
         TIMEOUT_SCHEDULER.schedule({
             if (!future.isDone) {
@@ -69,9 +72,7 @@ class BoundedCastExecutor(
         // 2. Purge pending
         executor.queue.clear()
         // 3. Execute stop — goes to front since queue is now empty
-        val future = executor.submit {
-            block()
-        }
+        val future = executor.submit { runGuarded(tag, block) }
         activeFuture.set(future)
         TIMEOUT_SCHEDULER.schedule({
             if (!future.isDone) {
@@ -80,6 +81,33 @@ class BoundedCastExecutor(
             }
         }, stopTimeoutMs, TimeUnit.MILLISECONDS)
         return true
+    }
+
+    /**
+     * Chạy [block] và KHÔNG để exception biến mất vào `Future` mà không ai `get()`.
+     * `InterruptedException` (do timeout/stop `cancel(true)`) là đường bình thường ⇒ chỉ đặt lại cờ interrupt.
+     */
+    private fun runGuarded(tag: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (interrupted: InterruptedException) {
+            Thread.currentThread().interrupt()
+        } catch (t: Throwable) {
+            if (onFailure != null) onFailure.invoke(tag, t) else t.printStackTrace()
+            if (t is Error) throw t
+        }
+    }
+
+    /**
+     * Hẹn giờ trên scheduler riêng (KHÔNG chiếm worker duy nhất).
+     * Dùng cho việc "chờ rồi làm" — nếu xếp vào [submit] thì `Thread.sleep` sẽ khoá hàng đợi
+     * (sức chứa 1 + DiscardOldestPolicy ⇒ lệnh chiếu kế tiếp của người dùng bị âm thầm vứt).
+     */
+    fun schedule(delayMs: Long, block: () -> Unit) {
+        if (isShutdown) return
+        TIMEOUT_SCHEDULER.schedule({
+            if (!isShutdown) runGuarded("scheduled", block)
+        }, delayMs, TimeUnit.MILLISECONDS)
     }
 
     /** Drain queue and shut down. Blocks up to 2s for active operation to finish. */

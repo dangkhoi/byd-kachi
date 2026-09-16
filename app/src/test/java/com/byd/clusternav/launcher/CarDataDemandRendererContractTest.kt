@@ -53,7 +53,9 @@ class CarDataDemandRendererContractTest {
         val re = Regex("""^\s*"([a-z0-9_]+)"\s*->\s*s\.(\w+)\.(\w+)""", RegexOption.MULTILINE)
         val m = re.findAll(source("core/src/main/kotlin/com/byd/clusternav/launcher/TelemetryReadout.kt"))
             .associate { "${it.groupValues[2]}.${it.groupValues[3]}" to it.groupValues[1] }
-        assertTrue(m.size > 100, "đọc ngược TelemetryReadout chỉ ra ${m.size} field — dạng bảng `when` đã đổi?")
+        // Sàn 100 → 88 sau (V) FEATURE-FILTER 2026-09-17 (112 → 100 datum; 12 nhánh `when` rụng theo).
+        // Sàn là *"bảng `when` có còn đọc ra được không"*, không phải số datum — để 8 % dưới số thật.
+        assertTrue(m.size > 88, "đọc ngược TelemetryReadout chỉ ra ${m.size} field — dạng bảng `when` đã đổi?")
         m
     }
 

@@ -185,13 +185,26 @@ def main() -> int:
                 out.append((reg, n))
         return out
 
+    def templates_for(tkind: str) -> list[tuple[str, str, str]]:
+        # Thiếu khuôn cho một loại ⇒ nói ra loại nào và sửa ở đâu. `tmpls[tkind]` trần ném KeyError
+        # trụi lủi, người chạy không biết phải thêm dòng nào vào data/templates.tsv.
+        if tkind not in tmpls:
+            sys.exit(f"data/templates.tsv: thiếu khuôn cho loại {tkind!r} "
+                     f"(đang có: {', '.join(sorted(tmpls))})")
+        return tmpls[tkind]
+
     def run(rid, ikind, tkind, label, short, args=None):
         for region, style, text in expand(
-            tmpls[tkind], nouns_for(rid, label, short), args or [], units.get(rid, []), a.max_per_id
+            templates_for(tkind), nouns_for(rid, label, short), args or [], units.get(rid, []), a.max_per_id
         ):
             emit(rid, ikind, region, style, text)
 
     for c in reg["controls"]:
+        # Registry sinh bằng máy từ ControlRegistry: thêm một ControlKind mới mà quên bảng này thì
+        # trước đây script chết bằng KeyError trần, không nói là kind nào.
+        if c["kind"] not in KIND_OF_CONTROL:
+            sys.exit(f"ControlKind {c['kind']!r} (nút {c['id']!r}) chưa có trong KIND_OF_CONTROL — "
+                     f"thêm vào bảng ở đầu tệp rồi chạy lại")
         tkind, ikind = KIND_OF_CONTROL[c["kind"]]
         run(c["id"], ikind, tkind, c["label"], c.get("short"), c.get("args") or [])
     for t in reg["telemetry"]:
@@ -209,7 +222,7 @@ def main() -> int:
     # đây là chỗ DUY NHẤT cố ý không giới hạn `--max-per-id`.
     for key, names in apps.items():
         for nreg, nsty, name in names:
-            for treg, tsty, tmpl in tmpls["APP"] + tmpls["SLOT"]:
+            for treg, tsty, tmpl in templates_for("APP") + templates_for("SLOT"):
                 rid = "open_app_slot" if "ô" in tmpl else "open_app"
                 style = nsty if nsty == "tieng_anh_viet" else tsty
                 emit(rid, "app", nreg if nreg != "chung" else treg, style, tmpl.replace("{n}", name))

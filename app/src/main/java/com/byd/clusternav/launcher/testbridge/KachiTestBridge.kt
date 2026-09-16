@@ -44,8 +44,7 @@ import java.util.Locale
  *  4. **Mọi lượt chạy đều để lại dấu**: một dòng `KachiTest` trong logcat + một tệp JSON trong `files/test/`.
  *     Không có lệnh nào chạy im lặng.
  *
- * ## Cái cầu này KHÔNG làm
- * Không chạm **display 1** (màn cụm) và không gọi tầng chiếu-cụm — `TestBridgeSafetyContractTest` canh riêng.
+ * ## Cái cầu này KHÔNG làm — không chạm **display 1** (màn cụm), không gọi tầng chiếu-cụm (bài canh riêng)
  */
 class KachiTestBridge : BroadcastReceiver() {
 
@@ -127,10 +126,11 @@ class KachiTestBridge : BroadcastReceiver() {
     // ── Điều phối ────────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Năm lệnh **KHÔNG cần màn chính**, gom vào một `when` (trần 500 dòng — CLAUDE.md §4.1):
+     * Sáu lệnh **KHÔNG cần màn chính**, gom vào một `when` (trần 500 dòng — CLAUDE.md §4.1):
      *  • `prefs` chỉ đọc đĩa ⇒ chạy được khi launcher chưa lên, đúng lúc cần chẩn đoán *"vì sao không lên"*;
      *  • `hal` gọi thẳng gateway HAL (không đọc `HomeUiState`, không chạm ô/bố cục) — chẩn đoán HAL độc lập với UI;
-     *  • `sweep`/`featmap` cũng thuần HAL (chỉ-đọc, luồng nền);
+     *  • `sweep`/`featmap` cũng thuần HAL (chỉ-đọc, luồng nền); `voice_dump` (H2) chỉ đọc `filesDir/voice-log/`
+     *    rồi nén ra thẻ, nên kéo được tiếng về cả sau một lượt launcher vừa khởi động lại ([TestBridgeVoiceDump]);
      *  • `prefs_set` ghi một khoá trong danh sách trắng; nó **nhận móc dưới dạng nullable** vì bốn khoá giọng nói
      *    ghi thẳng prefs được, còn `top_strip_labels` thì phải đi qua màn chính (xem KDoc [TestBridgePrefsSet]).
      */
@@ -142,6 +142,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.HAL -> { TestBridgeHal.run(app, cmd, reply); return }
             TestBridgeCommands.SWEEP -> { TestBridgeSweep.run(app, cmd, reply); return }
             TestBridgeCommands.FEATMAP -> { TestBridgeFeatMap.run(app, reply); return }
+            TestBridgeCommands.VOICE_DUMP -> { TestBridgeVoiceDump.run(app, cmd, reply); return }
             TestBridgeCommands.PREFS_SET -> {
                 TestBridgePrefsSet.run(app, cmd, KachiTestHooks.get(), reply); return
             }
@@ -440,9 +441,8 @@ class KachiTestBridge : BroadcastReceiver() {
         /** Trần một lượt chạy. Dưới hẳn trần 60 s của hàng đợi broadcast nền — hết giờ phải là LỜI ĐÁP, không phải im. */
         const val CAP_MS = 20_000L
 
-        // Nhịp chờ của `say` nay ở [TestBridgeSettle] (hằng cũ `GRACE_MS = 700` làm gói lệnh/dẫn đường luôn
-        // trả `replies: []` — §3 L4, `docs/diagnostics/emulator-voice-e2e-2026-09-15.md`).
-
+        // Nhịp chờ của `say` nay ở [TestBridgeSettle] (`GRACE_MS = 700` cũ làm gói lệnh/dẫn đường luôn trả
+        // `replies: []` — §3 L4, `docs/diagnostics/emulator-voice-e2e-2026-09-15.md`).
         /** Trần tệp WAV nhận qua `--es path` (16 MB ≈ 8 phút PCM16 16 kHz — dài hơn mọi câu lệnh). */
         const val MAX_WAV_BYTES = 16L * 1024L * 1024L
 

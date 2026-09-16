@@ -1,0 +1,928 @@
+# CÂU SAI CHÍNH TẢ — sinh bằng `scripts/voice/gen-misspell.py` (đừng sửa tay phần `rule`).
+# Cột: id | heard_text | source
+#  • source = real : chuỗi mô hình in ra khi NGƯỜI THẬT nói (5 bản thu 2026-09-16) — bằng chứng mạnh nhất
+#  • source = tts  : corpus tổng hợp trên host (aliases-proposed.tsv · bảng nghe nhầm §5)
+#  • source = rule : máy sinh từ bảng lẫn âm VoicePhoneticConfusions.kt (≤ 8 dòng/nhãn, tất định)
+# `id` là mã control/telemetry/macro mà câu PHẢI trỏ tới; `-` = câu cố ý KHÔNG phải lệnh.
+trunk	mở cấp sau	real
+trunk	ở cấp sau	real
+trunk	mở góc sau	real
+soc	xem bên	real
+soc	biên còn bao nhiêu	real
+soc	bin còn bao nhiêu	real
+soc	xem phim	real
+seath	bằng ghế sưởi	real
+temp	mật độ hai mươi hai độ	real
+win_lf	hạ kim trước trái	real
+win_lf	hạ kiêng trái	real
+tyre_p_fl	xe áp suất lốp trước trái	real
+tyre_p_fl	sẽ áp suất lốp trước trái	real
+media_pause	dần nhạc	real
+ac_auto	mã máy lạnh	real
+vol	mầm lượng	real
+readl	bật đèn độc	real
+mac_win_close_all	đóng máy kính	real
+mac_win_open_all	mở máy kính giùm	real
+waze	mở quây	real
+waze	mở quạ	real
+pm25	các bụi	tts
+pm25_clean_now	đọc ngay	tts
+soc	tin còn bao nhiêu	tts
+soc	xem tin	tts
+win_lf	mở kín trước trái	tts
+media_pause	rừng nhạc	tts
+seath	bật ghế sửi	tts
+seath	bật ghế sữa	tts
+readl	bật đèn đang đọc	tts
+gmaps	mở gu gồ máp	tts
+youtube	mở du túp	tts
+-	hôm nay trời đẹp quá	tts
+-	kể cho tôi nghe một câu chuyện	tts
+-	bật abcxyz	tts
+-	bật cái đó	tts
+-	về chỗ nào đó	tts
+-	tắt hết đèn	tts
+-	xem xe	tts
+-	mở cửa	tts
+-	đọc ngày	tts
+lock	bật khóa ma khóa	rule
+lock	bật khóa muo khóa	rule
+lock	bật khóa o khóa	rule
+window	bật kieng cửa lái	rule
+window	bật kính pua lái	rule
+window	bật kính cửa da	rule
+window	bật kim cửa lái	rule
+window	bật kính tua lái	rule
+window	bật kính cửa gai	rule
+window	bật kin cửa lái	rule
+window	bật kính cửa nai	rule
+trunk	bật cap sau	rule
+trunk	bật cốp xau	rule
+trunk	bật coc sau	rule
+trunk	bật cuop sau	rule
+trunk	bật goc sau	rule
+trunk	bật pop sau	rule
+trunk	bật top sau	rule
+readl	bật dang đọc	rule
+readl	bật đèn dop	rule
+readl	bật del đọc	rule
+readl	bật đèn dot	rule
+readl	bật deng đọc	rule
+readl	bật đèn duoc	rule
+readl	bật gien đọc	rule
+readl	bật đèn gioc	rule
+pm25	bật lop bụi	rule
+pm25	bật lot bụi	rule
+pm25	bật luoc bụi	rule
+pm25	bật noc bụi	rule
+seatc	bật ghế mac	rule
+seatc	bật ghế nhiet	rule
+temp	tăng mat độ	rule
+temp	tăng nhiệt duo	rule
+temp	tăng nhiec độ	rule
+temp	tăng nhiệt gio	rule
+temp	tăng nhiệt ro	rule
+temp	tăng nhiệt vo	rule
+fan	tăng do	rule
+fan	tăng giuo	rule
+fan	tăng vo	rule
+defrost	bật xay kính	rule
+defrost	bật sấy kieng	rule
+defrost	bật sấy kim	rule
+defrost	bật sấy kin	rule
+cam	bật pamera 360	rule
+cam	bật tamera 360	rule
+door	bật ma khóa cửa	rule
+door	bật mở khóa pua	rule
+door	bật muo khóa cửa	rule
+door	bật mở khóa tua	rule
+door	bật o khóa cửa	rule
+hood	bật pa pô	rule
+hood	bật ca co	rule
+hood	bật ta pô	rule
+hood	bật ca puo	rule
+sunroof	bật pua sổ trời	rule
+sunroof	bật cửa suo trời	rule
+sunroof	bật cửa sổ choi	rule
+sunroof	bật tua sổ trời	rule
+sunroof	bật cửa xo trời	rule
+headl	bật dang pha	rule
+headl	bật del pha	rule
+headl	bật deng pha	rule
+headl	bật gien pha	rule
+headl	bật ren pha	rule
+headl	bật ven pha	rule
+seath	bật ghế sua	rule
+seath	bật ghế sui	rule
+seath	bật ghế xuoi	rule
+recirc	bật nay gió trong	rule
+recirc	bật lấy do trong	rule
+recirc	bật lấy gió chong	rule
+recirc	bật lấy giuo trong	rule
+recirc	bật lấy gió tron	rule
+recirc	bật lấy vo trong	rule
+recirc	bật lấy gió truong	rule
+drl	bật dang ban ngày	rule
+drl	bật đèn bal ngày	rule
+drl	bật đèn ban nay	rule
+drl	bật del ban ngày	rule
+drl	bật đèn bang ngày	rule
+drl	bật deng ban ngày	rule
+drl	bật gien ban ngày	rule
+drl	bật ren ban ngày	rule
+vol	tăng âm long	rule
+vol	tăng âm luon	rule
+vol	tăng âm nuong	rule
+wiper	bật gac mưa	rule
+wiper	bật rat mưa	rule
+cast	bật trieu cụm	rule
+cast	bật chiếu pum	rule
+cast	bật chiếu tum	rule
+ac_auto	bật giieu hòa auto	rule
+ac_auto	bật rieu hòa auto	rule
+ac_auto	bật vieu hòa auto	rule
+defrost_rear	bật xay kính sau	rule
+defrost_rear	bật sấy kieng sau	rule
+defrost_rear	bật sấy kính xau	rule
+defrost_rear	bật sấy kim sau	rule
+defrost_rear	bật sấy kin sau	rule
+anion	bật iol âm	rule
+anion	bật iong âm	rule
+steer_heat	bật sua vô lăng	rule
+steer_heat	bật sưởi do lăng	rule
+steer_heat	bật sưởi vô lan	rule
+steer_heat	bật sui vô lăng	rule
+steer_heat	bật sưởi gio lăng	rule
+steer_heat	bật sưởi vô nang	rule
+steer_heat	bật xuoi vô lăng	rule
+steer_heat	bật sưởi vuo lăng	rule
+pm25_clean_now	bật lop ngay	rule
+pm25_clean_now	bật lọc nay	rule
+pm25_clean_now	bật lot ngay	rule
+pm25_clean_now	bật luoc ngay	rule
+pm25_clean_now	bật noc ngay	rule
+win_lf	mở kieng trước trái	rule
+win_lf	mở kính chuoc trái	rule
+win_lf	mở kính trước chai	rule
+win_lf	mở kim trước trái	rule
+win_lf	mở kính troc trái	rule
+win_lf	mở kin trước trái	rule
+win_lf	mở kính truop trái	rule
+win_lf	mở kính truot trái	rule
+win_rf	mở kieng trước phải	rule
+win_rf	mở kính chuoc phải	rule
+win_rf	mở kim trước phải	rule
+win_rf	mở kính troc phải	rule
+win_rf	mở kin trước phải	rule
+win_rf	mở kính truop phải	rule
+win_rf	mở kính truot phải	rule
+win_lr	mở kieng sau trái	rule
+win_lr	mở kính xau trái	rule
+win_lr	mở kính sau chai	rule
+win_lr	mở kim sau trái	rule
+win_lr	mở kin sau trái	rule
+win_rr	mở kieng sau phải	rule
+win_rr	mở kính xau phải	rule
+win_rr	mở kim sau phải	rule
+win_rr	mở kin sau phải	rule
+windows_all	mở cat cả kính	rule
+windows_all	mở tất pa kính	rule
+windows_all	mở tất cả kieng	rule
+windows_all	mở tac cả kính	rule
+windows_all	mở tất ta kính	rule
+windows_all	mở tất cả kim	rule
+windows_all	mở tất cả kin	rule
+sunshade	mở dem che nắng	rule
+sunshade	mở rèm tre nắng	rule
+sunshade	mở rèm che lang	rule
+sunshade	mở gem che nắng	rule
+sunshade	mở rèm che nan	rule
+sunshade	mở rèm che ngang	rule
+child_lock	bật khóa che em	rule
+seat_memory	bật nhuo ghế lái	rule
+seat_memory	bật nhớ ghế da	rule
+seat_memory	bật nhớ ghế gai	rule
+seat_memory	bật nhớ ghế nai	rule
+ambient_power	bật dang viền cabin	rule
+ambient_power	bật đèn dien cabin	rule
+ambient_power	bật đèn viền cabil	rule
+ambient_power	bật del viền cabin	rule
+ambient_power	bật đèn giien cabin	rule
+ambient_power	bật đèn viền cabing	rule
+ambient_power	bật deng viền cabin	rule
+ambient_power	bật đèn viel cabin	rule
+ambient_color	bật màu dang viền	rule
+ambient_color	bật màu đèn dien	rule
+ambient_color	bật màu del viền	rule
+ambient_color	bật màu đèn giien	rule
+ambient_color	bật màu deng viền	rule
+ambient_color	bật màu đèn viel	rule
+ambient_color	bật màu gien viền	rule
+ambient_color	bật màu đèn vieng	rule
+ambient_brightness	tăng duo sáng viền	rule
+ambient_brightness	tăng độ san viền	rule
+ambient_brightness	tăng độ sáng dien	rule
+ambient_brightness	tăng gio sáng viền	rule
+ambient_brightness	tăng độ xang viền	rule
+ambient_brightness	tăng độ sáng giien	rule
+ambient_brightness	tăng ro sáng viền	rule
+ambient_brightness	tăng độ sáng viel	rule
+ambient_music	bật dang viền theo nhạc	rule
+ambient_music	bật đèn dien theo nhạc	rule
+ambient_music	bật đèn viền theo nhap	rule
+ambient_music	bật del viền theo nhạc	rule
+ambient_music	bật đèn giien theo nhạc	rule
+ambient_music	bật đèn viền theo nhat	rule
+ambient_music	bật deng viền theo nhạc	rule
+ambient_music	bật đèn viel theo nhạc	rule
+headlight_mode	bật tre độ đèn pha	rule
+headlight_mode	bật chế duo đèn pha	rule
+headlight_mode	bật chế độ dang pha	rule
+headlight_mode	bật chế gio đèn pha	rule
+headlight_mode	bật chế độ del pha	rule
+headlight_mode	bật chế ro đèn pha	rule
+headlight_mode	bật chế độ deng pha	rule
+headlight_mode	bật chế vo đèn pha	rule
+regen_level	bật mup tái tạo	rule
+regen_level	bật mức cai tạo	rule
+regen_level	bật mức tái cao	rule
+regen_level	bật mut tái tạo	rule
+wireless_charge	bật sap không dây	rule
+wireless_charge	bật sạc khon dây	rule
+wireless_charge	bật sạc không giay	rule
+wireless_charge	bật sat không dây	rule
+wireless_charge	bật sạc khuong dây	rule
+wireless_charge	bật sạc không ray	rule
+wireless_charge	bật xac không dây	rule
+wireless_charge	bật sạc không vay	rule
+screen_rotation	bật soay màn hình	rule
+screen_rotation	bật xoay mal hình	rule
+screen_rotation	bật xoay mang hình	rule
+camera_view	bật cop camera	rule
+camera_view	bật góc pamera	rule
+camera_view	bật gop camera	rule
+camera_view	bật góc tamera	rule
+camera_view	bật got camera	rule
+camera_view	bật guoc camera	rule
+camera_view	bật roc camera	rule
+cluster_music	bật nhap trên cụm	rule
+cluster_music	bật nhạc chen cụm	rule
+cluster_music	bật nhạc trên pum	rule
+cluster_music	bật nhat trên cụm	rule
+cluster_music	bật nhạc trel cụm	rule
+cluster_music	bật nhạc trên tum	rule
+cluster_music	bật nhạc treng cụm	rule
+brightness_gear	tăng duo sáng màn	rule
+brightness_gear	tăng độ san màn	rule
+brightness_gear	tăng độ sáng mal	rule
+brightness_gear	tăng gio sáng màn	rule
+brightness_gear	tăng độ xang màn	rule
+brightness_gear	tăng độ sáng mang	rule
+brightness_gear	tăng ro sáng màn	rule
+brightness_gear	tăng vo sáng màn	rule
+hud_switch	bật hud kieng lái	rule
+hud_switch	bật hud kính da	rule
+hud_switch	bật hud kim lái	rule
+hud_switch	bật hud kính gai	rule
+hud_switch	bật hud kin lái	rule
+hud_switch	bật hud kính nai	rule
+hud_brightness	tăng duo sáng hud	rule
+hud_brightness	tăng độ san hud	rule
+hud_brightness	tăng gio sáng hud	rule
+hud_brightness	tăng độ xang hud	rule
+hud_brightness	tăng ro sáng hud	rule
+hud_brightness	tăng vo sáng hud	rule
+soc	xem ben soc	rule
+soc	xem pin sop	rule
+soc	xem bien soc	rule
+soc	xem pin sot	rule
+soc	xem bin soc	rule
+soc	xem pin suoc	rule
+soc	xem cin soc	rule
+soc	xem pin xoc	rule
+ev_range_km	xem cam hoạt động ev	rule
+ev_range_km	xem tầm hoac động ev	rule
+ev_range_km	xem tầm hoạt don ev	rule
+ev_range_km	xem tầm hoạt duong ev	rule
+ev_range_km	xem tầm hoạt giong ev	rule
+ev_range_km	xem tầm hoạt rong ev	rule
+ev_range_km	xem tầm hoạt vong ev	rule
+fuel_range_km	xem cam hoạt động xăng	rule
+fuel_range_km	xem tầm hoac động xăng	rule
+fuel_range_km	xem tầm hoạt don xăng	rule
+fuel_range_km	xem tầm hoạt động sang	rule
+fuel_range_km	xem tầm hoạt duong xăng	rule
+fuel_range_km	xem tầm hoạt động xan	rule
+fuel_range_km	xem tầm hoạt giong xăng	rule
+fuel_range_km	xem tầm hoạt rong xăng	rule
+fuel_pct	xem mup xăng	rule
+fuel_pct	xem mức sang	rule
+fuel_pct	xem mut xăng	rule
+fuel_pct	xem mức xan	rule
+odometer	xem odo cong	rule
+odometer	xem odo ton	rule
+odometer	xem odo tuong	rule
+ev_mileage_km	xem km tray điện	rule
+ev_mileage_km	xem km chạy diel	rule
+ev_mileage_km	xem km chạy dieng	rule
+ev_mileage_km	xem km chạy giien	rule
+ev_mileage_km	xem km chạy rien	rule
+ev_mileage_km	xem km chạy vien	rule
+trip_km	xem quan đường chuyến	rule
+trip_km	xem quãng dong chuyến	rule
+trip_km	xem quãng đường chuyel	rule
+trip_km	xem quãng duon chuyến	rule
+trip_km	xem quãng đường chuyeng	rule
+trip_km	xem quãng giuong chuyến	rule
+trip_km	xem quãng đường truyen	rule
+trip_km	xem quãng ruong chuyến	rule
+trip_hours	xem thời dan chuyến	rule
+trip_hours	xem thời gian chuyel	rule
+trip_hours	xem thời gial chuyến	rule
+trip_hours	xem thời gian chuyeng	rule
+trip_hours	xem thời giang chuyến	rule
+trip_hours	xem thời gian truyen	rule
+trip_hours	xem thời van chuyến	rule
+trip_kwh	xem diel tiêu thụ chuyến	rule
+trip_kwh	xem điện cieu thụ chuyến	rule
+trip_kwh	xem điện tiêu thụ chuyel	rule
+trip_kwh	xem dieng tiêu thụ chuyến	rule
+trip_kwh	xem điện tiêu thụ chuyeng	rule
+trip_kwh	xem giien tiêu thụ chuyến	rule
+trip_kwh	xem điện tiêu thụ truyen	rule
+trip_kwh	xem rien tiêu thụ chuyến	rule
+consumption_50km	xem cieu thụ 50km	rule
+motor_power	xem con suất mô tơ	rule
+motor_power	xem công suac mô tơ	rule
+motor_power	xem công suất ma tơ	rule
+motor_power	xem công suất mô co	rule
+motor_power	xem cuong suất mô tơ	rule
+motor_power	xem công xuat mô tơ	rule
+motor_power	xem công suất muo tơ	rule
+motor_power	xem công suất mô tuo	rule
+batt_temp	xem mat độ pin	rule
+batt_temp	xem nhiệt duo pin	rule
+batt_temp	xem nhiệt độ ben	rule
+batt_temp	xem nhiec độ pin	rule
+batt_temp	xem nhiệt gio pin	rule
+batt_temp	xem nhiệt độ bien	rule
+batt_temp	xem nhiệt ro pin	rule
+batt_temp	xem nhiệt độ bin	rule
+cell_temp_high	xem mat cell cao	rule
+cell_temp_high	xem nhiệt pell cao	rule
+cell_temp_high	xem nhiệt cell pao	rule
+cell_temp_high	xem nhiec cell cao	rule
+cell_temp_high	xem nhiệt tell cao	rule
+cell_temp_high	xem nhiệt cell tao	rule
+cell_temp_low	xem mat cell thấp	rule
+cell_temp_low	xem nhiệt pell thấp	rule
+cell_temp_low	xem nhiệt cell thac	rule
+cell_temp_low	xem nhiec cell thấp	rule
+cell_temp_low	xem nhiệt tell thấp	rule
+cell_temp_avg	xem mat cell tb	rule
+cell_temp_avg	xem nhiệt pell tb	rule
+cell_temp_avg	xem nhiệt cell cb	rule
+cell_temp_avg	xem nhiec cell tb	rule
+cell_temp_avg	xem nhiệt tell tb	rule
+cell_v_high	xem ac cell cao	rule
+cell_v_high	xem áp pell cao	rule
+cell_v_high	xem áp cell pao	rule
+cell_v_high	xem áp tell cao	rule
+cell_v_high	xem áp cell tao	rule
+cell_v_low	xem ac cell thấp	rule
+cell_v_low	xem áp pell thấp	rule
+cell_v_low	xem áp cell thac	rule
+cell_v_low	xem áp tell thấp	rule
+soh_oem	xem sup khỏe pin soh	rule
+soh_oem	xem sức khỏe ben soh	rule
+soh_oem	xem sức khỏe pin xoh	rule
+soh_oem	xem sut khỏe pin soh	rule
+soh_oem	xem sức khỏe bien soh	rule
+soh_oem	xem xuc khỏe pin soh	rule
+soh_oem	xem sức khỏe bin soh	rule
+soh_oem	xem sức khỏe cin soh	rule
+target_soc	xem mup tiêu sạc	rule
+target_soc	xem mục cieu sạc	rule
+target_soc	xem mục tiêu sap	rule
+target_soc	xem mut tiêu sạc	rule
+target_soc	xem mục tiêu sat	rule
+target_soc	xem mục tiêu xac	rule
+speed	xem coc độ	rule
+speed	xem tốc duo	rule
+speed	xem top độ	rule
+speed	xem tốc gio	rule
+speed	xem tot độ	rule
+speed	xem tốc ro	rule
+speed	xem tuoc độ	rule
+speed	xem tốc vo	rule
+accel_pct	xem chal ga	rule
+accel_pct	xem chân ra	rule
+accel_pct	xem chang ga	rule
+accel_pct	xem tran ga	rule
+brake_pct	xem chal phanh	rule
+brake_pct	xem chang phanh	rule
+brake_pct	xem tran phanh	rule
+motor_front_rpm	xem dong tua mô tơ trước	rule
+motor_front_rpm	xem vòng cua mô tơ trước	rule
+motor_front_rpm	xem vòng tua ma tơ trước	rule
+motor_front_rpm	xem vòng tua mô co trước	rule
+motor_front_rpm	xem vòng tua mô tơ chuoc	rule
+motor_front_rpm	xem giong tua mô tơ trước	rule
+motor_front_rpm	xem vòng tua muo tơ trước	rule
+motor_front_rpm	xem vòng tua mô tuo trước	rule
+motor_rear_rpm	xem dong tua mô tơ sau	rule
+motor_rear_rpm	xem vòng cua mô tơ sau	rule
+motor_rear_rpm	xem vòng tua ma tơ sau	rule
+motor_rear_rpm	xem vòng tua mô co sau	rule
+motor_rear_rpm	xem vòng tua mô tơ xau	rule
+motor_rear_rpm	xem giong tua mô tơ sau	rule
+motor_rear_rpm	xem vòng tua muo tơ sau	rule
+motor_rear_rpm	xem vòng tua mô tuo sau	rule
+motor_front_torque	xem ma men mô tơ trước	rule
+motor_front_torque	xem mô mel mô tơ trước	rule
+motor_front_torque	xem mô men ma tơ trước	rule
+motor_front_torque	xem mô men mô co trước	rule
+motor_front_torque	xem mô men mô tơ chuoc	rule
+motor_front_torque	xem muo men mô tơ trước	rule
+motor_front_torque	xem mô meng mô tơ trước	rule
+motor_front_torque	xem mô men muo tơ trước	rule
+engine_rpm	xem dong tua máy xăng	rule
+engine_rpm	xem vòng cua máy xăng	rule
+engine_rpm	xem vòng tua het xăng	rule
+engine_rpm	xem vòng tua máy sang	rule
+engine_rpm	xem giong tua máy xăng	rule
+engine_rpm	xem vòng tua máy xan	rule
+engine_rpm	xem von tua máy xăng	rule
+engine_rpm	xem vuong tua máy xăng	rule
+steering_deg	xem cop vô lăng	rule
+steering_deg	xem góc do lăng	rule
+steering_deg	xem góc vô lan	rule
+steering_deg	xem gop vô lăng	rule
+steering_deg	xem góc gio lăng	rule
+steering_deg	xem góc vô nang	rule
+steering_deg	xem got vô lăng	rule
+steering_deg	xem góc vuo lăng	rule
+wheel_speed	xem coc độ bánh	rule
+wheel_speed	xem tốc duo bánh	rule
+wheel_speed	xem top độ bánh	rule
+wheel_speed	xem tốc gio bánh	rule
+wheel_speed	xem tot độ bánh	rule
+wheel_speed	xem tốc ro bánh	rule
+wheel_speed	xem tuoc độ bánh	rule
+wheel_speed	xem tốc vo bánh	rule
+slope_deg	xem duo dốc	rule
+slope_deg	xem độ dop	rule
+slope_deg	xem gio dốc	rule
+slope_deg	xem độ dot	rule
+slope_deg	xem ro dốc	rule
+slope_deg	xem độ duoc	rule
+slope_deg	xem vo dốc	rule
+slope_deg	xem độ gioc	rule
+gear	xem suo	rule
+gear	xem xo	rule
+op_mode	xem tre độ lái	rule
+op_mode	xem chế duo lái	rule
+op_mode	xem chế độ da	rule
+op_mode	xem chế gio lái	rule
+op_mode	xem chế độ gai	rule
+op_mode	xem chế ro lái	rule
+op_mode	xem chế độ nai	rule
+op_mode	xem chế vo lái	rule
+energy_mode	xem tre độ năng lượng	rule
+energy_mode	xem chế duo năng lượng	rule
+energy_mode	xem chế độ lang lượng	rule
+energy_mode	xem chế độ năng long	rule
+energy_mode	xem chế gio năng lượng	rule
+energy_mode	xem chế độ nan lượng	rule
+energy_mode	xem chế độ năng luon	rule
+energy_mode	xem chế ro năng lượng	rule
+pm25_level	xem mup bụi mịn	rule
+pm25_level	xem mức bụi mil	rule
+pm25_level	xem mut bụi mịn	rule
+pm25_level	xem mức bụi ming	rule
+pm25_value	xem bụi mil pm2 5	rule
+pm25_value	xem bụi mịn cm2 5	rule
+pm25_value	xem bụi ming pm2 5	rule
+pm25_online	xem pam biến bụi mịn	rule
+pm25_online	xem cảm biel bụi mịn	rule
+pm25_online	xem cảm biến bụi mil	rule
+pm25_online	xem tam biến bụi mịn	rule
+pm25_online	xem cảm bieng bụi mịn	rule
+pm25_online	xem cảm biến bụi ming	rule
+pm25_online	xem cảm pin bụi mịn	rule
+cabin_temp	xem mat trong cabin	rule
+cabin_temp	xem nhiệt chong cabin	rule
+cabin_temp	xem nhiệt trong cabil	rule
+cabin_temp	xem nhiec trong cabin	rule
+cabin_temp	xem nhiệt tron cabin	rule
+cabin_temp	xem nhiệt trong cabing	rule
+cabin_temp	xem nhiệt truong cabin	rule
+cabin_temp	xem nhiệt trong pabin	rule
+inside_temp	xem mat cài đặt	rule
+inside_temp	xem nhiệt pai đặt	rule
+inside_temp	xem nhiệt cài dac	rule
+inside_temp	xem nhiec cài đặt	rule
+inside_temp	xem nhiệt tai đặt	rule
+inside_temp	xem nhiệt cài giat	rule
+inside_temp	xem nhiệt cài rat	rule
+inside_temp	xem nhiệt cài vat	rule
+ext_temp	xem mat ngoài xe	rule
+ext_temp	xem nhiệt noai xe	rule
+ext_temp	xem nhiệt ngoài se	rule
+ext_temp	xem nhiec ngoài xe	rule
+ext_temp	xem nhiệt ngoài xem	rule
+coolant_temp	xem mat nước làm mát	rule
+coolant_temp	xem nhiệt luoc làm mát	rule
+coolant_temp	xem nhiệt nước nam mát	rule
+coolant_temp	xem nhiệt nước làm mac	rule
+coolant_temp	xem nhiec nước làm mát	rule
+coolant_temp	xem nhiệt nguoc làm mát	rule
+coolant_temp	xem nhiệt nước làm nhiet	rule
+coolant_temp	xem nhiệt noc làm mát	rule
+ac_on	xem giieu hòa	rule
+ac_on	xem rieu hòa	rule
+ac_on	xem vieu hòa	rule
+ac_wind	xem mup quạt gió	rule
+ac_wind	xem mức quac gió	rule
+ac_wind	xem mức quạt do	rule
+ac_wind	xem mut quạt gió	rule
+ac_wind	xem mức quạt giuo	rule
+ac_wind	xem mức quạt vo	rule
+ac_cycle	xem tre độ lấy gió	rule
+ac_cycle	xem chế duo lấy gió	rule
+ac_cycle	xem chế độ nay gió	rule
+ac_cycle	xem chế độ lấy do	rule
+ac_cycle	xem chế gio lấy gió	rule
+ac_cycle	xem chế độ lấy giuo	rule
+ac_cycle	xem chế ro lấy gió	rule
+ac_cycle	xem chế độ lấy vo	rule
+temp_unit	xem dol vị nhiệt	rule
+temp_unit	xem đơn di nhiệt	rule
+temp_unit	xem đơn vị mat	rule
+temp_unit	xem dong vị nhiệt	rule
+temp_unit	xem đơn gii nhiệt	rule
+temp_unit	xem đơn vị nhiec	rule
+temp_unit	xem duon vị nhiệt	rule
+temp_unit	xem gion vị nhiệt	rule
+anion_state	xem iol âm	rule
+anion_state	xem iong âm	rule
+seat_vent_state	xem mup ghế mát	rule
+seat_vent_state	xem mức ghế mac	rule
+seat_vent_state	xem mut ghế mát	rule
+seat_vent_state	xem mức ghế nhiet	rule
+seat_heat_state	xem mup ghế sưởi	rule
+seat_heat_state	xem mức ghế sua	rule
+seat_heat_state	xem mut ghế sưởi	rule
+seat_heat_state	xem mức ghế sui	rule
+seat_heat_state	xem mức ghế xuoi	rule
+defrost_front_state	xem chang thái sấy trước	rule
+defrost_front_state	xem trạng thái xay trước	rule
+defrost_front_state	xem trạng thái sấy chuoc	rule
+defrost_front_state	xem tran thái sấy trước	rule
+defrost_front_state	xem trạng thái sấy troc	rule
+defrost_front_state	xem trạng thái sấy truop	rule
+defrost_front_state	xem trạng thái sấy truot	rule
+defrost_rear_state	xem chang thái sấy sau	rule
+defrost_rear_state	xem trạng thái xay sau	rule
+defrost_rear_state	xem trạng thái sấy xau	rule
+defrost_rear_state	xem tran thái sấy sau	rule
+ac_mode_auto	xem tre độ điều hòa	rule
+ac_mode_auto	xem chế duo điều hòa	rule
+ac_mode_auto	xem chế độ giieu hòa	rule
+ac_mode_auto	xem chế gio điều hòa	rule
+ac_mode_auto	xem chế độ rieu hòa	rule
+ac_mode_auto	xem chế ro điều hòa	rule
+ac_mode_auto	xem chế độ vieu hòa	rule
+ac_mode_auto	xem chế vo điều hòa	rule
+tyre_p_fl	xem ac lốp trước trái	rule
+tyre_p_fl	xem áp loc trước trái	rule
+tyre_p_fl	xem áp lốp chuoc trái	rule
+tyre_p_fl	xem áp lốp trước chai	rule
+tyre_p_fl	xem áp luop trước trái	rule
+tyre_p_fl	xem áp lốp troc trái	rule
+tyre_p_fl	xem áp nop trước trái	rule
+tyre_p_fl	xem áp lốp truop trái	rule
+tyre_p_fr	xem ac lốp trước phải	rule
+tyre_p_fr	xem áp loc trước phải	rule
+tyre_p_fr	xem áp lốp chuoc phải	rule
+tyre_p_fr	xem áp luop trước phải	rule
+tyre_p_fr	xem áp lốp troc phải	rule
+tyre_p_fr	xem áp nop trước phải	rule
+tyre_p_fr	xem áp lốp truop phải	rule
+tyre_p_fr	xem áp lốp truot phải	rule
+tyre_p_rl	xem ac lốp sau trái	rule
+tyre_p_rl	xem áp loc sau trái	rule
+tyre_p_rl	xem áp lốp xau trái	rule
+tyre_p_rl	xem áp lốp sau chai	rule
+tyre_p_rl	xem áp luop sau trái	rule
+tyre_p_rl	xem áp nop sau trái	rule
+tyre_p_rr	xem ac lốp sau phải	rule
+tyre_p_rr	xem áp loc sau phải	rule
+tyre_p_rr	xem áp lốp xau phải	rule
+tyre_p_rr	xem áp luop sau phải	rule
+tyre_p_rr	xem áp nop sau phải	rule
+tyre_t_fl	xem mat lốp trước trái	rule
+tyre_t_fl	xem nhiệt loc trước trái	rule
+tyre_t_fl	xem nhiệt lốp chuoc trái	rule
+tyre_t_fl	xem nhiệt lốp trước chai	rule
+tyre_t_fl	xem nhiec lốp trước trái	rule
+tyre_t_fl	xem nhiệt luop trước trái	rule
+tyre_t_fl	xem nhiệt lốp troc trái	rule
+tyre_t_fl	xem nhiệt nop trước trái	rule
+tyre_t_fr	xem mat lốp trước phải	rule
+tyre_t_fr	xem nhiệt loc trước phải	rule
+tyre_t_fr	xem nhiệt lốp chuoc phải	rule
+tyre_t_fr	xem nhiec lốp trước phải	rule
+tyre_t_fr	xem nhiệt luop trước phải	rule
+tyre_t_fr	xem nhiệt lốp troc phải	rule
+tyre_t_fr	xem nhiệt nop trước phải	rule
+tyre_t_fr	xem nhiệt lốp truop phải	rule
+tyre_t_rl	xem mat lốp sau trái	rule
+tyre_t_rl	xem nhiệt loc sau trái	rule
+tyre_t_rl	xem nhiệt lốp xau trái	rule
+tyre_t_rl	xem nhiệt lốp sau chai	rule
+tyre_t_rl	xem nhiec lốp sau trái	rule
+tyre_t_rl	xem nhiệt luop sau trái	rule
+tyre_t_rl	xem nhiệt nop sau trái	rule
+tyre_t_rr	xem mat lốp sau phải	rule
+tyre_t_rr	xem nhiệt loc sau phải	rule
+tyre_t_rr	xem nhiệt lốp xau phải	rule
+tyre_t_rr	xem nhiec lốp sau phải	rule
+tyre_t_rr	xem nhiệt luop sau phải	rule
+tyre_t_rr	xem nhiệt nop sau phải	rule
+window_lf	xem kieng trước trái	rule
+window_lf	xem kính chuoc trái	rule
+window_lf	xem kính trước chai	rule
+window_lf	xem kim trước trái	rule
+window_lf	xem kính troc trái	rule
+window_lf	xem kin trước trái	rule
+window_lf	xem kính truop trái	rule
+window_lf	xem kính truot trái	rule
+window_rf	xem kieng trước phải	rule
+window_rf	xem kính chuoc phải	rule
+window_rf	xem kim trước phải	rule
+window_rf	xem kính troc phải	rule
+window_rf	xem kin trước phải	rule
+window_rf	xem kính truop phải	rule
+window_rf	xem kính truot phải	rule
+window_lr	xem kieng sau trái	rule
+window_lr	xem kính xau trái	rule
+window_lr	xem kính sau chai	rule
+window_lr	xem kim sau trái	rule
+window_lr	xem kin sau trái	rule
+window_rr	xem kieng sau phải	rule
+window_rr	xem kính xau phải	rule
+window_rr	xem kim sau phải	rule
+window_rr	xem kin sau phải	rule
+door_lf	xem pua trước trái	rule
+door_lf	xem cửa chuoc trái	rule
+door_lf	xem cửa trước chai	rule
+door_lf	xem tua trước trái	rule
+door_lf	xem cửa troc trái	rule
+door_lf	xem cửa truop trái	rule
+door_lf	xem cửa truot trái	rule
+door_rf	xem pua trước phải	rule
+door_rf	xem cửa chuoc phải	rule
+door_rf	xem tua trước phải	rule
+door_rf	xem cửa troc phải	rule
+door_rf	xem cửa truop phải	rule
+door_rf	xem cửa truot phải	rule
+door_lr	xem pua sau trái	rule
+door_lr	xem cửa xau trái	rule
+door_lr	xem cửa sau chai	rule
+door_lr	xem tua sau trái	rule
+door_rr	xem pua sau phải	rule
+door_rr	xem cửa xau phải	rule
+door_rr	xem tua sau phải	rule
+tailgate_status	xem cap sau	rule
+tailgate_status	xem cốp xau	rule
+tailgate_status	xem coc sau	rule
+tailgate_status	xem cuop sau	rule
+tailgate_status	xem goc sau	rule
+tailgate_status	xem pop sau	rule
+tailgate_status	xem top sau	rule
+tailgate_position	xem di trí cốp	rule
+tailgate_position	xem vị chi cốp	rule
+tailgate_position	xem vị trí cap	rule
+tailgate_position	xem gii trí cốp	rule
+tailgate_position	xem vị trí coc	rule
+tailgate_position	xem vị trí cuop	rule
+tailgate_position	xem vị trí goc	rule
+tailgate_position	xem vị trí pop	rule
+sunroof_state	xem pua sổ trời	rule
+sunroof_state	xem cửa suo trời	rule
+sunroof_state	xem cửa sổ choi	rule
+sunroof_state	xem tua sổ trời	rule
+sunroof_state	xem cửa xo trời	rule
+sunroof_pos	xem di trí cửa sổ trời	rule
+sunroof_pos	xem vị chi cửa sổ trời	rule
+sunroof_pos	xem vị trí pua sổ trời	rule
+sunroof_pos	xem vị trí cửa suo trời	rule
+sunroof_pos	xem vị trí cửa sổ choi	rule
+sunroof_pos	xem gii trí cửa sổ trời	rule
+sunroof_pos	xem vị trí tua sổ trời	rule
+sunroof_pos	xem vị trí cửa xo trời	rule
+sunshade_pct	xem dem che nắng	rule
+sunshade_pct	xem rèm tre nắng	rule
+sunshade_pct	xem rèm che lang	rule
+sunshade_pct	xem gem che nắng	rule
+sunshade_pct	xem rèm che nan	rule
+sunshade_pct	xem rèm che ngang	rule
+mirror_fold	xem gong chiếu hậu	rule
+mirror_fold	xem gương trieu hậu	rule
+mirror_fold	xem guon chiếu hậu	rule
+mirror_fold	xem ruong chiếu hậu	rule
+wiper_state	xem gac mưa	rule
+wiper_state	xem rat mưa	rule
+power_level	xem ngon xe	rule
+power_level	xem nguồn se	rule
+power_level	xem nguol xe	rule
+power_level	xem nguồn xem	rule
+power_level	xem nguong xe	rule
+power_level	xem nuon xe	rule
+vehicle_type	xem mẫu se	rule
+vehicle_type	xem mẫu xem	rule
+emergency_alarm	xem panh báo khẩn	rule
+emergency_alarm	xem cảnh báo khal	rule
+emergency_alarm	xem tanh báo khẩn	rule
+emergency_alarm	xem cảnh báo khang	rule
+light_low_beam	xem dang cốt	rule
+light_low_beam	xem đèn coc	rule
+light_low_beam	xem del cốt	rule
+light_low_beam	xem đèn cuot	rule
+light_low_beam	xem deng cốt	rule
+light_low_beam	xem đèn pot	rule
+light_low_beam	xem gien cốt	rule
+light_low_beam	xem đèn tot	rule
+light_high_beam	xem dang pha	rule
+light_high_beam	xem del pha	rule
+light_high_beam	xem deng pha	rule
+light_high_beam	xem gien pha	rule
+light_high_beam	xem ren pha	rule
+light_high_beam	xem ven pha	rule
+light_front_fog	xem dang sương mù trước	rule
+light_front_fog	xem đèn song mù trước	rule
+light_front_fog	xem đèn sương mù chuoc	rule
+light_front_fog	xem del sương mù trước	rule
+light_front_fog	xem đèn suon mù trước	rule
+light_front_fog	xem đèn sương mù troc	rule
+light_front_fog	xem deng sương mù trước	rule
+light_front_fog	xem đèn xuong mù trước	rule
+light_rear_fog	xem dang sương mù sau	rule
+light_rear_fog	xem đèn song mù sau	rule
+light_rear_fog	xem đèn sương mù xau	rule
+light_rear_fog	xem del sương mù sau	rule
+light_rear_fog	xem đèn suon mù sau	rule
+light_rear_fog	xem deng sương mù sau	rule
+light_rear_fog	xem đèn xuong mù sau	rule
+light_rear_fog	xem gien sương mù sau	rule
+light_left_turn	xem si nhan trái	rule
+light_left_turn	xem xi nhal trái	rule
+light_left_turn	xem xi nhan chai	rule
+light_left_turn	xem xi nhang trái	rule
+light_right_turn	xem si nhan phải	rule
+light_right_turn	xem xi nhal phải	rule
+light_right_turn	xem xi nhang phải	rule
+light_side	xem dang hông	rule
+light_side	xem đèn hon	rule
+light_side	xem del hông	rule
+light_side	xem đèn huong	rule
+light_side	xem deng hông	rule
+light_side	xem gien hông	rule
+light_side	xem ren hông	rule
+light_side	xem ven hông	rule
+light_drl	xem dang ban ngày	rule
+light_drl	xem đèn bal ngày	rule
+light_drl	xem đèn ban nay	rule
+light_drl	xem del ban ngày	rule
+light_drl	xem đèn bang ngày	rule
+light_drl	xem deng ban ngày	rule
+light_drl	xem gien ban ngày	rule
+light_drl	xem ren ban ngày	rule
+headlight_feedback	xem tre độ đèn pha	rule
+headlight_feedback	xem chế duo đèn pha	rule
+headlight_feedback	xem chế độ dang pha	rule
+headlight_feedback	xem chế gio đèn pha	rule
+headlight_feedback	xem chế độ del pha	rule
+headlight_feedback	xem chế ro đèn pha	rule
+headlight_feedback	xem chế độ deng pha	rule
+headlight_feedback	xem chế vo đèn pha	rule
+ambient_enabled	xem dang viền cabin	rule
+ambient_enabled	xem đèn dien cabin	rule
+ambient_enabled	xem đèn viền cabil	rule
+ambient_enabled	xem del viền cabin	rule
+ambient_enabled	xem đèn giien cabin	rule
+ambient_enabled	xem đèn viền cabing	rule
+ambient_enabled	xem deng viền cabin	rule
+ambient_enabled	xem đèn viel cabin	rule
+ambient_front_color	xem màu dien trước	rule
+ambient_front_color	xem màu viền chuoc	rule
+ambient_front_color	xem màu giien trước	rule
+ambient_front_color	xem màu viền troc	rule
+ambient_front_color	xem màu viel trước	rule
+ambient_front_color	xem màu viền truop	rule
+ambient_front_color	xem màu vieng trước	rule
+ambient_front_color	xem màu viền truot	rule
+ambient_rear_color	xem màu dien sau	rule
+ambient_rear_color	xem màu viền xau	rule
+ambient_rear_color	xem màu giien sau	rule
+ambient_rear_color	xem màu viel sau	rule
+ambient_rear_color	xem màu vieng sau	rule
+ambient_front_brightness	xem duo sáng viền trước	rule
+ambient_front_brightness	xem độ san viền trước	rule
+ambient_front_brightness	xem độ sáng dien trước	rule
+ambient_front_brightness	xem độ sáng viền chuoc	rule
+ambient_front_brightness	xem gio sáng viền trước	rule
+ambient_front_brightness	xem độ xang viền trước	rule
+ambient_front_brightness	xem độ sáng giien trước	rule
+ambient_front_brightness	xem độ sáng viền troc	rule
+ambient_rear_brightness	xem duo sáng viền sau	rule
+ambient_rear_brightness	xem độ san viền sau	rule
+ambient_rear_brightness	xem độ sáng dien sau	rule
+ambient_rear_brightness	xem độ sáng viền xau	rule
+ambient_rear_brightness	xem gio sáng viền sau	rule
+ambient_rear_brightness	xem độ xang viền sau	rule
+ambient_rear_brightness	xem độ sáng giien sau	rule
+ambient_rear_brightness	xem ro sáng viền sau	rule
+volt_12v	xem ap quy 12v	rule
+volt_12v	xem at quy 12v	rule
+volt_12v_level	xem mup ắc quy 12v	rule
+volt_12v_level	xem mức ap quy 12v	rule
+volt_12v_level	xem mut ắc quy 12v	rule
+volt_12v_level	xem mức at quy 12v	rule
+vin	xem suo vin	rule
+vin	xem số din	rule
+vin	xem xo vin	rule
+vin	xem số giin	rule
+vin	xem số vil	rule
+vin	xem số ving	rule
+engine_code	xem mo máy	rule
+engine_code	xem mã het	rule
+engine_coolant_level	xem mup nước làm mát	rule
+engine_coolant_level	xem mức luoc làm mát	rule
+engine_coolant_level	xem mức nước nam mát	rule
+engine_coolant_level	xem mức nước làm mac	rule
+engine_coolant_level	xem mut nước làm mát	rule
+engine_coolant_level	xem mức nguoc làm mát	rule
+engine_coolant_level	xem mức nước làm nhiet	rule
+engine_coolant_level	xem mức noc làm mát	rule
+oil_level	xem mup dầu	rule
+oil_level	xem mức giau	rule
+oil_level	xem mut dầu	rule
+oil_level	xem mức rau	rule
+oil_level	xem mức vau	rule
+gps_lat	xem di độ	rule
+gps_lat	xem vĩ duo	rule
+gps_lat	xem gii độ	rule
+gps_lat	xem vĩ gio	rule
+gps_lat	xem vĩ ro	rule
+gps_lat	xem vĩ vo	rule
+gps_lon	xem kieng độ	rule
+gps_lon	xem kinh duo	rule
+gps_lon	xem kim độ	rule
+gps_lon	xem kinh gio	rule
+gps_lon	xem kin độ	rule
+gps_lon	xem kinh ro	rule
+gps_lon	xem kinh vo	rule
+gps_elevation	xem pao độ	rule
+gps_elevation	xem cao duo	rule
+gps_elevation	xem tao độ	rule
+gps_elevation	xem cao gio	rule
+gps_elevation	xem cao ro	rule
+gps_elevation	xem cao vo	rule
+gps_heading	xem hong	rule
+gps_heading	xem huon	rule
+media_vol	xem âm long giải trí	rule
+media_vol	xem âm lượng dai trí	rule
+media_vol	xem âm lượng giải chi	rule
+media_vol	xem âm luon giải trí	rule
+media_vol	xem âm lượng vai trí	rule
+media_vol	xem âm nuong giải trí	rule
+mac_win_open_all	bật ma hết kính	rule
+mac_win_open_all	bật mở hec kính	rule
+mac_win_open_all	bật mở hết kieng	rule
+mac_win_open_all	bật muo hết kính	rule
+mac_win_open_all	bật mở may kính	rule
+mac_win_open_all	bật mở hết kim	rule
+mac_win_open_all	bật o hết kính	rule
+mac_win_open_all	bật mở hết kin	rule
+mac_win_close_all	bật don hết kính	rule
+mac_win_close_all	bật đóng hec kính	rule
+mac_win_close_all	bật đóng hết kieng	rule
+mac_win_close_all	bật duong hết kính	rule
+mac_win_close_all	bật đóng may kính	rule
+mac_win_close_all	bật đóng hết kim	rule
+mac_win_close_all	bật giong hết kính	rule
+mac_win_close_all	bật đóng hết kin	rule
+mac_door_light	bật ma cửa đèn đọc	rule
+mac_door_light	bật mở pua đèn đọc	rule
+mac_door_light	bật mở cửa dang đọc	rule
+mac_door_light	bật mở cửa đèn dop	rule
+mac_door_light	bật muo cửa đèn đọc	rule
+mac_door_light	bật mở tua đèn đọc	rule
+mac_door_light	bật mở cửa del đọc	rule
+mac_door_light	bật mở cửa đèn dot	rule
+mac_leave	bật doi xe	rule
+mac_leave	bật rời se	rule
+mac_leave	bật goi xe	rule
+mac_leave	bật rời xem	rule

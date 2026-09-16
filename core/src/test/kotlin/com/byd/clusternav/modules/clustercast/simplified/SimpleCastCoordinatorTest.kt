@@ -496,6 +496,28 @@ class SimpleCastCoordinatorTest {
         )
     }
 
+    /**
+     * KHOÁ [SOÁT 1.69 · P2]: **KHÔNG Error nào được kẹt vĩnh viễn** — mỗi lỗi tự hẹn giờ nhả về Idle/Off.
+     *
+     * Bản vá 1.69 chuyển lượt hồi lỗi từ worker cast sang `TIMEOUT_SCHEDULER` (đúng: `Thread.sleep(3000)` trên
+     * worker duy nhất nuốt lệnh chiếu kế tiếp). Nhưng khối ấy nay chạy **song song** với worker, nên
+     * `if (state is Error) setState(Idle)` hai bước có thể đè lên một trạng thái MỚI HƠN ⇒ đổi sang CAS trên
+     * ĐÚNG thực thể lỗi đã hẹn. Hệ quả: lỗi nào **không** tự hẹn giờ thì không còn ăn ké lượt hẹn của lỗi khác
+     * được nữa — `closeProjection` hỏng là đúng ca đó, và trước bản vá nó sẽ nằm lại `Error` mãi mãi.
+     *
+     * Chuyển `setError("Projection close failed")` về `setState(SimpleCastState.Error(...))` trần thì ca này ĐỎ.
+     */
+    @Test
+    fun `loi dong projection cung tu nha ve Off, khong ket o Error`() {
+        coordinator.openProjection()
+        awaitState<SimpleCastState.Idle>()
+        shell.shouldFail = true
+        coordinator.closeProjection()
+        awaitState<SimpleCastState.Error>()
+        // 3 s hồi lỗi + biên cho lượt lập lịch; hết hạn mà vẫn Error ⇒ đúng cái kẹt vĩnh viễn phải chặn.
+        awaitTrue(timeoutMs = 6_000) { coordinator.state !is SimpleCastState.Error }
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private inline fun <reified T : SimpleCastState> awaitState(timeoutMs: Long = 2000) {

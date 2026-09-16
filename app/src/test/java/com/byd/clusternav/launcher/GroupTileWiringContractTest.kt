@@ -380,8 +380,8 @@ class GroupTileWiringContractTest {
         assertEquals(
             mapOf(
                 "g_tyres" to listOf(4, 4), "g_windows" to listOf(4), "g_doors" to listOf(5, 5),
-                "g_lights" to listOf(5, 4), "g_ambient" to listOf(5), "g_climate" to listOf(5, 5),
-                "g_energy" to listOf(5, 5), "g_battery" to listOf(5, 4), "g_trip" to listOf(3, 3),
+                "g_lights" to listOf(5, 4), "g_ambient" to listOf(5), "g_climate" to listOf(5, 4, 4),
+                "g_energy" to listOf(3, 3), "g_battery" to listOf(5, 4), "g_trip" to listOf(3, 3),
             ),
             strip,
             "dải STRIP (trần 5) đổi hình dạng",
@@ -392,8 +392,10 @@ class GroupTileWiringContractTest {
         assertEquals(
             mapOf(
                 "g_tyres" to listOf(3, 2, 2), "g_windows" to listOf(3), "g_doors" to listOf(3, 3, 3),
-                "g_lights" to listOf(3, 3, 2), "g_ambient" to listOf(2, 2), "g_climate" to listOf(3, 3, 3),
-                "g_energy" to listOf(3, 3, 3), "g_battery" to listOf(3, 3, 2), "g_trip" to listOf(3, 2),
+                "g_lights" to listOf(3, 3, 2), "g_ambient" to listOf(2, 2), "g_climate" to listOf(3, 3, 3, 3),
+                // ⚠ [(V) FEATURE-FILTER 2026-09-17] Nhóm Năng lượng 10 → 6 ô (5 ô sạc xoá theo lệnh owner,
+                //    `consumption_50km` thêm vào): STRIP [5,5] → [3,3] · CARD [3,3,3] → [3,2].
+                "g_energy" to listOf(3, 2), "g_battery" to listOf(3, 3, 2), "g_trip" to listOf(3, 2),
             ),
             card,
             "số phụ của thẻ CARD (trần 3) đổi hình dạng",
@@ -402,10 +404,12 @@ class GroupTileWiringContractTest {
             g.id to GroupTileView.rowsOf(g.writes, 6).map { it.size }
         }
         assertEquals(
-            mapOf("g_windows" to listOf(6), "g_doors" to listOf(6), "g_lights" to listOf(3)),
+            mapOf("g_windows" to listOf(6), "g_doors" to listOf(5), "g_lights" to listOf(3)),
             actions,
             "hàng nút (trần 6) đổi hình dạng — nhóm Đèn còn 3 nút sau [SOÁT P1-1] (bỏ `headl` vì trùng byte với " +
-                "`headlight_mode`); nếu con số này đổi tiếp thì phải xem lại thành viên nhóm, không sửa số cho xanh",
+                "`headlight_mode`), nhóm Cửa & khoang còn 5 nút sau (V) FEATURE-FILTER 2026-09-17 (bỏ " +
+                "`mirror_fold_btn` — owner chấm NO); nếu con số này đổi tiếp thì phải xem lại thành viên nhóm, " +
+                "không sửa số cho xanh",
         )
     }
 

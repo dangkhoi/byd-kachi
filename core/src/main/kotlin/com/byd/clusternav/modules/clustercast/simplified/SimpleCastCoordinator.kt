@@ -138,18 +138,29 @@ class SimpleCastCoordinator(
 
     private fun setState(new: SimpleCastState) {
         _state.set(new)
+        notifyState(new)
+    }
+
+    /** Phát cho người nghe (đã chụp danh sách dưới khoá) — tách khỏi [setState] để [setError] CAS được. */
+    private fun notifyState(new: SimpleCastState) {
         val copy = synchronized(listeners) { listeners.toList() }
         copy.forEach { it(new) }
     }
 
     /** Set error state with auto-recovery to Idle (or Off) after 3 seconds. */
     private fun setError(message: String) {
-        setState(SimpleCastState.Error(message))
-        executor.submit("error-recovery") {
-            Thread.sleep(3000)
-            if (state is SimpleCastState.Error) {
-                setState(if (projection.isOpen) SimpleCastState.Idle else SimpleCastState.Off)
-            }
+        val err = SimpleCastState.Error(message)
+        setState(err)
+        // KHÔNG xếp vào executor: `Thread.sleep(3000)` ở đó khoá worker duy nhất 3 giây, và với hàng đợi
+        // sức chứa 1 + DiscardOldestPolicy thì lệnh chiếu kế tiếp của người dùng bị vứt im lặng.
+        //
+        // ⚠ [SOÁT 1.69 · P2] Chính VÌ đã rời executor, chỗ này không còn được "kiểm rồi đặt": khối hồi lỗi nay
+        // chạy song song với worker cast, nên `if (state is Error) setState(Idle)` có thể đè một trạng thái MỚI
+        // HƠN lọt vào giữa hai bước (vd `Opening` của cú chiếu vừa bấm). CAS trên ĐÚNG thực thể lỗi đã hẹn đóng
+        // cả hai lỗ: không đè trạng thái mới hơn, và không nhả sớm một lỗi KHÁC tới sau.
+        executor.schedule(ERROR_RECOVERY_MS) {
+            val next = if (projection.isOpen) SimpleCastState.Idle else SimpleCastState.Off
+            if (_state.compareAndSet(err, next)) notifyState(next)
         }
     }
 
@@ -263,7 +274,10 @@ class SimpleCastCoordinator(
             undoTargetDisplay("closeProjection.clean")?.let { cleanDisplay(it) }
             setState(SimpleCastState.Closing)
             val ok = projection.close(displayId)
-            setState(if (ok) SimpleCastState.Off else SimpleCastState.Error("Projection close failed"))
+            // ⚠ [SOÁT 1.69 · P2] Qua [setError], không `setState(Error(...))` trần: sau bản vá CAS ở trên, chỉ lỗi
+            // nào TỰ hẹn giờ mới có đường nhả (trước đây nó **ăn ké** lượt hẹn của một `setError` khác tình cờ còn
+            // treo — một đường phục hồi không xác định). Bất biến: KHÔNG Error nào kẹt vĩnh viễn.
+            if (ok) setState(SimpleCastState.Off) else setError("Projection close failed")
         }
     }
 
@@ -654,7 +668,7 @@ class SimpleCastCoordinator(
         var currentStackId = -1
         var isPinned = false
         for (line in result.stdout.lines()) {
-            val stackMatch = Regex("""Stack id=(\d+).*displayId=(\d+)""").find(line)
+            val stackMatch = STACK_HEADER_WITH_ID.find(line)
             if (stackMatch != null) {
                 currentStackId = stackMatch.groupValues[1].toIntOrNull() ?: -1
                 currentDisplayId = stackMatch.groupValues[2].toIntOrNull() ?: -1
@@ -760,5 +774,11 @@ class SimpleCastCoordinator(
         private const val REPIN_PROBE_MIN_INTERVAL_MS = 4_000L
         /** After a re-pin, ignore the same package this long (avoid fighting a persistent external launch). */
         private const val REPIN_COOLDOWN_MS = 10_000L
+
+        /** Bao lâu sau khi vào Error thì tự nhả về Idle/Off. */
+        private const val ERROR_RECOVERY_MS = 3_000L
+
+        /** Biên dịch MỘT lần: [dismissPipOnDisplay] quét từng dòng của `am stack list`. */
+        private val STACK_HEADER_WITH_ID = Regex("""Stack id=(\d+).*displayId=(\d+)""")
     }
 }

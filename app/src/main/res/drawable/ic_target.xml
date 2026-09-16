@@ -1,5 +1,5 @@
 <!--
-  MỤC TIÊU SẠC (vòng ngắm) — cho `target_soc` (xem) và nút `target_soc_set` (đặt).
+  MỤC TIÊU SẠC (vòng ngắm) — cho `target_soc` (xem). ((V) 2026-09-17: nút `target_soc_set` đã gỡ.)
   [U6] Đây là một CON SỐ MONG MUỐN, không phải trạng thái hiện tại của pin — trước đây ô xem mang hình PIN (lẫn với
   SOC/SOH) còn nút mang TIA SÉT (lẫn với 4 nút sạc khác). Ô xem và nút dùng CÙNG hình vì chúng là một khái niệm;
   phân biệt xem/bấm nay nằm ở dòng phụ.

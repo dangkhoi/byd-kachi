@@ -106,12 +106,17 @@ class ControlTileFactory(
             typeface = Typeface.DEFAULT_BOLD; setPadding(dpi(ctx, Sp.S), 0, dpi(ctx, Sp.S), 0)
         }
         val minus = stepBtn("−"); val plus = stepBtn("+")
-        minus.setOnClickListener {
-            val nv = def.clamp(state.value(def) - def.step); state.setValue(def.id, nv); vtext.text = "$nv$unit"; control().step(def.id, nv)
+        // ⚠ H1 — mốc để cộng/trừ là mức THẬT của xe, không phải mức lạc quan trong [ControlTileState]: người lái chỉnh
+        // gió ở màn BYD gốc thì bảng kia không biết, nên nó vẫn giữ mặc định (gió 4 · nhiệt 22) và một cú bấm "+" nhảy
+        // mấy nấc cùng lúc — đúng lỗi tester 1.66 báo. Đọc `null` (off-car · nút chưa có đường đọc) ⇒ lùi về hành vi
+        // 1.68. MỘT lượt đọc cho MỘT cú chạm, KHÔNG đọc lúc dựng ô hay theo nhịp vẽ (ngân sách [ĐO xe 1.68] 33 lượt
+        // đọc HAL/phút) — nên nó chạy trên luồng vẽ y như lượt `step()` ghi ngay sau, không đổi mô hình luồng tệp này.
+        fun nudge(delta: Int) {
+            val base = runCatching { control().readState(def.id) }.getOrNull() ?: state.value(def)
+            val nv = def.clamp(base + delta); state.setValue(def.id, nv); vtext.text = "$nv$unit"; control().step(def.id, nv)
         }
-        plus.setOnClickListener {
-            val nv = def.clamp(state.value(def) + def.step); state.setValue(def.id, nv); vtext.text = "$nv$unit"; control().step(def.id, nv)
-        }
+        minus.setOnClickListener { nudge(-def.step) }
+        plus.setOnClickListener { nudge(def.step) }
         // Nút −/+ mang WEIGHT, chữ giá trị WRAP: chữ lấy đủ chỗ trước, hai nút chia phần còn lại ⇒ giá trị
         // không bao giờ bị bóp xuống hai dòng (lỗi [ĐO] khi hai nút dùng minWidth cố định).
         vtext.maxLines = 1
@@ -219,7 +224,7 @@ class ControlTileFactory(
             if (!state.beginRun(macro.id)) return@setOnClickListener
             applyBg(tile, true); tint(icon, label, true)
             val port = control()
-            Thread({
+            MacroExec.submit(macro.id) {                      // [SOÁT P3] luồng daemon + có trần, xem KDoc MacroExec
                 var res: MacroResult? = null
                 try {
                     res = MacroRunner.run(
@@ -261,7 +266,7 @@ class ControlTileFactory(
                         }
                     }
                 }
-            }, "macro-${macro.id}").start()
+            }
         }
         return if (macro.needsBadge()) withBadge(tile) else tile
     }

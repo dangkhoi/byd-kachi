@@ -1,6 +1,16 @@
 # Bảng kiểm tra từng chức năng xe — Kachi
 
-> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+> ⚠⚠ **BẢN CHỤP 2026-09-15 — ĐÃ LỖI THỜI, KHÔNG dùng để đi soát trên xe.** Bảng dưới liệt kê **123 thông tin + 64 hành động = 187 mục** của registry **ngày 2026-09-15**. Sau đó registry đổi hai lần và bảng này **chưa được sinh lại** (tệp không có script sinh riêng — nó là bản xuất tay từ công cụ trong app):
+>
+> - **(N) ADAS-PURGE 2026-09-16** — gỡ **27 mục** (10 nút + 17 thông tin an toàn/ADAS): `adas_slw` `adas_esp` `adas_tsr` `adas_lane` `adas_fcw` `adas_rcta` `adas_dow` `adas_cpd` `itac` `avh` · `seatbelt_driver` `seatbelt_passenger` `oms_driver` `oms_passenger` `child_presence` `speed_limit_warning` `bsd_fl_alarm` `bsd_fr_alarm` `lca_left` `lca_right` `rcta_left` `rcta_right` `dow_left` `dow_right` `radar_zones` `radar_volume` `esp_state` — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+> - **H1-T2 (1.69, 2026-09-16)** — **thêm 6 thông tin**: `seat_vent_state` `seat_heat_state` `defrost_front_state` `defrost_rear_state` `ac_mode_auto` `media_vol` (chưa có trong bảng dưới).
+> - **(V) FEATURE-FILTER 2026-09-17** — gỡ thêm **19 mục**, gồm **7 nút**: `charge_cap` `drive_mode` `mirror_auto` `mirror_fold_btn` `rain_close` `start_charging` `target_soc_set` · và **12 thông tin**: `batt_range_bodywork` `charge_power` `charger_work_state` `charging_capacity_kwh` `charging_eta_hour` `charging_eta_min` `charging_pct` `charging_state` `drift_mode` `is_charging` `key_bluetooth` `mcu_status` — xem `docs/diagnostics/feature-filter-2026-09-16.md`.
+>
+> **Số ĐÚNG hôm nay (2026-09-17, đếm bằng máy từ registry): 100 thông tin + 47 hành động = 147** (tổng registry **154** nếu tính cả 4 gói lệnh + 3 hành động launcher). Tức bảng dưới **thừa 46 mục đã bị gỡ** và **thiếu 6 mục mới**.
+>
+> ⚠ **Cần owner quyết**: sinh lại bảng này bằng máy (thêm một bước xuất vào `scripts/docs/`) hay chuyển hẳn sang `docs/archive/` và để `docs/kachi-feature-catalog.html` làm nguồn duy nhất. Cho tới lúc đó **KHÔNG** dùng bảng dưới làm danh sách soát: nó sẽ dẫn người soát đi tìm 46 nút/mục không còn tồn tại.
+
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái lúc đó (2026-09-16): **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
 
 - **Ngày:** 2026-09-15 · **Chủ:** dangkhoi · **Nguồn:** sinh tự động từ `TelemetryRegistry` (123 thông tin) + `ControlRegistry` (64 hành động) + `CapabilityDescriptions` (diễn giải). KHÔNG chép tay — thêm nút mới thì tự có mặt ở đây (và trong công cụ trong app).
 - **Công cụ trong app:** *Cài đặt › Hệ thống & quyền › Nâng cao › Kiểm tra từng nút xe*. Bấm **Bắt đầu / Tiếp tục** để đi tuần tự từng mục: mục **hành động** hiện nút **Chạy** rồi tự chấm **OK / Không OK**; mục **thông tin** hiện **giá trị đọc được**. Kết quả lưu trên xe, xuất lại bằng nút **Xuất báo cáo** (bản này luôn tươi theo lần soát mới nhất).

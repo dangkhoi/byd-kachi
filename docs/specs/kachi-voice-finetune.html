@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOICE-FT — Mô hình nghe tiếng Việt chuyên lệnh xe cho Kachi</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.ev{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.ev.do{background:rgba(26,127,55,.14);color:var(--ok);border-color:transparent}
+.ev.suy{background:rgba(0,113,227,.14);color:var(--accent);border-color:transparent}
+.ev.doan{background:rgba(191,95,0,.14);color:var(--warn);border-color:transparent}
+.ev.cb{background:rgba(142,142,147,.2);color:var(--muted);border-color:transparent}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>VOICE-FT — Mô hình nghe tiếng Việt chuyên lệnh xe cho Kachi</h1>
+<p class="muted">Slug: <code>kachi-voice-finetune</code> · Branch <code>feat/voice-hotword-phrases</code> · Owner <code>dangkhoi</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,documentation-and-backlog,conversation-protocol}.md</code> + <code>CLAUDE.md</code> §2 (mức bằng chứng) · §3 (đọc nguồn trước) · §14 (4 tầng) · §16.</p>
+
+<div class="card">
+<b>Mức bằng chứng dùng trong spec này</b> — <code>conversation-protocol.md</code> bắt buộc gắn nhãn cho mọi khẳng định.
+<p style="margin:8px 0 0">
+<span class="ev do">[ĐO]</span> chạy thật, có lệnh tái lập được &nbsp;
+<span class="ev suy">[SUY]</span> suy luận từ số đã đo, chưa đo trực tiếp &nbsp;
+<span class="ev doan">[ĐOÁN]</span> mới chỉ hợp lý &nbsp;
+<span class="ev cb">[CHƯA BIẾT]</span> chưa có dữ liệu, kèm cách chốt
+</p>
+</div>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-09-16</b>: P0/P1/P2 xong, P3 đang chạy. <b>Ba kết quả đổi hướng spec</b>:
+(1) tìm được <code>g-group-ai-lab/gipformer1.5-65M-rnnt</code> — <b>MIT</b>, <b>73.2 MB</b>,
+<code>tokens.txt</code>+<code>bpe.model</code> <b>trùng sha256 từng byte</b> với bản đang ship, và
+<b>+4.8 điểm ý định</b> trên giọng người thật ⇒ ứng viên mạnh nhất, dùng được ngay cả khi P3 thất bại;
+(2) có <b>bộ giữ lại giọng thật</b> 3 người × 3 lượt × 30 câu = <b>270 mẫu</b> ⇒ R1 chấm được;
+(3) corpus TTS <b>xếp hạng ngược</b> với giọng thật ⇒ mọi quyết định đổi sang lấy bộ giữ lại làm chính.
+Số chi tiết: <code>docs/diagnostics/voice-ft-2026-09-16.md</code>.</li>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo spec. Nguồn: owner <code>dangkhoi</code> 2026-09-16 — <i>"nếu fine tune được 1 model nào đó phù hợp, nhỏ gọn thì cũng nên thử… làm 1 bản voice command thật ngon lành, chuẩn chỉnh, xài lâu dài được là best nhất, không nhân nhượng, không dễ dãi"</i>. Cộng với kết luận đo được ở <code>docs/diagnostics/voice-stream-eval-2026-09-16.md</code> §2.2: nhánh <b>tên app</b> chỉ đúng 16.6 %, <b>tiếng_anh_việt</b> 8.3 %, <b>giọng Nam</b> 26.7 % — không ứng viên mô hình có sẵn nào chữa được.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Vấn đề THẬT</h3>
+<p>Kachi đang ship <code>sherpa-onnx-zipformer-vi-2025-04-20</code> (gọi tắt <b>A</b>, Apache-2.0, 270.4 MB). <span class="ev do">[ĐO]</span> trên corpus 1 874 WAV TTS, A đúng nguyên văn <b>50.3 %</b>. Ba chỗ thủng lớn nhất, đều <span class="ev do">[ĐO]</span> từ <code>voice-stream-eval-2026-09-16.md</code> §2.2/§2.4:</p>
+<table>
+<tr><th>Nhánh</th><th>A đang ship</th><th>số WAV</th><th>Vì sao thủng</th></tr>
+<tr><td><b>app</b> (tên ứng dụng)</td><td><b>16.6 %</b></td><td>549</td><td>tên riêng tiếng Anh (<i>YouTube · CarPlay · Zalo · Spotify</i>) không có trong 2 000 BPE token tiếng Việt</td></tr>
+<tr><td><b>tieng_anh_viet</b></td><td><b>8.3 %</b></td><td>133</td><td>như trên, cộng cách người Việt đọc chệch (<i>du túp · ca plây</i>)</td></tr>
+<tr><td><b>than_mat</b> (nói thân mật)</td><td>19.1 %</td><td>136</td><td>ngữ điệu/từ đệm ngoài phân bố huấn luyện</td></tr>
+<tr><td><b>giọng Nam</b></td><td>26.7 %</td><td>243</td><td>dữ liệu huấn luyện lệch giọng Bắc</td></tr>
+<tr><td><b>control_toggle</b></td><td>46.8 %</td><td>218</td><td>lệnh ngắn 2–3 từ, ít ngữ cảnh → dễ nghe nhầm phụ âm đầu (<i>tắt/bật</i>)</td></tr>
+</table>
+<p>Ba đường chữa đã thử và đã cạn: <b>hotword bias</b> (2 241 dòng, đã tối ưu bằng lưới 6 vòng — <code>voice-mishear-2026-09-16.md</code>), <b>VoiceSynonyms</b> (tầng chữ, chỉ cứu được khi model xuất ra chuỗi <i>gần đúng</i>), <b>đổi mô hình có sẵn</b> (§9 của voice-stream-eval: streaming đa ngữ −11.2 điểm; vi-30M +1.8 điểm nhưng CC-BY-NC-ND). Muốn qua mốc này phải <b>đổi chính mô hình</b> — tức huấn luyện.</p>
+
+<h3>2.2 Đã có sẵn gì trên host</h3>
+<table>
+<tr><th>Thứ</th><th>Ở đâu</th><th>Ghi chú</th></tr>
+<tr><td>Bộ đo độ chính xác</td><td><code>scripts/voice/mishear-table.py</code>, <code>stream-matrix.py</code></td><td>chuẩn hoá chung <code>vi_text.norm()</code> ⇒ số ghép thẳng được vào các tệp diagnostics cũ</td></tr>
+<tr><td>Corpus TTS</td><td><code>/tmp/kachi-voice-corpus</code></td><td>1 874 WAV + <code>manifest.tsv</code> (uid · intent_kind · region · style · voice · rate · ref)</td></tr>
+<tr><td>Bộ 25 WAV</td><td><code>/tmp/kachi-voice-wav</code></td><td>mốc lịch sử, A = 22/25</td></tr>
+<tr><td>Câu nguồn</td><td><code>scripts/voice/data/variants.tsv</code></td><td>4 484 câu sinh từ 7 tệp TSV tay</td></tr>
+<tr><td>Hotword thật</td><td><code>core/build/hotwords/hotwords-phrases.txt</code></td><td>2 241 dòng <span class="ev do">[ĐO]</span></td></tr>
+<tr><td>Máy</td><td>Apple <b>M5 Pro</b>, 15 lõi lô-gic, 48 GB RAM, 635 GB trống</td><td><b>không có GPU NVIDIA</b> ⇒ CUDA không dùng được; chỉ CPU + Metal (MPS)</td></tr>
+<tr><td>venv suy luận</td><td><code>/tmp/sherpa-venv</code></td><td>sherpa-onnx 1.13.8, python 3.14</td></tr>
+<tr><td>venv huấn luyện</td><td><code>/tmp/icefall-venv</code></td><td>python <b>3.12</b> (bắt buộc — bánh xe k2 arm64 chỉ tới cp312), torch 2.5.1</td></tr>
+</table>
+
+<div class="card"><b>Cổng / phụ thuộc</b>
+<ul>
+<li><b>Giấy phép nền fine-tune</b> phải là Apache-2.0 / MIT / CC-BY. <span class="ev do">[ĐO]</span> <code>hynt/Zipformer-30M-RNNT-6000h</code> (= <code>vi-30M-int8</code>, mô hình nghe tốt nhất đang có) là <code>cc-by-nc-nd-4.0</code> ⇒ <b>CẤM phái sinh</b> ⇒ <b>không được fine-tune</b>. Owner đã chấp nhận CC-BY-NC-ND cho bản <i>dùng nguyên trạng</i>, không cho bản sửa.</li>
+<li><b>Bộ giữ lại (held-out) giọng người thật</b> chưa có. Đợt thu đang chạy: <code>docs/diagnostics/voice-recording-campaign-2026-09-16.md</code>. <span class="ev cb">[CHƯA BIẾT]</span> ⇒ chỉ tiêu chính của spec này (§3 R1) <b>chưa chấm được</b> cho tới khi file về. Mọi số trước đó là số <i>phụ</i>.</li>
+<li><b>Không có GPU.</b> Huấn luyện toàn phần zipformer 6 000 h là bất khả trên máy này. Phạm vi spec = <b>fine-tune ngắn trên nền đã huấn luyện sẵn</b> + <b>hợp nhất LM</b>, không phải huấn luyện từ đầu.</li>
+</ul>
+</div>
+
+<h3>2.3 Bốn tầng theo CLAUDE.md §14 — spec này đứng ở đâu</h3>
+<p>Toàn bộ VOICE-FT là công việc <b>tầng 0 (host)</b>: sinh dữ liệu, huấn luyện, đo off-car. Nó <b>không</b> nối dây gì lên xe. Kết quả tầng 0 chỉ là một <b>gói mô hình</b> + số đo host. Việc đưa lên xe đi tiếp theo đúng 4 tầng (§P4), và <b>không</b> được thay mô hình đang ship khi chưa có phép đo trên xe thật.</p>
+
+<h2>3. Requirements</h2>
+
+<h3>Chức năng</h3>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Tiêu chí nghiệm thu (đo được)</th></tr>
+<tr><td><b>R1</b></td><td>Đúng <b>ý định</b> trên giọng người thật</td><td><b>≥ 90 %</b> exact-intent trên bộ <b>giữ lại</b> (held-out) gồm bản thu của tester — bộ này <b>không</b> được dùng để chọn tham số, chọn epoch, hay chọn <code>lm_scale</code>. Chấm bằng <code>VoiceIntentParser</code> (qua replay), không chấm bằng chuỗi chữ.</td></tr>
+<tr><td><b>R2</b></td><td>Đúng <b>nguyên văn</b> trên corpus TTS</td><td><b>≥ 80 %</b> exact-text trên <code>/tmp/kachi-voice-corpus</code> (mốc hiện tại: A = 50.3 %). Đây là chỉ tiêu <i>phụ</i> — nó dễ bị thổi phồng bởi chính TTS (§3 R-nf3).</td></tr>
+<tr><td><b>R3</b></td><td>Không hồi quy nhánh nào</td><td>Không ô nào trong bảng <code>intent_kind</code> (§2.2 của voice-stream-eval) thấp hơn A quá <b>2 điểm</b>.</td></tr>
+<tr><td><b>R4</b></td><td>Chạy kịp trên xe</td><td><b>RTF xe ≤ 0.30</b>. Quy đổi: RTF host × 30 (hệ số <span class="ev do">[ĐO xe]</span> ở voice-stream-eval §7) ⇒ <b>RTF host ≤ 0.010</b> ở <code>num_threads=2</code>.</td></tr>
+<tr><td><b>R5</b></td><td>Vừa gói OTA</td><td>Tổng tệp mô hình int8 (encoder+decoder+joiner+tokens, cộng LM nếu có) <b>≤ 80 MB</b>. RSS đỉnh host ≤ 400 MB.</td></tr>
+<tr><td><b>R6</b></td><td>Giấy phép ship được</td><td>Mọi thành phần trong gói: Apache-2.0 / MIT / CC-BY / BSD. Bảng giấy phép đầy đủ ở §4.5, kèm dẫn nguồn <code>cardData.license</code>.</td></tr>
+<tr><td><b>R7</b></td><td>Tái lập được</td><td>Mọi con số trong tệp <code>docs/diagnostics/voice-ft-2026-09-16.md</code> sinh bằng script trong <code>scripts/voice/ft/</code>, chạy lại ra y hệt (seed cố định).</td></tr>
+</table>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — <b>Kỷ luật held-out.</b> Bộ giọng người thật bị <b>khoá</b>: chấm <b>một lần</b> ở cuối mỗi pha, không dùng để chọn bất cứ tham số nào. Chia train/dev theo <b>câu</b> (sentence-level), không theo file — cùng một câu đọc bởi 10 giọng phải nằm cùng một phía, nếu không là rò rỉ.</li>
+<li><b>R-nf2</b> — <b>Không đụng repo.</b> Mọi artefact nặng (WAV tăng cường, checkpoint, ONNX) nằm trong scratchpad. Repo chỉ nhận <b>script</b> + <b>doc</b>.</li>
+<li><b>R-nf3</b> — <b>Chống tự lừa bằng TTS.</b> Fine-tune trên dữ liệu TTS rồi đo trên dữ liệu TTS là vòng tròn. Mọi kết luận "tốt hơn" phải kèm số trên <b>ít nhất một</b> bộ không phải TTS; khi chưa có, phải ghi <span class="ev cb">[CHƯA BIẾT]</span>, không được nói "tốt hơn".</li>
+<li><b>R-nf4</b> — <b>Không thay mô hình đang ship</b> trong phạm vi spec này. Đầu ra là <i>ứng viên</i> + số đo; quyết định đổi là của owner, sau khi có phép đo trên xe.</li>
+<li><b>R-nf5</b> — Mọi thay đổi phải <b>thêm được</b> vào <code>SherpaModelCatalog</code>/<code>VoiceModelStore</code> như một mục mới, không phá mục cũ (người dùng vẫn tải lại được bản cũ nếu bản mới tệ).</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Ba đường độc lập, xếp theo RỦI RO tăng dần</h3>
+<p>Không đặt cược một cửa. Ba đường dưới đây <b>độc lập</b> về mặt kỹ thuật — đường sau hỏng thì đường trước vẫn ship được.</p>
+
+<div class="flow">
+  <div class="fnode" style="background:rgba(26,127,55,.10)"><b>P1 · LM fusion</b><span>không đụng mô hình<br>rủi ro thấp nhất</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.10)"><b>P2 · Dữ liệu</b><span>≥ 30 h tăng cường<br>đầu vào cho P3</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(191,95,0,.10)"><b>P3 · Fine-tune</b><span>đổi trọng số<br>rủi ro cao nhất</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>P4 · Đóng gói</b><span>chỉ báo cáo<br>không sửa Kotlin</span></div>
+</div>
+
+<h3>4.2 P1 — Hợp nhất LM nông (shallow fusion)</h3>
+<p><span class="ev do">[ĐO]</span> sherpa-onnx <b>1.13.8</b> python API <code>OfflineRecognizer.from_transducer</code> có sẵn tham số <code>lm=</code> (đường dẫn ONNX), <code>lm_scale=</code> (mặc định 0.1), <code>lodr_fst=</code>, <code>lodr_scale=</code>. Kiểm bằng <code>inspect.signature</code>, không dựa trí nhớ (CLAUDE.md §3).</p>
+<p><span class="ev do">[ĐO]</span> Giao diện ONNX mà sherpa yêu cầu, đọc thẳng từ nguồn <code>sherpa-onnx/csrc/offline-lm.cc</code> + <code>offline-rnn-lm.cc</code>:</p>
+<pre>vào : x      int64 [N, L]   ← chuỗi token của từng giả thuyết, KHÔNG có sos/eos
+      x_lens int64 [N]     ← độ dài thật
+ra  : nll    float32 [N]   ← negative log-likelihood cả câu (tổng theo L)</pre>
+<p>Tên vào/ra <b>đọc từ chính tệp ONNX</b> (<code>GetInputNames</code>), nên chỉ cần đúng thứ tự và kiểu. Điểm LM được cộng vào <code>modified_beam_search</code> — <b>chỉ</b> phương pháp này dùng LM; <code>greedy_search</code> bỏ qua. Bản build đang ship đã dùng <code>modified_beam_search</code> beam 4 ⇒ <b>không phải đổi gì ở Kotlin</b> ngoài việc trỏ thêm một tệp.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 860 260" role="img" aria-label="Sơ đồ hợp nhất LM nông vào modified_beam_search">
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.4" color="#8e8e93">
+    <rect x="16" y="100" width="120" height="56" rx="10" stroke="currentColor"/>
+    <rect x="186" y="100" width="130" height="56" rx="10" stroke="currentColor"/>
+    <rect x="366" y="100" width="150" height="56" rx="10" stroke="currentColor"/>
+    <rect x="366" y="14" width="150" height="56" rx="10" stroke="#0071e3" stroke-dasharray="5 4"/>
+    <rect x="366" y="186" width="150" height="56" rx="10" stroke="currentColor"/>
+    <rect x="566" y="100" width="140" height="56" rx="10" stroke="currentColor"/>
+    <rect x="746" y="100" width="98" height="56" rx="10" stroke="currentColor"/>
+    <path d="M136,128 L182,128" marker-end="url(#ah)"/>
+    <path d="M316,128 L362,128" marker-end="url(#ah)"/>
+    <path d="M441,74 L441,96" marker-end="url(#ah)" stroke="#0071e3"/>
+    <path d="M441,182 L441,160" marker-end="url(#ah)"/>
+    <path d="M516,128 L562,128" marker-end="url(#ah)"/>
+    <path d="M706,128 L742,128" marker-end="url(#ah)"/>
+  </g>
+  <g font-family="-apple-system,system-ui,sans-serif" text-anchor="middle" fill="currentColor">
+    <text x="76"  y="124" font-size="13" font-weight="650">mic 16 kHz</text>
+    <text x="76"  y="142" font-size="11" fill="#8e8e93">cửa sổ đã cắt</text>
+    <text x="251" y="124" font-size="13" font-weight="650">encoder</text>
+    <text x="251" y="142" font-size="11" fill="#8e8e93">zipformer .onnx</text>
+    <text x="441" y="124" font-size="13" font-weight="650">modified_beam</text>
+    <text x="441" y="142" font-size="11" fill="#8e8e93">beam 4 · 4 giả thuyết</text>
+    <text x="441" y="38"  font-size="13" font-weight="650" fill="#0071e3">RNN-LM .onnx</text>
+    <text x="441" y="56"  font-size="11" fill="#0071e3">score × lm_scale · MỚI</text>
+    <text x="441" y="210" font-size="13" font-weight="650">hotword FST</text>
+    <text x="441" y="228" font-size="11" fill="#8e8e93">2 241 dòng · score 3.0</text>
+    <text x="636" y="124" font-size="13" font-weight="650">chữ</text>
+    <text x="636" y="142" font-size="11" fill="#8e8e93">VoiceSynonyms</text>
+    <text x="795" y="124" font-size="13" font-weight="650">ý định</text>
+    <text x="795" y="142" font-size="11" fill="#8e8e93">IntentParser</text>
+  </g>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối đang chạy (không đổi)</span>
+  <span class="sw"><span class="box" style="border-color:var(--accent);background:rgba(0,113,227,.15)"></span> khối P1 thêm vào</span>
+</div>
+
+<h4>Nguồn LM — hai đường, chọn bằng đo</h4>
+<table>
+<tr><th>Đường</th><th>Nội dung</th><th>Trạng thái</th></tr>
+<tr><td><b>LM-A</b> tự huấn luyện</td><td>RNN-LM (LSTM) trên <b>chính bộ BPE của mô hình đích</b>, dữ liệu = câu domain (<code>variants.tsv</code> nở ra ≥ 20 k) <b>trộn</b> văn bản tiếng Việt phổ thông để không sập về chỉ-biết-lệnh</td><td>đường chính. Không cần k2 — kiến trúc <code>RnnLmModel</code> của icefall là LSTM thuần torch, chép lại được trong 60 dòng</td></tr>
+<tr><td><b>LM-B</b> lấy sẵn</td><td><code>hataphu/zipformer-k2-rnn-lm-vi</code> — <span class="ev do">[ĐO]</span> <code>cardData.license = "mit"</code>, có <code>models/rnnlm.onnx</code> 33.2 MB + <code>rnnlm.int8.onnx</code> 8.4 MB</td><td>⚠ <span class="ev do">[ĐO]</span> repo <code>"gated":"auto"</code> ⇒ tải cần đăng nhập HF. Máy này <b>không có token</b> (<code>~/.cache/huggingface/token</code> không tồn tại). Và bộ token của nó (50 784 B) <b>≠</b> bộ token của A (25 847 B) ⇒ kể cả tải được cũng <b>không dùng chung</b> được với A.</td></tr>
+</table>
+<p><b>Ràng buộc cứng của LM fusion</b>: LM phải dùng <b>đúng</b> <code>tokens.txt</code> của mô hình ASR. <span class="ev do">[ĐO]</span> A và vi-30M đều có vocab 2 000, cùng <code>&lt;blk&gt;=0 &lt;sos/eos&gt;=1 &lt;unk&gt;=2</code>, nhưng <b>thứ tự khác nhau</b> (id 3 của A là <code>▁MỘT</code>, của vi-30M là <code>▁HAI</code>) ⇒ <b>phải huấn luyện LM riêng cho từng mô hình</b>. Đây là lý do LM-A (tự huấn luyện) là đường chính, không phải đường dự phòng.</p>
+
+<h3>4.3 P2 — Ống dữ liệu</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>câu</b><span>variants.tsv → ≥ 10 k<br>+ câu KHÔNG phải lệnh</span></div>
+    <div class="node"><b>giọng TTS</b><span>say -v Linh · Piper<br>(+ Edge TTS nếu có mạng)</span></div>
+    <div class="node"><b>tăng cường</b><span>tốc độ · cao độ · ồn<br>· vọng · băng thông mic</span></div>
+    <div class="node"><b>manifest</b><span>chia theo CÂU<br>train / dev / held-out</span></div>
+  </div>
+</div>
+<ul>
+<li><b>Câu không phải lệnh</b> (negatives) là bắt buộc: nếu 100 % dữ liệu là lệnh, mô hình học cách <i>ép</i> mọi âm thanh thành lệnh — đúng bệnh <i>"ừ bật đèn đọc"</i> / <i>"đang đọc sách"</i> đã thấy trong log xe (voice-stream-eval §6).</li>
+<li><b>Tăng cường</b> bằng numpy/torchaudio, không cần bộ ồn ngoài: ồn hồng + ù động cơ tổng hợp (ghi rõ là tổng hợp <span class="ev doan">[ĐOÁN]</span> giống cabin thật đến đâu), nhạc nền trộn ở SNR 5–20 dB, vọng phòng nhỏ, cắt băng thông kiểu micro.</li>
+<li><b>Chia theo CÂU</b> — cùng một câu ở mọi giọng/mọi mức tăng cường phải nằm cùng một phía. Chia theo file là rò rỉ và sẽ cho số dev đẹp giả.</li>
+</ul>
+
+<h3>4.4 P3 — Fine-tune</h3>
+<p>Nền bắt buộc có <b>checkpoint .pt</b> (ONNX không fine-tune được) + giấy phép mở. Ứng viên đầu: <code>zzasdf/icefall-asr-gigaspeech2-vi-zipformer</code> <span class="ev cb">[CHƯA BIẾT — đang xác minh]</span>.</p>
+<p><b>Khoá kỹ thuật</b>: hàm mất mát pruned-RNNT của icefall nằm trong <b>k2</b>. <span class="ev do">[ĐO]</span> PyPI <b>không có</b> bánh xe k2 cho macOS arm64 (chỉ <code>macosx_10_15_x86_64</code>). Nhưng kho <code>csukuangfj/k2</code> trên HF <b>có 86 bánh xe</b> <code>macosx_11_0_arm64</code>, bản <code>1.24.4.dev20241029+cpu</code>, ghép với torch <b>1.9 → 2.5.1</b>, python <b>cp38 → cp312</b>. ⇒ <b>Không cần build từ nguồn.</b> Đây là lý do venv huấn luyện phải là python <b>3.12</b>, không phải 3.14.</p>
+<p><b>Ngân sách thời gian</b>: đo thông lượng trên <b>1 giờ audio trước</b>, ngoại suy, rồi mới cam kết. Nếu bản đầy đủ &gt; 14 h thì cắt epoch/dữ liệu và <b>ghi rõ đã cắt</b> (không im lặng chạy tràn đêm rồi báo "xong").</p>
+
+<h3>4.5 Bảng giấy phép</h3>
+<table>
+<tr><th>Thành phần</th><th>Giấy phép</th><th>Nguồn <span class="ev do">[ĐO]</span></th><th>Dùng được?</th></tr>
+<tr><td><code>sherpa-onnx-zipformer-vi-2025-04-20</code> (A, đang ship)</td><td>Apache-2.0</td><td>model card HF</td><td class="ok">✔ ship + phái sinh</td></tr>
+<tr><td><code>hynt/Zipformer-30M-RNNT-6000h</code> (vi-30M)</td><td>CC-BY-NC-ND-4.0</td><td><code>cardData.license</code></td><td class="warn">✔ dùng nguyên trạng (owner đã chấp nhận, phi lợi nhuận) · <b>✘ CẤM fine-tune</b></td></tr>
+<tr><td><code>hataphu/zipformer-k2-rnn-lm-vi</code></td><td>MIT</td><td><code>cardData.license = "mit"</code></td><td class="warn">giấy phép OK nhưng <code>gated:auto</code> ⇒ tải cần token; token vocab không khớp</td></tr>
+<tr><td>PengChengStarling stream-multi</td><td><b>không có</b></td><td><code>"license": null</code></td><td class="warn">✘ mặc định all-rights-reserved</td></tr>
+<tr><td>Silero VAD</td><td>MIT</td><td>repo gốc</td><td class="ok">✔</td></tr>
+<tr><td>icefall / k2 (mã, kiến trúc RnnLmModel)</td><td>Apache-2.0</td><td>header tệp nguồn</td><td class="ok">✔</td></tr>
+<tr><td>Piper <code>vi_VN-vais1000</code></td><td>MIT</td><td>rhasspy/piper-voices</td><td class="ok">✔ (chỉ sinh dữ liệu, không ship)</td></tr>
+<tr><td>giọng <code>say -v Linh</code> của macOS</td><td>Apple</td><td>—</td><td class="warn">chỉ dùng <b>sinh dữ liệu huấn luyện trên máy này</b>; không phân phối lại WAV</td></tr>
+</table>
+
+<h3>4.6 Rủi ro</h3>
+<table>
+<tr><th>Rủi ro</th><th>Vì sao thật</th><th>Cách chặn</th></tr>
+<tr><td><b>Khớp quá mức vào TTS</b></td><td>Fine-tune trên giọng máy ⇒ mô hình học <i>giọng máy</i>, không học <i>tiếng Việt</i>. Đo lại bằng chính TTS sẽ cho số tăng vọt mà xe không được gì.</td><td>R-nf3. Đa dạng giọng + tăng cường mạnh. Bộ giữ lại là <b>người thật</b>, và đó mới là chỉ tiêu R1.</td></tr>
+<tr><td><b>Quên kiến thức nền</b> (catastrophic forgetting)</td><td>LR cao / nhiều epoch trên 10 k câu hẹp ⇒ mô hình mất khả năng nghe câu ngoài danh mục, hỏng hẳn ở lệnh mới thêm sau này.</td><td>LR thấp, dừng sớm theo dev, trộn dữ liệu phổ thông, <b>giữ checkpoint gốc</b> để so từng epoch.</td></tr>
+<tr><td><b>Rò rỉ held-out</b></td><td>Chọn <code>lm_scale</code>/epoch theo chính bộ chấm ⇒ số đẹp, xe không đổi.</td><td>R-nf1: khoá bộ, chấm một lần cuối pha.</td></tr>
+<tr><td><b>Hết thời gian CPU</b></td><td>Không GPU. Một epoch có thể tính bằng ngày.</td><td>Đo 1 h trước, ngoại suy, cắt sớm, ghi rõ.</td></tr>
+<tr><td><b>Giấy phép nhiễm</b></td><td>Fine-tune nhầm nền NC-ND ⇒ sản phẩm không ship được.</td><td>§4.5 là cổng cứng; xác minh <code>cardData.license</code> trước mỗi lần tải nền.</td></tr>
+<tr><td><b>LM lấn át âm thanh</b></td><td><code>lm_scale</code> cao ⇒ mô hình đoán câu quen thay vì nghe. Lệnh lạ sẽ bị bẻ về lệnh quen — nguy hiểm hơn nghe sai vì người dùng không biết.</td><td>Lưới <code>lm_scale</code>, chọn điểm <b>trước</b> chỗ nhánh <code>unknown</code>/<code>old_case</code> bắt đầu tụt.</td></tr>
+</table>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Ra cái gì</th><th>Phụ thuộc</th></tr>
+<tr><td><b>P0</b></td><td>Spec này</td><td><code>docs/specs/kachi-voice-finetune.html</code></td><td>—</td></tr>
+<tr><td><b>P1.1</b></td><td>Xác minh API LM của sherpa-onnx 1.13.8 + giao diện ONNX từ nguồn C++</td><td>§4.2</td><td>P0</td></tr>
+<tr><td><b>P1.2</b></td><td>Sinh văn bản LM: domain ≥ 20 k câu + văn phổ thông trộn vào</td><td><code>scripts/voice/ft/lm-text.py</code></td><td>P1.1</td></tr>
+<tr><td><b>P1.3</b></td><td>Huấn luyện RNN-LM theo <code>RnnLmModel</code> của icefall, trên BPE của <b>từng</b> mô hình đích</td><td><code>scripts/voice/ft/train-rnnlm.py</code></td><td>P1.2</td></tr>
+<tr><td><b>P1.4</b></td><td>Xuất ONNX đúng giao diện <code>x/x_lens → nll</code> + quant int8</td><td><code>scripts/voice/ft/export-rnnlm-onnx.py</code></td><td>P1.3</td></tr>
+<tr><td><b>P1.5</b></td><td>Lưới <code>lm_scale</code> trên 25 WAV + corpus + nhánh tên app, cho A · vi-30M-int8</td><td>bảng số trong diagnostics</td><td>P1.4</td></tr>
+<tr><td><b>P2.1</b></td><td>Nở câu ≥ 10 k + thêm câu không-phải-lệnh</td><td><code>scripts/voice/ft/gen-sentences.py</code></td><td>P0</td></tr>
+<tr><td><b>P2.2</b></td><td>Tổng hợp TTS nhiều giọng</td><td><code>scripts/voice/ft/tts-batch.py</code></td><td>P2.1</td></tr>
+<tr><td><b>P2.3</b></td><td>Tăng cường (tốc độ · cao độ · ồn · nhạc · vọng · băng thông)</td><td><code>scripts/voice/ft/augment.py</code></td><td>P2.2</td></tr>
+<tr><td><b>P2.4</b></td><td>Manifest icefall/lhotse, chia theo CÂU, chừa chỗ held-out</td><td><code>scripts/voice/ft/make-manifest.py</code></td><td>P2.3</td></tr>
+<tr><td><b>P3.1</b></td><td>Khảo sát nền có <code>.pt</code> + giấy phép mở</td><td>bảng ứng viên</td><td>P0</td></tr>
+<tr><td><b>P3.2</b></td><td>Dựng k2 + icefall (bánh xe arm64 của <code>csukuangfj/k2</code>)</td><td><code>/tmp/icefall-venv</code></td><td>P3.1</td></tr>
+<tr><td><b>P3.3</b></td><td><b>Đo thông lượng trên 1 h trước</b>, ngoại suy, quyết định ngân sách</td><td>số + quyết định</td><td>P3.2, P2.4</td></tr>
+<tr><td><b>P3.4</b></td><td>Fine-tune LR thấp, dừng sớm theo dev</td><td>checkpoint</td><td>P3.3</td></tr>
+<tr><td><b>P3.5</b></td><td>Xuất ONNX + int8, sherpa nạp được, đo lại cùng bộ đo</td><td>gói mô hình + bảng số</td><td>P3.4</td></tr>
+<tr><td><b>P4</b></td><td>Kế hoạch đóng gói (báo cáo, KHÔNG sửa Kotlin)</td><td>§ trong diagnostics</td><td>P1.5 / P3.5</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+
+<h3>6.0 Tình trạng từng yêu cầu — 2026-09-16</h3>
+<table>
+<tr><th>#</th><th>Ngưỡng</th><th>Tốt nhất đo được</th><th>Đạt?</th></tr>
+<tr><td><b>R1</b></td><td>≥ 90 % ý định trên giọng thật</td><td><b>84.8 %</b> (229/270, gipformer1.5 + fine-tune 2 epoch; cận trên 85.2 %)</td><td class="warn">✘ <b>chưa đạt</b> — còn <b>5.2 điểm</b> (đầu phiên: còn 15.2)</td></tr>
+<tr><td><b>R2</b></td><td>≥ 80 % nguyên văn trên corpus TTS</td><td><b>82.2 %</b> trên 354 WAV câu <b>CHƯA THẤY</b> · 78.4 % trên toàn corpus</td><td class="ok">✔ đạt trên tập chưa thấy · sát ngưỡng trên toàn corpus. <b>Nhưng xem ghi chú: ngưỡng này nên bỏ.</b></td></tr>
+<tr><td><b>R3</b></td><td>không nhánh nào tụt &gt; 2 điểm</td><td>Sau fine-tune, hai nhánh G từng thua A (<code>media</code>, <code>nav</code>) đã <b>vượt</b> A (95 %/89 % vs 52 %/56 %). Còn tụt: <code>launcher</code> −27 (n=15) và <code>profile</code> −67 (<b>n=3</b>)</td><td class="warn">⚠ chỉ còn 2 nhánh cỡ mẫu 3–15 ⇒ chưa kết luận được; theo dõi qua VFT-3</td></tr>
+<tr><td><b>R4</b></td><td>RTF xe ≤ 0.30</td><td>RTF host 0.0118 ⇒ <span class="ev suy">[SUY]</span> <b>≈ 0.35</b></td><td class="warn">⚠ <b>chưa biết</b> — chỉ đo trên xe mới chốt được</td></tr>
+<tr><td><b>R5</b></td><td>gói int8 ≤ 80 MB</td><td><b>73.2 MB</b> (gói nhà phát hành) · 78.3 MB (bản tự xuất)</td><td class="ok">✔ đạt</td></tr>
+<tr><td><b>R6</b></td><td>giấy phép mở</td><td><b>MIT</b> (mô hình) · Apache-2.0 (mã icefall/k2) · CC-BY-4.0 (dữ liệu tiếng nói thật)</td><td class="ok">✔ đạt</td></tr>
+<tr><td><b>R7</b></td><td>tái lập được</td><td>13 script trong <code>scripts/voice/ft/</code>, seed cố định, lệnh đầy đủ ở §9 của diagnostics</td><td class="ok">✔ đạt</td></tr>
+</table>
+
+<div class="card">
+<b>Nói thẳng về R1 và R2</b> — <code>trace-den-tan-cung.md</code> cấm im lặng cho qua:
+<ul>
+<li><b>R1 (90 %) vẫn chưa đạt, nhưng đường đi đã rõ.</b> Trong một đêm: <b>74.8 % → 84.8 %</b> (+10.0 điểm),
+gồm +4.8 từ đổi nền và +5.2 từ fine-tune 3.09 giờ. Còn <b>5.2 điểm</b>. Hai tín hiệu nói rằng đường này
+chưa cạn: (a) dev loss <b>vẫn đang giảm</b> ở epoch cuối (0.0595 → 0.0539) ⇒ chưa hội tụ;
+(b) mẻ lớn gấp <b>4.8 lần</b> dữ liệu (14.91 giờ) đã dựng xong và đang chạy. Nhắm tiếp vào đúng hai chỗ
+đang lỗ: <b>own.B nói nhanh</b> (21/30) và <b>unknown/profile</b>.</li>
+<li><b>R2 (80 % nguyên văn trên TTS) là một ngưỡng ĐẶT SAI, đề nghị bỏ.</b> <span class="ev do">[ĐO]</span>
+corpus TTS xếp hạng các mô hình <b>ngược</b> với giọng người thật. Tối ưu cho R2 là tối ưu cho một thước
+đã biết là sai. Đề nghị thay bằng: <i>"nguyên văn ≥ X % trên bộ giữ lại giọng thật"</i>, X chốt sau khi có
+≥ 5 người thu (VFT-3).</li>
+<li><b>R4 chưa biết, không phải chưa đạt.</b> Con số 0.35 là ngoại suy ×30 lấy từ log xe của <i>mô hình khác</i>.
+Đừng dùng nó để loại G, cũng đừng dùng nó để hứa.</li>
+</ul>
+</div>
+
+<ul>
+<li><b>V-host-1</b> — <code>mishear-table.py</code> / <code>stream-matrix.py</code> chạy trên corpus 1 874 WAV, cùng <code>vi_text.norm()</code> ⇒ số ghép được với <code>voice-mishear-2026-09-16.md</code> và <code>voice-stream-eval-2026-09-16.md</code>.</li>
+<li><b>V-host-2</b> — sherpa-onnx <b>nạp được</b> tệp ONNX mới (LM và/hoặc mô hình fine-tune) và giải mã ra chữ, không chỉ "xuất không lỗi".</li>
+<li><b>V-host-3</b> — RTF + RSS đo bằng <code>/usr/bin/time -l</code>, <code>num_threads=2</code>, đúng cách voice-stream-eval §7 đã đo ⇒ so sánh trực tiếp được.</li>
+<li><b>V-heldout</b> — <span class="pill ok">ĐÃ CHẠY 2026-09-16</span> bộ giữ lại <b>3 người × 3 lượt × 30 câu = 270 mẫu</b> (owner · con gái owner · một người giọng Nam), cắt bằng <code>ft/align-real.py</code>. Cổng của R1 đã mở.</li>
+<li><b>V-oncar</b> — ngoài phạm vi spec này. Điều kiện vào: V-host-1..3 xanh + V-heldout đạt. Kịch bản ở §P4.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1.</b> Owner có muốn xin ngoại lệ giấy phép từ tác giả <code>hynt</code> (CC-BY-NC-ND) không? Nếu có, vi-30M trở thành nền fine-tune tốt nhất đang biết. — <span class="muted">chờ owner</span></li>
+<li><b>OQ2.</b> Có tài khoản HuggingFace nào để mở kho <code>gated</code> (<code>hataphu/…</code>) không? — <span class="muted">chờ owner; hiện máy không có token</span></li>
+<li><b>OQ3.</b> Bộ giữ lại giọng người thật cần tối thiểu bao nhiêu câu × bao nhiêu người để con số 90 % có nghĩa? <span class="ev suy">[SUY]</span> 30 câu × 5 người × 2 lượt = 300 mẫu ⇒ sai số ±3.5 điểm ở mức 90 %. Ít hơn thì đừng phát biểu phần trăm. — <span class="muted">đề xuất, chờ owner</span></li>
+<li><b>OQ4.</b> Nếu P3 cho mô hình tốt hơn nhưng phải đổi <code>tokens.txt</code> ⇒ toàn bộ tệp hotword 2 241 dòng phải soát lại qua BPE mới. Chấp nhận chi phí đó chứ? — <span class="muted"><b>đã hết hiệu lực</b>: nền đã chọn (<code>gipformer1.5</code>) dùng <b>đúng cùng</b> <code>tokens.txt</code> + <code>bpe.model</code> (trùng sha256) ⇒ chi phí = 0</span></li>
+<li><b>OQ5.</b> <b>Bộ đo nào là chuẩn để chấm R3?</b> Corpus TTS nói G trượt R3 (<code>media</code> −28, <code>nav</code> −23, mỗi nhánh 9–21 WAV); bộ giữ lại giọng thật nói G hơn A ở 6/9 ô. Hai bộ **ngược nhau**. Đề nghị: lấy **giọng thật** làm chuẩn và thêm 20–30 câu media/nav vào đợt thu để nhánh đó đủ mẫu. — <span class="muted">chờ owner</span></li>
+<li><b>OQ6.</b> <b>Có bỏ R2 (80 % nguyên văn trên corpus TTS) không?</b> Xem §6.0 — ngưỡng này thưởng cho việc tối ưu vào một thước đã đo được là xếp hạng sai. — <span class="muted">chờ owner</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/voice-stream-eval-2026-09-16.md</code> — mốc A/B/C/D, phát hiện đuôi im lặng, bảng giấy phép.</li>
+<li><code>docs/diagnostics/voice-mishear-2026-09-16.md</code> — bảng nghe nhầm, chỗ thủng tên app.</li>
+<li><code>docs/diagnostics/voice-recording-campaign-2026-09-16.md</code> — đợt thu giọng thật (nguồn của bộ held-out).</li>
+<li><code>docs/diagnostics/voice-ft-2026-09-16.md</code> — <b>nhật ký + số của spec này</b>, cập nhật sau mỗi pha.</li>
+<li><code>docs/specs/kachi-voice-engine-v2.html</code> — quyết định loại <code>hynt/Zipformer-30M</code> vì giấy phép (2026-09-14).</li>
+<li>sherpa-onnx <code>csrc/offline-lm-config.h</code>, <code>csrc/offline-rnn-lm.cc</code> — giao diện LM (đọc nguồn, CLAUDE.md §3).</li>
+<li>icefall <code>icefall/rnn_lm/{model,export-onnx}.py</code> — kiến trúc + cách xuất ONNX.</li>
+<li>Bánh xe k2 macOS arm64: <code>https://huggingface.co/csukuangfj/k2</code> thư mục <code>cpu/1.24.4.dev20241029/macos/</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi NGAY khi làm. Số chi tiết nằm ở <code>docs/diagnostics/voice-ft-2026-09-16.md</code>; ở đây chỉ ghi <b>quyết định</b> và <b>chỗ lệch spec</b>.</p>
+<ul>
+<li><b>2026-09-16 · quyết định</b> — venv huấn luyện là python <b>3.12</b>, không phải 3.14 của <code>/tmp/sherpa-venv</code>. Lý do <span class="ev do">[ĐO]</span>: bánh xe k2 arm64 cao nhất là cp312/torch 2.5.1. Dùng 3.14 thì phải build k2 từ nguồn — chi phí hàng giờ không có gì bù lại.</li>
+<li><b>2026-09-16 · quyết định</b> — LM tự huấn luyện (LM-A) là đường chính, không phải đường dự phòng. Lý do <span class="ev do">[ĐO]</span>: LM fusion đòi LM dùng <b>đúng</b> bộ token của ASR; A và vi-30M có thứ tự token khác nhau; mọi LM lấy sẵn đều dùng bộ token của mô hình khác ⇒ không tái dùng được.</li>
+<li><b>2026-09-16 · chặn</b> — <code>hataphu/zipformer-k2-rnn-lm-vi</code> giấy phép MIT nhưng <code>gated:auto</code>, máy không có token HF ⇒ không tải được. Điều kiện mở khoá: owner cấp token (OQ2).</li>
+<li><b>2026-09-16 · spec không work → đổi</b> — §2.1 nói chỗ thủng lớn nhất là <b>giọng Nam</b> (26.7 % trên corpus TTS). <span class="ev do">[ĐO]</span> trên <b>giọng Nam THẬT</b>: <b>96.7 %</b> (nam.A, bản đang ship). ⇒ con số 26.7 % là lỗi của <b>giọng TTS giả giọng Nam</b>, không phải của mô hình. Chỗ thủng thật là <b>giọng trẻ em/thiếu niên</b> (22–25/30) và <b>nói nhanh</b> (14–15/30). §P2 đã đổi ưu tiên theo đó. Đây đúng là thứ CLAUDE.md §14 cảnh báo: dữ liệu tổng hợp chỉ được ở mức "nghi là".</li>
+<li><b>2026-09-16 · sai lệch spec (cắt phạm vi)</b> — §3 R-nf/§P2 đặt mục tiêu <b>≥ 30 giờ</b> dữ liệu. <span class="ev do">[ĐO]</span> thông lượng huấn luyện trên máy này là <b>0.5–0.9× realtime</b> (CPU, không GPU) ⇒ 30 h × 3 epoch = 50–180 giờ tường, bất khả trong một đêm. Đã cắt còn <b>3.09 giờ × 2 epoch</b>, chọn dữ liệu theo chỗ thủng đo được thay vì theo khối lượng. <b>Nói rõ để không ai đọc nhầm là đã làm đủ spec.</b></li>
+<li><b>2026-09-16 · quyết định</b> — nền fine-tune đổi từ <code>zzasdf/icefall-asr-gigaspeech2-vi-zipformer</code> (§4.4 dự kiến) sang <b><code>gipformer1.5-65M</code></b>. Lý do <span class="ev do">[ĐO]</span>: zzasdf là bản <b>150 M</b> ⇒ int8 <b>157 MB</b>, gấp đôi trần R5 = 80 MB. gipformer là 65 M ⇒ 73.2 MB, cùng giấy phép mở, và cùng tokenizer với bản đang ship.</li>
+<li><b>2026-09-16 · bug &amp; cách xử (×3, cùng một họ)</b> — cả ba đều là "tin trí nhớ về framework", đều bị bắt bằng chạy thật:
+<br>(a) k2 arm64: tên tệp bánh xe là <code>dev2024<b>1030</b></code> trong thư mục <code>dev20241029/</code> ⇒ đoán theo thư mục tải về tệp 15 byte "Entry not found";
+<br>(b) <code>feedforward_dim</code> không đọc thẳng được từ tensor (icefall chia 3/4 · 1 · 5/4) ⇒ <code>load_state_dict</code> lệch 40 tensor; đúng là <code>512,768,1024,1536,1024,768</code>;
+<br>(c) <code>AsrModel.forward</code> trả <b>5</b> giá trị (<code>model.py:481</code>) không phải 3, và <code>ScaledAdam</code> phải nạp qua <code>get_parameter_groups_with_lrs</code> với <code>lr</code> là <b>hệ số tương đối</b> (0.0045), không phải bước học Adam (2.5e-4).
+<br>Cả ba lộ ra vì script dùng <code>strict=True</code> và chạy thật — không vì đọc lại tài liệu.</li>
+<li><b>2026-09-16 · trade-off</b> — cột "ý định" chấm bằng bộ phân tích <b>xấp xỉ</b> (host không chạy Kotlin). Đã thêm cột <b>"nới"</b> dùng bảng cặp nghe-nhầm <b>sinh bằng máy</b> từ <code>VoicePhoneticConfusions.kt</code> (<code>ft/gen-phonetic-pairs.py</code>) ⇒ có cận dưới + cận trên thay vì một con số giả vờ chính xác. Đổi lấy: phải giữ hai cột trong mọi bảng.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

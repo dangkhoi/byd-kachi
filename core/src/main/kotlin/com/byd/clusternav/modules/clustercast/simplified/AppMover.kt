@@ -187,7 +187,7 @@ class AppMover(
     private fun findTaskId(pkg: String): Int? {
         val result = shell.execute("am stack list")
         if (!result.success) return null
-        val regex = Regex("taskId=(\\d+):[^\\n]*$pkg")
+        val regex = taskRegexFor(pkg)
         return regex.find(result.stdout)?.groupValues?.get(1)?.toIntOrNull()
     }
 
@@ -197,14 +197,15 @@ class AppMover(
         val result = shell.execute("am stack list")
         if (!result.success) return null
         var currentDisplayId = -1
+        val taskRegex = taskRegexFor(pkg)
         for (line in result.stdout.lines()) {
-            val stackMatch = Regex("""Stack id=\d+.*displayId=(\d+)""").find(line)
+            val stackMatch = STACK_DISPLAY.find(line)
             if (stackMatch != null) {
                 currentDisplayId = stackMatch.groupValues[1].toIntOrNull() ?: -1
                 continue
             }
             if (currentDisplayId == targetDisplayId) {
-                val taskMatch = Regex("""taskId=(\d+):[^\n]*$pkg""").find(line)
+                val taskMatch = taskRegex.find(line)
                 if (taskMatch != null) {
                     return taskMatch.groupValues[1].toIntOrNull()
                 }
@@ -420,5 +421,16 @@ class AppMover(
 
         /** Launcher/home KHÔNG được chiếu (guard R2 #3). Uỷ quyền [ProjectionApps.isLauncher] (nguồn duy nhất). */
         fun isLauncher(pkg: String): Boolean = ProjectionApps.isLauncher(pkg)
+
+        /** Biên dịch một lần — [findTaskIdOnDisplay] quét từng dòng của `am stack list`. */
+        private val STACK_DISPLAY = Regex("""Stack id=\d+.*displayId=(\d+)""")
+
+        /**
+         * `Regex.escape(pkg)` — tên gói có dấu chấm, mà `.` trong regex khớp MỌI ký tự:
+         * `com.byd.x` chưa escape sẽ khớp cả `comXbydXx`, tức có thể lấy nhầm taskId của app khác
+         * rồi `am stack move-task` sai task (CLAUDE.md §4: phải nhắm ĐÚNG app).
+         * [CastStackParser.findTaskIdTyped] đã escape từ trước — chỗ này lệch chuẩn.
+         */
+        internal fun taskRegexFor(pkg: String): Regex = Regex("""taskId=(\d+):[^\n]*""" + Regex.escape(pkg))
     }
 }

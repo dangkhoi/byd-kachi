@@ -93,11 +93,24 @@ class CapabilityIconsDiversityTest {
         // Sàn = số hình ĐO ĐƯỢC sau lượt vá gần nhất, không phải số mong muốn. Chỉ được đi LÊN.
         // ⚠ `Domain.SAFETY to 24` đã gỡ 2026-09-16 cùng cả domain (owner gỡ ADAS/an toàn).
         val floor = mapOf<Domain, Int>(
-            Domain.ENERGY to 15, Domain.DRIVETRAIN to 12, Domain.CLIMATE to 12,
+            // ⚠ (V) FEATURE-FILTER 2026-09-17 — sàn hạ theo SỐ Ô CÒN LẠI, không phải "hạ cho xanh": lĩnh vực
+            // Năng lượng mất 9 ô (8 ô sạc + tầm-pin-thân-xe + MCU, thêm nút sạc) ⇒ 22 ô còn 12 hình (trước:
+            // 31 ô / 15 hình). Động lực mất `drift_mode`+`drive_mode` ⇒ 11 hình. Thân xe mất 3 nút ⇒ 25.
+            Domain.ENERGY to 12, Domain.DRIVETRAIN to 11, Domain.CLIMATE to 12,
             // U7 — năm lĩnh vực còn lại, sau khi bộ hình xe theo vị trí thay cho gộp-theo-tiền-tố.
-            Domain.TYRES to 8, Domain.BODY to 26, Domain.LIGHTS to 16, Domain.IDENTITY to 7,
+            // ⚠ (V) FEATURE-FILTER 2026-09-17 — **Lốp = 0, và đó là một KẾT LUẬN, không phải một lỗ hổng.** Tám ô
+            // lốp LẺ vào [CapabilityCatalog.HIDDEN_FROM_PICKER] theo lệnh owner (*"gôm lại thành 1 widget"*) ⇒ bộ
+            // chọn không bày ô Lốp nào, mà bài này đo đúng *"những hình nằm CẠNH NHAU trên màn chọn"*. Sàn 0 đi
+            // kèm một assert RIÊNG ngay dưới (đúng 0 ô) để con số này không thể là "quên nối" — và hình lốp vẫn
+            // được canh ở `CapabilityIconMeaningTest` (từng mã → từng hình theo vị trí bánh).
+            Domain.TYRES to 0, Domain.BODY to 25, Domain.LIGHTS to 16, Domain.IDENTITY to 6,
         )
         assertEquals(doneDomains.toSet(), floor.keys, "sàn phải phủ đúng các nhóm đã chữa")
+        assertEquals(
+            emptyMap<String, List<String>>(), shownIconUse(Domain.TYRES),
+            "sàn 0 của Lốp chỉ đúng khi bộ chọn thật sự bày 0 ô Lốp — nếu một ô lốp lẻ quay lại thì phải ghim " +
+                "sàn thật cho nó, không để sàn 0 nuốt luôn phép đo",
+        )
         floor.forEach { (d, min) ->
             val use = shownIconUse(d)
             assertTrue(
@@ -140,7 +153,8 @@ class CapabilityIconsDiversityTest {
      */
     @Test
     fun `rpm va mo-men KHONG dung hinh cua pin`() {
-        val batteryIcons = listOf("soc", "soh_oem", "target_soc", "charging_pct", "is_charging")
+        // ⚠ (V) 2026-09-17: `charging_pct`/`is_charging` rời danh sách cùng datum của chúng (owner chấm NO).
+        val batteryIcons = listOf("soc", "soh_oem", "target_soc", "volt_12v_level")
             .map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }.toSet()
         listOf("motor_front_rpm", "motor_rear_rpm", "motor_front_torque").forEach { id ->
             val icon = CapabilityIcons.forTelemetry(id, Domain.DRIVETRAIN)
@@ -157,7 +171,8 @@ class CapabilityIconsDiversityTest {
     /** *"Còn đi được bao xa"* ≠ *"đã đi được bao xa"* — trước U6 cả sáu ô cùng hình con đường. */
     @Test
     fun `tam hoat dong KHAC quang duong da di`() {
-        val range = listOf("ev_range_km", "fuel_range_km", "batt_range_bodywork")
+        // ⚠ (V) 2026-09-17: `batt_range_bodywork` (mục thứ ba) đã gỡ — owner chấm NO.
+        val range = listOf("ev_range_km", "fuel_range_km")
             .map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }.toSet()
         val driven = listOf("odometer", "ev_mileage_km", "trip_km")
             .map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }.toSet()
@@ -166,21 +181,9 @@ class CapabilityIconsDiversityTest {
         assertTrue(range.first() != driven.first(), "tầm chạy và odo là hai câu hỏi khác nhau")
     }
 
-    /** Trạng thái CỔNG sạc, trạng thái BỘ sạc, công suất, lượng đã nạp — bốn thứ, trước U6 là một tia sét. */
-    @Test
-    fun `ho sac tach thanh cac khai niem rieng`() {
-        val ids = listOf("is_charging", "charge_power", "charging_capacity_kwh", "charging_state", "charger_work_state")
-        val icons = ids.map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }
-        assertTrue(
-            icons.toSet().size >= 4,
-            "họ sạc chỉ còn ${icons.toSet().size} hình cho ${ids.size} ô: ${ids.zip(icons)}",
-        )
-        assertTrue(
-            CapabilityIcons.forTelemetry("charging_state", Domain.ENERGY) !=
-                CapabilityIcons.forTelemetry("charger_work_state", Domain.ENERGY),
-            "trạng thái cổng trên XE và trạng thái THIẾT BỊ sạc là hai câu trả lời khác nhau",
-        )
-    }
+    // ⚠ (V) FEATURE-FILTER 2026-09-17: bài `ho sac tach thanh cac khai niem rieng` đã gỡ — cả năm ô sạc mà nó
+    // canh (`is_charging` · `charge_power` · `charging_capacity_kwh` · `charging_state` · `charger_work_state`)
+    // đều bị owner chấm NO và đã xoá khỏi registry. Không còn "họ sạc" nào để tách hình.
 
     /** Ba ô PM2.5 từng gần trùng cả TÊN lẫn HÌNH; hình phải tách trước, tên tách ở `TelemetryRegistry`. */
     @Test

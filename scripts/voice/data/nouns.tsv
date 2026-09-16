@@ -118,11 +118,6 @@ sunshade	chung	rèm nóc
 sunshade	nam	màn che nắng
 child_lock	chung	khoá trẻ em
 child_lock	nam	khoá con nít
-mirror_auto	chung	gập gương khi khoá
-mirror_auto	chung	tự gập gương
-mirror_fold_btn	chung	gập gương
-mirror_fold_btn	nam	xếp kiếng chiếu hậu
-mirror_fold_btn	chung	gập gương chiếu hậu
 seat_memory	chung	nhớ ghế lái
 seat_memory	chung	lưu vị trí ghế
 ambient_power	chung	đèn viền
@@ -136,25 +131,14 @@ ambient_music	chung	đèn viền theo nhạc
 ambient_music	chung	đèn nhảy theo nhạc
 headlight_mode	chung	chế độ đèn pha
 headlight_mode	chung	kiểu đèn pha
-drive_mode	chung	chế độ lái
-drive_mode	nam	chế độ chạy
-drive_mode	chung	kiểu lái
 powertrain_mode	chung	@only
 powertrain_mode	chung	chế độ động cơ
 powertrain_mode	chung	chế độ năng lượng
 powertrain_mode	chung	xăng điện
 regen_level	chung	mức tái tạo
 regen_level	chung	mức hãm tái sinh
-target_soc_set	chung	mục tiêu sạc
-target_soc_set	chung	giới hạn phần trăm sạc
-charge_cap	chung	giới hạn sạc
-charge_cap	chung	chặn sạc đầy
 wireless_charge	chung	sạc không dây
 wireless_charge	nam	sạc điện thoại
-start_charging	chung	@only
-start_charging	chung	sạc ngay
-start_charging	chung	bắt đầu sạc
-start_charging	nam	sạc liền
 screen_rotation	chung	xoay màn hình
 screen_rotation	chung	hướng màn hình
 camera_view	chung	góc camera
@@ -219,14 +203,11 @@ gear	chung	số
 gear	chung	cần số
 op_mode	chung	chế độ lái
 energy_mode	chung	chế độ năng lượng
-drift_mode	chung	chế độ trượt
 ac_on	chung	điều hoà
 ac_on	nam	máy lạnh
 ac_wind	chung	mức quạt gió
 ac_wind	chung	mức gió
 ac_cycle	chung	chế độ lấy gió
-mcu_status	chung	@only
-mcu_status	chung	trạng thái nguồn
 vin	chung	@only
 vin	chung	số vin
 vin	chung	số khung
@@ -246,17 +227,11 @@ light_front_fog	chung	đèn sương mù trước
 light_rear_fog	chung	đèn sương mù sau
 power_level	chung	nguồn xe
 vehicle_type	chung	mẫu xe
-key_bluetooth	chung	chìa bluetooth
 engine_code	chung	mã máy
 oil_level	chung	mức dầu
 engine_coolant_level	chung	mức nước làm mát
 coolant_temp	chung	nhiệt nước làm mát
 batt_temp	chung	nhiệt độ pin
-charging_pct	chung	@only
-charging_pct	chung	phần trăm sạc
-charging_state	chung	trạng thái sạc
-is_charging	chung	đang sạc
-charge_power	chung	công suất sạc
 target_soc	chung	mục tiêu sạc
 trip_km	chung	quãng đường chuyến
 trip_hours	chung	thời gian chuyến
@@ -275,20 +250,11 @@ temp_unit	chung	đơn vị nhiệt
 anion_state	chung	ion âm
 pm25_online	chung	cảm biến bụi mịn
 ev_mileage_km	chung	km chạy điện
-batt_range_bodywork	chung	tầm pin
 cell_temp_high	chung	nhiệt cell cao
 cell_temp_low	chung	nhiệt cell thấp
 cell_temp_avg	chung	nhiệt cell trung bình
 cell_v_high	chung	áp cell cao
 cell_v_low	chung	áp cell thấp
-charger_work_state	chung	trạng thái bộ sạc
-charging_capacity_kwh	chung	đã sạc phiên
-charging_eta_hour	chung	@only
-charging_eta_hour	chung	còn mấy giờ nữa đầy
-charging_eta_hour	chung	còn bao lâu nữa đầy pin
-charging_eta_min	chung	@only
-charging_eta_min	chung	còn mấy phút nữa đầy
-charging_eta_min	chung	còn bao nhiêu phút nữa đầy
 accel_pct	chung	chân ga
 brake_pct	chung	chân phanh
 wheel_speed	chung	tốc độ bánh

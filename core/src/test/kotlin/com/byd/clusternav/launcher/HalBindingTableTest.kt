@@ -180,6 +180,6 @@ class HalBindingTableTest {
         assertEquals(1, HalBindingTable.defaultPrimary(ControlRegistry.byId("win_lf")!!))      // COVER
         assertEquals(1, HalBindingTable.defaultPrimary(ControlRegistry.byId("pm25_clean_now")!!)) // BUTTON
         assertEquals(22, HalBindingTable.defaultPrimary(ControlRegistry.byId("temp")!!))       // STEP def.value
-        assertEquals(0, HalBindingTable.defaultPrimary(ControlRegistry.byId("drive_mode")!!))  // SELECT
+        assertEquals(0, HalBindingTable.defaultPrimary(ControlRegistry.byId("headlight_mode")!!))  // SELECT
     }
 }

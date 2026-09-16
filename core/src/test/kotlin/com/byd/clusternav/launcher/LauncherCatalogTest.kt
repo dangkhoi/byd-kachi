@@ -15,10 +15,15 @@ class LauncherCatalogTest {
         assertTrue(WidgetCatalog.CURATED.all { it.tier == EvidenceTier.PROVEN })
     }
 
-    @Test fun `telemetry picks phu 8 domain va tong bang registry`() {
+    @Test fun `telemetry picks phu du lanh vuc dang co datum va tong bang registry`() {
+        // H1 · T2 (2026-09-16): datum nay KHÔNG còn nằm gọn trong [Domain.TELEMETRY] — `media_vol` (âm lượng
+        // Android) là mục ĐỌC đầu tiên của [Domain.INFOTAINMENT]. Bài này vì thế đo *"bày ra đúng những lĩnh vực
+        // đang có datum"* thay vì ghim đúng bảy tên: ghim tên là bắt mọi lĩnh vực mới phải sửa bài kiểm trước khi
+        // được tồn tại, mà cái nó thật sự canh là *"không lĩnh vực nào có datum mà bộ chọn bỏ quên"*.
         val groups = WidgetCatalog.telemetryByDomain()
         val domains = groups.map { it.first }.toSet()
-        assertEquals(Domain.TELEMETRY.toSet(), domains, "telemetry phải phủ đúng 8 domain")
+        assertEquals(TelemetryRegistry.domains(), domains, "bộ chọn phải bày đúng các lĩnh vực đang có datum")
+        assertTrue(Domain.TELEMETRY.all { it in domains }, "bảy lĩnh vực gốc của catalog §A vẫn phải còn đủ")
         assertEquals(TelemetryRegistry.ALL.size, groups.sumOf { it.second.size }, "tổng pick = số datum")
     }
 
@@ -35,16 +40,19 @@ class LauncherCatalogTest {
         val byDomain = panels.toMap()
         // ⚠ Panel SAFETY (ADAS) đã gỡ 2026-09-16 cùng cả `Domain.SAFETY` — owner gỡ toàn bộ ADAS/an toàn.
         assertTrue(Domain.values().none { it.name == "SAFETY" }, "không được có panel ADAS/an toàn nào mọc lại")
-        assertTrue(byDomain[Domain.DRIVETRAIN]!!.any { it.id == "drive_mode" }, "chế độ lái panel DRIVETRAIN")
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: mốc cũ là `drive_mode` — nút đó đã gỡ (owner chấm NO). Nút DRIVETRAIN
+        // còn sống lấy làm mốc: `powertrain_mode` (EV / HEV).
+        assertTrue(byDomain[Domain.DRIVETRAIN]!!.any { it.id == "powertrain_mode" }, "EV/HEV panel DRIVETRAIN")
         assertTrue(byDomain[Domain.INFOTAINMENT]!!.any { it.id == "hud_switch" }, "HUD panel INFOTAINMENT")
         assertEquals(ControlRegistry.ALL.size, panels.sumOf { it.second.size }, "tổng nút = registry (không sót)")
     }
 
     @Test fun `select cycle vong va nhan dung`() {
-        val def = ControlRegistry.byId("drive_mode")!!   // args: Thường/Eco/Thể thao/Tuyết
+        // ⚠ (V) 2026-09-17: mốc cũ `drive_mode` đã gỡ ⇒ dùng `headlight_mode` (SELECT 4 lựa chọn: Tắt/Auto/Đỗ/Cốt).
+        val def = ControlRegistry.byId("headlight_mode")!!   // args: Tắt/Auto/Đỗ/Cốt
         assertEquals(1, ControlTileLogic.nextSelectIndex(0, def.args.size))
         assertEquals(0, ControlTileLogic.nextSelectIndex(def.args.size - 1, def.args.size))   // vòng lại
-        assertEquals("Eco", ControlTileLogic.selectLabel(def, 1))
+        assertEquals("Auto", ControlTileLogic.selectLabel(def, 1))
         assertEquals(def.label, ControlTileLogic.selectLabel(def, 99))   // ngoài phạm vi → nhãn nút
         assertEquals(0, ControlTileLogic.nextSelectIndex(0, 0))          // rỗng an toàn
     }
@@ -59,7 +67,7 @@ class LauncherCatalogTest {
         assertFalse(NoCar.toggle("pm25", true))
         assertFalse(NoCar.step("fan", 3))
         assertFalse(NoCar.cover("win_lf", true))
-        assertFalse(NoCar.select("drive_mode", 1))
+        assertFalse(NoCar.select("headlight_mode", 1))
         assertFalse(NoCar.press("pm25_clean_now"))
         assertNull(NoCar.batteryPercent())
         assertNull(NoCar.pm25Level())

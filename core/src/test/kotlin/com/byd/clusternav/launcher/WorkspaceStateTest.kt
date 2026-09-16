@@ -1,7 +1,9 @@
 package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class WorkspaceStateTest {
@@ -107,6 +109,47 @@ class WorkspaceStateTest {
         assertSame(SlotContent.Empty, clean.slots[2], "mã NHÓM đã xoá cũng phải rụng")
         assertEquals(SlotContent.Widget(listOf("soc")), clean.slots[3], "mã sống không bị đụng tới")
         assertEquals(emptyList<String>(), clean.unknownWidgetIds(), "chạy lại phải sạch (idempotent)")
+    }
+
+    /**
+     * ═══ (V) FEATURE-FILTER 2026-09-17 — CẢ 19 MÃ owner chấm NO phải rụng khỏi cấu hình ĐÃ LƯU ═══════════════
+     *
+     * Bài trên khoá **cơ chế**; bài này khoá **đúng danh sách của lượt xoá này**. Hai bài khác nhau ở chỗ: cơ chế
+     * có thể đúng mà vẫn sót một mã (vd một mã bị xoá khỏi registry này nhưng còn trong registry kia ⇒ `pick`
+     * vẫn tra ra ⇒ ô hỏng vẫn sống). Duyệt từng mã nên không có chỗ nào để sót.
+     *
+     * ⚠ Xe của owner đang chạy 1.68 với hồ sơ đã lưu; nếu một trong 19 mã này còn trên màn thì sau khi nâng cấp
+     * nó sẽ thành ô ghi hoa mã + `"—"` vĩnh viễn — đúng lỗi [P0] mà Pass 1 của ADAS-PURGE đã vá.
+     */
+    @Test fun `sanitized bo het 19 ma cua luot FEATURE-FILTER`() {
+        val gone = listOf(
+            "is_charging", "charge_power", "charging_pct", "charging_eta_hour", "charging_eta_min",
+            "charging_capacity_kwh", "charging_state", "charger_work_state", "batt_range_bodywork",
+            "target_soc_set", "charge_cap", "start_charging", "drift_mode", "drive_mode", "rain_close",
+            "mirror_auto", "mirror_fold_btn", "mcu_status", "key_bluetooth",
+        )
+        assertEquals(19, gone.size, "danh sách của lượt (V) phải đúng 19 mã — xem docs/diagnostics/feature-filter-2026-09-16.md §1")
+        gone.forEach { id ->
+            assertNull(CapabilityCatalog.pick(id), "$id vẫn tra ra được ⇒ chưa xoá khỏi bộ đăng ký nào đó")
+            val s = WorkspaceState().withSlot(0, SlotContent.Widget(listOf(id, "soc")))
+            assertEquals(listOf(id), s.unknownWidgetIds(), "$id phải bị NÓI RA là mã lạ")
+            assertEquals(
+                SlotContent.Widget(listOf("soc")), s.sanitized().slots[0],
+                "$id phải rụng khỏi ô đã lưu, `soc` ở lại",
+            )
+        }
+    }
+
+    // ⚠ Ngược lại: 8 ô lốp LẺ chỉ bị **ẩn khỏi bộ chọn** ở lượt (V), KHÔNG xoá ⇒ ô ai đã đặt phải sống tiếp.
+    @Test fun `tam o lop le chi bi an, khong bi don khoi cau hinh da luu`() {
+        listOf(
+            "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
+            "tyre_t_fl", "tyre_t_fr", "tyre_t_rl", "tyre_t_rr",
+        ).forEach { id ->
+            assertTrue(id in CapabilityCatalog.HIDDEN_FROM_PICKER, "$id phải nằm trong danh sách ẩn có lý do")
+            val s = WorkspaceState().withSlot(0, SlotContent.Widget(id))
+            assertSame(s, s.sanitized(), "$id còn trong registry ⇒ không phải rác")
+        }
     }
 
     // Mã CÒN trong registry nhưng bị ẩn khỏi bộ chọn (`CapabilityCatalog.HIDDEN_FROM_PICKER`) KHÔNG được coi là

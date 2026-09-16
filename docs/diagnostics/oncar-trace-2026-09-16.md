@@ -1,6 +1,8 @@
 # Lượt xe 2026-09-16 — trace voice trực tiếp · sweep · vòng action · framework thật của xe
 
-> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+> ⚠ **2026-09-17 — (V) FEATURE-FILTER**: owner gỡ thêm **19 mã chấm NO** (12 thông tin + 7 nút — cụm SẠC, chế độ lái, gập gương, chế độ drift, trạng thái nguồn MCU, chìa Bluetooth, tự-đóng-kính-khi-mưa) và **ẩn 8 ô lốp lẻ** khỏi bộ chọn. **Trạng thái hôm nay: 154 chức năng** = **47 nút · 100 thông tin · 4 gói · 3 hành động**; `status-by-id.json` **145** mục. Mọi con số dưới đây (kể cả banner ADAS-PURGE ngay dưới) là **LỊCH SỬ ĐO** — xem `docs/diagnostics/feature-filter-2026-09-16.md`.
+
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái lúc đó (2026-09-16): **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
 
 - **Ngày:** 2026-09-16 09:00–09:35 · **Chủ:** dangkhoi · **Xe:** DiLink3.0 (Android 10, fingerprint `…eng.build.20260204`), Qualcomm TRINKET 8 lõi 1,8 GHz, RAM 7,6 GB (**trống ~60 MB**) · **Bản:** Kachi **1.64 (65)** qua OTA, sau đó bản thử `1.65-mic` (vehicleTest).
 - **Kết nối:** `adb connect <ip-xe>:5555` từ máy soạn thảo; test-mode bật tay ở Cài đặt › Nâng cao (60 phút).

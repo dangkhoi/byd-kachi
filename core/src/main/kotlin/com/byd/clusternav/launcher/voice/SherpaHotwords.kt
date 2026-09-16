@@ -63,10 +63,12 @@ object SherpaHotwords {
      * tiếng Việt hay dùng nhất (bản đầu của hàm này đã làm rụng đúng cụm ấy — bài canh bắt được). Nhãn EN không
      * vào tệp vì [SherpaPhraseHotwords] **không lấy** `labelEn`/`shortEn`/`argsEn` ngay từ nguồn.
      */
-    fun phraseFile(phrases: Iterable<String>): String {
+    fun phraseFile(phrases: Iterable<String>, appNames: Iterable<String> = emptyList()): String {
         val seen = LinkedHashSet<String>()
         for (raw in phrases) phrasesOf(raw).filterTo(seen) { isPhrase(it) }
-        val kept = dropPrefixes(seen)
+        // Thứ tự hai bộ lọc có ý nghĩa: bỏ dòng mở đầu bằng tên app TRƯỚC, rồi mới bỏ tiền tố — làm ngược lại
+        // thì một dòng ngắn bị bỏ vì là tiền tố của một dòng mà ngay sau đó cũng bị bỏ, tức mất cả hai.
+        val kept = dropPrefixes(dropAppNameLeading(seen, appNames))
         return if (kept.isEmpty()) "" else kept.joinToString("\n") + "\n"
     }
 
@@ -105,6 +107,31 @@ object SherpaHotwords {
             }
         }
         return lines.filterNot { it in prefixes }
+    }
+
+    /**
+     * H3 — bỏ dòng **mở đầu bằng một TÊN APP đứng trọn vẹn** (*"YOUTUBE MUSIC"*, *"GU GỒ MÁP …"*).
+     *
+     * ## Bẫy `YOUTUBE MUSIC`, và vì sao nó khác luật tiền tố
+     * Cùng cơ chế nguồn với [dropPrefixes] (sherpa-onnx `csrc/context-graph.cc` `ForwardOneStep`: khớp trọn một
+     * hotword ⇒ đồ thị **về gốc**), nhưng chỗ đau khác: câu về app gần như luôn còn **mệnh đề đuôi** —
+     * *"mở youtube music **vào ô số hai**"*. Tên app khớp trọn ở đầu câu là phần đuôi mất sạch đường cộng điểm,
+     * mà đuôi ấy lại là thứ quyết định app đi vào ô nào. [dropPrefixes] không bắt được ca này: *"YOUTUBE MUSIC"*
+     * chỉ là tiền tố của một dòng khác khi dòng ấy **có mặt trong tệp**, còn *"vào ô số hai"* thì không bao giờ
+     * là hotword (số ô bị luật bỏ-token-chữ-số loại từ đầu).
+     *
+     * ⇒ Cụm tên app chỉ được bias khi nó đứng **sau một động từ** (*"MỞ YOUTUBE MUSIC"*): lúc đó đường đúng vẫn
+     * ăn trọn điểm mà đồ thị chỉ về gốc ở cuối cụm động-từ-+-tên, không phải ngay ở chữ đầu câu.
+     *
+     * ⚠ Tên app **không** được viết cứng trong tệp này (CLAUDE.md §7): chỗ gọi cấp danh sách — xem
+     * [SherpaPhraseHotwords.appNames]. Danh sách rỗng ⇒ hàm trả nguyên đầu vào.
+     *
+     * @param appNames tên app ở dạng đã chuẩn hoá hay chưa đều được — hàm tự đưa qua [normalize].
+     */
+    fun dropAppNameLeading(lines: Collection<String>, appNames: Iterable<String>): List<String> {
+        val names = appNames.flatMap { phrasesOf(it) }.toSet()
+        if (names.isEmpty()) return lines.toList()
+        return lines.filterNot { line -> names.any { line == it || line.startsWith("$it ") } }
     }
 
     /**

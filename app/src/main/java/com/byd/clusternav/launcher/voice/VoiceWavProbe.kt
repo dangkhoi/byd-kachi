@@ -55,6 +55,31 @@ object VoiceWavProbe {
     private const val MAX_FMT_BYTES = 64
 
     /**
+     * Số mẫu đưa vào bộ giải mã sau khi cắt đuôi — **cùng chế độ `head`** với phiên nghe thật.
+     *
+     * Đẩy cả tệp qua Silero theo từng khối đúng cỡ khối micro ([VoiceCapture.CHUNK_SAMPLES]) để phép đo giống
+     * phiên thật tới cả nhịp nạp, rồi `flush()` (tệp hết ⇒ đoạn cuối phải được chốt, y như lượt chạm trần).
+     *
+     * Không dựng được VAD ⇒ trả **nguyên** độ dài: đường đo thà nói về một cửa sổ chưa cắt còn hơn im lặng đổi
+     * kết quả bằng một phép cắt không ai đo được (cùng luật [VoiceTurnEndpoint.trimSamples] ở đường lùi).
+     */
+    private fun trimSamples(ctx: Context, pcm: ShortArray, n: Int): Int {
+        val vad = VoiceVad.open(ctx) ?: return n
+        return vad.use {
+            var at = 0
+            while (at < n) {
+                val len = minOf(VoiceCapture.CHUNK_SAMPLES, n - at)
+                it.accept(pcm.copyOfRange(at, at + len), len)
+                at += len
+            }
+            it.flush()
+            it.headTrimSamples(n).also { t ->
+                if (t < n) Log.i(TAG, "cắt đuôi WAV: $n → $t mẫu (bỏ ${(n - t) * 1000 / 16000} ms)")
+            }
+        }
+    }
+
+    /**
      * Nơi tìm tệp, **theo thứ tự**.
      *
      * 1. `Download/` — chỗ `adb push` mặc định, và là chỗ người ta nghĩ tới đầu tiên. Từ Android 10 app thường
@@ -88,13 +113,22 @@ object VoiceWavProbe {
             ?: return Result(file.absolutePath, "", Lang.t("mô hình chưa sẵn sàng", "model not ready"))
         return runCatching {
             val pcm = readPcm(file)
-            val grammarText = rec.use { it.decodeAll(pcm.first, pcm.second) }
+            // ═══ CẮT ĐUÔI **cùng phép cắt** mà phiên nghe thật dùng ═══════════════════════════════════
+            // Phiên thật nay cắt cửa sổ tại điểm hết tiếng (`head`, xem [VoiceVadTrim]); nếu đường đo này KHÔNG
+            // cắt thì nó thôi nói về phiên thật — đúng thứ KDoc lớp cấm ("phép đo phải đi qua cùng con đường").
+            //
+            // ⚠ Với tệp đã cắt sát tiếng (mọi WAV `w01`–`w25` của bộ đo) đây gần như **no-op**: VAD chốt đoạn ở
+            // sát cuối tệp nên `trim ≈ n`. Nó chỉ thật sự cắt ở những tệp CÓ đuôi — đúng ba ca `w26`/`w27`/`w28`
+            // mà [ĐO máy ảo 1.69] cho ra *"bật đèn đọc **sách**"* và *"xem pin **và**"*: cùng dạng token mọc thêm
+            // với *"đang đọc sách"* / *"mở cửa sổ **bật**"* trong log xe thật.
+            val trimmed = trimSamples(ctx, pcm.first, pcm.second)
+            val grammarText = rec.use { it.decodeAll(pcm.first, trimmed) }
             // ĐÚNG hai lượt như phiên nghe thật (R16) — phép đo phải đi qua cùng con đường, không phải một
             // đường rút gọn; nếu không thì nó không nói gì về phiên thật (xem KDoc lớp).
             val free = if (VoiceOpenVocab.triggerOf(grammarText) == null) {
                 ""
             } else {
-                VoiceRecognizer.openFree(ctx)?.use { it.decodeAll(pcm.first, pcm.second) }.orEmpty()
+                VoiceRecognizer.openFree(ctx)?.use { it.decodeAll(pcm.first, trimmed) }.orEmpty()
             }
             val merged = VoiceOpenVocab.merge(grammarText, free)
             Result(file.absolutePath, merged.text, null, grammarText, free)
@@ -110,24 +144,46 @@ object VoiceWavProbe {
      */
     private fun readPcm(file: File): Pair<ShortArray, Int> {
         val out = ShortArray(VoiceCapture.MAX_KEPT_SAMPLES)
+        return file.inputStream().buffered().use { input -> out to readSamples(input, out, readHeader(input)) }
+    }
+
+    /**
+     * Ghép [dataBytes] byte PCM16 little-endian từ [input] vào [out], trả **số mẫu** đã ghép.
+     *
+     * `internal` để bài kiểm off-car gọi được thẳng bằng một luồng dựng tay — đó là cách duy nhất ép ra được ca
+     * "khối lẻ byte" mà một tệp WAV bình thường không bao giờ cho.
+     *
+     * ## [SOÁT 2026-09-16 · P3] Byte LẺ phải được **treo sang lượt sau**, không được vứt
+     * Bản trước ghép `n / 2` mẫu rồi trừ `left -= n`: một lượt đọc trả về **số byte lẻ** làm byte cao của mẫu
+     * cuối bị **vứt đi trong khi vị trí luồng đã đi qua nó** ⇒ từ đó trở đi mọi mẫu được ghép từ một cặp byte
+     * **lệch một** — tức tiếng thành nhiễu, im lặng, ở giữa cửa sổ đo.
+     *
+     * ⚠ **Mức bằng chứng** (CLAUDE.md §2): với [readAtMost] hiện tại (nó **lặp** tới khi đủ hoặc hết luồng)
+     * ca ấy **[SUY] không tới được** — `n` lẻ chỉ xảy ra khi (a) luồng cạn giữa một mẫu, hoặc (b) `want` lẻ, mà
+     * `want` chỉ lẻ ở khối `data` lẻ byte, tức lượt cuối. Cả hai đều là lượt **cuối cùng**, nên không còn mẫu
+     * nào để làm lệch. Nhưng điều đó chỉ đúng **nhờ một chi tiết của một hàm khác** — một bất biến ngầm giữa
+     * hai hàm, đúng họ lỗi mà CLAUDE.md §3 cảnh báo. Vòng lặp này nay tự đúng, không mượn bảo đảm của ai.
+     */
+    internal fun readSamples(input: InputStream, out: ShortArray, dataBytes: Long): Int {
         var at = 0
-        file.inputStream().buffered().use { input ->
-            var left = readHeader(input)
-            val raw = ByteArray(VoiceCapture.SAMPLE_RATE / 5 * 2)
-            while (left > 0 && at < out.size) {
-                val want = minOf(raw.size.toLong(), left).toInt()
-                val n = input.readAtMost(raw, want)
-                if (n <= 0) break
-                val samples = minOf(n / 2, out.size - at)
-                for (i in 0 until samples) {
-                    // WAV PCM là little-endian có dấu.
-                    out[at + i] = ((raw[2 * i].toInt() and 0xFF) or (raw[2 * i + 1].toInt() shl 8)).toShort()
-                }
-                at += samples
-                left -= n
+        var left = dataBytes
+        var carry = -1                                          // byte THẤP còn treo từ lượt trước; -1 = không có
+        val raw = ByteArray(VoiceCapture.SAMPLE_RATE / 5 * 2)
+        while (left > 0 && at < out.size) {
+            val want = minOf(raw.size.toLong(), left).toInt()
+            val n = input.readAtMost(raw, want)
+            if (n <= 0) break
+            var i = 0
+            // WAV PCM là little-endian có dấu.
+            if (carry >= 0) { out[at++] = (carry or (raw[i++].toInt() shl 8)).toShort(); carry = -1 }
+            while (i + 1 < n && at < out.size) {
+                out[at++] = ((raw[i].toInt() and 0xFF) or (raw[i + 1].toInt() shl 8)).toShort()
+                i += 2
             }
+            if (i < n && at < out.size) carry = raw[i].toInt() and 0xFF
+            left -= n
         }
-        return out to at
+        return at
     }
 
     /**

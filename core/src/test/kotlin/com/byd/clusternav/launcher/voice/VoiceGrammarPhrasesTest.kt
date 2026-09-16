@@ -212,11 +212,18 @@ class VoiceGrammarPhrasesTest {
                 "app `$key` không có cách nói nào mô hình đọc nổi — thêm một cách gọi thuần Việt vào VoiceSynonyms.APP_TARGETS",
             )
         }
-        listOf(VoiceAppTargets.SPOTIFY, VoiceAppTargets.ZING).forEach { key ->
-            val target = VoiceAppTargets.byKey(key)!!
-            assertFalse(
+        // ═══ H3 (2026-09-16) — **tin tốt đã tới**: Spotify và Zing MP3 NAY nói được ═════════════════════════
+        //
+        // Tới 1.68 hai app này nằm ở vế `assertFalse` của chính bài này, kèm ghi chú *"chấp nhận: gõ được mà chưa
+        // nói được, vì không có âm Việt nào tự nhiên"*. Kết luận ấy đã sai ở chỗ *"không có"*: `apps.tsv` (người
+        // soạn tay) ghi **sờ pô ti phai** · **pô ti phai** · **ding mờ pê ba**, và [ĐO] tra lại đúng tệp từ điển
+        // 19.529 mục thì mọi từ trong chúng đều có mặt. Nên nay MỌI app đích phải nói được — không còn ngoại lệ,
+        // và ngày một app mới vào bảng mà quên khai cách đọc thì bài này đỏ.
+        VoiceAppTargets.ALL.forEach { target ->
+            assertTrue(
                 target.spoken.any { it in sayable },
-                "app `$key` NAY đã nói được — tin tốt: cập nhật §9 spec và gỡ nó khỏi danh sách này",
+                "app `${target.key}` không có cách nói nào mô hình đọc nổi — thêm cách đọc âm Việt vào " +
+                    "VoiceSynonyms.APP_TARGETS (xem scripts/voice/data/apps.tsv)",
             )
         }
     }
@@ -264,7 +271,21 @@ class VoiceGrammarPhrasesTest {
         //
         // [ĐO] 2026-09-16 · (N) ADAS-PURGE: **342 → 305 (−37)** — owner gỡ toàn bộ ADAS/an toàn khỏi launcher
         // (10 nút + 17 datum + 4 cách nói `itac`/`avh`), nên mọi cụm nhiều từ dựng từ nhãn của chúng rụng theo.
-        const val EXPECTED_PHRASES_KEPT = 305
+        //
+        // [ĐO off-car 2026-09-16 · H3/H4] **305 → 379 (+74)** = đúng 74 cách gọi mới thêm vào [VoiceSynonyms]
+        // (giọng Nam từ `scripts/voice/data/nouns.tsv` + `"đang đọc sách"` [ĐO xe] + vài cách nói đời thường).
+        // Đếm bằng máy trên CHÍNH tệp từ điển của bài này: cả 74 cụm đều nhiều từ và **mọi từ đều tra được**
+        // (không có dạng bỏ dấu nào vắng mặt) ⇒ không cụm nào rơi sang [EXPECTED_PHRASES_DROPPED].
+        // ⚠ Tên app đích KHÔNG nằm trong con số này: `set` gọi với `installed` rỗng (xem [EXPECTED_ENTRIES]).
+        // [ĐO off-car 2026-09-16 · lượt soát của cha] **379 → 378 (−1)**: gỡ `"khoa cua xe"` khỏi `lock` vì nó
+        // nuốt cụm ĐÃ ĐO `MỞ KHÓA CỬA` qua luật tiền tố — lý do đầy đủ ở chỗ khai trong `VoiceSynonyms.kt`.
+        // [ĐO off-car 2026-09-16 · H1 T2] **378 → 390 (+12)** = cụm nhiều từ dựng từ nhãn + nhãn ngắn của SÁU
+        // datum mới (*"Mức ghế mát"*, *"Ghế mát"*, *"Trạng thái sấy trước"*, *"Sấy trước"*, *"Chế độ điều hòa"*,
+        // *"Âm lượng giải trí"*…). Con số đếm bằng máy trên chính tệp từ điển của bài, không chép tay.
+        // [ĐO off-car 2026-09-17 · (V) FEATURE-FILTER] **390 → 357 (−33)** = cụm nhiều từ dựng từ nhãn + nhãn
+        // ngắn + từ đồng nghĩa của 19 mã owner chấm NO (cụm sạc, chế độ lái, gập gương, chế độ drift, chìa
+        // Bluetooth, trạng thái nguồn MCU…). Số đọc từ **actual** của chính bài này.
+        const val EXPECTED_PHRASES_KEPT = 357
 
         /**
          * [ĐO] 269 cụm bị loại — **gần như toàn bộ là nhãn tiếng ANH** (*"Reading light"*, *"Tyre FL"*…), cộng
@@ -279,7 +300,16 @@ class VoiceGrammarPhrasesTest {
          * [ĐO] 2026-09-16 · (N) ADAS-PURGE: **274 → 236 (−38)** — phần lớn là nhãn tiếng Anh của các mục ADAS
          * vừa xoá (*"Blind spot front-left"*, *"Rear cross-traffic alert"*…).
          */
-        const val EXPECTED_PHRASES_DROPPED = 236
+        //
+        // [ĐO off-car 2026-09-16 · H3/H4] **KHÔNG đổi** — cả 74 cách gọi mới đều tra được trọn vẹn (xem
+        // [EXPECTED_PHRASES_KEPT]). Đây là hệ quả của luật nhập: cách gọi giọng Nam là **tiếng Việt đời thường**,
+        // đúng thứ mô hình VN phủ tốt nhất — khác hẳn nhãn tiếng Anh vốn chiếm gần trọn con số dưới.
+        // [ĐO off-car 2026-09-16 · H1 T2] **236 → 244 (+8)** = tám cụm tiếng ANH của sáu datum mới
+        // (*"Seat ventilation level"*, *"Front defrost state"*, *"Media volume"*…) — đúng họ đã chiếm gần trọn
+        // con số này: mô hình tiếng Việt không nghe ra nhãn tiếng Anh. Bản tiếng Việt của cả sáu đều GIỮ được.
+        // [ĐO off-car 2026-09-17 · (V) FEATURE-FILTER] **244 → 216 (−28)** = nhãn tiếng ANH của 19 mã owner
+        //   chấm NO (*"Charge power"*, *"Drive mode"*, *"Fold mirrors on lock"*, *"Bluetooth key"*…).
+        const val EXPECTED_PHRASES_DROPPED = 216
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -311,6 +341,30 @@ class VoiceGrammarPhrasesTest {
         //
         // [ĐO] 2026-09-16 · (N) ADAS-PURGE: **2114 → 1985 (−129)** = 37 cụm giữ + 38 cụm loại rụng theo registry,
         // phần còn lại là **từ đơn** chỉ xuất hiện trong nhãn ADAS (*"mù"*, *"làn"*, *"thắt"*, *"ESP"*…).
-        const val EXPECTED_ENTRIES = 1985
+        //
+        // ⚠⚠ [CHƯA ĐO · 2026-09-16 · H3/H4] Con số dưới là con số **CŨ** và nó sẽ đỏ ở lượt chạy đầu.
+        //
+        // Hai vế kia tính được off-car vì chúng chỉ phụ thuộc *"cụm mới có tra được không"* — đếm thẳng trên tệp
+        // từ điển là ra. Vế này thì không: nó còn cộng **từ đơn nở theo thanh điệu**, mà phần nở ấy phụ thuộc
+        // *"từ đó đã có ai khai chưa"* — tức phụ thuộc toàn bộ tập singles cũ (1679 mục), thứ chỉ dựng được khi
+        // chạy thật. Đoán một con số ở đây là đúng thứ CLAUDE.md §2 cấm.
+        //
+        // ⇒ Chạy `:core:test --tests '*VoiceGrammarPhrasesTest*'`, đọc **actual** trong câu báo lỗi, dán vào đây
+        // kèm một dòng giải thích phần chênh (cụm mới + từ đơn mới: `kiếng` · `chốt` · `thùng` · `nít` · `xếp` ·
+        // `hãm` · `khung` · `hơi` · `bánh` · `nữa` … và hai tiếng đệm mới `u`/`um` của [VoiceLexicon.FILLERS]).
+        // [ĐO off-car 2026-09-16 · lượt chạy thật của cha] **1985 → 2192 (+207)**. Phần chênh = 73 cụm nhiều
+        // từ mới (378 − 305) **cộng** các từ ĐƠN chưa ai khai, nở theo họ thanh điệu: `kiếng` · `chốt` ·
+        // `thùng` · `nít` · `xếp` · `hãm` · `khung` · `hơi` · `bánh` · `nữa` … và hai tiếng đệm `ừ`/`ừm` mới
+        // thêm vào [VoiceLexicon.FILLERS] (P0 vòng lặp hội thoại). Con số đọc từ **actual** của chính bài này,
+        // không phải một phép đoán — đúng cách KDoc trên đã dặn.
+        // [ĐO off-car 2026-09-16 · H1 T2 · lượt chạy thật] **2192 → 2212 (+20)**: 12 cụm nhiều từ của sáu datum
+        // mới (390 − 378) cộng các từ ĐƠN lần đầu xuất hiện trong nhãn của chúng (`mức` đã có, nhưng `lượng` ·
+        // `giải` · `trí` · `trạng` · `thái` … thì chưa), nở theo họ thanh điệu như mọi từ đơn khác. Số đọc từ
+        // **actual** của chính bài này, không phải phép đoán.
+        // [ĐO off-car 2026-09-17 · (V) FEATURE-FILTER · lượt chạy thật] **2212 → 2097 (−115)** = 33 cụm giữ +
+        // 28 cụm loại rụng theo registry, phần còn lại là **từ đơn** chỉ xuất hiện trong nhãn/cách gọi của 19 mã
+        // owner chấm NO (*"drift"*, *"gương"*, *"chìa"*, *"sạc"* các biến thể chưa ai khai ở chỗ khác…).
+        // Số đọc từ **actual** của chính bài này, không phải phép đoán — đúng cách KDoc trên đã dặn.
+        const val EXPECTED_ENTRIES = 2097
     }
 }

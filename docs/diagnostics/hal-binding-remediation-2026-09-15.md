@@ -1,6 +1,8 @@
 # RE + vá binding HAL cho 187 chức năng — off-car (2026-09-15)
 
-> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+> ⚠ **2026-09-17 — (V) FEATURE-FILTER**: owner gỡ thêm **19 mã chấm NO** (12 thông tin + 7 nút — cụm SẠC, chế độ lái, gập gương, chế độ drift, trạng thái nguồn MCU, chìa Bluetooth, tự-đóng-kính-khi-mưa) và **ẩn 8 ô lốp lẻ** khỏi bộ chọn. **Trạng thái hôm nay: 154 chức năng** = **47 nút · 100 thông tin · 4 gói · 3 hành động**; `status-by-id.json` **145** mục. Mọi con số dưới đây (kể cả banner ADAS-PURGE ngay dưới) là **LỊCH SỬ ĐO** — xem `docs/diagnostics/feature-filter-2026-09-16.md`.
+
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái lúc đó (2026-09-16): **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
 
 - **Bối cảnh:** chuyến on-car 2026-09-15 chấm 64 OK / 121 KHÔNG / 2 chưa (187). Owner: *"mất quá nhiều thời gian trên xe vô nghĩa"* → RE toàn bộ **off-car**, lên xe chỉ xác nhận.
 - **Spec:** `docs/specs/kachi-hal187-cast-remediation.html`. **Nguồn:** `../jadx-*` (stub có enum/feature-id THẬT), `BYDAutoFeatureIds.java`, `../jadx-openbyd/.../CarControlImpl.java` (usage thật), `../dashcast-src/CHANGELOG.md`, doc RE nền.

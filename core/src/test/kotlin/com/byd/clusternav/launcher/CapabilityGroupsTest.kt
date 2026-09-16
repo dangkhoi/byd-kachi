@@ -253,11 +253,19 @@ class CapabilityGroupsTest {
         assertEquals(TopStripConfig.DEFAULT.ids, TopStripConfig.decode("g_tyres,g_lights").ids)
     }
 
-    /** Và luật cũ KHÔNG bị vá quá tay: mục ĐỌC rời vẫn lên được thanh trên, mặc định vẫn đúng 3 chip. */
+    /**
+     * Và luật cũ KHÔNG bị vá quá tay: mục ĐỌC rời vẫn lên được thanh trên, mặc định vẫn đúng 3 chip.
+     *
+     * ⚠ (V) FEATURE-FILTER 2026-09-17: mốc cũ là `tyre_p_fl` — tám ô lốp LẺ nay **ẩn khỏi bộ chọn**
+     * ([CapabilityCatalog.HIDDEN_FROM_PICKER]) theo lệnh owner *"gôm lại thành 1 widget"*, nên nó không còn
+     * chứng minh được vế thứ hai. Đổi sang `batt_temp`: cùng là mục ĐỌC rời, không ẩn. Luật *"ẩn ≠ cấm chip"*
+     * vẫn giữ — `isChippable` vẫn nói CÓ cho `tyre_p_fl`, chỉ màn chọn không bày nó nữa.
+     */
     @Test
     fun `chan nhom len chip - khong va qua tay`() {
-        assertTrue(TopStripConfig.isChippable("tyre_p_fl"), "mục ĐỌC rời vẫn phải chip được")
-        assertTrue(TopStripConfig.choices().any { it.id == "tyre_p_fl" }, "và màn chọn vẫn phải bày nó")
+        assertTrue(TopStripConfig.isChippable("batt_temp"), "mục ĐỌC rời vẫn phải chip được")
+        assertTrue(TopStripConfig.choices().any { it.id == "batt_temp" }, "và màn chọn vẫn phải bày nó")
+        assertTrue(TopStripConfig.isChippable("tyre_p_fl"), "ẩn khỏi bộ chọn KHÔNG phải cấm chip (mã vẫn sống)")
         assertEquals(3, TopStripConfig.DEFAULT.ids.size, "mặc định vẫn đúng 3 chip như owner đang thấy")
     }
 
@@ -289,8 +297,9 @@ class CapabilityGroupsTest {
         // xong xoá mục rời "cho gọn" là làm MẤT khả năng (§4.2 — có người chỉ muốn một con số tốc độ to giữa màn).
         // ⚠ 2026-09-16 owner gỡ ADAS/an toàn: 123 → 106 datum, 64 → 54 nút. Đó là một **quyết định của owner**,
         // không phải việc gom nhóm làm mất mục — bài này vẫn canh đúng điều nó sinh ra để canh.
-        assertEquals(106, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 106")
-        assertEquals(54, ControlRegistry.ALL.size, "nút rời phải còn nguyên 54")
+        // ⚠ (V) 2026-09-17 owner gỡ 19 mã chấm NO: 112 → 100 datum, 54 → 47 nút. Cùng loại quyết định như trên.
+        assertEquals(100, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 100")
+        assertEquals(47, ControlRegistry.ALL.size, "nút rời phải còn nguyên 47")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
@@ -299,7 +308,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            106 + 54 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            100 + 47 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

@@ -136,7 +136,9 @@ matrix_summary() {
   echo
   echo "MATRIX_RESULT $MATRIX_NAME pass=$pass fail=$fail skip=$skip of $MATRIX_TOTAL"
   echo "Paste-ready sign-off rows:"
-  awk -F'\t' 'NR>1 {printf "| %s | %s | %s | %s |\n", $1, $2, ENVIRON["EVIDENCE_DIR"], $4}' "$MATRIX_RESULTS"
+  # -v, not ENVIRON: new_evidence_dir sets EVIDENCE_DIR as a plain shell variable in most callers, so
+  # ENVIRON[] read back empty and every generated sign-off row had a blank evidence column.
+  awk -F'\t' -v evidence="$EVIDENCE_DIR" 'NR>1 {printf "| %s | %s | %s | %s |\n", $1, $2, evidence, $4}' "$MATRIX_RESULTS"
   if [[ "$fail" -gt 0 ]]; then
     echo
     echo "Repeat only the failures with:"

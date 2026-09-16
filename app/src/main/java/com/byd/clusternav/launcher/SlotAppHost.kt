@@ -92,8 +92,17 @@ class SlotAppHost(context: Context, private val cornerRadiusPx: Float) : FrameLa
         if (ok) embedded = true else h.postDelayed({ tryStart(av, intent, tries - 1) }, 150)
     }
 
-    /** Giải phóng virtual display + task nhúng. */
+    /**
+     * Giải phóng virtual display + task nhúng.
+     *
+     * ⚠ [SOÁT OCR] Gỡ MỌI lượt thử lại đã hẹn TRƯỚC khi đặt lại cờ: `embedded = false` ngay dưới **mở lại**
+     * đúng cái cổng `if (embedded || tries <= 0) return` của [tryShellStart]/[tryStart], nên một lượt đã hẹn
+     * (tới 40 × 150 ms ≈ 6 giây sau khi ô đã tháo) sẽ gọi `startActivity` / `am start --display` lên một
+     * `ActivityView` **vừa được release** — tức mở app lên một màn ảo không còn tồn tại, đúng họ lỗi
+     * "đường sống lâu hơn thứ nó phục vụ" (CLAUDE.md §5).
+     */
     fun release() {
+        h.removeCallbacksAndMessages(null)
         embedded = false
         runCatching { activityView?.javaClass?.getMethod("release")?.invoke(activityView) }
     }
