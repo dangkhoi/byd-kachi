@@ -212,13 +212,14 @@ object WidgetViews {
         val v = UnitFormat.apply(raw, units)
         val icon = WidgetCatalog.pick(id)?.icon ?: ""
         val sub = if (v.unit.isNotEmpty()) v.unit else v.label
-        return miniCard(ctx, icon, v.display, sub, KachiTheme.INK, v.needsBadge, dim = !v.available)
+        // P1 · sắc lĩnh vực lấy TỪ BỘ ĐĂNG KÝ (không đoán theo tên id); tra không ra ⇒ `null` = thẻ trung tính.
+        return miniCard(ctx, icon, v.display, sub, KachiTheme.INK, v.needsBadge, !v.available, TelemetryRegistry.byId(id)?.domain)
     }
 
-    private fun miniCard(ctx: Context, icon: String, big: String, sub: String, color: String, badge: Boolean, dim: Boolean = false): View =
+    private fun miniCard(ctx: Context, icon: String, big: String, sub: String, color: String, badge: Boolean, dim: Boolean = false, domain: Domain? = null): View =
         LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, Sp.RADIUS_M, KachiTheme.CELL)
+            background = KachiTheme.surface(ctx, Sp.RADIUS_M, domain = domain)
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             if (dim) alpha = 0.5f
             val r = KachiTheme.iconRes(icon)
@@ -462,7 +463,7 @@ object WidgetViews {
         val car = data.car
         fun cell(icon: String, big: String, sub: String, color: String) = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, Sp.RADIUS_M, KachiTheme.CELL)
+            background = KachiTheme.surface(ctx, Sp.RADIUS_M)
             val r = KachiTheme.iconRes(icon)
             if (r != 0) addView(ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
                 LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S)).also { it.bottomMargin = dpi(ctx, Sp.XS) })

@@ -1,0 +1,189 @@
+# CÂU VIẾT NGUYÊN VĂN — LLM soạn tay 2026-09-16, cho những ý định KHÔNG nở được từ nhãn registry
+# (nhạc · dẫn đường · hồ sơ · bố cục · câu KHÔNG phải lệnh) và cho ĐÚNG những câu tester báo sai ở bản 1.66.
+# Cột: id | intent_kind | region | style | text
+#
+# ═══ CÂU TESTER BÁO SAI (1.66, 2026-09-16) — phải có mặt NGUYÊN VĂN trong corpus ═══════════════
+pm25_clean_now	control_button	chung	ngan	lọc ngay
+ac_auto	control_toggle	chung	ngan	điều hoà
+pm25	control_toggle	chung	ngan	lọc bụi
+open_app	app	chung	tieng_anh_viet	Google Map
+open_app	app	chung	tieng_anh_viet	Google
+readl	control_toggle	chung	ngan	đèn đọc
+open_app	app	chung	tieng_anh_viet	YouTube
+pm25_clean_now	control_button	chung	than_mat	lọc ngay đi
+ac_auto	control_toggle	chung	ngan	bật điều hoà
+pm25	control_toggle	chung	ngan	bật lọc bụi
+# ═══ NHẠC ══════════════════════════════════════════════════════════════════════════════════════
+media_play	media	chung	ngan	phát nhạc
+media_play	media	chung	ngan	nghe nhạc
+media_play	media	chung	than_mat	mở nhạc đi
+media_play	media	chung	than_mat	bật nhạc lên
+media_play	media	nam	than_mat	mở nhạc giùm
+media_play	media	nam	than_mat	cho nghe nhạc dùm cái
+media_play	media	bac	lich_su	làm ơn bật nhạc
+media_play	media	chung	than_mat	ê Kachi phát nhạc
+media_play	media	chung	dai	cho tôi nghe nhạc nhé
+media_play	media	chung	dai	phát một bài gì đó đi
+media_play	media	chung	tieng_anh_viet	play nhạc
+media_play	media	trung	than_mat	mở nhạc hí
+media_play	media	chung	ngan	phát bài hát
+media_play	media	chung	tieng_anh_viet	phát nhạc trên Spotify
+media_pause	media	chung	ngan	dừng nhạc
+media_pause	media	chung	ngan	tạm dừng
+media_pause	media	chung	than_mat	tắt nhạc đi
+media_pause	media	chung	than_mat	dừng lại
+media_pause	media	nam	than_mat	ngưng nhạc giùm
+media_pause	media	nam	than_mat	tắt nhạc dùm cái
+media_pause	media	bac	lich_su	làm ơn dừng nhạc
+media_pause	media	chung	than_mat	ê Kachi dừng nhạc
+media_pause	media	chung	dai	dừng bài này giúp mình
+media_pause	media	chung	tieng_anh_viet	pause nhạc
+media_pause	media	trung	than_mat	dừng nhạc hí
+media_pause	media	chung	ngan	dừng bài hát
+media_next	media	chung	ngan	bài tiếp theo
+media_next	media	chung	ngan	bài tiếp
+media_next	media	chung	ngan	chuyển bài
+media_next	media	chung	than_mat	qua bài khác đi
+media_next	media	nam	than_mat	bài kế tiếp giùm
+media_next	media	nam	than_mat	chuyển bài dùm cái
+media_next	media	bac	lich_su	làm ơn chuyển bài
+media_next	media	chung	than_mat	ê Kachi bài tiếp theo
+media_next	media	chung	dai	cho tôi nghe bài tiếp theo nhé
+media_next	media	chung	tieng_anh_viet	next bài
+media_next	media	trung	than_mat	qua bài khác hí
+media_next	media	chung	ngan	bài kế tiếp
+media_prev	media	chung	ngan	bài trước
+media_prev	media	chung	ngan	quay lại bài
+media_prev	media	chung	than_mat	về bài lúc nãy
+media_prev	media	nam	than_mat	bài hồi nãy giùm
+media_prev	media	nam	than_mat	lùi lại bài dùm cái
+media_prev	media	bac	lich_su	làm ơn quay lại bài trước
+media_prev	media	chung	than_mat	ê Kachi bài trước
+media_prev	media	chung	dai	cho tôi nghe lại bài vừa rồi
+media_prev	media	chung	tieng_anh_viet	previous track
+media_prev	media	trung	than_mat	lùi bài hí
+media_prev	media	chung	ngan	bài lúc nãy
+media_prev	media	chung	ngan	quay lại bài trước
+media_query	media	chung	ngan	đang phát bài gì
+media_query	media	chung	ngan	bài gì đang phát
+media_query	media	chung	than_mat	bài này tên gì
+media_query	media	nam	than_mat	đang nghe bài gì vậy
+media_query	media	nam	than_mat	bài chi đây
+media_query	media	bac	lich_su	cho hỏi đang phát bài gì
+media_query	media	chung	than_mat	ê Kachi bài này tên gì
+media_query	media	chung	dai	cho tôi biết tên bài đang phát
+media_query	media	chung	ngan	tên bài hát
+media_query	media	trung	than_mat	bài ni tên chi
+media_query	media	chung	ngan	đọc tên bài
+media_query	media	chung	dai	bài đang chạy là bài nào
+# ═══ DẪN ĐƯỜNG ═════════════════════════════════════════════════════════════════════════════════
+nav	nav	chung	ngan	dẫn đường đến Bitexco
+nav	nav	chung	ngan	chỉ đường tới chợ Bến Thành
+nav	nav	chung	ngan	dẫn đường tới sân bay Tân Sơn Nhất
+nav	nav	chung	than_mat	chỉ đường ra Hồ Gươm đi
+nav	nav	nam	than_mat	dẫn đường qua quận một giùm
+nav	nav	nam	than_mat	chỉ đường tới Landmark tám mốt dùm cái
+nav	nav	bac	lich_su	làm ơn dẫn đường đến Hồ Tây
+nav	nav	chung	than_mat	ê Kachi dẫn đường về Thủ Đức
+nav	nav	chung	dai	cho tôi đường tới bệnh viện Chợ Rẫy nhé
+nav	nav	chung	tieng_anh_viet	dẫn đường tới Bitexco bằng Google Maps
+nav	nav	chung	than_mat	chỉ đường tới chợ Bến Thành bằng quây
+nav	nav	chung	tieng_anh_viet	dẫn đường đến Aeon Mall bằng Vietmap
+nav	nav	trung	than_mat	chỉ đường ra cầu Rồng hí
+nav	nav	chung	ngan	tìm đường đến trạm sạc gần nhất
+nav	nav	chung	dai	dẫn đường tới cây xăng gần đây giúp mình
+nav_saved	nav	chung	ngan	về nhà
+nav_saved	nav	chung	ngan	đến công ty
+nav_saved	nav	chung	ngan	đi làm
+nav_saved	nav	chung	than_mat	về nhà đi
+nav_saved	nav	nam	than_mat	chạy về nhà giùm
+nav_saved	nav	nam	than_mat	tới chỗ làm dùm cái
+nav_saved	nav	bac	lich_su	làm ơn dẫn tôi về nhà
+nav_saved	nav	chung	than_mat	ê Kachi về nhà
+nav_saved	nav	chung	dai	cho tôi đường về nhà nhé
+nav_saved	nav	chung	ngan	dẫn đường về nhà
+nav_saved	nav	trung	than_mat	về nhà hí
+nav_saved	nav	chung	ngan	đến chỗ làm
+# ═══ HỒ SƠ ═════════════════════════════════════════════════════════════════════════════════════
+profile	profile	chung	ngan	đổi sang hồ sơ Chính
+profile	profile	chung	ngan	chuyển sang hồ sơ Chính
+profile	profile	chung	ngan	dùng hồ sơ Chính
+profile	profile	chung	than_mat	qua hồ sơ Chính đi
+profile	profile	nam	than_mat	đổi qua hồ sơ Chính giùm
+profile	profile	nam	than_mat	xài hồ sơ Chính dùm cái
+profile	profile	bac	lich_su	làm ơn đổi sang hồ sơ Chính
+profile	profile	chung	than_mat	ê Kachi đổi hồ sơ Chính
+profile	profile	chung	dai	cho tôi dùng hồ sơ Chính nhé
+profile	profile	chung	ngan	hồ sơ Chính
+profile	profile	trung	than_mat	đổi hồ sơ Chính hí
+profile	profile	chung	dai	chuyển hồ sơ sang Chính giúp mình
+# ═══ BỐ CỤC ════════════════════════════════════════════════════════════════════════════════════
+layout	layout	chung	ngan	bố cục hai cột
+layout	layout	chung	so_lieu	bố cục 2 cột
+layout	layout	chung	ngan	bố cục một ô
+layout	layout	chung	ngan	đổi sang bố cục bốn ô
+layout	layout	chung	so_lieu	đổi sang bố cục 4 ô
+layout	layout	chung	than_mat	cho bố cục ba ô đi
+layout	layout	nam	than_mat	đổi bố cục hai cột giùm
+layout	layout	nam	than_mat	qua bố cục một ô dùm cái
+layout	layout	bac	lich_su	làm ơn đổi bố cục hai cột
+layout	layout	chung	than_mat	ê Kachi bố cục bốn ô
+layout	layout	chung	dai	cho tôi bố cục hai cột nhé
+layout	layout	trung	than_mat	đổi bố cục hí
+layout	layout	chung	ngan	chia màn hình hai cột
+layout	layout	chung	ngan	bố cục ba ô
+# ═══ CÂU KHÔNG PHẢI LỆNH (phải ra Unknown — canh chống hotword kéo bậy) ════════════════════════
+unknown_no_verb	unknown	chung	dai	hôm nay trời đẹp quá
+unknown_no_verb	unknown	chung	dai	đường này hay kẹt xe lắm
+unknown_no_verb	unknown	nam	than_mat	trưa nay ăn gì ta
+unknown_no_verb	unknown	chung	dai	xe mình chạy êm ghê
+unknown_no_verb	unknown	bac	dai	chiều nay chắc mưa to
+unknown_no_verb	unknown	chung	ngan	à quên mất rồi
+unknown_no_verb	unknown	chung	than_mat	thôi không có gì
+unknown_no_verb	unknown	trung	dai	trời ni nóng dễ sợ
+unknown_no_verb	unknown	chung	dai	nhạc này nghe cũng được đấy
+unknown_no_verb	unknown	nam	dai	kẹt xe quá trời luôn
+unknown_no_verb	unknown	chung	ngan	alo alo một hai ba
+unknown_no_verb	unknown	chung	dai	để tí nữa rồi tính
+unknown_no_object	unknown	chung	ngan	bật cái đó
+unknown_no_object	unknown	chung	ngan	mở cái kia
+unknown_no_object	unknown	chung	than_mat	tắt nó đi
+unknown_no_object	unknown	nam	than_mat	bật cái đó giùm
+unknown_no_object	unknown	chung	ngan	mở lên
+unknown_no_object	unknown	chung	ngan	tắt hết
+unknown_no_object	unknown	bac	lich_su	làm ơn bật cái ấy
+unknown_no_object	unknown	chung	than_mat	ê Kachi mở cái đó
+unknown_no_object	unknown	chung	dai	bật giúp mình cái vừa nãy
+unknown_no_object	unknown	trung	than_mat	mở cái nớ hí
+unknown_no_object	unknown	chung	ngan	đóng cái này
+unknown_no_object	unknown	chung	ngan	tăng cái đó
+unknown_mismatch	unknown	chung	ngan	tăng đèn đọc
+unknown_mismatch	unknown	chung	ngan	giảm khoá xe
+unknown_mismatch	unknown	chung	ngan	mở tốc độ
+unknown_mismatch	unknown	chung	ngan	tắt số km đã đi
+unknown_mismatch	unknown	chung	than_mat	tăng cốp sau đi
+unknown_mismatch	unknown	nam	than_mat	giảm đèn pha giùm
+unknown_mismatch	unknown	chung	ngan	đóng âm lượng
+unknown_mismatch	unknown	chung	ngan	mở pin
+unknown_mismatch	unknown	bac	lich_su	làm ơn tăng gạt mưa
+unknown_mismatch	unknown	chung	dai	giảm ion âm giúp mình nhé
+unknown_mismatch	unknown	chung	ngan	bật tốc độ bánh
+unknown_mismatch	unknown	trung	than_mat	tăng khoá trẻ em hí
+unknown_app_close	unknown	chung	ngan	đóng YouTube
+unknown_app_close	unknown	chung	ngan	tắt Google Maps
+unknown_app_close	unknown	chung	than_mat	thoát du túp đi
+unknown_app_close	unknown	nam	than_mat	tắt za lô giùm
+unknown_app_close	unknown	chung	ngan	đóng ứng dụng này
+unknown_app_close	unknown	chung	ngan	tắt app
+unknown_app_close	unknown	bac	lich_su	làm ơn đóng Spotify
+unknown_app_close	unknown	chung	than_mat	ê Kachi tắt quây
+unknown_app_close	unknown	chung	dai	đóng giúp mình cái ứng dụng đang mở
+unknown_app_close	unknown	trung	than_mat	tắt cái app ni hí
+unknown_app_close	unknown	chung	ngan	thoát ứng dụng
+unknown_app_close	unknown	chung	ngan	đóng bản đồ
+# ═══ CÂU GHÉP (hai vế) — chỗ model hay nuốt vế sau ════════════════════════════════════════════
+mac_door_light	macro	chung	dai	bật lọc bụi và tắt đèn đọc
+mac_door_light	macro	chung	dai	mở cửa và bật đèn đọc
+mac_leave	macro	chung	dai	đóng hết kính rồi khoá xe
+mac_leave	macro	nam	dai	tắt máy lạnh với khoá cửa giùm
+mac_win_close_all	macro	chung	dai	đóng hết kính và bật lọc bụi

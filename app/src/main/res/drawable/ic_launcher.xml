@@ -1,16 +1,30 @@
 <!--
-  Icon app Kachi (L2 — icon launcher riêng, 2026-09-13). Đây là bản SILHOUETTE 24dp dùng cho:
+  Icon app Kachi — bản SILHOUETTE 24dp của HOA ANH ĐÀO (VISUAL-REFRESH P1 · R7, owner 2026-09-16).
+
+  Dùng cho:
   (1) smallIcon thông báo (BootSetupService · KachiAutostartService · VietMapAutostartService · FloatingBubbleService)
-      — hệ thống tô trắng theo chuẩn, nên chỉ có hình, không nền;
+      — hệ thống tô TRẮNG theo chuẩn, nên chỉ có hình, một tông, không nền, không gradient;
   (2) fallback `android:icon` trên máy không có adaptive icon (không xảy ra: minSdk 29).
-  Hình = bố cục "1 ô lớn + 2 ô nhỏ" của workspace — đúng thứ Kachi làm: đặt app/widget vào ô. Ba khối tô đặc,
-  nằm trong ô quang học 20×20 (2..22) như mọi icon khác của bộ (IconStyleContractTest).
-  Icon trong ngăn kéo/launcher = adaptive icon ở mipmap-anydpi-v26 (nền accent + cùng hình).
+
+  ## Vì sao bản này KHÔNG có gradient trong khi `launcher_fg.xml` thì có
+  Hợp đồng smallIcon của Android: hệ thống **thay toàn bộ màu** bằng một tông. Một tệp nhiều màu ở đây không
+  "đẹp hơn" — nó chỉ ra đúng cùng một khối trắng, và người sửa sau sẽ tưởng màu ấy có tác dụng. Một tông là
+  **đúng hợp đồng**, không phải là chỗ chưa làm xong.
+
+  ## Hình học
+  ⚠ [SOÁT Pass 4] Sinh từ **cùng bộ tham số** với `launcher_fg.xml` (xem lý do vẽ lại ở tệp đó), chỉ đổi tâm
+  (12,12) và bán kính cánh R = 9.9 để lấp ô quang học 20×20. [ĐO] khung mực 2.79..21.21 × 2.66..20.45, cạnh lớn
+  nhất **18.43** — `IconGeometryContractTest` đòi 2..22 và cạnh lớn nhất ≥ 16.
+  Lòng hoa là một chấm tròn thay cho nhị: ở 24dp năm chấm nhị dính vào nhau thành một vệt, tức là chi tiết phải
+  BIẾN MẤT theo cỡ, không thu nhỏ.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#FFFFFF" android:pathData="M5,3 h5.5 a2,2 0 0 1 2,2 v14 a2,2 0 0 1 -2,2 h-5.5 a2,2 0 0 1 -2,-2 v-14 a2,2 0 0 1 2,-2 z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M16.5,3 h2.5 a2,2 0 0 1 2,2 v4 a2,2 0 0 1 -2,2 h-2.5 a2,2 0 0 1 -2,-2 v-4 a2,2 0 0 1 2,-2 z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M16.5,13 h2.5 a2,2 0 0 1 2,2 v4 a2,2 0 0 1 -2,2 h-2.5 a2,2 0 0 1 -2,-2 v-4 a2,2 0 0 1 2,-2 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12.00,12.00 C8.26,8.73,7.84,6.06,9.92,3.07 C11.06,2.49,11.63,2.40,12.00,3.68 C12.37,2.40,12.94,2.49,14.08,3.07 C16.16,6.06,15.74,8.73,12.00,12.00 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12.00,12.00 C13.95,7.43,16.36,6.21,19.85,7.26 C20.75,8.17,21.02,8.68,19.91,9.43 C21.25,9.39,21.33,9.95,21.14,11.22 C18.93,14.12,16.26,14.55,12.00,12.00 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12.00,12.00 C16.95,12.44,18.86,14.36,18.93,18.00 C18.34,19.14,17.95,19.55,16.89,18.73 C17.34,19.99,16.83,20.24,15.57,20.45 C12.13,19.25,10.89,16.84,12.00,12.00 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12.00,12.00 C13.11,16.84,11.87,19.25,8.43,20.45 C7.17,20.24,6.66,19.99,7.11,18.73 C6.05,19.55,5.66,19.14,5.07,18.00 C5.14,14.36,7.05,12.44,12.00,12.00 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12.00,12.00 C7.74,14.55,5.07,14.12,2.86,11.22 C2.67,9.95,2.75,9.39,4.09,9.43 C2.98,8.68,3.25,8.17,4.15,7.26 C7.64,6.21,10.05,7.43,12.00,12.00 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M10.4,12 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0 z" />
 </vector>

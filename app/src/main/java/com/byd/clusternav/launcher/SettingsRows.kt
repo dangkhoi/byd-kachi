@@ -118,7 +118,7 @@ class SettingsRows(private val context: Context) {
         paint()
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
+            background = KachiTheme.surface(context, Sp.RADIUS_L)
             val p = dpi(context, Sp.M); setPadding(p, p, p, p)
             layoutParams = stackLp()
             addView(box)
@@ -195,7 +195,7 @@ class SettingsRows(private val context: Context) {
         }
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
+            background = KachiTheme.surface(context, Sp.RADIUS_L)
             val p = dpi(context, Sp.M); setPadding(p, p, p, p)
             layoutParams = stackLp()
             addView(TextView(context).apply {
@@ -273,7 +273,7 @@ class SettingsRows(private val context: Context) {
         tv.gravity = Gravity.CENTER
         tv.setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
         tv.minHeight = dpi(context, Sp.TOUCH)
-        tv.background = KachiTheme.card(context, radius, KachiTheme.CARD2)
+        tv.background = KachiTheme.surface(context, radius)
     }
 
     /** Nút PHỤ — viên thuốc viền mảnh, chữ [KachiType.BODY], đích chạm ≥ [KachiSpace.TOUCH] (xem [paintButton]). */
@@ -429,7 +429,7 @@ class SettingsRows(private val context: Context) {
     fun listRow(title: String, sub: String, actionLabel: String, onAction: () -> Unit): View {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
+            background = KachiTheme.surface(context, Sp.RADIUS_L)
             val p = dpi(context, Sp.M); setPadding(p, p, p, p)
             layoutParams = stackLp()
             addView(LinearLayout(context).apply {
@@ -465,7 +465,7 @@ class SettingsRows(private val context: Context) {
      */
     fun embed(view: View, heightDp: Int): View = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
-        background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.CELL)
+        background = KachiTheme.surface(context, Sp.RADIUS_L)
         val p = dpi(context, Sp.M); setPadding(p, p, p, p)
         layoutParams = stackLp()
         addView(

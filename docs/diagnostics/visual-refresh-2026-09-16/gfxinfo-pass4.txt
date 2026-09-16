@@ -1,0 +1,12 @@
+# gfxinfo — soát Pass 4 (1.68 · 69, sau lượt ĐẬM TAY + ô làm việc dùng tone KHAY)
+# Kịch bản: perf-pass4 (màn chính → Cài đặt → nhóm Thanh trạng thái → 10 cuộn xuống + 10 lên →
+#           3 nhóm khác → 10 cuộn xuống + 10 lên → thoát). KHÁC kịch bản của §3, KHÔNG so trực tiếp được.
+# Ba lượt của CÙNG một bản, đo liên tiếp:
+
+lượt 1: Total frames rendered: 639 · Janky frames: 96 (15.02%) · 50th 5ms · 90th 21ms · 95th 27ms · 99th 89ms
+lượt 2: Total frames rendered: 646 · Janky frames: 134 (20.74%) · 50th 5ms · 90th 23ms · 95th 34ms · 99th 61ms
+lượt 3: Total frames rendered: 629 · Janky frames: 93 (14.79%) · 50th 5ms · 90th 20ms · 95th 32ms · 99th 150ms
+
+# Đọc số: biên độ 90th của ba lượt CÙNG bản = 3 ms (21/23/20). Kịch bản này ổn định hơn hẳn kịch bản §3
+# (biên độ 26 ms) nên nó DÙNG ĐƯỢC làm dụng cụ đo — nhưng không có lượt "trước" đo bằng chính dụng cụ này,
+# nên vẫn KHÔNG kết luận được trước/sau. Kết luận của §3 giữ nguyên: ngưỡng ±1.5 ms chỉ chốt được ở T14 🚗.

@@ -1,0 +1,161 @@
+# KHUÔN CÂU NÓI — do LLM (Claude Opus) soạn tay 2026-09-16, dùng để nở corpus `variants.tsv`.
+# Cột: kind | region(bac|trung|nam|chung) | style(ngan|dai|lich_su|than_mat|tieng_anh_viet|so_lieu) | template
+#  • {n} = cách gọi đối tượng (lấy từ nhãn registry + `nouns.tsv`)
+#  • {a} = tên lựa chọn (chỉ SELECT — lấy từ `args` của registry)
+#  • {v} = trị số nói ra (chỉ STEP — lấy từ `units.tsv`; id không có dòng nào ở đó thì khuôn {v} bị bỏ)
+# Vì sao có `giùm`/`dùm` cùng lúc: người miền Nam viết/nói cả hai, mà bộ nhận dạng nghe ra hai chuỗi khác nhau.
+# Vì sao có `ê Kachi`: tester hay gọi tên trước khi ra lệnh; phần đầu câu là chỗ model hay nuốt chữ nhất.
+#
+# ── TOGGLE (bật/tắt) ────────────────────────────────────────────────────────────────────────────
+TOGGLE	chung	ngan	bật {n}
+TOGGLE	chung	ngan	tắt {n}
+TOGGLE	bac	ngan	bật {n} lên
+TOGGLE	chung	ngan	mở {n}
+TOGGLE	chung	than_mat	tắt {n} đi
+TOGGLE	nam	than_mat	bật {n} giùm
+TOGGLE	nam	than_mat	tắt {n} dùm cái
+TOGGLE	bac	lich_su	làm ơn bật {n}
+TOGGLE	bac	lich_su	bật {n} hộ tôi
+TOGGLE	chung	than_mat	ê Kachi bật {n}
+TOGGLE	chung	than_mat	ê Kachi tắt {n} đi
+TOGGLE	chung	dai	cho tôi bật {n} nhé
+TOGGLE	chung	dai	tắt {n} giúp mình nhé
+TOGGLE	nam	dai	bật giùm tôi cái {n}
+TOGGLE	chung	than_mat	bật cái {n} đi
+TOGGLE	trung	than_mat	bật {n} hí
+TOGGLE	chung	ngan	đóng {n}
+TOGGLE	chung	dai	mở {n} lên giúp mình
+# ── COVER (kính, rèm, cửa có hành trình) ────────────────────────────────────────────────────────
+COVER	chung	ngan	mở {n}
+COVER	chung	ngan	đóng {n}
+COVER	chung	ngan	hạ {n}
+COVER	chung	than_mat	hạ {n} xuống
+COVER	chung	than_mat	mở {n} ra
+COVER	chung	than_mat	đóng {n} lại
+COVER	bac	ngan	kéo {n} lên
+COVER	nam	than_mat	mở {n} giùm
+COVER	nam	than_mat	hạ {n} dùm cái
+COVER	bac	lich_su	làm ơn đóng {n}
+COVER	bac	lich_su	mở {n} hộ tôi
+COVER	chung	ngan	mở nửa {n}
+COVER	chung	dai	mở {n} một nửa thôi
+COVER	chung	than_mat	ê Kachi mở {n}
+COVER	chung	dai	đóng {n} giúp mình nhé
+COVER	trung	than_mat	mở {n} hí
+COVER	chung	ngan	bật {n}
+COVER	chung	ngan	tắt {n}
+# ── STEP (tăng/giảm/đặt mức) ────────────────────────────────────────────────────────────────────
+STEP	chung	ngan	tăng {n}
+STEP	chung	ngan	giảm {n}
+STEP	chung	than_mat	tăng {n} lên
+STEP	chung	than_mat	giảm {n} xuống
+STEP	bac	ngan	tăng {n} một nấc
+STEP	nam	than_mat	giảm {n} giùm
+STEP	nam	than_mat	tăng {n} dùm cái
+STEP	bac	lich_su	làm ơn tăng {n}
+STEP	bac	lich_su	giảm {n} hộ tôi
+STEP	chung	than_mat	ê Kachi tăng {n}
+STEP	chung	dai	cho {n} lên một chút
+STEP	chung	dai	hạ {n} xuống một chút nhé
+STEP	trung	than_mat	tăng {n} chút hí
+STEP	chung	so_lieu	đặt {n} {v}
+STEP	chung	so_lieu	{n} {v}
+STEP	chung	so_lieu	chỉnh {n} về {v}
+STEP	nam	so_lieu	cho {n} {v} giùm
+STEP	chung	so_lieu	để {n} ở {v}
+# ── SELECT (chọn một trong nhiều) ───────────────────────────────────────────────────────────────
+SELECT	chung	ngan	{n} {a}
+SELECT	chung	ngan	đổi {n} sang {a}
+SELECT	chung	than_mat	chuyển sang {a}
+SELECT	chung	ngan	đặt {n} {a}
+SELECT	nam	than_mat	đổi {n} qua {a} giùm
+SELECT	bac	lich_su	làm ơn đổi {n} sang {a}
+SELECT	chung	than_mat	ê Kachi đổi {n} sang {a}
+SELECT	chung	dai	cho tôi {n} {a} nhé
+SELECT	chung	ngan	chọn {a}
+SELECT	chung	dai	đổi sang {a} giúp mình
+SELECT	trung	than_mat	đổi {n} qua {a} hí
+SELECT	chung	ngan	để {n} ở {a}
+# ── BUTTON (một nhát, không có trạng thái) ──────────────────────────────────────────────────────
+BUTTON	chung	ngan	{n}
+BUTTON	chung	than_mat	{n} đi
+BUTTON	chung	ngan	bấm {n}
+BUTTON	chung	ngan	chạy {n}
+BUTTON	chung	ngan	bật {n}
+BUTTON	nam	than_mat	{n} giùm
+BUTTON	nam	than_mat	{n} dùm cái
+BUTTON	bac	lich_su	làm ơn {n}
+BUTTON	bac	lich_su	{n} hộ tôi
+BUTTON	chung	than_mat	ê Kachi {n}
+BUTTON	chung	dai	cho tôi {n} nhé
+BUTTON	chung	dai	{n} giúp mình với
+BUTTON	trung	than_mat	{n} hí
+BUTTON	chung	ngan	mở {n}
+# ── READ (đọc thông tin) ────────────────────────────────────────────────────────────────────────
+READ	chung	ngan	xem {n}
+READ	chung	ngan	đọc {n}
+READ	chung	ngan	kiểm tra {n}
+READ	nam	than_mat	coi {n}
+READ	nam	than_mat	coi {n} giùm
+READ	chung	than_mat	xem {n} đi
+READ	chung	ngan	cho xem {n}
+READ	chung	dai	{n} bao nhiêu
+READ	chung	dai	{n} còn bao nhiêu
+READ	chung	dai	{n} thế nào
+READ	nam	dai	{n} sao rồi
+READ	bac	lich_su	làm ơn xem {n}
+READ	bac	lich_su	cho hỏi {n}
+READ	chung	than_mat	ê Kachi xem {n}
+READ	chung	tieng_anh_viet	check {n}
+READ	chung	tieng_anh_viet	check {n} giùm
+READ	chung	dai	đọc to {n} lên
+READ	trung	than_mat	xem {n} chút hè
+READ	chung	dai	báo {n} cho tôi
+# ── MACRO (gói lệnh) ────────────────────────────────────────────────────────────────────────────
+MACRO	chung	ngan	{n}
+MACRO	chung	than_mat	{n} đi
+MACRO	chung	ngan	chạy {n}
+MACRO	nam	than_mat	{n} giùm
+MACRO	nam	than_mat	{n} dùm cái
+MACRO	bac	lich_su	làm ơn {n}
+MACRO	bac	lich_su	{n} hộ tôi
+MACRO	chung	than_mat	ê Kachi {n}
+MACRO	chung	dai	cho tôi {n} nhé
+MACRO	chung	dai	{n} giúp mình với
+MACRO	trung	than_mat	{n} hí
+MACRO	chung	ngan	bật {n}
+# ── LAUNCHER (màn của chính Kachi) ──────────────────────────────────────────────────────────────
+LAUNCHER	chung	ngan	mở {n}
+LAUNCHER	chung	than_mat	mở {n} lên
+LAUNCHER	chung	ngan	vào {n}
+LAUNCHER	chung	than_mat	vào {n} đi
+LAUNCHER	nam	than_mat	mở {n} giùm
+LAUNCHER	nam	than_mat	vô {n} dùm cái
+LAUNCHER	bac	lich_su	làm ơn mở {n}
+LAUNCHER	bac	lich_su	mở {n} hộ tôi
+LAUNCHER	chung	than_mat	ê Kachi mở {n}
+LAUNCHER	chung	dai	cho tôi vào {n} nhé
+LAUNCHER	chung	dai	mở {n} giúp mình với
+LAUNCHER	trung	than_mat	mở {n} hí
+# ── APP (mở ứng dụng; {n} = tên app đọc theo âm Việt, xem `apps.tsv`) ────────────────────────────
+APP	chung	ngan	mở {n}
+APP	chung	than_mat	mở {n} lên
+APP	chung	ngan	bật {n}
+APP	chung	ngan	vào {n}
+APP	nam	than_mat	vô {n} đi
+APP	nam	than_mat	mở {n} giùm
+APP	nam	than_mat	mở {n} dùm cái
+APP	bac	lich_su	làm ơn mở {n}
+APP	bac	lich_su	mở {n} hộ tôi
+APP	chung	than_mat	ê Kachi mở {n}
+APP	chung	dai	cho tôi mở {n} nhé
+APP	chung	dai	mở {n} giúp mình với
+APP	trung	than_mat	mở {n} hí
+APP	chung	ngan	chạy {n}
+# ── SLOT (đưa app vào ô bố cục) ─────────────────────────────────────────────────────────────────
+SLOT	chung	ngan	đưa {n} vào ô số hai
+SLOT	chung	so_lieu	đưa {n} vào ô số 2
+SLOT	chung	ngan	đưa {n} vào ô một
+SLOT	chung	than_mat	cho {n} vào ô số ba
+SLOT	nam	than_mat	đưa {n} qua ô số hai giùm
+SLOT	chung	dai	đưa {n} vào ô số bốn giúp mình

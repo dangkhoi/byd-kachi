@@ -227,7 +227,7 @@ internal class ShellChannelGate(
 private fun approvalBanner(ctx: Context, onRetry: () -> Unit): View = LinearLayout(ctx).apply {
     orientation = LinearLayout.HORIZONTAL
     gravity = Gravity.CENTER_VERTICAL
-    background = KachiTheme.card(ctx, Sp.RADIUS_XL, KachiTheme.FIELD)
+    background = KachiTheme.surface(ctx, Sp.RADIUS_XL)
     val padX = KachiTheme.dpi(ctx, Sp.L)
     val padY = KachiTheme.dpi(ctx, Sp.M)
     setPadding(padX, padY, padX, padY)
@@ -245,7 +245,7 @@ private fun approvalBanner(ctx: Context, onRetry: () -> Unit): View = LinearLayo
             setTextColor(KachiTheme.c(KachiTheme.INK))
             KachiType.apply(this, KachiType.BODY, bold = true)
             gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, Sp.RADIUS_XL, KachiTheme.CARD2)
+            background = KachiTheme.surface(ctx, Sp.RADIUS_XL)
             val bx = KachiTheme.dpi(ctx, Sp.L)
             val by = KachiTheme.dpi(ctx, Sp.S)
             setPadding(bx, by, bx, by)

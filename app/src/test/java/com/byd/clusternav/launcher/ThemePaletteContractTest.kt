@@ -1,6 +1,9 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.SourceRoots
+import com.byd.clusternav.testsupport.Wcag.fmt
+import com.byd.clusternav.testsupport.Wcag.over
+import com.byd.clusternav.testsupport.Wcag.ratio
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.toList
@@ -155,10 +158,21 @@ class ThemePaletteContractTest {
         "cell" to ALL_INKS,
         "tile" to ALL_INKS,
         "slot" to ALL_INKS,
+        // ⚠ [SOÁT Pass 4] `slot`/`slotTo` là HAI ĐẦU chuyển sắc của khay ô làm việc, và cả hai đều đỡ chữ: ô nhóm
+        // vẽ thẳng lên khay (`GroupTileView` không có nền riêng), nên nhãn nhóm nằm trên `slot` ở đỉnh và mục đọc
+        // cuối ô nằm trên `slotTo` ở đáy. Đo một đầu là đo một nửa sự thật — đúng lẽ đã ghi cho `surfFrom/surfTo`.
+        "slotTo" to ALL_INKS,
         "chipOff" to ALL_INKS,
         "emptyFill" to listOf("ink", "mut"),
         // Nền nút bước −/+ và vùng radar tắt. Chỉ chữ chính nằm trên nó; vùng radar không có chữ nào.
         "dim" to listOf("ink"),
+        // ── VISUAL-REFRESH P1 · chất liệu bề mặt ──
+        // ⚠ Đo **CẢ HAI ĐẦU** của chuyển sắc, không đo màu trung bình (AC3.3): chữ nằm trên một điểm cụ thể của
+        // gradient, không nằm trên giá trị trung bình của nó. Đây đúng là chỗ mà "đo trung bình cho gọn" sẽ cho
+        // một con số đẹp mà đáy thẻ vẫn không đọc được.
+        "surfFrom" to ALL_INKS,
+        "surfTo" to ALL_INKS,
+        "fieldSunken" to ALL_INKS,
     )
 
     @Test
@@ -341,9 +355,18 @@ class ThemePaletteContractTest {
         val theme = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/KachiTheme.kt")
         val missing = KachiPalette::class.java.declaredFields
             .filterNot { java.lang.reflect.Modifier.isStatic(it.modifiers) }   // bỏ DARK/LIGHT/Companion
+            // ⚠ VISUAL-REFRESH P1: chỉ soi thuộc tính **là một mã màu** (`String`). `domainTints` là một BẢNG TRA
+            // (`Map`), không phải một vai màu — nó không có, và không được có, getter phơi cả bảng ra: mở một getter
+            // như thế là mời chỗ vẽ tự `when (domain)` trên bảng đó, tức là đúng cái "bảng màu thứ hai" mà cả tệp
+            // này sinh ra để chặn. Đường tra duy nhất của nó được khoá bằng phép kiểm ngay dưới.
+            .filter { it.type == String::class.java }
             .map { it.name }
             .filterNot { theme.contains("palette.$it") }
         assertEquals(emptyList<String>(), missing, "vai màu không có getter ở KachiTheme (không ai dùng được): $missing")
+        assertTrue(
+            "palette.domainTint(" in theme,
+            "bảng sắc lĩnh vực phải tra qua ĐÚNG MỘT hàm (KachiPalette.domainTint) — xem chú thích ngay trên",
+        )
     }
 
     /**
@@ -418,51 +441,15 @@ class ThemePaletteContractTest {
         .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
         .lines().joinToString("\n") { it.substringBefore("//") }
 
-    private fun fmt(v: Double) = String.format("%.2f", v)
-
-    /** `#RRGGBB` hoặc `#AARRGGBB` → (a, r, g, b). */
-    private fun argb(hex: String): IntArray {
-        val h = hex.removePrefix("#")
-        require(h.length == 6 || h.length == 8) { "mã màu không hợp lệ: $hex" }
-        fun at(i: Int) = h.substring(i, i + 2).toInt(16)
-        return if (h.length == 6) intArrayOf(255, at(0), at(2), at(4))
-        else intArrayOf(at(0), at(2), at(4), at(6))
-    }
-
-    /** Trộn [fg] (có thể có kênh trong suốt) lên [bg] → mã đặc `#RRGGBB`. */
-    private fun over(fg: String, bg: String): String {
-        val f = argb(fg); val b = argb(bg); val a = f[0] / 255.0
-        fun mix(i: Int) = (f[i] * a + b[i] * (1 - a)).toInt().coerceIn(0, 255)
-        return "#%02x%02x%02x".format(mix(1), mix(2), mix(3))
-    }
-
-    /** Độ chói tương đối theo WCAG 2.x. */
-    private fun luminance(hex: String): Double {
-        val c = argb(hex)
-        fun ch(v: Int): Double {
-            val s = v / 255.0
-            return if (s <= 0.03928) s / 12.92 else Math.pow((s + 0.055) / 1.055, 2.4)
-        }
-        return 0.2126 * ch(c[1]) + 0.7152 * ch(c[2]) + 0.0722 * ch(c[3])
-    }
-
-    /**
-     * Tỉ số tương phản WCAG. Màu có kênh trong suốt được TRỘN lên [bg] trước — bỏ bước này thì mọi màu alpha đo ra
-     * một con số không tồn tại trên màn.
-     */
-    private fun ratio(fg: String, bg: String): Double {
-        val f = luminance(if (argb(fg)[0] < 255) over(fg, bg) else fg)
-        val b = luminance(bg)
-        val hi = maxOf(f, b); val lo = minOf(f, b)
-        return (hi + 0.05) / (lo + 0.05)
-    }
-
     private companion object {
         /** Vai MỰC — thứ được vẽ dưới dạng chữ hoặc icon một màu. */
         val ALL_INKS = listOf("ink", "ink2", "mut", "mut2", "icon", "accentInk", "green", "amber", "red", "cyan", "orange", "slate")
 
         /** Vai NỀN — thứ chữ nằm lên. */
-        val SURFACE_ROLES = listOf("bg", "card", "card2", "panel", "field", "cell", "tile", "slot", "chipOff", "emptyFill", "dim")
+        val SURFACE_ROLES = listOf(
+            "bg", "card", "card2", "panel", "field", "cell", "tile", "slot", "slotTo", "chipOff", "emptyFill",
+            "dim", "surfFrom", "surfTo", "fieldSunken",
+        )
 
         /** Vai màu mang NGHĨA của dữ liệu (ổn · chưa kiểm · cảnh báo · không khí · nhạc · trung tính · nhấn). */
         val MEANING_ROLES = listOf("green", "amber", "red", "cyan", "orange", "slate", "accent", "accent2")

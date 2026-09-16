@@ -69,7 +69,7 @@ class VoiceTextConsole(
             setTextColor(c(KachiTheme.INK))
             setHintTextColor(c(KachiTheme.MUT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
-            background = KachiTheme.card(context, Sp.RADIUS_XL, KachiTheme.FIELD, KachiTheme.LINE)
+            background = KachiTheme.surface(context, Sp.RADIUS_XL, SurfaceTone.SUNKEN)
             val p = dpi(context, Sp.M)
             setPadding(p, p, p, p)
         }

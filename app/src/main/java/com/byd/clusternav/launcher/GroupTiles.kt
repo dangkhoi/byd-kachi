@@ -68,7 +68,7 @@ object GroupTiles {
         val worst = GroupTileView.worstTone(m)
         return LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.card(ctx, Sp.RADIUS_M, GroupTileView.fillOf(worst), GroupTileView.strokeOf(worst))
+            background = GroupTileView.surfaceOf(ctx, Sp.RADIUS_M, worst, CapabilityGroups.byId(id)?.domain)
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             val r = KachiTheme.iconRes(m.icon)
             if (r != 0) addView(

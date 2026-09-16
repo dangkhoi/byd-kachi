@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tự sấy kính khi mưa + nối lại cốp / điều hoà AUTO / sấy kính + GPS chỉ-đọc — Kachi</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file cho 1 feature. Thứ tự section CHUẨN:
+  Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Diagram = HTML visual (inline SVG / .layers / .flow) — CẤM mermaid/ascii.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--danger:#c1121f}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--danger:#ff453a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card.stop{border-color:var(--danger)}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.danger{color:var(--danger)}
+/* Nhãn mức bằng chứng (conversation-protocol.md P1) — mỗi Ô một nhãn */
+.e{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;letter-spacing:.02em;white-space:nowrap}
+.e.do{background:rgba(26,127,55,.14);color:var(--ok)}
+.e.suy{background:rgba(0,113,227,.14);color:var(--accent)}
+.e.doan{background:rgba(142,142,147,.2);color:var(--muted)}
+.e.unk{background:rgba(191,95,0,.14);color:var(--warn)}
+@media(prefers-color-scheme:dark){.e.do{background:rgba(48,209,88,.16)}.e.suy{background:rgba(41,151,255,.16)}.e.unk{background:rgba(255,159,10,.16)}}
+/* ---- Diagram helpers: inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center;overflow-x:auto}
+.diagram svg{max-width:100%;height:auto}
+.diagram svg text{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{border-color:var(--accent);background:rgba(0,113,227,.07)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{border-color:var(--accent);background:rgba(0,113,227,.07)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Tự sấy kính khi mưa · nối lại cốp / điều hoà AUTO / sấy kính · GPS chỉ-đọc</h1>
+<p class="muted">Slug: <code>kachi-rain-defrost-and-rebind</code> · Branch <code>feat/voice-hotword-phrases</code> · Owner <code>dangkhoi</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> §2 (mức bằng chứng) · §3 (đọc source trước khi ship) · §4 (phạm vi tường minh) · §5 (state ngoài hệ thống sống dai hơn tiến trình) · §7 (generic) · §8 (grep call site) · §13 · <b>§14 (4 tầng: shell thô trên xe → <code>car-integration</code>/HAL → <code>:core</code> → <code>:app</code>)</b> · §15 · §16, và <code>.kiro/steering/{conversation-protocol,trace-den-tan-cung,documentation-and-backlog}.md</code>. Mọi khẳng định gắn nhãn <span class="e do">ĐO</span> / <span class="e suy">SUY</span> / <span class="e doan">ĐOÁN</span> / <span class="e unk">CHƯA BIẾT</span>. Địa chỉ xe trong mọi lệnh ghi <code>&lt;ip-xe&gt;</code>, không bao giờ ghi số thật.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo. Nguồn: ba yêu cầu owner cùng ngày (§2.1: <i>xin quyền GPS</i> · <i>RE cốp + điều hoà AUTO</i> · <i>toggle tự sấy kính khi trời mưa</i>) + báo cáo <code>docs/diagnostics/oncar-captest-sealion6-2026-09-16.md</code> (xe thứ hai xác nhận <code>trunk</code>/<code>ac_auto</code>/<code>defrost_rear</code> vẫn hỏng) + RE framework.jar DL3 kéo cùng ngày (fw-dl3) cho toàn bộ đường thật của cốp · điều hoà AUTO · sấy kính · gạt mưa · cảm biến · vị trí.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Yêu cầu owner (nguyên văn, 2026-09-16)</h3>
+<div class="card">
+<p>“<i>GPS xin quyền vị trí luôn đi, chả mất gì đâu. RE thêm cốp, auto điều hoà nhé, 2 cái này priority, mất hác thì từ từ làm tiếp cũng ok nhé. có detect được trời mưa không, muốn 1 feature là toggle: sấy kính (sấy kính trước sau, kính chiếu hậu nếu có) khi trời mưa, đây là 1 chức năng rất thiết thực</i>”</p>
+</div>
+<p>Ba việc, hai mức ưu tiên: <b>(P0)</b> nối lại cốp + điều hoà AUTO — đây là sửa cái đang hỏng; <b>(P1)</b> tự sấy kính khi mưa — tính năng mới, và theo §14 nó phải bắt đầu bằng phép đo trên xe thật, không phải bằng code; <b>(P1)</b> GPS chỉ-đọc kèm quyền vị trí.</p>
+
+<h3>2.2 Bằng chứng hiện trường — xe thứ hai (Sealion 6, 2026-09-16)</h3>
+<p><span class="e do">ĐO trên xe</span> <code>docs/diagnostics/oncar-captest-sealion6-2026-09-16.md</code> — người ngồi trên xe chấm OK/không-OK cho 187 mục. Bốn mã liên quan spec này:</p>
+<table>
+<tr><th>id</th><th>Nhãn</th><th>S6 09-16</th><th>Xe owner (catalog trước)</th><th>Ghi chú</th></tr>
+<tr><td><code>trunk</code></td><td>Cốp sau</td><td class="danger">❌</td><td class="danger">❌</td><td>Hai xe cùng hỏng ⇒ không phải chuyện trim (captest §2 nhóm “không có setter trong framework thật”)</td></tr>
+<tr><td><code>ac_auto</code></td><td>Điều hoà AUTO</td><td class="danger">❌</td><td class="danger">❌</td><td>Owner E6 xác nhận <b>xe CÓ</b> điều hoà AUTO ⇒ hỏng ở binding, không phải ở xe</td></tr>
+<tr><td><code>defrost_rear</code></td><td>Sấy kính sau</td><td class="danger">❌</td><td>🚗 chưa đo</td><td>Lần đầu có bằng chứng: hỏng</td></tr>
+<tr><td><code>defrost</code></td><td>Sấy kính trước</td><td class="ok">✅</td><td>🟢 đã đo chạy</td><td><b>Đang CHẠY</b> — xem cảnh báo dưới</td></tr>
+<tr><td><code>gps_lat</code>/<code>lon</code>/<code>elevation</code>/<code>heading</code></td><td>Vị trí</td><td class="danger">❌</td><td class="danger">❌</td><td>Cố ý chặn (BLOCKED-BY-DESIGN) — §2.5</td></tr>
+</table>
+<div class="card"><b>Đính chính một câu dễ nói nhầm.</b> Không phải “cả bốn mã khí hậu/thân xe đều ❌”. <code>defrost</code> (sấy kính <b>trước</b>) <b>CHẠY</b> trên cả hai xe <span class="e do">ĐO</span>. Ba mã hỏng là <code>trunk</code> · <code>ac_auto</code> · <code>defrost_rear</code>. Điều đó quan trọng cho thiết kế: đường ghi <b>một feature-id trần</b> cho sấy trước đã đủ để xe nhận lệnh, nên việc đổi sang đường method KHÔNG được làm hỏng cái đang chạy (CLAUDE.md §6: <i>đường mới luôn xuống cuối, và phải tự đo xem đường cũ có thật sự hụt không rồi mới leo</i>).</div>
+
+<h3>2.3 Vì sao ba binding cũ hỏng — cơ chế, có file:line</h3>
+<p>Nguồn RE: <code>&lt;scratchpad&gt;/car-0916/framework/fw-dl3/sources/android/hardware/bydauto/…</code> (jadx từ <code>framework.jar</code> của chính chiếc xe, kéo 2026-09-16). Mỗi dòng dưới đây đã được mở tệp và đọc lại trong phiên viết spec này.</p>
+<table>
+<tr><th>Mã</th><th>Binding hiện tại</th><th>Chuyện gì xảy ra</th><th>Bằng chứng</th></tr>
+<tr>
+  <td><code>trunk</code></td>
+  <td><code>BYDAutoBodyworkDevice.setHetchDoorStatus</code><br><span class="muted"><code>ControlRegistry.kt:187</code></span></td>
+  <td><b>Phương thức KHÔNG TỒN TẠI</b> trong framework của xe ⇒ reflection ném <code>NoSuchMethod</code> ⇒ gateway trả null ⇒ nút “không nhận lệnh”. Tên có trong bản <code>jadx-tmap</code> cũ nên nó từng <i>có vẻ</i> đúng.</td>
+  <td><span class="e do">ĐO</span> <code>grep -rn "setHetchDoorStatus\|HetchDoor" &lt;fw-dl3&gt;/bydauto</code> → <b>0 kết quả</b> trên toàn cây. Trùng khớp ghi chú đã có sẵn ở <code>TestBridgeHal.kt:52</code>.</td>
+</tr>
+<tr>
+  <td><code>ac_auto</code></td>
+  <td>feature-id trần <code>"1324355606"</code><br><span class="muted"><code>ControlRegistry.kt:273</code></span></td>
+  <td><b>Con số không có thật.</b> Không xuất hiện ở bất kỳ đâu trong <code>BYDAutoFeatureIds</code> ⇒ <code>checkDeviceFeatures</code> trả sentinel ⇒ “vắng trên trim” trong khi xe có thật.</td>
+  <td><span class="e do">ĐO</span> <code>grep -n "1324355606" BYDAutoFeatureIds.java</code> → <b>0 kết quả</b>.</td>
+</tr>
+<tr>
+  <td><code>defrost_rear</code></td>
+  <td>feature-id trần <code>"501219357"</code><br><span class="muted"><code>ControlRegistry.kt:278</code></span></td>
+  <td>Số <b>có thật</b> = <code>AC_DEFROST_REAR_STATE_SET</code>, nhưng ghi <b>một mình</b>. API thật ghi một <b>cặp</b> <code>{AC_DEFROST_*_STATE_SET, AC_CTRL_SOURCE_SET}</code> với <code>{state, setSource}</code> — thiếu vế nguồn lệnh. <span class="e suy">SUY</span> đây là lý do rear không ăn trong khi front ăn; còn một nghi phạm thứ hai là cổng cấu hình <code>getDefrostRearConfig()</code>. Chốt bằng T-oncar-0.</td>
+  <td><span class="e do">ĐO</span> <code>BYDAutoFeatureIds.java:5129</code> (<code>AC_DEFROST_REAR_STATE_SET … : 501219357</code>) · <code>ac/BYDAutoAcDevice.java:443-446</code> (ghi cặp) · <code>:999-1004</code> (<code>getDefrostRearConfig</code>).</td>
+</tr>
+<tr>
+  <td><code>defrost</code></td>
+  <td>feature-id trần <code>"501219362"</code><br><span class="muted"><code>ControlRegistry.kt:210</code></span></td>
+  <td>= <code>AC_DEFROST_FRONT_STATE_SET</code>, cũng ghi một mình — <b>và vẫn chạy</b>. Con số còn phụ thuộc <code>isCanFD</code>/<code>isToyota</code> lúc nạp lớp ⇒ hardcode là bom hẹn giờ cho đời xe khác.</td>
+  <td><span class="e do">ĐO</span> <code>BYDAutoFeatureIds.java:5116</code>: <code>AC_DEFROST_FRONT_STATE_SET = (!isCanFD &amp;&amp; isToyota) ? 598736930 : 501219362;</code></td>
+</tr>
+</table>
+
+<h3>2.4 Đường THẬT đã RE được (fw-dl3) — mỗi dòng đã mở tệp đọc lại</h3>
+<h4>Cốp (<code>setting/BYDAutoSettingDevice.java</code>)</h4>
+<table>
+<tr><th>API</th><th>file:line</th><th>Nội dung</th></tr>
+<tr><td><code>voiceCtlBackDoor(int cmd)</code></td><td>:2437-2446</td><td><span class="e do">ĐO</span> Gác <code>if (cmd &lt; 1 || cmd &gt; 3) return -2147482645;</code> (:2440-2442) ⇒ <b>đúng ba lệnh 1·2·3</b>; thân ghi <code>super.set(mDeviceType, SET_VOICE_CTRL_BACK_DOOR_SET, cmd)</code> (:2443).</td></tr>
+<tr><td><code>SET_VOICE_CTRL_BACK_DOOR_SET</code></td><td><code>BYDAutoFeatureIds.java:2874</code>, gán :9182</td><td><span class="e do">ĐO</span> Tính lúc chạy: <code>(!isCanFD &amp;&amp; isToyota) ? 589299744 : 1125122080</code> ⇒ <b>cấm hardcode</b>, tra qua <code>BydFeatureIds.idByName</code>.</td></tr>
+<tr><td><code>setBackDoorElectricMode(int)</code> / <code>getBackDoorElectricMode()</code></td><td>:1477-1484 / :1486-1490</td><td><span class="e do">ĐO</span> Công tắc “cốp điện”. <code>getBackDoorElectricModeOnlineState()</code> :1470-1474 = cổng online.</td></tr>
+<tr><td><code>setBackDoorOpenedHeight(int)</code> / <code>getBackDoorOpenedHeight()</code></td><td>:2345-2352 / :2338-2343</td><td><span class="e do">ĐO</span> Dải <code>BACK_DOOR_OPENED_HEIGHT_MIN = 15</code> … <code>MAX = 100</code> (:27-28) ⇒ nút STEP tự nhiên.</td></tr>
+<tr><td>Sự kiện</td><td><code>setting/AbsBYDAutoSettingListener.java:214</code>, :247; phân phát :681, :695</td><td><span class="e do">ĐO</span> <code>onBackDoorElectricModeChanged(mode)</code> · <code>onBackDoorOpenedHeightChanged(height)</code>.</td></tr>
+<tr><td>Nghĩa của <code>cmd</code> 1·2·3</td><td>—</td><td><span class="e unk">CHƯA BIẾT</span> Tệp <b>không</b> khai hằng tên cho ba giá trị này (đã grep cả <code>BYDAutoConstants.java</code> → 0 kết quả <code>BACK_DOOR</code>). <span class="e doan">ĐOÁN</span> mở / đóng / dừng, theo khuôn của các API cốp khác — <b>không được ship theo phỏng đoán</b>, chốt bằng T-oncar-0 (§5).</td></tr>
+</table>
+
+<h4>Điều hoà AUTO + sấy kính (<code>ac/BYDAutoAcDevice.java</code>, <code>ac/AbsBYDAutoAcListener.java</code>)</h4>
+<table>
+<tr><th>API</th><th>file:line</th><th>Nội dung</th></tr>
+<tr><td><code>setAcControlMode(int setSource, int mode)</code></td><td>:318-331</td><td><span class="e do">ĐO</span> Nhận <code>setSource ∈ {0,1}</code>, <code>mode ∈ {0,1}</code>, sai ⇒ <code>-2147482645</code>; ghi cặp <code>{AC_CTRL_MODE_SET, AC_CTRL_SOURCE_SET}</code> ← <code>{mode, setSource}</code> (:325-328).</td></tr>
+<tr><td>Hằng</td><td>:29-32</td><td><span class="e do">ĐO</span> <code>AC_CTRLMODE_AUTO = 0</code> · <code>AC_CTRLMODE_MANUAL = 1</code> · <code>AC_CTRL_SOURCE_UI_KEY = 0</code> · <code>AC_CTRL_SOURCE_VOICE = 1</code>. <b>AUTO là 0</b> — nghịch trực giác, dễ viết ngược.</td></tr>
+<tr><td><code>getAcControlMode()</code></td><td>:333-338</td><td><span class="e do">ĐO</span> Đọc feature <code>AC_CTRL_MODE</code> (id ĐỌC, khác <code>AC_CTRL_MODE_SET = 501219352</code> — <code>BYDAutoFeatureIds.java:5098</code>).</td></tr>
+<tr><td><code>onAcCtrlModeChanged(int mode)</code></td><td><code>AbsBYDAutoAcListener.java:28</code>; phân phát :362-364</td><td><span class="e do">ĐO</span> Sự kiện cho AUTO/MANUAL.</td></tr>
+<tr><td><code>setAcDefrostState(int setSource, int area, int state)</code></td><td>:428-447</td><td><span class="e do">ĐO</span> <code>area==1 → AC_DEFROST_FRONT_STATE_SET</code>, <code>area==2 → AC_DEFROST_REAR_STATE_SET</code> (:436-442); ghi cặp cùng <code>AC_CTRL_SOURCE_SET</code> (:443-445).</td></tr>
+<tr><td>Hằng vùng/trạng thái</td><td>:37-40</td><td><span class="e do">ĐO</span> <code>AC_DEFROST_AREA_FRONT = 1</code> · <code>REAR = 2</code> · <code>STATE_OFF = 0</code> · <code>STATE_ON = 1</code>.</td></tr>
+<tr><td><code>getAcDefrostState(int area)</code></td><td>:449-461</td><td><span class="e do">ĐO</span> area 1/2 → <code>AC_DEFROST_FRONT_STATE</code>/<code>REAR_STATE</code>; area khác ⇒ <code>-2147482645</code>.</td></tr>
+<tr><td><code>getAcDefrostOnlineState()</code></td><td>:888-893</td><td><span class="e do">ĐO</span> Đọc <code>AC_CMD_AC_DEFROST_5S_ONLINE</code> ⇒ <b>cổng “sấy kính có đang online không”</b>. Đây là điều kiện chặn của R4.</td></tr>
+<tr><td><code>getDefrostRearConfig()</code></td><td>:999-1004</td><td><span class="e do">ĐO</span> Đọc <code>AC_DEFROST_REAR_CONFIG</code> ⇒ cấu hình trim có sấy sau hay không.</td></tr>
+<tr><td><code>onAcDefrostStateChanged(int area, int state)</code></td><td><code>AbsBYDAutoAcListener.java:49</code>; phân phát :382-388</td><td><span class="e do">ĐO</span> Một callback, tham số <code>area</code> 1/2 tách trước/sau. Cũng có nhánh cho <code>AC_CMD_AC_DEFROST_5S_ONLINE</code> (:253).</td></tr>
+</table>
+
+<h4>Gương chiếu hậu — sấy gương</h4>
+<div class="card"><span class="e do">ĐO</span> <code>doormirror/BYDAutoRearViewMirrorDevice.java</code> chỉ phơi ra <b>hai</b> getter: <code>getAutoExternalRearMirrorState()</code> (:58-63) và <code>getAutoExternalRearMirrorAntiglareState()</code> (:65-70), kèm hằng gập/chống-chói (:12-25). <b>Không có một API sấy gương nào</b> (grep <code>heat</code> trong <code>doormirror/</code> → 0), và listener cũng chỉ có hai callback tương ứng (<code>AbsBYDAutoRearViewMirrorListener.java:12, :15</code>).<br>
+⇒ <span class="e unk">CHƯA BIẾT</span> trên chiếc xe này, sấy gương có <b>đi kèm</b> mạch sấy kính sau (rất nhiều xe đấu chung rơ-le) hay hoàn toàn không có. Owner hỏi “<i>kính chiếu hậu nếu có</i>” ⇒ câu trả lời trung thực hôm nay là: <b>không có đường điều khiển riêng</b>; nếu gương ấm lên khi bật sấy sau thì đó là phần thưởng của phần cứng, không phải của app. Quan sát chốt: V-oncar-4 (§6).</div>
+
+<h4>Phát hiện trời mưa — không có cảm biến mưa nào phơi ra API</h4>
+<p><span class="e do">ĐO</span> Grep <code>rain</code> (không phân biệt hoa thường) trên toàn cây <code>bydauto</code>: chỉ ra <b>hai</b> họ, <b>không</b> họ nào là “đọc cảm biến mưa”:</p>
+<ul>
+<li><code>RainAutoCloseWindow</code> — <b>tính năng tự đóng kính khi mưa của chính xe</b>: <code>bodywork/BYDAutoBodyworkDevice.java:872-879</code> <code>setRainCloseWindow(int)</code>, :881-885 <code>getRainCloseWindow()</code>, hằng <code>CLOSE_WINDOW_FOR_RAIN_ON = 1</code> / <code>OFF = 2</code> / <code>INVALID = 0</code> (:246-248), <code>FEATURE_RAIN_CLOSE_WINDOW = "RainAutoCloseWindow"</code> (:266) + nhánh <code>hasFeature</code> (:853-854). <span class="e suy">SUY</span> quan trọng: <b>xe đã tự biết trời mưa</b> ở tầng dưới — nó chỉ không cho app đọc tín hiệu đó.</li>
+<li><code>AutoRainWiper</code> — <b>công tắc gạt mưa TỰ ĐỘNG</b>: <code>setting/BYDAutoSettingDevice.java:2783-2790</code> <code>setAutoRainWiperState(int)</code>, :2792-2797 <code>getAutoRainWiperState()</code>, hằng <code>AUTO_RAIN_WIPER_ON = 1</code> / <code>OFF = 2</code> / <code>INVALID = 0</code> (:24-26), <code>FEATURE_AUTO_RAIN_WIPER = "AutoRainWiper"</code> (:141) + nhánh <code>hasFeature</code> (:2158-2159), sự kiện <code>onAutoRainWiperStateChanged(state)</code> (<code>AbsBYDAutoSettingListener.java:316</code>, phân phát :562).</li>
+</ul>
+<p>⇒ <b>Không có <code>getRainSensor*</code>.</b> <span class="e do">ĐO</span>. Những gì <i>đọc được</i> và có thể suy ra mưa:</p>
+<table>
+<tr><th>Tín hiệu</th><th>API + file:line</th><th>Giá trị</th><th>Vai trò trong luật</th></tr>
+<tr><td>Rơ-le gạt mưa</td><td><code>wiper/BYDAutoWiperDevice.java:65-70</code> <code>getWindscreenWiperRelayState()</code> (feature literal <code>1336934438</code> = <code>WIPER_RELAY_STATE</code>, <code>BYDAutoFeatureIds.java:3163</code>)</td><td><span class="e do">ĐO</span> <code>ACTUATION = 1</code> · <code>DISCONNECT = 2</code> · <code>INVALID = 0</code> (:22-24)</td><td><b>Tín hiệu CHÍNH</b></td></tr>
+<tr><td>Sự kiện rơ-le</td><td><code>wiper/AbsBYDAutoWiperListener.java:13-14</code>, phân phát :43-48</td><td><span class="e do">ĐO</span> <code>onWindscreenWiperRelayStateChanged(state)</code>, chỉ bắn khi value ∈ {0,1,2}</td><td>Đẩy, không cần poll</td></tr>
+<tr><td>Độ nhạy gạt mưa</td><td><code>:88-93</code> <code>getWindscreenWiperSensitivity()</code> (<code>321912864</code> = <code>WIPER_WINDSCREEN_WIPER_SENSITIVITY</code>, :3164)</td><td><span class="e do">ĐO</span> 1..4, <code>INVALID = 0</code> (:25-29)</td><td>Phụ — chỉ có nghĩa khi gạt mưa ở chế độ AUTO</td></tr>
+<tr><td>Gạt mưa AUTO bật chưa</td><td><code>setting/BYDAutoSettingDevice.java:2792-2797</code></td><td><span class="e do">ĐO</span> ON=1 / OFF=2</td><td><b>Cổng chất lượng tín hiệu</b> — xem §4.4</td></tr>
+<tr><td>Ẩm trong cabin</td><td><code>sensor/BYDAutoSensorDevice.java:77-82</code> <code>getHumiditySensorValue()</code> → <code>double</code></td><td><span class="e do">ĐO</span> 0.0 … 100.0 (:20-21)</td><td>Phụ — chống mờ kính, không quyết định mưa</td></tr>
+<tr><td>Nhiệt độ ngoài</td><td><code>:70-75</code> <code>getTemperatureSensorValue()</code> → <code>double</code></td><td><span class="e do">ĐO</span> −40.0 … 125.0 (:37-38)</td><td>Phụ</td></tr>
+<tr><td>Cường độ sáng</td><td><code>:84-89</code> <code>getLightIntensity()</code></td><td><span class="e do">ĐO</span> 1..5 (:22-26)</td><td>Phụ — trời tối sầm</td></tr>
+<tr><td>Sự kiện cảm biến</td><td><code>sensor/AbsBYDAutoSensorListener.java:13, :16, :19</code></td><td><span class="e do">ĐO</span> <code>onTemperatureSensorValueChanged</code> · <code>onHumiditySensorValueChanged</code> · <code>onLightIntensityChanged</code></td><td>Đẩy</td></tr>
+</table>
+
+<h4>Vị trí (GPS) — hai nguồn, một trong hai là <b>vùng cấm</b></h4>
+<table>
+<tr><th>Nguồn</th><th>file:line</th><th>Phán quyết</th></tr>
+<tr><td>Android <code>LocationManager</code></td><td>SDK</td><td><b>Chọn cái này.</b> Chỉ ĐỌC, quyền runtime rõ ràng, người dùng thu hồi được.</td></tr>
+<tr><td><code>location/BYDAutoLocationDevice.getLocationLongitudeLatitudeValue()</code></td><td>:85-89</td><td><span class="e do">ĐO</span> Trả <code>double[7]</code> {kiểu-kinh, kinh, kiểu-vĩ, vĩ, cố-định, hướng, cao-độ} đọc thẳng từ bus; cần quyền hệ thống <code>android.permission.BYDAUTO_LOCATION_GET</code> (:23). Sự kiện <code>onLocationLongitudeLatitudeValueChanged(...)</code> (<code>AbsBYDAutoLocationListener.java:12</code>, phân phát :27-28 theo type <code>1008774</code>). <b>Nguồn dự phòng</b> — <span class="e unk">CHƯA BIẾT</span> app có được cấp quyền đó không (chốt bằng một lệnh <code>hal get</code> ở T-oncar-0).</td></tr>
+<tr><td class="danger"><code>location/BYDAutoLocationDevice.setLocationInfo(...)</code></td><td>:72-83</td><td class="danger"><b>CẤM TUYỆT ĐỐI.</b> <span class="e do">ĐO</span> Đây là đường <b>GHI</b> toạ độ lên bus xe — bản HAL của đúng cái tai nạn 2026-07 (test provider ghim GPS toàn xe). Nó phải bị test chặn y như <code>addTestProvider</code>.</td></tr>
+</table>
+
+<h3>2.5 Vùng cấm mang theo từ sự cố 2026-07 — mở quyền ĐỌC không mở lại chuyện cũ</h3>
+<div class="card stop">
+<p><span class="e do">ĐO</span> <code>app/src/test/java/com/byd/clusternav/DeadReckonRetirementTest.kt</code> hiện khoá bốn điều: (1) không nhánh <code>deadreckon</code>/<code>mockloc</code> trong cây; (2) không call-site nào chạm <code>MockLoc.*</code>; (3) manifest không xin <b>bất kỳ</b> quyền vị trí nào; (4) <code>Prefs</code> không còn <code>gpsAuto</code>.</p>
+<p>Gốc của luật (CLAUDE.md §3): <code>addTestProvider</code> <b>gỡ provider GPS thật</b> khỏi <code>mProviders</code>, chỉ <code>removeTestProvider</code> mới lắp lại — nên một lần ghim là cả xe đứng yên một toạ độ suốt chuyến.</p>
+<p><b>Owner mở khoá đúng một nửa</b>: cho phép <b>xin quyền để ĐỌC</b>. Nửa còn lại <b>không</b> được mở, và spec này siết nó chặt hơn trước: cấm cả <code>addTestProvider</code> / <code>setTestProviderEnabled</code> / <code>setTestProviderLocation</code> / <code>removeTestProvider</code> <b>lẫn</b> <code>BYDAutoLocationDevice.setLocationInfo</code> — một lối ghi toạ độ mà bài kiểm cũ chưa biết tới vì hồi đó chưa RE ra gói <code>location/</code>.</p>
+</div>
+
+<h3>2.6 Cổng / phụ thuộc</h3>
+<ul>
+<li><b>C1 — §14 là cổng cứng.</b> <code>auto_defrost_rain</code> là tính năng <b>MỚI</b> ⇒ không một dòng <code>:core</code> nào của luật mưa được ship trước khi T-oncar-0 cho bằng chứng <b>mới</b> rằng <code>getWindscreenWiperRelayState()</code> đọc được và đổi giá trị thật khi gạt mưa chạy. Dump cũ (<code>oncar-signals-*</code> 2026-07-25) chỉ dùng để biết <i>cần đo gì</i>.</li>
+<li><b>C2 — dùng chung hạ tầng của <code>kachi-live-state-ux.html</code>.</b> Đọc trạng thái nút đi qua <code>ControlDef.readKey</code>/<code>readArg</code> + <code>LiveCarState</code> + <code>BydHalEvents</code> (Proxy <code>IBYDAutoListener</code>) của spec đó. Spec này <b>không</b> dựng bảng getter thứ hai, <b>không</b> mở poller thứ hai (ngân sách §4.8 của spec kia).</li>
+<li><b>C3 — không đụng cast.</b> <code>SimpleCastRuntime</code> ngoài phạm vi (cùng ràng buộc <code>kachi-hal187-cast-remediation.html</code> §B).</li>
+<li><b>C4 — không mở lệnh shell mới.</b> Mọi thứ đi qua HAL reflection sẵn có (<code>BydHal</code>/<code>BydHalGateway</code>) — không <code>am</code>/<code>wm</code>/<code>service call</code> nào được thêm (CLAUDE.md §4).</li>
+</ul>
+
+<h2>3. Requirements</h2>
+
+<h3>Chức năng</h3>
+
+<h4>R1 — Cốp sau đi đúng đường <code>voiceCtlBackDoor</code></h4>
+<ul>
+<li>Đổi <code>ControlDef("trunk").bindingKey</code> từ <code>BYDAutoBodyworkDevice.setHetchDoorStatus</code> (không tồn tại) sang <code>BYDAutoSettingDevice.voiceCtlBackDoor</code>, <code>halDevice = "BYDAutoSettingDevice"</code>.</li>
+<li><code>writeArgs("trunk")</code> phát ra <b>một</b> int trong dải 1..3, lấy từ bảng <code>TRUNK_CMD</code> chỉ được điền <b>sau</b> T-oncar-0. Trước khi có kết quả đo, mã giữ <code>tier = NEEDS_CAR</code> và nút hiện “chưa kiểm trên xe”.</li>
+<li>Trạng thái sống: <code>readKey = "backdoor_electric_mode"</code> (<code>getBackDoorElectricMode()</code>) + sự kiện <code>onBackDoorElectricModeChanged</code> qua <code>HalEventMap</code>.</li>
+<li><b>AC-R1.1</b> Bấm “Cốp sau” trên xe làm cốp <b>thật sự</b> động (owner quan sát), và kết quả trả về <code>rc = 0</code>, không phải sentinel.
+<b>AC-R1.2</b> Off-car: <code>ControlWriteArgsTest</code> khẳng định giá trị gửi luôn ∈ 1..3 (gác của framework, <code>:2440-2442</code>) — gửi 0 hay 4 là test ĐỎ.
+<b>AC-R1.3</b> <code>trunk</code> vẫn nằm trong <code>CtlSafetyPolicy.CONFIRM_REQUIRED</code> (mở thân xe ⇒ cần <code>auto_confirm</code>).</li>
+<li><b>Để sau (STEP)</b>: <code>trunk_height</code> — <code>setBackDoorOpenedHeight(15..100)</code> làm nút STEP, chỉ mở khi <code>getBackDoorElectricModeOnlineState()</code> nói cốp điện online. Không làm ở pass này (owner: “<i>mất hác thì từ từ làm tiếp cũng ok</i>”).</li>
+</ul>
+
+<h4>R2 — Điều hoà AUTO đi đúng đường <code>setAcControlMode</code></h4>
+<ul>
+<li><code>bindingKey = "BYDAutoAcDevice.setAcControlMode"</code>; <code>writeArgs("ac_auto", primary)</code> = <code>[AC_CTRL_SOURCE_UI_KEY(0), if (primary &gt; 0) 0 /*AUTO*/ else 1 /*MANUAL*/]</code>.</li>
+<li><code>readKey = "ac_ctrl_mode"</code> → datum mới gọi <code>getAcControlMode()</code>; sự kiện <code>onAcCtrlModeChanged</code>.</li>
+<li><b>AC-R2.1</b> Bấm AUTO ⇒ màn điều hoà zin của xe chuyển sang AUTO (quan sát) <b>và</b> ô nút Kachi đổi nhãn theo giá trị <b>đọc lại</b>, không theo giá trị vừa gửi.
+<b>AC-R2.2</b> Off-car: test khoá <b>chiều đảo</b> — “bật AUTO” phải gửi <code>mode = 0</code>. Viết ngược (1) là test ĐỎ. Đây là cái bẫy dễ mắc nhất của cả spec.
+<b>AC-R2.3</b> <code>tier</code> chỉ được lên <code>PROVEN</code> sau khi có dòng <code>rc=0</code> + quan sát trên xe, ghi vào <code>docs/diagnostics/</code>.</li>
+</ul>
+
+<h4>R3 — Sấy kính trước/sau đi đường method, có trạng thái thật</h4>
+<ul>
+<li><code>defrost</code> / <code>defrost_rear</code> → <code>bindingKey = "BYDAutoAcDevice.setAcDefrostState"</code>; <code>writeArgs</code> = <code>[0 /*UI_KEY*/, 1|2 /*area*/, if (primary &gt; 0) 1 else 0]</code>.</li>
+<li><code>readKey = "defrost_front_state" | "defrost_rear_state"</code>, <code>readArg = 1 | 2</code> → <code>getAcDefrostState(area)</code>; sự kiện <code>onAcDefrostStateChanged(area, state)</code>.</li>
+<li><b>AC-R3.1 (bảo toàn cái đang chạy — CLAUDE.md §6)</b>: sau khi đổi route, <code>defrost</code> phải <b>vẫn</b> bật/tắt được sấy trước trên xe. Nếu đường method hụt mà id trần vẫn chạy ⇒ <b>giữ id trần cho <code>defrost</code></b> và chỉ đổi <code>defrost_rear</code>. Quyết định này do <b>số đo</b> ở T-oncar-0 định, không do spec định trước.
+<b>AC-R3.2</b> <code>defrost_rear</code> chỉ hiện khi <code>getDefrostRearConfig()</code> nói trim có sấy sau; không có ⇒ nhãn “xe không có”, không bắn lệnh.
+<b>AC-R3.3</b> Ô nút hiện trạng thái <b>đọc từ xe</b>; chưa đọc được ⇒ ⚠ “chưa đọc được trạng thái” (R5 của spec live-state), không bịa.</li>
+</ul>
+
+<h4>R4 — <code>auto_defrost_rain</code>: tự sấy kính khi trời mưa</h4>
+<p>Một công tắc (<code>ControlKind.TOGGLE</code>) tên <b>“Tự sấy kính khi mưa”</b>, mặc định <b>TẮT</b>, xuất hiện ở ba bề mặt: Cài đặt › <b>Tiện nghi xe</b>, một nút trên thanh nút (bật qua Tuỳ biến), và giọng nói.</p>
+<ul>
+<li><b>R4.1 Điều kiện bật sấy.</b> Khi <code>RainPolicy</code> chuyển sang <code>WET</code> ⇒ bật <b>sấy trước</b> + <b>sấy sau</b> (sấy sau chỉ khi <code>getDefrostRearConfig()</code> cho phép). Sấy gương: <span class="e unk">CHƯA BIẾT</span> có API ⇒ <b>không làm gì</b>, ghi rõ trong nhãn tính năng; nếu V-oncar-4 chứng minh gương ấm theo sấy sau thì chỉ sửa <b>chữ mô tả</b>, không thêm lệnh.</li>
+<li><b>R4.2 Chỉ trả lại thứ mình đã bật.</b> Trước mỗi lần bật, đọc trạng thái hiện tại; vùng nào <b>đã bật sẵn</b> thì <b>không ghi</b> và <b>không ghi sổ</b>. Khi tạnh + <code>T_DRY_MIN</code> phút ⇒ chỉ tắt đúng những vùng có trong sổ. <b>Không bao giờ</b> tắt thứ người lái tự bật.</li>
+<li><b>R4.3 Người lái luôn thắng.</b> Nếu giữa chừng trạng thái một vùng đổi mà <b>không</b> do Kachi ghi (phát hiện qua sự kiện HAL đối chiếu sổ) ⇒ Kachi <b>nhả quyền sở hữu</b> vùng đó ngay, xoá khỏi sổ, và ghi 1 dòng log. Từ đó không đụng vào nó nữa cho tới chu kỳ mưa sau.</li>
+<li><b>R4.4 Điều kiện chặn cứng (tầng THI HÀNH, không phải tầng UI — CLAUDE.md §5).</b> Không ghi lệnh nào khi: công tắc tắt · máy chưa nổ / ACC off · <code>getAcDefrostOnlineState()</code> không nói online · không đọc được rơ-le gạt mưa (<code>INVALID</code>/null) · chưa qua <code>MIN_CMD_GAP</code>.</li>
+<li><b>R4.5 Hạn tốc độ lệnh.</b> Tối đa <b>1 lệnh mỗi 10 phút cho mỗi chiều</b> (bật / tắt), tính riêng. Mưa rào ngắt quãng không được biến thành tràng lệnh khí hậu.</li>
+<li><b>R4.6 Chip trạng thái nhìn thấy được.</b> Một chip trên màn chính: “<i>Tự sấy: đang mưa → sấy bật</i>” · “<i>Tự sấy: đang chờ mưa</i>” · “<i>Tự sấy: tạnh 6/10 phút</i>” · “<i>Tự sấy: không đọc được gạt mưa</i>”. Chip nói <b>đúng</b> trạng thái máy, kể cả trạng thái xấu.</li>
+<li><b>R4.7 Mỗi quyết định ghi 1 dòng log</b> (<code>KachiLog</code>), gồm: trạng thái trước → sau, điểm tích luỹ, vùng đã ghi/không ghi và vì sao. Không log mỗi nhịp lấy mẫu.</li>
+<li><b>R4.8 Sổ sống dai hơn tiến trình (CLAUDE.md §5).</b> Sổ sở hữu ghi vào prefs <b>TRƯỚC</b> khi ghi lệnh xuống xe. Lúc khởi động: nếu sổ nói “đang sở hữu” mà luật đang <code>DRY</code> ⇒ tắt đúng những vùng trong sổ một lần rồi xoá sổ. App chết giữa cơn mưa <b>không</b> được để sấy kính bật vĩnh viễn.</li>
+<li><b>AC-R4.a</b> <code>RainPolicyTest</code> chạy các chuỗi tín hiệu tổng hợp: mưa liên tục · mưa rào 30 s rồi tạnh · gạt mưa gián đoạn (bật 2 s / nghỉ 6 s) · người lái gạt tay một nhát · rơ-le <code>INVALID</code> xen giữa · mất tín hiệu hẳn. Mỗi ca khoá một quyết định cụ thể.
+<b>AC-R4.b</b> Một nhát gạt tay (≤ 3 s) <b>không</b> được bật sấy.
+<b>AC-R4.c</b> Sau khi tạnh, sấy tắt <b>đúng</b> sau <code>T_DRY_MIN</code>, và <b>chỉ</b> vùng Kachi đã bật.
+<b>AC-R4.d</b> Công tắc tắt ⇒ <code>RainPolicy</code> không được gọi, không lệnh nào ra.</li>
+</ul>
+
+<h4>R5 — GPS chỉ-đọc, có quyền, có cổng</h4>
+<ul>
+<li>Manifest xin <code>ACCESS_FINE_LOCATION</code> + <code>ACCESS_COARSE_LOCATION</code>. <b>Không</b> xin <code>ACCESS_BACKGROUND_LOCATION</code>, <b>không</b> <code>FOREGROUND_SERVICE_LOCATION</code>, <b>không</b> <code>ACCESS_MOCK_LOCATION</code>.</li>
+<li>Xin quyền <b>tại Cài đặt</b>, khi người dùng chạm hàng “Vị trí”, <b>không</b> ở lần mở app đầu tiên, <b>không</b> nhắc lại sau khi bị từ chối (một lần duy nhất cho tới khi người dùng tự chạm lại).</li>
+<li>Đọc qua <code>LocationManager.requestLocationUpdates(GPS_PROVIDER, ≥ 1000 ms, 0f, …)</code>, <b>chỉ khi</b> có ít nhất một datum <code>gps_*</code> đang hiển thị — tái dùng cổng <code>CarDataDemand.of(state)</code> (spec PERF). Không datum nào trên màn ⇒ <b>huỷ đăng ký</b>.</li>
+<li>Bốn datum <code>gps_lat</code>/<code>gps_lon</code>/<code>gps_elevation</code>/<code>gps_heading</code> chuyển <code>bindingKey</code> từ <code>NaviInfo.*</code> sang đường <code>LocationManager</code> mới.</li>
+<li><b>AC-R5.1</b> Chưa cấp quyền ⇒ bốn ô hiện “—” + một hàng Cài đặt nói rõ vì sao; app <b>không</b> crash, <b>không</b> vòng lặp xin quyền.
+<b>AC-R5.2</b> <code>DeadReckonRetirementTest</code> sửa lại (§4.7) và <b>vẫn ĐỎ</b> nếu ai đó đưa mock/test-provider hoặc <code>setLocationInfo</code> trở lại.
+<b>AC-R5.3</b> Màn ẩn (<code>onStop</code>) ⇒ 0 lượt cập nhật vị trí.</li>
+</ul>
+
+<h4>R6 — An toàn: không mở cửa mới nào</h4>
+<ul>
+<li>Mọi lượt GHI vẫn đi qua <code>HalBindingTable</code> + cổng <code>auto_confirm</code> hiện có (<code>CtlSafetyPolicy</code> cho cầu kiểm thử; <code>voice_confirm_ids</code> cho giọng nói). Spec này <b>không</b> thêm lệnh shell, <b>không</b> thêm broadcast, <b>không</b> nới danh sách trắng <code>WRITABLE_PREFS_KEYS</code> ngoài đúng một khoá <code>auto_defrost_rain</code> (để E2E bật/tắt được bằng máy).</li>
+<li><b>Tín hiệu lạ ⇒ KHÔNG LÀM GÌ</b> (fail-open theo nghĩa “không hành động”, không phải “đoán bừa”): rơ-le <code>INVALID(0)</code>, getter trả null, sentinel, <code>getAcDefrostOnlineState()</code> không xác định — tất cả đều giữ nguyên trạng thái hiện tại và chip nói thẳng là chưa đọc được.</li>
+<li><code>auto_defrost_rain</code> <b>không</b> vào <code>CtlSafetyPolicy.CONFIRM_REQUIRED</code>: nó không mở thân xe. Nhưng nó <b>phải</b> có trong danh mục khả năng với mô tả nói rõ nó sẽ tự bắn lệnh khí hậu.</li>
+</ul>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 Thuần &amp; test off-device.</b> <code>RainPolicy</code>, sổ sở hữu, bảng tham số, <code>writeArgs</code>, <code>readKey</code> đều ở <code>:core</code>, không import Android ⇒ test JVM bằng chuỗi tín hiệu tổng hợp.</li>
+<li><b>R-nf2 Degrade-safe.</b> Off-car / máy ảo: không device ⇒ mọi getter null ⇒ luật đứng yên ở <code>DRY</code>, chip ⚠, không crash, không log lặp.</li>
+<li><b>R-nf3 Generic (CLAUDE.md §7).</b> Không <code>if (id == "defrost")</code> trong đường định tuyến; khác biệt là <b>dữ liệu</b> trong registry. Khác biệt đời xe (nếu đo ra) vào <code>ClusterProfile</code>, không rải rác.</li>
+<li><b>R-nf4 Không tăng tải.</b> Rơ-le gạt mưa + cảm biến đi đường <b>sự kiện</b> (đẩy). Chỉ có một nhịp đồng hồ 1 Hz <b>khi và chỉ khi</b> công tắc bật, dùng chung bộ lập lịch của spec PERF. <code>KachiPerf</code> đo trước/sau.</li>
+<li><b>R-nf5 Trần 500 dòng (CLAUDE.md §4.1).</b> <code>ControlRegistry.kt</code> đang 463 dòng, <code>HalBindingTable.kt</code> 469 dòng <span class="e do">ĐO <code>wc -l</code></span> ⇒ mã mới của luật mưa nằm ở tệp <b>riêng</b> (<code>RainPolicy.kt</code>, <code>RainDefrostLedger.kt</code>), không nhồi vào hai tệp đó.</li>
+<li><b>R-nf6 Không quyền nền.</b> Không dịch vụ nền theo dõi mưa khi app không chạy. Tính năng sống trong vòng đời màn chính + phiên lái, đúng như mọi thứ khác của Kachi.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Tín hiệu → luật → cơ cấu chấp hành</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 330" role="img" aria-label="Sơ đồ: tín hiệu gạt mưa và cảm biến vào luật RainPolicy ở :core, ra lệnh sấy kính qua HalBindingTable">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+    </marker>
+  </defs>
+  <!-- cột 1: tín hiệu -->
+  <text x="20" y="24" font-size="12" font-weight="700" fill="var(--muted)">TÍN HIỆU (đẩy, HAL)</text>
+  <rect x="20" y="36" width="210" height="46" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="32" y="55" font-size="13" font-weight="650" fill="var(--fg)">Rơ-le gạt mưa</text>
+  <text x="32" y="72" font-size="11.5" fill="var(--muted)">ACTUATION 1 · DISCONNECT 2 · INVALID 0</text>
+
+  <rect x="20" y="92" width="210" height="46" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="32" y="111" font-size="13" font-weight="650" fill="var(--fg)">Gạt mưa AUTO + độ nhạy</text>
+  <text x="32" y="128" font-size="11.5" fill="var(--muted)">getAutoRainWiperState · sensitivity 1..4</text>
+
+  <rect x="20" y="148" width="210" height="46" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="32" y="167" font-size="13" font-weight="650" fill="var(--fg)">Ẩm · nhiệt · sáng</text>
+  <text x="32" y="184" font-size="11.5" fill="var(--muted)">phụ trợ — không tự quyết định mưa</text>
+
+  <rect x="20" y="204" width="210" height="46" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="32" y="223" font-size="13" font-weight="650" fill="var(--fg)">Cổng: ACC · AC online</text>
+  <text x="32" y="240" font-size="11.5" fill="var(--muted)">getAcDefrostOnlineState</text>
+
+  <!-- cột 2: luật -->
+  <rect x="285" y="60" width="240" height="190" rx="12" fill="rgba(0,113,227,.07)" stroke="var(--accent)"/>
+  <text x="405" y="86" font-size="14" font-weight="700" text-anchor="middle" fill="var(--fg)">RainPolicy — :core</text>
+  <text x="405" y="106" font-size="11.5" text-anchor="middle" fill="var(--muted)">hàm THUẦN, không Android</text>
+  <text x="405" y="130" font-size="12" text-anchor="middle" fill="var(--fg)">tích phân điểm ướt + trễ</text>
+  <text x="405" y="150" font-size="12" text-anchor="middle" fill="var(--fg)">DRY→WET_PENDING→WET→DRYING</text>
+  <text x="405" y="172" font-size="12" text-anchor="middle" fill="var(--fg)">sổ sở hữu (chỉ trả lại thứ mình bật)</text>
+  <text x="405" y="192" font-size="12" text-anchor="middle" fill="var(--fg)">hạn tốc độ ≥ 10 phút / chiều</text>
+  <text x="405" y="216" font-size="11.5" text-anchor="middle" fill="var(--muted)">vào: mẫu tín hiệu + đồng hồ</text>
+  <text x="405" y="234" font-size="11.5" text-anchor="middle" fill="var(--muted)">ra: 0..2 Ý ĐỊNH (không phải lệnh)</text>
+
+  <!-- cột 3: chấp hành -->
+  <text x="585" y="24" font-size="12" font-weight="700" fill="var(--muted)">CHẤP HÀNH (ghi, :app)</text>
+  <rect x="585" y="60" width="255" height="52" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="598" y="80" font-size="13" font-weight="650" fill="var(--fg)">HalBindingTable + Gateway</text>
+  <text x="598" y="98" font-size="11.5" fill="var(--muted)">setAcDefrostState(0, area, state)</text>
+
+  <rect x="585" y="124" width="255" height="52" rx="9" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="598" y="144" font-size="13" font-weight="650" fill="var(--fg)">LiveCarState (spec live-state)</text>
+  <text x="598" y="162" font-size="11.5" fill="var(--muted)">đọc lại · sự kiện · phát hiện người lái</text>
+
+  <rect x="585" y="188" width="255" height="52" rx="9" fill="rgba(0,113,227,.07)" stroke="var(--accent)"/>
+  <text x="598" y="208" font-size="13" font-weight="650" fill="var(--fg)">Chip “Tự sấy: …” + log</text>
+  <text x="598" y="226" font-size="11.5" fill="var(--muted)">một dòng mỗi QUYẾT ĐỊNH</text>
+
+  <!-- mũi tên -->
+  <line x1="232" y1="60" x2="283" y2="110" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="232" y1="115" x2="283" y2="130" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="232" y1="171" x2="283" y2="160" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="232" y1="227" x2="283" y2="190" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="527" y1="110" x2="583" y2="86" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="527" y1="175" x2="583" y2="214" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <!-- vòng phản hồi -->
+  <path d="M712 176 L712 268 L405 268 L405 252" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="560" y="286" font-size="11.5" text-anchor="middle" fill="var(--muted)">phản hồi: trạng thái THẬT đọc lại — nếu lệch sổ ⇒ người lái đã can thiệp ⇒ nhả quyền</text>
+  <text x="430" y="312" font-size="11.5" text-anchor="middle" fill="var(--muted)">Luật không bao giờ tự gọi HAL. Nó nhận số, trả ý định; tầng :app mới ghi.</text>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (tái dùng)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới của spec này</span>
+</div>
+<p><b>Vì sao luật trả “ý định” chứ không tự ghi</b>: cùng lý do <code>Maneuver</code> là quyết định trung lập rồi mới encode ba đầu ra (§1 <code>project-context.md</code>). Luật thuần ⇒ chạy được 10 000 nhịp tín hiệu trong một bài test JVM 20 ms; luật có HAL bên trong ⇒ chỉ kiểm được trên xe, mà xe thì mỗi tuần mới lên một lần.</p>
+
+<h3>4.2 Bảng nối lại (R1–R3, R5) — trước ⇄ sau</h3>
+<table>
+<tr><th>id</th><th><code>bindingKey</code> trước</th><th><code>bindingKey</code> sau</th><th><code>writeArgs</code> sau</th><th><code>readKey</code> / <code>readArg</code></th><th>Sự kiện</th></tr>
+<tr>
+<td><code>trunk</code></td>
+<td><code>BYDAutoBodyworkDevice.setHetchDoorStatus</code> <span class="e do">ĐO không tồn tại</span></td>
+<td><code>BYDAutoSettingDevice.voiceCtlBackDoor</code><br><code>halDevice = "BYDAutoSettingDevice"</code></td>
+<td><code>[TRUNK_CMD[verb]]</code> — 1..3, bảng <b>chỉ điền sau T-oncar-0</b> <span class="e unk">CHƯA BIẾT</span></td>
+<td><code>backdoor_electric_mode</code> / —</td>
+<td><code>onBackDoorElectricModeChanged</code></td>
+</tr>
+<tr>
+<td><code>ac_auto</code></td>
+<td><code>"1324355606"</code> <span class="e do">ĐO số không có thật</span></td>
+<td><code>BYDAutoAcDevice.setAcControlMode</code></td>
+<td><code>[0, if (primary &gt; 0) 0 else 1]</code> — <b>AUTO = 0</b></td>
+<td><code>ac_ctrl_mode</code> / —</td>
+<td><code>onAcCtrlModeChanged</code></td>
+</tr>
+<tr>
+<td><code>defrost</code></td>
+<td><code>"501219362"</code> — <b>đang chạy</b> <span class="e do">ĐO</span></td>
+<td><code>BYDAutoAcDevice.setAcDefrostState</code> <b>nếu</b> T-oncar-0 xác nhận đường method cũng chạy; <b>không thì giữ nguyên</b> (AC-R3.1)</td>
+<td><code>[0, 1, if (primary &gt; 0) 1 else 0]</code></td>
+<td><code>defrost_front_state</code> / <code>1</code></td>
+<td><code>onAcDefrostStateChanged(1, …)</code></td>
+</tr>
+<tr>
+<td><code>defrost_rear</code></td>
+<td><code>"501219357"</code> <span class="e do">ĐO ghi thiếu vế nguồn</span></td>
+<td><code>BYDAutoAcDevice.setAcDefrostState</code></td>
+<td><code>[0, 2, if (primary &gt; 0) 1 else 0]</code></td>
+<td><code>defrost_rear_state</code> / <code>2</code></td>
+<td><code>onAcDefrostStateChanged(2, …)</code></td>
+</tr>
+<tr>
+<td><code>gps_lat</code> · <code>gps_lon</code> · <code>gps_elevation</code> · <code>gps_heading</code></td>
+<td><code>NaviInfo.*</code> → <code>BindingRoute.None</code> <span class="e do">ĐO <code>TelemetryRegistry.kt:346-350</code></span></td>
+<td><code>LocationManager.lat|lon|altitude|bearing</code> (đường <code>BindingRoute.Local</code>, thêm <code>"LocationManager"</code> vào <code>LOCAL_TARGETS</code>)</td>
+<td>— (chỉ đọc)</td>
+<td>—</td>
+<td><code>LocationListener</code> (Android, không HAL)</td>
+</tr>
+</table>
+<div class="card"><b>Vì sao đi đường <code>LOCAL_TARGETS</code> chứ không thêm một route thứ năm.</b> <code>HalBindingTable</code> đã có sẵn nhánh <code>BindingRoute.Local</code> cho <code>AudioManager</code>/<code>AutoContainer</code> (<code>:212-215</code>) — đúng khuôn “không qua HAL BYDAuto”. KDoc ở đó hiện ghi <i>“<code>LocationManager</code> CỐ Ý không có ở đây — BLOCKED-BY-DESIGN”</i>; bản vá phải <b>sửa chính KDoc đó</b> (ghi ngày + quyết định owner), không âm thầm thêm chuỗi vào set — người đọc sau phải thấy được vì sao luật đổi.</div>
+
+<h3>4.3 Máy trạng thái phát hiện mưa</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 300" role="img" aria-label="Máy trạng thái: DRY, WET_PENDING, WET, DRYING, và trạng thái NO_SIGNAL">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+    </marker>
+    <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--warn)"/>
+    </marker>
+  </defs>
+  <rect x="24" y="96" width="150" height="62" rx="12" fill="var(--bg)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="99" y="124" font-size="15" font-weight="700" text-anchor="middle" fill="var(--fg)">DRY</text>
+  <text x="99" y="143" font-size="11.5" text-anchor="middle" fill="var(--muted)">khô · không sở hữu gì</text>
+
+  <rect x="222" y="96" width="162" height="62" rx="12" fill="var(--bg)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="303" y="122" font-size="15" font-weight="700" text-anchor="middle" fill="var(--fg)">WET_PENDING</text>
+  <text x="303" y="141" font-size="11.5" text-anchor="middle" fill="var(--muted)">đang tích điểm · chưa ghi lệnh</text>
+
+  <rect x="432" y="96" width="150" height="62" rx="12" fill="rgba(0,113,227,.1)" stroke="var(--accent)" stroke-width="1.8"/>
+  <text x="507" y="122" font-size="15" font-weight="700" text-anchor="middle" fill="var(--fg)">WET</text>
+  <text x="507" y="141" font-size="11.5" text-anchor="middle" fill="var(--muted)">sấy BẬT · có sổ sở hữu</text>
+
+  <rect x="630" y="96" width="150" height="62" rx="12" fill="var(--bg)" stroke="var(--line)" stroke-width="1.6"/>
+  <text x="705" y="122" font-size="15" font-weight="700" text-anchor="middle" fill="var(--fg)">DRYING</text>
+  <text x="705" y="141" font-size="11.5" text-anchor="middle" fill="var(--muted)">đếm ngược T_DRY · sấy vẫn bật</text>
+
+  <rect x="300" y="228" width="260" height="54" rx="12" fill="var(--bg)" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="6 4"/>
+  <text x="430" y="250" font-size="14" font-weight="700" text-anchor="middle" fill="var(--fg)">NO_SIGNAL (giữ nguyên)</text>
+  <text x="430" y="268" font-size="11.5" text-anchor="middle" fill="var(--muted)">rơ-le INVALID/null · AC không online · ACC off</text>
+
+  <line x1="176" y1="116" x2="220" y2="116" stroke="var(--accent)" stroke-width="1.7" marker-end="url(#ar2)"/>
+  <text x="198" y="106" font-size="10.5" text-anchor="middle" fill="var(--muted)">gạt</text>
+  <line x1="220" y1="140" x2="176" y2="140" stroke="var(--accent)" stroke-width="1.7" marker-end="url(#ar2)"/>
+  <text x="198" y="158" font-size="10.5" text-anchor="middle" fill="var(--muted)">điểm ≤ S_DRY</text>
+
+  <line x1="386" y1="116" x2="430" y2="116" stroke="var(--accent)" stroke-width="1.7" marker-end="url(#ar2)"/>
+  <text x="408" y="106" font-size="10.5" text-anchor="middle" fill="var(--muted)">điểm ≥ S_WET</text>
+
+  <line x1="584" y1="116" x2="628" y2="116" stroke="var(--accent)" stroke-width="1.7" marker-end="url(#ar2)"/>
+  <text x="606" y="106" font-size="10.5" text-anchor="middle" fill="var(--muted)">tạnh</text>
+  <line x1="628" y1="140" x2="584" y2="140" stroke="var(--accent)" stroke-width="1.7" marker-end="url(#ar2)"/>
+  <text x="606" y="158" font-size="10.5" text-anchor="middle" fill="var(--muted)">mưa lại</text>
+
+  <path d="M705 160 L705 200 L99 200 L99 162" fill="none" stroke="var(--accent)" stroke-width="1.7" marker-end="url(#ar2)"/>
+  <text x="400" y="194" font-size="11" text-anchor="middle" fill="var(--muted)">khô đủ T_DRY_MIN ⇒ TẮT đúng vùng trong sổ, xoá sổ</text>
+
+  <path d="M430 226 L430 200" fill="none" stroke="var(--warn)" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#ar3)"/>
+  <text x="430" y="296" font-size="11" text-anchor="middle" fill="var(--muted)">NO_SIGNAL không phải một trạng thái riêng: nó ĐÓNG BĂNG trạng thái đang có và cấm mọi lượt ghi.</text>
+</svg>
+</div>
+
+<h4>Điểm ướt — tích phân có trễ, không phải bộ đếm giờ đơn</h4>
+<p><b>Vấn đề thật</b>: gạt mưa gián đoạn (mưa lất phất) bật 2 s rồi nghỉ 6 s. Một bộ đếm “ACTUATION liên tục ≥ N giây” sẽ <b>không bao giờ</b> nổ, dù trời đang mưa thật. Một bộ đếm “thấy ACTUATION là mưa” thì một nhát gạt tay lau bụi cũng bật sấy. Cả hai đều sai.</p>
+<p><b>Cách chọn</b>: một biến tích luỹ <code>score</code> (giây quy đổi), tăng khi rơ-le đang gạt, giảm chậm hơn khi ngừng, chặn hai đầu. Ngưỡng lên và ngưỡng xuống <b>khác nhau</b> ⇒ trễ (hysteresis) tự nhiên, không cần cờ phụ.</p>
+<pre>score' = clamp(score + dt·(relay == ACTUATION ? +1 : −1/K_DECAY), 0, S_MAX)
+DRY|WET_PENDING → WET       khi score ≥ S_WET
+WET|DRYING      → DRY(ing)  khi score ≤ S_DRY
+</pre>
+<h4>Bảng tham số (tất cả là hằng ở <code>:core</code>, sửa được bằng một dòng, có test khoá)</h4>
+<table>
+<tr><th>Tham số</th><th>Mặc định đề xuất</th><th>Vì sao</th><th>Mức</th></tr>
+<tr><td><code>SAMPLE_MS</code></td><td>1 000 ms</td><td>Đủ dày để bắt một nhịp gạt; đúng trần “≤ 1 Hz” của R-nf4. Sự kiện HAL đến sớm hơn thì dùng luôn, đồng hồ chỉ là lưới an toàn.</td><td><span class="e suy">SUY</span></td></tr>
+<tr><td><code>S_WET</code></td><td>25 (giây quy đổi)</td><td>Gạt liên tục ⇒ 25 s là mưa thật. Gián đoạn 2 s/8 s ⇒ ≈ 100 s mới đạt — chậm nhưng đúng. Một nhát gạt tay 3 s không tới gần.</td><td><span class="e doan">ĐOÁN</span> — <b>phải hiệu chuẩn bằng V-oncar-3</b></td></tr>
+<tr><td><code>S_DRY</code></td><td>3</td><td>Ngưỡng xuống thấp hơn hẳn ngưỡng lên ⇒ không rung quanh biên.</td><td><span class="e suy">SUY</span></td></tr>
+<tr><td><code>S_MAX</code></td><td>90</td><td>Chặn trên: mưa 2 tiếng không được biến thành 2 tiếng “nợ” phải xả sau khi tạnh.</td><td><span class="e suy">SUY</span></td></tr>
+<tr><td><code>K_DECAY</code></td><td>3</td><td>Giảm chậm gấp 3 lần lúc tăng ⇒ chịu được quãng nghỉ giữa hai nhịp gạt gián đoạn (≈ 8 s nghỉ chỉ mất ≈ 2,7 điểm).</td><td><span class="e suy">SUY</span></td></tr>
+<tr><td><code>T_DRY_MIN</code></td><td>10 phút</td><td>Owner hỏi “tắt sau khi tạnh” — 10 phút đủ để kính ráo và để cơn mưa rào quay lại mà không phải bật lại lệnh.</td><td><span class="e doan">ĐOÁN</span> — OQ2</td></tr>
+<tr><td><code>MIN_CMD_GAP_MS</code></td><td>10 phút / chiều</td><td>R4.5. Chặn ở tầng thi hành, không ở luật (luật có thể đổi ý nhiều lần, chỉ lệnh mới bị hạn).</td><td><span class="e suy">SUY</span></td></tr>
+<tr><td><code>T_BOOT_GRACE_MS</code></td><td>30 s</td><td>Sau khởi động, chờ đủ để đọc được trạng thái thật rồi mới quyết định dọn sổ mồ côi (R4.8).</td><td><span class="e suy">SUY</span></td></tr>
+<tr><td><code>HUMID_FOG_PCT</code></td><td>75 %</td><td>Chỉ dùng cho <b>một</b> việc: nếu đang <code>WET</code> và ẩm cabin cao thì <b>ưu tiên</b> giữ sấy trước lâu hơn. Không bao giờ tự nó bật sấy.</td><td><span class="e doan">ĐOÁN</span> — OQ3</td></tr>
+</table>
+<div class="card"><b>Nói thẳng về <code>S_WET</code> (CLAUDE.md §2).</b> Con số 25 là <b>ĐOÁN</b>. Nó chỉ trở thành số thật sau V-oncar-3: ngồi trên xe, bật gạt mưa ở từng chế độ (một nhát · gián đoạn · chậm · nhanh · AUTO khi mưa), ghi lại chuỗi <code>relay</code> theo thời gian vào <code>docs/diagnostics/</code>, rồi <b>chạy lại chính <code>RainPolicyTest</code></b> trên chuỗi thật đó. Không có bước này thì tính năng vẫn ship được (mặc định TẮT) nhưng <b>không</b> được quảng cáo là đã hiệu chuẩn.</div>
+
+<h4>Rơ-le có phản ánh <b>cảm biến mưa</b> hay chỉ phản ánh <b>cần gạt</b>?</h4>
+<p><span class="e unk">CHƯA BIẾT</span> — và đây là câu hỏi quan trọng nhất của cả tính năng. Hai khả năng:</p>
+<ul>
+<li>Nếu <code>getAutoRainWiperState() == ON(1)</code> và rơ-le đang <code>ACTUATION</code> ⇒ chính <b>cảm biến mưa của xe</b> đang kích gạt ⇒ tín hiệu <b>mạnh</b>, gần như tương đương một cảm biến mưa.</li>
+<li>Nếu gạt mưa ở chế độ tay ⇒ rơ-le chỉ nói “<i>người lái đang gạt</i>”. Vẫn là tín hiệu tốt (người ta gạt vì trời mưa), nhưng cũng có thể là rửa kính, lau bụi, lau sương.</li>
+</ul>
+<p><b>Thiết kế theo đó</b>: <code>RainPolicy</code> nhận thêm <code>autoWiper: Boolean?</code> và nhân hệ số tin cậy — <code>autoWiper == true</code> ⇒ <code>S_WET</code> giữ nguyên; <code>false</code> ⇒ <code>S_WET × K_MANUAL (1.6)</code> (đòi bằng chứng lâu hơn); <code>null</code> ⇒ xử như <code>false</code>. Đây là <b>đo rồi rẽ nhánh</b>, không phải hardcode tên (CLAUDE.md §7).</p>
+
+<h3>4.4 <code>RainPolicy</code> — hợp đồng <code>:core</code></h3>
+<pre>// core/src/main/kotlin/com/byd/clusternav/launcher/climate/RainPolicy.kt
+enum class RainPhase { DRY, WET_PENDING, WET, DRYING }
+
+/** Một lát cắt tín hiệu. `null` = CHƯA ĐỌC ĐƯỢC (khác "bằng 0") — cùng lệ LiveValue của spec live-state. */
+data class RainSample(
+    val atMs: Long,
+    val wiperRelay: Int?,      // 1 ACTUATION · 2 DISCONNECT · 0 INVALID · null chưa đọc
+    val autoWiper: Boolean?,   // getAutoRainWiperState() == 1
+    val humidityPct: Double?,  // getHumiditySensorValue()
+    val lightLevel: Int?,      // getLightIntensity() 1..5
+    val accOn: Boolean,
+    val defrostOnline: Boolean?,   // getAcDefrostOnlineState()
+)
+
+/** Ý ĐỊNH — không phải lệnh. Tầng :app dịch sang setAcDefrostState và mới là nơi ghi. */
+sealed interface RainIntent {
+    data class TurnOn(val areas: Set&lt;Int&gt;) : RainIntent     // 1 trước · 2 sau
+    data class TurnOff(val areas: Set&lt;Int&gt;) : RainIntent    // CHỈ vùng trong sổ
+    data object Hold : RainIntent
+}
+
+data class RainState(
+    val phase: RainPhase = RainPhase.DRY,
+    val score: Double = 0.0,
+    val sinceMs: Long = 0L,
+    val lastSampleMs: Long = 0L,
+    val frozen: Boolean = false,   // NO_SIGNAL
+)
+
+object RainPolicy {
+    /** THUẦN: (trạng thái, mẫu, sổ, tham số) → (trạng thái mới, ý định). Không đọc đồng hồ hệ thống. */
+    fun step(
+        prev: RainState,
+        s: RainSample,
+        owned: Set&lt;Int&gt;,
+        cfg: RainConfig = RainConfig.DEFAULT,
+    ): Pair&lt;RainState, RainIntent&gt; = …
+}</pre>
+<ul>
+<li><b>Không đọc <code>System.currentTimeMillis()</code> bên trong</b> — thời gian đến qua <code>RainSample.atMs</code>, đúng khuôn <code>LiveCarState(clock)</code>. Nhờ đó một bài test tua 2 giờ mưa trong vài mili-giây.</li>
+<li><b>Không biết gì về HAL</b> — không import <code>BydHal</code>, không biết <code>setAcDefrostState</code> tồn tại. Nó chỉ nói “bật vùng 1 và 2”.</li>
+<li><b>Không quyết định vùng nào <i>được phép</i> bật</b>: <code>TurnOn</code> luôn đề nghị cả {1,2}; tầng <code>:app</code> lọc theo <code>getDefrostRearConfig()</code> và theo trạng thái sẵn có. Tách như vậy để luật không phải biết về cấu hình trim.</li>
+</ul>
+
+<h3>4.5 Sổ sở hữu — chỉ trả lại thứ mình đã bật</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 210" role="img" aria-label="Trình tự: ghi sổ trước, ghi lệnh sau; khi tạnh chỉ tắt vùng trong sổ">
+  <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker></defs>
+  <rect x="14" y="40" width="152" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="90" y="64" font-size="12.5" font-weight="650" text-anchor="middle" fill="var(--fg)">① Đọc trạng thái</text>
+  <text x="90" y="82" font-size="11" text-anchor="middle" fill="var(--muted)">getAcDefrostState(1), (2)</text>
+
+  <rect x="188" y="40" width="152" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="264" y="64" font-size="12.5" font-weight="650" text-anchor="middle" fill="var(--fg)">② Lọc vùng</text>
+  <text x="264" y="82" font-size="11" text-anchor="middle" fill="var(--muted)">bỏ vùng đã BẬT sẵn</text>
+
+  <rect x="362" y="40" width="152" height="58" rx="10" fill="rgba(0,113,227,.1)" stroke="var(--accent)"/>
+  <text x="438" y="64" font-size="12.5" font-weight="650" text-anchor="middle" fill="var(--fg)">③ GHI SỔ (prefs)</text>
+  <text x="438" y="82" font-size="11" text-anchor="middle" fill="var(--muted)">TRƯỚC khi ghi xe</text>
+
+  <rect x="536" y="40" width="152" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="612" y="64" font-size="12.5" font-weight="650" text-anchor="middle" fill="var(--fg)">④ Ghi lệnh xuống xe</text>
+  <text x="612" y="82" font-size="11" text-anchor="middle" fill="var(--muted)">setAcDefrostState</text>
+
+  <rect x="710" y="40" width="136" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+  <text x="778" y="64" font-size="12.5" font-weight="650" text-anchor="middle" fill="var(--fg)">⑤ Đọc lại</text>
+  <text x="778" y="82" font-size="11" text-anchor="middle" fill="var(--muted)">rc ≠ 0 ⇒ xoá sổ</text>
+
+  <line x1="168" y1="69" x2="186" y2="69" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <line x1="342" y1="69" x2="360" y2="69" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <line x1="516" y1="69" x2="534" y2="69" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar4)"/>
+  <line x1="690" y1="69" x2="708" y2="69" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar4)"/>
+
+  <rect x="14" y="128" width="832" height="62" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="30" y="150" font-size="12.5" font-weight="650" fill="var(--fg)">Vì sao ③ phải đứng TRƯỚC ④ (CLAUDE.md §5)</text>
+  <text x="30" y="170" font-size="11.5" fill="var(--muted)">Nếu ghi lệnh trước rồi tiến trình chết trước khi kịp ghi sổ, sấy kính bật và KHÔNG AI biết là Kachi bật ⇒ nó ở lại</text>
+  <text x="30" y="185" font-size="11.5" fill="var(--muted)">mãi. Ngược lại: sổ ghi thừa (lệnh chưa ra) chỉ gây một lệnh TẮT vô hại cho thứ vốn đã tắt.</text>
+</svg>
+</div>
+<pre>// core/…/climate/RainDefrostLedger.kt — THUẦN (mã hoá/giải mã chuỗi), :app chỉ lo đọc/ghi prefs
+data class RainDefrostLedger(val ownedAreas: Set&lt;Int&gt;, val writtenAtMs: Long) {
+    fun encode(): String            // "1,2@1757990000000"
+    companion object { fun decode(raw: String?): RainDefrostLedger? }
+}</pre>
+<p><b>Phát hiện người lái can thiệp (R4.3)</b>: khi <code>onAcDefrostStateChanged(area, state)</code> đến, so với ý định gần nhất của Kachi trong cửa sổ <code>PENDING_MS</code> (khuôn <code>LiveCarState.isPending</code>). Ngoài cửa sổ đó mà trạng thái đổi ⇒ không phải Kachi ⇒ bỏ <code>area</code> khỏi sổ + log. Không cần thêm cơ chế mới nào — chính cơ chế “đang gửi” của spec live-state đã phân biệt được hai nguồn thay đổi.</p>
+
+<h3>4.6 Nối dây ở <code>:app</code> — không hạ tầng mới</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>BydHalEvents</b><span>Proxy IBYDAutoListener — spec live-state §4.4</span></div>
+    <div class="node"><b>HalEventMap</b><span>eventType → id, tra tên hằng lúc chạy</span></div>
+    <div class="node"><b>LiveCarState</b><span>kho giá trị thật</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>RainWatcher (:app)</b><span>gom RainSample · gọi RainPolicy.step · dịch ý định → HalBindingTable.write · giữ sổ</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>HalBindingTable</b><span>định tuyến + writeArgs (đã có)</span></div>
+    <div class="node"><b>CarDataDemand</b><span>cổng “datum nào đang hiện” (spec PERF)</span></div>
+    <div class="node new"><b>Chip “Tự sấy: …”</b><span>WidgetViews · một chip, không màn riêng</span></div>
+  </div>
+</div>
+<ul>
+<li><b>Feature ID đăng ký listener</b> lấy qua <code>BydFeatureIds.idByName</code> cho <code>WIPER_RELAY_STATE</code>, <code>AC_DEFROST_FRONT_STATE</code>, <code>AC_DEFROST_REAR_STATE</code>, <code>AC_CTRL_MODE</code>, <code>AC_CMD_AC_DEFROST_5S_ONLINE</code>, <code>SENSOR_HUMIDITY</code>, <code>SENSOR_LIGHT</code> — <b>cấm hardcode số</b> (<code>BYDAutoFeatureIds</code> gán lúc chạy theo <code>isCanFD</code>/<code>isToyota</code>; <code>WIPER_RELAY_STATE = 1336934438</code> là hằng <b>cố định</b> <span class="e do">ĐO :3163</span> nhưng vẫn đi qua <code>idByName</code> để một chỗ duy nhất biết số).</li>
+<li><b>Thiết bị đích</b> tra qua <code>BydFeatureIds.deviceFqnForFeature</code>, <b>không</b> suy từ <code>Domain</code> — <code>getWindscreenWiperRelayState</code> thuộc <code>BYDAutoWiperDevice</code>, <code>getAutoRainWiperState</code> thuộc <code>BYDAutoSettingDevice</code>, hai thứ <i>cùng nói về gạt mưa</i> mà ở hai thiết bị khác nhau — đúng cái bẫy đã ghi ở <code>ControlDef.halDevice</code>.</li>
+<li><b>Vòng đời</b>: <code>RainWatcher</code> chỉ chạy khi <code>auto_defrost_rain</code> bật; <code>onStop</code> ⇒ huỷ listener + dừng đồng hồ (sổ vẫn nằm trong prefs). <code>onStart</code> ⇒ đọc một lượt + xử lý sổ mồ côi (R4.8).</li>
+<li><b>Grep bắt buộc (CLAUDE.md §8)</b>: sau khi viết, <code>grep -rn "RainWatcher\|RainPolicy.step" app/src/main/java/</code> phải thấy ≥ 1 call site ngoài định nghĩa — đúng bài học <code>CastShell.evictVd</code>.</li>
+</ul>
+
+<h3>4.7 GPS chỉ-đọc — và bài kiểm phải sửa thế nào</h3>
+<h4>Đường đọc</h4>
+<ul>
+<li><code>LocationGateway</code> (<code>:app</code>, mỏng): <code>LocationManager.requestLocationUpdates(GPS_PROVIDER, 1000L, 0f, listener, Looper.getMainLooper())</code>, bọc <code>runCatching</code> (thiếu quyền ⇒ <code>SecurityException</code> ⇒ null, không ném ra ngoài — cùng lệ <code>BydHalGateway</code>). Cache <code>Location</code> mới nhất; bốn datum đọc từ cache.</li>
+<li><b>Cổng nhu cầu</b>: đăng ký chỉ khi <code>CarDataDemand.of(state)</code> chứa ít nhất một trong bốn mã <code>gps_*</code>; rời khỏi màn hoặc đổi bố cục bỏ hết ô GPS ⇒ <code>removeUpdates</code>. Đây là lý do R-nf4 không bị vi phạm: GPS không chạy khi không ai nhìn.</li>
+<li><b>Xin quyền</b>: một hàng trong Cài đặt › Tiện nghi xe (hoặc nhóm Quyền đã có) — chạm ⇒ <code>requestPermissions</code>. Bị từ chối ⇒ hàng đổi sang “<i>Đã từ chối — mở Cài đặt hệ thống</i>”, <b>không</b> tự hỏi lại. Đúng khuôn <code>kachi-permission-preflight.html</code>.</li>
+<li><b>Nguồn dự phòng</b>: nếu người dùng không cho quyền nhưng <code>BYDAutoLocationDevice.getLocationLongitudeLatitudeValue()</code> đọc được (quyền hệ thống), <b>vẫn không dùng</b> ở pass này — <span class="e unk">CHƯA BIẾT</span> nó có bị coi là lách quyền người dùng không. Ghi vào OQ6, owner chốt.</li>
+</ul>
+<h4>Bài kiểm mới — thay nguyên hai hàm, viết rõ từng khẳng định</h4>
+<pre>// app/src/test/java/com/byd/clusternav/DeadReckonRetirementTest.kt
+
+@Test
+fun `manifest xin quyen vi tri DOC va tuyet doi khong xin mock`() {
+    val manifest = app("src/main/AndroidManifest.xml").toFile().readText()
+    // Owner 2026-09-16 mở khoá ĐÚNG phần ĐỌC: "GPS xin quyền vị trí luôn đi, chả mất gì đâu."
+    assertTrue(manifest.contains("android.permission.ACCESS_FINE_LOCATION"))
+    assertTrue(manifest.contains("android.permission.ACCESS_COARSE_LOCATION"))
+    // Phần GHI và phần NỀN vẫn đóng — sự cố 2026-07 ghim GPS toàn xe không được quay lại.
+    listOf(
+        "ACCESS_MOCK_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE_LOCATION",
+    ).forEach { assertFalse(manifest.contains(it), "manifest still requests $it") }
+}
+
+@Test
+fun `khong mot duong GHI toa do nao ton tai trong cay`() {
+    // Bài cũ chỉ chặn MockLoc/DeadReckon. Nay chặn CẢ HAI họ ghi toạ độ:
+    //  (a) LocationManager test-provider — đường đã gây sự cố 2026-07;
+    //  (b) BYDAutoLocationDevice.setLocationInfo — ghi toạ độ THẲNG lên bus xe
+    //      ([ĐO] location/BYDAutoLocationDevice.java:72-83), bài cũ chưa biết tới vì
+    //      gói location/ mới được RE ngày 2026-09-16.
+    val forbidden = Regex(
+        """(addTestProvider|removeTestProvider|setTestProviderEnabled|""" +
+            """setTestProviderLocation|setTestProviderStatus|setLocationInfo)"""
+    )
+    val offenders = mutableListOf&lt;String&gt;()
+    Files.walk(app("src/main/java/com/byd/clusternav")).use { paths -&gt;
+        paths.filter { Files.isRegularFile(it) &amp;&amp; it.toString().endsWith(".kt") }
+            .forEach { file -&gt;
+                file.toFile().readText().lineSequence().forEachIndexed { i, line -&gt;
+                    val code = line.substringBefore("//").substringBefore("* ")
+                    if (forbidden.containsMatchIn(code)) offenders += "$file:${i + 1}"
+                }
+            }
+    }
+    assertTrue(offenders.isEmpty(), "duong GHI toa do song lai tai: $offenders")
+}</pre>
+<p>Ba hàm còn lại của bài kiểm (<code>deadreckon</code>/<code>mockloc</code> biến khỏi cây · không call-site · hai nhánh sản phẩm còn tên) <b>giữ nguyên không sửa một chữ</b>. Chỉ hàm thứ tư (manifest) bị thay, và một hàm thứ năm được thêm.</p>
+
+<h3>4.8 Danh mục: mã điều khiển mới, datum mới, giọng nói</h3>
+<h4>Mã điều khiển</h4>
+<table>
+<tr><th>id</th><th>Nhãn VI / EN</th><th>Kind</th><th>Domain / tier</th><th>bindingKey</th><th>Ghi chú</th></tr>
+<tr><td><code>auto_defrost_rain</code></td><td>Tự sấy kính khi mưa / Auto defrost in rain</td><td>TOGGLE</td><td>CLIMATE / OVERDRIVE</td><td>— (khoá prefs, <b>không</b> ghi thẳng HAL)</td><td><code>enabledByDefault = false</code>, <code>onByDefault = false</code>. Đây là mã <b>đầu tiên</b> mà bấm nút <b>không</b> sinh một lệnh HAL ⇒ <code>HalBindingTable</code> phải coi nó là <code>BindingRoute.None</code> và <code>:app</code> xử như một công tắc cấu hình.</td></tr>
+</table>
+<h4>Datum mới (<code>TelemetryRegistry</code>)</h4>
+<table>
+<tr><th>id</th><th>Nhãn</th><th>bindingKey</th><th>Đơn vị / miền</th><th>Nguồn</th></tr>
+<tr><td><code>wiper_relay</code></td><td>Rơ-le gạt mưa</td><td><code>BYDAutoWiperDevice.getWindscreenWiperRelayState</code></td><td>1 gạt · 2 ngừng · 0 không rõ</td><td><span class="e do">ĐO wiper/BYDAutoWiperDevice.java:65-70</span></td></tr>
+<tr><td><code>humidity_cabin</code></td><td>Độ ẩm trong xe</td><td><code>BYDAutoSensorDevice.getHumiditySensorValue</code></td><td>% (0..100)</td><td><span class="e do">ĐO sensor/BYDAutoSensorDevice.java:77-82</span></td></tr>
+<tr><td><code>light_level</code></td><td>Cường độ sáng</td><td><code>BYDAutoSensorDevice.getLightIntensity</code></td><td>mức 1..5</td><td><span class="e do">ĐO :84-89</span></td></tr>
+<tr><td><code>defrost_front_state</code></td><td>Sấy kính trước</td><td><code>BYDAutoAcDevice.getAcDefrostState</code>, <code>readArg = 1</code></td><td>0 tắt · 1 bật</td><td><span class="e do">ĐO ac/BYDAutoAcDevice.java:449-461</span></td></tr>
+<tr><td><code>defrost_rear_state</code></td><td>Sấy kính sau</td><td><code>BYDAutoAcDevice.getAcDefrostState</code>, <code>readArg = 2</code></td><td>0 tắt · 1 bật</td><td><span class="e do">ĐO cùng getter</span></td></tr>
+<tr><td><code>ac_ctrl_mode</code></td><td>Chế độ điều hoà</td><td><code>BYDAutoAcDevice.getAcControlMode</code></td><td>0 AUTO · 1 tay</td><td><span class="e do">ĐO :333-338</span></td></tr>
+</table>
+<p>Kèm theo (không bắt buộc cho R4, nhưng cùng một lượt RE nên khai luôn để không phải mở tệp lần hai): <code>auto_wiper_state</code> (<code>getAutoRainWiperState</code>, <span class="e do">ĐO setting/BYDAutoSettingDevice.java:2792-2797</span>), <code>wiper_sensitivity</code> (<span class="e do">ĐO wiper/…:88-93</span>), <code>defrost_online</code> (<span class="e do">ĐO ac/…:888-893</span>), <code>defrost_rear_config</code> (<span class="e do">ĐO ac/…:999-1004</span>), <code>backdoor_electric_mode</code> (<span class="e do">ĐO setting/…:1486-1490</span>), <code>backdoor_height</code> (<span class="e do">ĐO setting/…:2338-2343</span>).</p>
+<h4>Giọng nói — cụm CÓ DẤU, ≥ 2 từ (luật hotword)</h4>
+<p>Theo <code>kachi-voice-hotword-phrases.html</code> + <code>SherpaPhraseHotwords.kt</code>: hotword là <b>cụm lệnh</b> (động từ + đối tượng), <b>có dấu</b>, viết HOA, <b>không</b> từ rời — từ rời vừa chặn cụm dài vừa cộng điểm cho đường sai.</p>
+<table>
+<tr><th>Trường</th><th>Giá trị</th></tr>
+<tr><td><code>voice</code></td><td><code>["bật tự sấy kính khi mưa", "tắt tự sấy kính khi mưa"]</code></td></tr>
+<tr><td><code>synonyms</code> (đồng nghĩa, có dấu)</td><td><code>["tự sấy kính", "sấy kính khi mưa", "tự động sấy kính", "sấy kính tự động"]</code></td></tr>
+<tr><td>Hotword sinh ra</td><td><code>BẬT TỰ SẤY KÍNH KHI MƯA</code> · <code>TẮT TỰ SẤY KÍNH KHI MƯA</code></td></tr>
+<tr><td>Câu trả lời</td><td>bật: “<i>Đã bật tự sấy kính khi mưa</i>” · tắt: “<i>Đã tắt tự sấy kính khi mưa</i>” · hỏi trạng thái: đọc <b>từ kho</b> (“<i>Đang bật, trời đang tạnh</i>”), không đọc từ con số vừa gửi.</td></tr>
+</table>
+<div class="card"><span class="e do">ĐO memory <code>kachi-voice-hotwords-accented</code></span>: bảng không dấu <b>chưa bao giờ</b> bias được, và normalize cũ vứt 50/187 nhãn. ⇒ Mọi chuỗi trên đây phải được viết <b>có dấu ngay từ đầu</b> trong registry, không được sinh từ máy bằng cách khôi phục dấu. Đổi nội dung tệp hotword ⇒ <b>phải chạy lại</b> harness <code>scripts/emulator/voice-e2e.sh</code> trước khi nói là xong (memory <code>kachi-emulator-voice-e2e</code>).</div>
+
+<h3>4.9 Bề mặt Cài đặt + chip</h3>
+<ul>
+<li><b>Cài đặt › Tiện nghi xe</b> (<code>SettingsSectionsCar.kt</code>, nhóm 8 của IA v2): một hàng công tắc “Tự sấy kính khi mưa”, phụ đề nói đúng những gì nó làm và không làm — “<i>Khi phát hiện gạt mưa hoạt động liên tục, tự bật sấy kính trước và sau. Tắt lại sau khi tạnh 10 phút, và chỉ tắt đúng thứ Kachi đã bật. Xe này không có điều khiển sấy gương.</i>”</li>
+<li>Bên dưới, khi công tắc bật: một dòng trạng thái đọc-được (cùng chữ với chip) + một dòng “<i>Lần quyết định gần nhất: …</i>”. Đây là chỗ người lái tự kiểm tra được mà không cần log.</li>
+<li><b>Nút trên thanh nút</b>: mã <code>auto_defrost_rain</code> có sẵn trong kho, bật qua Tuỳ biến (giống mọi mã mặc định TẮT khác). Không tự chiếm chỗ.</li>
+<li><b>Chip</b> (<code>WidgetViews</code>): chỉ hiện khi công tắc bật. Bốn câu ở R4.6. Chip <b>không</b> có nút — chạm vào mở thẳng hàng Cài đặt tương ứng.</li>
+</ul>
+
+<h3>4.10 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Không thêm thư viện nào.</b> Dùng Android SDK (<code>LocationManager</code>, <code>SharedPreferences</code>), <code>kotlinx.coroutines StateFlow</code> đã có ở <code>:core</code>, và reflection HAL đã proven. ⇒ Theo <code>workflow.md</code> §1.1: <b>không cần Context7</b> (không framework/library mới). Nếu vòng review muốn đổi đường đọc vị trí sang một API khác (vd Google Play Services Fused) thì <b>lúc đó</b> mới verify — và <span class="e suy">SUY</span> đầu xe BYD không có Play Services nên hướng đó gần như chắc chắn sai.</li>
+<li><b>Vì sao không dùng <code>setRainCloseWindow</code> làm tín hiệu mưa</b>: nó là <b>công tắc cấu hình</b> của người dùng (bật/tắt tính năng tự đóng kính), không phải cảm biến. <code>getRainCloseWindow()</code> trả ON/OFF của <i>cài đặt</i>, không trả “đang mưa”. Nhầm hai thứ này là đúng kiểu quy kết mà CLAUDE.md §2 cấm.</li>
+<li><b>Vì sao không tự đóng kính khi mưa</b>: xe <b>đã có sẵn</b> <code>RainAutoCloseWindow</code> ở tầng dưới, làm tốt hơn và nhanh hơn app. Thêm một lớp nữa là hai bộ não tranh nhau một cơ cấu chấp hành. Xem OQ4.</li>
+<li><b>Trần tệp</b>: mã mới chia thành <code>climate/RainPolicy.kt</code> · <code>climate/RainConfig.kt</code> · <code>climate/RainDefrostLedger.kt</code> (<code>:core</code>) và <code>climate/RainWatcher.kt</code> (<code>:app</code>) — không tệp nào chạm 500 dòng, <code>ControlRegistry</code>/<code>HalBindingTable</code> chỉ nhận thêm vài dòng dữ liệu.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<p>🔲 = chưa làm · 🚗 = <b>cần xe thật</b>. Thứ tự tuân đúng <b>CLAUDE.md §14</b>: <b>không một dòng <code>:core</code> nào của luật mưa được viết trước khi T-oncar-0 xanh</b>. Các việc nối-lại (T1–T3) là <i>sửa hành vi đã nối dây sẵn</i> nên được phép đi song song, nhưng <b>ship</b> thì vẫn chờ đo.</p>
+<div class="flow">
+  <div class="fnode new"><b>Tầng 1 🚗</b><span>T-oncar-0<br>shell thô trên xe</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Tầng 2</b><span>T1–T4<br>HAL / binding / datum</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Tầng 3</b><span>T5–T7<br>:core luật thuần</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Tầng 4</b><span>T8–T10<br>:app · UI · giọng nói</span></div>
+</div>
+<table>
+<tr><th>#</th><th>Tầng</th><th>Task</th><th>Tệp</th></tr>
+<tr>
+<td><b>T-oncar-0</b></td><td>1 🚗</td>
+<td>🔲 <b>ĐẦU DÒ SHELL THÔ — làm TRƯỚC MỌI THỨ.</b> Sáu nhóm lệnh, đọc trước ghi sau, ghi toàn bộ output vào <code>docs/diagnostics/rain-defrost-probe-2026-09-1x.md</code>:<br>
+<b>(a) chỉ-đọc, an toàn tuyệt đối</b> — <code>getAcControlMode</code> · <code>getAcDefrostState 1</code> · <code>getAcDefrostState 2</code> · <code>getAcDefrostOnlineState</code> · <code>getDefrostRearConfig</code> · <code>getAutoRainWiperState</code> · <code>getWindscreenWiperSensitivity</code> · <code>getHumiditySensorValue</code> · <code>getLightIntensity</code> · <code>getBackDoorElectricMode</code> · <code>getBackDoorElectricModeOnlineState</code> · <code>getBackDoorOpenedHeight</code> · <code>getLocationLongitudeLatitudeValue</code> (thử quyền hệ thống) · <code>featmap</code> một lượt.<br>
+<b>(b) rơ-le gạt mưa — bài đo quan trọng nhất</b>: đọc <code>getWindscreenWiperRelayState</code> mỗi giây trong 5 kịch bản (gạt tắt · một nhát tay · gián đoạn · chậm · nhanh), <b>và nếu trời mưa thì thêm kịch bản AUTO</b>. Lưu chuỗi số + mốc thời gian làm <b>fixture</b> cho <code>RainPolicyTest</code>.<br>
+<b>(c) sấy kính, đường method</b> (có <code>auto_confirm</code>): <code>setAcDefrostState 0,1,1</code> → đọc lại → <code>0,1,0</code>; rồi <code>0,2,1</code> → đọc lại → <code>0,2,0</code>. So với đường id trần đang dùng.<br>
+<b>(d) điều hoà AUTO</b>: <code>setAcControlMode 0,0</code> (AUTO) → <code>getAcControlMode</code> phải trả 0 → <code>setAcControlMode 0,1</code> về tay.<br>
+<b>(e) cốp — cẩn trọng nhất</b>: <b>xe đỗ, cốp trống, không người/vật phía sau, owner đứng nhìn</b>. Bắn <b>từng giá trị một</b>, chờ 10 s giữa hai lần, ghi lại cốp làm gì: <code>voiceCtlBackDoor 1</code> → quan sát → <code>2</code> → quan sát → <code>3</code> → quan sát. Kết quả điền vào bảng <code>TRUNK_CMD</code>.<br>
+<b>(f) gương</b>: bật sấy sau 3 phút rồi <b>sờ mặt gương</b> — ấm hay không (V-oncar-4).</td>
+<td><code>docs/diagnostics/rain-defrost-probe-2026-09-1x.md</code></td>
+</tr>
+<tr><td>T1</td><td>2</td><td>🔲 <b>Nối lại 4 mã</b> (R1–R3): đổi <code>bindingKey</code>/<code>halDevice</code>, thêm nhánh <code>writeArgs</code> cho <code>trunk</code>/<code>ac_auto</code>/<code>defrost</code>/<code>defrost_rear</code>. Test: chiều AUTO=0 (bẫy đảo) · <code>trunk</code> luôn ∈ 1..3 · defrost gửi đúng bộ ba <code>(source, area, state)</code>.</td><td><code>core/…/ControlRegistry.kt</code> · <code>HalBindingTable.kt</code> · <code>ControlWriteArgsTest.kt</code></td></tr>
+<tr><td>T2</td><td>2</td><td>🔲 <b>6 datum mới + 6 datum kèm</b> (§4.8) vào <code>TelemetryRegistry</code>; điền <code>readKey</code>/<code>readArg</code> cho 4 mã. Test: mọi <code>readKey</code> tra ra datum có thật (bài chống gõ nhầm của spec live-state).</td><td><code>core/…/TelemetryRegistry.kt</code> · <code>ControlReadKeyTest.kt</code></td></tr>
+<tr><td>T3</td><td>2</td><td>🔲 <b>Nối sự kiện</b>: thêm vào <code>HalEventMap</code> các tên hằng <code>WIPER_RELAY_STATE</code> · <code>AC_DEFROST_FRONT_STATE</code> · <code>AC_DEFROST_REAR_STATE</code> · <code>AC_CTRL_MODE</code> · <code>AC_CMD_AC_DEFROST_5S_ONLINE</code> · <code>SENSOR_HUMIDITY</code> · <code>SENSOR_LIGHT</code> · <code>SET_CAR_BACK_DOOR_ELECTRIC_MODE</code>. Tra tên lúc chạy, cấm số. Test bảng tên giả lập.</td><td><code>core/…/HalEventMap.kt</code>(+Test)</td></tr>
+<tr><td>T4</td><td>2</td><td>🔲 <b>GPS đường đọc</b>: <code>LOCAL_TARGETS += "LocationManager"</code> + sửa KDoc BLOCKED-BY-DESIGN thành quyết định owner 2026-09-16; 4 datum <code>gps_*</code> đổi <code>bindingKey</code>; <code>LocationGateway</code> ở <code>:app</code> (đăng ký ≤ 1 Hz, gate bằng <code>CarDataDemand</code>, <code>runCatching</code>).</td><td><code>core/…/HalBindingTable.kt</code> · <code>TelemetryRegistry.kt</code> · <code>app/…/LocationGateway.kt</code></td></tr>
+<tr><td>T5</td><td>3</td><td>🔲 <b><code>RainPolicy</code> + <code>RainConfig</code></b> (§4.4): hàm thuần <code>step()</code>, tích phân điểm, 4 pha, NO_SIGNAL đóng băng, hệ số <code>K_MANUAL</code>.</td><td><code>core/…/climate/RainPolicy.kt</code> · <code>RainConfig.kt</code></td></tr>
+<tr><td>T6</td><td>3</td><td>🔲 <b><code>RainPolicyTest</code> trên chuỗi tổng hợp</b> (AC-R4.a–d) + <b>chuỗi THẬT</b> lấy từ T-oncar-0(b) làm fixture. Comment mỗi ca nói rõ nó khoá cái gì (CLAUDE.md §10).</td><td><code>core/src/test/…/RainPolicyTest.kt</code></td></tr>
+<tr><td>T7</td><td>3</td><td>🔲 <b>Sổ sở hữu</b> <code>RainDefrostLedger</code> (mã hoá/giải mã thuần) + luật dọn sổ mồ côi lúc khởi động. Test: sổ hỏng/rỗng/định dạng lạ ⇒ không ném, coi như không sở hữu gì.</td><td><code>core/…/climate/RainDefrostLedger.kt</code>(+Test)</td></tr>
+<tr><td>T8</td><td>4</td><td>🔲 <b><code>RainWatcher</code> (:app)</b>: gom <code>RainSample</code> từ <code>LiveCarState</code> + đồng hồ 1 Hz; gọi <code>RainPolicy.step</code>; ghi sổ TRƯỚC, ghi lệnh SAU; hạn tốc độ; phát hiện người lái can thiệp; log 1 dòng/quyết định. <b>Grep call site</b> (§8).</td><td><code>app/…/climate/RainWatcher.kt</code> · <code>KachiHomeWiring.kt</code></td></tr>
+<tr><td>T9</td><td>4</td><td>🔲 <b>Bề mặt</b>: mã <code>auto_defrost_rain</code> trong registry (VI+EN, mô tả, biểu tượng), hàng Cài đặt › Tiện nghi xe, chip trạng thái, cụm giọng nói <b>có dấu</b> + hotword. Chạy lại harness voice E2E.</td><td><code>core/…/ControlRegistry.kt</code> · <code>CapabilityDescriptions.kt</code> · <code>VoiceGrammar.kt</code> · <code>app/…/SettingsSectionsCar.kt</code> · <code>WidgetViews.kt</code></td></tr>
+<tr><td>T10</td><td>4</td><td>🔲 <b>Bài kiểm retirement sửa lại</b> (§4.7) + thêm khoá <code>auto_defrost_rain</code> vào <code>WRITABLE_PREFS_KEYS</code> (đúng một khoá, để E2E bật/tắt bằng máy).</td><td><code>app/src/test/…/DeadReckonRetirementTest.kt</code> · <code>core/…/TestBridgeCommand.kt</code></td></tr>
+<tr><td>T11</td><td>—</td><td>🔲 <b>Danh mục + doc trong CÙNG phiên</b> (R2.1, CLAUDE.md §16): cập nhật <code>docs/catalog/status-by-id.json</code>, <code>docs/README.md</code> (INDEX), <code>docs/PROJECT-BACKLOG.md</code>, <code>.kiro/steering/project-context.md</code>. Doc mồ côi = không tồn tại.</td><td><code>docs/…</code></td></tr>
+<tr><td>T12</td><td>—</td><td>🔲 <b>Bump version</b> (CLAUDE.md §9): 1.67 (68) đã báo APK ⇒ bản này là <b>1.68 (69)</b>, hiện trong app + log + tên tệp log.</td><td><code>app/build.gradle.kts</code></td></tr>
+<tr><td>T13</td><td>—</td><td>🔲 <b>Senior review (Opus, rule global §5)</b> + <b>security scan (§6)</b> + <code>./gradlew clean assembleRelease testDebugUnitTest</code> (JAVA_HOME <code>/opt/homebrew/opt/openjdk@17</code>; trả <code>local.properties</code> về <code>sdk.dir</code> Windows sau khi build).</td><td>—</td></tr>
+</table>
+
+<h4>Lệnh T-oncar-0 — dạng chuẩn (địa chỉ xe luôn là <code>&lt;ip-xe&gt;</code>)</h4>
+<pre># Chỉ-đọc (không cần auto_confirm)
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op get --es dev BYDAutoAcDevice --es m getAcControlMode
+
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op get --es dev BYDAutoAcDevice --es m getAcDefrostState --es args 1
+#   … lặp với --es args 2, và với getAcDefrostOnlineState / getDefrostRearConfig (không args)
+
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op get --es dev BYDAutoWiperDevice --es m getWindscreenWiperRelayState
+#   ↑ CHẠY LẶP mỗi giây trong lúc gạt mưa hoạt động — đây là fixture của RainPolicyTest
+
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op get --es dev BYDAutoSettingDevice --es m getAutoRainWiperState
+
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op get --es dev BYDAutoSensorDevice --es m getHumiditySensorValue
+#   … và getLightIntensity, getTemperatureSensorValue
+
+# Bảng feature-id THẬT của chiếc xe này (chỉ-đọc, một lượt, thay cho mọi phỏng đoán về số)
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd featmap
+
+# GHI — qua cổng CONFIRM. Sấy kính: vô hại, làm trước.
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op set --es dev BYDAutoAcDevice --es m setAcDefrostState --es args 0,1,1 \
+  --ez auto_confirm true
+#   rồi ĐỌC LẠI getAcDefrostState 1 — phải trả 1. Sau đó args 0,1,0 để trả về như cũ.
+
+# Điều hoà AUTO — kiểm đúng chiều AUTO=0
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op set --es dev BYDAutoAcDevice --es m setAcControlMode --es args 0,0 \
+  --ez auto_confirm true
+
+# CỐP — làm SAU CÙNG, xe đỗ, cốp trống, không ai phía sau, owner đứng nhìn.
+# Bắn TỪNG giá trị một, cách nhau ≥ 10 s, ghi lại cốp làm gì sau mỗi lần.
+adb -s &lt;ip-xe&gt;:5555 shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+  --es cmd hal --es op set --es dev BYDAutoSettingDevice --es m voiceCtlBackDoor --es args 1 \
+  --ez auto_confirm true
+#   … rồi args 2 … rồi args 3. Giá trị ngoài 1..3 KHÔNG được thử: framework trả -2147482645 (đã đọc source).</pre>
+<div class="card stop"><b>Phạm vi tường minh cho lượt GHI (CLAUDE.md §4) — trả lời đủ bốn câu trước khi gõ:</b>
+<ul>
+<li><b>Nhắm đúng thiết bị nào?</b> <code>BYDAutoAcDevice</code> (sấy/AUTO) và <code>BYDAutoSettingDevice</code> (cốp) — nêu tên rõ trong <code>--es dev</code>, không để mặc định, không quét mù.</li>
+<li><b>Nhắm đúng cơ cấu nào?</b> Đúng một method mỗi lệnh, đúng một bộ tham số. Không có lệnh nào “cho tất cả”.</li>
+<li><b>Giá trị nằm trong dải nào?</b> Đã đọc gác của framework: cốp 1..3 (<code>:2440-2442</code>), AC mode 0..1 (<code>:322-324</code>), defrost state 0..1 + area 1..2 (<code>:433-442</code>). Ngoài dải ⇒ framework trả sentinel, không phải hành vi lạ — nhưng vẫn không thử.</li>
+<li><b>Hoàn tác kiểu gì?</b> Sấy/AUTO: bắn giá trị ngược lại (đã ghi sẵn trong khối lệnh). Cốp: đóng bằng nút vật lý trên xe — <b>không</b> phụ thuộc vào việc đoán được lệnh nào là “đóng”.</li>
+</ul></div>
+
+<h2>6. Verification</h2>
+<h3>V-unit (JVM / máy ảo — không cần xe)</h3>
+<ul>
+<li><b>V-u1</b> <code>ControlWriteArgsTest</code>: <code>ac_auto</code> bật ⇒ <code>[0, 0]</code> (AUTO = 0, <b>không</b> phải 1) · <code>defrost</code> bật ⇒ <code>[0, 1, 1]</code> · <code>defrost_rear</code> tắt ⇒ <code>[0, 2, 0]</code> · <code>trunk</code> mọi động từ ⇒ giá trị ∈ 1..3.</li>
+<li><b>V-u2</b> <code>RainPolicyTest</code> — chuỗi tổng hợp, mỗi ca một bài học:
+  <ul>
+  <li>mưa liên tục 60 s ⇒ <code>WET</code> đúng lúc điểm chạm <code>S_WET</code>, ra <b>một</b> <code>TurnOn</code>, không lặp;</li>
+  <li>một nhát gạt tay 3 s ⇒ <b>không bao giờ</b> rời <code>DRY</code> (AC-R4.b);</li>
+  <li>gạt gián đoạn 2 s/8 s trong 3 phút ⇒ <b>có</b> đạt <code>WET</code> (đây là ca mà bộ đếm “liên tục” sẽ trượt);</li>
+  <li>tạnh ⇒ đúng <code>T_DRY_MIN</code> sau mới ra <code>TurnOff</code>, và <b>chỉ</b> với vùng trong sổ (AC-R4.c);</li>
+  <li>người lái tắt sấy sau giữa cơn mưa ⇒ vùng 2 rời sổ, khi tạnh <b>không</b> có lệnh nào cho vùng 2 (R4.3);</li>
+  <li>rơ-le trả <code>0</code>/<code>null</code> 30 s giữa chừng ⇒ trạng thái <b>đóng băng</b>, 0 lệnh, chip báo không đọc được;</li>
+  <li><code>defrostOnline == false</code> ⇒ 0 lệnh dù luật ở <code>WET</code> (R4.4);</li>
+  <li>hai chu kỳ mưa cách nhau 4 phút ⇒ lệnh thứ hai bị hạn tốc độ chặn (R4.5).</li>
+  </ul></li>
+<li><b>V-u3</b> <code>RainDefrostLedgerTest</code>: mã hoá/giải mã vòng tròn; chuỗi rác ⇒ null, không ném; sổ mồ côi + <code>DRY</code> ⇒ đúng một lượt <code>TurnOff</code> rồi xoá.</li>
+<li><b>V-u4</b> <code>DeadReckonRetirementTest</code> bản mới (§4.7): xanh với manifest có FINE/COARSE; <b>đỏ</b> khi cố tình thêm <code>addTestProvider</code> hoặc <code>setLocationInfo</code> vào một tệp bất kỳ (kiểm bằng cách thêm rồi gỡ).</li>
+<li><b>V-u5</b> <code>KachiPerf</code>: số lượt đọc HAL/phút với <code>auto_defrost_rain</code> <b>tắt</b> phải <b>bằng</b> bản nền; với công tắc bật, tăng ≤ 1 lượt/giây và chỉ khi màn đang hiện.</li>
+<li><b>V-u6</b> Cầu kiểm thử trên máy ảo: <code>prefs_set auto_defrost_rain 1</code> → <code>state</code> phải phản ánh công tắc bật; bơm chuỗi <code>onDataChanged(WIPER_RELAY_STATE, 1)</code> giả lập → chip đổi chữ, <b>không</b> chạm HAL (off-car gateway trả null).</li>
+</ul>
+<h3>V-oncar (cần xe — đúng thứ tự §14, shell thô TRƯỚC)</h3>
+<ul>
+<li><b>V-oncar-1</b> = T-oncar-0. Không xanh thì <b>không</b> có tầng 3, tầng 4.</li>
+<li><b>V-oncar-2</b> Nối lại 4 mã: bấm <code>trunk</code> → cốp động thật; bấm <code>ac_auto</code> → màn điều hoà zin chuyển AUTO; bấm <code>defrost_rear</code> → sấy sau ăn; bấm <code>defrost</code> → <b>vẫn</b> ăn như trước (AC-R3.1). Bốn ô nút hiện trạng thái đọc-từ-xe trong ≤ 2 s.</li>
+<li><b>V-oncar-3 (hiệu chuẩn — cần một ngày mưa)</b> Bật công tắc, lái thật dưới mưa. Ghi lại: lúc gạt mưa bắt đầu chạy → bao lâu thì sấy bật (kỳ vọng ≈ <code>S_WET</code> giây khi mưa đều); lúc tạnh → bao lâu thì sấy tắt (kỳ vọng <code>T_DRY_MIN</code>). Nếu bật quá chậm/quá nhạy ⇒ <b>sửa số trong <code>RainConfig</code></b>, không sửa luật.</li>
+<li><b>V-oncar-4 (gương)</b> Bật sấy sau 3 phút → sờ mặt gương chiếu hậu ngoài. Ấm ⇒ ghi vào doc là “sấy sau <b>có</b> kéo theo sấy gương trên đời xe này <span class="e do">ĐO</span>” và sửa <b>chữ mô tả</b> tính năng. Không ấm ⇒ giữ nguyên câu “xe này không có điều khiển sấy gương”.</li>
+<li><b>V-oncar-5 (GPS)</b> Cấp quyền trong Cài đặt → bốn ô <code>gps_*</code> hiện số thật và đổi khi xe chạy; rời khỏi màn có ô GPS → xác nhận 0 lượt cập nhật (đọc log). Thu hồi quyền trong Cài đặt hệ thống → ô về “—”, app không crash.</li>
+<li><b>V-oncar-6 (xe thứ hai — Sealion 6)</b> Chạy lại công cụ <i>Kiểm tra từng nút xe</i> và đối chiếu đúng 4 mã: <code>trunk</code> · <code>ac_auto</code> · <code>defrost_rear</code> · <code>defrost</code>. Đây là bài đo trực tiếp xem bản vá có chữa được cái mà báo cáo 09-16 ghi nhận hỏng hay không. Kết quả ghi thành một mục nối tiếp trong <code>docs/diagnostics/oncar-captest-sealion6-2026-09-16.md</code>.</li>
+</ul>
+<h3>V-lifecycle</h3>
+<ul>
+<li>Bật công tắc → mưa → sấy bật → <b>giết app</b> (<code>am force-stop</code>) → mở lại: sau <code>T_BOOT_GRACE</code>, nếu đã tạnh thì sấy được tắt đúng vùng trong sổ; nếu còn mưa thì giữ nguyên và nhận lại quyền sở hữu từ sổ.</li>
+<li>Tắt công tắc <b>trong khi</b> đang sở hữu: tắt đúng vùng trong sổ ngay (không chờ <code>T_DRY_MIN</code>), xoá sổ, chip biến mất.</li>
+<li>Đổi hồ sơ / đổi bố cục ⇒ tập datum đổi ⇒ đăng ký lại đúng tập mới; GPS chỉ chạy nếu bố cục mới còn ô GPS.</li>
+<li>Off-car (máy ảo): mọi getter null ⇒ luật đứng ở <code>DRY</code>, chip ⚠, 0 lệnh, 0 dòng log lặp.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 — <code>voiceCtlBackDoor</code>: 1·2·3 là gì?</b> <span class="e unk">CHƯA BIẾT</span> — framework chỉ gác dải, không đặt tên hằng (đã grep cả <code>BYDAutoConstants</code>). <b>Đề xuất mặc định</b>: đo bằng T-oncar-0(e), <b>ba lần bắn riêng lẻ, cốp trống, owner đứng nhìn</b>; cho tới lúc đó nút <code>trunk</code> ở <code>tier = NEEDS_CAR</code> và mở/đóng đều chưa nối. Không đoán, không ship theo phỏng đoán.</li>
+<li><b>OQ2 — <code>T_DRY_MIN</code> bao nhiêu phút?</b> <b>Đề xuất mặc định 10 phút.</b> Ngắn hơn (5) thì mưa rào ngắt quãng làm sấy bật-tắt liên tục; dài hơn (20) thì tốn điện và kính đã ráo từ lâu. Owner có thể chốt khác sau V-oncar-3.</li>
+<li><b>OQ3 — có dùng độ ẩm / nhiệt độ để bật sấy khi <b>mờ kính</b> (không mưa) không?</b> <b>Đề xuất mặc định: KHÔNG ở pass này.</b> Owner hỏi đúng bài toán “khi trời mưa”; mờ kính là bài toán khác (điểm sương, cần nhiệt độ <b>mặt kính</b> mà xe không phơi ra). Làm liều sẽ bật sấy giữa ngày nắng ẩm. Ghi vào backlog như một việc riêng.</li>
+<li><b>OQ4 — có tự đóng kính khi mưa không?</b> <b>Đề xuất mặc định: KHÔNG.</b> <span class="e do">ĐO</span> xe đã có <code>RainAutoCloseWindow</code> ở tầng dưới (<code>bodywork/BYDAutoBodyworkDevice.java:872-885</code>) — nhanh hơn, tin cậy hơn app. Việc của Kachi (nếu owner muốn) chỉ là <b>phơi ra công tắc</b> <code>setRainCloseWindow(ON=1/OFF=2)</code> của xe, không tự đóng kính. Mã <code>rain_close</code> đã có sẵn trong registry.</li>
+<li><b>OQ5 — ngưỡng <code>S_WET</code> khi gạt mưa ở chế độ TAY.</b> Thiết kế đang nhân <code>K_MANUAL = 1.6</code> <span class="e doan">ĐOÁN</span>. <b>Đề xuất mặc định</b>: giữ 1.6 tới V-oncar-3; nếu đo ra rằng <code>getAutoRainWiperState()</code> luôn trả ON trên xe này (tức người dùng để AUTO thường trực) thì bỏ hẳn hệ số cho đơn giản.</li>
+<li><b>OQ6 — có dùng <code>BYDAutoLocationDevice</code> làm nguồn vị trí dự phòng không?</b> <span class="e unk">CHƯA BIẾT</span> app có quyền <code>BYDAUTO_LOCATION_GET</code> hay không (T-oncar-0(a) chốt). <b>Đề xuất mặc định: KHÔNG dùng</b> — nếu người dùng từ chối quyền vị trí của Android mà app vẫn đọc toạ độ qua cửa sau HAL thì đó là lách ý định người dùng, dù kỹ thuật cho phép. Chỉ mở nếu owner nói rõ là muốn.</li>
+</ul>
+
+<h2>8. References</h2>
+<h4>Framework xe (fw-dl3, jadx từ <code>framework.jar</code> của xe, 2026-09-16) — mỗi dòng đã mở đọc lại khi viết spec</h4>
+<ul>
+<li><code>setting/BYDAutoSettingDevice.java</code>:24-28 (hằng AUTO_RAIN_WIPER + BACK_DOOR_OPENED_HEIGHT) · :141 · :1470-1490 · :2158-2159 · :2338-2352 · :2437-2446 · :2783-2797</li>
+<li><code>setting/AbsBYDAutoSettingListener.java</code>:214 · :247 · :316 · :562 · :681 · :695</li>
+<li><code>ac/BYDAutoAcDevice.java</code>:29-40 · :318-338 · :428-461 · :888-893 · :999-1004</li>
+<li><code>ac/AbsBYDAutoAcListener.java</code>:28 · :49 · :253 · :362-364 · :382-388</li>
+<li><code>wiper/BYDAutoWiperDevice.java</code>:14-33 · :65-70 · :72-86 · :88-93</li>
+<li><code>wiper/AbsBYDAutoWiperListener.java</code>:13-14 · :43-48</li>
+<li><code>sensor/BYDAutoSensorDevice.java</code>:20-38 · :70-89 · <code>sensor/AbsBYDAutoSensorListener.java</code>:13 · :16 · :19</li>
+<li><code>bodywork/BYDAutoBodyworkDevice.java</code>:246-248 · :266 · :853-854 · :872-885</li>
+<li><code>doormirror/BYDAutoRearViewMirrorDevice.java</code>:12-25 · :58-70 · <code>AbsBYDAutoRearViewMirrorListener.java</code>:12 · :15 (<b>không</b> có API sấy gương)</li>
+<li><code>location/BYDAutoLocationDevice.java</code>:23 · :37 · :72-83 (<b>vùng cấm</b>) · :85-89 · <code>AbsBYDAutoLocationListener.java</code>:12 · :27-28</li>
+<li><code>BYDAutoFeatureIds.java</code>:2263 (<code>SENSOR_HUMIDITY</code>) · :2358-2360 (<code>SET_AUTO_RAIN_WIPER_*</code>) · :2366-2367 · :2386-2388 · :2874 · :3163-3164 · :5075 · :5097-5100 · :5115-5129 · :8254 · :8332-8333 · :8361-8362 · :9182</li>
+</ul>
+<h4>Mã hiện có trong repo</h4>
+<ul>
+<li><code>core/…/launcher/ControlRegistry.kt</code>:187 (<code>trunk</code>) · :210 (<code>defrost</code>) · :267-274 (<code>ac_auto</code> + ghi chú số bịa) · :277-279 (<code>defrost_rear</code>)</li>
+<li><code>core/…/launcher/HalBindingTable.kt</code>:33-60 (<code>readRaw</code> + 4 route) · :199-206 (sentinel) · :212-215 (<code>LOCAL_TARGETS</code> + KDoc BLOCKED-BY-DESIGN phải sửa) · :247-300 (<code>writeArgs</code>)</li>
+<li><code>core/…/launcher/TelemetryRegistry.kt</code>:241 · :294 (<code>wiper_state</code> feature vô danh) · :346-350 (4 datum GPS)</li>
+<li><code>core/…/launcher/CarDataDemand.kt</code>:100-125 (cổng “datum nào đang hiện”)</li>
+<li><code>core/…/launcher/CtlSafetyPolicy.kt</code>:29-41 (<code>CONFIRM_REQUIRED</code> — <code>trunk</code> đã có trong đó)</li>
+<li><code>core/…/launcher/testbridge/TestBridgeCommand.kt</code>:84-120 (extras) · :149 (<code>hal</code>) · :161 (<code>featmap</code>) · :190-200 (<code>prefs_set</code> + danh sách trắng)</li>
+<li><code>app/…/launcher/testbridge/TestBridgeHal.kt</code>:47-64 (<code>setev</code> + lý do) · :69-115 (get/set + cổng CONFIRM)</li>
+<li><code>app/src/test/java/com/byd/clusternav/DeadReckonRetirementTest.kt</code> (toàn tệp — T10 sửa 1 hàm, thêm 1 hàm)</li>
+<li><code>app/…/launcher/BydFeatureIds.kt</code> (tra tên hằng lúc chạy) · <code>app/…/modules/hal/BydHal.kt</code></li>
+</ul>
+<h4>Spec &amp; diagnostics liên quan</h4>
+<ul>
+<li><code>docs/specs/kachi-live-state-ux.html</code> — <b>bắt buộc đọc cùng</b>: <code>readKey</code>/<code>readArg</code>, <code>LiveCarState</code>, <code>BydHalEvents</code> (Proxy), cửa sổ “đang gửi”. Spec này <b>tái dùng</b>, không dựng lại.</li>
+<li><code>docs/specs/kachi-hal187-cast-remediation.html</code> §B — bảng binding 187 + công cụ <code>hal</code>/<code>sweep</code>.</li>
+<li><code>docs/specs/kachi-perf-2026-09.html</code> — cổng <code>CarDataDemand</code> + ngân sách đọc.</li>
+<li><code>docs/specs/kachi-voice-hotword-phrases.html</code> · <code>kachi-voice-feedback.html</code> — luật cụm có dấu + trả lời từ kho.</li>
+<li><code>docs/specs/kachi-permission-preflight.html</code> — khuôn xin quyền không nhắc dai.</li>
+<li><code>docs/diagnostics/oncar-captest-sealion6-2026-09-16.md</code> §2 (4 mã hỏng) · §Bảng đầy đủ dòng <code>defrost</code> ✅.</li>
+<li><code>docs/diagnostics/oncar-captest-results-2026-09-15.md</code> (xe owner, 50/187) · <code>hal-binding-remediation-2026-09-15.md</code> · <code>byd-hal-permission-RE-2026-09-14.md</code> · <code>bodywork-window-trunk-RE-2026-09-06.md</code>.</li>
+</ul>
+<h4>Luật</h4>
+<ul>
+<li><code>CLAUDE.md</code> §2 (cơ chế ≠ quy kết) · §3 (đọc source, trích file:line) · §4 (phạm vi tường minh cho lệnh đổi state) · §5 (state ngoài hệ thống sống dai hơn tiến trình ⇒ sổ ghi trước) · §6 (đường mới xuống cuối, tự đo trước khi leo) · §7 (generic) · §8 (grep call site) · §9 (bump version) · §10 (test khoá bài học) · §13 (quy trình) · <b>§14 (4 tầng)</b> · §15 (debug bằng dữ liệu) · §16.</li>
+<li><code>.kiro/steering/conversation-protocol.md</code> (P1 mức bằng chứng) · <code>trace-den-tan-cung.md</code> (không bỏ cuộc sớm; bỏ tính năng = quyết định owner) · <code>documentation-and-backlog.md</code> (R2.1 doc + code atomic).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi <b>NGAY khi code</b> (R2.6): quyết định · trade-off · sai lệch spec · bug &amp; cách xử · “spec không work → đổi X”, kèm file:line hoặc commit.</p>
+<ul>
+<li><i>(Trống — chưa implement. Mục đầu tiên sẽ là kết quả T-oncar-0, vì không có nó thì không có gì được viết.)</i></li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm mục <code>Pass N — YYYY-MM-DD</code>; tag <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test + verdict (APPROVED / INCOMPLETE).</p>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

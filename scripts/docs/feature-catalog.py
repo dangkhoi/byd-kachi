@@ -51,7 +51,8 @@ def status_of(row, by_id, kind):
     tier = row.get("tier")
     base = TIER_VI.get(tier, DEFAULT_TIER_VI) if tier else DEFAULT_TIER_VI
     if s:
-        return f"<b>{esc(s.get('status', ''))}</b> {esc(s.get('note', ''))}<div class=\"ev\">{esc(s.get('evidence', ''))}</div><div class=\"ev\">tier: {esc(base)}</div>"
+        s6 = f"<div class=\"ev\"><b>S6</b> {esc(s['s6'])} <span class=\"muted\">Sealion 6 (anh em, 2026-09-16)</span></div>" if s.get("s6") else ""
+        return f"<b>{esc(s.get('status', ''))}</b> {esc(s.get('note', ''))}<div class=\"ev\">{esc(s.get('evidence', ''))}</div>{s6}<div class=\"ev\">tier: {esc(base)}</div>"
     return f"{esc(base)}<div class=\"ev\">chưa có kết quả on-car riêng cho mục này (tier từ registry)</div>"
 
 
@@ -132,7 +133,7 @@ từ <code>registry.json</code> (dump máy từ 4 bộ đăng ký, {n_ctl} nút 
 ({len(feats)} chức năng ngoài registry) + <code>docs/catalog/status-by-id.json</code> ({len(by_id)} mục có kết quả on-car). Chủ: dangkhoi.</p>
 <div class="card"><b>Quy ước status</b>: 🟢 đã xác nhận trên xe · ⚠ chạy một phần trên xe · ❌ trên xe không tác dụng / bỏ theo thiết kế · 🚗 code xong, chờ xe · ✅ off-car (máy ảo/test) · 🔨 đang dở · 🔲 chưa làm.
 Cột <i>Phản hồi</i> là <b>chuỗi thật</b> Kachi hiện trên tấm chữ và đọc bằng giọng (bỏ ký hiệu ✓/✗ khi đọc); “hỏi” = câu xác nhận trước khi bắn (rủi ro CONFIRM).
-Không suy diễn: mục chưa có phép đo trên xe giữ tier của registry (🚗), không được ghi 🟢.</div>
+Không suy diễn: mục chưa có phép đo trên xe giữ tier của registry (🚗), không được ghi 🟢. Dòng <b>S6</b> = kết quả kiểm-từng-nút trên xe <b>Sealion 6</b> của anh em (2026-09-16, ✅ có số/có tác dụng · ❌ không) — bằng chứng ĐỘC LẬP, không thay status xe owner.</div>
 <p class="toc"><b>Mục lục:</b> """ + " ".join(f"<a href=\"#g{i}\">{esc(g)}</a>" for i, g in enumerate(groups)) + f""" <a href="#controls">Nút điều khiển ({n_ctl})</a> <a href="#telemetry">Thông tin đọc ({n_tel})</a> <a href="#macros">Gói lệnh</a> <a href="#launcher">Hành động launcher</a> <a href="#generic">Voice ngoài registry</a></p>
 """)
 

@@ -41,8 +41,11 @@ android {
         applicationId = "com.byd.launcher"
         minSdk = 29
         targetSdk = 37
-        versionCode = 68
-        versionName = "1.67"
+        // VISUAL-REFRESH P1 (bề mặt + icon app hoa anh đào). 1.67 đã có 2 commit nhưng **chưa đăng APK nào**
+        // ⇒ gộp P1 vào 1.68 để ship một lần (CLAUDE.md §9: mỗi bản ĐÃ BÁO cho owner = một số hiệu riêng; 1.67
+        // chưa báo nên không phải giữ chỗ cho nó).
+        versionCode = 69
+        versionName = "1.68"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

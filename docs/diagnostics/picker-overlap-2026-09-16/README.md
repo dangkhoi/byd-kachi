@@ -1,0 +1,10 @@
+# Bug (O) UI-PICKER-OVERLAP — dải đè trong lưới chọn nút/widget · [ĐÃ CHỨNG MINH] 2026-09-16
+
+- **Chủ:** dangkhoi · **Owner báo:** ảnh xe (1.66) — hàng 3 mục Khí hậu trong *Chọn nút cho thanh nút xe* bị cắt ngang + dải đè (`oncar-row3-cut.webp`).
+- **Tái hiện máy ảo** (1.67/1.68, mật độ 240): hàng 2 mục Nhóm — `before-row2-cut.png` (dòng phụ nhạt rồi hụt ở y≈834, dải sáng 835–858).
+- **Bằng chứng đo:** `uiautomator dump` — bounds mọi ô ĐÚNG (4 ô cao 165, dòng phụ 816–843 nằm trong ô 696–861) ⇒ không phải lỗi bố cục/đo (`UniformRow` vô can). Đường cắt 834 = đáy ScrollView 918 − đệm đáy (48+8) dp × 1,5 = 84 px; vùng nhạt 816–834 = dải mờ 12 dp = 18 px.
+- **Cơ chế (AOSP `android-10.0.0_r47/core/java/android/view/View.java`):** `getFadeHeight` :20893-20897 = `mBottom - mTop - mPaddingBottom - mPaddingTop` ⇒ mép mờ đáy tại `đáy khung − paddingBottom` (:21500-21501); lớp mờ `saveUnclippedLayer(left, bottom − length, right, bottom)` :21539, xoá alpha bằng gradient :21592-21603. `AppDrawer` đặt `setPadding(…, TOUCH+S)` + `clipToPadding = false` ⇒ nội dung vẽ tràn vào vùng đệm còn dải mờ nằm GIỮA nội dung; hàng nào rơi vào y đó bị nhạt chữ + hụt (xe: hàng 3, máy ảo: hàng 2 — tuỳ vị trí cuộn; cuộn thêm là hết ⇒ trước đây tưởng "chập chờn").
+- **Vá:** đệm đầu/đáy thành hai `View` đệm TRONG thân cuộn (`AppDrawer.kt`), ScrollView không `setPadding`, không `clipToPadding=false` ⇒ `mPaddingBottom = 0`, mép mờ về đúng đáy khung. Quan hệ "đệm đáy > dải mờ" giữ (56 > 12 dp).
+- **Bài canh:** `PickerCapNoticeContractTest.mep vung cuon mo dan khong cat chu` cấm `clipToPadding = false` + `setPadding` trên ScrollView; `DrawerGridSeamContractTest.day vung cuon cao hon dai mo` khoá view đệm đáy `TOUCH + S`.
+- **Kết quả [ĐO] máy ảo:** `after-row2-clean.png` — cùng vị trí cuộn, hàng 2 đủ chữ, dải mờ chỉ ở mép đáy khung. 🚗 xác nhận trên xe ở bản 1.68.
+- **Bài học:** dải mờ của platform tính theo **hộp đệm**, không theo khung nhìn — bất kỳ ScrollView nào dùng `clipToPadding=false` + đệm lớn đều mắc. Grep toàn app: chỉ một chỗ (AppDrawer).

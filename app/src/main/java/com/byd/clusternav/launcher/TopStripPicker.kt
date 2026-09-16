@@ -1,6 +1,5 @@
 package com.byd.clusternav.launcher
 
-import android.graphics.drawable.GradientDrawable
 import android.content.Context
 import android.text.TextUtils
 import android.util.TypedValue
@@ -210,10 +209,12 @@ class TopStripPicker(
 
     private fun paint(id: String) {
         val t = tiles[id] ?: return
-        t.background = if (strip.has(id)) GradientDrawable().apply {
-            cornerRadius = dpi(context, Sp.RADIUS_L).toFloat()
-            setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
-        } else KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
+        // VISUAL-REFRESH P1 · T3 — hai trạng thái đi qua CÙNG một hàm dựng bề mặt, chỉ khác `tone`; sắc lĩnh vực
+        // giúp mắt tìm vùng trong một lưới trộn nhiều nhóm (đây là lưới dày nhất của app: 88 ô).
+        val domain = CapabilityCatalog.pick(id)?.domain
+        t.background = KachiTheme.surface(
+            context, Sp.RADIUS_L, if (strip.has(id)) SurfaceTone.ACTIVE else SurfaceTone.NEUTRAL, domain,
+        )
     }
 
     /** Icon của khả năng; chưa map → icon đại diện nhóm (khỏi ô trống icon). */

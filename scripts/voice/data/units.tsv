@@ -1,0 +1,26 @@
+# TRỊ SỐ NÓI RA cho khuôn STEP `{v}` — LLM soạn tay 2026-09-16.
+# Cột: id | style(so_lieu = viết bằng CHỮ SỐ · chung = viết bằng CHỮ) | value
+# Vì sao phải có cả hai: người lái nói *"hai bốn độ"*, còn kịch bản test hay viết *"24 độ"*. Mô hình
+# `zipformer-vi` xuất ra CHỮ (`HAI MƯƠI BỐN`), nên dòng chữ số chỉ dùng cho TTS + đối chiếu sau khi đọc
+# số thành chữ (xem `mishear-table.py: vi_spell_digits`).
+temp	chung	hai mươi bốn độ
+temp	chung	hai bốn độ
+temp	chung	hai mươi hai độ
+temp	chung	mười tám độ
+temp	so_lieu	24 độ
+temp	so_lieu	22 độ
+fan	chung	mức ba
+fan	chung	số bốn
+fan	so_lieu	mức 3
+vol	chung	mức mười hai
+vol	chung	mười lăm
+vol	so_lieu	mức 12
+target_soc_set	chung	tám mươi phần trăm
+target_soc_set	chung	chín mươi phần trăm
+target_soc_set	so_lieu	80 phần trăm
+brightness_gear	chung	mức năm
+brightness_gear	so_lieu	mức 5
+hud_brightness	chung	mức năm
+hud_brightness	so_lieu	mức 5
+ambient_brightness	chung	mức ba
+ambient_brightness	so_lieu	mức 3

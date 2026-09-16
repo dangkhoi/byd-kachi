@@ -313,7 +313,7 @@ class ControlTileFactory(
         val content = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
-            background = KachiTheme.card(ctx, size.radius, KachiTheme.TILE)
+            background = KachiTheme.surface(ctx, size.radius, domain = pick.domain)
         }
         val r = KachiTheme.iconRes(pick.icon)
         if (r != 0) content.addView(
@@ -414,7 +414,10 @@ class ControlTileFactory(
     }
 
     private fun applyBg(v: View, active: Boolean) {
-        v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiTheme.card(ctx, size.radius, KachiTheme.TILE)
+        // ⚠ Nhánh BẬT giữ [KachiTheme.gradientSoft] — KHÔNG đổi sang `surface(ACTIVE)`: chữ/icon của ô đang bật tô
+        // bằng `INK_ON_ACCENT`, và bài canh `ThemePaletteContractTest` đo vai đó **trên nền `tileOn*`**. Đổi nền mà
+        // giữ mực là làm số đo trong bài nói về một nền không còn tồn tại.
+        v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiTheme.surface(ctx, size.radius)
     }
 
     /**

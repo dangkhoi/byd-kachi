@@ -1,0 +1,545 @@
+# BÍ DANH ĐỀ XUẤT — sinh bằng `scripts/voice/mishear-table.py`, CHỈ từ chuỗi model thật sự in ra.
+# Cột: id | heard_text | count | proposed_action (synonym|hotword|clarify)
+# Cấu hình chính: hotwords-phrases.txt · corpus /tmp/kachi-voice-corpus
+open_app	mở zalô	14	synonym
+open_app	mở ca lây	9	synonym
+open_app	mở potifi	8	synonym
+open_app	mở viett map	6	synonym
+open_app	mở youtubec	6	synonym
+open_app	mở cài	5	synonym
+open_app	mở du tu	5	synonym
+open_app	mở ra lộ	5	synonym
+open_app	mở sei	5	synonym
+open_app	mở viett	5	synonym
+open_app	mở anderi ao	4	synonym
+open_app	mở ca py	4	synonym
+open_app	mở dựa	4	synonym
+open_app	mở giữa a lô	4	synonym
+open_app	mở hoa	4	synonym
+open_app	mở sy	4	synonym
+ac_on	xem điều hòa	3	hotword
+ambient_color	chuyển sang tím	3	synonym
+cabin_temp	nhiệt trong xe sao rồi	3	hotword
+camera_view	chuyển sang trước	3	synonym
+charging_eta_hour	còn mấy giờ nữa đầy sao rồi	3	hotword
+drive_mode	chuyển sang thể thao	3	synonym
+energy_mode	chế độ năng lượng thế nào	3	hotword
+headlight_feedback	chế độ đèn pha thế nào	3	hotword
+headlight_mode	chuyển sang đỗ	3	synonym
+launcher_settings	mở thiết lập giúp mình với	3	synonym
+layout	bố cục hai cột	3	synonym
+light_drl	đèn ban ngày thế nào	3	hotword
+light_high_beam	xem đèn pha	3	hotword
+mac_door_light	mở cửa bật đèn đọc	3	hotword
+mac_door_light	mở cửa và đèn đọc	3	hotword
+media_next	làm ơn chuyển bài	3	hotword
+media_pause	làm ơn dừng nhạc	3	hotword
+media_query	đang phát bài gì	3	hotword
+nav_saved	làm ơn dẫn tôi về nhà	3	synonym
+op_mode	chế độ lái thế nào	3	hotword
+op_mode	xem chế độ lái	3	hotword
+open_app	goovel	3	synonym
+open_app	mở ca play	3	synonym
+open_app	mở ca ray	3	synonym
+open_app	mở ca tờ lê	3	synonym
+open_app	mở dây	3	synonym
+open_app	mở g ba	3	synonym
+open_app	mở giúp top	3	synonym
+open_app	mở quê	3	synonym
+open_app	mở riêng mờ ba	3	synonym
+open_app	mở se	3	synonym
+open_app	mở seit	3	synonym
+open_app	mở spoty file	3	synonym
+open_app	mở sty file	3	synonym
+open_app	mở vietma	3	synonym
+open_app	mở vis map	3	synonym
+open_app	mở ô tô an đuôi	3	synonym
+open_app	mở ô tô ăn đuôi	3	synonym
+open_app	ở quê	3	synonym
+pm25	các bụi	3	synonym
+pm25_clean_now	cho tôi lọc bụi ngay nhé	3	hotword
+sunroof_state	xem cửa sổ trời	3	hotword
+sunshade_pct	xem rèm che nắng	3	hotword
+target_soc	mục tiêu sạc thế nào	3	hotword
+window_lf	kính trước trái thế nào	3	hotword
+window_lr	kính sau trái thế nào	3	hotword
+window_rf	xem kính trước phải	3	hotword
+window_rr	kính sau phải thế nào	3	hotword
+window_rr	xem kính sau phải	3	hotword
+ambient_enabled	xem đèn viền ca	2	clarify
+ambient_enabled	đèn viền ca	2	clarify
+anion_state	xem ai ôn âm	2	synonym
+batt_range_bodywork	xem tầm tin	2	synonym
+batt_temp	nhiệt độ tin thế nào	2	clarify
+cell_temp_avg	nhịp xe sao rồi	2	synonym
+cell_temp_avg	xem nhiệt	2	synonym
+cell_temp_high	nhiệt xe cao thế nào	2	synonym
+cell_temp_high	xem nhiệt cao	2	synonym
+cell_temp_low	nhiệt xe thấp thế nào	2	synonym
+cell_v_high	áp xe cao thế nào	2	synonym
+cell_v_low	áp xe thấp thế nào	2	synonym
+charging_eta_hour	xem còn mấy giờ nữa đầy	2	clarify
+charging_eta_min	còn mấy phút nữa đầy sao rồi	2	synonym
+charging_eta_min	xem còn mấy phút nữa đầy	2	synonym
+door	mở chốt cửa giúp mình với	2	synonym
+drift_mode	chế độ dốc sao rồi	2	clarify
+drift_mode	xem chế độ d	2	synonym
+energy_mode	xem chế độ năng lượng	2	clarify
+engine_rpm	vòng tua sang thế nào	2	synonym
+ev_mileage_km	xem trại điện	2	synonym
+headlight_feedback	xem chế độ đèn pha	2	clarify
+hood	bật ca	2	synonym
+hud_brightness	tăng độ sáng hu	2	synonym
+key_bluetooth	chìa blu	2	synonym
+key_bluetooth	xem chìa blus	2	synonym
+light_drl	xem đèn ban ngày	2	clarify
+light_high_beam	đèn pha thế nào	2	clarify
+light_left_turn	mc nhan trái	2	synonym
+lock	bật khóa	2	synonym
+mac_leave	bật tui xuống xe đây	2	synonym
+mirror_auto	bật gập vương khi khóa	2	synonym
+mirror_auto	ca chi tắt gập vương khi khóa đi	2	synonym
+mirror_fold_btn	cho tôi xếp kiến chiếu hậu nhé	2	clarify
+nav_saved	về nhà	2	synonym
+odometer	họ đo sao rồi	2	synonym
+open_app	lời du	2	synonym
+open_app	mcar pla	2	synonym
+open_app	mcm p ba	2	synonym
+open_app	mv at	2	synonym
+open_app	myat ubusc	2	synonym
+open_app	mở alo	2	synonym
+open_app	mở ca li	2	synonym
+open_app	mở các	2	synonym
+open_app	mở ghê	2	synonym
+open_app	mở goov	2	synonym
+open_app	mở ip	2	synonym
+open_app	mở mắt	2	synonym
+open_app	mở nhạc	2	clarify
+open_app	mở quai	2	synonym
+open_app	mở r	2	synonym
+open_app	mở ra	2	synonym
+open_app	mở ra lo	2	synonym
+open_app	mở riêng m ba	2	synonym
+open_app	mở ru số map	2	clarify
+open_app	mở run số mát	2	clarify
+open_app	mở rưng ba	2	synonym
+open_app	mở rộng alo	2	synonym
+open_app	mở sạc	2	clarify
+open_app	mở vest map	2	synonym
+open_app	mở vit mát	2	synonym
+open_app	mở vây	2	synonym
+open_app	mở youtubeoxit	2	synonym
+open_app	mở đường o	2	synonym
+open_app	mởi aoto	2	synonym
+open_app	mởi ô tô	2	synonym
+open_app	ở hà nội	2	synonym
+pm25_clean_now	đọc ngày	2	synonym
+profile	làm ơn đổi sang hồ sơ chính	2	clarify
+regen_level	làm ơn đổi mức hãm tái sinh sang tiêu chuẩn	2	synonym
+screen_rotation	làm ơn đổi hướng màn hình sang ngang	2	clarify
+soc	mức tin sao rồi	2	synonym
+soh_oem	xem sức khỏe	2	synonym
+sunroof_state	cửa sổ trời sao rồi	2	clarify
+sunshade	mở rèm nóc hộ tôi	2	synonym
+sunshade_pct	rèm che nắng thế nào	2	clarify
+tailgate_status	cốp sau rồi	2	clarify
+tailgate_status	xem cốp sau	2	clarify
+target_soc	xem mục tiêu sạc	2	clarify
+volt_12v_level	xem mức áp qu	2	synonym
+window_lf	xem kính trước trái	2	clarify
+window_lr	xem kính sau trái	2	clarify
+window_rf	kính trước phải thế nào	2	clarify
+wiper_state	gạt mưa sao rồi	2	clarify
+wiper_state	xem gạt mưa	2	clarify
+ac_cycle	chế độ lấy ra thế nào	1	clarify
+ac_on	điều hòa sao rồi	1	clarify
+ac_on	điều hòa sau rồi	1	clarify
+ac_on	điều hòa sắp rồi	1	clarify
+ac_wind	bước quạt gió sao rồi	1	clarify
+accel_pct	xe trần	1	clarify
+ambient_brightness	cho độ sáng lên một chút	1	clarify
+ambient_enabled	săn đèn viền cabin	1	clarify
+ambient_enabled	đèn viền cabin thế nào	1	clarify
+ambient_rear_color	sẽ màu xong	1	clarify
+anion	bất i	1	clarify
+anion_state	ai ôn âm thế nào	1	clarify
+anion_state	ai ơn âm thế nào	1	clarify
+anion_state	ion âm thế nào	1	clarify
+anion_state	theo ion âm	1	clarify
+batt_range_bodywork	thông tin sau rồi	1	clarify
+batt_range_bodywork	trong tuần	1	clarify
+batt_range_bodywork	tầm tin sao rồi	1	clarify
+batt_range_bodywork	tầm tin sau rồi	1	clarify
+batt_temp	nhiệt độ thế nào	1	clarify
+batt_temp	xem nhiệt độ kính	1	clarify
+brake_pct	chân trần vành	1	clarify
+cabin_temp	xem nhiệt trong xe abin	1	clarify
+cam	ac he a quanh xe đi	1	clarify
+cam	bật car a	1	clarify
+camera_view	góc car a trước	1	clarify
+cell_temp_avg	cr thế là sao rồi	1	clarify
+cell_temp_avg	thân nhiệt cl tv	1	clarify
+cell_temp_high	cl cao thế nào	1	clarify
+cell_temp_high	thân nhiệt cl cao	1	clarify
+cell_temp_low	cl thấp thế nào	1	clarify
+cell_temp_low	xem nhiệt thấp	1	clarify
+cell_temp_low	xem nhiệt xe thấp	1	clarify
+cell_v_high	hecot thế nào	1	clarify
+cell_v_high	xem lus	1	clarify
+cell_v_high	xem áp c cao	1	clarify
+cell_v_high	xem áp xe cao	1	clarify
+cell_v_low	chân elo tức	1	clarify
+cell_v_low	l thấp thế nào	1	clarify
+cell_v_low	xem áp se thấp	1	clarify
+cell_v_low	xem áp xe thấp	1	clarify
+charge_power	xem công suất giảm	1	clarify
+charging_eta_hour	sang còn mấy giờ nữa đầy	1	clarify
+charging_eta_min	còn mấy phút nữa đây	1	clarify
+charging_eta_min	còn mấy phút nữa đầy sau rồi	1	clarify
+child_lock	cac hi tắt khóa trẻ n	1	clarify
+cluster_music	bật nhạc trên	1	clarify
+cluster_music	caxi tắt nhạc trên cùng đi	1	clarify
+cluster_music	he tắt nhạc trên ni	1	clarify
+defrost	ac hi cắt giấy kiếm đi	1	clarify
+defrost	ka chi tắt giấy tiếng đi	1	clarify
+defrost_rear	bật sấy kính	1	clarify
+defrost_rear	ka chi tắt giấy kính sau đi	1	clarify
+door	bà chốt cửa giúp mình với	1	clarify
+drift_mode	chế độ drif	1	clarify
+drift_mode	xem chế độ gì	1	clarify
+drl	bước đến ba ngày	1	clarify
+energy_mode	sang chế độ năng lượng	1	clarify
+engine_code	em ngã máy	1	clarify
+engine_code	mã mái thế nào	1	clarify
+ev_mileage_km	ai mà chạy điện thế nào	1	clarify
+ev_mileage_km	chạy điện thế nào	1	clarify
+ev_mileage_km	kem chạy điện	1	clarify
+ev_mileage_km	trại điện thế nào	1	clarify
+ext_temp	xem ngoài	1	clarify
+fan	dấu	1	clarify
+fuel_pct	bước sang sao rồi	1	clarify
+fuel_range_km	thâm răng sau rồi	1	clarify
+gear	bố sao rồi	1	clarify
+gps_lon	tăng kỳ độ	1	clarify
+gps_lon	xem kinh đột	1	clarify
+gps_lon	độ thế nào	1	clarify
+headl	cac hi tắt đèn chiếu	1	clarify
+headlight_feedback	xem chế độ đèn	1	clarify
+headlight_mode	chế độ đèn thắt	1	clarify
+hood	bật	1	clarify
+hood	ca hi tắt ngắt cay	1	clarify
+hood	cá tri tắt ca pôni	1	clarify
+hood	cá tri tắt ca đi	1	clarify
+hud_brightness	cho độ sáng hơn lên một chút	1	clarify
+hud_brightness	cho độ sáng lên một chút	1	clarify
+hud_brightness	tăng độ sáng	1	clarify
+hud_switch	bật hu kính lái	1	clarify
+hud_switch	bật hát của nghề kính lái	1	clarify
+hud_switch	bật hũ kiếm lái	1	clarify
+hud_switch	he tri tắt hu kính lái đi	1	clarify
+hud_switch	kach tắt hô kính lái đi	1	clarify
+hud_switch	tất cả hi tắt hu kính lái đi	1	clarify
+inside_temp	can thiệp cài đặt	1	clarify
+is_charging	nhân sạc	1	clarify
+key_bluetooth	chia bl u thấy h thế nào	1	clarify
+key_bluetooth	xem chìa blu	1	clarify
+layout	ba bố cục một ô giùm cái	1	clarify
+layout	qua bố cục một ô dùng cái	1	clarify
+layout	qua bố cục một ô giùm cái	1	clarify
+light_drl	đền ban ngày	1	clarify
+light_high_beam	phạt thế nào	1	clarify
+light_left_turn	sinh nhan trái thế nào	1	clarify
+light_left_turn	sinh nhang trái	1	clarify
+light_low_beam	xem đèn cos	1	clarify
+light_rear_fog	mèn sương mù sáu	1	clarify
+light_right_turn	sinh nhan phải thế nào	1	clarify
+light_side	nên hôn thế nào	1	clarify
+lock	chi tắt khóa đi	1	clarify
+lock	tài khóa	1	clarify
+lock	tất cả h i tắt khóa đi	1	clarify
+lock	vê chi tắt khóa đi	1	clarify
+mac_leave	bật tu xuống xe đậy	1	clarify
+mac_leave	trời xanh	1	clarify
+mac_win_close_all	đóng hết hí	1	clarify
+mac_win_open_all	mở hết phí	1	clarify
+media_prev	ac ghi bài trước	1	clarify
+mirror_auto	ac hi tắt gập cường khi khóa đi	1	clarify
+mirror_auto	bạch cương hóa	1	clarify
+mirror_fold	vương chiếu hậu sao rồi	1	clarify
+mirror_fold_btn	cho tôi xếp kiến chiếu hộ nhé	1	clarify
+mirror_fold_btn	lập vương	1	clarify
+mirror_fold_btn	thắp hương	1	clarify
+mirror_fold_btn	vương	1	clarify
+motor_front_rpm	say vòng tù một thời trước	1	clarify
+motor_front_rpm	vòng tua mô rồi	1	clarify
+motor_front_torque	menuter trước dạo rồi	1	clarify
+motor_front_torque	mô men mô	1	clarify
+motor_front_torque	samo menboter trước	1	clarify
+motor_front_torque	xem mô men mô	1	clarify
+motor_power	công suất thế nào	1	clarify
+motor_power	xem công suất một thợ	1	clarify
+motor_rear_rpm	vòng tù một tờ sao rồi	1	clarify
+motor_rear_rpm	xem vòng tua mô	1	clarify
+nav	ac hi dẫn đường về thủ đức	1	clarify
+nav	cá tri dẫn đường về thủ đức	1	clarify
+nav	tế cá tri dẫn đường về thủ đức	1	clarify
+nav_saved	xây nhà	1	clarify
+odometer	cho sau rồi	1	clarify
+odometer	xem hoa hồng	1	clarify
+odometer	xem o đo tổng	1	clarify
+odometer	xem ong	1	clarify
+oil_level	thuốc giàu thế nào	1	clarify
+open_app	a l od	1	clarify
+open_app	bảo vệ it at	1	clarify
+open_app	bảo vệ it nt	1	clarify
+open_app	bởi fotifi	1	clarify
+open_app	của qúy	1	clarify
+open_app	d ot	1	clarify
+open_app	goo map	1	clarify
+open_app	good	1	clarify
+open_app	he	1	clarify
+open_app	he l	1	clarify
+open_app	hem	1	clarify
+open_app	huy	1	clarify
+open_app	it ubusc	1	clarify
+open_app	là cuối cùng	1	clarify
+open_app	là cái cô	1	clarify
+open_app	m p ba	1	clarify
+open_app	mand od	1	clarify
+open_app	mc a e rla	1	clarify
+open_app	mf	1	clarify
+open_app	mstfi	1	clarify
+open_app	msti	1	clarify
+open_app	mt e	1	clarify
+open_app	mt với i	1	clarify
+open_app	mtr	1	clarify
+open_app	mtro	1	clarify
+open_app	mv	1	clarify
+open_app	mv aps	1	clarify
+open_app	mv em ats	1	clarify
+open_app	mv emt	1	clarify
+open_app	mvart	1	clarify
+open_app	mvlats	1	clarify
+open_app	my om at	1	clarify
+open_app	my on đi at	1	clarify
+open_app	myao utube	1	clarify
+open_app	myat ube	1	clarify
+open_app	mà di tích	1	clarify
+open_app	mà youtubec	1	clarify
+open_app	máp	1	clarify
+open_app	mí úp m	1	clarify
+open_app	mờ rất ngại lo	1	clarify
+open_app	mở	1	clarify
+open_app	mở ag đơ roi ô tô	1	clarify
+open_app	mở ag đơ voi ô tô	1	clarify
+open_app	mở alô	1	clarify
+open_app	mở am đỗ ô tô	1	clarify
+open_app	mở an ô tô	1	clarify
+open_app	mở an đuôi ô tô	1	clarify
+open_app	mở androi ao	1	clarify
+open_app	mở andui ô tô	1	clarify
+open_app	mở ani ao	1	clarify
+open_app	mở ao	1	clarify
+open_app	mở ca lê	1	clarify
+open_app	mở ca lên	1	clarify
+open_app	mở ca lấy	1	clarify
+open_app	mở ca t	1	clarify
+open_app	mở ca tử lây	1	clarify
+open_app	mở ca đây	1	clarify
+open_app	mở caf ray	1	clarify
+open_app	mở cari	1	clarify
+open_app	mở cay	1	clarify
+open_app	mở cuộc thi khai	1	clarify
+open_app	mở cuộc thi phai lên	1	clarify
+open_app	mở các i	1	clarify
+open_app	mở dinh	1	clarify
+open_app	mở dinh m ba	1	clarify
+open_app	mở dãy linh ba	1	clarify
+open_app	mở dưới ba	1	clarify
+open_app	mở dưới hình	1	clarify
+open_app	mở dưới hình em tờ ba	1	clarify
+open_app	mở dịch em thuê	1	clarify
+open_app	mở dịch là một về ba	1	clarify
+open_app	mở dịch lần thứ ba	1	clarify
+open_app	mở dịch này mở về ba	1	clarify
+open_app	mở dự alo	1	clarify
+open_app	mở e ba	1	clarify
+open_app	mở giúp thuốc	1	clarify
+open_app	mở gm ba	1	clarify
+open_app	mở goi aoto	1	clarify
+open_app	mở goi ô tô	1	clarify
+open_app	mở goo rổ	1	clarify
+open_app	mở good	1	clarify
+open_app	mở goop	1	clarify
+open_app	mở goot	1	clarify
+open_app	mở gy	1	clarify
+open_app	mở gì em thấy bà	1	clarify
+open_app	mở hang đưa ô tô	1	clarify
+open_app	mở hàng đâu ra ô tô	1	clarify
+open_app	mở hại lò	1	clarify
+open_app	mở hại lọ	1	clarify
+open_app	mở ic	1	clarify
+open_app	mở ide	1	clarify
+open_app	mở im ba	1	clarify
+open_app	mở im tờ ba	1	clarify
+open_app	mở lại	1	clarify
+open_app	mở nhạc em	1	clarify
+open_app	mở nhạc tube	1	clarify
+open_app	mở nhạc tốp	1	clarify
+open_app	mở play	1	clarify
+open_app	mở poti file	1	clarify
+open_app	mở poti phai lên	1	clarify
+open_app	mở poti phay lên	1	clarify
+open_app	mở potifay	1	clarify
+open_app	mở poty phai	1	clarify
+open_app	mở poty size	1	clarify
+open_app	mở que	1	clarify
+open_app	mở ra alo	1	clarify
+open_app	mở ra hà nội	1	clarify
+open_app	mở ra hộ	1	clarify
+open_app	mở ra ô tô	1	clarify
+open_app	mở ri	1	clarify
+open_app	mở riêng em về bạn	1	clarify
+open_app	mở ru dồ map	1	clarify
+open_app	mở ru vồ	1	clarify
+open_app	mở râm ba	1	clarify
+open_app	mở rình	1	clarify
+open_app	mở rô tu	1	clarify
+open_app	mở rất tốt	1	clarify
+open_app	mở rốt rồi	1	clarify
+open_app	mở rộng in	1	clarify
+open_app	mở scot tifi	1	clarify
+open_app	mở scoty file	1	clarify
+open_app	mở sea	1	clarify
+open_app	mở sefi	1	clarify
+open_app	mở slo	1	clarify
+open_app	mở soi	1	clarify
+open_app	mở syfi	1	clarify
+open_app	mở số pin	1	clarify
+open_app	mở sợ potifi	1	clarify
+open_app	mở te	1	clarify
+open_app	mở thuê	1	clarify
+open_app	mở thí sinh	1	clarify
+open_app	mở tifi	1	clarify
+open_app	mở top	1	clarify
+open_app	mở tub	1	clarify
+open_app	mở tung	1	clarify
+open_app	mở v	1	clarify
+open_app	mở v đây	1	clarify
+open_app	mở vay	1	clarify
+open_app	mở vest	1	clarify
+open_app	mở vi hat map	1	clarify
+open_app	mở video map	1	clarify
+open_app	mở viet	1	clarify
+open_app	mở vietmas	1	clarify
+open_app	mở vietnat	1	clarify
+open_app	mở viettmas	1	clarify
+open_app	mở vit map	1	clarify
+open_app	mở vách map	1	clarify
+open_app	mở vô vụ	1	clarify
+open_app	mở với kết quả xét	1	clarify
+open_app	mở với tất cả các em	1	clarify
+open_app	mở với tất cả sét khe	1	clarify
+open_app	mở youtu	1	clarify
+open_app	mở youtub	1	clarify
+open_app	mở án đối với ôtô	1	clarify
+open_app	mở ô tô anz	1	clarify
+open_app	mở ô tô ăn	1	clarify
+open_app	mở ô tô ăn ra	1	clarify
+open_app	mở ô tô ăn thôi	1	clarify
+open_app	mở ăn đường ngọt oter	1	clarify
+open_app	mở ăn được món o	1	clarify
+open_app	mở ăn được một to tàu	1	clarify
+open_app	mở ăn đỗ ô tô	1	clarify
+open_app	mở đây	1	clarify
+open_app	mở đơn ra ô tô	1	clarify
+open_app	mở đơn xác ô tô	1	clarify
+open_app	mở đường hotor	1	clarify
+open_app	mở đường oter	1	clarify
+open_app	mởng đưa ô tô	1	clarify
+open_app	người dùng thuốc	1	clarify
+open_app	ngờ anh rơi ô tô	1	clarify
+open_app	nhạc youtub	1	clarify
+open_app	nói em	1	clarify
+open_app	nổi cuối	1	clarify
+open_app	nội quy	1	clarify
+open_app	nở hồi	1	clarify
+open_app	oh em at	1	clarify
+open_app	ru mát	1	clarify
+open_app	ruvel	1	clarify
+open_app	rút tu	1	clarify
+open_app	rồi youtub	1	clarify
+open_app	tuân thủ	1	clarify
+open_app	và di tích	1	clarify
+open_app	và giúp thuốc luic	1	clarify
+open_app	và giúp tôi	1	clarify
+open_app	và yout	1	clarify
+open_app	vùng	1	clarify
+open_app	vừa sinh	1	clarify
+open_app	ăn rơi ô tô	1	clarify
+open_app	đồ qúy	1	clarify
+open_app	ơ way	1	clarify
+open_app	ờ du	1	clarify
+open_app	ở hồi	1	clarify
+open_app	ở kala	1	clarify
+open_app	ở việt nam	1	clarify
+open_app_slot	một cuộc thì phải đi	1	clarify
+open_app_slot	ovle em ats đi	1	clarify
+open_app_slot	vo google map đi	1	clarify
+open_app_slot	vo ti phai đi	1	clarify
+open_app_slot	vô google map đi	1	clarify
+open_app_slot	vô tô ti phai đi	1	clarify
+pm25	cá chi tắt lọc đi	1	clarify
+pm25_clean_now	học này	1	clarify
+pm25_clean_now	long hay điê	1	clarify
+pm25_clean_now	ngay đi	1	clarify
+pm25_clean_now	đọc hay đi	1	clarify
+powertrain_mode	lam ơn đổi sang điện sang re	1	clarify
+profile	lam ân đổi sang hồ sơ chính	1	clarify
+regen_level	làm ơn đổi mức hãng tái sinh sang tiêu chuẩn	1	clarify
+screen_rotation	lam ơn đổi hướng màn hình sang ngang	1	clarify
+screen_rotation	quay màn hình nắng	1	clarify
+seath	cá tri tắt nóng đi	1	clarify
+seath	k ac hi tắt ghế nóng đi	1	clarify
+seath	vê chi tắt ghế nóng đi	1	clarify
+slope_deg	xem độ giúp	1	clarify
+soc	bước đi xảo rồi	1	clarify
+soh_oem	sức khỏe kim sao rồi	1	clarify
+soh_oem	sức khỏe thi sao rồi	1	clarify
+soh_oem	sức khỏe tin sao rồi	1	clarify
+soh_oem	xem sức tiền	1	clarify
+start_charging	mấy	1	clarify
+steer_heat	bật ruổi vô lăng	1	clarify
+steer_heat	áp rủi vô lăng	1	clarify
+sunroof_state	cửa sổ trời	1	clarify
+sunshade	mở rè	1	clarify
+sunshade_pct	xem che nắng thế nào	1	clarify
+tailgate_position	xem vị trí cốt	1	clarify
+tailgate_status	khúc sau rồi	1	clarify
+tailgate_status	thang cốp sáu	1	clarify
+target_soc	xem mục tiêu xả	1	clarify
+trip_hours	thời gian chiến thế nào	1	clarify
+trip_hours	xem thời gian chín	1	clarify
+trip_km	quãng đường	1	clarify
+trip_km	xem quãng đường	1	clarify
+trip_kwh	điện tiêu thụ chín sao rồi	1	clarify
+trunk	ac hu đi	1	clarify
+tyre_p_fr	cách rất lốp trước phải sao rồi	1	clarify
+tyre_p_fr	xem áp luôn chứ không phải	1	clarify
+tyre_p_rl	xem áp lu sau cháy	1	clarify
+tyre_t_fl	nhiệt lúc trước trái thế nào	1	clarify
+tyre_t_fr	nhịp lúc phải thế nào	1	clarify
+vehicle_type	xem màu	1	clarify
+vin	số vì sao rồi	1	clarify
+volt_12v	xem qu	1	clarify
+volt_12v	điện áp sao rồi	1	clarify
+volt_12v	điện áp ắc	1	clarify
+volt_12v_level	mức áp của thế nào	1	clarify
+volt_12v_level	mức áp thế nào	1	clarify
+window_lf	che kín trước thấy	1	clarify
+window_lr	treo kính sau cháy	1	clarify
+window_rf	tính trước phải thế nào	1	clarify
+wiper	bất hạt mưa	1	clarify
+wiper_state	cát mơ sao rồi	1	clarify
+wiper_state	xanh gạt mưa	1	clarify
+wireless_charge	vật không dây	1	clarify

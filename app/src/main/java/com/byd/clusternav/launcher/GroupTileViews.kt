@@ -440,6 +440,24 @@ class GroupTileView(context: Context) : LinearLayout(context) {
             GroupTone.ALERT -> alpha(KachiTheme.RED, "26")
         }
 
+        /**
+         * VISUAL-REFRESH P1 · T3 — nền ô con **theo trạng thái**, một chỗ tra cho cả nhóm lẫn ô con.
+         *
+         * Vì sao rẽ nhánh theo [GroupTone] chứ không chuyển hết sang [KachiTheme.surface]: ở [GroupTone.WARN] và
+         * [GroupTone.ALERT], **màu nền CHÍNH LÀ thông tin** (hổ phách = chưa kiểm · đỏ = cảnh báo). Phủ một chuyển
+         * sắc trung tính lên đó là lấy mất tín hiệu để đổi lấy chất liệu — sai đánh đổi trên một màn hình lái xe.
+         * Hai tone còn lại không mang màu riêng nên chúng nhận đúng bề mặt mới:
+         *  • [GroupTone.NEUTRAL] → [SurfaceTone.NEUTRAL] (+ sắc lĩnh vực nếu chỗ gọi biết)
+         *  • [GroupTone.ACTIVE] → [SurfaceTone.ACTIVE] — "đang bật" của nhóm và "đang bật" của ô picker từ nay
+         *    trông **giống nhau**, trước đây là hai cách vẽ khác nhau cho cùng một nghĩa.
+         */
+        fun surfaceOf(ctx: android.content.Context, radius: Int, t: GroupTone, domain: Domain? = null): android.graphics.drawable.Drawable =
+            when (t) {
+                GroupTone.NEUTRAL -> KachiTheme.surface(ctx, radius, SurfaceTone.NEUTRAL, domain)
+                GroupTone.ACTIVE -> KachiTheme.surface(ctx, radius, SurfaceTone.ACTIVE, domain)
+                GroupTone.WARN, GroupTone.ALERT -> KachiTheme.card(ctx, radius, fillOf(t), strokeOf(t))
+            }
+
         /** Viền ô con — cùng nguyên tắc [fillOf]. */
         fun strokeOf(t: GroupTone): String = when (t) {
             GroupTone.NEUTRAL -> KachiTheme.LINE

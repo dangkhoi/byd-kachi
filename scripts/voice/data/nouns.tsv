@@ -1,0 +1,342 @@
+# CÁCH GỌI ĐỐI TƯỢNG theo vùng miền — LLM (Claude Opus) soạn tay 2026-09-16.
+# Cột: id | region(bac|trung|nam|chung) | noun
+# Đây là phần CHỈ NGƯỜI biết: nhãn registry (*"Ghế mát"*, *"Điều hoà AUTO"*) không phải thứ người lái nói ra
+# miệng. Bộ sinh `gen-variants.py` còn tự thêm nhãn + nhãn ngắn của registry làm cách gọi nền, nên ở đây chỉ
+# khai cái nhãn KHÔNG phủ (đúng luật của `VoiceSynonyms`).
+#   • `@only` ở cột noun ⇒ BỎ cách gọi sinh từ nhãn cho id đó (nhãn có dấu `+`, chữ viết tắt… không nói được).
+#   • Khuôn có động từ đứng ngay trước {n} tự bị bỏ nếu cách gọi đã mang sẵn động từ (*"mở mở khoá cửa"*).
+#
+# ═══ NÚT (ControlRegistry) ══════════════════════════════════════════════════════════════════════
+lock	chung	@only
+lock	chung	khoá
+lock	chung	khoá xe
+lock	chung	khoá cửa
+lock	bac	chốt cửa
+lock	nam	khoá cửa xe
+window	chung	kính lái
+window	nam	kiếng lái
+window	chung	kính tài xế
+window	bac	cửa sổ lái
+trunk	chung	cốp
+trunk	chung	cốp xe
+trunk	nam	cửa hậu
+trunk	nam	thùng sau
+readl	chung	đèn đọc sách
+readl	bac	đèn trần
+readl	chung	đèn trong xe
+readl	nam	đèn nóc
+pm25	chung	lọc không khí
+pm25	chung	lọc bụi mịn
+pm25	nam	máy lọc không khí
+pm25	bac	lọc gió cabin
+seatc	chung	làm mát ghế
+seatc	chung	thông gió ghế
+seatc	nam	quạt ghế
+seatc	bac	ghế thoáng
+temp	bac	nhiệt độ điều hoà
+temp	nam	nhiệt độ máy lạnh
+temp	nam	độ lạnh
+temp	chung	nhiệt độ trong xe
+fan	chung	quạt gió
+fan	chung	mức gió
+fan	chung	tốc độ quạt
+fan	bac	sức gió
+defrost	chung	sấy kính trước
+defrost	nam	sấy kiếng
+defrost	chung	xả băng
+cam	chung	camera
+cam	chung	camera quanh xe
+cam	nam	cam ba sáu mươi
+door	chung	@only
+door	chung	mở khoá cửa
+door	chung	mở khoá xe
+door	nam	mở cửa xe
+door	bac	mở chốt cửa
+hood	chung	ca pô
+hood	chung	nắp ca pô
+hood	nam	nắp máy
+sunroof	chung	cửa sổ trời
+sunroof	chung	cửa nóc
+sunroof	nam	nóc xe
+headl	chung	đèn pha
+headl	chung	đèn chiếu xa
+headl	nam	đèn cốt pha
+seath	chung	sưởi ghế
+seath	nam	ghế nóng
+seath	bac	ghế ấm
+recirc	chung	lấy gió trong
+recirc	chung	gió trong
+recirc	chung	tuần hoàn trong
+drl	chung	đèn ban ngày
+drl	chung	đèn chạy ban ngày
+vol	chung	âm lượng
+vol	nam	tiếng
+vol	chung	âm thanh
+vol	bac	loa
+wiper	chung	gạt mưa
+wiper	chung	cần gạt
+wiper	nam	gạt nước
+cast	chung	chiếu cụm
+cast	chung	chiếu lên cụm
+cast	chung	chiếu màn
+ac_auto	chung	điều hoà
+ac_auto	nam	máy lạnh
+ac_auto	chung	điều hoà tự động
+ac_auto	nam	máy lạnh tự động
+defrost_rear	chung	sấy kính sau
+defrost_rear	nam	sấy kiếng sau
+anion	chung	ion âm
+anion	chung	khử mùi
+steer_heat	chung	sưởi vô lăng
+steer_heat	nam	vô lăng nóng
+pm25_clean_now	chung	@only
+pm25_clean_now	chung	lọc ngay
+pm25_clean_now	chung	lọc không khí ngay
+pm25_clean_now	chung	lọc bụi ngay
+pm25_clean_now	nam	lọc nhanh
+win_lf	chung	kính trước trái
+win_lf	chung	kính bên lái
+win_lf	nam	kiếng trước trái
+win_lf	chung	kính ghế lái
+win_rf	chung	kính trước phải
+win_rf	chung	kính bên phụ
+win_rf	nam	kiếng trước phải
+win_rf	chung	kính ghế phụ
+win_lr	chung	kính sau trái
+win_lr	nam	kiếng sau trái
+win_lr	chung	kính sau bên trái
+win_rr	chung	kính sau phải
+win_rr	nam	kiếng sau phải
+win_rr	chung	kính sau bên phải
+windows_all	chung	hết kính
+windows_all	chung	toàn bộ kính
+windows_all	nam	hết kiếng
+windows_all	chung	bốn kính
+windows_all	chung	cửa sổ
+sunshade	chung	rèm che nắng
+sunshade	chung	rèm nóc
+sunshade	nam	màn che nắng
+child_lock	chung	khoá trẻ em
+child_lock	nam	khoá con nít
+mirror_auto	chung	gập gương khi khoá
+mirror_auto	chung	tự gập gương
+mirror_fold_btn	chung	gập gương
+mirror_fold_btn	nam	xếp kiếng chiếu hậu
+mirror_fold_btn	chung	gập gương chiếu hậu
+seat_memory	chung	nhớ ghế lái
+seat_memory	chung	lưu vị trí ghế
+ambient_power	chung	đèn viền
+ambient_power	chung	đèn nội thất
+ambient_power	nam	đèn led nội thất
+ambient_color	chung	màu đèn viền
+ambient_color	chung	màu đèn nội thất
+ambient_brightness	chung	độ sáng viền
+ambient_brightness	chung	độ sáng đèn viền
+ambient_music	chung	đèn viền theo nhạc
+ambient_music	chung	đèn nhảy theo nhạc
+headlight_mode	chung	chế độ đèn pha
+headlight_mode	chung	kiểu đèn pha
+drive_mode	chung	chế độ lái
+drive_mode	nam	chế độ chạy
+drive_mode	chung	kiểu lái
+powertrain_mode	chung	@only
+powertrain_mode	chung	chế độ động cơ
+powertrain_mode	chung	chế độ năng lượng
+powertrain_mode	chung	xăng điện
+regen_level	chung	mức tái tạo
+regen_level	chung	mức hãm tái sinh
+target_soc_set	chung	mục tiêu sạc
+target_soc_set	chung	giới hạn phần trăm sạc
+charge_cap	chung	giới hạn sạc
+charge_cap	chung	chặn sạc đầy
+wireless_charge	chung	sạc không dây
+wireless_charge	nam	sạc điện thoại
+start_charging	chung	@only
+start_charging	chung	sạc ngay
+start_charging	chung	bắt đầu sạc
+start_charging	nam	sạc liền
+screen_rotation	chung	xoay màn hình
+screen_rotation	chung	hướng màn hình
+camera_view	chung	góc camera
+camera_view	chung	hướng camera
+cluster_music	chung	nhạc trên cụm
+cluster_music	chung	nhạc trên đồng hồ
+brightness_gear	chung	độ sáng màn
+brightness_gear	chung	độ sáng màn hình
+brightness_gear	nam	sáng màn
+hud_switch	chung	hud kính lái
+hud_switch	chung	hiển thị trên kính lái
+hud_brightness	chung	độ sáng hud
+# ═══ THÔNG TIN ĐỌC (TelemetryRegistry) — chỉ khai cái nhãn không phủ ════════════════════════════
+soc	chung	@only
+soc	chung	pin
+soc	chung	phần trăm pin
+soc	chung	mức pin
+soc	nam	pin còn nhiêu
+ev_range_km	chung	tầm hoạt động
+ev_range_km	chung	đi được bao xa
+ev_range_km	nam	còn chạy được bao nhiêu
+fuel_range_km	chung	tầm xăng
+fuel_range_km	chung	xăng còn chạy được bao xa
+fuel_pct	chung	xăng
+fuel_pct	chung	mức xăng
+odometer	chung	odo
+odometer	chung	số km đã đi
+speed	chung	tốc độ
+speed	chung	vận tốc
+speed	nam	đang chạy bao nhiêu
+ext_temp	chung	nhiệt độ ngoài trời
+ext_temp	chung	ngoài trời
+ext_temp	nam	ngoài trời nóng không
+cabin_temp	chung	nhiệt trong xe
+cabin_temp	chung	nhiệt độ trong cabin
+pm25_level	chung	mức bụi mịn
+pm25_level	chung	chất lượng không khí
+pm25_value	chung	@only
+pm25_value	chung	nồng độ bụi mịn
+pm25_value	chung	chỉ số bụi mịn
+soh_oem	chung	@only
+soh_oem	chung	sức khoẻ pin
+soh_oem	chung	độ chai pin
+volt_12v	chung	@only
+volt_12v	chung	ắc quy
+volt_12v	chung	điện áp ắc quy
+volt_12v	nam	bình
+volt_12v_level	chung	@only
+volt_12v_level	chung	mức ắc quy
+consumption_50km	chung	@only
+consumption_50km	chung	mức tiêu thụ
+consumption_50km	chung	tiêu thụ điện
+tyre_p_fl	chung	áp suất lốp trước trái
+tyre_p_fl	nam	hơi bánh trước trái
+tyre_p_fr	chung	áp suất lốp trước phải
+tyre_p_fr	nam	hơi bánh trước phải
+tyre_p_rl	chung	áp suất lốp sau trái
+tyre_p_rl	nam	hơi bánh sau trái
+tyre_p_rr	chung	áp suất lốp sau phải
+tyre_p_rr	nam	hơi bánh sau phải
+gear	chung	số
+gear	chung	cần số
+op_mode	chung	chế độ lái
+energy_mode	chung	chế độ năng lượng
+drift_mode	chung	chế độ trượt
+ac_on	chung	điều hoà
+ac_on	nam	máy lạnh
+ac_wind	chung	mức quạt gió
+ac_wind	chung	mức gió
+ac_cycle	chung	chế độ lấy gió
+mcu_status	chung	@only
+mcu_status	chung	trạng thái nguồn
+vin	chung	@only
+vin	chung	số vin
+vin	chung	số khung
+wiper_state	chung	gạt mưa
+wiper_state	nam	gạt nước
+sunroof_state	chung	cửa sổ trời
+sunroof_state	nam	nóc xe
+tailgate_status	chung	cốp sau
+tailgate_status	nam	cửa hậu
+mirror_fold	chung	gương chiếu hậu
+mirror_fold	nam	kiếng chiếu hậu
+light_high_beam	chung	đèn pha
+light_low_beam	chung	đèn cốt
+light_left_turn	chung	xi nhan trái
+light_right_turn	chung	xi nhan phải
+light_front_fog	chung	đèn sương mù trước
+light_rear_fog	chung	đèn sương mù sau
+power_level	chung	nguồn xe
+vehicle_type	chung	mẫu xe
+key_bluetooth	chung	chìa bluetooth
+engine_code	chung	mã máy
+oil_level	chung	mức dầu
+engine_coolant_level	chung	mức nước làm mát
+coolant_temp	chung	nhiệt nước làm mát
+batt_temp	chung	nhiệt độ pin
+charging_pct	chung	@only
+charging_pct	chung	phần trăm sạc
+charging_state	chung	trạng thái sạc
+is_charging	chung	đang sạc
+charge_power	chung	công suất sạc
+target_soc	chung	mục tiêu sạc
+trip_km	chung	quãng đường chuyến
+trip_hours	chung	thời gian chuyến
+trip_kwh	chung	điện tiêu thụ chuyến
+motor_power	chung	công suất mô tơ
+motor_front_rpm	chung	vòng tua mô tơ trước
+motor_rear_rpm	chung	vòng tua mô tơ sau
+motor_front_torque	chung	mô men mô tơ trước
+engine_rpm	chung	vòng tua máy xăng
+steering_deg	chung	góc vô lăng
+gps_heading	chung	hướng đi
+gps_elevation	chung	cao độ
+emergency_alarm	chung	cảnh báo khẩn
+inside_temp	chung	nhiệt cài đặt
+temp_unit	chung	đơn vị nhiệt
+anion_state	chung	ion âm
+pm25_online	chung	cảm biến bụi mịn
+ev_mileage_km	chung	km chạy điện
+batt_range_bodywork	chung	tầm pin
+cell_temp_high	chung	nhiệt cell cao
+cell_temp_low	chung	nhiệt cell thấp
+cell_temp_avg	chung	nhiệt cell trung bình
+cell_v_high	chung	áp cell cao
+cell_v_low	chung	áp cell thấp
+charger_work_state	chung	trạng thái bộ sạc
+charging_capacity_kwh	chung	đã sạc phiên
+charging_eta_hour	chung	@only
+charging_eta_hour	chung	còn mấy giờ nữa đầy
+charging_eta_hour	chung	còn bao lâu nữa đầy pin
+charging_eta_min	chung	@only
+charging_eta_min	chung	còn mấy phút nữa đầy
+charging_eta_min	chung	còn bao nhiêu phút nữa đầy
+accel_pct	chung	chân ga
+brake_pct	chung	chân phanh
+wheel_speed	chung	tốc độ bánh
+slope_deg	chung	độ dốc
+sunroof_pos	chung	vị trí cửa sổ trời
+sunshade_pct	chung	rèm che nắng
+tailgate_position	chung	vị trí cốp
+window_lf	chung	kính trước trái
+window_rf	chung	kính trước phải
+window_lr	chung	kính sau trái
+window_rr	chung	kính sau phải
+door_lf	chung	cửa trước trái
+door_rf	chung	cửa trước phải
+door_lr	chung	cửa sau trái
+door_rr	chung	cửa sau phải
+tyre_t_fl	chung	nhiệt lốp trước trái
+tyre_t_fr	chung	nhiệt lốp trước phải
+tyre_t_rl	chung	nhiệt lốp sau trái
+tyre_t_rr	chung	nhiệt lốp sau phải
+ambient_enabled	chung	đèn viền cabin
+ambient_front_color	chung	màu viền trước
+ambient_rear_color	chung	màu viền sau
+ambient_front_brightness	chung	độ sáng viền trước
+ambient_rear_brightness	chung	độ sáng viền sau
+headlight_feedback	chung	chế độ đèn pha
+light_side	chung	đèn hông
+light_drl	chung	đèn ban ngày
+gps_lat	chung	vĩ độ
+gps_lon	chung	kinh độ
+# ═══ GÓI LỆNH (ActionMacros) ═══════════════════════════════════════════════════════════════════
+mac_win_open_all	chung	mở hết kính
+mac_win_open_all	nam	mở hết kiếng
+mac_win_open_all	chung	hạ hết kính
+mac_win_close_all	chung	đóng hết kính
+mac_win_close_all	nam	đóng hết kiếng
+mac_win_close_all	chung	kéo hết kính lên
+mac_door_light	chung	@only
+mac_door_light	chung	mở cửa và đèn đọc
+mac_door_light	chung	mở cửa bật đèn đọc
+mac_leave	chung	rời xe
+mac_leave	chung	xuống xe
+mac_leave	nam	tui xuống xe đây
+# ═══ MÀN CỦA KACHI (LauncherActions) ═══════════════════════════════════════════════════════════
+launcher_apps	chung	ứng dụng
+launcher_apps	chung	danh sách ứng dụng
+launcher_apps	nam	mấy cái app
+launcher_settings	chung	cài đặt
+launcher_settings	chung	thiết lập
+launcher_settings	nam	phần cài đặt
+launcher_voice	chung	nói với xe
+launcher_voice	chung	màn giọng nói

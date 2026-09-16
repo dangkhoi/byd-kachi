@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -112,6 +111,8 @@ class AppDrawer(
         })
 
         val body = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        // Đệm ĐẦU thân cuộn (thay `setPadding` trên ScrollView — xem khối BUG (O) ở chỗ dựng ScrollView).
+        body.addView(View(context), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpi(context, Sp.XS)))
 
         if (dock) {
             // ĐÚNG tập ô mà màn Cài đặt bày cho thanh nút, cùng thứ tự — không chép danh sách, cả hai đường đi qua
@@ -164,6 +165,18 @@ class AppDrawer(
             apps.grid(body, all, cols = COLS_APP)
         }
 
+        // ⚠⚠ [BUG (O) UI-PICKER-OVERLAP — ĐÃ CHỨNG MINH 2026-09-16] Đệm của vùng cuộn phải là HAI VIEW ĐỆM TRONG THÂN,
+        // KHÔNG phải `setPadding` + `clipToPadding = false`. Owner chụp trên xe: một hàng ô giữa lưới bị "cắt ngang +
+        // dải đè"; máy ảo tái hiện đúng (dump `uiautomator`: bounds mọi ô ĐÚNG, nhưng ảnh cắt tại y = 834 = đáy khung
+        // 918 − đệm đáy 84px). Đọc `android-10.0.0_r47/core/java/android/view/View.java`:
+        //  • `getFadeHeight` (:20893-20897) = `mBottom - mTop - mPaddingBottom - mPaddingTop` ⇒ mép mờ ĐÁY nằm tại
+        //    `đáy khung − paddingBottom` (:21500-21501), không phải đáy khung;
+        //  • lớp mờ `saveUnclippedLayer(left, bottom - length, right, bottom)` (:21539) rồi xoá alpha bằng gradient
+        //    (:21592-21603).
+        // Với `clipToPadding = false` nội dung vẫn vẽ tràn xuống vùng đệm, nên dải mờ rơi vào GIỮA nội dung: hàng nào
+        // đi qua y ấy bị nhạt chữ rồi hụt một khúc — trên xe là hàng 3, máy ảo là hàng 2, tuỳ vị trí cuộn. Đưa đệm vào
+        // THÂN cuộn thì `mPaddingBottom = 0` ⇒ mép mờ về đúng đáy khung, và hàng cuối vẫn cuộn tới được nhờ view đệm.
+        body.addView(View(context), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpi(context, Sp.TOUCH) + dpi(context, Sp.S)))
         panel.addView(
             ScrollView(context).apply {
                 addView(body)
@@ -172,13 +185,9 @@ class AppDrawer(
                 // cách nền tảng có sẵn (không phải một lớp phủ tự vẽ phải tự nhớ đổi màu theo nền).
                 isVerticalFadingEdgeEnabled = true
                 setFadingEdgeLength(dpi(context, Sp.M))
-                // Đệm trên/dưới + KHÔNG cắt theo đệm ⇒ hàng đầu và hàng cuối không dính vào biên vùng cuộn.
-                clipToPadding = false
-                // ⚠⚠ [R-UI (e)] Đệm ĐÁY phải LỚN HƠN dải mờ, không thì hàng cuối KHÔNG BAO GIỜ đọc được: [ĐO] đệm
-                // `Sp.S` < dải mờ `Sp.XL` ⇒ cuộn hết cỡ mà nhãn hàng cuối vẫn bị cắt ngang chữ. `Sp.TOUCH + Sp.S` =
-                // cao nút áp + một nhịp — [ĐO] soát ảnh v2: bản `+ Sp.M` kèm dải mờ `Sp.XL` để lại **99px trống** ở
-                // đáy mà vẫn làm mờ nhãn hàng cuối, nên dải mờ hạ về `Sp.M` (quan hệ "đệm > dải mờ" giữ: 56 > 12).
-                setPadding(0, dpi(context, Sp.XS), 0, dpi(context, Sp.TOUCH) + dpi(context, Sp.S))
+                // ⚠ KHÔNG `setPadding`, KHÔNG `clipToPadding = false` ở đây — xem khối chú thích BUG (O) ngay trên.
+                // Đệm đầu = view đệm đầu thân (dưới), đệm đáy = view đệm cuối thân (trên). [R-UI (e)] "đệm đáy > dải
+                // mờ" vẫn giữ (Sp.TOUCH + Sp.S = 56 > Sp.M = 12) để hàng cuối ra khỏi vùng mờ khi cuộn hết cỡ.
             },
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f),
         )
@@ -435,17 +444,18 @@ class AppDrawer(
     private fun applyTileState(id: String) {
         val tile = widgetTiles[id] ?: return
         val on = id in selected
-        tile.background = if (on) GradientDrawable().apply {
-            cornerRadius = dpi(context, Sp.RADIUS_L).toFloat()
-            setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))   // tô nền accent mờ + viền accent
-        } else {
-            // ⚠ [R-UI (g)] Ô CHƯA CHỌN cũng có NỀN MỜ, trước đây là `null`.
-            //
-            // [ĐO] soát ảnh pha 2: không nền thì hai ô cạnh nhau "nền liền mạch" — mắt không tách được ranh giới ô,
-            // và cái chấm "chưa kiểm trên xe" ở góc icon không có mặt phẳng nào để thuộc về. Cùng nền `FIELD` mà lưới
-            // trong Cài đặt đã dùng từ pha 1 ⇒ hai bề mặt đọc như một.
-            KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
-        }
+        // ⚠ [R-UI (g)] Ô CHƯA CHỌN cũng có NỀN, trước đây là `null`.
+        //
+        // [ĐO] soát ảnh pha 2: không nền thì hai ô cạnh nhau "nền liền mạch" — mắt không tách được ranh giới ô, và
+        // cái chấm "chưa kiểm trên xe" ở góc icon không có mặt phẳng nào để thuộc về.
+        //
+        // VISUAL-REFRESH P1 · T3: hai trạng thái nay đi qua CÙNG [KachiTheme.surface], chỉ khác `tone` — trước đây
+        // nhánh BẬT dựng `GradientDrawable` tại chỗ còn nhánh TẮT gọi `card()`, tức hai cách vẽ cho hai trạng thái
+        // của **một** ô. Sắc lĩnh vực giúp mắt tìm vùng trong lưới trộn nhiều nhóm.
+        tile.background = KachiTheme.surface(
+            context, Sp.RADIUS_L, if (on) SurfaceTone.ACTIVE else SurfaceTone.NEUTRAL,
+            CapabilityCatalog.pick(id)?.domain,
+        )
         // [KIỂM TOÁN UX mục 5b] Đầy trần ⇒ LÀM MỜ những ô không còn chọn được, để trạng thái "không bấm được nữa"
         // nhìn ra được TRƯỚC khi bấm; toast chỉ là lớp thứ hai cho người đã bấm.
         tile.alpha = if (on || selected.size < cap) 1f else DIMMED

@@ -1,0 +1,63 @@
+# TÊN APP ĐỌC THEO ÂM NGƯỜI VIỆT — LLM soạn tay 2026-09-16.
+# Cột: app_key | region | style | spoken_name
+# Vì sao tệp này là trọng tâm: phản hồi tester bản 1.66 — *"Google Map không hiểu (Google thì được)"*. Tên
+# thương hiệu là chỗ mô hình `zipformer-vi` yếu nhất: nó được huấn luyện trên tiếng Việt, **không** có token
+# cho `maps`/`waze`/`spotify` (đo lại ở `VoiceSynonyms.APP_TARGETS` KDoc). Vậy nên mỗi app phải có cả:
+#   • cách viết NGUYÊN BẢN (người nói giọng Anh chuẩn) — style `tieng_anh_viet`
+#   • cách viết PHIÊN ÂM VIỆT (người nói giọng Việt) — style `ngan`/`than_mat`, đây là thứ model có cơ nghe ra
+#   • cách gọi THUẦN VIỆT nếu có (*"bản đồ"*, *"nhạc"*) — luôn là cách dễ nghe nhất
+# ⚠ Phiên âm ở đây là ĐỀ XUẤT để ĐO, không phải khẳng định người ta nói đúng như vậy. Kết quả đo ở
+#   `docs/diagnostics/voice-mishear-2026-09-16.md` mới nói cái nào dùng được.
+#
+gmaps	chung	tieng_anh_viet	Google Maps
+gmaps	chung	tieng_anh_viet	Google Map
+gmaps	chung	than_mat	gu gồ máp
+gmaps	chung	than_mat	gu gồ mép
+gmaps	chung	than_mat	gu gồ map
+gmaps	chung	ngan	gu gồ
+gmaps	chung	ngan	bản đồ Google
+gmaps	chung	ngan	bản đồ
+gmaps	nam	than_mat	cái bản đồ
+youtube	chung	tieng_anh_viet	YouTube
+youtube	chung	than_mat	du túp
+youtube	chung	than_mat	iu túp
+youtube	chung	than_mat	diu túp
+youtube	nam	than_mat	dút túp
+youtube	chung	ngan	du tu
+yt_music	chung	tieng_anh_viet	YouTube Music
+yt_music	chung	than_mat	du túp miu dích
+yt_music	chung	ngan	nhạc YouTube
+yt_music	chung	ngan	nhạc du túp
+zalo	chung	tieng_anh_viet	Zalo
+zalo	chung	than_mat	za lô
+zalo	nam	than_mat	gia lô
+zalo	bac	than_mat	da lô
+spotify	chung	tieng_anh_viet	Spotify
+spotify	chung	than_mat	spô ti phai
+spotify	chung	than_mat	sờ pô ti phai
+spotify	nam	than_mat	pô ti phai
+spotify	chung	than_mat	spo ti phy
+waze	chung	tieng_anh_viet	Waze
+waze	chung	than_mat	quây
+waze	chung	than_mat	quay
+waze	nam	than_mat	guây
+waze	bac	than_mat	guêy
+carplay	chung	tieng_anh_viet	CarPlay
+carplay	chung	than_mat	ca plây
+carplay	chung	than_mat	ca pờ lây
+carplay	nam	than_mat	cạc plây
+carplay	chung	ngan	ca lây
+androidauto	chung	tieng_anh_viet	Android Auto
+androidauto	chung	than_mat	an đroi ô tô
+androidauto	chung	than_mat	ăng đơ roi ô tô
+androidauto	nam	than_mat	an đờ roi ao tô
+androidauto	chung	ngan	ô tô an đroi
+vietmap	chung	tieng_anh_viet	Vietmap
+vietmap	chung	than_mat	việt máp
+vietmap	chung	than_mat	viet map
+vietmap	nam	than_mat	việt mát
+vietmap	chung	ngan	bản đồ Việt
+zing	chung	tieng_anh_viet	Zing MP3
+zing	chung	than_mat	zing em pê ba
+zing	nam	than_mat	ding mờ pê ba
+zing	chung	ngan	zing

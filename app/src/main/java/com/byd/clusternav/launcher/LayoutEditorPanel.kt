@@ -211,7 +211,7 @@ class LayoutEditorPanel(
         gravity = Gravity.CENTER
         setPadding(dp(Sp.L), dp(Sp.S), dp(Sp.L), dp(Sp.S))
         minHeight = dp(Sp.TOUCH)
-        background = KachiTheme.card(context, Sp.RADIUS_XL, KachiTheme.CARD2)
+        background = KachiTheme.surface(context, Sp.RADIUS_XL)
         setOnClickListener { onTap() }
     }
 

@@ -139,6 +139,17 @@ class DrawerGridSeamContractTest {
 
     // ══ (2) R-UI (g) — ô CHƯA CHỌN phải có nền ════════════════════════════════════════════════════════════
 
+    /**
+     * ⚠ **VISUAL-REFRESH P1 · T3 (2026-09-16) — bài này đổi CÁCH KIỂM, không đổi TÍNH CHẤT được kiểm.**
+     *
+     * Trước P1 nó khoá đúng một chuỗi: `KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)`. Tính chất thật
+     * mà R-UI (g) cần là *"ô chưa chọn CÓ nền, và nền ấy là **cùng một bề mặt** với lưới chọn trong Cài đặt"* —
+     * chuỗi kia chỉ là **cách hiện thời** để đạt nó. P1 đổi cả hai lưới sang [KachiTheme.surface], nên khoá chuỗi
+     * cũ sẽ đỏ đúng ở lượt làm cả hai lưới *khớp nhau hơn* — tức là bài canh chống lại chính mục đích của nó.
+     *
+     * Bản mới khoá thẳng tính chất: (a) không nhánh `else null`; (b) cả [AppDrawer] lẫn [TopStripPicker] đều dựng
+     * nền qua **cùng một hàm**. Nó chặt hơn bản cũ ở chỗ nó so **hai** tệp với nhau thay vì tin một chuỗi.
+     */
     @Test
     fun `o chua chon co nen mo de lo ranh gioi`() {
         val fn = SourceRoots.body(drawer, "private fun applyTileState(")
@@ -147,8 +158,19 @@ class DrawerGridSeamContractTest {
             "ô chưa chọn để nền `null` ⇒ hai ô cạnh nhau đọc thành một khối liền mạch (soát ảnh Pass 2)",
         )
         assertTrue(
-            fn.contains("KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)"),
-            "phải dùng CÙNG nền FIELD mà lưới trong Cài đặt đã dùng — hai bề mặt phải đọc như một",
+            fn.contains("KachiTheme.surface("),
+            "ô chưa chọn phải có nền dựng từ hệ thiết kế (KachiTheme.surface)",
+        )
+        val stripPaint = SourceRoots.body(code("TopStripPicker.kt"), "private fun paint(")
+        assertTrue(
+            stripPaint.contains("KachiTheme.surface("),
+            "lưới chọn chip của Cài đặt phải dùng CÙNG hàm dựng bề mặt với ngăn kéo — hai lưới bày cùng một tập ô " +
+                "thì chúng phải đọc như một; hai cách vẽ là cách chúng trôi khỏi nhau (đã lệch 3 lần: cột 4-vs-5, " +
+                "thụt 6px, cỡ chữ ngoài thang).",
+        )
+        assertTrue(
+            "SurfaceTone.ACTIVE" in fn && "SurfaceTone.ACTIVE" in stripPaint,
+            "trạng thái ĐANG CHỌN của cả hai lưới cũng phải đi qua cùng một `tone`, không ai dựng Drawable tại chỗ",
         )
     }
 
@@ -162,10 +184,12 @@ class DrawerGridSeamContractTest {
      */
     @Test
     fun `day vung cuon cao hon dai mo`() {
+        // BUG (O) 2026-09-16: đệm đáy nay là VIEW ĐỆM cuối thân cuộn (không còn `setPadding` trên ScrollView — xem
+        // `PickerCapNoticeContractTest.mep vung cuon mo dan khong cat chu`); quan hệ "đệm đáy > dải mờ" giữ nguyên.
         assertTrue(
-            Regex("""setPadding\(0, dpi\(context, Sp\.XS\), 0, dpi\(context, Sp\.TOUCH\) \+ dpi\(context, Sp\.S\)\)""")
+            Regex("""body\.addView\(View\(context\), LinearLayout\.LayoutParams\(LinearLayout\.LayoutParams\.MATCH_PARENT, dpi\(context, Sp\.TOUCH\) \+ dpi\(context, Sp\.S\)\)\)""")
                 .containsMatchIn(drawer),
-            "đệm đáy = cao nút áp (Sp.TOUCH) + một nhịp (Sp.S) ⇒ hàng cuối cuộn tới được đầy đủ",
+            "đệm đáy = view đệm cao nút áp (Sp.TOUCH) + một nhịp (Sp.S) ở CUỐI thân cuộn ⇒ hàng cuối cuộn tới được đầy đủ",
         )
         assertTrue(
             Regex("""setFadingEdgeLength\(dpi\(context, Sp\.M\)\)""").containsMatchIn(drawer),

@@ -329,7 +329,7 @@ Bảng chéo với catalog trước:
 
 ## 4. Việc tiếp
 
-1. **Catalog**: thêm cột **S6** vào `docs/catalog/status-by-id.json` (`sealion6: "✅"/"❌"`, evidence = doc này) và cột trong `docs/kachi-feature-catalog.html` — làm ngay sau khi commit (N) để không ghi đè. Luật: status chính vẫn theo **xe owner**; S6 là bằng chứng độc lập, nâng 🚗→"✅ S6" chứ không tự nâng 🟢.
+1. ✅ **Catalog** (2026-09-16): 160 id còn lại có trường `s6` (✅/❌) + `s6_evidence` trong `docs/catalog/status-by-id.json`; `scripts/docs/feature-catalog.py` in dòng **S6** dưới status; `docs/kachi-feature-catalog.html` sinh lại. Luật: status chính vẫn theo **xe owner**; S6 là bằng chứng độc lập, không tự nâng 🟢.
 2. 🚗 **Hỏi anh em**: bản Kachi (versionName), và xin thêm `usage-*.log` cùng lượt (thẻ: `Android/data/com.byd.launcher/files/kachi-logs/`) để phân loại 33 mục "chưa có giả thuyết" bằng rc thật.
 3. 🚗 **Chiếu cụm hỏng trên S6** — ưu tiên: đưa vào playbook chuyến xe (dump display/stack trên S6) hoặc nhờ anh em chụp màn `Cài đặt › Chiếu màn lên cụm` + `DiagActivity`.
 4. CapTest v2 (spec `kachi-captest-v2.html`) — chính là công cụ để lượt sau **tự ghi rc + giá trị trước/sau**, không cần chấm tay.

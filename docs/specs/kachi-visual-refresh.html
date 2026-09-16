@@ -98,6 +98,28 @@ các widget chạy trên nền xám nhìn hơi chán quá</i>”</p>
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 4 — 2026-09-16 · SOÁT + LƯỢT THIẾT KẾ ĐẬM TAY (vẫn 1.68 · 69 — chưa đăng APK nào)</b>:
+<span class="ev do">[ĐO]</span> P1 <b>không chạm</b> bề mặt lớn nhất màn hình — điểm ảnh giữa ô làm việc TRƯỚC và
+SAU P1 giống nhau <b>từng byte</b> (<code>(23,26,32)</code>), vì bảng rà 26 chỗ gọi đi từ chuỗi
+<code>KachiTheme.card(</code> còn ô làm việc dựng <code>GradientDrawable</code> thẳng tại chỗ. Sửa: tone thứ tư
+<code>SurfaceTone.WELL</code> + vai <code>slotTo</code> ⇒ <b>ba bậc</b> nền→khay→thẻ; đẩy mọi lực chất liệu lên
+(bước sáng 1.23× → <b>1.35×</b>, mép sáng 1.7× → <b>3.06×</b>, thẻ BẬT 1.28× → <b>1.59×</b>, sắc lĩnh vực
+<b>10.2 % / 7.8 %</b>), kèm nét đỉnh ĐẶC 1–2dp theo cỡ thẻ; <b>10 vai mực</b> hai bảng dịch một bậc để giữ sàn
+4.5:1. <b>R7</b> icon app vẽ lại bằng tham số — bản P1 đọc ra <b>bánh răng 10 răng</b> ở 36 px và cách chữa mà
+README cũ đề ra thì sai địa chỉ (xem §9 mục 12). Bốn bài canh mới khoá ba bậc · sức mép sáng · ngưỡng sắc lĩnh
+vực · <b>mọi</b> <code>SurfaceTone</code> phải có chỗ gọi. Chụp lại 10 ảnh <code>after/</code> + 4 ảnh icon
+(<code>before/</code> giữ nguyên). Test: core <b>1996</b>/0 · app <b>1007</b>/0.</li>
+<li><b>Pass 3 — 2026-09-16 · P1 XONG (1.68 · 69)</b>: <b>T1</b> 11 vai chất liệu ở cả hai bảng (Pass 4: <b>12</b>) + bảng tương phản
+<b>sinh bằng máy</b> (<code>contrast-table.md</code>) · <b>T2</b> <code>KachiTheme.surface()</code> 2–3 lớp (Pass 4: <b>3–4</b>), 0 blur /
+0 shadow / 0 elevation, 18 chỗ gọi · <b>T3</b> rà đủ 26 chỗ gọi <code>card()</code> → <b>16 chuyển · 10 giữ</b> (Pass 4 thêm <b>chỗ thứ 27</b>: ô làm việc, chưa bao giờ gọi <code>card()</code>) (bảng
+lý do ở §9) + <b>sắc lĩnh vực</b> <code>domainTint</code> 4.7–7 % (Pass 4: <b>7.8–10.2 %</b>) · <b>T4</b> phần đo gradient: [ĐO] AVD API 29
+<code>&lt;aapt:attr&gt;&lt;gradient&gt;</code> <b>render đúng</b> ⇒ §4.8 mức (1) khả thi · <b>R7</b> icon app =
+<b>hoa anh đào</b> (adaptive + silhouette 24dp) · <b>T11 phần P1</b> 20 ảnh máy ảo trước/sau + gfxinfo.
+Ba bài canh mới: <code>SurfaceMaterialContractTest</code> · <code>SurfaceContrastContractTest</code> ·
+<code>Wcag</code> (testFixtures). Hai bài cũ đổi <b>cách kiểm</b> (không đổi tính chất) — lý do ghi tại chỗ.
+Dọn sẵn cho P1b: hai vai <code>surf*OverArt</code> + tham số <code>overArtwork</code> (chưa ai bật).
+Test: core <b>1996</b>/0 · app <b>1002</b>/0 (trước: 1996/987; Pass 4: 1996/<b>1007</b>).</li>
+<li><b>Pass 2c — 2026-09-16</b>: Owner (ảnh xe có hình nền): thẻ xám trên ảnh thành “miếng vá” ⇒ §4.10 Hình nền (kính mờ tính một lần, scrim, màu theo ảnh) + task P1b; owner hỏi <i>“có cho người ta chọn màu không nhỉ?”</i> ⇒ <b>R8</b> chọn màu nhấn/tông thẻ/màu sơn theo hồ sơ, tự bảo vệ tương phản.</li>
 <li><b>Pass 2b — 2026-09-16</b>: Owner: <i>“icon app dùng hoa anh đào nhé”</i> ⇒ thêm <b>R7</b> (icon app = hoa anh đào, xếp P1).</li>
 <li><b>Pass 2 — 2026-09-16</b>: Owner duyệt toàn track (“<i>ò ok, làm hết đi nhé</i>”) và <b>bỏ luật cấm gradient</b>:
 “<i>cho gradient hay làm sao cho đẹp được thì làm, không cần rule cấm gì đâu, thoả mái sáng tạo, đứng vai user mà design</i>”
@@ -431,7 +453,31 @@ giữa). Silhouette 24dp cho thông báo = cùng bông hoa, một tông trắng 
 kiểm bằng mắt trên màn 27".</li>
 <li>AC7.3 — Không đổi tên gói / nhãn app; không ảnh hưởng HOME-alias (GUI-install) — bài canh hiện có vẫn xanh.</li>
 </ul>
-<p>Xếp vào <b>P1</b> (nhìn thấy ngay, độc lập với bộ icon chức năng).</p>
+<p>Xếp vào <b>P1</b> (nhìn thấy ngay, độc lập với bộ icon chức năng). — <b>✅ XONG 2026-09-16 (1.68)</b>:
+<code>launcher_fg.xml</code> 5 cánh khía + nhị vàng (chuyển sắc toả <code>#E86F9A → #F8C8D8</code> đặt đúng tâm hoa
+nên <b>bất biến khi xoay</b> ⇒ 5 cánh liền mạch, không có đường nối), <code>launcher_bg.xml</code> chuyển sắc chéo
+tím than → mận + quầng sáng toả, <code>ic_launcher.xml</code> 24dp cùng dáng hoa một tông <code>#FFFFFF</code>
+(nhị 5 chấm <b>biến mất</b> ở cỡ này, chỉ còn lòng hoa — chi tiết phải biến mất theo cỡ, không thu nhỏ).
+<span class="ev do">[ĐO]</span> khung mực 108: x 25.99–82.01 · y 26.50–81.29 ⇒ trong vùng an toàn 66/108 (21–87);
+khung mực 24: 2.15–21.85, cạnh lớn nhất 19.7 ⇒ qua <code>IconGeometryContractTest</code> (2–22 · ≥ 16).
+AC7.2 (nhận ra ở 36dp) kiểm bằng ảnh thu nhỏ, xem §9 mục 6.</p>
+
+<h4>R8 — Người dùng CHỌN MÀU (owner 2026-09-16: <i>“có cho người ta chọn màu không nhỉ?”</i>)</h4>
+<p>Hiện trạng [ĐO]: chỉ có chủ đề TỐI/SÁNG (<code>ThemeMode</code>); màu nhấn cố định trong <code>KachiPalette</code>.
+Vì mọi màu đã đi qua <b>một</b> bảng token nên chọn màu = đổi gốc token, không sửa từng màn.</p>
+<ul>
+<li>AC8.1 — <b>Màu nhấn</b>: 8 ô màu chọn nhanh (xanh Kachi mặc định · tím · lục ngọc · hổ phách · hồng anh đào · đỏ san hô ·
+bạc · trắng ấm) + ô <b>“theo ảnh nền”</b> (lấy màu trội của ảnh, tính một lần lúc chọn ảnh — chung hạ tầng §4.10). Chạm một
+cái ⇒ đổi mọi bề mặt ACTIVE, chip, viền chọn, gradient nút.</li>
+<li>AC8.2 — <b>Tông thẻ</b>: trung tính · ấm · lạnh (3 lựa chọn) — dịch nhẹ <code>surfFrom/To</code> theo nhiệt màu.</li>
+<li>AC8.3 — <b>Màu sơn xe</b> cho hình xe tổng hợp (P3, §4.8 bảng 5 màu) — riêng khỏi màu nhấn.</li>
+<li>AC8.4 — Lưu <b>theo hồ sơ tài xế</b> (<code>kachi-profiles-are-everything</code>): đổi hồ sơ ⇒ đổi màu; cấu hình cũ
+không có trường ⇒ mặc định (không hỏi).</li>
+<li>AC8.5 — <b>Tự bảo vệ tương phản</b>: với mỗi lựa chọn, test sinh bảng tương phản mực/nền; màu nào kéo chữ xuống
+&lt; 4,5:1 thì app tự đậm hoá nền hoặc đổi mực (không cấm chọn, không để người dùng tự làm xấu lúc lái đêm).</li>
+<li>AC8.6 — <b>Không</b> bánh xe màu tự do, không mã hex, không chỉnh từng thành phần (khó dùng trên xe).</li>
+</ul>
+<p>Xếp vào <b>P1b · Hình nền + màu</b> (sau P1) vì chung hạ tầng “màu theo ảnh nền”.</p>
 
 <h2>4. Design</h2>
 <p class="muted">§Design + §Tasks hoàn thiện <b>song song</b> với code. Mọi bản vẽ dưới đây là HTML/SVG nội tuyến
@@ -864,29 +910,114 @@ không đủ chỗ (RAM trống 56–94 MB), nên không làm.</p>
 <span class="ev suy">[SUY]</span> P1 là thứ owner nhìn thấy <b>ngay</b> trên mọi màn hình với công ít nhất; P2 phải
 đợi cổng C1; P3 tốn nhất và phụ thuộc pipeline mà P2 đã dựng xong.</p>
 
+<h3>4.10 Hình nền — thẻ phải là CỬA SỔ, không phải MIẾNG VÁ (P1b)</h3>
+<p>Owner 2026-09-16, kèm <b>ảnh chụp trên xe</b> đang đặt hình nền: <i>“cái màu đen, xám của mình, khi nhét thêm hình
+nền vào, nó lại không đẹp nữa”</i>. <span class="ev do">[ĐO]</span> nguyên nhân nằm ở <b>cách ghép lớp</b>, không ở mã
+màu: thẻ hiện là một tô <b>ĐỤC</b> đặt <i>đè lên</i> ảnh ⇒ mắt đọc ra một hình chữ nhật xám dán lên bức ảnh
+(<i>miếng vá</i>). Bề mặt “kính” thì ngược lại: nó là <b>một ô cửa nhìn xuống chính bức ảnh đó</b>, chỉ mờ đi và tối đi.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 640 210" width="100%" role="img" aria-label="Ghép lớp: miếng vá và cửa sổ kính">
+  <defs>
+    <linearGradient id="vrArt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d8b98a"/><stop offset="0.55" stop-color="#b9905c"/><stop offset="1" stop-color="#6d5a45"/>
+    </linearGradient>
+    <linearGradient id="vrGlassCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d232e" stop-opacity="0.80"/><stop offset="1" stop-color="#12161e" stop-opacity="0.80"/>
+    </linearGradient>
+  </defs>
+  <text x="8" y="16" font-size="12" fill="currentColor" opacity="0.75">TRƯỚC — thẻ đục đè lên ảnh (miếng vá)</text>
+  <rect x="8" y="26" width="290" height="150" rx="10" fill="url(#vrArt)"/>
+  <rect x="34" y="52" width="110" height="98" rx="10" fill="#141922"/>
+  <rect x="162" y="52" width="110" height="98" rx="10" fill="#141922"/>
+  <text x="52" y="106" font-size="11" fill="#eaf0f8">Pin 78%</text>
+  <text x="180" y="106" font-size="11" fill="#eaf0f8">Tầm 312</text>
+
+  <text x="342" y="16" font-size="12" fill="currentColor" opacity="0.75">SAU (P1b) — cửa sổ kính nhìn xuống ảnh đã làm mờ</text>
+  <rect x="342" y="26" width="290" height="150" rx="10" fill="url(#vrArt)"/>
+  <rect x="342" y="26" width="290" height="150" rx="10" fill="#0a0d13" opacity="0.42"/>
+  <rect x="368" y="52" width="110" height="98" rx="10" fill="url(#vrGlassCard)"/>
+  <rect x="368" y="52" width="110" height="98" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.18"/>
+  <rect x="496" y="52" width="110" height="98" rx="10" fill="url(#vrGlassCard)"/>
+  <rect x="496" y="52" width="110" height="98" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.18"/>
+  <text x="386" y="106" font-size="11" fill="#eaf0f8">Pin 78%</text>
+  <text x="514" y="106" font-size="11" fill="#eaf0f8">Tầm 312</text>
+  <text x="8" y="198" font-size="11" fill="currentColor" opacity="0.6">Cùng một bức ảnh · cùng một bảng màu · khác nhau ở CHỖ GHÉP LỚP, không ở mã màu.</text>
+</svg>
+</div>
+
+<p><b>Sáu quyết định thiết kế</b> (ghi trước, làm ở P1b — <b>không</b> làm trong P1):</p>
+<ol>
+<li><b>Ảnh mờ tính MỘT LẦN, lúc chọn ảnh.</b> Thu về <b>¼ độ phân giải</b>, làm mờ, lưu bitmap vào
+<code>files/</code> cạnh ảnh gốc. Lúc chạy chỉ còn việc <b>vẽ một bitmap</b> ⇒ <b>0 blur thời gian thực</b>, giữ
+nguyên AC5.2 (GPU TRINKET). Ảnh đổi ⇒ tính lại; đây là chỗ duy nhất được làm mờ.</li>
+<li><b>Thẻ = ô CẮT từ bitmap đó</b> + lớp che (scrim) <b>35–50 %</b> + hairline. Không phải một tô xám mới.</li>
+<li><b>Hai dải che ở đỉnh và đáy màn</b> (gradient xuống trong suốt) để thanh trạng thái trên và thanh nút xe luôn
+có nền đọc được, kể cả khi ảnh có vùng sáng trắng đúng chỗ đó.</li>
+<li><b>Lấy 2–3 màu trội của ảnh, MỘT LẦN</b> (cùng lượt tính ở mục 1) để nhuộm rất nhẹ bề mặt và màu nhấn ⇒ giao
+diện “ăn” theo ảnh thay vì nằm cạnh ảnh. Dùng chung hạ tầng với <b>R8</b> (ô <i>“theo ảnh nền”</i>).</li>
+<li><b>Chọn MỰC theo độ chói ĐO ĐƯỢC của vùng ảnh dưới từng thẻ</b>, không theo chủ đề. Đây là mục
+<b>bắt buộc</b>, không phải tuỳ chọn — xem phép đo ngay dưới.</li>
+<li><b>Không blur, không shadow, không elevation lúc chạy.</b> Mọi thứ trên đây là bitmap + gradient + tô phẳng.</li>
+</ol>
+
+<p class="warn"><b>Phép đo đã có sẵn, và nó nói P1b KHÔNG được bỏ mục (5)</b> <span class="ev do">[ĐO]</span>
+<code>SurfaceContrastContractTest</code> (2026-09-16) đo hai vai mới <code>surfFromOverArt</code>/<code>surfToOverArt</code>
+(alpha <b>80 %</b>) trên <b>hai cực</b> — ảnh trắng tinh và ảnh đen tuyền, vì ảnh là do người dùng chọn nên launcher
+không biết trước cái gì nằm dưới thẻ:</p>
+<table>
+<tr><th>Bảng</th><th>Nền ảnh</th><th><code>INK</code></th><th><code>MUT</code></th><th>Kết</th></tr>
+<tr><td>TỐI</td><td>trắng tinh</td><td>7.27</td><td><b>3.15</b></td><td>chữ chính đạt · nhãn phụ <b>KHÔNG</b></td></tr>
+<tr><td>TỐI</td><td>đen tuyền</td><td>14.92</td><td>6.46</td><td>đạt</td></tr>
+<tr><td>SÁNG</td><td>trắng tinh</td><td>18.17</td><td>6.27</td><td>đạt</td></tr>
+<tr><td>SÁNG</td><td>đen tuyền</td><td>11.31</td><td><b>3.91</b></td><td>chữ chính đạt · nhãn phụ <b>KHÔNG</b></td></tr>
+</table>
+<p>Nghĩa là: <b>chỉ đổi alpha là không đủ</b>. Nâng alpha cho <code>MUT</code> đạt 4.5 thì thẻ đục lại — quay về đúng
+cái “miếng vá” owner chê. Lời giải nằm ở <b>lớp che + chọn mực theo độ chói đo được</b>, tức mục (2) và (5) ở trên.
+Bảng này sinh bằng máy vào <code>docs/diagnostics/visual-refresh-2026-09-16/contrast-table.md</code>.</p>
+
+<p><b>Phần P1 đã dọn sẵn</b> (làm rồi, xem §9): hai vai màu bán trong suốt; tham số
+<code>surface(…, overArtwork = false)</code> — <b>chưa chỗ nào bật</b>, nên P1 không đổi một pixel nào của hôm nay;
+và ba lớp của <code>surface()</code> giữ <b>riêng biệt</b> trong <code>LayerDrawable</code>, đánh chỉ số theo
+<code>numberOfLayers - 1</code> chứ không theo số cứng ⇒ P1b chỉ phải <b>chèn một lớp bitmap ở chỉ số 0</b>.</p>
+
 <h2>5. Tasks (DAG)</h2>
 <p class="muted">🚗 = cần xe thật. Ước lượng là <b>ca làm</b> (một ca ≈ nửa ngày), <span class="ev doan">[ĐOÁN]</span>
 — chưa có mốc thời gian thật cho việc vẽ lại icon hàng loạt trong repo này.</p>
 <table>
 <tr><th>#</th><th>Phụ thuộc</th><th>Task · Definition of Done</th><th>Module · File</th><th>Ước</th></tr>
 
-<tr><td><b>T1</b></td><td>—</td>
-<td><b>Token bề mặt.</b> Thêm 6 token §4.1 vào <b>cả hai</b> bảng màu. DoD: <code>ThemePaletteContractTest</code> xanh ·
+<tr><td><b>T1 ✅</b></td><td>—</td>
+<td><b>Token bề mặt. — XONG 2026-09-16 (1.68).</b> Thành <b>11</b> vai chứ không 6: thêm <code>surfLine</code> (bảng SÁNG cần viền THẬT) và hai vai <code>surf*OverArt</code> cho P1b (§4.10). Bảng tương phản sinh bằng máy ra <code>docs/diagnostics/visual-refresh-2026-09-16/contrast-table.md</code>. Bản gốc: Thêm 6 token §4.1 vào <b>cả hai</b> bảng màu. DoD: <code>ThemePaletteContractTest</code> xanh ·
 bảng tương phản §6.4 sinh bằng máy cho token mới, mọi cặp đạt sàn.</td>
 <td><code>app/…/KachiPalette.kt</code>, <code>KachiTheme.kt</code></td><td>1</td></tr>
 
-<tr><td><b>T2</b></td><td>T1</td>
-<td><b><code>KachiTheme.surface()</code></b> theo §4.5 (LayerDrawable 2 lớp, dựng một lần). DoD: có <b>≥ 1 chỗ gọi</b>
+<tr><td><b>T2 ✅</b></td><td>T1</td>
+<td><b>XONG 2026-09-16 (1.68)</b> — 2–3 lớp (lớp giữa = sắc lĩnh vực), <b>18</b> chỗ gọi, <code>SurfaceMaterialContractTest</code> + <code>SurfaceContrastContractTest</code> xanh. Bản gốc: <b><code>KachiTheme.surface()</code></b> theo §4.5 (LayerDrawable 2 lớp, dựng một lần). DoD: có <b>≥ 1 chỗ gọi</b>
 (<code>grep -rn "KachiTheme.surface(" app/src/main/java/</code> — CLAUDE.md §8) · bài canh cấm blur/shadow/elevation xanh.</td>
 <td><code>app/…/KachiTheme.kt</code>(+Test)</td><td>1</td></tr>
 
-<tr><td><b>T3</b></td><td>T2</td>
-<td><b>Rà 26 chỗ gọi <code>card()</code></b>, phân loại <i>thẻ nội dung</i> (→ <code>surface()</code>) vs <i>ô lõm</i>
+<tr><td><b>T3 ✅</b></td><td>T2</td>
+<td><b>XONG 2026-09-16 (1.68)</b> — 16 chuyển · 10 giữ, bảng đầy đủ ở §9. Bản gốc: <b>Rà 26 chỗ gọi <code>card()</code></b>, phân loại <i>thẻ nội dung</i> (→ <code>surface()</code>) vs <i>ô lõm</i>
 (giữ). DoD: danh sách chuyển/không chuyển + lý do ghi vào §9 · ảnh chụp máy ảo trước/sau cho 3 bố cục màn chính.</td>
 <td><code>app/…/WidgetViews.kt</code>, <code>WorkspaceViewCards.kt</code>, <code>GroupTileViews.kt</code>, <code>ReadTile.kt</code>…</td><td>2</td></tr>
 
-<tr><td><b>T4</b></td><td>—</td>
-<td><b>Dựng lại đường ống</b> (cổng C2): <code>scripts/design/gen-icons.py</code> + <code>design/</code>; sinh lại
+<tr><td><b>T3b</b> 🔲</td><td>T3</td>
+<td><b>P1b · Hình nền</b> (§4.10) — thẻ thành CỬA SỔ nhìn xuống ảnh, không còn là miếng vá. Sáu việc: (1) ảnh mờ
+tính <b>một lần</b> lúc chọn ảnh (¼ độ phân giải, lưu <code>files/</code>); (2) thẻ = ô cắt từ bitmap đó + scrim
+35–50 % + hairline, bật qua <code>surface(…, overArtwork = true)</code>; (3) hai dải che đỉnh/đáy cho thanh trên và
+thanh nút; (4) lấy 2–3 màu trội của ảnh (cùng lượt tính ở (1)) để nhuộm nhẹ bề mặt — chung hạ tầng với <b>R8</b>;
+(5) <b>chọn mực theo độ chói ĐO ĐƯỢC của vùng ảnh dưới từng thẻ</b> — bắt buộc, vì [ĐO] ở alpha 80 % thì
+<code>MUT</code> chỉ còn <b>3.15:1</b> (bảng tối, ảnh sáng) và <b>3.91:1</b> (bảng sáng, ảnh tối); (6) <b>0</b> blur
+lúc chạy.<br>
+<b>DoD</b>: ảnh chụp máy ảo với <b>đúng kiểu ảnh owner đang dùng</b> (ảnh sáng, tông cát) cho 3 bố cục × {tối, sáng} ·
+bảng tương phản sinh bằng máy trên <b>3 ảnh nền</b> (sáng-cát · tối-đêm · nhiều tương phản), mọi cặp chữ/nền đạt sàn ·
+<code>SurfaceContrastContractTest</code> mở rộng sang nhánh <code>overArtwork</code> · gfxinfo 90th không tăng quá
++1.5 ms (bitmap thay blur) · <b>0</b> hit blur/shadow/elevation.</td>
+<td><code>app/…/KachiTheme.kt</code>, <code>WallView.kt</code>, <code>WallpaperStore</code>, <code>KachiPalette.kt</code></td><td>3</td></tr>
+
+<tr><td><b>T4 ⚠ một nửa</b></td><td>—</td>
+<td><b>Phép đo gradient: XONG 2026-09-16</b> — [ĐO] AVD API 29, <code>&lt;aapt:attr&gt;&lt;gradient&gt;</code> <b>render đúng chuyển sắc</b> (bằng chứng: chính icon app hoa anh đào, ảnh <code>gradient-probe.png</code>) ⇒ mức tả thực (1) khả thi, §4.8 nâng từ [ĐOÁN] lên [ĐO]. <b>Sai lệch có chủ ý</b>: không dựng <code>ic_probe_gradient.xml</code> rời — xem §9 mục 5. Phần <b>đường ống sinh icon</b> vẫn 🔲 (thuộc P2). Bản gốc: <b>Dựng lại đường ống</b> (cổng C2): <code>scripts/design/gen-icons.py</code> + <code>design/</code>; sinh lại
 <b>bộ icon xe hiện tại</b> trước đã. DoD: sinh lại ra <b>đúng byte</b> các tệp <code>ic_car_*.xml</code> đang có ⇒
 chứng minh script đúng trước khi dùng nó để đổi hình.<br>
 <b>+ phép đo chốt gradient</b> (§4.8): dựng <code>ic_probe_gradient.xml</code> có
@@ -968,6 +1099,17 @@ chụp màn từ xe (§11 — app tự chụp, không bắt owner gõ adb) + own
 
 <h2>6. Verification</h2>
 
+<div class="card">
+<b>📁 Bằng chứng P1 (2026-09-16 · 1.68 · 69)</b> —
+<a href="../diagnostics/visual-refresh-2026-09-16/README.md"><code>docs/diagnostics/visual-refresh-2026-09-16/</code></a>:
+<b>20 ảnh</b> <code>before/</code> + <code>after/</code> (§6.1) ·
+<a href="../diagnostics/visual-refresh-2026-09-16/contrast-table.md"><code>contrast-table.md</code></a> <b>sinh bằng máy</b> (§6.4) ·
+<code>gfxinfo-before.txt</code> / <code>gfxinfo-after.txt</code> + 3 lượt lặp (§6.2) ·
+<code>gradient-probe.png</code> · <code>app-icon-36dp.png</code> (T4 · AC7.2).
+<b>Hai mục không đo được ở P1</b>, ghi ra thay vì báo số sai: <b>Δ APK</b> (§6.3) và <b>ngưỡng gfxinfo ±1.5 ms</b>
+(§6.2) — lý do ngay tại hai mục đó.
+</div>
+
 <h3>6.1 V-shot — ma trận ảnh chụp máy ảo</h3>
 <p>Chụp <b>trước</b> và <b>sau</b> mỗi pha, cùng một AVD (<code>clusternav10</code>), cùng một hồ sơ, cùng dữ liệu giả:</p>
 <table>
@@ -993,11 +1135,25 @@ adb shell dumpsys gfxinfo &lt;pkg&gt;
 #      Number of Missed Vsync / Slow UI thread / Slow draw commands</pre>
 <p><b>Ngưỡng nhận</b>: 90th percentile <b>không tăng quá +1.5 ms</b> so với 1.67. Tăng hơn ⇒ tìm nguyên nhân trước
 khi ship, không nới ngưỡng.</p>
+<p class="warn"><b>[ĐO] P1 2026-09-16 — máy ảo KHÔNG phân giải được ngưỡng này, và đó là kết quả chứ không phải chỗ
+bỏ dở.</b> Kịch bản cuộn cố định cho ≥ 776 khung mỗi lượt (đủ theo §6.2), nhưng <b>ba lượt của CÙNG một bản</b>
+(1.68) cho 90th = <b>31 / 48 / 57 ms</b> và janky 20.35–40.72 %. Biên độ nhiễu <b>26 ms</b>, trong khi hiệu số
+trước/sau chỉ <b>44 → 48 ms</b> ⇒ nhiễu lớn gấp ~6 lần tín hiệu. Đây là <b>mở rộng</b> của điều
+<code>perf-profile-2026-09-16.md:212-213</code> đã ghi: cho đủ khung thì hết nhiễu vì <i>ít khung</i>, nhưng vẫn còn
+nhiễu vì <i>máy ảo</i>. Ngưỡng ±1.5 ms chỉ kết luận được ở <b>T14 🚗</b>. Cái đo được off-car là <b>cơ chế</b>:
+0 blur / 0 shadow layer / 0 elevation (bài canh quét cả tầng <code>launcher/</code>) và Drawable dựng <b>một lần lúc
+dựng View</b>, không dựng trong <code>onDraw</code>/nhịp 1 Hz.</p>
 
 <h3>6.3 V-size — Δ kích thước APK</h3>
 <pre>ls -l app/build/outputs/apk/release/*.apk        # trước và sau
 unzip -l &lt;apk&gt; | grep "res/drawable" | awk '{s+=$1} END {print s}'   # riêng phần drawable</pre>
 <p>Ngưỡng: <b>≤ +350 KB</b> tổng (AC5.5). Ghi cả con số <b>riêng phần drawable</b> để biết icon hay thứ khác làm phình.</p>
+<p class="warn"><b>[CHƯA ĐO ĐƯỢC] P1 2026-09-16.</b> Artefact <code>app-vehicleTest.apk</code> có sẵn lúc bắt đầu
+phiên (<b>40 978 459 B</b>) được dựng <b>TRƯỚC</b> lượt ADAS-PURGE, nên hiệu số tới 1.68 (<b>39 837 982 B</b>,
+<b>−1 140 477 B</b>) đo chủ yếu <b>cái purge</b>, không phải P1. P1 tự nó đổi <b>3 tệp vector</b>
+(<code>launcher_fg</code> · <code>launcher_bg</code> · <code>ic_launcher</code>) + ~200 dòng Kotlin ⇒ xa dưới trần,
+nhưng con số chính xác phải đo lại ở <b>lượt build sạch sau khi purge đã commit</b>. Báo một con số không truy được
+về nguyên nhân thì tệ hơn là nói chưa đo được.</p>
 
 <h3>6.4 V-contrast — bảng đo tương phản (sinh bằng máy)</h3>
 <p>Script tính tỉ số WCAG từ <code>KachiPalette</code>, xuất bảng này; <b>không chép tay</b> (AC6.6). Khuôn bảng:</p>
@@ -1137,21 +1293,277 @@ code THỰC TẾ, kể cả chỗ lệch. Nếu có quyết định kiến trúc
 và link vào đây.</p>
 <p class="muted">Mỗi mục nêu: <b>ngày</b> · loại (quyết định / trade-off / sai lệch-spec / bug / spec-không-work) ·
 nội dung · <code>file:line</code> hoặc commit.</p>
-<p class="muted"><i>(Trống — chưa implement. Điền dần trong lúc code; cấm “để sau”.)</i></p>
-<p><b>Ba mục đã biết chắc sẽ phải ghi khi bắt đầu</b>:</p>
+<h3>P1 — 2026-09-16 (1.68 · 69)</h3>
+
+<h4>1 · T1 — sáu mã hex đề xuất ở §4.1 sau khi qua bảng đo: <b>hai giữ, bốn đổi, năm vai thêm mới</b></h4>
+<p>§4.1 gắn nhãn <span class="ev doan">[ĐOÁN]</span> cho sáu mã và dặn <i>“không được coi là đã chốt”</i>. Kết quả đo:</p>
+<table>
+<tr><th>Vai</th><th>§4.1 đề xuất</th><th>Chốt (TỐI)</th><th>Chốt (SÁNG)</th><th>Vì sao đổi</th></tr>
+<tr><td><code>surfFrom</code></td><td><code>#1d232e</code></td><td><code>#1d232e</code> ✅ giữ</td><td><code>#ffffff</code></td><td>đo được 1.23× so với nền — đủ để thẻ tự lồi.</td></tr>
+<tr><td><code>surfTo</code></td><td><code>#12161e</code></td><td><code>#12161e</code> ✅ giữ</td><td><code>#eff3f9</code></td><td>bản sáng đầu thử <code>#e7ecf4</code> ⇒ <span class="ev do">[ĐO]</span> 6 vai mực tụt xuống 4.38–4.47 (dưới sàn) ⇒ nâng sáng lên.</td></tr>
+<tr><td><code>surfEdge</code></td><td><code>#24ffffff</code></td><td><code>#2effffff</code></td><td><code>#ccffffff</code></td><td>14 % quá nhạt để đọc ra “mặt vát”. Bản sáng gần như vô hình (1.00:1) và <b>đó là đúng</b> — đỉnh thẻ trắng đã là chỗ sáng nhất.</td></tr>
+<tr><td><code>surfOnFrom</code></td><td><code>#5c4c7dff</code></td><td><code>#663f6ae0</code></td><td><code>#4c2f5ae0</code></td><td>đổi sang họ <code>gradFrom</code> (tối hơn <code>accent</code> một bậc) để chữ <code>INK</code> đạt 10.76 thay vì bám sát sàn.</td></tr>
+<tr><td><code>surfOnTo</code></td><td><code>#287b5cff</code></td><td><code>#3d6b4ce6</code></td><td><code>#335b3ee0</code></td><td>16 % cho bước sáng BẬT↔thường chỉ ~1.09× — dưới ngưỡng “nhìn ra được”. 24 % ⇒ 1.28×.</td></tr>
+<tr><td><code>partFill/partLine</code></td><td>2 vai</td><td colspan="2"><b>chưa làm</b></td><td>thuộc <b>P3</b> (hình xe), không thuộc P1 — thêm bây giờ là thêm vai chết.</td></tr>
+<tr><td colspan="5"><b>Năm vai §4.1 KHÔNG có mà thực tế bắt buộc phải có</b>:</td></tr>
+<tr><td><code>surfLine</code></td><td>—</td><td><code>#2effffff</code></td><td><code>#788698</code></td><td>§4.5 định dùng lại <code>LINE</code>. Không được: <span class="ev do">[ĐO]</span> bảng SÁNG bước sáng thẻ↔nền chỉ <b>1.13×</b>, mắt không đọc ra ⇒ bảng sáng <b>bắt buộc</b> viền thật (3.28 trên nền / 3.71 trên thẻ), bảng tối thì không (bước sáng gánh).</td></tr>
+<tr><td><code>surfOnEdge</code></td><td>—</td><td><code>#8c4c7dff</code></td><td><code>#cce8eeff</code></td><td>bản đầu đặt bản sáng <code>#cc2f5ae0</code> theo phản xạ “bật thì mép cũng nhấn” ⇒ <b>bài canh đỏ</b>: nó làm đỉnh thẻ TỐI đi = một vệt bóng ngược chiều sáng.</td></tr>
+<tr><td><code>fieldSunken</code></td><td>—</td><td><code>#0c1016</code></td><td><code>#e6eaf2</code></td><td>ô lõm phải khác ô lồi ở <b>cơ chế</b> (tô đặc, không gradient, không mép sáng), không chỉ ở độ sáng.</td></tr>
+<tr><td><code>domainTints</code></td><td>—</td><td>8 mã, alpha <code>0x12</code></td><td>8 mã, alpha <code>0x0c</code></td><td>xem mục 3.</td></tr>
+<tr><td><code>surf*OverArt</code></td><td>—</td><td>alpha <code>0xcc</code></td><td>alpha <code>0xcc</code></td><td>dọn chỗ cho P1b (§4.10) — <b>chưa ai bật</b>.</td></tr>
+</table>
+
+<h4>2 · T3 — <b>26</b> chỗ gọi <code>KachiTheme.card()</code>: 16 chuyển, 10 giữ</h4>
+<p>Tiêu chí <b>một câu</b>: bề mặt đó có phải <i>một vật thể nổi lên khỏi nền, do launcher tự vẽ, và không mang màu
+mang nghĩa</i> không? Có ⇒ <code>surface()</code>. Không ⇒ giữ <code>card()</code>.</p>
+<table>
+<tr><th>#</th><th><code>file:line</code></th><th>Bề mặt</th><th>Quyết định</th><th>Vì sao</th></tr>
+<tr><td>1</td><td><code>SettingsRows.kt:121</code></td><td>hàng gạt bật/tắt</td><td><b>→ surface()</b></td><td>thẻ nội dung của Cài đặt</td></tr>
+<tr><td>2</td><td><code>SettingsRows.kt:150</code></td><td>chip TẮT (<code>chipRow</code>)</td><td>giữ <code>card()</code></td><td><b>đoạn phân đoạn</b> — chip tắt là cái nền LÕM mà chip bật nổi lên trên; cho nó lồi thì hai trạng thái cùng nổi</td></tr>
+<tr><td>3</td><td><code>SettingsRows.kt:198</code></td><td>hàng quyền</td><td><b>→ surface()</b></td><td>thẻ nội dung</td></tr>
+<tr><td>4</td><td><code>SettingsRows.kt:226</code></td><td>chip đơn vị TẮT</td><td>giữ <code>card()</code></td><td>như #2</td></tr>
+<tr><td>5</td><td><code>SettingsRows.kt:276</code></td><td><code>paintButton</code></td><td><b>→ surface()</b></td><td>nút = vật thể bấm được, phải nổi</td></tr>
+<tr><td>6</td><td><code>SettingsRows.kt:432</code></td><td><code>listRow</code></td><td><b>→ surface()</b></td><td>thẻ nội dung</td></tr>
+<tr><td>7</td><td><code>SettingsRows.kt:468</code></td><td><code>embed</code></td><td><b>→ surface()</b></td><td>khung chứa một view con = thẻ</td></tr>
+<tr><td>8</td><td><code>TopStripPicker.kt:216</code></td><td>ô chọn chip</td><td><b>→ surface() + ACTIVE + domain</b></td><td>trước đây nhánh BẬT dựng <code>GradientDrawable</code> tại chỗ, nhánh TẮT gọi <code>card()</code> — <b>hai cách vẽ cho hai trạng thái của một ô</b>. Nay một hàm, hai <code>tone</code>.</td></tr>
+<tr><td>9</td><td><code>GroupTiles.kt:71</code></td><td>ô nhóm nén</td><td><b>→ surfaceOf()</b></td><td>rẽ theo <code>GroupTone</code>: NEUTRAL/ACTIVE lấy bề mặt mới, WARN/ALERT giữ <code>card()</code> (xem #15)</td></tr>
+<tr><td>10</td><td><code>VoiceTextConsole.kt:72</code></td><td>ô nhập câu lệnh</td><td><b>→ surface(SUNKEN)</b></td><td>ô nhập là chỗ chữ <b>rơi vào</b>, không phải chỗ nổi lên</td></tr>
+<tr><td>11</td><td><code>ControlTileFactory.kt:316</code></td><td><code>readTile</code></td><td><b>→ surface() + domain</b></td><td>thẻ đọc; <code>pick.domain</code> có sẵn tại chỗ</td></tr>
+<tr><td>12</td><td><code>ControlTileFactory.kt:417</code></td><td>ô điều khiển TẮT</td><td><b>→ surface()</b> (nhánh BẬT <b>giữ</b> <code>gradientSoft</code>)</td><td>nhánh BẬT tô chữ/icon bằng <code>INK_ON_ACCENT</code>, và bài canh đo vai đó <b>trên nền <code>tileOn*</code></b>. Đổi nền mà giữ mực = số đo trong bài nói về một nền không còn tồn tại.</td></tr>
+<tr><td>13</td><td><code>KachiTopStrip.kt:77</code></td><td>thanh trạng thái trên</td><td>giữ <code>card()</code></td><td><code>BAR_TOP</code> có kênh trong suốt để <b>thấy ảnh nền</b> phía sau. Gradient đục ở đây là bịt chính thứ owner muốn thấy (→ đúng vấn đề §4.10).</td></tr>
+<tr><td>14</td><td><code>SettingsPanel.kt:191</code></td><td>vỏ bảng Cài đặt</td><td>giữ <code>card()</code></td><td>đây là <b>MẶT ĐẤT</b> mà thẻ đứng lên, không phải thẻ. Cho đất một chuyển sắc thì thẻ trên nó hết chỗ để nổi.</td></tr>
+<tr><td>15</td><td><code>GroupTileParts.kt:123</code></td><td>ô con của nhóm</td><td><b>→ surfaceOf()</b></td><td>WARN/ALERT <b>giữ</b> <code>card()</code>: ở hai tone đó <b>màu nền CHÍNH LÀ thông tin</b> (hổ phách = chưa kiểm · đỏ = cảnh báo). Phủ chuyển sắc trung tính lên là lấy mất tín hiệu để đổi lấy chất liệu — sai đánh đổi trên màn hình lái xe.</td></tr>
+<tr><td>16</td><td><code>SettingsSectionsProfiles.kt:124</code></td><td>hàng hồ sơ</td><td><b>→ surface()</b></td><td>thẻ nội dung</td></tr>
+<tr><td>17</td><td><code>SettingsSectionsProfiles.kt:165</code></td><td>nút Xoá</td><td>giữ <code>card()</code></td><td>nút <b>viền rỗng</b> (<code>CLEAR</code> + viền đỏ) — nền trong suốt là chủ ý, tô nó là đổi nghĩa nút</td></tr>
+<tr><td>18</td><td><code>WidgetViews.kt:221</code></td><td><code>miniCard</code></td><td><b>→ surface() + domain</b></td><td>đây đúng là “widget nền xám” owner chê; lĩnh vực tra từ <code>TelemetryRegistry</code></td></tr>
+<tr><td>19</td><td><code>WidgetViews.kt:465</code></td><td>ô của bảng tổng hợp</td><td><b>→ surface()</b></td><td>thẻ nội dung; bảng trộn nhiều lĩnh vực nên <b>không</b> tint (trung tính, không mượn sắc)</td></tr>
+<tr><td>20</td><td><code>AppDrawer.kt:82</code></td><td>vỏ ngăn kéo</td><td>giữ <code>card()</code></td><td>như #14 — mặt đất</td></tr>
+<tr><td>21</td><td><code>AppDrawer.kt:347</code></td><td>nhắc “đầy trần”</td><td>giữ <code>card()</code></td><td><b>huy hiệu mang nghĩa</b> (<code>AMBER_SOFT</code> + viền hổ phách) — như #15</td></tr>
+<tr><td>22</td><td><code>AppDrawer.kt:447</code></td><td>ô chọn nút</td><td><b>→ surface() + ACTIVE + domain</b></td><td>như #8; và nay hai lưới chọn dùng <b>cùng một hàm</b> — bài <code>DrawerGridSeamContractTest</code> đổi sang so <b>hai tệp với nhau</b> thay vì khoá một chuỗi</td></tr>
+<tr><td>23</td><td><code>LayoutEditorPanel.kt:214</code></td><td>nút của trình vẽ bố cục</td><td><b>→ surface()</b></td><td>như #5</td></tr>
+<tr><td>24</td><td><code>ShellChannelGate.kt:230</code></td><td>dải nhắc duyệt adb</td><td><b>→ surface()</b></td><td>thẻ nội dung nổi trên màn</td></tr>
+<tr><td>25</td><td><code>ShellChannelGate.kt:248</code></td><td>nút Thử lại</td><td><b>→ surface()</b></td><td>như #5</td></tr>
+<tr><td>26</td><td><code>voice/VoiceOverlay.kt:107</code></td><td>thanh nghe giọng nói</td><td>giữ <code>card()</code></td><td>như #13 — thanh bán trong suốt nổi trên nội dung</td></tr>
+</table>
+<p><b>Ba nhóm lý do GIỮ</b>, gom lại cho lần sau khỏi phải đọc 26 dòng: (a) <b>mặt đất</b> (vỏ bảng phủ) — thẻ cần
+một nền phẳng để nổi lên; (b) <b>bề mặt bán trong suốt</b> (thanh trên, thanh giọng nói) — chúng tồn tại để cho
+thấy thứ phía sau; (c) <b>màu mang nghĩa</b> (tone cảnh báo, huy hiệu, nút viền rỗng) — nền chính là dữ liệu.</p>
+
+<h4>3 · Quyết định — <b>sắc lĩnh vực</b> (ngoài phạm vi T1–T3 gốc, thêm theo brief P1)</h4>
+<p>Vấn đề đo được: màn chính bày 2–4 thẻ nhóm cùng lúc, tất cả cùng một xám ⇒ muốn biết thẻ nào là <i>Khí hậu</i>
+phải <b>đọc chữ</b>. Cách chữa: một lớp sắc rất nhạt theo <code>Domain</code>, tra ở <b>một chỗ duy nhất</b>
+(<code>KachiPalette.domainTints</code> + <code>KachiTheme.domainTint()</code>), dùng lại <b>màu mang nghĩa đã có</b>
+chứ không mở một dải màu thứ hai.</p>
+<p><b>Trade-off ghi rõ</b>: <span class="ev do">[ĐO]</span> alpha 7 % chạy tốt ở bảng TỐI (tint làm sáng lên) nhưng ở
+bảng SÁNG nó <b>làm tối đi</b> và ăn thẳng vào tương phản chữ ⇒ <code>mut2</code>/<code>accentInk</code>/<code>slate</code>
+tụt xuống 4.25–4.35. Bảng sáng vì thế dùng <b>4.7 %</b>. Hai bảng <b>không</b> cùng một alpha, và đó là hệ quả của
+việc hai bảng có chiều tác dụng ngược nhau — không phải một chỗ làm ẩu.</p>
+
+<h4>4 · Sai lệch-spec — <code>surface()</code> có <b>2–3</b> lớp, không phải đúng 2</h4>
+<p>§4.5 đặc tả 2 lớp (nền + mép). Thực tế 3 khi có sắc lĩnh vực (nền · tint · mép), 2 khi không, và <b>1</b> ở nhánh
+<code>SUNKEN</code> (thoát sớm, không <code>LayerDrawable</code>). Lớp mép đánh chỉ số theo
+<code>numberOfLayers - 1</code> chứ không theo số cứng — nhờ đó P1b chèn thêm lớp bitmap ở chỉ số 0 mà không phải sửa
+hàm (§4.10).</p>
+
+<h4>5 · Sai lệch-spec (có chủ ý) — <b>không</b> dựng <code>ic_probe_gradient.xml</code> rời</h4>
+<p>T4 yêu cầu một icon probe tạm, chụp ảnh, rồi <b>xoá</b>. Thay vào đó phép đo chạy trên <b>chính icon app hoa anh
+đào</b> (R7) — cùng cơ chế <code>&lt;aapt:attr name="android:fillColor"&gt;&lt;gradient&gt;</code>, cùng AVD API 29,
+nhưng là một tài sản <b>thật và ở lại</b>. Ba lý do: (a) probe đo cơ chế, icon app <b>dùng</b> đúng cơ chế đó ⇒ nó là
+phép đo mạnh hơn, không yếu hơn; (b) không sinh icon mồ côi để rồi phải nhớ xoá (<code>IconStyleContractTest</code>
+mục 5 đã có một lệ “quên xoá” trong danh sách <code>orphanPending</code>); (c) nếu cơ chế hỏng thì icon app ra khối
+đặc — <b>nhìn thấy ngay ở màn hình chính</b>, không phải đi tìm.
+<span class="ev do">[ĐO]</span> Kết quả: <b>render đúng chuyển sắc</b> ⇒ §4.8 mức tả thực (1) khả thi.</p>
+
+<h4>6 · Bug tự bắt được — mép sáng của thẻ BẬT ở bảng SÁNG là một <b>vệt bóng ngược</b></h4>
+<p>Bản đầu đặt <code>surfOnEdge</code> bản sáng = <code>#cc2f5ae0</code> theo phản xạ <i>“thẻ bật thì mép cũng mang màu
+nhấn”</i>. Bài canh <code>mep sang khong bao gio toi hon dinh gradient</code> đỏ ngay: trên nền <code>#b5c3ef</code>
+mã đó <b>tối hơn</b>, tức là một vệt bóng ở ĐỈNH thẻ — ngược hẳn nguồn sáng của cả hệ (trên-trái). Sửa thành
+<code>#cce8eeff</code> (trắng ngả xanh): vẫn cùng họ nhấn, vẫn sáng hơn nền. <b>Đây là lý do bài canh viết theo tính
+chất (“không bao giờ tối hơn”) chứ không theo con số</b> — một ngưỡng cố định sẽ không bắt được ca này.</p>
+
+<h4>7 · Hai bài canh CŨ đổi <b>cách kiểm</b> (không đổi tính chất) — lý do ghi tại chỗ</h4>
 <ul>
-<li><b>T3</b> — danh sách <b>26</b> chỗ gọi <code>card()</code>: cái nào chuyển sang <code>surface()</code>, cái nào giữ, <b>vì sao</b>.</li>
-<li><b>T4</b> — kết quả bước “sinh lại ra đúng byte”: nếu <b>không</b> trùng byte thì lệch ở đâu (precision? thứ tự
-thuộc tính?) và đã xử lý ra sao. Đây là bằng chứng script thay được <code>gen_car4.py</code> đã mất.</li>
-<li><b>T1</b> — sáu mã hex đề xuất ở §4.1 sau khi qua bảng tương phản §6.4: giữ nguyên hay đổi, số đo bao nhiêu.</li>
+<li><code>DrawerGridSeamContractTest.o chua chon co nen mo de lo ranh gioi</code>: trước khoá đúng chuỗi
+<code>KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)</code>. Tính chất thật là <i>“ô chưa chọn có nền, và
+nền ấy là cùng một bề mặt với lưới trong Cài đặt”</i> ⇒ bản mới so <b>hai tệp</b> (<code>AppDrawer</code> ↔
+<code>TopStripPicker</code>) cùng gọi <code>surface()</code> và cùng <code>SurfaceTone.ACTIVE</code>. <b>Chặt hơn</b>
+bản cũ, không lỏng hơn.</li>
+<li><code>ShellApprovalWiringContractTest.dai nhac dung chu trong res va mau cua KachiTheme</code>: nhận cả
+<code>surface()</code> lẫn <code>card()</code> — tính chất cần giữ là <i>“nền đến từ hệ thiết kế, không dựng
+<code>GradientDrawable</code> tại chỗ”</i>.</li>
+</ul>
+<p><b>Không</b> bài icon nào phải nới: hoa anh đào 24dp là một tông <code>#FFFFFF</code>, khung 24, khung mực
+2.15–21.85 ⇒ <code>IconStyleContractTest</code> và <code>IconGeometryContractTest</code> xanh <b>không sửa một dòng</b>.</p>
+
+<h4>8 · Nợ kỹ thuật đã trả kèm — phép đo WCAG thành <code>testFixtures</code></h4>
+<p>Bốn hàm <code>argb/over/luminance/ratio</code> đang <code>private</code> trong <code>ThemePaletteContractTest</code>,
+và bài canh thứ hai cần đúng bốn hàm ấy. Chép sang là mở đúng con đường <code>ChipTone</code> (hai bản sao của một
+phép tính, rồi một bản được sửa còn bản kia thì không) ⇒ tách ra
+<code>core/src/testFixtures/kotlin/com/byd/clusternav/testsupport/Wcag.kt</code>. <code>ThemePaletteContractTest</code>
+giảm 485 → <b>444</b> dòng, <code>SurfaceContrastContractTest</code> đứng riêng — cả hai dưới trần 500 của CLAUDE.md §4.1.</p>
+
+<h3 style="margin-top:2rem">Soát Pass 4 — 2026-09-16 (cùng 1.68 · 69)</h3>
+
+<h4>10 · Bug — lượt rà theo TÊN HÀM bỏ sót bề mặt lớn nhất màn hình</h4>
+<p>Bảng mục 2 ở trên rà <b>26 chỗ gọi <code>KachiTheme.card(</code></b> và chuyển 16. Nó đúng với những gì nó rà,
+và <b>hụt đúng cái quan trọng nhất</b>: <code>WorkspaceView.makeSlot</code> (<code>:274</code>) dựng nền ô làm
+việc bằng một <code>GradientDrawable</code> viết thẳng tại chỗ, nên nó chưa bao giờ xuất hiện trong danh sách.
+Ô làm việc chiếm phần lớn màn hình.</p>
+<p><span class="ev do">[ĐO]</span> so hai ảnh của chính lượt P1 tại điểm (800,320) — giữa ô làm việc:
+<code>before</code> <code>(23,26,32)</code>, <code>after</code> <code>(23,26,32)</code>. <b>Không đổi một byte.</b>
+Ô con bên trong thì có đổi ((28,33,43) → (23,28,38)). Đó là toàn bộ nội dung của lời chê “đổi mà nhìn không ra”.</p>
+<p><b>Bài học rút thành luật, không rút thành lời nhắc</b>: một cuộc rà theo <i>tên hàm</i> chỉ thấy chỗ đã dùng
+tên hàm đó. Bài canh mới <code>SurfaceMaterialContractTest.o lam viec dung tone KHAY khong dung nen tu dung tai
+cho</code> khoá <b>kết quả</b> (ô làm việc phải dùng tone KHAY, và trong <code>makeSlot</code> chỉ còn ĐÚNG một
+<code>GradientDrawable()</code> — của ô TRỐNG, ngoại lệ có chủ ý), không khoá quy trình.</p>
+
+<h4>11 · Quyết định — ba bậc, và mọi lực đẩy lên sát sàn</h4>
+<p>Owner đã bỏ luật cấm thẩm mỹ; ràng buộc còn lại chỉ là <b>mực ≥ 4.5:1</b>. Pass 4 vì thế đi tới sát ràng buộc
+đó thay vì dừng ở mức “an toàn”:</p>
+<table><thead><tr><th>Lực</th><th>P1</th><th>Pass 4</th><th>Sàn</th><th>Chốt chặn</th></tr></thead><tbody>
+<tr><td>bước sáng thẻ/nền (TỐI)</td><td>1.23×</td><td><b>1.35×</b></td><td>1.15×</td><td><code>mut2</code> trên thẻ đã tint</td></tr>
+<tr><td>mép sáng / mặt thẻ (TỐI)</td><td>1.7×</td><td><b>3.06×</b></td><td>2.20× <i>(bài mới)</i></td><td>—</td></tr>
+<tr><td>khay/nền · thẻ/khay (TỐI)</td><td>— · 1.00×</td><td>1.14× · <b>1.19×</b></td><td>1.12× · 1.15× <i>(bài mới)</i></td><td>mực trên hai đầu khay</td></tr>
+<tr><td>thẻ BẬT / thẻ thường (TỐI)</td><td>1.28×</td><td><b>1.59×</b></td><td>1.20×</td><td>—</td></tr>
+<tr><td>ô LÕM / thẻ (TỐI)</td><td>1.23×</td><td><b>1.39×</b></td><td>—</td><td>—</td></tr>
+<tr><td>sắc lĩnh vực TỐI · SÁNG</td><td>7 % · 4.7 %</td><td><b>10.2 %</b> · <b>7.8 %</b></td><td>bước ≥ 1.10× <i>(bài mới)</i></td><td>mực trên thẻ đã tint</td></tr>
+<tr><td>ô điều khiển BẬT (TỐI)</td><td>36 %</td><td><b>50 %</b></td><td>1.20×</td><td><code>inkOnAccent</code> (7.71:1)</td></tr>
+</tbody></table>
+<p><b>Giá phải trả, ghi rõ</b>: <b>10 vai mực</b> phải dịch một bậc — bảng TỐI <code>mut</code> ·
+<code>mut2</code> · <code>red</code> · <code>slate</code> <b>sáng lên</b>; bảng SÁNG <code>mut</code> ·
+<code>mut2</code> · <code>accentInk</code> · <code>red</code> · <code>cyan</code> · <code>orange</code> ·
+<code>slate</code> <b>đậm lên</b>. Đây không phải “tiện tay sửa”: nền sáng lên và tint đậm lên thì mực cũ tụt
+dưới 4.5:1 (<code>mut2</code> bảng tối còn <b>4.10</b>, <code>mut2</code> bảng sáng còn <b>4.54</b>). Ở bảng tối
+mực sáng hơn làm tương phản tốt hơn trên <b>mọi</b> nền; ở bảng sáng mực đậm hơn cũng vậy — nên hai lượt dịch này
+không có mặt trái ở chỗ nào khác.</p>
+<p><b>Sai lệch-spec (tiếp mục 4)</b>: <code>surface()</code> nay <b>3–4</b> lớp, không phải 2–3. Lớp thứ tư là
+<b>nét đỉnh ĐẶC</b> — dải mờ dần một mình chỉ đọc ra “hơi sáng ở trên”, không đọc ra “mặt vát”. Nét dày
+<b>2dp trên thẻ lớn</b> (bán kính ≥ <code>RADIUS_XL</code>) và <b>1dp trên ô nhỏ</b>: 2dp trên ô 40dp chiếm 5 %
+chiều cao ô và đọc thành viền, không thành ánh sáng. Vẫn <b>0</b> blur / <b>0</b> shadow / <b>0</b> elevation.</p>
+
+<h4>12 · Bug — icon app đọc ra “bánh răng 10 răng” ở 36 px, và cách chữa ghi trong README thì SAI ĐỊA CHỈ</h4>
+<p>Lượt P1 <b>tự ghi ra</b> triệu chứng (<code>README.md</code> §4: <i>“khía đầu cánh làm bông hoa hơi ngả sang
+10 cánh nhọn”</i>) và đề cách chữa: <i>“giảm độ sâu khía ở bản 24dp (không phải ở bản 108)”</i>.
+<span class="ev do">[ĐO]</span> cả hai vế đều sai:</p>
+<ol>
+<li>ảnh 36 px là bản <b>108 thu nhỏ</b>; bản 24dp chỉ dùng cho smallIcon thông báo ⇒ sửa nó không đổi ảnh ấy
+<b>một điểm ảnh</b>;</li>
+<li>thủ phạm không phải độ sâu khía mà là <b>thung lũng giữa hai cánh quá nông</b> — cánh béo tới mức viền ngoài
+chỉ còn là một đường tròn có 10 vết răng cưa, và mắt đọc một đường tròn có răng là <b>bánh răng</b>. Lượt thử đầu
+của Pass 4 làm đúng như README dặn (nông khía 4.76 → 2.26 đơn vị) và kết quả ra bánh răng <b>rõ hơn</b> — phép
+thử bác bỏ giả thuyết, đúng lối §2 của CLAUDE.md.</li>
+</ol>
+<p><b>Sửa</b>: vẽ lại hình bằng <b>tham số</b> (5 cánh, R = 28 trên khung 108; nở rộng nhất ở 0.60 R với nửa bề
+rộng 0.42 R; đầu cánh thắt còn 0.21 R ở 0.97 R; khía thụt về 0.84 R) ⇒ hai cánh kề nhau chỉ gặp nhau ở ~0.55 R,
+viền ngoài có <b>năm</b> thung lũng sâu. Bản 24dp sinh từ <b>cùng bộ tham số</b> (tâm 12,12 · R = 9.9).
+<span class="ev do">[ĐO]</span> khung mực 108: x 27.94..80.06 · y 27.60..77.89 (an toàn 21..87 ✅); khung mực 24:
+2.79..21.21 × 2.66..20.45, cạnh lớn nhất 18.43 (đòi 2..22 · ≥ 16 ✅) — <b>không bài canh nào phải nới</b>.
+Vòng lặp thiết kế chạy <b>off-device</b>: một bộ rasterizer bezier bằng Python dựng đúng path rồi thu về 36 px,
+nên mỗi lượt thử tốn giây chứ không tốn một lượt build + cài.</p>
+
+<h4>13 · Còn tồn / chưa verify được (P1 + Pass 4)</h4>
+<ul>
+<li><b>Δ APK không đo được so với 1.67</b>: artefact <code>app-vehicleTest.apk</code> trên đĩa lúc bắt đầu phiên
+<b>có trước</b> lượt ADAS-PURGE, nên hiệu số 40 978 459 → 39 837 982 byte là của <b>purge</b>, không phải của P1.
+P1 chỉ đổi <b>3 tệp vector</b> + ~200 dòng Kotlin ⇒ xa dưới trần +350 KB (AC5.5), nhưng con số chính xác phải đo lại
+ở lượt build sạch sau khi purge đã commit.</li>
+<li><b>AC7.2 ở 36dp</b> kiểm bằng ảnh <b>thu nhỏ</b> từ máy ảo (đúng yêu cầu “không kiểm bằng mắt trên màn 27&quot;”),
+chưa kiểm trên <b>ngăn kéo app của xe thật</b> — cỡ icon ở đó là <span class="ev doan">[ĐOÁN]</span>, thuộc T14.</li>
+<li><b>Banding của chuyển sắc trên màn đầu máy</b> vẫn <span class="ev chua">[CHƯA BIẾT]</span> — máy ảo không trả lời
+được câu này (§6.5 đã ghi). <b>Pass 4 làm câu hỏi này NẶNG HƠN</b>: chênh trong thân gradient tăng 1.23× → 1.29×
+và mép sáng lên 35 %, tức là có nhiều sắc độ hơn để banding lộ ra. Vẫn chỉ chốt được ở T14 🚗.</li>
+<li><b>gfxinfo sau Pass 4</b>: kịch bản mới (<code>gfxinfo-pass4.txt</code>) ổn định hơn hẳn — 90th =
+21 / 23 / 20 ms trên ba lượt CÙNG bản (biên độ <b>3 ms</b>, so với <b>26 ms</b> của kịch bản §3). Nhưng
+<b>không có lượt “trước” đo bằng chính dụng cụ này</b>, nên trước/sau vẫn <span class="ev chua">[CHƯA BIẾT]</span>.
+Điều đã biết là <b>cơ chế</b>: mỗi bề mặt thêm một <code>GradientDrawable</code> tô đặc (nét đỉnh) và ô làm việc
+đi từ 1 lên 3–4 lớp, tất cả dựng <b>lúc dựng View</b>, 0 blur / 0 shadow / 0 elevation.</li>
+<li><b>Δ APK sau Pass 4</b> vẫn <span class="ev chua">[CHƯA ĐO]</span> vì cùng lý do như P1 (không có artefact
+gốc 1.67 sạch để trừ). Pass 4 đổi <b>2 tệp vector + ~60 dòng Kotlin</b> ⇒ xa dưới trần +350 KB.</li>
+<li><b>Ba bậc trên màn xe thật</b>: khay/nền chỉ <b>1.14×</b> ở bảng tối — đủ trên máy ảo, nhưng màn đầu máy
+sáng khác và nhìn nghiêng. Nếu owner thấy khay “dính” vào nền thì chỗ chỉnh là <code>slot</code>/<code>slotTo</code>,
+một chỗ, và bài canh <code>nen khay the la ba bac nhin ra duoc</code> sẽ tự bắt nếu ai chỉnh quá tay. Thuộc T14 🚗.</li>
 </ul>
 
 <h2>10. Reviewer Log</h2>
 <p class="muted">Append-only. Mỗi pass thêm một mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG overwrite lịch sử.
 Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<h3>Pass 4 — 2026-09-16 (senior review + lượt thiết kế)</h3>
+<p><b>Phạm vi</b>: toàn bộ lượt P1 chưa commit (<code>app/</code> · <code>core/</code> · spec ·
+<code>docs/diagnostics/visual-refresh-2026-09-16/</code>) so với <code>f63c349</code>. Reviewer được phép vá; KHÔNG
+commit/push. Ba tệp nằm ngoài phạm vi vì đang có người khác sửa (<code>CapabilityTileGrid.kt</code> — bug (O) —
+và khối ScrollView của <code>AppDrawer.kt</code>).</p>
+
+<h4>Phát hiện</h4>
 <ul>
-<li>(chưa có pass review — spec mới draft.)</li>
+<li><b>[P1] Lượt P1 không chạm bề mặt lớn nhất màn hình.</b> <span class="ev do">[ĐO]</span> điểm ảnh giữa ô làm
+việc TRƯỚC/SAU P1 giống nhau từng byte — bảng rà đi từ chuỗi <code>KachiTheme.card(</code> còn ô làm việc dựng
+<code>GradientDrawable</code> tại chỗ. <b>Đã vá</b>: <code>SurfaceTone.WELL</code> + vai <code>slotTo</code>, ô làm
+việc mang sắc lĩnh vực của chính nội dung trong nó. Chi tiết §9 mục 10.</li>
+<li><b>[P1] Chất liệu đo đúng nhưng nhìn không ra ở khoảng cách lái xe.</b> Bước sáng 1.23× · mép 18 % · tint 7 %
+đều nằm ngay trên sàn “nhìn ra được”, cộng lại cho một thay đổi phải soi hai ảnh cạnh nhau mới thấy.
+<b>Đã vá</b>: bảng lực ở §9 mục 11, kèm 10 vai mực phải dịch một bậc để giữ sàn 4.5:1.</li>
+<li><b>[P1] Icon app đọc ra “bánh răng 10 răng” ở 36 px</b>, và cách chữa mà README của chính lượt P1 đề ra thì
+sai địa chỉ (sửa bản 24dp không đổi ảnh 36 px, và thủ phạm là thung lũng giữa hai cánh chứ không phải độ sâu
+khía). <b>Đã vá</b>: vẽ lại bằng tham số, verify bằng ảnh 36 px mới. Chi tiết §9 mục 12.</li>
+<li><b>[P2] Thang trạng thái bên cạnh bị hẹp lại trong im lặng.</b> Nút TẮT sáng lên ⇒ bậc BẬT↔TẮT của ô điều
+khiển tụt còn <b>1.22×</b>, sát sàn 1.20×. <b>Đã vá</b>: <code>tileOn*</code> 36 % → 50 % ⇒ <b>1.59×</b>, chữ
+<code>inkOnAccent</code> vẫn 7.71:1. Đây là cái bẫy chung của việc đổi một bậc trong một thang.</li>
+<li><b>[P2] Bảng SÁNG: khay trắng + thẻ trắng.</b> <code>slot</code> = <code>#ffffff</code> và
+<code>surfFrom</code> = <code>#ffffff</code> ⇒ ô con chỉ còn tồn tại nhờ hairline (thấy rõ ở
+<code>after/home-4o-sang.png</code> của lượt P1). <b>Đã vá</b> cùng lúc với tone KHAY: thẻ/khay 1.16×.</li>
+<li><b>[P2] Bài canh “≥ 5 chỗ gọi <code>surface(</code>” xanh kể cả khi một <code>SurfaceTone</code> chưa ai
+dùng.</b> Đó đúng là cách một tone mới sinh ra rồi nằm chết (CLAUDE.md §8). <b>Đã vá</b>: bài mới duyệt theo
+<b>tên hằng enum</b>, nên thêm tone mà quên nối dây là đỏ ngay.</li>
+<li><b>[P3] Ba con số “nhìn ra được” không có bài canh nào giữ.</b> Bước khay/thẻ, sức mép sáng, ngưỡng sắc lĩnh
+vực đều chỉ sống trong KDoc. <b>Đã vá</b>: ba bài mới (<code>nen khay the la ba bac nhin ra duoc</code> ·
+<code>mep sang du manh de doc ra mat vat o bang toi</code> · <code>sac linh vuc dat nguong nhin ra duoc</code>)
++ 5 dòng mới trong bảng tương phản sinh bằng máy.</li>
 </ul>
+
+<h4>Đã KIỂM và KHÔNG có vấn đề</h4>
+<ul>
+<li><code>surface()</code> dựng <code>Drawable</code> mới mỗi lượt gọi (không cache dùng chung ⇒ không chia
+<code>ConstantState</code>), và mọi chỗ gọi đều nằm ở đường <b>dựng View</b>, không nằm trong
+<code>onDraw</code>/nhịp trạng thái 1 Hz. Bài canh cũ vẫn giữ.</li>
+<li>0 blur / 0 shadow / 0 elevation trong cả tầng <code>launcher/</code> (bài canh quét lại sau khi thêm lớp thứ tư).</li>
+<li><code>KachiTopStrip</code> (:77) và <code>voice/VoiceOverlay</code> (:107) <b>giữ nguyên</b>
+<code>card()</code> + <code>BAR_TOP</code> — độ trong suốt không đổi, đúng lý do #13/#26 của bảng §9.</li>
+<li>Nhánh BẬT của <code>ControlTileFactory</code> vẫn là <code>gradientSoft</code> (không đổi sang
+<code>surface(ACTIVE)</code>) ⇒ <code>INK_ON_ACCENT</code> vẫn được đo trên đúng nền <code>tileOn*</code>.</li>
+<li><code>overArtwork</code> biên dịch được và <b>chưa chỗ nào bật</b> — đúng chủ ý (dọn chỗ cho P1b); alpha
+<code>0xcc</code> vẫn trong khoảng bài canh đòi.</li>
+<li>Mọi vai màu mới có getter ở <code>KachiTheme</code> và có chỗ vẽ thật (bài canh đòi cả hai).</li>
+<li><b>Không PII</b> trong 20 ảnh <code>before/</code> + <code>after/</code> và 4 ảnh icon: tất cả đều là màn của
+launcher hoặc ảnh icon đã cắt bỏ thanh trạng thái — soát bằng một tấm contact-sheet dựng từ toàn bộ tệp PNG
+trong thư mục.</li>
+<li>Chỉ dùng handle <code>dangkhoi</code>; không có tên/email nào trong diff.</li>
+</ul>
+
+<h4>Scope checklist (§5 T1–T4 · R7)</h4>
+<ul>
+<li><b>T1</b> ✅ — 12 vai chất liệu (11 của P1 + <code>slotTo</code>) đủ hai bảng; bảng tương phản sinh bằng máy,
+nay 5 dòng nhiều hơn.</li>
+<li><b>T2</b> ✅ — <code>surface()</code> 3–4 lớp, 4 tone, 0 blur/shadow/elevation, có bài canh.</li>
+<li><b>T3</b> ✅ — 26 chỗ gọi <code>card()</code> đã rà (16 chuyển · 10 giữ) <b>+ chỗ thứ 27</b> mà lượt rà không
+thấy vì nó chưa bao giờ gọi <code>card()</code>.</li>
+<li><b>T4 (phần đo gradient)</b> ✅ — <span class="ev do">[ĐO]</span> lại trên chính icon mới:
+<code>&lt;aapt:attr&gt;&lt;gradient&gt;</code> render đúng chuyển sắc trên API 29.</li>
+<li><b>R7</b> ✅ — AC7.1 ✅ · <b>AC7.2 nay mới thật sự ✅</b> (P1 ghi ✅ nhưng ảnh của chính nó cho bánh răng) ·
+AC7.3 ✅ (không đổi tên gói/nhãn; bài canh HOME-alias xanh).</li>
+<li><b>T11 (phần P1)</b> ✅ — 10 ảnh <code>after/</code> chụp lại, <code>before/</code> nguyên vẹn, thêm
+<code>gfxinfo-pass4.txt</code>.</li>
+<li>🚗 <b>T14</b> giữ nguyên là việc cần xe: banding · ba bậc dưới nắng · Δ khung hình thật · cỡ icon trong ngăn
+kéo app của xe.</li>
+</ul>
+
+<h4>Kết quả test cuối</h4>
+<p><code>:core:test</code> <b>1996</b>/0 · <code>:app:testDebugUnitTest</code> <b>1007</b>/0 ·
+<code>:app:assembleVehicleTest</code> xanh, APK cài lên <code>emulator-5554</code> và chụp lại toàn bộ ma trận.
+Phiên bản giữ <b>1.68 (69)</b>: CLAUDE.md §9 chỉ buộc tách số khi bản cũ <b>đã báo cho owner</b>, mà 1.68 chưa
+đăng APK nào (kênh OTA dừng ở 1.66).</p>
+
+<p><b>Verdict: APPROVED</b> — 100 % deliverable của §5 T1–T4 + R7 có mã, có dây nối, có bài canh và có ảnh
+người dùng nhìn được. Phần còn lại đều là việc <b>cần xe</b> (T14) và đã ghi rõ ở §9 mục 13.</p>
 
 </div></body>
 </html>

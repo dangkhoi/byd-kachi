@@ -121,7 +121,7 @@ class SettingsProfilesSection(
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.FIELD)
+            background = KachiTheme.surface(context, Sp.RADIUS_L)
             val p = dpi(context, Sp.M)
             setPadding(p, p, p, p)
             addView(

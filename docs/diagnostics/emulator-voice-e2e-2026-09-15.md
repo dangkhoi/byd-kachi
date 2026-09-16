@@ -647,3 +647,115 @@ tắc) · `Prefs` + `ClusterNavBridgeKeys` (2 khoá mới) · `SettingsCatalogEn
 `KachiHomeActivity`/`VoiceTextConsole` (nối `onLayout`).
 **Bài canh mới**: `VoiceLayoutParseTest` · `VoiceReplyActualTest` · `VoiceSpeakerDoneContractTest` ·
 `VoiceStepReadbackTest` + 3 bài mới trong `VoiceCommandWiringContractTest`.
+
+---
+
+## 8. [ĐO host 2026-09-16] VOICE-DATA — corpus tự dựng thay cho việc "chờ xe"
+
+Owner 2026-09-16: *"cái voice phải nói chậm, nhận diện khó này kia, là đã fix chưa, có dùng AI LLM này để
+generate ra nhiều nhiều các mẫu câu, vùng miền, tiếng anh kiểu tiếng việt này kia để đảm bảo nhận dạng tốt
+hơn không? tự xây data kiểu vậy thì may ra mới ổn, chứ chờ xe cũng ko biết chờ gì"*.
+
+Toàn bộ lượt này chạy **trên host**, không gradle, không máy ảo, không đụng một dòng Kotlin nào. Số chi tiết:
+[`voice-mishear-2026-09-16.md`](voice-mishear-2026-09-16.md). Đợt thu giọng người:
+[`voice-recording-campaign-2026-09-16.md`](voice-recording-campaign-2026-09-16.md).
+
+### 8.1 Dựng được gì
+
+| Thứ | Số | Ghi chú |
+|---|---|---|
+| `scripts/voice/data/variants.tsv` | **4 484 câu · 182 mã** (24,6 câu/mã, mọi mã ≥ 12) | LLM soạn từ vựng vùng miền + khuôn câu; `gen-variants.py` nở tất định từ `registry.json` |
+| WAV corpus `/tmp/kachi-voice-corpus` | **1 874 WAV** từ 431 câu (83 tier A · 348 tier B) | `say -v Linh` 140/180/220/260/300 · piper `vi_VN-vais1000-medium` 0,9/1,0/1,3 · nén thời gian 1,3×/1,6× |
+| `data/aliases-proposed.tsv` | **542 dòng** (101 `synonym` · 23 `hotword` · 418 `clarify`) | CHỈ từ chuỗi model thật sự in ra |
+| `data/hotwords-proposed.txt` | **448 dòng** | HOA có dấu, ≥ 2 từ, không đụng tiền tố với 1 757 dòng đang ship |
+| Thời gian máy | TTS ~24 ph · giải mã 30 s/cấu hình (5 cấu hình ≈ 2,5 ph) | giải mã RTF ≈ 0,015 — rẻ hơn TTS hai bậc |
+
+Piper chạy **qua chính `sherpa_onnx.OfflineTts`** với gói `voice/tts/piper-vi_VN-vais1000-medium/` đã có trong
+repo ⇒ **không** phải cài `piper-tts`, không thêm phụ thuộc nào.
+
+### 8.2 *"Phải nói chậm"* — [ĐO] **BÁC**, và ngược lại là đằng khác
+
+| giọng · tốc độ | `none` | tệp đang ship | +đề xuất |
+|---|---|---|---|
+| linh 140 (chậm) | 38,6% | 43,4% | 49,4% |
+| linh 180 (thường) | 50,3% | **62,9%** | 65,2% |
+| linh 220 | 39,8% | 44,6% | 49,4% |
+| linh 260 (nhanh) | 49,9% | **63,8%** | 65,9% |
+| linh 300 (rất nhanh) | 38,6% | 42,2% | 44,6% |
+
+Đọc **chậm hơn** (140) KHÔNG tốt hơn đọc thường (43,4% vs 62,9%), và 260 ≈ 180. Tức cảm giác *"phải nói chậm
+mới nhận"* **không khớp** với cách mô hình hành xử ở tầng này. [SUY] Nó nhiều khả năng là chuyện của **điểm
+ngắt câu** (`VoiceEndpointer` cắt sớm khi người ta ngập ngừng) hoặc mic trên xe, chứ không phải tốc độ đọc —
+và đó là thứ **chỉ đo được trên xe**, không đo được ở đây.
+
+⚠ Cột 140/220/300 chỉ có 83 WAV (tier A) so với 431 WAV ở 180/260, nên đừng so ngang tuyệt đối giữa hai
+nhóm; so trong cùng nhóm (140 vs 220 vs 300, và 180 vs 260) thì kết luận trên vẫn đứng.
+
+### 8.3 Đúng ba câu tester báo sai — nghe lại bằng máy, 10–11 lần mỗi câu
+
+| Câu | Đúng nguyên văn | Model hay nghe ra |
+|---|---|---|
+| `lọc ngay` | 8/11 | *"đọc ngày"* · *"học này"* |
+| `lọc bụi` | 7/10 | *"các bụi"* |
+| `điều hoà` | **10/10** | *"điều hòa"* — **khác chỗ đặt dấu, không phải nghe sai** |
+| `bật điều hoà` | **10/10** | *"bật điều hòa"* |
+| `Google Map` | 5/10 | *"oh em at"* · *"d ot"* |
+| `Google` (đối chứng tester nói ĐƯỢC) | **0/10** | *"goovel"* · *"ruvel"* |
+| `bật đèn đọc` (đối chứng OK) | 10/11 | — |
+| `mở YouTube` (đối chứng OK) | 7/11 | — |
+
+Hai điều rút ra:
+- *"điều hoà"* **không** phải lỗi nghe. Mô hình nghe ra *"ĐIỀU HÒA"* (dấu kiểu mới) trong khi cả dự án viết
+  *"điều hoà"* (kiểu cũ). Chỗ hỏng nằm ở **so khớp chữ**, không ở tai. Xem 8.5.
+- `Google` đứng một mình 0/10 là **[SUY], nhiều khả năng là lỗi của TTS**: `say -v Linh` đọc một từ tiếng
+  Anh trơ trọi không giống người Việt đọc nó. Đây đúng là chỗ phải để giọng thật trả lời (8.6).
+
+### 8.4 Hotword đề xuất — **+55 câu, 0 hồi quy**
+
+| Tệp hotword | 1 899 WAV | 25 WAV của ma trận cũ |
+|---|---|---|
+| `none` | 729 (38,4%) | 18/25 |
+| đang ship (1 757 dòng) | 935 (49,2%) | **22/25** |
+| ship + 448 dòng đề xuất (2 205) | **990 (52,1%)** | **22/25** |
+
+Chỗ ăn điểm đúng là chỗ tester kêu: `app` 12,6% → **20,6%** · kiểu nói `tieng_anh_viet` 11,3% → **21,8%** ·
+`than_mat` 15,4% → 19,9% · `macro` 61,9% → **81,0%** · giọng Nam 21,8% → 25,1%. Một chỗ **tụt**: `media`
+57,1% → 52,4% (21 WAV ⇒ đúng **một** ca; mẫu quá nhỏ để kết luận, phải đo lại nếu ship).
+
+**Một dòng duy nhất suýt gây hồi quy** — `YOUTUBE MUSIC` làm w10 (*"đưa YouTube vào ô số hai"*) tụt xuống
+*"ĐƯA YOUTUBE"*, mất sạch đuôi. Cơ chế là **mặt sau của luật tiền tố**: giải mã xong `YOUTUBE`, đồ thị ngữ
+cảnh đang đứng GIỮA cụm `YOUTUBE MUSIC` nên cộng điểm cho `MUSIC` và trừ mọi đường khác (kể cả `VÀO Ô SỐ
+HAI`). Đã thành **luật máy** trong `propose-hotwords.py`: *cụm bắt đầu bằng một tên app đứng-một-mình thì
+bỏ* — tên app là chỗ KẾT của câu, đặt nó làm đầu cụm là mời lỗi này.
+
+### 8.5 [ĐO] Chỗ đặt dấu — 54/1 757 dòng hotword viết chữ mô hình KHÔNG có
+
+`tokens.txt` của `zipformer-vi` có `▁HÒA` · `▁KHÓA` · `▁KHỎE`, **không** có `▁HOÀ` · `▁KHOÁ` · `▁KHOẺ`. Tệp
+hotword đang ship dùng dạng sau ở **54 dòng** (KHOÁ ×24 · HOÀ ×23 · KHOẺ ×7).
+
+⚠ Nhưng giả thuyết *"viết sai kiểu ⇒ hotword vô hiệu"* đã bị **chính phép đo bác**: sửa riêng chỗ đặt dấu cho
+**đúng bằng** tệp cũ (935 = 935, 22/25 = 22/25), chỉ nhích ở nhánh `piper 0.9`. BPE vẫn kéo được bằng mảnh
+nhỏ. ⇒ **Nên sửa** (đó là chính tả của từ điển mô hình, và nó làm mọi phép so chữ sạch hơn) nhưng **không
+được bán như một bản vá cải thiện độ chính xác**. Lưu ý sửa **đúng âm tiết mở**: `HOÀN` · `NGOÀI` · `TOÀN` ·
+`THOÁNG` vốn đã đúng và `tokens.txt` cũng ghi như vậy — đổi mù cả cụm là làm hỏng bốn từ đang chạy tốt (đã
+mắc và bắt được ngay trong lượt này).
+
+### 8.6 Cái này **KHÔNG** trả lời được, và ai trả lời
+
+| Câu hỏi | Vì sao host không trả lời được | Chốt ở đâu |
+|---|---|---|
+| Trên xe nghe đúng bao nhiêu % | giọng TTS ≠ giọng người + mic 4 kênh + ồn đường (CLAUDE.md §2) | đợt thu giọng `voice-recording-campaign-2026-09-16.md`, rồi chạy `hotword-matrix.py` trên WAV thật |
+| *"Phải nói chậm"* đến từ đâu | tốc độ đọc đã loại (8.2); còn lại là điểm ngắt câu / mic | [CHƯA BIẾT] — cần một lượt xe đọc `state` của `VoiceEndpointer` |
+| `createStream` với 2 205 dòng tốn bao lâu trên đầu xe | host 6,9 ms; [SUY] ×20 ⇒ ~140 ms, vượt ngân sách 100 ms của spec | OQ2 của `kachi-voice-hotword-phrases.html` — phải đo trên xe trước khi ship tệp to hơn |
+| 101 bí danh đề xuất có làm hiểu nhầm câu khác không | `approx_parse` là **xấp xỉ**, không phải `VoiceIntentParser` | chạy lại bộ `:core` sau khi nhập vào `VoiceSynonyms` |
+
+### 8.7 Chạy lại (một lệnh mỗi bước)
+
+```bash
+python3 scripts/voice/gen-variants.py                         # 4 484 câu, tất định
+/tmp/sherpa-venv/bin/python scripts/voice/synth-corpus.py     # ~24 ph, 1 874 WAV
+/tmp/sherpa-venv/bin/python scripts/voice/mishear-table.py --model <MODEL_DIR> \
+    --primary hotwords-phrases.txt --dump /tmp/dump.tsv \
+    --hotwords none core/build/hotwords/hotwords-phrases.txt <tệp-thử-khác>
+python3 scripts/voice/propose-hotwords.py --dump /tmp/dump.tsv
+```

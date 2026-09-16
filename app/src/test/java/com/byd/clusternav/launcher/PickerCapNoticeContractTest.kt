@@ -184,7 +184,14 @@ class PickerCapNoticeContractTest {
     fun `mep vung cuon mo dan khong cat chu`() {
         assertTrue(drawer.contains("isVerticalFadingEdgeEnabled = true"), "mép cuộn phải mờ dần")
         assertTrue(drawer.contains("setFadingEdgeLength("), "và phải khai độ dài dải mờ")
-        assertTrue(drawer.contains("clipToPadding = false"), "đệm trên/dưới không được bị cắt theo vùng cuộn")
+        // ⚠ BUG (O) 2026-09-16 [ĐÃ CHỨNG MINH View.java r47 :20893-20897]: mép mờ tính theo HỘP ĐỆM của ScrollView,
+        // nên `setPadding` + `clipToPadding = false` đặt dải mờ vào GIỮA nội dung ⇒ một hàng ô bị cắt ngang. Đệm phải
+        // là view đệm TRONG thân cuộn; hai dòng dưới chặn cách cũ mọc lại.
+        assertFalse(drawer.contains("clipToPadding = false"), "cấm `clipToPadding = false` trên vùng cuộn: dải mờ sẽ rơi vào giữa nội dung (BUG (O))")
+        assertFalse(
+            Regex("""ScrollView\(context\)\.apply \{[^}]*setPadding\(""").containsMatchIn(drawer),
+            "cấm `setPadding` trên ScrollView: đệm phải là view đệm trong thân cuộn (BUG (O))",
+        )
     }
 
     /**

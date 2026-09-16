@@ -2,8 +2,41 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
+import android.view.Gravity
 import com.byd.clusternav.R
+
+/**
+ * Ba trạng thái BỀ MẶT của [KachiTheme.surface] (VISUAL-REFRESH P1 · T2).
+ *
+ * Khai ở tầng trên cùng chứ không lồng trong `object KachiTheme` để chỗ gọi viết `SurfaceTone.ACTIVE` thay vì
+ * `KachiTheme.SurfaceTone.ACTIVE` — cùng lối [ThemeMode]/[LayoutPreset] của `:core`.
+ */
+enum class SurfaceTone {
+    /** Thẻ nội dung thường — chuyển sắc dọc + hairline + mép sáng. */
+    NEUTRAL,
+
+    /**
+     * **KHAY** — thẻ ô làm việc ở màn chính, tức cái mặt mà [NEUTRAL] đứng lên (VISUAL-REFRESH P1 · soát Pass 4).
+     *
+     * Cùng ba lớp với [NEUTRAL] nhưng lấy cặp [KachiTheme.SLOT]/[KachiTheme.SLOT_TO] (**tối hơn** thẻ nội dung một
+     * bậc) và viền [KachiTheme.LINE_STRONG] — viền sáng rõ mà ô làm việc đã dùng từ prototype và đã chạy tốt trên
+     * xe (CLAUDE.md §6: không đảo đường đang chạy tốt).
+     *
+     * Vì sao phải là một tone RIÊNG chứ không dùng lại [NEUTRAL]: khay và thẻ mà cùng một sắc độ thì thẻ hết chỗ
+     * nổi lên. Đây đúng là chỗ P1 hụt — ô làm việc dựng `GradientDrawable` thẳng tại chỗ nên nó **không nằm trong
+     * bảng rà 26 chỗ gọi `card()`**, và [ĐO] điểm ảnh của nó TRƯỚC/SAU P1 giống nhau từng byte.
+     */
+    WELL,
+
+    /** Thẻ/ô ĐANG BẬT — cùng ba lớp nhưng mang màu nhấn; chữ trên nó là `INK`, **không** phải `ON_ACCENT`. */
+    ACTIVE,
+
+    /** Ô LÕM (nhập liệu, rãnh, đoạn phân đoạn) — một tô đặc tối hơn, **không** gradient, **không** mép sáng. */
+    SUNKEN,
+}
 
 /**
  * Bảng màu + helper drawable của launcher. **Tra theo chủ đề đang chọn** (T1) — mã hex nằm ở [KachiPalette].
@@ -58,6 +91,7 @@ object KachiTheme {
     val DIM: String get() = palette.dim
     val TRACK: String get() = palette.track
     val SLOT: String get() = palette.slot
+    val SLOT_TO: String get() = palette.slotTo
     val BAR: String get() = palette.bar
     val BAR_TOP: String get() = palette.barTop
     val LINE: String get() = palette.line
@@ -96,6 +130,23 @@ object KachiTheme {
     val GLOW1: String get() = palette.glow1
     val GLOW2: String get() = palette.glow2
     val CLEAR: String get() = palette.clear
+    // ── VISUAL-REFRESH P1 · chất liệu bề mặt (KDoc của từng vai ở [KachiPalette]) ──
+    val SURF_FROM: String get() = palette.surfFrom
+    val SURF_TO: String get() = palette.surfTo
+    val SURF_EDGE: String get() = palette.surfEdge
+    val SURF_LINE: String get() = palette.surfLine
+    val SURF_ON_FROM: String get() = palette.surfOnFrom
+    val SURF_ON_TO: String get() = palette.surfOnTo
+    val SURF_ON_EDGE: String get() = palette.surfOnEdge
+    val FIELD_SUNKEN: String get() = palette.fieldSunken
+    val SURF_FROM_OVER_ART: String get() = palette.surfFromOverArt
+    val SURF_TO_OVER_ART: String get() = palette.surfToOverArt
+
+    /**
+     * Sắc lĩnh vực của [domain] — vỏ bọc để chỗ vẽ **không** phải tự viết `?.name` (và không ai nghĩ ra cách thứ
+     * hai để tra). `null` ⇒ [CLEAR] = không tint.
+     */
+    fun domainTint(domain: Domain?): String = palette.domainTint(domain?.name)
 
     fun c(s: String): Int = Color.parseColor(s)
     fun dp(ctx: Context, v: Float): Float = v * ctx.resources.displayMetrics.density
@@ -118,6 +169,106 @@ object KachiTheme {
             setColor(c(fill))
             setStroke(dpi(ctx, KachiSpace.HAIRLINE), c(stroke))
         }
+
+    /**
+     * ═══ VISUAL-REFRESH P1 · T2 — BỀ MẶT CÓ CHẤT LIỆU ═══════════════════════════════════════════════════════
+     *
+     * Thay một lớp tô phẳng bằng **ba–bốn lớp**: (0) chuyển sắc DỌC + hairline ngoài, (1) lớp sắc lĩnh vực nếu
+     * [domain] khác `null`, (2) dải mép sáng mờ dần ở ĐỈNH, (3) nét đỉnh ĐẶC 1–2dp. Thẻ lồi lên khỏi nền mà
+     * **không** bóng đổ.
+     *
+     * ## Vì sao không có bóng/blur/elevation — và vì sao có bài canh riêng
+     * Đầu máy DiLink chạy GPU TRINKET. `setShadowLayer`/`BlurMaskFilter`/`RenderEffect` và `elevation` đều bắt GPU
+     * vẽ thêm một lượt off-screen mỗi khung. Cảm giác "lồi" ở đây do **chênh sáng trong chính gradient** tạo ra, tức
+     * là 0 chi phí thêm so với một tô đặc. [SurfaceMaterialContractTest] quét tầng `launcher/` và đỏ nếu một trong
+     * bốn thứ đó quay lại.
+     *
+     * ## Vì sao chuyển sắc DỌC chứ không chéo
+     * [gradient] đang dùng `TL_BR` (chéo) cho **nút/pill đang chọn**. Giữ chéo = nhận diện của *"cái đang được
+     * chọn"*, dọc = nhận diện của *"bề mặt"* ⇒ hai vai không lẫn nhau. Đây là lý do chức năng, không phải sở thích.
+     *
+     * ## ⚠ Mỗi lần gọi dựng một `Drawable` MỚI — cố ý
+     * `Drawable` dùng chung giữa nhiều View thì chúng chia nhau **một** `ConstantState`: đổi bounds/alpha ở một ô là
+     * đổi cả những ô kia. Hàm này vì thế **không cache**. Ràng buộc AC5.3 (*"dựng một lần"*) nói về **nhịp trạng
+     * thái** — chỗ gọi phải dựng lúc dựng View, không dựng lại mỗi giây trong `bind`/`onDraw`.
+     *
+     * @param tone [SurfaceTone.NEUTRAL] thẻ nội dung · [SurfaceTone.WELL] **khay** mà thẻ đứng lên (ô làm việc ở
+     *   màn chính) · [SurfaceTone.ACTIVE] thẻ/ô đang bật (mang màu nhấn) · [SurfaceTone.SUNKEN] ô lõm — **giữ
+     *   phẳng**: một tô đặc, không gradient, không mép sáng. Lồi và lõm phải khác nhau ở CƠ CHẾ chứ không chỉ ở độ
+     *   sáng, nếu không thì hai vai đọc như một.
+     * @param domain lĩnh vực của nội dung trong thẻ — thêm một lớp sắc rất nhạt để mắt tìm được vùng *trước khi*
+     *   đọc chữ. `null` (mặc định) ⇒ không có lớp đó, không phải một màu mặc định.
+     * @param overArtwork thẻ này nằm **trên ẢNH NỀN** ⇒ dùng bản bán trong suốt 80 % ([KachiPalette.surfFromOverArt])
+     *   để ảnh lọt qua. Sinh ra cho P1b (spec §4.10) sau phản hồi owner 2026-09-16 kèm ảnh chụp trên xe: *"cái màu
+     *   đen, xám của mình, khi nhét thêm hình nền vào, nó lại không đẹp nữa"* — thẻ đục trên ảnh đọc ra thành
+     *   **miếng vá**, không thành **cửa sổ**.
+     *   ⚠ P1 **chưa chỗ nào bật cờ này** (mặc định `false` ⇒ hành vi hôm nay không đổi một pixel). Nó có sẵn để
+     *   P1b chỉ phải thêm **một lớp ảnh ở chỉ số 0** của [LayerDrawable] chứ không phải viết lại hàm này: thứ tự
+     *   lớp ở đây đánh theo `numberOfLayers - 1` chứ không theo số cứng, nên chèn thêm lớp đáy không lệch gì.
+     *   ⚠⚠ Và ghi ra chỗ CHƯA ĐỦ: ở 80 %, [ĐO] trên hai nền tệ nhất (trắng tinh / đen tuyền) [INK] còn 7.27:1
+     *   (tối) và 10.17:1 (sáng) — đạt; nhưng [MUT] chỉ còn 3.15–3.91:1. P1b **phải** kèm lớp che 35–50 % hoặc
+     *   chọn mực theo độ chói đo được của vùng ảnh dưới thẻ. Không có bước đó thì cờ này chưa dùng được thật.
+     */
+    fun surface(
+        ctx: Context,
+        radius: Int = KachiSpace.RADIUS_XL,
+        tone: SurfaceTone = SurfaceTone.NEUTRAL,
+        domain: Domain? = null,
+        overArtwork: Boolean = false,
+    ): Drawable {
+        val r = KachiSpace.dpf(ctx, radius)
+        val hair = dpi(ctx, KachiSpace.HAIRLINE)
+        if (tone == SurfaceTone.SUNKEN) return GradientDrawable().apply {
+            cornerRadius = r
+            setColor(c(FIELD_SUNKEN))
+            setStroke(hair, c(SURF_LINE))
+        }
+        val active = tone == SurfaceTone.ACTIVE
+        val well = tone == SurfaceTone.WELL
+        val neutralFrom = if (overArtwork) SURF_FROM_OVER_ART else SURF_FROM
+        val neutralTo = if (overArtwork) SURF_TO_OVER_ART else SURF_TO
+        val from = if (active) SURF_ON_FROM else if (well) SLOT else neutralFrom
+        val to = if (active) SURF_ON_TO else if (well) SLOT_TO else neutralTo
+        val base = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(c(from), c(to)),
+        ).apply {
+            cornerRadius = r
+            setStroke(hair, c(if (active) ACCENT_LINE else if (well) LINE_STRONG else SURF_LINE))
+        }
+        // Dải mép sáng cao đúng [KachiSpace.RADIUS_M]; bo góc trên không được vượt chiều cao dải, nếu không
+        // `GradientDrawable` tự kẹp bán kính và mép trông méo ở thẻ bo tròn nhiều (pill: radius = 999).
+        val edgeH = dpi(ctx, KachiSpace.RADIUS_M)
+        val topR = minOf(r, edgeH.toFloat())
+        val edgeColor = if (active) SURF_ON_EDGE else SURF_EDGE
+        val edge = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(c(edgeColor), c(CLEAR)),
+        ).apply { cornerRadii = floatArrayOf(topR, topR, topR, topR, 0f, 0f, 0f, 0f) }
+        // ⚠ [SOÁT Pass 4] NÉT ĐỈNH — dải mờ dần một mình đọc ra "hơi sáng ở trên", không đọc ra "mặt vát".
+        // Thêm một nét ĐẶC ở đúng đỉnh, dày 2dp trên thẻ LỚN (bán kính ≥ [KachiSpace.RADIUS_XL]) và 1dp trên ô
+        // nhỏ — ô 40dp mà kẻ 2dp thì nét chiếm 5 % chiều cao ô và đọc thành viền, không thành ánh sáng. Nét nằm
+        // ĐÈ lên đầu dải mờ nên hai lớp cộng alpha ⇒ đỉnh sáng gấp ~3.1× mặt thẻ, thấy được ở khoảng cách lái xe.
+        val crispH = if (radius >= KachiSpace.RADIUS_XL) hair * 2 else hair
+        val crisp = GradientDrawable().apply {
+            cornerRadii = floatArrayOf(topR, topR, topR, topR, 0f, 0f, 0f, 0f)
+            setColor(c(edgeColor))
+        }
+        val tint = domainTint(domain)
+        val layers: Array<Drawable> =
+            if (tint == CLEAR) arrayOf(base, edge, crisp)
+            else arrayOf(base, GradientDrawable().apply { cornerRadius = r; setColor(c(tint)) }, edge, crisp)
+        return LayerDrawable(layers).apply {
+            val top = numberOfLayers - 1
+            // Hai lớp ánh sáng đánh theo `numberOfLayers` chứ không theo số cứng — P1b chèn thêm lớp ảnh ở chỉ
+            // số 0 mà không lệch gì (xem KDoc [overArtwork]).
+            listOf(top to crispH, top - 1 to edgeH).forEach { (i, h) ->
+                setLayerInset(i, hair, hair, hair, 0)           // mép sáng nằm TRONG hairline, không đè lên nó
+                setLayerGravity(i, Gravity.TOP or Gravity.FILL_HORIZONTAL)
+                setLayerHeight(i, h)
+            }
+        }
+    }
 
     /**
      * Nền gradient accent (nút chính / tile bật).

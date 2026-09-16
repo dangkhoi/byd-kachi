@@ -147,7 +147,14 @@ class ShellApprovalWiringContractTest {
     fun `dai nhac dung chu trong res va mau cua KachiTheme`() {
         assertTrue(gate.contains("R.string.kachi_shell_approval_msg"), "chữ phải ở res (VI/EN), không viết cứng")
         assertTrue(gate.contains("R.string.kachi_shell_approval_retry"), "phải có nút Thử lại")
-        assertTrue(gate.contains("KachiTheme.card("), "nền lấy từ hệ thiết kế")
+        // ⚠ VISUAL-REFRESH P1 · T3 (2026-09-16): dải nhắc là **thẻ nội dung** nên nó chuyển từ `card()` sang
+        // `surface()`. Tính chất cần giữ vẫn y nguyên — *"nền lấy từ hệ thiết kế, không dựng Drawable tại chỗ"* —
+        // nên bài nhận CẢ HAI hàm dựng của hệ thay vì khoá đúng một cái. Khoá một cái là cách bài canh biến thành
+        // rào cản cho chính việc dọn mà nó muốn.
+        assertTrue(
+            gate.contains("KachiTheme.surface(") || gate.contains("KachiTheme.card("),
+            "nền lấy từ hệ thiết kế (KachiTheme.surface / KachiTheme.card), không dựng GradientDrawable tại chỗ",
+        )
         assertFalse(Regex("\"#[0-9a-fA-F]{3,8}\"").containsMatchIn(gate), "cấm mã màu viết cứng — phải qua KachiTheme")
     }
 

@@ -1,9 +1,31 @@
-<!-- Lớp NỀN của adaptive icon Kachi (L2): accent của bảng màu (KachiPalette DARK accent #4c7dff) + một vệt accent2
-     (#7b5cff) chéo ở góc dưới-phải để icon không phẳng một màu. Không dùng gradient (aapt2 vector gradient chỉ từ API 24
-     nhưng render khác nhau giữa launcher OEM) — hai mảng phẳng là an toàn nhất trên đầu xe. -->
+<!-- Lớp NỀN của adaptive icon Kachi — VISUAL-REFRESH P1 · R7 (hoa anh đào).
+
+     Chuyển sắc chéo **tím than → mận**: đủ tối để cánh hoa hồng phấn nổi lên (tương phản cánh/nền ≈ 7:1 ở mã
+     nhạt nhất, ≈ 4.4:1 ở mã đậm nhất), và đủ ấm để không đọc thành "nền xanh doanh nghiệp".
+     Thêm một quầng sáng toả rất nhạt sau bông hoa — cùng thủ pháp "chiều sâu bằng gradient, không bằng bóng đổ"
+     của `KachiTheme.surface()`: adaptive icon bị launcher phóng to/parallax, mọi hiệu ứng thật đều tốn GPU.
+
+     ⚠ Chú thích của bản 2026-09-13 ghi *"Không dùng gradient — render khác nhau giữa launcher OEM"*. Câu đó
+     **hết hiệu lực**: owner 2026-09-16 bỏ luật cấm, và `<aapt:attr><gradient>` đã được đo trên AVD API 29
+     (`docs/diagnostics/visual-refresh-2026-09-16/gradient-probe.png`). Nếu một launcher OEM nào đó vẫn đổ khối
+     đặc thì icon vẫn đọc được — nó lùi về màu `startColor`, không lùi về trong suốt.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#4C7DFF" android:pathData="M0,0h108v108H0z" />
-    <path android:fillColor="#7B5CFF" android:pathData="M108,42 L108,108 L42,108 z" />
+
+    <path android:pathData="M0,0h108v108H0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="0" android:startY="0" android:endX="108" android:endY="108"
+                android:startColor="#161C3A" android:centerColor="#2A1E46" android:endColor="#3E2145" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M0,0h108v108H0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="50" android:gradientRadius="46"
+                android:startColor="#38E86F9A" android:centerColor="#1AE86F9A" android:endColor="#00E86F9A" />
+        </aapt:attr>
+    </path>
 </vector>

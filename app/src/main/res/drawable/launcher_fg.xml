@@ -1,11 +1,77 @@
-<!-- Lớp TRƯỚC của adaptive icon Kachi (L2). Viewport 108, vùng an toàn 66 ở giữa (21..87) — hệ cắt mặt nạ tròn/
-     squircle theo OEM nên hình phải nằm trọn trong vùng đó. Cùng hình "1 ô lớn + 2 ô nhỏ" với ic_launcher.xml
-     (silhouette thông báo); ô nhỏ dưới tô accent2 nhạt để có một điểm nhấn thứ hai trên nền accent. Không đặt tên
-     `ic_*` vì đây không phải icon giao diện — bài canh IconStyleContractTest chỉ quét `ic_*`. -->
+<!-- Lớp TRƯỚC của adaptive icon Kachi — HOA ANH ĐÀO (VISUAL-REFRESH P1 · R7, owner 2026-09-16: *"icon app dùng
+     hoa anh đào nhé"*). Thay bố cục "1 ô lớn + 2 ô nhỏ" của bản 2026-09-13.
+
+     ## ⚠ [SOÁT Pass 4] Vẽ lại hình học — bản P1 đọc ra "bánh răng 10 răng" ở cỡ ngăn kéo
+     [ĐO] `app-icon-36dp-zoom.png` của lượt P1: bông hoa thu về 36 px cho một viền **10 mấu**, không ra năm cánh.
+     `README` của thư mục bằng chứng đã ghi triệu chứng và đề cách chữa là *"giảm độ sâu khía ở bản 24dp"* — câu
+     đó **sai địa chỉ hai lần**:
+      1. ảnh 36 px là bản **108 thu nhỏ**, nên sửa bản 24dp (chỉ dùng cho smallIcon thông báo) không đổi nó;
+      2. thủ phạm không phải độ sâu khía mà là **thung lũng giữa hai cánh quá nông**: cánh béo tới mức chúng dính
+         vào nhau gần hết bán kính, nên viền ngoài chỉ còn là một đường tròn có 10 vết răng cưa nhỏ — và mắt đọc
+         một đường tròn có răng là **bánh răng**, không phải hoa. [ĐO] hạ độ sâu khía một mình (lượt thử đầu của
+         Pass 4) làm nó ra bánh răng RÕ HƠN, đúng như suy luận trên.
+
+     ## Hình học (dựng bằng THAM SỐ, không vẽ tay)
+     Viewport 108, tâm (54,54), bán kính cánh R = 28. Mỗi cánh là MỘT path, năm cánh cách nhau 72°, sinh từ một
+     bộ tham số duy nhất: nở rộng nhất ở **0.60 R** (nửa bề rộng 0.42 R), thắt lại còn 0.21 R ở đầu cánh
+     (**0.97 R**), khía đầu cánh thụt về **0.84 R**. Hai con số đầu là thứ quyết định: nửa bề rộng 0.42 R tại
+     0.60 R ⇒ hai cánh kề nhau chỉ gặp nhau ở khoảng **0.55 R**, tức viền ngoài có **năm** thung lũng SÂU và mắt
+     đọc ra năm cánh ngay cả ở 36 px ([ĐO] `app-icon-36dp-zoom.png` của lượt này).
+     [ĐO] khung mực: x 27.94..80.06 · y 27.60..77.89 — nằm trọn trong vùng an toàn adaptive **66/108** (21..87)
+     nên mọi mặt nạ OEM (tròn · squircle · vuông bo) đều không cắt vào cánh.
+
+     ## Vì sao dùng GRADIENT ở đây (mà `ic_launcher.xml` 24dp thì không)
+     Owner 2026-09-16 bỏ mọi luật cấm thẩm mỹ. Icon app **không đi qua `setTint`** (khác icon giao diện), nên nó
+     được giữ màu riêng và chiều sâu. Chuyển sắc toả đặt đúng tâm hoa ⇒ **bất biến khi xoay**: năm cánh xoay 72°
+     vẫn cho một dải màu liền mạch, không có đường nối giữa các cánh.
+     Bản 24dp thì ngược lại — hệ thống tô TRẮNG cho smallIcon thông báo, nên nó phải là một tông duy nhất.
+
+     ## Ràng buộc còn giữ
+     Không `<aapt:attr>` nào nằm trên tệp `ic_*` (bài canh `IconStyleContractTest` quét đúng nhóm đó). Tệp này tên
+     `launcher_*`, cố ý — nó không phải icon giao diện.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M28.33,21.0 h20.169999999999998 a7.33,7.33 0 0 1 7.33,7.33 v51.34 a7.33,7.33 0 0 1 -7.33,7.33 h-20.169999999999998 a7.33,7.33 0 0 1 -7.33,-7.33 v-51.34 a7.33,7.33 0 0 1 7.33,-7.33 z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M70.5,21.0 h9.169999999999998 a7.33,7.33 0 0 1 7.33,7.33 v14.669999999999998 a7.33,7.33 0 0 1 -7.33,7.33 h-9.169999999999998 a7.33,7.33 0 0 1 -7.33,-7.33 v-14.669999999999998 a7.33,7.33 0 0 1 7.33,-7.33 z" />
-    <path android:fillColor="#D6DEFF" android:pathData="M70.5,57.67 h9.169999999999998 a7.33,7.33 0 0 1 7.33,7.33 v14.669999999999998 a7.33,7.33 0 0 1 -7.33,7.33 h-9.169999999999998 a7.33,7.33 0 0 1 -7.33,-7.33 v-14.669999999999998 a7.33,7.33 0 0 1 7.33,-7.33 z" />
+
+    <!-- ── 5 cánh · chuyển sắc toả từ tâm: hồng đậm ở lòng hoa → hồng phấn ở rìa cánh ───────────────── -->
+    <path android:pathData="M54.00,54.00 C43.42,44.76,42.24,37.20,48.12,28.74 C51.35,27.11,52.94,26.84,54.00,30.48 C55.06,26.84,56.65,27.11,59.88,28.74 C65.76,37.20,64.58,44.76,54.00,54.00 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="54" android:gradientRadius="31"
+                android:startColor="#E86F9A" android:centerColor="#F2A9C2" android:endColor="#F8C8D8" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M54.00,54.00 C59.52,41.08,66.34,37.62,76.21,40.60 C78.75,43.17,79.50,44.60,76.37,46.73 C80.16,46.61,80.39,48.21,79.84,51.79 C73.61,59.99,66.06,61.21,54.00,54.00 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="54" android:gradientRadius="31"
+                android:startColor="#E86F9A" android:centerColor="#F2A9C2" android:endColor="#F8C8D8" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M54.00,54.00 C67.99,55.25,73.39,60.68,73.60,70.98 C71.95,74.20,70.82,75.35,67.82,73.03 C69.11,76.60,67.66,77.31,64.09,77.89 C54.36,74.50,50.87,67.70,54.00,54.00 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="54" android:gradientRadius="31"
+                android:startColor="#E86F9A" android:centerColor="#F2A9C2" android:endColor="#F8C8D8" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M54.00,54.00 C57.13,67.70,53.64,74.50,43.91,77.89 C40.34,77.31,38.89,76.60,40.18,73.03 C37.18,75.35,36.05,74.20,34.40,70.98 C34.61,60.68,40.01,55.25,54.00,54.00 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="54" android:gradientRadius="31"
+                android:startColor="#E86F9A" android:centerColor="#F2A9C2" android:endColor="#F8C8D8" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M54.00,54.00 C41.94,61.21,34.39,59.99,28.16,51.79 C27.61,48.21,27.84,46.61,31.63,46.73 C28.50,44.60,29.25,43.17,31.79,40.60 C41.66,37.62,48.48,41.08,54.00,54.00 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="54" android:gradientRadius="31"
+                android:startColor="#E86F9A" android:centerColor="#F2A9C2" android:endColor="#F8C8D8" />
+        </aapt:attr>
+    </path>
+
+    <!-- ── Nhị: 5 chấm vàng lệch 36° so với trục cánh (rơi vào KHE giữa hai cánh) + lòng hoa ─────────── -->
+    <path android:fillColor="#F5C451" android:pathData="M57.97,45.51 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" />
+    <path android:fillColor="#F5C451" android:pathData="M61.79,57.24 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" />
+    <path android:fillColor="#F5C451" android:pathData="M51.8,64.5 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" />
+    <path android:fillColor="#F5C451" android:pathData="M41.81,57.24 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" />
+    <path android:fillColor="#F5C451" android:pathData="M45.63,45.51 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 z" />
+    <path android:fillColor="#E8A93A" android:pathData="M49.8,54 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0 z" />
 </vector>

@@ -271,11 +271,15 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
 
     private fun makeSlot(index: Int, content: SlotContent): View {
         val fl = FrameLayout(context)
-        fl.background = GradientDrawable().apply {
-            cornerRadius = dp(Sp.RADIUS_L).toFloat()
-            setColor(Color.parseColor(KachiTheme.SLOT))                 // nền card nhấc nhẹ khỏi nền (prototype --k-card)
-            setStroke(dp(Sp.HAIRLINE), Color.parseColor(KachiTheme.LINE_STRONG))       // viền HAIRLINE SÁNG mảnh (prototype, không phải viền tối)
-        }
+        // ⚠⚠ [SOÁT Pass 4 · VISUAL-REFRESH P1] Ô làm việc là **bề mặt lớn nhất màn hình**, và P1 đã bỏ sót nó:
+        // bảng rà của §9 đi từ chuỗi `KachiTheme.card(`, còn chỗ này dựng `GradientDrawable` thẳng tại chỗ nên nó
+        // không nằm trong 26 chỗ gọi được rà. [ĐO] so ảnh máy ảo trước/sau P1 tại (800,320): cùng là `(23,26,32)`
+        // — không đổi MỘT byte, trong khi ô con bên trong thì đổi. Đó là toàn bộ lý do "đổi mà nhìn không ra".
+        //
+        // Nay nó đi qua CÙNG bộ dựng bề mặt với mọi thẻ khác, ở tone KHAY: tối hơn thẻ nội dung một bậc để thẻ có
+        // chỗ nổi lên, viền vẫn [KachiTheme.LINE_STRONG] như prototype đã chạy tốt trên xe, cộng sắc lĩnh vực của
+        // chính nội dung trong ô ⇒ nhìn màu là biết ô nào là Khí hậu, không phải đọc chữ.
+        fl.background = KachiTheme.surface(context, Sp.RADIUS_L, SurfaceTone.WELL, slotDomain(content))
         fl.clipToOutline = true                                    // clip nội dung theo góc bo (như overflow:hidden của prototype)
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         when (content) {
@@ -356,6 +360,17 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         }
         return fl
     }
+
+    /**
+     * Lĩnh vực của nội dung trong ô — để khay mang sắc của chính thứ nó chứa.
+     *
+     * Tra qua [CapabilityCatalog.pick] (chỗ tra DUY NHẤT, đã phủ cả nhóm lẫn datum lẫn nút — xem
+     * `LauncherCatalog.kt`), KHÔNG đoán theo tiền tố mã. Ô App / ô widget bên thứ ba / ô trống ⇒ `null` = khay
+     * trung tính: launcher không biết app của người khác thuộc lĩnh vực nào, và mượn đại một sắc là nói sai.
+     */
+    private fun slotDomain(content: SlotContent): Domain? = (content as? SlotContent.Widget)
+        ?.ids?.firstOrNull()
+        ?.let { CapabilityCatalog.pick(it)?.domain }
 
     private fun startSlotDrag(index: Int, v: View) {
         v.startDragAndDrop(null, View.DragShadowBuilder(v), index, 0)
