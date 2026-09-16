@@ -93,16 +93,31 @@ class VoiceModelSideloadTest {
         assertEquals(payload.size.toLong(), seen.last(), "nhịp cuối = đúng cỡ tệp")
     }
 
+    /**
+     * ⚠ **Đổi có chủ ý ở T8** (spec `kachi-voice-feedback.html`): trước đây MỌI `/` bị từ chối; nay `/` được
+     * phép làm **dấu ngăn đoạn** vì gói ĐỌC mang một cây thư mục (`espeak-ng-data/lang/aav/vi`) — cấm `/` là cấm
+     * luôn cả gói. Phần **chống leo thư mục thì không nới một ly**: mỗi đoạn vẫn phải khác rỗng, khác `.`/`..`,
+     * không `\`/`:`, và cả chuỗi không bắt đầu bằng `/`. Bài này khoá đúng ranh giới đó.
+     */
     @Test
-    fun `ten co dau gach cheo bi tu choi ngay o candidate`() {
+    fun `duong dan nhieu doan duoc nhan, moi kieu leo thu muc bi tu choi`() {
         val dir = tmpDir()
         File(dir, "evil.txt").writeBytes(ByteArray(3))
+        File(dir, "espeak-ng-data/lang/aav").mkdirs()
+        File(dir, "espeak-ng-data/lang/aav/vi").writeBytes(ByteArray(7))
         // Tên luôn tới từ bản ghim, nhưng lớp này vẫn tự chặn: một call site tương lai quên `requireSafe` thì
         // side-load KHÔNG được trở thành đường leo ra khỏi thư mục import (CLAUDE.md §4.1).
         assertNull(VoiceModelSideload.candidate(dir, "../evil.txt"))
-        assertNull(VoiceModelSideload.candidate(dir, "sub/evil.txt"))
+        assertNull(VoiceModelSideload.candidate(dir, "sub/../../evil.txt"))
+        assertNull(VoiceModelSideload.candidate(dir, "/etc/passwd"))
+        assertNull(VoiceModelSideload.candidate(dir, "a//b"))
+        assertNull(VoiceModelSideload.candidate(dir, "a\\b"))
         assertNull(VoiceModelSideload.candidate(dir, ".."))
         assertNotNull(VoiceModelSideload.candidate(dir, "evil.txt"), "tên thuần vẫn phải nhận")
+        assertNotNull(
+            VoiceModelSideload.candidate(dir, "espeak-ng-data/lang/aav/vi"),
+            "T8: cây thư mục của gói ĐỌC phải chép nguyên được từ USB",
+        )
     }
 
     @Test

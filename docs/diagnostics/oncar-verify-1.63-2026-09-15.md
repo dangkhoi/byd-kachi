@@ -130,7 +130,7 @@ adb shell rm -rf $D
 - Xong ⇒ chạy lại 6b(b) `wav` để xác nhận nhận dạng chạy trên xe.
 
 ## 6d. Thêm cho bản 1.64 (commit `e598925`) — 3 mục on-car mới, mỗi mục 1 lệnh
-Cài `app-release.apk` 1.64/65 (cùng khoá, `install -r`). Mọi thứ dưới đã xanh off-car + E2E emulator (`emulator-voice-e2e-2026-09-15.md` §6).
+Cài `app-release.apk` 1.65 (66) (cùng khoá, `install -r`). Mọi thứ dưới đã xanh off-car + E2E emulator (`emulator-voice-e2e-2026-09-15.md` §6).
 ```
 # (a) Phản hồi giọng: nói 1 câu bất kỳ rồi đọc khối tts — vi_status: 0/1 = có giọng vi (Android TTS đọc được);
 #     -1 = engine có, thiếu gói (tải là xong); -2 = engine không bao giờ đọc tiếng Việt → cần sherpa offline (pha 2)
@@ -155,6 +155,98 @@ adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "heard|intent|hotword"
 adb shell "run-as com.byd.launcher wc -l files/sherpa/hotwords.txt" 2>/dev/null   # nếu có tệp: kỳ vọng ~1902 dòng (không có ⇒ per-stream, không tệp)
 ```
 - Nếu giọng thật vẫn sai ở đúng 3 câu ấy mà máy ảo đúng ⇒ vấn đề là **âm học** (mic/ồn), không phải hotword — đo tiếp theo §6b (WAV thu từ mic xe → `wav` bridge).
+
+## 6f. Thêm cho **voice pha 2** (1.65 (66) — TTS gói tỉa · công tắc đọc · đọc lại giá trị thật · bố cục bằng giọng)
+
+Spec: `docs/specs/kachi-voice-feedback.html` (T8 · T9 · T10 · OQ4) + `kachi-voice-command.html` (L7). Mọi thứ dưới
+đã xanh off-car + E2E máy ảo (`emulator-voice-e2e-2026-09-15.md` §7). Bốn mục, mỗi mục 1–2 lệnh.
+
+### (a) SIDE-LOAD gói GIỌNG ĐỌC (61 MB, 13 tệp) — xe không internet
+
+⚠ **Asset trên GitHub Release CHƯA được đăng** (owner phải tự upload — máy soạn thảo không có `gh`), nên tới lúc
+đó nút *Tải* sẽ hỏng fail-safe (404 / sha không khớp, câu lỗi **nói rõ tệp nào**). Đường side-load thì chạy ngay.
+
+Gói giữ **nguyên cây thư mục** — khác gói NGHE (4 tệp phẳng, phải đổi tên): ở đây **không đổi tên gì cả**, chỉ
+chép nguyên thư mục. Nguồn: giải nén `vits-piper-vi_VN-vais1000-medium.tar.bz2` rồi **xoá bớt** `espeak-ng-data`
+còn đúng 11 mục dưới đây (bảng ghim đầy đủ: `SherpaTtsCatalog.PIPER_VI_VAIS1000`).
+
+```bash
+# 1) trên máy tính — dựng cây gói TỈA (13 tệp, 63 877 499 byte)
+#    giữ: espeak-ng-data/{intonations, phondata, phondata-manifest, phonindex, phontab, vi_dict}
+#         espeak-ng-data/lang/aav/{vi, vi-VN-x-central, vi-VN-x-south}
+#         MODEL_CARD, tokens.txt, vi_VN-vais1000-medium.onnx, vi_VN-vais1000-medium.onnx.json
+find . -type f | sort | while read f; do printf '%s\t%s\t%s\n' "${f#./}" "$(stat -f%z "$f")" "$(shasum -a 256 "$f"|cut -d' ' -f1)"; done
+#    → so từng dòng với bảng ghim trong SherpaTtsCatalog.kt (lệch 1 byte là install từ chối)
+
+# 2) chép NGUYÊN CÂY sang xe (adb push thư mục giữ cấu trúc con)
+D=/sdcard/Android/data/com.byd.launcher/files/sherpa/import/piper-vi_VN-vais1000-medium
+adb shell mkdir -p $D
+adb push ./espeak-ng-data $D/
+adb push MODEL_CARD tokens.txt vi_VN-vais1000-medium.onnx vi_VN-vais1000-medium.onnx.json $D/
+adb shell "find $D -type f | wc -l"        # kỳ vọng 13
+
+# 3) trên xe: Cài đặt › Hệ thống & quyền › Nâng cao › "Giọng đọc offline (tại máy)" → bấm Tải
+#    (install() thấy đủ 13 tệp side-load ⇒ KHÔNG chạm mạng, vẫn băm sha256 từng tệp)
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "offline_pack|speak_replies|prefer_offline"
+#    kỳ vọng: offline_pack_ready:true · offline_pack_dir:/data/user/0/…/files/sherpa-tts/piper-vi_VN-vais1000-medium
+
+# 4) xong thì trả lại chỗ trên thẻ (bản chép trong máy mới là bản dùng)
+adb shell rm -rf $D
+```
+- Cần **~101 MB** trống trong bộ nhớ trong (61 MB gói + 40 MB lề của `install`); thiếu ⇒ báo "máy còn … MB" TRƯỚC khi chép.
+- Sai nội dung ⇒ "side-load &lt;tên&gt; không khớp bản ghim" — **không** âm thầm rơi về mạng.
+- Thư mục `import` giữ **nguyên đường dẫn tương đối**; đặt phẳng (`vi` ra ngoài `lang/aav/`) ⇒ tệp đó đi đường mạng ⇒ xe không mạng thì cả lượt hỏng.
+
+### (b) Công tắc R4 + câu trả lời có tiếng
+
+```bash
+# Hai công tắc ở ngay dưới hai hàng gói: "Đọc phản hồi bằng giọng" (mặc định BẬT) · "Ưu tiên giọng offline" (TẮT)
+adb shell "$B --es cmd say --es text 'bật đèn đọc'"     # phải NGHE thấy câu "Đã bật Đèn đọc" (không chỉ hiện chữ)
+# tắt công tắc thứ nhất rồi nói lại ⇒ chỉ còn chữ + âm báo (y như 1.65)
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "speak_replies|prefer_offline|ask_aloud|kind|engine"
+```
+- `kind` = `ANDROID_TTS` khi máy có giọng `vi-VN`; bật *"Ưu tiên giọng offline"* sau khi lắp gói ⇒ phải đổi sang `SHERPA_OFFLINE`.
+
+### (c) R5 — đọc lại giá trị THẬT (đây là mục **cần xe**, máy ảo không lộ được)
+
+```bash
+adb shell "$B --es cmd say --es text 'đặt nhiệt độ 24'"
+# ba kết quả đều hợp lệ, và mỗi cái nói một chuyện khác nhau:
+#   "✓ Đặt Nhiệt độ = 24"                → xe báo đúng 24 (hoặc trim này không đọc được — xem hal get bên dưới)
+#   "✓ Đã gửi Nhiệt độ 24 — xe báo 23"   → LỆCH thật: xe kẹp, xe chậm, hoặc nút không ăn trên trim
+adb shell "$B --es cmd hal --es op get --es id temp"    # phân biệt "không đọc được" với "đọc được nhưng lệch"
+```
+- **OQ6 (cần đo)**: `READBACK_SETTLE_MS = 300 ms` là **giả định**. Bấm giờ giữa lượt ghi và lần `hal get` ĐẦU TIÊN
+  trả số mới (lặp 10 lần cho `temp` và `fan`) → nếu > 300 ms thì câu trả lời sẽ hay thuật lại số cũ ⇒ nâng hằng.
+
+### (d) Cổng xác nhận — câu trả lời, và (tuỳ chọn) đọc câu hỏi
+
+> ⚠ **Owner chốt 2026-09-16: KHÔNG đọc câu hỏi xác nhận** (chỉ đọc phản hồi sau lệnh). Khoá `voice_ask_aloud`
+> **mặc định false** và **chưa có hàng trong Cài đặt** ⇒ trên bản đang cầm, câu hỏi chỉ **hiện chữ** rồi mở micro
+> ngay như 1.65. Kiểm bằng `state`, đừng kiểm bằng tai.
+
+```bash
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "ask_aloud|speak_replies"   # kỳ vọng ask_aloud:false
+# Nói bằng MIC (không phải bridge) một câu CONFIRM: "mở khoá cửa"
+#   → tấm chữ hiện câu hỏi, có tiếng bíp mở micro NGAY (không có lượt đọc chen vào)
+#   → trả lời bằng BẤT KỲ từ nào: "ừ" · "vâng" · "có" · "được" · "đúng rồi" · "làm đi" · "đồng ý" · "ok"
+```
+- **C1 (cần đo trên mic thật)**: bảng `CONFIRM_YES` mở rộng 2026-09-16 sau khi [ĐO xe] thấy *"ừ"* bị bỏ **im
+  lặng**. Đo: nói *"ừ"* ⇒ việc phải CHẠY (không phải *"đã huỷ"*). ⚠ Nếu nói *"dừng"* (ý là **thôi**) mà việc vẫn
+  chạy thì đó là va chạm `đúng`/`dừng` đã biết — backlog `V-CONFIRM-DUNG`, báo về để owner chốt.
+- **OQ7** chỉ đo được khi bật `voice_ask_aloud`: trần `ASK_ALOUD_CAP_MS = **6 s**` (nới từ 4 s ở lượt soát
+  09-16; [SUY] câu dài nhất ~3,8 s). Nghe micro mở khi câu hỏi **chưa dứt** ⇒ trần vẫn hụt.
+- Bấm nút *Đồng ý* **giữa lúc đang đọc** ⇒ câu phải **cắt ngay**, không đọc nốt.
+- **Huỷ** (chạm ra ngoài) giữa lúc đang đọc ⇒ **không được** có tiếng bíp mở micro nào sau đó (lỗi [P2] vá ở
+  lượt soát 09-16).
+
+### (e) L7 — bố cục bằng giọng nói
+
+```bash
+adb shell "$B --es cmd say --es text 'đổi sang bố cục 2 cột'"   # kỳ vọng: ✓ Bố cục 2 cột, và MÀN HÌNH đổi thật
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "preset|custom"
+```
+- ⚠ Đang dùng **bố cục tự vẽ** thì câu này **bỏ** bố cục tự vẽ (đúng như bấm chip ở Cài đặt) — kiểm `custom:false` sau lệnh.
 
 ## 7. Sau khi 1 + 2 + 3 PASS
 → báo về: em chạy lại senior review + security scan (đã chạy off-car) với log thật → OTA 1.63. Mục FAIL: dán nguyên output — sửa đúng chỗ.

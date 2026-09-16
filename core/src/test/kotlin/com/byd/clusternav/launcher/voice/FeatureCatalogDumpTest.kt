@@ -4,6 +4,7 @@ import com.byd.clusternav.launcher.ActionMacros
 import com.byd.clusternav.launcher.ControlKind
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.LauncherActions
+import com.byd.clusternav.launcher.LayoutPreset
 import com.byd.clusternav.launcher.TelemetryRegistry
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -115,6 +116,13 @@ class FeatureCatalogDumpTest {
             Triple("open_app", listOf("mở YouTube", "đưa YouTube vào ô số hai"), VoiceIntent.OpenApp("YouTube")),
             Triple("open_app_slot", listOf("đưa YouTube vào ô số hai"), VoiceIntent.OpenApp("YouTube", slot = 2)),
             Triple("profile", listOf("đổi sang hồ sơ Chính"), VoiceIntent.Profile("Chính")),
+            // L7 — bố cục bằng giọng nói. Một dòng cho mỗi **kiểu** câu, không phải một dòng cho mỗi bố cục:
+            // năm bố cục dùng chung một câu trả lời, chỉ khác cái nhãn mà `LayoutPreset.label` trả về.
+            Triple(
+                "layout",
+                listOf("bố cục 2 cột", "đổi sang bố cục 4 ô", "bố cục một ô"),
+                VoiceIntent.Layout(LayoutPreset.TWO_COL),
+            ),
             Triple("unknown_no_verb", listOf("hôm nay trời đẹp quá"), VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, "hôm nay trời đẹp quá")),
             Triple("unknown_no_object", listOf("bật cái đó"), VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, "bật cái đó")),
             Triple("unknown_mismatch", listOf("tăng đèn đọc"), VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, "tăng đèn đọc")),
@@ -126,7 +134,12 @@ class FeatureCatalogDumpTest {
                 "id" to id, "voice" to voice, "risk" to risk.name,
                 "replyPreview" to VoiceReply.preview(intent),
                 "replyDone" to if (intent is VoiceIntent.Unknown) VoiceReply.unknown(intent) else VoiceReply.done(intent),
-                "replyFailed" to VoiceReply.failed(intent),
+                // Câu HỎNG phải là câu **thật** của nhánh ấy, không phải câu chung: bố cục không hỏng vì *"xe không
+                // nhận lệnh"* (nó chẳng đụng tới xe) mà vì bề mặt đang nói không nối được đường bố cục.
+                "replyFailed" to when (intent) {
+                    is VoiceIntent.Layout -> VoiceReply.layoutNotHere(intent)
+                    else -> VoiceReply.failed(intent)
+                },
                 "confirmQuestion" to if (risk == VoiceRisk.CONFIRM) VoiceReply.confirmQuestion(intent) else null,
             ))
             if (idx < generic.size - 1) sb.append(",\n")

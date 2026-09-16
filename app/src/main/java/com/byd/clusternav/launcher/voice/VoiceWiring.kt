@@ -68,6 +68,12 @@ object VoiceWiring {
          * là *"vào ô số 2"*, làm một việc khác mà báo ✓ là nói dối. Xem `VoiceDispatcher.assignAppToSlot`.
          */
         assignAppToSlot: (Int, String) -> Boolean = { _, _ -> false },
+        /**
+         * L7 — đổi bố cục màn chính. Mặc định **từ chối**, cùng lẽ [assignAppToSlot]: bề mặt không nối được thì
+         * nói ra, không báo ✓ cho một việc chưa xảy ra. Xem `VoiceDispatcher.onLayout` về vì sao phải là CHÍNH
+         * đường mà chip bố cục dùng (nó còn bỏ bố cục tự vẽ trước khi đặt preset).
+         */
+        onLayout: (com.byd.clusternav.launcher.LayoutPreset) -> Boolean = { false },
     ): VoiceDispatcher = VoiceDispatcher(
         control = { AppContainer.get(ctx).carControl },
         state = state,
@@ -81,6 +87,7 @@ object VoiceWiring {
         confirm = confirm,
         say = say,
         assignAppToSlot = assignAppToSlot,
+        onLayout = onLayout,
         // V1.1 — ba đường của bảng đích. Dựng ở ĐÂY, không ở hai bề mặt: xem KDoc lớp (một bộ dây, một chỗ khai).
         sendToApp = { handoff -> VoiceAppIntents.send(ctx, handoff) },
         geocode = { place -> VoiceGeocoder.resolve(ctx, place) },

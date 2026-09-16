@@ -344,7 +344,7 @@ class SettingsSections(
         // ĐO, không phải một bề mặt cấu hình (xem KDoc [VoiceTextConsole] về vì sao không cho nó một nhóm riêng).
         // V1 pha NGHE · R9 — hàng tải mô hình đứng TRƯỚC ô gõ thử: đó là thứ tự làm việc thật (tải cái tai,
         // rồi thử cái đầu), và đặt sau thì người dùng gõ thử xong mới phát hiện mình chưa nói được.
-        com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows).build(body)
+        com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows, deps).build(body)
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
         VoiceTextConsole(context, rows, deps).build(body)
         // Owner 2026-09-15 — công cụ kiểm tra từng nút/thông tin xe, bấm chạy lần lượt, tự chấm OK/Không OK, ghi log.

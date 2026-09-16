@@ -162,6 +162,10 @@ class VoiceTextConsole(
         say = say,
         // V1.1 — *"mở YouTube vào ô số 2"* gõ ở đây phải gắn thật vào ô, qua ĐÚNG đường của ngăn kéo.
         assignAppToSlot = deps.assignAppToSlot,
+        // L7 — *"bố cục 2 cột"* gõ ở đây đổi THẬT, qua CHÍNH intent mà chip bố cục ngay trong màn này dùng
+        // (`SettingsSectionsHome` → `deps.onPreset`). Không nối thì ô thử báo "chưa đổi được bố cục từ đây" cho
+        // một việc mà màn Cài đặt hoàn toàn làm được — tức nói dối theo hướng ngược lại.
+        onLayout = { preset -> deps.onPreset(preset); true },
     )
 
     /**

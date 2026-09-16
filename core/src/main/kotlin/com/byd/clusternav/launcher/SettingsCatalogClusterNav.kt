@@ -64,6 +64,9 @@ internal object SettingsCatalogClusterNav {
             "voicekey_enabled", "voicekey_bindings", "voicekey_custom_buttons", "voicekey_learn",
             "seat_comfort_enabled", "seat_comfort_mode", "seat_level_0",
             "pm25_filter_enabled", "recirc_on_start_enabled", "headless_autostart",
+            // V1 pha NÓI · R4 (spec `kachi-voice-feedback.html` T9) — hai công tắc của đường ra TIẾNG. Khoá nằm
+            // cùng tệp với `voice_mic_pill` (cũng của `Prefs`), nên "cấu hình giọng nói ở đâu" có một câu trả lời.
+            "voice_speak_replies", "voice_prefer_offline",
         ).forEach { put(it, "clusternav_prefs") }
         // ── simple_cast_prefs (SimpleCastRuntime.kt) ──
         listOf(
@@ -113,6 +116,12 @@ internal object SettingsCatalogClusterNav {
             "không có nút ở màn cũ — màn chỉ HIỆN nguồn đang dùng (txt_nav_source_active); chọn tay nguồn nào là " +
                 "việc của bộ trọng tài, không phải của người lái",
         "anim_opt" to "ép true — tối ưu hoạt ảnh cụm, không có nút ở màn cũ",
+        "voice_ask_aloud" to
+            "OQ4 — đọc to CÂU HỎI xác nhận rồi mới mở micro. Owner chốt 2026-09-16: **không** đọc câu hỏi (chỉ " +
+                "đọc phản hồi sau lệnh) ⇒ khoá này mặc định false và CHƯA lên UI. Không gỡ mã: đường ấy đã có " +
+                "hợp đồng + bài canh, và đây là một lựa chọn hành vi, không phải một cơ chế sai. Hàng trong Cài " +
+                "đặt đi cùng batch 'chọn nút nào phải hỏi lại' (backlog V-CONFIRM-UI) — lúc đó dòng này chuyển " +
+                "sang KEYS + một mục danh mục",
         "hud" to
             "ép false — HUD kính lái mới chỉ có vòng đời request/output, KHÔNG có đường ghi nội dung thật; bày nút " +
                 "ra là hứa một tính năng chưa tồn tại",

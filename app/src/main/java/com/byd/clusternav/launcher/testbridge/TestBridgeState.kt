@@ -9,6 +9,8 @@ import com.byd.clusternav.launcher.PermissionPreflight
 import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SlotCodec
 import com.byd.clusternav.launcher.UnitFormat
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.voice.SherpaTtsCatalog
 import com.byd.clusternav.launcher.voice.VoiceModelStore
 import com.byd.clusternav.launcher.voice.VoiceSpeakerKind
 import com.byd.clusternav.launcher.voice.VoiceSpeakerRouter
@@ -95,7 +97,7 @@ internal object TestBridgeState {
                         "bytes" to VoiceModelStore.sizeOnDisk(ctx),
                     ),
                 ),
-                "tts" to TestBridgeJson.Raw(tts()),
+                "tts" to TestBridgeJson.Raw(tts(ctx)),
                 "cast_enabled" to castEnabled(ctx),
                 "test_mode_minutes_left" to TestBridgeStore.remainingMinutes(ctx),
             ),
@@ -157,8 +159,13 @@ internal object TestBridgeState {
      * (−2, *engine này không bao giờ đọc được tiếng Việt ⇒ phải đổi engine hoặc dùng gói offline*) là khác biệt
      * quyết định người ngồi trên xe phải làm gì tiếp.
      */
-    private fun tts(): String {
+    private fun tts(ctx: Context): String {
         val s = VoiceSpeakerRouter.lastSnapshot()
+        // T8/T9 — bốn trường dưới đọc từ **sự thật trên đĩa/prefs**, không từ ảnh chụp: chúng trả lời được ngay
+        // cả khi chưa có phiên nói nào (`measured=false`), và đó chính là câu hỏi đầu tiên khi lên xe — *"gói
+        // giọng đã nằm đúng chỗ chưa"*. `offline_pack_dir` in ra đường dẫn TUYỆT ĐỐI để người cầm adb chép tệp
+        // vào đúng chỗ mà không phải đoán (side-load, playbook §6f).
+        val pack = SherpaTtsCatalog.PIPER_VI_VAIS1000
         return TestBridgeJson.obj(
             "measured" to (s != null),
             "kind" to (s?.kind?.name ?: VoiceSpeakerKind.NONE.name),
@@ -166,6 +173,14 @@ internal object TestBridgeState {
             "vi_status" to (s?.androidLangStatus ?: UNKNOWN_LANG),
             "vi_available" to (s?.androidUsable ?: false),
             "offline_voice_ready" to (s?.sherpaVoiceReady ?: false),
+            "offline_pack_ready" to runCatching { VoiceModelStore.isReady(ctx, pack) }.getOrDefault(false),
+            "offline_pack_dir" to runCatching { VoiceModelStore.dir(ctx, pack).absolutePath }.getOrDefault(""),
+            "speak_replies" to runCatching { Prefs.voiceSpeakReplies(ctx) }.getOrDefault(true),
+            "prefer_offline" to runCatching { Prefs.voicePreferOffline(ctx) }.getOrDefault(false),
+            // OQ4 — công tắc *"đọc câu hỏi xác nhận"*, mặc định TẮT (owner 2026-09-16) và CHƯA có hàng trong Cài
+            // đặt. Phơi ở đây để trên xe còn **đọc được** nó đang tắt thật, thay vì suy từ mã: một công tắc không
+            // có bề mặt nào mà cũng không đo được là một công tắc không ai kiểm chứng được.
+            "ask_aloud" to runCatching { Prefs.voiceAskAloud(ctx) }.getOrDefault(false),
         )
     }
 

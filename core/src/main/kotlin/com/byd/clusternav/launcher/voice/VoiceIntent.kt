@@ -134,6 +134,19 @@ sealed interface VoiceIntent {
      */
     data class OpenApp(val appName: String, val slot: Int? = null, val appKey: String? = null) : VoiceIntent
 
+    /**
+     * L7 — đổi **bố cục màn chính** (*"bố cục 2 cột"*, *"đổi sang bố cục 4 ô"*).
+     *
+     * Mang thẳng [com.byd.clusternav.launcher.LayoutPreset] chứ không mang một chuỗi: đây là một **tập ĐÓNG**
+     * đã có sẵn ở `:core`, nên `when` trên nó exhaustive và không có ca *"tên bố cục lạ"* nào để tầng thi hành
+     * phải đoán. Khác hẳn [OpenApp]/[NavigateSaved] — hai cái đó mang chuỗi vì tập của chúng **động**.
+     *
+     * ⚠ Cố ý KHÔNG mang bố cục **tự vẽ**: nó là dữ liệu của người dùng, không có tên để gọi. Nói một bố cục sẵn
+     * sẽ BỎ bố cục tự vẽ — đúng như bấm chip bố cục ở Cài đặt (`KachiHomeActivity.selectPreset`), vì đó là cùng
+     * một đường, không phải một đường thứ hai (KDoc [com.byd.clusternav.launcher.VoiceDispatcher]).
+     */
+    data class Layout(val preset: com.byd.clusternav.launcher.LayoutPreset) : VoiceIntent
+
     /** Không hiểu. [text] giữ nguyên câu gốc để màn thử + nhật ký còn nói được *"không hiểu CÁI GÌ"*. */
     data class Unknown(val reason: VoiceUnknownReason, val text: String) : VoiceIntent
 }

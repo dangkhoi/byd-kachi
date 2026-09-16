@@ -219,6 +219,21 @@ internal object SettingsCatalogEntries {
             "system_headless_autostart", SettingsGroup.SYSTEM, "Chạy dịch vụ nền khi nổ máy",
             "headless_autostart", "Run background service on engine start",
         ),
+        // ── Giọng nói: ĐỌC phản hồi (spec `kachi-voice-feedback.html` R4 · T9) ──
+        // Ba mục đứng cạnh hàng *Nhận dạng giọng nói* trong nhóm Hệ thống (§Nâng cao) vì chúng là hai nửa của
+        // MỘT việc: cái tai (mô hình nghe) và cái miệng (gói đọc + hai công tắc). DEBT-CAT-2: bề mặt đã vẽ thì
+        // phải có mục danh mục, nếu không rail nói một đằng mà trang có một nẻo.
+        SettingsEntry(
+            "voice_speak_replies", SettingsGroup.SYSTEM, "Đọc phản hồi bằng giọng",
+            "voice_speak_replies", "Speak replies out loud",
+        ),
+        SettingsEntry(
+            "voice_prefer_offline", SettingsGroup.SYSTEM, "Ưu tiên giọng offline",
+            "voice_prefer_offline", "Prefer the offline voice",
+        ),
+        // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
+        // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.
+        SettingsEntry("voice_tts_pack", SettingsGroup.SYSTEM, "Giọng đọc offline", labelEn = "Offline voice pack"),
         // ── Màn hình chính (S5) ──
         // btn_set_home · ClusterNavBridge.setDefaultHome — VIỆC LÀM (không lưu khoá): ROM BYD KHÔNG hiện hộp chọn
         // HOME khi bấm nút Home, nên đây là đường đặt được duy nhất. Nút gọi `cmd package set-home-activity` qua

@@ -251,8 +251,14 @@ class VoiceGrammarPhrasesTest {
     }
 
     private companion object {
-        /** [ĐO] 2026-09-14: 330 cụm nhiều từ dựng được từ nhãn + từ đồng nghĩa. */
-        const val EXPECTED_PHRASES_KEPT = 330
+        /**
+         * [ĐO] 2026-09-14: 330 cụm nhiều từ dựng được từ nhãn + từ đồng nghĩa.
+         *
+         * [ĐO] 2026-09-16 · L7 *"bố cục bằng giọng nói"*: **330 → 338 (+8)** = đúng 8 cách nói của
+         * [VoiceLayouts.SPOKEN] (*"bố cục"*, 5 bố cục, *"đổi bố cục"*, *"chuyển bố cục"*). Cả 8 đều giữ được ⇒
+         * mô hình có đủ mọi từ trong chúng; không cụm nào rơi vào [EXPECTED_PHRASES_DROPPED].
+         */
+        const val EXPECTED_PHRASES_KEPT = 338
 
         /**
          * [ĐO] 269 cụm bị loại — **gần như toàn bộ là nhãn tiếng ANH** (*"Reading light"*, *"Tyre FL"*…), cộng
@@ -279,6 +285,16 @@ class VoiceGrammarPhrasesTest {
         // [ĐO] 2026-09-15 · T7: **2058 → 2063 (+5)**. Từ đơn MỚI *"nửa"* (arg của 4 kính + rèm) nở theo thanh điệu
         // — cùng cơ chế +21 của *"đưa"* ở V1.1. (Lần đo đầu chỉ lộ assertion "cụm loại"; mục này lộ ở lần đo 2 —
         // đúng lý do bài khoá CẢ BA con số.)
-        const val EXPECTED_ENTRIES = 2063
+        //
+        // [ĐO] 2026-09-16 · L7: **2063 → 2102 (+39)** = 8 **cụm** bố cục ([EXPECTED_PHRASES_KEPT]) + 31 **từ đơn**
+        // mới nở theo thanh điệu từ [VoiceLayouts.WORDS] (*"bố"*, *"cục"*, *"cột"*, *"hàng"*, *"dòng"*, *"chọn"*,
+        // *"thành"*… — phần lớn động từ/đơn vị đã có sẵn nên không cộng thêm). Số **cụm loại** KHÔNG đổi: mô hình
+        // có đủ mọi từ của cả 8 cách nói.
+        //
+        // [ĐO] 2026-09-16 · C1 (owner chốt: cổng xác nhận nhận mọi từ đồng nghĩa *"có"*): **2102 → 2110 (+8)**.
+        // Không có **cụm** nào mới (hai cụm `đúng rồi`/`làm đi` gồm toàn từ đã có ⇒ [EXPECTED_PHRASES_KEPT] giữ
+        // nguyên); +8 là **từ đơn** mới của [VoiceLexicon.CONFIRM_YES] nở theo thanh điệu (`u` · `vang` · `co` ·
+        // `duoc` · `dung` · `roi` · `lam` · `di` — mỗi từ chỉ cộng phần biến thể chưa ai khai).
+        const val EXPECTED_ENTRIES = 2110
     }
 }

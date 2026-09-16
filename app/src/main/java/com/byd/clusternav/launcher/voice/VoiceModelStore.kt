@@ -9,19 +9,26 @@ import java.io.IOException
 import java.security.MessageDigest
 
 /**
- * ═══ V2 pha NGHE · TẢI · KIỂM mô hình sherpa-onnx (NHIỀU tệp rời) ════════════════════════════════════════════
+ * ═══ TẢI · KIỂM · LẮP một **gói giọng** (nghe HOẶC đọc) — NHIỀU tệp rời, ghim từng tệp ══════════════════════
  *
- * Spec `docs/specs/kachi-voice-engine-v2.html` §Design. Bản kê (URL · sha256 · cỡ từng tệp · model A/B) nằm ở
- * `:core` ([SherpaModelCatalog]) và có bài canh off-car; tệp này chỉ **thi hành**. Thay bản Vosk (một gói zip)
- * bằng đường **nhiều tệp ONNX rời** — không giải nén, mỗi tệp tự mang sha256 + kích thước.
+ * Spec `docs/specs/kachi-voice-engine-v2.html` §Design (đường NGHE) + `kachi-voice-feedback.html` **T8** (đường
+ * ĐỌC). Bản kê (URL · sha256 · cỡ từng tệp) nằm ở `:core` ([SherpaModelCatalog] · [SherpaTtsCatalog]) và có bài
+ * canh off-car; tệp này chỉ **thi hành**.
+ *
+ * ## T8 — vì sao lớp này nay nhận [VoicePack] chứ không chỉ mô hình NGHE
+ * Gói ĐỌC (Piper tỉa, 13 tệp) cần **đúng bốn việc** mà lớp này đã làm cho mô hình nghe: tải từng tệp có ghim,
+ * side-load từ USB, hỏi *"đã lắp đủ chưa"*, gỡ. Chép lớp này thành `VoiceTtsStore` là dựng bản sao thứ hai của
+ * một thuật toán có bốn tính chất tinh tế (dưới) — và bản sao ấy sẽ lệch ở đúng lần ai đó vá một tính chất.
+ * Nên hợp đồng ở `:core` ([VoicePack]) và **một** bản thi hành ở đây. Mọi API cũ (không tham số gói) vẫn còn:
+ * chúng gập về gói NGHE đang chọn ([selected]), nên không chỗ gọi nào phải sửa.
  *
  * ## Bốn tính chất giữ nguyên tinh thần R9
- *  1. **Không để lại thư mục nửa vời.** Tải vào [TMP_DIR] rồi mới đổi tên sang thư mục thật. Tiến trình bị giết
- *     giữa chừng chỉ để rác trong `.staging`; thư mục mô hình hoặc chưa có, hoặc đủ tệp — onnxruntime không ngã
+ *  1. **Không để lại thư mục nửa vời.** Tải vào `.staging` rồi mới đổi tên sang thư mục thật. Tiến trình bị giết
+ *     giữa chừng chỉ để rác trong `.staging`; thư mục gói hoặc chưa có, hoặc đủ tệp — onnxruntime không ngã
  *     bằng lỗi native khó bắt.
  *  2. **Băm TRONG lúc tải.** `DigestInputStream`-kiểu: đọc một lượt vừa ghi vừa băm, so ngay với bản ghim.
  *  3. **Hỏng thì XOÁ rồi nói ra.** Không giữ tệp cụt chiếm chỗ.
- *  4. **Từ chối model chưa ghim.** [SherpaModel.downloadable] = false (vd bản gated chưa mirror) ⇒ báo lý do,
+ *  4. **Từ chối gói chưa ghim.** [VoicePack.downloadable] = false (vd bản gated chưa mirror) ⇒ báo lý do,
  *     KHÔNG tải mù (fail-safe — CLAUDE.md §4.1).
  *
  * ⚠ Mọi hàm có I/O ở đây **chặn** ⇒ chỗ gọi chạy trên luồng nền (xem [VoiceModelSettings]).
@@ -30,14 +37,19 @@ object VoiceModelStore {
 
     private const val TAG = "KachiVoiceModel"
 
-    /** Thư mục dựng dở — đổi tên sang thư mục thật ở bước cuối. Dấu `.` đầu để không bị nhầm là mô hình. */
-    private const val TMP_DIR = "sherpa/.staging"
+    /**
+     * Tên thư mục dựng dở, đặt **cạnh** thư mục gói trong cùng họ (`sherpa/.staging` · `sherpa-tts/.staging`).
+     *
+     * Dấu `.` đầu để không bị nhầm là một gói. Cùng **hệ thống tệp** với đích là điều kiện để `renameTo` ở bước
+     * cuối là một phép đổi tên nguyên tử chứ không phải một lượt chép 61 MB lần thứ hai.
+     */
+    private const val STAGING_NAME = ".staging"
 
     private const val READ_TIMEOUT_MS = 60_000
     private const val MB = 1024L * 1024L
     private const val SPACE_MARGIN_BYTES = 40L * MB
 
-    /** Tiến trình cài mô hình — một dòng chữ cho người dùng. Giữ nguyên các nhánh để chữ trong Cài đặt khỏi đổi. */
+    /** Tiến trình cài gói — một dòng chữ cho người dùng. Giữ nguyên các nhánh để chữ trong Cài đặt khỏi đổi. */
     sealed interface Step {
         /** Đang tải; [percent] = `-1` khi máy chủ không nói tổng cỡ. */
         data class Downloading(val percent: Int) : Step
@@ -48,7 +60,7 @@ object VoiceModelStore {
         data class Failed(val reason: String) : Step
     }
 
-    /** Model đang chọn (A/B) — lưu ở prefs riêng, mặc định bản license-sạch tải-được ([SherpaModelCatalog.DEFAULT_ID]). */
+    /** Model NGHE đang chọn (A/B) — lưu ở prefs riêng, mặc định bản license-sạch tải-được. */
     fun selected(ctx: Context): SherpaModelCatalog.SherpaModel =
         SherpaModelCatalog.byId(prefs(ctx).getString(KEY_MODEL, null))
 
@@ -57,47 +69,54 @@ object VoiceModelStore {
         prefs(ctx).edit().putString(KEY_MODEL, id).apply()
     }
 
-    /** Thư mục mô hình đang chọn. */
-    fun dir(ctx: Context): File = File(ctx.applicationContext.filesDir, selected(ctx).dir)
+    /** Thư mục của một gói (mặc định: mô hình NGHE đang chọn). */
+    fun dir(ctx: Context, pack: VoicePack = selected(ctx)): File =
+        File(ctx.applicationContext.filesDir, pack.dir)
 
-    /** Đường dẫn tuyệt đối một tệp thành phần trong thư mục mô hình đang chọn. */
+    /** Đường dẫn tuyệt đối một tệp thành phần trong thư mục gói. */
     fun filePath(ctx: Context, name: String): String = File(dir(ctx), name).absolutePath
 
     /**
-     * Mô hình đang chọn đã sẵn sàng chưa — kiểm **từng tệp** (tồn tại + khác rỗng), không chỉ kiểm thư mục.
+     * Gói đã sẵn sàng chưa — kiểm **từng tệp** (tồn tại + khác rỗng), không chỉ kiểm thư mục.
      * Một thư mục thiếu tệp là cách chắc chắn nhất để onnxruntime ngã trong mã native.
      */
-    fun isReady(ctx: Context): Boolean {
-        val model = selected(ctx)
-        val root = dir(ctx)
+    fun isReady(ctx: Context, pack: VoicePack = selected(ctx)): Boolean {
+        val root = dir(ctx, pack)
         if (!root.isDirectory) return false
-        return model.files.all { File(root, it.name).let { f -> f.isFile && f.length() > 0L } }
+        return pack.files.all { File(root, it.name).let { f -> f.isFile && f.length() > 0L } }
     }
 
-    /** Cỡ thật đang chiếm trên đĩa (byte) cho model đang chọn. */
-    fun sizeOnDisk(ctx: Context): Long =
-        dir(ctx).walkTopDown().filter { it.isFile }.sumOf { it.length() }
+    /** Cỡ thật đang chiếm trên đĩa (byte) cho một gói. */
+    fun sizeOnDisk(ctx: Context, pack: VoicePack = selected(ctx)): Long =
+        dir(ctx, pack).walkTopDown().filter { it.isFile }.sumOf { it.length() }
 
-    /** Gỡ mô hình đang chọn (và mọi rác dựng dở). Trả `true` nếu sau lệnh này thư mục model không còn. */
-    fun remove(ctx: Context): Boolean {
-        val files = ctx.applicationContext.filesDir
-        val ok = dir(ctx).deleteRecursively()
-        File(files, TMP_DIR).deleteRecursively()
+    /** Gỡ một gói (và mọi rác dựng dở của họ gói đó). Trả `true` nếu sau lệnh này thư mục gói không còn. */
+    fun remove(ctx: Context, pack: VoicePack = selected(ctx)): Boolean {
+        val ok = dir(ctx, pack).deleteRecursively()
+        staging(ctx, pack).deleteRecursively()
         return ok
     }
 
     /**
      * Tải · kiểm từng tệp · đặt vào chỗ. **CHẶN** — gọi trên luồng nền.
+     *
+     * [pack] mặc định là mô hình NGHE đang chọn, nên mọi chỗ gọi cũ không phải sửa; màn Cài đặt truyền thêm gói
+     * ĐỌC ([SherpaTtsCatalog.PIPER_VI_VAIS1000]) qua đúng hàm này.
      */
     @Suppress("ReturnCount")
-    fun install(ctx: Context, onStep: (Step) -> Unit) {
+    fun install(ctx: Context, pack: VoicePack = selected(ctx), onStep: (Step) -> Unit) {
         val app = ctx.applicationContext
-        val model = selected(app)
-        if (isReady(app)) { onStep(Step.Done(model.files.size)); return }
-        if (!model.downloadable) {
+        if (isReady(app, pack)) { onStep(Step.Done(pack.files.size)); return }
+        // Side-load (owner 2026-09-15, xe không internet): tệp đặt sẵn ở `<ext>/sherpa/import/<id>/<đường dẫn
+        // tương đối>` được ưu tiên, qua CÙNG phép kiểm bytes+sha256 với đường mạng ([VoiceModelSideload]).
+        val importDir = importDir(app, pack)
+        val sideloaded = pack.files.count { VoiceModelSideload.candidate(importDir, it.name) != null }
+        // ⚠ Cổng `downloadable` chỉ chặn đường MẠNG. Gói chưa ghim mà có ĐỦ tệp side-load thì vẫn lắp được —
+        // và đó chính là ca của chiếc xe không internet: sai một byte vẫn bị phép so sha256 dưới kia bắt.
+        if (!pack.downloadable && sideloaded < pack.files.size) {
             onStep(Step.Failed(Lang.t(
-                "mô hình '${model.label}' chưa có nguồn tải (chờ mirror) — chọn bản khác",
-                "model '${model.label}' has no download source yet (awaiting mirror) — pick another",
+                "gói '${pack.label}' chưa có nguồn tải (chờ mirror) — chép tệp vào thẻ hoặc chọn bản khác",
+                "'${pack.label}' has no download source yet (awaiting mirror) — side-load it or pick another",
             )))
             return
         }
@@ -106,50 +125,49 @@ object VoiceModelStore {
             return
         }
         try {
-            spaceError(app, model)?.let { onStep(Step.Failed(it)); return }
-            remove(app)
-            val staging = File(app.filesDir, TMP_DIR)
-            val out = File(staging, model.id)
+            spaceError(app, pack)?.let { onStep(Step.Failed(it)); return }
+            remove(app, pack)
+            val staging = staging(app, pack)
+            val out = File(staging, pack.id)
             out.deleteRecursively(); out.mkdirs()
 
-            val total = model.totalBytes
+            val total = pack.totalBytes
             var done = 0L
-            // Side-load (owner 2026-09-15, xe không internet): tệp đặt sẵn ở `<ext>/sherpa/import/<model-id>/` được
-            // ưu tiên, qua CÙNG phép kiểm bytes+sha256 với đường mạng (xem [VoiceModelSideload]). Vắng thẻ ⇒ null ⇒ mạng.
-            val importDir = runCatching { app.getExternalFilesDir(null) }.getOrNull()
-                ?.let { File(it, "${VoiceModelSideload.IMPORT_SUBDIR}/${model.id}") }
-            for (mf in model.files) {
+            for (mf in pack.files) {
                 val safe = requireSafe(mf.name) ?: run {
                     onStep(Step.Failed(Lang.t(
                         "tên tệp không hợp lệ: ${mf.name}", "invalid file name: ${mf.name}",
                     ))); return
                 }
                 val target = File(out, safe)
+                // Cây thư mục nhiều tầng (`espeak-ng-data/lang/aav/…`): tạo thư mục cha TRƯỚC, nếu không thì
+                // `outputStream()` ném `FileNotFoundException` cho một đường dẫn hoàn toàn hợp lệ.
+                target.parentFile?.mkdirs()
                 val err = fetch(mf, target, total, done, onStep, VoiceModelSideload.candidate(importDir, safe))
                 if (err != null) { out.deleteRecursively(); onStep(Step.Failed(err)); return }
                 done += mf.bytes
             }
 
             onStep(Step.Verifying)
-            val missing = model.files.filterNot { File(out, it.name).let { f -> f.isFile && f.length() > 0L } }
+            val missing = pack.files.filterNot { File(out, it.name).let { f -> f.isFile && f.length() > 0L } }
             if (missing.isNotEmpty()) {
                 out.deleteRecursively()
                 onStep(Step.Failed(Lang.t("thiếu tệp: ${missing.first().name}", "missing ${missing.first().name}")))
                 return
             }
 
-            onStep(Step.Extracting)   // "đang hoàn tất" — đổi tên là bước làm mô hình "xuất hiện"
-            val dest = dir(app)
+            onStep(Step.Extracting)   // "đang hoàn tất" — đổi tên là bước làm gói "xuất hiện"
+            val dest = dir(app, pack)
             dest.parentFile?.mkdirs()
             dest.deleteRecursively()
             if (!out.renameTo(dest)) {
                 out.deleteRecursively()
-                onStep(Step.Failed(Lang.t("không chuyển được thư mục mô hình", "could not move the model folder")))
+                onStep(Step.Failed(Lang.t("không chuyển được thư mục gói", "could not move the pack folder")))
                 return
             }
             staging.deleteRecursively()
-            Log.i(TAG, "mô hình sẵn sàng: ${dest.absolutePath} (${model.files.size} tệp)")
-            onStep(Step.Done(model.files.size))
+            Log.i(TAG, "gói sẵn sàng: ${dest.absolutePath} (${pack.files.size} tệp)")
+            onStep(Step.Done(pack.files.size))
         } finally {
             installing.set(false)
         }
@@ -157,15 +175,32 @@ object VoiceModelStore {
 
     private val installing = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    /** Tên tệp an toàn (§4.1) — một đoạn tên thuần, không `/ \ : .. .`. */
+    /** Thư mục dựng dở của họ gói chứa [pack] — `<họ>/.staging`, cùng hệ thống tệp với đích (xem [STAGING_NAME]). */
+    private fun staging(ctx: Context, pack: VoicePack): File =
+        File(ctx.applicationContext.filesDir, pack.dir.substringBeforeLast('/') + "/" + STAGING_NAME)
+
+    /** Thư mục side-load của [pack] trên thẻ/USB; `null` khi máy không có thư mục ngoài (vắng thẻ). */
+    private fun importDir(app: Context, pack: VoicePack): File? =
+        runCatching { app.getExternalFilesDir(null) }.getOrNull()
+            ?.let { File(it, "${VoiceModelSideload.IMPORT_SUBDIR}/${pack.id}") }
+
+    /**
+     * Đường dẫn tương đối AN TOÀN (§4.1) — trả chính chuỗi đó nếu hợp lệ, `null` nếu không.
+     *
+     * Từ T8 [name] có thể **nhiều đoạn** (`espeak-ng-data/lang/aav/vi`), nên luật kiểm theo **từng đoạn**: không
+     * đoạn nào rỗng/`.`/`..`, không đoạn nào chứa `\` hay `:` (đường dẫn của HĐH khác), và cả chuỗi không bắt
+     * đầu bằng `/` (đường tuyệt đối). Nới ra cho có `/` mà quên kiểm đoạn là mở thẳng đường `../../` ra khỏi
+     * thư mục app — đúng thứ luật cũ (*"một đoạn tên thuần"*) đang chặn.
+     */
     private fun requireSafe(name: String): String? {
-        if (name.isBlank() || name == "." || name == "..") return null
-        if (name.any { it == '/' || it == '\\' || it == ':' }) return null
+        if (name.isBlank() || name.startsWith("/")) return null
+        val parts = name.split('/')
+        if (parts.any { it.isBlank() || it == "." || it == ".." || it.any { c -> c == '\\' || c == ':' } }) return null
         return name
     }
 
-    private fun spaceError(app: Context, model: SherpaModelCatalog.SherpaModel): String? {
-        val need = model.totalBytes + SPACE_MARGIN_BYTES
+    private fun spaceError(app: Context, pack: VoicePack): String? {
+        val need = pack.totalBytes + SPACE_MARGIN_BYTES
         val free = runCatching { app.filesDir.usableSpace }.getOrDefault(0L)
         if (free <= 0L || free >= need) return null
         return Lang.t(
@@ -191,6 +226,12 @@ object VoiceModelStore {
             Log.i(TAG, "side-load ${mf.name} từ ${sideload.absolutePath}")
             return VoiceModelSideload.copyVerified(
                 sideload, target, mf.bytes, mf.sha256, percentReporter(totalAll, doneBefore, onStep),
+            )
+        }
+        if (mf.url.isBlank()) {
+            return Lang.t(
+                "tệp ${mf.name} chưa có nguồn tải — chép qua thẻ/USB (xem Cài đặt › Giọng nói)",
+                "${mf.name} has no download source — side-load it from a USB stick",
             )
         }
         val got = runCatching { download(mf.url, target, totalAll, doneBefore, onStep) }

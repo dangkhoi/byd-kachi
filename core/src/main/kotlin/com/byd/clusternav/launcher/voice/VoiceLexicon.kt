@@ -147,12 +147,29 @@ object VoiceLexicon {
      * mọi thứ khác trong tệp này. Để ở `:app` thì tầng nghe và các bài kiểm off-car không chạm được — mà đây đúng
      * là chỗ phải kiểm kỹ: trả lời nhầm một hộp *"mở khoá toàn xe?"* là hậu quả không hoàn lại được.
      *
-     * ⚠ Danh sách CỐ Ý ngắn và **không** có từ một âm tiết mơ hồ (`"ok"` thì nhận, `"ừ"`/`"vâng"` bỏ dấu ra `u`/
-     * `vang` — trùng tiếng đệm và trùng chữ *"vàng"*). Nghe nhầm một tiếng ậm ừ thành *"đồng ý"* là đúng thứ mà
-     * cổng xác nhận sinh ra để chặn; thà hỏi lại còn hơn tự trả lời hộ người lái.
+     * ## ⚠⚠ ĐỔI 2026-09-16 (owner chốt) — nhận MỌI từ đồng nghĩa *"có"*, kể cả từ một âm tiết
+     * Bản 1.49–1.65 cố ý chỉ nhận 5 cụm và **bỏ** `"ừ"`/`"vâng"` với lý do *"bỏ dấu ra `u`/`vang`, trùng tiếng
+     * đệm và trùng chữ vàng"*. Lý do ấy bị **[ĐO xe 2026-09-16] bác**: người lái trả lời hộp xác nhận bằng đúng
+     * chữ *"ừ"*, Kachi im lặng bỏ qua, và cái im lặng ấy đọc ra thành *"tính năng giọng nói hỏng"* — tức phép
+     * phòng xa đã làm hỏng đúng cổng nó định bảo vệ, ở ca thường gặp nhất. Một hộp không nhận câu trả lời tự
+     * nhiên thì người ta thôi dùng cả tính năng, chứ không đổi cách nói.
+     *
+     * Hai chốt an toàn **không đổi** và chúng mới là thứ giữ cổng này:
+     *  1. [confirmAnswer] chỉ nhận khi **cả câu** đúng bằng một cụm — một tiếng ậm ừ lẫn trong câu dài vẫn là
+     *     `null` (⇒ KHÔNG), không phải "đồng ý";
+     *  2. lượt nghe xác nhận chỉ kéo `CONFIRM_LISTEN_MS`, và mặc định của mọi đường thoát vẫn là **KHÔNG**.
+     *
+     * ⚠ **Va chạm đã biết, chưa chốt** (báo owner 2026-09-16): `"đúng"` bỏ dấu ra `dung`, **trùng** `"dừng"`
+     * (*dừng nhạc · dừng chiếu cụm*) và `"dùng"`. Trong lượt nghe xác nhận, một tiếng *"dừng"* (ý người lái là
+     * **thôi**) sẽ đọc thành ĐỒNG Ý. Cách chữa rẻ nhất là bỏ `"đúng"` đứng một mình và giữ `"đúng rồi"` — nhưng
+     * đó là một cụm owner đã liệt kê tên, nên **quyết định thuộc owner**, không phải chỗ này tự cắt (backlog
+     * `V-CONFIRM-DUNG`).
      */
-    val CONFIRM_YES: List<List<String>> =
-        listOf(listOf("dong", "y"), listOf("xac", "nhan"), listOf("ok"), listOf("yes"), listOf("confirm"))
+    val CONFIRM_YES: List<List<String>> = listOf(
+        listOf("dong", "y"), listOf("xac", "nhan"), listOf("dung", "roi"), listOf("lam", "di"),
+        listOf("u"), listOf("vang"), listOf("co"), listOf("duoc"),  // KHÔNG có "dung" một mình: trùng "dừng" (V-CONFIRM-DUNG, chốt 2026-09-16)
+        listOf("ok"), listOf("yes"), listOf("confirm"),
+    )
 
     /** Cụm TỪ CHỐI — xem KDoc [CONFIRM_YES]. */
     val CONFIRM_NO: List<List<String>> =

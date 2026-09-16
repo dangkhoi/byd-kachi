@@ -20,7 +20,14 @@ import java.security.MessageDigest
  */
 internal object VoiceModelSideload {
 
-    /** Thư mục con (trong external files dir) mà người dùng đặt tệp mô hình: `<ext>/sherpa/import/<model-id>/<tên tệp>`. */
+    /**
+     * Thư mục con (trong external files dir) mà người dùng đặt tệp gói: `<ext>/sherpa/import/<id>/<đường dẫn
+     * tương đối>`.
+     *
+     * ⚠ Dùng CHUNG cho cả gói NGHE lẫn gói ĐỌC (T8) — một thư mục để chỉ dẫn cho anh em, không phải hai. Đường
+     * dẫn tương đối bên trong giữ **nguyên cây** của gói (`espeak-ng-data/lang/aav/vi`), nên chép nguyên thư mục
+     * từ USB là xong, không phải làm phẳng tên tệp.
+     */
     const val IMPORT_SUBDIR = "sherpa/import"
 
     /** Kết quả chép-và-băm. */
@@ -29,15 +36,19 @@ internal object VoiceModelSideload {
     /**
      * Tệp side-load cho [name] có sẵn không (tồn tại, là tệp thường, >0 byte). `null` khi không có — caller đi đường mạng.
      *
-     * ⚠ **Hợp đồng:** [name] phải là MỘT đoạn tên đã qua luật chống leo thư mục của caller
-     * (`VoiceModelStore.requireSafe`, CLAUDE.md §4.1) — ở đây tên luôn tới từ bản ghim [SherpaModelCatalog],
-     * không bao giờ từ người dùng. Lớp này vẫn tự chặn lần nữa (rẻ, và ngăn một call site tương lai quên):
-     * có `/ \ :` hay là `.`/`..` ⇒ coi như không có tệp side-load.
+     * ⚠ **Hợp đồng:** [name] là một **đường dẫn TƯƠNG ĐỐI** (một hoặc nhiều đoạn) đã qua luật chống leo thư mục
+     * của caller (`VoiceModelStore.requireSafe`, CLAUDE.md §4.1) — tên luôn tới từ bản ghim ở `:core`, không bao
+     * giờ từ người dùng. Lớp này vẫn tự chặn lần nữa (rẻ, và ngăn một call site tương lai quên).
+     *
+     * ## T8 — vì sao luật nới từ "một đoạn" sang "nhiều đoạn", mà KHÔNG nới phần chống leo
+     * Gói ĐỌC mang một cây thư mục (`espeak-ng-data/lang/aav/vi`), nên cấm `/` là cấm luôn cả gói. Nhưng `/` chỉ
+     * được phép làm **dấu ngăn đoạn**: mỗi đoạn vẫn phải khác rỗng, khác `.`/`..`, không chứa `\` hay `:`, và cả
+     * chuỗi không được bắt đầu bằng `/`. Nới `/` mà quên kiểm đoạn là mở thẳng `../../` ra khỏi thư mục app.
      */
     fun candidate(importDir: File?, name: String): File? {
-        if (name.isBlank() || name == "." || name == ".." ||
-            name.any { it == '/' || it == '\\' || it == ':' }
-        ) return null
+        if (name.isBlank() || name.startsWith("/")) return null
+        val parts = name.split('/')
+        if (parts.any { it.isBlank() || it == "." || it == ".." || it.any { c -> c == '\\' || c == ':' } }) return null
         return importDir?.let { File(it, name) }?.takeIf { it.isFile && it.length() > 0L }
     }
 

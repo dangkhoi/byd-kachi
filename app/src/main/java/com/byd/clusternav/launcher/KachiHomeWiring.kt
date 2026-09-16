@@ -272,6 +272,8 @@ internal fun Activity.voiceSession(
     openPermissions: () -> Unit,
     /** V1.1 — *"mở YouTube vào ô số 2"*. CÙNG lambda mà ngăn kéo dùng (`KachiHomeSlots.assignApp`). */
     assignAppToSlot: (Int, String) -> Boolean,
+    /** L7 — *"bố cục 2 cột"*. CÙNG đường mà chip bố cục ở Cài đặt dùng (`selectPreset`, có bỏ bố cục tự vẽ). */
+    onLayout: (LayoutPreset) -> Boolean,
 ): VoiceSession {
     lateinit var session: VoiceSession
     session = VoiceSession(
@@ -295,6 +297,7 @@ internal fun Activity.voiceSession(
                 confirm = confirm,
                 say = say,
                 assignAppToSlot = assignAppToSlot,
+                onLayout = onLayout,
             )
         },
         openPermissions = openPermissions,

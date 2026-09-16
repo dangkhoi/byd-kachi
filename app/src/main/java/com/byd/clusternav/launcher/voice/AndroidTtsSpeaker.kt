@@ -82,21 +82,40 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
      */
     private val listener = object : UtteranceProgressListener() {
         override fun onStart(utteranceId: String?) = Unit
-        override fun onDone(utteranceId: String?) = abandonIfCurrent(utteranceId)
+        override fun onDone(utteranceId: String?) = finished(utteranceId)
 
         // Nền tảng gọi bản 2 tham số; bản 1 tham số vẫn phải cài vì lớp cha khai nó `abstract`.
         // ⚠ Thông điệp của `@Deprecated` viết bằng TIẾNG ANH có chủ ý: `LauncherI18nContractTest` quét chuỗi
         // tiếng Việt viết cứng ở `:app` và nó KHÔNG coi `@Deprecated(` là một lời gọi chẩn đoán (khác `Log.*`).
         @Deprecated("Platform calls the 2-arg overload; kept because the superclass declares it abstract.")
-        override fun onError(utteranceId: String?) = abandonIfCurrent(utteranceId)
+        override fun onError(utteranceId: String?) = finished(utteranceId)
 
         override fun onError(utteranceId: String?, errorCode: Int) {
             Log.w(TAG, "đọc hỏng ($utteranceId, mã $errorCode)")
-            abandonIfCurrent(utteranceId)
+            finished(utteranceId)
         }
 
-        override fun onStop(utteranceId: String?, interrupted: Boolean) = abandonIfCurrent(utteranceId)
+        override fun onStop(utteranceId: String?, interrupted: Boolean) = finished(utteranceId)
     }
+
+    /**
+     * ═══ OQ4 · MỐC **ĐỌC XONG** — nhả tiêu điểm, rồi báo cho chỗ đang chờ ═══════════════════════════
+     *
+     * Bốn sự kiện của nền tảng (`onDone` · hai `onError` · `onStop`) đều là *"câu này hết đời"*, và cả bốn đều
+     * phải mở cổng cho [VoiceSession.confirm] — nếu chỉ `onDone` mở cổng thì một câu hỏi bị engine từ chối giữa
+     * chừng sẽ **không bao giờ mở micro**, tức cổng xác nhận chết im đúng lúc cần nó nhất.
+     *
+     * `getAndSet(null)` ⇒ gọi lại **nhiều nhất một lần** (vế (1) của hợp đồng [VoiceSpeaker.speak]): nền tảng
+     * bắn `onStop` rồi `onDone` cho cùng một câu trên vài ROM.
+     */
+    private fun finished(utteranceId: String?) {
+        abandonIfCurrent(utteranceId)
+        if (utteranceId != null && utteranceId != idOf(seq.get())) return
+        pending.getAndSet(null)?.let { runCatching { it() } }
+    }
+
+    /** Việc phải làm khi câu MỚI NHẤT đọc xong; `null` = không ai chờ. Xem [finished]. */
+    private val pending = AtomicReference<(() -> Unit)?>(null)
 
     /**
      * Nhả tiêu điểm — **chỉ khi** sự kiện thuộc về câu MỚI NHẤT (đó là điều KDoc [seq] hứa).
@@ -155,10 +174,29 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
 
     override fun available(): Boolean = inited.get() && !dead.get()
 
-    override fun speak(text: String): Boolean {
-        if (!available() || text.isBlank()) return false
-        val engine = tts ?: return false
+    override fun speak(text: String): Boolean = speakInternal(text, null)
+
+    /**
+     * OQ4 — đọc rồi báo *"xong"*. Câu không nhận được ⇒ gọi [onDone] **ngay** (vế (1) của hợp đồng).
+     *
+     * Dùng một ô nhớ duy nhất ([pending]) chứ không một hàng đợi: `speak` luôn `QUEUE_FLUSH`, nên tại một lúc
+     * chỉ có **một** câu sống. Câu trước bị đè thì việc chờ của nó cũng hết nghĩa — và [speakInternal] bắn nó
+     * ngay để chỗ gọi cũ không treo (nó có hạn chờ riêng, nhưng chờ hết hạn cho một việc đã biết là vô nghĩa).
+     */
+    override fun speak(text: String, onDone: () -> Unit): Boolean = speakInternal(text, onDone)
+
+    @Suppress("ReturnCount")
+    private fun speakInternal(text: String, onDone: (() -> Unit)?): Boolean {
+        fun fail(): Boolean { onDone?.let { runCatching { it() } }; return false }
+        if (!available() || text.isBlank()) return fail()
+        val engine = tts ?: return fail()
+        // ⚠ [SOÁT Pass 4 · P2] Tăng số thứ tự TRƯỚC khi đặt việc chờ mới, không sau.
+        // Đặt trước rồi mới tăng là để hở một khe: một sự kiện về muộn của câu CŨ (`onStop`/`onDone` của nó) rơi
+        // vào khe ấy vẫn khớp `idOf(seq.get())` ⇒ [finished] vớ đúng việc chờ **của câu mới** và bắn ngay — tức
+        // micro mở trong lúc câu hỏi xác nhận còn đang đọc, đúng hazard mà OQ4 sinh ra để chặn.
         val id = idOf(seq.incrementAndGet())
+        // Câu cũ (nếu có ai chờ) sắp bị `QUEUE_FLUSH` đè ⇒ đóng sổ cho nó.
+        pending.getAndSet(onDone)?.let { runCatching { it() } }
         // Xin tiêu điểm TRƯỚC khi đẩy câu: xin sau thì vài trăm ms đầu của câu đọc chồng lên nhạc đang phát ở
         // nguyên âm lượng — đúng khúc mang mấy từ quan trọng nhất ("Đã đặt…").
         requestFocus()
@@ -168,7 +206,9 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
         if (rc != TextToSpeech.SUCCESS) {
             Log.w(TAG, "máy đọc từ chối câu (rc=$rc)")
             abandonFocus()
-            return false
+            // Câu không vào hàng đợi ⇒ sẽ KHÔNG có sự kiện nào của nền tảng bắn về ⇒ phải tự đóng sổ ở đây,
+            // nếu không thì cổng xác nhận chờ mãi một câu chưa bao giờ bắt đầu.
+            return fail()
         }
         return true
     }
@@ -176,6 +216,9 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
     override fun stop() {
         runCatching { tts?.stop() }
         abandonFocus()
+        // `stop()` trên vài ROM KHÔNG bắn `onStop` cho câu đang đọc ⇒ tự đóng sổ. Gọi thừa vô hại: `getAndSet`
+        // bảo đảm nhiều nhất một lần (vế (1) của hợp đồng).
+        pending.getAndSet(null)?.let { runCatching { it() } }
     }
 
     override fun shutdown() {
@@ -184,6 +227,7 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
         runCatching { tts?.stop() }
         runCatching { tts?.shutdown() }
         abandonFocus()
+        pending.getAndSet(null)?.let { runCatching { it() } }
     }
 
     // ── tiêu điểm âm thanh (gương của VoiceCapture) ──────────────────────────────────────────────

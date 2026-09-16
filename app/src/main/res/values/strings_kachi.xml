@@ -516,6 +516,16 @@
     <string name="kachi_voice_model_verifying">Đang kiểm gói (sha256)…</string>
     <string name="kachi_voice_model_extracting">Đang giải nén…</string>
     <string name="kachi_voice_model_failed">Hỏng: %1$s</string>
+    <string name="kachi_voice_tts_title">Giọng đọc offline (tại máy)</string>
+    <string name="kachi_voice_tts_absent">Chưa cài. Gói giọng Việt %1$s — tải một lần rồi Kachi đọc câu trả lời ngay trên xe, không cần mạng và không cần Google.</string>
+    <string name="kachi_voice_tts_ready">Đã cài %1$s · %2$d tệp · %3$s trên đĩa</string>
+    <string name="kachi_voice_tts_get">Tải gói giọng đọc</string>
+    <string name="kachi_voice_tts_remove">Gỡ gói giọng đọc</string>
+    <string name="kachi_voice_tts_sideload">Xe không có mạng: chép cả cây thư mục gói vào Android/data/%1$s/files/sherpa/import/%2$s/ rồi bấm Tải — máy vẫn kiểm sha256 từng tệp.</string>
+    <string name="kachi_voice_speak_title">Đọc phản hồi bằng giọng</string>
+    <string name="kachi_voice_speak_sub">Kachi đọc to câu trả lời thay vì chỉ hiện chữ.</string>
+    <string name="kachi_voice_offline_title">Ưu tiên giọng offline</string>
+    <string name="kachi_voice_offline_sub">Chỉ có tác dụng khi gói giọng đọc đã cài; chưa cài thì vẫn dùng máy đọc của hệ thống.</string>
     <string name="kachi_voice_wav_try">Nhận dạng tệp WAV thử</string>
     <string name="kachi_voice_wav_running">Đang nhận dạng tệp thử…</string>
     <string name="kachi_voice_wav_heard">WAV nghe được: %1$s</string>

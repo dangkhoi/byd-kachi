@@ -773,7 +773,7 @@
  },
  {
   "group": "Voice",
-  "name": "Phản hồi bằng GIỌNG (pha 1) — Android TTS / sherpa TTS / lùi về chữ",
+  "name": "Phản hồi bằng GIỌNG — Android TTS / sherpa TTS / lùi về chữ",
   "desc": "Sau khi thi hành, N dòng trả lời của một lượt được GỘP thành MỘT câu ≤ 12 từ rồi đọc ra loa; bỏ các ký hiệu dành cho mắt (✓ ✗ « » = — ) vì máy đọc hoặc phát âm hoặc nuốt chúng khiến «thành công» nghe giống hệt «thất bại», và KHÔNG BAO GIỜ gộp vế hỏng dưới chữ «Đã». Backend chọn bằng PHÉP ĐO ở MỖI câu (không hardcode tên xe): (a) Android `TextToSpeech` khi `isLanguageAvailable(vi-VN) ≥ 0`, (b) sherpa-onnx `OfflineTts` khi gói giọng đã lắp, (c) lùi về chữ + âm báo. Không nói đè lúc đang nghe (hai cờ: đang thu ∨ hộp xác nhận đang mở).",
   "voice": [],
   "voice_reply": "(đọc lại chính câu trả lời của lệnh, gộp thành một câu ≤ 12 từ)",
@@ -783,13 +783,65 @@
  },
  {
   "group": "Voice",
-  "name": "Gói giọng đọc tiếng Việt offline (sherpa TTS) — chưa lắp được",
-  "desc": "AAR sherpa-onnx v1.13.8 ĐÃ chở sẵn lớp `OfflineTts` + ký hiệu native arm64 ⇒ không phải nâng phiên bản, không thêm byte APK. Nhưng gói giọng Piper `vi_VN-vais1000-medium` chỉ phát hành dạng `tar.bz2` 397 mục (393 mục là `espeak-ng-data/` 18 MB, bắt buộc vì Piper chuyển chữ→âm qua espeak-ng) và không có URL từng tệp ⇒ đường tải ghim-từng-tệp không dùng được ⇒ khai `downloadable=false` fail-safe, ghim sha256 + byte của CẢ kho (67 154 040 B, CC-BY-4.0, phải hiện attribution). Chờ tầng giải nén `tar.bz2` (T8 pha 2). Chép tay một thư mục vào máy thì chạy được ngay.",
+  "name": "Gói giọng đọc tiếng Việt offline (sherpa TTS) — gói TỈA 13 tệp, 61 MB",
+  "desc": "AAR sherpa-onnx v1.13.8 ĐÃ chở sẵn lớp `OfflineTts` + ký hiệu native arm64 ⇒ không phải nâng phiên bản, không thêm byte APK. Gói Piper `vi_VN-vais1000-medium` chỉ phát hành dạng `tar.bz2` 397 mục — nhưng [ĐO host 2026-09-16] `espeak-ng-data` TỈA còn 11 mục/728 KB (thay 393 mục/18 MB) cho audio **bit-identical** (nạp 203 ms · tổng hợp 62 ms · 2,11 s @22050 Hz) ⇒ gói còn **13 tệp / 63 877 499 B**, tải **từng tệp có ghim sha256** qua ĐÚNG đường đã có, KHÔNG cần tầng giải nén nào. Hợp đồng cài dùng chung với mô hình NGHE (`VoicePack` ở `:core`). Hai đường lắp: (a) tải qua mạng từ GitHub Release `dangkhoi/byd-kachi` tag `tts-vi-vais1000-medium` — ⚠ **13 asset CHƯA được đăng** (TODO dangkhoi), tới lúc đó nút Tải hỏng fail-safe (404/sha không khớp, câu lỗi nói rõ tệp nào); (b) **side-load USB**: chép NGUYÊN CÂY thư mục vào `<ext>/sherpa/import/piper-vi_VN-vais1000-medium/` rồi bấm Tải — vẫn băm sha256 từng tệp. CC-BY-4.0, phải hiện attribution.",
   "voice": [],
   "voice_reply": "",
-  "status": "🔨 đang dở",
-  "evidence": "core/.../voice/SherpaTtsCatalog.kt:35,38,56,111,114 · BACKLOG V-TTS (nợ T8) · OQ chờ dangkhoi: 67 MB qua 4G? tỉa espeak còn `vi`? mặc định BẬT? có đọc câu xác nhận không?",
+  "status": "✅ off-car (code + test + hàng Cài đặt) · ⚠ asset chờ dangkhoi đăng · 🚗 chưa đo trên xe",
+  "evidence": "core/.../voice/SherpaTtsCatalog.kt (13 tệp ghim) · core/.../voice/VoicePack.kt · app/.../voice/VoiceModelStore.kt (install/isReady/remove theo VoicePack) · app/.../voice/VoiceModelSettings.kt · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §6f(a) · BACKLOG V-PHASE2",
   "spec": "docs/specs/kachi-voice-feedback.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Công tắc «Đọc phản hồi bằng giọng» + «Ưu tiên giọng offline» (R4)",
+  "desc": "Hai ô tick ở *Cài đặt › Hệ thống & quyền › Nâng cao*, ngay dưới hai hàng gói giọng. **Đọc phản hồi** mặc định BẬT — tắt thì mọi thứ y như trước: tấm chữ + âm báo, không mất chức năng nào, và cũng không tốn CPU tổng hợp giọng (cổng gác TRƯỚC khi gộp câu). **Ưu tiên giọng offline** mặc định TẮT, chỉ có tác dụng khi gói giọng đọc đã lắp; bật rồi thì câu TIẾP THEO đã đổi đường (công tắc đọc lại ở mỗi câu, không phải khởi động lại). Hai khoá `voice_speak_replies`/`voice_prefer_offline` thuộc **XE** chứ không theo hồ sơ: thứ quyết định chúng có nghĩa hay không là máy này có giọng gì, không phải người đang lái.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (hàng Cài đặt + khai khoá + bài canh dây nối) · 🚗 chưa đo trên xe",
+  "evidence": "app/.../Prefs.kt (voiceSpeakReplies/voicePreferOffline) · app/.../ClusterNavBridgeKeys.kt · app/.../voice/VoiceModelSettings.kt (speakToggles) · app/.../voice/VoiceSession.kt (speakReplies gác speakLines) · core/.../SettingsCatalogEntries.kt + ProfileScope.kt (khai khoá theo XE) · BACKLOG V-PHASE2",
+  "spec": "docs/specs/kachi-voice-feedback.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Câu trả lời đọc lại GIÁ TRỊ THẬT mà xe báo (R5) — chỉ nút STEP",
+  "desc": "Tới 1.65 câu trả lời dựng từ **con số vừa gửi**, nên một chiếc xe kẹp 24 °C về 17 vẫn nghe là «✓ Đặt Nhiệt độ = 24». Nay ghi xong thì hỏi lại xe qua đúng đường đọc mà ô thông tin dùng (`HalBindingTable.readInt`, sentinel đã lọc). Ba nhánh: **không đọc được** (off-car, máy ảo, trim không provision) ⇒ giữ câu cũ, KHÔNG bịa số; **khớp** ⇒ đúng câu cũ, không thêm chữ nào; **lệch** ⇒ đọc lại đúng MỘT lần sau 300 ms (xe có thể chưa kịp áp) rồi nói «✓ Đã gửi Nhiệt độ 24 — xe báo 23» và sửa luôn bảng trạng thái dùng chung. Vẫn là ✓ chứ không phải ✗: lệnh KHÔNG hỏng, xe chỉ đang ở một con số khác — câu nói thuật lại hai con số, không suy diễn nguyên nhân.",
+  "voice": [
+   "đặt nhiệt độ 24",
+   "tăng gió",
+   "đặt âm lượng 10"
+  ],
+  "voice_reply": "✓ Đặt Nhiệt độ = 24  ·  hoặc  ✓ Đã gửi Nhiệt độ 24 — xe báo 23",
+  "status": "✅ off-car (7 ca JVM có ca «xe chậm một nhịp») · 🚗 CẦN XE — máy ảo dùng NoCar nên nhánh «lệch» không chạy được",
+  "evidence": "core/.../LauncherPorts.kt (CarControlPort.readStep) · core/.../CarControlAdapter.kt · core/.../voice/VoiceReply.kt (doneActual) · app/.../VoiceDispatcher.kt (sayStepResult) · app/src/test/.../VoiceStepReadbackTest.kt · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §6f(c) · BACKLOG V-PHASE2",
+  "spec": "docs/specs/kachi-voice-feedback.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Đọc XONG câu hỏi xác nhận rồi mới mở micro (OQ4)",
+  "desc": "Cổng an toàn quan trọng nhất của cả tính năng từng là cổng duy nhất CÂM: câu «Mở khoá cửa?» chỉ hiện chữ, vì đọc nó lên trong lúc micro mở là Kachi nghe chính mình. Nay câu hỏi được đọc, và micro mở **trong mốc «đọc xong»** của chính câu ấy. Hợp đồng `VoiceSpeaker.speak(text, onDone)` gọi `onDone` **đúng một lần, kể cả khi không đọc được** — một cổng an toàn chờ một mốc không bao giờ về là một cổng chết im. Thêm **hạn cứng 4 giây**: engine đọc treo cũng không được khoá cổng (hết hạn ⇒ vẫn mở micro). Bấm nút Đồng ý giữa lúc đang đọc ⇒ cắt câu ngay. Tắt công tắc R4 hoặc máy không có giọng ⇒ y như 1.65: mở micro luôn.",
+  "voice": [
+   "mở khoá cửa",
+   "đổi sang hồ sơ Vợ"
+  ],
+  "voice_reply": "(đọc câu hỏi xác nhận, rồi bíp mở micro nghe «đồng ý» / «huỷ»)",
+  "status": "✅ off-car (hợp đồng có bài canh) · 🚗 CẦN XE — máy ảo không có giọng nào nên luôn đi nhánh «mở micro ngay»",
+  "evidence": "core/.../voice/VoiceSpeaker.kt (speak(text,onDone)) · app/.../voice/AndroidTtsSpeaker.kt · app/.../voice/SherpaTtsSpeaker.kt · app/.../voice/VoiceSession.kt (askAloudThenListen, ASK_ALOUD_CAP_MS) · core/src/test/.../VoiceSpeakerDoneContractTest.kt · docs/diagnostics/oncar-verify-1.63-2026-09-15.md §6f(d)",
+  "spec": "docs/specs/kachi-voice-feedback.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Hiểu ý — Layout (đổi bố cục màn chính bằng giọng, L7)",
+  "desc": "«bố cục 2 cột» · «đổi sang bố cục 4 ô» · «về bố cục hai hàng» — số nói bằng chữ hay chữ số đều được. Cách nói khai MỘT chỗ (`VoiceLayouts`, `:core`) và cố ý **không** vào từ vựng chung: ba từ *ô · cột · hàng* quá thường để mang nghĩa cố định ở mọi vị trí trong câu. Ba điều kiện để nhận: có cụm đánh dấu «bố cục» · mọi từ đứng trước nó thuộc một danh sách đóng (đổi/chuyển/sang/về/chọn…) · phần đuôi khớp TRỌN VẸN một bố cục — thừa một từ là bỏ qua, không đoán. Rủi ro NORMAL (không hỏi lại): đảo lại được bằng đúng một câu ngược. Thi hành đi đúng đường mà chip bố cục ở Cài đặt dùng, nên nó cũng **bỏ bố cục tự vẽ** — thiếu bước đó thì state đổi mà màn hình không đổi gì.",
+  "voice": [
+   "bố cục 2 cột",
+   "đổi sang bố cục 4 ô",
+   "bố cục một ô",
+   "về bố cục hai hàng"
+  ],
+  "voice_reply": "✓ Bố cục 2 cột  ·  ✗ Bố cục 4 ô — chưa đổi được bố cục từ đây (bề mặt không nối được đường bố cục)",
+  "status": "✅ off-car + E2E máy ảo (t59 · t60 · t60b PASS, kiểm state.layout.preset) · 🚗 chưa đo bằng giọng thật",
+  "evidence": "core/.../voice/VoiceLayouts.kt · core/.../voice/VoiceIntent.kt (Layout) · core/.../voice/VoiceIntentParser.kt (bước b½) · app/.../VoiceDispatcher.kt (onLayout) · core/src/test/.../VoiceLayoutParseTest.kt · scripts/emulator/voice-cases.tsv t59–t60b · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §7",
+  "spec": "docs/specs/kachi-voice-command.html"
  },
  {
   "group": "Voice",
@@ -855,8 +907,8 @@
   "desc": "Một nguồn dẫn đường có thẩm quyền duy nhất (trọng tài chọn giữa GMaps / Waze / VietMap) → một quyết định hướng rẽ trung lập → BA đầu ra mã hoá ĐỘC LẬP: làn zin của cụm (broadcast AMAP), khối «Giữa + ETA» của cụm (qua HAL, chỉ ghi khi Cast đang TẮT), và HUD kính lái. Bật/tắt ở Cài đặt › Dẫn đường & cụm đồng hồ › «Dẫn đường lên cụm đồng hồ»; chip «Chế độ hiện trên cụm» chọn Tắt / Bật «Giữa + ETA»; công tắc «Chạy chữ tên đường dài»; nút «Kết nối lại nguồn dẫn đường». Ba hàng trạng thái chỉ-đọc cho biết nguồn nào đang cấp, cụm đang ở trạng thái gì, và op-39 đã được khẳng định chưa.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 code xong chờ xe (nền ClusterNav 1.38 từng 🟢, Kachi 1.6x sau S2/S3 chưa đo lại)",
-  "evidence": "app/.../SettingsSectionsNav.kt:78-108,133-152 · .kiro/steering/project-context.md §1 · README.md §Tính năng (nền tảng ClusterNav 1.38 đã chạy ổn trên xe)",
+  "status": "🟢 đã xác nhận trên xe (owner 2026-09-16: 'cái này OK rồi' với Kachi 1.6x)",
+  "evidence": "app/.../SettingsSectionsNav.kt:78-108,133-152 · .kiro/steering/project-context.md §1 · README.md §Tính năng (nền tảng ClusterNav 1.38 đã chạy ổn trên xe) · owner-questions-2026-09-16 E3",
   "spec": "docs/specs/nav-input-output-architecture.html"
  },
  {
@@ -865,8 +917,8 @@
   "desc": "Khi có dẫn đường đang chạy VÀ Cast đang tắt, Kachi gọi `service call AutoContainer 2 i32 1000 i32 39` để bật chế độ làn zin trên cụm, giữ 30 s rồi khẳng định lại, thử lại sau 4 s nếu hỏng. Trạng thái có 4 mức (IDLE / ASSERTED / GATED_CAST / SHELL_UNREACHABLE) và hiện thành một hàng trong Cài đặt › Dẫn đường.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 code xong chờ xe (nền ClusterNav 1.38 từng 🟢, Kachi 1.6x sau S2/S3 chưa đo lại)",
-  "evidence": "app/.../ClusterNavLaneWidget.kt:36-53,79-133 · app/.../ClusterNavBridge.kt:210 · app/.../SettingsSectionsNav.kt:160-172",
+  "status": "🟢 đã xác nhận trên xe (owner 2026-09-16: 'cái này OK rồi' với Kachi 1.6x)",
+  "evidence": "app/.../ClusterNavLaneWidget.kt:36-53,79-133 · app/.../ClusterNavBridge.kt:210 · app/.../SettingsSectionsNav.kt:160-172 · owner-questions-2026-09-16 E3",
   "spec": "docs/specs/nav-cluster-op39-selfdiagnose.html"
  },
  {
@@ -895,8 +947,8 @@
   "desc": "Dịch vụ riêng mở VietMap rồi ĐỢI tới khi VietMap thật sự là activity đang hiện liên tục ≥ 2,5 s (trần 25 s) mới hạ nó xuống nền — bản 1.36 ngủ cứng 1,5 s thì trên xe chưa kịp dựng bong bóng. Tách thành dịch vụ riêng để các việc khởi động khác không phải chờ.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 code xong chờ xe (nền ClusterNav 1.38 từng 🟢, Kachi 1.6x sau S2/S3 chưa đo lại)",
-  "evidence": "app/.../VietMapAutostart.kt · app/.../VietMapAutostartService.kt · app/.../BootSetupService.kt:86 · README.md changelog 1.37",
+  "status": "🟢 đã xác nhận trên xe (owner 2026-09-16: 'cái này OK rồi' với Kachi 1.6x)",
+  "evidence": "app/.../VietMapAutostart.kt · app/.../VietMapAutostartService.kt · app/.../BootSetupService.kt:86 · README.md changelog 1.37 · owner-questions-2026-09-16 E3",
   "spec": "docs/specs/waze-vietmap-signal-revival.html"
  },
  {

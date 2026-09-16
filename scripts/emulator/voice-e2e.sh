@@ -237,6 +237,9 @@ run_t1() {
       resumed:*) sleep 2; sidereal="$(adbs shell dumpsys activity activities | grep -m1 -E 'mResumedActivity|topResumedActivity' | tr -d '\r')";;
       slot:*) sidereal="$(state_json | python3 "$HERE/voice_e2e_json.py" slot "${side#slot:}")";;
       profile:*) sidereal="$(state_json | python3 "$HERE/voice_e2e_json.py" get profile.active)";;
+      # L7 — bố cục bằng giọng nói: đọc PRESET ĐANG DÙNG từ chính bridge `state` (cùng nguồn mà màn hình vẽ),
+      # không đoán qua ảnh chụp màn hình.
+      preset:*) sidereal="$(state_json | python3 "$HERE/voice_e2e_json.py" get layout.preset)";;
       media) sidereal="$(adbs shell dumpsys media_session | grep -m1 -i 'package=' | tr -d '\r')";;
     esac
     # Sau mỗi ca mở app: đưa Kachi lên lại để ca sau còn móc (hooks sống theo Activity, không theo tiêu điểm).

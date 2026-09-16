@@ -30,8 +30,12 @@ object SherpaModelCatalog {
     /**
      * Một tệp cần tải, ghim bằng sha256 + kích thước.
      *
-     * @param name tên tệp sau khi lưu (cũng là tên tương đối trong thư mục mô hình).
-     * @param url  URL trần (HTTPS).
+     * @param name **đường dẫn TƯƠNG ĐỐI** của tệp trong thư mục gói sau khi lắp. Thường là một đoạn
+     *   (`encoder.onnx`), nhưng từ pha 2 (gói ĐỌC) có thể **nhiều đoạn** ngăn bằng `/`
+     *   (`espeak-ng-data/lang/aav/vi`) — gói Piper mang một cây thư mục, không phải một rổ tệp phẳng.
+     *   ⚠ Tầng cài (`VoiceModelStore.requireSafe`) kiểm từng đoạn: không đoạn nào được rỗng/`.`/`..`, không
+     *   `\`/`:`, không bắt đầu bằng `/` (CLAUDE.md §4.1 — user input → file path).
+     * @param url  URL trần (HTTPS). `""` = chưa có nguồn tải ⇒ chỉ side-load được.
      * @param sha256 sha256 chữ thường; `""` = CHƯA GHIM ⇒ [VoiceModelStore] từ chối tải (fail-safe).
      * @param bytes kích thước byte; `0` = chưa ghim.
      */
@@ -57,25 +61,25 @@ object SherpaModelCatalog {
      * @param decodingMethod "modified_beam_search" (cần cho hotwords biasing) hoặc "greedy_search".
      */
     data class SherpaModel(
-        val id: String,
-        val label: String,
+        override val id: String,
+        override val label: String,
         val license: String,
-        val files: List<ModelFile>,
+        override val files: List<ModelFile>,
         val encoder: String,
         val decoder: String,
         val joiner: String,
         val tokens: String,
         val bpeVocab: String,
         val decodingMethod: String = "modified_beam_search",
-    ) {
+    ) : VoicePack {
         /** Thư mục con của `filesDir` chứa mô hình. */
-        val dir: String get() = "$DIR_ROOT/$id"
+        override val dir: String get() = "$DIR_ROOT/$id"
 
         /** Mọi tệp đã ghim sha256+size ⇒ được phép tải. Mô hình chưa mirror ([HATAPHU_VI]) trả `false`. */
-        val downloadable: Boolean get() = files.isNotEmpty() && files.all { it.pinned }
+        override val downloadable: Boolean get() = files.isNotEmpty() && files.all { it.pinned }
 
         /** Tổng byte phải tải — nói trước cho người dùng cần bao nhiêu chỗ + bao nhiêu 4G. */
-        val totalBytes: Long get() = files.sumOf { it.bytes }
+        override val totalBytes: Long get() = files.sumOf { it.bytes }
 
         /** Tìm một tệp theo tên. */
         fun file(name: String): ModelFile? = files.firstOrNull { it.name == name }

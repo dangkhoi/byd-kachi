@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.launcher.Lang
+import com.byd.clusternav.launcher.LayoutPreset
 import com.byd.clusternav.launcher.Strings
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -281,13 +282,62 @@ class VoiceIntentParserTest {
         "mở VietMap Live" to VoiceIntent.OpenApp("VietMap Live"),
     )
 
-    /** Hai câu còn lại trong mười câu: một câu KHÔNG hiểu được và **đúng ra là không nên** hiểu. */
-    @Test fun `hai cau con lai noi thang la chua lam duoc`() {
+    /** Câu còn lại: KHÔNG hiểu được và **đúng ra là không nên** hiểu. */
+    @Test fun `cau con lai noi thang la chua lam duoc`() {
         // *"tắt hết đèn"*: Kachi không có khả năng "mọi đèn" (không nút gộp, không gói lệnh) ⇒ nói thẳng còn hơn
         // tự chọn một cái đèn nào đó. Ngày có gói lệnh "tắt hết đèn", câu này tự hiểu được (từ vựng SINH từ registry).
         unknown("tắt hết đèn", VoiceUnknownReason.NO_OBJECT)
-        // *"về bố cục 2 cột"*: bố cục **chưa** nằm trong tập đóng của giọng nói (spec §7 OQ1 họ hàng) — chờ owner.
-        unknown("về bố cục 2 cột", VoiceUnknownReason.NO_VERB)
+    }
+
+    /**
+     * ⚠⚠ **ĐỔI KỲ VỌNG CÓ CHỦ Ý (L7, owner duyệt 2026-09-16)** — *"về bố cục 2 cột"*.
+     *
+     * Từ 1.64 câu này được giữ ở [VoiceUnknownReason.NO_VERB] vì bố cục **chưa** nằm trong tập đóng của giọng
+     * nói. Nay nó nằm rồi ([VoiceLayouts]), nên kỳ vọng đổi sang [VoiceIntent.Layout] — đây là *"tính năng mới
+     * phủ lên một ca đang để ngỏ"*, không phải *"sửa test cho hết đỏ"*.
+     *
+     * Thứ bài canh này **luôn** canh thì KHÔNG đổi: `về` vẫn không được thành động từ dẫn đường vô điều kiện
+     * ([VoiceGrammar.VERBS] không có nó; xem chú thích ⚠⚠ ở đó). Ba câu dưới khoá đúng ranh giới ấy — chỉ đuôi
+     * *"bố cục …"* mới thành [VoiceIntent.Layout], mọi đuôi khác vẫn `NO_VERB`, tuyệt đối không thành `Nav`.
+     */
+    @Test fun `ve bo cuc la LAYOUT, con ve mot chuoi la thi van NO_VERB`() {
+        assertEquals(VoiceIntent.Layout(LayoutPreset.TWO_COL), one("về bố cục 2 cột"))
+        unknown("về Bitexco", VoiceUnknownReason.NO_VERB)
+        unknown("về chỗ nào đó", VoiceUnknownReason.NO_VERB)
+    }
+
+    /**
+     * L7 — bảng cách nói bố cục, gồm cả số bằng CHỮ (mô hình nghe trả chữ, không trả chữ số).
+     *
+     * *"bố cục hai ô"* ra [LayoutPreset.TWO_COL], không phải `TWO_ROW` — quyết định ghi ở KDoc [VoiceLayouts].
+     */
+    @Test fun `bo cuc bang giong noi`() = expect(
+        "bố cục 1 ô" to VoiceIntent.Layout(LayoutPreset.ONE),
+        "bố cục một ô" to VoiceIntent.Layout(LayoutPreset.ONE),
+        "bố cục 2 cột" to VoiceIntent.Layout(LayoutPreset.TWO_COL),
+        "bố cục hai cột" to VoiceIntent.Layout(LayoutPreset.TWO_COL),
+        "bố cục hai ô" to VoiceIntent.Layout(LayoutPreset.TWO_COL),
+        "bố cục 2 hàng" to VoiceIntent.Layout(LayoutPreset.TWO_ROW),
+        "bố cục hai hàng" to VoiceIntent.Layout(LayoutPreset.TWO_ROW),
+        "bố cục 3 ô" to VoiceIntent.Layout(LayoutPreset.THREE),
+        "bố cục bốn ô" to VoiceIntent.Layout(LayoutPreset.QUAD),
+        "đổi sang bố cục 2 cột" to VoiceIntent.Layout(LayoutPreset.TWO_COL),
+        "chuyển bố cục 4 ô" to VoiceIntent.Layout(LayoutPreset.QUAD),
+        "đổi bố cục 4 ô" to VoiceIntent.Layout(LayoutPreset.QUAD),
+        "bố cục 4" to VoiceIntent.Layout(LayoutPreset.QUAD),
+    )
+
+    /** Cụm đánh dấu phải có, phần đuôi phải khớp TRỌN — không thì im lặng đi tiếp, không đoán. */
+    @Test fun `cau khong phai bo cuc thi VoiceLayouts khong dung vao`() {
+        unknown("hai cột", VoiceUnknownReason.NO_VERB)
+        unknown("bố cục mười hai ô", VoiceUnknownReason.NO_VERB)
+        unknown("bố cục 2 cột màu xanh", VoiceUnknownReason.NO_VERB)
+        // Hai chữ *"bố cục"* nằm giữa một câu KHÁC (ở đây là tên bài hát) ⇒ [VoiceLayouts.LEAD_WORDS] chặn:
+        // *"mở bài …"* vẫn là một câu nhạc, không bị cướp thành lệnh đổi bố cục.
+        assertEquals(
+            VoiceIntent.Media(VoiceMediaOp.QUERY, "bố cục hai cột"),
+            one("mở bài bố cục hai cột"),
+        )
     }
 
     /**

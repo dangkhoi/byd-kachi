@@ -96,6 +96,10 @@ object SherpaPhraseHotwords {
         // Sổ địa chỉ: *"về Nhà"* · *"đến Công ty"* · *"đi làm"* (bí danh nhiều từ của [VoicePlaces.ALIASES]).
         VoicePlaces.PLACE_VERBS.forEach { v -> places.forEach { out.add("$v $it") } }
         out.addAll(VoicePlaces.spokenPhrases(places))
+        // L7 — bố cục: *"BỐ CỤC HAI CỘT"* · *"ĐỔI BỐ CỤC"*. Số viết bằng CHỮ (xem KDoc [VoiceLayouts.SPOKEN]);
+        // dòng *"bố cục"* trần là **tiền tố** của năm dòng kia nên [SherpaHotwords.dropPrefixes] tự bỏ nó — đúng
+        // luật tiền tố mà cả tệp này dựng lên để giữ.
+        out.addAll(VoiceLayouts.SPOKEN)
         return out
     }
 

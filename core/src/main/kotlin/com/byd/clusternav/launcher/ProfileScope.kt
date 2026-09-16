@@ -153,6 +153,24 @@ object ProfileScope {
                 "Còn áp THẬT (`setCastEnabled`) thì làm cụm trước mặt người lái tối đi/sáng lên vì một cú chạm chip " +
                 "hồ sơ. Mở lại theo hồ sơ được khi có đường áp gác theo 'phiên chiếu không chạy' — backlog S4-OQ2",
         )
+        put(
+            "voice_speak_replies",
+            "V1 pha NÓI · R4 — công tắc 'Đọc phản hồi bằng giọng'. Theo XE vì thứ quyết định nó có nghĩa hay " +
+                "không là **máy này có giọng gì**: engine của hệ thống có gói `vi-VN` chưa, gói Piper offline đã " +
+                "lắp chưa (`VoiceSpeakerSelector` đo lại ở MỖI câu). Chép nó theo hồ sơ thì đổi hồ sơ xong loa im " +
+                "mà không ai hiểu vì sao — cùng họ `voice_mic_pill`/`headless_autostart`: lựa chọn mức máy",
+        )
+        put(
+            "voice_ask_aloud",
+            "V1 pha NÓI · OQ4 — 'đọc câu hỏi xác nhận rồi mới mở micro'. Cùng lý do [voice_speak_replies]: nó chỉ " +
+                "có nghĩa khi MÁY NÀY có giọng, và nó gác một lượt mở micro — tức một tính chất của cái xe, không " +
+                "phải một sở thích đi theo người lái. Owner chốt 2026-09-16: mặc định TẮT, chưa lên UI",
+        )
+        put(
+            "voice_prefer_offline",
+            "V1 pha NÓI · R4 — 'Ưu tiên giọng offline'. Cùng lý do [voice_speak_replies], và còn rõ hơn: nó chỉ " +
+                "có tác dụng khi **gói 61 MB đã nằm trên đĩa của chính xe này**, mà đĩa thì không đi theo hồ sơ",
+        )
         put("enable_freeform_support", "cờ boot của HỆ THỐNG (`Settings.Global`) — thuộc máy")
         put("force_resizable_activities", "cờ boot của HỆ THỐNG (`Settings.Global`), gieo CẶP với khoá trên")
         put("enabled_accessibility_services", "danh sách trợ năng DÙNG CHUNG với mọi app khác (`Settings.Secure`)")

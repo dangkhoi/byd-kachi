@@ -559,7 +559,7 @@ lặng đầu ⇒ *"TIN"* / *"PRAKIN"* — mô hình nghe sai âm *"pin"* ở đ
 | Việc | Trạng thái |
 |---|---|
 | L3 phần `pin`/`dừng` (w09 · w12 · w22) | **✅ vá ở 1.65** — kết luận "loãng" 09-15 bị [ĐO host 09-16] bác; gốc là **từ rời/tiền tố** trong tệp hotword (§6.3 phần [ĐO host 2026-09-16]); spec `kachi-voice-hotword-phrases.html`; máy ảo 20 → **22/25**. Riêng w22 còn (lỗi âm học "pin" đầu câu, ngoài tầm hotword) |
-| L7 bố cục bằng giọng nói (t59/t60) | **còn** — quyết định của owner (spec chưa khai R nào) |
+| L7 bố cục bằng giọng nói (t59/t60) | **✅ xong ở voice pha 2 (2026-09-16)** — owner duyệt; spec `kachi-voice-command.html` **L7**; ba ca t59 · t60 · t60b PASS, xem **§7** |
 | w07 `Bitexco` · w24 `Waze` (tên riêng / tên app tiếng Anh) | **còn** — thuộc lỗ *"model VN không phát ra token tiếng Anh"* (§3 L6 + eval 09-14 §4), không phải lỗi mã |
 | t29 *"chạy gói …"* | **không sửa** — lỗi của bộ ca (L9), giữ nguyên để lượt sau không sửa nhầm sản phẩm |
 | Transport nhạc với **phiên thật** · mic thật · giọng thật | vẫn [CHƯA ĐO] — xem §4 |
@@ -574,3 +574,69 @@ lặng đầu ⇒ *"TIN"* / *"PRAKIN"* — mô hình nghe sai âm *"pin"* ở đ
 `MediaBridge` (interface `MediaTransport`) · `VoiceSynonyms.APP_TARGETS` (thêm cách nói *"bản đồ"*).
 Bài canh mới: `SherpaBiasingCoverageTest` · `TestBridgeSettleTest` · `VoiceE2EFix0915Test` ·
 `VoiceMediaOpenAppTest`. [ĐO] `:core` 1 899 ca / `:app` 955 ca — **0 đỏ**.
+
+---
+
+## 7. LƯỢT 3 — **voice pha 2** trên bản `vehicleTest` 1.65 (66) · [ĐO] 2026-09-16
+
+> Thay đổi đo ở lượt này: **T8** gói giọng ĐỌC tỉa 13 tệp (tải từng tệp + side-load cây thư mục) · **T9** hai công
+> tắc R4 · **T10/R5** đọc lại giá trị THẬT sau khi ghi · **OQ4** đọc xong câu hỏi xác nhận rồi mới mở micro ·
+> **L7** bố cục bằng giọng nói. Spec: `docs/specs/kachi-voice-feedback.html` + `kachi-voice-command.html`.
+
+### 7.1 Lệnh tái lập (nguyên văn)
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 GRADLE_OPTS=-Xmx3g \
+  ./gradlew :core:test :app:testDebugUnitTest :app:assembleVehicleTest --max-workers=2
+PATH="$HOME/Library/Android/sdk/platform-tools:$PATH" bash scripts/emulator/voice-e2e.sh \
+  --serial emulator-5554 --apk app/build/outputs/apk/vehicleTest/app-vehicleTest.apk --only say --out <out>
+```
+
+### 7.2 Kết quả
+
+| Đo | Trước (1.65, §6) | Sau (pha 2) |
+|---|---|---|
+| `:core` (đếm từ XML) | 1 899 ca · 0 đỏ | **1 928 ca · 0 đỏ** (+29) → **1 932** sau lượt soát (+4, `VoiceConfirmAnswerTest`) |
+| `:app` (đếm từ XML) | 955 ca · 0 đỏ | **965 ca · 0 đỏ** (+10) |
+| T1 `say` | 66/67 PASS | **67/68 PASS** — ca đỏ vẫn đúng **t29** |
+| Ca bố cục t59 · t60 | **FAIL** (`-`/`-`, chưa có tính năng) | **PASS** cả hai, + **t60b** mới cũng PASS |
+
+- **t29** (*"chạy gói mở cửa + đèn đọc"*) — **không đổi, không sửa**: đây là **lỗi của bộ ca** (L9 ở §3), giữ
+  nguyên đúng như quyết định 09-15 để lượt sau không sửa nhầm sản phẩm.
+- **Lượt soát Opus cùng ngày** chạy lại đúng lệnh trên: **T1 67/68**, ca đỏ vẫn đúng `t29` ⇒ 5 bản vá của lượt soát (xem `kachi-voice-feedback.html` §10 Pass 2) **không làm hồi quy ca nào**. Lưu ý: E2E **không chạm tới** hai quyết định C1/C2 — `auto_confirm` của cầu kiểm thử không đi qua `VoiceSession.confirm`, và máy ảo không có giọng nào ⇒ cả hai vẫn thuộc cột 🚗 (§7.3).
+- Ba ca bố cục kiểm **tác dụng phụ thật**: cột `side` có kiểu mới `preset:<TEN>`, đọc `state.layout.preset` —
+  cùng nguồn mà màn hình vẽ, không đoán qua ảnh chụp. [ĐO] `QUAD` · `TWO_COL` · `TWO_ROW` đúng cả ba.
+
+### 7.3 Ba thứ máy ảo **KHÔNG** đo được (và vì sao) — chuyển sang playbook §6f
+
+| Hạng mục | Vì sao máy ảo mù | Chốt ở đâu |
+|---|---|---|
+| **R5 nhánh "lệch"** | máy ảo dùng `NoCar` ⇒ `readStep` trả `null` ⇒ luôn đi nhánh *"không đọc được"*; không có HAL để trả một con số khác | playbook §6f(c) + `VoiceStepReadbackTest` (7 ca JVM, có ca *xe chậm một nhịp*) |
+| **OQ4 đọc-xong-rồi-nghe** | máy ảo **không có giọng nào** (`app_voices` rỗng — Đ2 của spec) ⇒ `speaker.available()` = false ⇒ mở micro ngay như 1.65; `auto_confirm` của bridge cũng không đi qua `VoiceSession.confirm` | playbook §6f(d) + `VoiceSpeakerDoneContractTest` (hợp đồng `onDone` luôn gọi) |
+| **T8 tải qua mạng** | 13 asset **chưa được đăng** lên GitHub Release (TODO owner) | playbook §6f(a): side-load cây thư mục, `state.tts.offline_pack_ready` |
+
+### 7.4 Bốn trường mới của `state.tts` (đọc được **ngay cả khi chưa nói câu nào**)
+
+```
+offline_pack_ready   gói giọng ĐỌC đã đủ 13 tệp trên đĩa chưa (đọc từ ĐĨA, không từ ảnh chụp phiên nói)
+offline_pack_dir     đường dẫn TUYỆT ĐỐI của thư mục gói — để người cầm adb chép đúng chỗ, không phải đoán
+speak_replies        công tắc R4 "Đọc phản hồi bằng giọng"   (mặc định true)
+prefer_offline       công tắc R4 "Ưu tiên giọng offline"     (mặc định false)
+```
+
+### 7.5 Mã đã đổi ở lượt này (để lượt sau lần ngược được)
+
+**Mới**: `core/…/voice/VoicePack.kt` · `core/…/voice/VoiceLayouts.kt` · `app/…/VoiceTargetDispatch.kt` ·
+`app/…/voice/VoiceFreeTail.kt`.
+**Sửa**: `SherpaTtsCatalog` (13 tệp ghim, gỡ hẳn `archive*`/`needsArchiveExtract`/`rootInArchive`) ·
+`SherpaModelCatalog` (`SherpaModel : VoicePack`) · `VoiceModelStore` (nhận `VoicePack`, `requireSafe` nhiều đoạn,
+staging theo họ gói) · `VoiceModelSideload` (đường dẫn nhiều đoạn) · `VoiceModelSettings` (4 hàng: 2 gói + 2 công
+tắc) · `Prefs` + `ClusterNavBridgeKeys` (2 khoá mới) · `SettingsCatalogEntries`/`SettingsCatalogClusterNav`/
+`ProfileScope` (khai khoá + phạm vi) · `LauncherPorts` + `CarControlAdapter` (`readStep`) · `VoiceReply`
+(`doneActual` · `layoutNotHere` · nhánh `Layout`) · `VoiceDispatcher` (`sayStepResult` · `onLayout`) ·
+`VoiceIntent` (`Layout`) · `VoiceIntentParser` (bước b½) · `VoiceSpeaker`/`AndroidTtsSpeaker`/`SherpaTtsSpeaker`/
+`VoiceSpeakerRouter` (`speak(text, onDone)`) · `VoiceSession` (`askAloudThenListen` · gác R4) · `VoicePhrases` +
+`SherpaPhraseHotwords` (cụm bố cục) · `TestBridgeState` (4 trường) · `TestBridgeHooks`/`KachiHomeWiring`/
+`KachiHomeActivity`/`VoiceTextConsole` (nối `onLayout`).
+**Bài canh mới**: `VoiceLayoutParseTest` · `VoiceReplyActualTest` · `VoiceSpeakerDoneContractTest` ·
+`VoiceStepReadbackTest` + 3 bài mới trong `VoiceCommandWiringContractTest`.

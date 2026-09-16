@@ -28,6 +28,22 @@ class CarControlAdapter(private val table: HalBindingTable) : CarControlPort {
     override fun press(id: String): Boolean = ok(table.write(id, 1))
 
     /**
+     * R5 — đọc lại giá trị THẬT của một nút STEP qua **đúng đường đọc** mà ô thông tin đang dùng
+     * ([HalBindingTable.readInt]).
+     *
+     * Không có đường đọc thứ hai: `readInt` đã lọc sentinel (`readRaw` trả `null` khi `rawIsSentinel`) và đã
+     * biết các ca đặc thù (`ARRAY_INDEX`, `float=` của `BYDAutoEventValue`, `INVALID_VALUES`). Tự gọi
+     * `gateway.getter` ở đây là dựng bản sao thứ hai của bốn luật ấy — và bản sao sẽ đọc ra
+     * `-999999999` rồi Kachi đọc to con số đó cho người lái nghe.
+     *
+     * `runCatching`: đường HAL đi qua reflection, một trim thiếu lớp là `ClassNotFoundException` — mà đây chỉ là
+     * một câu trả lời đẹp hơn, không đáng làm hỏng cả lệnh vừa gửi thành công.
+     */
+    override fun readStep(id: String): Int? =
+        if (ControlRegistry.byId(id)?.kind != ControlKind.STEP) null
+        else runCatching { table.readInt(id) }.getOrNull()
+
+    /**
      * Định tuyến chung theo [ControlDef.kind] — cho UI gọi 1 điểm. [arg]: TOGGLE 1/0, STEP giá trị, COVER 1/0,
      * SELECT index, BUTTON bỏ qua. Id lạ → false.
      *

@@ -498,6 +498,16 @@
     <string name="kachi_voice_model_verifying">Checking the package (sha256)…</string>
     <string name="kachi_voice_model_extracting">Unpacking…</string>
     <string name="kachi_voice_model_failed">Failed: %1$s</string>
+    <string name="kachi_voice_tts_title">Offline voice (on-device)</string>
+    <string name="kachi_voice_tts_absent">Not installed. The Vietnamese voice pack (%1$s) is downloaded once; after that Kachi speaks its replies on the car itself, with no network and no Google.</string>
+    <string name="kachi_voice_tts_ready">%1$s installed · %2$d files · %3$s on disk</string>
+    <string name="kachi_voice_tts_get">Download the voice pack</string>
+    <string name="kachi_voice_tts_remove">Remove the voice pack</string>
+    <string name="kachi_voice_tts_sideload">No network on the car: copy the whole pack tree into Android/data/%1$s/files/sherpa/import/%2$s/ and press Download — every file is still sha256-checked.</string>
+    <string name="kachi_voice_speak_title">Speak replies out loud</string>
+    <string name="kachi_voice_speak_sub">Kachi reads its answer aloud instead of only showing it.</string>
+    <string name="kachi_voice_offline_title">Prefer the offline voice</string>
+    <string name="kachi_voice_offline_sub">Only takes effect once the voice pack is installed; until then the system speech engine is used.</string>
     <string name="kachi_voice_wav_try">Recognise a test WAV file</string>
     <string name="kachi_voice_wav_running">Recognising the test file…</string>
     <string name="kachi_voice_wav_heard">WAV heard: %1$s</string>

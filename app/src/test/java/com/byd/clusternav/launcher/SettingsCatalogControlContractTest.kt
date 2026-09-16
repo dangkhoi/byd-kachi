@@ -29,6 +29,13 @@ class SettingsCatalogControlContractTest {
     private val places by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsPlaces.kt") }
 
     /**
+     * Khối *Giọng nói* của nhóm Hệ thống nằm ở `launcher/voice/` chứ không ở một `SettingsSections*.kt`: nó là
+     * **một bề mặt cài đặt có việc nền** (tải 61 MB, băm, gỡ) và nó đứng cạnh chính lớp lưu gói mà nó điều khiển.
+     * Bảng nguồn ở đây bám nơi control **thật sự** được dựng, không bám quy ước đặt tên tệp.
+     */
+    private val voice by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt") }
+
+    /**
      * ⚠⚠ **BÀI CANH CHÍNH CỦA IA v2 (R2 · §4.3)** — *"không cấu hình nào nằm ngoài"*.
      *
      * `SettingsCoverageContractTest` trả lời chiều thứ nhất: *mọi khoá lưu bền đều thuộc một nhóm của danh mục*.
@@ -116,6 +123,10 @@ class SettingsCatalogControlContractTest {
             "system_permissions" to ("SettingsSections" to "rows.permissionRow("),
             "system_autostart" to ("SettingsSections" to "deps.onAutostart("),
             "system_headless_autostart" to ("SettingsSections" to "deps.bridge.setHeadlessAutostart("),
+            // V1 pha NÓI · R4/T8 — hai công tắc đọc phản hồi + nút tải gói giọng offline (tệp `voice/`, xem KDoc).
+            "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
+            "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),
+            "voice_tts_pack" to ("VoiceModelSettings" to "SherpaTtsCatalog.PIPER_VI_VAIS1000"),
             // S5 — nút Đặt Kachi làm màn hình chính (ROM không hiện hộp chọn HOME) + công tắc giữ khi nổ máy.
             "system_default_home" to ("SettingsSections" to "deps.bridge.setDefaultHome"),
             "system_keep_home_on_boot" to ("SettingsSections" to "deps.bridge.setKeepHomeOnBoot("),
@@ -139,6 +150,7 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsKeys" to keys,
             "SettingsSectionsCar" to car,
             "SettingsSectionsPlaces" to places,
+            "VoiceModelSettings" to voice,
         )
 
         val catalogIds = SettingsCatalog.ENTRIES.map { it.id }.toSet()

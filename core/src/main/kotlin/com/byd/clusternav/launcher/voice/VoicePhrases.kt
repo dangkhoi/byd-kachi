@@ -214,6 +214,9 @@ object VoicePhrases {
         // Sổ địa chỉ (spec `kachi-voice-addresses.html` R6) — nhãn ĐÃ LƯU + cách nói dựng sẵn của nhãn chuẩn
         // tương ứng. CÙNG luật với hai dòng trên: chỉ khai thứ gọi được thật; sổ trống ⇒ không khai gì.
         out.addAll(VoicePlaces.spokenPhrases(places))
+        // L7 — bố cục: cụm *"bố cục hai cột"* vào ngữ pháp để bigram nối được ba từ ấy. KHÔNG gác theo dữ liệu
+        // động như hai dòng trên: năm bố cục là một tập ĐÓNG có sẵn trên mọi chiếc xe, không có ca "chưa cài".
+        out.addAll(VoiceLayouts.SPOKEN)
         return out
     }
 
@@ -233,6 +236,9 @@ object VoicePhrases {
         // V1.1 — *"…vào ô số hai"*. Thiếu một từ ở đây thì câu gõ được mà **không nói được**, im lặng.
         out.addAll(VoiceLexicon.SLOT_WORDS)
         out.addAll(VoiceLexicon.BY_APP_MARKERS)
+        // L7 — *"bố cục"*, *"cột"*, *"hàng"*, và các động từ đổi. Thiếu một từ ở đây thì câu gõ được mà **không
+        // nói được**, im lặng — cùng lý do với hai dòng trên.
+        out.addAll(VoiceLayouts.WORDS)
         VoiceLexicon.CONFIRM_YES.forEach { out.addAll(it) }
         VoiceLexicon.CONFIRM_NO.forEach { out.addAll(it) }
         return out

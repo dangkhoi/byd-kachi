@@ -141,6 +141,13 @@ class LayeringRulesTest {
         // `LocalDeviceShell`, `WorkspacePrefs`, `DefaultHome` (đều thuộc :app/:car-integration) và mở rộng một lớp
         // giữ Context. Không chuyển được sang :core — cùng lẽ với `ThemeHost.kt`.
         "ClusterNavBridgeHome.kt" to "hàm mở rộng ClusterNavBridge (Context-bound) — gọi AdbKeys/LocalDeviceShell/WorkspacePrefs",
+        // Voice pha 2 (1.65 · 2026-09-16): nửa của `VoiceDispatcher` tách ra vì trần 500 dòng. Nó "thuần" theo phép đo ở đây
+        // (không `import android.*`, không nhắc chữ Context) nhưng nó **là** cầu sang các đường Android của
+        // `:app`: `VoiceAppIntents.send` bắn `startActivity`, `MediaTransport` là `MediaBridge` (MediaSession),
+        // `HomeUiState` là state của màn chính. Chuyển nó sang `:core` là kéo cả ba thứ đó theo — cùng lẽ với
+        // `ThemeHost.kt`/`ClusterNavBridgeHome.kt`. ⚠ `VoiceDispatcher.kt` không có ở đây vì nó nhắc chữ
+        // `Context` (KDoc) nên phép đo không coi nó là thuần — một chi tiết của bộ quét, không phải một luật.
+        "VoiceTargetDispatch.kt" to "nửa tách ra của VoiceDispatcher — cầu sang VoiceAppIntents/MediaBridge/HomeUiState của :app",
     )
 
     @Test

@@ -102,16 +102,25 @@ class VoicePlacesParseTest {
     // ══ B · KHÔNG ĐƯỢC PHÁ ═══════════════════════════════════════════════════════════════════════════════
 
     /**
-     * ⚠⚠ Câu này được `VoiceIntentParserTest` cố ý giữ ở [VoiceUnknownReason.NO_VERB] (bố cục chưa nằm trong tập
-     * đóng của giọng nói). Nếu `về` thành động từ dẫn đường **vô điều kiện** thì nó lặng lẽ thành *"dẫn đường tới
-     * «bố cục 2 cột»"*. Bài này khoá đúng chỗ đó.
+     * ⚠⚠ Bài này canh **động từ nơi chốn không được cướp câu không phải địa điểm** — và nó vẫn canh đúng thứ ấy
+     * sau L7, chỉ đổi **câu mẫu**.
+     *
+     * Câu cũ (*"về bố cục 2 cột"*) nay có một cách hiểu đúng hơn là [VoiceIntent.Layout] (owner duyệt
+     * 2026-09-16, xem KDoc [VoiceLayouts]), nên nó không còn chứng minh được điều bài này muốn chứng minh. Thay
+     * bằng hai câu vẫn **không** trỏ tới đâu cả: nếu `về`/`đi` thành động từ dẫn đường vô điều kiện thì chúng
+     * lặng lẽ thành *"dẫn đường tới «…»"* — đúng bẫy mà bài này sinh ra để chặn.
      */
     @Test
     fun `dong tu noi chon KHONG duoc cuop cau khong phai dia diem`() {
         assertEquals(
             VoiceUnknownReason.NO_VERB,
-            (one("về bố cục 2 cột") as? VoiceIntent.Unknown)?.reason,
+            (one("về chỗ nào đó") as? VoiceIntent.Unknown)?.reason,
             "phần đuôi không khớp nơi nào ⇒ phải đi tiếp đúng đường cũ",
+        )
+        assertEquals(
+            VoiceUnknownReason.NO_VERB,
+            (one("đi Bitexco") as? VoiceIntent.Unknown)?.reason,
+            "tên chưa lưu trong sổ thì `đi` KHÔNG được tự thành dẫn đường",
         )
     }
 

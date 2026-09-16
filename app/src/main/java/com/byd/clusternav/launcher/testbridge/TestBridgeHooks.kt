@@ -151,6 +151,11 @@ internal fun Activity.attachTestBridge(
                     confirm = confirm,
                     say = say,
                     assignAppToSlot = { index, pkg -> slots().assignApp(index, pkg); true },
+                    // L7 — CÙNG lambda mà lệnh `preset` của cầu kiểm thử dùng (`setPreset` ngay dưới), để hai
+                    // lệnh của cùng một cầu không đi hai đường. ⚠ Khác đường của màn chính đúng MỘT bước: ở đó
+                    // `selectPreset` còn bỏ bố cục tự vẽ trước. Cầu kiểm thử cố ý **không** bỏ — nó là bề mặt ĐO,
+                    // và một lệnh đo không được tự tay xoá cấu hình của người dùng.
+                    onLayout = { preset -> viewModel.setPreset(preset); true },
                 )
             },
             assignAppToSlot = { index, pkg -> slots().assignApp(index, pkg); true },

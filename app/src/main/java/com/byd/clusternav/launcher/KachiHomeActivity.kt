@@ -142,6 +142,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             openPermissions = { panels.openSettings(SettingsGroup.SYSTEM) },
             // V1.1 — CÙNG đường mà ngăn kéo dùng khi người ta chọn app cho một ô.
             assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true },
+            // L7 — CÙNG đường mà chip bố cục ở Cài đặt dùng (nó còn bỏ bố cục tự vẽ trước, xem `selectPreset`).
+            onLayout = { preset -> selectPreset(preset); true },
         )
     }
     private val voice: com.byd.clusternav.launcher.voice.VoiceSession by voiceLazy

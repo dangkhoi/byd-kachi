@@ -268,6 +268,11 @@ class LauncherI18nContractTest {
             "`SherpaModel.label` là TÊN RIÊNG của mô hình ASR (vd \"Zipformer VN (Apache-2.0, 70k h)\"), một danh " +
                 "hiệu sản phẩm/giấy phép — KHÔNG phải `Localized.label` VI-gốc cần dịch. Cùng loại với `item.label` " +
                 "(tên ứng dụng): danh từ riêng, không đổi theo ngôn ngữ giao diện",
+        "pack.label" to
+            "`VoicePack.label` — cùng lý do `model.label`, chỉ là dạng TỔNG QUÁT của nó (T8 gộp gói nghe + gói đọc " +
+                "vào một hợp đồng). Vẫn là tên riêng: \"Piper VN — VAIS-1000 (medium)\"",
+        "ttsPack.label" to
+            "`SherpaTtsCatalog.TtsVoice.label` — tên riêng của gói giọng Piper, cùng lý do `model.label`",
         // U6 đã bỏ mục `"pick.sub"`: ngăn kéo nay đọc `pick.displaySub` (gợi ý loại + câu "gồm gì"), tức nó KHÔNG
         // còn chạm vào trường gốc nữa nên không cần được tha. Danh sách này phải tự rữa — giữ một dòng không còn ai
         // khớp là để dành sẵn một lỗ hổng cho lần sau.

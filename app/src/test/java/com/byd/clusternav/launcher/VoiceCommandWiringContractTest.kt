@@ -26,7 +26,17 @@ class VoiceCommandWiringContractTest {
 
     private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
-    private val dispatcher by lazy { code("src/main/java/com/byd/clusternav/launcher/VoiceDispatcher.kt") }
+    /**
+     * **Bộ dây của cầu giọng nói**, không phải *một tệp*.
+     *
+     * Từ voice pha 2 (2026-09-16) vai *"giao chữ/toạ độ cho app đích"* nằm ở `VoiceTargetDispatch.kt` (tách vì trần 500 dòng — xem
+     * KDoc lớp đó). Bài này canh **dây nối**, nên phạm vi quét phải đi theo vai chứ không theo tên tệp: ghim một
+     * tệp là biến mọi lượt tách tệp hợp lệ thành một lượt đỏ giả, và cách chữa đỏ giả ấy thường là gỡ assert.
+     */
+    private val dispatcher by lazy {
+        code("src/main/java/com/byd/clusternav/launcher/VoiceDispatcher.kt") + "\n" +
+            code("src/main/java/com/byd/clusternav/launcher/VoiceTargetDispatch.kt")
+    }
     private val console by lazy { code("src/main/java/com/byd/clusternav/launcher/VoiceTextConsole.kt") }
     private val sections by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
     private val panels by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
@@ -306,8 +316,12 @@ class VoiceCommandWiringContractTest {
         assertTrue(rec.contains("fun openFree("), "R16 cần một bộ giải mã tự do cho phần đuôi từ vựng mở")
         assertTrue(rec.contains("VoiceRecognizer(rec, \"\")"), "bộ giải mã tự do dựng KHÔNG kèm hotwords (biasing rỗng)")
 
-        val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
-        val fn = SourceRoots.body(session, "private fun freeTail(")
+        // ⚠ voice pha 2 (2026-09-16) — khối này tách khỏi `VoiceSession.kt` sang `VoiceFreeTail.kt` (trần 500 dòng, xem KDoc lớp đó).
+        // Bài canh đi theo VAI, nên nó quét đúng nơi vai ấy đang ở; tính chất được canh không đổi một chữ.
+        val fn = SourceRoots.body(
+            code("src/main/java/com/byd/clusternav/launcher/voice/VoiceFreeTail.kt"),
+            "fun decode(",
+        )
         assertTrue(
             fn.indexOf("VoiceOpenVocab.triggerOf(") in 0 until fn.indexOf("VoiceRecognizer.openFree("),
             "phải hỏi cụm kích hoạt TRƯỚC khi dựng bộ giải mã tự do — thứ tự này chính là cái cổng",
@@ -317,7 +331,7 @@ class VoiceCommandWiringContractTest {
 
         // Chỉ hai chỗ được gọi: phiên nghe thật và đường đo bằng WAV (phải đi cùng một con đường — R14).
         val users = voiceSources().filter { (_, src) -> src.contains("openFree(") }.map { it.first }.sorted()
-        assertEquals(listOf("VoiceRecognizer.kt", "VoiceSession.kt", "VoiceWavProbe.kt"), users,
+        assertEquals(listOf("VoiceFreeTail.kt", "VoiceRecognizer.kt", "VoiceWavProbe.kt"), users,
             "bộ giải mã tự do bị gọi ở chỗ lạ: $users")
     }
 
@@ -338,6 +352,71 @@ class VoiceCommandWiringContractTest {
             "if (stale(my) || overlay == null) onNo() else confirm(question, onYes, onNo)" in fn,
             "phiên đã qua / tấm chữ đã đóng ⇒ trả lời KHÔNG, tuyệt đối không mở thêm một lượt nghe xác nhận",
         )
+    }
+
+    /**
+     * **OQ4 (voice pha 2) — ĐỌC XONG câu hỏi rồi mới mở micro, và hạn 4 giây phải là một lưới an toàn THẬT.**
+     *
+     * Hai tính chất, mỗi cái chặn một cách hỏng ngược nhau:
+     *  • mở micro **trong** `onDone` — không thì Kachi nghe chính mình đọc câu hỏi (hazard đã ghi ở KDoc
+     *    `VoiceSession.speakLines`), và cổng *"đồng ý"* nhận nhầm một lần là một cánh cửa mở giữa bãi đỗ;
+     *  • vẫn mở micro khi **hết hạn** — CLAUDE.md §3: *"không gate một đường phục hồi bằng dữ liệu mà chỉ chính
+     *    đường đó mới làm mới được"*. Engine đọc chết giữa chừng không được phép khoá cổng an toàn vĩnh viễn.
+     */
+    @Test
+    fun `cau hoi xac nhan doc xong moi mo micro, va het han thi van mo`() {
+        val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
+        val fn = SourceRoots.body(session, "private fun askAloudThenListen(")
+        assertTrue(fn.contains("speaker.speak(question) { openMic() }"),
+            "micro phải mở TRONG mốc 'đọc xong' của chính câu hỏi, không phải ngay sau khi xếp câu")
+        assertTrue(fn.contains("ASK_ALOUD_CAP_MS"),
+            "phải có hạn cứng — engine đọc treo không được khoá cổng xác nhận vĩnh viễn")
+        assertTrue(fn.contains("!speakReplies() || !speaker.available()"),
+            "tắt công tắc R4 / máy không có giọng ⇒ mở micro NGAY như 1.65, không chờ gì")
+        assertTrue(fn.contains("listening.compareAndSet(false, true)") || fn.contains("!listening.compareAndSet"),
+            "hai đường (đọc xong · hết hạn) có thể cùng về ⇒ phải chốt để chỉ mở ĐÚNG MỘT lượt nghe")
+        assertTrue(SourceRoots.body(session, "private fun confirm(").contains("askAloudThenListen("),
+            "cổng xác nhận phải đi qua đường đọc-rồi-nghe; gọi thẳng listenForConfirm là bỏ qua OQ4")
+    }
+
+    /**
+     * **R4 (voice pha 2) — hai công tắc của đường ra tiếng phải THẬT SỰ gác, và gác đúng chỗ.**
+     *
+     * *"Đọc phản hồi"* tắt mà vẫn tổng hợp giọng là tốn hàng trăm ms CPU trên đầu xe cho một câu không ai nghe;
+     * *"Ưu tiên giọng offline"* phải là **lambda** (đọc lại mỗi câu) chứ không phải một giá trị chụp lúc dựng
+     * phiên — chụp một lần thì bật công tắc xong phải khởi động lại launcher mới thấy tác dụng.
+     */
+    @Test
+    fun `hai cong tac doc phan hoi gac that`() {
+        val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
+        assertTrue(session.contains("VoiceSpeakerRouter(ctx) { Prefs.voicePreferOffline(ctx) }"),
+            "công tắc 'ưu tiên giọng offline' phải truyền dạng lambda để đọc lại ở MỖI câu")
+        assertTrue(SourceRoots.body(session, "private fun speakLines(").contains("if (!speakReplies()) return"),
+            "tắt 'Đọc phản hồi' phải chặn TRƯỚC khi gộp/tổng hợp câu, không phải sau")
+        val settings = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt")
+        assertTrue(settings.contains("deps.bridge.setVoiceSpeakReplies(") &&
+            settings.contains("deps.bridge.setVoicePreferOffline("),
+            "hai công tắc phải có một hàng THẬT trong Cài đặt — khoá không ai chạm tới được là khoá chết")
+    }
+
+    /**
+     * **T8 (voice pha 2) — gói giọng ĐỌC đi qua CHÍNH đường cài của gói NGHE, không phải một bản sao.**
+     *
+     * Chép `VoiceModelStore` thành `VoiceTtsStore` là nhân đôi bốn tính chất tinh tế (staging · băm trong lúc
+     * tải · hỏng thì xoá · từ chối gói chưa ghim), và bản sao sẽ lệch ở đúng lần ai đó vá một tính chất.
+     */
+    @Test
+    fun `goi giong doc dung chung duong cai voi goi nghe`() {
+        val settings = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt")
+        assertTrue(settings.contains("VoiceModelStore.install(context, ttsPack)"),
+            "gói ĐỌC phải gọi đúng `VoiceModelStore.install`, không dựng đường cài thứ hai")
+        assertTrue(settings.contains("VoiceModelStore.remove(context, ttsPack)"), "phải có đường GỠ cho gói đọc")
+        assertTrue(settings.contains("SherpaTtsCatalog.PIPER_VI_VAIS1000"),
+            "gói đọc phải lấy từ danh mục `:core`, không viết cứng đường dẫn/URL ở tầng vẽ")
+        val store = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelStore.kt")
+        assertTrue(store.contains("pack: VoicePack"), "đường cài phải nhận hợp đồng chung VoicePack")
+        assertTrue(store.contains("target.parentFile?.mkdirs()"),
+            "gói đọc mang cây thư mục nhiều tầng ⇒ phải tạo thư mục cha, không thì FileNotFoundException")
     }
 
     /**
@@ -441,7 +520,7 @@ class VoiceCommandWiringContractTest {
         assertTrue(settings.contains("VoiceEngine.release()"),
             "gỡ phải trả mô hình khỏi bộ nhớ TRƯỚC khi xoá tệp, không thì mã native còn giữ bản cũ")
         assertTrue(
-            code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt").contains("VoiceModelSettings(context, rows).build(body)"),
+            code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt").contains("VoiceModelSettings(context, rows, deps).build(body)"),
             "hàng tải mô hình phải có mặt trong màn Cài đặt — một lớp không ai dựng là mã chết",
         )
     }

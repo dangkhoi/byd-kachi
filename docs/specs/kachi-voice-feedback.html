@@ -45,11 +45,12 @@ ul{padding-left:22px}li{margin:3px 0}
 <body><div class="wrap">
 
 <h1>Phản hồi bằng GIỌNG sau khi thi hành lệnh</h1>
-<p class="muted">Slug: <code>kachi-voice-feedback</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Slug: <code>kachi-voice-feedback</code> · Branch <code>main</code> · <span class="pill ok">Trạng thái: pha 1 + pha 2 DONE off-car (2026-09-16) · chờ đo trên xe</span></p>
 <p class="muted">Tuân thủ <code>CLAUDE.md</code> §1 · §2 (mức bằng chứng) · §7 (generic, cấm hardcode) · §10 (test khoá bài học) và <code>.kiro/steering/*.md</code>.</p>
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 2 — 2026-09-16 (pha 2)</b>: Owner duyệt trọn gói (<i>“Có hết, làm nhé”</i>). <b>T8 · T9 · T10 ⇒ DONE</b>, <b>OQ1 · OQ2 · OQ4 ⇒ CHỐT</b>. Ba thay đổi lớn: (1) <b>OQ2 bị ĐO bác theo hướng tốt</b> — <code>espeak-ng-data</code> tỉa còn <b>11 mục / 728 KB</b> (thay 393 mục / 18 MB) cho audio <b>bit-identical</b> ⇒ gói còn <b>13 tệp</b>, tải <b>từng tệp có ghim sha256</b> được, <b>không cần tầng giải nén <code>tar.bz2</code></b> nào (OQ1 cũng đóng theo: 67 MB → <b>61 MB</b>, không phải mirror bản nhẹ hơn); (2) hai công tắc R4 vào Cài đặt, khoá <b>theo XE</b>; (3) R5 đọc lại giá trị THẬT qua <code>CarControlPort.readStep</code>. OQ4 chốt <b>CÓ cơ chế</b> (đọc xong câu hỏi rồi mới mở micro, hạn cứng 6 s) — và ở <b>lượt soát cùng ngày owner chốt tiếp: mặc định <u>TẮT</u></b> (chỉ đọc phản hồi sau lệnh), khoá <code>voice_ask_aloud</code>. Cùng lượt: <b>C1</b> — cổng xác nhận nhận mọi từ đồng nghĩa <i>“có”</i> (<code>ừ · vâng · có · được · đúng · đúng rồi · làm đi</code>), sau khi [ĐO xe] cho thấy bảng cũ bỏ qua chữ <i>“ừ”</i> trong im lặng.</li>
 <li><b>Pass 0 — 2026-09-15</b>: Khởi tạo spec. Owner hỏi <i>“Con voice có phản hồi chưa? … ‘Đã tăng nhiệt độ lên 24, mức gió 3’ chẳng hạn?”</i>. Tới 1.63 câu trả lời chỉ là <b>chữ</b> trên <code>VoiceOverlay</code> + hai tiếng bíp — không có TTS. Spec voice V1 để R8 (TTS) ở trạng thái <i>“đóng — chưa biết engine”</i>; mục §2.3 dưới đây đã ĐO xong phần “engine nào”.</li>
 </ul>
 
@@ -68,6 +69,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <p class="muted">[CHƯA BIẾT] — chưa đo <code>isLanguageAvailable("vi-VN")</code> trên <b>xe thật</b> (DiLink 3/4/5). Đó là lý do §6 V-oncar tồn tại, và là lý do có cầu đo ở R6.</p>
 
 <h3>2.3 Gói giọng Việt offline — đã tải thật, đã băm thật</h3>
+<p class="muted">⚠ <b>ĐÍNH CHÍNH 2026-09-16</b>: mọi câu ở mục này về <i>“phải giải nén <code>tar.bz2</code>”</i> / <i>“393 mục <code>espeak-ng-data</code> bắt buộc”</i> đã bị một phép ĐO bác — xem <b>§7 OQ2</b> và §9. Gói dùng thật nay là bản <b>TỈA 13 tệp / 61 MB</b>, tải từng tệp có ghim sha256. Giữ nguyên văn phần dưới làm <b>lịch sử</b>, không phải mô tả hiện hành.</p>
 <p>[ĐO] 2026-09-15, tải bằng <code>curl</code> từ bản phát hành <code>tts-models</code> của <code>k2-fsa/sherpa-onnx</code>:</p>
 <pre>vits-piper-vi_VN-vais1000-medium.tar.bz2
   sha256 = fa1367710767d36ed5cf13b4a449e20c35ffd12791c2e47c2e64142bfa55551a
@@ -94,9 +96,9 @@ ul{padding-left:22px}li{margin:3px 0}
   <li><b>R2b</b> — sherpa-onnx <code>OfflineTts</code> khi gói VITS/Piper đã có đủ tệp trên đĩa (<b>kiểm trên đĩa</b>, không tin pref — CLAUDE.md §5).</li>
   <li><b>R2c</b> — Không có đường nào ⇒ <b>degrade</b>: chữ + âm báo y như 1.63. Không ném, không hiện lỗi, không tắt tính năng nghe.</li>
   </ul></li>
-<li><b>R3</b> — <b>Không nói đè lúc đang nghe.</b> Cổng gồm <b>hai</b> cờ: <code>capturing</code> (micro đang mở) <b>và</b> <code>confirmOpen</code> (hộp hỏi lại vừa mở — lượt nghe của nó bắt đầu vài ms SAU, nên <code>capturing</code> một mình còn <code>false</code> đúng ở khe nguy hiểm). Tiêu điểm âm thanh dùng <code>AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK</code> + <code>CONTENT_TYPE_SPEECH</code> — <b>gương</b> của <code>VoiceCapture.requestFocus</code>. Huỷ phiên ⇒ cắt câu đang đọc; màn chính chết ⇒ <code>shutdown()</code>.</li>
-<li><b>R4</b> <span class="pill">pha 2</span> — Công tắc <i>“Đọc phản hồi”</i> trong Cài đặt (mặc định BẬT khi có engine) + <i>“Ưu tiên giọng offline”</i>. Hoãn vì <code>SettingsSections*.kt</code> đang có agent khác sửa; hợp đồng đã chừa sẵn: <code>VoiceSpeakerRouter(ctx, preferOffline = { … })</code>.</li>
-<li><b>R5</b> <span class="pill">pha 2</span> — Câu xác nhận đọc lại <b>trạng thái THẬT</b> cho <code>ControlKind.STEP</code> (đọc HAL <i>sau</i> khi ghi: <i>“Đã tăng nhiệt độ lên 24”</i> thay vì lặp lại con số vừa gửi). Phụ thuộc <code>VoiceReply</code>/<code>VoiceDispatcher</code> đang có agent khác sửa. <b>Hợp đồng cần</b>: <code>VoiceDispatcher</code> gọi <code>say</code> với câu dựng từ giá trị <b>đọc lại</b>, không từ giá trị <b>đã gửi</b>; <code>VoiceFeedbackPhrase</code> không phải đổi gì (nó chỉ nhận chuỗi).</li>
+<li><b>R3</b> — <b>Không nói đè lúc đang nghe.</b> Cổng gồm <b>hai</b> cờ: <code>capturing</code> (micro đang mở) <b>và</b> <code>confirmOpen</code> (hộp hỏi lại vừa mở — lượt nghe của nó bắt đầu vài ms SAU, nên <code>capturing</code> một mình còn <code>false</code> đúng ở khe nguy hiểm). Tiêu điểm âm thanh dùng <code>AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK</code> + <code>CONTENT_TYPE_SPEECH</code> — <b>gương</b> của <code>VoiceCapture.requestFocus</code>. Huỷ phiên ⇒ cắt câu đang đọc; màn chính chết ⇒ <code>shutdown()</code>. <br><b>C1 · 2026-09-16 (owner chốt)</b>: cổng xác nhận nhận <b>mọi từ đồng nghĩa <i>“có”</i></b> — <code>ừ · vâng · có · được · đúng · đúng rồi · làm đi · đồng ý · xác nhận · ok · yes · confirm</code>. Lý do cũ (<i>“từ một âm tiết dễ nghe nhầm”</i>) bị <b>[ĐO xe 2026-09-16]</b> bác: owner trả lời <i>“ừ”</i>, Kachi im lặng bỏ qua ⇒ đọc ra thành <i>“voice hỏng”</i>. Hai chốt giữ nguyên: <b>cả câu đúng bằng một cụm</b>, và mặc định mọi đường thoát vẫn là KHÔNG. <span class="muted">AC: <code>VoiceConfirmAnswerTest</code> (4 ca, khoá cả hai chiều + va chạm <code>đúng</code>/<code>dừng</code> — backlog <code>V-CONFIRM-DUNG</code>).</span></li>
+<li><b>R4</b> <span class="pill ok">DONE 2026-09-16</span> — Hai công tắc trong <i>Cài đặt › Hệ thống &amp; quyền › Nâng cao</i>, ngay dưới hai hàng gói giọng: <b>“Đọc phản hồi bằng giọng”</b> (khoá <code>voice_speak_replies</code>, <b>mặc định BẬT</b>) và <b>“Ưu tiên giọng offline”</b> (<code>voice_prefer_offline</code>, mặc định TẮT). Cả hai <b>theo XE</b> (<code>ProfileScope.DEVICE_KEYS</code>, tệp <code>clusternav_prefs</code> qua <code>Prefs</code>): thứ quyết định chúng có nghĩa hay không là <b>máy này có giọng gì</b>, không phải người đang lái. <br><span class="muted">AC: <code>speakLines</code> gác <b>trước</b> khi gộp/tổng hợp câu (không tốn CPU cho câu không ai nghe); <code>preferOffline</code> truyền dạng <b>lambda</b> ⇒ đọc lại ở MỖI câu (bật công tắc xong là câu sau đã đổi đường, không phải khởi động lại). Khoá bởi <code>VoiceCommandWiringContractTest.hai cong tac doc phan hoi gac that</code>.</span></li>
+<li><b>R5</b> <span class="pill ok">DONE 2026-09-16</span> — Câu xác nhận đọc lại <b>trạng thái THẬT</b> cho <code>ControlKind.STEP</code>. Đường đọc: <code>CarControlPort.readStep(id)</code> (mặc định <code>null</code> ⇒ mọi impl cũ/<code>NoCar</code>/máy ảo giữ nguyên hành vi) → <code>CarControlAdapter</code> trả <code>HalBindingTable.readInt(id)</code> (đường đọc mà ô thông tin đang dùng; sentinel đã lọc ở <code>readRaw</code>). Ba nhánh: <b>null</b> ⇒ giữ câu cũ, <b>không bịa số</b>; <b>khớp</b> ⇒ đúng câu cũ; <b>lệch</b> ⇒ đọc lại <b>đúng một lần</b> sau <code>READBACK_SETTLE_MS</code> = 300 ms trên luồng nền, rồi nói <i>“✓ Đã gửi Nhiệt độ 24 — xe báo 23”</i> và sửa <code>ControlTileState</code> theo số thật. <br><span class="muted">AC: <code>VoiceReplyActualTest</code> (câu chữ, cả EN, cả đuôi “chưa kiểm trên xe”) + <code>VoiceStepReadbackTest</code> (hành vi: số lần đọc, ca xe-chậm-một-nhịp, TOGGLE không đọc lại).</span></li>
 <li><b>R6</b> — Cầu kiểm thử: <code>state</code> của <code>KachiTestBridge</code> thêm khối <code>tts</code> để <b>một lệnh</b> trên xe là biết máy đang đọc bằng đường nào.</li>
 </ul>
 <h3>Phi chức năng</h3>
@@ -203,15 +205,22 @@ ul{padding-left:22px}li{margin:3px 0}
 <tr><td>T5</td><td>Hai backend + bộ định tuyến</td><td><code>AndroidTtsSpeaker.kt</code> · <code>SherpaTtsSpeaker.kt</code> · <code>VoiceSpeakerRouter.kt</code></td><td class="ok">DONE</td></tr>
 <tr><td>T6</td><td><b>Hook duy nhất</b>: gom <code>say</code> → gộp → đọc, kèm cổng R3 + nhả tài nguyên</td><td><code>app/…/voice/VoiceSession.kt</code></td><td class="ok">DONE</td></tr>
 <tr><td>T7</td><td>Cầu kiểm thử <code>state.tts</code> (R6)</td><td><code>app/…/testbridge/TestBridgeState.kt</code></td><td class="ok">DONE</td></tr>
-<tr><td>T8</td><td><span class="pill">pha 2</span> Tầng tải + <b>giải nén</b> <code>tar.bz2</code> cho gói giọng ⇒ mở <code>downloadable</code></td><td><code>VoiceModelStore</code>/<code>VoiceModelSideload</code> (đang có agent khác sửa)</td><td class="warn">TODO</td></tr>
-<tr><td>T9</td><td><span class="pill">pha 2</span> Công tắc R4 trong Cài đặt</td><td><code>SettingsSections*.kt</code> (đang có agent khác sửa)</td><td class="warn">TODO</td></tr>
-<tr><td>T10</td><td><span class="pill">pha 2</span> R5 — câu xác nhận đọc lại trạng thái THẬT</td><td><code>VoiceDispatcher.kt</code> · <code>VoiceReply.kt</code> (đang có agent khác sửa)</td><td class="warn">TODO</td></tr>
-<tr><td>T11</td><td>Build + chạy test (2 module)</td><td>—</td><td class="ok">DONE — [ĐO] 2026-09-15, xem §6</td></tr>
+<tr><td>T8</td><td><span class="pill">pha 2</span> Gói giọng <b>TỈA</b> 13 tệp + hợp đồng cài dùng chung (<code>VoicePack</code>) + tải từng tệp + side-load cây thư mục ⇒ mở <code>downloadable</code>. <b>Không</b> viết tầng giải nén nào (OQ2 bác tiền đề cũ)</td><td><code>core/…/voice/VoicePack.kt</code> · <code>SherpaTtsCatalog.kt</code> · <code>SherpaModelCatalog.kt</code> · <code>app/…/voice/VoiceModelStore.kt</code> · <code>VoiceModelSideload.kt</code> · <code>VoiceModelSettings.kt</code></td><td class="ok">DONE 2026-09-16</td></tr>
+<tr><td>T9</td><td><span class="pill">pha 2</span> Hai công tắc R4 + khai khoá (catalog + phạm vi) + <code>state.tts</code> bốn trường mới</td><td><code>Prefs.kt</code> · <code>ClusterNavBridgeKeys.kt</code> · <code>SettingsCatalogEntries.kt</code> · <code>SettingsCatalogClusterNav.kt</code> · <code>ProfileScope.kt</code> · <code>VoiceModelSettings.kt</code> · <code>TestBridgeState.kt</code></td><td class="ok">DONE 2026-09-16</td></tr>
+<tr><td>T10</td><td><span class="pill">pha 2</span> R5 — câu xác nhận đọc lại trạng thái THẬT (+ lượt đọc lại khi lệch)</td><td><code>LauncherPorts.kt</code> · <code>CarControlAdapter.kt</code> · <code>VoiceReply.kt</code> · <code>VoiceDispatcher.kt</code></td><td class="ok">DONE 2026-09-16</td></tr>
+<tr><td>T13</td><td><span class="pill">pha 2</span> OQ4 — đọc XONG câu hỏi xác nhận rồi mới mở micro (mốc <code>speak(text, onDone)</code> + hạn cứng <b>6 s</b>). ⚠ <b>Mặc định TẮT</b> sau khoá <code>voice_ask_aloud</code> (owner chốt 2026-09-16, xem §10 Pass 2) — mã giữ nguyên, hành vi mặc định là <i>không đọc câu hỏi</i></td><td><code>core/…/voice/VoiceSpeaker.kt</code> · <code>AndroidTtsSpeaker.kt</code> · <code>SherpaTtsSpeaker.kt</code> · <code>VoiceSpeakerRouter.kt</code> · <code>VoiceSession.kt</code></td><td class="ok">DONE 2026-09-16</td></tr>
+<tr><td>T14</td><td><span class="pill">pha 2</span> <b>Trần 500 dòng</b> (CLAUDE.md §4.1): tách <code>VoiceDispatcher</code> (571→394) và <code>VoiceSession</code> (514→482) theo VAI</td><td><code>VoiceTargetDispatch.kt</code> (mới) · <code>voice/VoiceFreeTail.kt</code> (mới)</td><td class="ok">DONE 2026-09-16</td></tr>
+<tr><td>T11</td><td>Build + chạy test (2 module) + E2E máy ảo <code>--only say</code></td><td>—</td><td class="ok">DONE — [ĐO] 2026-09-16, xem §6</td></tr>
 <tr><td>T12</td><td>Senior review + security scan</td><td>—</td><td class="warn">TODO</td></tr>
 </table>
 
 <h2>6. Verification</h2>
 <ul>
+<li><b>V-unit (pha 2)</b> <span class="pill ok">[ĐO] 2026-09-16</span> — <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 GRADLE_OPTS=-Xmx3g ./gradlew :core:test :app:testDebugUnitTest --max-workers=2</code>, đếm từ XML:
+<pre>core  1 928 ca · 0 đỏ      (1 899 → 1 928: +29 ca của pha 2)
+app     965 ca · 0 đỏ      (955 → 965: +10 ca của pha 2)
+bộ MỚI: VoiceReplyActualTest 6 · VoiceLayoutParseTest 6 · VoiceSpeakerDoneContractTest 3 · VoiceStepReadbackTest 7</pre></li>
+<li><b>V-e2e máy ảo (pha 2)</b> <span class="pill ok">[ĐO] 2026-09-16</span> — <code>scripts/emulator/voice-e2e.sh --serial emulator-5554 --apk app/build/outputs/apk/vehicleTest/app-vehicleTest.apk --only say</code> ⇒ <b>T1 67/68 PASS</b>. Ca đỏ duy nhất là <b>t29</b> (<i>“chạy gói mở cửa + đèn đọc”</i>) — <b>lỗi của bộ ca</b>, đã ghi từ 09-15 (L9) và cố ý không sửa. Ba ca bố cục MỚI (t59 · t60 · t60b) đều <b>PASS</b>, kèm kiểm tác dụng phụ <code>preset:</code> đọc từ chính <code>state.layout.preset</code>. <span class="muted">⚠ Máy ảo dùng <code>NoCar</code> ⇒ <code>readStep</code> trả <code>null</code> ⇒ nhánh R5 “lệch” <b>KHÔNG</b> chạy ở đây; nó chỉ có bài JVM (<code>VoiceStepReadbackTest</code>) và một phép đo V-oncar.</span></li>
 <li><b>V-unit</b> <span class="pill ok">[ĐO] 2026-09-15</span> — <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew :core:test :app:testDebugUnitTest --rerun-tasks --continue</code>, đếm từ XML (<code>core/build/test-results/test/*.xml</code>, <code>app/build/test-results/testDebugUnitTest/*.xml</code>):
 <pre>core  182 XML · 1867 test · 4 đỏ  (cả 4 NGOÀI spec này — xem dưới)
 app   115 XML ·  948 test · 1 đỏ  (NGOÀI spec này)
@@ -227,10 +236,12 @@ ba bộ của spec này: VoiceFeedbackPhraseTest 14/0 · SherpaTtsCatalogTest 7/
 
 <h2>7. Open Questions</h2>
 <ul>
-<li><b>OQ1</b> — Gói giọng 67 MB tải qua 4G của xe: chấp nhận, hay mirror bản <b>int8</b>/<b>low</b> nhẹ hơn? <span class="muted">Chờ owner. Liên quan: kênh OTA <code>byd-kachi</code> đã dùng cho mô hình NGHE.</span></li>
-<li><b>OQ2</b> — Có được cắt <code>espeak-ng-data</code> còn riêng phần <code>vi</code> (18 MB → ~1 MB) không? <span class="muted">[CHƯA BIẾT] — chưa đo espeak-ng cần tối thiểu những tệp nào. Chốt bằng một lần chạy thử với thư mục đã tỉa.</span></li>
-<li><b>OQ3</b> — R4 đặt mặc định BẬT khi có engine: có đúng ý owner không, hay nên hỏi một lần ở lần nói đầu tiên? <span class="muted">Chờ owner.</span></li>
-<li><b>OQ4</b> — Câu hỏi của hộp <b>xác nhận</b> (<i>“Mở khoá cửa?”</i>) hiện <b>không</b> được đọc (R3 chặn, vì lượt nghe có/không mở ngay sau đó). Muốn đọc thì phải nối tiếp: đọc xong <i>rồi mới</i> mở micro — thêm ~2 s vào một cổng an toàn. <span class="muted">Chờ owner.</span></li>
+<li><b>OQ1</b> <span class="pill ok">CHỐT 2026-09-16</span> — Gói giọng qua 4G: <b>không mirror bản nhẹ hơn</b>. OQ2 đã kéo 67 MB xuống <b>61 MB</b> mà <b>không mất một mẫu audio nào</b> (bit-identical), nên đổi sang bản <code>low</code>/<code>int8</code> chỉ còn đánh đổi chất giọng lấy vài MB. Hosting: GitHub Release <code>dangkhoi/byd-kachi</code>, tag <code>voice/tts/piper-vi_VN-vais1000-medium/</code> (raw URL trong repo — đã đăng 2026-09-16). <b>TODO(owner)</b>: 13 asset <b>chưa đăng</b> (máy soạn thảo không có <code>gh</code>) ⇒ tới lúc đó nút <i>Tải</i> hỏng fail-safe (404/sha), còn <b>side-load USB chạy ngay</b>.</li>
+<li><b>OQ2</b> <span class="pill ok">CHỐT 2026-09-16 — [ĐO] bác tiền đề cũ</span> — <b>CÓ</b>, và tỉa được sâu hơn dự đoán: <code>espeak-ng-data</code> còn <b>11 mục / 728 KB</b> (thay 393 mục / 18 MB). Phép đo: dựng lại <code>OfflineTts</code> (sherpa-onnx 1.13.8) trên host với thư mục đã tỉa, câu <i>“Đã đặt nhiệt độ hai mươi bốn, gió mức ba”</i> ⇒ nạp 203 ms · tổng hợp 62 ms · 2,11 s audio @22050 Hz, hai tệp WAV <b>giống nhau từng byte</b> so với gói đầy đủ. <b>Hệ quả kiến trúc</b>: gói còn 13 tệp ⇒ tải từng tệp có ghim sha256 được ⇒ <b>tầng giải nén <code>tar.bz2</code> của T8 không phải viết</b> (một tầng không viết là một tầng không thể hỏng trên xe). 11 mục giữ lại: <code>intonations · lang/aav/{vi, vi-VN-x-central, vi-VN-x-south} · phondata · phondata-manifest · phonindex · phontab · vi_dict</code>.</li>
+<li><b>OQ3</b> <span class="pill ok">CHỐT 2026-09-16</span> — Mặc định <b>BẬT</b>, <b>không</b> hỏi ở lần nói đầu. Lý do: không có engine thì công tắc BẬT cũng không phát ra gì (<code>VoiceSpeakerRouter</code> lùi về im lặng), nên một hộp hỏi lúc đang lái là một cú chạm cho một lựa chọn chưa có hệ quả. Người không muốn nghe tắt được ở đúng một chỗ, cạnh hàng gói giọng.</li>
+<li><b>OQ4</b> <span class="pill ok">CHỐT 2026-09-16 — cơ chế CÓ, mặc định TẮT</span> — ⚠ <b>Quyết định cuối (owner, cùng ngày, sau lượt soát): KHÔNG đọc câu hỏi xác nhận</b> — chỉ đọc <b>phản hồi sau lệnh</b>. Đường dưới đây giữ nguyên mã nhưng nằm sau khoá <code>voice_ask_aloud</code> (<b>mặc định false</b>, khai ở <code>CLUSTERNAV_HIDDEN_KEYS</code> + <code>ProfileScope.DEVICE_KEYS</code>, chưa có hàng UI; đọc được ở <code>state.tts.ask_aloud</code>). Khi BẬT: câu hỏi <b>được đọc</b>, và micro mở <b>trong mốc “đọc xong”</b> (<code>VoiceSpeaker.speak(text, onDone)</code>). Ba tính chất: (a) mốc ấy có thể tới từ luồng của engine ⇒ đẩy về luồng vẽ trước khi chạm state phiên; (b) <b>hạn cứng 6 s</b> — engine treo không được khoá cổng an toàn (CLAUDE.md §3: không gate đường phục hồi bằng dữ liệu mà chỉ chính nó làm mới được); (c) bấm nút trước ⇒ cắt câu đang đọc. Tắt công tắc R4 / máy không có giọng ⇒ <b>y như 1.65</b>: mở micro ngay.</li>
+<li><b>OQ6</b> <span class="pill wait">MỞ — cần xe</span> — <code>READBACK_SETTLE_MS = 300 ms</code> là một <b>giả định</b>, không phải phép đo: [CHƯA BIẾT] xe mất bao lâu từ lúc nhận lệnh tới lúc bus mang số mới. <span class="muted">Cách chốt: trên xe, bấm giờ giữa lượt <code>write</code> và lần <code>HalBindingTable.readInt</code> ĐẦU TIÊN trả số mới (lặp 10 lần cho <code>temp</code> và <code>fan</code>). Đặt hụt ⇒ câu trả lời thỉnh thoảng thuật lại số cũ — vẫn đúng nghĩa <i>“xe đang báo thế”</i>, không phải một lời nói dối. Cũng cần phân biệt ba nguyên nhân của một chỗ lệch: xe kẹp · xe chưa kịp áp · nút không ăn trên trim.</span></li>
+<li><b>OQ7</b> <span class="pill wait">MỞ — cần xe (chỉ có nghĩa khi <code>voice_ask_aloud</code> bật)</span> — <code>ASK_ALOUD_CAP_MS = <b>6 s</b></code> (4 s → 6 s ở lượt soát 2026-09-16) có đủ cho câu xác nhận DÀI nhất không. <span class="muted">Số liệu đang có: [ĐO host] Piper đọc câu 11 từ ra <b>2,11 s</b> ⇒ [SUY] câu ~20 từ của <code>confirmQuestion</code> (gồm dòng lý do) rơi vào <b>~3,8 s</b> — tức 4 s không còn dư chút nào, mà CPU đầu xe (lượt tổng hợp nằm TRƯỚC tiếng đầu) và máy đọc hệ thống đều đẩy con số lên ⇒ nới lên 6 s. Hai đầu không đối xứng: thừa 2 s chỉ tốn 2 s chờ ở ca engine chết (hiếm), hụt thì Kachi nghe chính mình ở mọi câu hỏi dài. Hết hạn thì <b>vẫn mở micro</b> (không huỷ cổng), nên hậu quả xấu nhất là Kachi nghe nốt phần đuôi câu hỏi của chính nó. Chốt bằng: nói <i>“mở khoá cửa”</i> trên xe, bấm giờ từ lúc tấm chữ hiện tới lúc dứt tiếng.</span></li>
 <li><b>OQ5</b> — <code>VoiceSpeakerRouter.last</code> là một ảnh chụp <b>tĩnh</b> (chỉ để báo cáo, CLAUDE.md §5 cho phép). Nếu sau này có hai <code>VoiceSession</code> cùng lúc thì nó chỉ nói về cái mới nhất. <span class="muted">Hôm nay không có ca đó (một phiên tại một thời điểm).</span></li>
 </ul>
 
@@ -247,6 +258,14 @@ ba bộ của spec này: VoiceFeedbackPhraseTest 14/0 · SherpaTtsCatalogTest 7/
 
 <h2>9. Nhật ký triển khai (Implementation Log)</h2>
 <ul>
+<li><b>2026-09-16 · [ĐO] bác một kết luận của chính spec này</b> — §2.3 + OQ2 của Pass 0 nói gói Piper <i>“chỉ phát hành dạng <code>tar.bz2</code> 397 mục”</i> nên <b>phải viết tầng giải nén</b>. Đúng về dữ kiện, <b>sai về kết luận</b>: thứ bắt buộc là <i>nội dung</i>, không phải <i>cách đóng gói</i>. Tỉa <code>espeak-ng-data</code> còn 11 mục cho audio bit-identical ⇒ 13 tệp ⇒ đường tải-từng-tệp đã có <b>lắp vào được ngay</b>. Đây là ca CLAUDE.md §2 nói tới: một <b>cơ chế</b> đã chứng minh (<i>Piper cần espeak-ng-data</i>) bị <b>quy kết</b> thành một ràng buộc kỹ thuật (<i>nên phải giải nén cả gói</i>) mà chưa ai đo. Ba trường <code>archive*</code> + <code>rootInArchive</code> + <code>needsArchiveExtract</code> đã <b>gỡ hẳn</b> khỏi <code>SherpaTtsCatalog</code> — giữ một trường không ai đọc là mời người sau tưởng còn một đường thứ hai.</li>
+<li><b>2026-09-16 · quyết định kiến trúc</b> — Rút <b><code>VoicePack</code></b> (`:core`) làm hợp đồng cài dùng chung cho gói NGHE và gói ĐỌC, thay vì chép <code>VoiceModelStore</code> thành một bản thứ hai cho TTS. Lớp cài có <b>bốn tính chất tinh tế</b> (staging rồi đổi tên · băm trong lúc tải · hỏng thì xoá · từ chối gói chưa ghim); một bản sao sẽ lệch ở đúng lần ai đó vá một trong bốn. Mọi API cũ giữ nguyên chữ ký nhờ tham số mặc định <code>pack = selected(ctx)</code> ⇒ <b>0</b> chỗ gọi phải sửa.</li>
+<li><b>2026-09-16 · siết an toàn kèm theo</b> — <code>ModelFile.name</code> nay là <b>đường dẫn tương đối nhiều đoạn</b> (<code>espeak-ng-data/lang/aav/vi</code>). Luật chống leo thư mục <b>không nới một ly</b>: <code>requireSafe</code>/<code>VoiceModelSideload.candidate</code> kiểm <b>từng đoạn</b> (khác rỗng · khác <code>.</code>/<code>..</code> · không <code>\</code>/<code>:</code> · cả chuỗi không bắt đầu bằng <code>/</code>). Nới <code>/</code> mà quên kiểm đoạn là mở thẳng <code>../../</code> ra khỏi thư mục app (CLAUDE.md §4.1).</li>
+<li><b>2026-09-16 · trade-off (R5)</b> — Khi lượt đọc ĐẦU báo lệch, chọn <b>đọc lại một lần sau 300 ms trên luồng nền</b> thay vì (a) nói ngay số đọc được, hay (b) chặn luồng vẽ để chờ. (a) sai ở ca <i>xe chưa kịp áp</i> — một câu trả lời SAI trên một lệnh THÀNH CÔNG; (b) là đơ launcher trên xe đang chạy (R-nf1). Cái giá của lựa chọn: câu trả lời cho ca lệch tới chậm ~300 ms. Máy ảo không lộ ca này (<code>NoCar</code> ⇒ <code>readStep</code> = null), nên nó chỉ có bài JVM + một phép đo V-oncar (OQ6).</li>
+<li><b>2026-09-16 · hợp đồng (OQ4)</b> — <code>VoiceSpeaker.speak(text, onDone)</code> gọi <code>onDone</code> <b>đúng một lần, KỂ CẢ khi trả <code>false</code></b>. Bản nháp đầu chọn <i>“chỉ gọi khi thành công”</i> (trông đúng hơn về ngữ nghĩa) — nhưng chỗ gọi duy nhất là một <b>cổng an toàn</b>, và ở đó một <code>onDone</code> không bao giờ về nghĩa là <b>micro không bao giờ mở</b>. Hợp đồng “luôn gọi” cho chỗ gọi đúng MỘT đường, không có nhánh nào để quên. Trần <code>ASK_ALOUD_CAP_MS</code> (nay 6 s) vẫn giữ làm lưới cuối (engine trả <code>true</code> rồi im).</li>
+<li><b>2026-09-16 · trần 500 dòng (CLAUDE.md §4.1)</b> — <code>VoiceDispatcher.kt</code> đã <b>499</b> dòng trước lượt này; R5 + L7 đẩy lên <b>571</b>. Tách theo VAI: khối <i>“giao chữ/toạ độ cho app đích”</i> ⇒ <code>VoiceTargetDispatch.kt</code> (dẫn đường + nhạc, 254 dòng) ⇒ còn <b>394</b>. <code>VoiceSession.kt</code> 514 ⇒ tách <i>lượt giải mã tự do</i> ⇒ <code>VoiceFreeTail.kt</code> ⇒ còn <b>482</b>. Hai bài canh quét-nguồn đi theo VAI chứ không theo tên tệp (đã sửa phạm vi quét kèm lý do) — ghim một tệp là biến mọi lượt tách hợp lệ thành đỏ giả.</li>
+<li><b>2026-09-16 · sai lệch spec</b> — Bản giao việc nói <i>“hàng Giọng đọc offline đặt ở <code>SettingsSections.kt:347</code>”</i>; thực tế cả khối (2 hàng gói + 2 công tắc) dựng trong <code>VoiceModelSettings</code> và <code>SettingsSections.kt</code> chỉ đổi <b>một</b> tham số. Lý do: tệp đó đã <b>501</b> dòng — thêm dòng vào nó là đẩy sâu hơn qua trần. Kèm theo: <code>SettingsCatalogControlContractTest</code> nhận thêm một tệp nguồn (<code>VoiceModelSettings.kt</code>), vì bảng nguồn phải bám <b>nơi control thật sự được dựng</b>, không bám quy ước đặt tên tệp.</li>
+<li><b>2026-09-16 · nợ đã trả</b> — DEBT-CAT-2 (<i>bề mặt vẽ mà không có mục catalog</i>): ba mục mới vào <code>SettingsCatalog</code> (<code>voice_speak_replies</code> · <code>voice_prefer_offline</code> · <code>voice_tts_pack</code>), kéo theo bốn con số ghim phải cập nhật (<code>LangCoverageTest</code> 60→63 và 312→315, <code>SettingsCatalogTest</code> danh sách mục-không-khoá). ⚠ <b>Nợ còn lại</b>: hàng <i>“Nhận dạng giọng nói”</i> (mô hình NGHE, có từ 1.63) <b>vẫn chưa</b> có mục catalog — ngoài phạm vi lượt này, đã ghi backlog.</li>
 <li><b>2026-09-15 · quyết định</b> — Đặt luật dựng câu ở <code>:core</code> (<code>VoiceFeedbackPhrase</code>) thay vì biến đổi chuỗi ngay trong <code>VoiceSession</code>: <code>:app</code> không được chứa chuỗi tiếng Việt viết cứng (<code>LauncherI18nContractTest</code>), mà câu <i>“Đã …”</i>/<i>“Chưa …”</i> phải ghép vào giữa nhãn đến từ registry của <code>:core</code>. Cùng lý lẽ mà <code>VoiceReply</code> đã ghi ở KDoc của nó.</li>
 <li><b>2026-09-15 · quyết định</b> — <b>Không</b> sửa <code>VoiceReply.kt</code> (đang có agent khác sửa) dù về lâu dài câu đọc có thể sinh thẳng ở đó. Cái giá: một tầng biến đổi chuỗi nữa. Cái được: 0 write-conflict, và luật biến đổi trở thành thứ <b>kiểm được riêng</b>.</li>
 <li><b>2026-09-15 · trade-off</b> — Chọn <b>gộp trong lượt</b> (mảng + cờ <code>flushed</code>) thay vì một hàng đợi có hẹn giờ. Mất: dòng về muộn (tra cứu điểm đến) đọc riêng thành câu thứ hai. Được: không thêm một <code>Handler</code> sống lâu hơn phiên — đúng thứ CLAUDE.md §5 dặn tránh.</li>
@@ -259,6 +278,104 @@ ba bộ của spec này: VoiceFeedbackPhraseTest 14/0 · SherpaTtsCatalogTest 7/
 </ul>
 
 <h2>10. Reviewer Log</h2>
+<h3>Pass 2 — 2026-09-16 (Opus senior review · voice pha 2) <span class="pill ok">đã vá + chạy lại xanh</span></h3>
+<p class="muted">Soát toàn bộ cây chưa commit của pha 2 (≈45 tệp) theo rule global §5 + <code>CLAUDE.md</code>.
+<b>Scope checklist</b>: <b>R4 ✅</b> (2 công tắc, khoá theo XE, khai đủ <code>SettingsCatalog</code> +
+<code>ProfileScope</code>, VI/EN đủ đôi) · <b>R5 ✅</b> (<code>readStep</code> → 3 nhánh, có bài canh hành vi
+<code>VoiceStepReadbackTest</code>) · <b>T8 ✅</b> (gói tỉa 13 tệp, <code>VoicePack</code> dùng chung cho gói
+nghe/đọc, side-load cây thư mục) · <b>T9 ✅</b> · <b>T10 ✅</b> · <b>T13 ✅ (nay TẮT SẴN — xem C2)</b> ·
+<b>T14 ✅</b> (L7 ở spec <code>kachi-voice-command</code>). Mọi hàm mới đều grep ra call site production
+(<code>doneActual</code> 5 · <code>layoutNotHere</code> 3 · <code>readStep</code> 6 · <code>onLayout</code> 11 ·
+<code>VoicePack</code> 17). <b>[ĐO]</b> <code>:core</code> <b>1 932</b> ca · <code>:app</code> <b>965</b> ca ·
+<b>0 đỏ</b> (đếm từ XML sau khi vá); E2E máy ảo <code>--only say</code> <b>67/68</b>, ca đỏ vẫn đúng
+<code>t29</code> (lỗi bộ ca, không phải sản phẩm).</p>
+
+<table>
+<tr><th>#</th><th>Phát hiện</th><th>Vá</th></tr>
+
+<tr><td><span class="tag">P1</span></td>
+    <td><b><code>SherpaTtsSpeaker</code>: mốc *"đọc xong"* của câu MỚI bị câu CŨ bắn hộ.</b> Luồng đọc là
+        <b>một luồng duy nhất</b>, nên câu B xếp vào lúc câu A còn trong <code>generate()</code> chỉ chạy SAU
+        <code>finally</code> của A — mà <code>finally</code> ấy gọi <code>pending.getAndSet(null)</code>, tức nó vớ
+        đúng việc chờ <b>của B</b> và bắn ngay. Hệ quả: <code>VoiceSession</code> mở micro <b>trước khi câu hỏi xác
+        nhận bắt đầu đọc</b> — đúng hazard mà OQ4 sinh ra để chặn. Ca vào rất thường: người lái bấm nói lần nữa khi
+        câu trả lời trước còn đang đọc.</td>
+    <td>Việc chờ nay mang <b>số thế hệ</b> (<code>Waiter(gen, done)</code>) và <code>settle(gen)</code> chỉ đóng sổ
+        cho đúng lượt của mình; <code>stop()</code>/<code>shutdown()</code> gọi <code>settle(null)</code> (mọi câu
+        đều chấm dứt). <code>compareAndSet</code> giữ *"nhiều nhất một lần"* của hợp đồng.</td></tr>
+
+<tr><td><span class="tag">P1</span></td>
+    <td><b>Câu hướng dẫn side-load chỉ SAI tên gói.</b> Chuỗi VI/EN ghi
+        <code>Android/data/com.byd.clusternav2/files/sherpa/import/</code> — <code>applicationId</code> thật là
+        <code>com.byd.launcher</code> (id kia là app cũ), và chuỗi còn bỏ mất đoạn <code>&lt;id gói&gt;</code>. Người
+        cầm USB làm đúng theo câu hướng dẫn thì tệp rơi vào thư mục không ai đọc, rồi nút <i>Tải</i> báo lỗi mạng —
+        đúng ca mà side-load sinh ra để chữa (xe không có internet).</td>
+    <td>Chuỗi nhận tham số: <code>%1$s</code> = <code>BuildConfig.APPLICATION_ID</code>, <code>%2$s</code> =
+        <code>ttsPack.id</code> ⇒ đường dẫn <b>sinh từ dữ liệu thật</b>, không chép tay được nữa.</td></tr>
+
+<tr><td><span class="tag p1">P2</span></td>
+    <td><b><code>VoiceSession.cancel</code> vẫn mở micro cho một phiên vừa chết.</b> <code>cancel()</code> gọi
+        <code>speaker.stop()</code> <b>trước</b> khi post <code>answerConfirm(false)</code>, mà cắt câu là một mốc
+        *"đọc xong"* (hợp đồng vế 1) ⇒ <code>openMic</code> chạy đúng khe <code>answered</code> còn <code>false</code>
+        và thế hệ chưa đổi (huỷ KHÔNG tăng thế hệ, khác <code>stop</code>). <code>VoiceCapture.listen</code> mở
+        <code>AudioRecord</code> + kêu bíp <b>trước</b> khi hỏi cờ huỷ ⇒ một cú chạm huỷ vẫn ra một tiếng bíp, và
+        <code>AudioRecord</code> ấy chồng lên phiên người lái bấm ngay sau đó.</td>
+    <td>Thêm <code>cancelled.get()</code> vào đúng cổng của <code>openMic</code>, cạnh
+        <code>answered</code>/<code>stale</code>.</td></tr>
+
+<tr><td><span class="tag p1">P2</span></td>
+    <td><b><code>AndroidTtsSpeaker</code>: đặt việc chờ TRƯỚC khi tăng <code>seq</code></b> để hở đúng khe cho một sự
+        kiện về muộn của câu cũ (<code>onStop</code>/<code>onDone</code>) khớp <code>idOf(seq.get())</code> và bắn hộ
+        việc chờ của câu mới — cùng họ lỗi P1 ở trên, chỉ hẹp hơn (đường
+        <code>VoiceSpeakerRouter.route</code> gọi <code>stop()</code> trước mỗi câu đã đóng sổ hộ phần lớn ca).</td>
+    <td>Tăng <code>seq</code> trước, <code>pending.getAndSet</code> sau.</td></tr>
+
+<tr><td><span class="tag p1">P2</span></td>
+    <td><b><code>NAV_PREFERENCE</code> bị nhân đôi</b> sau lượt tách <code>VoiceTargetDispatch</code>: bản trong
+        <code>VoiceDispatcher</code> (companion <code>private</code>) không còn ai đọc. Hai bảng thứ tự app, sửa một
+        bảng thì bảng kia lệch trong im lặng — đúng thứ <code>CLAUDE.md</code> §4.1 cấm.</td>
+    <td>Xoá bản chết + 3 <code>import</code> mồ côi theo nó (<code>NavApps</code>,
+        <code>VoiceAppTarget</code>, <code>VoiceMediaOp</code>), để lại chú thích nói vì sao.</td></tr>
+</table>
+
+<h3>Pass 2 — quyết định của owner áp trong cùng lượt (2026-09-16)</h3>
+<ul>
+<li><b>C2 · OQ4/T13 — KHÔNG đọc câu hỏi xác nhận (mặc định TẮT).</b> Owner chốt: chỉ đọc <b>phản hồi sau lệnh</b>.
+  Đường speak-then-listen <b>giữ nguyên mã</b> (hợp đồng ba vế + bài canh đã có) nhưng nay nằm sau khoá
+  <code>voice_ask_aloud</code>, <b>mặc định false</b>, khai ở <code>SettingsCatalog.CLUSTERNAV_HIDDEN_KEYS</code> +
+  <code>ProfileScope.DEVICE_KEYS</code> (chưa có hàng UI — đi cùng batch *"chọn nút nào phải hỏi lại"*). Phơi trên
+  cầu kiểm thử ở <code>state.tts.ask_aloud</code> để trên xe còn <b>đọc được</b> nó đang tắt thật.</li>
+<li><b>C1 · R3 — cổng xác nhận nhận MỌI từ đồng nghĩa *"có"*.</b> <code>VoiceLexicon.CONFIRM_YES</code> nay có
+  <code>ừ · vâng · có · được · đúng · đúng rồi · làm đi · đồng ý · xác nhận · ok · yes · confirm</code>. Lý do cũ
+  (*"từ một âm tiết dễ nghe nhầm"*) bị <b>[ĐO xe 2026-09-16]</b> bác: owner trả lời *"ừ"*, Kachi im lặng bỏ qua ⇒
+  đọc ra thành *"voice hỏng"*. Hai chốt an toàn không đổi: <b>cả câu đúng bằng một cụm</b>, và mặc định mọi đường
+  thoát vẫn là KHÔNG. Bài canh mới <code>VoiceConfirmAnswerTest</code> (4 ca) khoá cả hai chiều.
+  <b>⚠ Va chạm báo owner</b>: <code>đúng</code> bỏ dấu = <code>dừng</code> ⇒ một tiếng *"dừng"* (ý là <i>thôi</i>)
+  trong lượt nghe xác nhận đọc thành ĐỒNG Ý. Đã ghim thành một bài canh + backlog <code>V-CONFIRM-DUNG</code>;
+  <b>quyết định thuộc owner</b>, không tự cắt.</li>
+<li><b>OQ7 — <code>ASK_ALOUD_CAP_MS</code> 4 s → 6 s.</b> [SUY] câu xác nhận dài nhất ~3,8 s ⇒ 4 s không còn dư, mà
+  CPU đầu xe + máy đọc hệ thống đều đẩy con số lên. Hai đầu không đối xứng: thừa 2 s chỉ tốn 2 s chờ ở ca engine
+  chết (hiếm); hụt thì Kachi nghe chính mình ở mọi câu hỏi dài. (Trần này chỉ có tác dụng khi C2 được bật.)</li>
+</ul>
+
+<h3>Pass 2 — phần KHÔNG vá (ghi lại)</h3>
+<ul>
+<li><span class="tag p1">P3</span> <b>Câu ghép có một vế STEP lệch ⇒ hai lượt đọc.</b> Vế STEP hoãn câu trả lời
+  <code>READBACK_SETTLE_MS</code>, nên nó không kịp vào lượt gộp <code>VoiceFeedbackPhrase.merge</code> và được đọc
+  riêng sau đó. Không vá vì đây là <b>đánh đổi đã ghi</b> của R5 (§9) và vá nó nghĩa là giữ cả câu trả lời lại 300 ms
+  cho <b>mọi</b> lệnh. Theo dõi ở OQ6.</li>
+<li><span class="tag p1">P3</span> <b>Bài kiểm vượt trần 500 dòng</b>: <code>VoiceCommandWiringContractTest</code>
+  663 dòng. Trần của <code>CLAUDE.md</code> §4.1 viết cho mã sản phẩm và bài canh hiện chỉ tự soi mã
+  <code>main</code>; ghi vào backlog (<code>DEBT-500-TEST</code>) thay vì tách trong một lượt soát.</li>
+<li><b>TODO(owner)</b> — 13 asset của gói giọng đọc vẫn chưa đăng lên GitHub Release
+  <code>voice/tts/piper-vi_VN-vais1000-medium/</code> (raw URL trong repo — đã đăng 2026-09-16). Tới lúc đó nút <i>Tải</i> hỏng <b>fail-safe</b> (404/sha lệch, nói rõ tệp
+  nào) và side-load USB là đường duy nhất chạy được.</li>
+</ul>
+
+<p><b>Verdict Pass 2: APPROVED</b> cho pha 2 off-car — 0 phát hiện [P0]–[P2] còn lại, 0 test đỏ, mọi deliverable
+R4/R5/T8/T9/T10/T13/T14 có mã + call site + bài canh. <b>NEEDS-ONCAR</b> (không chặn): OQ6 (300 ms), OQ7 (6 s),
+nhánh lệch của R5, và lượt tải gói qua mạng — cả bốn đều cần xe/asset thật, đã ghi cách chốt ở §7.</p>
+
 <h3>Pass 1 — 2026-09-15</h3>
 <p class="muted">Senior review (rule global §5) trên toàn bộ cây chưa commit từ HEAD <code>9c5b679</code>. Scope checklist pha 1: <b>R1 ✅ · R2a ✅ · R2b ✅ (mã xong, gói giọng chưa lắp — xem §2.3) · R2c ✅ · R3 ✅ · R6 ✅</b>; <b>R4 · R5 = pha 2, TODO đúng như §5 khai</b>. T1–T7 ✅ · T11 ✅ · T8–T10 TODO · T12 = chính pass này.</p>
 <ul>

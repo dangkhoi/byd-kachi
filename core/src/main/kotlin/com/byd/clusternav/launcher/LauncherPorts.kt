@@ -48,6 +48,25 @@ interface CarControlPort {
     fun select(id: String, index: Int): Boolean
     /** BUTTON bấm-1-phát (lọc-ngay·nhớ-ghế·gập-gương·sạc-ngay). */
     fun press(id: String): Boolean
+
+    /**
+     * ĐỌC LẠI giá trị THẬT của một nút [ControlKind.STEP] (nhiệt độ · gió · âm lượng · độ sáng).
+     * `null` = **không đọc được** (off-car, chưa map đường đọc, feature không provision trên trim này).
+     *
+     * ## Vì sao cổng GHI lại mọc thêm một đường ĐỌC (spec `kachi-voice-feedback.html` R5)
+     * Tới 1.65 câu trả lời của giọng nói dựng từ **con số vừa gửi đi**: nói *"đặt nhiệt độ 24"* thì Kachi đáp
+     * *"✓ Đặt Nhiệt độ = 24"* ngay cả khi xe kẹp nó về 17 hay bỏ qua hẳn. Đó là một câu **lạc quan**, và trên một
+     * cái xe thì lạc quan nghĩa là nói sai: người lái nghe "xong" rồi thôi không nhìn lại nữa.
+     *
+     * Mặc định `null` (không override) có chủ ý: mọi bản cài đặt cũ ([NoCar], bản giả trong test, máy ảo) giữ
+     * nguyên hành vi *"nói con số đã gửi"* mà không phải sửa một dòng nào — và đó cũng là hành vi ĐÚNG cho
+     * chúng, vì ở đó **không có** giá trị thật nào để đọc. Chỉ [CarControlAdapter] (có `HalBindingTable`) mới
+     * trả được số thật.
+     *
+     * ⚠ **Đọc ngay sau khi ghi có thể trả giá trị CŨ** — xe chưa kịp áp và bắn lại lên bus. Đây là tính chất của
+     * phần cứng, không phải của hàm này; tầng gọi (`VoiceDispatcher.runControl`) là chỗ xử lý, xem KDoc ở đó.
+     */
+    fun readStep(id: String): Int? = null
 }
 
 /**

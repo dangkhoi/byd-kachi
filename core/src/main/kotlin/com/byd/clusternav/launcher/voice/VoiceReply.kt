@@ -53,6 +53,9 @@ object VoiceReply {
         is VoiceIntent.NavigateSaved ->
             Strings.t("Dẫn đường tới ", "Navigate to ") + VoicePlaces.displayLabel(i.placeName) + by(i.app)
         is VoiceIntent.OpenApp -> Strings.t("Mở ứng dụng ", "Open app ") + i.appName + inSlot(i.slot)
+        // L7 — đọc **nhãn của chính enum** (`LayoutPreset.label`), không dựng một bảng chữ thứ hai: chip bố cục
+        // ở Cài đặt đang vẽ đúng chuỗi đó, nên câu nói và màn hình không thể gọi một bố cục bằng hai cái tên.
+        is VoiceIntent.Layout -> Strings.t("Bố cục ", "Layout ") + i.preset.label
         is VoiceIntent.Media -> mediaPreview(i)
         is VoiceIntent.Unknown -> unknown(i)
     }
@@ -104,6 +107,34 @@ object VoiceReply {
 
     /** Việc đã làm xong. */
     fun done(i: VoiceIntent): String = "✓ " + preview(i) + unverified(i)
+
+    /**
+     * ═══ R5 · CÂU TRẢ LỜI ĐỌC LẠI **GIÁ TRỊ THẬT** MÀ XE BÁO ═══════════════════════════════════════════════
+     *
+     * Spec `docs/specs/kachi-voice-feedback.html` **R5 · T10**. Chỉ dùng cho nút [ControlKind.STEP], và chỉ khi
+     * [CarControlPort.readStep] đọc được một con số (`null` ⇒ chỗ gọi giữ nguyên [done] — **không bịa số**).
+     *
+     * ## Hai câu, vì đây là hai việc khác nhau
+     *  • **Khớp** ([actual] == giá trị đã gửi) ⇒ y hệt [done]: *"✓ Đặt Nhiệt độ = 24"*. Không thêm chữ nào —
+     *    một câu dài hơn cho cùng một kết quả chỉ tốn thêm hai giây của người đang lái.
+     *  • **Lệch** ⇒ nói ra **cả hai** con số: *"✓ Đã gửi Nhiệt độ 24 — xe báo 23"*. Không sửa câu thành *"đã đặt
+     *    23"* (lệnh đã gửi là 24, nói khác đi là giấu mất việc vừa xảy ra), cũng không đổi thành *"✗"* (lệnh
+     *    KHÔNG hỏng — nó được nhận, xe chỉ đang ở một con số khác).
+     *
+     * ## ⚠ Lệch KHÔNG có nghĩa là xe từ chối
+     * Ba nguyên nhân [SUY] có thể cho cùng một chỗ lệch, và câu trên đúng với cả ba: (a) xe **kẹp** giá trị vào
+     * dải của nó; (b) xe **chưa kịp áp** — đường đọc trả lại số CŨ vì lượt đọc chạy vài ms sau lượt ghi; (c) nút
+     * này thật sự không ăn trên trim đó. Phân biệt ba ca ấy cần một phép đo trên xe (spec §7 **OQ6**), nên câu trả
+     * lời chỉ **thuật lại** hai con số và để người lái nhìn thanh nút — nó không suy diễn nguyên nhân.
+     */
+    fun doneActual(i: VoiceIntent.Control, actual: Int): String {
+        if (i.value == actual) return done(i)
+        val name = ControlRegistry.byId(i.id)?.displayLabel ?: labelOf(i.id)
+        return "✓ " + Strings.t(
+            "Đã gửi $name ${i.value} — xe báo $actual",
+            "Sent $name ${i.value} — the car reports $actual",
+        ) + unverified(i)
+    }
 
     /**
      * Đuôi *"chưa kiểm trên xe"* cho việc mà mức bằng chứng chưa phải [com.byd.clusternav.launcher.EvidenceTier.PROVEN].
@@ -282,6 +313,18 @@ object VoiceReply {
 
     /** App có tên nhưng không mở được (đã gỡ, hoặc ROM chặn mở từ launcher). */
     fun cannotOpen(i: VoiceIntent): String = failed(i, Strings.t("không mở được", "could not open"))
+
+    /**
+     * L7 — bề mặt đang nói **không nối được** đường đổi bố cục (ô *"Gõ lệnh chữ"* trong Cài đặt là một ca thật:
+     * ở đó màn chính có thể chưa dựng).
+     *
+     * Nói ra thay vì im lặng, và nói ra **chỗ làm được** thay vì một câu chung chung: người dùng vừa nói một câu
+     * hoàn toàn hợp lệ, thứ thiếu là dây nối — mà đó không phải lỗi của họ và cũng không phải thứ họ sửa được.
+     */
+    fun layoutNotHere(i: VoiceIntent): String = failed(i, Strings.t(
+        "chưa đổi được bố cục từ đây — nói ở màn chính, hoặc đổi trong Cài đặt › Màn hình chính",
+        "cannot change the layout from here — say it on the home screen, or use Settings › Home screen",
+    ))
 
     // ═══ SỔ ĐỊA CHỈ (spec `kachi-voice-addresses.html` R4) ════════════════════════════════════════════════════
 

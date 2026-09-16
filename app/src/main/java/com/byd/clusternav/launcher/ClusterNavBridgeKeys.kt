@@ -299,3 +299,21 @@ internal fun ClusterNavBridge.voiceMicPill(): Boolean = Prefs.voiceMicPill(app)
 
 /** Xem [voiceMicPill]. */
 internal fun ClusterNavBridge.setVoiceMicPill(on: Boolean) = Prefs.setVoiceMicPill(app, on)
+
+/**
+ * V1 pha NÓI · R4 (spec `kachi-voice-feedback.html` T9) — hai công tắc của đường ra TIẾNG.
+ *
+ * Đi qua cầu này vì cùng lý do với [voiceMicPill]: tầng vẽ của launcher **không mở cửa riêng vào nơi lưu bền**.
+ * Bốn hàm, không phải hai lớp prefs mới — khoá nằm cùng tệp `clusternav_prefs` với `voice_mic_pill`, nên câu
+ * *"cấu hình giọng nói nằm ở đâu"* vẫn có đúng một câu trả lời.
+ */
+internal fun ClusterNavBridge.voiceSpeakReplies(): Boolean = Prefs.voiceSpeakReplies(app)
+
+/** Xem [voiceSpeakReplies]. */
+internal fun ClusterNavBridge.setVoiceSpeakReplies(on: Boolean) = Prefs.setVoiceSpeakReplies(app, on)
+
+/** Xem [voiceSpeakReplies]. `true` = ưu tiên gói giọng offline hơn máy đọc của hệ thống. */
+internal fun ClusterNavBridge.voicePreferOffline(): Boolean = Prefs.voicePreferOffline(app)
+
+/** Xem [voicePreferOffline]. */
+internal fun ClusterNavBridge.setVoicePreferOffline(on: Boolean) = Prefs.setVoicePreferOffline(app, on)

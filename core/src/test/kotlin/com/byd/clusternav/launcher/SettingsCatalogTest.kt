@@ -251,6 +251,10 @@ class SettingsCatalogTest {
                 // IA v2: mọi HÀNH ĐỘNG của màn ClusterNav (§4.3, cột "API ghi") — chúng bấm là chạy, không lưu gì.
                 "nav_reconnect", "cast_actions", "cast_rescue", "keys_check", "car_pm25_clean",
                 "system_permissions",
+                // Voice pha 2 (docs/specs/kachi-voice-feedback.html T8) — "Giọng đọc offline" là nút TẢI/GỠ một
+                // gói 61 MB: trạng thái đọc **từ đĩa** (`VoiceModelStore.isReady`), không có pref nào để nhớ.
+                // Hai công tắc đi kèm (`voice_speak_replies` · `voice_prefer_offline`) thì CÓ khoá nên không ở đây.
+                "voice_tts_pack",
                 // S5 — nút "Đặt Kachi làm màn hình chính" là VIỆC LÀM (gọi `cmd package set-home-activity`), không
                 // lưu khoá nào; trạng thái đọc live từ PackageManager. Công tắc `system_keep_home_on_boot` thì CÓ
                 // khoá (`keep_home_on_boot`) nên KHÔNG nằm ở đây.
@@ -260,7 +264,7 @@ class SettingsCatalogTest {
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "mười sáu mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười bảy mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

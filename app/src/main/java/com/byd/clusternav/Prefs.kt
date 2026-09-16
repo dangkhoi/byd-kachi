@@ -157,6 +157,48 @@ object Prefs {
 
     fun voiceMicPill(ctx: Context): Boolean = sp(ctx).getBoolean(K_VOICE_PILL, true)
     fun setVoiceMicPill(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VOICE_PILL, v).apply()
+
+    // ─── V1 pha NÓI · R4 (spec `docs/specs/kachi-voice-feedback.html` T9) ──────────────────────
+    // Hai công tắc THEO XE, cùng họ `voice_mic_pill` ngay trên: cái quyết định chúng trả lời được hay không là
+    // **máy này có giọng gì** (engine hệ thống · gói offline đã lắp chưa), không phải người đang lái. Để chúng
+    // theo hồ sơ nghĩa là đổi hồ sơ xong loa im, mà không ai hiểu vì sao (`ProfileScope.DEVICE_KEYS` ghi lý do).
+    private const val K_VOICE_SPEAK = "voice_speak_replies"
+    private const val K_VOICE_OFFLINE = "voice_prefer_offline"
+
+    /**
+     * Có ĐỌC câu trả lời thành tiếng không. **Mặc định BẬT** — R1 của spec: câu trả lời chỉ hiện chữ thì người
+     * lái phải rời mắt khỏi đường để đọc nó, tức đúng thứ mà một trợ lý giọng nói sinh ra để khỏi phải làm.
+     * Tắt vẫn còn nguyên tấm chữ + âm báo, không mất chức năng nào.
+     */
+    fun voiceSpeakReplies(ctx: Context): Boolean = sp(ctx).getBoolean(K_VOICE_SPEAK, true)
+    fun setVoiceSpeakReplies(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VOICE_SPEAK, v).apply()
+
+    /**
+     * Ưu tiên **giọng offline tại máy** (gói Piper) hơn máy đọc của hệ thống. Mặc định TẮT: đường hệ thống rẻ
+     * hơn hẳn (0 byte đĩa, 0 byte RAM) và trên đầu xe có sẵn `vi-VN` thì nó đọc ngay. Công tắc chỉ có tác dụng
+     * khi gói đã lắp — `VoiceSpeakerSelector` tự lùi về đường còn dùng được, không bao giờ im lặng vì một cờ.
+     */
+    fun voicePreferOffline(ctx: Context): Boolean = sp(ctx).getBoolean(K_VOICE_OFFLINE, false)
+    fun setVoicePreferOffline(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VOICE_OFFLINE, v).apply()
+
+    // ─── OQ4 · ĐỌC câu hỏi xác nhận rồi mới mở micro — **MẶC ĐỊNH TẮT** (owner chốt 2026-09-16) ───
+    private const val K_VOICE_ASK_ALOUD = "voice_ask_aloud"
+
+    /**
+     * Có đọc to **câu hỏi xác nhận** (rồi mới mở micro) không. Mặc định **false**.
+     *
+     * ## Vì sao một công tắc riêng, không đi chung [voiceSpeakReplies]
+     * Hai việc khác hẳn nhau về cái giá của lỗi. Đọc **phản hồi** (R4) xảy ra khi việc đã xong — đọc thừa chỉ tốn
+     * hai giây. Đọc **câu hỏi** thì nằm ngay trước một lượt mở micro, nên nó kéo theo cả chuỗi *đọc → chờ mốc
+     * xong → mở micro*: dài hơn, và có thêm một đường để hỏng. Owner 2026-09-16 chốt **KHÔNG** đọc câu hỏi (chỉ
+     * đọc phản hồi sau lệnh) ⇒ mặc định tắt.
+     *
+     * Đường mã của OQ4 (`VoiceSession.askAloudThenListen` + hợp đồng `VoiceSpeaker.speak(text, onDone)`) **giữ
+     * nguyên**, không gỡ: nó đã có bài canh, và quyết định này là một **lựa chọn hành vi** chứ không phải một
+     * kết luận *"cơ chế ấy sai"*. Chưa có hàng trong Cài đặt (owner xếp vào batch sau, cùng mục *"chọn nút nào
+     * phải hỏi"*); tới lúc đó khoá này lên UI và ra khỏi [SettingsCatalog.CLUSTERNAV_HIDDEN_KEYS].
+     */
+    fun voiceAskAloud(ctx: Context): Boolean = sp(ctx).getBoolean(K_VOICE_ASK_ALOUD, false)
     const val VK_TARGET_DEFAULT = "ai.zalo.kiki.car"           // mặc định Kiki (khớp default cũ 0=Kiki)
 
     fun voiceKeyEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_ENABLED, false)

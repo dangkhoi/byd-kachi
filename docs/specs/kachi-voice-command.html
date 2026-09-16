@@ -52,7 +52,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <body><div class="wrap">
 
 <h1>V1 — Điều khiển bằng lời: tầng <b>chữ → hành động</b> (pha off-car)</h1>
-<p class="muted">Slug: <code>kachi-voice-command</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: pha CHỮ ✅ · pha NGHE ✅ off-car (1.49) · TTS vẫn CHƯA BIẾT</span></p>
+<p class="muted">Slug: <code>kachi-voice-command</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: pha CHỮ ✅ · pha NGHE ✅ off-car (1.49) · TTS ✅ off-car (1.65 pha 2, xem <code>kachi-voice-feedback.html</code>) · L7 bố cục ✅ (2026-09-16)</span></p>
 <p class="muted">Owner: dangkhoi · Tuân thủ <code>CLAUDE.md</code> §2 (tách mức bằng chứng) · §7 (generic, không case-by-case) · §8 (kiểm hàm mới có được gọi không) · §10 (test khoá bài học) · §14 (tính năng mới đi 4 tầng, shell thật trước) và <code>.kiro/steering/*</code>.</p>
 
 <div class="card">
@@ -139,6 +139,11 @@ mỗi dòng kèm <b>mức bằng chứng</b>. Từ vựng mở nay <b>luôn hỏ
 <li><b>R16. Nhận dạng HAI LƯỢT cho từ vựng mở.</b> Lượt 1 = bộ nhận dạng <b>ngữ pháp</b> (như 1.49). Nếu câu có một <b>cụm kích hoạt</b> (<i>“phát bài/nhạc”</i> · <i>“mở/tìm/nghe bài”</i> · <i>“dẫn/chỉ đường tới/đến”</i> · <i>“đi tới/đến”</i> · EN <i>play</i> · <i>navigate to</i>) <b>và còn từ đứng sau</b>, thì lượt 2 = bộ nhận dạng <b>TỰ DO</b> (cùng <code>Model</code>, không ngữ pháp, dựng lười) chạy trên <b>đúng khúc PCM đã thu</b> (giữ trong RAM, trần 9 s ≈ 288 KB) để đọc phần đuôi. Đuôi vào <code>Media(QUERY, text)</code> / <code>Nav(text)</code>. <b>AC:</b> câu lệnh xe (không có cụm kích hoạt) <b>không tốn lượt giải mã nào</b>; lượt 2 <b>không</b> mở micro lần nữa; hỏng ở bất kỳ đâu ⇒ lùi về bản ngữ pháp; <b>tiếng không ra mạng</b> (bài canh R14 giữ nguyên). Từ vựng mở ⇒ <b>luôn CONFIRM</b>: máy đọc lại <i>“Tìm bài «X» trên YouTube Music?”</i> trước khi giao.</li>
 
 <li><b>R17. Bảng đích <code>VoiceAppTargets</code> (<code>:core</code> thuần) + mệnh đề <i>“bằng &lt;app&gt;”</i>.</b> Nhạc = {YT Music · YouTube · Spotify · Zing MP3}; dẫn đường = {Google Maps · Waze · VietMap}. Mỗi dòng mô tả bằng <b>dữ liệu</b> (<code>VoiceLaunch.Action</code> / <code>Uri</code> / <code>OpenOnly</code> + đường <b>toạ độ</b> riêng) kèm <b>mức bằng chứng</b> (<code>MEASURED</code> / <code>AWAITING_CAR</code> / <code>UNKNOWN</code>) — đổi một phép đo = đổi <b>một dòng dữ liệu</b>, không sửa mã. Gói dẫn đường lấy từ roster <code>NavApps</code> (không chép tên gói). Câu có <i>“bằng &lt;app&gt;”</i> ⇒ chọn app đó; không có ⇒ nhạc lấy <b>phiên đang phát</b> rồi mới tới thứ tự bảng, dẫn đường lấy thứ tự <code>NavApps</code> đã có. <b>AC:</b> mọi ý-định giao việc phải <code>setPackage</code> (không bung hộp <i>“Open with”</i> giữa lúc lái); app được gọi tên mà chưa cài ⇒ nói <i>“chưa cài &lt;tên&gt;”</i>, <b>không</b> lặng lẽ đổi app; app không có cửa nhận chữ ⇒ mở app + <b>nói rõ</b>, không có dấu ✓ rỗng. <b>Không thêm một setting mới nào.</b></li>
+
+<li><b>L7. Bố cục màn chính bằng GIỌNG NÓI.</b> <span class="pill ok">DONE 2026-09-16 — owner duyệt</span> <code>VoiceIntent.Layout(preset: LayoutPreset)</code>; cách nói <i>“bố cục 1 ô / một ô / 2 cột / hai cột / 2 hàng / 3 ô / 4 ô”</i>, có/không động từ (<i>“đổi sang bố cục 2 cột”</i> · <i>“chuyển bố cục 4 ô”</i> · <i>“về bố cục hai hàng”</i>), số nói bằng <b>chữ hoặc chữ số</b>. Rủi ro <b>NORMAL</b> (không hỏi lại): đảo lại được bằng đúng một câu ngược.
+<br>Cách nói khai ở <b>một chỗ</b> (<code>VoiceLayouts</code>, <code>:core</code>) và <b>không</b> vào từ vựng chung — ba từ <i>ô · cột · hàng</i> quá thường để mang nghĩa cố định ở mọi vị trí (cùng bẫy mà <code>VoiceLexicon.SLOT_HEADS</code> đã phải chừa). Ba điều kiện: có cụm đánh dấu <i>“bố cục”</i> · mọi từ đứng TRƯỚC nó thuộc danh sách đóng <code>LEAD_WORDS</code> · phần đuôi khớp <b>trọn vẹn</b> một bố cục.
+<br><b>AC</b>: mọi giá trị của <code>LayoutPreset</code> có ≥1 cách nói (<code>VoiceLayoutParseTest</code> — thêm bố cục mà quên khai ⇒ đỏ tại chỗ); thi hành đi <b>đúng đường</b> mà chip bố cục ở Cài đặt dùng (<code>KachiHomeActivity.selectPreset</code> — nó còn <b>bỏ bố cục tự vẽ</b> trước khi đặt preset, thiếu bước đó thì state đổi mà màn hình không đổi gì, [ĐO] P9); bề mặt không nối được ⇒ <b>nói ra</b> (<code>VoiceReply.layoutNotHere</code>), không báo ✓ rỗng.
+<br>⚠ <b>Một bài canh đổi kỳ vọng có chủ ý</b>: <i>“về bố cục 2 cột”</i> từ 1.64 được giữ ở <code>NO_VERB</code> để chặn việc đưa <code>về/đi/đến</code> vào <code>VoiceGrammar.VERBS</code> như động từ dẫn đường vô điều kiện. Ý ấy <b>không đổi</b> (<code>về</code> vẫn không có trong bảng động từ); thứ đổi là câu đó nay có một cách hiểu <b>đúng hơn</b> — đuôi của nó là một BỐ CỤC, không phải một NƠI. Bài canh cũ đổi câu mẫu sang <i>“về chỗ nào đó”</i> / <i>“đi Bitexco”</i>, vẫn khoá đúng ranh giới ấy.</li>
 </ul>
 <h3>Phi chức năng</h3>
 <ul>
@@ -313,6 +318,12 @@ chốt tiêu điểm âm thanh.</p>
 <tr><td>T22</td><td>Ghép hai lượt nhận dạng (thuần) + bộ nhận dạng tự do + giữ PCM</td><td><code>core/…/voice/VoiceOpenVocab.kt</code> · <code>app/…/voice/VoiceRecognizer.kt</code> (<code>openFree</code>, <code>decodeAll</code>) · <code>VoiceCapture.kt</code> (<code>Heard</code>) · <code>VoiceSession.kt</code> (<code>freeTail</code>) · <code>VoiceWavProbe.kt</code></td><td><span class="pill ok">xong</span></td></tr>
 <tr><td>T23</td><td>Thi hành: ô qua đường ngăn kéo · chọn app · giao chữ/toạ độ · tra toạ độ</td><td><code>app/…/VoiceDispatcher.kt</code> · <code>voice/VoiceAppIntents.kt</code> · <code>voice/VoiceGeocoder.kt</code> · <code>voice/VoiceWiring.kt</code> · <code>MediaBridge.kt</code> (<code>activePackage</code>) · <code>KachiHomeWiring.kt</code> · <code>KachiHomeActivity.kt</code> · <code>HomePanels.kt</code> · <code>SettingsPanel.kt</code> · <code>VoiceTextConsole.kt</code></td><td><span class="pill ok">xong</span></td></tr>
 <tr><td>T24</td><td>Test: phân tích ô + app đích · bảng đích · ghép hai lượt · hành vi thi hành · bài canh dây nối mới</td><td><code>VoiceSlotAndTargetParseTest.kt</code> · <code>VoiceAppTargetsTest.kt</code> · <code>VoiceOpenVocabTest.kt</code> · <code>VoiceHandoverTest.kt</code> · <code>VoiceCommandWiringContractTest.kt</code> · <code>VoiceGrammarPhrasesTest.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td colspan="4" style="padding-top:14px"><b>L7 · BỐ CỤC BẰNG GIỌNG NÓI (2026-09-16)</b></td></tr>
+<tr><td>T26</td><td>Ý định + cách nói (một chỗ khai, không vào từ vựng chung) + nối vào bộ phân tích</td><td><code>core/…/voice/VoiceLayouts.kt</code> (mới) · <code>VoiceIntent.kt</code> · <code>VoiceIntentParser.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T27</td><td>Câu trả lời (đọc nhãn của chính <code>LayoutPreset</code>) + câu “chưa đổi được từ đây”</td><td><code>core/…/voice/VoiceReply.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T28</td><td>Thi hành qua ĐÚNG đường của chip bố cục — ba bề mặt (màn chính · ô gõ chữ · cầu kiểm thử)</td><td><code>VoiceDispatcher.kt</code> · <code>voice/VoiceWiring.kt</code> · <code>KachiHomeWiring.kt</code> · <code>KachiHomeActivity.kt</code> · <code>VoiceTextConsole.kt</code> · <code>testbridge/TestBridgeHooks.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T29</td><td>Tầng NGHE: cụm bố cục vào ngữ pháp + hotwords (số viết bằng CHỮ, luật tiền tố)</td><td><code>VoicePhrases.kt</code> · <code>SherpaPhraseHotwords.kt</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T30</td><td>Test + ca E2E máy ảo (t59 · t60 · t60b, kiểm tác dụng phụ <code>preset:</code>)</td><td><code>VoiceLayoutParseTest.kt</code> · <code>VoiceIntentParserTest.kt</code> · <code>VoicePlacesParseTest.kt</code> · <code>VoiceStepReadbackTest.kt</code> · <code>VoiceReplyActualTest.kt</code> · <code>scripts/emulator/voice-cases.tsv</code> · <code>voice-e2e.sh</code> · <code>voice_e2e_json.py</code></td><td><span class="pill ok">xong — [ĐO] 3/3 PASS</span></td></tr>
 <tr><td>T25</td><td><b>Trên xe</b>: nói thật bằng giọng người — lượt 2 có chạy không, đuôi đọc ra gì; VietMap deep link có dẫn đường thật không; GMaps <code>google.navigation:ll=</code></td><td><code>docs/diagnostics/carlog-kachi-*</code></td><td><span class="pill wait">🚗 chờ xe</span></td></tr>
 </table>
 
@@ -367,7 +378,7 @@ bật đèn đọc và tắt đèn pha        → Bật Đèn đọc · Tắt Đ
 <ul>
 <li><b>OQ1.</b> Nhóm khả năng (<code>CapabilityGroups</code>, 12 nhóm) <b>chưa</b> nằm trong từ vựng — <i>“xem áp suất lốp”</i> (cả 4 bánh) hiện chưa đọc được, phải nói từng bánh. Thêm nhóm cần một <code>VoiceIntent.ReadGroup</code> và một đường đọc bảng. — <span class="muted">chờ owner: có cần không?</span></li>
 <li><b>OQ2.</b> Nút nào kích hoạt phiên nghe của Kachi khi tầng tiếng bật? Nút mic 328 đang thuộc Kiki và <b>đang chạy tốt</b> (CLAUDE.md §6). — <span class="muted">chờ số đo W5 (đo phím) + quyết định owner</span></li>
-<li><b>OQ3.</b> Có đọc to (TTS) hay chỉ hiện chữ? <code>Read.aloud</code> đã phân biệt sẵn hai ý định. — <span class="muted">chờ playbook §2.14 phép đo 3</span></li>
+<li><b>OQ3. <span class="pill ok">đã chốt — 2026-09-16</span></b> <b>CÓ đọc to</b>, và có công tắc tắt: xem <code>docs/specs/kachi-voice-feedback.html</code> (R1 · R2 · R4). <code>Read.aloud</code> vẫn giữ nguyên ý nghĩa cũ (<i>“đọc”</i> vs <i>“xem”</i>) — nó phân biệt <b>ý định của người nói</b>, còn công tắc R4 phân biệt <b>máy có phát tiếng không</b>; hai câu hỏi khác nhau, không gộp.</li>
 <li><b>OQ4. <span class="pill ok">đã chốt — soát 2026-09-14</span></b> Câu ghép có một vế CONFIRM ⇒ <b>dừng cả chuỗi tại vế đó</b>: đồng ý thì chạy vế đó rồi mới đi tiếp; huỷ thì dừng hẳn và nói ra còn mấy vế không chạy. Lý do bỏ luật cũ (mượn của <code>MacroRunner</code>): các bước trong một gói lệnh đã được owner duyệt sẵn lúc khai gói, còn các vế của một câu ghép là thứ vừa <i>nghe được</i> — mà vế phải hỏi lại đứng đó chính vì có thể đã nghe nhầm. <i>“Mở khoá cửa rồi mở hết kính”</i> nghe nhầm một lần là xe mở toang trong lúc người lái mới đang đọc câu hỏi cho vế đầu. Khoá bằng <code>VoiceDispatcherSafetyTest</code> (bài chạy thật, không quét nguồn).</li>
 </ul>
 
@@ -382,6 +393,16 @@ bật đèn đọc và tắt đèn pha        → Bật Đèn đọc · Tắt Đ
 </ul>
 
 <h2>9. Nhật ký triển khai (Implementation Log)</h2>
+
+<h3>Pass 4 — L7 “bố cục bằng giọng nói” (2026-09-16)</h3>
+<ul>
+<li><b>quyết định</b> — Cách nói bố cục khai ở <b>một lớp riêng</b> (<code>VoiceLayouts</code>) và <b>không</b> vào <code>VoiceGrammar.terms</code>. Lý do y hệt <code>VoicePlaces</code>: mọi thứ vào từ vựng chung được tra ở <b>mọi vị trí trong câu</b>, mà <i>ô · cột · hàng</i> là ba từ quá thường. Giá phải trả: một điểm móc nữa trong <code>parseTokens</code> (bước b½). Được: <b>0</b> câu đang chạy bị đổi cách hiểu — <code>VoiceLayouts.match</code> trả <code>null</code> ngay khi không thấy cụm đánh dấu.</li>
+<li><b>quyết định</b> — Bảng cách nói là <b>5 dòng chép tay</b>, không suy từ <code>LayoutPreset</code>. Enum chỉ mang <code>slotCount</code>; thông tin <i>cột</i> vs <i>hàng</i> nằm trong phép tính hình học của <code>WorkspaceLayout.slots</code>, rút ra bằng mã là đọc toạ độ rồi <b>đoán</b>. Lưới an toàn cho một bảng chép tay: <code>VoiceLayoutParseTest.moi bo cuc deu co it nhat mot cach noi</code> — thêm bố cục thứ sáu mà quên khai ⇒ đỏ tại chỗ khai, không im lặng trên xe.</li>
+<li><b>quyết định</b> — <i>“bố cục hai ô”</i> ⇒ <code>TWO_COL</code> (không phải <code>TWO_ROW</code>): màn hình xe nằm ngang, rộng gấp hơn hai lần chiều cao, nên <i>“chia đôi”</i> mặc định là chia dọc. Ai muốn hàng thì nói đúng chữ <i>“hàng”</i>.</li>
+<li><b>sai lệch có chủ ý (bài canh)</b> — <i>“về bố cục 2 cột”</i> đổi kỳ vọng từ <code>NO_VERB</code> sang <code>Layout(TWO_COL)</code> ở <code>VoiceIntentParserTest</code>, và <code>VoicePlacesParseTest</code> đổi <b>câu mẫu</b> (sang <i>“về chỗ nào đó”</i> / <i>“đi Bitexco”</i>) thay vì đổi kỳ vọng. Phân biệt quan trọng: bài thứ hai canh <b>một luật</b> (động từ nơi chốn không cướp câu không phải địa điểm) chứ không canh một câu — khi câu mẫu mất tính đại diện thì thay câu, không nới luật.</li>
+<li><b>tầng nghe</b> — Cách nói vào ngữ pháp <b>không gác theo dữ liệu động</b> (khác sổ địa chỉ / app đã cài): năm bố cục là tập ĐÓNG có trên mọi chiếc xe, không có ca <i>“chưa cài”</i>. Số trong cụm hotword viết bằng <b>CHỮ</b> — <code>SherpaHotwords.normalize</code> bỏ token mang chữ số, nên <i>“BỐ CỤC 2 CỘT”</i> sẽ thành <i>“BỐ CỤC CỘT”</i>, một cụm không ai nói. Dòng <i>“BỐ CỤC”</i> trần tự rụng theo luật tiền tố (đúng ý).</li>
+<li><b>[ĐO] 2026-09-16</b> — ba con số ghim của <code>VoiceGrammarPhrasesTest</code>: cụm giữ <b>330 → 338</b> (+8 = đúng 8 cách nói), cụm loại <b>274 → không đổi</b> (mô hình có đủ mọi từ), tổng mục <b>2063 → 2102</b> (+39: 8 cụm + 31 từ đơn nở theo thanh điệu). E2E máy ảo: t59 · t60 · t60b <b>PASS</b>, kiểm tác dụng phụ bằng <code>state.layout.preset</code> (thêm kiểu <code>preset:</code> cho cột <code>side</code> của bộ ca).</li>
+</ul>
 
 <h3>Pass 3 — V1.1 “nói được tên” (2026-09-14)</h3>
 <ul>
@@ -538,6 +559,36 @@ làm nợ” thì lượt sau sẽ ghi tiếp.</li>
 </ul>
 
 <h2>10. Reviewer Log</h2>
+
+<h3>Pass 4 — 2026-09-16 (Opus senior review · L7 bố cục bằng giọng + C1 cổng xác nhận) <span class="pill ok">đã vá + chạy lại xanh</span></h3>
+<p class="muted">Phần của spec này trong lượt soát pha 2 (bản đầy đủ ở <code>kachi-voice-feedback.html</code>
+§10 Pass 2). <b>Scope L7 ✅</b>: <code>VoiceLayouts</code> (<code>:core</code>, thuần) →
+<code>VoiceIntent.Layout</code> → bước (b½) của <code>VoiceIntentParser</code> → <code>onLayout</code> nối ở
+<b>bốn</b> bề mặt (màn chính · ô <i>Gõ lệnh chữ</i> · cầu kiểm thử · mặc định từ chối) → <code>VoiceReply.done</code>
+/<code>layoutNotHere</code>. <b>[ĐO]</b> E2E máy ảo: <code>t59</code> QUAD · <code>t60</code> TWO_COL ·
+<code>t60b</code> TWO_ROW — cả ba PASS, đọc tác dụng phụ thật qua <code>state.layout.preset</code>; tổng
+<b>67/68</b> (ca đỏ vẫn đúng <code>t29</code>, lỗi bộ ca). <code>:core</code> <b>1 932</b> · <code>:app</code>
+<b>965</b> · 0 đỏ.</p>
+<ul>
+<li><b>Ranh giới *"về"* giữ đúng như bài canh từ 1.64 luôn canh</b> — [ĐO nguồn] <code>về</code> vẫn KHÔNG có
+  trong <code>VoiceGrammar.VERBS</code>; <code>VoiceLayouts.match</code> chỉ nhận khi câu có cụm đánh dấu
+  <i>bố cục</i>, <b>mọi</b> từ đứng trước thuộc <code>LEAD_WORDS</code>, và <b>toàn bộ</b> phần đuôi khớp trọn một
+  dòng của bảng. Bài canh mới khoá cả hai chiều: <i>“về bố cục 2 cột”</i> ⇒ <code>Layout(TWO_COL)</code>, còn
+  <i>“về Bitexco”</i> / <i>“về chỗ nào đó”</i> vẫn <code>NO_VERB</code> và <b>không bao giờ</b> thành
+  <code>Nav</code>. <i>“mở bài bố cục hai cột”</i> vẫn là một câu nhạc.</li>
+<li><b>C1 (owner chốt 2026-09-16) — cổng xác nhận nhận mọi từ đồng nghĩa *"có"*</b>
+  (<code>ừ · vâng · có · được · đúng · đúng rồi · làm đi</code> + 5 cụm cũ). Chi tiết và va chạm
+  <code>đúng</code>/<code>dừng</code> ghi ở Reviewer Log của spec phản hồi; ở đây chỉ ghi ảnh hưởng tới tầng nghe:
+  <b>[ĐO]</b> ngữ pháp <b>2 102 → 2 110 mục (+8)</b>, <b>không</b> cụm nhiều từ nào mới (hai cụm mới gồm toàn từ đã
+  có) ⇒ <code>EXPECTED_PHRASES_KEPT</code>/<code>DROPPED</code> không đổi. Con số mới đã ghim lại ở
+  <code>VoiceGrammarPhrasesTest</code> kèm lý do.</li>
+<li><span class="tag p1">P2</span> <b>Đã vá</b>: <code>NAV_PREFERENCE</code> bị nhân đôi sau lượt tách
+  <code>VoiceTargetDispatch</code> (bản trong <code>VoiceDispatcher</code> không còn ai đọc) — xoá bản chết + 3
+  <code>import</code> mồ côi. Lượt tách còn lại <b>không có logic nào bị nhân đôi</b>: [ĐO] 9 hàm chuyển nguyên
+  vẹn, <code>VoiceDispatcher</code> 394 → 389 dòng, <code>VoiceTargetDispatch</code> 254 dòng, cả hai dưới trần 500.</li>
+<li><b>Verdict Pass 4: APPROVED</b> cho L7 off-car. Không có [P0]–[P1] nào của riêng L7.</li>
+</ul>
+
 
 <h3>Pass 3 — 2026-09-14 (V1.1 “nói được tên”, R15–R17) <span class="pill ok">đã vá + chạy lại xanh</span></h3>
 <p class="muted">Senior review theo CLAUDE.md §5 (phạm vi: toàn bộ thay đổi chưa commit của V1.1 — 4 tệp mới ở

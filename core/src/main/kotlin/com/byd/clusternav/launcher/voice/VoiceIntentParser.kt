@@ -165,6 +165,13 @@ object VoiceIntentParser {
             val after = dropFillers(t.subList(head.words.size, t.size))
             return build(head, implicitVerb(head), aloud = false, after, terms, places, original)
         }
+        // (b½) L7 — *"bố cục 2 cột"* / *"đổi sang bố cục 4 ô"* / *"về bố cục hai hàng"*.
+        //
+        // Đứng SAU [headMatch] (nhãn registry vẫn thắng) và TRƯỚC [savedPlace]: hai chữ *"bố cục"* là một cụm
+        // đánh dấu rất hẹp, còn *"về/đi/đến"* của sổ địa chỉ thì rộng — cái hẹp phải xét trước, nếu không một
+        // mục sổ tên *"bố cục"* sẽ nuốt mất cả họ câu này. [VoiceLayouts.match] tự trả `null` cho mọi câu không
+        // mang cụm đánh dấu, nên nó không đụng tới một câu nào đang chạy.
+        VoiceLayouts.match(t)?.let { return VoiceIntent.Layout(it) }
         // (b'') *"về nhà"* · *"đi làm"* · *"đến công ty"* — động từ CÓ ĐIỀU KIỆN của sổ địa chỉ.
         //
         // Đứng SAU [headMatch] có chủ ý: bỏ dấu thì *"đến"* = *"đèn"*, nên câu *"đèn đọc"* phải được nhãn nút

@@ -81,14 +81,60 @@ class SherpaTtsSpeaker(
     private fun filesPresent(): Boolean =
         File(root, voice.model).isFile && File(root, voice.tokens).isFile && File(root, voice.dataDir).isDirectory
 
-    override fun speak(text: String): Boolean {
-        if (!available() || text.isBlank()) return false
+    override fun speak(text: String): Boolean = speakInternal(text, null)
+
+    /**
+     * OQ4 — đọc rồi báo *"xong"*.
+     *
+     * [onDone] chạy trên luồng `KachiSpeak` (vế (2) của hợp đồng [VoiceSpeaker.speak]) ở **mọi** đường thoát của
+     * một lượt: phát hết, bị [stop] cắt, tổng hợp ném, hay câu đã lỗi thời. Khối `finally` là chỗ duy nhất gọi
+     * nó, nên không đường nào bỏ sót — và `getAndSet(null)` giữ đúng *"nhiều nhất một lần"*.
+     */
+    override fun speak(text: String, onDone: () -> Unit): Boolean = speakInternal(text, onDone)
+
+    private fun speakInternal(text: String, onDone: (() -> Unit)?): Boolean {
+        fun fail(): Boolean { onDone?.let { runCatching { it() } }; return false }
+        if (!available() || text.isBlank()) return fail()
         val my = generation.incrementAndGet()
-        val exec = ensureWorker() ?: return false
+        val exec = ensureWorker() ?: return fail()
+        // Một ô nhớ, đúng như [AndroidTtsSpeaker]: `speak` mới luôn đè câu cũ (số thế hệ vừa tăng), nên việc chờ
+        // của câu cũ hết nghĩa ⇒ đóng sổ ngay thay vì để chỗ gọi kia chờ hết hạn.
+        pending.getAndSet(onDone?.let { Waiter(my, it) })?.let { runCatching { it.done() } }
         return runCatching {
             exec.execute { synthesizeAndPlay(text, my) }
             true
-        }.onFailure { Log.w(TAG, "không xếp được câu vào luồng đọc", it) }.getOrDefault(false)
+        }.onFailure {
+            Log.w(TAG, "không xếp được câu vào luồng đọc", it)
+            // Không xếp được ⇒ `synthesizeAndPlay` sẽ KHÔNG chạy ⇒ `finally` của nó không tồn tại để đóng sổ.
+            settle(my)
+        }.getOrDefault(false)
+    }
+
+    /**
+     * Việc phải làm khi lượt đọc **của đúng thế hệ [gen]** kết thúc.
+     *
+     * ## [SOÁT Pass 4 · P1] Vì sao phải mang số thế hệ, không chỉ là một lambda trần
+     * Luồng đọc là **một luồng duy nhất** ([ensureWorker]), nên câu B xếp vào lúc câu A còn đang `generate()` sẽ
+     * chỉ chạy SAU khi `finally` của A đã chạy. Bản đầu để `pending` là một lambda trần và `finally` của A gọi
+     * `getAndSet(null)` ⇒ nó vớ đúng việc chờ **của B** và bắn ngay — tức [VoiceSession] mở micro **trong lúc
+     * câu hỏi xác nhận của B còn chưa bắt đầu đọc**, đúng cái hazard mà OQ4 sinh ra để chặn. Ca vào: người lái
+     * bấm nói lần nữa khi câu trả lời trước còn đang đọc.
+     */
+    private class Waiter(val gen: Int, val done: () -> Unit)
+
+    /** Việc phải làm khi lượt đọc hiện hành kết thúc; `null` = không ai chờ. Xem [synthesizeAndPlay]. */
+    private val pending = AtomicReference<Waiter?>(null)
+
+    /**
+     * Đóng sổ cho lượt [gen] — hoặc cho **bất kỳ** lượt nào khi [gen] = `null` ([stop] · [shutdown], nơi mọi câu
+     * đều chấm dứt. `compareAndSet` giữ *"nhiều nhất một lần"* (vế (1) của hợp đồng [VoiceSpeaker.speak]).
+     */
+    private fun settle(gen: Int?) {
+        while (true) {
+            val w = pending.get() ?: return
+            if (gen != null && w.gen != gen) return
+            if (pending.compareAndSet(w, null)) { runCatching { w.done() }; return }
+        }
     }
 
     /**
@@ -104,6 +150,9 @@ class SherpaTtsSpeaker(
         generation.incrementAndGet()
         track.get()?.let { t -> runCatching { t.pause(); t.flush() } }
         abandonFocus()
+        // Cắt câu = câu ấy *"hết đời"* ⇒ đóng sổ NGAY, không đợi `finally` của luồng nền: [VoiceSpeakerRouter]
+        // gọi `stop()` trước MỖI câu, nên chỗ đang chờ phải được mở trước khi câu mới đặt việc chờ của nó.
+        settle(null)
     }
 
     /**
@@ -125,6 +174,9 @@ class SherpaTtsSpeaker(
         // `shutdown()` (không phải `shutdownNow()`): việc vừa xếp PHẢI chạy, nếu không thì engine không bao giờ
         // được nhả. Pool tự kết thúc ngay sau đó.
         runCatching { w.shutdown() }
+        // Chốt cuối cho OQ4: nếu vì lý do gì lượt đọc không bao giờ chạy tới `finally` của nó (pool từ chối việc
+        // đã xếp), chỗ đang chờ vẫn phải được mở. Gọi thừa vô hại — [settle] giữ *"nhiều nhất một lần"*.
+        settle(null)
     }
 
     private fun releaseEngine() {
@@ -160,6 +212,12 @@ class SherpaTtsSpeaker(
         } catch (t: Throwable) {
             Log.w(TAG, "đọc offline hỏng", t)
             abandonFocus()
+        } finally {
+            // OQ4 — MỘT chỗ đóng sổ cho MỌI đường thoát (phát hết · bị cắt · ném · lỗi thời). Đặt ở `finally`
+            // chứ không sau `play()`: ba trong bốn đường thoát ở trên là `return` hoặc `catch`.
+            // ⚠ `settle(my)` chứ không `settle(null)`: xem KDoc [Waiter] — lượt này chỉ được đóng sổ cho CHÍNH
+            // việc chờ của nó, không được vớ việc chờ của câu xếp sau.
+            settle(my)
         }
     }
 

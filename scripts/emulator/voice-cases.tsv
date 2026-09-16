@@ -4,7 +4,7 @@
 #    nhiều vế ngăn bằng dấu phẩy (câu ghép). "-" = không kiểm.
 #  • chuoi_mong_doi: chuỗi con phải có trong `preview` (nối mọi vế). "-" = không kiểm.
 #  • confirm: 1 ⇒ reply phải có `needs_confirm` KHÔNG rỗng và KHÔNG được thi hành.
-#  • side: "-" | resumed:<pkg> | slot:<n>:<pkg> | profile:<ten> | media
+#  • side: "-" | resumed:<pkg> | slot:<n>:<pkg> | profile:<ten> | preset:<TEN_LAYOUT> | media
 #  • @PROFILE@ được harness thay bằng một hồ sơ có thật (đọc từ bridge `state`).
 # ── TOGGLE ──────────────────────────────────────────────────────────────────────────────────────
 t01	toggle	bật đèn đọc	Control	Bật Đèn đọc	0	0	-
@@ -76,8 +76,9 @@ t56	nav	dẫn đường	Unknown	-	0	0	-
 # ── HỒ SƠ · BỐ CỤC ──────────────────────────────────────────────────────────────────────────────
 t57	profile	đổi sang hồ sơ @PROFILE@	Profile	@PROFILE@	1	0	-
 t58	profile	chuyển sang hồ sơ @PROFILE@	Profile	@PROFILE@	0	1	profile:@PROFILE@
-t59	layout	đổi bố cục 4 ô	-	-	0	0	-
-t60	layout	bố cục hai ô	-	-	0	0	-
+t59	layout	đổi bố cục 4 ô	Layout	4 ô	0	0	preset:QUAD
+t60	layout	bố cục hai ô	Layout	2 cột	0	0	preset:TWO_COL
+t60b	layout	về bố cục 2 hàng	Layout	2 hàng	0	0	preset:TWO_ROW
 # ── CÂU GHÉP ────────────────────────────────────────────────────────────────────────────────────
 t61	compound	bật đèn đọc và tắt lọc bụi	Control,Control	Bật Đèn đọc	0	0	-
 t62	compound-confirm	mở khoá cửa rồi bật đèn đọc	Control,Control	Mở khoá cửa	1	0	-

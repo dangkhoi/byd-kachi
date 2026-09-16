@@ -61,13 +61,27 @@ class VoiceSpeakerRouter(
 
     override fun available(): Boolean = active() !== SilentSpeaker
 
-    override fun speak(text: String): Boolean {
+    override fun speak(text: String): Boolean = route(text, null)
+
+    /**
+     * OQ4 — chuyển tiếp cả mốc *"đọc xong"*.
+     *
+     * ⚠ Không tự dựng một hạn chờ ở đây: lớp này **không biết** câu dài bao nhiêu và chỗ gọi nào đang chờ. Hạn
+     * chờ là việc của cổng an toàn (`VoiceSession.ASK_ALOUD_CAP_MS`), đúng chỗ biết hậu quả của việc chờ quá lâu.
+     */
+    override fun speak(text: String, onDone: () -> Unit): Boolean = route(text, onDone)
+
+    private fun route(text: String, onDone: (() -> Unit)?): Boolean {
         val target = active()
-        if (target === SilentSpeaker) return false
+        if (target === SilentSpeaker) {
+            // Không có đường nào đọc được ⇒ *"đọc xong"* là ngay bây giờ (vế (1) của hợp đồng).
+            onDone?.let { runCatching { it() } }
+            return false
+        }
         // Đường kia có thể còn đang đọc câu trước (người lái nói hai câu sát nhau trong lúc gói offline vừa lắp
         // xong ⇒ đổi đường giữa hai câu). Dừng cả hai rồi mới nói là một lệnh rẻ, và nó chặn ca hai giọng chồng.
         stop()
-        val ok = target.speak(text)
+        val ok = if (onDone == null) target.speak(text) else target.speak(text, onDone)
         if (!ok) Log.i(TAG, "đường ${target.kind} không đọc được câu — chỉ còn chữ trên tấm chữ")
         return ok
     }

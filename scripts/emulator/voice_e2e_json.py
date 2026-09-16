@@ -10,6 +10,7 @@ Lệnh con:
   get <đường.dẫn>      — in một trường của JSON trên stdin (vd `voice_model.ready`, `test_mode_minutes_left`).
   pick_profile         — in một hồ sơ KHÁC hồ sơ đang dùng (rỗng nếu chỉ có một).
   slot <n>:<pkg>       — in nội dung ô n (chuỗi `SlotCodec.encode`) của JSON `state` trên stdin.
+  (bố cục đang dùng đọc bằng `get layout.preset` — xem cột `side` kiểu `preset:<TEN>`)
   report <t1.tsv> <t2.tsv> — in bảng Markdown + tổng kết.
 """
 import json
@@ -91,6 +92,10 @@ def _verdict(row, d):
         _, pkg = side[len("slot:"):].split(":", 1)
         if pkg not in (real or ""):
             why.append("ô không mang %s (đang là %s)" % (pkg, real or "∅"))
+    elif side.startswith("preset:"):
+        want = side.split(":", 1)[1]
+        if (real or "").strip() != want:
+            why.append("bố cục đang là %s (mong %s)" % (real or "∅", want))
     elif side.startswith("profile:"):
         want = side.split(":", 1)[1]
         if (real or "").strip() != want:
