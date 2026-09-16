@@ -1,5 +1,7 @@
 # Bảng kiểm tra từng chức năng xe — Kachi
 
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+
 - **Ngày:** 2026-09-15 · **Chủ:** dangkhoi · **Nguồn:** sinh tự động từ `TelemetryRegistry` (123 thông tin) + `ControlRegistry` (64 hành động) + `CapabilityDescriptions` (diễn giải). KHÔNG chép tay — thêm nút mới thì tự có mặt ở đây (và trong công cụ trong app).
 - **Công cụ trong app:** *Cài đặt › Hệ thống & quyền › Nâng cao › Kiểm tra từng nút xe*. Bấm **Bắt đầu / Tiếp tục** để đi tuần tự từng mục: mục **hành động** hiện nút **Chạy** rồi tự chấm **OK / Không OK**; mục **thông tin** hiện **giá trị đọc được**. Kết quả lưu trên xe, xuất lại bằng nút **Xuất báo cáo** (bản này luôn tươi theo lần soát mới nhất).
 - **Log trên xe → THẺ NHỚ (1.58, owner 2026-09-15):** app ghi log ra `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/` (external ⇒ nhẹ bộ nhớ trong đầu xe; `DiagStorageCap` tự dọn không cho phình). Ba tệp:

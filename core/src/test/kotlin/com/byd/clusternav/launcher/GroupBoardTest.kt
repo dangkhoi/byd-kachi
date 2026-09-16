@@ -160,18 +160,13 @@ class GroupBoardTest {
         assertEquals(GroupTone.NEUTRAL, cells.first { it.id == "tyre_p_fl" }.tone, "bánh đủ hơi không được tô cảnh báo")
     }
 
+    // Phần *"dây an toàn chưa thắt"* của bài này đã gỡ 2026-09-16 cùng nhóm `g_occupants` (owner gỡ ADAS/an toàn).
     @Test
-    fun `cua mo va day an toan chua that la CANH BAO`() {
-        val car = CarStatus(
-            body = CarStatus.Body(doorLfOpen = true, doorRfOpen = false),
-            safety = CarStatus.Safety(seatbeltDriver = false, seatbeltPassenger = true),
-        )
+    fun `cua mo la CANH BAO`() {
+        val car = CarStatus(body = CarStatus.Body(doorLfOpen = true, doorRfOpen = false))
         val doors = GroupBoard.of(CapabilityGroups.DOORS, car).cells
         assertEquals(GroupTone.ALERT, doors.first { it.id == "door_lf" }.tone)
         assertEquals(GroupTone.NEUTRAL, doors.first { it.id == "door_rf" }.tone)
-        val occ = GroupBoard.of(CapabilityGroups.OCCUPANTS, car).cells
-        assertEquals(GroupTone.ALERT, occ.first { it.id == "seatbelt_driver" }.tone, "chưa thắt dây là cảnh báo")
-        assertEquals(GroupTone.NEUTRAL, occ.first { it.id == "seatbelt_passenger" }.tone)
     }
 
     @Test
@@ -188,28 +183,8 @@ class GroupBoardTest {
         assertEquals(GroupTone.NEUTRAL, win.first { it.id == "window_rf" }.tone)
     }
 
-    @Test
-    fun `ESP dang tat la LUU Y, dang bat thi khong to gi`() {
-        val off = CarStatus(safety = CarStatus.Safety(espOn = false))
-        assertEquals(
-            GroupTone.WARN,
-            GroupBoard.of(CapabilityGroups.ADAS, off).cells.first { it.id == "esp_state" }.tone,
-        )
-        val on = CarStatus(safety = CarStatus.Safety(espOn = true))
-        assertEquals(
-            GroupTone.NEUTRAL,
-            GroupBoard.of(CapabilityGroups.ADAS, on).cells.first { it.id == "esp_state" }.tone,
-        )
-    }
-
-    @Test
-    fun `cam bien ho tro lai dang keu thi canh bao`() {
-        val car = CarStatus(safety = CarStatus.Safety(bsdLeftLevel = 2, bsdRightLevel = 0, dowLeft = 1))
-        val cells = GroupBoard.of(CapabilityGroups.ADAS, car).cells
-        assertEquals(GroupTone.ALERT, cells.first { it.id == "bsd_fl_alarm" }.tone)
-        assertEquals(GroupTone.NEUTRAL, cells.first { it.id == "bsd_fr_alarm" }.tone)
-        assertEquals(GroupTone.ALERT, cells.first { it.id == "dow_left" }.tone)
-    }
+    // ⚠ Hai bài `ESP dang tat la LUU Y` và `cam bien ho tro lai dang keu thi canh bao` đã gỡ 2026-09-16: nhóm
+    // `g_adas` và mọi datum của nó (ESP · điểm mù · chuyển làn · cắt ngang sau · cảnh báo mở cửa) không còn tồn tại.
 
     @Test
     fun `muc bui dung LAI nguong cua Pm25Filter`() {
@@ -228,8 +203,7 @@ class GroupBoardTest {
         // Cố ý: tự nghĩ ngưỡng cho nhiệt pin / điện áp cell rồi tô đỏ là **bịa cảnh báo**. Bài này khoá quyết định
         // đó lại, để lần sau ai thêm ngưỡng thì phải sửa bài test (tức phải nhìn thấy quyết định).
         val car = CarStatus(
-            energy = CarStatus.Energy(battTempC = 61, cellVHigh = 4.35, soc = 3),
-            safety = CarStatus.Safety(volt12v = 10.9),
+            energy = CarStatus.Energy(battTempC = 61, cellVHigh = 4.35, soc = 3, volt12v = 10.9),
         )
         val batt = GroupBoard.of(CapabilityGroups.BATTERY, car).cells
         assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "batt_temp" }.tone)
@@ -242,33 +216,8 @@ class GroupBoardTest {
         )
     }
 
-    // ── Cảm biến đỗ: 8 vùng ──────────────────────────────────────────────────────────────────────
-
-    @Test
-    fun `muc 8 vung doc THANG tu trang thai xe va luon du 8 phan tu`() {
-        assertEquals(8, GroupBoard.RADAR_ZONE_COUNT)
-        val full = CarStatus(safety = CarStatus.Safety(radarZones = listOf(0, 1, 2, 3, 4, 0, 0, 0)))
-        assertEquals(listOf(0, 1, 2, 3, 4, 0, 0, 0), GroupBoard.radarLevels(full))
-        // Thiếu vùng ⇒ null (chưa đọc), KHÔNG phải 0 (an toàn) — hai nghĩa khác nhau.
-        val partial = CarStatus(safety = CarStatus.Safety(radarZones = listOf(0, 4, 1)))
-        assertEquals(listOf(0, 4, 1, null, null, null, null, null), GroupBoard.radarLevels(partial))
-        assertEquals(List<Int?>(8) { null }, GroupBoard.radarLevels(CarStatus()), "off-car: 8 vùng chưa đọc")
-    }
-
-    @Test
-    fun `sac thai vung radar theo mot nguong duy nhat`() {
-        assertEquals(GroupTone.NEUTRAL, GroupBoard.radarTone(null), "chưa đọc ≠ an toàn, nhưng cũng không cảnh báo")
-        assertEquals(GroupTone.NEUTRAL, GroupBoard.radarTone(0))
-        assertEquals(GroupTone.WARN, GroupBoard.radarTone(GroupBoard.RADAR_ALERT_LEVEL - 1))
-        assertEquals(GroupTone.ALERT, GroupBoard.radarTone(GroupBoard.RADAR_ALERT_LEVEL))
-        assertEquals(GroupTone.ALERT, GroupBoard.radarTone(4))
-        // Ô con `radar_zones` mang sắc thái của vùng NẶNG NHẤT (một dòng chữ không thể nói tám điều).
-        val car = CarStatus(safety = CarStatus.Safety(radarZones = listOf(0, 0, 4, 0, 0, 0, 0, 0)))
-        assertEquals(
-            GroupTone.ALERT,
-            GroupBoard.of(CapabilityGroups.PARKING, car).cells.first().tone,
-        )
-    }
+    // ⚠ Hai bài về **8 vùng cảm biến đỗ** đã gỡ 2026-09-16 cùng nhóm `g_parking`, datum `radar_zones`/
+    // `radar_volume` và mọi phép radar ở `GroupBoard` (owner gỡ toàn bộ ADAS/an toàn khỏi launcher).
 
     // ── Dấu "chưa kiểm" + tóm tắt ────────────────────────────────────────────────────────────────
 
@@ -290,8 +239,9 @@ class GroupBoardTest {
     fun `tom tat noi CAI SAI truoc, khong noi so cua thanh vien dau tien`() {
         val alert = CarStatus(body = CarStatus.Body(doorLfOpen = true, doorRfOpen = true))
         assertEquals("2 cảnh báo", GroupBoard.of(CapabilityGroups.DOORS, alert).summary())
-        val warn = CarStatus(safety = CarStatus.Safety(espOn = false))
-        assertEquals("1 lưu ý", GroupBoard.of(CapabilityGroups.ADAS, warn).summary())
+        // Sắc thái LƯU Ý: lốp lệch (bánh thấp nhất) — ca WARN duy nhất còn lại sau lượt gỡ ADAS/an toàn.
+        val warn = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 240.0, pFrKpa = 240.0, pRlKpa = 240.0, pRrKpa = 200.0))
+        assertEquals("1 lưu ý", GroupBoard.of(CapabilityGroups.TYRES, warn).summary())
         // Không có gì sai ⇒ hiện số chính.
         val ok = CarStatus(energy = CarStatus.Energy(soc = 82))
         assertEquals("82 %", GroupBoard.of(CapabilityGroups.ENERGY, ok).summary())
@@ -373,68 +323,8 @@ class GroupBoardTest {
         )
     }
 
-    // ── Bảng sơ đồ hai bên: ô hẹp thì hiện cái gì ────────────────────────────────────────────────
-
-    @Test
-    fun `du cho thi ve du hai ben, y nhu truoc`() {
-        val m = GroupBoard.of(CapabilityGroups.ADAS, CarStatus())
-        val plan = GroupBoard.sidePlan(m, maxPerSide = 4)
-        assertEquals(m.leftCells, plan.left, "đủ chỗ ⇒ giữ nguyên hành vi cũ (vẽ đủ)")
-        assertEquals(m.rightCells, plan.right)
-        assertEquals(0, plan.hidden)
-        assertNull(plan.summary, "đủ chỗ thì KHÔNG có câu thay thế — câu đó chỉ dành cho ca không vẽ được hàng nào")
-    }
-
-    @Test
-    fun `khong du cho thi uu tien o DANG canh bao va dem phan con lai`() {
-        // Một cảnh báo bên trái (BSD trái mức 2) — mọi mục khác im lặng.
-        val s = CarStatus(safety = CarStatus.Safety(bsdLeftLevel = 2))
-        val m = GroupBoard.of(CapabilityGroups.ADAS, s)
-        val plan = GroupBoard.sidePlan(m, maxPerSide = 1)
-        assertEquals(listOf("bsd_fl_alarm"), plan.left.map { it.id }, "chỗ hẹp ⇒ ô ĐANG cảnh báo được chỗ trước")
-        assertTrue(plan.right.isEmpty(), "bên phải không có gì đáng nói ⇒ không vẽ ô rỗng (ô rỗng đọc thành 'an toàn')")
-        assertEquals(m.leftCells.size + m.rightCells.size - 1, plan.hidden, "phần còn lại phải được ĐẾM, không bỏ im")
-        assertNull(plan.summary)
-    }
-
-    @Test
-    fun `khong du cho ma cung khong co canh bao thi noi THANG trang thai`() {
-        val m = GroupBoard.of(CapabilityGroups.ADAS, CarStatus())     // off-car: mọi field null
-        val plan = GroupBoard.sidePlan(m, maxPerSide = 2)
-        assertTrue(plan.left.isEmpty() && plan.right.isEmpty())
-        val note = plan.summary
-        assertNotNull(note, "không vẽ được hàng nào thì phải có MỘT câu — để trống là kênh im lặng")
-        // ⚠ Phải phân biệt "chưa đọc được" với "đã đọc, không có gì": gộp hai câu là **nói sai** với người lái.
-        assertTrue(note!!.contains("chưa đọc"), "off-car chưa đọc được gì ⇒ nói đúng điều đó: '$note'")
-        val alive = CarStatus(
-            safety = CarStatus.Safety(
-                bsdLeftLevel = 0, bsdRightLevel = 0, lcaLeft = 0, lcaRight = 0,
-                rctaLeft = 0, rctaRight = 0, dowLeft = 0, dowRight = 0,
-            ),
-        )
-        val quiet = GroupBoard.sidePlan(GroupBoard.of(CapabilityGroups.ADAS, alive), maxPerSide = 2).summary
-        assertNotNull(quiet)
-        assertTrue(quiet!!.contains("Không có cảnh báo"), "đọc được mà sạch ⇒ nói 'không có cảnh báo': '$quiet'")
-    }
-
-    @Test
-    fun `sidePlan khong nem o ca bien`() {
-        val m = GroupBoard.of(CapabilityGroups.ADAS, CarStatus())
-        listOf(0, -3).forEach { cap ->
-            val p = GroupBoard.sidePlan(m, cap)
-            assertTrue(p.left.isEmpty() && p.right.isEmpty(), "trần $cap ⇒ không hàng nào, KHÔNG ném")
-            assertNotNull(p.summary, "và vẫn phải nói một câu")
-        }
-        // Nhóm KHÔNG có ô con hai bên ⇒ "đủ chỗ" theo định nghĩa, không có gì bị ẩn.
-        //
-        // ⚠ [ĐO] bản đầu của bài này dùng nhóm *Lốp* và **đỏ** (`hidden = 6`): tôi cho rằng lốp không có "phía", nhưng
-        // `GroupBoard.sideOf` đọc quy ước tên (`_fl`/`_fr`/`_rl`/`_rr`) nên **cả 8 datum lốp đều có phía**. Đúng theo
-        // thiết kế (bảng lốp cũng xếp theo không gian), chỉ là nó không phải ca "không có phía". Giữ số đo, sửa giả
-        // định: nhóm *Cảm biến đỗ* (`radar_zones` · `radar_volume`) mới thật sự không mã nào mang dấu hiệu phía.
-        val noSides = GroupBoard.sidePlan(GroupBoard.of(CapabilityGroups.PARKING, CarStatus()), 0)
-        assertEquals(0, noSides.hidden)
-        assertNull(noSides.summary)
-    }
+    // ⚠ Bốn bài về **bảng sơ đồ hai bên xe** (`GroupBoard.sidePlan`) đã gỡ 2026-09-16: cả phép đó, kiểu
+    // `SideBoardPlan`, `GroupSide` lẫn ô vẽ `SideBoardView` đều xoá cùng nhóm `g_adas` (owner gỡ ADAS/an toàn).
 
     /**
      * ⚠⚠ **[THỬ PHÁ tìm ra] Luật icon của HÀNG NÚT trước đó KHÔNG có ai canh.**

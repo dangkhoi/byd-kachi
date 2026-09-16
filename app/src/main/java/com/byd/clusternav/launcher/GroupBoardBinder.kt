@@ -22,6 +22,9 @@ import android.view.View
  * `GroupTileParts.kt`. Khai thừa một tệp vào đó là để lại một lời hứa **không ai kiểm** trong KDoc, đúng thứ tệp
  * này đang cố tránh.
  *
+ * ⚠ 2026-09-16 — hai bảng `RadarBoardView` (8 vùng cảm biến đỗ) và `SideBoardView` (cảnh báo hai bên xe) đã **xoá
+ * hẳn** cùng toàn bộ ADAS/an toàn (owner): nhóm duy nhất dùng chúng cũng không còn. Đừng dựng lại.
+ *
  * ## Vì sao "đổ dữ liệu" chứ không dựng lại ô vẽ mỗi nhịp
  * Ô nhóm được làm mới theo **nhịp trạng thái xe** (~1 lần/giây trên xe). Dựng lại một `View` Canvas mỗi nhịp là cấp
  * phát đúng thứ mà KDoc ba bảng hứa là không có, và với nhóm *Cửa & khoang* — nhóm `BOARD` **đầu tiên có hàng nút**
@@ -30,8 +33,6 @@ import android.view.View
  */
 internal class GroupBoardBinder {
 
-    private var radar: RadarBoardView? = null
-    private var side: SideBoardView? = null
     private var door: DoorBoardView? = null
 
     /**
@@ -46,15 +47,9 @@ internal class GroupBoardBinder {
         tyreBoard: ((Context, WidgetData) -> View)?,
         strip: () -> View,
     ): View {
-        radar = null
-        side = null
         door = null
         return when (m.id) {
             CapabilityGroups.TYRES.id -> tyreBoard?.invoke(context, data) ?: strip()
-            CapabilityGroups.PARKING.id -> RadarBoardView(context)
-                .also { radar = it; it.set(GroupBoard.radarLevels(data.car), footer(m)) }
-            // Cảnh báo hai bên xe: xếp theo PHÍA thay vì thành dải tám ô cùng icon (kiểm toán mục 4c).
-            CapabilityGroups.ADAS.id -> SideBoardView(context).also { side = it; fillSide(it, m) }
             // U9 pha 2 — cửa/cốp/nóc/rèm/gương đặt đúng chỗ trên hình xe (owner 2026-09-13).
             CapabilityGroups.DOORS.id -> DoorBoardView(context).also { door = it; it.set(m) }
             else -> strip()
@@ -67,42 +62,10 @@ internal class GroupBoardBinder {
      * @return `false` ⇒ chỗ gọi phải dựng lại thân ô. Hiện chỉ bảng lốp rơi vào nhánh đó: nó đến từ cổng ngoài nên ở
      *   đây không có đường đổ dữ liệu vào ô vẽ đã có. An toàn vì bộ vẽ bảng lốp là **bản vẽ thuần** (không trạng thái
      *   chạm, không vòng quay) và nhóm lốp **không có nút**. ⚠ Nợ nhỏ: cách đó cấp phát một ô vẽ mỗi nhịp — chữa được
-     *   khi bộ dựng bảng lốp có đường `set(...)` như ba bảng còn lại.
+     *   khi bộ dựng bảng lốp có đường `set(...)` như bảng cửa.
      */
-    fun refill(m: GroupBoardModel, car: CarStatus): Boolean {
-        radar?.let { it.set(GroupBoard.radarLevels(car), footer(m)); return true }
-        side?.let { fillSide(it, m); return true }
+    fun refill(m: GroupBoardModel): Boolean {
         door?.let { it.set(m); return true }
         return false
-    }
-
-    /**
-     * Đổ dữ liệu cho [SideBoardView] — một chỗ duy nhất, dùng cho cả [build] lẫn [refill].
-     *
-     * Truyền **cả model** vì phép chọn *"ô hẹp thì hiện cái gì"* cần biết mọi ô con và chỉ chạy được khi đã biết bề
-     * cao ⇒ nó nằm trong ô vẽ. Dòng chân dựng bằng CÙNG hàm với bảng radar — không có bản thứ hai của quy ước
-     * lead/rest.
-     */
-    private fun fillSide(v: SideBoardView, m: GroupBoardModel) =
-        v.set(m, m.centreCells.joinToString(SEP) { "${it.label} · ${it.value}" })
-
-    private companion object {
-        /** Khe giữa hai mục của dòng chân bảng. */
-        const val SEP = "   "
-
-        /**
-         * Chân bảng `BOARD` = **các ô con mà bảng KHÔNG vẽ**.
-         *
-         * Quy ước: bảng vẽ ô con ĐẦU (8 mức vùng), phần còn lại ([GroupBoardModel.rest]) xuống dòng chân — cùng quy
-         * ước lead/rest với thẻ CARD, nên không cần viết tay mã `radar_volume` ở đây (luật 2 của KDoc [GroupTiles]).
-         *
-         * ⚠ [SOÁT G1 · b2] Luôn ghi `nhãn · giá trị`, kể cả khi chưa đọc được. Bản trước bỏ hẳn phần giá trị khi
-         * `!available` ⇒ off-car chân bảng chỉ có chữ *"Âm lượng CB"* trơ trọi, không dấu gạch — người xem không biết
-         * là *chưa đọc được* hay *không có số để hiển thị*. [GroupCell.value] đã trả `"—"` đúng trong ca đó.
-         *
-         * ⚠ Bảng *Cửa & khoang* KHÔNG dùng hàm này: dòng chân của nó là một **câu kết luận** do `:core` dựng
-         * (`GroupBoard.doorPlan`), không phải danh sách ô con thừa — mười ô con của nhóm đó đều đã có mặt trên hình.
-         */
-        fun footer(m: GroupBoardModel): String = m.rest.joinToString(SEP) { "${it.label} · ${it.value}" }
     }
 }

@@ -435,10 +435,11 @@ object WidgetViews {
         row.addView(tv(ctx, car.drivetrain.speedKmh?.toString() ?: "—", 44f, KachiTheme.INK, true))
         row.addView(tv(ctx, " km/h", 15f, KachiTheme.MUT))
         addView(row)
-        val limit = ctx.getString(
-            if (car.safety.speedLimitWarning == true) R.string.kachi_speed_over else R.string.kachi_speed_current,
-        )
-        addView(tv(ctx, limit, 13f, if (car.safety.speedLimitWarning == true) KachiTheme.RED else KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) })
+        // ⚠ 2026-09-16 — dòng dưới TỪNG đổi thành *"Vượt tốc độ"* (đỏ) khi datum `speed_limit_warning` bật. Cảnh
+        // báo quá tốc là chức năng AN TOÀN và owner đã gỡ toàn bộ khỏi launcher: xe tự cảnh báo bằng hệ của nó.
+        // Ô này nay chỉ nói nó đang hiện cái gì.
+        addView(tv(ctx, ctx.getString(R.string.kachi_speed_current), 13f, KachiTheme.MUT)
+            .apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) })
     }
 
     private fun carState(ctx: Context, car: CarStatus) = col(ctx).apply {

@@ -166,27 +166,10 @@ object TelemetryReadout {
         "ambient_rear_color" -> s.lights.ambientRearColorIndex?.toString()
         "ambient_rear_brightness" -> s.lights.ambientRearBrightness?.toString()
 
-        // ── A7. An toàn / ADAS ──────────────────────────────────────────────────────────
-        "seatbelt_driver" -> s.safety.seatbeltDriver?.let { if (it) Strings.t("Thắt", "On") else Strings.t("Chưa", "Not on") }
-        "seatbelt_passenger" -> s.safety.seatbeltPassenger?.let { if (it) Strings.t("Thắt", "On") else Strings.t("Chưa", "Not on") }
-        "child_presence" -> s.safety.childPresence?.let { yesNo(it) }
-        "speed_limit_warning" -> s.safety.speedLimitWarning?.let { yesNo(it) }
-        "bsd_fl_alarm" -> s.safety.bsdLeftLevel?.toString()
-        "bsd_fr_alarm" -> s.safety.bsdRightLevel?.toString()
-        "radar_zones" -> s.safety.radarZones?.joinToString(" ")
-        "esp_state" -> s.safety.espOn?.let { onOff(it) }
-        "mcu_status" -> s.safety.mcuStatus?.toString()
-        "volt_12v" -> s.safety.volt12v?.let { dec1(it) }
-        "oms_driver" -> s.safety.omsDriver?.let { yesNo(it) }
-        "oms_passenger" -> s.safety.omsPassenger?.let { yesNo(it) }
-        "lca_left" -> s.safety.lcaLeft?.toString()
-        "lca_right" -> s.safety.lcaRight?.toString()
-        "rcta_left" -> s.safety.rctaLeft?.toString()
-        "rcta_right" -> s.safety.rctaRight?.toString()
-        "dow_left" -> s.safety.dowLeft?.toString()
-        "dow_right" -> s.safety.dowRight?.toString()
-        "radar_volume" -> s.safety.radarVolume?.toString()
-        "volt_12v_level" -> s.safety.volt12vLevel?.toString()
+        // ── A7. Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16) ───
+        "mcu_status" -> s.energy.mcuStatus?.toString()
+        "volt_12v" -> s.energy.volt12v?.let { dec1(it) }
+        "volt_12v_level" -> s.energy.volt12vLevel?.toString()
 
         // ── A8. Danh tính ───────────────────────────────────────────────────────────────
         "vin" -> s.identity.vin

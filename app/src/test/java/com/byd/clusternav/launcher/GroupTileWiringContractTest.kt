@@ -49,8 +49,8 @@ class GroupTileWiringContractTest {
         "src/main/java/com/byd/clusternav/launcher/GroupBoardBinder.kt",
     )
     private val tiles by lazy { tileFiles.joinToString("\n") { code(it) } }
-    private val radar by lazy { code("src/main/java/com/byd/clusternav/launcher/RadarBoardView.kt") }
-    private val side by lazy { code("src/main/java/com/byd/clusternav/launcher/SideBoardView.kt") }
+    // ⚠ `RadarBoardView.kt` + `SideBoardView.kt` đã XOÁ 2026-09-16 cùng toàn bộ ADAS/an toàn (owner) — hai nhóm
+    // duy nhất dùng chúng (`g_parking` · `g_adas`) cũng không còn, nên không có gì để quét riêng nữa.
     private val door by lazy { code("src/main/java/com/byd/clusternav/launcher/DoorBoardView.kt") }
     /**
      * Phần `:core` của ô nhóm = **HAI tệp** nối lại (`GroupBoard.kt` phần quyết định + `GroupBoardModel.kt` các kiểu).
@@ -73,7 +73,7 @@ class GroupTileWiringContractTest {
      *
      * Không có bài này thì bài canh yếu đi **âm thầm** mỗi lần ai tách thêm một tệp: các `assertFalse` vẫn xanh vì
      * chúng chỉ soi những tệp đã khai. Dò theo dấu hiệu *"tệp này dựng ô nhóm"* = có gọi `GroupBoard.` hoặc
-     * `GroupTileView`, trừ chính ô vẽ radar (đã quét riêng qua [radar]) và các tệp chỉ **gọi** ô nhóm.
+     * `GroupTileView`, trừ chính các ô vẽ Canvas (đã quét riêng) và các tệp chỉ **gọi** ô nhóm.
      */
     @Test
     fun `tang ve nhom van la dung cac tep da khai`() {
@@ -82,13 +82,9 @@ class GroupTileWiringContractTest {
         // Tệp chỉ ĐIỀU PHỐI (gọi GroupTiles.build/mini) hoặc là ô vẽ riêng — không phải bộ dựng ô nhóm.
         val notBuilders = mapOf(
             "WidgetViews.kt" to "chỗ GỌI (rẽ nhánh sang GroupTiles), không dựng ô nhóm — đã quét riêng qua `widgets`",
-            "RadarBoardView.kt" to "ô vẽ Canvas của một nhóm BOARD — đã quét riêng qua `radar`",
-            "SideBoardView.kt" to
-                "ô vẽ Canvas của nhóm ADAS — đã quét riêng qua `side` (nó hỏi `GroupBoard.sidePlan` để biết ô hẹp thì " +
-                    "hiện cái gì, đúng lối `RadarBoardView` hỏi `GroupBoard.radarTone`)",
             "DoorBoardView.kt" to
                 "ô vẽ Canvas của nhóm *Cửa & khoang* (U9 pha 2) — đã quét riêng qua `door` (nó hỏi " +
-                    "`GroupBoard.doorPlan` để biết bộ phận nào đang mở, đúng lối `SideBoardView` hỏi `sidePlan`)",
+                    "`GroupBoard.doorPlan` để biết bộ phận nào đang mở, thay vì tự đoán từ mã datum)",
             "ControlDockView.kt" to "thanh nút: chỉ hỏi tóm tắt — đã quét riêng trong GroupPickerWiringContractTest",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->
@@ -98,7 +94,11 @@ class GroupTileWiringContractTest {
         }.filter { name ->
             name !in notBuilders &&
                 code("src/main/java/com/byd/clusternav/launcher/$name")
-                    .let { it.contains("GroupBoard.") || it.contains("GroupTileView") }
+                    // ⚠ 2026-09-16 nới từ `"GroupBoard."` sang `"GroupBoard"`: sau lượt gỡ ADAS/an toàn,
+                    // `GroupBoardBinder` không còn gọi `GroupBoard.<gì>` nào (hai bảng radar/sơ-đồ-bên đã xoá) —
+                    // nó chỉ còn nhận `GroupBoardModel`. Giữ dấu hiệu chặt cũ thì chính tệp sổ-đăng-ký-bảng rơi ra
+                    // ngoài tầm mọi `assertFalse` bên dưới, tức bài canh tự yếu đi vì một lượt xoá ở chỗ khác.
+                    .let { it.contains("GroupBoard") || it.contains("GroupTileView") }
         }.toSet()
         assertEquals(
             declared, builders,
@@ -168,7 +168,7 @@ class GroupTileWiringContractTest {
     /**
      * ⚠⚠ [KIỂM TOÁN UX mục 4c] Ô con chỉ hiện icon khi icon **phân biệt được**.
      *
-     * [ĐO] nhóm ADAS có 8/10 mục cùng icon sóng radar; nhóm *Người ngồi* có 3 mục cùng icon ghế. Ở đó icon không
+     * [ĐO] nhóm *Kính* có 4 mục cùng icon kính; nhóm *Cửa & khoang* có 4 mục cùng icon cửa. Ở đó icon không
      * mang thông tin nào mà vẫn ăn bề cao của nhãn và con số. Quyết định *"có phân biệt được không"* nằm ở `:core`
      * ([GroupBoardModel.iconsDistinguish]) — bài này canh việc tầng vẽ **có hỏi** nó, vì nếu không hỏi thì luật ở
      * `:core` chỉ là một thuộc tính không ai đọc (đúng loại "nút chết" mà dự án cấm).
@@ -231,15 +231,10 @@ class GroupTileWiringContractTest {
         // số HÌNH HỌC/CỠ CHỮ, không được là số phán xét.
         listOf("TyreBoard.LOW_BAR", "TyreBoard.HIGH_BAR", "TyreBoard.SPREAD_BAR", "Pm25Filter", "2.2").forEach {
             assertFalse(tiles.contains(it), "tầng vẽ nhóm không được biết ngưỡng: $it")
-            assertFalse(radar.contains(it), "ô vẽ radar không được biết ngưỡng: $it")
-            assertFalse(side.contains(it), "ô vẽ sơ đồ bên không được biết ngưỡng: $it")
+            assertFalse(door.contains(it), "ô vẽ bảng cửa không được biết ngưỡng: $it")
         }
-        // Ô vẽ radar cũng KHÔNG tự quyết mức nào là đỏ — nó hỏi :core.
-        assertTrue(radar.contains("GroupBoard.radarTone("), "màu vùng phải theo sắc thái do :core quyết định")
-        assertFalse(
-            radar.contains("RADAR_ALERT_LEVEL ="),
-            "ngưỡng vùng radar khai ở :core (một chỗ), không khai lại trong ô vẽ",
-        )
+        // Bảng cửa cũng KHÔNG tự quyết bộ phận nào đang mở — nó hỏi :core.
+        assertTrue(door.contains("GroupBoard.doorPlan("), "trạng thái bộ phận phải do :core quyết định")
     }
 
     // ── 4 · Một lớp đơn vị ───────────────────────────────────────────────────────────────────────
@@ -253,8 +248,7 @@ class GroupTileWiringContractTest {
                 "tầng vẽ nhóm KHÔNG được tự tra dữ liệu/đổi đơn vị ($it) — đó là cách bảng lốp từng ghi °C khi " +
                     "người dùng chọn °F",
             )
-            assertFalse(radar.contains(it), "ô vẽ radar cũng không ($it)")
-            assertFalse(side.contains(it), "ô vẽ sơ đồ bên cũng không ($it)")
+            assertFalse(door.contains(it), "ô vẽ bảng cửa cũng không ($it)")
         }
         // Và :core thì PHẢI đi qua nó.
         val cell = SourceRoots.body(board, "private fun cell(")
@@ -275,11 +269,15 @@ class GroupTileWiringContractTest {
         assertTrue(of.contains("g.reads.map"), "ô con sinh từ danh sách XEM của nhóm")
         assertTrue(of.contains("g.writes.map"), "nút sinh từ danh sách BẤM của nhóm")
         // Tầng vẽ không được có MỘT mã thành viên nào viết tay: đó là bản sao thứ hai phải giữ đồng bộ bằng trí nhớ.
-        listOf("\"tyre_p_", "\"tyre_t_", "\"window_", "\"door_", "\"light_", "\"radar_", "\"seatbelt_", "\"pm25_")
+        // ⚠ Bốn tiền tố cuối (`radar_` · `seatbelt_` · `bsd_` · `adas_`) là mã ĐÃ XOÁ 2026-09-16 cùng toàn bộ
+        // ADAS/an toàn (owner). Giữ chúng trong danh sách này KHÔNG phải để canh bản-sao-thứ-hai nữa mà là **cổng
+        // chống mọc lại ở tầng vẽ**: chép một mã an toàn vào `:app` là đường vòng quanh việc registry đã gỡ nó.
+        listOf(
+            "\"tyre_p_", "\"tyre_t_", "\"window_", "\"door_", "\"light_", "\"pm25_",
+            "\"radar_", "\"seatbelt_", "\"bsd_", "\"adas_",
+        )
             .forEach {
                 assertFalse(tiles.contains(it), "tầng vẽ nhóm chép tay mã thành viên: $it")
-                assertFalse(radar.contains(it), "ô vẽ radar chép tay mã thành viên: $it")
-                assertFalse(side.contains(it), "ô vẽ sơ đồ bên chép tay mã thành viên: $it")
                 // ⚠ Bảng cửa là chỗ CÁM DỖ NHẤT của luật này: nó vẽ đúng bốn vạt cửa, nên viết thẳng `"door_lf"` để
                 // tra trạng thái là cách "nhanh" hiển nhiên. Chỗ nối đúng là enum [CarPart] ở `:core`.
                 assertFalse(door.contains(it), "ô vẽ bảng cửa chép tay mã thành viên: $it")
@@ -365,8 +363,8 @@ class GroupTileWiringContractTest {
     /**
      * ⚠ **Bài GHIM: sửa [GroupTileView.rowsOf] cho khớp giao kèo KHÔNG được đổi hình dạng ô nhóm nào đang có.**
      *
-     * Bản trước ra sai với `(7,3)` / `(13,5)`, nhưng cả 12 nhóm hiện nay đều không rơi vào ca đó. Bài này ghim
-     * **số ô mỗi hàng** của cả 12 nhóm ở đúng ba trần đang dùng (`MAX_PER_ROW=5` cho dải · `CARD_PER_ROW=3` cho số
+     * Bản trước ra sai với `(7,3)` / `(13,5)`, nhưng cả 9 nhóm hiện nay đều không rơi vào ca đó. Bài này ghim
+     * **số ô mỗi hàng** của cả 9 nhóm ở đúng ba trần đang dùng (`MAX_PER_ROW=5` cho dải · `CARD_PER_ROW=3` cho số
      * phụ của thẻ · `ACTIONS_PER_ROW=6` cho hàng nút) ⇒ nếu bản sửa làm xê dịch một hàng nào thì bài đỏ, và nếu
      * mai ai thêm/bớt thành viên thì cũng phải xem lại con số ở đây.
      *
@@ -375,15 +373,14 @@ class GroupTileWiringContractTest {
      * đổi hình dạng bằng số đo, chứ không để nó lặng lẽ đi qua. Dải XEM và số phụ CARD **không đổi** (chỉ `writes` đổi).
      */
     @Test
-    fun `phep chia hang khong doi hinh dang cua 12 nhom dang co`() {
+    fun `phep chia hang khong doi hinh dang cua 9 nhom dang co`() {
         val strip = CapabilityGroups.ALL.associate { g ->
             g.id to GroupTileView.rowsOf(g.reads, 5).map { it.size }
         }
         assertEquals(
             mapOf(
                 "g_tyres" to listOf(4, 4), "g_windows" to listOf(4), "g_doors" to listOf(5, 5),
-                "g_lights" to listOf(5, 4), "g_ambient" to listOf(5), "g_adas" to listOf(5, 5),
-                "g_occupants" to listOf(5), "g_parking" to listOf(2), "g_climate" to listOf(5, 5),
+                "g_lights" to listOf(5, 4), "g_ambient" to listOf(5), "g_climate" to listOf(5, 5),
                 "g_energy" to listOf(5, 5), "g_battery" to listOf(5, 4), "g_trip" to listOf(3, 3),
             ),
             strip,
@@ -395,8 +392,7 @@ class GroupTileWiringContractTest {
         assertEquals(
             mapOf(
                 "g_tyres" to listOf(3, 2, 2), "g_windows" to listOf(3), "g_doors" to listOf(3, 3, 3),
-                "g_lights" to listOf(3, 3, 2), "g_ambient" to listOf(2, 2), "g_adas" to listOf(3, 3, 3),
-                "g_occupants" to listOf(2, 2), "g_parking" to listOf(1), "g_climate" to listOf(3, 3, 3),
+                "g_lights" to listOf(3, 3, 2), "g_ambient" to listOf(2, 2), "g_climate" to listOf(3, 3, 3),
                 "g_energy" to listOf(3, 3, 3), "g_battery" to listOf(3, 3, 2), "g_trip" to listOf(3, 2),
             ),
             card,

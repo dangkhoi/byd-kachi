@@ -91,10 +91,11 @@ class CapabilityIconsDiversityTest {
     @Test
     fun `ba nhom da chua giu duoc so hinh da dat`() {
         // Sàn = số hình ĐO ĐƯỢC sau lượt vá gần nhất, không phải số mong muốn. Chỉ được đi LÊN.
-        val floor = mapOf(
+        // ⚠ `Domain.SAFETY to 24` đã gỡ 2026-09-16 cùng cả domain (owner gỡ ADAS/an toàn).
+        val floor = mapOf<Domain, Int>(
             Domain.ENERGY to 15, Domain.DRIVETRAIN to 12, Domain.CLIMATE to 12,
             // U7 — năm lĩnh vực còn lại, sau khi bộ hình xe theo vị trí thay cho gộp-theo-tiền-tố.
-            Domain.TYRES to 8, Domain.BODY to 26, Domain.LIGHTS to 16, Domain.SAFETY to 24, Domain.IDENTITY to 7,
+            Domain.TYRES to 8, Domain.BODY to 26, Domain.LIGHTS to 16, Domain.IDENTITY to 7,
         )
         assertEquals(doneDomains.toSet(), floor.keys, "sàn phải phủ đúng các nhóm đã chữa")
         floor.forEach { (d, min) ->

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test
  *
  * ## Cách đo: đọc HẬU TỐ THẬT trong mã, không kê tay danh sách mã
  * Bộ đăng ký dùng **hai** quy ước hậu tố cho cùng một góc xe (lịch sử: TPMS theo `fl/fr/rl/rr`, thân xe theo
- * `lf/rf/lr/rr`, ADAS theo `left/right`, ghế theo `driver/passenger`). Bài này chuẩn hoá cả bốn về một thang
+ * `lf/rf/lr/rr`, ghế theo `driver/passenger`). Bài này chuẩn hoá tất cả về một thang
  * [Corner] rồi so với hậu tố của tên hình — nên thêm một mã có vị trí ở quy ước nào cũng bị soi, và **không** có
  * một danh sách chép tay nào phải giữ đồng bộ.
  */
@@ -70,8 +70,8 @@ class CapabilityIconPositionTest {
     /**
      * Hậu tố nào của TÊN HÌNH được coi là "nói đúng vị trí này".
      *
-     * Bốn góc chấp nhận **cả hậu tố bên** (`-l`/`-r`): [ĐO] `bsd_fl_alarm` là *"điểm mù trước-trái"* nhưng vùng
-     * cảm biến vẽ được chỉ có một bên trái — ép nó phải mang `-fl` sẽ là ép vẽ một thứ không có thật.
+     * Bốn góc chấp nhận **cả hậu tố bên** (`-l`/`-r`): có mã nói *"trước-trái"* mà hình vẽ được chỉ phân biệt nổi
+     * BÊN trái — ép nó phải mang `-fl` sẽ là ép vẽ một thứ không có thật.
      */
     private fun iconSaysCorner(icon: String, corner: Corner): Boolean {
         fun end(vararg t: String) = t.any { icon.endsWith("-$it") }
@@ -108,7 +108,10 @@ class CapabilityIconPositionTest {
                 "thì khai vào noPositionShape KÈM lý do",
         )
         // Chốt chống bộ quét hỏng: quét rỗng thì câu "0 mã sai" là câu nói vô nghĩa.
-        assertTrue(positioned().size >= 40, "chỉ soi được ${positioned().size} mã có vị trí — nghi phép đọc hậu tố hỏng")
+        // Sàn 40 → 28 sau khi owner gỡ toàn bộ ADAS/an toàn 2026-09-16 (12 mã có vị trí của điểm mù · chuyển làn ·
+        // cắt ngang sau · cảnh báo mở cửa · dây an toàn · người ngồi đã xoá). Sàn là chốt chống bộ quét hỏng, không
+        // phải mục tiêu — hạ nó đúng bằng số đã mất, không hạ thêm.
+        assertTrue(positioned().size >= 28, "chỉ soi được ${positioned().size} mã có vị trí — nghi phép đọc hậu tố hỏng")
     }
 
     // ── 2 · hai góc KHÁC nhau không được dùng chung một hình ────────────────────────────────────────

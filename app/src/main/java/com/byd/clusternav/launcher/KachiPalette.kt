@@ -45,7 +45,7 @@ package com.byd.clusternav.launcher
  * @property cell nền ô con nhỏ trong widget.
  * @property tile nền ô điều khiển lúc tắt.
  * @property chipOff nền chip lúc không chọn.
- * @property dim nền vùng "không có dữ liệu / đang tắt" (sơ đồ radar, nút bước).
+ * @property dim nền vùng "không có dữ liệu / đang tắt" (ô giá trị chưa đọc được, nút bước).
  * @property track vành rỗng của vòng đo.
  * @property slot nền thẻ ô làm việc ở màn chính.
  * @property bar nền thanh nút xe (có kênh trong suốt để thấy nền sau nó).

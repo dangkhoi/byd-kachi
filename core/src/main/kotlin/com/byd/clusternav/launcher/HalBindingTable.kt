@@ -76,7 +76,7 @@ class HalBindingTable(private val gateway: HalGateway) {
     fun readString(id: String): String? = readRaw(id)?.trim()?.takeIf { it.isNotEmpty() && it != "null" }
 
     /**
-     * [id] → danh sách Int (vd 8 vùng radar "[0, 1, 2,…]" — `BydHal.arrayToStr`); không parse được → null.
+     * [id] → danh sách Int (vd `"[h, m]"` của thời gian sạc còn lại — `BydHal.arrayToStr`); không parse được → null.
      * MỌI token phải là số: `"[I@1a2b3c"` (toString mặc định của mảng) từng lọt qua regex-tìm-chữ-số thành `[1, 2, 3]`
      * ⇒ số rác lên ô. Nay token lạ ⇒ null (unavailable), không đoán.
      */
@@ -159,9 +159,7 @@ class HalBindingTable(private val gateway: HalGateway) {
          *  • nhiệt cabin `getTemprature(0)`;
          *  • áp lốp `getTyrePressureValue(area)` BYDAutoTyreDevice.java:27-30 — LF=1 · RF=2 · LR=3 · RR=4;
          *  • cửa `getDoorState(area)` BYDAutoBodyworkDevice.java:172-176 — LF=1 · RF=2 · LR=3 · RR=4;
-         *  • vô-lăng `getSteeringWheelValue(BODYWORK_CMD_STEERING_WHEEL_ANGEL=1)` BYDAutoBodyworkDevice.java:178;
-         *  • dây an toàn `getSafetyBeltStatus(area)` BYDAutoSafetyBeltDevice.java:16/15 — MAIN=1 · DEPUTY=2;
-         *  • ghế phụ `getPassengerStatus(SAFETY_BELT_PASSENGER_DEPUTY=1)` BYDAutoSafetyBeltDevice.java:27.
+         *  • vô-lăng `getSteeringWheelValue(BODYWORK_CMD_STEERING_WHEEL_ANGEL=1)` BYDAutoBodyworkDevice.java:178.
          * Còn lại → null (getter 0-arg; `getWheelSpeed()` là 0-arg — BYDAutoSpecialDevice.java:59).
          */
         fun readArg(id: String): Int? = when (id) {
@@ -173,8 +171,6 @@ class HalBindingTable(private val gateway: HalGateway) {
             "tyre_p_fl" -> 1; "tyre_p_fr" -> 2; "tyre_p_rl" -> 3; "tyre_p_rr" -> 4
             "door_lf" -> 1; "door_rf" -> 2; "door_lr" -> 3; "door_rr" -> 4
             "steering_deg" -> 1
-            "seatbelt_driver" -> 1; "seatbelt_passenger" -> 2
-            "oms_passenger" -> 1
             else -> null
         }
 
@@ -305,7 +301,6 @@ class HalBindingTable(private val gateway: HalGateway) {
             "wireless_charge" -> intArrayOf(if (primary > 0) 1 else 2)
             // camera 360 `setAVMSwitchState` — AVM_FUNCTION_ON=2 / OFF=1 (BYDAutoADASDevice.java:35/:34).
             "cam" -> intArrayOf(if (primary > 0) 2 else 1)
-            // NEEDS-ONCAR: `avh` `setAVHState` enum on/off chưa có nguồn ⇒ đi nhánh else (1/0) — chốt trên xe.
             // NEEDS-ONCAR: `camera_view` `setDisplayMode` — gửi index thô, map nhãn↔DISPLAY_MODE_* chưa chốt.
             else -> intArrayOf(primary)
         }
@@ -368,7 +363,6 @@ class HalBindingTable(private val gateway: HalGateway) {
                 Domain.TYRES -> "BYDAutoInstrumentDevice"
                 Domain.BODY -> "BYDAutoBodyworkDevice"
                 Domain.LIGHTS -> "BYDAutoLightDevice"
-                Domain.SAFETY -> "BYDAutoADASDevice"
                 Domain.IDENTITY -> "BYDAutoBodyworkDevice"
                 Domain.INFOTAINMENT -> "BYDAutoSettingDevice"
             },
@@ -433,7 +427,7 @@ class HalBindingTable(private val gateway: HalGateway) {
         /**
          * Mảng từ gateway ("[a, b, …]" — `BydHal.arrayToStr`, ≥2 phần tử; 1 phần tử đã là số trần) → phần tử ĐẦU.
          * [ĐO] §B remediation 2026-09-15: getter trả `int[]`/`byte[]` (PM2.5 value/level, wheel_speed…) từng ra
-         * `"[I@hash"` ⇒ "—". Không phải mảng → trả nguyên chuỗi. [readIntList] (radar 8 vùng) vẫn đọc cả mảng.
+         * `"[I@hash"` ⇒ "—". Không phải mảng → trả nguyên chuỗi. [readIntList] vẫn đọc cả mảng.
          */
         private fun firstOfArray(s: String): String =
             if (s.startsWith("[")) s.removePrefix("[").substringBefore(',').substringBefore(']').trim() else s

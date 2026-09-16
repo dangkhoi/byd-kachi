@@ -39,12 +39,14 @@ class CarFramesSourceContractTest {
     /**
      * Các bảng `BOARD` vẽ bằng Canvas — chúng là toàn bộ chỗ từng (hoặc có thể) tự vẽ thân xe.
      *
+     *
      * `DoorBoardView.kt` vào danh sách ở U9 pha 2: nó ra đời SAU [CarFrames] nên chưa bao giờ "tự vẽ", nhưng mọi bất
      * biến còn lại (sàn nét · phóng giữ tỉ lệ · không cấp phát trong `onDraw` · chép path trước khi biến hình) áp
      * cho nó y hệt — bỏ nó ra ngoài là để một bảng sống ngoài tầm bài canh.
      */
-    private val boardFiles =
-        listOf("TyreBoardView.kt", "RadarBoardView.kt", "SideBoardView.kt", "DoorBoardView.kt")
+    // ⚠ `RadarBoardView.kt` + `SideBoardView.kt` đã XOÁ 2026-09-16 cùng toàn bộ ADAS/an toàn (owner) — hai nhóm
+    // duy nhất dùng chúng (`g_parking` · `g_adas`) cũng không còn.
+    private val boardFiles = listOf("TyreBoardView.kt", "DoorBoardView.kt")
 
     private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
@@ -161,7 +163,7 @@ class CarFramesSourceContractTest {
      * Nét khung xe có **SÀN** (R1: *"không mảnh hơn 1.6dp tương đương"*) và sàn đó lấy từ thang [KachiSpace].
      *
      * Tỉ lệ một mình (`m * 0.018`) là đủ ở ô lớn nhưng ở ô nhỏ nhất mà bảng còn dựng, nó xuống dưới một pixel
-     * mực — cùng họ lỗi mà `SideBoardView` đã phải vá cho cỡ chữ và cho khe nhãn↔thân xe.
+     * mực — cùng họ lỗi mà các bảng Canvas đã phải vá cho cỡ chữ và cho khe nhãn↔thân xe.
      */
     @Test
     fun `net khung xe co SAN lay tu thang khoang cach`() {

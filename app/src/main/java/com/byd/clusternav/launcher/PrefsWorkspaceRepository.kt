@@ -95,9 +95,19 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
      */
     override fun load(): HomeUiState {
         val base = HomeUiState(
-            // `.sanitized()`: chữa state cũ đã lưu cùng app ở hai ô (trước bản vá MỘT-APP-MỘT-Ô 2026-09-15) —
-            // nạp thẳng qua constructor không đi qua withSlot nên phải ép bất biến ở đây, nếu không ô trùng vẫn hiện.
-            workspace = defaultIfEmpty(prefs.load().sanitized()),
+            // `.sanitized()`: chữa state cũ đã lưu cùng app ở hai ô (trước bản vá MỘT-APP-MỘT-Ô 2026-09-15) **và**
+            // bỏ mã khả năng đã biến mất khỏi mọi bộ đăng ký (vd lượt ADAS-PURGE 2026-09-16) — nạp thẳng qua
+            // constructor không đi qua withSlot nên phải ép bất biến ở đây, nếu không ô trùng / ô rác vẫn hiện.
+            workspace = defaultIfEmpty(prefs.load().let { raw ->
+                // Nói ra thứ vừa bỏ: ô của người dùng biến mất mà không có một dòng nào là kênh im lặng.
+                raw.unknownWidgetIds().takeIf { it.isNotEmpty() }?.let {
+                    android.util.Log.i(
+                        "KachiWorkspace",
+                        "[dọn ô] bỏ ${it.size} mã widget không còn trong bộ đăng ký: ${it.joinToString(" ")}",
+                    )
+                }
+                raw.sanitized()
+            }),
             dock = prefs.loadDock(),
             activeProfile = prefs.activeProfile(),
             profiles = prefs.profiles(),

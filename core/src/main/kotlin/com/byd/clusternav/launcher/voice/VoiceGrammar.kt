@@ -82,14 +82,13 @@ object VoiceSynonyms {
         "start_charging" to listOf("sac xe", "bat dau sac", "start charge"),
         "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now"),
         // ── Pha NGHE (R10): nhãn có CHỮ VIẾT TẮT / CHỮ SỐ thì mô hình tiếng Việt không có từ để nghe ──
-        // [ĐO] 2026-09-14, từ điển `vosk-model-small-vn-0.4` (19.529 mục): `ev` · `hev` · `itac` · `avh` đều
-        // KHÔNG có mặt ⇒ ba nút này trước đó **gõ được mà không nói được**, và cái thiếu ấy im lặng. Thêm một
-        // cách gọi thuần Việt là cách sửa đúng: nó cũng là cách người ta nói ngoài đời, không phải một mẹo cho
-        // bộ nhận dạng. Bài canh `VoiceGrammarPhrasesTest.moi kha nang deu co it nhat mot cum noi duoc` đòi
-        // MỌI dòng registry phải có ít nhất một cụm nói được, nên thêm nhãn viết tắt mới là nó đỏ ngay.
+        // [ĐO] 2026-09-14, từ điển `vosk-model-small-vn-0.4` (19.529 mục): `ev` · `hev` KHÔNG có mặt ⇒ nút này
+        // trước đó **gõ được mà không nói được**, và cái thiếu ấy im lặng. Thêm một cách gọi thuần Việt là cách
+        // sửa đúng: nó cũng là cách người ta nói ngoài đời, không phải một mẹo cho bộ nhận dạng. Bài canh
+        // `VoiceGrammarPhrasesTest.moi kha nang deu co it nhat mot cum noi duoc` đòi MỌI dòng registry phải có ít
+        // nhất một cụm nói được, nên thêm nhãn viết tắt mới là nó đỏ ngay.
+        // ⚠ Hai dòng `itac` / `avh` đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn (owner) — nút không còn tồn tại.
         "powertrain_mode" to listOf("che do dong co", "xang dien", "che do nang luong"),
-        "itac" to listOf("kiem soat mo men", "kiem soat luc keo"),
-        "avh" to listOf("giu phanh", "giu phanh tu dong"),
     )
 
     /** Cách nói thêm cho THÔNG TIN ĐỌC (`TelemetryRegistry`). */

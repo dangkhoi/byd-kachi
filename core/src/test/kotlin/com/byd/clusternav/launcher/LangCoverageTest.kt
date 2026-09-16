@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test
  *
  * ## Ba luật về CHẤT bản dịch (không chỉ "có hay không")
  *  1. **Không được trùng y nguyên nhãn Việt** — vì chép nguyên là cách "điền cho xong". Trừ [SAME_ON_PURPOSE]: ký
- *     hiệu ngành (VIN · ESP · PM2.5 · EV/HEV · LDW/LDP) thì dịch mới là sai (spec §6 OQ2).
+ *     hiệu ngành (VIN · PM2.5 · EV/HEV) thì dịch mới là sai (spec §6 OQ2).
  *  2. **Không được chứa dấu tiếng Việt** — bắt ca dịch nửa vời (*"Tyre pressure trước-trái"*).
  *  3. **Nhãn ngắn phải THẬT ngắn** — chip thanh trạng thái cao ~24dp; nhãn ngắn dài bằng nhãn đầy thì `shortEn` vô
  *     nghĩa và chữ bị cắt (đúng lỗi [ĐO] 2026-09-10: *"Áp lốp trước-t…"* × 2 không phân biệt được).
@@ -46,22 +46,25 @@ class LangCoverageTest {
     // ── 1 · ĐẾM TUYỆT ĐỐI: không mã nào thiếu nhãn EN ────────────────────────────────────────────
 
     @Test
-    fun `moi datum co nhan EN, dung 123 dong`() {
-        assertEquals(123, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+    fun `moi datum co nhan EN, dung 106 dong`() {
+        // 106 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 123).
+        assertEquals(106, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
 
     @Test
-    fun `moi nut co nhan EN, dung 64 nut`() {
-        assertEquals(64, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+    fun `moi nut co nhan EN, dung 54 nut`() {
+        // 54 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 64).
+        assertEquals(54, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = ControlRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nút thiếu nhãn tiếng Anh: $missing")
     }
 
     @Test
-    fun `moi nhom co nhan va dong phu EN, dung 12 nhom`() {
-        assertEquals(12, CapabilityGroups.ALL.size)
+    fun `moi nhom co nhan va dong phu EN, dung 9 nhom`() {
+        // 9 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 12 — bỏ g_adas · g_occupants · g_parking).
+        assertEquals(9, CapabilityGroups.ALL.size)
         val missing = CapabilityGroups.ALL
             .filter { it.labelEn.isNullOrBlank() || it.subEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nhóm thiếu labelEn/subEn: $missing")
@@ -106,7 +109,8 @@ class LangCoverageTest {
 
     @Test
     fun `cac enum mang nhan cung co ban EN`() {
-        assertEquals(9, Domain.values().size)
+        // 8 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 9 — bỏ Domain.SAFETY).
+        assertEquals(8, Domain.values().size)
         assertEquals(7, Quantity.values().size)
         assertEquals(4, TyreCorner.values().size)
         // V1 pha NGHE: +1 — `microphone` (quyền micro, tự cấp bằng `pm grant`).
@@ -132,7 +136,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 319`() {
+    fun `tong so nhan co ban EN dung 288`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -149,7 +153,8 @@ class LangCoverageTest {
         // ⚠ TÊN BÀI đã lệch số từ trước lượt này (tên nói 307 trong khi ghim 310); nay đặt lại cho khớp —
         // một cái tên nói sai con số nó đang canh là chỗ người sau đọc rồi tin nhầm.
         // Voice pha 2 (2026-09-16): +3 — `voice_speak_replies` · `voice_prefer_offline` · `voice_tts_pack`.
-        assertEquals(319, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 288 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 319).
+        assertEquals(288, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -212,10 +217,10 @@ class LangCoverageTest {
     @Test
     fun `lua chon cua nut co ban EN dung so phan tu`() {
         val withArgs = ControlRegistry.ALL.filter { it.args.isNotEmpty() }
-        // 14 = 5 nút COVER kính/rèm (mỗi cái "Đóng"/"Mở") + 9 nút SELECT. ⚠ [ĐO] con số tôi ĐOÁN lúc viết bài này là
+        // 13 = 5 nút COVER kính/rèm (mỗi cái "Đóng"/"Mở") + 8 nút SELECT. ⚠ [ĐO] con số tôi ĐOÁN lúc viết bài này là
         // 11 và bài đỏ ngay — đúng việc nó sinh ra để làm, và là lời nhắc rằng đếm bằng mắt qua một tệp 355 dòng thì
-        // sai. Giữ số đo, không giữ số đoán.
-        assertEquals(14, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
+        // sai. Giữ số đo, không giữ số đoán. 13 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 14 — nút SELECT `adas_lane` đã xoá).
+        assertEquals(13, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
         val bad = withArgs.filter { it.argsEn.size != it.args.size }.map { "${it.id}(${it.args.size}≠${it.argsEn.size})" }
         assertTrue(bad.isEmpty(), "lựa chọn EN thiếu/lệch số phần tử — sẽ lùi về CẢ danh sách tiếng Việt: $bad")
     }
@@ -386,14 +391,13 @@ class LangCoverageTest {
          */
         val SAME_ON_PURPOSE: Map<String, String> = mapOf(
             "PM2.5" to "ký hiệu ngành cho bụi mịn 2.5µm — dịch thành câu dài là sai chuẩn (spec §6 OQ2)",
-            "ESP" to "electronic stability program — viết tắt in trên chính táp-lô xe",
             "EV / HEV" to "hai chế độ hệ truyền động, viết tắt ngành; xe hiện đúng chữ này",
             "EV" to "electric vehicle — lựa chọn của nút EV/HEV, không dịch",
             "HEV" to "hybrid electric vehicle — lựa chọn của nút EV/HEV, không dịch",
             "Auto" to "từ quốc tế, dùng y nguyên trong cả hai thứ tiếng ở chế độ đèn pha",
             "Eco" to "tên chế độ lái do xe đặt, không dịch",
-            "LDW" to "lane departure warning — viết tắt ngành, dịch ra sẽ dài hơn cả ô nút",
-            "LDP" to "lane departure prevention — cùng lý do LDW",
+            // ⚠ Ba mục "ESP" · "LDW" · "LDP" đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn — bài
+            // `moi muc trong danh sach cho phep trung deu co ly do, va deu dung toi` bắt ngay nếu để lại.
         )
 
         /** Mọi dòng có nhãn, ở đúng một chỗ để các bài không lệch phạm vi quét. */

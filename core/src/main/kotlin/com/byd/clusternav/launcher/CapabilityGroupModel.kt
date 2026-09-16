@@ -20,15 +20,15 @@ package com.byd.clusternav.launcher
  *   ⚠ Tên là **HỢP ĐỒNG giữa hai module**: đổi một bên mà không đổi bên kia thì `iconRes` rơi vào `else -> 0` và ô
  *   nhóm hiện ra **không có icon** — sai im lặng, vì không có ngoại lệ nào được ném. Nhóm dùng tiền tố riêng
  *   `ic-group-` (không dùng lại `ic-tire`/`ic-window`…) vì icon nhóm phải nói *"đây là cả bốn bánh"* chứ không phải
- *   *"đây là một cái lốp"*; T2 vẽ 12 icon riêng cho đúng việc đó. Có test hai đầu: `:core` canh tiền tố,
- *   `:app` canh cả 12 tên tra ra được drawable.
+ *   *"đây là một cái lốp"*; T2 vẽ một icon riêng cho từng nhóm. Có test hai đầu: `:core` canh tiền tố,
+ *   `:app` canh mọi tên tra ra được drawable.
  * @property domain nhóm hiển thị ở màn chọn. Chỉ để **gom chỗ bày**, không mang ngữ nghĩa an toàn (xem [Domain]).
- *   ⚠ Thành viên KHÔNG buộc cùng domain với nhóm: [CapabilityGroups.BATTERY] là `ENERGY` nhưng chứa `volt_12v`
- *   (khai ở `SAFETY`). Sức khoẻ pin là câu hỏi về NĂNG LƯỢNG, còn `volt_12v` nằm ở `SAFETY` vì lý do lịch sử của
- *   bảng datum — bắt hai thứ đó phải khớp nhau sẽ làm nhóm sai theo cách người dùng nghĩ.
+ *   ⚠ Thành viên KHÔNG buộc cùng domain với nhóm: một mã khai ở domain này vẫn được một nhóm của domain khác dùng,
+ *   vì nhóm gom theo **câu người lái hỏi** còn domain gom theo bảng dữ liệu — bắt hai thứ đó phải khớp nhau sẽ làm
+ *   nhóm sai theo cách người dùng nghĩ.
  * @property shape bộ vẽ dùng chung (§4.3): [WidgetShape.BOARD] · [WidgetShape.STRIP] · [WidgetShape.CARD]. Ba giá
- *   trị này ĐÃ có sẵn trong enum từ trước — [WidgetShape.BOARD] còn ghi rõ *"4 lốp, 8 zone radar"*. Nghĩa là việc
- *   gom nhóm KHÔNG phải khái niệm mới, mà là **làm nốt thứ đã thiết kế nhưng chưa dựng**.
+ *   trị này ĐÃ có sẵn trong enum từ trước — [WidgetShape.BOARD] còn ghi rõ *"4 lốp"*. Nghĩa là việc gom nhóm
+ *   KHÔNG phải khái niệm mới, mà là **làm nốt thứ đã thiết kế nhưng chưa dựng**.
  * @property reads mã datum ĐỌC trong [TelemetryRegistry], theo thứ tự hiện ra.
  * @property writes mã nút ([ControlRegistry]) hoặc gói lệnh ([ActionMacros]) — hàng dưới cùng ô (§4.3).
  * @property sub **nội dung** nhóm nói bằng chữ, KHÔNG có số. Dùng cho dòng phụ của ô chọn (T4): người dùng thấy ô
@@ -88,26 +88,15 @@ data class CapabilityGroup(
         }
 
     /**
-     * Số mục **người dùng THẤY** trong ô — không phải số mã datum.
+     * Số mục **người dùng THẤY** trong ô.
      *
-     * ## ⚠⚠ [KIỂM TOÁN UX mục 6] Hai con số này KHÁC nhau, và bản trước đếm sai con số quan trọng hơn
-     * [ĐO] màn chọn ghi *"Cảm biến đỗ — **2 mục**"* trong khi ô đó hiện **8 ô vùng** + một dòng âm lượng: nhóm
-     * `PARKING` khai hai mã (`radar_zones`, `radar_volume`) nhưng `radar_zones` là **một mã mang cả 8 vùng**
-     * ([CarStatus.Safety.radarZones]). Tức nhóm được trình bày TỆ NHẤT lại là nhóm mà kiểm toán khen là đúng nhất —
-     * số đếm bán rẻ chính nó.
+     * ## ⚠⚠ [KIỂM TOÁN UX mục 6] Con số này từng KHÁC số mã datum, và bản trước đếm sai
+     * [ĐO] màn chọn từng ghi *"Cảm biến đỗ — **2 mục**"* trong khi ô đó hiện **8 ô vùng** + một dòng âm lượng: mã
+     * `radar_zones` là một mã mang cả 8 vùng. Nhóm đó đã bị gỡ cùng toàn bộ ADAS/an toàn (owner 2026-09-16) nên
+     * hôm nay **không mã nào nở ra nhiều ô con** ⇒ mỗi mã đúng một ô.
      *
-     * Nên: mã nào **nở ra nhiều ô con** thì đếm theo số ô con thật. Bảng [EXPANDING] là chỗ DUY NHẤT khai điều đó,
-     * và nó lấy số từ hằng đã có ở `GroupBoard` (`const val` ⇒ hằng biên dịch, không tạo vòng khởi tạo giữa hai
-     * object) thay vì gõ lại số 8.
+     * ⚠ Ngày nào lại có một mã "nở ra nhiều ô" thì phải khai số nở ở MỘT chỗ (như bảng `EXPANDING` cũ) chứ không
+     * sửa dòng phụ bằng tay — luật *"không chép tay số"* của [sub] vẫn giữ nguyên.
      */
-    val visibleReadCount: Int get() = reads.sumOf { EXPANDING[it] ?: 1 }
-
-    private companion object {
-        /**
-         * Mã datum → số ô con nó VẼ RA (mã không có trong bảng = 1 ô con, ca thường).
-         *
-         * Chỉ nhận mã mà bộ vẽ thật sự nở ra nhiều ô — thêm bừa vào đây là làm số đếm nói sai theo chiều ngược lại.
-         */
-        val EXPANDING: Map<String, Int> = mapOf("radar_zones" to GroupBoard.RADAR_ZONE_COUNT)
-    }
+    val visibleReadCount: Int get() = reads.size
 }

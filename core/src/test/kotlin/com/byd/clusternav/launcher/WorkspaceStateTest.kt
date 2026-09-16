@@ -80,6 +80,44 @@ class WorkspaceStateTest {
         assertSame(s, s.sanitized(), "không trùng ⇒ trả chính nó")
     }
 
+    // ── Mã khả năng đã BIẾN MẤT khỏi bộ đăng ký (owner gỡ hẳn) ───────────────────────────────────
+    //
+    // ⚠ Bài này khoá bài học của lượt **ADAS-PURGE 2026-09-16**: owner gỡ 10 nút + 17 datum + 3 nhóm, nhưng cấu
+    // hình ĐÃ LƯU trên xe vẫn trỏ tới chúng. [ĐO đọc source] đường cũ không sập mà **tệ hơn**: `WidgetViews.build`
+    // rơi xuống `telemetry(...)` → `TelemetryReadout.of` trả null → ô hiện `"ADAS_FCW"` + `"—"` **mãi mãi**. Thanh
+    // nút (`ControlDockView` nhánh `null -> Unit`) và chip thanh trên (`TopStripChips.render` `mapNotNull`) đã bỏ
+    // mã lạ từ trước — ô giữa màn là bề mặt cuối cùng còn giữ rác.
+    @Test fun `sanitized bo ma widget khong con trong bo dang ky`() {
+        val dirty = WorkspaceState(slots = List(WorkspaceState.SLOT_CAP) { i ->
+            when (i) {
+                0 -> SlotContent.Widget(listOf("adas_fcw"))              // nút ADAS đã xoá ⇒ cả ô về trống
+                1 -> SlotContent.Widget(listOf("w_energy", "radar_zones"))  // một mã sống + một mã chết
+                2 -> SlotContent.Widget(listOf("g_adas"))                // nhóm đã xoá
+                3 -> SlotContent.Widget(listOf("soc"))                   // mã sống ⇒ giữ nguyên
+                else -> SlotContent.Empty
+            }
+        })
+        assertEquals(
+            listOf("adas_fcw", "radar_zones", "g_adas"), dirty.unknownWidgetIds(),
+            "phải NÓI RA được mã nào sắp bị bỏ — mất một ô đã lưu mà im lặng là kênh im lặng",
+        )
+        val clean = dirty.sanitized()
+        assertSame(SlotContent.Empty, clean.slots[0], "ô chỉ có mã đã xoá ⇒ về trống, không phải ô 'ADAS_FCW —'")
+        assertEquals(SlotContent.Widget(listOf("w_energy")), clean.slots[1], "giữ mã còn sống, bỏ mã đã xoá")
+        assertSame(SlotContent.Empty, clean.slots[2], "mã NHÓM đã xoá cũng phải rụng")
+        assertEquals(SlotContent.Widget(listOf("soc")), clean.slots[3], "mã sống không bị đụng tới")
+        assertEquals(emptyList<String>(), clean.unknownWidgetIds(), "chạy lại phải sạch (idempotent)")
+    }
+
+    // Mã CÒN trong registry nhưng bị ẩn khỏi bộ chọn (`CapabilityCatalog.HIDDEN_FROM_PICKER`) KHÔNG được coi là
+    // rác — đó chính là luật *"ẩn khỏi bộ chọn ≠ xoá mã"*: ô của ai đã đặt phải tiếp tục chạy.
+    @Test fun `sanitized khong dung toi ma chi bi an khoi bo chon`() {
+        val hidden = CapabilityCatalog.HIDDEN_FROM_PICKER.keys.first()
+        val s = WorkspaceState().withSlot(0, SlotContent.Widget(hidden))
+        assertSame(s, s.sanitized(), "mã ẩn vẫn tra ra được ⇒ không phải rác")
+        assertEquals(emptyList<String>(), s.unknownWidgetIds())
+    }
+
     @Test fun `mot app mot o - app khac khong bi anh huong`() {
         val gmaps = "com.google.android.apps.maps"
         val s = WorkspaceState()

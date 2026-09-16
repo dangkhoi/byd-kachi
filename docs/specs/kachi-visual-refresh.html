@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VISUAL-REFRESH — vẽ lại hình xe · bộ icon · chất liệu bề mặt widget</title>
+<!--
+  Spec Kiro-style (consolidated) — dựng từ docs/specs/_template.html.
+  Thứ tự section CHUẨN: Changelog · Context · Requirements · Design · Tasks · Verification ·
+  Open Questions · References · Nhật ký triển khai · Reviewer Log.
+  Diagram = HTML visual (inline SVG / .layers / .flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.ev{font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.ev.do{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.ev.suy{background:rgba(0,113,227,.12);color:var(--accent);border-color:transparent}
+.ev.doan{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.ev.chua{background:rgba(142,142,147,.18);color:var(--muted);border-color:transparent}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{background:rgba(0,113,227,.10);border-color:rgba(0,113,227,.35)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{background:rgba(0,113,227,.10);border-color:rgba(0,113,227,.35)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+
+/* ---- Mockup TRƯỚC/SAU: hai thẻ widget dựng bằng đúng mã màu của KachiPalette.DARK ---- */
+.mock{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0}
+.mockcol{flex:1 1 300px;min-width:260px}
+.mockcol>h4{margin-top:0}
+.stage{background:#0a0d13;border-radius:16px;padding:20px;display:flex;gap:14px;flex-wrap:wrap}
+.w{flex:1 1 130px;min-width:120px;border-radius:16px;padding:14px;color:#eaf0f8;font-size:12.5px}
+.w .wl{color:#93a0b4;font-size:11px;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px}
+.w .wv{font-size:22px;font-weight:650;letter-spacing:-.01em}
+.w .wu{color:#93a0b4;font-size:11px;margin-left:3px}
+/* TRƯỚC: KachiTheme.card() — một lớp tô phẳng + hairline 1dp */
+.w.before{background:rgba(255,255,255,.078);border:1px solid rgba(255,255,255,.09)}
+/* SAU: chất liệu nhiều lớp — gradient dọc + hairline trong + mép trên sáng */
+.w.after{background:linear-gradient(180deg,rgba(255,255,255,.115),rgba(255,255,255,.045));border:1px solid rgba(255,255,255,.09);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+.w.after.on{background:linear-gradient(180deg,rgba(76,125,255,.34),rgba(123,92,255,.16));border-color:rgba(76,125,255,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.20)}
+.w.before.on{background:rgba(76,125,255,.36);border:1px solid rgba(76,125,255,.55)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.sw2{font-size:11.5px;color:var(--muted);text-align:center}
+.sw2 i{display:block;width:64px;height:40px;border-radius:8px;border:1px solid var(--line);margin-bottom:4px}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>VISUAL-REFRESH — vẽ lại hình xe · dựng lại bộ icon · chất liệu bề mặt widget</h1>
+<p class="muted">Slug: <code>kachi-visual-refresh</code> · Branch <code>feat/visual-refresh</code> (chưa tạo) ·
+<span class="pill wait">Trạng thái: Draft / chờ duyệt</span> · Owner: <b>dangkhoi</b> · Khởi tạo 2026-09-16 · Nền 1.67 (68)</p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,documentation-and-backlog,conversation-protocol}.md</code>
+và <code>CLAUDE.md</code> §1 · §7 (generic, không case-by-case) · §8 (kiểm call site) · §10 (test khoá bài học) · §16.
+Mọi khẳng định dưới đây gắn <span class="ev do">[ĐO]</span> / <span class="ev suy">[SUY]</span> /
+<span class="ev doan">[ĐOÁN]</span> / <span class="ev chua">[CHƯA BIẾT]</span> theo <code>conversation-protocol.md</code>.</p>
+
+<div class="card">
+<b>Yêu cầu owner (nguyên văn, 2026-09-16):</b>
+<p style="margin:8px 0 0">“<i>có thêm được 1 track vẽ lại hình xe tổng hợp cho các widget tổng hợp thật đẹp, luxury,
+xây lại toàn bộ icon của tất cả các widget, thông tin, action thật đẹp không? svg icon như hiện tại nhìn quê mùa quá,
+các widget chạy trên nền xám nhìn hơi chán quá</i>”</p>
+</div>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 2b — 2026-09-16</b>: Owner: <i>“icon app dùng hoa anh đào nhé”</i> ⇒ thêm <b>R7</b> (icon app = hoa anh đào, xếp P1).</li>
+<li><b>Pass 2 — 2026-09-16</b>: Owner duyệt toàn track (“<i>ò ok, làm hết đi nhé</i>”) và <b>bỏ luật cấm gradient</b>:
+“<i>cho gradient hay làm sao cho đẹp được thì làm, không cần rule cấm gì đâu, thoả mái sáng tạo, đứng vai user mà design</i>”
+⇒ AC1.7 và §R2 viết lại: gradient/màu riêng/độ mờ được dùng ở <b>mọi cỡ</b> kể cả icon 24dp; ràng buộc còn lại chỉ là
+<b>kỹ thuật</b> (trạng thái chọn nhìn ra được, chữ đọc được lúc lái đêm, 0 blur lúc chạy) và giải bằng thiết kế, không
+bằng luật cấm. 7 OQ đi theo mặc định đề xuất. Luật R4 của <code>kachi-icon-set-v2.html</code> hết hiệu lực cho bộ mới.</li>
+<li><b>Pass 1 — 2026-09-16</b>: Owner hỏi tiếp “<i>nó visual thật sự không? màu sắc đồ nhìn giống thật, 3D gì không?</i>”
+⇒ thêm <b>§4.8 Mức tả thực</b> (3 hướng: vector-có-khối / raster từ render 3D / 3D thời gian thực) kèm mockup
+TRƯỚC-SAU, bảng màu sơn, và <b>OQ7</b> (owner có ảnh render không). Chốt <b>mức (1) là mặc định</b>; nói thẳng agent
+<b>không</b> tự làm được mức (2), và mức (3) bị RAM chặn. Thêm <b>T8b</b>, siết DoD của <b>T4</b> (phép đo gradient
+trên API 29).</li>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo spec từ yêu cầu owner ở trên. Đo hiện trạng bộ icon + bảng màu + các bảng
+vẽ hình xe trong mã; chốt spec chạy <b>SAU</b> track ADAS-PURGE (backlog mục (N)) để không vẽ lại 20 hình sắp bị xoá.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Owner nói “quê mùa” và “chán” — đo xem đó là cái gì trong mã</h3>
+<p>Hai lời phàn nàn là hai bệnh <b>khác nhau</b>, nằm ở hai tầng khác nhau, nên spec này tách chúng ra ngay từ đầu
+(§2.1.a = icon, §2.1.b = bề mặt). Gộp lại rồi “làm đẹp chung” là cách chắc chắn nhất để sửa một cái và làm hỏng cái kia.</p>
+
+<h4>a) “svg icon nhìn quê mùa” — bộ icon đang bị ép về MỘT phong cách nét mảnh, đơn sắc</h4>
+<table>
+<tr><th>Đo được</th><th>Giá trị</th><th>Nguồn</th></tr>
+<tr><td>Số tệp <code>ic_*.xml</code></td><td><b>168</b> (trên tổng 201 drawable)</td><td><span class="ev do">[ĐO]</span> <code>ls app/src/main/res/drawable/ic_*.xml | wc -l</code>, 2026-09-16</td></tr>
+<tr><td>Độ dày nét — <b>duy nhất một giá trị</b> cho cả bộ</td><td><code>1.6</code></td><td><code>app/src/test/java/com/byd/clusternav/launcher/IconStyleContractTest.kt:30</code></td></tr>
+<tr><td>Khung vẽ — <b>bắt buộc</b> 24×24, ô quang học 20×20</td><td><code>viewportWidth/Height = 24</code></td><td><code>IconStyleContractTest.kt:139</code>, <code>:53</code></td></tr>
+<tr><td>Màu — <b>cấm</b> mọi màu riêng, chỉ <code>#FFFFFF</code> hoặc trong suốt</td><td>7 ngoại lệ có lý do tại chỗ</td><td><code>IconStyleContractTest.kt:154</code>, <code>:38-48</code></td></tr>
+<tr><td>Đầu/khớp nét — <b>bắt buộc</b> tròn trên mọi đường có nét</td><td><code>strokeLineCap/Join = round</code></td><td><code>IconStyleContractTest.kt:114-115</code></td></tr>
+<tr><td>Hình nền/độ dày thứ hai / lớp tô mềm / bóng</td><td><b>không có bất kỳ cơ chế nào</b></td><td><span class="ev do">[ĐO]</span> grep <code>fillAlpha</code>/<code>strokeAlpha</code>/<code>&lt;gradient&gt;</code> trong <code>res/drawable/ic_*.xml</code> → 0 tệp</td></tr>
+</table>
+<p><span class="ev suy">[SUY]</span> <b>“Quê mùa” = hệ quả trực tiếp của ba luật đang có hiệu lực</b>: nét đúng
+<code>1.6</code> ở <i>mọi</i> cỡ hiển thị (16 · 20 · 24 · 32 · 44 · 56 dp — <code>KachiSpace.ICON_XS…ICON_XXL</code>,
+<code>KachiSpace.kt:138-153</code>), <i>một</i> tông màu, <i>không</i> lớp thứ hai. Ba luật đó sinh ra để chữa một bệnh
+THẬT và đã chữa được (trước T2: 9 độ dày nét khác nhau, 29/98 đường thiếu <code>strokeLineCap</code> —
+<code>IconStyleContractTest.kt:14-16</code>); nhưng cái giá là một bộ hình <b>đúng mà không có sức</b>: ở 44–56 dp nét
+1.6 trông như sợi chỉ, và không có gì phân biệt hình <i>chính</i> với hình <i>phụ</i> trong cùng một icon.</p>
+<p><span class="ev doan">[ĐOÁN]</span> Owner còn có thể đang so với icon của app OEM (Amap/TMap trong
+<code>jadx-amap/</code>, <code>jadx-tmap/</code>) vốn dùng duotone + bo tròn dày. <b>Chưa đo</b> — đây là giả thuyết về
+điểm so sánh, không phải căn cứ thiết kế. Nếu cần chốt: xuất icon của một app đó ra rồi đặt cạnh bộ hiện tại
+(<span class="ev chua">[CHƯA BIẾT]</span>).</p>
+
+<h4>b) “widget chạy trên nền xám nhìn hơi chán” — 26 bề mặt phẳng, 1 lớp tô, 0 chất liệu</h4>
+<table>
+<tr><th>Đo được</th><th>Giá trị</th><th>Nguồn</th></tr>
+<tr><td>Số chỗ gọi <code>KachiTheme.card(…)</code> (tô <b>một màu</b> + viền hairline 1dp)</td><td><b>26</b></td><td><span class="ev do">[ĐO]</span> <code>grep -rn "KachiTheme.card(" app/src/main | wc -l</code></td></tr>
+<tr><td>Số chỗ gọi <code>KachiTheme.gradient(…)</code></td><td><b>7</b> (chỉ nút/pill đang chọn)</td><td><span class="ev do">[ĐO]</span> cùng lượt grep</td></tr>
+<tr><td>Số chỗ gọi <code>KachiTheme.gradientSoft(…)</code></td><td><b>1</b> (tile dock BẬT)</td><td><span class="ev do">[ĐO]</span> cùng lượt grep</td></tr>
+<tr><td>Nền thẻ mặc định bản TỐI (<code>cardFill</code>)</td><td><code>#14ffffff</code> — trắng 8% trên nền <code>#0a0d13</code></td><td><code>KachiPalette.kt:186</code>, <code>:184</code></td></tr>
+<tr><td>Nền ô lõm (<code>field</code>) / ô điều khiển tắt (<code>tile</code>)</td><td><code>#161b24</code> / <code>#242a34</code></td><td><code>KachiPalette.kt:188</code>, <code>:190</code></td></tr>
+<tr><td>Đổ bóng / blur trong launcher</td><td><b>không có</b> (chỉ <code>speedbadge/</code> và bong bóng Cast dùng <code>setShadowLayer</code>)</td><td><span class="ev do">[ĐO]</span> grep <code>setShadowLayer|BlurMaskFilter|RenderEffect|elevation</code> → 3 hit, đều ngoài launcher</td></tr>
+</table>
+<p><span class="ev do">[ĐO]</span> <b>Tỉ lệ 26 : 8.</b> Ba phần tư bề mặt của launcher là <b>một lớp tô đặc + một
+đường viền 1dp</b>. Không có chuyển sắc, không có mép sáng, không có gì nói cho mắt biết thẻ này <i>nổi lên</i> khỏi
+nền — nên khi bảy tám thẻ nằm cạnh nhau trên nền <code>#0a0d13</code> thì màn hình đọc ra đúng như owner nói:
+một mảng xám đều.</p>
+
+<h3>2.2 Hình xe hiện có — đã đúng kiến trúc, chỉ chưa đủ mặt và chưa có chất</h3>
+<p>Kachi <b>đã</b> có một chiếc xe dùng chung giữa icon 24dp và các bảng Canvas cỡ lớn. Đây là tài sản, không phải nợ:</p>
+<ul>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/CarFrames.kt</code> — giữ chuỗi path SVG
+<b>chép nguyên văn</b> từ script sinh icon (<code>TOP_BODY</code> · <code>TOP_GLASS</code> · 4 bánh ·
+8 bộ phận mở được), đọc <b>một lần</b> bằng <code>by lazy</code> qua <code>PathParser</code>
+(<code>CarFrames.kt:46-155</code>). <code>CarFramesSourceContractTest</code> so từng chuỗi ở đây với
+<code>android:pathData</code> trong <code>res/drawable/</code> và đỏ nếu lệch <b>một ký tự</b>
+(<code>CarFrames.kt:26-28</code>).</li>
+<li>Năm bề mặt vẽ hình xe trên <b>1.67 đã phát hành</b>: <code>TyreBoardView</code> · <code>RadarBoardView</code> ·
+<code>SideBoardView</code> · <code>DoorBoardView</code> · <code>CarMiniView</code> <span class="ev do">[ĐO]</span>.
+<br><b>⚠ ADAS-PURGE đang chạy ngay lúc viết spec này</b> <span class="ev do">[ĐO] <code>git status</code> 2026-09-16</span>:
+<code>RadarBoardView.kt</code> và <code>SideBoardView.kt</code> đã bị <b>xoá</b> trong cây làm việc ⇒ khi VISUAL-REFRESH
+bắt đầu sẽ còn <b>ba</b> bề mặt (<code>Tyre</code> · <code>Door</code> · <code>CarMini</code>). Mọi chỗ spec này nói
+“bốn bảng Canvas” phải <b>đếm lại từ mã</b> ở T8, không chép con số này.</li>
+<li>Trạng thái đã được <code>:core</code> quyết trước khi tới tầng vẽ: <code>GroupTone</code> =
+<code>NEUTRAL · ACTIVE · WARN · ALERT</code> (<code>core/…/GroupBoardModel.kt:22-42</code>), bộ phận =
+<code>CarPart</code> 8 giá trị (<code>GroupBoardModel.kt:253-254</code>), bánh = <code>TyreCorner</code>.</li>
+</ul>
+<p><b>Ba thiếu sót đo được</b> <span class="ev do">[ĐO]</span>:</p>
+<ol>
+<li><b>Chỉ có khung TRÊN.</b> <code>CarFrames.kt:36-44</code> nói thẳng: <i>“Khung TRƯỚC/SAU, ô kính và ca-pô
+<b>cố ý chưa đưa vào</b>”</i> — vì một hằng không ai gọi thì không bài canh nào giữ được nó. Khung FRONT/REAR
+<b>có</b> tồn tại nhưng chỉ ở dạng path trong từng tệp <code>ic_car_front_*.xml</code>, không rút ra hằng dùng chung.</li>
+<li><b>Ngữ pháp hình cố ý nghèo.</b> <code>docs/diagnostics/icon-set-v2-inventory-2026-09-13.md §1</code>:
+<i>“NÉT = vật thể, VÙNG TÔ = bộ phận đang được nói tới. Không gradient, không màu riêng, không đổ bóng.”</i>
+Đúng cho ô 24dp; ở bảng Canvas 300–500 px thì đó là một đường viền mảnh giữa ô rộng.</li>
+<li><b>Script sinh hình KHÔNG có trong repo.</b> <code>CarFrames.kt:12-13</code> và
+<code>docs/specs/kachi-car-boards.html:81</code> đều trỏ tới <code>gen_car4.py</code>, nhưng
+<span class="ev do">[ĐO]</span> <code>find . -name "gen_car*"</code> trong <code>byd-launcher/</code> trả về
+<b>rỗng</b>. Tức là hôm nay <b>không ai sinh lại được</b> bộ hình xe — chỉ vá tay từng tệp, đúng cái mà chính header
+mỗi tệp icon cấm (<i>“sửa thì sửa ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp”</i>,
+<code>ic_car_top_tyre_fl.xml</code> dòng 2-3). <b>Đây là cổng kỹ thuật số 1 của track này.</b></li>
+</ol>
+
+<h3>2.3 Ràng buộc HMI ô-tô — vì sao không thể bê thẩm mỹ điện thoại vào</h3>
+<ul>
+<li><b>Khoảng nhìn ~70 cm, liếc ≤ 2 giây.</b> <span class="ev suy">[SUY]</span> Hệ quả trực tiếp: nét mảnh 1.6dp ở
+cỡ 44–56dp là dưới ngưỡng liếc; chi tiết trang trí bên trong icon (vân, chấm, đường phụ) là <b>rác thị giác</b>.
+Luật rút ra cho §R2: chi tiết phải <b>biến mất theo cỡ</b>, không phải thu nhỏ theo cỡ.</li>
+<li><b>Lái đêm.</b> Chủ đề TỐI là mặc định (<code>KachiTheme.palette = KachiPalette.DARK</code>,
+<code>KachiTheme.kt:26</code>). Mọi vùng sáng lớn là nguồn chói — nên <b>không</b> có mảng tô sáng toàn thẻ.</li>
+<li><b>Không chuyển động gây phân tâm.</b> Launcher hiện <b>không</b> chạy animation lặp nào trên màn chính
+<span class="ev do">[ĐO]</span>. Track này <b>không</b> được thêm.</li>
+<li><b>Tương phản chữ ≥ 4.5:1</b> đã được đo và ghim trong mã:
+<ul>
+<li><code>KachiTheme.kt:125-127</code>: trắng trên <code>ACCENT #4c7dff</code> chỉ <b>3.69:1</b> (dưới 4.5) ⇒ nền có
+chữ dùng <code>GRAD_FROM #3f6ae0</code> = <b>4.83:1</b>.</li>
+<li><code>KachiPalette.kt:168-174</code>: <code>lineStrong</code> nâng <code>#26ffffff</code> → <code>#59ffffff</code>
+vì mã cũ chỉ <b>1.49:1</b>; mã mới <b>3.14:1</b> trên nền · <b>3.20:1</b> trên thẻ (mức thấp nhất vượt 3:1).
+<code>emptyLine</code> <code>#42506a</code> → <code>#5b6d8f</code>: 2.36 → <b>3.68:1</b>.</li>
+</ul>
+Đây là <b>sàn không thương lượng</b>: mọi nền mới của §R3 phải đo lại và đạt bằng hoặc hơn.</li>
+<li><b>Phần cứng.</b> minSdk 29 · compileSdk/targetSdk 37 · AGP 9.3.1 · Kotlin 2.4.10
+(<code>app/build.gradle.kts:38-45</code>, <code>build.gradle.kts:5</code>). Đầu máy DiLink 3 là GPU yếu
+<span class="ev doan">[ĐOÁN]</span> — chưa có số GPU thật, xem §R5 để biết cách đo thay vì đoán.</li>
+</ul>
+
+<div class="card">
+<b>Cổng / phụ thuộc (bắt buộc, không được bỏ qua):</b>
+<ul style="margin:8px 0 0">
+<li><b>C1 — Chạy SAU track ADAS-PURGE (backlog mục (N)).</b> <span class="ev do">[ĐO]</span> Track đó xoá
+<code>Domain.SAFETY</code>: <b>17</b> datum (<code>seatbelt_*</code> · <code>oms_*</code> ·
+<code>child_presence</code> · <code>speed_limit_warning</code> · <code>bsd_*</code> · <code>lca_*</code> ·
+<code>rcta_*</code> · <code>dow_*</code> · <code>radar_zones</code> · <code>radar_volume</code> ·
+<code>esp_state</code>) và <b>10</b> nút (<code>adas_*</code> ×8 · <code>itac</code> · <code>avh</code>).
+Vẽ lại 20 hình sắp bị xoá là ném thẳng công sức đi ⇒ VISUAL-REFRESH <b>không bắt đầu T5 (vẽ icon)</b> khi (N) chưa merge.
+Phần <b>T1–T4</b> (bề mặt + token + pipeline) <b>không</b> phụ thuộc (N) và chạy song song được.</li>
+<li><b>C2 — Phải dựng lại <code>gen_car4.py</code> trước khi chạm hình xe</b> (§2.2 mục 3). Không có script thì
+<code>CarFramesSourceContractTest</code> biến thành lời hứa suông: nó so hai bản chép tay với nhau.</li>
+<li><b>C3 — Không đụng <code>:core</code>.</b> Track này là <b>thuần trình bày</b> (§R4). Mọi thay đổi ở
+<code>TelemetryRegistry</code> / <code>ControlRegistry</code> / <code>CapabilityIcons</code> ngoài việc <b>đổi tên hình</b>
+là ra ngoài scope.</li>
+</ul>
+</div>
+
+<h3>2.4 Hiện trạng số lượng — TRƯỚC và SAU ADAS-PURGE</h3>
+<p><span class="ev do">[ĐO]</span> đếm bằng máy trên mã 1.67 (68), 2026-09-16
+(<code>TelemetryRegistry.kt</code> · <code>ControlRegistry.kt</code> · <code>WidgetRegistry.kt</code> ·
+<code>CapabilityGroups.kt</code>):</p>
+<table>
+<tr><th>Lĩnh vực (<code>Domain</code>)</th><th>Datum (xem)</th><th>Nút (bấm)</th><th>Sau ADAS-PURGE</th></tr>
+<tr><td>ENERGY</td><td>28</td><td>4</td><td>28 + 4</td></tr>
+<tr><td>BODY</td><td>18</td><td>18</td><td>18 + 18</td></tr>
+<tr><td>DRIVETRAIN</td><td>14</td><td>5</td><td>14 + <b>3</b> <span class="muted">(−itac −avh)</span></td></tr>
+<tr><td>LIGHTS</td><td>14</td><td>8</td><td>14 + 8</td></tr>
+<tr><td>CLIMATE</td><td>12</td><td>12</td><td>12 + 12</td></tr>
+<tr><td>IDENTITY</td><td>9</td><td>0</td><td>9 + 0</td></tr>
+<tr><td>TYRES</td><td>8</td><td>0</td><td>8 + 0</td></tr>
+<tr><td>INFOTAINMENT</td><td>0</td><td>9</td><td>0 + 9</td></tr>
+<tr><td><b>SAFETY</b></td><td><b>20</b></td><td><b>8</b></td><td><b>3 + 0</b> <span class="muted">(xem ⚠ dưới)</span></td></tr>
+<tr><td><b>TỔNG</b></td><td><b>123</b></td><td><b>64</b></td><td><b>106 + 54 = 160</b></td></tr>
+</table>
+<p>Ngoài ra: <b>9</b> widget (<code>WidgetRegistry.ALL</code>), <b>12</b> nhóm khả năng
+(<code>CapabilityGroups.ALL</code>) — trong đó <b>3</b> nhóm thuộc <code>Domain.SAFETY</code>
+(<code>g_adas</code> · <code>g_occupants</code> · <code>g_parking</code>,
+<code>CapabilityGroups.kt:192,206,220</code>) ⇒ <b>9 nhóm</b> sau purge.</p>
+<div class="card"><b>✓ Dự đoán đã được kiểm chứng ngay trong phiên</b> <span class="ev do">[ĐO] 2026-09-16</span>:
+đếm lại trên <b>cây làm việc</b> (ADAS-PURGE đang chạy song song, chưa commit) cho <b>đúng</b> ba con số cột phải:
+<b>106</b> datum · <b>54</b> nút · <b>9</b> nhóm. Riêng bộ icon <b>vẫn 168 tệp</b> — 20 tệp mồ côi <b>chưa</b> bị xoá.
+⇒ Việc đầu tiên của §R2 là kiểm lại con số này bằng máy, không đọc lại bảng trên.</div>
+
+<div class="card">
+<p style="margin:0"><b>⚠ Hai phát hiện phải chuyển ngược về track ADAS-PURGE</b> (không phải việc của spec này,
+nhưng nếu (N) làm theo đúng danh sách đã nêu thì build sẽ <b>đỏ</b>):</p>
+<ol style="margin:8px 0 0">
+<li><span class="ev do">[ĐO]</span> <b><code>ic_torque</code> và <code>ic_brake</code> KHÔNG được xoá.</b> Chúng nằm
+trong danh sách xoá vì <code>itac</code>/<code>avh</code> dùng, nhưng <b>vẫn còn</b> hai datum
+<code>Domain.DRIVETRAIN</code> trỏ vào: <code>motor_front_torque → ic-torque</code> và
+<code>brake_pct → ic-brake</code> (<code>CapabilityIcons.kt:68,171</code>). Xoá tệp ⇒
+<code>IconStyleContractTest.moi ten icon dung trong ma tra ra duoc mot drawable that</code> đỏ, và
+<code>R.drawable.ic_torque</code> không biên dịch.</li>
+<li><span class="ev do">[ĐO]</span> <b>Danh sách xoá icon còn thiếu 10 tệp</b> thực sự mồ côi sau purge:
+<code>ic_car_top_bsd_l/_r</code> · <code>ic_car_top_lca_l/_r</code> · <code>ic_car_top_rcta_l/_r</code> ·
+<code>ic_car_top_dow_l/_r</code> · <code>ic_car_top_park_all</code> · và (nếu bỏ cả 3 nhóm)
+<code>ic_adas</code>+<code>ic_group_occupants</code>+<code>ic_group_parking</code>.</li>
+</ol>
+<p style="margin:8px 0 0"><b>Phép tính đúng</b> <span class="ev do">[ĐO]</span> (chạy bằng máy, đối chiếu
+<code>CapabilityIcons.EXACT</code> + <code>ControlRegistry</code> + grep toàn `src/main` 3 module):
+<b>20 tệp</b> trở thành mồ côi, <b>4 tên</b> (<code>ic-brake</code> · <code>ic-speed</code> ·
+<code>ic-torque</code> · <code>ic-volume</code>) <b>phải giữ</b>. ⇒ Bộ icon sau purge =
+<b>168 − 20 = 148 tệp</b>, và đó là con số §R2 phải dựng lại.</p>
+</div>
+
+<h2>3. Requirements</h2>
+
+<h3>Chức năng</h3>
+
+<h4>R1 — Bộ hình xe TỔNG HỢP, nhiều mặt, có LỚP đặt tên</h4>
+<p>Dựng <b>ba mặt</b> của một chiếc xe duy nhất: <b>TOP</b> (nhìn từ trên) · <b>FRONT</b> (nhìn từ trước) ·
+<b>SIDE</b> (nhìn ngang). Mỗi mặt là <b>một tệp SVG nguồn duy nhất</b> trong <code>design/car/</code>, trong đó mỗi bộ
+phận là một <code>&lt;path id="…"&gt;</code> có tên; script xuất ra (a) các tệp
+<code>res/drawable/ic_car_*_*.xml</code> và (b) các hằng chuỗi path trong <code>CarFrames.kt</code>.</p>
+<p><b>Bộ phận bắt buộc có tên riêng</b>: thân · kính lái · kính hậu · 4 kính cửa · nóc/cửa sổ trời · rèm · 4 vạt cửa ·
+ca-pô · cốp · 2 gương · 4 bánh · cụm đèn trước (pha · cốt · sương mù · ban ngày · xi-nhan L/R · đèn hông) ·
+cụm đèn sau (sương mù · hậu) · lớp <b>highlight</b> phủ trên cùng.</p>
+<p><b>Acceptance criteria</b>:</p>
+<ul>
+<li>AC1.1 — <code>ls design/car/*.svg</code> trả về đúng <b>3</b> tệp; <b>không</b> tệp
+<code>res/drawable/ic_car_*.xml</code> nào chứa path không sinh ra từ ba tệp đó (khoá bằng test T10).</li>
+<li>AC1.2 — <code>CarFrames</code> khai đủ 3 khung + mọi bộ phận ở trên, và
+<code>CarFramesSourceContractTest</code> (mở rộng) so <b>từng ký tự</b> chuỗi path với
+<code>android:pathData</code> tương ứng, <b>và</b> với tệp SVG nguồn. Lệch 1 ký tự ⇒ đỏ.</li>
+<li>AC1.3 — Mọi hằng mới trong <code>CarFrames</code> có <b>≥ 1 chỗ gọi</b> ngoài định nghĩa
+(<code>grep -rn "&lt;tênHằng&gt;" app/src/main/java/</code> — CLAUDE.md §8). Hằng chưa ai gọi ⇒ <b>không thêm</b>.</li>
+<li>AC1.4 — Bốn bảng Canvas (<code>TyreBoardView</code> · <code>SideBoardView</code> · <code>DoorBoardView</code> ·
+<code>CarMiniView</code>) vẽ bằng <code>CarFrames</code>, <b>không</b> còn <code>drawRoundRect</code>/<code>drawLine</code>
+tự chế cho thân xe. Khoá bằng test quét mã: 0 hit <code>drawRoundRect</code> trong 4 tệp đó.</li>
+<li>AC1.5 — Mỗi bộ phận tô được <b>độc lập</b> theo <code>GroupTone</code> qua bảng <code>CarPartStyle</code> (§4.4);
+đổi một bộ phận không đụng bộ phận khác.</li>
+<li>AC1.6 — Tầng vẽ đi qua giao diện <code>CarArtSource</code> (§4.8), <b>không</b> gọi thẳng
+<code>CarFrames</code>. Chứng minh bằng một test dựng nguồn giả: đổi nguồn ảnh ⇒ <code>CarPartStyle</code> và bốn
+bảng Canvas <b>không sửa một dòng</b>.</li>
+<li>AC1.7 — Gradient, màu riêng, độ mờ được dùng ở <b>mọi cỡ</b> (hình xe lẫn icon 24dp) — owner 2026-09-16 bỏ luật cấm.
+Ràng buộc kỹ thuật duy nhất: hình vẫn phải đọc được trên cả nền TỐI và SÁNG (đo tương phản §6.4) và không dùng
+<code>BlurMaskFilter</code>/shadow layer lúc chạy (AC5.2).</li>
+</ul>
+
+<h4>R2 — Dựng lại TOÀN BỘ bộ icon theo phong cách “luxury”, vẫn tint được</h4>
+<p>Phạm vi: <b>148 tệp</b> <code>ic_*.xml</code> sau ADAS-PURGE (§2.4), phủ <b>106 datum + 54 nút + 9 widget +
+9 nhóm</b> = <b>178 mục</b> có hình.</p>
+<p><b>Phong cách mới — tự do sáng tạo, đứng vai người lái</b> (owner 2026-09-16: <i>“cho gradient hay làm sao cho đẹp
+được thì làm, không cần rule cấm gì đâu, thoả mái sáng tạo, đứng vai user mà design”</i>): icon được dùng <b>gradient</b>,
+<b>màu riêng</b> (họ màu theo lĩnh vực: khí hậu xanh-lam, năng lượng xanh-lục/hổ phách, đèn vàng ấm, thân xe bạc…),
+nhiều <b>lớp</b> với độ mờ khác nhau, điểm sáng (specular) vẽ sẵn bằng gradient toả. Thứ được giữ không phải luật mà là
+<b>tính nhất quán</b> (một ngữ pháp cho cả bộ — cùng bo góc, cùng hướng ánh sáng trên-trái, cùng thang độ mờ) và
+<b>hợp đồng kỹ thuật</b> với chỗ dùng: trạng thái chọn/chưa chọn phải nhìn ra được (bằng bề mặt ô + lớp phủ tint, không
+còn dựa vào <code>setTint</code> đơn sắc), chủ đề SÁNG không được làm hình chìm (mỗi icon có kiểm tương phản trên hai nền).
+<span class="ev suy">[SUY]</span> “9 độ dày nét” hồi trước là bệnh <i>thiếu ngữ pháp</i>, không phải bệnh <i>có màu</i> —
+nên thuốc là bảng ngữ pháp + script sinh, không phải cấm màu.</p>
+<p><b>Acceptance criteria</b>:</p>
+<ul>
+<li>AC2.1 — Thang alpha <b>đúng 3 bậc</b>: <code>1.0</code> (hình chính) · <code>0.38</code> (khối phụ) ·
+<code>0.16</code> (nền/ngữ cảnh). Giá trị ngoài thang ⇒ test đỏ.</li>
+<li>AC2.2 — Nét: <b>hai</b> độ dày được phép, không nhiều hơn — <code>1.8</code> (đường chính) và <code>1.2</code>
+(đường phụ), thay cho <code>1.6</code> duy nhất. Lý do: <span class="ev suy">[SUY]</span> phân cấp trong một hình cần
+tối thiểu hai bậc; ba bậc trở lên là quay về “9 độ dày”.</li>
+<li>AC2.3 — <code>strokeLineCap</code>/<code>strokeLineJoin</code> = <code>round</code> trên <b>mọi</b> đường có nét
+(luật cũ giữ nguyên, <code>IconStyleContractTest.kt:114-115</code>).</li>
+<li>AC2.4 — Khung 24×24, ô quang học 20×20 (luật cũ giữ nguyên); thêm <b>biến thể 32 và 48</b> cho các mặt lớn
+(thẻ widget, đầu nhóm) sinh <b>từ cùng SVG nguồn</b> bằng cách <i>bỏ bớt</i> chi tiết, không phải phóng to
+(§2.3 “chi tiết phải biến mất theo cỡ”).</li>
+<li>AC2.5 — Màu riêng/gradient được phép; mỗi icon khai <b>họ màu theo lĩnh vực</b> trong bảng ngữ pháp (một nơi,
+<code>design/icon-grammar.json</code>) — icon dùng màu ngoài họ của lĩnh vực mình ⇒ test đỏ (nhất quán, không phải cấm).</li>
+<li>AC2.6 — Trạng thái chọn/không-chọn nhìn ra được ở <b>mọi</b> chỗ dùng icon (ô picker, dock, chip, widget): bề mặt ô
+đổi (accent) <b>và</b> icon chưa chọn hạ độ mờ/độ bão hoà qua <code>ColorMatrixColorFilter</code> hoặc lớp phủ, không dựa vào
+<code>setTint</code> đơn sắc (kiểm bằng ảnh chụp máy ảo, §6; đo Δ độ sáng ≥ 20 % giữa hai trạng thái).</li>
+<li>AC2.7 — <b>Mọi</b> id trong 4 registry tra ra một drawable có thật; 0 icon mồ côi; 0 dòng bảng tra chết
+(<code>IconStyleContractTest</code> mục 5 + mục 7 vẫn xanh).</li>
+<li>AC2.8 — Trong <b>một</b> lĩnh vực, không hình nào mang quá <code>CapabilityIcons.MAX_PER_DOMAIN = 3</code> ô
+(<code>CapabilityIcons.kt:199</code>) — <b>không được xấu đi</b> so với bản 1.67.</li>
+</ul>
+
+<h4>R3 — Bề mặt widget: thay lớp tô phẳng bằng CHẤT LIỆU nhiều lớp</h4>
+<p>Thêm <b>một</b> hàm dựng nền mới trong <code>KachiTheme</code> — <code>surface(ctx, radius, state)</code> — gồm
+ba lớp: (1) chuyển sắc <b>dọc</b> hai chặng, (2) hairline 1dp viền ngoài, (3) mép trên sáng
+(<i>inner top highlight</i>) 1dp. Trạng thái <code>ACTIVE</code> thêm mép nhấn màu <code>ACCENT_LINE</code>.</p>
+<p><b>Acceptance criteria</b>:</p>
+<ul>
+<li>AC3.1 — Mọi mã màu mới nằm <b>trong <code>KachiPalette</code></b> và <b>chỉ</b> ở đó. Bài canh
+<code>ThemePaletteContractTest</code> (“0 hex trong <code>launcher/</code>”) vẫn xanh.</li>
+<li>AC3.2 — <b>Cả hai</b> bảng (DARK và LIGHT) có đủ token mới; chuyển chủ đề lúc chạy vẫn đổi được
+(<code>KachiTheme.applyTheme</code> là chỗ ghi duy nhất, <code>KachiTheme.kt:36-41</code>).</li>
+<li>AC3.3 — <b>Tương phản không được xấu đi.</b> Bảng đo (§6.4) cho mọi cặp chữ/nền mới: chữ chính ≥ <b>4.5:1</b>,
+viền/kết cấu ≥ <b>3:1</b>. Đo trên <b>cả hai đầu</b> của mỗi gradient, không phải màu trung bình
+<span class="ev suy">[SUY]</span> — chữ nằm trên một điểm cụ thể, không nằm trên giá trị trung bình.</li>
+<li>AC3.4 — <code>KachiTheme.card()</code> <b>không bị xoá</b>: nó vẫn là bề mặt của ô lõm/danh sách. Chỉ <b>26</b>
+chỗ gọi được rà, chỗ nào là <i>thẻ nội dung</i> thì chuyển sang <code>surface()</code>, chỗ nào là <i>ô lõm</i> thì giữ.
+Danh sách chuyển/không chuyển ghi vào §9 khi làm.</li>
+<li>AC3.5 — <b>Không</b> dùng <code>RenderEffect</code>, <code>BlurMaskFilter</code>, <code>setShadowLayer</code> hay
+<code>elevation</code> cho bề mặt widget (§R5).</li>
+</ul>
+
+<h4>R4 — Không đổi hành vi (thuần trình bày)</h4>
+<ul>
+<li>AC4.1 — <b>0</b> thay đổi trong <code>:core</code> ngoài việc đổi <i>chuỗi tên hình</i> (<code>"ic-…"</code>).
+Không thêm/bớt/đổi id, nhãn, <code>bindingKey</code>, <code>domain</code>, <code>tier</code>.</li>
+<li>AC4.2 — <b>0</b> thay đổi trong <code>car-integration/</code>.</li>
+<li>AC4.3 — Toàn bộ suite <code>:core</code> và <code>:app</code> xanh <b>không sửa một assertion hành vi nào</b>;
+chỉ các bài về <i>phong cách hình</i> được cập nhật (T10).</li>
+<li>AC4.4 — Track này <b>không cần xe để làm</b>; chỉ cần xe để owner ngắm lần cuối (§6.5).</li>
+</ul>
+
+<h3>Phi chức năng</h3>
+
+<h4>R5 — Ngân sách hiệu năng trên đầu máy (TRINKET / DiLink 3)</h4>
+<ul>
+<li>AC5.1 — <b>Trần số path</b>: icon 24dp ≤ <b>6</b> <code>&lt;path&gt;</code>; biến thể 32/48dp ≤ <b>10</b>;
+hình xe của bảng Canvas ≤ <b>28</b> path cho cả khung + mọi bộ phận. Đếm bằng máy trong test.</li>
+<li>AC5.2 — <b>Cấm</b> mọi hiệu ứng tốn GPU lúc chạy: <code>RenderEffect</code> · <code>BlurMaskFilter</code> ·
+<code>setShadowLayer</code> · <code>Paint.setMaskFilter</code> · <code>elevation</code> trên bề mặt launcher.
+Khoá bằng test quét mã (giữ nguyên miễn trừ cho <code>speedbadge/</code> và bong bóng Cast — hai bề mặt đó đã chạy
+ổn trên xe, CLAUDE.md §6 <i>“không đảo thứ tự đường đã chạy tốt”</i>).</li>
+<li>AC5.3 — <code>GradientDrawable</code> nhiều chặng dựng <b>một lần</b> rồi dùng lại, không dựng trong
+<code>onDraw</code>/mỗi nhịp trạng thái (nhịp trên xe là 1 Hz — <code>KachiTheme.kt:33-34</code>).</li>
+<li>AC5.4 — Đo <code>dumpsys gfxinfo</code> <b>trước/sau</b> theo đúng cách đọc số đã học:
+<span class="ev do">[ĐO]</span> <code>docs/diagnostics/perf-profile-2026-09-16.md:212-213</code> ghi rõ máy ảo đứng yên
+chỉ vẽ 19–26 khung ⇒ <code>Janky frames %</code> là <b>nhiễu</b>, không so được. Phép đo hợp lệ phải là
+<b>một kịch bản cuộn/chạm cố định</b> (§6.2), và số dùng để so là <b>50th/90th/95th percentile</b> trên ≥ 300 khung,
+không phải % jank.</li>
+<li>AC5.5 — <b>Δ kích thước APK ≤ +350 KB</b> so với 1.67 (68). VectorDrawable là XML nén; nếu vượt thì nguyên nhân
+gần như chắc là path chưa giản lược <span class="ev suy">[SUY]</span> ⇒ quay lại chỉnh precision ở script, không nới trần.</li>
+</ul>
+
+<h4>R6 — Bài canh (tests)</h4>
+<ul>
+<li>AC6.1 — <code>IconStyleContractTest</code> cập nhật sang luật mới (thang alpha 3 bậc · 2 độ dày nét · trần số path)
+và <b>giữ nguyên</b> mọi luật cũ còn đúng (cap/join tròn · khung 24 · không màu riêng · không mồ côi · mọi tên tra được).</li>
+<li>AC6.2 — <b>Bài mới</b> <code>IconSetInventoryTest</code>: với <b>mọi</b> id trong
+<code>TelemetryRegistry</code> ∪ <code>ControlRegistry</code> ∪ <code>WidgetRegistry</code> ∪
+<code>CapabilityGroups</code> ∪ <code>ActionMacros</code>, <code>KachiTheme.iconRes</code> phải tra ra <b>≠ 0</b>.
+<span class="ev do">[ĐO]</span> Hôm nay <b>không tồn tại</b> lớp/tệp nào tên <code>IconSetInventory</code> trong repo
+(grep toàn repo → 0 hit) — bài mục 7 của <code>IconStyleContractTest</code> phủ <i>gần</i> việc này nhưng đi <b>từ bảng
+tra ra</b>, còn bài mới đi <b>từ registry vào</b>. Hai chiều bắt hai loại lỗi khác nhau.</li>
+<li>AC6.3 — <b>Bài mới</b> <code>CarPartStyleTest</code> (<code>:core</code> thuần): mọi
+<code>CarPart</code> × <code>GroupTone</code> tra ra đúng một token; không cặp nào rơi vào nhánh mặc định im lặng.</li>
+<li>AC6.4 — <code>CarFramesSourceContractTest</code> mở rộng sang FRONT/SIDE + so với SVG nguồn (AC1.2).</li>
+<li>AC6.5 — Ảnh chụp máy ảo theo ma trận §6.1, lưu vào <code>docs/diagnostics/visual-refresh-&lt;ngày&gt;/</code>.</li>
+<li>AC6.6 — Bảng đo tương phản §6.4 sinh <b>bằng máy</b> từ <code>KachiPalette</code> (một script tính tỉ số WCAG),
+không chép tay — chép tay là cách bảng màu và tài liệu lệch nhau.</li>
+</ul>
+
+<h4>R7 — Icon APP = hoa anh đào (owner 2026-09-16: <i>“icon app dùng hoa anh đào nhé”</i>)</h4>
+<p>Hiện trạng [ĐO]: adaptive icon <code>mipmap-anydpi-v26/ic_launcher.xml</code> = nền accent (<code>launcher_bg</code>) +
+hình “1 ô lớn + 2 ô nhỏ” (<code>launcher_fg</code>, 2026-09-13); bản silhouette 24dp <code>drawable/ic_launcher.xml</code>
+dùng làm <b>smallIcon thông báo</b> (4 service) — hệ thống tô trắng, chỉ nhận hình đơn sắc.</p>
+<p><b>Yêu cầu</b>: hình hoa anh đào (5 cánh khía đầu, nhị giữa) làm <b>foreground</b> adaptive icon; nền gradient hồng
+phấn → tím than (hoặc theo họ màu app), có khối theo cùng ngữ pháp §4.1; giữ vùng an toàn adaptive (hình nằm trong 66/108
+giữa). Silhouette 24dp cho thông báo = cùng bông hoa, một tông trắng (không đổi hợp đồng smallIcon).</p>
+<ul>
+<li>AC7.1 — <code>launcher_fg</code>/<code>launcher_bg</code> vẽ lại; <code>ic_launcher.xml</code> 24dp là cùng dáng hoa
+đơn sắc; ảnh máy ảo ở ngăn kéo app của xe (icon 48/72dp) + thông báo thanh trạng thái, cả tối/sáng.</li>
+<li>AC7.2 — Bông hoa nhận ra được ở <b>36dp</b> (cỡ nhỏ nhất trong ngăn kéo BYD [ĐOÁN]) — kiểm bằng ảnh thu nhỏ, không
+kiểm bằng mắt trên màn 27".</li>
+<li>AC7.3 — Không đổi tên gói / nhãn app; không ảnh hưởng HOME-alias (GUI-install) — bài canh hiện có vẫn xanh.</li>
+</ul>
+<p>Xếp vào <b>P1</b> (nhìn thấy ngay, độc lập với bộ icon chức năng).</p>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện <b>song song</b> với code. Mọi bản vẽ dưới đây là HTML/SVG nội tuyến
+(workflow.md §3.1).</p>
+
+<h3>4.1 Hướng thẩm mỹ — “EV hạng sang”, không mượn nhận diện hãng</h3>
+<p><b>Ba chữ chốt hướng</b>: <b>sâu</b> (bề mặt có lớp, không phẳng) · <b>tĩnh</b> (không chuyển động) ·
+<b>sạch</b> (chi tiết ít, hình học tròn đều). <b>Không</b> dùng logo, phông chữ, hình dáng xe hay bảng màu nhận diện
+của BYD hay bất kỳ hãng nào — hình xe là một <b>hình chung chung</b> đủ để người lái nhận ra “đây là xe tôi”,
+không phải chân dung một mẫu xe.</p>
+<p><b>Bảng màu = MỞ RỘNG cái đang có, không thay.</b> <code>ACCENT #4c7dff</code> → <code>ACCENT2 #7b5cff</code>
+(xanh→tím) đã là trục nhận diện của Kachi <span class="ev do">[ĐO]</span> <code>KachiPalette.kt:204-206</code>.
+Track này chỉ thêm <b>các bậc trung gian</b> để dựng chất liệu:</p>
+<div class="swatches">
+  <span class="sw2"><i style="background:#0a0d13"></i><code>bg</code><br>#0a0d13</span>
+  <span class="sw2"><i style="background:linear-gradient(180deg,#1d232e,#12161e)"></i><b>surfFrom→To</b><br>MỚI</span>
+  <span class="sw2"><i style="background:#14ffffff"></i><code>cardFill</code><br>#14ffffff</span>
+  <span class="sw2"><i style="background:#4c7dff"></i><code>accent</code><br>#4c7dff</span>
+  <span class="sw2"><i style="background:#7b5cff"></i><code>accent2</code><br>#7b5cff</span>
+  <span class="sw2"><i style="background:linear-gradient(135deg,#3f6ae0,#6b4ce6)"></i><code>grad*</code><br>chữ 4.83:1</span>
+</div>
+<p><b>Token mới đề xuất</b> (đặt vào <code>KachiPalette</code>, đủ cho cả DARK và LIGHT):</p>
+<table>
+<tr><th>Token</th><th>Vai</th><th>DARK (đề xuất)</th><th>Ghi chú</th></tr>
+<tr><td><code>surfFrom</code></td><td>đỉnh chuyển sắc của thẻ nội dung</td><td><code>#1d232e</code></td><td>sáng hơn <code>card</code> một bậc</td></tr>
+<tr><td><code>surfTo</code></td><td>đáy chuyển sắc</td><td><code>#12161e</code></td><td>tối hơn <code>card</code> một bậc</td></tr>
+<tr><td><code>surfEdge</code></td><td>mép trên sáng 1dp</td><td><code>#24ffffff</code></td><td>tạo cảm giác lồi, không phải bóng đổ</td></tr>
+<tr><td><code>surfOnFrom</code>/<code>surfOnTo</code></td><td>thẻ ở trạng thái ACTIVE</td><td><code>#5c4c7dff</code>/<code>#287b5cff</code></td><td>cùng họ <code>tileOn*</code> đang có</td></tr>
+<tr><td><code>partFill</code>/<code>partLine</code></td><td>vùng tô / nét bộ phận xe ở tone NEUTRAL</td><td><code>#33ffffff</code>/<code>#8caeb8c8</code></td><td>để §4.4 có gốc chung</td></tr>
+</table>
+<p class="warn"><span class="ev doan">[ĐOÁN]</span> Sáu mã hex trên là <b>điểm khởi đầu</b>, chưa đo tương phản.
+Chúng phải đi qua bảng §6.4 và có thể đổi. Không được coi là đã chốt.</p>
+
+<h3>4.2 Ngữ pháp hình của bộ icon mới</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>Lớp 1 — NỀN</b><span><code>fillAlpha 0.16</code><br>khối ngữ cảnh (thân xe, vỏ thiết bị)</span></div>
+    <div class="node"><b>Lớp 2 — PHỤ</b><span><code>fillAlpha 0.38</code> / nét <code>1.2</code><br>chi tiết bổ nghĩa</span></div>
+    <div class="node new"><b>Lớp 3 — CHÍNH</b><span><code>alpha 1.0</code> / nét <code>1.8</code><br>thứ mà icon đang nói tới</span></div>
+  </div>
+</div>
+<p><b>Luật</b> (mỗi luật là một dòng trong <code>IconStyleContractTest</code> mới):</p>
+<ol>
+<li><b>Một icon = tối đa 3 lớp.</b> Mắt ở 70 cm không tách được lớp thứ tư <span class="ev suy">[SUY]</span>.</li>
+<li><b>Lớp CHÍNH luôn tồn tại và luôn <code>alpha 1.0</code></b> — nếu tint về một màu duy nhất thì lớp này là thứ
+còn đọc được.</li>
+<li><b>Bo góc hình học ≥ 1.0 đơn vị</b> ở mọi góc lồi của khối tô. <span class="ev suy">[SUY]</span> Góc nhọn là thứ
+làm hình trông “cắt bằng kéo”; bo đều là thứ tạo cảm giác đắt tiền.</li>
+<li><b>Canh quang học, không canh hình học</b>: khối nặng thị giác (tam giác, mũi tên) dịch để <i>trông</i> giữa ô
+20×20, không phải để tâm hộp bao trùng tâm ô.</li>
+<li><b>Không “glow” vẽ sẵn trong tệp.</b> Ánh sáng là việc của <b>bề mặt</b> (§4.5), không phải của hình — vẽ quầng
+sáng vào icon là ghim một màu vào tệp, phá hợp đồng tint. Cần nhấn thì dùng lớp NỀN <code>0.16</code>.</li>
+<li><b>Ba cỡ, ba mức chi tiết</b>: 24dp = lớp CHÍNH (+ PHỤ nếu còn đọc được) · 32dp = 3 lớp đầy đủ ·
+48dp = 3 lớp + bo góc rộng hơn. Sinh từ cùng nguồn, khác nhau ở <i>bộ lọc chi tiết</i> của script.</li>
+</ol>
+
+<h3>4.3 Kiến trúc lớp của hình xe</h3>
+<p>Một tệp SVG nguồn cho mỗi mặt; mỗi nhóm là một lớp có tên; thứ tự vẽ từ dưới lên:</p>
+<div class="diagram">
+<svg viewBox="0 0 760 330" role="img" aria-label="Kiến trúc lớp của hình xe: nguồn SVG một tệp mỗi mặt, tách thành 6 lớp có tên, xuất ra hai đích là res/drawable và CarFrames.kt">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.4" font-family="-apple-system,system-ui,sans-serif">
+
+    <!-- nguồn -->
+    <rect x="8" y="112" width="132" height="86" rx="12" opacity=".5"/>
+    <text x="74" y="142" text-anchor="middle" font-size="13" font-weight="650" fill="currentColor" stroke="none">design/car/</text>
+    <text x="74" y="161" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">top.svg</text>
+    <text x="74" y="176" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">front.svg</text>
+    <text x="74" y="191" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">side.svg</text>
+
+    <line x1="142" y1="155" x2="186" y2="155" marker-end="url(#ar)" color="#4c7dff" stroke="#4c7dff"/>
+
+    <!-- 6 lớp xếp chồng -->
+    <g>
+      <rect x="192" y="34" width="250" height="34" rx="9" fill="#4c7dff" fill-opacity=".14" stroke="#4c7dff" stroke-opacity=".5"/>
+      <text x="204" y="56" font-size="12.5" font-weight="650" fill="currentColor" stroke="none">6 · highlight</text>
+      <text x="430" y="56" font-size="11" text-anchor="end" fill="currentColor" stroke="none" opacity=".65">lớp nhấn theo trạng thái</text>
+
+      <rect x="192" y="76" width="250" height="34" rx="9" opacity=".55"/>
+      <text x="204" y="98" font-size="12.5" font-weight="650" fill="currentColor" stroke="none">5 · doors</text>
+      <text x="430" y="98" font-size="11" text-anchor="end" fill="currentColor" stroke="none" opacity=".65">4 vạt · cốp · ca-pô · gương</text>
+
+      <rect x="192" y="118" width="250" height="34" rx="9" opacity=".55"/>
+      <text x="204" y="140" font-size="12.5" font-weight="650" fill="currentColor" stroke="none">4 · tyres</text>
+      <text x="430" y="140" font-size="11" text-anchor="end" fill="currentColor" stroke="none" opacity=".65">FL · FR · RL · RR</text>
+
+      <rect x="192" y="160" width="250" height="34" rx="9" opacity=".55"/>
+      <text x="204" y="182" font-size="12.5" font-weight="650" fill="currentColor" stroke="none">3 · lights</text>
+      <text x="430" y="182" font-size="11" text-anchor="end" fill="currentColor" stroke="none" opacity=".65">pha · cốt · sương mù · xi-nhan…</text>
+
+      <rect x="192" y="202" width="250" height="34" rx="9" opacity=".55"/>
+      <text x="204" y="224" font-size="12.5" font-weight="650" fill="currentColor" stroke="none">2 · glass</text>
+      <text x="430" y="224" font-size="11" text-anchor="end" fill="currentColor" stroke="none" opacity=".65">kính lái · hậu · 4 kính cửa · nóc</text>
+
+      <rect x="192" y="244" width="250" height="34" rx="9" opacity=".55"/>
+      <text x="204" y="266" font-size="12.5" font-weight="650" fill="currentColor" stroke="none">1 · body</text>
+      <text x="430" y="266" font-size="11" text-anchor="end" fill="currentColor" stroke="none" opacity=".65">thân — NÉT, luôn hiện</text>
+    </g>
+
+    <line x1="444" y1="155" x2="492" y2="155" marker-end="url(#ar)" color="#4c7dff" stroke="#4c7dff"/>
+
+    <!-- hai đích -->
+    <rect x="498" y="70" width="240" height="72" rx="12" opacity=".5"/>
+    <text x="618" y="98" text-anchor="middle" font-size="13" font-weight="650" fill="currentColor" stroke="none">res/drawable/ic_car_*.xml</text>
+    <text x="618" y="118" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">icon 24 · 32 · 48 dp</text>
+    <text x="618" y="134" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">1 bộ phận nổi + phần còn lại mờ</text>
+
+    <rect x="498" y="168" width="240" height="72" rx="12" opacity=".5"/>
+    <text x="618" y="196" text-anchor="middle" font-size="13" font-weight="650" fill="currentColor" stroke="none">CarFrames.kt</text>
+    <text x="618" y="216" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">hằng chuỗi path · parse 1 lần</text>
+    <text x="618" y="232" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">4 bảng Canvas cỡ lớn</text>
+
+    <path d="M470,150 L470,106 L494,106" marker-end="url(#ar)" color="#4c7dff" stroke="#4c7dff" fill="none"/>
+    <path d="M470,160 L470,204 L494,204" marker-end="url(#ar)" color="#4c7dff" stroke="#4c7dff" fill="none"/>
+
+    <text x="380" y="308" text-anchor="middle" font-size="11.5" fill="currentColor" stroke="none" opacity=".7">
+      CarFramesSourceContractTest so từng ký tự: SVG nguồn ↔ pathData ↔ hằng Kotlin
+    </text>
+  </g>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+</div>
+<p><b>Vì sao “một nguồn, hai đích” chứ không hai bộ hình</b>: đây đúng là bài học đã đóng vào
+<code>CarFrames.kt:16-20</code> — trước U9 có <b>hai chiếc xe</b> trên cùng một màn hình (icon vẽ thân thuôn mũi, ba
+bảng lớn tự <code>drawRoundRect</code>). Track này <b>không được</b> tạo ra chiếc thứ ba.</p>
+
+<h3>4.4 <code>CarPartStyle</code> — bộ phận × trạng thái → token màu</h3>
+<p>Bảng <b>thuần <code>:core</code></b> (test off-car), là <b>nơi duy nhất</b> quyết định một bộ phận trông thế nào.
+Tầng vẽ chỉ tra bảng rồi tô — nó <b>không phán xét gì</b> (đúng luật đang có:
+<code>GroupBoardModel.kt:275-277</code> <i>“tô khi nào là một câu hỏi về dữ liệu”</i>).</p>
+<table>
+<tr><th>Bộ phận</th><th>NEUTRAL</th><th>ACTIVE</th><th>WARN</th><th>ALERT</th></tr>
+<tr><td><b>body</b> (thân)</td><td>nét <code>partLine</code></td><td>nét <code>partLine</code></td><td>nét <code>partLine</code></td><td>nét <code>partLine</code></td></tr>
+<tr><td><b>glass</b> (kính, nóc)</td><td>tô <code>partFill</code></td><td>tô <code>ACCENT_WASH</code></td><td>tô <code>AMBER_SOFT</code></td><td>tô <code>RED</code> α.35</td></tr>
+<tr><td><b>door</b> ×4, cốp, ca-pô</td><td>không tô</td><td>tô <code>ACCENT_SOFT</code></td><td>tô <code>AMBER</code> α.30</td><td>tô <code>RED</code> α.40 + nét <code>RED</code></td></tr>
+<tr><td><b>tyre</b> ×4</td><td>tô <code>partFill</code></td><td>tô <code>ACCENT</code></td><td>tô <code>AMBER</code></td><td>tô <code>RED</code></td></tr>
+<tr><td><b>light</b> (mỗi cụm)</td><td>nét <code>MUT2</code></td><td>tô <code>ACCENT</code> + <code>surfEdge</code></td><td>tô <code>AMBER</code></td><td>tô <code>RED</code></td></tr>
+<tr><td><b>mirror</b></td><td>không tô</td><td>tô <code>ACCENT_SOFT</code> (gập)</td><td>—</td><td>—</td></tr>
+<tr><td><b>highlight</b> (lớp 6)</td><td>ẩn</td><td>viền <code>ACCENT_LINE</code></td><td>viền <code>AMBER</code></td><td>viền <code>RED</code></td></tr>
+<tr><td colspan="5"><i>chưa đọc được</i> (<code>available = false</code>) — <b>mọi</b> bộ phận: nét <code>DIM</code>, không tô, <b>không</b> bịa trạng thái đóng (luật đã có: <code>GroupBoardModel.kt:278</code>)</td></tr>
+</table>
+<p><b>Luật của bảng</b>: (a) mọi cặp (bộ phận × tone × available) phải tra ra <b>đúng một</b> kết quả — không có nhánh
+mặc định im lặng (AC6.3); (b) bảng trả về <b>tên token</b>, không phải mã hex — mã hex chỉ sống trong
+<code>KachiPalette</code>; (c) <code>ALERT</code> luôn là thứ <b>đậm nhất</b> trên hình, kể cả khi có bộ phận
+<code>ACTIVE</code> ở cạnh (đúng tinh thần <code>GroupTone.isLoud</code>, <code>GroupBoardModel.kt:36-41</code>).</p>
+
+<h3>4.5 Chất liệu bề mặt — đặc tả + mockup TRƯỚC/SAU</h3>
+<p>Hai thẻ dưới đây dựng bằng <b>đúng</b> mã màu của <code>KachiPalette.DARK</code> (nền <code>#0a0d13</code>,
+<code>cardFill #14ffffff</code>, <code>line #17ffffff</code>, <code>accent #4c7dff</code>) nên chênh lệch nhìn thấy ở
+đây là chênh lệch sẽ thấy trên xe <span class="ev suy">[SUY]</span> — trừ khác biệt gamma của màn hình đầu máy,
+việc phải xác nhận ở §6.5.</p>
+<div class="mock">
+  <div class="mockcol">
+    <h4>TRƯỚC — <code>KachiTheme.card()</code> (26 chỗ gọi)</h4>
+    <div class="stage">
+      <div class="w before"><span class="wl">Pin</span><span class="wv">78</span><span class="wu">%</span></div>
+      <div class="w before"><span class="wl">Tầm đi</span><span class="wv">312</span><span class="wu">km</span></div>
+      <div class="w before on"><span class="wl">Điều hoà</span><span class="wv">Bật</span></div>
+    </div>
+    <p class="muted" style="font-size:13px">Một lớp tô đặc (trắng 8%) + viền 1dp. Thẻ và nền khác nhau đúng 8% độ sáng ⇒
+    ở ánh sáng ban ngày trong xe, ranh giới gần như biến mất.</p>
+  </div>
+  <div class="mockcol">
+    <h4>SAU — <code>KachiTheme.surface()</code></h4>
+    <div class="stage">
+      <div class="w after"><span class="wl">Pin</span><span class="wv">78</span><span class="wu">%</span></div>
+      <div class="w after"><span class="wl">Tầm đi</span><span class="wv">312</span><span class="wu">km</span></div>
+      <div class="w after on"><span class="wl">Điều hoà</span><span class="wv">Bật</span></div>
+    </div>
+    <p class="muted" style="font-size:13px">Ba lớp: chuyển sắc dọc 11.5% → 4.5% · hairline ngoài <code>line</code> ·
+    mép trên sáng 14%. Thẻ <b>lồi</b> lên khỏi nền mà không cần bóng đổ ⇒ 0 chi phí GPU thêm (§R5).</p>
+  </div>
+</div>
+<p><b>Đặc tả <code>surface()</code></b> — dựng bằng <code>GradientDrawable</code> có sẵn của Android, không thư viện mới:</p>
+<pre>fun surface(ctx, radius: Int, state: SurfaceState): Drawable
+  lớp 0 (nền)   GradientDrawable(TOP_BOTTOM, [surfFrom, surfTo]) · cornerRadius = radius
+                + setStroke(HAIRLINE, LINE)                    ← hairline NGOÀI
+  lớp 1 (mép)   GradientDrawable(TOP_BOTTOM, [surfEdge, CLEAR]) · cornerRadii chỉ 2 góc TRÊN
+                inset đúng 1dp                                 ← mép sáng, KHÔNG phải bóng
+  state=ACTIVE  lớp 0 dùng [surfOnFrom, surfOnTo]; stroke = ACCENT_LINE
+  ⇒ LayerDrawable 2 lớp, dựng MỘT LẦN (AC5.3), 0 blur / 0 shadow / 0 elevation (AC5.2)</pre>
+<p><b>Vì sao chuyển sắc DỌC chứ không chéo</b>: <code>KachiTheme.gradient()</code> đang dùng
+<code>TL_BR</code> (chéo) cho <b>nút/pill đang chọn</b> (<code>KachiTheme.kt:129-132</code>). Giữ chéo = nhận diện của
+<i>“cái đang được chọn”</i>, dọc = nhận diện của <i>“bề mặt”</i> ⇒ hai vai không lẫn nhau. Đây là lý do
+chức năng, không phải sở thích.</p>
+
+<h3>4.6 Đường ống tài sản (asset pipeline)</h3>
+<div class="flow">
+  <div class="fnode new"><b>design/</b><span>SVG nguồn<br>(người vẽ sửa ở đây)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>scripts/design/<br>gen-icons.py</b><span>lọc chi tiết theo cỡ<br>làm tròn precision</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>res/drawable/</b><span>ic_*.xml<br>24 · 32 · 48 dp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>CarFrames.kt</b><span>hằng path<br>(sinh, không gõ tay)</span></div>
+</div>
+<p><b>Quyết định</b>: script <b>Python</b>, đặt tại <code>scripts/design/gen-icons.py</code>, và nó <b>thay thế</b>
+<code>gen_car4.py</code> đã thất lạc (§2.2 mục 3). Lý do chọn Python thay vì công cụ ngoài:</p>
+<ul>
+<li>Repo đã có sẵn thói quen script Python (<code>scripts/count-tests.py</code>,
+<code>scripts/spacing-inventory.py</code>, <code>scripts/emulator/voice_e2e_json.py</code>) ⇒ không thêm
+runtime mới vào máy build <span class="ev do">[ĐO]</span>.</li>
+<li>Bước <i>“lọc chi tiết theo cỡ”</i> (AC2.4) và bước <i>“sinh hằng Kotlin”</i> là logic riêng của dự án — không
+công cụ chuyển đổi nào làm hộ.</li>
+</ul>
+<p><b>Công cụ tham chiếu (không phụ thuộc bắt buộc)</b>:</p>
+<table>
+<tr><th>Công cụ</th><th>Vai</th><th>Xác minh</th></tr>
+<tr><td><code>svg2vectordrawable</code> (<code>s2v</code>)</td><td>đối chiếu kết quả của script nhà; CLI
+<code>s2v -f &lt;thư mục&gt; -o &lt;thư mục&gt;</code>, <code>-p</code> = độ chính xác số thực (mặc định 2)</td>
+<td><span class="ev do">[ĐO]</span> Context7 <code>/ashung/svg2vectordrawable</code>, truy vấn 2026-09-16 — hợp đồng CLI
+xác nhận. <b>Số phiên bản mới nhất: <span class="ev chua">[CHƯA KIỂM]</span></b> (Context7 không trả về version;
+chưa tra npm registry).</td></tr>
+<tr><td>Android Studio <i>Vector Asset</i> / <code>vd-tool</code></td><td>kiểm tra chéo bằng tay khi nghi ngờ một path</td>
+<td><span class="ev chua">[CHƯA KIỂM]</span> — không tra được version qua Context7; <b>không</b> đưa vào đường build.</td></tr>
+<tr><td>AGP 9.3.1 (đang dùng)</td><td>biên dịch VectorDrawable, hỗ trợ <code>fillAlpha</code>/<code>strokeAlpha</code></td>
+<td><span class="ev do">[ĐO]</span> <code>app/build.gradle.kts:18</code>. <code>fillAlpha</code> có từ API 21 ⇒ an toàn với minSdk 29 <span class="ev suy">[SUY]</span>.</td></tr>
+</table>
+<p class="warn"><b>Luật cứng của đường ống</b>: không công cụ nào ngoài <code>scripts/design/gen-icons.py</code> được
+ghi vào <code>res/drawable/</code>. Vá tay một tệp icon đã sinh = vi phạm; test T10 phát hiện bằng cách sinh lại rồi
+so byte.</p>
+
+<h3>4.7 Chung sống với <code>KachiTheme</code></h3>
+<ul>
+<li><b>Không</b> tạo object màu thứ hai. Token mới vào thẳng <code>KachiPalette</code> (cả DARK và LIGHT), lộ ra qua
+getter của <code>KachiTheme</code> đúng khuôn 50 vai đang có (<code>KachiTheme.kt:44-98</code>).</li>
+<li><b>Không</b> biến chúng thành <code>const val</code> — đó chính là lỗi đã làm nút gạt chủ đề thành nút chết,
+ghi rõ ở <code>KachiTheme.kt:11-15</code>.</li>
+<li><code>applyTheme</code> vẫn là <b>chỗ ghi duy nhất</b>; <code>ThemePaletteContractTest</code> đếm số chỗ gọi và đỏ
+nếu có chỗ thứ hai (<code>KachiTheme.kt:18-21</code>). Track này <b>không</b> thêm chỗ gọi.</li>
+<li><code>surface()</code> nằm cạnh <code>card()</code>/<code>gradient()</code>/<code>pill()</code> trong
+<code>KachiTheme</code> — cùng một nơi, cùng một khuôn chữ ký <code>(ctx, radius, …)</code>.</li>
+</ul>
+
+<h3>4.8 Mức tả thực — “nó visual thật sự không? màu sắc nhìn giống thật, 3D gì không?”</h3>
+<p class="muted">Owner hỏi thẳng (2026-09-16). Trả lời thẳng: <b>có ba mức</b>, và chúng khác nhau ở thứ <b>ai làm được</b>,
+chứ không chỉ ở đẹp nhiều hay ít. Dưới đây là cả ba, kèm cái giá thật của từng mức.</p>
+
+<div class="card">
+<b>ℹ Luật cũ đã được owner bỏ (2026-09-16) — đoạn dưới giữ làm lịch sử.</b> <code>docs/specs/kachi-icon-set-v2.html:70</code> (R4) viết:
+<i>“fancy = tinh tế/nhất quán/có chiều sâu bằng vùng tô, <b>KHÔNG phải gradient/màu riêng/đổ bóng</b>”</i>, nhắc lại ở
+<code>docs/diagnostics/icon-set-v2-inventory-2026-09-13.md:45-46</code>. Luật đó sinh ra để icon <b>tint được</b> theo
+chủ đề và theo trạng thái ô — và nó vẫn đúng <b>cho icon 24dp</b>.
+Pass 1 đề nghị tách đôi luật (giữ cho icon, nới cho hình xe). <b>Owner chốt rộng hơn</b>: <i>“không cần rule cấm gì
+đâu, thoả mái sáng tạo, đứng vai user mà design”</i> ⇒ gradient/màu riêng dùng được ở <b>cả icon</b>; R4 của
+<code>kachi-icon-set-v2.html</code> hết hiệu lực cho bộ mới (AC1.7, §R2 đã viết lại).
+</div>
+
+<table>
+<tr><th>Mức</th><th>Trông ra sao</th><th>Ai làm được</th><th>Giá</th><th>Kết</th></tr>
+<tr>
+  <td><b>(1) Vector “có khối”</b><br><code>VectorDrawable</code> + gradient</td>
+  <td>Thân xe <b>có sáng-tối</b> (chuyển sắc dọc), kính có <b>vệt phản chiếu</b>, đèn có <b>quầng sáng</b> (vẽ bằng
+  gradient toả, không blur), <b>bóng đổ xuống nền</b> là một ellipse mờ. Đổi <b>màu sơn</b> trong Cài đặt.</td>
+  <td><b>Agent làm được hoàn toàn off-car</b> — chỉ là XML + path.</td>
+  <td>Nhẹ GPU (vẫn là vector, không bitmap, không blur lúc chạy). +vài KB/tệp.</td>
+  <td><b class="ok">ĐỀ XUẤT — làm ở pha P3</b></td>
+</tr>
+<tr>
+  <td><b>(2) Raster nhiều lớp</b><br>PNG/WebP có alpha, render sẵn từ 3D</td>
+  <td><b>Giống ảnh thật</b>: phản chiếu môi trường, kim loại, bóng mềm. Đây là thứ owner thấy trên quảng cáo xe.</td>
+  <td><b class="warn">Agent KHÔNG tự làm được.</b> Nói thẳng: dựng cảnh Blender / thuê render / dùng ảnh báo chí là
+  việc <b>ngoài</b> khả năng của agent trong repo này. Cần <b>owner cung cấp ảnh</b> hoặc thuê người vẽ.</td>
+  <td><b>Nặng</b> (ước tính dưới) · <b>không đổi được màu sơn</b> (màu nằm trong pixel) · chỉ lọc màu được cho lớp
+  <i>nhấn</i>. Bản quyền ảnh báo chí là rủi ro thật nếu app phát hành.</td>
+  <td><b>Mở sau</b>, nếu owner có ảnh</td>
+</tr>
+<tr>
+  <td><b>(3) 3D thời gian thực</b><br>OpenGL ES / Filament</td>
+  <td>Xoay được, đổ bóng thật, đổi màu sơn tức thì.</td>
+  <td>Làm được về kỹ thuật, nhưng là <b>một dự án riêng</b> (model · material · loader · vòng vẽ · vòng đời surface).</td>
+  <td><b class="warn">Không đủ chỗ.</b> <span class="ev do">[ĐO]</span>
+  <code>docs/diagnostics/perf-profile-2026-09-16.md:23-24</code>: RSS Kachi <b>537 MB</b> (native heap 477 MB),
+  <b>RAM trống của máy chỉ 56–94 MB</b>, <code>memFactor=1</code>. Thêm một runtime 3D + texture vào khoảng trống
+  60 MB là mời <code>lowmemorykiller</code> giết launcher — trên xe đang lăn bánh.</td>
+  <td><b class="warn">KHÔNG làm</b></td>
+</tr>
+</table>
+
+<h4>Mockup: hình xe nhìn từ trên — hôm nay vs đề xuất (1)</h4>
+<p>Hai hình dưới dùng <b>đúng</b> đường path <code>TOP_BODY</code>/<code>TOP_GLASS</code>/4 bánh đang có trong
+<code>CarFrames.kt:52-60</code>, cùng hệ toạ độ 24×24, phóng lên cùng một cỡ. Khác biệt duy nhất là <b>cách tô</b>.</p>
+<div class="diagram">
+<svg viewBox="0 0 520 260" role="img" aria-label="So sánh hình xe nhìn từ trên: bên trái là kiểu nét phẳng hiện tại, bên phải là kiểu vector có khối với chuyển sắc thân xe, phản chiếu kính, quầng đèn và bóng đổ">
+  <defs>
+    <linearGradient id="vrBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9c6d6"/><stop offset=".45" stop-color="#7d8da3"/>
+      <stop offset="1" stop-color="#2e3743"/>
+    </linearGradient>
+    <linearGradient id="vrGlass" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#dbe8ff" stop-opacity=".92"/><stop offset="1" stop-color="#43566e" stop-opacity=".92"/>
+    </linearGradient>
+    <linearGradient id="vrSpec" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vrLamp"><stop offset="0" stop-color="#eaf3ff" stop-opacity=".95"/><stop offset="1" stop-color="#9dc4ff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="vrShadow"><stop offset="0" stop-color="#000000" stop-opacity=".55"/><stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <!-- khung nền cho cả hai ô, dùng màu nền thật #0a0d13 -->
+  <rect x="4" y="4" width="248" height="216" rx="14" fill="#0a0d13"/>
+  <rect x="268" y="4" width="248" height="216" rx="14" fill="#0a0d13"/>
+
+  <!-- ══ TRÁI · hôm nay: nét phẳng ══ -->
+  <g transform="translate(58,14) scale(7.1)" fill="none" stroke="#aeb8c8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+    <path d="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"/>
+    <path d="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"/>
+    <g fill="#aeb8c8" stroke="none">
+      <rect x="3.1" y="6.8" width="2.6" height="4.6" rx="1.2"/><rect x="18.3" y="6.8" width="2.6" height="4.6" rx="1.2"/>
+      <rect x="3.1" y="13.6" width="2.6" height="4.6" rx="1.2"/><rect x="18.3" y="13.6" width="2.6" height="4.6" rx="1.2"/>
+    </g>
+  </g>
+  <text x="128" y="238" text-anchor="middle" font-size="12.5" font-weight="650" fill="currentColor" font-family="-apple-system,system-ui,sans-serif">HÔM NAY — nét 1.6, một tông</text>
+
+  <!-- ══ PHẢI · đề xuất (1): vector có khối ══ -->
+  <g transform="translate(322,14) scale(7.1)">
+    <!-- bóng đổ xuống nền -->
+    <ellipse cx="12" cy="20.9" rx="6.4" ry="1.15" fill="url(#vrShadow)"/>
+    <!-- bánh: tối, nằm DƯỚI thân -->
+    <g fill="#141922">
+      <rect x="3.1" y="6.8" width="2.6" height="4.6" rx="1.2"/><rect x="18.3" y="6.8" width="2.6" height="4.6" rx="1.2"/>
+      <rect x="3.1" y="13.6" width="2.6" height="4.6" rx="1.2"/><rect x="18.3" y="13.6" width="2.6" height="4.6" rx="1.2"/>
+    </g>
+    <!-- quầng đèn trước (gradient toả, KHÔNG blur lúc chạy) -->
+    <ellipse cx="9.6" cy="5.1" rx="2.1" ry="1.5" fill="url(#vrLamp)"/>
+    <ellipse cx="14.4" cy="5.1" rx="2.1" ry="1.5" fill="url(#vrLamp)"/>
+    <!-- thân xe: chuyển sắc dọc = MÀU SƠN -->
+    <path d="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
+          fill="url(#vrBody)" stroke="#ffffff" stroke-opacity=".22" stroke-width=".35"/>
+    <!-- vệt sáng cạnh trái (specular) -->
+    <path d="M8.15,6.6 C7.85,9.4 7.75,14.4 8.0,18.0" fill="none" stroke="url(#vrSpec)" stroke-width=".75" stroke-linecap="round"/>
+    <!-- kính lái + kính hậu: mảng có chuyển sắc, không phải hai vạch -->
+    <path d="M8.75,8.9 C9.95,8.0 14.05,8.0 15.25,8.9 L14.75,11.3 L9.25,11.3 Z" fill="url(#vrGlass)"/>
+    <path d="M9.25,15.1 L14.75,15.1 L15.25,16.8 C14.05,17.6 9.95,17.6 8.75,16.8 Z" fill="url(#vrGlass)"/>
+    <!-- đèn trước: khối sáng -->
+    <g fill="#eaf3ff"><rect x="8.7" y="4.85" width="1.8" height=".62" rx=".31"/><rect x="13.5" y="4.85" width="1.8" height=".62" rx=".31"/></g>
+    <!-- gương -->
+    <path d="M7.6,8.9 L5.3,9.6 L7.45,10.6 Z M16.4,8.9 L18.7,9.6 L16.55,10.6 Z" fill="#6b788a"/>
+  </g>
+  <text x="392" y="238" text-anchor="middle" font-size="12.5" font-weight="650" fill="currentColor" font-family="-apple-system,system-ui,sans-serif">ĐỀ XUẤT (1) — vector có khối</text>
+</svg>
+</div>
+<p class="muted" style="font-size:13.5px">Bên phải <b>không dùng</b> blur, không bitmap, không lớp 3D: toàn bộ chiều sâu
+đến từ <b>4 gradient</b> (thân · kính · vệt sáng · quầng đèn) + <b>1 ellipse bóng</b>. Đó chính là lý do nó rẻ.</p>
+
+<h4>(1) — điều kiện kỹ thuật phải chốt trước khi làm</h4>
+<ul>
+<li><b>Gradient trong <code>VectorDrawable</code></b> khai bằng
+<code>&lt;aapt:attr name="android:fillColor"&gt;&lt;gradient …&gt;</code>, hỗ trợ <b>native từ API 24</b>.
+minSdk của dự án là <b>29</b> (<code>app/build.gradle.kts:42</code>) ⇒ <b>không cần</b> đường lùi
+<code>VectorDrawableCompat</code>. <span class="ev suy">[SUY]</span> — đây là kiến thức nền tảng, <b>chưa</b> xác nhận
+bằng một bản dựng thật trong repo này.
+<b>Một phép đo chốt việc</b>: tạo <code>res/drawable/ic_probe_gradient.xml</code> có một
+<code>&lt;gradient type="linear"&gt;</code>, gắn vào một <code>ImageView</code>, chạy trên AVD
+<code>clusternav10</code> (API 29), chụp ảnh. Thấy chuyển sắc ⇒ xanh; thấy khối đặc ⇒ phải đổi cách. Làm ở <b>T4</b>,
+<b>trước</b> khi vẽ bất cứ thứ gì.</li>
+<li><b>Tint sẽ bị mất ở phần có gradient</b> — <code>setTint</code> đè lên <i>toàn bộ</i> drawable. Đây là lý do
+mục này chỉ áp mức (1) cho <b>hình xe cỡ lớn</b> (không ai tint cả hình) chứ không áp cho icon 24dp trong ô chọn
+(ở đó tint là cơ chế sống còn của trạng thái chọn/không-chọn).</li>
+<li><b>Bóng đổ là một <code>&lt;path&gt;</code> có gradient toả</b>, <b>không</b> phải
+<code>elevation</code>/<code>setShadowLayer</code> ⇒ vẫn giữ nguyên AC5.2.</li>
+</ul>
+
+<h4>Màu sơn chọn được trong Cài đặt (chỉ mức (1))</h4>
+<p>Màu sơn là <b>một token</b> (<code>carPaintFrom</code>/<code>carPaintTo</code>) mà người dùng chọn; mọi thứ khác
+(kính, đèn, bóng, <code>CarPartStyle</code>) <b>không đổi</b>. Bảng dưới là đề xuất khởi đầu:</p>
+<table>
+<tr><th>Tên</th><th>from → to</th><th>Tương phản với nền <code>#0a0d13</code></th><th>Ghi chú</th></tr>
+<tr><td>Trắng ngọc trai</td><td><code>#e9eef5</code> → <code>#8d99ab</code></td><td><b>cao</b> — dễ đọc nhất ban đêm</td><td><b>mặc định đề xuất</b></td></tr>
+<tr><td>Xám titan</td><td><code>#b9c6d6</code> → <code>#2e3743</code></td><td>trung bình</td><td>màu dùng trong mockup trên</td></tr>
+<tr><td>Đen bóng</td><td><code>#4a5361</code> → <code>#11151c</code></td><td><b class="warn">thấp</b></td><td>⚠ đáy gradient gần như trùng nền ⇒ <b>bắt buộc</b> bật viền <code>partLine</code>, nếu không chiếc xe biến mất</td></tr>
+<tr><td>Xanh Kachi</td><td><code>#6f92ff</code> → <code>#27407f</code></td><td>trung bình-cao</td><td>cùng họ <code>ACCENT #4c7dff</code></td></tr>
+<tr><td>Đỏ</td><td><code>#ff8b8b</code> → <code>#7a2230</code></td><td>trung bình</td><td>⚠ đụng vai <code>RED</code> = cảnh báo ⇒ khi sơn đỏ, tone <code>ALERT</code> phải chuyển sang <b>viền nháy tĩnh + AMBER</b>, nếu không “xe đỏ” đọc thành “xe đang báo lỗi”</td></tr>
+</table>
+<p><b>Luật</b>: (a) mọi màu sơn đi qua <b>cùng</b> bảng đo §6.4 — <b>đáy</b> gradient phải đạt ≥ <b>3:1</b> với nền,
+nếu không thì tự động bật viền; (b) màu sơn <b>không</b> được dùng ở bất kỳ đâu ngoài hình xe — nó là <b>trang trí</b>,
+không phải một vai ngữ nghĩa; (c) mặc định là Trắng ngọc trai, và <b>không</b> hỏi người dùng lúc cài
+(<span class="ev do">[ĐO]</span> quyết định owner 2026-09-16: không hỏi xác nhận mặc định, để trong Cài đặt).</p>
+
+<h4>(2) — hợp đồng lớp để raster THAY được vector sau này mà không đổi logic</h4>
+<p>Thiết kế <b>ngay từ bây giờ</b> để mức (2) cắm vào được, kể cả khi không bao giờ làm. Chìa khoá: tầng vẽ hỏi
+<b>một giao diện</b>, không hỏi “vector hay ảnh”.</p>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>:core — <code>CarPartStyle</code></b><span>bộ phận × <code>GroupTone</code> → <b>tên token</b><br><b>KHÔNG ĐỔI</b> giữa hai mức</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>:app — <code>CarArtSource</code></b><span>giao diện mới:<br><code>bodyLayer()</code> · <code>part(p)</code> · <code>bounds(p)</code></span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>VectorCarArt</b><span>đọc <code>CarFrames</code><br>(mức 1 — mặc định)</span></div>
+    <div class="node"><b>RasterCarArt</b><span>đọc <code>drawable-*dpi/car_top_*.webp</code><br>(mức 2 — nếu có ảnh)</span></div>
+  </div>
+</div>
+<p><b>Ràng buộc của hợp đồng</b>: <code>CarArtSource</code> trả về <b>hộp bao theo hệ toạ độ 24×24</b> cho mọi bộ phận
+— y hệt thứ <code>CarFrames.partBounds()</code>/<code>wheelBounds()</code> đang trả
+(<code>CarFrames.kt:196-222</code>). Nhờ vậy chỗ đặt nhãn <code>%</code>, chỗ đặt số áp suất, phép
+<code>Matrix.setRectToRect(…, CENTER)</code> đều <b>không phải sửa một dòng</b> khi đổi nguồn ảnh.</p>
+<p><b>Ước lượng dung lượng mức (2)</b> <span class="ev doan">[ĐOÁN]</span> — chưa có ảnh thật để đo:
+3 mặt × ~18 lớp bộ phận × 2 mật độ (hdpi + xhdpi), WebP có alpha, cạnh dài 512/1024 px:
+≈ <b>25–45 KB</b>/lớp ⇒ <b>≈ 2,7 – 4,9 MB</b>. So với trần Δ APK <b>+350 KB</b> của §R5 thì mức (2)
+<b>vượt trần khoảng 10 lần</b> ⇒ nếu làm, phải nâng trần <b>và</b> owner phải chấp nhận APK nặng thêm ~5 MB.
+Đây là con số phải chốt <b>trước</b> khi vẽ, không phải sau.</p>
+<p><b>Cái mức (2) mất</b>: đổi màu sơn (màu nằm trong pixel — chỉ còn cách render lại mỗi màu = ×5 dung lượng);
+<code>CarPartStyle</code> chỉ còn <b>lọc màu</b> (<code>ColorFilter</code>) cho <b>lớp nhấn</b> nằm trên, không tô lại
+được chính bộ phận. <b>Cái mức (2) được</b>: giống thật.</p>
+
+<h4>Tóm một câu cho owner</h4>
+<p><b>Có, sẽ visual thật sự — nhưng là “có khối, có ánh sáng, có bóng” (mức 1), không phải ảnh chụp (mức 2) và không
+phải 3D xoay được (mức 3).</b> Mức 1 agent làm trọn vẹn được ngay, nhẹ máy, và đổi được màu sơn. Mức 2 đẹp hơn nhưng
+<b>cần anh đưa ảnh render/ảnh xe</b> — không có ảnh thì không có mức 2, dù có bao nhiêu thời gian. Mức 3 thì máy
+không đủ chỗ (RAM trống 56–94 MB), nên không làm.</p>
+
+<h3>4.9 Ba pha ship độc lập</h3>
+<div class="flow">
+  <div class="fnode"><b>P1 · Bề mặt</b><span>token + surface()<br>26 chỗ gọi được rà<br><b>không</b> chờ ADAS-PURGE</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>P2 · Icon</b><span>148 tệp, 3 cỡ<br>SAU ADAS-PURGE</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>P3 · Hình xe</b><span>3 mặt · 6 lớp<br>4 bảng Canvas<br><b>mức tả thực (1)</b> — §4.8</span></div>
+</div>
+<p>Mỗi pha là <b>một bản APK dùng được</b>, có bump version riêng (CLAUDE.md §9). Vì sao thứ tự này:
+<span class="ev suy">[SUY]</span> P1 là thứ owner nhìn thấy <b>ngay</b> trên mọi màn hình với công ít nhất; P2 phải
+đợi cổng C1; P3 tốn nhất và phụ thuộc pipeline mà P2 đã dựng xong.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">🚗 = cần xe thật. Ước lượng là <b>ca làm</b> (một ca ≈ nửa ngày), <span class="ev doan">[ĐOÁN]</span>
+— chưa có mốc thời gian thật cho việc vẽ lại icon hàng loạt trong repo này.</p>
+<table>
+<tr><th>#</th><th>Phụ thuộc</th><th>Task · Definition of Done</th><th>Module · File</th><th>Ước</th></tr>
+
+<tr><td><b>T1</b></td><td>—</td>
+<td><b>Token bề mặt.</b> Thêm 6 token §4.1 vào <b>cả hai</b> bảng màu. DoD: <code>ThemePaletteContractTest</code> xanh ·
+bảng tương phản §6.4 sinh bằng máy cho token mới, mọi cặp đạt sàn.</td>
+<td><code>app/…/KachiPalette.kt</code>, <code>KachiTheme.kt</code></td><td>1</td></tr>
+
+<tr><td><b>T2</b></td><td>T1</td>
+<td><b><code>KachiTheme.surface()</code></b> theo §4.5 (LayerDrawable 2 lớp, dựng một lần). DoD: có <b>≥ 1 chỗ gọi</b>
+(<code>grep -rn "KachiTheme.surface(" app/src/main/java/</code> — CLAUDE.md §8) · bài canh cấm blur/shadow/elevation xanh.</td>
+<td><code>app/…/KachiTheme.kt</code>(+Test)</td><td>1</td></tr>
+
+<tr><td><b>T3</b></td><td>T2</td>
+<td><b>Rà 26 chỗ gọi <code>card()</code></b>, phân loại <i>thẻ nội dung</i> (→ <code>surface()</code>) vs <i>ô lõm</i>
+(giữ). DoD: danh sách chuyển/không chuyển + lý do ghi vào §9 · ảnh chụp máy ảo trước/sau cho 3 bố cục màn chính.</td>
+<td><code>app/…/WidgetViews.kt</code>, <code>WorkspaceViewCards.kt</code>, <code>GroupTileViews.kt</code>, <code>ReadTile.kt</code>…</td><td>2</td></tr>
+
+<tr><td><b>T4</b></td><td>—</td>
+<td><b>Dựng lại đường ống</b> (cổng C2): <code>scripts/design/gen-icons.py</code> + <code>design/</code>; sinh lại
+<b>bộ icon xe hiện tại</b> trước đã. DoD: sinh lại ra <b>đúng byte</b> các tệp <code>ic_car_*.xml</code> đang có ⇒
+chứng minh script đúng trước khi dùng nó để đổi hình.<br>
+<b>+ phép đo chốt gradient</b> (§4.8): dựng <code>ic_probe_gradient.xml</code> có
+<code>&lt;aapt:attr&gt;&lt;gradient&gt;</code>, chạy trên AVD API 29, <b>chụp ảnh</b>. Thấy chuyển sắc ⇒ mức (1) khả thi;
+thấy khối đặc ⇒ dừng, báo owner trước khi vẽ. Ảnh lưu vào <code>docs/diagnostics/</code>.</td>
+<td><code>scripts/design/</code>, <code>design/</code></td><td>2</td></tr>
+
+<tr><td><b>T5</b></td><td>T4 · <b>C1</b> 🔒</td>
+<td><b>Vẽ 3 SVG nguồn</b> (top · front · side) theo §4.3 với lớp có tên đầy đủ. DoD: mở bằng trình xem SVG thấy đủ
+6 lớp · script xuất được cả 3 mặt không lỗi.</td>
+<td><code>design/car/*.svg</code></td><td>3</td></tr>
+
+<tr><td><b>T6</b></td><td>T5</td>
+<td><b>Sinh bộ icon xe mới</b> (mọi <code>ic_car_*</code>) ở 3 cỡ. DoD: <code>CarFramesSourceContractTest</code> mở rộng
+xanh (SVG ↔ pathData ↔ hằng Kotlin) · trần path AC5.1 đạt.</td>
+<td><code>res/drawable/</code>, <code>app/…/CarFrames.kt</code></td><td>2</td></tr>
+
+<tr><td><b>T7</b></td><td>T4 · <b>C1</b> 🔒</td>
+<td><b>Vẽ lại icon KHÔNG-phải-xe</b> (khái niệm trừu tượng: pin · tia sét · nhiệt · quạt · lá · GPS…) theo ngữ pháp
+§4.2. DoD: từng tệp có header nói <b>vì sao hình này</b> (lệ đang có trong bộ) · thang alpha 3 bậc · 2 độ dày nét.</td>
+<td><code>design/glyph/*.svg</code> → <code>res/drawable/</code></td><td>4</td></tr>
+
+<tr><td><b>T8</b></td><td>T6 · T7</td>
+<td><b><code>CarPartStyle</code></b> (<code>:core</code> thuần) theo bảng §4.4 + nối 4 bảng Canvas vào
+<code>CarFrames</code> đa-mặt. DoD: <code>CarPartStyleTest</code> phủ mọi cặp · 0 hit <code>drawRoundRect</code> cho
+thân xe trong 4 View (AC1.4) · mỗi hàm mới có call site.</td>
+<td><code>core/…/CarPartStyle.kt</code>(+Test), <code>app/…/{Tyre,Side,Door}BoardView.kt</code>, <code>CarMiniView.kt</code></td><td>3</td></tr>
+
+<tr><td><b>T8b</b></td><td>T8</td>
+<td><b>Mức tả thực (1) + hợp đồng nguồn ảnh</b> (§4.8). (a) Giao diện <code>CarArtSource</code> + bản dựng
+<code>VectorCarArt</code> — <code>RasterCarArt</code> <b>không</b> viết bây giờ, chỉ để giao diện đỡ sẵn;
+(b) 4 gradient + ellipse bóng cho hình xe cỡ lớn; (c) token <code>carPaintFrom/To</code> + <b>một hàng trong Cài đặt</b>
+chọn màu sơn (5 màu §4.8), mặc định Trắng ngọc trai, <b>không hỏi lúc cài</b>.
+DoD: mọi màu sơn qua bảng §6.4, màu nào đáy &lt; 3:1 thì <b>tự</b> bật viền · icon 24dp <b>không</b> đổi (vẫn 1 tông,
+vẫn tint được) · <code>CarPartStyle</code> <b>không đổi một dòng</b> khi đổi nguồn ảnh (chứng minh bằng một test dựng
+<code>CarArtSource</code> giả).</td>
+<td><code>app/…/CarArtSource.kt</code>(+Test), <code>KachiPalette.kt</code>, <code>SettingsDialogs.kt</code>, <code>res/drawable/</code></td><td>3</td></tr>
+
+<tr><td><b>T9</b></td><td>T7</td>
+<td><b>Biến thể 32/48dp</b> + nối vào các mặt lớn (thẻ widget, đầu nhóm, ô bộ chọn). DoD: <code>KachiSpace.ICON_L/XL/XXL</code>
+tra ra biến thể đúng cỡ, không phóng to icon 24.</td>
+<td><code>res/drawable/</code>, <code>app/…/KachiTheme.kt</code></td><td>2</td></tr>
+
+<tr><td><b>T10</b></td><td>T6 · T7 · T9</td>
+<td><b>Bài canh phong cách mới.</b> Cập nhật <code>IconStyleContractTest</code> (thang alpha · 2 nét · trần path ·
+sinh-lại-so-byte) + thêm <code>IconSetInventoryTest</code> (AC6.2). DoD: cả hai xanh · cố tình vá tay một tệp ⇒ đỏ
+(kiểm bằng cách thử).</td>
+<td><code>app/src/test/java/…/IconStyleContractTest.kt</code>, <code>…/IconSetInventoryTest.kt</code></td><td>2</td></tr>
+
+<tr><td><b>T11</b></td><td>T3 · T8b · T10</td>
+<td><b>Ma trận ảnh chụp máy ảo</b> §6.1 + <code>gfxinfo</code> trước/sau §6.2 + Δ APK §6.3 + bảng tương phản §6.4.
+DoD: bằng chứng lưu vào <code>docs/diagnostics/visual-refresh-&lt;ngày&gt;/</code> và được dẫn từ §6.</td>
+<td><code>scripts/emulator/</code>, <code>docs/diagnostics/</code></td><td>2</td></tr>
+
+<tr><td><b>T12</b></td><td>T11</td>
+<td><b>Bump version + cập nhật doc.</b> <code>versionCode</code>/<code>versionName</code> mỗi pha (CLAUDE.md §9);
+cập nhật <code>docs/README.md</code> (INDEX) + <code>docs/PROJECT-BACKLOG.md</code> + <code>.kiro/steering/project-context.md</code>
+trong <b>cùng</b> commit (R2.1).</td>
+<td><code>app/build.gradle.kts</code>, <code>docs/</code>, <code>.kiro/steering/</code></td><td>1</td></tr>
+
+<tr><td><b>T13</b></td><td>T12</td>
+<td><b>Senior review (Opus) + security scan + build.</b> <code>./gradlew clean assembleRelease testDebugUnitTest</code>
+(JAVA_HOME <code>/opt/homebrew/opt/openjdk@17</code>; trả <code>local.properties</code> về <code>sdk.dir</code> Windows sau khi build).
+Vòng lặp review tới khi 0 finding [P0]–[P3].</td>
+<td>—</td><td>1</td></tr>
+
+<tr><td><b>T14</b> 🚗</td><td>T13</td>
+<td><b>Owner ngắm trên xe thật.</b> Cài APK, mở 3 bố cục + bộ chọn + Cài đặt, ban ngày <b>và</b> ban đêm. DoD: ảnh
+chụp màn từ xe (§11 — app tự chụp, không bắt owner gõ adb) + owner chốt “đẹp/chưa”.</td>
+<td><code>DiagActivity</code> / <code>ClusterDiag</code></td><td>1</td></tr>
+</table>
+
+<div class="card">
+<b>Đường găng (critical path)</b>: <code>T4 → T5 → T6 → T8 → T8b → T11 → T12 → T13 → T14</code>.
+<b>Chạy song song được</b>: nhánh <code>T1→T2→T3</code> (pha P1, không vướng cổng C1) và nhánh
+<code>T7→T9</code>. <b>🔒 = bị chặn</b> bởi ADAS-PURGE.<br>
+<b>Chỉ T14 cần xe.</b> Toàn bộ phần còn lại làm và kiểm được off-car — đúng chủ trương “làm MAX off-car có test”.
+</div>
+
+<h2>6. Verification</h2>
+
+<h3>6.1 V-shot — ma trận ảnh chụp máy ảo</h3>
+<p>Chụp <b>trước</b> và <b>sau</b> mỗi pha, cùng một AVD (<code>clusternav10</code>), cùng một hồ sơ, cùng dữ liệu giả:</p>
+<table>
+<tr><th>Màn</th><th>Biến thể</th><th>Số ảnh</th><th>Nhìn cái gì</th></tr>
+<tr><td>Màn chính</td><td>3 bố cục (<code>LayoutPreset</code>) × {tối, sáng}</td><td>6</td><td>thẻ có lồi khỏi nền không · chữ còn đọc được không</td></tr>
+<tr><td>Bộ chọn nút/widget</td><td>{tối, sáng} × {ô chọn, ô chưa chọn}</td><td>4</td><td>icon mới có tint đúng theo trạng thái không (AC2.6)</td></tr>
+<tr><td>Bảng tổng hợp có hình xe</td><td>Lốp · Cửa &amp; khoang · Đèn (bảng ngang)</td><td>3</td><td>một chiếc xe hay hai (AC1.4) · <code>CarPartStyle</code> có đúng tone không</td></tr>
+<tr><td>Cài đặt</td><td>{tối, sáng}</td><td>2</td><td>ô lõm có bị đổi nhầm sang <code>surface()</code> không (AC3.4)</td></tr>
+<tr><td>Cụm (cluster mirror)</td><td>tối</td><td>1</td><td>không regression ở bề mặt đang chiếu</td></tr>
+<tr><td colspan="2"><b>Tổng mỗi lượt</b></td><td><b>16</b></td><td>lưu <code>docs/diagnostics/visual-refresh-&lt;ngày&gt;/{before,after}/</code></td></tr>
+</table>
+
+<h3>6.2 V-perf — <code>gfxinfo</code> trước/sau</h3>
+<p><b>Cách đo hợp lệ</b> (bắt buộc, vì cách sai đã được ghi lại): máy ảo <b>đứng yên</b> chỉ vẽ 19–26 khung trong
+150–210 s ⇒ <code>Janky frames %</code> là <b>nhiễu thống kê</b>, không so được
+(<span class="ev do">[ĐO]</span> <code>docs/diagnostics/perf-profile-2026-09-16.md:212-213</code>).</p>
+<pre>adb shell dumpsys gfxinfo &lt;pkg&gt; reset
+# kịch bản CỐ ĐỊNH, kịch bản y hệt cho before và after:
+#   mở màn chính → cuộn bộ chọn hết 1 vòng → mở 3 bảng tổng hợp → về màn chính
+adb shell dumpsys gfxinfo &lt;pkg&gt;
+# đọc: Total frames rendered (phải ≥ 300, nếu không thì kịch bản quá ngắn)
+#      50th / 90th / 95th / 99th percentile   ← SỐ ĐỂ SO
+#      Number of Missed Vsync / Slow UI thread / Slow draw commands</pre>
+<p><b>Ngưỡng nhận</b>: 90th percentile <b>không tăng quá +1.5 ms</b> so với 1.67. Tăng hơn ⇒ tìm nguyên nhân trước
+khi ship, không nới ngưỡng.</p>
+
+<h3>6.3 V-size — Δ kích thước APK</h3>
+<pre>ls -l app/build/outputs/apk/release/*.apk        # trước và sau
+unzip -l &lt;apk&gt; | grep "res/drawable" | awk '{s+=$1} END {print s}'   # riêng phần drawable</pre>
+<p>Ngưỡng: <b>≤ +350 KB</b> tổng (AC5.5). Ghi cả con số <b>riêng phần drawable</b> để biết icon hay thứ khác làm phình.</p>
+
+<h3>6.4 V-contrast — bảng đo tương phản (sinh bằng máy)</h3>
+<p>Script tính tỉ số WCAG từ <code>KachiPalette</code>, xuất bảng này; <b>không chép tay</b> (AC6.6). Khuôn bảng:</p>
+<table>
+<tr><th>Cặp</th><th>Vai</th><th>Sàn</th><th>1.67</th><th>Sau refresh</th><th>Kết</th></tr>
+<tr><td><code>INK</code> trên <code>surfFrom</code></td><td>chữ chính, đỉnh gradient</td><td>4.5</td><td>—</td><td>?</td><td>?</td></tr>
+<tr><td><code>INK</code> trên <code>surfTo</code></td><td>chữ chính, đáy gradient</td><td>4.5</td><td>—</td><td>?</td><td>?</td></tr>
+<tr><td><code>MUT</code> trên <code>surfTo</code></td><td>nhãn phụ</td><td>4.5</td><td>—</td><td>?</td><td>?</td></tr>
+<tr><td><code>LINE</code> trên <code>bg</code></td><td>viền thẻ</td><td>3.0</td><td>—</td><td>?</td><td>?</td></tr>
+<tr><td><code>surfEdge</code> trên <code>surfFrom</code></td><td>mép sáng</td><td>3.0</td><td>n/a</td><td>?</td><td>?</td></tr>
+<tr><td><code>ON_ACCENT</code> trên <code>surfOnFrom</code></td><td>chữ trên thẻ BẬT</td><td>4.5</td><td>—</td><td>?</td><td>?</td></tr>
+<tr><td colspan="6">… lặp cho <b>bảng SÁNG</b>. Đo cả <b>hai đầu</b> mỗi gradient (AC3.3).</td></tr>
+</table>
+<p><b>Hai mốc phải giữ bằng-hoặc-hơn</b> <span class="ev do">[ĐO]</span>: <code>lineStrong</code> 3.14 (nền) / 3.20 (thẻ) ·
+<code>emptyLine</code> 3.68 · chữ trắng trên <code>GRAD_FROM</code> 4.83.</p>
+
+<h3>6.5 V-unit / V-oncar / V-lifecycle</h3>
+<ul>
+<li><b>V-unit</b>: <code>:core</code> + <code>:app</code> xanh, không sửa assertion hành vi (AC4.3). Đếm test từ
+<b>XML kết quả</b>, không tin grep console (bài học <code>kachi-gradle-parallel-agents</code>).</li>
+<li><b>V-oncar</b> 🚗 (T14): APK cài trên xe, mở 3 bố cục + bộ chọn + Cài đặt, <b>ban ngày và ban đêm</b>. Ảnh chụp
+do <b>app tự chụp</b> qua <code>ClusterDiag</code>/<code>DiagActivity</code> — không hướng dẫn owner gõ adb (CLAUDE.md §11).
+Cái duy nhất chỉ xe trả lời được: gamma/độ sáng màn đầu máy có làm gradient bị “dải màu” (banding) không
+<span class="ev chua">[CHƯA BIẾT]</span>.</li>
+<li><b>V-lifecycle</b>: đổi chủ đề TỐI↔SÁNG lúc chạy → mọi bề mặt mới đổi theo, không cần khởi động lại app ·
+xoay/đổi cỡ ô → gradient không kéo giãn méo · widget chưa đọc được dữ liệu → hình xe ra nét <code>DIM</code>,
+<b>không</b> bịa trạng thái đóng.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<p class="muted">Bảy câu, mỗi câu kèm <b>mặc định đề xuất</b> — công việc <b>bắt đầu được ngay</b> theo mặc định,
+owner chỉ cần nói khi muốn khác.</p>
+<ul>
+<li><b>OQ1. Có cho phép “glow” (quầng sáng) không?</b> —
+<b>Mặc định đề xuất: KHÔNG có glow lúc chạy</b>, chỉ mép sáng 1dp tĩnh (§4.5). Lý do: glow thật cần blur ⇒ tốn GPU
+trên đầu máy yếu và vi phạm AC5.2; glow vẽ sẵn trong tệp icon ⇒ ghim màu, phá hợp đồng tint.
+<span class="muted">[chưa trả lời]</span></li>
+
+<li><b>OQ2. Bản SÁNG ưu tiên tới đâu?</b> —
+<b>Mặc định đề xuất: làm đủ token và đủ đúng tương phản, nhưng chỉ chụp ảnh kiểm 8/16 khung hình.</b> Lý do:
+chủ đề mặc định là TỐI (<code>KachiTheme.kt:26</code>) và xe chạy đêm là ca khó nhất. Bản SÁNG không được <i>hỏng</i>,
+nhưng không tiêu tốn thời gian tinh chỉnh ngang bản TỐI. <span class="muted">[chưa trả lời]</span></li>
+
+<li><b>OQ3. Xe vẽ tả thực (photo-real) hay cách điệu?</b> (xem §4.8 để có ba mức đầy đủ) —
+<b>Mặc định đề xuất: mức (1) “vector có khối”</b> — hình học cách điệu <b>nhưng có</b> chuyển sắc thân, phản chiếu
+kính, quầng đèn, bóng đổ. Lý do: ở <b>bảng tổng hợp cỡ lớn</b> nó đủ “thật” để owner thấy khác hẳn hôm nay, mà ở
+<b>24dp</b> vẫn rút về nét sạch — nên <b>không</b> sinh ra “hai chiếc xe” (đúng cái <code>CarFrames.kt:16-20</code>
+vừa dọn xong). Ảnh render thật (mức 2) để OQ7 quyết. <span class="muted">[chưa trả lời]</span></li>
+
+<li><b>OQ4. Một dáng xe cho mọi đời xe, hay theo <code>ClusterProfile</code>?</b> —
+<b>Mặc định đề xuất: MỘT dáng chung chung.</b> Lý do: CLAUDE.md §7 bảo khác biệt đời xe phải nằm trong
+<code>ClusterProfile</code> — nhưng ở đây <b>không có phép đo nào</b> phân biệt được dáng xe từ HAL
+<span class="ev chua">[CHƯA BIẾT]</span>, nên thêm nhánh là thêm cấu hình chết. Nếu sau này đọc được mẫu xe
+(<code>vehicle_type</code> có trong registry) thì thêm dáng là việc <b>của lượt sau</b>, và kiến trúc §4.3 đã đỡ sẵn
+(chỉ thay tệp SVG nguồn). <span class="muted">[chưa trả lời]</span></li>
+
+<li><b>OQ5. Bộ icon mới thay <b>toàn bộ</b> 148 tệp, hay chỉ những tệp xấu nhất?</b> —
+<b>Mặc định đề xuất: thay toàn bộ, nhưng theo 3 pha</b> (§4.9). Lý do: trộn hai phong cách trong một lưới là
+<i>tệ hơn</i> một phong cách cũ đồng đều — đây đúng là lý do <code>ic_mic_g</code> bị loại khỏi thanh nút
+(<code>KachiTheme.kt:254-256</code>). <span class="muted">[chưa trả lời]</span></li>
+
+<li><b>OQ6. Hình xe mới có được vẽ thêm bộ phận mà registry CHƯA đọc được không</b> (ca-pô, đèn hậu, 3 ghế còn lại
+— <code>docs/diagnostics/icon-set-v2-inventory-2026-09-13.md §5</code> liệt kê 10 hình đã dựng mà chưa có mã)? —
+<b>Mặc định đề xuất: vẽ trong SVG nguồn (có lớp, có tên), nhưng KHÔNG xuất ra tệp icon</b> cho tới khi registry có mã.
+Lý do: xuất ra là tạo icon mồ côi (<code>IconStyleContractTest</code> mục 5 đỏ), và vẽ một bộ phận vĩnh viễn chưa đọc
+được là để bảng tự bịa nội dung (<code>CarFrames.kt:42-44</code>). <span class="muted">[chưa trả lời]</span></li>
+
+<li><b>OQ7. Anh có ảnh render / ảnh xe thật nhiều góc không?</b> (top · front · side, nền trong suốt hoặc tách nền được) —
+<b>Có ⇒ mở hướng (2)</b> ở §4.8: dùng ảnh làm <b>lớp nền</b> thân xe, còn các bộ phận đổi trạng thái vẫn vẽ vector đè
+lên (hợp đồng <code>CarArtSource</code> đã thiết kế sẵn cho đúng việc này).
+<b>Mặc định đề xuất: bắt đầu bằng (1) ngay, không chờ.</b> Lý do: (1) làm được trọn vẹn off-car, và nếu sau này có ảnh
+thì thay <b>một</b> lớp, <code>CarPartStyle</code> và cả bốn bảng Canvas <b>không phải sửa</b>. Hai điều cần biết trước
+khi chọn (2): APK nặng thêm <b>≈ 2,7–4,9 MB</b> <span class="ev doan">[ĐOÁN]</span> (gấp ~10 lần trần §R5 hiện tại),
+và <b>mất</b> tính năng đổi màu sơn. <span class="muted">[chưa trả lời]</span></li>
+</ul>
+
+<h2>8. References</h2>
+<h4>Mã (đọc trước khi sửa)</h4>
+<ul>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/KachiTheme.kt</code> — 50 vai màu, <code>card()</code>
+(:110), <code>gradient()</code> (:129), <code>gradientSoft()</code> (:138), bảng tra <code>iconRes</code> (:164-353),
+ghi chú tương phản (:125-127).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/KachiPalette.kt</code> — DARK (:184-230), LIGHT (:253+),
+lý do hai lần vá tương phản (:168-174).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/KachiSpace.kt</code> — <code>HAIRLINE</code> (:68),
+<code>RADIUS_*</code> (:84-105), <code>ICON_XS…XXL</code> (:138-153).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/KachiType.kt</code> — 5 bậc chữ (:42-46).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/CarFrames.kt</code> — khung xe dùng chung, luật “chép nguyên
+văn” (:26-28), lý do chưa có khung FRONT/REAR (:36-44).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/{TyreBoardView,RadarBoardView,SideBoardView,DoorBoardView,CarMiniView}.kt</code>
+— 5 bề mặt vẽ hình xe.</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/WorkspaceViewCards.kt:55</code> — nền widget bên thứ ba
+(<code>WIDGET_BACKING</code>, cố ý không theo chủ đề).</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/CapabilityIcons.kt</code> — bảng khái niệm→hình,
+<code>MAX_PER_DOMAIN = 3</code> (:199).</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/GroupBoardModel.kt</code> — <code>GroupTone</code> (:22-42),
+<code>CarPart</code> (:253-264), luật “off-car không bịa trạng thái” (:278).</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/{TelemetryRegistry,ControlRegistry,WidgetRegistry,CapabilityGroups}.kt</code>
+— nguồn đếm của §2.4.</li>
+<li><code>app/src/test/java/com/byd/clusternav/launcher/IconStyleContractTest.kt</code> — 7 luật phong cách đang có
+(:30, :53, :114-115, :139, :154, :190, :282).</li>
+</ul>
+<h4>Spec &amp; chẩn đoán</h4>
+<ul>
+<li><code>docs/specs/kachi-design-system.html</code> — hệ thiết kế + IA gốc.</li>
+<li><code>docs/specs/kachi-capability-icons.html</code> (U1/U6) — 123 mục đọc chỉ dùng 7 hình (§2 Đ1); 59 tệp icon
+mà chỉ 29 tên được nối (§2 Đ2); bài <code>CapabilityIconsDiversityTest</code>. <b>Không</b> chứa luật phong cách.</li>
+<li><code>docs/specs/kachi-icon-set-v2.html</code> (U7) — <b>nguồn của luật bị spec này đề nghị nới</b>:
+<b>R4 (:70)</b> <i>“fancy = tinh tế/nhất quán/có chiều sâu bằng vùng tô, KHÔNG phải gradient/màu riêng/đổ bóng”</i>;
+R1 (:67) ngữ pháp <i>nét = vật thể, vùng tô = bộ phận</i>; R3 (:69) ô quang học 20×20, chi tiết ≥1.6dp,
+<b>không quá 3 mảng nhìn thấy</b>, soát viên độc lập gọi đúng tên <b>≥90%</b>; R5 (:71) cổng đo.
+§9 (:94): script sinh icon là <b>scratchpad</b> — nói rõ nó chưa bao giờ được commit.
+Bài canh: <code>IconStyleContractTest</code> · <code>IconGeometryContractTest</code> ·
+<code>CapabilityIconPositionTest</code>.</li>
+<li><code>docs/specs/kachi-design-system.html</code> — 5 bậc chữ (§4.1 :52-60, khoá đúng 5) · component
+<code>KachiUi</code> (R2 :43) · <b>cấm dựng nút/chip bằng <code>GradientDrawable</code> ngoài <code>KachiUi</code></b>
+(R5 :46 — luật về <i>cách dựng</i>, không phải cấm gradient về mặt thị giác) · đo tương phản Pass 2 (:125):
+<b>chữ chính 14–16:1, chữ phụ 6.1–7.3:1</b>.</li>
+<li><code>docs/specs/kachi-settings-ia-v2.html</code> — <b>R5 (:83)</b> một lưới dùng chung
+<code>CapabilityGridSection</code>, khe <code>Sp.S</code>/<code>Sp.XS</code>, ô đồng cao, căn trên; số cột theo
+<code>CapabilityPicker.COLS</code> (:110). <b>R7 (:85)</b> nút = <code>Sp.TOUCH</code> 48 · chip 44 (owner chốt) ·
+<b>ô lưới ≥ 48</b>. Đo Pass 2 (:211): dock picker <b>4 cột 414px</b>, khe 24/12px.</li>
+<li><code>docs/specs/kachi-car-boards.html</code> — U9, nguồn của <code>CarFrames</code> (dẫn <code>gen_car4.py</code> ở :81).</li>
+<li><code>docs/diagnostics/icon-set-v2-inventory-2026-09-13.md</code> — kiểm kê U7: 3 khung xe (§1), 4 quy ước hậu tố
+(§2), 10 hình chưa xuất (§5).</li>
+<li><code>docs/diagnostics/perf-profile-2026-09-16.md</code> — <b>:212-213</b> vì sao <code>Janky %</code> trên máy ảo
+không so được; <b>:23-24</b> RSS Kachi <b>537 MB</b> (native heap 477 MB), <b>RAM trống của máy 56–94 MB</b>,
+<code>memFactor=1</code> ⇒ căn cứ loại mức (3) ở §4.8.</li>
+<li><code>docs/PROJECT-BACKLOG.md</code> mục <b>(N) ADAS-PURGE</b> — cổng C1 (<span class="ev do">[ĐO]</span> mục (N)
+<b>chưa có dòng riêng</b> trong backlog hôm nay; nó mới chỉ được <i>nhắc tới</i> từ mục (P) CAPTEST-V2).</li>
+<li>Context7 <code>/ashung/svg2vectordrawable</code> — truy vấn 2026-09-16 (§4.6).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi <b>NGAY khi code</b> — R2.6 (<code>documentation-and-backlog.md</code>). Đây là chỗ spec phản ánh
+code THỰC TẾ, kể cả chỗ lệch. Nếu có quyết định kiến trúc xuyên suốt ⇒ mở thêm ADR ở <code>docs/decisions/</code>
+và link vào đây.</p>
+<p class="muted">Mỗi mục nêu: <b>ngày</b> · loại (quyết định / trade-off / sai lệch-spec / bug / spec-không-work) ·
+nội dung · <code>file:line</code> hoặc commit.</p>
+<p class="muted"><i>(Trống — chưa implement. Điền dần trong lúc code; cấm “để sau”.)</i></p>
+<p><b>Ba mục đã biết chắc sẽ phải ghi khi bắt đầu</b>:</p>
+<ul>
+<li><b>T3</b> — danh sách <b>26</b> chỗ gọi <code>card()</code>: cái nào chuyển sang <code>surface()</code>, cái nào giữ, <b>vì sao</b>.</li>
+<li><b>T4</b> — kết quả bước “sinh lại ra đúng byte”: nếu <b>không</b> trùng byte thì lệch ở đâu (precision? thứ tự
+thuộc tính?) và đã xử lý ra sao. Đây là bằng chứng script thay được <code>gen_car4.py</code> đã mất.</li>
+<li><b>T1</b> — sáu mã hex đề xuất ở §4.1 sau khi qua bảng tương phản §6.4: giữ nguyên hay đổi, số đo bao nhiêu.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm một mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG overwrite lịch sử.
+Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

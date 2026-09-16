@@ -6,7 +6,6 @@ import com.byd.clusternav.launcher.Domain.DRIVETRAIN
 import com.byd.clusternav.launcher.Domain.ENERGY
 import com.byd.clusternav.launcher.Domain.IDENTITY
 import com.byd.clusternav.launcher.Domain.LIGHTS
-import com.byd.clusternav.launcher.Domain.SAFETY
 import com.byd.clusternav.launcher.Domain.TYRES
 import com.byd.clusternav.launcher.EvidenceTier.NEEDS_CAR
 import com.byd.clusternav.launcher.EvidenceTier.OVERDRIVE
@@ -47,7 +46,7 @@ data class TelemetrySpec(
     /**
      * Nhãn NGẮN cho bề mặt hẹp (chip thanh trên, ô nhỏ). `null` ⇒ dùng [label].
      *
-     * Là **tham số mặc định** để không phải sửa 123 dòng khai báo: chỉ điền cho datum nào thật sự cần. Trước đây khái
+     * Là **tham số mặc định** để không phải sửa cả trăm dòng khai báo: chỉ điền cho datum nào thật sự cần. Trước đây khái
      * niệm này chỉ tồn tại ở `TyreCorner.shortLabel` (bảng lốp), tức mỗi bề mặt hẹp lại tự nghĩ cách viết tắt riêng.
      */
     val short: String? = null,
@@ -55,7 +54,7 @@ data class TelemetrySpec(
      * Nhãn tiếng Anh (U5 · T2) — **cùng khuôn tham số mặc định** với [short], vì cùng lý do: nó là DỮ LIỆU của dòng
      * này, không phải chữ tra từ tài nguyên Android (`:core` thuần, xem KDoc [Strings]).
      *
-     * `null` ⇒ [displayLabel] lùi về [label]; `LangCoverageTest` đếm tuyệt đối 123 dòng nên bỏ trống là **đỏ off-car**.
+     * `null` ⇒ [displayLabel] lùi về [label]; `LangCoverageTest` đếm tuyệt đối mọi dòng nên bỏ trống là **đỏ off-car**.
      */
     override val labelEn: String? = null,
     /** Nhãn NGẮN tiếng Anh. `null` ⇒ [shortLabelIn] lùi về [labelEn] rồi tới [label] — xem [shortLabel]. */
@@ -65,9 +64,9 @@ data class TelemetrySpec(
      * [domain] ([HalBindingTable.featureDeviceFqn]).
      *
      * [ĐO] `docs/diagnostics/hal-binding-remediation-2026-09-15.md` §C: trước đây chỉ `ControlDef` có trường này nên
-     * MỌI feature-read đi theo Domain mặc định — sai cho dây an toàn (SafetyBelt 1042, không ADAS 1038), ion (PM2P5,
-     * không AC), độ dốc (Sensor, không Setting), đèn viền (Setting, không Light). Các mục có getter tên thật đã được
-     * chuyển sang named-method (degrade-safe hơn); trường này dành cho mục CHỈ có feature-id.
+     * MỌI feature-read đi theo Domain mặc định — sai cho ion (PM2P5, không AC), độ dốc (Sensor, không Setting), đèn
+     * viền (Setting, không Light). Các mục có getter tên thật đã được chuyển sang named-method (degrade-safe hơn);
+     * trường này dành cho mục CHỈ có feature-id.
      */
     val halDevice: String? = null,
 ) : Localized {
@@ -94,7 +93,7 @@ data class TelemetrySpec(
 }
 
 /**
- * REGISTRY TELEMETRY — bản kê MỌI datum đọc được, gom theo 8 domain của catalog §A
+ * REGISTRY TELEMETRY — bản kê MỌI datum đọc được, gom theo 7 domain của catalog §A
  * (`docs/diagnostics/kachi-capability-catalog-2026-09-10.md`). Nguồn cột `bindingKey` = HAL getter / feature-id số
  * trong catalog. Tier = mức bằng chứng ĐỌC (read) của datum đó.
  */
@@ -323,43 +322,15 @@ object TelemetryRegistry {
         t("ambient_front_brightness", "Độ sáng viền trước", "Ambient brightness front", "", LIGHTS, VALUE, OVERDRIVE, "1121976328", shortEn = "Bright front"),
         t("ambient_rear_brightness", "Độ sáng viền sau", "Ambient brightness rear", "", LIGHTS, VALUE, OVERDRIVE, "1121976332", shortEn = "Bright rear"),
 
-        // ── A7. An toàn / ADAS / occupancy ──────────────────────────────────────────────────────
-        // [ĐO] `int getSafetyBeltStatus(int area)` BYDAutoSafetyBeltDevice.java:85 — UNLOCK0/LOCK1/INVALID2 (:38-40);
-        // area MAIN=1/DEPUTY=2 (:16/:15) — HalBindingTable.readArg cấp. Cũ feature-id route Domain.SAFETY → ADAS(1038),
-        // thật thuộc SafetyBelt(1042).
-        t("seatbelt_driver", "Dây an toàn lái", "Seatbelt driver", "", SAFETY, STRIP, OVERDRIVE, "BYDAutoSafetyBeltDevice.getSafetyBeltStatus", shortEn = "Belt driver"),
-        t("seatbelt_passenger", "Dây an toàn phụ", "Seatbelt passenger", "", SAFETY, STRIP, OVERDRIVE, "BYDAutoSafetyBeltDevice.getSafetyBeltStatus", shortEn = "Belt pass."),
-        // NEEDS-ONCAR: oms_driver — enum PASSENGER của `getPassengerStatus` KHÔNG có ghế lái (DEPUTY=1, hàng 2 = 2/3/4,
-        // BYDAutoSafetyBeltDevice.java:27-30) ⇒ chưa có arg đúng cho tài xế; giữ feature-id, chốt bằng `hal get`.
-        t("oms_driver", "Nhận diện tài xế", "Driver detected", "", SAFETY, BADGE, OVERDRIVE, "834666600"),
-        // [ĐO] `int getPassengerStatus(int)` BYDAutoSafetyBeltDevice.java:73 — NOBODY0/SOMEBODY1 (:32-33), ghế phụ = DEPUTY=1 (:27).
-        t("oms_passenger", "Nhận diện ghế phụ", "Passenger detected", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoSafetyBeltDevice.getPassengerStatus", shortEn = "Passenger"),
-        // NEEDS-ONCAR: child_presence / speed_limit_warning / bsd_* / lca_* / rcta_* / dow_* — id "Overdrive" không resolve
-        // trong dump; per-side không có getter (ADAS chỉ có aggregate, per-side qua listener event).
-        t("child_presence", "Phát hiện trẻ em", "Child presence", "", SAFETY, BADGE, OVERDRIVE, "376438818"),
-        t("speed_limit_warning", "Cảnh báo quá tốc", "Speed limit warning", "", SAFETY, BADGE, OVERDRIVE, "535834664", shortEn = "Over speed"),
-        // ⚠ V3 · R11 [ĐO nguồn fw-dl3]: `BYDAutoFeatureIds` có `ADAS_BSD_STATE` (= 1098907656) và
-        // `ADAS_BSD_STATE_HAL`/`_CONFIG`/`_SET`, nhưng **không có** hằng báo động theo TỪNG GÓC; hai số
-        // 1098907692/1098907694 không xuất hiện ở đâu. Cảnh báo điểm mù trên ROM này là MỘT trạng thái, không
-        // phải hai đèn trái/phải ⇒ lại là một thay đổi hình dạng, chờ `featmap` + owner.
-        t("bsd_fl_alarm", "Điểm mù trước-trái", "Blind spot front-left", "", SAFETY, STRIP, OVERDRIVE, "1098907692", shortEn = "Blind spot L"),
-        t("bsd_fr_alarm", "Điểm mù trước-phải", "Blind spot front-right", "", SAFETY, STRIP, OVERDRIVE, "1098907694", shortEn = "Blind spot R"),
-        t("lca_left", "Chuyển làn trái", "Lane change left", "", SAFETY, STRIP, OVERDRIVE, "1098907664", shortEn = "Lane chg L"),
-        t("lca_right", "Chuyển làn phải", "Lane change right", "", SAFETY, STRIP, OVERDRIVE, "1098907666", shortEn = "Lane chg R"),
-        t("rcta_left", "Cắt ngang sau trái", "Rear cross-traffic left", "", SAFETY, STRIP, OVERDRIVE, "1098907668", shortEn = "Cross rear L"),
-        t("rcta_right", "Cắt ngang sau phải", "Rear cross-traffic right", "", SAFETY, STRIP, OVERDRIVE, "1098907669", shortEn = "Cross rear R"),
-        t("dow_left", "Mở cửa cảnh báo trái", "Door open warning left", "", SAFETY, STRIP, OVERDRIVE, "1098907680", short = "Cảnh báo cửa trái", shortEn = "Door warn L"),
-        t("dow_right", "Mở cửa cảnh báo phải", "Door open warning right", "", SAFETY, STRIP, OVERDRIVE, "1098907682", short = "Cảnh báo cửa phải", shortEn = "Door warn R"),
-        t("radar_zones", "Cảm biến đỗ (8 vùng)", "Parking sensors (8 zones)", "", SAFETY, BOARD, OVERDRIVE, "BYDAutoRadarDevice.getAllRadarProbeStates", short = "Cảm biến đỗ", shortEn = "Park sensors"),
-        // NEEDS-ONCAR: radar_volume — chỉ có đường ghi, không có getter đọc.
-        t("radar_volume", "Âm lượng cảm biến", "Sensor volume", "", SAFETY, VALUE, OVERDRIVE, "BYDAutoRadarDevice.getRadarVolume", short = "Âm lượng", shortEn = "Volume"),
-        // ESP · MCU = ký hiệu ngành, giữ nguyên viết tắt (spec §6 OQ2). Nhãn ngắn "ESP" trùng cả hai thứ tiếng ⇒ có
-        // tên trong danh sách cho phép của `LangCoverageTest`.
-        t("esp_state", "Cân bằng điện tử (ESP)", "Stability control (ESP)", "", SAFETY, BADGE, OVERDRIVE, "305135676", short = "ESP", shortEn = "ESP"),
-        t("mcu_status", "Trạng thái nguồn (MCU)", "Power state (MCU)", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoPowerDevice.getMcuStatus", short = "Nguồn MCU", shortEn = "MCU power"),
+        // ── A7. Điện phụ / nguồn (trước 2026-09-16 là "An toàn · ADAS") ─────────────────────────
+        // ⚠ Owner 2026-09-16 gỡ TOÀN BỘ ADAS/an toàn chủ động khỏi launcher — 17 datum (dây an toàn · nhận diện
+        // người ngồi · phát hiện trẻ em · cảnh báo quá tốc · điểm mù · chuyển làn · cắt ngang sau · cảnh báo mở cửa ·
+        // 8 vùng cảm biến đỗ · âm lượng cảm biến · ESP) đã xoá cùng `Domain.SAFETY`. Ba mục dưới đây KHÔNG thuộc hệ
+        // an toàn lái: chúng nói về **điện 12V và nguồn máy**, nên ở lại dưới [ENERGY].
+        t("mcu_status", "Trạng thái nguồn (MCU)", "Power state (MCU)", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoPowerDevice.getMcuStatus", short = "Nguồn MCU", shortEn = "MCU power"),
         // [ĐO] `double getBatteryVoltage()` BYDAutoOtaDevice.java:87 — Power KHÔNG có method này (chỉ getBatteryLowVoltageState).
-        t("volt_12v", "Ắc-quy 12V", "12V battery", "V", SAFETY, VALUE, OVERDRIVE, "BYDAutoOtaDevice.getBatteryVoltage"),
-        t("volt_12v_level", "Mức ắc-quy 12V", "12V battery level", "", SAFETY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getBatteryVoltageLevel", shortEn = "12V level"),
+        t("volt_12v", "Ắc-quy 12V", "12V battery", "V", ENERGY, VALUE, OVERDRIVE, "BYDAutoOtaDevice.getBatteryVoltage"),
+        t("volt_12v_level", "Mức ắc-quy 12V", "12V battery level", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getBatteryVoltageLevel", shortEn = "12V level"),
 
         // ── A8. Danh tính / khoá / máy ──────────────────────────────────────────────────────────
         // VIN = ký hiệu ngành, giữ nguyên (spec §6 OQ2).

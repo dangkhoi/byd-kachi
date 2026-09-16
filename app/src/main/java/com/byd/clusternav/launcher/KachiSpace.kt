@@ -205,11 +205,14 @@ object KachiSpace {
      *
      * ## Con số suy từ CHÍNH chuẩn G1, không tự chọn
      * G1 chốt nhãn ô con của nhóm ở **13.5sp** và ghi *"[ĐO] ở density 1.5: 13.5sp cho nét cao 16px"*. Ô vẽ này là
-     * cùng loại nội dung (nhãn của một ô con) nên phải cùng bậc ⇒ sàn 13dp ≈ 13.5sp. Đặt thấp hơn là để bảng ADAS có
-     * một chuẩn đọc riêng, thấp hơn phần còn lại của cùng một màn.
+     * cùng loại nội dung (nhãn của một ô con) nên phải cùng bậc ⇒ sàn 13dp ≈ 13.5sp. Đặt thấp hơn là để một bảng
+     * Canvas có chuẩn đọc riêng, thấp hơn phần còn lại của cùng một màn.
      *
-     * Nên: cỡ = `max(tỉ lệ, sàn)`, và **số HÀNG** mới là thứ co theo chỗ (xem [SideBoardPlan]). Đảo lại — bóp chữ để
-     * nhồi đủ hàng — là chính cái bệnh đang chữa.
+     * ⚠ Bảng đã đo ở trên (*sơ đồ hai bên xe*, nhóm ADAS) **đã xoá 2026-09-16** cùng toàn bộ ADAS/an toàn (owner).
+     * Phép đo giữ nguyên làm bằng chứng cho con số — sàn này nay áp cho [DoorBoardView] và [TyreBoardView].
+     *
+     * Nên: cỡ = `max(tỉ lệ, sàn)`, và **số HÀNG** mới là thứ co theo chỗ. Đảo lại — bóp chữ để nhồi đủ hàng — là
+     * chính cái bệnh đang chữa.
      *
      * **Không thể là một bậc của thang**: đây là cỡ CHỮ, không phải khoảng cách; và thang cố ý không quản typography
      * (xem KDoc `SpacingScaleContractTest`) — nhưng một cái SÀN thì phải sống cùng chỗ với mọi con số dp khác, không
@@ -225,17 +228,9 @@ object KachiSpace {
      */
     const val BOARD_VALUE_MIN = 16
 
-    /**
-     * **SÀN chiều cao một HÀNG của bảng sơ đồ hai bên** (24dp = 36px @1.5×).
-     *
-     * Suy ra từ [BOARD_VALUE_MIN] + [S] chứ không tự chọn: một hàng nay xếp **NGANG** (`nhãn · số`, xem
-     * `SideBoardView`) nên nó cần đúng một dòng chữ cao bằng chữ to nhất trong hàng ([BOARD_VALUE_MIN]) cộng khoảng
-     * thở. Bảng cũ xếp DỌC (số trên, nhãn dưới) nên một hàng cần gấp đôi — đó là lý do 4 hàng không vừa và chữ bị bóp.
-     *
-     * [ĐO] kiểm lại trên ô ADAS thật (`bodyH = 182px`): `182 / 36 = 5` hàng vừa được ⇒ cả 8 ô con vẫn hiện ĐỦ ở cỡ chữ
-     * đã nới. Tức phép co hàng là **lưới an toàn cho ô nhỏ**, không phải thứ ăn vào ca thường.
-     */
-    const val BOARD_ROW_MIN = BOARD_VALUE_MIN + S
+    // ⚠ 2026-09-16 — `BOARD_ROW_MIN` (sàn chiều cao một HÀNG của bảng sơ đồ hai bên) đã XOÁ cùng `SideBoardView`:
+    // nó là hằng của **riêng** bảng đó và sau lượt gỡ ADAS/an toàn (owner) không còn một chỗ gọi nào. Nếu mai có
+    // bảng nhiều-hàng mới, suy lại từ [BOARD_VALUE_MIN] + [S] như cũ — đừng chép lại con số.
 
     /**
      * Chiều cao **số chính** của thẻ CARD = 1.5 × [READ_ROW].

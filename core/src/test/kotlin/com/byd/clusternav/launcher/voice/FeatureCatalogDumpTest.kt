@@ -147,7 +147,8 @@ class FeatureCatalogDumpTest {
         sb.append("\n]\n}\n")
         val dir = File(System.getProperty("user.dir"), "build/catalog").apply { mkdirs() }
         File(dir, "registry.json").writeText(sb.toString())
-        assertTrue(ControlRegistry.ALL.size >= 60 && TelemetryRegistry.ALL.size >= 100, "registry teo lại bất thường")
+        // Sàn 60/100 → 50/100 sau khi owner gỡ toàn bộ ADAS/an toàn 2026-09-16 (64 → 54 nút · 123 → 106 datum).
+        assertTrue(ControlRegistry.ALL.size >= 50 && TelemetryRegistry.ALL.size >= 100, "registry teo lại bất thường")
     }
 
     private fun obj(sb: StringBuilder, fields: List<Pair<String, Any?>>) {

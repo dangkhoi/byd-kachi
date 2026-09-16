@@ -29,9 +29,9 @@ import android.widget.TextView
  *  • [CAPTION] 12 — chú thích, dòng phụ, đơn vị.
  *
  * ## KHÔNG thuộc thang này
- * Cỡ chữ VẼ trên Canvas của widget/board (số áp suất lốp, nhãn ADAS…) tính theo **tỉ lệ cạnh ô** để bất biến với
+ * Cỡ chữ VẼ trên Canvas của widget/board (số áp suất lốp, nhãn bộ phận thân xe…) tính theo **tỉ lệ cạnh ô** để bất biến với
  * cỡ ô — đó là kích thước hình học, không phải một bậc chữ giao diện. Chúng khai riêng tại chỗ vẽ, có lý do (xem
- * [TyreBoardView]/[SideBoardView]).
+ * [TyreBoardView]/[DoorBoardView]).
  *
  * ## Bài canh
  * [TypeScaleContractTest] quét mã nguồn các bề mặt đã áp và **đỏ** khi có `setTextSize(COMPLEX_UNIT_SP, <số>)`

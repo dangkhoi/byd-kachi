@@ -52,17 +52,16 @@ object WidgetCatalog {
         Domain.TYRES -> "ic-tire"
         Domain.BODY -> "ic-window"
         Domain.LIGHTS -> "ic-light"
-        // [KIỂM TOÁN UX mục 4a] Hai lĩnh vực này từng lùi về `ic-grid` (⊞) — cùng hình với widget "Bảng tổng hợp"
+        // [KIỂM TOÁN UX mục 4a] Lĩnh vực này từng lùi về `ic-grid` (⊞) — cùng hình với widget "Bảng tổng hợp"
         // VÀ với kính cửa, tức một glyph mang ba nghĩa. Nay ⊞ chỉ còn nghĩa "bảng".
-        Domain.SAFETY -> "ic-shield"
         Domain.IDENTITY -> "ic-car"
         Domain.INFOTAINMENT -> "ic-cast"
     }
 }
 
 /**
- * NHÓM NÚT điều khiển theo [Domain] cho màn Tuỳ biến — ADAS (SAFETY) / chế độ lái (DRIVETRAIN) / HUD (INFOTAINMENT)
- * nằm trong panel RIÊNG của domain đó (KHÔNG ẩn — OQ3). Không gate: mọi nút bật được vào dock.
+ * NHÓM NÚT điều khiển theo [Domain] cho màn Tuỳ biến — chế độ lái (DRIVETRAIN) / HUD (INFOTAINMENT) nằm trong
+ * panel RIÊNG của domain đó (KHÔNG ẩn — OQ3). Không gate: mọi nút bật được vào dock.
  */
 object ControlPanels {
 
@@ -166,7 +165,7 @@ data class CapabilityPick(
      *
      * [ĐO] 2026-09-11: từ gói 2, bảng chọn bày CẢ hai loại trong cùng một lưới ⇒ **18 nhãn trùng nhau** lộ ra
      * (vd hai ô đều ghi "Kính trước-trái": một cái để XEM độ mở %, một cái để BẤM đóng/mở). Trước gói 2 hai loại
-     * nằm ở hai màn khác nhau nên trùng không sao. Chỉ thêm gợi ý ở chỗ trùng — thêm cho cả 187 mục là nhiễu.
+     * nằm ở hai màn khác nhau nên trùng không sao. Chỉ thêm gợi ý ở chỗ trùng — thêm cho mọi mục là nhiễu.
      *
      * ⚠ Phép **phát hiện trùng vẫn chạy trên nhãn tiếng Việt** ([CapabilityCatalog.collidingLabels] đọc `label`):
      * tiếng Việt là nhãn GỐC, và tập trùng của nó là tập đã được kiểm/khoá bằng test. Nếu đổi sang so nhãn hiện tại
@@ -215,7 +214,7 @@ data class CapabilityPick(
      * Gợi ý loại, chỉ dùng khi nhãn bị trùng. Thứ tự xét quan trọng: **nhóm trước, rồi widget dựng tay**, vì cả hai
      * đều là ĐỌC — xét theo [kind] trước thì chúng và mục đọc thô sẽ ra cùng một gợi ý ⇒ vẫn không phân biệt được.
      * [ĐO] ca thật: widget "Tốc độ" (thẻ dựng tay) và mục đọc "Tốc độ" (số thô) — cùng là ĐỌC. Nhóm cần gợi ý riêng
-     * vì nó CÓ THỂ trùng nhãn với một mục rời (vd nhóm "Cảm biến đỗ" và datum `radar_zones`); không có nhánh này thì
+     * vì nó CÓ THỂ trùng nhãn với một mục rời (vd nhóm "Lốp" và một datum áp suất); không có nhánh này thì
      * hai bên cùng ra "· xem" và phép kiểm nhãn-trùng bế tắc thay vì tự giải.
      */
     private val kindHint: String
@@ -234,7 +233,7 @@ data class CapabilityPick(
  * TRA CỨU KHẢ NĂNG — lớp mỏng nằm TRÊN ba bộ đăng ký, KHÔNG trộn dữ liệu của chúng.
  *
  * ## Vì sao một không gian mã PHẲNG là an toàn (và vì sao phải khoá lại)
- * [ĐO] 2026-09-10: 123 mã telemetry + 64 mã control + 8 mã widget dựng tay = **195 mã, giao nhau RỖNG ở cả 3 cặp**.
+ * [ĐO] 2026-09-10: mã telemetry + mã control + mã widget dựng tay **giao nhau RỖNG ở cả 3 cặp**.
  * Nhờ vậy tra cứu chỉ cần `id` ⇒ **KHÔNG phải chuyển đổi cấu hình người dùng đã lưu** (ô + thanh nút đang lưu mã
  * trần). Nhưng "hôm nay không trùng" KHÔNG phải bảo đảm: thêm một nút trùng tên một datum sẽ gây **nối chéo âm
  * thầm** (ô hiện số trong khi người dùng tưởng bấm được, hoặc ngược lại). Vì thế [collisions] tồn tại và bị test
@@ -432,8 +431,8 @@ object CapabilityCatalog {
      * Nhãn xuất hiện NHIỀU HƠN MỘT LẦN trên toàn bộ khả năng (không chỉ giữa đọc↔hành động: [ĐO] còn có ca cùng
      * loại, vd widget "Tốc độ" dựng tay và mục đọc "Tốc độ" thô — cả hai đều ĐỌC).
      *
-     * Tính một lần rồi giữ, vì [CapabilityPick.displayLabel] gọi nó cho TỪNG ô khi dựng lưới 187 ô — tính lại mỗi
-     * lần sẽ quét toàn bộ bộ đăng ký 187 lần cho một lần mở bảng.
+     * Tính một lần rồi giữ, vì [CapabilityPick.displayLabel] gọi nó cho TỪNG ô khi dựng lưới — tính lại mỗi lần sẽ
+     * quét toàn bộ bộ đăng ký một lượt cho mỗi ô của một lần mở bảng.
      */
     fun collidingLabels(): Set<String> = collidingLabelsCache
 

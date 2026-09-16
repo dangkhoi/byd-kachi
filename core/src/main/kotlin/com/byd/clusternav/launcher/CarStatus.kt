@@ -15,7 +15,6 @@ data class CarStatus(
     val tyres: Tyres = Tyres(),
     val body: Body = Body(),
     val lights: Lights = Lights(),
-    val safety: Safety = Safety(),
     val identity: Identity = Identity(),
 ) {
     /** A1 — năng lượng / sạc / pin. */
@@ -48,6 +47,11 @@ data class CarStatus(
         val cellTempAvgC: Int? = null,
         val cellVHigh: Double? = null,
         val cellVLow: Double? = null,
+        // ── Điện phụ 12V + nguồn máy — chuyển từ `Safety` sang đây 2026-09-16 khi owner gỡ toàn bộ ADAS/an toàn.
+        // Ắc-quy 12V và trạng thái nguồn MCU không phải hệ an toàn lái; chúng là câu hỏi về NĂNG LƯỢNG.
+        val mcuStatus: Int? = null,
+        val volt12v: Double? = null,
+        val volt12vLevel: Int? = null,
     )
 
     /** A2 — động lực / tốc độ. */
@@ -136,30 +140,9 @@ data class CarStatus(
         val ambientRearBrightness: Int? = null,
     )
 
-    /** A7 — an toàn / ADAS / occupancy. */
-    data class Safety(
-        val seatbeltDriver: Boolean? = null,
-        val seatbeltPassenger: Boolean? = null,
-        val childPresence: Boolean? = null,
-        val speedLimitWarning: Boolean? = null,
-        val bsdLeftLevel: Int? = null,
-        val bsdRightLevel: Int? = null,
-        /** 8 vùng cảm biến đỗ (0=an toàn…4=đỏ); null = chưa đọc. */
-        val radarZones: List<Int>? = null,
-        val espOn: Boolean? = null,
-        val mcuStatus: Int? = null,
-        val volt12v: Double? = null,
-        val omsDriver: Boolean? = null,
-        val omsPassenger: Boolean? = null,
-        val lcaLeft: Int? = null,
-        val lcaRight: Int? = null,
-        val rctaLeft: Int? = null,
-        val rctaRight: Int? = null,
-        val dowLeft: Int? = null,
-        val dowRight: Int? = null,
-        val radarVolume: Int? = null,
-        val volt12vLevel: Int? = null,
-    )
+    // ⚠ A7 (`Safety`) đã **xoá hẳn** 2026-09-16 cùng toàn bộ ADAS/an toàn chủ động (owner). Đừng dựng lại nhóm này:
+    // dây an toàn · nhận diện người ngồi · trẻ em · quá tốc · điểm mù · chuyển làn · cắt ngang sau · cảnh báo mở cửa ·
+    // cảm biến đỗ · ESP đều KHÔNG còn trong launcher. Ba mục điện 12V/MCU đã dời sang [Energy].
 
     /** A8 — danh tính / khoá / máy. */
     data class Identity(

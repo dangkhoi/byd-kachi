@@ -156,8 +156,8 @@ object CapabilityPicker {
             CapabilityGroups.groupsContaining(p.id).map { it.id }
         }
         if (hit.isEmpty()) return ""
-        // ⚠ Ngăn cách bằng DẤU PHẨY, không bằng " · ": [ĐO] nhãn nhóm "An toàn · ADAS" đã chứa dấu giữa, nên nối bằng
-        // " · " ra câu "Đã có trong nhóm: An toàn · ADAS · Người ngồi" — đọc thành BA nhóm thay vì hai. Không nhãn
+        // ⚠ Ngăn cách bằng DẤU PHẨY, không bằng " · ": [ĐO 2026-09-13] có nhãn nhóm đã chứa dấu giữa, nên nối bằng
+        // " · " ra câu "Đã có trong nhóm: Cửa & khoang · Đèn viền" — đọc thành ba nhóm thay vì hai. Không nhãn
         // nhóm nào chứa dấu phẩy (có test canh), nên dấu phẩy phân biệt được.
         return HINT_PREFIX + CapabilityGroups.ALL.filter { it.id in hit }.joinToString(", ") { it.displayLabel }
     }

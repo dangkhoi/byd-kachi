@@ -30,11 +30,11 @@ class LauncherCatalogTest {
         assertNull(WidgetCatalog.pick("khong_co"))
     }
 
-    @Test fun `control panels co ADAS drive HUD rieng va tong bang registry`() {
+    @Test fun `control panels co drive HUD rieng va tong bang registry`() {
         val panels = ControlPanels.byDomain()
         val byDomain = panels.toMap()
-        // SAFETY = ADAS panel riêng, KHÔNG ẩn (OQ3)
-        assertTrue(byDomain[Domain.SAFETY]!!.any { it.id == "adas_slw" }, "ADAS phải nằm trong panel SAFETY")
+        // ⚠ Panel SAFETY (ADAS) đã gỡ 2026-09-16 cùng cả `Domain.SAFETY` — owner gỡ toàn bộ ADAS/an toàn.
+        assertTrue(Domain.values().none { it.name == "SAFETY" }, "không được có panel ADAS/an toàn nào mọc lại")
         assertTrue(byDomain[Domain.DRIVETRAIN]!!.any { it.id == "drive_mode" }, "chế độ lái panel DRIVETRAIN")
         assertTrue(byDomain[Domain.INFOTAINMENT]!!.any { it.id == "hud_switch" }, "HUD panel INFOTAINMENT")
         assertEquals(ControlRegistry.ALL.size, panels.sumOf { it.second.size }, "tổng nút = registry (không sót)")

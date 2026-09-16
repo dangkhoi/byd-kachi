@@ -1,5 +1,7 @@
 # RE + vá binding HAL cho 187 chức năng — off-car (2026-09-15)
 
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+
 - **Bối cảnh:** chuyến on-car 2026-09-15 chấm 64 OK / 121 KHÔNG / 2 chưa (187). Owner: *"mất quá nhiều thời gian trên xe vô nghĩa"* → RE toàn bộ **off-car**, lên xe chỉ xác nhận.
 - **Spec:** `docs/specs/kachi-hal187-cast-remediation.html`. **Nguồn:** `../jadx-*` (stub có enum/feature-id THẬT), `BYDAutoFeatureIds.java`, `../jadx-openbyd/.../CarControlImpl.java` (usage thật), `../dashcast-src/CHANGELOG.md`, doc RE nền.
 - **Verdict:** BINDING-OK · WRONG-ROUTE · WRONG-SCALE · WRONG-ENUM · UNMAPPED · NEEDS-ONCAR · UNAVAILABLE-TRIM.

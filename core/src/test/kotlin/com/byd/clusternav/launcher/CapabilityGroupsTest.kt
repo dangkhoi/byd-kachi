@@ -22,13 +22,16 @@ class CapabilityGroupsTest {
     // ── §4.1: đủ nhóm, thành viên là mã THẬT ─────────────────────────────────────────────────────
 
     @Test
-    fun `co dung 12 nhom theo bang spec`() {
+    fun `co dung 9 nhom theo bang spec`() {
         assertEquals(
-            12, CapabilityGroups.ALL.size,
-            "bảng §4.1 chốt 12 nhóm. Thêm/bớt nhóm là đổi thứ owner đã duyệt ⇒ sửa spec trước, đừng nới test",
+            9, CapabilityGroups.ALL.size,
+            "bảng §4.1 chốt 9 nhóm (2026-09-16 owner gỡ ADAS/an toàn — trước đó 12, bỏ g_adas · g_occupants · " +
+                "g_parking). Thêm/bớt nhóm là đổi thứ owner đã duyệt ⇒ sửa spec trước, đừng nới test",
         )
-        // R1 của spec đòi "≥ 10 nhóm" — khoá luôn quan hệ đó để đổi số ở trên không lặng lẽ tụt xuống dưới ngưỡng.
-        assertTrue(CapabilityGroups.ALL.size >= 10, "R1: phải có ít nhất 10 nhóm")
+        // Ba mã nhóm đã gỡ KHÔNG được mọc lại — owner gỡ chúng vì lý do AN TOÀN, không phải vì gọn.
+        listOf("g_adas", "g_occupants", "g_parking").forEach {
+            assertNull(CapabilityGroups.byId(it), "nhóm ADAS/an toàn '$it' đã gỡ theo lệnh owner 2026-09-16")
+        }
     }
 
     @Test
@@ -199,7 +202,7 @@ class CapabilityGroupsTest {
         CapabilityGroups.ALL.forEach { g ->
             assertFalse(
                 TopStripConfig.isChippable(g.id),
-                "chip ~24dp không vẽ được nhóm ${g.id}, và 3/12 nhóm mang nút ⇒ đích chạm 24dp bắn lệnh xe",
+                "chip ~24dp không vẽ được nhóm ${g.id}, và 3/9 nhóm mang nút ⇒ đích chạm 24dp bắn lệnh xe",
             )
         }
     }
@@ -284,8 +287,10 @@ class CapabilityGroupsTest {
     fun `khong muc roi nao bi xoa khi gom nhom`() {
         // [ĐO] 2026-09-11 trước G1: 123 datum · 64 nút · 9 widget · 4 gói lệnh. Gom nhóm là việc CỘNG THÊM; ai gom
         // xong xoá mục rời "cho gọn" là làm MẤT khả năng (§4.2 — có người chỉ muốn một con số tốc độ to giữa màn).
-        assertEquals(123, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 123")
-        assertEquals(64, ControlRegistry.ALL.size, "nút rời phải còn nguyên 64")
+        // ⚠ 2026-09-16 owner gỡ ADAS/an toàn: 123 → 106 datum, 64 → 54 nút. Đó là một **quyết định của owner**,
+        // không phải việc gom nhóm làm mất mục — bài này vẫn canh đúng điều nó sinh ra để canh.
+        assertEquals(106, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 106")
+        assertEquals(54, ControlRegistry.ALL.size, "nút rời phải còn nguyên 54")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
@@ -294,7 +299,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            123 + 64 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            106 + 54 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",
@@ -309,7 +314,7 @@ class CapabilityGroupsTest {
             TelemetryRegistry.ALL.size, covered.size + ungrouped.size,
             "mỗi datum phải hoặc thuộc nhóm hoặc nằm trong danh sách chưa-thuộc-nhóm, không rơi đâu mất",
         )
-        assertTrue(covered.size >= 80, "12 nhóm phải phủ phần lớn datum, đang phủ ${covered.size}")
+        assertTrue(covered.size >= 65, "9 nhóm phải phủ phần lớn datum, đang phủ ${covered.size}")
         // KHÔNG đòi phủ 100%: động lực/danh tính/GPS chưa có nhóm là đúng bảng §4.1, và mục rời vẫn đặt được.
         assertTrue("speed" in ungrouped, "tiền đề: tốc độ chưa thuộc nhóm nào (vẫn đặt được như mục rời)")
         // Không datum nào bị đếm hai lần trong CÙNG một nhóm.

@@ -258,8 +258,8 @@ class LauncherI18nContractTest {
             "`GroupCell`/`GroupActionCell` của `GroupBoard` — nhãn đã được `:core` điền từ `displayLabel`/" +
                 "`displayShortLabel` lúc dựng bảng (xem `GroupBoard`), nên tầng vẽ chỉ chép lại",
         "cell.label" to "cùng lý do `m.label`: ô của `GroupBoard`, nhãn đã dịch từ trước khi tới tầng vẽ",
-        "c.label" to "cùng lý do `m.label`: ô của `GroupBoard` trong bảng sơ đồ bên",
-        "it.label} ·" to "cùng lý do `m.label`: ô của `GroupBoard` ghép thành một dòng",
+        // ⚠ Hai mục `c.label` (bảng sơ đồ bên) và `it.label} ·` (dòng chân bảng BOARD) đã gỡ 2026-09-16 cùng
+        // `SideBoardView`/`RadarBoardView` — owner gỡ toàn bộ ADAS/an toàn nên hai ô vẽ đó không còn.
         "v.label" to
             "`TelemetryView` — `TelemetryReadout.of` điền `spec.displayLabel` vào đó, nên nhãn đã theo ngôn ngữ",
         "item.label" to "tên ứng dụng từ `PackageManager` — do HỆ THỐNG dịch, không phải chuỗi của dự án",

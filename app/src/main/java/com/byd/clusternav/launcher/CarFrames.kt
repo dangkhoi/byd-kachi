@@ -7,16 +7,16 @@ import android.os.Build
 import androidx.core.graphics.PathParser
 
 /**
- * ═══ U9 · MỘT CHIẾC XE — khung xe dùng chung cho icon 24dp VÀ ba bảng Canvas cỡ lớn ═══════════════════════════
+ * ═══ U9 · MỘT CHIẾC XE — khung xe dùng chung cho icon 24dp VÀ các bảng Canvas cỡ lớn ═════════════════════════
  *
  * Spec `docs/specs/kachi-car-boards.html` §4 (R1). Nguồn hình: script sinh icon của U7 (hằng `TOP_BODY` ·
  * `TOP_GLASS` · `WHEEL_FILL` trong `gen_car4.py`, xem `docs/diagnostics/icon-set-v2-inventory-2026-09-13.md` §1).
  *
  * ## Vì sao tệp này tồn tại
  * Trước U9 có **HAI chiếc xe** trong cùng một màn hình: bộ icon v2 vẽ thân thuôn mũi + hai vạch kính (path ở
- * `res/drawable/ic_car_top_*.xml`), còn ba bảng lớn ([TyreBoardView] · [RadarBoardView] · [SideBoardView]) mỗi
- * cái tự vẽ một `drawRoundRect` + một `drawLine` bằng tỉ lệ riêng. Kiểm kê U7 §1 đã ghi thẳng nợ đó:
- * *"ba path khung này là cùng hình học mà ba View đang vẽ tay… nên rút ra một hằng dùng chung để bảng lớn và
+ * `res/drawable/ic_car_top_*.xml`), còn các bảng lớn ([TyreBoardView] · [DoorBoardView]) mỗi cái tự vẽ một
+ * `drawRoundRect` + một `drawLine` bằng tỉ lệ riêng. Kiểm kê U7 §1 đã ghi thẳng nợ đó:
+ * *"các path khung này là cùng hình học mà nhiều View đang vẽ tay… nên rút ra một hằng dùng chung để bảng lớn và
  * icon nhỏ là MỘT chiếc xe, không phải hai chiếc khác nhau"*.
  *
  * Hệ toạ độ: **ô 24×24** của bộ icon (ô quang học 20×20, nét 1.6) — mọi số trong các chuỗi path dưới đây đọc
@@ -106,8 +106,8 @@ internal object CarFrames {
     /**
      * Bốn bánh, khoá theo [TyreCorner] của `:core` — **không** theo bốn chữ `fl/fr/rl/rr` của tên tệp icon.
      *
-     * Bộ đăng ký dùng tới **bốn** quy ước hậu tố cho cùng một góc xe (kiểm kê U7 §2: TPMS `fl·fr·rl·rr`, thân xe
-     * `lf·rf·lr·rr` **đảo chữ**, ADAS `left·right`…). Đổi chỗ giữa hai quy ước ấy là lỗi im lặng: bảng vẫn vẽ đủ
+     * Bộ đăng ký dùng nhiều quy ước hậu tố cho cùng một góc xe (kiểm kê U7 §2: TPMS `fl·fr·rl·rr`, thân xe
+     * `lf·rf·lr·rr` **đảo chữ**…). Đổi chỗ giữa hai quy ước ấy là lỗi im lặng: bảng vẫn vẽ đủ
      * bốn bánh, chỉ là bánh sau-trái mang số của bánh trước-trái. Khoá bằng enum thì trình biên dịch giữ hộ.
      */
     private val WHEELS: Map<TyreCorner, String> = mapOf(

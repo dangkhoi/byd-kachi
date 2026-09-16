@@ -15,30 +15,17 @@ import com.byd.clusternav.comfort.Pm25Filter
  * ## Ngưỡng: chỉ dùng lại, gần như không đặt mới
  * Phán xét non/căng/lệch của lốp lấy **nguyên** từ [TyreBoard] (nếu viết lại ở đây thì thành ngưỡng **THỨ TƯ** của
  * dự án — lỗi đã xảy ra thật: widget lốp cũ có `t[i] < 2.2` viết tại chỗ, lệch với `:core`). Mức bụi lấy từ
- * [Pm25Filter.isDirty]. Chỉ có ĐÚNG MỘT ngưỡng mới ([RADAR_ALERT_LEVEL]) vì cảm biến đỗ chưa từng có ngưỡng nào.
+ * [Pm25Filter.isDirty]. Không có ngưỡng nào tự nghĩ ra ở đây.
  *
  * ⚠ **CỐ Ý KHÔNG gán sắc thái cho các số "sức khoẻ"** (nhiệt pin, điện áp cell, ắc-quy 12V, nhiệt lốp, µg/m³, SOC…):
  * tôi KHÔNG biết ngưỡng đúng cho đời xe owner, và tự nghĩ một con số rồi tô đỏ là **bịa cảnh báo** — nguy hơn là
  * không cảnh báo, vì người lái sẽ học cách bỏ qua màu đỏ. Chỉ những datum **bản thân nó đã là tín hiệu báo động**
- * (cửa mở, dây chưa thắt, radar, BSD/LCA/RCTA/DOW, quá tốc, ESP tắt) mới có sắc thái. Đây là chỗ để owner thêm ngưỡng
- * sau khi đo số thật trên xe.
+ * (cửa mở, cốp mở) mới có sắc thái. Đây là chỗ để owner thêm ngưỡng sau khi đo số thật trên xe.
+ *
+ * ⚠ 2026-09-16 — mọi sắc thái ADAS/an toàn (dây an toàn, điểm mù, chuyển làn, cắt ngang sau, cảnh báo mở cửa, quá
+ * tốc, ESP, 8 vùng cảm biến đỗ) đã **gỡ hẳn** cùng các datum của chúng: launcher không còn nói gì về hệ an toàn.
  */
 object GroupBoard {
-
-    /**
-     * Số vùng cảm biến đỗ. Bằng 8 vì [CarStatus.Safety.radarZones] khai *"8 vùng cảm biến đỗ (0=an toàn…4=đỏ)"* và
-     * [WidgetShape.BOARD] cũng ghi *"8 zone radar"* từ đầu.
-     */
-    const val RADAR_ZONE_COUNT = 8
-
-    /**
-     * Mức vùng radar từ đây trở lên = **cảnh báo** (0..4 theo KDoc [CarStatus.Safety.radarZones], 4 = đỏ).
-     *
-     * ⚠ Con số này là **quyết định của agent**, chưa đo trên xe — cùng tình trạng với [TyreBoard.LOW_BAR]. Đặt ở MỘT
-     * chỗ để đổi một dòng sau khi owner nghe thử tiếng bíp ở từng mức. Chọn 3 (chứ không 1) có chủ ý: cảm biến đỗ kêu
-     * gần như liên tục lúc đỗ xe, tô đỏ từ mức 1 sẽ làm cả bảng đỏ suốt và mất hết ý nghĩa.
-     */
-    const val RADAR_ALERT_LEVEL = 3
 
     /**
      * Datum áp suất lốp ↔ góc bánh. Cần vì [TyreBoard.readings] trả về theo [TyreCorner] còn nhóm nói bằng **mã
@@ -89,7 +76,6 @@ object GroupBoard {
      */
     fun of(g: CapabilityGroup, status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT): GroupBoardModel {
         val tyres = tyreStatuses(g, status)
-        val radar = radarLevels(status)
         return GroupBoardModel(
             id = g.id,
             // U5 · T2: nhãn theo ngôn ngữ đang dùng ở CHÍNH chỗ dựng model — bộ vẽ ở `:app` chỉ đọc model, nên nếu
@@ -97,23 +83,9 @@ object GroupBoard {
             label = g.displayLabel,
             icon = g.icon,
             shape = g.shape,
-            cells = g.reads.map { cell(it, status, units, tyres, radar) },
+            cells = g.reads.map { cell(it, status, units, tyres) },
             actions = g.writes.mapNotNull { action(it) },
         )
-    }
-
-    /**
-     * 8 mức vùng radar cho bộ vẽ BOARD — luôn ĐÚNG [RADAR_ZONE_COUNT] phần tử; vùng chưa đọc = `null`.
-     *
-     * Đọc THẲNG từ [CarStatus] chứ **không** tách lại chuỗi hiển thị của `radar_zones` (chuỗi đó là `"0 1 2 …"` ghép
-     * bằng dấu cách trong [TelemetryReadout]). Tách ngược một chuỗi trình bày để lấy lại số là dựng **bản sao thứ
-     * hai** của cùng dữ liệu, và nó sẽ vỡ im lặng ngay khi ai đổi dấu phân cách. Giá trị hiển thị của ô con
-     * `radar_zones` thì vẫn đi qua [TelemetryReadout] như mọi ô con khác — hai việc khác nhau, không phải hai đường
-     * cho cùng một việc.
-     */
-    fun radarLevels(status: CarStatus): List<Int?> {
-        val z = status.safety.radarZones
-        return List(RADAR_ZONE_COUNT) { z?.getOrNull(it) }
     }
 
     /**
@@ -147,49 +119,11 @@ object GroupBoard {
         )
     }
 
-    /** Sắc thái tổng của bảng radar (dùng cho cả ô con `radar_zones` lẫn màu vùng). */
-    fun radarTone(level: Int?): GroupTone = when {
-        level == null -> GroupTone.NEUTRAL
-        level >= RADAR_ALERT_LEVEL -> GroupTone.ALERT
-        level > 0 -> GroupTone.WARN
-        else -> GroupTone.NEUTRAL
-    }
-
-    /**
-     * Kế hoạch cho bảng sơ đồ hai bên (xem [SideBoardPlan]) khi mỗi bên chỉ vẽ được [maxPerSide] hàng **ở cỡ chữ đọc
-     * được**.
-     *
-     * `maxPerSide` do `:app` tính từ pixel (nó là bên duy nhất biết ô cao bao nhiêu); hàm này chỉ quyết định *hiện
-     * cái gì*. Tách vậy để phép chọn kiểm được off-car — cùng lối [TyreBoard] ↔ `TyreBoardView`.
-     *
-     * ⚠ Sắp cảnh báo lên trước **giữ nguyên thứ tự khai** trong mỗi bên (`filter` ổn định): thứ tự khai là thứ tự
-     * không gian (trước → sau), nên xáo nó lên là nói sai vị trí.
-     */
-    fun sidePlan(m: GroupBoardModel, maxPerSide: Int): SideBoardPlan {
-        val l = m.leftCells
-        val r = m.rightCells
-        val total = l.size + r.size
-        // Đủ chỗ ⇒ vẽ đủ. Đây là ca THƯỜNG ở ô to, và nó phải byte-giữ hành vi cũ.
-        if (maxPerSide >= maxOf(l.size, r.size)) return SideBoardPlan(l, r, hidden = 0, summary = null)
-        val cap = maxPerSide.coerceAtLeast(0)
-        val la = l.filter { it.tone.isLoud }.take(cap)
-        val ra = r.filter { it.tone.isLoud }.take(cap)
-        val shown = la.size + ra.size
-        if (shown > 0) return SideBoardPlan(la, ra, hidden = total - shown, summary = null)
-        // Không có gì đáng nói mà cũng không đủ chỗ ⇒ MỘT dòng, và dòng đó phải phân biệt "đã đọc, sạch" với "chưa
-        // đọc được": off-car mọi field là null, nói "không có cảnh báo" ở đó là **hứa một điều chưa kiểm**.
-        val read = l.count { it.available } + r.count { it.available }
-        val summary =
-            if (read == 0) Strings.t("$total cảm biến · chưa đọc được", "$total sensors · not read yet")
-            else Strings.t("Không có cảnh báo · $total cảm biến", "No alerts · $total sensors")
-        return SideBoardPlan(emptyList(), emptyList(), hidden = total, summary = summary)
-    }
-
     /**
      * Kế hoạch cho bảng **Cửa & khoang** (U9 pha 2) — bộ phận nào đang mở, tô sắc thái nào, kết luận là câu gì.
      *
      * ## Vì sao ở `:core` chứ không ở ô vẽ
-     * Cùng lý do [sidePlan] và [TyreBoard.verdict]: *"cửa nào đang mở"* và *"nói câu gì về chúng"* là quyết định về
+     * Cùng lý do [TyreBoard.verdict]: *"cửa nào đang mở"* và *"nói câu gì về chúng"* là quyết định về
      * DỮ LIỆU, kiểm được off-car; còn *"vẽ vạt cửa ở góc nào"* mới là việc của Canvas. Ô vẽ ở `:app` thậm chí **không
      * được phép** nhắc tới mã `door_lf` — `GroupTileWiringContractTest` cấm đúng điều đó, nên chỗ nối phải là
      * [CarPart].
@@ -230,7 +164,7 @@ object GroupBoard {
      *
      * Ba điều nó phải phân biệt, và cả ba đều là chỗ dự án đã trả giá ở bảng khác:
      *  • **đã đọc, đóng hết** ≠ **chưa đọc được gì** — off-car mọi field là `null`, nói *"tất cả đã đóng"* ở đó là
-     *    hứa một điều chưa kiểm (đúng lỗi [sidePlan] đã phải vá);
+     *    hứa một điều chưa kiểm;
      *  • **đóng hết nhưng còn bộ phận chưa đọc** — vẫn phải kể ra con số, không được im lặng làm tròn thành "đóng hết";
      *  • bốn cửa thì **đếm**, các khoang còn lại thì **kể tên kèm giá trị** (xem [CarPart.isDoor]).
      */
@@ -277,7 +211,6 @@ object GroupBoard {
         s: CarStatus,
         units: UnitPrefs,
         tyres: Map<String, TyreStatus>,
-        radar: List<Int?>,
     ): GroupCell {
         val spec = TelemetryRegistry.byId(id)
         // Mã không có trong registry là chuyện [CapabilityGroups.init] đã chặn; giữ lưới an toàn để ô hiện "—" thay
@@ -288,29 +221,11 @@ object GroupBoard {
             label = spec?.displayShortLabel ?: id,
             number = view?.display ?: TelemetryView.PLACEHOLDER,
             unit = view?.unit ?: "",
-            tone = toneOf(id, s, tyres, radar),
+            tone = toneOf(id, s, tyres),
             icon = spec?.let { CapabilityIcons.forTelemetry(it.id, it.domain) } ?: "",
             available = view?.available == true,
             needsBadge = spec?.tier?.needsBadge == true,
-            side = sideOf(id),
         )
-    }
-
-    /**
-     * Phía trên xe của một mã datum, suy từ **quy ước đặt tên** của bộ đăng ký.
-     *
-     * Quy ước có thật và nhất quán trong cả 123 datum: `_lf`/`_fl`/`_lr` + hậu tố `_left` = bên trái, `_rf`/`_fr`/
-     * `_rr` + `_right` = bên phải. Mã không mang dấu hiệu nào ⇒ [GroupSide.NONE] (ESP, cảnh báo quá tốc — chúng nói
-     * về cả xe, gán bừa vào một bên là **nói sai** chứ chỉ là xếp xấu).
-     *
-     * ⚠ Xét TRÁI trước PHẢI không quan trọng ở đây (không mã nào mang cả hai), nhưng xét `contains` thay vì
-     * `endsWith` thì **bắt buộc**: `bsd_fl_alarm` kết bằng `_alarm`, nên `endsWith("_fl")` sẽ trả NONE cho đúng
-     * bốn mục điểm mù — tức bảng mất hẳn hai hàng mà không báo gì.
-     */
-    fun sideOf(id: String): GroupSide = when {
-        id.endsWith("_left") || id.contains("_fl") || id.contains("_lf") || id.contains("_lr") -> GroupSide.LEFT
-        id.endsWith("_right") || id.contains("_fr") || id.contains("_rf") || id.contains("_rr") -> GroupSide.RIGHT
-        else -> GroupSide.NONE
     }
 
     /**
@@ -318,7 +233,7 @@ object GroupBoard {
      *
      * [ĐO] ảnh máy ảo 2026-09-12: hàng nút chia 6 ô trên khung 4/12 màn ⇒ 82px/ô, nhãn đầy bị cắt
      * (`"Window front-ri…"` · `"Kính trước-p…"`). Nhãn ngắn khai ở [ControlDef.short]/[ActionMacro] chứ không viết tắt
-     * tại đây: quy tắc viết tắt tự nghĩ ở tầng trình bày sẽ ra nhãn vô nghĩa ở đâu đó trong 64 nút mà không ai kiểm.
+     * tại đây: quy tắc viết tắt tự nghĩ ở tầng trình bày sẽ ra nhãn vô nghĩa ở đâu đó trong bộ nút mà không ai kiểm.
      */
     private fun action(id: String): GroupActionCell? {
         ControlRegistry.byId(id)?.let {
@@ -359,7 +274,7 @@ object GroupBoard {
      *
      * Mã không có luật ⇒ [GroupTone.NEUTRAL]: xem KDoc lớp về việc **không bịa ngưỡng**.
      */
-    private fun toneOf(id: String, s: CarStatus, tyres: Map<String, TyreStatus>, radar: List<Int?>): GroupTone {
+    private fun toneOf(id: String, s: CarStatus, tyres: Map<String, TyreStatus>): GroupTone {
         tyres[id]?.let { return tyreTone(it) }
         return when (id) {
             // ── ĐANG BẬT / ĐANG MỞ (sáng lên) ───────────────────────────────────────────────
@@ -387,9 +302,6 @@ object GroupBoard {
             "ac_cycle" -> active(s.climate.recircOn)
             "anion_state" -> active(s.climate.anionOn)
             "is_charging" -> active(s.energy.isCharging)
-            // Có người ngồi = thông tin, không phải cảnh báo (cảnh báo là *chưa thắt dây*, ở nhánh dưới).
-            "oms_driver" -> active(s.safety.omsDriver)
-            "oms_passenger" -> active(s.safety.omsPassenger)
 
             // ── CẢNH BÁO ────────────────────────────────────────────────────────────────────
             "door_lf" -> alertIf(s.body.doorLfOpen)
@@ -397,20 +309,6 @@ object GroupBoard {
             "door_lr" -> alertIf(s.body.doorLrOpen)
             "door_rr" -> alertIf(s.body.doorRrOpen)
             "tailgate_status" -> alertIf(s.body.tailgateOpen)
-            "child_presence" -> alertIf(s.safety.childPresence)
-            "speed_limit_warning" -> alertIf(s.safety.speedLimitWarning)
-            "seatbelt_driver" -> alertIfNot(s.safety.seatbeltDriver)
-            "seatbelt_passenger" -> alertIfNot(s.safety.seatbeltPassenger)
-            "bsd_fl_alarm" -> alarmLevel(s.safety.bsdLeftLevel)
-            "bsd_fr_alarm" -> alarmLevel(s.safety.bsdRightLevel)
-            "lca_left" -> alarmLevel(s.safety.lcaLeft)
-            "lca_right" -> alarmLevel(s.safety.lcaRight)
-            "rcta_left" -> alarmLevel(s.safety.rctaLeft)
-            "rcta_right" -> alarmLevel(s.safety.rctaRight)
-            "dow_left" -> alarmLevel(s.safety.dowLeft)
-            "dow_right" -> alarmLevel(s.safety.dowRight)
-            // ESP TẮT là đèn báo trên táp-lô thật ⇒ để ý. Bật = bình thường, không cần tô gì.
-            "esp_state" -> if (s.safety.espOn == false) GroupTone.WARN else GroupTone.NEUTRAL
             // Ngưỡng bụi dùng LẠI [Pm25Filter] (đã có, đang chạy trên xe) — không đặt ngưỡng thứ hai.
             "pm25_level" -> s.climate.pm25Level?.let {
                 when {
@@ -419,7 +317,6 @@ object GroupBoard {
                     else -> GroupTone.NEUTRAL
                 }
             } ?: GroupTone.NEUTRAL
-            "radar_zones" -> radarTone(radar.filterNotNull().maxOrNull())
 
             else -> GroupTone.NEUTRAL
         }
@@ -431,11 +328,4 @@ object GroupBoard {
     private fun active(on: Boolean?): GroupTone = if (on == true) GroupTone.ACTIVE else GroupTone.NEUTRAL
 
     private fun alertIf(open: Boolean?): GroupTone = if (open == true) GroupTone.ALERT else GroupTone.NEUTRAL
-
-    /** Cảnh báo khi giá trị là **false** (dây an toàn chưa thắt). `null` = chưa đọc ⇒ không cảnh báo oan. */
-    private fun alertIfNot(ok: Boolean?): GroupTone = if (ok == false) GroupTone.ALERT else GroupTone.NEUTRAL
-
-    /** Mức báo động của cảm biến hỗ trợ lái (0 = im lặng). */
-    private fun alarmLevel(level: Int?): GroupTone =
-        if (level != null && level > 0) GroupTone.ALERT else GroupTone.NEUTRAL
 }

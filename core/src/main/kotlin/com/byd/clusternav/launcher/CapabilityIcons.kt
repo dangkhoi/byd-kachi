@@ -5,10 +5,10 @@ package com.byd.clusternav.launcher
  *
  * ## Bệnh nó chữa
  * [ĐO] 2026-09-11: **123 mục đọc chỉ dùng 9 icon** vì icon lấy theo NHÓM ([WidgetCatalog.iconFor]) — cả 28 mục
- * năng lượng đều mang icon tia sét, cả 20 mục an toàn đều mang icon lưới. Trên bảng Tuỳ biến, một hàng 5 ô trông
+ * năng lượng đều mang icon tia sét. Trên bảng Tuỳ biến, một hàng 5 ô trông
  * y hệt nhau, icon **không giúp phân biệt gì**, người dùng phải đọc chữ (mà chữ thì bị cắt trong ô nhỏ).
  *
- * ## Cách làm — KHÔNG sửa 123 dòng registry
+ * ## Cách làm — KHÔNG sửa từng dòng registry
  * Bảng tra theo **khái niệm** (đo cái gì), không theo nhóm. Cùng lối với lớp đơn vị: thêm một mục vào registry mà
  * chưa khai icon thì nó tự lùi về icon của nhóm — **không bao giờ ra ô trống icon**.
  *
@@ -119,24 +119,11 @@ object CapabilityIcons {
         // đại lượng khác nhau của cùng một dải (R2: khác biệt phải ở HÌNH, không chỉ ở nhãn).
         "ambient_front_brightness" to "ic-car-top-ambient-bright-front",
         "ambient_rear_brightness" to "ic-car-top-ambient-bright-rear",
-        // ── An toàn ──
-        // U7: 9 cảnh báo vùng trước đây dùng chung MỘT sóng radar. Nay vùng cảm biến được vẽ ĐÚNG CHỖ
-        // trên khung xe nhìn từ trên: điểm mù = hai vòng sóng ở hông sau; chuyển làn = mũi tên cong rời
-        // thân; cắt ngang sau = mũi tên chạy ngang sau đuôi; mở cửa = vạt cửa + xe tới từ phía sau.
-        "bsd_fl_alarm" to "ic-car-top-bsd-l", "bsd_fr_alarm" to "ic-car-top-bsd-r",
-        "lca_left" to "ic-car-top-lca-l", "lca_right" to "ic-car-top-lca-r",
-        "rcta_left" to "ic-car-top-rcta-l", "rcta_right" to "ic-car-top-rcta-r",
-        "dow_left" to "ic-car-top-dow-l", "dow_right" to "ic-car-top-dow-r",
-        "seatbelt_driver" to "ic-car-top-belt-fl", "seatbelt_passenger" to "ic-car-top-belt-fr",
-        "radar_zones" to "ic-car-top-park-all", "radar_volume" to "ic-volume",
-        // Ghế nào có người: vẽ NGƯỜI (đầu + vai nhìn từ trên) ở đúng ghế, không vẽ cái ghế —
-        // ba mục này trước đây cùng một hình ghế nên không nói được "ai đang ngồi đâu".
-        "child_presence" to "ic-car-top-occupant-rear",
-        "oms_driver" to "ic-car-top-occupant-fl", "oms_passenger" to "ic-car-top-occupant-fr",
-        "speed_limit_warning" to "ic-speed",
-        // ESP có ký hiệu chuẩn trên táp-lô; trước đây nó lùi về icon nhóm AN TOÀN = hình lưới ⊞ (mục 4a).
-        "esp_state" to "ic-esp",
-        "volt_12v" to "ic-bolt", "volt_12v_level" to "ic-bolt",
+        // ── Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16 cùng 17 datum của nó) ──
+        // ⚠ Ba mục này chuyển từ `SAFETY` sang `ENERGY` cùng lượt gỡ, và tia sét trần thì **không còn chỗ**: [ĐO]
+        // `CapabilityIconsDiversityTest` báo `ic-bolt ×6` trong lĩnh vực Năng lượng ngay lượt chạy đầu (trần là 3).
+        // Nên mỗi mục lấy đúng hình của thứ nó đo: ĐIỆN ÁP (cùng họ với áp cell) · MỨC pin · THIẾT BỊ còn sống.
+        "volt_12v" to "ic-cell-volt", "volt_12v_level" to "ic-battery", "mcu_status" to "ic-sensor",
         // ── Lốp (U7) — vị trí bánh nằm trong mã, nay nằm cả trong hình ──
         // Áp suất: ba bánh kia là NÉT, bánh đang nói tới TÔ ĐẶC. Nhiệt: bánh đó TÔ + nhiệt kế giữa xe.
         "tyre_p_fl" to "ic-car-top-tyre-fl", "tyre_p_fr" to "ic-car-top-tyre-fr",
@@ -158,7 +145,7 @@ object CapabilityIcons {
      * Thứ tự QUAN TRỌNG: tiền tố dài đứng trước (nhiệt lốp phải khớp trước áp suất lốp).
      */
     private val PREFIX: List<Pair<String, String>> = listOf(
-        // ⚠ U7 GỠ 15 TIỀN TỐ Ở ĐÂY (lốp · kính · cửa · dây an toàn · đèn · đèn viền · GPS · ADAS).
+        // ⚠ U7 GỠ 15 TIỀN TỐ Ở ĐÂY (lốp · kính · cửa · đèn · đèn viền · GPS).
         // Tiền tố là công cụ để nói "cả HỌ này cùng một hình" — đúng khi khác biệt nằm ở KHÁI NIỆM.
         // Nhưng ở các họ đó khác biệt nằm ở VỊ TRÍ, nên gộp theo tiền tố chính là thứ tạo ra "14 ô
         // cùng một bóng đèn". Nay mỗi mã tra thẳng ra hình mang đúng vị trí của nó (bảng EXACT ở trên).

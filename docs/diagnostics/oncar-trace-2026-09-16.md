@@ -1,5 +1,7 @@
 # Lượt xe 2026-09-16 — trace voice trực tiếp · sweep · vòng action · framework thật của xe
 
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+
 - **Ngày:** 2026-09-16 09:00–09:35 · **Chủ:** dangkhoi · **Xe:** DiLink3.0 (Android 10, fingerprint `…eng.build.20260204`), Qualcomm TRINKET 8 lõi 1,8 GHz, RAM 7,6 GB (**trống ~60 MB**) · **Bản:** Kachi **1.64 (65)** qua OTA, sau đó bản thử `1.65-mic` (vehicleTest).
 - **Kết nối:** `adb connect <ip-xe>:5555` từ máy soạn thảo; test-mode bật tay ở Cài đặt › Nâng cao (60 phút).
 - **Bằng chứng:** `carlog-0916/` (sweep JSON · vòng action · getters · trace voice · ảnh bug ô · thống kê feature-not-in-device) — thư mục **gitignored** (`docs/diagnostics/carlog-*/`, chứa VIN thật trong sweep) ⇒ chỉ có trên máy soạn thảo; số liệu trích vào doc này là bản đã lọc. Mức: mọi số dưới đây là **[ĐO]** trừ khi ghi khác.

@@ -43,19 +43,14 @@ class TelemetryReadoutTest {
         assertEquals("Có", TelemetryReadout.of("is_charging", CarStatus(energy = CarStatus.Energy(isCharging = true)))!!.display)
         assertEquals("Mở", TelemetryReadout.of("door_lf", CarStatus(body = CarStatus.Body(doorLfOpen = true)))!!.display)
         assertEquals("Đóng", TelemetryReadout.of("tailgate_status", CarStatus(body = CarStatus.Body(tailgateOpen = false)))!!.display)
-        assertEquals("Thắt", TelemetryReadout.of("seatbelt_driver", CarStatus(safety = CarStatus.Safety(seatbeltDriver = true)))!!.display)
     }
 
     @Test fun `double format lam tron`() {
         assertEquals("241", TelemetryReadout.of("tyre_p_fl", CarStatus(tyres = CarStatus.Tyres(pFlKpa = 240.6)))!!.display)  // kPa round
-        assertEquals("12.4", TelemetryReadout.of("volt_12v", CarStatus(safety = CarStatus.Safety(volt12v = 12.42)))!!.display)
+        assertEquals("12.4", TelemetryReadout.of("volt_12v", CarStatus(energy = CarStatus.Energy(volt12v = 12.42)))!!.display)
     }
 
-    @Test fun `radar_zones ghep list`() {
-        val v = TelemetryReadout.of("radar_zones", CarStatus(safety = CarStatus.Safety(radarZones = listOf(0, 1, 2, 3))))!!
-        assertEquals("0 1 2 3", v.display)
-        assertEquals(WidgetShape.BOARD, v.shape)
-    }
+    // ⚠ Bài `radar_zones ghep list` đã gỡ 2026-09-16 cùng datum `radar_zones` (owner gỡ toàn bộ ADAS/an toàn).
 
     @Test fun `string field passthrough`() {
         assertEquals("P", TelemetryReadout.of("gear", CarStatus(drivetrain = CarStatus.Drivetrain(gear = "P")))!!.display)

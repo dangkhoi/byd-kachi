@@ -28,9 +28,7 @@ class CarDataAdapterTest {
                 ),
                 features = mapOf(
                     1031798832 to "24",    // cabin_temp
-                    305135676 to "1",      // esp_state
                     339738656 to "120",    // motor_power (fast) — số của xe giả, tra qua TÊN ở dưới
-                    535834664 to "1",      // speed_limit_warning (fast)
                 ),
                 // V3 · R11 (1.66): `motor_power` nay bind theo **TÊN HẰNG** (`ENGINE_POWER`) vì số thật đổi theo
                 // cấu hình xe ([ĐO nguồn fw-dl3]: 339738656 khi CanFD · 353370144 Toyota · 1033203762 còn lại).
@@ -49,7 +47,6 @@ class CarDataAdapterTest {
         assertEquals(240.0, s.tyres.pFlKpa)          // raw kPa in CarStatus
         assertEquals(98, s.body.windowLfPct)
         assertEquals(true, s.lights.lowBeam)
-        assertEquals(true, s.safety.espOn)
         assertEquals("LGXCE4CB0N0000001", s.identity.vin)
     }
 
@@ -57,7 +54,6 @@ class CarDataAdapterTest {
         val s = adapter().readFast(CarStatus())
         assertEquals(56, s.drivetrain.speedKmh)
         assertEquals(120, s.energy.motorPowerKw)
-        assertEquals(true, s.safety.speedLimitWarning)
     }
 
     @Test fun `slow preserves fast fields (copy-merge boundary)`() {
@@ -66,8 +62,6 @@ class CarDataAdapterTest {
         assertEquals(56, s.drivetrain.speedKmh)          // from fast, kept
         assertEquals(120, s.energy.motorPowerKw)         // fast field survives slow energy.copy
         assertEquals(82, s.energy.soc)                   // from slow
-        assertEquals(true, s.safety.speedLimitWarning)   // fast alert survives slow safety.copy
-        assertEquals(true, s.safety.espOn)               // from slow
     }
 
     @Test fun `legacy 6 methods map correctly (kPa to bar)`() {

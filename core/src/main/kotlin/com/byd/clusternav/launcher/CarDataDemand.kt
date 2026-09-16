@@ -1,7 +1,7 @@
 package com.byd.clusternav.launcher
 
 /**
- * ═══ H1 · ĐỌC ĐÚNG THỨ ĐANG HIỆN, KHÔNG ĐỌC CẢ 123 DATUM ═════════════════════════════════════════════════════
+ * ═══ H1 · ĐỌC ĐÚNG THỨ ĐANG HIỆN, KHÔNG ĐỌC CẢ BẢNG DATUM ═══════════════════════════════════════════════════
  *
  * [ĐO xe 2026-09-16] (`docs/diagnostics/perf-profile-2026-09-16.md` §0): trong 47 phút lăn bánh, Kachi ghi
  * **24 055 dòng getter HAL (≈510/phút)** và **10 804 dòng "no permission" (≈229/phút)** — vì [CarDataAdapter] đọc
@@ -61,7 +61,7 @@ object CarDataDemand {
     val CURATED: Map<String, Set<String>> = mapOf(
         "w_energy" to setOf("soc", "ev_range_km"),
         "w_pm25" to setOf("pm25_value", "pm25_level"),
-        "w_speed" to setOf("speed", "speed_limit_warning"),
+        "w_speed" to setOf("speed"),
         "w_tire" to setOf(
             "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
             "tyre_t_fl", "tyre_t_fr", "tyre_t_rl", "tyre_t_rr",
@@ -128,7 +128,7 @@ object CarDataDemand {
     /**
      * Có datum nào của **nhịp NHANH** nằm trong [demand] không.
      *
-     * Vì sao cần: nhịp nhanh chạy 1 Hz và mang 18 datum; màn mặc định (pin · bụi · nhiệt độ ngoài) KHÔNG bày một
+     * Vì sao cần: nhịp nhanh chạy 1 Hz và mang 15 datum; màn mặc định (pin · bụi · nhiệt độ ngoài) KHÔNG bày một
      * datum nhanh nào, nên cả vòng 1 Hz là **thuần lãng phí** — nhưng chỉ biết được điều đó bằng cách hỏi, chứ
      * không được đoán theo tên hồ sơ hay theo bố cục. `null` ([of] không tính được) ⇒ `true` (chạy như cũ).
      */
@@ -195,6 +195,5 @@ object CarDataDemand {
         "speed", "accel_pct", "brake_pct", "motor_front_rpm", "steering_deg", "slope_deg",
         "gear", "op_mode", "energy_mode", "motor_rear_rpm", "motor_front_torque", "engine_rpm",
         "wheel_speed", "drift_mode", "motor_power",
-        "speed_limit_warning", "bsd_fl_alarm", "bsd_fr_alarm",
     )
 }

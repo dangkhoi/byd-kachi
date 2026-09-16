@@ -60,8 +60,8 @@ class ControlRegistryExtendedTest {
     @Test fun `control gom nhieu domain (panel)`() {
         val domains = ControlRegistry.ALL.map { it.domain }.toSet()
         assertTrue(domains.size >= 6, "control chi phu $domains")
-        // ADAS + drive + energy + infotainment deu co nut.
-        listOf(Domain.SAFETY, Domain.DRIVETRAIN, Domain.ENERGY, Domain.INFOTAINMENT, Domain.BODY, Domain.LIGHTS, Domain.CLIMATE)
+        // drive + energy + infotainment deu co nut. (`Domain.SAFETY` da go 2026-09-16 cung toan bo ADAS/an toan.)
+        listOf(Domain.DRIVETRAIN, Domain.ENERGY, Domain.INFOTAINMENT, Domain.BODY, Domain.LIGHTS, Domain.CLIMATE)
             .forEach { d -> assertTrue(ControlRegistry.byDomain(d).isNotEmpty(), "domain $d khong co control") }
     }
 

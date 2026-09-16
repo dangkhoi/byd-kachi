@@ -87,7 +87,7 @@ class CapabilityIconsTest {
             "soc" to "ic-battery", "ev_range_km" to "ic-range", "odometer" to "ic-road",
             // U7 — sáu họ dưới đây đổi từ "một hình cho cả họ" sang "một hình cho mỗi VỊ TRÍ"; đó là toàn bộ
             // điểm của lượt này, nên số ghim ở đây đổi theo (xem CapabilityIconPositionTest).
-            "seatbelt_driver" to "ic-car-top-belt-fl", "bsd_fl_alarm" to "ic-car-top-bsd-l",
+            // ⚠ Hai mốc `seatbelt_driver` · `bsd_fl_alarm` đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn (owner).
             "gps_lat" to "ic-gps-lat",
             "steering_deg" to "ic-steering", "cabin_temp" to "ic-temp",
             "window_lf" to "ic-car-top-window-lf", "door_lf" to "ic-car-top-door-lf",

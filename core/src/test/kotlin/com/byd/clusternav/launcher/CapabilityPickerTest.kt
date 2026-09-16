@@ -72,11 +72,12 @@ class CapabilityPickerTest {
             (before - after.toSet()).toSet(),
             "phép lọc chỉ được bỏ mã NHÓM, không bỏ gì khác",
         )
-        // Đếm tuyệt đối: mục rời có nhóm hiển thị = 212 khả năng − 12 nhóm − 9 widget dựng tay (không thuộc lĩnh vực).
+        // Đếm tuyệt đối: mục rời có nhóm hiển thị = tổng khả năng − nhóm − 9 widget dựng tay (không thuộc lĩnh vực).
         // U6: trừ các mã cố ý ẩn khỏi màn chọn (có lý do, tra cứu vẫn được — xem `HIDDEN_FROM_PICKER`).
+        // 106 + 54 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 123 + 64).
         assertEquals(
-            123 + 64 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
-            "mục rời theo lĩnh vực phải còn nguyên 123 đọc + 64 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
+            106 + 54 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
+            "mục rời theo lĩnh vực phải còn nguyên 106 đọc + 54 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
         )
     }
 
@@ -128,34 +129,22 @@ class CapabilityPickerTest {
     }
 
     /**
-     * ⚠⚠ [KIỂM TOÁN UX mục 6] Số đếm phải là số mục **NGƯỜI DÙNG THẤY**, không phải số mã datum.
+     * ⚠⚠ [KIỂM TOÁN UX mục 6] Số đếm là số mục **NGƯỜI DÙNG THẤY**.
      *
-     * [ĐO] màn chọn từng ghi *"Cảm biến đỗ — 2 mục"* trong khi ô đó hiện **8 ô vùng** + một dòng âm lượng: nhóm khai
-     * hai mã, nhưng `radar_zones` là một mã mang cả 8 vùng. Tức nhóm được trình bày ĐÚNG NHẤT lại bị số đếm nói cho
-     * thành nhỏ nhất — người dùng đọc "2 mục" thì không có lý do gì để thử nó.
+     * Ca duy nhất từng lệch (`g_parking`: hai mã nhưng `radar_zones` nở ra 8 ô vùng) đã biến mất 2026-09-16 cùng
+     * toàn bộ ADAS/an toàn. Bài này giữ nguyên vai: chốt rằng **hôm nay không mã nào nở ra**, để ngày ai thêm một
+     * mã như thế mà quên khai số nở thì đỏ tại đây chứ không im lặng nói sai số trên màn chọn.
      */
     @Test
     fun `so muc dem theo thu NGUOI DUNG THAY, khong theo so ma datum`() {
-        val parking = CapabilityGroups.PARKING
-        assertEquals(2, parking.reads.size, "vẫn khai hai mã (không đổi thành viên)")
-        assertEquals(
-            GroupBoard.RADAR_ZONE_COUNT + 1, parking.visibleReadCount,
-            "nhưng người dùng thấy 8 ô vùng + 1 dòng âm lượng",
-        )
-        assertTrue(
-            parking.contentLine.startsWith("9 mục"),
-            "dòng phụ phải nói 9: '${parking.contentLine}'",
-        )
-        // Mọi nhóm KHÁC không có mã nở ra ⇒ hai cách đếm phải TRÙNG. Không có phép kiểm này thì bảng nở-ra có thể
-        // âm thầm phồng số của nhóm khác.
-        CapabilityGroups.ALL.filter { it.id != parking.id }.forEach { g ->
+        CapabilityGroups.ALL.forEach { g ->
             assertEquals(g.reads.size, g.visibleReadCount, "${g.id}: không có mã nở ra ⇒ hai cách đếm phải bằng nhau")
         }
     }
 
     @Test
     fun `chi NHOM co dong phu - muc roi de rong`() {
-        // Nếu mục rời cũng có dòng phụ thì lưới 187 ô cao thêm một dòng mỗi ô — làm chật đúng chỗ đang chật.
+        // Nếu mục rời cũng có dòng phụ thì cả lưới cao thêm một dòng mỗi ô — làm chật đúng chỗ đang chật.
         val singles = CapabilityCatalog.byDomain().flatMap { CapabilityPicker.singlesOf(it.second) }
         val noisy = singles.filter { it.sub.isNotEmpty() }.map { it.id }
         assertEquals(emptyList<String>(), noisy, "mục rời không cần dòng phụ (nhãn của nó đã tự nói): $noisy")
@@ -205,25 +194,20 @@ class CapabilityPickerTest {
             hint.indexOf(CapabilityGroups.WINDOWS.label) < hint.indexOf(CapabilityGroups.DOORS.label),
             "gợi ý phải theo thứ tự khai của CapabilityGroups.ALL: '$hint'",
         )
-        // Nhãn nhóm đã chứa " · " (vd "An toàn · ADAS") nên dấu ngăn cách PHẢI khác, không thì đọc thành nhiều nhóm.
+        // Nhãn nhóm có thể chứa " · " (vd "Cửa & khoang") nên dấu ngăn cách PHẢI khác, không thì đọc thành nhiều nhóm.
         assertTrue(
             CapabilityGroups.ALL.none { "," in it.label },
             "nhãn nhóm không được chứa dấu phẩy — đó là dấu ngăn cách của gợi ý",
-        )
-        val safety = CapabilityCatalog.byDomain().first { it.first == Domain.SAFETY }.second
-        assertTrue(
-            CapabilityGroups.ADAS.label in CapabilityPicker.groupHint(safety),
-            "nhãn có dấu giữa vẫn phải đọc ra nguyên vẹn",
         )
     }
 
     @Test
     fun `goi y bat ca nhom BAT CHEO linh vuc`() {
-        // `volt_12v` khai ở SAFETY nhưng thuộc nhóm Sức khoẻ pin (ENERGY) — ca đã ghi trong KDoc CapabilityGroup.
-        // Gợi ý phải bắt được nó, nếu không thì người dùng cuộn qua ắc-quy 12V mà không biết nhóm pin đã có nó.
-        val safety = CapabilityCatalog.byDomain().first { it.first == Domain.SAFETY }.second
+        // `volt_12v` khai ở ENERGY và thuộc nhóm Sức khoẻ pin (cũng ENERGY) — nhưng phép tra ngược vẫn phải đi theo
+        // THÀNH VIÊN, không theo domain: đó là tính chất bài này khoá.
+        val energy = CapabilityCatalog.byDomain().first { it.first == Domain.ENERGY }.second
         assertTrue(
-            CapabilityGroups.BATTERY.label in CapabilityPicker.groupHint(safety),
+            CapabilityGroups.BATTERY.label in CapabilityPicker.groupHint(energy),
             "gợi ý phải theo THÀNH VIÊN, không theo domain của nhóm",
         )
         assertEquals(

@@ -1,6 +1,6 @@
 package com.byd.clusternav.launcher
 
-// ⚠ [KIỂM TOÁN 2026-09-12] Tách khỏi `GroupBoard.kt` vì tệp đó vượt trần 500 dòng sau khi thêm [SideBoardPlan] và
+// ⚠ [KIỂM TOÁN 2026-09-12] Tách khỏi `GroupBoard.kt` vì tệp đó vượt trần 500 dòng sau khi thêm
 // [GroupBoardModel.actionIconsDistinguish]. Đường cắt: đây là **các KIỂU** (dữ liệu đã quyết định xong), còn
 // `GroupBoard` là **phần quyết định** (đọc CarStatus + đơn vị + ngưỡng) — hai vai khác nhau, không phải cắt bừa.
 //
@@ -26,33 +26,16 @@ enum class GroupTone {
     /** Đang bật, đang mở, đang hoạt động — làm nổi bật, KHÔNG phải cảnh báo. */
     ACTIVE,
 
-    /** Đáng để ý nhưng không nguy (lốp lệch, ESP đang tắt, bụi mức trung bình). */
+    /** Đáng để ý nhưng không nguy (lốp lệch, bụi mức trung bình). */
     WARN,
 
-    /** Đang cảnh báo (cửa mở, dây chưa thắt, radar sát vật, lốp non/căng). */
-    ALERT;
-
-    /**
-     * Sắc thái này có **đáng để người lái nhìn ngay** không (⇒ được ưu tiên chỗ khi ô hẹp — xem [SideBoardPlan]).
-     *
-     * [ACTIVE] KHÔNG tính: *"đèn cốt đang bật"* là thông tin, không phải chuyện phải xử lý; nếu tính nó thì một dải
-     * đèn đang bật bình thường sẽ đẩy cảnh báo thật ra khỏi chỗ.
-     */
-    val isLoud: Boolean get() = this == WARN || this == ALERT
+    /** Đang cảnh báo (cửa mở, cốp mở, lốp non/căng). */
+    ALERT,
+    // ⚠ 2026-09-16 — thuộc tính `isLoud` (*"sắc thái này có đáng nhìn ngay không"*) đã XOÁ cùng
+    // `GroupBoard.sidePlan`: chỗ gọi DUY NHẤT của nó là phép "ô hẹp thì ưu tiên ô đang cảnh báo" của bảng sơ đồ
+    // hai bên, mà bảng đó rụng cùng toàn bộ ADAS/an toàn (owner). Cần lại thì dựng lại cùng chỗ gọi — đừng để
+    // một thuộc tính không ai đọc nằm đây (luật "nút chết" của dự án).
 }
-
-/**
- * PHÍA của một ô con **trên xe** — để bộ vẽ `BOARD` đặt nó đúng chỗ trong không gian.
- *
- * ## Vì sao ở `:core` chứ không suy ra ở tầng vẽ
- * Biết `bsd_fl_alarm` là bên TRÁI là kiến thức về **mã datum**, cùng họ với việc biết `window_lf` là kính nào. Tầng
- * vẽ tự đoán từ mã nghĩa là nó phải chép quy ước đặt tên — đúng bản-sao-thứ-hai mà [CapabilityGroups] tồn tại để
- * loại bỏ, và có test cấm tầng vẽ nhắc tới mã thành viên.
- *
- * [NONE] **không phải** "chưa biết" mà là *"mục này không thuộc bên nào"* (ESP, cảnh báo quá tốc — chúng nói về cả
- * xe). Bộ vẽ đưa chúng xuống dòng chân bảng thay vì gán bừa vào một bên.
- */
-enum class GroupSide { LEFT, RIGHT, NONE }
 
 /**
  * Một ô con **XEM** trong ô nhóm — đã quyết định xong nội dung, không biết View.
@@ -64,7 +47,6 @@ enum class GroupSide { LEFT, RIGHT, NONE }
  * @property unit đơn vị đã theo lựa chọn người dùng ([UnitFormat]); rỗng nếu datum không có đơn vị.
  * @property available đọc được số hay chưa. Off-car là ca **thường**, không phải ca lỗi ⇒ bộ vẽ làm mờ, KHÔNG bịa số.
  * @property needsBadge mức bằng chứng chưa PROVEN ⇒ ô nhóm mang dấu "chưa kiểm trên xe".
- * @property side phía trên xe (xem [GroupSide]) — chỉ bộ vẽ `BOARD` dùng.
  */
 data class GroupCell(
     val id: String,
@@ -75,7 +57,6 @@ data class GroupCell(
     val icon: String,
     val available: Boolean,
     val needsBadge: Boolean,
-    val side: GroupSide = GroupSide.NONE,
 ) {
     /**
      * Số **kèm đơn vị** — dạng dùng cho dải STRIP và cho các số phụ của thẻ CARD.
@@ -119,39 +100,21 @@ data class GroupBoardModel(
     /** Các số phụ xếp hàng dưới số chính (CARD). */
     val rest: List<GroupCell> get() = if (cells.isEmpty()) emptyList() else cells.drop(1)
 
-    /** Nhóm có hàng nút ở dưới không — chỉ 3/12 nhóm có (kính · cửa & khoang · đèn). */
+    /** Nhóm có hàng nút ở dưới không — chỉ 3/9 nhóm có (kính · cửa & khoang · đèn). */
     val hasActions: Boolean get() = actions.isNotEmpty()
-
-    /**
-     * Ô con **bên trái / bên phải xe** (theo [GroupCell.side]) — cho bộ vẽ `BOARD` xếp theo không gian.
-     *
-     * ## Vì sao là hai danh sách chứ không phải danh sách CẶP
-     * Ghép cặp đòi hai bên **luôn** cùng số lượng. Đúng với nhóm ADAS hôm nay (4 trái / 4 phải), nhưng một nhóm chỉ
-     * có cảnh báo bên trái là chuyện hợp lệ, và lúc đó phép ghép cặp sẽ hoặc ném hoặc âm thầm đẩy một mục sang bên
-     * kia — tức **nói sai vị trí**, đúng thứ bảng theo-không-gian sinh ra để tránh. Hai cột độc lập thì bên nào có
-     * bao nhiêu vẽ bấy nhiêu.
-     */
-    val leftCells: List<GroupCell> get() = cells.filter { it.side == GroupSide.LEFT }
-
-    /** Đối xứng với [leftCells]. */
-    val rightCells: List<GroupCell> get() = cells.filter { it.side == GroupSide.RIGHT }
-
-    /** Ô con **không thuộc bên nào** (ESP, quá tốc…) ⇒ bộ vẽ BOARD đưa xuống dòng chân bảng. */
-    val centreCells: List<GroupCell> get() = cells.filter { it.side == GroupSide.NONE }
 
     /**
      * Icon của các ô con có **phân biệt được** không.
      *
      * ## ⚠⚠ [KIỂM TOÁN UX mục 4c] Icon không phân biệt được thì phải BỎ, không phải để cho đủ
-     * [ĐO] nhóm *An toàn · ADAS*: **8/10 mục cùng một icon sóng radar** ⇒ tám ô con trông y hệt nhau và icon **không
-     * mang thông tin nào**, nó chỉ chiếm chỗ của thứ có mang (con số và cái nhãn, mà nhãn thì đang bị cắt).
+     * Một nhóm mà phần lớn ô con mang CÙNG một hình thì icon **không mang thông tin nào**, nó chỉ chiếm chỗ của thứ
+     * có mang (con số và cái nhãn, mà nhãn thì đang bị cắt).
      *
      * Đo bằng *"có hình nào lặp ≥ [ICON_REPEAT_CAP] lần"* chứ không bằng *"mọi hình đều khác nhau"*: hai ô cùng hình
      * (trái/phải của một cặp) vẫn phân biệt được nhờ nhãn và vị trí; ba ô trở lên thì mắt thôi phân loại được.
      *
-     * [ĐO] hiện trạng — bốn nhóm KHÁC cũng không phân biệt được (`g_windows` 4× kính · `g_doors` 4× cửa · `g_lights`
-     * nhiều × đèn · `g_occupants` 3× ghế). Ba nhóm đầu **có nút** nên bộ vẽ vốn đã bỏ icon (chỗ đó cần bề cao cho
-     * hàng nút); `g_occupants` thì trước bản vá này vẫn hiện ba icon ghế giống nhau.
+     * [ĐO] hiện trạng — ba nhóm không phân biệt được (`g_windows` 4× kính · `g_doors` 4× cửa · `g_lights` nhiều ×
+     * đèn). Cả ba **có nút** nên bộ vẽ vốn đã bỏ icon (chỗ đó cần bề cao cho hàng nút).
      */
     val iconsDistinguish: Boolean
         get() = cells.groupingBy { it.icon }.eachCount().none { it.value >= ICON_REPEAT_CAP }
@@ -208,40 +171,11 @@ data class GroupBoardModel(
 }
 
 /**
- * KẾ HOẠCH TRÌNH BÀY của bảng sơ đồ hai bên xe — **quyết định ở `:core`, vẽ ở `:app`**.
- *
- * ## [ĐO] bệnh nó chữa — ảnh máy ảo 2026-09-12
- * Nhóm *An toàn · ADAS* có 8 ô con hai bên. Bảng cũ chia bề cao cho **4 hàng mỗi bên** bất kể ô cao bao nhiêu, nên ở
- * khung 4/12 màn mỗi hàng chỉ còn ~45px cho HAI dòng chữ (giá trị trên, nhãn dưới) ⇒ nhãn ra **nét cao 13px**, dưới
- * chuẩn G1 (15–16px). Tức bảng tự bóp chữ để nhồi cho đủ hàng — đúng thứ kiểm toán gọi là *"nhét 10 nhãn bằng chữ
- * nhỏ"*, mà người đang lái thì không đọc được.
- *
- * ## Luật: cỡ chữ có SÀN, số hàng thì CO
- * `:app` biết mấy hàng còn vẽ được ở cỡ chữ đọc được (nó có pixel), rồi hỏi hàm này *"vậy hiện cái gì"*. Trả lời:
- *  • đủ chỗ cho mọi hàng ⇒ vẽ đủ, y như trước (ca thường ở ô to);
- *  • không đủ ⇒ chỉ những ô **ĐANG cảnh báo** (chúng trả lời đúng câu người lái hỏi: *"có gì bên cạnh tôi không, bên
- *    nào?"*), phần còn lại **đếm** ở dòng chân;
- *  • không đủ chỗ mà cũng **không có cảnh báo nào** ⇒ một dòng [summary] nói thẳng trạng thái. Ở đây phải phân biệt
- *    *"đã đọc, không có gì"* với *"chưa đọc được"* — gộp hai câu đó lại là **nói sai** với người lái (off-car và ca
- *    mất cảm biến đều rơi vào nhánh sau).
- *
- * @property left / @property right ô con sẽ vẽ ở mỗi bên (đã theo thứ tự khai của nhóm).
- * @property hidden số ô con hai bên KHÔNG được vẽ — `:app` ghép vào dòng chân, không im lặng bỏ.
- * @property summary câu duy nhất thay cho cả hai cột khi không vẽ được hàng nào; `null` khi có hàng để vẽ.
- */
-data class SideBoardPlan(
-    val left: List<GroupCell>,
-    val right: List<GroupCell>,
-    val hidden: Int,
-    val summary: String?,
-)
-
-/**
  * BỘ PHẬN MỞ ĐƯỢC của thân xe — khoá **hình học** của bảng *Cửa & khoang* (U9 pha 2).
  *
  * ## Vì sao enum ở `:core` chứ không để tầng vẽ tự suy từ mã datum
- * Biết `door_lf` là **vạt cửa trước-trái** là kiến thức về mã datum, cùng họ với việc biết `bsd_fl_alarm` nằm bên
- * trái ([GroupSide]). `GroupTileWiringContractTest` cấm tầng vẽ nhắc tới mã thành viên (`"door_"`) chính vì mỗi lần
+ * Biết `door_lf` là **vạt cửa trước-trái** là kiến thức về mã datum, không phải về pixel.
+ * `GroupTileWiringContractTest` cấm tầng vẽ nhắc tới mã thành viên (`"door_"`) chính vì mỗi lần
  * chép một mã sang `:app` là dựng thêm một bản sao phải giữ đồng bộ bằng trí nhớ. Enum này là chỗ nối: `:core` nói
  * *"bộ phận nào"*, `:app` tra ra path của **đúng** bộ phận đó trong bộ icon v2.
  *
@@ -288,15 +222,15 @@ data class CarPartState(
 )
 
 /**
- * KẾ HOẠCH TRÌNH BÀY của bảng *Cửa & khoang* — cùng lối [SideBoardPlan]: quyết định ở `:core`, vẽ ở `:app`.
+ * KẾ HOẠCH TRÌNH BÀY của bảng *Cửa & khoang* — quyết định ở `:core`, vẽ ở `:app`.
  *
- * Khác [SideBoardPlan] ở chỗ **không phụ thuộc bề cao ô**: bảng này vẽ theo hình học thật của xe (vạt cửa ở đúng góc
- * xe), nên không có phép "bớt hàng cho vừa" — bộ phận nào cũng phải ở đúng chỗ của nó, hoặc cả bảng thu nhỏ lại.
+ * **Không phụ thuộc bề cao ô**: bảng này vẽ theo hình học thật của xe (vạt cửa ở đúng góc xe), nên không có phép
+ * "bớt hàng cho vừa" — bộ phận nào cũng phải ở đúng chỗ của nó, hoặc cả bảng thu nhỏ lại.
  *
  * @property parts đúng thứ tự khai của [CarPart] và chỉ gồm bộ phận **có datum trong nhóm** (nhóm khác gọi nhầm thì
  *   được danh sách rỗng chứ không phải một bảng vẽ bừa).
  * @property footer dòng KẾT LUẬN (*"Tất cả đã đóng"* / *"2 cửa mở"* / *"chưa đọc được"*) — câu này phân biệt
- *   *"đã đọc, đóng hết"* với *"chưa đọc được"*, đúng chỗ mà [GroupBoard.sidePlan] đã phải vá một lần.
+ *   *"đã đọc, đóng hết"* với *"chưa đọc được"*.
  */
 data class DoorBoardPlan(
     val parts: List<CarPartState>,

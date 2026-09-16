@@ -273,7 +273,9 @@ class IconGeometryContractTest {
     fun `moi hinh xe deu co mot dong trong bang tra cua KachiTheme`() {
         val table = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiTheme.kt")
         val cars = icons().map { it.first.removeSuffix(".xml") }.filter { it.startsWith("ic_car_") }
-        assertTrue(cars.size >= 55) { "chỉ thấy ${cars.size} hình xe — bài đang quét vùng sai" }
+        // Sàn 55 → 42 sau khi owner gỡ toàn bộ ADAS/an toàn 2026-09-16 (13 tệp `ic_car_*` của điểm mù · chuyển làn ·
+        // cắt ngang sau · cảnh báo mở cửa · giữ làn · va chạm trước · cảm biến đỗ · dây an toàn · người ngồi đã xoá).
+        assertTrue(cars.size >= 42) { "chỉ thấy ${cars.size} hình xe — bài đang quét vùng sai" }
         assertEquals(
             emptyList<String>(),
             cars.filterNot { Regex("R\\.drawable\\.$it\\b").containsMatchIn(table) },

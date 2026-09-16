@@ -261,7 +261,10 @@ class VoiceGrammarPhrasesTest {
         // [ĐO] 2026-09-16 · V3 R10 *"kính lái"*: **338 → 342 (+4)** = đúng 4 cách nói mới của `window`
         // (`kinh lai` · `cua kinh lai` · `kinh tai xe` · `cua so lai`), cả bốn đều có dạng có dấu ở
         // [SherpaSpokenWords] nên không cụm nào bị loại.
-        const val EXPECTED_PHRASES_KEPT = 342
+        //
+        // [ĐO] 2026-09-16 · (N) ADAS-PURGE: **342 → 305 (−37)** — owner gỡ toàn bộ ADAS/an toàn khỏi launcher
+        // (10 nút + 17 datum + 4 cách nói `itac`/`avh`), nên mọi cụm nhiều từ dựng từ nhãn của chúng rụng theo.
+        const val EXPECTED_PHRASES_KEPT = 305
 
         /**
          * [ĐO] 269 cụm bị loại — **gần như toàn bộ là nhãn tiếng ANH** (*"Reading light"*, *"Tyre FL"*…), cộng
@@ -272,8 +275,11 @@ class VoiceGrammarPhrasesTest {
          * [ĐO] 2026-09-15 · T7 "nút mở 50%": **269 → 274 (+5)** = đúng 5 nhãn tiếng Anh *"Half"* thêm vào
          * `win_lf/rf/lr/rr` + `sunshade` (bị loại như mọi nhãn Anh). Cụm giữ (330) KHÔNG đổi (*"Nửa"* là từ
          * đơn, không tạo cụm nhiều từ). Tổng mục đổi — xem [EXPECTED_ENTRIES].
+         *
+         * [ĐO] 2026-09-16 · (N) ADAS-PURGE: **274 → 236 (−38)** — phần lớn là nhãn tiếng Anh của các mục ADAS
+         * vừa xoá (*"Blind spot front-left"*, *"Rear cross-traffic alert"*…).
          */
-        const val EXPECTED_PHRASES_DROPPED = 274
+        const val EXPECTED_PHRASES_DROPPED = 236
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -302,6 +308,9 @@ class VoiceGrammarPhrasesTest {
         // [ĐO] 2026-09-16 · V3 R10 (*"kính lái"*): **2110 → 2114 (+4)** = đúng 4 **cụm** mới của `window`
         // ([EXPECTED_PHRASES_KEPT] 338 → 342); KHÔNG có từ đơn nào mới — `kinh`/`lai`/`cua`/`so`/`tai`/`xe`
         // đều đã có sẵn trong từ vựng, nên phần nở theo thanh điệu không cộng thêm gì.
-        const val EXPECTED_ENTRIES = 2114
+        //
+        // [ĐO] 2026-09-16 · (N) ADAS-PURGE: **2114 → 1985 (−129)** = 37 cụm giữ + 38 cụm loại rụng theo registry,
+        // phần còn lại là **từ đơn** chỉ xuất hiện trong nhãn ADAS (*"mù"*, *"làn"*, *"thắt"*, *"ESP"*…).
+        const val EXPECTED_ENTRIES = 1985
     }
 }

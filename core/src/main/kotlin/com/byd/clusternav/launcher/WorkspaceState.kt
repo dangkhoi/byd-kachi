@@ -134,19 +134,56 @@ data class WorkspaceState(
     }
 
     /**
-     * Ép bất biến MỘT-APP-MỘT-Ô lên một trạng thái NẠP từ ngoài (prefs). Dữ liệu lưu TRƯỚC bản vá 2026-09-15 có
-     * thể đã có cùng app ở hai ô — [withSlot] chỉ chặn lượt gán MỚI, không tự chữa state cũ khi nạp (dựng thẳng
-     * qua constructor, không đi qua withSlot). Giữ lần xuất hiện ĐẦU (ô index thấp = ô đang hiện cửa sổ thật),
-     * xoá các ô trùng SAU về trống. Trả `this` nếu không có trùng (không đổi tham chiếu vô ích).
+     * Chữa một trạng thái NẠP từ ngoài (prefs) về đúng hai bất biến của mô hình. Hai việc, cùng một lý do: dữ liệu
+     * trên đĩa có thể **cũ hơn** bản đang chạy, mà [withSlot] chỉ chặn lượt gán MỚI (nạp thì dựng thẳng qua
+     * constructor, không đi qua nó).
+     *
+     *  1. **MỘT-APP-MỘT-Ô** (owner 2026-09-15): dữ liệu lưu TRƯỚC bản vá đó có thể có cùng app ở hai ô. Giữ lần
+     *     xuất hiện ĐẦU (ô index thấp = ô đang hiện cửa sổ thật), xoá các ô trùng SAU về trống.
+     *  2. **MÃ KHẢ NĂNG ĐÃ BIẾN MẤT** ⇒ bỏ khỏi ô. [ĐO đọc source] `WidgetViews.build` cho mã lạ rơi xuống
+     *     `telemetry(...)` → [TelemetryReadout.of] trả `null` → ô vẽ ra **`"ADAS_FCW"` + `"—"` mãi mãi**: không
+     *     sập, nhưng người dùng nhìn thấy một ô hỏng mà không có cách nào biết vì sao. Thanh nút và chip thanh
+     *     trên vốn ĐÃ bỏ mã lạ (`ControlDockView.rebuild` nhánh `null -> Unit`; `TopStripChips.render` dùng
+     *     `mapNotNull`), nên ô giữa màn là bề mặt DUY NHẤT còn giữ lại rác — chữa ở đây thì cả ba khớp nhau.
+     *
+     * ⚠ Vì sao ở tầng MÔ HÌNH chứ không ở [SlotCodec]: dạng chuỗi trên đĩa là **hợp đồng lưu bền** và phải đọc lên
+     * nguyên vẹn (KDoc [SlotCodec]); việc *"mã này còn tồn tại không"* là câu hỏi về BỘ ĐĂNG KÝ hôm nay, không phải
+     * về cú pháp chuỗi. Hai câu hỏi khác nhau ⇒ hai tầng khác nhau.
+     *
+     * ⚠ Nền của luật: [CapabilityCatalog.HIDDEN_FROM_PICKER] chốt *"ẩn khỏi bộ chọn ≠ xoá mã"* — mã ẩn vẫn tra ra
+     * được nên ô của ai đã đặt vẫn chạy, và hàm này KHÔNG đụng tới chúng. Nó chỉ bỏ mã mà **không bộ đăng ký nào
+     * còn nhận** (owner gỡ hẳn — vd lượt ADAS-PURGE 2026-09-16 xoá 10 nút + 17 datum + 3 nhóm).
+     *
+     * Trả `this` nếu không phải chữa gì (không đổi tham chiếu vô ích).
      */
     fun sanitized(): WorkspaceState {
         val seen = HashSet<String>()
         var changed = false
         val out = slots.map { c ->
-            if (c is SlotContent.App && !seen.add(c.pkg)) { changed = true; SlotContent.Empty } else c
+            when {
+                c is SlotContent.App && !seen.add(c.pkg) -> { changed = true; SlotContent.Empty }
+                c is SlotContent.Widget -> {
+                    val keep = c.ids.filter { CapabilityCatalog.kindOf(it) != null }
+                    when {
+                        keep.size == c.ids.size -> c
+                        keep.isEmpty() -> { changed = true; SlotContent.Empty }
+                        else -> { changed = true; SlotContent.Widget(keep) }
+                    }
+                }
+                else -> c
+            }
         }
         return if (changed) copy(slots = out) else this
     }
+
+    /**
+     * Mã widget đang nằm trong ô mà **không bộ đăng ký nào còn nhận** — thứ [sanitized] sẽ bỏ đi.
+     *
+     * Tách khỏi [sanitized] để chỗ gọi ở `:app` **nói ra được** nó vừa bỏ cái gì (một dòng log), thay vì để ô của
+     * người dùng biến mất im lặng. Luật dự án: mất một thứ đã lưu mà không báo là kênh im lặng.
+     */
+    fun unknownWidgetIds(): List<String> =
+        slots.filterIsInstance<SlotContent.Widget>().flatMap { it.ids }.filter { CapabilityCatalog.kindOf(it) == null }
 
     /** Đổi preset (giữ nguyên gán ô theo chỉ số — ô ẩn vẫn nhớ). */
     fun withPreset(preset: LayoutPreset): WorkspaceState = copy(preset = preset)

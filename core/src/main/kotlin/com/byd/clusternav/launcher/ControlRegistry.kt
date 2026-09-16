@@ -401,14 +401,6 @@ object ControlRegistry {
             domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setEnergyFeedback",
             args = listOf("Tiêu chuẩn", "Cao"),
             labelEn = "Regen level", argsEn = listOf("Standard", "High")),
-        ControlDef("itac", "iTAC (kiểm soát mô-men)", "ic-torque", ControlKind.TOGGLE,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324376094",
-            labelEn = "iTAC (torque control)"),
-        // [ĐO] `setAVHState(int)` BYDAutoADASDevice.java:344 (cũ command-wrapper `ADAS_AVH_STATE` → None). NEEDS-ONCAR:
-        // enum on/off chưa có nguồn (stub chỉ có AUTO_HOLD_STATE1..4 = 0..3 protected, :26-29) ⇒ tạm gửi 1/0.
-        ControlDef("avh", "Giữ phanh tự động (AVH)", "ic-brake", ControlKind.TOGGLE,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoADASDevice.setAVHState",
-            labelEn = "Auto hold (AVH)"),
         // [ĐO] `setChargeStopCapacityState(int)` BYDAutoChargingDevice.java:426 — enum RỜI: 100→1, 90→2, 80→3, 70→4, 60→5,
         // 50→6 (:42-47), KHÔNG phải % thô; % UI → mốc gần nhất → enum ở writeArgs. Cũ `SET_DR_SOC_TARGET` → None.
         ControlDef("target_soc_set", "Mục tiêu sạc", "ic-target", ControlKind.STEP, value = 80, min = 50, max = 100, step = 5,
@@ -430,33 +422,10 @@ object ControlRegistry {
         ControlDef("start_charging", "Sạc ngay", "ic-bolt", ControlKind.BUTTON,
             domain = Domain.ENERGY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoChargingDevice.setChargingMode",
             labelEn = "Charge now"),
-        // ADAS (panel riêng — KHÔNG gate, owner tự chịu)
-        ControlDef("adas_slw", "Cảnh báo quá tốc", "ic-speed", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "850452531",
-            labelEn = "Speed limit warning"),
-        ControlDef("adas_esp", "Cân bằng điện tử (ESP)", "ic-esp", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "944766984",
-            labelEn = "Stability control (ESP)"),
-        ControlDef("adas_tsr", "Nhận diện biển báo", "ic-sign", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944767044",
-            labelEn = "Traffic sign recognition"),
-        ControlDef("adas_lane", "Hỗ trợ giữ làn", "ic-car-top-lane", ControlKind.SELECT,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoADASDevice.setLKSMode",
-            args = listOf("Tắt", "LDW", "LDP", "Cả hai"),
-            // LDW/LDP = ký hiệu ngành (lane departure warning / prevention) ⇒ giữ nguyên trong cả hai thứ tiếng.
-            labelEn = "Lane keep assist", argsEn = listOf("Off", "LDW", "LDP", "Both")),
-        ControlDef("adas_fcw", "Cảnh báo va chạm trước", "ic-car-front-fcw", ControlKind.STEP, value = 2, min = 0, max = 3, step = 1,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324560420",
-            labelEn = "Forward collision warning"),
-        ControlDef("adas_rcta", "Cắt ngang phía sau", "ic-car-top-rcta-all", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944766990",
-            labelEn = "Rear cross-traffic alert"),
-        ControlDef("adas_dow", "Cảnh báo mở cửa", "ic-car-top-dow-all", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "944766994",
-            labelEn = "Door open warning"),
-        ControlDef("adas_cpd", "Phát hiện trẻ em", "ic-car-top-occupant-rear", ControlKind.TOGGLE,
-            domain = Domain.SAFETY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324617778",
-            labelEn = "Child presence detection"),
+        // ⚠ 2026-09-16 — KHÔNG có nút ADAS/an toàn nào ở đây, và sẽ không có. Owner gỡ toàn bộ (cảnh báo quá tốc ·
+        // ESP · biển báo · giữ làn · va chạm trước · cắt ngang sau · mở cửa · phát hiện trẻ em · iTAC · AVH) vì một
+        // lệnh sai vào hệ an toàn chủ động là rủi ro trên đường thật. Người lái chỉnh mấy thứ đó trong **setting
+        // gốc của xe**; launcher không can thiệp. Thêm lại = quyết định của owner, không phải của phiên code.
         // Giải trí / cụm / HUD
         // NEEDS-ONCAR: screen_rotation (enum) / cluster_music (nghi INSTRUMENT_MUSIC_SOURCE 970981412).
         ControlDef("screen_rotation", "Xoay màn hình", "ic-cast", ControlKind.SELECT,

@@ -1,5 +1,7 @@
 # Kết quả KIỂM TRA TỪNG CHỨC NĂNG trên xe — 2026-09-15 (CapTest lần đầu)
 
+> ⚠ **2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher** (backlog (N) ADAS-PURGE). Mọi mục ADAS/an toàn và mọi con số dưới đây chỉ là **LỊCH SỬ ĐO**, giữ nguyên làm bằng chứng. Trạng thái hôm nay: **167 chức năng** (54 nút · 106 thông tin · 4 gói · 3 hành động), **không còn** nút/datum ADAS/an toàn nào — xem `docs/diagnostics/adas-purge-2026-09-16.md`.
+
 - **Ngày:** 2026-09-15 · **Chủ:** dangkhoi · **Xe:** DiLink3 (DL3), Android 10, Kachi uid 10135 (KHÔNG platform-sign).
 - **Nguồn:** owner chạy công cụ *Kiểm tra từng nút xe* trên xe thật rồi báo miệng ("Chốt lại như sau"). Đây là **[ĐO trên xe]** — mức bằng chứng cao nhất cho hành vi HAL thật.
 - **Quy ước:** ✅ chạy · ⚠ chạy một phần · ❌ không tác dụng / không đọc được. Owner chốt: **mục KHÔNG nêu = không đọc được thông tin & bấm không tác dụng.**

@@ -218,7 +218,7 @@ class IconStyleContractTest {
         orphanPending.forEach { (f, why) -> assertTrue(why.length >= 20) { "$f: lý do chờ-dùng quá mỏng" } }
     }
 
-    // ── 6. 12 icon nhóm phải tra ra được ────────────────────────────────────────────────────────────
+    // ── 6. 9 icon nhóm phải tra ra được ─────────────────────────────────────────────────────────────
 
     /**
      * Giao kèo với T1 (`:core CapabilityGroups`): mỗi nhóm khai một tên `ic-group-…`, và tên đó PHẢI tra ra một
@@ -231,7 +231,7 @@ class IconStyleContractTest {
     @Test
     fun `moi icon nhom cua core tra ra duoc mot drawable that`() {
         val declared = CapabilityGroups.ALL.map { it.icon }
-        assertEquals(12, declared.size, "spec §4.1 chốt 12 nhóm")
+        assertEquals(9, declared.size, "spec §4.1 chốt 9 nhóm (2026-09-16 owner gỡ ADAS/an toàn — trước đó 12)")
         assertEquals(declared.size, declared.toSet().size, "hai nhóm khai trùng tên icon")
 
         // `iconRes` cần R.drawable (Android framework) nên off-car ta canh bằng chính bảng nguồn + tệp có thật.
@@ -268,7 +268,7 @@ class IconStyleContractTest {
     /**
      * ═══ KHÔNG TÊN `ic-…` NÀO ĐƯỢC TRA RA **0** ═══════════════════════════════════════════════════════════════
      *
-     * Bài `moi icon nhom cua core tra ra duoc mot drawable that` phía trên chỉ phủ **12 icon NHÓM**. Tên của 123
+     * Bài `moi icon nhom cua core tra ra duoc mot drawable that` phía trên chỉ phủ **9 icon NHÓM**. Tên của các
      * datum · 64 nút · 9 widget · 4 gói lệnh thì không bài nào phủ — mà `KachiTheme.iconRes` kết bằng `else -> 0`,
      * nên một tên gõ sai (`"ic-temp-out"` ↔ tệp `ic_temp_out.xml`) **không ném gì cả**: `ImageView` chỉ đơn giản
      * không được thêm vào ô. Đúng họ "sai IM LẶNG" mà tệp này sinh ra để chặn.

@@ -116,12 +116,11 @@ object SherpaPhraseHotwords {
     /**
      * Từ đầu của mọi dạng động từ có dấu — để nhận ra cách nói đã mang sẵn động từ.
      *
-     * ⚠ Đây là phép đo THÔ và nó bắt nhầm — đã đếm trên danh mục thật (2026-09-16): 5 nhãn/cách nói bị coi là
-     * "đã có động từ" dù chúng là **danh từ**, chỉ vì từ đầu trùng đầu một dạng động từ khác loại —
-     * *"Phát hiện trẻ em"* (`phát` của PLAY), *"kiểm soát lực kéo"* · *"kiểm soát mô men"* (`kiểm` của
-     * *"kiểm tra"*), *"Chuyển làn trái/phải"* (`chuyển` của SWITCH), *"Mở cửa cảnh báo trái/phải"* (`mở`).
-     * Hậu quả **giới hạn**: mấy nhãn ấy mất bản cụm có động từ (*"BẬT KIỂM SOÁT LỰC KÉO"*), nhưng **vẫn được
-     * bias** vì bản thân nhãn đã ≥ 2 từ nên vào tệp nguyên văn (`SherpaBiasingCoverageTest` ép điều đó).
+     * ⚠ Đây là phép đo THÔ và nó bắt nhầm: một nhãn **danh từ** có từ đầu trùng đầu một dạng động từ khác loại
+     * (vd *"Mở khoá cửa"* bắt đầu bằng `mở`) bị coi là "đã có động từ". Hậu quả **giới hạn**: nhãn ấy mất bản cụm
+     * có động từ, nhưng **vẫn được bias** vì bản thân nhãn đã ≥ 2 từ nên vào tệp nguyên văn
+     * (`SherpaBiasingCoverageTest` ép điều đó). [ĐO 2026-09-16] trên danh mục trước lượt gỡ ADAS: 5 nhãn dính;
+     * bốn trong số đó là nhãn ADAS/an toàn nay đã xoá.
      *
      * Chưa siết lại (ví dụ chỉ chặn khi nhãn bắt đầu bằng CHÍNH dạng động từ sắp ghép) vì mọi thay đổi ở đây
      * đổi NỘI DUNG tệp hotword ⇒ phải đo lại host + máy ảo trước khi ship (spec R5) — chưa đo thì chưa đổi.

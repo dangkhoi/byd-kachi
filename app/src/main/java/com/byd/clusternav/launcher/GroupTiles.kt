@@ -29,7 +29,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *     và không gọi [UnitFormat] — mỗi bề mặt tự đổi đơn vị chính là bệnh RW0 đã dọn ([ĐO] bảng lốp từng ghi `°C`
  *     trong khi người dùng chọn `°F`, vì ô vẽ tự ghép ký hiệu đơn vị).
  *  2. **KHÔNG chép danh sách thành viên**: [GroupBoard] hỏi [CapabilityGroups]. Ở đây không có một mã `tyre_p_*` /
- *     `window_*` / `radar_*` nào viết tay.
+ *     `window_*` / `door_*` nào viết tay.
  *  3. **KHÔNG có ngưỡng**: non/căng/lệch của lốp và mức bụi thuộc `:core`. Viết lại ở đây là tạo ngưỡng thứ tư —
  *     lỗi dự án đã gặp thật (widget lốp cũ có `t[i] < 2.2` viết tại chỗ, lệch với `:core`).
  *

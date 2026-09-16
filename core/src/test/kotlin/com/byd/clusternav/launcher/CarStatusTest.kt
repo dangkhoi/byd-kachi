@@ -15,7 +15,7 @@ class CarStatusTest {
         assertNull(s.tyres.pFlKpa)
         assertNull(s.body.windowLfPct)
         assertNull(s.lights.lowBeam)
-        assertNull(s.safety.radarZones)
+        assertNull(s.energy.volt12v)
         assertNull(s.identity.vin)
     }
 
@@ -28,8 +28,12 @@ class CarStatusTest {
         assertNull(s.energy.soc)         // ban goc bat bien
     }
 
-    @Test fun `radar zones la list nullable`() {
-        val s = CarStatus().copy(safety = CarStatus.Safety(radarZones = listOf(0, 1, 2, 3, 4, 0, 0, 0)))
-        assertEquals(8, s.safety.radarZones!!.size)
+    // ⚠ Bài `radar zones la list nullable` đã gỡ 2026-09-16: cụm `CarStatus.Safety` và datum `radar_zones` không
+    // còn tồn tại sau khi owner gỡ toàn bộ ADAS/an toàn; ba mục điện 12V/MCU đã dời sang [CarStatus.Energy].
+    @Test fun `dien 12V va nguon MCU nam o cum Energy`() {
+        val s = CarStatus().copy(energy = CarStatus.Energy(volt12v = 12.6, volt12vLevel = 2, mcuStatus = 1))
+        assertEquals(12.6, s.energy.volt12v)
+        assertEquals(2, s.energy.volt12vLevel)
+        assertEquals(1, s.energy.mcuStatus)
     }
 }

@@ -15,13 +15,13 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * bật ra hai bên, nắp cốp ở đuôi, ô nóc + rèm trên nóc, hai tai gương ở đầu xe; một dòng KẾT LUẬN ở chân bảng.
  *
  * Owner 2026-09-13: *"vẽ hình xe cho những chức năng tổng hợp có hình xe như áp suất lốp, mở cửa, mở cốp"*. Pha 1 đã
- * làm lốp · cảm biến đỗ · ADAS; đây là phần **cửa/cốp** còn thiếu. Spec `docs/specs/kachi-car-boards.html` R7.
+ * làm lốp; đây là phần **cửa/cốp** còn thiếu. Spec `docs/specs/kachi-car-boards.html` R7.
  *
  * ## Vì sao nhóm này phải rời dải STRIP
  * [ĐO] nhóm *Cửa & khoang* có **10 ô con dùng chung một icon cửa** ⇒ [GroupBoardModel.iconsDistinguish] trả `false`
  * ⇒ dải STRIP đã phải **bỏ icon**, còn lại mười ô chữ giống hệt nhau xếp hai hàng 5. Câu người lái hỏi ở đây là
  * *"xe tôi kín chưa — cửa NÀO đang mở?"*, tức một câu về **không gian**; mười ô chữ không trả lời được nó, đúng lý do
- * [SideBoardView] đã ra đời cho nhóm ADAS.
+ * (Hai bảng Canvas anh em của nhóm ADAS/cảm-biến-đỗ đã xoá 2026-09-16 cùng toàn bộ ADAS/an toàn — owner.)
  *
  * ## NGỮ PHÁP VẼ — bám nguyên bộ icon v2: *nét = vật thể, vùng tô = bộ phận đang được nói tới*
  *  • **Đang mở / đang gập ⇒ VÙNG TÔ** mang màu sắc thái. Đây là chỗ thông tin nằm, nên nó phải là thứ đậm nhất.
@@ -103,8 +103,8 @@ internal class DoorBoardView(context: Context) : View(context) {
     private val labelFloorPx = Sp.dpf(context, Sp.BOARD_LABEL_MIN)
 
     /**
-     * Đặt dữ liệu. Kế hoạch dựng ở `:core` ngay tại đây (KHÔNG trong [onDraw]): khác [SideBoardView], phép chọn của
-     * bảng này **không phụ thuộc bề cao ô** — bộ phận nào cũng phải ở đúng chỗ của nó, không có chuyện bớt hàng.
+     * Đặt dữ liệu. Kế hoạch dựng ở `:core` ngay tại đây (KHÔNG trong [onDraw]): phép chọn của bảng này **không phụ
+     * thuộc bề cao ô** — bộ phận nào cũng phải ở đúng chỗ của nó, không có chuyện bớt hàng cho vừa.
      */
     fun set(model: GroupBoardModel) {
         plan = GroupBoard.doorPlan(model)
@@ -167,7 +167,7 @@ internal class DoorBoardView(context: Context) : View(context) {
         // dài **theo dữ liệu** (càng nhiều khoang đang mở càng dài) nên nó là ca thường, không phải ca biên.
         //
         // Thu trước, cắt sau: thu giữ được TRỌN câu (thứ người lái cần), cắt chỉ là lưới cuối khi thu đã chạm sàn
-        // chữ đọc được — cùng thứ tự ưu tiên "đọc được trước, đủ chữ sau" mà `SideBoardView` đã chốt.
+        // chữ đọc được — đúng thứ tự ưu tiên "đọc được trước, đủ chữ sau" của mọi bảng Canvas trong dự án.
         val room = w - pad * 2f
         val need = midP.measureText(p.footer)
         if (need > room) midP.textSize = maxOf(midP.textSize * room / need, labelFloorPx)

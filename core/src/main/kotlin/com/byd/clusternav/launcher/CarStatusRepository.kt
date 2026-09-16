@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
  * MỖI nhịp NHẬN [CarStatus] hiện tại và TRẢ bản mới (copy-based) — field không đọc được để `null`.
  */
 interface CarStatusReader {
-    /** Nhịp NHANH (~1s): tốc độ / động lực / công suất / cảnh báo ADAS. */
+    /** Nhịp NHANH (~1s): tốc độ / động lực / công suất. */
     fun readFast(prev: CarStatus): CarStatus
 
     /** Nhịp CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · an toàn(bền) · danh tính. */

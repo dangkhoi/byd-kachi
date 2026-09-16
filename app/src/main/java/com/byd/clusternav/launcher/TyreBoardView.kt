@@ -28,9 +28,9 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *  • **hứa 8 mục, hiện 4**: nhiệt độ từng bánh nằm chung một dòng phụ với chữ viết tắt và lý do, nên khi có cả ba
  *    thì dòng đó dài quá và bị cắt.
  *
- * Khuôn mới bám nguyên [RadarBoardView] (bảng `BOARD` thứ hai của dự án, và là bảng mà kiểm toán gọi là đúng nhất):
- * **thân xe ở giữa · các ô giá trị áp sát thân theo đúng vị trí không gian · một dòng chân bảng**. Hai bảng `BOARD`
- * nhìn ra ngay là cùng một họ.
+ * Khuôn mới bám nguyên khuôn `BOARD` mà kiểm toán gọi là đúng nhất: **thân xe ở giữa · các ô giá trị áp sát thân
+ * theo đúng vị trí không gian · một dòng chân bảng**. Mọi bảng `BOARD` nhìn ra ngay là cùng một họ — nay còn
+ * [DoorBoardView] (hai bảng radar/sơ-đồ-bên đã xoá 2026-09-16 cùng toàn bộ ADAS/an toàn, owner).
  *
  * ## U9 (2026-09-13) — hình xe nay là CHÍNH path của bộ icon v2
  * Thân + hai vạch kính + bốn bánh lấy từ [CarFrames] (chuỗi path chép nguyên văn từ script sinh icon U7), thay
@@ -74,7 +74,7 @@ class TyreBoardView(context: Context) : View(context) {
     }
     private val tyrePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
-    /** Nền ô giá trị. Paint RIÊNG (không đổi màu của [tyrePaint] rồi trả lại — xem KDoc [RadarBoardView.dimOutline]). */
+    /** Nền ô giá trị. Paint RIÊNG — KHÔNG đổi màu của [tyrePaint] rồi trả lại (quên trả một lần là sai màu im lặng). */
     private val cellFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL; color = Color.parseColor(KachiTheme.CARD2)
     }

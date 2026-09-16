@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Test
  *
  * `IconStyleContractTest` (:app) canh **phong cách** (một độ dày nét, đầu nét tròn, khung 24, không màu riêng). Nó
  * KHÔNG canh **nghĩa** — và [ĐO] kiểm toán 2026-09-12 cho thấy nghĩa là chỗ hỏng thật:
- *  • glyph ⊞ (`ic-grid`) mang **BA** nghĩa: cửa kính · widget *"Bảng tổng hợp"* · **ESP** (lùi về icon nhóm AN TOÀN);
+ *  • glyph ⊞ (`ic-grid`) mang **BA** nghĩa: cửa kính · widget *"Bảng tổng hợp"* · mọi mục lùi về icon của nhóm;
  *  • hai nút **ĐỐI NGHỊCH** *"Mở hết kính"* / *"Đóng hết kính"* dùng **CÙNG** một icon;
- *  • nhóm ADAS: **8/10 mục cùng một icon sóng radar** ⇒ icon không giúp phân biệt gì;
+ *  • một nhóm cảnh báo: **8/10 mục cùng một icon sóng radar** ⇒ icon không giúp phân biệt gì (nhóm đó đã gỡ hẳn
+ *    2026-09-16 cùng toàn bộ ADAS/an toàn — owner);
  *  • 5 icon **sai nghĩa**: *"Trạng thái xe"* = ổ khoá · *"Trình chiếu ảnh"* = mặt trời (y hệt *"Đồng hồ + thời
  *    tiết"*) · *"Mức xăng"* = pin · *"Công suất mô-tơ"* = đồng hồ tốc · lốp có **hai** hình không liên quan nhau.
  *
@@ -137,18 +138,8 @@ class CapabilityIconMeaningTest {
         )
     }
 
-    /** Và nhóm ADAS phải ở dạng BOARD — ghim đúng bản vá, để không ai lặng lẽ trả nó về dải. */
-    @Test
-    fun `nhom adas xep theo phia`() {
-        assertEquals(WidgetShape.BOARD, CapabilityGroups.ADAS.shape)
-        val left = CapabilityGroups.ADAS.reads.count { GroupBoard.sideOf(it) == GroupSide.LEFT }
-        val right = CapabilityGroups.ADAS.reads.count { GroupBoard.sideOf(it) == GroupSide.RIGHT }
-        assertEquals(4, left, "4 cảnh báo bên trái (điểm mù · chuyển làn · cắt ngang · mở cửa)")
-        assertEquals(4, right, "và 4 bên phải")
-        // Hai mục nói về CẢ XE — không được gán bừa vào một bên.
-        assertEquals(GroupSide.NONE, GroupBoard.sideOf("esp_state"))
-        assertEquals(GroupSide.NONE, GroupBoard.sideOf("speed_limit_warning"))
-    }
+    // ⚠ Bài `nhom adas xep theo phia` đã gỡ 2026-09-16: nhóm `g_adas` và phép `GroupBoard.sideOf`/`GroupSide`
+    // không còn tồn tại sau khi owner gỡ toàn bộ ADAS/an toàn khỏi launcher.
 
     // ── 4 · Năm icon sai nghĩa ─────────────────────────────────────────────────────────────────────
 
@@ -163,7 +154,9 @@ class CapabilityIconMeaningTest {
 
         assertEquals("ic-fuel", icon("fuel_pct"), "xăng ≠ pin (trên xe hybrid là hai bình chứa khác nhau)")
         assertEquals("ic-motor", icon("motor_power"), "công suất ≠ tốc độ")
-        assertEquals("ic-esp", icon("esp_state"), "ESP có ký hiệu riêng, không dùng hình lùi-về-nhóm")
+        // ⚠ Mốc `esp_state → ic-esp` đã gỡ 2026-09-16 cùng datum ESP (owner gỡ toàn bộ ADAS/an toàn).
+        // Thay bằng một mốc cùng loại còn sống: nguồn MCU không được lùi về tia sét chung của lĩnh vực Năng lượng.
+        assertEquals("ic-sensor", icon("mcu_status"), "trạng thái THIẾT BỊ có hình riêng, không lùi về hình nhóm")
     }
 
     /**

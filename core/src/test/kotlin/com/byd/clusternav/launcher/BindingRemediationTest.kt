@@ -120,19 +120,10 @@ class BindingRemediationTest {
         }
     }
 
-    // ── An toàn / GPS ───────────────────────────────────────────────────────────────────────────
-    @Test fun `day an toan va ghe phu doc tu SafetyBelt(1042) khong phai ADAS`() {
-        assertEquals("BYDAutoSafetyBeltDevice.getSafetyBeltStatus", key("seatbelt_driver"))
-        assertEquals("BYDAutoSafetyBeltDevice.getSafetyBeltStatus", key("seatbelt_passenger"))
-        assertEquals(1, HalBindingTable.readArg("seatbelt_driver"), "SAFETY_BELT_AREA_MAIN=1")
-        assertEquals(2, HalBindingTable.readArg("seatbelt_passenger"), "SAFETY_BELT_AREA_DEPUTY=2")
-        assertEquals("android.hardware.bydauto.safetybelt.BYDAutoSafetyBeltDevice", named("seatbelt_driver").fqn)
-        assertEquals("BYDAutoSafetyBeltDevice.getPassengerStatus", key("oms_passenger"))
-        assertEquals(1, HalBindingTable.readArg("oms_passenger"), "SAFETY_BELT_PASSENGER_DEPUTY=1")
-        // oms_driver: enum PASSENGER không có ghế lái ⇒ NEEDS-ONCAR, giữ nguyên feature-id (không bịa arg).
-        assertTrue(HalBindingTable.routeOf(key("oms_driver")) is BindingRoute.Feature)
-    }
-
+    // ── GPS ─────────────────────────────────────────────────────────────────────────────────────
+    // ⚠ Bài `day an toan va ghe phu doc tu SafetyBelt(1042)` đã gỡ 2026-09-16: bốn datum nó khoá
+    // (`seatbelt_driver` · `seatbelt_passenger` · `oms_driver` · `oms_passenger`) không còn tồn tại sau khi
+    // owner gỡ toàn bộ ADAS/an toàn khỏi launcher.
     @Test fun `GPS van None - BLOCKED-BY-DESIGN, khong duoc route sang LocationManager`() {
         // Quyền location đã retire (DeadReckonRetirementTest ở :app ghim manifest) sau sự cố ghim GPS toàn xe.
         // Mở lại = quyết định owner; tới lúc đó 4 mục này phải là None, và `LocationManager` KHÔNG được là Local target.
@@ -146,10 +137,10 @@ class BindingRemediationTest {
 
     // ── §C: telemetry halDevice ghi đè device cho feature-read ────────────────────────────────────
     @Test fun `TelemetrySpec halDevice ghi de device theo domain cho feature-read`() {
-        val byDomain = TelemetrySpec("x", "X", "", Domain.SAFETY, WidgetShape.BADGE, EvidenceTier.OVERDRIVE, "123")
-        assertEquals("android.hardware.bydauto.adas.BYDAutoADASDevice", HalBindingTable.featureDeviceFor(byDomain))
-        val override = byDomain.copy(halDevice = "BYDAutoSafetyBeltDevice")
-        assertEquals("android.hardware.bydauto.safetybelt.BYDAutoSafetyBeltDevice", HalBindingTable.featureDeviceFor(override))
+        val byDomain = TelemetrySpec("x", "X", "", Domain.CLIMATE, WidgetShape.BADGE, EvidenceTier.OVERDRIVE, "123")
+        assertEquals("android.hardware.bydauto.ac.BYDAutoAcDevice", HalBindingTable.featureDeviceFor(byDomain))
+        val override = byDomain.copy(halDevice = "BYDAutoPM2p5Device")
+        assertEquals("android.hardware.bydauto.pm2p5.BYDAutoPM2p5Device", HalBindingTable.featureDeviceFor(override))
         // Đường thật: ControlDef.halDevice vẫn được tôn trọng cho id vừa đọc vừa ghi (readl → SETTING).
         assertEquals("BYDAutoSettingDevice", ControlRegistry.byId("readl")!!.halDevice)
     }
@@ -161,17 +152,12 @@ class BindingRemediationTest {
         assertNull(HalBindingTable.coerceInt("[]"))
         assertNull(HalBindingTable.coerceInt("[I@6f2b958e"), "toString mặc định của mảng vẫn là rác, không đoán")
         assertEquals(7, HalBindingTable.coerceInt("7"), "1 phần tử gateway đã trả số trần")
-        // radar 8 vùng vẫn đọc CẢ mảng.
-        val table = HalBindingTable(FakeHalGateway(getters = mapOf("getAllRadarProbeStates" to "[0, 1, 2, 3, 0, 0, 0, 0]")))
-        assertEquals(listOf(0, 1, 2, 3, 0, 0, 0, 0), table.readIntList("radar_zones"))
+        // Getter trả mảng nhiều phần tử vẫn đọc được CẢ mảng (thời gian sạc còn lại `[giờ, phút]`).
+        val table = HalBindingTable(FakeHalGateway(getters = mapOf("getChargeRestTime" to "[2, 35]")))
+        assertEquals(listOf(2, 35), table.readIntList("charging_eta_hour"))
     }
 
-    // ── Ghi: avh có đường thật, headl/lock đúng trạng thái NEEDS-ONCAR ─────────────────────────
-    @Test fun `avh doi tu command-wrapper sang setAVHState`() {
-        val def = ControlRegistry.byId("avh")!!
-        assertEquals("named:setAVHState" to "android.hardware.bydauto.adas.BYDAutoADASDevice", HalBindingTable.describeWrite(def))
-        assertEquals(EvidenceTier.NEEDS_CAR, def.tier, "enum on/off chưa có nguồn ⇒ vẫn cần xe")
-    }
+    // ⚠ Bài `avh doi tu command-wrapper sang setAVHState` đã gỡ 2026-09-16 cùng nút `avh` (owner gỡ ADAS/an toàn).
 
     @Test fun `headlight_mode feature-id di device INSTRUMENT`() {
         val (route, device) = HalBindingTable.describeWrite(ControlRegistry.byId("headlight_mode")!!)

@@ -13,7 +13,8 @@ import org.junit.jupiter.api.Test
  * nối* của ô nhóm (làm mới tại chỗ · một ngưỡng · một lớp đơn vị · một danh sách thành viên), bài này canh riêng ba
  * lỗi **nhìn-thấy-được** mà lượt kiểm toán 2026-09-12 đo được trên ảnh chụp máy ảo:
  *
- *  1. nhãn bảng sơ đồ ADAS **nét 13px** (dưới chuẩn G1 15–16px) vì ô vẽ bóp chữ để nhồi đủ 4 hàng × 2 dòng;
+ *  1. nhãn bảng sơ đồ hai bên xe **nét 13px** (dưới chuẩn G1 15–16px) vì ô vẽ bóp chữ để nhồi đủ 4 hàng × 2 dòng
+ *     — bảng đó đã xoá 2026-09-16 cùng toàn bộ ADAS/an toàn (owner), bài canh của nó gỡ theo;
  *  2. hàng nút của nhóm *Kính* **bị cắt đáy** vì `LinearLayout` đo con theo thứ tự xếp — lưới đọc lấy trọn trần trước;
  *  3. nhãn nút bị cắt (`"Window front-ri…"` / `"Kính trước-p…"`) vì ô BẤM chưa có khái niệm nhãn ngắn.
  *
@@ -28,40 +29,14 @@ class GroupTileTightSpaceContractTest {
         "src/main/java/com/byd/clusternav/launcher/GroupTileParts.kt",
     )
     private val tiles by lazy { tileFiles.joinToString("\n") { code(it) } }
-    private val side by lazy { code("src/main/java/com/byd/clusternav/launcher/SideBoardView.kt") }
 
     private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
 
     // ── 7 · [KIỂM TOÁN 2026-09-12] Chỗ hẹp: chữ có SÀN, chỗ thì CO ────────────────────────────────
 
-    /**
-     * ⚠⚠ **Bảng sơ đồ bên không được tự bóp chữ để nhồi đủ hàng.**
-     *
-     * [ĐO] ảnh máy ảo 2026-09-12: bảng ADAS ở khung 4/12 màn có `m = 231px`, cỡ nhãn `231 × 0.058 = 13.4px` ⇒ **nét
-     * cao 13px**, dưới chuẩn G1 (15–16px). Tỉ lệ vẫn "đúng" mà chữ không đọc được — vì tỉ lệ không biết ngưỡng của
-     * mắt. Bài này chốt hai nửa của cách chữa:
-     *  (a) cỡ chữ = `max(tỉ lệ, SÀN)` — sàn khai trong thang [KachiSpace], không phải số trần ở tầng vẽ;
-     *  (b) **số hàng** là thứ co, và ai co thì phải HỎI `:core` (`GroupBoard.sidePlan`) chứ không tự chọn bỏ ô nào —
-     *      chọn bỏ là một quyết định về DỮ LIỆU (cảnh báo nào quan trọng), không phải về vẽ.
-     */
-    @Test
-    fun `bang so do ben co san chu doc duoc va hoi core khi khong du cho`() {
-        assertTrue(side.contains("Sp.BOARD_LABEL_MIN"), "cỡ nhãn phải có SÀN lấy từ thang KachiSpace")
-        assertTrue(side.contains("Sp.BOARD_VALUE_MIN"), "cỡ giá trị cũng phải có SÀN")
-        assertTrue(
-            Regex("""maxOf\(\s*min \* LABEL_RATIO,\s*labelFloorPx\s*\)""").containsMatchIn(side),
-            "cỡ nhãn phải là max(tỉ lệ, sàn) — chỉ dùng tỉ lệ là quay lại đúng lỗi 13px",
-        )
-        assertTrue(side.contains("GroupBoard.sidePlan("), "không đủ chỗ thì HỎI :core hiện cái gì")
-        assertTrue(
-            side.contains("rowFloorPx"),
-            "số hàng phải suy từ SÀN chiều cao hàng (Sp.BOARD_ROW_MIN), không phải chia đều cho số ô con",
-        )
-        // Và phần bị ẩn phải NÓI RA con số — bỏ bớt im lặng là kênh im lặng thứ tư của dự án.
-        assertTrue(side.contains("kachi_board_hidden_n"), "ô con bị ẩn phải được ĐẾM ra trên màn")
-    }
-
+    // ⚠ Bài `bang so do ben co san chu doc duoc va hoi core khi khong du cho` đã gỡ 2026-09-16 cùng `SideBoardView`
+    // và `GroupBoard.sidePlan` — owner gỡ toàn bộ ADAS/an toàn nên nhóm duy nhất dùng bảng đó không còn.
 
     /**
      * ⚠⚠ **Hàng nút là chi phí CỐ ĐỊNH; lưới đọc là phần NHƯỜNG được.**

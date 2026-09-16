@@ -31,7 +31,8 @@ DEFAULT_TIER_VI = "🚗 chờ xe"
 KIND_VI = {"TOGGLE": "Bật/tắt", "STEP": "Tăng/giảm/đặt mức", "COVER": "Mở/đóng (có 50%)", "SELECT": "Chọn một trong N", "BUTTON": "Bấm một phát"}
 DOMAIN_VI = {
     "ENERGY": "Năng lượng", "DRIVETRAIN": "Truyền động", "CLIMATE": "Điều hoà", "TYRES": "Lốp", "BODY": "Thân xe",
-    "LIGHTS": "Đèn", "SAFETY": "An toàn", "IDENTITY": "Định danh", "INFOTAINMENT": "Giải trí/hiển thị",
+    # `SAFETY` đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn (owner) — không còn domain nào mang tên đó.
+    "LIGHTS": "Đèn", "IDENTITY": "Định danh", "INFOTAINMENT": "Giải trí/hiển thị",
 }
 RISK_VI = {"SAFE": "an toàn", "NORMAL": "chạy ngay", "CONFIRM": "⚠ hỏi xác nhận trước"}
 

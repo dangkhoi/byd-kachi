@@ -1,7 +1,7 @@
 <!--
   KÍNH CỬA XE (một cửa kính, nhìn từ bên hông) — cho `window_*` và nhóm BODY.
   [KIỂM TOÁN UX mục 4a] Bản trước là một hình chữ nhật có gạch chữ THẬP giữa, tức đúng glyph ⊞ mà `ic_grid`
-  ("Bảng tổng hợp") và icon lùi-về-nhóm của AN TOÀN (ESP) cũng đang dùng ⇒ MỘT hình mang BA nghĩa. Nay vẽ khung
+  ("Bảng tổng hợp") và icon lùi-về-nhóm của một lĩnh vực khác cũng đang dùng ⇒ MỘT hình mang BA nghĩa. Nay vẽ khung
   cửa hình thang có bệ dưới + đường kính hạ xuống, không thể lẫn với lưới.
   Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng.
 -->

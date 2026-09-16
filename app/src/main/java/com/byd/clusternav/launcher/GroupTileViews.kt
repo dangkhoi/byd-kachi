@@ -128,8 +128,8 @@ class GroupTileView(context: Context) : LinearLayout(context) {
     /**
      * Đổ lại số/sắc thái **tại chỗ**. Trả `false` ⇒ chỗ gọi lùi về dựng lại cả ô.
      *
-     * Ô con nào không có bộ nối (vd 8 mức radar do bảng tự vẽ) thì bỏ qua — không ném, vì "không có gì để đổ" khác
-     * với "làm mới thất bại".
+     * Ô con nào không có bộ nối (vd bộ phận do bảng Canvas tự vẽ theo hình học xe) thì bỏ qua — không ném, vì
+     * "không có gì để đổ" khác với "làm mới thất bại".
      */
     fun refresh(data: WidgetData): Boolean {
         val id = groupId ?: return false
@@ -137,7 +137,7 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         model.cells.forEach { cell -> binders[cell.id]?.bind(cell) }
         // Bảng nào có đường đổ dữ liệu thì giữ NGUYÊN ô vẽ (Paint đã cấp phát sẵn trong nó); chỉ bảng lốp phải thay
         // ô vẽ, và chỉ nhóm lốp — nhóm KHÔNG có nút — mới đi vào nhánh đó (xem KDoc [GroupBoardBinder.refill]).
-        if (model.shape == WidgetShape.BOARD && !boards.refill(model, data.car)) {
+        if (model.shape == WidgetShape.BOARD && !boards.refill(model)) {
             bodyHolder.removeAllViews()
             buildBody(model, data)
         }
@@ -201,7 +201,8 @@ class GroupTileView(context: Context) : LinearLayout(context) {
      * ## ⚠ Nhóm CÓ NÚT thì ô con bỏ icon — [ĐO] máy ảo
      * Thân ô nhận phần CÒN LẠI sau hàng nút (`WRAP`), nên nhóm có nút thì ô con thấp hơn nhiều và clip theo thứ tự
      * icon → nhãn → số: *Cửa & khoang* (10 mục + 6 nút) từng **chỉ còn ICON**, mất cả nhãn lẫn số. Nhóm KHÔNG nút
-     * (*ADAS* 10 mục, *Người ngồi* 5 mục) lấy trọn chiều cao và [ĐO] hiện đủ ⇒ chúng giữ icon.
+     * lấy trọn chiều cao và [ĐO] hiện đủ ⇒ chúng giữ icon. (Hai nhóm không-nút của phép đo gốc 2026-09-12 — *ADAS*
+     * 10 mục và *Người ngồi* 5 mục — đã xoá 2026-09-16 cùng toàn bộ ADAS/an toàn, owner; luật thì không đổi.)
      *
      * Bỏ icon (thay vì thu chữ) vì **con số là thứ không được mất**: ô chỉ còn icon nói ít hơn cả ô trống — nó
      * trông như đã có dữ liệu.

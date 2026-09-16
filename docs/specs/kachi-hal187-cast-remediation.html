@@ -44,10 +44,24 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>2026-09-16 — ADAS/an toàn GỠ TOÀN BỘ theo owner (mục backlog (N) ADAS-PURGE ✅ 1.67 (68)).</b>
+  Owner (nguyên văn): <i>"clean toàn bộ các chức năng an toàn, ADAS trong launcher này, có rủi ro nếu chạy sai,
+  ảnh hưởng an toàn lái xe, dẹp hết toàn bộ HAL, nút, chức năng, widget, whatever, coi như chưa bao giờ tồn tại,
+  người lái xe muốn chỉnh gì mấy này thì vào setting thật của xe làm"</i>. Xoá <b>10 nút</b> + <b>17 thông tin</b>
+  + <b>3 nhóm</b> + <code>Domain.SAFETY</code> + <code>CarStatus.Safety</code> + 2 ô vẽ Canvas + 24 icon vector.
+  ⇒ <b>Con số "187" trong tên tệp và trong mọi mục dưới đây là LỊCH SỬ</b>; số thật hôm nay là
+  <b>167</b> = <b>54 nút · 106 thông tin · 4 gói · 3 hành động</b> <i>(2026-09-16 owner gỡ ADAS/an toàn — trước
+  đó 187)</i>. Tên tệp <b>giữ nguyên</b> (không đổi slug). Chi tiết + bằng chứng grep:
+  <code>docs/diagnostics/adas-purge-2026-09-16.md</code>. Các mục §2–§9 bên dưới <b>không sửa số</b> — chúng ghi
+  lại phép đo của chuyến xe 2026-09-15, và sửa số của một phép đo đã xảy ra là làm hỏng bằng chứng.</li>
 <li><b>Pass 0 — 2026-09-15</b>: Khởi tạo. Gộp 2 việc version tiếp: (A) sửa regression cast-cụm do refactor SimpleCast (P0), (B) RE off-car + vá binding cho 121/187 chức năng đang hỏng. Kèm nợ nhỏ: công cụ <code>sweep</code>, guard size-compat YouTube. Fix kính-đóng + CapTest 2 chiều đã làm (giữ lại).</li>
 </ul>
 
 <h2>2. Context</h2>
+<div class="card"><b>⚠ 2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher.</b> Mọi con số và mọi mục
+ADAS/an toàn từ đây xuống là <b>LỊCH SỬ ĐO</b> của chuyến xe 2026-09-15, giữ nguyên làm bằng chứng. Trạng thái
+hôm nay: <b>167 chức năng</b> (54 nút · 106 thông tin · 4 gói · 3 hành động) và <b>không còn</b> nút/datum
+ADAS/an toàn nào — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</div>
 <h3>Hai vấn đề THẬT (đều [ĐO] trên xe hôm nay)</h3>
 <p><b>(A) Cast qua cụm hỏng — regression P0.</b> Bản 1.61/1.62 (chứa refactor quality-review Pha 1-3: xoá <code>ClusterCast.kt</code>, thêm <code>SimpleCast</code> + <code>LauncherBootPlan.reconcile</code>) lần đầu chạy cast thật trên xe (sau reboot) đã đặt <code>ClusterBlackActivity</code> + app cast (GMaps) vào <b>display 1</b> (VD slot của launcher, <code>kachi-slot-0</code>) thay vì <b>display 2</b> (cụm thật <code>fission_bg_xdjaVirtualSurface</code>) → "cast vào giữa launcher". [ĐO] <code>ClusterDisplayResolver.resolve()</code>/<code>DisplayParse.clusterDisplayId</code> parse dump thật <b>ra đúng 2</b>; gốc là <b>TIMING</b>: boot log <code>Cluster display seed = 1</code> → seed=1 được dùng đặt ClusterBlack TRƯỚC khi refine sang 2.</p>
 <p><b>(B) 121/187 chức năng "chưa chạy / số vô nghĩa".</b> Công cụ "Kiểm tra từng nút xe" chấm <b>64 OK / 121 KHÔNG / 2 chưa</b>. Nhiều mục ĐỌC trả rỗng hoặc sai đơn vị; nhiều NÚT không tác dụng. Đây KHÔNG phải 121 bug riêng — chúng gom theo <b>device HAL</b> (charging/light/radar/tyre/bodywork…) và theo <b>loại lỗi</b> (chưa-map / sai-route / sai-scale / sai-enum / bị-chặn-chữ-ký / trim-không-có).</p>
@@ -191,6 +205,42 @@ ul{padding-left:22px}li{margin:3px 0}
 </ul>
 
 <h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-16 (senior review + patch, Opus) — lượt (N) ADAS-PURGE</h3>
+<p><b>Phạm vi:</b> toàn bộ <code>git diff</code> chưa commit vs <code>703fb14</code> (94 tệp) + tài liệu mới
+<code>docs/diagnostics/adas-purge-2026-09-16.md</code>. Version <b>giữ 1.67 (68)</b>, không commit.
+<b>Verdict: APPROVED</b> (off-car).</p>
+<p><b>[P0] Ô đã lưu của người dùng thành ô hỏng vĩnh viễn.</b> Lượt xoá gỡ <b>27 mã + 3 mã nhóm</b> khỏi registry
+trong khi chính dự án đã chốt <i>"ẩn khỏi bộ chọn ≠ XOÁ MÃ — mã là KHOÁ LƯU BỀN"</i>
+(<code>CapabilityCatalog.HIDDEN_FROM_PICKER</code>, <code>LauncherCatalog.kt:244-270</code>), và <b>không có đường
+chuyển đổi</b>. Thanh nút (<code>ControlDockView.rebuild</code> nhánh <code>null -&gt; Unit</code>) và chip thanh
+trên (<code>TopStripChips.render</code> <code>mapNotNull</code>) vốn đã bỏ mã lạ; <b>ô giữa màn thì không</b> —
+<code>WidgetViews.build</code> rơi xuống <code>telemetry(…)</code> → <code>TelemetryReadout.of</code> trả
+<code>null</code> → vẽ <code>label(ctx, id.uppercase(), "—", "")</code>, tức người lái thấy một ô ghi thẳng
+<b><code>ADAS_FCW</code></b> và nó <b>không bao giờ tự khỏi</b>. <b>Vá:</b> <code>WorkspaceState.sanitized()</code>
+bỏ mã widget không còn trong bộ đăng ký (ô chỉ còn mã chết ⇒ về TRỐNG) + <code>unknownWidgetIds()</code> để
+<code>PrefsWorkspaceRepository.load()</code> ghi MỘT dòng log; mã chỉ <i>bị ẩn</i> không bị đụng; 2 bài hồi quy
+<code>:core</code> nạp đúng <code>adas_fcw</code> · <code>radar_zones</code> · <code>g_adas</code>.</p>
+<p><b>[P2]×3 dead code + số sai:</b> <code>Sp.BOARD_ROW_MIN</code> và <code>GroupTone.isLoud</code> còn lại
+<b>0 chỗ gọi</b> sau khi hai ô vẽ Canvas bị xoá (đúng loại "nút chết" CLAUDE §8) ⇒ xoá;
+<code>docs/catalog/features.json</code> còn mô tả hiện trạng bằng số cũ (<i>"123 thông tin + 64 hành động"</i>,
+<i>"187 diễn giải"</i>, <i>"quét CẠN 187 mục"</i>) ⇒ sửa 5 chỗ + sinh lại
+<code>docs/kachi-feature-catalog.html</code>. <b>[P3]×3:</b> 13 chỗ KDoc treo/nói sai thì hiện tại
+(<code>[RadarBoardView]</code> · <code>[SideBoardView]</code> · <code>[SideBoardPlan]</code> · <i>"8 zone radar"</i>
+· <i>"ADAS 10 mục"</i> · <code>adas_esp</code>) ⇒ sửa, giữ nguyên phần <code>[ĐO]</code> lịch sử (§12);
+<code>GroupTileWiringContractTest</code> trả lại 4 chuỗi cấm (<code>"radar_</code> <code>"seatbelt_</code>
+<code>"bsd_</code> <code>"adas_</code>) làm <b>cổng chống mọc lại</b>; 4 spec còn nói "187" được thêm dòng
+Changelog lịch sử.</p>
+<p><b>Kiểm và KHÔNG phải sửa:</b> grep bằng máy ⇒ <b>0</b> mã sống cho mọi id/hằng đã gỡ;
+<code>BYDAutoADASDevice</code> còn đúng 4 chỗ hợp lệ (route camera 360 <code>setAVMSwitchState</code> + bảng tra
+FQN), không còn nhánh <code>Domain.SAFETY</code>; <b>0</b> chuỗi <code>R.string</code> mồ côi (quét 463 khai báo);
+drawable mồ côi chỉ <b>2</b> và <b>đều có từ trước</b> (<code>segment_selected_bg</code> ·
+<code>segment_selected_warm_bg</code>) ⇒ không xoá; mọi số neo hạ xuống đều suy từ registry (phủ thật 71 vs sàn 65;
+<code>ic_car_*</code> thật 44 vs sàn 42); bài <code>GroupTileWiringContractTest</code> <b>không</b> yếu đi như doc
+nghi — đổi <code>"GroupBoard."</code> → <code>"GroupBoard"</code> là NỚI CHIỀU DÒ nên chặt hơn.
+<b>[ĐO]</b> JUnit XML: <code>:core</code> 1 994 → <b>1 996</b>/0 đỏ · <code>:app</code> <b>987</b>/0 đỏ;
+hotword <b>1 757</b> dòng không đổi; E2E không chạy lại vì Pass 1 không đụng logic voice/registry.
+<b>Còn nợ:</b> 🚗 xác nhận log dọn ô trên xe · 👤 owner chốt <code>CtlSafetyPolicy</code> (giữ).</p>
 
 <h3>Pass 1 — 2026-09-15 (senior review + patch, Opus)</h3>
 <p><b>Phạm vi:</b> toàn bộ <code>git status</code> (93 mục) — cast display-targeting · đường đọc HAL · registry binding · YouTube density · HOME-alias · T-BRIDGE <code>hal</code>/<code>sweep</code> · T7 · CapTest · reconciler cửa sổ (staged). <b>Verdict: APPROVED off-car</b> (mọi deliverable T1–T7/R1–R6 làm được off-car đã có code + call-site + test; phần còn lại là NEEDS-ONCAR đã ghi rõ). <b>KHÔNG được OTA</b> trước khi <code>oncar-verify-1.63</code> §1 (cast) PASS — đúng cổng spec §7 OQ1(a).</p>

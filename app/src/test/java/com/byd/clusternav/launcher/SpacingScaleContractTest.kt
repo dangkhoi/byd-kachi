@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
  *
  * ## Phạm vi — nói rõ cái KHÔNG quét, để chỗ trống không bị đọc thành sơ suất
  *  - **Cỡ chữ (`sp`)** không thuộc thang này: nó là typography, có nhịp riêng theo cấp bậc thông tin.
- *  - **Ô vẽ Canvas** ([TyreBoardView], [RadarBoardView]) dùng **toán theo tỉ lệ** (`m * 0.018f`) chứ không dùng
+ *  - **Ô vẽ Canvas** ([TyreBoardView], [DoorBoardView]) dùng **toán theo tỉ lệ** (`m * 0.018f`) chứ không dùng
  *    dp — chúng tự đúng với mọi mật độ và mọi cỡ ô, nên đưa vào thang dp sẽ làm chúng *kém* đúng đi.
  *  - **`:core`** không được giữ số dp — có bài riêng bên dưới.
  */

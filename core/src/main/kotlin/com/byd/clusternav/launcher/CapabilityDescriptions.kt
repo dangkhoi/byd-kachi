@@ -117,24 +117,7 @@ object CapabilityDescriptions {
         "ambient_front_brightness" to Desc("Độ sáng đèn viền nội thất khu vực trước", "Ambient light brightness for the front zone"),
         "ambient_rear_brightness" to Desc("Độ sáng đèn viền nội thất khu vực sau", "Ambient light brightness for the rear zone"),
 
-        // ── SAFETY (INFO) ──
-        "seatbelt_driver" to Desc("Dây an toàn ghế lái đã cài hay chưa", "Whether the driver's seatbelt is buckled"),
-        "seatbelt_passenger" to Desc("Dây an toàn ghế phụ đã cài hay chưa", "Whether the front passenger's seatbelt is buckled"),
-        "oms_driver" to Desc("Hệ thống có nhận diện tài xế trên ghế không", "Whether the driver occupant-monitoring system detects the driver"),
-        "oms_passenger" to Desc("Hệ thống có nhận diện người ngồi ghế phụ không", "Whether the passenger occupant-monitoring system detects an occupant"),
-        "child_presence" to Desc("Hệ thống có phát hiện trẻ em trong xe không", "Whether the system detects a child left in the car"),
-        "speed_limit_warning" to Desc("Trạng thái cảnh báo vượt quá tốc độ giới hạn", "Overspeed warning alert state"),
-        "bsd_fl_alarm" to Desc("Cảnh báo điểm mù phía trước bên trái", "Front-left blind-spot warning alert"),
-        "bsd_fr_alarm" to Desc("Cảnh báo điểm mù phía trước bên phải", "Front-right blind-spot warning alert"),
-        "lca_left" to Desc("Cảnh báo hỗ trợ chuyển làn bên trái", "Left lane-change assist warning"),
-        "lca_right" to Desc("Cảnh báo hỗ trợ chuyển làn bên phải", "Right lane-change assist warning"),
-        "rcta_left" to Desc("Cảnh báo phương tiện cắt ngang phía sau bên trái", "Rear cross-traffic alert, left side"),
-        "rcta_right" to Desc("Cảnh báo phương tiện cắt ngang phía sau bên phải", "Rear cross-traffic alert, right side"),
-        "dow_left" to Desc("Cảnh báo mở cửa an toàn bên trái", "Left-side door-open safety warning"),
-        "dow_right" to Desc("Cảnh báo mở cửa an toàn bên phải", "Right-side door-open safety warning"),
-        "radar_zones" to Desc("Trạng thái cả 8 vùng cảm biến đỗ xe", "Status of all eight parking sensor zones"),
-        "radar_volume" to Desc("Mức âm lượng cảnh báo cảm biến đỗ xe", "Parking sensor beep volume level"),
-        "esp_state" to Desc("Trạng thái hoạt động của hệ thống cân bằng điện tử", "Electronic stability control (ESP) state"),
+        // ── Điện phụ 12V / nguồn máy (nhóm ADAS/an toàn đã gỡ 2026-09-16) ──
         "mcu_status" to Desc("Trạng thái nguồn của bộ điều khiển trung tâm (MCU)", "Power state of the main control unit (MCU)"),
         "volt_12v" to Desc("Điện áp ắc-quy 12V hiện tại", "Current 12V auxiliary battery voltage (V)"),
         "volt_12v_level" to Desc("Mức đánh giá tình trạng ắc-quy 12V", "12V auxiliary battery health level rating"),
@@ -209,23 +192,11 @@ object CapabilityDescriptions {
         "drive_mode" to Desc("Chọn chế độ lái (Eco/Normal/Sport…)", "Pick the drive mode (Eco/Normal/Sport…)"),
         "powertrain_mode" to Desc("Chọn chế độ vận hành động cơ (EV/HEV)", "Pick the powertrain mode (EV/HEV)"),
         "regen_level" to Desc("Chọn mức thu hồi năng lượng phanh tái tạo", "Pick the regenerative braking level"),
-        "itac" to Desc("Bật/tắt hệ thống kiểm soát mô-men iTAC", "Turn the iTAC torque-control system on/off"),
-        "avh" to Desc("Bật/tắt chức năng giữ phanh tự động khi dừng", "Turn Auto Vehicle Hold (AVH) on/off"),
 
         // ── ENERGY (ACT) ──
         "target_soc_set" to Desc("Tăng/giảm mức pin mục tiêu cho sạc", "Raise/lower the target charge level"),
         "charge_cap" to Desc("Bật/tắt giới hạn mức sạc tối đa", "Turn the maximum charge cap on/off"),
         "wireless_charge" to Desc("Bật/tắt sạc không dây cho điện thoại", "Turn the wireless phone charger on/off"),
         "start_charging" to Desc("Bắt đầu sạc xe ngay lập tức", "Start charging the car immediately"),
-
-        // ── SAFETY (ACT) ──
-        "adas_slw" to Desc("Bật/tắt cảnh báo vượt quá tốc độ giới hạn", "Turn the overspeed warning on/off"),
-        "adas_esp" to Desc("Bật/tắt hệ thống cân bằng điện tử ESP", "Turn electronic stability control (ESP) on/off"),
-        "adas_tsr" to Desc("Bật/tắt nhận diện biển báo giao thông", "Turn traffic-sign recognition on/off"),
-        "adas_lane" to Desc("Chọn chế độ hỗ trợ giữ làn đường", "Pick the lane-keeping assist mode"),
-        "adas_fcw" to Desc("Tăng/giảm độ nhạy cảnh báo va chạm phía trước", "Raise/lower the forward collision warning sensitivity"),
-        "adas_rcta" to Desc("Bật/tắt cảnh báo phương tiện cắt ngang phía sau", "Turn rear cross-traffic alert on/off"),
-        "adas_dow" to Desc("Bật/tắt cảnh báo an toàn khi mở cửa", "Turn the door-open safety warning on/off"),
-        "adas_cpd" to Desc("Bật/tắt phát hiện trẻ em bỏ quên trong xe", "Turn child-presence detection on/off")
     )
 }

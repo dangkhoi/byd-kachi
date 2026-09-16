@@ -22,16 +22,21 @@ enum class Domain(override val label: String, override val labelEn: String) : Lo
     TYRES("Lốp", "Tyres"),
     BODY("Thân xe · cửa · kính", "Body · doors · windows"),
     LIGHTS("Đèn", "Lights"),
-    SAFETY("An toàn · ADAS", "Safety · ADAS"),
+    // ⚠ 2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn chủ động khỏi launcher (*"người lái muốn chỉnh mấy cái này thì
+    // vào setting thật của xe"*). Domain `SAFETY` vì thế **không còn tồn tại**: mọi datum/nút của nó đã xoá, ba mục
+    // điện 12V (`mcu_status` · `volt_12v` · `volt_12v_level`) chuyển sang [ENERGY] vì ắc-quy không phải hệ an toàn
+    // lái. Đừng dựng lại enum này để "gom tạm" thứ gì — nó là cổng duy nhất khiến ADAS không mọc lại.
     IDENTITY("Danh tính · khoá", "Identity · keys"),
     INFOTAINMENT("Giải trí · cụm · HUD", "Media · cluster · HUD");
 
     companion object {
         /**
-         * 8 domain của telemetry catalog §A (kachi-capability-catalog). [INFOTAINMENT] KHÔNG nằm ở đây vì nó là
-         * nhóm control (không có datum đọc riêng). Test `TelemetryRegistry` phủ đủ 8 domain này.
+         * 7 domain của telemetry catalog §A (kachi-capability-catalog). [INFOTAINMENT] KHÔNG nằm ở đây vì nó là
+         * nhóm control (không có datum đọc riêng). Test `TelemetryRegistry` phủ đủ 7 domain này.
+         *
+         * Trước 2026-09-16 có 8 — `SAFETY` là cái thứ 8, đã gỡ cùng toàn bộ ADAS (xem chú thích ở enum).
          */
-        val TELEMETRY: List<Domain> = listOf(ENERGY, DRIVETRAIN, CLIMATE, TYRES, BODY, LIGHTS, SAFETY, IDENTITY)
+        val TELEMETRY: List<Domain> = listOf(ENERGY, DRIVETRAIN, CLIMATE, TYRES, BODY, LIGHTS, IDENTITY)
     }
 }
 
@@ -47,8 +52,8 @@ enum class WidgetShape {
     /** Đồng hồ cung (công suất, ga/phanh). */ GAUGE,
     /** Kim quay (tốc độ, vô-lăng). */ DIAL,
     /** Thẻ nhiều dòng (sạc, sức khoẻ pin). */ CARD,
-    /** Bảng lưới nhiều ô (4 lốp, 8 zone radar). */ BOARD,
-    /** Dải icon trạng thái (cửa/kính/đèn/dây an toàn). */ STRIP,
+    /** Bảng lưới nhiều ô (4 lốp · cửa & khoang). */ BOARD,
+    /** Dải icon trạng thái (cửa/kính/đèn). */ STRIP,
     /** Thẻ nhạc + transport. */ MEDIA,
     /** Một con số + đơn vị. */ VALUE,
     /** Huy hiệu bật/tắt/enum ngắn. */ BADGE,
@@ -80,7 +85,7 @@ enum class EvidenceTier {
      * Có cần badge "chưa kiểm trên xe" không = **mọi mức trừ [PROVEN]**.
      *
      * ## ⚠ [SOÁT P1-3] Vì sao KHÔNG viết `== OVERDRIVE || == DASHCAST`
-     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **4 nút yếu nhất của cả bộ** (`door`, `hood`, `adas_esp`,
+     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **các nút yếu nhất của cả bộ** (`door`, `hood`,
      * `start_charging`) hiện ra **không có chấm cảnh báo** nào, trông y như nút đã chạy thật. Hai trong số đó
      * (`hood`, `start_charging`) còn chưa có đường HAL nên chắc chắn không bao giờ ăn. Đúng chỗ ngược đời: mức
      * tin cậy thấp nhất lại là mức duy nhất không được cảnh báo.

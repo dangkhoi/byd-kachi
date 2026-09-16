@@ -7,15 +7,17 @@ import org.junit.jupiter.api.Test
 
 class CapabilityModelTest {
 
-    @Test fun `Domain co du 8 domain telemetry`() {
-        assertEquals(8, Domain.TELEMETRY.size)
+    // 7 chứ không 8: `Domain.SAFETY` đã gỡ hẳn 2026-09-16 cùng toàn bộ ADAS/an toàn (owner).
+    @Test fun `Domain co du 7 domain telemetry`() {
+        assertEquals(7, Domain.TELEMETRY.size)
         assertEquals(
             listOf(
                 Domain.ENERGY, Domain.DRIVETRAIN, Domain.CLIMATE, Domain.TYRES,
-                Domain.BODY, Domain.LIGHTS, Domain.SAFETY, Domain.IDENTITY,
+                Domain.BODY, Domain.LIGHTS, Domain.IDENTITY,
             ),
             Domain.TELEMETRY,
         )
+        assertFalse(Domain.values().any { it.name == "SAFETY" }, "ADAS/an toàn không được mọc lại thành domain")
         // INFOTAINMENT ton tai (control-only) nhung KHONG nam trong telemetry domain.
         assertFalse(Domain.INFOTAINMENT in Domain.TELEMETRY)
     }
@@ -45,8 +47,8 @@ class CapabilityModelTest {
 
     /**
      * ⚠ [SOÁT P1-3] Bài này TRƯỚC ĐÂY khoá đúng hành vi SAI: nó đòi `NEEDS_CAR.needsBadge == false`, tức mức tin cậy
-     * THẤP NHẤT là mức duy nhất KHÔNG được cảnh báo — 4 nút yếu nhất bộ (`door`, `hood`, `adas_esp`,
-     * `start_charging`) hiện ra trông y như nút đã chạy thật. Luật đúng: cảnh báo cho MỌI mức trừ PROVEN.
+     * THẤP NHẤT là mức duy nhất KHÔNG được cảnh báo — các nút yếu nhất bộ (`door`, `hood`, `start_charging`…)
+     * hiện ra trông y như nút đã chạy thật. Luật đúng: cảnh báo cho MỌI mức trừ PROVEN.
      */
     @Test fun `needsBadge cho MOI muc tru PROVEN`() {
         assertFalse(EvidenceTier.PROVEN.needsBadge, "đã chạy thật trên xe thì không cảnh báo")

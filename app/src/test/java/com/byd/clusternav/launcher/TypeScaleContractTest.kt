@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
  * thêm tệp vào [SURFACES] tới đó.
  *
  * ## KHÔNG thuộc phạm vi
- * Ô vẽ Canvas ([TyreBoardView]/[SideBoardView]) tính cỡ chữ theo **tỉ lệ cạnh ô** (`m * 0.xxx`) — đó là kích
+ * Ô vẽ Canvas ([TyreBoardView]/[DoorBoardView]) tính cỡ chữ theo **tỉ lệ cạnh ô** (`m * 0.xxx`) — đó là kích
  * thước hình học bất biến với cỡ ô, không phải một bậc chữ giao diện; chúng không dùng `setTextSize(sp)` số tay.
  */
 class TypeScaleContractTest {
@@ -33,7 +33,7 @@ class TypeScaleContractTest {
      *
      * Mở rộng dần theo §R7: sau Settings, đã lan sang ngăn kéo / thanh trên / overlay / ô workspace / bảng vẽ.
      * Ô lưới mật độ cao (`CapabilityGridSection` 11.5/10sp — tệp đã xoá ở R-UI (m)) và ô vẽ Canvas
-     * ([TyreBoardView]/[SideBoardView] theo tỉ
+     * ([TyreBoardView]/[DoorBoardView] theo tỉ
      * lệ) KHÔNG ở đây — cỡ của chúng là ngoại lệ có lý do (mật độ / hình học), KHÔNG phải bậc chữ giao diện.
      */
     private val SURFACES = listOf(

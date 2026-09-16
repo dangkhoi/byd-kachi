@@ -42,14 +42,6 @@
     </plurals>
     <string name="kachi_drawer_cap_note">Ô chứa tối đa %1$d mục — bỏ một mục để thêm</string>
 
-    <!-- ── SideBoardView — bảng sơ đồ hai bên xe (ADAS) ──
-         Ô hẹp không đủ chỗ cho mọi cảm biến Ở CỠ CHỮ ĐỌC ĐƯỢC ⇒ bảng chỉ hiện cái đang cảnh báo và ĐẾM phần còn lại.
-         Bỏ bớt mà không nói ra là đúng "kênh im lặng" dự án đã vá ba lần. -->
-    <plurals name="kachi_board_hidden_n">
-        <!-- Tiếng Việt không phân biệt số ít/số nhiều ⇒ chỉ cần `other`. -->
-        <item quantity="other">+%1$d mục khác</item>
-    </plurals>
-
     <!-- ── ControlTileFactory — ô điều khiển kiểu COVER (cửa/kính/cốp) ── -->
     <string name="kachi_cover_close">Đóng</string>
     <string name="kachi_cover_open">Mở</string>
@@ -153,7 +145,6 @@
     <string name="kachi_about_package">Tên gói: %1$s</string>
     <string name="kachi_about_licence">Giấy phép MIT. Thử nghiệm cá nhân, KHÔNG liên kết với BYD.</string>
 
-
     <!-- ── SettingsSectionsHome — Màn hình chính ── -->
     <string name="kachi_sec_layout">Bố cục màn hình</string>
     <string name="kachi_row_preset">Bố cục sẵn</string>
@@ -203,7 +194,6 @@
     <string name="kachi_pm_poor">Kém</string>
     <string name="kachi_tyre_temp_unverified">%1$s · nhiệt chưa kiểm</string>
     <string name="kachi_outside_temp">%1$s · ngoài xe</string>
-    <string name="kachi_speed_over">Vượt tốc độ</string>
     <string name="kachi_speed_current">Tốc độ hiện tại</string>
     <string name="kachi_doors_unknown">Trạng thái cửa —</string>
     <string name="kachi_doors_open">Có cửa đang mở</string>

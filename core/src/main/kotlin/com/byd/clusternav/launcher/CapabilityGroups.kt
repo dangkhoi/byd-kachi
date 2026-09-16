@@ -6,7 +6,8 @@ package com.byd.clusternav.launcher
  * Thuần Kotlin (`:core`, cấm `android.*`) ⇒ kiểm được off-car. Spec `docs/specs/kachi-capability-groups.html` §4.1.
  *
  * ## Bệnh nó chữa — nói bằng số
- * [ĐO] 2026-09-11: launcher có **196 mục rời** (123 datum đọc · 64 nút · 9 widget) và **mỗi datum là một ô riêng**.
+ * [ĐO] 2026-09-11: launcher có **196 mục rời** (123 datum đọc · 64 nút · 9 widget — trước lượt gỡ ADAS 2026-09-16)
+ * và **mỗi datum là một ô riêng**.
  * Muốn xem lốp phải đặt **bốn** ô (`tyre_p_fl`, `tyre_p_fr`, `tyre_p_rl`, `tyre_p_rr`); muốn xem kính phải đặt bốn ô
  * nữa. Owner nói đúng: *"không ai xem áp suất lốp 1 lốp cả, phải xem cả 4 cùng lúc"*. Một con số áp suất đứng một
  * mình gần như **không trả lời được câu hỏi nào** — "2.4 bar" chỉ có nghĩa khi đặt cạnh ba bánh kia (lệch hay không).
@@ -18,15 +19,15 @@ package com.byd.clusternav.launcher
  * khác nhau. Ngược lại [DOORS] gộp cửa + cốp + nóc + rèm + gương vì chúng là **một** câu hỏi: *"xe tôi kín chưa?"*.
  *
  * ## Nhóm KHÔNG thay thế mục rời (§4.2)
- * 123 mục rời còn **nguyên** — có người chỉ muốn một con số tốc độ to giữa màn. [ĐO] 12 nhóm phủ **88/123** datum;
- * 35 datum còn lại (động lực, danh tính, GPS…) chưa thuộc nhóm nào và vẫn đặt được như trước. Nhóm chỉ là thứ người
+ * Mục rời còn **nguyên** — có người chỉ muốn một con số tốc độ to giữa màn. Datum không thuộc nhóm nào (động lực,
+ * danh tính, GPS…) vẫn đặt được như trước — xem [ungroupedReadIds]. Nhóm chỉ là thứ người
  * dùng **gặp trước**, không phải thứ thay thế. Đây cũng là điều kiện để không phá cấu hình ai đã lưu: mã cũ vẫn đặt
  * được vì không mã nào bị xoá hay đổi tên.
  *
  * ## Vì sao chỉ 3 nhóm có nút (§4.3 + OQ1)
  * [WINDOWS] · [DOORS] · [LIGHTS] mang nút vì chúng là thứ người ta **làm**, và trạng thái của chúng vô nghĩa nếu
  * không sửa được (thấy kính mở 40% mà không đóng được thì để làm gì). Chín nhóm còn lại là thứ người ta **xem**:
- * lốp, radar, pin, chuyến đi không có gì để bấm. Bất biến này bị chốt trong [init] — nút chỉ được ở nhóm có bộ vẽ
+ * lốp, pin, chuyến đi không có gì để bấm. Bất biến này bị chốt trong [init] — nút chỉ được ở nhóm có bộ vẽ
  * mang hàng nút ([SHAPES_WITH_ACTIONS] = STRIP + BOARD từ U9 pha 2), vì bộ vẽ CARD **không có hàng nút**, nên nút
  * khai vào đó sẽ **vẽ ra rồi không ai chạm tới được** — đúng họ lỗi *"vẽ được ≠ đặt được"* mà RW0 vừa dọn.
  *
@@ -103,7 +104,7 @@ object CapabilityGroups {
      * Câu nhóm này hỏi — *"xe tôi kín chưa?"* — là một câu về **không gian**: người lái cần biết cửa NÀO mở, không
      * phải *"có 1 cảnh báo"*. Dải STRIP trả lời sai loại câu hỏi: [ĐO] 10 ô con cùng một icon cửa (xem
      * [GroupBoardModel.iconsDistinguish]) nên bộ vẽ đã phải **bỏ icon**, còn lại mười ô chữ giống nhau xếp hai hàng.
-     * Bảng BOARD (`DoorBoardView`) đặt mỗi bộ phận đúng chỗ của nó trên hình xe — cùng lối [TYRES] và [ADAS] đã đi.
+     * Bảng BOARD (`DoorBoardView`) đặt mỗi bộ phận đúng chỗ của nó trên hình xe — cùng lối [TYRES] đã đi.
      *
      * Nhóm này vì thế là nhóm BOARD **đầu tiên có nút** — xem [SHAPES_WITH_ACTIONS] về chỗ cho hàng nút.
      */
@@ -174,55 +175,10 @@ object CapabilityGroups {
         subEn = "on/off, colour and brightness front–rear",
     )
 
-    /**
-     * *"Có gì bên cạnh tôi không?"* — điểm mù, chuyển làn, cắt ngang sau, cảnh báo mở cửa, quá tốc, ESP.
-     *
-     * ## ⚠ `BOARD` chứ không `STRIP` — [ĐO] kiểm toán UX 2026-09-12 (mục 4c)
-     * Spec §4.1 xếp nhóm này là `STRIP`, và trên dải đó **8/10 thành viên mang CÙNG một icon sóng radar** (`bsd_*`,
-     * `lca_*`, `rcta_*`, `dow_*` đều tra ra `ic-radar`) ⇒ tám ô con trông y hệt nhau, nhãn thì bị cắt (*"Điểm mù
-     * trư…"* / *"Chuyển làn tr…"*) nên người xem **không phân biệt được ô nào là bên nào**. Icon ở đó không mang
-     * thông tin, nó chỉ chiếm chỗ.
-     *
-     * Câu người lái thật sự hỏi là *"bên NÀO có vật?"* — tức một câu hỏi **không gian**, đúng ca của `BOARD`
-     * (*"lưới theo hình học thật của xe"*, §4.3). Đổi kiểu vẽ, KHÔNG đổi thành viên: mọi mã ở dưới giữ nguyên, nên
-     * cấu hình ai đã lưu vẫn chạy. Phía trái/phải do `:core` quyết định ([GroupBoard.sideOf]).
-     */
-    val ADAS = CapabilityGroup(
-        id = "g_adas", label = "An toàn · ADAS", labelEn = "Safety · ADAS",
-        icon = "ic-group-adas", domain = Domain.SAFETY,
-        shape = WidgetShape.BOARD,
-        reads = listOf(
-            "bsd_fl_alarm", "bsd_fr_alarm", "lca_left", "lca_right",
-            "rcta_left", "rcta_right", "dow_left", "dow_right",
-            "speed_limit_warning", "esp_state",
-        ),
-        sub = "điểm mù, chuyển làn, cắt ngang sau, mở cửa",
-        subEn = "blind spot, lane change, rear cross-traffic, door open",
-    )
-
-    /** *"Ai đang ngồi trong xe, cài dây chưa?"* — dây an toàn, nhận diện người, phát hiện trẻ em. */
-    val OCCUPANTS = CapabilityGroup(
-        id = "g_occupants", label = "Người ngồi", labelEn = "Occupants",
-        icon = "ic-group-occupants", domain = Domain.SAFETY,
-        shape = WidgetShape.STRIP,
-        reads = listOf("seatbelt_driver", "seatbelt_passenger", "oms_driver", "oms_passenger", "child_presence"),
-        sub = "dây an toàn + người ngồi",
-        subEn = "seatbelts and who is on board",
-    )
-
-    /**
-     * *"Đằng sau còn bao nhiêu chỗ?"* — 8 vùng radar + âm lượng.
-     *
-     * Đúng ca mà [WidgetShape.BOARD] đã ghi sẵn trong KDoc từ đầu (*"4 lốp, 8 zone radar"*) nhưng chưa ai dựng.
-     */
-    val PARKING = CapabilityGroup(
-        id = "g_parking", label = "Cảm biến đỗ", labelEn = "Parking sensors",
-        icon = "ic-group-parking", domain = Domain.SAFETY,
-        shape = WidgetShape.BOARD,
-        reads = listOf("radar_zones", "radar_volume"),
-        sub = "vùng cảm biến quanh xe + âm lượng",
-        subEn = "sensor zones around the car, plus volume",
-    )
+    // ⚠ 2026-09-16 — BA nhóm bị gỡ hẳn ở đây cùng toàn bộ ADAS/an toàn (owner): `g_adas` (điểm mù · chuyển làn ·
+    // cắt ngang sau · cảnh báo mở cửa · quá tốc · ESP), `g_occupants` (dây an toàn · nhận diện người ngồi · trẻ em),
+    // `g_parking` (8 vùng cảm biến đỗ + âm lượng). Cả ba chỉ gồm datum đã xoá nên không còn gì để bày. Đừng dựng
+    // lại: hệ an toàn chủ động chỉnh ở **setting gốc của xe**, không ở launcher.
 
     /** *"Trong xe có dễ thở không?"* — nhiệt trong/ngoài/cài đặt, điều hoà, bụi mịn, ion âm. */
     val CLIMATE = CapabilityGroup(
@@ -284,9 +240,9 @@ object CapabilityGroups {
         subEn = "distance, time, energy used, odometer",
     )
 
-    /** 12 nhóm, thứ tự khai = thứ tự hiện ra. */
+    /** 9 nhóm, thứ tự khai = thứ tự hiện ra (12 trước khi owner gỡ ADAS/an toàn 2026-09-16). */
     val ALL: List<CapabilityGroup> = listOf(
-        TYRES, WINDOWS, DOORS, LIGHTS, AMBIENT, ADAS, OCCUPANTS, PARKING, CLIMATE, ENERGY, BATTERY, TRIP,
+        TYRES, WINDOWS, DOORS, LIGHTS, AMBIENT, CLIMATE, ENERGY, BATTERY, TRIP,
     )
 
     /**
@@ -336,7 +292,7 @@ object CapabilityGroups {
 
     /**
      * Datum KHÔNG thuộc nhóm nào — **không phải lỗi** (§4.2: mục rời còn nguyên), nhưng phải đếm được để đừng ai
-     * tưởng 12 nhóm đã phủ hết 123 mục.
+     * tưởng các nhóm đã phủ hết mọi mục.
      */
     fun ungroupedReadIds(): List<String> =
         TelemetryRegistry.ALL.map { it.id }.filterNot { it in coveredReadIds() }

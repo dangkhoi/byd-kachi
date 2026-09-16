@@ -67,7 +67,6 @@ class CarDataAdapter(
         fun dbl(id: String, prev: Double?): Double? = read(id, prev) { table.readDouble(id) }
         fun bool(id: String, prev: Boolean?): Boolean? = read(id, prev) { table.readBool(id) }
         fun str(id: String, prev: String?): String? = read(id, prev) { table.readString(id) }
-        fun ints(id: String, prev: List<Int>?): List<Int>? = read(id, prev) { table.readIntList(id) }
     }
 
     private fun gate() = Gate(table, demand(), absent, clock())
@@ -105,7 +104,7 @@ class CarDataAdapter(
     override fun speedKmh(): Int? = table.readInt("speed")
     override fun outsideTempC(): Int? = table.readInt("ext_temp")
 
-    // ── NHỊP NHANH (~1s): tốc độ / động lực / công suất / cảnh báo ADAS ─────────────────────────────────
+    // ── NHỊP NHANH (~1s): tốc độ / động lực / công suất ─────────────────────────────────────────────────
     override fun readFast(prev: CarStatus): CarStatus {
         val g = gate()
         val d = prev.drivetrain
@@ -127,19 +126,14 @@ class CarDataAdapter(
                 driftMode = g.bool("drift_mode", d.driftMode),
             ),
             energy = prev.energy.copy(motorPowerKw = g.int("motor_power", prev.energy.motorPowerKw)),
-            safety = prev.safety.copy(
-                speedLimitWarning = g.bool("speed_limit_warning", prev.safety.speedLimitWarning),
-                bsdLeftLevel = g.int("bsd_fl_alarm", prev.safety.bsdLeftLevel),
-                bsdRightLevel = g.int("bsd_fr_alarm", prev.safety.bsdRightLevel),
-            ),
         )
     }
 
-    // ── NHỊP CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · an toàn(bền) · danh tính ─────────
+    // ── NHỊP CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · danh tính ────────────────────────
     override fun readSlow(prev: CarStatus): CarStatus {
         val g = gate()
         val e = prev.energy; val c = prev.climate; val t = prev.tyres
-        val b = prev.body; val l = prev.lights; val s = prev.safety; val i = prev.identity
+        val b = prev.body; val l = prev.lights; val i = prev.identity
         return prev.copy(
             energy = e.copy(   // GIỮ motorPowerKw của nhịp nhanh
                 soc = g.int("soc", e.soc),
@@ -169,6 +163,10 @@ class CarDataAdapter(
                 cellTempAvgC = g.int("cell_temp_avg", e.cellTempAvgC),
                 cellVHigh = g.dbl("cell_v_high", e.cellVHigh),
                 cellVLow = g.dbl("cell_v_low", e.cellVLow),
+                // Điện 12V + nguồn MCU — trước 2026-09-16 nằm ở cụm `Safety`, chuyển sang đây cùng lượt gỡ ADAS.
+                mcuStatus = g.int("mcu_status", e.mcuStatus),
+                volt12v = g.dbl("volt_12v", e.volt12v),
+                volt12vLevel = g.int("volt_12v_level", e.volt12vLevel),
             ),
             climate = CarStatus.Climate(
                 pm25Level = g.int("pm25_level", c.pm25Level),
@@ -229,25 +227,6 @@ class CarDataAdapter(
                 sideLight = g.bool("light_side", l.sideLight),
                 ambientRearColorIndex = g.int("ambient_rear_color", l.ambientRearColorIndex),
                 ambientRearBrightness = g.int("ambient_rear_brightness", l.ambientRearBrightness),
-            ),
-            safety = s.copy(   // GIỮ cảnh báo ADAS (bsd/speedLimitWarning) của nhịp nhanh
-                seatbeltDriver = g.bool("seatbelt_driver", s.seatbeltDriver),
-                seatbeltPassenger = g.bool("seatbelt_passenger", s.seatbeltPassenger),
-                childPresence = g.bool("child_presence", s.childPresence),
-                radarZones = g.ints("radar_zones", s.radarZones),
-                espOn = g.bool("esp_state", s.espOn),
-                mcuStatus = g.int("mcu_status", s.mcuStatus),
-                volt12v = g.dbl("volt_12v", s.volt12v),
-                omsDriver = g.bool("oms_driver", s.omsDriver),
-                omsPassenger = g.bool("oms_passenger", s.omsPassenger),
-                lcaLeft = g.int("lca_left", s.lcaLeft),
-                lcaRight = g.int("lca_right", s.lcaRight),
-                rctaLeft = g.int("rcta_left", s.rctaLeft),
-                rctaRight = g.int("rcta_right", s.rctaRight),
-                dowLeft = g.int("dow_left", s.dowLeft),
-                dowRight = g.int("dow_right", s.dowRight),
-                radarVolume = g.int("radar_volume", s.radarVolume),
-                volt12vLevel = g.int("volt_12v_level", s.volt12vLevel),
             ),
             identity = CarStatus.Identity(
                 vin = g.str("vin", i.vin),

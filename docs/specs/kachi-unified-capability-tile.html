@@ -48,6 +48,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <h2>1. Changelog</h2>
 <table>
 <tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>—</td><td>2026-09-16</td><td>⚠ <b>Owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher</b> (backlog (N) ADAS-PURGE). Mọi con số “187 ô / 123 thông tin / 64 nút” trong spec này từ đây là <b>LỊCH SỬ</b>, giữ nguyên làm bằng chứng đo. Hôm nay: <b>167 chức năng</b> (54 nút · 106 thông tin · 4 gói · 3 hành động), <b>9 nhóm</b> — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</td></tr>
 <tr><td>0</td><td>2026-09-10</td><td>Lập bản thiết kế sau khi ĐỌC code thật ở 3 mặt tiếp giáp (bộ đăng ký · thanh nút · bảng Tuỳ biến). Đo được 4 sự thật quyết định hình dáng thiết kế (§2). Xác minh cách vẽ qua Context7.</td></tr>
 <tr><td>1</td><td>2026-09-10</td><td><b>Owner thêm phạm vi</b>: <i>"mấy cái mà có đơn vị thì cho user chọn đơn vị luôn, đừng ép"</i> ⇒ thêm <b>R11–R13</b> + §4.6 (lớp đơn vị). [ĐO] 61/123 mục có đơn vị, trong đó <b>27 mục có lựa chọn hợp lý</b> (°C×12 · km×6 · kPa×4 · km/h×2 · Nm×1 · m×1 · kWh/100km×1 — <i>đếm lại ở senior review: bản đầu ghi 26, đếm thật là 27</i>). Phát hiện <b>tự mâu thuẫn hiện có</b>: bộ đăng ký ghi kPa nhưng widget lốp tự chia 100 hiện bar ⇒ đã có chuyển đổi ngầm rải rác. <b>OQ2 thay bằng "người dùng chọn"</b>. Owner cũng hỏi i18n → trả lời: <b>CHƯA chuẩn</b> ([ĐO] 0 thư mục ngôn ngữ · 24 chuỗi trong tài nguyên · launcher dùng cơ chế dịch <b>0 lần</b> so với 216 lần ở phần cũ) ⇒ owner CHỐT <b>tách i18n thành việc riêng</b>, không nhập vào gói 2 (backlog U5).</td></tr>
 </table>

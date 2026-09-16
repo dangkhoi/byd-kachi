@@ -200,12 +200,10 @@ object KachiTheme {
         // chính tệp XML (đó là chỗ người sửa icon sẽ đọc).
         "ic-window-open" -> R.drawable.ic_window_open
         "ic-window-close" -> R.drawable.ic_window_close
-        "ic-esp" -> R.drawable.ic_esp
         "ic-car" -> R.drawable.ic_car
         "ic-photo" -> R.drawable.ic_photo
         "ic-fuel" -> R.drawable.ic_fuel
         "ic-motor" -> R.drawable.ic_motor
-        "ic-shield" -> R.drawable.ic_shield
         "ic-drive" -> R.drawable.ic_drive
         // ── [U6 · ĐO ảnh 2026-09-12] 18 icon MỚI: tách theo KHÁI NIỆM trong 3 nhóm dày nhất ───────────
         // Bệnh đo được: nhóm Năng lượng có 9/28 ô cùng glyph tia sét và 6/28 cùng glyph con đường; nhóm Động lực có
@@ -258,10 +256,12 @@ object KachiTheme {
         // ══ U7 · BỘ HÌNH XE THEO VỊ TRÍ (spec docs/specs/kachi-icon-set-v2.html) ═════════════════════
         // Ba KHUNG dùng chung (top · front · rear) + VÙNG TÔ là bộ phận đang được nói tới. Tên tệp mang
         // luôn khung + bộ phận + vị trí (`ic_car_top_door_lf`) nên đọc bảng này là đọc được cả nghĩa.
-        // ⚠ Chín dòng đã bị GỠ ở lượt này (`ic-trunk` · `ic-sunroof` · `ic-mirror` · `ic-seatbelt` ·
-        // `ic-radar` · `ic-gps` · `ic-adas` · `ic-turn-left` · `ic-turn-right`): năm tệp đầu được hình xe
-        // thay 1:1 nên xoá luôn tệp; bốn tên sau chỉ chết TÊN, còn TỆP vẫn sống (ic_adas là icon nhóm
-        // ADAS, hai ic_turn_* là mũi tên rẽ của màn dẫn đường) — nên không xoá tệp, chỉ xoá dòng tra.
+        // ⚠ Chín dòng đã bị GỠ ở U7 (`ic-trunk` · `ic-sunroof` · `ic-mirror` · `ic-seatbelt` · `ic-radar` ·
+        // `ic-gps` · `ic-adas` · `ic-turn-left` · `ic-turn-right`): năm tệp đầu được hình xe thay 1:1 nên xoá luôn
+        // tệp; hai `ic_turn_*` chỉ chết TÊN, còn TỆP vẫn sống (mũi tên rẽ của màn dẫn đường).
+        // ⚠ 2026-09-16 — lượt gỡ ADAS/an toàn xoá tiếp 21 dòng + 21 tệp vector (dây an toàn · người ngồi · điểm mù
+        // · chuyển làn · cắt ngang sau · cảnh báo mở cửa · giữ làn · va chạm trước · cảm biến đỗ · ESP · biển báo ·
+        // khiên an toàn · ba icon nhóm).
         "ic-car-top-door-lf" -> R.drawable.ic_car_top_door_lf
         "ic-car-top-door-rf" -> R.drawable.ic_car_top_door_rf
         "ic-car-top-door-lr" -> R.drawable.ic_car_top_door_lr
@@ -282,11 +282,6 @@ object KachiTheme {
         "ic-car-top-tyre-temp-rl" -> R.drawable.ic_car_top_tyre_temp_rl
         "ic-car-top-tyre-temp-rr" -> R.drawable.ic_car_top_tyre_temp_rr
         "ic-car-top-seat-fl" -> R.drawable.ic_car_top_seat_fl
-        "ic-car-top-belt-fl" -> R.drawable.ic_car_top_belt_fl
-        "ic-car-top-belt-fr" -> R.drawable.ic_car_top_belt_fr
-        "ic-car-top-occupant-fl" -> R.drawable.ic_car_top_occupant_fl
-        "ic-car-top-occupant-fr" -> R.drawable.ic_car_top_occupant_fr
-        "ic-car-top-occupant-rear" -> R.drawable.ic_car_top_occupant_rear
         "ic-car-top-mirror" -> R.drawable.ic_car_top_mirror
         "ic-car-top-trunk" -> R.drawable.ic_car_top_trunk
         "ic-car-top-trunk-pos" -> R.drawable.ic_car_top_trunk_pos
@@ -301,18 +296,6 @@ object KachiTheme {
         "ic-car-top-ambient-bright-front" -> R.drawable.ic_car_top_ambient_bright_front
         "ic-car-top-ambient-bright-rear" -> R.drawable.ic_car_top_ambient_bright_rear
         "ic-car-top-ambient-music" -> R.drawable.ic_car_top_ambient_music
-        "ic-car-top-bsd-l" -> R.drawable.ic_car_top_bsd_l
-        "ic-car-top-bsd-r" -> R.drawable.ic_car_top_bsd_r
-        "ic-car-top-lca-l" -> R.drawable.ic_car_top_lca_l
-        "ic-car-top-lca-r" -> R.drawable.ic_car_top_lca_r
-        "ic-car-top-rcta-l" -> R.drawable.ic_car_top_rcta_l
-        "ic-car-top-rcta-r" -> R.drawable.ic_car_top_rcta_r
-        "ic-car-top-rcta-all" -> R.drawable.ic_car_top_rcta_all
-        "ic-car-top-dow-l" -> R.drawable.ic_car_top_dow_l
-        "ic-car-top-dow-r" -> R.drawable.ic_car_top_dow_r
-        "ic-car-top-dow-all" -> R.drawable.ic_car_top_dow_all
-        "ic-car-top-lane" -> R.drawable.ic_car_top_lane
-        "ic-car-top-park-all" -> R.drawable.ic_car_top_park_all
         "ic-car-front-lowbeam" -> R.drawable.ic_car_front_lowbeam
         "ic-car-front-highbeam" -> R.drawable.ic_car_front_highbeam
         "ic-car-front-fog" -> R.drawable.ic_car_front_fog
@@ -321,7 +304,6 @@ object KachiTheme {
         "ic-car-front-turn-r" -> R.drawable.ic_car_front_turn_r
         "ic-car-front-sidelight" -> R.drawable.ic_car_front_sidelight
         "ic-car-front-headlight-mode" -> R.drawable.ic_car_front_headlight_mode
-        "ic-car-front-fcw" -> R.drawable.ic_car_front_fcw
         "ic-car-rear-fog" -> R.drawable.ic_car_rear_fog
         "ic-car-rear-defrost" -> R.drawable.ic_car_rear_defrost
         // Bốn thành phần của MỘT toạ độ, nhưng là bốn đại lượng khác nhau ⇒ bốn hình (U7 · OQ1: mục
@@ -330,21 +312,15 @@ object KachiTheme {
         "ic-gps-lon" -> R.drawable.ic_gps_lon
         "ic-gps-alt" -> R.drawable.ic_gps_alt
         "ic-gps-heading" -> R.drawable.ic_gps_heading
-        "ic-sign" -> R.drawable.ic_sign
-        // ── T2: 12 ICON NHÓM (spec kachi-capability-groups §4.1) ───────────────────────────────────────
+        // ── T2: 9 ICON NHÓM (spec kachi-capability-groups §4.1; 12 trước lượt gỡ ADAS 2026-09-16) ─────
         // Đây là ĐẦU `:app` của giao kèo tên icon cho nhóm khả năng: `CapabilityGroups` (T1, `:core`) khai
         // `icon = "ic-group-…"`, bảng này dịch sang `R.drawable`. Tên là HỢP ĐỒNG giữa hai module — đổi một bên mà
-        // không đổi bên kia thì icon tra ra 0 (ô trống), nên có [IconStyleContractTest] canh đủ 12 tên tra được.
+        // không đổi bên kia thì icon tra ra 0 (ô trống), nên có [IconStyleContractTest] canh đủ 9 tên tra được.
         "ic-group-tyres" -> R.drawable.ic_group_tyres
         "ic-group-windows" -> R.drawable.ic_group_windows
         "ic-group-doors" -> R.drawable.ic_group_doors
         "ic-group-lights" -> R.drawable.ic_group_lights
         "ic-group-ambient" -> R.drawable.ic_group_ambient
-        // ADAS dùng LẠI ic_adas: tệp đó vốn được vẽ đúng cho nhóm này (xe nhìn từ trên + hai vệt quét), thêm tệp
-        // thứ hai cùng nghĩa chỉ tạo hai bản sao phải giữ đồng bộ.
-        "ic-group-adas" -> R.drawable.ic_adas
-        "ic-group-occupants" -> R.drawable.ic_group_occupants
-        "ic-group-parking" -> R.drawable.ic_group_parking
         "ic-group-climate" -> R.drawable.ic_group_climate
         "ic-group-energy" -> R.drawable.ic_group_energy
         "ic-group-battery" -> R.drawable.ic_group_battery_health
@@ -353,14 +329,16 @@ object KachiTheme {
     }
 
     /**
-     * 12 tên icon NHÓM mà `:core` được phép khai (spec kachi-capability-groups §4.1).
+     * 9 tên icon NHÓM mà `:core` được phép khai (spec kachi-capability-groups §4.1).
      *
      * Khai ở đây thay vì rải trong test: nó là **danh sách hợp đồng**, và [iconRes] phải tra ra được từng tên.
      * Thứ tự = thứ tự nhóm trong spec.
+     *
+     * ⚠ Ba tên `ic-group-adas` · `ic-group-occupants` · `ic-group-parking` đã gỡ 2026-09-16 cùng ba nhóm ADAS/an
+     * toàn (owner) — tệp vector của chúng cũng xoá khỏi `res/drawable`.
      */
     val GROUP_ICON_NAMES: List<String> = listOf(
         "ic-group-tyres", "ic-group-windows", "ic-group-doors", "ic-group-lights", "ic-group-ambient",
-        "ic-group-adas", "ic-group-occupants", "ic-group-parking", "ic-group-climate", "ic-group-energy",
-        "ic-group-battery", "ic-group-trip",
+        "ic-group-climate", "ic-group-energy", "ic-group-battery", "ic-group-trip",
     )
 }
