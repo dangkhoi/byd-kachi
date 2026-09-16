@@ -21,12 +21,63 @@ class BydHalGateway(context: Context) : HalGateway {
 
     private val app: Context = context.applicationContext
 
-    /** Resolve device BYDAuto qua reflection proven (system-ctx rồi app-ctx, đều bọc bypass). null nếu off-car. */
-    private fun device(fqn: String): Any? =
-        runCatching { BydHal.device(fqn, BydHal.systemBypassContext(), BydHal.bypass(app)) }.getOrNull()
+    /**
+     * ═══ H1 (PERF 2026-09-16) — NHỚ tay cầm device thay vì dựng lại mỗi lượt đọc ═════════════════════════════
+     *
+     * [ĐO máy ảo 2026-09-16] bản 1.66: **1 404 lượt đọc/phút**, và MỖI lượt chạy trọn công thức resolve:
+     * `systemBypassContext()` (reflection `ActivityThread.currentActivityThread` + `getSystemContext` + dựng một
+     * `ContextWrapper` bọc quyền) → `bypass(app)` (một `ContextWrapper` nữa) → `Class.forName(fqn).getMethod(
+     * "getInstance", Context).invoke(...)`. Tức ≈4 200 lượt tra reflection + ≈2 800 vật tạm **mỗi phút**, chỉ để
+     * lấy lại đúng cái đối tượng vừa lấy một mili-giây trước.
+     *
+     * Tay cầm device là **process-singleton phía framework** (`getInstance(Context)`), nên nhớ nó là đúng ngữ
+     * nghĩa, không phải một mẹo.
+     *
+     * ## Vì sao lần HỤT được nhớ CÓ HẠN (không nhớ vĩnh viễn)
+     * Off-car `getInstance` luôn hụt — nhớ vĩnh viễn thì rẻ. Nhưng trên xe, launcher có thể lên **trước** khi
+     * service HAL sẵn sàng (nó là HOME, chạy rất sớm sau khi nổ máy): nhớ "không có" vĩnh viễn ở đúng cửa sổ ấy
+     * là mọi ô câm cho tới khi khởi động lại app — một lỗi chức năng đổi lấy một chút CPU. Vì thế lần hụt chỉ
+     * được nhớ [MISS_TTL_MS]; sau đó thử lại một lần.
+     *
+     * ## ⚠ [SOÁT P2-2 · 2026-09-16] Lần TRÚNG cũng có hạn — vì tiền đề "singleton" mới ở mức [SUY]
+     * Lý lẽ *"tay cầm là process-singleton phía framework nên nhớ nó không đổi ngữ nghĩa gì"* dựa trên chữ ký
+     * `public static synchronized BYDAutoXDevice getInstance(Context)` trong **stub SDK** đã decompile
+     * (`../jadx-tmap/sources/android/hardware/bydauto/pm2p5/BYDAutoPM2p5Device.java:47`) — thân hàm ở đó là
+     * `throw new RuntimeException("Stub!")`, tức **chưa ai đọc được mã thật**. Nếu tiền đề SAI ở một điểm (ví dụ
+     * `getInstance` trả vật mới sau khi service HAL khởi động lại) thì `BydHal.callGetter` — vốn nuốt mọi ngoại
+     * lệ và trả `null` — sẽ biến một binder chết thành *"mọi ô hiện —"* **vĩnh viễn**, không có đường phục hồi
+     * nào ngoài khởi động lại app. Đúng họ lỗi CLAUDE.md §3 (tin trí nhớ về framework) + §5 (đổi ra ngoài thì
+     * phải có đường trả lại chạy được cả khi không ai gọi).
+     *
+     * Vì thế lần trúng cũng hết hạn sau [HIT_TTL_MS]. Giá: **12 device × 1 lượt resolve / 5 phút ≈ 2,4 lượt
+     * reflection/phút** — so với ≈4 200/phút của 1.66 thì nằm dưới mức nhiễu, và nó mua lại một trần phục hồi
+     * hữu hạn cho một tiền đề chưa kiểm được trên xe.
+     */
+    private class Handle(val device: Any, val bornAt: Long)
 
-    override fun getter(deviceFqn: String, method: String, arg: Int?): String? =
-        runCatching { device(deviceFqn)?.let { BydHal.callGetter(it, method, arg) } }.getOrNull()
+    private val deviceCache = java.util.concurrent.ConcurrentHashMap<String, Handle>()
+    private val deviceMissAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    /** Resolve device BYDAuto qua reflection proven (system-ctx rồi app-ctx, đều bọc bypass). null nếu off-car. */
+    private fun device(fqn: String): Any? {
+        val now = android.os.SystemClock.elapsedRealtime()
+        deviceCache[fqn]?.let { h ->
+            // Đồng hồ lùi (`elapsedRealtime` không lùi, nhưng chỗ gọi test/giả thì có) ⇒ coi như hết hạn, không
+            // để một hiệu âm khoá tay cầm lại mãi mãi.
+            if (now - h.bornAt in 0 until HIT_TTL_MS) return h.device
+            deviceCache.remove(fqn, h)
+        }
+        val missAt = deviceMissAt[fqn]
+        if (missAt != null && now - missAt in 0 until MISS_TTL_MS) return null
+        val d = runCatching { BydHal.device(fqn, BydHal.systemBypassContext(), BydHal.bypass(app)) }.getOrNull()
+        if (d != null) { deviceCache[fqn] = Handle(d, now); deviceMissAt.remove(fqn) } else deviceMissAt[fqn] = now
+        return d
+    }
+
+    override fun getter(deviceFqn: String, method: String, arg: Int?): String? {
+        KachiPerf.add(KachiPerf.Counter.HAL_READ)
+        return runCatching { device(deviceFqn)?.let { BydHal.callGetter(it, method, arg) } }.getOrNull()
+    }
 
     /**
      * Ghi named-method + **ghi trộm** câu chữ THẬT vào [HalWriteProbe] cho cầu kiểm thử (spec §9).
@@ -48,6 +99,7 @@ class BydHalGateway(context: Context) : HalGateway {
      * off-car; đây chỉ resolve device. null = off-car / device không có get / HAL từ chối / giá trị sentinel.
      */
     override fun featureGet(deviceFqn: String, id: Int): String? = runCatching {
+        KachiPerf.add(KachiPerf.Counter.HAL_READ)
         val dev = device(deviceFqn) ?: return null
         BydHal.readFeature(dev, id)
     }.getOrNull()
@@ -123,5 +175,18 @@ class BydHalGateway(context: Context) : HalGateway {
 
         /** Đường car-setting chưa proven trên trim (grab-list §9). */
         const val SETTING_UNSUPPORTED = "setting_unsupported"
+
+        /**
+         * Nhớ một lần resolve device HỤT trong bao lâu (xem KDoc [device]). 30 s: đủ dài để cắt sạch 1 400 lượt
+         * reflection/phút off-car, đủ ngắn để HAL lên muộn lúc nổ máy vẫn được bắt trong một nhịp poll chậm.
+         */
+        const val MISS_TTL_MS = 30_000L
+
+        /**
+         * Nhớ một tay cầm ĐÃ resolve được trong bao lâu (xem ⚠ [SOÁT P2-2] ở KDoc [deviceCache]). 5 phút: trần
+         * phục hồi hữu hạn nếu tiền đề "singleton" sai, mà chi phí (≈2,4 lượt reflection/phút cho 12 device) vẫn
+         * nằm dưới mức nhiễu so với ≈4 200/phút của 1.66.
+         */
+        const val HIT_TTL_MS = 300_000L
     }
 }

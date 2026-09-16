@@ -711,19 +711,33 @@ class SimpleCastCoordinator(
             else -> emptyList()
         }
         if (expected.isEmpty()) return
-        // R1: re-pin cũng là ĐẶT ⇒ dò live trước; hụt ⇒ bỏ lượt này (watchdog sẽ thử lại ở tick sau).
-        val vd = detectClusterDisplay()
-        if (vd < 1) { log("repin: display cụm chưa xác minh — bỏ lượt"); return }
+        // ═══ H2 (PERF 2026-09-16) — một lượt ĐỌC = một lệnh shell, không phải 1+N ═══════════════════════════
+        // [ĐO xe 2026-09-16] (`docs/diagnostics/perf-profile-2026-09-16.md` §0): 305 `am stack list` + 304
+        // `dumpsys display` trong 47 phút (≈13 lệnh/phút) — mỗi lượt watchdog chạy CẢ HAI, rồi `isAppOnDisplay`
+        // lại chạy `am stack list` MỘT LẦN NỮA cho từng gói khi cast chia đôi. Mọi lệnh ấy xếp hàng trên CÙNG
+        // một chủ `ShellTransport` với lệnh đặt cửa sổ của màn chính.
+        //
+        // Lượt ĐỌC (câu hỏi "app còn trên cụm không") nay dùng: id display đã xác minh + **một** `am stack list`
+        // chia cho mọi gói (parser đã thuần sẵn). Lượt ĐẶT thì KHÔNG đổi một bước nào — vẫn dò TƯƠI ngay trước
+        // khi đặt (bất biến R1, xem chỗ gọi `detectClusterDisplay()` bên dưới).
+        val probeVd = liveDisplayId.takeIf { it >= 1 } ?: detectClusterDisplay()
+        if (probeVd < 1) { log("repin: display cụm chưa xác minh — bỏ lượt"); return }
+        val stackOut = shell.execute("am stack list").let { if (it.success) it.stdout else null }
+        if (stackOut == null) { log("repin: không đọc được am stack list — bỏ lượt"); return }
         val now = System.currentTimeMillis()
         for ((pkg, side) in expected) {
             if (pkg == selfPackage) continue
-            if (geometry.isAppOnDisplay(pkg, vd)) { repinMissStreak.remove(pkg); continue }
+            if (CastStackParser.isAppOnDisplay(stackOut, pkg, probeVd)) { repinMissStreak.remove(pkg); continue }
             // Debounce: require MISSING on two consecutive probes (ignore transient parse gaps and the
             // split-second while Kiki's own launch is in flight).
             val streak = (repinMissStreak[pkg] ?: 0) + 1
             repinMissStreak[pkg] = streak
             if (streak < 2) { log("repin: $pkg not on cluster (streak=$streak) — waiting"); continue }
             if (now < (repinCooldownUntil[pkg] ?: 0L)) { log("repin: $pkg cooling down"); continue }
+            // R1 KHÔNG đổi: sắp ĐẶT ⇒ dò TƯƠI id display cụm ngay tại đây (chỉ ở nhánh hiếm này, không phải mỗi
+            // nhịp đọc). Hụt ⇒ bỏ lượt, KHÔNG rơi về seed — đúng như đường cũ.
+            val vd = detectClusterDisplay()
+            if (vd < 1) { log("repin: dò lại không thấy VD cụm trước khi đặt — bỏ lượt"); return }
             log("repin: $pkg escaped cluster → re-cast to slot=$side (keep running task/nav)")
             val leftPercent = prefs.splitRatioLeftPercent()
             val ok = mover.castToCluster(

@@ -549,6 +549,13 @@ w04 · w09 · w12 · w13 · w19 đều ✓ và ra đúng ý định (`Read · Xe
 lái: Thể thao`); 3 ca ≈ còn lại đúng là w07 · w22 · w24 (w11 *khóa* được bộ so khớp coi là đúng). Tệp hotword thật
 trên máy: 1902 dòng, `biasing=true` (logcat `KachiVoiceEngine`).
 
+
+**[ĐO host 2026-09-16 · giọng NHANH]** — anh em trên xe (1.66): *"phải đọc chậm, đọc nhanh nó không hiểu"*. Thử trên host: 25 câu `say -v Linh -r 230`
+(nhanh hơn ~30 % so với mặc định ~175) × 2 model, cùng tệp hotword ship (1933 dòng): **int8 21/25 · fp32 20/25** (fp32 rớt thêm
+w15 `bật sưởi ghế` → *"bật ruồi ghế"*); không hotword: 16/25 (mặc định là 17). ⇒ tốc độ TTS **không** tái hiện được lỗi trên xe
+⇒ vấn đề nằm ở **giọng thật/ngữ âm vùng/nói liền** mà TTS không mô phỏng được; muốn sửa phải **thu WAV thật từ xe** (bản 1.67:
+nút "Xuất nhật ký voice" kèm WAV) rồi chạy lại ma trận trên đúng WAV đó. Không chỉnh beam/score theo TTS.
+
 **Ngoài tầm hotword** (4 ca còn lại, ở mọi tệp): w22 `pin còn bao nhiêu` → *"còn bao nhiêu"* (thêm 300/600 ms im
 lặng đầu ⇒ *"TIN"* / *"PRAKIN"* — mô hình nghe sai âm *"pin"* ở đầu câu của giọng TTS, không phải bias); w07
 `Bitexco` · w24 `Waze` (tên riêng/EN); w11 *"khoá"* → *"KHÓA"* (chính tả cũ/mới, `VoiceLexicon.deaccent` gộp về

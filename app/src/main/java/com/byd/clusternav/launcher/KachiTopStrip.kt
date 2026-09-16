@@ -220,8 +220,12 @@ class KachiTopStrip(
                 applyChipFace(v, c.icon, color)
                 v.tag = c.icon.toString() + color
             }
-            v.text = c.text
-            v.contentDescription = c.desc
+            // H5 (PERF 2026-09-16) — cùng luật với dòng icon/màu ngay trên: `setText` với CHÍNH chuỗi đang hiện
+            // vẫn dựng lại `Layout` của TextView và gọi `requestLayout()`. Trên xe, trạng thái đổi kéo theo cả
+            // dải chip vẽ lại dù phần lớn chip (bụi mịn · nhiệt độ ngoài) đứng yên hàng phút. So chuỗi rẻ hơn
+            // nhiều lần so với đo-và-sắp lại một hàng 8 chip.
+            if (v.text?.toString() != c.text) v.text = c.text
+            if (v.contentDescription?.toString() != c.desc) v.contentDescription = c.desc
         }
     }
 

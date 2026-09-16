@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapTest v2 — Lượt kiểm chứng từng nút xe (đọc → bắn → đọc lại → hoàn tác) — Kachi</title>
+<!--
+  Spec Kiro-style (consolidated) dựng từ docs/specs/_template.html.
+  Thứ tự section CHUẨN: Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions ·
+  References · Nhật ký triển khai · Reviewer Log.
+  Diagram = HTML visual (inline SVG + .flow + CSS boxes) — CẤM mermaid/ascii (workflow.md §3.1, CLAUDE.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.tblwrap{overflow-x:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.ev{font-size:12px;color:var(--muted)}
+/* ---- Diagram helpers (workflow.md §3.1) ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{background:var(--new)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+/* ---- Mockup màn CapTest v2 (CSS box, không phải ảnh) ---- */
+.mock{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:16px 0;max-width:520px}
+.mock .bar{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px}
+.mock .prog{height:6px;border-radius:3px;background:var(--line);margin:10px 0 14px;overflow:hidden}
+.mock .prog i{display:block;height:100%;width:36%;background:var(--accent)}
+.mock .title{font-size:19px;font-weight:650;margin:2px 0}
+.mock .sub{font-size:13px;color:var(--muted);margin-bottom:12px}
+.mock .kv{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);margin:5px 0}
+.mock .kv b{font-weight:650}
+.mock .btns{display:flex;gap:10px;margin:16px 0 8px}
+.mock .btns div{flex:1;text-align:center;padding:18px 6px;border-radius:14px;font-size:16px;font-weight:650;border:1px solid var(--line)}
+.mock .b-yes{background:rgba(26,127,55,.14);color:var(--ok)}
+.mock .b-no{background:rgba(191,95,0,.14);color:var(--warn)}
+.mock .b-odd{background:var(--bg);color:var(--muted)}
+.mock .foot{display:flex;gap:8px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.mock .foot span{border:1px solid var(--line);border-radius:8px;padding:5px 10px;background:var(--bg)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>CapTest v2 — Lượt kiểm chứng từng nút xe</h1>
+<p class="muted">Slug: <code>kachi-captest-v2</code> · Branch <code>feat/voice-hotword-phrases</code> · Chủ: <b>dangkhoi</b> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/{project-context,documentation-and-backlog,product-team-workflow,trace-den-tan-cung,conversation-protocol}.md</code> + <code>CLAUDE.md</code> §2 (mức bằng chứng) · §4 (phạm vi lệnh tường minh) · §7 (generic, không case-by-case) · §14 (shell thô trước, nối dây theo tầng sau) · §15 (debug bằng dữ liệu). Mọi khẳng định dưới đây gắn nhãn <b>[ĐO]</b> / <b>[SUY]</b> / <b>[ĐOÁN]</b> / <b>[CHƯA BIẾT]</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo spec. Nguồn: owner 09-16 — <i>“mình có cái test 187 chức năng đó, làm sâu thêm cái đó, lấy thực tế, lấy log, lấy vấn đề để get things done chỗ này”</i> và <i>“làm 1 lượt nhanh quá không thể biết cái nào chạy hay không”</i> (<code>docs/_handoff/owner-questions-2026-09-16.md</code> mục A). Bối cảnh: vòng <code>ctl</code> 44 lệnh cách 4 s ⇒ HAL “accepted” 34 nhưng KHÔNG quy được nút nào chạy thật.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Vấn đề THẬT</h3>
+<p><b>[ĐO xe 2026-09-16]</b> (<code>docs/diagnostics/oncar-trace-2026-09-16.md</code> §3): vòng action bắn <b>44 lệnh <code>ctl</code></b>, cách nhau 4 s, chạy một lượt liên tục. Kết quả:</p>
+<div class="tblwrap"><table>
+<tr><th>Hiện tượng [ĐO]</th><th>Số</th><th>Vì sao lượt hiện tại KHÔNG kết luận được</th></tr>
+<tr><td>HAL trả <code>accepted</code> (rc hợp lệ)</td><td>34 / 44</td><td><code>accepted</code> = <b>gateway nhận lệnh</b>, KHÔNG phải <b>xe làm</b>. Không có phép đọc lại sau khi bắn ⇒ không có bằng chứng thay đổi.</td></tr>
+<tr><td>Sentinel <i>“absent on trim”</i></td><td>4 (<code>ac_auto</code>, <code>ambient_power</code>, <code>mirror_fold_btn</code>, <code>child_lock</code>)</td><td>Owner trả lời E6: <b>xe CÓ cả 4 tính năng</b> ⇒ sentinel là <b>sai feature-id</b>, không phải thiếu trang bị.</td></tr>
+<tr><td><code>NoSuchMethod</code></td><td><code>door</code>/<code>lock</code> (<code>setDoorLockState</code>), <code>trunk</code> (<code>setHetchDoorStatus</code>)</td><td>[ĐO nguồn <code>fw-dl3</code>] framework xe <b>không có</b> các setter đó ⇒ cần đường <code>set()</code> generic (đã có đầu dò <code>setev</code>, chưa đo).</td></tr>
+<tr><td>Datum <i>“no permission … device N”</i></td><td>12</td><td><code>AbsBYDAutoDevice.checkDeviceFeatures</code>: gọi <b>sai device</b>. Feature-id <b>tính lúc chạy</b> (<code>isCanFD</code>/<code>isToyota</code>) ⇒ số hardcode có thể không tồn tại.</td></tr>
+<tr><td>Sweep chỉ-đọc</td><td>83 / 123 đọc được · ctl route 62 / 64</td><td>Đọc được ≠ đọc ĐÚNG. Owner 09-15: <i>“nhiều số lấy được nhưng vô nghĩa”</i> — chưa có phép so với táp-lô.</td></tr>
+</table></div>
+<p>Owner chốt mục A: <i>“vòng nhanh không phân biệt được; cửa/lọc gió có phản ứng, không chắc từng nút ⇒ giữ 🚗, <b>lần sau bắn TỪNG nút có người nhìn</b>”</i>. Đó chính là yêu cầu của spec này.</p>
+
+<h3>2.2 Đã có sẵn gì trong code (đọc source, không suy diễn)</h3>
+<div class="tblwrap"><table>
+<tr><th>Khối</th><th>File</th><th>Làm được gì hôm nay</th><th>Thiếu gì cho lượt kiểm chứng</th></tr>
+<tr><td>Kế hoạch 187 mục</td><td><code>core/…/launcher/CapabilityTest.kt:53-86</code></td><td><code>CapabilityTestPlan.items()</code> dựng ĐỘNG từ <code>TelemetryRegistry</code> (123) + <code>ControlRegistry</code> (64), xếp theo <code>Domain</code>.</td><td>Không có <b>kế hoạch thử</b> (giá trị nào bắn) và <b>kế hoạch hoàn tác</b>.</td></tr>
+<tr><td>Chấm điểm</td><td>cùng file <code>:20</code>, <code>:89-115</code></td><td><code>CapTestVerdict{UNTESTED,OK,NOT_OK}</code> + codec TSV lưu prefs.</td><td>3 mức quá thô: “không OK” gộp chung <i>không-có-method</i>, <i>sai id</i>, <i>bắn xong không đổi</i>, <i>sai scale</i> ⇒ không sinh được danh sách việc.</td></tr>
+<tr><td>Màn “Kiểm tra từng nút xe”</td><td><code>app/…/launcher/CapTestConsole.kt:121-203</code></td><td>Popup từng mục · nút Chạy theo <b>từng chiều</b> (vá 1.62) · chạy tuần tự · xuất báo cáo · chụp logcat.</td><td>Không đọc-trước / đọc-lại, không hoàn tác, không ghi JSON, không có tick nhóm nguy hiểm, không kiểm xe đỗ.</td></tr>
+<tr><td>Bắn một control qua adb</td><td><code>app/…/testbridge/TestBridgeCtl.kt:50-107</code></td><td>Đi ĐÚNG đường một cú chạm (<code>CarControlPort.actByKind</code>) · chụp câu chữ HAL qua <code>HalWriteProbe</code> · cổng <code>auto_confirm</code> + dấu <code>AUTO-CONFIRM</code>.</td><td>Bắn một chiều rồi thôi: không đọc trước/sau, không hoàn tác, không ghi tệp.</td></tr>
+<tr><td>Quét chỉ-đọc</td><td><code>app/…/testbridge/TestBridgeSweep.kt:52-109</code></td><td>Đọc <code>readRaw</code> mọi telemetry + <code>describeWrite</code> mọi control → JSON <code>kachi-logs/sweep-&lt;stamp&gt;.json</code>.</td><td>Đúng khuôn JSON cần tái dùng; nhưng <b>không bắn</b> nên không trả lời được “nút có chạy không”.</td></tr>
+<tr><td>Đầu dò HAL thô</td><td><code>app/…/testbridge/TestBridgeHal.kt:69-189</code></td><td><code>get</code> getter · <code>set</code> named-method · <code>setev</code> qua <code>AbsBYDAutoDevice.set()</code> generic · <code>featmap</code> đổ bảng feature-id THẬT.</td><td>Là đầu dò tay từng method — không phải một lượt đi hết danh mục.</td></tr>
+<tr><td>Catalog status</td><td><code>docs/catalog/status-by-id.json</code> + <code>scripts/docs/feature-catalog.py:48-54</code></td><td>191 mục [ĐO 09-16]: 🟢 10 · ⚠ 68 · ❌ 15 · 🚗 98. Mỗi mục có <code>status</code>/<code>note</code>/<code>evidence</code>.</td><td>Cập nhật <b>bằng tay</b> ⇒ sau mỗi lượt xe phải chép lại 187 dòng. Không có lịch sử theo stamp.</td></tr>
+<tr><td>Nguồn đọc live</td><td><code>core/…/launcher/CarStatusRepository.kt</code></td><td><code>StateFlow&lt;CarStatus&gt;</code> 2 nhịp (nhanh 1 s · chậm 10 s) — nguồn UDF của HOME.</td><td>Chưa có đường “đọc một datum ngay bây giờ, đồng bộ” cho lượt kiểm chứng (hiện <code>HalBindingTable.readRaw</code>/<code>telemetryText</code> làm việc đó).</td></tr>
+</table></div>
+
+<h3>2.3 Vì sao KHÔNG làm tiếp bằng “bắn nhanh rồi hỏi owner”</h3>
+<p><b>[ĐO]</b> đúng cách đó đã chạy 09-16 và trả về <b>0 quy kết</b>. Nguyên nhân cơ học, không phải do owner không để ý:</p>
+<ul>
+<li>4 s giữa 44 lệnh ⇒ owner phải nhớ thứ tự 44 nút trong 3 phút. Không có mốc “đang ở nút nào”.</li>
+<li>Nhiều nút <b>tự trở về</b> hoặc không có biểu hiện nhìn thấy (ion âm, gió trong, ghế sưởi ở 30 °C) ⇒ mắt không phải công cụ đúng; phải <b>đọc lại giá trị</b>.</li>
+<li>Bắn xong <b>không hoàn tác</b> ⇒ sau lượt, xe ở trạng thái lạ (kính mở, sấy bật) — owner không dám chạy lượt dài.</li>
+</ul>
+<p>Theo <code>CLAUDE.md §15</code>: thứ tự đúng là <b>đọc state thật → lệnh đo trực tiếp → mắt người là phương án cuối</b>. CapTest v2 mã hoá đúng thứ tự đó: mắt owner chỉ còn là <b>một trong ba nguồn</b>, không phải nguồn duy nhất.</p>
+
+<div class="card"><b>Cổng / phụ thuộc:</b>
+<ul>
+<li><b>[ĐO]</b> Đường bắn (<code>CarControlPort.actByKind</code>) và đường đọc (<code>HalBindingTable.readRaw</code>) đã chạy trên xe ⇒ <b>không</b> cần thêm phép đo shell thô trước khi code (<code>CLAUDE.md §14</code> tầng 1 đã xanh cho cả hai đường; spec này chỉ <b>ghép</b> chúng lại + ghi bằng chứng, không thêm cơ chế HAL mới).</li>
+<li><b>Ngoại lệ</b>: <code>setev</code> cho <code>lock</code>/<code>trunk</code> <b>[CHƯA ĐO]</b> ⇒ CapTest v2 <b>không</b> tự đổi route; nó chỉ <b>phân loại</b> <code>NO_METHOD</code> và sinh việc RE. Đổi route chỉ sau khi <code>setev</code> đo xanh trên xe.</li>
+<li>Lượt chạy thật cần <b>xe đỗ (P) + owner ngồi trong xe</b> ⇒ V-oncar nằm ở lượt xe kế, không chặn phần off-car.</li>
+</ul>
+</div>
+
+<h2>3. Requirements</h2>
+
+<h3>R1 — Lượt kiểm chứng CÓ NGƯỜI NHÌN (in-app, màn “Kiểm tra từng nút xe” v2)</h3>
+<p>Với <b>từng</b> mục đang có route, chạy đúng một vòng 7 bước, không bỏ bước:</p>
+<div class="flow">
+  <div class="fnode new"><b>1 · Đọc trước</b><span>getter / <code>CarStatus</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>2 · Bắn thử</b><span>giá trị theo <code>ControlKind</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>3 · Chờ</b><span>mặc định 3 s</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>4 · Đọc lại</b><span>cùng đường đọc</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>5 · So</b><span>trước ≠ sau?</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>6 · Hỏi owner</b><span>Thấy ✓ / Không ✗ / Lạ ⚠</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>7 · Hoàn tác</b><span>về giá trị bước 1</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (reuse)</span>
+  <span class="sw"><span class="box" style="background:var(--new)"></span> khối mới</span>
+</div>
+<ul>
+<li><b>R1.1</b> Giá trị thử theo <code>ControlKind</code> (bảng §4.3): TOGGLE ⇒ bật · STEP ⇒ +1 bước · COVER ⇒ mở → 50% → đóng · SELECT ⇒ mức kế · CYCLE/SELECT-vòng ⇒ mức kế · BUTTON ⇒ bấm một phát.</li>
+<li><b>R1.2</b> <b>Datum (INFO)</b>: hiện <b>giá trị + đơn vị</b> đọc được → hỏi <i>“đúng với táp-lô?”</i> ✓/✗/⚠, có ô <b>nhập số thật</b> (tuỳ chọn) để tính sai-scale.</li>
+<li><b>R1.3</b> <b>Ba nút to</b> (mỗi nút ≥ 64 dp cao, chạm được khi ngồi ghế lái): <b>Thấy ✓</b> · <b>Không ✗</b> · <b>Lạ ⚠</b>. Kèm <b>ghi chú giọng nói tuỳ chọn</b> (tái dùng đường nghe sẵn có; bỏ qua được bằng một chạm).</li>
+<li><b>R1.4</b> <b>Nhóm nguy hiểm</b> — khoá/mở khoá, cốp, ca-pô, cửa sổ trời, sạc, chế độ lái/ADAS — <b>chỉ chạy khi tick riêng ở đầu lượt</b>. Không tick ⇒ verdict <code>SKIPPED_DANGEROUS</code>, không bắn. Danh sách lấy từ <code>CtlSafetyPolicy.CONFIRM_REQUIRED</code> + domain <code>SAFETY</code>/<code>ENERGY</code>(sạc), <b>không</b> hardcode mã trong UI.</li>
+<li><b>R1.5</b> <b>Chạy theo Domain, từng đợt 5–8 phút</b>: chọn một hoặc nhiều domain rồi chạy; có <b>tạm dừng / tiếp tục</b>; đóng app giữa chừng thì mở lại tiếp đúng mục đang dở.</li>
+<li><b>R1.6</b> <b>Xe phải đỗ (P)</b>: đọc datum <code>gear</code> (<code>BYDAutoGearboxDevice.getCurrentGear</code>); đọc được và ≠ P ⇒ <b>từ chối chạy</b>. Đọc <b>không</b> được (sweep 09-16: <code>gear</code> nằm trong 24 datum câm) ⇒ hiện một câu hỏi <i>“Xe đang đỗ (P) và phanh tay đang kéo?”</i>, owner xác nhận mới chạy.</li>
+<li><b>R1.7</b> Mục <b>không có route</b> (<code>BindingRoute.None</code>) ⇒ không bắn, verdict <code>UNTESTED</code> + ghi lý do; không tính vào mẫu số của “đã kiểm chứng”.</li>
+<li><b>Acceptance</b>: chạy hết một domain ⇒ mọi mục trong domain có verdict ≠ <code>UNTESTED</code> hoặc lý do ghi rõ; trạng thái xe sau lượt <b>khớp</b> trạng thái trước lượt ở mọi mục đã bắn (kiểm bằng chính giá trị đọc lại sau hoàn tác).</li>
+</ul>
+
+<h3>R2 — Bằng chứng MỖI MỤC, ghi JSON ra thẻ</h3>
+<p>Một tệp cho một lượt: <code>kachi-logs/captest-&lt;stamp&gt;.json</code> (<code>/sdcard/Android/data/com.byd.launcher/files/kachi-logs/</code> — cùng chỗ <code>sweep-*.json</code>, lấy về bằng <code>KachiLog.pullCommand</code>). Mỗi mục ghi đủ:</p>
+<ul>
+<li><code>id</code> · <code>kind</code> (INFO / TOGGLE / STEP / COVER / SELECT / BUTTON) · <code>route</code> + <code>binding</code> (<code>describeWrite</code>: route + device).</li>
+<li><b>Giá trị trước / sau</b> kèm <b>thời điểm</b> của từng phép đọc (epoch ms).</li>
+<li><b>Phản hồi HAL</b>: <code>rc</code> · <code>exception</code> · <code>sentinel</code> · nguyên văn <code>hal_line</code> (chụp qua <code>HalWriteProbe</code>, đúng giao thức mốc <code>seq</code> của <code>TestBridgeCtl</code>).</li>
+<li><b>Sự kiện HAL nhận được trong cửa sổ chờ</b> — khi mục đó có listener đăng ký; không có listener ⇒ trường rỗng, <b>không</b> bịa.</li>
+<li><b>Dòng logcat</b> tag <code>Kachi*</code> / <code>BYDAuto*</code> rơi vào cửa sổ chờ (cắt theo mốc đầu/cuối, trần số dòng).</li>
+<li><b>Ý kiến owner</b> (<code>seen</code>/<code>not_seen</code>/<code>odd</code>/<code>auto</code>) + ghi chú + số thật owner nhập (nếu có) · <b>ms</b> của cả vòng.</li>
+</ul>
+<p><b>Acceptance</b>: mở tệp JSON bằng <code>python3 -m json.tool</code> ⇒ hợp lệ; mỗi mục đã bắn có đủ 4 mốc thời gian (đọc-trước · bắn · đọc-lại · hoàn-tác-xong).</p>
+
+<h3>R3 — Phân loại TỰ ĐỘNG (<code>CapVerdict</code>, <code>:core</code> thuần, có test)</h3>
+<p>10 verdict, suy từ dữ liệu đã ghi ở R2 — <b>không</b> hỏi thêm owner ngoài ✓/✗/⚠:</p>
+<div class="tblwrap"><table>
+<tr><th>Verdict</th><th>Điều kiện suy ra</th><th>Áp cho</th></tr>
+<tr><td><code>NO_METHOD</code></td><td><code>exception</code> chứa <code>NoSuchMethod</code></td><td>control</td></tr>
+<tr><td><code>FEATURE_ABSENT</code></td><td><code>hal_line</code> chứa sentinel <code>-2147482648</code> / <code>-2147482645</code></td><td>control</td></tr>
+<tr><td><code>NOT_IN_DEVICE</code></td><td><code>hal_line</code> khớp <i>“no permission … with this device”</i> (<code>checkDeviceFeatures</code>)</td><td>control + datum</td></tr>
+<tr><td><code>ACCEPTED_NO_CHANGE</code></td><td>rc hợp lệ <b>và</b> đọc-lại == đọc-trước <b>và</b> owner ✗</td><td>control</td></tr>
+<tr><td><code>ACCEPTED_CHANGED</code></td><td>rc hợp lệ <b>và</b> (đọc-lại ≠ đọc-trước <b>hoặc</b> owner ✓)</td><td>control</td></tr>
+<tr><td><code>READ_NULL</code></td><td>đọc trả <code>null</code> / rỗng</td><td>datum (+ control có getter)</td></tr>
+<tr><td><code>READ_WRONG_SCALE</code></td><td>đọc ra số <b>và</b> owner ✗ <b>và</b> có số thật owner nhập</td><td>datum</td></tr>
+<tr><td><code>READ_OK</code></td><td>đọc ra số <b>và</b> owner ✓</td><td>datum</td></tr>
+<tr><td><code>SKIPPED_DANGEROUS</code></td><td>thuộc nhóm nguy hiểm, owner không tick</td><td>control</td></tr>
+<tr><td><code>UNTESTED</code></td><td>chưa chạy / không có route / lượt bị dừng giữa chừng</td><td>cả hai</td></tr>
+</table></div>
+<p><b>R3.1</b> Mỗi verdict ánh xạ sang <b>một gợi ý việc sửa</b> theo <b>bảng cố định</b> (§4.5) — bảng là <b>dữ liệu ở <code>:core</code></b>, không phải <code>when</code> rải trong UI (<code>CLAUDE.md §7</code>).<br>
+<b>Acceptance</b>: hàm phân loại là hàm thuần (vào: một bản ghi R2 · ra: verdict + việc); test off-car phủ <b>đủ 10</b> verdict + ca biên (rc hợp lệ nhưng owner ⚠ ⇒ giữ <code>ACCEPTED_NO_CHANGE</code> và đánh dấu cần đo lại).</p>
+
+<h3>R4 — Đổ kết quả vào CATALOG (một lệnh, không chép tay)</h3>
+<ul>
+<li><b>R4.1</b> <code>scripts/docs/captest-import.py</code> đọc <code>captest-&lt;stamp&gt;.json</code> → cập nhật <code>docs/catalog/status-by-id.json</code>: <code>status</code> (🟢 / ⚠ / ❌) · <code>note</code> (verdict + giá trị trước/sau + câu HAL) · <code>evidence</code> = <b>đường dẫn JSON + stamp</b>.</li>
+<li><b>R4.2</b> Ánh xạ verdict → biểu tượng: <code>ACCEPTED_CHANGED</code>/<code>READ_OK</code> ⇒ 🟢 · <code>ACCEPTED_NO_CHANGE</code>/<code>READ_WRONG_SCALE</code>/<code>NOT_IN_DEVICE</code>/<code>FEATURE_ABSENT</code> ⇒ ⚠ · <code>NO_METHOD</code>/<code>READ_NULL</code> ⇒ ❌ · <code>SKIPPED_DANGEROUS</code>/<code>UNTESTED</code> ⇒ <b>giữ nguyên</b> giá trị cũ (không hạ 🟢 đã đo bằng một lượt bỏ qua).</li>
+<li><b>R4.3</b> Chạy tiếp <code>scripts/docs/feature-catalog.py</code> ⇒ <code>docs/kachi-feature-catalog.html</code> tươi.</li>
+<li><b>R4.4</b> Sinh <code>docs/diagnostics/captest-&lt;ngày&gt;.md</code>: <b>bảng vấn đề theo verdict</b> = danh sách việc (mỗi dòng: id · nhãn · verdict · giá trị trước/sau · câu HAL · việc cần làm).</li>
+<li><b>Acceptance</b>: <code>python3 scripts/docs/captest-import.py &lt;json&gt; --dry-run</code> in ra diff dự kiến mà <b>không</b> ghi; chạy thật ⇒ <code>git diff</code> chỉ đụng các id có trong JSON.</li>
+</ul>
+
+<h3>R5 — Chạy từ adb, KHÔNG cần bấm màn</h3>
+<pre>adb shell am broadcast -a com.byd.launcher.TEST --es cmd verify --es id defrost \
+  --ei v 1 --ez auto_confirm true
+adb shell am broadcast -a com.byd.launcher.TEST --es cmd verify --es group CLIMATE \
+  --ez auto_confirm true
+adb shell am broadcast -a com.byd.launcher.TEST --es cmd verify --es group BODY \
+  --ez only_failed true --ez auto_confirm true</pre>
+<ul>
+<li><b>R5.1</b> <code>verify --es id &lt;id&gt; [--ei v &lt;giá trị&gt;] --ez auto_confirm true</code> = <b>đọc → bắn → chờ → đọc lại → hoàn tác</b> + ghi JSON. <b>Không có ý kiến owner</b> ⇒ trường <code>owner</code> = <code>auto</code>; verdict chỉ dùng nhánh máy-đo-được (<code>ACCEPTED_CHANGED</code> chỉ khi giá trị đọc lại đổi).</li>
+<li><b>R5.2</b> <code>verify --es group &lt;domain&gt;</code> chạy cả một domain, tuần tự, mỗi mục một vòng đầy đủ; trả tóm tắt + đường dẫn JSON.</li>
+<li><b>R5.3</b> <b>Logcat cửa sổ chờ tự chụp</b> trong tiến trình (không spawn shell ngoài) và gắn vào đúng mục.</li>
+<li><b>R5.4</b> <code>sweep</code> <b>giữ nguyên chỉ-đọc</b> — không thêm một dòng ghi nào vào lệnh đó.</li>
+<li><b>Acceptance</b>: một lệnh <code>verify</code> trên máy ảo (NoCar) trả JSON hợp lệ với verdict <code>READ_NULL</code>/<code>UNTESTED</code>, không ném.</li>
+</ul>
+
+<h3>R6 — LẶP: mỗi bản vá chạy lại đúng phần còn hỏng</h3>
+<ul>
+<li><code>--ez only_failed true</code> ⇒ chỉ chạy các id đang ⚠/❌ (đọc từ <code>status-by-id.json</code> đóng gói trong APK hoặc từ lượt JSON gần nhất trên thẻ — chọn nguồn ở §4.7).</li>
+<li>Sau mỗi lượt, số 🟢 <b>phải tăng</b> (hoặc nêu rõ vì sao không).</li>
+<li>Catalog ghi <b>lịch sử theo stamp</b>: mục <code>history</code> nối thêm <code>{stamp, verdict}</code> — không ghi đè kết quả cũ.</li>
+</ul>
+
+<h3>R7 — An toàn (phi chức năng, guard ở tầng THI HÀNH)</h3>
+<ul>
+<li><b>R7.1</b> <b>Hoàn tác LUÔN chạy</b> — kể cả khi owner bấm dừng, kể cả khi phép đọc lại ném, kể cả khi vòng hết giờ. Hoàn tác đặt trong <code>finally</code> của từng mục.</li>
+<li><b>R7.2</b> <b>Timeout mỗi mục</b> (mặc định 8 s, cấu hình): quá hạn ⇒ hoàn tác + verdict <code>UNTESTED</code> + ghi <code>timeout</code>.</li>
+<li><b>R7.3</b> <b>Không chạy</b> khi: chế độ kiểm thử TẮT (đường bridge) · xe không đỗ hoặc owner chưa xác nhận đỗ (đường in-app).</li>
+<li><b>R7.4</b> Mọi lượt bắn mức CONFIRM ghi dấu <code>AUTO-CONFIRM</code> vào logcat — <b>cùng</b> dấu và cùng cổng mà <code>ctl</code>/<code>say</code>/<code>hal</code> dùng, không mở cổng thứ hai.</li>
+<li><b>R7.5</b> Phạm vi tường minh (<code>CLAUDE.md §4</code>): chỉ chạm <b>control có trong <code>ControlRegistry</code></b>, <b>chỉ một mục tại một thời điểm</b>, <b>không</b> lệnh <code>am</code>/<code>wm</code>/<code>service call</code> nào, <b>không</b> chạm display/stack.</li>
+<li><b>R-nf1</b> Phần lập kế hoạch + phân loại là <b>hàm thuần <code>:core</code></b> ⇒ test off-car; <code>:app</code> chỉ thi hành + vẽ.</li>
+<li><b>R-nf2</b> Đọc/ghi HAL là binder <b>CHẶN</b> ⇒ chạy trên luồng nền, kết quả <code>post</code> về luồng vẽ (cùng lối <code>CapTestConsole:151-158</code>).</li>
+<li><b>R-nf3</b> Chuỗi giao diện qua <code>R.string</code> (bài canh i18n cấm chuỗi Việt viết cứng ở <code>:app</code>); mã lỗi/verdict trong JSON là <b>ASCII, không dịch</b> (cùng luật <code>TestBridgeParse.Err</code>).</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện <b>song song</b> với code. Diagram là HTML visual (inline SVG + box-and-arrow), không mermaid/ascii.</p>
+
+<h3>4.1 Kiến trúc — hai lối vào, MỘT bộ chạy</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 478" role="img" aria-label="Sơ đồ: màn CapTest v2 và lệnh bridge verify cùng gọi CapVerifyRunner ở :app, runner dùng kế hoạch thuần từ :core, đi qua CarControlPort và HalBindingTable, ghi JSON ra thẻ, script import đổ vào catalog">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+    </marker>
+  </defs>
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">
+
+    <!-- hàng 1: hai lối vào -->
+    <rect x="40" y="14" width="330" height="62" rx="12" fill="var(--new)" stroke="var(--line)"/>
+    <text x="205" y="40" text-anchor="middle" font-size="15" font-weight="650" fill="var(--fg)">Màn “Kiểm tra từng nút xe” v2</text>
+    <text x="205" y="60" text-anchor="middle" font-size="12" fill="var(--muted)">:app · có người nhìn · 3 nút to · tạm dừng</text>
+
+    <rect x="490" y="14" width="330" height="62" rx="12" fill="var(--new)" stroke="var(--line)"/>
+    <text x="655" y="40" text-anchor="middle" font-size="15" font-weight="650" fill="var(--fg)">T-BRIDGE · lệnh verify (adb)</text>
+    <text x="655" y="60" text-anchor="middle" font-size="12" fill="var(--muted)">--es id | --es group | --ez only_failed</text>
+
+    <path d="M 205 76 L 205 108" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+    <path d="M 655 76 L 655 108" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+    <path d="M 205 108 L 655 108" stroke="var(--accent)" stroke-width="2" fill="none"/>
+    <path d="M 430 108 L 430 126" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+
+    <!-- hàng 2: runner -->
+    <rect x="110" y="128" width="640" height="62" rx="12" fill="var(--new)" stroke="var(--line)"/>
+    <text x="430" y="154" text-anchor="middle" font-size="15" font-weight="650" fill="var(--fg)">CapVerifyRunner (:app) — THI HÀNH một vòng</text>
+    <text x="430" y="174" text-anchor="middle" font-size="12" fill="var(--muted)">luồng nền · timeout mỗi mục · hoàn tác trong finally · gom bằng chứng</text>
+
+    <path d="M 430 190 L 430 212" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+
+    <!-- hàng 3: core thuần -->
+    <rect x="110" y="214" width="640" height="62" rx="12" fill="var(--new)" stroke="var(--line)"/>
+    <text x="430" y="240" text-anchor="middle" font-size="15" font-weight="650" fill="var(--fg)">CapVerifyPlan · CapVerdict (:core, thuần)</text>
+    <text x="430" y="260" text-anchor="middle" font-size="12" fill="var(--muted)">giá trị thử + giá trị hoàn tác theo ControlKind · phân loại 10 verdict · bảng verdict→việc</text>
+
+    <path d="M 240 276 L 240 300" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+    <path d="M 430 276 L 430 300" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+    <path d="M 620 276 L 620 300" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+
+    <!-- hàng 4: ba cổng có sẵn -->
+    <rect x="110" y="302" width="200" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="210" y="326" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">CarControlPort</text>
+    <text x="210" y="345" text-anchor="middle" font-size="11.5" fill="var(--muted)">actByKind — đường một cú chạm</text>
+
+    <rect x="330" y="302" width="200" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="430" y="326" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">HalBindingTable</text>
+    <text x="430" y="345" text-anchor="middle" font-size="11.5" fill="var(--muted)">readRaw · getter · describeWrite</text>
+
+    <rect x="550" y="302" width="200" height="58" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="650" y="326" text-anchor="middle" font-size="13" font-weight="650" fill="var(--fg)">HalWriteProbe + logcat</text>
+    <text x="650" y="345" text-anchor="middle" font-size="11.5" fill="var(--muted)">rc · sentinel · câu chữ HAL</text>
+
+    <path d="M 430 360 L 430 386" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+
+    <!-- hàng 5: JSON -> import -> catalog -->
+    <rect x="110" y="388" width="290" height="62" rx="12" fill="var(--new)" stroke="var(--line)"/>
+    <text x="255" y="414" text-anchor="middle" font-size="13.5" font-weight="650" fill="var(--fg)">kachi-logs/captest-&lt;stamp&gt;.json</text>
+    <text x="255" y="433" text-anchor="middle" font-size="11.5" fill="var(--muted)">thẻ nhớ · adb pull</text>
+
+    <path d="M 400 419 L 456 419" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+
+    <rect x="458" y="388" width="292" height="62" rx="12" fill="var(--new)" stroke="var(--line)"/>
+    <text x="604" y="410" text-anchor="middle" font-size="13.5" font-weight="650" fill="var(--fg)">captest-import.py</text>
+    <text x="604" y="429" text-anchor="middle" font-size="11.5" fill="var(--muted)">status-by-id.json · feature-catalog.py · captest-&lt;ngày&gt;.md</text>
+  </g>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (reuse nguyên trạng)</span>
+  <span class="sw"><span class="box" style="background:var(--new)"></span> khối mới của spec này</span>
+</div>
+<p><b>Vì sao MỘT runner cho hai lối vào</b>: 09-15 đã trả giá đúng cho lỗi ngược lại — <code>CapabilityTestPlan.runArg</code> luôn bằng <code>defaultPrimary</code> = 1 (mở) nên màn CapTest <b>không có đường gửi ĐÓNG</b>, owner kết luận <i>“kính đóng không được”</i> trong khi HAL đóng tin cậy cả 4 kính (<b>[ĐO 1.61]</b>). Hai bản sao của “lượt thử” sẽ lại lệch đúng kiểu đó. Nên: <b>kế hoạch</b> nằm một chỗ ở <code>:core</code>, <b>thi hành</b> một chỗ ở <code>:app</code>, hai lối vào chỉ khác nhau ở <b>ai chấm</b> (owner hay máy).</p>
+
+<h3>4.2 Phân tầng theo module</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>:app · UI</b><span>CapTestConsole v2 — 3 nút to · tiến độ · tạm dừng · tick nhóm nguy hiểm</span></div>
+    <div class="node"><b>:app · bridge</b><span>TestBridgeVerify — lệnh <code>verify</code>, cổng test-mode + auto_confirm</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>:app · thi hành</b><span>CapVerifyRunner — luồng nền · chờ · timeout · hoàn tác <code>finally</code> · gom logcat</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>:core · kế hoạch</b><span>CapVerifyPlan — giá trị thử + hoàn tác theo <code>ControlKind</code></span></div>
+    <div class="node"><b>:core · phán quyết</b><span>CapVerdict + bảng verdict→việc</span></div>
+    <div class="node"><b>:core · bản ghi</b><span>CapVerifyRecord + mã hoá JSON (tái dùng <code>TestBridgeJson</code>)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>cổng có sẵn</b><span><code>CarControlPort.actByKind</code></span></div>
+    <div class="node"><b>cổng có sẵn</b><span><code>HalBindingTable.readRaw</code> / getter</span></div>
+    <div class="node"><b>cổng có sẵn</b><span><code>HalWriteProbe</code> · <code>CtlSafetyPolicy</code></span></div>
+  </div>
+</div>
+
+<h3>4.3 Bảng <code>kind → giá trị thử → hoàn tác</code> (nguồn sự thật ở <code>:core</code>)</h3>
+<div class="tblwrap"><table>
+<tr><th>Kind</th><th>Đọc trước</th><th>Giá trị thử</th><th>Chờ</th><th>Hoàn tác</th><th>Ghi chú cơ chế</th></tr>
+<tr><td><code>TOGGLE</code></td><td>getter nếu có; không có ⇒ <code>null</code></td><td><b>bật</b> (primary = 1)</td><td>3 s</td><td>bắn lại giá trị đọc trước; đọc trước <code>null</code> ⇒ bắn <b>tắt</b></td><td>Đọc trước <code>null</code> ⇒ không bao giờ để nút ở trạng thái bật sau lượt.</td></tr>
+<tr><td><code>STEP</code></td><td>getter / <code>CarStatus</code></td><td><b>+1 bước</b>, kẹp trong <code>min..max</code> (<code>ControlDef.clamp</code>); đang ở <code>max</code> ⇒ <b>−1 bước</b></td><td>3 s</td><td>đặt lại giá trị đọc trước</td><td>Không dùng giá trị tuyệt đối viết cứng — đọc <code>min/max/step</code> từ <code>ControlDef</code>.</td></tr>
+<tr><td><code>COVER</code></td><td><code>getWindowOpenPercent</code> / getter tương ứng</td><td><b>mở</b> → chờ → <b>50%</b> → chờ → <b>đóng</b> (ba chặng, ghi 3 phép đọc)</td><td>5 s mỗi chặng (OQ4)</td><td>đưa về <b>đóng</b> nếu đọc trước ≈ 0; ngược lại về phần trăm đọc trước</td><td><b>[ĐO 1.61]</b> <code>setBodyWindowCtrlState(w,1)</code> ⇒ 97–98% · <code>(w,2)</code> ⇒ 0%. Chặng 50% là để trả lời câu A13 còn treo của owner.</td></tr>
+<tr><td><code>SELECT</code></td><td>getter nếu có</td><td><b>mức kế</b> (chỉ số +1, vòng về 0 ở cuối) — đúng chỉ số mà <code>actByKind</code> nhận</td><td>3 s</td><td>đặt lại chỉ số đọc trước; không đọc được ⇒ chỉ số 0</td><td>Nhãn mức lấy từ <code>ControlDef.displayArgs</code> (đã song ngữ).</td></tr>
+<tr><td><code>CYCLE</code> (SELECT xoay vòng)</td><td>như SELECT</td><td><b>mức kế</b></td><td>3 s</td><td>bấm tiếp cho tới khi về mức ban đầu (trần = số mức)</td><td>Nút chỉ tiến-một-bước không nhận giá trị tuyệt đối ⇒ hoàn tác bằng cách đi hết vòng.</td></tr>
+<tr><td><code>BUTTON</code></td><td>getter nếu có (thường không)</td><td><b>bấm một phát</b></td><td>3 s</td><td><b>không</b> hoàn tác (momentary — hoàn tác là một phát bấm thứ hai, tệ hơn)</td><td>Ghi rõ <code>undo: "none_momentary"</code> trong JSON để không ai tưởng là quên.</td></tr>
+<tr><td><code>INFO</code> (datum)</td><td>đọc giá trị + đơn vị</td><td><b>không bắn gì</b></td><td>—</td><td>—</td><td>Chỉ hỏi owner “đúng với táp-lô?”; có ô nhập số thật.</td></tr>
+</table></div>
+<p class="muted"><b>[ĐO]</b> <code>ControlKind</code> hiện có đúng <b>5</b> giá trị (<code>ControlRegistry.kt:31</code>): TOGGLE · STEP · COVER · SELECT · BUTTON. <b>CYCLE không phải enum mới</b> — nó là <b>biến thể hành vi</b> của SELECT cho nút chỉ “tiến-một-bước” (không nhận chỉ số tuyệt đối), nhận biết bằng <b>đo</b> (đặt chỉ số N mà đọc lại ra N+1) chứ không bằng một trường khai tay. Spec này <b>không</b> thêm giá trị vào <code>ControlKind</code>.<br>
+<b>[SUY]</b> Ba chặng của COVER và vòng-hết-chu-kỳ của CYCLE là suy luận từ cơ chế đã đo (kính) + nhãn mức trong registry; chưa có phép đo riêng cho rèm/nóc ⇒ kết quả lượt đầu sẽ <b>tạo dữ liệu</b> cho chúng, không phải dựa vào chúng.</p>
+
+<h3>4.4 Lược đồ JSON một lượt</h3>
+<pre>{
+  "stamp": "20260917-081530",
+  "version": "1.67 (68)",
+  "mode": "inapp",              // "inapp" | "bridge"
+  "groups": ["CLIMATE"],
+  "dangerous_enabled": false,   // owner có tick nhóm nguy hiểm không
+  "parked": {"source": "gear", "value": "P", "confirmed_by_owner": false},
+  "settle_ms": 3000,
+  "items": [
+    {
+      "id": "defrost",
+      "kind": "TOGGLE",
+      "label": "Sấy kính",
+      "route": "NamedMethod",
+      "binding": "BYDAutoAirConditionDevice.setDefrostState",
+      "device": "com.byd.auto.……BYDAutoAirConditionDevice",
+      "before": {"value": "0", "unit": "", "ts": 1789543210123, "source": "getter"},
+      "probe":  {"value": 1, "ts": 1789543210456},
+      "after":  {"value": "1", "unit": "", "ts": 1789543213470, "source": "getter"},
+      "hal": {"rc": 0, "exception": "", "sentinel": "", "line": "rc=0"},
+      "events": [{"ts": 1789543211002, "raw": "……"}],   // rỗng nếu mục không có listener
+      "logcat": ["09-17 08:15:30.501 I Kachi…", "……"],
+      "owner": {"mark": "seen", "note": "nghe quạt gió đổi", "real_value": null},
+      "undo": {"value": 0, "ts": 1789543214001, "ok": true, "after_undo": "0"},
+      "elapsed_ms": 3878,
+      "verdict": "ACCEPTED_CHANGED",
+      "todo": ""
+    }
+  ],
+  "summary": {"total": 64, "tested": 23, "by_verdict": {"ACCEPTED_CHANGED": 9, "…": 0}}
+}</pre>
+<p class="muted">Mã hoá tái dùng <code>TestBridgeJson</code> (<code>obj</code>/<code>arr</code>/<code>Raw</code>) — cùng bộ mà <code>sweep</code> dùng, nên script off-car đọc hai loại tệp bằng một đường.</p>
+
+<h3>4.5 Bảng <code>verdict → việc sửa</code> (cố định, dữ liệu ở <code>:core</code>)</h3>
+<div class="tblwrap"><table>
+<tr><th>Verdict</th><th>Catalog</th><th>Việc sửa gợi ý</th><th>Chỗ làm</th></tr>
+<tr><td><code>NO_METHOD</code></td><td>❌</td><td>RE framework <code>fw-dl3</code> tìm method thật; nếu không có ⇒ thử đường <code>set()</code> generic bằng <code>hal --es op setev</code></td><td><code>scratchpad car-0916/framework/fw-dl3</code> · <code>TestBridgeHal</code></td></tr>
+<tr><td><code>FEATURE_ABSENT</code></td><td>⚠</td><td>Đối chiếu <code>featmap</code> (bảng feature-id THẬT của xe) — hằng đổi theo cấu hình; sửa <code>bindingKey</code> sang <b>tên hằng</b>, không số</td><td><code>TestBridgeFeatMap</code> · <code>ControlRegistry</code></td></tr>
+<tr><td><code>NOT_IN_DEVICE</code></td><td>⚠</td><td>Bind theo <b>tên</b> + tra device đúng từ <code>BYDAutoDeviceFeaturesMap</code>; thêm <code>halDevice</code> cho mục đó; ngừng poll mục đã bị từ chối</td><td><code>ControlDef.halDevice</code> · <code>HalAbsentCache</code></td></tr>
+<tr><td><code>ACCEPTED_NO_CHANGE</code></td><td>⚠</td><td>Sai <b>enum / đối số</b>: thử giá trị khác qua <code>hal set</code> (như ca kính 0→2 đã chốt), rồi sửa <code>writeArgs</code></td><td><code>HalBindingTable.writeArgs</code></td></tr>
+<tr><td><code>READ_WRONG_SCALE</code></td><td>⚠</td><td>Sửa <b>hệ số/đơn vị</b> theo số thật owner nhập (ví dụ ÷10, °C↔K, Wh↔kWh)</td><td><code>TelemetryRegistry</code> · bộ định dạng</td></tr>
+<tr><td><code>READ_NULL</code></td><td>❌</td><td>Tìm getter đúng trên device đúng; không có ⇒ đánh dấu không-đọc-được-trên-đời-xe-này</td><td><code>TelemetryRegistry.bindingKey</code></td></tr>
+<tr><td><code>ACCEPTED_CHANGED</code> · <code>READ_OK</code></td><td>🟢</td><td>Không việc — khoá bằng dòng <code>evidence</code> + stamp</td><td><code>status-by-id.json</code></td></tr>
+<tr><td><code>SKIPPED_DANGEROUS</code> · <code>UNTESTED</code></td><td>giữ nguyên</td><td>Xếp vào lượt xe kế; không hạ status cũ</td><td>playbook lượt kế</td></tr>
+</table></div>
+
+<h3>4.6 Mockup màn CapTest v2 (CSS box — không phải ảnh)</h3>
+<div class="mock">
+  <div class="bar"><span>◀ Điều hoà</span><span>23 / 64 · Điều hoà</span><span>⏸ Tạm dừng</span></div>
+  <div class="prog"><i></i></div>
+  <div class="title">Sấy kính trước</div>
+  <div class="sub">Bật sấy để tan sương mặt kính trước · nút Bật/tắt</div>
+  <div class="kv"><span>Trước khi bắn</span><b>0 (tắt)</b></div>
+  <div class="kv"><span>Đã bắn</span><b>bật · HAL rc=0</b></div>
+  <div class="kv"><span>Đọc lại sau 3 s</span><b>1 (bật) — đã đổi</b></div>
+  <div class="btns">
+    <div class="b-yes">Thấy ✓</div>
+    <div class="b-no">Không ✗</div>
+    <div class="b-odd">Lạ ⚠</div>
+  </div>
+  <div class="foot"><span>🎙 Ghi chú giọng nói</span><span>⤺ Hoàn tác đang chạy…</span><span>⏭ Bỏ qua</span></div>
+</div>
+<p class="muted">Ba nút chiếm trọn bề ngang, cao ≥ 64 dp — owner ngồi ghế lái chấm được mà không phải nhắm. Dòng “Hoàn tác đang chạy” luôn hiện sau khi chấm, để owner biết xe đang được trả về trạng thái cũ (R7.1).</p>
+
+<h3>4.7 Quyết định thiết kế</h3>
+<ul>
+<li><b>Chấm bằng máy TRƯỚC, mắt owner SAU</b> — đảo đúng thứ tự của <code>CLAUDE.md §15</code>. Ô “đọc lại” là dữ liệu tất định; ✓/✗/⚠ của owner chỉ dùng cho nút <b>không có getter</b> (ion âm, ghế sưởi…) và để bắt ca “máy thấy đổi nhưng xe không làm gì”.</li>
+<li><b>Verdict không gộp</b> — 3 mức cũ (OK/NOT_OK/UNTESTED) là lý do 09-15 phải ngồi đoán lại từ đầu. 10 verdict ánh xạ <b>1-1</b> sang việc sửa ⇒ báo cáo <b>là</b> danh sách việc, không phải nguyên liệu để viết danh sách việc.</li>
+<li><b>Nguồn của <code>only_failed</code></b>: đọc <b>lượt JSON gần nhất trên thẻ</b> (chọn theo stamp lớn nhất), <b>không</b> nhúng <code>status-by-id.json</code> vào APK — catalog là tài liệu ở máy soạn thảo, nhúng vào APK là bản sao thứ hai sẽ lệch (bẫy hai-bản-sao mà dự án đã trả giá). Không có tệp trên thẻ ⇒ <code>only_failed</code> báo lỗi có tên, không im lặng chạy hết.</li>
+<li><b>Không đổi route nào trong lượt này</b> — CapTest v2 chỉ <b>đo và phân loại</b>. Mọi bản vá route (<code>lock</code>/<code>trunk</code> qua <code>setev</code>, 4 nút sentinel, 12 datum sai device) là việc <b>sinh ra từ</b> báo cáo, làm ở spec/commit riêng, có phép đo riêng (<code>CLAUDE.md §2</code>: cấm trộn cơ chế với quy kết).</li>
+<li><b>Generic, không case-by-case</b> (<code>CLAUDE.md §7</code>): không <code>if (id == "win_lf")</code> ở bất kỳ đâu. Khác biệt giữa các nút lộ ra qua <code>ControlKind</code> + <code>ControlDef</code> (min/max/step/args) + <code>CtlSafetyPolicy</code>; khác biệt đời xe (nếu có) vào <code>ClusterProfile</code>.</li>
+<li><b>Context7</b>: <b>không cần</b> — spec chỉ dùng Android SDK (đã có trong app: <code>AlertDialog</code>, <code>Thread</code>, <code>BroadcastReceiver</code>), Kotlin thuần ở <code>:core</code>, và Python chuẩn thư viện (<code>json</code>, <code>argparse</code>) cho script. Không thêm dependency mới nào ⇒ theo <code>workflow.md §1.1</code> ghi rõ lý do thay vì gọi Context7 hình thức.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">Trạng thái: 🔲 chưa làm · 🔨 đang dở · ✅ xong (có [ĐO]). T1→T2→T3/T4 song song; T5 nằm trong T2; T6→T7; T8–T10 sau cùng.</p>
+<div class="tblwrap"><table>
+<tr><th>#</th><th>Task</th><th>File</th><th>TT</th></tr>
+<tr><td>T1</td><td><b>:core</b> — <code>CapVerifyPlan</code> (giá trị thử + hoàn tác theo <code>ControlKind</code>, bảng §4.3) · <code>CapVerdict</code> 10 mức + hàm phân loại thuần · bảng verdict→việc · <code>CapVerifyRecord</code> + mã hoá JSON. Test phủ đủ 10 verdict + biên (STEP ở <code>max</code>, TOGGLE đọc trước <code>null</code>, CYCLE hoàn tác hết vòng, BUTTON không hoàn tác).</td><td><code>core/…/launcher/CapVerify.kt</code> + <code>CapVerifyTest.kt</code>, <code>CapVerdictTest.kt</code></td><td>🔲</td></tr>
+<tr><td>T2</td><td><b>:app</b> — <code>CapVerifyRunner</code>: một vòng 7 bước trên luồng nền · chờ cấu hình được · <b>timeout mỗi mục</b> · <b>hoàn tác trong <code>finally</code></b> · gọi <code>CarControlPort.actByKind</code> + <code>HalBindingTable</code> · chụp <code>HalWriteProbe</code>.</td><td><code>app/…/launcher/CapVerifyRunner.kt</code></td><td>🔲</td></tr>
+<tr><td>T3</td><td><b>bridge</b> — lệnh <code>verify</code> (<code>--es id</code> · <code>--es group</code> · <code>--ei v</code> · <code>--ez only_failed</code> · <code>--ez auto_confirm</code>), khai trong <code>TestBridgeCommands.SPECS</code>, cổng test-mode + <code>AUTO-CONFIRM</code>; <code>sweep</code> giữ nguyên chỉ-đọc. Test phân tích lệnh + ca thiếu đối số.</td><td><code>app/…/testbridge/TestBridgeVerify.kt</code>, <code>core/…/testbridge/TestBridgeCommand.kt(+Test)</code></td><td>🔲</td></tr>
+<tr><td>T4</td><td><b>UI</b> — CapTest v2: 3 nút to · tiến độ “23/64 · Điều hoà” · chọn domain · tạm dừng/tiếp tục · tick nhóm nguy hiểm đầu lượt · cổng xe-đỗ (<code>gear</code> hoặc câu hỏi) · ô nhập số thật cho datum · ghi chú giọng nói tuỳ chọn. Chuỗi qua <code>R.string</code>.</td><td><code>app/…/launcher/CapTestConsole.kt</code>, <code>res/values*/strings.xml</code></td><td>🔲</td></tr>
+<tr><td>T5</td><td><b>Bằng chứng</b> — ghi JSON <code>kachi-logs/captest-&lt;stamp&gt;.json</code> theo §4.4 + <b>chụp logcat cửa sổ chờ trong tiến trình</b> (trần số dòng, lọc tag <code>Kachi*</code>/<code>BYDAuto*</code>) + gắn sự kiện HAL khi có listener.</td><td><code>app/…/launcher/CapVerifyLog.kt</code>, <code>KachiLog.kt</code></td><td>🔲</td></tr>
+<tr><td>T6</td><td><b>Script import</b> — <code>captest-import.py</code>: đọc JSON → cập nhật <code>status-by-id.json</code> (status/note/evidence + <code>history</code> theo stamp) · <code>--dry-run</code> · từ chối hạ 🟢 bằng lượt bỏ qua.</td><td><code>scripts/docs/captest-import.py</code></td><td>🔲</td></tr>
+<tr><td>T7</td><td><b>Catalog + báo cáo việc</b> — chạy <code>feature-catalog.py</code>; sinh <code>docs/diagnostics/captest-&lt;ngày&gt;.md</code> bảng vấn đề theo verdict (danh sách việc, mỗi dòng trace về id + evidence).</td><td><code>scripts/docs/captest-import.py</code>, <code>docs/diagnostics/</code></td><td>🔲</td></tr>
+<tr><td>T8</td><td><b>Playbook §6i “lượt kiểm chứng 25 phút”</b> — kịch bản cho owner: đỗ xe · bật test-mode · chọn 3 domain · chạy · hoàn tác tự động · <code>adb pull</code> · lệnh import. Ghi rõ domain nào ưu tiên (Điều hoà · Thân xe · Đèn).</td><td><code>docs/diagnostics/oncar-playbook-kachi-&lt;bản&gt;.md §6i</code></td><td>🔲</td></tr>
+<tr><td>T9</td><td><b>E2E máy ảo</b> — chạy <code>verify --es group …</code> với <code>NoCar</code> (<code>LauncherPorts.kt:99</code>): khẳng định JSON hợp lệ, verdict rơi đúng <code>READ_NULL</code>/<code>ACCEPTED_*</code>, <b>hoàn tác vẫn chạy</b> khi phép đọc ném, timeout cho ra <code>UNTESTED</code>.</td><td><code>app/src/test/…/CapVerifyE2ETest.kt</code>, <code>scripts/emulator/</code></td><td>🔲</td></tr>
+<tr><td>T10</td><td><b>Docs atomic</b> (R2.1) — spec này + <code>docs/README.md</code> (INDEX) + <code>docs/PROJECT-BACKLOG.md</code> + <code>.kiro/steering/project-context.md</code> cập nhật trong CÙNG commit; bump version nếu đã báo APK.</td><td>—</td><td>🔲</td></tr>
+<tr><td>Tn</td><td>Senior review (Opus, rule global §5) + security scan (§6) + <code>./gradlew clean assembleRelease testDebugUnitTest</code></td><td>—</td><td>🔲</td></tr>
+</table></div>
+
+<h2>6. Verification</h2>
+<h3>6.1 Máy ảo / off-car (làm được NGAY, không cần xe)</h3>
+<ul>
+<li><b>V-unit-core</b>: <code>:core</code> xanh — <code>CapVerifyTest</code> phủ đủ bảng §4.3 (7 kind × trước/sau/hoàn tác) và <code>CapVerdictTest</code> phủ đủ 10 verdict + 4 ca biên. Lệnh: <code>./gradlew :core:test --rerun-tasks</code>.</li>
+<li><b>V-unit-bridge</b>: <code>TestBridgeCommandTest</code> có ca <code>verify</code> thiếu <code>id</code>/<code>group</code> ⇒ <code>missing_extra:</code>; ca <code>only_failed</code> không có tệp trên thẻ ⇒ lỗi có tên.</li>
+<li><b>V-e2e-nocar</b>: chạy <code>verify --es group CLIMATE</code> trên máy ảo với <code>NoCar</code> ⇒ JSON hợp lệ (<code>python3 -m json.tool</code>), mọi mục verdict <code>READ_NULL</code> hoặc <code>UNTESTED</code>, <b>0</b> ngoại lệ thoát ra, và <b>mọi mục đã bắn có bản ghi <code>undo</code></b>.</li>
+<li><b>V-safety-offcar</b>: test khẳng định (a) mục thuộc <code>CtlSafetyPolicy.CONFIRM_REQUIRED</code> mà chưa tick ⇒ <code>SKIPPED_DANGEROUS</code> và <b>không</b> có lượt bắn nào; (b) phép đọc ném ⇒ hoàn tác vẫn chạy; (c) timeout ⇒ hoàn tác + <code>UNTESTED</code>.</li>
+<li><b>V-script</b>: <code>captest-import.py</code> chạy trên một JSON mẫu (fixture trong repo) ⇒ <code>--dry-run</code> in diff; chạy thật ⇒ chỉ đụng id có trong JSON; lượt <code>SKIPPED_DANGEROUS</code> <b>không</b> hạ 🟢 có sẵn.</li>
+<li><b>V-lifecycle</b>: bắt đầu lượt → tạm dừng → đóng app → mở lại → tiếp đúng mục đang dở → xuất báo cáo → xoá kết quả → danh sách về <code>UNTESTED</code>.</li>
+<li><b>V-quality</b> (P5): <code>./gradlew test --rerun-tasks --continue</code> đủ 5 module, fail mới = 0; grep call site của mọi hàm/lớp mới (<code>CLAUDE.md §8</code>).</li>
+</ul>
+<h3>6.2 Trên xe (lượt xe kế — cần owner + xe đỗ)</h3>
+<ul>
+<li><b>V-oncar-1</b>: một domain nhỏ trước (Điều hoà, ~12 mục) — khẳng định vòng chạy trọn, xe <b>về đúng trạng thái cũ</b> sau lượt, JSON có đủ 4 mốc thời gian mỗi mục.</li>
+<li><b>V-oncar-2</b>: <b>4 nút sentinel</b> (<code>ac_auto</code>, <code>ambient_power</code>, <code>mirror_fold_btn</code>, <code>child_lock</code>) ⇒ verdict phải là <code>FEATURE_ABSENT</code> và báo cáo phải sinh việc “đối chiếu featmap” — vì owner đã xác nhận xe CÓ các tính năng này (E6).</li>
+<li><b>V-oncar-3</b>: <b>Thân xe</b> có tick nhóm nguy hiểm — kính 4 cửa phải ra <code>ACCEPTED_CHANGED</code> với ba chặng mở/50%/đóng đọc được phần trăm; <code>lock</code>/<code>trunk</code> phải ra <code>NO_METHOD</code> (khớp [ĐO 09-16]) chứ không phải “không OK” chung chung.</li>
+<li><b>V-oncar-4</b>: chạy lại <code>--ez only_failed true</code> sau bản vá đầu tiên ⇒ số 🟢 trong catalog <b>tăng</b>; <code>history</code> có ≥ 2 stamp cho các id đã chạy hai lượt.</li>
+<li><b>Bằng chứng bắt buộc</b>: tệp JSON + <code>docs/diagnostics/captest-&lt;ngày&gt;.md</code> commit vào repo (JSON gốc có VIN ⇒ theo lệ hiện hành, <code>carlog-*</code> gitignored, chỉ commit bản đã lọc).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1.</b> <b>seatID ghế lái</b>: <code>seatc</code>/<code>seath</code> (ghế mát/ấm) nhận tham số ghế nào cho ghế lái? Lượt 09-16 bắn nhưng owner không phân biệt được ghế nào phản ứng. Đề xuất: lượt đầu bắn <b>ghế lái</b> và ghi rõ trên màn “đang thử GHẾ LÁI” để owner ngồi đúng chỗ mà cảm. — <span class="muted">cần owner chốt / hoặc đo bằng <code>hal get</code></span></li>
+<li><b>OQ2.</b> <b>Thời gian chờ theo nhóm</b>: mặc định 3 s, nhưng kính cần <b>5 s</b> (hành trình cơ khí), điều hoà có thể cần <b>7–10 s</b> để nhiệt độ đọc ra đổi. Đặt trần theo <code>Domain</code> hay theo từng <code>ControlKind</code>? — <span class="muted">đề xuất: theo Domain, cấu hình được ở đầu lượt</span></li>
+<li><b>OQ3.</b> <b>Nhóm điều hoà khi máy nổ</b>: nhiều nút điều hoà chỉ phản ứng khi máy đang nổ / A/C đang chạy. Có nên tự động <b>lặp lại</b> nhóm điều hoà một lượt thứ hai sau khi bật A/C, rồi so hai lượt? — <span class="muted">cần owner chốt: có làm lượt đôi không (thêm ~4 phút)</span></li>
+<li><b>OQ4.</b> <b>Chặng 50% của COVER</b>: câu A13 của owner (<i>“50% có dừng giữa không?”</i>) vẫn treo. CapTest v2 sẽ đo bằng <code>getWindowOpenPercent</code> — nhưng nếu phần trăm chỉ có 0/98 thì kết luận là “không có 50%” hay “lệnh 50% sai đối số”? — <span class="muted">[CHƯA BIẾT] — chốt bằng chính lượt V-oncar-3</span></li>
+<li><b>OQ5.</b> <b>Ghi chú giọng nói</b> có làm chậm lượt không? [ĐO 09-16] một lượt nghe tốn 8 s trần + 2,3 s giải mã + 3,1 s lỗ ⇒ ~13 s/mục, gấp 3 lần cả vòng kiểm chứng. Đề xuất: mặc định <b>TẮT</b>, bật theo mục khi owner muốn nói dài. — <span class="muted">cần owner chốt</span></li>
+<li><b>OQ6.</b> <b>Datum không có getter riêng</b> (đọc qua <code>CarStatus</code> nhịp chậm 10 s): đọc-lại sau 3 s có thể <b>chưa kịp cập nhật</b> ⇒ ra <code>ACCEPTED_NO_CHANGE</code> oan. Đề xuất: khi nguồn đọc là <code>CarStatus</code>, chờ tối thiểu = <code>slowMs</code> + 1 s, hoặc ép một phép đọc đồng bộ qua <code>readRaw</code>. — <span class="muted">[SUY] từ <code>CarStatusRepository</code> (fast 1 s · slow 10 s); chốt khi code T2</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Owner 2026-09-16: <i>“mình có cái test 187 chức năng đó, làm sâu thêm cái đó, lấy thực tế, lấy log, lấy vấn đề để get things done chỗ này”</i> · mục A của <code>docs/_handoff/owner-questions-2026-09-16.md:3</code> (<i>“vòng nhanh không phân biệt được… lần sau bắn TỪNG nút có người nhìn”</i>) · E6 (<i>“xe CÓ cả 4 tính năng ⇒ cần RE feature-id”</i>).</li>
+<li><code>docs/diagnostics/oncar-trace-2026-09-16.md:43-52</code> — §3 vòng action 44 lệnh (34 accepted · 4 sentinel · NoSuchMethod door/lock/trunk · sweep 83/123) · §4 framework THẬT (<code>checkDeviceFeatures</code>, feature-id tính lúc chạy, <code>BYDAutoDoorLockDevice</code> không setter).</li>
+<li><code>docs/diagnostics/oncar-captest-results-2026-09-15.md:56-77</code> — CHỐT KÍNH-ĐÓNG [ĐO 1.61] + root-cause <b>bug công cụ</b> <code>CapabilityTestPlan.runArg</code> luôn = mở.</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/CapabilityTest.kt:53-86</code> (<code>CapabilityTestPlan.items()</code>), <code>:20</code> (3 verdict cũ), <code>:96-151</code> (codec + báo cáo).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/CapTestConsole.kt:121-203</code> (popup + nút theo chiều, vá 1.62), <code>:249-261</code> (chụp logcat).</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeCtl.kt:60-107</code> (cổng CONFIRM + <code>HalWriteProbe</code> + phân loại câu HAL), <code>TestBridgeSweep.kt:52-109</code> (khuôn JSON + ghi thẻ), <code>TestBridgeHal.kt:69-189</code> (<code>get</code>/<code>set</code>/<code>setev</code>), <code>TestBridgeFeatMap.kt</code>.</li>
+<li><code>core/…/launcher/ControlRegistry.kt:31</code> (<code>ControlKind</code>), <code>:44-122</code> (<code>ControlDef</code>: min/max/step/args/halDevice/displayArgs/clamp) · <code>TelemetryRegistry.kt:212</code> (<code>gear</code>) · <code>CtlSafetyPolicy.kt:35-41</code> (12 mã nguy hiểm) · <code>CapabilityModel.kt:18-35</code> (9 <code>Domain</code>) · <code>CarStatusRepository.kt</code> (nhịp 1 s / 10 s) · <code>LauncherPorts.kt:99</code> (<code>NoCar</code>).</li>
+<li><code>docs/catalog/status-by-id.json</code> (191 mục — [ĐO 09-16] 🟢 10 · ⚠ 68 · ❌ 15 · 🚗 98) · <code>scripts/docs/feature-catalog.py:48-54</code> (<code>status_of</code>) · <code>docs/kachi-feature-catalog.html</code>.</li>
+<li>Spec liên quan: <code>docs/specs/kachi-capability-test.html</code> (CapTest v1) · <code>docs/specs/kachi-test-bridge.html</code> (T-BRIDGE) · <code>docs/specs/kachi-hal187-cast-remediation.html</code> (R4 sweep).</li>
+<li>Luật: <code>CLAUDE.md</code> §2 · §4 · §7 · §8 · §14 · §15 · <code>.kiro/steering/conversation-protocol.md</code> P1/P5 · <code>.kiro/steering/trace-den-tan-cung.md</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi <b>NGAY khi code</b> (R2.6). Mỗi mục: ngày · loại (quyết định / trade-off / sai lệch-spec / bug / spec-không-work) · nội dung · <code>file:line</code> hoặc commit.</p>
+<ul>
+<li><i>(Trống — spec mới draft, chưa implement. Điền dần trong lúc code; cấm “để sau”.)</i></li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG overwrite. Tag finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

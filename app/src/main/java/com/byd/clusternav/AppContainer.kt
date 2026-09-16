@@ -70,8 +70,16 @@ class AppContainer internal constructor(
     /** Bảng nối HAL dùng CHUNG (1 gateway) cho cả đọc telemetry lẫn ghi control. */
     private val halBindingTable: HalBindingTable by lazy { HalBindingTable(carGatewayInit()) }
 
+    /**
+     * H1 (PERF 2026-09-16) — **nhu cầu dữ liệu của màn hình đang hiện**, cầu một chiều `state → poll`.
+     *
+     * Màn chính ghi ([collectHome] mỗi lượt state, [KachiHomeActivity.onStop] xoá); vòng poll đọc. `null` (mặc
+     * định, và sau khi màn khuất) = đọc hết như mọi bản trước 1.67 — xem KDoc [CarDataDemand].
+     */
+    val carDemand = com.byd.clusternav.launcher.CarDataDemand.Holder()
+
     /** Adapter đọc xe: [CarDataPort] (widget cũ) + `CarStatusReader` (build [com.byd.clusternav.launcher.CarStatus]). */
-    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable) }
+    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable, carDemand::get) }
 
     /** Cổng đọc xe LIVE cho widget/thanh trạng thái — off-car mọi field null ⇒ "—". */
     val carData: CarDataPort get() = carDataAdapter
@@ -91,6 +99,31 @@ class AppContainer internal constructor(
 
     /** Repo trạng thái xe LIVE: poll 2 nhịp → `StateFlow<CarStatus>` (nguồn cho UDF HOME; Activity collect qua repeatOnLifecycle). */
     val carStatusRepository: CarStatusRepository by lazy { CarStatusRepository(carDataAdapter, carScope) }
+
+    /**
+     * H1 — màn chính rời tiền cảnh: quên **nhu cầu** và quên **kết luận "xe không có datum ấy"**.
+     *
+     * Hai việc, một chỗ gọi, có chủ ý: chúng cùng hết hiệu lực vào đúng một thời điểm (lần mở sau bắt đầu bằng
+     * một lượt đọc ĐỦ), và tách ra hai lời gọi là mời một trong hai bị quên — đúng họ lỗi CLAUDE.md §8.
+     */
+    fun forgetCarDemand() {
+        carDemand.clear()
+        carDataAdapter.forgetAbsent()
+    }
+
+    /**
+     * [SOÁT P1-1 · 2026-09-16] Đọc **TƯƠI** một datum cho câu hỏi bằng giọng; `null` = *"dùng ảnh chụp sẵn có"*.
+     *
+     * Trả `null` ở hai ca — và cả hai đều là *"ảnh chụp ĐÃ tươi rồi"*, không phải bỏ cuộc:
+     *  • nhu cầu chưa tính được (`null`) ⇒ vòng poll đang đọc **hết** mọi datum mỗi 10 s;
+     *  • datum đã nằm trong nhu cầu ⇒ nó đang được đọc mỗi nhịp.
+     * Nhờ hai lối ra này, phần việc đồng bộ có trần cứng: **đúng một** datum ngoài màn, cộng vài datum của màn.
+     */
+    fun refreshForRead(id: String): com.byd.clusternav.launcher.CarStatus? {
+        val want = carDemand.get() ?: return null
+        if (id in want) return null
+        return carDemand.withExtra(setOf(id)) { carStatusRepository.refreshNow() }
+    }
 
     /** Cast folded BY REFERENCE — process-singleton object hiện có; KHÔNG sở hữu/không dựng coordinator ở đây. */
     val castRuntime: SimpleCastRuntime get() = SimpleCastRuntime

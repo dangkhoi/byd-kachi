@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PERF — profiling sâu + tối ưu tải HAL/shell/log (1.67) — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:20px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>PERF — profiling sâu + tối ưu tải HAL / shell / log</h1>
+<p class="muted">Slug: <code>kachi-perf-2026-09</code> · Branch <code>feat/voice-hotword-phrases</code> · Bản <b>1.67 (68)</b> · Owner <b>dangkhoi</b> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Số đo chi tiết + lệnh tái lập: <code>docs/diagnostics/perf-profile-2026-09-16.md</code>. Mức bằng chứng theo CLAUDE.md §2: <b>[ĐO]</b> / <b>[SUY]</b> / <b>[CHƯA BIẾT]</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo. Owner: <i>"làm 1 vòng profiling và optimise performance đi, làm sâu"</i>. Đầu vào là log 47,2 phút do chính app ghi trên xe DL3 (1.66) — không phải một cảm giác "hơi lag".</li>
+<li><b>Pass 1 — 2026-09-16 (senior review, Opus)</b>: 4 vá <b>[P1-1]</b> câu hỏi bằng giọng không còn đọc số đóng băng · <b>[P1-2]</b> bài canh bảng <code>CURATED</code> suy từ chính bộ vẽ · <b>[P2-1]</b> <code>HalAbsentCache.clear()</code> có chỗ gọi · <b>[P2-2]</b> tay cầm device có hạn dùng · <b>[P2-3]</b> hết đua dữ liệu; 2 sửa tài liệu. §4.3 sửa một khẳng định SAI về đường giọng nói. Chi tiết §10.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Kachi chạy trên đầu xe DL3: <b>8 lõi 1,8 GHz</b>, RAM trống <b>56–94 MB</b>, RSS của chính Kachi <b>537 MB</b>. Owner báo lag. Log phiên 47,2 phút cho ba con số quyết định hướng đi:</p>
+<ul>
+<li><b>510 dòng getter HAL / phút</b> + <b>229 dòng "no permission" / phút</b> — vòng poll đọc <b>toàn bộ</b> 123 datum mỗi nhịp, bất kể màn hình bày cái gì.</li>
+<li><b>79 KB log / phút</b> ghi ra thẻ, <code>flush()</code> sau <b>mỗi</b> dòng.</li>
+<li><b>6,6 % CPU trên 8 lõi</b> lúc "không làm gì" ≈ nửa lõi liên tục.</li>
+</ul>
+<div class="card"><b>Bằng chứng khoá hướng [ĐO]:</b> đếm theo <b>số nhịp</b> trong log (1 114 lượt <code>getSteeringWheelValue</code> của nhịp nhanh so với 158 lượt của nhịp chậm) cho chu kỳ nhịp nhanh THẬT ≈ <b>1,42 s</b> thay vì 1,00 s. Vì <code>delay(1 s)</code> chạy <i>sau</i> lượt đọc, 0,42 s dôi ra chính là thời gian 18 lượt đọc HAL chiếm ⇒ <b>≈23 ms/lượt</b> và <b>≈42 % một lõi</b> chỉ để nuôi vòng nhanh. Con số này khớp độc lập với <code>top</code>. ⇒ nút cổ chai là <b>số lượt đọc HAL</b>, không phải việc vẽ.</div>
+<div class="card"><b>Cổng / ràng buộc:</b> (a) owner muốn <b>GIỮ</b> log suốt phiên ⇒ chỉ được giảm <i>nguồn ồn</i>, không được tắt log; (b) cầu <code>sweep</code> phải vẫn đọc <b>đủ</b> mọi datum (lệnh chủ động, không chịu bộ lọc); (c) E2E giọng nói <code>voice-e2e.sh --only say</code> phải giữ 69/70.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> — Vòng poll chỉ đọc datum <b>đang hiện trên màn</b>. Acceptance [ĐO]: &lt; 150 lượt đọc HAL/phút ở màn mặc định (từ ≈1 390).</li>
+<li><b>R2</b> — Datum xe <b>không có</b> thì ngưng hỏi lại, nhưng <b>vẫn thử lại có giãn cách</b>. Acceptance: &lt; 20 dòng "no permission"/phút; datum vắng <i>tạm thời</i> (ETA sạc khi chưa cắm) quay lại trong ≤ 60 s sau khi có giá trị.</li>
+<li><b>R3</b> — Không ô nào đang có số bị biến thành "—" vì bản vá này. Acceptance: kiểm mắt 4 bề mặt (ô Tốc độ · ô Lốp · nhóm Kính · chip bất kỳ) — mỗi cái ra số trong ≤ 10 s sau khi đặt lên màn.</li>
+<li><b>R4</b> — Watchdog cast tốn <b>một</b> lệnh shell mỗi lượt đọc (không phải 1 + N). Acceptance: ≈13 → ≈6,5 lệnh/phút khi đang cast.</li>
+<li><b>R5</b> — Log ra thẻ ghi theo lô, nhưng dòng <b>W/E/F/A không bao giờ mất</b> khi app chết đột ngột.</li>
+<li><b>R6</b> — Nạp sẵn mô hình nghe phải hỏi RAM còn lại trước; thiếu RAM ⇒ <b>hoãn</b> (không tắt tính năng).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Mọi quyết định (chọn datum · nguội/thử lại · nạp sẵn) là <b>hàm thuần ở <code>:core</code></b>, test off-device. <code>:app</code> chỉ nối dây.</li>
+<li><b>R-nf2</b> — <b>Fail-open</b> tuyệt đối: thiếu dữ liệu để quyết ⇒ giữ nguyên hành vi 1.66 (đọc hết / nạp sẵn như cũ). Thà hụt hiệu năng còn hơn một ô câm.</li>
+<li><b>R-nf3</b> — Bộ đếm đo <b>ship theo app</b>: thứ cần đo chỉ tồn tại trên xe đang chạy, nên công cụ đo phải đi cùng bản chạy trên xe.</li>
+<li><b>R-nf4</b> — Không đụng bất biến R1/R2 của cast (mọi lệnh ĐẶT vẫn dò display TƯƠI ngay trước khi đặt).</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Bốn tầng cổng trên đường đọc xe</h3>
+<div class="layers">
+  <div class="layer"><div class="node" style="background:rgba(0,113,227,.12)"><b>HomeUiState</b><span>nguồn sự thật của màn chính</span></div></div>
+  <div class="layer"><div class="node" style="background:rgba(0,113,227,.12)"><b>CarDataDemand.of()</b><span>:core thuần — chip + ô + nhóm + thanh nút → tập id</span></div></div>
+  <div class="layer">
+    <div class="node" style="background:rgba(0,113,227,.12)"><b>Cổng 1 — nhu cầu</b><span>không hiện ⇒ giữ giá trị cũ</span></div>
+    <div class="node" style="background:rgba(0,113,227,.12)"><b>Cổng 2 — nhịp nhanh</b><span>fastNeeded() = false ⇒ vòng 1 Hz ngủ</span></div>
+  </div>
+  <div class="layer">
+    <div class="node" style="background:rgba(0,113,227,.12)"><b>Cổng 3 — HalAbsentCache</b><span>3× null ⇒ nguội, thử lại 60 s → ×2 → trần 10 ph</span></div>
+    <div class="node" style="background:rgba(0,113,227,.12)"><b>Cổng 4 — nhớ tay cầm device</b><span>BydHalGateway: hết dựng lại Context mỗi lượt</span></div>
+  </div>
+  <div class="layer"><div class="node"><b>HalBindingTable → HAL BYDAuto</b><span>binder IPC — ≈23 ms/lượt trên xe</span></div></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (không đổi)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới của 1.67</span>
+</div>
+
+<h3>4.2 Cầu một chiều: state → nhu cầu → vòng poll</h3>
+<div class="flow">
+  <div class="fnode"><b>uiState</b><span>collectHome</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.12)"><b>CarDataDemand.of</b><span>hàm thuần</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.12)"><b>Holder</b><span>@Volatile, 1 ghi / N đọc</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>CarDataAdapter</b><span>readFast / readSlow</span></div>
+</div>
+<p>Ghi ở <b>một chỗ duy nhất</b> (vòng thu state) ⇒ mọi đường đổi state (đổi hồ sơ · gắn widget · đổi chip · đổi bố cục) tự cập nhật nhu cầu, không có đường thứ hai nào phải nhớ gọi. Cố ý <b>không</b> dùng <code>StateFlow</code>: vòng poll không cần được đánh thức, nó tự hỏi lại ở nhịp sau.</p>
+
+<h3>4.3 Đường ĐỌC TƯỜNG MINH không bị lọc</h3>
+<p>Cổng chỉ nằm trong <code>CarDataAdapter.readFast/readSlow</code>. Hai đường sau gọi thẳng <code>HalBindingTable</code> nên <b>tự nhiên</b> nằm ngoài cổng — không cần một cờ miễn trừ nào (và vì thế không có cờ nào để ai đó quên bật):</p>
+<ul>
+<li>cầu kiểm thử <code>sweep</code> / <code>read</code> (<code>KachiTestBridge</code>) — [ĐO 2026-09-16 máy ảo] <code>sweep</code> vẫn trả <code>info_total=123</code> sau khi có cổng;</li>
+<li>màn <i>Kiểm tra từng nút</i> + <code>AppContainer.telemetryText</code>.</li>
+</ul>
+<p class="muted"><b>⚠ Sửa sau review (Pass 1) —</b> bản đầu của mục này còn dòng thứ ba: <i>"câu hỏi bằng giọng — cùng <code>telemetryText</code>"</i>. <b>Sai</b>: <code>VoiceDispatcher.runRead</code> đọc <code>TelemetryReadout.of(id, state().carStatus)</code>, tức chính <b>ảnh chụp của vòng poll</b> — thứ mà cổng vừa lọc. <code>telemetryText</code> chỉ có đúng một chỗ gọi (<code>KachiHomeActivity.readInfo</code>). Xem <b>[P1-1]</b> ở §10.</p>
+<p><b>Đường thứ ba, có cổng riêng:</b> câu hỏi bằng giọng <b>ghim</b> datum nó sắp trả lời vào nhu cầu (<code>CarDataDemand.Holder.withExtra</code>) rồi bắt đọc NGAY một lượt (<code>CarStatusRepository.refreshNow</code>). Ghim là <b>hợp</b>, không phải <b>thay</b> — nhu cầu của màn hình còn nguyên, nên một nhịp poll chạy song song không bị bỏ đói. Chi phí có trần cứng: <code>AppContainer.refreshForRead</code> trả <code>null</code> (⇒ dùng ảnh chụp như cũ) khi nhu cầu chưa tính được <i>hoặc</i> khi datum vốn đã nằm trong nhu cầu, nên phần việc thêm là <b>đúng một datum</b> ngoài màn.</p>
+
+<h3>4.4 Quyết định thiết kế</h3>
+<ul>
+<li><b>Giữ giá trị cũ</b> khi không hiện, nhưng trả <b>null</b> khi đã nguội. Hai lối bỏ qua mang hai nghĩa khác nhau: <i>"chưa biết gì mới"</i> ≠ <i>"đã kết luận đọc không ra"</i>. Trả giá trị cũ ở lối thứ hai là đóng băng một con số trông như đang sống — đúng bệnh "SurfaceView giữ khung hình cuối", lần này bằng số.</li>
+<li><b>Thử lại giãn dần</b> thay vì cấm vĩnh viễn: một <code>null</code> KHÔNG chứng minh <i>"xe không có"</i>. Cấm vĩnh viễn đổi một lỗi hiệu năng lấy một lỗi chức năng.</li>
+<li><b>Ngưỡng RAM theo cỡ gói</b>, không phải số cứng: cùng 180 MB trống, gói int8 (74 MB) nạp được còn fp32 (266 MB) thì không; một ngưỡng <i>"còn &lt;200 MB thì thôi"</i> chặn nhầm cả hai.</li>
+<li><b>Context7</b>: không dùng thư viện/API mới nào — toàn bộ là Android SDK sẵn có (<code>ActivityManager.MemoryInfo</code>) + khối đã có trong repo ⇒ không cần verify version.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T0</td><td>Đo BASELINE trên máy ảo <b>trước</b> khi sửa dòng code nào <span class="pill ok">xong</span></td><td><code>docs/diagnostics/perf-profile-2026-09-16.md</code> §1–2</td></tr>
+<tr><td>T1</td><td>Bộ đếm ship-theo-app + báo cáo 1 dòng/phút <span class="pill ok">xong</span></td><td><code>core/…/KachiPerf.kt</code> (+<code>Test</code>) · <code>ShellTransport.kt</code> · <code>KachiHomeActivity.kt</code></td></tr>
+<tr><td>T2</td><td>H1a — tính nhu cầu từ state + hộp giữ + nối dây <span class="pill ok">xong</span></td><td><code>core/…/CarDataDemand.kt</code> (+<code>Test</code>) · <code>AppContainer.kt</code> · <code>KachiHomeWiring.kt</code></td></tr>
+<tr><td>T3</td><td>H1b — cổng nhịp NHANH <span class="pill ok">xong</span></td><td><code>CarStatusRepository.kt</code> (+<code>Test</code>) · <code>CarDataAdapter.kt</code></td></tr>
+<tr><td>T4</td><td>H1c — nguội + thử lại giãn dần cho đường ĐỌC <span class="pill ok">xong</span></td><td><code>core/…/HalAbsentCache.kt</code> (+<code>Test</code>)</td></tr>
+<tr><td>T5</td><td>H1d — nhớ tay cầm device (TTL cho lần hụt) <span class="pill ok">xong</span></td><td><code>app/…/BydHalGateway.kt</code></td></tr>
+<tr><td>T6</td><td>H2 — watchdog cast: 1 lệnh/lượt đọc, dò TƯƠI chỉ khi sắp ĐẶT <span class="pill ok">xong</span></td><td><code>SimpleCastCoordinator.kt</code></td></tr>
+<tr><td>T7</td><td>H3 — ghi log theo lô, W/E/F/A xả ngay <span class="pill ok">xong</span></td><td><code>KachiLog.kt</code> (+<code>KachiLogFlushTest</code>)</td></tr>
+<tr><td>T8</td><td>H5 — chip không set text khi chữ không đổi <span class="pill ok">xong</span></td><td><code>KachiTopStrip.kt</code></td></tr>
+<tr><td>T9</td><td>H6 — nạp sẵn mô hình hỏi RAM trước <span class="pill ok">xong</span></td><td><code>core/…/voice/VoicePreloadPolicy.kt</code> (+<code>Test</code>) · <code>VoiceRecognizer.kt</code></td></tr>
+<tr><td>T10</td><td>Đo LẠI + bảng trước/sau + doc + backlog <span class="pill ok">xong</span></td><td>doc §2 · <code>docs/README.md</code> · <code>docs/PROJECT-BACKLOG.md</code></td></tr>
+<tr><td>T11</td><td>Senior review <span class="pill ok">Pass 1 xong</span> (§10: 4 vá [P1]–[P2], 2 ghi chú) · security scan + đo trên XE <span class="pill wait">còn lại</span></td><td>§10 Reviewer Log</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO 2026-09-16, <b>sau senior review Pass 1</b>, đếm từ XML]: <code>:core</code> <b>2 006</b> bài xanh · <code>:app</code> <b>988</b> bài xanh · 0 đỏ. Bài khoá bài học: <code>CarDataDemandTest.demand khong bao gio nuot mot datum dang hien</code> (bảng nhu cầu sai = ô câm im lặng) · <code>CarDataDemandRendererContractTest.CURATED chua du moi datum ma bo ve doc</code> (bảng chép tay không được trôi khỏi bộ vẽ — suy từ chính nguồn) · <code>CarDataDemandTest.ghim datum ngoai man la HOP va tu go</code> · <code>CarStatusRepositoryTest.refreshNow doc ngay tren luong goi va khong nem</code> · <code>HalAbsentCacheTest.datum vang tam thoi quay lai duoc</code> (chặn ai đó đổi thành cấm vĩnh viễn) · <code>CarStatusRepositoryTest.nhip nhanh ngung khi man khong can, song lai khi can</code> (canh CẢ HAI chiều) · <code>KachiLogFlushTest.dong canh bao va loi xa NGAY</code>.</li>
+<li><b>V-emulator</b> [ĐO]: 1 404 → 48 → 0 lượt đọc HAL/phút; CPU 1,69 % → 0,71 % một lõi; log 9,6 → 3,1 dòng/phút. E2E <code>voice-e2e.sh --only say</code> giữ <b>69/70</b> (chạy lại sau review: vẫn 69/70, ca đỏ duy nhất <code>t29</code> có từ trước). Cầu <code>sweep</code>: <code>info_total=123</code>.</li>
+<li><b>V-oncar</b> <span class="pill wait">🚗 còn lại</span>: playbook + tiêu chí đạt ở <code>docs/diagnostics/perf-profile-2026-09-16.md</code> §6. Bắt buộc gồm phần <b>kiểm mắt R3</b> (4 bề mặt phải ra số).</li>
+<li><b>V-lifecycle</b>: mở màn → nhu cầu <code>null</code> ⇒ lượt poll đầu đọc ĐỦ (làm tươi mọi datum một lần) → state về ⇒ thu hẹp → <code>onStop</code> ⇒ xoá nhu cầu + vòng poll dừng theo <code>repeatOnLifecycle(STARTED)</code> → mở lại ⇒ lại đọc đủ một lượt.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — Nhịp watchdog cast 4 s → 15 s? Đây là <b>thời gian phục hồi khi app bị kéo khỏi cụm lúc đang lái</b> (nay 8 s, thành 30 s). <span class="muted">Chưa làm — quyết định của owner, không phải của một vòng tối ưu (CLAUDE.md §6).</span></li>
+<li><b>OQ2</b> — H4: hàng Cài đặt <i>"Chuyển sang mô hình nhẹ (int8, 74 MB)"</i> cho máy ĐÃ cài fp32 + gợi ý tự động khi RAM thấp. <span class="muted">Chưa làm — đổi mô hình của người đang dùng là đổi dữ liệu người dùng, phải hỏi. H6 đã chặn phần tệ nhất.</span></li>
+<li><b>OQ3</b> — Giải phóng recognizer khi app nền &gt; 10 phút? <span class="muted">Chưa làm: đánh đổi 15 s nạp lại, và chưa ĐO được nó có thật sự cứu được RAM trên xe không.</span></li>
+<li><b>OQ4</b> — <code>SimpleCastCoordinator.kt</code> 764 dòng &gt; trần 500 (CLAUDE.md §4.1). <span class="muted">Nợ CÓ TỪ TRƯỚC (750 dòng ở 1.66). Tách = đụng đường cast đang chạy tốt ngoài hiện trường ⇒ spec riêng.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/perf-profile-2026-09-16.md</code> — số đo trước/sau + playbook đo trên xe.</li>
+<li>CLAUDE.md §2 (cơ chế vs quy kết) · §6 (không đảo thứ tự đường đang chạy tốt) · §7 (generic) · §10 (test khoá bài học) · §4.1 (trần 500 dòng).</li>
+<li><code>.kiro/steering/trace-den-tan-cung.md</code> §2 — bỏ một tính năng / đổi hành vi an toàn là quyết định của OWNER.</li>
+<li><code>BydHal.kt</code> TASK 5 (closeout 1.28) — cache từ-chối cho đường GHI; 1.67 bổ sung vế ĐỌC còn thiếu.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+<ul>
+<li><b>2026-09-16 · quyết định</b> — Đo BASELINE bằng bộ đếm <b>ship theo app</b> thay vì công cụ ngoài. Lý do: thứ cần đo (lượt đọc HAL/phút) chỉ tồn tại trên xe; một công cụ chỉ chạy off-car sẽ không bao giờ trả lời được <i>"trên xe có giảm không"</i>.</li>
+<li><b>2026-09-16 · [ĐO] bác giả thuyết</b> — Brief nói <i>"2 poller gọi <code>am stack list</code> ~4–5 s/lần <b>dù không cast</b>"</i>. <b>SAI</b>: <code>repinEscapedCastApps</code> thoát sớm khi state không phải Casting, và máy ảo lúc đứng yên đo được <b>0,0 lệnh shell/phút</b>. 13 lệnh/phút của xe là của một phiên ĐANG cast ⇒ mục tiêu <i>"&lt;4 lệnh/phút idle"</i> đã đạt từ trước; mục tiêu đúng là "khi đang cast".</li>
+<li><b>2026-09-16 · [ĐO] bác giả thuyết</b> — Brief nói <i>"đọc kiểu (type) đúng ngay lần đầu thay vì thử 4 kiểu"</i>. Không tái lập được: <code>BydHal.readFeature</code> chỉ thử <b>một</b> kiểu (<code>Integer.TYPE</code>); 4 dạng dòng "no permission" trong log là <b>4 feature-id khác nhau</b>, không phải 4 kiểu của một id.</li>
+<li><b>2026-09-16 · [ĐO] xác nhận giả thuyết</b> — <i>"1.66 có cache denied chưa?"</i> ⇒ <b>có nhưng chỉ cho đường GHI</b> (<code>BydHal.rejectedFeatures</code>). Đường ĐỌC hoàn toàn không có ⇒ đúng là nguồn của 10 804 dòng "no permission".</li>
+<li><b>2026-09-16 · bug &amp; cách xử</b> — <code>KachiPerf</code> bản đầu dùng <code>0</code> làm sentinel <i>"chưa báo lần nào"</i>; <code>0</code> lại là mốc giờ hợp lệ của đồng hồ giả ⇒ bộ đếm im lặng, không bao giờ báo cáo. <code>KachiPerfTest</code> bắt được ngay. Sửa: sentinel = <code>Long.MIN_VALUE</code>. Cùng họ lỗi với <code>NOT_PROVISIONED_RC ≠ Int.MIN_VALUE</code> mà dự án đã trả giá một lần.</li>
+<li><b>2026-09-16 · trade-off</b> — Ghi log theo lô làm mất tối đa 2 s dòng D/I nếu app chết đột ngột. Chấp nhận, vì dòng W/E/F/A (thứ thật sự cần khi patch lỗi) vẫn xả ngay.</li>
+<li><b>2026-09-16 · sai lệch brief</b> — Brief đặt mục tiêu <i>"&lt;60 lệnh HAL/phút"</i>; máy ảo đo được <b>48 → 0</b>. Nhưng con số 0 là <b>đặc thù máy ảo</b> (không có HAL ⇒ mọi datum nguội). Trên xe kỳ vọng ổn định ở <b>≈50–130/phút</b> — ghi rõ là <b>[SUY]</b>, chưa [ĐO].</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-16 (Opus senior review)</h3>
+<p><b>Verdict: APPROVED off-car</b> — mọi deliverable của §5 đã có code + test + chỗ gọi; 4 phát hiện đã vá tại chỗ, 2 ghi chú. <b>🚗 CHƯA duyệt trên xe</b>: mọi con số của §2.1 vẫn là [SUY].</p>
+
+<p><b>Đối chiếu tay bảng <code>CURATED</code> với bộ vẽ</b> (việc implementer tự gắn cờ [P1]): đọc từng bộ vẽ trong <code>WidgetViews</code> (<code>energyRing</code> · <code>pm25Ring</code> · <code>speed</code> · <code>tyreBoard</code> · <code>carState</code> · <code>board</code> · <code>clock</code> + bản <code>mini</code>), <code>TopStripChips.chip</code>, <code>GroupBoard.of</code>/<code>cell</code>/<code>toneOf</code>, <code>ControlDockView.setCarStatus</code>. <b>Bảng ĐÚNG</b> — không có datum nào bị nuốt. Hai điểm từng ngờ đã truy tận nơi và <b>loại</b>: <code>GroupBoard.radarLevels</code> chỉ được <code>cell</code> dùng cho đúng mã <code>radar_zones</code> (thuộc nhóm <code>g_radar</code>, có trong <code>reads</code>), và <code>TyreBoard.statusOf</code> không đụng nhiệt độ.</p>
+
+<table>
+<tr><th>#</th><th>Phát hiện</th><th>Đã làm</th></tr>
+<tr><td><b>[P1-1]</b></td><td><b>Câu hỏi bằng giọng trả lời bằng số ĐÓNG BĂNG.</b> §4.3 (và KDoc <code>CarDataDemand</code>) khẳng định đường giọng nói đi qua <code>telemetryText</code> — <b>không đúng</b>: <code>VoiceDispatcher.runRead</code> đọc <code>state().carStatus</code>. Hỏi một datum KHÔNG có trên màn ⇒ cổng H1 đã <i>giữ giá trị cũ</i> cho nó ⇒ Kachi đọc to con số của lần cuối ô ấy còn trên màn (có thể hàng giờ trước), nghe như đang sống. Đây là <b>lỗi chức năng do cổng hiệu năng sinh ra</b> — đúng thứ §4.4 nói phải tránh, và là một <b>quy kết chưa kiểm</b> theo CLAUDE.md §2.</td><td><b>Vá:</b> <code>Holder.withExtra</code> (ghim HỢP, tự gỡ kể cả khi ném) · <code>CarStatusRepository.refreshNow()</code> (đọc đồng bộ, degrade-safe) · <code>AppContainer.refreshForRead</code> (trần cứng: chỉ 1 datum ngoài màn) · <code>VoiceDispatcher.freshCar</code> (mặc định <code>{ null }</code> ⇒ mọi test/bề mặt cũ giữ nguyên) · nối ở <code>VoiceWiring.dispatcher</code>. Sửa §4.3 + KDoc. 2 bài test mới.</td></tr>
+<tr><td><b>[P1-2]</b></td><td><b>Bảng <code>CURATED</code> chép tay không có gì canh nó khỏi trôi.</b> <code>CarDataDemandTest</code> canh được <i>"mã có thật không"</i> và <i>"widget nào chưa khai"</i>, nhưng KHÔNG canh được <i>"bộ vẽ đọc field nào"</i> — mà đó mới là chiều làm ô câm im lặng.</td><td><b>Thêm</b> <code>CarDataDemandRendererContractTest</code> (<code>:app</code>): đọc ngược <code>TelemetryReadout</code> lấy <code>field → mã</code>, rồi đi theo từng nhánh <code>"w_*"</code> của <code>build</code>/<code>mini</code> vào các hàm phụ để suy ra mã mà bộ vẽ THẬT SỰ chạm. <b>Đã thử làm ĐỎ</b> (bỏ <code>speed_limit_warning</code> khỏi <code>w_speed</code> ⇒ đỏ đúng chỗ). Bài tự chốt mình bằng <code>covered &gt;= 6</code> để không xanh giả khi phép đọc nguồn hụt.</td></tr>
+<tr><td><b>[P2-1]</b></td><td><b><code>HalAbsentCache.clear()</code> không có chỗ gọi nào</b> (CLAUDE.md §8). Hệ quả thật: giãn nhịp chạm trần 10 phút, nên datum vắng lâu rồi mới có (ETA sạc lúc vừa cắm) có thể câm tới 10 phút — kể cả khi người dùng vừa mở màn chính lên đúng để xem nó.</td><td><b>Vá:</b> <code>CarDataAdapter.forgetAbsent()</code> + <code>AppContainer.forgetCarDemand()</code> gộp hai việc vào MỘT chỗ gọi ở <code>onStop</code>. Không tốn thêm lượt đọc nào: lượt poll đầu sau khi màn quay lại vốn đã là <i>đọc hết</i>.</td></tr>
+<tr><td><b>[P2-2]</b></td><td><b>Tay cầm device nhớ VĨNH VIỄN dựa trên một tiền đề [SUY].</b> Lý lẽ <i>"getInstance là process-singleton nên nhớ nó không đổi ngữ nghĩa"</i> chỉ dựa trên <b>chữ ký</b> trong stub SDK (<code>jadx-tmap/…/BYDAutoPM2p5Device.java:47</code>, thân hàm là <code>throw new RuntimeException("Stub!")</code>) — chưa ai đọc được mã thật. Nếu tiền đề sai một điểm, <code>BydHal.callGetter</code> (nuốt mọi ngoại lệ, trả <code>null</code>) biến một binder chết thành <i>"mọi ô hiện —"</i> <b>vĩnh viễn</b>, không đường phục hồi. CLAUDE.md §3 + §5.</td><td><b>Vá:</b> <code>HIT_TTL_MS = 5 phút</code> cho lần TRÚNG. Giá ≈2,4 lượt reflection/phút (12 device) so với ≈4 200/phút của 1.66 ⇒ dưới mức nhiễu, đổi lấy một trần phục hồi hữu hạn.</td></tr>
+<tr><td><b>[P2-3]</b></td><td><b>Đua dữ liệu trong <code>HalAbsentCache</code>:</b> <code>record</code> ghi dưới <code>synchronized</code> nhưng <code>shouldRead</code> đọc ngoài khoá với field thường; <code>nextTryAt</code> là <code>Long</code> ⇒ JMM cho phép đọc <b>rách</b>. Lúc viết chỉ có một luồng poll nên chưa lộ — bản vá [P1-1] tạo ra luồng thứ hai thật.</td><td><b>Vá:</b> <code>@Volatile</code> cả ba field + <code>computeIfAbsent</code> thay <code>getOrPut</code> (bản Kotlin là đọc-rồi-ghi, hai luồng dựng hai <code>Entry</code>).</td></tr>
+<tr><td><b>[P3-1]</b></td><td><code>KachiPerf.HAL_READ</code> tự mô tả là <i>"lượt đọc thật sự chạm HAL"</i> nhưng đếm ở <b>cửa</b> <code>BydHalGateway</code>, trước khi resolve device ⇒ off-car (và trong cửa sổ 30 s nhớ-hụt) nó đếm cả lượt không chạm HAL.</td><td><b>Giữ hành vi</b> (đổi là mọi số máy ảo thành 0 ⇒ bộ đếm vô dụng đúng nơi dùng nhiều nhất), <b>sửa KDoc</b> nói đúng nó đếm gì.</td></tr>
+<tr><td><b>[P3-2]</b></td><td>KDoc của <code>FAST_IDS</code> bị <b>mồ côi</b>: hai khối KDoc xếp liền nhau trong <code>CarDataDemand.kt</code> nên nó gắn nhầm vào <code>class Holder</code>, còn <code>FAST_IDS</code> thì không có tài liệu.</td><td>Chuyển về đúng chỗ.</td></tr>
+<tr><td><b>[thêm]</b></td><td>Bài test mới ở [P1-2] chỉ ra <code>w_board</code> chuyền <b>cả cụm</b> <code>CarStatus.Tyres</code> cho <code>TyreBoard.readings</code> (rồi đọc <code>status.alert</code>) trong khi bảng chỉ khai 4 mã ÁP SUẤT. Hôm nay phép xét ấy không dùng nhiệt ⇒ chưa sai; nhưng ranh giới đang được chép theo <i>thứ đang in ra</i> thay vì <i>thứ được chuyền đi</i>.</td><td>Thêm 4 mã <code>tyre_t_*</code> vào <code>CURATED["w_board"]</code> (+4 lượt đọc/nhịp chậm khi ô có trên màn) — chép theo thứ được chuyền đi.</td></tr>
+</table>
+
+<h4>Đã kiểm và KHÔNG có vấn đề</h4>
+<ul>
+<li><b>CLAUDE.md §6 (không đảo thứ tự đường đang chạy tốt)</b> — H2 giữ nguyên đường ĐẶT: <code>detectClusterDisplay()</code> vẫn chạy TƯƠI ngay trước <code>mover.castToCluster</code>, chỉ lượt ĐỌC mới dùng <code>liveDisplayId</code> đã xác minh. <code>CastStackParser.isAppOnDisplay(out, pkg, vd)</code> là <b>đúng thân hàm</b> mà <code>CastGeometryController.isAppOnDisplay</code> gọi ⇒ không có bản parse thứ hai. <code>REPIN_PROBE_MIN_INTERVAL_MS</code> vẫn <b>4 000</b> (OQ1 chưa đụng, đúng như owner chưa quyết). Nếu id cụm đổi giữa chừng, lượt đọc báo "escaped" ⇒ đường ĐẶT tự dò lại ⇒ tự chữa.</li>
+<li><b>Cổng nhịp NHANH tỉnh lại ≤10 s</b> — <code>delay(slowMs)</code> với <code>slowMs = 10 000</code>; <code>fastNeeded()</code> hỏi lại mỗi vòng. <code>FAST_IDS</code> ↔ <code>readFast</code> đã có bài canh cả hai chiều.</li>
+<li><b>Không có hộ tiêu thụ <code>CarStatus</code> nào ngoài màn chính</b> [ĐO grep]: chỉ <code>KachiHomeWiring</code> thu <code>carStatusRepository.status</code>; HUD/nav (<code>NavigationHudOwner</code>) và cast đi đường HAL riêng ⇒ cổng nhu cầu <b>không</b> bỏ đói overlay nào.</li>
+<li><b>Chỗ gọi hàm mới</b> (CLAUDE.md §8): <code>fastNeeded</code> · <code>mustFlushNow</code> · <code>dueLine</code> · <code>shouldRead</code>/<code>record</code> · <code>shouldPreload</code> · <code>withExtra</code> · <code>refreshNow</code> · <code>forgetAbsent</code> — mỗi hàm ít nhất một chỗ gọi ngoài định nghĩa. <code>coldCount</code> là công cụ chẩn đoán/test, KDoc đã nói rõ.</li>
+<li><b><code>SEVERITY_COL = 19</code></b> khớp đúng <code>logcat -v time</code> mà <code>startCapture</code> chạy (<code>09-16 09:01:53.708 W/…</code> ⇒ chỉ số 19).</li>
+<li><b>Danh tính + bí mật</b>: doc mới chỉ ghi <code>dangkhoi</code>; không IP xe, không VIN, không khoá.</li>
+</ul>
+
+<h4>Còn nợ (không vá ở pass này)</h4>
+<ul>
+<li><b>[P2] Đuôi log khi app chết đột ngột</b> — cửa sổ mất ≤2 s dòng D/I là <i>đã chấp nhận</i> ở §9, nhưng luồng <code>KachiLogCapture</code> chết theo tiến trình nên không có móc nào xả nốt bộ đệm. Thực tế nhẹ: dòng ngay trước một cú sập gần như luôn ở mức E (<code>AndroidRuntime</code>) ⇒ xả ngay. Ghi lại để không ai tưởng đã chặn hết.</li>
+<li><b>[P3] <code>KachiHomeActivity.kt</code> 532 dòng &gt; trần 500</b> — nợ CÓ TỪ TRƯỚC, +5 dòng ở vòng này. Không tách trong một vòng tối ưu hiệu năng (cùng lẽ OQ4).</li>
+</ul>
+
+<h4>Số sau review [ĐO 2026-09-16]</h4>
+<ul>
+<li><code>:core</code> <b>2 006</b> bài / <b>0</b> đỏ · <code>:app</code> <b>988</b> bài / <b>0</b> đỏ (đếm từ XML, không từ console).</li>
+<li>E2E máy ảo <code>voice-e2e.sh --only say</code>: <b>T1 69/70</b> — <b>không đổi</b>. Ca đỏ duy nhất là <code>t29</code> (<i>"chạy gói mở cửa + đèn đọc"</i> ra <code>Unknown</code>), có từ trước và không liên quan PERF. Bốn ca <code>Read</code> (t33–t36) trả đúng <i>"chưa đọc được"</i> off-car, độ trễ 357–361 ms — bản vá [P1-1] không thêm chi phí đo được.</li>
+<li>Cầu kiểm thử <code>sweep</code> trên máy ảo: <code>info_total=123</code> ⇒ đường đọc tường minh vẫn đọc đủ, đúng như §4.3 hứa.</li>
+</ul>
+
+</div></body>
+</html>

@@ -7,8 +7,86 @@ package com.byd.clusternav.launcher
  *
  * Map `id` → field [CarStatus] theo §2 handoff (id ↔ tên field gần khớp). Per-index (kính/lốp/đèn) suy từ hậu tố
  * id trong [HalBindingTable]. KHÔNG gate an toàn.
+ *
+ * ## H1 (PERF 2026-09-16) — [demand]: đọc thứ ĐANG HIỆN, giữ nguyên phần còn lại
+ * [demand] trả tập `id` mà màn hình thật sự bày ra ([CarDataDemand.of]); `null` = *"không tính được ⇒ đọc hết"*
+ * (mặc định, và là hành vi y hệt mọi bản trước 1.67). Datum ngoài tập ấy **KHÔNG được đọc** và **GIỮ giá trị cũ**
+ * của [CarStatus] — cố ý không đặt `null`, vì `null` ở đây nghĩa là *"không đọc được"* và sẽ biến ô đang hiện
+ * thành "—" ngay khi nó rời khỏi tập nhu cầu trong một nhịp giao thời.
+ *
+ * ⚠ Cổng CHỈ áp cho hai hàm nhịp ([readFast]/[readSlow]). Sáu method [CarDataPort] và mọi đường đọc tường minh
+ * (cầu `sweep`/`read`, màn kiểm-tra-từng-nút, câu hỏi bằng giọng) đi thẳng [HalBindingTable] nên không bị lọc —
+ * xem khối ⚠ trong KDoc [CarDataDemand].
  */
-class CarDataAdapter(private val table: HalBindingTable) : CarDataPort, CarStatusReader {
+class CarDataAdapter(
+    private val table: HalBindingTable,
+    private val demand: () -> Set<String>? = { null },
+    private val absent: HalAbsentCache = HalAbsentCache(),
+    private val clock: () -> Long = System::currentTimeMillis,
+) : CarDataPort, CarStatusReader {
+
+    /**
+     * Một lượt đọc có **hai** cổng. Chụp tập nhu cầu + mốc giờ MỘT lần cho cả nhịp (gọi [demand] 123 lần mỗi nhịp
+     * là đúng kiểu chi phí mà cổng này sinh ra để cắt), rồi mỗi field hỏi hai câu:
+     *  1. *màn có đang bày không* ([CarDataDemand]) — nếu không thì GIỮ giá trị cũ;
+     *  2. *xe này có không* ([HalAbsentCache]) — datum đã `null` liên tiếp thì giãn nhịp hỏi lại.
+     *
+     * Thứ tự QUAN TRỌNG: hỏi nhu cầu TRƯỚC. Một datum không hiện thì không được tính là "miss" — nếu không, cái
+     * không đọc lại tự nguội, rồi lúc người dùng kéo nó lên màn thì nó câm cho tới lượt thử lại.
+     */
+    private class Gate(
+        private val table: HalBindingTable,
+        private val want: Set<String>?,
+        private val absent: HalAbsentCache,
+        private val now: Long,
+    ) {
+        private fun wanted(id: String): Boolean {
+            val w = want ?: return true
+            if (id in w) return true
+            KachiPerf.add(KachiPerf.Counter.HAL_SKIP_OFFSCREEN)
+            return false
+        }
+
+        /**
+         * ⚠ Hai lối bỏ qua trả về HAI thứ khác nhau, có chủ ý:
+         *  • *không hiện* ⇒ trả [prev] — ta KHÔNG biết gì mới, mà cũng chưa kết luận gì; xoá đi thì lúc ô quay lại
+         *    màn hình nó nháy "—" một nhịp dù dữ liệu cũ vẫn còn đúng.
+         *  • *đang nguội* ⇒ trả `null` (= "—") — ta ĐÃ kết luận datum này đọc không ra. Trả [prev] ở đây là đóng
+         *    băng con số cuối cùng đọc được, tức ô hiện một giá trị CŨ mà trông như đang sống (đúng bệnh
+         *    "SurfaceView giữ khung hình cuối" mà `SlotLiveProbe` sinh ra để chữa, lần này bằng số).
+         */
+        private inline fun <T> read(id: String, prev: T?, body: () -> T?): T? {
+            if (!wanted(id)) return prev
+            if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); return null }
+            val v = body()
+            absent.record(id, v != null, now)
+            return v
+        }
+
+        fun int(id: String, prev: Int?): Int? = read(id, prev) { table.readInt(id) }
+        fun dbl(id: String, prev: Double?): Double? = read(id, prev) { table.readDouble(id) }
+        fun bool(id: String, prev: Boolean?): Boolean? = read(id, prev) { table.readBool(id) }
+        fun str(id: String, prev: String?): String? = read(id, prev) { table.readString(id) }
+        fun ints(id: String, prev: List<Int>?): List<Int>? = read(id, prev) { table.readIntList(id) }
+    }
+
+    private fun gate() = Gate(table, demand(), absent, clock())
+
+    /** Nhịp NHANH chỉ đáng chạy khi màn đang bày ít nhất một datum nhanh — xem [CarDataDemand.needsFast]. */
+    override fun fastNeeded(): Boolean = CarDataDemand.needsFast(demand())
+
+    /**
+     * [SOÁT P2-1 · 2026-09-16] Quên mọi kết luận *"xe này không có datum ấy"* ([HalAbsentCache.clear]).
+     *
+     * Vì sao phải có chỗ gọi, không để `clear()` nằm không: giãn nhịp chạm trần **10 phút**, nên một datum vắng
+     * lâu rồi mới có (ETA sạc lúc vừa cắm sạc, ghế/ECU lúc vừa nổ máy) có thể câm tới 10 phút — trong khi người
+     * dùng vừa mở màn chính lên đúng để xem nó.
+     *
+     * Gọi CÙNG chỗ với [CarDataDemand.Holder.clear] (màn rời tiền cảnh): lượt poll đầu sau khi màn quay lại vốn
+     * đã là một lượt **đọc hết** (nhu cầu `null`), nên gỡ kết luận cũ ở đúng đó **không tốn thêm một lượt đọc
+     * nào** — nó chỉ làm lượt đọc-hết ấy thật sự đọc hết.
+     */
+    fun forgetAbsent() = absent.clear()
 
     // ── 6 method CŨ (tương thích WorkspaceView/WidgetViews) ────────────────────────────────────────────
     override fun batteryPercent(): Int? = table.readInt("soc")
@@ -28,151 +106,160 @@ class CarDataAdapter(private val table: HalBindingTable) : CarDataPort, CarStatu
     override fun outsideTempC(): Int? = table.readInt("ext_temp")
 
     // ── NHỊP NHANH (~1s): tốc độ / động lực / công suất / cảnh báo ADAS ─────────────────────────────────
-    override fun readFast(prev: CarStatus): CarStatus = prev.copy(
-        drivetrain = CarStatus.Drivetrain(
-            speedKmh = table.readInt("speed"),
-            accelPct = table.readInt("accel_pct"),
-            brakePct = table.readInt("brake_pct"),
-            motorFrontRpm = table.readInt("motor_front_rpm"),
-            steeringDeg = table.readInt("steering_deg"),
-            slopeDeg = table.readInt("slope_deg"),
-            gear = table.readString("gear"),
-            opMode = table.readString("op_mode"),
-            energyMode = table.readString("energy_mode"),
-            motorRearRpm = table.readInt("motor_rear_rpm"),
-            motorFrontTorqueNm = table.readInt("motor_front_torque"),
-            engineRpm = table.readInt("engine_rpm"),
-            wheelSpeedKmh = table.readInt("wheel_speed"),
-            driftMode = table.readBool("drift_mode"),
-        ),
-        energy = prev.energy.copy(motorPowerKw = table.readInt("motor_power")),
-        safety = prev.safety.copy(
-            speedLimitWarning = table.readBool("speed_limit_warning"),
-            bsdLeftLevel = table.readInt("bsd_fl_alarm"),
-            bsdRightLevel = table.readInt("bsd_fr_alarm"),
-        ),
-    )
+    override fun readFast(prev: CarStatus): CarStatus {
+        val g = gate()
+        val d = prev.drivetrain
+        return prev.copy(
+            drivetrain = CarStatus.Drivetrain(
+                speedKmh = g.int("speed", d.speedKmh),
+                accelPct = g.int("accel_pct", d.accelPct),
+                brakePct = g.int("brake_pct", d.brakePct),
+                motorFrontRpm = g.int("motor_front_rpm", d.motorFrontRpm),
+                steeringDeg = g.int("steering_deg", d.steeringDeg),
+                slopeDeg = g.int("slope_deg", d.slopeDeg),
+                gear = g.str("gear", d.gear),
+                opMode = g.str("op_mode", d.opMode),
+                energyMode = g.str("energy_mode", d.energyMode),
+                motorRearRpm = g.int("motor_rear_rpm", d.motorRearRpm),
+                motorFrontTorqueNm = g.int("motor_front_torque", d.motorFrontTorqueNm),
+                engineRpm = g.int("engine_rpm", d.engineRpm),
+                wheelSpeedKmh = g.int("wheel_speed", d.wheelSpeedKmh),
+                driftMode = g.bool("drift_mode", d.driftMode),
+            ),
+            energy = prev.energy.copy(motorPowerKw = g.int("motor_power", prev.energy.motorPowerKw)),
+            safety = prev.safety.copy(
+                speedLimitWarning = g.bool("speed_limit_warning", prev.safety.speedLimitWarning),
+                bsdLeftLevel = g.int("bsd_fl_alarm", prev.safety.bsdLeftLevel),
+                bsdRightLevel = g.int("bsd_fr_alarm", prev.safety.bsdRightLevel),
+            ),
+        )
+    }
 
     // ── NHỊP CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · an toàn(bền) · danh tính ─────────
-    override fun readSlow(prev: CarStatus): CarStatus = prev.copy(
-        energy = prev.energy.copy(   // GIỮ motorPowerKw của nhịp nhanh
-            soc = table.readInt("soc"),
-            evRangeKm = table.readInt("ev_range_km"),
-            fuelRangeKm = table.readInt("fuel_range_km"),
-            odometerKm = table.readInt("odometer"),
-            isCharging = table.readBool("is_charging"),
-            chargePowerKw = table.readDouble("charge_power"),
-            chargingPct = table.readInt("charging_pct"),
-            chargingEtaMin = table.readInt("charging_eta_min"),
-            chargedKwh = table.readDouble("charging_capacity_kwh"),
-            battTempC = table.readInt("batt_temp"),
-            sohPct = table.readInt("soh_oem"),
-            targetSoc = table.readInt("target_soc"),
-            fuelPct = table.readInt("fuel_pct"),
-            evMileageKm = table.readInt("ev_mileage_km"),
-            tripKm = table.readDouble("trip_km"),
-            tripHours = table.readDouble("trip_hours"),
-            tripKwh = table.readDouble("trip_kwh"),
-            consumption50 = table.readDouble("consumption_50km"),
-            chargingEtaHour = table.readInt("charging_eta_hour"),
-            chargingState = table.readInt("charging_state"),
-            chargerWorkState = table.readInt("charger_work_state"),
-            battRangeBodyworkKm = table.readInt("batt_range_bodywork"),
-            cellTempHighC = table.readInt("cell_temp_high"),
-            cellTempLowC = table.readInt("cell_temp_low"),
-            cellTempAvgC = table.readInt("cell_temp_avg"),
-            cellVHigh = table.readDouble("cell_v_high"),
-            cellVLow = table.readDouble("cell_v_low"),
-        ),
-        climate = CarStatus.Climate(
-            pm25Level = table.readInt("pm25_level"),
-            pm25ValueUgm3 = table.readInt("pm25_value"),
-            pm25Online = table.readBool("pm25_online"),
-            cabinTempC = table.readInt("cabin_temp"),
-            outsideTempC = table.readInt("ext_temp"),
-            acOn = table.readBool("ac_on"),
-            fanLevel = table.readInt("ac_wind"),
-            recircOn = table.readBool("ac_cycle"),
-            anionOn = table.readBool("anion_state"),
-            setTempC = table.readInt("inside_temp"),
-            coolantTempC = table.readInt("coolant_temp"),
-            tempUnit = table.readString("temp_unit"),
-        ),
-        tyres = CarStatus.Tyres(
-            pFlKpa = table.readDouble("tyre_p_fl"),
-            pFrKpa = table.readDouble("tyre_p_fr"),
-            pRlKpa = table.readDouble("tyre_p_rl"),
-            pRrKpa = table.readDouble("tyre_p_rr"),
-            tFlC = table.readInt("tyre_t_fl"),
-            tFrC = table.readInt("tyre_t_fr"),
-            tRlC = table.readInt("tyre_t_rl"),
-            tRrC = table.readInt("tyre_t_rr"),
-        ),
-        body = CarStatus.Body(
-            windowLfPct = table.readInt("window_lf"),
-            windowRfPct = table.readInt("window_rf"),
-            windowLrPct = table.readInt("window_lr"),
-            windowRrPct = table.readInt("window_rr"),
-            doorLfOpen = table.readBool("door_lf"),
-            doorRfOpen = table.readBool("door_rf"),
-            doorLrOpen = table.readBool("door_lr"),
-            doorRrOpen = table.readBool("door_rr"),
-            tailgateOpen = table.readBool("tailgate_status"),
-            sunroofPct = table.readInt("sunroof_pos"),
-            sunshadePct = table.readInt("sunshade_pct"),
-            mirrorFolded = table.readBool("mirror_fold"),
-            powerLevel = table.readInt("power_level"),
-            vehicleType = table.readString("vehicle_type"),
-            tailgatePct = table.readInt("tailgate_position"),
-            sunroofOpen = table.readBool("sunroof_state"),
-            wiperOn = table.readBool("wiper_state"),
-            emergencyAlarm = table.readBool("emergency_alarm"),
-        ),
-        lights = CarStatus.Lights(
-            lowBeam = table.readBool("light_low_beam"),
-            highBeam = table.readBool("light_high_beam"),
-            frontFog = table.readBool("light_front_fog"),
-            drl = table.readBool("light_drl"),
-            headlightMode = table.readInt("headlight_feedback"),
-            ambientOn = table.readBool("ambient_enabled"),
-            ambientColorIndex = table.readInt("ambient_front_color"),
-            ambientBrightness = table.readInt("ambient_front_brightness"),
-            rearFog = table.readBool("light_rear_fog"),
-            leftTurn = table.readBool("light_left_turn"),
-            rightTurn = table.readBool("light_right_turn"),
-            sideLight = table.readBool("light_side"),
-            ambientRearColorIndex = table.readInt("ambient_rear_color"),
-            ambientRearBrightness = table.readInt("ambient_rear_brightness"),
-        ),
-        safety = prev.safety.copy(   // GIỮ cảnh báo ADAS (bsd/speedLimitWarning) của nhịp nhanh
-            seatbeltDriver = table.readBool("seatbelt_driver"),
-            seatbeltPassenger = table.readBool("seatbelt_passenger"),
-            childPresence = table.readBool("child_presence"),
-            radarZones = table.readIntList("radar_zones"),
-            espOn = table.readBool("esp_state"),
-            mcuStatus = table.readInt("mcu_status"),
-            volt12v = table.readDouble("volt_12v"),
-            omsDriver = table.readBool("oms_driver"),
-            omsPassenger = table.readBool("oms_passenger"),
-            lcaLeft = table.readInt("lca_left"),
-            lcaRight = table.readInt("lca_right"),
-            rctaLeft = table.readInt("rcta_left"),
-            rctaRight = table.readInt("rcta_right"),
-            dowLeft = table.readInt("dow_left"),
-            dowRight = table.readInt("dow_right"),
-            radarVolume = table.readInt("radar_volume"),
-            volt12vLevel = table.readInt("volt_12v_level"),
-        ),
-        identity = CarStatus.Identity(
-            vin = table.readString("vin"),
-            keyState = table.readString("key_bluetooth"),
-            engineCode = table.readString("engine_code"),
-            oilLevelPct = table.readInt("oil_level"),
-            gpsLat = table.readDouble("gps_lat"),
-            gpsLon = table.readDouble("gps_lon"),
-            engineCoolantLevel = table.readInt("engine_coolant_level"),
-            gpsElevation = table.readDouble("gps_elevation"),
-            gpsHeading = table.readDouble("gps_heading"),
-        ),
-    )
+    override fun readSlow(prev: CarStatus): CarStatus {
+        val g = gate()
+        val e = prev.energy; val c = prev.climate; val t = prev.tyres
+        val b = prev.body; val l = prev.lights; val s = prev.safety; val i = prev.identity
+        return prev.copy(
+            energy = e.copy(   // GIỮ motorPowerKw của nhịp nhanh
+                soc = g.int("soc", e.soc),
+                evRangeKm = g.int("ev_range_km", e.evRangeKm),
+                fuelRangeKm = g.int("fuel_range_km", e.fuelRangeKm),
+                odometerKm = g.int("odometer", e.odometerKm),
+                isCharging = g.bool("is_charging", e.isCharging),
+                chargePowerKw = g.dbl("charge_power", e.chargePowerKw),
+                chargingPct = g.int("charging_pct", e.chargingPct),
+                chargingEtaMin = g.int("charging_eta_min", e.chargingEtaMin),
+                chargedKwh = g.dbl("charging_capacity_kwh", e.chargedKwh),
+                battTempC = g.int("batt_temp", e.battTempC),
+                sohPct = g.int("soh_oem", e.sohPct),
+                targetSoc = g.int("target_soc", e.targetSoc),
+                fuelPct = g.int("fuel_pct", e.fuelPct),
+                evMileageKm = g.int("ev_mileage_km", e.evMileageKm),
+                tripKm = g.dbl("trip_km", e.tripKm),
+                tripHours = g.dbl("trip_hours", e.tripHours),
+                tripKwh = g.dbl("trip_kwh", e.tripKwh),
+                consumption50 = g.dbl("consumption_50km", e.consumption50),
+                chargingEtaHour = g.int("charging_eta_hour", e.chargingEtaHour),
+                chargingState = g.int("charging_state", e.chargingState),
+                chargerWorkState = g.int("charger_work_state", e.chargerWorkState),
+                battRangeBodyworkKm = g.int("batt_range_bodywork", e.battRangeBodyworkKm),
+                cellTempHighC = g.int("cell_temp_high", e.cellTempHighC),
+                cellTempLowC = g.int("cell_temp_low", e.cellTempLowC),
+                cellTempAvgC = g.int("cell_temp_avg", e.cellTempAvgC),
+                cellVHigh = g.dbl("cell_v_high", e.cellVHigh),
+                cellVLow = g.dbl("cell_v_low", e.cellVLow),
+            ),
+            climate = CarStatus.Climate(
+                pm25Level = g.int("pm25_level", c.pm25Level),
+                pm25ValueUgm3 = g.int("pm25_value", c.pm25ValueUgm3),
+                pm25Online = g.bool("pm25_online", c.pm25Online),
+                cabinTempC = g.int("cabin_temp", c.cabinTempC),
+                outsideTempC = g.int("ext_temp", c.outsideTempC),
+                acOn = g.bool("ac_on", c.acOn),
+                fanLevel = g.int("ac_wind", c.fanLevel),
+                recircOn = g.bool("ac_cycle", c.recircOn),
+                anionOn = g.bool("anion_state", c.anionOn),
+                setTempC = g.int("inside_temp", c.setTempC),
+                coolantTempC = g.int("coolant_temp", c.coolantTempC),
+                tempUnit = g.str("temp_unit", c.tempUnit),
+            ),
+            tyres = CarStatus.Tyres(
+                pFlKpa = g.dbl("tyre_p_fl", t.pFlKpa),
+                pFrKpa = g.dbl("tyre_p_fr", t.pFrKpa),
+                pRlKpa = g.dbl("tyre_p_rl", t.pRlKpa),
+                pRrKpa = g.dbl("tyre_p_rr", t.pRrKpa),
+                tFlC = g.int("tyre_t_fl", t.tFlC),
+                tFrC = g.int("tyre_t_fr", t.tFrC),
+                tRlC = g.int("tyre_t_rl", t.tRlC),
+                tRrC = g.int("tyre_t_rr", t.tRrC),
+            ),
+            body = CarStatus.Body(
+                windowLfPct = g.int("window_lf", b.windowLfPct),
+                windowRfPct = g.int("window_rf", b.windowRfPct),
+                windowLrPct = g.int("window_lr", b.windowLrPct),
+                windowRrPct = g.int("window_rr", b.windowRrPct),
+                doorLfOpen = g.bool("door_lf", b.doorLfOpen),
+                doorRfOpen = g.bool("door_rf", b.doorRfOpen),
+                doorLrOpen = g.bool("door_lr", b.doorLrOpen),
+                doorRrOpen = g.bool("door_rr", b.doorRrOpen),
+                tailgateOpen = g.bool("tailgate_status", b.tailgateOpen),
+                sunroofPct = g.int("sunroof_pos", b.sunroofPct),
+                sunshadePct = g.int("sunshade_pct", b.sunshadePct),
+                mirrorFolded = g.bool("mirror_fold", b.mirrorFolded),
+                powerLevel = g.int("power_level", b.powerLevel),
+                vehicleType = g.str("vehicle_type", b.vehicleType),
+                tailgatePct = g.int("tailgate_position", b.tailgatePct),
+                sunroofOpen = g.bool("sunroof_state", b.sunroofOpen),
+                wiperOn = g.bool("wiper_state", b.wiperOn),
+                emergencyAlarm = g.bool("emergency_alarm", b.emergencyAlarm),
+            ),
+            lights = CarStatus.Lights(
+                lowBeam = g.bool("light_low_beam", l.lowBeam),
+                highBeam = g.bool("light_high_beam", l.highBeam),
+                frontFog = g.bool("light_front_fog", l.frontFog),
+                drl = g.bool("light_drl", l.drl),
+                headlightMode = g.int("headlight_feedback", l.headlightMode),
+                ambientOn = g.bool("ambient_enabled", l.ambientOn),
+                ambientColorIndex = g.int("ambient_front_color", l.ambientColorIndex),
+                ambientBrightness = g.int("ambient_front_brightness", l.ambientBrightness),
+                rearFog = g.bool("light_rear_fog", l.rearFog),
+                leftTurn = g.bool("light_left_turn", l.leftTurn),
+                rightTurn = g.bool("light_right_turn", l.rightTurn),
+                sideLight = g.bool("light_side", l.sideLight),
+                ambientRearColorIndex = g.int("ambient_rear_color", l.ambientRearColorIndex),
+                ambientRearBrightness = g.int("ambient_rear_brightness", l.ambientRearBrightness),
+            ),
+            safety = s.copy(   // GIỮ cảnh báo ADAS (bsd/speedLimitWarning) của nhịp nhanh
+                seatbeltDriver = g.bool("seatbelt_driver", s.seatbeltDriver),
+                seatbeltPassenger = g.bool("seatbelt_passenger", s.seatbeltPassenger),
+                childPresence = g.bool("child_presence", s.childPresence),
+                radarZones = g.ints("radar_zones", s.radarZones),
+                espOn = g.bool("esp_state", s.espOn),
+                mcuStatus = g.int("mcu_status", s.mcuStatus),
+                volt12v = g.dbl("volt_12v", s.volt12v),
+                omsDriver = g.bool("oms_driver", s.omsDriver),
+                omsPassenger = g.bool("oms_passenger", s.omsPassenger),
+                lcaLeft = g.int("lca_left", s.lcaLeft),
+                lcaRight = g.int("lca_right", s.lcaRight),
+                rctaLeft = g.int("rcta_left", s.rctaLeft),
+                rctaRight = g.int("rcta_right", s.rctaRight),
+                dowLeft = g.int("dow_left", s.dowLeft),
+                dowRight = g.int("dow_right", s.dowRight),
+                radarVolume = g.int("radar_volume", s.radarVolume),
+                volt12vLevel = g.int("volt_12v_level", s.volt12vLevel),
+            ),
+            identity = CarStatus.Identity(
+                vin = g.str("vin", i.vin),
+                keyState = g.str("key_bluetooth", i.keyState),
+                engineCode = g.str("engine_code", i.engineCode),
+                oilLevelPct = g.int("oil_level", i.oilLevelPct),
+                gpsLat = g.dbl("gps_lat", i.gpsLat),
+                gpsLon = g.dbl("gps_lon", i.gpsLon),
+                engineCoolantLevel = g.int("engine_coolant_level", i.engineCoolantLevel),
+                gpsElevation = g.dbl("gps_elevation", i.gpsElevation),
+                gpsHeading = g.dbl("gps_heading", i.gpsHeading),
+            ),
+        )
+    }
 }

@@ -224,6 +224,18 @@ object VoiceEngine {
                     Log.i(TAG, "nạp sẵn: chưa có mô hình trên đĩa — bỏ qua")
                     return@runCatching
                 }
+                // H6 (PERF 2026-09-16) — hỏi RAM CÒN LẠI trước khi nạp thêm vài trăm MB. Quyết định thuần nằm ở
+                // [VoicePreloadPolicy]; ở đây chỉ đọc số của hệ thống và ghi lý do (không im lặng bỏ qua).
+                val mem = android.app.ActivityManager.MemoryInfo().also { mi ->
+                    (app.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager)
+                        ?.getMemoryInfo(mi)
+                }
+                val bytes = runCatching { VoiceModelStore.selected(app).totalBytes }.getOrDefault(0L)
+                if (!VoicePreloadPolicy.shouldPreload(mem.availMem, mem.lowMemory, bytes)) {
+                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${VoicePreloadPolicy.reason(mem.availMem, mem.lowMemory, bytes)}" +
+                        "; lần bấm mic đầu sẽ nạp như cũ")
+                    return@runCatching
+                }
                 val t0 = System.currentTimeMillis()
                 val ok = recognizer(app) != null
                 Log.i(TIMING_TAG, "nạp sẵn mô hình ${System.currentTimeMillis() - t0} ms (ok=$ok)")

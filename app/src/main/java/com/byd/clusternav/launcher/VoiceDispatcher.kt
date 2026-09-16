@@ -113,6 +113,17 @@ class VoiceDispatcher(
     private val onUi: (() -> Unit) -> Unit = { it() },
     /** Chạy một việc dài trên thread NỀN (gói lệnh) — tách ra để test/đo được, mặc định là một Thread. */
     private val background: (() -> Unit) -> Unit = { block -> Thread(block, "KachiVoice").start() },
+    /**
+     * [SOÁT P1-1 · 2026-09-16] Đọc **TƯƠI** một datum trước khi đọc số cho người dùng nghe; `null` = *"ảnh chụp
+     * hiện có đã tươi"* ⇒ dùng [state] như cũ.
+     *
+     * Vì sao phải có: từ 1.67 vòng poll chỉ đọc datum **đang hiện trên màn** (`CarDataDemand`) và **giữ giá trị
+     * cũ** cho phần còn lại. Câu hỏi bằng giọng thì hỏi được **mọi** datum, kể cả thứ không có trên màn — nên nếu
+     * chỉ đọc [state] thì Kachi sẽ đọc to một con số của lần cuối cái ô ấy còn trên màn, nghe như đang sống.
+     *
+     * Mặc định `{ null }` để mọi bài test (và mọi bề mặt chưa nối) giữ NGUYÊN hành vi cũ: đọc ảnh chụp.
+     */
+    private val freshCar: (String) -> CarStatus? = { null },
 ) {
 
     /**
@@ -332,7 +343,10 @@ class VoiceDispatcher(
 
     private fun runRead(i: VoiceIntent.Read) {
         val spec = TelemetryRegistry.byId(i.datumId)
-        val view = TelemetryReadout.of(i.datumId, state().carStatus)
+        // [SOÁT P1-1] Cổng hiệu năng H1 giữ giá trị CŨ cho datum không hiện trên màn ⇒ hỏi một lượt TƯƠI trước
+        // khi nói. Hụt/không cần ⇒ `null` ⇒ dùng ảnh chụp như bản 1.66. Xem KDoc [freshCar].
+        val car = runCatching { freshCar(i.datumId) }.getOrNull() ?: state().carStatus
+        val view = TelemetryReadout.of(i.datumId, car)
         val value = view?.displayWithUnit()
         say(
             when {

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trạng thái SỐNG + UX nút nhiều mức — Kachi</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file cho 1 feature. Thứ tự section CHUẨN:
+  Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Diagram = HTML visual (inline SVG / .layers / .flow) — CẤM mermaid/ascii.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+/* Nhãn mức bằng chứng (conversation-protocol.md P1) — dùng trong bảng, mỗi Ô một nhãn */
+.e{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;letter-spacing:.02em;white-space:nowrap}
+.e.do{background:rgba(26,127,55,.14);color:var(--ok)}
+.e.suy{background:rgba(0,113,227,.14);color:var(--accent)}
+.e.unk{background:rgba(191,95,0,.14);color:var(--warn)}
+@media(prefers-color-scheme:dark){.e.do{background:rgba(48,209,88,.16)}.e.suy{background:rgba(41,151,255,.16)}.e.unk{background:rgba(255,159,10,.16)}}
+/* ---- Diagram helpers: inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center;overflow-x:auto}
+.diagram svg{max-width:100%;height:auto}
+.diagram svg text{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Trạng thái SỐNG + UX nút nhiều mức</h1>
+<p class="muted">Slug: <code>kachi-live-state-ux</code> · Branch <code>feat/voice-hotword-phrases</code> · Owner <b>dangkhoi</b> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md §2 §3 §7 §8 §13 §16</code> + <code>.kiro/steering/{conversation-protocol,trace-den-tan-cung,documentation-and-backlog}.md</code>. Mọi ô dữ liệu trong spec này đều gắn <b>mức bằng chứng</b> <span class="e do">ĐO</span> / <span class="e suy">SUY</span> / <span class="e unk">CHƯA BIẾT</span> (P1).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo. Nguồn: yêu cầu owner cùng ngày (§2.1) — *"thông tin realtime… chỉnh gió lên 4 nhưng launcher vẫn hiện 3"*, *"mát ghế có mức 1, mức 2, off… đang không có liên tục nhấn để change"*, *"lấy gió ngoài / lấy gió trong nên là 1 nút"*, *"mình đang làm data, infor, và action thô, chưa UX cho người dùng"*. Bằng chứng HAL trích từ <code>framework.jar</code> DL3 kéo về 2026-09-16 (fw-dl3).</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Yêu cầu owner (nguyên văn, 2026-09-16)</h3>
+<div class="card">
+<p style="margin:0">“còn 1 cái chưa hoàn thiện, là thông tin realtime, ví dụ chỉnh gió ở setting lên 4, nhưng trên launcher vẫn hiện là 3, chỉnh nhiệt độ lên 25 … vẫn là 22 … có những cấu hình có 2 mode, như mát ghế có mức 1, mức 2, off, thì đang không có liên tục nhấn để change các mode này? các action liên đới cũng chưa gom lại cho chuẩn, như lấy gió ngoài, lấy gió trong, nên là 1 nút và có hiển thị thông tin đang là gió ngoài hay trong, khi tap thì chuyển trong/ngoài … mình đang làm data, infor, và action thô, chưa UX cho người dùng”</p>
+</div>
+
+<h3>2.2 Vì sao launcher hiện SỐ SAI — cơ chế, không phải quy kết</h3>
+<table>
+<tr><th>Bằng chứng</th><th>Nội dung</th></tr>
+<tr><td><span class="e do">ĐO</span> <code>ControlTileState.kt:20-35</code></td><td>Trạng thái nút là <b>lạc quan trong RAM</b>: ba <code>ConcurrentHashMap</code> (<code>on</code>/<code>values</code>/<code>selIndex</code>) khởi tạo từ <code>ControlRegistry.ALL</code> và chỉ đổi khi <b>chính Kachi</b> bấm. KDoc của chính lớp đã ghi: <i>“Đây KHÔNG phải trạng thái đọc từ xe”</i>.</td></tr>
+<tr><td><span class="e do">ĐO</span> <code>CarDataDemand.kt:104</code></td><td>Vòng poll <b>cố ý bỏ qua</b> mọi mã nút: <code>if (ControlRegistry.byId(id) != null || ActionMacros.byId(id) != null) return true</code> — kèm chú thích <i>“trạng thái bật/tắt của ô nút nằm trong RAM của chính nó, không đọc lại từ HAL”</i>. Nút <b>không bao giờ</b> được làm tươi.</td></tr>
+<tr><td><span class="e do">ĐO</span> grep toàn repo</td><td><code>grep -rn "registerListener" app core --include="*.kt"</code> → <b>0 kết quả</b>. Kachi chưa từng nghe một sự kiện HAL nào; mọi thứ hoặc là poll hoặc là lạc quan.</td></tr>
+<tr><td><span class="e do">ĐO</span> <code>CarControlAdapter.kt:42-44</code></td><td><code>readStep</code> (R5, bản 1.66) <b>chỉ</b> phục vụ <code>ControlKind.STEP</code>: <code>if (kind != STEP) null</code>. TOGGLE/SELECT/COVER không có đường đọc lại.</td></tr>
+<tr><td><span class="e do">ĐO</span> <code>HalBindingTable.kt:37-52, 113-115</code></td><td><code>readRaw(id)</code> của một <b>nút</b> tra <code>ControlDef.bindingKey</code> — mà key đó là đường <b>GHI</b>. Ví dụ <code>fan</code> mang <code>"501219340"</code> = <code>AC_WIND_LEVEL_<b>SET</b></code>, <code>temp</code> mang <code>"BYDAutoAcDevice.<b>set</b>AcTemperature"</code>. Tức <code>readStep</code> hiện đọc một id <code>_SET</code> hoặc gọi <b>setter như getter</b>.</td></tr>
+<tr><td><span class="e suy">SUY</span></td><td>⇒ Ngay cả R5 (đọc lại sau ghi, 1.66) cũng chỉ đúng ở id nào mà đường <code>_SET</code> tình cờ đọc được. Cần một <b>khoá ĐỌC riêng</b> cho mỗi nút (§4.3). Chốt bằng V-oncar-2.</td></tr>
+</table>
+<p>⇒ Triệu chứng owner thấy (“chỉnh gió ở setting lên 4, launcher vẫn 3”) <b>không phải bug hiển thị</b>: launcher đang vẽ đúng thứ nó có — một con số do chính nó bịa ra từ lần bấm gần nhất, hoặc giá trị mặc định trong registry (<code>fan value=4</code>, <code>temp value=22</code> — <span class="e do">ĐO</span> <code>ControlRegistry.kt:201-208</code>, đúng hai con số owner nêu).</p>
+
+<h3>2.3 Cổng / phụ thuộc</h3>
+<div class="card">
+<b>C1 — dùng CHUNG bộ lập lịch của spec PERF, không mở poller thứ hai.</b> Cùng phiên 2026-09-16 có một nhánh việc hiệu năng đang sửa vòng đọc (<code>core/.../CarDataDemand.kt</code> + <code>KachiPerf.kt</code>, chưa commit tại thời điểm viết — <span class="e do">ĐO</span> <code>git status</code>). Số nền: <b>≈510 lượt đọc HAL/phút (≈8,5/giây)</b> trong 47 phút lăn bánh <span class="e suy">SUY</span> (số của agent PERF trích trong KDoc <code>CarDataDemand.kt:6-11</code>; theo P1.2 chưa tự đo lại nên chưa được lên <span class="e do">ĐO</span>). Spec này <b>chỉ được làm giảm</b> con số đó, không được tăng.
+<br><br><b>C2 — không đụng logic cast</b> (<code>SimpleCastRuntime</code>) và không đổi định dạng lưu prefs/SlotCodec (R-nf3).
+<br><br><b>C3 — mọi khẳng định về framework phải trích <code>file:line</code> của fw-dl3</b> (CLAUDE.md §3). Đã làm cho 16 nút ở §4.6; ô nào chưa có nguồn thì để <span class="e unk">CHƯA BIẾT</span> + một lệnh chốt, <b>không đoán</b>.
+</div>
+
+<h2>3. Requirements</h2>
+
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Kho trạng thái SỐNG (<code>LiveCarState</code>, <code>:core</code>).</b> Một kho giá trị THẬT theo <code>id</code> (nút + datum). Nguồn cập nhật, theo thứ tự ưu tiên:
+  <br>(a) <b>sự kiện HAL</b> — listener đăng ký theo feature của các <code>id</code> đang hiển thị;
+  <br>(b) <b>đọc lại sau khi ghi</b> — mở rộng R5 (hiện chỉ STEP) sang TOGGLE/SELECT/CYCLE/COVER;
+  <br>(c) <b>poll nhịp thấp</b> của bộ lập lịch PERF, chỉ cho <code>id</code> đang hiển thị;
+  <br>(d) <b>đọc một lượt</b> khi màn hình hiện lại (<code>onStart</code>).
+  <br><b>AC:</b> nút · chip · widget · voice đều vẽ từ kho này, không đọc thẳng HAL. Giá trị lạc quan chỉ được hiện ở trạng thái “đang gửi” ≤ <code>PENDING_MS</code> (§4.7) rồi nhường cho giá trị thật; lệch ⇒ hiện <b>giá trị thật</b> + ghi 1 dòng log <code>live: &lt;id&gt; muốn=&lt;a&gt; xe=&lt;b&gt;</code>.</li>
+
+<li><b>R2 — Nút nhiều mức (<code>ControlKind.CYCLE</code>).</b> Nhãn hiện đúng mức đang có (“Tắt · Mức 1 · Mức 2 · Mức 3”); <b>tap</b> = mức kế tiếp tính <b>từ mức THẬT</b> (đọc kho R1 trước khi ghi, không phải từ chỉ số RAM); <b>giữ</b> = về mức tắt. Áp cho ghế mát / ghế sưởi (seatID lái mặc định), sưởi vô-lăng nếu có mức, mức lọc… — <b>sinh từ registry</b>, không <code>if (id == "seatc")</code> (CLAUDE.md §7).
+  <br><b>AC:</b> bấm 4 lần trên nút 3 mức phải quay về Tắt; nếu kho chưa có giá trị thật thì nút hiện ⚠ “chưa đọc được trạng thái” và tap bắt đầu từ mức 1 (không giả vờ biết mức hiện tại).</li>
+
+<li><b>R3 — Nút hai chế độ gộp (TOGGLE có <code>stateLabels</code>).</b> “Gió trong / Gió ngoài” là <b>một nút</b>, nhãn hiện chế độ <b>đang có</b> đọc từ <code>getAcCycleMode()</code>, tap = đổi chiều. Cùng khuôn cho: đèn đọc (Tắt/Bật/Theo cửa ⇒ 3 trạng thái ⇒ CYCLE), sấy kính, khoá/mở khoá (chỉ khi có đường ghi — hiện <code>tier=NEEDS_CAR</code>).
+  <br><b>AC:</b> nhãn nút <b>không bao giờ</b> hứa một chế độ mà kho R1 không xác nhận; chưa đọc được ⇒ nhãn trung tính (“Lấy gió”) + ⚠.</li>
+
+<li><b>R4 — Voice dùng CÙNG kho.</b> Câu trả lời đọc số thật (“gió đang mức 3”); “bật ghế mát” ⇒ mức 1; “ghế mát mức 2” ⇒ đặt thẳng mức 2. <b>AC:</b> không còn đường nào trong <code>VoiceDispatcher</code> dựng câu từ con số vừa gửi khi kho có giá trị thật.</li>
+
+<li><b>R5 — Thành thật khi không đọc được.</b> HAL không có sự kiện/getter cho một <code>id</code> ⇒ nút ghi rõ <b>“chưa đọc được trạng thái”</b> (không đoán, không hiện số lạc quan quá <code>PENDING_MS</code>), và catalog khả năng gắn status ⚠ cho mã đó.</li>
+
+<li><b>R6 — Không thêm tải.</b> Listener đăng ký/huỷ theo <b>tập id đang hiển thị</b> + vòng đời màn (<code>onStart</code>/<code>onStop</code>). Số lệnh HAL/phút sau thay đổi <b>≤ ngân sách của spec PERF</b>, đo bằng <code>KachiPerf.dueLine</code>.</li>
+</ul>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 — Thuần &amp; test off-device.</b> <code>LiveCarState</code> + luật CYCLE + map <code>eventType→id</code> nằm ở <code>:core</code>, không import Android ⇒ test JVM. Phần chạm framework (Proxy listener) ở <code>:app</code>, mỏng nhất có thể.</li>
+<li><b>R-nf2 — Degrade-safe.</b> Off-car / máy ảo: không có device ⇒ không đăng ký được ⇒ kho rỗng ⇒ UI “—” / ⚠, <b>không crash, không ném ra ngoài</b> (cùng lệ <code>BydHalGateway</code>).</li>
+<li><b>R-nf3 — Tương thích lưu trữ.</b> KHÔNG đổi định dạng prefs/SlotCodec: <code>DockConfig.enabled</code> vẫn là danh sách mã trần; CYCLE là kiểu trong registry, không phải một trường lưu mới. Cấu hình người dùng đã lưu đọc lên nguyên vẹn.</li>
+<li><b>R-nf4 — An toàn luồng.</b> Sự kiện HAL tới trên luồng binder; UI đọc trên luồng chính ⇒ kho phải an toàn đa luồng (<code>StateFlow</code> + <code>update</code> nguyên tử, đúng khuôn <code>CarStatusRepository.kt:57</code>).</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Luồng dữ liệu — bốn nguồn, một kho, ba bề mặt</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 400" role="img" aria-label="Bốn nguồn cập nhật đổ vào LiveCarState rồi ra ba bề mặt hiển thị">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 z" fill="var(--accent)"/>
+    </marker>
+  </defs>
+  <!-- cột nguồn -->
+  <text x="20" y="24" font-size="12" font-weight="700" fill="var(--muted)">NGUỒN (ưu tiên a → d)</text>
+  <g>
+    <rect x="20" y="36" width="230" height="56" rx="10" fill="rgba(0,113,227,.13)" stroke="var(--line)"/>
+    <text x="34" y="58" font-size="13.5" font-weight="700" fill="var(--fg)">(a) Sự kiện HAL</text>
+    <text x="34" y="78" font-size="11.5" fill="var(--muted)">IBYDAutoListener qua Proxy · tức thì</text>
+  </g>
+  <g>
+    <rect x="20" y="102" width="230" height="56" rx="10" fill="rgba(0,113,227,.13)" stroke="var(--line)"/>
+    <text x="34" y="124" font-size="13.5" font-weight="700" fill="var(--fg)">(b) Đọc lại sau khi ghi</text>
+    <text x="34" y="144" font-size="11.5" fill="var(--muted)">mở rộng R5 · mọi ControlKind</text>
+  </g>
+  <g>
+    <rect x="20" y="168" width="230" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="34" y="190" font-size="13.5" font-weight="700" fill="var(--fg)">(c) Poll nhịp thấp</text>
+    <text x="34" y="210" font-size="11.5" fill="var(--muted)">bộ lập lịch PERF · chỉ id đang hiện</text>
+  </g>
+  <g>
+    <rect x="20" y="234" width="230" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="34" y="256" font-size="13.5" font-weight="700" fill="var(--fg)">(d) Đọc một lượt</text>
+    <text x="34" y="276" font-size="11.5" fill="var(--muted)">khi màn hiện lại (onStart)</text>
+  </g>
+  <!-- mũi tên vào kho -->
+  <path d="M250,64 C300,64 300,178 330,178" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M250,130 C300,130 300,182 330,182" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M250,196 C300,196 300,190 330,190" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M250,262 C300,262 300,196 330,196" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <!-- kho -->
+  <rect x="336" y="110" width="180" height="150" rx="14" fill="rgba(0,113,227,.18)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="426" y="146" font-size="15" font-weight="700" text-anchor="middle" fill="var(--fg)">LiveCarState</text>
+  <text x="426" y="168" font-size="11.5" text-anchor="middle" fill="var(--muted)">:core · thuần · StateFlow</text>
+  <text x="426" y="192" font-size="11.5" text-anchor="middle" fill="var(--muted)">id → (giá trị, lúc, nguồn,</text>
+  <text x="426" y="208" font-size="11.5" text-anchor="middle" fill="var(--muted)">đang-gửi?)</text>
+  <text x="426" y="234" font-size="11.5" text-anchor="middle" fill="var(--muted)">không có giá trị ⇒ ⚠ “chưa đọc được”</text>
+  <!-- ra 3 bề mặt -->
+  <path d="M516,140 C560,140 560,70 600,70" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M516,185 C560,185 560,185 600,185" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M516,230 C560,230 560,300 600,300" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="606" y="24" font-size="12" font-weight="700" fill="var(--muted)">BỀ MẶT</text>
+  <g>
+    <rect x="606" y="42" width="232" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="620" y="64" font-size="13.5" font-weight="700" fill="var(--fg)">Ô nút / thanh nút</text>
+    <text x="620" y="84" font-size="11.5" fill="var(--muted)">TOGGLE 2 chế độ · CYCLE nhiều mức</text>
+  </g>
+  <g>
+    <rect x="606" y="157" width="232" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="620" y="179" font-size="13.5" font-weight="700" fill="var(--fg)">Chip / widget đọc</text>
+    <text x="620" y="199" font-size="11.5" fill="var(--muted)">cùng một con số, không hai bản</text>
+  </g>
+  <g>
+    <rect x="606" y="272" width="232" height="56" rx="10" fill="var(--bg)" stroke="var(--line)"/>
+    <text x="620" y="294" font-size="13.5" font-weight="700" fill="var(--fg)">Giọng nói</text>
+    <text x="620" y="314" font-size="11.5" fill="var(--muted)">“gió đang mức 3” — số THẬT</text>
+  </g>
+  <text x="20" y="330" font-size="11.5" fill="var(--muted)">Nguồn (a) và (b) đẩy; (c) và (d) kéo. Cả bốn ghi vào CÙNG một kho ⇒ không có bề mặt nào tự giữ bản sao riêng.</text>
+  <text x="20" y="352" font-size="11.5" fill="var(--muted)">Ưu tiên khi trùng: giá trị MỚI HƠN thắng; “đang gửi” chỉ thắng trong cửa sổ PENDING_MS (§4.7).</text>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (tái dùng)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới của spec này</span>
+</div>
+
+<h3>4.2 Kho <code>LiveCarState</code> (<code>:core</code>)</h3>
+<pre>// core/src/main/kotlin/com/byd/clusternav/launcher/LiveCarState.kt
+enum class LiveSrc { EVENT, READBACK, POLL, RESUME }
+
+/** Một giá trị THẬT của xe. `value == null` ⇒ CHƯA ĐỌC ĐƯỢC (khác với "bằng 0"). */
+data class LiveValue(
+    val value: Int?,
+    val atMs: Long,
+    val src: LiveSrc,
+)
+
+class LiveCarState(private val clock: () -> Long) {
+    private val _flow = MutableStateFlow(mapOf&lt;String, LiveValue&gt;())
+    val flow: StateFlow&lt;Map&lt;String, LiveValue&gt;&gt; = _flow.asStateFlow()
+
+    /** Ghi giá trị thật. Giá trị CŨ HƠN cái đang có thì bỏ (sự kiện tới sau lượt poll chậm). */
+    fun put(id: String, value: Int?, src: LiveSrc) { … }
+
+    /** Đánh dấu "đang gửi" — chỉ để VẼ, không phải sự thật. Tự hết hạn sau PENDING_MS. */
+    fun markPending(id: String, wanted: Int) { … }
+
+    /** Giá trị để VẼ: đang-gửi còn hạn ⇒ wanted; ngược lại ⇒ giá trị thật; chưa có ⇒ null (⚠). */
+    fun shown(id: String): Int? = …
+
+    /** true khi đang trong cửa sổ "đang gửi" (ô vẽ mờ + chấm nhịp). */
+    fun isPending(id: String): Boolean = …
+}</pre>
+<p><b>Vì sao <code>value: Int?</code> chứ không phải <code>Int</code> mặc định 0</b>: đúng bài học đã ghi ở <code>HalBindingTable.readRaw</code> (<span class="e do">ĐO</span> <code>HalBindingTable.kt:34-35</code>) — một con số vô nghĩa hiện lên ô còn tệ hơn một dấu “—”, vì người lái tin nó. <code>null</code> = “chưa đọc được”, và UI phải nói đúng chữ đó (R5).</p>
+<p><b>Vì sao không nhét vào <code>CarStatus</code> đang có</b>: <code>CarStatus</code> là <b>bản ghi phẳng có tên trường</b> cho datum ĐỌC, còn kho này phải tra theo <b>mã chuỗi</b> (mọi nút + mọi datum, sinh từ registry). Nhét vào nhau thì mỗi nút mới lại phải thêm một trường — đúng kiểu case-by-case mà CLAUDE.md §7 cấm. Hai lớp sống cạnh nhau; <code>CarDataAdapter</code> ghi vào cả hai trong cùng một lượt đọc (không đọc hai lần).</p>
+
+<h3>4.3 Khoá ĐỌC riêng cho nút — <code>ControlDef.readKey</code></h3>
+<p>Gốc bệnh ở §2.2 (đọc bằng khoá GHI) được chữa bằng <b>một trường dữ liệu</b>, không phải một nhánh rẽ theo tên:</p>
+<pre>data class ControlDef(
+    …,
+    /** Mã DATUM đọc trạng thái thật của nút này (trỏ vào TelemetryRegistry). "" ⇒ chưa có đường đọc ⇒ ⚠. */
+    val readKey: String = "",
+    /** Tham số của getter khi cần (seatID ghế, area kính/sấy). null ⇒ getter 0-arg. */
+    val readArg: Int? = null,
+)</pre>
+<p>Phần lớn đường đọc <b>đã tồn tại</b> trong <code>TelemetryRegistry</code> (<span class="e do">ĐO</span>): <code>fan → ac_wind</code> (<code>TelemetryRegistry.kt:248</code>), <code>temp → inside_temp</code> (<code>:242</code>), <code>recirc → ac_cycle</code> (<code>:250</code>), <code>win_lf → window_lf</code> (<code>:274</code>). Mã nào chưa có datum thì <b>thêm datum</b> (một dòng <code>t(...)</code>), để getter của xe chỉ được khai <b>một chỗ duy nhất</b> trong cả dự án — không mọc một bảng getter thứ hai cho nút.</p>
+
+<h3>4.4 Nghe sự kiện HAL — <code>BydHalEvents</code> (<code>:app</code>, <code>java.lang.reflect.Proxy</code>)</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node" style="background:rgba(0,113,227,.13)"><b>LiveCarState</b><span>:core · thuần</span></div>
+    <div class="node" style="background:rgba(0,113,227,.13)"><b>HalEventMap</b><span>:core · eventType → id · thuần, test được</span></div>
+  </div>
+  <div class="layer">
+    <div class="node" style="background:rgba(0,113,227,.13)"><b>BydHalEvents</b><span>:app · Proxy cài IBYDAutoListener · đăng ký/huỷ theo màn</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>BydHal / BydFeatureIds</b><span>:app · reflection SẴN CÓ, không mở đường mới</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>AbsBYDAutoDevice.registerListener(l, int[] featureIDs)</b><span>framework xe · qua checkDeviceFeatures → enableDevice</span></div>
+  </div>
+</div>
+<p><b>Vì sao Proxy</b>: <code>android.hardware.IBYDAutoListener</code> nằm trong <code>framework.jar</code> của xe, <b>không có trong SDK</b> ⇒ không <code>implements</code> được lúc biên dịch. Interface chỉ có 3 method (<span class="e do">ĐO</span> <code>IBYDAutoListener.java:6-12</code>) nên <code>Proxy.newProxyInstance</code> là đường sạch, cùng họ reflection mà <code>BydHal</code> đang dùng:</p>
+<pre>// :app — BydHalEvents.kt (rút gọn)
+val iface = Class.forName("android.hardware.IBYDAutoListener")
+val listener = java.lang.reflect.Proxy.newProxyInstance(iface.classLoader, arrayOf(iface)) { _, m, args -&gt;
+    when (m.name) {
+        "onDataChanged" -&gt; {                       // args[0] : IBYDAutoEvent
+            val ev = args!![0]
+            val type = ev.javaClass.getMethod("getEventType").invoke(ev) as Int
+            val value = ev.javaClass.getMethod("getValue").invoke(ev) as Int
+            onEvent(type, value)                    // → HalEventMap → LiveCarState.put(..., EVENT)
+        }
+        "onError" -&gt; KachiLog.w("hal event lỗi: ${args?.getOrNull(1)}")
+        else -&gt; Unit                                // onDataEventChanged: chưa dùng
+    }
+    null
+}
+device.javaClass.getMethod("registerListener", iface, IntArray::class.java)
+      .invoke(device, listener, readFeatureIds)     // id ĐỌC, KHÔNG phải id _SET</pre>
+
+<div class="card">
+<b>⚠ Hai cạm bẫy đã đọc ra từ source, phải xử ngay từ bản đầu:</b>
+<ul>
+<li><span class="e do">ĐO</span> <code>AbsBYDAutoDevice.java:130-145</code> — <code>registerListener(l, featureIDs)</code> mở đầu bằng <code>if (checkDeviceFeatures(getDevicetype(), featureIDs) &amp;&amp; l != null) { … }</code> và <b>KHÔNG có nhánh else, không ném</b>. Đăng ký nhầm device ⇒ <b>im lặng không đăng ký</b>. ⇒ Không được coi “gọi xong không lỗi” là “đã nghe được”; bằng chứng duy nhất là <b>có sự kiện tới</b> (V-oncar-1). Device đích lấy từ <code>BYDAutoDeviceFeaturesMap</code> qua <code>BydFeatureIds.deviceFqnForFeature</code> (<span class="e do">ĐO</span> <code>BydFeatureIds.kt:69</code>), <b>không</b> đoán theo <code>Domain</code> — đúng bài học đã ghi trong <code>ControlRegistry.kt:62-70</code>.</li>
+<li><span class="e do">ĐO</span> <code>BYDAutoFeatureIds.java:5103-5109, 5300-5309</code> — id feature <b>tính lúc chạy</b> theo <code>isCanFD</code>/<code>isToyota</code> (<code>AC_CYCLE_MODE</code> = 1077936148 hoặc 801112084 hoặc 330301460). ⇒ Bảng <code>eventType→id</code> phải dựng bằng <b>tên hằng</b> qua <code>BydFeatureIds.idByName</code> lúc chạy, cấm hardcode số.</li>
+<li><span class="e do">ĐO</span> <code>AbsBYDAutoAcListener.java:346-348, 370-372</code> — sự kiện mang id <b>ĐỌC</b> (<code>AC_WIND_LEVEL</code>, <code>AC_CYCLE_MODE</code>), không phải id <code>_SET</code>. ⇒ Tập <code>featureIDs</code> đăng ký = tập id ĐỌC của <code>readKey</code> (§4.3), <b>không</b> tập <code>bindingKey</code>.</li>
+</ul>
+</div>
+
+<h3>4.5 Bảng nút → getter trạng thái → sự kiện → kiểu UX mới</h3>
+<p class="muted">Nguồn fw-dl3: <code>&lt;scratchpad&gt;/car-0916/framework/fw-dl3/sources/android/hardware/bydauto/…</code> (jadx từ <code>framework.jar</code> của xe, kéo 2026-09-16). <b>Mỗi ô một nhãn mức bằng chứng.</b></p>
+<table>
+<tr><th>Nút (id)</th><th>Getter trạng thái</th><th>Sự kiện (callback ⇐ feature)</th><th>Kiểu UX mới</th></tr>
+
+<tr><td><code>fan</code><br><span class="muted">Gió, STEP 0..7</span></td>
+<td><span class="e do">ĐO</span> <code>getAcWindLevel()</code> — <code>ac/BYDAutoAcDevice.java:574</code>; datum <code>ac_wind</code> đã có</td>
+<td><span class="e do">ĐO</span> <code>onAcWindLevelChanged(level)</code> ⇐ <code>AC_WIND_LEVEL</code> — <code>AbsBYDAutoAcListener.java:346-348</code></td>
+<td>STEP giữ nguyên, số vẽ từ kho R1 (chữa đúng ca owner nêu)</td></tr>
+
+<tr><td><code>temp</code><br><span class="muted">Nhiệt độ, STEP 17..33</span></td>
+<td><span class="e do">ĐO</span> <code>getTemprature(int area)</code> — <code>BYDAutoAcDevice.java:677</code>; datum <code>inside_temp</code> đã có<br><span class="e unk">CHƯA BIẾT</span> <code>area</code> nào là ghế lái</td>
+<td><span class="e do">ĐO</span> <code>onTemperatureChanged(area, value)</code> ⇐ nhiều id theo vùng — <code>AbsBYDAutoAcListener.java:299-336</code></td>
+<td>STEP + đọc thật; hiện ⚠ tới khi chốt được <code>area</code></td></tr>
+
+<tr><td><code>recirc</code><br><span class="muted">“Lấy gió trong”, TOGGLE</span></td>
+<td><span class="e do">ĐO</span> <code>getAcCycleMode()</code> — <code>BYDAutoAcDevice.java:377</code>; <b>INLOOP=1 / OUTLOOP=0</b> — <code>:33-34</code>; datum <code>ac_cycle</code> đã có</td>
+<td><span class="e do">ĐO</span> <code>onAcCycleModeChanged(mode)</code> ⇐ <code>AC_CYCLE_MODE</code> — <code>AbsBYDAutoAcListener.java:370-372</code></td>
+<td><b>R3</b> — TOGGLE hai nhãn: <b>“Gió trong” ⇄ “Gió ngoài”</b>, tap đổi chiều</td></tr>
+
+<tr><td><code>seatc</code><br><span class="muted">Ghế mát, TOGGLE</span></td>
+<td><span class="e do">ĐO</span> <code>getSeatVentilatingState(seatID)</code> — <code>setting/BYDAutoSettingDevice.java:1939</code>; <code>seatID=1</code> → <code>SET_DRIVER_SEAT_VENTILATING_STATE</code> (<code>:1941-1943</code>)<br><span class="e do">ĐO</span> enum: <code>OFF=1 · LOW=2 · HIGH=3</code> (<code>:326-332</code>)</td>
+<td><span class="e do">ĐO</span> <code>onSeatVentilatingStateChanged(seatID, state)</code> — <code>AbsBYDAutoSettingListener.java:241</code></td>
+<td><b>R2</b> — CYCLE “Tắt · Mức 1 · Mức 2”, giữ = tắt</td></tr>
+
+<tr><td><code>seath</code><br><span class="muted">Ghế sưởi, TOGGLE</span></td>
+<td><span class="e do">ĐO</span> <code>getSeatHeatingState(seatID)</code> — <code>BYDAutoSettingDevice.java:1893</code><br><span class="e do">ĐO</span> hằng <code>LEVEL1_OFF=1 · LEVEL1_ON=2 · LEVEL3=4 · LEVEL3_ON=6</code> (<code>:318-323</code>)</td>
+<td><span class="e do">ĐO</span> <code>onSeatHeatingStateChanged(seatID, state)</code> — <code>AbsBYDAutoSettingListener.java:238</code>, phân phát <code>:789-798</code></td>
+<td><b>R2</b> — CYCLE; số mức thật của đời xe chốt bằng <code>featmap</code> (OQ3)</td></tr>
+
+<tr><td><code>readl</code><br><span class="muted">Đèn đọc, TOGGLE</span></td>
+<td><span class="e do">ĐO</span> <code>getInsideLightDoorState()</code> — <code>BYDAutoSettingDevice.java:2641</code>; <code>INVALID=0 · OPEN=1 · CLOSE=2</code> (<code>:230-232</code>) — đây là cờ <b>“theo cửa”</b><br><span class="e unk">CHƯA BIẾT</span> getter cho <b>trạng thái bật/tắt</b> của chính đèn (chỉ thấy đường GHI <code>SET_INSIDE_LIGHT_STATE_SET</code>, <code>:2661-2671</code>)</td>
+<td><span class="e do">ĐO</span> <code>onInsideLightDoorStateChanged(state)</code> — <code>AbsBYDAutoSettingListener.java:304</code></td>
+<td>CYCLE 3 trạng thái (Tắt · Bật · Theo cửa) — <b>chỉ sau khi</b> chốt được getter bật/tắt; trước đó ⚠ R5</td></tr>
+
+<tr><td><code>defrost</code><br><span class="muted">Sấy kính trước</span></td>
+<td><span class="e do">ĐO</span> <code>getAcDefrostState(area)</code> — <code>BYDAutoAcDevice.java:449-456</code>; <code>AREA_FRONT=1 · AREA_REAR=2</code>, <code>STATE_OFF=0 · ON=1</code> (<code>:35-40</code>)</td>
+<td><span class="e do">ĐO</span> <code>onAcDefrostStateChanged(area, state)</code> — <code>AbsBYDAutoAcListener.java:49</code></td>
+<td>TOGGLE + trạng thái thật (<code>readArg=1</code>)</td></tr>
+
+<tr><td><code>defrost_rear</code><br><span class="muted">Sấy kính sau</span></td>
+<td><span class="e do">ĐO</span> cùng getter, <code>area=2</code> — <code>BYDAutoAcDevice.java:456</code></td>
+<td><span class="e do">ĐO</span> cùng callback, tham số <code>area=2</code></td>
+<td>TOGGLE + trạng thái thật (<code>readArg=2</code>)</td></tr>
+
+<tr><td><code>steer_heat</code><br><span class="muted">Sưởi vô-lăng</span></td>
+<td><span class="e do">ĐO</span> <code>getSteeringWheelHeatingState()</code> — <code>BYDAutoSettingDevice.java:2916</code><br><span class="e unk">CHƯA BIẾT</span> có nhiều mức hay chỉ bật/tắt</td>
+<td><span class="e do">ĐO</span> <code>onSteeringWheelHeatingStateChanged(state)</code> — <code>AbsBYDAutoSettingListener.java:334</code>, phân phát <code>:660</code></td>
+<td>CYCLE nếu đo ra nhiều mức, TOGGLE nếu 2 trạng thái — <b>quyết theo số đo</b>, không theo tên</td></tr>
+
+<tr><td><code>pm25</code><br><span class="muted">Lọc bụi</span></td>
+<td><span class="e do">ĐO</span> <code>getAutoCleanAirState()</code> — <code>BYDAutoAcDevice.java:965</code></td>
+<td><span class="e do">ĐO</span> <code>onAutoCleanAirStateChanged(state)</code> — <code>AbsBYDAutoAcListener.java:141</code></td>
+<td>TOGGLE + trạng thái thật</td></tr>
+
+<tr><td><code>win_lf</code><br><span class="muted">Kính trước-trái, COVER</span></td>
+<td><span class="e do">ĐO</span> <code>getWindowOpenPercent(area)</code> — <code>bodywork/BYDAutoBodyworkDevice.java:666</code>; area <code>LF=1 · RF=2 · LR=3 · RR=4</code> (<code>:214-217</code>); datum <code>window_lf</code> đã có</td>
+<td><span class="e do">ĐO</span> <code>onWindowOpenPercentChanged(area, percent)</code> — <code>AbsBYDAutoBodyworkListener.java:52</code>, phân phát <code>:204-207</code>; kèm <code>onWindowStateChanged(area, state)</code> (<code>:13, :159-171</code>)</td>
+<td>COVER + <b>% thật</b> trên nhãn (nay nhãn chỉ nói Đóng/Mở/Nửa)</td></tr>
+
+<tr><td><code>sunshade</code><br><span class="muted">Rèm che nắng, COVER</span></td>
+<td><span class="e do">ĐO</span> <b>KHÔNG có</b> <code>getSunshadeState</code> trong <code>BYDAutoBodyworkDevice</code> — chỉ có <code>setSunshadeState(int)</code> (<code>:939</code>), <code>voiceCtlSunshadePanel</code> (<code>:642</code>)<br><span class="e unk">CHƯA BIẾT</span> datum <code>sunshade_pct</code> đang bám feature vô danh <code>1101004816</code></td>
+<td><span class="e do">ĐO</span> <code>grep -c "unshade" AbsBYDAutoBodyworkListener.java</code> → <b>0</b> — không có callback nào</td>
+<td><b>R5</b> — “chưa đọc được trạng thái”, catalog ⚠. Không bịa %.</td></tr>
+
+<tr><td><code>windows_all</code><br><span class="muted">Tất cả kính, COVER</span></td>
+<td><span class="e suy">SUY</span> không có getter “tất cả”; suy từ 4 lần <code>getWindowOpenPercent</code> đã đọc sẵn cho <code>win_*</code> (không thêm lượt đọc nào)</td>
+<td><span class="e suy">SUY</span> gộp 4 sự kiện <code>onWindowOpenPercentChanged</code></td>
+<td>COVER + nhãn gộp (“4 kính đóng” / “2 kính mở”) — <b>chỉ</b> khi cả 4 mã đều có giá trị thật, thiếu một ⇒ ⚠</td></tr>
+
+<tr><td><code>cam</code><br><span class="muted">Camera 360</span></td>
+<td><span class="e do">ĐO</span> <code>getAVMSwitchState()</code> — <code>adas/BYDAutoADASDevice.java:714</code></td>
+<td><span class="e do">ĐO</span> <code>onAVMSwitchStateChanged(state)</code> — <code>AbsBYDAutoADASListener.java:85</code>, phân phát <code>:184</code></td>
+<td>TOGGLE + trạng thái thật (<code>OFF=1 / ON=2</code> đã ghi ở registry)</td></tr>
+
+<tr><td><code>drl</code><br><span class="muted">Đèn ban ngày</span></td>
+<td><span class="e do">ĐO</span> <code>getDayTimeLightState()</code> — <code>light/BYDAutoLightDevice.java:315</code></td>
+<td><span class="e do">ĐO</span> <code>onDayTimeLightChanged(state)</code> — <code>AbsBYDAutoLightListener.java:52</code>, phân phát <code>:146</code></td>
+<td>TOGGLE + trạng thái thật (datum <code>light_drl</code> đang bám feature <code>985661476</code> — đổi sang getter tên)</td></tr>
+
+<tr><td><code>ac_auto</code><br><span class="muted">Điều hoà AUTO</span></td>
+<td><span class="e do">ĐO</span> id <code>1324355606</code> đang khai <b>không có</b> trong <code>BYDAutoFeatureIds</code> (đã ghi ở <code>ControlRegistry.kt:267-271</code>)<br><span class="e unk">CHƯA BIẾT</span> getter đúng (ứng viên <code>getAcControlMode()</code> — <code>BYDAutoAcDevice.java:333</code>)</td>
+<td><span class="e unk">CHƯA BIẾT</span> ứng viên <code>onAcCtrlModeChanged(mode)</code> — <code>AbsBYDAutoAcListener.java:28</code></td>
+<td><b>R5</b> ⚠ tới khi <code>featmap</code> trên xe chốt; <b>cấm</b> bắn lệnh khí hậu theo phỏng đoán</td></tr>
+</table>
+<p><b>Đọc bảng này thế nào</b>: 12/16 nút đã có <b>cả getter lẫn sự kiện</b> ở mức <span class="e do">ĐO</span> ⇒ làm được ngay off-car (T1–T5). 4 nút còn lại (<code>readl</code> phần bật/tắt, <code>sunshade</code>, <code>ac_auto</code>, và <code>temp</code> ở tham số <code>area</code>) rơi vào R5 — <b>hiện ⚠, không đoán</b>, và mở khoá bằng đúng một lượt <code>featmap</code> trên xe (T9).</p>
+
+<h3>4.6 Kiểu mới <code>ControlKind.CYCLE</code> — và vì sao không mở rộng SELECT</h3>
+<pre>enum class ControlKind { TOGGLE, STEP, COVER, SELECT, BUTTON, CYCLE }   // CYCLE nối CUỐI ⇒ ordinal cũ không đổi
+
+/** Một mức của nút CYCLE: nhãn + giá trị GHI xuống xe + (các) giá trị ĐỌC khớp mức này. */
+data class CycleState(
+    val label: String,          // "Tắt" · "Mức 1" · "Mức 2"
+    val labelEn: String,
+    val write: Int,            // ví dụ ghế mát: OFF=1 · LOW=2 · HIGH=3  ([ĐO] BYDAutoSettingDevice.java:326-332)
+    val read: Set&lt;Int&gt; = setOf(write),   // đọc có thể trả nhiều mã cho cùng một mức
+)</pre>
+<ul>
+<li><b>Tap</b> = <code>CycleLogic.next(states, current)</code> với <code>current</code> lấy từ <b>kho R1</b>; kho chưa có ⇒ bắt đầu từ mức 1 và nút mang ⚠ (R2 AC).</li>
+<li><b>Giữ</b> = về <code>states[0]</code> (mức tắt). Một cử chỉ duy nhất để thoát, không phải bấm vòng 3 lần.</li>
+<li><b>Vì sao không dùng SELECT có tap-xoay-vòng</b>: SELECT là “bày ra danh sách rồi chọn” (<code>ambient_color</code> 5 màu — xoay vòng qua 5 màu là UX tệ), còn CYCLE có <b>khái niệm mức tắt ở chỉ số 0</b> và luật giữ-để-tắt. Hai luật khác nhau ⇒ hai kiểu; nhét chung thì mỗi chỗ vẽ lại phải hỏi “SELECT này là loại xoay hay loại bày?” — đúng kiểu cờ-trong-cờ đã sinh ra lỗi ở <code>ControlTileState</code>.</li>
+<li><b>Sinh từ registry</b>: <code>ControlTileFactory.actionTile</code> (<span class="e do">ĐO</span> <code>ControlTileFactory.kt:56</code>) thêm đúng một nhánh <code>CYCLE -&gt; tileCycle(def, …)</code>, không có chỗ nào so tên mã.</li>
+</ul>
+
+<h3>4.7 Trạng thái “đang gửi” — cửa sổ lạc quan có hạn</h3>
+<div class="diagram">
+<svg viewBox="0 0 840 220" role="img" aria-label="Dòng thời gian một cú tap: đang gửi, đọc lại, và ba kết cục">
+  <line x1="40" y1="70" x2="800" y2="70" stroke="var(--line)" stroke-width="2"/>
+  <g>
+    <circle cx="60" cy="70" r="6" fill="var(--accent)"/>
+    <text x="40" y="52" font-size="12" font-weight="700" fill="var(--fg)">t=0 tap</text>
+    <text x="40" y="96" font-size="11" fill="var(--muted)">ghi xuống xe</text>
+    <text x="40" y="112" font-size="11" fill="var(--muted)">markPending(id, muốn)</text>
+  </g>
+  <rect x="60" y="60" width="300" height="20" rx="6" fill="rgba(0,113,227,.18)"/>
+  <text x="130" y="75" font-size="11.5" font-weight="600" fill="var(--fg)">cửa sổ “đang gửi” — ô vẽ MỜ + nhịp</text>
+  <g>
+    <circle cx="220" cy="70" r="5" fill="var(--ok)"/>
+    <text x="150" y="140" font-size="11.5" fill="var(--muted)">① sự kiện HAL tới ⇒ đóng cửa sổ NGAY, vẽ giá trị thật</text>
+  </g>
+  <g>
+    <circle cx="360" cy="70" r="6" fill="var(--warn)"/>
+    <text x="330" y="52" font-size="12" font-weight="700" fill="var(--fg)">PENDING_MS</text>
+    <text x="300" y="164" font-size="11.5" fill="var(--muted)">② hết hạn mà chưa có sự kiện ⇒ đọc lại MỘT lần (nguồn b)</text>
+  </g>
+  <g>
+    <circle cx="560" cy="70" r="6" fill="var(--warn)"/>
+    <text x="470" y="188" font-size="11.5" fill="var(--muted)">③ đọc ra số KHÁC ⇒ vẽ số THẬT + log “live: id muốn=a xe=b”. Không vẽ lại số mình muốn.</text>
+  </g>
+  <g>
+    <circle cx="720" cy="70" r="6" fill="var(--muted)"/>
+    <text x="640" y="52" font-size="12" fill="var(--muted)">④ vẫn null ⇒ ⚠ “chưa đọc được”</text>
+  </g>
+</svg>
+</div>
+<ul>
+<li><code>PENDING_MS</code> mặc định <b>1 500 ms</b> — <span class="e suy">SUY</span> chọn theo hằng đã có <code>READBACK_SETTLE_MS</code> của R5 (<code>VoiceDispatcher.kt</code>); đo lại trên xe ở T9 rồi chốt.</li>
+<li>Cửa sổ này là <b>duy nhất</b> chỗ giá trị lạc quan được phép hiện. Hết hạn ⇒ kho quyết định, không phải RAM của ô.</li>
+<li><b>Đúng một dòng log mỗi lần lệch</b>, không log mỗi nhịp vẽ — log cũng là tải (bộ đếm <code>KachiPerf.LOG_BYTES</code>).</li>
+</ul>
+
+<h3>4.8 Ngân sách tải (R6) — listener THAY poll, không cộng thêm</h3>
+<table>
+<tr><th>Đường</th><th>Trước</th><th>Sau spec này</th></tr>
+<tr><td>Đọc datum đang hiện</td><td><span class="e suy">SUY</span> ≈510 lượt/phút (đọc cả bảng)</td><td>Giữ nguyên cổng <code>CarDataDemand</code> của agent PERF — spec này <b>không</b> đụng</td></tr>
+<tr><td>Đọc trạng thái NÚT</td><td><span class="e do">ĐO</span> 0 (nút không bao giờ đọc)</td><td>Sự kiện (đẩy, 0 lượt đọc) + 1 lượt/nút khi màn hiện lại + 1 lượt sau mỗi lần ghi</td></tr>
+<tr><td>Đăng ký listener</td><td>—</td><td>1 lần/màn <code>onStart</code>, huỷ ở <code>onStop</code>; tập feature = id đang hiển thị</td></tr>
+</table>
+<p><b>Điều kiện xuất xưởng</b>: <code>KachiPerf.dueLine</code> sau thay đổi cho <code>HAL đọc/phút</code> <b>≤</b> con số của bản không có spec này, đo cùng hồ sơ + cùng bố cục, cùng độ dài cửa sổ. Tăng ⇒ hỏng R6 ⇒ không ship.</p>
+
+<h3>4.9 Quyết định thiết kế + Context7</h3>
+<ul>
+<li><b>Không thêm thư viện nào.</b> Dùng <code>kotlinx.coroutines</code> <code>StateFlow</code>/<code>update</code> đã có sẵn trong <code>:core</code> (khuôn <code>CarStatusRepository.kt:44-66</code>) và <code>java.lang.reflect.Proxy</code> của JDK. ⇒ Theo <code>workflow.md §1.1</code>: <b>không cần Context7</b> (chỉ Android SDK + khối đã có). Nếu vòng review muốn đổi sang một cơ chế phát khác thì lúc đó mới cần verify.</li>
+<li><b>Tái dùng, không mở đường mới</b>: reflection đi qua <code>BydHal</code>/<code>BydHalGateway</code> đã proven; tra id qua <code>BydFeatureIds</code>; getter khai một chỗ ở <code>TelemetryRegistry</code>.</li>
+<li><b>Trần 500 dòng (CLAUDE.md §4.1)</b>: <code>ControlRegistry.kt</code> đang <b>494 dòng</b> (<span class="e do">ĐO</span> <code>wc -l</code>) ⇒ thêm <code>CycleState</code> + bảng mức <b>phải</b> nằm ở tệp mới (<code>ControlCycles.kt</code>), không nhồi vào registry.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">🔲 = chưa làm. T1→T2→T3 nối tiếp; T4/T5/T6 song song sau T3; T7 sau T5; T8 bất kỳ lúc nào; T9 cần xe.</p>
+<table>
+<tr><th>#</th><th>Task</th><th>Tệp</th></tr>
+<tr><td>T1</td><td>🔲 <b>Kho trạng thái sống</b> — <code>LiveCarState</code> (put/markPending/shown/isPending, luật “mới hơn thắng”, hết hạn đang-gửi) + test thuần: sự kiện đè lạc quan, giá trị cũ bị bỏ, <code>null</code> ≠ 0.</td><td><code>core/…/LiveCarState.kt</code> + <code>LiveCarStateTest.kt</code></td></tr>
+<tr><td>T2</td><td>🔲 <b>Khoá ĐỌC cho nút</b> — thêm <code>ControlDef.readKey</code>/<code>readArg</code> (tham số mặc định ⇒ call-site cũ nguyên vẹn); điền cho 12 nút mức <span class="e do">ĐO</span> ở §4.5; thêm datum còn thiếu vào <code>TelemetryRegistry</code>. Test: mọi <code>readKey</code> phải tra ra một datum có thật (bài chống gõ nhầm).</td><td><code>core/…/ControlRegistry.kt</code>, <code>TelemetryRegistry.kt</code>, <code>ControlReadKeyTest.kt</code></td></tr>
+<tr><td>T3</td><td>🔲 <b>Map sự kiện → mã</b> — <code>HalEventMap</code> thuần: tên hằng feature ĐỌC → mã nút/datum, dựng lúc chạy qua <code>idByName</code>; cấm số hardcode. Test bằng bảng tên giả lập.</td><td><code>core/…/HalEventMap.kt</code> + test</td></tr>
+<tr><td>T4</td><td>🔲 <b>Nghe HAL</b> — <code>BydHalEvents</code> (Proxy <code>IBYDAutoListener</code>), đăng ký theo tập id đang hiển thị (<code>CarDataDemand.of</code>), huỷ ở <code>onStop</code>; device lấy qua <code>deviceFqnForFeature</code>; bọc <code>runCatching</code>, off-car ⇒ no-op. Grep chứng minh có call site (CLAUDE.md §8).</td><td><code>app/…/BydHalEvents.kt</code>, <code>KachiHomeWiring.kt</code></td></tr>
+<tr><td>T5</td><td>🔲 <b>Đọc lại sau ghi cho MỌI kind</b> — mở <code>CarControlPort.readStep</code> thành <code>readState(id): Int?</code> (giữ <code>readStep</code> uỷ quyền để không vỡ call-site 1.66); đường đọc dùng <code>readKey</code> chứ không <code>bindingKey</code>. Test khoá đúng lỗi §2.2 (đọc <code>fan</code> không được chạm id <code>_SET</code>).</td><td><code>core/…/LauncherPorts.kt</code>, <code>CarControlAdapter.kt</code>, <code>HalBindingTable.kt</code></td></tr>
+<tr><td>T6</td><td>🔲 <b>CYCLE</b> — <code>ControlKind.CYCLE</code> + <code>CycleState</code> + <code>CycleLogic.next/reset</code> + bảng mức cho ghế mát/ghế sưởi (và sưởi vô-lăng nếu T9 đo ra nhiều mức). Test: vòng 4 lần về Tắt; giữ = Tắt; không có giá trị thật ⇒ bắt đầu mức 1 + cờ ⚠.</td><td><code>core/…/ControlCycles.kt</code> + test</td></tr>
+<tr><td>T7</td><td>🔲 <b>Ô nút vẽ từ kho</b> — <code>tileCycle</code> (nhãn mức, giữ-để-tắt), TOGGLE hai nhãn (<code>stateLabels</code>: Gió trong/Gió ngoài), ô mờ + nhịp khi đang gửi, ⚠ khi <code>null</code>. Không đổi định dạng prefs (R-nf3).</td><td><code>app/…/ControlTileFactory.kt</code>, <code>ControlDockView.kt</code></td></tr>
+<tr><td>T8</td><td>🔲 <b>Voice dùng kho</b> — <code>runControl</code> đọc mức thật trước khi tính mức kế tiếp; câu trả lời lấy từ kho (“gió đang mức 3”); “bật ghế mát” ⇒ mức 1, “ghế mát mức 2” ⇒ mức 2.</td><td><code>app/…/VoiceDispatcher.kt</code>, <code>core/…/VoiceReply</code></td></tr>
+<tr><td>T9</td><td>🔲 <b>Catalog + doc</b> — status ⚠ cho mã chưa đọc được (R5); cập nhật <code>docs/README.md</code> (INDEX) + <code>docs/PROJECT-BACKLOG.md</code> + <code>.kiro/steering/project-context.md</code> trong CÙNG phiên (R2.1 — doc mồ côi = không tồn tại).</td><td><code>core/…/CapabilityCatalog</code>, <code>docs/…</code></td></tr>
+<tr><td>T10</td><td>🔲 <b>Playbook trên xe</b> — kịch bản đo: sự kiện có bắn không, <code>featmap</code> cho 4 mã còn ⚠, số mức ghế thật, <code>area</code> nhiệt độ ghế lái; ghi evidence vào <code>docs/diagnostics/</code>.</td><td><code>docs/diagnostics/live-state-oncar-2026-09-1x.md</code></td></tr>
+<tr><td>Tn</td><td>🔲 Senior review (Opus, rule global §5) + security scan (§6) + <code>./gradlew test --rerun-tasks --continue</code> + bump version nếu đã báo APK.</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<h3>V-unit (máy ảo / JVM — không cần xe)</h3>
+<ul>
+<li><b>V-u1</b> <code>LiveCarStateTest</code>: sự kiện đè giá trị lạc quan trong cửa sổ đang-gửi; giá trị cũ hơn bị bỏ; <code>null</code> giữ nguyên nghĩa “chưa đọc được”.</li>
+<li><b>V-u2</b> <code>CycleLogicTest</code>: 3 mức × tap 4 lần → Tắt; giữ → Tắt; mức hiện tại đọc từ kho chứ không từ chỉ số RAM.</li>
+<li><b>V-u3</b> <code>ControlReadKeyTest</code>: mọi <code>readKey</code> tra ra datum có thật; và <b>không</b> nút nào còn đọc qua <code>bindingKey</code> (bài khoá thẳng lỗi §2.2 — gỡ dòng vá thì phải ĐỎ).</li>
+<li><b>V-u4</b> <code>NoCar</code> + nguồn sự kiện giả: bơm <code>onDataChanged(type, value)</code> giả lập → ô nút đổi nhãn đúng, không chạm HAL.</li>
+<li><b>V-u5</b> <code>KachiPerf</code>: số lượt <code>HAL_READ</code> trong một kịch bản dựng sẵn <b>không tăng</b> so với bản nền.</li>
+</ul>
+<h3>V-oncar (cần xe — đúng thứ tự CLAUDE.md §14: shell thô TRƯỚC)</h3>
+<ul>
+<li><b>V-oncar-1 — sự kiện có bắn không?</b> Đây là câu hỏi <b>chặn</b> cả R1(a). Chạy trên xe, rồi <b>chỉnh gió ở màn BYD gốc</b> (không qua Kachi) và xem log:
+<pre>adb -s &lt;vehicle-ip&gt;:5555 shell "logcat -c"
+# chỉnh mức gió ở màn điều hoà BYD (3 → 4 → 5)
+adb -s &lt;vehicle-ip&gt;:5555 shell "logcat -d -v time | grep -iE 'Kachi/live|BYDAutoAc|WindLevel|CycleMode'"</pre>
+Kỳ vọng: dòng <code>Kachi/live … src=EVENT id=fan v=4</code>. <b>Không có dòng nào</b> ⇒ hoặc <code>checkDeviceFeatures</code> đã im lặng từ chối (§4.4), hoặc app không có quyền ⇒ ghi kết quả THẬT vào diagnostics, <b>không</b> suy diễn, và R1 lùi về (b)+(c)+(d).</li>
+<li><b>V-oncar-2 — khoá đọc đúng chưa?</b> So <code>readKey</code> (getter) với <code>bindingKey</code> (<code>_SET</code>) trên cùng một nút: đọc cả hai, ghi lại số. Đây là bằng chứng chốt cho §2.2.</li>
+<li><b>V-oncar-3 — <code>featmap</code></b> cho 4 mã còn ⚠ (<code>ac_auto</code>, <code>readl</code> bật/tắt, <code>sunshade</code>, <code>temp</code>/<code>area</code>) + số mức thật của ghế mát / ghế sưởi / sưởi vô-lăng trên đời xe này.</li>
+<li><b>V-oncar-4 — ngân sách</b>: đọc <code>KachiPerf.dueLine</code> trong 10 phút lăn bánh, so với bản nền cùng bố cục.</li>
+<li><b>V-oncar-5 — trải nghiệm</b> (bước cuối, sau khi 1–4 xong): chỉnh gió/nhiệt ở màn BYD → nhìn launcher trong ≤ 2 s; tap ghế mát 4 lần → Tắt·1·2·Tắt; tap “Lấy gió” → nhãn đổi trong/ngoài.</li>
+</ul>
+<h3>V-lifecycle</h3>
+<ul>
+<li>Màn ẩn (<code>onStop</code>) ⇒ listener huỷ ⇒ 0 sự kiện; hiện lại ⇒ đọc một lượt + đăng ký lại; <b>không rò listener</b> sau 10 vòng ẩn/hiện.</li>
+<li>Đổi hồ sơ / đổi bố cục ⇒ tập id đổi ⇒ đăng ký lại đúng tập mới, không giữ tập cũ.</li>
+<li>Off-car (máy ảo): mọi nút ⚠ “chưa đọc được”, app không crash, không dòng log lỗi lặp.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 — seatID nào là ghế lái?</b> <span class="e do">ĐO</span> <b>đã trả lời ở mức API</b>: <code>seatID=1</code> → <code>SET_DRIVER_SEAT_VENTILATING_STATE</code> (<code>BYDAutoSettingDevice.java:1941-1943</code>), 2=phụ, 3=sau-trái, 4=sau-phải. <span class="e unk">CHƯA BIẾT</span> đời xe này có provision ghế nào ngoài ghế lái ⇒ chốt bằng <code>featmap</code> (T10). Mặc định lấy <code>seatID=1</code>.</li>
+<li><b>OQ2 — enum chế độ lấy gió?</b> <span class="e do">ĐO</span> <b>đã trả lời</b>: <code>AC_CYCLEMODE_INLOOP = 1</code> (gió trong) / <code>AC_CYCLEMODE_OUTLOOP = 0</code> (gió ngoài) — <code>BYDAutoAcDevice.java:33-34</code>; <code>setAcCycleMode(setSource, mode)</code> chỉ nhận <code>mode ∈ {0,1}</code> (<code>:362-374</code>). <span class="e unk">CHƯA BIẾT</span> đường GHI hiện tại của Kachi đi qua feature <code>AC_CYCLE_MODE_SET</code> (<code>501219355</code>) có nhận cùng 0/1 không ⇒ V-oncar-2.</li>
+<li><b>OQ3 — ghế mát 0..3 hay 0..2?</b> <span class="e do">ĐO</span> <b>không phải 0..3</b>: hằng là <code>OFF=1 · LOW=2 · HIGH=3</code> (<code>BYDAutoSettingDevice.java:326-332</code>), và <code>setSeatVentilatingState</code> nhận <code>1..6</code> khi <code>seatID=1</code>, <code>1..4</code> với ghế khác (<code>:1958-1966</code>) — có thêm biến thể <code>LEVEL1_OPEN=4 · LEVEL1_CLOSE=5 · LEVEL3_ON=6</code>. <span class="e unk">CHƯA BIẾT</span> đời xe này dùng biến thể nào ⇒ <b>bảng mức phải sinh từ giá trị ĐỌC ĐƯỢC trên xe</b> (T10), không hardcode 3 mức.</li>
+<li><b>OQ4 — đèn đọc:</b> có getter nào trả trạng thái BẬT/TẮT của đèn đọc không, hay chỉ có cờ “theo cửa” (<code>getInsideLightDoorState</code>)? <span class="e unk">CHƯA BIẾT</span> — quyết định UX (CYCLE 3 trạng thái hay TOGGLE + ⚠) phụ thuộc câu này.</li>
+<li><b>OQ5 — nhiệt độ:</b> <code>getTemprature(area)</code> — <code>area</code> nào là phía ghế lái? <span class="e unk">CHƯA BIẾT</span>; listener phân phát <code>onTemperatureChanged</code> với area 1/2/3/4 (<code>AbsBYDAutoAcListener.java:299-336</code>).</li>
+<li><b>OQ6 — chi phí đăng ký:</b> <code>registerListener</code> gọi <code>BYDAutoDeviceManager.enableDevice</code> (<span class="e do">ĐO</span> <code>AbsBYDAutoDevice.java:141-143</code>). <span class="e unk">CHƯA BIẾT</span> việc “bật” device có tốn điện / đánh thức bus khi xe tắt máy không ⇒ đo ở V-oncar-4 trước khi để listener chạy mặc định.</li>
+<li><b>OQ7 — owner:</b> khi một nút chưa đọc được trạng thái, muốn <b>ẩn nút</b> hay <b>hiện kèm ⚠</b>? Spec đang chọn <b>hiện kèm ⚠</b> (giữ được đường bấm, đúng tinh thần <code>trace-den-tan-cung.md</code>: không cắt tính năng để né).</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><b>Mã hiện có</b>: <code>app/src/main/java/com/byd/clusternav/launcher/ControlTileState.kt:20-35</code> · <code>ControlTileFactory.kt:56-200</code> · <code>BydHalGateway.kt:28-65</code> · <code>BydFeatureIds.kt:54-140</code> · <code>VoiceDispatcher.kt:233-290</code></li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/launcher/ControlRegistry.kt:44-122, 171-486</code> · <code>HalBindingTable.kt:33-115</code> · <code>TelemetryRegistry.kt:236-300</code> · <code>CarStatusRepository.kt:38-74</code> · <code>LauncherPorts.kt:33-90</code> · <code>CarControlAdapter.kt:42-56</code></li>
+<li><b>Nhánh hiệu năng cùng phiên</b> (chưa commit khi viết): <code>core/…/CarDataDemand.kt</code> · <code>core/…/KachiPerf.kt</code></li>
+<li><b>Framework xe (fw-dl3, jadx 2026-09-16)</b>: <code>AbsBYDAutoDevice.java:114-160, 265-278</code> · <code>IBYDAutoListener.java:6-12</code> · <code>ac/BYDAutoAcDevice.java:33-40, 333, 362-380, 449-456, 574, 677, 965</code> · <code>ac/AbsBYDAutoAcListener.java:28-150, 166-372</code> · <code>setting/BYDAutoSettingDevice.java:230-232, 318-332, 1893-1980, 2641-2671, 2916</code> · <code>setting/AbsBYDAutoSettingListener.java:238-334, 660, 789-798</code> · <code>bodywork/BYDAutoBodyworkDevice.java:214-217, 666, 939</code> · <code>bodywork/AbsBYDAutoBodyworkListener.java:13, 52, 159-207</code> · <code>adas/BYDAutoADASDevice.java:714</code> · <code>adas/AbsBYDAutoADASListener.java:85, 184</code> · <code>light/BYDAutoLightDevice.java:315</code> · <code>light/AbsBYDAutoLightListener.java:52, 146</code> · <code>BYDAutoFeatureIds.java:5103-5109, 5300-5309</code></li>
+<li><b>Spec liên quan</b>: <code>docs/specs/kachi-voice-feedback.html</code> (R5 đọc-lại-sau-ghi, bản 1.66) · <code>docs/specs/kachi-capability-groups.html</code> · <code>docs/specs/kachi-profiles-are-everything.html</code></li>
+<li><b>Luật</b>: <code>CLAUDE.md §2 §3 §4 §7 §8 §13 §14 §15 §16</code> · <code>.kiro/steering/conversation-protocol.md</code> (P1 mức bằng chứng) · <code>trace-den-tan-cung.md</code></li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi <b>NGAY khi code</b> (R2.6): quyết định · trade-off · sai lệch spec · bug &amp; cách xử · “spec không work → đổi X”, kèm <code>file:line</code> hoặc commit.</p>
+<p class="muted"><i>(Trống — chưa implement.)</i></p>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm mục <code>Pass N — YYYY-MM-DD</code>; tag <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test + verdict (APPROVED / INCOMPLETE).</p>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

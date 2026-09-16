@@ -69,18 +69,53 @@ object KachiLog {
                 proc.inputStream.bufferedReader().use { r ->
                     out.bufferedWriter().use { w ->
                         var line = r.readLine()
+                        var lastFlush = System.currentTimeMillis()
                         while (line != null) {
-                            w.write(line); w.newLine(); w.flush()
+                            w.write(line); w.newLine()
                             written += line.length + 1
+                            KachiPerf.add(KachiPerf.Counter.LOG_BYTES, (line.length + 1).toLong())
+                            val now = System.currentTimeMillis()
+                            if (mustFlushNow(line, now - lastFlush)) { w.flush(); lastFlush = now }
                             if (written >= USAGE_CAP_BYTES) { runCatching { proc.destroy() }; break }
                             line = r.readLine()
                         }
+                        runCatching { w.flush() }
                     }
                 }
             }.onFailure { Log.w(TAG, "usage capture stopped: ${it.message}") }
             capturing = false
         }, "KachiLogCapture").apply { isDaemon = true }.start()
     }
+
+    /**
+     * ═══ H3 (PERF 2026-09-16) — có phải ghi xuống thẻ NGAY ở dòng này không ═══════════════════════════════════
+     *
+     * [ĐO xe 2026-09-16]: app tự ghi **79 KB/phút** ra thẻ, và bản cũ gọi `flush()` sau **MỖI dòng** ⇒ mỗi dòng
+     * log là một lượt `write(2)` thật xuống thẻ (≈1 400 lượt/phút lúc cao điểm), phá sạch tác dụng của
+     * `BufferedWriter`.
+     *
+     * Nhưng KHÔNG được bỏ hẳn `flush`: lý do tệp này tồn tại là *"có ngữ cảnh khi patch lỗi trên xe"* — mà lỗi
+     * hay gặp nhất là app CHẾT, và một bộ đệm chưa xả thì đúng phần quan trọng nhất (những dòng ngay trước khi
+     * chết) là phần biến mất.
+     *
+     * Đường giữa, hai điều kiện:
+     *  • dòng mức **W/E/F** (`logcat -v time` đặt ký tự mức ở cột [SEVERITY_COL]) ⇒ xả NGAY — cảnh báo/lỗi/chết
+     *    là thứ phải sống sót qua một cú tắt máy đột ngột;
+     *  • còn lại ⇒ xả theo thời gian, tối đa mất [FLUSH_EVERY_MS] dòng mức D/I nếu app chết ngay sau đó.
+     *
+     * THUẦN (không đụng tệp/đồng hồ) ⇒ `KachiLogFlushTest` khoá cả hai nhánh off-device.
+     */
+    fun mustFlushNow(line: String, sinceLastFlushMs: Long): Boolean =
+        line.getOrNull(SEVERITY_COL) in SEVERITY_FLUSH_NOW || sinceLastFlushMs >= FLUSH_EVERY_MS
+
+    /** Cột ký tự mức trong `logcat -v time` (`09-16 09:01:53.708 W/Tag(pid): …`). */
+    const val SEVERITY_COL = 19
+
+    /** Mức phải xả ngay: Warning · Error · Fatal (Assert). */
+    private val SEVERITY_FLUSH_NOW = setOf('W', 'E', 'F', 'A')
+
+    /** Trần thời gian giữa hai lần xả cho dòng D/I — cửa sổ mất mát tối đa khi app chết đột ngột. */
+    const val FLUSH_EVERY_MS = 2_000L
 
     /** Chụp một phát toàn bộ logcat gần đây (gồm hệ thống). Trả tệp hoặc `null`. */
     fun snapshot(ctx: Context): File? = runCatching {

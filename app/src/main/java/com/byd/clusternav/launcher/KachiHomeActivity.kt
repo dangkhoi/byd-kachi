@@ -179,6 +179,10 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         override fun run() {
             topStrip.updateClock()
             wallpaper.step()   // U4: dùng LẠI nhịp có sẵn thay vì dựng thêm một vòng đếm riêng
+            // PERF — báo cáo tải mỗi phút ([KachiPerf]); dùng LẠI nhịp này vì nó chạy đúng lúc vòng poll HAL chạy.
+            // ⚠ `elapsedRealtime`, KHÔNG phải giờ tường: [ĐO] xe 14/09 giờ tường của đầu xe bị chỉnh nhảy >5 s giữa
+            // phiên (đúng lỗi đã làm hỏng cửa sổ 60 phút của cầu kiểm thử) ⇒ một cú nhảy là một dòng số bịa.
+            KachiPerf.dueLine(android.os.SystemClock.elapsedRealtime())?.let { Log.i("KachiPerf", it) }
             handler.postDelayed(this, 10_000)
         }
     }
@@ -457,6 +461,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onStop() {
         super.onStop(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP); appWidgets.stopListening()
         SlotLiveProbe.pause()
+        // H1 — quên nhu cầu VÀ quên kết luận "xe không có datum ấy" ⇒ lần mở sau bắt đầu bằng một lượt đọc ĐỦ
+        container.forgetCarDemand()
         shellGate.onHidden()     // F4 — màn khuất ⇒ dừng vòng dò (không dựng hộp thoại lên app người lái đang dùng)
     }
 

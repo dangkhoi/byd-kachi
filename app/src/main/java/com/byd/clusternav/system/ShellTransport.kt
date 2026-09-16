@@ -69,6 +69,9 @@ class ShellTransport private constructor(context: Context) {
     private fun closeConn() { runCatching { db?.close() }; db = null }
 
     private fun attempt(cmd: String): Response {
+        // PERF 2026-09-16: đếm Ở ĐÂY (chỗ lệnh thật sự rời tiến trình), không ở `exec` — một `exec` hỏng rồi thử
+        // lại là HAI lượt chặn trên hàng đợi dùng chung, và đó đúng là cái giá mà bộ đếm phải nói ra.
+        com.byd.clusternav.launcher.KachiPerf.add(com.byd.clusternav.launcher.KachiPerf.Counter.SHELL_CMD)
         val r = conn().shell(cmd)
         return Response(r.exitCode, r.output, r.errorOutput, r.allOutput)
     }

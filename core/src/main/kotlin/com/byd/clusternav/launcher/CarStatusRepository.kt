@@ -20,6 +20,16 @@ interface CarStatusReader {
 
     /** Nhịp CHẬM (~10s): pin/tầm/sạc · khí hậu · lốp · thân xe · đèn · an toàn(bền) · danh tính. */
     fun readSlow(prev: CarStatus): CarStatus
+
+    /**
+     * H1 (PERF 2026-09-16) — nhịp NHANH có đáng chạy ở lượt này không.
+     *
+     * [ĐO máy ảo 2026-09-16]: nhịp nhanh mang **18 datum × 1 Hz = 1 080 lượt đọc/phút**, tức **77 %** toàn bộ tải
+     * HAL của app — trong khi màn mặc định (pin · bụi mịn · nhiệt độ ngoài) KHÔNG bày một datum nhanh nào. Mặc
+     * định `true` ⇒ mọi reader cũ (và mọi test dùng reader giả) giữ nguyên hành vi; chỉ [CarDataAdapter] biết
+     * cách trả lời câu này bằng nhu cầu THẬT của màn hình.
+     */
+    fun fastNeeded(): Boolean = true
 }
 
 /**
@@ -54,6 +64,10 @@ class CarStatusRepository(
         stop()
         fastJob = scope.launch {
             while (isActive) {
+                // H1: màn không bày datum nhanh nào ⇒ KHÔNG đọc, và lùi về nhịp chậm thay vì thức dậy mỗi giây
+                // để không làm gì. Vẫn có một lượt hỏi lại mỗi [slowMs] nên khi người dùng kéo ô Tốc độ lên màn,
+                // nhịp nhanh sống lại trong vòng một nhịp chậm — không cần ai đánh thức nó.
+                if (!reader.fastNeeded()) { delay(slowMs); continue }
                 _status.update { runCatching { reader.readFast(it) }.getOrDefault(it) }
                 delay(fastMs)
             }
@@ -64,6 +78,25 @@ class CarStatusRepository(
                 delay(slowMs)
             }
         }
+    }
+
+    /**
+     * [SOÁT P1-1 · 2026-09-16] Đọc NGAY một lượt (chậm + nhanh) trên luồng của chỗ gọi, trả ảnh chụp vừa đọc.
+     *
+     * Sinh ra cho đường **câu hỏi bằng giọng**: từ 1.67, datum không nằm trên màn thì vòng poll GIỮ giá trị cũ
+     * (xem [CarDataDemand]), nên trả lời bằng ảnh chụp là trả lời bằng một con số có thể đã cũ hàng giờ. Chỗ gọi
+     * ghim datum cần hỏi vào nhu cầu ([CarDataDemand.Holder.withExtra]) rồi gọi hàm này.
+     *
+     * ⚠ **ĐỒNG BỘ, KHÔNG phải một nhịp poll thứ ba**: người vừa hỏi đang đợi câu trả lời, mà nhịp chậm còn tới
+     * 10 s nữa. Chi phí có trần rõ ràng — đúng tập nhu cầu đang ghim (vài datum), không phải cả 123 — vì chính
+     * cổng H1 lọc bên trong [reader]. Chỗ gọi phải tự bảo đảm không gọi khi nhu cầu là `null` (= đọc hết).
+     *
+     * Dùng `update`+`value` chứ không `updateAndGet`: [MutableStateFlow.update] đã nguyên tử, và `value` đọc
+     * ngay sau đó cho đúng ảnh mới nhất (một nhịp poll chen vào giữa chỉ làm nó **mới hơn**, không cũ đi).
+     */
+    fun refreshNow(): CarStatus {
+        _status.update { runCatching { reader.readSlow(reader.readFast(it)) }.getOrDefault(it) }
+        return _status.value
     }
 
     /** Dừng poll (huỷ 2 job). Idempotent — gọi nhiều lần an toàn. */

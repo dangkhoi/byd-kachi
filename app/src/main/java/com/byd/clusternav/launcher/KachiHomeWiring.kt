@@ -380,7 +380,13 @@ internal fun collectHome(
 ) {
     owner.lifecycleScope.launch {
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.uiState.collect { render(it) }
+            viewModel.uiState.collect {
+                // H1 (PERF 2026-09-16) — công bố NHU CẦU trước khi vẽ: vòng poll HAL chạy trên coroutine khác và
+                // chỉ đọc hộp này, nên đặt ở đây là *mọi* đường đổi state (đổi hồ sơ · gắn widget · đổi chip · đổi
+                // bố cục) tự động cập nhật nhu cầu — không có đường thứ hai nào phải nhớ gọi.
+                container.carDemand.set(CarDataDemand.of(it))
+                render(it)
+            }
         }
     }
     owner.lifecycleScope.launch {
