@@ -79,7 +79,11 @@ class VoiceRecognizer private constructor(
         val n = minOf(length, pcm.size)
         val samples = FloatArray(n) { pcm[it] / 32768f }
         return runCatching {
+            // [ĐO cần trên xe] spec `kachi-voice-hotword-phrases` R-nf1/OQ2(b): dựng đồ thị hotword (1902 cụm) mỗi
+            // phiên — host 6,6 ms, ngân sách xe ≤ 150 ms. Mốc giờ này là số duy nhất để chốt, đọc qua logcat tag này.
+            val t0 = System.currentTimeMillis()
             val stream = if (hotwords.isNotEmpty()) recognizer.createStream(hotwords) else recognizer.createStream()
+            if (hotwords.isNotEmpty()) Log.i(TAG, "createStream(hotwords) ${System.currentTimeMillis() - t0} ms")
             try {
                 stream.acceptWaveform(samples, SAMPLE_RATE_INT)
                 recognizer.decode(stream)
@@ -109,8 +113,9 @@ class VoiceRecognizer private constructor(
         /**
          * Mở phiên nhận dạng RÀNG lệnh, hoặc `null` nếu mô hình chưa sẵn sàng. **CHẶN** ⇒ luồng nền.
          *
-         * Biasing lấy từ **tập control tĩnh** ([SherpaBiasing]) — tên hồ sơ/app KHÔNG bias (mô hình VN không phát
-         * ra token tiếng Anh; [VoiceIntentParser] khớp nhãn app lo). Chỉ bias khi engine có bpe vocab.
+         * Biasing lấy từ **tập CỤM LỆNH tĩnh** ([SherpaBiasing], spec `kachi-voice-hotword-phrases.html`: cụm
+         * ≥ 2 từ sinh từ 4 bộ đăng ký, không dòng một từ) — tên hồ sơ/app KHÔNG bias (mô hình VN không phát ra
+         * token tiếng Anh; [VoiceIntentParser] khớp nhãn app lo). Chỉ bias khi engine có bpe vocab.
          */
         @Suppress("UNUSED_PARAMETER")
         fun open(

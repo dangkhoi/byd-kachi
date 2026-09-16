@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotword theo CỤM LỆNH — cấm từ rời</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file cho 1 feature. Thứ tự section chuẩn:
+  Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Diagram = HTML visual (inline SVG / .flow / .layers) — CẤM mermaid/ascii.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--bad:#c0392b;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--bad:#ff453a;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.tblwrap{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+tr.best td{background:rgba(26,127,55,.10)}
+tr.worst td{background:rgba(192,57,43,.10)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ev{font-size:11.5px;font-weight:700;letter-spacing:.02em;padding:1px 6px;border-radius:5px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.ev.do{color:var(--ok);border-color:rgba(26,127,55,.4)}
+.ev.suy{color:var(--accent);border-color:rgba(0,113,227,.4)}
+.ev.doan{color:var(--warn);border-color:rgba(191,95,0,.4)}
+.ev.chua{color:var(--bad);border-color:rgba(192,57,43,.4)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+/* ---- Diagram helpers: inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.diagram figcaption{font-size:12.5px;color:var(--muted);margin-top:10px;text-align:left}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{background:rgba(0,113,227,.13);border-color:var(--accent)}
+.layer .sep{flex:1 1 100%;text-align:center;color:var(--accent);font-weight:700;font-size:16px;line-height:1}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{background:rgba(0,113,227,.13);border-color:var(--accent)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Hotword theo <span style="color:var(--accent)">CỤM LỆNH</span> — cấm từ rời</h1>
+<p class="muted">Slug: <code>kachi-voice-hotword-phrases</code> · Backlog <code>V-HOTWORD-CTX</code> · Owner <b>dangkhoi</b> · Branch <code>ota/1.64</code> · Ship ở <b>1.65 (66)</b> · <span class="pill ok">Trạng thái: implement + senior review APPROVED (off-car) · 🚗 còn nợ V-latency + giọng thật</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> §2 (tách cơ chế ↔ quy kết, gắn mức bằng chứng) · §3 (đọc source trước khi ship) · §7 (generic, cấm hardcode) · §10 (test khoá bài học) · §16 và <code>.kiro/steering/*.md</code>.</p>
+<p>
+<span class="ev do">[ĐO]</span> đọc source / chạy phép đo thật ·
+<span class="ev suy">[SUY]</span> suy luận khớp hiện tượng, chưa đo trực tiếp ·
+<span class="ev doan">[ĐOÁN]</span> mới chỉ hợp lý ·
+<span class="ev chua">[CHƯA BIẾT]</span> chưa có dữ liệu.
+</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-09-16</b>: <b>Implement xong</b> (T1–T5 ✅ · T7 ✅ · T6 🔨). Hai thứ spec bản nháp ghi <b>sai</b>, đều do phép đo trên mã thật bắt được, đều đã sửa ngay trong tài liệu này: (1) luật <i>“cấm dòng ASCII thuần”</i> (R2b cũ) <b>làm rụng chính <code>XEM PIN</code></b> — câu tiếng Việt hay dùng nhất lại viết bằng chữ ASCII thuần; luật thay thế là <b>không lấy <code>labelEn</code>/<code>shortEn</code>/<code>argsEn</code> ngay từ nguồn</b>. (2) Tệp Kotlin sinh ra còn <b>nhãn trần nhiều từ</b> làm tiền tố của cụm dài ⇒ <code>chế độ lái thể thao</code> nghe cụt thành <i>“CHẾ ĐỘ LÁI”</i>; sinh thêm luật <b>R2c <code>dropPrefixes</code></b>. Kết quả: host <b>19 → 21/25</b>, máy ảo 1.65 (66) <b>20 → 22/25</b>. OQ1 (tiền tố) chuyển từ [CHƯA ĐO] sang <b>[ĐO]</b>.<br>
+<b>Senior review cùng ngày</b> (§10): <b>APPROVED off-car</b>, 8 finding — 7 vá (đáng kể nhất: <code>dropPrefixes</code> sót dòng giữa trong một <b>khối</b> cùng tiền tố; số latency lấy nhầm của tệp 2 057 thay vì tệp ship 1 902), 1 thành <b>OQ5</b>. Ngân sách R-nf1 chốt lại <b>≤ 150 ms</b> và V-latency <b>mở lại</b> thành cổng phải đo trên xe — trước đó spec ghi như thể đã đạt.</li>
+<li><b>Pass 0 — 2026-09-16</b>: Khởi tạo spec. Sinh ra từ việc <b>bác bỏ</b> kết luận của chính hôm trước: backlog <code>V-HOTWORD-CTX</code> (2026-09-15) ghi <i>“gốc là LOÃNG (tệp 623 dòng) ⇒ hướng = tệp nhỏ theo ngữ cảnh”</i>. Ba ma trận chạy trên host 2026-09-16 (23 cấu hình tệp hotword, cùng model · cùng 25 WAV · cùng <code>hotwords_score=3.0</code>) cho thấy <b>kích thước tệp không phải biến số</b>; biến số quyết định là <b>dòng MỘT TỪ</b>. Spec này chốt hướng mới: tệp hotword <b>chỉ chứa cụm ≥ 2 từ</b>, sinh generic từ bộ đăng ký.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Chỗ đứng hôm nay của tệp hotword</h3>
+<p>Engine nghe là <b>sherpa-onnx v1.13.8</b> <code>OfflineRecognizer</code>, model <code>zipformer-vi-2025-04-20</code>, giải mã <code>modified_beam_search</code> với <code>max_active_paths=4</code>, <code>modeling_unit=bpe</code>, <code>hotwords_score=3.0</code> (<code>SherpaModelCatalog.kt:168</code> · <code>:69</code>). <span class="ev do">[ĐO nguồn]</span></p>
+<p>Hotwords được truyền <b>theo từng phiên nghe</b>, không phải một lần lúc nạp model: <code>app/…/voice/VoiceRecognizer.kt:82</code> gọi <code>recognizer.createStream(hotwords)</code> ở mỗi lượt giải mã, và chuỗi <code>hotwords</code> đến từ <code>VoiceRecognizer.kt:129</code> → <code>SherpaBiasing.hotwordsFile(places)</code> (<code>core/…/voice/SherpaBiasing.kt:35-36</code>). Nội dung tệp do <code>SherpaHotwords.fileContent</code> (<code>SherpaHotwords.kt:48-52</code>) chuẩn hoá: viết HOA, bỏ token có chữ số, khử trùng, giữ thứ tự xuất hiện. <span class="ev do">[ĐO nguồn]</span></p>
+<p>Bản <b>1.64</b> thật sinh ra một tệp <b>623 dòng</b>: nhãn VI/EN/bản ngắn/lựa chọn của <code>ControlRegistry</code> · <code>TelemetryRegistry</code> · <code>ActionMacros</code> · <code>LauncherActions</code> (<code>SherpaBiasing.kt:54-67</code>) cộng <b>39 động từ có dấu</b> và <b>105 cách nói đời thường</b> (<code>SherpaSpokenWords.kt:201-219</code> và <code>:40-146</code>, ghép ở <code>:225</code>), cộng nhãn sổ địa chỉ (<code>VoicePlaces.kt:123-137</code>). Trong 623 dòng đó có <b>283 dòng đến từ nhãn tiếng Anh</b> (<code>labelEn</code>/<code>shortEn</code>/<code>argsEn</code>). <span class="ev do">[ĐO]</span></p>
+
+<h3>2.2 Chuỗi sự việc — kết luận “loãng” của 09-15 và việc nó bị bác</h3>
+<div class="tblwrap"><table>
+<tr><th>Mốc</th><th>Việc đã xảy ra</th><th>Mức bằng chứng</th></tr>
+<tr>
+  <td><b>2026-09-15</b><br>E2E máy ảo</td>
+  <td>Trên bản 1.64 (65), <code>vehicleTest</code>, 25 câu WAV giọng <code>say -v Linh</code>: <code>xem pin</code> nghe ra <i>“XEM TIN”</i> · <code>dừng nhạc</code> ra <i>“RỪNG NHẠC”</i> · <code>pin còn bao nhiêu</code> ra <i>“CÒN BAO NHIÊU”</i> — <b>dù</b> <code>PIN</code>, <code>DỪNG</code>, <code>NHẠC</code> đều đã có trong tệp 623 dòng (bản vá “dấu câu = ngắt từ” đã kéo nhãn mất hotword từ 50 về 0).</td>
+  <td><span class="ev do">[ĐO]</span> <code>emulator-voice-e2e-2026-09-15.md</code> §6.2–6.3</td>
+</tr>
+<tr>
+  <td><b>2026-09-15</b><br>kết luận tối hôm đó</td>
+  <td>§6.3 của doc E2E + backlog <code>V-HOTWORD-CTX</code> chốt: <i>“gốc là <b>LOÃNG</b> — tệp 3 dòng sửa được, tệp 623 dòng thì không ⇒ hướng vá là tệp nhỏ theo ngữ cảnh (nhãn đang hiện + hồ sơ) hoặc hai tầng score.”</i></td>
+  <td><span class="ev suy">[SUY]</span> — suy từ <b>hai</b> điểm dữ liệu (3 dòng vs 623 dòng), chưa quét dải kích thước</td>
+</tr>
+<tr>
+  <td><b>2026-09-16</b><br>3 ma trận host</td>
+  <td>Chạy <b>23 cấu hình tệp</b> trên host (sherpa-onnx 1.13.8 bản pip, cùng model · cùng 25 WAV · cùng tham số): thu nhỏ tệp từ 623 → 340 → 255 → 144 → 39 dòng <b>không</b> sửa được <code>dừng nhạc</code>/<code>xem pin</code>; ngược lại tệp <b>1 440 dòng toàn cụm</b> lại đúng <b>21/25</b>, còn tệp <b>114 dòng</b> mô phỏng “ngữ cảnh” (có động từ rời) đúng <b>17/25</b> — <b>tệ hơn cả không bias</b>.</td>
+  <td><span class="ev do">[ĐO]</span> <code>matrix2/3/4_stdout.log</code></td>
+</tr>
+<tr>
+  <td><b>2026-09-16</b><br>quy kết mới</td>
+  <td>Biến số quyết định <b>không phải kích thước</b> mà là <b>dòng MỘT TỪ</b>: bỏ mọi dòng 1 từ khỏi tệp 340 dòng ⇒ 21/25; thêm động từ rời vào tệp cụm ⇒ tụt từ 21 xuống 17.</td>
+  <td><span class="ev do">[ĐO]</span> ma trận 4 (N1 · N5)</td>
+</tr>
+<tr>
+  <td><b>2026-09-16</b><br>implement (Pass 1)</td>
+  <td>Viết mã, đo lại trên <b>tệp Kotlin thật</b> (ma trận 5/6) — và <b>hai</b> chỗ của spec bản nháp bị chính bài canh/phép đo bác tiếp: luật <i>“cấm ASCII thuần”</i> làm rụng <code>XEM PIN</code>; <b>nhãn trần nhiều từ</b> làm tiền tố giết <code>w19</code>. Sửa cả hai ⇒ host <b>19 → 21/25</b>, máy ảo <b>20 → 22/25</b> (bản 1.65 (66)).</td>
+  <td><span class="ev do">[ĐO]</span> <code>matrix5/6_stdout.log</code> + <code>SherpaBiasingCoverageTest</code></td>
+</tr>
+</table></div>
+<p class="muted">Ba vòng liên tiếp cùng một khuôn: một kết luận nghe rất hợp lý (<i>“gốc là loãng”</i> → <i>“cấm dòng ASCII”</i> → <i>“bỏ từ rời là đủ”</i>) bị <b>một phép đo trên đủ 25 ca</b> bác. Đó là lý do §Verification không cho phép chấm một bản vá bằng đúng mấy câu mà nó nhắm tới.</p>
+<div class="card"><b>Bài học đúng theo <code>CLAUDE.md</code> §2:</b> kết luận 09-15 trộn <b>cơ chế</b> (“tệp 3 dòng sửa được, tệp 623 dòng không”) với <b>quy kết</b> (“vậy thì do loãng”). Hai tệp ấy khác nhau <b>hai</b> thứ cùng lúc — số dòng <i>và</i> việc có/không có từ rời — nên không quy được cho thứ nào. Ma trận 2/3/4 tách đúng hai biến đó ra, và biến “loãng” <b>rơi</b>.</div>
+
+<h3>2.3 Cơ chế — đọc thẳng source sherpa-onnx v1.13.8</h3>
+<p><span class="ev do">[ĐO nguồn]</span> <code>csrc/context-graph.cc</code>, hàm <code>ContextGraph::ForwardOneStep</code>: khi bước token đưa trạng thái tới một nút <code>is_end</code> (đã khớp trọn một hotword) ở chế độ <b>non-strict</b>, hàm <b>trả trạng thái về root</b> và cộng điểm <code>score + output_score − node_score</code>. Hệ quả trực tiếp, cả hai đều quan sát được trong ma trận:</p>
+<ul>
+<li><b>(a) Hotword một từ là TIỀN TỐ của cụm ⇒ giết cụm.</b> <code>XEM</code> đứng rời là tiền tố của <code>XEM PIN</code>: ngay sau từ <i>“xem”</i>, trạng thái đã <code>is_end</code> và quay về root, nên cạnh <code>PIN</code> của cụm dài <b>không bao giờ được đi tới</b> — cụm đúng không cộng đủ điểm. <span class="ev do">[ĐO]</span> hiện tượng khớp: mọi tệp có động từ rời đều hỏng <code>w12 xem pin</code>.</li>
+<li><b>(b) Hotword một từ đứng CUỐI ⇒ cộng điểm cho cả đường sai.</b> <code>NHẠC</code> đứng rời cộng <b>+3</b> cho <i>bất kỳ</i> đường giải mã nào kết thúc bằng <i>“nhạc”</i>, kể cả đường sai <i>“RỪNG NHẠC”</i>. Biên lợi thế của cụm đúng <code>DỪNG NHẠC</code> (+6) so với đường sai (+3) co lại còn <b>3</b>, và 3 điểm không thắng nổi chênh lệch âm học giữa <i>dừng</i> và <i>rừng</i>. <span class="ev suy">[SUY]</span> về phép cộng cụ thể (+6/+3); <span class="ev do">[ĐO]</span> về kết quả: <code>NHẠC</code> rời có mặt ⇒ <code>w09</code> hỏng, bỏ đi ⇒ <code>w09</code> đúng.</li>
+</ul>
+<p><span class="ev do">[ĐO nguồn]</span> <code>csrc/utils.cc</code>, <code>EncodeHotwords</code>: mỗi dòng được mã hoá bằng bảng BPE của chính model; cú pháp điểm riêng theo dòng (<code>CỤM :2.5</code>) <b>được nhận</b> — ma trận 2 đã chạy được cấu hình hai tầng <code>3.0/1.0</code>; dòng nào không mã hoá được thì hàm trả <code>false</code> và dòng đó bị bỏ <b>im lặng</b>. Đó là lý do luật “HOA + có dấu” của <code>SherpaHotwords</code> tồn tại, và là lý do 283 dòng ASCII trong tệp 1.64 <span class="ev suy">[SUY]</span> nhiều khả năng chưa bao giờ kéo được câu nào.</p>
+
+<h3>2.4 Cổng / phụ thuộc</h3>
+<div class="card">
+<ul>
+<li><b>Không</b> cần xe để bắt đầu: cả bốn tệp phải sửa đều ở <code>:core</code> thuần + test JVM; phép đo chốt chạy trên host với chính model thật. <span class="pill ok">đã xong ở 1.65 (66)</span></li>
+<li><b>Có</b> một cổng 🚗 ở cuối: bộ 25 WAV là giọng máy <code>say -v Linh</code>, không phải giọng người qua mic 4 kênh của xe — xem OQ2. Spec này <b>không</b> tuyên bố đã chứng minh trên xe.</li>
+<li>Không phụ thuộc phiên bản sherpa-onnx mới: <b>không</b> nâng AAR, <b>không</b> đổi tham số engine.</li>
+</ul>
+</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R0 — Chỉ đổi NỘI DUNG tệp hotword, không đổi gì khác.</b> <code>VoiceIntentParser</code> và <code>VoiceDispatcher</code> giữ nguyên từng dòng; <code>:app</code> giữ nguyên (<code>VoiceRecognizer.kt:82</code> đã truyền hotwords theo từng phiên, <code>:129</code> đã gọi đúng chỗ). Tệp hotword là <b>gợi ý cho bộ nghe</b>, không phải ngữ pháp — mọi luật hiểu ý định vẫn nằm ở tầng chữ.<br>
+<span class="muted">AC: không đổi <b>mã thi hành</b> của <code>VoiceIntentParser.kt</code> · <code>VoiceDispatcher.kt</code> · <code>VoiceRecognizer.kt</code>. <b>KDoc được phép sửa</b> — và phải sửa khi mô tả cũ đã sai: Pass 1 review đã sửa KDoc <code>VoiceRecognizer.open</code> từ <i>“tập control tĩnh”</i> sang <i>“tập <b>CỤM LỆNH</b> tĩnh”</i>. Một KDoc mô tả sai nguồn dữ liệu là nợ kỹ thuật im lặng, không phải chuyện nhỏ.</span></li>
+
+<li><b>R1 — Tệp hotword = CHỈ CỤM ≥ 2 TỪ, sinh generic từ bộ đăng ký.</b> Không chép tay một cụm nào: mỗi cụm phải là tích <code>động từ × nhãn</code> dựng bằng máy từ <code>ControlRegistry</code>/<code>TelemetryRegistry</code>/<code>ActionMacros</code>/<code>LauncherActions</code> + <code>SherpaSpokenWords</code> + sổ địa chỉ của hồ sơ đang dùng. Động từ chọn theo <code>ControlKind</code> (bảng §4.4) — <b>không</b> nhân chéo mù mọi động từ với mọi nhãn, và <b>không</b> <code>if (pkg == …)</code>.<br>
+<span class="muted">AC: mọi dòng của tệp có ≥ 1 khoảng trắng; mỗi nhãn tiếng Việt của 4 bộ đăng ký xuất hiện trong ≥ 1 cụm.</span></li>
+
+<li><b>R2 — Ba luật lọc dòng.</b> Cả ba đặt ở tầng lọc/ghép (<code>SherpaHotwords.phraseFile</code> + <code>SherpaPhraseHotwords.phrases</code>), <b>không</b> đặt trong <code>SherpaHotwords.normalize</code> — <code>normalize</code> là hàm chung, vẫn phải trả được hotword một từ cho chỗ gọi khác (<code>phrasesOf("Pin (SOC)") == [PIN, SOC]</code>).
+  <ul>
+  <li><b>R2a — không dòng MỘT TỪ.</b> Cơ chế §2.3 (a)+(b). <span class="ev do">[ĐO]</span> ma trận 4: bỏ mọi dòng 1 từ khỏi tệp 340 dòng ⇒ <b>19 → 21</b>; thêm động từ rời vào tệp cụm ⇒ <b>21 → 17</b>. Cài ở <code>SherpaHotwords.isPhrase</code> (<code>SherpaHotwords.kt:74</code>).</li>
+
+  <li><b>R2b — nhãn tiếng Anh bị loại Ở NGUỒN, KHÔNG lọc bằng “ASCII thuần”.</b> <span class="pill">sửa ở Pass 1</span><br>
+  Bản nháp của spec này viết <i>“cấm dòng ASCII thuần”</i>. <span class="ev do">[ĐO]</span> Luật đó <b>sai</b> và <b>bài canh đã bắt</b> ngay khi implement: <code>XEM PIN</code> — câu được đo nhiều nhất trong cả spec — <b>cũng là ASCII thuần</b> (cả <i>“xem”</i> lẫn <i>“pin”</i> đều không mang dấu nào), nên nó bị chính luật ấy làm rụng. Gốc của nhầm lẫn: <i>“có dấu”</i> chỉ là một <b>đặc điểm thường gặp</b> của chữ Việt, không phải dấu hiệu nhận dạng — hàng loạt cụm Việt hợp lệ (<code>XEM PIN</code>, <code>CAMERA</code>) viết toàn ký tự ASCII.<br>
+  <b>Luật thay thế:</b> nguồn <b>không lấy</b> <code>labelEn</code> / <code>shortEn</code> / <code>argsEn</code> — nhãn EN không bao giờ vào danh sách để mà phải lọc ra (<code>SherpaPhraseHotwords.nounsOf</code>, <code>SherpaPhraseHotwords.kt:97-98</code>). Bài canh <b>đổi theo</b>: dựng danh sách EN từ <b>chính các trường <code>labelEn</code>/<code>shortEn</code>/<code>argsEn</code></b> rồi khẳng định không cụm nào của chúng có trong tệp (<code>SherpaBiasingCoverageTest.kt:70-74</code>), thay cho phép đếm ký tự ASCII.<br>
+  <span class="muted">Bằng chứng giữ nguyên giá trị: ma trận 2 cho thấy bỏ 283 dòng nhãn EN (623 → 340) <b>không đổi</b> kết quả (19 → 19) ⇒ chúng không đóng góp gì. Chỉ <b>cách</b> loại chúng là sai, không phải việc loại chúng.</span></li>
+
+  <li><b>R2c — không dòng là TIỀN TỐ THEO TỪ của dòng khác.</b> <span class="pill">mới ở Pass 1</span><br>
+  Cùng cơ chế §2.3 (a), chỉ khác: thủ phạm không phải từ rời mà là <b>cụm ngắn</b>. <span class="ev do">[ĐO]</span> Tệp Kotlin đầu tiên (2 057 dòng, đã bỏ hết từ rời) vẫn còn nhãn trần nhiều từ như <code>CHẾ ĐỘ LÁI</code> đứng cạnh <code>CHẾ ĐỘ LÁI THỂ THAO</code> ⇒ <code>w19 “chế độ lái thể thao”</code> nghe cụt thành <i>“CHẾ ĐỘ LÁI”</i>, <b>20/25</b>. Bỏ <b>155</b> dòng tiền tố ⇒ <b>1 902 dòng, 21/25</b>, <code>w19</code> ✓. Cài ở <code>SherpaHotwords.dropPrefixes</code> (<code>SherpaHotwords.kt:87-92</code>).<br>
+  <b>Cái giá đã biết</b> (xem §4.7 + OQ4): cụm ngắn <b>phổ biến</b> cũng rụng khi nó là tiền tố của cụm dài hơn — <code>MỞ CỬA SỔ</code>, <code>BẬT ĐIỀU HOÀ</code>, <code>MỞ KHOÁ</code> mất bias khi người lái nói <b>một mình</b>.</li>
+  </ul></li>
+
+<li><b>R3 — Không đổi <code>hotwords_score</code>, không dùng điểm riêng theo dòng.</b> <span class="ev do">[ĐO]</span> ma trận 2 cấu hình hai tầng (<code>:3.0</code> cho lõi, <code>:1.0</code> cho phần còn lại, 347 dòng) cho <b>19/25</b> — đúng bằng tệp 623 dòng một tầng. Cơ chế đã đo không nằm ở điểm số mà ở <b>hình dạng đồ thị</b>, nên vặn điểm là vặn nhầm núm.</li>
+
+<li><b>R4 — Bài canh bằng máy, không phải lời hứa trong KDoc.</b> Năm phép đếm bắt buộc, tất cả ở <code>SherpaBiasingCoverageTest</code>:
+  <ul>
+  <li>(i) mỗi nhãn tiếng Việt của 4 bộ đăng ký nằm <b>trong</b> ≥ 1 cụm của tệp — “nằm trong”, không phải “có mặt như một dòng” (<code>:54-62</code>, dùng <code>containsWords</code> theo ranh giới từ);</li>
+  <li>(ii) <b>0</b> dòng một từ (<code>:66-67</code>);</li>
+  <li>(iii) <b>0</b> cụm sinh từ <code>labelEn</code>/<code>shortEn</code>/<code>argsEn</code> lọt vào tệp (<code>:70-74</code>) — thay cho phép đếm ASCII đã bị bác ở R2b;</li>
+  <li>(iv) <b>0</b> dòng là tiền tố theo từ của dòng khác, cộng hai khẳng định chốt <code>"CHẾ ĐỘ LÁI THỂ THAO" ∈ tệp</code> và <code>"CHẾ ĐỘ LÁI" ∉ tệp</code> (<code>:86-92</code>);</li>
+  <li>(v) thứ tự dòng <b>ổn định</b> giữa hai lần gọi (<code>:95-97</code>) — để <code>diff</code> được hai lượt đo.</li>
+  </ul>
+  Thêm một bài canh <b>âm</b>: động từ rời và cách nói đời thường rời — đúng hai bảng từng bị đổ RỜI vào tệp ở 1.64 — phải <b>không</b> còn là dòng riêng (<code>:78-83</code>).</li>
+
+<li><b>R5 — Đo lại trên chính tệp do Kotlin sinh, không đo trên tệp Python dựng tay.</b> Dump tệp từ test ra đĩa, chạy lại ma trận host trên đúng tệp ấy, rồi chạy E2E máy ảo <code>voice-e2e.sh --only wav</code> trước/sau. Ma trận Python của 09-16 chỉ là <b>phép dò hướng</b>, không phải bằng chứng cho sản phẩm.</li>
+</ul>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 — Không chậm thêm lượt nghe.</b> <b>Ngân sách = ≤ 150 ms</b> cho <code>createStream(hotwords)</code> mỗi phiên nghe trên xe <span class="muted">(agent chốt tạm 2026-09-16 sau senior review — owner chưa duyệt con số này; con số 100 ms của bản nháp đặt trước khi biết tệp ship dài bao nhiêu)</span>.<br>
+<span class="ev do">[ĐO host]</span> tệp ship <b>1 902 dòng = 6,6 ms</b>. <span class="ev doan">[ƯỚC LƯỢNG]</span> ×20 cho đầu xe ⇒ <b>≈ 130 ms</b> — <b>sát</b> ngân sách, không phải dư thoải mái như bản nháp viết. Hệ số ×20 là phỏng đoán, không có phép đo nào chống lưng.<br>
+<span class="ev chua">[CHƯA ĐO trên xe]</span> ⇒ cổng <b>V-latency</b> (§6.4) và <b>OQ2</b> giữ câu này mở cho tới khi có số thật.</li>
+<li><b>R-nf2 — Không over-trigger.</b> Câu đời thường không được biến thành lệnh. <span class="ev do">[ĐO]</span> <code>w21 “hôm nay trời đẹp quá”</code> nghe đúng ở <b>mọi</b> cấu hình, kể cả tệp 1 440 dòng.</li>
+<li><b>R-nf3 — Thuần <code>:core</code>, kiểm off-car.</b> Không <code>import android.*</code>; toàn bộ luật sinh cụm test được bằng JVM.</li>
+<li><b>R-nf4 — 0 phụ thuộc mới, 0 quyền mới, 0 byte model mới.</b></li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Luồng dựng tệp hotword (sau khi vá)</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>ControlRegistry</b><span>nhãn + <code>kind</code> + <code>args</code></span></div>
+    <div class="node"><b>TelemetryRegistry</b><span>nhãn datum</span></div>
+    <div class="node"><b>ActionMacros</b><span>nhãn macro</span></div>
+    <div class="node"><b>LauncherActions</b><span>nhãn hành động</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>SherpaSpokenWords.VERBS</b><span>động từ CÓ DẤU theo <code>VoiceVerb</code><br><code>SherpaSpokenWords.kt:201-219</code></span></div>
+    <div class="node"><b>SherpaSpokenWords.ACCENTED</b><span>105 cách nói đời thường<br><code>:40-146</code></span></div>
+    <div class="node"><b>VoicePlaces.spokenPhrases</b><span>sổ địa chỉ của hồ sơ<br><code>VoicePlaces.kt:123-137</code></span></div>
+  </div>
+  <div class="layer"><div class="sep">▼</div></div>
+  <div class="layer">
+    <div class="node new" style="flex:1 1 100%"><b>SherpaPhraseHotwords.phrases(places) — MỚI, <code>:core</code></b><span>ghép <b>động từ × nhãn</b> theo <code>CONTROL_VERBS[kind]</code> (§4.4) · <b>chỉ nhãn VI</b> — không đụng <code>labelEn</code>/<code>shortEn</code>/<code>argsEn</code> (R2b) · không chồng động từ lên cách nói đã có động từ (<code>startsWithVerb</code>) · thứ tự ổn định<br><code>SherpaPhraseHotwords.kt:57-94</code></span></div>
+  </div>
+  <div class="layer"><div class="sep">▼</div></div>
+  <div class="layer">
+    <div class="node"><b>SherpaBiasing.hotwordsFile(places)</b><span>một dòng: <code>phraseFile(SherpaPhraseHotwords.phrases(places))</code><br><code>SherpaBiasing.kt:31-32</code></span></div>
+    <div class="node new"><b>SherpaHotwords.phraseFile</b><span>HOA · bỏ token chữ số · khử trùng<br>+ <code>isPhrase</code> (R2a) → + <code>dropPrefixes</code> (R2c)<br><code>SherpaHotwords.kt:66-71</code></span></div>
+  </div>
+  <div class="layer"><div class="sep">▼</div></div>
+  <div class="layer">
+    <div class="node"><b>VoiceRecognizer.kt:129</b><span>chỉ khi <code>biasingReady()</code></span></div>
+    <div class="node"><b>VoiceRecognizer.kt:82</b><span><code>recognizer.createStream(hotwords)</code><br><b>mỗi phiên nghe</b> · <b>6,6 ms</b> / 2 057 dòng [ĐO host]</span></div>
+    <div class="node"><b>ContextGraph (native)</b><span><code>hotwords_score = 3.0</code><br>không đổi (R3)</span></div>
+  </div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (giữ nguyên)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15);border-color:var(--accent)"></span> khối mới / khối phải sửa</span>
+</div>
+
+<h3>4.2 Vì sao một hotword MỘT TỪ phá cụm — đồ thị ngữ cảnh</h3>
+
+<h4>(a) <code>XEM</code> đứng rời giết <code>XEM PIN</code></h4>
+<figure class="diagram">
+<svg viewBox="0 0 620 250" role="img" aria-label="Đồ thị ngữ cảnh: từ root, cạnh XEM dẫn tới một nút is_end; vì is_end nên trạng thái quay về root và cạnh PIN dẫn tới nút is_end của cụm XEM PIN không bao giờ được đi tới">
+  <defs>
+    <marker id="ar1" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="var(--accent)"/></marker>
+    <marker id="arBad" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="var(--bad)"/></marker>
+    <marker id="arDim" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="var(--muted)"/></marker>
+  </defs>
+  <g font-family="-apple-system,sans-serif" font-size="12.5" fill="var(--fg)">
+    <!-- root -->
+    <circle cx="70" cy="150" r="28" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/>
+    <text x="70" y="155" text-anchor="middle" font-weight="650">root</text>
+    <!-- edge XEM -->
+    <line x1="100" y1="150" x2="222" y2="150" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar1)"/>
+    <text x="161" y="141" text-anchor="middle" fill="var(--accent)" font-weight="650">“xem”</text>
+    <text x="161" y="171" text-anchor="middle" fill="var(--muted)" font-size="11.5">+3</text>
+    <!-- node XEM (is_end) -->
+    <circle cx="256" cy="150" r="30" fill="var(--bg)" stroke="var(--bad)" stroke-width="2"/>
+    <circle cx="256" cy="150" r="24" fill="none" stroke="var(--bad)" stroke-width="1.5"/>
+    <text x="256" y="147" text-anchor="middle" font-weight="650" font-size="12">XEM</text>
+    <text x="256" y="162" text-anchor="middle" fill="var(--bad)" font-size="10.5">is_end</text>
+    <!-- edge PIN (dead) -->
+    <line x1="288" y1="150" x2="408" y2="150" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arDim)" opacity=".6"/>
+    <text x="348" y="141" text-anchor="middle" fill="var(--muted)" font-size="11.5">“pin”</text>
+    <text x="348" y="171" text-anchor="middle" fill="var(--muted)" font-size="11">không bao giờ đi tới</text>
+    <!-- node XEM PIN -->
+    <circle cx="442" cy="150" r="32" fill="var(--bg)" stroke="var(--line)" stroke-width="2" opacity=".6"/>
+    <circle cx="442" cy="150" r="26" fill="none" stroke="var(--line)" stroke-width="1.5" opacity=".6"/>
+    <text x="442" y="147" text-anchor="middle" font-size="11.5" fill="var(--muted)">XEM PIN</text>
+    <text x="442" y="162" text-anchor="middle" fill="var(--muted)" font-size="10.5">is_end</text>
+    <!-- back to root -->
+    <path d="M 240 122 C 200 60, 110 66, 74 120" fill="none" stroke="var(--bad)" stroke-width="2" marker-end="url(#arBad)"/>
+    <text x="158" y="58" text-anchor="middle" fill="var(--bad)" font-weight="650" font-size="12">ForwardOneStep: is_end (non-strict) ⇒ về root</text>
+    <text x="158" y="76" text-anchor="middle" fill="var(--muted)" font-size="11">trả score + output_score − node_score</text>
+    <!-- caption box -->
+    <rect x="30" y="200" width="560" height="38" rx="9" fill="var(--card)" stroke="var(--line)"/>
+    <text x="310" y="224" text-anchor="middle" font-size="12.5">Kết quả nghe: <tspan font-weight="650" fill="var(--bad)">“XEM TIN”</tspan> — cụm <tspan font-weight="650">XEM PIN</tspan> chưa bao giờ được cộng đủ điểm</text>
+  </g>
+</svg>
+<figcaption><span class="ev do">[ĐO nguồn]</span> <code>csrc/context-graph.cc</code> <code>ForwardOneStep</code>. Bỏ dòng <code>XEM</code> đứng rời ⇒ cạnh <i>“pin”</i> sống lại ⇒ <span class="ev do">[ĐO]</span> <code>w12</code> chuyển từ ✗ sang ✓ trong mọi cấu hình đã thử.</figcaption>
+</figure>
+
+<h4>(b) <code>NHẠC</code> đứng rời cộng điểm cho đường SAI</h4>
+<figure class="diagram">
+<svg viewBox="0 0 620 250" role="img" aria-label="Hai đường giải mã: đường đúng DỪNG NHẠC được cộng 6 điểm, đường sai RỪNG NHẠC vẫn được cộng 3 điểm nhờ hotword NHẠC đứng rời, nên biên lợi thế co từ 6 xuống 3">
+  <defs>
+    <marker id="ar2" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="var(--ok)"/></marker>
+    <marker id="ar3" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="var(--bad)"/></marker>
+  </defs>
+  <g font-family="-apple-system,sans-serif" font-size="12.5" fill="var(--fg)">
+    <text x="20" y="26" font-size="12" fill="var(--muted)">Tệp hotword có CẢ cụm «DỪNG NHẠC» LẪN từ rời «NHẠC»</text>
+
+    <!-- đường đúng -->
+    <rect x="20" y="42" width="124" height="46" rx="9" fill="var(--bg)" stroke="var(--ok)" stroke-width="2"/>
+    <text x="82" y="62" text-anchor="middle" font-weight="650" font-size="12.5">“dừng”</text>
+    <text x="82" y="79" text-anchor="middle" fill="var(--ok)" font-size="11.5">cụm khớp: +3</text>
+    <line x1="146" y1="65" x2="196" y2="65" stroke="var(--ok)" stroke-width="2" marker-end="url(#ar2)"/>
+    <rect x="200" y="42" width="124" height="46" rx="9" fill="var(--bg)" stroke="var(--ok)" stroke-width="2"/>
+    <text x="262" y="62" text-anchor="middle" font-weight="650" font-size="12.5">“nhạc”</text>
+    <text x="262" y="79" text-anchor="middle" fill="var(--ok)" font-size="11.5">trọn cụm: +3</text>
+    <rect x="344" y="42" width="130" height="46" rx="9" fill="rgba(26,127,55,.12)" stroke="var(--ok)"/>
+    <text x="409" y="62" text-anchor="middle" font-size="12">đường ĐÚNG</text>
+    <text x="409" y="80" text-anchor="middle" font-weight="700" fill="var(--ok)">tổng +6</text>
+
+    <!-- đường sai -->
+    <rect x="20" y="112" width="124" height="46" rx="9" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/>
+    <text x="82" y="132" text-anchor="middle" font-weight="650" font-size="12.5">“rừng”</text>
+    <text x="82" y="149" text-anchor="middle" fill="var(--muted)" font-size="11.5">không khớp: +0</text>
+    <line x1="146" y1="135" x2="196" y2="135" stroke="var(--bad)" stroke-width="2" marker-end="url(#ar3)"/>
+    <rect x="200" y="112" width="124" height="46" rx="9" fill="var(--bg)" stroke="var(--bad)" stroke-width="2"/>
+    <text x="262" y="132" text-anchor="middle" font-weight="650" font-size="12.5">“nhạc”</text>
+    <text x="262" y="149" text-anchor="middle" fill="var(--bad)" font-size="11.5">từ RỜI khớp: +3</text>
+    <rect x="344" y="112" width="130" height="46" rx="9" fill="rgba(192,57,43,.12)" stroke="var(--bad)"/>
+    <text x="409" y="132" text-anchor="middle" font-size="12">đường SAI</text>
+    <text x="409" y="150" text-anchor="middle" font-weight="700" fill="var(--bad)">tổng +3</text>
+
+    <!-- biên -->
+    <line x1="494" y1="52" x2="494" y2="148" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="488" y1="65" x2="500" y2="65" stroke="var(--muted)" stroke-width="1.5"/>
+    <line x1="488" y1="135" x2="500" y2="135" stroke="var(--muted)" stroke-width="1.5"/>
+    <text x="512" y="92" font-size="12" fill="var(--muted)">biên chỉ còn</text>
+    <text x="512" y="110" font-size="15" font-weight="700" fill="var(--warn)">3</text>
+
+    <rect x="20" y="180" width="580" height="56" rx="9" fill="var(--card)" stroke="var(--line)"/>
+    <text x="310" y="203" text-anchor="middle" font-size="12.5">Bỏ dòng rời «NHẠC» ⇒ đường sai về <tspan font-weight="650">+0</tspan>, biên trở lại <tspan font-weight="700" fill="var(--ok)">6</tspan> ⇒ thắng được chênh lệch âm học <i>dừng</i> ↔ <i>rừng</i></text>
+    <text x="310" y="223" text-anchor="middle" font-size="11.5" fill="var(--muted)">[ĐO] ma trận 4 · N4 (cụm + 8 danh từ rời) = 20/25, w09 ✗ — chính danh từ rời đó là thứ giữ w09 sai</text>
+  </g>
+</svg>
+<figcaption>Con số +3/+6 là <span class="ev suy">[SUY]</span> (đọc hợp đồng cộng điểm của <code>ForwardOneStep</code>, chưa in thang điểm thật ra); <b>chiều</b> của hiệu ứng là <span class="ev do">[ĐO]</span>: có <code>NHẠC</code> rời ⇒ <code>w09</code> ✗, bỏ đi ⇒ ✓.</figcaption>
+</figure>
+
+<h3>4.3 Hợp đồng — như đã implement</h3>
+<pre>// core/…/voice/SherpaPhraseHotwords.kt  (MỚI)
+object SherpaPhraseHotwords {
+    /** Động từ được phép theo loại nút — CÙNG bảng với nhánh control() của VoiceIntentParser. */
+    val CONTROL_VERBS: Map&lt;ControlKind, List&lt;VoiceVerb&gt;&gt;
+
+    /** Mọi cụm CÓ DẤU đáng bias, thứ tự ỔN ĐỊNH. Chưa lọc — việc đó của SherpaHotwords.phraseFile. */
+    fun phrases(places: List&lt;String&gt; = emptyList()): List&lt;String&gt;
+}
+
+// core/…/voice/SherpaHotwords.kt  (thêm 3 hàm, giữ nguyên fileContent/phrasesOf/normalize)
+fun phraseFile(phrases: Iterable&lt;String&gt;): String     // chuẩn hoá → isPhrase → dropPrefixes
+fun isPhrase(hotword: String): Boolean                 // R2a — cụm ≥ 2 từ
+fun dropPrefixes(lines: Collection&lt;String&gt;): List&lt;String&gt;  // R2c — bỏ tiền tố theo từ
+
+// core/…/voice/SherpaBiasing.kt  (thân hàm đổi, chữ ký GIỮ NGUYÊN)
+fun hotwordsFile(places: List&lt;String&gt; = emptyList()): String =
+    SherpaHotwords.phraseFile(SherpaPhraseHotwords.phrases(places))</pre>
+<p><b>Bốn quyết định đặt-ở-đâu</b>, mỗi cái có lý do đã trả giá:</p>
+<ul>
+<li><b>Lọc ở <code>phraseFile</code>, không ở <code>normalize</code></b> (<code>SherpaHotwords.kt:118-141</code>): <code>normalize</code> là hàm chung, còn phải trả hotword một từ cho bài canh <code>phrasesOf("Pin (SOC)") == [PIN, SOC]</code>. Trộn hai việc vào một hàm là cách nhanh nhất để lần sau có người bỏ lọc mà không biết mình bỏ cái gì. <code>fileContent</code> cũ <b>giữ nguyên</b>, không ai phải sửa chỗ gọi khác.</li>
+<li><b><code>SherpaBiasing.hotwordsFile</code> giữ nguyên chữ ký</b> ⇒ <code>:app</code> không sửa một dòng nào (R0). Phần KDoc mô tả nguồn cũ được chuyển thành khối <i>“Lịch sử — vì sao không còn <code>accentedControlPhrases()</code>”</i> (<code>SherpaBiasing.kt:34-42</code>): người sau đọc ra <b>vì sao</b> đã bỏ, nên không khôi phục lại.</li>
+<li><b><code>startsWithVerb</code></b> (<code>SherpaPhraseHotwords.kt:107-110</code>): cách nói đã mang sẵn động từ (<i>“mở khoá cửa”</i>, <i>“sấy kính trước”</i>) thì <b>không</b> chồng thêm động từ — nếu không sẽ đẻ ra <code>MỞ MỞ KHOÁ CỬA</code>. Nhận biết bằng <b>từ đầu</b> so với tập đầu-từ của mọi dạng động từ, không bằng danh sách chép tay.</li>
+<li><b><code>dropPrefixes</code> sắp xếp từ điển rồi nhìn phần tử KẾ TIẾP</b> (<code>SherpaHotwords.kt:87-92</code>) thay vì so từng cặp: mọi dòng bắt đầu bằng <code>"$x "</code> đứng ngay sau <code>x</code> (dấu cách nhỏ hơn mọi chữ cái) ⇒ O(n log n) thay cho O(n²) trên 2 000 dòng. Kết quả vẫn trả theo <b>thứ tự xuất hiện</b> để tệp <code>diff</code> được.</li>
+</ul>
+
+<h3>4.4 Động từ ghép theo <code>ControlKind</code> — và vì sao không nhân chéo mù</h3>
+<p>Nguồn động từ là <code>SherpaSpokenWords.VERBS</code> (<code>SherpaSpokenWords.kt:201-219</code>, đã có bài canh ép nó không lệch khỏi <code>VoiceGrammar.VERBS</code>). <code>ControlKind</code> khai ở <code>ControlRegistry.kt:31</code>: <code>TOGGLE · STEP · COVER · SELECT · BUTTON</code>. Bảng thật nằm ở <code>SherpaPhraseHotwords.CONTROL_VERBS</code> (<code>SherpaPhraseHotwords.kt:42-48</code>) và <b>khớp đúng</b> nhánh <code>control()</code> mà <code>VoiceIntentParser</code> chấp nhận — cụm nào parser không hiểu thì không bias, để tệp hotword không hứa thứ đường lệnh không làm được.</p>
+<p class="muted">Mỗi “nhãn” dưới đây gồm <b>ba</b> nguồn, tất cả đều tiếng Việt: <code>label</code> · <code>short</code> · cách nói đời thường có dấu tra từ <code>VoiceSynonyms.CONTROL/TELEMETRY[id]</code> qua <code>SherpaSpokenWords.ACCENTED</code> (<code>SherpaPhraseHotwords.kt:97-102</code>). Nhãn <b>nhiều từ</b> tự nó đã là một cụm nên vào tệp cả ở dạng trần; nhãn <b>một từ</b> rụng ở tầng lọc (R2a) — không cần luật riêng.</p>
+<div class="tblwrap"><table>
+<tr><th>Nguồn</th><th><code>kind</code></th><th>Động từ ghép</th><th>Mẫu cụm</th><th>Ví dụ sinh ra</th></tr>
+<tr><td rowspan="4"><code>ControlRegistry</code></td><td><code>TOGGLE</code>, <code>COVER</code></td><td><code>ON</code> (bật) · <code>OFF</code> (tắt) · <code>OPEN</code> (mở, đưa) · <code>CLOSE</code> (đóng)</td><td>động từ + (label · short · synonym có dấu)</td><td><code>BẬT ĐÈN ĐỌC</code> · <code>TẮT LỌC BỤI</code> · <code>MỞ KÍNH TRƯỚC TRÁI</code> · <code>ĐÓNG CỐP XE</code></td></tr>
+<tr><td><code>STEP</code></td><td><code>UP</code> (tăng) · <code>DOWN</code> (giảm) · <code>SET</code> (đặt, chỉnh)</td><td>động từ + nhãn</td><td><code>TĂNG ÂM LƯỢNG</code> · <code>GIẢM NHIỆT ĐỘ</code> · <code>ĐẶT QUẠT GIÓ</code></td></tr>
+<tr><td><code>BUTTON</code></td><td><code>ON</code> (bật) · <code>OPEN</code> (mở, đưa)</td><td>động từ + nhãn</td><td><code>BẬT LỌC KHÔNG KHÍ NGAY</code> · <code>MỞ CAMERA QUANH XE</code></td></tr>
+<tr><td><code>SELECT</code></td><td><code>SWITCH</code> (đổi, chuyển, đổi sang, chuyển sang) · <code>SET</code> (đặt, chỉnh)</td><td>3 mẫu: <i>động từ + nhãn</i> · <i>nhãn + arg</i> · <i>SWITCH + arg</i></td><td><code>ĐỔI CHẾ ĐỘ LÁI</code> · <code>CHẾ ĐỘ LÁI THỂ THAO</code> · <code>CHUYỂN SANG THỂ THAO</code><br><span class="muted">⚠ <code>CHẾ ĐỘ LÁI</code> trần <b>rụng</b> vì R2c — nó là tiền tố của cụm có <code>arg</code></span></td></tr>
+<tr><td><code>TelemetryRegistry</code></td><td>—</td><td><code>READ</code> (xem, đọc, hiện, kiểm tra, cho xem, đọc to)</td><td>động từ + (label · short · synonym)</td><td><code>XEM PIN</code> · <code>KIỂM TRA ÁP LỐP TRƯỚC TRÁI</code> · <code>ĐỌC MỨC PIN</code></td></tr>
+<tr><td><code>ActionMacros</code></td><td>—</td><td>— (nhãn macro <b>đã là</b> một câu lệnh)</td><td>chỉ nhãn</td><td><code>ĐÓNG HẾT KÍNH</code> · <code>MỞ CỬA</code> + <code>ĐÈN ĐỌC</code> (nhãn <i>“Mở cửa + đèn đọc”</i> tách hai ở tầng chuẩn hoá)</td></tr>
+<tr><td><code>LauncherActions</code></td><td>—</td><td><code>OPEN</code> (mở, đưa)</td><td>nhãn · động từ + nhãn</td><td><code>MỞ CÀI ĐẶT</code> · <code>MỞ ỨNG DỤNG</code> <span class="muted">(nhãn trần <i>“Ứng dụng”</i> một từ ⇒ rụng)</span></td></tr>
+<tr><td>media (<code>VoiceSynonyms.MEDIA_WORDS</code> dạng có dấu)</td><td>—</td><td><code>PLAY</code> (phát, nghe) · <code>PAUSE</code> (dừng, tạm dừng)</td><td>động từ + danh từ nhạc; <code>NEXT</code>/<code>PREV</code> đã là cụm sẵn</td><td><code>PHÁT NHẠC</code> · <code>DỪNG NHẠC</code> · <code>BÀI TIẾP THEO</code> · <code>QUAY LẠI BÀI</code></td></tr>
+<tr><td>nav</td><td>—</td><td><code>NAV</code> (dẫn đường, chỉ đường, dẫn đường đến/tới, chỉ đường đến/tới, tìm đường đến)</td><td>bản thân cụm động từ đã ≥ 2 từ ⇒ vào thẳng</td><td><code>DẪN ĐƯỜNG ĐẾN</code> · <code>TÌM ĐƯỜNG ĐẾN</code></td></tr>
+<tr><td>sổ địa chỉ (<code>places</code>)</td><td>—</td><td><code>VoicePlaces.PLACE_VERBS</code> (<code>VoicePlaces.kt:76</code>): đi đến · đi tới · về tới · về · đi · đến · tới</td><td>động từ + nhãn — <b>bỏ nhãn trần</b></td><td><code>VỀ NHÀ</code> · <code>ĐẾN CÔNG TY</code> · <code>ĐI TỚI NHÀ NGOẠI</code></td></tr>
+</table></div>
+<div class="card">
+<b>Vì sao theo <code>kind</code> chứ không nhân chéo mọi động từ × mọi nhãn:</b> nhân chéo đủ 39 động từ × ~190 nhãn ≈ 7 000 dòng — <span class="ev do">[ĐO]</span> chi phí <code>createStream</code> vẫn chịu được (§4.6), nhưng phần lớn cụm sẽ là thứ <b>không ai nói</b> (<i>“giảm đèn đọc”</i>, <i>“đóng pin”</i>) và mỗi cụm vô nghĩa là một đường cạnh tranh thêm trong beam rộng 4. Ghép theo <code>kind</code> là cách <b>để dữ liệu tự rẽ nhánh</b> đúng tinh thần <code>CLAUDE.md</code> §7: khác biệt giữa các nút lộ ra qua trường <code>kind</code> của chính bộ đăng ký, không qua một bảng tên viết tay.
+<br><span class="ev chua">[CHƯA BIẾT]</span> ngưỡng trên thật sự của số dòng — đã đo tới <b>2 078</b> dòng và vẫn tốt. Bài canh chặn ở dải <code>300..3000</code> dòng (<code>SherpaBiasingCoverageTest.kt:106</code>): vượt ra là test đỏ, buộc phải đo lại thay vì suy tuyến tính.
+</div>
+
+<h3>4.5 Năm ma trận đã đo (host, 2026-09-16) — 31 cấu hình tệp × 25 WAV</h3>
+<p class="muted"><b>Năm</b> ma trận (đánh số 2–6 theo tên tệp log), tổng <b>31 cấu hình tệp</b>, mỗi cấu hình chạy đủ <b>25 WAV</b>. ⚠ Không tính “ma trận 1” của 09-15 vào đây: lượt ấy chỉ chạy <b>5</b> WAV nên không so được số với bảng dưới — và chính cỡ mẫu 5 câu là thứ đã đẻ ra kết luận <i>“loãng”</i> bị bác ở §2.2.<br>
+Cùng model <code>zipformer-vi-2025-04-20</code>, cùng 25 WAV sinh bằng <code>scripts/emulator/voice-wavgen.sh</code> (<code>say -v Linh</code>), cùng <code>modified_beam_search</code> / <code>max_active_paths=4</code> / <code>hotwords_score=3.0</code> / <code>modeling_unit=bpe</code>. Cột số = <b>số câu nghe ĐÚNG NGUYÊN VĂN / 25</b>. Bốn cột WAV chốt: <code>w04 mở kính trước trái</code> · <code>w09 dừng nhạc</code> · <code>w12 xem pin</code> · <code>w13 tăng âm lượng</code>.</p>
+
+<h4>Ma trận 2 — kích thước tệp, KHÔNG có cụm động-từ+đối-tượng <span class="muted">(<code>matrix2_stdout.log</code>)</span></h4>
+<div class="tblwrap"><table>
+<tr><th>Cấu hình tệp</th><th>n dòng</th><th>đúng/25</th><th>w04</th><th>w09</th><th>w12</th><th>w13</th></tr>
+<tr><td>không hotword</td><td>0</td><td>17</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+<tr><td><b>1.64 thật</b></td><td>623</td><td>19</td><td>✓</td><td>✗</td><td>✗</td><td>✓</td></tr>
+<tr><td>chỉ dòng VN (bỏ ASCII)</td><td>340</td><td>19</td><td>✓</td><td>✗</td><td>✗</td><td>✓</td></tr>
+<tr><td>động từ + nhãn VN (không synonyms)</td><td>255</td><td>18</td><td>✗</td><td>✗</td><td>✗</td><td>✓</td></tr>
+<tr><td>chỉ VERBS+ACCENTED (<code>SherpaSpokenWords.ALL</code>)</td><td>144</td><td>18</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+<tr><td>chỉ 39 động từ</td><td>39</td><td>17</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+<tr><td>hai tầng điểm theo dòng — lõi <code>:3.0</code> / còn lại <code>:1.0</code></td><td>347</td><td>19</td><td>✓</td><td>✗</td><td>✗</td><td>✓</td></tr>
+</table></div>
+<p><b>⇒ Thu nhỏ tệp KHÔNG sửa được <code>w09</code>/<code>w12</code>.</b> Giả thuyết “loãng” bị bác. Hai tầng điểm cũng không thêm gì ⇒ R3.</p>
+
+<h4>Ma trận 3 — đưa CỤM vào <span class="muted">(<code>matrix3_stdout.log</code>)</span></h4>
+<div class="tblwrap"><table>
+<tr><th>Cấu hình tệp</th><th>n</th><th>đúng/25</th><th>w04</th><th>w09</th><th>w12</th><th>w13</th></tr>
+<tr><td>3 dòng: <code>PIN</code> / <code>XEM PIN</code> / <code>DỪNG NHẠC</code></td><td>3</td><td>19</td><td>✗</td><td>✓</td><td>✓</td><td>✗</td></tr>
+<tr class="worst"><td>39 động từ + 2 cụm</td><td>41</td><td>17</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+<tr><td>144 lõi + 2 cụm</td><td>146</td><td>18</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+<tr><td>340 VN + 2 cụm</td><td>342</td><td>20</td><td>✓</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr><td>623 + 2 cụm</td><td>625</td><td>19</td><td>✓</td><td>✗</td><td>✗</td><td>✓</td></tr>
+<tr class="best"><td><b>CHỈ cụm sinh generic</b> (động từ theo loại × nhãn VN), 0 từ rời</td><td>756</td><td><b>21</b></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td>340 VN + cụm generic</td><td>1093</td><td>20</td><td>✓</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr class="best"><td><b>cụm generic + cụm cho synonyms</b></td><td>1440</td><td><b>21</b></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr class="worst"><td>mô phỏng “ngữ cảnh”: 39 động từ rời + cụm cho 10 nhãn</td><td>114</td><td>17</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+</table></div>
+<p><b>⇒ Tệp 1 440 dòng toàn cụm là tốt nhất; tệp 114 dòng “theo ngữ cảnh” có động từ rời là tệ nhất (bằng không bias).</b> Kích thước không phải biến số.</p>
+
+<h4>Ma trận 4 — tách riêng biến “dòng một từ” <span class="muted">(<code>matrix4_stdout.log</code>)</span></h4>
+<div class="tblwrap"><table>
+<tr><th>Cấu hình tệp</th><th>n</th><th>đúng/25</th><th>w04</th><th>w09</th><th>w12</th><th>w13</th></tr>
+<tr class="best"><td>340 VN <b>bỏ MỌI dòng 1 từ</b> + 2 cụm</td><td>297</td><td><b>21</b></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td>340 VN bỏ chỉ động từ rời + 2 cụm</td><td>325</td><td>20</td><td>✓</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr><td>623 bỏ động từ rời + 2 cụm</td><td>606</td><td>20</td><td>✓</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr><td>cụm generic + 8 danh từ rời (<code>PIN</code>, <code>NHẠC</code>, <code>KÍNH</code>…)</td><td>764</td><td>20</td><td>✓</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr class="worst"><td>cụm generic + động từ rời</td><td>775</td><td><b>17</b></td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+<tr class="best"><td>mô phỏng ngữ cảnh, bỏ động từ rời</td><td>95</td><td><b>21</b></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr class="best"><td>cụm generic + <code>PIN CÒN BAO NHIÊU</code></td><td>758</td><td><b>21</b></td><td>✓</td><td>✓</td><td>✓</td><td>✓ <span class="muted">(w22 vẫn ✗)</span></td></tr>
+</table></div>
+<p><b>⇒ Biến số quyết định = dòng MỘT TỪ.</b> Động từ rời phá nặng nhất (21 → 17 — kéo tệp cụm tốt nhất xuống bằng mức không-bias); danh từ rời phá đúng cụm chứa danh từ đó (<code>NHẠC</code> rời ⇒ <i>“dừng nhạc”</i> thua <i>“rừng nhạc”</i>). Và: tệp 95 dòng bỏ động từ rời = tệp 1 440 dòng = <b>21/25</b> ⇒ số dòng không giải thích được gì.</p>
+
+<h4>Ma trận 5 — <b>đúng tệp Kotlin sinh</b> (R5), không phải tệp Python dựng tay <span class="muted">(<code>matrix5_stdout.log</code>)</span></h4>
+<p class="muted">Tệp dump từ chính bài canh (<code>SherpaBiasingCoverageTest.kt:101-107</code> ghi <code>core/build/hotwords/hotwords-phrases.txt</code>), rồi nạp thẳng vào sherpa trên host. Cột cuối là chi phí <code>createStream(hotwords)</code>, median 5 lần.</p>
+<div class="tblwrap"><table>
+<tr><th>Cấu hình</th><th>n</th><th>đúng/25</th><th>w04</th><th>w09</th><th>w12</th><th>w13</th><th>w19 <span class="muted">chế độ lái thể thao</span></th><th><code>createStream</code></th></tr>
+<tr><td>không hotword</td><td>0</td><td>17</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✓</td><td>—</td></tr>
+<tr><td>1.64 thật</td><td>623</td><td>19</td><td>✓</td><td>✗</td><td>✗</td><td>✓</td><td>✓</td><td>1,5 ms</td></tr>
+<tr><td><b>Kotlin sinh</b> (cụm, 0 từ rời — <b>chưa</b> có R2c)</td><td>2057</td><td>20</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><b class="bad">✗</b> <i>“CHẾ ĐỘ LÁI”</i></td><td><b>6,6 ms</b></td></tr>
+<tr><td>Kotlin sinh + sổ địa chỉ (<i>Nhà</i>, <i>Công ty</i>)</td><td>2078</td><td>20</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td><td>6,8 ms</td></tr>
+</table></div>
+<p><b>⇒ Cụm sinh từ Kotlin sửa được cả bốn câu canh cũ</b> (<code>w09</code>, <code>w12</code> lần đầu ✓ trên tệp sản phẩm thật) — <b>nhưng lộ ra một lỗi mới</b>: <code>w19</code> từ ✓ thành ✗. Đúng thứ mà bộ 25 WAV tồn tại để bắt: một bản vá không được phép đổi một ca đang đúng thành sai.</p>
+
+<h4>Ma trận 6 — chữa <code>w19</code>: bốn cách, chọn cách nào <span class="muted">(<code>matrix6_stdout.log</code>)</span></h4>
+<div class="tblwrap"><table>
+<tr><th>Cấu hình</th><th>n</th><th>đúng/25</th><th>w19</th><th>Luật đứng sau</th></tr>
+<tr><td>Kotlin sinh, nguyên trạng</td><td>2057</td><td>20</td><td class="bad">✗</td><td>—</td></tr>
+<tr class="best"><td><b>bỏ dòng là tiền tố theo từ của dòng khác</b> ← <b>đã chọn</b></td><td>1902</td><td><b>21</b></td><td>✓</td><td>suy thẳng từ cơ chế §2.3 (a) — <b>155</b> dòng rụng</td></tr>
+<tr><td>chỉ giữ cụm bắt đầu bằng động từ</td><td>1770</td><td>21</td><td>✓</td><td>một danh sách động từ chép tay ⇒ mỗi lần thêm động từ là một chỗ phải nhớ</td></tr>
+<tr><td>chỉ cụm động từ <b>+</b> bỏ tiền tố</td><td>1638</td><td>21</td><td>✓</td><td>hai luật cho cùng một hiệu ứng ⇒ thừa</td></tr>
+</table></div>
+<p><b>⇒ Ba cách đều cho 21/25; chọn “bỏ tiền tố”</b> vì nó <b>suy thẳng từ cơ chế đã đọc trong source</b>, không cần một bảng tên viết tay (<code>CLAUDE.md</code> §7). Hai cách kia cho cùng con số nhưng bằng một luật <b>hẹp hơn thực tế</b>: chúng vứt luôn cả cụm không-động-từ đang chạy tốt (<code>ÁP SUẤT LỐP TRƯỚC TRÁI</code>, <code>PIN CÒN BAO NHIÊU</code>), tức mua đúng một câu bằng cách mất bias ở nhiều câu <b>chưa nằm trong bộ 25 WAV</b>. <span class="ev suy">[SUY]</span></p>
+<p class="muted">Canh over-trigger giữ nguyên: <span class="ev do">[ĐO]</span> <code>w21 “hôm nay trời đẹp quá”</code> ✓ ở <b>mọi</b> tệp của cả 5 ma trận, kể cả 2 078 dòng.</p>
+
+<h3>4.6 Vì sao KHÔNG làm hotword theo ngữ cảnh / theo hồ sơ</h3>
+<p>Hướng của backlog 09-15 là <i>“tệp nhỏ theo ngữ cảnh — chỉ nhãn đang hiện trên màn + hồ sơ”</i>. Ba phép đo dưới đây <b>đóng</b> hướng đó lại, và cả ba đều là <span class="ev do">[ĐO]</span>:</p>
+<div class="tblwrap"><table>
+<tr><th>Lý lẽ của hướng ngữ cảnh</th><th>Phép đo</th><th>Kết luận</th></tr>
+<tr>
+  <td>“Tệp nhỏ thì đỡ loãng, nghe chuẩn hơn”</td>
+  <td>M9 (114 dòng, có động từ rời) = <b>17/25</b> · M6 (756 dòng, toàn cụm) = <b>21/25</b> · N6 (95 dòng, toàn cụm) = <b>21/25</b> · M8 (1 440 dòng, toàn cụm) = <b>21/25</b></td>
+  <td><b>Kích thước không phải biến số.</b> Cùng ~100 dòng cho ra 17 hay 21 tuỳ có từ rời hay không.</td>
+</tr>
+<tr>
+  <td>“Tệp lớn thì dựng lại mỗi phiên sẽ chậm”</td>
+  <td><code>createStream(hotwords)</code> trên host, median 5 lần: 95 dòng <b>0,3 ms</b> · 297 dòng <b>0,8 ms</b> · 756 dòng <b>2,2 ms</b> · 1 440 dòng <b>4,5 ms</b> · <b>2 057 dòng (tệp thật) 6,6 ms</b> · 2 078 dòng (+ sổ địa chỉ) <b>6,8 ms</b></td>
+  <td>Tệp ship 1 902 dòng = <b>6,6 ms</b> host; <span class="ev doan">[ƯỚC LƯỢNG]</span> ×20 trên đầu xe ≈ <b>130 ms</b>, vừa <b>trong</b> ngân sách 150 ms của R-nf1 nhưng <b>không dư</b>. Quan hệ gần tuyến tính theo số dòng trên dải đã đo ⇒ tệp phình thêm ~15% là chạm trần. Đây là lý lẽ để <b>không phình tệp</b>, không phải lý lẽ để thu nhỏ theo ngữ cảnh (thu nhỏ không mua được gì về độ chính xác — hàng trên).</td>
+</tr>
+<tr>
+  <td>“Nhãn đang hiện trên màn thì sát ý người lái hơn”</td>
+  <td>Người lái nói <i>“xem pin”</i> khi đang ở màn <b>bất kỳ</b>; tệp theo màn sẽ thiếu đúng nhãn cần. Đồng thời tệp theo ngữ cảnh phải dựng lại theo trạng thái UI ⇒ thêm một nguồn state ngoài tầm test thuần.</td>
+  <td><span class="ev suy">[SUY]</span> — không đo được bằng bộ 25 WAV; nhưng vì lý lẽ hiệu năng và lý lẽ “kích thước” đều đã đổ, hướng này <b>không còn lợi ích nào</b> để bù rủi ro.</td>
+</tr>
+</table></div>
+<p><b>Quyết định:</b> giữ <b>một</b> tệp tĩnh cho mọi ngữ cảnh (cộng nhãn sổ địa chỉ của hồ sơ đang dùng — thứ đã có sẵn ở <code>VoiceRecognizer.kt:129</code>). Backlog <code>V-HOTWORD-CTX</code> giữ ID nhưng <b>đổi mô tả</b> thành <i>“hotword theo CỤM LỆNH, cấm từ rời”</i>.</p>
+
+<h3>4.7 Cái giá của R2c — những cụm ngắn bị luật tiền tố lấy mất</h3>
+<p><code>dropPrefixes</code> không phân biệt <i>“nhãn trần vô nghĩa”</i> với <i>“câu người ta hay nói”</i>: nó bỏ <b>mọi</b> dòng là tiền tố theo từ của một dòng khác. Nên cùng lúc với <code>CHẾ ĐỘ LÁI</code> (thứ ta muốn bỏ), nó cũng lấy mất mấy cụm hoàn toàn đời thường:</p>
+<div class="tblwrap"><table>
+<tr><th>Cụm bị bỏ</th><th>Vì nó là tiền tố của</th><th>Hệ quả khi nói cụm ngắn một mình</th></tr>
+<tr><td><code>MỞ KHOÁ</code></td><td><code>MỞ KHOÁ CỬA</code> · <code>MỞ KHOÁ XE</code></td><td rowspan="3">Không mất <b>chức năng</b>: đường lệnh chữ (<code>VoiceIntentParser</code>) vẫn hiểu nếu model nghe đúng. Mất <b>trợ lực</b> của biasing ⇒ câu ngắn phải tự đứng bằng âm học. <span class="ev chua">[CHƯA ĐO]</span> mức thiệt hại — không ca nào trong bộ 25 WAV chạm tới.</td></tr>
+<tr><td><code>BẬT ĐIỀU HOÀ</code></td><td><code>BẬT ĐIỀU HOÀ TỰ ĐỘNG</code></td></tr>
+<tr><td><code>MỞ CỬA SỔ</code></td><td><code>MỞ CỬA SỔ NÓC</code></td></tr>
+</table></div>
+<p>Bài canh <b>ghi nhận</b> đánh đổi này thay vì giấu nó: <code>SherpaBiasingCoverageTest.kt:127</code> nói thẳng <i>“<code>BẬT ĐIỀU HOÀ</code> cố ý KHÔNG có — nó là tiền tố của <code>BẬT ĐIỀU HOÀ TỰ ĐỘNG</code>; dùng <code>BẬT MÁY LẠNH</code> thay”</i>. Nghĩa là: cách nói thứ hai của cùng một nút (<code>MÁY LẠNH</code> ← <code>VoiceSynonyms</code>) vẫn còn bias, nên nút đó không mất hẳn trợ lực — <span class="ev suy">[SUY]</span>, chưa đo.</p>
+<div class="card"><b>Vì sao vẫn chấp nhận:</b> cụm <b>dài</b> mới là thứ hay nghe sai (từ ngắn model tự nghe được — <span class="ev do">[ĐO]</span> <code>w20 “lọc ngay”</code>, <code>w08 “phát nhạc”</code> đúng ngay cả khi <b>không</b> bias). Đổi trợ lực của cụm ngắn lấy cụm dài nghe đúng là đổi đúng chiều. Nếu muốn giữ cả hai thì phải nới luật — xem <b>OQ4</b>.</div>
+
+<h3>4.8 Context7</h3>
+<p>Không thêm/nâng thư viện nào: <code>sherpa-onnx v1.13.8</code> giữ nguyên phiên bản đang dùng, API chạm tới (<code>createStream(hotwords)</code>, <code>hotwords_score</code>, <code>modeling_unit=bpe</code>) không đổi. Cơ chế được xác nhận bằng <b>đọc thẳng source của đúng phiên bản ấy</b> (<code>csrc/context-graph.cc</code>, <code>csrc/utils.cc</code>) — mức bằng chứng cao hơn tra tài liệu. ⇒ không cần Context7 cho spec này; nếu sau này phải nâng AAR thì verify lúc đó.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">🔲 = chưa làm · 🔨 = đang làm · ✅ = xong. T1 → T2 → T3 tuần tự (T2 cần hợp đồng của T1; T3 cần cả hai). T4 cần T3 (tệp dump ra từ test). T5 cần T4 xanh. T6/T7 chạy cùng T4/T5.</p>
+<div class="tblwrap"><table>
+<tr><th>#</th><th>Việc</th><th>File</th><th>Trạng thái</th></tr>
+<tr>
+  <td><b>T1</b></td>
+  <td>Viết <code>SherpaPhraseHotwords</code> (<b>mới</b>, <code>:core</code>): <code>CONTROL_VERBS</code> + <code>phrases(places)</code>. Ghép động từ × nhãn theo <code>ControlKind</code> đúng bảng §4.4; động từ từ <code>SherpaSpokenWords.VERBS</code>, cách nói từ <code>ACCENTED</code>, địa chỉ từ <code>VoicePlaces.PLACE_VERBS</code>. <b>Chỉ nhãn VI</b> (R2b). Thứ tự ổn định.<br><span class="muted">Lệch so với bản nháp: hợp đồng thật là <code>phrases()</code> (trả danh sách CHƯA lọc) chứ không phải <code>build()</code>+<code>keep()</code> — việc lọc dồn hết về <code>SherpaHotwords</code> để một chỗ duy nhất quyết định hình dạng tệp.</span></td>
+  <td><code>core/…/voice/SherpaPhraseHotwords.kt</code> <span class="muted">(111 dòng)</span></td>
+  <td>✅</td>
+</tr>
+<tr>
+  <td><b>T2</b></td>
+  <td>Thêm <code>SherpaHotwords.phraseFile</code> + <code>isPhrase</code> (R2a) + <code>dropPrefixes</code> (R2c); chuyển <code>SherpaBiasing.hotwordsFile</code> sang <code>phraseFile(SherpaPhraseHotwords.phrases(places))</code>, giữ nguyên chữ ký (R0). Lý do bỏ nguồn cũ ghi lại tại chỗ (<code>SherpaBiasing.kt:34-42</code>) để người sau không khôi phục.</td>
+  <td><code>core/…/voice/SherpaHotwords.kt</code><br><code>core/…/voice/SherpaBiasing.kt</code></td>
+  <td>✅</td>
+</tr>
+<tr>
+  <td><b>T3</b></td>
+  <td>Viết lại <code>SherpaBiasingCoverageTest</code> theo R4 (5 phép đếm + 1 bài canh âm + bài dump của T4) và thêm <code>SherpaHotwordsTest</code> khoá riêng <code>normalize</code>/<code>phrasesOf</code>/<code>dropPrefixes</code>. Giữ nguyên các bài canh cũ về <code>SherpaSpokenWords</code> (không để mất bài khoá lỗi “dấu câu nuốt 50 nhãn”).<br><span class="ev do">[ĐO]</span> Chính bộ này bắt <b>hai</b> lỗi của bản nháp: luật ASCII làm rụng <code>XEM PIN</code>, và dòng tiền tố (§Changelog Pass 1).</td>
+  <td><code>core/src/test/…/SherpaBiasingCoverageTest.kt</code> <span class="muted">(203 dòng)</span><br><code>core/src/test/…/SherpaHotwordsTest.kt</code></td>
+  <td>✅</td>
+</tr>
+<tr>
+  <td><b>T4</b></td>
+  <td><b>Đo lại trên chính tệp Kotlin sinh</b> (R5): bài canh dump <code>hotwordsFile()</code> ra <code>core/build/hotwords/</code>, ma trận 5 + 6 chạy trên đúng tệp đó.<br><span class="ev do">[ĐO]</span> <b>2 057 dòng = 20/25</b> (w19 ✗) → <b>1 902 dòng = 21/25</b> (w19 ✓) sau luật tiền tố. <code>createStream</code> <b>6,6 ms</b> @ 2 057 dòng.</td>
+  <td><code>matrix5_stdout.log</code> · <code>matrix6_stdout.log</code><br>tóm tắt trong doc E2E §6.3</td>
+  <td>✅</td>
+</tr>
+<tr>
+  <td><b>T5</b></td>
+  <td>E2E máy ảo trước/sau: <code>voice-e2e.sh --only wav</code>, đủ 25 ca, <code>vehicleTest</code>.<br><span class="ev do">[ĐO]</span> bản <b>1.65 (66)</b>: <b>22/25</b> nghe đúng nguyên văn (1.64 = 20/25). Tệp hotword thật trên máy <b>1 902 dòng</b>, <code>biasing=true</code> (logcat <code>KachiVoiceEngine</code>).</td>
+  <td><code>scripts/emulator/voice-e2e.sh</code></td>
+  <td>✅</td>
+</tr>
+<tr>
+  <td><b>T6</b></td>
+  <td>Doc + index (R2.1 của <code>documentation-and-backlog.md</code> — doc mồ côi = không tồn tại): §6.3 của doc E2E <b>đã có</b> khối <i>[ĐO host 2026-09-16]</i> (5 ma trận + cơ chế + kết quả 1.65) và §6.4 đã đổi dòng L3 sang <i>“✅ vá ở 1.65”</i>; còn lại: mô tả <code>V-HOTWORD-CTX</code> trong backlog và dòng index trong <code>docs/README.md</code>.</td>
+  <td><code>docs/diagnostics/emulator-voice-e2e-2026-09-15.md</code> ✅<br><code>docs/PROJECT-BACKLOG.md</code> · <code>docs/README.md</code> 🔨</td>
+  <td>🔨</td>
+</tr>
+<tr>
+  <td><b>T7</b></td>
+  <td><b>Đưa công cụ đo vào repo</b> — ma trận từng chỉ sống trong scratchpad của một phiên, tức lượt sau không tái lập được (đúng cái bẫy <code>CLAUDE.md</code> §10 dặn tránh). Bản chép của <code>run_matrix*.py</code> nay nằm trong repo kèm docstring nói rõ cách chạy (model ở đâu, WAV sinh bằng gì, đọc kết quả thế nào).</td>
+  <td><code>scripts/voice/hotword-matrix.py</code></td>
+  <td>✅</td>
+</tr>
+<tr>
+  <td><b>T8</b></td>
+  <td>Senior review (Opus, rule global §5) + <code>./gradlew :core:test :app:testDebugUnitTest</code>. Grep call-site của hàm mới (<code>CLAUDE.md</code> §8). Bump version — <b>đã bump 1.65 (66)</b>.<br><span class="ev do">[ĐO]</span> <b>APPROVED off-car</b>: 8 finding ([P2]×3 · [P3]×5), 7 vá trong pass, 1 thành OQ5; <code>:core</code> <b>1 908/0</b> · <code>:app</code> <b>955/0</b>. Chi tiết ở §10.<br><span class="muted">Còn lại: security scan ngay trước <code>git commit</code> (rule global §6 — chưa chạy vì chưa commit).</span></td>
+  <td>§10 Reviewer Log</td>
+  <td>✅ <span class="muted">(scan 🔲)</span></td>
+</tr>
+</table></div>
+
+<h2>6. Verification</h2>
+
+<h3>6.1 Mốc trước/sau — 25 WAV <span class="muted">(<code>say -v Linh</code>, cùng bộ ca)</span></h3>
+<div class="tblwrap"><table>
+<tr><th>Mốc</th><th>Môi trường</th><th>Tệp hotword</th><th>n dòng</th><th>đúng nguyên văn /25</th><th>Nguồn</th></tr>
+<tr><td>trước — bản ship 1.64 (65)</td><td>máy ảo, <code>vehicleTest</code></td><td>sinh từ <code>SherpaBiasing</code> hiện tại</td><td>623</td><td><b>20</b></td><td><span class="ev do">[ĐO]</span> <code>emulator-voice-e2e-2026-09-15.md</code> §6.1</td>
+</tr>
+<tr><td>trước — cùng tệp ấy, đo trên host</td><td>host (sherpa-onnx pip)</td><td>tệp 623 dòng dump ra</td><td>623</td><td><b>19</b></td><td><span class="ev do">[ĐO]</span> <code>matrix2</code> H1</td></tr>
+<tr><td>đáy — không bias</td><td>host</td><td>—</td><td>0</td><td><b>17</b></td><td><span class="ev do">[ĐO]</span> <code>matrix2</code> H0</td></tr>
+<tr><td>trần đã chạm của hướng cụm</td><td>host, tệp Python dựng tay</td><td>M6 / M8 / N1 / N6 / N7</td><td>756 · 1440 · 297 · 95 · 758</td><td><b>21</b></td><td><span class="ev do">[ĐO]</span> ma trận 3 + 4</td></tr>
+<tr><td>bước giữa — tệp Kotlin <b>chưa</b> có luật tiền tố</td><td>host</td><td>cụm, 0 từ rời</td><td>2057</td><td><b>20</b> <span class="muted">(w19 ✗)</span></td><td><span class="ev do">[ĐO]</span> <code>matrix5</code> K2 / <code>matrix6</code> P0</td></tr>
+<tr class="best"><td><b>sau — tệp Kotlin của bản ship</b></td><td>host</td><td>cụm · 0 từ rời · 0 tiền tố</td><td><b>1902</b></td><td><b>21</b></td><td><span class="ev do">[ĐO]</span> <code>matrix6</code> P1 — <b>đạt cổng T4</b></td></tr>
+<tr class="best"><td><b>sau — E2E máy ảo, bản 1.65 (66)</b></td><td>máy ảo, <code>vehicleTest</code></td><td>tệp 1 902 dòng trong APK thật, <code>biasing=true</code></td><td>1902</td><td><b>22</b></td><td><span class="ev do">[ĐO]</span> <code>voice-e2e.sh --only wav</code> — <b>đạt cổng T5</b></td></tr>
+</table></div>
+<p class="muted"><span class="ev suy">[SUY]</span> Chênh 20 (máy ảo) ↔ 19 (host) trên <b>cùng</b> tệp 623 dòng: khác môi trường giải mã (AAR Android vs bản pip host). Vì vậy hai cổng được chấm riêng — <b>host 19 → 21</b>, <b>máy ảo 20 → 22</b> — không trộn vào một câu. Máy ảo <b>cao hơn host 1 điểm</b> ở cả hai mốc, và chênh ấy giữ nguyên trước/sau bản vá ⇒ <span class="ev suy">[SUY]</span> là hằng số của môi trường, không phải hiệu ứng của bản vá.</p>
+
+<h3>6.2 Năm câu canh — trước/sau, nguyên văn từ báo cáo E2E 1.65</h3>
+<div class="tblwrap"><table>
+<tr><th>Ca</th><th>Câu</th><th>1.64 (623 dòng)</th><th>1.65 (1 902 dòng) — nghe</th><th>1.65 — ý định</th></tr>
+<tr><td><code>w04</code></td><td>mở kính trước trái</td><td>✓</td><td>✓ <i>mở kính trước trái</i></td><td><code>Control · Mở Kính trước-trái</code></td></tr>
+<tr><td><code>w09</code></td><td>dừng nhạc</td><td><b class="bad">✗</b> <i>rừng nhạc</i></td><td><b class="ok">✓</b> <i>dừng nhạc</i></td><td><code>Media · Dừng nhạc</code></td></tr>
+<tr><td><code>w12</code></td><td>xem pin</td><td><b class="bad">✗</b> <i>xem tin</i></td><td><b class="ok">✓</b> <i>xem pin</i></td><td><code>Read · Xem Pin (SOC)</code></td></tr>
+<tr><td><code>w13</code></td><td>tăng âm lượng</td><td>✓</td><td>✓ <i>tăng âm lượng</i></td><td><code>Control · Tăng Âm lượng 1 nấc</code></td></tr>
+<tr><td><code>w19</code></td><td>chế độ lái thể thao</td><td>✓ <span class="muted">(host 2 057 dòng: ✗ — lỗi do chính bản vá, đã chữa bằng R2c)</span></td><td><b class="ok">✓</b> <i>chế độ lái thể thao</i></td><td><code>Control · Chế độ lái: Thể thao</code></td></tr>
+</table></div>
+<p class="muted">Ba ca ≈ còn lại trên 1.65 đúng là <code>w07</code> · <code>w22</code> · <code>w24</code> (§6.3). <code>w11</code> <i>“mở khoá cửa”</i> nghe ra <i>“mở khóa cửa”</i> nhưng bộ so khớp của harness tính là đúng và ý định ra <code>Control · Bấm Mở khoá cửa</code> — đó là lý do máy ảo đạt 22 trong khi host (so <b>nguyên văn</b> từng ký tự) dừng ở 21.</p>
+
+<h3>6.3 Trần của phép đo — 4 ca sai ở MỌI cấu hình</h3>
+<p><span class="ev do">[ĐO]</span> Trong cả <b>31</b> cấu hình tệp của 5 ma trận (kể cả “không hotword” và kể cả tệp Kotlin của bản ship), đúng bốn ca luôn ✗ ⇒ <b>21/25 là trần</b> của bộ 25 WAV khi chấm <b>nguyên văn trên host</b>, và bản ship <b>đã chạm trần</b>. Trên máy ảo con số là 22 vì harness tính <code>w11</code> là đúng (xem §6.2). Bốn ca đó nằm ngoài tầm của hotword:</p>
+<div class="tblwrap"><table>
+<tr><th>Ca</th><th>Câu</th><th>Nghe ra</th><th>Vì sao ngoài tầm</th></tr>
+<tr><td><code>w07</code></td><td>dẫn đường đến Bitexco</td><td><i>DẪN ĐƯỜNG ĐẾN BICO</i></td><td>Tên riêng — model VN không phát ra được token ấy. Đã ghi ở §3 L6 của doc E2E. <span class="ev do">[ĐO]</span></td></tr>
+<tr><td><code>w11</code></td><td>mở khoá cửa</td><td><i>MỞ KHÓA CỬA</i></td><td>Chính tả cũ/mới (<i>khoá</i> ↔ <i>khóa</i>). <code>VoiceLexicon.deaccent</code> gộp cả hai về <code>khoa</code> ⇒ <b>ý định vẫn đúng</b>; chỉ “đúng nguyên văn” là sai. <span class="ev do">[ĐO]</span></td></tr>
+<tr><td><code>w22</code></td><td>pin còn bao nhiêu</td><td><i>CÒN BAO NHIÊU</i></td><td>Model nuốt/nghe sai <i>“pin”</i> ở <b>đầu câu</b>; pad 300/600 ms im lặng ⇒ ra <i>“TIN”</i>/<i>“PRAKIN”</i> ⇒ lỗi âm học/TTS, không phải hotword. Thêm hẳn dòng <code>PIN CÒN BAO NHIÊU</code> (N7) <b>vẫn</b> ✗. <span class="ev do">[ĐO]</span></td></tr>
+<tr><td><code>w24</code></td><td>dẫn đường tới chợ Bến Thành bằng Waze</td><td><i>… BẰNG LOA E</i></td><td>Tên app tiếng Anh — cùng lỗ với <code>w07</code>. <span class="ev do">[ĐO]</span></td></tr>
+</table></div>
+
+<h3>6.4 Cổng bắt buộc</h3>
+<ul>
+<li><b>V-unit</b> <span class="pill ok">đạt</span> — <span class="ev do">[ĐO]</span> <code>:core</code> <b>1 908</b> ca · <code>:app</code> <b>955</b> ca · <b>0 đỏ</b> (đếm từ XML, không tin console grep — memory <code>kachi-gradle-parallel-agents</code>). Năm phép đếm của R4 <b>đỏ được thật</b>: chính chúng đã bắt hai lỗi của bản nháp (§Changelog Pass 1). Pass 1 review bổ sung 5 bài canh đơn vị cho <code>dropPrefixes</code>/<code>phraseFile</code>/<code>isPhrase</code>.</li>
+<li><b>V-host</b> <span class="pill ok">đạt</span> — T4: ma trận 5/6 chạy trên <b>tệp do Kotlin sinh</b>: <b>1 902 dòng = 21/25</b> (= trần). <code>w21 “hôm nay trời đẹp quá”</code> vẫn ✓ ở mọi tệp (R-nf2).</li>
+<li><b>V-emulator</b> <span class="pill ok">đạt</span> — T5: <code>voice-e2e.sh --only wav</code> trên 1.65 (66) = <b>22/25</b>, <b>không</b> ca nào đang ✓ chuyển thành ✗ (đã đối chiếu từng dòng với lượt 1.64).</li>
+<li><b>V-latency</b> <span class="pill wait">một nửa — 🚗 còn nợ</span> — <span class="ev do">[ĐO host]</span> <code>createStream</code> <b>6,6 ms</b> @ tệp ship 1 902 dòng. <b>Cổng thật chưa đóng</b>: phải <b>đo trên xe</b> và đạt <b>≤ 150 ms</b> mỗi phiên nghe (R-nf1). <span class="ev doan">[ƯỚC LƯỢNG]</span> ≈ 130 ms — sát trần, nên đây <b>không</b> phải cổng được phép bỏ qua cho là chắc đạt. Lệnh đo ở OQ2.</li>
+<li><b>V-oncar</b> 🚗 <span class="ev chua">[CHƯA BIẾT]</span> — xem OQ2. <b>Không</b> tuyên bố xong trước khi có lượt nói bằng giọng người qua mic vô-lăng. Tất cả số ở trên là giọng TTS <code>say -v Linh</code>, phòng sạch.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 — Cụm là TIỀN TỐ của cụm khác thì sao?</b> <span class="pill ok">ĐÃ ĐO — đóng 2026-09-16</span><br>
+Câu hỏi của Pass 0 đã được trả lời bằng đúng phép đo mà nó đề ra. <span class="ev do">[ĐO]</span> ma trận 6: tệp Kotlin còn dòng tiền tố = <b>20/25</b> (<code>w19</code> nghe cụt thành <i>“CHẾ ĐỘ LÁI”</i>); bỏ 155 dòng tiền tố = <b>21/25</b>. Tác hại <b>không</b> nhỏ như phỏng đoán [SUY] ở Pass 0 — nó làm mất trọn một câu. ⇒ đã thành <b>R2c</b> + <code>SherpaHotwords.dropPrefixes</code> + bài canh <code>SherpaBiasingCoverageTest.kt:86-92</code>. <span class="muted">Phần [SUY] <i>“cụm ngắn không cộng điểm cho đường sai”</i> vẫn đúng: <code>w19</code> nghe ra một <b>tiền tố của chính câu đúng</b>, không phải một câu khác — nhưng cụt vẫn là sai.</span></li>
+<li><b>OQ2 — Giọng THẬT trên xe, mic 4 kênh.</b> 🚗 <span class="ev chua">[CHƯA BIẾT]</span> Toàn bộ 31 cấu hình đo bằng WAV giọng máy <code>say -v Linh</code>, sạch, không nhiễu động cơ/gió/nhạc. Hiệu ứng của hotword phụ thuộc chênh lệch âm học giữa đường đúng và đường sai — mà chênh lệch đó <b>đổi</b> khi tín hiệu nhiễu. Không có phép đo off-car nào thay thế được.<br>
+<b>Hai thứ phải đo trong CÙNG một lượt lên xe</b> (đừng lên xe hai lần):
+  <ul>
+  <li><b>(a) độ chính xác</b> — nói tay qua <code>ClusterDiag</code>/bridge, lưu log nguyên văn vào <code>docs/diagnostics/</code>;</li>
+  <li><b>(b) độ trễ</b> — cổng V-latency của R-nf1.<br>
+  <span class="ev do">[ĐO nguồn]</span> Từ 1.65 <code>VoiceRecognizer.decode</code> ghi <code>createStream(hotwords) N ms</code> vào tag <code>KachiVoiceRec</code> mỗi phiên nghe (mốc giờ quanh <code>createStream</code>, chỉ khi có hotword) — đây là con số duy nhất để chốt trên xe:
+  <pre>adb shell logcat -c &amp;&amp; &lt;nói vài lệnh&gt; &amp;&amp; adb shell logcat -d -s KachiVoiceRec:*
+adb shell dumpsys package &lt;pkg&gt; | grep versionName   # chốt ĐÚNG bản đang chạy trước khi đo — CLAUDE.md §9</pre>
+  Chốt: <b>≤ 150 ms</b>. Nếu vượt ⇒ lúc đó mới bàn thu nhỏ tệp, và bàn theo <b>số thật</b> chứ không theo hệ số ×20 phỏng đoán.</li>
+  </ul>
+→ cần <b>xe</b>.</li>
+<li><b>OQ3 — <code>w22</code> “pin còn bao nhiêu”.</b> <span class="ev do">[ĐO]</span> Ngoài tầm hotword: pad 300/600 ms im lặng đầu câu ⇒ <i>“TIN”</i>/<i>“PRAKIN”</i>; thêm hẳn dòng <code>PIN CÒN BAO NHIÊU</code> vẫn ✗. Đây là lỗi <b>âm học</b> (TTS <code>say -v Linh</code> phát <i>“pin”</i> đầu câu quá ngắn / model cắt mất). <b>Không</b> sửa trong spec này; ghi lại để lượt sau không đi sửa nhầm chỗ. Chỉ chốt được khi có giọng người (OQ2). → <b>owner không cần quyết</b>.</li>
+
+<li><b>OQ4 — Có nên giữ lại cụm ngắn PHỔ BIẾN, tức nới luật tiền tố?</b> <span class="ev chua">[CHƯA ĐO]</span> <span class="pill">mở ở Pass 1</span><br>
+<code>dropPrefixes</code> hiện áp <b>không có ngoại lệ</b>, nên nó lấy mất cả <code>MỞ KHOÁ</code>, <code>BẬT ĐIỀU HOÀ</code>, <code>MỞ CỬA SỔ</code> — những câu người lái thật sự nói một mình (§4.7). Hai hướng nới, cả hai đều <b>chưa</b> có phép đo:
+  <ul>
+  <li><b>(a)</b> giữ cụm ngắn nếu nó là <b>nhãn/cách nói trọn vẹn</b> của một nút (khác với <code>CHẾ ĐỘ LÁI</code> vốn chỉ là nửa câu thiếu <code>arg</code>). Rủi ro: đúng cơ chế §2.3 (a), nó sẽ chặn lại cụm dài — tức đổi ngược lại thứ vừa mua được.</li>
+  <li><b>(b)</b> không nới luật, nhưng <b>bỏ</b> cụm dài khi cụm ngắn phổ biến hơn hẳn (ví dụ giữ <code>MỞ KHOÁ</code>, bỏ <code>MỞ KHOÁ XE</code>). Cần một tiêu chí “phổ biến” đo được, mà hiện <b>không có</b> dữ liệu tần suất nói thật.</li>
+  </ul>
+<b>Cách chốt</b>: bộ 25 WAV <b>không</b> chạm tới ca nào thuộc loại này ⇒ phải <b>thêm ca</b> trước (vd <i>“mở khoá”</i>, <i>“bật điều hoà”</i>, <i>“mở cửa sổ”</i> nói trống) rồi mới chạy <code>scripts/voice/hotword-matrix.py</code> so (a) ↔ nguyên trạng. → <b>việc đo, không cần owner quyết</b>; nhưng <b>ưu tiên thấp</b>: chưa có bằng chứng người lái đang gặp lỗi này, và §4.7 cho thấy cách nói thứ hai của cùng nút (<code>BẬT MÁY LẠNH</code>) vẫn còn bias.</li>
+
+<li><b>OQ5 — <code>startsWithVerb</code> chặn nhầm 5 nhãn là DANH TỪ.</b> <span class="ev do">[ĐO đếm]</span> + <span class="ev chua">[CHƯA ĐO ảnh hưởng]</span> <span class="pill">mở ở Pass 1 review</span><br>
+<code>VERB_HEADS</code> (<code>SherpaPhraseHotwords.kt:107-108</code>) là <b>từ đầu của mọi dạng động từ</b> — <b>27</b> từ, trong đó có <code>phát</code>, <code>kiểm</code>, <code>chuyển</code>, <code>mở</code>. Vì <code>startsWithVerb</code> chỉ nhìn từ đầu, nó coi <b>5 nhãn danh từ</b> là “đã mang sẵn động từ” và bỏ bước ghép:
+  <ul>
+  <li><i>“Phát hiện trẻ em”</i> (<code>phát</code> ≠ động từ PLAY ở đây) · <i>“kiểm soát lực kéo”</i> · <i>“kiểm soát mô men”</i> (<code>kiểm</code> ← <i>kiểm tra</i>) · <i>“Chuyển làn trái/phải”</i> (<code>chuyển</code> ← SWITCH) · <i>“Mở cửa cảnh báo trái/phải”</i> (<code>mở</code> — ở đây là tên bộ phận, không phải lệnh).</li>
+  </ul>
+<b>Thiệt hại thật sự nhỏ hơn vẻ ngoài</b>: cả 5 nhãn <b>vẫn vào tệp nguyên văn</b> (đều ≥ 2 từ ⇒ qua R2a) nên vẫn được bias; chỉ <b>mất bản có động từ</b> (<code>BẬT KIỂM SOÁT LỰC KÉO</code>, <code>BẬT PHÁT HIỆN TRẺ EM</code>). Người lái nói trống tên chức năng thì vẫn được kéo; nói kèm động từ thì không.<br>
+<b>Không sửa ở Pass 1</b> — có lý do: sửa là <b>đổi nội dung tệp đã đo</b> (1 902 dòng, byte-identical với cấu hình đã cho 21/25), tức vứt bỏ chính bằng chứng của bản ship để đổi lấy một cải thiện <b>chưa đo</b>. Đúng thứ <code>CLAUDE.md</code> §6 cấm: đừng đảo thứ tự một đường đang chạy tốt ngoài hiện trường.<br>
+<b>Cách siết (cho lượt sau)</b>: chặn <b>chỉ khi</b> nhãn bắt đầu bằng <b>chính dạng động từ sắp ghép</b> (so cả cụm động từ, không so mỗi từ đầu) ⇒ <code>MỞ + “Mở cửa cảnh báo trái”</code> vẫn bị chặn (đúng), còn <code>BẬT + “Phát hiện trẻ em”</code> thì không. <b>Chốt bằng</b>: ma trận host trên tệp mới + E2E máy ảo — không merge nếu tụt dưới 21/25 host. → <b>việc đo, không cần owner quyết</b>.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><b>Mã MỚI</b> — <code>core/src/main/kotlin/com/byd/clusternav/launcher/voice/SherpaPhraseHotwords.kt</code>: <code>:42-48</code> (<code>CONTROL_VERBS</code>) · <code>:57-94</code> (<code>phrases</code>) · <code>:97-102</code> (<code>nounsOf</code>/<code>accented</code> — chỗ nhãn EN bị loại ở nguồn, R2b) · <code>:107-110</code> (<code>startsWithVerb</code>).</li>
+<li><b>Mã đã sửa</b> — <code>SherpaHotwords.kt:66-71</code> (<code>phraseFile</code>) · <code>:74</code> (<code>isPhrase</code>, R2a) · <code>:87-92</code> (<code>dropPrefixes</code>, R2c) · <code>SherpaBiasing.kt:31-32</code> (<code>hotwordsFile</code> một dòng) · <code>:34-42</code> (khối lịch sử thay cho <code>accentedControlPhrases</code> đã bỏ).</li>
+<li><b>Mã giữ nguyên nhưng phải đọc</b> — <code>SherpaHotwords.kt:48-52</code> (<code>fileContent</code> cũ, còn chỗ gọi khác) · <code>:99-110</code> (<code>phrasesOf</code>) · <code>:118-141</code> (<code>normalize</code>) · <code>:149</code> (<code>ALT_SEPARATORS</code>).</li>
+<li><b>Nguồn động từ / cách nói</b> — <code>SherpaSpokenWords.kt:201-219</code> (<code>VERBS</code> theo <code>VoiceVerb</code>) · <code>:40-146</code> (<code>ACCENTED</code>, 105 mục) · <code>:225</code> (<code>ALL</code>).</li>
+<li><b>Sổ địa chỉ</b> — <code>VoicePlaces.kt:76</code> (<code>PLACE_VERBS</code>) · <code>:123-137</code> (<code>spokenPhrases</code>) · <code>:143</code> (<code>VERB_FOR_PHRASE</code>).</li>
+<li><b>Chỗ tệp được nạp</b> — <code>app/src/main/java/com/byd/clusternav/launcher/voice/VoiceRecognizer.kt:82</code> (<code>recognizer.createStream(hotwords)</code>, mỗi phiên nghe) · <code>:129</code> (<code>SherpaBiasing.hotwordsFile(places)</code> khi <code>biasingReady()</code>).</li>
+<li><b>Tham số engine</b> — <code>core/…/voice/SherpaModelCatalog.kt:168</code> (<code>HOTWORDS_SCORE = 3.0f</code>) · <code>:69</code> (<code>decodingMethod = "modified_beam_search"</code>). <code>ControlRegistry.kt:31</code> (<code>enum class ControlKind</code>).</li>
+<li><b>Bài canh</b> — <code>core/src/test/kotlin/com/byd/clusternav/launcher/voice/SherpaBiasingCoverageTest.kt:43-45</code> (<code>containsWords</code>, khớp theo ranh giới từ) · <code>:54-62</code> (nhãn nằm TRONG cụm) · <code>:66-67</code> (0 dòng một từ) · <code>:70-74</code> (nhãn EN không lọt — luật của R2b) · <code>:78-83</code> (bài canh âm: từ rời không còn là dòng) · <code>:86-92</code> (0 tiền tố + hai khẳng định <code>CHẾ ĐỘ LÁI*</code>) · <code>:95-97</code> (thứ tự ổn định) · <code>:101-107</code> (dump tệp cho T4) · <code>:127</code> (ghi nhận đánh đổi <code>BẬT ĐIỀU HOÀ</code>). Kèm <code>SherpaHotwordsTest.kt</code>.</li>
+<li><b>Source sherpa-onnx v1.13.8</b> — <code>csrc/context-graph.cc</code> <code>ContextGraph::ForwardOneStep</code> (<code>is_end</code> ⇒ về root ở chế độ non-strict) · <code>csrc/utils.cc</code> <code>EncodeHotwords</code> (điểm riêng theo dòng <code>:x</code>; dòng không mã hoá được ⇒ trả <code>false</code>, bỏ im lặng).</li>
+<li><b>Log phép đo 2026-09-16</b> — <code>matrix2_stdout.log</code> (7 cấu hình kích thước) · <code>matrix3_stdout.log</code> (9 cấu hình cụm) · <code>matrix4_stdout.log</code> (7 cấu hình tách “từ rời”) · <code>matrix5_stdout.log</code> (4 cấu hình trên <b>tệp Kotlin</b> + chi phí <code>createStream</code>) · <code>matrix6_stdout.log</code> (4 cách chữa <code>w19</code>) · <code>run_latency.py</code> (thử pad im lặng cho <code>w22</code>). Mỗi log có mục <i>BẢNG TÓM TẮT</i> ở cuối. <b>Công cụ đã đưa vào repo</b>: <code>scripts/voice/hotword-matrix.py</code> (T7) — scratchpad của một phiên không tái lập được.</li>
+<li><b>Báo cáo E2E 1.65 (66)</b> — bảng T2 đủ 25 ca (câu gốc · heard · lượt 1 · lượt 2 · intent · khớp), tóm tắt trong <code>emulator-voice-e2e-2026-09-15.md</code> §6.3 khối <i>[ĐO máy ảo, bản 1.65 (66)]</i>.</li>
+<li><b>Doc liên quan</b> — <code>docs/diagnostics/emulator-voice-e2e-2026-09-15.md</code> §3 L3 (lỗi gốc) · §6.1–6.3 (lượt 2 trên 1.64 + phép đo host 09-15) · §6.4 (việc còn lại — T6 sẽ sửa dòng L3 ở đây).</li>
+<li><b>Spec cùng mảng</b> — <code>docs/specs/kachi-voice-engine-v2.html</code> (sherpa-onnx, luật ghim sha256) · <code>kachi-voice-feedback.html</code> (pha NÓI) · <code>kachi-voice-addresses.html</code> (sổ địa chỉ theo hồ sơ, nguồn <code>places</code>).</li>
+<li><b>Harness</b> — <code>scripts/emulator/voice-e2e.sh</code> (<code>--only wav</code> = 25 ca) · <code>scripts/emulator/voice-wavgen.sh</code> (sinh WAV <code>say -v Linh</code>, 16 kHz mono PCM16).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi <b>NGAY khi code</b> (R2.6 của <code>documentation-and-backlog.md</code>) — đây là chỗ spec phản ánh code THỰC TẾ, kể cả chỗ lệch. Mỗi mục: ngày · loại (quyết định / trade-off / sai lệch-spec / bug / spec-không-work) · nội dung · <code>file:line</code>.</p>
+<ul>
+<li><b>2026-09-16 · quyết định</b> — Hợp đồng thật khác bản nháp §4.3: <code>SherpaPhraseHotwords</code> chỉ <b>sinh</b> (<code>phrases()</code>), không lọc; mọi luật lọc dồn về <code>SherpaHotwords.phraseFile</code> (<code>SherpaHotwords.kt:66-71</code>). Lý do: một chỗ duy nhất quyết định <b>hình dạng tệp</b> ⇒ ba luật R2a/R2b/R2c đọc được cạnh nhau, và <code>fileContent</code> cũ không phải đụng tới.</li>
+
+<li><b>2026-09-16 · spec-không-work → đổi luật</b> <span class="tag">R2b</span> — Bản nháp bắt <i>“cấm dòng ASCII thuần”</i>. Implement xong thì <code>SherpaBiasingCoverageTest</code> đỏ: <b><code>XEM PIN</code> bị chính luật ấy làm rụng</b> — câu được đo nhiều nhất trong cả spec lại viết toàn ký tự ASCII. “Có dấu hay không” <b>không</b> phân biệt được tiếng Việt với tiếng Anh. Đổi sang loại nhãn EN <b>ở nguồn</b> (<code>SherpaPhraseHotwords.kt:97-98</code> không lấy <code>labelEn</code>/<code>shortEn</code>/<code>argsEn</code>) và đổi bài canh sang dựng danh sách EN từ chính các trường đó (<code>SherpaBiasingCoverageTest.kt:70-74</code>). §Requirements R2b đã viết lại cho khớp. <span class="ev do">[ĐO]</span> — test bắt, không phải suy đoán.</li>
+
+<li><b>2026-09-16 · bug (phép đo bắt)</b> <span class="tag">R2c</span> — Tệp Kotlin đầu tiên <b>2 057 dòng</b>, đã sạch từ rời, host cho <b>20/25</b>: <code>w09</code>/<code>w12</code> lần đầu ✓ nhưng <code>w19 “chế độ lái thể thao”</code> <b>từ ✓ thành ✗</b> (nghe cụt <i>“CHẾ ĐỘ LÁI”</i>). Root-cause bằng đúng cơ chế §2.3 (a), chỉ khác thủ phạm: <b>nhãn trần nhiều từ</b> làm tiền tố. Vá: <code>SherpaHotwords.dropPrefixes</code> (<code>:87-92</code>) — 155 dòng rụng, 1 902 dòng, <b>21/25</b>. Bài canh khoá lại: <code>:86-92</code>. <b>Bài học</b>: bản vá không được tự chấm bằng bốn câu nó nhắm tới — đủ 25 ca mới thấy ca thứ năm.</li>
+
+<li><b>2026-09-16 · trade-off</b> — Ma trận 6 có <b>ba</b> cách cùng cho 21/25 (bỏ tiền tố 1 902 · chỉ cụm động từ 1 770 · cả hai 1 638). Chọn <b>bỏ tiền tố</b> vì nó suy thẳng từ cơ chế đã đọc trong source, không cần danh sách động từ chép tay (<code>CLAUDE.md</code> §7). Cái mất: <code>MỞ KHOÁ</code>/<code>BẬT ĐIỀU HOÀ</code>/<code>MỞ CỬA SỔ</code> hết bias khi nói một mình (§4.7, OQ4) — <span class="ev chua">[CHƯA ĐO]</span> mức thiệt hại, không ca nào trong bộ 25 WAV chạm tới.</li>
+
+<li><b>2026-09-16 · quyết định</b> — Đưa <code>run_matrix*.py</code> vào repo thành <code>scripts/voice/hotword-matrix.py</code> (T7). Năm ma trận này (31 cấu hình tệp) là toàn bộ bằng chứng của spec; để chúng nằm trong scratchpad một phiên là để lượt sau <b>không tái lập được</b> — đúng cái bẫy <code>CLAUDE.md</code> §10 dặn tránh.</li>
+
+<li><b>2026-09-16 · <span class="ev do">[ĐO]</span> tệp ship = ĐÚNG tệp đã đo</b> — <code>core/build/hotwords/hotwords-phrases.txt</code> (<b>1 902 dòng</b>, do bài canh dump ra) <b>byte-identical</b> với cấu hình host <code>hw6_P1</code> đã cho <b>21/25</b>. Đây là mắt xích hay bị bỏ qua nhất của R5: “đo tệp Kotlin” chỉ có nghĩa nếu tệp đem đo <b>đúng là</b> tệp đem ship, chứ không phải một bản dựng lại gần giống. Nay đã so bằng byte, không bằng niềm tin.</li>
+
+<li><b>2026-09-16 · <span class="ev do">[ĐO]</span> test cuối (sau senior review)</b> — <code>:core</code> <b>1 908</b> ca · <code>:app</code> <b>955</b> ca · <b>0 đỏ</b> (đếm từ XML). <code>:core</code> tăng 1 903 → 1 908 vì Pass 1 review thêm <b>5 bài canh đơn vị</b> cho <code>dropPrefixes</code>/<code>phraseFile</code>/<code>isPhrase</code> — trước đó ba hàm này chỉ được kiểm <b>gián tiếp</b> qua tệp sinh ra, tức một lỗi trong chúng sẽ hiện thành “tệp sai” chứ không chỉ đúng hàm sai. <span class="muted">(Mục [CHƯA BIẾT] về full-suite ở bản trước của nhật ký này nay <b>đã đóng</b>.)</span></li>
+
+<li><b>2026-09-16 · phiên bản</b> — Bump <b>1.65 (66)</b> (<code>app/build.gradle.kts:44-45</code>): APK 1.64 đã báo cho owner nên không tái dùng số cũ (<code>CLAUDE.md</code> §9). Tệp hotword trên máy ảo 1.65 đo được <b>1 902 dòng</b>, <code>biasing=true</code>.</li>
+</ul>
+<p class="muted">Bốn số chốt của T4/T5: tệp <b>1 902 dòng</b> · host <b>21/25</b> · máy ảo <b>22/25</b> · <code>createStream</code> <b>6,6 ms</b> (host). Test cuối: <code>:core</code> <b>1 908/0</b> · <code>:app</code> <b>955/0</b>. Bản: <b>1.65 (66)</b>.</p>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm một mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG overwrite lịch sử. Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<h3>Pass 1 — 2026-09-16 (Opus senior review)</h3>
+<p class="muted">Scope: toàn bộ mã của T1–T3 + T7 + spec này. <b>8 finding</b> — <b>7 đã vá trong pass</b>, 1 chuyển thành OQ5. Không finding nào ở mức <code>[P0]</code>/<code>[P1]</code>.</p>
+<div class="tblwrap"><table>
+<tr><th>#</th><th>Finding</th><th>Xử lý</th></tr>
+<tr><td><span class="tag p1">P2</span></td><td><b>KDoc <code>phraseFile</code> mô tả sai luật</b> — còn nói lọc theo “dòng ASCII thuần”, tức đúng cái luật đã bị bác ở R2b. KDoc sai về <b>luật lọc</b> là thứ dẫn người sau cài lại lỗi cũ.</td><td>✅ vá</td></tr>
+<tr><td><span class="tag p1">P2</span></td><td><b>Số latency trong spec/KDoc lấy của tệp 2 057 dòng</b>, không phải tệp ship 1 902 dòng — và câu <i>“×20 vẫn dư”</i> che mất việc ≈130 ms là <b>sát</b> trần.</td><td>✅ vá — R-nf1 chốt ngân sách <b>150 ms</b>, tách rõ [ĐO host] ↔ [ƯỚC LƯỢNG], mở cổng V-latency trên xe</td></tr>
+<tr><td><span class="tag p1">P2</span></td><td><b><code>dropPrefixes</code> chỉ so cặp kề nhau sau khi sort</b> ⇒ với một <b>khối</b> nhiều dòng cùng tiền tố (<code>A</code> · <code>A B</code> · <code>A B C</code>), dòng giữa có thể sót lại. Lỗi im lặng: tệp vẫn sinh ra, chỉ là luật R2c không áp trọn.</td><td>✅ vá + 2 bài canh khoá đúng hình dạng khối</td></tr>
+<tr><td><span class="tag p2">P3</span></td><td><b>Ba hàm mới không có bài canh đơn vị</b> (<code>phraseFile</code> · <code>isPhrase</code> · <code>dropPrefixes</code>) — chỉ được kiểm gián tiếp qua tệp sinh ra.</td><td>✅ thêm bài canh cho cả ba (<code>:core</code> 1 903 → <b>1 908</b> ca)</td></tr>
+<tr><td><span class="tag p2">P3</span></td><td><b>KDoc <code>VoiceRecognizer.open</code></b> còn nói nguồn là <i>“tập control tĩnh”</i> — nay là <b>tập CỤM LỆNH tĩnh</b>.</td><td>✅ vá (chỉ KDoc — xem R0)</td></tr>
+<tr><td><span class="tag p2">P3</span></td><td><b>Spec đếm “6 ma trận”</b>, gộp cả lượt 09-15 vốn chỉ chạy <b>5</b> WAV ⇒ không so số được.</td><td>✅ vá — nay ghi <b>5 ma trận / 31 cấu hình × 25 WAV</b> (§4.5)</td></tr>
+<tr><td><span class="tag p2">P3</span></td><td><b><code>scripts/voice/hotword-matrix.py</code> không chạy trên Python 3.9</b> (cú pháp type-hint mới) — máy đo không phải lúc nào cũng có 3.10+.</td><td>✅ vá — thêm <code>from __future__ import annotations</code></td></tr>
+<tr><td><span class="tag p2">P3</span></td><td><b><code>startsWithVerb</code> chặn nhầm 5 nhãn danh từ</b> (<i>“Phát hiện trẻ em”</i>, <i>“kiểm soát lực kéo”</i>…).</td><td>⏸ <b>không vá</b> — sửa là đổi nội dung tệp đã đo; chuyển thành <b>OQ5</b> kèm cách siết + cách chốt</td></tr>
+</table></div>
+<p><b>Verdict: <span class="ok">APPROVED</span> (off-car).</b> Kiểm lại sau vá: <span class="ev do">[ĐO]</span> <code>:core</code> <b>1 908/0</b> · <code>:app</code> <b>955/0</b>. Scope checklist: <b>R0 ✅ · R1 ✅ · R2a ✅ · R2b ✅ · R2c ✅ · R3 ✅ · R4 ✅ · R5 ✅</b> · T1–T5 ✅ · T7 ✅ · T6 🔨 · T8 = chính pass này.<br>
+<b>Còn nợ 🚗 (không chặn merge)</b>: V-latency đo trên xe ≤ 150 ms (OQ2b) và độ chính xác với giọng người (OQ2a). Hai thứ này <b>không</b> được coi là đã đạt chỉ vì off-car xanh.</p>
+
+<h3>Pass 0 — 2026-09-16 (chưa review)</h3>
+<ul>
+<li>Spec mới draft, chưa có mã để review.</li>
+</ul>
+
+</div></body>
+</html>

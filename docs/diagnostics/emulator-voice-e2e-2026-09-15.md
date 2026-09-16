@@ -475,11 +475,90 @@ Không kết luận thêm gì về score 5.0 — đó là tham khảo, không ph
 **Script + log** (scratchpad phiên đo, không phải trong repo): `build_hotwords.py`, `run_matrix.py`,
 `matrix_full_stdout.log`, `hotwords_full_623.txt`, `hotwords_3lines.txt`, `hotwords_623_plus2.txt`.
 
+#### [ĐO host 2026-09-16] — kết luận "loãng" ở trên là SAI một phần: biến số thật là **TỪ RỜI**, không phải kích thước
+
+Cùng máy/model/tham số như phép đo 09-15 (sherpa-onnx 1.13.8 pip, `hotwords_score=3.0`, beam 4), nhưng chạy **cả 25
+WAV** thay vì 5, và tách hẳn hai biến: kích thước tệp ↔ hình dạng dòng (từ rời / cụm). Số = câu nghe đúng nguyên văn
+/25. Log nguyên văn: scratchpad phiên `matrix2..6_stdout.log` (script `run_matrix2..6.py`, tệp `hw*_*.txt`);
+bản chép vào repo: `scripts/voice/hotword-matrix.py`.
+
+**Ma trận 2 — chỉ đổi kích thước, giữ hình dạng cũ (nhãn/động từ RỜI):**
+
+| tệp | dòng | đúng/25 | w04 `mở kính trước trái` | w09 `dừng nhạc` | w12 `xem pin` | w13 `tăng âm lượng` |
+|---|---|---|---|---|---|---|
+| không hotword | 0 | 17 | ✗ | ✗ | ✗ | ✗ |
+| 1.64 thật | 623 | 19 | ✓ | ✗ | ✗ | ✓ |
+| chỉ dòng có dấu (bỏ 283 dòng nhãn EN) | 340 | 19 | ✓ | ✗ | ✗ | ✓ |
+| chỉ `SherpaSpokenWords.ALL` (động từ + cách nói) | 144 | 18 | ✓ | ✗ | ✗ | ✗ |
+| chỉ 39 động từ | 39 | 17 | ✗ | ✗ | ✗ | ✗ |
+| hai tầng per-line score (core `:3.0`, còn lại `:1.0`) | 347 | 19 | ✓ | ✗ | ✗ | ✓ |
+
+⇒ Thu nhỏ tệp **không** sửa w09/w12. "Loãng" (giả thuyết b ở §6.3) **bị bác**. Tệp 3 dòng hôm qua thắng không phải
+vì nhỏ — mà vì nó chứa **cụm** `XEM PIN` / `DỪNG NHẠC`.
+
+**Ma trận 3 — cụm động từ + đối tượng:**
+
+| tệp | dòng | đúng/25 | w04 | w09 | w12 | w13 |
+|---|---|---|---|---|---|---|
+| 3 dòng `PIN` · `XEM PIN` · `DỪNG NHẠC` | 3 | 19 | ✗ | ✓ | ✓ | ✗ |
+| 39 động từ rời + 2 cụm | 41 | 17 | ✗ | ✗ | ✗ | ✗ |
+| 144 + 2 cụm | 146 | 18 | ✓ | ✗ | ✗ | ✗ |
+| 340 + 2 cụm | 342 | 20 | ✓ | ✗ | ✓ | ✓ |
+| 623 + 2 cụm | 625 | 19 | ✓ | ✗ | ✗ | ✓ |
+| **chỉ cụm sinh generic** (động từ theo loại × nhãn VN), **0 từ rời** | 756 | **21** | ✓ | ✓ | ✓ | ✓ |
+| 340 + cụm generic | 1093 | 20 | ✓ | ✗ | ✓ | ✓ |
+| cụm generic + cụm cho cách nói đời thường | **1440** | **21** | ✓ | ✓ | ✓ | ✓ |
+| "ngữ cảnh" mô phỏng: 39 động từ rời + cụm cho 10 nhãn | 114 | 17 | ✗ | ✗ | ✗ | ✗ |
+
+⇒ Tệp **lớn nhất** (1440 dòng, toàn cụm) tốt nhất; tệp 114 dòng có động từ rời tệ nhất.
+
+**Ma trận 4 — tách "từ rời":**
+
+| tệp | dòng | đúng/25 | w04 | w09 | w12 | w13 |
+|---|---|---|---|---|---|---|
+| 340 **bỏ mọi dòng 1 từ** + 2 cụm | 297 | **21** | ✓ | ✓ | ✓ | ✓ |
+| 340 bỏ chỉ động từ rời + 2 cụm | 325 | 20 | ✓ | ✗ | ✓ | ✓ |
+| cụm generic + 8 danh từ rời (`PIN` `NHẠC` `KÍNH`…) | 764 | 20 | ✓ | ✗ | ✓ | ✓ |
+| cụm generic + 39 động từ rời | 775 | **17** | ✗ | ✗ | ✗ | ✗ |
+| cụm generic + `PIN CÒN BAO NHIÊU` | 758 | 21 | ✓ | ✓ | ✓ | ✓ (w22 vẫn ✗) |
+
+**Cơ chế** (đọc source sherpa-onnx v1.13.8 `sherpa-onnx/csrc/context-graph.cc`, `ContextGraph::ForwardOneStep`): khi
+tới nút `is_end` (khớp trọn một hotword) ở chế độ non-strict, hàm trả `score + output_score − node_score` và trạng
+thái **về `root_`**. Hệ quả đo được: (a) `XEM` rời là tiền tố của `XEM PIN` — khớp xong `XEM` là về gốc, cụm dài
+không bao giờ được cộng đủ; (b) `NHẠC` rời đứng cuối cộng +3 cho **cả đường sai** *"RỪNG NHẠC"*, biên lợi thế của
+*"DỪNG NHẠC"* (+6) so với đường sai co còn 3 và thua âm học; (c) cùng lẽ, **cụm ngắn là tiền tố của cụm dài** cũng
+chặn cụm dài (ma trận 6 dưới). `csrc/utils.cc` `EncodeHotwords` nhận per-line score `:x` (ma trận 2 hàng cuối chạy
+được) — không cần dùng.
+
+**Ma trận 5/6 — đúng tệp Kotlin sinh** (`SherpaBiasing.hotwordsFile()` dump từ `SherpaBiasingCoverageTest`):
+
+| tệp | dòng | đúng/25 | w19 `chế độ lái thể thao` | `createStream(hotwords)` host |
+|---|---|---|---|---|
+| 1.64 thật (623) | 623 | 19 | ✓ | 1,5 ms |
+| Kotlin cụm, còn nhãn trần nhiều từ | 2057 | 20 | ✗ *"CHẾ ĐỘ LÁI"* | 6,6 ms |
+| Kotlin cụm **bỏ dòng tiền-tố-của-dòng-khác** (bản ship) | 1902 | **21** | ✓ | — |
+| chỉ cụm bắt đầu bằng động từ | 1770 | 21 | ✓ | — |
+| chỉ cụm động từ + bỏ tiền tố | 1638 | 21 | ✓ | — |
+
+Chọn luật **bỏ tiền tố** vì nó suy thẳng từ cơ chế (a)/(c), không phải danh sách động từ chép tay. Canh
+over-trigger: w21 *"hôm nay trời đẹp quá"* ✓ ở **mọi** tệp (kể cả 2057 dòng). Chi phí mỗi phiên nghe 6,6 ms host ⇒
+×20 trên xe vẫn < 150 ms ⇒ **không cần** thu nhỏ theo hồ sơ/ngữ cảnh (ý ban đầu của V-HOTWORD-CTX).
+
+**[ĐO máy ảo, bản 1.65 (66) vehicleTest, `voice-e2e.sh --only wav`]**: T2 **22/25** nghe đúng nguyên văn (1.64: 20/25) —
+w04 · w09 · w12 · w13 · w19 đều ✓ và ra đúng ý định (`Read · Xem Pin (SOC)` · `Media · Dừng nhạc` · `Control · Chế độ
+lái: Thể thao`); 3 ca ≈ còn lại đúng là w07 · w22 · w24 (w11 *khóa* được bộ so khớp coi là đúng). Tệp hotword thật
+trên máy: 1902 dòng, `biasing=true` (logcat `KachiVoiceEngine`).
+
+**Ngoài tầm hotword** (4 ca còn lại, ở mọi tệp): w22 `pin còn bao nhiêu` → *"còn bao nhiêu"* (thêm 300/600 ms im
+lặng đầu ⇒ *"TIN"* / *"PRAKIN"* — mô hình nghe sai âm *"pin"* ở đầu câu của giọng TTS, không phải bias); w07
+`Bitexco` · w24 `Waze` (tên riêng/EN); w11 *"khoá"* → *"KHÓA"* (chính tả cũ/mới, `VoiceLexicon.deaccent` gộp về
+`khoa` ⇒ ý định vẫn đúng).
+
 ### 6.4 Còn lại sau lượt 2
 
 | Việc | Trạng thái |
 |---|---|
-| L3 phần `pin`/`dừng` (w09 · w12 · w22) | **còn** — [ĐO host 2026-09-15] ở §6.3 đã chốt: nguyên nhân CHÍNH là tệp 623 dòng làm loãng (giả thuyết b), không phải cụm quá ngắn đơn thuần; hướng vá (giảm/tách tầng hotword) chưa implement, cần spec riêng |
+| L3 phần `pin`/`dừng` (w09 · w12 · w22) | **✅ vá ở 1.65** — kết luận "loãng" 09-15 bị [ĐO host 09-16] bác; gốc là **từ rời/tiền tố** trong tệp hotword (§6.3 phần [ĐO host 2026-09-16]); spec `kachi-voice-hotword-phrases.html`; máy ảo 20 → **22/25**. Riêng w22 còn (lỗi âm học "pin" đầu câu, ngoài tầm hotword) |
 | L7 bố cục bằng giọng nói (t59/t60) | **còn** — quyết định của owner (spec chưa khai R nào) |
 | w07 `Bitexco` · w24 `Waze` (tên riêng / tên app tiếng Anh) | **còn** — thuộc lỗ *"model VN không phát ra token tiếng Anh"* (§3 L6 + eval 09-14 §4), không phải lỗi mã |
 | t29 *"chạy gói …"* | **không sửa** — lỗi của bộ ca (L9), giữ nguyên để lượt sau không sửa nhầm sản phẩm |

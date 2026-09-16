@@ -60,6 +60,44 @@ class SherpaHotwordsTest {
         assertEquals("", SherpaHotwords.fileContent(listOf("2", "!", "x")))
     }
 
+    // ── Tệp CỤM (spec `kachi-voice-hotword-phrases.html` R2) — hai luật lọc của bản ship ──────────────
+
+    @Test
+    fun `phraseFile chi giu cum, bo dong mot tu, van giu cum ASCII`() {
+        val out = SherpaHotwords.phraseFile(listOf("pin", "xem pin", "Tắt", "tắt đèn đọc", "xem pin"))
+        // `XEM PIN` không có chữ nào mang dấu — luật "bỏ dòng ASCII thuần" của spec bản nháp đã làm rụng đúng
+        // câu được đo nhiều nhất, nên nó KHÔNG được quay lại (§R2b).
+        assertEquals(listOf("XEM PIN", "TẮT ĐÈN ĐỌC"), out.trimEnd().split("\n"))
+        assertTrue(out.endsWith("\n"))
+        assertEquals("", SherpaHotwords.phraseFile(listOf("pin", "tắt", "2,5")), "không cụm nào ⇒ tệp rỗng")
+        assertTrue(SherpaHotwords.isPhrase("XEM PIN"))
+        assertFalse(SherpaHotwords.isPhrase("PIN"))
+    }
+
+    @Test
+    fun `dropPrefixes bo dong la tien to THEO TU, khong bo dong chi giong dau chuoi`() {
+        val kept = SherpaHotwords.dropPrefixes(
+            listOf("CHẾ ĐỘ", "CHẾ ĐỘ LÁI", "CHẾ ĐỘ LÁI THỂ THAO", "CHẾ ĐỘI", "MỞ CỬA SỔ"),
+        )
+        // Chuỗi bắc cầu: cả hai cụm ngắn đều rụng. `CHẾ ĐỘI` chỉ giống ký tự đầu, KHÔNG phải tiền tố theo từ.
+        assertEquals(listOf("CHẾ ĐỘ LÁI THỂ THAO", "CHẾ ĐỘI", "MỞ CỬA SỔ"), kept)
+        assertEquals(emptyList<String>(), SherpaHotwords.dropPrefixes(emptyList()))
+    }
+
+    @Test
+    fun `dropPrefixes khong duoc dua vao viec dau cach la ky tu nho nhat`() {
+        // Bản đầu chỉ nhìn ĐÚNG MỘT phần tử kế tiếp sau khi xếp — đúng nhờ một tính chất của chỗ gọi (normalize
+        // chỉ sinh chữ cái + dấu cách). Hàm công khai thì không được đúng nhờ giả định nằm ở file khác: một
+        // chuỗi có ký tự < dấu cách (vd TAB khi ai đó đổ thẳng dòng TSV vào) chen vào giữa là luật câm lặng.
+        val kept = SherpaHotwords.dropPrefixes(listOf("MỞ CỬA", "MỞ CỬA\tGHI CHÚ", "MỞ CỬA SỔ"))
+        assertEquals(listOf("MỞ CỬA\tGHI CHÚ", "MỞ CỬA SỔ"), kept)
+        // Trùng lặp ở đầu vào không được che mất luật.
+        assertEquals(
+            listOf("MỞ CỬA SỔ", "MỞ CỬA SỔ"),
+            SherpaHotwords.dropPrefixes(listOf("MỞ CỬA", "MỞ CỬA", "MỞ CỬA SỔ", "MỞ CỬA SỔ")),
+        )
+    }
+
     @Test
     fun `english app names are dropped so parser not the bias handles them`() {
         // "youtube" là Latin thường model VN không phát ra ⇒ vẫn giữ (chữ cái) NHƯNG không nên gây lỗi;

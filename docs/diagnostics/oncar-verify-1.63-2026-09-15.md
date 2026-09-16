@@ -142,7 +142,19 @@ adb shell "$B --es cmd say --es text 'về nhà'"          # đọc intents/repl
 adb shell "$B --es cmd say --es text 'đóng YouTube'"; adb shell "$B --es cmd say --es text 'phát nhạc trên YouTube Music'"
 ```
 - Biasing/hotword (nhãn 50→0 mất) và nhịp chờ bridge không cần xe — đã đo trên emulator.
-- Còn lỗ đã biết (không cần đo lại trên xe): từ đơn `pin`/`dừng` nghe sai do tệp hotword 623 dòng bị LOÃNG ([ĐO host]) → spec riêng "hotword theo ngữ cảnh".
+- ~~Còn lỗ đã biết: từ đơn `pin`/`dừng` nghe sai do tệp hotword 623 dòng bị LOÃNG~~ — **kết luận "loãng" đã bị bác** ([ĐO host 2026-09-16], `emulator-voice-e2e` §6.3): gốc là **từ rời/tiền tố** trong tệp hotword; vá ở 1.65 (§6e).
+
+## 6e. Thêm cho bản 1.65 (66) — hotword theo CỤM (spec `kachi-voice-hotword-phrases.html`), 1 mục on-car
+
+Máy ảo đã đo 20 → 22/25 (giọng TTS). Trên xe chỉ còn câu hỏi **giọng thật + mic 4 kênh** (OQ2 của spec): nói 3 câu
+từng sai ở 1.64, mỗi câu 2 lần, qua nút mic thanh trên; rồi đọc `state` xem `heard`/`intent`:
+
+```bash
+# kỳ vọng: "xem pin" → Read · Xem Pin (SOC); "dừng nhạc" → Media · Dừng nhạc; "chế độ lái thể thao" → Control · Chế độ lái: Thể thao
+adb shell "$B --es cmd state" | tr ',' '\n' | grep -iE "heard|intent|hotword"
+adb shell "run-as com.byd.launcher wc -l files/sherpa/hotwords.txt" 2>/dev/null   # nếu có tệp: kỳ vọng ~1902 dòng (không có ⇒ per-stream, không tệp)
+```
+- Nếu giọng thật vẫn sai ở đúng 3 câu ấy mà máy ảo đúng ⇒ vấn đề là **âm học** (mic/ồn), không phải hotword — đo tiếp theo §6b (WAV thu từ mic xe → `wav` bridge).
 
 ## 7. Sau khi 1 + 2 + 3 PASS
 → báo về: em chạy lại senior review + security scan (đã chạy off-car) với log thật → OTA 1.63. Mục FAIL: dán nguyên output — sửa đúng chỗ.

@@ -52,6 +52,62 @@ object SherpaHotwords {
     }
 
     /**
+     * Như [fileContent] nhưng **chỉ giữ CỤM ≥ 2 từ tiếng Việt** — tệp hotwords thật của bản ship
+     * (spec `kachi-voice-hotword-phrases.html` R2).
+     *
+     * Một luật lọc, có phép đo (2026-09-16, host, 25 WAV, chi tiết ở KDoc [SherpaPhraseHotwords]): **bỏ dòng một
+     * từ** — thêm 39 động từ rời vào tệp toàn cụm kéo 21/25 xuống 17/25 (bằng không hotword); danh từ rời (`NHẠC`)
+     * cộng điểm cho cả đường sai (*"rừng nhạc"*). Cơ chế: khớp trọn hotword ⇒ đồ thị về gốc.
+     *
+     * ⚠ Cố ý KHÔNG lọc theo "dòng ASCII thuần" để loại nhãn tiếng Anh: *"xem pin"* cũng là ASCII thuần mà là câu
+     * tiếng Việt hay dùng nhất (bản đầu của hàm này đã làm rụng đúng cụm ấy — bài canh bắt được). Nhãn EN không
+     * vào tệp vì [SherpaPhraseHotwords] **không lấy** `labelEn`/`shortEn`/`argsEn` ngay từ nguồn.
+     */
+    fun phraseFile(phrases: Iterable<String>): String {
+        val seen = LinkedHashSet<String>()
+        for (raw in phrases) phrasesOf(raw).filterTo(seen) { isPhrase(it) }
+        val kept = dropPrefixes(seen)
+        return if (kept.isEmpty()) "" else kept.joinToString("\n") + "\n"
+    }
+
+    /** Cụm ≥ 2 từ. */
+    fun isPhrase(hotword: String): Boolean = ' ' in hotword
+
+    /**
+     * Bỏ dòng là **tiền tố theo từ** của một dòng khác (*"CHẾ ĐỘ LÁI"* khi đã có *"CHẾ ĐỘ LÁI THỂ THAO"*).
+     *
+     * [ĐO] 2026-09-16 host, tệp Kotlin sinh 2057 dòng: `chế độ lái thể thao` nghe ra *"CHẾ ĐỘ LÁI"* (mất đuôi);
+     * bỏ 155 dòng tiền tố ⇒ nghe đúng, 20/25 → 21/25. Cùng cơ chế với luật cấm từ rời: khớp trọn *"CHẾ ĐỘ LÁI"*
+     * là đồ thị về gốc, phần *"THỂ THAO"* không còn đường cộng điểm. Cụm ngắn mất bias khi nói một mình — đổi lấy
+     * cụm dài nghe đúng; cụm dài mới là thứ hay sai (từ đơn mô hình tự nghe được).
+     *
+     * Cách tìm: xếp thứ tự từ điển ⇒ **mọi** dòng nhận `x` làm tiền tố (theo ký tự) nằm LIỀN NHAU ngay sau `x`
+     * (một dòng khác `x` ở vị trí sớm hơn thì đã khác `x` ở một ký tự *bên trong* `x`, nên nó lớn hơn cả khối ấy).
+     * Nên chỉ cần quét khối liền sau `x` tới khi hết, tìm một dòng bắt đầu bằng `"$x "`.
+     *
+     * ⚠ Cố ý KHÔNG dừng ở **một** phần tử kế tiếp. Làm thế là ngầm dựa vào *"dấu cách nhỏ hơn mọi ký tự khác có
+     * thể đứng ở đó"* — đúng với tệp hiện nay ([SherpaHotwords.normalize] chỉ sinh chữ cái + một dấu cách, và chữ
+     * cái Unicode đều ≥ `A`), nhưng đó là điều kiện của **chỗ gọi**, không phải của hàm này. Hàm công khai thì
+     * không được đúng nhờ một giả định nằm ở file khác. Chi phí: vẫn `O(n log n)` + tổng kích thước các khối
+     * cùng tiền tố ([ĐO] tệp ship 1902 dòng, kết quả không đổi một dòng nào).
+     *
+     * Giữ thứ tự xuất hiện ở kết quả để tệp `diff` được giữa hai lượt đo.
+     */
+    fun dropPrefixes(lines: Collection<String>): List<String> {
+        val sorted = lines.sorted()
+        val prefixes = HashSet<String>()
+        for (i in sorted.indices) {
+            val x = sorted[i]
+            var j = i + 1
+            while (j < sorted.size && sorted[j].startsWith(x)) {
+                if (sorted[j].startsWith("$x ")) { prefixes.add(x); break }
+                j++
+            }
+        }
+        return lines.filterNot { it in prefixes }
+    }
+
+    /**
      * Một nhãn → **các** hotword của nó (0, 1 hay nhiều), theo đúng ba luật ở KDoc lớp.
      *
      * Trả về danh sách đã khử trùng **trong phạm vi một nhãn**, giữ thứ tự xuất hiện.

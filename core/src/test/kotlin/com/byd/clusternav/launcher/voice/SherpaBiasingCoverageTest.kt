@@ -21,11 +21,17 @@ import org.junit.jupiter.api.Test
  * Đếm được lúc đó: **12/64** nhãn `ControlRegistry` + **38/123** nhãn `TelemetryRegistry` = **50 nhãn** không
  * bao giờ ra hotword — và cái thiếu ấy **im lặng**: tệp hotwords vẫn được ghi, engine vẫn báo `biasing=true`.
  * Nên chỗ khoá phải là một phép đếm bằng máy, không phải một lời hứa trong KDoc.
+ *
+ * ## Vòng 2 (2026-09-16) — tệp hotwords nay là **CỤM**, không từ rời
+ * [ĐO] host, ba ma trận (spec `kachi-voice-hotword-phrases.html`): có `PIN`/`DỪNG` rời trong tệp vẫn nghe sai;
+ * thêm 39 động từ rời vào tệp toàn cụm kéo 21/25 → 17/25. Nên bài canh đổi hình: mỗi nhãn phải nằm **trong** ít
+ * nhất một cụm (không phải "có mặt như một dòng"), và tệp **không được** có dòng một từ hay dòng ASCII thuần.
  */
 class SherpaBiasingCoverageTest {
 
-    private val hotwords: Set<String> =
-        SherpaBiasing.hotwordsFile().trimEnd().split("\n").filter { it.isNotBlank() }.toSet()
+    private val lines: List<String> =
+        SherpaBiasing.hotwordsFile().trimEnd().split("\n").filter { it.isNotBlank() }
+    private val hotwords: Set<String> = lines.toSet()
 
     /** Mọi nhãn tiếng Việt của 4 bộ đăng ký — đúng tập mà `VoicePhrases`/`VoiceGrammar` cũng phủ. */
     private fun allLabels(): List<String> =
@@ -34,6 +40,10 @@ class SherpaBiasingCoverageTest {
             ActionMacros.ALL.map { it.label } +
             LauncherActions.ALL.map { it.label }
 
+    /** `needle` là một dãy từ nguyên vẹn bên trong `line` (ranh giới từ, không phải chuỗi con tuỳ ý). */
+    private fun containsWords(line: String, needle: String): Boolean =
+        line == needle || line.startsWith("$needle ") || line.endsWith(" $needle") || line.contains(" $needle ")
+
     @Test
     fun `moi nhan trong danh muc deu sinh it nhat mot hotword`() {
         val lost = allLabels().filter { SherpaHotwords.phrasesOf(it).isEmpty() }
@@ -41,11 +51,59 @@ class SherpaBiasingCoverageTest {
     }
 
     @Test
-    fun `hotword cua moi nhan deu co mat trong tep hotwords`() {
-        val missing = allLabels().flatMap { label ->
-            SherpaHotwords.phrasesOf(label).filterNot { it in hotwords }.map { "$label ⇒ $it" }
+    fun `moi nhan tieng Viet deu nam trong it nhat mot cum cua tep hotwords`() {
+        // Nhãn ASCII thuần (*"Camera 360"* ⇒ `CAMERA`, *"SOC"*) vẫn phải có mặt qua cụm có động từ VN (*"MỞ CAMERA"*);
+        // nhãn nào cả cụm lẫn nhãn đều ASCII (không có từ tiếng Việt nào) thì cố ý không bias — parser chữ lo.
+        val missing = allLabels().filter { label ->
+            val parts = SherpaHotwords.phrasesOf(label)
+            parts.none { p -> lines.any { containsWords(it, p) } }
         }
-        assertEquals(emptyList<String>(), missing, "nhãn sinh được hotword mà tệp lại không có ⇒ hụt ở tầng ghép")
+        assertEquals(emptyList<String>(), missing, "nhãn không nằm trong cụm nào ⇒ nút/datum đó không được bias")
+    }
+
+    @Test
+    fun `tep hotwords khong co dong mot tu va khong co nhan tieng Anh`() {
+        val singles = lines.filterNot { ' ' in it }
+        assertEquals(emptyList<String>(), singles, "[ĐO] từ rời chặn cụm dài + cộng điểm đường sai — cấm")
+        // Nhãn EN (`labelEn`/`shortEn`/`argsEn`) không được lọt: mô hình VN không phát token ấy, dòng chỉ chiếm chỗ
+        // (283/623 dòng ở 1.64). KHÔNG canh bằng "ASCII thuần" — *"XEM PIN"* cũng ASCII thuần mà là câu VN.
+        val en = ControlRegistry.ALL.flatMap { listOfNotNull(it.labelEn, it.shortEn) + it.argsEn } +
+            TelemetryRegistry.ALL.flatMap { listOfNotNull(it.labelEn, it.shortEn) } +
+            ActionMacros.ALL.mapNotNull { it.labelEn } + LauncherActions.ALL.mapNotNull { it.labelEn }
+        val leaked = en.flatMap { SherpaHotwords.phrasesOf(it) }.filter { ' ' in it && it in hotwords }
+        assertEquals(emptyList<String>(), leaked, "nhãn tiếng Anh lọt vào tệp hotwords")
+    }
+
+    @Test
+    fun `dong tu roi va cach noi doi thuong roi KHONG con la dong rieng`() {
+        // Chính hai bảng từng được đổ RỜI vào tệp (1.64) — nay chỉ được xuất hiện BÊN TRONG cụm.
+        (SherpaSpokenWords.VERBS.values.flatten() + SherpaSpokenWords.ACCENTED.values)
+            .map { it.uppercase() }.filterNot { ' ' in it }
+            .forEach { assertTrue(it !in hotwords, "từ rời «$it» lọt vào tệp hotwords") }
+    }
+
+    @Test
+    fun `khong dong nao la tien to theo tu cua dong khac`() {
+        // [ĐO] host 09-16: `chế độ lái thể thao` → "CHẾ ĐỘ LÁI" khi tệp còn dòng tiền tố; bỏ ⇒ đúng (KDoc dropPrefixes).
+        val set = hotwords
+        val prefixes = lines.filter { l -> set.any { it != l && it.startsWith("$l ") } }
+        assertEquals(emptyList<String>(), prefixes, "dòng tiền tố chặn cụm dài hơn nó")
+        assertTrue("CHẾ ĐỘ LÁI THỂ THAO" in set); assertTrue("CHẾ ĐỘ LÁI" !in set)
+    }
+
+    @Test
+    fun `tep hotwords sinh ra on dinh thu tu`() {
+        assertEquals(SherpaBiasing.hotwordsFile(), SherpaBiasing.hotwordsFile(), "hai lượt sinh phải giống hệt để diff được")
+    }
+
+    /** T4 của spec: dump tệp thật để chạy lại ma trận host trên ĐÚNG tệp Kotlin sinh (không tái dựng bằng Python). */
+    @Test
+    fun `dump tep hotwords that ra build de do tren host`() {
+        val dir = java.io.File(System.getProperty("user.dir"), "build/hotwords")
+        dir.mkdirs()
+        java.io.File(dir, "hotwords-phrases.txt").writeText(SherpaBiasing.hotwordsFile())
+        java.io.File(dir, "hotwords-phrases-with-places.txt").writeText(SherpaBiasing.hotwordsFile(listOf("Nhà", "Công ty")))
+        assertTrue(lines.size in 300..3000, "tệp ${lines.size} dòng — ngoài dải đã đo (756–1440 dòng cụm ổn)")
     }
 
     @Test
@@ -63,10 +121,13 @@ class SherpaBiasingCoverageTest {
     }
 
     @Test
-    fun `ba cum nghe sai trong luot E2E deu co trong tap hotword`() {
-        // [ĐO] emulator-voice-e2e-2026-09-15 §2 T2 w04/w09/w12 — đúng ba cụm đã làm câu lệnh ra Unknown.
-        listOf("PIN", "KÍNH", "KÍNH TRƯỚC TRÁI", "DỪNG", "NHẠC", "MỞ KHOÁ", "ĐIỀU HOÀ", "CỬA SỔ", "XEM")
-            .forEach { assertTrue(it in hotwords, "thiếu hotword «$it» — xem §3 L3 của lượt đo") }
+    fun `bon cau nghe sai trong luot E2E deu la cum trong tap hotword`() {
+        // [ĐO] emulator-voice-e2e-2026-09-15 §2 T2 w04/w09/w12/w13 — đúng bốn CỤM mà ma trận host 09-16 chốt là
+        // được sửa khi (và chỉ khi) chúng đứng thành cụm, không có từ rời bên cạnh.
+        // `BẬT ĐIỀU HOÀ` cố ý KHÔNG có: nó là tiền tố của `BẬT ĐIỀU HOÀ TỰ ĐỘNG` (luật dropPrefixes) — `BẬT MÁY LẠNH` thay.
+        // `MỞ CỬA SỔ` cũng là tiền tố (`MỞ CỬA SỔ NÓC`) ⇒ `MỞ CÁC CỬA SỔ` thay.
+        listOf("XEM PIN", "DỪNG NHẠC", "MỞ KÍNH TRƯỚC TRÁI", "TĂNG ÂM LƯỢNG", "MỞ KHOÁ CỬA", "BẬT MÁY LẠNH", "MỞ CÁC CỬA SỔ")
+            .forEach { assertTrue(it in hotwords, "thiếu cụm «$it» — xem spec kachi-voice-hotword-phrases") }
     }
 
     @Test
@@ -132,10 +193,11 @@ class SherpaBiasingCoverageTest {
     }
 
     @Test
-    fun `dang co dau cua dong tu va cach noi doi thuong deu vao duoc tep hotwords`() {
+    fun `dang co dau cua dong tu va cach noi doi thuong deu nam TRONG mot cum cua tep hotwords`() {
+        // Vòng 2: không còn là "có mặt như một dòng" (từ rời bị cấm) mà là "nằm trong ít nhất một cụm".
         val missing = SherpaSpokenWords.ALL
             .flatMap { SherpaHotwords.phrasesOf(it) }
-            .filterNot { it in hotwords }
-        assertEquals(emptyList<String>(), missing, "khai dạng có dấu mà tệp hotwords không có ⇒ hụt ở SherpaBiasing")
+            .filterNot { p -> lines.any { containsWords(it, p) } }
+        assertEquals(emptyList<String>(), missing, "khai dạng có dấu mà không cụm nào mang nó ⇒ hụt ở SherpaPhraseHotwords")
     }
 }
