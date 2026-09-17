@@ -12,6 +12,17 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **1.70 (71) — 2026-09-17** (`Kachi-1.70-release.apk`, 38,0 MB, sha256 `be34ddc6…6617b`, thay 1.69). VOICE
+  tái kiến trúc từ đầu (owner: quan trọng nhất, chưa bao giờ ổn thực tế): máy trạng thái tường minh `VoiceTurnState`
+  (8 pha, bất biến chống-loop CHỈ pha nghe mở mic) thay chùm cờ race; VAD hâm sẵn 1 lần/tiến trình (bỏ nghẽn
+  nạp-mỗi-lượt của "bấm 1,5 s mới nghe"); chime PCM async (bỏ chặn 3 s). Sửa 2 lỗi owner báo: overlay tắt giữa
+  câu → sống tới hết câu đọc; **Piper nói chậm lại** (0.9, núm `voice_tts_speed` chỉnh trên xe). **Chọn giọng
+  phản hồi**: số 1 Piper (mặc định) · số 2 giọng bé (clone, tự lùi Piper khi thiếu clip). Chạm trong ô: TCP
+  loopback + token (thay unix-socket bị SELinux chặn) + cầu chì daemon + `input` no-retry. Cốp bằng giọng
+  (`voiceCtlBackDoor` MỞ=1/ĐÓNG=3, [ĐO xe 09-17]); ghế mát 3 mức; AC AUTO đọc được nhưng GHI vẫn chặn (thiếu
+  feature-id trên xe). **Model G** fine-tune (gipformer-vi-ft-ep2, MIT, experimental) + nút chọn — [ĐO benchmark
+  270 câu giọng thật: G 177 vs ship 167]; mặc định vẫn giữ, owner quyết trên xe. Visual P1b/P2/P3. 🚗 chưa đo
+  trên xe: độ trễ nói→nghe→chạy, overlay không cắt giữa câu, chạm YouTube, chọn model G, cốp/ghế/AC.
 - **1.69 (70) — 2026-09-17** (`Kachi-1.69-release.apk`, 37,7 MB, sha256 `a3ad5ed7…4db1fe`, thay 1.66). Voice: hết vòng lặp
   "ừ/ừm" và mic chồng phiên (gốc của "YouTube không lướt được" + "nói xong 5–6 s mới chạy"), ngắt câu bằng Silero VAD
   (asset 0,64 MB trong APK) + cắt đuôi im lặng, số THẬT trước khi tăng/giảm (17/47 nút), tên app kiểu Việt
