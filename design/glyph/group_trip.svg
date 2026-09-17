@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NHÓM CHUYẾN ĐI (km · giờ · kWh · odo) — điểm xuất phát → lộ trình cong → cờ đích tô. Khác ic_road (mặt đường) và ic_range (mũi tên tới cờ). -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M5,18.6 C5,12.4 10.2,13.8 12.4,10.6 C14,8.2 13.6,6.2 16.6,5.4" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M2.8,18.6 A2.2,2.2 0 1 1 7.2,18.6 A2.2,2.2 0 1 1 2.8,18.6 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M16.6,3.4 L16.6,12.2" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16.6,3.8 L21.2,5.8 L16.6,7.8 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+</svg>

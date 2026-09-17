@@ -110,13 +110,18 @@ class VoiceVadWiringContractTest {
     @Test
     fun `luot khong co tieng theo VAD thi khong giai ma`() {
         val body = SourceRoots.body(capture, "private fun listenGranted(")
-        assertTrue(body.contains("decodeOnlyIfSpeech && !ep.sawSpeech()"), "cổng phải hỏi bề mặt chung")
+        // 1.70 — cổng nay hỏi [VoiceSilenceGate.skipDecode] (`:core` thuần): nó bỏ giải mã khi `!sawSpeech` VÀ
+        // (lượt nối tự tuyên bố `decodeOnlyIfSpeech` HOẶC đường VAD ở lượt chính). Đường VAD đủ tin để kết luận
+        // "không có tiếng"; đường RMS thì không (giữ giải mã rồi nói *"Không nghe rõ"*).
+        assertTrue(body.contains("VoiceSilenceGate.skipDecode("), "cổng phải hỏi bề mặt chung `:core`")
+        assertTrue(body.contains("ep.route"), "cổng phải xét đường ngắt câu (VAD vs RMS)")
+        assertTrue(body.contains("ep.sawSpeech()"), "cổng phải hỏi \"đã nghe thấy tiếng chưa\"")
         assertTrue(turn.contains("vad?.sawSpeech() ?: rms?.sawSpeech()"), "VAD trả lời trước, RMS lùi sau")
         // Chạm trần mà đoạn còn mở ⇒ phải `flush`, nếu không "nói dài" bị coi là "không ai nói".
         assertTrue(body.contains("ep.flush()"), "phải chốt nốt đoạn đang mở khi chạm trần")
         assertTrue(vad.contains("fun flush()"), "VAD phải phơi ra `flush`")
         assertTrue(
-            body.indexOf("ep.flush()") < body.indexOf("decodeOnlyIfSpeech && !ep.sawSpeech()"),
+            body.indexOf("ep.flush()") < body.indexOf("VoiceSilenceGate.skipDecode("),
             "`flush` phải chạy TRƯỚC cổng bỏ-giải-mã — không thì câu dài bị bỏ như câu im",
         )
     }

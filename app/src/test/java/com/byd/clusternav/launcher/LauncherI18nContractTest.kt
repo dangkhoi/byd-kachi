@@ -56,6 +56,11 @@ class LauncherI18nContractTest {
         "ảnh không giải mã được" to "nhật ký (Log.w) của hình nền — không hiện trên màn",
         "không đọc được thư mục ảnh" to "nhật ký (Log.w) của WallpaperStore — không hiện trên màn",
         "không giải mã được ảnh" to "nhật ký (Log.w) của WallpaperStore — không hiện trên màn",
+        // ── ÂM BÁO (1.70) — đi qua `VoiceChime.trip(why)` → `Log.w`; câu chẩn đoán cầu chì, không hiện trên màn ──
+        "AudioTrack không khởi tạo được" to "lý do cầu chì âm báo (VoiceChime.trip → Log.w) — không hiện trên màn",
+        "play() ném" to "lý do cầu chì âm báo (VoiceChime.trip → Log.w) — không hiện trên màn",
+        "play() mất \$startMs ms (> \$MAX_START_MS)" to
+            "lý do cầu chì âm báo (VoiceChime.trip → Log.w) — không hiện trên màn",
         "bỏ qua id KHÔNG thuộc host này" to
             "nhật ký (Log.w) của chốt bảo vệ badge tốc-độ VietMap: id đem thu hồi mà không thuộc host của launcher " +
                 "thì bỏ qua. Ca này chỉ tới từ dữ liệu hỏng nên nó là dấu vết để GREP khi gỡ lỗi trên xe, " +

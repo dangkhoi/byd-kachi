@@ -99,6 +99,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onUi = { block -> runOnUiThread(block) },
             gone = { destroyed || isFinishing || isDestroyed },
             onPhotoSource = { paths, sec -> workspace.setPhotoSource(paths, sec) },
+            // P1b: ảnh mờ đổi ⇒ dựng lại nền KÍNH của các thẻ tại chỗ (không recreate); bảng màu chỉ đổi khi người
+            // dùng chọn màu nhấn *theo ảnh nền* — khi đó đi đúng đường của nút chủ đề (`render` → recreate).
+            onArtChanged = { KachiGlass.refresh(rootFrame); if (ThemeHost.sync(viewModel.uiState.value)) recreate() },
         )
     }
     private lateinit var drawerController: DrawerController

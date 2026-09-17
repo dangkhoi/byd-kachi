@@ -170,12 +170,17 @@ object SherpaTtsCatalog {
     fun byId(id: String?): TtsVoice = ALL.firstOrNull { it.id == id } ?: PIPER_VI_VAIS1000
 
     /**
-     * Tốc độ đọc mặc định cho `OfflineTts.generate(text, sid, speed)`.
+     * Tốc độ đọc mặc định cho `OfflineTts.generate(text, sid, speed)` — nhỏ hơn 1.0 = **chậm hơn**.
      *
-     * `1.0` = tốc độ gốc của gói. Chưa có phép đo trên xe nên **không** tự ý đẩy nhanh: một câu đọc nhanh trong
-     * phòng yên là một câu không nghe ra trong ca-bin 80 km/h. Số này lên/xuống sau phép đo V-oncar (spec §6).
+     * **0.9 (chậm hơn gốc 10 %)** — [ĐO tai owner 2026-09-17]: Piper ở 1.0 *"nói nhanh quá, nghe không kịp"*.
+     * Owner nghe thử ⇒ cho phép chậm lại (tai owner là bằng chứng, thay cho ràng buộc "chưa đo xe" cũ). Chỉnh
+     * được trên xe qua núm `voice_tts_speed` (0.7–1.2) mà không cần build lại — xem `SherpaTtsSpeaker`.
      */
-    const val DEFAULT_SPEED = 1.0f
+    const val DEFAULT_SPEED = 0.9f
+
+    /** Dải cho phép của núm `voice_tts_speed` — dưới 0.7 thì méo kéo dài, trên 1.2 thì lại nhanh như cũ. */
+    const val MIN_SPEED = 0.7f
+    const val MAX_SPEED = 1.2f
 
     /** Số luồng cho phiên suy diễn ONNX — cùng số với đường NGHE, ca-bin chỉ có một việc chạy tại một lúc. */
     const val NUM_THREADS = 2

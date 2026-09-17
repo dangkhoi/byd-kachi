@@ -1,24 +1,25 @@
 <!--
-  BỤI MỊN (hạt bụi lơ lửng + luồng khí) — cho `pm25_level` · `pm25_value`.
-  [U6] Trước đây cả ba mục PM2.5 lẫn ion âm đều mang CHIẾC LÁ (ic_leaf) ⇒ bốn ô trong nhóm Khí hậu trông y hệt.
-  Lá nay chỉ còn nghĩa "ion âm / lọc không khí đang chạy"; hạt bụi nói đúng thứ đang được ĐO.
+  BỤI MỊN (`pm25_*`) — ba hạt tô chuyển sắc lơ lửng trên luồng khí mờ: thứ đang ĐO là hạt, không phải chiếc lá (ion) hay phin lọc.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/dust.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực CLIMATE · họ màu climate · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M3.6,11.8 C6.8,9.8 10.4,13.8 13.6,11.8 C16.2,10.2 18.4,11.2 20.4,12.4"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.4,6.4 m-1.2,0 a1.2,1.2 0 1 0 2.4,0 a1.2,1.2 0 1 0 -2.4,0Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M12.6,4.8 m-0.9,0 a0.9,0.9 0 1 0 1.8,0 a0.9,0.9 0 1 0 -1.8,0Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M17.8,7.4 m-1.1,0 a1.1,1.1 0 1 0 2.2,0 a1.1,1.1 0 1 0 -2.2,0Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M8.2,17 m-1.3,0 a1.3,1.3 0 1 0 2.6,0 a1.3,1.3 0 1 0 -2.6,0Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M14.6,18.6 m-1,0 a1,1 0 1 0 2,0 a1,1 0 1 0 -2,0Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M18.8,16 m-0.8,0 a0.8,0.8 0 1 0 1.6,0 a0.8,0.8 0 1 0 -1.6,0Z"
-        android:fillColor="#FFFFFF" />
+    <path android:pathData="M 5.6 8.4 A 2.6 2.6 0 1 1 10.8 8.4 A 2.6 2.6 0 1 1 5.6 8.4 Z M 14 6.6 A 1.8 1.8 0 1 1 17.6 6.6 A 1.8 1.8 0 1 1 14 6.6 Z M 12.4 13.2 A 2.2 2.2 0 1 1 16.8 13.2 A 2.2 2.2 0 1 1 12.4 13.2 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="5.6" android:startY="4.8" android:endX="17.6" android:endY="15.4">
+                <item android:offset="0" android:color="#8AE8F7" />
+                <item android:offset="1" android:color="#0D8AA3" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 3.6 17.6 C 7 16 9.4 19.4 12.4 17.6 C 15.4 15.8 17.8 19.2 20.4 17.6 M 5.2 21 C 8.4 19.6 10.6 22.4 13.4 21"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 4.6 13.4 A 1 1 0 1 1 6.6 13.4 A 1 1 0 1 1 4.6 13.4 Z M 18.1 11.2 A 1.1 1.1 0 1 1 20.3 11.2 A 1.1 1.1 0 1 1 18.1 11.2 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
 </vector>

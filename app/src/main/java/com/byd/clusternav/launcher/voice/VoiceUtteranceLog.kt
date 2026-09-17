@@ -116,6 +116,14 @@ object VoiceUtteranceLog {
         val decodeMs: Long = 0L,
         /** Mã loại của từng ý định hiểu ra (`OpenApp`, `Control`, `Unknown`…). */
         val intents: List<String> = emptyList(),
+        /**
+         * 1.70 — MỘT dòng quyết định của bộ phân tích, cùng chuỗi in ra logcat (`VoiceDecision.describe`).
+         *
+         * Khác [intents] (chỉ là tên lớp): trường này mang cả tham số đã hiểu (`Control(temp=25)`,
+         * `OpenApp(YouTube→ô 2)`, `không hiểu: MISMATCH`). [ĐO xe 2026-09-17] log xe có *"nghe được: chỉnh lại
+         * hai mươi lăm độ nhiệt độ"* mà không biết bộ phân tích ra gì ⇒ không tra được lỗi ở tai hay ở đầu.
+         */
+        val decision: String = "",
         /** Các dòng Kachi trả lời. */
         val replies: List<String> = emptyList(),
         /** Lượt này có đi qua một vòng **hỏi lại** không (V3 · R8). */
@@ -250,6 +258,7 @@ object VoiceUtteranceLog {
             "stamp" to stamp,
             "heard" to m.heard,
             "sentence" to m.sentence,
+            "decision" to m.decision,
             "intents" to TestBridgeJson.Raw(TestBridgeJson.arr(m.intents)),
             "replies" to TestBridgeJson.Raw(TestBridgeJson.arr(m.replies)),
             "mic_source" to m.micSource,

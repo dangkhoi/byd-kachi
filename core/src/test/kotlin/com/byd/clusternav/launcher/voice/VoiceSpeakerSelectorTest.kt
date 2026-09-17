@@ -110,4 +110,36 @@ class VoiceSpeakerSelectorTest {
         SilentSpeaker.stop()
         SilentSpeaker.shutdown()
     }
+
+    // ══ (4) GIỌNG PHẢN HỒI — MẶC ĐỊNH PIPER (voice-clone R6) ══════════════════════════════════════════════
+
+    @Test
+    fun `mac dinh la Piper -- so 1`() {
+        assertEquals(1, VoiceSpeakerSelector.FEEDBACK_PIPER)
+        assertEquals(2, VoiceSpeakerSelector.FEEDBACK_CHILD)
+    }
+
+    @Test
+    fun `mac dinh KHONG dung giong be du goi da san sang`() {
+        // Owner chốt: giọng bé chỉ là lựa chọn. Giá trị mặc định (Piper) không bao giờ rẽ sang clip.
+        assertFalse(VoiceSpeakerSelector.usesChildVoice(VoiceSpeakerSelector.FEEDBACK_PIPER, childReady = true))
+    }
+
+    @Test
+    fun `chon giong be VA goi san sang thi moi dung clip`() {
+        assertTrue(VoiceSpeakerSelector.usesChildVoice(VoiceSpeakerSelector.FEEDBACK_CHILD, childReady = true))
+    }
+
+    @Test
+    fun `chon giong be nhung goi chua co thi van Piper`() {
+        assertFalse(VoiceSpeakerSelector.usesChildVoice(VoiceSpeakerSelector.FEEDBACK_CHILD, childReady = false))
+    }
+
+    @Test
+    fun `gia tri la thi coi nhu Piper -- khong bao gio lo bat giong be`() {
+        // Một pref rác (0 · 99 · số âm) còn sót không được lỡ bật giọng bé.
+        assertFalse(VoiceSpeakerSelector.usesChildVoice(0, childReady = true))
+        assertFalse(VoiceSpeakerSelector.usesChildVoice(99, childReady = true))
+        assertFalse(VoiceSpeakerSelector.usesChildVoice(-1, childReady = true))
+    }
 }

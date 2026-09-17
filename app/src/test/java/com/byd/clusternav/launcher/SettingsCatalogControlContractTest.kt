@@ -83,6 +83,8 @@ class SettingsCatalogControlContractTest {
             // ── 3 · Hiển thị & đơn vị ──
             "display_units" to ("SettingsSections" to "rows.unitRow("),
             "display_theme" to ("SettingsSections" to "deps.onThemeMode("),
+            // VISUAL-REFRESH P1b · R8 — hàng ô màu nhấn + chip tông thẻ, cùng intent.
+            "display_color" to ("SettingsSections" to "deps.onColorChoice("),
             "display_lang" to ("SettingsSections" to "deps.onLangMode("),
             // ── 4 · Hồ sơ tài xế ──
             "profiles_list" to ("SettingsSectionsProfiles" to "deps.onSwitchProfile("),
@@ -138,6 +140,7 @@ class SettingsCatalogControlContractTest {
             // V1 pha NÓI · R4/T8 — hai công tắc đọc phản hồi + nút tải gói giọng offline (tệp `voice/`, xem KDoc).
             "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
             "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),
+            "voice_feedback_voice" to ("VoiceModelSettings" to "deps.bridge.setVoiceFeedbackVoice("),
             "voice_tts_pack" to ("VoiceModelSettings" to "SherpaTtsCatalog.PIPER_VI_VAIS1000"),
             // VOICE-HOTFIX 1.69 — ba mục mới, cùng tệp `VoiceModelSettings.kt` với khối Giọng nói còn lại.
             // Dấu vết chọn theo đúng luật ở KDoc: **lời gọi thật**, không phải nhãn.

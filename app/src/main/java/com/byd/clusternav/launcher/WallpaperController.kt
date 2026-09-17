@@ -26,6 +26,9 @@ import com.byd.clusternav.R
  * @param onUi chạy khối trên thread chính.
  * @param gone màn đã huỷ/đang huỷ ⇒ callback về muộn phải im.
  * @param onPhotoSource đẩy danh sách ảnh xuống widget trình chiếu — chạy **kể cả khi nền đang tắt** (widget độc lập).
+ * @param onArtChanged P1b — ảnh "đã nấu" ([WallArt]) vừa đổi/bật/tắt ⇒ chỗ gọi dựng lại nền kính của các thẻ
+ *   (`KachiGlass.refresh`) và soi lại bảng màu (ô *theo ảnh nền*). Gọi trên thread chính, SAU khi [WallArtStore]
+ *   đã đổi và TRƯỚC khi ảnh cũ bị nhả.
  */
 class WallpaperController(
     private val ctx: Context,
@@ -35,6 +38,7 @@ class WallpaperController(
     private val onUi: (() -> Unit) -> Unit,
     private val gone: () -> Boolean,
     private val onPhotoSource: (List<String>, Int) -> Unit,
+    private val onArtChanged: () -> Unit = {},
 ) {
     private var slide = SlideshowState()
     private var wallImages: List<String> = emptyList()
@@ -68,6 +72,8 @@ class WallpaperController(
             // đổi hướng ⇒ tăng thẻ GIẢI MÃ + nhả chốt đang-nạp.
             wallDecodeGen++
             wallLoading = null
+            // P1b: tắt hình nền ⇒ hết kính. Dựng lại nền các thẻ TRƯỚC rồi mới nhả ảnh mờ (drawable cũ còn trỏ tới nó).
+            WallArtStore.clear()?.let { old -> onArtChanged(); old.blurred.recycle() }
         }
         // [SOÁT P2-2] Tạo thư mục + quét thư mục + giải mã ảnh đều là I/O. Trước đây cả ba chạy trên thread chính
         // NGAY trong lúc về màn chính ⇒ đứng hình mỗi lần về HOME. Nay đẩy sang thread nền có sẵn (cùng nơi các
@@ -122,14 +128,19 @@ class WallpaperController(
         // [SOÁT P2-2] Giải mã ảnh là việc nặng nhất ở đây (ảnh nhiều megapixel) ⇒ chạy ở thread nền.
         val gen = ++wallDecodeGen
         wallLoading = path
+        val first = slide.index == 0
+        val fit = prefs().fit; val dim = prefs().dim
         submitIo {
             val next = WallpaperStore.loadScaled(path, reqW, reqH)
+            // P1b · §4.10 mục (1): ảnh mờ ¼ + lưới độ chói + màu trội nấu MỘT LẦN, ở đây (thread nền), từ chính ảnh
+            // vừa giải mã; lượt sau lấy từ bộ đệm đĩa. 0 blur lúc chạy.
+            val art = next?.let { WallArtBuilder.build(ctx, path, it, fit, dim, reqW, reqH) }
             onUi {
                 if (wallLoading == path) wallLoading = null
-                if (gen != wallDecodeGen || gone()) { next?.recycle(); return@onUi }
+                if (gen != wallDecodeGen || gone()) { next?.recycle(); art?.blurred?.recycle(); return@onUi }
                 // [SOÁT P1-3] lớp thứ HAI: kiểm lại công tắc ngay lúc ảnh về. Thẻ thế hệ chặn ca "đổi lựa chọn",
                 // còn cờ này chặn ca "người dùng vừa TẮT" và ca "đổi hồ sơ" — hai đường tới cùng một hậu quả.
-                if (!prefs().enabled) { next?.recycle(); return@onUi }
+                if (!prefs().enabled) { next?.recycle(); art?.blurred?.recycle(); return@onUi }
                 if (next == null) {
                     Log.w("Wallpaper", "ảnh không giải mã được, giữ nền hiện tại: ảnh thứ $shown/$total")
                     return@onUi
@@ -139,6 +150,12 @@ class WallpaperController(
                 wall.setPhoto(next, prefs().fit, prefs().dim)
                 // Nhả ảnh CŨ sau khi đã đưa ảnh mới vào View — nhả trước thì lần vẽ kế tiếp dùng ảnh đã thu hồi và sập.
                 old?.recycle()
+                // Cùng luật cho ảnh mờ: đổi kho → dựng lại nền kính → rồi mới nhả ảnh mờ cũ.
+                if (art != null) {
+                    val oldArt = WallArtStore.swap(art, first)
+                    onArtChanged()
+                    oldArt?.blurred?.recycle()
+                }
             }
         }
     }

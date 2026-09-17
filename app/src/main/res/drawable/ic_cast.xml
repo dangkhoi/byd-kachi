@@ -1,16 +1,17 @@
+<!--
+  CHIẾU CỤM (`cast` · `hud_switch` · `screen_rotation`; nhận dạng nhóm Giải trí) — màn hình nét với ba cung phát từ góc dưới-trái tô: hình ảnh đang được ĐẨY sang màn khác.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/cast.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực INFOTAINMENT · họ màu media · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4,7L20,7L20,17L13,17"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M4,14A6,6 0 0 1 10,20"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M4,17.5A3,3 0 0 1 6.5,20"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M4,20L4.5,20"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 8.4 19.4 L 18.6 19.4 A 2.4 2.4 0 0 0 21 17 L 21 7 A 2.4 2.4 0 0 0 18.6 4.6 L 5.4 4.6 A 2.4 2.4 0 0 0 3 7 L 3 9.4"
+        android:fillColor="#00000000" android:strokeColor="#F59E0B" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3 15.8 A 3.6 3.6 0 0 1 6.6 19.4 M 3 12.2 A 7.2 7.2 0 0 1 10.2 19.4"
+        android:fillColor="#00000000" android:strokeColor="#FFC75A" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 2.2 19.2 A 1.2 1.2 0 1 1 4.6 19.2 A 1.2 1.2 0 1 1 2.2 19.2 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
 </vector>

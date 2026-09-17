@@ -103,12 +103,20 @@ object SlotLiveProbe {
         ui.postDelayed(tick, SlotLiveness.PROBE_PERIOD_MS)
     }
 
+    /**
+     * K8 (1.70) — số nhịp liên tiếp mà bức tranh sống/chết của MỌI ô **không đổi**; nhịp kế lấy từ
+     * [SlotLiveness.probePeriodMs] (5 → 10 → 15 s). Đổi (ô mới đăng ký, một ô vắng task) ⇒ về 0.
+     */
+    @Volatile private var unchangedSweeps = 0
+    @Volatile private var lastPicture: List<Pair<String, Boolean>> = emptyList()
+
     private val tick = object : Runnable {
         override fun run() {
             if (subs.isEmpty()) { ticking = false; return }   // hết ô ⇒ dừng hẳn, không hẹn tiếp
             if (paused) { ticking = false; return }           // màn khuất ⇒ ngưng; `resume()` hẹn lại
             if (!running) sweep()
-            ui.postDelayed(this, SlotLiveness.PROBE_PERIOD_MS)
+            // Nhịp SAU tính từ bức tranh của nhịp TRƯỚC (nhịp này còn đang chạy trên luồng nền) — SlotLiveness.PROBE_PERIOD_MS là sàn.
+            ui.postDelayed(this, SlotLiveness.probePeriodMs(unchangedSweeps))
         }
     }
 
@@ -123,8 +131,11 @@ object SlotLiveProbe {
                 .getOrNull()
             running = false
             if (out.isNullOrBlank()) return@execute            // không đọc được ⇒ KHÔNG kết luận (nhịp này bỏ qua)
+            val picture = snapshot.map { it.key to (FreeformLaunch.parseTaskIdOnDisplay(out, it.pkg, it.displayId) != null) }
+            unchangedSweeps = if (picture == lastPicture) unchangedSweeps + 1 else 0
+            lastPicture = picture
             snapshot.forEach { sub ->
-                val alive = FreeformLaunch.parseTaskIdOnDisplay(out, sub.pkg, sub.displayId) != null
+                val alive = picture.first { it.first == sub.key }.second
                 if (sub.liveness.observe(alive)) {
                     Log.i(TAG, "ô ${sub.key}: ${sub.pkg} không còn task trên display ${sub.displayId} ⇒ app đã đóng")
                     unwatch(sub.key)                            // đã kết luận ⇒ thôi đo (mở lại sẽ đăng ký lượt mới)

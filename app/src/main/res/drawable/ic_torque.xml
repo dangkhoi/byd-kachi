@@ -1,18 +1,27 @@
 <!--
-  MÔ-MEN XOẮN (trục + cánh tay đòn + mũi tên lực) — cho `motor_front_torque`.
-  [U6] Mô-men KHÁC vòng tua: cùng một trục quay, một cái đo tốc độ quay, một cái đo LỰC. Cánh tay đòn + mũi tên
-  lực là cách vẽ chuẩn của mô-men, và nó phân biệt được với ic_rpm khi hai ô nằm cạnh nhau.
+  MÔ-MEN (`motor_front_torque`) — ĐAI ỐC LỤC GIÁC ở tâm + MŨI TÊN CONG quanh nó: lực xoay quanh trục, chính là hình mọi người thấy trên cờ-lê lực. Cùng trục với ic_rpm nhưng đo LỰC chứ không đo tốc độ quay. Vẽ lại 2026-09-17 (bản đầu = trục + tay đòn, quá trừu tượng ở 24px).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/torque.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M8.8,12 a3.2,3.2 0 1 0 6.4,0 a3.2,3.2 0 1 0 -6.4,0"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M4.2,12 L18.6,12"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M18.6,12 L18.6,18.4 M16.4,16.2 L18.6,18.4 L20.8,16.2"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 12 7.6 L 15.8 9.8 L 15.8 14.2 L 12 16.4 L 8.2 14.2 L 8.2 9.8 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="8.2" android:startY="7.6" android:endX="15.8" android:endY="16.4">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 10.6 12 A 1.4 1.4 0 1 1 13.4 12 A 1.4 1.4 0 1 1 10.6 12 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+    <path android:pathData="M 5.3 16.9 A 8.4 8.4 0 1 1 18.5 17.4"
+        android:fillColor="#00000000" android:strokeColor="#7B5CFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 15.6 15.6 L 18.5 17.4 L 20.4 14.6"
+        android:fillColor="#00000000" android:strokeColor="#7B5CFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

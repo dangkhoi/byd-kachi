@@ -82,6 +82,25 @@ class InputDaemonLaunchTest {
         )
     }
 
+    /**
+     * 1.70 — chế độ TCP loopback: thêm ` tcp <port> <token>` sau tên socket. [ĐO máy ảo + xe 2026-09-17] socket
+     * abstract bị sepolicy chặn ở lượt nối ⇒ đây là dòng lệnh THẬT xe sẽ chạy; dòng cũ giữ nguyên byte khi
+     * `port = null`.
+     */
+    @Test
+    fun `launch command co che do tcp loopback voi cong va token`() {
+        assertEquals(
+            "CLASSPATH=/x/base.apk app_process /" +
+                " com.byd.clusternav.system.inputd.InputDaemonMain kachi_input tcp 38138 abcdef0123456789" +
+                " </dev/null >/sdcard/l/inputd-7.log 2>&1 &",
+            InputDaemonLaunch.launchCmd(
+                "/x/base.apk", logPath = "/sdcard/l/inputd-7.log", useNohup = false,
+                port = 38_138, token = "abcdef0123456789",
+            ),
+        )
+        assertEquals("tcp", InputDaemonLaunch.ARG_TCP)
+    }
+
     @Test
     fun `launch command backgrounds and never targets a display (lifecycle only, no cluster leak)`() {
         val cmd = InputDaemonLaunch.launchCmd("/x/base.apk")

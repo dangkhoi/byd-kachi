@@ -247,6 +247,9 @@ object VoiceEngine {
     /** Mô hình đang nằm sẵn trong bộ nhớ chưa (để Cài đặt nói *"lần nói đầu sẽ hơi chậm"*). */
     fun loaded(): Boolean = recognizer != null
 
+    /** Mã gói ĐANG nằm trong RAM (`""` = chưa nạp) — cầu `state.voice_model.loaded_id` đối chiếu với gói đang chọn. */
+    fun loadedId(): String = builtFor.orEmpty()
+
     /**
      * ═══ V3 · R4 — NẠP SẴN mô hình, **trên luồng nền, ưu tiên thấp** ═══════════════════════════════════════
      *

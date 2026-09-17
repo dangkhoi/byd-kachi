@@ -451,12 +451,19 @@ class GroupTileView(context: Context) : LinearLayout(context) {
          *  • [GroupTone.ACTIVE] → [SurfaceTone.ACTIVE] — "đang bật" của nhóm và "đang bật" của ô picker từ nay
          *    trông **giống nhau**, trước đây là hai cách vẽ khác nhau cho cùng một nghĩa.
          */
-        fun surfaceOf(ctx: android.content.Context, radius: Int, t: GroupTone, domain: Domain? = null): android.graphics.drawable.Drawable =
+        fun surfaceOf(view: android.view.View, radius: Int, t: GroupTone, domain: Domain? = null) {
+            // P1b: hai tone chất liệu đi qua KachiGlass (kính khi có ảnh nền, KachiTheme.surface khi không) — nhận
+            // VIEW chứ không trả Drawable, vì cửa sổ kính phải biết vị trí của thẻ trong cửa sổ.
             when (t) {
-                GroupTone.NEUTRAL -> KachiTheme.surface(ctx, radius, SurfaceTone.NEUTRAL, domain)
-                GroupTone.ACTIVE -> KachiTheme.surface(ctx, radius, SurfaceTone.ACTIVE, domain)
-                GroupTone.WARN, GroupTone.ALERT -> KachiTheme.card(ctx, radius, fillOf(t), strokeOf(t))
+                GroupTone.NEUTRAL -> KachiGlass.apply(view, radius, SurfaceTone.NEUTRAL, domain)
+                GroupTone.ACTIVE -> KachiGlass.apply(view, radius, SurfaceTone.ACTIVE, domain)
+                // Qua `KachiGlass.plain` chứ không gán thẳng `background`: ô con DÙNG LẠI view và đổi sắc thái theo
+                // nhịp trạng thái (1 Hz), nên nếu thẻ kính của lượt NEUTRAL/ACTIVE trước còn lại thì lượt
+                // `KachiGlass.refresh` khi ảnh nền đổi sẽ đắp kính đè lên nền cảnh báo (màu nền LÀ thông tin).
+                GroupTone.WARN, GroupTone.ALERT ->
+                    KachiGlass.plain(view, KachiTheme.card(view.context, radius, fillOf(t), strokeOf(t)))
             }
+        }
 
         /** Viền ô con — cùng nguyên tắc [fillOf]. */
         fun strokeOf(t: GroupTone): String = when (t) {

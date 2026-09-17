@@ -1,20 +1,25 @@
 <!--
-  MỤC TIÊU SẠC (vòng ngắm) — cho `target_soc` (xem). ((V) 2026-09-17: nút `target_soc_set` đã gỡ.)
-  [U6] Đây là một CON SỐ MONG MUỐN, không phải trạng thái hiện tại của pin — trước đây ô xem mang hình PIN (lẫn với
-  SOC/SOH) còn nút mang TIA SÉT (lẫn với 4 nút sạc khác). Ô xem và nút dùng CÙNG hình vì chúng là một khái niệm;
-  phân biệt xem/bấm nay nằm ở dòng phụ.
+  MỤC TIÊU SẠC (`target_soc`) — vòng ngắm với tâm ĐẶC: một con số MONG MUỐN, không phải trạng thái pin. Tâm tô chuyển sắc để đọc ra ngay cả ở 20dp.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/target.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4.4,12 a7.6,7.6 0 1 0 15.2,0 a7.6,7.6 0 1 0 -15.2,0"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <!-- Tâm ĐẶC (không phải vòng tròn thứ hai): [ĐO] ảnh 2026-09-13 hai vòng đồng tâm đọc gần giống ĐĨA PHANH
-         (ic_brake) khi hai ô nằm trên cùng một màn cuộn. Chấm đặc + bốn vạch ngắm thì không lẫn được nữa. -->
-    <path android:pathData="M12,12 m-2,0 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M12,2.8 L12,5.2 M12,18.8 L12,21.2 M2.8,12 L5.2,12 M18.8,12 L21.2,12"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 4.4 12 A 7.6 7.6 0 1 1 19.6 12 A 7.6 7.6 0 1 1 4.4 12 Z"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 9.3 12 A 2.7 2.7 0 1 1 14.7 12 A 2.7 2.7 0 1 1 9.3 12 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="9.3" android:startY="9.3" android:endX="14.7" android:endY="14.7">
+                <item android:offset="0" android:color="#8FF0C4" />
+                <item android:offset="1" android:color="#0F8F63" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 12 2.6 L 12 5.4 M 12 18.6 L 12 21.4 M 2.6 12 L 5.4 12 M 18.6 12 L 21.4 12"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

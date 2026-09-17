@@ -4,34 +4,47 @@ import android.content.Context
 import android.util.Log
 
 /**
- * ═══ V1 pha NÓI · MỘT MÁY ĐỌC ĐỐI VỚI CHỖ GỌI, BA ĐƯỜNG BÊN TRONG ════════════════════════════════════════════
+ * ═══ CHỌN ĐƯỜNG RA TIẾNG — mỗi câu đo lại, không rẽ nhánh theo cờ RAM ════════════════════════════════════════
  *
- * Spec `docs/specs/kachi-voice-feedback.html` **R2**. Nó cầm cả [AndroidTtsSpeaker] lẫn [SherpaTtsSpeaker] và
- * hỏi [VoiceSpeakerSelector] **tại mỗi câu** xem đường nào đang dùng được.
+ * Spec `kachi-voice-feedback.html` R2 (Piper/Android) + `kachi-voice-clone.html` R4/R6 (giọng bé).
  *
- * ## Vì sao chọn LẠI mỗi câu, không chọn một lần lúc dựng
- * Hai phép đo ở đây đều **đổi giữa chuyến**, và cả hai đều đổi theo hướng *"lúc dựng chưa có, lát nữa mới có"*:
- *  • [AndroidTtsSpeaker] dựng **bất đồng bộ** — hỏi lúc launcher vừa khởi động thì gần như chắc chắn chưa xong
- *    ([VoiceSpeaker.available] còn `false`), mà phiên nói đầu tiên có thể xảy ra vài giây sau đó;
- *  • gói giọng offline có thể vừa được lắp xong ở màn Cài đặt, hoặc vừa bị *Xoá dữ liệu* cuốn đi.
- * Chốt một lần lúc dựng nghĩa là một launcher khởi động xong trước máy đọc sẽ **im lặng tới hết chuyến**, và
- * không có gì báo. Phép chọn ở đây rẻ (một `Int` + ba `File.exists`), không đáng đánh đổi lấy sự im lặng ấy.
+ * ## Hai trục quyết định, độc lập nhau
+ *  1. **Giọng phản hồi** người dùng chọn (`voice_feedback_voice`): Piper (mặc định) hay giọng bé (clip). Trục
+ *     này đứng TRƯỚC, vì nó là lựa chọn tường minh; giọng bé chỉ thắng khi được chọn **và** gói clip đã có trên
+ *     đĩa (`VoiceSpeakerSelector.usesChildVoice`). Thiếu một trong hai ⇒ rơi về trục 2.
+ *  2. **Máy đọc nào cho đường Piper**: máy đọc hệ thống (`vi-VN` thật) hay gói Piper offline — do
+ *     [VoiceSpeakerSelector] đo lại mỗi câu, y như trước.
  *
- * ## Nó KHÔNG giữ trạng thái "đang nói"
- * [stop] gọi thẳng cả hai đường. Hỏi *"đường nào đang nói"* rồi chỉ dừng đúng đường đó là dựng một cờ RAM để
- * quyết định — CLAUDE.md §5 cấm đúng việc ấy, và ở đây cái giá của cờ sai là micro mở trong lúc loa còn đang nói.
+ * ## ⚠ [ClipSpeaker] nhận chuỗi GỐC, đường Piper nhận chuỗi ĐÃ PHIÊN ÂM
+ * [TtsPronunciation.normalise] là cửa đổi chữ Latin → âm Việt, và nó nằm SAU chỗ tra clip (KDoc [TtsPronunciation]
+ * mục 3): bảng clip khoá theo **chuỗi gốc**. Nên khi đi đường clip, Router chuyển thẳng [text] gốc cho
+ * [ClipSpeaker]; [ClipSpeaker] tự gọi `normalise` cho **đường lùi Piper của nó**. Khi đi đường Piper/Android,
+ * Router phiên âm ngay tại đây như cũ. KHÔNG phiên âm hai lần.
  */
 class VoiceSpeakerRouter(
     ctx: Context,
     /** Pha 2 — công tắc *"ưu tiên giọng offline"* trong Cài đặt. Chưa có ⇒ luôn `false`, xem KDoc probe. */
     private val preferOffline: () -> Boolean = { false },
+    /** Giọng phản hồi đang chọn (`voice_feedback_voice`); mặc định Piper. Đọc **mỗi câu** như [preferOffline]. */
+    private val feedbackVoice: () -> Int = { VoiceSpeakerSelector.FEEDBACK_PIPER },
 ) : VoiceSpeaker {
 
     private val android = AndroidTtsSpeaker(ctx)
     private val sherpa = SherpaTtsSpeaker(ctx)
 
+    /** Giọng bé — DÙNG [sherpa] làm đường lùi (chia sẻ, không dựng engine thứ hai); Router sở hữu vòng đời [sherpa]. */
+    private val clip = ClipSpeaker(ctx, fallback = sherpa)
+
+    /** Có rẽ sang giọng bé không — luật thuần ở [VoiceSpeakerSelector.usesChildVoice] (mặc định Piper). */
+    private fun usingChild(): Boolean =
+        VoiceSpeakerSelector.usesChildVoice(
+            runCatching { feedbackVoice() }.getOrDefault(VoiceSpeakerSelector.FEEDBACK_PIPER),
+            childReady = clip.available(),
+        )
+
     /** Đường **đang** được chọn — chỉ để báo cáo (nhật ký / cầu kiểm thử). */
-    override val kind: VoiceSpeakerKind get() = VoiceSpeakerSelector.choose(probe())
+    override val kind: VoiceSpeakerKind
+        get() = if (usingChild()) clip.kind else VoiceSpeakerSelector.choose(probe())
 
     /** Ảnh chụp phép đo, dùng cho cả [VoiceSpeakerSelector.choose] lẫn cầu kiểm thử (`TestBridgeState`). */
     fun probe(): VoiceSpeakerSelector.VoiceSpeakerProbe {
@@ -59,7 +72,7 @@ class VoiceSpeakerRouter(
         VoiceSpeakerKind.NONE -> SilentSpeaker
     }
 
-    override fun available(): Boolean = active() !== SilentSpeaker
+    override fun available(): Boolean = usingChild() || active() !== SilentSpeaker
 
     override fun speak(text: String): Boolean = route(text, null)
 
@@ -72,19 +85,19 @@ class VoiceSpeakerRouter(
     override fun speak(text: String, onDone: () -> Unit): Boolean = route(text, onDone)
 
     private fun route(text: String, onDone: (() -> Unit)?): Boolean {
+        // Đường kia có thể còn đang đọc câu trước ⇒ dừng cả ba rồi mới nói (rẻ, và chặn ca hai giọng chồng).
+        stop()
+        if (usingChild()) {
+            // §4.7 — [ClipSpeaker] tra bảng bằng chuỗi GỐC; nó tự phiên âm cho đường lùi Piper của nó.
+            return if (onDone == null) clip.speak(text) else clip.speak(text, onDone)
+        }
         val target = active()
         if (target === SilentSpeaker) {
             // Không có đường nào đọc được ⇒ *"đọc xong"* là ngay bây giờ (vế (1) của hợp đồng).
             onDone?.let { runCatching { it() } }
             return false
         }
-        // Đường kia có thể còn đang đọc câu trước (người lái nói hai câu sát nhau trong lúc gói offline vừa lắp
-        // xong ⇒ đổi đường giữa hai câu). Dừng cả hai rồi mới nói là một lệnh rẻ, và nó chặn ca hai giọng chồng.
-        stop()
-        // §9 — CỬA DUY NHẤT đổi chữ Latin sang âm Việt, và nó nằm **sau** mọi bề mặt khác: tấm chữ, nhật ký và
-        // bảng tra clip đọc sẵn đều đã cầm [text] gốc từ trước. Đặt ở đây (không đặt trong từng máy đọc) vì cả
-        // hai đường đều là bộ phiên âm theo luật chính tả — rẽ nhánh theo `target.kind` là đúng thứ CLAUDE.md §7
-        // cấm, và nó sẽ lệch đúng vào ngày đường thứ ba được thêm vào.
+        // §9 — CỬA DUY NHẤT đổi chữ Latin sang âm Việt cho đường Piper/Android (xem KDoc lớp về vì sao clip đứng trước).
         val said = TtsPronunciation.normalise(text)
         val ok = if (onDone == null) target.speak(said) else target.speak(said, onDone)
         if (!ok) Log.i(TAG, "đường ${target.kind} không đọc được câu — chỉ còn chữ trên tấm chữ")
@@ -94,11 +107,13 @@ class VoiceSpeakerRouter(
     override fun stop() {
         android.stop()
         sherpa.stop()
+        clip.stop()
     }
 
     override fun shutdown() {
         android.shutdown()
         sherpa.shutdown()
+        clip.shutdown()
     }
 
     companion object {

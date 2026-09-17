@@ -10,9 +10,11 @@ import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SlotCodec
 import com.byd.clusternav.launcher.UnitFormat
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.inputdDisabled
 import com.byd.clusternav.system.inputd.InputDaemonClient
 import com.byd.clusternav.launcher.voice.SherpaModelCatalog
 import com.byd.clusternav.launcher.voice.SherpaTtsCatalog
+import com.byd.clusternav.launcher.voice.VoiceEngine
 import com.byd.clusternav.launcher.voice.VoiceModelStore
 import com.byd.clusternav.launcher.voice.VoiceSpeakerKind
 import com.byd.clusternav.launcher.voice.VoiceSpeakerRouter
@@ -165,6 +167,9 @@ internal object TestBridgeState {
         return TestBridgeJson.obj(
             "ready" to VoiceModelStore.isReady(ctx),
             "id" to (model?.id ?: ""),
+            // 1.70 [ĐO xe 2026-09-17] — gói ĐANG CHỌN và gói ĐANG NẰM TRONG RAM có thể khác nhau (đổi gói
+            // giữa hai phiên); `loaded_id` là thứ engine thật sự giải mã bằng, `""` = chưa nạp.
+            "loaded_id" to VoiceEngine.loadedId(),
             "label" to (model?.label ?: ""),
             "bytes" to VoiceModelStore.sizeOnDisk(ctx),
             "alt_available" to (model?.let { SherpaModelCatalog.lighterThan(it) } != null),
@@ -249,6 +254,10 @@ internal object TestBridgeState {
             "attempts" to s.attempts,
             "log" to s.logPath,
             "forced_off" to runCatching { Prefs.inputdDisabled(ctx) }.getOrDefault(false),
+            // 1.70 — cầu chì + cổng loopback (xem `InputDaemonClient.Health`).
+            "fused" to s.fused,
+            "fuse_reason" to s.fuseReason,
+            "port" to s.port,
         )
     }
 

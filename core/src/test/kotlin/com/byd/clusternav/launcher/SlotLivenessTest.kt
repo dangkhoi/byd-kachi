@@ -65,3 +65,19 @@ class SlotLivenessTest {
         assertTrue(l.observe(alive = false))
     }
 }
+
+/**
+ * K8 (1.70) — lùi nhịp `am stack list` khi kết quả đứng yên; đổi là về 5 s ngay.
+ * [ĐO xe 2026-09-17] 12 lệnh/phút cho cùng một câu trả lời.
+ */
+class SlotLivenessBackoffTest {
+    @org.junit.jupiter.api.Test
+    fun `lui nhip 5 - 10 - 15 s roi ket tran`() {
+        org.junit.jupiter.api.Assertions.assertEquals(5_000L, SlotLiveness.probePeriodMs(0))
+        org.junit.jupiter.api.Assertions.assertEquals(5_000L, SlotLiveness.probePeriodMs(1))
+        org.junit.jupiter.api.Assertions.assertEquals(10_000L, SlotLiveness.probePeriodMs(2))
+        org.junit.jupiter.api.Assertions.assertEquals(15_000L, SlotLiveness.probePeriodMs(3))
+        org.junit.jupiter.api.Assertions.assertEquals(15_000L, SlotLiveness.probePeriodMs(50))
+        org.junit.jupiter.api.Assertions.assertEquals(SlotLiveness.PROBE_PERIOD_MAX_MS, SlotLiveness.probePeriodMs(9))
+    }
+}

@@ -171,7 +171,14 @@ class TopStripPicker(
             // icon ô nhãn-một-dòng xuống lệch với ô nhãn-hai-dòng cùng hàng. Cùng lẽ với `CapabilityGridSection`.
             gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
-            addView(PickerBadge.icon(context, iconRes(pick), pick.needsBadge, Sp.ICON_L))
+            // P2 · AC2.6 — icon phải mang trạng thái CHỌN, không chỉ cái nền.
+            //
+            // ⚠ [SOÁT 2026-09-17] Bản đầu để `selected` rơi về mặc định `false` ⇒ trên bảng TỐI ở cỡ
+            // [KachiSpace.ICON_L], `KachiIcons.tint` áp bộ lọc *chưa chọn* (bão hoà 35 % · mờ 72 %) cho **cả** ô đang
+            // bật, và `rebuild()` sau mỗi cú bấm dựng lại ô nên nó không bao giờ tự đúng lại. Đây là lưới dày nhất
+            // của app (88 ô) — đúng chỗ cần phân biệt nhất. `AppDrawer` đã làm việc này qua `PickerBadge.retint`;
+            // ở đây ô biết ngay lúc dựng nên truyền thẳng.
+            addView(PickerBadge.icon(context, iconRes(pick), pick.needsBadge, Sp.ICON_L, strip.has(pick.id)))
             addView(TextView(context).apply {
                 text = pick.displayLabel; setTextColor(c(KachiTheme.INK))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
@@ -219,9 +226,9 @@ class TopStripPicker(
 
     /** Icon của khả năng; chưa map → icon đại diện nhóm (khỏi ô trống icon). */
     private fun iconRes(pick: CapabilityPick): Int {
-        val r = KachiTheme.iconRes(pick.icon)
+        val r = KachiIcons.res(pick.icon, Sp.ICON_L)
         if (r != 0) return r
         val d = pick.domain ?: return 0
-        return KachiTheme.iconRes(WidgetCatalog.iconFor(d))
+        return KachiIcons.res(WidgetCatalog.iconFor(d), Sp.ICON_L)
     }
 }

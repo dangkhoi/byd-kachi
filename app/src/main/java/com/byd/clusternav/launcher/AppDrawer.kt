@@ -382,7 +382,7 @@ class AppDrawer(
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(ImageView(context).apply {
-                val r = KachiTheme.iconRes(def.icon); if (r != 0) { setImageResource(r); setColorFilter(c(KachiTheme.INK)) }
+                val r = KachiIcons.res(def.icon, Sp.ICON_XL); if (r != 0) { setImageResource(r); KachiIcons.tint(this, Sp.ICON_XL, false) }
                 layoutParams = LinearLayout.LayoutParams(dpi(context, Sp.ICON_XL), dpi(context, Sp.ICON_XL))
             })
             addView(TextView(context).apply {
@@ -409,7 +409,7 @@ class AppDrawer(
             // hàng, nếu căn giữa dọc thì ô có dòng phụ đẩy icon/nhãn xuống ~10px lệch với ô cùng hàng.
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
-            addView(PickerBadge.icon(context, KachiTheme.iconRes(pick.icon), pick.needsBadge, Sp.ICON_XL))
+            addView(PickerBadge.icon(context, KachiIcons.res(pick.icon, Sp.ICON_XL), pick.needsBadge, Sp.ICON_XL))
             addView(TextView(context).apply {
                 // Nhãn = TÊN của khả năng, không mang gợi ý loại (U6): loại xuống dòng phụ bên dưới. [ĐO] ảnh
                 // 2026-09-12 owner đọc được "Charge target · view" trên lưới — thuật ngữ nội bộ lọt vào tên.
@@ -459,6 +459,7 @@ class AppDrawer(
         // [KIỂM TOÁN UX mục 5b] Đầy trần ⇒ LÀM MỜ những ô không còn chọn được, để trạng thái "không bấm được nữa"
         // nhìn ra được TRƯỚC khi bấm; toast chỉ là lớp thứ hai cho người đã bấm.
         tile.alpha = if (on || selected.size < cap) 1f else DIMMED
+        (tile as? ViewGroup)?.getChildAt(0)?.let { PickerBadge.retint(it, Sp.ICON_XL, on) }
     }
 
     private fun sectionLabel(text: String) = TextView(context).apply {

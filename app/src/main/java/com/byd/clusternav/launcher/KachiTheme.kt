@@ -58,19 +58,63 @@ object KachiTheme {
     var palette: KachiPalette = KachiPalette.DARK
         private set
 
+    /** Bảng đang dùng là bảng TỐI? (hình chiếu của [applyTheme], chỉ để ô xem-trước màu ở Cài đặt chọn đúng hạt giống). */
+    var night: Boolean = true
+        private set
+
+    /** Màu trội của ảnh nền đã đưa vào lượt [applyTheme] gần nhất (chỉ để xem trước ô *theo ảnh nền*). */
+    var artDominant: IntArray? = null
+        private set
+
     /**
-     * Chọn bảng màu cho [mode] tại giờ [hour] (0..23, chỉ dùng khi mode = AUTO).
+     * Bảng **GỐC** của chủ đề đang dùng — tức bảng TRƯỚC khi suy theo lựa chọn màu của người dùng.
      *
-     * Trả về `true` nếu bảng **ĐỔI** — chỗ gọi dùng giá trị đó để quyết định có dựng lại màn hay không. Trả về
-     * `false` thay vì dựng lại vô điều kiện vì `applyTheme` được gọi mỗi lượt trạng thái đổi (1 nhịp/giây trên xe),
-     * và dựng lại màn mỗi giây thì app đang chiếu trong ô bị nhả/gắn liên tục — đúng họ lỗi P-bug1/R3.
+     * ⚠ [SOÁT P1b] Ô xem-trước ở Cài đặt phải so với GỐC, không với [palette]: [palette] đã bị chuyển sắc theo lựa
+     * chọn hiện hành, nên hỏi nó màu của ô *Xanh Kachi* sẽ trả về **màu đang chọn** (chọn Lục ngọc ⇒ ô "Xanh Kachi"
+     * cũng vẽ lục ngọc, hai ô giống hệt nhau). Cùng một phép chọn với [applyTheme], không phải một đường thứ hai.
      */
-    fun applyTheme(mode: ThemeMode, hour: Int): Boolean {
-        val next = if (mode.isNight(hour)) KachiPalette.DARK else KachiPalette.LIGHT
-        if (next == palette) return false
+    val basePalette: KachiPalette get() = if (night) KachiPalette.DARK else KachiPalette.LIGHT
+
+    /**
+     * Chọn bảng màu cho [mode] tại giờ [hour] (0..23, chỉ dùng khi mode = AUTO), rồi **suy** theo lựa chọn màu của
+     * người dùng ([choice], P1b · R8) và màu trội của ảnh nền ([artDominant], chỉ khi chọn *theo ảnh nền*).
+     *
+     * Trả về `true` nếu **thứ đã áp đổi** (bảng màu, hoặc màu sơn hình xe) — chỗ gọi dùng để quyết định có dựng lại
+     * màn hay không. Trả `false` thay vì dựng lại vô điều kiện vì `applyTheme` chạy mỗi nhịp trạng thái (1 Hz trên
+     * xe) và dựng lại màn mỗi giây thì app trong ô bị nhả/gắn liên tục — họ lỗi P-bug1/R3; cùng lý do đó phép suy
+     * chỉ chạy khi **đầu vào đổi** ([derivedFor]), mọi nhịp khác chỉ là một phép so.
+     */
+    fun applyTheme(
+        mode: ThemeMode,
+        hour: Int,
+        choice: ColorChoice = ColorChoice.DEFAULT,
+        artDominant: IntArray? = null,
+    ): Boolean {
+        val isNight = mode.isNight(hour)
+        val art = if (choice.accent == AccentChoice.FROM_ART) artDominant?.toList() else null
+        val key = Triple(isNight, choice, art)
+        val next = if (key == derivedFor) derived else {
+            val base = if (isNight) KachiPalette.DARK else KachiPalette.LIGHT
+            base.derive(choice, art?.toIntArray(), isNight).also { derived = it; derivedFor = key }
+        }
+        night = isNight
+        this.artDominant = artDominant
+        // ⚠⚠ [SOÁT P2/P3 2026-09-17] Màu sơn KHÔNG nằm trong [KachiPalette] ⇒ `next == palette` vẫn đúng khi chỉ đổi
+        // sơn, và bản đầu trả `false` ⇒ ô chọn sơn là NÚT CHẾT. Lý do đầy đủ: `ColorChoiceContractTest.doi mau son…`.
+        val nextPaint = CarPaint.of(choice.paint)   // P3 · AC8.3: màu sơn theo hồ sơ, đọc cùng lượt với bảng màu
+        val paintChanged = nextPaint != carPaint
+        carPaint = nextPaint
+        if (next == palette && !paintChanged) return false
         palette = next
         return true
     }
+
+    /** Màu sơn hình xe đang áp (P3 · R8 AC8.3) — `CarArtPainter` đọc qua `KachiCarPaint.look()`, không đọc prefs. */
+    var carPaint: CarPaint = CarPaint.DEFAULT
+        private set
+
+    private var derivedFor: Triple<Boolean, ColorChoice, List<Int>?>? = null
+    private var derived: KachiPalette = KachiPalette.DARK
 
     // ══ VAI MÀU — tên GIỮ NGUYÊN từ bản `const val` để 21 tệp không phải đổi cách gọi ═════════════════════
     val BG: String get() = palette.bg
@@ -138,6 +182,15 @@ object KachiTheme {
     val FIELD_SUNKEN: String get() = palette.fieldSunken
     val SURF_FROM_OVER_ART: String get() = palette.surfFromOverArt
     val SURF_TO_OVER_ART: String get() = palette.surfToOverArt
+    // VISUAL-REFRESH P3 — hình xe mức tả thực (1); tra qua `CarArtInks` (tên token → vai), không gọi thẳng ở chỗ vẽ
+    val PART_FILL: String get() = palette.partFill
+    val PART_LINE: String get() = palette.partLine
+    val GLASS_FROM: String get() = palette.glassFrom
+    val GLASS_TO: String get() = palette.glassTo
+    val LAMP_ON: String get() = palette.lampOn
+    val LAMP_GLOW: String get() = palette.lampGlow
+    val TAIL_ON: String get() = palette.tailOn
+    val CAR_SHADOW: String get() = palette.carShadow
 
     /**
      * Sắc lĩnh vực của [domain] — vỏ bọc để chỗ vẽ **không** phải tự viết `?.name` (và không ai nghĩ ra cách thứ
@@ -149,23 +202,10 @@ object KachiTheme {
     fun dp(ctx: Context, v: Float): Float = v * ctx.resources.displayMetrics.density
     fun dpi(ctx: Context, v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
-    /**
-     * Thẻ kính bo góc + viền mảnh.
-     *
-     * `radius` nhận **dp dạng `Int`** (T5) chứ không phải `Float` như trước: bán kính giờ đi qua họ hằng
-     * `KachiSpace.RADIUS_*`, và để `Float` thì mọi chỗ gọi phải viết `.toFloat()` — tức là mời số trần quay lại.
-     */
-    fun card(
-        ctx: Context,
-        radius: Int = KachiSpace.RADIUS_XL,
-        fill: String = CARD_FILL,
-        stroke: String = LINE,
-    ): GradientDrawable =
-        GradientDrawable().apply {
-            cornerRadius = KachiSpace.dpf(ctx, radius)
-            setColor(c(fill))
-            setStroke(dpi(ctx, KachiSpace.HAIRLINE), c(stroke))
-        }
+    // ⚠ [P1b] Năm bộ dựng drawable KHÔNG-chất-liệu (`card` · `gradient` · `gradientSoft` · `topFade` · `pill`) nay là
+    // hàm mở rộng ở `KachiThemeDrawables.kt` — cùng chữ ký, cùng cách gọi `KachiTheme.card(...)`; tách vì trần 500
+    // dòng (CLAUDE.md §4.1) khi P1b thêm phép suy bảng màu + `surfacePair`. Bảng tra icon ở lại đây: bốn bài canh
+    // icon đọc chính tệp này.
 
     /**
      * ═══ VISUAL-REFRESH P1 · T2 — BỀ MẶT CÓ CHẤT LIỆU ═══════════════════════════════════════════════════════
@@ -241,13 +281,9 @@ object KachiTheme {
         }
         val active = tone == SurfaceTone.ACTIVE
         val well = tone == SurfaceTone.WELL
-        val neutralFrom = if (overArtwork) SURF_FROM_OVER_ART else SURF_FROM
-        val neutralTo = if (overArtwork) SURF_TO_OVER_ART else SURF_TO
-        val from = if (active) SURF_ON_FROM else if (well) SLOT else neutralFrom
-        val to = if (active) SURF_ON_TO else if (well) SLOT_TO else neutralTo
         val base = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(c(from), c(to)),
+            surfacePair(tone, overArtwork),
         ).apply {
             cornerRadius = r
             setStroke(hair, c(if (active) ACCENT_LINE else if (well) LINE_STRONG else SURF_LINE))
@@ -260,45 +296,25 @@ object KachiTheme {
     }
 
     /**
-     * Nền gradient accent (nút chính / tile bật).
+     * Hai đầu chuyển sắc của một [tone] (đỉnh, đáy) — **một** chỗ tra cho cả [surface] lẫn lớp che của thẻ kính
+     * (`KachiGlass`, P1b): lớp che phải biết đúng bề mặt sẽ nằm trên nó để chọn độ đục theo độ chói đo được.
      *
-     * ⚠ Mặc định là [GRAD_FROM]/[GRAD_TO], **không** phải [ACCENT]/[ACCENT2]: chữ [ON_ACCENT] nằm TRÊN nền này, và
-     * [ĐO] trắng trên `#4c7dff` chỉ **3.69:1** (dưới 4.5). [GRAD_FROM] là cùng họ xanh nhưng tối một bậc ⇒ 4.83:1.
-     * [ACCENT] vẫn là màu nhận diện cho chấm/viền/lớp tô nhạt — chỗ không có chữ đè lên.
+     * [overArtwork] ⇒ bán trong suốt 80 %: NEUTRAL dùng hai vai `surf*OverArt` đã đo; KHAY/BẬT hạ alpha của chính
+     * cặp vai của mình bằng [ColorMath.scaleAlpha] — không mở thêm bốn vai `*OverArt` chỉ để lặp lại con số 0xcc.
      */
-    fun gradient(ctx: Context, radius: Int, from: String = GRAD_FROM, to: String = GRAD_TO): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c(from), c(to))).apply {
-            cornerRadius = KachiSpace.dpf(ctx, radius)
+    fun surfacePair(tone: SurfaceTone, overArtwork: Boolean): IntArray {
+        val (from, to) = when (tone) {
+            SurfaceTone.ACTIVE -> SURF_ON_FROM to SURF_ON_TO
+            SurfaceTone.WELL -> SLOT to SLOT_TO
+            SurfaceTone.NEUTRAL -> if (overArtwork) SURF_FROM_OVER_ART to SURF_TO_OVER_ART else SURF_FROM to SURF_TO
+            SurfaceTone.SUNKEN -> FIELD_SUNKEN to FIELD_SUNKEN
         }
+        val f = if (overArtwork && tone != SurfaceTone.NEUTRAL) OVER_ART_OPACITY else 1.0
+        return intArrayOf(ColorMath.scaleAlpha(c(from), f), ColorMath.scaleAlpha(c(to), f))
+    }
 
-    /**
-     * Tile DOCK BẬT — gradient accent BÁN TRONG SUỐT + viền accent, khớp prototype `.dtile.on`
-     * (accent 36% → accent2 32%, viền accent 55%). KHÁC gradient đặc [gradient] (dùng cho pill/preset chọn).
-     */
-    fun gradientSoft(ctx: Context, radius: Int): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(c(TILE_ON_FROM), c(TILE_ON_TO))).apply {
-            cornerRadius = KachiSpace.dpf(ctx, radius); setStroke(dpi(ctx, KachiSpace.HAIRLINE), c(TILE_ON_LINE))
-        }
-
-    /**
-     * Fade dưới nhãn ô (slot-head) — khớp prototype `linear-gradient(180deg, rgba(0,0,0,.55), transparent)`.
-     *
-     * ⚠ Bản SÁNG dùng mờ **TRẮNG** chứ không phải mờ đen: mực trên nhãn này là [INK], và ở bảng sáng [INK] là mực
-     * đậm ⇒ mờ đen sẽ làm chữ đậm nằm trên nền đậm.
-     */
-    fun topFade(ctx: Context, radius: Int = KachiSpace.RADIUS_L): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(c(SCRIM_HEAD), c(CLEAR))).apply {
-            val r = KachiSpace.dpf(ctx, radius)
-            cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
-        }
-
-    /** Viên thuốc (pill) bo tròn hết cỡ. */
-    fun pill(ctx: Context, fill: String = CARD_FILL, stroke: String = LINE): GradientDrawable =
-        GradientDrawable().apply {
-            cornerRadius = KachiSpace.dpf(ctx, KachiSpace.RADIUS_PILL)
-            setColor(c(fill))
-            setStroke(dpi(ctx, KachiSpace.HAIRLINE), c(stroke))
-        }
+    /** Độ đục của thẻ trên ảnh nền — cùng con số với alpha `0xcc` của hai vai `surf*OverArt` (P1). */
+    private const val OVER_ART_OPACITY = 0.8
 
     /** Ánh xạ tên icon (ControlDef.icon / WidgetDef.icon) → vector drawable. 0 = không có. */
     fun iconRes(icon: String): Int = when (icon) {

@@ -41,8 +41,13 @@ object ControlLevels {
      * số mức lẫn phép đổi, và không thể lệch nhau như hai `Map` rời.
      */
     val RAW_BY_LEVEL: Map<String, List<Int>> = mapOf(
-        // [ĐO xe 2026-09-16] raw 3 ⇐ màn xe hiện "mức 2"; raw 1 ⇐ tắt. Mức 1 và 3 là **nội suy**, chờ điểm đo thứ hai.
-        "seatc" to listOf(1, 2, 3, 4),
+        // ═══ [ĐO xe 2026-09-17 — điểm đo THỨ HAI, thang ghế mát nay đã chốt] ═══════════════════════════════
+        // `getSeatVentilatingState(1|2)` cả ghế lái lẫn phụ: **OFF=1 · mức1=2 · mức2=3**, và trim owner **KHÔNG
+        // có mức 3** (raw 4 không bao giờ xuất hiện). Bỏ `4` khỏi thang: một mã 4 nếu có sẽ trả `null` (hiện ⚠)
+        // đúng hơn là bịa ra "mức 3" mà xe này không có.
+        "seatc" to listOf(1, 2, 3),
+        // `seath` (ghế sưởi): getter cùng họ ở `BYDAutoSettingDevice` nhưng **CHƯA đo thang trên xe** — giữ
+        // [SUY] bốn mức cho tới lượt xe sau (handoff 2026-09-17 §6.7: `seath` chờ đo).
         "seath" to listOf(1, 2, 3, 4),
     )
 

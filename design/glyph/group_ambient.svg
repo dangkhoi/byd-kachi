@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NHÓM ĐÈN VIỀN — khoang xe nhìn từ trên (nét) với quầng sáng toả từ hai mép trong: ánh sáng ở TRONG khoang, không phải đèn pha. -->
+  <style>:root{--ink:#ffffff;--main:#fbbf24;--light:#ffe08a;--deep:#b7810a}</style>
+  <path d="M12,3.4 C9.6,3.4 8.2,4.2 7.9,6 L7.5,9.4 C7.2,12 7.2,15.4 7.5,18 C7.8,19.8 9.4,20.6 12,20.6 C14.6,20.6 16.2,19.8 16.5,18 C16.8,15.4 16.8,12 16.5,9.4 L16.1,6 C15.8,4.2 14.4,3.4 12,3.4 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7.8,12 A4.2,4.2 0 1 1 16.2,12 A4.2,4.2 0 1 1 7.8,12 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="glow"/>
+  <path d="M9.2,8.4 L9.2,15.6 M14.8,8.4 L14.8,15.6" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

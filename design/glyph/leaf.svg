@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- ION ÂM / KHÔNG KHÍ SẠCH (`anion_state` · nút Ion âm; widget Không khí) — chiếc lá tô chuyển sắc + gân giữa mờ. Bụi đo (ic_dust) và máy lọc (ic_filter) mang hình khác. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M4.2,19.8 C4.2,10.4 10.6,4.2 20.2,4.2 C20.2,13.8 14.2,20 4.2,19.8 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M6.6,17.4 C9.4,13.4 12.6,10.4 16.8,7.6" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CHIẾU CỤM (`cast` · `hud_switch` · `screen_rotation`; nhận dạng nhóm Giải trí) — màn hình nét với ba cung phát từ góc dưới-trái tô: hình ảnh đang được ĐẨY sang màn khác. -->
+  <style>:root{--ink:#ffffff;--main:#f59e0b;--light:#ffc75a;--deep:#b06f05}</style>
+  <path d="M8.4,19.4 L18.6,19.4 A2.4,2.4 0 0 0 21,17 L21,7 A2.4,2.4 0 0 0 18.6,4.6 L5.4,4.6 A2.4,2.4 0 0 0 3,7 L3,9.4" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3,15.8 A3.6,3.6 0 0 1 6.6,19.4 M3,12.2 A7.2,7.2 0 0 1 10.2,19.4" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M2.2,19.2 A1.2,1.2 0 1 1 4.6,19.2 A1.2,1.2 0 1 1 2.2,19.2 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+</svg>

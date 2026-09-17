@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NHÓM CỬA & CỐP — thân xe nhìn từ trên (nét) + bốn vạt cửa hé ra ngoài tô chuyển sắc: cả bộ cửa, không phải một cánh (ic_door). -->
+  <style>:root{--ink:#ffffff;--main:#aeb8c8;--light:#dfe5ee;--deep:#6b7686}</style>
+  <path d="M12,3.4 C9.6,3.4 8.2,4.2 7.9,6 L7.5,9.4 C7.2,12 7.2,15.4 7.5,18 C7.8,19.8 9.4,20.6 12,20.6 C14.6,20.6 16.2,19.8 16.5,18 C16.8,15.4 16.8,12 16.5,9.4 L16.1,6 C15.8,4.2 14.4,3.4 12,3.4 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7.4,8.2 L3.8,6.2 L3.8,10.2 L7.3,11.6 Z M16.6,8.2 L20.2,6.2 L20.2,10.2 L16.7,11.6 Z M7.3,12.8 L3.8,11.4 L3.8,15.4 L7.4,16.6 Z M16.7,12.8 L20.2,11.4 L20.2,15.4 L16.6,16.6 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M10.4,15.8 L13.6,15.8 A1,1 0 0 1 14.6,16.8 L14.6,17.2 A1,1 0 0 1 13.6,18.2 L10.4,18.2 A1,1 0 0 1 9.4,17.2 L9.4,16.8 A1,1 0 0 1 10.4,15.8 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+</svg>

@@ -1,0 +1,1978 @@
+{
+  "faces": {
+    "top": {
+      "framePaths": 27,
+      "maxFramePaths": 28,
+      "pieces": [
+        {
+          "id": "glow_front",
+          "layer": "glow",
+          "role": "glow",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            6.6,
+            2.9,
+            17.4,
+            6.5
+          ],
+          "ref": null
+        },
+        {
+          "id": "glow_rear",
+          "layer": "glow",
+          "role": "glowtail",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.2,
+            18.7,
+            16.8,
+            21.7
+          ],
+          "ref": null
+        },
+        {
+          "id": "body",
+          "layer": "body",
+          "role": "paint",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.28,
+            4.6,
+            16.72,
+            20.3
+          ],
+          "ref": null
+        },
+        {
+          "id": "windscreen",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            8.7,
+            8.1,
+            15.3,
+            10.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_rear",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            8.7,
+            15.2,
+            15.3,
+            17.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_lf",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            8.6,
+            10.6,
+            9.7,
+            12.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_rf",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            14.3,
+            10.6,
+            15.4,
+            12.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_lr",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            8.6,
+            12.9,
+            9.7,
+            14.8
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_rr",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            14.3,
+            12.9,
+            15.4,
+            14.8
+          ],
+          "ref": null
+        },
+        {
+          "id": "sunroof",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            10.3,
+            10.9,
+            13.7,
+            14.6
+          ],
+          "ref": null
+        },
+        {
+          "id": "sunshade",
+          "layer": "glass",
+          "role": "shade",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": true,
+          "subpaths": 4,
+          "bounds": [
+            10.6,
+            11.2,
+            13.4,
+            14.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "headlamp",
+          "layer": "lights",
+          "role": "lamp",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            8.25,
+            5.0,
+            15.75,
+            7.05
+          ],
+          "ref": null
+        },
+        {
+          "id": "drl",
+          "layer": "lights",
+          "role": "drl",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            8.6,
+            6.55,
+            15.4,
+            7.7
+          ],
+          "ref": null
+        },
+        {
+          "id": "turn_l",
+          "layer": "lights",
+          "role": "turn",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.55,
+            7.35,
+            8.65,
+            8.45
+          ],
+          "ref": null
+        },
+        {
+          "id": "turn_r",
+          "layer": "lights",
+          "role": "turn",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            15.35,
+            7.35,
+            16.45,
+            8.45
+          ],
+          "ref": null
+        },
+        {
+          "id": "tail",
+          "layer": "lights",
+          "role": "tail",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            7.85,
+            18.25,
+            16.15,
+            19.7
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_fl",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.1,
+            6.8,
+            5.7,
+            11.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_fr",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            18.3,
+            6.8,
+            20.9,
+            11.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_rl",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.1,
+            13.6,
+            5.7,
+            18.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_rr",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            18.3,
+            13.6,
+            20.9,
+            18.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_lf",
+          "layer": "doors",
+          "role": "flap",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.9,
+            9.1,
+            7.55,
+            13.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_rf",
+          "layer": "doors",
+          "role": "flap",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            16.45,
+            9.1,
+            20.1,
+            13.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_lr",
+          "layer": "doors",
+          "role": "flap",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.9,
+            13.9,
+            7.6,
+            17.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_rr",
+          "layer": "doors",
+          "role": "flap",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            16.4,
+            13.9,
+            20.1,
+            17.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "bonnet",
+          "layer": "doors",
+          "role": "panel",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            9.5,
+            5.6,
+            14.5,
+            7.6
+          ],
+          "ref": null
+        },
+        {
+          "id": "boot",
+          "layer": "doors",
+          "role": "panel",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            9.2,
+            17.7,
+            14.8,
+            19.6
+          ],
+          "ref": null
+        },
+        {
+          "id": "mirror",
+          "layer": "doors",
+          "role": "mirror",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            4.7,
+            8.9,
+            19.3,
+            10.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "highlight",
+          "layer": "highlight",
+          "role": "highlight",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 0,
+          "bounds": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "ref": "body"
+        },
+        {
+          "id": "lock_shackle",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            10.7,
+            9.5,
+            13.3,
+            11.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "lock_body",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            9.7,
+            11.9,
+            14.3,
+            15.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "seat_fl",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            8.6,
+            9.2,
+            11.2,
+            12.7
+          ],
+          "ref": null
+        },
+        {
+          "id": "therm_stem",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            12.0,
+            9.6,
+            12.0,
+            12.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "therm_bulb",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            10.65,
+            12.95,
+            13.35,
+            15.65
+          ],
+          "ref": null
+        },
+        {
+          "id": "sunroof_gap",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            10.8,
+            11.3,
+            13.2,
+            12.3
+          ],
+          "ref": null
+        },
+        {
+          "id": "arrow_v_stem",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            12.0,
+            16.6,
+            12.0,
+            17.8
+          ],
+          "ref": null
+        },
+        {
+          "id": "arrow_v_heads",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            10.66,
+            15.1,
+            13.34,
+            19.3
+          ],
+          "ref": null
+        },
+        {
+          "id": "chev_front",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            9.1,
+            9.85,
+            14.9,
+            11.55
+          ],
+          "ref": null
+        },
+        {
+          "id": "chev_rear",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            9.1,
+            16.45,
+            14.9,
+            18.15
+          ],
+          "ref": null
+        },
+        {
+          "id": "dots",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 3,
+          "bounds": [
+            9.3,
+            12.75,
+            15.2,
+            15.25
+          ],
+          "ref": null
+        },
+        {
+          "id": "drop",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            10.45,
+            11.5,
+            13.55,
+            15.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "note_head",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            10.3,
+            14.25,
+            12.2,
+            16.15
+          ],
+          "ref": null
+        },
+        {
+          "id": "note_stem",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            12.1,
+            12.2,
+            13.95,
+            15.1
+          ],
+          "ref": null
+        }
+      ]
+    },
+    "front": {
+      "framePaths": 19,
+      "maxFramePaths": 28,
+      "pieces": [
+        {
+          "id": "shadow",
+          "layer": "shadow",
+          "role": "shadow",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            4.4,
+            18.7,
+            19.6,
+            20.7
+          ],
+          "ref": null
+        },
+        {
+          "id": "glow_front",
+          "layer": "glow",
+          "role": "glow",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.5,
+            9.9,
+            20.5,
+            15.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_l",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            5.4,
+            17.3,
+            8.4,
+            19.5
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_r",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            15.6,
+            17.3,
+            18.6,
+            19.5
+          ],
+          "ref": null
+        },
+        {
+          "id": "body",
+          "layer": "body",
+          "role": "paint",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            4.6,
+            4.7,
+            19.4,
+            18.3
+          ],
+          "ref": null
+        },
+        {
+          "id": "bonnet",
+          "layer": "body",
+          "role": "panel",
+          "glyph": false,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            6.0,
+            9.3,
+            18.0,
+            10.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "windscreen",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.5,
+            5.45,
+            16.5,
+            8.8
+          ],
+          "ref": null
+        },
+        {
+          "id": "headlamp_l",
+          "layer": "lights",
+          "role": "lamp",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            5.4,
+            11.25,
+            9.0,
+            13.75
+          ],
+          "ref": null
+        },
+        {
+          "id": "headlamp_r",
+          "layer": "lights",
+          "role": "lamp",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            15.0,
+            11.25,
+            18.6,
+            13.75
+          ],
+          "ref": null
+        },
+        {
+          "id": "drl",
+          "layer": "lights",
+          "role": "drl",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            4.9,
+            11.6,
+            19.1,
+            13.0
+          ],
+          "ref": null
+        },
+        {
+          "id": "fog",
+          "layer": "lights",
+          "role": "lamp",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            5.8,
+            14.7,
+            18.2,
+            16.3
+          ],
+          "ref": null
+        },
+        {
+          "id": "turn_l",
+          "layer": "lights",
+          "role": "turn",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            4.8,
+            11.2,
+            8.4,
+            15.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "turn_r",
+          "layer": "lights",
+          "role": "turn",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            15.6,
+            11.2,
+            19.2,
+            15.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "sidelight",
+          "layer": "lights",
+          "role": "lamp",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            3.8,
+            12.5,
+            20.2,
+            14.7
+          ],
+          "ref": null
+        },
+        {
+          "id": "mirror",
+          "layer": "doors",
+          "role": "mirror",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            2.5,
+            9.3,
+            21.5,
+            10.6
+          ],
+          "ref": null
+        },
+        {
+          "id": "glow_rear",
+          "layer": "rear",
+          "role": "glowtail",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            5.0,
+            10.1,
+            19.0,
+            14.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "tail_bar",
+          "layer": "rear",
+          "role": "tail",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            6.2,
+            11.2,
+            17.8,
+            12.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "plate",
+          "layer": "rear",
+          "role": "plate",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            9.6,
+            13.9,
+            14.4,
+            15.5
+          ],
+          "ref": null
+        },
+        {
+          "id": "fog_rear",
+          "layer": "rear",
+          "role": "tail",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            6.3,
+            13.9,
+            8.5,
+            15.5
+          ],
+          "ref": null
+        },
+        {
+          "id": "highlight",
+          "layer": "highlight",
+          "role": "highlight",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 0,
+          "bounds": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "ref": "body"
+        },
+        {
+          "id": "rays_high",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.0,
+            18.9,
+            13.4,
+            21.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "rays_low",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.2,
+            18.9,
+            12.2,
+            21.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "fog_beam",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            3.2,
+            18.2,
+            14.6,
+            20.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "mode_rays",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            2.9,
+            18.9,
+            21.1,
+            21.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "defrost_waves",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.8,
+            6.37,
+            15.2,
+            9.23
+          ],
+          "ref": null
+        },
+        {
+          "id": "hinge",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.0,
+            6.4,
+            16.8,
+            9.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "arrow_h_stem",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.2,
+            12.6,
+            7.2,
+            14.3
+          ],
+          "ref": null
+        },
+        {
+          "id": "arrow_h_heads",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 2,
+          "bounds": [
+            6.0,
+            11.1,
+            8.4,
+            15.8
+          ],
+          "ref": null
+        }
+      ]
+    },
+    "side": {
+      "framePaths": 18,
+      "maxFramePaths": 28,
+      "pieces": [
+        {
+          "id": "shadow",
+          "layer": "shadow",
+          "role": "shadow",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            2.6,
+            17.8,
+            21.8,
+            19.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "glow_front",
+          "layer": "glow",
+          "role": "glow",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            0.8,
+            9.9,
+            5.6,
+            13.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "glow_rear",
+          "layer": "glow",
+          "role": "glowtail",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            19.6,
+            10.0,
+            23.6,
+            12.8
+          ],
+          "ref": null
+        },
+        {
+          "id": "body",
+          "layer": "body",
+          "role": "paint",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            2.6,
+            5.8,
+            21.9,
+            16.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "bonnet",
+          "layer": "body",
+          "role": "panel",
+          "glyph": false,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            4.7,
+            10.1,
+            7.5,
+            10.75
+          ],
+          "ref": null
+        },
+        {
+          "id": "windscreen",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            8.3,
+            6.75,
+            12.2,
+            9.75
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_front",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            12.7,
+            6.75,
+            15.8,
+            9.75
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_rear",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            16.3,
+            6.75,
+            17.8,
+            9.75
+          ],
+          "ref": null
+        },
+        {
+          "id": "glass_quarter",
+          "layer": "glass",
+          "role": "glass",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            18.2,
+            6.95,
+            19.35,
+            9.75
+          ],
+          "ref": null
+        },
+        {
+          "id": "headlamp",
+          "layer": "lights",
+          "role": "lamp",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            2.95,
+            10.55,
+            5.3,
+            12.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "tail",
+          "layer": "lights",
+          "role": "tail",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            20.4,
+            10.55,
+            21.75,
+            12.1
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_front",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            4.5,
+            14.0,
+            8.7,
+            18.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "wheel_rear",
+          "layer": "tyres",
+          "role": "tyre",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            15.8,
+            14.0,
+            20.0,
+            18.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "rim_front",
+          "layer": "tyres",
+          "role": "rim",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            5.5,
+            15.0,
+            7.7,
+            17.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "rim_rear",
+          "layer": "tyres",
+          "role": "rim",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            16.8,
+            15.0,
+            19.0,
+            17.2
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_front",
+          "layer": "doors",
+          "role": "panel",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            12.6,
+            10.2,
+            15.9,
+            15.7
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_rear",
+          "layer": "doors",
+          "role": "panel",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            16.3,
+            10.2,
+            19.2,
+            13.8
+          ],
+          "ref": null
+        },
+        {
+          "id": "mirror",
+          "layer": "doors",
+          "role": "mirror",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            8.9,
+            9.0,
+            10.1,
+            9.9
+          ],
+          "ref": null
+        },
+        {
+          "id": "highlight",
+          "layer": "highlight",
+          "role": "highlight",
+          "glyph": false,
+          "strokeOnly": false,
+          "evenOdd": false,
+          "subpaths": 0,
+          "bounds": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "ref": "body"
+        }
+      ]
+    }
+  },
+  "icons": {
+    "ic_car_front_drl": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "headlamp_l",
+        "headlamp_r",
+        "bonnet"
+      ],
+      "main": [
+        "drl"
+      ],
+      "paths": 4
+    },
+    "ic_car_front_fog": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "headlamp_l",
+        "headlamp_r",
+        "bonnet"
+      ],
+      "main": [
+        "fog",
+        "fog_beam"
+      ],
+      "paths": 5
+    },
+    "ic_car_front_headlight_mode": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "bonnet"
+      ],
+      "main": [
+        "headlamp_l+headlamp_r",
+        "mode_rays"
+      ],
+      "paths": 5
+    },
+    "ic_car_front_highbeam": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "headlamp_r",
+        "bonnet"
+      ],
+      "main": [
+        "headlamp_l",
+        "rays_high"
+      ],
+      "paths": 5
+    },
+    "ic_car_front_lowbeam": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "headlamp_r",
+        "bonnet"
+      ],
+      "main": [
+        "headlamp_l",
+        "rays_low"
+      ],
+      "paths": 5
+    },
+    "ic_car_front_sidelight": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "headlamp_l",
+        "headlamp_r",
+        "bonnet"
+      ],
+      "main": [
+        "sidelight"
+      ],
+      "paths": 4
+    },
+    "ic_car_front_turn_l": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "headlamp_l",
+        "headlamp_r",
+        "bonnet"
+      ],
+      "main": [
+        "turn_l"
+      ],
+      "paths": 4
+    },
+    "ic_car_front_turn_r": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "headlamp_l",
+        "headlamp_r",
+        "bonnet"
+      ],
+      "main": [
+        "turn_r"
+      ],
+      "paths": 4
+    },
+    "ic_car_rear_defrost": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "tail_bar",
+        "plate"
+      ],
+      "main": [
+        "defrost_waves"
+      ],
+      "paths": 3
+    },
+    "ic_car_rear_fog": {
+      "face": "front",
+      "sub": [
+        "windscreen",
+        "tail_bar",
+        "plate"
+      ],
+      "main": [
+        "fog_rear",
+        "fog_beam"
+      ],
+      "paths": 4
+    },
+    "ic_car_top_ambient": {
+      "face": "top",
+      "sub": [
+        "windscreen"
+      ],
+      "main": [
+        "chev_front",
+        "chev_rear"
+      ],
+      "paths": 4
+    },
+    "ic_car_top_ambient_bright_front": {
+      "face": "top",
+      "sub": [
+        "windscreen"
+      ],
+      "main": [
+        "chev_front",
+        "dots"
+      ],
+      "paths": 4
+    },
+    "ic_car_top_ambient_bright_rear": {
+      "face": "top",
+      "sub": [
+        "windscreen"
+      ],
+      "main": [
+        "chev_rear",
+        "dots"
+      ],
+      "paths": 4
+    },
+    "ic_car_top_ambient_color_front": {
+      "face": "top",
+      "sub": [
+        "windscreen"
+      ],
+      "main": [
+        "chev_front",
+        "drop"
+      ],
+      "paths": 4
+    },
+    "ic_car_top_ambient_color_rear": {
+      "face": "top",
+      "sub": [
+        "windscreen"
+      ],
+      "main": [
+        "chev_rear",
+        "drop"
+      ],
+      "paths": 4
+    },
+    "ic_car_top_ambient_music": {
+      "face": "top",
+      "sub": [
+        "windscreen"
+      ],
+      "main": [
+        "chev_front",
+        "chev_rear",
+        "note_head",
+        "note_stem"
+      ],
+      "paths": 6
+    },
+    "ic_car_top_door_all": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_lf",
+        "door_lr",
+        "door_rf",
+        "door_rr"
+      ],
+      "paths": 6
+    },
+    "ic_car_top_door_lf": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_lf"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_door_lr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_lr"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_door_rf": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_rf"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_door_rr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_rr"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_hood": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "bonnet"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_lock": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "lock_shackle",
+        "lock_body"
+      ],
+      "paths": 4
+    },
+    "ic_car_top_mirror": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "mirror"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_seat_fl": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "seat_fl"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_sunroof": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "sunroof"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_sunroof_pos": {
+      "face": "top",
+      "sub": [
+        "windscreen"
+      ],
+      "main": [
+        "sunroof:stroke",
+        "sunroof_gap",
+        "arrow_v_stem",
+        "arrow_v_heads"
+      ],
+      "paths": 6
+    },
+    "ic_car_top_sunshade": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "sunshade"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_trunk": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "boot"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_trunk_pos": {
+      "face": "front",
+      "sub": [
+        "plate"
+      ],
+      "main": [
+        "hinge",
+        "arrow_h_stem",
+        "arrow_h_heads"
+      ],
+      "paths": 5
+    },
+    "ic_car_top_tyre_fl": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_fl"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_tyre_fr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_fr"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_tyre_rl": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_rl"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_tyre_rr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_rr"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_tyre_temp_fl": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_fl",
+        "therm_stem",
+        "therm_bulb"
+      ],
+      "paths": 5
+    },
+    "ic_car_top_tyre_temp_fr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_fr",
+        "therm_stem",
+        "therm_bulb"
+      ],
+      "paths": 5
+    },
+    "ic_car_top_tyre_temp_rl": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_rl",
+        "therm_stem",
+        "therm_bulb"
+      ],
+      "paths": 5
+    },
+    "ic_car_top_tyre_temp_rr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "wheel_rr",
+        "therm_stem",
+        "therm_bulb"
+      ],
+      "paths": 5
+    },
+    "ic_car_top_window_all": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "glass_lf",
+        "glass_rf",
+        "glass_lr",
+        "glass_rr"
+      ],
+      "paths": 6
+    },
+    "ic_car_top_window_lf": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "glass_lf"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_window_lr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "glass_lr"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_window_rf": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "glass_rf"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_window_rr": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "glass_rr"
+      ],
+      "paths": 3
+    }
+  },
+  "faceVectors": {
+    "car_face_top": {
+      "face": "top",
+      "paths": 20
+    },
+    "car_face_front": {
+      "face": "front",
+      "paths": 11
+    },
+    "car_face_rear": {
+      "face": "front",
+      "paths": 10
+    },
+    "car_face_side": {
+      "face": "side",
+      "paths": 18
+    }
+  }
+}

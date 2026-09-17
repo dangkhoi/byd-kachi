@@ -1,0 +1,23 @@
+<!--
+  ION ÂM / KHÔNG KHÍ SẠCH (`anion_state` · nút Ion âm; widget Không khí) — chiếc lá tô chuyển sắc + gân giữa mờ. Bụi đo (ic_dust) và máy lọc (ic_filter) mang hình khác.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/leaf.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực CLIMATE · họ màu climate · cỡ 48dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 4.2 19.8 C 4.2 10.4 10.6 4.2 20.2 4.2 C 20.2 13.8 14.2 20 4.2 19.8 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="4.2" android:startY="4.2" android:endX="20.2" android:endY="19.8">
+                <item android:offset="0" android:color="#8AE8F7" />
+                <item android:offset="1" android:color="#0D8AA3" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 6.6 17.4 C 9.4 13.4 12.6 10.4 16.8 7.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

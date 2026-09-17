@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- TIÊU THỤ (`trip_kwh` · `consumption_50km`) — ba cột thống kê tô chuyển sắc + đường chuẩn dưới: một phép ĐO TÍCH LUỸ theo quãng, không phải tia sét trần của mục sạc. -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M4.8,12.2 L6.2,12.2 A1.2,1.2 0 0 1 7.4,13.4 L7.4,18.2 A1.2,1.2 0 0 1 6.2,19.4 L4.8,19.4 A1.2,1.2 0 0 1 3.6,18.2 L3.6,13.4 A1.2,1.2 0 0 1 4.8,12.2 Z M11.3,6.4 L12.7,6.4 A1.2,1.2 0 0 1 13.9,7.6 L13.9,18.2 A1.2,1.2 0 0 1 12.7,19.4 L11.3,19.4 A1.2,1.2 0 0 1 10.1,18.2 L10.1,7.6 A1.2,1.2 0 0 1 11.3,6.4 Z M17.8,9.4 L19.2,9.4 A1.2,1.2 0 0 1 20.4,10.6 L20.4,18.2 A1.2,1.2 0 0 1 19.2,19.4 L17.8,19.4 A1.2,1.2 0 0 1 16.6,18.2 L16.6,10.6 A1.2,1.2 0 0 1 17.8,9.4 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M3.2,21.2 L20.8,21.2" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M12.66,1.87 L10.57,4.73 L11.95,4.73 L11.34,6.93 L13.43,4.07 L12.05,4.07 Z" data-layer="sub" fill="var(--ink)" stroke="none" data-min="32" opacity="0.38"/>
+</svg>

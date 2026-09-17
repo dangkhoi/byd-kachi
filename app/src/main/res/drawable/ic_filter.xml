@@ -1,18 +1,17 @@
 <!--
-  LỌC KHÔNG KHÍ (phin lọc + luồng khí qua) — cho nút `pm25` (Lọc bụi) và `pm25_clean_now` (Lọc ngay).
-  [U6] Chiếc lá nay chỉ còn nghĩa ION ÂM (`anion_state` + nút `anion`); máy lọc là một THIẾT BỊ, và trước đây bốn
-  ô khí sạch trong nhóm Khí hậu đều mang cùng một chiếc lá.
+  LỌC KHÔNG KHÍ (nút `pm25` · `pm25_clean_now`) — phin lọc gấp nếp (thiết bị) + luồng khí đi qua tô: máy lọc là VẬT, khác lá (ion) và hạt (bụi).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/filter.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực CLIMATE · họ màu climate · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M7.6,4.8 L16.4,4.8 A1.4,1.4 0 0 1 17.8,6.2 L17.8,17.8 A1.4,1.4 0 0 1 16.4,19.2 L7.6,19.2 A1.4,1.4 0 0 1 6.2,17.8 L6.2,6.2 A1.4,1.4 0 0 1 7.6,4.8 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9,7.6 L9,16.4 M12,7.6 L12,16.4 M15,7.6 L15,16.4"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M3,12 L5.4,12 M18.6,12 L21,12"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5 5.2 L 11 5.2 A 1.6 1.6 0 0 1 12.6 6.8 L 12.6 17.2 A 1.6 1.6 0 0 1 11 18.8 L 5 18.8 A 1.6 1.6 0 0 1 3.4 17.2 L 3.4 6.8 A 1.6 1.6 0 0 1 5 5.2 Z"
+        android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 6.2 7.6 L 9.8 10.2 L 6.2 12.8 L 9.8 15.4 L 6.2 18"
+        android:fillColor="#00000000" android:strokeColor="#8AE8F7" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 14.6 9 L 20.6 9 M 17.6 12 L 20.6 12 M 14.6 15 L 20.6 15"
+        android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

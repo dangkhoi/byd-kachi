@@ -59,6 +59,8 @@ class ProfileScopeTest {
             // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html R1): *"nhà"* của người này không phải *"nhà"* của
             // người kia — khoá theo XE ở đây nghĩa là đổi hồ sơ mà câu *"về nhà"* vẫn dẫn về nhà người trước.
             "saved_places",
+            // VISUAL-REFRESH P1b · R8 (AC8.4): màu nhấn/tông thẻ là lựa chọn của MỘT người, như `theme_mode`.
+            "color_choice",
         ).forEach { assertEquals(ProfileScope.Scope.PROFILE, ProfileScope.scopeOf(it), "khoá $it") }
     }
 

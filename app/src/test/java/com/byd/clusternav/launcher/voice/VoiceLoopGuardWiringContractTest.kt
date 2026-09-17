@@ -36,18 +36,17 @@ class VoiceLoopGuardWiringContractTest {
     @Test
     fun `luot khong co tieng thi KHONG giai ma`() {
         val body = SourceRoots.body(capture, "private fun listenGranted(")
-        val guard = body.indexOf("decodeOnlyIfSpeech && !ep.sawSpeech()")
-        // ⚠ 1.69 vòng hai: `finalResult()` KHÔNG ĐỐI SỐ đã bị **xoá** — sau khi có phép cắt đuôi, nó không
-        // còn chỗ gọi nào và để lại là mời người sau nạp cả cửa sổ vào mô hình lần nữa (đúng bẫy §6 của
-        // `voice-stream-eval-2026-09-16.md`). Soi theo lời gọi CÓ đối số.
-        //
-        // ⚠ [SOÁT 1.69 · P2] Phải soi **đúng** lời gọi `(trim)`, không phải `rec.finalResult(` bất kỳ: từ lượt
-        // soát này nhánh CHẾT `if (rec.accept(...))` cũng giải mã khúc đã cắt (trước đó nó gọi `rec.result()` —
-        // đường nạp nguyên cửa sổ), và nhánh ấy nằm **trên** cổng bỏ-giải-mã trong thân hàm. Soi chuỗi chung
-        // thì `indexOf` bắt được nhánh chết và bài này đỏ oan, trong khi cổng vẫn đứng đúng chỗ của nó.
+        // 1.70 — cổng bỏ-giải-mã nay là luật thuần ở `:core` ([VoiceSilenceGate.skipDecode]): nó nhận CẢ
+        // `decodeOnlyIfSpeech` (lượt nối tự tuyên bố) LẪN `ep.route` (đường VAD ở lượt CHÍNH cũng bỏ khi
+        // `!sawSpeech`). Soi lời gọi bề mặt chung thay biểu thức inline — abstraction đúng, có test `:core` riêng.
+        val guard = body.indexOf("VoiceSilenceGate.skipDecode(")
         val decode = body.indexOf("rec.finalResult(trim)")
         assertTrue(guard >= 0, "thiếu cổng bỏ-giải-mã — đây là chỗ cắt ~200 lượt giải mã/12 phút")
         assertTrue(guard < decode, "cổng phải đứng TRƯỚC lượt giải mã, không phải sau")
+        assertTrue(
+            body.contains("ep.sawSpeech()"),
+            "cổng phải hỏi \"đã nghe thấy tiếng chưa\" của bộ ngắt câu, không suy lại",
+        )
         // Câu hỏi "đã nghe thấy tiếng chưa" do bộ ngắt câu trả lời (VAD hoặc RMS), không suy lại ở vòng đọc.
         assertTrue(endpointer.contains("fun sawSpeech()"), "`:core` (đường lùi RMS) phải phơi ra phép hỏi ấy")
         val turn = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceTurnEndpoint.kt")

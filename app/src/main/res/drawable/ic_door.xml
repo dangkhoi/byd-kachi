@@ -1,13 +1,25 @@
+<!--
+  CỬA XE (macro mở khoá cửa · `door_*`) — một cánh cửa nhìn ngang: khung nét, kính tô chuyển sắc, tay nắm mờ.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/door.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực BODY · họ màu body · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M6,4L15,4L15,20L6,20Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8,7L13,7L13,11L8,11Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M10,15L12,15"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.4 20.4 L 3.4 11 C 3.4 8.4 5.8 3.6 9.4 3.6 L 20.6 3.6 L 20.6 20.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#AEB8C8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 6.2 10.8 C 6.2 8.8 7.8 6.2 9.8 6.2 L 17.8 6.2 L 17.8 10.8 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="6.2" android:startY="6.2" android:endX="17.8" android:endY="10.8">
+                <item android:offset="0" android:color="#DFE5EE" />
+                <item android:offset="1" android:color="#6B7686" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 14.3 13.4 L 16.9 13.4 A 0.9 0.9 0 0 1 17.8 14.3 L 17.8 14.3 A 0.9 0.9 0 0 1 16.9 15.2 L 14.3 15.2 A 0.9 0.9 0 0 1 13.4 14.3 L 13.4 14.3 A 0.9 0.9 0 0 1 14.3 13.4 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
 </vector>

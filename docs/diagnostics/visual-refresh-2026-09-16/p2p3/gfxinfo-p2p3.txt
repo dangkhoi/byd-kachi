@@ -1,0 +1,22 @@
+ui-done
+== run 1
+Total frames rendered: 675
+Janky frames: 176 (26.07%)
+50th percentile: 8ms
+90th percentile: 36ms
+95th percentile: 61ms
+99th percentile: 150ms
+== run 2
+Total frames rendered: 657
+Janky frames: 136 (20.70%)
+50th percentile: 8ms
+90th percentile: 32ms
+95th percentile: 61ms
+99th percentile: 150ms
+== run 3
+Total frames rendered: 648
+Janky frames: 120 (18.52%)
+50th percentile: 7ms
+90th percentile: 19ms
+95th percentile: 26ms
+99th percentile: 53ms

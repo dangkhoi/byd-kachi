@@ -109,6 +109,13 @@ object SherpaModelCatalog {
 
         /** Tìm một tệp theo tên. */
         fun file(name: String): ModelFile? = files.firstOrNull { it.name == name }
+
+        /**
+         * Gói lượng hoá int8 (encoder `*.int8.onnx`) — 1.70: `VoiceModelStore.selected` ưu tiên gói này khi
+         * người dùng chưa chọn mà cả hai bản cùng nằm trên đĩa ([ĐO xe 2026-09-17]: xe owner giải mã fp32 dù
+         * int8 đã tải xong; owner đã chốt int8 từ 09-16).
+         */
+        val isInt8: Boolean get() = encoder.contains(".int8.")
     }
 
     /** Gốc thư mục cho mọi mô hình sherpa (song song `vosk/` của [VoiceModelManifest]). */
@@ -328,8 +335,51 @@ object SherpaModelCatalog {
         experimental = true,
     )
 
+    /** Gốc URL gói fine-tune G trên kênh OTA (`dangkhoi/byd-kachi`) — owner mirror như gói TTS. */
+    private const val GIP_FT = "https://raw.githubusercontent.com/dangkhoi/byd-kachi/main/voice/asr/gipformer-vi-ft-ep2/"
+
+    /**
+     * ═══ G — Gipformer 65M fine-tune trên GIỌNG THẬT (MIT phái sinh) — THỬ NGHIỆM, ứng viên mặc-định-trên-xe ═══
+     *
+     * Spec `kachi-voice-finetune.html` · số `voice-ft-2026-09-16.md` · benchmark `voice-bench-ship-vs-ft-2026-09-17.md`.
+     *
+     * **Đáng ship kèm** — [ĐO host, bộ giữ RIÊNG giọng thật 270 câu]: ship `zipformer-vi` int8 74,8 % · base
+     * `gipformer1.5-65M` (MIT, cùng tokenizer) · **G = fine-tune 2 epoch / 3,09 h giọng thật = 84,8 %** (+27
+     * câu, lãi đúng chỗ thủng: nói NHANH + giọng TRẺ EM). Gói int8 **78,2 MB**, không đụng hotword/synonym/parser.
+     *
+     * **experimental, KHÔNG mặc định** (owner chốt 2026-09-17): +10 điểm đo trên host giọng thu SẴN, không phải
+     * mic 4 kênh + ồn cabin. Corpus/host đã đánh lừa 2 lần (xem [ZIPFORMER_VI_30M_INT8]) ⇒ ship CẢ HAI, cờ
+     * [experimental] + nút chọn; quyết mặc định = trên xe. VFT-2 🚗: RTF ước 0,35 (sát trần 0,30).
+     *
+     * **Giấy phép**: MIT phái sinh (base `gipformer1.5-65M` MIT cho phép phái sinh — khác họ ND của gói 30M).
+     * **bpe_vocab RIÊNG** (cùng bẫy gói 30M): tokens.txt giống base nhưng bpe_vocab là bảng piece+score riêng
+     * (55 006 B) ⇒ asset riêng `voice/gipformer-vi-ft-ep2.bpe_vocab.txt`.
+     *
+     * sha256 + cỡ **[ĐO] 2026-09-17** (`~/.kachi/model-gip15-ep2/`, cứu từ scratchpad). ⚠ `downloadable=false`
+     * tới khi owner mirror lên `byd-kachi` (URL đã trỏ sẵn; side-load USB chạy ngay).
+     */
+    val GIPFORMER_VI_FT = SherpaModel(
+        id = "gipformer-vi-ft-ep2",
+        label = "Gipformer VN fine-tune giọng thật — THỬ NGHIỆM, nghe nhanh/trẻ em tốt hơn (MIT, 78 MB)",
+        license = "MIT",
+        files = listOf(
+            ModelFile("encoder.int8.onnx", GIP_FT + "encoder.int8.onnx", "4003cf76645107c0c5652334a4e4ff26b44d7e5abc2d4e558e0f158ccab40de3", 72_828_389L),
+            ModelFile("decoder.int8.onnx", GIP_FT + "decoder.int8.onnx", "a5742079e09807b08ce12a694623c3a2028eead3f60117f109ef1bc644b8bf6f", 4_380_352L),
+            ModelFile("joiner.int8.onnx", GIP_FT + "joiner.int8.onnx", "19a251d44b6c87b83dede0010f50cc3dabd2707dcf4d5c85b3496ce84cbc4144", 1_033_417L),
+            ModelFile("tokens.txt", GIP_FT + "tokens.txt", "f536d03c2e95ebd2930cf0abec88e823bd17d3c1933da7ae6a82db3b80605e15", 25_847L),
+        ),
+        encoder = "encoder.int8.onnx",
+        decoder = "decoder.int8.onnx",
+        joiner = "joiner.int8.onnx",
+        tokens = "tokens.txt",
+        bpeVocab = "gipformer-vi-ft-ep2.bpe_vocab.txt",
+        attribution = "Fine-tune (dự án Kachi) trên gipformer1.5-65M-rnnt (MIT) · 3,09 h giọng thật",
+        sourceUrl = "https://huggingface.co/hynt/gipformer1.5-65M-rnnt",
+        experimental = true,
+    )
+
     /** Mọi mô hình, thứ tự hiện trong Cài đặt — bản mặc định đứng đầu. */
-    val ALL: List<SherpaModel> = listOf(ZIPFORMER_VI_30M_INT8, ZIPFORMER_VI_INT8, ZIPFORMER_VI, HATAPHU_VI)
+    val ALL: List<SherpaModel> = listOf(ZIPFORMER_VI_INT8, GIPFORMER_VI_FT, ZIPFORMER_VI_30M_INT8, ZIPFORMER_VI, HATAPHU_VI)
 
     /**
      * Mô hình mặc định cho **máy cài mới**.

@@ -1,13 +1,27 @@
+<!--
+  CA-PÔ (nút `hood`) — xe NHÌN NGANG (nét mờ) với NẮP CA-PÔ BẬT LÊN ở mũi xe, tô chuyển sắc: đúng dáng đèn báo "nắp mở" trên táp-lô, nên người lái nhận ra tức thì. Vẽ lại 2026-09-17 (bản đầu = xe nhìn từ trước, đọc thành "xe" trước khi đọc thành "nắp").
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/hood.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực BODY · họ màu body · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4,15L20,15"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M5,15C5,10 8,8 12,8C16,8 19,10 19,15"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M10,8L14,8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.35 16.67 L 3.63 13.37 C 3.73 12.21 4.39 11.43 5.42 11.14 L 8.8 10.46 L 10.87 7.55 C 11.25 6.97 11.91 6.68 12.56 6.68 L 16.14 6.68 C 16.79 6.68 17.36 6.97 17.73 7.55 L 19.52 10.46 L 20.55 10.95 C 21.12 11.24 21.4 11.82 21.4 12.5 L 21.31 16.67"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.04 17.06 A 1.88 1.94 0 1 1 8.8 17.06 A 1.88 1.94 0 1 1 5.04 17.06 Z M 15.2 17.06 A 1.88 1.94 0 1 1 18.96 17.06 A 1.88 1.94 0 1 1 15.2 17.06 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+    <path android:pathData="M 9.09 10.36 L 3.16 4.25 A 0.85 0.87 0 0 1 4.39 3.57 L 10.4 8.33 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3.16" android:startY="3.48" android:endX="10.4" android:endY="10.36">
+                <item android:offset="0" android:color="#DFE5EE" />
+                <item android:offset="1" android:color="#6B7686" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 9.09 10.36 L 3.26 4.35 M 9.09 10.36 L 10.4 8.33"
+        android:fillColor="#00000000" android:strokeColor="#AEB8C8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

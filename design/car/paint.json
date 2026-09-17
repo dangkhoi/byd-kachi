@@ -1,0 +1,123 @@
+{
+  "_doc": "Màu sơn xe cho hình xe tổng hợp (spec kachi-visual-refresh §4.8 bảng 5 màu · R8 AC8.3/AC8.5). Chỉ dùng cho HÌNH XE — không phải vai ngữ nghĩa. Mặc định Trắng ngọc trai, không hỏi lúc cài. Đáy gradient < outlineFloor so với nền ⇒ app TỰ bật viền partLine. Sơn ĐỎ: tone ALERT phải chuyển sang AMBER + viền tĩnh (đỏ = cảnh báo).",
+  "outlineFloor": 3.0,
+  "backgrounds": {
+    "dark": "#0a0d13",
+    "light": "#eef1f6"
+  },
+  "default": "pearl",
+  "paints": [
+    {
+      "id": "pearl",
+      "name": "Trắng ngọc trai",
+      "from": "#e9eef5",
+      "to": "#8d99ab",
+      "contrast": {
+        "dark": {
+          "top": 16.68,
+          "bottom": 6.74,
+          "worst": 6.74
+        },
+        "light": {
+          "top": 1.03,
+          "bottom": 2.55,
+          "worst": 1.03
+        }
+      },
+      "forceOutline": {
+        "dark": false,
+        "light": true
+      }
+    },
+    {
+      "id": "titan",
+      "name": "Xám titan",
+      "from": "#b9c6d6",
+      "to": "#2e3743",
+      "contrast": {
+        "dark": {
+          "top": 11.22,
+          "bottom": 1.61,
+          "worst": 1.61
+        },
+        "light": {
+          "top": 1.53,
+          "bottom": 10.64,
+          "worst": 1.53
+        }
+      },
+      "forceOutline": {
+        "dark": true,
+        "light": true
+      }
+    },
+    {
+      "id": "black",
+      "name": "Đen bóng",
+      "from": "#4a5361",
+      "to": "#11151c",
+      "contrast": {
+        "dark": {
+          "top": 2.5,
+          "bottom": 1.06,
+          "worst": 1.06
+        },
+        "light": {
+          "top": 6.87,
+          "bottom": 16.16,
+          "worst": 6.87
+        }
+      },
+      "forceOutline": {
+        "dark": true,
+        "light": false
+      }
+    },
+    {
+      "id": "kachi",
+      "name": "Xanh Kachi",
+      "from": "#6f92ff",
+      "to": "#27407f",
+      "contrast": {
+        "dark": {
+          "top": 6.7,
+          "bottom": 1.97,
+          "worst": 1.97
+        },
+        "light": {
+          "top": 2.56,
+          "bottom": 8.72,
+          "worst": 2.56
+        }
+      },
+      "forceOutline": {
+        "dark": true,
+        "light": true
+      }
+    },
+    {
+      "id": "red",
+      "name": "Đỏ",
+      "from": "#ff8b8b",
+      "to": "#7a2230",
+      "alertToneOverride": "amber_outline",
+      "contrast": {
+        "dark": {
+          "top": 8.63,
+          "bottom": 1.94,
+          "worst": 1.94
+        },
+        "light": {
+          "top": 1.99,
+          "bottom": 8.84,
+          "worst": 1.99
+        }
+      },
+      "forceOutline": {
+        "dark": true,
+        "light": true
+      }
+    }
+  ],
+  "_generated": "contrast · forceOutline do scripts/design/gen-car.py điền (WCAG 2.x, cả hai đầu gradient vs nền; worst < outlineFloor ⇒ app tự bật viền partLine); sửa màu rồi sinh lại"
+}

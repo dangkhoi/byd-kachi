@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- MÀN CHIẾU (cockpit, ô tile_cast) — khung màn nét + chân đế + vùng hình tô mờ: đích chiếu. -->
+  <style>:root{--ink:#ffffff;--main:#eaf0f8;--light:#ffffff;--deep:#b9c4d4}</style>
+  <path d="M5.4,4.6 L18.6,4.6 A2,2 0 0 1 20.6,6.6 L20.6,14.2 A2,2 0 0 1 18.6,16.2 L5.4,16.2 A2,2 0 0 1 3.4,14.2 L3.4,6.6 A2,2 0 0 1 5.4,4.6 Z M12,16.2 L12,19.6 M8.2,19.8 L15.8,19.8" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5.4,4.6 L18.6,4.6 A2,2 0 0 1 20.6,6.6 L20.6,14.2 A2,2 0 0 1 18.6,16.2 L5.4,16.2 A2,2 0 0 1 3.4,14.2 L3.4,6.6 A2,2 0 0 1 5.4,4.6 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

@@ -45,6 +45,9 @@ class ClusterNavKeysContractTest {
             // — không phải một cửa thứ hai vào chỗ lưu; đó là lý do nó được đứng ở đây, và là điều bài canh này
             // vẫn kiểm được (khoá phải tồn tại NGUYÊN VĂN trong một trong ba tệp).
             "src/main/java/com/byd/clusternav/PrefsVoiceV3.kt",
+            // 1.70 — tệp THỨ TƯ cùng `clusternav_prefs`: khoá daemon chạm (`inputd_disabled` · `inputd_token`)
+            // tách sang `PrefsInputd.kt` (hàm mở rộng của [Prefs], trần 500 dòng) — cùng tệp prefs, cùng lẽ V3.
+            "src/main/java/com/byd/clusternav/PrefsInputd.kt",
         ),
         "simple_cast_prefs" to listOf(
             "src/main/java/com/byd/clusternav/modules/clustercast/simplified/SimpleCastRuntime.kt",

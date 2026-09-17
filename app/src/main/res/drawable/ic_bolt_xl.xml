@@ -1,0 +1,23 @@
+<!--
+  TIA SÉT — nhận dạng của điện/sạc (`energy_mode` · `regen_level` · `powertrain_mode` · widget Năng lượng). Khối tô chuyển sắc sáng trên-trái → đậm dưới-phải (một nguồn sáng cho cả bộ); ở cỡ lớn thêm đĩa nền mờ để khối không trơ trên thẻ.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/bolt.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 48dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 2.4 12 A 9.6 9.6 0 1 1 21.6 12 A 9.6 9.6 0 1 1 2.4 12 Z"
+        android:fillColor="#34D399" android:fillAlpha="0.16" />
+    <path android:pathData="M 14.4 2.8 L 6.8 13.2 L 11.8 13.2 L 9.6 21.2 L 17.2 10.8 L 12.2 10.8 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="6.8" android:startY="2.8" android:endX="17.2" android:endY="21.2">
+                <item android:offset="0" android:color="#8FF0C4" />
+                <item android:offset="1" android:color="#0F8F63" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

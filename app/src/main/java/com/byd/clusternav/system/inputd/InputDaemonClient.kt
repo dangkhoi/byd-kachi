@@ -47,7 +47,17 @@ class InputDaemonClient(
     private val apkPath: String,
     private val launchShell: (String) -> String,
     private val socketName: String = InputDaemonLaunch.DEFAULT_SOCKET,
-    private val channelFactory: (String) -> DaemonChannel = { LocalAbstractChannel(it) },
+    /**
+     * ## 1.70 — kênh TCP loopback (`127.0.0.1:port` + token), thay socket abstract
+     * [ĐO máy ảo + ĐO xe 2026-09-17]: socket abstract của daemon (miền `shell`) bị sepolicy chặn ở lượt NỐI từ
+     * app — trên xe `IOException: Permission denied` 25/25 lượt trong khi daemon vẫn thường trú. `port` cố định
+     * theo uid ([InputDaemonLaunch.portFor]) và `token` cố định theo cài đặt (`Prefs.inputdToken`) ⇒ daemon của
+     * lượt mở app trước được **dùng lại**. Kênh mặc định = [TcpLoopbackChannel]; test bơm kênh giả qua
+     * [channelFactory] như cũ.
+     */
+    private val port: Int = InputDaemonLaunch.portFor(0),
+    private val token: String = "",
+    private val channelFactory: (String) -> DaemonChannel = { TcpLoopbackChannel(port, token) },
     private val lifecycleExecutor: Executor = Executors.newSingleThreadExecutor { r ->
         Thread(r, "kachi-inputd-life").apply { isDaemon = true }
     },
@@ -71,9 +81,30 @@ class InputDaemonClient(
      */
     private val disabled: () -> Boolean = { false },
     private val log: (String) -> Unit = { Log.i("Kachi/InputDaemonClient", it) },
+    /**
+     * 1.70 — dọn nhật ký daemon cũ trong [logDir] về [KEEP_LOGS] tệp mới nhất, gọi **một lần** trước lượt khởi
+     * động đầu tiên. [ĐO xe 2026-09-17] 45 tệp `inputd-*.log` trong vài phút (23 MB thư mục log) vì mỗi chu kỳ
+     * khởi động lại đẻ một tệp. Tiêm được để test đếm mà không đụng đĩa.
+     */
+    private val pruneLogs: (String) -> Unit = { dir -> pruneLogDir(dir) },
 ) {
     @Volatile private var channel: DaemonChannel? = null
     @Volatile private var healthy = false
+
+    /**
+     * ═══ 1.70 · CẦU CHÌ — thôi khởi động lại daemon cho tới hết đời tiến trình ═══════════════════════════
+     * [ĐO xe 2026-09-17] client khởi động lại daemon **mỗi ~5,5 s** chừng nào owner còn chạm: một lệnh shell +
+     * 25 lượt nối + một tệp log mỗi chu kỳ, 45 tệp trong vài phút, `KachiPerf shell=36/phút`. Hai lý do ngắt:
+     *  • lý do nối là **sepolicy** (`Permission denied`) — thử lại không bao giờ đổi được luật của ROM;
+     *  • [FUSE_AFTER_FAILURES] chu kỳ hỏng liên tiếp — kể cả lý do khác, một daemon không lên sau hai lượt 5 s
+     *    thì không lên ở lượt thứ ba trong cùng tiến trình.
+     * Cầu chì KHÔNG chặn [tryConnect] lượt đầu của một chu kỳ (daemon thường trú vẫn được dùng lại nếu nối được);
+     * nó chỉ chặn việc **khởi động** thêm daemon.
+     */
+    @Volatile private var fused = false
+    @Volatile private var fuseReason = ""
+    @Volatile private var failedCycles = 0
+    @Volatile private var pruned = false
 
     /** CAS thay cờ `Boolean` (soát OCR #69): "kiểm rồi đặt" hai bước cho hai luồng chạm cùng lọt vào một lượt launch. */
     private val starting = AtomicBoolean(false)
@@ -112,7 +143,7 @@ class InputDaemonClient(
 
     /** Khởi động daemon (throttled, 1 in-flight). An toàn gọi nhiều lần / từ nhiều thread. Không block caller. */
     fun ensureStarted() {
-        if (healthy || disabled()) return
+        if (healthy || disabled() || fused) return
         val t = now()
         if (lastStartAttempt != 0L && t - lastStartAttempt < retryCooldownMs) return
         // CAS: đúng MỘT luồng thắng cuộc và đi tiếp; kẻ thua trả về ngay (soát OCR #69).
@@ -128,32 +159,42 @@ class InputDaemonClient(
     }
 
     private fun startAndConnect() {
-        if (tryConnect(attempt = 0)) return   // daemon có thể đã chạy (resident, dùng chung mọi ô) → nối luôn
+        if (tryConnect(attempt = 0)) { failedCycles = 0; return }   // daemon thường trú (dùng chung mọi ô) → nối luôn
         val useNohup = nohupAvailable()
-        val path = logDir()?.takeIf { it.isNotBlank() }
-            ?.let { "$it/${InputDaemonLaunch.logFileName(now())}" }
+        val dir = logDir()?.takeIf { it.isNotBlank() }
+        if (dir != null && !pruned) { pruned = true; runCatching { pruneLogs(dir) } }
+        val path = dir?.let { "$it/${InputDaemonLaunch.logFileName(now())}" }
         logPath = path.orEmpty()
-        val cmd = InputDaemonLaunch.launchCmd(apkPath, socketName, path, useNohup)
+        val cmd = InputDaemonLaunch.launchCmd(apkPath, socketName, path, useNohup, port, token.ifEmpty { null })
         val rc = runCatching { launchShell(cmd) }
             .onFailure {
                 lastError = "launch failed: ${it.message}"
-                log("launch NÉM: ${it.message} — cmd=$cmd")
+                log("launch NÉM: ${it.message} — cmd=${cmd.replace(token.ifEmpty { " " }, "<token>")}")
             }
             .getOrNull()
-        log("launch rc=${rc?.trim()?.take(RC_CHARS) ?: "<ném>"} nohup=$useNohup log=${logPath.ifEmpty { "/dev/null" }}")
+        log(
+            "launch rc=${rc?.trim()?.take(RC_CHARS) ?: "<ném>"} nohup=$useNohup tcp=127.0.0.1:$port" +
+                " log=${logPath.ifEmpty { "/dev/null" }}",
+        )
         var reason = ""
         for (i in 1..connectTries) {
             sleep(connectStepMs)
-            if (tryConnect(attempt = i)) return
+            if (tryConnect(attempt = i)) { failedCycles = 0; return }
             val r = lastError
             // In lượt ĐẦU, mỗi khi lý do ĐỔI, và lượt CUỐI — xem KDoc lớp (vì sao không in đủ 25 dòng).
             if (i == 1 || r != reason || i == connectTries) log("connect #$i: ${r.ifEmpty { "?" }}")
             reason = r
         }
+        failedCycles++
+        val sepolicy = reason.contains(SEPOLICY_REASON, ignoreCase = true)
+        if (sepolicy || failedCycles >= FUSE_AFTER_FAILURES) {
+            fused = true
+            fuseReason = if (sepolicy) "sepolicy: $reason" else "$failedCycles chu kỳ hỏng liên tiếp: $reason"
+        }
         log(
             "daemon did not come up sau ${connectTries * connectStepMs} ms (${connectTries} lượt);" +
                 " lý do cuối=${reason.ifEmpty { "?" }}; nhật ký daemon=${logPath.ifEmpty { "/dev/null (không có thẻ)" }};" +
-                " ở lại đường lùi theo cử chỉ",
+                " ở lại đường lùi theo cử chỉ" + if (fused) " — CẦU CHÌ: không khởi động lại nữa ($fuseReason)" else "",
         )
         publish()
     }
@@ -221,7 +262,7 @@ class InputDaemonClient(
 
     /** Đẩy ảnh chụp ra chỗ cầu kiểm thử đọc được ([lastSnapshot]). */
     private fun publish() {
-        last = Health(healthy, lastError, attempts, logPath)
+        last = Health(healthy, lastError, attempts, logPath, fused, fuseReason, port)
     }
 
     /** Ảnh chụp sức khoẻ daemon cho cầu kiểm thử (`state.inputd`) — KHÔNG có bề mặt người dùng nào. */
@@ -230,10 +271,31 @@ class InputDaemonClient(
         val lastError: String,
         val attempts: Int,
         val logPath: String,
+        /** 1.70 — cầu chì đã ngắt việc khởi động lại chưa, và vì sao. */
+        val fused: Boolean = false,
+        val fuseReason: String = "",
+        /** Cổng loopback đang dùng (để lượt xe sau `netstat`/`ss` đối chiếu). */
+        val port: Int = 0,
     )
 
     companion object {
         private const val DISABLED = "disabled_by_pref"
+
+        /** Câu chữ của nền tảng khi sepolicy chặn — thấy nó là thôi thử (xem [fused]). */
+        private const val SEPOLICY_REASON = "Permission denied"
+
+        /** Số chu kỳ khởi-động-rồi-không-nối-được liên tiếp trước khi ngắt cầu chì. */
+        const val FUSE_AFTER_FAILURES = 2
+
+        /** Số tệp `inputd-*.log` giữ lại trong thư mục log. */
+        const val KEEP_LOGS = 5
+
+        /** Dọn `inputd-*.log` trong [dir] về [KEEP_LOGS] tệp mới nhất (theo mốc trong tên, xem [InputDaemonLaunch.logFileName]). */
+        fun pruneLogDir(dir: String) {
+            val files = java.io.File(dir).listFiles { f -> f.isFile && f.name.startsWith("inputd-") && f.name.endsWith(".log") }
+                ?: return
+            files.sortedByDescending { it.name }.drop(KEEP_LOGS).forEach { runCatching { it.delete() } }
+        }
 
         /** Lượt ghi socket hỏng ⇒ daemon coi như rớt (lần chạm sau đi đường lùi + kick khởi động lại). */
         private const val WRITE_FAILED = "socket write failed"

@@ -239,6 +239,12 @@ class WorkspacePrefs(context: Context) {
 
     fun setThemeMode(m: ThemeMode) { sp.edit().putString(key(K_THEME), m.name).apply() }
 
+    // ── VISUAL-REFRESH P1b · R8 — màu nhấn/tông thẻ theo hồ sơ. Khoá MỚI ⇒ đọc thẳng `key()` (không có bản chung cũ
+    //    để lùi về, cùng lẽ [savedPlaces]); thiếu/rác ⇒ mặc định = bảng màu 1.69, không hỏi (AC8.4).
+    fun colorChoice(): ColorChoice = ColorChoice.decode(sp.getString(key(K_COLOR), null))
+
+    fun setColorChoice(c: ColorChoice) { sp.edit().putString(key(K_COLOR), c.encode()).apply() }
+
     // ── Launcher auto-start (S4 · R3a — nay THEO HỒ SƠ; xem [profileBoolean] về đường lùi khoá chung cũ) — B6 ──
     // Nổ máy → Kachi tự làm setup KHÔNG cần bung view (seed freeform + đặt HOME + đảm bảo HOME lên để khôi phục ô).
     // Kill-switch của người dùng; MẶC ĐỊNH BẬT (launcher nên tự sẵn sàng). [com.byd.clusternav.KachiAutostart] đọc cờ này.
@@ -404,6 +410,8 @@ class WorkspacePrefs(context: Context) {
 
         // ── Hậu tố theo HỒ SƠ (R3) — luôn đi qua [key]/[keyOf] ──────────────────────────────────
         private const val K_THEME = "theme_mode"
+        /** P1b · R8 — `ColorChoice.encode()`; nằm trong [ProfileScope.LAUNCHER_PERSONAL_SUFFIXES]. */
+        private const val K_COLOR = "color_choice"
         private const val K_AUTOSTART = "launcher_autostart"
         private const val K_UNITS = "unit_prefs"
         private const val K_WALL = "wallpaper_prefs"

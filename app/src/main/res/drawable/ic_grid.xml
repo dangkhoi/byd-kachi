@@ -1,7 +1,23 @@
+<!--
+  BẢNG TỔNG HỢP / LƯỚI ỨNG DỤNG (`ic-apps`; widget Bảng) — bốn ô bo góc: ô trên-trái tô đặc (đang mở), ba ô còn lại nét. Chỉ mang nghĩa BẢNG/LƯỚI, không mang nghĩa kính.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/grid.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực LAUNCHER · họ màu chrome · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4,4H10V10H4Z M14,4H20V10H14Z M4,14H10V20H4Z M14,14H20V20H14Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.6 3.6 L 9 3.6 A 2 2 0 0 1 11 5.6 L 11 9 A 2 2 0 0 1 9 11 L 5.6 11 A 2 2 0 0 1 3.6 9 L 3.6 5.6 A 2 2 0 0 1 5.6 3.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3.6" android:startY="3.6" android:endX="11" android:endY="11">
+                <item android:offset="0" android:color="#FFFFFF" />
+                <item android:offset="1" android:color="#B9C4D4" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 15 3.6 L 18.4 3.6 A 2 2 0 0 1 20.4 5.6 L 20.4 9 A 2 2 0 0 1 18.4 11 L 15 11 A 2 2 0 0 1 13 9 L 13 5.6 A 2 2 0 0 1 15 3.6 Z M 5.6 13 L 9 13 A 2 2 0 0 1 11 15 L 11 18.4 A 2 2 0 0 1 9 20.4 L 5.6 20.4 A 2 2 0 0 1 3.6 18.4 L 3.6 15 A 2 2 0 0 1 5.6 13 Z M 15 13 L 18.4 13 A 2 2 0 0 1 20.4 15 L 20.4 18.4 A 2 2 0 0 1 18.4 20.4 L 15 20.4 A 2 2 0 0 1 13 18.4 L 13 15 A 2 2 0 0 1 15 13 Z"
+        android:fillColor="#00000000" android:strokeColor="#EAF0F8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

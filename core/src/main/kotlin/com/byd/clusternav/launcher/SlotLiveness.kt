@@ -49,5 +49,25 @@ class SlotLiveness(private val missesToDie: Int = DEFAULT_MISSES) {
 
         /** Chu kỳ đo: 5 giây — trần "không poll dày" của H2; 1 lệnh `am stack list` cho TẤT CẢ ô mỗi nhịp. */
         const val PROBE_PERIOD_MS = 5_000L
+
+        /** Trần lùi nhịp khi kết quả đứng yên (K8) — 15 s. */
+        const val PROBE_PERIOD_MAX_MS = 15_000L
+
+        /** Số nhịp đứng yên liên tiếp trước khi bắt đầu lùi nhịp. */
+        const val PROBE_BACKOFF_AFTER = 2
+
+        /**
+         * K8 (1.70) — nhịp đo TIẾP THEO theo số nhịp mà kết quả **không đổi** liên tiếp.
+         *
+         * [ĐO xe 2026-09-17] `KachiPerf shell=36/phút`, trong đó `am stack list` mỗi 5 s = 12/phút chỉ để thấy
+         * cùng một câu trả lời hàng giờ (app trong ô sống yên). Lùi 5 → 10 → 15 s khi đứng yên; **bất kỳ** thay
+         * đổi nào (một ô vắng task) đưa về 5 s ngay, nên kết luận chết vẫn cần 2 nhịp hụt **ở nhịp 5 s** — tức
+         * chậm nhất là 15 s (nhịp đang lùi) + 5 s, thay vì 10 s.
+         */
+        fun probePeriodMs(unchangedSweeps: Int): Long {
+            if (unchangedSweeps < PROBE_BACKOFF_AFTER) return PROBE_PERIOD_MS
+            val steps = (unchangedSweeps - PROBE_BACKOFF_AFTER + 2).toLong()
+            return (PROBE_PERIOD_MS * steps).coerceAtMost(PROBE_PERIOD_MAX_MS)
+        }
     }
 }

@@ -1,8 +1,8 @@
 package com.byd.clusternav.system.inputd
 
 /**
- * PORT (:core) cho KÊNH DỮ LIỆU tới input-daemon. Adapter thật ở :app (`LocalAbstractChannel` bọc
- * `android.net.LocalSocket` namespace ABSTRACT — tương đương "localabstract" của adb). Tách port ra :core để
+ * PORT (:core) cho KÊNH DỮ LIỆU tới input-daemon. Adapter thật từ 1.70 là [TcpLoopbackChannel] (TCP
+ * `127.0.0.1:<port>` + token; socket abstract cũ bị sepolicy chặn — [ĐO máy ảo + xe 2026-09-17]). Tách port ra :core để
  * `InputDaemonClient` test được với kênh GIẢ (không cần thiết bị) và để :core giữ hợp đồng (giống `LauncherPorts`).
  * PURE — chỉ `ByteArray` + `Boolean`, không android.
  *

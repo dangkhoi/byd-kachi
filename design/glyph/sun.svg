@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NẮNG / SƯỞI (`seat_heat_state`; widget Đồng hồ + thời tiết) — đĩa tô chuyển sắc + tám tia nét: nguồn sáng ấm, họ màu Đèn vì đó là ánh sáng. -->
+  <style>:root{--ink:#ffffff;--main:#fbbf24;--light:#ffe08a;--deep:#b7810a}</style>
+  <path d="M7.6,12 A4.4,4.4 0 1 1 16.4,12 A4.4,4.4 0 1 1 7.6,12 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M12,3.2 L12,5.4 M12,18.6 L12,20.8 M3.2,12 L5.4,12 M18.6,12 L20.8,12 M5.8,5.8 L7.3,7.3 M16.7,16.7 L18.2,18.2 M5.8,18.2 L7.3,16.7 M16.7,7.3 L18.2,5.8" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

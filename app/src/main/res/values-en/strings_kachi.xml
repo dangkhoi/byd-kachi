@@ -92,6 +92,12 @@
     <string name="kachi_sec_theme">Light / dark theme</string>
     <string name="kachi_row_palette">Colour palette</string>
     <string name="kachi_theme_note">"Auto" means dark from 18:00 to 06:00. Changing the palette rebuilds the screen once.</string>
+    <!-- P1b · R8 — accent colour / card tone (per profile) -->
+    <string name="kachi_sec_color">Colours</string>
+    <string name="kachi_row_accent">Accent colour</string>
+    <string name="kachi_row_tone">Card tone</string>
+    <string name="kachi_row_paint">Car paint</string>
+    <string name="kachi_color_note">Saved with the current profile. "From wallpaper" takes the dominant colour of the first photo in the wallpaper folder. Text always stays readable: on a very light accent the button text turns dark by itself. Changing the colour rebuilds the screen once.</string>
     <string name="kachi_sec_lang">Language</string>
     <string name="kachi_row_lang">On-screen text</string>
     <string name="kachi_lang_note">"By car" follows the system language: a Vietnamese system gets Vietnamese, anything else gets English. Changing the language rebuilds the screen once.</string>
@@ -514,6 +520,8 @@
     <string name="kachi_voice_speak_sub">Kachi reads its answer aloud instead of only showing it.</string>
     <string name="kachi_voice_offline_title">Prefer the offline voice</string>
     <string name="kachi_voice_offline_sub">Only takes effect once the voice pack is installed; until then the system speech engine is used.</string>
+    <string name="kachi_voice_feedback_title">Child feedback voice (experimental)</string>
+    <string name="kachi_voice_feedback_sub">Piper is the default. Turn on to hear the child voice — cloned, not perfect; unknown phrases still use Piper.</string>
     <string name="kachi_voice_wav_try">Recognise a test WAV file</string>
     <string name="kachi_voice_wav_running">Recognising the test file…</string>
     <string name="kachi_voice_wav_heard">WAV heard: %1$s</string>

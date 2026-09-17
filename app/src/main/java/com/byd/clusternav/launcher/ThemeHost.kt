@@ -22,6 +22,11 @@ import java.util.Calendar
  *
  * ⚠ [KachiTheme.palette] **KHÔNG phải trạng thái thứ hai**: nó là *hình chiếu lúc vẽ* của `themeMode`, không bao giờ
  * được đọc để quyết định logic, và không có đường ghi nào khác ngoài đây.
+ *
+ * ## P1b · R8 — thêm hai đầu vào, vẫn MỘT chỗ áp
+ * `HomeUiState.colorChoice` (màu nhấn/tông thẻ theo hồ sơ) đi cùng `themeMode` vào cùng lời gọi. Ô *theo ảnh nền*
+ * cần màu trội của ảnh — thứ **không** nằm trong state (nó là dữ liệu suy ra từ một bitmap, tính một lần lúc nạp
+ * ảnh, xem [WallArtStore]); lấy ở đây qua [WallArtStore.accentDominant] để chỗ gọi không phải biết nguồn đó.
  */
 internal object ThemeHost {
 
@@ -29,8 +34,12 @@ internal object ThemeHost {
      * Áp bảng màu cho [state]; trả về `true` nếu bảng **ĐỔI** (chỗ gọi dùng để quyết định dựng lại màn).
      *
      * Giờ lấy tại chỗ vì chỉ [ThemeMode.AUTO] cần nó, và AUTO cần giờ **lúc vẽ** chứ không phải lúc nạp cấu hình.
-     * [now] mở ra để test off-car ép được ca 6h/18h mà không phải chờ đến giờ đó.
+     * [now] mở ra để test off-car ép được ca 6h/18h mà không phải chờ đến giờ đó; [artDominant] mở ra cùng lý do.
      */
-    fun sync(state: HomeUiState, now: Calendar = Calendar.getInstance()): Boolean =
-        KachiTheme.applyTheme(state.themeMode, now.get(Calendar.HOUR_OF_DAY))
+    fun sync(
+        state: HomeUiState,
+        now: Calendar = Calendar.getInstance(),
+        artDominant: IntArray? = WallArtStore.accentDominant(),
+    ): Boolean =
+        KachiTheme.applyTheme(state.themeMode, now.get(Calendar.HOUR_OF_DAY), state.colorChoice, artDominant)
 }

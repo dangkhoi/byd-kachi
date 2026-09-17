@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CA-PÔ (nút `hood`) — xe NHÌN NGANG (nét mờ) với NẮP CA-PÔ BẬT LÊN ở mũi xe, tô chuyển sắc: đúng dáng đèn báo "nắp mở" trên táp-lô, nên người lái nhận ra tức thì. Vẽ lại 2026-09-17 (bản đầu = xe nhìn từ trước, đọc thành "xe" trước khi đọc thành "nắp"). -->
+  <style>:root{--ink:#ffffff;--main:#aeb8c8;--light:#dfe5ee;--deep:#6b7686}</style>
+  <path d="M 3.35,16.67 L 3.63,13.37 C 3.73,12.21 4.39,11.43 5.42,11.14 L 8.8,10.46 L 10.87,7.55 C 11.25,6.97 11.91,6.68 12.56,6.68 L 16.14,6.68 C 16.79,6.68 17.36,6.97 17.73,7.55 L 19.52,10.46 L 20.55,10.95 C 21.12,11.24 21.4,11.82 21.4,12.5 L 21.31,16.67" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M 5.04,17.06 A 1.88,1.94 0 1 1 8.8,17.06 A 1.88,1.94 0 1 1 5.04,17.06 Z M 15.2,17.06 A 1.88,1.94 0 1 1 18.96,17.06 A 1.88,1.94 0 1 1 15.2,17.06 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+  <path d="M 9.09,10.36 L 3.16,4.25 A 0.85,0.87 0 0 1 4.39,3.57 L 10.4,8.33 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 9.09,10.36 L 3.26,4.35 M 9.09,10.36 L 10.4,8.33" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

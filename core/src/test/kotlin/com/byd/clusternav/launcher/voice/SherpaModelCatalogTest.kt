@@ -122,7 +122,7 @@ class SherpaModelCatalogTest {
         // *"không được có"* thành *"có thì phải VÔ HẠI"*: gói NC/ND bắt buộc mang cờ [SherpaModel.experimental],
         // KHÔNG được là mặc định, và KHÔNG được lọt vào phép đề nghị `lighterThan`. Nới thành *"cứ có cũng
         // được"* là mở đường cho nó lặng lẽ thành mặc định ở một lượt sau.
-        assertEquals(4, SherpaModelCatalog.ALL.size)
+        assertEquals(5, SherpaModelCatalog.ALL.size)   // 1.70: + gói G fine-tune giọng thật (experimental)
         SherpaModelCatalog.ALL.filter {
             it.license.contains("NC", ignoreCase = true) || it.license.contains("ND", ignoreCase = true)
         }.forEach { nc ->

@@ -137,8 +137,12 @@ class VoiceFastNaturalWiringContractTest {
     @Test
     fun `hoi thoai cho DOC XONG moi mo mic lai, va co bon cong`() {
         val fn = SourceRoots.body(session, "internal fun execute(")
-        assertTrue(fn.contains("speakLines(batch) { post { followUp(my, pending) } }"),
-            "micro chỉ mở lại SAU mốc 'đọc xong' — mở sớm là Kachi nghe chính mình")
+        // 1.70 — fix "overlay tắt giữa câu": execute gọi onReplyDone ở mốc ĐỌC XONG (onDone), onReplyDone mới
+        // nán overlay + mở hội thoại. Micro chỉ mở lại SAU mốc đọc xong (mở sớm là Kachi nghe chính mình).
+        assertTrue(fn.contains("speakLines(batch) { post { onReplyDone(my, pending) } }"),
+            "micro chỉ mở lại SAU mốc 'đọc xong' — qua onReplyDone (onDone của speakLines)")
+        val done = SourceRoots.body(turns, "internal fun VoiceSession.onReplyDone(")
+        assertTrue(done.contains("followUp(my, pending)"), "onReplyDone (sau đọc xong) mới mở hội thoại")
         assertTrue(fn.contains("VoiceFeedbackPhrase.isInterim("), "lệnh còn đang tra mạng ⇒ KHÔNG mở hội thoại")
         val f = SourceRoots.body(turns, "internal fun VoiceSession.followUp(")
         assertTrue(f.contains("confirmOpen.get()"), "đang có hộp xác nhận ⇒ micro đã có chủ, không mở thêm")

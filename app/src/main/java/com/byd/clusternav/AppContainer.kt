@@ -167,9 +167,14 @@ class AppContainer internal constructor(
             val apk = runCatching { app.applicationInfo.sourceDir }.getOrNull()
             if (apk.isNullOrEmpty()) return null
             val forced = runCatching { Prefs.inputdDisabled(app) }.getOrDefault(false)
+            // 1.70 — kênh TCP loopback: cổng theo uid + token theo cài đặt (xem KDoc `InputDaemonClient.port`).
+            val uid = runCatching { app.applicationInfo.uid }.getOrDefault(0)
+            val token = runCatching { Prefs.inputdToken(app) }.getOrDefault("")
             return InputDaemonClient(
                 apkPath = apk,
                 launchShell = dispatcher.launcherSeam(),
+                port = com.byd.clusternav.system.inputd.InputDaemonLaunch.portFor(uid),
+                token = token,
                 logDir = { runCatching { KachiLog.dir(app)?.absolutePath }.getOrNull() },
                 disabled = { forced },
             )

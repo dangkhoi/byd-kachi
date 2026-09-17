@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- LỐP (`tyre_*`; nhận dạng nhóm Lốp) — một bánh nhìn ngang: vỏ tròn nét + vành tô chuyển sắc + gai lốp mờ quanh mép. Cùng họ với bốn bánh của ic_group_tyres. -->
+  <style>:root{--ink:#ffffff;--main:#94a3b8;--light:#c7d0dc;--deep:#626e82}</style>
+  <path d="M3.2,12 A8.8,8.8 0 1 1 20.8,12 A8.8,8.8 0 1 1 3.2,12 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M8.4,12 A3.6,3.6 0 1 1 15.6,12 A3.6,3.6 0 1 1 8.4,12 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M12,3.2 L12,5.4 M12,18.6 L12,20.8 M3.2,12 L5.4,12 M18.6,12 L20.8,12 M5.8,5.8 L7.3,7.3 M16.7,16.7 L18.2,18.2 M5.8,18.2 L7.3,16.7 M16.7,7.3 L18.2,5.8" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

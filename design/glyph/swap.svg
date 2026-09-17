@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- ĐỔI CHỖ Ô (⇄) — hai mũi tên ngược chiều xếp chồng: một ô đi sang, ô kia đi về. -->
+  <style>:root{--ink:#ffffff;--main:#eaf0f8;--light:#ffffff;--deep:#b9c4d4}</style>
+  <path d="M3.6,8.6 L19.6,8.6 M15.8,4.6 L20.2,8.6 L15.8,12.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20.4,15.4 L4.4,15.4 M8.2,11.4 L3.8,15.4 L8.2,19.4" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

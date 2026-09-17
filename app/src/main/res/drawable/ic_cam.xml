@@ -1,10 +1,25 @@
+<!--
+  CAMERA 360 (`cam` · `camera_view`) — thân máy nét + thấu kính tô chuyển sắc + đèn nhỏ mờ: ống kính là thứ đang bật.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/cam.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực INFOTAINMENT · họ màu media · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4,8L14,8L14,16L4,16Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M14,11L20,8L20,16L14,13Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.4 8.6 L 7.6 8.6 L 9.4 5.6 L 14.6 5.6 L 16.4 8.6 L 20.6 8.6 L 20.6 19.4 L 3.4 19.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#F59E0B" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 8.6 13.6 A 3.4 3.4 0 1 1 15.4 13.6 A 3.4 3.4 0 1 1 8.6 13.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="8.6" android:startY="10.2" android:endX="15.4" android:endY="17">
+                <item android:offset="0" android:color="#FFC75A" />
+                <item android:offset="1" android:color="#B06F05" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 17.1 11 A 0.9 0.9 0 1 1 18.9 11 A 0.9 0.9 0 1 1 17.1 11 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
 </vector>

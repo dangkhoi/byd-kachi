@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NHÓM KÍNH — xe NHÌN NGANG (nét mờ) với hai ô kính cửa tô chuyển sắc: kính là thứ ô đang nói, xe chỉ là chỗ nó ở. Vẽ lại 2026-09-17: bản đầu (xe nhìn từ trên + hai mảng kính) ở 24px đọc thành một viên thuốc. -->
+  <style>:root{--ink:#ffffff;--main:#aeb8c8;--light:#dfe5ee;--deep:#6b7686}</style>
+  <path d="M 3.01,16.2 L 3.3,12.6 C 3.4,11.4 4.06,10.6 5.12,10.3 L 7.98,9.6 L 10.27,6.3 C 10.65,5.7 11.32,5.4 11.99,5.4 L 16,5.4 C 16.67,5.4 17.24,5.7 17.63,6.3 L 19.44,9.4 L 20.49,9.9 C 21.06,10.2 21.35,10.8 21.35,11.5 L 21.25,16.2" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M 4.73,16.6 A 1.91,2 0 1 1 8.55,16.6 A 1.91,2 0 1 1 4.73,16.6 Z M 15.05,16.6 A 1.91,2 0 1 1 18.87,16.6 A 1.91,2 0 1 1 15.05,16.6 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+  <path d="M 9.32,9.4 L 11.04,6.9 L 13.33,6.9 L 13.33,9.4 Z M 14.47,6.9 L 16.48,6.9 L 17.91,9.4 L 14.47,9.4 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 9.32,9.4 L 11.04,6.9 L 13.33,6.9 L 13.33,9.4 Z M 14.47,6.9 L 16.48,6.9 L 17.91,9.4 L 14.47,9.4 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

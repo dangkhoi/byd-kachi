@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
@@ -22,6 +21,10 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * ⇒ dải STRIP đã phải **bỏ icon**, còn lại mười ô chữ giống hệt nhau xếp hai hàng 5. Câu người lái hỏi ở đây là
  * *"xe tôi kín chưa — cửa NÀO đang mở?"*, tức một câu về **không gian**; mười ô chữ không trả lời được nó, đúng lý do
  * (Hai bảng Canvas anh em của nhóm ADAS/cảm-biến-đỗ đã xoá 2026-09-16 cùng toàn bộ ADAS/an toàn — owner.)
+ *
+ * ## P3 (2026-09-17) — mức tả thực (1): thân sơn chuyển sắc, kính phản chiếu, đèn có quầng ([CarArtPainter])
+ * Cách tô từng bộ phận nay tra bảng [CarPartStyle] (`:core`, spec kachi-visual-refresh §4.4) — bảng này không giữ
+ * một quyết định màu nào; nó chỉ nói cho painter biết mảnh nào đang mở (tone) và đã đọc được chưa.
  *
  * ## NGỮ PHÁP VẼ — bám nguyên bộ icon v2: *nét = vật thể, vùng tô = bộ phận đang được nói tới*
  *  • **Đang mở / đang gập ⇒ VÙNG TÔ** mang màu sắc thái. Đây là chỗ thông tin nằm, nên nó phải là thứ đậm nhất.
@@ -52,17 +55,14 @@ internal class DoorBoardView(context: Context) : View(context) {
 
     private var plan: DoorBoardPlan? = null
 
-    private val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; color = Color.parseColor(KachiTheme.MUT2)
-        // Đầu/khớp nét TRÒN — khung xe là path của bộ icon v2, vốn khai `strokeLineCap/Join="round"`.
-        strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
-    }
+    /**
+     * VISUAL-REFRESH P3 — hình xe mức tả thực (1) qua [CarArtPainter]/[CarArtSource]; mỗi bộ phận tô theo
+     * [CarPartStyle] (`:core`, §4.4) — bảng này không còn `tint(tone)` riêng, không còn `Paint` tô/nét tại chỗ.
+     */
+    private val painter = CarArtPainter()
 
-    /** Vùng tô của một bộ phận ĐANG mở — Paint riêng để không phải đổi `style` qua lại trên cùng một cây cọ. */
-    private val partFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-
-    /** Nét của bộ phận đang ĐÓNG / chưa đọc — mảnh hơn nét thân xe để thân vẫn là hình chính. */
-    private val partStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    /** Đường TÁCH giữa hai vùng tô chồng nhau (nóc + rèm) — màu NỀN THẺ, xem [colCard]. */
+    private val separator = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
     private val noteP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -72,14 +72,14 @@ internal class DoorBoardView(context: Context) : View(context) {
         textAlign = Paint.Align.CENTER; color = Color.parseColor(KachiTheme.MUT)
     }
 
-    // ── Hình xe dùng chung ([CarFrames]) — cấp phát MỘT LẦN, đúng luật "không cấp phát trong onDraw" ──
-    private val carMatrix = Matrix()
-
-    /** Bản chép để biến hình — KHÔNG `transform` thẳng vào path dùng chung của [CarFrames]. */
-    private val carPath = Path()
-    private val srcBox = RectF()
+    // ── Hình xe dùng chung ([CarArtSource]) — cấp phát MỘT LẦN, đúng luật "không cấp phát trong onDraw" ──
     private val carDst = RectF()
+    private val laidOut = RectF()
     private val partBox = RectF()
+    private val carPath = Path()
+
+    /** Trạng thái theo TÊN MẢNH, dựng ở [set] (không trong onDraw) — painter hỏi tone/available của từng mảnh. */
+    private var stateById: Map<String, CarPartState> = emptyMap()
 
     /**
      * Màu NỀN THẺ — dùng làm mực "khoét" trên vùng tô, và làm đường tách hai vùng tô chồng nhau.
@@ -91,7 +91,6 @@ internal class DoorBoardView(context: Context) : View(context) {
      */
     private val colCard = Color.parseColor(KachiTheme.CARD2)
     private val colMut = Color.parseColor(KachiTheme.MUT)
-    private val colMut2 = Color.parseColor(KachiTheme.MUT2)
     private val colAccent = Color.parseColor(KachiTheme.ACCENT)
     private val colAmber = Color.parseColor(KachiTheme.AMBER)
     private val colRed = Color.parseColor(KachiTheme.RED)
@@ -107,22 +106,18 @@ internal class DoorBoardView(context: Context) : View(context) {
      * thuộc bề cao ô** — bộ phận nào cũng phải ở đúng chỗ của nó, không có chuyện bớt hàng cho vừa.
      */
     fun set(model: GroupBoardModel) {
-        plan = GroupBoard.doorPlan(model)
+        val p = GroupBoard.doorPlan(model)
+        plan = p
+        stateById = p.parts.associateBy { CarFrames.pieceIdOf(it.part) }
         invalidate()
     }
 
-    /**
-     * Sắc thái → màu.
-     *
-     * [GroupTone.ACTIVE] dùng [KachiTheme.ACCENT] chứ không [KachiTheme.INK] như dải STRIP: ở dải, "đang bật" được
-     * nói bằng **nền + viền** accent của ô con nên chữ giữ màu mực; trên Canvas không có ô con nào, chính vùng tô là
-     * thứ duy nhất nói được điều đó — tô bằng màu mực thì nóc đang mở trông y hệt một hình trang trí.
-     */
+    /** Màu chữ nhãn `%` đặt NGOÀI vùng tô — cùng sắc thái với bộ phận (chữ trong vùng tô thì "khoét" bằng [colCard]). */
     private fun tint(tone: GroupTone): Int = when (tone) {
         GroupTone.ALERT -> colRed
         GroupTone.WARN -> colAmber
         GroupTone.ACTIVE -> colAccent
-        GroupTone.NEUTRAL -> colMut2
+        GroupTone.NEUTRAL -> colMut
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -132,8 +127,8 @@ internal class DoorBoardView(context: Context) : View(context) {
         if (w <= 0f || h <= 0f || p.parts.isEmpty()) return
         val min = minOf(w, h)
 
-        outline.strokeWidth = maxOf(min * OUTLINE_RATIO, strokeFloorPx)
-        partStroke.strokeWidth = maxOf(min * PART_STROKE_RATIO, strokeFloorPx * PART_STROKE_FLOOR)
+        val outlinePx = maxOf(min * OUTLINE_RATIO, strokeFloorPx)
+        separator.strokeWidth = maxOf(min * PART_STROKE_RATIO, strokeFloorPx * PART_STROKE_FLOOR)
         // SÀN đứng sau tỉ lệ: ô to thì tỉ lệ thắng (chữ lớn theo ô), ô nhỏ thì sàn thắng (chữ vẫn đọc được).
         noteP.textSize = maxOf(min * NOTE_RATIO, labelFloorPx)
         midP.textSize = maxOf(min * MID_RATIO, labelFloorPx)
@@ -143,17 +138,28 @@ internal class DoorBoardView(context: Context) : View(context) {
         val pad = w * PAD_RATIO
         carDst.set(pad, h * TOP_INSET, w - pad, h * FOOTER_TOP)
         // Chừa nửa nét mỗi phía: `Path` là ĐƯỜNG TÂM nét, không phải mép mực.
-        carDst.inset(outline.strokeWidth / 2f, outline.strokeWidth / 2f)
-        CarFrames.openFrameBounds(srcBox)
-        CarFrames.fit(srcBox, carDst, carMatrix)
+        carDst.inset(outlinePx / 2f, outlinePx / 2f)
+        if (carDst != laidOut) { painter.layout(CarFace.TOP, carDst, openFrame = true, strokePx = outlinePx); laidOut.set(carDst) }
 
-        // Ba lớp, và thân xe chen vào GIỮA: gương/nóc/rèm/cốp nằm dưới nét thân (chúng là bộ phận CỦA thân), còn bốn
-        // vạt cửa nằm trên cùng vì chúng bật ra ngoài thân — và vì cửa mở là thứ phải thắng chỗ (xem KDoc lớp).
-        drawLayer(canvas, p, LAYER_UNDER)
-        carPath.set(CarFrames.topFrame)
-        carPath.transform(carMatrix)
-        canvas.drawPath(carPath, outline)
-        drawLayer(canvas, p, LAYER_OVER)
+        // Cả mặt xe theo thứ tự lớp SVG (§4.3): thân → kính/nóc/rèm → đèn → bánh → cửa/cốp/gương (bốn vạt cửa vẽ SAU
+        // cùng vì chúng bật ra ngoài thân — và vì cửa mở là thứ phải thắng chỗ, xem KDoc lớp). Tone/available của
+        // từng mảnh đến từ [stateById] (`:core` quyết), cách tô từ [CarPartStyle].
+        painter.draw(
+            canvas,
+            toneOf = { part -> stateById[part.id]?.let { if (it.open) it.tone else GroupTone.NEUTRAL } },
+            availableOf = { part -> stateById[part.id]?.available ?: true },
+        )
+        // Đường TÁCH bằng màu nền thẻ quanh mỗi bộ phận ĐANG mở: hai vùng tô chồng nhau mà cùng sắc thái thì không có
+        // ranh giới — [ĐO] ô nóc + tấm rèm cùng ACTIVE dính thành MỘT khối, người xem đếm được một bộ phận thay vì hai.
+        for (i in p.parts.indices) {
+            val s = p.parts[i]
+            if (!s.open) continue
+            val shape = VectorCarArt.path(CarFace.TOP, CarFrames.pieceIdOf(s.part)) ?: continue
+            carPath.set(shape)
+            painter.transform(carPath)
+            separator.color = colCard
+            canvas.drawPath(carPath, separator)
+        }
         // Nhãn `%` vẽ SAU CÙNG — không thì bộ phận vẽ sau che mất nhãn của bộ phận vẽ trước. [ĐO] ô nóc `y 9.3…15.3`
         // và tấm rèm `y 9.9…16.0` chồng gần trọn lên nhau, nên nhãn của nóc bị chính tấm rèm phủ.
         for (i in p.parts.indices) {
@@ -175,37 +181,6 @@ internal class DoorBoardView(context: Context) : View(context) {
     }
 
     /**
-     * Vẽ mọi bộ phận thuộc [layer], theo **đúng thứ tự khai** của kế hoạch.
-     *
-     * Duyệt bằng chỉ số chứ không bằng `for (s in list)`: vòng lặp trên `List` cấp phát một `Iterator` mỗi lượt, mà
-     * [onDraw] chạy theo nhịp trạng thái xe — cùng lý do mọi `Paint`/`Path` ở đây là field.
-     */
-    private fun drawLayer(canvas: Canvas, p: DoorBoardPlan, layer: Int) {
-        for (i in p.parts.indices) {
-            val s = p.parts[i]
-            if (layerOf(s.part) != layer) continue
-            val shape = CarFrames.part(s.part) ?: continue
-            carPath.set(shape)
-            carPath.transform(carMatrix)
-            if (s.open) {
-                partFill.color = tint(s.tone)
-                canvas.drawPath(carPath, partFill)
-                // ⚠ Đường TÁCH bằng màu nền thẻ: hai vùng tô chồng nhau mà cùng sắc thái thì không có ranh giới nào
-                // — [ĐO] ô nóc + tấm rèm cùng ACTIVE dính thành MỘT khối xanh, người xem đếm được một bộ phận thay
-                // vì hai. Vẽ ở mọi bộ phận (không chỉ hai cái chồng nhau) để không phải nhớ cặp nào chồng cặp nào.
-                partStroke.color = colCard
-                partStroke.alpha = OPAQUE
-                canvas.drawPath(carPath, partStroke)
-            } else {
-                partStroke.color = colMut2
-                // Đã đọc & đang đóng vs CHƯA đọc được — hai câu khác nhau, nói bằng hai độ mờ.
-                partStroke.alpha = if (s.available) OPAQUE else DIM
-                canvas.drawPath(carPath, partStroke)
-            }
-        }
-    }
-
-    /**
      * Nhãn `%` vẽ **bên trong** chính bộ phận (cốp · nóc · rèm là ba mảng đủ rộng để chứa một con số).
      *
      * ## ⚠ Vì sao neo theo từng bộ phận chứ không đều là tâm
@@ -214,8 +189,7 @@ internal class DoorBoardView(context: Context) : View(context) {
      * chữ cao ~24px ⇒ dính nhau. Neo nóc lên **mép trên** và rèm xuống **mép dưới** thì khoảng cách thành ~5 đơn vị.
      */
     private fun drawNote(canvas: Canvas, s: CarPartState) {
-        if (!CarFrames.partBounds(s.part, partBox)) return
-        carMatrix.mapRect(partBox)
+        if (!painter.mapBounds(CarFrames.pieceIdOf(s.part), partBox)) return
         // Màu phải theo thứ NẰM DƯỚI chữ, không theo bộ phận: nhãn đặt TRONG vùng tô thì phải "khoét" bằng màu nền
         // thẻ (tô-trên-tô là không đọc được), nhãn đặt NGOÀI thì nền là thân xe nên dùng chính màu sắc thái.
         noteP.color = when {
@@ -242,19 +216,8 @@ internal class DoorBoardView(context: Context) : View(context) {
     }
 
     private companion object {
-        /** `Paint.alpha` theo thang 0..255 (khác `View.alpha` 0..1f). */
-        const val DIM = 110
-        const val OPAQUE = 255
-
         /** Dấu cắt chữ — ký hiệu, không phải chữ để dịch. */
         const val ELLIPSIS = "…"
-
-        /** Lớp vẽ: bộ phận CỦA thân (gương · nóc · rèm · cốp) nằm dưới nét thân; bốn vạt cửa nằm trên. */
-        const val LAYER_UNDER = 0
-        const val LAYER_OVER = 1
-
-        /** Xem KDoc lớp về việc vì sao cửa phải là lớp trên cùng (73% tai gương nằm trong vạt cửa trước). */
-        fun layerOf(p: CarPart): Int = if (p.isDoor) LAYER_OVER else LAYER_UNDER
 
         /**
          * Chỗ neo nhãn `%` trong bộ phận, theo phần trăm chiều cao của chính bộ phận đó (0 = mép trên).

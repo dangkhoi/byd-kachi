@@ -1,0 +1,25 @@
+<!--
+  NHÓM CỬA & CỐP — thân xe nhìn từ trên (nét) + bốn vạt cửa hé ra ngoài tô chuyển sắc: cả bộ cửa, không phải một cánh (ic_door).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/group_doors.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực BODY · họ màu body · cỡ 32dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="32dp" android:height="32dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 12 3.4 C 9.6 3.4 8.2 4.2 7.9 6 L 7.5 9.4 C 7.2 12 7.2 15.4 7.5 18 C 7.8 19.8 9.4 20.6 12 20.6 C 14.6 20.6 16.2 19.8 16.5 18 C 16.8 15.4 16.8 12 16.5 9.4 L 16.1 6 C 15.8 4.2 14.4 3.4 12 3.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#AEB8C8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 7.4 8.2 L 3.8 6.2 L 3.8 10.2 L 7.3 11.6 Z M 16.6 8.2 L 20.2 6.2 L 20.2 10.2 L 16.7 11.6 Z M 7.3 12.8 L 3.8 11.4 L 3.8 15.4 L 7.4 16.6 Z M 16.7 12.8 L 20.2 11.4 L 20.2 15.4 L 16.6 16.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3.8" android:startY="6.2" android:endX="20.2" android:endY="16.6">
+                <item android:offset="0" android:color="#DFE5EE" />
+                <item android:offset="1" android:color="#6B7686" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 10.4 15.8 L 13.6 15.8 A 1 1 0 0 1 14.6 16.8 L 14.6 17.2 A 1 1 0 0 1 13.6 18.2 L 10.4 18.2 A 1 1 0 0 1 9.4 17.2 L 9.4 16.8 A 1 1 0 0 1 10.4 15.8 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+</vector>

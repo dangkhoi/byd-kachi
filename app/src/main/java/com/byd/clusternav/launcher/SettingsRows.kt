@@ -27,7 +27,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * Mỗi hàng tự giữ trạng thái hiển thị trong closure và báo ra bằng lambda. Không có bảng tra `id → view` (cố ý —
  * xem KDoc lịch sử RW0 / `CapabilityGridSection` — lưới đó đã rời khỏi Settings ở R-UI (m), tệp bị xoá).
  */
-class SettingsRows(private val context: Context) {
+class SettingsRows(internal val context: Context) {
 
     /**
      * Lề STACK chuẩn cho một phần tử trong cột dọc của Settings. Gap giữa hàng = [KachiSpace.S]. [topGap] là lề
@@ -41,7 +41,7 @@ class SettingsRows(private val context: Context) {
      * truyền lp riêng khi `addView` (sẽ ghi đè lề này) — `SettingsStackMarginContractTest` canh đúng điều đó ở cả
      * hai chiều: mọi hàm dựng công khai ở đây phải tự đặt `layoutParams`, và không chỗ gọi nào được truyền lp.
      */
-    private fun stackLp(topGap: Int = 0, wrapWidth: Boolean = false) =
+    internal fun stackLp(topGap: Int = 0, wrapWidth: Boolean = false) =
         LinearLayout.LayoutParams(
             if (wrapWidth) ViewGroup.LayoutParams.WRAP_CONTENT else LinearLayout.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -90,7 +90,7 @@ class SettingsRows(private val context: Context) {
      * NHÃN của một hàng "nhãn trái · điều khiển phải" — một chỗ duy nhất cho [chipRow] và [unitRow].
      * `minWidth` [KachiSpace.LABEL_COL] (không `weight`) — lý do ở KDoc hằng đó.
      */
-    private fun rowLabel(text: String): TextView = TextView(context).apply {
+    internal fun rowLabel(text: String): TextView = TextView(context).apply {
         this.text = text; setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
         minWidth = dpi(context, Sp.LABEL_COL)
         gravity = Gravity.CENTER_VERTICAL

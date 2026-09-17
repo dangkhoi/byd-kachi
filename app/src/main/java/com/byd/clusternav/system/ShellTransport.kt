@@ -86,6 +86,11 @@ class ShellTransport private constructor(context: Context) {
     fun exec(cmd: String, priority: MutationPriority = MutationPriority.NORMAL): Response = onOwner(priority) {
         runCatching { attempt(cmd) }.getOrElse {
             closeConn()
+            // ═══ 1.70 · [ĐO xe 2026-09-17] lệnh `input …` KHÔNG được gửi lại ═══════════════════════════
+            // Lượt thử lại là nguồn của cú chạm ĐÔI (*"play → pause → play"*): dưới tải xe một `input tap`
+            // có thể quá `SOCKET_TIMEOUT_MS` mà đã bơm xong. Luật nằm ở `:core` ([ShellIdempotency]); kết nối
+            // vẫn được đóng để lệnh SAU tự chữa như B1 — chỉ lệnh này không đi lần hai.
+            if (!ShellIdempotency.retryable(cmd)) throw it
             attempt(cmd)
         }
     }

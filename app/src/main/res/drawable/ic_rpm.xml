@@ -1,17 +1,23 @@
 <!--
-  VÒNG TUA (mũi tên quay quanh trục) — cho `motor_front_rpm` · `motor_rear_rpm`.
-  [U6] Đây là mục owner báo đích danh: ba ô rpm/mô-men mang hình ĐỌC RA LÀ ẮC-QUY (ic_motor cũ là hộp bo góc có
-  cực lồi bên phải). Vòng tua là chuyển động QUAY — vẽ đúng cái quay, không vẽ cái hộp.
+  VÒNG TUA (`motor_*_rpm`) — mũi tên quay quanh trục + tâm tô: vẽ đúng CHUYỂN ĐỘNG QUAY, không vẽ cái hộp (bản cũ bị đọc thành ắc-quy).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/rpm.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M12,4.4 A7.6,7.6 0 1 1 6.6,6.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.2,3 L12,4.4 L10.6,7.2"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M12,12 m-1.6,0 a1.6,1.6 0 1 0 3.2,0 a1.6,1.6 0 1 0 -3.2,0Z"
-        android:fillColor="#FFFFFF" />
+    <path android:pathData="M 18.28 6.73 A 8.2 8.2 0 1 1 7.9 4.9 M 14.6 3.6 L 18.8 5.4 L 17.6 9.6"
+        android:fillColor="#00000000" android:strokeColor="#7B5CFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 9 12 A 3 3 0 1 1 15 12 A 3 3 0 1 1 9 12 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="9" android:startY="9" android:endX="15" android:endY="15">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

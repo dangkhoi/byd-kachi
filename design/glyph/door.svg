@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CỬA XE (macro mở khoá cửa · `door_*`) — một cánh cửa nhìn ngang: khung nét, kính tô chuyển sắc, tay nắm mờ. -->
+  <style>:root{--ink:#ffffff;--main:#aeb8c8;--light:#dfe5ee;--deep:#6b7686}</style>
+  <path d="M3.4,20.4 L3.4,11 C3.4,8.4 5.8,3.6 9.4,3.6 L20.6,3.6 L20.6,20.4 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.2,10.8 C6.2,8.8 7.8,6.2 9.8,6.2 L17.8,6.2 L17.8,10.8 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M14.3,13.4 L16.9,13.4 A0.9,0.9 0 0 1 17.8,14.3 L17.8,14.3 A0.9,0.9 0 0 1 16.9,15.2 L14.3,15.2 A0.9,0.9 0 0 1 13.4,14.3 L13.4,14.3 A0.9,0.9 0 0 1 14.3,13.4 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+</svg>

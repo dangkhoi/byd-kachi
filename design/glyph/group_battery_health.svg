@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NHÓM SỨC KHOẺ PIN (nhiệt/áp cell · SOH · 12V) — pin NGANG + nhịp đo (điện tâm đồ) bên trong: pin có KHOẺ không. Khác ic_group_energy (pin đứng + sét). -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M5.8,7.2 L16.6,7.2 A2.4,2.4 0 0 1 19,9.6 L19,14.4 A2.4,2.4 0 0 1 16.6,16.8 L5.8,16.8 A2.4,2.4 0 0 1 3.4,14.4 L3.4,9.6 A2.4,2.4 0 0 1 5.8,7.2 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5.6,12 L8.2,12 L9.8,9 L12.2,15 L13.8,12 L17,12" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20.6,10 L20.8,10 A0.8,0.8 0 0 1 21.6,10.8 L21.6,13.2 A0.8,0.8 0 0 1 20.8,14 L20.6,14 A0.8,0.8 0 0 1 19.8,13.2 L19.8,10.8 A0.8,0.8 0 0 1 20.6,10 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+  <path d="M5.8,7.2 L16.6,7.2 A2.4,2.4 0 0 1 19,9.6 L19,14.4 A2.4,2.4 0 0 1 16.6,16.8 L5.8,16.8 A2.4,2.4 0 0 1 3.4,14.4 L3.4,9.6 A2.4,2.4 0 0 1 5.8,7.2 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

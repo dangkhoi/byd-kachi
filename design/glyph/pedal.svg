@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CHÂN GA (`accel_pct`) — mặt bàn đạp nghiêng tô chuyển sắc có BA GỜ CHỐNG TRƯỢT + cần treo xuống sàn: gờ là thứ làm mắt đọc ra "bàn đạp" chứ không phải "tấm nghiêng". Độ nhấn là việc CHÂN NGƯỜI LÁI làm, khác tốc độ đo ở bánh. Vẽ lại 2026-09-17. -->
+  <style>:root{--ink:#ffffff;--main:#7b5cff;--light:#b39dff;--deep:#7059d7}</style>
+  <path d="M7,3.2 L18.6,6.6 A1,1 0 0 1 19.3,7.8 L16.9,16.2 A1,1 0 0 1 15.7,16.9 L4.1,13.5 A1,1 0 0 1 3.4,12.3 L5.8,3.9 A1,1 0 0 1 7,3.2 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M7.6,6.5 L15.6,8.8 M6.7,9.4 L14.7,11.7 M5.9,12.2 L13.9,14.5" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M10.4,16.4 L10.4,19.2 L15.2,21" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

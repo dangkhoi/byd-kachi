@@ -15,6 +15,7 @@ import com.byd.clusternav.setVoiceEndpointMinSpeechMs
 import com.byd.clusternav.setVoiceEndpointSilenceMs
 import com.byd.clusternav.setVoiceFollowUpMs
 import com.byd.clusternav.setVoiceHotwordScore
+import com.byd.clusternav.setVoiceTtsSpeed
 import com.byd.clusternav.setVoiceVadMinSilenceMs
 import com.byd.clusternav.setVoiceVadMinSpeechMs
 import com.byd.clusternav.setVoiceVadThreshold
@@ -26,6 +27,8 @@ import com.byd.clusternav.voiceEndpointMinSpeechMs
 import com.byd.clusternav.voiceEndpointSilenceMs
 import com.byd.clusternav.voiceFollowUpMs
 import com.byd.clusternav.voiceHotwordScore
+import com.byd.clusternav.voiceTtsSpeed
+import com.byd.clusternav.launcher.voice.SherpaTtsCatalog
 import com.byd.clusternav.voiceMicSource
 import com.byd.clusternav.voiceVadMinSilenceMs
 import com.byd.clusternav.voiceVadMinSpeechMs
@@ -124,6 +127,9 @@ internal object TestBridgePrefsSet {
             "voice_hotword_score" -> raw.toFloatOrNull()
                 ?.takeIf { it in SherpaModelCatalog.MIN_HOTWORDS_SCORE..SherpaModelCatalog.MAX_HOTWORDS_SCORE }
                 ?.let { Prefs.setVoiceHotwordScore(app, it); it.toString() }
+            "voice_tts_speed" -> raw.toFloatOrNull()
+                ?.takeIf { it in SherpaTtsCatalog.MIN_SPEED..SherpaTtsCatalog.MAX_SPEED }
+                ?.let { Prefs.setVoiceTtsSpeed(app, it); it.toString() }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -160,6 +166,7 @@ internal object TestBridgePrefsSet {
             "voice_vad_min_silence_ms" -> Prefs.voiceVadMinSilenceMs(app).toString()
             "voice_beam" -> Prefs.voiceBeam(app).toString()
             "voice_hotword_score" -> Prefs.voiceHotwordScore(app).toString()
+            "voice_tts_speed" -> Prefs.voiceTtsSpeed(app).toString()
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""

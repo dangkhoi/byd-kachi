@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- VISUAL-REFRESH P1b · §4.10 — khoá tag của view có nền KÍNH (KachiGlass): tham số dựng + listener đã gắn,
+         để `KachiGlass.refresh` dựng lại đúng nền khi ảnh nền đổi mà không phải dựng lại cả màn. -->
+    <item name="kachi_glass_spec" type="id" />
+    <item name="kachi_glass_binding" type="id" />
+</resources>

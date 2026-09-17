@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- TẦM (`ev_range_km` · `fuel_range_km`) — mũi tên chạy về CỜ ĐÍCH: còn tới được bao xa. Cờ tô = giới hạn; ic_road giữ nghĩa quãng đường ĐÃ đi. -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M3.4,17.2 L13.6,17.2 M10.4,14 L13.6,17.2 L10.4,20.4" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16.2,4.2 L16.2,20.2" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16.2,4.6 L21.2,6.9 L16.2,9.2 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+</svg>

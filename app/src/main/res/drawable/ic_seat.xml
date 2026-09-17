@@ -1,10 +1,25 @@
+<!--
+  GHẾ (`seatc` mát · `seath` sưởi · `steer_heat`) — ghế nhìn ngang: tựa nét + đệm tô chuyển sắc; chân ghế mờ.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/seat.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực CLIMATE · họ màu climate · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M9,4L9,13L17,13"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M17,13L17,19M9,13L7,19"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 7.2 3.6 C 5.4 3.6 5 5 5.4 6.8 L 7.2 14.4 L 17 14.4"
+        android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 8.2 14.4 L 16.8 14.4 A 2 2 0 0 1 18.8 16.4 L 18.8 16.6 A 2 2 0 0 1 16.8 18.6 L 8.2 18.6 A 2 2 0 0 1 6.2 16.6 L 6.2 16.4 A 2 2 0 0 1 8.2 14.4 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="6.2" android:startY="14.4" android:endX="18.8" android:endY="18.6">
+                <item android:offset="0" android:color="#8AE8F7" />
+                <item android:offset="1" android:color="#0D8AA3" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 8.4 18.6 L 8.4 20.8 M 16.6 18.6 L 16.6 20.8"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

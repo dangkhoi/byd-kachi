@@ -1,0 +1,457 @@
+{
+ "$comment": "NGỮ PHÁP BỘ ICON (spec kachi-visual-refresh §4.2/§R2). Một nơi duy nhất khai họ màu theo lĩnh vực (AC2.5), cờ `large` (sinh thêm 32/48dp — T9) và ghi chú khái niệm. Nguồn hình: design/glyph/<id>.svg. Sinh: scripts/design/gen-icons.py. Mã hex ở đây LÀ mã của KachiPalette.DARK (green/accent2/cyan/amber/accent/red + slate/silver/orange của domainTints) — đổi ở đó thì đổi ở đây; chủ đề SÁNG do chỗ dùng tint (setColorFilter INK), tệp không đổi.",
+ "layers": {
+  "main": 1.0,
+  "sub": 0.38,
+  "bg": 0.16
+ },
+ "strokes": {
+  "main": 1.8,
+  "sub": 1.2
+ },
+ "pathCap": {
+  "24": 6,
+  "32": 10,
+  "48": 10
+ },
+ "families": {
+  "energy": {
+   "main": "#34d399",
+   "light": "#8ff0c4",
+   "deep": "#0f8f63",
+   "role": "green (KachiPalette.DARK.green)"
+  },
+  "drive": {
+   "main": "#7b5cff",
+   "light": "#b39dff",
+   "deep": "#7059d7",
+   "role": "accent2 (tím chuyển động)"
+  },
+  "climate": {
+   "main": "#29d3ee",
+   "light": "#8ae8f7",
+   "deep": "#0d8aa3",
+   "role": "cyan"
+  },
+  "tyres": {
+   "main": "#94a3b8",
+   "light": "#c7d0dc",
+   "deep": "#626e82",
+   "role": "slate (domainTints.TYRES)"
+  },
+  "body": {
+   "main": "#aeb8c8",
+   "light": "#dfe5ee",
+   "deep": "#6b7686",
+   "role": "icon/bạc (domainTints.BODY)"
+  },
+  "lights": {
+   "main": "#fbbf24",
+   "light": "#ffe08a",
+   "deep": "#b7810a",
+   "role": "amber"
+  },
+  "identity": {
+   "main": "#4c7dff",
+   "light": "#9db6ff",
+   "deep": "#4068d7",
+   "role": "accent"
+  },
+  "media": {
+   "main": "#f59e0b",
+   "light": "#ffc75a",
+   "deep": "#b06f05",
+   "role": "orange (domainTints.INFOTAINMENT)"
+  },
+  "alert": {
+   "main": "#ff8fa0",
+   "light": "#ffc4cd",
+   "deep": "#c63751",
+   "role": "red (màu = nghĩa)"
+  },
+  "chrome": {
+   "main": "#eaf0f8",
+   "light": "#ffffff",
+   "deep": "#b9c4d4",
+   "role": "ink — thanh trên/cockpit, luôn tint theo mực"
+  }
+ },
+ "domains": {
+  "ENERGY": "energy",
+  "DRIVETRAIN": "drive",
+  "CLIMATE": "climate",
+  "TYRES": "tyres",
+  "BODY": "body",
+  "LIGHTS": "lights",
+  "IDENTITY": "identity",
+  "INFOTAINMENT": "media",
+  "LAUNCHER": "chrome",
+  "COCKPIT": "chrome"
+ },
+ "icons": {
+  "ac": {
+   "domain": "CLIMATE",
+   "note": "ĐIỀU HOÀ (`ac_on` · `ac_auto`)"
+  },
+  "adv_g": {
+   "domain": "COCKPIT",
+   "note": "NÂNG CAO (cockpit, ô tile_adv)"
+  },
+  "alert": {
+   "domain": "BODY",
+   "note": "CẢNH BÁO KHẨN (`emergency_alarm`)",
+   "family": "alert"
+  },
+  "badge_g": {
+   "domain": "COCKPIT",
+   "note": "BIỂN TỐC ĐỘ (cockpit, ô tile_badge)"
+  },
+  "battery": {
+   "domain": "ENERGY",
+   "note": "PIN (mức sạc · SOH)"
+  },
+  "bolt": {
+   "domain": "ENERGY",
+   "note": "TIA SÉT",
+   "large": true
+  },
+  "brake": {
+   "domain": "DRIVETRAIN",
+   "note": "PHANH (`brake_pct`)"
+  },
+  "bubble_g": {
+   "domain": "COCKPIT",
+   "note": "NÚT NỔI (cockpit, ô tile_bubble)"
+  },
+  "cam": {
+   "domain": "INFOTAINMENT",
+   "note": "CAMERA 360 (`cam` · `camera_view`)"
+  },
+  "car": {
+   "domain": "IDENTITY",
+   "note": "XE nhìn ngang (`vehicle_type`; widget Trạng thái xe; nhận dạng nhóm Danh tính)",
+   "family": "body",
+   "large": true
+  },
+  "cast": {
+   "domain": "INFOTAINMENT",
+   "note": "CHIẾU CỤM (`cast` · `hud_switch` · `screen_rotation`; nhận dạng nhóm Giải trí)"
+  },
+  "cast_g": {
+   "domain": "COCKPIT",
+   "note": "MÀN CHIẾU (cockpit, ô tile_cast)"
+  },
+  "cell_temp": {
+   "domain": "ENERGY",
+   "note": "NHIỆT CELL (`cell_temp_*`)"
+  },
+  "cell_volt": {
+   "domain": "ENERGY",
+   "note": "ĐIỆN ÁP CELL (`cell_v_*`)"
+  },
+  "charger": {
+   "domain": "ENERGY",
+   "note": "TRỤ SẠC (sạc không dây `wireless_charge`)"
+  },
+  "clock_g": {
+   "domain": "ENERGY",
+   "note": "ĐỒNG HỒ (`trip_hours`; đầu ô Nhanh/ETA của cockpit)"
+  },
+  "close": {
+   "domain": "LAUNCHER",
+   "note": "ĐÓNG (✕)"
+  },
+  "consumption": {
+   "domain": "ENERGY",
+   "note": "TIÊU THỤ (`trip_kwh` · `consumption_50km`)"
+  },
+  "coolant": {
+   "domain": "CLIMATE",
+   "note": "NHIỆT NƯỚC LÀM MÁT (`coolant_temp`)"
+  },
+  "defrost": {
+   "domain": "CLIMATE",
+   "note": "SẤY KÍNH (`defrost` · `defrost_front_state`)"
+  },
+  "door": {
+   "domain": "BODY",
+   "note": "CỬA XE (macro mở khoá cửa · `door_*`)",
+   "large": true
+  },
+  "drive": {
+   "domain": "DRIVETRAIN",
+   "note": "CẦN SỐ (`gear`)"
+  },
+  "dust": {
+   "domain": "CLIMATE",
+   "note": "BỤI MỊN (`pm25_*`)"
+  },
+  "dust_g": {
+   "domain": "COCKPIT",
+   "note": "LỌC KHÍ (cockpit, ô tile_dust)"
+  },
+  "engine": {
+   "domain": "DRIVETRAIN",
+   "note": "MÁY XĂNG (`engine_rpm`)"
+  },
+  "fan": {
+   "domain": "CLIMATE",
+   "note": "QUẠT GIÓ (`ac_wind` · nút Gió; nhận dạng nhóm Khí hậu)"
+  },
+  "filter": {
+   "domain": "CLIMATE",
+   "note": "LỌC KHÔNG KHÍ (nút `pm25` · `pm25_clean_now`)"
+  },
+  "fuel": {
+   "domain": "ENERGY",
+   "note": "XĂNG (`fuel_pct` · bình xăng)"
+  },
+  "gear": {
+   "domain": "LAUNCHER",
+   "note": "CÀI ĐẶT (`ic-settings`)"
+  },
+  "gps_alt": {
+   "domain": "IDENTITY",
+   "note": "CAO ĐỘ (`gps_alt`)"
+  },
+  "gps_heading": {
+   "domain": "IDENTITY",
+   "note": "HƯỚNG (`gps_heading`)"
+  },
+  "gps_lat": {
+   "domain": "IDENTITY",
+   "note": "VĨ ĐỘ (`gps_lat`)"
+  },
+  "gps_lon": {
+   "domain": "IDENTITY",
+   "note": "KINH ĐỘ (`gps_lon`)"
+  },
+  "grid": {
+   "domain": "LAUNCHER",
+   "note": "BẢNG TỔNG HỢP / LƯỚI ỨNG DỤNG (`ic-apps`; widget Bảng)",
+   "large": true
+  },
+  "group_ambient": {
+   "domain": "LIGHTS",
+   "note": "NHÓM ĐÈN VIỀN",
+   "large": true
+  },
+  "group_battery_health": {
+   "domain": "ENERGY",
+   "note": "NHÓM SỨC KHOẺ PIN (nhiệt/áp cell · SOH · 12V)",
+   "large": true
+  },
+  "group_climate": {
+   "domain": "CLIMATE",
+   "note": "NHÓM KHÍ HẬU & KHÔNG KHÍ",
+   "large": true
+  },
+  "group_doors": {
+   "domain": "BODY",
+   "note": "NHÓM CỬA & CỐP",
+   "large": true
+  },
+  "group_energy": {
+   "domain": "ENERGY",
+   "note": "NHÓM NĂNG LƯỢNG & SẠC",
+   "large": true
+  },
+  "group_lights": {
+   "domain": "LIGHTS",
+   "note": "NHÓM ĐÈN",
+   "large": true
+  },
+  "group_trip": {
+   "domain": "ENERGY",
+   "note": "NHÓM CHUYẾN ĐI (km · giờ · kWh · odo)",
+   "large": true
+  },
+  "group_tyres": {
+   "domain": "TYRES",
+   "note": "NHÓM LỐP",
+   "large": true
+  },
+  "group_windows": {
+   "domain": "BODY",
+   "note": "NHÓM KÍNH",
+   "large": true
+  },
+  "hood": {
+   "domain": "BODY",
+   "note": "CA-PÔ (nút `hood`)"
+  },
+  "lang_g": {
+   "domain": "COCKPIT",
+   "note": "NGÔN NGỮ (cockpit, hàng ngôn ngữ tile_sys)"
+  },
+  "leaf": {
+   "domain": "CLIMATE",
+   "note": "ION ÂM / KHÔNG KHÍ SẠCH (`anion_state` · nút Ion âm; widget Không khí)",
+   "large": true
+  },
+  "left_g": {
+   "domain": "COCKPIT",
+   "note": "CHIẾU NỬA TRÁI (cockpit, cast_zone_left)"
+  },
+  "light": {
+   "domain": "LIGHTS",
+   "note": "ĐÈN (`brightness_gear` · `hud_brightness`; nhận dạng nhóm Đèn)"
+  },
+  "lock": {
+   "domain": "BODY",
+   "note": "KHOÁ (`child_lock`; nút khoá/mở)",
+   "large": true
+  },
+  "mic": {
+   "domain": "LAUNCHER",
+   "note": "MICRO (`ic-mic`"
+  },
+  "mic_g": {
+   "domain": "COCKPIT",
+   "note": "MICRO (cockpit, ô tile_mic)"
+  },
+  "mode": {
+   "domain": "DRIVETRAIN",
+   "note": "NÚM CHỌN CHẾ ĐỘ (`op_mode` · `ac_mode_auto`)"
+  },
+  "motor": {
+   "domain": "DRIVETRAIN",
+   "note": "MÔ-TƠ ĐIỆN (`motor_power`)"
+  },
+  "music": {
+   "domain": "INFOTAINMENT",
+   "note": "NHẠC (`cluster_music`; widget Nhạc)",
+   "large": true
+  },
+  "nav_g": {
+   "domain": "COCKPIT",
+   "note": "DẪN ĐƯỜNG (cockpit, ô tile_nav)"
+  },
+  "next": {
+   "domain": "INFOTAINMENT",
+   "note": "TỚI BÀI"
+  },
+  "pedal": {
+   "domain": "DRIVETRAIN",
+   "note": "CHÂN GA (`accel_pct`)"
+  },
+  "photo": {
+   "domain": "INFOTAINMENT",
+   "note": "ẢNH (widget Trình chiếu ảnh)",
+   "large": true
+  },
+  "play": {
+   "domain": "INFOTAINMENT",
+   "note": "PHÁT / TẠM DỪNG"
+  },
+  "prev": {
+   "domain": "INFOTAINMENT",
+   "note": "LÙI BÀI"
+  },
+  "range": {
+   "domain": "ENERGY",
+   "note": "TẦM (`ev_range_km` · `fuel_range_km`)"
+  },
+  "readlight": {
+   "domain": "LIGHTS",
+   "note": "ĐÈN ĐỌC (nút `readl`)"
+  },
+  "recirc": {
+   "domain": "CLIMATE",
+   "note": "LẤY GIÓ TRONG (`ac_cycle` · nút Lấy gió trong)"
+  },
+  "right_g": {
+   "domain": "COCKPIT",
+   "note": "CHIẾU NỬA PHẢI (cockpit, cast_zone_right)"
+  },
+  "road": {
+   "domain": "ENERGY",
+   "note": "QUÃNG ĐƯỜNG ĐÃ ĐI (`odometer` · `trip_km` · `ev_mileage_km`)"
+  },
+  "rpm": {
+   "domain": "DRIVETRAIN",
+   "note": "VÒNG TUA (`motor_*_rpm`)"
+  },
+  "seat": {
+   "domain": "CLIMATE",
+   "note": "GHẾ (`seatc` mát · `seath` sưởi · `steer_heat`)"
+  },
+  "seat_g": {
+   "domain": "COCKPIT",
+   "note": "GHẾ (cockpit, ô tile_seat)"
+  },
+  "sensor": {
+   "domain": "CLIMATE",
+   "note": "CẢM BIẾN (`pm25_online`"
+  },
+  "slope": {
+   "domain": "DRIVETRAIN",
+   "note": "ĐỘ DỐC (`slope_deg`)"
+  },
+  "speed": {
+   "domain": "DRIVETRAIN",
+   "note": "TỐC ĐỘ (`speed`; nhận dạng nhóm Động lực)",
+   "large": true
+  },
+  "steering": {
+   "domain": "DRIVETRAIN",
+   "note": "VÔ-LĂNG (`steering_deg`)"
+  },
+  "sun": {
+   "domain": "CLIMATE",
+   "note": "NẮNG / SƯỞI (`seat_heat_state`; widget Đồng hồ + thời tiết)",
+   "family": "lights",
+   "large": true
+  },
+  "swap": {
+   "domain": "LAUNCHER",
+   "note": "ĐỔI CHỖ Ô (⇄)"
+  },
+  "sys_g": {
+   "domain": "COCKPIT",
+   "note": "HỆ THỐNG (cockpit, ô tile_sys)"
+  },
+  "target": {
+   "domain": "ENERGY",
+   "note": "MỤC TIÊU SẠC (`target_soc`)"
+  },
+  "temp": {
+   "domain": "CLIMATE",
+   "note": "NHIỆT ĐỘ (`cabin_temp` · nút Nhiệt độ)"
+  },
+  "temp_out": {
+   "domain": "CLIMATE",
+   "note": "NHIỆT NGOÀI XE (`ext_temp`)"
+  },
+  "tire": {
+   "domain": "TYRES",
+   "note": "LỐP (`tyre_*`; nhận dạng nhóm Lốp)"
+  },
+  "torque": {
+   "domain": "DRIVETRAIN",
+   "note": "MÔ-MEN (`motor_front_torque`)"
+  },
+  "volume": {
+   "domain": "INFOTAINMENT",
+   "note": "ÂM LƯỢNG (`vol` · `media_vol`)"
+  },
+  "window": {
+   "domain": "BODY",
+   "note": "KÍNH CỬA (`window_*`; nhận dạng nhóm Thân xe)"
+  },
+  "window_close": {
+   "domain": "BODY",
+   "note": "ĐÓNG HẾT KÍNH (macro)",
+   "large": true
+  },
+  "window_open": {
+   "domain": "BODY",
+   "note": "MỞ HẾT KÍNH (macro)",
+   "large": true
+  },
+  "wiper": {
+   "domain": "BODY",
+   "note": "GẠT MƯA (`wiper` · `wiper_state`)"
+  }
+ }
+}

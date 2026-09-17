@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- MÔ-TƠ ĐIỆN (`motor_power`) — vỏ tròn + rô-to tô chuyển sắc + trục ra bên phải: hình tròn của rô-to là thứ không thể đọc thành ắc-quy. -->
+  <style>:root{--ink:#ffffff;--main:#7b5cff;--light:#b39dff;--deep:#7059d7}</style>
+  <path d="M 2.94,12 A 8.32,8.32 0 1 1 19.57,12 A 8.32,8.32 0 1 1 2.94,12 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 7.1,12 A 4.16,4.16 0 1 1 15.42,12 A 4.16,4.16 0 1 1 7.1,12 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 19.57,10.61 L 21.36,10.61 M 19.57,13.39 L 21.36,13.39 M 6.51,7.25 L 4.92,5.66 M 6.51,16.75 L 4.92,18.34" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

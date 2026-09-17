@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kế hoạch: tái kiến trúc VOICE + làm hết phần còn lại — Kachi</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p0{background:#d70015}.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.bad{color:var(--warn)}.good{color:var(--ok)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kế hoạch: tái kiến trúc VOICE + làm hết phần còn lại</h1>
+<p class="muted">Kachi launcher (<code>com.byd.launcher</code>) · cây làm việc 1.70 (71) · <span class="pill wait">CHỜ OWNER DUYỆT — chưa code gì mới</span></p>
+<p class="muted">Đây là kế hoạch, không phải lệnh thi hành. Mọi khẳng định gắn [ĐO]/[SUY]/[ĐOÁN]/[CHƯA BIẾT] theo <code>conversation-protocol.md</code>. Nguồn: đọc code thật (<code>VoiceSession</code>/<code>VoiceCapture</code>/<code>VoiceRecognizer</code>/<code>VoiceChime</code>/<code>VoiceSessionTurns</code>) + handoff 2026-09-17 + backlog.</p>
+
+<h2>0. Trạng thái ngay lúc này (bắt buộc đọc trước)</h2>
+<div class="card">
+<p><b>Cây làm việc KHÔNG biên dịch được.</b> [ĐO] <code>VoiceSessionTurns.kt:85</code> gọi <code>VoiceUtteranceLog.update(...decision = lastDecision...)</code> nhưng <code>VoiceUtteranceLog.Meta</code> (dòng 93) <b>chưa có field <code>decision</code></b> — đây là chỗ đứt duy nhất chặn compile, di sản của hotfix D dở dang.</p>
+<p><b>Ba khối việc chồng trong một cây</b> (không tách nhánh được nữa): (1) VISUAL P1b/P2/P3 xong, chưa review/commit; (2) senior review visual dừng giữa chừng; (3) hotfix chạm+voice (agent D) dừng giữa chừng.</p>
+<p><b>Việc 0 đã xong:</b> dữ liệu xe + WAV giọng đã cứu ra <code>~/.kachi/</code> (handoff §5).</p>
+</div>
+
+<h2>1. Vì sao voice "vô dụng" — bằng chứng [ĐO] trên xe 09-17</h2>
+<p>Owner: <i>"voice có test nhiều, nhưng vẫn phản hồi chậm, không làm được gì hết, rất vô dụng"</i>. Đây là chuỗi thời gian THẬT một lượt nói, đo trên xe 1.69:</p>
+
+<div class="flow">
+  <div class="fnode"><b>Bấm nút</b><span>t=0</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>Mở mic</b><span class="bad">+1.5s</span><span>dựng overlay+VAD+nhãn app</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>ToneGenerator</b><span class="bad">+3.0s CHẶN</span><span>status -110, block record thread</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>Nghe</b><span>đệm chỉ 80ms</span><span>3s tiếng đầu MẤT</span></div><span class="arrow">→</span>
+  <div class="fnode"><b>Giải mã</b><span>8.2s im lặng → chữ BỊA</span></div>
+</div>
+
+<table>
+<tr><th>Triệu chứng [ĐO]</th><th>Gốc rễ</th><th>Loại</th></tr>
+<tr><td>~4.5s chết đầu lượt, câu nói mất sạch</td><td><code>ToneGenerator.startTone</code> chặn 3.0s trên record thread (ROM DL3 trả -110, không phát tiếng nào) + đệm <code>AudioRecord</code> chỉ 80ms</td><td class="bad">Engineering âm thanh</td></tr>
+<tr><td>Bấm → mic 1.5s</td><td>Dựng overlay + nạp Silero VAD ONNX + hỏi PackageManager nhãn app — đều nằm trên đường tới lúc mở mic</td><td class="bad">Engineering thứ tự</td></tr>
+<tr><td>7/10 lượt chính giải mã 8.2s im lặng → "ừm/chúng ta xây/vâng giấc mơ"</td><td>Không có cổng "im lặng thì không giải mã" cho lượt CHÍNH (chỉ có cho lượt nối)</td><td class="bad">Logic</td></tr>
+<tr><td>Model fp32 (266MB) vẫn trong RAM dù <code>state.voice_model</code>=int8</td><td>Engine không nạp lại khi gói đổi giữa phiên</td><td class="bad">Vòng đời</td></tr>
+<tr><td>Nghe SAI nhiều: "xem pin"→"xem binh", giọng thật 74.8% ý định</td><td>Model <code>zipformer-vi-int8</code> gốc chưa fine-tune trên giọng thật</td><td class="bad">Model</td></tr>
+<tr><td>Cửa sổ hỏi-lại 4s cắt câu giữa chừng</td><td>Trần <code>CLARIFY_LISTEN_MS</code>=4s (đã sửa lên 8s trong hotfix D)</td><td class="bad">Tham số</td></tr>
+</table>
+
+<p><b>Kết luận:</b> phần lớn "vô dụng" KHÔNG phải do model kém nghe — mà do <b>engineering âm thanh</b> làm mất 3–4.5s tiếng đầu và bịa chữ từ im lặng. Model chỉ là ~25% vấn đề (74.8%→84.8% fine-tune). Hotfix D đã bắt đầu vá đúng chỗ nhưng dở dang. Kế hoạch chia rõ: <b>hoàn tất engineering trước (rẻ, tác động lớn), model sau (đắt, tác động vừa).</b></p>
+
+<h2>2. Nghiên cứu lại VOICE — bốn hướng (theo yêu cầu owner)</h2>
+<p>Owner yêu cầu <i>"nghĩ thêm nhiều hướng… có thể cần research lại, thay đổi kiến trúc, model, engineering"</i>. Bốn trục, xếp theo tỉ lệ tác động / chi phí:</p>
+
+<h3>Hướng A — Engineering âm thanh (tác động CAO nhất, chi phí THẤP, không cần model mới)</h3>
+<div class="card">
+<p><b>Đây là phần "vô dụng" thật sự.</b> Bốn thứ, tất cả đo được off-car bằng harness + xác nhận 1 lượt xe:</p>
+<ul>
+<li><b>A1 — Chime rời khỏi record thread</b> (hotfix D đã có khung <code>VoiceChime.kt</code>): PCM sin dựng sẵn qua <code>AudioTrack</code> thường + luồng riêng + cầu chì. Bỏ hẳn <code>ToneGenerator</code>. → cắt 3.0s chết. <span class="pill ok">khung đã có</span></li>
+<li><b>A2 — Đệm <code>AudioRecord</code> ≥ 1s</b> (hotfix D: <code>MIN_BUFFER_MS=1000</code>): mọi lượt chặn chưa đo (GC, giải mã partial, app khác giành CPU) không làm rơi tiếng nữa. <span class="pill ok">đã có trong cây</span></li>
+<li><b>A3 — Mở mic TRƯỚC, dựng overlay/VAD song song</b>: mục tiêu bấm→nghe &lt; 300ms. Hâm sẵn Silero VAD lúc preload engine (đã preload engine, thêm preload VAD). Overlay dựng sau khi mic đã mở.</li>
+<li><b>A4 — Không giải mã lượt CHÍNH khi VAD nói "không có tiếng"</b> (hotfix D: <code>VoiceSilenceGate</code> + route=vad): 7/10 lượt bịa chữ biến mất; đáp ngắn "Kachi không nghe thấy gì". <span class="pill ok">đã có trong cây</span></li>
+</ul>
+<p class="muted">[ĐO host] harness <code>voice-e2e.sh --only wav</code> nạp WAV theo đúng nhịp khối 200ms nên đo được A4/cắt-đuôi mà không cần xe. A1/A3 cần 1 lượt xe xác nhận (ROM-specific).</p>
+</div>
+
+<h3>Hướng B — Kiến trúc phiên (tác động VỪA, chi phí VỪA)</h3>
+<div class="card">
+<p><code>VoiceSession</code> hiện là một máy trạng thái ngầm với 6 cờ chồng (<code>running</code>, <code>capturing</code>, <code>confirmOpen</code>, <code>cancelled</code>, <code>generation</code>, <code>pendingConfirm</code>) và ba lượt nghe chạy trên luồng nền chồng lấn luồng vẽ. Ba lượt soát trước đã phải vá đúng các cờ này ba lần. [SUY] đây là nguồn lỗi lặp lại.</p>
+<ul>
+<li><b>B1 — Máy trạng thái tường minh ở <code>:core</code></b>: <code>VoiceTurnState</code> (IDLE→LISTENING→DECODING→EXECUTING→(CONFIRM|CLARIFY|FOLLOW_UP)→CLOSING) thuần, testable, thay chùm cờ. Đây là hình dạng đã dùng thành công cho <code>SimpleCastRuntime</code> (4-state). Giảm khe race, khoá bằng test thuần thay vì phải đo trên thiết bị.</li>
+<li><b>B2 — Single-flight micro</b> (đã có <code>VoiceSingleFlight</code> + cầu chì 12 lượt/phút): giữ, đây là lớp chống vòng lặp hoang [P0 xe] đã chứng minh.</li>
+<li><b>B3 — Một dòng quyết định/lượt</b> (hotfix D: <code>VoiceDecision.describe</code>): giữ — nó là cách duy nhất chẩn đoán "nghe ra gì → hiểu ra gì" trên xe.</li>
+</ul>
+<p class="muted">⚠ B1 là refactor lớn, đụng đường đang chạy. CLAUDE.md §4: chỉ làm khi có test tương-đương-hành-vi trước. Đề xuất <b>hoãn B1</b> sang sau khi A+model ổn, trừ khi owner muốn làm sạch ngay.</p>
+</div>
+
+<h3>Hướng C — Model nghe (tác động VỪA, chi phí CAO, một phần cần xe)</h3>
+<div class="card">
+<p>[ĐO host, bộ giữ riêng giọng thật 3 người × 270 câu] — nguồn: backlog (Y) VOICE-FT:</p>
+<table>
+<tr><th>Model</th><th>Đúng ý định</th><th>Cỡ int8</th><th>Giấy phép</th><th>Trạng thái</th></tr>
+<tr><td><code>zipformer-vi</code> (đang ship)</td><td>202/270 = 74.8%</td><td>74 MB</td><td>Apache-2.0</td><td>ship</td></tr>
+<tr><td><code>gipformer1.5-65M</code> gốc</td><td>215/270</td><td>—</td><td>MIT</td><td>base</td></tr>
+<tr><td><b>G = fine-tune 2 epoch / 3.09h</b></td><td class="good">229/270 = 84.8%</td><td>78.2 MB</td><td>MIT phái sinh</td><td>mirror ở scratchpad <code>ft/model-gip15-ep2/</code></td></tr>
+<tr><td><code>vi-30M-int8</code></td><td>sai ~7/30 giọng thật</td><td>~9 MB</td><td>CC-BY-NC-ND ✗</td><td>LOẠI (đã bác 2 lần)</td></tr>
+</table>
+<ul>
+<li><b>C1 (VFT-0) — mirror gói G lên repo + cờ <code>experimental</code></b>: +10 điểm đúng, lãi đúng chỗ thủng (nói nhanh, giọng trẻ em). Làm được off-car (mirror + catalog). ⚠ Kiểm <code>GU GỒ MÁP</code>/<code>DIU TÚP</code> đã ở <code>VoiceSynonyms</code> chưa. ⚠ Trước hết phải xác nhận model còn ở scratchpad (handoff cảnh báo có thể mất).</li>
+<li><b>C2 (VFT-2) — đo RTF trên xe</b>: ước 0.35, sát trần 0.30. Nếu vượt → chậm hơn. <span class="pill wait">cần xe</span></li>
+<li><b>C3 (VFT-3/5) — thu giọng thật nhiều hơn</b>: [ĐO] ×4.8 dữ liệu TTS = 0 câu thêm ⇒ nghẽn ở giọng/ồn THẬT, không phải khối lượng. Cần thu ≥5 người (ưu tiên trẻ em) + câu media/nav/profile. Chiến dịch có sẵn: <code>voice-recording-campaign</code>.</li>
+<li><b>C4 (VFT-4) — RNN-LM 33MB</b>: +1.5 điểm cho gói ship. Đổi API. Hoãn tới khi có thêm giọng thật (dev loss còn giảm).</li>
+</ul>
+<p class="muted"><b>Bài học ghi trong backlog:</b> corpus TTS xếp hạng NGƯỢC giọng thật (+17.5 trên TTS = +1.1 trên người). Chỉ cột giọng thật quyết định. Đã sai theo hướng này 2 lần.</p>
+</div>
+
+<h3>Hướng D — Bài toán khác đi (research, để owner cân nhắc)</h3>
+<div class="card">
+<p>Nếu A+B+C vẫn chưa đủ "ngon", có 3 hướng đổi HÌNH DẠNG bài toán — mỗi cái là một đánh đổi lớn:</p>
+<ul>
+<li><b>D1 — Thu hẹp thành wake-word + lệnh ngắn cố định</b> (kiểu Kiki tại máy): [ĐO RE Kiki] chính đội mạnh nhất thị trường cũng CHỈ chạy wake-word tại máy, ASR/NLU trên mây. ⇒ tập lệnh ĐÓNG + biasing mạnh là mức khả thi thật trên phần cứng này. Kachi đã đi đúng hướng này. D1 = siết thêm: bỏ lượt-2-tự-do khi không cần (chỉ bật cho tên bài/điểm đến).</li>
+<li><b>D2 — Hai chế độ nghe</b>: (a) "lệnh xe" = tập đóng, biasing, nhanh; (b) "đọc tên" = tự do, chỉ khi câu có động từ mở (dẫn đường/mở nhạc). Hiện đã có <code>VoiceOpenVocab</code>/<code>VoiceFreeTail</code> làm việc này nhưng chạy 2 lượt giải mã tuần tự — D2 = gộp còn 1 lượt quyết định đường nào.</li>
+<li><b>D3 — Streaming decode</b> (đã research, LOẠI): backlog (U) — streaming đa ngữ −11.2 điểm, không giấy phép, [SUY] RTF xe ≈1.15 (quá chậm). Silero VAD + offline decode là đúng lựa chọn. <b>Không làm lại.</b></li>
+<li><b>D4 — Cloud khi có mạng, offline khi không</b>: owner đã chốt "đừng bỏ on-device, API key khó cho user". ⇒ có thể thêm đường cloud TÙY CHỌN (tắt mặc định) cho từ vựng mở, nhưng KHÔNG làm lõi. Hoãn, chờ owner.</li>
+</ul>
+</div>
+
+<h2>3. Kế hoạch thi hành — theo giai đoạn</h2>
+<p>Thứ tự bám nguyên tắc: sửa compile trước → engineering rẻ-tác-động-lớn → ship 1.70 → model → phần còn lại.</p>
+
+<table>
+<tr><th>GĐ</th><th>Việc</th><th>Gồm</th><th>Cần xe?</th><th>Vì sao thứ tự này</th></tr>
+<tr><td><b>G0</b></td><td>Sửa compile + hoàn tất hotfix D</td><td>Field <code>decision</code> vào <code>Meta</code>; nối nốt TCP channel/no-retry/daemon-fuse; A1–A4; engine reload on model change; seat/AC/trunk data đã đo</td><td>—</td><td>Cây phải xanh mới làm được gì. Hotfix D là <b>ưu tiên 1</b> của owner (chạm+voice trên visual)</td></tr>
+<tr><td><b>G1</b></td><td>Harness voice bắt buộc</td><td><code>voice-e2e.sh --only all</code> (T1 104/105 · T2 23/27), suite core+app xanh, doc <code>oncar-0917-voice-touch.md</code></td><td>—</td><td>Không đo lại được thì không biết A1–A4 có ăn. Bắt buộc trước commit</td></tr>
+<tr><td><b>G2</b></td><td>Chốt visual + ship 1.70</td><td>Senior review visual (làm lại từ đầu) → vá → scan → commit 1 (visual) + commit 2 (hotfix) → OTA <code>Kachi-1.70-release.apk</code></td><td>—</td><td>Visual đã xong off-car, chỉ chờ review+commit. Ship để owner test cả chạm+voice+visual một lượt xe</td></tr>
+<tr><td><b>G3</b></td><td>Model fine-tune (C1)</td><td>Xác nhận model G còn ở scratchpad → mirror lên repo → <code>SherpaModelCatalog</code> cờ experimental → kiểm synonym → owner nghe thử</td><td>C2 RTF 🚗</td><td>Sau khi engineering ổn thì +10 điểm model mới có ý nghĩa (trước đó tiếng đã mất thì model tốt cũng vô ích)</td></tr>
+<tr><td><b>G4</b></td><td>Gói giọng clone (W)</td><td>finish-pack → validate → owner nghe 10 cặp → T3/T6/T7/T8 → OTA gói</td><td>T10 🚗</td><td>Owner đã duyệt "giọng bé ok". Độc lập với nghe, chen được lúc chờ</td></tr>
+<tr><td><b>G5</b></td><td>Lượt xe verify 1.70</td><td>Bấm-mic-nói-ngay · YouTube tap/vuốt · <code>state.inputd</code> TCP · visual T14 · cốp · listener Wiper · seat sưởi</td><td>🚗 15 phút</td><td>Mở khoá cả loạt 🚗 — nút thắt lớn nhất dự án</td></tr>
+<tr><td><b>G6</b></td><td>Phần còn lại theo lộ trình</td><td>(S) rain/defrost/GPS · (P) CAPTEST-v2 · (L) live-state 27 nút · (Y) VFT tiếp · (K) perf K5/K8 · nợ LOC · OCR định kỳ</td><td>một phần 🚗</td><td>Thứ tự owner đã duyệt 09-16, không đổi</td></tr>
+<tr><td><b>G7</b></td><td>(tùy chọn) B1 máy trạng thái voice</td><td>Refactor <code>VoiceSession</code> → state machine <code>:core</code> + test tương-đương-hành-vi</td><td>—</td><td>Làm sạch nợ kiến trúc. CHỈ khi owner muốn — đụng đường đang chạy</td></tr>
+</table>
+
+<h3>3.1 Chi tiết G0 — hoàn tất hotfix D (ưu tiên 1)</h3>
+<div class="card">
+<p><b>Chạm trong ô (sepolicy đã chốt Enforcing chặn daemon):</b></p>
+<ul>
+<li>(a) <code>input …</code> KHÔNG bao giờ gửi lại (no-retry) — bỏ 2-tap</li>
+<li>(b) Cầu chì daemon: 1 chu kỳ <code>Permission denied</code> ⇒ thôi hẳn tới lần mở app sau, dọn <code>inputd-*.log</code> còn 5</li>
+<li>(c) Kênh TCP loopback <code>127.0.0.1:&lt;cổng&gt;</code> + token (thay unix-socket bị sepolicy chặn); chứng minh máy ảo; nếu TCP cũng bị chặn ⇒ ghi <code>avc:</code> và giữ cử chỉ làm đường chính</li>
+</ul>
+<p><b>Voice engineering (A1–A4 + vòng đời):</b></p>
+<ul>
+<li>Field <code>decision</code> vào <code>VoiceUtteranceLog.Meta</code> — <b>sửa compile</b></li>
+<li>A1 chime PCM async (khung <code>VoiceChime.kt</code> đã có) · A2 đệm ≥1s (đã có) · A3 mic mở trước &lt;300ms · A4 no-decode-on-silence (đã có)</li>
+<li>Engine nạp lại khi gói đổi/tải xong; log id đã nạp</li>
+<li>Hỏi-lại 8s, xác nhận 5s (VAD tự ngắt)</li>
+<li>Kiểm "ba" là chọn số hay khớp âm; cấm khớp âm một âm tiết; ngữ pháp số nhiệt độ</li>
+</ul>
+<p><b>Dữ liệu xe đã đo (code được ngay, KHÔNG cần lên xe lại — handoff §6.7):</b></p>
+<ul>
+<li>Cốp: <code>voiceCtlBackDoor(1)</code>=mở · <code>(3)</code>=đóng → <code>ControlRegistry</code> + <code>VoiceGrammar</code></li>
+<li>Ghế mát: <code>RAW_BY_LEVEL["seatc"]=listOf(1,2,3)</code> (trim owner không có mức 3)</li>
+<li>AC AUTO: <code>getAcControlMode</code> 0=auto/1=tay → nối setter</li>
+</ul>
+<p><b>Perf:</b> <code>am stack list</code> chỉ khi bong bóng VietMap hoạt động, backoff ≥15s (K8, shell 36/phút).</p>
+</div>
+
+<h2>4. Nguyên tắc bám suốt</h2>
+<ul>
+<li><b>Không đổi mặc định model đang ship</b> khi C1 chưa xác nhận trên giọng thật của owner (bài học 2 lần). Gói G ở lại cờ <code>experimental</code>.</li>
+<li><b>Không refactor B1 lẫn vào ship 1.70</b> — đụng đường đang chạy, cần vòng riêng + test tương-đương.</li>
+<li><b>Harness bắt buộc trước commit</b> (G1): "test nhiều mà vẫn vô dụng" vì test không phủ đường âm thanh thật — A1–A4 phải chứng minh bằng WAV replay + 1 lượt xe.</li>
+<li><b>Mỗi thay đổi engineering có 1 dòng logcat đo được</b> (<code>KachiVoiceTiming</code>) để lượt xe chốt nhanh.</li>
+</ul>
+
+<h2>5. Verification (cổng đạt)</h2>
+<ul>
+<li>G0: <code>./gradlew :app:compileDebugKotlin</code> xanh; 5 module test <code>--rerun-tasks</code> 0 đỏ.</li>
+<li>G1: <code>voice-e2e.sh --only all</code> đạt mốc; WAV replay chứng minh A4 (im lặng → không giải mã) + cắt-đuôi.</li>
+<li>G2: senior review APPROVED (0 P0/P1) + security scan CLEAN + OTA đăng.</li>
+<li>G3: model G nghe thử owner ≥ gói ship trên giọng thật; RTF xe &lt; trần (C2).</li>
+<li>G5: [ĐO xe] bấm-mic-nói-ngay nhận đúng; bấm→nghe &lt;300ms; không còn 3s chết; không bịa chữ từ im lặng.</li>
+</ul>
+
+<h2>6. Quyết định owner (2026-09-17, đã CHỐT)</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Owner chốt</th></tr>
+<tr><td>OQ1</td><td>Ship 1.70 gồm cả visual + chạm + voice + model?</td><td><b>Làm hết, ship 1 lần.</b></td></tr>
+<tr><td>OQ2</td><td>Có viết lại kiến trúc voice (B1) không?</td><td><b>CÓ — làm tốt hết từ đầu, KHÔNG đi đường hotfix chắp vá.</b> Đây là dev, làm đúng ngay. Viết lại <code>VoiceSession</code> → máy trạng thái tường minh <code>:core</code>, gỡ mã chắp vá.</td></tr>
+<tr><td>OQ3</td><td>Model G experimental thành mặc định thế nào?</td><td><b>Ship CẢ HAI model</b> (G cờ experimental + nút chọn). Quyết off-car = "G có đáng ship kèm không" (benchmark số + 10 clip mẫu). Quyết MẶC ĐỊNH = trên xe (mic 4 kênh + ồn + RTF).</td></tr>
+<tr><td>OQ4</td><td>Cloud tùy chọn?</td><td><b>Không.</b> On-device.</td></tr>
+<tr><td>OQ5</td><td>Chống loop/hang?</td><td><b>Yêu cầu CỨNG.</b> Sáng nay (daemon restart 5.5s/lần) + voice hôm qua (309 lượt mở mic/7 phiên) đều là loop. Mọi vòng phải có cầu chì + trần lần + single-flight, mọi lệnh chặn KHÔNG nằm trên luồng chính/luồng nghe — <b>bất biến có test khoá</b>.</td></tr>
+</table>
+
+<h2>7. Anti-loop / anti-hang — bất biến CỨNG (OQ5)</h2>
+<div class="card">
+<p>Ba loop đã đo được, mỗi cái thành một bất biến có test khoá:</p>
+<table>
+<tr><th>Loop đã đo</th><th>Bất biến</th><th>Test khoá</th></tr>
+<tr><td>Daemon restart 5.5s/lần (sáng 09-17)</td><td>1 chu kỳ lỗi nối ⇒ thôi hẳn tới lần mở app sau (cầu chì một chiều)</td><td><code>InputDaemonClientTest</code> — không mở lại trong cùng phiên</td></tr>
+<tr><td>309 lượt mở mic / 7 phiên (voice 09-16)</td><td>Single-flight 1 micro + cầu chì ≤12 lượt/phút; máy trạng thái không có cạnh tự-mở-lại vô điều kiện</td><td><code>VoiceSingleFlightTest</code> + test máy trạng thái</td></tr>
+<tr><td>ToneGenerator chặn 3s / decode 8.2s im lặng (voice 09-17)</td><td>Mọi lệnh chặn (tone/shell/decode) trên luồng RIÊNG có cầu chì; luồng nghe + luồng vẽ không bao giờ chặn &gt; ngưỡng</td><td><code>VoiceChime</code> cầu chì + <code>VoiceSilenceGate</code></td></tr>
+</table>
+<p><b>Luật chung mã hoá thành review-gate:</b> mọi vòng lặp/retry mới phải có (a) trần số lần, (b) cầu chì khi vượt, (c) không nằm trên luồng người-dùng-đang-chờ. Không có đủ 3 ⇒ không merge.</p>
+</div>
+
+<h2>8. B1 — làm sâu (owner 2026-09-17: voice là function quan trọng nhất nhì, chưa bao giờ ổn thực tế)</h2>
+<p>Mục tiêu owner nêu: <b>nói → nghe liền · thực hiện liền · feedback liền</b>. Ba nghẽn [ĐO xe 09-17] + cách chữa:</p>
+<table>
+<tr><th>Nghẽn</th><th>Gốc</th><th>Chữa (B1)</th></tr>
+<tr><td>Bấm → nghe 1.5s</td><td>Overlay dựng + VAD nạp ONNX nằm TRÊN đường tới mic</td><td>(1) VAD singleton hâm sẵn (preload như engine, reset mỗi lượt thay dựng lại); (2) mở mic TRƯỚC, overlay song song</td></tr>
+<tr><td>3s chết (ToneGenerator)</td><td>đã vá ở A1 (VoiceChime async)</td><td>xong</td></tr>
+<tr><td>Chùm 6 cờ race</td><td>running/capturing/confirmOpen/cancelled/generation/pendingConfirm rải trong VoiceSession + Turns</td><td>Máy trạng thái tường minh VoiceTurnState ở :core (thuần, test), VoiceSession chỉ là lớp thi hành</td></tr>
+<tr><td>Giải mã im lặng → bịa</td><td>đã vá ở A4 (VoiceSilenceGate)</td><td>xong</td></tr>
+</table>
+<p><b>Thứ tự làm (rủi ro tăng dần, mỗi bước có test + cây xanh trước khi sang bước sau):</b></p>
+<ol>
+<li><b>B1.1 — VAD preload singleton</b>: VoiceVad giữ holder (nạp ONNX 1 lần/tiến trình, dựng lại chỉ khi 3 tham số prefs đổi), reset mỗi lượt. Preload từ KachiApplication cùng engine.</li>
+<li><b>B1.2 — mở mic trước overlay</b>: VoiceSession.start đẩy dựng overlay ra khỏi đường tới capture.listen.</li>
+<li><b>B1.3 — VoiceTurnState :core</b>: máy trạng thái thuần thay chùm cờ. Test tương-đương-hành-vi trước. Bước lớn nhất, làm cuối.</li>
+</ol>
+<p class="muted">Nguyên tắc: cây xanh sau mỗi bước con. Không gộp 3 bước vào 1 lần sửa lớn (bài học regex-nhiều-dòng).</p>
+
+<h3>8.1 — Hai lỗi UX owner báo 2026-09-17 (đã vá)</h3>
+<table>
+<tr><th>Owner báo</th><th>Gốc [ĐO/SUY]</th><th>Vá</th></tr>
+<tr><td>"feedback chưa nói hết câu đã tắt overlay, hụt hẫng"</td><td>[ĐO đọc mã] <code>execute</code> hẹn đóng overlay <b>ngay</b> (LINGER 2.5s) lúc bắt đầu, mà câu ~12 từ đọc 3–4s ⇒ tấm chữ biến giữa câu (audio còn chạy, màn tắt)</td><td>Overlay sống theo <b>mốc ĐỌC XONG thật</b> (onDone của TTS), không hằng số: lưới an toàn <code>SPEAK_SAFETY_MS</code> phủ cả lượt đọc → <code>onReplyDone</code> (đọc xong) mới nán <code>LINGER_MS</code>. Vế tra mạng chờ <code>NETWORK_WAIT_MS</code>. Late-line network cũng nán lại khi đọc xong.</td></tr>
+<tr><td>"nói nghe không rõ / không ra thì xử lý sao"</td><td>Đã có clarify (hỏi lại 2 lượt) + giveUp (nêu ví dụ) + nothing_heard, nhưng nếu overlay tắt giữa câu hướng dẫn thì owner không kịp thấy/nghe</td><td>Fix overlay ở trên đảm bảo câu "Không nghe rõ, thử nói…" được đọc/hiện trọn. Cơ chế nghe-không-rõ đã tường minh trong máy trạng thái (CLARIFYING → LISTENING).</td></tr>
+</table>
+
+<h2>9. References</h2>
+<ul>
+<li><code>docs/_handoff/session-2026-09-17-visual-voice-touch.md</code> — trạng thái + số đo xe</li>
+<li><code>docs/specs/kachi-voice-fast-natural.html</code> · <code>kachi-voice-finetune.html</code> · <code>kachi-voice-clone.html</code> · <code>kachi-rain-defrost-and-rebind.html</code></li>
+<li><code>docs/diagnostics/inputd-selinux-and-gesture-fallback-2026-09-17.md</code> · <code>voice-stream-eval-2026-09-16.md</code> · <code>voice-ft-2026-09-16.md</code></li>
+<li>Code: <code>app/.../voice/{VoiceSession,VoiceCapture,VoiceRecognizer,VoiceChime,VoiceSessionTurns,VoiceUtteranceLog}.kt</code> · <code>core/.../voice/{VoiceDecision,VoiceSilenceGate}.kt</code></li>
+</ul>
+
+</div></body></html>

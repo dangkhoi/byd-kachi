@@ -1,20 +1,23 @@
-<!-- U7 · bộ icon v2 — MICRO ("Nói với xe", V1 pha NGHE).
-     Ba khối của một micro cầm tay, cùng ngôn ngữ với `ic_music`/`ic_cast`: nét 1.6, đầu/khớp tròn, không tô.
-     LỀ QUANG HỌC (R3): hộp bao kể cả nửa nét là x 5.2–18.8 · y 2.3–21.7 ⇒ nằm gọn trong ô 20×20 (2..22), cạnh
-     lớn 19.4 ≥ 16 (R4). Micro là glyph CAO-HẸP: phủ gần hết chiều dọc là đúng tỉ lệ khối của nó, không phải tràn. -->
+<!--
+  MICRO (`ic-mic` — Nói với xe) — viên nang tô chuyển sắc + giá đỡ nét + chân: ba khối của một micro cầm tay, cao-hẹp là đúng tỉ lệ.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/mic.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực LAUNCHER · họ màu chrome · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <!-- Thân micro: viên nang bo tròn hai đầu (y 3.1 → 15.1). -->
-    <path android:pathData="M9.2,5.9a2.8,2.8 0 0 1 5.6,0v6.4a2.8,2.8 0 0 1 -5.6,0z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <!-- Gọng đỡ: nửa cung ôm dưới thân. -->
-    <path android:pathData="M6,12.1L6,12.9A6,6 0 0 0 18,12.9L18,12.1"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <!-- Chân + đế. -->
-    <path android:pathData="M12,18.9L12,20.9M8.4,20.9L15.6,20.9"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 12 2.8 L 12 2.8 A 2.8 2.8 0 0 1 14.8 5.6 L 14.8 11.2 A 2.8 2.8 0 0 1 12 14 L 12 14 A 2.8 2.8 0 0 1 9.2 11.2 L 9.2 5.6 A 2.8 2.8 0 0 1 12 2.8 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="9.2" android:startY="2.8" android:endX="14.8" android:endY="14">
+                <item android:offset="0" android:color="#FFFFFF" />
+                <item android:offset="1" android:color="#B9C4D4" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 17.8 10.6 A 5.8 5.8 0 0 1 6.2 10.6 M 12 16.4 L 12 20.4 M 8.6 20.6 L 15.4 20.6"
+        android:fillColor="#00000000" android:strokeColor="#EAF0F8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

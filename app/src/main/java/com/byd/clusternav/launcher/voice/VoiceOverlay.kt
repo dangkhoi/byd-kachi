@@ -16,6 +16,7 @@ import android.widget.TextView
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiSpace as Sp
 import com.byd.clusternav.launcher.KachiTheme
+import com.byd.clusternav.launcher.card
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiType

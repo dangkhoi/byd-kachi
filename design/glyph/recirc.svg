@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- LẤY GIÓ TRONG (`ac_cycle` · nút Lấy gió trong) — mũi tên xoay vòng tô ở đầu bên trong khoang xe mờ: gió quay lại trong cabin. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M7.11,11.22 A5.2,5.2 0 1 1 10.22,17.89 M12.4,6.2 L15.6,8.2 L13.2,11" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3.4,15.8 L5,10.2 C5.6,8.4 7,7.4 9,7.4 L15,7.4 C17,7.4 18.4,8.4 19,10.2 L20.6,15.8 L20.6,19 L3.4,19 Z" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M3.4,15.8 L5,10.2 C5.6,8.4 7,7.4 9,7.4 L15,7.4 C17,7.4 18.4,8.4 19,10.2 L20.6,15.8 L20.6,19 L3.4,19 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

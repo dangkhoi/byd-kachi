@@ -3,10 +3,8 @@ package com.byd.clusternav.launcher.voice
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.ToneGenerator
 import android.util.Log
@@ -180,7 +178,7 @@ internal class VoiceCapture(private val ctx: Context) {
         val tOpen = System.currentTimeMillis()
         val opened = openRecord() ?: return Heard("", kept, keptN)
         val record = opened.record
-        val focus = requestFocus()
+        val focus = VoiceAudioFocus.request(ctx)
         // Bộ ngắt câu của lượt này: Silero VAD nếu dựng được, lùi về bộ RMS (xem [VoiceTurnEndpoint]). Dựng SAU
         // khi micro đã mở: nó tốn vài chục–vài trăm ms nạp ONNX, và trả cái giá ấy trước khi biết có mở được
         // micro hay không là trả cho một lượt có thể không bao giờ chạy.
@@ -196,6 +194,8 @@ internal class VoiceCapture(private val ctx: Context) {
             Log.i(VoiceEngine.TIMING_TAG, "mic mở sau ${System.currentTimeMillis() - tOpen} ms")
             // [P0-2] Bíp **SAU** cửa sổ đo nền của đường lùi, không phải trước — lý do + số đo ở KDoc
             // [VoiceTurnEndpoint.floorWindowOpen]. Đường VAD không có cửa sổ ấy nên nó bíp ngay như cũ.
+            // ⚠ 1.70: [tone] trả về NGAY (luồng riêng, xem [VoiceChime]) — [ĐO xe 2026-09-17] bản cũ chặn 3,0 s
+            // ở đúng dòng này và làm rơi 3 s tiếng đầu của MỌI lượt chính.
             var beepPending = beep
             if (beepPending && !ep.floorWindowOpen()) { tone(ToneGenerator.TONE_PROP_BEEP, TONE_START_MS); beepPending = false }
             val buf = ShortArray(CHUNK_SAMPLES)
@@ -270,7 +270,13 @@ internal class VoiceCapture(private val ctx: Context) {
             // ═══ [P0-1a] KHÔNG GIẢI MÃ một lượt chưa bao giờ nghe thấy tiếng ═══════════════════════════
             // Đây là chỗ cắt ~200 lượt giải mã/12 phút và cắt luôn nhiên liệu của vòng lặp (xem KDoc tham số
             // `decodeOnlyIfSpeech`). Câu trả lời rỗng ⇒ chỗ gọi đóng phiên êm, không có gì để "hiểu".
-            if (decodeOnlyIfSpeech && !ep.sawSpeech()) {
+            // ═══ 1.70 · lượt CHÍNH cũng bỏ — khi bộ ngắt câu là VAD ═════════════════════════════════════
+            // [ĐO xe 2026-09-17] 7/10 lượt chính `vad doan=0` vẫn nạp 8,2 s im lặng vào mô hình: 4,3 s CPU mỗi
+            // lượt để ra chữ BỊA (*"chúng ta xây"* · *"vâng giấc mơ"* · *"ừm"* · rỗng) rồi phiên đi hỏi lại về
+            // một câu không ai nói. Chỗ gọi nói ra *"Không nghe rõ"* (chữ + giọng) — im lặng ở lượt chính vẫn
+            // được **nói ra**, chỉ không còn được **giải mã**. Đường lùi RMS giữ hành vi cũ (nó không đủ tin để
+            // kết luận "không có tiếng", xem KDoc [VoiceTurnEndpoint.sawSpeech]).
+            if (VoiceSilenceGate.skipDecode(decodeOnlyIfSpeech, ep.route, ep.sawSpeech())) {
                 Log.i(VoiceEngine.TIMING_TAG, "bỏ giải mã: lượt này không có tiếng nào (${ep.summary(fed)})")
                 return Heard(
                     "", kept, keptN, endpointFired = ended, listenMs = listenMs, micSource = opened.source,
@@ -343,12 +349,14 @@ internal class VoiceCapture(private val ctx: Context) {
             // Vì sao gắn vào cùng cờ `beep` của đầu lượt: chúng mô tả **cùng một loại lượt**. Lượt chính (người
             // lái vừa bấm) cần cả hai mốc "tôi bắt đầu"/"tôi thôi nghe"; lượt nối thì micro chỉ *chưa đóng*, và
             // một tiếng bíp sau mỗi câu trả lời vốn đã là thứ làm người ta tắt tính năng (KDoc tham số `beep`).
+            // 1.70: [tone] không chặn nữa ⇒ số "bíp … ms" ở dòng dưới đo lượt XẾP HÀNG, không đo lượt phát.
             if (tailBeep) tone(ToneGenerator.TONE_PROP_ACK, TONE_END_MS)
             val t2 = System.currentTimeMillis()
-            abandonFocus(focus)
+            VoiceAudioFocus.abandon(ctx, focus)
             Log.i(
                 VoiceEngine.TIMING_TAG,
-                "nền: bíp ${t2 - t1} ms · nhả tiêu điểm ${System.currentTimeMillis() - t2} ms",
+                "nền: bíp ${t2 - t1} ms · nhả tiêu điểm ${System.currentTimeMillis() - t2} ms" +
+                    if (VoiceChime.disabled()) " · âm báo ĐÃ TẮT (cầu chì)" else "",
             )
         }, "KachiMicTail").apply { isDaemon = true }.start()
     }
@@ -371,7 +379,12 @@ internal class VoiceCapture(private val ctx: Context) {
      */
     private fun openRecord(): Opened? {
         val min = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        val size = if (min > 0) min * 2 else CHUNK_SAMPLES * 2 * 8
+        // 1.70 — đệm ≥ [MIN_BUFFER_MS] tiếng: [ĐO xe 2026-09-17] `min*2` = **2 560 byte = 80 ms** trên DL3, và
+        // một lượt chặn 3 s (âm báo) trên luồng đọc làm rơi **toàn bộ** tiếng của khoảng đó, không lỗi nào báo.
+        // Âm báo đã dời khỏi luồng đọc; đệm rộng là lớp thứ hai cho mọi lượt chặn chưa ai đo (GC, giải mã
+        // partial, một app khác giành CPU).
+        val floor = SAMPLE_RATE * MIN_BUFFER_MS / 1000 * 2
+        val size = maxOf(if (min > 0) min * 2 else CHUNK_SAMPLES * 2 * 8, floor)
         // V3 · R1 — thứ tự lấy từ `:core` ([VoiceMicSource]) + lựa chọn của người dùng. Xem KDoc ở đó để biết
         // vì sao MIC đứng trước ([ĐO xe 2026-09-16]) và vì sao ép một nguồn vẫn còn đường lùi.
         val pref = runCatching { Prefs.voiceMicSource(ctx) }.getOrDefault(VoiceMicSource.PREF_AUTO)
@@ -415,47 +428,16 @@ internal class VoiceCapture(private val ctx: Context) {
             .getOrDefault(VoiceEndpointer.FLOOR_CAP),
     )
 
-    // ── tiêu điểm âm thanh ───────────────────────────────────────────────────────────────────────
-
-    private fun audio(): AudioManager? = ctx.getSystemService(AudioManager::class.java)
-
-    private fun requestFocus(): AudioFocusRequest? {
-        val am = audio() ?: return null
-        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build(),
-            )
-            // Không nghe đổi tiêu điểm: phiên dài tối đa 8 s và tự kết thúc. Đăng ký một listener chỉ để bỏ qua
-            // mọi sự kiện của nó là thêm một đường sống lâu hơn phiên — thứ §5 CLAUDE.md dặn phải tránh.
-            .setWillPauseWhenDucked(false)
-            .build()
-        return if (runCatching { am.requestAudioFocus(req) }.getOrNull() == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) req
-        else null
-    }
-
-    private fun abandonFocus(req: AudioFocusRequest?) {
-        val am = audio() ?: return
-        req?.let { runCatching { am.abandonAudioFocusRequest(it) } }
-    }
-
     /**
      * Một tiếng báo ngắn.
      *
-     * Dựng rồi **giải phóng ngay** mỗi lần: giữ một [ToneGenerator] sống suốt đời tiến trình là giữ một đường
-     * vào `AudioTrack` mở vĩnh viễn cho hai tiếng bíp mỗi vài phút. `runCatching` vì vài ROM xe từ chối hẳn
-     * `STREAM_NOTIFICATION` — im lặng một tiếng bíp không được phép làm hỏng phiên nghe.
+     * 1.70 — KHÔNG còn [ToneGenerator]: [ĐO xe 2026-09-17] `startTone` chặn **3,0 s** trên ROM DL3 (`status
+     * -110`) ngay trên luồng đọc và không phát ra tiếng nào. Hai tiếng của [VoiceChime] là PCM dựng sẵn qua
+     * `AudioTrack` thường, phát trên luồng riêng, có cầu chì. Hằng `TONE_PROP_*` chỉ còn là **nhãn** chọn tiếng
+     * đầu/cuối; giữ chữ ký `(type, ms)` để hai chỗ gọi + bài canh không đổi. Trả về NGAY.
      */
-    private fun tone(type: Int, ms: Int) {
-        runCatching {
-            val g = ToneGenerator(android.media.AudioManager.STREAM_NOTIFICATION, TONE_VOLUME)
-            g.startTone(type, ms)
-            // Giải phóng sau khi tiếng đã phát xong; huỷ sớm là cắt cụt tiếng bíp.
-            android.os.Handler(android.os.Looper.getMainLooper())
-                .postDelayed({ runCatching { g.release() } }, (ms + TONE_RELEASE_PAD_MS).toLong())
-        }.onFailure { Log.w(TAG, "không phát được âm báo", it) }
+    private fun tone(type: Int, @Suppress("UNUSED_PARAMETER") ms: Int) {
+        if (type == ToneGenerator.TONE_PROP_BEEP) VoiceChime.start() else VoiceChime.end()
     }
 
     companion object {
@@ -491,9 +473,10 @@ internal class VoiceCapture(private val ctx: Context) {
         /** Không cấp phát gì khi chỗ gọi không cần tiếng (lượt nghe *"đồng ý/huỷ"*). */
         private val EMPTY = ShortArray(0)
 
-        private const val TONE_VOLUME = 70
-        private const val TONE_START_MS = 90
-        private const val TONE_END_MS = 60
-        private const val TONE_RELEASE_PAD_MS = 250
+        private const val TONE_START_MS = VoiceChime.START_MS
+        private const val TONE_END_MS = VoiceChime.END_MS
+
+        /** Sàn đệm `AudioRecord` — một giây tiếng (xem [openRecord]). */
+        const val MIN_BUFFER_MS = 1_000
     }
 }

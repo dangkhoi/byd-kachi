@@ -157,6 +157,8 @@ class ProfileKeysWiringContractTest {
             "K_WALL" to "wallpaper_prefs", "K_AUTOSTART" to "launcher_autostart", "K_LANG" to "lang",
             // Sổ địa chỉ theo hồ sơ (docs/specs/kachi-voice-addresses.html R1).
             "K_PLACES" to "saved_places",
+            // VISUAL-REFRESH P1b · R8 — màu nhấn/tông thẻ theo hồ sơ.
+            "K_COLOR" to "color_choice",
         )
         val suffixes = ProfileScope.LAUNCHER_SUFFIXES
         val missing = used.mapNotNull { raw ->
@@ -197,7 +199,7 @@ class ProfileKeysWiringContractTest {
                 )
             }
         // Chiều ngược: bốn khoá S4 vừa đưa về hồ sơ phải THẬT SỰ tới nơi.
-        listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang", "saved_places").forEach {
+        listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang", "saved_places", "color_choice").forEach {
             assertTrue(
                 it in WorkspacePrefs.PROFILE_SUFFIXES,
                 "S4 · R3(a): `$it` nay THEO HỒ SƠ — thiếu nó thì hồ sơ chỉ cover được một nửa",

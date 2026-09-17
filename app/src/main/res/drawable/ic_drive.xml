@@ -1,21 +1,25 @@
 <!--
-  Cần số / chế độ lái — cho nhóm `drive_*` (chế độ lái, mức phanh tái sinh, chế độ số).
-  [SOÁT P3] Tên "ic-drive" chưa được map nên 3 nút này lùi về icon nhóm. Nét: cần số hình chữ H (sơ đồ số) tối giản.
-  LỀ QUANG HỌC (T2): núm cần số trước có tâm y=3.4 bán kính 2.4 ⇒ đỉnh ở y=1.00, đâm ra mép khung. Nay tâm 4.4
-  bán kính 2.0 ⇒ đỉnh 2.40, nằm trong ô 20×20. Đoạn nối núm–trục ngắn lại theo.
+  CẦN SỐ (`gear`) — sơ đồ chữ H + núm tô chuyển sắc trên trục: cần số là VẬT người lái cầm, chế độ lái mang núm chọn (ic_mode).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/drive.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <!-- trục dọc + hai nhánh ngang = sơ đồ số H -->
-    <path android:pathData="M12,7.6 L12,18.5 M7,10 L7,15.6 M17,10 L17,15.6 M7,12.8 L17,12.8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <!-- núm cần số: khối ĐẶC cố ý — đây là chi tiết vật lý của cần số, không phải icon nhận dạng riêng -->
-    <path android:pathData="M12,4.4 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"
-        android:fillColor="#FFFFFF" />
-    <!-- nối núm với trục -->
-    <path android:pathData="M12,6.4 L12,7.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 6.2 7.2 L 6.2 19.2 M 17.8 7.2 L 17.8 19.2 M 6.2 13.2 L 17.8 13.2"
+        android:fillColor="#00000000" android:strokeColor="#7B5CFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 12 13.2 L 12 7.6"
+        android:fillColor="#00000000" android:strokeColor="#B39DFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 9.6 5.6 A 2.4 2.4 0 1 1 14.4 5.6 A 2.4 2.4 0 1 1 9.6 5.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="9.6" android:startY="3.2" android:endX="14.4" android:endY="8">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

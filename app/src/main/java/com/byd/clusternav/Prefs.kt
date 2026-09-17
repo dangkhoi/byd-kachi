@@ -480,8 +480,7 @@ object Prefs {
     // lên lần nào) sẽ chỉ kiểm được bằng... một chiếc xe. Không có bề mặt UI (xem SettingsCatalog HIDDEN_KEYS) —
     // đặt bằng `run-as` trên bản vehicleTest, đọc lại bằng cầu kiểm thử (`state.inputd` / `prefs`).
     // Đọc MỘT lần mỗi tiến trình ở AppContainer ⇒ đổi xong phải khởi động lại app.
-    private const val K_INPUTD_DISABLED = "inputd_disabled"
-    fun inputdDisabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_INPUTD_DISABLED, false)
+    // inputd (công tắc ẩn `inputd_disabled` + token TCP loopback) tách sang `PrefsInputd.kt` (trần 500 dòng).
 
     // Toggle theo module (key namespaced "mod_" — không thể đụng các key lõi ở trên). Mặc định TẮT
     // (experiment phải bật tay). Key mồ côi sau khi xoá module = dead data vô hại, không cần dọn.

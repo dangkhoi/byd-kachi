@@ -46,6 +46,9 @@ class ThemePaletteContractTest {
      */
     private val hexAllowed: Map<String, String> = mapOf(
         "KachiPalette.kt" to "chính là bảng màu — chỗ DUY NHẤT được khai hex (T1 §3.2)",
+        "KachiPaletteSeeds.kt" to
+            "phần CHỌN ĐƯỢC của cùng bảng màu (hạt giống màu nhấn P1b · tông thẻ · màu sơn xe P3) — tách tệp vì trần 500 dòng, " +
+                "vẫn là bảng màu chứ không phải chỗ vẽ",
     )
 
     @Test

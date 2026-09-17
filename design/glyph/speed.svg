@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- TỐC ĐỘ (`speed`; nhận dạng nhóm Động lực) — cung đồng hồ + kim tô chuyển sắc chỉ 2/3 thang; núm kim mờ. Kim là thứ mắt bắt trước. -->
+  <style>:root{--ink:#ffffff;--main:#7b5cff;--light:#b39dff;--deep:#7059d7}</style>
+  <path d="M3.92,16.54 A8.6,8.6 0 1 1 20.08,16.54" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M11.1,14.4 L17.2,6.6 L12.9,12.4 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M10.1,13.6 A1.9,1.9 0 1 1 13.9,13.6 A1.9,1.9 0 1 1 10.1,13.6 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+  <path d="M3.92,16.54 A8.6,8.6 0 1 1 20.08,16.54 L12,13.6 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

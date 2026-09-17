@@ -39,11 +39,15 @@ class ControlLevelsTest {
     }
 
     @Test
-    fun `thang KHONG phai OFF-LOW-HIGH 1-2-3 nhu tai lieu cu`() {
-        // Nếu ai đó "sửa lại cho khớp tài liệu" (1 = tắt, 2 = thấp, 3 = cao ⇒ raw 3 thành mức 2 **cao nhất**), ca này
-        // vẫn xanh ở dòng trên nhưng đỏ ở đây: thang đo được có ÍT NHẤT 4 nấc, không phải 3.
-        assertEquals(4, ControlLevels.levelCount("seatc"), "tắt + 3 mức — hằng của khung chạy tới 6, không dừng ở 3")
-        assertEquals(3, ControlLevels.levelOf("seatc", 4), "raw 4 là mức 3, không phải 'ngoài thang'")
+    fun `thang seatc la tat + 2 muc - dung phep do thu hai tren xe 2026-09-17`() {
+        // [ĐO xe 2026-09-17] điểm đo THỨ HAI: getSeatVentilatingState(1|2) = OFF 1 · mức1 2 · mức2 3, trim owner
+        // KHÔNG có mức 3. Nếu ai "sửa lại cho khớp tài liệu cũ" (1/2/3 = tắt/thấp/cao) thì thang vẫn 3 nấc nhưng
+        // levelOf(seatc,3) phải là **mức 2** (dòng trên đã khoá), không phải mức "cao nhất" của một thang 1/2/3
+        // hiểu theo tên hằng. `raw 4` nay NGOÀI thang: xe này không có mức đó.
+        assertEquals(3, ControlLevels.levelCount("seatc"), "tắt + 2 mức — trim owner không có mức 3 (raw 4)")
+        assertNull(ControlLevels.levelOf("seatc", 4), "raw 4 ngoài thang trên trim này — hiện ⚠, không bịa mức 3")
+        // seath CHƯA đo thang ⇒ giữ [SUY] 4 nấc; đây là chỗ khoá "đừng lẫn hai ghế thành một thang".
+        assertEquals(4, ControlLevels.levelCount("seath"), "ghế sưởi chưa đo thang ⇒ giữ [SUY] tắt + 3 mức")
     }
 
     @Test

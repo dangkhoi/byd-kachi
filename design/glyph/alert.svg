@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CẢNH BÁO KHẨN (`emergency_alarm`) — tam giác nét + dấu chấm than tô: ký hiệu người lái đọc ra ngay; họ màu ĐỎ vì màu ở đây là nghĩa. -->
+  <style>:root{--ink:#ffffff;--main:#ff8fa0;--light:#ffc4cd;--deep:#c63751}</style>
+  <path d="M12,3.8 L21,19.6 L3,19.6 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12,8.6 L12,8.6 A1.1,1.1 0 0 1 13.1,9.7 L13.1,13.1 A1.1,1.1 0 0 1 12,14.2 L12,14.2 A1.1,1.1 0 0 1 10.9,13.1 L10.9,9.7 A1.1,1.1 0 0 1 12,8.6 Z M10.7,16.6 A1.3,1.3 0 1 1 13.3,16.6 A1.3,1.3 0 1 1 10.7,16.6 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M12,3.8 L21,19.6 L3,19.6 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

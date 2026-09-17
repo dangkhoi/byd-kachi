@@ -1,0 +1,34 @@
+<!--
+  NHÓM CHUYẾN ĐI (km · giờ · kWh · odo) — điểm xuất phát → lộ trình cong → cờ đích tô. Khác ic_road (mặt đường) và ic_range (mũi tên tới cờ).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/group_trip.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 32dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="32dp" android:height="32dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 5 18.6 C 5 12.4 10.2 13.8 12.4 10.6 C 14 8.2 13.6 6.2 16.6 5.4"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 2.8 18.6 A 2.2 2.2 0 1 1 7.2 18.6 A 2.2 2.2 0 1 1 2.8 18.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="2.8" android:startY="16.4" android:endX="7.2" android:endY="20.8">
+                <item android:offset="0" android:color="#8FF0C4" />
+                <item android:offset="1" android:color="#0F8F63" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 16.6 3.4 L 16.6 12.2"
+        android:fillColor="#00000000" android:strokeColor="#8FF0C4" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 16.6 3.8 L 21.2 5.8 L 16.6 7.8 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="16.6" android:startY="3.8" android:endX="21.2" android:endY="7.8">
+                <item android:offset="0" android:color="#8FF0C4" />
+                <item android:offset="1" android:color="#0F8F63" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

@@ -8,6 +8,8 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.SystemClock
 import android.util.Log
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.voiceTtsSpeed
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
@@ -205,7 +207,10 @@ class SherpaTtsSpeaker(
         try {
             if (my != generation.get()) return
             val tts = ensureEngine() ?: return
-            val audio = tts.generate(text, 0, SherpaTtsCatalog.DEFAULT_SPEED)
+            // Tốc độ đọc lấy từ pref (owner 2026-09-17 "Piper nói nhanh quá"; chỉnh trên xe qua `voice_tts_speed`),
+            // mặc định 0.9 (chậm hơn gốc 10 %). runCatching + mặc định: lỗi đọc pref không được làm câm máy đọc.
+            val speed = runCatching { Prefs.voiceTtsSpeed(app) }.getOrDefault(SherpaTtsCatalog.DEFAULT_SPEED)
+            val audio = tts.generate(text, 0, speed)
             // Câu đã lỗi thời trong lúc tổng hợp ⇒ **không phát**. Xem KDoc [generation].
             if (my != generation.get()) return
             play(audio.samples, audio.sampleRate, my)

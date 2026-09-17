@@ -272,7 +272,9 @@ class IconGeometryContractTest {
     @Test
     fun `moi hinh xe deu co mot dong trong bang tra cua KachiTheme`() {
         val table = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiTheme.kt")
-        val cars = icons().map { it.first.removeSuffix(".xml") }.filter { it.startsWith("ic_car_") }
+        // Ba mặt hình xe theo vị trí; `ic_car`(+`_l`/`_xl`) là glyph "xe" của lĩnh vực Danh tính (P2), không thuộc bộ này.
+        val cars = icons().map { it.first.removeSuffix(".xml") }
+            .filter { n -> listOf("ic_car_top_", "ic_car_front_", "ic_car_rear_").any { n.startsWith(it) } }
         // Sàn 55 → 42 sau khi owner gỡ toàn bộ ADAS/an toàn 2026-09-16 (13 tệp `ic_car_*` của điểm mù · chuyển làn ·
         // cắt ngang sau · cảnh báo mở cửa · giữ làn · va chạm trước · cảm biến đỗ · dây an toàn · người ngồi đã xoá).
         assertTrue(cars.size >= 42) { "chỉ thấy ${cars.size} hình xe — bài đang quét vùng sai" }

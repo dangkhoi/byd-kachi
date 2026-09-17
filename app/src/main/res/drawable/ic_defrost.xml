@@ -1,13 +1,15 @@
+<!--
+  SẤY KÍNH (`defrost` · `defrost_front_state`) — kính lái hình thang mờ + ba làn nhiệt uốn lên là thứ đang nói: SẤY, không phải kính.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/defrost.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực CLIMATE · họ màu climate · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4.0,19.6 A10.0,7.8 0 0 1 20.0,19.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.6,15.6 L8.6,5.4 M8.6,5.4 L6.4,7.6 M8.6,5.4 L10.8,7.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M15.4,15.6 L15.4,5.4 M15.4,5.4 L13.2,7.6 M15.4,5.4 L17.6,7.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 7.2 20 C 5.6 17.2 9.4 15.6 7.6 12.2 M 12 20 C 10.4 17.2 14.2 15.6 12.4 12.2 M 16.8 20 C 15.2 17.2 19 15.6 17.2 12.2"
+        android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.4 10.6 L 6.4 4.4 L 17.6 4.4 L 20.6 10.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

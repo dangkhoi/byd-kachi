@@ -147,6 +147,10 @@ package com.byd.clusternav.launcher
  *   [mut] chỉ còn **3.15–3.91:1** ⇒ **P1b BẮT BUỘC** phải thêm lớp che (scrim 35–50 %) hoặc chọn mực theo độ chói
  *   đo được của chính vùng ảnh dưới thẻ. Ghi ra đây, không giấu: đây là ràng buộc của pha sau, không phải một chỗ
  *   đã xong.
+ * @property partFill / @property partLine vùng tô · nét của bộ phận xe ở tone NEUTRAL (P3 §4.4); `partLine` cũng là
+ *   VIỀN BẮT BUỘC khi màu sơn chạm nền (§4.8 luật (a)). @property glassFrom / @property glassTo chuyển sắc KÍNH (mức
+ *   tả thực (1)); @property lampOn đèn bật · @property lampGlow tâm quầng đèn (toả về trong suốt, không blur) ·
+ *   @property tailOn đèn hậu bật (đỏ ĐÈN, khác [red] cảnh báo) · @property carShadow tâm bóng đổ dưới xe.
  * @property domainTints lớp sắc LĨNH VỰC phủ lên gradient thẻ (4.7–7 % — [ĐO] bước sáng 1.07–1.15× so với thẻ
  *   không tint, tức nhìn ra được mà không đánh nhau với chữ: mọi mực vẫn ≥ 4.5:1 trên **cả hai** đầu gradient).
  *   Khoá là **tên `Domain`** (chuỗi, không phải kiểu enum) để tệp này giữ nguyên tính chất *không phụ thuộc mô
@@ -218,6 +222,14 @@ data class KachiPalette(
     val fieldSunken: String,
     val surfFromOverArt: String,
     val surfToOverArt: String,
+    val partFill: String,
+    val partLine: String,
+    val glassFrom: String,
+    val glassTo: String,
+    val lampOn: String,
+    val lampGlow: String,
+    val tailOn: String,
+    val carShadow: String,
     val domainTints: Map<String, String>,
     val clear: String = "#00000000",
 ) {
@@ -234,6 +246,7 @@ data class KachiPalette(
 
     companion object {
 
+        // ⚠ Hạt giống màu nhấn (P1b) · tông thẻ · MÀU SƠN xe (P3) ở `KachiPaletteSeeds.kt` (tách vì trần 500 dòng).
         /**
          * Sắc lĩnh vực bản TỐI — 7 % (`0x12`) của **màu mang nghĩa đã có**, không phải tám màu mới.
          *
@@ -377,6 +390,10 @@ data class KachiPalette(
             fieldSunken = "#05080d",
             surfFromOverArt = "#cc232a37",
             surfToOverArt = "#cc0f131a",
+            // ── VISUAL-REFRESH P3 · hình xe mức tả thực (1) (§4.1 đề xuất partFill/partLine · §4.8): kính lam nhạt→sẫm,
+            //    đèn trắng-lam, đèn hậu = đỏ ĐÈN (không phải `red` cảnh báo), bóng đổ 55 % đen toả về trong suốt
+            partFill = "#33ffffff", partLine = "#8caeb8c8", glassFrom = "#ebdbe8ff", glassTo = "#eb43566e",
+            lampOn = "#eaf3ff", lampGlow = "#f29dc4ff", tailOn = "#ff6b6b", carShadow = "#8c000000",
             domainTints = DARK_TINTS,
         )
 
@@ -466,6 +483,9 @@ data class KachiPalette(
             fieldSunken = "#dfe5ee",
             surfFromOverArt = "#ccffffff",
             surfToOverArt = "#cceff3f9",
+            // ── VISUAL-REFRESH P3 — bản SÁNG: bộ phận phải SẪM hơn nền (đèn trắng-lam sẽ tan vào nền ⇒ lam đậm) ──
+            partFill = "#33000000", partLine = "#a6667487", glassFrom = "#eb9fb6d6", glassTo = "#eb34465e",
+            lampOn = "#5b8def", lampGlow = "#b36f9dff", tailOn = "#d43d3d", carShadow = "#66000000",
             domainTints = LIGHT_TINTS,
         )
     }

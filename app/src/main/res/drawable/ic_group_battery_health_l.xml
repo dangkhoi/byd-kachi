@@ -1,0 +1,19 @@
+<!--
+  NHÓM SỨC KHOẺ PIN (nhiệt/áp cell · SOH · 12V) — pin NGANG + nhịp đo (điện tâm đồ) bên trong: pin có KHOẺ không. Khác ic_group_energy (pin đứng + sét).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/group_battery_health.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 32dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp" android:height="32dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 5.8 7.2 L 16.6 7.2 A 2.4 2.4 0 0 1 19 9.6 L 19 14.4 A 2.4 2.4 0 0 1 16.6 16.8 L 5.8 16.8 A 2.4 2.4 0 0 1 3.4 14.4 L 3.4 9.6 A 2.4 2.4 0 0 1 5.8 7.2 Z"
+        android:fillColor="#34D399" android:fillAlpha="0.16" />
+    <path android:pathData="M 5.8 7.2 L 16.6 7.2 A 2.4 2.4 0 0 1 19 9.6 L 19 14.4 A 2.4 2.4 0 0 1 16.6 16.8 L 5.8 16.8 A 2.4 2.4 0 0 1 3.4 14.4 L 3.4 9.6 A 2.4 2.4 0 0 1 5.8 7.2 Z"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.6 12 L 8.2 12 L 9.8 9 L 12.2 15 L 13.8 12 L 17 12"
+        android:fillColor="#00000000" android:strokeColor="#8FF0C4" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 20.6 10 L 20.8 10 A 0.8 0.8 0 0 1 21.6 10.8 L 21.6 13.2 A 0.8 0.8 0 0 1 20.8 14 L 20.6 14 A 0.8 0.8 0 0 1 19.8 13.2 L 19.8 10.8 A 0.8 0.8 0 0 1 20.6 10 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+</vector>

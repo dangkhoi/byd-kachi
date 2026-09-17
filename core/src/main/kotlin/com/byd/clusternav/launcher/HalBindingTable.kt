@@ -252,7 +252,10 @@ class HalBindingTable(private val gateway: HalGateway) {
             // tempSource=0, unit=1 (Celsius). Vd 22°C → setAcTemperature(0,22,0,1). Thay `setTemprature` (không tồn tại).
             "temp" -> intArrayOf(0, primary, 0, 1)
             "window" -> intArrayOf(1, if (primary > 0) 1 else 2)   // kính lái nhị-phân: cùng enum WINDOW_* (mở=1/đóng=2)
-            "trunk" -> intArrayOf(if (primary > 0) 1 else 2)
+            // [ĐO xe 2026-09-17] cốp = `voiceCtlBackDoor(cmd)` ở Setting device: MỞ=1 · ĐÓNG=3 (đo 2 lần mỗi
+            // lệnh). Trước 1.70 gửi 1/2 cho `setHetchDoorStatus` (method KHÔNG tồn tại) ⇒ no-op. cmd 2 = dừng
+            // giữa hành trình ([ĐOÁN], chưa thử lúc cốp chạy) — không dùng cho TOGGLE mở/đóng.
+            "trunk" -> intArrayOf(if (primary > 0) 1 else 3)
             "lock" -> intArrayOf(if (primary > 0) 2 else 1)     // khoá = 2 · mở khoá = 1
             "door" -> intArrayOf(1)                             // NÚT BẤM một chiều: mở khoá (1), không có mặt tắt
             // [ĐO xe 2026-09-15] rèm "bấm mở CHÚT XÍU". Gốc: feature 1330642984 = 0x4F500028

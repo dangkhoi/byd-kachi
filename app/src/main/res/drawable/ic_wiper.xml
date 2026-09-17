@@ -1,31 +1,25 @@
 <!--
-  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
-  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
-  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
-  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  GẠT MƯA — khung TRƯỚC + hai CUNG QUÉT SONG SONG trên kính lái, mỗi cung một LƯỠI GẠT chéo ở đầu.
-  [ĐO ảnh dựng 48px] thử ba cách: hai cung ĐỐI XỨNG (đọc ra 'ria mép/cánh chim'), hai cung
-  SONG SONG ngả phải (đọc ra gạt mưa), song song dài chạm trụ A (dính mép). Chọn cách giữa.
+  GẠT MƯA (`wiper` · `wiper_state`) — cần gạt nét trên kính lái mờ, quạt quét tô chuyển sắc: thứ đang nói là cần gạt và vùng quét.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/wiper.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực BODY · họ màu body · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4.4,16.9 L4.4,9.9 L6.6,4.9 L17.4,4.9 L19.6,9.9 L19.6,16.9 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.0,9.3 C9.2,10.5 14.8,10.5 18.0,9.3"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.20,10.20 C8.80,9.20 9.40,8.40 10.20,7.60"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M10.20,7.60 L12.20,6.70"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M12.60,10.20 C13.20,9.20 13.80,8.40 14.60,7.60"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M14.60,7.60 L16.60,6.70"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 4.39 8.73 A 13.6 13.6 0 0 1 19.61 8.73 L 12 20 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="4.39" android:startY="6.4" android:endX="19.61" android:endY="20">
+                <item android:offset="0" android:color="#DFE5EE" />
+                <item android:offset="1" android:color="#6B7686" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 12 20 L 5.2 8.8"
+        android:fillColor="#00000000" android:strokeColor="#AEB8C8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 2.6 17.6 L 5.6 5.4 L 18.4 5.4 L 21.4 17.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

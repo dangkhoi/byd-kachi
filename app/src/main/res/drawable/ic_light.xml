@@ -1,10 +1,23 @@
+<!--
+  ĐÈN (`brightness_gear` · `hud_brightness`; nhận dạng nhóm Đèn) — thấu kính chữ D tô chuyển sắc + ba tia nét sang trái: ánh sáng phát ra là thứ đang nói.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/light.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực LIGHTS · họ màu lights · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4,6L8,6A6,6 0 0 1 8,18L4,18Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M13,8L19,8M13,12L20,12M13,16L19,16"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 14.2 4.6 C 19 4.6 21.4 8.2 21.4 12 C 21.4 15.8 19 19.4 14.2 19.4 C 12.4 19.4 11.6 18 11.6 16.4 L 11.6 7.6 C 11.6 6 12.4 4.6 14.2 4.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="11.6" android:startY="4.6" android:endX="21.4" android:endY="19.4">
+                <item android:offset="0" android:color="#FFE08A" />
+                <item android:offset="1" android:color="#B7810A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 3.2 8.2 L 8.8 8.2 M 3.2 12 L 8.8 12 M 3.2 15.8 L 8.8 15.8"
+        android:fillColor="#00000000" android:strokeColor="#FBBF24" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

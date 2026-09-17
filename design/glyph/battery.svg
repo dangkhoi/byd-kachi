@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- PIN (mức sạc · SOH) — thân pin NGANG có mức sạc tô chuyển sắc; cực pin nhỏ bên phải. Mức tô = thứ ô đang nói (bao nhiêu %). Cố ý khác ic_group_energy (pin ĐỨNG + tia sét = nhóm) và ic_bolt (chỉ điện). -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M5.6,7.6 L16.4,7.6 A2.2,2.2 0 0 1 18.6,9.8 L18.6,14.2 A2.2,2.2 0 0 1 16.4,16.4 L5.6,16.4 A2.2,2.2 0 0 1 3.4,14.2 L3.4,9.8 A2.2,2.2 0 0 1 5.6,7.6 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.7,9.6 L10.9,9.6 A1.2,1.2 0 0 1 12.1,10.8 L12.1,13.2 A1.2,1.2 0 0 1 10.9,14.4 L6.7,14.4 A1.2,1.2 0 0 1 5.5,13.2 L5.5,10.8 A1.2,1.2 0 0 1 6.7,9.6 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M20.2,10.2 L20.4,10.2 A0.8,0.8 0 0 1 21.2,11 L21.2,13 A0.8,0.8 0 0 1 20.4,13.8 L20.2,13.8 A0.8,0.8 0 0 1 19.4,13 L19.4,11 A0.8,0.8 0 0 1 20.2,10.2 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+  <path d="M5.6,7.6 L16.4,7.6 A2.2,2.2 0 0 1 18.6,9.8 L18.6,14.2 A2.2,2.2 0 0 1 16.4,16.4 L5.6,16.4 A2.2,2.2 0 0 1 3.4,14.2 L3.4,9.8 A2.2,2.2 0 0 1 5.6,7.6 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- KHOÁ (`child_lock`; nút khoá/mở) — ổ khoá: quai nét + thân tô chuyển sắc + lỗ khoá mờ. Ổ khoá để dành cho khoá, không cho widget Trạng thái xe (ic_car). -->
+  <style>:root{--ink:#ffffff;--main:#aeb8c8;--light:#dfe5ee;--deep:#6b7686}</style>
+  <path d="M 7.2,10.55 L 7.2,7.75 A 4.8,4.8 0 0 1 16.8,7.75 L 16.8,10.55" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 6.8,10.55 L 17.2,10.55 A 2.4,2.4 0 0 1 19.6,12.95 L 19.6,18.35 A 2.4,2.4 0 0 1 17.2,20.75 L 6.8,20.75 A 2.4,2.4 0 0 1 4.4,18.35 L 4.4,12.95 A 2.4,2.4 0 0 1 6.8,10.55 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 10.5,14.75 A 1.5,1.5 0 1 1 13.5,14.75 A 1.5,1.5 0 1 1 10.5,14.75 Z M 12,15.75 L 12,17.95" data-layer="sub" fill="var(--ink)" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

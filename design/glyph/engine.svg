@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- MÁY XĂNG (`engine_rpm`) — khối máy BẬC THANG kinh điển (nắp xi-lanh nhô trên-trái, cổ hút phải, đế dưới) tô chuyển sắc + hai chân đế và ống xả mờ: trên DM-i vòng tua MÁY phải khác vòng tua MÔ-TƠ (ic_rpm/ic_motor). Vẽ lại 2026-09-17 (bản đầu = hộp + ống, đọc thành "thùng"). -->
+  <style>:root{--ink:#ffffff;--main:#7b5cff;--light:#b39dff;--deep:#7059d7}</style>
+  <path d="M8.6,4.4 L14.2,4.4 A1,1 0 0 1 15.2,5.4 L15.2,7.6 L17.2,7.6 A1,1 0 0 1 18.2,8.6 L18.2,10.4 L20.2,10.4 A1,1 0 0 1 21.2,11.4 L21.2,15.6 A1,1 0 0 1 20.2,16.6 L18.2,16.6 L18.2,18 A1,1 0 0 1 17.2,19 L6.4,19 A1,1 0 0 1 5.4,18 L5.4,8.6 A1,1 0 0 1 6.4,7.6 L7.6,7.6 L7.6,5.4 A1,1 0 0 1 8.6,4.4 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M3,11.2 L5.4,11.2 M3,15 L5.4,15 M10.4,4.4 L10.4,2.6 M12.4,4.4 L12.4,2.6" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M9.4,13.4 A2.2,2.2 0 1 1 13.8,13.4 A2.2,2.2 0 1 1 9.4,13.4 Z" data-layer="main" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

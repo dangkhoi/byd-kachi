@@ -1,18 +1,17 @@
 <!--
-  ICON NHÓM (T2 · spec kachi-capability-groups §4.1) — nhóm SỨC KHOẺ PIN (nhiệt cell, điện áp cell, SOH, 12V).
-  Pin NGANG + nhịp đo bên trong = "pin có khoẻ không". Cố ý KHÁC ic_group_energy (pin đứng + tia sét).
-  Chuẩn bộ icon: khung 24×24, hình trong ô 20×20, nét 1.6, đầu/khớp nét tròn, KHÔNG giữ màu riêng (chỗ dùng tint).
+  NHÓM SỨC KHOẺ PIN (nhiệt/áp cell · SOH · 12V) — pin NGANG + nhịp đo (điện tâm đồ) bên trong: pin có KHOẺ không. Khác ic_group_energy (pin đứng + sét).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/group_battery_health.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M20.4,10.6 L20.4,13.4"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M5.4,7.6 L17.2,7.6 A1.5,1.5 0 0 1 18.7,9.1 L18.7,14.9 A1.5,1.5 0 0 1 17.2,16.4 L5.4,16.4 A1.5,1.5 0 0 1 3.9,14.9 L3.9,9.1 A1.5,1.5 0 0 1 5.4,7.6 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.2,12 L8.4,12 L9.8,9.4 L11.8,14.6 L13.2,12 L16.4,12"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.8 7.2 L 16.6 7.2 A 2.4 2.4 0 0 1 19 9.6 L 19 14.4 A 2.4 2.4 0 0 1 16.6 16.8 L 5.8 16.8 A 2.4 2.4 0 0 1 3.4 14.4 L 3.4 9.6 A 2.4 2.4 0 0 1 5.8 7.2 Z"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.6 12 L 8.2 12 L 9.8 9 L 12.2 15 L 13.8 12 L 17 12"
+        android:fillColor="#00000000" android:strokeColor="#8FF0C4" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 20.6 10 L 20.8 10 A 0.8 0.8 0 0 1 21.6 10.8 L 21.6 13.2 A 0.8 0.8 0 0 1 20.8 14 L 20.6 14 A 0.8 0.8 0 0 1 19.8 13.2 L 19.8 10.8 A 0.8 0.8 0 0 1 20.6 10 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
 </vector>

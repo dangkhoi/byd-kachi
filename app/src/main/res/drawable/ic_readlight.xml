@@ -1,22 +1,25 @@
 <!--
-  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
-  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
-  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
-  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  ĐÈN ĐỌC — đèn trần GIỮA trục xe: hộp đèn gắn trần + CHÙM SÁNG HÌNH NÓN hắt xuống.
-  [ĐO Pass 5] bản hai chỏm ở hai ghế trước bị đọc thành "người ngồi hàng trước".
+  ĐÈN ĐỌC (nút `readl`) — hộp đèn trần mờ + chùm sáng đổ xuống tô chuyển sắc: đèn ở TRONG khoang, chùm là thứ đang bật.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/readlight.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực LIGHTS · họ màu lights · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M10.95,9.60 L13.05,9.60 A0.45,0.45 0 0 1 13.50,10.05 L13.50,10.55 A0.45,0.45 0 0 1 13.05,11.00 L10.95,11.00 A0.45,0.45 0 0 1 10.50,10.55 L10.50,10.05 A0.45,0.45 0 0 1 10.95,9.60 Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M11.00,11.60 L13.00,11.60 L14.40,15.40 L9.60,15.40 Z"
-        android:fillColor="#FFFFFF" />
+    <path android:pathData="M 9.2 7.4 L 14.8 7.4 L 20.4 20.4 L 3.6 20.4 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3.6" android:startY="7.4" android:endX="20.4" android:endY="20.4">
+                <item android:offset="0" android:color="#FFE08A" />
+                <item android:offset="1" android:color="#B7810A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 9.6 3.4 L 14.4 3.4 A 1.4 1.4 0 0 1 15.8 4.8 L 15.8 6 A 1.4 1.4 0 0 1 14.4 7.4 L 9.6 7.4 A 1.4 1.4 0 0 1 8.2 6 L 8.2 4.8 A 1.4 1.4 0 0 1 9.6 3.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#FBBF24" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.4 3.6 L 20.6 3.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

@@ -1,0 +1,27 @@
+<!--
+  TỐC ĐỘ (`speed`; nhận dạng nhóm Động lực) — cung đồng hồ + kim tô chuyển sắc chỉ 2/3 thang; núm kim mờ. Kim là thứ mắt bắt trước.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/speed.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 32dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="32dp" android:height="32dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 3.92 16.54 A 8.6 8.6 0 1 1 20.08 16.54 L 12 13.6 Z"
+        android:fillColor="#7B5CFF" android:fillAlpha="0.16" />
+    <path android:pathData="M 3.92 16.54 A 8.6 8.6 0 1 1 20.08 16.54"
+        android:fillColor="#00000000" android:strokeColor="#7B5CFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 11.1 14.4 L 17.2 6.6 L 12.9 12.4 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="11.1" android:startY="6.6" android:endX="17.2" android:endY="14.4">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 10.1 13.6 A 1.9 1.9 0 1 1 13.9 13.6 A 1.9 1.9 0 1 1 10.1 13.6 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+</vector>

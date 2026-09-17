@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- SẤY KÍNH (`defrost` · `defrost_front_state`) — kính lái hình thang mờ + ba làn nhiệt uốn lên là thứ đang nói: SẤY, không phải kính. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M7.2,20 C5.6,17.2 9.4,15.6 7.6,12.2 M12,20 C10.4,17.2 14.2,15.6 12.4,12.2 M16.8,20 C15.2,17.2 19,15.6 17.2,12.2" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3.4,10.6 L6.4,4.4 L17.6,4.4 L20.6,10.6 Z" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M3.4,10.6 L6.4,4.4 L17.6,4.4 L20.6,10.6 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

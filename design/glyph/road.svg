@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- QUÃNG ĐƯỜNG ĐÃ ĐI (`odometer` · `trip_km` · `ev_mileage_km`) — mặt đường thu về xa + vạch giữa đứt: đã đi được bao xa (ic_range là còn đi được bao xa). -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M4.2,20.6 L9.6,3.6 M19.8,20.6 L14.4,3.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12,4.4 L12,7.6 M12,10.2 L12,14.2 M12,16.8 L12,20.4" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M9.6,3.6 L14.4,3.6 L19.8,20.6 L4.2,20.6 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

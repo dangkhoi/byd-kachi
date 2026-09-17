@@ -98,6 +98,45 @@ các widget chạy trên nền xám nhìn hơi chán quá</i>”</p>
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>P2 + P3 — 2026-09-17 · BỘ ICON MỚI + HÌNH XE MỨC TẢ THỰC (1) + MÀU SƠN (1.70 · 71)</b>: <b>T4</b> đường ống
+<code>scripts/design/gen-icons.py</code> (85 glyph SVG + <code>design/icon-grammar.json</code> → 127 tệp: 24dp + 21 icon
+<i>large</i> × {32, 48}) và <code>gen-car.py</code> (3 SVG mặt xe → 43 <code>ic_car_*</code> + 4 <code>car_face_*</code>
+48dp có gradient + <code>CarFramesGenerated.kt</code>); cả hai có <code>--check</code> so byte, gọi từ
+<code>IconStyleContractTest</code> (vá tay ⇒ đỏ). <b>T5/T6</b> ba SVG nguồn, mỗi bộ phận một <code>id</code> có vai màu;
+mặt TOP giữ nguyên hình thân/bánh/vạt cửa (delta 0) nên hai bảng cũ không phải đo lại. <b>T7</b> 85 glyph theo ngữ pháp
+§4.2 (3 lớp · alpha 1/0.38/0.16 · nét 1.8/1.2 · họ màu theo lĩnh vực — <b>có màu và chuyển sắc</b>, đúng quyết định owner);
+6 icon vẽ lại lần hai vì yếu ở 24px; lớp nền luôn vẽ TRƯỚC (bản đầu đè đĩa 16 % lên hình chính). <b>T8</b>
+<code>CarPartStyle</code> (<code>:core</code>): vai SVG × tone × available × sơn → tên token, <code>when</code> vét cạn,
+<code>CarPartStyleTest</code> duyệt trọn tích Đề-các; <b>ba</b> bảng Canvas (lốp · cửa · <code>CarMiniView</code> — chiếc xe
+THỨ BA spec bỏ sót, B2 tìm ra) vẽ qua <code>CarArtPainter</code>. <b>T8b</b> giao diện <code>CarArtSource</code> +
+<code>VectorCarArt</code>; painter dựng shader <b>một lần ở layout</b> (thân = chuyển sắc DỌC màu sơn, kính chéo lam→sẫm,
+quầng đèn/đèn hậu toả, bóng đổ toả), 0 blur/shadow/elevation; <b>màu sơn</b> 5 ô ở Cài đặt › Màu sắc, theo hồ sơ
+(mảnh thứ 3 của <code>color_choice</code>), mặc định Trắng ngọc trai, <b>viền tự bật</b> khi đầu gradient &lt; 3:1
+(<code>contrast-table-paint.md</code> sinh bằng máy, khoá trùng <code>design/car/paint.json</code>); sơn đỏ ⇒ ALERT
+hổ phách + viền. <b>T9</b> <code>KachiIcons.res(icon, dp)</code> tra biến thể theo cỡ; hợp đồng tint: SÁNG tint INK mọi cỡ,
+TỐI bỏ filter ở mặt lớn, ô chưa chọn hạ bão hoà + mờ (AC2.6). <b>T10</b> <code>IconStyleContractTest</code> viết lại,
+<code>IconSetInventoryTest</code> (registry → drawable), <code>CarFramesSourceContractTest</code> mở rộng,
+<code>CarArtSourceContractTest</code>, <code>CarPaintContrastContractTest</code>. <b>T11</b> 14 ảnh máy ảo + gfxinfo + Δ APK
+(tài nguyên +94.6 KB, tổng +180.8 KB &lt; +350 KB) ở <code>docs/diagnostics/visual-refresh-2026-09-16/p2p3/</code>.
+Test: core <b>2169</b>/0 · app <b>1125</b>/0. Sai lệch có chủ ý ghi ở §9 "P2/P3" (đèn tắt = mảng mờ thay vì nét; bánh lốp
+tone từ TPMS; mảnh trạng thái không bắt buộc có icon). 🚗 T14 chờ owner ngắm.</li>
+<li><b>P1b — 2026-09-17 · HÌNH NỀN LÀ CỬA SỔ + NGƯỜI DÙNG CHỌN MÀU (T3b · R8)</b>: sáu quyết định của §4.10 làm
+đủ: (1) ảnh mờ ¼ màn nấu <b>một lần</b> ở thread nền (<code>WallArtBuilder</code>, box blur ×3 thuần Kotlin, đệm đĩa
+<code>.kachi-art/</code>) · (2) thẻ = <code>LayerDrawable(cửa sổ, bề mặt 80 %)</code> — <code>WallWindowDrawable</code>
+vẽ đúng vùng ảnh mờ dưới thẻ theo <code>getLocationInWindow</code>, cửa duy nhất <code>KachiGlass.apply(view…)</code>
+(khay ô làm việc · thẻ widget · ô nhóm) · (3) hai dải che đỉnh/đáy trong <code>WallView</code>, chỉ khi có ảnh ·
+(4) <code>DominantColors</code> (<code>:core</code>) — 3 màu trội, nhuộm 6 % lên cửa sổ + hạt giống ô <i>theo ảnh
+nền</i> · (5) <b>lớp che theo độ chói đo được</b>: lưới 16×9 + <code>GlassVeil</code> (<code>:core</code>) tìm alpha
+nhỏ nhất 35–90 % đưa mực tệ nhất qua 4.5:1 — <b>sai lệch có chủ ý</b> so với chữ "chọn MỰC" của mục (5), lý do ở
+§9 mục P1b-3 · (6) 0 blur lúc chạy, 0 cấp phát trong <code>draw()</code> (bài canh). <b>R8</b>: 8 ô màu nhấn + <i>theo
+ảnh nền</i> + 3 tông thẻ, lưu theo hồ sơ (<code>color_choice</code>), mọi vai nhấn suy từ <b>một</b> hạt giống
+(<code>ColorMath.recolor</code>) rồi qua <code>ContrastGuard</code> (đổi mực trước, đẩy nền sau — AC8.5);
+<code>applyTheme</code> vẫn là chỗ áp duy nhất, nay nhận <code>ColorChoice</code> + màu trội. <b>Không có ảnh nền và
+không chọn màu ⇒ không đổi một byte</b> ([ĐO] điểm ảnh bề mặt khay/thẻ/nền trùng 1.69 từng byte). Bảng đo mới
+<code>contrast-table-colors.md</code> (56 tổ hợp, mọi cặp ✅). Bài canh mới: <code>ColorChoiceContractTest</code> ·
+<code>WallGlassContractTest</code> (:app) · <code>ColorMathTest</code> · <code>ContrastGuardTest</code> ·
+<code>GlassVeilTest</code> · <code>DominantColorsTest</code> · <code>ColorChoiceTest</code> (:core). Ảnh máy ảo
+<code>docs/diagnostics/visual-refresh-2026-09-16/p1b/</code>. Chi tiết §9 "P1b".</li>
 <li><b>Pass 5 — 2026-09-17 · OWNER NHÌN 1.68 TRÊN XE: GỠ MÉP SÁNG + NÉT ĐỈNH (1.69 · 70)</b>:
 owner, nguyên văn: <em>"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top đấy nhé,
 bug rồi"</em>. Hai lớp Pass 4 thêm vào đã bị <b>gỡ hẳn</b> khỏi <code>KachiTheme.surface()</code>:
@@ -499,6 +538,32 @@ không có trường ⇒ mặc định (không hỏi).</li>
 <li>AC8.6 — <b>Không</b> bánh xe màu tự do, không mã hex, không chỉnh từng thành phần (khó dùng trên xe).</li>
 </ul>
 <p>Xếp vào <b>P1b · Hình nền + màu</b> (sau P1) vì chung hạ tầng “màu theo ảnh nền”.</p>
+<p><b>✅ XONG 2026-09-17 (P1b)</b> — cách làm và chỗ lệch, mỗi AC một dòng:</p>
+<ul>
+<li><b>AC8.1</b> — <code>AccentChoice</code> (<code>:core</code>): 8 ô + <code>FROM_ART</code>. Mỗi ô mỗi bảng đúng
+<b>một</b> mã hạt giống (<code>KachiPalette.ACCENT_SEEDS_DARK/LIGHT</code>, bản SÁNG đậm hơn theo §3.2 mục 3); 17 vai
+nhấn (<code>accent</code> · <code>accent2</code> · <code>gradFrom/To</code> · <code>tileOn*</code> · <code>surfOn*</code>
+· <code>accentSoft/Line/Wash</code> · <code>glow1/2</code> · tint IDENTITY) suy bằng <code>ColorMath.recolor</code>:
+giữ alpha, giữ khoảng cách sắc (accent2 vẫn lệch +30°), dịch bậc sáng theo hạt giống ×0.6. Ô <i>theo ảnh nền</i> =
+màu trội <b>rực nhất</b> của <b>ảnh đầu</b> trong thư mục (không phải ảnh đang chiếu — §9 mục P1b-4), kẹp bậc sáng
+0.55–0.72 (tối) / 0.32–0.48 (sáng). Chưa có ảnh ⇒ bảng gốc, không hỏi.</li>
+<li><b>AC8.2</b> — <code>CardTone</code> ấm/lạnh nhuộm 8 % (<code>#ff9a4a</code> / <code>#4aa8ff</code>) vào 11 vai
+bề mặt (<code>surfFrom/To</code>, <code>surf*OverArt</code>, <code>slot/slotTo</code>, <code>tile</code>, <code>cell</code>,
+<code>card/card2</code>, <code>fieldSunken</code>). [ĐO] tông đi <b>trước</b> màu nhấn, lớp bảo vệ đo <b>sau</b> cả hai —
+thứ tự ngược làm <code>inkOnAccent</code> tụt 4.22–4.48 ở tông ấm/lạnh.</li>
+<li><b>AC8.3</b> — <b>chưa làm UI</b>. Chỉ để sẵn trường <code>ColorChoice.paint</code> (chuỗi, đi qua encode/decode)
+để định dạng lưu bền không đổi lần nữa; enum + <code>CarPartStyle</code> thuộc P3 (T8b).</li>
+<li><b>AC8.4</b> — khoá <code>color_choice</code> trong <code>ProfileScope.LAUNCHER_PERSONAL_SUFFIXES</code>, nạp/ghi ở
+<code>PrefsWorkspaceRepository.load/persist</code>, <code>HomeUiState.colorChoice</code> là nguồn sự thật,
+<code>ThemeHost.sync</code> là người đọc-để-vẽ duy nhất. Thiếu khoá ⇒ <code>ColorChoice.DEFAULT</code> = bảng 1.69.</li>
+<li><b>AC8.5</b> — <code>ContrastGuard</code> (<code>:core</code>): <b>đổi mực trước</b> (giữ màu người chọn), <b>đẩy
+nền sau</b> (8 %/bậc về phía nền màn, ≤ 8 bậc), vai có alpha thì chỉnh alpha ít nhất; bốn cặp được canh: chữ trên nút
+nhấn đặc (hai đầu) · chữ trên ô BẬT · chữ trên thẻ BẬT · mực nhấn trên 13 nền thường. Bảng
+<code>contrast-table-colors.md</code> sinh bằng máy: 9 × 3 × 2 (+ 4 ảnh cực đoan cho <i>theo ảnh nền</i>) = 56 dòng,
+mực tệ nhất mỗi dòng ≥ 4.5 ✅.</li>
+<li><b>AC8.6</b> — <code>SettingsRows.swatchRow</code>: ô tròn 48dp, ✓ trên ô đang chọn (mực ✓ chọn theo tương phản đo
+được trên chính ô), tên lựa chọn bên cạnh; ô <i>theo ảnh nền</i> chưa có ảnh vẽ gạch đứt + <code>?</code>. Tông thẻ = 3 chip.</li>
+</ul>
 
 <h2>4. Design</h2>
 <p class="muted">§Design + §Tasks hoàn thiện <b>song song</b> với code. Mọi bản vẽ dưới đây là HTML/SVG nội tuyến
@@ -997,6 +1062,29 @@ không biết trước cái gì nằm dưới thẻ:</p>
 cái “miếng vá” owner chê. Lời giải nằm ở <b>lớp che + chọn mực theo độ chói đo được</b>, tức mục (2) và (5) ở trên.
 Bảng này sinh bằng máy vào <code>docs/diagnostics/visual-refresh-2026-09-16/contrast-table.md</code>.</p>
 
+<p><b>✅ P1b đã làm (2026-09-17) — sáu quyết định, cái nào ở đâu:</b></p>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Ở đâu</th><th>Bằng chứng</th></tr>
+<tr><td>1</td><td>ảnh mờ ¼ màn, <b>một lần</b>, thread nền, đệm đĩa theo <code>tên-mtime-cỡ-WxH-phủ-tối</code></td>
+<td><code>WallArtBuilder.build</code> (<code>WallArt.kt</code>) gọi trong <code>submitIo</code> của
+<code>WallpaperController.step</code>, ngay sau <code>loadScaled</code>; box blur ×3 r=6 trên mảng <code>Int</code></td>
+<td><code>WallGlassContractTest.anh mo tinh MOT LAN…</code></td></tr>
+<tr><td>2</td><td>thẻ = cửa sổ + lớp che + bề mặt 80 %</td>
+<td><code>WallWindowDrawable</code> (chỉ số 0) + <code>KachiTheme.surface(…, overArtwork = true)</code>; cửa duy nhất
+<code>KachiGlass.apply(view, radius, tone, domain)</code>; KHAY/BẬT hạ alpha bằng <code>surfacePair</code>, không mở
+thêm vai hex</td><td>3 chỗ gọi (khay · widget · nhóm); bài <code>khong co anh nen thi nen the la dung KachiTheme surface</code></td></tr>
+<tr><td>3</td><td>hai dải che đỉnh/đáy</td><td><code>WallView.drawBands</code>, chỉ trong <code>drawPhoto</code>, màu
+<code>BAR_TOP → CLEAR</code>, cao 14 % màn, shader dựng ở <code>onSizeChanged</code></td><td>bài <code>hai dai che chi ve khi co anh</code></td></tr>
+<tr><td>4</td><td>2–3 màu trội, một lần</td><td><code>DominantColors.of</code> (<code>:core</code>, 4 bit/kênh, điểm
+= đếm × (0.1 + 1.5·bão hoà), cách sắc ≥ 30°) — nhuộm 6 % lên cửa sổ; hạt giống R8 qua <code>WallArtStore.accentDominant</code></td>
+<td><code>DominantColorsTest</code></td></tr>
+<tr><td>5</td><td><b>chọn theo độ chói đo được</b></td><td>lưới 16×9 độ chói WCAG của ảnh <b>đã làm tối</b>;
+<code>WallWindowDrawable.relocate</code> tra vùng dưới thẻ → <code>GlassVeil.alphaFor</code> → alpha lớp che 35–90 %.
+<b>Lệch có chủ ý</b>: chọn <i>lớp che</i> chứ không đổi <i>mực</i> — §9 P1b-3</td>
+<td><code>GlassVeilTest</code> + <code>WallGlassContractTest.lop che du cho moi do choi…</code> (0..1 × 3 tone × 2 bảng)</td></tr>
+<tr><td>6</td><td>0 blur/shadow/elevation lúc chạy</td><td>không đổi; thêm: 0 cấp phát trong <code>draw()</code>, đo vị
+trí chỉ khi đổi</td><td><code>SurfaceMaterialContractTest</code> + bài <code>khong cap phat trong draw</code></td></tr>
+</table>
 <p><b>Phần P1 đã dọn sẵn</b> (làm rồi, xem §9): hai vai màu bán trong suốt; tham số
 <code>surface(…, overArtwork = false)</code> — <b>chưa chỗ nào bật</b>, nên P1 không đổi một pixel nào của hôm nay;
 và ba lớp của <code>surface()</code> giữ <b>riêng biệt</b> trong <code>LayerDrawable</code>, đánh chỉ số theo
@@ -1023,8 +1111,12 @@ bảng tương phản §6.4 sinh bằng máy cho token mới, mọi cặp đạt
 (giữ). DoD: danh sách chuyển/không chuyển + lý do ghi vào §9 · ảnh chụp máy ảo trước/sau cho 3 bố cục màn chính.</td>
 <td><code>app/…/WidgetViews.kt</code>, <code>WorkspaceViewCards.kt</code>, <code>GroupTileViews.kt</code>, <code>ReadTile.kt</code>…</td><td>2</td></tr>
 
-<tr><td><b>T3b</b> 🔲</td><td>T3</td>
-<td><b>P1b · Hình nền</b> (§4.10) — thẻ thành CỬA SỔ nhìn xuống ảnh, không còn là miếng vá. Sáu việc: (1) ảnh mờ
+<tr><td><b>T3b ✅</b></td><td>T3</td>
+<td><b>XONG 2026-09-17</b> — sáu việc + R8, bảng "ở đâu / bằng chứng" ở §4.10; ảnh máy ảo
+<code>docs/diagnostics/visual-refresh-2026-09-16/p1b/</code> (3 bố cục × 2 chủ đề trên ảnh cát + ảnh đêm + ảnh tương
+phản + 3 lựa chọn màu + hàng ô màu ở Cài đặt); bảng tương phản trên 3 ảnh nền = phép đo trên <b>mọi</b> độ chói
+0..1 (chặt hơn 3 ảnh); gfxinfo: xem README p1b (máy ảo không phân giải được ±1.5 ms — §6.2 đã ghi). Bản gốc:
+<b>P1b · Hình nền</b> (§4.10) — thẻ thành CỬA SỔ nhìn xuống ảnh, không còn là miếng vá. Sáu việc: (1) ảnh mờ
 tính <b>một lần</b> lúc chọn ảnh (¼ độ phân giải, lưu <code>files/</code>); (2) thẻ = ô cắt từ bitmap đó + scrim
 35–50 % + hairline, bật qua <code>surface(…, overArtwork = true)</code>; (3) hai dải che đỉnh/đáy cho thanh trên và
 thanh nút; (4) lấy 2–3 màu trội của ảnh (cùng lượt tính ở (1)) để nhuộm nhẹ bề mặt — chung hạ tầng với <b>R8</b>;
@@ -1037,8 +1129,8 @@ bảng tương phản sinh bằng máy trên <b>3 ảnh nền</b> (sáng-cát ·
 +1.5 ms (bitmap thay blur) · <b>0</b> hit blur/shadow/elevation.</td>
 <td><code>app/…/KachiTheme.kt</code>, <code>WallView.kt</code>, <code>WallpaperStore</code>, <code>KachiPalette.kt</code></td><td>3</td></tr>
 
-<tr><td><b>T4 ⚠ một nửa</b></td><td>—</td>
-<td><b>Phép đo gradient: XONG 2026-09-16</b> — [ĐO] AVD API 29, <code>&lt;aapt:attr&gt;&lt;gradient&gt;</code> <b>render đúng chuyển sắc</b> (bằng chứng: chính icon app hoa anh đào, ảnh <code>gradient-probe.png</code>) ⇒ mức tả thực (1) khả thi, §4.8 nâng từ [ĐOÁN] lên [ĐO]. <b>Sai lệch có chủ ý</b>: không dựng <code>ic_probe_gradient.xml</code> rời — xem §9 mục 5. Phần <b>đường ống sinh icon</b> vẫn 🔲 (thuộc P2). Bản gốc: <b>Dựng lại đường ống</b> (cổng C2): <code>scripts/design/gen-icons.py</code> + <code>design/</code>; sinh lại
+<tr><td><b>T4 ✅</b></td><td>—</td>
+<td><b>Đường ống: XONG 2026-09-17 (1.70)</b> — <code>gen-icons.py</code> + <code>gen-car.py</code> ghi thẳng vào <code>res/drawable</code>, <code>--check</code> so byte gọi từ test. Bản gốc: <b>Phép đo gradient: XONG 2026-09-16</b> — [ĐO] AVD API 29, <code>&lt;aapt:attr&gt;&lt;gradient&gt;</code> <b>render đúng chuyển sắc</b> (bằng chứng: chính icon app hoa anh đào, ảnh <code>gradient-probe.png</code>) ⇒ mức tả thực (1) khả thi, §4.8 nâng từ [ĐOÁN] lên [ĐO]. <b>Sai lệch có chủ ý</b>: không dựng <code>ic_probe_gradient.xml</code> rời — xem §9 mục 5. Phần <b>đường ống sinh icon</b> vẫn 🔲 (thuộc P2). Bản gốc: <b>Dựng lại đường ống</b> (cổng C2): <code>scripts/design/gen-icons.py</code> + <code>design/</code>; sinh lại
 <b>bộ icon xe hiện tại</b> trước đã. DoD: sinh lại ra <b>đúng byte</b> các tệp <code>ic_car_*.xml</code> đang có ⇒
 chứng minh script đúng trước khi dùng nó để đổi hình.<br>
 <b>+ phép đo chốt gradient</b> (§4.8): dựng <code>ic_probe_gradient.xml</code> có
@@ -1046,29 +1138,29 @@ chứng minh script đúng trước khi dùng nó để đổi hình.<br>
 thấy khối đặc ⇒ dừng, báo owner trước khi vẽ. Ảnh lưu vào <code>docs/diagnostics/</code>.</td>
 <td><code>scripts/design/</code>, <code>design/</code></td><td>2</td></tr>
 
-<tr><td><b>T5</b></td><td>T4 · <b>C1</b> 🔒</td>
-<td><b>Vẽ 3 SVG nguồn</b> (top · front · side) theo §4.3 với lớp có tên đầy đủ. DoD: mở bằng trình xem SVG thấy đủ
+<tr><td><b>T5 ✅</b></td><td>T4 · <b>C1</b> 🔒</td>
+<td><b>XONG 2026-09-17</b> — <code>design/car/{top,front,side}.svg</code>, 27/19/18 path khung (trần 28), 14+8 glyph icon. Bản gốc: <b>Vẽ 3 SVG nguồn</b> (top · front · side) theo §4.3 với lớp có tên đầy đủ. DoD: mở bằng trình xem SVG thấy đủ
 6 lớp · script xuất được cả 3 mặt không lỗi.</td>
 <td><code>design/car/*.svg</code></td><td>3</td></tr>
 
-<tr><td><b>T6</b></td><td>T5</td>
-<td><b>Sinh bộ icon xe mới</b> (mọi <code>ic_car_*</code>) ở 3 cỡ. DoD: <code>CarFramesSourceContractTest</code> mở rộng
+<tr><td><b>T6 ✅</b></td><td>T5</td>
+<td><b>XONG 2026-09-17</b> — 43 <code>ic_car_*</code> (≤ 6 path, một tông) + 4 mặt 48dp gradient; <code>CarFramesSourceContractTest</code> mở rộng 3 mặt. Bản gốc: <b>Sinh bộ icon xe mới</b> (mọi <code>ic_car_*</code>) ở 3 cỡ. DoD: <code>CarFramesSourceContractTest</code> mở rộng
 xanh (SVG ↔ pathData ↔ hằng Kotlin) · trần path AC5.1 đạt.</td>
 <td><code>res/drawable/</code>, <code>app/…/CarFrames.kt</code></td><td>2</td></tr>
 
-<tr><td><b>T7</b></td><td>T4 · <b>C1</b> 🔒</td>
-<td><b>Vẽ lại icon KHÔNG-phải-xe</b> (khái niệm trừu tượng: pin · tia sét · nhiệt · quạt · lá · GPS…) theo ngữ pháp
+<tr><td><b>T7 ✅</b></td><td>T4 · <b>C1</b> 🔒</td>
+<td><b>XONG 2026-09-17</b> — 85 glyph <code>design/glyph/</code> (13 tệp legacy ngoài đường ống có lý do). Bản gốc: <b>Vẽ lại icon KHÔNG-phải-xe</b> (khái niệm trừu tượng: pin · tia sét · nhiệt · quạt · lá · GPS…) theo ngữ pháp
 §4.2. DoD: từng tệp có header nói <b>vì sao hình này</b> (lệ đang có trong bộ) · thang alpha 3 bậc · 2 độ dày nét.</td>
 <td><code>design/glyph/*.svg</code> → <code>res/drawable/</code></td><td>4</td></tr>
 
-<tr><td><b>T8</b></td><td>T6 · T7</td>
-<td><b><code>CarPartStyle</code></b> (<code>:core</code> thuần) theo bảng §4.4 + nối 4 bảng Canvas vào
+<tr><td><b>T8 ✅</b></td><td>T6 · T7</td>
+<td><b>XONG 2026-09-17</b> — <code>CarPartStyle</code> + <code>CarPartStyleTest</code> (trọn tích Đề-các); 3 bảng thật là Tyre · Door · <code>CarMiniView</code> (SideBoardView đã xoá). Bản gốc: <b><code>CarPartStyle</code></b> (<code>:core</code> thuần) theo bảng §4.4 + nối 4 bảng Canvas vào
 <code>CarFrames</code> đa-mặt. DoD: <code>CarPartStyleTest</code> phủ mọi cặp · 0 hit <code>drawRoundRect</code> cho
 thân xe trong 4 View (AC1.4) · mỗi hàm mới có call site.</td>
 <td><code>core/…/CarPartStyle.kt</code>(+Test), <code>app/…/{Tyre,Side,Door}BoardView.kt</code>, <code>CarMiniView.kt</code></td><td>3</td></tr>
 
-<tr><td><b>T8b</b></td><td>T8</td>
-<td><b>Mức tả thực (1) + hợp đồng nguồn ảnh</b> (§4.8). (a) Giao diện <code>CarArtSource</code> + bản dựng
+<tr><td><b>T8b ✅</b></td><td>T8</td>
+<td><b>XONG 2026-09-17</b> — <code>CarArtSource</code>/<code>VectorCarArt</code>/<code>CarArtPainter</code>; màu sơn ở <code>SettingsSections.color</code> (không phải <code>SettingsDialogs</code>), <code>KachiCarPaint</code> đo viền. Bản gốc: <b>Mức tả thực (1) + hợp đồng nguồn ảnh</b> (§4.8). (a) Giao diện <code>CarArtSource</code> + bản dựng
 <code>VectorCarArt</code> — <code>RasterCarArt</code> <b>không</b> viết bây giờ, chỉ để giao diện đỡ sẵn;
 (b) 4 gradient + ellipse bóng cho hình xe cỡ lớn; (c) token <code>carPaintFrom/To</code> + <b>một hàng trong Cài đặt</b>
 chọn màu sơn (5 màu §4.8), mặc định Trắng ngọc trai, <b>không hỏi lúc cài</b>.
@@ -1077,29 +1169,29 @@ vẫn tint được) · <code>CarPartStyle</code> <b>không đổi một dòng</
 <code>CarArtSource</code> giả).</td>
 <td><code>app/…/CarArtSource.kt</code>(+Test), <code>KachiPalette.kt</code>, <code>SettingsDialogs.kt</code>, <code>res/drawable/</code></td><td>3</td></tr>
 
-<tr><td><b>T9</b></td><td>T7</td>
-<td><b>Biến thể 32/48dp</b> + nối vào các mặt lớn (thẻ widget, đầu nhóm, ô bộ chọn). DoD: <code>KachiSpace.ICON_L/XL/XXL</code>
+<tr><td><b>T9 ✅</b></td><td>T7</td>
+<td><b>XONG 2026-09-17</b> — <code>KachiIcons.res/tint</code>; chỗ gọi: bộ chọn ngăn kéo (44dp → 48), chip thanh trên (32), ô điều khiển BIG (32). Bản gốc: <b>Biến thể 32/48dp</b> + nối vào các mặt lớn (thẻ widget, đầu nhóm, ô bộ chọn). DoD: <code>KachiSpace.ICON_L/XL/XXL</code>
 tra ra biến thể đúng cỡ, không phóng to icon 24.</td>
 <td><code>res/drawable/</code>, <code>app/…/KachiTheme.kt</code></td><td>2</td></tr>
 
-<tr><td><b>T10</b></td><td>T6 · T7 · T9</td>
-<td><b>Bài canh phong cách mới.</b> Cập nhật <code>IconStyleContractTest</code> (thang alpha · 2 nét · trần path ·
+<tr><td><b>T10 ✅</b></td><td>T6 · T7 · T9</td>
+<td><b>XONG 2026-09-17</b> — [ĐO] vá tay 1 ký tự ⇒ <code>--check</code> đỏ. Bản gốc: <b>Bài canh phong cách mới.</b> Cập nhật <code>IconStyleContractTest</code> (thang alpha · 2 nét · trần path ·
 sinh-lại-so-byte) + thêm <code>IconSetInventoryTest</code> (AC6.2). DoD: cả hai xanh · cố tình vá tay một tệp ⇒ đỏ
 (kiểm bằng cách thử).</td>
 <td><code>app/src/test/java/…/IconStyleContractTest.kt</code>, <code>…/IconSetInventoryTest.kt</code></td><td>2</td></tr>
 
-<tr><td><b>T11</b></td><td>T3 · T8b · T10</td>
-<td><b>Ma trận ảnh chụp máy ảo</b> §6.1 + <code>gfxinfo</code> trước/sau §6.2 + Δ APK §6.3 + bảng tương phản §6.4.
+<tr><td><b>T11 ✅</b></td><td>T3 · T8b · T10</td>
+<td><b>XONG 2026-09-17</b> — <code>p2p3/</code> 14 ảnh · gfxinfo 3 lượt · Δ APK. Bản gốc: <b>Ma trận ảnh chụp máy ảo</b> §6.1 + <code>gfxinfo</code> trước/sau §6.2 + Δ APK §6.3 + bảng tương phản §6.4.
 DoD: bằng chứng lưu vào <code>docs/diagnostics/visual-refresh-&lt;ngày&gt;/</code> và được dẫn từ §6.</td>
 <td><code>scripts/emulator/</code>, <code>docs/diagnostics/</code></td><td>2</td></tr>
 
-<tr><td><b>T12</b></td><td>T11</td>
-<td><b>Bump version + cập nhật doc.</b> <code>versionCode</code>/<code>versionName</code> mỗi pha (CLAUDE.md §9);
+<tr><td><b>T12 ✅</b></td><td>T11</td>
+<td><b>XONG 2026-09-17 — 1.70 (71)</b>. Bản gốc: <b>Bump version + cập nhật doc.</b> <code>versionCode</code>/<code>versionName</code> mỗi pha (CLAUDE.md §9);
 cập nhật <code>docs/README.md</code> (INDEX) + <code>docs/PROJECT-BACKLOG.md</code> + <code>.kiro/steering/project-context.md</code>
 trong <b>cùng</b> commit (R2.1).</td>
 <td><code>app/build.gradle.kts</code>, <code>docs/</code>, <code>.kiro/steering/</code></td><td>1</td></tr>
 
-<tr><td><b>T13</b></td><td>T12</td>
+<tr><td><b>T13</b> 🔲 (parent)</td><td>T12</td>
 <td><b>Senior review (Opus) + security scan + build.</b> <code>./gradlew clean assembleRelease testDebugUnitTest</code>
 (JAVA_HOME <code>/opt/homebrew/opt/openjdk@17</code>; trả <code>local.properties</code> về <code>sdk.dir</code> Windows sau khi build).
 Vòng lặp review tới khi 0 finding [P0]–[P3].</td>
@@ -1314,6 +1406,110 @@ code THỰC TẾ, kể cả chỗ lệch. Nếu có quyết định kiến trúc
 và link vào đây.</p>
 <p class="muted">Mỗi mục nêu: <b>ngày</b> · loại (quyết định / trade-off / sai lệch-spec / bug / spec-không-work) ·
 nội dung · <code>file:line</code> hoặc commit.</p>
+
+<h3>P2 + P3 — 2026-09-17 (bộ icon · hình xe mức tả thực (1) · màu sơn — 1.70 · 71)</h3>
+<ol>
+<li><b>P2P3-1 · Đường ống ghi thẳng vào đích.</b> Hai agent nguồn (B1 glyph, B2 xe) sinh vào <code>design/out/</code>;
+tích hợp đổi đích thật: <code>gen-icons.py</code> → <code>res/drawable</code>; <code>gen-car.py</code> → <code>res/drawable</code>
++ <code>launcher/CarFramesGenerated.kt</code> + <code>design/car/manifest.json</code>; <code>design/out/</code> xoá, ảnh xem trước
+chuyển vào <code>docs/diagnostics/…/p2/</code>, <code>p3/</code>. <code>--check</code> của cả hai so byte với ba đích.</li>
+<li><b>P2P3-2 · [ĐO] AGP từ chối <code>android:fillColor</code> phẳng đi kèm <code>&lt;aapt:attr&gt;</code></b>
+(<code>ResourceCompilerRunnable</code>: "Cannot find attribute fillColor"; aapt2 thuần thì nuốt) ⇒ script bỏ thuộc tính phẳng
+khi có gradient. Không có bằng chứng dựng thật thì 111 tệp gradient đã lên xe rồi mới đỏ.</li>
+<li><b>P2P3-3 · Lớp NỀN vẽ trước.</b> 17 glyph của B1 đặt đĩa nền (bg 0.16) SAU lớp chính ⇒ phủ màng 16 % lên hình; script
+nay sắp bg lên đầu, giữ thứ tự sub/main như nguồn (chi tiết sub được phép nằm trên main — gờ bàn đạp).</li>
+<li><b>P2P3-4 · Sáu icon vẽ lại lần hai</b> (engine · mode · group_windows · pedal · torque · hood) + chín glyph co/dịch bằng
+<code>fit-glyph.py</code>: script sinh nay kiểm ĐÚNG luật của <code>IconGeometryContractTest</code> (dung sai 0.05, cạnh ≥ 16) —
+B1 để 0.35/14 nên tệp sinh xanh ở script mà đỏ ở test.</li>
+<li><b>P2P3-5 · Sai lệch có chủ ý so với bảng §4.4</b>: đèn TẮT = mảng mờ <code>partFill</code> thay vì "nét MUT2" — [ĐO máy ảo]
+nét thân ≥ 2dp bọc thấu kính 1–2 đơn vị thành hai cục xám ở mũi xe. Gương WARN/ALERT (§4.4 ghi "—") lấy cùng thang các bộ phận
+khác thay vì nhánh im lặng. Bánh lốp: tone suy từ <code>TyreStatus</code> qua <code>CarPartStyle.tyreTone</code> (một chỗ dịch).</li>
+<li><b>P2P3-6 · [ĐO] <code>Paint.color</code> nhân alpha vào shader</b>: đặt màu lùi 20 % rồi gắn shader ⇒ thân sơn ngọc trai ra
+xám mờ trên cả hai bảng (ảnh lượt đầu). Có shader ⇒ alpha 255.</li>
+<li><b>P2P3-7 · Bảng chỉ vẽ bộ phận thuộc câu hỏi của nó</b>: <code>CarArtPainter.draw(include=…)</code> — bảng lốp không vẽ vạt
+cửa/gương/nắp (lượt đầu vẽ đủ ⇒ bảng lốp trông như xe mở bốn cửa); widget xe không vẽ gương/ca-pô.</li>
+<li><b>P2P3-8 · Mảnh trạng thái không bắt buộc có icon</b>: <code>CarFramesSourceContractTest</code> đòi mọi mảnh lớp
+body/glass/tyres/doors có mặt trong một drawable; lớp lights/glow/shadow/rear/glyph là trạng thái/trang trí chỉ Canvas dùng
+(xi-nhan mặt TOP không có icon nào — đúng thiết kế B2: mặt "nghỉ" không bật xi-nhan).</li>
+<li><b>P2P3-9 · Tên tệp <code>ic_car</code> ≠ họ <code>ic_car_top_/front_/rear_</code></b>: glyph "xe" của lĩnh vực Danh tính có
+biến thể <code>ic_car_l</code>/<code>ic_car_xl</code>; ba bài canh lọc theo tiền tố ba mặt, không theo <code>ic_car_</code>.</li>
+<li><b>P2P3-10 · Trần 500 dòng</b>: <code>KachiPalette.kt</code> tách hạt giống màu nhấn · tông · màu sơn sang
+<code>KachiPaletteSeeds.kt</code> (vào <code>hexAllowed</code> + danh sách tệp thuần của <code>LayeringRulesTest</code> kèm lý do);
+<code>CarFramesGenerated.kt</code> (tệp sinh, dữ liệu) cũng vào danh sách đó.</li>
+<li><b>P2P3-11 · Chưa làm / cần ai</b>: 🚗 T14 owner ngắm (banding gradient trên màn xe, sơn tối ban ngày, bảng lốp có số thật);
+<code>RasterCarArt</code> không viết (chỉ giao diện); mặt FRONT/SIDE chưa có bảng Canvas nào dùng (chỉ 4 tệp 48dp +
+icon) — chỗ dùng đầu tiên sẽ là widget đèn (P3 nối tiếp); contact sheet Pillow không thay được render Android.</li>
+</ol>
+<h3>P1b — 2026-09-17 (hình nền là cửa sổ · chọn màu)</h3>
+
+<h4>P1b-1 · quyết định — cửa sổ kính phải biết VỊ TRÍ thẻ, nên cửa vào là <code>KachiGlass.apply(view…)</code> chứ không phải một <code>Drawable</code></h4>
+<p>§4.10 dặn "chèn một lớp bitmap ở chỉ số 0 của <code>LayerDrawable</code>". Chèn được, nhưng lớp đó phải vẽ
+<b>đúng vùng ảnh nằm dưới thẻ</b>, mà một <code>Drawable</code> không biết view của nó ở đâu; và dưới HW-acceleration
+<code>canvas.matrix</code> của mỗi view là ma trận <b>cục bộ</b> (mỗi view một RenderNode) nên không suy được vị trí
+trong cửa sổ từ canvas. ⇒ cửa vào nhận <b>view</b>: <code>KachiGlass.apply(view, radius, tone, domain)</code> ghi tag
+(<code>R.id.kachi_glass_spec</code>), gắn listener layout + cuộn, và <code>WallWindowDrawable.relocate(view)</code> đọc
+<code>getLocationInWindow</code> <b>chỉ khi vị trí đổi</b>. <code>GroupTileView.surfaceOf</code> vì thế đổi chữ ký
+(nhận view, không trả drawable) — hai chỗ gọi (<code>GroupTiles.kt</code>, <code>GroupTileParts.kt</code>) sửa theo.
+<b>Không có ảnh</b> ⇒ <code>apply</code> rơi về đúng <code>KachiTheme.surface(...)</code>; [ĐO] ảnh máy ảo bố cục 4 ô
+TỐI không ảnh: điểm ảnh khay <code>(800,320) = (34,40,49)</code>, thẻ <code>(300,300) = (34,41,50)</code>, nền
+<code>(960,540) = (10,13,19)</code> trùng 1.69 <b>từng byte</b> (mục khác nhau chỉ ở nội dung ô — máy ảo đang có ô
+YouTube thay ô Khí hậu).</p>
+
+<h4>P1b-2 · quyết định — ảnh đổi thì <b>dựng lại nền kính tại chỗ</b>, KHÔNG <code>recreate()</code></h4>
+<p>Đường "bảng màu đổi ⇒ <code>recreate()</code>" là của nút chủ đề, và nó đắt (app đang chiếu trong ô bị nhả/gắn).
+Trình chiếu đổi ảnh mỗi 15 s–30 ph, nên ảnh đổi phải rẻ: <code>WallpaperController</code> nhận thêm
+<code>onArtChanged</code> → <code>KachiGlass.refresh(rootFrame)</code> đi cây view, dựng lại nền của đúng những view
+có tag. Thứ tự bắt buộc (bài canh): <code>WallArtStore.swap</code> → <code>onArtChanged()</code> → <b>rồi mới</b>
+nhả ảnh mờ cũ (drawable cũ còn trỏ tới nó tới lúc được thay). <code>WallArtStore</code> là <code>object</code> cấp
+tiến trình (không phải field Activity) vì ô <i>theo ảnh nền</i> đổi bảng màu ⇒ <code>recreate</code>; nếu màu trội
+chết theo Activity thì <code>onCreate</code> áp bảng không có màu ảnh → ảnh về lại đổi bảng → vòng lặp dựng lại vô tận.</p>
+
+<h4>P1b-3 · sai lệch-spec (có chủ ý) — §4.10 mục (5) nói "chọn MỰC theo độ chói"; làm là "chọn LỚP CHE theo độ chói"</h4>
+<p>Mực của một thẻ là hằng lúc dựng view (mọi <code>TextView</code> nhận <code>KachiTheme.MUT</code> khi dựng, ở
+hàng chục chỗ). Đổi mực theo từng thẻ nghĩa là mọi view phải hỏi lại nền của mình sau layout, và mỗi lượt trình chiếu đổi
+ảnh là một lượt dựng lại chữ — đúng thứ P1b-2 vừa tránh. Lớp che thì nằm <b>trong chính drawable</b>: đo lúc layout,
+vẽ lúc draw. AC8.5 cho phép cả hai vế ("tự đậm hoá nền <i>hoặc</i> đổi mực"); kết quả đọc được là như nhau và được
+chứng minh bằng số thay vì bằng ảnh: <code>GlassVeil.alphaFor</code> tìm alpha nhỏ nhất trong 35–90 % để <b>mọi</b>
+mực (thẻ thường/khay: <code>mut</code>·<code>mut2</code>·<code>ink</code>; thẻ BẬT: <code>ink</code> — cùng hợp
+đồng với bảng đo P1) đạt 4.5 trên <b>mọi</b> độ chói 0..1 (bước 0.05), <b>ba</b> tone, <b>hai</b> bảng — 189 ca, 0 ❌.
+Dải 35–90 chứ không 35–50 như mục (2): [ĐO] ảnh trắng tinh + "làm tối 0 %" cần ~82 %; ảnh cát đã làm tối 45 % rơi
+vào 35–50. Trần 90 để thẻ không bao giờ đục hẳn.</p>
+
+<h4>P1b-4 · quyết định — hạt giống <i>theo ảnh nền</i> lấy từ ảnh ĐẦU của bộ, không phải ảnh đang chiếu</h4>
+<p>Cùng lý do P1b-2: bảng màu đổi là <code>recreate</code>. Ảnh đầu (thứ tự ổn định của
+<code>Slideshow.imagesFrom</code>) là hạt giống ổn định tới khi người dùng đổi bộ ảnh hoặc đổi hồ sơ; còn lớp nhuộm
+6 % trên từng thẻ thì theo ảnh <b>đang</b> chiếu (nó ở trong drawable). Câu chú thích ở Cài đặt nói đúng điều này.</p>
+
+<h4>P1b-5 · trade-off — <code>KachiTheme.kt</code> vượt trần 500 ⇒ tách 5 bộ dựng drawable, KHÔNG tách bảng icon</h4>
+<p><code>applyTheme</code> nhận thêm hai đầu vào + <code>surfacePair</code> đẩy tệp lên 526 dòng. Bốn bài canh icon
+đọc bảng <code>iconRes</code> từ chính tệp này nên bảng ở lại; <code>card/gradient/gradientSoft/topFade/pill</code>
+thành hàm mở rộng ở <code>KachiThemeDrawables.kt</code> — cùng chữ ký, cùng cách gọi, 0 chỗ gọi phải sửa (trừ một
+<code>import</code> ở gói con <code>voice/</code>). Kết quả 472 dòng.</p>
+
+<h4>P1b-6 · bug — thứ tự "màu nhấn → tông" làm lớp bảo vệ đo SAI nền</h4>
+<p>[ĐO] bản đầu chạy <code>ContrastGuard</code> bên trong bước đổi màu nhấn rồi mới nhuộm tông ⇒ nền <code>tile</code>
+bị nhuộm <b>sau</b> khi đo, <code>inkOnAccent</code> tụt 4.22–4.48 ở TEAL/AMBER/CORAL/WARM_WHITE × ấm/lạnh. Sửa:
+tông → màu nhấn → <code>guarded()</code> đo nền cuối. Cùng lượt: <code>fitInk</code> của <code>accentInk</code> đo 4 nền
+⇒ bảng SÁNG tụt 4.12–4.47 ở <code>slotTo</code>/<code>fieldSunken</code> (đúng hai nền bảng gốc đã ghi "chạm sàn") ⇒
+đo đủ 13 nền của <code>ThemePaletteContractTest.textOn</code>.</p>
+
+<h4>P1b-7 · đo — <code>DominantColors</code>: 15 % biển xanh KHÔNG thắng 85 % cát</h4>
+<p>Điểm = đếm × (0.1 + 1.5·bão hoà). [ĐO] 35 % biển thắng 65 % cát; 15 % thì thua (ảnh đó <i>là</i> ảnh cát) — nhưng
+hạt giống màu nhấn lấy màu <b>rực nhất</b> trong ba màu trội nên vẫn ra biển. Ghi để không ai "sửa cho biển thắng"
+bằng cách nâng trọng số rồi biến mọi ảnh thành ảnh của cái áo đỏ ở góc.</p>
+
+<h4>P1b-8 · trade-off — <code>KachiPaletteDerive.kt</code> "thuần" mà ở <code>:app</code></h4>
+<p><code>LayeringRulesTest</code> đỏ vì tệp không import Android. Nó là hàm mở rộng của <code>KachiPalette</code>
+(bảng hex, đã có ngoại lệ) và đọc hạt giống hex của nó; phép <b>tính</b> thì ở <code>:core</code>
+(<code>ColorMath</code> · <code>ContrastGuard</code> · <code>GlassVeil</code> · <code>DominantColors</code>, 5 bài canh
+thuần). Khai vào danh sách-kèm-lý-do, không nâng con số chốt.</p>
+
+<h4>P1b-9 · dây nối — thêm một mục Cài đặt là chạm 6 bài canh, và đó là đúng</h4>
+<p><code>display_color</code> vào <code>SettingsCatalogEntries</code> ⇒ <code>LangCoverageTest</code> ghim 70→71 mục,
+278→279 nhãn (sau khi có bản EN "Colours"); <code>SettingsCatalogControlContractTest</code> đòi control thật
+(<code>deps.onColorChoice(</code>); <code>ProfileScopeTest</code>/<code>ProfileKeysWiringContractTest</code> đòi khoá theo
+hồ sơ; <code>SpacingScaleContractTest</code> bắt một <code>Sp.STROKE + 1</code> ⇒ dùng <code>Sp.XS</code>. Không bài
+nào bị nới.</p>
 <h3>P1 — 2026-09-16 (1.68 · 69)</h3>
 
 <h4>1 · T1 — sáu mã hex đề xuất ở §4.1 sau khi qua bảng đo: <b>hai giữ, bốn đổi, năm vai thêm mới</b></h4>
@@ -1568,6 +1764,135 @@ một chỗ, và bài canh <code>nen khay the la ba bac nhin ra duoc</code> sẽ
 <h2>10. Reviewer Log</h2>
 <p class="muted">Append-only. Mỗi pass thêm một mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG overwrite lịch sử.
 Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<h3>Pass 6 — 2026-09-17 (senior review VISUAL P1b + P2/P3, off-car, trước ship 1.70)</h3>
+<p><b>Phạm vi</b>: phần VISUAL của lô 1.70 chưa commit — P1b (hình nền là cửa sổ · chọn màu) + P2 (bộ icon) + P3
+(hình xe · màu sơn). Reviewer được phép vá; KHÔNG commit. Lượt soát trước bị <b>dừng giữa chừng</b> khi đang vá
+<i>"stale glass tag"</i> ở <code>WallGlass.kt</code> ⇒ pass này làm lại từ đầu.
+Verdict <b>APPROVED</b> — <b>2 × [P1] · 4 × [P2] · 3 × [P3] đã vá</b>; 6 mục ngoài phạm vi ghi ra, không vá.</p>
+
+<h4>Phát hiện đã vá</h4>
+<ul>
+<li><b>[P1] Sơn ĐỎ + một bộ phận ALERT ⇒ TÔ KÍN thân xe bằng hổ phách.</b> <code>CarPartStyle.alert()</code> đổi
+<i>mọi</i> vai sang <code>PartLook(AMBER, AMBER)</code>, kể cả <code>HIGHLIGHT</code> — vai <b>chỉ có NÉT</b> mà
+<code>HIGHLIGHT_REF</code> trỏ về CHÍNH path thân xe ⇒ một bánh non trên xe sơn đỏ là mất cả chiếc xe ở bảng lốp ·
+bảng cửa · widget xe. <b>Bài canh cũ KHOÁ ĐÚNG ĐIỀU SAI</b> (<code>assertEquals(PartLook(AMBER, AMBER, outline =
+true), red)</code> cho mọi vai) nên nó không thể đỏ — đảo chiều bài canh trước, gỡ mã sau (đúng lối Pass 5).
+<b>Đã vá</b>: phép đổi giữ <i>hình dạng</i> cách tô (<code>fill == NONE</code> ở lại <code>NONE</code>) + bài canh
+mới đo NGUYÊN NHÂN <code>vai chi co net khong bao gio to, moi tone moi mau son</code>.
+<span class="ev do">[ĐO]</span> thử phá: dựng lại mã cũ ⇒ <b>2 bài ĐỎ</b>.</li>
+
+<li><b>[P1] Ô chọn MÀU SƠN là NÚT CHẾT.</b> Màu sơn không nằm trong <code>KachiPalette</code> nên
+<code>applyTheme</code> trả <code>false</code> khi chỉ đổi sơn ⇒ <code>render()</code> không dựng lại màn, và
+<code>WorkspaceRenderPlanner</code> cũng không thấy gì đổi (<code>colorChoice</code> nằm ngoài
+<code>WorkspaceState</code>) ⇒ chọn xong không một pixel nào đổi cho tới lần mở app sau. <code>invalidate()</code>
+cũng không cứu được: hai đầu chuyển sắc thân xe là <code>Shader</code> dựng ở <code>CarArtPainter.layout</code>,
+chỉ chạy khi ô ĐỔI CỠ. <b>Đã vá</b>: <code>applyTheme</code> báo <code>true</code> khi <code>carPaint</code> đổi ⇒
+đi đúng đường recreate của nút chủ đề; không có vòng lặp vì <code>carPaint</code> là trạng thái cấp TIẾN TRÌNH như
+<code>palette</code>. Bài canh <code>doi mau son bao co doi de man dung lai</code>, thử phá ⇒ ĐỎ.</li>
+
+<li><b>[P2] Lớp che của thẻ kính KHÔNG đo lại khi thẻ đổi cỡ tại chỗ.</b> Cổng thoát sớm của
+<code>WallWindowDrawable.relocate</code> chỉ so <i>vị trí</i>, nhưng độ chói được đo trên hình chữ nhật
+<code>loc … loc + (w, h)</code> ⇒ thẻ giữ nguyên chỗ mà đổi cỡ nhìn xuống vùng ảnh khác với lớp che của vùng CŨ,
+im lặng; cùng bẫy ở lượt <code>bind</code> đầu (<code>width == 0</code> ⇒ đo một vùng 1×1). <b>Đã vá</b>: cổng xét
+cả cỡ. ⚠ bài canh <b>bản đầu của chính tôi SỐNG SÓT phép thử phá</b> vì <code>lastW</code>/<code>lastH</code> cũng
+xuất hiện ở dòng GÁN ⇒ siết lại thành đọc CHÍNH điều kiện của lệnh thoát sớm, rồi thử phá lại ⇒ ĐỎ.</li>
+
+<li><b>[P2] Ảnh mờ bị thu hồi ⇒ launcher mất màn chính (lỗ tiềm ẩn).</b>
+<code>KachiGlass.refresh</code> chỉ đi cây view dưới <code>rootFrame</code>, còn <code>WallpaperController</code>
+nhả ảnh mờ cũ ngay sau đó ⇒ một thẻ kính nằm ngoài cây đó giữ <code>BitmapShader</code> trỏ vào bitmap đã thu hồi và
+<code>drawRoundRect</code> <b>ném</b>. <span class="ev do">[ĐO]</span> hôm nay chưa xảy ra: 3 chỗ gọi
+<code>KachiGlass.apply</code> đều dưới <code>rootFrame</code> (ngăn kéo <code>TYPE_APPLICATION_OVERLAY</code> dùng
+<code>KachiTheme.surface</code>, không dùng kính) ⇒ ghi là <i>tiềm ẩn</i>, không phóng đại. <b>Đã vá</b>: bỏ lớp ảnh
+khi <code>isRecycled</code> — đúng lá chắn <code>WallView.onDraw</code> đã có cho ảnh gốc; hỏng thì thẻ rơi về lớp
+che + bề mặt, không sập.</li>
+
+<li><b>[P2] Bộ chọn chip thanh trên: ô ĐANG BẬT vẫn mang icon mờ (AC2.6 mất).</b>
+<code>PickerBadge.icon(…)</code> để <code>selected</code> rơi về mặc định <code>false</code> ⇒ ở bảng TỐI cỡ
+<code>ICON_L</code>, <code>KachiIcons.tint</code> áp bộ lọc <i>chưa chọn</i> (bão hoà 35 % · mờ 72 %) cho <b>cả</b>
+ô đang bật, và <code>rebuild()</code> sau mỗi cú bấm dựng lại ô nên nó không bao giờ tự đúng lại — đúng lưới dày
+nhất của app (88 ô). <code>AppDrawer</code> đã lo việc này qua <code>PickerBadge.retint</code>; bộ chọn thì không.
+<b>Đã vá</b>: truyền <code>strip.has(pick.id)</code> + bài canh NGUYÊN NHÂN
+(<code>IconSetInventoryTest.moi o chon truyen trang thai chon cho icon cua no</code>: mỗi tệp gọi
+<code>PickerBadge.icon(</code> phải truyền đối số thứ năm hoặc có <code>retint</code>). Thử phá ⇒ ĐỎ.</li>
+
+<li><b>[P2] Sàn 4.5:1 của thẻ kính chỉ được chứng minh cho bảng GỐC.</b>
+<code>WallGlassContractTest</code> chạy sweep độ chói với <code>ColorChoice.DEFAULT</code>, nhưng
+<code>CardTone</code> nhuộm đúng bốn vai mà lớp che đo (<code>surf*OverArt</code> · <code>slot</code>/<code>slotTo</code>)
+và màu nhấn đổi <code>surfOn*</code>/<code>ink</code> ⇒ 54 bảng còn lại chưa ai đo. <b>Đã vá</b>: mở rộng sweep sang
+mọi biến thể (9 màu nhấn × 3 tông × 2 bảng + 4 màu trội cực đoan) × 21 bậc độ chói × 3 tone.
+<span class="ev do">[ĐO]</span> kết quả <b>0 ❌</b> — sàn GIỮ ĐƯỢC ở mọi lựa chọn; đây là lỗ <i>phủ sóng</i>, không
+phải lỗi tương phản.</li>
+
+<li><b>[P3] <code>veilAlpha</code> là mã chết + một câu KDoc nói sai.</b> <code>var veilAlpha</code> (<code>private
+set</code>) khai <i>"để bảng đo/ảnh chụp đối chiếu"</i> nhưng <span class="ev do">[ĐO]</span> <b>0 chỗ đọc</b> trong
+<code>app</code> · <code>core</code> · <code>docs</code> · <code>scripts</code> (CLAUDE.md §8, cùng họ
+<code>LauncherRequirements.notice()</code> đã gỡ). <b>Đã vá</b>: hạ về biến cục bộ.</li>
+
+<li><b>[P3] Thiếu token <code>CarInk</code> ⇒ ném NGAY TRONG <code>onDraw</code> trên xe.</b>
+<code>CarArtPainter</code> tra bằng <code>colors.getValue(look.fill)</code>; bảng là <code>Map</code> chứ không phải
+<code>when</code> vét cạn nên trình biên dịch không giữ hộ, mà <code>CarPartStyle</code> ở <code>:core</code> có thể
+thêm token mà không thấy bảng ở <code>:app</code>. <b>Đã vá</b>: bài canh
+<code>moi token CarInk co mau trong bang cua painter</code> (20/20 token hiện có đủ màu); thử phá bằng cách gỡ
+<code>DECOR</code> ⇒ ĐỎ.</li>
+
+<li><b>[P3] Bản vá của chính tôi đẩy <code>KachiTheme.kt</code> 495 → 510 dòng</b> (quá trần 500, CLAUDE.md §4.1) ⇒
+nén chú thích, phần lý giải đầy đủ dời vào KDoc của chính bài canh. Kết quả <b>499</b>.</li>
+</ul>
+
+<h4>Đã kiểm, KHÔNG có lỗi</h4>
+<ul>
+<li><b>"stale glass tag" (việc dở của lượt trước) — phần MÃ đã đúng, phần thiếu là BÀI CANH.</b>
+<code>KachiGlass.plain()</code> gỡ thẻ <code>kachi_glass_spec</code> + tháo listener TRƯỚC khi đặt nền, và
+<code>GroupTileViews.surfaceOf</code> đưa WARN/ALERT qua đúng nó; rà hết các chỗ gán <code>view.background</code>
+trực tiếp thì không còn view nào từng-là-kính bị gán thẳng (ô TRỐNG của <code>WorkspaceView</code> là
+<code>FrameLayout</code> mới mỗi lượt <code>makeSlot</code>). Bản vá không có gì canh nó ⇒ thêm
+<code>nen khong-kinh cua o con nhom di qua KachiGlass plain</code>.</li>
+<li><b>Đường ống tài sản khớp byte</b> <span class="ev do">[ĐO]</span>:
+<code>gen-icons.py --check app/src/main/res/drawable</code> ⇒ <b>127 tệp khớp</b>; <code>gen-car.py --check</code>
+⇒ <b>50 tệp khớp</b>; và <code>IconStyleContractTest</code> <b>chạy thật</b> hai lệnh đó (13 bài, <b>0 skipped</b> —
+<code>assumeTrue(python != null)</code> không bỏ qua).</li>
+<li><b>Không có giải mã ảnh trên thread chính</b>: <code>WallpaperStore.loadScaled</code> +
+<code>WallArtBuilder.build</code> (kèm <code>BitmapFactory.decodeFile</code> của <code>loadCached</code> và box blur
+3 lượt) đều nằm trong <code>submitIo</code>; thread chính chỉ có <code>wall.setPhoto</code> +
+<code>KachiGlass.refresh</code>. Thứ tự <code>swap → onArtChanged() → recycle</code> đúng như bài canh đòi.</li>
+<li><b>Không có <code>ConstantState</code> dùng chung</b>: <code>surface</code>/<code>card</code>/<code>gradient</code>/
+<code>gradientSoft</code>/<code>topFade</code>/<code>pill</code> đều cấp phát <code>GradientDrawable</code> mới; vật
+dùng chung duy nhất là <code>KachiIcons.UNSELECTED</code> — một <code>ColorMatrixColorFilter</code> bất biến.</li>
+<li><b>Mọi thành viên mới có chỗ gọi thật</b> (CLAUDE.md §8) sau khi gỡ <code>veilAlpha</code>.
+<code>GlassVeil.worstRatio</code> trông như mã chết với phép grep có tiền tố nhưng được gọi <i>không tiền tố</i> từ
+<code>alphaFor</code> — ghi lại để lượt sau không "dọn" nó.</li>
+<li><b>Bộ đệm đĩa ảnh mờ có chặn trên</b>: hàng <i>làm tối</i> ở Cài đặt là <b>chip 4 lựa chọn</b> (0/25/45/65),
+<i>vừa khung</i> 2 ⇒ tối đa 8 mục đệm mỗi ảnh. Kiểm bằng cách đọc chỗ dựng chip, không suy từ chữ "phần trăm".</li>
+</ul>
+
+<h4>Ngoài phạm vi VISUAL — ghi ra, KHÔNG vá</h4>
+<ul>
+<li><b>[P2] <code>Prefs.kt</code> 492 → 509 dòng</b> — <b>vượt trần 500 trong chính lô này</b>, nhưng phần thêm là
+việc GIỌNG NÓI, không phải visual. Cần tách hoặc một lời miễn tường minh của owner trước khi ship.</li>
+<li><b>[P3] Ba tệp vốn đã quá trần bị lô này bồi thêm</b>: <code>KachiHomeActivity.kt</code> 533 → <b>536</b> (+3 do
+visual: đúng dòng nối <code>onArtChanged</code>) · <code>AppDrawer.kt</code> 508 → 509 ·
+<code>SherpaModelCatalog.kt</code> 440 → <b>510</b> (giọng nói). Tách <code>KachiHomeActivity</code> — tệp sở hữu
+đường chiếu app lên <code>VirtualDisplay</code> — không phải việc làm bên trong một lượt soát visual.</li>
+<li><b>[P3] Cấp phát trong <code>onDraw</code></b>: <code>CarMiniView</code> và <code>DoorBoardView</code> truyền
+<code>toneOf</code>/<code>availableOf</code> có bắt <code>this</code> ⇒ mỗi khung một thực thể (~3 lượt cấp phát,
+nhịp 1 Hz). <code>TyreBoardView</code> sạch vì lambda của nó không bắt gì (Kotlin dựng singleton). Dưới ngưỡng ồn.</li>
+<li><b>[P3] <code>ContrastGuard.Fit</code> là <code>data class</code> giữ <code>IntArray</code></b> ⇒
+<code>equals</code>/<code>hashCode</code> theo THỰC THỂ. Hôm nay không chỗ nào so <code>Fit</code>.</li>
+<li><b>[P3] Khoá bộ đệm ảnh mờ thiếu <code>RADIUS</code>/<code>PASSES</code></b>: đổi hai hằng làm mờ sẽ dùng lại
+PNG cũ. <code>SCALE</code>/<code>COLS</code>/<code>ROWS</code> thì đã được hai phép kiểm cỡ/độ dài chặn.</li>
+<li><b>🚗 Vẫn chưa có gì đo trên xe.</b> Cả hai [P1] tìm ra bằng ĐỌC MÃ, không bằng ảnh; kết quả nhìn thật (banding
+gradient, sơn tối ban ngày, hình xe trên bảng lốp) vẫn là T14 — owner ngắm.</li>
+</ul>
+
+<h4>Kết quả test cuối <span class="ev do">[ĐO]</span></h4>
+<ul>
+<li><code>:core:test --rerun-tasks</code>, 6 lớp visual: <b>32 bài / 0 đỏ</b> (trước pass: 31).</li>
+<li><code>:app:testDebugUnitTest --rerun-tasks</code>, 23 lớp visual + hợp đồng liên quan:
+<b>181 bài / 0 đỏ / 0 skipped</b> (trước pass: 176).</li>
+<li><code>:app:compileReleaseKotlin</code> + <code>:core:compileKotlin</code>: BUILD SUCCESSFUL.</li>
+<li><b>5 phép thử phá, cả 5 ĐỎ đúng bài</b>, mỗi lần hoàn nguyên có kiểm <code>diff</code> byte-identical.</li>
+</ul>
+
 <h3>Pass 5 — 2026-09-17 (final senior review 1.69)</h3>
 <p><b>Phạm vi</b>: lượt VISUAL Pass 5 (gỡ lớp <code>edge</code>/<code>crisp</code> khỏi <code>KachiTheme.surface()</code>, gỡ vai
 <code>surfEdge</code>/<code>surfOnEdge</code>, đảo chiều ba bài canh, 10 ảnh chụp lại) trong lô 1.69 chưa commit.

@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Rect
@@ -21,6 +22,10 @@ class WallView(context: Context) : View(context) {
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
     private val photoPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
     private val dimPaint = Paint()
+    /** P1b · §4.10 mục (3) — hai dải che ở đỉnh/đáy màn khi có ảnh; shader dựng ở [onSizeChanged], không mỗi khung. */
+    private val bandTop = Paint()
+    private val bandBottom = Paint()
+    private var bandH = 0f
     private val src = Rect()
     private val dst = Rect()
 
@@ -71,24 +76,8 @@ class WallView(context: Context) : View(context) {
 
         val bw = p.width; val bh = p.height
         if (bw <= 0 || bh <= 0) return
-        when (fit) {
-            ImageFit.FILL -> {
-                // Phủ kín: cắt phần thừa ở giữa ảnh (cắt lệch một bên sẽ mất chủ thể).
-                val scale = maxOf(w / bw, h / bh)
-                val cw = (w / scale).toInt().coerceAtMost(bw)
-                val ch = (h / scale).toInt().coerceAtMost(bh)
-                src.set((bw - cw) / 2, (bh - ch) / 2, (bw - cw) / 2 + cw, (bh - ch) / 2 + ch)
-                dst.set(0, 0, w.toInt(), h.toInt())
-            }
-            ImageFit.FIT -> {
-                val scale = minOf(w / bw, h / bh)
-                val dw = (bw * scale).toInt()
-                val dh = (bh * scale).toInt()
-                src.set(0, 0, bw, bh)
-                val left = ((w.toInt() - dw) / 2); val top = ((h.toInt() - dh) / 2)
-                dst.set(left, top, left + dw, top + dh)
-            }
-        }
+        // P1b: phép phủ/vừa khung dùng CHUNG với `WallArtBuilder` (ảnh mờ dưới thẻ kính phải khớp đúng ảnh này).
+        WallFit.map(bw, bh, w, h, fit, src, dst)
         canvas.drawBitmap(p, src, dst, photoPaint)
 
         // Làm tối ảnh: CẦN THIẾT, không phải trang trí — ảnh sáng làm chữ/ô của launcher nằm trên nó khó đọc.
@@ -105,5 +94,31 @@ class WallView(context: Context) : View(context) {
                 ((dimPercent * 255 / 100).coerceIn(0, 255) shl 24)
             canvas.drawRect(0f, 0f, w, h, dimPaint)
         }
+        drawBands(canvas, w, h)
+    }
+
+    /**
+     * P1b · §4.10 mục (3) — hai dải che (màu nền thanh trên → trong suốt) ở đỉnh và đáy màn, **chỉ khi có ảnh**:
+     * thanh trạng thái trên và thanh nút xe luôn có nền đọc được, kể cả khi ảnh có vùng trắng đúng chỗ đó. Vai màu
+     * [KachiTheme.BAR_TOP] đã là "nền của thanh trên" ở cả hai bảng nên dải này theo chủ đề mà không mở vai mới.
+     */
+    private fun drawBands(canvas: Canvas, w: Float, h: Float) {
+        if (bandH <= 0f) return
+        canvas.drawRect(0f, 0f, w, bandH, bandTop)
+        canvas.drawRect(0f, h - bandH, w, h, bandBottom)
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w <= 0 || h <= 0) { bandH = 0f; return }
+        bandH = h * BAND_FRACTION
+        val bar = Color.parseColor(KachiTheme.BAR_TOP)
+        bandTop.shader = LinearGradient(0f, 0f, 0f, bandH, bar, Color.TRANSPARENT, Shader.TileMode.CLAMP)
+        bandBottom.shader = LinearGradient(0f, h - bandH, 0f, h.toFloat(), Color.TRANSPARENT, bar, Shader.TileMode.CLAMP)
+    }
+
+    private companion object {
+        /** Dải che cao 14 % màn (≈ 150 px trên 1080): phủ thanh trên + thanh nút, tan hết trước hàng ô đầu tiên. */
+        const val BAND_FRACTION = 0.14f
     }
 }

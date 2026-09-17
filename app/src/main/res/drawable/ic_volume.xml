@@ -1,10 +1,23 @@
+<!--
+  ÂM LƯỢNG (`vol` · `media_vol`) — loa tô chuyển sắc + hai cung sóng nét: mức âm là cung, loa là ngữ cảnh.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/volume.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực INFOTAINMENT · họ màu media · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M3.4,9.4 L3.4,14.6 L7.6,14.6 L12.2,19.2 L12.2,4.8 L7.6,9.4 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M15.4,8.4 A4.8,4.8 0 0 1 15.4,15.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.6 9.4 L 7.2 9.4 L 12.4 4.8 L 12.4 19.2 L 7.2 14.6 L 3.6 14.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3.6" android:startY="4.8" android:endX="12.4" android:endY="19.2">
+                <item android:offset="0" android:color="#FFC75A" />
+                <item android:offset="1" android:color="#B06F05" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 15.56 8.48 A 4.6 4.6 0 0 1 15.56 15.52 M 17.87 5.72 A 8.2 8.2 0 0 1 17.87 18.28"
+        android:fillColor="#00000000" android:strokeColor="#F59E0B" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

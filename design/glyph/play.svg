@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- PHÁT / TẠM DỪNG — tam giác tô chuyển sắc chỉ phải, canh QUANG HỌC (dịch phải 1 đơn vị để trông giữa ô). -->
+  <style>:root{--ink:#ffffff;--main:#f59e0b;--light:#ffc75a;--deep:#b06f05}</style>
+  <path d="M 6.14,3.9 L 20.26,12 L 6.14,20.1 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 1.98,12 A 9.97,9.97 0 1 1 21.92,12 A 9.97,9.97 0 1 1 1.98,12 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

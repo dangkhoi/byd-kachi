@@ -1,0 +1,27 @@
+<!--
+  NHÓM KÍNH — xe NHÌN NGANG (nét mờ) với hai ô kính cửa tô chuyển sắc: kính là thứ ô đang nói, xe chỉ là chỗ nó ở. Vẽ lại 2026-09-17: bản đầu (xe nhìn từ trên + hai mảng kính) ở 24px đọc thành một viên thuốc.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/group_windows.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực BODY · họ màu body · cỡ 48dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 3.01 16.2 L 3.3 12.6 C 3.4 11.4 4.06 10.6 5.12 10.3 L 7.98 9.6 L 10.27 6.3 C 10.65 5.7 11.32 5.4 11.99 5.4 L 16 5.4 C 16.67 5.4 17.24 5.7 17.63 6.3 L 19.44 9.4 L 20.49 9.9 C 21.06 10.2 21.35 10.8 21.35 11.5 L 21.25 16.2"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 4.73 16.6 A 1.91 2 0 1 1 8.55 16.6 A 1.91 2 0 1 1 4.73 16.6 Z M 15.05 16.6 A 1.91 2 0 1 1 18.87 16.6 A 1.91 2 0 1 1 15.05 16.6 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+    <path android:pathData="M 9.32 9.4 L 11.04 6.9 L 13.33 6.9 L 13.33 9.4 Z M 14.47 6.9 L 16.48 6.9 L 17.91 9.4 L 14.47 9.4 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="9.32" android:startY="6.9" android:endX="17.91" android:endY="9.4">
+                <item android:offset="0" android:color="#DFE5EE" />
+                <item android:offset="1" android:color="#6B7686" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 9.32 9.4 L 11.04 6.9 L 13.33 6.9 L 13.33 9.4 Z M 14.47 6.9 L 16.48 6.9 L 17.91 9.4 L 14.47 9.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#AEB8C8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

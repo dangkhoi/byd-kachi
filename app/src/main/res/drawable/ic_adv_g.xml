@@ -1,9 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- L2 Stage 2a — glyph: tool/edit = advanced (white stroke). For tile_adv. -->
+<!--
+  NÂNG CAO (cockpit, ô tile_adv) — cờ-lê nét đầu mở, cán tô: công cụ = cài đặt sâu.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/adv_g.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực COCKPIT · họ màu chrome · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M14.4,6.2 L17.8,9.6 L8.6,18.8 L4.8,20.0 L6.0,16.2 Z M12.2,3.9 L20.1,11.8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 14.2 3.6 A 5.2 5.2 0 0 0 9.6 9.8 L 3.8 15.6 A 1.8 1.8 0 0 0 6.4 18.2 L 12.2 12.4 A 5.2 5.2 0 0 0 18.4 7.8 L 15.6 10.6 L 13.4 8.4 L 16.2 5.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#EAF0F8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

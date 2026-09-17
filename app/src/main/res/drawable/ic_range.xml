@@ -1,21 +1,25 @@
 <!--
-  TẦM HOẠT ĐỘNG (mũi tên chạy tới lá cờ đích) — cho `ev_range_km` · `fuel_range_km`.
-  [U6] "Còn đi được bao xa" KHÁC "đã đi được bao xa": trước đây cả sáu mục quãng đường đều mang ic_road, nên tầm
-  chạy và odo trông y hệt. Ở đây cờ đích = giới hạn còn tới được; ic_road giữ nghĩa quãng đường ĐÃ đi.
+  TẦM (`ev_range_km` · `fuel_range_km`) — mũi tên chạy về CỜ ĐÍCH: còn tới được bao xa. Cờ tô = giới hạn; ic_road giữ nghĩa quãng đường ĐÃ đi.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/range.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M3.6,17 L16,17"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M13.8,14.8 L16,17 L13.8,19.2"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M18.4,4.6 L18.4,12.8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M18.4,5.2 L13.4,7.2 L18.4,9.2 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.4 17.2 L 13.6 17.2 M 10.4 14 L 13.6 17.2 L 10.4 20.4"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 16.2 4.2 L 16.2 20.2"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 16.2 4.6 L 21.2 6.9 L 16.2 9.2 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="16.2" android:startY="4.6" android:endX="21.2" android:endY="9.2">
+                <item android:offset="0" android:color="#8FF0C4" />
+                <item android:offset="1" android:color="#0F8F63" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

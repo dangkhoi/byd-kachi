@@ -343,15 +343,16 @@ class TestBridgeCommandTest {
     /**
      * Danh sách trắng KHÔNG được chứa khoá của cast/cụm/phím — xem KDoc [TestBridgeCommands.PREFS_SET] (2).
      *
-     * ⚠ Con số **13** (trước H5 là 5): +3 núm Silero VAD (`voice_vad_*` — đường ngắt câu CHÍNH từ 1.69), +4 núm chỉnh bộ nghe (`voice_endpoint_silence_ms` ·
-     * `voice_endpoint_min_speech_ms` · `voice_beam` · `voice_hotword_score`) và +1 của bản vá [P0-2]
-     * (`voice_endpoint_floor_cap` — trần nền, xem KDoc `VoiceEndpointer`). Ghim con số chứ không chỉ ghim tính
+     * ⚠ Con số **14** (trước H5 là 5): +3 núm Silero VAD (`voice_vad_*` — đường ngắt câu CHÍNH từ 1.69), +4 núm chỉnh bộ nghe (`voice_endpoint_silence_ms` ·
+     * `voice_endpoint_min_speech_ms` · `voice_beam` · `voice_hotword_score`), +1 của bản vá [P0-2]
+     * (`voice_endpoint_floor_cap` — trần nền) và **+1 của 1.70** (`voice_tts_speed` — tốc độ đọc Piper, owner
+     * 2026-09-17 "nói nhanh quá"). Ghim con số chứ không chỉ ghim tính
      * chất: một khoá **thêm vào mà không ai bàn** là đúng cách danh sách trắng nở ra cho tới khi nó không còn là
      * một danh sách trắng nữa. Đổi số ở đây phải là một hành động có ý thức, kèm lý do ở dòng này.
      */
     @Test
-    fun `danh sach trang chi co muoi ba khoa, khong cham cast hay cum`() {
-        assertEquals(13, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+    fun `danh sach trang chi co muoi bon khoa, khong cham cast hay cum`() {
+        assertEquals(14, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
         // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
         assertTrue(

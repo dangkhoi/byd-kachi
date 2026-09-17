@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- GẠT MƯA (`wiper` · `wiper_state`) — cần gạt nét trên kính lái mờ, quạt quét tô chuyển sắc: thứ đang nói là cần gạt và vùng quét. -->
+  <style>:root{--ink:#ffffff;--main:#aeb8c8;--light:#dfe5ee;--deep:#6b7686}</style>
+  <path d="M4.39,8.73 A13.6,13.6 0 0 1 19.61,8.73 L12,20 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M12,20 L5.2,8.8" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M2.6,17.6 L5.6,5.4 L18.4,5.4 L21.4,17.6 Z" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M2.6,17.6 L5.6,5.4 L18.4,5.4 L21.4,17.6 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- QUẠT GIÓ (`ac_wind` · nút Gió; nhận dạng nhóm Khí hậu) — ba cánh tô chuyển sắc quanh moay-ơ nét: quạt vẫn chạy khi lạnh đã tắt nên khác ic_ac. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M12,10.2 C9.4,10.2 7.4,6.6 9.6,3.8 C12.4,3.2 13.6,6.2 12,10.2 Z M13.4,12.6 C14.8,14.8 19,15.4 20.2,12 C19.4,9.2 16.2,9.8 13.4,12.6 Z M10.6,12.8 C8,14 5.8,17.8 8.6,20.2 C11.6,20.4 12.2,16.6 10.6,12.8 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M9.8,12 A2.2,2.2 0 1 1 14.2,12 A2.2,2.2 0 1 1 9.8,12 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

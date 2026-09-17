@@ -1,9 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- L2 Stage 2a — glyph: microphone (white stroke). For tile_mic. -->
+<!--
+  MICRO (cockpit, ô tile_mic) — cùng dáng với ic_mic của launcher để hai màn không có hai bộ hình.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/mic_g.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực COCKPIT · họ màu chrome · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M9,6 A3,3 0 0 1 15,6 L15,11 A3,3 0 0 1 9,11 Z M5,11 A7,7 0 0 0 19,11 M12,18 L12,21"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 12 2.8 L 12 2.8 A 2.8 2.8 0 0 1 14.8 5.6 L 14.8 11.2 A 2.8 2.8 0 0 1 12 14 L 12 14 A 2.8 2.8 0 0 1 9.2 11.2 L 9.2 5.6 A 2.8 2.8 0 0 1 12 2.8 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="9.2" android:startY="2.8" android:endX="14.8" android:endY="14">
+                <item android:offset="0" android:color="#FFFFFF" />
+                <item android:offset="1" android:color="#B9C4D4" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 17.8 10.6 A 5.8 5.8 0 0 1 6.2 10.6 M 12 16.4 L 12 20.4 M 8.6 20.6 L 15.4 20.6"
+        android:fillColor="#00000000" android:strokeColor="#EAF0F8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

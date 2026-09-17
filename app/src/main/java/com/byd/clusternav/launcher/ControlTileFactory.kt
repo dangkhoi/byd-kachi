@@ -208,7 +208,7 @@ class ControlTileFactory(
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
         }
-        val r = KachiTheme.iconRes(macro.icon)
+        val r = KachiIcons.res(macro.icon, size.iconDp)
         val icon = ImageView(ctx).apply { if (r != 0) setImageResource(r) }
         // Cùng hàng thì cùng luật: hàng nút nào bỏ icon thì ô gói lệnh cũng bỏ, không thì một hàng có hai kiểu ô.
         if (icons) tile.addView(icon, LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp)))
@@ -289,7 +289,7 @@ class ControlTileFactory(
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
         }
-        val r = KachiTheme.iconRes(pick.icon)
+        val r = KachiIcons.res(pick.icon, size.iconDp)
         val icon = ImageView(ctx).apply { if (r != 0) setImageResource(r) }
         if (icons) tile.addView(icon, LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp)))
         val label = TextView(ctx).apply {
@@ -380,8 +380,8 @@ class ControlTileFactory(
     // ── Helper dùng chung ───────────────────────────────────────────────────────────────────────────────
     /** iconRes theo def.icon; nếu chưa map (ic-adas/ic-drive/ic-mirror…) → icon đại diện domain. */
     private fun iconRes(def: ControlDef): Int {
-        val r = KachiTheme.iconRes(def.icon)
-        return if (r != 0) r else KachiTheme.iconRes(WidgetCatalog.iconFor(def.domain))
+        val r = KachiIcons.res(def.icon, size.iconDp)
+        return if (r != 0) r else KachiIcons.res(WidgetCatalog.iconFor(def.domain), size.iconDp)
     }
 
     private fun tint(icon: ImageView, label: TextView, active: Boolean) {
@@ -390,7 +390,8 @@ class ControlTileFactory(
         // dùng `gradientSoft` = nền nhấn **BÁN TRONG SUỐT**, nên ở bảng sáng nó trộn ra tím nhạt (214,217,248) và
         // icon trắng chỉ còn **1.39:1** — [ĐO] trên ảnh thanh nút xe, glyph ổ khoá gần như biến mất. Ở bảng tối
         // `INK_ON_ACCENT` = `#e7ecff` nên icon vẫn gần như trắng ⇒ bản tối không đổi hình.
-        icon.setColorFilter(c(if (active) KachiTheme.INK_ON_ACCENT else KachiTheme.ICON))
+        // P2 · AC2.6 — hợp đồng cỡ/chủ đề/trạng thái ở [KachiIcons.tint] (mặt nhỏ + bảng sáng vẫn tint mực như trước).
+        KachiIcons.tint(icon, size.iconDp, active, if (active) KachiTheme.INK_ON_ACCENT else KachiTheme.ICON)
         label.setTextColor(c(if (active) KachiTheme.INK_ON_ACCENT else KachiTheme.INK2))
     }
 

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- ĐỒNG HỒ (`trip_hours`; đầu ô Nhanh/ETA của cockpit) — mặt tròn + hai kim; kim là thứ đang nói (thời gian), mặt là ngữ cảnh. -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M3.4,12 A8.6,8.6 0 1 1 20.6,12 A8.6,8.6 0 1 1 3.4,12 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12,7.2 L12,12.4 L15.4,14.4" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3.4,12 A8.6,8.6 0 1 1 20.6,12 A8.6,8.6 0 1 1 3.4,12 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

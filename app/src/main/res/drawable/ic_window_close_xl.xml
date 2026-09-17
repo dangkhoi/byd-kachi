@@ -1,0 +1,25 @@
+<!--
+  ĐÓNG HẾT KÍNH (macro) — khung cửa nét, kính tô kín, mũi tên LÊN là hành động. Cặp với ic_window_open.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/window_close.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực BODY · họ màu body · cỡ 48dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 3.4 19.2 L 3.4 10.4 L 8.2 4.8 L 20.6 4.8 L 20.6 19.2 Z"
+        android:fillColor="#00000000" android:strokeColor="#AEB8C8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.8 17.4 L 5.8 11.2 L 9.2 7.2 L 18.2 7.2 L 18.2 17.4 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="5.8" android:startY="7.2" android:endX="18.2" android:endY="17.4">
+                <item android:offset="0" android:color="#DFE5EE" />
+                <item android:offset="1" android:color="#6B7686" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 12 16.6 L 12 9.6 M 9.6 12 L 12 9.4 L 14.4 12"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

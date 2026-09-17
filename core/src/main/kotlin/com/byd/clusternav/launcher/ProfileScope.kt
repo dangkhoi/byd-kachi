@@ -69,7 +69,13 @@ object ProfileScope {
      * thời nằm trong ảnh chụp ClusterNav — xem [LAUNCHER_OWNED_CLUSTERNAV_KEYS].
      */
     val LAUNCHER_PERSONAL_SUFFIXES: List<String> =
-        listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang", "saved_places")
+        listOf(
+            "theme_mode", "unit_prefs", "wallpaper_prefs", "launcher_autostart", "lang", "saved_places",
+            // VISUAL-REFRESH P1b · R8 (owner 2026-09-16 *"có cho người ta chọn màu không nhỉ?"*) — màu nhấn + tông
+            // thẻ (+ chỗ để sẵn màu sơn P3) là *lựa chọn của một người* y như `theme_mode` ngay cạnh ⇒ theo hồ sơ
+            // (AC8.4). Khoá MỚI hoàn toàn: không có bản chung-cả-máy để lùi về, đọc thẳng `key()` như `saved_places`.
+            "color_choice",
+        )
 
     /**
      * Khoá ClusterNav mà **phía launcher đã sở hữu** dưới một hậu tố riêng ⇒ KHÔNG đi qua ảnh chụp → lý do.
@@ -222,6 +228,12 @@ object ProfileScope {
             "voice_prefer_offline",
             "V1 pha NÓI · R4 — 'Ưu tiên giọng offline'. Cùng lý do [voice_speak_replies], và còn rõ hơn: nó chỉ " +
                 "có tác dụng khi **gói 61 MB đã nằm trên đĩa của chính xe này**, mà đĩa thì không đi theo hồ sơ",
+        )
+        put(
+            "voice_feedback_voice",
+            "voice-clone T7 (2026-09-17) — chọn giọng phản hồi: Piper (mặc định) hay 'Giọng Kachi bé' (gói clip). " +
+                "Cùng lý do [voice_prefer_offline]: gói clip 10 MB nằm trên đĩa của chính xe này, không đi theo hồ " +
+                "sơ; và mặc định phải là Piper bất kể hồ sơ nào (owner chốt: giọng bé chỉ là lựa chọn)",
         )
         put("enable_freeform_support", "cờ boot của HỆ THỐNG (`Settings.Global`) — thuộc máy")
         put("force_resizable_activities", "cờ boot của HỆ THỐNG (`Settings.Global`), gieo CẶP với khoá trên")

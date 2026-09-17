@@ -238,6 +238,8 @@ object TestBridgeCommands {
         "voice_vad_min_silence_ms",
         "voice_beam",
         "voice_hotword_score",
+        // Tốc độ đọc Piper (owner 2026-09-17 "nói nhanh quá") — chỉnh mức chậm đúng ý trên xe không cần build.
+        "voice_tts_speed",
     )
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────

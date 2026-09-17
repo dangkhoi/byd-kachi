@@ -112,6 +112,8 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             activeProfile = prefs.activeProfile(),
             profiles = prefs.profiles(),
             themeMode = prefs.themeMode(),
+            // P1b · R8: màu nhấn/tông thẻ theo hồ sơ — nạp cùng lượt nên đổi hồ sơ là đổi màu (AC8.4), cùng lẽ themeMode.
+            colorChoice = prefs.colorChoice(),
             embedded = false,
             // [SOÁT P1-1 kiến trúc] Ba nhóm này nằm ở KHOÁ RIÊNG (không đi qua `persist`) nhưng vẫn phải có mặt trong
             // state ngay từ lượt nạp. Nạp ở đây thì ca **đổi hồ sơ** tự đúng: `switchProfile` gọi lại `load()` nên bố
@@ -158,6 +160,7 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         prefs.save(state.workspace)
         prefs.saveDock(state.dock)
         prefs.setThemeMode(state.themeMode)
+        prefs.setColorChoice(state.colorChoice)   // P1b · R8 — cùng lượt với chủ đề, theo hồ sơ
         // IA v2 · R3 "một công tắc cho một khái niệm" (docs/specs/kachi-settings-ia-v2.html): màn ClusterNav cũ (nay là
         // màn nâng cao) đọc chủ đề từ store RIÊNG `clusternav_theme` ở attachBaseContext — trước đây hai công tắc độc
         // lập, người dùng chỉnh ở Kachi mà màn kia không đổi. Gương lựa chọn sang store đó NGAY lúc lưu bền, tại chính

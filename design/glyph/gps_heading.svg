@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- HƯỚNG (`gps_heading`) — la bàn: vành nét, kim với nửa ĐẦU tô chuyển sắc là hướng đang đi, nửa đuôi mờ. -->
+  <style>:root{--ink:#ffffff;--main:#4c7dff;--light:#9db6ff;--deep:#4068d7}</style>
+  <path d="M3.2,12 A8.8,8.8 0 1 1 20.8,12 A8.8,8.8 0 1 1 3.2,12 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12,3.9 L14.4,12 L12,10.6 L9.6,12 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M12,20.1 L9.6,12 L12,13.4 L14.4,12 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+</svg>

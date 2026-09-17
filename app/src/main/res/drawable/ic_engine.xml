@@ -1,18 +1,25 @@
 <!--
-  MÁY XĂNG (khối máy + nắp xi-lanh + ống) — cho `engine_rpm`.
-  [U6] Trên xe DM-i có CẢ mô-tơ điện lẫn máy xăng: vòng tua MÁY phải khác vòng tua MÔ-TƠ, không thì hai con số
-  cạnh nhau không biết cái nào của cái gì. Trước đây `engine_rpm` mang hình đồng hồ tốc.
+  MÁY XĂNG (`engine_rpm`) — khối máy BẬC THANG kinh điển (nắp xi-lanh nhô trên-trái, cổ hút phải, đế dưới) tô chuyển sắc + hai chân đế và ống xả mờ: trên DM-i vòng tua MÁY phải khác vòng tua MÔ-TƠ (ic_rpm/ic_motor). Vẽ lại 2026-09-17 (bản đầu = hộp + ống, đọc thành "thùng").
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/engine.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M6.4,9.6 L17.6,9.6 A1.4,1.4 0 0 1 19,11 L19,16.4 A1.4,1.4 0 0 1 17.6,17.8 L6.4,17.8 A1.4,1.4 0 0 1 5,16.4 L5,11 A1.4,1.4 0 0 1 6.4,9.6 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.4,9.6 L8.4,6.2 L14.4,6.2 L14.4,9.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M19,13 L21,13 M5,13 L3,13"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 8.6 4.4 L 14.2 4.4 A 1 1 0 0 1 15.2 5.4 L 15.2 7.6 L 17.2 7.6 A 1 1 0 0 1 18.2 8.6 L 18.2 10.4 L 20.2 10.4 A 1 1 0 0 1 21.2 11.4 L 21.2 15.6 A 1 1 0 0 1 20.2 16.6 L 18.2 16.6 L 18.2 18 A 1 1 0 0 1 17.2 19 L 6.4 19 A 1 1 0 0 1 5.4 18 L 5.4 8.6 A 1 1 0 0 1 6.4 7.6 L 7.6 7.6 L 7.6 5.4 A 1 1 0 0 1 8.6 4.4 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="5.4" android:startY="4.4" android:endX="21.2" android:endY="19">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 3 11.2 L 5.4 11.2 M 3 15 L 5.4 15 M 10.4 4.4 L 10.4 2.6 M 12.4 4.4 L 12.4 2.6"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 9.4 13.4 A 2.2 2.2 0 1 1 13.8 13.4 A 2.2 2.2 0 1 1 9.4 13.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

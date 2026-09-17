@@ -1,16 +1,15 @@
+<!--
+  LẤY GIÓ TRONG (`ac_cycle` · nút Lấy gió trong) — mũi tên xoay vòng tô ở đầu bên trong khoang xe mờ: gió quay lại trong cabin.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/recirc.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực CLIMATE · họ màu climate · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M6.2,11.2 A6.0,6.0 0 0 1 17.8,10.2"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M17.8,10.2 L17.8,4.8 M17.8,10.2 L12.6,10.2"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M17.8,12.8 A6.0,6.0 0 0 1 6.2,13.8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.2,13.8 L6.2,19.2 M6.2,13.8 L11.4,13.8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 7.11 11.22 A 5.2 5.2 0 1 1 10.22 17.89 M 12.4 6.2 L 15.6 8.2 L 13.2 11"
+        android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.4 15.8 L 5 10.2 C 5.6 8.4 7 7.4 9 7.4 L 15 7.4 C 17 7.4 18.4 8.4 19 10.2 L 20.6 15.8 L 20.6 19 L 3.4 19 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

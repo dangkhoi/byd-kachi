@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- TIA SÉT — nhận dạng của điện/sạc (`energy_mode` · `regen_level` · `powertrain_mode` · widget Năng lượng). Khối tô chuyển sắc sáng trên-trái → đậm dưới-phải (một nguồn sáng cho cả bộ); ở cỡ lớn thêm đĩa nền mờ để khối không trơ trên thẻ. -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M14.4,2.8 L6.8,13.2 L11.8,13.2 L9.6,21.2 L17.2,10.8 L12.2,10.8 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M2.4,12 A9.6,9.6 0 1 1 21.6,12 A9.6,9.6 0 1 1 2.4,12 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

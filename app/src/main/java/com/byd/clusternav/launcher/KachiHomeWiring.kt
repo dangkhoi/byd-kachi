@@ -144,6 +144,7 @@ internal fun homePanels(
     // `HomeUiState.savedPlaces` mà `load()` đã nạp (không mở cửa `WorkspacePrefs` thứ hai ở tầng UI).
     onSavedPlaces = { places -> viewModel.setSavedPlaces(places) },
     onThemeMode = { m -> viewModel.setThemeMode(m) },   // T1 — đọc-để-vẽ ở [ThemeHost]; gương store ở repository
+    onColorChoice = { c -> viewModel.setColorChoice(c) },   // P1b · R8 — cùng đường một chiều với chủ đề
     onLangMode = { m -> viewModel.setLangMode(m) },     // U5·T3 — đọc-để-vẽ ở [LangHost.wrap]
     onAutostart = { on -> viewModel.setAutostart(on) },
     onSwitchProfile = { name -> viewModel.switchProfile(name) },

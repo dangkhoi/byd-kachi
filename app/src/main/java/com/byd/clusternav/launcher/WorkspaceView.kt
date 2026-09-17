@@ -279,7 +279,12 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // Nay nó đi qua CÙNG bộ dựng bề mặt với mọi thẻ khác, ở tone KHAY: tối hơn thẻ nội dung một bậc để thẻ có
         // chỗ nổi lên, viền vẫn [KachiTheme.LINE_STRONG] như prototype đã chạy tốt trên xe, cộng sắc lĩnh vực của
         // chính nội dung trong ô ⇒ nhìn màu là biết ô nào là Khí hậu, không phải đọc chữ.
-        fl.background = KachiTheme.surface(context, Sp.RADIUS_L, SurfaceTone.WELL, slotDomain(content))
+        // P1b · §4.10: có ảnh nền thì khay là CỬA SỔ kính nhìn xuống ảnh mờ (KachiGlass); không có ảnh thì đúng
+        // KachiTheme.surface(..., SurfaceTone.WELL, ...) như trước — cùng cửa, cùng tone, không đổi một byte.
+        // Ô TRỐNG không đi qua kính: nó là ngoại lệ có chủ ý (gạch đứt + emptyFill, nhánh Empty bên dưới) — [ĐO] máy
+        // ảo: gắn kính rồi để nhánh Empty đè nền lên thì lượt `KachiGlass.refresh` khi ảnh đổi lại đè kính lên gạch
+        // đứt, ô trống mất dấu "chỗ này đặt được app".
+        if (content !is SlotContent.Empty) KachiGlass.apply(fl, Sp.RADIUS_L, SurfaceTone.WELL, slotDomain(content))
         fl.clipToOutline = true                                    // clip nội dung theo góc bo (như overflow:hidden của prototype)
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         when (content) {

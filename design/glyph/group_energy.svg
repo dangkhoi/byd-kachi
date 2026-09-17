@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NHÓM NĂNG LƯỢNG & SẠC — pin ĐỨNG với tia sét tô chuyển sắc bên trong: gói pin + điện đi vào. Cố ý khác ic_battery (pin ngang, mức) và ic_bolt (chỉ tia sét). -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M 8.8,4.45 L 15.2,4.45 A 2.4,2.4 0 0 1 17.6,6.85 L 17.6,18.65 A 2.4,2.4 0 0 1 15.2,21.05 L 8.8,21.05 A 2.4,2.4 0 0 1 6.4,18.65 L 6.4,6.85 A 2.4,2.4 0 0 1 8.8,4.45 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 13.86,5.62 L 7.97,13.68 L 11.85,13.68 L 10.14,19.88 L 16.03,11.82 L 12.15,11.82 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 10.6,2.25 L 13.4,2.25 A 0.8,0.8 0 0 1 14.2,3.05 L 14.2,3.25 A 0.8,0.8 0 0 1 13.4,4.05 L 10.6,4.05 A 0.8,0.8 0 0 1 9.8,3.25 L 9.8,3.05 A 0.8,0.8 0 0 1 10.6,2.25 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+  <path d="M 8.8,4.45 L 15.2,4.45 A 2.4,2.4 0 0 1 17.6,6.85 L 17.6,18.65 A 2.4,2.4 0 0 1 15.2,21.05 L 8.8,21.05 A 2.4,2.4 0 0 1 6.4,18.65 L 6.4,6.85 A 2.4,2.4 0 0 1 8.8,4.45 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

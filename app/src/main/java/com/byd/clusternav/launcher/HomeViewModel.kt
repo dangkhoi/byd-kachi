@@ -79,6 +79,9 @@ class HomeViewModel(
     // ── Intent: theme ────────────────────────────────────────────────────────────
     fun setThemeMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
 
+    /** P1b · R8 — màu nhấn + tông thẻ (theo hồ sơ, đi qua `persist` như chủ đề). Đọc-để-vẽ ở `ThemeHost`. */
+    fun setColorChoice(choice: ColorChoice) = mutate { it.copy(colorChoice = choice) }
+
     /**
      * U5·T3 — NGÔN NGỮ. State + lưu bền trong MỘT lượt, cùng khuôn [setAutostart]/[setTopStrip]: khoá này nằm ngoài
      * bộ khoá theo hồ sơ (chung cả máy) nên không đi qua [mutate]/`persist`.

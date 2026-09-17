@@ -122,7 +122,40 @@ class SettingsSections(
         // store (`PrefsWorkspaceRepository.persist` gương sang `ThemeMode.setChoice`), nên câu đó nói SAI với
         // người dùng. `ThemeMirrorWiringContractTest` canh chuỗi `kachi_theme_note_clusternav` không còn tồn tại.
         body.addView(rows.note(context.getString(R.string.kachi_theme_note)))
+        color(body)
         lang(body)
+    }
+
+    /**
+     * VISUAL-REFRESH P1b · R8 — **màu nhấn** (8 ô + *theo ảnh nền*) và **tông thẻ** (3 chip), theo hồ sơ.
+     *
+     * Cùng khuôn một chiều với nút chủ đề ngay trên: đọc `deps.state().colorChoice`, intent `deps.onColorChoice`,
+     * `ThemeHost.sync` đọc-để-vẽ rồi màn dựng lại một lượt. Màu xem trước của từng ô lấy từ **cùng** phép suy bảng
+     * màu sẽ được áp (`accentPreview`), không phải một bảng màu thứ hai vẽ riêng cho Cài đặt.
+     */
+    private fun color(body: LinearLayout) {
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_color)))
+        var choice = deps.state().colorChoice
+        val swatches = AccentChoice.values().map { it.name to it.label() }.map { (code, text) ->
+            // Bảng GỐC, không phải `KachiTheme.palette`: bảng đang dùng đã chuyển sắc theo lựa chọn hiện hành, hỏi nó
+            // màu của ô *Xanh Kachi* sẽ ra chính màu đang chọn (hai ô vẽ giống hệt nhau) — xem [KachiTheme.basePalette].
+            Swatch(code, KachiTheme.basePalette.accentPreview(AccentChoice.valueOf(code), KachiTheme.artDominant, KachiTheme.night), text)
+        }
+        body.addView(rows.swatchRow(context.getString(R.string.kachi_row_accent), swatches, choice.accent.name) { code ->
+            choice = choice.copy(accent = AccentChoice.valueOf(code)); deps.onColorChoice(choice)
+        })
+        body.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_row_tone),
+            options = CardTone.values().map { it.name to it.label() },
+            current = choice.tone.name,
+        ) { code -> choice = choice.copy(tone = CardTone.valueOf(code)); deps.onColorChoice(choice) })
+        // P3 · R8 AC8.3 — MÀU SƠN của hình xe (5 màu §4.8), riêng khỏi màu nhấn; ô = điểm giữa gradient sơn. Màu nào
+        // chạm nền thì viền thân tự bật ([KachiCarPaint]) — không cấm chọn (AC8.5).
+        val paints = CarPaint.values().map { Swatch(it.id, KachiCarPaint.swatch(it), it.title()) }
+        body.addView(rows.swatchRow(context.getString(R.string.kachi_row_paint), paints, CarPaint.of(choice.paint).id) { code ->
+            choice = choice.copy(paint = code); deps.onColorChoice(choice)
+        })
+        body.addView(rows.note(context.getString(R.string.kachi_color_note)))
     }
 
     /**

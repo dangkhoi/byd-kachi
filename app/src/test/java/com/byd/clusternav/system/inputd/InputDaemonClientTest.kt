@@ -45,7 +45,7 @@ class InputDaemonClientTest {
      * biến thể `… &` (xem KDoc [InputDaemonLaunch.hasNohup] — "không rõ" thì KHÔNG dùng nohup).
      */
     private fun expectedLaunch(logPath: String? = null) =
-        InputDaemonLaunch.launchCmd("/x/base.apk", "kachi_input", logPath, useNohup = false)
+        InputDaemonLaunch.launchCmd("/x/base.apk", "kachi_input", logPath, useNohup = false, port = PORT, token = TOKEN)
 
     /** Chỉ những lệnh KHỞI ĐỘNG (bỏ lượt dò `nohup`) — cái mà các bài dưới đây thật sự nói về. */
     private fun launchesOnly(all: List<String>) = all.filter { it.startsWith("CLASSPATH=") }
@@ -56,22 +56,32 @@ class InputDaemonClientTest {
         connectTries: Int = 2,
         logDir: String? = null,
         disabled: () -> Boolean = { false },
+        now: () -> Long = { 1_000L },          // constant clock → cooldown throttle is deterministic
+        pruned: MutableList<String> = mutableListOf(),
     ) = InputDaemonClient(
         apkPath = "/x/base.apk",
         launchShell = { launches += it; "" },
         socketName = "kachi_input",
+        port = PORT,
+        token = TOKEN,
         channelFactory = { fake },
         lifecycleExecutor = direct,
         senderExecutor = direct,
         sleep = {},
-        now = { 1_000L },          // constant clock → cooldown throttle is deterministic
+        now = now,
         connectTries = connectTries,
         connectStepMs = 0L,
         retryCooldownMs = 3_000L,
         logDir = { logDir },
         disabled = disabled,
         log = {},
+        pruneLogs = { pruned += it },
     )
+
+    private companion object {
+        const val PORT = 38_138
+        const val TOKEN = "abcdef0123456789"
+    }
 
     @Test
     fun `daemon down - sendTouch falls back and issues ONLY the exact launch command on the queue`() {
@@ -195,22 +205,103 @@ class InputDaemonClientTest {
     fun `luot do nohup chi chay mot lan`() {
         val fake = FakeChannel(connectScript = mutableListOf())
         val launches = mutableListOf<String>()
-        val c = InputDaemonClient(
-            apkPath = "/x/base.apk",
-            launchShell = { launches += it; "" },
-            channelFactory = { fake },
-            lifecycleExecutor = direct,
-            senderExecutor = direct,
-            sleep = {},
-            now = { launches.size * 10_000L },   // đồng hồ chạy ⇒ cooldown KHÔNG chặn lượt khởi động thứ hai
-            connectTries = 1,
-            connectStepMs = 0L,
-            log = {},
-        )
+        // đồng hồ chạy ⇒ cooldown KHÔNG chặn lượt khởi động thứ hai (cầu chì 1.70 ngắt từ lượt thứ HAI hỏng)
+        val c = client(fake, launches, connectTries = 1, now = { launches.size * 10_000L })
         c.sendTouch(1, 0, 5, 5)
         c.sendTouch(1, 0, 6, 6)
         assertEquals(2, launchesOnly(launches).size, "hai lượt khởi động (đồng hồ đã qua cooldown)")
         assertEquals(1, launches.count { it == InputDaemonLaunch.WHICH_NOHUP }, "nhưng chỉ MỘT lượt dò `nohup`")
+    }
+
+    // ═══ 1.70 — CẦU CHÌ + dọn log + kênh TCP ═════════════════════════════════════════════════════════════
+
+    /**
+     * KHOÁ [ĐO xe 2026-09-17]: lý do nối là **sepolicy** (`Permission denied`) ⇒ ngắt cầu chì NGAY sau chu kỳ
+     * đầu — không khởi động lại daemon mỗi ~5,5 s nữa (45 tệp log/vài phút, shell 36/phút).
+     */
+    @Test
+    fun `permission denied ngat cau chi sau MOT chu ky`() {
+        val fake = FakeChannel(connectScript = mutableListOf(), error = "IOException: Permission denied")
+        val launches = mutableListOf<String>()
+        val c = client(fake, launches, connectTries = 1, now = { launches.size * 10_000L })
+        c.sendTouch(1, 0, 5, 5)
+        c.sendTouch(1, 0, 6, 6)
+        c.sendTouch(1, 0, 7, 7)
+        assertEquals(1, launchesOnly(launches).size, "đúng MỘT lượt khởi động rồi thôi")
+        val snap = InputDaemonClient.lastSnapshot()
+        assertTrue(snap.fused, "cầu chì phải ngắt")
+        assertTrue(snap.fuseReason.startsWith("sepolicy:"), "và nói rõ vì sao — thấy: ${snap.fuseReason}")
+        assertEquals("IOException: Permission denied", snap.lastError, "lý do nguyên văn vẫn giữ")
+        assertEquals(PORT, snap.port)
+    }
+
+    /** KHOÁ: lý do KHÁC sepolicy (daemon không bao giờ bind) ⇒ ngắt sau [InputDaemonClient.FUSE_AFTER_FAILURES] chu kỳ. */
+    @Test
+    fun `ly do khac ngat cau chi sau hai chu ky hong lien tiep`() {
+        val fake = FakeChannel(connectScript = mutableListOf())   // "Connection refused" mãi
+        val launches = mutableListOf<String>()
+        val c = client(fake, launches, connectTries = 1, now = { launches.size * 10_000L })
+        repeat(5) { c.sendTouch(1, 0, it, it) }
+        assertEquals(InputDaemonClient.FUSE_AFTER_FAILURES, launchesOnly(launches).size, "hai chu kỳ rồi thôi")
+        assertTrue(InputDaemonClient.lastSnapshot().fused)
+        // Cầu chì chỉ chặn KHỞI ĐỘNG; chạm vẫn đi đường lùi bình thường.
+        assertFalse(c.sendTouch(1, 1, 9, 9))
+    }
+
+    /** KHOÁ: một chu kỳ hỏng rồi một chu kỳ nối được ⇒ bộ đếm về 0, không ngắt oan. */
+    @Test
+    fun `noi duoc thi bo dem chu ky hong ve khong`() {
+        val fake = FakeChannel(connectScript = mutableListOf(false, false, false, true))
+        val launches = mutableListOf<String>()
+        val c = client(fake, launches, connectTries = 1, now = { launches.size * 10_000L })
+        c.sendTouch(1, 0, 5, 5)                // chu kỳ 1: hỏng
+        c.sendTouch(1, 0, 6, 6)                // chu kỳ 2: nối được ở lượt sau khởi động
+        assertTrue(c.isHealthy())
+        assertFalse(InputDaemonClient.lastSnapshot().fused)
+    }
+
+    /** KHOÁ: dọn `inputd-*.log` đúng MỘT lần, trước lượt khởi động đầu, chỉ khi có thư mục log. */
+    @Test
+    fun `don log daemon mot lan truoc luot khoi dong dau`() {
+        val fake = FakeChannel(connectScript = mutableListOf())
+        val launches = mutableListOf<String>()
+        val pruned = mutableListOf<String>()
+        val dir = "/sdcard/Android/data/com.byd.launcher/files/kachi-logs"
+        val c = client(fake, launches, connectTries = 1, logDir = dir, now = { launches.size * 10_000L }, pruned = pruned)
+        c.sendTouch(1, 0, 5, 5)
+        c.sendTouch(1, 0, 6, 6)
+        assertEquals(listOf(dir), pruned, "dọn đúng một lần, đúng thư mục")
+        val none = mutableListOf<String>()
+        client(FakeChannel(mutableListOf()), mutableListOf(), connectTries = 1, logDir = null, pruned = none).sendTouch(1, 0, 5, 5)
+        assertTrue(none.isEmpty(), "không có thẻ ⇒ không có gì để dọn")
+    }
+
+    /** KHOÁ: hàm dọn thật giữ đúng [InputDaemonClient.KEEP_LOGS] tệp mới nhất và không đụng tệp khác. */
+    @Test
+    fun `pruneLogDir giu 5 tep moi nhat`() {
+        val dir = java.nio.file.Files.createTempDirectory("kachi-inputd").toFile()
+        try {
+            (1..9).forEach { java.io.File(dir, InputDaemonLaunch.logFileName(1_000L + it)).writeText("x") }
+            java.io.File(dir, "usage-1.log").writeText("keep")
+            InputDaemonClient.pruneLogDir(dir.absolutePath)
+            val left = dir.list()!!.sorted()
+            assertEquals(
+                (5..9).map { InputDaemonLaunch.logFileName(1_000L + it) } + "usage-1.log",
+                left,
+                "giữ 5 tệp mới nhất + tệp không phải inputd",
+            )
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    /** KHOÁ: lệnh khởi động mang `tcp <port> <token>` — kênh 1.70, không còn socket abstract. */
+    @Test
+    fun `lenh khoi dong mang cong va token tcp`() {
+        val launches = mutableListOf<String>()
+        client(FakeChannel(mutableListOf()), launches).sendTouch(1, 0, 5, 5)
+        val cmd = launchesOnly(launches).single()
+        assertTrue(cmd.contains(" tcp $PORT $TOKEN "), "thấy: $cmd")
     }
 
     /** KHOÁ: ảnh chụp cho cầu kiểm thử mang đủ ba thứ owner cần đọc từ xe: khoẻ · lý do · số lượt. */

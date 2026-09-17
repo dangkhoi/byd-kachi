@@ -1,19 +1,23 @@
 <!--
-  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
-  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
-  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
-  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
+  SINH BỞI scripts/design/gen-car.py từ design/car/top.svg — KHÔNG SỬA TAY (sửa SVG rồi sinh lại; cờ check của script so byte).
+  VISUAL-REFRESH P3 · spec docs/specs/kachi-visual-refresh.html §4.2: NỀN thân 0.16 + viền 1.2/0.38 · PHỤ 0.38 · CHÍNH 1.0/nét 1.8.
+  Khung 24×24 · một tông #FFFFFF (chỗ dùng tint) · cap/join tròn · ≤ 6 path.
   CỐP SAU — mảng đuôi xe tô đặc (nắp ĐANG ĐÓNG, liền khối).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.80,17.30 L14.20,17.30 A0.90,0.90 0 0 1 15.10,18.20 L15.10,18.60 A0.90,0.90 0 0 1 14.20,19.50 L9.80,19.50 A0.90,0.90 0 0 1 8.90,18.60 L8.90,18.20 A0.90,0.90 0 0 1 9.80,17.30 Z"
+    <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9,20.3 12,20.3 C15,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.16"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.2"
+        android:strokeAlpha="0.38"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 L15.05,10.4 L8.95,10.4 Z M8.95,15.2 L15.05,15.2 L15.3,16.6 C14.1,17.4 9.9,17.4 8.7,16.6 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.38" />
+    <path android:pathData="M10,17.7 L14,17.7 A0.8,0.8 0 0 1 14.8,18.5 L14.8,18.8 A0.8,0.8 0 0 1 14,19.6 L10,19.6 A0.8,0.8 0 0 1 9.2,18.8 L9.2,18.5 A0.8,0.8 0 0 1 10,17.7 Z"
         android:fillColor="#FFFFFF" />
 </vector>

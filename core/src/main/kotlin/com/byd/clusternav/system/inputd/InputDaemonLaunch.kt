@@ -47,11 +47,44 @@ object InputDaemonLaunch {
         socketName: String = DEFAULT_SOCKET,
         logPath: String? = null,
         useNohup: Boolean = true,
+        /**
+         * ## 1.70 — kênh TCP loopback thay socket abstract (`port` + `token`)
+         * [ĐO máy ảo 2026-09-17 + ĐO xe 2026-09-17] sepolicy **enforcing** cả hai nơi chặn `untrusted_app` nối tới
+         * `unix_stream_socket` của miền `shell` (`avc: denied { connectto }`; trên xe client báo
+         * `IOException: Permission denied` 25/25 lượt trong khi daemon vẫn thường trú — *"bind failed: Address
+         * already in use"*). Kênh TCP trên `127.0.0.1` không đi qua luật ấy: cả hai miền đều là `net_domain`.
+         * Daemon nhận thêm hai tham số: cổng để bind (loopback) và một **token** — khung đầu tiên của client
+         * phải mang đúng token, nếu không daemon đóng kết nối (bất kỳ app nào trên máy cũng nối được tới
+         * loopback, nên phải có cửa). `null` ⇒ giữ nguyên dòng lệnh 1.69 (golden test khoá byte).
+         */
+        port: Int? = null,
+        token: String? = null,
     ): String {
         val runner = if (useNohup) "nohup app_process" else "app_process"
         val out = logPath?.takeIf { it.isNotBlank() } ?: "/dev/null"
-        return "CLASSPATH=$apkPath $runner / $MAIN_CLASS $socketName </dev/null >$out 2>&1 &"
+        val tcp = if (port != null) " $ARG_TCP $port ${token.orEmpty()}" else ""
+        return "CLASSPATH=$apkPath $runner / $MAIN_CLASS $socketName$tcp </dev/null >$out 2>&1 &"
     }
+
+    /** Từ khoá đứng trước `<port> <token>` trong dòng lệnh — daemon nhận ra chế độ TCP bằng đúng từ này. */
+    const val ARG_TCP: String = "tcp"
+
+    /**
+     * Cổng loopback **cố định theo uid** của app — cùng một cài đặt thì mọi lần mở app đều ra cùng cổng, nên
+     * daemon thường trú của lượt trước (cùng token, xem `Prefs.inputdToken`) được **dùng lại** thay vì mỗi lần mở
+     * app đẻ thêm một daemon mồ côi trên một cổng mới. Dải 38000–38999 (uid app ≥ 10000 ⇒ `uid % 1000`).
+     */
+    fun portFor(uid: Int): Int = PORT_BASE + ((uid % PORT_SPAN + PORT_SPAN) % PORT_SPAN)
+
+    private const val PORT_BASE = 38_000
+    private const val PORT_SPAN = 1_000
+
+    /** Token hợp lệ: 16–64 ký tự hex/chữ số — đủ ngẫu nhiên, và không mang khoảng trắng phá dòng lệnh. */
+    fun validToken(token: String): Boolean =
+        token.length in TOKEN_MIN_CHARS..TOKEN_MAX_CHARS && token.all { it.isLetterOrDigit() }
+
+    private const val TOKEN_MIN_CHARS = 16
+    private const val TOKEN_MAX_CHARS = 64
 
     /**
      * Lệnh dò `nohup`. Chạy MỘT lần mỗi tiến trình (kết quả nhớ ở `InputDaemonClient`).

@@ -1,6 +1,21 @@
+<!--
+  PHÁT / TẠM DỪNG — tam giác tô chuyển sắc chỉ phải, canh QUANG HỌC (dịch phải 1 đơn vị để trông giữa ô).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/play.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực INFOTAINMENT · họ màu media · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M6.4,3.8 L6.4,20.2 L19.8,12 Z"
-        android:fillColor="#FFFFFF" />
+    <path android:pathData="M 6.14 3.9 L 20.26 12 L 6.14 20.1 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="6.14" android:startY="3.9" android:endX="20.26" android:endY="20.1">
+                <item android:offset="0" android:color="#FFC75A" />
+                <item android:offset="1" android:color="#B06F05" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

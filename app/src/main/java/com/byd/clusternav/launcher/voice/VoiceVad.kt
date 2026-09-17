@@ -57,6 +57,8 @@ internal class VoiceVad private constructor(
     val threshold: Float,
     val minSpeechMs: Int,
     val minSilenceMs: Int,
+    /** B1.1: `true` = instance dùng CHUNG holder (close ⇒ trả pool); `false` = dựng riêng (close ⇒ release ONNX). */
+    private val shared: Boolean = false,
 ) : AutoCloseable {
 
     /** Các đoạn tiếng đã chốt trong lượt này, theo thứ tự VAD trả ra. */
@@ -129,7 +131,10 @@ internal class VoiceVad private constructor(
     }
 
     override fun close() {
-        runCatching { vad.release() }.onFailure { Log.w(TAG, "đóng VAD hỏng", it) }
+        // B1.1: instance dùng CHUNG chỉ trả holder về pool (giữ ONNX sống cho lượt sau); instance dựng RIÊNG thì
+        // release ONNX như cũ. Trong cả hai ca, `segments` là của instance này nên không cần dọn — instance rời đi.
+        if (shared) releaseShared()
+        else runCatching { vad.release() }.onFailure { Log.w(TAG, "đóng VAD hỏng", it) }
     }
 
     companion object {
@@ -146,41 +151,96 @@ internal class VoiceVad private constructor(
          */
         const val ASSET_NAME = "voice/silero_vad.onnx"
 
+        // ═══ B1.1 (1.70) — HÂM SẴN + DÙNG LẠI một Vad cho cả tiến trình ══════════════════════════════════════
+        // [ĐO xe 2026-09-17] "bấm → mic mở" mất 1,5 s ở lượt đầu; một phần là dựng ONNX của Silero **mỗi lượt**
+        // (`Vad(assets, config)` nạp lại đồ thị 0,64 MB). Silero có `reset()`/`clear()` (javap AAR v1.13.8) ⇒ giữ
+        // MỘT instance sống, mỗi lượt chỉ reset — bỏ hẳn phần nạp ONNX khỏi đường "nói → nghe liền".
+        //
+        // Vì sao khoá theo BỘ THAM SỐ: ba núm (threshold/minSpeech/minSilence) chỉnh được trên xe giữa hai lượt
+        // nói (`prefs_set`). Tham số nằm trong `VadModelConfig` lúc dựng, `reset()` KHÔNG đổi chúng ⇒ nếu người
+        // đo vừa đổi núm thì phải dựng lại. Cùng pattern `VoiceEngine.recognizer(builtFor)`.
+        //
+        // Thread: một lượt nghe một lúc (VoiceSingleFlight), nhưng `VoiceWavProbe` (host) + preload có thể chạm
+        // song song ⇒ `synchronized(lock)`. Instance đang cho mượn thì lượt kia dựng RIÊNG (không tranh reset).
+        private val lock = Any()
+        @Volatile private var holder: Vad? = null
+        private var holderKey: String = ""
+        @Volatile private var inUse = false
+
+        private fun keyOf(t: Float, sp: Int, si: Int) = "$t/$sp/$si"
+
         /**
-         * Dựng VAD cho MỘT lượt nghe, hoặc `null` khi không dựng được (asset thiếu, ONNX từ chối, ROM lạ).
-         *
-         * `null` **không phải lỗi phải báo cho người lái**: chỗ gọi lùi về [VoiceEndpointer] (bộ RMS) và lượt
-         * nghe vẫn chạy — kém hơn, nhưng chạy. Một tính năng phụ không được giết launcher (cùng luật
-         * `VoiceSession.runSession`).
-         *
-         * Ba tham số đọc từ prefs mỗi lượt (không chụp một lần): chúng tồn tại để **đo trên xe giữa hai lượt
-         * nói** mà không phải build lại — xem `TestBridgeCommands.WRITABLE_PREFS_KEYS`.
+         * Hâm sẵn Vad trên luồng nền — gọi từ [com.byd.clusternav.KachiApplication] cùng [VoiceEngine.preload].
+         * Không ném, không chặn caller. Đọc prefs mặc định (người chưa chỉnh núm) để dựng đúng bộ hay dùng nhất.
          */
-        fun open(ctx: Context): VoiceVad? {
+        fun preload(ctx: Context) {
             val app = ctx.applicationContext
-            val threshold = runCatching { Prefs.voiceVadThreshold(app) }.getOrDefault(VoiceVadTrim.THRESHOLD)
-            val minSpeech = runCatching { Prefs.voiceVadMinSpeechMs(app) }.getOrDefault(VoiceVadTrim.MIN_SPEECH_MS)
-            val minSilence = runCatching { Prefs.voiceVadMinSilenceMs(app) }.getOrDefault(VoiceVadTrim.MIN_SILENCE_MS)
+            Thread({
+                runCatching {
+                    val t = runCatching { Prefs.voiceVadThreshold(app) }.getOrDefault(VoiceVadTrim.THRESHOLD)
+                    val sp = runCatching { Prefs.voiceVadMinSpeechMs(app) }.getOrDefault(VoiceVadTrim.MIN_SPEECH_MS)
+                    val si = runCatching { Prefs.voiceVadMinSilenceMs(app) }.getOrDefault(VoiceVadTrim.MIN_SILENCE_MS)
+                    synchronized(lock) {
+                        if (holder == null) holder = build(app, t, sp, si)?.also { holderKey = keyOf(t, sp, si) }
+                    }
+                }.onFailure { Log.w(TAG, "hâm sẵn VAD hỏng — lần nghe đầu sẽ dựng như cũ", it) }
+            }, "KachiVadPreload").apply { isDaemon = true; priority = Thread.MIN_PRIORITY }.start()
+        }
+
+        private fun build(app: Context, t: Float, sp: Int, si: Int): Vad? {
             val config = VadModelConfig(
                 sileroVadModelConfig = SileroVadModelConfig(
                     model = ASSET_NAME,
-                    threshold = threshold,
-                    // ⚠ `SileroVadModelConfig` nhận GIÂY (Float) còn prefs của dự án giữ MILI-GIÂY (Int, cùng họ
-                    // `voice_follow_up_ms`/`voice_endpoint_*`). Đổi đúng MỘT chỗ, ở đây.
-                    minSilenceDuration = VoiceVadTrim.msToSeconds(minSilence),
-                    minSpeechDuration = VoiceVadTrim.msToSeconds(minSpeech),
+                    threshold = t,
+                    minSilenceDuration = VoiceVadTrim.msToSeconds(si),
+                    minSpeechDuration = VoiceVadTrim.msToSeconds(sp),
                     windowSize = VoiceVadTrim.WINDOW_SIZE,
                 ),
-                sampleRate = RATE,
-                numThreads = 1,
-                provider = "cpu",
-                debug = false,
+                sampleRate = RATE, numThreads = 1, provider = "cpu", debug = false,
             )
-            // `ctx.assets` (KHÔNG phải `null`): sherpa đọc thẳng asset trong APK, không cần chép ra `filesDir`.
-            // Khác `copyBpeVocabAsset` — thứ đó phải chép vì sherpa nhận `bpeVocab` là một ĐƯỜNG DẪN TỆP.
-            return runCatching { VoiceVad(Vad(app.assets, config), threshold, minSpeech, minSilence) }
-                .onFailure { Log.w(TAG, "không dựng được Silero VAD — lùi về bộ ngắt câu RMS", it) }
-                .getOrNull()
+            return runCatching { Vad(app.assets, config) }
+                .onFailure { Log.w(TAG, "không dựng được Silero VAD", it) }.getOrNull()
         }
+
+        /**
+         * Dựng VAD cho MỘT lượt nghe, hoặc `null` khi không dựng được (asset thiếu, ONNX từ chối, ROM lạ).
+         *
+         * B1.1: ưu tiên **dùng lại** holder đã hâm (chỉ `reset()`, ~0 ms) khi bộ tham số khớp và không có lượt
+         * khác đang mượn; nếu tham số đổi / holder chưa có / đang bận thì dựng riêng như cũ. Lượt dùng lại holder
+         * KHÔNG `close()` nó (trả về pool ở [releaseShared]); lượt dựng riêng thì `close()` bình thường.
+         *
+         * `null` **không phải lỗi phải báo cho người lái**: chỗ gọi lùi về [VoiceEndpointer] (bộ RMS) và lượt
+         * nghe vẫn chạy — kém hơn, nhưng chạy (cùng luật `VoiceSession.runSession`).
+         */
+        fun open(ctx: Context): VoiceVad? {
+            val app = ctx.applicationContext
+            val t = runCatching { Prefs.voiceVadThreshold(app) }.getOrDefault(VoiceVadTrim.THRESHOLD)
+            val sp = runCatching { Prefs.voiceVadMinSpeechMs(app) }.getOrDefault(VoiceVadTrim.MIN_SPEECH_MS)
+            val si = runCatching { Prefs.voiceVadMinSilenceMs(app) }.getOrDefault(VoiceVadTrim.MIN_SILENCE_MS)
+            val key = keyOf(t, sp, si)
+            synchronized(lock) {
+                val h = holder
+                if (h != null && holderKey == key && !inUse) {
+                    inUse = true
+                    runCatching { h.reset() }.onFailure {
+                        // reset hỏng ⇒ vứt holder, để lượt này dựng riêng — không kẹt `inUse`.
+                        runCatching { h.release() }; holder = null; inUse = false
+                    }
+                    if (holder != null) return VoiceVad(h, t, sp, si, shared = true)
+                }
+                // Tham số đổi ⇒ thay holder mới (đóng cái cũ nếu không ai mượn).
+                if (h != null && holderKey != key && !inUse) {
+                    runCatching { h.release() }; holder = build(app, t, sp, si)?.also { holderKey = key }
+                    holder?.let { inUse = true; return VoiceVad(it, t, sp, si, shared = true) }
+                }
+            }
+            // Holder chưa có / đang bận / dựng lại hỏng ⇒ dựng RIÊNG cho lượt này (close bình thường).
+            val own = build(app, t, sp, si)
+            if (own == null) Log.w(TAG, "không dựng được Silero VAD — lùi về bộ ngắt câu RMS")
+            return own?.let { VoiceVad(it, t, sp, si, shared = false) }
+        }
+
+        /** Trả holder về pool (chỉ gọi cho instance `shared`). */
+        private fun releaseShared() = synchronized(lock) { inUse = false }
     }
 }

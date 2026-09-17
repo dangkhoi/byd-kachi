@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Kachi · HÌNH XE TỔNG HỢP · mặt TRƯỚC (FRONT) — và mặt SAU dùng CÙNG bóng thân (đối xứng), lớp `layer-rear` chứa
+  những gì chỉ thấy từ sau (đèn hậu dài ngang · biển số · sương mù sau). Nguồn của `ic_car_front_*` + `ic_car_rear_*`
+  + `ic_car_top_trunk_pos` (nhìn từ sau). Cùng luật soạn như top.svg.
+  Bóng thân MỚI (vai mềm, nóc bo, mép dưới bo) thay hình thang góc nhọn của U7; thấu kính · DRL · sương mù · xi-nhan ·
+  đèn hông giữ NGUYÊN vị trí U7 để tám icon đèn không đổi cách đọc.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <title>Kachi car · FRONT / REAR</title>
+  <defs>
+    <linearGradient id="paint" x1="0" y1="0" x2="0" y2="1">
+      <stop id="paintFrom" offset="0" stop-color="#e9eef5"/>
+      <stop id="paintTo" offset="1" stop-color="#8d99ab"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#dbe8ff" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#43566e" stop-opacity="0.92"/>
+    </linearGradient>
+    <radialGradient id="lamp">
+      <stop offset="0" stop-color="#eaf3ff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#9dc4ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="taillamp">
+      <stop offset="0" stop-color="#ff8a80" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff3d3d" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shadow">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tyre" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a313c"/>
+      <stop offset="1" stop-color="#0f1319"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f9ff"/>
+      <stop offset="1" stop-color="#a9c6f2"/>
+    </linearGradient>
+  </defs>
+
+  <g id="layer-shadow">
+    <ellipse id="shadow" data-role="shadow" cx="12" cy="19.7" rx="7.6" ry="1.0" fill="url(#shadow)"/>
+  </g>
+  <g id="layer-glow">
+    <ellipse id="glow_front" data-role="glow" cx="12" cy="12.5" rx="8.5" ry="2.6" fill="url(#lamp)"/>
+  </g>
+
+  <!-- BÁNH nằm DƯỚI thân ở mặt trước (thân đè lên) ⇒ lớp bánh trước lớp thân. -->
+  <g id="layer-tyres">
+    <rect id="wheel_l" data-role="tyre" x="5.4" y="17.3" width="3.0" height="2.2" rx="0.7" fill="url(#tyre)"/>
+    <rect id="wheel_r" data-role="tyre" x="15.6" y="17.3" width="3.0" height="2.2" rx="0.7" fill="url(#tyre)"/>
+  </g>
+
+  <g id="layer-body">
+    <path id="body" data-role="paint"
+          d="M4.6,17.3 L4.6,10.8 C4.6,9.7 5.0,9.0 5.7,8.6 L7.4,5.6 C7.7,5.0 8.3,4.7 9.0,4.7 L15.0,4.7 C15.7,4.7 16.3,5.0 16.6,5.6 L18.3,8.6 C19.0,9.0 19.4,9.7 19.4,10.8 L19.4,17.3 C19.4,17.9 19.0,18.3 18.4,18.3 L5.6,18.3 C5.0,18.3 4.6,17.9 4.6,17.3 Z"
+          fill="url(#paint)" stroke="#ffffff" stroke-opacity="0.22" stroke-width="0.35"/>
+    <!-- gờ ca-pô: NGUYÊN VĂN cung kính của U7 — icon dùng làm nét phụ, bảng dùng làm nếp thân. -->
+    <path id="bonnet" data-role="panel" data-stroke="1" d="M6.0,9.3 C9.2,10.5 14.8,10.5 18.0,9.3" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="0.25"/>
+  </g>
+
+  <g id="layer-glass">
+    <path id="windscreen" data-role="glass" d="M7.5,8.8 L8.4,6.1 C8.55,5.65 8.85,5.45 9.3,5.45 L14.7,5.45 C15.15,5.45 15.45,5.65 15.6,6.1 L16.5,8.8 Z" fill="url(#glass)"/>
+  </g>
+
+  <g id="layer-lights">
+    <path id="headlamp_l" data-role="lamp" d="M5.4,12.5 C6.41,10.83 7.99,10.83 9.0,12.5 C7.99,14.17 6.41,14.17 5.4,12.5 Z" fill="url(#lens)"/>
+    <path id="headlamp_r" data-role="lamp" d="M15.0,12.5 C16.01,10.83 17.59,10.83 18.6,12.5 C17.59,14.17 16.01,14.17 15.0,12.5 Z" fill="url(#lens)"/>
+    <rect id="drl" data-role="drl" x="4.9" y="11.6" width="14.2" height="1.4" rx="0.7" fill="#eaf3ff"/>
+    <g id="fog" data-role="lamp" data-merge="1" fill="#eaf3ff">
+      <rect x="5.8" y="14.7" width="2.6" height="1.6" rx="0.6"/>
+      <rect x="15.6" y="14.7" width="2.6" height="1.6" rx="0.6"/>
+    </g>
+    <path id="turn_l" data-role="turn" d="M4.8,13.3 L8.4,11.2 L8.4,15.4 Z" fill="#ffb74d"/>
+    <path id="turn_r" data-role="turn" d="M19.2,13.3 L15.6,11.2 L15.6,15.4 Z" fill="#ffb74d"/>
+    <g id="sidelight" data-role="lamp" data-merge="1" fill="#eaf3ff">
+      <circle cx="4.9" cy="13.6" r="1.1"/>
+      <circle cx="19.1" cy="13.6" r="1.1"/>
+    </g>
+  </g>
+
+  <g id="layer-doors">
+    <g id="mirror" data-role="mirror" data-merge="1" fill="#6b788a">
+      <rect x="2.5" y="9.3" width="2.0" height="1.3" rx="0.5"/>
+      <rect x="19.5" y="9.3" width="2.0" height="1.3" rx="0.5"/>
+    </g>
+  </g>
+
+  <!-- CHỈ THẤY TỪ SAU — cùng bóng thân; ô kính = `windscreen` ở trên (đối xứng). -->
+  <g id="layer-rear">
+    <ellipse id="glow_rear" data-role="glowtail" cx="12" cy="12.1" rx="7.0" ry="2.0" fill="url(#taillamp)"/>
+    <rect id="tail_bar" data-role="tail" x="6.2" y="11.2" width="11.6" height="1.7" rx="0.8" fill="#ff5252"/>
+    <rect id="plate" data-role="plate" x="9.6" y="13.9" width="4.8" height="1.6" rx="0.4" fill="#eef1f6"/>
+    <rect id="fog_rear" data-role="tail" x="6.3" y="13.9" width="2.2" height="1.6" rx="0.5" fill="#ff5252"/>
+  </g>
+
+  <g id="layer-highlight">
+    <path id="highlight" data-role="highlight" data-ref="body" fill="none" stroke="#4c7dff" stroke-width="0.5"/>
+  </g>
+
+  <!-- KÝ HIỆU (chỉ icon 24dp). -->
+  <g id="layer-glyph" data-glyph="1" fill="#ffffff">
+    <path id="rays_high" data-stroke="1" d="M3.0,18.9 L13.4,18.9 M3.0,21.1 L13.4,21.1" fill="none" stroke="#ffffff"/>
+    <path id="rays_low" data-stroke="1" d="M5.4,18.9 L3.2,21.1 M8.8,18.9 L6.6,21.1 M12.2,18.9 L10.0,21.1" fill="none" stroke="#ffffff"/>
+    <path id="fog_beam" data-stroke="1" d="M3.2,20.0 L11.6,20.0 M14.6,18.2 C13.2,19.1 15.2,20.0 13.8,20.9" fill="none" stroke="#ffffff"/>
+    <!-- cốt (chúc, trái) + pha (ngang, phải) trong MỘT path để icon chế-độ-đèn không vượt 6 path -->
+    <path id="mode_rays" data-stroke="1" d="M4.4,18.9 L2.9,21.0 M7.0,18.9 L5.5,21.0 M14.6,19.1 L21.1,19.1 M14.6,21.1 L21.1,21.1" fill="none" stroke="#ffffff"/>
+    <path id="defrost_waves" data-stroke="1" d="M7.8,6.6 C9.1,5.8 10.2,7.4 11.5,6.6 C12.8,5.8 13.9,7.4 15.2,6.6 M7.8,9.0 C9.1,8.2 10.2,9.8 11.5,9.0 C12.8,8.2 13.9,9.8 15.2,9.0" fill="none" stroke="#ffffff"/>
+    <path id="hinge" data-stroke="1" d="M7.0,9.9 L16.8,9.9 M7.4,7.8 L16.4,6.4" fill="none" stroke="#ffffff"/>
+    <path id="arrow_h_stem" data-stroke="1" d="M7.2,12.6 L7.2,14.3" fill="none" stroke="#ffffff"/>
+    <g id="arrow_h_heads" data-merge="1">
+      <path d="M7.2,11.1 L8.4,12.44 L6.0,12.44 Z"/>
+      <path d="M7.2,15.8 L6.0,14.46 L8.4,14.46 Z"/>
+    </g>
+  </g>
+</svg>

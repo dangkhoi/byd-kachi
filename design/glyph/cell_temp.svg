@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- NHIỆT CELL (`cell_temp_*`) — dãy cell bên trái (khối ngữ cảnh mờ) + nhiệt kế bên phải là đại lượng đang đo. Cùng họ với ic_cell_volt (dãy cell + tia sét). -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M14.9,5.5 A1.5,1.5 0 0 1 17.9,5.5 L17.9,14.88 A2.6,2.6 0 1 1 14.9,14.88 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16.4,10.2 L16.4,10.2 A1.2,1.2 0 0 1 17.6,11.4 L17.6,15.8 A1.2,1.2 0 0 1 16.4,17 L16.4,17 A1.2,1.2 0 0 1 15.2,15.8 L15.2,11.4 A1.2,1.2 0 0 1 16.4,10.2 Z M14.7,17 A1.7,1.7 0 1 1 18.1,17 A1.7,1.7 0 1 1 14.7,17 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M4.3,6.2 L5.1,6.2 A0.9,0.9 0 0 1 6,7.1 L6,16.9 A0.9,0.9 0 0 1 5.1,17.8 L4.3,17.8 A0.9,0.9 0 0 1 3.4,16.9 L3.4,7.1 A0.9,0.9 0 0 1 4.3,6.2 Z M8.3,6.2 L9.1,6.2 A0.9,0.9 0 0 1 10,7.1 L10,16.9 A0.9,0.9 0 0 1 9.1,17.8 L8.3,17.8 A0.9,0.9 0 0 1 7.4,16.9 L7.4,7.1 A0.9,0.9 0 0 1 8.3,6.2 Z M12.1,6.2 L12.1,6.2 A0.7,0.7 0 0 1 12.8,6.9 L12.8,17.1 A0.7,0.7 0 0 1 12.1,17.8 L12.1,17.8 A0.7,0.7 0 0 1 11.4,17.1 L11.4,6.9 A0.7,0.7 0 0 1 12.1,6.2 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+</svg>

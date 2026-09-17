@@ -1,12 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Đường/quãng đường (tầm chạy, odo, chuyến) — line-art, khớp bộ ic_* hiện có (24dp, stroke 1.7, currentColor qua tint) -->
+<!--
+  QUÃNG ĐƯỜNG ĐÃ ĐI (`odometer` · `trip_km` · `ev_mileage_km`) — mặt đường thu về xa + vạch giữa đứt: đã đi được bao xa (ic_range là còn đi được bao xa).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/road.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M6,21 L9,3 M18,21 L15,3"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M12,4 L12,7 M12,10.5 L12,13.5 M12,17 L12,20"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 4.2 20.6 L 9.6 3.6 M 19.8 20.6 L 14.4 3.6"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 12 4.4 L 12 7.6 M 12 10.2 L 12 14.2 M 12 16.8 L 12 20.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

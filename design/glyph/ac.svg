@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- ĐIỀU HOÀ (`ac_on` · `ac_auto`) — bông tuyết: ba trục chính + mấu nhánh mờ ở đầu trục dọc. Làm LẠNH khác quạt GIÓ (ic_fan). -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M12,3.2 L12,20.8 M4.4,7.6 L19.6,16.4 M4.4,16.4 L19.6,7.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M9.4,5.2 L12,7.4 L14.6,5.2 M9.4,18.8 L12,16.6 L14.6,18.8 M4.8,10.6 L7.6,9.6 L7.2,6.8 M19.2,13.4 L16.4,14.4 L16.8,17.2" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M2.4,12 A9.6,9.6 0 1 1 21.6,12 A9.6,9.6 0 1 1 2.4,12 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

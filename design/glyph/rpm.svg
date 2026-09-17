@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- VÒNG TUA (`motor_*_rpm`) — mũi tên quay quanh trục + tâm tô: vẽ đúng CHUYỂN ĐỘNG QUAY, không vẽ cái hộp (bản cũ bị đọc thành ắc-quy). -->
+  <style>:root{--ink:#ffffff;--main:#7b5cff;--light:#b39dff;--deep:#7059d7}</style>
+  <path d="M18.28,6.73 A8.2,8.2 0 1 1 7.9,4.9 M14.6,3.6 L18.8,5.4 L17.6,9.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M9,12 A3,3 0 1 1 15,12 A3,3 0 1 1 9,12 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+</svg>

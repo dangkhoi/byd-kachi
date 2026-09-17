@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- TRỤ SẠC (sạc không dây `wireless_charge`) — thân trụ đứng, tia sét bên trong là việc nó làm, dây cáp cong ra bên phải là thứ phân biệt TRỤ với ĐẦU CẮM. -->
+  <style>:root{--ink:#ffffff;--main:#34d399;--light:#8ff0c4;--deep:#0f8f63}</style>
+  <path d="M6.8,3.4 L11.6,3.4 A2.4,2.4 0 0 1 14,5.8 L14,18.2 A2.4,2.4 0 0 1 11.6,20.6 L6.8,20.6 A2.4,2.4 0 0 1 4.4,18.2 L4.4,5.8 A2.4,2.4 0 0 1 6.8,3.4 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10.82,5.19 L5.69,12.21 L9.06,12.21 L7.58,17.61 L12.71,10.59 L9.33,10.59 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M14,7.2 L17.4,7.2 A2.4,2.4 0 0 1 19.8,9.6 L19.8,15.2 A1.6,1.6 0 0 1 18.2,16.8 L18.2,19.4" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

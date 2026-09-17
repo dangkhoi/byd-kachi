@@ -1,18 +1,25 @@
 <!--
-  NHIỆT CELL PIN (dãy cell + nhiệt kế) — cho `cell_temp_high` · `cell_temp_low` · `cell_temp_avg`.
-  [U6] Nhiệt của CELL khác nhiệt của cả gói pin (`batt_temp` giữ ic_temp): trước đây bốn mục dùng chung một nhiệt kế.
-  Dãy vạch bên trái = các cell trong gói; nhiệt kế bên phải = đại lượng đang đo.
+  NHIỆT CELL (`cell_temp_*`) — dãy cell bên trái (khối ngữ cảnh mờ) + nhiệt kế bên phải là đại lượng đang đo. Cùng họ với ic_cell_volt (dãy cell + tia sét).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/cell_temp.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M3.4,6.4 L12.6,6.4 M3.4,17.6 L12.6,17.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M4.6,8.4 L4.6,15.6 M8,8.4 L8,15.6 M11.4,8.4 L11.4,15.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M17.6,4.6 A1.5,1.5 0 0 1 19.1,6.1 L19.1,12.4 A2.7,2.7 0 1 1 16.1,12.4 L16.1,6.1 A1.5,1.5 0 0 1 17.6,4.6 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 14.9 5.5 A 1.5 1.5 0 0 1 17.9 5.5 L 17.9 14.88 A 2.6 2.6 0 1 1 14.9 14.88 Z"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 16.4 10.2 L 16.4 10.2 A 1.2 1.2 0 0 1 17.6 11.4 L 17.6 15.8 A 1.2 1.2 0 0 1 16.4 17 L 16.4 17 A 1.2 1.2 0 0 1 15.2 15.8 L 15.2 11.4 A 1.2 1.2 0 0 1 16.4 10.2 Z M 14.7 17 A 1.7 1.7 0 1 1 18.1 17 A 1.7 1.7 0 1 1 14.7 17 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="14.7" android:startY="10.2" android:endX="18.1" android:endY="18.7">
+                <item android:offset="0" android:color="#8FF0C4" />
+                <item android:offset="1" android:color="#0F8F63" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 4.3 6.2 L 5.1 6.2 A 0.9 0.9 0 0 1 6 7.1 L 6 16.9 A 0.9 0.9 0 0 1 5.1 17.8 L 4.3 17.8 A 0.9 0.9 0 0 1 3.4 16.9 L 3.4 7.1 A 0.9 0.9 0 0 1 4.3 6.2 Z M 8.3 6.2 L 9.1 6.2 A 0.9 0.9 0 0 1 10 7.1 L 10 16.9 A 0.9 0.9 0 0 1 9.1 17.8 L 8.3 17.8 A 0.9 0.9 0 0 1 7.4 16.9 L 7.4 7.1 A 0.9 0.9 0 0 1 8.3 6.2 Z M 12.1 6.2 L 12.1 6.2 A 0.7 0.7 0 0 1 12.8 6.9 L 12.8 17.1 A 0.7 0.7 0 0 1 12.1 17.8 L 12.1 17.8 A 0.7 0.7 0 0 1 11.4 17.1 L 11.4 6.9 A 0.7 0.7 0 0 1 12.1 6.2 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
 </vector>

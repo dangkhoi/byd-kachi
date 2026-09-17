@@ -1,18 +1,27 @@
 <!--
-  NÚM CHỌN CHẾ ĐỘ (núm xoay + kim + ba nấc) — cho `op_mode` · `ac_mode_auto`.
-  [U6] `ic_drive` (sơ đồ số chữ H) nay chỉ còn nghĩa **cần số** (`gear`); trước đây bốn mục dùng chung nó nên
-  "Số" và ba "chế độ" trông y hệt nhau. Chế độ là thứ CHỌN, nên vẽ cái núm chọn.
+  CHỌN CHẾ ĐỘ (`op_mode` · `ac_mode_auto` · `energy_mode`) — NÚM XOAY có cung nấc hở đáy (như núm chỉnh trên táp-lô): núm tô chuyển sắc, kim chỉ nấc, cung ba nấc mờ. Chế độ là thứ để CHỌN, khác cần số (ic_drive). Vẽ lại 2026-09-17 (bản đầu = tròn + kim, đọc thành nút radio).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/mode.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M6.4,12 a5.6,5.6 0 1 0 11.2,0 a5.6,5.6 0 1 0 -11.2,0"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M12,8.6 L12,12"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M12,3.2 L12,4.6 M5.3,16.9 L6.5,16.2 M18.7,16.9 L17.5,16.2"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.37 18.61 A 9.36 9.36 0 1 1 18.63 18.61"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 2.83 11.98 L 4.78 11.98 M 12 2.81 L 12 4.76 M 21.17 11.98 L 19.22 11.98 M 5.51 5.49 L 6.88 6.86 M 18.49 5.49 L 17.12 6.86"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 7.12 11.98 A 4.88 4.88 0 1 1 16.88 11.98 A 4.88 4.88 0 1 1 7.12 11.98 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="7.12" android:startY="7.1" android:endX="16.88" android:endY="16.86">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 12 11.98 L 15.12 8.86"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

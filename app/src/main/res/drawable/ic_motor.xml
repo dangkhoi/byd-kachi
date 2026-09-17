@@ -1,24 +1,25 @@
 <!--
-  MÔ-TƠ ĐIỆN (vỏ tròn + rô-to + trục) — cho `motor_power`.
-  [KIỂM TOÁN UX mục 4d] Trước đây họ `motor_` tra ra `ic_speed` (ĐỒNG HỒ TỐC ĐỘ) ⇒ "công suất mô-tơ" trông như một
-  số tốc độ.
-  [U6 · ĐO ảnh 2026-09-12] Bản vá đó lại vẽ mô-tơ thành một HỘP BO GÓC CÓ CỰC LỒI BÊN PHẢI — ở cỡ ô 40dp nó đọc ra
-  đúng là CỤC ẮC-QUY (owner báo: "3 ô rpm/mô-men dùng glyph ắc-quy"). Nay vẽ theo hình tròn của rô-to: không có
-  hình dạng nào của bộ icon này còn lẫn với pin được nữa.
+  MÔ-TƠ ĐIỆN (`motor_power`) — vỏ tròn + rô-to tô chuyển sắc + trục ra bên phải: hình tròn của rô-to là thứ không thể đọc thành ắc-quy.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/motor.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4.4,12 a7.6,7.6 0 1 0 15.2,0 a7.6,7.6 0 1 0 -15.2,0"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.2,12 a2.8,2.8 0 1 0 5.6,0 a2.8,2.8 0 1 0 -5.6,0"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.7,6.7 L8.7,8.7 M17.3,6.7 L15.3,8.7 M6.7,17.3 L8.7,15.3 M17.3,17.3 L15.3,15.3"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M19.6,12 L21.1,12"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 2.94 12 A 8.32 8.32 0 1 1 19.57 12 A 8.32 8.32 0 1 1 2.94 12 Z"
+        android:fillColor="#00000000" android:strokeColor="#7B5CFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 7.1 12 A 4.16 4.16 0 1 1 15.42 12 A 4.16 4.16 0 1 1 7.1 12 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="7.1" android:startY="7.84" android:endX="15.42" android:endY="16.16">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 19.57 10.61 L 21.36 10.61 M 19.57 13.39 L 21.36 13.39 M 6.51 7.25 L 4.92 5.66 M 6.51 16.75 L 4.92 18.34"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

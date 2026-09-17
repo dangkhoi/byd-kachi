@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CAO ĐỘ (`gps_alt`) — dãy núi tô chuyển sắc + thước đo đứng có vạch bên trái: chiều CAO, khác hẳn toạ độ phẳng. -->
+  <style>:root{--ink:#ffffff;--main:#4c7dff;--light:#9db6ff;--deep:#4068d7}</style>
+  <path d="M7.6,20 L12.4,9.6 L15,14.2 L17.2,11.4 L21.2,20 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M4.2,3.6 L4.2,20" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M2.6,6.4 L5.8,6.4 M2.6,10.6 L5.8,10.6 M2.6,14.8 L5.8,14.8 M2.6,19 L5.8,19" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

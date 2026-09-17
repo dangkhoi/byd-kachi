@@ -86,7 +86,7 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 70 muc`() {
+    fun `moi muc cai dat co nhan EN — 10 nhom va 72 muc`() {
         assertEquals(10, SettingsCatalog.GROUPS.size)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
@@ -104,7 +104,10 @@ class LangCoverageTest {
         // H2/H6 (1.69): **+3** — `voice_keep_log` (ô tích giữ nhật ký lượt nói, khoá THEO XE), `voice_log_export`
         // (nút nén `voice-log/` ra `Download/`, không khoá) và `voice_model_light` (hai nút đổi/gỡ mô hình nghe,
         // không khoá — lựa chọn mô hình lưu ở tệp prefs riêng `kachi_voice` của `VoiceModelStore`).
-        assertEquals(70, SettingsCatalog.ENTRIES.size)
+        // VISUAL-REFRESH P1b · R8 (2026-09-17): **+1** — `display_color` (màu nhấn + tông thẻ, khoá `color_choice`
+        // theo hồ sơ; docs/specs/kachi-visual-refresh.html §R8).
+        // voice-clone T7/T8 (2026-09-17): **+1** — `voice_feedback_voice` (ô tích chọn giọng phản hồi Piper/giọng bé).
+        assertEquals(72, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -140,7 +143,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 278`() {
+    fun `tong so nhan co ban EN dung 280`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -165,7 +168,9 @@ class LangCoverageTest {
         // `seat_heat_state` `defrost_front_state` `defrost_rear_state` `ac_mode_auto` `media_vol`). Cả sáu có nhãn
         // ở CẢ hai thứ tiếng + nhãn ngắn — chính bài này ép điều đó, nên số chỉ được ghim SAU khi đã dịch.
         // (V) FEATURE-FILTER (2026-09-17): **297 → 278 (−19)** = đúng 19 mã owner chấm NO (12 datum + 7 nút).
-        assertEquals(278, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // VISUAL-REFRESH P1b · R8 (2026-09-17): **278 → 279 (+1)** = mục Cài đặt `display_color` ("Màu sắc" / "Colours").
+        // voice-clone T7/T8 (2026-09-17): **279 → 280 (+1)** = mục Cài đặt `voice_feedback_voice` ("Giọng phản hồi" / "Feedback voice").
+        assertEquals(280, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

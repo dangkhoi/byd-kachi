@@ -41,6 +41,15 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
 object PickerBadge {
 
     /**
+     * Đổi trạng thái chọn của một icon đã dựng bằng [icon] (ô bộ chọn bật/tắt tại chỗ) — tìm lại `ImageView` dù nó
+     * đứng một mình hay nằm trong khung kèm chấm.
+     */
+    fun retint(view: View, iconDp: Int, selected: Boolean) {
+        val img = view as? ImageView ?: (view as? FrameLayout)?.getChildAt(0) as? ImageView ?: return
+        KachiIcons.tint(img, iconDp, selected)
+    }
+
+    /**
      * Đường kính chấm, tính từ cỡ icon: **1/5 cạnh icon**, không phải một con số tự chọn.
      *
      * Suy ra thay vì tự chọn để hai bề mặt có cỡ icon khác nhau ([KachiSpace.ICON_XL] ở ngăn kéo,
@@ -65,10 +74,11 @@ object PickerBadge {
      * 66px và nằm giữa ô ⇒ chấm ở góc thẻ cách icon ~268px, và ô chưa chọn thì không có nền thẻ để cái góc đó
      * thuộc về, nên chấm trông như một hạt bụi trên màn.
      */
-    fun icon(ctx: Context, res: Int, needsBadge: Boolean, iconDp: Int): View {
+    fun icon(ctx: Context, res: Int, needsBadge: Boolean, iconDp: Int, selected: Boolean = false): View {
         val size = dpi(ctx, iconDp)
         val img = ImageView(ctx).apply {
-            if (res != 0) { setImageResource(res); setColorFilter(c(KachiTheme.INK)) }
+            // P2 · AC2.6: tint theo hợp đồng cỡ/chủ đề/trạng thái ([KachiIcons.tint]) thay vì INK đơn sắc ở mọi nơi.
+            if (res != 0) { setImageResource(res); KachiIcons.tint(this, iconDp, selected) }
         }
         if (!needsBadge) return img.apply { layoutParams = LinearLayout.LayoutParams(size, size) }
         val d = dotPx(ctx, iconDp)

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- ĐÓNG HẾT KÍNH (macro) — khung cửa nét, kính tô kín, mũi tên LÊN là hành động. Cặp với ic_window_open. -->
+  <style>:root{--ink:#ffffff;--main:#aeb8c8;--light:#dfe5ee;--deep:#6b7686}</style>
+  <path d="M3.4,19.2 L3.4,10.4 L8.2,4.8 L20.6,4.8 L20.6,19.2 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5.8,17.4 L5.8,11.2 L9.2,7.2 L18.2,7.2 L18.2,17.4 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M12,16.6 L12,9.6 M9.6,12 L12,9.4 L14.4,12" data-layer="main" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,25 @@
+<!--
+  KHOÁ (`child_lock`; nút khoá/mở) — ổ khoá: quai nét + thân tô chuyển sắc + lỗ khoá mờ. Ổ khoá để dành cho khoá, không cho widget Trạng thái xe (ic_car).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/lock.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực BODY · họ màu body · cỡ 32dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="32dp" android:height="32dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 7.2 10.55 L 7.2 7.75 A 4.8 4.8 0 0 1 16.8 7.75 L 16.8 10.55"
+        android:fillColor="#00000000" android:strokeColor="#AEB8C8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 6.8 10.55 L 17.2 10.55 A 2.4 2.4 0 0 1 19.6 12.95 L 19.6 18.35 A 2.4 2.4 0 0 1 17.2 20.75 L 6.8 20.75 A 2.4 2.4 0 0 1 4.4 18.35 L 4.4 12.95 A 2.4 2.4 0 0 1 6.8 10.55 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="4.4" android:startY="10.55" android:endX="19.6" android:endY="20.75">
+                <item android:offset="0" android:color="#DFE5EE" />
+                <item android:offset="1" android:color="#6B7686" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 10.5 14.75 A 1.5 1.5 0 1 1 13.5 14.75 A 1.5 1.5 0 1 1 10.5 14.75 Z M 12 15.75 L 12 17.95"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

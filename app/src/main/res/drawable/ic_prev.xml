@@ -1,6 +1,23 @@
+<!--
+  LÙI BÀI — thanh chặn trái + tam giác tô chuyển sắc chỉ về trái. Cặp với ic_next; cùng cỡ với ic_play.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/prev.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực INFOTAINMENT · họ màu media · cỡ 24dp.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M18.4,3.8 L18.4,20.2 L7.0,12 Z M4.2,3.8 L6.6,3.8 L6.6,20.2 L4.2,20.2 Z"
-        android:fillColor="#FFFFFF" />
+    <path android:pathData="M 19.6 4.6 L 19.6 19.4 L 7.8 12 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="7.8" android:startY="4.6" android:endX="19.6" android:endY="19.4">
+                <item android:offset="0" android:color="#FFC75A" />
+                <item android:offset="1" android:color="#B06F05" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 4.6 4.6 L 4.6 19.4"
+        android:fillColor="#00000000" android:strokeColor="#F59E0B" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

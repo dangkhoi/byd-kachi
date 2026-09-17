@@ -424,7 +424,9 @@ class VoiceCommandWiringContractTest {
             "tắt công tắc R4 / máy không có giọng ⇒ mở micro NGAY như 1.65, không chờ gì")
         assertTrue(fn.contains("listening.compareAndSet(false, true)") || fn.contains("!listening.compareAndSet"),
             "hai đường (đọc xong · hết hạn) có thể cùng về ⇒ phải chốt để chỉ mở ĐÚNG MỘT lượt nghe")
-        assertTrue(SourceRoots.body(session, "private fun confirm(").contains("askAloudThenListen("),
+        // 1.70 — `confirm` tách sang `VoiceSessionTurns.kt` (extension VoiceSession) theo VAI, trần 500 dòng.
+        val turnsSrc = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt")
+        assertTrue(SourceRoots.body(turnsSrc, "internal fun VoiceSession.confirm(").contains("askAloudThenListen("),
             "cổng xác nhận phải đi qua đường đọc-rồi-nghe; gọi thẳng listenForConfirm là bỏ qua OQ4")
     }
 
@@ -438,12 +440,17 @@ class VoiceCommandWiringContractTest {
     @Test
     fun `hai cong tac doc phan hoi gac that`() {
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
-        assertTrue(session.contains("VoiceSpeakerRouter(ctx) { Prefs.voicePreferOffline(ctx) }"),
+        assertTrue(session.contains("preferOffline = { Prefs.voicePreferOffline(ctx) }"),
             "công tắc 'ưu tiên giọng offline' phải truyền dạng lambda để đọc lại ở MỖI câu")
+        // 1.70 (voice-clone T7) — giọng phản hồi (Piper/giọng bé) cũng là lambda: đổi lựa chọn trong Cài đặt là
+        // câu tiếp theo đã đi đường mới, không phải khởi động lại launcher.
+        assertTrue(session.contains("feedbackVoice = { Prefs.voiceFeedbackVoice(ctx) }"),
+            "giọng phản hồi phải truyền dạng lambda để đọc lại ở MỖI câu")
         // ⚠ 1.66: [speakLines] nay phải gọi `onDone` ở MỌI đường thoát (hội thoại R9 treo trên mốc đó), nên cổng
-        // không còn là một `return` trần. Thứ phải canh vẫn y nguyên — **THỨ TỰ**: công tắc chặn TRƯỚC phép gộp,
-        // vì một lượt Piper tốn hàng trăm ms CPU trên đầu xe cho một câu không ai nghe.
-        val body = SourceRoots.body(session, "internal fun speakLines(")
+        // không còn là một `return` trần. Thứ phải canh vẫn y nguyên — **THỨ TỰ**: công tắc chặn TRƯỚC phép gộp.
+        // 1.70: speakLines tách sang VoiceSessionTurns (extension) theo VAI, trần 500 dòng.
+        val turns = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt")
+        val body = SourceRoots.body(turns, "internal fun VoiceSession.speakLines(")
         val gate = body.indexOf("!speakReplies()")
         val merge = body.indexOf("VoiceFeedbackPhrase.merge(")
         assertTrue(gate in 0 until merge, "tắt 'Đọc phản hồi' phải chặn TRƯỚC khi gộp/tổng hợp câu, không phải sau")
@@ -618,9 +625,10 @@ class VoiceCommandWiringContractTest {
             "nghe không ra `đồng ý` ⇒ KHÔNG. Im lặng không bao giờ được hiểu là đồng ý.")
         assertTrue(turns.contains("VoiceLexicon.confirmAnswer("),
             "câu trả lời có/không phải đọc bằng bảng ở `:core` (kiểm off-car), không bằng một `if` ở tầng vẽ")
-        val capture = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCapture.kt")
-        assertTrue(capture.contains("AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK"),
-            "chỉ HẠ tiếng nhạc, không dừng hẳn — xem KDoc VoiceCapture")
+        // 1.70 — vai tiêu điểm âm thanh tách khỏi VoiceCapture sang VoiceAudioFocus (trần 500 dòng).
+        val audioFocus = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceAudioFocus.kt")
+        assertTrue(audioFocus.contains("AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK"),
+            "chỉ HẠ tiếng nhạc, không dừng hẳn — xem KDoc VoiceAudioFocus")
     }
 
     // ══ (3b) SOÁT Pass 2 — ba bài khoá đúng ba lỗi đã vá ═════════════════════════════════════════════════

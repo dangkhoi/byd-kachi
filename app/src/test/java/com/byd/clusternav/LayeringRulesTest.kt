@@ -153,6 +153,16 @@ class LayeringRulesTest {
         // của `WorkspacePrefs`** (giữ `SharedPreferences` + `Context`) và gọi `ClusterNavLang` (prefs của ClusterNav).
         // Chuyển sang `:core` là kéo cả hai thứ đó theo — cùng lẽ `ThemeHost.kt`/`ClusterNavBridgeHome.kt`.
         "WorkspacePrefsLang.kt" to "hàm mở rộng WorkspacePrefs (SharedPreferences/Context-bound) — gọi ClusterNavLang",
+        // VISUAL-REFRESH P1b · R8: phép SUY bảng màu theo lựa chọn người dùng — hàm mở rộng của `KachiPalette` (bảng
+        // MÃ MÀU, đã ở danh sách này), đọc hạt giống hex của nó. Phép TÍNH thì đã ở :core (`ColorMath` ·
+        // `ContrastGuard`); thứ ở lại :app là đúng phần chạm vào hex — cùng lẽ với chính `KachiPalette.kt`.
+        "KachiPaletteDerive.kt" to "hàm mở rộng KachiPalette (bảng hex) — phép tính đã ở :core (ColorMath/ContrastGuard)",
+        // VISUAL-REFRESH P3: phần CHỌN ĐƯỢC của bảng màu (hạt giống nhấn · tông · màu sơn) tách khỏi `KachiPalette.kt`
+        // vì trần 500 dòng — cùng lẽ với chính `KachiPalette.kt`: nó LÀ hex, và hex chỉ được sống ở :app.
+        "KachiPaletteSeeds.kt" to "nửa tách ra của KachiPalette (bảng hex) — hạt giống màu nhấn · tông thẻ · màu sơn xe",
+        // VISUAL-REFRESH P3: tệp SINH bởi `scripts/design/gen-car.py` — chuỗi path + hộp bao của hình xe, là DỮ LIỆU
+        // của tầng vẽ `:app` (icon 24dp + Canvas), không có logic. `:core` chỉ giữ CarPartStyle (tên vai → token).
+        "CarFramesGenerated.kt" to "tệp sinh (gen-car.py): chuỗi path hình xe cho tầng vẽ — dữ liệu, không logic",
     )
 
     @Test

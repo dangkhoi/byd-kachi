@@ -1,0 +1,27 @@
+<!--
+  NHÓM NĂNG LƯỢNG & SẠC — pin ĐỨNG với tia sét tô chuyển sắc bên trong: gói pin + điện đi vào. Cố ý khác ic_battery (pin ngang, mức) và ic_bolt (chỉ tia sét).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/group_energy.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực ENERGY · họ màu energy · cỡ 48dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 8.8 4.45 L 15.2 4.45 A 2.4 2.4 0 0 1 17.6 6.85 L 17.6 18.65 A 2.4 2.4 0 0 1 15.2 21.05 L 8.8 21.05 A 2.4 2.4 0 0 1 6.4 18.65 L 6.4 6.85 A 2.4 2.4 0 0 1 8.8 4.45 Z"
+        android:fillColor="#34D399" android:fillAlpha="0.16" />
+    <path android:pathData="M 8.8 4.45 L 15.2 4.45 A 2.4 2.4 0 0 1 17.6 6.85 L 17.6 18.65 A 2.4 2.4 0 0 1 15.2 21.05 L 8.8 21.05 A 2.4 2.4 0 0 1 6.4 18.65 L 6.4 6.85 A 2.4 2.4 0 0 1 8.8 4.45 Z"
+        android:fillColor="#00000000" android:strokeColor="#34D399" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 13.86 5.62 L 7.97 13.68 L 11.85 13.68 L 10.14 19.88 L 16.03 11.82 L 12.15 11.82 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="7.97" android:startY="5.62" android:endX="16.03" android:endY="19.88">
+                <item android:offset="0" android:color="#8FF0C4" />
+                <item android:offset="1" android:color="#0F8F63" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 10.6 2.25 L 13.4 2.25 A 0.8 0.8 0 0 1 14.2 3.05 L 14.2 3.25 A 0.8 0.8 0 0 1 13.4 4.05 L 10.6 4.05 A 0.8 0.8 0 0 1 9.8 3.25 L 9.8 3.05 A 0.8 0.8 0 0 1 10.6 2.25 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+</vector>

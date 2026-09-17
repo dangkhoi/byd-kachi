@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- LÙI BÀI — thanh chặn trái + tam giác tô chuyển sắc chỉ về trái. Cặp với ic_next; cùng cỡ với ic_play. -->
+  <style>:root{--ink:#ffffff;--main:#f59e0b;--light:#ffc75a;--deep:#b06f05}</style>
+  <path d="M19.6,4.6 L19.6,19.4 L7.8,12 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M4.6,4.6 L4.6,19.4" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

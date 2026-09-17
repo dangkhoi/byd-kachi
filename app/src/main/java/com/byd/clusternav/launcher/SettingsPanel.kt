@@ -93,6 +93,8 @@ class SettingsDeps(
      */
     val onSavedPlaces: (List<SavedPlace>) -> Unit,
     val onThemeMode: (ThemeMode) -> Unit,
+    /** P1b · R8 — màu nhấn + tông thẻ; cùng khuôn một chiều với [onThemeMode] (đọc-để-vẽ ở `ThemeHost`). */
+    val onColorChoice: (ColorChoice) -> Unit,
     val onLangMode: (LangMode) -> Unit,
     val onAutostart: (Boolean) -> Unit,
     val onSwitchProfile: (String) -> Unit,

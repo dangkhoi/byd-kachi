@@ -120,7 +120,7 @@ internal class CellBinder(
         icon?.setColorFilter(c(if (cell.tone == GroupTone.NEUTRAL) KachiTheme.MUT2 else GroupTileView.tintOf(cell.tone)))
         // Ô số-chính không có nền riêng (nó nằm trên nền của cả ô nhóm) ⇒ chỉ ô con của lưới mới tô nền.
         if (!numberOnly) {
-            root.background = GroupTileView.surfaceOf(root.context, Sp.RADIUS_M, cell.tone)
+            GroupTileView.surfaceOf(root, Sp.RADIUS_M, cell.tone)
         }
         // ⚠⚠ [KIỂM TOÁN UX mục 2] LÀM MỜ **GIÁ TRỊ**, KHÔNG LÀM MỜ CẢ Ô.
         //

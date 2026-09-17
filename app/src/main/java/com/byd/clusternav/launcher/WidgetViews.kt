@@ -219,7 +219,7 @@ object WidgetViews {
     private fun miniCard(ctx: Context, icon: String, big: String, sub: String, color: String, badge: Boolean, dim: Boolean = false, domain: Domain? = null): View =
         LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.surface(ctx, Sp.RADIUS_M, domain = domain)
+            KachiGlass.apply(this, Sp.RADIUS_M, domain = domain)   // P1b: kính khi có ảnh nền, surface() khi không
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             if (dim) alpha = 0.5f
             val r = KachiTheme.iconRes(icon)
@@ -444,8 +444,8 @@ object WidgetViews {
     }
 
     private fun carState(ctx: Context, car: CarStatus) = col(ctx).apply {
-        addView(CarMiniView(ctx), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         val doors = listOf(car.body.doorLfOpen, car.body.doorRfOpen, car.body.doorLrOpen, car.body.doorRrOpen)
+        addView(CarMiniView(ctx).apply { set(doors, car.body.tailgateOpen) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))   // P3: cửa/cốp tô trên hình xe
         val doorLine = ctx.getString(when {
             doors.all { it == null } -> R.string.kachi_doors_unknown
             doors.any { it == true } -> R.string.kachi_doors_open
@@ -463,7 +463,7 @@ object WidgetViews {
         val car = data.car
         fun cell(icon: String, big: String, sub: String, color: String) = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = KachiTheme.surface(ctx, Sp.RADIUS_M)
+            KachiGlass.apply(this, Sp.RADIUS_M)
             val r = KachiTheme.iconRes(icon)
             if (r != 0) addView(ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
                 LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S)).also { it.bottomMargin = dpi(ctx, Sp.XS) })

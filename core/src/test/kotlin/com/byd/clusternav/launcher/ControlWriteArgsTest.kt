@@ -198,8 +198,8 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(2, 2, 2, 2), args("windows_all", 0), "tất cả kính đóng → 4× đóng=2")
         assertArrayEquals(intArrayOf(1, 1), args("window", 1))
         assertArrayEquals(intArrayOf(1, 2), args("window", 0), "kính lái đóng → [1, đóng=2]")
-        assertArrayEquals(intArrayOf(1), args("trunk", 1))
-        assertArrayEquals(intArrayOf(2), args("trunk", 0))
+        assertArrayEquals(intArrayOf(1), args("trunk", 1), "cốp mở → voiceCtlBackDoor(1) [ĐO xe 2026-09-17]")
+        assertArrayEquals(intArrayOf(3), args("trunk", 0), "cốp đóng → voiceCtlBackDoor(3) [ĐO xe 2026-09-17]")
         assertArrayEquals(intArrayOf(1), args("pm25_clean_now", 1))
         assertArrayEquals(intArrayOf(1), args("seat_memory", 0), "nút bấm-1-phát luôn gửi 1")
     }

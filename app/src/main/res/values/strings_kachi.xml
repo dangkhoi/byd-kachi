@@ -100,6 +100,12 @@
     <string name="kachi_sec_theme">Giao diện sáng/tối</string>
     <string name="kachi_row_palette">Bảng màu</string>
     <string name="kachi_theme_note">"Tự động" = tối từ 18h đến 6h. Đổi bảng màu thì màn hình dựng lại một lượt.</string>
+    <!-- P1b · R8 — chọn màu nhấn / tông thẻ (theo hồ sơ) -->
+    <string name="kachi_sec_color">Màu sắc</string>
+    <string name="kachi_row_accent">Màu nhấn</string>
+    <string name="kachi_row_tone">Tông thẻ</string>
+    <string name="kachi_row_paint">Màu sơn xe</string>
+    <string name="kachi_color_note">Lưu theo hồ sơ đang dùng. "Theo ảnh nền" lấy màu trội của ảnh đầu tiên trong thư mục hình nền. Chữ luôn được giữ đọc được: màu nào quá sáng thì chữ trên nút tự đậm lại. Đổi màu thì màn hình dựng lại một lượt.</string>
     <string name="kachi_sec_lang">Ngôn ngữ</string>
     <string name="kachi_row_lang">Chữ trên màn</string>
     <string name="kachi_lang_note">"Theo xe" = theo ngôn ngữ của máy: máy tiếng Việt thì tiếng Việt, còn lại tiếng Anh. Đổi ngôn ngữ thì màn hình dựng lại một lượt.</string>
@@ -530,6 +536,8 @@
     <string name="kachi_voice_speak_sub">Kachi đọc to câu trả lời thay vì chỉ hiện chữ.</string>
     <string name="kachi_voice_offline_title">Ưu tiên giọng offline</string>
     <string name="kachi_voice_offline_sub">Chỉ có tác dụng khi gói giọng đọc đã cài; chưa cài thì vẫn dùng máy đọc của hệ thống.</string>
+    <string name="kachi_voice_feedback_title">Giọng phản hồi giọng bé (thử nghiệm)</string>
+    <string name="kachi_voice_feedback_sub">Mặc định đọc bằng giọng Piper. Bật để nghe giọng bé — giọng clone, chưa hoàn hảo; câu lạ vẫn đọc bằng Piper.</string>
     <string name="kachi_voice_wav_try">Nhận dạng tệp WAV thử</string>
     <string name="kachi_voice_wav_running">Đang nhận dạng tệp thử…</string>
     <string name="kachi_voice_wav_heard">WAV nghe được: %1$s</string>

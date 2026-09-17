@@ -1,0 +1,25 @@
+<!--
+  ẢNH (widget Trình chiếu ảnh) — khung nét + dãy núi tô chuyển sắc + mặt trời nhỏ mờ: một BỨC ẢNH, không phải mặt trời (ic_sun).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/photo.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực INFOTAINMENT · họ màu media · cỡ 32dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="32dp" android:height="32dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 5.6 4.6 L 18.4 4.6 A 2.2 2.2 0 0 1 20.6 6.8 L 20.6 17.2 A 2.2 2.2 0 0 1 18.4 19.4 L 5.6 19.4 A 2.2 2.2 0 0 1 3.4 17.2 L 3.4 6.8 A 2.2 2.2 0 0 1 5.6 4.6 Z"
+        android:fillColor="#00000000" android:strokeColor="#F59E0B" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.2 17.4 L 9.8 10.6 L 13 14.4 L 15.2 12.2 L 18.8 17.4 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="5.2" android:startY="10.6" android:endX="18.8" android:endY="17.4">
+                <item android:offset="0" android:color="#FFC75A" />
+                <item android:offset="1" android:color="#B06F05" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 14.3 8.6 A 1.5 1.5 0 1 1 17.3 8.6 A 1.5 1.5 0 1 1 14.3 8.6 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.38" />
+</vector>

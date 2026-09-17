@@ -39,6 +39,15 @@ data class HomeUiState(
     val bootProfile: String? = null,
     val themeMode: ThemeMode = ThemeMode.NIGHT,
     /**
+     * VISUAL-REFRESH P1b · R8 — **màu nhấn + tông thẻ** người dùng chọn, theo hồ sơ (AC8.4).
+     *
+     * Cùng lý do với [themeMode] ngay trên: thứ được **render** thì phải nằm trong nguồn sự thật. Người đọc-để-vẽ
+     * duy nhất là `ThemeHost.sync` (`:app`), nó đưa cả [themeMode] lẫn trường này vào `KachiTheme.applyTheme` —
+     * một chỗ áp, một bảng màu suy ra, không có bản sao thứ hai. Cấu hình cũ không có khoá ⇒ [ColorChoice.DEFAULT]
+     * = đúng bảng màu của 1.69, **không** hỏi.
+     */
+    val colorChoice: ColorChoice = ColorChoice.DEFAULT,
+    /**
      * U5 · T3 — NGÔN NGỮ launcher. Mặc định [LangMode.AUTO] ("Theo xe", §6 OQ1): xe của owner đặt tiếng Việt nên
      * không ai thấy gì khác, còn người cài trên máy tiếng khác thì nhận đúng tiếng Anh mà không phải đi tìm nút.
      *

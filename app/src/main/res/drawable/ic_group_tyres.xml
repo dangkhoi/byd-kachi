@@ -1,25 +1,23 @@
 <!--
-  U7 · BỘ ICON HÌNH XE (spec docs/specs/kachi-icon-set-v2.html §4). SINH BỞI script — sửa thì sửa
-  ở khung dùng chung rồi sinh lại, đừng vá lẻ một tệp (lệch 0.2 là nhìn ra khi hai icon cạnh nhau).
-  Luật: khung 24×24 · ô quang học 20×20 · nét 1.6 cap/join tròn · KHÔNG màu riêng (chỗ dùng tint).
-  NGỮ PHÁP: NÉT = vật thể (thân xe), VÙNG TÔ = bộ phận đang được nói tới.
-  NHÓM LỐP — bốn bánh tô đặc (cả cụm, không phải một bánh).
+  NHÓM LỐP — thân xe nhìn từ trên (nét mờ) + BỐN bánh tô chuyển sắc: cả cụm, không phải một bánh (ic_tire).
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/group_tyres.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực TYRES · họ màu tyres · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M12,4.6 C9.9,4.6 8.35,5.4 7.95,7.2 L7.5,10.2 C7.2,12.6 7.2,15.6 7.55,18.1 C7.8,19.7 9.0,20.3 12,20.3 C15.0,20.3 16.2,19.7 16.45,18.1 C16.8,15.6 16.8,12.6 16.5,10.2 L16.05,7.2 C15.65,5.4 14.1,4.6 12,4.6 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.7,8.7 C9.9,7.9 14.1,7.9 15.3,8.7 M8.7,16.6 C9.9,17.4 14.1,17.4 15.3,16.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M4.30,6.80 L4.50,6.80 A1.20,1.20 0 0 1 5.70,8.00 L5.70,10.20 A1.20,1.20 0 0 1 4.50,11.40 L4.30,11.40 A1.20,1.20 0 0 1 3.10,10.20 L3.10,8.00 A1.20,1.20 0 0 1 4.30,6.80 Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M4.30,13.60 L4.50,13.60 A1.20,1.20 0 0 1 5.70,14.80 L5.70,17.00 A1.20,1.20 0 0 1 4.50,18.20 L4.30,18.20 A1.20,1.20 0 0 1 3.10,17.00 L3.10,14.80 A1.20,1.20 0 0 1 4.30,13.60 Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M19.50,6.80 L19.70,6.80 A1.20,1.20 0 0 1 20.90,8.00 L20.90,10.20 A1.20,1.20 0 0 1 19.70,11.40 L19.50,11.40 A1.20,1.20 0 0 1 18.30,10.20 L18.30,8.00 A1.20,1.20 0 0 1 19.50,6.80 Z"
-        android:fillColor="#FFFFFF" />
-    <path android:pathData="M19.50,13.60 L19.70,13.60 A1.20,1.20 0 0 1 20.90,14.80 L20.90,17.00 A1.20,1.20 0 0 1 19.70,18.20 L19.50,18.20 A1.20,1.20 0 0 1 18.30,17.00 L18.30,14.80 A1.20,1.20 0 0 1 19.50,13.60 Z"
-        android:fillColor="#FFFFFF" />
+    <path android:pathData="M 5.5 5.2 L 5.9 5.2 A 1.3 1.3 0 0 1 7.2 6.5 L 7.2 9.1 A 1.3 1.3 0 0 1 5.9 10.4 L 5.5 10.4 A 1.3 1.3 0 0 1 4.2 9.1 L 4.2 6.5 A 1.3 1.3 0 0 1 5.5 5.2 Z M 18.1 5.2 L 18.5 5.2 A 1.3 1.3 0 0 1 19.8 6.5 L 19.8 9.1 A 1.3 1.3 0 0 1 18.5 10.4 L 18.1 10.4 A 1.3 1.3 0 0 1 16.8 9.1 L 16.8 6.5 A 1.3 1.3 0 0 1 18.1 5.2 Z M 5.5 13.6 L 5.9 13.6 A 1.3 1.3 0 0 1 7.2 14.9 L 7.2 17.5 A 1.3 1.3 0 0 1 5.9 18.8 L 5.5 18.8 A 1.3 1.3 0 0 1 4.2 17.5 L 4.2 14.9 A 1.3 1.3 0 0 1 5.5 13.6 Z M 18.1 13.6 L 18.5 13.6 A 1.3 1.3 0 0 1 19.8 14.9 L 19.8 17.5 A 1.3 1.3 0 0 1 18.5 18.8 L 18.1 18.8 A 1.3 1.3 0 0 1 16.8 17.5 L 16.8 14.9 A 1.3 1.3 0 0 1 18.1 13.6 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="4.2" android:startY="5.2" android:endX="19.8" android:endY="18.8">
+                <item android:offset="0" android:color="#C7D0DC" />
+                <item android:offset="1" android:color="#626E82" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 12 3.4 C 9.6 3.4 8.2 4.2 7.9 6 L 7.5 9.4 C 7.2 12 7.2 15.4 7.5 18 C 7.8 19.8 9.4 20.6 12 20.6 C 14.6 20.6 16.2 19.8 16.5 18 C 16.8 15.4 16.8 12 16.5 9.4 L 16.1 6 C 15.8 4.2 14.4 3.4 12 3.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

@@ -49,6 +49,7 @@ class HomePanels(
      */
     private val onSavedPlaces: (List<SavedPlace>) -> Unit,
     private val onThemeMode: (ThemeMode) -> Unit,
+    private val onColorChoice: (ColorChoice) -> Unit,
     private val onLangMode: (LangMode) -> Unit,
     private val onAutostart: (Boolean) -> Unit,
     private val onSwitchProfile: (String) -> Unit,
@@ -165,6 +166,7 @@ class HomePanels(
             // Sổ địa chỉ: một cổng, nhận cả danh sách đã chốt (xem KDoc [onSavedPlaces]).
             onSavedPlaces = { list -> onSavedPlaces(list) },
             onThemeMode = { m -> onThemeMode(m) },
+            onColorChoice = { c -> onColorChoice(c) },
             onLangMode = { m -> onLangMode(m) },
             onAutostart = { on -> onAutostart(on) },
             onSwitchProfile = { name -> onSwitchProfile(name) },

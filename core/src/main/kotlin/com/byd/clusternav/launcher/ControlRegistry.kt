@@ -96,7 +96,11 @@ object ControlRegistry {
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
             labelEn = "Driver window"),
         ControlDef("trunk", "Cốp sau", "ic-car-top-trunk", ControlKind.TOGGLE, enabledByDefault = true,
-            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setHetchDoorStatus", readKey = "tailgate_status",
+            // [ĐO xe 2026-09-17] `setHetchDoorStatus` KHÔNG tồn tại trên ROM này; đường THẬT là
+            // `BYDAutoSettingDevice.voiceCtlBackDoor(cmd)` — cmd 1 = MỞ · 3 = ĐÓNG (đo 2 lần mỗi lệnh, cốp mở/đóng
+            // thật; cmd 2 không thấy tác dụng khi cốp đứng yên — [ĐOÁN] dừng-giữa-hành-trình, chưa thử lúc chạy).
+            // Đọc trạng thái từ `getBackDoorOpenedHeight` cũng ở Setting device (Bodywork trả rỗng).
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.voiceCtlBackDoor", readKey = "tailgate_status",
             labelEn = "Tailgate"),
         ControlDef("readl", "Đèn đọc", "ic-readlight", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643002",
@@ -188,6 +192,8 @@ object ControlRegistry {
         // ⚠ ĐỌC được nhưng vẫn CHƯA ghi được: `readKey` nối vào `getAcControlMode` (T2), còn `bindingKey` giữ nguyên
         // feature `1324355606` — id đó KHÔNG có trong `BYDAutoFeatureIds` của xe owner, và lệnh *"cấm bắn lệnh khí hậu
         // theo phỏng đoán"* còn nguyên. `readInverted` vì AC_CTRLMODE_AUTO = 0 (xem KDoc trường đó).
+        // [ĐO xe 2026-09-17] điểm đo thứ hai xác nhận đường ĐỌC: `getAcControlMode` = 0 khi owner bấm AUTO trên màn,
+        // 1 khi tay ⇒ `readInverted` đúng. Đường GHI vẫn chờ `featmap` trên xe (không tự nghĩ giá trị — bài học W2-P0).
         ControlDef("ac_auto", "Điều hòa AUTO", "ic-ac", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324355606",
             readKey = "ac_mode_auto", readInverted = true,

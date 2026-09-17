@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- ĐÓNG (✕) — hai nét chéo bằng nhau, đầu tròn; giữ trong bộ cho nút đóng ở bất kỳ đâu bày lại. -->
+  <style>:root{--ink:#ffffff;--main:#eaf0f8;--light:#ffffff;--deep:#b9c4d4}</style>
+  <path d="M 4.87,4.87 L 19.13,19.13 M 19.13,4.87 L 4.87,19.13" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- MÔ-MEN (`motor_front_torque`) — ĐAI ỐC LỤC GIÁC ở tâm + MŨI TÊN CONG quanh nó: lực xoay quanh trục, chính là hình mọi người thấy trên cờ-lê lực. Cùng trục với ic_rpm nhưng đo LỰC chứ không đo tốc độ quay. Vẽ lại 2026-09-17 (bản đầu = trục + tay đòn, quá trừu tượng ở 24px). -->
+  <style>:root{--ink:#ffffff;--main:#7b5cff;--light:#b39dff;--deep:#7059d7}</style>
+  <path d="M12,7.6 L15.8,9.8 L15.8,14.2 L12,16.4 L8.2,14.2 L8.2,9.8 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M10.6,12 A1.4,1.4 0 1 1 13.4,12 A1.4,1.4 0 1 1 10.6,12 Z" data-layer="sub" fill="var(--ink)" stroke="none" opacity="0.38"/>
+  <path d="M5.3,16.9 A8.4,8.4 0 1 1 18.5,17.4" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M15.6,15.6 L18.5,17.4 L20.4,14.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

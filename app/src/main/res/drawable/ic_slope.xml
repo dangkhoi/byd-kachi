@@ -1,15 +1,25 @@
 <!--
-  ĐỘ DỐC (mặt dốc + cung đo góc) — cho `slope_deg`.
-  [U6] Trước đây độ dốc lùi về icon lĩnh vực (đồng hồ tốc): một góc nghiêng của mặt đường không liên quan gì tới
-  kim tốc độ.
+  ĐỘ DỐC (`slope_deg`) — mặt dốc tô chuyển sắc + cung đo góc ở chân dốc: một góc của mặt đường, không phải kim tốc độ.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/slope.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực DRIVETRAIN · họ màu drive · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M3.6,19.2 L20.4,19.2 L20.4,7.2 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M11.2,19.2 A7.6,7.6 0 0 0 9.8,14.8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.4 19.4 L 20.6 19.4 L 20.6 5.2 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3.4" android:startY="5.2" android:endX="20.6" android:endY="19.4">
+                <item android:offset="0" android:color="#B39DFF" />
+                <item android:offset="1" android:color="#7059D7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 3.4 19.4 L 20.6 19.4"
+        android:fillColor="#00000000" android:strokeColor="#7B5CFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 9.1 14.68 A 7.4 7.4 0 0 1 10.8 19.4"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

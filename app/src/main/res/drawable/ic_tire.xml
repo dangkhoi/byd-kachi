@@ -1,15 +1,25 @@
 <!--
-  LỐP — MỘT bánh (vỏ lốp thuôn dọc + gai lốp), cùng ngôn ngữ hình với `ic_group_tyres` (xe + 4 bánh cùng dạng).
-  [KIỂM TOÁN UX mục 4d] Bản trước là hai vòng tròn đồng tâm ◎ — không cùng họ với bốn bánh của icon nhóm Lốp,
-  nên MỘT khái niệm ("lốp") có HAI hình không liên quan gì nhau. Nay bánh của datum = một bánh của nhóm, phóng to.
+  LỐP (`tyre_*`; nhận dạng nhóm Lốp) — một bánh nhìn ngang: vỏ tròn nét + vành tô chuyển sắc + gai lốp mờ quanh mép. Cùng họ với bốn bánh của ic_group_tyres.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/tire.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực TYRES · họ màu tyres · cỡ 24dp.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M9.2,3.6 L14.8,3.6 A3.2,3.2 0 0 1 18,6.8 L18,17.2 A3.2,3.2 0 0 1 14.8,20.4 L9.2,20.4 A3.2,3.2 0 0 1 6,17.2 L6,6.8 A3.2,3.2 0 0 1 9.2,3.6 Z"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M9.6,8 L9.6,16 M14.4,8 L14.4,16 M12,7.2 L12,16.8"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.6"
-        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 3.2 12 A 8.8 8.8 0 1 1 20.8 12 A 8.8 8.8 0 1 1 3.2 12 Z"
+        android:fillColor="#00000000" android:strokeColor="#94A3B8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 8.4 12 A 3.6 3.6 0 1 1 15.6 12 A 3.6 3.6 0 1 1 8.4 12 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="8.4" android:startY="8.4" android:endX="15.6" android:endY="15.6">
+                <item android:offset="0" android:color="#C7D0DC" />
+                <item android:offset="1" android:color="#626E82" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 12 3.2 L 12 5.4 M 12 18.6 L 12 20.8 M 3.2 12 L 5.4 12 M 18.6 12 L 20.8 12 M 5.8 5.8 L 7.3 7.3 M 16.7 16.7 L 18.2 18.2 M 5.8 18.2 L 7.3 16.7 M 16.7 7.3 L 18.2 5.8"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

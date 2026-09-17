@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- LỌC KHÔNG KHÍ (nút `pm25` · `pm25_clean_now`) — phin lọc gấp nếp (thiết bị) + luồng khí đi qua tô: máy lọc là VẬT, khác lá (ion) và hạt (bụi). -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M5,5.2 L11,5.2 A1.6,1.6 0 0 1 12.6,6.8 L12.6,17.2 A1.6,1.6 0 0 1 11,18.8 L5,18.8 A1.6,1.6 0 0 1 3.4,17.2 L3.4,6.8 A1.6,1.6 0 0 1 5,5.2 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.2,7.6 L9.8,10.2 L6.2,12.8 L9.8,15.4 L6.2,18" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M14.6,9 L20.6,9 M17.6,12 L20.6,12 M14.6,15 L20.6,15" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5,5.2 L11,5.2 A1.6,1.6 0 0 1 12.6,6.8 L12.6,17.2 A1.6,1.6 0 0 1 11,18.8 L5,18.8 A1.6,1.6 0 0 1 3.4,17.2 L3.4,6.8 A1.6,1.6 0 0 1 5,5.2 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

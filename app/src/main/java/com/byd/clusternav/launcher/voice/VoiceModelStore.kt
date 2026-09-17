@@ -77,6 +77,11 @@ object VoiceModelStore {
         prefs(ctx).getString(KEY_MODEL, null)?.takeIf { it.isNotBlank() }?.let { return SherpaModelCatalog.byId(it) }
         val default = SherpaModelCatalog.default()
         if (isReady(ctx, default)) return default
+        // 1.70 — chưa chọn và mặc định chưa có: ưu tiên gói **int8 không thử nghiệm** đã nằm trên đĩa, rồi mới
+        // tới gói bất kỳ. [ĐO xe 2026-09-17] xe owner có CẢ fp32 lẫn int8 mà vẫn giải mã bằng fp32 (4,3 s cho
+        // 8 s tiếng dưới tải) chỉ vì fp32 đứng trước trong `ALL`; owner đã chốt int8 từ 09-16. Vẫn KHÔNG ghi
+        // pref ở đây (lượt ghi duy nhất là [select]).
+        SherpaModelCatalog.ALL.firstOrNull { !it.experimental && it.isInt8 && isReady(ctx, it) }?.let { return it }
         return SherpaModelCatalog.ALL.firstOrNull { isReady(ctx, it) } ?: default
     }
 

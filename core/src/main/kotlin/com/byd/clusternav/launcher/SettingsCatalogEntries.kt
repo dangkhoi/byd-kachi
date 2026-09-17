@@ -66,6 +66,8 @@ internal object SettingsCatalogEntries {
         // IA v2 · R3 — cùng một chip nay ghi THÊM `theme_choice` (tệp `clusternav_theme`) để màn nâng cao theo cùng
         // lựa chọn; khoá thứ hai đó khai ở [SettingsCatalog.CLUSTERNAV_COMPANION_KEYS], không mở mục riêng.
         SettingsEntry("display_theme", SettingsGroup.DISPLAY, "Giao diện sáng/tối", "theme_mode", "Light / dark theme"),
+        // VISUAL-REFRESH P1b · R8 — màu nhấn (8 ô + theo ảnh nền) và tông thẻ, theo hồ sơ; mã hoá ở `ColorChoice`.
+        SettingsEntry("display_color", SettingsGroup.DISPLAY, "Màu sắc", "color_choice", "Colours"),
         // U5·T3 — NGÔN NGỮ. ⚠ Khoá `lang` KHÔNG nằm trong tệp `kachi_workspace` mà trong tệp lưu ngôn ngữ đã có của
         // ClusterNav (`clusternav_lang`, `com.byd.clusternav.Lang`) — cố ý, để một APK chỉ có MỘT công tắc ngôn ngữ
         // thay vì hai cái lệch nhau; lập luận đầy đủ ở KDoc `WorkspacePrefs.langMode`.
@@ -236,6 +238,11 @@ internal object SettingsCatalogEntries {
         SettingsEntry(
             "voice_prefer_offline", SettingsGroup.SYSTEM, "Ưu tiên giọng offline",
             "voice_prefer_offline", "Prefer the offline voice",
+        ),
+        // 1.70 (voice-clone T7/T8) — chọn giọng phản hồi Piper (mặc định) hay "Giọng Kachi bé" (clip clone).
+        SettingsEntry(
+            "voice_feedback_voice", SettingsGroup.SYSTEM, "Giọng phản hồi",
+            "voice_feedback_voice", "Feedback voice",
         ),
         // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
         // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.

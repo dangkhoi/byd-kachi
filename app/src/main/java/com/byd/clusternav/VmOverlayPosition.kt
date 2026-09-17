@@ -82,6 +82,21 @@ object VmOverlayPosition {
         }.onFailure { Log.w(TAG, "gửi VM_BUBBLE_POS lỗi", it) }
     }
 
-    /** Gọi lúc mở app / bong bóng dựng lại: áp vị trí đã lưu (nếu Cast ON). */
-    fun applyOnOpen(ctx: Context) { if (castOn(ctx)) send(ctx) }
+    /**
+     * Gọi lúc mở app / bong bóng dựng lại: áp vị trí đã lưu (nếu Cast ON).
+     *
+     * K8 (1.70): nhịp làm tươi 2 s của `FloatingBubbleService` gọi vào đây ⇒ [ĐO xe 2026-09-17] một broadcast
+     * + một dòng log mỗi 2 s cho cùng toạ độ. Qua [ResendGate]: cùng toạ độ chỉ gửi lại sau
+     * [RESEND_MIN_MS]; toạ độ đổi (người dùng kéo) gửi ngay — [set] gọi thẳng [send] nên không qua cổng này.
+     */
+    fun applyOnOpen(ctx: Context) {
+        if (!castOn(ctx)) return
+        val app = ctx.applicationContext
+        val xy = x(app) to y(app)
+        val go = synchronized(gate) { gate.shouldSend(System.currentTimeMillis(), xy) }
+        if (go) send(app)
+    }
+
+    private const val RESEND_MIN_MS = 15_000L
+    private val gate = com.byd.clusternav.launcher.ResendGate(RESEND_MIN_MS)
 }

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Kachi · HÌNH XE TỔNG HỢP · mặt NGANG (SIDE) — mũi xe bên TRÁI. Chưa có icon nào dùng mặt này (SideBoardView đã xoá
+  cùng ADAS 2026-09-16); mặt này tồn tại để widget lốp gộp/hình xe tổng hợp P3 và mọi bảng sau này có sẵn một xe
+  NHẤT QUÁN với hai mặt kia (cùng tỉ lệ trục cơ sở ≈ 11.3 / thân 15.7 của mặt trên). Cùng luật soạn như top.svg.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <title>Kachi car · SIDE</title>
+  <defs>
+    <linearGradient id="paint" x1="0" y1="0" x2="0" y2="1">
+      <stop id="paintFrom" offset="0" stop-color="#e9eef5"/>
+      <stop id="paintTo" offset="1" stop-color="#8d99ab"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#dbe8ff" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#43566e" stop-opacity="0.92"/>
+    </linearGradient>
+    <radialGradient id="lamp">
+      <stop offset="0" stop-color="#eaf3ff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#9dc4ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="taillamp">
+      <stop offset="0" stop-color="#ff8a80" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff3d3d" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shadow">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tyre" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a313c"/>
+      <stop offset="1" stop-color="#0f1319"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c3ccd8"/>
+      <stop offset="1" stop-color="#5d6a7b"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f9ff"/>
+      <stop offset="1" stop-color="#a9c6f2"/>
+    </linearGradient>
+  </defs>
+
+  <g id="layer-shadow">
+    <ellipse id="shadow" data-role="shadow" cx="12.2" cy="18.6" rx="9.6" ry="0.8" fill="url(#shadow)"/>
+  </g>
+  <g id="layer-glow">
+    <ellipse id="glow_front" data-role="glow" cx="3.2" cy="11.5" rx="2.4" ry="1.6" fill="url(#lamp)"/>
+    <ellipse id="glow_rear" data-role="glowtail" cx="21.6" cy="11.4" rx="2.0" ry="1.4" fill="url(#taillamp)"/>
+  </g>
+
+  <g id="layer-body">
+    <path id="body" data-role="paint"
+          d="M2.6,15.4 L2.9,12.6 C3.0,11.6 3.6,10.9 4.6,10.6 L7.6,9.9 L10.0,6.6 C10.4,6.1 11.0,5.8 11.7,5.8 L16.6,5.8 C17.2,5.8 17.7,6.1 18.0,6.6 L19.7,9.6 L21.0,10.2 C21.6,10.5 21.9,11.0 21.9,11.7 L21.8,15.4 C21.8,16.0 21.4,16.4 20.8,16.4 L3.6,16.4 C3.0,16.4 2.6,16.0 2.6,15.4 Z"
+          fill="url(#paint)" stroke="#ffffff" stroke-opacity="0.22" stroke-width="0.35"/>
+    <path id="bonnet" data-role="panel" data-stroke="1" d="M4.7,10.75 L7.5,10.1" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="0.25"/>
+  </g>
+
+  <g id="layer-glass">
+    <path id="windscreen" data-role="glass" d="M8.3,9.75 L10.5,6.75 L12.2,6.75 L12.2,9.75 Z" fill="url(#glass)"/>
+    <rect id="glass_front" data-role="glass" x="12.7" y="6.75" width="3.1" height="3.0" rx="0.25" fill="url(#glass)"/>
+    <rect id="glass_rear" data-role="glass" x="16.3" y="6.75" width="1.5" height="3.0" rx="0.25" fill="url(#glass)"/>
+    <path id="glass_quarter" data-role="glass" d="M18.2,6.95 L19.35,9.0 L19.35,9.75 L18.2,9.75 Z" fill="url(#glass)"/>
+  </g>
+
+  <g id="layer-lights">
+    <path id="headlamp" data-role="lamp" d="M2.95,11.1 L5.0,10.55 L5.3,11.7 L3.05,12.1 Z" fill="url(#lens)"/>
+    <path id="tail" data-role="tail" d="M20.4,10.55 L21.75,11.05 L21.75,12.1 L20.4,11.8 Z" fill="#ff5252"/>
+  </g>
+
+  <!-- BÁNH ở mặt ngang nằm TRÊN thân (nhìn thấy trọn vòng qua hốc bánh) ⇒ vẽ sau thân. -->
+  <g id="layer-tyres">
+    <circle id="wheel_front" data-role="tyre" cx="6.6" cy="16.1" r="2.1" fill="url(#tyre)"/>
+    <circle id="wheel_rear" data-role="tyre" cx="17.9" cy="16.1" r="2.1" fill="url(#tyre)"/>
+    <circle id="rim_front" data-role="rim" cx="6.6" cy="16.1" r="1.1" fill="url(#rim)"/>
+    <circle id="rim_rear" data-role="rim" cx="17.9" cy="16.1" r="1.1" fill="url(#rim)"/>
+  </g>
+
+  <g id="layer-doors">
+    <rect id="door_front" data-role="panel" x="12.6" y="10.2" width="3.3" height="5.5" rx="0.3" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="0.25"/>
+    <rect id="door_rear" data-role="panel" x="16.3" y="10.2" width="2.9" height="3.6" rx="0.3" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="0.25"/>
+    <rect id="mirror" data-role="mirror" x="8.9" y="9.0" width="1.2" height="0.9" rx="0.3" fill="#6b788a"/>
+  </g>
+
+  <g id="layer-highlight">
+    <path id="highlight" data-role="highlight" data-ref="body" fill="none" stroke="#4c7dff" stroke-width="0.5"/>
+  </g>
+</svg>
