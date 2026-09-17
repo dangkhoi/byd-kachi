@@ -12,6 +12,16 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **1.72 (73) — 2026-09-17** (`Kachi-1.72-release.apk`, 38,0 MB, sha256 `37e8b4e8…6939d`, thay 1.71). Sửa
+  END-TO-END 3 lỗi voice→app owner báo từ log xe (159 lượt): **(1) Google Maps chưa dẫn** — `geo:0,0?q=` chỉ MỞ
+  màn kết quả; nay `google.navigation:q=<địa chỉ>` (dẫn turn-by-turn, Google tự geocode, không cần Nominatim).
+  Và mặc định (không nêu app) nay ưu tiên GMaps dẫn-bằng-chữ thay VietMap (VietMap buộc geocode → kẹt "đang tra
+  điểm đến" khi mạng xe treo). **(2) VietMap đơ** — geocode hỏng/timeout nay **lùi về Google Maps dẫn bằng chữ**
+  (luôn có dẫn) thay mở VietMap trơn; thêm timeout cứng 7 s chống on-device Geocoder treo vô hạn. **(3) YouTube
+  search không phát** — `ACTION_SEARCH` (chỉ mở ô tìm) → `MEDIA_PLAY_FROM_SEARCH` + focus (phát theo tìm), fallback
+  ACTION_SEARCH. **[ĐO] 5 module 0 đỏ** (core 2220 · app 1141/1153 · car-int 61 · offcar 99 · contracts 22). 🚗
+  owner test xe: GMaps dẫn thật · VietMap không đơ (hoặc tự lùi GMaps) · YouTube phát. **Còn nợ (parser)**: «mở
+  &lt;tên ca sĩ&gt; trên youtube» (không có từ "bài/hát") rớt tên; app-hint đầu câu ("dùng google map…") chưa bắt.
 - **1.71 (72) — 2026-09-17** (`Kachi-1.71-release.apk`, 38,0 MB, sha256 `c1f4fdd5…9064a`, thay 1.70). Sửa 2 việc
   owner báo, **từ gốc IA (không hotfix)**: (1) **Trạng thái xe đọc REALTIME** — ô điều khiển (nhiệt độ · gió · lấy
   gió trong · cốp…) trước hiển thị mức MẶC ĐỊNH trong RAM (nhiệt 22 · gió 4), chỉ đổi khi bấm trên launcher; nay
