@@ -18,6 +18,24 @@ data class CarStatus(
     val identity: Identity = Identity(),
     /** A9 — giải trí (Android, KHÔNG qua HAL BYDAuto). Xem [Infotainment]. */
     val infotainment: Infotainment = Infotainment(),
+    /**
+     * ═══ Giá trị THẬT của XE cho các Ô ĐIỀU KHIỂN đang hiện (2026-09-17 · owner báo "không realtime") ══════
+     *
+     * `control id → giá trị hiện tại đọc từ xe`, ngữ nghĩa **y hệt** [HalBindingTable.readState]:
+     *  • STEP (`temp`/`fan`/`vol`) = con số (24 · 3 · 12);
+     *  • TOGGLE (`recirc`/`trunk`/`seatc`/`sunroof`/`drl`…) = **0/1** (tắt/bật);
+     *  • SELECT = chỉ số lựa chọn.
+     *
+     * ## Vì sao là map RỜI, không nhét vào các cụm trên
+     * Ô control cần con số **theo mã nút** (`temp`), trong khi các cụm ([Climate.setTempC]…) khoá theo **mã datum**
+     * (`inside_temp`). Một map theo mã nút để `ControlTileFactory` tra thẳng `controls[def.id]` — không phải dựng
+     * một bảng NGƯỢC datum→nút ở tầng vẽ (đúng bẫy "hai bảng lệch nhau" của repo). [CarDataAdapter] điền nó bằng
+     * chính [HalBindingTable.readState] nên phép biến đổi (thang mức ghế · đảo AUTO) chỉ sống **một chỗ**.
+     *
+     * `emptyMap()` = chưa đọc control nào (off-car / màn không bày ô điều khiển nào có đường đọc) ⇒ ô lùi về mức
+     * trong RAM ([ControlTileState]) như hành vi 1.69 — KHÔNG bịa số.
+     */
+    val controls: Map<String, Int> = emptyMap(),
 ) {
     /** A1 — năng lượng / pin (mọi ô SẠC đã gỡ ở lượt (V) 2026-09-17 — owner chấm NO). */
     data class Energy(

@@ -386,6 +386,7 @@ internal fun collectHome(
                 // chỉ đọc hộp này, nên đặt ở đây là *mọi* đường đổi state (đổi hồ sơ · gắn widget · đổi chip · đổi
                 // bố cục) tự động cập nhật nhu cầu — không có đường thứ hai nào phải nhớ gọi.
                 container.carDemand.set(CarDataDemand.of(it))
+                container.carDemand.setControls(CarDataDemand.controlsOf(it))
                 render(it)
             }
         }

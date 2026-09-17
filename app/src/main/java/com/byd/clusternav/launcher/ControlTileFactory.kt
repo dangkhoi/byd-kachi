@@ -52,8 +52,14 @@ class ControlTileFactory(
 ) {
 
     // ── HÀNH ĐỘNG ───────────────────────────────────────────────────────────────────────────────────────
-    /** Ô bấm được cho [def]. Không đặt `layoutParams` — cỡ do VÙNG quyết định (thanh nút vs ô giữa màn). */
-    fun actionTile(def: ControlDef): View {
+    /**
+     * Ô bấm được cho [def]. Không đặt `layoutParams` — cỡ do VÙNG quyết định (thanh nút vs ô giữa màn).
+     *
+     * Trả [ActionTile] (view + [ActionTile.refresh]): từ 2026-09-17 ô control **đọc giá trị THẬT của xe** theo nhịp
+     * poll ([CarStatus.controls]) và cập nhật TẠI CHỖ — không dựng lại ô (ràng buộc C5). `refresh` là no-op cho
+     * COVER/BUTTON (chúng không mang một con số/trạng-thái bền để đọc lại).
+     */
+    fun actionTile(def: ControlDef): ActionTile {
         val content = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
@@ -78,27 +84,35 @@ class ControlTileFactory(
         }
         if (icons) content.addView(icon)
 
-        when (def.kind) {
+        val refresh: (CarStatus) -> Unit = when (def.kind) {
             ControlKind.TOGGLE -> tileToggle(def, content, icon, label)
             ControlKind.STEP -> tileStep(def, content, icon, label)
-            ControlKind.COVER -> tileCover(def, content, icon, label)
+            ControlKind.COVER -> { tileCover(def, content, icon, label); {} }
             ControlKind.SELECT -> tileSelect(def, content, icon, label)
-            ControlKind.BUTTON -> tileButton(def, content, icon, label)
+            ControlKind.BUTTON -> { tileButton(def, content, icon, label); {} }
         }
-        return if (ControlTileLogic.needsBadge(def)) withBadge(content) else content
+        val outer = if (ControlTileLogic.needsBadge(def)) withBadge(content) else content
+        return ActionTile(outer, refresh)
     }
 
-    private fun tileToggle(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {
+    private fun tileToggle(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView): (CarStatus) -> Unit {
         tile.addView(reserveTwoLines(label))
         val active = state.isOn(def.id)
         applyBg(tile, active); tint(icon, label, active)
         tile.setOnClickListener {
+            state.touch(def.id)   // ân hạn: đừng để nhịp poll nháy ngược ngay sau khi vừa bấm
             val nv = !state.isOn(def.id); state.setOn(def.id, nv)
             applyBg(tile, nv); tint(icon, label, nv); control().toggle(def.id, nv)
         }
+        // Đọc lại trạng thái THẬT của xe (0/1) — bỏ qua trong cửa sổ ân hạn, và chỉ đổi khi khác để không vẽ thừa.
+        return refresh@{ car ->
+            if (state.touchedWithin(def.id)) return@refresh
+            val on = (car.controls[def.id] ?: return@refresh) > 0
+            if (on != state.isOn(def.id)) { state.setOn(def.id, on); applyBg(tile, on); tint(icon, label, on) }
+        }
     }
 
-    private fun tileStep(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {
+    private fun tileStep(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView): (CarStatus) -> Unit {
         val unit = if (def.id == "temp") "°" else ""
         applyBg(tile, false); tint(icon, label, true)
         val vtext = TextView(ctx).apply {
@@ -112,6 +126,7 @@ class ControlTileFactory(
         // 1.68. MỘT lượt đọc cho MỘT cú chạm, KHÔNG đọc lúc dựng ô hay theo nhịp vẽ (ngân sách [ĐO xe 1.68] 33 lượt
         // đọc HAL/phút) — nên nó chạy trên luồng vẽ y như lượt `step()` ghi ngay sau, không đổi mô hình luồng tệp này.
         fun nudge(delta: Int) {
+            state.touch(def.id)
             val base = runCatching { control().readState(def.id) }.getOrNull() ?: state.value(def)
             val nv = def.clamp(base + delta); state.setValue(def.id, nv); vtext.text = "$nv$unit"; control().step(def.id, nv)
         }
@@ -129,6 +144,12 @@ class ControlTileFactory(
         // [R7] Đích chạm: nới VÙNG NHẬN CHẠM ra nửa ô (≥ Sp.TOUCH bề dọc), KHÔNG nới cái nút — nới nút thì
         // 2×48 > 68dp dùng được của ô và chữ giá trị xuống hai dòng ([ĐO] ghi ở KDoc Sp.TOUCH_TIGHT).
         StepTouchTarget.attach(tile, minus, plus)
+        // Đọc lại con số THẬT của xe (nhiệt/gió/âm lượng) — bỏ qua trong ân hạn, chỉ đổi chữ khi khác.
+        return refresh@{ car ->
+            if (state.touchedWithin(def.id)) return@refresh
+            val v = car.controls[def.id] ?: return@refresh
+            if (v != state.value(def)) { state.setValue(def.id, v); vtext.text = "$v$unit" }
+        }
     }
 
     private fun tileCover(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {
@@ -140,7 +161,7 @@ class ControlTileFactory(
         val labels = def.displayArgs.ifEmpty {
             listOf(ctx.getString(R.string.kachi_cover_close), ctx.getString(R.string.kachi_cover_open))
         }
-        val buttons = labels.mapIndexed { level, text -> miniBtn(text) { control().coverLevel(def.id, level) } }
+        val buttons = labels.mapIndexed { level, text -> miniBtn(text) { state.touch(def.id); control().coverLevel(def.id, level) } }
         tile.addView(LinearLayout(ctx).apply {
             // ⚠⚠ [KIỂM TOÁN 2026-09-12 mục 3] XẾP DỌC ở ô HẸP.
             //
@@ -166,7 +187,7 @@ class ControlTileFactory(
         })
     }
 
-    private fun tileSelect(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView) {
+    private fun tileSelect(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView): (CarStatus) -> Unit {
         applyBg(tile, false); tint(icon, label, true)
         label.setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp - 1.5f); tile.addView(label)
         val optView = TextView(ctx).apply {
@@ -176,8 +197,17 @@ class ControlTileFactory(
         }
         tile.addView(optView)
         tile.setOnClickListener {
+            state.touch(def.id)
             val next = ControlTileLogic.nextSelectIndex(state.sel(def.id), def.args.size)
             state.setSel(def.id, next); optView.text = ControlTileLogic.selectLabel(def, next); control().select(def.id, next)
+        }
+        // Đọc lại chỉ số lựa chọn THẬT của xe — bỏ qua trong ân hạn, chỉ nhận chỉ số hợp lệ (trong phạm vi args).
+        return refresh@{ car ->
+            if (state.touchedWithin(def.id)) return@refresh
+            val v = car.controls[def.id] ?: return@refresh
+            if (v != state.sel(def.id) && v >= 0 && v < def.args.size) {
+                state.setSel(def.id, v); optView.text = ControlTileLogic.selectLabel(def, v)
+            }
         }
     }
 
@@ -185,6 +215,7 @@ class ControlTileFactory(
         tile.addView(reserveTwoLines(label)); applyBg(tile, false); tint(icon, label, true)
         tile.setOnClickListener {
             applyBg(tile, true); tint(icon, label, true)
+            state.touch(def.id)
             control().press(def.id)
             tile.postDelayed({ applyBg(tile, false); tint(icon, label, true) }, 220)   // nháy sáng momentary
         }
@@ -453,6 +484,14 @@ class ControlTileFactory(
         const val TAG_MACRO = "ActionMacro"
     }
 }
+
+/**
+ * Ô HÀNH ĐỘNG đã dựng + cách cập nhật số từ xe.
+ *
+ * [refresh] nhận [CarStatus] và cập nhật hiển thị TẠI CHỖ từ [CarStatus.controls] (không dựng lại ô — ràng buộc
+ * C5). No-op cho COVER/BUTTON. Chỗ đặt ô (thanh nút · ô giữa màn) giữ [refresh] rồi gọi mỗi lần trạng thái xe đổi.
+ */
+class ActionTile(val view: View, val refresh: (CarStatus) -> Unit)
 
 /**
  * Cỡ ô theo VÙNG. [BIG] cho ô giữa màn (khung to hơn nhiều nên chữ/icon phải to theo, không thì ô trông hụt).

@@ -48,8 +48,7 @@ class CarDataAdapterTest {
         assertEquals("LGXCE4CB0N0000001", s.identity.vin)
     }
 
-    @Test fun `readFast builds drivetrain and fast fields`() {
-        val s = adapter().readFast(CarStatus())
+    @Test fun `readFast builds drivetrain and fast fields`() {        val s = adapter().readFast(CarStatus())
         assertEquals(56, s.drivetrain.speedKmh)
         assertEquals(120, s.energy.motorPowerKw)
     }
@@ -81,5 +80,29 @@ class CarDataAdapterTest {
         assertNull(s.identity.vin)
         assertNull(a.batteryPercent())
         assertNull(a.tirePressuresBar())
+    }
+
+    // ═══ controls map — giá trị THẬT của Ô ĐIỀU KHIỂN đang hiện (2026-09-17 · realtime) ══════════════════
+
+    @Test fun `readSlow doc gia tri THAT cho nut dang hien`() {
+        // Xe đặt gió mức 3 ở màn BYD gốc → launcher phải NHẬN 3 (không giữ mặc định RAM 4). Đọc qua readState(fan).
+        val a = CarDataAdapter(
+            HalBindingTable(FakeHalGateway(getters = mapOf("getAcWindLevel" to "3"))),
+            controlDemand = { setOf("fan") },
+        )
+        assertEquals(3, a.readSlow(CarStatus()).controls["fan"], "ô Gió phải đọc mức THẬT của xe, không dùng RAM")
+    }
+
+    @Test fun `readSlow giu gia tri cu khi khong con trong nhu cau`() {
+        // Nút rời khỏi màn một nhịp giao thời ⇒ GIỮ giá trị cũ (không xoá về "—").
+        val a = CarDataAdapter(HalBindingTable(FakeHalGateway()), controlDemand = { emptySet() })
+        val s = a.readSlow(CarStatus(controls = mapOf("fan" to 5)))
+        assertEquals(5, s.controls["fan"])
+    }
+
+    @Test fun `readSlow bo nut doc khong ra khoi map (khong bia)`() {
+        // Off-car / getter chưa provision ⇒ readState null ⇒ KHÔNG vào map ⇒ ô lùi về RAM, không hiện số bịa.
+        val a = CarDataAdapter(HalBindingTable(FakeHalGateway()), controlDemand = { setOf("fan") })
+        assertNull(a.readSlow(CarStatus()).controls["fan"])
     }
 }

@@ -23,6 +23,11 @@ class CarDataAdapter(
     private val demand: () -> Set<String>? = { null },
     private val absent: HalAbsentCache = HalAbsentCache(),
     private val clock: () -> Long = System::currentTimeMillis,
+    /**
+     * Tập mã NÚT đang hiện có đường đọc ([CarDataDemand.controlsOf]) — đọc giá trị THẬT của chúng vào
+     * [CarStatus.controls] mỗi nhịp CHẬM. Mặc định rỗng ⇒ mọi test/reader cũ không đổi hành vi.
+     */
+    private val controlDemand: () -> Set<String> = { emptySet() },
 ) : CarDataPort, CarStatusReader {
 
     /**
@@ -242,6 +247,29 @@ class CarDataAdapter(
             infotainment = CarStatus.Infotainment(
                 mediaVolume = g.int("media_vol", prev.infotainment.mediaVolume),
             ),
+            // ═══ Giá trị THẬT cho các Ô ĐIỀU KHIỂN đang hiện (2026-09-17 · owner "không realtime") ══════════
+            // Đọc mỗi nút qua CHÍNH [HalBindingTable.readState] (readKey → readInt → transform) nên phép biến đổi
+            // (thang mức ghế · đảo AUTO) sống một chỗ. Chỉ các nút đang hiện có đường đọc ([controlDemand]) — nhịp
+            // CHẬM, ≤ số ô điều khiển trên màn, trong ngân sách K1. `null` (đọc không ra) ⇒ loại khỏi map ⇒ ô lùi
+            // về mức RAM (không bịa). Đây là đường đọc TƯỜNG MINH theo nhu cầu, không đi qua [Gate] (Gate lọc field
+            // của cụm; nút đã được [controlDemand] chọn sẵn nên không cần lọc lần hai).
+            controls = readControls(prev.controls),
         )
+    }
+
+    /**
+     * Giá trị THẬT của các nút đang hiện, giữ giá trị CŨ cho nút không còn trong [controlDemand] (một nhịp giao
+     * thời không nên xoá về "—"). Nút đọc ra `null` (off-car / getter chưa provision) ⇒ **loại khỏi map** để ô lùi
+     * về mức RAM thay vì hiện số bịa. Đọc qua [HalBindingTable.readState] — cùng đường mà nút ± dùng ở [ControlTileFactory].
+     */
+    private fun readControls(prev: Map<String, Int>): Map<String, Int> {
+        val want = controlDemand()
+        if (want.isEmpty()) return prev
+        val out = HashMap<String, Int>(prev)   // giữ nút cũ (ngoài nhu cầu lượt này) — tránh nháy "—" khi giao thời
+        for (id in want) {
+            val v = runCatching { table.readState(id) }.getOrNull()
+            if (v != null) out[id] = v   // đọc không ra ⇒ GIỮ giá trị cũ nếu có, không ghi đè bằng bịa
+        }
+        return out
     }
 }

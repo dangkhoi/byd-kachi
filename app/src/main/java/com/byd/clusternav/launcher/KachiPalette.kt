@@ -309,7 +309,12 @@ data class KachiPalette(
          * T1 dặn *"tìm ra chỗ nào khó đọc thì vá luôn"*.
          */
         val DARK = KachiPalette(
-            bg = "#0a0d13",
+            // ── THANG BỀ MẶT: derive từ [KachiPaletteSeeds.DARK_RAMP] (2026-09-17). Số trong at(N) là ĐỘ CAO ngữ
+            //    nghĩa (nền 0 · lõm âm · nổi dương), KHÔNG phải mã màu. Đổi mood = đổi recipe ở KachiPaletteSeeds.
+            //    Bậc chọn theo thứ tự nổi: fieldSunken(-2) < emptyFill(-1) < bg/slotTo(0) < surfTo/panel/slot/field(1)
+            //    < chipOff/card/card2(2) < cell/tile/surfFrom(3) < dim(4) < track(5). surfFrom(3) > surfTo(1) ⇒ thẻ
+            //    có chiều nổi; mọi bề mặt trong `textOn` ≤ độ cao 3 nên mut2 vẫn ≥ 4.5:1 (xem ràng buộc ở recipe).
+            bg = KachiPaletteSeeds.DARK_RAMP.at(0),
             ink = "#eaf0f8",
             ink2 = "#c3cee0",
             // ⚠ [SOÁT Pass 4] Bốn vai mực dưới đây SÁNG LÊN một bậc — hệ quả BẮT BUỘC của việc thẻ sáng lên
@@ -319,24 +324,24 @@ data class KachiPalette(
             mut = "#9daabe",
             mut2 = "#99a4b6",
             icon = "#aeb8c8",
-            card = "#141922",
-            card2 = "#1a1e28",
+            card = KachiPaletteSeeds.DARK_RAMP.at(2),
+            card2 = KachiPaletteSeeds.DARK_RAMP.at(2),
             cardFill = "#14ffffff",
-            panel = "#12141c",
-            field = "#161b24",
-            cell = "#1c212b",
-            tile = "#242a34",
-            chipOff = "#1a1f29",
-            dim = "#2a2f3a",
-            track = "#3a3f45",
-            slot = "#161c26",
-            slotTo = "#0d1118",
-            bar = "#d915191f",
-            barTop = "#990a0d13",
+            panel = KachiPaletteSeeds.DARK_RAMP.at(1),
+            field = KachiPaletteSeeds.DARK_RAMP.at(1),
+            cell = KachiPaletteSeeds.DARK_RAMP.at(2),
+            tile = KachiPaletteSeeds.DARK_RAMP.at(2),
+            chipOff = KachiPaletteSeeds.DARK_RAMP.at(2),
+            dim = KachiPaletteSeeds.DARK_RAMP.at(4),
+            track = KachiPaletteSeeds.DARK_RAMP.at(5),
+            slot = KachiPaletteSeeds.DARK_RAMP.at(-1),
+            slotTo = KachiPaletteSeeds.DARK_RAMP.at(-2),
+            bar = KachiPaletteSeeds.DARK_RAMP.at(1, 0xd9),
+            barTop = KachiPaletteSeeds.DARK_RAMP.at(0, 0x99),
             line = "#17ffffff",
             lineStrong = "#59ffffff",
             gridLine = "#22ffffff",
-            emptyFill = "#0b0f16",
+            emptyFill = KachiPaletteSeeds.DARK_RAMP.at(-1),
             emptyLine = "#5b6d8f",
             wash = "#0dffffff",
             overlay = "#29ffffff",
@@ -382,14 +387,14 @@ data class KachiPalette(
             //      · mép sáng 18 % → **35 %** ⇒ đỉnh thẻ sáng gấp **3.08×** mặt thẻ — đọc ra là mặt vát kim loại
             //      · thẻ BẬT so với thẻ thường 1.28× → **1.61×**
             //      · ô LÕM so với thẻ 1.23× → **1.39×** (và nay TỐI hơn cả nền màn)
-            surfFrom = "#232a37",
-            surfTo = "#0f131a",
+            surfFrom = KachiPaletteSeeds.DARK_RAMP.at(2),
+            surfTo = KachiPaletteSeeds.DARK_RAMP.at(-5),
             surfLine = "#3dffffff",
             surfOnFrom = "#993f6ae0",
             surfOnTo = "#596b4ce6",
-            fieldSunken = "#05080d",
-            surfFromOverArt = "#cc232a37",
-            surfToOverArt = "#cc0f131a",
+            fieldSunken = KachiPaletteSeeds.DARK_RAMP.at(-2),
+            surfFromOverArt = KachiPaletteSeeds.DARK_RAMP.at(2, 0xcc),
+            surfToOverArt = KachiPaletteSeeds.DARK_RAMP.at(-5, 0xcc),
             // ── VISUAL-REFRESH P3 · hình xe mức tả thực (1) (§4.1 đề xuất partFill/partLine · §4.8): kính lam nhạt→sẫm,
             //    đèn trắng-lam, đèn hậu = đỏ ĐÈN (không phải `red` cảnh báo), bóng đổ 55 % đen toả về trong suốt
             partFill = "#33ffffff", partLine = "#8caeb8c8", glassFrom = "#ebdbe8ff", glassTo = "#eb43566e",
@@ -410,7 +415,7 @@ data class KachiPalette(
          *    làm bảng sáng: cùng một vai, cùng một nền danh nghĩa, mà hướng mực phải ĐẢO.
          */
         val LIGHT = KachiPalette(
-            bg = "#eef1f6",
+            bg = KachiPaletteSeeds.LIGHT_RAMP.at(0),
             ink = "#0f1620",
             ink2 = "#26303f",
             // ⚠ [SOÁT Pass 4] Sáu vai mực của bảng SÁNG ĐẬM LÊN một bậc — đối xứng với việc bốn vai của bảng TỐI
@@ -420,28 +425,28 @@ data class KachiPalette(
             mut = "#4c5869",
             mut2 = "#54606f",
             icon = "#4f5b6d",
-            card = "#ffffff",
-            card2 = "#f7f9fc",
+            card = KachiPaletteSeeds.LIGHT_RAMP.at(2),
+            card2 = KachiPaletteSeeds.LIGHT_RAMP.at(2),
             cardFill = "#ffffff",
-            panel = "#ffffff",
-            field = "#e8ecf3",
-            cell = "#f2f5fa",
-            tile = "#f2f5fa",
-            chipOff = "#e4e9f1",
-            dim = "#cfd6e2",
-            track = "#d5dbe6",
+            panel = KachiPaletteSeeds.LIGHT_RAMP.at(2),
+            field = KachiPaletteSeeds.LIGHT_RAMP.at(-1),
+            cell = KachiPaletteSeeds.LIGHT_RAMP.at(2),
+            tile = KachiPaletteSeeds.LIGHT_RAMP.at(2),
+            chipOff = KachiPaletteSeeds.LIGHT_RAMP.at(-1),
+            dim = KachiPaletteSeeds.LIGHT_RAMP.at(-2),
+            track = KachiPaletteSeeds.LIGHT_RAMP.at(-1),
             // ⚠ [SOÁT Pass 4] Khay của ô làm việc KHÔNG còn là trắng. Trắng + thẻ trắng = [ĐO] ảnh máy ảo
             // `after/home-4o-sang.png`: ô con chỉ còn tồn tại nhờ hairline, không còn bậc nào. Khay nay xám nhạt
             // hơn nền màn một chút để thẻ trắng có chỗ nổi lên (thẻ/khay **1.16×**), và mực tệ nhất trên khay vẫn
             // **4.66:1**. Không thể xám hơn nữa: [mut2] của bảng sáng chạm sàn ở `#dfe5ee`.
-            slot = "#eaeff6",
-            slotTo = "#e4e9f2",
-            bar = "#d9ffffff",
-            barTop = "#e6ffffff",
+            slot = KachiPaletteSeeds.LIGHT_RAMP.at(-1),
+            slotTo = KachiPaletteSeeds.LIGHT_RAMP.at(-2),
+            bar = KachiPaletteSeeds.LIGHT_RAMP.at(2, 0xd9),
+            barTop = KachiPaletteSeeds.LIGHT_RAMP.at(2, 0xe6),
             line = "#788698",
             lineStrong = "#667487",
             gridLine = "#aab5c6",
-            emptyFill = "#e6eaf1",
+            emptyFill = KachiPaletteSeeds.LIGHT_RAMP.at(-1),
             emptyLine = "#788698",
             wash = "#0a000000",
             overlay = "#14000000",
@@ -475,14 +480,14 @@ data class KachiPalette(
             glow2 = "#ece0f8",
             // ── VISUAL-REFRESH P1. KHÔNG phải nghịch đảo của DARK: xem KDoc [surfLine] (bảng sáng bắt buộc
             //    có viền THẬT ≥ 3:1 vì bước sáng thẻ/nền ở đó chỉ 1.13×).
-            surfFrom = "#ffffff",
-            surfTo = "#eff3f9",
+            surfFrom = KachiPaletteSeeds.LIGHT_RAMP.at(2),
+            surfTo = KachiPaletteSeeds.LIGHT_RAMP.at(1),
             surfLine = "#788698",
             surfOnFrom = "#4c2f5ae0",
             surfOnTo = "#335b3ee0",
-            fieldSunken = "#dfe5ee",
-            surfFromOverArt = "#ccffffff",
-            surfToOverArt = "#cceff3f9",
+            fieldSunken = KachiPaletteSeeds.LIGHT_RAMP.at(-2),
+            surfFromOverArt = KachiPaletteSeeds.LIGHT_RAMP.at(2, 0xcc),
+            surfToOverArt = KachiPaletteSeeds.LIGHT_RAMP.at(1, 0xcc),
             // ── VISUAL-REFRESH P3 — bản SÁNG: bộ phận phải SẪM hơn nền (đèn trắng-lam sẽ tan vào nền ⇒ lam đậm) ──
             partFill = "#33000000", partLine = "#a6667487", glassFrom = "#eb9fb6d6", glassTo = "#eb34465e",
             lampOn = "#5b8def", lampGlow = "#b36f9dff", tailOn = "#d43d3d", carShadow = "#66000000",

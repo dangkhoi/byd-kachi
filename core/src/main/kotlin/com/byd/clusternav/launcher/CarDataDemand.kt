@@ -108,6 +108,34 @@ object CarDataDemand {
     }
 
     /**
+     * ═══ Các Ô ĐIỀU KHIỂN đang hiện MÀ CÓ đường đọc (2026-09-17) — tập cho [CarStatus.controls] ══════════════
+     *
+     * Khác [of] (tập DATUM cho các cụm/read-tile/nhóm): đây là tập **mã NÚT** để vòng poll đọc giá trị THẬT của
+     * chúng qua [HalBindingTable.readState] rồi cất vào [CarStatus.controls] theo mã nút. Chỉ nút có [ControlDef.readKey]
+     * (đường đọc) mới vào — nút chưa nối đường đọc thì ô lùi về mức RAM, không bịa.
+     *
+     * Vì sao TÁCH khỏi [of] thay vì nhét `readKey` vào tập datum: nhét vào thì vòng poll đọc datum ấy vào **field
+     * của cụm** (vd `Climate.setTempC`) rồi tầng vẽ phải map NGƯỢC field→nút — thêm một bảng dễ lệch. Đọc thẳng
+     * `readState(nút)` cho ra đúng con số ô cần, và [readState] là **một nguồn transform duy nhất** (thang mức ghế,
+     * đảo AUTO) nên không có bản sao thứ hai. Chi phí: mỗi nút đang hiện = 1 lượt đọc HAL ở nhịp CHẬM (≤ số ô điều
+     * khiển trên màn), trong ngân sách K1 (< 150 lượt/phút).
+     *
+     * THUẦN — cùng ba bề mặt với [of] (thanh trên KHÔNG mang nút; chip chỉ nhận mục ĐỌC — RW0).
+     */
+    fun controlsOf(state: HomeUiState): Set<String> {
+        val out = LinkedHashSet<String>()
+        fun scan(id: String) {
+            val def = ControlRegistry.byId(id) ?: return
+            if (def.readKey.isNotBlank()) out += id
+        }
+        state.dock.enabled.forEach(::scan)
+        state.workspace.slots.forEach { slot ->
+            if (slot is SlotContent.Widget) slot.ids.forEach(::scan)
+        }
+        return out
+    }
+
+    /**
      * Thêm vào [out] các datum mà một **mã khả năng** [id] bày ra. Trả `false` nghĩa là *"không biết mã này bày gì"*
      * ⇒ chỗ gọi phải rơi về đọc-hết.
      *
@@ -163,7 +191,22 @@ object CarDataDemand {
          */
         @Volatile private var extra: Set<String> = emptySet()
 
+        /**
+         * Tập mã NÚT đang hiện có đường đọc ([controlsOf]) — cho [CarStatus.controls].
+         *
+         * Rời khỏi [value] vì [value] là tập DATUM còn đây là tập NÚT, và [CarDataAdapter] đọc chúng bằng hai đường
+         * khác nhau (`readInt(datum)` vào field cụm · `readState(nút)` vào map controls). Trộn chung một biến là
+         * trộn hai đơn vị.
+         */
+        @Volatile private var controls: Set<String> = emptySet()
+
         fun set(v: Set<String>?) { value = v }
+
+        /** Đặt tập nút đang hiện (từ [controlsOf]). Màn rời tiền cảnh ⇒ [clear] xoá về rỗng = không đọc control nào. */
+        fun setControls(ids: Set<String>) { controls = ids }
+
+        /** Tập nút đang hiện — [CarDataAdapter] đọc `readState` cho từng mã rồi cất vào [CarStatus.controls]. */
+        fun controls(): Set<String> = controls
 
         /** Nhu cầu THẬT của lượt poll này = nhu cầu màn hình **hợp** phần đang ghim. `null` vẫn là *"đọc hết"*. */
         fun get(): Set<String>? {
@@ -188,7 +231,7 @@ object CarDataDemand {
         }
 
         /** Màn chính rời tiền cảnh ⇒ quên nhu cầu; lần mở sau bắt đầu lại bằng một lượt đọc đủ. */
-        fun clear() { value = null; extra = emptySet() }
+        fun clear() { value = null; extra = emptySet(); controls = emptySet() }
     }
 
     /**

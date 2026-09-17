@@ -140,6 +140,12 @@ object WidgetViews {
             val tag = v.tag as? WidgetTag
             if (tag != null) {
                 val keep = CapabilityCatalog.isWrite(tag.id) || WorkspaceRenderPlanner.selfDriven(tag.id)
+                // 2026-09-17 — ô HÀNH ĐỘNG (WRITE) KHÔNG dựng lại (C5), nhưng phải ĐỌC LẠI giá trị THẬT của xe qua
+                // hàm refresh đã giữ theo view. Gói lệnh không có refresher ⇒ bỏ qua như cũ.
+                if (keep) {
+                    actionRefreshers[v]?.invoke(data.car)
+                    return
+                }
                 if (!keep) {
                     // G1·T3 — ô NHÓM tự đổi chữ TẠI CHỖ. KHÔNG được thay view của nó: nhóm kính/cửa/đèn có **hàng
                     // nút bên trong**, thay view là tháo/gắn nút giữa cú chạm ⇒ mất cú bấm (đúng bệnh [SOÁT P1-1]).
@@ -196,15 +202,25 @@ object WidgetViews {
         // Gói lệnh (W2) cũng là HÀNH ĐỘNG ⇒ đặt được trong ô giữa màn như mọi nút khác. Đi qua CÙNG lớp đệm với ô nút
         // (bản đầu trả ô trần ⇒ ô gói lệnh dính sát mép khung trong khi ô nút bên cạnh có đệm 12dp).
         val factory = ControlTileFactory(ctx, control = { data.control }, size = size)
+        // Nút đơn có đường đọc ⇒ ActionTile (view + refresh); gói lệnh ⇒ View trần (không có số để đọc lại).
+        var refresh: ((CarStatus) -> Unit)? = null
         val tile = ActionMacros.byId(id)?.let { factory.macroTile(it) }
-            ?: ControlRegistry.byId(id)?.let { factory.actionTile(it) }
+            ?: ControlRegistry.byId(id)?.let { factory.actionTile(it).also { at -> refresh = at.refresh }.view }
             ?: return label(ctx, id.uppercase(), "—", "")
         val pad = if (size == TileSize.BIG) dpi(ctx, Sp.M) else 0
         return FrameLayout(ctx).apply {
             setPadding(pad, pad, pad, pad)
             addView(tile, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            // 2026-09-17 — giữ hàm refresh theo ô để [refreshRead] đổ giá trị THẬT của xe mà không dựng lại ô.
+            refresh?.let { r -> actionRefreshers[this] = r; r(data.car) }
         }
     }
+
+    /**
+     * Hàm refresh của ô HÀNH ĐỘNG giữa màn, theo VIEW (WeakHashMap ⇒ ô bị gỡ thì tự rụng, không giữ Context).
+     * [WidgetViews] là `object` nên map này dùng chung cả tiến trình — đúng vai (chỉ có một cái xe).
+     */
+    private val actionRefreshers = java.util.WeakHashMap<View, (CarStatus) -> Unit>()
 
     /** Mini cho 1 telemetry id (icon domain + số + đơn vị/nhãn), "—"+mờ khi null, badge khi cần. */
     private fun telemetryMini(ctx: Context, id: String, car: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT): View {

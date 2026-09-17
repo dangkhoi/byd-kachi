@@ -7,23 +7,23 @@
 
 | Cặp | Vai | Sàn | Đo được | Kết |
 |---|---|---|---|---|
-| `INK trên surfFrom` | chữ chính, đỉnh gradient | 4.5 | **12.57** | ✅ |
-| `INK trên surfTo` | chữ chính, đáy gradient | 4.5 | **16.23** | ✅ |
-| `MUT trên surfFrom` | nhãn phụ, đỉnh | 4.5 | **6.12** | ✅ |
-| `MUT trên surfTo` | nhãn phụ, đáy | 4.5 | **7.91** | ✅ |
-| `MUT2 trên surfTo` | mực mờ nhất, đáy | 4.5 | **7.39** | ✅ |
-| `INK trên fieldSunken` | chữ trong ô lõm | 4.5 | **17.50** | ✅ |
-| `INK trên surfOnFrom` | chữ trên thẻ BẬT, đỉnh | 4.5 | **7.92** | ✅ |
-| `INK trên surfOnTo` | chữ trên thẻ BẬT, đáy | 4.5 | **12.33** | ✅ |
-| `surfLine trên surfFrom` + `surfFrom ÷ bg` | tách thẻ khỏi nền (**viền ≥ 3.0 HOẶC bước ≥ 1.15**) | 3.0 / 1.15 | viền **2.15** · bước **1.35** | ✅ |
-| `surfOnFrom ÷ surfFrom` | bước sáng BẬT↔thường | 1.2 | **1.59** | ✅ |
-| `slot ÷ bg` + `lineStrong trên slot` | bậc 1 · khay ô làm việc trên nền màn (**bước ≥ 1.12 HOẶC viền ≥ 3.0**) | 1.12 / 3.0 | bước **1.14** · viền **3.19** | ✅ |
-| `surfFrom ÷ slot` | bậc 2 · thẻ nội dung trên khay | 1.15 | **1.19** | ✅ |
-| `surfFrom ÷ surfTo` | chuyển sắc DỌC = toàn bộ chiều nổi (bảng SÁNG miễn: đỉnh đã trắng) | 1.20 | **1.29** | ✅ |
-| `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **14.91** | ✅ |
-| `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **7.51** | ✅ |
-| `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **3.13** | ✅ |
-| `emptyLine trên emptyFill` | mốc cũ phải giữ | 3.0 | **3.68** | ✅ |
+| `INK trên surfFrom` | chữ chính, đỉnh gradient | 4.5 | **12.53** | ✅ |
+| `INK trên surfTo` | chữ chính, đáy gradient | 4.5 | **15.73** | ✅ |
+| `MUT trên surfFrom` | nhãn phụ, đỉnh | 4.5 | **6.11** | ✅ |
+| `MUT trên surfTo` | nhãn phụ, đáy | 4.5 | **7.66** | ✅ |
+| `MUT2 trên surfTo` | mực mờ nhất, đáy | 4.5 | **7.16** | ✅ |
+| `INK trên fieldSunken` | chữ trong ô lõm | 4.5 | **15.25** | ✅ |
+| `INK trên surfOnFrom` | chữ trên thẻ BẬT, đỉnh | 4.5 | **7.18** | ✅ |
+| `INK trên surfOnTo` | chữ trên thẻ BẬT, đáy | 4.5 | **10.62** | ✅ |
+| `surfLine trên surfFrom` + `surfFrom ÷ bg` | tách thẻ khỏi nền (**viền ≥ 3.0 HOẶC bước ≥ 1.15**) | 3.0 / 1.15 | viền **2.16** · bước **1.19** | ✅ |
+| `surfOnFrom ÷ surfFrom` | bước sáng BẬT↔thường | 1.2 | **1.75** | ✅ |
+| `slot ÷ bg` + `lineStrong trên slot` | bậc 1 · khay ô làm việc trên nền màn (**bước ≥ 1.12 HOẶC viền ≥ 3.0**) | 1.12 / 3.0 | bước **1.01** · viền **3.16** | ✅ |
+| `surfFrom ÷ slot` | bậc 2 · thẻ nội dung trên khay | 1.15 | **1.20** | ✅ |
+| `surfFrom ÷ surfTo` | chuyển sắc DỌC = toàn bộ chiều nổi (bảng SÁNG miễn: đỉnh đã trắng) | 1.20 | **1.25** | ✅ |
+| `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **15.08** | ✅ |
+| `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **6.94** | ✅ |
+| `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **3.17** | ✅ |
+| `emptyLine trên emptyFill` | mốc cũ phải giữ | 3.0 | **3.32** | ✅ |
 | `ON_ACCENT trên gradFrom` | mốc cũ phải giữ | 4.5 | **4.83** | ✅ |
 | `INK trên surfFromOverArt (ảnh sáng)` | P1b · chữ chính trên ảnh | 4.5 | **6.65** | ✅ |
 | `MUT trên surfFromOverArt (ảnh sáng)` | P1b · nhãn phụ — CẦN scrim ở P1b | 4.5 | **3.24** | ❌ |
@@ -34,36 +34,36 @@
 
 | Lĩnh vực | Mã tint | Nền đỉnh | Nền đáy | Mực tệ nhất | Bước sáng |
 |---|---|---|---|---|---|
-| ENERGY | `#1a34d399` | `#243b40` | `#122626` | **4.69** | 1.22× |
-| DRIVETRAIN | `#1a7b5cff` | `#2b2f4b` | `#1a1a31` | **5.16** | 1.11× |
-| CLIMATE | `#1a29d3ee` | `#233b49` | `#11262f` | **4.64** | 1.23× |
-| TYRES | `#1a94a3b8` | `#2e3644` | `#1c212a` | **4.81** | 1.18× |
-| BODY | `#1aaeb8c8` | `#313845` | `#1f232b` | **4.67** | 1.22× |
-| LIGHTS | `#1afbbf24` | `#393935` | `#27241b` | **4.59** | 1.24× |
-| IDENTITY | `#1a4c7dff` | `#27324b` | `#151d31` | **5.06** | 1.13× |
-| INFOTAINMENT | `#1af59e0b` | `#383532` | `#262118` | **4.82** | 1.18× |
+| ENERGY | `#1a34d399` | `#233a49` | `#132931` | **4.69** | 1.21× |
+| DRIVETRAIN | `#1a7b5cff` | `#2b2e54` | `#1a1d3c` | **5.13** | 1.11× |
+| CLIMATE | `#1a29d3ee` | `#223a52` | `#12293a` | **4.63** | 1.23× |
+| TYRES | `#1a94a3b8` | `#2d354d` | `#1d2434` | **4.81** | 1.18× |
+| BODY | `#1aaeb8c8` | `#30374e` | `#202636` | **4.67** | 1.22× |
+| LIGHTS | `#1afbbf24` | `#38383e` | `#272725` | **4.61** | 1.23× |
+| IDENTITY | `#1a4c7dff` | `#263154` | `#16203c` | **5.04** | 1.13× |
+| INFOTAINMENT | `#1af59e0b` | `#37343b` | `#272323` | **4.84** | 1.17× |
 
 ## Bảng SÁNG
 
 | Cặp | Vai | Sàn | Đo được | Kết |
 |---|---|---|---|---|
 | `INK trên surfFrom` | chữ chính, đỉnh gradient | 4.5 | **18.17** | ✅ |
-| `INK trên surfTo` | chữ chính, đáy gradient | 4.5 | **16.31** | ✅ |
+| `INK trên surfTo` | chữ chính, đáy gradient | 4.5 | **17.12** | ✅ |
 | `MUT trên surfFrom` | nhãn phụ, đỉnh | 4.5 | **7.22** | ✅ |
-| `MUT trên surfTo` | nhãn phụ, đáy | 4.5 | **6.49** | ✅ |
-| `MUT2 trên surfTo` | mực mờ nhất, đáy | 4.5 | **5.75** | ✅ |
-| `INK trên fieldSunken` | chữ trong ô lõm | 4.5 | **14.34** | ✅ |
-| `INK trên surfOnFrom` | chữ trên thẻ BẬT, đỉnh | 4.5 | **10.40** | ✅ |
-| `INK trên surfOnTo` | chữ trên thẻ BẬT, đáy | 4.5 | **11.84** | ✅ |
+| `MUT trên surfTo` | nhãn phụ, đáy | 4.5 | **6.81** | ✅ |
+| `MUT2 trên surfTo` | mực mờ nhất, đáy | 4.5 | **6.03** | ✅ |
+| `INK trên fieldSunken` | chữ trong ô lõm | 4.5 | **13.57** | ✅ |
+| `INK trên surfOnFrom` | chữ trên thẻ BẬT, đỉnh | 4.5 | **10.41** | ✅ |
+| `INK trên surfOnTo` | chữ trên thẻ BẬT, đáy | 4.5 | **11.86** | ✅ |
 | `surfLine trên surfFrom` + `surfFrom ÷ bg` | tách thẻ khỏi nền (**viền ≥ 3.0 HOẶC bước ≥ 1.15**) | 3.0 / 1.15 | viền **3.71** · bước **1.13** | ✅ |
 | `surfOnFrom ÷ surfFrom` | bước sáng BẬT↔thường | 1.2 | **1.75** | ✅ |
-| `slot ÷ bg` + `lineStrong trên slot` | bậc 1 · khay ô làm việc trên nền màn (**bước ≥ 1.12 HOẶC viền ≥ 3.0**) | 1.12 / 3.0 | bước **1.02** · viền **4.12** | ✅ |
-| `surfFrom ÷ slot` | bậc 2 · thẻ nội dung trên khay | 1.15 | **1.16** | ✅ |
-| `surfFrom ÷ surfTo` | chuyển sắc DỌC = toàn bộ chiều nổi (bảng SÁNG miễn: đỉnh đã trắng) | 1.20 | **1.11** | ✅ |
-| `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **15.72** | ✅ |
-| `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **5.26** | ✅ |
-| `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **4.20** | ✅ |
-| `emptyLine trên emptyFill` | mốc cũ phải giữ | 3.0 | **3.07** | ✅ |
+| `slot ÷ bg` + `lineStrong trên slot` | bậc 1 · khay ô làm việc trên nền màn (**bước ≥ 1.12 HOẶC viền ≥ 3.0**) | 1.12 / 3.0 | bước **1.09** · viền **3.88** | ✅ |
+| `surfFrom ÷ slot` | bậc 2 · thẻ nội dung trên khay | 1.15 | **1.23** | ✅ |
+| `surfFrom ÷ surfTo` | chuyển sắc DỌC = toàn bộ chiều nổi (bảng SÁNG miễn: đỉnh đã trắng) | 1.20 | **1.06** | ✅ |
+| `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **14.80** | ✅ |
+| `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **4.78** | ✅ |
+| `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **4.21** | ✅ |
+| `emptyLine trên emptyFill` | mốc cũ phải giữ | 3.0 | **3.02** | ✅ |
 | `ON_ACCENT trên gradFrom` | mốc cũ phải giữ | 4.5 | **5.74** | ✅ |
 | `INK trên surfFromOverArt (ảnh sáng)` | P1b · chữ chính trên ảnh | 4.5 | **18.17** | ✅ |
 | `MUT trên surfFromOverArt (ảnh sáng)` | P1b · nhãn phụ — CẦN scrim ở P1b | 4.5 | **7.22** | ✅ |
@@ -74,12 +74,12 @@
 
 | Lĩnh vực | Mã tint | Nền đỉnh | Nền đáy | Mực tệ nhất | Bước sáng |
 |---|---|---|---|---|---|
-| ENERGY | `#1404684c` | `#ebf3f0` | `#dce8eb` | **5.12** | 1.13× |
-| DRIVETRAIN | `#145b3ee0` | `#f2effc` | `#e3e4f7` | **5.09** | 1.13× |
-| CLIMATE | `#14026e83` | `#ebf3f5` | `#dce8ef` | **5.13** | 1.12× |
-| TYRES | `#145a6779` | `#f2f3f4` | `#e3e8ee` | **5.20** | 1.11× |
-| BODY | `#144f5b6d` | `#f1f2f3` | `#e2e7ee` | **5.15** | 1.12× |
-| LIGHTS | `#147d5200` | `#f4f1eb` | `#e6e6e5` | **5.13** | 1.13× |
-| IDENTITY | `#142f5ae0` | `#eef2fc` | `#dfe7f7` | **5.16** | 1.12× |
-| INFOTAINMENT | `#14a5480a` | `#f7f0eb` | `#e9e5e6` | **5.13** | 1.13× |
+| ENERGY | `#1404684c` | `#ebf3f0` | `#e3ecee` | **5.34** | 1.13× |
+| DRIVETRAIN | `#145b3ee0` | `#f2effc` | `#eae9f9` | **5.34** | 1.13× |
+| CLIMATE | `#14026e83` | `#ebf3f5` | `#e3edf2` | **5.39** | 1.12× |
+| TYRES | `#145a6779` | `#f2f3f4` | `#eaecf1` | **5.42** | 1.11× |
+| BODY | `#144f5b6d` | `#f1f2f3` | `#e9ebf0` | **5.37** | 1.12× |
+| LIGHTS | `#147d5200` | `#f4f1eb` | `#edeae8` | **5.35** | 1.13× |
+| IDENTITY | `#142f5ae0` | `#eef2fc` | `#e7ebf9` | **5.38** | 1.12× |
+| INFOTAINMENT | `#14a5480a` | `#f7f0eb` | `#f0eae9` | **5.38** | 1.13× |
 

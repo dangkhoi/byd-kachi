@@ -2,8 +2,8 @@
   "_doc": "Màu sơn xe cho hình xe tổng hợp (spec kachi-visual-refresh §4.8 bảng 5 màu · R8 AC8.3/AC8.5). Chỉ dùng cho HÌNH XE — không phải vai ngữ nghĩa. Mặc định Trắng ngọc trai, không hỏi lúc cài. Đáy gradient < outlineFloor so với nền ⇒ app TỰ bật viền partLine. Sơn ĐỎ: tone ALERT phải chuyển sang AMBER + viền tĩnh (đỏ = cảnh báo).",
   "outlineFloor": 3.0,
   "backgrounds": {
-    "dark": "#0a0d13",
-    "light": "#eef1f6"
+    "dark": "#141b30",
+    "light": "#eef1f8"
   },
   "default": "pearl",
   "paints": [
@@ -14,9 +14,9 @@
       "to": "#8d99ab",
       "contrast": {
         "dark": {
-          "top": 16.68,
-          "bottom": 6.74,
-          "worst": 6.74
+          "top": 14.65,
+          "bottom": 5.92,
+          "worst": 5.92
         },
         "light": {
           "top": 1.03,
@@ -36,13 +36,13 @@
       "to": "#2e3743",
       "contrast": {
         "dark": {
-          "top": 11.22,
-          "bottom": 1.61,
-          "worst": 1.61
+          "top": 9.85,
+          "bottom": 1.42,
+          "worst": 1.42
         },
         "light": {
           "top": 1.53,
-          "bottom": 10.64,
+          "bottom": 10.65,
           "worst": 1.53
         }
       },
@@ -58,14 +58,14 @@
       "to": "#11151c",
       "contrast": {
         "dark": {
-          "top": 2.5,
-          "bottom": 1.06,
-          "worst": 1.06
+          "top": 2.2,
+          "bottom": 1.07,
+          "worst": 1.07
         },
         "light": {
-          "top": 6.87,
-          "bottom": 16.16,
-          "worst": 6.87
+          "top": 6.88,
+          "bottom": 16.18,
+          "worst": 6.88
         }
       },
       "forceOutline": {
@@ -80,14 +80,14 @@
       "to": "#27407f",
       "contrast": {
         "dark": {
-          "top": 6.7,
-          "bottom": 1.97,
-          "worst": 1.97
+          "top": 5.88,
+          "bottom": 1.73,
+          "worst": 1.73
         },
         "light": {
-          "top": 2.56,
-          "bottom": 8.72,
-          "worst": 2.56
+          "top": 2.57,
+          "bottom": 8.74,
+          "worst": 2.57
         }
       },
       "forceOutline": {
@@ -103,13 +103,13 @@
       "alertToneOverride": "amber_outline",
       "contrast": {
         "dark": {
-          "top": 8.63,
-          "bottom": 1.94,
-          "worst": 1.94
+          "top": 7.58,
+          "bottom": 1.71,
+          "worst": 1.71
         },
         "light": {
           "top": 1.99,
-          "bottom": 8.84,
+          "bottom": 8.85,
           "worst": 1.99
         }
       },

@@ -179,7 +179,7 @@ internal fun actionsRow(context: Context, m: GroupBoardModel, data: WidgetData):
             val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
             rowActions.forEach { a ->
                 val tile = ActionMacros.byId(a.id)?.let { factory.macroTile(it) }
-                    ?: ControlRegistry.byId(a.id)?.let { factory.actionTile(it) }
+                    ?: ControlRegistry.byId(a.id)?.let { factory.actionTile(it).view }
                     ?: View(context)
                 row.addView(tile, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also { it.setMargins(dpi(context, Sp.XS), 0, dpi(context, Sp.XS), 0) })
             }

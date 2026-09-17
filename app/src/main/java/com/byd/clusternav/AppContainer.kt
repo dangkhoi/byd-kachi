@@ -80,7 +80,7 @@ class AppContainer internal constructor(
     val carDemand = com.byd.clusternav.launcher.CarDataDemand.Holder()
 
     /** Adapter đọc xe: [CarDataPort] (widget cũ) + `CarStatusReader` (build [com.byd.clusternav.launcher.CarStatus]). */
-    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable, carDemand::get) }
+    private val carDataAdapter: CarDataAdapter by lazy { CarDataAdapter(halBindingTable, carDemand::get, controlDemand = carDemand::controls) }
 
     /** Cổng đọc xe LIVE cho widget/thanh trạng thái — off-car mọi field null ⇒ "—". */
     val carData: CarDataPort get() = carDataAdapter

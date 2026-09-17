@@ -68,6 +68,35 @@ class CarDataDemandTest {
         assertTrue(d!!.isEmpty(), "ô nút giữ trạng thái trong RAM, không đọc lại HAL mỗi nhịp")
     }
 
+    // ═══ controlsOf — các Ô ĐIỀU KHIỂN đang hiện MÀ CÓ đường đọc (2026-09-17 · realtime) ══════════════════
+
+    @Test
+    fun `controlsOf lay nut co readKey dang hien tren thanh nut`() {
+        // `fan`/`temp`/`recirc` có readKey (đường đọc) ⇒ vào tập để poll đọc giá trị THẬT của xe.
+        val out = CarDataDemand.controlsOf(state(dock = listOf("fan", "temp", "recirc")))
+        assertEquals(setOf("fan", "temp", "recirc"), out)
+    }
+
+    @Test
+    fun `controlsOf lay ca nut o giua man`() {
+        val out = CarDataDemand.controlsOf(state(slots = slotsWith("fan")))
+        assertEquals(setOf("fan"), out)
+    }
+
+    @Test
+    fun `controlsOf bo qua nut CHUA co duong doc`() {
+        // `door` là BUTTON không readKey; `readl` cố ý rỗng readKey ⇒ không vào tập (ô lùi về RAM, không bịa).
+        val out = CarDataDemand.controlsOf(state(dock = listOf("door", "readl")))
+        assertTrue(out.isEmpty(), "nút chưa nối đường đọc không được ép poll đọc: $out")
+    }
+
+    @Test
+    fun `controlsOf bo qua datum va gói lenh`() {
+        // datum thường (soc) + gói lệnh (mac_*) không phải control có readKey ⇒ không vào tập control.
+        val out = CarDataDemand.controlsOf(state(dock = listOf("soc"), slots = slotsWith("w_energy")))
+        assertTrue(out.isEmpty())
+    }
+
     /**
      * [SOÁT OCR 2026-09-16 · P1] **Hành động của launcher trên thanh nút KHÔNG được tắt cổng H1.**
      *

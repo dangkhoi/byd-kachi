@@ -35,6 +35,19 @@ class ControlTileState {
     fun setSel(id: String, i: Int) { selIndex[id] = i }
 
     /**
+     * ═══ CỬA SỔ ÂN HẠN sau khi NGƯỜI DÙNG vừa bấm (2026-09-17 · đọc realtime) ══════════════════════════════
+     *
+     * Khi ô control đọc lại giá trị THẬT từ xe theo nhịp poll ([CarStatus.controls]), nó phải bỏ qua trong một
+     * khoảnh khắc ngắn sau khi người lái vừa chạm ô: xe cần vài trăm ms tới vài giây để áp lệnh, còn nhịp chậm
+     * tới 10 s — nếu reconcile ngay thì bấm "+" xong con số **nháy ngược** về mức cũ rồi mới lên. [touch] ghi mốc
+     * mỗi lần chạm; [touchedWithin] trả true trong [GRACE_MS] để refresh nhường cho giá trị lạc quan.
+     */
+    private val touchedAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    fun touch(id: String, now: Long = System.currentTimeMillis()) { touchedAt[id] = now }
+    fun touchedWithin(id: String, now: Long = System.currentTimeMillis(), ms: Long = GRACE_MS): Boolean =
+        touchedAt[id]?.let { now - it < ms } ?: false
+
+    /**
      * Chốt "gói lệnh này đang chạy" — **dùng chung theo mã gói, KHÔNG theo View**.
      *
      * ## ⚠ [SOÁT P1-1] Vì sao không để cờ trong View
@@ -53,5 +66,14 @@ class ControlTileState {
     companion object {
         /** Bảng dùng chung mọi vùng trong cùng tiến trình. */
         val shared = ControlTileState()
+
+        /**
+         * Bao lâu sau một cú chạm thì ô còn tin giá trị LẠC QUAN thay vì giá trị đọc từ xe.
+         *
+         * **2500 ms** = quãng cần cho xe áp lệnh + một nhịp nhanh (1 s) xác nhận, dưới nhịp chậm (10 s) nên con
+         * số sẽ về đúng thực tế ở lần poll kế. Ngắn hơn thì nháy ngược khi xe áp chậm; dài hơn thì người lái đổi
+         * ở màn BYD gốc ngay sau khi bấm trên launcher sẽ chờ lâu mới thấy.
+         */
+        const val GRACE_MS = 2_500L
     }
 }

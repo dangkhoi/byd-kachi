@@ -43,6 +43,8 @@ class ControlDockView(context: Context) : LinearLayout(context) {
     private var unitPrefs: UnitPrefs = UnitPrefs.DEFAULT
     // Ô ĐỌC đang hiện, theo mã. Giữ tham chiếu để cập nhật TẠI CHỖ (xem setCarStatus) thay vì dựng lại.
     private val readTiles = LinkedHashMap<String, ReadTile>()
+    // Ô HÀNH ĐỘNG có đường đọc: giữ hàm refresh để đổ giá trị THẬT của xe (2026-09-17) mà KHÔNG dựng lại ô.
+    private val actionRefreshers = LinkedHashMap<String, (CarStatus) -> Unit>()
     private val tiles = ControlTileFactory(context, control = { control }, size = TileSize.DOCK)
 
     init {
@@ -63,6 +65,8 @@ class ControlDockView(context: Context) : LinearLayout(context) {
     fun setCarStatus(status: CarStatus, prefs: UnitPrefs = unitPrefs) {
         carStatus = status; unitPrefs = prefs
         readTiles.forEach { (id, tile) -> tile.bind(readout(id)) }
+        // 2026-09-17 — ô HÀNH ĐỘNG cũng đọc giá trị THẬT của xe (nhiệt/gió/gió-trong/cốp…), cập nhật tại chỗ.
+        actionRefreshers.values.forEach { it(status) }
     }
 
     /**
@@ -80,15 +84,18 @@ class ControlDockView(context: Context) : LinearLayout(context) {
 
     private fun rebuild() {
         orientation = if (config.isVertical()) VERTICAL else HORIZONTAL
-        removeAllViews(); readTiles.clear()
+        removeAllViews(); readTiles.clear(); actionRefreshers.clear()
         config.enabled.forEach { id ->
             when (CapabilityCatalog.kindOf(id)) {
                 CapabilityKind.WRITE -> {
                     // Mã HÀNH ĐỘNG có thể là NÚT ĐƠN hoặc GÓI LỆNH (W2). Thiếu nhánh gói lệnh thì ô sẽ không hiện
                     // gì cả mà cũng không báo lỗi — người dùng bật vào thanh rồi tưởng hỏng.
                     val def = ControlRegistry.byId(id)
-                    if (def != null) addView(sized(tiles.actionTile(def)))
-                    else ActionMacros.byId(id)?.let { addView(sized(tiles.macroTile(it))) }
+                    if (def != null) {
+                        val at = tiles.actionTile(def)
+                        actionRefreshers[id] = at.refresh; at.refresh(carStatus)   // đổ giá trị hiện có ngay khi dựng
+                        addView(sized(at.view))
+                    } else ActionMacros.byId(id)?.let { addView(sized(tiles.macroTile(it))) }
                 }
                 CapabilityKind.READ -> CapabilityCatalog.pick(id)?.let { pick ->
                     val tile = tiles.readTile(pick)
