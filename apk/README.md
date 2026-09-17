@@ -12,6 +12,16 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **1.71 (72) — 2026-09-17** (`Kachi-1.71-release.apk`, 38,0 MB, sha256 `c1f4fdd5…9064a`, thay 1.70). Sửa 2 việc
+  owner báo, **từ gốc IA (không hotfix)**: (1) **Trạng thái xe đọc REALTIME** — ô điều khiển (nhiệt độ · gió · lấy
+  gió trong · cốp…) trước hiển thị mức MẶC ĐỊNH trong RAM (nhiệt 22 · gió 4), chỉ đổi khi bấm trên launcher; nay
+  đọc giá trị THẬT của xe theo nhịp poll (`CarStatus.controls` + `CarDataAdapter.readState`, cửa sổ ân hạn 2,5 s
+  chống nháy sau khi bấm). Đặt 24°C ở màn BYD gốc ⇒ launcher hiện 24 (nhịp chậm ≤10 s). Chỉ đọc thứ ĐANG HIỆN
+  (không phá tối ưu K1). (2) **Màu sáng sủa hơn** — thang bề mặt (16 vai nền) trước là hex đặt tay rời rạc, mood
+  "tối tăm" nằm rải; nay derive từ MỘT recipe `SurfaceRamp` (nền deep-indigo ấm `#141b30` thay near-black lạnh
+  `#0a0d13`, gradient thẻ sâu hơn có sức sống). Tương phản chữ WCAG giữ nguyên (test khoá). Đây là **thử 1
+  version** — 🚗 owner ngắm màu trên xe + đo realtime (đặt nhiệt/gió ở màn xe, xem launcher đổi theo). **[ĐO] 5
+  module 0 đỏ** (core 2219 · app 1139/1151 · car-int 61 · offcar 99 · contracts 22).
 - **1.70 (71) — 2026-09-17** (`Kachi-1.70-release.apk`, 38,0 MB, sha256 `be34ddc6…6617b`, thay 1.69). VOICE
   tái kiến trúc từ đầu (owner: quan trọng nhất, chưa bao giờ ổn thực tế): máy trạng thái tường minh `VoiceTurnState`
   (8 pha, bất biến chống-loop CHỈ pha nghe mở mic) thay chùm cờ race; VAD hâm sẵn 1 lần/tiến trình (bỏ nghẽn
