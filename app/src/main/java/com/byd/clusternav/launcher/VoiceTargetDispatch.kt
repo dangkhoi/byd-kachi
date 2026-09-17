@@ -73,12 +73,11 @@ class VoiceTargetDispatch(
         background {
             val coords = runCatching { geocode(i.query) }.getOrNull()
             onUi {
-                // [SOÁT Pass 3 · P2] Tra cứu hỏng ≠ *"app không có cửa"*. Nói đúng cái vừa xảy ra, xem
-                // [VoiceReply.navNoPlace] — dùng chung một câu là đổ lỗi cho app về một lần mất sóng.
-                if (coords == null) {
-                    say(if (openApp(pkg)) VoiceReply.navNoPlace(i, target) else VoiceReply.cannotOpen(i))
-                    return@onUi
-                }
+                // [ĐO xe 2026-09-17] Geocode hỏng/timeout (mạng xe treo) ⇒ TRƯỚC ĐÂY mở VietMap trơn = "đơ" (app
+                // lên mà không có tuyến). Nay **lùi về Google Maps dẫn bằng CHỮ** (`google.navigation:q=`, Google
+                // tự geocode) — người lái luôn nhận được dẫn đường, không kẹt. Chỉ khi cả GMaps cũng không cài mới
+                // mở app đích trơn + nói rõ.
+                if (coords == null) { navFallbackToText(i, installed, target, pkg); return@onUi }
                 // Tên do bên giải trả về KHÁC câu người ta nói (*"chợ bến thành"* → *"Chợ Bến Thành"*, hoặc một
                 // nơi trùng tên). Đọc lại rồi mới bắn — cùng lý do với cổng CONFIRM của từ vựng mở.
                 confirm(
@@ -88,6 +87,19 @@ class VoiceTargetDispatch(
                 )
             }
         }
+    }
+
+    /**
+     * Geocode hỏng cho app-chỉ-nhận-toạ-độ (VietMap) ⇒ **dẫn bằng Google Maps qua chữ** thay vì mở app trơn.
+     *
+     * `google.navigation:q=<địa chỉ>` để Google tự giải toạ độ ở máy chủ — đúng cách Kiki làm việc mà Kachi
+     * không có máy chủ để tự geocode. Không có GMaps ⇒ mới mở app đích trơn + nói rõ chưa giao được điểm đến.
+     */
+    private fun navFallbackToText(i: VoiceIntent.Nav, installed: Set<String>, orig: VoiceAppTarget, origPkg: String) {
+        val gmaps = VoiceAppTargets.byKey(VoiceAppTargets.GMAPS)?.takeIf { it.packageIn(installed) != null }
+        val gpkg = gmaps?.packageIn(installed)
+        if (gmaps != null && gpkg != null) { deliver(i, gmaps, gpkg, i.query, null); return }
+        say(if (openApp(origPkg)) VoiceReply.navNoPlace(i, orig) else VoiceReply.cannotOpen(i))
     }
 
     /**
@@ -245,10 +257,17 @@ class VoiceTargetDispatch(
 
     private companion object {
         /**
-         * Thứ tự ƯU TIÊN app dẫn đường — **danh sách roster dùng chung** ở `:core`, không phải tên gói viết cứng
-         * mới. VietMap đứng đầu vì đó là app đang nuôi badge tốc độ trên xe owner; Google Maps rồi Waze theo sau.
+         * Thứ tự ƯU TIÊN app dẫn đường khi câu KHÔNG nêu đích danh app — **danh sách roster dùng chung** ở `:core`.
+         *
+         * ## [ĐO xe 2026-09-17] Vì sao GMaps ĐẦU, không phải VietMap
+         * Trước 1.71 VietMap đứng đầu (nó nuôi badge tốc độ). Nhưng VietMap chỉ nhận TOẠ ĐỘ ⇒ mọi câu "dẫn đường
+         * đến X" không nêu app đều bị đẩy vào đường **geocode** (Nominatim), mà trên xe mạng hay treo ⇒ kẹt ở
+         * "đang tra điểm đến…" (owner báo: GMaps chưa dẫn + VietMap đơ). Google Maps nhận CHỮ thẳng
+         * (`google.navigation:q=`, Google tự geocode) ⇒ dẫn ngay, không phụ thuộc mạng của ta. Đặt GMaps đầu là
+         * chọn ĐƯỜNG TIN CẬY làm mặc định; VietMap vẫn dùng được khi người lái nói *"dẫn bằng VietMap"* (và khi ấy
+         * geocode hỏng thì tự lùi về GMaps — xem [runNav]).
          */
         val NAV_PREFERENCE: List<String> =
-            listOf(NavApps.VIETMAP_LIVE) + NavApps.GMAPS.toList() + NavApps.WAZE.toList()
+            NavApps.GMAPS.toList() + listOf(NavApps.VIETMAP_LIVE) + NavApps.WAZE.toList()
     }
 }

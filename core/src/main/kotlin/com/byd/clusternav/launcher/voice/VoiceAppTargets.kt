@@ -231,7 +231,13 @@ object VoiceAppTargets {
             label = "YouTube",
             kind = VoiceAppKind.MUSIC,
             packages = listOf("com.google.android.youtube", "app.revanced.android.youtube"),
-            launch = VoiceLaunch.Action(VoiceLaunch.ACTION_SEARCH),
+            // [ĐO xe 2026-09-17 · log owner] `ACTION_SEARCH` chỉ MỞ Ô TÌM KIẾM, không phát — owner báo "search mà
+            // không hát". `MEDIA_PLAY_FROM_SEARCH` + `extra.focus=audio` là hợp đồng nền tảng để PHÁT theo chuỗi
+            // tìm; app nhạc/video (gồm YouTube) đăng ký receiver này và tự phát kết quả đầu (như YT Music). CHỜ XE
+            // xác nhận YouTube tự phát hay dừng ở kết quả (bản YouTube trên xe khác bản 2019 chặn của máy ảo).
+            launch = VoiceLaunch.Action(VoiceLaunch.ACTION_MEDIA_PLAY_FROM_SEARCH, extras = AUDIO_FOCUS),
+            fallback = VoiceLaunch.Action(VoiceLaunch.ACTION_SEARCH),
+            evidence = VoiceAppEvidence.AWAITING_CAR,
         ),
         VoiceAppTarget(
             key = SPOTIFY,
@@ -278,11 +284,15 @@ object VoiceAppTargets {
             label = "Google Maps",
             kind = VoiceAppKind.NAV,
             packages = NavApps.GMAPS.toList(),
-            launch = VoiceLaunch.Uri("geo:0,0?q=${VoiceLaunch.SLOT}"),
+            // [ĐO xe 2026-09-17 · log owner] `geo:0,0?q=` chỉ MỞ MÀN KẾT QUẢ, KHÔNG bắt đầu dẫn — owner báo "dẫn
+            // đường chưa trigger google map dẫn". `google.navigation:q=<địa chỉ text>` là deep-link CHUẨN của Google
+            // để BẮT ĐẦU dẫn turn-by-turn với chuỗi chữ (Google tự geocode ở máy chủ ⇒ KHÔNG cần Nominatim, không
+            // kẹt mạng). Bản GMaps trên xe là bản mới (khác màn "Update Google Maps" của GMaps 2019 trên máy ảo cũ).
+            launch = VoiceLaunch.Uri("google.navigation:q=${VoiceLaunch.SLOT}"),
             evidence = VoiceAppEvidence.MEASURED,
-            // [ĐO] nguồn Kiki (xem KDoc); `google.navigation:` trên máy ảo rơi vào màn *"Update Google Maps"*.
+            // Đường toạ độ (khi đã geocode sẵn — vd sổ địa chỉ có lat/lng): dẫn thẳng bằng toạ độ, cũng không cần tra.
             coord = VoiceLaunch.Uri("google.navigation:ll=${VoiceLaunch.LAT},${VoiceLaunch.LNG}"),
-            coordEvidence = VoiceAppEvidence.AWAITING_CAR,
+            coordEvidence = VoiceAppEvidence.MEASURED,
         ),
         VoiceAppTarget(
             key = WAZE,

@@ -171,7 +171,7 @@ class VoiceHandoverTest {
 
     // ══ (3) DẪN ĐƯỜNG — chọn app + toạ độ ════════════════════════════════════════════════════════════════
 
-    /** Google Maps có cửa CHỮ ⇒ bắn thẳng, **không** tốn một lượt tra toạ độ nào (CLAUDE.md §6). */
+    /** Google Maps DẪN bằng CHỮ (`google.navigation:q=`, Google tự geocode) ⇒ bắn thẳng, **không** tra toạ độ. */
     @Test
     fun `Google Maps di duong chu va khong geocode`() {
         val r = Rig(labels = mapOf("Bản đồ" to GMAPS))
@@ -179,7 +179,8 @@ class VoiceHandoverTest {
         val h = r.sent.single()
         assertEquals(GMAPS, h.pkg)
         assertEquals("chợ Bến Thành", h.query)
-        assertTrue((h.launch as VoiceLaunch.Uri).template.startsWith("geo:0,0?q="))
+        // [ĐO xe 2026-09-17] `geo:0,0?q=` chỉ HIỆN, không dẫn ⇒ nay `google.navigation:q=` (dẫn turn-by-turn).
+        assertTrue((h.launch as VoiceLaunch.Uri).template.startsWith("google.navigation:q="))
         assertEquals(0, r.geocodeCalls, "app có cửa chữ mà vẫn đi tra toạ độ ⇒ một lượt mạng không cần thiết")
     }
 

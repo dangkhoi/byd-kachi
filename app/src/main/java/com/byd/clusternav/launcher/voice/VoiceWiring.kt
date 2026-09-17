@@ -151,7 +151,7 @@ object VoiceWiring {
         onLayout = onLayout,
         // V1.1 — ba đường của bảng đích. Dựng ở ĐÂY, không ở hai bề mặt: xem KDoc lớp (một bộ dây, một chỗ khai).
         sendToApp = { handoff -> VoiceAppIntents.send(ctx, handoff) },
-        geocode = { place -> VoiceGeocoder.resolve(ctx, place) },
+        geocode = { place -> VoiceGeocoder.resolveBounded(ctx, place) },
         mediaPackage = { MediaBridge(ctx).activePackage() },
         onUi = { block ->
             if (Looper.myLooper() == Looper.getMainLooper()) block() else Handler(Looper.getMainLooper()).post(block)

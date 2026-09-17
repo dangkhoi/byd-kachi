@@ -43,6 +43,9 @@ object VoiceGeocoder {
     /** Thời hạn cho lượt hỏi máy chủ — ngắn: người lái đang chờ, và mạng của xe hay treo (CLAUDE.md §11). */
     private const val READ_TIMEOUT_MS = 5_000
 
+    /** Thời hạn CỨNG cho cả lượt giải (gồm cả đường on-device không có timeout) — xem [resolveBounded]. */
+    private const val TOTAL_BUDGET_MS = 7_000L
+
     /**
      * Máy chủ tra cứu mở của OpenStreetMap.
      *
@@ -96,6 +99,27 @@ object VoiceGeocoder {
     fun resolve(ctx: Context, place: String): VoiceAppIntents.Coords? {
         if (place.isBlank()) return null
         return onDevice(ctx, place) ?: online(place)
+    }
+
+    /**
+     * [resolve] với **thời hạn CỨNG** — chống `Geocoder` của nền tảng treo vô hạn (owner báo "VietMap đơ" 09-17).
+     *
+     * ## Vì sao cần dù [online] đã có timeout
+     * `online` (Nominatim) đi qua [HttpConn] có hạn đọc 5 s. Nhưng đường [onDevice] (`Geocoder.getFromLocationName`)
+     * **không có** tham số timeout nào ở API 29, và trên một ROM mà `isPresent()` true nhưng dịch vụ đằng sau
+     * không có mạng, nó có thể **chặn mãi** — luồng nền của lượt dẫn đường không bao giờ trả lời, người lái thấy
+     * "đang tra điểm đến…" đứng im. Chạy trên một luồng phụ + `join(hạn)`; quá hạn ⇒ trả `null` (⇒ chỗ gọi lùi
+     * về Google Maps dẫn bằng chữ). Luồng phụ là daemon: ca treo dai dẳng là điều kiện ROM cố định, sau lần đầu
+     * chỗ gọi đã lùi sang GMaps nên không gọi lại — không rò luồng theo thời gian.
+     */
+    fun resolveBounded(ctx: Context, place: String): VoiceAppIntents.Coords? {
+        if (place.isBlank()) return null
+        var out: VoiceAppIntents.Coords? = null
+        val worker = Thread { out = runCatching { resolve(ctx, place) }.getOrNull() }
+            .apply { isDaemon = true; name = "kachi-geocode"; start() }
+        worker.join(TOTAL_BUDGET_MS)
+        if (worker.isAlive) Log.w(TAG, "geocode quá hạn ${TOTAL_BUDGET_MS}ms cho \"$place\" — lùi về dẫn bằng chữ")
+        return out
     }
 
     /** Đường của nền tảng. `isPresent()` false ⇒ ROM không có dịch vụ nào đứng sau, gọi cũng chỉ trả rỗng. */

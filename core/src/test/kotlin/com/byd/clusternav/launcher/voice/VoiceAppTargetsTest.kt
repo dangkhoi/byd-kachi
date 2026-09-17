@@ -19,6 +19,26 @@ class VoiceAppTargetsTest {
 
     // ══ (1) Tính toàn vẹn của bảng ═══════════════════════════════════════════════════════════════════════
 
+    /**
+     * [ĐO xe 2026-09-17] Không nêu app + chưa có toạ độ ⇒ navFor chọn **GMaps** (dẫn bằng CHỮ), KHÔNG chọn VietMap.
+     *
+     * Bệnh: VietMap chỉ nhận toạ độ ⇒ chọn nó làm mặc định buộc mọi câu dẫn đường đi qua geocode (Nominatim),
+     * trên xe mạng treo ⇒ kẹt "đang tra điểm đến". GMaps nhận chữ (`google.navigation:q=`, Google tự geocode) ⇒
+     * dẫn ngay. Khoá luật *"mặc định = app giao được với dữ liệu đang có"*.
+     */
+    @Test
+    fun `default nav khong toa do chon GMaps dan bang chu, khong buoc geocode`() {
+        val pref = NavApps.GMAPS.toList() + listOf(NavApps.VIETMAP_LIVE) + NavApps.WAZE.toList()
+        val installed = setOf("com.google.android.apps.maps", "vn.vietmap.live")
+        val t = VoiceAppTargets.navFor(hasCoords = false, preferredPackages = pref, installed = installed)!!
+        assertEquals(VoiceAppTargets.GMAPS, t.key, "chưa có toạ độ ⇒ phải chọn app nhận CHỮ (GMaps), không phải VietMap")
+        assertFalse(t.needsCoords, "đường mặc định không được buộc geocode")
+        assertTrue(
+            (t.destinationLaunch(false) as VoiceLaunch.Uri).template.startsWith("google.navigation:q="),
+            "GMaps phải DẪN bằng chữ, không chỉ hiện",
+        )
+    }
+
     /** Mã đích là **hợp đồng** giữa `:core` và `:app` ⇒ không được trùng và không được rỗng. */
     @Test
     fun `ma dich duy nhat va co nhan doc duoc`() {
@@ -75,28 +95,30 @@ class VoiceAppTargetsTest {
     }
 
     /** [ĐO] YouTube là app VIDEO, đi cửa `ACTION_SEARCH`; bản trên máy ảo chặn ⇒ mức bằng chứng phải là CHƯA BIẾT. */
+    /** [ĐO xe 2026-09-17 · log owner] YouTube ACTION_SEARCH chỉ MỞ Ô TÌM (không phát) ⇒ đổi sang MEDIA_PLAY_FROM_SEARCH. */
     @Test
-    fun `YouTube di cua ACTION_SEARCH va van la chua biet`() {
+    fun `YouTube di MEDIA_PLAY_FROM_SEARCH de phat, fallback ACTION_SEARCH`() {
         val t = VoiceAppTargets.byKey(VoiceAppTargets.YOUTUBE)!!
-        assertEquals(VoiceLaunch.ACTION_SEARCH, (t.launch as VoiceLaunch.Action).action)
-        assertEquals(VoiceAppEvidence.UNKNOWN, t.evidence, "máy ảo rơi vào màn *Update your app* ⇒ chưa đo được")
+        assertEquals(VoiceLaunch.ACTION_MEDIA_PLAY_FROM_SEARCH, (t.launch as VoiceLaunch.Action).action)
+        assertEquals(VoiceLaunch.ACTION_SEARCH, (t.fallback as VoiceLaunch.Action).action)
+        assertEquals(VoiceAppEvidence.AWAITING_CAR, t.evidence, "cửa PHÁT của YouTube chờ xe xác nhận (bản mới, khác máy ảo cũ)")
     }
 
     /**
-     * [ĐO] Google Maps đi `geo:`, **không** `google.navigation:`.
+     * [ĐO xe 2026-09-17 · log owner] Google Maps đi `google.navigation:q=` (DẪN thật), **không** `geo:` (chỉ hiện).
      *
-     * `google.navigation:` rơi vào màn *"Update Google Maps"* trên bản của máy ảo ⇒ nó nằm ở [VoiceAppTarget.coord]
-     * với mức *chờ xe*, không nằm ở đường chính. Đảo hai cái này là đảo một đường đã đo lấy một đường chưa đo.
+     * Owner báo `geo:0,0?q=` chỉ mở màn kết quả, không bắt đầu dẫn ("dẫn đường chưa trigger google map dẫn").
+     * `google.navigation:q=<địa chỉ text>` là deep-link chuẩn để bắt đầu dẫn turn-by-turn (Google tự geocode ⇒
+     * KHÔNG cần Nominatim). Bản GMaps trên xe là bản mới (màn "Update Google Maps" là của GMaps 2019 trên máy ảo).
      */
     @Test
-    fun `Google Maps di geo chu khong di google navigation`() {
+    fun `Google Maps di google navigation de dan, khong chi hien`() {
         val t = VoiceAppTargets.byKey(VoiceAppTargets.GMAPS)!!
         val uri = (t.launch as VoiceLaunch.Uri).template
-        assertTrue(uri.startsWith("geo:0,0?q="), "đường chính phải là `geo:` đã đo; đang là `$uri`")
-        assertFalse((t.launch as VoiceLaunch.Uri).needsCoords, "đường chính không được đòi toạ độ")
+        assertTrue(uri.startsWith("google.navigation:q="), "đường chính phải DẪN bằng chữ; đang là `$uri`")
+        assertFalse((t.launch as VoiceLaunch.Uri).needsCoords, "đường chính không được đòi toạ độ (Google tự geocode)")
         assertEquals(VoiceAppEvidence.MEASURED, t.evidence)
-        assertTrue(t.coord!!.template.startsWith("google.navigation:ll="), "đường toạ độ giữ nguyên cho ngày đo trên xe")
-        assertEquals(VoiceAppEvidence.AWAITING_CAR, t.coordEvidence)
+        assertTrue(t.coord!!.template.startsWith("google.navigation:ll="), "đường toạ độ = dẫn thẳng bằng lat/lng")
     }
 
     /** [ĐO] Waze resolve đúng qua `waze://?q=…&navigate=yes`, và có lưới an toàn `geo:`. */
