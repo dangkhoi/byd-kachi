@@ -55,6 +55,8 @@ object SherpaSpokenWords {
         "ghe am" to "ghế ấm",
         "nhiet do dieu hoa" to "nhiệt độ điều hòa",
         "nhiet do trong xe" to "nhiệt độ trong xe",
+        "nhiet do" to "nhiệt độ",
+        "dieu hoa bao nhieu do" to "điều hòa bao nhiêu độ",
         "quat" to "quạt",
         "quat gio" to "quạt gió",
         "toc do quat" to "tốc độ quạt",

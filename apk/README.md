@@ -12,6 +12,15 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **1.73 (74) — 2026-09-17** (`Kachi-1.73-release.apk`, 38,0 MB, sha256 `953b5510…b5e4c`, thay 1.72). Sửa
+  NHẬN-SỐ + câu HỎI từ log xe 81 lượt owner báo (*"chỉnh máy lạnh 24 độ không hiểu, hỏi đi hỏi lại"*, *"nhận diện
+  số đang tệ"*). **(A) số nhiệt độ**: «tăng/giảm nhiệt độ 24 độ» trước bị hiểu **±24** (cộng vào 22 = kẹt trần 33)
+  → nay **ĐẶT = 24** (số trong dải 17..33 = setpoint); gió/âm lượng giữ tương đối (không phá «giảm âm lượng 2 nấc»).
+  **(B) câu hỏi map sai datum**: «chỉ số **bụi mịn** là bao nhiêu» ra `Số` (datum `gear` do chữ *"số"*) → nay **bụi
+  mịn** (datum dài nhất thắng + bỏ cụm dẫn *"chỉ số"*); «nhiệt độ / máy lạnh bao nhiêu độ» trước RỖNG/`Âm lượng` →
+  nay **nhiệt AC**. **(C)** «tắt bụi mịn» trước MỞ Google Maps → nay **tắt máy lọc**. **[ĐO] 5 module 0 đỏ** (core
+  2224 · app 1147/1153 · car-int 61 · offcar 99 · contracts 22). 🚗 owner test xe. **Còn nợ (log)**: «chế độ lái»→đèn
+  pha · «xi nhan»→đèn ngày (feature đã gỡ, khớp mờ lạc) · «một nửa kính» (chưa có lệnh ghi ½) · «xăng» (BEV chưa map).
 - **1.72 (73) — 2026-09-17** (`Kachi-1.72-release.apk`, 38,0 MB, sha256 `37e8b4e8…6939d`, thay 1.71). Sửa
   END-TO-END 3 lỗi voice→app owner báo từ log xe (159 lượt): **(1) Google Maps chưa dẫn** — `geo:0,0?q=` chỉ MỞ
   màn kết quả; nay `google.navigation:q=<địa chỉ>` (dẫn turn-by-turn, Google tự geocode, không cần Nominatim).

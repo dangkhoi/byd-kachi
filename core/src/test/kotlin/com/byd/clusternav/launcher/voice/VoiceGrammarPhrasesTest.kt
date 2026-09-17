@@ -285,7 +285,10 @@ class VoiceGrammarPhrasesTest {
         // [ĐO off-car 2026-09-17 · (V) FEATURE-FILTER] **390 → 357 (−33)** = cụm nhiều từ dựng từ nhãn + nhãn
         // ngắn + từ đồng nghĩa của 19 mã owner chấm NO (cụm sạc, chế độ lái, gập gương, chế độ drift, chìa
         // Bluetooth, trạng thái nguồn MCU…). Số đọc từ **actual** của chính bài này.
-        const val EXPECTED_PHRASES_KEPT = 357
+        // [ĐO off-car 2026-09-17 · voice-number-read] **357 → 359 (+2)** = hai cách nói nhiều từ mới cho câu
+        // HỎI về nhiệt AC (`inside_temp ← "nhiệt độ"`, `"điều hòa bao nhiêu độ"`) — thêm để «nhiệt độ đang bao
+        // nhiêu»/«máy lạnh bao nhiêu độ» map đúng datum thay vì rỗng/media_vol (log xe 81 lượt). Đọc từ **actual**.
+        const val EXPECTED_PHRASES_KEPT = 359
 
         /**
          * [ĐO] 269 cụm bị loại — **gần như toàn bộ là nhãn tiếng ANH** (*"Reading light"*, *"Tyre FL"*…), cộng
@@ -365,6 +368,8 @@ class VoiceGrammarPhrasesTest {
         // 28 cụm loại rụng theo registry, phần còn lại là **từ đơn** chỉ xuất hiện trong nhãn/cách gọi của 19 mã
         // owner chấm NO (*"drift"*, *"gương"*, *"chìa"*, *"sạc"* các biến thể chưa ai khai ở chỗ khác…).
         // Số đọc từ **actual** của chính bài này, không phải phép đoán — đúng cách KDoc trên đã dặn.
-        const val EXPECTED_ENTRIES = 2097
+        // [ĐO off-car 2026-09-17 · voice-number-read] **2097 → 2099 (+2)** = 2 cách nói mới cho câu hỏi nhiệt AC
+        // (`inside_temp`) — cùng 2 cụm với [EXPECTED_PHRASES_KEPT].
+        const val EXPECTED_ENTRIES = 2099
     }
 }

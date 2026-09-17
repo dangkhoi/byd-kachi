@@ -63,7 +63,11 @@ object VoiceSynonyms {
         // **BỊ LOẠI** theo đúng luật §2 dưới (một từ đời thường ⇒ nuốt câu người khác mà im lặng).
         "readl" to listOf("den trong xe", "den doc sach", "cabin light", "den tran", "den noc", "dang doc sach"),
         "pm25" to listOf("loc bui", "loc khong khi", "air filter", "purifier",
-            "may loc khong khi", "may loc bui", "loc gio cabin"),
+            "may loc khong khi", "may loc bui", "loc gio cabin",
+            // [ĐO xe 2026-09-17 · log] «tắt bụi mịn» ra `OpenApp(Maps)`: *"bụi mịn"* chỉ khớp `pm25_level`
+            // (telemetry, chỉ-đọc) ⇒ TẮT nó = MISMATCH ⇒ rơi xuống "mở app". Cho NÚT lọc nhận *"bụi mịn"* để
+            // *"tắt/bật bụi mịn"* điều khiển máy lọc; câu HỎI *"bụi mịn bao nhiêu"* vẫn về telemetry (read/action tách).
+            "bui min"),
         // *"quạt ghế"* / *"làm mát ghế"* đứng cạnh `fan ← "quat"`: luật **dãy dài nhất thắng** giữ đúng nút ghế,
         // và *"quạt"* một mình vẫn là quạt gió — không cần một dòng `if` nào.
         "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling", "quat ghe", "lam mat ghe", "thong gio ghe"),
@@ -132,6 +136,11 @@ object VoiceSynonyms {
         "fuel_range_km" to listOf("xang con chay duoc bao xa"),
         "speed" to listOf("dang chay bao nhieu", "van toc"),
         "ext_temp" to listOf("nhiet do ngoai troi", "ngoai troi", "outside temperature", "ngoai troi nong khong"),
+        // [ĐO xe 2026-09-17 · log] «nhiệt độ đang bao nhiêu» ra RỖNG (không datum), «máy lạnh bao nhiêu độ» ra
+        // media_vol: *"nhiệt độ"* chỉ khớp NÚT `temp`, không có telemetry nào; *"máy lạnh"* chỉ khớp `ac_auto`.
+        // `inside_temp` = nhiệt AC ĐANG ĐẶT ("Nhiệt cài đặt") ⇒ đúng câu hỏi. Câu HỎI về telemetry, câu LỆNH
+        // *"tăng nhiệt độ"* vẫn về nút `temp` (choose ưu tiên control cho động từ hành động).
+        "inside_temp" to listOf("nhiet do", "may lanh", "nhiet do may lanh", "dieu hoa bao nhieu do"),
         "cabin_temp" to listOf("nhiet trong xe", "nhiet do trong cabin"),
         "pm25_level" to listOf("bui min", "chat luong khong khi", "air quality"),
         "odometer" to listOf("so km da di", "odo", "mileage"),

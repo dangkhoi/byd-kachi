@@ -434,4 +434,41 @@ class VoiceIntentParserTest {
         assertEquals("Turn on Reading light", VoiceReply.preview(VoiceIntent.Control("readl", 1)))
         assertTrue(VoiceReply.unknown(VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, "abc")).contains("abc"))
     }
+
+    // ══ LOG XE 2026-09-17 — số & câu hỏi (nguồn: /tmp/kvlog, 81 lượt thật) ══════════════════════════════
+    //
+    // Mỗi ca dưới đây là MỘT chuỗi owner/bạn bè NÓI THẬT trên xe + hành vi SAI đo được, nay khoá về đúng.
+
+    /** «tăng/giảm nhiệt độ HAI MƯƠI BỐN độ» = ĐẶT 24, KHÔNG phải ±24 (số trong dải 17..33 = setpoint). */
+    @Test fun `log xe · so trong dai nhiet do la SETPOINT tuyet doi`() = expect(
+        "tăng nhiệt độ hai mươi bốn độ" to VoiceIntent.Control("temp", 24),   // was: temp +24
+        "giảm nhiệt độ hai mươi hai độ" to VoiceIntent.Control("temp", 22),   // was: temp -22
+        "giảm nhiệt độ hai mươi bốn độ" to VoiceIntent.Control("temp", 24),   // was: temp -24
+        "tăng nhiệt độ hai mươi hai" to VoiceIntent.Control("temp", 22),      // was: temp +22
+    )
+
+    /** …nhưng số NGOÀI dải + không số ⇒ vẫn TƯƠNG ĐỐI (không phá hành vi bước đang đúng trong log). */
+    @Test fun `log xe · nhiet do ngoai dai va gio-am-luong van tuong doi`() = expect(
+        "giảm nhiệt độ năm độ" to VoiceIntent.Control("temp", null, relative = -5),   // 5 < 17 ⇒ bước
+        "giảm nhiệt độ bốn độ" to VoiceIntent.Control("temp", null, relative = -4),
+        "tăng nhiệt độ" to VoiceIntent.Control("temp", null, relative = 1),
+        "giảm nhiệt độ" to VoiceIntent.Control("temp", null, relative = -1),
+        "tăng quạt gió" to VoiceIntent.Control("fan", null, relative = 1),            // fan min 0 ⇒ luôn tương đối
+        "giảm âm lượng hai" to VoiceIntent.Control("vol", null, relative = -2),       // vol min 0 ⇒ giữ −2
+    )
+
+    /** Câu HỎI: datum DÀI NHẤT thắng + bỏ cụm dẫn «chỉ số» ⇒ hết «số»→gear, hết ø. */
+    @Test fun `log xe · cau hoi map dung datum`() = expect(
+        "chỉ số bụi mịn là bao nhiêu" to VoiceIntent.Read("pm25_level"),  // was: Read(gear)
+        "chỉ số bụi mịn hiện nay" to VoiceIntent.Read("pm25_level"),      // was: Read(odometer)
+        "nhiệt độ đang bao nhiêu" to VoiceIntent.Read("inside_temp"),     // was: rỗng (không datum)
+        "máy lạnh đang bao nhiêu độ" to VoiceIntent.Read("inside_temp"),  // was: Read(media_vol)
+        "bin còn bao nhiêu" to VoiceIntent.Read("soc"),                   // giữ đúng (chống hồi quy)
+    )
+
+    /** «tắt bụi mịn» = tắt máy lọc (pm25 control), KHÔNG mở app; câu HỎI vẫn về telemetry (read/action tách). */
+    @Test fun `log xe · tat bui min dieu khien may loc khong mo app`() {
+        assertEquals(VoiceIntent.Control("pm25", 0), one("tắt bụi mịn"))
+        assertEquals(VoiceIntent.Read("pm25_level"), one("bụi mịn bao nhiêu"))
+    }
 }

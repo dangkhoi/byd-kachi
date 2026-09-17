@@ -1,8 +1,5 @@
 package com.byd.clusternav.launcher.voice
 
-import com.byd.clusternav.launcher.ControlDef
-import com.byd.clusternav.launcher.ControlKind
-import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
 
 /**
@@ -163,6 +160,9 @@ object VoiceIntentParser {
             val body = dropFillers(t.subList(0, at) + t.subList(at + len, t.size))
             return objectOnlyRead(body, terms, original)
         }
+        // (a') *"chỉ số X"* = *"cho biết giá trị của X"* — là câu ĐỌC kể cả khi KHÔNG có cụm hỏi (*"chỉ số bụi mịn
+        //      hiện nay"*). [objectOnlyRead] tự bỏ cụm dẫn để *"số"* không nuốt thành datum `gear`.
+        if (READ_LEADS.any { VoiceLexicon.phraseAt(t, 0, it) }) return objectOnlyRead(t, terms, original)
 
         // (b) Động từ đứng đầu, khớp cụm DÀI nhất.
         val verbHit = VoiceGrammar.VERBS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it.first) }
@@ -283,14 +283,27 @@ object VoiceIntentParser {
         if (term.kind == VoiceTermKind.MACRO) VoiceVerb.ON else VoiceVerb.OPEN
 
     /** Câu chỉ có đối tượng + đuôi hỏi ⇒ ĐỌC. Không khớp được datum nào thì nói rõ là thiếu đối tượng. */
-    private fun objectOnlyRead(body: List<Token>, terms: List<VoiceTerm>, original: String): VoiceIntent {
-        // Cùng luật "cách hiểu đầu tiên CÓ NGHĨA" như ở [parseTokens] — xem lý do tại đó.
+    private fun objectOnlyRead(body0: List<Token>, terms: List<VoiceTerm>, original: String): VoiceIntent {
+        // [ĐO xe 2026-09-17 · log] *"chỉ số bụi mịn là bao nhiêu"* ra `Read(gear)` vì *"số"* (nhãn datum `gear`)
+        // khớp Ở TRƯỚC *"bụi mịn"*. *"chỉ số X"* = *"giá trị của X"* ⇒ bỏ cụm dẫn để *"số"* thôi nuốt câu.
+        val body = stripReadLead(body0)
+        // ⚠ Chọn datum DÀI NHẤT trong cả câu, KHÔNG lấy vị-trí-khớp-đầu-tiên. [ĐO] cùng câu trên: *"bụi mịn"* (2
+        // từ, `pm25`) phải thắng *"số"* (1 từ, `gear`) dù đứng sau. Đây là luật "dãy dài nhất thắng" áp cho READ —
+        // trước đây chỉ áp trong vòng quét hành động, còn câu hỏi thì dừng ở khớp đầu tiên (gốc bug).
+        var best: VoiceTerm? = null
         body.indices.forEach { i ->
-            val cands = VoiceGrammar.matchAt(body, i, terms)
-            val term = cands.takeIf { it.isNotEmpty() }?.let { choose(it, VoiceVerb.READ) }
-            if (term != null && term.kind == VoiceTermKind.TELEMETRY) return VoiceIntent.Read(term.id)
+            val term = VoiceGrammar.matchAt(body, i, terms)
+                .filter { it.kind == VoiceTermKind.TELEMETRY }
+                .maxByOrNull { it.words.size }
+            if (term != null && (best == null || term.words.size > best!!.words.size)) best = term
         }
-        return VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
+        return best?.let { VoiceIntent.Read(it.id) } ?: VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
+    }
+
+    /** Bỏ cụm dẫn *"chỉ số"* đầu câu hỏi (*"chỉ số bụi mịn"*) — nó là "giá trị của", không phải datum `gear`. */
+    private fun stripReadLead(body: List<Token>): List<Token> {
+        READ_LEADS.forEach { lead -> if (VoiceLexicon.phraseAt(body, 0, lead)) return dropFillers(body.subList(lead.size, body.size)) }
+        return body
     }
 
     /**
@@ -336,7 +349,7 @@ object VoiceIntentParser {
                 else VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
 
             VoiceTermKind.CONTROL ->
-                if (VoiceGrammar.isAction(verb)) control(term.id, verb, after, original)
+                if (VoiceGrammar.isAction(verb)) VoiceControlParse.control(term.id, verb, after, original)
                 else VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
 
             VoiceTermKind.MACRO ->
@@ -404,74 +417,10 @@ object VoiceIntentParser {
             }
         }
 
-    // ── Nút: tính giá trị theo ControlKind ───────────────────────────────────────────────────────
+    // ── Câu hỏi ĐỌC ──────────────────────────────────────────────────────────────────────────────
 
-    @Suppress("ReturnCount")
-    private fun control(id: String, verb: VoiceVerb, after: List<Token>, original: String): VoiceIntent {
-        val def = ControlRegistry.byId(id) ?: return VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
-        val num = firstNumber(after)
-        return when (def.kind) {
-            ControlKind.TOGGLE, ControlKind.COVER -> when (verb) {
-                VoiceVerb.ON, VoiceVerb.OPEN -> VoiceIntent.Control(id, 1)
-                // "dừng chiếu cụm" = tắt nút `cast`. Không có nhánh này thì đúng câu người ta hay nói nhất cho
-                // việc **dừng** một thứ đang chạy lại rơi vào MISMATCH.
-                VoiceVerb.OFF, VoiceVerb.CLOSE, VoiceVerb.PAUSE -> VoiceIntent.Control(id, 0)
-                VoiceVerb.SET -> num?.let { VoiceIntent.Control(id, if (it > 0) 1 else 0) }
-                    ?: VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
-                else -> VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
-            }
-            // Nút BẤM-một-phát: không có mặt "tắt" nào để nói dối, nên mọi động từ hành động đều là "bấm".
-            ControlKind.BUTTON -> VoiceIntent.Control(id, null)
-            ControlKind.SELECT -> selectIndex(def, after)?.let { VoiceIntent.Control(id, it) }
-                ?: VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
-            ControlKind.STEP -> step(def, verb, num, original)
-        }
-    }
-
-    /**
-     * Bước nhảy (nhiệt độ / gió / âm lượng / độ sáng).
-     *
-     * *"tăng/giảm"* ⇒ **tương đối** (xem KDoc [VoiceIntent.Control.relative] về việc vì sao `:core` không được tự
-     * quy nó về tuyệt đối). Nêu số ⇒ tuyệt đối, đã kẹp trong `min..max` bằng chính [ControlDef.clamp] mà thanh nút
-     * đang dùng — hai bề mặt không được có hai luật kẹp.
-     */
-    private fun step(def: ControlDef, verb: VoiceVerb, num: Int?, original: String): VoiceIntent = when (verb) {
-        // *"Tăng âm lượng tối đa"* ([ĐO] mẫu câu Kiki #14) là lệnh TUYỆT ĐỐI đội lốt lệnh tương đối: "tối đa" đã
-        // nói ra đích rồi. Bỏ qua vế đó thì câu phổ biến nhất của người dùng chỉ nhích lên một nấc.
-        VoiceVerb.UP -> if (num == VoiceLexicon.MAX) VoiceIntent.Control(def.id, def.max)
-        else VoiceIntent.Control(def.id, null, relative = num?.takeIf { plainStep(it) } ?: 1)
-        VoiceVerb.DOWN -> if (num == VoiceLexicon.MIN) VoiceIntent.Control(def.id, def.min)
-        else VoiceIntent.Control(def.id, null, relative = -(num?.takeIf { plainStep(it) } ?: 1))
-        VoiceVerb.SET, VoiceVerb.ON, VoiceVerb.OPEN -> when (num) {
-            null -> VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
-            VoiceLexicon.MAX -> VoiceIntent.Control(def.id, def.max)
-            VoiceLexicon.MIN -> VoiceIntent.Control(def.id, def.min)
-            else -> VoiceIntent.Control(def.id, def.clamp(num))
-        }
-        VoiceVerb.OFF, VoiceVerb.CLOSE -> VoiceIntent.Control(def.id, def.min)
-        else -> VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
-    }
-
-    /** Số đi kèm "tăng/giảm" phải là số bước thật, không phải sentinel *"hết cỡ"*. */
-    private fun plainStep(n: Int): Boolean = n != VoiceLexicon.MAX && n != VoiceLexicon.MIN
-
-    /** Khớp một nhãn lựa chọn của nút SELECT (VI hoặc EN), hoặc số thứ tự nói thẳng. */
-    private fun selectIndex(def: ControlDef, after: List<Token>): Int? {
-        val lists = listOf(def.args, def.argsEn).filter { it.isNotEmpty() }
-        lists.forEach { args ->
-            args.forEachIndexed { idx, label ->
-                val words = VoiceLexicon.tokenize(label).map { it.norm }
-                if (words.isNotEmpty() && after.indices.any { VoiceLexicon.phraseAt(after, it, words) }) return idx
-            }
-        }
-        val n = firstNumber(after) ?: return null
-        return n.takeIf { it in def.args.indices }
-    }
-
-    private fun firstNumber(after: List<Token>): Int? {
-        after.indices.forEach { i -> VoiceLexicon.readNumber(after, i)?.let { return it.value } }
-        return null
-    }
+    /** Cụm dẫn *"chỉ số X"* = *"giá trị của X"* — bỏ ở đầu câu hỏi để *"số"* không nuốt thành datum `gear`. */
+    private val READ_LEADS: List<List<String>> = listOf(listOf("chi", "so"))
 
     // ── Tiện ích ─────────────────────────────────────────────────────────────────────────────────
 
