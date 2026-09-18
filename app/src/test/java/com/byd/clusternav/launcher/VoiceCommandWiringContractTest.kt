@@ -328,9 +328,19 @@ class VoiceCommandWiringContractTest {
         listOf("AudioRecord", "ShortArray", "pcm", "Recognizer").forEach {
             assertFalse(geo.contains(it), "lớp tra cứu địa điểm chạm tới tiếng (`$it`) — hai việc này phải tách hẳn")
         }
-        // Và chỉ ĐÚNG hai tệp Voice* được phép có `HttpConn`: tải mô hình (xuống) + tra cứu địa điểm (chữ).
+        // Và chỉ ĐÚNG BA tệp Voice* được phép có `HttpConn`: tải mô hình (xuống) · tra cứu địa điểm (chữ) ·
+        // giải video_id nhạc (chữ). YoutubeResolver gửi một **chuỗi tìm** đi lấy về `video_id` để "phát luôn"
+        // (owner 2026-09-18, cơ chế Kiki) — cùng loại chữ như geocoder, KHÔNG gửi tiếng; degrade-safe.
+        val yt = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceYoutubeResolver.kt")
+        assertFalse(yt.contains("outputStream"), "VoiceYoutubeResolver chỉ GET — không gửi thân yêu cầu nào")
+        listOf("AudioRecord", "ShortArray", "pcm", "Recognizer").forEach {
+            assertFalse(yt.contains(it), "VoiceYoutubeResolver chạm tới tiếng (`$it`) — phải tách hẳn")
+        }
         val users = voiceSources().filter { (_, src) -> src.contains("HttpConn") }.map { it.first }.sorted()
-        assertEquals(listOf("VoiceGeocoder.kt", "VoiceModelStore.kt"), users, "có tệp Voice* thứ ba ra mạng: $users")
+        assertEquals(
+            listOf("VoiceGeocoder.kt", "VoiceModelStore.kt", "VoiceYoutubeResolver.kt"),
+            users, "có tệp Voice* thứ tư ra mạng: $users",
+        )
     }
 
     /** Và bộ nhận dạng phải là **sherpa-onnx tại máy**, giải mã tự do + biasing — không gửi tiếng ra mạng. */

@@ -300,6 +300,9 @@ object VoiceReply {
      */
     fun resolving(i: VoiceIntent): String = preview(i) + " — " + Strings.t("đang tra điểm đến…", "looking the place up…")
 
+    /** *"Đang tìm bài…"* — đọc ngay khi bắt đầu giải video_id (YouTube/YT Music), vì lượt tải HTML mất 1–3 s. */
+    fun searchingMusic(i: VoiceIntent): String = preview(i) + " — " + Strings.t("đang tìm bài…", "finding the track…")
+
     /**
      * Đọc lại **tên nơi mà bên tra cứu trả về** trước khi bắn.
      *

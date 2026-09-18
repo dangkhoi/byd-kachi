@@ -132,6 +132,12 @@ data class VoiceAppTarget(
     val evidence: VoiceAppEvidence = VoiceAppEvidence.UNKNOWN,
     val coord: VoiceLaunch.Uri? = null,
     val coordEvidence: VoiceAppEvidence = VoiceAppEvidence.UNKNOWN,
+    /**
+     * URL **watch** để TỰ PHÁT theo `video_id` đã giải (owner 2026-09-18 *"phát bài hát luôn"*). `{q}` = video_id
+     * (không phải chuỗi tìm). Mở URL watch thì YouTube/YT Music tự phát đúng video — đúng cơ chế Kiki (server giải
+     * id rồi mở `watch?v=`). `null` = app không có đường watch-theo-id ⇒ chỉ dùng [launch] (`MEDIA_PLAY_FROM_SEARCH`).
+     */
+    val watch: VoiceLaunch.Uri? = null,
 ) {
     /** Cách NÓI ra tên app này — khai một chỗ ở [VoiceSynonyms.APP_TARGETS] (xem KDoc ở đó). */
     val spoken: List<String> get() = VoiceSynonyms.APP_TARGETS[key].orEmpty()
@@ -225,6 +231,8 @@ object VoiceAppTargets {
             packages = listOf("com.google.android.apps.youtube.music"),
             launch = VoiceLaunch.Action(VoiceLaunch.ACTION_MEDIA_PLAY_FROM_SEARCH, extras = AUDIO_FOCUS),
             evidence = VoiceAppEvidence.MEASURED,
+            // Tự phát theo video_id đã giải (owner "phát luôn"): mở URL watch của YT Music.
+            watch = VoiceLaunch.Uri("https://music.youtube.com/watch?v=${VoiceLaunch.SLOT}"),
         ),
         VoiceAppTarget(
             key = YOUTUBE,
@@ -238,6 +246,8 @@ object VoiceAppTargets {
             launch = VoiceLaunch.Action(VoiceLaunch.ACTION_MEDIA_PLAY_FROM_SEARCH, extras = AUDIO_FOCUS),
             fallback = VoiceLaunch.Action(VoiceLaunch.ACTION_SEARCH),
             evidence = VoiceAppEvidence.AWAITING_CAR,
+            // Tự phát: mở URL watch (YouTube tự phát video theo id). Đây là cách Kiki đạt "phát luôn".
+            watch = VoiceLaunch.Uri("https://www.youtube.com/watch?v=${VoiceLaunch.SLOT}"),
         ),
         VoiceAppTarget(
             key = SPOTIFY,

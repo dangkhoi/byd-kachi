@@ -130,6 +130,11 @@ class VoiceDispatcher(
      * để mọi test/bề mặt chưa nối giữ hành vi cũ (thứ tự [VoiceTargetDispatch.NAV_PREFERENCE]).
      */
     private val navDefault: () -> String? = { null },
+    /**
+     * Giải `video_id` bài đầu từ YouTube (owner 2026-09-18 "phát luôn"), truyền xuống [VoiceTargetDispatch].
+     * Mặc định `{ null }` ⇒ test/bề mặt chưa nối giữ đường search-play cũ.
+     */
+    private val resolveVideo: (String) -> String? = { null },
 ) {
 
     /**
@@ -149,6 +154,7 @@ class VoiceDispatcher(
         onUi = onUi,
         background = background,
         navDefault = navDefault,
+        resolveVideo = resolveVideo,
     )
 
     /**

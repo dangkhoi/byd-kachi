@@ -12,6 +12,12 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **1.75 (76) — 2026-09-18** (`Kachi-1.75-release.apk`, sha256 `3a92fd0a…81577`, thay 1.74). Nhạc: "phát bài …"
+  trên YouTube/YT Music nay **tìm ra + phát LUÔN** (owner: *"phải play luôn"*) — làm đúng cơ chế Kiki nhưng
+  on-device: tải HTML trang tìm kiếm → bóc `video_id` bài đầu → mở `watch?v=<id>` (mở URL watch thì app tự phát).
+  Giải hỏng/mạng treo → **lùi** về `MEDIA_PLAY_FROM_SEARCH` với TÊN bài (không kẹt, không regression). ⚠ scrape ⇒
+  mong manh theo markup YouTube — có đường lùi. **[ĐO] 5 module 0 đỏ** (core 2229). 🚗 owner test xe: "phát bài
+  [tên] trên YT Music / YouTube" tự phát không.
 - **1.74 (75) — 2026-09-18** (`Kachi-1.74-release.apk`, 38,0 MB, sha256 `abe05f3e…8286e`, thay 1.73). Voice dẫn
   đường + kính 50% (owner yêu cầu). **(1) App dẫn đường MẶC ĐỊNH**: Cài đặt › Dẫn đường có mục *"App dẫn đường mặc
   định"* (Google Maps / VietMap / Waze, mặc định **Google Maps**). Nói *"dẫn đường …"* KHÔNG nêu app → dùng app

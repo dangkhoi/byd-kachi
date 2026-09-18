@@ -51,6 +51,12 @@ class VoiceTargetDispatch(
      * lấy app mặc định; có tên thì app đó; KHÔNG fallback chéo"*.
      */
     private val navDefault: () -> String? = { null },
+    /**
+     * Giải `video_id` bài đầu từ YouTube cho câu *"phát bài X"* (owner 2026-09-18 *"phát luôn"*), hoặc `null` khi
+     * mạng hỏng/không khớp ⇒ lùi về `MEDIA_PLAY_FROM_SEARCH`. Lambda (đọc mạng ở `:app` [YoutubeResolver]); mặc
+     * định `{ null }` để test/bề mặt chưa nối giữ đường cũ (search-play).
+     */
+    private val resolveVideo: (String) -> String? = { null },
 ) {
     // ══ V1.1 · TỪ VỰNG MỞ → APP ĐÍCH ════════════════════════════════════════════════════════════
 
@@ -158,10 +164,30 @@ class VoiceTargetDispatch(
         runTransport(i)
     }
 
-    /** *"phát bài &lt;tên&gt;"* — giao chuỗi chữ cho app nhạc (từ vựng mở, R17). */
+    /**
+     * *"phát bài &lt;tên&gt;"* — mục tiêu: **tìm ra rồi PHÁT LUÔN** (owner 2026-09-18).
+     *
+     * App có đường **watch** (YouTube/YT Music) ⇒ giải `video_id` bài đầu ([resolveVideo], luồng nền vì tải HTML
+     * mất 1–3 s) rồi mở `watch?v=<id>` — mở URL watch thì app **tự phát** đúng video (cơ chế Kiki). Giải hỏng /
+     * bắn watch hỏng ⇒ **lùi** `deliver` (`MEDIA_PLAY_FROM_SEARCH` với TÊN bài, không phải id) — không regression.
+     * App không có watch (Spotify/Zing) ⇒ đi thẳng đường cũ.
+     */
     private fun runMediaQuery(i: VoiceIntent.Media, labels: Map<String, String>) {
         val (target, pkg) = musicTarget(i, labels) ?: return
-        deliver(i, target, pkg, i.query, null)
+        val watch = target.watch ?: run { deliver(i, target, pkg, i.query, null); return }
+        say(VoiceReply.searchingMusic(i))
+        background {
+            val vid = runCatching { resolveVideo(i.query) }.getOrNull()
+            onUi {
+                // ⚠ Handoff fallback = null (không phải target.launch): fallback bắn cùng `query`, mà ở watch
+                // `query`=video_id — đưa id làm chuỗi tìm là sai. Watch hỏng ⇒ lùi bằng `deliver` với TÊN bài.
+                if (vid != null && sendToApp(VoiceAppIntents.Handoff(pkg, watch, vid, null, null))) {
+                    say(VoiceReply.handedOver(i, target))
+                } else {
+                    deliver(i, target, pkg, i.query, null)
+                }
+            }
+        }
     }
 
     /**
