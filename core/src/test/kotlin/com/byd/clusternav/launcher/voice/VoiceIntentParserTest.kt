@@ -457,6 +457,21 @@ class VoiceIntentParserTest {
         "giảm âm lượng hai" to VoiceIntent.Control("vol", null, relative = -2),       // vol min 0 ⇒ giữ −2
     )
 
+    /**
+     * Log xe (build cũ) từng BẮN NHẦM điều khiển cho câu về feature ĐÃ GỠ / không phải control / xe không có.
+     * 1.73 hiện trả Unknown (→ hỏi lại) — KHÓA lại để không tái phát thành bắn nhầm nguy hiểm (đèn pha, cửa sổ trời).
+     */
+    @Test fun `log xe · cau feature-da-go KHONG ban nham control`() {
+        listOf(
+            "chuyển chế độ lái",                     // was: Control(headl) — chế độ lái đã gỡ, KHÔNG được bật đèn pha
+            "mở xi nhan trái", "mở xi nhan phải",     // was: Control(drl) — xi nhan không phải control
+            "tất cả cửa đang khóa hay đang mở",       // was: Control(sunroof=1) — câu HỎI, KHÔNG được mở cửa sổ trời
+            "chỉ số xăng",                            // was: Read(speed) — xe điện, KHÔNG trả tốc độ sai
+        ).forEach { s ->
+            assertTrue(one(s) is VoiceIntent.Unknown, "«$s» phải Unknown (hỏi lại), KHÔNG bắn nhầm — ra: ${one(s)}")
+        }
+    }
+
     /** Câu HỎI: datum DÀI NHẤT thắng + bỏ cụm dẫn «chỉ số» ⇒ hết «số»→gear, hết ø. */
     @Test fun `log xe · cau hoi map dung datum`() = expect(
         "chỉ số bụi mịn là bao nhiêu" to VoiceIntent.Read("pm25_level"),  // was: Read(gear)
