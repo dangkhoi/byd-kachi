@@ -86,8 +86,10 @@ class PackageQueriesContractTest {
         // Nó KHÔNG dùng lại `AppDrawerApps.load()` vì hàm đó nạp cả **icon** của từng app (`ri.loadIcon`) — công
         // việc nặng nhất của ngăn kéo — trong khi ở đây chỉ cần hai chuỗi. Đi qua đúng helper này là đủ để giữ
         // tính chất mà bài canh bảo vệ: một cửa duy nhất tới `PackageManager`.
+        // +1 từ 2026-09-18 (BUG1 un-set): `DefaultHome.otherHomeComponent` liệt kê home KHÁC Kachi để trả quyền
+        // HOME khi bỏ chọn — đi qua đúng helper (không gọi thẳng PackageManager).
         val callers = kotlinSources().filter { (_, code) -> code.contains("PackageQueries.queryActivities(") }.map { it.first }
-        assertEquals(6, callers.size, "mọi chỗ gọi phải đi qua helper; thấy: $callers")
+        assertEquals(7, callers.size, "mọi chỗ gọi phải đi qua helper; thấy: $callers")
     }
 
     /**

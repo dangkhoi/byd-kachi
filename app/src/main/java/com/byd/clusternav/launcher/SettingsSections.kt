@@ -323,6 +323,26 @@ class SettingsSections(
             }
         }
         body.addView(setBtn)
+
+        // Nút BỎ chọn Kachi làm màn hình chính — hiện khi Kachi ĐANG là home (owner 2026-09-18: bỏ chọn phải TRẢ
+        // về launcher khác, không kẹt Kachi). Đường un-set xoá marker homeChosen/keepHomeOnBoot (gốc "vẫn keep").
+        val unsetBtn = rows.button(context.getString(R.string.kachi_home_unset)) {} as TextView
+        unsetBtn.visibility = if (isHome) View.VISIBLE else View.GONE
+        unsetBtn.setOnClickListener {
+            unsetBtn.isEnabled = false
+            unsetBtn.text = context.getString(R.string.kachi_home_unsetting)
+            deps.bridge.clearDefaultHome { outcome ->
+                result.visibility = View.VISIBLE
+                unsetBtn.visibility = View.GONE
+                setBtn.visibility = View.VISIBLE
+                val pkg = deps.bridge.currentHomePackage() ?: context.getString(R.string.kachi_home_unknown_pkg)
+                status.update(KachiTheme.AMBER, context.getString(R.string.kachi_home_not_default, pkg))
+                result.text = context.getString(
+                    if (outcome is LocalSetHomeOutcome.Ok) R.string.kachi_home_unset_ok else R.string.kachi_home_unset_partial,
+                )
+            }
+        }
+        body.addView(unsetBtn)
         body.addView(result)
 
         // Công tắc "giữ khi nổ máy" (theo XE, mặc định TẮT) — đặt lại HOME một lần lúc khởi động nếu ROM reset.

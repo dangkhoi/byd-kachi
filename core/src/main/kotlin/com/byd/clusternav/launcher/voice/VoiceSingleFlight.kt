@@ -88,6 +88,24 @@ object VoiceSingleFlight {
     /** Nhả micro. An toàn khi gọi thừa (lượt bị chắn vẫn có thể chạy qua `finally` của chỗ gọi). */
     fun release() = synchronized(lock) { holder = null }
 
+    /**
+     * Chuyển micro NGUYÊN TỬ từ [fromLabel] sang [toLabel] — cho "Hey Kachi": bộ nghe wake đang GIỮ mic liên tục
+     * (`holder = "wake"`), khi bắt được câu gọi thì trao thẳng cho phiên lệnh mà **không có khe hở** giữa
+     * `release()` và `acquire()` cho lượt khác chen vào (một mic tại một thời điểm — R-nf3).
+     *
+     *  • Chỉ chuyển nếu chủ hiện tại **đúng** là [fromLabel] (chủ đã đổi ⇒ trả [Grant.Busy], không cướp bừa).
+     *  • Lượt mới VẪN tính vào **cầu chì** — một wake→command là một lượt mở mới hợp lệ; storm false-accept vẫn
+     *    bị trần 12/phút chặn. Nếu chạm cầu chì: **giữ nguyên chủ wake** (không tạo khe trống), phiên lệnh nhường.
+     */
+    fun handoff(fromLabel: String, toLabel: String, nowMs: Long = System.currentTimeMillis()): Grant = synchronized(lock) {
+        if (holder != fromLabel) return Grant.Busy(holder ?: "?")
+        trim(nowMs)
+        if (opens.size >= MAX_OPENS_PER_MINUTE) return Grant.Fused(opens.size)
+        opens.addLast(nowMs)
+        holder = toLabel
+        return Grant.Ok
+    }
+
     /** Có lượt nào đang giữ micro không — chỉ để nhật ký/chẩn đoán, KHÔNG dùng làm cổng (xem KDoc lớp). */
     fun busy(): Boolean = synchronized(lock) { holder != null }
 

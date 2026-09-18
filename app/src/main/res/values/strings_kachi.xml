@@ -136,6 +136,10 @@
     <string name="kachi_home_unknown_pkg">(không đọc được)</string>
     <string name="kachi_home_set">Đặt Kachi làm màn hình chính</string>
     <string name="kachi_home_setting">Đang đặt…</string>
+    <string name="kachi_home_unset">Bỏ chọn Kachi làm màn hình chính</string>
+    <string name="kachi_home_unsetting">Đang bỏ chọn…</string>
+    <string name="kachi_home_unset_ok">Đã bỏ chọn — bấm Home để về launcher khác.</string>
+    <string name="kachi_home_unset_partial">Đã bỏ Kachi khỏi màn hình chính. Không tìm thấy launcher khác — hệ sẽ tự chọn.</string>
     <string name="kachi_home_result_ok">Đã đặt — bấm Home để về Kachi.</string>
     <string name="kachi_home_result_no_shell">Cần kênh shell — xem hàng \"Kênh điều khiển cửa sổ\" ở trên.</string>
     <string name="kachi_home_result_failed">Đã chạy lệnh nhưng hệ thống vẫn chưa nhận Kachi: %1$s</string>

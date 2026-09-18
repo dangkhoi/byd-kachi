@@ -128,6 +128,10 @@
     <string name="kachi_home_unknown_pkg">(unreadable)</string>
     <string name="kachi_home_set">Set Kachi as home screen</string>
     <string name="kachi_home_setting">Setting…</string>
+    <string name="kachi_home_unset">Stop using Kachi as home screen</string>
+    <string name="kachi_home_unsetting">Clearing…</string>
+    <string name="kachi_home_unset_ok">Cleared — press Home to go to the other launcher.</string>
+    <string name="kachi_home_unset_partial">Kachi removed as home screen. No other launcher found — the system will pick one.</string>
     <string name="kachi_home_result_ok">Done — press Home to return to Kachi.</string>
     <string name="kachi_home_result_no_shell">Needs the shell channel — see the \"Window control channel\" row above.</string>
     <string name="kachi_home_result_failed">The command ran but the system still isn\'t using Kachi: %1$s</string>

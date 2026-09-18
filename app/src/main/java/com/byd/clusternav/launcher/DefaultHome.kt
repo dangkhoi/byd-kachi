@@ -68,6 +68,32 @@ object DefaultHome {
         PackageQueries.resolveActivity(ctx.packageManager, homeIntent())?.activityInfo?.packageName
     }.getOrNull()
 
+    /**
+     * TẮT lối vào HOME (alias) — đảo của [enableHomeEntry]. Sau đó Kachi **thôi là ứng viên HOME** (chỉ alias mang
+     * `CATEGORY_HOME`; [KachiHomeActivity] chỉ MAIN+LAUNCHER). Bước 2 của "Bỏ chọn Kachi làm màn hình chính".
+     */
+    fun disableHomeEntry(ctx: Context): Boolean = runCatching {
+        ctx.packageManager.setComponentEnabledSetting(
+            alias(ctx), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP,
+        )
+        true
+    }.getOrDefault(false)
+
+    /**
+     * Component `"pkg/cls"` của một màn hình chính **KHÁC Kachi** để trả lại quyền HOME khi bỏ chọn Kachi.
+     *
+     * Android `set-home-activity` chỉ ĐẶT được HOME, không có "unset" — muốn thôi Kachi phải **chỉ đích một home
+     * khác** (launcher stock của xe). Liệt kê mọi activity `CATEGORY_HOME`, loại gói Kachi, lấy cái đầu. `null`
+     * khi xe chỉ có Kachi là home (hiếm — xe luôn có launcher stock; khi null thì tắt alias + xoá marker đã đủ để
+     * hệ tự phân giải lại).
+     */
+    fun otherHomeComponent(ctx: Context): String? = runCatching {
+        PackageQueries.queryActivities(ctx.packageManager, homeIntent())
+            .mapNotNull { it.activityInfo }
+            .firstOrNull { it.packageName != ctx.packageName }
+            ?.let { "${it.packageName}/${it.name}" }
+    }.getOrNull()
+
     /** Kachi có đang là màn hình chính không; `null` = không đọc được (không kết luận là thiếu). */
     fun isCurrent(ctx: Context): Boolean? = runCatching {
         PackageQueries.resolveActivity(ctx.packageManager, homeIntent())

@@ -64,3 +64,31 @@ fun ClusterNavBridge.keepHomeOnBoot(): Boolean = WorkspacePrefs(app).keepHomeOnB
 
 /** Xem [keepHomeOnBoot]. */
 fun ClusterNavBridge.setKeepHomeOnBoot(on: Boolean) = WorkspacePrefs(app).setKeepHomeOnBoot(on)
+
+/**
+ * BỎ chọn Kachi làm màn hình chính — TRẢ quyền HOME cho launcher khác (owner 2026-09-18: *"bỏ chọn Kachi làm
+ * launcher → không trả về launcher mặc định mà vẫn keep Kachi"*). Ba việc, ĐÚNG thứ tự:
+ *
+ *  1. **XOÁ hai marker** `homeChosen` + `keepHomeOnBoot` TRƯỚC. Đây là gốc lỗi "vẫn keep Kachi": `KachiAutostart`
+ *     re-assert Kachi làm HOME mỗi lần nổ máy khi `keepHomeOnBoot() || homeChosen()`, mà `homeChosen` set một lần
+ *     rồi không bao giờ xoá ⇒ bỏ chọn kiểu gì boot sau cũng bị giành lại. Không xoá hai cờ này thì mọi bước sau vô ích.
+ *  2. **TẮT alias HOME** ⇒ Kachi thôi là ứng viên HOME (không cần shell).
+ *  3. **`set-home-activity <launcher khác>`** (nếu tìm được) — Android chỉ SET được HOME, phải chỉ đích launcher
+ *     stock để hệ chuyển sang. Không có launcher khác ⇒ bước 1+2 vẫn đủ để hệ tự phân giải lại (báo [LocalSetHomeOutcome.Failed]).
+ *
+ * [onResult] trên luồng vẽ: Ok = đã trỏ sang launcher khác; NoShellChannel = xoá cờ+tắt alias xong nhưng không
+ * set được đích (thiếu kênh ADB); Failed = không có launcher khác (vẫn đã bỏ Kachi khỏi HOME).
+ */
+fun ClusterNavBridge.clearDefaultHome(onResult: (LocalSetHomeOutcome) -> Unit) {
+    Thread({
+        runCatching { WorkspacePrefs(app).apply { setHomeChosen(false); setKeepHomeOnBoot(false) } }
+        DefaultHome.disableHomeEntry(app)
+        val other = DefaultHome.otherHomeComponent(app)
+        val outcome = when {
+            other == null -> LocalSetHomeOutcome.Failed("no-other-home")
+            else -> runCatching { LocalDeviceShell.setHomeActivity(AdbKeys.ensure(app), other) }
+                .getOrElse { LocalSetHomeOutcome.NoShellChannel(LocalShellFailure.UNKNOWN) }
+        }
+        ui(Runnable { onResult(outcome) })
+    }, "bridge-clear-home").start()
+}

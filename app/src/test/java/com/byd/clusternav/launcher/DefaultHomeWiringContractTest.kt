@@ -81,4 +81,27 @@ class DefaultHomeWiringContractTest {
         // Nút ẩn khi đã là home (task item 2) — có nhánh đặt visibility theo isHome.
         assertTrue(home.contains("View.GONE"), "nút phải ẩn khi Kachi đã là màn hình chính")
     }
+
+    // ── BUG1 (owner 2026-09-18): bỏ chọn Kachi PHẢI trả về launcher khác, không kẹt Kachi ─────────────────────
+    @Test
+    fun `clearDefaultHome xoa CA HAI marker (goc keep) + tat alias + tra ve launcher khac`() {
+        val body = SourceRoots.body(bridgeHome, "fun ClusterNavBridge.clearDefaultHome(")
+        // GỐC lỗi "vẫn keep Kachi": KachiAutostart re-assert HOME khi `keepHomeOnBoot() || homeChosen()`, mà
+        // homeChosen set một lần không bao giờ xoá ⇒ un-set PHẢI xoá CẢ HAI, nếu không boot sau lại giành lại.
+        assertTrue(body.contains("setHomeChosen(false)"), "phải XOÁ homeChosen — gốc của 'vẫn keep Kachi' sau reboot")
+        assertTrue(body.contains("setKeepHomeOnBoot(false)"), "phải tắt keepHomeOnBoot")
+        assertTrue(body.contains("DefaultHome.disableHomeEntry("), "phải tắt alias HOME (Kachi thôi là ứng viên)")
+        assertTrue(
+            body.contains("otherHomeComponent(") && body.contains("LocalDeviceShell.setHomeActivity("),
+            "phải trỏ HOME sang launcher KHÁC (Android chỉ SET được HOME, không UNSET)",
+        )
+        assertTrue(body.contains("ui(Runnable"), "kết quả post về luồng vẽ")
+    }
+
+    @Test
+    fun `nut Bo chon HOME hien khi la home + goi clearDefaultHome`() {
+        val home = SourceRoots.body(sections, "private fun homeScreen(")
+        assertTrue(home.contains("deps.bridge.clearDefaultHome"), "nút Bỏ chọn phải gọi cầu clearDefaultHome")
+        assertTrue(home.contains("kachi_home_unset"), "phải có nút Bỏ chọn (string kachi_home_unset)")
+    }
 }

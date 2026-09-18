@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>"Hey Kachi" — gọi voice rảnh tay (CPU-safe) — Kachi</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card.danger{border-color:var(--warn);background:rgba(191,95,0,.06)}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:104px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.fnode.new{background:rgba(0,113,227,.10);border-color:var(--accent)}
+.fnode.reuse{background:var(--card)}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.guard{border:1px dashed var(--warn);border-radius:12px;padding:10px 14px;margin:14px 0;font-size:13.5px;background:rgba(191,95,0,.05)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>"Hey Kachi" — gọi voice command rảnh tay</h1>
+<p class="muted">Slug: <code>kachi-wake-word</code> · <span class="pill ok">Trạng thái: APPROVED — owner chốt 3 OQ 2026-09-18</span> · 2026-09-18</p>
+<p class="muted">Owner 2026-09-18: <i>"lên plan làm 'Hey Kachi', cho user chọn luôn câu lệnh để gọi Voice command lên, khỏi nhấn nút — nhưng phải làm rất khéo, không thì listen forever, làm hang CPU, app; phần này đang là vấn đề rồi."</i> ⇒ spec này đặt <b>an toàn CPU làm trục chính</b>, chưa code (plan-first, workflow §1).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-09-18</b>: Owner chốt 3 OQ ⇒ <b>APPROVED</b>. (1) <b>KHÔNG cần câu gọi tiếng Việt tùy ý</b> → chỉ <b>preset đã kiểm</b>, bỏ phương án B (chạy ASR). (2) <b>Nghe cả khi launcher KHÔNG hiện</b> → <b>foreground-service micro nền</b>, gate theo <b>màn sáng</b> (không phải foreground) ⇒ <b>load-guard thành lá chắn CPU chính</b>. (3) Ngưỡng load-guard <b>đo trên xe</b> (chuẩn bị đường đo + mặc định thận trọng + núm chỉnh).</li>
+<li><b>Pass 0 — 2026-09-18</b>: Khởi tạo. Từ yêu cầu owner + ràng buộc CPU [ĐO] (load 14 toàn hệ, bind kẹt vì đói CPU, thảm hoạ 309 lượt mở mic/12 phút).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Muốn gì (PO):</b> nói một câu gọi (vd <i>"Hey Kachi"</i>, câu do user tự chọn) là mở phiên voice command lên — <b>không cần chạm nút</b>. Đây là tính năng rảnh-tay khi lái.</p>
+<p><b>Đã có sẵn</b> (đọc source):</p>
+<ul>
+<li>Pipeline voice <b>theo phiên</b>: nút → <code>VoiceSession</code> → <code>VoiceCapture</code> mở <b>một</b> <code>AudioRecord</code> → <code>OfflineRecognizer</code> (sherpa-onnx v1.13.8) giải cả khúc. Mic KHÔNG chạy liên tục.</li>
+<li><code>VoiceSingleFlight</code>: <b>một mic cho cả tiến trình</b> + cầu chì <b>≤ 12 lượt mở mic/phút</b>. Sinh ra vì [ĐO xe 09-16] mô hình bịa <i>"ừ/ừm"</i> trong cabin im → <b>309 lượt mở mic/12 phút</b> → CPU bão hoà → ô YouTube không cuộn nổi.</li>
+<li><code>VoiceVad</code> (Silero ONNX) + <code>VoiceEndpointer</code> (năng lượng RMS thuần) — hai bộ ngắt câu; energy gate là bộ <b>rẻ</b>.</li>
+</ul>
+<div class="card danger"><b>⚠ Ràng buộc SỐNG CÒN — [ĐO xe 18-09] <code>docs/diagnostics/oncar-voice-number-and-voicekey-bind-2026-09-18.md</code>:</b>
+<ul>
+<li><code>load average 13.48 / 14.52 / 16.36</code> = <b>CPU bão hoà toàn hệ</b>; trợ năng của mình <b>và</b> trợ lý OEM iFlytek đều kẹt <code>"Binding"</code> vì AMS đói CPU. Launcher chỉ ~1.8% CPU (không phải thủ phạm) nhưng cũng là nạn nhân.</li>
+<li>Wake-word = thêm <b>một luồng LUÔN NGHE</b> — đúng vào chỗ hệ đang yếu nhất. Làm ẩu = lặp lại thảm hoạ 309-mở-mic ở quy mô tệ hơn (mic 24/7).</li>
+</ul>
+<b>Hệ quả thiết kế:</b> mặc định <b>TẮT</b>; và phải <b>chứng minh bằng số đo trên xe</b> rằng bật wake KHÔNG đẩy load lên / KHÔNG gây bind-wedge, TRƯỚC khi coi là dùng được. Đây là feature phải <i>"làm rất khéo"</i> — không phải feature làm cho có.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> Công tắc "Hey Kachi" (mặc định <b>TẮT</b>). Bật → nghe câu gọi → mở <b>đúng phiên voice hiện có</b> (y như nhấn nút) rồi nghe lệnh bình thường.</li>
+<li><b>R2</b> User <b>chọn câu gọi</b>: vài preset đã kiểm (<i>"Hey Kachi"</i>, <i>"Ka Chi ơi"</i>…) + ô nhập tùy chọn. Áp ở <b>runtime</b> (keywords-file của KWS) — không train lại model.</li>
+<li><b>R3</b> Wake chỉ để <b>MỞ</b> phiên; câu lệnh vẫn đi qua ASR hiện có ⇒ bộ nghe wake không cần hiểu cả câu, chỉ cần bắt đúng câu gọi.</li>
+<li><b>R4</b> Wake fires → phản hồi rõ (chime + overlay "đang nghe") để tài xế biết xe đã nghe; nếu bật đọc phản hồi thì tôn trọng núm hiện có.</li>
+</ul>
+<h3>Phi chức năng — CPU-SAFETY là hạng nhất</h3>
+<ul>
+<li><b>R-nf1 · Hai tầng, không nghe-thần-kinh-liên-tục:</b> tầng 1 = <b>cổng năng lượng RMS thuần</b> (rẻ) chạy trên mic liên tục; <b>chỉ khi có năng lượng giọng</b> mới chạy tầng 2 = KWS inference. Cabin im / ồn đường đều = chỉ toán RMS, 0 suy diễn mạng nơ-ron.</li>
+<li><b>R-nf2 · Nhạy theo tải (chốt MỚI, đặc trị vấn đề CPU):</b> đọc <code>/proc/loadavg</code>; load vượt ngưỡng → <b>TẠM DỪNG</b> wake-listener (nhả mic, thôi inference), hạ xuống mới chạy lại. Wake không bao giờ được làm CPU tệ hơn khi hệ đang nóng.</li>
+<li><b>R-nf3 · MỘT mic duy nhất:</b> wake-listener + phiên lệnh dùng chung một chủ mic (mở rộng <code>VoiceSingleFlight</code>). Wake fires → nhả mic → phiên lệnh giữ. <b>Không bao giờ hai mic mở cùng lúc.</b></li>
+<li><b>R-nf4 · Cổng vòng đời (owner: nghe cả khi launcher KHÔNG hiện):</b> nghe qua <b>foreground-service micro</b> (Android 10 bắt buộc FGS để thu nền) — chạy <b>xuyên các app</b> khi <b>màn sáng</b>; <b>tắt khi màn tắt</b> (xe tắt/ngủ = không nghe, tránh drain 24/7) / tắt công tắc. Vì đã bỏ cổng foreground, <b>load-guard (R-nf2) là lá chắn CPU CHÍNH</b>. Watchdog + vòng đời gắn <code>ActivityLifecycleCallbacks</code>/màn hình, listener <b>không bao giờ chạy mồ côi</b>.</li>
+<li><b>R-nf5 · Chống tự-kích:</b> cooldown sau mỗi wake; <b>nhả mic khi mình đang đọc/chime</b> (không tự nghe tiếng của chính mình).</li>
+<li><b>R-nf6 · Cầu chì false-accept:</b> quá N lần wake vô ích trong cửa sổ → <b>tự tắt</b> + báo user (cùng triết lý cầu chì single-flight), tránh vòng wake→mở→wake.</li>
+<li><b>R-nf7 · Degrade-safe:</b> thiếu model KWS / không nghe được → im lặng, lùi về nút bấm; không crash, không spam.</li>
+<li><b>R-nf8 · Test off-car:</b> toàn bộ LOGIC (cổng năng lượng, cổng tải, single-flight handoff, tokenize câu gọi, debounce, cầu chì) là <code>:core</code> thuần — test bằng chuỗi RMS/loadavg giả.</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Luồng — nhiều tầng lọc, đắt dần</h3>
+<div class="flow">
+  <div class="fnode reuse"><b>Mic liên tục</b><span>1 AudioRecord</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>Cổng 1 · RMS</b><span>có giọng?</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>Cổng 2 · KWS</b><span>khớp câu gọi?</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>Debounce</b><span>cooldown</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode reuse"><b>VoiceSession</b><span>chime + nghe lệnh (đường hiện có)</span></div>
+</div>
+<div class="guard">🛡 <b>Bao trùm mọi tầng:</b> <b>Load-guard</b> (<code>/proc/loadavg</code> cao → dừng cả cụm) · <b>Lifecycle-gate</b> (foreground + màn sáng) · <b>Single-flight</b> (một mic) · <b>False-accept fuse</b> (tự tắt nếu loạn).</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> reuse (đã có)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> khối mới</span>
+</div>
+<p>Điểm mấu chốt chống "listen forever hang CPU": <b>toán RMS gác cửa</b> nên 99% thời gian (cabin im/ồn nền) chỉ chạy phép rẻ; KWS (nơ-ron) chỉ nổ khi có người nói; và <b>load-guard</b> cắt phăng cả chuỗi khi hệ nóng.</p>
+
+<h3>4.2 Quyết định thiết kế + Context7 + so sánh phương án</h3>
+<p><b>[ĐO Context7 <code>/websites/k2-fsa_github_io_sherpa_onnx</code>]</b> sherpa-onnx có <b>keyword-spotting</b> (<code>KeywordSpotter</code>, <b>open-vocabulary</b> qua <b>keywords-file</b>) — user tự đặt câu gọi ở runtime, <b>không train lại</b> (đúng R2). Model = streaming zipformer <b>~3.3M tham số int8 (rất nhẹ)</b>, Apache-2.0, <b>cùng AAR v1.13.8 đang dùng</b> ⇒ không thêm dependency native. ⚠ Pretrained CHỈ có <b>zh · en · zh-en</b> — <b>KHÔNG có tiếng Việt</b>.</p>
+<table>
+<tr><th>Phương án</th><th>Ưu</th><th>Nhược</th><th>Chọn?</th></tr>
+<tr><td><b>A · sherpa KWS</b> (streaming, keywords-file)</td><td>Nhẹ nhất trong các bộ nơ-ron; reuse lib; câu gọi tùy chọn runtime; Apache-2.0</td><td>Không có model VN ⇒ câu gọi Việt chất lượng [CHƯA BIẾT]; cần tải model KWS riêng (~4MB)</td><td class="ok"><b>CHÍNH</b> (gated)</td></tr>
+<tr><td>B · VAD onset → chạy <b>ASR offline VN</b> → khớp tiền tố câu</td><td>Reuse hết; hỗ trợ câu gọi Việt đầy đủ (dùng ASR VN sẵn)</td><td>Chạy ASR mỗi lần có giọng = <b>NẶNG NHẤT</b> = đúng rủi ro 309-mở-mic; trễ hơn</td><td>Dự phòng cho câu Việt (nếu A trượt) — gated rất chặt</td></tr>
+<tr><td>C · Picovoice Porcupine</td><td>Wake-word chuẩn công nghiệp, rất nhẹ</td><td><b>Proprietary + license key</b>; custom "Hey Kachi" cần console của họ; trái hướng MIT/Apache của dự án</td><td class="warn">Loại</td></tr>
+<tr><td>D · openWakeWord</td><td>Apache-2.0</td><td>Custom phrase cần <b>train</b> + công cụ Python; tích hợp nặng</td><td class="warn">Loại (v1)</td></tr>
+</table>
+<ul>
+<li><b>Chọn A làm chính</b>, gated bằng cổng RMS + load-guard. Wake CHỈ bắt câu gọi; câu lệnh vẫn qua ASR VN hiện có ⇒ chất lượng KWS chỉ ảnh hưởng câu gọi, không ảnh hưởng lệnh.</li>
+<li>Câu gọi mặc định <b>"Hey Kachi"</b> (âm Anh ⇒ hợp model en/zh-en). Câu gọi <b>Việt tùy chọn</b>: cho nhập nhưng ghi rõ <i>"chất lượng tùy câu, thử trên xe"</i>; nếu đo thấy trượt nhiều → cân nhắc B cho riêng phrase Việt (OQ1).</li>
+<li>Model KWS <b>tải riêng</b> (ghim sha256) qua <code>VoiceModelStore</code> — KHÔNG nhồi APK (giữ APK nhẹ, đúng pattern model ASR/TTS).</li>
+<li>Wake-listener gắn <b>vòng đời launcher</b> (là launcher ⇒ foreground phần lớn), KHÔNG foreground-service nghe-nền-24/7 (chống drain + tránh thêm tiến trình nền lúc CPU đã căng).</li>
+</ul>
+
+<h3>4.3 Các chốt an toàn (phần "làm khéo" — chi tiết)</h3>
+<ul>
+<li><b>VoiceWakeGate</b> (:core thuần): RMS &lt; ngưỡng nền động → trả "im, đừng chạy KWS". Duty-cycle phần đắt.</li>
+<li><b>VoiceLoadGuard</b> (:core thuần, nhận chuỗi loadavg để test): <code>load1 &gt; SUSPEND_CAP</code> → dừng; <code>&lt; RESUME</code> → chạy lại (có trễ chống rung). :app đọc <code>/proc/loadavg</code> bơm vào.</li>
+<li><b>Mở rộng VoiceSingleFlight</b>: thêm khái niệm chủ "wake" nhường chủ "command" — vẫn một mic, vẫn đếm trần lượt/phút.</li>
+<li><b>Cooldown/echo-guard</b>: sau wake khoá X giây; khi <code>VoiceSpeaker</code> đọc / chime kêu → wake-listener nhả mic (không tự nghe).</li>
+<li><b>Lifecycle</b>: nối <code>onStart/onStop</code> của launcher qua <code>ActivityLifecycleCallbacks</code> (không phải <code>onDestroy</code> — bài học cặp gắn/tháo); watchdog bắt buộc dừng nếu mất neo.</li>
+<li><b>False-accept fuse</b>: &gt; N wake không dẫn tới lệnh hợp lệ / cửa sổ → tự tắt + toast "đã tắt Hey Kachi vì nghe nhầm nhiều; bật lại trong Cài đặt".</li>
+</ul>
+
+<h2>5. Tasks (DAG) — <span class="warn">CHƯA code, chờ duyệt</span></h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File (dự kiến)</th></tr>
+<tr><td>T1</td><td>Cổng năng lượng + cổng tải + tokenize/validate câu gọi (thuần) + test</td><td><code>core/…/voice/{VoiceWakeGate,VoiceLoadGuard,VoiceWakePhrase}.kt(+Test)</code></td></tr>
+<tr><td>T2</td><td>Mở rộng single-flight cho handoff wake↔command + test</td><td><code>core/…/voice/VoiceSingleFlight.kt(+Test)</code></td></tr>
+<tr><td>T3</td><td>Foreground-service micro nền + bộ nghe (mic liên tục → RMS gate → KWS) + load-guard + gate màn-sáng + cầu chì; degrade-safe khi thiếu model KWS (chạy chế độ chỉ-RMS để đo baseline on-car)</td><td><code>app/…/voice/{VoiceWakeService,VoiceWakeListener}.kt</code></td></tr>
+<tr><td>T4</td><td>Khai model KWS vào catalog + tải riêng (sha256)</td><td><code>core/…/voice/SherpaKwsCatalog.kt</code> · <code>app/…/voice/VoiceModelStore.kt</code></td></tr>
+<tr><td>T5</td><td>UI: công tắc "Hey Kachi" + chọn/nhập câu gọi; strings VI/EN</td><td>Cài đặt › (nhóm Voice) + <code>strings_kachi.xml</code></td></tr>
+<tr><td>T6</td><td>Wire: wake fires → <code>VoiceSession.start</code> (đường nút hiện có)</td><td><code>app/…/voice/VoiceWiring.kt</code></td></tr>
+<tr><td>T7</td><td>Test đủ 5 module · senior review · security scan · build · OTA</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b>: cổng năng lượng (chuỗi RMS giả), cổng tải (chuỗi loadavg giả), single-flight handoff, tokenize câu gọi, debounce, cầu chì — tất cả off-car.</li>
+<li><b>V-oncar (BẮT BUỘC — đây là feature rủi ro CPU):</b> đo <code>/proc/loadavg</code> <b>trước/sau</b> khi bật wake ở 3 ca (cabin im · cabin ồn · đang phát nhạc); phải chứng minh: (a) load KHÔNG tăng đáng kể khi im; (b) KHÔNG gây bind-wedge; (c) load-guard THẬT SỰ suspend khi load cao; (d) tỉ lệ wake-nhầm/giờ; (e) trễ nói-xong-câu-gọi → chime.</li>
+<li><b>V-lifecycle</b>: tắt màn → listener dừng (đo mic nhả) · tắt công tắc → mic nhả · TTS đọc → không tự wake · rời launcher → dừng.</li>
+</ul>
+
+<h2>7. Open Questions — <span class="ok">owner đã chốt 2026-09-18</span></h2>
+<ul>
+<li><b>OQ1 · CHỐT</b> — <b>KHÔNG cần câu gọi tiếng Việt tùy ý</b>. ⇒ chỉ <b>preset đã kiểm</b> (sherpa KWS, model en/zh-en); <b>bỏ phương án B</b> (chạy ASR mỗi onset — nặng CPU). Đơn giản + an toàn hơn hẳn.</li>
+<li><b>OQ2 · CHỐT</b> — <b>nghe cả khi launcher KHÔNG hiện</b> ⇒ foreground-service micro nền, gate theo <b>màn sáng</b> (xuyên app). Đánh đổi: cần FGS + notification thường trú; load-guard gánh vai chính chống CPU.</li>
+<li><b>OQ3 · CHỐT</b> — ngưỡng load-guard <b>đo trên xe</b>. ⇒ chuẩn bị: mặc định thận trọng + núm ẩn chỉnh + đường đo <code>/proc/loadavg</code>; chốt số khi xe online.</li>
+<li><b>OQ4 · CHỐT (kéo theo OQ2)</b> — <b>CÓ</b> foreground-service (bắt buộc để nghe nền trên Android 10).</li>
+<li><b>OQ5</b> — cầu chì false-accept: đề xuất <b>tự tắt + báo</b>; ngưỡng N chốt cùng lượt đo on-car.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Ràng buộc CPU: <code>docs/diagnostics/oncar-voice-number-and-voicekey-bind-2026-09-18.md</code> (load 14, bind wedge).</li>
+<li>Cầu chì mic: <code>core/…/voice/VoiceSingleFlight.kt</code> (309-mở-mic, MAX 12/phút).</li>
+<li>Engine + model: <code>app/…/voice/VoiceRecognizer.kt</code> (OfflineRecognizer, sherpa v1.13.8) · <code>VoiceModelStore.kt</code> (tải model ghim sha256).</li>
+<li>Context7: <code>/websites/k2-fsa_github_io_sherpa_onnx</code> — Keyword spotting (open-vocab, keywords-file; model zh/en/zh-en; Android app mẫu).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai</h2>
+<h3>2026-09-18 — LÕI AN TOÀN (:core thuần) xong + test off-car</h3>
+<ul>
+<li><b>VoiceLoadGuard</b> (lá chắn CPU chính vì OQ2 nghe nền): suspend NHANH khi <code>load1 &gt; suspendAbove</code>, resume CHẬM (phải nguội liên tiếp N nhịp) — trễ hai chiều chống rung. Ngưỡng mặc định thận trọng <code>6.0/4.0</code>, <b>đo lại trên xe (OQ3)</b>.</li>
+<li><b>VoiceWakeGate</b>: cổng năng lượng RMS <code>max(2×nền, 120)</code> (mượn công thức [VoiceEndpointer] đã [ĐO]); nền chỉ học lúc im ⇒ giọng dài không tự bịt mình. Đây là tầng duty-cycle: im/ồn nền = 0 suy diễn KWS.</li>
+<li><b>VoiceWakePhrase</b>: 3 preset ("Hey/OK/Hi Kachi" — âm latinh cho model en/zh-en) + <code>isValidCustom</code> (dự phòng). Owner chốt <b>preset-only</b>.</li>
+<li><b>VoiceSingleFlight.handoff(from,to)</b>: chuyển mic wake→command NGUYÊN TỬ (không khe hở), vẫn tính cầu chì 12/phút; chạm cầu chì giữ nguyên chủ wake (không tạo khe trống).</li>
+<li><b>VoiceWakeController</b> (bộ não mỗi nhịp): gộp 3 tầng cắt CPU (load-guard → cooldown → cổng năng lượng) + cầu chì false-accept (&gt;6 wake/60s ⇒ tự tắt, OQ5). Kiểm được bằng chuỗi số giả ⇒ mọi lý lẽ chống-hang-CPU đã khoá bằng test.</li>
+<li><b>[ĐO]</b> <code>:core</code> 2245/0 (5 module 0 đỏ). Bài: <code>VoiceWakeSafetyTest</code> · <code>VoiceWakeControllerTest</code>.</li>
+</ul>
+<p><b>Còn lại (lớp KHÓ verify off-car + phụ thuộc bên ngoài — đang chờ):</b></p>
+<ul>
+<li>T3-adapter (Android): <code>VoiceWakeService</code> (FGS micro) + <code>VoiceWakeListener</code> (vòng đọc mic → RMS + <code>/proc/loadavg</code> → controller → KWS) + receiver màn-sáng. <b>Khó verify off-car</b> (mic emulator) ⇒ làm cẩn thận, lặp trên xe.</li>
+<li><b>T4 — PHỤ THUỘC OWNER</b>: model KWS (đề xuất <code>sherpa-onnx-kws-zipformer-gigaspeech-3.3M</code> tiếng Anh, int8 ~4MB, Apache-2.0) phải được <b>đăng lên repo OTA</b> <code>dangkhoi/byd-kachi</code> (ghim sha256) — giống model ASR/TTS. Chưa có model ⇒ degrade: bộ nghe chạy chế độ chỉ-RMS (đo được baseline CPU on-car) nhưng KHÔNG bắt được câu gọi.</li>
+<li>T5 UI công tắc + chọn preset · T6 wire wake→VoiceSession · T7 build/OTA.</li>
+<li><b>V-oncar (chặn bởi xe offline)</b>: ngưỡng load-guard + tỉ lệ false-accept + xác nhận nghe-nền KHÔNG đẩy load lên / gây bind-wedge.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul><li>(chưa có — spec mới draft.)</li></ul>
+
+</div></body>
+</html>
