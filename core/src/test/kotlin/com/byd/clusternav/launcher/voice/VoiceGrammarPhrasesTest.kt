@@ -288,7 +288,14 @@ class VoiceGrammarPhrasesTest {
         // [ĐO off-car 2026-09-17 · voice-number-read] **357 → 359 (+2)** = hai cách nói nhiều từ mới cho câu
         // HỎI về nhiệt AC (`inside_temp ← "nhiệt độ"`, `"điều hòa bao nhiêu độ"`) — thêm để «nhiệt độ đang bao
         // nhiêu»/«máy lạnh bao nhiêu độ» map đúng datum thay vì rỗng/media_vol (log xe 81 lượt). Đọc từ **actual**.
-        const val EXPECTED_PHRASES_KEPT = 359
+        // [ĐO off-car 2026-09-18 · D2 log xe] **361 → 362 (+1)** = đúng MỘT cách nói mới của datum `ac_wind`:
+        // *"quạt điều hòa"*. Ba cụm còn lại của dòng ấy (*"quạt gió"* · *"mức gió"* · *"tốc độ quạt"*) đã có sẵn
+        // ở nút `fan`, và `distinct()` của `VoiceGrammar.terms` gộp chúng ⇒ chỉ cộng 1.
+        const val EXPECTED_PHRASES_KEPT = 362
+        // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
+        // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
+        // số này — nó chỉ nở thêm ở [EXPECTED_ENTRIES]. Thêm để «chỉ số xăng» / «xăng còn bao nhiêu» (cả hai ra
+        // Unknown trong log) map đúng `fuel_pct`. Đọc từ **actual** của chính bài này.
 
         /**
          * [ĐO] 269 cụm bị loại — **gần như toàn bộ là nhãn tiếng ANH** (*"Reading light"*, *"Tyre FL"*…), cộng
@@ -321,7 +328,8 @@ class VoiceGrammarPhrasesTest {
          * 2026-09-14 · V1.1: **2037 → 2058** (+21). Toàn bộ phần thêm là **từ đơn**: 8 cách viết của động từ
          * mới *"đưa"* (*"đưa YouTube vào ô 2"*), cộng hai bảng mới —
          * [VoiceLexicon.SLOT_WORDS] (*"ô · số · thứ · vào · slot · in · into"*) và
-         * [VoiceLexicon.BY_APP_MARKERS] (*"bằng · trên · với · qua · with · on · using"*), nở theo thanh điệu.
+         * [VoiceLexicon.BY_APP_MARKERS] (*"bằng · trên · với · qua · dùng · with · on · using"*), nở theo thanh
+         * điệu. (*"dùng"* thêm 2026-09-18 và cộng **0** mục: chữ `dung` đã có sẵn từ bảng động từ.)
          * Số **cụm** không đổi: tên app đích chỉ vào ngữ pháp khi app ấy **có trên máy** (`installed`), mà bài
          * này cố ý gọi với danh sách rỗng — xem `ten app dich chi vao ngu phap khi app do co tren may`.
          */
@@ -371,6 +379,14 @@ class VoiceGrammarPhrasesTest {
         // Số đọc từ **actual** của chính bài này, không phải phép đoán — đúng cách KDoc trên đã dặn.
         // [ĐO off-car 2026-09-17 · voice-number-read] **2097 → 2099 (+2)** = 2 cách nói mới cho câu hỏi nhiệt AC
         // (`inside_temp`) — cùng 2 cụm với [EXPECTED_PHRASES_KEPT].
-        const val EXPECTED_ENTRIES = 2099
+        // [ĐO off-car 2026-09-18 · D2] **2109 → 2110 (+1)** = đúng mục CỤM mới *"quạt điều hòa"* (xem
+        // [EXPECTED_PHRASES_KEPT]). KHÔNG có từ đơn nào mới: `quạt` · `điều` · `hòa` đều đã có trong từ vựng, nên
+        // phần nở theo thanh điệu không cộng thêm gì. Cụm đánh dấu `dung` (*"dùng &lt;app&gt;"*) cũng cộng **0** —
+        // [ĐO] chữ ấy đã có sẵn ở bảng động từ (*"dừng"* = PAUSE) và ở [VoiceLexicon.CONFIRM_YES].
+        const val EXPECTED_ENTRIES = 2110
+        // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
+        // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
+        // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính
+        // bài này, không phải phép đoán — đúng cách KDoc trên đã dặn.
     }
 }

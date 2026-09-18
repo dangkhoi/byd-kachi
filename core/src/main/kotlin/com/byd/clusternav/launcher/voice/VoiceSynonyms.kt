@@ -134,6 +134,12 @@ object VoiceSynonyms {
         "ev_range_km" to listOf("tam hoat dong", "di duoc bao xa", "con di duoc bao nhieu", "range",
             "con chay duoc bao nhieu"),
         "fuel_range_km" to listOf("xang con chay duoc bao xa"),
+        // [ĐO xe 2026-09-18 · log] «chỉ số xăng» ra Unknown và «xăng còn bao nhiêu» cũng vậy: chữ *"xăng"* đứng
+        // trần không trỏ tới đâu (nhãn là *"Mức xăng"* / *"Tầm hoạt động xăng"*, đều cần từ thứ hai). Cụm MỘT từ
+        // ở đây an toàn theo đúng luật §3 của KDoc: *"xăng"* không phải từ đời thường đa nghĩa, và đường NAV
+        // không tra từ vựng nên *"chỉ đường đến trạm xăng gần nhất"* (có bài canh) không bị đụng. Luật dãy dài
+        // nhất thắng giữ nguyên *"tầm hoạt động xăng"* → `fuel_range_km`.
+        "fuel_pct" to listOf("xang", "nhien lieu", "muc nhien lieu"),
         "speed" to listOf("dang chay bao nhieu", "van toc"),
         "ext_temp" to listOf("nhiet do ngoai troi", "ngoai troi", "outside temperature", "ngoai troi nong khong"),
         // [ĐO xe 2026-09-17 · log] «nhiệt độ đang bao nhiêu» ra RỖNG (không datum), «máy lạnh bao nhiêu độ» ra
@@ -142,6 +148,12 @@ object VoiceSynonyms {
         // *"tăng nhiệt độ"* vẫn về nút `temp` (choose ưu tiên control cho động từ hành động).
         "inside_temp" to listOf("nhiet do", "may lanh", "nhiet do may lanh", "dieu hoa bao nhieu do"),
         "cabin_temp" to listOf("nhiet trong xe", "nhiet do trong cabin"),
+        // [ĐO xe 2026-09-18 · log] *"quạt gió đang mất máy"* + *"quạt điều hòa đang mất máy"* (2 lượt, cùng người)
+        // = *"quạt gió đang **mức mấy**"* nghe rụng chữ. Câu ra MISMATCH vì *"quạt gió"* chỉ khớp NÚT `fan`, còn
+        // datum `ac_wind` mang nhãn *"Mức quạt gió"* nên nó cần từ *"mức"* mới khớp — mà không ai nói đủ chữ ấy.
+        // Cụm trùng với nút `fan` là **hợp lệ** và là cơ chế đã có: `VoiceIntentParser.choose` lấy datum cho động
+        // từ ĐỌC, lấy nút cho động từ hành động ⇒ *"tăng quạt gió"* vẫn là nút (cùng khuôn `inside_temp` ↔ `temp`).
+        "ac_wind" to listOf("quat gio", "quat dieu hoa", "muc gio", "toc do quat"),
         "pm25_level" to listOf("bui min", "chat luong khong khi", "air quality"),
         "odometer" to listOf("so km da di", "odo", "mileage"),
         "tyre_p_fl" to listOf("ap suat lop truoc trai", "hoi banh truoc trai"),

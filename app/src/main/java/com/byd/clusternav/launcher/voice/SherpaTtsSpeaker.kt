@@ -42,7 +42,19 @@ import java.util.concurrent.atomic.AtomicReference
  * **từng tệp có ghim sha256**. Nên tới 1.63 [available] gần như luôn `false`, và lớp này nằm im. Nó **không**
  * phải mã chết: thư mục đã lắp bằng tay (`adb push`) là chạy ngay, và đó chính là phép đo V-oncar của spec.
  *
- * ## Vì sao tự đẩy `AudioTrack` chứ không nhờ ai phát hộ
+ * ## ⚠ TỪ 1.79 LỚP NÀY CHẠY Ở TIẾN TRÌNH RIÊNG `:tts`, KHÔNG Ở LAUNCHER
+ * [ĐO tombstone xe 2026-09-18 `docs/diagnostics/oncar-piper-crash-binding-2026-09-18.md`]:
+ * `OfflineTts.generate` **SIGSEGV** (SEGV_MAPERR) trên luồng `KachiSpeak` ⇒ **cả tiến trình launcher chết** ⇒
+ * a11y service unbind ⇒ rebind kẹt *"Binding"* ⇒ **phím gán chết**. `runCatching { Throwable }` ở dưới **không
+ * bắt được**: SIGSEGV native abort tiến trình, không phải một exception JVM — nên trong cùng tiến trình thì
+ * KHÔNG có bản vá nào khả thi.
+ *
+ * ⇒ Chủ sở hữu duy nhất của lớp này nay là [PiperTtsService] (`android:process=":tts"`); launcher nói với nó qua
+ * [RemotePiperSpeaker] (Messenger). Bản thân lớp này **không đổi một dòng hành vi** — nó chỉ đổi chỗ ở. Ngày
+ * `generate` lại nổ, thứ chết là tiến trình `:tts`, và launcher chỉ thấy `onServiceDisconnected`.
+ *
+ * ⚠ **Đừng dựng lớp này ở tiến trình launcher nữa** (kể cả "chỉ để hỏi available") — xem [voiceFilesPresent].
+ *
  * `OfflineTts.generate` trả về [FloatArray] PCM thô + tần số mẫu; không có đường nào khác. Ghi ra tệp `.wav` rồi
  * nhờ `MediaPlayer` là thêm một lượt ghi đĩa (~90 KB mỗi câu) và một tiến trình giải mã cho một thứ vốn đã là PCM.
  */
@@ -79,9 +91,11 @@ class SherpaTtsSpeaker(
      *
      * CLAUDE.md §5: *"cấm quyết định bằng cờ RAM; kiểm bằng sự thật"*. Một pref *"đã tải xong"* sống sót qua cả
      * lần người dùng vào Cài đặt ứng dụng bấm *Xoá dữ liệu*.
+     *
+     * Thân phép kiểm nằm ở [voiceFilesPresent] (companion) để [RemotePiperSpeaker] — chạy ở tiến trình LAUNCHER,
+     * nơi engine không được phép tồn tại — trả lời `available()` mà **không** dựng một [SherpaTtsSpeaker] nào.
      */
-    private fun filesPresent(): Boolean =
-        File(root, voice.model).isFile && File(root, voice.tokens).isFile && File(root, voice.dataDir).isDirectory
+    private fun filesPresent(): Boolean = voiceFilesPresent(root, voice)
 
     override fun speak(text: String): Boolean = speakInternal(text, null)
 
@@ -209,6 +223,10 @@ class SherpaTtsSpeaker(
             val tts = ensureEngine() ?: return
             // Tốc độ đọc lấy từ pref (owner 2026-09-17 "Piper nói nhanh quá"; chỉnh trên xe qua `voice_tts_speed`),
             // mặc định 0.9 (chậm hơn gốc 10 %). runCatching + mặc định: lỗi đọc pref không được làm câm máy đọc.
+            // ⚠ #0 (2026-09-18) lớp này nay chạy ở tiến trình `:tts` ⇒ `SharedPreferences` là bộ đệm RIÊNG của
+            // tiến trình đó: núm chỉnh ở launcher chỉ ăn sau khi `:tts` dựng lại (unbind → bind, hoặc mở lại app).
+            // Chấp nhận có chủ ý — `MULTI_PROCESS` đã deprecated và không tin được; một núm chỉnh trễ vài giây
+            // không đáng đổi lấy một cơ chế đồng bộ nữa để hỏng.
             val speed = runCatching { Prefs.voiceTtsSpeed(app) }.getOrDefault(SherpaTtsCatalog.DEFAULT_SPEED)
             val audio = tts.generate(text, 0, speed)
             // Câu đã lỗi thời trong lúc tổng hợp ⇒ **không phát**. Xem KDoc [generation].
@@ -343,22 +361,48 @@ class SherpaTtsSpeaker(
         runCatching { am.abandonAudioFocusRequest(req) }
     }
 
-    private companion object {
+    companion object {
         const val TAG = "KachiVoiceTtsOffline"
+
+        /**
+         * Gói giọng [voice] đã lắp đủ trên đĩa của [ctx] chưa — **phép kiểm dùng chung** cho hai tiến trình.
+         *
+         * #0 (2026-09-18) tách ra vì [RemotePiperSpeaker] sống ở tiến trình LAUNCHER và phải trả lời
+         * `available()` **mỗi câu** (`VoiceSpeakerRouter.probe`), trong khi engine chỉ được tồn tại ở `:tts`.
+         * Không có hàm này thì chỗ đó chỉ còn hai lựa chọn tồi: dựng một [SherpaTtsSpeaker] thứ hai ở launcher
+         * (kéo `OfflineTts` về đúng tiến trình vừa bỏ công cô lập) hoặc **chép lại** ba phép `isFile/isDirectory`
+         * — bản sao thứ hai của một phép kiểm là chỗ hai bên lệch nhau mà không ai kêu.
+         */
+        fun voiceFilesPresent(
+            ctx: Context,
+            voice: SherpaTtsCatalog.TtsVoice = SherpaTtsCatalog.PIPER_VI_VAIS1000,
+        ): Boolean = voiceFilesPresent(File(ctx.applicationContext.filesDir, voice.dir), voice)
+
+        /**
+         * Vế THUẦN của phép kiểm trên: nhận thẳng thư mục gói ⇒ kiểm off-car bằng thư mục tạm được (không cần
+         * `Context`, không cần Robolectric) — cùng lệ [VoiceModelSideload.copyVerified].
+         *
+         * Ba điều kiện, **đúng như bản 1.78**: tệp `.onnx` · bảng token · **thư mục** dữ liệu espeak-ng (họ Piper
+         * bắt buộc có — xem KDoc [SherpaTtsCatalog]).
+         */
+        internal fun voiceFilesPresent(root: File, voice: SherpaTtsCatalog.TtsVoice): Boolean =
+            File(root, voice.model).isFile &&
+                File(root, voice.tokens).isFile &&
+                File(root, voice.dataDir).isDirectory
 
         // Ba số của chính gói Piper ([ĐO] `vi_VN-vais1000-medium.onnx.json`: noise_scale 0.667 · noise_w 0.8 ·
         // length_scale 1). Viết ra đây vì `OfflineTtsVitsModelConfig` KHÔNG đọc tệp `.json` ấy — mặc định của
         // sherpa là số khác, và dùng số khác thì giọng nghe méo đúng kiểu "máy nói" mà ai cũng tắt ngay.
-        const val NOISE_SCALE = 0.667f
-        const val NOISE_SCALE_W = 0.8f
-        const val LENGTH_SCALE = 1.0f
+        private const val NOISE_SCALE = 0.667f
+        private const val NOISE_SCALE_W = 0.8f
+        private const val LENGTH_SCALE = 1.0f
 
         /** Nhịp hỏi lại đầu đọc trong [drain] — đủ nhỏ để không nghe thấy khoảng lặng nối câu. */
-        const val DRAIN_POLL_MS = 20L
+        private const val DRAIN_POLL_MS = 20L
 
         /** Dôi ra ngoài thời lượng câu: đệm phần cứng + nhịp nạp của ROM. */
-        const val DRAIN_MARGIN_MS = 300L
+        private const val DRAIN_MARGIN_MS = 300L
 
-        const val MS_PER_SECOND = 1_000L
+        private const val MS_PER_SECOND = 1_000L
     }
 }

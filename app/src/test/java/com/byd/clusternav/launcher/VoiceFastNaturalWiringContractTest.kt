@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -141,6 +142,12 @@ class VoiceFastNaturalWiringContractTest {
         // nán overlay + mở hội thoại. Micro chỉ mở lại SAU mốc đọc xong (mở sớm là Kachi nghe chính mình).
         assertTrue(fn.contains("speakLines(batch) { post { onReplyDone(my, pending) } }"),
             "micro chỉ mở lại SAU mốc 'đọc xong' — qua onReplyDone (onDone của speakLines)")
+        // [ĐO xe 2026-09-18 §B] Lưới an toàn phải theo ĐỘ DÀI CÂU. Hằng 10 s cũ đóng tấm chữ giữa lúc Piper còn
+        // đang đọc (load 14) — tức chính lưới an toàn thành thủ phạm của lỗi nó sinh ra để phòng.
+        assertTrue(fn.contains("VoiceSpeakBudget.estimateMs(batch, SPEAK_SAFETY_MS)"),
+            "hẹn đóng phải ước lượng theo độ dài batch, không phải một hằng số cho mọi câu")
+        assertFalse(fn.contains("scheduleClose(SPEAK_SAFETY_MS)"),
+            "hằng trần trơn đã quay lại — câu dài sẽ bị cắt giữa chừng như 1.78")
         val done = SourceRoots.body(turns, "internal fun VoiceSession.onReplyDone(")
         assertTrue(done.contains("followUp(my, pending)"), "onReplyDone (sau đọc xong) mới mở hội thoại")
         assertTrue(fn.contains("VoiceFeedbackPhrase.isInterim("), "lệnh còn đang tra mạng ⇒ KHÔNG mở hội thoại")
@@ -227,12 +234,25 @@ class VoiceFastNaturalWiringContractTest {
     @Test
     fun `het tran hoi thi noi cau bo cuoc, khong roi ve cau khong hieu`() {
         val fn = SourceRoots.body(session, "internal fun execute(")
-        assertTrue(fn.contains("clarifyGaveUp(intents)"), "hết trần phải rẽ sang câu bỏ cuộc")
-        assertTrue(fn.indexOf("clarifyGaveUp(intents)") < fn.indexOf("d.execute(intents)"), "và rẽ TRƯỚC khi thi hành")
+        assertTrue(fn.contains("clarifyGaveUp(intents, my)"), "hết trần phải rẽ sang câu bỏ cuộc")
+        assertTrue(
+            fn.indexOf("clarifyGaveUp(intents, my)") < fn.indexOf("d.execute(intents)"),
+            "và rẽ TRƯỚC khi thi hành",
+        )
         val g = SourceRoots.body(turns, "internal fun VoiceSession.clarifyGaveUp(")
         assertTrue(g.contains("VoiceClarify.MAX_ROUNDS"), "trần vẫn do `:core` giữ, không chép một bản thứ hai")
         assertTrue(g.contains("VoiceClarify.ask(only, 0)"), "phân biệt hai ca `null` bằng chính luật của `:core`")
         assertTrue(g.contains("clarifyRound = 0"), "bỏ cuộc rồi thì lượt sau được hỏi lại từ đầu")
+        // [ĐO xe 2026-09-18 §B] Đường này cũng ĐỌC một câu ⇒ cũng phải có lưới theo độ dài câu. Bản 1.78 hẹn đóng
+        // bằng LINGER_MS (2,5 s) TRƯỚC lượt đọc, mà câu bỏ cuộc dài ~40 ký tự ⇒ tấm chữ đi trước khi loa nói hết.
+        assertTrue(
+            g.contains("VoiceSpeakBudget.estimateMs(listOf(line), VoiceSession.SPEAK_SAFETY_MS)"),
+            "câu bỏ cuộc cũng phải được lưới theo độ dài, không phải LINGER_MS đặt trước lượt đọc",
+        )
+        assertTrue(
+            g.contains("speakLines(listOf(line)) { post { if (!stale(my)) scheduleClose(VoiceSession.LINGER_MS) } }"),
+            "và mốc ĐỌC XONG mới rút về LINGER_MS — kèm chốt thế hệ để không rút tấm chữ của phiên khác",
+        )
     }
 
     /**

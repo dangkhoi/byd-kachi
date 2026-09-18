@@ -433,6 +433,12 @@ object VoiceReply {
                 "Đã bỏ qua vế không hiểu",
                 "Skipped a clause I did not understand",
             )
+            // D3 — gọi ĐÚNG TÊN tính năng thay vì *"không tìm thấy thứ đó trong xe"* (một câu sai sự thật: thứ đó
+            // có trên xe, chỉ là Kachi không làm). Tra lại bảng thuần bằng chính câu gốc — không mang thêm trường
+            // nào vào [VoiceIntent.Unknown] cho một ca duy nhất dùng tới.
+            VoiceUnknownReason.FEATURE_GONE ->
+                VoiceFeatureGone.match(VoiceLexicon.tokenize(u.text))?.let { return VoiceFeatureGone.reply(it) }
+                    ?: Strings.t("Tính năng này Kachi không làm", "Kachi does not do this")
         }
         return if (u.text.isBlank()) head else "$head: \"${u.text}\""
     }

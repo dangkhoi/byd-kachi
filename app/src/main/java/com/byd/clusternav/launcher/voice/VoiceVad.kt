@@ -19,7 +19,9 @@ import com.k2fsa.sherpa.onnx.VadModelConfig
  * ## Vì sao thay bộ RMS ([VoiceEndpointer]) làm đường CHÍNH
  * [ĐO xe 2026-09-16] bộ RMS trên xe thật **gần như không bao giờ nổ**: `chot=4200ms` ở 165/299 lượt, có lượt
  * 8 400 ms — tức mọi câu đều trả giá bằng trọn cái trần. [ĐO host §5] cùng corpus 1 899 câu, Silero với bộ tham
- * số đã chốt cho **p50 660 ms · p90 780 ms · 0/1 899 cắt giữa câu · 0/1 899 không nổ**.
+ * số đã chốt cho **p50 660 ms · p90 780 ms · 0/1 899 cắt giữa câu · 0/1 899 không nổ**. ⚠ Hai con số endpoint ấy
+ * đo với `min_silence = 0,15 s`; từ [ĐO xe 2026-09-18] núm ấy là **0,60 s** ⇒ cộng ~450 ms (xem
+ * [VoiceVadTrim.MIN_SILENCE_MS] — vẫn nhanh hơn bộ RMS một bậc).
  *
  * Và quan trọng hơn cả tốc độ — §6: đuôi im lặng **phá độ chính xác** (22/25 → 6/25 khi nối thêm 4 s im lặng vào
  * chính mô hình đang ship). Cắt cửa sổ ở điểm hết tiếng là phép sửa **độ chính xác**, không phải phép tối ưu độ

@@ -161,9 +161,45 @@ class VoiceOverlay(
                 }
                 return super.dispatchKeyEvent(event)
             }
+
+            /**
+             * ═══ [ĐO xe 2026-09-18] Lấy TIÊU ĐIỂM là kéo cả thanh hệ thống lên cùng ═══════════════════════
+             *
+             * Owner: *"overlay kéo taskbar hệ thống lên — không muốn cái này"*. Gốc: cửa sổ này **cố ý** không
+             * có `FLAG_NOT_FOCUSABLE` (thiếu tiêu điểm thì mất đường thoát bằng Back — xem KDoc [show]), nhưng
+             * cờ ẩn thanh hệ thống thì Android đọc từ **cửa sổ đang có tiêu điểm**. Màn chính giữ cờ đó
+             * (`goImmersiveWindow`); overlay không ⇒ giây nó nhận tiêu điểm là giây status/nav/taskbar hiện lại,
+             * và nó **ở lại** cả khi tấm chữ đã tắt (màn chính chỉ áp lại cờ khi tiêu điểm quay về).
+             *
+             * ⇒ overlay mang **cùng bộ cờ** với màn chính. `IMMERSIVE_STICKY` để một cú quệt cạnh chỉ hiện thanh
+             * tạm rồi tự ẩn — người lái không mất đường vào thanh hệ thống, chỉ không bị nó **ghim** lên.
+             * `dimAmount` vẫn 0 và không có `FLAG_DIM_BEHIND`: đây là việc của thanh hệ thống, không phải một
+             * phép làm tối màn.
+             *
+             * Áp ở CẢ hai mốc, mỗi mốc đóng một khe khác nhau: [onAttachedToWindow] cho lượt đầu (cửa sổ mới
+             * thêm), [onWindowFocusChanged] cho mỗi lượt **lấy lại** tiêu điểm (hộp thoại xác nhận / lượt nghe
+             * nối / một cửa sổ khác chen vào rồi rút).
+             */
+            override fun onAttachedToWindow() {
+                super.onAttachedToWindow()
+                goImmersive(this)
+            }
+
+            override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+                super.onWindowFocusChanged(hasWindowFocus)
+                if (hasWindowFocus) goImmersive(this)
+            }
         }.apply {
             setBackgroundColor(Color.TRANSPARENT)
             isFocusableInTouchMode = true
+            goImmersive(this)
+            // Thanh hệ thống được hệ thống cho hiện lại (quệt cạnh, một app khác xin) ⇒ áp lại. Điều kiện
+            // `FULLSCREEN` chưa bật là thứ chặn vòng lặp: lượt áp lại của chính ta bắn listener lần nữa với cờ
+            // ĐÃ bật ⇒ nhánh này không chạy tiếp.
+            @Suppress("DEPRECATION")
+            setOnSystemUiVisibilityChangeListener { vis ->
+                if (vis and View.SYSTEM_UI_FLAG_FULLSCREEN == 0) goImmersive(this)
+            }
             addView(
                 card,
                 FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -183,6 +219,24 @@ class VoiceOverlay(
     private fun inside(v: View, ev: MotionEvent): Boolean {
         val x = ev.x.toInt(); val y = ev.y.toInt()
         return x >= v.left && x <= v.right && y >= v.top && y <= v.bottom
+    }
+
+    /**
+     * Cùng **đúng** bộ cờ mà màn chính dùng (`KachiHomeWiring.goImmersiveWindow`) — hai bề mặt lệch cờ nhau thì
+     * thanh hệ thống hiện/ẩn theo cửa sổ nào đang có tiêu điểm, tức nhấp nháy theo mỗi lượt nói.
+     *
+     * Xe chạy Android 10 (API 29) ⇒ `systemUiVisibility`; `WindowInsetsController` là API 30+. Deprecated trên
+     * SDK biên dịch nhưng nó là API **duy nhất** có tác dụng trên nền tảng đích — cùng lý do đã ghi ở
+     * `goImmersiveWindow` và `ClusterNavActivity`.
+     */
+    @Suppress("DEPRECATION")
+    private fun goImmersive(v: View) {
+        v.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            )
     }
 
     private companion object {

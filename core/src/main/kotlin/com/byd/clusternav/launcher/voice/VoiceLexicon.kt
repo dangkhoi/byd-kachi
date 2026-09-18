@@ -347,8 +347,17 @@ object VoiceLexicon {
      * Cụm đánh dấu *"…**bằng** &lt;app&gt;"* — mở đầu phần CHỌN APP ở cuối một câu nhạc/dẫn đường.
      *
      * ⚠ Cố ý **không** có `"o"`/`"tai"`: chúng quá ngắn và quá thường. Và cụm này chỉ có nghĩa khi **ngay sau nó
-     * là một tên app đã biết, và tên ấy đứng ở CUỐI câu** ([VoiceIntentParser.appAfterMarker]) — nếu không thì
+     * là một tên app đã biết, và tên ấy đứng ở CUỐI câu** ([VoiceTailClause.appAfterMarker]) — nếu không thì
      * một điểm đến như *"cầu Bằng Lăng"* sẽ bị cắt đôi.
+     *
+     * ## `dung` (= *"dùng"*) — thêm 2026-09-18, và vì sao nó an toàn dù trùng ba từ
+     * Owner nói cả *"…**bằng** VietMap"* lẫn *"**dùng** VietMap dẫn đường"*; nợ này đã ghi ở backlog (*app-hint
+     * "dùng google map" chưa bắt*). Bỏ dấu thì `dung` trùng **ba** từ khác nhau: *"dừng"* (một động từ PAUSE của
+     * [VoiceGrammar.VERBS]), *"đừng"* và *"đúng"*. Nó vào được đây **chỉ vì** ba cổng của
+     * [VoiceTailClause.appAfterMarker] đứng chắn: phần sau cụm đánh dấu phải (a) **chạm cuối câu**, (b) khớp
+     * **một tên app đã biết**, (c) dài ≤ [VoiceAppTargets.LONGEST_SPOKEN] từ. Nghĩa là `dung` chỉ có nghĩa
+     * *"dùng"* trong đúng hình dạng `… dùng <tên app>` kết thúc câu — *"dừng nhạc"*, *"tạm dừng"*, *"đừng mở
+     * youtube"* đều không có hình dạng đó và [ĐO] không đổi một ý định nào (`VoiceLogCases0918Test`).
      */
-    val BY_APP_MARKERS: Set<String> = setOf("bang", "tren", "voi", "qua", "with", "on", "using")
+    val BY_APP_MARKERS: Set<String> = setOf("bang", "tren", "voi", "qua", "dung", "with", "on", "using")
 }

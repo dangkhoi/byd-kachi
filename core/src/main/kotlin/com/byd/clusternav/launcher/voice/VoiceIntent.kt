@@ -198,4 +198,19 @@ enum class VoiceUnknownReason {
      * đứng sau nó) để tầng trả lời nói thêm đúng một dòng.
      */
     DROPPED_CLAUSE,
+
+    /**
+     * Câu nói về một tính năng Kachi **đã bỏ** hoặc **chưa bao giờ điều khiển được** ([VoiceFeatureGone]).
+     *
+     * [ĐO xe 2026-09-18] (`oncar-voice-cases-findings-2026-09-18.md` §D1/§D3): *"kiểm tra dây an toàn"* ·
+     * *"gập gương chiếu hậu"* · *"xe đang sạc pin hay không"* đều ra [NO_OBJECT] — câu *"Không tìm thấy thứ đó
+     * trong xe"* là **sai sự thật**: thứ đó có trên xe, chỉ là Kachi không làm (owner đã gỡ, hoặc bộ đăng ký chỉ
+     * có datum ĐỌC). Cùng phiên log, *"bật đèn khẩn cấp"* còn tệ hơn: nó ra `Control(trunk, 1)` = **mở cốp**, do
+     * tầng chữa chính tả sửa *"cấp"* → *"cốp"*.
+     *
+     * Là một lý do RIÊNG vì hành động tiếp theo khác hẳn: không có gì để **hỏi lại** (nói lại cũng thế), và
+     * cũng không được **đoán** sang một nút gần giống. Câu trả lời gọi đúng tên tính năng — xem
+     * [VoiceFeatureGone.reply].
+     */
+    FEATURE_GONE,
 }

@@ -1,6 +1,6 @@
 # apk/ — kênh OTA của Kachi
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-17 · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-18 (Kachi-1.79-release.apk vc80 sha256 1a3de67a…) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
 
 **(VI)** App trên xe (`UpdateChecker`) hỏi GitHub Contents API thư mục này trên nhánh `main` của repo `dangkhoi/byd-kachi`,
 tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang cài, tải về rồi cài qua dadb loopback (`pm install -r`)
@@ -12,6 +12,29 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **1.78 (79) — 2026-09-18** (`Kachi-1.78-release.apk`, sha256 `bcfe70c2…da21`, thay 1.77). **Sửa "phím gán không ăn"
+  dưới tải nặng** [ĐO on-car live <car-ip>, load 14]: `NavAccessibilityService` rớt bind dưới áp lực CPU/RAM →
+  phím chết; Kachi tự-rebind THUA vì `GRANT_TIMEOUT_MS=9s` (rebind qua dadb, dưới load 14 dadb chậm > 9s → cắt giữa
+  chừng). Nới **9s → 20s** ⇒ rebind hoàn tất dưới tải ("Sửa ngay"/OFF→ON ăn kể cả khi lag). [ĐO] toggle a11y trực
+  tiếp bind lại NGAY cả khi load 14 ⇒ cơ chế đúng, chỉ thiếu thời gian. **[ĐO] CPU root** (không phải Kachi — chỉ
+  2%): Google Maps 61% (chạy trong 1 Ô Kachi) + BYD cdr 39% + surfaceflinger 34% (3 display) + VietMap 18% ⇒ 8 lõi
+  bão hoà. 5 module 0 đỏ. 🚗 owner test phím sau khi update.
+- **1.77 (78) — 2026-09-18** (`Kachi-1.77-release.apk`, sha256 `f3671580…2508`, thay 1.76). **"Hey Kachi" — lớp Android
+  (FGS micro nền) để gọi voice rảnh tay, mặc định TẮT.** `VoiceWakeService` (foreground-service, gate màn-sáng) +
+  `VoiceWakeListener` (mic → cổng RMS → controller đã test → KWS) + `VoiceWakeKws` (sherpa KeywordSpotter,
+  degrade RMS-only khi chưa có model). **Lá chắn CPU**: load-guard (hệ nóng → dừng), cổng năng lượng (im → không
+  chạy KWS), cầu chì false-accept (nghe nhầm nhiều → tự tắt), một-mic (VoiceSingleFlight + yield cho nút lệnh).
+  **Senior review độc lập bắt + vá 4 P0** (busy-loop CPU khi mic lỗi · bật wake làm chết nút mic · re-arm ăn cầu
+  chì · orphan double-mic) + 11 lỗi khác. **[ĐO] 5 module 0 đỏ** (core 2255, 4743 test). ⚠ **CÒN CHỜ**: model KWS
+  owner đăng OTA (`sherpa-onnx-kws-zipformer-gigaspeech-3.3M` ~4MB) — chưa có ⇒ bật lên chỉ chạy chế độ đo baseline
+  (mic + gating, KHÔNG bắt câu gọi). 🚗 owner bật thử để đo CPU trên xe (không đẩy load / không kẹt).
+- **1.76 (77) — 2026-09-18** (`Kachi-1.76-release.apk`, sha256 `6a95968e…6461`, thay 1.75). **Sửa BUG owner báo: bỏ
+  chọn Kachi làm màn hình chính KHÔNG trả về launcher khác, vẫn kẹt Kachi.** Gốc kép: (a) chưa có đường un-set;
+  (b) tự-khởi-động re-assert Kachi làm HOME mỗi lần nổ máy khi `keepHomeOnBoot() || homeChosen()`, mà `homeChosen`
+  đặt một lần không bao giờ xoá → bỏ chọn kiểu gì boot sau cũng bị giành lại. Nay Cài đặt › Màn hình chính có nút
+  **"Bỏ chọn Kachi làm màn hình chính"**: xoá cả hai marker → tắt alias HOME → `set-home-activity` về launcher khác.
+  Kèm **lõi an toàn "Hey Kachi"** (chưa nối, inert): load-guard/cổng năng lượng/controller (chống hang CPU). **[ĐO]
+  5 module 0 đỏ** (core 2245). 🚗 owner test xe: bỏ chọn → về launcher stock, reboot vẫn giữ (không quay lại Kachi).
 - **1.75 (76) — 2026-09-18** (`Kachi-1.75-release.apk`, sha256 `3a92fd0a…81577`, thay 1.74). Nhạc: "phát bài …"
   trên YouTube/YT Music nay **tìm ra + phát LUÔN** (owner: *"phải play luôn"*) — làm đúng cơ chế Kiki nhưng
   on-device: tải HTML trang tìm kiếm → bóc `video_id` bài đầu → mở `watch?v=<id>` (mở URL watch thì app tự phát).

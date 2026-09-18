@@ -59,6 +59,8 @@ object SherpaSpokenWords {
         "dieu hoa bao nhieu do" to "điều hòa bao nhiêu độ",
         "quat" to "quạt",
         "quat gio" to "quạt gió",
+        // [ĐO xe 2026-09-18 · log] cách gọi ĐỌC của `ac_wind` (*"quạt điều hòa đang mất máy"*, 2 lượt).
+        "quat dieu hoa" to "quạt điều hòa",
         "toc do quat" to "tốc độ quạt",
         "suc gio" to "sức gió",
         "say kinh truoc" to "sấy kính trước",
@@ -199,6 +201,10 @@ object SherpaSpokenWords {
         "hien thi tren kinh lai" to "hiển thị trên kính lái",
         "con chay duoc bao nhieu" to "còn chạy được bao nhiêu",
         "xang con chay duoc bao xa" to "xăng còn chạy được bao xa",
+        // [ĐO xe 2026-09-18] ba cách nói về nhiên liệu (log: «chỉ số xăng» · «xăng còn bao nhiêu» ra Unknown).
+        "xang" to "xăng",
+        "nhien lieu" to "nhiên liệu",
+        "muc nhien lieu" to "mức nhiên liệu",
         "ngoai troi nong khong" to "ngoài trời nóng không",
         "nhiet trong xe" to "nhiệt trong xe",
         "nhiet do trong cabin" to "nhiệt độ trong cabin",

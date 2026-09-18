@@ -57,6 +57,10 @@ object VoiceVadTrim {
      *
      * Với bộ tham số này [ĐO host §5]: endpoint **p50 660 ms** · p90 780 ms · **0/1 899 cắt giữa câu** ·
      * **0/1 899 không nổ**. So với bộ RMS đang chạy trên xe (`chot=4200ms` ở 165/299 lượt, có lượt 8 400 ms).
+     *
+     * ⚠ Hai con số endpoint ấy đo với `min_silence = 0,15 s`. Từ [ĐO xe 2026-09-18] núm đó lên **0,60 s**
+     * ([MIN_SILENCE_MS]) ⇒ cộng thẳng ~450 ms vào cả p50 lẫn p90 (≈ 1 110 / 1 230 ms). Ngưỡng xác suất và hai
+     * tính chất *"cắt giữa câu"* / *"không nổ"* thì không đụng tới.
      */
     const val THRESHOLD = 0.5f
 
@@ -64,13 +68,33 @@ object VoiceVadTrim {
     const val MIN_SPEECH_MS = 100
 
     /**
-     * Im ngần này thì VAD **đóng** đoạn ⇒ đó là điểm ngắt câu. 0,15 s — điểm lưới.
+     * Im ngần này thì VAD **đóng** đoạn ⇒ đó là điểm ngắt câu. **0,60 s** sau [ĐO xe 2026-09-18].
      *
-     * ⚠ Con số này nhỏ hơn nhiều `VoiceEndpointer.HANGOVER_MS` (800 ms) và **đó là điều đúng**: bộ RMS phải chờ
-     * lâu vì nó chỉ biết *to/nhỏ*, còn Silero biết *có phải giọng người không*, nên nó dám chốt sớm mà [ĐO] vẫn
-     * 0/1 899 lượt cắt giữa câu.
+     * ## ⚠ 150 ms là con số của corpus THU SẴN, và giọng lái xe thật đã bác nó
+     * Lưới off-car §8 chốt 150 ms trên **câu thu sẵn** — loại câu không có quãng ngừng lấy hơi nào — nên kết luận
+     * *"0/1 899 cắt giữa câu"* chỉ đúng **cho corpus đó**. [ĐO xe 2026-09-18, 53 phiên thật] `silence_ms` =
+     * **150–174 ms ở 90/90 lượt**, tức VAD chốt đúng tại trần dưới của chính nó ở **mọi** lượt; và những câu cụt
+     * lộ ra ngay: *"gập gương chiếu hậu"* → **`gặp gu`** (tiếng chỉ 814 ms) · *"chỉ số bụi mịn là bao nhiêu"* →
+     * cụt còn `chỉ số bụi mịn`. Người lái ngừng 200–500 ms giữa câu để nghĩ; 200 ms > 150 ms ⇒ đoạn đóng ⇒
+     * `VoiceCapture` thoát vòng nghe **ngay tại quãng ngừng**. Bằng chứng:
+     * `docs/diagnostics/oncar-voice-cases-findings-2026-09-18.md` §A.
+     *
+     * ## Vì sao nâng lên KHÔNG hại độ chính xác — [ĐO nguồn sherpa-onnx v1.13.8]
+     * Nỗi lo hợp lý là *"chờ im lâu hơn ⇒ nạp thêm im vào mô hình"*, tức rơi lại đúng cái bẫy §6. Nó **không xảy
+     * ra**: `sherpa-onnx/csrc/voice-activity-detector.cc` cắt đuôi hangover **ra khỏi đoạn** trước khi đẩy vào
+     * hàng đợi — `int32_t end = buffer_.Tail() - model_->MinSilenceDurationSamples();`. Nghĩa là
+     * `segment.start + samples.size` = **điểm hết tiếng thật**, không phụ thuộc núm này, và [headTrimSamples]
+     * (chế độ `head`, margin 0) cắt đúng ở đó. Thứ duy nhất tăng là **độ trễ chốt câu**: +450 ms (p50 ~660 →
+     * ~1 110 ms), còn rất xa trần cứng `VoiceSession.MAX_LISTEN_MS` = 8 s.
+     *
+     * Đây cũng chính là lý do §8 đo `head` (21/25) hơn `window` (18/25): `window` cắt ở **lúc chốt** nên nó mới
+     * là chế độ dính `min_silence` — `head` thì không, ở mọi giá trị của núm.
+     *
+     * ⚠ Vẫn nhỏ hơn `VoiceEndpointer.HANGOVER_MS` (800 ms), và vế *"Silero biết có phải giọng người không nên
+     * dám chờ ít hơn bộ RMS"* vẫn nguyên — chỉ biên độ *"nhỏ hơn nhiều"* thì hết đúng. Núm
+     * `voice_vad_min_silence_ms` (80–800) chỉnh được trên xe, không cần build.
      */
-    const val MIN_SILENCE_MS = 150
+    const val MIN_SILENCE_MS = 600
 
     /** Cửa sổ Silero v4 = 512 mẫu @16 kHz. Cũng đúng mặc định của `SileroVadModelConfig` trong AAR 1.13.8 [ĐO javap]. */
     const val WINDOW_SIZE = 512
@@ -89,8 +113,12 @@ object VoiceVadTrim {
     const val MAX_MIN_SPEECH_MS = 500
 
     /**
-     * Dưới 80 ms thì một quãng ngắt hơi giữa câu cũng đóng đoạn (**cắt giữa câu** — thứ [ĐO] đang là 0/1 899);
-     * trên 800 ms thì đuôi im lặng nạp vào mô hình lại dài bằng bản RMS cũ, tức núm mất tác dụng.
+     * Dưới 80 ms thì một quãng ngắt hơi giữa câu cũng đóng đoạn (**cắt giữa câu** — đúng lỗi [ĐO xe 2026-09-18]
+     * bắt được ở mức 150 ms); trên 800 ms thì **độ trễ chốt câu** ăn quá sâu vào trần cứng 8 s và người lái tưởng
+     * máy thôi nghe.
+     *
+     * ⚠ Trần trên **KHÔNG** phải để chặn *"đuôi im lặng nạp vào mô hình dài bằng bản RMS cũ"* như bản đầu ghi:
+     * sherpa tự cắt đuôi hangover khỏi đoạn nên đuôi ấy chưa bao giờ vào bộ giải mã — xem [MIN_SILENCE_MS].
      */
     const val MIN_MIN_SILENCE_MS = 80
     const val MAX_MIN_SILENCE_MS = 800

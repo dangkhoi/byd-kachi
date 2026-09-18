@@ -190,6 +190,22 @@
             android:foregroundServiceType="microphone">
         </service>
 
+        <!-- #0 (2026-09-18): PIPER TTS Ở TIẾN TRÌNH RIÊNG `:tts`.
+             [ĐO tombstone xe, docs/diagnostics/oncar-piper-crash-binding-2026-09-18.md] `OfflineTts.generate`
+             SIGSEGV (SEGV_MAPERR, luồng KachiSpeak) → chết CẢ tiến trình launcher → NavAccessibilityService
+             unbind → rebind kẹt "Binding" → PHÍM GÁN CHẾT. SIGSEGV native không bắt được bằng runCatching trong
+             cùng tiến trình ⇒ ranh giới tiến trình là bản vá duy nhất khả thi. Nay Piper nổ thì chỉ `:tts` chết;
+             launcher thấy onServiceDisconnected và mở mọi chỗ đang chờ (RemotePiperSpeaker).
+             KHÔNG foreground (chỉ sống khi có ai bind), KHÔNG exported. Hậu tố tiến trình khai một chỗ ở
+             PiperTtsService.PROCESS_SUFFIX — KachiApplication so bằng chính hằng đó để không nạp mô hình NGHE
+             trong `:tts`. Giữ ĐƠN GIẢN (xem cảnh báo <property> ở trên: packageinstaller Android 10 không hiểu
+             element lạ dưới <service>). -->
+        <service
+            android:name=".launcher.voice.PiperTtsService"
+            android:process=":tts"
+            android:exported="false">
+        </service>
+
         <!-- B6 (launcher): Kachi auto-start — surface-INDEPENDENT boot orchestration (seed freeform + set-home +
              cast-coordination plan + ensure the HOME activity is up so it restores + mounts the saved workspace).
              Does NOT mount slots (VirtualDisplays are surface-bound → they live in KachiHomeActivity). Short-lived;

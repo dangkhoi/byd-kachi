@@ -134,14 +134,39 @@ class VoiceVadTrimTest {
 
     // ══ Tham số đã chốt bằng lưới ═════════════════════════════════════════════════════════════════════════
 
-    /** Mặc định phải bằng ĐÚNG bộ đã đo (§8) — đổi một con số ở đây là đổi một kết luận đã có bằng chứng. */
+    /**
+     * Mặc định phải bằng ĐÚNG bộ đang chạy — đổi một con số ở đây là đổi một kết luận đã có bằng chứng.
+     *
+     * Ba con số vẫn là điểm lưới host §8; **`MIN_SILENCE_MS` thì không nữa** — nó bị [ĐO xe 2026-09-18] chốt lại
+     * (150 → 600), xem KDoc `VoiceVadTrim.MIN_SILENCE_MS` và bài `nguong im chiu duoc quang ngung lay hoi`.
+     */
     @Test
-    fun `tham so mac dinh bang dung bo da chot tren host`() {
+    fun `tham so mac dinh bang dung bo dang chay`() {
         assertEquals(0.5f, VoiceVadTrim.THRESHOLD)
-        assertEquals(100, VoiceVadTrim.MIN_SPEECH_MS)     // 0,10 s
-        assertEquals(150, VoiceVadTrim.MIN_SILENCE_MS)    // 0,15 s
+        assertEquals(100, VoiceVadTrim.MIN_SPEECH_MS)     // 0,10 s — lưới host §8
+        assertEquals(600, VoiceVadTrim.MIN_SILENCE_MS)    // 0,60 s — [ĐO xe 2026-09-18], KHÔNG còn là 0,15 s host
         assertEquals(0, VoiceVadTrim.MARGIN_MS)
         assertEquals(512, VoiceVadTrim.WINDOW_SIZE)       // Silero v4 @16 kHz, cũng là mặc định của AAR 1.13.8
+    }
+
+    /**
+     * ═══ [ĐO xe 2026-09-18] Ngưỡng im phải CHỊU ĐƯỢC một quãng ngừng lấy hơi giữa câu ═════════════════════
+     *
+     * 53 phiên thật: `silence_ms` = **150–174 ms ở 90/90 lượt** (VAD chốt đúng trần dưới của chính nó ở mọi
+     * lượt), và câu cụt lộ ra ngay — *"gập gương chiếu hậu"* → `gặp gu`. Người lái ngừng **200–500 ms** giữa câu
+     * để nghĩ; ngưỡng nào ≤ quãng ngừng đó là ngưỡng **cắt giữa câu**, và nó cắt IM LẶNG (Kachi chỉ hiểu sai).
+     *
+     * Sàn 500 ms ở đây là *"trên mức ngừng-để-nghĩ dài nhất đã đo"*. Ai hạ lại về vùng 150 ms thì bài này đỏ kèm
+     * đúng lý do — thay vì phát hiện lại bằng một lượt lái thử nữa.
+     * Bằng chứng: `docs/diagnostics/oncar-voice-cases-findings-2026-09-18.md` §A.
+     */
+    @Test
+    fun `nguong im chiu duoc quang ngung lay hoi giua cau`() {
+        assertTrue(
+            VoiceVadTrim.MIN_SILENCE_MS >= 500,
+            "ngưỡng im ${VoiceVadTrim.MIN_SILENCE_MS} ms ≤ quãng ngừng-để-nghĩ đã đo trên xe (200–500 ms) " +
+                "⇒ câu bị cắt giữa chừng",
+        )
     }
 
     @Test
@@ -149,8 +174,9 @@ class VoiceVadTrimTest {
         assertTrue(VoiceVadTrim.THRESHOLD in VoiceVadTrim.MIN_THRESHOLD..VoiceVadTrim.MAX_THRESHOLD)
         assertTrue(VoiceVadTrim.MIN_SPEECH_MS in VoiceVadTrim.MIN_MIN_SPEECH_MS..VoiceVadTrim.MAX_MIN_SPEECH_MS)
         assertTrue(VoiceVadTrim.MIN_SILENCE_MS in VoiceVadTrim.MIN_MIN_SILENCE_MS..VoiceVadTrim.MAX_MIN_SILENCE_MS)
-        // Ngưỡng im của VAD phải NHỎ HƠN HẲN của bộ RMS: Silero biết "có phải giọng người không" nên dám chốt
-        // sớm ([ĐO] 0/1 899 cắt giữa câu), còn RMS chỉ biết to/nhỏ nên phải chờ 800 ms.
+        // Ngưỡng im của VAD vẫn phải NHỎ HƠN của bộ RMS: Silero biết "có phải giọng người không" nên còn dám chờ
+        // ít hơn. ⚠ Biên độ thì hết là "nhỏ hơn nhiều" — [ĐO xe 2026-09-18] đẩy 150 → 600 ms (RMS 800 ms), vì
+        // 150 ms cắt đúng vào quãng ngừng lấy hơi của người lái.
         assertTrue(
             VoiceVadTrim.MIN_SILENCE_MS < VoiceEndpointer.HANGOVER_MS,
             "VAD chốt sớm hơn RMS — đó là toàn bộ lý do nó thành đường chính",
@@ -160,11 +186,12 @@ class VoiceVadTrimTest {
     @Test
     fun `doi don vi ms sang giay va sang mau khong lam tron sai`() {
         assertEquals(0.15f, VoiceVadTrim.msToSeconds(150))
+        assertEquals(0.60f, VoiceVadTrim.msToSeconds(600))   // mốc thật của bộ tham số từ 2026-09-18
         assertEquals(0.10f, VoiceVadTrim.msToSeconds(100))
         assertEquals(1_600, VoiceVadTrim.msToSamples(100, rate))
         assertEquals(100, VoiceVadTrim.samplesToMs(1_600, rate))
         // Vòng tròn ms → mẫu → ms phải đứng yên ở mọi mốc thật của bộ tham số.
-        listOf(40, 80, 100, 150, 500, 800, 8_400).forEach {
+        listOf(40, 80, 100, 150, 500, 600, 800, 8_400).forEach {
             assertEquals(it, VoiceVadTrim.samplesToMs(VoiceVadTrim.msToSamples(it, rate), rate), "mốc $it ms")
         }
         assertEquals(0, VoiceVadTrim.samplesToMs(1_600, 0), "chia cho 0 phải trả 0, không được ném")

@@ -119,16 +119,23 @@ internal fun VoiceSession.clarifyAsk(intents: List<VoiceIntent>): VoiceClarify.A
  *
  * Đặt [VoiceSession.clarifyRound] về 0 ngay: phiên có thể còn chạy tiếp (hội thoại), và lượt sau phải được hỏi
  * lại từ đầu chứ không kế thừa trần của câu vừa bỏ.
+ *
+ * ## ⚠ [ĐO xe 2026-09-18 §B] Cùng bệnh *"overlay tắt giữa câu"*, ở một đường KHÁC
+ * Đường này cũng **đọc** một câu, mà hẹn đóng của nó đặt **trước** lượt đọc bằng [VoiceSession.LINGER_MS] = 2,5 s
+ * — trong khi [VoiceClarify.giveUp] dài ~40 ký tự ([SUY] ≈ 2,6 s ở nhịp đọc [ĐO host] ~65 ms/ký tự, và dưới load
+ * 14 thì lâu hơn nữa) ⇒ tấm chữ đi trước khi loa nói hết, đúng thứ owner báo. Bản vá §B chỉ chữa `execute`; ở đây
+ * dùng **cùng** lưới ([VoiceSpeakBudget]) và **cùng** mốc rút ([VoiceSession.LINGER_MS] sau khi đọc xong — khuôn
+ * của nhánh `flushed` trong `execute`). [my] có mặt chỉ để mốc đọc-xong về muộn không rút tấm chữ của phiên KHÁC.
  */
-internal fun VoiceSession.clarifyGaveUp(intents: List<VoiceIntent>): Boolean {
+internal fun VoiceSession.clarifyGaveUp(intents: List<VoiceIntent>, my: Int): Boolean {
     if (clarifyRound < VoiceClarify.MAX_ROUNDS) return false
     val only = intents.singleOrNull() as? VoiceIntent.Unknown ?: return false
     if (VoiceClarify.ask(only, 0) == null) return false
     clarifyRound = 0
     val line = VoiceClarify.giveUp()
     overlay?.render(R.string.kachi_voice_heard, line)
-    scheduleClose(VoiceSession.LINGER_MS)
-    speakLines(listOf(line))
+    scheduleClose(VoiceSpeakBudget.estimateMs(listOf(line), VoiceSession.SPEAK_SAFETY_MS))
+    speakLines(listOf(line)) { post { if (!stale(my)) scheduleClose(VoiceSession.LINGER_MS) } }
     return true
 }
 

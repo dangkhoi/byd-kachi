@@ -83,7 +83,11 @@ internal object VoiceTailClause {
             val len = after.size - i - 1
             if (len !in 1..VoiceAppTargets.LONGEST_SPOKEN) return@forEach
             val words = (i + 1 until after.size).map { after[it].norm }
-            val target = VoiceAppTargets.bySpoken(words, kind) ?: return@forEach
+            // Khớp CHÍNH XÁC trước; chỉ khi trượt mới thử cụm rụng âm cuối (*"vietma"* ⇒ VietMap) — xem KDoc
+            // [VoiceAppTargets.bySpokenLoose] về vì sao đường nới lỏng chỉ có ở đây, sau cụm đánh dấu.
+            val target = VoiceAppTargets.bySpoken(words, kind)
+                ?: VoiceAppTargets.bySpokenLoose(words, kind)
+                ?: return@forEach
             return target.key to i
         }
         return null

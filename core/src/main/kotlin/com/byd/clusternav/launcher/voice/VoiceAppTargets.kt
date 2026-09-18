@@ -377,6 +377,43 @@ object VoiceAppTargets {
     fun bySpoken(words: List<String>, kind: VoiceAppKind? = null): VoiceAppTarget? =
         ALL.firstOrNull { t -> (kind == null || t.kind == kind) && t.spoken.any { spokenWords(it) == words } }
 
+    /**
+     * ═══ Đích cho một cách nói **RỤNG MẤT ÂM CUỐI** — *"vietma"* ⇒ VietMap ═════════════════════════════════
+     *
+     * ## Bệnh nó chữa — [ĐO xe 2026-09-18] (`oncar-voice-music-vietmap-2026-09-18.md` §BUG A)
+     * Owner nói *"dẫn đường tới chợ Bến Thành **bằng VietMap**"*; mô hình in ra *"bằng **vietma**"* (rụng chữ
+     * `p`). [bySpoken] khớp **nguyên cụm** nên trượt ⇒ mệnh đề chọn app không được cắt ra ⇒ Kachi bắn
+     * `google.navigation:q=chợ bến thành **bằng vietma**` tới **Google Maps**: sai app, và địa chỉ mang theo hai
+     * chữ rác. Một dòng log, ba lỗi.
+     *
+     * ## Luật hẹp nhất chữa được đúng bệnh đã đo
+     * Rụng **đúng một ký tự cuối** của **từ cuối**, mọi từ trước phải khớp y nguyên, và cụm phải dài ≥
+     * [MIN_LOOSE_LEN] ký tự. Không dùng khoảng cách sửa chữa tổng quát ([VoicePhoneticMatch]) vì ở đó *"quay"* ·
+     * *"map"* · *"yt"* sẽ khớp vào hàng loạt tiếng Việt thường — mà cụm này đứng ngay trước phần **điểm đến**,
+     * tức chỗ đắt nhất để đoán sai.
+     *
+     * ⚠ Chỉ [VoiceTailClause.appAfterMarker] gọi (sau cụm đánh dấu *"bằng / trên / với"*): ở đó chữ *"bằng"* đã
+     * chứng minh người nói **đang nêu tên một app**. Đường không có cụm đánh dấu ([VoiceTailClause.appByTargetName])
+     * cố ý vẫn khớp CHÍNH XÁC — nới ở đó là mời mọi câu lạ mở app.
+     */
+    fun bySpokenLoose(words: List<String>, kind: VoiceAppKind? = null): VoiceAppTarget? {
+        if (words.isEmpty() || words.sumOf { it.length } < MIN_LOOSE_LEN) return null
+        return ALL.firstOrNull { t ->
+            (kind == null || t.kind == kind) && t.spoken.any { droppedLastChar(spokenWords(it), words) }
+        }
+    }
+
+    /** [said] đúng bằng [full] nhưng từ CUỐI thiếu một ký tự ở cuối. */
+    private fun droppedLastChar(full: List<String>, said: List<String>): Boolean {
+        if (full.size != said.size || full.isEmpty()) return false
+        if (full.dropLast(1) != said.dropLast(1)) return false
+        val last = full.last()
+        return last.length >= 2 && said.last() == last.dropLast(1)
+    }
+
+    /** Cụm ngắn hơn ngần này ký tự thì rụng một âm cũng thành một từ khác hẳn ⇒ không khớp mờ. */
+    private const val MIN_LOOSE_LEN = 5
+
     /** Số từ dài nhất mà một cách nói chiếm — chỗ gọi quét từ dài xuống ngắn (luật *"dãy dài nhất thắng"*). */
     val LONGEST_SPOKEN: Int = ALL.flatMap { it.spoken }.maxOfOrNull { spokenWords(it).size } ?: 1
 

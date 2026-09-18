@@ -348,7 +348,7 @@ class VoiceSession(
         // thường. [VoiceClarify.ask] trả `null` ở hai ca khác hẳn nhau (không nên hỏi · đã hỏi đủ 2 lượt) và tới
         // bản này cả hai rơi vào cùng một chỗ ⇒ [VoiceClarify.giveUp] — câu nêu một ví dụ có thật, đúng thứ spec
         // R8 hứa — **chưa từng chạy** ở đường hết-trần. Xem `clarifyExhausted`.
-        if (clarifyGaveUp(intents)) return
+        if (clarifyGaveUp(intents, my)) return
         d.execute(intents)
         // `say` chạy ĐỒNG BỘ bên trong `d.execute` cho mọi vế không phải tra mạng (cả hai đều trên luồng vẽ, và
         // `post` chạy thẳng khi đã ở luồng vẽ) ⇒ tới đây [batch] đã đủ. Mở cổng cho các dòng về muộn.
@@ -359,7 +359,9 @@ class VoiceSession(
         val pending = batch.any { VoiceFeedbackPhrase.isInterim(it) }
         // 1.70 [ĐO owner 2026-09-17] "feedback chưa nói hết câu đã tắt overlay": bản cũ hẹn đóng NGAY lúc execute
         // (LINGER 2,5 s) mà câu ~12 từ đọc 3–4 s. Nay lưới an toàn dài; mốc ĐỌC XONG ([onReplyDone]) mới nán lại.
-        scheduleClose(SPEAK_SAFETY_MS)
+        // [ĐO xe 2026-09-18] và lưới ấy phải theo ĐỘ DÀI CÂU, không phải một hằng 10 s: dưới load 14 Piper tổng
+        // hợp câu dài quá 10 s ⇒ chính lưới an toàn đóng tấm chữ giữa lúc đọc. Xem KDoc [VoiceSpeakBudget].
+        scheduleClose(VoiceSpeakBudget.estimateMs(batch, SPEAK_SAFETY_MS))
         logDone(intents, batch)
         clarifyRound = 0
         speakLines(batch) { post { onReplyDone(my, pending) } }
@@ -479,8 +481,17 @@ class VoiceSession(
         /** Ca thiếu quyền/chưa tải mô hình nán lâu hơn: nó có một nút phải bấm được. */
         const val FAIL_LINGER_MS = 8_000L
 
-        /** 1.70 — lưới an toàn: tấm chữ sống qua CẢ lượt đọc kể cả khi máy đọc treo (onDone không về). */
-        const val SPEAK_SAFETY_MS = 10_000L
+        /**
+         * 1.70 — lưới an toàn: tấm chữ sống qua CẢ lượt đọc kể cả khi máy đọc treo (onDone không về).
+         *
+         * [ĐO xe 2026-09-18] Từ bản này nó là **SÀN**, không phải toàn bộ lưới: `execute` cộng thêm theo độ dài
+         * câu qua [VoiceSpeakBudget.estimateMs]. 10 s → **15 s** vì chính con số cũ là thứ cắt tấm chữ giữa câu
+         * dưới tải CPU của xe (load 14) — lý do đầy đủ ở KDoc [VoiceSpeakBudget].
+         *
+         * Giá trị đọc từ `:core` để có **đúng một con số** (cùng luật với ba núm VAD): tên này ở lại vì nó là
+         * cách cả spec lẫn nhật ký gọi lưới ấy.
+         */
+        const val SPEAK_SAFETY_MS = VoiceSpeakBudget.FLOOR_MS
         /** 1.70 — vế tra mạng: câu trả lời thật tới ~20 s (15 s nối + 5 s đọc), tấm chữ chờ tới đó. */
         const val NETWORK_WAIT_MS = 22_000L
     }

@@ -72,9 +72,33 @@ object VoiceIntentParser {
      *
      * Đứng sau tất cả: mọi luật V1 chạy trước, không đổi một dòng. Chỉ nhận khi lần đọc lại ra một ý định CÓ
      * NGHĨA — không thì giữ nguyên câu báo cũ, kể cả **lý do** không hiểu (bài kiểm đang khoá lý do).
+     *
+     * ## D1 (log xe 2026-09-18) — BA cổng thêm vào, mỗi cổng chặn một lỗi ĐÃ ĐO
+     * Tầng chữa chính tả là chỗ ba lỗi nặng nhất của phiên log sinh ra: nó "sửa" một âm tiết thành một cụm của
+     * xe, và lần đọc lại thì có đủ động từ + đối tượng nên ra một ý định **rất tự tin mà sai**.
+     *  1. **Tính năng đã bỏ / không có nút** ⇒ trả lời đúng tên, không đem đi chữa. *"bật đèn khẩn cấp"* từng ra
+     *     `Control(trunk, 1)` = **mở cốp** (*"cấp"* → *"cốp"*, cặp lẫn owner đã nêu).
+     *  2. **Câu nêu một HỌ thứ mà chưa nói cái nào** ⇒ hỏi lại, không đoán sang họ khác. *"áp suất lốp bên trái
+     *     là bao nhiêu"* từng ra `Read(soc)` (*"bên"* → *"pin"*) — trả lời phần trăm pin cho một câu hỏi về lốp.
+     *  3. **Câu HỎI thì không bao giờ được thành lệnh GHI.** *"tất cả cửa đang khóa hay đang mở"* từng ra
+     *     `Control(sunroof, 1)` = **mở cửa sổ trời**. Cổng này đứng SAU phép chữa (chứ không chặn trước) để câu
+     *     hỏi nghe trượt vẫn chữa được thành một câu ĐỌC — chỉ chặn đúng đường ra lệnh ghi.
+     *
+     * ⚠ Cổng (2) và (3) **chỉ áp cho câu HỎI**, không áp cho câu ra lệnh. [ĐO off-car] siết sang cả câu lệnh thì
+     * hai phép chữa đang chạy đúng chết theo: *"mở góc sau"* (họ *"Góc …"*) và *"mật độ hai mươi hai độ"* (họ
+     * *"Độ …"*) — ở đó chính phép chữa mới là thứ **giải** được cái họ ấy, nên chặn nó là chặn ngược. Câu lệnh
+     * nói về một tính năng không có thì đã có cổng (1) lo.
      */
-    private fun fuzzy(got: VoiceIntent, t: List<Token>, terms: List<VoiceTerm>, p: List<String>, s: String) =
-        VoicePhoneticMatch.orRepair(got, t, terms) { parseTokens(it, terms, p, s) }
+    private fun fuzzy(got: VoiceIntent, t: List<Token>, terms: List<VoiceTerm>, p: List<String>, s: String):
+        VoiceIntent {
+        if (got !is VoiceIntent.Unknown) return got
+        if (got.reason == VoiceUnknownReason.FEATURE_GONE) return got
+        if (VoiceFeatureGone.match(t) != null) return VoiceIntent.Unknown(VoiceUnknownReason.FEATURE_GONE, s)
+        val question = VoiceQuestion.isQuestion(t)
+        if (question && VoiceClarify.namesAFamily(t, terms)) return got
+        val out = VoicePhoneticMatch.orRepair(got, t, terms) { parseTokens(it, terms, p, s) }
+        return if (question && VoiceQuestion.writesToCar(out)) got else out
+    }
 
     /**
      * Dòng *"đã bỏ qua «…»"* cho vế bị nuốt khi cả câu được hiểu theo cách khác — hoặc rỗng khi không có gì bị bỏ.
@@ -156,15 +180,29 @@ object VoiceIntentParser {
         val half = VoiceControlParse.mentionsHalf(t)
 
         // (a) Cụm hỏi (*"… bao nhiêu?"*) — người Việt hỏi xe bằng cụm hỏi, không bằng động từ đứng đầu.
-        val ask = askAt(t)
+        val ask = VoiceQuestion.askAt(t)
         if (ask != null) {
             val (at, len) = ask
             val body = dropFillers(t.subList(0, at) + t.subList(at + len, t.size))
             return objectOnlyRead(body, terms, original)
         }
+        // (a″) D1 — **câu hỏi LỰA CHỌN** (*"… đang khóa hay đang mở"*, *"… hay không"*) ⇒ ép ĐỌC.
+        //
+        // [ĐO xe 2026-09-18] *"tất cả cửa đang khóa hay đang mở"* ra **`Control(sunroof, 1)`** = mở cửa sổ trời.
+        // Câu ấy không có cụm hỏi nào cắt được, nên nhánh (a) không thấy nó; mà bỏ dấu thì *"tất"* = *"tắt"* ⇒
+        // nó có đủ hình dạng một câu ra lệnh. Nhận dạng theo HÌNH DẠNG câu hỏi rồi đi đường ĐỌC là chỗ chữa
+        // duy nhất không phải liệt kê từng câu — xem ba cổng ở [VoiceQuestion.isChoice].
+        if (VoiceQuestion.isChoice(t)) return objectOnlyRead(VoiceQuestion.strip(t), terms, original)
+        // (a‴) D2 — câu hỏi mức mà chữ hỏi rụng còn MỘT tiếng ở cuối (*"ghế mát mức mấy"* → ASR *"ghế mất mấy"*).
+        //       Chỉ đổi được câu thành một lệnh ĐỌC, và chỉ khi phần thân ra một datum thật ⇒ không thân thì đi
+        //       tiếp y như chưa có gì. Ba cổng chặn *"bật máy lạnh"* ở [VoiceQuestion.bareAskBody].
+        VoiceQuestion.bareAskBody(t)?.let { body ->
+            val read = objectOnlyRead(body, terms, original)
+            if (read is VoiceIntent.Read) return read
+        }
         // (a') *"chỉ số X"* = *"cho biết giá trị của X"* — là câu ĐỌC kể cả khi KHÔNG có cụm hỏi (*"chỉ số bụi mịn
         //      hiện nay"*). [objectOnlyRead] tự bỏ cụm dẫn để *"số"* không nuốt thành datum `gear`.
-        if (READ_LEADS.any { VoiceLexicon.phraseAt(t, 0, it) }) return objectOnlyRead(t, terms, original)
+        if (VoiceQuestion.readsLead(t)) return objectOnlyRead(t, terms, original)
 
         // (b) Động từ đứng đầu, khớp cụm DÀI nhất.
         val verbHit = VoiceGrammar.VERBS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it.first) }
@@ -286,6 +324,11 @@ object VoiceIntentParser {
 
     /** Câu chỉ có đối tượng + đuôi hỏi ⇒ ĐỌC. Không khớp được datum nào thì nói rõ là thiếu đối tượng. */
     private fun objectOnlyRead(body0: List<Token>, terms: List<VoiceTerm>, original: String): VoiceIntent {
+        // D3 (log xe 2026-09-18) — câu HỎI về một tính năng đã bỏ thì trả lời đúng tên nó, TRƯỚC khi tra datum.
+        // *"xe đang sạc pin hay không"* trước đây ra `Read(soc)`: máy đọc phần trăm pin cho một câu hỏi về SẠC —
+        // đúng datum gần nhất, sai câu hỏi. Đây là chỗ an toàn để hỏi bảng: một câu HỎI không bao giờ là một
+        // điểm đến ([VoiceIntent.Nav] không đi qua đây), nên cụm *"sạc pin"* không thể cướp *"trạm sạc pin"*.
+        VoiceFeatureGone.match(body0)?.let { return VoiceIntent.Unknown(VoiceUnknownReason.FEATURE_GONE, original) }
         // [ĐO xe 2026-09-17 · log] *"chỉ số bụi mịn là bao nhiêu"* ra `Read(gear)` vì *"số"* (nhãn datum `gear`)
         // khớp Ở TRƯỚC *"bụi mịn"*. *"chỉ số X"* = *"giá trị của X"* ⇒ bỏ cụm dẫn để *"số"* thôi nuốt câu.
         val body = stripReadLead(body0)
@@ -304,7 +347,9 @@ object VoiceIntentParser {
 
     /** Bỏ cụm dẫn *"chỉ số"* đầu câu hỏi (*"chỉ số bụi mịn"*) — nó là "giá trị của", không phải datum `gear`. */
     private fun stripReadLead(body: List<Token>): List<Token> {
-        READ_LEADS.forEach { lead -> if (VoiceLexicon.phraseAt(body, 0, lead)) return dropFillers(body.subList(lead.size, body.size)) }
+        VoiceQuestion.READ_LEADS.forEach { lead ->
+            if (VoiceLexicon.phraseAt(body, 0, lead)) return dropFillers(body.subList(lead.size, body.size))
+        }
         return body
     }
 
@@ -421,9 +466,7 @@ object VoiceIntentParser {
         }
 
     // ── Câu hỏi ĐỌC ──────────────────────────────────────────────────────────────────────────────
-
-    /** Cụm dẫn *"chỉ số X"* = *"giá trị của X"* — bỏ ở đầu câu hỏi để *"số"* không nuốt thành datum `gear`. */
-    private val READ_LEADS: List<List<String>> = listOf(listOf("chi", "so"))
+    // Cụm dẫn *"chỉ số X"* nay khai ở [VoiceQuestion.READ_LEADS] — [VoiceClarify] cần cùng bảng ấy (xem KDoc ở đó).
 
     // ── Tiện ích ─────────────────────────────────────────────────────────────────────────────────
 
@@ -432,20 +475,4 @@ object VoiceIntentParser {
         while (i < t.size && t[i].norm in VoiceLexicon.FILLERS) i++
         return if (i == 0) t else t.subList(i, t.size)
     }
-
-    /**
-     * Vị trí + độ dài của cụm hỏi (*"bao nhiêu"*, *"thế nào"*…) ở BẤT KỲ đâu trong câu, hoặc `null`.
-     *
-     * ## [SOÁT P2] Vì sao không còn bắt buộc nằm ở CUỐI
-     * Bản đầu chỉ nhận đuôi câu nên *"pin còn bao nhiêu"* hiểu được mà *"còn bao nhiêu pin"* thì NO_VERB — cùng
-     * một câu hỏi, đảo trật tự là câm. Tiếng Việt đặt cụm hỏi ở giữa cũng tự nhiên như ở cuối (*"bao nhiêu phần
-     * trăm pin"*). Cắt cụm hỏi ra rồi đọc phần còn lại xử lý được cả ba trật tự bằng một luật.
-     *
-     * Không sợ nuốt nhầm câu HÀNH ĐỘNG: năm cụm trong [VoiceLexicon.READ_TAILS] đều là cụm **hỏi** thuần
-     * (*"bao nhiêu"*, *"thế nào"*, *"ra sao"*, *"how much/many"*), không cụm nào xuất hiện trong một câu ra lệnh.
-     */
-    private fun askAt(t: List<Token>): Pair<Int, Int>? =
-        VoiceLexicon.READ_TAILS.firstNotNullOfOrNull { words ->
-            t.indices.firstOrNull { VoiceLexicon.phraseAt(t, it, words) }?.let { it to words.size }
-        }
 }

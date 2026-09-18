@@ -30,7 +30,19 @@ class VoiceSpeakerRouter(
 ) : VoiceSpeaker {
 
     private val android = AndroidTtsSpeaker(ctx)
-    private val sherpa = SherpaTtsSpeaker(ctx)
+
+    /**
+     * Đường Piper — **qua ranh giới tiến trình** từ #0 (2026-09-18).
+     *
+     * [RemotePiperSpeaker] chuyển câu sang [PiperTtsService] (`android:process=":tts"`); engine ONNX không còn
+     * sống trong tiến trình launcher. Lý do là một tombstone, không phải một sở thích kiến trúc: `OfflineTts.generate`
+     * SIGSEGV trên xe làm **chết cả launcher** ⇒ mất binding phím (`docs/diagnostics/oncar-piper-crash-binding-2026-09-18.md`).
+     *
+     * Với lớp này thì **không có gì đổi**: vẫn là một [VoiceSpeaker] báo `kind = SHERPA_OFFLINE`, vẫn `available()`
+     * bằng cách kiểm gói trên đĩa, vẫn gọi `onDone` đúng một lần. Đừng dựng lại [SherpaTtsSpeaker] ở đây —
+     * `VoiceTtsIsolationContractTest` sẽ đỏ, và đúng như thế: đó là kéo con trỏ native về lại tiến trình launcher.
+     */
+    private val sherpa = RemotePiperSpeaker(ctx)
 
     /** Giọng bé — DÙNG [sherpa] làm đường lùi (chia sẻ, không dựng engine thứ hai); Router sở hữu vòng đời [sherpa]. */
     private val clip = ClipSpeaker(ctx, fallback = sherpa)
