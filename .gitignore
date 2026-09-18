@@ -114,3 +114,6 @@ car-logs*/
 # Giọng ghi âm của owner/anh em — dữ liệu cá nhân, chỉ giữ local (phát lại qua scripts/voice)
 voice/record/
 
+
+# Log/ghi âm voice thu trên xe (PII — KHÔNG commit)
+logs/
