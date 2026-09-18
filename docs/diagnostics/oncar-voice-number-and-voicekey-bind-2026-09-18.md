@@ -53,3 +53,27 @@ Tách `VoiceControlParse.kt` (VoiceIntentParser về 451 dòng < trần 500). [�
 4. **Phụ (môi trường)**: `adb` daemon Mac bị macOS chặn LAN — dùng client thô Python để vào xe cho phiên sau.
 
 **[CHƯA BIẾT]**: thread nào spin gây load 14 (cần đo) · reboot có giữ bind lâu không · macOS Local Network cấp quyền cho adb thế nào.
+
+## 4. [ĐO LIVE trên xe 2026-09-18 13:18–13:24, adb wireless 172.20.10.8:5555] — TÌM RA THỦ PHẠM CPU + KHÔI PHỤC PHÍM
+
+Vào xe bằng **client ADB thô pure-python** (`/tmp/adb_raw.py` — CNXN + AUTH ký `~/.android/adbkey` PKCS#8 + shell; không cần adb binary/cryptography). **adb wireless SỐNG** suốt phiên ⇒ **BUG2 KHÔNG tái hiện lúc này** (chập chờn, không chết vĩnh viễn).
+
+**Thủ phạm CPU (8 lõi, `load 10.71/14.45/17.02` → 10.02/11.29/14.78) — `top -b -n 2`:**
+
+| PID | Tiến trình | %CPU | Ghi chú |
+|---|---|---|---|
+| 5537 | com.google.android.apps.maps | **53–61** | **Chạy trong 1 Ô Kachi** (freeform stack #10, VD `kachi-slot-0` display 5) — nav/render |
+| 3929 | com.byd.cdr | 38–39 | BYD driving recorder — KHÔNG phải Kachi |
+| 138 | surfaceflinger | 34 | Compositing **3 display**: chính(0) + cụm(2 `fission_bg_xdja`) + ô-VD(5) |
+| 10489 | vn.vietmap.live | 16–18 | Kachi autostart (bóng/badge) |
+| 410/387 | camera / media.codec | 14–16 | |
+| 1700 | com.byd.vrassistant.xf (iFlytek) | 13–14 | trợ lý zin — KHÔNG phải Kachi |
+| 14083 | **com.byd.launcher (Kachi)** | **2** | **KHÔNG phải thủ phạm** |
+
+⇒ **Kachi process 2%**, nhưng **TÍNH NĂNG Kachi induce phần lớn tải**: chiếu GMaps vào ô (→ GMaps 61% + surfaceflinger 34% compositing thêm 2 display) + autostart VietMap (18%). Cộng BYD cdr 39% + iFlytek 13% (của BYD) ⇒ 8 lõi bão hoà ⇒ lag. GMaps 61% là con lớn nhất — là nav-in-slot owner tự chọn; không rẻ hơn được.
+
+**Phím gán không ăn — GỐC + KHÔI PHỤC LIVE:** `dumpsys accessibility`: `NavAccessibilityService` **ENABLED nhưng KHÔNG Bound** (Bound chỉ StatusBar; Binding rỗng) ⇒ `onKeyEvent` không bắt ⇒ phím chết. iFlytek cũng không Bound. Service **rớt bind** dưới áp lực CPU/RAM. **Toggle a11y TRỰC TIẾP** (`settings put secure enabled_accessibility_services` bỏ Kachi → thêm lại) ⇒ **BOUND NGAY** (label "ClusterNav — booster đọc", `capabilities=9` = window-content + **FILTER_KEY_EVENTS 8**), giữ bound sau đó ⇒ **phím chạy lại**. Cơ chế rebind ĐÚNG; Kachi tự-rebind thua vì **`GRANT_TIMEOUT_MS=9s`** đi qua **dadb** (dưới load 14 dadb chậm > 9s → cắt giữa toggle), còn toggle settings trực tiếp thì nhanh.
+
+**FIX (1.78):** nới `NavConnect.GRANT_TIMEOUT_MS` **9s → 20s** ⇒ rebind hoàn tất dưới tải. [SUY] "Sửa ngay" / OFF→ON sẽ ăn trên xe kể cả load 14. **Còn nợ**: service vẫn rớt bind lại nếu áp lực kéo dài (gốc là CPU); giảm tải (bớt chạy đồng thời GMaps-in-slot + VietMap) là cách bền hơn — owner quyết vì đó là cách dùng.
+
+**Tồn**: `/tmp/adb_raw.py` là client tạm (chưa lưu repo) — cân nhắc `scripts/vehicle/kachi/adb_raw.py` cho phiên sau.

@@ -42,7 +42,11 @@ object NavConnect {
     // [grantingAcc] single-flight forever: if it did, every later grant (incl. re-toggling 'Nút vật lý') would
     // no-op until an app RESTART. On timeout we interrupt the worker and force-release the flag. One attempt per
     // call — NO auto-loop/backoff. Kept comfortably above the ~2 s of settle+toggle sleeps in forceRebindIfNeeded.
-    private const val GRANT_TIMEOUT_MS = 9_000L
+    // [ĐO xe 2026-09-18, load 14] 9s KHÔNG đủ dưới tải: dadb chậm ⇒ settle(1.2s)+toggle(0.8s)+nhiều lượt đọc
+    // verify vượt 9s ⇒ worker bị cắt GIỮA toggle ⇒ rebind thất bại ("phím gán không ăn"). [ĐO] toggle a11y
+    // TRỰC TIẾP (settings, không dadb) thì bind lại NGAY cả khi load 14 ⇒ cơ chế đúng, chỉ thiếu thời gian.
+    // Nới 20s để hoàn tất dưới tải nặng; single-flight vẫn được nhả sau timeout (không kẹt vĩnh viễn).
+    private const val GRANT_TIMEOUT_MS = 20_000L
 
     /** Reconnect NGAY qua dadb (chạy nền). An toàn gọi nhiều lần. */
     fun reconnect(ctx: Context) {
