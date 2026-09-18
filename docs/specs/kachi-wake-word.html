@@ -188,7 +188,15 @@ ul{padding-left:22px}li{margin:3px 0}
 </ul>
 
 <h2>10. Reviewer Log</h2>
-<ul><li>(chưa có — spec mới draft.)</li></ul>
+<h3>Pass 1 — 2026-09-18 (senior review lớp runtime, APPROVED off-car)</h3>
+<p>Review độc lập lớp always-on-mic (CPU-critical). <b>15 phát hiện, tất cả đã vá</b>; [ĐO tự chạy lại] 5 module <b>4743</b> test / 0 đỏ (core 2255). Không nới lỏng guard nào; mutation-proved 2 guard mới đỏ được.</p>
+<ul>
+<li><b>[P0]×4</b>: (1) <b>busy-loop 100% CPU</b> khi `AudioRecord.read()` trả số ÂM (mic bị app khác chiếm) — `if (n<=0) continue` quay vòng không chặn = ĐÚNG nỗi lo owner ⇒ n&lt;0 nhả mic + backoff luỹ tiến. (2) Bật wake <b>giết nút mic</b>: listener giữ single-flight liên tục ⇒ mọi lối vào lệnh bị `Busy("wake")` ⇒ thêm bắt tay <b>yield</b> (`VoiceMicPreempt` :core, VoiceCapture chiếm mic từ wake trong ≤600ms). (3) Re-arm wake <b>ăn cầu chì 12/phút</b> ⇒ nút tài xế bị `Fused` tới 60s ⇒ `acquireWake` giữ chủ KHÔNG tính budget. (4) <b>Orphan thread double-mic</b> khi screen off→on nhanh ⇒ luồng park dài + nhãn `wake#n` + release theo-chủ + stop() join ≤700ms.</li>
+<li><b>[P1]×4</b>: ngoại lệ giết feature vĩnh viễn → backoff không-vĩnh-viễn; KWS chạy 100% khung khi cabin ồn liên tục → <b>tầng 4 budget 40 khung/10s</b> (≤40% duty); model có nhưng thiếu keywords → degrade RMS-only; `startForegroundService` thiếu `startForeground` → crash ⇒ startForeground trước.</li>
+<li><b>[P2]×5 / [P3]×2</b>: FGS type specialUse→<b>microphone</b> + `FOREGROUND_SERVICE_MICROPHONE` ([SUY] chưa verify xe) · use-after-free native KWS → cờ `released` idempotent · buffer mic 200ms→1s · thiếu recordingState check · model nạp lười khi màn sáng · rò AudioRecord chưa init.</li>
+<li><b>Refactor kèm</b>: VoiceCapture 523→494 (tách `VoiceMicPreempt` :core, 4 ca preempt test off-car). VoiceWakeListener 320 · Service 169 · Controller 111 — đều &lt; 500.</li>
+</ul>
+<p><b>[SUY, chưa verify xe]</b>: FGS type `microphone` trên packageinstaller DL3 (API 29); duty-cycle/backoff số thật; wake→command handoff (đọc hai đầu: KachiHomeActivity singleTask + onNewIntent gọi startVoiceIfRequested ⇒ đúng).</p>
 
 </div></body>
 </html>

@@ -241,6 +241,14 @@ class SettingsSections(
         body.addView(update)
         body.addView(rows.button(context.getString(R.string.kachi_nav_stop)) { deps.bridge.navStop() })
 
+        // ── "Hey Kachi" wake-word (W-WAKE, owner 2026-09-18) — nghe câu gọi rảnh tay. Mặc định TẮT (nghe nền =
+        // tốn CPU/pin). Gạt ⇒ ghi pref (theo XE) + VoiceWakeService.sync bật/tắt FGS. Cầu chì false-accept tự tắt. ──
+        body.addView(rows.checkRow(
+            on = deps.bridge.wakeEnabled(),
+            title = context.getString(R.string.kachi_wake_title),
+            sub = context.getString(R.string.kachi_wake_sub),
+        ) { on -> deps.bridge.setWakeEnabled(on) })
+
         // ── Nâng cao ──
         // ⚠ Dòng "Màn nâng cao (ClusterNav)" đã XOÁ 2026-09-13: màn cũ bị gỡ hẳn (S3 · R1 —
         // docs/specs/kachi-remove-legacy-screen.html). Hai mục còn lại là hai màn CHẨN ĐOÁN thật, không phải

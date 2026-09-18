@@ -212,6 +212,13 @@ object Prefs {
     fun voiceNavDefaultApp(ctx: Context): String = sp(ctx).getString(K_VOICE_NAV_APP, "gmaps") ?: "gmaps"
     fun setVoiceNavDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_NAV_APP, key).apply()
 
+    // "Hey Kachi" wake-word (W-WAKE) — theo XE (ProfileScope.DEVICE_KEYS), mặc định **TẮT** (nghe nền = rủi ro CPU
+    // → opt-in). Câu gọi = preset id ([VoiceWakePhrase]). VoiceWakeService.sync() đọc cờ này để bật/tắt FGS.
+    fun wakeEnabled(ctx: Context): Boolean = sp(ctx).getBoolean("voice_wake_enabled", false)
+    fun setWakeEnabled(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("voice_wake_enabled", on).apply()
+    fun wakePhraseId(ctx: Context): String = sp(ctx).getString("voice_wake_phrase", "hey_kachi") ?: "hey_kachi"
+    fun setWakePhraseId(ctx: Context, id: String) = sp(ctx).edit().putString("voice_wake_phrase", id).apply()
+
     const val VK_TARGET_DEFAULT = "ai.zalo.kiki.car"           // mặc định Kiki (khớp default cũ 0=Kiki)
 
     fun voiceKeyEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_ENABLED, false)

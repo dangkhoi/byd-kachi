@@ -99,4 +99,51 @@ class VoiceWakeSafetyTest {
         // chủ vẫn là wake (không tạo khe trống): ai xin đều thấy wake giữ
         assertEquals(VoiceSingleFlight.Grant.Busy("wake"), VoiceSingleFlight.acquire("khac", 3102L))
     }
+
+    // ── [SOÁT 2026-09-18] Bộ nghe nền KHÔNG được tiêu hạn mức của phiên lệnh ──────────────────────────────────
+
+    /**
+     * Ca hỏng: hệ nóng ⇒ load-guard cắt ⇒ vòng ngoài của bộ nghe xin lại mic ~30 lần/phút. Nếu mỗi lượt ấy tiêu
+     * một suất của trần 12/phút thì **cú bấm nút mic của người lái nhận `Fused`** — một tính năng mặc định TẮT
+     * làm chết tính năng chính. [acquireWake] vì thế không đếm; hạn mức được tiêu ở [VoiceSingleFlight.handoff].
+     */
+    @Test fun `acquireWake khong tieu han muc phut`() {
+        repeat(30) {
+            assertEquals(VoiceSingleFlight.Grant.Ok, VoiceSingleFlight.acquireWake("wake#$it"))
+            VoiceSingleFlight.release("wake#$it")
+        }
+        assertEquals(0, VoiceSingleFlight.opensInWindow(1_000L), "vòng wake xin lại KHÔNG được đếm vào cầu chì")
+        assertEquals(VoiceSingleFlight.Grant.Ok, VoiceSingleFlight.acquire("chinh", 1_000L), "nút mic vẫn phải mở được")
+    }
+
+    /**
+     * Ca hỏng: một luồng wake CŨ đang thoát (tắt màn / service dựng lại) gọi nhả trong lúc chủ đã là lượt MỚI.
+     * Nhả trần sẽ xoá chủ của lượt mới ⇒ một phiên lệnh xin được mic **cùng lúc** với bộ nghe mới ⇒ hai
+     * `AudioRecord`. Nhả theo nhãn = nhả theo quyền sở hữu.
+     */
+    @Test fun `nha theo nhan khong xoa chu cua luot khac`() {
+        VoiceSingleFlight.acquireWake("wake#2")
+        VoiceSingleFlight.release("wake#1") // luồng CŨ thoát muộn
+        assertEquals(VoiceSingleFlight.Grant.Busy("wake#2"), VoiceSingleFlight.acquire("chinh", 5_000L))
+        VoiceSingleFlight.release("wake#2")
+        assertEquals(VoiceSingleFlight.Grant.Ok, VoiceSingleFlight.acquire("chinh", 5_001L))
+    }
+
+    @Test fun `nhan wake nhan dien duoc ca dang co hau to`() {
+        assertTrue(VoiceSingleFlight.isWakeLabel("wake"))
+        assertTrue(VoiceSingleFlight.isWakeLabel("wake#17"))
+        assertFalse(VoiceSingleFlight.isWakeLabel("chinh"), "phiên lệnh KHÔNG được coi là wake (nó không nhường)")
+    }
+
+    /** Phiên lệnh xin bộ nghe nhường mic; cờ phải tắt ngay khi mic đổi chủ (không để lượt sau tự nhường oan). */
+    @Test fun `xin nhuong mic dung cho chu wake, va tat khi doi chu`() {
+        assertFalse(VoiceSingleFlight.yieldRequested(), "chưa ai giữ mic ⇒ không có gì để nhường")
+        VoiceSingleFlight.requestYield()
+        assertFalse(VoiceSingleFlight.yieldRequested())
+        VoiceSingleFlight.acquireWake("wake#3")
+        VoiceSingleFlight.requestYield()
+        assertTrue(VoiceSingleFlight.yieldRequested(), "bộ nghe phải thấy yêu cầu nhường")
+        VoiceSingleFlight.release("wake#3")
+        assertFalse(VoiceSingleFlight.yieldRequested(), "nhả xong ⇒ xoá cờ")
+    }
 }

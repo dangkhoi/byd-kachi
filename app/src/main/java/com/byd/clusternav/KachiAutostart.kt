@@ -112,6 +112,9 @@ object KachiAutostart {
                 //     Covers MY_PACKAGE_REPLACED (installer kills us, does not relaunch). No --display ⇒ gate ALLOWs.
                 seam("am start -n $launchComp")
                 Log.i(TAG, "requested HOME up ($launchComp) — Activity restores + mounts saved slots")
+
+                // (5) W-WAKE — bật FGS "Hey Kachi" nếu công tắc ON (sync tự stopSelf khi OFF). Mặc định TẮT.
+                runCatching { com.byd.clusternav.launcher.voice.VoiceWakeService.sync(app) }
             }.onFailure { Log.w(TAG, "kachi auto-start failed (degrade-safe, retried next trigger): ${it.message}") }
         } finally {
             finishRun()

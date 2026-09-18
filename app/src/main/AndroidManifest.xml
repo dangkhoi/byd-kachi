@@ -24,6 +24,8 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- W-WAKE: FGS thu micro (VoiceWakeService, type=microphone). API 34+ đòi quyền này; API 29 (xe) bỏ qua. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- liệt kê app cho picker "Chiếu app lên cụm". API29 không lọc; thêm để chắc trên API30+ (app sideload cá nhân). -->
     <!-- Personal sideloaded app manager intentionally enumerates the full installed catalog. -->
     <uses-permission
@@ -173,6 +175,19 @@
             android:name=".VietMapAutostartService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
+        </service>
+
+        <!-- W-WAKE (2026-09-18): "Hey Kachi" — FGS micro nền nghe câu gọi (owner: nghe cả khi launcher không hiện).
+             Gate màn-sáng + load-guard (lá chắn CPU chính). Mặc định TẮT (opt-in); started/stopped by
+             VoiceWakeService.sync() theo công tắc + boot. Never exported.
+             ⚠ Type = `microphone`, KHÔNG `specialUse` như các FGS khác: đây là FGS **duy nhất thu micro**, và
+             `microphone` là hằng có từ API 29 (đúng ROM xe) đồng thời là type **bắt buộc** cho việc thu nền từ
+             API 30+ (`specialUse` ở đó không cho quyền mic). Kèm `FOREGROUND_SERVICE_MICROPHONE` — API 34+ ném
+             SecurityException nếu thiếu; API 29 bỏ qua tên quyền không biết nên vô hại trên xe. -->
+        <service
+            android:name=".launcher.voice.VoiceWakeService"
+            android:exported="false"
+            android:foregroundServiceType="microphone">
         </service>
 
         <!-- B6 (launcher): Kachi auto-start — surface-INDEPENDENT boot orchestration (seed freeform + set-home +

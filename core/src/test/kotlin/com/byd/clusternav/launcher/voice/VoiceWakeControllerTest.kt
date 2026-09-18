@@ -42,6 +42,37 @@ class VoiceWakeControllerTest {
         assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, 200), "không khớp ⇒ không nghỉ")
     }
 
+    /**
+     * ═══ TẦNG 4 — trần THỜI LƯỢNG suy diễn ═══════════════════════════════════════════════════════════════
+     * Ca hỏng mà ba tầng đầu KHÔNG bịt: **nhạc trong cabin** = RMS nằm trên ngưỡng cổng năng lượng **liên tục**,
+     * mà nền của cổng ấy cố ý chỉ học lúc im ⇒ `voiced()` trả `true` mọi khung ⇒ KWS chạy 100 % thời gian. Trần
+     * này cho một chặn trên chứng minh được, không phụ thuộc phổ âm của cabin.
+     */
+    @Test fun `on lien tuc tren nguong van khong cho KWS chay qua tran thoi luong`() {
+        val c = VoiceWakeController(
+            gate = VoiceWakeGate(),
+            loadGuard = VoiceLoadGuard(suspendAbove = 6.0, resumeBelow = 4.0, resumeStableReads = 1),
+            maxKwsFramesPerWindow = 5, kwsWindowMs = 1_000L,
+        )
+        // 5 khung đầu (trong cùng cửa sổ) được chạy KWS…
+        for (i in 0 until 5) {
+            assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, 100L + i * 10), "khung #${i + 1}")
+        }
+        // …khung thứ 6 trong cùng cửa sổ bị hạ về IDLE dù tiếng vẫn to (đây là chỗ CPU được cắt).
+        assertEquals(VoiceWakeController.Frame.IDLE, c.onFrame(800.0, 1.0, 160L), "quá trần ⇒ IDLE, chỉ còn toán RMS")
+        assertEquals(VoiceWakeController.Frame.IDLE, c.onFrame(800.0, 1.0, 900L))
+        // Cửa sổ trượt qua ⇒ lại được chạy (không phải một lần cắt vĩnh viễn).
+        assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, 1_200L), "cửa sổ trượt ⇒ có suất mới")
+    }
+
+    @Test fun `tran thoi luong khong chan mot cau goi binh thuong`() {
+        val c = controller() // mặc định: 40 khung / 10 s
+        // Câu gọi "Hey Kachi" ≈ 1 s ≈ 10 khung 100 ms — phải qua hết, không khung nào bị bỏ.
+        for (i in 0 until 10) {
+            assertEquals(VoiceWakeController.Frame.RUN_KWS, c.onFrame(800.0, 1.0, i * 100L), "khung #${i + 1} của câu gọi")
+        }
+    }
+
     @Test fun `cau chi false-accept tu tat sau qua nhieu wake`() {
         val c = controller()
         // 6 wake đầu trong cửa sổ ⇒ FIRE; wake thứ 7 ⇒ FUSED

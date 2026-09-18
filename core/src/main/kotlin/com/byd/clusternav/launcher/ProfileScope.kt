@@ -184,6 +184,15 @@ object ProfileScope {
                 "voice_speak_replies/voice_mic_pill",
         )
         put(
+            "voice_wake_enabled",
+            "\"Hey Kachi\" wake-word (W-WAKE, owner 2026-09-18) — nghe câu gọi rảnh tay. Theo XE: nghe-nền là " +
+                "tính chất phần cứng/ROM của chiếc xe (mic + tải CPU), không đi theo người lái. Mặc định TẮT.",
+        )
+        put(
+            "voice_wake_phrase",
+            "Câu gọi preset của \"Hey Kachi\" (VoiceWakePhrase id). Theo XE cùng voice_wake_enabled.",
+        )
+        put(
             "voice_mic_source",
             "V3 · R1 — nguồn micro thử TRƯỚC. Theo XE vì nó là một tính chất của **phần cứng và ROM của chính " +
                 "chiếc xe này** ([ĐO] nguồn 6 gần câm trên DiLink3.0), không phải sở thích của người lái; chép " +

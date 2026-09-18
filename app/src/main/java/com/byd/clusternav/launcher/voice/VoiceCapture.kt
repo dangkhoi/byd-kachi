@@ -141,8 +141,20 @@ internal class VoiceCapture(private val ctx: Context) {
         // đi qua, không phải nhớ gọi thêm gì. Xem KDoc [VoiceSingleFlight].
         when (val grant = VoiceSingleFlight.acquire(label)) {
             is VoiceSingleFlight.Grant.Busy -> {
-                Log.w(TAG, "chắn lượt '$label': micro đang thuộc lượt '${grant.holder}' — bỏ qua")
-                return Heard("", kept, 0)
+                // ═══ [SOÁT 2026-09-18] BỘ NGHE "Hey Kachi" GIỮ MIC LIÊN TỤC ⇒ PHẢI XIN NÓ NHƯỜNG ═════════
+                // Bộ nghe wake không phải một phiên: nó giữ chốt **suốt thời gian màn sáng**. Không có bước này
+                // thì mọi lối vào phiên lệnh (nút mic · ô thanh nút · phím vô-lăng · cầu kiểm thử) chỉ nhận
+                // `Busy("wake")` — tức **bật Hey Kachi làm chết nút mic**, một tính năng mặc định-TẮT giết tính
+                // năng chính. Chờ có **trần cứng** ([VoiceMicPreempt], chia thành nhịp nhỏ): bộ nghe hỏi cờ
+                // nhường mỗi khung (~100 ms) rồi nhả trong một khung + `stop/release`, nên trần này rộng gấp
+                // nhiều lần thời gian thật cần. Hết trần thì cư xử y như trước (một dòng nhật ký rồi rút) —
+                // KHÔNG có đường chờ vô hạn nào ở đây. Lượt bị chắn bởi một phiên khác thì **không** chờ: chốt
+                // một-lượt sinh ra để từ chối NGAY (4 mic trong 300 ms), giữ nguyên hành vi ấy.
+                val preempted = VoiceSingleFlight.isWakeLabel(grant.holder) && VoiceMicPreempt.preempt(label)
+                if (!preempted) {
+                    Log.w(TAG, "chắn lượt '$label': micro đang thuộc lượt '${grant.holder}' — bỏ qua")
+                    return Heard("", kept, 0)
+                }
             }
             is VoiceSingleFlight.Grant.Fused -> {
                 Log.w(

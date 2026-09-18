@@ -513,12 +513,12 @@ class VoiceCommandWiringContractTest {
     @Test
     fun `chi mot tep duy nhat mo micro`() {
         val users = voiceSources().filter { (_, src) -> src.contains("AudioRecord(") }.map { it.first }
-        assertEquals(listOf("VoiceCapture.kt"), users.sorted(), "chỉ `VoiceCapture` được mở micro; thấy: $users")
+        assertEquals(listOf("VoiceCapture.kt", "VoiceWakeListener.kt"), users.sorted(), "chỉ VoiceCapture (lệnh) + VoiceWakeListener (wake) được mở micro; một-mic do VoiceSingleFlight đảm bảo; thấy: $users")
         val all = SourceRoots.moduleSourceRoots().flatMap { root ->
             root.toFile().walkTopDown().filter { it.isFile && it.name.endsWith(".kt") }
                 .filter { it.readText().contains("AudioRecord(") }.map { it.name }.toList()
         }
-        assertEquals(listOf("VoiceCapture.kt"), all.sorted(), "không tệp nào NGOÀI `Voice*` được mở micro; thấy: $all")
+        assertEquals(listOf("VoiceCapture.kt", "VoiceWakeListener.kt"), all.sorted(), "chỉ hai tệp Voice* mở micro (lệnh + wake); thấy: $all")
     }
 
     /** Manifest phải xin `RECORD_AUDIO` — đảo đúng bài canh cũ của R8, cùng một chỗ, cùng một tệp. */

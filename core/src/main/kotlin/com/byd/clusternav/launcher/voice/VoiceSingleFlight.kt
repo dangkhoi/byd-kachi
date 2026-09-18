@@ -50,6 +50,20 @@ object VoiceSingleFlight {
 
     const val WINDOW_MS = 60_000L
 
+    /**
+     * Nhãn của bộ nghe **"Hey Kachi"** — lượt DUY NHẤT giữ micro **liên tục** thay vì theo phiên.
+     *
+     * Nó khác mọi nhãn khác ở hai điểm, và cả hai đều phải được lớp này biết (nếu không thì hai tính năng đúng
+     * khi đứng riêng sẽ sai khi gặp nhau — đúng họ lỗi giao-điểm mà dự án đã trả giá):
+     *  1. **[acquireWake] KHÔNG tiêu hạn mức phút** — xem KDoc ở đó.
+     *  2. **Nó nhường được** ([requestYield]) — vì nếu không thì người lái bấm nút mic sẽ chỉ nhận `Busy("wake")`
+     *     mãi mãi.
+     */
+    const val LABEL_WAKE = "wake"
+
+    /** Chủ hiện tại có phải bộ nghe wake không (nhãn có thể mang hậu tố `#<số>` của từng lượt chạy). */
+    fun isWakeLabel(label: String): Boolean = label == LABEL_WAKE || label.startsWith("$LABEL_WAKE#")
+
     /** Kết quả xin mở micro. */
     sealed interface Grant {
         /** Được mở. Chỗ gọi **phải** gọi [release] trong `finally`. */
@@ -64,6 +78,12 @@ object VoiceSingleFlight {
 
     private val lock = Any()
     private var holder: String? = null
+
+    /**
+     * Có ai đang **xin chủ hiện tại nhường** micro không — chỉ có nghĩa với chủ `wake` (xem [requestYield]).
+     * Nằm trong cùng `lock` với [holder] để không phải nghĩ về thứ tự nhìn thấy giữa hai luồng.
+     */
+    private var yieldWanted = false
 
     /** Mốc giờ của các lượt **đã được cấp**, cũ → mới. Chỉ giữ trong cửa sổ, nên nó không lớn quá [MAX_OPENS_PER_MINUTE]. */
     private val opens = ArrayDeque<Long>()
@@ -82,11 +102,58 @@ object VoiceSingleFlight {
         if (opens.size >= MAX_OPENS_PER_MINUTE) return Grant.Fused(opens.size)
         opens.addLast(nowMs)
         holder = label
+        yieldWanted = false
+        return Grant.Ok
+    }
+
+    /**
+     * Xin micro cho **bộ nghe wake** — giống [acquire] nhưng **KHÔNG tiêu một suất của hạn mức phút**.
+     *
+     * ## Vì sao phải khác (nếu không thì tính năng nền giết tính năng chính)
+     * Hạn mức [MAX_OPENS_PER_MINUTE] sinh ra để chặn **vòng lặp phiên tự nuôi nhau** (309 lượt/12 phút). Bộ nghe
+     * wake không phải một phiên: nó là **một** lượt giữ mic dài, và nó buộc phải nhả–xin lại mỗi lần load-guard
+     * cắt (hệ nóng) hay mỗi lần vừa nổ wake. [SUY, đọc mã] với `SUSPEND_NAP_MS = 2 s`, một chiếc xe đang nóng
+     * (đúng ca [ĐO] load 14) làm vòng ngoài xin lại ~30 lần/phút ⇒ **hạn mức bị bộ nghe nền tiêu hết**, và cú
+     * bấm nút mic của người lái nhận `Fused` — tức một tính năng **mặc định TẮT** làm chết tính năng chính.
+     *
+     * Chỗ hạn mức được tiêu đúng là **[handoff]**: một `wake → command` là một lượt mở phiên thật, và một tràng
+     * false-accept vẫn bị trần 12/phút chặn ở đó. Trần tốc độ của riêng vòng wake là việc của bộ nghe (load-guard
+     * + nghỉ có tăng dần), không phải của hạn mức phiên.
+     */
+    fun acquireWake(label: String = LABEL_WAKE): Grant = synchronized(lock) {
+        holder?.let { return Grant.Busy(it) }
+        holder = label
+        yieldWanted = false
         return Grant.Ok
     }
 
     /** Nhả micro. An toàn khi gọi thừa (lượt bị chắn vẫn có thể chạy qua `finally` của chỗ gọi). */
-    fun release() = synchronized(lock) { holder = null }
+    fun release() = synchronized(lock) { holder = null; yieldWanted = false }
+
+    /**
+     * Nhả micro **chỉ khi chủ đúng là [label]** — dùng cho bộ nghe wake.
+     *
+     * ## Ca hỏng nó chặn
+     * Bộ nghe wake sống trên một luồng nền và có thể bị dừng (tắt màn / tắt công tắc / service chết + START_STICKY
+     * dựng lại) **trong lúc** đang cuộn nốt vòng của nó. Một luồng cũ đang thoát mà gọi [release] trần sẽ xoá chủ
+     * của **lượt mới** ⇒ ngay sau đó một phiên lệnh xin được mic **cùng lúc** với bộ nghe mới ⇒ đúng thứ cả lớp
+     * này sinh ra để chặn: **hai `AudioRecord` mở một lúc**. Mỗi lượt chạy mang nhãn riêng (`wake#<n>`) nên phép
+     * so nhãn ở đây là phép so *quyền sở hữu*, không phải phép so tên.
+     */
+    fun release(label: String) = synchronized(lock) {
+        if (holder == label) { holder = null; yieldWanted = false }
+    }
+
+    /**
+     * Xin chủ hiện tại **nhường** micro (chỉ bộ nghe wake có hỏi). Không chặn, không cướp: chỉ dựng cờ.
+     *
+     * Bộ nghe wake hỏi [yieldRequested] mỗi khung (~100 ms) nên nó nhả trong khoảng một khung + `stop/release`.
+     * Chỗ gọi (phiên lệnh) chờ **có trần cứng** rồi bỏ qua — không có đường chờ vô hạn nào ở đây.
+     */
+    fun requestYield() = synchronized(lock) { if (holder != null) yieldWanted = true }
+
+    /** Chủ hiện tại có đang bị xin nhường không — bộ nghe wake hỏi mỗi khung. */
+    fun yieldRequested(): Boolean = synchronized(lock) { yieldWanted }
 
     /**
      * Chuyển micro NGUYÊN TỬ từ [fromLabel] sang [toLabel] — cho "Hey Kachi": bộ nghe wake đang GIỮ mic liên tục
@@ -103,6 +170,7 @@ object VoiceSingleFlight {
         if (opens.size >= MAX_OPENS_PER_MINUTE) return Grant.Fused(opens.size)
         opens.addLast(nowMs)
         holder = toLabel
+        yieldWanted = false
         return Grant.Ok
     }
 
@@ -113,7 +181,7 @@ object VoiceSingleFlight {
     fun opensInWindow(nowMs: Long = System.currentTimeMillis()): Int = synchronized(lock) { trim(nowMs); opens.size }
 
     /** Xoá sạch trạng thái — **chỉ cho bài kiểm**; tiến trình thật không bao giờ cần. */
-    fun reset() = synchronized(lock) { holder = null; opens.clear() }
+    fun reset() = synchronized(lock) { holder = null; opens.clear(); yieldWanted = false }
 
     private fun trim(nowMs: Long) {
         // `<=` chứ không `<`: một mốc đúng bằng mép cửa sổ đã ra ngoài cửa sổ. Dùng `<` thì trần thành 13 ở đúng
