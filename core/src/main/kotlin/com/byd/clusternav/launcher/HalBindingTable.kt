@@ -240,14 +240,14 @@ class HalBindingTable(private val gateway: HalGateway) {
             // BYDAutoBodyworkDevice.java:367-381, DL3). ⇒ ánh xạ COVER: Mở(primary>0)→1, Đóng→2.
             // T7 (owner 2026-09-15 "mở 50%"): mức 2 = WINDOW_OPEN_HALF=4 — enum THẬT cùng bảng CLOSE=2/OPEN_FULL=1 đã
             // đo đúng cả 4 kính (jadx-tmap BYDAutoBodyworkDevice.java:378). 0/1 giữ nguyên. NEEDS-ONCAR (1 lệnh):
-            // `hal set setBodyWindowCtrlState 1,4` rồi `getWindowOpenPercent(1)` ≈ 50. `windows_all` KHÔNG khai mức 2:
-            // `setAllWindowState(a,b,c,d)` nhận CÙNG enum WINDOW_* cho cả 4 ô (OpenBYD gọi `setAllWindowState(s,s,s,s)`
-            // — CarControlImpl.java:1513-1515) nên 1/2 là đúng, nhưng OPEN_HALF cho cả 4 kính chưa từng đo ⇒ không hứa.
+            // `hal set setBodyWindowCtrlState 1,4` rồi `getWindowOpenPercent(1)` ≈ 50. `windows_all` mức 2 (Nửa) nay
+            // gửi `setAllWindowState(4,4,4,4)` — CÙNG enum WINDOW_OPEN_HALF=4 đã đo per-window; ca 4-kính-nửa CHƯA đo
+            // trên xe (AWAITING_CAR) nhưng enum đã proven ⇒ làm được, câu trả lời mang nhãn "chưa kiểm trên xe".
             "win_lf" -> intArrayOf(1, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
             "win_rf" -> intArrayOf(2, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
             "win_lr" -> intArrayOf(3, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
             "win_rr" -> intArrayOf(4, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
-            "windows_all" -> (if (primary > 0) 1 else 2).let { intArrayOf(it, it, it, it) }
+            "windows_all" -> (when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 }).let { intArrayOf(it, it, it, it) }
             // [ĐO] RE 2026-09-14 §1/§5a: `setAcTemperature(type, value, tempSource, unit)` — lái=0, value=°C thô,
             // tempSource=0, unit=1 (Celsius). Vd 22°C → setAcTemperature(0,22,0,1). Thay `setTemprature` (không tồn tại).
             "temp" -> intArrayOf(0, primary, 0, 1)

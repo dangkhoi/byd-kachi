@@ -12,6 +12,14 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **1.74 (75) — 2026-09-18** (`Kachi-1.74-release.apk`, 38,0 MB, sha256 `abe05f3e…8286e`, thay 1.73). Voice dẫn
+  đường + kính 50% (owner yêu cầu). **(1) App dẫn đường MẶC ĐỊNH**: Cài đặt › Dẫn đường có mục *"App dẫn đường mặc
+  định"* (Google Maps / VietMap / Waze, mặc định **Google Maps**). Nói *"dẫn đường …"* KHÔNG nêu app → dùng app
+  mặc định; **có** nêu tên → đúng app đó. **BỎ fallback chéo**: VietMap geocode hỏng KHÔNG còn tự nhảy sang Google
+  Maps nữa — mở CHÍNH app đã chọn + báo *"chưa tra được điểm đến"* (owner: *"cái nào ra cái đó thôi"*). **(2) Kính
+  50%**: *"mở một nửa kính"* / *"mở kính 50%"* nay hạ kính tới **~nửa** (HAL `WINDOW_OPEN_HALF`, đã đo per-window;
+  ca cả-4-kính chờ xác nhận trên xe) thay vì mở hết. **[ĐO] 5 module 0 đỏ** (core 2226 · app · car-int 61 · offcar
+  99 · contracts 22). 🚗 owner test xe: chọn app mặc định · «dẫn bằng vietmap» không nhảy GMaps · «mở một nửa kính».
 - **1.73 (74) — 2026-09-17** (`Kachi-1.73-release.apk`, 38,0 MB, sha256 `953b5510…b5e4c`, thay 1.72). Sửa
   NHẬN-SỐ + câu HỎI từ log xe 81 lượt owner báo (*"chỉnh máy lạnh 24 độ không hiểu, hỏi đi hỏi lại"*, *"nhận diện
   số đang tệ"*). **(A) số nhiệt độ**: «tăng/giảm nhiệt độ 24 độ» trước bị hiểu **±24** (cộng vào 22 = kẹt trần 33)

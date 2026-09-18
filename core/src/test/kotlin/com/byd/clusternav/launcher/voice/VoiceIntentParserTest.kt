@@ -472,6 +472,15 @@ class VoiceIntentParserTest {
         }
     }
 
+    /** «mở một nửa kính» / «50%» ⇒ mức NỬA (COVER value 2 → HAL state 4). Không "nửa" ⇒ mở hết (value 1). */
+    @Test fun `log xe · mo mot nua kinh = muc Nua`() = expect(
+        "mở một nửa kính" to VoiceIntent.Control("windows_all", 2),   // was: windows_all=1 (mất "một nửa")
+        "mở kính một nửa" to VoiceIntent.Control("windows_all", 2),
+        "mở kính 50%" to VoiceIntent.Control("windows_all", 2),
+        "mở nửa kính trước trái" to VoiceIntent.Control("win_lf", 2),
+        "mở kính" to VoiceIntent.Control("windows_all", 1),           // không "nửa" ⇒ mở hết (chống hồi quy)
+    )
+
     /** Câu HỎI: datum DÀI NHẤT thắng + bỏ cụm dẫn «chỉ số» ⇒ hết «số»→gear, hết ø. */
     @Test fun `log xe · cau hoi map dung datum`() = expect(
         "chỉ số bụi mịn là bao nhiêu" to VoiceIntent.Read("pm25_level"),  // was: Read(gear)

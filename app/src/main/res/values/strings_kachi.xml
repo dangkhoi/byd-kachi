@@ -308,6 +308,10 @@
     <string name="kachi_nav_cluster_on">Bật (Giữa + ETA)</string>
     <string name="kachi_nav_marquee_title">Chạy chữ tên đường dài</string>
     <string name="kachi_nav_marquee_sub">Tên dài hơn bề ngang sẽ chạy ngang thay vì bị cắt.</string>
+    <string name="kachi_nav_default_app">App dẫn đường mặc định</string>
+    <string name="kachi_nav_app_gmaps">Google Maps</string>
+    <string name="kachi_nav_app_vietmap">VietMap</string>
+    <string name="kachi_nav_app_waze">Waze</string>
     <string name="kachi_nav_reconnect">Kết nối lại nguồn dẫn đường</string>
     <string name="kachi_sub_badge">Biển báo tốc độ</string>
     <string name="kachi_badge_enabled_title">Hiện biển báo tốc độ</string>

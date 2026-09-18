@@ -244,8 +244,10 @@ object ControlRegistry {
             short = "Kính SP", shortEn = "Window RR"),
         ControlDef("windows_all", "Tất cả kính", "ic-car-top-window-all", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setAllWindowState",
-            args = listOf("Đóng", "Mở"),
-            labelEn = "All windows", argsEn = listOf("Close", "Open")),
+            // T7 (owner 2026-09-18 "kính 50%"): mức 2 = Nửa → HAL `setAllWindowState(4,4,4,4)` (WINDOW_OPEN_HALF=4,
+            // enum đã proven per-window; ca 4-kính-nửa AWAITING_CAR). «mở một nửa kính» dùng mức này.
+            args = listOf("Đóng", "Mở", "Nửa"),
+            labelEn = "All windows", argsEn = listOf("Close", "Open", "Half")),
         ControlDef("sunshade", "Rèm che nắng", "ic-car-top-sunshade", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở", "Nửa"),
             labelEn = "Sunshade", argsEn = listOf("Close", "Open", "Half")),   // T7: mức 2 = 50% (đường percent)

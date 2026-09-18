@@ -152,6 +152,8 @@ object VoiceIntentParser {
     ): VoiceIntent {
         val t = dropFillers(raw)
         if (t.isEmpty()) return VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, original)
+        // «mở … một nửa / 50%» ⇒ cờ NỬA cho kính (COVER). Dò cả câu vì «một nửa» đứng TRƯỚC object («một nửa kính»).
+        val half = VoiceControlParse.mentionsHalf(t)
 
         // (a) Cụm hỏi (*"… bao nhiêu?"*) — người Việt hỏi xe bằng cụm hỏi, không bằng động từ đứng đầu.
         val ask = askAt(t)
@@ -178,7 +180,7 @@ object VoiceIntentParser {
             val after = dropFillers(t.subList(head.words.size, t.size))
             // ⚠ [SOÁT 1.69 · P1] Không động từ + cụm không đọc đuôi ⇒ KHÔNG phải lệnh (*"cốp xe bẩn quá"* từng ra **mở cốp**) — KDoc [VoiceGrammar.readsTail].
             if (verbHit == null && after.isNotEmpty() && !VoiceGrammar.readsTail(head)) return@let
-            return build(head, implicitVerb(head), aloud = false, after, terms, places, original)
+            return build(head, implicitVerb(head), aloud = false, after, terms, places, original, half)
         }
         // (b½) L7 — *"bố cục 2 cột"* / *"đổi sang bố cục 4 ô"* / *"về bố cục hai hàng"*.
         //
@@ -232,7 +234,7 @@ object VoiceIntentParser {
                     VoiceTailClause.appByTargetName(rest, i, term.words.size)?.let { return it }
                 }
                 val after = dropFillers(rest.subList(i + term.words.size, rest.size))
-                val built = build(term, verb, aloud, after, terms, places, original)
+                val built = build(term, verb, aloud, after, terms, places, original, half)
                 if (built !is VoiceIntent.Unknown) return built
                 if (firstMiss == null) firstMiss = built
             }
@@ -342,6 +344,7 @@ object VoiceIntentParser {
         terms: List<VoiceTerm>,
         places: List<String>,
         original: String,
+        half: Boolean = false,
     ): VoiceIntent =
         when (term.kind) {
             VoiceTermKind.TELEMETRY ->
@@ -349,7 +352,7 @@ object VoiceIntentParser {
                 else VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
 
             VoiceTermKind.CONTROL ->
-                if (VoiceGrammar.isAction(verb)) VoiceControlParse.control(term.id, verb, after, original)
+                if (VoiceGrammar.isAction(verb)) VoiceControlParse.control(term.id, verb, after, original, half)
                 else VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
 
             VoiceTermKind.MACRO ->

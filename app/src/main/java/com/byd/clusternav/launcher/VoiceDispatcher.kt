@@ -125,6 +125,11 @@ class VoiceDispatcher(
      * Mặc định `{ null }` để mọi bài test (và mọi bề mặt chưa nối) giữ NGUYÊN hành vi cũ: đọc ảnh chụp.
      */
     private val freshCar: (String) -> CarStatus? = { null },
+    /**
+     * Mã app dẫn đường MẶC ĐỊNH (`voice_nav_default_app`), truyền xuống [VoiceTargetDispatch]. Mặc định `{ null }`
+     * để mọi test/bề mặt chưa nối giữ hành vi cũ (thứ tự [VoiceTargetDispatch.NAV_PREFERENCE]).
+     */
+    private val navDefault: () -> String? = { null },
 ) {
 
     /**
@@ -143,6 +148,7 @@ class VoiceDispatcher(
         mediaPackage = mediaPackage,
         onUi = onUi,
         background = background,
+        navDefault = navDefault,
     )
 
     /**

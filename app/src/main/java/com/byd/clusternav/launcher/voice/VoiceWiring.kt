@@ -160,5 +160,7 @@ object VoiceWiring {
         // datum đó vào nhu cầu rồi đọc NGAY một lượt. `AppContainer.refreshForRead` tự trả `null` khi ảnh chụp
         // vốn đã tươi, nên chỗ này không phải biết gì về lịch poll.
         freshCar = { id -> runCatching { AppContainer.get(ctx).refreshForRead(id) }.getOrNull() },
+        // App dẫn đường mặc định (owner chọn trong Cài đặt › Dẫn đường) — đọc mỗi lượt để đổi là ăn ngay.
+        navDefault = { com.byd.clusternav.Prefs.voiceNavDefaultApp(ctx) },
     )
 }

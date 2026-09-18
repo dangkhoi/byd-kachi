@@ -296,6 +296,10 @@
     <string name="kachi_nav_cluster_on">On (centre + ETA)</string>
     <string name="kachi_nav_marquee_title">Scroll long street names</string>
     <string name="kachi_nav_marquee_sub">Names wider than the cluster scroll across instead of being cut off.</string>
+    <string name="kachi_nav_default_app">Default navigation app</string>
+    <string name="kachi_nav_app_gmaps">Google Maps</string>
+    <string name="kachi_nav_app_vietmap">VietMap</string>
+    <string name="kachi_nav_app_waze">Waze</string>
     <string name="kachi_nav_reconnect">Reconnect the navigation source</string>
     <string name="kachi_sub_badge">Speed limit badge</string>
     <string name="kachi_badge_enabled_title">Show the speed limit badge</string>

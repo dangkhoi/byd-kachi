@@ -22,12 +22,15 @@ internal object VoiceControlParse {
 
     /** Câu điều khiển nút [id] với động từ [verb] + đuôi [after] ⇒ [VoiceIntent.Control] (hoặc Unknown/MISMATCH). */
     @Suppress("ReturnCount")
-    fun control(id: String, verb: VoiceVerb, after: List<Token>, original: String): VoiceIntent {
+    fun control(id: String, verb: VoiceVerb, after: List<Token>, original: String, half: Boolean = false): VoiceIntent {
         val def = ControlRegistry.byId(id) ?: return VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
         val num = firstNumber(after)
         return when (def.kind) {
             ControlKind.TOGGLE, ControlKind.COVER -> when (verb) {
-                VoiceVerb.ON, VoiceVerb.OPEN -> VoiceIntent.Control(id, 1)
+                // COVER (kính) + «mở … một nửa / 50%» ⇒ mức NỬA (value 2 → HAL state 4 = ~50%). [ĐO] enum
+                // WINDOW_OPEN_HALF=4 proven per-window; TOGGLE không có mức nửa nên cờ half bị bỏ qua.
+                VoiceVerb.ON, VoiceVerb.OPEN ->
+                    if (half && def.kind == ControlKind.COVER) VoiceIntent.Control(id, 2) else VoiceIntent.Control(id, 1)
                 // "dừng chiếu cụm" = tắt nút `cast`. Không có nhánh này thì đúng câu người ta hay nói nhất cho
                 // việc **dừng** một thứ đang chạy lại rơi vào MISMATCH.
                 VoiceVerb.OFF, VoiceVerb.CLOSE, VoiceVerb.PAUSE -> VoiceIntent.Control(id, 0)
@@ -42,6 +45,15 @@ internal object VoiceControlParse {
             ControlKind.STEP -> step(def, verb, num, original)
         }
     }
+
+    /**
+     * Câu có nhắc *"nửa / một nửa / 50% / 50 phần trăm"* không — để mở kính (COVER) tới mức NỬA.
+     *
+     * Dò trên **cả câu** (không chỉ phần đuôi sau object): người ta nói *"mở **một nửa** kính"* — chữ *"nửa"* đứng
+     * TRƯỚC object nên không bao giờ vào `after`. Chỉ COVER dùng cờ này (kính), control khác bỏ qua.
+     */
+    fun mentionsHalf(tokens: List<Token>): Boolean =
+        tokens.any { it.norm == "nua" } || tokens.indices.any { VoiceLexicon.readNumber(tokens, it)?.value == 50 }
 
     /**
      * Bước nhảy (nhiệt độ / gió / âm lượng / độ sáng).

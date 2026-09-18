@@ -312,7 +312,8 @@ class VoiceGrammarPhrasesTest {
         // con số này: mô hình tiếng Việt không nghe ra nhãn tiếng Anh. Bản tiếng Việt của cả sáu đều GIỮ được.
         // [ĐO off-car 2026-09-17 · (V) FEATURE-FILTER] **244 → 216 (−28)** = nhãn tiếng ANH của 19 mã owner
         //   chấm NO (*"Charge power"*, *"Drive mode"*, *"Fold mirrors on lock"*, *"Bluetooth key"*…).
-        const val EXPECTED_PHRASES_DROPPED = 216
+        // [ĐO off-car 2026-09-18 · kính 50%] **216 → 217 (+1)** = nhãn EN *"Half"* của `windows_all` (nay khai mức Nửa).
+        const val EXPECTED_PHRASES_DROPPED = 217
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.

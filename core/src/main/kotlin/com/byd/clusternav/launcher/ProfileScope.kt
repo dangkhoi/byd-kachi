@@ -178,6 +178,12 @@ object ProfileScope {
                 "phải một sở thích đi theo người lái. Owner chốt 2026-09-16: mặc định TẮT, chưa lên UI",
         )
         put(
+            "voice_nav_default_app",
+            "App dẫn đường MẶC ĐỊNH (owner 2026-09-18) — 'nói dẫn đường không nêu app thì dùng cái này'. Theo XE: " +
+                "app nào đang cài / owner ưa dùng là tính chất của cái xe, không đi theo người lái; cùng họ " +
+                "voice_speak_replies/voice_mic_pill",
+        )
+        put(
             "voice_mic_source",
             "V3 · R1 — nguồn micro thử TRƯỚC. Theo XE vì nó là một tính chất của **phần cứng và ROM của chính " +
                 "chiếc xe này** ([ĐO] nguồn 6 gần câm trên DiLink3.0), không phải sở thích của người lái; chép " +

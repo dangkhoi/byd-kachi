@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.launcher.voice.VoiceAppIntents
+import com.byd.clusternav.launcher.voice.VoiceAppKind
 import com.byd.clusternav.launcher.voice.VoiceAppTarget
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.launcher.voice.VoiceIntent
@@ -43,6 +44,13 @@ class VoiceTargetDispatch(
     private val mediaPackage: () -> String?,
     private val onUi: (() -> Unit) -> Unit,
     private val background: (() -> Unit) -> Unit,
+    /**
+     * Mã app dẫn đường MẶC ĐỊNH khi câu KHÔNG nêu tên app (`voice_nav_default_app`: `gmaps`/`vietmap`/`waze`),
+     * hoặc `null` khi chưa đặt/không đọc được ⇒ lùi về [NAV_PREFERENCE]. Là **lambda** vì owner đổi trong Cài đặt
+     * rồi nói ngay câu sau (cùng lẽ `confirmIds`/`freshCar`). Owner 2026-09-18: *"nói dẫn đường không nêu app thì
+     * lấy app mặc định; có tên thì app đó; KHÔNG fallback chéo"*.
+     */
+    private val navDefault: () -> String? = { null },
 ) {
     // ══ V1.1 · TỪ VỰNG MỞ → APP ĐÍCH ════════════════════════════════════════════════════════════
 
@@ -73,11 +81,12 @@ class VoiceTargetDispatch(
         background {
             val coords = runCatching { geocode(i.query) }.getOrNull()
             onUi {
-                // [ĐO xe 2026-09-17] Geocode hỏng/timeout (mạng xe treo) ⇒ TRƯỚC ĐÂY mở VietMap trơn = "đơ" (app
-                // lên mà không có tuyến). Nay **lùi về Google Maps dẫn bằng CHỮ** (`google.navigation:q=`, Google
-                // tự geocode) — người lái luôn nhận được dẫn đường, không kẹt. Chỉ khi cả GMaps cũng không cài mới
-                // mở app đích trơn + nói rõ.
-                if (coords == null) { navFallbackToText(i, installed, target, pkg); return@onUi }
+                // [owner 2026-09-18] KHÔNG fallback chéo: geocode hỏng thì mở CHÍNH app đã chọn + nói rõ chưa
+                // tra được điểm đến — "cái nào ra cái đó", KHÔNG lặng lẽ chuyển sang Google Maps.
+                if (coords == null) {
+                    say(if (openApp(pkg)) VoiceReply.navNoPlace(i, target) else VoiceReply.cannotOpen(i))
+                    return@onUi
+                }
                 // Tên do bên giải trả về KHÁC câu người ta nói (*"chợ bến thành"* → *"Chợ Bến Thành"*, hoặc một
                 // nơi trùng tên). Đọc lại rồi mới bắn — cùng lý do với cổng CONFIRM của từ vựng mở.
                 confirm(
@@ -87,19 +96,6 @@ class VoiceTargetDispatch(
                 )
             }
         }
-    }
-
-    /**
-     * Geocode hỏng cho app-chỉ-nhận-toạ-độ (VietMap) ⇒ **dẫn bằng Google Maps qua chữ** thay vì mở app trơn.
-     *
-     * `google.navigation:q=<địa chỉ>` để Google tự giải toạ độ ở máy chủ — đúng cách Kiki làm việc mà Kachi
-     * không có máy chủ để tự geocode. Không có GMaps ⇒ mới mở app đích trơn + nói rõ chưa giao được điểm đến.
-     */
-    private fun navFallbackToText(i: VoiceIntent.Nav, installed: Set<String>, orig: VoiceAppTarget, origPkg: String) {
-        val gmaps = VoiceAppTargets.byKey(VoiceAppTargets.GMAPS)?.takeIf { it.packageIn(installed) != null }
-        val gpkg = gmaps?.packageIn(installed)
-        if (gmaps != null && gpkg != null) { deliver(i, gmaps, gpkg, i.query, null); return }
-        say(if (openApp(origPkg)) VoiceReply.navNoPlace(i, orig) else VoiceReply.cannotOpen(i))
     }
 
     /**
@@ -123,7 +119,7 @@ class VoiceTargetDispatch(
         val target = if (asked != null) {
             VoiceAppTargets.byKey(asked)?.takeIf { it.packageIn(installed) != null }
         } else {
-            VoiceAppTargets.navFor(place.hasCoords, NAV_PREFERENCE, installed)
+            defaultTarget(installed) ?: VoiceAppTargets.navFor(place.hasCoords, NAV_PREFERENCE, installed)
         }
         if (target == null) {
             say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noNavApp(i))
@@ -216,10 +212,17 @@ class VoiceTargetDispatch(
      */
     private fun pickNav(key: String?, installed: Set<String>): VoiceAppTarget? {
         VoiceAppTargets.byKey(key)?.let { return it.takeIf { t -> t.packageIn(installed) != null } }
+        // Không nêu app ⇒ app MẶC ĐỊNH đã chọn (nếu đang cài). Chưa đặt / không cài ⇒ lùi về thứ tự [NAV_PREFERENCE].
+        defaultTarget(installed)?.let { return it }
         return NAV_PREFERENCE.firstNotNullOfOrNull { pkg ->
             VoiceAppTargets.NAV.firstOrNull { pkg in it.packages && it.packageIn(installed) != null }
         }
     }
+
+    /** App dẫn đường MẶC ĐỊNH đã chọn ([navDefault]) nếu đang cài, hoặc `null`. */
+    private fun defaultTarget(installed: Set<String>): VoiceAppTarget? =
+        navDefault()?.let { VoiceAppTargets.byKey(it) }
+            ?.takeIf { it.kind == VoiceAppKind.NAV && it.packageIn(installed) != null }
 
     /**
      * Chọn app nhạc: **phiên đang phát trước**, rồi mới tới thứ tự của bảng.

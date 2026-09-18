@@ -86,7 +86,7 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 72 muc`() {
+    fun `moi muc cai dat co nhan EN — 10 nhom va 73 muc`() {
         assertEquals(10, SettingsCatalog.GROUPS.size)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
@@ -107,7 +107,7 @@ class LangCoverageTest {
         // VISUAL-REFRESH P1b · R8 (2026-09-17): **+1** — `display_color` (màu nhấn + tông thẻ, khoá `color_choice`
         // theo hồ sơ; docs/specs/kachi-visual-refresh.html §R8).
         // voice-clone T7/T8 (2026-09-17): **+1** — `voice_feedback_voice` (ô tích chọn giọng phản hồi Piper/giọng bé).
-        assertEquals(72, SettingsCatalog.ENTRIES.size)
+        assertEquals(73, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -170,7 +170,8 @@ class LangCoverageTest {
         // (V) FEATURE-FILTER (2026-09-17): **297 → 278 (−19)** = đúng 19 mã owner chấm NO (12 datum + 7 nút).
         // VISUAL-REFRESH P1b · R8 (2026-09-17): **278 → 279 (+1)** = mục Cài đặt `display_color` ("Màu sắc" / "Colours").
         // voice-clone T7/T8 (2026-09-17): **279 → 280 (+1)** = mục Cài đặt `voice_feedback_voice` ("Giọng phản hồi" / "Feedback voice").
-        assertEquals(280, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // nav-default-app (owner 2026-09-18): **280 → 281 (+1)** = mục `nav_default_app` ("App dẫn đường mặc định" / "Default navigation app").
+        assertEquals(281, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

@@ -140,6 +140,14 @@ class ClusterNavBridge(
     /** Lặp lại `MainActivity.kt:203`. */
     fun setMarquee(on: Boolean) = Prefs.setMarquee(app, on)
 
+    /** App dẫn đường MẶC ĐỊNH khi câu KHÔNG nêu tên app (owner 2026-09-18) — key của [VoiceAppTargets]. */
+    fun navDefaultApp(): String = Prefs.voiceNavDefaultApp(app)
+    fun setNavDefaultApp(key: String) = Prefs.setVoiceNavDefaultApp(app, key)
+
+    /** Các app dẫn đường chọn được (key) — nguồn sự thật [VoiceAppTargets.NAV], không chép tay. */
+    fun navAppChoices(): List<String> =
+        com.byd.clusternav.launcher.voice.VoiceAppTargets.NAV.map { it.key }
+
     /**
      * "Kết nối lại nguồn dẫn đường" — lặp lại `MainActivity.kt:255–276`: có quyền ⇒
      * [NavConnect.reconnect] + toast; chưa có ⇒ toast + [NavConnect.selfGrant] (KHÔNG mở màn Settings

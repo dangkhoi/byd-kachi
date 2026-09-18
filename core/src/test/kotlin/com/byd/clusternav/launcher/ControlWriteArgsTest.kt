@@ -188,9 +188,10 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(2, 4), args("win_rf", 2), "kính TP NỬA → [cửa 2, 4]")
         assertArrayEquals(intArrayOf(3, 4), args("win_lr", 2), "kính ST NỬA → [cửa 3, 4]")
         assertArrayEquals(intArrayOf(4, 4), args("win_rr", 2), "kính SP NỬA → [cửa 4, 4]")
-        // `windows_all` KHÔNG có mức nửa (setAllWindowState mỗi arg 0/1): mức 2 rơi về MỞ, và registry không khai "Nửa".
-        assertArrayEquals(intArrayOf(1, 1, 1, 1), args("windows_all", 2), "tất cả kính: không có nửa → mở")
-        assertEquals(2, com.byd.clusternav.launcher.ControlRegistry.byId("windows_all")!!.args.size, "windows_all không khai nút Nửa")
+        // [owner 2026-09-18 "kính 50%"] `windows_all` NAY có mức Nửa: mức 2 → `setAllWindowState(4,4,4,4)`
+        // (WINDOW_OPEN_HALF=4, enum proven per-window; 4-kính-nửa AWAITING_CAR). Trước 1.74 mức 2 rơi về MỞ.
+        assertArrayEquals(intArrayOf(4, 4, 4, 4), args("windows_all", 2), "tất cả kính NỬA → 4× state 4")
+        assertEquals(3, com.byd.clusternav.launcher.ControlRegistry.byId("windows_all")!!.args.size, "windows_all khai nút Nửa (kính 50%)")
         assertArrayEquals(intArrayOf(2, 2), args("win_rf", 0), "kính TP đóng → [cửa 2, đóng=2]")
         assertArrayEquals(intArrayOf(3, 1), args("win_lr", 1))
         assertArrayEquals(intArrayOf(4, 1), args("win_rr", 1))

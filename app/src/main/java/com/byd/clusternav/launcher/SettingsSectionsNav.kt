@@ -103,10 +103,26 @@ class SettingsNavSection(
             title = context.getString(R.string.kachi_nav_marquee_title),
             sub = context.getString(R.string.kachi_nav_marquee_sub),
         ) { on -> bridge.setMarquee(on) })
+        // App dẫn đường MẶC ĐỊNH (owner 2026-09-18): nói "dẫn đường" không nêu app ⇒ dùng cái này; có tên ⇒ app đó.
+        body.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_nav_default_app),
+            options = bridge.navAppChoices().map { it to navAppLabel(it) },
+            current = bridge.navDefaultApp(),
+        ) { key -> bridge.setNavDefaultApp(key) })
         body.addView(rows.button(context.getString(R.string.kachi_nav_reconnect)) {
             bridge.reconnect { refreshStatus() }
         })
     }
+
+    /** Nhãn thương hiệu app dẫn đường (danh từ riêng, VI=EN) — tra qua tài nguyên đúng luật i18n launcher. */
+    private fun navAppLabel(key: String): String = context.getString(
+        when (key) {
+            "gmaps" -> R.string.kachi_nav_app_gmaps
+            "vietmap" -> R.string.kachi_nav_app_vietmap
+            "waze" -> R.string.kachi_nav_app_waze
+            else -> R.string.kachi_nav_app_gmaps
+        },
+    )
 
     /**
      * Nhãn hai nấc chế độ cụm — tra **tài nguyên của launcher** theo `enum`, KHÔNG đọc

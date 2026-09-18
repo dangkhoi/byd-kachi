@@ -201,6 +201,17 @@ object Prefs {
     fun voiceAskAloud(ctx: Context): Boolean = sp(ctx).getBoolean(K_VOICE_ASK_ALOUD, false)
     fun setVoiceAskAloud(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VOICE_ASK_ALOUD, v).apply()
 
+    // ─── APP DẪN ĐƯỜNG MẶC ĐỊNH (owner 2026-09-18) — nói "dẫn đường" không nêu app thì dùng cái này ───
+    private const val K_VOICE_NAV_APP = "voice_nav_default_app"
+
+    /**
+     * Mã app dẫn đường MẶC ĐỊNH (`gmaps`/`vietmap`/`waze`) khi câu KHÔNG nêu tên app. Mặc định **`gmaps`** —
+     * đường tin cậy nhất (nhận CHỮ thẳng, Google tự geocode, không kẹt mạng xe). Owner đổi được trong Cài đặt ›
+     * Dẫn đường. Giá trị = `VoiceAppTargets` key; `VoiceTargetDispatch` tự lùi về [VoiceAppTargets] nếu app chưa cài.
+     */
+    fun voiceNavDefaultApp(ctx: Context): String = sp(ctx).getString(K_VOICE_NAV_APP, "gmaps") ?: "gmaps"
+    fun setVoiceNavDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_NAV_APP, key).apply()
+
     const val VK_TARGET_DEFAULT = "ai.zalo.kiki.car"           // mặc định Kiki (khớp default cũ 0=Kiki)
 
     fun voiceKeyEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_ENABLED, false)

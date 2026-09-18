@@ -119,6 +119,11 @@ internal object SettingsCatalogEntries {
         ),
         // cb_marquee · Prefs.setMarquee
         SettingsEntry("nav_marquee", SettingsGroup.NAV, "Chạy chữ tên đường", "marquee", "Scroll long street names"),
+        // App dẫn đường MẶC ĐỊNH (owner 2026-09-18): nói "dẫn đường" không nêu app ⇒ dùng cái này.
+        SettingsEntry(
+            "nav_default_app", SettingsGroup.NAV, "App dẫn đường mặc định",
+            "voice_nav_default_app", "Default navigation app",
+        ),
         // btn_reconnect_nav · NavConnect.ensureConnected — VIỆC LÀM, không lưu gì
         SettingsEntry(
             "nav_reconnect", SettingsGroup.NAV, "Kết nối lại nguồn dẫn đường",

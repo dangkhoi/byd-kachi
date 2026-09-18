@@ -77,6 +77,8 @@ internal object SettingsCatalogClusterNav {
             // H2 (1.69) — công tắc giữ nhật ký lượt nói. Cùng tệp với mọi khoá giọng nói khác, nên câu hỏi
             // *"cấu hình giọng nói nằm ở đâu"* vẫn có đúng MỘT câu trả lời.
             "voice_keep_log",
+            // App dẫn đường mặc định (owner 2026-09-18) — cùng tệp `clusternav_prefs` với mọi khoá giọng nói.
+            "voice_nav_default_app",
         ).forEach { put(it, "clusternav_prefs") }
         // ── simple_cast_prefs (SimpleCastRuntime.kt) ──
         listOf(

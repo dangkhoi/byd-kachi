@@ -96,6 +96,7 @@ class SettingsCatalogControlContractTest {
             "nav_enabled" to ("SettingsSectionsNav" to "bridge.setNavEnabled("),
             "nav_cluster_mode" to ("SettingsSectionsNav" to "bridge.setClusterMode("),
             "nav_marquee" to ("SettingsSectionsNav" to "bridge.setMarquee("),
+            "nav_default_app" to ("SettingsSectionsNav" to "bridge.setNavDefaultApp("),
             // ⚠ Bốn dòng dưới KHÔNG có "(" ở cuối: chúng là lời gọi dạng **trailing lambda** (`bridge.reconnect { … }`).
             "nav_reconnect" to ("SettingsSectionsNav" to "bridge.reconnect"),
             "badge_enabled" to ("SettingsSectionsNav" to "bridge.setBadgeEnabled("),
