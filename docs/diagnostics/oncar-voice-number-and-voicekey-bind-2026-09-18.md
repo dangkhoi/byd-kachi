@@ -23,7 +23,7 @@ Tách `VoiceControlParse.kt` (VoiceIntentParser về 451 dòng < trần 500). [�
 
 ## 2. PHÍM-THOẠI mất tác dụng — finding xe sáng 18-09 [ĐO qua ADB]
 
-**Cách vào**: `adb` binary trên Mac bị macOS chặn LAN (nc/socket tới `172.20.10.8:5555` OK, daemon adb báo "No route"). Vòng qua bằng **client adb thô Python** (ký AUTH bằng `~/.android/adbkey`, xe đã uỷ quyền). Dữ liệu dưới là **[ĐO] thật trên xe**.
+**Cách vào**: `adb` binary trên Mac bị macOS chặn LAN (nc/socket tới `<car-ip>:5555` OK, daemon adb báo "No route"). Vòng qua bằng **client adb thô Python** (ký AUTH bằng `~/.android/adbkey`, xe đã uỷ quyền). Dữ liệu dưới là **[ĐO] thật trên xe**.
 
 **Gốc — KHÔNG phải mất quyền:**
 - `enabled_accessibility_services` VẪN chứa `com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService`; master `accessibility_enabled`=1 → **grant đúng**.
@@ -54,7 +54,7 @@ Tách `VoiceControlParse.kt` (VoiceIntentParser về 451 dòng < trần 500). [�
 
 **[CHƯA BIẾT]**: thread nào spin gây load 14 (cần đo) · reboot có giữ bind lâu không · macOS Local Network cấp quyền cho adb thế nào.
 
-## 4. [ĐO LIVE trên xe 2026-09-18 13:18–13:24, adb wireless 172.20.10.8:5555] — TÌM RA THỦ PHẠM CPU + KHÔI PHỤC PHÍM
+## 4. [ĐO LIVE trên xe 2026-09-18 13:18–13:24, adb wireless <car-ip>:5555] — TÌM RA THỦ PHẠM CPU + KHÔI PHỤC PHÍM
 
 Vào xe bằng **client ADB thô pure-python** (`/tmp/adb_raw.py` — CNXN + AUTH ký `~/.android/adbkey` PKCS#8 + shell; không cần adb binary/cryptography). **adb wireless SỐNG** suốt phiên ⇒ **BUG2 KHÔNG tái hiện lúc này** (chập chờn, không chết vĩnh viễn).
 
