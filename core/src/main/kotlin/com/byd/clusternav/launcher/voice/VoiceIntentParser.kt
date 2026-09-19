@@ -233,7 +233,12 @@ object VoiceIntentParser {
         // (dài hơn) giành lấy trước. Và chỉ nhận khi **cả phần đuôi** là một nơi có thật — xem KDoc
         // [VoicePlaces.PLACE_VERBS] về vì sao ba từ này không được vào bảng động từ chung.
         savedPlace(t, places)?.let { return it }
-        if (verbHit == null) return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
+        // (b''') [ĐO log 1.79] "tìm + TỪ-NHẠC" → tra nhạc; "tìm <phi-nhạc>" giữ NO_VERB (hỏi lại). Đứng sau
+        // headMatch nên "tìm đường đến X" (động từ NAV) đã giải trước — xem [mediaSearch].
+        if (verbHit == null) {
+            mediaSearch(t)?.let { return it }
+            return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
+        }
         val verb = verbHit.second
         val aloud = verbHit.first.any { it == "doc" || it == "read" || it == "nghe" }
         val rest = dropFillers(t.subList(verbHit.first.size, t.size))
@@ -443,6 +448,20 @@ object VoiceIntentParser {
                 else -> VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
             }
         }
+
+    private val SEARCH_HEADS = listOf(listOf("tim", "kiem"), listOf("tim"))
+
+    /** (b''') *"tìm [kiếm] &lt;từ-nhạc&gt; &lt;tên bài&gt;"* ⇒ Media QUERY, `null` nếu không (⇒ NO_VERB hỏi lại). Ba cổng
+     * như [savedPlace]: *"tìm"* · TỪ-NHẠC ngay sau (*"tìm trạm xăng"* không có ⇒ `null`, không đoán) · còn tên bài. */
+    private fun mediaSearch(t: List<Token>): VoiceIntent? {
+        val head = SEARCH_HEADS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it) } ?: return null
+        val rest = dropFillers(t.subList(head.size, t.size))
+        val mw = VoiceSynonyms.MEDIA_WORDS.map { it.split(" ") }.sortedByDescending { it.size }
+            .firstOrNull { VoiceLexicon.phraseAt(rest, 0, it) } ?: return null
+        val after = dropFillers(rest.subList(mw.size, rest.size))
+        if (after.isEmpty()) return null
+        return media(VoiceVerb.PLAY, after, "")
+    }
 
     /**
      * Dẫn đường: phần đuôi là ĐIỂM ĐẾN, trừ mệnh đề *"bằng &lt;app&gt;"* ở cuối nếu có.

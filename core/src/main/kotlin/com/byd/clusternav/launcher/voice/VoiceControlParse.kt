@@ -25,6 +25,12 @@ internal object VoiceControlParse {
     fun control(id: String, verb: VoiceVerb, after: List<Token>, original: String, half: Boolean = false): VoiceIntent {
         val def = ControlRegistry.byId(id) ?: return VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
         val num = firstNumber(after)
+        // (c) [ĐO log xe 1.79] "mở/chỉnh điều hòa 25 độ" — "điều hòa"/"máy lạnh" khớp `ac_auto` (TOGGLE) nên MẤT
+        // số → bật AUTO thay vì đặt nhiệt. Có SỐ + token "độ" ⇒ ý người dùng là ĐẶT nhiệt độ AC → chuyển sang nút
+        // `temp` (setpoint, [ĐO] ghi được trên xe). "bật/tắt điều hòa" (KHÔNG số) vẫn là ac_auto — không có "độ".
+        if (id == "ac_auto" && num != null && after.any { it.norm == "do" }) {
+            ControlRegistry.byId("temp")?.let { return VoiceIntent.Control("temp", it.clamp(num)) }
+        }
         return when (def.kind) {
             ControlKind.TOGGLE, ControlKind.COVER -> when (verb) {
                 // COVER (kính) + «mở … một nửa / 50%» ⇒ mức NỬA (value 2 → HAL state 4 = ~50%). [ĐO] enum

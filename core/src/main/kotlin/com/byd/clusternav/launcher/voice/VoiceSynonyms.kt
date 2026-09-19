@@ -260,7 +260,14 @@ object VoiceSynonyms {
             "gu go map", "gu go mep", "gu go", "cai ban do",
         ),
         VoiceAppTargets.WAZE to listOf("waze", "quay", "guay", "guey"),
-        VoiceAppTargets.VIETMAP to listOf("viet map", "vietmap", "viet mat", "ban do viet"),
+        // [owner 2026-09-19] "vietmap" là tên tự chế, ASR tiếng Việt nghe "hên xui" (việt máp/mép/mốp/mụp/láp…)
+        // ⇒ thêm biến thể phiên âm như các app tiếng Anh khác (xem GMAPS "gu go mep"). Toàn 2-từ nên không đụng
+        // từ thường; APP_TARGETS chỉ dùng cho đường mở-app/chọn-app-nav nên không rớt vào vựng chung. (Biến thể
+        // rụng-1-âm-cuối như "vietma" đã do VoiceAppTargets.bySpokenLoose lo — KHÔNG khai exact ở đây kẻo phá nó.)
+        VoiceAppTargets.VIETMAP to listOf(
+            "viet map", "vietmap", "viet mat", "ban do viet",
+            "viet mep", "viet mop", "viet mup", "viet lap",
+        ),
     )
 
     /**

@@ -247,6 +247,10 @@ object SherpaSpokenWords {
         "guay" to "guây",
         "guey" to "guêy",
         "viet map" to "việt máp",
+        "viet mep" to "việt mép",
+        "viet mop" to "việt mốp",
+        "viet mup" to "việt mụp",
+        "viet lap" to "việt láp",
         "viet mat" to "việt mát",
         "ban do viet" to "bản đồ việt",
     )

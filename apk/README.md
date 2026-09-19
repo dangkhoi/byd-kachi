@@ -1,6 +1,6 @@
 # apk/ — kênh OTA của Kachi
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-18 (Kachi-1.81-release.apk vc82 sha256 bf5f3cd3…) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-18 (Kachi-1.82-release.apk vc83 sha256 363a7a38…) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
 
 **(VI)** App trên xe (`UpdateChecker`) hỏi GitHub Contents API thư mục này trên nhánh `main` của repo `dangkhoi/byd-kachi`,
 tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang cài, tải về rồi cài qua dadb loopback (`pm install -r`)
