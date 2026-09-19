@@ -51,3 +51,34 @@ interface VoicePack {
      */
     val downloadable: Boolean
 }
+
+/**
+ * Luật **thuần** về chỗ đặt thư mục dựng dở của một gói — tách khỏi `VoiceModelStore` để kiểm được off-car.
+ *
+ * ## ⚠ Vì sao luật này đáng một hàm riêng (bug 2026-09-19)
+ * Bước cuối của lượt cài là: xoá sạch thư mục đích rồi **đổi tên** thư mục dựng dở vào chỗ đó. Phép ấy chỉ đúng
+ * khi thư mục dựng dở nằm **NGOÀI** thư mục đích mà vẫn **cùng hệ thống tệp** (để `renameTo` là một phép đổi tên
+ * nguyên tử, không phải một lượt chép 61 MB lần thứ hai).
+ *
+ * Công thức cũ (`dir.substringBeforeLast('/')`) đúng cho hai gói đầu — [VoicePack.dir] hai đoạn (`sherpa/<id>` ·
+ * `sherpa-tts/<id>`) ⇒ `sherpa/.staging`, một thư mục **em**. Nhưng với gói KWS, `dir` chỉ có MỘT đoạn (`kws`,
+ * vì engine đọc tệp phẳng ở đó): Kotlin trả **chính chuỗi đó** khi không có dấu ngăn ⇒ `kws/.staging`, tức nằm
+ * **trong** đích ⇒ lượt xoá-để-đổi-tên tự xoá luôn thư mục vừa tải xong ⇒ gói **không bao giờ cài được**, và câu
+ * lỗi hiện ra là *"không chuyển được thư mục gói"* (trỏ sai chỗ hoàn toàn).
+ */
+object VoicePackPaths {
+
+    /** Tên thư mục dựng dở. Dấu `.` đầu để không bị nhầm là một gói. */
+    const val STAGING_NAME = ".staging"
+
+    /**
+     * Đường dẫn (tương đối với `filesDir`) của thư mục dựng dở cho một gói có [packDir].
+     *
+     * `"sherpa/x"` ⇒ `"sherpa/.staging"` (thư mục em) · `"kws"` ⇒ `".staging"` (ngay dưới `filesDir`).
+     * Cả hai đều **không nằm trong** [packDir] và đều cùng hệ thống tệp với nó.
+     */
+    fun stagingDir(packDir: String): String {
+        val parent = packDir.substringBeforeLast('/', missingDelimiterValue = "")
+        return if (parent.isEmpty()) STAGING_NAME else "$parent/$STAGING_NAME"
+    }
+}

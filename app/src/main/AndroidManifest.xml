@@ -183,9 +183,18 @@
              ⚠ Type = `microphone`, KHÔNG `specialUse` như các FGS khác: đây là FGS **duy nhất thu micro**, và
              `microphone` là hằng có từ API 29 (đúng ROM xe) đồng thời là type **bắt buộc** cho việc thu nền từ
              API 30+ (`specialUse` ở đó không cho quyền mic). Kèm `FOREGROUND_SERVICE_MICROPHONE` — API 34+ ném
-             SecurityException nếu thiếu; API 29 bỏ qua tên quyền không biết nên vô hại trên xe. -->
+             SecurityException nếu thiếu; API 29 bỏ qua tên quyền không biết nên vô hại trên xe.
+
+             ⚠ 2026-09-19 (crowd-test): CHẠY Ở TIẾN TRÌNH RIÊNG `:wake`, **cùng lẽ với `:tts` của 1.79**. Bộ nghe
+             câu gọi cầm `KeywordSpotter` của sherpa-onnx — tức cùng một thư viện native (`libonnxruntime.so`) mà
+             [ĐO tombstone xe 2026-09-18] đã một lần SIGSEGV trong `OfflineTts.generate` và giết CẢ tiến trình
+             launcher (⇒ a11y unbind ⇒ phím gán chết). Một SIGSEGV native KHÔNG bắt được bằng `runCatching` trong
+             cùng tiến trình, nên ranh giới tiến trình là bản vá duy nhất khả thi. Nay KWS nổ thì chỉ `:wake` chết;
+             launcher + phím gán + màn hình sống nguyên. Hậu tố khai MỘT chỗ ở `VoiceWakeService.PROCESS_SUFFIX`.
+             Giữ khối ĐƠN GIẢN (xem cảnh báo `<property>` ở trên). -->
         <service
             android:name=".launcher.voice.VoiceWakeService"
+            android:process=":wake"
             android:exported="false"
             android:foregroundServiceType="microphone">
         </service>

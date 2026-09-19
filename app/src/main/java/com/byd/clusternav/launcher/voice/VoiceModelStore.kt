@@ -37,14 +37,6 @@ object VoiceModelStore {
 
     private const val TAG = "KachiVoiceModel"
 
-    /**
-     * Tên thư mục dựng dở, đặt **cạnh** thư mục gói trong cùng họ (`sherpa/.staging` · `sherpa-tts/.staging`).
-     *
-     * Dấu `.` đầu để không bị nhầm là một gói. Cùng **hệ thống tệp** với đích là điều kiện để `renameTo` ở bước
-     * cuối là một phép đổi tên nguyên tử chứ không phải một lượt chép 61 MB lần thứ hai.
-     */
-    private const val STAGING_NAME = ".staging"
-
     private const val READ_TIMEOUT_MS = 60_000
     private const val MB = 1024L * 1024L
     private const val SPACE_MARGIN_BYTES = 40L * MB
@@ -196,9 +188,14 @@ object VoiceModelStore {
 
     private val installing = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    /** Thư mục dựng dở của họ gói chứa [pack] — `<họ>/.staging`, cùng hệ thống tệp với đích (xem [STAGING_NAME]). */
+    /**
+     * Thư mục dựng dở của [pack] — luật chỗ đặt ở `:core` ([VoicePackPaths.stagingDir], có bài canh off-car).
+     *
+     * Ở đây chỉ còn việc nối nó vào `filesDir`. Giữ luật ở `:core` vì nó là luật **đường dẫn thuần**, và vì nó
+     * từng sai một cách không thể phát hiện bằng bất kỳ phép kiểm nào ở tầng này (xem KDoc [VoicePackPaths]).
+     */
     private fun staging(ctx: Context, pack: VoicePack): File =
-        File(ctx.applicationContext.filesDir, pack.dir.substringBeforeLast('/') + "/" + STAGING_NAME)
+        File(ctx.applicationContext.filesDir, VoicePackPaths.stagingDir(pack.dir))
 
     /** Thư mục side-load của [pack] trên thẻ/USB; `null` khi máy không có thư mục ngoài (vắng thẻ). */
     private fun importDir(app: Context, pack: VoicePack): File? =

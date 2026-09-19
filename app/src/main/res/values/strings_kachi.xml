@@ -141,8 +141,8 @@
     <string name="kachi_home_unset_ok">Đã bỏ chọn — bấm Home để về launcher khác.</string>
     <string name="kachi_home_unset_partial">Đã bỏ Kachi khỏi màn hình chính. Không tìm thấy launcher khác — hệ sẽ tự chọn.</string>
     <string name="kachi_home_result_ok">Đã đặt — bấm Home để về Kachi.</string>
-    <string name="kachi_wake_title">"Hey Kachi" — gọi bằng giọng</string>
-    <string name="kachi_wake_sub">Nói câu gọi để mở lệnh thoại, không cần chạm. Nghe nền khi màn sáng. Mặc định tắt (tốn pin/CPU).</string>
+    <string name="kachi_wake_title">"Hey Kachi" — gọi bằng giọng (thử nghiệm)</string>
+    <string name="kachi_wake_sub">Nói câu gọi để mở lệnh thoại, không cần chạm. Nghe nền khi màn sáng. Mặc định tắt (tốn pin/CPU). Đang thử nghiệm — có thể chưa nhận tốt, gặp lỗi thì báo lại.</string>
     <string name="kachi_wake_notif_title">Hey Kachi</string>
     <string name="kachi_wake_notif_text">Đang nghe câu gọi</string>
     <string name="kachi_wake_auto_off">Đã tắt Hey Kachi vì nghe nhầm nhiều lần. Bật lại trong Cài đặt.</string>

@@ -307,13 +307,22 @@ class VoiceWakeListener(
         /** Đếm lượt chạy, chỉ để nhãn chốt micro của mỗi lượt là **duy nhất** (xem [label]). */
         private val SEQ = AtomicInteger(0)
 
-        /** Model KWS ở `filesDir/kws/`; thiếu ⇒ null (chỉ-RMS). Tên tệp theo model gigaspeech int8 (owner đăng sau). */
+        /**
+         * Model KWS ở `filesDir/`[WakeModelCatalog.dir]; thiếu ⇒ null (chỉ-RMS).
+         *
+         * Thư mục **và** 5 tên tệp lấy từ [WakeModelCatalog] — cùng bảng mà đường tải OTA dùng để ghim sha256.
+         * Chép tên tệp lần thứ hai ở đây là mở đúng cái khe im lặng: gói tải về đủ 5 tệp, engine soi một tên
+         * khác, `build` trả `null`, và "Hey Kachi" chạy mà không bao giờ nhận — không log nào nói vì sao.
+         */
         private fun defaultKws(ctx: Context): VoiceWakeKws? {
-            val dir = File(ctx.filesDir, "kws")
+            val dir = File(ctx.filesDir, WakeModelCatalog.dir)
             return VoiceWakeKws.build(
                 dir,
-                encoder = "encoder.int8.onnx", decoder = "decoder.int8.onnx", joiner = "joiner.int8.onnx",
-                tokens = "tokens.txt", keywordsFileName = "keywords.txt",
+                encoder = WakeModelCatalog.ENCODER,
+                decoder = WakeModelCatalog.DECODER,
+                joiner = WakeModelCatalog.JOINER,
+                tokens = WakeModelCatalog.TOKENS,
+                keywordsFileName = WakeModelCatalog.KEYWORDS,
             )
         }
     }

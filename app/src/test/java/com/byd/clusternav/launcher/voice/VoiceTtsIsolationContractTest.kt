@@ -133,16 +133,23 @@ class VoiceTtsIsolationContractTest {
      * `Application.onCreate` chạy ở MỌI tiến trình. Không có cổng này thì `:tts` cũng gọi `VoiceEngine.preload`
      * (74 MB int8) + `VoiceVad.preload`: vô ích (nó chỉ đọc), và **đúng thứ gây ra lỗi đang vá** — SIGSEGV của
      * `OfflineTts.generate` là `SEGV_MAPERR` dưới áp lực RAM. Cô lập tiến trình mà nhân đôi RAM là cô lập hỏng.
+     *
+     * ⚠ 2026-09-19: cổng đổi tên `isTtsProcess` → `isBackgroundVoiceProcess` khi "Hey Kachi" ra tiến trình thứ
+     * ba (`:wake`) — **một** cổng cho cả hai, vì cả hai đều không cần mô hình NGHE. Vế `:wake` có bài canh riêng
+     * ở [VoiceWakeIsolationContractTest]; bài này giữ vế `:tts`.
      */
     @Test
     fun `tien trinh tts khong nap mo hinh nghe`() {
         val fn = SourceRoots.body(application, "override fun onCreate()")
-        assertTrue(fn.contains("if (isTtsProcess()) return"), "phải thoát sớm khi đang ở tiến trình `:tts`")
-        val gate = fn.indexOf("isTtsProcess()")
+        assertTrue(
+            fn.contains("if (isBackgroundVoiceProcess()) return"),
+            "phải thoát sớm khi đang ở tiến trình voice nền (`:tts`/`:wake`)",
+        )
+        val gate = fn.indexOf("isBackgroundVoiceProcess()")
         listOf("AppContainer.get(this)", "VoiceEngine.preload(this)", "VoiceVad.preload(this)").forEach {
             val at = fn.indexOf(it)
             assertTrue(at > 0, "vẫn phải giữ `$it` cho tiến trình launcher")
-            assertTrue(at > gate, "`$it` phải nằm SAU cổng `isTtsProcess()` — nếu không `:tts` cũng nạp nó")
+            assertTrue(at > gate, "`$it` phải nằm SAU cổng `isBackgroundVoiceProcess()` — nếu không `:tts` cũng nạp nó")
         }
     }
 

@@ -114,7 +114,10 @@ object KachiAutostart {
                 Log.i(TAG, "requested HOME up ($launchComp) — Activity restores + mounts saved slots")
 
                 // (5) W-WAKE — bật FGS "Hey Kachi" nếu công tắc ON (sync tự stopSelf khi OFF). Mặc định TẮT.
+                //     Kèm THỬ LẠI lượt tải model KWS: cú gạt công tắc có thể đã hỏng vì không mạng, và nếu không
+                //     thử lại thì "Hey Kachi" bật mà không bao giờ nhận, im lặng (xem KDoc ensureWakeModelIfEnabled).
                 runCatching { com.byd.clusternav.launcher.voice.VoiceWakeService.sync(app) }
+                runCatching { com.byd.clusternav.launcher.ensureWakeModelIfEnabled(app) }
             }.onFailure { Log.w(TAG, "kachi auto-start failed (degrade-safe, retried next trigger): ${it.message}") }
         } finally {
             finishRun()
