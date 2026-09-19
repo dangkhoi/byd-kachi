@@ -30,6 +30,7 @@ class VoiceWakeIsolationContractTest {
     private val listener by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeListener.kt") }
     private val application by lazy { code("src/main/java/com/byd/clusternav/KachiApplication.kt") }
     private val bridge by lazy { code("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeWake.kt") }
+    private val prefs by lazy { code("src/main/java/com/byd/clusternav/Prefs.kt") }
     private val manifest by lazy { SourceRoots.text("src/main/AndroidManifest.xml") }
 
     // ══ (1) Manifest: tiến trình `:wake` tồn tại, và khối giữ ĐƠN GIẢN ═══════════════════════════════════
@@ -121,6 +122,78 @@ class VoiceWakeIsolationContractTest {
                         )
                     }
             }
+    }
+
+    // ══ (1b) [P2] Tiến trình `:wake` KHÔNG ghi tệp prefs CHUNG ═════════════════════════════════════════════
+
+    /**
+     * ⚠ [P2 2026-09-19] Cầu chì tự-tắt của `:wake` phải đi qua tệp RIÊNG, KHÔNG ghi `clusternav_prefs`.
+     *
+     * `voice_wake_enabled` nằm trong `clusternav_prefs` — tệp CHUNG 38 key = mọi setting launcher (biển tốc độ,
+     * ghế, phím thoại, chế độ nav…). MODE_PRIVATE **không** an toàn đa-tiến-trình: nếu `:wake` `apply()` tệp này
+     * bằng map-RAM cũ của nó (nạp lúc `:wake` khởi động), nó ghi đè CẢ tệp ⇒ **xoá mọi setting launcher đã đổi
+     * kể từ đó**. Đây là bản vá KHÔNG nhìn thấy được off-car nếu không chốt bằng chính đường ghi.
+     */
+    @Test
+    fun `wake khong ghi tep prefs chung, chi ghi tep rieng`() {
+        // (1) auto-disable ghi cờ tệp RIÊNG, và `:wake` TUYỆT ĐỐI không gọi đường ghi clusternav_prefs.
+        val fn = SourceRoots.body(service, "private fun autoDisable()")
+        assertTrue(
+            fn.contains("Prefs.setWakeServiceDisabled(this, true)"),
+            "auto-disable phải ghi cờ tệp RIÊNG (setWakeServiceDisabled), không tắt công tắc chung",
+        )
+        // ⚠ [SOÁT 2026-09-19] Guard phải chặn NGUYÊN NHÂN, không chặn MỘT CÁI TÊN. `Prefs` có ~30 setter ghi
+        // `clusternav_prefs`, **và hai READER tự GHI** khi migrate (`badgeCenterX/Y` → `migrateBadgeIfNeeded`;
+        // `voiceKeyBindings`/`voiceKeyTargetSpec` → `migrateLegacy`). Một guard chỉ soi `setWakeEnabled` vẫn XANH
+        // khi ai đó thêm `Prefs.setWakePhraseId(...)` hay `Prefs.badgeCenterX(...)` vào `:wake` — tức đúng họ lỗi
+        // "lá chắn mang hình dạng lá chắn" của dự án, và cái clobber nó để lọt thì **im lặng**.
+        val kwsSrc = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeKws.kt")
+        val allowedWrites = setOf("Prefs.setWakeServiceDisabled")
+        val readersThatWrite = listOf(
+            "Prefs.badgeCenterX", "Prefs.badgeCenterY", "Prefs.voiceKeyBindings", "Prefs.voiceKeyTargetSpec",
+        )
+        mapOf("VoiceWakeService.kt" to service, "VoiceWakeListener.kt" to listener, "VoiceWakeKws.kt" to kwsSrc)
+            .forEach { (name, src) ->
+                Regex("""Prefs\.set[A-Za-z0-9_]*""").findAll(src).map { it.value }.toSet().forEach { call ->
+                    assertTrue(
+                        call in allowedWrites,
+                        "$name gọi `$call` — mọi setter ngoài setWakeServiceDisabled ghi `clusternav_prefs` (38 key) " +
+                            "bằng map-RAM cũ của tiến trình `:wake` ⇒ apply() ghi đè CẢ tệp ⇒ xoá mọi setting launcher",
+                    )
+                }
+                readersThatWrite.forEach { reader ->
+                    assertFalse(
+                        src.contains(reader),
+                        "$name gọi `$reader` — READER này tự GHI `clusternav_prefs` khi migrate ⇒ cùng một clobber",
+                    )
+                }
+            }
+        // (2) [SOÁT 2026-09-19] Cầu chì = MARKER FILE (`kachi_wake_disabled`), KHÔNG phải một tệp prefs thứ hai:
+        //     `SharedPreferences` cache map per-process ⇒ launcher không thấy `:wake` ghi (công tắc hiện ON dù đã
+        //     tắt). `File.exists()` đọc thẳng hệ tệp ⇒ launcher thấy NGAY. Vẫn tách khỏi `clusternav_prefs`.
+        assertTrue(prefs.contains("\"kachi_wake_disabled\""), "cầu chì phải là marker file kachi_wake_disabled")
+        assertTrue(
+            prefs.contains("java.io.File(ctx.applicationContext.filesDir, \"kachi_wake_disabled\")"),
+            "marker phải nằm trong filesDir, tách khỏi clusternav_prefs",
+        )
+        assertTrue(
+            prefs.contains("wakeDisabledMarker(ctx).exists()"),
+            "wakeServiceDisabled phải đọc bằng File.exists() — KHÔNG cache per-process như SharedPreferences",
+        )
+        assertFalse(
+            prefs.contains("getSharedPreferences(\"kachi_wake_state\""),
+            "KHÔNG dùng tệp prefs cho cầu chì — sẽ tái lập lỗi cache cross-process (F2)",
+        )
+        // (3) wakeEnabled = owner-intent (clusternav_prefs) AND KHÔNG service-tự-tắt (tệp riêng).
+        assertTrue(
+            prefs.contains("getBoolean(\"voice_wake_enabled\", false) && !wakeServiceDisabled(ctx)"),
+            "wakeEnabled phải kết hợp owner-intent AND !service_disabled",
+        )
+        // (4) owner BẬT lại ⇒ xoá cờ tự-tắt (nếu không, service_disabled còn thì bật lại vô hiệu, im lặng).
+        assertTrue(
+            prefs.contains("if (on) setWakeServiceDisabled(ctx, false)"),
+            "setWakeEnabled(on=true) phải xoá cờ tự-tắt của service để bật lại có hiệu lực",
+        )
     }
 
     // ══ (2) Nhường micro cho phiên lệnh — cross-process thì phải theo THỜI GIAN ═══════════════════════════

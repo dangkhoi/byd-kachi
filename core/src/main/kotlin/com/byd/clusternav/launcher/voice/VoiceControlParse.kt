@@ -26,10 +26,12 @@ internal object VoiceControlParse {
         val def = ControlRegistry.byId(id) ?: return VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
         val num = firstNumber(after)
         // (c) [ĐO log xe 1.79] "mở/chỉnh điều hòa 25 độ" — "điều hòa"/"máy lạnh" khớp `ac_auto` (TOGGLE) nên MẤT
-        // số → bật AUTO thay vì đặt nhiệt. Có SỐ + token "độ" ⇒ ý người dùng là ĐẶT nhiệt độ AC → chuyển sang nút
-        // `temp` (setpoint, [ĐO] ghi được trên xe). "bật/tắt điều hòa" (KHÔNG số) vẫn là ac_auto — không có "độ".
-        if (id == "ac_auto" && num != null && after.any { it.norm == "do" }) {
-            ControlRegistry.byId("temp")?.let { return VoiceIntent.Control("temp", it.clamp(num)) }
+        // số → bật AUTO thay vì đặt nhiệt. Có cụm "<số> độ" ⇒ ý người dùng là ĐẶT nhiệt độ AC → chuyển sang nút
+        // `temp` (setpoint, [ĐO] ghi được trên xe). "bật/tắt điều hòa" (KHÔNG số) vẫn là ac_auto.
+        if (id == "ac_auto") {
+            degreesSetpoint(after)?.let { deg ->
+                ControlRegistry.byId("temp")?.let { return VoiceIntent.Control("temp", it.clamp(deg)) }
+            }
         }
         return when (def.kind) {
             ControlKind.TOGGLE, ControlKind.COVER -> when (verb) {
@@ -126,4 +128,28 @@ internal object VoiceControlParse {
         after.indices.forEach { i -> VoiceLexicon.readNumber(after, i)?.let { return it.value } }
         return null
     }
+
+    /**
+     * Số nói **liền ngay trước** chữ *"độ"* (*"hai mươi lăm **độ**"*) — dấu hiệu duy nhất của một setpoint nhiệt.
+     *
+     * ## Vì sao phải LIỀN KỀ, không phải "câu có số và có chữ độ ở đâu đó" ([SOÁT 2026-09-19])
+     * Bản đầu của fix (c) hỏi `num != null && after.any { it.norm == "do" }`. Nhưng `do` (bỏ dấu) cũng là **âm
+     * tiết thứ hai** của những cụm chẳng liên quan gì tới nhiệt độ — *"chế độ"*, *"mức độ"* — nên [ĐO off-car]
+     * *"bật điều hòa **chế độ** hai"* ra `Control(temp, 17)`: người lái nói một chế độ, xe đặt nhiệt xuống **mức
+     * thấp nhất** (số 2 bị `clamp` vào dải 17..33), và đó là một lệnh GHI không ai xin. Đúng họ lỗi mà chính fix
+     * (c) sinh ra để đóng.
+     *
+     * Phép liền kề khớp đúng cách người ta nói một nhiệt độ (*"<số> độ"*) và bỏ đúng cách người ta nói một chế độ
+     * (*"chế độ <số>"* — chữ `do` đứng TRƯỚC số). Không cần danh sách từ cấm nào.
+     */
+    private fun degreesSetpoint(after: List<Token>): Int? {
+        after.indices.forEach { i ->
+            val n = VoiceLexicon.readNumber(after, i) ?: return@forEach
+            if (after.getOrNull(i + n.consumed)?.norm == DEGREE_WORD) return n.value
+        }
+        return null
+    }
+
+    /** Chữ *"độ"* đã bỏ dấu — đơn vị đi kèm một setpoint nhiệt (xem [degreesSetpoint]). */
+    private const val DEGREE_WORD = "do"
 }

@@ -214,8 +214,35 @@ object Prefs {
 
     // "Hey Kachi" wake-word (W-WAKE) — theo XE (ProfileScope.DEVICE_KEYS), mặc định **TẮT** (nghe nền = rủi ro CPU
     // → opt-in). Câu gọi = preset id ([VoiceWakePhrase]). VoiceWakeService.sync() đọc cờ này để bật/tắt FGS.
-    fun wakeEnabled(ctx: Context): Boolean = sp(ctx).getBoolean("voice_wake_enabled", false)
-    fun setWakeEnabled(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("voice_wake_enabled", on).apply()
+    //
+    // ⚠ [P2 2026-09-19] Cờ owner `voice_wake_enabled` nằm trong `clusternav_prefs` (tệp CHUNG, 38 key = mọi
+    // setting launcher). MODE_PRIVATE **không** an toàn đa-tiến-trình: nếu tiến trình `:wake` ghi tệp này bằng
+    // map-RAM cũ của nó, `apply()` ghi đè cả tệp ⇒ **xoá mọi setting launcher đã đổi từ lúc :wake khởi động**.
+    // ⇒ `:wake` CHỈ được ghi marker RIÊNG [wakeDisabledMarker]; `clusternav_prefs` chỉ tiến trình launcher ghi.
+    //
+    // ⚠ [SOÁT 2026-09-19] Marker là TỆP RỖNG, KHÔNG phải một tệp prefs thứ hai: `SharedPreferences` cache map
+    // theo tiến trình và KHÔNG thấy tiến trình khác ghi ⇒ nếu cờ tự-tắt nằm trong prefs, launcher (đã cache)
+    // đọc lại vẫn thấy cũ ⇒ công tắc hiện ON dù bộ nghe đã tắt. `File.exists()` đọc thẳng hệ tệp (không cache)
+    // ⇒ launcher thấy NGAY. Một tệp create/delete = op FS đơn, an toàn hai tiến trình.
+    private fun wakeDisabledMarker(ctx: Context) =
+        java.io.File(ctx.applicationContext.filesDir, "kachi_wake_disabled")
+
+    /** Cầu chì false-accept: `:wake` tự-tắt bằng cách tạo marker RIÊNG (KHÔNG đụng `clusternav_prefs`). */
+    fun wakeServiceDisabled(ctx: Context): Boolean =
+        runCatching { wakeDisabledMarker(ctx).exists() }.getOrDefault(false)
+    fun setWakeServiceDisabled(ctx: Context, disabled: Boolean) {
+        runCatching { wakeDisabledMarker(ctx).let { if (disabled) it.createNewFile() else it.delete() } }
+    }
+
+    /** BẬT-HIỆU-LỰC = owner bật (`clusternav_prefs`) **VÀ** service chưa tự-tắt (marker `kachi_wake_disabled`). */
+    fun wakeEnabled(ctx: Context): Boolean =
+        sp(ctx).getBoolean("voice_wake_enabled", false) && !wakeServiceDisabled(ctx)
+
+    /** CHỈ tiến trình LAUNCHER gọi (công tắc Cài đặt). Bật lại ⇒ xoá marker tự-tắt của `:wake` để service chạy lại. */
+    fun setWakeEnabled(ctx: Context, on: Boolean) {
+        sp(ctx).edit().putBoolean("voice_wake_enabled", on).apply()
+        if (on) setWakeServiceDisabled(ctx, false)
+    }
     fun wakePhraseId(ctx: Context): String = sp(ctx).getString("voice_wake_phrase", "hey_kachi") ?: "hey_kachi"
     fun setWakePhraseId(ctx: Context, id: String) = sp(ctx).edit().putString("voice_wake_phrase", id).apply()
 

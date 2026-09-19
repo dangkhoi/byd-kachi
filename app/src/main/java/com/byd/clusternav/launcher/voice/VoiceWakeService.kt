@@ -216,9 +216,9 @@ class VoiceWakeService : Service() {
         main.postDelayed(resumeTask, WAKE_HANDOFF_MS)
     }
 
-    /** Cầu chì false-accept: tắt công tắc + báo + dừng service (owner OQ5). */
+    /** Cầu chì false-accept: [P2] ghi cờ tệp RIÊNG (KHÔNG đụng `clusternav_prefs` chung) + báo + dừng service. */
     private fun autoDisable() {
-        runCatching { Prefs.setWakeEnabled(this, false) }
+        runCatching { Prefs.setWakeServiceDisabled(this, true) }
         runCatching { Toast.makeText(this, getString(R.string.kachi_wake_auto_off), Toast.LENGTH_LONG).show() }
         stopListening(); stopSelf()
     }

@@ -64,4 +64,18 @@ class VoiceLogCases0919Test {
         assertEquals(VoiceIntent.Control("ac_auto", 1), one("bật điều hòa"))
         assertEquals(VoiceIntent.Control("ac_auto", 0), one("tắt điều hòa"))
     }
+
+    /**
+     * GUARD [SOÁT 2026-09-19] — *"chế độ"* / *"mức độ"* bỏ dấu thành `che do` / `muc do`, tức có **âm tiết `do`**.
+     *
+     * Bản đầu của fix (c) hỏi *"câu có số VÀ có token `do` ở đâu đó trong đuôi"* ⇒ [ĐO off-car] *"bật điều hòa
+     * **chế độ** hai"* ra `Control(temp, 17)`: người lái nói một CHẾ ĐỘ, xe hạ nhiệt xuống **mức thấp nhất** (số 2
+     * bị `clamp` vào dải 17..33) — một lệnh GHI không ai xin, đúng họ lỗi mà chính fix (c) sinh ra để đóng. Nay số
+     * phải đứng **liền ngay trước** chữ *"độ"* (*"<số> độ"*), còn *"chế độ <số>"* thì `do` đứng TRƯỚC số ⇒ không khớp.
+     */
+    @Test fun `che do hay muc do co so KHONG bi hieu thanh setpoint nhiet`() {
+        assertEquals(VoiceIntent.Control("ac_auto", 1), one("bật điều hòa chế độ hai"))
+        assertEquals(VoiceIntent.Control("ac_auto", 1), one("mở điều hòa chế độ 3"))
+        assertEquals(VoiceIntent.Control("ac_auto", 1), one("bật điều hòa mức độ 2"))
+    }
 }
