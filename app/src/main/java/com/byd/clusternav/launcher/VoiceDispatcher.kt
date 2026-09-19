@@ -276,6 +276,26 @@ class VoiceDispatcher(
             }
             else -> i.value ?: 1
         }
+        val shown = if (i.relative != 0) VoiceIntent.Control(def.id, arg) else i
+        // ═══ C (owner test xe 2026-09-19) · CỐP/CA-PÔ chỉ MỞ được khi xe đang DỪNG ════════════════════════
+        //
+        // Đặt **trước** [CarControlPort.actByKind], sau khi đã biết `arg`: chỉ chặn lượt MỞ (`arg > 0`) — đóng
+        // cốp lúc đang chạy là việc nên làm, chặn nó lại là chặn đúng đường chữa. Tập mã ở
+        // [CtlSafetyPolicy.REQUIRES_STATIONARY] (KDoc ở đó giải thích vì sao kính/cửa sổ trời KHÔNG vào).
+        //
+        // ## Đọc TƯƠI, và `null` ⇒ CHO PHÉP (fail-open) — một lựa chọn có chủ ý
+        // Hỏi [freshCar] trước vì vòng poll chỉ đọc datum **đang hiện trên màn** (`CarDataDemand`), nên ảnh chụp
+        // có thể mang tốc độ của lần cuối cái ô ấy còn trên màn — dùng nó để gate là gate bằng một con số cũ.
+        //
+        // Không đọc được (`null`) thì **cho mở**: [ĐO] `speed` ở mức PROVEN (`TelemetryRegistry`), tức trên xe
+        // thật gate này có số để chạy; `null` gần như chỉ xảy ra off-car/máy ảo, và ở đó chẳng có cốp nào để bung.
+        // Chọn fail-CLOSED thì mọi lần đọc hụt trên xe đỗ sẽ thành một lời từ chối cho một việc hoàn toàn an toàn
+        // (mở cốp lúc đỗ là ca dùng **thường nhất** của nút này) — tức một gate an toàn tự biến thành lỗi.
+        if (CtlSafetyPolicy.requiresStationary(def.id) && arg > 0) {
+            val kmh = runCatching { freshCar("speed") }.getOrNull()?.drivetrain?.speedKmh
+                ?: state().carStatus.drivetrain.speedKmh
+            if (kmh != null && kmh > 0) { say(VoiceReply.notWhileMoving(shown)); return }
+        }
         val ok = runCatching { control().actByKind(def.id, arg) }.getOrDefault(false)
         // Ghi lại trạng thái lạc quan y như cú chạm: hai bề mặt phải nói cùng một điều về MỘT cái xe.
         if (ok) when (def.kind) {
@@ -284,7 +304,6 @@ class VoiceDispatcher(
             ControlKind.SELECT -> st.setSel(def.id, arg)
             else -> Unit
         }
-        val shown = if (i.relative != 0) VoiceIntent.Control(def.id, arg) else i
         if (!ok) {
             // ═══ R5 (live-state) — *"hỏng lần này"* và *"xe này không có"* là HAI câu khác nhau ═════════
             //
@@ -302,46 +321,29 @@ class VoiceDispatcher(
             say(if (absent) VoiceReply.notOnThisCar(shown) else VoiceReply.failed(shown))
             return
         }
-        if (def.kind == ControlKind.STEP) sayStepResult(shown, st) else say(VoiceReply.done(shown))
+        // ═══ E (owner test xe 2026-09-19) · nút nào ĐỌC ĐƯỢC thì đọc lại xác nhận, không trả lời mù ═════════
+        //
+        // Ba lối, và cái thứ ba là chỗ thành thật: nút **không có** [ControlDef.readKey] thì giữ nguyên câu 1.79
+        // (còn cả đuôi *"chưa kiểm trên xe"*) — ở đó thật sự không có gì để kiểm, nên hedge là đúng.
+        //
+        // Cổng kind CỐ Ý hẹp hơn *"có readKey"*: [ControlKind.BUTTON] là nút bấm-một-phát (`pm25_clean_now`), mức
+        // sau khi bấm **không nói gì** về việc cú bấm có tới hay không ⇒ so mức ở đó sẽ báo *"xe không nhận lệnh"*
+        // cho một cú bấm hoàn toàn bình thường. [ControlKind.SELECT] cũng vậy: mức của nó là **chỉ số lựa chọn**,
+        // `> 0` không mang nghĩa *bật* (chỉ số 0 là một lựa chọn hợp lệ, không phải "tắt").
+        when {
+            def.kind == ControlKind.STEP -> readback.step(shown, st)
+            (def.kind == ControlKind.TOGGLE || def.kind == ControlKind.COVER) && def.readKey.isNotBlank() ->
+                readback.act(shown, def, arg, st)
+            else -> say(VoiceReply.done(shown))
+        }
     }
 
     /**
-     * ═══ R5 · ĐỌC LẠI GIÁ TRỊ THẬT trước khi nói *"xong"* (spec `kachi-voice-feedback.html` T10) ═══════════
+     * ═══ R5 + E · đọc lại xe rồi mới nói — đã tách sang [VoiceReadback] (trần 500 dòng) ═══════════════════════
      *
-     * Tới 1.65 câu trả lời dựng từ **con số vừa gửi**, nên *"đặt nhiệt độ 24"* trên một chiếc xe kẹp về 17 vẫn
-     * nghe là *"✓ Đặt Nhiệt độ = 24"*. Nay: ghi xong thì hỏi lại xe ([CarControlPort.readStep]).
-     *
-     * ## Ba nhánh, và nhánh thứ ba là chỗ khó
-     *  1. **Không đọc được** (`null` — off-car, máy ảo, trim không provision) ⇒ giữ nguyên câu cũ. **Không bịa
-     *     số**: một con số đọc được là một lời hứa, còn `null` thì không có gì để hứa.
-     *  2. **Khớp** ⇒ [VoiceReply.doneActual] trả đúng câu cũ (xem KDoc ở đó về vì sao không thêm chữ nào).
-     *  3. **Lệch** ⇒ [ĐO chưa có, xem OQ5] có thể xe **chưa kịp áp**: lượt đọc chạy vài ms sau lượt ghi và bus
-     *     còn mang số cũ. Nói ngay *"xe báo 23"* trong ca đó là báo một cái sai. ⇒ đọc lại **đúng MỘT lần** sau
-     *     [READBACK_SETTLE_MS] trên luồng NỀN (không chặn luồng vẽ — xe đang chạy), rồi mới nói. Một lần, không
-     *     phải một vòng lặp: nếu sau chừng ấy vẫn lệch thì đó là chỗ lệch THẬT, và người lái cần nghe nó.
-     *
-     * Trạng thái ô ([ControlTileState]) cũng được sửa theo số thật, để thanh nút và câu nói không nói hai điều
-     * khác nhau về một cái xe — đúng bất biến mà `ControlTileState.shared` sinh ra để giữ.
+     * Dựng **một lần** cho cả đời cầu, cùng lẽ với [targets]: nó chỉ cầm chính những lambda mà cầu này đã cầm.
      */
-    private fun sayStepResult(shown: VoiceIntent.Control, st: ControlTileState) {
-        val port = control()
-        // Câu không nêu đích (`value == null`) thì không có gì để so — giữ nguyên câu cũ. Bộ phân tích không
-        // sinh ra ca này cho STEP (xem `VoiceIntentParser.step`), nhưng một nhánh mới mai sau thì có thể.
-        val want = shown.value ?: run { say(VoiceReply.done(shown)); return }
-        val first = runCatching { port.readStep(shown.id) }.getOrNull()
-        if (first == null || first == want) {
-            say(if (first == null) VoiceReply.done(shown) else VoiceReply.doneActual(shown, first))
-            return
-        }
-        background {
-            runCatching { Thread.sleep(READBACK_SETTLE_MS) }
-            val again = runCatching { port.readStep(shown.id) }.getOrNull() ?: first
-            onUi {
-                st.setValue(shown.id, again)
-                say(VoiceReply.doneActual(shown, again))
-            }
-        }
-    }
+    private val readback = VoiceReadback(control = control, say = say, onUi = onUi, background = background)
 
     private fun runMacro(i: VoiceIntent.Macro) {
         val macro = ActionMacros.byId(i.id)
@@ -453,16 +455,10 @@ class VoiceDispatcher(
         const val NO_VALUE = "—"
 
         /**
-         * R5 — chờ bao lâu rồi đọc lại khi lượt đọc ĐẦU báo một số khác số vừa gửi.
-         *
-         * 300 ms là một **giả định có chủ ý**, chưa phải phép đo: [CHƯA BIẾT] xe mất bao lâu từ lúc nhận lệnh
-         * tới lúc bus mang số mới (spec §7 **OQ6** ghi cách chốt — bấm giờ giữa `write` và lần `readInt` đầu tiên
-         * trả số mới, trên xe thật). Chọn số này vì nó nằm dưới ngưỡng người ta cảm thấy là *"máy treo"* (~500 ms)
-         * mà vẫn dôi so với một nhịp CAN thường. Đặt hụt ⇒ câu trả lời thỉnh thoảng thuật lại số cũ — vẫn đúng
-         * theo nghĩa *"xe đang báo thế"*, và đó là lý do câu nói không suy diễn nguyên nhân (KDoc
-         * [VoiceReply.doneActual]).
+         * R5 — hằng chờ của lượt đọc lại đã theo vai *"đọc lại xe rồi mới nói"* sang [VoiceReadback] (lượt E
+         * 2026-09-19). Giữ một bản sao ở đây là dựng hai hằng cho cùng một khoảng chờ, và bản không ai đọc sẽ
+         * lặng lẽ lệch — đúng họ lỗi mà ghi chú `NAV_PREFERENCE` dưới đây nói tới.
          */
-        const val READBACK_SETTLE_MS = 300L
 
         // ⚠ [SOÁT Pass 4 · P2] `NAV_PREFERENCE` đã theo [VoiceTargetDispatch] sang tệp kia cùng ba hàm dùng nó.
         // Lượt tách để lại ở đây một **bản sao y nguyên** mà không còn ai đọc (companion này `private`) — đúng

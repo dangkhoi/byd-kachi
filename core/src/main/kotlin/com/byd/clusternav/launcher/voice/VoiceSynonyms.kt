@@ -86,18 +86,40 @@ object VoiceSynonyms {
         // giữ nguyên mọi cụm dài hơn có chứa nó (*"chiếu cụm"*, *"đèn chiếu xa"*), nên không nuốt nhãn nào.
         "cast" to listOf("chieu", "chieu len cum", "chieu man", "cast cluster"),
         "ac_auto" to listOf("dieu hoa", "may lanh", "dieu hoa tu dong", "air con", "ac", "aircon"),
-        // [SOÁT P2] *"mở cửa sổ"* / *"mở kính"* — hai câu đời thường nhất về kính, trước đây **không** trỏ tới đâu:
-        // *"cửa"* không có trong từ vựng, còn *"sổ"* thì khớp nhãn *"Số"* của datum `gear` ⇒ ra MISMATCH (một câu
-        // báo lỗi sai chỗ). Trỏ về nút GỘP là lựa chọn an toàn nhất: nó thuộc diện CONFIRM (`VoiceRiskTable`) nên
-        // người lái thấy đúng hộp *"hạ HẾT 4 kính?"* trước khi có gì xảy ra.
+        // ═══ D (owner test xe 2026-09-19) · CỤM MƠ HỒ TRỎ VỀ **MỘT** KÍNH, KHÔNG PHẢI CẢ BỐN ══════════════
+        // Owner nói *"mở kính"* và xe hạ **cả 4**. Đây là hồi quy của chính bản vá [SOÁT P2] trước đó: lúc ấy
+        // *"mở kính"* / *"mở cửa sổ"* chưa trỏ tới đâu (ra MISMATCH), nên bốn cụm mơ hồ được gắn vào nút GỘP với
+        // lập luận *"nó thuộc diện CONFIRM nên người lái còn thấy hộp hỏi lại"*. Lập luận đó **sập** ở mặc định
+        // thật: `voice_confirm_ids` mặc định **RỖNG** (owner chốt *"không hỏi xác nhận gì cả"*), nên không có hộp
+        // nào hiện — câu mơ hồ nhất đi thẳng tới việc rộng nhất.
+        //
+        // Nguyên tắc chọn: cụm **mơ hồ** ⇒ phạm vi **HẸP NHẤT** hợp lý (kính lái = chỗ người nói đang ngồi, và
+        // `window` tier PROVEN); muốn cả bốn thì phải nói TƯỜNG MINH (*"hết / toàn bộ / mọi / bốn kính"*). Hẹp
+        // đoán sai thì thiếu một việc, còn rộng đoán sai thì **hạ ba cửa kính không ai xin** — hai cái giá không
+        // cùng hạng.
+        //
+        // ⚠ [SOÁT lượt D · P2] Chính nguyên tắc trên khoanh lại phạm vi của lượt dời: nó áp cho cụm **MƠ HỒ**, mà
+        // *"các cửa sổ"* và *"windows"* thì **không** mơ hồ — `các` là dấu hiệu SỐ NHIỀU của tiếng Việt và `windows`
+        // là dạng số nhiều tiếng Anh, tức cả hai đã **tường minh-nhiều-cửa** y như *"bốn kính"*. Bản vá D đầu dời cả
+        // bốn cụm sang [window], nên *"mở các cửa sổ"* chỉ hạ MỘT cửa — không phải cái giá rẻ hơn, chỉ là cái sai đổi
+        // chiều. Ở lại đây đúng hai cụm số nhiều; hai cụm mơ hồ (`kinh` · `cua so`) sang [window].
+        //
+        // Luật **dãy dài nhất thắng** giữ hai bên không cướp nhau: *"mở các cửa sổ"* khớp `cac cua so` (3 từ) ở vị
+        // trí 1 nên nó thắng `cua so` (2 từ) ở vị trí 2 — bài canh `VoiceWindowScopeTest` khoá đúng cặp này.
         "windows_all" to listOf("het kinh", "toan bo kinh", "moi kinh", "every window",
-            "kinh", "cua so", "cac cua so", "windows", "het kieng", "bon kinh"),
+            "het kieng", "bon kinh", "cac cua so", "windows"),
         // ═══ V3 · R10 — *"mở kính lái"*, câu [ĐO xe 2026-09-16] mà máy hiểu SAI ═══════════════════════
         // Owner nói *"mở kính lái"*; sherpa nghe **đúng**, nhưng từ vựng không có cụm nào bắt đầu bằng `kinh lai`
         // ⇒ luật dãy-dài-nhất chỉ còn `kinh` ⇒ trỏ về nút GỘP `windows_all` ⇒ hộp *"Hạ hết 4 kính?"*. Tức một câu
         // chỉ về MỘT cửa kính lại thành lệnh cho bốn.
+        //
+        // ⚠ Hai cụm cuối (`kinh` · `cua so`) dời từ `windows_all` sang đây ở lượt D 2026-09-19 — xem khối ghi chú
+        // ngay trên. Chỉ **hai**, không phải bốn: `cac cua so` / `windows` là dạng SỐ NHIỀU nên ở lại nút gộp
+        // ([SOÁT lượt D · P2], lý do đầy đủ ghi ở khối `windows_all`). Luật **dãy dài nhất thắng** giữ nguyên mọi
+        // cụm dài hơn: *"mở hết kính"* vẫn về nút gộp vì `het kinh` (2 từ) thắng `kinh` (1 từ) tại cùng vị trí.
         "window" to listOf("kinh lai", "cua kinh lai", "kinh tai xe", "cua so lai",
-            "kieng lai", "cua kieng lai", "kieng tai xe"),
+            "kieng lai", "cua kieng lai", "kieng tai xe",
+            "kinh", "cua so"),
         "win_lf" to listOf("kinh ben lai", "kinh ghe lai", "kieng truoc trai"),
         "win_rf" to listOf("kinh ben phu", "kinh ghe phu", "kieng truoc phai"),
         "win_lr" to listOf("kieng sau trai", "kinh sau ben trai"),

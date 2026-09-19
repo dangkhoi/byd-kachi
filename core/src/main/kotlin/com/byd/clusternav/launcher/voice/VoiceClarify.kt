@@ -282,13 +282,23 @@ object VoiceClarify {
     /**
      * Câu HỎI ⇒ chỉ đưa ra những mã **đọc được**; câu ra lệnh ⇒ để nguyên.
      *
-     * Chỉ lọc khi còn **≥ 2** mã đọc được: một họ toàn nút (vd *"lọc"* → `pm25` / `pm25_clean_now`) thì lọc đi là
-     * không còn gì để chọn, và một câu hỏi không có gì để chọn còn tệ hơn một câu hỏi lệch loại.
+     * ## ⚠ Bản trước có một đường LÙI, và nó nói ngược lại chính [ambiguity]
+     * Tới 1.79 hàm này trả về **nguyên** danh sách khi họ ấy còn dưới 2 mã đọc được, với lý do *"một câu hỏi không
+     * có gì để chọn còn tệ hơn một câu hỏi lệch loại"*. Nhưng [ambiguity] đã có sẵn đường xử lý ca ấy — nó **thử
+     * tiếp đầu họ sau** khi một họ không đủ hai nhãn (xem ghi chú ở vòng `forEach` đó) — nên đường lùi này chỉ làm
+     * đúng một việc: **chặn** vòng thử tiếp, bằng cách trả về đủ 2 nhãn của loại SAI.
+     *
+     * [ĐO off-car 2026-09-19, lượt D] *"tất cả cửa đang khóa hay đang mở"* hỏi lại thành
+     * *"Khóa nào — Khóa / mở khóa hay Khóa trẻ em?"* — mời người lái đọc tên hai cái **nút** để trả lời một câu
+     * hỏi về trạng thái, trong khi họ *"Cửa …"* ở ngay sau đó có đủ 4 datum cửa. (Lượt D chỉ **làm lộ** chỗ này:
+     * nó đổi thứ tự ủng hộ giữa hai đầu họ `cua` / `khoa`, chứ không sinh ra nó.)
+     *
+     * Không có mã đọc được nào ⇒ trả rỗng ⇒ [ambiguity] bỏ qua họ đó và thử họ tiếp; không họ nào đủ thì câu hỏi
+     * rơi về [vague] — vẫn mang [READ_VERB] nên cổng D1 còn nguyên.
      */
     private fun readsFirst(ids: List<String>, asking: Boolean): List<String> {
         if (!asking) return ids
-        val reads = ids.filter { TelemetryRegistry.byId(it) != null }
-        return if (reads.size >= 2) reads else ids
+        return ids.filter { TelemetryRegistry.byId(it) != null }
     }
 
     /**

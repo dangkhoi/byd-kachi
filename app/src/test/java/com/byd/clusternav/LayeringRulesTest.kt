@@ -151,6 +151,11 @@ class LayeringRulesTest {
         // `ThemeHost.kt`/`ClusterNavBridgeHome.kt`. ⚠ `VoiceDispatcher.kt` không có ở đây vì nó nhắc chữ
         // `Context` (KDoc) nên phép đo không coi nó là thuần — một chi tiết của bộ quét, không phải một luật.
         "VoiceTargetDispatch.kt" to "nửa tách ra của VoiceDispatcher — cầu sang VoiceAppIntents/MediaBridge/HomeUiState của :app",
+        // Lượt E (2026-09-19): vai *"ghi xong thì đọc lại xe rồi mới nói"* tách khỏi `VoiceDispatcher` vì trần 500
+        // dòng. \"Thuần\" theo phép đo ở đây (không `import android.*`, không nhắc chữ Context) nhưng nó **đọc và
+        // SỬA** `ControlTileState` — bảng trạng thái ô dùng chung của màn chính, sống ở `:app`. Chuyển sang `:core`
+        // là kéo bảng ấy theo, mà bảng ấy là state của tầng vẽ. Cùng lẽ với `VoiceTargetDispatch.kt` ngay trên.
+        "VoiceReadback.kt" to "vai đọc-lại tách khỏi VoiceDispatcher — đọc/sửa ControlTileState (state tầng vẽ :app)",
         // [SOÁT Pass 1 · 2026-09-16] Ba hàm ngôn ngữ tách khỏi `WorkspacePrefs.kt` vì trần 500 dòng. "Thuần" theo
         // phép đo ở đây chỉ vì nó không `import android.*` và không nhắc chữ `Context` — nhưng nó là **hàm mở rộng
         // của `WorkspacePrefs`** (giữ `SharedPreferences` + `Context`) và gọi `ClusterNavLang` (prefs của ClusterNav).

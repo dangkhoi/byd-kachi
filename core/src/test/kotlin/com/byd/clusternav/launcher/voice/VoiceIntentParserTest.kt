@@ -271,8 +271,9 @@ class VoiceIntentParserTest {
     // chỗ nào là `if (id == "…")`. Giữ nguyên cả mười ở đây để lần sau sửa ngữ pháp còn biết mình phá cái gì.
 
     @Test fun `muoi cau doi thuong deu hieu duoc`() = expect(
-        // Trước: MISMATCH (cụm *"sổ"* khớp nhãn "Số" của datum `gear`). Nay: nút kính GỘP — việc CONFIRM.
-        "mở cửa sổ" to VoiceIntent.Control("windows_all", 1),
+        // Trước: MISMATCH (cụm *"sổ"* khớp nhãn "Số" của datum `gear`). Nay: **kính LÁI** — lượt D 2026-09-19 dời
+        // cụm mơ hồ này khỏi nút GỘP (owner: *"mở kính"* hạ cả 4 là sai), xem KDoc `VoiceSynonyms.CONTROL`.
+        "mở cửa sổ" to VoiceIntent.Control("window", 1),
         "bật máy lạnh" to VoiceIntent.Control("ac_auto", 1),
         "xem pin" to VoiceIntent.Read("soc"),
         "đổi sang hồ sơ Mặc định" to VoiceIntent.Profile("Mặc định"),
@@ -374,15 +375,8 @@ class VoiceIntentParserTest {
         "đặt âm lượng năm" to VoiceIntent.Control("vol", 5),
     )
 
-    /** Kính: cụm dài vẫn thắng cụm ngắn mới thêm — một kính cụ thể KHÔNG được rơi vào nút gộp. */
-    @Test fun `cum kinh ngan khong nuot cum kinh dai`() = expect(
-        "mở kính" to VoiceIntent.Control("windows_all", 1),
-        "đóng kính" to VoiceIntent.Control("windows_all", 0),
-        "mở kính trước trái" to VoiceIntent.Control("win_lf", 1),
-        "xem kính trước trái" to VoiceIntent.Read("window_lf"),
-        "mở hết kính" to VoiceIntent.Macro("mac_win_open_all"),
-        "đóng hết kính" to VoiceIntent.Macro("mac_win_close_all"),
-    )
+    // ⚠ Hai bài về PHẠM VI câu nói về kính (cụm mơ hồ vs tường minh · mức Nửa) đã sang
+    // `VoiceWindowScopeTest` ở lượt D 2026-09-19 — tệp này đứng sát trần 500 dòng, tách theo CHỦ ĐỀ.
 
     /** …và cụm *"chiếu"* một từ không được nuốt nhãn nào có chứa nó. */
     @Test fun `cum chieu mot tu khong nuot nhan dai hon`() = expect(
@@ -400,7 +394,7 @@ class VoiceIntentParserTest {
      * [ĐO off-car 2026-09-17] ba câu dưới đây từng ra **hành động thân xe**:
      *  • *"chiều nay mấy giờ về"* ⇒ `Control(cast, 1)`
      *  • *"cốp xe bẩn quá"* ⇒ `Control(trunk, 1)` — mở cốp trên xe đang chạy
-     *  • *"kính bẩn quá"* ⇒ `Control(windows_all, 1)` — hạ hết kính
+     *  • *"kính bẩn quá"* ⇒ `Control(windows_all, 1)` — hạ hết kính (sau lượt D: `Control(window, 1)`)
      *
      * Bài này khoá đúng điều đó. Gỡ dòng `verbHit != null || after.isEmpty() || readsTail(head)` ở nhánh (b')
      * thì ba dòng đầu đỏ ngay — đã thử, đúng ba giá trị ghi trên.
@@ -472,15 +466,6 @@ class VoiceIntentParserTest {
             assertTrue(one(s) is VoiceIntent.Unknown, "«$s» phải Unknown (hỏi lại), KHÔNG bắn nhầm — ra: ${one(s)}")
         }
     }
-
-    /** «mở một nửa kính» / «50%» ⇒ mức NỬA (COVER value 2 → HAL state 4). Không "nửa" ⇒ mở hết (value 1). */
-    @Test fun `log xe · mo mot nua kinh = muc Nua`() = expect(
-        "mở một nửa kính" to VoiceIntent.Control("windows_all", 2),   // was: windows_all=1 (mất "một nửa")
-        "mở kính một nửa" to VoiceIntent.Control("windows_all", 2),
-        "mở kính 50%" to VoiceIntent.Control("windows_all", 2),
-        "mở nửa kính trước trái" to VoiceIntent.Control("win_lf", 2),
-        "mở kính" to VoiceIntent.Control("windows_all", 1),           // không "nửa" ⇒ mở hết (chống hồi quy)
-    )
 
     /** Câu HỎI: datum DÀI NHẤT thắng + bỏ cụm dẫn «chỉ số» ⇒ hết «số»→gear, hết ø. */
     @Test fun `log xe · cau hoi map dung datum`() = expect(

@@ -114,6 +114,33 @@ object VoiceReply {
     fun done(i: VoiceIntent): String = "✓ " + preview(i) + unverified(i)
 
     /**
+     * ═══ E (owner test xe 2026-09-19) · ĐÃ **ĐỌC LẠI XÁC NHẬN** ⇒ BỎ ĐUÔI *"chưa kiểm trên xe"* ════════════════
+     *
+     * Khác [done] ở đúng một chỗ: **không** gọi [unverified]. Đuôi *"chưa kiểm trên xe"* nói về mức bằng chứng
+     * **tĩnh** của registry (`EvidenceTier`) — nó trả lời câu *"nút này từng chạy thật chưa"*. Nhưng khi chỗ gọi
+     * vừa ghi xong **rồi đọc lại đường ĐỌC của chính xe** và thấy đúng mức mong muốn, thì câu hỏi ấy đã được trả
+     * lời **tại chỗ, trên chiếc xe này, giây vừa rồi** — bằng chứng mạnh hơn hẳn một mức khai trong mã. Đọc thêm
+     * *"chưa kiểm"* vào đó là nói sai: nó vừa được kiểm.
+     *
+     * ⇒ Chỉ dùng khi lượt đọc lại **khớp**. Đọc không được (`null`) ⇒ chỗ gọi giữ [done] (còn nguyên đuôi hedge —
+     * đó là sự thành thật); đọc được mà **lệch** ⇒ [failed] (xe không nhận lệnh). Ba nhánh, ba câu khác nhau.
+     */
+    fun doneConfirmed(i: VoiceIntent): String = "✓ " + preview(i)
+
+    /**
+     * ═══ C (owner test xe 2026-09-19) · TỪ CHỐI MỞ CỐP/CA-PÔ KHI XE ĐANG CHẠY ═════════════════════════════════
+     *
+     * Xem [com.byd.clusternav.launcher.CtlSafetyPolicy.REQUIRES_STATIONARY] về vì sao chỉ hai mã ấy bị gate.
+     *
+     * Nói **điều kiện mở được** (*"khi xe đang dừng"*) thay vì một lời từ chối trơn: người lái vừa nói một câu
+     * hoàn toàn hợp lệ, thứ chặn nó là một điều kiện họ **giải được trong mười giây** (đạp phanh, về P). Câu
+     * *"xe không nhận lệnh"* ở đây sẽ làm họ nói lại lần hai, lần ba giữa lúc đang chạy — đúng thứ gate này sinh
+     * ra để tránh.
+     */
+    fun notWhileMoving(i: VoiceIntent): String =
+        "✗ " + preview(i) + " — " + Strings.t("chỉ mở được khi xe đang dừng", "only while the car is stopped")
+
+    /**
      * ═══ R5 · CÂU TRẢ LỜI ĐỌC LẠI **GIÁ TRỊ THẬT** MÀ XE BÁO ═══════════════════════════════════════════════
      *
      * Spec `docs/specs/kachi-voice-feedback.html` **R5 · T10**. Chỉ dùng cho nút [ControlKind.STEP], và chỉ khi

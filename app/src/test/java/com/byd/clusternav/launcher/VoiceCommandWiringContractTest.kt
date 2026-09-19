@@ -30,12 +30,14 @@ class VoiceCommandWiringContractTest {
      * **Bộ dây của cầu giọng nói**, không phải *một tệp*.
      *
      * Từ voice pha 2 (2026-09-16) vai *"giao chữ/toạ độ cho app đích"* nằm ở `VoiceTargetDispatch.kt` (tách vì trần 500 dòng — xem
-     * KDoc lớp đó). Bài này canh **dây nối**, nên phạm vi quét phải đi theo vai chứ không theo tên tệp: ghim một
+     * KDoc lớp đó), và từ lượt E (2026-09-19) vai *"ghi xong thì đọc lại xe rồi mới nói"* nằm ở `VoiceReadback.kt`
+     * (cùng lý do). Bài này canh **dây nối**, nên phạm vi quét phải đi theo vai chứ không theo tên tệp: ghim một
      * tệp là biến mọi lượt tách tệp hợp lệ thành một lượt đỏ giả, và cách chữa đỏ giả ấy thường là gỡ assert.
      */
     private val dispatcher by lazy {
         code("src/main/java/com/byd/clusternav/launcher/VoiceDispatcher.kt") + "\n" +
-            code("src/main/java/com/byd/clusternav/launcher/VoiceTargetDispatch.kt")
+            code("src/main/java/com/byd/clusternav/launcher/VoiceTargetDispatch.kt") + "\n" +
+            code("src/main/java/com/byd/clusternav/launcher/VoiceReadback.kt")
     }
     private val console by lazy { code("src/main/java/com/byd/clusternav/launcher/VoiceTextConsole.kt") }
     private val sections by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
