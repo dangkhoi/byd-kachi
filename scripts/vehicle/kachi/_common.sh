@@ -175,7 +175,9 @@ KACHI_LOG_TAGS="${KACHI_LOG_TAGS:-KachiVoiceSession KachiVoiceRec KachiVoiceEngi
 KachiVoiceModel KachiVoiceWav KachiVoiceIntents KachiVoiceGeo KachiVd KachiTest ClusterNavReapply \
 ClusterNavBridge ActivityTaskManager ActivityManager NavAccess VmOverlayPos SeatComfort Pm25Filter \
 NavigationSpeedSign NavRepository Preflight CastLifecycle ClusterCastBubble KachiAutostart \
-KachiAutostartSvc UpdateRelaunch}"
+KachiAutostartSvc UpdateRelaunch \
+KachiVoiceTtsLink KachiVoiceTtsProc KachiVoiceTts KachiVoiceTtsOffline KachiVoiceSpeak \
+KachiVoiceVad KachiVoiceTiming YtResolve WakeListen WakeKws WakeSvc KachiPerf}"
 
 K_LOG_PID=""
 K_LOG_STEP=""

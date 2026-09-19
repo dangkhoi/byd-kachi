@@ -61,6 +61,8 @@ docs/diagnostics/carlog-*/
 docs/diagnostics/log-nav-debug.txt
 # Dump/trace on-car theo phiên (WM NPE traces, castlog, IP nội bộ, tên app) — PII, TUYỆT ĐỐI không public
 oncar-*/
+!docs/diagnostics/oncar-master/
+!docs/diagnostics/oncar-master/**
 # ─── Không thuộc ClusterNav (PoSound / tooling / audio / bên thứ 3) ──
 tools/*
 !tools/re/

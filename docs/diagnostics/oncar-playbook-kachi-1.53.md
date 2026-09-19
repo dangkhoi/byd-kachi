@@ -1,4 +1,6 @@
 # PLAYBOOK LÊN XE — Kachi 1.53 (54)
+> ⚠ **2026-09-19 — SUPERSEDED cho 1.79 bởi [`oncar-master/RUNBOOK.md`](oncar-master/RUNBOOK.md)** (một buổi đóng hết 🚗). Doc này giữ làm tham chiếu chi tiết. **CẤM `am display move-stack`** ([ĐO] treo system_server 3/3 trên DiLink3; code đã đổi `am stack move-task` 2026-09-15) — mọi chỗ nhắc move-stack ở dưới là LỊCH SỬ.
+
 
 > **Loại**: Diagnostics (on-car playbook) · **Trạng thái**: Current · **Cập nhật**: 2026-09-14 · **Chủ**: dangkhoi
 > **Mục đích**: lên xe là BẮT ĐẦU ĐO NGAY — không phải mở code ra dò xem tính năng nằm ở đâu.

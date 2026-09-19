@@ -46,7 +46,7 @@ cat <<BANNER
  ⚠ TẮT lại công tắc đó trước khi rời xe.
 BANNER
 
-STEPS="00-connect 10-baseline 20-datums 40-ota 30-profiles 50-keys 70-voice 60-cast 90-collect"
+STEPS="00-connect 10-baseline 20-datums 40-ota 30-profiles 50-keys 70-voice 71-hal-sweep 60-cast 90-collect"
 SKIP="${SKIP:-}"; ONLY="${ONLY:-}"
 
 run_step() {
