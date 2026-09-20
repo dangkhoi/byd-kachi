@@ -2,6 +2,7 @@
 
 > **Loại**: Diagnostics (on-car master runbook) · **Trạng thái**: Current · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)** (OTA trước; xe cũ hơn ⇒ `40-ota.sh`)
 > **Mục đích**: MỘT buổi đóng hết mục `🚗 chờ xe`. Mỗi bước có **lệnh gõ sẵn** · **tiêu chí PASS/FAIL** · **outcome → option kế thử NGAY cùng buổi** (không hẹn buổi thứ hai) · **ô ghi kết quả**.
+> **▶ SCRIPT CHẠY TỪNG BƯỚC (bám khi ở xe)**: `oncar-master/RUN-STEPS.md` — 23 step, mỗi step ghi rõ 🤖 EM làm / 👤 ANH làm / PASS-FAIL; đi hết 1 vòng → tổng hợp → vòng 2 chỉ chạy lại step ❌.
 > **📋 LIST HẾT MỤC CẦN XE (đọc TRƯỚC)**: `oncar-master/0-PENDING.md` — bảng tổng 8 nhóm (100 info + 34 action + voice + Hey Kachi + cast + system), ưu tiên + trace tới cách-làm. Runbook này (8 phase) là bộ điều phối chi tiết.
 > **Gom từ 6 doc** (chi tiết nằm ở đó, runbook này là bộ điều phối — đừng chép lại):
 > `oncar-master/1-hal.md` (ma trận HAL) · `2-slot-cast.md` (option A–I app-vào-ô + cast) · `3-voice.md` (voice + `:tts`) · `4-system.md` (K5/K8/P7/S5/F4/W5/T-BRIDGE/P8/U8a) · `oncar-playbook-kachi-1.53.md` (quy trình + bẫy) · `oncar-runbook-hey-kachi.md` (wake word).
