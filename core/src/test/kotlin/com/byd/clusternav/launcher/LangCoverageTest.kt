@@ -49,7 +49,7 @@ class LangCoverageTest {
     fun `moi datum co nhan EN, dung 100 dong`() {
         // 106 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 123).
         // 100 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 12 datum NO — trước đó 112).
-        assertEquals(100, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        assertEquals(101, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
@@ -171,7 +171,7 @@ class LangCoverageTest {
         // VISUAL-REFRESH P1b · R8 (2026-09-17): **278 → 279 (+1)** = mục Cài đặt `display_color` ("Màu sắc" / "Colours").
         // voice-clone T7/T8 (2026-09-17): **279 → 280 (+1)** = mục Cài đặt `voice_feedback_voice` ("Giọng phản hồi" / "Feedback voice").
         // nav-default-app (owner 2026-09-18): **280 → 281 (+1)** = mục `nav_default_app` ("App dẫn đường mặc định" / "Default navigation app").
-        assertEquals(281, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        assertEquals(282, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -238,7 +238,7 @@ class LangCoverageTest {
         // 11 và bài đỏ ngay — đúng việc nó sinh ra để làm, và là lời nhắc rằng đếm bằng mắt qua một tệp 355 dòng thì
         // sai. Giữ số đo, không giữ số đoán. 13 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 14 — nút SELECT `adas_lane` đã xoá).
         // 12 ((V) 2026-09-17: nút SELECT `drive_mode` đã xoá — trước đó 13).
-        assertEquals(12, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
+        assertEquals(14, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
         val bad = withArgs.filter { it.argsEn.size != it.args.size }.map { "${it.id}(${it.args.size}≠${it.argsEn.size})" }
         assertTrue(bad.isEmpty(), "lựa chọn EN thiếu/lệch số phần tử — sẽ lùi về CẢ danh sách tiếng Việt: $bad")
     }

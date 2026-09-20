@@ -40,7 +40,8 @@
 - **Outcome**: A đạt ⇒ đổi `coordEvidence` VietMap MEASURED · A fail ⇒ 4 option chữ (B1 ACTION_SEND thắng lớn) · music fail ⇒ trace resolver UA/mạng xe.
 
 ### D · HAL info — đọc 100 telemetry — 1-hal §1
-- **12 NEEDS_CAR (không có đường đọc)**: `cell_v_high` `cell_v_low` `target_soc` `coolant_temp` · `tyre_t_fl/fr/rl/rr` (4 nhiệt lốp) · `gps_lat/lon/elevation/heading` (4 GPS). → sweep tìm getter/feature-id THẬT (`featmap`), có ⇒ nối off-car; không ⇒ ẩn.
+- **13 NEEDS_CAR (không có đường đọc)**: `cell_v_high` `cell_v_low` `target_soc` `coolant_temp` · `tyre_t_fl/fr/rl/rr` (4 nhiệt lốp) · `gps_lat/lon/elevation/heading` (4 GPS). → sweep tìm getter/feature-id THẬT (`featmap`), có ⇒ nối off-car; không ⇒ ẩn.
+- **Bụi mịn NGOÀI xe** (`pm25_outside`, 1.84 steering — [ĐO off-car] chỉ có in-cabin + outside TEMP): sweep candidate getter theo analogy `getOutCarTemperature`: thử `BYDAutoPM2p5Device.getOutCarPM2p5Value`/`getOutCarPM2p5Level`, `BYDAutoInstrumentDevice.getOutCarPM2p5`, hoặc `getPM2p5Value(area)` 2-arg. Có value thật ⇒ nối getter + đổi tier; unavailable ⇒ ẩn datum.
 - **~87 wired chưa xác nhận trên xe owner**: quét `hal --es op read-all` một phát → đối chiếu giá trị thật. [ĐO] xe owner bị chặn ĐỌC do provision (một số chỉ OK trên S6) ⇒ ghi rõ đọc-được/sentinel/unavailable.
 - **Cách**: 1-hal §1 giao-thức-sweep (read-all → route-all) HOẶC captest tool trong app (đi tuần tự, hiện giá trị từng mục). **Outcome**: sentinel ⇒ trim không có, ẩn · unavailable ⇒ gõ lại với `--es dev` đúng device · số thật ⇒ ✓.
 

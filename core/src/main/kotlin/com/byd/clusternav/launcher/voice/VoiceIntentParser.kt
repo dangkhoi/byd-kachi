@@ -237,6 +237,8 @@ object VoiceIntentParser {
         // headMatch nên "tìm đường đến X" (động từ NAV) đã giải trước — xem [mediaSearch].
         if (verbHit == null) {
             mediaSearch(t)?.let { return it }
+            // "hạ [cái] cốp [sau]" → ĐÓNG cốp — scoped: "hạ" mơ hồ theo vật (hạ kính=MỞ) nên KHÔNG vào bảng verb chung.
+            if (VoiceLexicon.phraseAt(t, 0, listOf("ha")) && t.any { it.norm == "cop" }) return VoiceIntent.Control("trunk", 0)
             return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
         }
         val verb = verbHit.second

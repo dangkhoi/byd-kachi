@@ -49,6 +49,7 @@ internal object VoiceControlParse {
             // Nút BẤM-một-phát: không có mặt "tắt" nào để nói dối, nên mọi động từ hành động đều là "bấm".
             ControlKind.BUTTON -> VoiceIntent.Control(id, null)
             ControlKind.SELECT -> selectIndex(def, after)?.let { VoiceIntent.Control(id, it) }
+                ?: offOnSelect(def, verb)
                 ?: VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
             ControlKind.STEP -> step(def, verb, num, original)
         }
@@ -127,6 +128,21 @@ internal object VoiceControlParse {
     private fun firstNumber(after: List<Token>): Int? {
         after.indices.forEach { i -> VoiceLexicon.readNumber(after, i)?.let { return it.value } }
         return null
+    }
+
+    /**
+     * SELECT có mức **"Tắt"/"Off" ở index 0** (ghế mát/sưởi) chấp nhận **bật/tắt trần** khi không nêu mức:
+     * *"bật ghế mát"* → mức 1 (bật mặc định) · *"tắt ghế mát"* → 0. Nút SELECT khác (màu viền, EV/HEV…) không có
+     * "Tắt" ở đầu ⇒ trả `null`, giữ nguyên (chỉ chọn theo nhãn/số). *"ghế mát mức 1/mức 2"* đã do [selectIndex] lo.
+     */
+    private fun offOnSelect(def: ControlDef, verb: VoiceVerb): VoiceIntent? {
+        val offFirst = def.args.firstOrNull()?.let { VoiceLexicon.tokenize(it).map { t -> t.norm } } == listOf("tat")
+        if (!offFirst) return null
+        return when (verb) {
+            VoiceVerb.ON, VoiceVerb.OPEN -> VoiceIntent.Control(def.id, 1)
+            VoiceVerb.OFF, VoiceVerb.CLOSE -> VoiceIntent.Control(def.id, 0)
+            else -> null
+        }
     }
 
     /**

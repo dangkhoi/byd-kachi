@@ -51,6 +51,7 @@ object CapabilityDescriptions {
         "pm25_level" to Desc("Mức đánh giá chất lượng không khí trong xe", "Cabin air-quality rating based on fine dust"),
         "pm25_value" to Desc("Nồng độ bụi mịn PM2.5 trong cabin", "PM2.5 fine dust concentration in the cabin (µg/m³)"),
         "pm25_online" to Desc("Cảm biến bụi mịn có đang hoạt động không", "Whether the PM2.5 sensor is online"),
+        "pm25_outside" to Desc("Nồng độ bụi mịn PM2.5 NGOÀI xe (cần RE getter trên xe)", "Outside cabin PM2.5 concentration (getter to be RE'd on-car)"),
         "cabin_temp" to Desc("Nhiệt độ thực tế đo trong khoang cabin", "Actual measured cabin air temperature (°C)"),
         "inside_temp" to Desc("Nhiệt độ điều hoà đã cài đặt", "A/C target temperature currently set (°C)"),
         "ext_temp" to Desc("Nhiệt độ không khí bên ngoài xe", "Outside ambient air temperature (°C)"),

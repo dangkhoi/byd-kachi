@@ -58,6 +58,12 @@ object ControlLevels {
     fun levelOf(id: String, raw: Int): Int? = RAW_BY_LEVEL[id]?.indexOf(raw)?.takeIf { it >= 0 }
 
     /**
+     * Nghịch của [levelOf]: **mức người dùng** [level] → mã thô khung, hoặc `null` khi mức ngoài thang của nút.
+     * Dùng ở [HalBindingTable.writeArgs] cho ghế mát/sưởi (SELECT 0/1/2 → state khung 1/2/3).
+     */
+    fun rawForLevel(id: String, level: Int): Int? = RAW_BY_LEVEL[id]?.getOrNull(level)
+
+    /**
      * Phép **NGHỊCH ĐẢO** của [levelOf]: mức người dùng → mã thô, hoặc `null` nếu nút không khai thang / mức
      * ngoài thang.
      *

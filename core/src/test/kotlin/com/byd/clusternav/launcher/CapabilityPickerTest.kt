@@ -76,7 +76,7 @@ class CapabilityPickerTest {
         // U6: trừ các mã cố ý ẩn khỏi màn chọn (có lý do, tra cứu vẫn được — xem `HIDDEN_FROM_PICKER`).
         // 100 + 47 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 19 mã NO — trước đó 112 + 54; trước 09-16 là 123 + 64).
         assertEquals(
-            100 + 47 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
+            101 + 47 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
             "mục rời theo lĩnh vực phải còn nguyên 100 đọc + 47 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
         )
     }

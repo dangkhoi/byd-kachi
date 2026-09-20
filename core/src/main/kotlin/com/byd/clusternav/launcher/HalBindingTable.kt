@@ -232,7 +232,7 @@ class HalBindingTable(private val gateway: HalGateway) {
          * THUẦN (không đọc gateway) ⇒ kiểm được off-car; [ControlWriteArgsTest] khoá cả họ "hai mã một lệnh".
          */
         fun writeArgs(def: ControlDef, primary: Int): IntArray = when (def.id) {
-            "seatc", "seath" -> intArrayOf(1, if (primary > 0) 2 else 1)
+            "seatc", "seath" -> intArrayOf(1, ControlLevels.rawForLevel(def.id, primary) ?: 1)
             "steer_heat" -> intArrayOf(if (primary > 0) 2 else 1)
             // [ĐO xe 2026-09-15] kính MỞ được, ĐÓNG không. Gốc: state cũ = COVER primary (Đóng=0/Mở=1) — Mở gửi
             // 1 (= WINDOW_OPEN_FULL, chạy), Đóng gửi 0 (= WINDOW_ENABLE/INVALID, KHÔNG phải đóng ⇒ no-op). Enum

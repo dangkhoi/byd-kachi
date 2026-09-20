@@ -97,11 +97,12 @@ class ControlLevelsTest {
     fun `thang muc nam tren duong doc that, khong con la bang chi bai test dung`() {
         listOf("seatc" to "seat_vent_state", "seath" to "seat_heat_state").forEach { (id, datum) ->
             assertEquals(datum, ControlRegistry.byId(id)!!.readKey, "$id phải đọc qua datum $datum")
-            // [ĐO xe 2026-09-16] raw 3 ⇐ màn xe "mức 2" ⇒ nút TOGGLE phải ra 1 (đang bật), raw 1 (tắt) ⇒ 0.
+            // [2026-09-20] seatc/seath nay là SELECT (3 mức) ⇒ readState trả THẲNG mức (không quy 0/1 như TOGGLE):
+            // raw 3 = mức 2, raw 1 = mức 0 (Tắt). [ĐO xe 2026-09-16] raw 3 ⇐ màn xe "mức 2".
             val on = HalBindingTable(FakeHalGateway(getters = mapOf(getterOf(datum) to "3"))).readState(id)
             val off = HalBindingTable(FakeHalGateway(getters = mapOf(getterOf(datum) to "1"))).readState(id)
-            assertEquals(1, on, "$id: mã 3 = mức 2 ⇒ nút đang BẬT")
-            assertEquals(0, off, "$id: mã 1 = mức 0 ⇒ nút đang TẮT")
+            assertEquals(2, on, "$id: mã 3 = mức 2 (SELECT trả thẳng level)")
+            assertEquals(0, off, "$id: mã 1 = mức 0 ⇒ Tắt")
             // Mã ngoài thang ⇒ ⚠ (null), KHÔNG làm tròn thành "mức 1" — thang mới có MỘT điểm đo.
             assertNull(
                 HalBindingTable(FakeHalGateway(getters = mapOf(getterOf(datum) to "9"))).readState(id),

@@ -95,7 +95,7 @@ object ControlRegistry {
         ControlDef("window", "Kính cửa lái", "ic-car-top-window-lf", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
             labelEn = "Driver window"),
-        ControlDef("trunk", "Cốp sau", "ic-car-top-trunk", ControlKind.TOGGLE, enabledByDefault = true,
+        ControlDef("trunk", "Cốp sau", "ic-car-top-trunk", ControlKind.COVER, enabledByDefault = true,
             // [ĐO xe 2026-09-17] `setHetchDoorStatus` KHÔNG tồn tại trên ROM này; đường THẬT là
             // `BYDAutoSettingDevice.voiceCtlBackDoor(cmd)` — cmd 1 = MỞ · 3 = ĐÓNG (đo 2 lần mỗi lệnh, cốp mở/đóng
             // thật; cmd 2 không thấy tác dụng khi cốp đứng yên — [ĐOÁN] dừng-giữa-hành-trình, chưa thử lúc chạy).
@@ -111,9 +111,12 @@ object ControlRegistry {
         ControlDef("pm25", "Lọc bụi", "ic-filter", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setAutoCleanAirState",
             labelEn = "Air purifier"),
-        ControlDef("seatc", "Ghế mát", "ic-seat", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
+        ControlDef("seatc", "Ghế mát", "ic-seat", ControlKind.SELECT, enabledByDefault = true,
+            args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
             readKey = "seat_vent_state",   // T2 [ĐO xe 2026-09-16] getter ở device Setting; thang mức ở ControlLevels
+            // 3 mức (Tắt/Mức1/Mức2) — [ĐO xe 2026-09-17 ControlLevels] getSeatVentilatingState OFF=1·mức1=2·mức2=3.
+            // writeArgs đổi index (0/1/2) → state khung (1/2/3) qua ControlLevels.rawForLevel. Voice: "ghế mát mức 1/2".
             labelEn = "Seat ventilation"),
         ControlDef("temp", "Nhiệt độ", "ic-temp", ControlKind.STEP, enabledByDefault = true, value = 22, min = 17, max = 33, step = 1,
             // [ĐO] RE 2026-09-14 §1/§5a: `setTemprature` KHÔNG tồn tại trong HAL ⇒ reflection trượt, không lệnh nào
@@ -156,9 +159,10 @@ object ControlRegistry {
         ControlDef("headl", "Đèn pha", "ic-car-front-highbeam", ControlKind.TOGGLE,
             domain = Domain.LIGHTS, tier = EvidenceTier.NEEDS_CAR, bindingKey = "INSTRUMENT_HEADLIGHT_ON_OFF",
             labelEn = "Headlights"),
-        ControlDef("seath", "Ghế sưởi", "ic-seat", ControlKind.TOGGLE,
+        ControlDef("seath", "Ghế sưởi", "ic-seat", ControlKind.SELECT,
+            args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
-            readKey = "seat_heat_state",   // T2 — cùng device Setting, cùng thang mức (ĐO ra 1 = tắt)
+            readKey = "seat_heat_state",   // T2 — cùng device Setting; thang mức ControlLevels (seath [SUY] 1/2/3/4, đo lại)
             labelEn = "Seat heating"),
         ControlDef("recirc", "Lấy gió trong", "ic-recirc", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219355", readKey = "ac_cycle",   // [ĐO] INLOOP=1 trong / OUTLOOP=0 — BYDAutoAcDevice.java:33-34

@@ -222,6 +222,12 @@ object TelemetryRegistry {
         // (spec §6 OQ2). Có tên trong danh sách cho phép của `LangCoverageTest`.
         t("pm25_value", "Bụi mịn PM2.5", "Fine dust PM2.5", "µg/m³", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Value", short = "PM2.5", shortEn = "PM2.5"),
         t("pm25_online", "Cảm biến bụi mịn", "Fine dust sensor", "", CLIMATE, BADGE, PROVEN, "BYDAutoPM2p5Device.getPM2p5OnlineState", short = "Cảm biến", shortEn = "Sensor"),
+        // [steering 2026-09-20] Bụi mịn NGOÀI xe — [ĐO off-car] `BYDAutoPM2p5Device` chỉ phơi 3 getter IN-CABIN
+        // (Level/Value/OnlineState — car-log + `byd-pm25-airclean-RE`); KHÔNG có getter outside off-car (chỉ outside
+        // TEMP `getOutCarTemperature` trên Instrument). ⇒ NEEDS_CAR: candidate getter (analogy "OutCar") để SWEEP
+        // xác nhận trên xe (`0-PENDING` nhóm D). Có value thật ⇒ đổi tier + đúng getter; unavailable ⇒ ẩn. Off-car
+        // hiện "—", KHÔNG claim chạy được.
+        t("pm25_outside", "Bụi mịn ngoài xe", "Outside fine dust", "µg/m³", CLIMATE, VALUE, NEEDS_CAR, "UNMAPPED_OUTSIDE_PM25", short = "Bụi ngoài", shortEn = "Outside dust"),
         // Feature-read, device AC đúng theo domain; sống lại khi §A (get 2-arg) được vá ở :app. NEEDS-ONCAR: scale.
         t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, OVERDRIVE, "1031798832"),
         t("inside_temp", "Nhiệt cài đặt", "Set temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getTemprature", short = "Trong xe", shortEn = "In car"),

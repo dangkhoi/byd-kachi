@@ -291,7 +291,7 @@ class VoiceGrammarPhrasesTest {
         // [ĐO off-car 2026-09-18 · D2 log xe] **361 → 362 (+1)** = đúng MỘT cách nói mới của datum `ac_wind`:
         // *"quạt điều hòa"*. Ba cụm còn lại của dòng ấy (*"quạt gió"* · *"mức gió"* · *"tốc độ quạt"*) đã có sẵn
         // ở nút `fan`, và `distinct()` của `VoiceGrammar.terms` gộp chúng ⇒ chỉ cộng 1.
-        const val EXPECTED_PHRASES_KEPT = 362
+        const val EXPECTED_PHRASES_KEPT = 364
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
         // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
         // số này — nó chỉ nở thêm ở [EXPECTED_ENTRIES]. Thêm để «chỉ số xăng» / «xăng còn bao nhiêu» (cả hai ra
@@ -320,7 +320,11 @@ class VoiceGrammarPhrasesTest {
         // [ĐO off-car 2026-09-17 · (V) FEATURE-FILTER] **244 → 216 (−28)** = nhãn tiếng ANH của 19 mã owner
         //   chấm NO (*"Charge power"*, *"Drive mode"*, *"Fold mirrors on lock"*, *"Bluetooth key"*…).
         // [ĐO off-car 2026-09-18 · kính 50%] **216 → 217 (+1)** = nhãn EN *"Half"* của `windows_all` (nay khai mức Nửa).
-        const val EXPECTED_PHRASES_DROPPED = 217
+        // [ĐO off-car 2026-09-20 · ghế 2 mức] **217 → 227 (+10)** = args của `seatc`/`seath` nay là SELECT
+        //   (Tắt/Mức 1/Mức 2 + Off/Level 1/Level 2): nhãn EN *"Level 1/2"* + nhãn VI *"Mức 1/2"* mang **chữ số**
+        //   ⇒ không bias được (rơi DROPPED như mọi nhãn Anh/chữ-số). Parse vẫn chạy: `selectIndex` khớp nhãn HOẶC
+        //   số nói thẳng ("ghế mát mức 2"→index 2). `trunk`→COVER không đổi con số (không có args).
+        const val EXPECTED_PHRASES_DROPPED = 229
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -383,7 +387,7 @@ class VoiceGrammarPhrasesTest {
         // [EXPECTED_PHRASES_KEPT]). KHÔNG có từ đơn nào mới: `quạt` · `điều` · `hòa` đều đã có trong từ vựng, nên
         // phần nở theo thanh điệu không cộng thêm gì. Cụm đánh dấu `dung` (*"dùng &lt;app&gt;"*) cũng cộng **0** —
         // [ĐO] chữ ấy đã có sẵn ở bảng động từ (*"dừng"* = PAUSE) và ở [VoiceLexicon.CONFIRM_YES].
-        const val EXPECTED_ENTRIES = 2110
+        const val EXPECTED_ENTRIES = 2112
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
         // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính

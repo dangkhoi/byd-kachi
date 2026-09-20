@@ -298,7 +298,7 @@ class CapabilityGroupsTest {
         // ⚠ 2026-09-16 owner gỡ ADAS/an toàn: 123 → 106 datum, 64 → 54 nút. Đó là một **quyết định của owner**,
         // không phải việc gom nhóm làm mất mục — bài này vẫn canh đúng điều nó sinh ra để canh.
         // ⚠ (V) 2026-09-17 owner gỡ 19 mã chấm NO: 112 → 100 datum, 54 → 47 nút. Cùng loại quyết định như trên.
-        assertEquals(100, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 100")
+        assertEquals(101, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 101 (+1 pm25_outside 2026-09-20)")
         assertEquals(47, ControlRegistry.ALL.size, "nút rời phải còn nguyên 47")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
@@ -308,7 +308,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            100 + 47 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            101 + 47 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",
