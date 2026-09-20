@@ -449,17 +449,15 @@
   },
   "inside_temp": {
     "status": "🚗",
-    "note": "Chốt SCALE trên xe. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+    "note": "1.85 SỬA đường đọc: area 0 → 1 (AC_TEMPERATURE_MAIN). [ĐO nguồn] javadoc getTemprature(area) chỉ nhận MAIN(1)/DEPUTY(2)/REAR(3)/OUT(4); 0 = MAIN_DEPUTY là *type* của đường GHI ⇒ đọc area 0 trả sentinel ⇒ ô hiện \"—\" ([ĐO xe 2026-09-20 §4] \"nhiệt cài đặt = X\"). Vẫn cần chốt SCALE trên xe.",
+    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6 + docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4",
     "s6": "❌",
     "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
   },
   "ac_auto": {
-    "status": "❌",
-    "note": "[ĐO xe 09-16] HAL trả sentinel 'feature absent on trim' khi ghi · owner 2026-09-16 E6: xe CÓ tính năng này trên màn BYD ⇒ SAI feature-id, cần RE từ fw-dl3",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+    "status": "✅",
+    "note": "1.85 ĐÃ WIRE: Ac.AC_CTRL_MODE_SET (số trên xe owner 501219352) trên BYDAutoAcDevice — [ĐO xe 2026-09-20] rc=0 hai chiều, owner xác nhận màn AC. ⚠ giá trị ĐẢO: ghi 0 = AUTO, 1 = chỉnh tay. Nút đổi nghĩa thành GIÓ tự động (xe không có nhiệt-auto) ⇒ nhãn \"Gió tự động\"/\"Auto fan\". Đọc = ac_wind_auto (getAcWindLevelManualSign, 0 = AUTO, readInverted).",
+    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
   },
   "lock": {
     "status": "❌",
@@ -518,18 +516,14 @@
     "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
   },
   "child_lock": {
-    "status": "❌",
-    "note": "[ĐO xe 09-16] HAL trả sentinel 'feature absent on trim' khi ghi · owner 2026-09-16 E6: xe CÓ tính năng này trên màn BYD ⇒ SAI feature-id, cần RE từ fw-dl3 · 1.66: bind DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET (dev 1041), chỉ bên TRÁI — owner quyết 2 nút",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+    "status": "✅",
+    "note": "1.85 ĐÃ WIRE: Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET (1276141584) trên BYDAutoDoorLockDevice — [ĐO xe 2026-09-20] rc=0, owner xác nhận cửa thật. ⚠ BẪY: ghi 2 = BẬT (state đọc 1) · ghi 1 = TẮT (state 2). Nhãn nói rõ BÊN TRÁI; cụm mơ hồ \"khoá trẻ em\" trỏ về nút này.",
+    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
   },
   "hood": {
-    "status": "❌",
-    "note": "owner 2026-09-16: xe không có nắp ca-pô điện — ẩn nút · 1.66: ẩn khỏi mọi màn chọn (HIDDEN_FROM_PICKER)",
-    "evidence": "owner-questions-2026-09-16 B6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+    "status": "➖",
+    "note": "1.85 XOÁ HẲN mã: [ĐO xe 2026-09-20 §4] owner xác nhận xe KHÔNG có ca-pô điện (chỉ cốp sau). 1.66 chỉ ẩn khỏi bộ chọn; 1.85 bỏ khỏi ControlRegistry + 3 bảng CtlSafetyPolicy + synonym + diễn giải + icon xe sinh (gen-car). Ô đã lưu tự rụng qua WorkspaceState.sanitized().",
+    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
   },
   "batt_temp": {
     "status": "🚗",
@@ -1005,5 +999,20 @@
     "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
     "s6": "✅",
     "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+  },
+  "child_lock_r": {
+    "status": "✅",
+    "note": "1.85 nút MỚI: Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_RIGHT_SET (1276141586), cùng device/cùng bẫy giá trị với child_lock. Hai bên là hai lệnh tách nhau nên là hai nút; \"cả hai bên\" cần một gói lệnh (ActionMacros) — CHƯA làm, chờ owner duyệt.",
+    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
+  },
+  "pm25_outside": {
+    "status": "🚗",
+    "note": "1.85 ĐÃ WIRE getter: BYDAutoPM2p5Device.getPM2p5Value() ô [1]. [ĐO nguồn] javadoc chính thức BYD: \"first = value in auto, second = value out of auto\"; callback onPM2p5ValueChanged(value_in, value_out) + [ĐO car log] in:8 out:22. Tier GIỮ NEEDS_CAR tới khi một lượt đọc trên xe in ra cả hai ô.",
+    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
+  },
+  "ac_wind_auto": {
+    "status": "🚗",
+    "note": "1.85 datum MỚI: BYDAutoAcDevice.getAcWindLevelManualSign() — 0 = Auto ctrl, 1 = Manual ctrl (javadoc BYD). Là chỉ báo ĐỌC của nút ac_auto sau khi nút ấy đổi sang gió-auto. Chờ một lượt đọc trên xe.",
+    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
   }
 }

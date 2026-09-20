@@ -150,17 +150,25 @@ internal fun VoiceSession.askAgain(ask: VoiceClarify.Ask, my: Int) {
     go(VoiceTurnPhase.CLARIFYING)   // B1: EXECUTING → CLARIFYING (sẽ về LISTENING khi mở lượt nghe)
     overlay?.render(R.string.kachi_voice_confirm_title, ask.question)
     scheduleClose(VoiceSession.CLARIFY_LISTEN_MS + VoiceSession.LINGER_MS)
-    // Đọc câu hỏi XONG rồi mới mở micro — cùng hazard với [askAloudThenListen]: micro mở trong lúc loa nói
-    // thì Kachi nghe chính mình. Khác ở chỗ đây **luôn** đọc (nếu có giọng): owner chốt không đọc *câu hỏi
-    // XÁC NHẬN* (một cổng an toàn), còn đây là một câu hội thoại — chính thứ **D2** xin.
+    // ⚠⚠ [ĐO xe 2026-09-20 §5] CHỐT MỘT-LƯỢT, cùng khuôn `listening` của [askAloudThenListen]. Hợp đồng
+    // [VoiceSpeaker.speak] là *"luôn gọi onDone, KỂ CẢ khi trả false"* ⇒ máy đọc chưa nối được
+    // (`TextToSpeech: not bound to TTS engine`, nhật ký xe) thì onDone chạy NGAY **và** `spoke` = false, nên bản
+    // cũ gọi [listenAgain] HAI lần: lượt hai bị `VoiceSingleFlight` chối mic ⇒ chuỗi rỗng ⇒ [endsConversation] ⇒
+    // đóng tấm chữ sau LINGER 2,5 s **giữa** lượt nghe thứ nhất = *"overlay vẽ rồi biến mất"*. Cũng hết tiêu
+    // hai suất `followUps` cho một lượt hỏi.
+    val opened = AtomicBoolean(false)
+    fun open() { if (!micOpen() && opened.compareAndSet(false, true)) listenAgain(ask, my) }
+    // Đọc câu hỏi XONG rồi mới mở micro (cùng hazard [askAloudThenListen]: mic mở lúc loa nói ⇒ Kachi nghe chính
+    // mình). Khác ở chỗ đây **luôn** đọc nếu có giọng: owner chỉ chốt không đọc *câu hỏi XÁC NHẬN*.
     val spoke = if (speakReplies()) {
-        runCatching { speaker.speak(ask.question) { post { listenAgain(ask, my) } } }
+        runCatching { speaker.speak(ask.question) { post { open() } } }
             .onFailure { Log.w(VoiceSession.TAG, "không đọc được câu hỏi lại", it) }
             .getOrDefault(false)
     } else {
         false
     }
-    if (!spoke) listenAgain(ask, my)
+    // Không đọc được ⇒ vẫn PHẢI mở mic (owner: *"không được dừng khi chưa xong việc"*).
+    if (!spoke) open()
 }
 
 private fun VoiceSession.listenAgain(ask: VoiceClarify.Ask, my: Int) {

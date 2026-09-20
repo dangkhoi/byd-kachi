@@ -283,6 +283,41 @@
     <string name="kachi_places_coords_note">With coordinates VietMap can route there too. To get them: open a map app, press and hold the spot, then copy the pair of numbers.</string>
     <string name="kachi_edit">Edit</string>
 
+    <!-- ── AUTOMATION (1.85) — docs/specs/kachi-automation.html ── -->
+    <!-- #1 · Auto-defrost when it rains (Car comfort group) -->
+    <string name="kachi_sub_rain_defrost">Auto-defrost when it rains</string>
+    <string name="kachi_rain_defrost_title">Turn the defroster on when it rains</string>
+    <string name="kachi_rain_defrost_sub">Reads the rain sensor every 5 minutes; turns the front and rear windscreen defrosters on while it rains and off again afterwards.</string>
+    <string name="kachi_rain_defrost_note">Only switches off a defroster Kachi turned on itself. If you turn it on, Kachi leaves it alone; if you turn it off mid-shower, Kachi will not turn it back on.</string>
+    <!-- #2 · Scheduled navigation (Navigation group) -->
+    <string name="kachi_sec_nav_auto">Scheduled navigation</string>
+    <string name="kachi_nav_auto_note">At the right time on the right day, opens your navigation app to a saved address. Each window navigates once per day.</string>
+    <string name="kachi_nav_auto_empty">No schedules yet.</string>
+    <string name="kachi_nav_auto_add">Add a schedule…</string>
+    <string name="kachi_nav_auto_edit">Edit schedule</string>
+    <string name="kachi_nav_auto_full">You already have %1$d schedules — delete one before adding another.</string>
+    <string name="kachi_nav_auto_need_place">There is no saved address to navigate to yet. Add one under "Address book" above first.</string>
+    <string name="kachi_nav_auto_bad">Not saved: the times need to read HH:mm, the end time must not be earlier than the start (no crossing midnight), and at least one day must be ticked.</string>
+    <string name="kachi_nav_auto_row">%1$s–%2$s → %3$s</string>
+    <string name="kachi_nav_auto_row_off">%1$s (off)</string>
+    <string name="kachi_nav_auto_gps_on">waits for GPS</string>
+    <string name="kachi_nav_auto_gps_off">no GPS needed</string>
+    <string name="kachi_nav_auto_enabled">Enable this schedule</string>
+    <string name="kachi_nav_auto_window">Time window (HH:mm)</string>
+    <string name="kachi_nav_auto_days">Days of the week</string>
+    <string name="kachi_nav_auto_gps">Only navigate once GPS is available (wait until out of the car park)</string>
+    <string name="kachi_nav_auto_place">Navigate to</string>
+    <string name="kachi_nav_auto_app">Using app</string>
+    <string name="kachi_day_mon">Mon</string>
+    <string name="kachi_day_tue">Tue</string>
+    <string name="kachi_day_wed">Wed</string>
+    <string name="kachi_day_thu">Thu</string>
+    <string name="kachi_day_fri">Fri</string>
+    <string name="kachi_day_sat">Sat</string>
+    <string name="kachi_day_sun">Sun</string>
+    <string name="kachi_days_all">every day</string>
+    <string name="kachi_days_weekdays">Mon–Fri</string>
+
     <!-- ── IA v2 nhóm 5 — Dẫn đường & cụm đồng hồ (SettingsNavSection) ── -->
     <string name="kachi_sec_nav">Navigation + HUD</string>
     <string name="kachi_nav_enabled_title">Navigation on the cluster</string>

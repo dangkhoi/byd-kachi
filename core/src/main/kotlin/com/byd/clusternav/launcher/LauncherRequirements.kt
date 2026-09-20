@@ -290,9 +290,42 @@ object LauncherRequirements {
         losesWhatIfMissingEn = "you cannot talk to the car (the \"Talk to car\" tile and the mic button)",
     )
 
+    /**
+     * AUTOMATION #2 (1.85) — **định vị**, cổng *"đã ra khỏi hầm chưa"* của luật dẫn-đường-theo-lịch (spec
+     * `kachi-automation.html` R3). Quyền RUNTIME, cấp y như [MICROPHONE]: `pm grant` qua kênh dadb loopback
+     * (uid shell) ⇒ [FixBy.SELF], không phải hộp hỏi quyền.
+     *
+     * ## Vì sao nó phải là một HÀNG NGƯỜI DÙNG THẤY, không phải một lần `pm grant` im lặng
+     * Thiếu quyền ⇒ `GpsAvailability.isAvailable` trả *"không đọc được"* ⇒ `ScheduledNavApplier` **CHỜ** (đúng, nó
+     * không được dẫn bừa trong hầm). Nhưng hệ quả nhìn từ ghế lái là: luật đã bật, đúng giờ, đúng thứ — và
+     * **không có gì xảy ra**, mãi mãi, không một lời nào. Đó đúng họ lỗi mà P8 sinh ra để dọn (*"người dùng chỉ
+     * biết thiếu quyền khi một tính năng im lặng không chạy"*). Có hàng này thì câu trả lời nằm sẵn ở
+     * *Cài đặt › Hệ thống & quyền*.
+     *
+     * ## ⚠ KHÔNG `coreFeature`
+     * Thiếu định vị thì Kachi vẫn là một launcher đầy đủ; chỉ mất một cổng của một automation **mặc định tắt**.
+     * Gắn `coreFeature = true` sẽ làm toast ở màn chính nổ trên mọi máy ảo và mọi xe chưa dùng automation — cùng
+     * lý do [MICROPHONE] không gắn.
+     *
+     * ## ⚠ ĐỌC-CHỈ-ĐỌC
+     * Quyền này **chỉ** để đọc tuổi của fix gần nhất. Kachi không bao giờ ghi vị trí giả, không bám định vị liên
+     * tục, và không xin thêm quyền định vị nào khác (thô · nền · quyền foreground-service định vị). Hai bài
+     * `DeadReckonRetirementTest` (*manifest requests no mock or broad location permission* + *the app never
+     * writes or subscribes to location*) khoá cả sáu điều đó.
+     */
+    val LOCATION = LauncherRequirement(
+        id = "location",
+        label = "Định vị",
+        losesWhatIfMissing = "tự dẫn đường theo lịch không biết đã ra khỏi hầm chưa nên sẽ không dẫn",
+        fixBy = FixBy.SELF,
+        labelEn = "Location",
+        losesWhatIfMissingEn =
+            "scheduled navigation cannot tell whether you have left the car park, so it never starts",
+    )
+
     /** Thứ tự khai = thứ tự hiện cho người dùng. */
     val ALL: List<LauncherRequirement> = listOf(
-        SHELL_CHANNEL, FREEFORM, DEFAULT_HOME, OVERLAY, NOTIFICATION_LISTENER, ACCESSIBILITY, MICROPHONE,
+        SHELL_CHANNEL, FREEFORM, DEFAULT_HOME, OVERLAY, NOTIFICATION_LISTENER, ACCESSIBILITY, MICROPHONE, LOCATION,
     )
 
     fun byId(id: String): LauncherRequirement? = ALL.firstOrNull { it.id == id }

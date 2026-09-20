@@ -474,7 +474,6 @@ ICONS: dict[str, tuple[str, list[str], list, str]] = {
     "ic_car_top_window_lr": ("top", TOP_SUB, ["glass_lr"], "KÍNH LR — ô kính cửa trong thân, đúng góc xe."),
     "ic_car_top_window_rr": ("top", TOP_SUB, ["glass_rr"], "KÍNH RR — ô kính cửa trong thân, đúng góc xe."),
     "ic_car_top_window_all": ("top", TOP_SUB, ["glass_lf", "glass_rf", "glass_lr", "glass_rr"], "TẤT CẢ KÍNH — cả bốn ô kính cửa."),
-    "ic_car_top_hood": ("top", TOP_SUB, ["bonnet"], "CA-PÔ — mảng mũi xe tô đặc."),
     "ic_car_top_trunk": ("top", TOP_SUB, ["boot"], "CỐP SAU — mảng đuôi xe tô đặc (nắp ĐANG ĐÓNG, liền khối)."),
     "ic_car_top_sunroof": ("top", TOP_SUB, ["sunroof"], "CỬA SỔ TRỜI — ô nóc tô đặc (tấm kính ĐANG ĐÓNG, kín ô)."),
     "ic_car_top_sunshade": ("top", TOP_SUB, ["sunshade"], "RÈM CHE NẮNG — THANH CUỘN ở mép trước nóc + TẤM PHỦ có HAI NẾP GẤP khoét rỗng (even-odd)."),

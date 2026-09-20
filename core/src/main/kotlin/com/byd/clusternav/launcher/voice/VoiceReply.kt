@@ -303,9 +303,20 @@ object VoiceReply {
      *
      * [ĐO] máy ảo 2026-09-14: YT Music mở đúng màn kết quả nhưng **dừng ở nút Play** — không tự phát. Báo
      * *"✓ Tìm bài «X» trên YouTube Music"* rồi im là để người lái ngồi chờ một bài hát không bao giờ kêu.
+     *
+     * ## ⚠ [autoplay] — từ 1.75 có MỘT đường nữa, và đuôi câu của nó phải khác
+     * Hàm này được gọi từ **hai** chỗ trong `VoiceTargetDispatch`: đường `deliver` (ý-định
+     * `MEDIA_PLAY_FROM_SEARCH` mang TÊN bài — vẫn dừng ở nút Play, đúng phép đo trên) và đường **watch** (`runMediaQuery`
+     * giải `video_id` rồi mở `watch?v=<id>`, app **tự phát**). [ĐO xe 2026-09-20 §5] owner báo câu trả lời vẫn nhắc
+     * *"bấm Play"* trong khi nhạc **đã phát** — tức một câu đúng cho đường kia bị đọc cho đường này. Sửa bằng một
+     * tham số ở chỗ gọi (nơi BIẾT đường nào đã đi), **không** bằng cách bỏ câu cũ: nó vẫn đúng cho `deliver`, và
+     * cho Spotify/Zing (`watch == null`) thì `deliver` là đường duy nhất.
      */
-    fun handedOver(i: VoiceIntent, target: VoiceAppTarget): String {
+    fun handedOver(i: VoiceIntent, target: VoiceAppTarget, autoplay: Boolean = false): String {
         val tail = when {
+            // Đường watch: video_id đã giải + ý-định đã nhận ⇒ app đang phát. Đứng TRƯỚC nhánh `evidence` vì
+            // YouTube còn là AWAITING_CAR mà đường watch của nó vẫn là đường tự-phát (xem KDoc trên).
+            autoplay -> Strings.t("đang phát", "playing now")
             target.evidence == VoiceAppEvidence.UNKNOWN -> Strings.t(
                 "chưa kiểm cửa nhận chữ của ${target.label}",
                 "${target.label}'s hand-over door is not verified yet",

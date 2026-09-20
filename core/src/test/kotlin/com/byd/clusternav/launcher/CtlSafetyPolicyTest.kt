@@ -50,8 +50,11 @@ class CtlSafetyPolicyTest {
 
     // ══ C (owner test xe 2026-09-19) · CHỈ MỞ ĐƯỢC KHI XE ĐANG DỪNG ════════════════════════════════════════
 
-    @Test fun `cop va ca-po chi mo duoc khi xe dung`() {
-        listOf("trunk", "hood").forEach { id ->
+    @Test fun `cop chi mo duoc khi xe dung`() {
+        // ⚠ 1.85: trước đây có cả `hood`. Mã ấy đã xoá khỏi registry (xe không có ca-pô điện — [ĐO xe
+        // 2026-09-20 §4]), nên gate theo vận tốc còn đúng MỘT thành viên. Bài canh nửa-còn-lại ngay dưới
+        // (kính/nóc/khoá KHÔNG bị gate) vẫn là thứ chặn việc nới tập này quá tay.
+        listOf("trunk").forEach { id ->
             assertTrue(
                 CtlSafetyPolicy.requiresStationary(id),
                 "'$id' mở ra là BUNG khỏi bao xe / che tầm nhìn ⇒ phải gate theo vận tốc",

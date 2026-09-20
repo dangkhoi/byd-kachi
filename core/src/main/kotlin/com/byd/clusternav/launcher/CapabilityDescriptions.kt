@@ -51,7 +51,10 @@ object CapabilityDescriptions {
         "pm25_level" to Desc("Mức đánh giá chất lượng không khí trong xe", "Cabin air-quality rating based on fine dust"),
         "pm25_value" to Desc("Nồng độ bụi mịn PM2.5 trong cabin", "PM2.5 fine dust concentration in the cabin (µg/m³)"),
         "pm25_online" to Desc("Cảm biến bụi mịn có đang hoạt động không", "Whether the PM2.5 sensor is online"),
-        "pm25_outside" to Desc("Nồng độ bụi mịn PM2.5 NGOÀI xe (cần RE getter trên xe)", "Outside cabin PM2.5 concentration (getter to be RE'd on-car)"),
+        "pm25_outside" to Desc(
+            "Nồng độ bụi mịn PM2.5 NGOÀI xe — cùng getter với ô trong cabin, lấy ô thứ hai của mảng (chờ xác nhận trên xe)",
+            "Outside-cabin PM2.5 — same getter as the in-cabin value, second array slot (pending on-car confirmation)",
+        ),
         "cabin_temp" to Desc("Nhiệt độ thực tế đo trong khoang cabin", "Actual measured cabin air temperature (°C)"),
         "inside_temp" to Desc("Nhiệt độ điều hoà đã cài đặt", "A/C target temperature currently set (°C)"),
         "ext_temp" to Desc("Nhiệt độ không khí bên ngoài xe", "Outside ambient air temperature (°C)"),
@@ -67,6 +70,10 @@ object CapabilityDescriptions {
         "defrost_front_state" to Desc("Sấy kính trước có đang bật không", "Whether front windscreen defrost is on"),
         "defrost_rear_state" to Desc("Sấy kính sau có đang bật không", "Whether rear windscreen defrost is on"),
         "ac_mode_auto" to Desc("Điều hòa đang ở chế độ AUTO hay chỉnh tay", "Whether the A/C is in AUTO or manual mode"),
+        "ac_wind_auto" to Desc(
+            "Quạt gió đang tự động hay do người lái chỉnh tay (chỉ báo của nút Gió tự động)",
+            "Whether the fan is on auto or set by hand (indicator behind the Auto-fan button)",
+        ),
 
         // ── TYRES (INFO) ──
         "tyre_p_fl" to Desc("Áp suất lốp trước bên trái", "Front-left tyre pressure (kPa)"),
@@ -133,7 +140,9 @@ object CapabilityDescriptions {
         "window" to Desc("Bật/tắt điều khiển kính cửa lái, dịch chuyển kính vật lý", "Turn the driver's window control on/off (moves the glass)"),
         "trunk" to Desc("Bật/tắt mở cốp sau, dịch chuyển cốp vật lý", "Turn the boot/tailgate release on/off (moves the boot)"),
         "door" to Desc("Mở khoá cửa xe ngay lập tức", "Unlock the car doors immediately"),
-        "hood" to Desc("Bật/tắt mở ca-pô, dịch chuyển nắp ca-pô vật lý", "Turn the bonnet release on/off (moves the bonnet)"),
+        // ⚠ 1.85: mục `hood` đã xoá cùng mã ([ĐO xe 2026-09-20 §4] xe không có ca-pô điện). `CapabilityTestPlanTest`
+        // đòi mọi mã CÓ diễn giải, không đòi mọi diễn giải có mã — nhưng để lại một mục cho mã đã chết là mời người
+        // sau tưởng nút vẫn còn.
         "sunroof" to Desc("Bật/tắt điều khiển cửa sổ trời, dịch chuyển tấm kính", "Turn sunroof control on/off (moves the glass panel)"),
         "wiper" to Desc("Bật/tắt gạt mưa kính chắn gió", "Turn the windscreen wipers on/off"),
         "win_lf" to Desc("Mở/đóng kính cửa trước bên trái", "Open/close the front-left window"),
@@ -142,7 +151,14 @@ object CapabilityDescriptions {
         "win_rr" to Desc("Mở/đóng kính cửa sau bên phải", "Open/close the rear-right window"),
         "windows_all" to Desc("Mở/đóng đồng thời toàn bộ kính cửa xe", "Open/close all windows at once"),
         "sunshade" to Desc("Mở/đóng rèm che nắng cửa sổ trời", "Open/close the sunroof sunshade"),
-        "child_lock" to Desc("Bật/tắt khoá trẻ em cho cửa sau", "Turn the rear child-safety lock on/off"),
+        "child_lock" to Desc(
+            "Bật/tắt khoá trẻ em cửa sau BÊN TRÁI (chốt trong cửa — trẻ ngồi sau không mở được cửa đó)",
+            "Turn the LEFT rear child-safety lock on/off (that door can't be opened from inside)",
+        ),
+        "child_lock_r" to Desc(
+            "Bật/tắt khoá trẻ em cửa sau BÊN PHẢI — nút riêng, vì xe phơi hai lệnh tách nhau cho hai bên",
+            "Turn the RIGHT rear child-safety lock on/off — a separate button, the car exposes one command per side",
+        ),
         "seat_memory" to Desc("Gọi lại vị trí ghế lái đã lưu", "Recall the saved driver seat position"),
 
         // ── LIGHTS (ACT) ──
@@ -163,7 +179,12 @@ object CapabilityDescriptions {
         "defrost" to Desc("Bật/tắt sấy kính chắn gió trước", "Turn the front windscreen defroster on/off"),
         "seath" to Desc("Bật/tắt sưởi ghế", "Turn seat heating on/off"),
         "recirc" to Desc("Bật/tắt chế độ lấy gió trong xe", "Turn cabin air recirculation on/off"),
-        "ac_auto" to Desc("Bật/tắt chế độ điều hoà tự động (AUTO)", "Turn automatic A/C mode on/off"),
+        // ⚠ 1.85: [ĐO xe 2026-09-20 §4] xe KHÔNG có nhiệt-auto — id này bật/tắt **gió** auto, nên diễn giải (và
+        // nhãn nút) nói đúng chừng đó. Nhiệt độ vẫn chỉnh bằng nút `temp`.
+        "ac_auto" to Desc(
+            "Bật/tắt quạt gió TỰ ĐỘNG (xe tự chọn mức gió). Không đụng nhiệt độ — xe này không có chế độ nhiệt tự động",
+            "Turn the AUTO fan on/off (the car picks the fan level). Does not touch temperature — this car has no auto-temp mode",
+        ),
         "defrost_rear" to Desc("Bật/tắt sấy kính chắn gió sau", "Turn the rear windscreen defroster on/off"),
         "anion" to Desc("Bật/tắt chức năng ion âm lọc không khí", "Turn the anion air ioniser on/off"),
         "steer_heat" to Desc("Bật/tắt sưởi vô-lăng", "Turn steering wheel heating on/off"),

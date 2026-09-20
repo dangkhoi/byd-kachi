@@ -97,11 +97,21 @@ class VoiceActGateReadbackTest {
         assertTrue(r.said.single().contains("dừng"), "câu trả lời phải nói ĐIỀU KIỆN mở được: ${r.said}")
     }
 
+    /**
+     * ⚠ 1.85 — ca này TRƯỚC ĐÂY bắn `hood` ở 5 km/h. Mã `hood` đã xoá ([ĐO xe 2026-09-20 §4] xe không có ca-pô
+     * điện), và một ca gate trỏ tới mã KHÔNG tồn tại thì **xanh vì không có gì bắn ra cả** — tức nó hết canh được
+     * điều nó sinh ra để canh (đúng họ *"bài canh là trang trí"* mà dự án đã bắt vài lần).
+     *
+     * Giữ đúng tính chất đáng giá của nó — **tốc độ NHỎ nhưng khác 0 vẫn là "đang chạy"** — bằng một mã còn sống.
+     * Ca 37 km/h ở trên không thay được ca này: 37 thì ai cũng đồng ý là đang chạy, còn 5 km/h (bò trong bãi xe)
+     * chính là chỗ một phép so `> 0` dễ bị "nới cho tiện" thành `> 10`.
+     */
     @Test
-    fun `xe dang chay thi KHONG mo ca-po`() {
+    fun `toc do nho nhung khac 0 van la dang chay`() {
         val r = Rig(speedKmh = 5)
-        r.run("hood", 1)
-        assertEquals(emptyList<String>(), r.port.fired, "5 km/h vẫn là đang chạy — ca-pô bật lên che kính lái")
+        r.run("trunk", 1)
+        assertEquals(emptyList<String>(), r.port.fired, "5 km/h vẫn là đang chạy — cốp mở ra che kính hậu")
+        assertEquals(listOf(VoiceReply.notWhileMoving(VoiceIntent.Control("trunk", 1))), r.said)
     }
 
     /** Xe đứng yên (0 km/h) ⇒ mở bình thường. Đây là ca dùng THƯỜNG NHẤT của nút này. */
@@ -109,7 +119,7 @@ class VoiceActGateReadbackTest {
     fun `xe dung yen thi mo cop binh thuong`() {
         val r = Rig(speedKmh = 0)
         r.run("trunk", 1)
-        assertEquals(listOf("toggle:trunk:true"), r.port.fired)
+        assertEquals(listOf("cover:trunk:true"), r.port.fired)
     }
 
     /**
@@ -122,7 +132,7 @@ class VoiceActGateReadbackTest {
     fun `dong cop thi khong bi gate du dang chay`() {
         val r = Rig(speedKmh = 60)
         r.run("trunk", 0)
-        assertEquals(listOf("toggle:trunk:false"), r.port.fired, "đóng cốp là đường CHỮA, không được chặn")
+        assertEquals(listOf("cover:trunk:false"), r.port.fired, "đóng cốp là đường CHỮA, không được chặn")
     }
 
     /**
@@ -136,7 +146,7 @@ class VoiceActGateReadbackTest {
     fun `khong doc duoc toc do thi van cho mo`() {
         val r = Rig(speedKmh = null)
         r.run("trunk", 1)
-        assertEquals(listOf("toggle:trunk:true"), r.port.fired, "null ≠ đang chạy — không được từ chối")
+        assertEquals(listOf("cover:trunk:true"), r.port.fired, "null ≠ đang chạy — không được từ chối")
     }
 
     /** Đường đọc TƯƠI hụt ⇒ lùi về ảnh chụp [HomeUiState], và ảnh chụp nói đang chạy thì vẫn phải chặn. */

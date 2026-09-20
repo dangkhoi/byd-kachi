@@ -22,13 +22,17 @@ class VoiceMusicPlayTest {
     private val ytPkg = "com.google.android.youtube"
     private val labels = mapOf("YouTube" to ytPkg)
 
-    private fun dispatch(vid: String?, handoffs: MutableList<VoiceAppIntents.Handoff>) =
+    private fun dispatch(
+        vid: String?,
+        handoffs: MutableList<VoiceAppIntents.Handoff>,
+        said: MutableList<String> = ArrayList(),
+    ) =
         VoiceTargetDispatch(
             state = { HomeUiState() },
             media = { error("QUERY không chạm transport") },
             openApp = { true },
             confirm = { _, y, _ -> y() },
-            say = {},
+            say = { said += it },
             sendToApp = { h -> handoffs += h; true },
             geocode = { null },
             mediaPackage = { null },
@@ -118,5 +122,35 @@ class VoiceMusicPlayTest {
             src.contains("StringBuilder"),
             "gom cả trang vào RAM: trang 1,3 M ký tự ≈ 2,6 MB — thứ resolver không được phép giữ",
         )
+    }
+
+    /**
+     * ═══ [ĐO xe 2026-09-20 §5] CÂU TRẢ LỜI của đường watch KHÔNG được nhắc *"bấm Play"* ═════════════════
+     *
+     * Owner báo: nhạc **đã phát** mà Kachi vẫn đọc *"đã mở kết quả tìm — bấm Play để phát"*. Câu ấy sinh ra từ
+     * phép đo 2026-09-14 (`MEDIA_PLAY_FROM_SEARCH` dừng ở nút Play) và **vẫn đúng** cho đường lùi; cái sai là nó
+     * bị đọc cho cả đường watch mà 1.75 thêm vào. Hai bài dưới khoá cả hai chiều trên **cùng một** lượt chạy thật,
+     * nên không thể chữa một bên bằng cách bỏ câu của bên kia.
+     */
+    @Test
+    fun `duong watch noi DANG PHAT, khong nhac bam Play`() {
+        val said = ArrayList<String>()
+        dispatch(vid = "dQw4w9WgXcQ", handoffs = ArrayList(), said = said)
+            .runMedia(VoiceIntent.Media(VoiceMediaOp.QUERY, "diễm xưa", VoiceAppTargets.YOUTUBE), labels)
+
+        val last = said.last()
+        assertTrue(last.contains("đang phát"), "mở URL watch = app tự phát ⇒ phải nói đang phát; nhận: «$last»")
+        assertFalse(said.any { it.contains("bấm Play") }, "không được nhắc bấm Play khi nhạc đã phát: $said")
+    }
+
+    @Test
+    fun `duong lui search-play VAN nhac bam Play`() {
+        val said = ArrayList<String>()
+        dispatch(vid = null, handoffs = ArrayList(), said = said)
+            .runMedia(VoiceIntent.Media(VoiceMediaOp.QUERY, "diễm xưa", VoiceAppTargets.YOUTUBE), labels)
+
+        val last = said.last()
+        assertTrue(last.contains("bấm Play"), "search-play dừng ở nút Play ([ĐO] 2026-09-14); nhận: «$last»")
+        assertFalse(last.contains("đang phát"), "chưa phát thì không được hứa đang phát; nhận: «$last»")
     }
 }

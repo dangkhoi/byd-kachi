@@ -411,8 +411,82 @@ object VoiceAppTargets {
         return last.length >= 2 && said.last() == last.dropLast(1)
     }
 
+    /**
+     * ═══ Đích cho một cách nói **BỊ ASR BÓP MÉO** — *"vietna"* ⇒ VietMap ══════════════════════════════════════
+     *
+     * ## Bệnh nó chữa — [ĐO xe 2026-09-20] (`oncar-1.84-session-2026-09-20.md` §5)
+     * Owner nói *"… bằng VietMap"*, mô hình in ra *"bằng **vietna**"*. [bySpoken] khớp nguyên cụm ⇒ trượt;
+     * [bySpokenLoose] chỉ tha **một** ký tự cuối ⇒ cũng trượt. Không cắt được mệnh đề chọn app ⇒ hai chữ rác đi
+     * theo **điểm đến**, và câu rơi về app mặc định với một địa chỉ không tra được. *"vietmap"* là tên tự chế nên
+     * ASR tiếng Việt sẽ còn bóp méo nhiều kiểu nữa: khai từng biến thể vào [VoiceSynonyms.APP_TARGETS] là đuổi
+     * bắt vô hạn (1.82 đã thêm 4 biến thể mà vẫn hụt đúng cái này).
+     *
+     * ## Luật: **NEO TIỀN TỐ** rồi mới đo lệch — đó là thứ giữ nó không nuốt tên địa điểm
+     * Cùng [PREFIX_ANCHOR] ký tự đầu **và** lệch ≤ [MAX_EDITS] ký tự (Levenshtein), cả hai chuỗi ≥
+     * [MIN_LOOSE_LEN] ký tự: *"vietna"* ↔ *"vietmap"* lệch 2 ✓, *"vietm"* ↔ *"vietmap"* lệch 2 ✓,
+     * *"youtub"* ↔ *"youtube"* lệch 1 ✓.
+     *
+     * So trên chuỗi đã **ghép liền** nên nó không phụ thuộc việc mô hình tách *"vietna"* hay *"viet na"* — đúng
+     * chỗ mà một phép so theo-từng-từ sẽ hụt.
+     *
+     * ⚠ Cố ý **KHÔNG** có luật *"said là tiền tố thật sự của full"*. [ĐO off-car, lượt đầu của bản vá này] nó làm
+     * *"youtub"* khớp **YouTube Music** (vì `youtubemusic` cũng bắt đầu bằng `youtub`, và YT Music đứng trước trong
+     * [ALL]) và *"zing"* khớp `zingmp3` dù cụm ấy vốn đã dưới sàn — tức kết quả phụ thuộc **thứ tự dòng trong
+     * bảng**, thứ không ai coi là một quyết định. Luật lệch-ký-tự thì đối xứng: nó tự loại `youtubemusic` (lệch 6).
+     *
+     * ## Vì sao KHÔNG phải một phép so mờ tổng quát (và KDoc [bySpokenLoose] cảnh đúng điều đó)
+     * Neo tiền tố + hai sàn độ dài là ba cổng khoá lại đúng cái nguy: [ĐO off-car] các cụm đứng sau cụm đánh dấu
+     * trong câu dẫn đường thật (*"qua thủ đức"* · *"trên nguyễn huệ"* · *"cầu bằng **lăng**"* · *"cảng dung
+     * **quất**"* · *"bằng xe máy"*) đều **không** qua nổi: hoặc ngắn hơn sàn, hoặc lệch tiền tố. Cụm ngắn
+     * (*"waze"* · *"quay"* · *"yt"* · *"zing"*) vẫn chỉ khớp CHÍNH XÁC vì chính chúng dưới sàn.
+     *
+     * ⚠ Chỉ [VoiceTailClause.appAfterMarker] gọi — cùng ràng buộc của [bySpokenLoose]: ở đó chữ *"bằng / qua /
+     * dùng"* đã chứng minh người nói **đang nêu tên một app**. Nới ở đường không có cụm đánh dấu
+     * ([VoiceTailClause.appByTargetName]) là mời mọi câu lạ mở app.
+     */
+    fun bySpokenFuzzy(words: List<String>, kind: VoiceAppKind? = null): VoiceAppTarget? {
+        val said = words.joinToString("")
+        if (said.length < MIN_LOOSE_LEN) return null
+        return ALL.firstOrNull { t ->
+            (kind == null || t.kind == kind) && t.spoken.any { nearly(spokenWords(it).joinToString(""), said) }
+        }
+    }
+
+    /** Luật của [bySpokenFuzzy]; [full] = cách nói đã khai, [said] = cụm người ta thật sự nói. */
+    private fun nearly(full: String, said: String): Boolean {
+        if (full.length < MIN_LOOSE_LEN) return false
+        if (full.take(PREFIX_ANCHOR) != said.take(PREFIX_ANCHOR)) return false
+        // Chặn theo ĐỘ DÀI trước để khỏi chạy bảng cho hai chuỗi lệch hẳn nhau (*"youtub"* vs *"youtubemusic"*).
+        if (kotlin.math.abs(full.length - said.length) > MAX_EDITS) return false
+        return edits(full, said) <= MAX_EDITS
+    }
+
+    /**
+     * Khoảng cách Levenshtein. Bảng **hai hàng** (các chuỗi ở đây dài ≤ ~15 ký tự nên không cần tối ưu gì thêm);
+     * thuần Kotlin, không `android.*`, kiểm cạn off-car.
+     */
+    private fun edits(a: String, b: String): Int {
+        var prev = IntArray(b.length + 1) { it }
+        var cur = IntArray(b.length + 1)
+        for (i in 1..a.length) {
+            cur[0] = i
+            for (j in 1..b.length) {
+                val sub = prev[j - 1] + if (a[i - 1] == b[j - 1]) 0 else 1
+                cur[j] = minOf(sub, prev[j] + 1, cur[j - 1] + 1)
+            }
+            val t = prev; prev = cur; cur = t
+        }
+        return prev[b.length]
+    }
+
     /** Cụm ngắn hơn ngần này ký tự thì rụng một âm cũng thành một từ khác hẳn ⇒ không khớp mờ. */
     private const val MIN_LOOSE_LEN = 5
+
+    /** Số ký tự đầu phải khớp Y NGUYÊN ở [bySpokenFuzzy] — cái neo giữ nó không bắt sang tên địa điểm. */
+    private const val PREFIX_ANCHOR = 4
+
+    /** Lệch tối đa (thêm/bớt/đổi) sau khi đã neo tiền tố. 2 = đủ cho *"vietna"* ↔ *"vietmap"*. */
+    private const val MAX_EDITS = 2
 
     /** Số từ dài nhất mà một cách nói chiếm — chỗ gọi quét từ dài xuống ngắn (luật *"dãy dài nhất thắng"*). */
     val LONGEST_SPOKEN: Int = ALL.flatMap { it.spoken }.maxOfOrNull { spokenWords(it).size } ?: 1

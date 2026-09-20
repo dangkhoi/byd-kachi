@@ -295,6 +295,41 @@
     <string name="kachi_places_coords_note">Có toạ độ thì dẫn được bằng VietMap. Lấy toạ độ: mở app bản đồ, giữ vào điểm đó rồi chép cặp số.</string>
     <string name="kachi_edit">Sửa</string>
 
+    <!-- ── AUTOMATION (1.85) — docs/specs/kachi-automation.html ── -->
+    <!-- #1 · Tự sấy kính khi mưa (nhóm Tiện nghi xe) -->
+    <string name="kachi_sub_rain_defrost">Tự sấy kính khi mưa</string>
+    <string name="kachi_rain_defrost_title">Mưa thì tự bật sấy kính</string>
+    <string name="kachi_rain_defrost_sub">Đọc cảm biến mưa mỗi 5 phút; có mưa thì bật sấy kính trước + sau, hết mưa thì tắt lại.</string>
+    <string name="kachi_rain_defrost_note">Chỉ tắt cái sấy do Kachi bật. Bạn tự bật sấy thì Kachi không đụng vào; bạn tự tắt giữa cơn mưa thì Kachi cũng không bật lại.</string>
+    <!-- #2 · Tự dẫn đường theo lịch (nhóm Dẫn đường) -->
+    <string name="kachi_sec_nav_auto">Tự dẫn đường theo lịch</string>
+    <string name="kachi_nav_auto_note">Đúng giờ, đúng thứ thì tự mở app dẫn đường tới một địa chỉ đã lưu. Mỗi khung giờ chỉ dẫn một lần trong ngày.</string>
+    <string name="kachi_nav_auto_empty">Chưa có lịch nào.</string>
+    <string name="kachi_nav_auto_add">Thêm lịch…</string>
+    <string name="kachi_nav_auto_edit">Sửa lịch</string>
+    <string name="kachi_nav_auto_full">Đã đủ %1$d lịch — xoá bớt rồi thêm mới.</string>
+    <string name="kachi_nav_auto_need_place">Chưa có địa chỉ nào để dẫn tới. Thêm ở “Sổ địa chỉ” phía trên trước đã.</string>
+    <string name="kachi_nav_auto_bad">Chưa lưu được: cần giờ đúng dạng HH:mm, giờ kết thúc không sớm hơn giờ bắt đầu (không bắc qua nửa đêm), và tick ít nhất một thứ.</string>
+    <string name="kachi_nav_auto_row">%1$s–%2$s → %3$s</string>
+    <string name="kachi_nav_auto_row_off">%1$s (đang tắt)</string>
+    <string name="kachi_nav_auto_gps_on">chờ có GPS</string>
+    <string name="kachi_nav_auto_gps_off">không cần GPS</string>
+    <string name="kachi_nav_auto_enabled">Bật lịch này</string>
+    <string name="kachi_nav_auto_window">Khung giờ (HH:mm)</string>
+    <string name="kachi_nav_auto_days">Thứ trong tuần</string>
+    <string name="kachi_nav_auto_gps">Chỉ dẫn khi đã có GPS (chờ ra khỏi hầm)</string>
+    <string name="kachi_nav_auto_place">Dẫn tới</string>
+    <string name="kachi_nav_auto_app">Bằng app</string>
+    <string name="kachi_day_mon">T2</string>
+    <string name="kachi_day_tue">T3</string>
+    <string name="kachi_day_wed">T4</string>
+    <string name="kachi_day_thu">T5</string>
+    <string name="kachi_day_fri">T6</string>
+    <string name="kachi_day_sat">T7</string>
+    <string name="kachi_day_sun">CN</string>
+    <string name="kachi_days_all">cả tuần</string>
+    <string name="kachi_days_weekdays">T2–T6</string>
+
     <!-- ── IA v2 nhóm 5 — Dẫn đường & cụm đồng hồ (SettingsNavSection) ── -->
     <string name="kachi_sec_nav">Dẫn đường + HUD</string>
     <string name="kachi_nav_enabled_title">Dẫn đường lên cụm đồng hồ</string>

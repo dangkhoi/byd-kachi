@@ -11,13 +11,18 @@ class ControlRegistryExtendedTest {
         assertEquals(ControlKind.values().toSet(), kinds, "thieu ControlKind: ${ControlKind.values().toSet() - kinds}")
     }
 
-    @Test fun `20 nut goc con nguyen (id + thu tu + co default)`() {
+    @Test fun `19 nut goc con nguyen (id + thu tu + co default)`() {
+        // ⚠ 1.85 · **20 → 19**: `hood` (vị trí 12) đã xoá — [ĐO xe 2026-09-20 §4] owner xác nhận xe KHÔNG có
+        // ca-pô điện, chỉ cốp sau điện; từ 1.66 nút đã bị ẩn khỏi bộ chọn vì đúng lý do ấy, lượt này bỏ hẳn.
+        // Đây là mã ĐẦU TIÊN rời khối gốc. Ý của bài canh KHÔNG đổi: **thứ tự các nút còn lại phải nguyên vẹn**
+        // (chúng quyết định `defaultEnabledIds()` và thứ tự thanh nút mà người dùng đã quen), nên nếu ai đó
+        // chèn/đảo một nút trong khối này thì bài vẫn đỏ. Xoá thêm một mã ⇒ phải sửa danh sách Ở ĐÂY và nói rõ
+        // lý do, chứ không lặng lẽ hạ con số.
         val original = listOf(
             "lock", "window", "trunk", "readl", "pm25", "seatc", "temp", "fan",
-            "defrost", "cam", "door", "hood", "sunroof", "headl", "seath", "recirc", "drl", "vol", "wiper", "cast",
+            "defrost", "cam", "door", "sunroof", "headl", "seath", "recirc", "drl", "vol", "wiper", "cast",
         )
-        // 20 nut goc phai la 20 phan tu DAU tien, dung thu tu.
-        assertEquals(original, ControlRegistry.ALL.take(20).map { it.id })
+        assertEquals(original, ControlRegistry.ALL.take(19).map { it.id })
     }
 
     @Test fun `defaultEnabledIds bat bien - 8 nut mac dinh dung thu tu`() {

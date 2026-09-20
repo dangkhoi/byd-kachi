@@ -40,8 +40,33 @@ class SettingsCarSection(
 
     fun build(body: LinearLayout) {
         recirc(body)
+        rainDefrost(body)
         seats(body)
         pm25(body)
+    }
+
+    // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────
+
+    /**
+     * Công tắc *"Tự sấy kính khi mưa"* (1.85, spec `kachi-automation.html` R1.1) — theo XE, mặc định TẮT.
+     *
+     * ## Vì sao ở nhóm *Tiện nghi xe* và đứng ngay sau lấy-gió-trong
+     * Nhóm chia theo **thứ người dùng đang nghĩ tới** (KDoc [SettingsGroup]). Người ta vào đây để chỉnh những thứ
+     * cabin tự làm hộ khi nổ máy/khi đang đi; đây đúng là thứ thứ hai trong danh sách đó. Đặt nó ở nhóm *Hệ
+     * thống* (cùng chỗ với autostart) sẽ đúng về **cơ chế** (nó là một dịch vụ nền) mà sai về **chỗ người dùng đi
+     * tìm** — cùng ranh giới mà sổ địa chỉ đã chọn khi nằm ở *Dẫn đường* dù dữ liệu theo hồ sơ.
+     *
+     * Bật/tắt đi qua cầu (`bridge.setRainDefrost`), và chính cầu đồng bộ động cơ nền ngay trong lượt đó — xem ⚠ ở
+     * KDoc `ClusterNavBridgeAutomation` về vì sao lượt `sync` không được để chỗ gọi nhớ.
+     */
+    private fun rainDefrost(body: LinearLayout) {
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sub_rain_defrost)))
+        body.addView(rows.checkRow(
+            on = bridge.rainDefrost(),
+            title = context.getString(R.string.kachi_rain_defrost_title),
+            sub = context.getString(R.string.kachi_rain_defrost_sub),
+        ) { on -> bridge.setRainDefrost(on) })
+        body.addView(rows.note(context.getString(R.string.kachi_rain_defrost_note)))
     }
 
     // ── Lấy gió trong ────────────────────────────────────────────────────────────────────────────

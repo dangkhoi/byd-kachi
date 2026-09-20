@@ -85,6 +85,12 @@ data class CarStatus(
     data class Climate(
         val pm25Level: Int? = null,
         val pm25ValueUgm3: Int? = null,
+        /**
+         * 1.85 — bụi mịn **NGOÀI** xe (µg/m³): ô thứ HAI của `getPM2p5Value()`, cùng một lời gọi HAL với
+         * [pm25ValueUgm3] (javadoc BYD: *"first = in auto, second = out of auto"*). Field riêng vì đó là hai con số
+         * người dùng đặt cạnh nhau được, không phải hai cách hiển thị của một con số.
+         */
+        val pm25OutsideUgm3: Int? = null,
         val pm25Online: Boolean? = null,
         val cabinTempC: Int? = null,
         val outsideTempC: Int? = null,
@@ -116,6 +122,15 @@ data class CarStatus(
          * cũng có nguy cơ đảo lần thứ hai và ô nói ngược.
          */
         val acModeRaw: Int? = null,
+        /**
+         * 1.85 — dấu **chỉnh tay của mức gió** THÔ: `getAcWindLevelManualSign()` — javadoc BYD:
+         * *"Auto ctrl: `AC_WINDLEVEL_MANUAL_SIGN_OFF`(0) · Manual ctrl: `_ON`(1)"* ⇒ **0 = gió đang AUTO**.
+         *
+         * Đây là chỉ báo của nút `ac_auto` sau khi nút ấy đổi sang *gió* auto ([ĐO xe 2026-09-20 §3/§4); [acModeRaw]
+         * ở trên là câu hỏi KHÁC (chế độ điều hoà) và vẫn còn nguyên. Giữ **thô** đúng một lẽ với [acModeRaw]: phép
+         * đảo chỉ được xảy ra một lần, ở đường đọc của nút.
+         */
+        val acWindAutoRaw: Int? = null,
     )
 
     /** A4 — lốp (áp suất kPa + nhiệt °C). */

@@ -85,10 +85,11 @@ enum class EvidenceTier {
      * Có cần badge "chưa kiểm trên xe" không = **mọi mức trừ [PROVEN]**.
      *
      * ## ⚠ [SOÁT P1-3] Vì sao KHÔNG viết `== OVERDRIVE || == DASHCAST`
-     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **các nút yếu nhất của cả bộ** (`door`, `hood`) hiện ra
-     * **không có chấm cảnh báo** nào, trông y như nút đã chạy thật; `hood` còn chưa có đường HAL nên chắc chắn
-     * không bao giờ ăn. Đúng chỗ ngược đời: mức tin cậy thấp nhất lại là mức duy nhất không được cảnh báo.
-     * ([ĐO 2026-09-16] ví dụ thứ ba của câu này từng là `start_charging`; nút đó đã xoá ở lượt (V).)
+     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **các nút yếu nhất của cả bộ** (`lock`, `door`) hiện ra
+     * **không có chấm cảnh báo** nào, trông y như nút đã chạy thật; cả hai còn chưa có setter HAL tồn tại trên
+     * ROM này nên chắc chắn không bao giờ ăn. Đúng chỗ ngược đời: mức tin cậy thấp nhất lại là mức duy nhất
+     * không được cảnh báo. (Hai ví dụ cũ của câu này — `start_charging` ở lượt (V) và `hood` ở 1.85 — đều đã
+     * bị xoá khỏi registry; luật thì không đổi.)
      *
      * `ActionMacro.needsBadge()` đã dùng `tier() != PROVEN` và KDoc ở đó nói rõ lý do — nhưng chỉ áp cho gói lệnh,
      * không áp cho nút đơn. Nay hai bên cùng một luật.

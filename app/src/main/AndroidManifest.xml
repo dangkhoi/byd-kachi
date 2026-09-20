@@ -23,6 +23,29 @@
          chỉ mất đúng tính năng này. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- AUTOMATION #2 (1.85, spec kachi-automation R3) — CỔNG "có định vị chưa" cho luật dẫn-đường-theo-lịch.
+         Usecase hầm (R2.4): vẫn trong khung 7–9h, chờ ra khỏi hầm có GPS mới dẫn. `isProviderEnabled` một mình
+         KHÔNG trả lời được (trong hầm provider vẫn BẬT, chỉ không có fix) ⇒ phải hỏi TUỔI của fix gần nhất, và
+         đó là thứ cần quyền này.
+
+         ⚠⚠ CHỈ ĐỌC — đây là bất biến an toàn, không phải một lựa chọn phong cách. Ngày 2026-07-27 owner bỏ hẳn
+         đường ghi vị trí giả vì nó GHIM GPS CỦA CẢ XE. Kachi KHÔNG BAO GIỜ được:
+           • dựng test-provider hay ghi vị trí giả,
+           • bám định vị liên tục (đăng ký nhận cập nhật / listener),
+           • xin thêm bất kỳ quyền định vị nào khác (thô, nền, hay quyền foreground-service định vị).
+         Cả sáu điều trên bị hai bài canh trong `app/src/test/java/com/byd/clusternav/` khoá (lớp canh việc gỡ
+         nguồn vị-trí-giả năm 2026-07). ⚠ Hai bài đó GIỮ
+         DANH SÁCH TÊN QUYỀN và quét chính tệp này, nên KHÔNG viết lại tên các quyền ấy ở đây — viết ra là tự làm
+         đỏ bài canh. Đường đọc duy nhất là `GpsAvailability` (`isProviderEnabled` + `getLastKnownLocation`, đọc
+         lại chính cái fix mà app dẫn đường đang chạy đã tạo ra).
+
+         Quyền RUNTIME, tự cấp qua kênh dadb loopback (`pm grant … ACCESS_FINE_LOCATION`) — cùng đường
+         RECORD_AUDIO, xem `LauncherRequirements.LOCATION` + `PermissionPreflight`. Thiếu ⇒ cổng GPS trả
+         "chưa biết" và luật chờ-GPS **không dẫn bừa**; hàng quyền trong Cài đặt nói ra lý do. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <!-- W-WAKE: FGS thu micro (VoiceWakeService, type=microphone). API 34+ đòi quyền này; API 29 (xe) bỏ qua. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
@@ -173,6 +196,20 @@
              Never exported. -->
         <service
             android:name=".VietMapAutostartService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+        </service>
+
+        <!-- AUTOMATION (1.85, spec kachi-automation R4): MỘT động cơ nền cho cả hai automation — "tự sấy kính khi
+             mưa" (nhịp ~5 phút) + "tự dẫn đường theo lịch" (nhịp ~1 phút). KHÁC ba service trên: chúng là việc
+             MỘT LẦN rồi tự chết, còn cái này là một nhịp DÀI HẠN (cả chuyến) ⇒ `START_STICKY`.
+             Chỉ sống khi có ít nhất một automation BẬT (`AutomationService.anyEnabled`); hết việc thì tự
+             `stopSelf`. Started/stopped bởi `AutomationService.sync()` (công tắc UI + boot). Never exported.
+             `specialUse` như BootSetup/VietMap: nó KHÔNG thu micro, KHÔNG bám định vị liên tục — chỉ đọc
+             `getLastKnownLocation` theo nhịp, nên không cần type `location` (và không xin quyền
+             foreground-service định vị — xem khối quyền ở đầu manifest). -->
+        <service
+            android:name=".automation.AutomationService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
         </service>

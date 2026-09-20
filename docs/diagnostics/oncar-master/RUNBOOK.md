@@ -87,7 +87,7 @@ adb shell "dumpsys package com.byd.launcher | grep -E 'versionName|versionCode'"
 
 ```bash
 CAR=<ip-xe>; A="adb -s $CAR:5555"                 # hoặc: A="python3 /tmp/adb_raw.py $CAR 5555"
-T() { $A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher $*"; }
+T() { $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST $*"; }
 mkdir -p car-logs && exec > >(tee car-logs/session.txt) 2>&1
 ```
 

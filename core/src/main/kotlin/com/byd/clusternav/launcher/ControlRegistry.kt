@@ -143,10 +143,14 @@ object ControlRegistry {
         ControlDef("door", "Mở khóa cửa", "ic-car-top-door-all", ControlKind.BUTTON,
             domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorLockDevice.setDoorLockState",
             labelEn = "Unlock doors"),
-        // NEEDS-ONCAR: hood — nghiêng UNAVAILABLE (BODYWORK_CMD_DOOR_HOOD=5 chỉ là area ĐỌC, không có lệnh mở).
-        ControlDef("hood", "Ca-pô", "ic-car-top-hood", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BODYWORK_CMD_HOOD",
-            labelEn = "Bonnet"),
+        // ⚠⚠ 1.85 · **`hood` (Ca-pô) ĐÃ XOÁ HẲN** — [ĐO xe 2026-09-20 §4] owner xác nhận bằng mắt: xe **KHÔNG có
+        // ca-pô điện**, chỉ cốp sau điện. Từ 1.66 nó đã bị ẩn khỏi bộ chọn (`HIDDEN_FROM_PICKER`) với lý do ấy; lượt
+        // này owner chốt bỏ hẳn nên giữ một dòng registry không ai bấm được nữa chỉ là dead code.
+        // ⇒ Đây là mã đầu tiên rời **khối 20 nút GỐC**, nên khối đó nay còn **19** và `ControlRegistryExtendedTest`
+        // đã ghim lại danh sách mới (thứ tự các nút còn lại KHÔNG đổi).
+        // Ô/thanh nút của ai đã đặt `hood` tự rụng khi nạp — `WorkspaceState.sanitized()` (đường đã dựng ở ADAS-PURGE
+        // Pass 1 rồi dùng lại cho 19 mã của (V) FEATURE-FILTER); `WorkspaceStateTest` có ca duyệt riêng cho `hood`.
+        // [ĐO nguồn] RE cũ cũng đã nghi đúng: `BODYWORK_CMD_HOOD` chỉ là **area ĐỌC**, không có lệnh mở.
         // [ĐO] `setMoonRoofState(int)` BYDAutoBodyworkDevice.java:587; OpenBYD gọi thật với state chung enum kính
         // (CarControlImpl.java:1503-1505, windowId=5 → mở=1/đóng=2). Cũ `setSunroofState` KHÔNG tồn tại.
         ControlDef("sunroof", "Cửa sổ trời", "ic-car-top-sunroof", ControlKind.TOGGLE,
@@ -188,20 +192,33 @@ object ControlRegistry {
 
         // ── MỞ RỘNG catalog §B (mặc định TẮT) ─────────────────────────────────────────────────────
         // Khí hậu
-        // ⚠ V3 · R12 [ĐO nguồn fw-dl3]: số 1324355606 KHÔNG có trong `BYDAutoFeatureIds` của xe này ⇒ đó là lý do
-        // lượt 09-16 trả sentinel "absent on trim" dù owner xác nhận **xe CÓ** điều hoà auto (E6). Hai ứng viên
-        // gần nhất — `Ac.AC_CTRL_MODE_SET` (đổi CHẾ ĐỘ điều hoà) và `Ac.AC_AUTOMATIC_BUTTON_TURNED_OFF` (một cờ
-        // ĐỌC) — **chưa cái nào chốt được**, và đoán sai ở đây là bắn một lệnh khí hậu lạ khi xe đang chạy.
-        // NEEDS-ONCAR (1 lệnh): `featmap` rồi tra tên mang nghĩa AUTO trong set của device AC (1000).
-        // ⚠ ĐỌC được nhưng vẫn CHƯA ghi được: `readKey` nối vào `getAcControlMode` (T2), còn `bindingKey` giữ nguyên
-        // feature `1324355606` — id đó KHÔNG có trong `BYDAutoFeatureIds` của xe owner, và lệnh *"cấm bắn lệnh khí hậu
-        // theo phỏng đoán"* còn nguyên. `readInverted` vì AC_CTRLMODE_AUTO = 0 (xem KDoc trường đó).
-        // [ĐO xe 2026-09-17] điểm đo thứ hai xác nhận đường ĐỌC: `getAcControlMode` = 0 khi owner bấm AUTO trên màn,
-        // 1 khi tay ⇒ `readInverted` đúng. Đường GHI vẫn chờ `featmap` trên xe (không tự nghĩ giá trị — bài học W2-P0).
-        ControlDef("ac_auto", "Điều hòa AUTO", "ic-ac", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1324355606",
-            readKey = "ac_mode_auto", readInverted = true,
-            labelEn = "A/C AUTO"),
+        // ═══ 1.85 · GIÓ TỰ ĐỘNG — [ĐO xe 2026-09-20 §3] route ĐÃ RE XONG, nút đổi cả nghĩa lẫn nhãn ═════════════
+        //
+        // Lịch sử ngắn: 1.69 nối được đường ĐỌC nhưng đường GHI đứng yên ở feature `1324355606` — một id **không có
+        // trong `BYDAutoFeatureIds` của xe owner** (nên CAPTEST chấm X) trong khi owner xác nhận xe CÓ điều hoà auto.
+        // Phiên on-car 2026-09-20 tìm ra đường thật: **`Ac.AC_CTRL_MODE_SET`** (số trên xe owner: 501219352), device
+        // **`BYDAutoAcDevice`** — ⚠ chữ `c` THƯỜNG, `BYDAutoACDevice` là ClassNotFound. rc=0, thử cả hai chiều.
+        // KHÔNG phải `AC_WIND_MODE_SET` (hướng gió) cũng KHÔNG phải `AC_WIND_LEVEL_SET=0` (bị xe bỏ qua).
+        //
+        // Bind theo **TÊN HẰNG** (R11) chứ không dán số 501219352: [ĐO nguồn fw-dl3] `BYDAutoFeatureIds` gán giá trị
+        // trong `static {}` theo `isCanFD`/`isToyota`, nên cùng một tín hiệu mang số khác nhau tuỳ cấu hình xe. Tên
+        // là thứ ổn định; số chỉ đúng cho một cấu hình. (Đo được 501219352 trên xe owner ⇒ nếu sweep sau này thấy
+        // tên tra ra đúng số ấy thì hai bằng chứng khớp nhau.)
+        //
+        // ⚠⚠ **NHÃN ĐỔI: "Điều hòa AUTO" → "Gió tự động"** (owner review). [ĐO xe §4] xe **không có nhiệt-auto** —
+        // thứ id này bật/tắt là **gió** auto. Giữ nhãn cũ là hứa một việc rộng hơn thứ nút làm, đúng họ lỗi đã cắn
+        // dự án ba lần (*"Kính 50%"* · `lock`/`door` một byte · `hood` không tồn tại). **Mã `ac_auto` GIỮ NGUYÊN** —
+        // nó là khoá lưu bền của ô/thanh nút người dùng đã đặt (xem KDoc `CapabilityCatalog.HIDDEN_FROM_PICKER`).
+        // Cách nói *"điều hoà/máy lạnh"* vẫn trỏ nút này (`VoiceSynonyms`) vì đây là nút AC duy nhất bật/tắt được.
+        //
+        // `readKey` → `ac_wind_auto` (`getAcWindLevelManualSign`, chỉ báo gió auto) thay cho `ac_mode_auto`
+        // (`getAcControlMode` = *chế độ điều hoà*, câu hỏi khác — datum ấy vẫn còn nguyên). Cả hai đều **0 = AUTO**
+        // nên `readInverted` giữ nguyên. Giá trị GHI cũng ĐẢO — xem `HalBindingTable.writeArgs` ca `ac_auto`.
+        ControlDef("ac_auto", "Gió tự động", "ic-fan", ControlKind.TOGGLE,
+            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN,
+            bindingKey = "BYDAutoFeatureIds.Ac.AC_CTRL_MODE_SET", halDevice = "BYDAutoAcDevice",
+            readKey = "ac_wind_auto", readInverted = true,
+            labelEn = "Auto fan", short = "Gió auto", shortEn = "Auto fan"),
         // U7 lượt 2 · sấy kính SAU nay có khung REAR riêng (kính hậu + biển số + sóng nhiệt); trước dùng
         // chung `ic-defrost` với sấy trước ⇒ hai ô cạnh nhau y hệt (nợ đã ghi ở kiểm kê §4).
         ControlDef("defrost_rear", "Sấy kính sau", "ic-car-rear-defrost", ControlKind.TOGGLE,
@@ -255,19 +272,30 @@ object ControlRegistry {
         ControlDef("sunshade", "Rèm che nắng", "ic-car-top-sunshade", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở", "Nửa"),
             labelEn = "Sunshade", argsEn = listOf("Close", "Open", "Half")),   // T7: mức 2 = 50% (đường percent)
-        // NEEDS-ONCAR: child_lock — feature-id vô danh, không có named-method.
-        // ⚠ (V) FEATURE-FILTER 2026-09-17: `mirror_auto` · `mirror_fold_btn` · `rain_close` đã xoá (owner chấm NO).
-        // ═══ V3 · R12 — [ĐO nguồn fw-dl3 2026-09-16] id 1276141584 CÓ tên: `DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET`
-        // (lớp lồng `Door`, `BYDAutoFeatureIds.java:12954-12958`; giá trị thứ hai = 401664 khi Toyota không CanFD).
-        // Nó thuộc device **DOOR_LOCK (1041)**, KHÔNG phải BODYWORK — mà `Domain.BODY` lại đoán ra BODYWORK, nên
-        // lượt bắn 09-16 rơi vào `checkDeviceFeatures` và trả sentinel "absent on trim". Bind theo TÊN ⇒ device
-        // đích do `BYDAutoDeviceFeaturesMap` quyết, đúng gốc bệnh.
-        // ⚠ Tên nói rõ **LEFT**: đây là khoá trẻ em cửa TRÁI. Phải có cả hai bên thì đó là hai nút, không phải
-        // sửa dòng này — NEEDS-ONCAR (owner nhìn thấy cửa nào khoá khi bấm).
-        ControlDef("child_lock", "Khóa trẻ em", "ic-lock", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE,
+        // ═══ 1.85 · KHOÁ TRẺ EM — [ĐO xe 2026-09-20 §3] RE xong CẢ HAI BÊN, nên nay là HAI nút ════════════════════
+        //
+        // Route: `Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET` (số trên xe owner 1276141584) và `…_RIGHT_SET`
+        // (1276141586), device **`BYDAutoDoorLockDevice`**. rc=0, state đổi, owner xác nhận bằng cửa thật.
+        // ⚠ Giá trị NGƯỢC trực giác: ghi **2 → BẬT** · ghi **1 → TẮT** — ở `HalBindingTable.writeArgs`.
+        //
+        // ⚠⚠ Vì sao HAI nút chứ không một nút "khoá cả hai": một `ControlDef` = **một** feature-id (`write` bắn đúng
+        // một lệnh), nên "cả hai bên" phải là một **gói lệnh** (`ActionMacros`, cơ chế gộp-nhiều-lệnh đã có và đã
+        // chạy — `mac_win_close_all` gộp 4 kính). Gói ấy CHƯA làm ở lượt này: thêm gói là thêm một khả năng mới vào
+        // bộ chọn, và owner chưa duyệt ⇒ ghi vào handoff xin duyệt thay vì tự thêm.
+        // ⚠ Nhãn nói rõ BÊN NÀO. Trước 1.85 nhãn là *"Khóa trẻ em"* trong khi nút chỉ bind cửa TRÁI — một nút hứa
+        // cả xe mà khoá nửa xe là chỗ tệ nhất để hứa quá, vì người lái tin là con mình không mở được cửa nào.
+        // Mã `child_lock` GIỮ NGUYÊN (khoá lưu bền của ô người dùng đã đặt); cách nói mơ hồ *"khoá trẻ em"* trỏ
+        // về nút TRÁI, đúng tiền lệ owner đã duyệt ở 1.80 cho *"mở kính"* → kính LÁI (`VoiceSynonyms`).
+        ControlDef("child_lock", "Khóa trẻ em trái", "ic-lock", ControlKind.TOGGLE,
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN,
             bindingKey = "BYDAutoFeatureIds.Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET",
-            labelEn = "Child lock"),
+            halDevice = "BYDAutoDoorLockDevice",
+            labelEn = "Child lock left", short = "Khóa trẻ T", shortEn = "Child lock L"),
+        ControlDef("child_lock_r", "Khóa trẻ em phải", "ic-lock", ControlKind.TOGGLE,
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN,
+            bindingKey = "BYDAutoFeatureIds.Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_RIGHT_SET",
+            halDevice = "BYDAutoDoorLockDevice",
+            labelEn = "Child lock right", short = "Khóa trẻ P", shortEn = "Child lock R"),
         ControlDef("seat_memory", "Nhớ ghế lái", "ic-car-top-seat-fl", ControlKind.BUTTON,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276186678",
             // [ĐO] RE 2026-09-14 §4: SET_LF_MEMORY_LOCATION_SET thuộc SETTING(1023), KHÔNG phải BODYWORK(1001).

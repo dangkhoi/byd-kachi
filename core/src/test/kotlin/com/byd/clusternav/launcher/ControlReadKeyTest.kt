@@ -205,19 +205,43 @@ class ControlReadKeyTest {
         assertNull(applyInverted(null, inverted = true), "chưa đọc được thì không có mặt nào để đảo")
     }
 
+    /**
+     * ═══ 1.85 · `ac_auto` nay GHI ĐƯỢC — và cả hai vế của nó đều ĐẢO ═════════════════════════════════════════
+     *
+     * Bài này thay ca `ac_auto doc duoc roi ma duong GHI van dung yen` của 1.69. Ca cũ ghim đúng một sự thật của
+     * lúc đó (*"id 1324355606 không có trong `BYDAutoFeatureIds` của xe ⇒ không bắn lệnh khí hậu theo phỏng đoán"*);
+     * phiên on-car 2026-09-20 §3 đã RE ra đường thật nên sự thật ấy hết hiệu lực. Điều bài mới canh:
+     *  1. đường GHI trỏ **tên hằng** `Ac.AC_CTRL_MODE_SET` (R11 — số 501219352 chỉ đúng cho một cấu hình xe);
+     *  2. giá trị ghi **ĐẢO**: bật gió-auto ⇒ gửi **0**. Đây là chỗ dễ hỏng im lặng nhất (rc vẫn 0 mà xe làm
+     *     ngược), nên nó phải có ca riêng chứ không chỉ nằm trong bảng `writeArgs`;
+     *  3. đường ĐỌC chuyển sang chỉ báo **gió** (`getAcWindLevelManualSign`), vẫn 0 = AUTO ⇒ cờ đảo giữ nguyên.
+     */
     @Test
-    fun `ac_auto doc duoc roi ma duong GHI van dung yen`() {
+    fun `ac_auto ghi qua AC_CTRL_MODE_SET va ca hai ve deu dao`() {
         val def = ControlRegistry.byId("ac_auto")!!
-        assertEquals("ac_mode_auto", def.readKey, "T2 đã nối đường ĐỌC qua getAcControlMode")
-        assertTrue(def.readInverted, "AC_CTRLMODE_AUTO = 0 ⇒ phải khai cờ đảo, nếu không ô nói ngược")
+        assertEquals("ac_wind_auto", def.readKey, "1.85 nối đường ĐỌC sang chỉ báo GIÓ auto")
+        assertTrue(def.readInverted, "AC_WINDLEVEL_MANUAL_SIGN_OFF = 0 ⇒ phải khai cờ đảo, nếu không ô nói ngược")
         assertEquals(
-            "1324355606", def.bindingKey,
-            "⚠ đọc được KHÔNG kéo theo ghi được: id này không có trong BYDAutoFeatureIds của xe, spec cấm bắn " +
-                "lệnh khí hậu theo phỏng đoán",
+            "BYDAutoFeatureIds.Ac.AC_CTRL_MODE_SET", def.bindingKey,
+            "[ĐO xe 2026-09-20 §3] đường GHI đã RE xong — bind theo TÊN hằng, không dán số 501219352",
         )
-        // [ĐO xe 2026-09-16] getter trả 0 ⇒ nút phải hiện ĐANG BẬT (1). Gỡ cờ đảo ra thì ca này ĐỎ ngay.
-        assertEquals(1, HalBindingTable(FakeHalGateway(getters = mapOf("getAcControlMode" to "0"))).readState("ac_auto"))
-        assertEquals(0, HalBindingTable(FakeHalGateway(getters = mapOf("getAcControlMode" to "1"))).readState("ac_auto"))
+        assertEquals("BYDAutoAcDevice", def.halDevice, "device đo được là BYDAutoAcDevice (chữ 'c' THƯỜNG)")
+
+        // Vế GHI: bật (primary 1) ⇒ **0** = AUTO · tắt (0) ⇒ **1** = chỉnh tay. Đảo lại thì ca này ĐỎ.
+        assertEquals(listOf(0), HalBindingTable.writeArgs(def, 1).toList(), "bật gió-auto phải gửi 0")
+        assertEquals(listOf(1), HalBindingTable.writeArgs(def, 0).toList(), "tắt gió-auto phải gửi 1")
+
+        // Và đi hết đường GHI thật (tên hằng → id → featureSet) thì đúng con số ấy tới gateway.
+        val fake = 501219352
+        val gw = FakeHalGateway(featureNames = mapOf("Ac.AC_CTRL_MODE_SET" to fake), featureRc = 0L)
+        HalBindingTable(gw).write("ac_auto", 1)
+        assertEquals(listOf(0), gw.featureSetCalls.map { it.value }, "lệnh tới xe phải là 0 (AUTO), không phải 1")
+
+        // Vế ĐỌC: [ĐO nguồn javadoc BYD] 0 = Auto ctrl ⇒ nút hiện ĐANG BẬT (1). Gỡ cờ đảo ⇒ ĐỎ.
+        val on = FakeHalGateway(getters = mapOf("getAcWindLevelManualSign" to "0"))
+        val off = FakeHalGateway(getters = mapOf("getAcWindLevelManualSign" to "1"))
+        assertEquals(1, HalBindingTable(on).readState("ac_auto"))
+        assertEquals(0, HalBindingTable(off).readState("ac_auto"))
     }
 
     // ══ 6 · Sáu nút của lượt T2 — mỗi cái đi qua ĐÚNG getter đã đo trên xe ═════════════════════════════════
@@ -230,7 +254,7 @@ class ControlReadKeyTest {
             "seath" to ("getSeatHeatingState" to 1),
             "defrost" to ("getAcDefrostState" to 1),
             "defrost_rear" to ("getAcDefrostState" to 2),
-            "ac_auto" to ("getAcControlMode" to null),
+            "ac_auto" to ("getAcWindLevelManualSign" to null),   // 1.85: chỉ báo GIÓ auto, xem ca riêng ở §5
             "vol" to ("getStreamVolume" to null),
         ).forEach { (id, expect) ->
             val path = readPathOf(id)!!

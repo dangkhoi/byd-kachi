@@ -440,7 +440,6 @@ object KachiTheme {
         "ic-car-top-mirror" -> R.drawable.ic_car_top_mirror
         "ic-car-top-trunk" -> R.drawable.ic_car_top_trunk
         "ic-car-top-trunk-pos" -> R.drawable.ic_car_top_trunk_pos
-        "ic-car-top-hood" -> R.drawable.ic_car_top_hood
         "ic-car-top-sunroof" -> R.drawable.ic_car_top_sunroof
         "ic-car-top-sunroof-pos" -> R.drawable.ic_car_top_sunroof_pos
         "ic-car-top-sunshade" -> R.drawable.ic_car_top_sunshade

@@ -66,8 +66,8 @@ adb devices                                                             # bướ
 ```bash
 A="adb -s 127.0.0.1:15555"
 $A shell "dumpsys package com.byd.launcher | grep -E 'versionName|versionCode'"
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd state"
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd voice_dump --ez auto_confirm true"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd state"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd voice_dump --ez auto_confirm true"
 $A exec-out screencap -p > screen.png
 $A shell "ls -t /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ | head"
 ```

@@ -99,6 +99,7 @@ object TelemetryReadout {
         // ── A3. Khí hậu ─────────────────────────────────────────────────────────────────
         "pm25_level" -> s.climate.pm25Level?.toString()
         "pm25_value" -> s.climate.pm25ValueUgm3?.toString()
+        "pm25_outside" -> s.climate.pm25OutsideUgm3?.toString()
         "pm25_online" -> s.climate.pm25Online?.let { yesNo(it) }
         "cabin_temp" -> s.climate.cabinTempC?.toString()
         "ext_temp" -> s.climate.outsideTempC?.toString()
@@ -119,6 +120,9 @@ object TelemetryReadout {
         // 0 = AUTO (`AC_CTRLMODE_AUTO`) — đảo Ở ĐÂY, và chỉ ở đây, cho bề mặt ĐỌC; nút `ac_auto` có đường riêng
         // ([ControlDef.readInverted]) nên không chỗ nào đảo hai lần.
         "ac_mode_auto" -> s.climate.acModeRaw?.let { if (it == 0) "AUTO" else Strings.t("Chỉnh tay", "Manual") }
+        // 1.85 — cùng quy ước và cùng lý do với dòng trên: `AC_WINDLEVEL_MANUAL_SIGN_OFF = 0` ⇒ gió đang AUTO.
+        // Đảo Ở ĐÂY cho bề mặt ĐỌC; nút `ac_auto` đảo bằng [ControlDef.readInverted] nên không ai đảo hai lần.
+        "ac_wind_auto" -> s.climate.acWindAutoRaw?.let { if (it == 0) "AUTO" else Strings.t("Chỉnh tay", "Manual") }
 
         // ── A9. Giải trí ────────────────────────────────────────────────────────────────
         "media_vol" -> s.infotainment.mediaVolume?.toString()

@@ -250,6 +250,30 @@ object ProfileScope {
                 "Cùng lý do [voice_prefer_offline]: gói clip 10 MB nằm trên đĩa của chính xe này, không đi theo hồ " +
                 "sơ; và mặc định phải là Piper bất kể hồ sơ nào (owner chốt: giọng bé chỉ là lựa chọn)",
         )
+        put(
+            "rain_defrost_enabled",
+            "AUTOMATION #1 (1.85, spec kachi-automation R1/R5) — 'Tự sấy kính khi mưa'. Theo XE: nó đọc một CẢM " +
+                "BIẾN của chiếc xe này ([ĐO] SETTING_FRONT_RAIN_WIPER_SPEED) và ghi hai nút sấy của chính nó, " +
+                "tức một quyết định về phần cứng chứ không phải sở thích đi theo người lái. Chép nó theo hồ sơ thì " +
+                "đổi hồ sơ giữa cơn mưa là sấy tự tắt/bật mà không ai hiểu vì sao — cùng họ cast_enabled/" +
+                "voice_wake_enabled: quyết định mức máy, không mức người",
+        )
+        put(
+            "nav_automation_rules",
+            "AUTOMATION #2 (1.85, spec kachi-automation R2/R5) — sổ luật 'tự dẫn đường theo lịch'. Theo XE vì đây " +
+                "là việc CHIẾC XE làm theo lịch (nổ máy lúc 7h30 thứ Hai thì dẫn tới công ty), không phải một " +
+                "lựa chọn hiển thị của một tài xế. ⚠ Hệ quả phải biết: `saved_places` thì theo HỒ SƠ, nên một " +
+                "luật trỏ tới mục không có trong hồ sơ đang dùng sẽ BỎ LƯỢT (ScheduledNavApplier ghi log rồi thôi) " +
+                "— degrade an toàn, và cố ý không đóng dấu đã-dẫn nên đổi lại hồ sơ trong khung giờ thì lượt đi " +
+                "vẫn còn",
+        )
+        put(
+            "nav_automation_fired",
+            "AUTOMATION #2 (1.85) — sổ ĐÃ-DẪN (`id luật` → ngày). Theo XE cùng `nav_automation_rules`: nó là dấu " +
+                "vết thi hành CỦA những luật ấy, nên tách phạm vi hai khoá là mời chúng lệch nhau (luật theo xe mà " +
+                "dấu theo hồ sơ ⇒ đổi hồ sơ là dẫn lại lần thứ hai trong cùng khung giờ). Là NOT_SETTINGS nhưng " +
+                "vẫn phải có phạm vi — cùng ca `home_chosen`/`recent_apps`",
+        )
         put("enable_freeform_support", "cờ boot của HỆ THỐNG (`Settings.Global`) — thuộc máy")
         put("force_resizable_activities", "cờ boot của HỆ THỐNG (`Settings.Global`), gieo CẶP với khoá trên")
         put("enabled_accessibility_services", "danh sách trợ năng DÙNG CHUNG với mọi app khác (`Settings.Secure`)")

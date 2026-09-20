@@ -183,14 +183,24 @@ object SherpaSpokenWords {
         "do sang den vien" to "độ sáng đèn viền",
         "den nhay theo nhac" to "đèn nhảy theo nhạc",
         "loc nhanh" to "lọc nhanh",
-        "nap ca po" to "nắp ca pô",
-        "nap may" to "nắp máy",
+        // ⚠ 1.85: "nap ca po"/"nap may" đã xoá cùng nút `hood` — bảng này KHÔNG được giữ mục chết
+        // (`SherpaBiasingCoverageTest` đỏ hai chiều: thiếu dạng có dấu, và có dạng có dấu mà cụm đã biến mất).
         "say kieng sau" to "sấy kiếng sau",
         "khu mui" to "khử mùi",
         "vo lang nong" to "vô lăng nóng",
         "rem noc" to "rèm nóc",
         "man che nang" to "màn che nắng",
+        // 1.85 · khoá trẻ em hai bên + cụm mơ hồ. Dạng CÓ DẤU là thứ mô hình VN mã hoá được bằng BPE — thiếu nó thì
+        // cụm không được bias và sự thiếu ấy im lặng (đúng bài học `MEDIA_WORDS` khai không dấu ở 1.75).
         "khoa con nit" to "khóa con nít",
+        "khoa tre em" to "khóa trẻ em",
+        "khoa tre em ben trai" to "khóa trẻ em bên trái",
+        "khoa tre em ben phai" to "khóa trẻ em bên phải",
+        "khoa con nit ben phai" to "khóa con nít bên phải",
+        // ⚠ Bảng này CHỈ được viết lại dấu — bỏ dấu phải ra ĐÚNG khoá (`SherpaBiasingCoverageTest` khoá hai chiều).
+        // [ĐO] bản đầu viết *"gió au-tô"* (cách ĐỌC) ⇒ bỏ dấu ra "gio au-to" ≠ "gio auto" ⇒ đỏ đúng chỗ. Cách đọc
+        // là việc của `TtsPronunciation`, không phải của bảng bias.
+        "gio auto" to "gió auto",
         "luu vi tri ghe" to "lưu vị trí ghế",
         "kieu den pha" to "kiểu đèn pha",
         "muc ham tai sinh" to "mức hãm tái sinh",

@@ -163,8 +163,10 @@ class HalBindingTableTest {
 
     @Test fun `describeWrite local and none`() {
         assertEquals("local:AudioManager.setStreamVolume" to "AudioManager", HalBindingTable.describeWrite(ControlRegistry.byId("vol")!!))
-        // hood = BODYWORK_CMD_HOOD (UPPER_SNAKE command) → chưa map.
-        assertEquals("none" to "", HalBindingTable.describeWrite(ControlRegistry.byId("hood")!!))
+        // ⚠ 1.85: ví dụ cũ là `hood` (`BODYWORK_CMD_HOOD`), nay mã đó đã xoá khỏi registry. Thay bằng `headl`
+        // — `INSTRUMENT_HEADLIGHT_ON_OFF` cũng là UPPER_SNAKE command-wrapper chưa map, tức cùng ca cần canh:
+        // khoá kiểu ấy phải ra `none`, KHÔNG được âm thầm bị đọc thành một feature-id hay một setting key.
+        assertEquals("none" to "", HalBindingTable.describeWrite(ControlRegistry.byId("headl")!!))
     }
 
     @Test fun `describeWrite covers every control without throwing`() {

@@ -83,10 +83,12 @@ internal object VoiceTailClause {
             val len = after.size - i - 1
             if (len !in 1..VoiceAppTargets.LONGEST_SPOKEN) return@forEach
             val words = (i + 1 until after.size).map { after[it].norm }
-            // Khớp CHÍNH XÁC trước; chỉ khi trượt mới thử cụm rụng âm cuối (*"vietma"* ⇒ VietMap) — xem KDoc
-            // [VoiceAppTargets.bySpokenLoose] về vì sao đường nới lỏng chỉ có ở đây, sau cụm đánh dấu.
+            // Ba tầng, nới dần, và **thứ tự là hợp đồng**: khớp CHÍNH XÁC trước; rồi cụm rụng âm cuối
+            // (*"vietma"* ⇒ VietMap); rồi cụm bị ASR bóp méo có NEO TIỀN TỐ (*"vietna"* ⇒ VietMap, [ĐO xe
+            // 2026-09-20 §5]). Cả hai đường nới chỉ có ở đây, sau cụm đánh dấu — xem KDoc [VoiceAppTargets.bySpokenFuzzy].
             val target = VoiceAppTargets.bySpoken(words, kind)
                 ?: VoiceAppTargets.bySpokenLoose(words, kind)
+                ?: VoiceAppTargets.bySpokenFuzzy(words, kind)
                 ?: return@forEach
             return target.key to i
         }

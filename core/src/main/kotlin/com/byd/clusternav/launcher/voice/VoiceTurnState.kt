@@ -82,8 +82,22 @@ object VoiceTurnMachine {
             VoiceTurnPhase.EXECUTING, VoiceTurnPhase.CLARIFYING, VoiceTurnPhase.CLOSING,
         ),
         // Thi hành xong: cần xác nhận ⇒ CONFIRMING; mở hội thoại ⇒ FOLLOW_UP; xong hẳn ⇒ CLOSING.
+        //
+        // ⚠⚠ [ĐO xe 2026-09-20 · `oncar-1.84-session-2026-09-20.md` §5] **CLARIFYING phải có ở đây**, và thiếu nó
+        // là gốc của lỗi *"phiên thoại biến mất"*. Sơ đồ ở KDoc lớp (nhánh *"(không hiểu)"* mọc ra từ EXECUTING) và
+        // chính chỗ gọi (`VoiceSessionTurns.askAgain`, chú thích *"B1: EXECUTING → CLARIFYING"*) đều nói cạnh này
+        // tồn tại; chỉ **bảng dữ liệu** này bỏ sót nó. Cạnh này KHÔNG phải một đường lùi cho tiện: cổng hỏi-lại
+        // (`clarifyAsk`) nằm **sau** `go(DECODING); go(EXECUTING)` trong `VoiceSession.execute` — tức lúc quyết định
+        // *"câu này không hiểu"* thì phiên đã ở EXECUTING, nên EXECUTING mới là pha XUẤT PHÁT thật của lượt hỏi lại.
+        //
+        // Hậu quả khi thiếu (đo được trong nhật ký xe, theo đúng thứ tự): `askAgain` bị từ chối ⇒ pha kẹt ở
+        // EXECUTING ⇒ `listenAgain` xin LISTENING cũng bị từ chối ⇒ lượt trả lời gọi `execute` lần hai và in ra
+        // `pha: chuyển KHÔNG hợp lệ EXECUTING ⇒ DECODING` — dòng owner bắt được. Tức **cả ba** mốc pha của một lượt
+        // hỏi-lại đều trượt, và pha thôi mô tả sự thật kể từ câu không-hiểu đầu tiên của mỗi phiên.
+        //
+        // (DECODING → CLARIFYING ở trên vẫn giữ: nó là đường của một bản sau muốn hỏi lại **trước** khi thi hành.)
         VoiceTurnPhase.EXECUTING to setOf(
-            VoiceTurnPhase.CONFIRMING, VoiceTurnPhase.FOLLOW_UP, VoiceTurnPhase.CLOSING,
+            VoiceTurnPhase.CONFIRMING, VoiceTurnPhase.CLARIFYING, VoiceTurnPhase.FOLLOW_UP, VoiceTurnPhase.CLOSING,
         ),
         // Xác nhận xong: đồng ý ⇒ EXECUTING (chạy việc); từ chối/hết giờ ⇒ CLOSING.
         VoiceTurnPhase.CONFIRMING to setOf(

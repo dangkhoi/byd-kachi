@@ -28,6 +28,11 @@ class SettingsCatalogControlContractTest {
     private val car by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCar.kt") }
     private val places by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsPlaces.kt") }
 
+    /** AUTOMATION #2 (1.85) — lịch tự dẫn; tệp riêng vì `SettingsSectionsNav.kt` đã 425 dòng (trần 500). */
+    private val automation by lazy {
+        code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsAutomation.kt")
+    }
+
     /** ⚠ 1.66 — nhóm Hồ sơ tài xế tách khỏi `SettingsSections.kt` (một-tệp-một-nhóm + trần 500 dòng). */
     private val profilesSection by lazy {
         code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsProfiles.kt")
@@ -111,6 +116,9 @@ class SettingsCatalogControlContractTest {
             // `bridge`, một bên là dữ liệu của hồ sơ đi qua `deps`).
             "places_list" to ("SettingsSectionsPlaces" to "deps.state().savedPlaces"),
             "places_add" to ("SettingsSectionsPlaces" to "deps.onSavedPlaces("),
+            // AUTOMATION #2 (1.85) — lịch tự dẫn. Tệp section RIÊNG cùng lý do `SettingsSectionsPlaces`:
+            // `SettingsSectionsNav` đã 425 dòng, và hai khối không liên quan nhau.
+            "nav_automation" to ("SettingsSectionsAutomation" to "bridge.setNavRules("),
             // ── 6 · Chiếu màn lên cụm ──
             "cast_enabled" to ("SettingsSectionsCast" to "bridge.setCastEnabled("),
             "cast_split" to ("SettingsSectionsCast" to "bridge.setSplitPct("),
@@ -134,6 +142,8 @@ class SettingsCatalogControlContractTest {
             "car_seat_levels" to ("SettingsSectionsCar" to "bridge.setSeatLevel("),
             "car_pm25" to ("SettingsSectionsCar" to "bridge.setPm25Enabled("),
             "car_pm25_clean" to ("SettingsSectionsCar" to "bridge.pm25CleanNow()"),
+            // AUTOMATION #1 (1.85) — công tắc "Tự sấy kính khi mưa", cùng tệp nhóm Tiện nghi xe.
+            "car_rain_defrost" to ("SettingsSectionsCar" to "bridge.setRainDefrost("),
             // ── 9 · Hệ thống & quyền ──
             "system_permissions" to ("SettingsSections" to "rows.permissionRow("),
             "system_autostart" to ("SettingsSections" to "deps.onAutostart("),
@@ -180,6 +190,7 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsKeys" to keys,
             "SettingsSectionsCar" to car,
             "SettingsSectionsPlaces" to places,
+            "SettingsSectionsAutomation" to automation,
             "VoiceModelSettings" to voice,
             "VoiceConfirmSettings" to voiceConfirm,
             "SettingsSectionsProfiles" to profilesSection,

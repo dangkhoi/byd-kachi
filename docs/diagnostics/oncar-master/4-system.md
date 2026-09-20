@@ -48,7 +48,7 @@ gate cả 8 mục.
 ```bash
 # (1) Cầu kiểm thử: Kachi › Cài đặt › Hệ thống & quyền › Nâng cao › "Chế độ kiểm thử qua adb"  (TAY, không có
 #     đường bật bằng broadcast — có chủ ý). Tự tắt sau 60 phút ⇒ buổi dài phải bật lại.
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd state"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd state"
 #   → có JSON            = cầu SỐNG + cổng MỞ
 #   → "error":"test_mode_off" = cầu sống, công tắc CHƯA bật
 #   → không kết quả nào  = bản trên xe chưa có cầu (hoặc §6 fail — xem đó)
@@ -76,7 +76,7 @@ giá trị ra giấy là có ngay **chứng cứ độc lập** rằng lượt r
 
 ```bash
 $A shell "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME"
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd prefs --es file kachi_workspace" \
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd prefs --es file kachi_workspace" \
   | tr ',' '\n' | grep -iE "keep_home_on_boot|home_chosen|launcher_autostart"
 ```
 Không có hai dòng này thì cuối buổi **không ai chứng minh được HOME đã đổi** (§3).
@@ -173,7 +173,7 @@ rồi đọc ngay một lượt (`Holder.withExtra` + `CarStatusRepository.refre
 - **Đường A (máy, đúng đường một cú chạm đi)**:
   ```bash
   # xe ĐANG LĂN BÁNH, tốc độ X1 → hỏi → đổi tốc độ sang X2 (chênh ≥ 15 km/h) → hỏi lại
-  $A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd say --es text 'tốc độ bao nhiêu'"
+  $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd say --es text 'tốc độ bao nhiêu'"
   $A shell "logcat -d -v time -s KachiVoice KachiTest" | tail -20
   ```
 - **Đường B (miệng người)**: bấm mic → nói *"tốc độ bao nhiêu"*. Dùng khi cầu im. Cùng tiêu chí.
@@ -196,7 +196,7 @@ thử lại) + `HIT_TTL_MS = 300 s` (lần TRÚNG cũng hết hạn, vì tiền 
 - **Đường C (đo bằng máy, không bằng mắt)**:
   ```bash
   $A shell "logcat -d -v time -s KachiPerf" | tail -5     # cột bỏ-xe-không-có phải TỤT về ~0 sau khi HAL lên
-  $A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd sweep --es op info"
+  $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd sweep --es op info"
   # → JSON trên thẻ: đếm datum có giá trị ở giây thứ 10 vs giây thứ 60 sau khi nổ máy
   ```
 - **PASS**: ≤ 60 s mọi ô đang hiện có số. **FAIL**: còn `—` sau 60 s ⇒ chép `sweep` của cả hai mốc + `logcat -s Preflight`.
@@ -451,7 +451,7 @@ gửi **index thô** ⇒ *phép đo này là để chốt map nhãn↔enum*, kh�
   ```bash
   # cam đang mở; bắn lần lượt 0..5 rồi QUAN SÁT MÀN CAM mỗi lượt (có người thứ hai nhìn + đọc to)
   for v in 0 1 2 3 4 5; do
-    $A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd ctl --es id camera_view --ei v $v"
+    $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd ctl --es id camera_view --ei v $v"
     sleep 2
   done
   ```
@@ -461,7 +461,7 @@ gửi **index thô** ⇒ *phép đo này là để chốt map nhãn↔enum*, kh�
 - **Đường B (tay)**: bấm ô *Góc camera › Trái* trong Kachi (50-keys.sh mục [E]). Dùng khi cầu im.
 - **Đường C (HAL thô — khi A trả `accepted:false`)**: gọi thẳng method để tách lỗi *registry* khỏi lỗi *HAL*:
   ```bash
-  $A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd hal \
+  $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd hal \
      --es dev BYDAutoPanoramaDevice --es m setDisplayMode --es args 4 --es op set --ez auto_confirm true"
   ```
 
@@ -503,7 +503,7 @@ receiver `exported=false` (cùng họ ca `am start` vào `.ClusterNavActivity` g
 
 ```bash
 # A — đường chuẩn (có -p, đúng như playbook)
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd state"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd state"
 # B — nếu A bị chối: thử nhắm THẲNG component (một số ROM lọc theo -p)
 $A shell "am broadcast -n com.byd.launcher/.launcher.testbridge.KachiTestBridge \
    -a com.byd.launcher.TEST --es cmd state"
@@ -533,11 +533,11 @@ GPS >5 s sau khi bật ⇒ cầu tự tắt) — nên phép thử này là **h�
 
 ```bash
 # TRƯỚC reboot: bật công tắc, xác nhận cửa mở, chép boot_id
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd state" | head -3
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd state" | head -3
 $A shell "cat /proc/sys/kernel/random/boot_id"
 # → tắt máy bằng NÚT NGUỒN, nổ lại (cùng lượt với §3)
 $A shell "cat /proc/sys/kernel/random/boot_id"        # PHẢI khác
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd state"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd state"
 ```
 - **PASS** = `"error":"test_mode_off"`, **và** `boot_id` đã đổi (chứng minh reboot thật).
 - **FAIL** = còn chạy ⇒ **[P1] cửa sống qua lần nổ máy** = đúng thứ `TestBridgeWindow` sinh ra để chặn ⇒ chép giá
@@ -548,11 +548,11 @@ $A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd sta
 
 ```bash
 # đọc — vô hại
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd sweep --es op info"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd sweep --es op info"
 # ghi — chọn control KHÔNG thuộc CONFIRM_REQUIRED (CtlSafetyPolicy.kt:35-38) ⇒ đèn đọc
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd ctl --es id readl"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd ctl --es id readl"
 # cổng CONFIRM phải TỪ CHỐI khi không có cờ:
-$A shell "am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd ctl --es id door"
+$A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd ctl --es id door"
 #   → kỳ vọng needs_confirm + nguyên văn câu hỏi, và XE KHÔNG ĐỘNG GÌ
 ```
 - **PASS** = `readl` trả `accepted:true` + `hal_line` thật + **đèn đọc bật thật** (mắt); `door` trả `needs_confirm`

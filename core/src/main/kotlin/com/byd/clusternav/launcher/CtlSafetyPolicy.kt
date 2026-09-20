@@ -28,12 +28,17 @@ object CtlSafetyPolicy {
     /**
      * Control "mở/khoá thân xe" — bắn qua broadcast phải có `auto_confirm`, và script sweep không tự bắn.
      *
-     * Gồm: khoá/mở khoá cửa (`lock`,`door`), cốp (`trunk`), ca-pô (`hood`), nóc (`sunroof`), rèm (`sunshade`),
+     * Gồm: khoá/mở khoá cửa (`lock`,`door`), cốp (`trunk`), nóc (`sunroof`), rèm (`sunshade`),
      * kính cửa lái (`window`), kính mở-hết (`windows_all`) và từng kính (`win_lf`,`win_rf`,`win_lr`,`win_rr`).
      * Đây đúng tập DENYLIST mà task 71-hal-sweep yêu cầu ("kính mở-hết/nóc/rèm" + từng kính + khoá + cốp).
+     *
+     * ⚠ 1.85: `hood` rời danh sách vì **mã đã xoá khỏi registry** (xe không có ca-pô điện — [ĐO xe 2026-09-20 §4]),
+     * không phải vì nó bớt nguy hiểm. Khoá trẻ em (`child_lock`/`child_lock_r`) CỐ Ý không vào đây: nó khoá *chốt
+     * trong* của cửa sau, không mở/bung gì ra ngoài, và chặn nó sau một cổng xác nhận chỉ làm chậm đúng thứ người
+     * lái muốn bật ngay khi có trẻ trên xe.
      */
     val CONFIRM_REQUIRED: Set<String> = setOf(
-        "lock", "door", "trunk", "hood", "sunroof", "sunshade",
+        "lock", "door", "trunk", "sunroof", "sunshade",
         "window", "windows_all", "win_lf", "win_rf", "win_lr", "win_rr",
     )
 
@@ -43,11 +48,15 @@ object CtlSafetyPolicy {
     /**
      * ═══ C (owner test xe 2026-09-19) · CHỈ MỞ ĐƯỢC KHI XE ĐANG DỪNG ══════════════════════════════════════════
      *
-     * Cốp và ca-pô là hai bộ phận **bung ra ngoài bao xe** khi mở. Mở lúc xe đang chạy thì cốp che trọn kính hậu
-     * (mất tầm quan sát sau) và ca-pô bật lên **che kính lái** — ca thứ hai là mất tầm nhìn trước ở tốc độ, tức
-     * hỏng nặng hơn hẳn mọi nút khác trong registry. Một câu nói nghe nhầm giữa lúc chạy là đủ.
+     * Cốp là bộ phận **bung ra ngoài bao xe** khi mở: mở lúc xe đang chạy thì nó che trọn kính hậu (mất tầm quan
+     * sát sau). Một câu nói nghe nhầm giữa lúc chạy là đủ.
      *
-     * ## Vì sao ĐÚNG HAI mã này, không phải cả họ "mở thân xe"
+     * ⚠ 1.85: tập này còn **một** mã. `hood` rời đi vì mã đã xoá khỏi registry (xe không có ca-pô điện — [ĐO xe
+     * 2026-09-20 §4]); lý lẽ của nó (*ca-pô bật lên che kính lái*) giữ lại trong nhật ký để ngày nào một xe khác
+     * có ca-pô điện thì người nối lại biết phải kết nạp nó ngay. Một tập một phần tử vẫn đúng vai: nó trả lời câu
+     * *"mã nào bị gate theo vận tốc"*, và câu trả lời hôm nay là *"cốp"*.
+     *
+     * ## Vì sao KHÔNG phải cả họ "mở thân xe"
      * [CONFIRM_REQUIRED] rộng hơn có chủ ý (nó canh *"lệnh từ ngoài"*), còn tập này canh *"vận tốc"* — hai câu hỏi
      * khác nhau nên hai danh sách. Kính và cửa sổ trời **CỐ Ý không** vào đây: mở kính lúc đang chạy là việc bình
      * thường, ai cũng làm, và gate chúng lại biến một tính năng đang dùng tốt thành một lời từ chối vô cớ. Khoá/mở
@@ -55,7 +64,7 @@ object CtlSafetyPolicy {
      *
      * ⇒ Tiêu chí kết nạp là **"mở ra thì bung khỏi bao xe / che tầm nhìn"**, không phải *"thuộc BODY"*.
      */
-    val REQUIRES_STATIONARY: Set<String> = setOf("trunk", "hood")
+    val REQUIRES_STATIONARY: Set<String> = setOf("trunk")
 
     /** Control [id] chỉ được MỞ khi xe đang dừng (0 km/h) không — xem [REQUIRES_STATIONARY]. */
     fun requiresStationary(id: String): Boolean = id in REQUIRES_STATIONARY
@@ -79,14 +88,15 @@ object CtlSafetyPolicy {
      * và một chỗ lệch dai dẳng **đúng là** *"lệnh không ăn"* — nên nhóm ấy KHÔNG vào đây, và vẫn phải nghe được câu
      * *"xe không nhận lệnh"* (đó là nửa owner yêu cầu ở E).
      *
-     * Kê cả mã **chưa** có khoá ĐỌC (`hood` · `windows_all` · `sunshade`): tính chất được kê ở đây là của **bộ phận**
+     * Kê cả mã **chưa** có khoá ĐỌC (`windows_all` · `sunshade`): tính chất được kê ở đây là của **bộ phận**
      * chứ không của việc hôm nay đọc được hay chưa — ngày chúng có khoá đọc thì không ai phải nhớ quay lại đây.
+     * (1.85: `hood` rời danh sách cùng lượt xoá mã.)
      *
      * ⚠ Nới [VoiceReadback.READBACK_SETTLE_MS] KHÔNG thay được danh sách này: chờ đủ cho một cửa kính (vài giây) là
      * bắt **mọi** câu trả lời chậm thêm vài giây. Khoảng chờ theo từng nút là việc của lượt có số ĐO trên xe.
      */
     val MOVES_SLOWLY: Set<String> = setOf(
-        "trunk", "hood", "sunroof", "sunshade",
+        "trunk", "sunroof", "sunshade",
         "window", "windows_all", "win_lf", "win_rf", "win_lr", "win_rr",
     )
 

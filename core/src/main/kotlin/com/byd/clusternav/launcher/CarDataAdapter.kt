@@ -165,6 +165,10 @@ class CarDataAdapter(
             climate = CarStatus.Climate(
                 pm25Level = g.int("pm25_level", c.pm25Level),
                 pm25ValueUgm3 = g.int("pm25_value", c.pm25ValueUgm3),
+                // 1.85 — ô [1] của CÙNG getter (`HalReadTables.ARRAY_INDEX`). Hai lượt `g.int` = hai lời gọi HAL
+                // cho một mảng; chấp nhận vì cổng `wanted(id)` chỉ đọc khi datum ĐANG HIỆN, và gộp lại sẽ phải
+                // dựng một đường "đọc một lần trả nhiều datum" mà hôm nay chỉ có đúng một chủ.
+                pm25OutsideUgm3 = g.int("pm25_outside", c.pm25OutsideUgm3),
                 pm25Online = g.bool("pm25_online", c.pm25Online),
                 cabinTempC = g.int("cabin_temp", c.cabinTempC),
                 outsideTempC = g.int("ext_temp", c.outsideTempC),
@@ -185,6 +189,7 @@ class CarDataAdapter(
                 defrostFrontOn = g.bool("defrost_front_state", c.defrostFrontOn),
                 defrostRearOn = g.bool("defrost_rear_state", c.defrostRearOn),
                 acModeRaw = g.int("ac_mode_auto", c.acModeRaw),
+                acWindAutoRaw = g.int("ac_wind_auto", c.acWindAutoRaw),   // 1.85 — chỉ báo gió auto (0 = AUTO)
             ),
             tyres = CarStatus.Tyres(
                 pFlKpa = g.dbl("tyre_p_fl", t.pFlKpa),

@@ -48,6 +48,10 @@ class ClusterNavKeysContractTest {
             // 1.70 — tệp THỨ TƯ cùng `clusternav_prefs`: khoá daemon chạm (`inputd_disabled` · `inputd_token`)
             // tách sang `PrefsInputd.kt` (hàm mở rộng của [Prefs], trần 500 dòng) — cùng tệp prefs, cùng lẽ V3.
             "src/main/java/com/byd/clusternav/PrefsInputd.kt",
+            // 1.85 — tệp THỨ NĂM cùng `clusternav_prefs`: ba khoá automation (`rain_defrost_enabled` ·
+            // `nav_automation_rules` · `nav_automation_fired`) tách sang `PrefsAutomation.kt` (hàm mở rộng của
+            // [Prefs]) vì `Prefs.kt` đã 536 dòng — cùng tệp prefs, cùng lẽ V3/inputd, không phải cửa thứ hai.
+            "src/main/java/com/byd/clusternav/PrefsAutomation.kt",
         ),
         "simple_cast_prefs" to listOf(
             "src/main/java/com/byd/clusternav/modules/clustercast/simplified/SimpleCastRuntime.kt",

@@ -41,6 +41,47 @@ class VoiceTurnMachineTest {
         assertEquals(P.LISTENING, M.next(P.FOLLOW_UP, P.LISTENING))
     }
 
+    /**
+     * ═══ HỒI QUY [ĐO xe 2026-09-20 §5] — DỰNG LẠI ĐÚNG CHUỖI PHA CỦA MỘT LƯỢT HỎI-LẠI THẬT ══════════════════
+     *
+     * Nhật ký xe: `quyết định: … ⇒ không hiểu: NO_VERB` rồi `pha: chuyển KHÔNG hợp lệ EXECUTING ⇒ DECODING`.
+     * Gốc: bảng cạnh thiếu **EXECUTING → CLARIFYING**, mà cổng hỏi-lại của `VoiceSession.execute` chạy SAU
+     * `go(DECODING); go(EXECUTING)` ⇒ pha xuất phát của lượt hỏi lại là EXECUTING, không phải DECODING.
+     *
+     * Bài trên (`hoi lai va hoi thoai…`) **không** bắt được vì nó chỉ hỏi cạnh DECODING → CLARIFYING — nó soi đúng
+     * cái bảng dữ liệu đang sai chứ không soi đường đi thật. Bài này đi **từng bước như `:app` gọi**, nên nó đỏ ngay
+     * ở bước 4 khi cạnh bị gỡ, và nó cũng khoá luôn hai mốc kế (mở mic + lượt trả lời gọi `execute` lần hai).
+     */
+    @Test
+    fun `chuoi pha cua mot luot HOI LAI that - khong buoc nao bi tu choi`() {
+        // Lượt 1: bấm mic → nghe → giải mã → thi hành (VoiceSession.start + execute).
+        var at = P.IDLE
+        listOf(P.LISTENING, P.DECODING, P.EXECUTING).forEach { to ->
+            at = M.next(at, to) ?: error("bước $at ⇒ $to phải hợp lệ")
+        }
+        // `clarifyAsk` != null ⇒ askAgain: ĐÂY là bước đã trượt trên xe.
+        at = M.next(at, P.CLARIFYING) ?: error("EXECUTING ⇒ CLARIFYING phải hợp lệ (gốc lỗi phiên-thoại-chết)")
+        // listenAgain: về LISTENING rồi mới được mở mic (bất biến chống-loop).
+        at = M.next(at, P.LISTENING) ?: error("CLARIFYING ⇒ LISTENING phải hợp lệ")
+        assertTrue(M.canOpenMic(at), "lượt hỏi lại phải mở được mic sau khi về LISTENING")
+        // Câu trả lời về ⇒ execute lần hai: dòng `EXECUTING ⇒ DECODING` trong log xe sinh ra ở đây.
+        at = M.next(at, P.DECODING) ?: error("LISTENING ⇒ DECODING phải hợp lệ ở lượt trả lời")
+        assertEquals(P.EXECUTING, M.next(at, P.EXECUTING), "lượt trả lời phải thi hành được")
+    }
+
+    /** Hỏi lại xong mà vẫn không hiểu ⇒ hỏi lại lần hai: cạnh EXECUTING → CLARIFYING phải dùng LẠI được. */
+    @Test
+    fun `hoi lai duoc LAN HAI trong cung mot phien`() {
+        var at = P.EXECUTING
+        repeat(2) {
+            at = M.next(at, P.CLARIFYING) ?: error("lượt hỏi lại thứ ${it + 1} bị từ chối")
+            at = M.next(at, P.LISTENING) ?: error("không về được LISTENING")
+            at = M.next(at, P.DECODING) ?: error("không giải mã được câu trả lời")
+            at = M.next(at, P.EXECUTING) ?: error("không thi hành được")
+        }
+        assertEquals(P.EXECUTING, at)
+    }
+
     @Test
     fun `CLOSING den duoc tu MOI pha - huy bat cu luc nao`() {
         P.entries.filter { it != P.CLOSING }.forEach { from ->

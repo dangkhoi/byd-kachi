@@ -66,11 +66,13 @@ class SettingsSections(
             SettingsGroup.BARS -> SettingsBarsSection(context, rows, deps).build(body)
             SettingsGroup.DISPLAY -> display(body)
             SettingsGroup.PROFILES -> SettingsProfilesSection(context, rows, deps).build(body)
-            // Hai khối trong một nhóm, và thứ tự là một quyết định: **Sổ địa chỉ trước**, cấu hình cụm sau —
-            // lý do đầy đủ ở KDoc [SettingsPlacesSection] (sổ địa chỉ không phụ thuộc công tắc dẫn đường, và
-            // chôn nó dưới ~2,7 màn cuộn là chôn một tính năng dùng hằng ngày).
+            // Ba khối trong một nhóm, và thứ tự là một quyết định: **Sổ địa chỉ trước**, rồi **lịch tự dẫn**, cấu
+            // hình cụm sau. Sổ địa chỉ đứng đầu — lý do đầy đủ ở KDoc [SettingsPlacesSection] (nó không phụ thuộc
+            // công tắc dẫn đường, và chôn nó dưới ~2,7 màn cuộn là chôn một tính năng dùng hằng ngày). Lịch tự dẫn
+            // (1.85) đứng NGAY SAU sổ vì một luật **không dựng được** khi sổ còn trống: nó chọn điểm đến TỪ sổ.
             SettingsGroup.NAV -> {
                 SettingsPlacesSection(context, rows, deps).build(body)
+                SettingsNavAutomationSection(context, rows, deps).build(body)
                 SettingsNavSection(context, rows, deps).build(body)
             }
             SettingsGroup.CAST -> SettingsCastSection(context, rows, deps).build(body)

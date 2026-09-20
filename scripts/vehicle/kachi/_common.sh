@@ -277,7 +277,8 @@ k_state_diff() {
 # CẦU KIỂM THỬ QUA ADB (`KachiTestBridge`) — thay cho `input tap` theo toạ độ
 #
 # Giao thức (broadcast, kết quả trả bằng `setResultData` + một tệp JSON):
-#   adb shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher \
+#   adb shell am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge \
+#       -a com.byd.launcher.TEST \
 #       --es cmd <say|wav|listen|state|profiles|profile|preset|slot|slot_clear|open|prefs|reapply|diag> \
 #       [--es text … | --es path … | --es name … | --es pkg …] [--ei n <số>] [--ez auto_confirm true]
 #   ⇒ JSON mới nhất ở /sdcard/Android/data/com.byd.launcher/files/test/
@@ -295,6 +296,15 @@ k_state_diff() {
 
 KACHI_TEST_ACTION="${KACHI_TEST_ACTION:-com.byd.launcher.TEST}"
 
+# ⚠⚠ [ĐO xe 2026-09-20] Broadcast PHẢI mang **thành phần tường minh** (`-n`), không chỉ action.
+#   Android 10 chặn broadcast ngầm tới receiver khai trong manifest, và cái chặn đó **im lặng**:
+#   `am broadcast -a com.byd.launcher.TEST …` trả `result=0` **không kèm `data=`** ⇒ mọi lượt gọi
+#   cầu rơi, mà lỗi lại đọc giống hệt "cầu chưa bật / adb hỏng". Cả mấy buổi test trước nghi oan
+#   cho kết nối chính là vì dòng lệnh này, không phải vì xe. Dạng `-n <gói>/<lớp> -a <action>` trả
+#   `result=1` + `data=<JSON>` + receiver chạy thật.
+#   Giữ `-a` bên cạnh `-n` vì `KachiTestBridge.onReceive` rẽ nhánh theo `intent.action`.
+KACHI_TEST_COMP="${KACHI_TEST_COMP:-$KACHI_PKG/com.byd.clusternav.launcher.testbridge.KachiTestBridge}"
+
 # Kết quả lượt gọi cầu gần nhất — chỗ gọi đọc hai biến này thay vì phân tích lại chuỗi.
 K_TEST_DATA=""      # nội dung `setResultData` (một dòng)
 K_TEST_JSON=""      # đường dẫn tệp JSON đã kéo về carlog, "" nếu không có
@@ -311,7 +321,7 @@ k_test() {
   local cmd="$1"; shift
   local out line res newest dest; out="$(k_out)"
   K_TEST_DATA=""; K_TEST_JSON=""; K_TEST_OK=0
-  line="am broadcast -a $KACHI_TEST_ACTION -p $KACHI_PKG --es cmd $(k_shq "$cmd")"
+  line="am broadcast -n $KACHI_TEST_COMP -a $KACHI_TEST_ACTION --es cmd $(k_shq "$cmd")"
   while [ $# -gt 0 ]; do line="$line $(k_shq "$1")"; shift; done
   res="$(k_sh "$line" 2>&1 | tr -d '\r')"
   printf '%s\n' "$res" >> "$out/test-bridge.log"

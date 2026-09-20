@@ -89,7 +89,9 @@ class PackageQueriesContractTest {
         // +1 từ 2026-09-18 (BUG1 un-set): `DefaultHome.otherHomeComponent` liệt kê home KHÁC Kachi để trả quyền
         // HOME khi bỏ chọn — đi qua đúng helper (không gọi thẳng PackageManager).
         val callers = kotlinSources().filter { (_, code) -> code.contains("PackageQueries.queryActivities(") }.map { it.first }
-        assertEquals(7, callers.size, "mọi chỗ gọi phải đi qua helper; thấy: $callers")
+        // AUTOMATION #2 (1.85): +1 — `ScheduledNavApplier` hỏi "app dẫn đường này có trên xe không" bằng CÙNG
+        // phép đo mà `VoiceWiring.appsByLabel` dùng (activity LAUNCHER), nên hai đường không trả lời khác nhau.
+        assertEquals(8, callers.size, "mọi chỗ gọi phải đi qua helper; thấy: $callers")
     }
 
     /**

@@ -49,7 +49,8 @@ class LangCoverageTest {
     fun `moi datum co nhan EN, dung 100 dong`() {
         // 106 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 123).
         // 100 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 12 datum NO — trước đó 112).
-        assertEquals(101, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // 1.85: +1 `ac_wind_auto` (đã có nhãn + nhãn ngắn ở CẢ hai thứ tiếng — chính bài này ép điều đó).
+        assertEquals(102, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
@@ -86,7 +87,7 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 73 muc`() {
+    fun `moi muc cai dat co nhan EN — 10 nhom va 75 muc`() {
         assertEquals(10, SettingsCatalog.GROUPS.size)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
@@ -107,7 +108,10 @@ class LangCoverageTest {
         // VISUAL-REFRESH P1b · R8 (2026-09-17): **+1** — `display_color` (màu nhấn + tông thẻ, khoá `color_choice`
         // theo hồ sơ; docs/specs/kachi-visual-refresh.html §R8).
         // voice-clone T7/T8 (2026-09-17): **+1** — `voice_feedback_voice` (ô tích chọn giọng phản hồi Piper/giọng bé).
-        assertEquals(73, SettingsCatalog.ENTRIES.size)
+        // AUTOMATION (1.85, spec kachi-automation): **+2** — `car_rain_defrost` (công tắc tự sấy kính khi mưa,
+        // khoá `rain_defrost_enabled`) + `nav_automation` (sổ luật tự dẫn đường theo lịch, khoá
+        // `nav_automation_rules`). Cả hai theo XE.
+        assertEquals(75, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -121,7 +125,9 @@ class LangCoverageTest {
         assertEquals(7, Quantity.values().size)
         assertEquals(4, TyreCorner.values().size)
         // V1 pha NGHE: +1 — `microphone` (quyền micro, tự cấp bằng `pm grant`).
-        assertEquals(7, LauncherRequirements.ALL.size)
+        // AUTOMATION #2 (1.85): +1 — `location` (quyền ĐỌC định vị cho cổng "đã ra khỏi hầm chưa", cùng đường
+        // `pm grant`; CHỈ đọc — xem `DeadReckonRetirementTest.the app never writes or subscribes to location`).
+        assertEquals(8, LauncherRequirements.ALL.size)
         Domain.values().forEach { assertTrue(it.labelEn.isNotBlank(), "Domain.${it.name} thiếu nhãn EN") }
         Quantity.values().forEach { assertTrue(it.labelEn.isNotBlank(), "Quantity.${it.name} thiếu nhãn EN") }
         TyreCorner.values().forEach {
@@ -143,7 +149,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 280`() {
+    fun `tong so nhan co ban EN dung 286`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -171,7 +177,10 @@ class LangCoverageTest {
         // VISUAL-REFRESH P1b · R8 (2026-09-17): **278 → 279 (+1)** = mục Cài đặt `display_color` ("Màu sắc" / "Colours").
         // voice-clone T7/T8 (2026-09-17): **279 → 280 (+1)** = mục Cài đặt `voice_feedback_voice` ("Giọng phản hồi" / "Feedback voice").
         // nav-default-app (owner 2026-09-18): **280 → 281 (+1)** = mục `nav_default_app` ("App dẫn đường mặc định" / "Default navigation app").
-        assertEquals(282, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 1.85 (2026-09-20): **282 → 283 (+1)** = +1 datum `ac_wind_auto`, +1 nút `child_lock_r`, −1 nút `hood`.
+        // 1.85 AUTOMATION (2026-09-20): **283 → 286 (+3)** = +2 mục cài đặt (`car_rain_defrost` ·
+        // `nav_automation`) +1 điều kiện quyền (`location`). Ba nhãn mới đều đã có bản EN tại chỗ khai.
+        assertEquals(286, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

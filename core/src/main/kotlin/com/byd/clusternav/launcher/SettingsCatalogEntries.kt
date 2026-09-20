@@ -124,6 +124,12 @@ internal object SettingsCatalogEntries {
             "nav_default_app", SettingsGroup.NAV, "App dẫn đường mặc định",
             "voice_nav_default_app", "Default navigation app",
         ),
+        // AUTOMATION #2 (1.85, spec kachi-automation R2.1) — sổ luật "tự dẫn đường theo lịch". Cùng nhóm NAV với
+        // sổ địa chỉ vì nó CHỌN điểm đến từ sổ đó; control ở tệp section riêng (`SettingsSectionsAutomation`).
+        SettingsEntry(
+            "nav_automation", SettingsGroup.NAV, "Tự dẫn đường theo lịch",
+            "nav_automation_rules", "Scheduled navigation",
+        ),
         // btn_reconnect_nav · NavConnect.ensureConnected — VIỆC LÀM, không lưu gì
         SettingsEntry(
             "nav_reconnect", SettingsGroup.NAV, "Kết nối lại nguồn dẫn đường",
@@ -216,6 +222,13 @@ internal object SettingsCatalogEntries {
         SettingsEntry("car_pm25", SettingsGroup.CAR, "Tự lọc bụi mịn", "pm25_filter_enabled", "Automatic air purifier"),
         // btn_pm25_clean_now + pm25_gauge · Pm25FilterApplier.cleanNow/readLevel — VIỆC LÀM
         SettingsEntry("car_pm25_clean", SettingsGroup.CAR, "Lọc ngay một lượt", labelEn = "Purify now"),
+        // AUTOMATION #1 (1.85, spec kachi-automation R1.1) · bridge.setRainDefrost + AutomationService.sync.
+        // Ở nhóm CAR (không phải SYSTEM) vì người dùng đi tìm nó ở "thứ cabin tự làm hộ", không ở "dịch vụ nền" —
+        // cùng ranh giới mà sổ địa chỉ đã chọn khi nằm ở nhóm NAV dù dữ liệu theo hồ sơ.
+        SettingsEntry(
+            "car_rain_defrost", SettingsGroup.CAR, "Tự sấy kính khi mưa",
+            "rain_defrost_enabled", "Auto-defrost when it rains",
+        ),
 
         // ── Hệ thống & quyền ──
         // Không lưu gì: hàng quyền chỉ ĐỌC trạng thái thật rồi tự xin lại (xem [LauncherRequirements]).

@@ -182,7 +182,9 @@ class VoiceTargetDispatch(
                 // ⚠ Handoff fallback = null (không phải target.launch): fallback bắn cùng `query`, mà ở watch
                 // `query`=video_id — đưa id làm chuỗi tìm là sai. Watch hỏng ⇒ lùi bằng `deliver` với TÊN bài.
                 if (vid != null && sendToApp(VoiceAppIntents.Handoff(pkg, watch, vid, null, null))) {
-                    say(VoiceReply.handedOver(i, target))
+                    // `autoplay = true`: mở URL watch thì app tự phát ⇒ câu trả lời KHÔNG được nhắc *"bấm Play"*
+                    // (owner báo [ĐO xe 2026-09-20 §5]). Đường `deliver` dưới đây vẫn nhắc, và vẫn đúng.
+                    say(VoiceReply.handedOver(i, target, autoplay = true))
                 } else {
                     deliver(i, target, pkg, i.query, null)
                 }

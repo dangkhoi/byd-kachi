@@ -117,8 +117,13 @@ class TelemetryReadoutTest {
                 BindingRoute.None -> {}              // GPS/target_soc → không đường đọc
             }
         }
-        // `int[] getChargeRestTime()` trả mảng [giờ, phút] (gateway thật: BydHal.arrayToStr) — mục eta_min lấy [1].
-        getters["getChargeRestTime"] = "[1, 1]"
+        // ⚠ 1.85 · Getter trả MẢNG phải được mồi đúng hình dạng mảng, không phải một số đơn.
+        // `int[] getPM2p5Value()` trả `[trong cabin, ngoài xe]` (javadoc BYD; gateway thật: `BydHal.arrayToStr`):
+        // `pm25_value` lấy ô [0], `pm25_outside` lấy ô [1] (`HalReadTables.ARRAY_INDEX`). Mồi "1" như mọi getter
+        // khác thì `pm25_outside` ra "—" và bài này ĐỎ — đúng ý nó: `coerceIntAt` CỐ Ý không lùi về số thuần cho
+        // ô ≥ 1 (lùi = hiện số trong cabin dưới nhãn ngoài xe). Trước 1.85 dòng này mồi `getChargeRestTime`, một
+        // getter đã không còn chủ nào từ lượt (V) FEATURE-FILTER.
+        getters["getPM2p5Value"] = "[1, 2]"
         val adapter = CarDataAdapter(
             HalBindingTable(
                 FakeHalGateway(
@@ -169,7 +174,7 @@ class TelemetryReadoutTest {
                 else -> {}
             }
         }
-        getters["getChargeRestTime"] = "[1, 1]"   // mảng [giờ, phút] — xem bài FULL WIRE.
+        getters["getPM2p5Value"] = "[1, 2]"   // mảng [trong, ngoài] — xem bài FULL WIRE.
         val adapter = CarDataAdapter(
             HalBindingTable(
                 FakeHalGateway(

@@ -85,7 +85,12 @@ object VoiceSynonyms {
         // [SOÁT P2] *"dừng chiếu"* — người ta bỏ chữ *"cụm"*. Một từ `chieu` là đủ vì luật **dãy dài nhất thắng**
         // giữ nguyên mọi cụm dài hơn có chứa nó (*"chiếu cụm"*, *"đèn chiếu xa"*), nên không nuốt nhãn nào.
         "cast" to listOf("chieu", "chieu len cum", "chieu man", "cast cluster"),
-        "ac_auto" to listOf("dieu hoa", "may lanh", "dieu hoa tu dong", "air con", "ac", "aircon"),
+        // ⚠ 1.85 · nhãn nút này đổi *"Điều hòa AUTO"* → *"Gió tự động"* ([ĐO xe §4] xe không có nhiệt-auto), nhưng
+        // các cụm *"điều hoà"/"máy lạnh"* **Ở LẠI ĐÂY** có chủ ý: đó là nút điều hoà DUY NHẤT bật/tắt được (không có
+        // control nào cho `getAcStartState`), và owner đã chốt ở 1.82 rằng *"bật/tắt điều hoà"* (không kèm số độ) là
+        // nút này. Bỏ chúng đi thì câu người ta hay nói nhất về điều hoà thành NO_OBJECT. Câu có *"<số> độ"* vẫn rẽ
+        // sang nút `temp` ở `VoiceControlParse` (fix (c) 1.82) — đường đó không đụng tới nhãn.
+        "ac_auto" to listOf("dieu hoa", "may lanh", "dieu hoa tu dong", "air con", "ac", "aircon", "gio auto"),
         // ═══ D (owner test xe 2026-09-19) · CỤM MƠ HỒ TRỎ VỀ **MỘT** KÍNH, KHÔNG PHẢI CẢ BỐN ══════════════
         // Owner nói *"mở kính"* và xe hạ **cả 4**. Đây là hồi quy của chính bản vá [SOÁT P2] trước đó: lúc ấy
         // *"mở kính"* / *"mở cửa sổ"* chưa trỏ tới đâu (ra MISMATCH), nên bốn cụm mơ hồ được gắn vào nút GỘP với
@@ -130,12 +135,18 @@ object VoiceSynonyms {
         "ambient_music" to listOf("den nhay theo nhac"),
         "brightness_gear" to listOf("do sang man hinh", "sang man"),
         "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now", "loc nhanh"),
-        "hood" to listOf("nap ca po", "nap may"),
+        // ⚠ 1.85: `hood` ("nap ca po"/"nap may") đã xoá cùng mã — xe không có ca-pô điện ([ĐO xe 2026-09-20 §4]).
+        // Không để lại cách nói mồ côi: `VoiceGrammarCoverageTest` đòi mọi cụm trỏ về một mã có thật.
         "defrost_rear" to listOf("say kieng sau"),
         "anion" to listOf("khu mui"),
         "steer_heat" to listOf("vo lang nong"),
         "sunshade" to listOf("rem noc", "man che nang"),
-        "child_lock" to listOf("khoa con nit"),
+        // 1.85 · khoá trẻ em nay có HAI nút (trái/phải — [ĐO xe 2026-09-20 §3] RE cả hai id).
+        // Cụm **MƠ HỒ** (*"khoá trẻ em"*, *"khoá con nít"* — không nêu bên) trỏ về nút TRÁI: đúng tiền lệ owner đã
+        // duyệt ở 1.80 cho *"mở kính"* → kính LÁI (`window`), thay vì hỏi lại hay tự ý bắn cả hai bên. Nhãn của nút
+        // nói rõ *"trái"* nên câu trả lời đọc lên không giấu chuyện nó chỉ khoá một bên.
+        "child_lock" to listOf("khoa con nit", "khoa tre em", "khoa tre em ben trai"),
+        "child_lock_r" to listOf("khoa con nit ben phai", "khoa tre em ben phai"),
         "seat_memory" to listOf("luu vi tri ghe"),
         "headlight_mode" to listOf("kieu den pha"),
         "regen_level" to listOf("muc ham tai sinh"),

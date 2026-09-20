@@ -220,7 +220,9 @@ class VoiceRelativeStepTest {
         listOf("seatc", "seath", "defrost", "defrost_rear").forEach { id ->
             val r = Rig(mapOf(id to 1))
             r.dispatcher().execute(listOf(VoiceIntent.Control(id, 1)))
-            assertEquals(listOf("toggle:$id:true"), r.port.fired, "$id phải bắn đúng một lệnh bật")
+            // [2026-09-20] seatc/seath nay là SELECT (mức 1/2) ⇒ bật = select:id:1; defrost/defrost_rear vẫn TOGGLE.
+            val expected = if (ControlRegistry.byId(id)!!.kind == ControlKind.SELECT) "select:$id:1" else "toggle:$id:true"
+            assertEquals(listOf(expected), r.port.fired, "$id phải bắn đúng một lệnh bật (mức 1)")
             assertTrue(ControlRegistry.byId(id)!!.readKey.isNotBlank(), "$id mất đường đọc")
         }
     }

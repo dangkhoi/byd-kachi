@@ -222,14 +222,42 @@ object TelemetryRegistry {
         // (spec §6 OQ2). Có tên trong danh sách cho phép của `LangCoverageTest`.
         t("pm25_value", "Bụi mịn PM2.5", "Fine dust PM2.5", "µg/m³", CLIMATE, RING, PROVEN, "BYDAutoPM2p5Device.getPM2p5Value", short = "PM2.5", shortEn = "PM2.5"),
         t("pm25_online", "Cảm biến bụi mịn", "Fine dust sensor", "", CLIMATE, BADGE, PROVEN, "BYDAutoPM2p5Device.getPM2p5OnlineState", short = "Cảm biến", shortEn = "Sensor"),
-        // [steering 2026-09-20] Bụi mịn NGOÀI xe — [ĐO off-car] `BYDAutoPM2p5Device` chỉ phơi 3 getter IN-CABIN
-        // (Level/Value/OnlineState — car-log + `byd-pm25-airclean-RE`); KHÔNG có getter outside off-car (chỉ outside
-        // TEMP `getOutCarTemperature` trên Instrument). ⇒ NEEDS_CAR: candidate getter (analogy "OutCar") để SWEEP
-        // xác nhận trên xe (`0-PENDING` nhóm D). Có value thật ⇒ đổi tier + đúng getter; unavailable ⇒ ẩn. Off-car
-        // hiện "—", KHÔNG claim chạy được.
-        t("pm25_outside", "Bụi mịn ngoài xe", "Outside fine dust", "µg/m³", CLIMATE, VALUE, NEEDS_CAR, "UNMAPPED_OUTSIDE_PM25", short = "Bụi ngoài", shortEn = "Outside dust"),
-        // Feature-read, device AC đúng theo domain; sống lại khi §A (get 2-arg) được vá ở :app. NEEDS-ONCAR: scale.
+        // ═══ 1.85 · BỤI MỊN NGOÀI XE — KHÔNG phải getter riêng, mà là PHẦN TỬ THỨ HAI của getter đã dùng ════════
+        //
+        // Lượt 1.84 đi tìm một getter tên kiểu `getOutCarPM2p5` (analogy `getOutCarTemperature`) và không thấy, nên
+        // datum này mang khoá giả `UNMAPPED_OUTSIDE_PM25` ⇒ hiện "—". [ĐO nguồn 2026-09-20] câu hỏi đặt sai chỗ:
+        //  • `BYDAutoPM2p5Device.getPM2p5Value()` trả **`int[]`**, không phải `int` (stub `jadx-tmap/.../pm2p5/
+        //    BYDAutoPM2p5Device.java:92` · `jadx-kim` cùng lớp) — thiết bị này là **dual-channel**
+        //    (`FEATURE_DUAL_CHANNEL_DETECT`, `WARNING_INFO_EXCESS_IN=1`/`_OUT=2`);
+        //  • **javadoc CHÍNH THỨC của BYD** (`sdk_v1.0.5/DOC_v1.0.5/doc/.../pm2p5/BYDAutoPM2p5Device.html`) nói
+        //    thẳng thứ tự: *"The first param is value **in** auto and the second param is value **out** of auto"*
+        //    (0..3000 µg/m³) ⇒ **[1] = NGOÀI xe**;
+        //  • callback cùng thiết bị khai đúng thứ tự ấy — `onPM2p5ValueChanged(int value_in, int value_out)`
+        //    (`jadx-kim/.../AbsBYDAutoPM2p5Listener.java:16`, bản này còn giữ TÊN tham số), khớp [ĐO car log
+        //    2026-09-20] `Pm2p5Controller: onPM2p5ValueChanged in:8 out:22`.
+        // ⇒ cùng getter với `pm25_value`, khác **chỉ số phần tử**: `pm25_value` lấy [0] (đường `firstOfArray` đã
+        // chạy thật, tier PROVEN), datum này lấy [1] qua `HalReadTables.ARRAY_INDEX`.
+        //
+        // ⚠ TIER GIỮ `NEEDS_CAR` — có chủ ý. Thứ tự phần tử là [ĐO nguồn] (vendor doc) + [ĐO log] chứ **chưa** có
+        // một lượt đọc `getPM2p5Value()` nào trên xe owner in ra cả hai ô để đối chiếu. Đường đã nối nên nó có thể
+        // hiện số thật ngay; dấu "chưa kiểm" ở lại tới khi sweep đọc được ([ĐO] out ≈ 22 khi in ≈ 8 ⇒ lên PROVEN).
+        t("pm25_outside", "Bụi mịn ngoài xe", "Outside fine dust", "µg/m³", CLIMATE, VALUE, NEEDS_CAR, "BYDAutoPM2p5Device.getPM2p5Value", short = "Bụi ngoài", shortEn = "Outside dust"),
+        // ⚠ 1.85 · [ĐO xe 2026-09-20] ô này đọc **X** (hiện "—") trong khi xe CÓ số nhiệt ([ĐO car log]
+        // `AmapService: temp=22`). **KHÔNG sửa route ở lượt này, và đây là lý do** (task: *"không chắc thì ghi TODO,
+        // không bịa"*): [ĐO nguồn] cả `jadx-tmap`/`jadx-kim`/`jadx-dashcast`/`jadx-openbyd` lẫn **javadoc chính thức
+        // BYD** (`sdk_v1.0.5`) đều KHÔNG có getter nào cho nhiệt độ ĐO ĐƯỢC trong cabin — thiết bị AC chỉ phơi
+        // `getTemprature(area)` (= **setpoint**, dải 17..33 = `AC_TEMP_IN_CELSIUS_MIN/MAX`) và Instrument phơi
+        // `getOutCarTemperature` (ngoài xe). Con số `temp=22` của AmapService vì thế **có thể chính là setpoint**,
+        // không phải một datum thứ ba. ⇒ TODO on-car (`0-PENDING` nhóm D): sweep feature-id này trên device AC
+        // (1031798832 = đường hiện tại) rồi đối chiếu với số trên màn AC khi ĐỔI setpoint — nếu hai số dính nhau thì
+        // ô này TRÙNG `inside_temp` và nên bỏ, chứ không phải nối thêm một getter.
         t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, OVERDRIVE, "1031798832"),
+        // ⚠ 1.85 · GỐC của *"nhiệt cài đặt đọc X"* [ĐO xe 2026-09-20] — nằm ở **tham số**, không ở tên getter.
+        // `HalReadTables.readArg` khai `inside_temp → 0`, mà **javadoc chính thức BYD** cho `getTemprature(int area)`
+        // liệt kê đúng bốn vùng đọc được: `AC_TEMPERATURE_MAIN`(1) · `_DEPUTY`(2) · `_REAR`(3) · `_OUT`(4) — **0
+        // KHÔNG có trong danh sách** (0 = `AC_TEMPERATURE_MAIN_DEPUTY`, một *type* của đường GHI `setAcTemperature`,
+        // xem `HalBindingTable.writeArgs` ca `temp`) ⇒ đọc area 0 trả `AC_COMMAND_INVALID_VALUE` = sentinel ⇒ "—".
+        // Nút `temp` không bị bệnh này vì nó đã ghi đè `readArg = 1` từ 1.69 — nay datum dùng CHUNG con số đó.
         t("inside_temp", "Nhiệt cài đặt", "Set temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getTemprature", short = "Trong xe", shortEn = "In car"),
         t("ext_temp", "Nhiệt ngoài xe", "Outside temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getOutCarTemperature"),
         // NEEDS-ONCAR: coolant_temp — HAL không lộ °C numeric (chỉ mức/đèn cảnh báo); probe feature-id.
@@ -267,6 +295,19 @@ object TelemetryRegistry {
         // Datum thì giữ NGUYÊN số thô của khung — đảo là việc của nút, không phải của phép đọc.
         t("ac_mode_auto", "Chế độ điều hòa", "A/C control mode", "", CLIMATE, BADGE, PROVEN,
             "BYDAutoAcDevice.getAcControlMode", short = "Chế độ ĐH", shortEn = "A/C mode"),
+        // ═══ 1.85 · CHỈ BÁO **GIÓ TỰ ĐỘNG** — đường ĐỌC của nút `ac_auto` sau khi nút ấy đổi nghĩa ═════════════
+        //
+        // [ĐO xe 2026-09-20 §3] nút `ac_auto` nay ghi `AC_CTRL_MODE_SET` và thứ owner thấy đổi trên màn AC là
+        // **gió auto**, nên chỉ báo của nó là `AC_WINDLEVEL_MANUAL_SIGN`, KHÔNG phải `getAcControlMode` (đó là
+        // *chế độ điều hoà*, một câu hỏi khác — datum ngay trên vẫn giữ nguyên, không ai mất gì).
+        //
+        // [ĐO nguồn] getter có tên thật (degrade-safe hơn feature-id): `getAcWindLevelManualSign()`
+        // (`jadx-tmap/.../ac/BYDAutoAcDevice.java:302`), và **javadoc chính thức BYD** ghi rõ hai giá trị:
+        // *"Auto ctrl: `AC_WINDLEVEL_MANUAL_SIGN_OFF`(0) · Manual ctrl: `AC_WINDLEVEL_MANUAL_SIGN_ON`(1)"*.
+        // ⇒ **0 = đang AUTO**, tức số ĐẢO so với ô bật/tắt — y hệt `ac_mode_auto`. Datum giữ **số thô của khung**
+        // (phép đảo là việc của nút, qua [ControlDef.readInverted]) để không có hai chỗ cùng đảo.
+        t("ac_wind_auto", "Chế độ gió", "Fan mode", "", CLIMATE, BADGE, OVERDRIVE,
+            "BYDAutoAcDevice.getAcWindLevelManualSign", short = "Gió auto", shortEn = "Fan auto"),
 
         // ── A4. Lốp (TPMS) ──────────────────────────────────────────────────────────────────────
         // [ĐO] `int getTyrePressureValue(int area)` BYDAutoTyreDevice.java:115, area LEFT_FRONT=1/RIGHT_FRONT=2/LEFT_REAR=3/

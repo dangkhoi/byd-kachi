@@ -150,6 +150,15 @@ object SettingsCatalog {
                 "không 'đặt' nó như một lựa chọn; bày ra như một dòng cài đặt thì vô nghĩa. Theo máy như OTA/chẩn đoán",
         )
         put(
+            "nav_automation_fired",
+            "AUTOMATION #2 (1.85) — trạng thái CHẠY, không phải cấu hình: `id luật` → ngày đã dẫn " +
+                "(`NavAutomationFired`), thứ thi hành luật \"1 lần / khung giờ / ngày\" (spec R2.4). Người dùng " +
+                "không 'đặt' nó và không sửa nó; bày ra như một dòng cài đặt thì chỉ có một chuỗi ngày không ai " +
+                "hiểu, mà sửa sai là mất một lượt dẫn của ngày hôm đó. Cùng họ `recent_apps`/`captest_results` — " +
+                "dấu vết của việc đã xảy ra. Cấu hình của automation này là `nav_automation_rules` (mục " +
+                "`nav_automation`), khoá ĐÓ mới lên UI",
+        )
+        put(
             "sherpa_model_id",
             "trạng thái THEO-MÁY, không phải cấu hình theo hồ sơ — là mã mô hình ASR đã TẢI VỀ máy NÀY (`VoiceModelStore`, " +
                 "tệp `kachi_voice`). Việc chọn/tải mô hình làm TRỰC TIẾP trên màn Cài đặt giọng nói (`VoiceModelSettings`, " +

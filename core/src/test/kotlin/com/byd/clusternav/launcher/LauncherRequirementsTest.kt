@@ -224,7 +224,7 @@ class LauncherRequirementsTest {
         // V1 pha NGHE: 6 → 7. `microphone` là quyền mà launcher THẬT SỰ dùng (ô *Nói với xe* · nút mic · đích
         // phím vô-lăng *Kachi nghe*) và **tự cấp được** qua kênh shell, nên nó thuộc đúng chỗ này chứ không phải
         // một hộp hỏi quyền riêng. Nó cố ý KHÔNG `coreFeature`: thiếu micro thì launcher vẫn đủ, chỉ mất lối tắt.
-        assertEquals(7, LauncherRequirements.ALL.size,
+        assertEquals(8, LauncherRequirements.ALL.size,
             "Thêm/bớt điều kiện thì phải xem lại spec §2.2 — đừng nhét quyền không dùng vào vòng kiểm")
     }
 }

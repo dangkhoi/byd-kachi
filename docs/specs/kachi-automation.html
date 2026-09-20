@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi Automation — Tự sấy kính khi mưa + Tự động dẫn đường theo lịch</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --mut:#6e6e73; --line:#e2e2e6;
+    --accent:#0071e3; --ok:#34c759; --warn:#ff9f0a; --bad:#ff3b30; --code:#f2f2f4;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0a0d13; --card:#161a22; --ink:#f5f5f7; --mut:#98989d; --line:#2a2f3a;
+      --accent:#2997ff; --code:#12151c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 96px}
+  h1{font-size:34px;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--mut);font-size:17px;margin:0 0 32px}
+  h2{font-size:24px;letter-spacing:-.01em;margin:44px 0 14px;padding-top:20px;border-top:1px solid var(--line)}
+  h3{font-size:18px;margin:26px 0 10px}
+  p{margin:10px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0}
+  code{background:var(--code);padding:2px 6px;border-radius:6px;font:13.5px/1.4 "SF Mono",ui-monospace,Menlo,monospace}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow:auto;font:13px/1.5 "SF Mono",ui-monospace,Menlo,monospace}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--code);font-weight:600}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:20px;vertical-align:middle}
+  .t-ok{background:rgba(52,199,89,.15);color:var(--ok)} .t-warn{background:rgba(255,159,10,.15);color:var(--warn)}
+  .t-new{background:rgba(0,113,227,.14);color:var(--accent)}
+  ul,ol{margin:10px 0;padding-left:22px} li{margin:5px 0}
+  .diagram{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin:18px 0;overflow:auto}
+  .muted{color:var(--mut)}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:6px 16px;font-size:14.5px}
+  .kv div:nth-child(odd){color:var(--mut)}
+  svg text{font-family:-apple-system,"SF Pro Text",sans-serif}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi Automation</h1>
+<p class="sub">Tự sấy kính khi mưa · Tự động dẫn đường theo lịch · <span class="muted">docs/specs/kachi-automation.html · owner DUYỆT 2026-09-20 · T1–T5 xong off-car (1.85 · vc86) · 🚗 chờ buổi mưa + buổi khung giờ</span></p>
+
+<h2>Changelog</h2>
+<div class="card">
+<div class="kv">
+<div>2026-09-20 v1</div><div>Draft đầu — 2 automation từ phiên on-car 1.84. Owner chốt 3 điểm (sấy trước+sau · dẫn 1 lần/khung/ngày · nav check ~1 phút, rain ~5 phút). Chờ duyệt.</div>
+</div>
+</div>
+
+<h2>Context — vì sao & nền tảng</h2>
+<div class="card">
+<p>Phiên on-car 1.84 (<code>docs/diagnostics/oncar-1.84-session-2026-09-20.md</code>) tìm ra <b>2 mảnh khoá</b> cho automation:</p>
+<ul>
+<li><b>Trigger mưa THẬT</b> <span class="tag t-ok">[ĐO]</span>: <code>SETTING_FRONT_RAIN_WIPER_SPEED</code> (feature-id <code>1196425250</code>, device <code>BYDAutoSettingDevice</code>) = <b>1 khô / ≥2 mưa</b>, bistable, live. ⇒ <b>Bác giả định "không có cảm biến mưa"</b> của <code>specs/kachi-rain-defrost-and-rebind.html</code> (spec đó dùng heuristic rơ-le gạt × cờ auto × độ ẩm; phiên này [ĐO] rơ-le gạt = 0 cả khi đang gạt = CHẾT). Spec này <b>thay</b> phần trigger mưa của spec cũ.</li>
+<li><b>GPS có</b> <span class="tag t-ok">[ĐO]</span>: <code>dumpsys location</code> — VietMap xin <code>gps ACCURACY_FINE</code>, "monitoring location: true". Kachi launch nav-intent được; nav app tự lấy GPS.</li>
+</ul>
+<p>Tái dùng có sẵn: <code>SavedPlaces</code> (sổ địa chỉ theo hồ sơ), <code>voice_nav_default_app</code> + <code>VoiceAppTargets.navFor</code> (chọn app dẫn đường), 2 nút defrost (<code>AC_DEFROST_FRONT_STATE_SET</code>/<code>AC_DEFROST_REAR_STATE_SET</code> — CAPTEST OK), <code>BydHalGateway</code>, boot autostart (<code>KachiAutostart</code>/<code>BootSetupService</code>), mẫu poll nền của <code>Pm25FilterApplier.startPollLoop</code>.</p>
+</div>
+
+<h2>Requirements</h2>
+
+<h3>R1 — Automation #1: Tự sấy kính khi mưa <span class="tag t-new">mới</span></h3>
+<div class="card">
+<ul>
+<li><b>R1.1</b> Một <b>toggle</b> "Tự sấy kính khi mưa" ở khu tiện ích/Cài đặt (Khí hậu). Lưu bền <b>theo XE</b> (<code>ProfileScope.DEVICE_KEYS</code>), mặc định TẮT.</li>
+<li><b>R1.2</b> Khi BẬT: mỗi <b>~5 phút</b> đọc <code>SETTING_FRONT_RAIN_WIPER_SPEED</code>.</li>
+<li><b>R1.3</b> Có mưa (<code>&gt;1</code>) <b>và</b> sấy chưa chạy → <b>bật sấy TRƯỚC + SAU</b>.</li>
+<li><b>R1.4</b> Hết mưa (<code>=1</code>) <b>và</b> sấy do automation bật → <b>tắt sấy</b>.</li>
+<li><b>R1.5 (own-state)</b> Chỉ tắt cái sấy do CHÍNH automation bật. Người lái tự bật sấy → automation KHÔNG đụng (không auto-tắt). Nếu người lái tự tắt giữa chừng → automation nhả quyền (không bật lại tới lần mưa sau).</li>
+</ul>
+</div>
+
+<h3>R2 — Automation #2: Tự động dẫn đường theo lịch <span class="tag t-new">mới</span></h3>
+<div class="card">
+<ul>
+<li><b>R2.1</b> Ở khu <b>Dẫn đường / Địa chỉ</b> (cạnh <code>SavedPlaces</code>): danh sách <b>rule dẫn đường tự động</b> (thêm/sửa/xoá; hỗ trợ &gt;1 rule — vd sáng đến cty, chiều về nhà).</li>
+<li><b>R2.2</b> Mỗi rule: <b>bật/tắt · khung giờ</b> (giờ bắt đầu–kết thúc) · <b>thứ trong tuần</b> (checkbox T2–CN) · <b>checkbox "chỉ khi có GPS"</b> · <b>điểm đến</b> (chọn từ <code>SavedPlaces</code>) · <b>app dẫn đường</b> (GMaps/VietMap/Waze).</li>
+<li><b>R2.3</b> Kiểm mỗi <b>~1 phút</b>: đúng ngày <b>và</b> trong khung giờ <b>và</b> (nếu tick "chỉ khi có GPS" → GPS đang có) <b>và</b> chưa dẫn trong cửa-sổ-này-hôm-nay → <b>launch nav</b> tới điểm đến bằng app đã chọn.</li>
+<li><b>R2.4</b> <b>Dẫn 1 lần / khung giờ / ngày</b> (đánh dấu đã-dẫn theo <code>rule+ngày</code>, reset sang ngày mới). Usecase: hầm không GPS → chờ tới khi ra hầm có GPS (vẫn trong 7–9h) mới dẫn.</li>
+</ul>
+</div>
+
+<h3>R3–R6 — chung</h3>
+<div class="card">
+<ul>
+<li><b>R3</b> GPS-available = <code>LocationManager</code> có provider GPS bật + fix gần đây (last-known trong ≤ N giây, N cấu hình mặc định ~120s). Không dùng weather/API ngoài.</li>
+<li><b>R4</b> MỘT engine nền chung (<code>AutomationService</code>, foreground, tick ~60s) chạy 2 rule; khởi động ở autostart khi có bất kỳ automation nào BẬT. Tick 60s: rule mưa cứ ~5 phút (đếm nhịp), rule nav mỗi tick.</li>
+<li><b>R5</b> Cấu hình lưu bền theo XE; sống qua nổ máy (autostart re-arm).</li>
+<li><b>R6</b> Logic quyết định ở <code>:core</code> THUẦN (test off-car); <code>:app</code> chỉ làm HAL/location/launch. An toàn: sấy/nav đều <b>đảo lại được</b>, không lệnh phá huỷ; sấy gate own-state; nav chỉ mở app (không ép).</li>
+</ul>
+</div>
+
+<h2>Design</h2>
+
+<div class="diagram">
+<svg viewBox="0 0 900 300" width="100%" height="auto" role="img" aria-label="Kiến trúc automation">
+  <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="var(--mut)"/></marker></defs>
+  <!-- service -->
+  <rect x="20" y="120" width="170" height="70" rx="12" fill="var(--code)" stroke="var(--accent)"/>
+  <text x="105" y="150" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">AutomationService</text>
+  <text x="105" y="170" text-anchor="middle" font-size="11.5" fill="var(--mut)">:app · tick ~60s · FGS</text>
+  <!-- core policies -->
+  <rect x="270" y="40" width="200" height="72" rx="12" fill="var(--card)" stroke="var(--line)"/>
+  <text x="370" y="68" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">RainDefrostPolicy</text>
+  <text x="370" y="88" text-anchor="middle" font-size="11" fill="var(--mut)">:core thuần · quyết định</text>
+  <text x="370" y="102" text-anchor="middle" font-size="11" fill="var(--mut)">ON / OFF / giữ nguyên</text>
+  <rect x="270" y="200" width="200" height="72" rx="12" fill="var(--card)" stroke="var(--line)"/>
+  <text x="370" y="228" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">ScheduledNavPolicy</text>
+  <text x="370" y="248" text-anchor="middle" font-size="11" fill="var(--mut)">:core thuần · ngày×giờ×gps</text>
+  <text x="370" y="262" text-anchor="middle" font-size="11" fill="var(--mut)">→ launch / giữ nguyên</text>
+  <!-- app actions -->
+  <rect x="560" y="30" width="310" height="52" rx="12" fill="var(--card)" stroke="var(--line)"/>
+  <text x="715" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">RainDefrostApplier</text>
+  <text x="715" y="70" text-anchor="middle" font-size="11" fill="var(--mut)">đọc SETTING_FRONT_RAIN_WIPER_SPEED · ghi defrost F+R</text>
+  <rect x="560" y="110" width="310" height="46" rx="12" fill="var(--card)" stroke="var(--line)"/>
+  <text x="715" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">GpsAvailability</text>
+  <text x="715" y="147" text-anchor="middle" font-size="11" fill="var(--mut)">LocationManager · provider + fix</text>
+  <rect x="560" y="200" width="310" height="72" rx="12" fill="var(--card)" stroke="var(--line)"/>
+  <text x="715" y="226" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">ScheduledNavApplier</text>
+  <text x="715" y="244" text-anchor="middle" font-size="11" fill="var(--mut)">SavedPlaces + VoiceAppTargets.navFor</text>
+  <text x="715" y="258" text-anchor="middle" font-size="11" fill="var(--mut)">→ launch nav-intent (app đã chọn)</text>
+  <!-- arrows -->
+  <line x1="190" y1="150" x2="268" y2="80" stroke="var(--mut)" marker-end="url(#ar)"/>
+  <line x1="190" y1="160" x2="268" y2="232" stroke="var(--mut)" marker-end="url(#ar)"/>
+  <line x1="470" y1="70" x2="558" y2="56" stroke="var(--mut)" marker-end="url(#ar)"/>
+  <line x1="470" y1="236" x2="558" y2="150" stroke="var(--mut)" marker-end="url(#ar)"/>
+  <line x1="470" y1="240" x2="558" y2="236" stroke="var(--mut)" marker-end="url(#ar)"/>
+</svg>
+</div>
+
+<h3>:core (thuần — có test)</h3>
+<div class="card">
+<ul>
+<li><code>RainDefrostPolicy.decide(rainSpeed, defrostOn, ownedByAuto)</code> → <code>TurnOn | TurnOff | Leave</code>. Luật R1.3–R1.5. Ngưỡng mưa = <code>rainSpeed &gt; 1</code> (hằng <code>RAIN_ON=2</code>).</li>
+<li><code>ScheduledNavRule</code> (model: <code>enabled, startMin, endMin, days:Set&lt;DoW&gt;, requireGps, placeId, navApp</code>) + encode/decode một-dòng (khử ký tự ngăn ở cửa vào — bài học <code>SlotCodec.SEP</code>).</li>
+<li><code>ScheduledNavPolicy.decide(rule, nowMinOfDay, dow, gpsOk, lastFiredDay)</code> → <code>Launch | Skip(reason)</code>. Luật R2.3–R2.4 (đã-dẫn theo <code>rule.id + ngày</code>).</li>
+<li><code>NavAutomationBook</code> (danh sách rule + encode/decode, khoá theo XE).</li>
+</ul>
+</div>
+
+<h3>:app</h3>
+<div class="card">
+<ul>
+<li><code>AutomationService</code> — foreground service, Handler tick 60s (mẫu <code>Pm25FilterApplier.startPollLoop</code> + guard <code>pollGeneration</code> chống race enable/disable). Gọi cả 2 policy mỗi tick (rain qua bộ đếm 5 phút). Start/stop ở autostart theo cờ bật.</li>
+<li><code>RainDefrostApplier</code> — đọc rain qua <code>BydHalGateway</code> (id 1196425250), đọc defrost state (front), gọi <code>RainDefrostPolicy</code>, ghi <code>AC_DEFROST_FRONT_STATE_SET</code>+<code>AC_DEFROST_REAR_STATE_SET</code>; giữ cờ <code>ownedByAuto</code> trong RAM (+ nhả khi người lái tự tắt).</li>
+<li><code>GpsAvailability.isAvailable()</code> — <code>LocationManager</code> (GPS provider enabled + <code>getLastKnownLocation</code> tuổi ≤ ngưỡng). 0 quyền mới (RECORD/FINE_LOCATION đã có? — nếu thiếu, tự <code>pm grant</code> như các quyền khác; xem Open Q).</li>
+<li><code>ScheduledNavApplier</code> — gọi <code>ScheduledNavPolicy</code>; khi Launch → tra <code>SavedPlaces[placeId]</code> → <code>VoiceAppTargets.navFor(place, navApp)</code> → launch. Ghi <code>lastFiredDay</code> (bền).</li>
+<li><b>UI</b>: (a) toggle #1 ở <code>SettingsSections</code> Khí hậu; (b) mục #2 ở <code>SettingsSectionsPlaces</code>/Dẫn đường — danh sách rule + màn thêm/sửa (giờ, thứ, GPS, điểm đến, app).</li>
+</ul>
+</div>
+
+<h3>Quyết định thiết kế</h3>
+<div class="card">
+<ul>
+<li><b>Foreground service tick, KHÔNG WorkManager</b>: Kachi vốn chạy nền thường trú (autostart); IVI khoá nhiều thứ; tick 60s trong FGS đơn giản + đã proven (PM2.5 poll). WorkManager min-interval 15 phút không đủ cho nav-window.</li>
+<li><b>Rain-off own-state</b>: cờ RAM (không cần bền — mưa qua đêm hiếm + reset khi nổ máy là an toàn). Nếu người lái tự bật/tắt sấy → automation nhả quyền lượt đó.</li>
+<li><b>Nav "1 lần/khung/ngày"</b>: <code>lastFiredDay[ruleId] = &lt;ngày&gt;</code> bền; so ngày hiện tại. Đổi ngày → cho dẫn lại.</li>
+<li><b>GPS gate qua LocationManager</b>, không đọc HAL GPS (Kachi không đọc được GPS HAL trên trim này — 4 datum GPS = X).</li>
+</ul>
+</div>
+
+<h2>Tasks</h2>
+<div class="card">
+<ol>
+<li><b>T1</b> :core — <code>RainDefrostPolicy</code> · <code>ScheduledNavRule</code>/<code>NavAutomationBook</code> (codec) · <code>ScheduledNavPolicy</code> + test thuần (đủ ca: mưa/khô/own-state · ngày×giờ×gps×đã-dẫn · hầm-rồi-ra).</li>
+<li><b>T2</b> :app — <code>RainDefrostApplier</code> · <code>GpsAvailability</code> · <code>ScheduledNavApplier</code> · <code>AutomationService</code> (tick, start/stop, autostart wire).</li>
+<li><b>T3</b> UI — toggle #1 (Khí hậu) + màn rule #2 (Dẫn đường: list + add/edit).</li>
+<li><b>T4</b> Wire autostart + <code>BootSetupService</code>; đếm-test cập nhật; build release + bump version.</li>
+<li><b>T5</b> Senior review + security scan; ghi Nhật ký triển khai.</li>
+</ol>
+</div>
+
+<h2>Verification</h2>
+<div class="card">
+<ul>
+<li><b>Off-car</b>: unit test 2 policy (thuần, giờ/gps giả) — mọi ca R1/R2; test codec round-trip; 5 module 0 đỏ.</li>
+<li><b>On-car (chờ)</b>: #1 buổi MƯA thật → sấy tự bật/tắt (poll <code>SETTING_FRONT_RAIN_WIPER_SPEED</code>); #2 khung giờ + ra hầm có GPS → tự dẫn đúng app tới cty, chỉ 1 lần.</li>
+</ul>
+</div>
+
+<h2>Open Questions</h2>
+<div class="card">
+<ul>
+<li><b>OQ1</b> Quyền <code>ACCESS_FINE_LOCATION</code> cho <code>LocationManager</code>: bản hiện chưa xin (chỉ RECORD_AUDIO). Sẽ thêm vào manifest + tự <code>pm grant</code> (đường đã proven). <span class="muted">[SUY] cần xe xác nhận grant chạy.</span></li>
+<li><b>OQ2</b> #2 hỗ trợ <b>nhiều rule</b> (list) — em làm list ngay (usecase 1 rule nhưng list linh hoạt, chi phí thấp). Owner OK?</li>
+<li><b>OQ3</b> Rain poll đọc HAL nền: <code>SETTING_FRONT_RAIN_WIPER_SPEED</code> đọc được trong tiến trình app (như mọi datum). Cần xe xác nhận đọc ổn định ngoài lúc test-bridge.</li>
+</ul>
+</div>
+
+<h2>References</h2>
+<div class="card">
+<ul>
+<li><code>docs/diagnostics/oncar-1.84-session-2026-09-20.md</code> — nguồn trigger mưa + GPS + route.</li>
+<li><code>docs/specs/kachi-rain-defrost-and-rebind.html</code> — spec cũ (phần trigger mưa bị spec này thay; phần cốp/AC-AUTO/GPS-đọc còn tham khảo).</li>
+<li>:core <code>SavedPlaces</code> · <code>VoiceAppTargets.navFor</code> · <code>voice_nav_default_app</code>; :app <code>Pm25FilterApplier</code> (mẫu poll) · <code>BydHalGateway</code>.</li>
+</ul>
+</div>
+
+<h2>Nhật ký triển khai</h2>
+<div class="card">
+<h3>2026-09-20 · T1 (:core) DONE off-car — 1.85 stage 1</h3>
+<p>Chi tiết + bằng chứng: <code>docs/_handoff/1.85-stage1.md</code>. 8 file mới ở
+<code>core/…/launcher/automation/</code>, <b>0 file cũ bị sửa</b>, 0 khoá prefs mới.
+<span class="tag t-ok">[ĐO]</span> bộ lọc stage 1 <b>61 test / 0 đỏ</b> (đếm từ JUnit XML, 4 lớp chạy thật) ·
+<code>:core</code> đầy đủ <b>2389 / 0 đỏ</b> (trước: 2328 ⇒ đúng +61) · <code>LayeringRulesTest</code> 9/9 ·
+trần dòng lớn nhất <b>195</b> · <b>thử phá 4 phép, đỏ đúng chỗ cả 4</b> (khôi phục sha256 khớp).</p>
+
+<p><b>⚠ Bốn thứ THÊM so với §Design — mỗi thứ vì hạng mục gốc một mình không thoả được chính spec này:</b></p>
+<ul>
+<li><b><code>RainDefrostOwner</code> + <code>RainDefrostState</code>/<code>RainDefrostStep</code></b> — §Design ghi
+<code>decide(rainSpeed, defrostOn, ownedByAuto)</code> và để cờ <code>ownedByAuto</code> cho <code>:app</code> giữ.
+Nhưng luật ấy cho ra <code>TurnOn</code> ở ca <i>mưa + sấy tắt</i> <b>bất kể</b> <code>ownedByAuto</code> ⇒ người lái
+tự tắt sấy giữa cơn mưa thì nhịp poll sau <b>bật lại</b>: automation giành nút mỗi 5 phút với người đang lái, trái
+R1.5 (<i>"không bật lại tới lần mưa sau"</i>). Không vá được trong <code>decide</code> vì <i>"người lái vừa tắt"</i> là
+<b>thay đổi giữa hai nhịp</b>, còn <code>decide</code> chỉ thấy một nhịp. Máy trạng thái giữ 2 bit ký ức
+(<code>owned</code>/<code>suppressed</code>) rồi <b>gọi lại <code>decide</code></b> ⇒ luật vẫn một chỗ, không bản sao
+thứ hai. Chữ ký + luật của <code>decide</code> <b>giữ nguyên</b> như spec.</li>
+
+<li><b><code>RainDefrostPolicy.plausible(raw: Int?)</code></b> — <span class="tag t-ok">[ĐO]</span> §1 doc on-car: họ
+getter gạt mưa của chính ROM này trả <code>65535</code> (latch) và <code>-10011</code> (invalid) khi hỏng.
+<code>65535 &gt; 1</code> ⇒ sentinel lọt vào <code>decide</code> là <b>bật sấy giữa trời nắng</b>, im lặng. Lọc ở
+<code>:app</code> thì phép lọc không có bài canh (đường HAL không test off-car được). Cố ý <b>không</b> gộp vào
+<code>decide</code>: chỗ gọi phải phân biệt <i>"trời khô"</i> (⇒ có thể phải TẮT) với <i>"không đọc được"</i> (⇒ giữ
+nguyên — <code>RainDefrostOwner.stepUnknown</code>); gộp lại là biến một lần đọc lỗi thành lệnh tắt cái sấy đang cần.</li>
+
+<li><b><code>ScheduledNavPolicy.firstToLaunch</code></b> — hai khung giờ chồng nhau là thứ người dùng đặt được (R2.1
+cho nhiều rule). Nếu <code>:app</code> duyệt sổ rồi bắn mọi luật <code>Launch</code> ⇒ <b>hai ý-định dẫn đường trong
+cùng một giây</b>, app sau ghi đè tuyến app trước, người lái thấy tuyến nhảy không giải thích được. Chọn một theo
+<b>thứ tự trong sổ</b>; luật kia nổ nhịp sau (có test <i>"không bị mất lượt"</i>).</li>
+
+<li><b><code>NavSkipReason.NO_DAY_KEY</code></b> — <code>today</code> rỗng thì phép so <i>"đã dẫn hôm nay"</i> mất
+nghĩa ⇒ luật nổ <b>mỗi nhịp</b>, tức app dẫn đường mở lại mỗi phút suốt cả khung giờ, ngay trước mặt người đang lái.
+Thà không dẫn.</li>
+</ul>
+
+<p><b>Quyết định cần owner biết:</b></p>
+<ul>
+<li><b>Khung giờ QUA ĐÊM (22:00→02:00) bị TỪ CHỐI</b> (<code>ScheduledNavRules.of</code> trả <code>null</code>), không
+hỗ trợ âm thầm. Sổ đã-dẫn đóng dấu theo <i>ngày lịch tại lúc dẫn</i>, nên khung bắc qua nửa đêm nằm trên <b>hai</b>
+ngày lịch ⇒ được phép nổ hai lần cho cùng một lượt đi; và <code>days</code> không trả lời được <i>"đêm CN sang T2 là
+thứ mấy"</i>. Hai câu đó không có câu trả lời đúng duy nhất ⇒ đây là chỗ phải <b>từ chối</b>, không phải chỗ đoán.
+Usecase của R2 là khung trong ngày; UI (T3) chặn trước.</li>
+<li><b><code>id</code> luật không được trùng</b> — nó là khoá sổ đã-dẫn, nên trùng <code>id</code> ⇒ luật nổ trước
+đóng dấu cho <b>cả hai</b> ⇒ luật buổi chiều không bao giờ chạy, mà Cài đặt vẫn hiện đủ hai dòng và test từng luật vẫn
+xanh. Vì vậy <code>decode</code> bỏ dòng trùng, và <code>newId</code> <b>hỏi chính sổ</b> chứ không dùng
+<code>size + 1</code> (xoá <code>r1</code> rồi thêm mới thì <code>size+1</code> = <code>r2</code> = trùng luật đang còn).</li>
+<li>Trần <code>NavAutomationBook.MAX = 8</code> · <code>MAX_PLAUSIBLE = 12</code> (rộng có chủ ý: mục đích là chặn
+sentinel, không phải đoán đúng số mức gạt).</li>
+<li><code>ScheduledNavRule.placeId</code> = <code>SavedPlaces.keyOf(name)</code> (sổ địa chỉ không có trường
+<code>id</code>) — nối qua <code>ScheduledNavRules.placeIdOf</code> để không ai chép lại luật <i>"cùng một nơi"</i>.</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>2026-09-20 · T2 · T3 · T4 (:app) DONE off-car — 1.85 stage 3</h3>
+<p>Chi tiết + bằng chứng: <code>docs/_handoff/1.85-stage3.md</code>. 8 file mới (4 applier/engine ở
+<code>app/…/automation/</code> · <code>PrefsAutomation.kt</code> · <code>ClusterNavBridgeAutomation.kt</code> · 2 tệp UI)
++ 12 file sửa. <span class="tag t-ok">[ĐO]</span> 5 module <b>5045 test / 0 đỏ</b> (stage 2: 5001 ⇒ +44) ·
+26 test mới <b>chạy thật</b> (đếm từ JUnit XML) · <b>thử phá 7 phép, đỏ ĐÚNG ca dự định cả 7</b> (hoàn nguyên
+sha256 khớp) · <code>:core</code> 0 import <code>android.*</code> · 0 tệp vượt 500 dòng · quét bảo mật CLEAN.</p>
+
+<p><b>⚠⚠ MỘT ĐIỂM CẦN OWNER QUYẾT — đã đổi một BẤT BIẾN AN TOÀN:</b> thêm
+<code>ACCESS_FINE_LOCATION</code> vào manifest và <b>thu hẹp</b>
+<code>DeadReckonRetirementTest</code> (bài đang ghim <i>"không quyền định vị nào"</i>, sinh ra sau sự cố
+2026-07-27 mock-location ghim GPS cả xe). Lý do: <span class="tag t-ok">[ĐO]</span>
+<code>isProviderEnabled</code> một mình trả <code>true</code> <b>ngay trong hầm</b> (provider vẫn bật, chỉ không
+có fix) ⇒ cổng GPS của R2.4 <b>không dựng được</b> mà không hỏi tuổi fix. Đây là thu HẸP chứ không phải nới:
+4 quyền nguy hiểm <b>vẫn ghim</b>, và bài mới còn ghim thêm hai đường mà bài cũ <b>không soi</b> —
+<code>addTestProvider</code>/<code>setTestProvider*</code> và <code>requestLocationUpdates</code>/
+<code>LocationListener</code> — quét toàn bộ <code>app/src/main</code>. Thử phá M5 (chèn một lời gọi
+<code>requestLocationUpdates</code> <b>biên dịch được</b>) làm bài đó ĐỎ. Owner muốn giữ tuyệt-đối-không-quyền ⇒
+phải gỡ <code>GpsAvailability</code> + <code>LauncherRequirements.LOCATION</code> <b>và</b> gỡ luôn ô tích
+<i>"chỉ khi có GPS"</i> khỏi UI (giữ một ô tick không làm gì là "nút chết").</p>
+
+<p><b>Bốn thứ LỆCH so với chữ của task, mỗi thứ có lý do:</b></p>
+<ul>
+<li><b>Khoá prefs ở tệp MỚI <code>PrefsAutomation.kt</code></b> (hàm mở rộng của <code>Prefs</code>, <b>cùng tệp</b>
+<code>clusternav_prefs</code>) — <code>Prefs.kt</code> đã <b>536</b> dòng ở HEAD, quá trần 500. Khuôn đã có:
+<code>PrefsVoiceV3</code>/<code>PrefsInputd</code>.</li>
+<li><b>Bridge accessor ở <code>ClusterNavBridgeAutomation.kt</code></b> — <code>ClusterNavBridge.kt</code> 499 dòng;
+thêm vào là 540 ⇒ <b>tự gây breach</b>. Đã khai vào <code>LayeringRulesTest.pureButMustStayInApp</code> kèm lý do
+(<b>không</b> nâng <code>pureFilesStillInApp</code> — con số đó là chốt chỉ-được-giảm).</li>
+<li><b>Thêm <code>NavAutomationFired</code> ở <code>:core</code></b> (88 dòng, 10 test) — sổ đã-dẫn phải lưu bền, và
+codec của một thứ lưu bền thuộc <code>:core</code> (lệ <code>SavedPlaces</code>/<code>SlotCodec</code>). Ba nhánh
+hỏng thật của nó (thiếu <code>=</code> · id rỗng · trùng id) đều hỏng <b>im lặng</b> theo cùng một kiểu: sổ đọc ra
+thiếu một mục ⇒ luật tưởng là chưa dẫn ⇒ <b>nổ lại</b> trong cùng khung giờ.</li>
+<li><b>Thêm <code>LauncherRequirements.LOCATION</code></b> — task nói <i>"tự pm grant như RECORD_AUDIO"</i>, mà
+đường đó <b>đi qua</b> registry → <code>report.selfFixable</code> → <code>PermissionPreflight.selfGrant</code>;
+không có mục registry thì không có hook để tự cấp. Kèm lợi ích thật: thiếu quyền ⇒ luật chờ <b>mãi mãi không một
+lời nào</b>, nay có hàng nói ra ở <i>Cài đặt › Hệ thống &amp; quyền</i>.</li>
+</ul>
+
+<p><b>Hai quyết định thi hành đáng ghi:</b></p>
+<ul>
+<li><b><code>gpsOk = (isAvailable == true)</code></b>, tức <code>null</code> (chưa cấp quyền / ROM thiếu API) =
+<b>CHỜ</b>. Dùng <code>!= false</code> sẽ biến <i>"chưa cấp quyền"</i> thành <i>"có GPS"</i> ⇒ dẫn trong hầm, im
+lặng, <b>đúng trên chiếc xe chưa cấp quyền</b>. Khoá bằng test + thử phá M1.</li>
+<li><b>Tuổi fix tính bằng đồng hồ ĐƠN ĐIỆU</b> (<code>elapsedRealtimeNanos</code>) rồi mới lùi về
+<code>Location.time</code>: đầu xe <b>vặn đồng hồ tường</b> khi bắt được giờ GPS lúc nổ máy ⇒
+<code>now - fix.time</code> phình ra hàng giờ (chờ vô cớ) hoặc ra <b>âm</b> (fix vừa lấy bị coi là "rất mới" ⇒ dẫn
+trong hầm).</li>
+</ul>
+
+<p><b>Phạm vi giao nhau phải biết:</b> luật theo <b>XE</b> nhưng <code>saved_places</code> theo <b>HỒ SƠ</b> ⇒ đổi
+sang hồ sơ không có mục đó thì luật <b>bỏ lượt</b> + ghi log, và <b>không</b> đóng dấu đã-dẫn (đổi lại hồ sơ trong
+khung giờ thì lượt đi vẫn còn). Degrade an toàn, đã ghi ở KDoc <code>PrefsAutomation</code> + <code>ProfileScope</code>.</p>
+
+<p><b>🚗 Rủi ro lớn nhất còn lại</b> (chưa đo được off-car, xem handoff §8): <code>startActivity</code> từ FGS có
+bị chặn <i>background-activity-start</i> trên ROM DiLink3.0 không. <span class="tag t-warn">[SUY]</span> Kachi có
+<code>SYSTEM_ALERT_WINDOW</code> nên được miễn — nhưng nếu sai thì luật nổ mà <b>không app nào lên màn</b>.</p>
+</div>
+
+<h3>2026-09-20 · T5 + fix script + đóng gói 1.85 (86) — stage 5</h3>
+<p>Chi tiết + bằng chứng: <code>docs/_handoff/1.85-done.md</code>. Ba việc, không việc nào chạm luật automation.</p>
+<ul>
+<li><b>Lệnh gọi cầu kiểm thử thành TƯỜNG MINH</b> (§0 doc on-car — không thuộc §Tasks của spec này nhưng là
+việc chặn buổi đo kế tiếp): <code>k_test</code> ở <code>_common.sh</code> nay gửi
+<code>-n $KACHI_TEST_COMP -a $KACHI_TEST_ACTION</code>. Sửa <b>một chỗ</b> vì cả 11 script của bộ đều đi qua hàm
+đó — và khai thành biến <code>KACHI_TEST_COMP</code> thay vì dán chuỗi vào dòng lệnh, để bài canh mới có một thứ
+để so. Kèm <b>18 dòng lệnh gõ tay</b> trong 4 tài liệu chạy-trên-xe (<code>RUNBOOK.md</code> ·
+<code>RUN-STEPS.md</code> · <code>4-system.md</code> · <code>adb-car-tunnel-macos.md</code>): đó chính là những
+dòng owner copy vào xe, để nguyên thì buổi sau lại mất thời gian đúng chỗ cũ. [ĐO] <code>bash -n</code> sạch
+12/12 tệp.</li>
+<li><b>Hai bản vá của lượt soát</b> ([P2] chủ quyền sấy khi ghi hỏng · [P2] bài canh cho chính bản sửa script) —
+xem §Reviewer Log Pass 1.</li>
+<li><b>Đóng gói</b>: <code>versionCode</code> 85 → <b>86</b>, <code>versionName</code> 1.84 → <b>1.85</b>;
+<code>apk/Kachi-1.85-release.apk</code> <code>sha256 ee5a4e2e…</code>. [ĐO <code>aapt2 dump badging</code>]
+gói <code>com.byd.launcher</code> vc86 vn1.85, <b>không</b> cờ debuggable, <b>0</b> bề mặt
+<code>HalProbeReceiver</code> trong manifest bản release (nó vẫn chỉ sống ở <code>vehicleTest</code>).</li>
+</ul>
+<p><b>Chưa làm, có lý do</b> (owner hoãn ở đầu phiên): camera 360 · góc cam · khoá cửa chính. Hai cái đầu chưa có
+feature-id; cái thứ ba [ĐO] trả sentinel <code>NOT_PROVISIONED</code> trên trim này ⇒ ghi ở
+<code>0-PENDING</code> §E.4, <b>không</b> wire một nút chết.</p>
+
+<h2>Reviewer Log</h2>
+<div class="card">
+<h3>Pass 1 — 2026-09-20 · lượt soát của chính phiên (KHÔNG độc lập — ghi rõ)</h3>
+<p>⚠ <b>Giới hạn phải nói trước:</b> phiên này <b>không có công cụ sinh sub-agent</b>, nên lượt soát do chính
+người viết mã chạy trong vai soát viên. Đó <b>không</b> tương đương một luồng độc lập — đúng bài học đã ghi ở
+gói 2 và U5 (*hai lần bài canh của chính phiên bỏ sót đúng thứ nó sinh ra để bắt*). Mọi kết luận dưới đây có
+kèm cách kiểm lại, để một lượt soát độc lập sau này bác được bằng số.</p>
+<p><b>Sáu điểm owner chỉ định soát</b> — kết quả từng điểm:</p>
+<ul>
+<li><b>mapping khoá trẻ em (ngược)</b> — ĐÚNG. <code>writeArgs</code> ca <code>child_lock</code>/<code>child_lock_r</code>
+trả <code>if (primary &gt; 0) 2 else 1</code>, khớp [ĐO] <i>ghi 2 → BẬT · ghi 1 → TẮT</i>. Kiểm thêm vế ĐỌC:
+hai nút <b>không có <code>readKey</code></b> ⇒ không có đường đọc nào để mắc lỗi đảo dấu lần thứ hai (đọc-lại
+xác nhận của 1.80 sẽ rơi về nhánh <i>không đọc được</i>, tức <code>done</code> + hedge — đúng, không phải bug).</li>
+<li><b>chữ hoa/thường của device AC</b> — ĐÚNG. <code>halDevice = "BYDAutoAcDevice"</code> (chữ <code>c</code> thường);
+<code>deviceFqn</code> hạ cả đoạn gói nên ra <code>android.hardware.bydauto.ac.BYDAutoAcDevice</code>. Soát thêm
+một ca <b>không</b> nằm trong danh sách owner nêu, cùng họ lỗi: <code>BYDAutoDoor<b>L</b>ockDevice</code> —
+repo có <b>hai</b> cách viết (<code>DoorLock</code> ×7 ở registry vs <code>Doorlock</code> ×1). [ĐO] cái duy nhất
+viết <code>Doorlock</code> nằm trong <b>chú thích lịch sử</b> (trích dẫn hiện trạng 2026-09-11), mọi binding SỐNG
+dùng <code>DoorLock</code> — và chính chuỗi ấy đã rc=0 + owner xác nhận cửa thật trên xe hôm nay ⇒ tên đúng.
+Cố ý <b>không</b> sửa chữ trong chú thích: nó là bản ghi một phép đo cũ.</li>
+<li><b>id cảm biến mưa</b> — ĐÚNG và bind theo <b>TÊN</b>: <code>RAIN_CONST</code> =
+<code>…Setting.SETTING_FRONT_RAIN_WIPER_SPEED</code>, số đo được <code>1196425250</code> chỉ làm đường lùi
+(<code>MEASURED_ID</code>), device <code>BYDAutoSettingDevice</code> — khớp §1 doc on-car.</li>
+<li><b>own-state sấy</b> — <b>tìm ra 1 lỗi [P2], đã vá</b> (xem dưới).</li>
+<li><b>nav 1 lần/khung</b> — ĐÚNG, và ranh giới hai đầu khớp: <code>:core</code> chỉ so
+<code>lastFiredDay == today</code> (không mang phép định dạng ngày thứ hai vào <code>:core</code>), còn
+<code>:app</code> đóng dấu <b>CHỈ khi</b> <code>launch()</code> trả <code>true</code> — nên một lần mở app hỏng
+không ăn mất lượt đi của cả ngày, mà giao được thì nhịp 60 s sau không mở lần hai.</li>
+<li><b>phiên thoại không kết thúc sớm</b> — ĐÚNG cả hai vế: bảng cạnh <code>:core</code> nay có
+<code>EXECUTING → CLARIFYING</code>, và <code>askAgain</code> đi qua đúng <b>một</b> cổng
+<code>open()</code> = <code>!micOpen() &amp;&amp; opened.compareAndSet(false, true)</code>.</li>
+</ul>
+<p><b>[P2] — lỗi thật, đã vá:</b> <i>một lần ghi hỏng làm automation bỏ cả cơn mưa, im lặng.</i>
+<code>RainDefrostOwner.step</code> nhận chủ quyền ở nhịp nó <b>ra lệnh</b> bật (nó thuần — không biết xe có nhận
+hay không), còn <code>RainDefrostApplier</code> trước bản vá nhận <code>owned = true</code> <b>bất kể</b>
+<code>toggle</code> trả gì. Hệ quả: nhịp sau đọc về <code>sấy = tắt</code> <b>cùng với</b> <code>owned = true</code>
+— đúng dấu hiệu <i>"người lái vừa tự tắt"</i> ⇒ <code>suppressed</code> ⇒ im tới hết cơn mưa, vì một giây xe từ
+chối lệnh. Vá: <code>RainDefrostOwner.unclaim</code> (<code>:core</code>, thuần, chỉ hoàn nguyên nhánh
+<code>TurnOn</code> — nhánh <code>TurnOff</code> xoá ký ức vì <b>hết mưa</b>, không vì lệnh thành công) +
+<code>writeBoth</code> nay <b>trả</b> kết quả ghi nút <b>TRƯỚC</b> (nút trước là nút được ĐỌC lại, nên sấy sau
+hỏng riêng không làm automation hiểu lầm). Nhả chủ quyền thì nhịp sau chỉ <b>thử lại</b>, và vẫn không thể giành
+nút với người lái vì đường nhận ra <i>"người lái tự tắt"</i> đòi <code>owned = true</code>, mà bit đó giờ chỉ bật
+sau một lượt ghi <b>đã</b> thành công. 3 bài canh mới, gồm một bài <b>đối chứng</b> ghim đúng hành vi cũ để không
+ai "đơn giản hoá" <code>unclaim</code> đi mất.</p>
+<p><b>[P2] — lỗ hổng bài canh, đã vá:</b> bản sửa script của T-scripts <b>không có gì canh</b>. Bệnh mà nó chữa
+(broadcast ngầm bị Android 10 chặn <b>im lặng</b> — <code>result=0</code>, không <code>data=</code>) đã tốn mấy
+buổi test trên xe và từng bị ghi vào tài liệu thành <i>"BUG2 / adb hỏng"</i>; một lượt "dọn dẹp" sau này đưa nó
+về là lại mất một buổi nữa. Thêm 2 bài ở <code>TestBridgeSafetyContractTest</code> (<code>:app</code> — module
+đã khai <code>scripts/vehicle</code> làm đầu vào của gradle, nên chúng <b>thật sự chạy lại</b> khi script đổi):
+một bài đòi <code>k_test</code> gửi <code>-n</code> <b>và</b> chuỗi thành phần khớp
+<code>KachiTestBridge::class.java.name</code> (phép so ranh giới script ↔ mã — đổi tên lớp mà quên script thì
+mọi lượt gọi trên xe rơi với cùng triệu chứng mù mờ ấy), một bài quét cả bộ script không cho ai dựng lại đường
+ngầm.</p>
+<p><b>[P3] — ghi ra, KHÔNG vá:</b> (a) chú thích lịch sử viết <code>BYDAutoDoorlockDevice</code> (sai chữ so với
+lớp thật) — là trích dẫn một phép đo cũ, sửa vào là sửa bản ghi; (b) <code>canOpenMic</code> vẫn <b>0 chỗ gọi</b>
+trong mã sản phẩm (nợ từ stage 4, cần owner quyết); (c) <code>scripts/design/gen-car.py</code> 883 dòng &gt; trần
+500 — [ĐO] ở <code>HEAD</code> nó đã 884 dòng, lượt này chỉ làm nó <b>ngắn đi</b> (gỡ ca-pô), nên đây là nợ có
+trước, không phải vi phạm mới.</p>
+<p><b>Tech freshness:</b> lượt này <b>không thêm dependency nào</b> (0 dòng đổi ở
+<code>build.gradle.kts</code> ngoài <code>versionCode</code>/<code>versionName</code>) ⇒ không có API bên thứ ba
+mới để đối chiếu. Mọi API Android dùng (<code>LocationManager</code> · FGS · <code>AppWidget…</code> không đụng)
+đã có sẵn trong dự án từ các bản trước.</p>
+<p><b>[ĐO] sau vá:</b> 5 module <b>5073 test / 0 đỏ / 0 lỗi / 0 bỏ qua</b>
+(<code>test --rerun-tasks --continue</code>, 73/73 task chạy thật, đếm từ JUnit XML) · 2 phép thử phá
+(M1 hoàn nguyên script về dạng ngầm ⇒ 2 bài mới ĐỎ · M2 vô hiệu hoá <code>unclaim</code> ⇒ bài <i>"ghi bật hỏng
+thì nhả chủ quyền"</i> ĐỎ), mỗi lần hoàn nguyên đã kiểm <code>sha256</code> trùng khít.
+<b>Verdict: APPROVED off-car</b> (0 P0/P1 còn lại) — với giới hạn <i>không độc lập</i> nêu ở đầu.</p>
+</div>
+
+</div>
+</body>
+</html>

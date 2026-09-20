@@ -35,7 +35,8 @@ AUTO="${AUTO:-0}"
 SKIP="${SKIP:-}"
 
 # DENYLIST — PHẢI khớp CtlSafetyPolicy.CONFIRM_REQUIRED (core). Đổi một chỗ thì đổi cả hai (test canh).
-DENYLIST="lock door trunk hood sunroof sunshade window windows_all win_lf win_rf win_lr win_rr"
+# ⚠ 1.85: `hood` rời danh sách vì mã đã XOÁ khỏi registry (xe không có ca-pô điện — [ĐO xe 2026-09-20 §4]).
+DENYLIST="lock door trunk sunroof sunshade window windows_all win_lf win_rf win_lr win_rr"
 
 [ -f "$CTLREG" ] || { k_bad "thiếu $CTLREG"; exit 2; }
 echo "carlog: $OUT · xe: $TARGET"; k_hr

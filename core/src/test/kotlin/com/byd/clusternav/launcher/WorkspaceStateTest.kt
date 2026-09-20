@@ -140,6 +140,32 @@ class WorkspaceStateTest {
         }
     }
 
+    /**
+     * ═══ 1.85 — `hood` bị XOÁ HẲN, nên ô/thanh nút đã lưu của owner phải tự rụng ══════════════════════════════
+     *
+     * Cùng khuôn bài (V) ngay trên, và cần riêng một ca vì `hood` đi một đường KHÁC: từ 1.66 nó nằm trong
+     * `CapabilityCatalog.HIDDEN_FROM_PICKER` (ẩn khỏi bộ chọn nhưng `pick` VẪN tra ra, để ô ai đã đặt còn chạy).
+     * 1.85 xoá mã ([ĐO xe 2026-09-20 §4] xe không có ca-pô điện) ⇒ nay `pick` phải trả `null` **và** mục ở bảng ẩn
+     * phải biến mất cùng — giữ lại mục ẩn cho một mã đã chết là ghim `HIDDEN_FROM_PICKER.size` (con số mà
+     * `CapabilityGroupsTest` đang trừ trong phép đếm tổng) vào một thứ hư.
+     *
+     * ⚠ Xe owner đang chạy 1.84; nếu `hood` còn trên màn thì sau khi nâng cấp nó phải RỤNG, không được thành ô ghi
+     * hoa mã + `"—"` vĩnh viễn (lỗi [P0] mà Pass 1 của ADAS-PURGE đã vá).
+     */
+    @Test fun `sanitized bo ma hood da xoa o 1_85`() {
+        assertNull(CapabilityCatalog.pick("hood"), "hood vẫn tra ra được ⇒ chưa xoá khỏi bộ đăng ký nào đó")
+        assertNull(
+            CapabilityCatalog.HIDDEN_FROM_PICKER["hood"],
+            "mã đã xoá thì KHÔNG được còn mục ở bảng ẩn — 'ẩn' và 'không tồn tại' là hai trạng thái khác nhau",
+        )
+        val s = WorkspaceState().withSlot(0, SlotContent.Widget(listOf("hood", "soc")))
+        assertEquals(listOf("hood"), s.unknownWidgetIds(), "hood phải bị NÓI RA là mã lạ")
+        assertEquals(
+            SlotContent.Widget(listOf("soc")), s.sanitized().slots[0],
+            "hood phải rụng khỏi ô đã lưu, `soc` ở lại",
+        )
+    }
+
     // ⚠ Ngược lại: 8 ô lốp LẺ chỉ bị **ẩn khỏi bộ chọn** ở lượt (V), KHÔNG xoá ⇒ ô ai đã đặt phải sống tiếp.
     @Test fun `tam o lop le chi bi an, khong bi don khoi cau hinh da luu`() {
         listOf(

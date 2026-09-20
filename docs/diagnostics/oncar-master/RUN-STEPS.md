@@ -223,7 +223,7 @@ $ADB connect $IP:5555 && $ADB -s $IP:5555 get-state      # (2) real adb — cầ
 # S3  CPU/RAM    : $A shell "top -b -n2 -d5 | grep -E 'com.byd.launcher|load average'"
 #                  $A shell "dumpsys meminfo com.byd.launcher:tts | grep 'TOTAL PSS'"   # phải < ~100MB
 # S4  telemetry  : (2) chạy ⇒ bash scripts/vehicle/kachi/71-hal-sweep.sh $IP:5555
-#                  chỉ (1)  ⇒ $A shell "am broadcast -a com.byd.launcher.TEST --es cmd hal --es op read-all" (đọc từng phần)
+#                  chỉ (1)  ⇒ $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd hal --es op read-all" (đọc từng phần)
 # --- S5 A vietmap (anh NÓI giữa 2 lệnh) ---
 # S5a $A shell "logcat -c"
 # S5b (anh nói "dẫn đường tới chợ Bến Thành bằng vietmap") → $A shell "logcat -d | grep -E 'ActivityTaskManager: START|vietmaplive|google.navigation|KachiVoiceGeo' | tail -8"
@@ -236,8 +236,8 @@ $ADB connect $IP:5555 && $ADB -s $IP:5555 get-state      # (2) real adb — cầ
 # S10 phím sống  : sau mỗi lượt: $A shell "dumpsys accessibility | grep -c Bound" ; $A shell "logcat -d | grep -c 'Fatal signal 11'"
 # --- S11 Hey Kachi load (CỔNG) --- $A shell 'sh -c "for i in \$(seq 1 60); do cut -d\" \" -f1 /proc/loadavg; sleep 1; done"' ; $A shell "grep -c processor /proc/cpuinfo"
 # --- S16 điều hoà (cầu say, không cần mic) ---
-# S16  $A shell "am broadcast -a com.byd.launcher.TEST --es cmd say --es text \"'mở điều hòa hai mươi lăm độ'\""
-# S16b $A shell "am broadcast -a com.byd.launcher.TEST --es cmd say --es text \"'bật điều hòa chế độ hai'\""
+# S16  $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd say --es text \"'mở điều hòa hai mươi lăm độ'\""
+# S16b $A shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd say --es text \"'bật điều hòa chế độ hai'\""
 # --- batch (chỉ khi real adb (2) chạy) --- HAL: bash .../71-hal-sweep.sh $IP:5555 · cast: bash .../60-cast.sh $IP:5555 · thu log: bash .../90-collect.sh $IP:5555
 ```
 

@@ -118,6 +118,12 @@ object KachiAutostart {
                 //     thử lại thì "Hey Kachi" bật mà không bao giờ nhận, im lặng (xem KDoc ensureWakeModelIfEnabled).
                 runCatching { com.byd.clusternav.launcher.voice.VoiceWakeService.sync(app) }
                 runCatching { com.byd.clusternav.launcher.ensureWakeModelIfEnabled(app) }
+
+                // (6) AUTOMATION (1.85, spec kachi-automation R4/R5) — dựng lại động cơ nền nếu có automation
+                //     nào BẬT. Cấu hình lưu bền theo XE, nhưng vòng nhịp là RAM ⇒ mỗi lần nổ máy phải re-arm,
+                //     nếu không thì hai automation chỉ chạy đúng phiên người dùng gạt công tắc. `sync` tự no-op
+                //     khi không còn việc (và tự dừng service) ⇒ gọi vô điều kiện là an toàn + idempotent.
+                runCatching { com.byd.clusternav.automation.AutomationService.sync(app) }
             }.onFailure { Log.w(TAG, "kachi auto-start failed (degrade-safe, retried next trigger): ${it.message}") }
         } finally {
             finishRun()

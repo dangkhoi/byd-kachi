@@ -1699,17 +1699,6 @@
       ],
       "paths": 3
     },
-    "ic_car_top_hood": {
-      "face": "top",
-      "sub": [
-        "windscreen",
-        "glass_rear"
-      ],
-      "main": [
-        "bonnet"
-      ],
-      "paths": 3
-    },
     "ic_car_top_lock": {
       "face": "top",
       "sub": [

@@ -75,19 +75,22 @@ class CapabilityPickerTest {
         // Đếm tuyệt đối: mục rời có nhóm hiển thị = tổng khả năng − nhóm − 9 widget dựng tay (không thuộc lĩnh vực).
         // U6: trừ các mã cố ý ẩn khỏi màn chọn (có lý do, tra cứu vẫn được — xem `HIDDEN_FROM_PICKER`).
         // 100 + 47 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 19 mã NO — trước đó 112 + 54; trước 09-16 là 123 + 64).
+        // 1.85: **102** đọc (+1 `ac_wind_auto`) · nút giữ 47 (−`hood` +`child_lock_r`) · bảng ẩn còn 9 mục
+        // (mục `hood` rời đi CÙNG lượt xoá mã — nó không còn gì để ẩn).
         assertEquals(
-            101 + 47 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
-            "mục rời theo lĩnh vực phải còn nguyên 100 đọc + 47 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
+            102 + 47 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
+            "mục rời theo lĩnh vực phải còn nguyên 102 đọc + 47 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
         )
     }
 
     @Test
     fun `muc roi van con ca HANH DONG - loc nhom khong lam mat nut hay goi lenh`() {
         val after = CapabilityCatalog.byDomain().flatMap { CapabilityPicker.singlesOf(it.second) }.map { it.id }.toSet()
-        // V3 · R12 (1.66): mã trong [CapabilityCatalog.HIDDEN_FROM_PICKER] được TRỪ RA — `hood` ẩn vì owner xác
-        // nhận **xe không có nắp ca-pô điện** (2026-09-16 · B6). Trừ theo chính danh sách ấy (không chép tên
-        // `hood` vào đây) nên mục ẩn sau này tự được tính, và mục ẩn KHÔNG có lý do thì bài canh ở
-        // `CapabilityCatalogTest` đỏ trước.
+        // V3 · R12 (1.66): mã trong [CapabilityCatalog.HIDDEN_FROM_PICKER] được TRỪ RA (hôm nay: `temp_unit` +
+        // tám ô lốp lẻ). Trừ theo chính danh sách ấy — KHÔNG chép tên mã nào vào đây — nên mục ẩn sau này tự
+        // được tính, và mục ẩn KHÔNG có lý do thì bài canh ở `CapabilityCatalogTest` đỏ trước.
+        // ⚠ 1.85: `hood` từng là ví dụ của luật này; nay nó đã bị **xoá hẳn** khỏi registry (xe không có ca-pô
+        // điện) nên nó không còn "ẩn" mà là "không tồn tại" — hai trạng thái khác nhau, đừng lẫn khi đọc lại.
         val hidden = CapabilityCatalog.HIDDEN_FROM_PICKER.keys
         val missingControls = ControlRegistry.ALL.map { it.id }.filterNot { it in after || it in hidden }
         assertEquals(emptyList<String>(), missingControls, "nút bị mất khỏi màn chọn: $missingControls")

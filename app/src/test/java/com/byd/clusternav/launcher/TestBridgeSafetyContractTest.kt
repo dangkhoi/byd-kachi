@@ -40,11 +40,13 @@ class TestBridgeSafetyContractTest {
      * Đọc một tệp ở GỐC repo (vd `scripts/…`) — [SourceRoots] chỉ biết cây source của module, còn `:app:test` chạy
      * với cwd = thư mục module nên script nằm ở `../`. Thử vài mức cha cho chắc (module / gốc repo).
      */
-    private fun repoText(rel: String): String {
+    private fun repoText(rel: String): String = repoPath(rel).toFile().readText()
+
+    /** Đường dẫn thật của một mục ở gốc repo — dùng chung cho cả tệp lẫn thư mục. */
+    private fun repoPath(rel: String): Path {
         val tries = listOf(rel, "../$rel", "../../$rel").map(java.nio.file.Paths::get)
-        val hit = tries.firstOrNull { java.nio.file.Files.exists(it) }
+        return tries.firstOrNull { java.nio.file.Files.exists(it) }
             ?: error("không tìm thấy $rel; đã thử: ${tries.joinToString()}")
-        return hit.toFile().readText()
     }
 
     // ── (1) Khai báo ở manifest ─────────────────────────────────────────────────────────────────
@@ -332,5 +334,50 @@ class TestBridgeSafetyContractTest {
         assertTrue(code("KachiTestBridge.kt").contains("Log.i(TAG, \"cmd \""), "phải ghi nguyên văn lệnh nhận được")
         assertTrue(code("TestBridgeReply.kt").contains("Log.i(TAG, \"reply"), "phải ghi lời đáp")
         assertTrue(code("TestBridgeReply.kt").contains("TAG = \"KachiTest\""), "tag nhật ký phải là `KachiTest`")
+    }
+
+    // ── (7) Lệnh gọi cầu phải TƯỜNG MINH ────────────────────────────────────────────────────────
+
+    /**
+     * ⚠⚠ [ĐO xe 2026-09-20 §0] Lệnh gọi cầu PHẢI mang **thành phần tường minh** (`-n`), không chỉ `-a`.
+     *
+     * Android 10 chặn broadcast ngầm tới receiver khai trong manifest, và cái chặn đó **im lặng**: `am broadcast
+     * -a com.byd.launcher.TEST …` trả `result=0` **không có `data=`** — đọc giống hệt ca *"cầu chưa bật"* hoặc
+     * *"adb hỏng"*. Mấy buổi test trên xe đã nghi oan cho kết nối (và ghi vào tài liệu là "BUG2") trong khi lỗi
+     * nằm ở đúng một dòng dựng lệnh. Bài canh này để cái nhầm ấy không quay lại được bằng một lượt "dọn dẹp".
+     *
+     * Vế thứ hai là phép so **ranh giới script ↔ mã**: tên lớp trong chuỗi `-n` phải là tên lớp THẬT. Đổi tên /
+     * dời gói `KachiTestBridge` mà quên script thì mọi lượt gọi trên xe trả `result=0` — cùng một triệu chứng
+     * mù mờ ấy. Lấy tên từ `KachiTestBridge::class.java.name` nên không có bản sao chép tay nào để lệch.
+     */
+    @Test
+    fun `script goi cau bang thanh phan tuong minh khop ten lop that`() {
+        val common = repoText("scripts/vehicle/kachi/_common.sh")
+        val fqn = com.byd.clusternav.launcher.testbridge.KachiTestBridge::class.java.name
+        assertTrue(
+            common.contains("KACHI_TEST_COMP=\"\${KACHI_TEST_COMP:-\$KACHI_PKG/$fqn}\""),
+            "_common.sh phải khai KACHI_TEST_COMP = \$KACHI_PKG/$fqn (tên lớp thật)",
+        )
+        val call = common.lines().single { it.contains("line=\"am broadcast") }
+        assertTrue(call.contains("-n \$KACHI_TEST_COMP"), "k_test phải gửi -n <thành phần>: $call")
+        assertTrue(call.contains("-a \$KACHI_TEST_ACTION"), "vẫn phải mang -a (onReceive rẽ theo action): $call")
+    }
+
+    /** Không script nào trong bộ được dựng lại lệnh gọi cầu bằng đường ngầm của riêng nó. */
+    @Test
+    fun `khong script nao ban broadcast cau ma thieu thanh phan`() {
+        val dirPath = repoPath("scripts/vehicle/kachi")
+        val offenders = Files.walk(dirPath).use { s ->
+            s.filter { it.toString().endsWith(".sh") }
+                .toList()
+                .flatMap { p -> Files.readAllLines(p).map { p.fileName.toString() to it } }
+                .filter { (_, line) ->
+                    val l = line.trim()
+                    !l.startsWith("#") && l.contains("am broadcast") &&
+                        (l.contains("KACHI_TEST_ACTION") || l.contains("com.byd.launcher.TEST")) &&
+                        !l.contains("-n ")
+                }
+        }
+        assertTrue(offenders.isEmpty(), "lệnh gọi cầu thiếu -n (sẽ im lặng rơi trên xe): $offenders")
     }
 }

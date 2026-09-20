@@ -95,6 +95,13 @@ class BootSetupService : Service() {
                 // (tier OVERDRIVE) ⇒ có thể xe không nhận; đặt SAU 2 bộ đã proven để nếu nó hỏng thì không
                 // ảnh hưởng ghế/lọc bụi.
                 com.byd.clusternav.comfort.RecircApplier.applyOnStart(applicationContext)
+                // AUTOMATION (1.85, spec kachi-automation R4/R5) — dựng lại động cơ nền khi nổ máy nếu có
+                // automation nào BẬT. Phải có mặt ở CẢ HAI đường boot: `KachiAutostart` chỉ chạy khi *"Tự mở
+                // Kachi"* (`launcher_autostart`) BẬT, còn dịch vụ này chạy theo *"Chạy dịch vụ nền"*
+                // (`headless_autostart`) — hai công tắc RIÊNG. Gác automation sau một công tắc không liên quan là
+                // đúng bẫy đã ăn ở P7 (cảnh khởi động chết theo `launcher_autostart`, im lặng). `sync` idempotent
+                // + tự dừng khi hết việc ⇒ gọi ở hai chỗ không nhân đôi gì.
+                com.byd.clusternav.automation.AutomationService.sync(applicationContext)
                 // F4e boot (owner 08-25): boot headless KHÔNG mở màn nào ⇒ trợ lý
                 // hệ thống chưa được đặt = Gemini ⇒ hold-mic → keyevent 231 route sai. Đặt luôn ở đây NẾU có
                 // binding Gemini, để hold-mic → Gemini ready NGAY sau nổ máy mà KHÔNG cần mở app (owner

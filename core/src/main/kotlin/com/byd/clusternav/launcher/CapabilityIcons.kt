@@ -89,6 +89,11 @@ object CapabilityIcons {
         // *"Chế độ"* — cùng hình với ô CHẾ ĐỘ khác của xe (`op_mode`), khác hẳn hình `ic-ac`
         // của ô *"Điều hòa"* bật/tắt: hai câu hỏi khác nhau (đang AUTO hay tay ≠ lạnh đang chạy hay không).
         "ac_mode_auto" to "ic-mode",
+        // 1.85 · chỉ báo **gió** auto. Dùng "ic-mode" (cùng hình với `ac_mode_auto`) chứ KHÔNG "ic-fan": [ĐO]
+        // `CapabilityIconsDiversityTest` đỏ ngay khi thử — CLIMATE đã có ba ô mang hình quạt (`fan` · `ac_wind` ·
+        // nút `ac_auto`) và ô thứ tư làm icon thành hoa văn nền. Cả hai ô này trả lời cùng một dạng câu hỏi
+        // (*"đang tự động hay chỉnh tay"*) nên chung hình là đúng nghĩa, không phải nhượng bộ cho bài canh.
+        "ac_wind_auto" to "ic-mode",
         // A9 — âm lượng dùng chung hình với nút `vol` (cùng MỘT việc: xem và chỉnh).
         "media_vol" to "ic-volume",
         // ── Thân xe ──

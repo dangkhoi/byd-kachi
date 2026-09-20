@@ -114,15 +114,14 @@ class SettingsNavSection(
         })
     }
 
-    /** Nhãn thương hiệu app dẫn đường (danh từ riêng, VI=EN) — tra qua tài nguyên đúng luật i18n launcher. */
-    private fun navAppLabel(key: String): String = context.getString(
-        when (key) {
-            "gmaps" -> R.string.kachi_nav_app_gmaps
-            "vietmap" -> R.string.kachi_nav_app_vietmap
-            "waze" -> R.string.kachi_nav_app_waze
-            else -> R.string.kachi_nav_app_gmaps
-        },
-    )
+    /**
+     * Nhãn thương hiệu app dẫn đường (danh từ riêng, VI=EN) — tra qua tài nguyên đúng luật i18n launcher.
+     *
+     * 1.85: uỷ quyền [SettingsNavAutomationFormat.navAppLabel] thay vì giữ bảng `when` riêng — nay có **hai** bề
+     * mặt cần đúng cái tên này (chip ở đây + hai bề mặt của lịch tự dẫn), và bản thứ hai chép tay là chỗ để hai
+     * bên hiện hai cái tên khác nhau cho cùng một app.
+     */
+    private fun navAppLabel(key: String): String = SettingsNavAutomationFormat.navAppLabel(context, key)
 
     /**
      * Nhãn hai nấc chế độ cụm — tra **tài nguyên của launcher** theo `enum`, KHÔNG đọc

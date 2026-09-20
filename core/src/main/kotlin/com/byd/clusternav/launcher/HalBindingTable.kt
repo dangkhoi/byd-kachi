@@ -90,8 +90,16 @@ class HalBindingTable(private val gateway: HalGateway) {
         return applyInverted(if (level > 0) 1 else 0, def.readInverted)
     }
 
-    /** [id] → Int (parse "int=.. float=.." của EventValue hoặc số thuần); sentinel/absent → null. */
-    fun readInt(id: String): Int? = coerceInt(readRaw(id))
+    /**
+     * [id] → Int (parse "int=.. float=.." của EventValue hoặc số thuần); sentinel/absent → null.
+     *
+     * 1.85: datum khai trong [HalReadTables.ARRAY_INDEX] lấy **phần tử thứ N** của getter trả mảng (bụi mịn NGOÀI
+     * xe = ô [1] của `getPM2p5Value()`), thay vì ô [0] mà `firstOfArray` lấy mặc định.
+     */
+    fun readInt(id: String): Int? {
+        val idx = HalReadTables.ARRAY_INDEX[id] ?: return coerceInt(readRaw(id))
+        return coerceIntAt(readRaw(id), idx)
+    }
 
     /** [id] → Double (float= của EventValue hoặc số thuần). */
     fun readDouble(id: String): Double? = coerceDouble(readRaw(id))
@@ -280,6 +288,19 @@ class HalBindingTable(private val gateway: HalGateway) {
             "wireless_charge" -> intArrayOf(if (primary > 0) 1 else 2)
             // camera 360 `setAVMSwitchState` — AVM_FUNCTION_ON=2 / OFF=1 (BYDAutoADASDevice.java:35/:34).
             "cam" -> intArrayOf(if (primary > 0) 2 else 1)
+            // ═══ 1.85 · HAI BẪY GIÁ TRỊ **NGƯỢC**, cả hai [ĐO trên xe 2026-09-20 §3] ═════════════════════════════
+            //
+            // (a) **gió tự động** `AC_CTRL_MODE_SET`: [ĐO] **0 → AUTO** · **1 → chỉnh tay** (rc=0, thử cả hai chiều,
+            //     owner xác nhận màn AC đổi theo). Nút là TOGGLE nên `primary` 1 = *"bật gió auto"* ⇒ phải gửi **0**.
+            //     Không có nhánh này thì bật/tắt chạy **ngược hoàn toàn** mà rc vẫn 0 — im lặng, đúng loại lỗi chỉ
+            //     người ngồi trong xe phát hiện được. (`AC_CTRLMODE_AUTO=0`/`_MANUAL=1` ở `ac/BYDAutoAcDevice.java:20-21`
+            //     khớp con số đo được.)
+            "ac_auto" -> intArrayOf(if (primary > 0) 0 else 1)
+            // (b) **khoá trẻ em** `DOOR_LOCK_COMMAND_AREA_CHILDLOCK_{LEFT,RIGHT}_SET`: [ĐO] ghi **2 → BẬT** (state
+            //     đọc về 1) · ghi **1 → TẮT** (state 2) — owner xác nhận bằng cửa thật. Tức giá trị GHI và state
+            //     ĐỌC ngược nhau; ở đây chỉ lo vế GHI (bật→2). Cùng hình dạng `OFF=1/ON=2` của `lock`/`steer_heat`,
+            //     nhưng viết riêng để con số đo được có chỗ neo kèm bằng chứng thay vì lẫn vào nhánh `else`.
+            "child_lock", "child_lock_r" -> intArrayOf(if (primary > 0) 2 else 1)
             // NEEDS-ONCAR: `camera_view` `setDisplayMode` — gửi index thô, map nhãn↔DISPLAY_MODE_* chưa chốt.
             else -> intArrayOf(primary)
         }
@@ -402,6 +423,26 @@ class HalBindingTable(private val gateway: HalGateway) {
          */
         private fun firstOfArray(s: String): String =
             if (s.startsWith("[")) s.removePrefix("[").substringBefore(',').substringBefore(']').trim() else s
+
+        /**
+         * ═══ 1.85 · Phần tử **thứ [index]** của một giá trị mảng — và vì sao nó KHÔNG có đường lùi ═══════════════
+         *
+         * Gateway trả mảng dưới dạng `"[a, b, …]"` (`BydHal.arrayToStr`). Hàm này cắt ô thứ [index]; `index = 0`
+         * tương đương [firstOfArray] nên chỗ gọi mặc định không cần nó.
+         *
+         * **Chuỗi KHÔNG phải mảng + [index] > 0 ⇒ `null`**, cố ý không lùi về số thuần. Chủ duy nhất hôm nay là
+         * `pm25_outside`: nếu ROM nào trả về một số đơn (chỉ đo trong cabin) thì đường lùi sẽ hiện **số trong
+         * cabin dưới nhãn "ngoài xe"** — một con số sai mà trông như đang sống, đúng họ lỗi *"nhãn hứa việc A, hiện
+         * việc B"* mà dự án đã trả giá ở nút *"Kính 50%"* và cặp `lock`/`door`. `null` thì ô hiện "—" và người xem
+         * biết là chưa đọc được. Mảng ngắn hơn [index] cũng `null`, cùng một lẽ.
+         */
+        fun coerceIntAt(raw: String?, index: Int): Int? {
+            val s = raw?.trim() ?: return null
+            if (index == 0) return coerceInt(s)
+            if (!s.startsWith("[")) return null
+            val parts = s.removePrefix("[").removeSuffix("]").split(',')
+            return parts.getOrNull(index)?.let { coerceInt(it.trim()) }
+        }
 
         /**
          * Parse Int từ chuỗi thô: ưu tiên `int=<n>` (EventValue), rồi số thuần, rồi `float=<x>` làm tròn; mảng → [0].

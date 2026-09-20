@@ -66,6 +66,7 @@ object PermissionPreflight {
                 LauncherRequirements.SHELL_CHANNEL.id -> shellUsable
                 LauncherRequirements.DEFAULT_HOME.id -> isDefaultHome(ctx)
                 LauncherRequirements.MICROPHONE.id -> micGranted(ctx)
+                LauncherRequirements.LOCATION.id -> locationGranted(ctx)
                 else -> null
             }
         }
@@ -102,6 +103,10 @@ object PermissionPreflight {
         // ĐÚNG đường mà máy ảo cũng dùng (`adb shell pm grant com.byd.launcher android.permission.RECORD_AUDIO`),
         // nên thứ chạy trên bàn và thứ chạy trên xe là một câu lệnh, không phải hai.
         LauncherRequirements.MICROPHONE.id -> "pm grant $PKG android.permission.RECORD_AUDIO"
+        // AUTOMATION #2 (1.85) — cùng đường `pm grant` uid-shell với micro. ⚠ CHỈ quyền ĐỌC
+        // (`ACCESS_FINE_LOCATION`); tuyệt đối không cấp `ACCESS_MOCK_LOCATION`/`ACCESS_BACKGROUND_LOCATION`
+        // (xem KDoc `LauncherRequirements.LOCATION` + khối quyền trong manifest).
+        LauncherRequirements.LOCATION.id -> "pm grant $PKG android.permission.ACCESS_FINE_LOCATION"
         // ⚠ FREEFORM cố ý KHÔNG có lệnh ở đây. Cờ cửa sổ tự do là **trạng thái BỀN**, và dự án có luật
         // **một-nơi-ghi-duy-nhất** (`FreeformSeedPolicy` ở `:core system/`); phía launcher KHÔNG được ghi trực tiếp.
         // Guard `PersistentWindowStateWriterGuardTest` đã bắt đúng lúc tôi viết lệnh thô vào đây.
@@ -204,6 +209,18 @@ object PermissionPreflight {
      */
     private fun micGranted(ctx: Context): Boolean? = runCatching {
         ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    }.getOrNull()
+
+    /**
+     * AUTOMATION #2 (1.85) — quyền ĐỌC định vị (`ACCESS_FINE_LOCATION`).
+     *
+     * Cùng khuôn [micGranted]: `checkSelfPermission` luôn có từ API 23 nên ca *"không đọc được"* không tồn tại,
+     * vẫn bọc `runCatching` cho đồng nhất cả nhóm. ⚠ Đây là phép hỏi **quyền**, không phải hỏi *"có fix chưa"* —
+     * câu sau là việc của `GpsAvailability` và nó có câu trả lời thứ ba (*chưa biết*).
+     */
+    private fun locationGranted(ctx: Context): Boolean? = runCatching {
+        ctx.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) ==
             android.content.pm.PackageManager.PERMISSION_GRANTED
     }.getOrNull()
 
