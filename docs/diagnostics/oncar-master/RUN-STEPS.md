@@ -194,3 +194,51 @@
 
 ## Thứ tự nếu ít thời gian
 S0→S2 (tiền đề) → **S5,S6** (logcat A/B) → **S8,S9** (:tts kill, nếu có vehicleTest) → **S11** (Hey Kachi load-gate, quyết luôn) → **S14** (3 bug id-trùng) → **S15,S16** (thân xe + điều hoà). Phần đọc 100 telemetry (S4) + cast (S19,S20) + system (S21-23) để vòng/buổi sau.
+
+---
+
+## PHỤ LỤC · LỆNH GÕ SẴN (dán IP là chạy — prep 2026-09-20)
+
+> Xe reachable từ máy em ⇒ **EM chạy hết**. Dán IP một lần: `IP=<car-ip>` rồi `A="python3 scripts/vehicle/kachi/adb_raw.py $IP 5555"`.
+> **Artefact đã build sẵn**: `apk/Kachi-1.83-release.apk` (vc84 `df7b832f…`, OTA) · `app/build/outputs/apk/vehicleTest/app-vehicleTest.apk` (vc84 diagLog, `ba71abf2…` — cho :tts kill).
+
+```sh
+IP=<car-ip>                                   # dán khi anh gửi
+A="python3 scripts/vehicle/kachi/adb_raw.py $IP 5555"   # đường SHELL PROVEN (pure-python, không bị macOS chặn)
+ADB=~/Library/Android/sdk/platform-tools/adb            # real adb — MACOS CÓ THỂ CHẶN daemon LAN (lý do adb_raw.py có)
+
+# --- S0 test CẢ HAI đường (real adb có thể không connect được từ máy này) ---
+$A shell "echo OK"                                       # (1) adb_raw.py — nếu ra OK ⇒ shell chạy chắc
+$ADB connect $IP:5555 && $ADB -s $IP:5555 get-state      # (2) real adb — cần cho INSTALL + batch scripts (71-hal-sweep/60-cast/90-collect)
+#   → (2) ra "device" ⇒ dùng real adb cho install + scripts. (2) timeout ⇒ CHỈ dùng $A (shell); install + HAL-sweep đi đường khác (dưới).
+
+# --- Cài vehicleTest (S8-S10) ---
+# NẾU (2) chạy: $ADB -s $IP:5555 install -r app/build/outputs/apk/vehicleTest/app-vehicleTest.apk   (proven)
+# NẾU chỉ (1) : $A install app/build/outputs/apk/vehicleTest/app-vehicleTest.apk   (adb_raw.py install — CHƯA test off-car, verify sau)
+# NẾU cả hai hỏng: BỎ vehicleTest ⇒ S8-S10 làm bằng crash TỰ NHIÊN trên release (F4), không có kill chủ động.
+#   ⚠ cuối buổi (nếu đã cài vehicleTest): cài lại release — install -r apk/Kachi-1.83-release.apk
+
+# S1  bản        : $A shell "dumpsys package com.byd.launcher | grep -E 'versionName|versionCode'"
+# S2  a11y bound : $A shell "dumpsys accessibility | grep -c Bound"
+# S3  CPU/RAM    : $A shell "top -b -n2 -d5 | grep -E 'com.byd.launcher|load average'"
+#                  $A shell "dumpsys meminfo com.byd.launcher:tts | grep 'TOTAL PSS'"   # phải < ~100MB
+# S4  telemetry  : (2) chạy ⇒ bash scripts/vehicle/kachi/71-hal-sweep.sh $IP:5555
+#                  chỉ (1)  ⇒ $A shell "am broadcast -a com.byd.launcher.TEST --es cmd hal --es op read-all" (đọc từng phần)
+# --- S5 A vietmap (anh NÓI giữa 2 lệnh) ---
+# S5a $A shell "logcat -c"
+# S5b (anh nói "dẫn đường tới chợ Bến Thành bằng vietmap") → $A shell "logcat -d | grep -E 'ActivityTaskManager: START|vietmaplive|google.navigation|KachiVoiceGeo' | tail -8"
+# --- S6 B music --- $A shell "logcat -c" ; (anh nói "mở bài hát <tên>") ; $A shell "logcat -d | grep -iE 'MediaSession|PLAY_FROM_SEARCH|youtube|YtResolve' | tail -8"
+# --- S7 mở việt máp --- $A shell "logcat -c" ; (anh nói "mở việt máp") ; $A shell "logcat -d | grep 'START.*vietmap' | tail -5"
+# --- S8-S9 :tts kill (vehicleTest) ---
+# S8  $A shell "ps -A | grep com.byd.launcher" ; $A shell "dumpsys accessibility | grep -A6 NavAccessibilityService"
+# S9  $A shell "run-as com.byd.launcher sh -c 'for i in \$(seq 1 300); do p=\$(ps -A|grep com.byd.launcher:tts|grep -v grep|awk \"{print \\\$2}\"); [ -n \"\$p\" ] && { echo TRAP \$p; kill -9 \$p; break; }; sleep 0.1; done'"
+#     (anh nói "mở tất cả kính" NGAY sau) → $A shell "ps -A | grep com.byd.launcher" (pid :app KHÔNG đổi?) ; $A shell "dumpsys accessibility | grep -c Bound"
+# S10 phím sống  : sau mỗi lượt: $A shell "dumpsys accessibility | grep -c Bound" ; $A shell "logcat -d | grep -c 'Fatal signal 11'"
+# --- S11 Hey Kachi load (CỔNG) --- $A shell 'sh -c "for i in \$(seq 1 60); do cut -d\" \" -f1 /proc/loadavg; sleep 1; done"' ; $A shell "grep -c processor /proc/cpuinfo"
+# --- S16 điều hoà (cầu say, không cần mic) ---
+# S16  $A shell "am broadcast -a com.byd.launcher.TEST --es cmd say --es text \"'mở điều hòa hai mươi lăm độ'\""
+# S16b $A shell "am broadcast -a com.byd.launcher.TEST --es cmd say --es text \"'bật điều hòa chế độ hai'\""
+# --- batch (chỉ khi real adb (2) chạy) --- HAL: bash .../71-hal-sweep.sh $IP:5555 · cast: bash .../60-cast.sh $IP:5555 · thu log: bash .../90-collect.sh $IP:5555
+```
+
+> **Bẫy dấu nháy** (đã proven): cầu `say`/text có khoảng trắng phải nháy HAI lớp `"'chuỗi có dấu cách'"` — nếu không `am` cắt ở khoảng trắng đầu mà vẫn báo `ok:true` (helper `k_shq` trong `_common.sh` làm đúng). **CẤM `input tap` toạ độ** (xe 1920×720 ≠ máy ảo).
