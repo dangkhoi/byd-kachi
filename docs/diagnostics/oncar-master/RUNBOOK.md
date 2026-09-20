@@ -1,12 +1,34 @@
 # RUNBOOK — TEST XE MỘT-LẦN-ĐỦ (Kachi 1.79 · 80)
 
-> **Loại**: Diagnostics (on-car master runbook) · **Trạng thái**: Current · **Ngày**: 2026-09-19 · **Bản đích**: **1.79 (80)** (xe đang **1.76** ⇒ OTA trước)
+> **Loại**: Diagnostics (on-car master runbook) · **Trạng thái**: Current · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)** (OTA trước; xe cũ hơn ⇒ `40-ota.sh`)
 > **Mục đích**: MỘT buổi đóng hết mục `🚗 chờ xe`. Mỗi bước có **lệnh gõ sẵn** · **tiêu chí PASS/FAIL** · **outcome → option kế thử NGAY cùng buổi** (không hẹn buổi thứ hai) · **ô ghi kết quả**.
+> **📋 LIST HẾT MỤC CẦN XE (đọc TRƯỚC)**: `oncar-master/0-PENDING.md` — bảng tổng 8 nhóm (100 info + 34 action + voice + Hey Kachi + cast + system), ưu tiên + trace tới cách-làm. Runbook này (8 phase) là bộ điều phối chi tiết.
 > **Gom từ 6 doc** (chi tiết nằm ở đó, runbook này là bộ điều phối — đừng chép lại):
 > `oncar-master/1-hal.md` (ma trận HAL) · `2-slot-cast.md` (option A–I app-vào-ô + cast) · `3-voice.md` (voice + `:tts`) · `4-system.md` (K5/K8/P7/S5/F4/W5/T-BRIDGE/P8/U8a) · `oncar-playbook-kachi-1.53.md` (quy trình + bẫy) · `oncar-runbook-hey-kachi.md` (wake word).
 > **Nhãn** (CLAUDE.md §2): `[ĐO source]` đọc được ở mã/dump có `file:line` · `[ĐO xe]` số thật của lượt xe trước · `[SUY]` suy từ nguồn, chưa chạy · `[CHƯA BIẾT]` không có dữ liệu.
 > **Ô trống = CHƯA ĐO.** Điền bừa một dấu tick tệ hơn để trống.
-> **An toàn**: xe **ĐỖ · số P · phanh tay** cho mọi bước GHI. Phase E chạm **cụm trước mặt người lái**. Phase C3 là bước duy nhất cần xe **lăn bánh** — **người lái KHÔNG gõ adb**, phải có người thứ hai.
+> **An toàn**: xe **ĐỖ · số P · phanh tay** cho mọi bước GHI. Phase E chạm **cụm trước mặt người lái**. Phase C3 + D-cốp là bước cần xe **lăn bánh** — **người lái KHÔNG gõ adb**, phải có người thứ hai.
+
+---
+
+## 0.0 DELTA 1.79 → 1.83 (thêm vào runbook này, 2026-09-20)
+
+> 8 phase A–I bên dưới VẪN ĐÚNG (voice/`:tts`/Hey Kachi/HAL/cast). Bản đích nay **1.83** — thêm các mục sau, mỗi mục chỉ 1–2 lệnh, cắm vào phase tương ứng:
+
+| # | Bản | Mục | Cắm vào | Lệnh / cách đo | PASS |
+|---|---|---|---|---|---|
+| Δ1 | 1.82 | **"tìm bài hát X"** tra nhạc (không còn KHÔNG-HIỂU) | Phase C (say) | `T say "'tìm bài hát ngày chưa giông bão'"` → decision | intent = Media(QUERY) |
+| Δ2 | 1.82 | **"mở việt máp/mép/mốp"** mở VietMap (biến thể phiên âm) | Phase C (mic thật) | nói "mở việt máp" · `logcat \| grep 'START.*vietmap'` | mở `vn.vietmap.live`, KHÔNG mở drawer |
+| Δ3 | 1.82 | **"điều hòa 25 độ"** đặt nhiệt (không toggle AUTO) | Phase D (HAL) | `T say "'mở điều hòa hai mươi lăm độ'"` → xe đặt 25°C | nút temp = 25 (KHÔNG chỉ bật AUTO) |
+| Δ3b | 1.83 | GUARD: **"điều hòa chế độ hai"** KHÔNG được đặt nhiệt 17 | Phase D | `T say "'bật điều hòa chế độ hai'"` | intent = ac_auto (KHÔNG phải temp=17) |
+| Δ4 | 1.80 | **"mở kính"** hạ 1 cửa LÁI (không cả 4) | Phase D | `T say "'mở kính'"` → nhìn xe | chỉ kính tài xế hạ |
+| Δ5 | 1.80 | **cốp/ca-pô chỉ mở khi 0km/h** (gate tốc độ) | Phase D + xe lăn (người thứ 2) | đỗ: "mở cốp" ăn · lăn: "mở cốp" → "chỉ mở khi xe dừng" | gate đúng cả 2 trạng thái |
+| Δ6 | 1.80 | **read-back**: TOGGLE/COVER đọc lại xác nhận | Phase D | nghe reply sau "bật đèn đọc" | khớp→"đã bật" bỏ hedge · lệch→"xe không nhận lệnh" |
+| Δ7 | 1.81 | **B music có PHÁT thật** (WavProbe không ghi được) | Phase C | `logcat -c` → nói/say "mở bài hát X" → `logcat \| grep -iE 'MediaSession\|PLAY_FROM_SEARCH\|youtube'` + NGHE | nhạc kêu thật |
+| Δ8 | 1.83 | **P2 marker**: Hey Kachi tự-tắt hiện đúng OFF + persist | Phase G | bật Hey Kachi → ép auto-disable (nói bừa 6 lần/phút) → mở Cài đặt | công tắc hiện **OFF** (không ON dởm); reboot vẫn OFF tới khi bật lại tay |
+| Δ9 | 1.83 | **setting KHÔNG bị :wake xoá** (P2 gốc) | Phase G | đặt biển tốc độ vị trí X → bật/auto-tắt Hey Kachi → kiểm vị trí X | vị trí biển KHÔNG mất |
+
+⚠ **Δ7 (music) + C1 (vietmap) là hai mục CHÍNH cần `logcat` — chạy `logcat -c` NGAY TRƯỚC, `logcat -d \| grep` NGAY SAU.** Đây là thứ log WavProbe của owner **không** trả lời được (không ghi app đích).
 
 ---
 
