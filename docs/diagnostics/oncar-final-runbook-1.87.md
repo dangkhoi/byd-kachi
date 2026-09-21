@@ -101,3 +101,37 @@
 
 ## Cột mốc kết thúc
 Đi hết 8 mục, mọi mục PASS hoặc đã có cách xử → **baseline đóng dự án** (cập nhật PROJECT-BACKLOG + project-context).
+
+---
+
+## KẾT QUẢ ON-CAR 2026-09-21 (xe 172.20.10.8, DiLink3.0, đổ xe) — phần EM verify qua adb_raw.py
+
+**Kết nối**: macOS adb bị chặn (`No route to host` dù cổng 5555 mở) — dùng `scripts/vehicle/kachi/adb_raw.py 172.20.10.8 5555` (pure-python, ký adbkey). ⚠ adbd churn (`host-xx already offline`) = BUG2 (Kachi giữ dadb loopback) — chập chờn nhưng dùng được.
+
+| Mục | Kết quả EM verify | Trạng thái |
+|---|---|---|
+| 0.2 version | dumpsys: **1.87 (88)** cài OK (push+pm install qua adb_raw; run-as chặn nên pm install chạy shell riêng) | ✅ |
+| 0.3 + 1.1 badge | Screenshot xe (đọc sub-agent, zoom 3×): **0 chấm amber** mọi tile dock/topbar | ✅ |
+| — telemetry | state bridge: mọi chip số THẬT, 0 "—" (93%/539km · 32°C · 18µg · 14.9kWh · ghế mát mức 2) — HAL read live | ✅ |
+| — app-in-slot | YouTube live-host trong ô (thumbnail thật), `embedded=true shell_usable=true` | ✅ |
+| 5.1 voice reply | bridge `say "bật đèn đọc"` → `"✓ Bật Đèn đọc"` — **KHÔNG còn đuôi "chưa kiểm trên xe"** | ✅ |
+| — quyền | `permissions.all_ok=true` "đủ quyền" | ✅ |
+| — cast/cụm | cụm = `fission_bg_xdja` VD 1920×720 (đúng records); cast_enabled=true; FloatingBubbleService chạy | ✅ |
+| — test-mode | đang BẬT (48′ còn lại) → bridge chạy được | ✅ |
+| 2.4 folder photos | pref `vm_bubble_enabled=true`; 3 folder tách (code) | ✅ code |
+
+**CHƯA verify được qua adb (cần OWNER bấm/nhìn/nổ máy)**:
+- **§6.2 bóng VietMap (bug vừa sửa)** — cần một **CHU KỲ NỔ MÁY** để chạy đúng boot-autostart. `am start` tay không kích boot-path; release không log autostart. VietMap process từng chạy (pid 2767) rồi nền (không activity). ⇒ **Owner: tắt máy → nổ lại → nhìn cụm xem bóng VietMap có TỰ lên KHÔNG cần bấm** (mạng chậm càng tốt để soi bug cũ). Bóng không lên → ghi VietMap dừng màn nào bao lâu.
+- **§3 nhóm Voice** — owner mở Cài đặt, xem rail có nhóm "Giọng nói" riêng + chọn App nhạc mặc định.
+- **§7 nút xe** — owner bấm 1 lượt, ghi nút hỏng.
+- **§8 giọng bé** — owner Tải trong Cài đặt › Giọng nói.
+
+## BUG on-car 2026-09-21 (owner báo giữa buổi) — CHẨN ĐOÁN + XỬ
+
+### BUG A — binding phím TẠCH (regression dai dẳng, gặp suốt)
+[ĐO adb xe] service Kachi (label "ClusterNav — booster đọc", `NavAccessibilityService`, capabilities=9 = FILTER_KEY_EVENTS) **ENABLED nhưng KHÔNG Bound**; `/proc/loadavg`=**10.17** (8 lõi bão hoà). Đúng gốc 1.78: tải CPU cao → a11y rớt bind → `onKeyEvent` không bắt → phím chết. **FIX LIVE (đã làm)**: toggle `enabled_accessibility_services` (gỡ Kachi rồi thêm lại + `accessibility_enabled=1`) qua adb → service **BOUND lại** (xác nhận capabilities=9 giữ, load 8.2). ⇒ Owner **thử phím vô-lăng** — phải ăn lại.
+- **FIX CODE (off-car)**: rebind timeout 20s (1.78) VẪN thua ở load>10. Cần (1) retry rebind bền bỉ hơn + (2) tự phát hiện "enabled-nhưng-không-bound" rồi tự toggle a11y ép bind (đúng thao tác live vừa làm) thay vì chỉ nút "Sửa ngay" thủ công.
+
+### BUG B — Hey Kachi KHÔNG phản hồi
+[ĐO adb xe] `voice_wake_enabled=true` NHƯNG `VoiceWakeService` KHÔNG chạy + `files/kws/` TRỐNG (model KWS chưa tải). Gốc: owner bật wake trên **1.84** (lúc model KWS CHƯA đăng repo → tải 404); model `voice/kws/` nay ĐÃ có trên repo (5 tệp, raw HTTP 200) từ lượt này. `setWakeEnabled(true)` CÓ gọi `WakeModelFetch.ensure` (tải model) nhưng chỉ chạy khi GẠT công tắc / boot — `pm install -r` phiên này không kích lại. **FIX LIVE cho owner**: Cài đặt › Giọng nói › **Hey Kachi → TẮT rồi BẬT lại** ⇒ tải model ~5 MB + dựng service; chờ tải xong rồi gọi "Hey Kachi".
+- **LƯU Ý**: KWS gigaspeech ĐA NGỮ — records 1.81 ghi "bật = đo baseline, chưa chắc bắt câu gọi giọng Việt". Đây là **thử nghiệm**; tải xong mà vẫn không nhận ⇒ vấn đề độ chính xác KWS (không phải wiring), cần fine-tune keyword — việc riêng.
