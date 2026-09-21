@@ -132,21 +132,13 @@ class KachiTestBridge : BroadcastReceiver() {
      *  • `sweep`/`featmap` cũng thuần HAL (chỉ-đọc, luồng nền); `voice_dump` (H2) chỉ đọc `filesDir/voice-log/`
      *    rồi nén ra thẻ, nên kéo được tiếng về cả sau một lượt launcher vừa khởi động lại ([TestBridgeVoiceDump]);
      *  • `prefs_set` ghi một khoá trong danh sách trắng; nó **nhận móc dưới dạng nullable** vì bốn khoá giọng nói
-     *    ghi thẳng prefs được, còn `top_strip_labels` thì phải đi qua màn chính (xem KDoc [TestBridgePrefsSet]).
+     *    ghi thẳng prefs được, còn `top_strip_labels` thì phải đi qua màn chính (xem KDoc [TestBridgePrefsSet]);
+     *  • `captest` (WP7) chỉ chạm prefs `kachi_captest` + dựng chuỗi ở `:core` ⇒ cũng **không cần màn chính**: một
+     *    buổi RE hay bắt đầu bằng `force-stop` rồi đo, mà bắt nó chờ launcher lên mới đóng dấu được kết quả thì mất
+     *    đúng những mục đo ngay sau khi khởi động lại.
      */
     private fun dispatch(app: Context, cmd: TestBridgeCommand, reply: TestBridgeReply) {
-        when (cmd.name) {
-            TestBridgeCommands.PREFS -> {
-                reply.ok("file" to cmd.file, "values" to TestBridgeState.prefsSnapshot(app, cmd.file)); return
-            }
-            TestBridgeCommands.HAL -> { TestBridgeHal.run(app, cmd, reply); return }
-            TestBridgeCommands.SWEEP -> { TestBridgeSweep.run(app, cmd, reply); return }
-            TestBridgeCommands.FEATMAP -> { TestBridgeFeatMap.run(app, reply); return }
-            TestBridgeCommands.VOICE_DUMP -> { TestBridgeVoiceDump.run(app, cmd, reply); return }
-            TestBridgeCommands.PREFS_SET -> {
-                TestBridgePrefsSet.run(app, cmd, KachiTestHooks.get(), reply); return
-            }
-        }
+        if (TestBridgeNoHome.handle(app, cmd, reply)) return
         val hooks = KachiTestHooks.get()
         if (hooks == null) {
             reply.fail(ERR_NO_HOME)

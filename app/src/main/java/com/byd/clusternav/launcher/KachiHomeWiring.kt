@@ -138,6 +138,8 @@ internal fun homePanels(
     onDockEdge = { e -> viewModel.setDockEdge(e) },
     onTopStrip = { id, on -> viewModel.toggleTopStrip(id, on) },
     onTopStripConfig = { cfg -> viewModel.setTopStrip(cfg) },
+    // WP4 — intent thuần; đường ghi bền duy nhất là `HomeViewModel.setHeaderLayout` (state + prefs một lượt).
+    onHeaderLayout = { layout -> viewModel.setHeaderLayout(layout) },
     onWallpaper = onWallpaperChanged,
     onUnitPrefs = onUnitsChanged,
     // Sổ địa chỉ (spec `kachi-voice-addresses.html` R1) — intent thuần, KHÔNG ghi bền trực tiếp; đường đọc là

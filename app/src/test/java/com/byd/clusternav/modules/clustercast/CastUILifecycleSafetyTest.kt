@@ -202,10 +202,14 @@ class CastUILifecycleSafetyTest {
     @Test
     fun `single icon is app-icon sized and honours the 48dp automotive minimum`() {
         // The 3-zone layout (its 38dp compact size and its disabled-zone no-op) is gone. The one
-        // nav-arrow icon is ALWAYS actionable (tap = cast / return / prepare, never a dead no-op),
-        // so there is no disabled-zone gate to test; instead the icon's touch target must meet the
-        // ≥48dp automotive guideline and be ~app-icon sized.
-        assertEquals(52, BubbleRenderer.ICON_SIZE_DP)
+        // icon is ALWAYS actionable (tap = cast / return / prepare, never a dead no-op), so there is
+        // no disabled-zone gate to test; instead the icon's touch target must meet the ≥48dp
+        // automotive guideline and be ~app-icon sized.
+        //
+        // ⚠ WP6 · R6.2 (owner 2026-09-20 *"nhỏ gọn"*): **52 → 48dp**, tức đúng SÀN. Ghim con số ở đây là chủ ý —
+        // hạ tiếp là một nút bắn lệnh chiếu thật nằm dưới ngưỡng chạm an toàn của xe, nên lượt hạ sau phải đi qua
+        // bài này. Quan hệ `cỡ == sàn` được canh riêng ở `BubbleGestureContractTest`.
+        assertEquals(48, BubbleRenderer.ICON_SIZE_DP)
         assertTrue(BubbleRenderer.TOUCH_MIN_DP >= 48, "automotive touch target must be ≥48dp")
         assertTrue(
             BubbleRenderer.ICON_SIZE_DP in BubbleRenderer.TOUCH_MIN_DP..56,

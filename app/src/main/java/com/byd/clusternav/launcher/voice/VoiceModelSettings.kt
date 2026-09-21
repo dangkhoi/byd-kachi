@@ -7,6 +7,7 @@ import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
 import com.byd.clusternav.setVoiceKeepLog
+import com.byd.clusternav.launcher.DevMode
 import com.byd.clusternav.launcher.SettingsDeps
 import com.byd.clusternav.launcher.SettingsRows
 import com.byd.clusternav.launcher.setVoiceFeedbackVoice
@@ -59,6 +60,7 @@ class VoiceModelSettings(
         lightModelRows(body)
         attributionRows(body)
         ttsRow(body)
+        ClipVoiceRow(context, rows).build(body)
         speakToggles(body)
         logRows(body)
         // V3 · R7 — mục *"Hỏi xác nhận trước khi chạy"* + nguồn micro. Lớp RIÊNG (trần 500 dòng, CLAUDE.md §4.1)
@@ -277,6 +279,13 @@ class VoiceModelSettings(
      * nút người ta sẽ bấm lần thứ hai.
      */
     private fun logRows(body: LinearLayout) {
+        // UX-OVERHAUL · WP7 — nhật ký lượt nói + nút Xuất là **đồ ĐO** (owner: "công tắc diag-log + xuất-log" nằm
+        // trong danh sách ẩn), nên cả khối đứng sau cổng [DevMode.unlocked]. Qua adb: đọc/ghi công tắc bằng
+        // `prefs_set --es key voice_keep_log --es text true|false`, lấy nhật ký bằng `voice_dump`.
+        //
+        // ⚠ Chỉ ẩn BỀ MẶT, không đổi HÀNH VI: `voice_keep_log` vẫn mặc định BẬT và [VoiceUtteranceLog] vẫn ghi như
+        // trước — tắt nó ở đây nữa thì buổi RE mở test-mode lên sẽ không còn nhật ký nào của những lượt nói TRƯỚC đó.
+        if (!DevMode.unlocked(context)) return
         body.addView(rows.checkRow(
             on = VoiceUtteranceLog.enabled(context),
             title = context.getString(R.string.kachi_voice_log_title),

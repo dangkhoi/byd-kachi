@@ -162,7 +162,11 @@ class SettingsProfilesSection(
                 text = context.getString(R.string.kachi_delete); setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
                 typeface = Typeface.DEFAULT_BOLD
                 setPadding(dpi(context, Sp.L), dpi(context, Sp.S), dpi(context, Sp.L), dpi(context, Sp.S))
-                background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.CLEAR, KachiTheme.RED)
+                // ⚠ WP1 · R1.1 — nút này TRƯỚC là *nút viền rỗng* (`CLEAR` + viền [KachiTheme.RED]). Gỡ viền mà giữ
+                // nền trong suốt thì nó thành một dòng chữ đỏ trơn: mất hẳn dấu hiệu "bấm được" trên một hành động
+                // KHÔNG hoàn lại được. Nên nghĩa "nguy hiểm" chuyển sang **NỀN** [KachiTheme.RED_SOFT] (vai mới,
+                // cùng công thức `amberSoft`) + chữ đỏ giữ nguyên — [ĐO] nền tách thẻ 1.45×/1.40×, chữ 4.57/4.65.
+                background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.RED_SOFT)
                 setOnClickListener { deps.onDeleteProfile(name) }
             })
             if (!active) setOnClickListener { deps.onSwitchProfile(name) }

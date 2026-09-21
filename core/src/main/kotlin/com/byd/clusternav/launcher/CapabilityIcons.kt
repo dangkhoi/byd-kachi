@@ -55,12 +55,8 @@ object CapabilityIcons {
         "trip_hours" to "ic-clock",
         // U6: nhiệt/áp của CELL tách khỏi nhiệt của cả gói pin — dãy cell + đại lượng, hai hình cùng họ.
         "batt_temp" to "ic-temp",
-        "cell_temp_high" to "ic-cell-temp", "cell_temp_low" to "ic-cell-temp", "cell_temp_avg" to "ic-cell-temp",
-        "cell_v_high" to "ic-cell-volt", "cell_v_low" to "ic-cell-volt",
         // ── Động lực ──
-        "steering_deg" to "ic-steering",
         // U6: bàn đạp và độ dốc trước đây lùi về icon LĨNH VỰC (đồng hồ tốc) ⇒ 6/14 ô cùng một hình.
-        "accel_pct" to "ic-pedal", "brake_pct" to "ic-brake", "slope_deg" to "ic-slope",
         // [KIỂM TOÁN UX mục 4a] Bốn mục CHẾ ĐỘ LÁI trước đây tra ra `ic-grid` (⊞) — cùng hình với widget "Bảng tổng
         // hợp" và với kính cửa. `ic-drive` đã có sẵn và nói đúng việc.
         // U6 siết thêm: `ic-drive` VẼ cần số chữ H ⇒ để đúng cho `gear`; ba CHẾ ĐỘ là thứ để chọn nên mang núm chọn.
@@ -77,7 +73,6 @@ object CapabilityIcons {
         // U6: nhóm Khí hậu có BỐN thứ đo bằng nhiệt kế (kể cả nút "Nhiệt độ") — cái duy nhất không nói về không
         // khí TRONG XE là nhiệt ngoài trời, nên nó là cái tách ra.
         "cabin_temp" to "ic-temp", "inside_temp" to "ic-temp", "ext_temp" to "ic-temp-out",
-        "coolant_temp" to "ic-coolant", "temp_unit" to "ic-temp",
         // U6: LÀM LẠNH (bông tuyết) ≠ QUẠT GIÓ — quạt vẫn chạy khi lạnh đã tắt. Nút `ac_auto` cùng hình với `ac_on`.
         "ac_on" to "ic-ac", "ac_wind" to "ic-fan", "ac_cycle" to "ic-recirc",
         "anion_state" to "ic-leaf",
@@ -103,10 +98,8 @@ object CapabilityIcons {
         // U7 lượt 2 · [ĐO bài mù Pass 1] hai cặp này trước dùng CHUNG một hình: `sunroof_state` ↔ `sunroof_pos`
         // khác nhau 0 pixel, `tailgate_status` ↔ `tailgate_position` khác 2% — mà chúng nằm KỀ NHAU trong
         // nhóm Thân xe. Nay: ô TRẠNG THÁI = nắp/tấm kín liền khối; ô VỊ TRÍ = hé mở + mũi tên mức.
-        "tailgate_status" to "ic-car-top-trunk", "tailgate_position" to "ic-car-top-trunk-pos",
-        "sunroof_state" to "ic-car-top-sunroof", "sunroof_pos" to "ic-car-top-sunroof-pos",
+        "tailgate_status" to "ic-car-top-trunk", "sunroof_state" to "ic-car-top-sunroof", "sunroof_pos" to "ic-car-top-sunroof-pos",
         "sunshade_pct" to "ic-car-top-sunshade",
-        "wiper_state" to "ic-wiper", "mirror_fold" to "ic-car-top-mirror",
         // U7 · BỐN CỬA và BỐN KÍNH — mã đã mang vị trí (`_lf`/`_rf`/`_lr`/`_rr`), nay HÌNH cũng mang.
         // Cửa vẽ VẠT CỬA MỞ RA NGOÀI thân; kính vẽ THANH KÍNH TRONG vách ⇒ hai họ không lẫn nhau.
         "door_lf" to "ic-car-top-door-lf", "door_rf" to "ic-car-top-door-rf",
@@ -123,13 +116,8 @@ object CapabilityIcons {
         "light_left_turn" to "ic-car-front-turn-l", "light_right_turn" to "ic-car-front-turn-r",
         "light_side" to "ic-car-front-sidelight", "light_drl" to "ic-car-front-drl",
         "headlight_feedback" to "ic-car-front-headlight-mode",
-        "ambient_enabled" to "ic-car-top-ambient",
-        "ambient_front_color" to "ic-car-top-ambient-color-front",
-        "ambient_rear_color" to "ic-car-top-ambient-color-rear",
         // Màu vẽ dải LIỀN KHỐI, độ sáng vẽ dải CHIA NẤC — cùng vị trí nhưng khác hình, vì đây là hai
         // đại lượng khác nhau của cùng một dải (R2: khác biệt phải ở HÌNH, không chỉ ở nhãn).
-        "ambient_front_brightness" to "ic-car-top-ambient-bright-front",
-        "ambient_rear_brightness" to "ic-car-top-ambient-bright-rear",
         // ── Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16 cùng 17 datum của nó) ──
         // ⚠ Ba mục này chuyển từ `SAFETY` sang `ENERGY` cùng lượt gỡ, và tia sét trần thì **không còn chỗ**: [ĐO]
         // `CapabilityIconsDiversityTest` báo `ic-bolt ×6` trong lĩnh vực Năng lượng ngay lượt chạy đầu (trần là 3).
@@ -146,10 +134,7 @@ object CapabilityIcons {
         // U7: bốn mục GPS trước đây cùng một hình ghim vị trí. Chúng là bốn ĐẠI LƯỢNG khác nhau nên
         // tách theo đúng thứ chúng đo: vĩ tuyến (ngang) · kinh tuyến (dọc) · cao độ (núi + thước) ·
         // hướng (kim la bàn). Đây KHÔNG phải nhóm "nằm trên xe" nên giữ glyph trừu tượng (OQ1).
-        "gps_lat" to "ic-gps-lat", "gps_lon" to "ic-gps-lon",
-        "gps_elevation" to "ic-gps-alt", "gps_heading" to "ic-gps-heading",
-        "oil_level" to "ic-hood", "engine_coolant_level" to "ic-hood", "engine_code" to "ic-hood",
-    )
+        "oil_level" to "ic-hood", )
 
     /**
      * Khớp TIỀN TỐ — cho các họ mục cùng khái niệm (áp suất lốp ×4, nhiệt lốp ×4, kính ×4, cửa ×4…).
@@ -166,10 +151,8 @@ object CapabilityIcons {
         // [KIỂM TOÁN UX mục 4d] Công suất mô-tơ KHÔNG phải tốc độ ⇒ không dùng icon đồng hồ tốc.
         // U6: và vòng tua / mô-men KHÔNG phải công suất — ba đại lượng khác nhau của cùng một mô-tơ. Tiền tố dài
         // đứng trước tiền tố ngắn (`motor_front_rpm` phải khớp trước `motor_`), cùng luật đã dùng cho lốp.
-        "motor_front_rpm" to "ic-rpm", "motor_rear_rpm" to "ic-rpm", "motor_front_torque" to "ic-torque",
         "motor_" to "ic-motor",
         // Máy XĂNG có hình riêng: trên DM-i hai vòng tua nằm cạnh nhau, cùng hình là không đọc ra cái nào của cái gì.
-        "engine_rpm" to "ic-engine", "wheel_speed" to "ic-speed",
     )
 
     /**

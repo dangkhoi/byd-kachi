@@ -1,8 +1,5 @@
 package com.byd.clusternav.modules.clustercast
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
@@ -17,23 +14,26 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import com.byd.clusternav.Lang
-import com.byd.clusternav.R
 import com.byd.clusternav.cast.platform.CastAppCatalog
-import com.byd.clusternav.modules.clustercast.simplified.AppMover
 import com.byd.clusternav.modules.clustercast.simplified.BubbleGesturePlanner
-import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
-import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
-import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
+import com.byd.clusternav.modules.clustercast.simplified.BubblePresence
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Presentation-only overlay host for the canonical Cast model. ONE nav-arrow icon, three gestures.
+ * Presentation-only overlay host for the canonical Cast model. ONE app-icon glyph, three gestures.
  *
  * Delegates rendering to [BubbleRenderer], gesture disambiguation to [BubbleGestureHandler], action
  * dispatch to [BubbleActionDispatcher], and the long-press menu to [BubbleSubmenuOverlay]. This file
  * owns only: service lifecycle, window management, gesture→action wiring, state listener.
+ *
+ * ⚠ WP6 (2026-09-20) — tệp này từng giữ thêm ba khối KHÔNG thuộc bốn vai trên, và đã 537 dòng > trần 500
+ * (CLAUDE.md §4.1). Ba khối đó nay ở tệp riêng, **không đổi một bước nào**: bộ tự-chiếu-khi-nổ-máy
+ * ([BubbleAutostart], driver duy nhất R1) · chặn/trả PiP của GMaps-YouTube ([BubblePipGuard]) · thông báo thường
+ * trú của FGS ([BubbleForegroundNotice]). Sau lượt tách, KDoc trên mô tả đúng thứ tệp này thật sự làm.
+ *
+ * Công tắc **HIỆN nút nổi** (WP6 · R6.1) gác đúng một thứ: có dựng cửa sổ hay không ([syncBubbleWindow]). Dịch vụ
+ * vẫn chạy khi bị ẩn — nó còn là driver của tự-chiếu, nhịp giữ-cụm và nhịp áp lại bong bóng VietMap.
  */
 class FloatingBubbleService : Service() {
 
@@ -55,51 +55,17 @@ class FloatingBubbleService : Service() {
     /** One-shot: the overlay settings screen is launched at most once per service start. */
     private var overlayRequested = false
     /**
-     * ⚠ `ConcurrentHashMap`, KHÔNG phải `mutableMapOf`. Bản đồ này được GHI trên luồng `"pip-block"` và được
-     * DUYỆT + XOÁ trên luồng `"pip-restore"` mà [onDestroy] khởi — hai luồng rời nhau, không khoá. Một
-     * `forEach` chạy trong lúc luồng kia còn `put` ném `ConcurrentModificationException`, giết luồng restore
-     * GIỮA CHỪNG ⇒ `appops … PICTURE_IN_PICTURE deny` của GMaps/YouTube nằm lại VĨNH VIỄN (đổi state ra ngoài
-     * tiến trình, sống qua cả reboot — CLAUDE.md §5: mỗi thứ đổi ra ngoài phải có đường trả lại chạy được).
+     * Chặn PiP của GMaps/YouTube trong lúc dịch vụ sống, trả lại lúc chết — thân ở [BubblePipGuard] (tách ở WP6 vì
+     * trần 500 dòng; khối đó không đọc trường nào của dịch vụ nên là chỗ cắt an toàn nhất).
      */
-    private val pipPreviousModes = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val pipGuard = BubblePipGuard()
 
     /**
-     * Autostart is driven by this service ONLY (sole driver, R1). [autoStartDispatched] is an
-     * ATOMIC one-shot: [addStateListener] emits the current state on the caller thread while
-     * [SimpleCastCoordinator.setState] iterates listeners on the executor thread, so the idle
-     * trigger can be invoked from two threads at once. A plain check-then-set would let both pass
-     * and dispatch the split twice → the 2nd CastSlot hits SLOT_OCCUPIED → setError wipes
-     * CastingSplit (the exact R1 failure). `compareAndSet` guarantees a single dispatch.
-     * [autoStartRightDispatched] gives the split-right handoff the same guarantee. The two listener
-     * refs are held so [onDestroy] can detach them if projection never reached Idle (or the
-     * split-right handoff never completed).
+     * Bộ **tự chiếu khi nổ máy** — driver DUY NHẤT (R1); thân ở [BubbleAutostart] (tách ở WP6 vì trần 500 dòng).
+     * Dùng CHUNG [handler] với dịch vụ, nên `handler.removeCallbacksAndMessages(null)` ở [onDestroy] vẫn huỷ đúng
+     * lượt mở-chiếu đang chờ; `detach` gỡ hai bộ nghe còn treo.
      */
-    private val autoStartDispatched = AtomicBoolean(false)
-    private val autoStartRightDispatched = AtomicBoolean(false)
-    @Volatile private var autoStartIdleListener: ((SimpleCastState) -> Unit)? = null
-    @Volatile private var autoStartSplitRightListener: ((SimpleCastState) -> Unit)? = null
-
-    /**
-     * Boot autostart needs the projection OPEN to ever reach [SimpleCastState.Idle] (the trigger).
-     * On a pure boot there is no Activity to open it, so this service opens it. adb loopback
-     * (localhost:5555) may not be ready the instant we boot, so retry a few times until the
-     * coordinator leaves Off/Error. Cancelled once autostart is claimed or the service is destroyed
-     * (via [handler].removeCallbacksAndMessages in [onDestroy]). Only armed when autostart is enabled.
-     */
-    @Volatile private var autoStartOpenAttempts = 0
-    private val autoStartOpenProjection = object : Runnable {
-        override fun run() {
-            if (destroyed || autoStartDispatched.get()) return
-            val coordinator = SimpleCastRuntime.coordinator(applicationContext)
-            when (coordinator.state) {
-                is SimpleCastState.Off, is SimpleCastState.Error -> coordinator.openProjection()
-                else -> Unit // already opening/idle/casting — the idle listener will fire
-            }
-            if (++autoStartOpenAttempts < AUTOSTART_OPEN_MAX_ATTEMPTS && !autoStartDispatched.get()) {
-                handler.postDelayed(this, AUTOSTART_OPEN_RETRY_MS)
-            }
-        }
-    }
+    private val autostart by lazy { BubbleAutostart(applicationContext, handler) { destroyed } }
 
     /** State listener reference — stored so we can remove it on destroy. */
     private val stateListener: (SimpleCastState) -> Unit = { _ ->
@@ -124,6 +90,9 @@ class FloatingBubbleService : Service() {
     /** Periodic refresh as fallback; primary repaint is driven by state listener. */
     private val refresh = object : Runnable {
         override fun run() {
+            // WP6 · R6.1 — công tắc "Hiện nút nổi" đọc lại mỗi nhịp (xem [syncBubbleWindow]); đặt TRƯỚC
+            // [refreshBubbleState] để cửa sổ vừa dựng lại có nhãn trạng thái đúng ngay trong cùng nhịp.
+            syncBubbleWindow()
             refreshBubbleState()
             // TRIAL (2026-08-14): re-pin a cast app that an external trigger (e.g. Kiki starting GMaps
             // navigation) pulled off the cluster. Cheap-gated + serial-executed inside the coordinator.
@@ -144,7 +113,11 @@ class FloatingBubbleService : Service() {
         if (!startForegroundOnce()) { stopSelf(); return }
         // Master OFF (default OFF, opt-in 2026-08-11) → stand down after startForeground (stopSelf legal): no projection/bubble/autostart; nav→cluster + HUD stay independent.
         if (!castEnabledNow()) { stopSelf(); return }
-        if (!requestOverlayIfMissing()) { stopSelf(); return }
+        // WP6 · R6.1 — ba nhánh, ba hậu quả khác nhau (lý do từng nhánh ở KDoc [BubblePresence]). Chỉ nhánh
+        // NEEDS_OVERLAY_PERMISSION được đứng xuống: nhánh HIDDEN phải để dịch vụ SỐNG, vì nó còn là driver DUY
+        // NHẤT của tự-chiếu-khi-nổ-máy (R1) + nhịp giữ-cụm + nhịp áp lại vị trí bong bóng VietMap.
+        val presence = bubblePresence()
+        if (presence == BubblePresence.NEEDS_OVERLAY_PERMISSION) { requestOverlayIfMissing(); stopSelf(); return }
 
         renderer = BubbleRenderer(this)
         gestureHandler = BubbleGestureHandler(
@@ -157,7 +130,9 @@ class FloatingBubbleService : Service() {
         )
         actionDispatcher = BubbleActionDispatcher(applicationContext, handler, ::toast)
 
-        showBubble()
+        // ⚠ Dựng ba bộ trên VÔ ĐIỀU KIỆN, kể cả nhánh HIDDEN: owner bật lại công tắc giữa chuyến thì [syncBubbleWindow]
+        // gọi `showBubble()` từ nhịp 2 giây, và nó cần `renderer`/`gestureHandler` đã có (`lateinit`).
+        if (presence == BubblePresence.SHOW) showBubble()
 
         // Register named state listener (removable on destroy).
         val coordinator = SimpleCastRuntime.coordinator(applicationContext)
@@ -165,17 +140,25 @@ class FloatingBubbleService : Service() {
         handler.post(refresh)
 
         // Block PiP for GMaps/YouTube — prevents foreground detection confusion
-        blockPipForKnownApps(coordinator)
+        pipGuard.block(coordinator)
 
         // Auto-cast configured app if enabled (works without Activity open)
-        dispatchBootAutoStart(coordinator)
+        autostart.dispatch(coordinator)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // startForeground() before the overlay gate — same startForegroundService() contract as onCreate.
         if (!startForegroundOnce()) { stopSelf(startId); return START_NOT_STICKY }
         if (!castEnabledNow()) { stopSelf(startId); return START_NOT_STICKY }
-        if (!requestOverlayIfMissing()) { stopSelf(startId); return START_NOT_STICKY }
+        // WP6 · R6.1 — cùng ba nhánh như [onCreate] (đây là lời gọi LẶP LẠI: mỗi `startForegroundService`). Nhánh
+        // HIDDEN gỡ cửa sổ nếu còn sót rồi GIỮ dịch vụ; chỉ nhánh thiếu quyền mới đứng xuống.
+        when (bubblePresence()) {
+            BubblePresence.HIDDEN -> { hideBubble(); return START_STICKY }
+            BubblePresence.NEEDS_OVERLAY_PERMISSION -> {
+                if (!requestOverlayIfMissing()) { stopSelf(startId); return START_NOT_STICKY }
+            }
+            BubblePresence.SHOW -> Unit
+        }
         // ⚠ [onCreate] có thể đã DỪNG SỚM (`castEnabledNow` false, hoặc chưa có quyền overlay) và `return`
         // TRƯỚC khi dựng `renderer`/`gestureHandler`. Nếu cổng lật giữa `onCreate` và lượt này — owner vừa bấm
         // "Cho phép" ở màn hệ thống mà [requestOverlayIfMissing] vừa mở, hoặc Cast vừa được bật — thì
@@ -197,12 +180,9 @@ class FloatingBubbleService : Service() {
         val coordinator = SimpleCastRuntime.coordinator(applicationContext)
         coordinator.removeStateListener(stateListener)
         // Detach any still-pending autostart listeners (projection may never have reached Idle).
-        autoStartIdleListener?.let { coordinator.removeStateListener(it) }
-        autoStartSplitRightListener?.let { coordinator.removeStateListener(it) }
-        autoStartIdleListener = null
-        autoStartSplitRightListener = null
+        autostart.detach(coordinator)
         // Restore PiP permissions for blocked apps
-        restorePipForKnownApps(coordinator)
+        pipGuard.restore(coordinator)
         // Shutdown gesture executor. Guard the lateinits: onCreate() may stopSelf() and return
         // BEFORE these are initialized (overlay permission or startForeground denied — e.g. the
         // very first launch after a clean install), and stopSelf() still runs onDestroy(). Touching
@@ -321,7 +301,7 @@ class FloatingBubbleService : Service() {
     }
 
     private fun startForegroundOnce(): Boolean = foregroundStarted || runCatching {
-        startForeground(NOTIFICATION_ID, notification())
+        startForeground(BubbleForegroundNotice.ID, BubbleForegroundNotice.build(this))
         foregroundStarted = true
         true
     }.getOrElse {
@@ -332,6 +312,56 @@ class FloatingBubbleService : Service() {
     // Master Cast enable, read fresh each lifecycle entry (persisted via prefs). Fail-safe FALSE so a transient coordinator read error never silently STARTS casting (Cast is opt-in / default off, 2026-08-11).
     private fun castEnabledNow(): Boolean =
         runCatching { SimpleCastRuntime.coordinator(applicationContext).prefs.castEnabled() }.getOrDefault(false)
+
+    /**
+     * WP6 · R6.1 — *"cửa sổ nút nổi có được dựng không"*, đọc MỚI mỗi lần (cờ bền, CLAUDE.md §5) rồi để
+     * [BubblePresence] phân ba nhánh.
+     *
+     * ⚠ Fail-safe **TRUE**, NGƯỢC với [castEnabledNow] ngay trên — chủ ý: ở kia đọc hỏng mà đoán BẬT là tự ý đi
+     * giành mặt cụm trước mặt người lái; ở đây đọc hỏng mà đoán TẮT là **xoá lối vào chính của việc chiếu** mà
+     * không nói gì. Hai fail-safe ngược nhau vì hậu quả ngược nhau.
+     */
+    private fun bubblePresence(): BubblePresence = BubblePresence.decide(
+        visible = runCatching { SimpleCastRuntime.coordinator(applicationContext).prefs.bubbleVisible() }
+            .getOrDefault(true),
+        overlayGranted = runCatching { Settings.canDrawOverlays(this) }.getOrDefault(false),
+    )
+
+    /**
+     * Đưa cửa sổ về khớp công tắc — gọi từ nhịp 2 giây ([refresh]) nên gạt công tắc trong Cài đặt là thấy ngay.
+     *
+     * ⚠⚠ Cố ý KHÔNG stop-rồi-start dịch vụ (cách `CastBubbleControl.apply` dùng cho công tắc cũ): [onCreate] là
+     * nơi chạy [dispatchBootAutoStart], nên dựng lại dịch vụ ⇒ `autoStartDispatched` về false ⇒ **tự chiếu nổ lại
+     * giữa chuyến**, tức gạt một công tắc trình bày lại đẩy một app lên cụm trước mặt người lái.
+     *
+     * Nhánh thiếu quyền vẫn phải xin (một lần mỗi lượt chạy, [overlayRequested]): im lặng ở đây = nút nổi không
+     * bao giờ hiện mà không ai biết vì sao.
+     */
+    private fun syncBubbleWindow() {
+        when (bubblePresence()) {
+            BubblePresence.SHOW -> if (bubble == null) showBubble()
+            BubblePresence.HIDDEN -> hideBubble()
+            BubblePresence.NEEDS_OVERLAY_PERMISSION -> if (bubble != null) hideBubble() else requestOverlayIfMissing()
+        }
+    }
+
+    /**
+     * Gỡ cửa sổ nút nổi (và bảng con neo vào nó) — **không** dừng dịch vụ.
+     *
+     * Bảng con phải đi theo: nó đặt bằng toạ độ của bong bóng ([onBubbleLongPress]), để lại là một thẻ lơ lửng
+     * không còn gì neo vào. `::renderer.isInitialized` vì [onStartCommand] có thể tới đây trước khi [onCreate]
+     * dựng xong — cùng ca mà lượt soát ngoài 2026-09-16 đã bắt ở đường vào.
+     */
+    private fun hideBubble() {
+        submenu?.dismiss()
+        submenu = null
+        val view = bubble ?: return
+        handler.removeCallbacks(fade)
+        runCatching { windowManager?.removeView(view) }
+        bubble = null
+        params = null
+        if (::renderer.isInitialized) renderer.clearViews()
+    }
 
     private fun measureBubble(view: View) {
         val unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -354,184 +384,14 @@ class FloatingBubbleService : Service() {
         return value.coerceIn(0, (height - bubbleHeightPx(view)).coerceAtLeast(0))
     }
 
-    private fun notification(): android.app.Notification {
-        val channel = "cluster_cast_v2"
-        if (Build.VERSION.SDK_INT >= 26) {
-            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
-                NotificationChannel(channel, "Cluster Cast", NotificationManager.IMPORTANCE_LOW),
-            )
-        }
-        // Chạm thông báo ⇒ mở thẳng nhóm *Chiếu cụm* của Kachi Settings (S3 · R1). Màn ClusterNav cũ — đích của
-        // PendingIntent này trước 2026-09-13 — đã gỡ; "điều khiển" mà câu chữ nói tới nay nằm đúng ở nhóm đó.
-        val pending = PendingIntent.getActivity(
-            this, 0,
-            Intent(this, com.byd.clusternav.launcher.KachiHomeActivity::class.java)
-                .putExtra(
-                    com.byd.clusternav.launcher.EXTRA_OPEN_SETTINGS_GROUP,
-                    com.byd.clusternav.launcher.SettingsGroup.CAST.id,
-                ),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        @Suppress("DEPRECATION")
-        return android.app.Notification.Builder(this, channel)
-            .setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle("Cluster Cast")
-            .setContentText(Lang.t("Nhấn để mở điều khiển", "Tap to open controls"))
-            .setOngoing(true)
-            .setContentIntent(pending)
-            .build()
-    }
-
     private fun dp(value: Int) = (value * resources.displayMetrics.density + .5f).toInt()
-
-    /**
-     * Block PiP for known apps (GMaps, YouTube) via appops when our service runs.
-     * This prevents them from entering PiP mode which confuses foreground detection.
-     * Original mode is saved and restored on service destroy.
-     */
-    private fun blockPipForKnownApps(coordinator: SimpleCastCoordinator) {
-        Thread({
-            PIP_BLOCK_PACKAGES.forEach { pkg ->
-                val prev = queryPipMode(coordinator, pkg)
-                if (prev != null && prev != "deny") {
-                    pipPreviousModes[pkg] = prev
-                    coordinator.executeShell("appops set $pkg PICTURE_IN_PICTURE deny")
-                    Log.i(TAG, "blocked PiP for $pkg (was: $prev)")
-                }
-            }
-            // Also dismiss any currently active PiP
-            runCatching { coordinator.dismissPipOnDisplay(0) }
-        }, "pip-block").start()
-    }
-
-    /**
-     * Lấy RA danh sách cần trả lại TRƯỚC khi rời [onDestroy] (bằng `remove` nguyên tử, chạy trên luồng gọi),
-     * rồi mới phát lệnh trên luồng nền. Nhờ vậy: (a) không duyệt bản đồ dùng chung trong lúc luồng
-     * `"pip-block"` còn ghi, (b) mỗi gói được trả lại ĐÚNG MỘT lần, (c) một lệnh shell hỏng ở gói này không
-     * nuốt luôn gói còn lại — trước đây một ngoại lệ ở gói đầu bỏ mặc gói sau ở trạng thái `deny`.
-     */
-    private fun restorePipForKnownApps(coordinator: SimpleCastCoordinator) {
-        val pending = PIP_BLOCK_PACKAGES.mapNotNull { pkg -> pipPreviousModes.remove(pkg)?.let { pkg to it } }
-        if (pending.isEmpty()) return
-        Thread({
-            pending.forEach { (pkg, mode) ->
-                runCatching { coordinator.executeShell("appops set $pkg PICTURE_IN_PICTURE $mode") }
-                    .onFailure { Log.w(TAG, "restore PiP for $pkg failed", it) }
-                Log.i(TAG, "restored PiP for $pkg → $mode")
-            }
-        }, "pip-restore").start()
-    }
-
-    private fun queryPipMode(coordinator: SimpleCastCoordinator, pkg: String): String? {
-        val result = coordinator.executeShell("appops get $pkg PICTURE_IN_PICTURE")
-        if (!result.success) return null
-        // Output: "PICTURE_IN_PICTURE: allow" or "No operations."
-        val match = Regex("PICTURE_IN_PICTURE:\\s*(\\w+)").find(result.stdout)
-        return match?.groupValues?.get(1) ?: "allow" // default is allow if not set
-    }
-
-    /**
-     * Sole autostart driver (R1). Waits for the coordinator to reach [SimpleCastState.Idle], then
-     * dispatches the saved autostart intent. The Activity path ([CastAutostart]) no longer
-     * dispatches, so there is exactly ONE driver and the old two-driver SLOT_OCCUPIED race — which
-     * pushed the coordinator into Error → auto-recover Idle and wiped [SimpleCastState.CastingSplit]
-     * — is gone. Works without the Activity open (this is a boot-started foreground service).
-     *
-     * [autoStartDispatched] guards against re-entry (onStartCommand/onCreate running again): once a
-     * sequence is launched it is never launched twice within this service instance.
-     */
-    private fun dispatchBootAutoStart(coordinator: SimpleCastCoordinator) {
-        if (autoStartDispatched.get()) return
-        val prefs = coordinator.prefs
-        val autoFull = prefs.autoStartEnabled()
-        val autoSplit = prefs.autoStartSplitEnabled()
-        if (!autoFull && !autoSplit) return
-
-        val idleListener = object : (SimpleCastState) -> Unit {
-            override fun invoke(state: SimpleCastState) {
-                if (state !is SimpleCastState.Idle) return
-                // Detach the idle trigger and claim the one-shot BEFORE dispatching.
-                coordinator.removeStateListener(this)
-                autoStartIdleListener = null
-                if (!autoStartDispatched.compareAndSet(false, true)) return
-                if (autoFull) dispatchAutoFull(coordinator) else dispatchAutoSplit(coordinator)
-            }
-        }
-        autoStartIdleListener = idleListener
-        coordinator.addStateListener(idleListener)
-
-        // Pure boot has no Activity, so nothing else opens the projection and the idle trigger above
-        // would never fire. Open it here (idempotent, R10) with a bounded retry for adb-loopback boot
-        // timing. When autostart is off this method already returned, so gauges are untouched.
-        autoStartOpenAttempts = 0
-        handler.post(autoStartOpenProjection)
-    }
-
-    /** Full autostart: cast the saved package to the whole cluster. */
-    private fun dispatchAutoFull(coordinator: SimpleCastCoordinator) {
-        val pkg = coordinator.prefs.autoStartPackage()
-        if (pkg.isNullOrBlank()) return
-        Log.i(TAG, "boot auto-cast full: $pkg")
-        coordinator.dispatch(SimpleCastIntent.CastFull(pkg, AppMover.classifyApp(pkg)))
-    }
-
-    /**
-     * Split autostart: cast LEFT, then cast RIGHT ONLY after the coordinator confirms
-     * [SimpleCastState.CastingSplit] with a non-null left slot (verified landing). This replaces
-     * the old blind postDelayed(2000) that let RIGHT race LEFT into SLOT_OCCUPIED. If LEFT fails
-     * (transient Error → Idle), RIGHT is simply never dispatched — no wipe, no collision. If only
-     * one side is configured, only that side is cast.
-     */
-    private fun dispatchAutoSplit(coordinator: SimpleCastCoordinator) {
-        val leftPkg = coordinator.prefs.autoStartLeftPackage()?.takeIf(String::isNotBlank)
-        val rightPkg = coordinator.prefs.autoStartRightPackage()?.takeIf(String::isNotBlank)
-
-        if (leftPkg == null) {
-            // No left configured → cast right (if any) directly from Idle.
-            rightPkg?.let {
-                Log.i(TAG, "boot auto-cast split right-only: $it")
-                coordinator.dispatch(SimpleCastIntent.CastSlot(it, ClusterSlotSide.RIGHT))
-            }
-            return
-        }
-
-        Log.i(TAG, "boot auto-cast split left: $leftPkg")
-        coordinator.dispatch(SimpleCastIntent.CastSlot(leftPkg, ClusterSlotSide.LEFT))
-        if (rightPkg == null) return // left-only split
-
-        val rightListener = object : (SimpleCastState) -> Unit {
-            override fun invoke(state: SimpleCastState) {
-                // Fire only once LEFT has verifiably landed. Ignore Idle/Opening/Error transients
-                // (a failed LEFT never reaches CastingSplit, so RIGHT is never dispatched).
-                if (state !is SimpleCastState.CastingSplit || state.left == null) return
-                coordinator.removeStateListener(this)
-                autoStartSplitRightListener = null
-                if (state.right != null) return // RIGHT already present — nothing to do
-                if (!autoStartRightDispatched.compareAndSet(false, true)) return
-                Log.i(TAG, "boot auto-cast split right: $rightPkg")
-                coordinator.dispatch(SimpleCastIntent.CastSlot(rightPkg, ClusterSlotSide.RIGHT))
-            }
-        }
-        autoStartSplitRightListener = rightListener
-        coordinator.addStateListener(rightListener)
-    }
 
     companion object {
         private const val TAG = "ClusterCastBubble"
-        private const val NOTIFICATION_ID = 1042
         private const val REFRESH_INTERVAL_MS = 2_000L
         private const val EDGE_MARGIN_DP = 28
         private const val IDLE_ALPHA = 0.35f
         private const val ACTIVE_ALPHA = 1.0f
         private const val FADE_DELAY_MS = 2_500L
-        private const val AUTOSTART_OPEN_MAX_ATTEMPTS = 5
-        private const val AUTOSTART_OPEN_RETRY_MS = 3_000L
-        private val PIP_BLOCK_PACKAGES = listOf(
-            "com.google.android.apps.maps",
-            "app.revanced.android.apps.maps",
-            "com.google.android.youtube",
-            "app.revanced.android.youtube",
-            "app.revanced.android.apps.youtube",
-        )
     }
 }

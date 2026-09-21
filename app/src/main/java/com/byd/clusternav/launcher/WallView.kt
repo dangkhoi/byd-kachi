@@ -43,7 +43,16 @@ class WallView(context: Context) : View(context) {
         this.photo = bitmap
         this.fit = fit
         this.dimPercent = dimPercent.coerceIn(0, 90)
+        // UX-OVERHAUL WP1 · R1.3 — glass THẬT: làm mờ NỀN này để thẻ trong mờ frost lên trên. Không làm gì ở API < 31
+        // hoặc khi công tắc TẮT (lùi về glass giả). Đặt ở đây để đổi ảnh nền thì hiệu ứng cập nhật theo.
+        KachiGlassMode.applyBackdrop(this)
         invalidate()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Áp lúc gắn vào cửa sổ (lần dựng màn đầu tiên) — công tắc glass thật áp ở lượt dựng màn kế tiếp.
+        KachiGlassMode.applyBackdrop(this)
     }
 
     /** Có đang vẽ ảnh không (cho test dây nối / nhật ký). */

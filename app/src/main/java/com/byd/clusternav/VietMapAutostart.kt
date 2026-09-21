@@ -94,6 +94,28 @@ object VietMapAutostart {
     }
 
     /**
+     * PURE — activity đang resumed có phải **MÀN CHÍNH (đã vào map)** của VietMap không, KHÔNG tính màn splash/flash.
+     *
+     * ## Bug owner báo 2026-09-21 (vì sao cần hàm này TÁCH khỏi [isResumedActivity])
+     * VietMap cold-start chậm dừng ở **màn flash** vài giây. Màn flash cũng là một activity của `vn.vietmap.live`,
+     * nên nó khớp [isResumedActivity] ("bất kỳ activity của gói") ⇒ poll tưởng "đã vào map", hạ VietMap xuống nền
+     * **trong khi còn ở flash** ⇒ `VMBluetoothService` chưa kịp dựng bóng ⇒ bóng không lên. Owner phải bấm vào
+     * VietMap cho nó chạy xong rồi hạ tay thì bóng mới lên.
+     *
+     * VietMap là Flutter: activity host map là `.MainActivity` (cũng là dòng resumed điển hình trong KDoc trên).
+     * Màn flash mang tên KHÁC (`.SplashActivity`/`.LaunchActivity`/…). Nên "đã vào map" = resumed activity là
+     * `pkg/` **và** tên activity chứa `MainActivity`. Không có `MainActivity` (đang splash) ⇒ CHƯA vào map ⇒ poll
+     * tiếp. Nếu bản VietMap nào đặt tên khác thì poll sẽ hết giờ (POLL_TIMEOUT_MS) rồi vẫn hạ nền — an toàn hơn
+     * hạ sớm, và đó là ca hiếm; giữ khớp `MainActivity` vì đó là tên [ĐO] thấy ở dòng resumed thực tế.
+     */
+    internal fun isInMapActivity(dumpsysResumedGrep: String, pkg: String = PKG): Boolean {
+        if (dumpsysResumedGrep.isBlank()) return false
+        return dumpsysResumedGrep.lineSequence().any { line ->
+            line.contains("ResumedActivity") && line.contains("$pkg/") && line.contains("MainActivity")
+        }
+    }
+
+    /**
      * Giành 1 suất chạy: trả `true` nếu được phép tiếp tục (đánh dấu in-flight + đóng dấu thời gian). Trả
      * `false` nếu ĐANG có phiên chạy (in-flight) HOẶC còn trong [COOLDOWN_MS]. Thành công ⇒ caller PHẢI gọi
      * [finishRun] khi xong (dùng `try/finally`). `internal` để test off-car lái được trọn vòng gate.
@@ -253,14 +275,14 @@ object VietMapAutostart {
         while (System.currentTimeMillis() < deadline) {
             Thread.sleep(POLL_INTERVAL_MS)
             val resumed = runCatching {
-                isResumedActivity(sh("dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity|ResumedActivity'").output)
+                isInMapActivity(sh("dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity|ResumedActivity'").output)
             }.getOrDefault(false)
             val nowMs = System.currentTimeMillis()
             if (resumed) {
                 if (resumedSinceMs == 0L) resumedSinceMs = nowMs
                 if (nowMs - resumedSinceMs >= SETTLE_MS) return true
             } else {
-                resumedSinceMs = 0L   // rớt foreground (splash→map) ⇒ chờ ổn định lại
+                resumedSinceMs = 0L   // còn ở splash/flash (chưa vào MainActivity) ⇒ chờ vào map thật
             }
         }
         return false

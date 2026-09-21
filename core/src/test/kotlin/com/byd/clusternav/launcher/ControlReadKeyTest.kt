@@ -129,15 +129,17 @@ class ControlReadKeyTest {
      * của nó TRÙNG mã một datum cũng đọc được, và đó là đa số 11 nút ngoài 6 nút của lượt T2.
      */
     @Test
-    fun `dung 17 tren 47 nut co duong doc`() {
+    fun `dung 17 tren 39 nut co duong doc`() {
         val wired = ControlRegistry.ALL.filter { readPathOf(it.id) != null }.map { it.id }
         val blind = ControlRegistry.ALL.map { it.id } - wired.toSet()
         // ⚠ (V) 2026-09-17: 54 → 47 nút (owner gỡ 7 nút NO). [ĐO] độ phủ GIỮ NGUYÊN **17** — cả 7 nút bị gỡ
         // đều nằm trong nhóm chưa có đường đọc, nên độ phủ tương đối còn TĂNG (17/54 → 17/47).
-        assertEquals(47, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
+        // ⚠ WP8 2026-09-20: 47 → 39 nút (owner purge 8). [ĐO] độ phủ GIỮ NGUYÊN **17** — cả 8 nút bị gỡ đều nằm
+        // trong nhóm chưa có đường đọc, nên độ phủ tương đối TĂNG (17/47 = 36 % → 17/39 = 44 %).
+        assertEquals(39, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
         assertEquals(
             17, wired.size,
-            "độ phủ đường đọc đổi (thấy ${wired.size}/47; chưa có đường đọc: ${blind.sorted()}). " +
+            "độ phủ đường đọc đổi (thấy ${wired.size}/39; chưa có đường đọc: ${blind.sorted()}). " +
                 "Sửa dòng T2 trong docs/specs/kachi-live-state-ux.html NGAY trong lượt này (R2.1), đừng chỉ sửa số ở đây.",
         )
     }

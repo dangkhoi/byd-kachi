@@ -128,6 +128,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             // thứ khác, không phải nhớ nạp lại bằng tay ở tầng UI (bài học [SOÁT P1-1]).
             savedPlaces = prefs.savedPlaces(),
             topStrip = prefs.topStrip(),
+            // UX-OVERHAUL · WP4 — thứ tự các vật trên thanh trên, nạp CÙNG lượt (theo hồ sơ như `topStrip` ngay
+            // trên) ⇒ đổi hồ sơ là thanh sắp lại theo hồ sơ đó, không phải nhớ nạp bằng tay ở tầng UI.
+            header = prefs.headerLayout(),
             // S1·T4: nạp cùng lượt với mọi thứ khác ⇒ mở lại màn Cài đặt là thấy đúng cờ đang lưu (bài học P1-1: nạp
             // bằng tay ở tầng UI thì sẽ có lần quên).
             autostart = prefs.launcherAutostart(),
@@ -256,6 +259,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun topStrip(): TopStripConfig = prefs.topStrip()
 
     override fun setTopStrip(config: TopStripConfig) = prefs.setTopStrip(config)
+
+    override fun headerLayout(): HeaderLayout = prefs.headerLayout()
+
+    override fun setHeaderLayout(layout: HeaderLayout) = prefs.setHeaderLayout(layout)
 
     override fun savedPlaces(): List<SavedPlace> = prefs.savedPlaces()
 

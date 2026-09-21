@@ -77,9 +77,11 @@ class CapabilityPickerTest {
         // 100 + 47 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 19 mã NO — trước đó 112 + 54; trước 09-16 là 123 + 64).
         // 1.85: **102** đọc (+1 `ac_wind_auto`) · nút giữ 47 (−`hood` +`child_lock_r`) · bảng ẩn còn 9 mục
         // (mục `hood` rời đi CÙNG lượt xoá mã — nó không còn gì để ẩn).
+        // ⚠ WP8 2026-09-20: **73** đọc + **39** nút (owner purge 37 mã BỎ) · bảng ẩn +1 mục (`cast` — giữ
+        // feature, chỉ ẩn ô khỏi bộ chọn) ⇒ 10 mục ẩn.
         assertEquals(
-            102 + 47 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
-            "mục rời theo lĩnh vực phải còn nguyên 102 đọc + 47 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
+            73 + 39 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
+            "mục rời theo lĩnh vực phải còn nguyên 73 đọc + 39 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
         )
     }
 

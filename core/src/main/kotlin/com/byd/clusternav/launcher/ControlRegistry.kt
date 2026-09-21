@@ -72,6 +72,26 @@ data class DockConfig(
         return copy(enabled = cur)
     }
     fun isVertical(): Boolean = edge == DockEdge.LEFT || edge == DockEdge.RIGHT
+
+    /**
+     * ═══ UX-OVERHAUL · WP4 — DỜI CHỖ MỘT NÚT TRONG THANH ════════════════════════════════════════════════════
+     *
+     * [enabled] đã là **danh sách có thứ tự** (thứ tự = thứ tự nút hiện trên thanh) từ RW0, nhưng tới 1.85 **không
+     * có bề mặt nào sắp lại được nó**: [DockSelection.apply] cố ý giữ nguyên chỗ của phần cũ và nối phần mới vào
+     * cuối (xem KDoc ở đó — xáo lại theo thứ tự catalog là một lỗi đã tránh). Nên nút vào thanh muộn thì **mãi mãi**
+     * ở cuối. WP4 · R4.1 vá đúng chỗ ấy.
+     *
+     * Uỷ quyền [BarOrder.move] — CÙNG phép với thứ tự thanh trên ([HeaderLayout.move]), không viết bản thứ hai.
+     * Không dời được (đụng biên / mã không có trong thanh) ⇒ trả về **chính** vật này, để chỗ gọi biết mà không
+     * nhân đôi luật.
+     */
+    fun moveEnabled(id: String, delta: Int): DockConfig {
+        val next = BarOrder.move(enabled, id, delta)
+        return if (next === enabled) this else copy(enabled = next)
+    }
+
+    /** Dời được nút [id] theo [delta] hay không — CÙNG luật với [moveEnabled]. */
+    fun canMove(id: String, delta: Int): Boolean = BarOrder.canMove(enabled, id, delta)
 }
 
 /**
@@ -182,10 +202,6 @@ object ControlRegistry {
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.PROVEN, bindingKey = "AudioManager.setStreamVolume",
             readKey = "media_vol",   // T2: đọc bằng `getStreamVolume` của CHÍNH Android — không mượn HAL xe
             labelEn = "Volume"),
-        // BINDING-OK: 321912848 = WIPER_FRONT_WIPER_LEVEL đúng id (caveat device-target — NEEDS-ONCAR).
-        ControlDef("wiper", "Gạt mưa", "ic-wiper", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "321912848",
-            labelEn = "Wipers"),
         ControlDef("cast", "Chiếu cụm", "ic-cast", ControlKind.TOGGLE,
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "AutoContainer.sendInfo",
             labelEn = "Cast to cluster"),
@@ -302,29 +318,6 @@ object ControlRegistry {
             halDevice = "BYDAutoSettingDevice",
             labelEn = "Driver seat memory"),
         // Đèn
-        // NEEDS-ONCAR: 4 nút ambient_* — device nghi SETTING(1023) atmosphere-lamp; scale nghi 0–100 (không 0–10), màu 31.
-        // ⚠ V3 · R12 [ĐO nguồn fw-dl3]: 1276153924 không có. Ứng viên **gần** nhất là
-        // `Setting.SET_ATMOSPHERE_LAMP_PANEL_STATE_SET` = **1276153872** (lệch 52) — gần tới mức nghi cùng họ,
-        // nhưng "gần" không phải "đúng", và đây là một lượt GHI vào đèn nội thất. NEEDS-ONCAR (1 lệnh, có người
-        // nhìn): `hal --es op set --es dev BYDAutoSettingDevice --es m set --es args …` sau khi có `featmap`.
-        ControlDef("ambient_power", "Đèn viền cabin", "ic-car-top-ambient", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153924",
-            // ⚠ Nhãn Anh phải TRÙNG với datum `ambient_enabled` **đúng như bản Việt trùng nhau** ("Đèn viền cabin"):
-            // cặp này vốn là một-cái-xem / một-cái-bấm nên chúng ĐƯỢC trùng và đã có gợi ý loại (`· xem`/`· bấm`).
-            // Nhóm `g_ambient` thì mang nhãn KHÁC ("Ambient light"), y như bản Việt ("Đèn viền") — nếu dịch cả ba
-            // thành "Ambient lighting" thì tiếng Anh sinh ra một cặp trùng MỚI mà tiếng Việt không có, và cái trùng
-            // mới đó **không được gợi ý loại** (phép phát hiện trùng chạy trên nhãn Việt).
-            labelEn = "Cabin ambient light"),
-        ControlDef("ambient_color", "Màu đèn viền", "ic-car-top-ambient-color-front", ControlKind.SELECT,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276194864",
-            args = listOf("Tím", "Xanh dương", "Xanh lá", "Vàng", "Trắng"),
-            labelEn = "Ambient colour", argsEn = listOf("Purple", "Blue", "Green", "Yellow", "White")),
-        ControlDef("ambient_brightness", "Độ sáng viền", "ic-car-top-ambient-bright-front", ControlKind.STEP, value = 3, min = 0, max = 10, step = 1,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276194858",
-            labelEn = "Ambient brightness"),
-        ControlDef("ambient_music", "Đèn viền theo nhạc", "ic-car-top-ambient-music", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "489701407",
-            labelEn = "Ambient follows music"),
         // [ĐO] 1276153912 = INSTRUMENT_HEADLIGHT_CONTROL_SET (BYDAutoFeatureIds.java) thuộc INSTRUMENT(1007) — Domain.LIGHTS
         // route thô tới LIGHT(1004) là SAI ⇒ `halDevice` ghi đè. NEEDS-ONCAR: enum index↔giá trị (hiện gửi index thô).
         ControlDef("headlight_mode", "Chế độ đèn pha", "ic-car-front-headlight-mode", ControlKind.SELECT,
@@ -343,10 +336,6 @@ object ControlRegistry {
             domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoEnergyDevice.setEnergyMode",
             args = listOf("EV", "HEV"),
             labelEn = "EV / HEV", argsEn = listOf("EV", "HEV")),
-        ControlDef("regen_level", "Mức tái tạo", "ic-bolt", ControlKind.SELECT,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setEnergyFeedback",
-            args = listOf("Tiêu chuẩn", "Cao"),
-            labelEn = "Regen level", argsEn = listOf("Standard", "High")),
         // ⚠ (V) FEATURE-FILTER 2026-09-17: ba nút SẠC (`target_soc_set` · `charge_cap` · `start_charging`) đã xoá
         // — owner chấm NO cho cả cụm sạc (xem nhật ký cùng tên ở TelemetryRegistry). `wireless_charge` KHÔNG nằm
         // trong danh sách NO nên ở lại.
@@ -378,13 +367,6 @@ object ControlRegistry {
         ControlDef("brightness_gear", "Độ sáng màn", "ic-light", ControlKind.STEP, value = 5, min = 0, max = 10, step = 1,
             domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276174360",
             labelEn = "Screen brightness"),
-        // HUD = ký hiệu ngành (head-up display) ⇒ giữ nguyên.
-        ControlDef("hud_switch", "HUD kính lái", "ic-cast", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "1276174371",
-            labelEn = "Windscreen HUD"),
-        ControlDef("hud_brightness", "Độ sáng HUD", "ic-light", ControlKind.STEP, value = 5, min = 0, max = 10, step = 1,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "1276174360",
-            labelEn = "HUD brightness"),
     )
 
     fun byId(id: String): ControlDef? = RegistryIndex.CONTROLS[id]   // [SOÁT P3] tra băm — xem KDoc RegistryIndex

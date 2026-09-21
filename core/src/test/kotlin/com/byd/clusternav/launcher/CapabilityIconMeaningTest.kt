@@ -92,7 +92,9 @@ class CapabilityIconMeaningTest {
             // `g_adas` · `g_occupants`): cả bảy "mù icon" vì cùng một lý do — ô con của chúng khác nhau ở VỊ
             // TRÍ, mà icon theo khái niệm không nói được vị trí. Bộ hình xe theo vị trí chữa đúng chỗ đó, nên
             // đây là chiều danh sách PHẢI rữa. Còn lại hai nhóm mà ô con khác nhau ở ĐẠI LƯỢNG chứ không ở chỗ.
-            listOf("g_battery", "g_trip"),
+            // WP8: `g_battery` rời danh sách — 5 ô pin dùng chung hình (3 nhiệt cell + 2 áp cell) đã purge,
+            // nên nhóm pin còn lại phân biệt được hình.
+            listOf("g_trip"),
             blind,
             "danh sách nhóm mà icon ô con KHÔNG phân biệt được đã đổi — cập nhật danh sách và xem lại bộ vẽ",
         )

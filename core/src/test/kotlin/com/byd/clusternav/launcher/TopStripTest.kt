@@ -209,7 +209,8 @@ class TopStripTest {
             "màn chọn phải bày ĐỦ mọi mã đặt được — không còn hộp thoại 'Thêm chip khác…' để giấu phần thiếu",
         )
         // Sàn 100 → 88 sau (V) FEATURE-FILTER 2026-09-17 (12 datum xoá + 8 ô lốp ẩn ⇒ [ĐO] 94 ô).
-        assertTrue(ids.size > 88, "…và đó là gần trăm mục đọc, không phải 7 ô như trước R11: ${ids.size}")
+        // ⚠ WP8 2026-09-20: 88 → 60 (purge 29 datum ⇒ [ĐO] 67 ô). Sàn là chốt chống bộ quét hỏng.
+        assertTrue(ids.size > 60, "…và đó là hàng chục mục đọc, không phải 7 ô như trước R11: ${ids.size}")
     }
 
     /** Khối *"đang bật"* đứng ĐẦU và giữ đúng thứ tự chip trên thanh — nó là ảnh của thanh trên, không phải một tập. */

@@ -175,6 +175,19 @@ class HomeViewModel(
     fun toggleTopStrip(id: String, on: Boolean) = setTopStrip(_uiState.value.topStrip.setEnabled(id, on))
 
     /**
+     * UX-OVERHAUL · WP4 — **thứ tự các vật trên thanh trên**. State + lưu bền trong MỘT lượt, cùng khuôn [setTopStrip]
+     * (khoá `header_order` nằm ngoài bộ khoá mà `persist` ghi).
+     *
+     * Phép DỜI là hàm thuần ở `:core` ([HeaderLayout.move] → [BarOrder.move]); ở đây chỉ nhận thứ tự đã chốt. Không
+     * có cổng `moveHeaderItem(item, delta)` vì cổng ấy sẽ là bản sao thứ hai của luật kẹp biên — đúng bẫy mà
+     * [setDockConfig] đã ghi lại một lần (`toggleDock` cũ không diễn tả được chiều tắt hàng loạt).
+     */
+    fun setHeaderLayout(layout: HeaderLayout) {
+        _uiState.update { it.copy(header = layout) }
+        repository.setHeaderLayout(layout)
+    }
+
+    /**
      * **Sổ địa chỉ** của hồ sơ đang dùng — state + lưu bền trong MỘT lượt, cùng khuôn mẫu [setTopStrip].
      *
      * Không đi qua [mutate]/`persist` vì khoá này nằm ngoài bộ khoá mà `persist` ghi (đúng như đơn vị, hình nền,

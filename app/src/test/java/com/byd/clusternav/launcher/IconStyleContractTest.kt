@@ -44,7 +44,9 @@ class IconStyleContractTest {
         "ic_turn_right.xml" to "mũi tên rẽ của màn dẫn đường — như trên",
         "ic_turn_straight.xml" to "mũi tên đi thẳng của màn dẫn đường — như trên",
         "ic_turn_right_g.xml" to "mũi tên rẽ cockpit cũ (turn_tile_bg) — cùng họ dẫn đường",
-        "ic_bubble_nav.xml" to "nút nổi Cast vẽ TRỰC TIẾP (BubbleRenderer), xanh thương hiệu = danh tính Cast; bề mặt đã chạy trên xe (CLAUDE.md §6)",
+        // ⚠ WP6 · R6.2 (2026-09-20) — `ic_bubble_nav.xml` (mũi tên xanh `#1565C0`) đã **XOÁ**: nút nổi nay vẽ
+        // `launcher_fg` = chính icon app Kachi (owner *"đổi icon nút nổi thành icon app Kachi"*). Dòng legacy phải
+        // rời theo, vì bài `danh sach legacy tu rua hai chieu` đòi mọi tệp khai ở đây còn tồn tại thật.
         "ic_menu_config.xml" to "bảng con nút nổi Cast (bề mặt đã chạy trên xe), không có bước tint",
         "ic_menu_left.xml" to "cùng bảng con nút nổi Cast — không tint",
         "ic_menu_right.xml" to "cùng bảng con nút nổi Cast — không tint",
@@ -298,7 +300,7 @@ class IconStyleContractTest {
     @Test
     fun `moi icon nhom cua core tra ra duoc mot drawable that`() {
         val declared = CapabilityGroups.ALL.map { it.icon }
-        assertEquals(9, declared.size, "spec §4.1 chốt 9 nhóm (2026-09-16 owner gỡ ADAS/an toàn — trước đó 12)")
+        assertEquals(8, declared.size, "spec §4.1 chốt 8 nhóm (09-16 gỡ ADAS: 12→9 · WP8 gỡ g_ambient: 9→8)")
         assertEquals(declared.size, declared.toSet().size, "hai nhóm khai trùng tên icon")
         val table = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiTheme.kt")
         val files = icons().map { it.first }.toSet()

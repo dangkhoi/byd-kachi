@@ -79,6 +79,8 @@ internal object SettingsCatalogClusterNav {
             "voice_keep_log",
             // App dẫn đường mặc định (owner 2026-09-18) — cùng tệp `clusternav_prefs` với mọi khoá giọng nói.
             "voice_nav_default_app",
+            // App nhạc mặc định (owner 2026-09-21) — cùng tệp, cùng lẽ với app dẫn đường.
+            "voice_music_default_app",
             // AUTOMATION (1.85, spec kachi-automation) — hai khoá CẤU HÌNH. Khai ở `PrefsAutomation.kt` (hàm mở
             // rộng của `Prefs`, cùng tệp `clusternav_prefs` — tách vì trần 500 dòng, xem KDoc tệp đó).
             // ⚠ Khoá thứ ba `nav_automation_fired` KHÔNG ở đây: nó là TRẠNG THÁI CHẠY, khai ở
@@ -88,6 +90,10 @@ internal object SettingsCatalogClusterNav {
         // ── simple_cast_prefs (SimpleCastRuntime.kt) ──
         listOf(
             "cast_enabled", "split_ratio_left_pct",
+            // UX-OVERHAUL WP6 · R6.1 — công tắc HIỆN nút nổi. Cùng tệp `simple_cast_prefs` với `cast_enabled` ngay
+            // cạnh, và cùng một bộ đọc (`SimpleCastPrefs` → `FloatingBubbleService`), nên "cấu hình chiếu cụm nằm
+            // ở đâu" vẫn có đúng MỘT câu trả lời.
+            "cast_bubble_visible",
             "autostart_enabled", "autostart_package",
             "autostart_split_enabled", "autostart_left_package", "autostart_right_package",
         ).forEach { put(it, "simple_cast_prefs") }

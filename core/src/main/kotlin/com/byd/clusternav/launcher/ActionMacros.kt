@@ -73,13 +73,11 @@ data class ActionMacro(
     /**
      * Có cần dấu "chưa kiểm trên xe" không.
      *
-     * ⚠ **KHÔNG** dùng [EvidenceTier.needsBadge] ở đây. Cờ đó chỉ đúng cho OVERDRIVE/DASHCAST và **trả `false` cho
-     * NEEDS_CAR** — vì với mục ĐỌC, NEEDS_CAR đã tự lộ ra bằng "—" + mờ (không có số thì người xem biết ngay). Gói
-     * lệnh là **NÚT**: không có con số nào để mờ, nên dùng cờ đó thì gói yếu nhất ([EvidenceTier.NEEDS_CAR], vd
-     * `mac_door_light` có bước `door` chưa xác nhận) hiện **y như** gói đã chạy thật — hứa quá đúng chỗ nguy hiểm
-     * nhất. Ở đây: **không PROVEN thì phải mang dấu**.
+     * ⚠ 2026-09-21 · OWNER CHỐT BỎ HẲN CHẤM — luôn `false` (xem KDoc [EvidenceTier.needsBadge]). Giữ [tier] làm
+     * dữ liệu (mức yếu nhất của gói), chỉ không vẽ dấu nữa. Trước đây trả `tier() != PROVEN` để nút gói lệnh yếu
+     * nhất không hiện như đã chạy thật — nay cả hai loại nút đều không có dấu, và lượt test-xe cuối đi hết một vòng.
      */
-    fun needsBadge(): Boolean = tier() != EvidenceTier.PROVEN
+    fun needsBadge(): Boolean = false
 }
 
 /** Kết quả chạy MỘT bước — để chỗ gọi biết chính xác bước nào hỏng, không chỉ "gói hỏng". */

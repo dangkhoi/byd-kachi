@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.AdbKeys
+import com.byd.clusternav.Prefs
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalSetHomeOutcome
 import com.byd.clusternav.carexec.LocalShellFailure
@@ -92,3 +93,18 @@ fun ClusterNavBridge.clearDefaultHome(onResult: (LocalSetHomeOutcome) -> Unit) {
         ui(Runnable { onResult(outcome) })
     }, "bridge-clear-home").start()
 }
+
+/**
+ * UX-OVERHAUL WP1 · R1.3 — công tắc **"Kính thật (làm mờ nền)"** (`ui_glass_real`).
+ *
+ * Ở đây, không ở `ClusterNavBridge.kt`: tệp đó đã **499 dòng** trước WP1 (trần 500 — CLAUDE.md §4.1), nên thêm bất
+ * cứ gì vào nó là vượt trần. Cùng khuôn mọi `ClusterNavBridge*` khác: màn Cài đặt không ghi `Prefs.set` trực tiếp
+ * (`SettingsScreenWiringContractTest` cấm), mọi state bền đi qua một cửa.
+ *
+ * Theo XE, mặc định TẮT; chỉ thấy được ở API ≥ 31 ([KachiGlassMode]) nên **trên xe DiLink (API 29) nó luôn lùi về
+ * glass GIẢ**; áp ở lượt dựng màn kế tiếp.
+ */
+fun ClusterNavBridge.glassReal(): Boolean = Prefs.glassReal(app)
+
+/** Xem [glassReal]. */
+fun ClusterNavBridge.setGlassReal(on: Boolean) = Prefs.setGlassReal(app, on)

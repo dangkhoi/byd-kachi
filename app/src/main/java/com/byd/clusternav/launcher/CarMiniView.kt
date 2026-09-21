@@ -2,31 +2,33 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.RectF
 import android.view.View
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
- * Sơ đồ xe mini cho widget *Trạng thái xe* — VISUAL-REFRESH P3: nay là **cùng chiếc xe** với bộ icon và hai bảng
- * lớn ([CarArtSource] mặt TRÊN, mức tả thực (1) qua [CarArtPainter]), thay cho bản `drawRoundRect` hệ 150×250 —
- * "chiếc xe thứ ba" mà kiểm kê U7 §1 đã gọi tên và AC1.4 cấm (`CarFramesSourceContractTest`).
+ * Sơ đồ xe mini cho widget *Trạng thái xe* — **WP3-v5**: nay là **ẢNH bitmap** ([CarImageLayer]) + chấm trạng thái
+ * cửa/cốp tại neo [CarLayout], thay hình vector cũ (owner bỏ vector car).
  *
- * Trạng thái vẽ được: bốn cửa + cốp (đúng dữ liệu widget này có — `CarStatus.Body`), tone qua [CarPartStyle]
- * (`:core`); chưa đọc được ⇒ nét DIM, không bịa đóng.
+ * Trạng thái vẽ được: bốn cửa + cốp (đúng dữ liệu widget này có — `CarStatus.Body`). Cửa mở ⇒ chấm ĐỎ tại vị trí
+ * cửa đó; chưa đọc/đóng ⇒ không chấm (ảnh xe đã nói "xe kín"). KHÔNG viền, KHÔNG blur.
  */
 class CarMiniView(context: Context) : View(context) {
 
-    private val painter = CarArtPainter()
+    private val car = CarImageLayer(context) { invalidate() }
+    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val dst = RectF()
-    private val laidOut = RectF()
-    private val strokeFloorPx = Sp.dpf(context, Sp.STROKE)
+    private val content = RectF()
 
-    /** Cửa mở? (`null` = chưa đọc), thứ tự [CarPart.DOOR_LF]·RF·LR·RR; cốp riêng. Dựng map ở [set], không trong onDraw. */
-    private var open: Map<String, Boolean?> = emptyMap()
+    /** Cửa mở? (`null` = chưa đọc), thứ tự [CarPart.DOOR_LF]·RF·LR·RR; cốp riêng. */
+    private var doors: List<Boolean?> = emptyList()
+    private var tailgate: Boolean? = null
 
     fun set(doors: List<Boolean?>, tailgate: Boolean?) {
-        val ids = listOf(CarPart.DOOR_LF, CarPart.DOOR_RF, CarPart.DOOR_LR, CarPart.DOOR_RR).map(CarFrames::pieceIdOf)
-        open = ids.mapIndexed { i, id -> id to doors.getOrNull(i) }.toMap() + (CarFrames.pieceIdOf(CarPart.TAILGATE) to tailgate)
+        this.doors = doors
+        this.tailgate = tailgate
         invalidate()
     }
 
@@ -35,21 +37,30 @@ class CarMiniView(context: Context) : View(context) {
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
         val pad = minOf(w, h) * PAD_RATIO
-        val strokePx = maxOf(minOf(w, h) * OUTLINE_RATIO, strokeFloorPx)
         dst.set(pad, pad, w - pad, h - pad)
-        dst.inset(strokePx / 2f, strokePx / 2f)
-        if (dst != laidOut) { painter.layout(CarFace.TOP, dst, openFrame = true, strokePx = strokePx); laidOut.set(dst) }
-        painter.draw(
-            canvas,
-            toneOf = { p -> open[p.id]?.let { if (it) GroupTone.ALERT else GroupTone.NEUTRAL } },
-            availableOf = { p -> !open.containsKey(p.id) || open[p.id] != null },
-            // Widget này chỉ có dữ liệu cửa + cốp ⇒ không vẽ gương/ca-pô (không bịa bộ phận không đọc).
-            include = { p -> p.role != CarPartRole.MIRROR && p.role != CarPartRole.PANEL || open.containsKey(p.id) },
-        )
+        car.ensure(width, height)
+        car.draw(canvas, dst)
+
+        car.contentRect(dst, content)
+        val r = minOf(content.width(), content.height()) * DOT_RATIO
+        val open = Color.parseColor(KachiTheme.RED)
+        // Cửa
+        val parts = listOf(CarPart.DOOR_LF, CarPart.DOOR_RF, CarPart.DOOR_LR, CarPart.DOOR_RR)
+        parts.forEachIndexed { i, part ->
+            if (doors.getOrNull(i) == true) markAt(canvas, part, r, open)
+        }
+        if (tailgate == true) markAt(canvas, CarPart.TAILGATE, r, open)
+    }
+
+    private fun markAt(canvas: Canvas, part: CarPart, r: Float, color: Int) {
+        val a = CarLayout.part(part)
+        dot.color = color
+        canvas.drawCircle(content.left + a.x * content.width(), content.top + a.y * content.height(), r, dot)
     }
 
     private companion object {
         const val PAD_RATIO = 0.04f
-        const val OUTLINE_RATIO = 0.018f
+        /** Bán kính chấm theo cạnh nhỏ của khung xe — đủ thấy mà không che thân. */
+        const val DOT_RATIO = 0.07f
     }
 }

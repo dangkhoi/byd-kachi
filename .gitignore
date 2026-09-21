@@ -119,3 +119,14 @@ voice/record/
 
 # Log/ghi âm voice thu trên xe (PII — KHÔNG commit)
 logs/
+
+# ─── Ảnh xe (WP3-v5) — nguồn ảnh top-down có BẢN QUYỀN (BYD/hãng), KHÔNG vào repo public.
+# App đọc ảnh xe từ thư mục MÁY (files/car/), không bundle vào APK/repo. images/ chỉ để push demo lên máy ảo.
+images/
+
+# Ảnh chụp máy ảo lượt UX-overhaul (nhiều ảnh render xe) — KHÔNG vào repo public (security scan).
+docs/diagnostics/ux-overhaul-2026-09-20/
+
+# ─── Giọng bé: chỉ commit archive .zip + bảng ghim sha256 (đủ cho OTA). Thư mục CLIP ĐÃ BUNG (1 546 .aac ~13 MB)
+# là bản sao của .zip ⇒ không đưa vào history (git không delta được AAC nén sẵn).
+voice/tts/kachi-giong-be-v1/

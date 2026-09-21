@@ -3,12 +3,13 @@ package com.byd.clusternav.launcher
 /**
  * ═══ VISUAL-REFRESH P1b · R8 — NGƯỜI DÙNG CHỌN MÀU (owner 2026-09-16: *"có cho người ta chọn màu không nhỉ?"*) ══
  *
- * Ba lựa chọn, lưu **theo hồ sơ tài xế** (AC8.4, khoá `color_choice` trong [ProfileScope.LAUNCHER_PERSONAL_SUFFIXES]):
+ * Hai lựa chọn, lưu **theo hồ sơ tài xế** (AC8.4, khoá `color_choice` trong [ProfileScope.LAUNCHER_PERSONAL_SUFFIXES]):
  *  • [AccentChoice] — màu nhấn: 8 ô chọn nhanh + *theo ảnh nền* (AC8.1);
- *  • [CardTone] — tông thẻ: trung tính · ấm · lạnh (AC8.2);
- *  • [ColorChoice.paint] — màu sơn xe cho hình xe tổng hợp (AC8.3) — **chỗ để sẵn** cho P3: P1b chỉ giữ chuỗi
- *    mã qua encode/decode, không có UI và không ai đọc; P3 khai enum và nối vào `CarPartStyle`. Để sẵn trường
- *    để định dạng lưu bền không phải đổi lần nữa (một byte hỏng trên đĩa xe là một lỗi hiện trường).
+ *  • [CardTone] — tông thẻ: trung tính · ấm · lạnh (AC8.2).
+ *
+ * ⚠ WP3-v5 (2026-09-20) — hai trường `paint`/`model` (màu sơn + kiểu xe cho **vector car**) đã GỠ cùng toàn bộ
+ * vector car (owner: bỏ vector, dùng ảnh bitmap). Chúng chỉ tô/kéo dãn hình vector — với ẢNH thì vô nghĩa (nút
+ * chết). `decode` vẫn tha thứ chuỗi cũ `ACCENT;TONE;paint;model` (bỏ qua trường dư) nên cấu hình đã lưu không sập.
  *
  * Cấu hình cũ không có khoá ⇒ [ColorChoice.DEFAULT] — **không hỏi** (AC8.4; owner 2026-09-16: không hỏi xác nhận
  * mặc định). Không bánh xe màu, không mã hex, không chỉnh từng thành phần (AC8.6): người lái chọn một ô.
@@ -50,22 +51,19 @@ enum class CardTone {
 data class ColorChoice(
     val accent: AccentChoice = AccentChoice.KACHI_BLUE,
     val tone: CardTone = CardTone.NEUTRAL,
-    /** Mã màu sơn (P3). Rỗng = chưa chọn = mặc định của P3. Giữ nguyên qua encode/decode, không diễn giải ở P1b. */
-    val paint: String = "",
 ) {
-    fun encode(): String = "${accent.name};${tone.name};${paint.replace(';', ' ').trim()}"
+    fun encode(): String = "${accent.name};${tone.name}"
 
     companion object {
         val DEFAULT = ColorChoice()
 
-        /** Giải mã; thiếu/rác ⇒ mặc định cho phần đó, KHÔNG sập và KHÔNG mất phần đọc được (cùng luật [WallpaperPrefs.decode]). */
+        /** Giải mã; thiếu/rác ⇒ mặc định cho phần đó, KHÔNG sập. Chuỗi cũ `ACCENT;TONE;paint;model` ⇒ bỏ qua trường dư. */
         fun decode(s: String?): ColorChoice {
             if (s.isNullOrBlank()) return DEFAULT
             val p = s.split(";")
             return ColorChoice(
                 accent = p.getOrNull(0)?.trim()?.let { n -> AccentChoice.values().firstOrNull { it.name == n } } ?: DEFAULT.accent,
                 tone = p.getOrNull(1)?.trim()?.let { n -> CardTone.values().firstOrNull { it.name == n } } ?: DEFAULT.tone,
-                paint = p.getOrNull(2)?.trim() ?: "",
             )
         }
     }

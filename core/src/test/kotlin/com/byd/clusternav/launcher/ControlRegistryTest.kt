@@ -12,15 +12,15 @@ class ControlRegistryTest {
         assertEquals(DockEdge.BOTTOM, d.edge)
         assertEquals(ControlRegistry.defaultEnabledIds(), d.enabled)
         assertTrue("temp" in d.enabled && "fan" in d.enabled && "pm25" in d.enabled)
-        assertFalse("wiper" in d.enabled) // có trong kho nhưng mặc định tắt
+        assertFalse("cast" in d.enabled) // có trong kho nhưng mặc định tắt (⚠ WP8: mốc cũ `wiper` đã purge)
     }
 
     @Test fun `setEnabled them va xoa - id khong hop le thi bo qua`() {
         val d = ControlRegistry.defaultDock()
-        val added = d.setEnabled("wiper", true)
-        assertTrue("wiper" in added.enabled)
-        val removed = added.setEnabled("wiper", false)
-        assertFalse("wiper" in removed.enabled)
+        val added = d.setEnabled("cast", true)
+        assertTrue("cast" in added.enabled)
+        val removed = added.setEnabled("cast", false)
+        assertFalse("cast" in removed.enabled)
         assertEquals(d, d.setEnabled("khong-co", true))
     }
 

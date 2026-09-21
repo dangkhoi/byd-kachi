@@ -22,15 +22,16 @@ class CapabilityGroupsTest {
     // ── §4.1: đủ nhóm, thành viên là mã THẬT ─────────────────────────────────────────────────────
 
     @Test
-    fun `co dung 9 nhom theo bang spec`() {
+    fun `co dung 8 nhom theo bang spec`() {
         assertEquals(
-            9, CapabilityGroups.ALL.size,
-            "bảng §4.1 chốt 9 nhóm (2026-09-16 owner gỡ ADAS/an toàn — trước đó 12, bỏ g_adas · g_occupants · " +
-                "g_parking). Thêm/bớt nhóm là đổi thứ owner đã duyệt ⇒ sửa spec trước, đừng nới test",
+            8, CapabilityGroups.ALL.size,
+            "bảng §4.1 chốt 8 nhóm (2026-09-16 owner gỡ ADAS/an toàn: 12 → 9 · UX-OVERHAUL WP8 2026-09-20 gỡ " +
+                "`g_ambient` vì cả 5 datum + 4 nút đèn viền đều nằm trong danh sách BỎ ⇒ nhóm không còn thành " +
+                "viên nào). Thêm/bớt nhóm là đổi thứ owner đã duyệt ⇒ sửa spec trước, đừng nới test",
         )
-        // Ba mã nhóm đã gỡ KHÔNG được mọc lại — owner gỡ chúng vì lý do AN TOÀN, không phải vì gọn.
-        listOf("g_adas", "g_occupants", "g_parking").forEach {
-            assertNull(CapabilityGroups.byId(it), "nhóm ADAS/an toàn '$it' đã gỡ theo lệnh owner 2026-09-16")
+        // Bốn mã nhóm đã gỡ KHÔNG được mọc lại — ba vì AN TOÀN (owner 09-16), `g_ambient` vì hết thành viên (WP8).
+        listOf("g_adas", "g_occupants", "g_parking", "g_ambient").forEach {
+            assertNull(CapabilityGroups.byId(it), "nhóm '$it' đã gỡ theo lệnh owner (09-16 ADAS · WP8 đèn viền)")
         }
     }
 
@@ -302,8 +303,11 @@ class CapabilityGroupsTest {
         // `ac_auto` sau khi nút ấy được RE lại). Số NÚT **không đổi**: −1 `hood` (xe không có ca-pô điện) +1
         // `child_lock_r` (khoá trẻ em bên phải, RE xong cùng phiên) — đúng 47, và đó là trùng hợp chứ không
         // phải một phép bù trừ có ý nghĩa, nên hai vế được ghi ra riêng ở đây.
-        assertEquals(102, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 102 (+1 ac_wind_auto 1.85)")
-        assertEquals(47, ControlRegistry.ALL.size, "nút rời phải còn nguyên 47 (−hood +child_lock_r ở 1.85)")
+        // ⚠ UX-OVERHAUL · WP8 (2026-09-20): 102 → **73** datum và 47 → **39** nút = owner purge 37 mã BỎ (29 đọc
+        // + 8 nút) theo triage on-car 1.84 — pin cell/mô-tơ/chân ga-phanh/vô-lăng/độ dốc/nước làm mát/vị trí cốp/
+        // gương/gạt mưa/đèn viền ×9/mã máy/GPS ×4/HUD ×2/mức tái tạo. Cùng loại quyết định như hai lượt trên.
+        assertEquals(73, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 73 (WP8 purge 29)")
+        assertEquals(39, ControlRegistry.ALL.size, "nút rời phải còn nguyên 39 (WP8 purge 8)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
@@ -312,7 +316,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            102 + 47 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            73 + 39 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",
@@ -327,7 +331,9 @@ class CapabilityGroupsTest {
             TelemetryRegistry.ALL.size, covered.size + ungrouped.size,
             "mỗi datum phải hoặc thuộc nhóm hoặc nằm trong danh sách chưa-thuộc-nhóm, không rơi đâu mất",
         )
-        assertTrue(covered.size >= 65, "9 nhóm phải phủ phần lớn datum, đang phủ ${covered.size}")
+        // WP8: sàn hạ 65 → 55 vì tử số và mẫu số cùng teo (73 datum, nhóm phủ 57) — tỉ lệ phủ **tăng** (64 % →
+        // 78 %), nên đây là cập nhật theo phép đếm mới, không phải nới luật.
+        assertTrue(covered.size >= 55, "8 nhóm phải phủ phần lớn datum, đang phủ ${covered.size}")
         // KHÔNG đòi phủ 100%: động lực/danh tính/GPS chưa có nhóm là đúng bảng §4.1, và mục rời vẫn đặt được.
         assertTrue("speed" in ungrouped, "tiền đề: tốc độ chưa thuộc nhóm nào (vẫn đặt được như mục rời)")
         // Không datum nào bị đếm hai lần trong CÙNG một nhóm.
@@ -345,7 +351,7 @@ class CapabilityGroupsTest {
         // bảng trông như đã chạy thật trong khi một nửa số ô của nó chắc chắn ra "—" ⇒ hứa quá.
         val tyres = CapabilityCatalog.pick("g_tyres")!!
         assertEquals(EvidenceTier.NEEDS_CAR, tyres.tier, "nhóm phải mang mức của thành viên yếu nhất")
-        assertTrue(tyres.needsBadge, "⇒ ô phải mang dấu chưa-kiểm")
+        assertFalse(tyres.needsBadge, "2026-09-21 owner bỏ hẳn chấm ⇒ không mang dấu (tier vẫn là dữ liệu)")
         // Nhóm toàn PROVEN thì KHÔNG mang dấu — nếu không thì dấu mất nghĩa vì ô nào cũng có.
         val allProven = CapabilityGroup(
             id = "g_test", label = "Thử", icon = "ic-grid", domain = Domain.TYRES, shape = WidgetShape.BOARD,

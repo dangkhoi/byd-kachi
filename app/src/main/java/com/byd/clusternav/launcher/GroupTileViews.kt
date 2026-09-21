@@ -433,12 +433,27 @@ class GroupTileView(context: Context) : LinearLayout(context) {
          * Nền ô con. Suy ra từ CHÍNH màu của [KachiTheme] bằng cách thêm kênh trong suốt — KHÔNG khai mã màu mới (đó
          * là cách một bảng màu thứ hai bắt đầu). Cùng thủ pháp với `#264c7dff` đang dùng ở lưới chọn khả năng.
          */
+        /**
+         * Nền ô con theo trạng thái.
+         *
+         * ## ⚠⚠ WP1 · R1.1 — MÀU NGỮ NGHĨA chuyển hẳn sang NỀN (viền `strokeOf` đã xoá)
+         * Owner gỡ hết viền, riêng màu ngữ nghĩa thì *"chuyển sang nền/chữ màu"*. WARN/ALERT trước nói ra bằng **hai**
+         * thứ: nền 15% (`26`) + viền cùng màu 55% (`8C`). Giữ 15% mà bỏ viền thì tín hiệu tụt còn [ĐO] 1.38×/1.25× —
+         * sát ngưỡng nhìn-ra-được, tức một cảnh báo trên màn lái xe **mờ đi** vì một lượt dọn thẩm mỹ. Nền nay 35%
+         * (`59`): [ĐO] 2.25×/1.99× (tối) · 1.74×/1.83× (sáng) — đậm hơn cả cặp nền+viền cũ, 0 đường kẻ.
+         */
         fun fillOf(t: GroupTone): String = when (t) {
             GroupTone.NEUTRAL -> CELL_BG
             GroupTone.ACTIVE -> alpha(KachiTheme.ACCENT, "26")
-            GroupTone.WARN -> alpha(KachiTheme.AMBER, "26")
-            GroupTone.ALERT -> alpha(KachiTheme.RED, "26")
+            GroupTone.WARN -> alpha(KachiTheme.AMBER, SEMANTIC_ALPHA)
+            GroupTone.ALERT -> alpha(KachiTheme.RED, SEMANTIC_ALPHA)
         }
+
+        /**
+         * Độ đục nền màu-ngữ-nghĩa (`0x59` = 35 %) — **gánh một mình** việc mà nền 15 % + viền 55 % từng chia nhau
+         * (xem [fillOf]). Hạ là làm mờ cảnh báo; nâng quá thì mực tụt dưới 4.5:1 (`ThemePaletteContractTest` là rào).
+         */
+        private const val SEMANTIC_ALPHA = "59"
 
         /**
          * VISUAL-REFRESH P1 · T3 — nền ô con **theo trạng thái**, một chỗ tra cho cả nhóm lẫn ô con.
@@ -461,17 +476,12 @@ class GroupTileView(context: Context) : LinearLayout(context) {
                 // nhịp trạng thái (1 Hz), nên nếu thẻ kính của lượt NEUTRAL/ACTIVE trước còn lại thì lượt
                 // `KachiGlass.refresh` khi ảnh nền đổi sẽ đắp kính đè lên nền cảnh báo (màu nền LÀ thông tin).
                 GroupTone.WARN, GroupTone.ALERT ->
-                    KachiGlass.plain(view, KachiTheme.card(view.context, radius, fillOf(t), strokeOf(t)))
+                    KachiGlass.plain(view, KachiTheme.card(view.context, radius, fillOf(t)))
             }
         }
 
-        /** Viền ô con — cùng nguyên tắc [fillOf]. */
-        fun strokeOf(t: GroupTone): String = when (t) {
-            GroupTone.NEUTRAL -> KachiTheme.LINE
-            GroupTone.ACTIVE -> alpha(KachiTheme.ACCENT, "8C")
-            GroupTone.WARN -> alpha(KachiTheme.AMBER, "8C")
-            GroupTone.ALERT -> alpha(KachiTheme.RED, "8C")
-        }
+        // ⚠ WP1 · R1.1 — `strokeOf(GroupTone)` đã XOÁ (0 chỗ gọi). Nó là bảng tra VIỀN, tức chính thứ owner bỏ; và
+        // giữ một bảng tra không ai gọi là mời nó mọc lại. Màu ngữ nghĩa nay nằm trong [fillOf] (xem KDoc ở đó).
 
         /** Nền ô con bình thường — cùng giá trị ô nén đang dùng, để nhóm không trông lạ giữa các widget khác. */
         private val CELL_BG: String get() = KachiTheme.CELL

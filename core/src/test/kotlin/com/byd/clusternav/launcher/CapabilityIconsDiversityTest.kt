@@ -96,14 +96,19 @@ class CapabilityIconsDiversityTest {
             // ⚠ (V) FEATURE-FILTER 2026-09-17 — sàn hạ theo SỐ Ô CÒN LẠI, không phải "hạ cho xanh": lĩnh vực
             // Năng lượng mất 9 ô (8 ô sạc + tầm-pin-thân-xe + MCU, thêm nút sạc) ⇒ 22 ô còn 12 hình (trước:
             // 31 ô / 15 hình). Động lực mất `drift_mode`+`drive_mode` ⇒ 11 hình. Thân xe mất 3 nút ⇒ 25.
-            Domain.ENERGY to 12, Domain.DRIVETRAIN to 11, Domain.CLIMATE to 12,
+            // ⚠ UX-OVERHAUL · WP8 2026-09-20 — sàn hạ theo SỐ Ô ĐÃ MẤT, không phải "hạ cho xanh": Năng lượng mất
+            // 5 ô pin (3 nhiệt cell + 2 áp cell) ⇒ 12 → 11 hình; Động lực mất 9 ô (chân ga/phanh · 2 vòng tua
+            // mô-tơ · mô-men · vòng tua máy · tốc độ bánh · vô-lăng · độ dốc) ⇒ 11 → 4; Khí hậu mất nước làm mát
+            // ⇒ 12 → 11; Thân xe mất 3 (vị trí cốp · gương · gạt mưa-đọc, + nút gạt mưa) ⇒ 25 → 22; Đèn mất 9 mã
+            // đèn viền ⇒ 16 → 9; Danh tính mất mã máy + mức nước + 4 GPS ⇒ 6 → 2.
+            Domain.ENERGY to 11, Domain.DRIVETRAIN to 4, Domain.CLIMATE to 11,
             // U7 — năm lĩnh vực còn lại, sau khi bộ hình xe theo vị trí thay cho gộp-theo-tiền-tố.
             // ⚠ (V) FEATURE-FILTER 2026-09-17 — **Lốp = 0, và đó là một KẾT LUẬN, không phải một lỗ hổng.** Tám ô
             // lốp LẺ vào [CapabilityCatalog.HIDDEN_FROM_PICKER] theo lệnh owner (*"gôm lại thành 1 widget"*) ⇒ bộ
             // chọn không bày ô Lốp nào, mà bài này đo đúng *"những hình nằm CẠNH NHAU trên màn chọn"*. Sàn 0 đi
             // kèm một assert RIÊNG ngay dưới (đúng 0 ô) để con số này không thể là "quên nối" — và hình lốp vẫn
             // được canh ở `CapabilityIconMeaningTest` (từng mã → từng hình theo vị trí bánh).
-            Domain.TYRES to 0, Domain.BODY to 25, Domain.LIGHTS to 16, Domain.IDENTITY to 6,
+            Domain.TYRES to 0, Domain.BODY to 22, Domain.LIGHTS to 9, Domain.IDENTITY to 2,
         )
         assertEquals(doneDomains.toSet(), floor.keys, "sàn phải phủ đúng các nhóm đã chữa")
         assertEquals(
@@ -152,20 +157,20 @@ class CapabilityIconsDiversityTest {
      * không được dùng chung hình với bất kỳ mã PIN nào.
      */
     @Test
-    fun `rpm va mo-men KHONG dung hinh cua pin`() {
+    fun `cong suat mo-to KHONG dung hinh cua pin`() {
         // ⚠ (V) 2026-09-17: `charging_pct`/`is_charging` rời danh sách cùng datum của chúng (owner chấm NO).
+        // ⚠⚠ UX-OVERHAUL · WP8 2026-09-20: cả năm mốc cũ (`motor_front_rpm` · `motor_rear_rpm` ·
+        // `motor_front_torque` · `engine_rpm` + `wheel_speed`) đã **purge** ⇒ bài này giữ đúng tính chất nó sinh ra
+        // để canh (*"đại lượng của mô-tơ không được mang hình PIN"*) trên mã còn lại duy nhất của họ mô-tơ:
+        // `motor_power`. Vòng-tua-≠-mô-men không còn đo được ở đây vì không còn mã nào của cặp đó.
         val batteryIcons = listOf("soc", "soh_oem", "target_soc", "volt_12v_level")
             .map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }.toSet()
-        listOf("motor_front_rpm", "motor_rear_rpm", "motor_front_torque").forEach { id ->
-            val icon = CapabilityIcons.forTelemetry(id, Domain.DRIVETRAIN)
-            assertTrue(icon !in batteryIcons, "$id mang hình của pin ($icon) — nó là chuyển động quay, không phải pin")
-        }
-        // Và vòng tua ≠ mô-men: cùng một trục, hai đại lượng khác nhau.
-        assertEquals("ic-rpm", CapabilityIcons.forTelemetry("motor_front_rpm", Domain.DRIVETRAIN))
-        assertEquals("ic-rpm", CapabilityIcons.forTelemetry("motor_rear_rpm", Domain.DRIVETRAIN))
-        assertEquals("ic-torque", CapabilityIcons.forTelemetry("motor_front_torque", Domain.DRIVETRAIN))
-        // Máy xăng ≠ mô-tơ điện: trên DM-i hai vòng tua nằm cạnh nhau.
-        assertEquals("ic-engine", CapabilityIcons.forTelemetry("engine_rpm", Domain.DRIVETRAIN))
+        val icon = CapabilityIcons.forTelemetry("motor_power", Domain.ENERGY)
+        assertTrue(
+            icon !in batteryIcons,
+            "motor_power mang hình của pin ($icon) — nó là công suất mô-tơ, không phải trạng thái pin",
+        )
+        assertEquals("ic-motor", icon)
     }
 
     /** *"Còn đi được bao xa"* ≠ *"đã đi được bao xa"* — trước U6 cả sáu ô cùng hình con đường. */

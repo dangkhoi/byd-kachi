@@ -53,11 +53,6 @@ data class CarStatus(
         val tripHours: Double? = null,
         val tripKwh: Double? = null,
         val consumption50: Double? = null,
-        val cellTempHighC: Int? = null,
-        val cellTempLowC: Int? = null,
-        val cellTempAvgC: Int? = null,
-        val cellVHigh: Double? = null,
-        val cellVLow: Double? = null,
         // ── Điện phụ 12V + nguồn máy — chuyển từ `Safety` sang đây 2026-09-16 khi owner gỡ toàn bộ ADAS/an toàn.
         // Ắc-quy 12V không phải hệ an toàn lái; nó là câu hỏi về NĂNG LƯỢNG. (`mcuStatus` xoá ở lượt (V).)
         val volt12v: Double? = null,
@@ -67,18 +62,9 @@ data class CarStatus(
     /** A2 — động lực / tốc độ. */
     data class Drivetrain(
         val speedKmh: Int? = null,
-        val accelPct: Int? = null,
-        val brakePct: Int? = null,
-        val motorFrontRpm: Int? = null,
-        val steeringDeg: Int? = null,
-        val slopeDeg: Int? = null,
         val gear: String? = null,
         val opMode: String? = null,
         val energyMode: String? = null,
-        val motorRearRpm: Int? = null,
-        val motorFrontTorqueNm: Int? = null,
-        val engineRpm: Int? = null,
-        val wheelSpeedKmh: Int? = null,
     )
 
     /** A3 — khí hậu / không khí. */
@@ -99,7 +85,6 @@ data class CarStatus(
         val recircOn: Boolean? = null,
         val anionOn: Boolean? = null,
         val setTempC: Int? = null,
-        val coolantTempC: Int? = null,
         val tempUnit: String? = null,
         /**
          * H1 · T2 — mã mức THÔ của khung cho ghế mát/sưởi ([ĐO xe 2026-09-16] 3 ⇐ màn xe *"mức 2"*, 1 = tắt).
@@ -158,12 +143,9 @@ data class CarStatus(
         val tailgateOpen: Boolean? = null,
         val sunroofPct: Int? = null,
         val sunshadePct: Int? = null,
-        val mirrorFolded: Boolean? = null,
         val powerLevel: Int? = null,
         val vehicleType: String? = null,
-        val tailgatePct: Int? = null,
         val sunroofOpen: Boolean? = null,
-        val wiperOn: Boolean? = null,
         val emergencyAlarm: Boolean? = null,
     )
 
@@ -174,15 +156,10 @@ data class CarStatus(
         val frontFog: Boolean? = null,
         val drl: Boolean? = null,
         val headlightMode: Int? = null,
-        val ambientOn: Boolean? = null,
-        val ambientColorIndex: Int? = null,
-        val ambientBrightness: Int? = null,
         val rearFog: Boolean? = null,
         val leftTurn: Boolean? = null,
         val rightTurn: Boolean? = null,
         val sideLight: Boolean? = null,
-        val ambientRearColorIndex: Int? = null,
-        val ambientRearBrightness: Int? = null,
     )
 
     // ⚠ A7 (`Safety`) đã **xoá hẳn** 2026-09-16 cùng toàn bộ ADAS/an toàn chủ động (owner). Đừng dựng lại nhóm này:
@@ -201,12 +178,6 @@ data class CarStatus(
     /** A8 — danh tính / khoá / máy. */
     data class Identity(
         val vin: String? = null,
-        val engineCode: String? = null,
         val oilLevelPct: Int? = null,
-        val gpsLat: Double? = null,
-        val gpsLon: Double? = null,
-        val engineCoolantLevel: Int? = null,
-        val gpsElevation: Double? = null,
-        val gpsHeading: Double? = null,
     )
 }

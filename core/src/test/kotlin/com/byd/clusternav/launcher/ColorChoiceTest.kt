@@ -11,10 +11,17 @@ class ColorChoiceTest {
     fun `encode decode di vong tron cho moi to hop`() {
         AccentChoice.values().forEach { a ->
             CardTone.values().forEach { t ->
-                val c = ColorChoice(a, t, "pearl")
+                val c = ColorChoice(a, t)
                 assertEquals(c, ColorChoice.decode(c.encode()), c.encode())
             }
         }
+    }
+
+    @Test
+    fun `chuoi cu co truong du paint va model van doc duoc, khong sap`() {
+        // WP3-v5 gỡ paint/model; cấu hình đã lưu trên xe còn dạng cũ `ACCENT;TONE;paint;model` ⇒ bỏ qua trường dư.
+        assertEquals(ColorChoice(AccentChoice.VIOLET, CardTone.WARM), ColorChoice.decode("VIOLET;WARM;pearl"))
+        assertEquals(ColorChoice(AccentChoice.VIOLET, CardTone.WARM), ColorChoice.decode("VIOLET;WARM;pearl;sealion6"))
     }
 
     @Test
@@ -24,12 +31,6 @@ class ColorChoiceTest {
         assertEquals(ColorChoice.DEFAULT, ColorChoice.decode("garbage"))
         assertEquals(ColorChoice(AccentChoice.TEAL, CardTone.NEUTRAL), ColorChoice.decode("TEAL;???"))
         assertEquals(ColorChoice(AccentChoice.KACHI_BLUE, CardTone.WARM), ColorChoice.decode("nope;WARM"))
-    }
-
-    @Test
-    fun `ma mau son khong duoc pha dinh dang`() {
-        val c = ColorChoice(paint = "a;b")
-        assertEquals("a b", ColorChoice.decode(c.encode()).paint)
     }
 
     @Test

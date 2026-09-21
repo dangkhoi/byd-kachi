@@ -78,6 +78,7 @@ class SettingsSections(
             SettingsGroup.CAST -> SettingsCastSection(context, rows, deps).build(body)
             SettingsGroup.KEYS -> SettingsKeysSection(context, rows, deps).also { keysSection = it }.build(body)
             SettingsGroup.CAR -> SettingsCarSection(context, rows, deps).build(body)
+            SettingsGroup.VOICE -> SettingsVoiceSection(context, rows, deps).build(body)
             SettingsGroup.SYSTEM -> system(body)
             SettingsGroup.ABOUT -> about(body)
         }
@@ -124,6 +125,14 @@ class SettingsSections(
         // store (`PrefsWorkspaceRepository.persist` gương sang `ThemeMode.setChoice`), nên câu đó nói SAI với
         // người dùng. `ThemeMirrorWiringContractTest` canh chuỗi `kachi_theme_note_clusternav` không còn tồn tại.
         body.addView(rows.note(context.getString(R.string.kachi_theme_note)))
+        // UX-OVERHAUL WP1 · R1.3 — công tắc glass GIẢ (mặc định, 0 blur) ↔ glass THẬT (RenderEffect, API 31+).
+        // Đi qua `deps.bridge.setGlassReal` (khoá theo XE trong clusternav_prefs, như `headless_autostart`). Áp ở
+        // lượt dựng màn kế tiếp — [ĐO] xe API 29 nên nút này ở đó chỉ lưu ý định, hình mờ chỉ thấy trên máy API ≥ 31.
+        body.addView(rows.checkRow(
+            on = deps.bridge.glassReal(),
+            title = context.getString(R.string.kachi_glass_real_title),
+            sub = context.getString(R.string.kachi_glass_real_sub),
+        ) { on -> deps.bridge.setGlassReal(on) })
         color(body)
         lang(body)
     }
@@ -151,13 +160,33 @@ class SettingsSections(
             options = CardTone.values().map { it.name to it.label() },
             current = choice.tone.name,
         ) { code -> choice = choice.copy(tone = CardTone.valueOf(code)); deps.onColorChoice(choice) })
-        // P3 · R8 AC8.3 — MÀU SƠN của hình xe (5 màu §4.8), riêng khỏi màu nhấn; ô = điểm giữa gradient sơn. Màu nào
-        // chạm nền thì viền thân tự bật ([KachiCarPaint]) — không cấm chọn (AC8.5).
-        val paints = CarPaint.values().map { Swatch(it.id, KachiCarPaint.swatch(it), it.title()) }
-        body.addView(rows.swatchRow(context.getString(R.string.kachi_row_paint), paints, CarPaint.of(choice.paint).id) { code ->
-            choice = choice.copy(paint = code); deps.onColorChoice(choice)
-        })
+        // Footnote màu đứng NGAY sau hai hàng màu (nhấn + tông) — nó nói về màu, không phải hình xe. Nếu để sau
+        // khối HÌNH XE thì nó đọc như đang giải thích hình xe (đúng họ lỗi U12/U13: cơ chế đúng, UI nói sai chỗ).
         body.addView(rows.note(context.getString(R.string.kachi_color_note)))
+        // WP3-v5 + WP-C — HÌNH XE là ẢNH bitmap thả vào thư mục máy. Xe không có màn chọn tệp hệ thống (khoá),
+        // nên KHÔNG có picker; thay vào đó nói RÕ đang dùng ảnh nào + hướng dẫn TỪNG BƯỚC + nút sao chép đường dẫn.
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sec_car_image)))
+        if (CarImageStore.hasUserImage(context)) {
+            body.addView(rows.note(context.getString(
+                R.string.kachi_car_image_current, CarImageStore.imageNames(context).first(),
+            )))
+        } else {
+            body.addView(rows.note(context.getString(R.string.kachi_car_image_default)))
+        }
+        val carFolder = CarImageStore.folderHint(context)
+        body.addView(rows.note(context.getString(R.string.kachi_car_image_steps, carFolder)))
+        body.addView(rows.button(context.getString(R.string.kachi_copy_path)) {
+            copyToClipboard(context.getString(R.string.kachi_car_image_title), carFolder)
+            android.widget.Toast.makeText(
+                context, context.getString(R.string.kachi_path_copied), android.widget.Toast.LENGTH_SHORT,
+            ).show()
+        })
+    }
+
+    /** Chép một chuỗi vào bộ nhớ tạm — dùng cho các nút "Sao chép đường dẫn" (WP-C). */
+    private fun copyToClipboard(label: String, text: String) {
+        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+        cm?.setPrimaryClip(android.content.ClipData.newPlainText(label, text))
     }
 
     /**
@@ -243,31 +272,25 @@ class SettingsSections(
         body.addView(update)
         body.addView(rows.button(context.getString(R.string.kachi_nav_stop)) { deps.bridge.navStop() })
 
-        // ── "Hey Kachi" wake-word (W-WAKE, owner 2026-09-18) — nghe câu gọi rảnh tay. Mặc định TẮT (nghe nền =
-        // tốn CPU/pin). Gạt ⇒ ghi pref (theo XE) + VoiceWakeService.sync bật/tắt FGS. Cầu chì false-accept tự tắt. ──
-        body.addView(rows.checkRow(
-            on = deps.bridge.wakeEnabled(),
-            title = context.getString(R.string.kachi_wake_title),
-            sub = context.getString(R.string.kachi_wake_sub),
-        ) { on -> deps.bridge.setWakeEnabled(on) })
+        // ⚠ Khối GIỌNG NÓI (Hey Kachi + tải mô hình NGHE/ĐỌC + giọng bé) ĐÃ TÁCH sang [SettingsGroup.VOICE]
+        // (owner 2026-09-21: "voice nên tách thành 1 menu setting riêng"). Xem [SettingsVoiceSection].
 
         // ── Nâng cao ──
-        // ⚠ Dòng "Màn nâng cao (ClusterNav)" đã XOÁ 2026-09-13: màn cũ bị gỡ hẳn (S3 · R1 —
-        // docs/specs/kachi-remove-legacy-screen.html). Hai mục còn lại là hai màn CHẨN ĐOÁN thật, không phải
-        // hai bề mặt cấu hình song song — nên mục này vẫn có nghĩa.
+        // ⚠ Dòng "Màn nâng cao (ClusterNav)" đã XOÁ 2026-09-13 (S3 · R1). Còn lại ở đây là **đồ ĐO**, và từ
+        // UX-OVERHAUL · WP7 chúng đứng SAU cổng [DevMode.unlocked] — xem KDoc [DevMode] về vì sao gác bằng chính
+        // cửa sổ test-mode. Công tắc mở cổng phải dựng TRƯỚC (nếu không thì không có cách nào bật nó lên).
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_advanced)))
+        testBridge(body)
+        if (!DevMode.unlocked(context)) return
+        body.addView(rows.note(context.getString(R.string.kachi_dev_tools_note)))
         body.addView(rows.button(context.getString(R.string.kachi_vietmap_data)) { deps.bridge.openVietMapData() })
         body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { deps.bridge.openDiagnostics() })
-        testBridge(body)
-        // V1 · R6 — đường thử lệnh bằng CHỮ. Đặt ở "Nâng cao" cạnh hai màn chẩn đoán kia vì nó cùng loại: một chỗ
-        // ĐO, không phải một bề mặt cấu hình (xem KDoc [VoiceTextConsole] về vì sao không cho nó một nhóm riêng).
-        // V1 pha NGHE · R9 — hàng tải mô hình đứng TRƯỚC ô gõ thử: đó là thứ tự làm việc thật (tải cái tai,
-        // rồi thử cái đầu), và đặt sau thì người dùng gõ thử xong mới phát hiện mình chưa nói được.
-        com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows, deps).build(body)
+        // V1 · R6 — đường thử lệnh bằng CHỮ. Cùng loại với hai màn chẩn đoán trên: một chỗ ĐO, không phải một bề
+        // mặt cấu hình (xem KDoc [VoiceTextConsole] về vì sao không cho nó một nhóm riêng).
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
         VoiceTextConsole(context, rows, deps).build(body)
         // Owner 2026-09-15 — công cụ kiểm tra từng nút/thông tin xe, bấm chạy lần lượt, tự chấm OK/Không OK, ghi log.
-        // Cùng chỗ "Nâng cao" vì nó là bề mặt ĐO (soát trên xe), không phải cấu hình.
+        // WP7: bản bấm tay GIỮ (buổi RE cần nhìn đèn/cốp bằng mắt), và có thêm đường adb `captest` cho script.
         CapTestConsole(context, rows, deps).build(body)
     }
 
@@ -390,7 +413,14 @@ class SettingsSections(
             } else {
                 context.getString(R.string.kachi_test_bridge_sub_off)
             },
-        ) { on -> if (on) TestBridgeStore.enable(context) else TestBridgeStore.disable(context) })
+        ) { on ->
+            if (on) TestBridgeStore.enable(context) else TestBridgeStore.disable(context)
+            // WP7 — công tắc này nay còn là CỔNG của khối đồ đo bên dưới ([DevMode]), nên phải dựng lại trang:
+            // trang Cài đặt được **nhớ lại** (`SettingsPanel.pages`) ⇒ không dựng lại thì người bật thấy "tích rồi
+            // mà không có gì xuất hiện" và phải tự đoán là cần đóng/mở lại bảng. Đúng họ lỗi "cơ chế đúng mà UI
+            // không nói" (U12/U13).
+            deps.refreshSettings()
+        })
     }
 
     // ── Dẫn đường · Cụm · Phím ───────────────────────────────────────────────────────────────────

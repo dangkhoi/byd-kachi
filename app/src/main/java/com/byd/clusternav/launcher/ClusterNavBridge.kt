@@ -148,6 +148,14 @@ class ClusterNavBridge(
     fun navAppChoices(): List<String> =
         com.byd.clusternav.launcher.voice.VoiceAppTargets.NAV.map { it.key }
 
+    // App NHẠC mặc định (owner 2026-09-21) — "" = tự chọn (app đang phát / app đầu tiên).
+    fun musicDefaultApp(): String = Prefs.voiceMusicDefaultApp(app)
+    fun setMusicDefaultApp(key: String) = Prefs.setVoiceMusicDefaultApp(app, key)
+
+    /** Các app nhạc chọn được (key) — nguồn [VoiceAppTargets.MUSIC], kèm "" đứng đầu = tự chọn. */
+    fun musicAppChoices(): List<String> =
+        listOf("") + com.byd.clusternav.launcher.voice.VoiceAppTargets.MUSIC.map { it.key }
+
     /**
      * "Kết nối lại nguồn dẫn đường" — lặp lại `MainActivity.kt:255–276`: có quyền ⇒
      * [NavConnect.reconnect] + toast; chưa có ⇒ toast + [NavConnect.selfGrant] (KHÔNG mở màn Settings

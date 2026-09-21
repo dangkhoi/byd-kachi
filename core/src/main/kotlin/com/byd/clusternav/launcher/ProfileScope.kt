@@ -51,6 +51,10 @@ object ProfileScope {
             // V3 · R14 (owner 2026-09-16) — *"cho cái toggle hiện text label"*. Theo hồ sơ như `top_strip` ngay
             // cạnh: nó là một lựa chọn về **bố cục thanh trên**, và S4 đã chốt bố cục đi theo hồ sơ.
             "top_strip_labels",
+            // UX-OVERHAUL · WP4 (2026-09-20) — THỨ TỰ các vật trên thanh trên ([HeaderLayout]). Cùng họ với
+            // `top_strip`/`dock_enabled` ngay cạnh: cả ba trả lời *"thanh này bày gì, ở đâu"*. Thứ tự các nút của
+            // thanh nút KHÔNG cần khoá mới — nó LÀ thứ tự của `dock_enabled` ([DockConfig.moveEnabled]).
+            "header_order",
         )
 
     /**
@@ -135,6 +139,13 @@ object ProfileScope {
             "R4 — số hiệu màn cụm ĐO ĐƯỢC của chính chiếc xe này (`SimpleCastRuntime`), không phải lựa chọn",
         )
         put("doze_whitelist_applied", "trạng thái máy: đã xin miễn doze cho tiến trình chưa — thuộc máy, không thuộc người")
+        put(
+            "ui_glass_real",
+            "UX-OVERHAUL WP1 · R1.3 — 'Kính thật (làm mờ nền)'. Theo XE: glass-thật là RenderEffect blur, một tính " +
+                "chất của PHẦN CỨNG (GPU) + ROM (API ≥ 31) của chính chiếc xe này, không phải sở thích đi theo " +
+                "người lái. [ĐO] xe DiLink là API 29 nên nó luôn lùi về glass-giả ở đó. Cùng họ cast_enabled/" +
+                "voice_wake_enabled — quyết định mức máy, không mức người",
+        )
         put(
             "captest_results",
             "nhật ký 'kiểm tra từng nút' (`CapTestStore`, tệp `kachi_captest`) — kết quả OK/Không OK khi soát trên " +
@@ -273,6 +284,14 @@ object ProfileScope {
                 "vết thi hành CỦA những luật ấy, nên tách phạm vi hai khoá là mời chúng lệch nhau (luật theo xe mà " +
                 "dấu theo hồ sơ ⇒ đổi hồ sơ là dẫn lại lần thứ hai trong cùng khung giờ). Là NOT_SETTINGS nhưng " +
                 "vẫn phải có phạm vi — cùng ca `home_chosen`/`recent_apps`",
+        )
+        put(
+            "cast_bubble_visible",
+            "UX-OVERHAUL WP6 · R6.1 (owner 2026-09-20) — 'Hiện nút nổi chiếu cụm'. Theo XE, **cùng phạm vi với " +
+                "`cast_enabled`** mà nó phụ thuộc: để nó theo hồ sơ thì hai khoá của CÙNG một tính năng nằm ở hai " +
+                "phạm vi khác nhau, và đổi hồ sơ giữa lúc đang chiếu sẽ làm nút nổi biến mất/hiện lại mà không ai " +
+                "hiểu vì sao — trong khi phiên chiếu (theo XE) vẫn chạy. Nó cũng là một quyết định về BỀ MẶT CỦA " +
+                "CHIẾC XE (một cửa sổ nổi đè lên mọi app trên màn chính này), không phải sở thích đi theo người lái",
         )
         put("enable_freeform_support", "cờ boot của HỆ THỐNG (`Settings.Global`) — thuộc máy")
         put("force_resizable_activities", "cờ boot của HỆ THỐNG (`Settings.Global`), gieo CẶP với khoá trên")

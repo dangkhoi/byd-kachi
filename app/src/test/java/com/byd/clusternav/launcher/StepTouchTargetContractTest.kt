@@ -68,8 +68,8 @@ class StepTouchTargetContractTest {
      */
     @Test
     fun `hai vung cua nut trai va phai khong chong nhau`() {
-        val w = KachiSpace.DOCK_TILE_W
-        val h = KachiSpace.DOCK_TILE_H
+        val w = KachiBars.DOCK_TILE_W
+        val h = KachiBars.DOCK_TILE_H
         val mid = w / 2
         val left = StepTouchTarget.zone(w / 4, h * 2 / 3, min, 0, mid, h)
         val right = StepTouchTarget.zone(w * 3 / 4, h * 2 / 3, min, mid, w, h)
@@ -78,12 +78,35 @@ class StepTouchTargetContractTest {
         assertEquals(min, left[3] - left[1], "bề dọc đủ đích chạm ở ô cao ${h}dp")
     }
 
-    /** Thanh nút DỌC (ô rộng 100dp) thì đủ 48 cả hai chiều — ghi lại để khỏi ai nghĩ giới hạn 42 là do phép tính. */
+    /**
+     * ⚠⚠ **WP5 ĐÃ LÀM HỎNG lời hứa cũ của bài này — ghi lại thay vì xoá.**
+     *
+     * Trước WP5 ô thanh nút DỌC rộng 100dp ⇒ mỗi làn 50dp ⇒ đích chạm −/+ đủ **48×48**, và bài này tồn tại để
+     * *"khỏi ai nghĩ giới hạn 42dp của thanh ngang là do phép tính"*. WP5 hạ ô dọc còn
+     * [KachiBars.DOCK_TILE_W_VERTICAL] = 83dp (owner: *"taskbar kích thước 80 %"*) ⇒ mỗi làn **41dp < 48**.
+     *
+     * Nên nay **cả hai** hướng thanh đều dưới mức tối thiểu ở chiều NGANG của nút: 35dp (ngang) · 41dp (dọc). Bài
+     * canh đổi từ *"đủ 48"* sang *"đo được đúng bao nhiêu"* — một con số thật thì phiên sau còn đối chiếu được;
+     * một lời hứa đã sai thì chỉ làm người đọc tin nhầm. Bề DỌC của vùng chạm **vẫn đủ 48** ở cả hai hướng
+     * ([ĐO] ô dọc cao 60dp > 48 nên vùng vẫn nới trọn được).
+     *
+     * 🚗 Cần owner biết: đây là hệ quả trực tiếp của mốc 80 %, không phải lỗi phép tính. Muốn trả lại 48dp thì
+     * phải nới [KachiBars.DOCK_WIDE] lên ≥ 112dp (tức bỏ mốc 80 % ở thanh dọc).
+     */
     @Test
-    fun `thanh nut doc du 48 ca hai chieu`() {
-        val w = KachiSpace.DOCK_TILE_W_VERTICAL
-        val z = StepTouchTarget.zone(w / 4, KachiSpace.DOCK_TILE_H_VERTICAL / 2, min, 0, w / 2, KachiSpace.DOCK_TILE_H_VERTICAL)
-        assertEquals(min, z[2] - z[0], "ô dọc rộng ${w}dp ⇒ mỗi làn ${w / 2}dp ≥ $min")
+    fun `thanh nut doc - WP5 ha lan xuong duoi 48, be doc van du`() {
+        val w = KachiBars.DOCK_TILE_W_VERTICAL
+        val h = KachiBars.DOCK_TILE_H_VERTICAL
+        val z = StepTouchTarget.zone(w / 4, h / 2, min, 0, w / 2, h)
+        assertEquals(w / 2, z[2] - z[0], "ô dọc rộng ${w}dp ⇒ mỗi làn tối đa ${w / 2}dp (WP5: 41, trước là 50)")
+        assertEquals(min, z[3] - z[1], "bề dọc VẪN đủ $min: ô cao ${h}dp sau WP5 vẫn còn chỗ cho một vùng $min")
+        // Mốc so là phép ĐO trước khi có `TouchDelegate`: ~20×32 = 640dp². Sau WP5 vùng dọc là 41×48 = 1968dp²
+        // (3.07×) — nhỏ hơn 50×48 = 2400dp² của bản trước WP5, nhưng vẫn gấp ba lần mốc gốc.
+        assertTrue(
+            (z[2] - z[0]) * (z[3] - z[1]) >= 640 * 2,
+            "diện tích vùng chạm vẫn phải lớn hơn hẳn ~20×32 = 640dp² đo được trước khi có TouchDelegate " +
+                "(hiện ${(z[2] - z[0])}×${(z[3] - z[1])})",
+        )
     }
 
     // ══ (2) CÁCH NỚI — TouchDelegate, KHÔNG phóng nút, KHÔNG phóng glyph ══════════════════════════════════

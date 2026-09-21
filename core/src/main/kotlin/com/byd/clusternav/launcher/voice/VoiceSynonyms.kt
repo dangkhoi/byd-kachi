@@ -81,7 +81,6 @@ object VoiceSynonyms {
         "headl" to listOf("den chieu xa", "high beam", "den cot pha"),
         "recirc" to listOf("gio trong", "tuan hoan trong", "recirc"),
         "vol" to listOf("tieng", "am thanh", "volume"),
-        "wiper" to listOf("can gat", "gat nuoc", "windscreen wiper"),
         // [SOÁT P2] *"dừng chiếu"* — người ta bỏ chữ *"cụm"*. Một từ `chieu` là đủ vì luật **dãy dài nhất thắng**
         // giữ nguyên mọi cụm dài hơn có chứa nó (*"chiếu cụm"*, *"đèn chiếu xa"*), nên không nuốt nhãn nào.
         "cast" to listOf("chieu", "chieu len cum", "chieu man", "cast cluster"),
@@ -129,10 +128,6 @@ object VoiceSynonyms {
         "win_rf" to listOf("kinh ben phu", "kinh ghe phu", "kieng truoc phai"),
         "win_lr" to listOf("kieng sau trai", "kinh sau ben trai"),
         "win_rr" to listOf("kieng sau phai", "kinh sau ben phai"),
-        "ambient_power" to listOf("den vien", "den noi that", "ambient", "den led noi that"),
-        "ambient_color" to listOf("mau den noi that"),
-        "ambient_brightness" to listOf("do sang den vien"),
-        "ambient_music" to listOf("den nhay theo nhac"),
         "brightness_gear" to listOf("do sang man hinh", "sang man"),
         "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now", "loc nhanh"),
         // ⚠ 1.85: `hood` ("nap ca po"/"nap may") đã xoá cùng mã — xe không có ca-pô điện ([ĐO xe 2026-09-20 §4]).
@@ -149,12 +144,10 @@ object VoiceSynonyms {
         "child_lock_r" to listOf("khoa con nit ben phai", "khoa tre em ben phai"),
         "seat_memory" to listOf("luu vi tri ghe"),
         "headlight_mode" to listOf("kieu den pha"),
-        "regen_level" to listOf("muc ham tai sinh"),
         "wireless_charge" to listOf("sac dien thoai"),
         "screen_rotation" to listOf("huong man hinh"),
         "camera_view" to listOf("huong camera"),
         "cluster_music" to listOf("nhac tren dong ho"),
-        "hud_switch" to listOf("hien thi tren kinh lai"),
         // ── Pha NGHE (R10): nhãn có CHỮ VIẾT TẮT / CHỮ SỐ thì mô hình tiếng Việt không có từ để nghe ──
         // [ĐO] 2026-09-14, từ điển `vosk-model-small-vn-0.4` (19.529 mục): `ev` · `hev` KHÔNG có mặt ⇒ nút này
         // trước đó **gõ được mà không nói được**, và cái thiếu ấy im lặng.
@@ -195,9 +188,6 @@ object VoiceSynonyms {
         "tyre_p_rr" to listOf("ap suat lop sau phai", "hoi banh sau phai"),
         "gear" to listOf("can so"),
         "vin" to listOf("so khung"),
-        "mirror_fold" to listOf("kieng chieu hau"),
-        "gps_heading" to listOf("huong di"),
-        "cell_temp_avg" to listOf("nhiet cell trung binh"),
         // ── Pha NGHE (R10) — nhãn mang `PM2.5` · `SOH` · `MCU` · `12V` · `50km` · `%` · `drift`, mà mô hình tiếng
         // Việt không có từ nào trong số đó. [ĐO] 2026-09-14.
         // ⚠ `pm25_value` KHÔNG lấy cụm `"bui min"` — cụm ấy đã thuộc `pm25_level` (mức 0–3); hai datum khác nhau

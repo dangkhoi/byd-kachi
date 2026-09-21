@@ -16,8 +16,9 @@ import org.junit.jupiter.api.Test
  *
  * ## Vì sao KHÔNG gộp vào [ThemePaletteContractTest]
  * Tệp kia đã ~485 dòng và canh **bảng màu nói chung**; phần dưới đây canh riêng **chất liệu bề mặt** (gradient hai
- * đầu · mép sáng · sắc lĩnh vực · trạng thái bật). Hai bộ luật, hai vòng đời: bảng màu đổi vì chủ đề, chất liệu đổi
- * vì thiết kế. Gộp lại thì mỗi lần một bên đỏ, người sửa phải đọc cả hai để biết mình đang vi phạm luật nào.
+ * đầu · sắc lĩnh vực · trạng thái bật · và từ WP1: *không* mép, *không* viền). Hai bộ luật, hai vòng đời: bảng màu
+ * đổi vì chủ đề, chất liệu đổi vì thiết kế. Gộp lại thì mỗi lần một bên đỏ, người sửa phải đọc cả hai để biết mình
+ * đang vi phạm luật nào.
  *
  * ## ⚠ Mọi phép đo ở đây TRỘN trước, đo sau
  * Vai `surf*` phần lớn có kênh trong suốt (`#AARRGGBB`), và một mã alpha **không tồn tại trên màn** cho tới khi nó
@@ -68,9 +69,21 @@ class SurfaceContrastContractTest {
     /**
      * Thẻ CHẤT LIỆU phải tách được khỏi nền — **hai bảng dùng hai cơ chế**, y như bài [the tach duoc khoi nen].
      *
-     * Bản TỐI: bước sáng thật (đỉnh gradient sáng hơn nền 1.23×) ⇒ hairline chỉ là nét trang trí.
-     * Bản SÁNG: thẻ trắng trên nền sáng chỉ hơn nhau 1.13× — mắt không đọc ra ⇒ [KachiPalette.surfLine] **bắt buộc**
-     * là viền thật ≥ 3:1. Bài khoá **tính chất**, không khoá cơ chế, nên nó tự đảo chiều nếu ai làm phẳng bảng tối.
+     * Bản TỐI: bước sáng thật (đỉnh gradient sáng hơn nền 1.23×) ⇒ đủ một mình.
+     * Bản SÁNG: thẻ trắng trên nền sáng chỉ hơn nhau 1.13× ⇒ nó đi qua bài này **nhờ chân viền**
+     * [KachiPalette.surfLine] ≥ 3:1. Bài khoá **tính chất**, không khoá cơ chế, nên nó tự đảo chiều nếu ai làm
+     * phẳng bảng tối.
+     *
+     * ## ⚠⚠ [WP1 · 2026-09-20] CHÂN VIỀN NAY **KHÔNG CÒN ĐƯỢC VẼ** bởi [KachiTheme.surface] — ghi ra, không giấu
+     * Owner *"bỏ viền đi luôn"* ⇒ `surface()` gỡ mọi `setStroke`, nên [KachiPalette.surfLine] chỉ còn là **một mã
+     * màu trong bảng** + đường opt-in của `card(stroke = …)`/`pill(stroke = …)`. Hệ quả đo được: **trên bảng SÁNG,
+     * thẻ nội dung nay chỉ tách khỏi nền 1.13×** và không có đường kẻ nào — tức bài này VẪN xanh bằng một chân mà
+     * màn hình không còn dùng.
+     *
+     * Cố ý **không** đổi bài thành "chỉ đo bước sáng": làm vậy thì bảng SÁNG đỏ, và hai cách chữa duy nhất là (a)
+     * hạ sàn 1.15 — nới luật an toàn, hoặc (b) đổi thang chói bảng sáng — đúng thứ WP1 đã chốt GIỮ NGUYÊN (lớp che
+     * thẻ-kính-trên-ảnh ở tone COOL chỉ dư ~0.01 so với sàn 4.5). Đây là **quyết định của owner** (giữ 1.13× hay
+     * cho phép một mép ở riêng bảng sáng), đã ghi ở `docs/_handoff/ux-wp1-edges-removed.md`.
      */
     @Test
     fun `the chat lieu tach duoc khoi nen o ca hai bang`() {
@@ -122,44 +135,58 @@ class SurfaceContrastContractTest {
     }
 
     /**
-     * ═══ [SOÁT Pass 5 · 2026-09-17] ĐỈNH THẺ KHÔNG ĐƯỢC LÀ MỘT VẠCH ══════════════════════════════════════════
+     * ═══ [UX-OVERHAUL WP1 · iteration 2026-09-20] BỀ MẶT KHÔNG CÒN MÉP, KHÔNG CÒN VIỀN ═══════════════════════
      *
-     * **Bài này ĐẢO CHIỀU bài cũ** `mep sang du manh de doc ra mat vat o bang toi` (sàn ≥ 2.2×). Owner nhìn 1.68
-     * trên xe: *"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top đấy nhé, bug
-     * rồi"*. Pass 4 đã đẩy mép sáng lên 3.06× **đúng theo bài cũ** — tức là bài canh cũ đang khoá một điều sai.
-     * Ghi ra thay vì lặng lẽ xoá: đây là một hợp đồng bị đảo, không phải một bài bị nới.
+     * **Bài này ĐẢO CHIỀU chính bản WP1 sáng cùng ngày** (vốn *đòi* `GLASS_SHEEN`+`GLASS_SHADE` = bevel 1px). Owner
+     * xem ảnh bản đó: *"better, bị bug gạch trên đầu mỗi khung, bỏ viền đi luôn"* ⇒ gỡ HẲN mép **và** viền.
      *
-     * ## Khoá ở tầng CƠ CHẾ, không khoá ở tầng con số
-     * Một vạch 1–2dp ở đỉnh đọc ra là *vạch* ở **mọi** alpha — cái sai là **hình dạng**, không phải cường độ. Nên
-     * bài không hỏi *"mép mờ tới mức nào"* mà hỏi *"còn lớp nào ghim vào đỉnh không"*: quét thân
-     * [KachiTheme.surface] và đòi **không** còn `Gravity.TOP` / `setLayerHeight` / `setLayerGravity`, và bảng màu
-     * **không** còn vai `surfEdge`/`surfOnEdge`. Hạ alpha rồi giữ lớp đó lại thì bài vẫn đỏ — đúng ý muốn.
+     * ## Vì sao khoá bằng lệnh CẤM, không khoá bằng ngưỡng cường độ
+     * Bản sáng cùng ngày đã thử đúng cách "khoá cường độ": cho phép mép nhưng bắt nó 1px + bán trong suốt + đi cặp
+     * sheen/shade. Nó **vẫn** bị gọi là gạch. Cộng `surfEdge`/`surfOnEdge` (Pass-4 → Pass-5) thì đây là lần thứ BA
+     * cùng một họ lỗi, và kết luận đo được là: cái sai nằm ở **HÌNH DẠNG** — một hình chữ nhật ghim vào cạnh thẻ
+     * đọc ra thành một VẠCH ở mọi alpha, mọi độ dày. Ngưỡng cường độ không bắt được điều đó; lệnh cấm thì có.
+     *
+     * Bốn tone vì thế phân biệt nhau **CHỈ bằng MÀU FILL** ([KachiTheme.surfacePair]). Chiều nổi do chuyển sắc DỌC
+     * gánh một mình — bài `chuyen sac doc con du manh de thay the mep sang o bang toi` khoá đúng phần đó.
      */
     @Test
-    fun `khong con lop anh sang ghim o dinh be mat`() {
+    fun `khong con mep hay vien tren be mat`() {
         val body = SourceRoots.body(
             SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/KachiTheme.kt"), "fun surface(",
         )
-        val banned = listOf("Gravity.TOP", "setLayerHeight(", "setLayerGravity(", "setLayerInset(")
-            .filter { it in body }
+        val banned = listOf(
+            "GLASS_SHEEN" to "vệt sáng đỉnh (mép kính)",
+            "GLASS_SHADE" to "vệt tối đáy (mép kính)",
+            "setStroke" to "viền quanh thẻ",
+            "Gravity.TOP" to "lớp ghim vào cạnh trên",
+            "Gravity.BOTTOM" to "lớp ghim vào cạnh dưới",
+            "setLayerHeight" to "dải mỏng ghim vào một cạnh",
+            "setLayerGravity" to "lớp ghim vào một cạnh",
+        ).filter { (needle, _) -> needle in body }
         assertEquals(
-            emptyList<String>(), banned,
-            "surface() lại có lớp ghim vào ĐỈNH thẻ ⇒ vạch sáng quay lại (owner 2026-09-16 gọi nó là bug): $banned",
+            emptyList<Pair<String, String>>(), banned,
+            "surface() mọc lại mép/viền — owner 2026-09-20 đã chê ĐÚNG hình dạng này hai lần (Pass-5 nét đỉnh đặc, " +
+                "WP1 bevel 1px bán trong suốt). Phân biệt tone bằng MÀU FILL (surfacePair), chiều nổi bằng chuyển " +
+                "sắc DỌC. Đang có: $banned",
         )
+        // Hai vai màu mép — của Pass-4 (surfEdge/surfOnEdge) VÀ của WP1 (glassSheen/glassShade) — không được mọc lại
+        // dưới bất kỳ tên nào: đây là chỗ ba lượt trước đều đi qua trước khi chạm tới chỗ vẽ.
         val roles = KachiPalette::class.java.declaredFields.map { it.name }
         assertEquals(
-            emptyList<String>(), listOf("surfEdge", "surfOnEdge").filter { it in roles },
-            "vai mép sáng mọc lại ở bảng màu — Pass 5 gỡ hẳn, không hạ alpha (xem KDoc KachiPalette.surfTo)",
+            emptyList<String>(), listOf("surfEdge", "surfOnEdge", "glassSheen", "glassShade").filter { it in roles },
+            "vai màu MÉP mọc lại ở KachiPalette — bề mặt WP1 không có mép nào, nên một vai như thế là vai chết (và " +
+                "là lời mời vẽ lại gạch)",
         )
     }
 
     /**
-     * Và vì mép sáng đã đi, **chiều nổi nằm hết trong chuyển sắc** ⇒ chuyển sắc phải còn đủ mạnh để đọc ra.
+     * Và vì mép sáng đã đi (Pass-5 nét đỉnh, WP1 bevel 1px), **chiều nổi nằm HẾT trong chuyển sắc** ⇒ chuyển sắc
+     * phải còn đủ mạnh để đọc ra.
      *
      * Con số đo được ghi thẳng vào bảng §6.4 (dòng `surfFrom ÷ surfTo`). Bảng SÁNG được miễn vì `#ffffff` ÷
-     * `#eff3f9` chỉ ~1.06× — ở đó chiều nổi do [KachiPalette.surfLine] gánh (bài
-     * `the chat lieu tach duoc khoi nen o ca hai bang` đã khoá đúng cơ chế đó), cùng lối miễn trừ có-lý-do của
-     * các bài trên.
+     * `#eff3f9` chỉ ~1.06×: đỉnh của nó đã trắng hết cỡ nên **không nâng thêm được**, và ở đó việc tách thẻ đi qua
+     * chân viền của bài `the chat lieu tach duoc khoi nen o ca hai bang` — chân đó sau WP1 không còn được
+     * [KachiTheme.surface] vẽ, xem KDoc của chính bài kia (đã ghi rõ, không giấu).
      */
     @Test
     fun `chuyen sac doc con du manh de thay the mep sang o bang toi`() {
@@ -167,8 +194,8 @@ class SurfaceContrastContractTest {
         val step = ratio(over(p.surfFrom, p.bg), over(p.surfTo, p.bg))
         assertTrue(
             step >= 1.20,
-            "chuyển sắc thẻ bảng TỐI chỉ ${fmt(step)}× (cần ≥ 1.20): sau Pass 5 đây là TOÀN BỘ chiều nổi của thẻ, " +
-                "làm phẳng nó là trả màn hình về đúng mảng xám của lượt P1.",
+            "chuyển sắc thẻ bảng TỐI chỉ ${fmt(step)}× (cần ≥ 1.20): sau khi Pass-5 gỡ nét đỉnh và WP1 gỡ mép kính " +
+                "+ viền, đây là TOÀN BỘ chiều nổi của thẻ — làm phẳng nó là trả màn hình về đúng mảng xám của P1.",
         )
     }
 
@@ -354,12 +381,15 @@ class SurfaceContrastContractTest {
             row("INK trên surfOnFrom", "chữ trên thẻ BẬT, đỉnh", 4.5, ratio(p.ink, on))
             row("INK trên surfOnTo", "chữ trên thẻ BẬT, đáy", 4.5, ratio(p.ink, on2))
             // ⚠ Hai dòng dưới đo MỘT tính chất ("thẻ tách được khỏi nền") bằng HAI cơ chế, và bảng phải nói đúng
-            // như thế: chấm ❌ cho hairline của bảng TỐI là sai sự thật — ở bảng tối việc tách thẻ do bước sáng
-            // gánh (1.23×), hairline chỉ trang trí. Xem bài `the chat lieu tach duoc khoi nen o ca hai bang`.
+            // như thế: chấm ❌ cho chân viền của bảng TỐI là sai sự thật — ở bảng tối việc tách thẻ do bước sáng
+            // gánh (1.23×). ⚠⚠ [WP1 2026-09-20] `surfLine` KHÔNG còn được `KachiTheme.surface()` vẽ (owner bỏ hết
+            // viền) ⇒ với bảng SÁNG, chân đang đỡ con số này là một cơ chế màn hình không dùng nữa. Giữ dòng để
+            // con số vẫn hiện ra cho owner quyết, KHÔNG im lặng bỏ. Xem `the chat lieu tach duoc khoi nen…`.
             val border = ratio(over(p.surfLine, top), top)
             val step = ratio(top, p.bg)
             out.append(
                 "| `surfLine trên surfFrom` + `surfFrom ÷ bg` | tách thẻ khỏi nền (**viền ≥ 3.0 HOẶC bước ≥ 1.15**) " +
+                    "— ⚠ WP1: viền KHÔNG còn được vẽ, chỉ còn bước sáng trên màn " +
                     "| 3.0 / 1.15 | viền **${fmt(border)}** · bước **${fmt(step)}** | " +
                     "${if (border >= 3.0 || step >= 1.15) "✅" else "❌"} |\n",
             )
@@ -376,8 +406,8 @@ class SurfaceContrastContractTest {
             )
             row("surfFrom ÷ slot", "bậc 2 · thẻ nội dung trên khay", 1.15, ratio(over(p.surfFrom, wellTop), wellTop))
             // ⚠ [SOÁT Pass 5] Dòng `surfEdge trên surfFrom` (mép sáng, sàn 2.20) ĐÃ BỎ cùng với chính lớp mép
-            //    sáng. Thay bằng chuyển sắc — sau Pass 5 đó là toàn bộ chiều nổi của thẻ. Bảng SÁNG miễn (đỉnh đã
-            //    trắng tinh, chiều nổi do surfLine gánh), đúng lối miễn trừ của hairline bảng tối.
+            //    sáng; WP1 bỏ tiếp cặp `glassSheen`/`glassShade`. Thay bằng chuyển sắc — nay đó là toàn bộ chiều
+            //    nổi của thẻ. Bảng SÁNG miễn (đỉnh đã trắng tinh, không nâng thêm được).
             val slope = ratio(top, bot)
             // ⚠ [SOÁT 1.69 · P3] Miễn trừ đo bằng **ĐỘ SÁNG**, không so mã màu. Bản trước viết
             // `p.surfFrom.equals("#ffffff")`: lý do miễn là *"đỉnh đã sáng hết cỡ nên không nâng thêm được"*,
@@ -391,7 +421,10 @@ class SurfaceContrastContractTest {
             row("INK trên slot", "chữ ô nhóm, đỉnh khay", 4.5, ratio(p.ink, wellTop))
             row("MUT2 trên slotTo", "nhãn nhóm mờ nhất, đáy khay", 4.5, ratio(p.mut2, over(p.slotTo, p.bg)))
             row("lineStrong trên bg", "mốc cũ phải giữ", 3.0, ratio(over(p.lineStrong, p.bg), p.bg))
-            row("emptyLine trên emptyFill", "mốc cũ phải giữ", 3.0, ratio(over(p.emptyLine, p.emptyFill), p.emptyFill))
+            // WP1 · R1.1 — hàng `emptyLine trên emptyFill` đã ĐỔI CHÂN: gạch đứt ô trống bị gỡ (và vai `emptyLine`
+            // xoá khỏi bảng màu), nên thứ phải đo nay là **bước sáng của NỀN ô trống** — xem
+            // `ThemePaletteContractTest.o trong tach duoc khoi nen bang mau`.
+            row("emptyFill ÷ bg", "ô trống tách nền bằng MÀU (gạch đứt đã gỡ)", 1.15, ratio(p.emptyFill, p.bg))
             row("ON_ACCENT trên gradFrom", "mốc cũ phải giữ", 4.5, ratio(p.onAccent, p.gradFrom))
             // P1b — thẻ trên ẢNH NỀN: đo ở hai cực vì ảnh do người dùng chọn (xem bài `the tren anh nen...`).
             listOf("#ffffff" to "ảnh sáng", "#000000" to "ảnh tối").forEach { (art, why) ->

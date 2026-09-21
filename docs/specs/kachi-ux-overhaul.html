@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi UX Overhaul — hệ màu glass + control-state + widget/xe + layout + dọn + purge + voice</title>
+<style>
+  :root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--mut:#6e6e73;--line:#e2e2e6;--accent:#0071e3;--ok:#34c759;--warn:#ff9f0a;--code:#f2f2f4}
+  @media (prefers-color-scheme:dark){:root{--bg:#0a0d13;--card:#161a22;--ink:#f5f5f7;--mut:#98989d;--line:#2a2f3a;--accent:#2997ff;--code:#12151c}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:48px 24px 96px}
+  h1{font-size:32px;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--mut);font-size:16px;margin:0 0 30px}
+  h2{font-size:23px;margin:44px 0 12px;padding-top:20px;border-top:1px solid var(--line)}
+  h3{font-size:17px;margin:22px 0 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:14px 0}
+  code{background:var(--code);padding:2px 6px;border-radius:6px;font:13px/1.4 "SF Mono",ui-monospace,Menlo,monospace}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:var(--code);font-weight:600}
+  ul,ol{margin:8px 0;padding-left:22px}li{margin:4px 0}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:20px}
+  .new{background:rgba(0,113,227,.14);color:var(--accent)}.warnt{background:rgba(255,159,10,.15);color:var(--warn)}
+  .diagram{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin:16px 0;overflow:auto}
+  .muted{color:var(--mut)}
+  svg text{font-family:-apple-system,"SF Pro Text",sans-serif}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Kachi UX Overhaul</h1>
+<p class="sub">Hệ màu glass mới (light+dark) · control-state · widget + hình xe · vị trí item · sizing · dọn dev · purge 37 · voice · <span class="muted">docs/specs/kachi-ux-overhaul.html · Draft 2026-09-20 · chờ duyệt lần cuối</span></p>
+
+<h2>Changelog</h2>
+<div class="card"><b>2026-09-21 v8</b> — <b>WP7 + WP8 + WP9 + S7 XONG off-car; verify emulator API 29; build 1.86 (87)</b>. Phiên trước hết token giữa chừng để lại 5 test đỏ (grep sai file sau khi WP7 dời lệnh dev sang <code>TestBridgeNoHome</code>; <code>VoiceIntentParser</code> 501&gt;500; kỳ vọng shape <code>g_battery</code>/<code>g_doors</code> cũ) — <b>đã vá hết</b> (tách <code>VoiceMediaNavParse.kt</code>; sửa 3 bài canh wiring; cập nhật shape). <b>(WP7)</b> mọi bề mặt dev/debug/log gác sau cổng DUY NHẤT <code>DevMode.unlocked</code> (= cửa sổ test-mode, fail-safe ĐÓNG); +bài canh <code>DevSurfaceGateContractTest</code>. <b>(WP8)</b> purge đã xong ở registry (icon xoá, id gỡ); +bài canh <code>WorkspaceStateTest.sanitized bo het cac ma purge cua luot UX-OVERHAUL WP8</code> (ambient×9/gps×4/cell×5/motor-rpm/steering/slope/wheel/wiper/tailgate-pos/mirror-fold/engine/coolant/hud/regen); <code>cast</code> chỉ HIDDEN_FROM_PICKER. <b>(WP9)</b> giọng bé OTA = MỘT <code>.zip</code> (10,849,310 B, sha256 <code>3a939017…</code>, 1550 tệp) ghim ở <code>KachiClipVoiceCatalog.OTA_PACK</code>; <code>VoiceModelStore.install</code> bung qua <code>java.util.zip</code> + guard zip-slip (canonicalPath) rồi renameTo; hàng Cài đặt tách lớp <code>ClipVoiceRow.kt</code>; +2 bài canh. <b>(S7)</b> senior review độc lập + security scan (1 [BLOCK] = <code>wp3b-home-dark.png</code> ảnh xe bản quyền → gitignore; +gitignore thư mục clip đã bung, chỉ commit <code>.zip</code>+sha); bump 1.85→<b>1.86 (87)</b>; <code>apk/Kachi-1.86-release.apk</code> sha256 <code>aa87cca2…</code> (aapt2: không debuggable, không probe surface). <b>[ĐO] 5 module 5151 test / 0 đỏ.</b> <b>Verify emulator API 29</b> (đọc ảnh qua sub-agent): WP7 NÂNG CAO chỉ có checkbox test-mode, không nút dev khi test-mode OFF · WP8 picker đúng 8 nhóm, không Ambient/hood, không tile Cast · WP9 hiện section "Kachi child voice" + nút Download + selector experimental. CHƯA commit/push, CHƯA FF main/OTA (chờ owner OK — OQ2). Xem <code>docs/_handoff/ux-wp6-done.md</code> + các handoff WP.</div>
+<div class="card"><b>2026-09-20 v7</b> — <b>WP6 XONG off-car</b> (R6.1 · R6.2).
+<div class="card"><b>2026-09-20 v6</b> — <b>WP4 + WP5 XONG off-car</b> (R4.1 · R5.1 · R5.2). <b>(WP4)</b> người dùng sắp được chỗ đứng của từng vật <b>BÊN TRONG</b> thanh trên (6 vật: đồng hồ+ngày · hàng chip · nút nói · ứng dụng · cài đặt · chip hồ sơ) và của từng nút trên thanh nút xe — hai danh sách ◀▶ ở <i>Cài đặt › Thanh trạng thái &amp; thanh nút</i>, lưu <b>theo HỒ SƠ</b> (<code>header_order</code>). <b>MỘT</b> phép sắp lại ở <code>:core</code> (<code>BarOrder.move</code>) dùng cho cả hai thanh; thanh nút <b>KHÔNG</b> sinh khoá lưu thứ hai (thứ tự LÀ <code>dock_enabled</code> qua <code>DockConfig.moveEnabled</code>). Vị trí THANH không đổi, taskbar 4 cạnh giữ nguyên. ⚠ <b>sai lệch có chủ ý</b>: nút ◀▶ thay vì kéo-thả — xem §Reviewer Log. <b>(WP5)</b> thanh nút <b>80 %</b> (116→93 · 124→99dp) + ô <b>85 %</b> (84×86→71×73 · 100×70→<b>83</b>×60); thanh trên cao <b>75 %</b> (56→42dp), nút App/Voice/hồ sơ <b>70 %</b> (48→34dp), đĩa hồ sơ 32→22dp, <b>thông tin giữ nguyên cỡ chữ</b>. Thang tách <code>KachiSpaceBars.kt</code> (<code>KachiSpace</code> đã 496 dòng). <b>[ĐO] 5 module 5109 test / 0 đỏ · ảnh API 29 dark ×5.</b> ⚠⚠ hai đánh đổi AN TOÀN owner cần biết (nút 34dp &lt; 48dp · vùng chạm −/+ thanh DỌC 50×48→41×48dp) — §Reviewer Log. CHƯA commit. Xem <code>docs/_handoff/ux-wp45-done.md</code>.</div>
+<div class="card"><b>2026-09-20 v5</b> — <b>WP3 LÀM LẠI: bỏ vector car → ẢNH bitmap (owner chê vector xấu/tốn token)</b>. <b>(A)</b> hình xe tổng hợp (bảng Lốp · Cửa&Khoang · widget xe) nay là <b>ẢNH top-down</b> đọc từ thư mục máy <code>Android/data/&lt;pkg&gt;/files/car/</code> (mặc định <code>images/seal.png</code> 408×624), <b>user thay được</b> (cơ chế thư mục như hình nền), <b>feather mờ cạnh</b> (mask gradient DST_OUT, tính 1 lần lúc nạp, <b>0 blur runtime</b> vì xe API 29) cho tiệp nền. Overlay trạng thái (cửa/cốp/lốp = <b>chấm màu</b> tại vị trí neo) vẽ trên ảnh; hết cửa xoè động. Thư mục trống ⇒ placeholder silhouette mờ (KHÔNG dùng lại vector). <b>(B)</b> GỠ HẲN vector car: <code>CarArtPainter</code> · <code>CarArtSource</code>/<code>VectorCarArt</code> · <code>CarFrames</code>(+Generated) · <code>CarModel</code>+model-picker · <code>:core CarPartStyle</code> (CarFace/CarPartRole/CarInk/PartLook) + <b>CarPaint + paint-picker</b> (xem quyết định scope §WP3-v5). <b>(C)</b> Task B: cốp/rèm bỏ chữ Đóng/Mở/Nửa → active/mờ (2 mức) hoặc vạch như ghế (≥3 mức). <b>(D)</b> <code>images/</code> vào <code>.gitignore</code> (ảnh bản quyền không vào repo public). CHƯA commit. Xem §WP3-v5 + <code>docs/_handoff/ux-wp3b-photo-car.md</code>.</div>
+<div class="card"><b>2026-09-20 v4</b> — <b>WP3 XONG off-car</b> (BẢN TRƯỚC — vector car, đã bị v5 thay) (board + hình xe, R3.1–R3.2): <b>(R3.1)</b> COVER trong hàng nút board = MỘT tile cycle (như TOGGLE/SELECT), bỏ 2–3 nút phụ ⇒ ô *Cửa & khoang* đồng nhất (sửa "rèm 3 option vs 1 nút"); ô rộng (dock/giữa màn) giữ nhiều nút. <b>(R3.2a)</b> vẽ lại hình xe: bánh thu vào vè + cửa đóng liền thân (bỏ dáng "que/trẻ con"); <code>CarPartStyle</code> FLAP đóng=HIDDEN. <b>(R3.2b)</b> bộ chọn KIỂU XE (<code>CarModel</code> :core + <code>ColorChoice.model</code> + selector Cài đặt): 5 model Seal·Han·Sealion 6·Sealion 8·Chung, phân biệt theo TỈ LỆ dáng (kéo dãn) — ⚠ bản đầu, cùng-lớp khác nhẹ; per-model geometry là bước lặp. 5 module 5131 test/0 đỏ · gen-car --check OK · ảnh API 29 đã chụp. CHƯA commit. Xem §Reviewer Log · <code>docs/_handoff/ux-wp3-done.md</code>.</div>
+<div class="card"><b>2026-09-20 v3</b> — <b>WP2 XONG off-car</b> (control-state, R2.1–R2.5): luật trạng thái ô điều khiển chuyển sang <code>:core</code> (<code>ControlVisuals</code>, thuần, 16 test); on/off nói bằng icon+màu (bỏ chữ "Bật/Tắt"); ghế mát/sưởi → 2 vạch mức; cốp/kính mở = màu nhấn (ô COVER nay đọc lại xe); stepper ba cột 1:2:1 + sàn bề ngang suy từ registry. <code>ControlTileFactory</code> 539 → 495 dòng. 5 module 5123 test/0 đỏ · thử phá 3/3 · ảnh API 29 đã chụp. CHƯA commit. Xem §Reviewer Log · <code>docs/_handoff/ux-wp2-done.md</code>.</div>
+<div class="card"><b>2026-09-20 v2</b> — WP1 xong (3 lượt): hệ màu light+dark + <code>surface()</code> glass 2-mode → owner <i>"bỏ viền đi luôn"</i> → ZERO BORDER toàn tầng vẽ + lề ngang còn 80 %.</div>
+<div class="card"><b>2026-09-20 v1</b> — Draft từ 9 việc owner giao + Q&A. Owner chốt: glass 2-option (giả default/thật option + đo xe), item-position trong bar (không đổi vị trí bar), model xe nhiều lựa chọn, ẩn dev-UI giữ-adb, dồn 1 version, giọng bé giữ+OTA, bỏ speed-0.8, research giọng nữ Nam. Baseline 1.85 đã commit (`e0cb368`, nhánh feat).</div>
+
+<h2>Context</h2>
+<div class="card">
+Owner: giao diện "nhà quê như 30 năm trước". Làm lại **toàn diện** trong MỘT version (thuần off-car, không build nhiều bản vì không test được off-car). Gộp cả **dọn dẹp** (37 mục purge + dev-UI) + **voice** (giọng bé OTA, research giọng Nam). RE 25 mục CẦN = <b>task riêng on-car</b> (không trong version này) — `docs/diagnostics/oncar-re-tasks-can-2026-09-20.md`.
+</div>
+
+<h2>Requirements (9 WP)</h2>
+
+<h3>WP1 — Hệ màu mới + glass (việc 1) <span class="tag new">lớn nhất</span></h3>
+<div class="card"><ul>
+<li><b>R1.1</b> Bỏ HẾT border stroke (thẻ/khối/nút/widget) — phân tách bằng màu nền + khoảng cách + sắc độ.</li>
+<li><b>R1.2</b> Làm lại <b>hệ màu</b> light+dark (hiện "nhà quê") — bảng màu hiện đại, tươi, tương phản WCAG đạt. `KachiPalette` 2 bảng viết lại.</li>
+<li><b>R1.3</b> Thẩm mỹ <b>glass/liquid (iOS 27)</b>, làm <b>2 chế độ</b>: <b>giả-glass (MẶC ĐỊNH)</b> = trong mờ + gradient + viền sáng mảnh + shadow rẻ, <b>0 blur runtime</b>; <b>glass-thật (option)</b> = blur runtime (RenderEffect/blur). Công tắc chọn. <b>Lên xe đo CPU/fps/lag</b> cả 2 → quyết dựa số thật.</li>
+</ul></div>
+
+<h3>WP2 — UX trạng thái control (việc 3, 5)</h3>
+<div class="card"><ul>
+<li><b>R2.1</b> On/off → <b>icon active/mờ + đổi màu</b>, BỎ chữ "Bật/Tắt" (nhà quê). Active=màu accent, off=mặc định.</li>
+<li><b>R2.2</b> Nhiều mức (ghế mát/sưởi 2 mức) → <b>2 vạch nhỏ</b> (mức1/mức2 sáng dần, OFF=mờ).</li>
+<li><b>R2.3</b> Cốp/cover: mở=màu active, đóng=mặc định.</li>
+<li><b>R2.4</b> Stepper (nhiệt 22° vs gió 4) <b>consistent</b>: ô giá trị rộng cố định + nút −/+ thẳng hàng bất kể số chữ số/đơn vị. Áp MỌI stepper/button/widget.</li>
+<li><b>R2.5</b> Rà soát TOÀN BỘ control tile theo chuẩn chung.</li>
+</ul></div>
+
+<h3>WP3 — Board widget + hình xe chuyên nghiệp (việc 4)</h3>
+<div class="card"><ul>
+<li><b>R3.1</b> Chuẩn hoá MỌI board widget (không case-by-case) — sửa lệch kiểu "rèm 3 option vs mục khác 1 nút" trong Cửa&Khoang.</li>
+<li><b>R3.2</b> <b>Hình xe = ẢNH bitmap top-down</b> (v5 — owner chê vector xấu, bỏ). Đọc từ thư mục máy <code>files/car/</code> (mặc định <code>images/seal.png</code>), user thay được (cơ chế thư mục như hình nền), <b>feather mờ cạnh</b> cho tiệp nền (0 blur runtime — xe API 29). GỠ vector + multi-model (CarModel/paint). Overlay trạng thái = chấm màu tại vị trí. Ảnh bản quyền KHÔNG vào repo (<code>.gitignore images/</code>).</li>
+</ul></div>
+
+<h3>WP4 — Vị trí item trong header + taskbar (việc 2)</h3>
+<div class="card"><ul>
+<li><b>R4.1</b> Cho chọn <b>vị trí từng item BÊN TRONG</b> header + taskbar (panel "Tuỳ biến thanh": kéo/chọn thứ tự-vị trí). KHÔNG đổi vị trí bar. Taskbar 4-cạnh giữ nguyên.</li>
+</ul></div>
+
+<h3>WP5 — Sizing (việc 6, 7)</h3>
+<div class="card"><ul>
+<li><b>R5.1</b> Taskbar: kích thước <b>80%</b>, nội dung <b>85%</b>.</li>
+<li><b>R5.2</b> Header: cao <b>75%</b>, nội dung <b>70%</b>; nút App/Voice/icon-profile <b>70%</b> (thông tin giữ nguyên).</li>
+</ul></div>
+
+<h3>WP6 — Nút nổi cast (việc 9)</h3>
+<div class="card"><ul>
+<li><b>R6.1</b> Toggle ẩn/hiện nút nổi cast. <b>R6.2</b> Đổi icon nút nổi thành <b>icon app Kachi</b>, nhỏ gọn.</li>
+</ul></div>
+
+<h3>WP7 — Dọn dev/debug UI (việc 8)</h3>
+<div class="card"><ul>
+<li><b>R7.1</b> Liệt kê + <b>ẩn khỏi UI</b> mọi bề mặt dev/debug/log/lấy-info-xe/thử-nghiệm. <b>GIỮ chức năng chạy qua adb</b> (test-bridge sau checkbox "Chế độ kiểm thử qua adb").</li>
+<li>Ứng viên ẩn (sẽ liệt kê đủ khi làm): công tắc diag-logging + xuất-log · CAPTEST tool (giữ qua adb) · featmap dump · HAL probe · các nút chẩn đoán/cứu-hộ dạng dev. Giữ: checkbox adb-test, cứu-hộ cast người-dùng-thật (nếu là UX thật).</li>
+</ul></div>
+
+<h3>WP8 — Purge 37 + ẩn cast-tile (đã chốt triage)</h3>
+<div class="card"><ul>
+<li><b>R8.1</b> Xoá 37 mục BỎ khỏi registry/UI/voice/icon/status-by-id.json + cập nhật count (mẫu FEATURE-FILTER). Danh sách: <code>5-18,20,23,30,39-43,46-49,51-56,58*,59†,61†,62,63</code> — *#58 chỉ ẩn tile giữ feature; †#59/#61 CHUYỂN sang RE-task (giữ, không xoá).</li>
+<li><b>R8.2</b> <b>#58 `cast`</b>: chỉ `HIDDEN_FROM_PICKER` (giữ nút nổi + voice "chiếu cụm" + subsystem). <b>#31/#34 gạt mưa</b>, #29 vị-trí-cốp, #30 gương… xoá. GPS×4 (#53-56) xoá datum HAL (nav dùng LocationManager).</li>
+<li><b>Đính chính triage</b>: #59 (xoay màn) + #61 (nhạc cụm) owner để lại <b>RE on-car</b> ⇒ KHÔNG purge (chuyển vào task RE). Purge thực = <b>35 mục</b>.</li>
+</ul></div>
+
+<h3>WP9 — Voice (Q&A)</h3>
+<div class="card"><ul>
+<li><b>R9.1</b> Giọng bé: <b>GIỮ + wire OTA download</b> (khâu T9 chưa làm). Đóng gói clip thành <b>1 archive .zip</b> (java.util.zip có sẵn, không cần viết decompressor) + ghim sha256, tải như VoicePack; giải nén vào `filesDir/<DIR>/`. (1546 file per-file-download là bất khả.)</li>
+<li><b>R9.2</b> Piper speed 0.8: <b>KHÔNG làm</b> (owner bỏ).</li>
+<li><b>R9.3</b> Giọng nữ miền Nam: <b>research</b> model Piper VN Nam (hoặc TTS offline khác, license Apache/MIT) → báo options. <b>Task riêng</b>, không chặn version.</li>
+</ul></div>
+
+<h2>Design</h2>
+<div class="diagram">
+<svg viewBox="0 0 900 210" width="100%" height="auto" role="img" aria-label="Kiến trúc UX">
+<rect x="20" y="20" width="200" height="60" rx="12" fill="var(--code)" stroke="var(--accent)"/>
+<text x="120" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">KachiPalette (mới)</text>
+<text x="120" y="63" text-anchor="middle" font-size="11" fill="var(--mut)">light+dark · glass tokens</text>
+<rect x="20" y="110" width="200" height="60" rx="12" fill="var(--code)" stroke="var(--accent)"/>
+<text x="120" y="135" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">KachiTheme.surface()</text>
+<text x="120" y="153" text-anchor="middle" font-size="11" fill="var(--mut)">glass giả/thật · 0 border</text>
+<rect x="270" y="20" width="200" height="60" rx="12" fill="var(--card)" stroke="var(--line)"/>
+<text x="370" y="45" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">ControlTileFactory</text>
+<text x="370" y="63" text-anchor="middle" font-size="11" fill="var(--mut)">active-color · vạch mức · stepper</text>
+<rect x="270" y="110" width="200" height="60" rx="12" fill="var(--card)" stroke="var(--line)"/>
+<text x="370" y="135" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">BoardViews + CarArt</text>
+<text x="370" y="153" text-anchor="middle" font-size="11" fill="var(--mut)">chuẩn chung · model xe</text>
+<rect x="520" y="20" width="200" height="60" rx="12" fill="var(--card)" stroke="var(--line)"/>
+<text x="620" y="45" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Header/Taskbar</text>
+<text x="620" y="63" text-anchor="middle" font-size="11" fill="var(--mut)">item-position · sizing</text>
+<rect x="520" y="110" width="200" height="60" rx="12" fill="var(--card)" stroke="var(--line)"/>
+<text x="620" y="135" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Purge + dev-clean</text>
+<text x="620" y="153" text-anchor="middle" font-size="11" fill="var(--mut)">35 mục · ẩn dev UI</text>
+<rect x="770" y="65" width="110" height="60" rx="12" fill="var(--code)" stroke="var(--accent)"/>
+<text x="825" y="90" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Voice</text>
+<text x="825" y="108" text-anchor="middle" font-size="11" fill="var(--mut)">giọng bé OTA</text>
+</svg>
+</div>
+<div class="card"><ul>
+<li><b>Nền tảng trước</b>: KachiPalette mới + KachiTheme.surface() glass-2-mode + KachiType/KachiSpace (nếu cần) — mọi WP khác dựng trên đó.</li>
+<li><b>Glass giả</b>: LayerDrawable (translucent fill + linear-gradient + hairline sáng 1px + soft shadow tính-sẵn). <b>Glass thật</b>: `RenderEffect.createBlurEffect` (API 31+) / fallback giả nếu API thấp — công tắc `ui_glass_real` (default off).</li>
+<li><b>Control-state</b>: `:core` quyết trạng thái hiển thị (active/level/off) — thuần, test được; `:app` render (màu/icon/vạch).</li>
+<li><b>Hình xe</b>: mở rộng `CarFrames`/`CarArtPainter` — mỗi model 1 bộ path vector gốc (sinh qua `gen-car.py`); pref `car_model` theo XE.</li>
+<li><b>Item-position</b>: model thứ-tự/vị-trí item ở `:core` (`TopStripConfig`/`DockConfig` mở rộng vị-trí) + panel kéo-thả `:app`.</li>
+</ul></div>
+
+<h2>Tasks (DAG dự kiến)</h2>
+<div class="card"><ol>
+<li><b>S1</b> ✅ Nền: KachiPalette mới (light+dark) + KachiTheme.surface() glass-2-mode + bỏ border + test tương phản. <span class="muted">(3 lượt; lượt cuối = ZERO BORDER toàn tầng vẽ)</span></li>
+<li><b>S2</b> ✅ Control-state (:core <code>ControlVisuals</code> + ControlTileFactory) + stepper consistent + rà soát cả 5 <code>ControlKind</code>. <span class="muted">(off-car; 🚗 màu ô COVER khi mở cần xe)</span></li>
+<li><b>S3</b> ✅ Board widgets chuẩn hoá (COVER→tile cycle trong board) + hình xe vẽ lại (bánh thu vào vè, cửa đóng liền thân) + bộ chọn model (5 model, phân biệt theo tỉ lệ — per-model geometry là lặp sau). <span class="muted">(off-car; 🚗 màu/tỉ lệ trên cụm cần xe)</span></li>
+<li><b>S4</b> Header/taskbar: item-position panel + sizing (80/85, 75/70/70).</li>
+<li><b>S5</b> Cast-button (ẩn/hiện + icon Kachi) + WP8 purge 35 + ẩn cast-tile + WP7 dọn dev-UI (liệt kê + ẩn).</li>
+<li><b>S6</b> Voice: giọng bé OTA (.zip + sha256 + unzip) + wire download.</li>
+<li><b>S7</b> Finalize: full test + senior review (độc lập) + security scan + build + bump 1.86 (chưa OTA tới khi owner OK).</li>
+<li>Song song (không chặn): research giọng nữ miền Nam → báo options.</li>
+</ol></div>
+
+<h2>Verification</h2>
+<div class="card"><ul>
+<li>Off-car: 5 module 0 đỏ; test tương phản màu (WCAG) sinh-bằng-máy; test control-state (:core); test purge (count + WorkspaceState.sanitized rụng 35 mã); ảnh máy ảo before/after (đọc qua sub-agent).</li>
+<li>🚗 On-car: <b>glass giả vs thật — đo CPU/fps/lag</b> (quyết định); hình xe/màu trên cụm thật; giọng bé OTA tải + phát; item-position; RE 25 mục (task riêng).</li>
+</ul></div>
+
+<h2>Open Questions / Quyết định tự lấy</h2>
+<div class="card"><ul>
+<li><b>AD1</b> Model xe: Seal · Han · Sealion 6 · Sealion 8 + generic (owner veto nếu thêm/bớt).</li>
+<li><b>AD2</b> Glass/màu "look": em thiết kế → owner xem ẢNH kết quả rồi chỉnh (không duyệt qua chữ).</li>
+<li><b>AD3</b> Giọng bé OTA: đóng gói .zip 1 tệp (không per-file 1546 pin).</li>
+<li><b>OQ1</b> WP7: em sẽ liệt kê ĐẦY ĐỦ bề mặt dev trước khi ẩn, owner tick giữ/ẩn từng cái (CAPTEST giữ-qua-adb vì cần cho RE 25 mục).</li>
+<li><b>OQ2</b> Version: build 1.86 nhưng CHƯA FF main/OTA tới khi owner OK (giữ nhánh feat như baseline 1.85).</li>
+</ul></div>
+
+<h2>References</h2>
+<div class="card"><ul>
+<li>Baseline: 1.85 `e0cb368`. Triage: tin nhắn owner 2026-09-20. RE task: `oncar-re-tasks-can-2026-09-20.md`.</li>
+<li>Nền cũ: `kachi-visual-refresh.html` (P1-P5, surface/car-art), `KachiPalette`/`KachiTheme`, `ControlTileFactory`, `CarFrames`/`CarArtPainter`, `TopStripConfig`/`DockConfig`, `VoiceModelStore`/`SherpaTtsCatalog` (OTA pattern).</li>
+</ul></div>
+
+<h2>Reviewer Log</h2>
+<div class="card"><h3>WP6 — 2026-09-20 · NÚT NỔI CAST: TOGGLE ẨN/HIỆN + ICON KACHI (R6.1 · R6.2) · code+test, CHƯA commit</h3>
+<p>Handoff: <code>docs/_handoff/ux-wp6-done.md</code> · Ảnh (API 29): <code>wp6-bubble-home.png</code> · <code>wp6-bubble-zoom.png</code> · <code>wp6-settings-row.png</code> · <code>wp6-bubble-hidden.png</code> (untracked, KHÔNG commit).</p>
+<ul>
+<li>⚠⚠ <b>Cách “ẩn” dễ nghĩ nhất là cách SAI, và nó hỏng IM LẶNG.</b> Phản xạ đầu tiên là <code>stopService</code> / <code>stopSelf()</code> — đúng như <code>CastBubbleControl.apply</code> (công tắc bong bóng đời cũ) đang làm. Nhưng dịch vụ nổi KHÔNG chỉ là cái cửa sổ: nó là driver <b>DUY NHẤT</b> của <i>tự chiếu khi nổ máy</i> (R1 — đường Activity đã thôi bắn để hết đua <code>SLOT_OCCUPIED</code>), nó chạy nhịp <code>repinEscapedCastApps</code> (kéo app bị giật khỏi cụm về lại) và nhịp <code>VmOverlayPosition.applyOnOpen</code> (áp lại vị trí bong bóng VietMap). Tắt một cái NÚT mà tắt luôn ba thứ đó thì owner sẽ thấy <i>“tự chiếu tự nhiên không chạy nữa”</i> — không lỗi, không log, không liên hệ nhân-quả nào nhìn ra được. ⇒ cờ gác <b>đúng một thứ</b>: cửa sổ. Bài canh <code>nhanh an KHONG dung dich vu xuong va KHONG xin quyen</code> ghim cả bốn lời gọi kia nằm <b>SAU</b> cổng.</li>
+<li><b>Ba nhánh ở <code>:core BubblePresence</code>, không phải một <code>Boolean</code>.</b> Hai câu hỏi <i>“owner có muốn thấy không”</i> và <i>“máy có cho vẽ lên app khác không”</i> rất dễ gộp, nhưng ba tổ hợp cần ba hành vi và <b>mỗi nhánh sai là một lỗi thật</b>: đã-tắt mà đi xin quyền ⇒ bung màn hệ thống cho thứ vừa bị tắt; đã-tắt mà <code>stopSelf</code> ⇒ mất ba tính năng trên; muốn-hiện-thiếu-quyền mà im ⇒ nút nổi không bao giờ hiện và không gì nói vì sao. Thứ tự xét là <b>ý muốn trước, quyền sau</b> — đảo lại là rơi vào ca thứ nhất (bài canh <code>an nut noi KHONG duoc di xin quyen</code> đỏ đúng chỗ khi thử phá).</li>
+<li>⚠⚠ <b>Áp bằng NHỊP 2 giây, cố ý KHÔNG stop-rồi-start dịch vụ.</b> <code>onCreate</code> là nơi chạy <code>dispatchBootAutoStart</code>, nên dựng lại dịch vụ ⇒ cờ <code>autoStartDispatched</code> về false ⇒ <b>tự chiếu nổ lại giữa chuyến</b>: gạt một công tắc <i>trình bày</i> lại đẩy một app lên cụm trước mặt người lái. Nhịp <code>refresh</code> đã có sẵn (2 s) nên cái giá là 0 và không có cửa đó. [ĐO máy ảo] tắt→bật: <b>pid KHÔNG đổi</b> (20267 → 20267), cửa sổ 1→0→1.</li>
+<li><b>Fail-safe NGƯỢC nhau, có lý do.</b> <code>castEnabledNow()</code> đọc hỏng ⇒ coi như TẮT (đừng tự ý đi giành mặt cụm); <code>bubblePresence()</code> đọc hỏng ⇒ coi như HIỆN (đừng xoá lối vào chính của việc chiếu trên chiếc xe mà owner vừa bật Cast). Hai hàm đứng cạnh nhau với hai mặc định trái dấu là thứ người sau dễ “sửa cho nhất quán”, nên lý do viết ngay tại chỗ.</li>
+<li><b>Icon: dùng CHÍNH <code>launcher_fg</code>, không chép hình học sang một tệp <code>ic_*</code> thứ hai.</b> <code>ic_launcher.xml</code> (24dp) là bản MỘT TÔNG cho smallIcon thông báo — hệ thống tô trắng theo hợp đồng — nên dùng nó ở đây buộc phải tự tô màu trong Kotlin, đúng thứ <code>ThemePaletteContractTest</code> sinh ra để chặn. Và nút nổi nằm trên pixel của app đang chiếu (bản đồ sáng, video tối), nên một glyph <b>nhiều tông</b> (hồng chuyển sắc + nhị vàng) còn hình để nhận ra ở cả hai, còn mũi tên một tông <code>#1565C0</code> thì tan vào mọi nền xanh đậm. <code>ic_bubble_nav.xml</code> xoá + rời danh sách <code>legacy</code> (bài <code>danh sach legacy tu rua hai chieu</code> đòi tệp khai ở đó phải còn tồn tại).</li>
+<li>⚠⚠ <b>Bản vá đầu làm nút nổi TO GẤP ĐÔI, và chỉ số đo bắt được.</b> <code>launcher_fg</code> khai cỡ riêng <b>108dp</b> (nó là lớp trước của adaptive icon), còn <code>minimumWidth/Height</code> chỉ đặt <b>SÀN</b> ⇒ cỡ nội tại thắng. [ĐO máy ảo API 29 density 240] cửa sổ ra <b>162×162 px = 108dp</b> — ngược hẳn yêu cầu <i>“nhỏ gọn”</i>, mà nhìn ảnh thì vẫn ra “một bông hoa”, không ai thấy sai. Vá bằng <code>adjustViewBounds</code> + <code>maxWidth/maxHeight</code> (<code>resolveAdjustedSize</code> lấy <code>min(nội tại, max, spec)</code>) ⇒ <b>72×72 px = 48.0dp</b>. Bài canh mới ghim đúng ba thuộc tính đó, vì thiếu một cái là lỗi quay lại y nguyên. <b>Bài học: “đo cửa sổ bằng dumpsys” là bước bắt buộc, không phải bước xác nhận.</b></li>
+<li><b>Cỡ 52 → 48dp = đúng SÀN chạm</b>, không xuống thêm: nút này bắn một lệnh chiếu THẬT lên cụm. Ghim bằng <b>quan hệ</b> (<code>ICON_SIZE_DP == TOUCH_MIN_DP</code>) chứ không ghim hai con số rời — ghim rời thì hạ sàn xuống 40 mà bài vẫn xanh. Mực hoa thấy được: <b>24.0×22.7dp</b> (48 × 48.3 % hộp mực của <code>launcher_fg</code>), so với mũi tên cũ ~25×32dp ⇒ gọn hơn theo chiều cao, giữ nguyên bề ngang.</li>
+<li><b>Tách 3 khối để về dưới trần 500</b> — <code>FloatingBubbleService</code> 537 → <b>397</b> dòng (nợ có TRƯỚC lượt này, WP4/5 đã ghi nhận cùng họ với <code>KachiHomeActivity</code> 541). Ba khối chọn theo <b>chính KDoc của dịch vụ</b>, vốn tự khai nó “chỉ sở hữu: vòng đời · quản cửa sổ · nối cử chỉ→hành động · bộ nghe trạng thái”: <code>BubbleAutostart</code> (bộ tự chiếu) · <code>BubblePipGuard</code> (chặn/trả PiP) · <code>BubbleForegroundNotice</code> (thông báo FGS). Sau lượt tách, KDoc mô tả đúng thứ tệp làm. <code>OcrReviewContractTest</code> ghim khối PiP <b>theo đường dẫn</b> nên đi theo chỗ ở mới — tính chất canh không đổi (bảng đồng thời · <code>remove</code> nguyên tử · không <code>forEach</code>), và thêm hai khẳng định <i>dịch vụ có thật sự gọi cả hai nửa</i>, vì tách mà quên nối = <code>appops … deny</code> nằm lại vĩnh viễn.</li>
+<li><b>Phạm vi khoá: theo XE</b>, cùng phạm vi <code>cast_enabled</code> mà nó phụ thuộc. Để nó theo hồ sơ thì hai khoá của CÙNG một tính năng nằm hai phạm vi, và đổi hồ sơ giữa lúc đang chiếu làm nút nổi biến mất/hiện lại trong khi phiên chiếu (theo XE) vẫn chạy — không ai hiểu vì sao.</li>
+<li><b>[ĐO] bằng chứng máy ảo API 29</b> (= API của xe): hộp <b>72×72 px = 48.0×48.0 dp</b> · mực hoa <b>24.0×22.7 dp</b>, <b>91.7 %</b> điểm mực nghiêng hồng (<code>r&gt;g</code> và <code>r&gt;b</code>) ⇒ đúng hoa anh đào, không phải mũi tên xanh · hàng Cài đặt hiện đủ tiêu đề + dòng phụ + dấu ✓ (mặc định BẬT), đứng giữa <i>“Enable Cluster cast”</i> và <i>“Split ratio”</i>, nhãn ra tiếng Anh ⇒ i18n chạy · <b>tắt ⇒ cửa sổ overlay 1→0 trong ≤4 s mà dịch vụ vẫn <code>isForeground=true foregroundId=1042</code></b> (đúng lằn ranh owner đặt) · bật lại ⇒ cửa sổ về, pid không đổi.</li>
+<li><b>[ĐO] 5 module 5131 test / 0 đỏ / 0 lỗi / 0 bỏ qua</b> (<code>test --rerun-tasks --continue</code>, đếm từ 567 tệp JUnit XML) · <b>thử phá 3/3 đỏ đúng chỗ</b> (đảo thứ tự xét trong <code>decide</code> ⇒ bài “không xin quyền” đỏ · nhánh ẩn cũng <code>stopSelf</code> ⇒ bài “không dừng dịch vụ” đỏ · mặc định cờ về <code>false</code> ⇒ bài chuỗi-dây đỏ), hoàn nguyên kiểm sha256 · <code>:core</code> <b>0</b> import <code>android.*</code> · <b>0</b> setStroke/blur/elevation trong mọi tệp WP6 chạm tới · 7 tệp đều &lt; 500 dòng (bài canh trong <code>BubbleVisibilityWiringContractTest</code>).</li>
+<li>🚗 <b>cần xe</b>: nhìn nút hoa trên nền GMaps/VietMap thật (mực 24dp ở alpha nghỉ 0.35 có đủ thấy khi lái không) · tắt nút nổi rồi <b>nổ máy lại</b> ⇒ tự-chiếu vẫn phải chạy (đây là tính chất đắt nhất của WP6 và off-car chỉ kiểm được bằng cách đọc mã + đo dịch vụ còn sống, vì mở chiếu cần cầu adb của xe) · gạt công tắc trong lúc đang chiếu chia đôi.</li>
+<li>⚠ <b>Chưa soát độc lập</b> (phiên không có công cụ sinh sub-agent) — ghi rõ, không tự tuyên bố đã duyệt.</li>
+</ul>
+</div>
+
+<div class="card"><h3>WP4 + WP5 — 2026-09-20 · VỊ TRÍ ITEM TRONG HAI THANH + SIZING (R4.1 · R5.1 · R5.2) · code+test, CHƯA commit</h3>
+<p>Handoff: <code>docs/_handoff/ux-wp45-done.md</code> · Ảnh (API 29, dark): <code>wp45-home-dark.png</code> · <code>wp45-header-reordered-dark.png</code> · <code>wp45-dock-left-dark.png</code> · <code>wp45-settings-bars*.png</code>.</p>
+<ul>
+<li><b>MỘT phép sắp lại cho CẢ HAI thanh</b> — <code>:core BarOrder.move(items, item, delta)</code>; <code>HeaderLayout.move</code> và <code>DockConfig.moveEnabled</code> chỉ uỷ quyền. Thanh trên sắp <code>HeaderItem</code>, thanh nút sắp mã khả năng (<code>String</code>): hai loại dữ liệu, một phép. Viết hai bản là dựng sẵn bẫy hai-bản-sao mà dự án đã trả giá bốn lần (<code>unitPrefs</code> 4 bản · <code>customLayout</code> 2 bản) — chúng sẽ lệch ở đúng lần ai đó sửa một bên (ví dụ một bên kẹp chỉ số, bên kia để nó âm).</li>
+<li><b>Tính chất mà tầng vẽ dựa vào</b>: không dời được ⇒ trả về <b>CHÍNH</b> vật cũ (bài canh dùng <code>assertSame</code>, không phải <code>assertEquals</code> — <code>assertEquals</code> vẫn xanh nếu ai đổi sang trả bản sao). Nhờ đó nút ◀/▶ ở hai đầu biết phải làm mờ mà không nhân đôi luật kẹp biên, và không có lượt ghi bền vô nghĩa.</li>
+<li><b><code>HeaderLayout.order</code> là HOÁN VỊ ĐỦ, không phải tập con</b> (<code>init { require }</code>). Vắng một vật thì vật đó <i>biến mất khỏi thanh mà không bề mặt nào nói ra</i>; ẩn/hiện là việc riêng và đã có chỗ riêng cho từng vật. ⚠ Ca quan trọng nhất của <code>decode</code> là chuỗi <b>THIẾU</b> vật (bản sau thêm một vật trong lúc xe chạy bản trước): nối vật thiếu vào cuối theo thứ tự mặc định — không chữa thì hàm dựng ném <b>ngay lúc nạp</b> ⇒ launcher sập khi mở, đúng lỗi <code>DEFAULT_WORKSPACE</code> đã phải vá ở P9 (và lỗi đó không có bài nào bắt vì lớp ấy cần Context).</li>
+<li><code>KachiTopStrip</code>: <code>build()</code> dựng view vào <b>bảng <code>items[HeaderItem]</code></b>, <code>place(layout)</code> mới quyết chỗ; <code>setLayout()</code> chỉ <b>sắp lại</b> (removeAllViews + gắn lại), KHÔNG dựng lại ⇒ không mất chữ trên chip / tên hồ sơ và không tra+tint lại drawable mỗi cú bấm. <code>lpFor(item)</code> phụ thuộc <b>LOẠI vật, không phụ thuộc chỗ</b> ⇒ hàng chip vẫn là phần co giãn <b>duy nhất</b>, nên <b>không tổ hợp thứ tự nào làm thanh tràn</b> (bài canh chốt đúng MỘT vật mang weight).</li>
+<li>⚠⚠ <b><code>bars_dock_order</code> phải khai <code>prefKey = null</code></b>: <code>SettingsCatalog</code> ép bất biến <i>"một khoá chỉ thuộc ĐÚNG một mục"</i>. [ĐO] khai <code>dock_enabled</code> lần thứ hai ⇒ <code>ExceptionInInitializerError</code> <i>"khoá hai chủ"</i>, <b>45 bài đỏ</b>. Đúng tiền lệ <code>home_grid_editor</code>: một mục <b>sửa</b> giá trị mà mục khác <b>sở hữu</b>.</li>
+<li>⚠ <b>SAI LỆCH CÓ CHỦ Ý — nút ◀▶, KHÔNG kéo-thả</b> (lời giao ghi <i>"sắp/kéo"</i>). Ba lý do: kéo trong một <code>ScrollView</code> dài phải phân xử với cuộn trang, và cách duy nhất phân xử được là giữ-rồi-kéo = <b>cử chỉ không nhìn thấy được</b>, trong xe, cho một việc làm một lần rồi quên; nút bấm thì <b>ĐO được off-car</b> (kết quả là một vật <code>:core</code>); và hai nút 48dp rõ hơn một vùng kéo trên màn rung theo đường. <code>BarOrder.move</code> nhận <b>delta bất kỳ</b> (không kẹp ±1) nên nối kéo-thả về sau chỉ là thêm một chỗ gọi, không viết lại luật. <b>Xin owner chốt.</b></li>
+<li><b>WP5 — thang tách hai tệp</b>: <code>KachiSpace.kt</code> đã <b>496 dòng</b> trước khi WP5 thêm một dòng (trần 500). Cắt theo VAI: thang chung ở lại, <b>cỡ của hai khối bố cục</b> sang <code>KachiSpaceBars.kt</code> — chúng <b>suy lẫn nhau</b> (bề dày thanh = ô + lề ô + lề thanh) nên phải đứng cạnh nhau. Hệ quả: hai bài canh phải <b>nới</b> (nhận <code>Bars.</code>/<code>KachiBars.</code>; lý-do-tại-chỗ quét cả hai tệp) ⇒ thêm bài <code>KachiSpaceBars chi duoc khai hang</code> (0 lời gọi dp · 0 import Android · 0 <code>fun</code> · ≥8 hằng) để nới mà <b>không</b> mở cửa cho một <code>KachiSpaceXxx.kt</code> chứa mã vẽ. Net: guard mạnh hơn trước.</li>
+<li>⚠⚠ <b>BỐN hằng phải đổi CÙNG LÚC hoặc ô bị cắt IM LẶNG</b>: lề trong thanh nút <code>Sp.S</code>→<code>Sp.XS</code> và bề cao <b>vẽ</b> nút −/+ <code>TOUCH_TIGHT</code> 32→27 là <b>BẮT BUỘC</b>, không phải cho gọn — [ĐO số học] giữ nguyên thì ô ngang cần 97 &gt; 93dp, ô dọc cần 107 &gt; 99dp, rồi nội dung ô STEP cần 64 &gt; 60dp. <code>LinearLayout</code> gravity CENTER cắt mà không báo gì, nên bài canh mới tính chính phép cộng đó thay vì tin mắt.</li>
+<li>⚠ <code>TOUCH_TIGHT</code> <b>không phải</b> đích chạm nhỏ đi: vùng nhận chạm thật do <code>StepTouchTarget</code> cấp qua <code>TouchDelegate</code> và nó lấy <code>Sp.TOUCH</code> (48dp), độc lập với bề cao vẽ. Chọn thu ở đây thay vì thu <code>ICON_S</code> — icon là manh mối nhận ra nút, 5dp bề cao của một dấu <code>−</code> thì không mang thông tin nào.</li>
+<li>⚠ <b><code>DOCK_TILE_W_VERTICAL</code> lệch mốc 2 điểm, có chủ ý</b>: bản trước WP5 khít <b>tuyệt đối</b> ở chiều này (<code>100 + 8 + 16 = 124</code> = đúng <code>DOCK_WIDE</code> cũ) ⇒ hai mốc owner <b>không thể đúng cùng lúc</b> (85 % của ô đòi thanh ≥ 101dp = 81.5 %; 80 % của thanh đòi ô ≤ 83dp = 83 %). Giữ đúng mốc <b>THANH</b> vì đó là thứ owner nhìn thấy và nói ra; viết dạng <b>phép trừ</b> nên ô không bao giờ tràn được.</li>
+<li><b>[ĐO] ảnh máy ảo API 29 / 1920×1080 / density 240</b> (chủ đề kiểm bằng độ chói trung bình <b>34.8/255</b>, không tin nhãn tệp — bài học WP1 về ô WAL của <code>SharedPreferencesImpl</code>): thanh trên nội dung canh giữa <b>y 44..66</b>, tâm 55 = đúng tâm dải 24..87 (42dp); mép vùng ô <b>y = 100</b> = 87 + khe 13px, mà WP1 đo đáy thanh cũ ở <b>y = 107</b> ⇒ <b>84px → 63px = 75.0 %</b> và vùng ô <b>được thêm 20px</b>; pill nhấn <b>40.0 × 34.0dp</b> (= <code>HEADER_BTN</code>); đĩa hồ sơ <b>22.0 × 22.0dp</b> (= <code>HEADER_AVATAR</code>); thanh nút ngang <b>92.7dp</b>, dọc <b>98.7dp</b>, ô dọc <b>60.0dp</b>; <b>WP4</b> ghi <code>header_order = PROFILE,VOICE,CLOCK,CHIPS,APPS,SETTINGS</code> ⇒ đĩa hồ sơ dời <b>x1749..1781 → x62..94</b> và pill Cài đặt dời <b>x1670 → x1817</b>; ô STEP ở thanh <b>DỌC</b> (ca chật nhất) <b>không bị cắt</b> (mực 798..858 trong ô 788..877, đủ hai nhóm icon + hàng nút). Bề mặt Cài đặt đọc từ <b>cây trợ năng</b> (<code>uiautomator</code>, không suy từ ảnh): 6 hàng <code>1/6…6/6</code> + 8 hàng <code>1/8…8/8</code>, mỗi hàng có ▲/▼ kèm mô tả <i>Move up/down one place</i>, nhãn ra tiếng Anh ⇒ i18n chạy.</li>
+<li><b>[ĐO] 5 module · 5109 test / 0 đỏ / 0 lỗi / 0 bỏ qua</b> (<code>test --rerun-tasks --continue</code>, đếm từ JUnit XML); lệnh bắt buộc của lượt này <code>:core:test :app:testDebugUnitTest --rerun-tasks</code> = <b>3684 / 0</b>. <code>:core</code> <b>0</b> import <code>android.*</code>; <b>0</b> <code>setStroke</code>/blur/shadow/elevation trong hai tệp mới (giữ WP1). Máy ảo đã trả prefs gốc (kiểm sau khi trả).</li>
+<li>⚠⚠ <b>HAI ĐÁNH ĐỔI AN TOÀN do mốc % gây ra — owner cần biết.</b> <b>(a)</b> nút thanh trên <b>34dp &lt; 48dp</b> tối thiểu mà chính dự án dùng làm lý do cấm chip thanh trên bắn lệnh xe; giảm nhẹ đo được: không nút nào ở đây bắn lệnh xe (ba pill mở một bề mặt, chip hồ sơ mở bộ chọn) ⇒ bấm nhầm = Back, hoàn lại được ngay; trả về 48dp = đổi <b>đúng một hằng</b>. <b>(b)</b> vùng chạm −/+ của thanh nút <b>DỌC</b>: <b>50×48 → 41×48dp</b> — trước WP5 đây là hướng <b>duy nhất</b> đủ 48×48, và có một bài canh tồn tại để nói <i>"giới hạn 42dp của thanh ngang không phải do phép tính"</i>. Bài đó đổi từ <i>"đủ 48"</i> sang <b>đo được đúng bao nhiêu</b> (một con số thật thì phiên sau còn đối chiếu; một lời hứa đã sai thì chỉ làm người đọc tin nhầm). Diện tích vẫn 1968dp² = <b>3.07×</b> mốc 640dp² trước khi có <code>TouchDelegate</code>. Trả lại 48dp đòi nới <code>DOCK_WIDE</code> ≥ 112dp, tức <b>bỏ mốc 80 %</b> ở thanh dọc.</li>
+<li><b>Thử phá 3/3 đỏ đúng chỗ</b>: (a) <code>BarOrder.move</code> trả bản sao ở biên ⇒ 2 đỏ (<code>assertSame</code>); (b) <code>DOCK_PAD</code> về <code>Sp.S</code> ⇒ 3 đỏ (ô-trong-thanh + ô-STEP-trong-ô-dọc); (c) bỏ dòng diff <code>topStrip.setLayout</code> ⇒ 1 đỏ (chuỗi dây nối). ⚠⚠ <b>TAI NẠN LẶP LẠI ĐÚNG CÁI ĐÃ GHI Ở <code>project-context.md</code></b>: phép (c) hoàn nguyên bằng <code>git checkout -- KachiHomeActivity.kt</code> trên cây <b>chưa commit</b> ⇒ lệnh trả về <b>HEAD</b> và <b>xoá sạch 3 sửa đổi WP4/WP5</b> trong tệp đó; bắt được vì sha256 báo <i>did NOT match</i>, đã áp lại tay rồi chạy lại <b>5109/0</b> + build/cài/chụp lại ảnh cho khớp mã cuối. Phép (a) đụng cùng bẫy theo hướng khác: <code>BarLayout.kt</code> là tệp MỚI (untracked) nên <code>git checkout</code> <b>thất bại</b> và để lại dòng <code>// MUTATION</code> trong mã sản phẩm. <b>LUẬT (lần hai): cây chưa commit thì hoàn nguyên bằng ĐẢO CHÍNH PHÉP SỬA + kiểm sha256, tuyệt đối không dùng git.</b></li>
+<li>⚠ <b>Nợ có TRƯỚC lượt này</b>: <code>KachiHomeActivity.kt</code> <b>542</b> dòng &gt; trần 500 — 536 ở <code>HEAD</code> (do WP1–WP3b), WP4/WP5 thêm 6 dòng nối dây. Cắt nó phải chạm đúng khối mà <code>TopStripSurfaceContractTest</code> canh (3 khẳng định <code>.picker</code> / <code>SettingsGroup.PROFILES</code> / <code>topStrip.setProfile</code>) ⇒ để <b>một lượt riêng</b>, không gộp vào WP5.</li>
+<li><b>Reviewer độc lập</b>: phiên KHÔNG có công cụ sinh sub-agent ⇒ chưa soát độc lập, và không đọc ảnh bằng mắt máy được (luật <code>image-reading-subagent.md</code>) ⇒ mọi bằng chứng hình ảnh là <b>phép đo điểm ảnh</b> + <b>cây trợ năng</b>. Owner nhìn 5 ảnh gốc là bước xác nhận cuối.</li>
+</ul></div>
+<div class="card"><h3>WP3-v5 — 2026-09-20 · LÀM LẠI: ẢNH bitmap thay vector car + Task B cốp/rèm · code+test, CHƯA commit</h3>
+<p>Owner: <i>"bỏ vector car (xấu/tốn token), thay bằng bitmap car-image; user thay được; feather mờ cạnh; gỡ vector+multi-model; cốp/rèm bỏ chữ close/open"</i>. Handoff: <code>docs/_handoff/ux-wp3b-photo-car.md</code> · Ảnh (API 29, dark): <code>wp3b-*.png</code>.</p>
+<ul>
+<li><b>Kiến trúc ảnh (mẫu HÌNH NỀN)</b>: <code>CarImageStore</code> (:app, như <code>WallpaperStore</code>) đọc <code>getExternalFilesDir/car/</code> — <b>0 quyền, 0 màn chọn tệp hệ thống</b> (khoá trên xe) · nạp <b>giảm cỡ</b> (<code>inSampleSize</code>, dùng lại <code>WallpaperStore.loadScaled</code>) · <b>feather</b> = 4 <code>LinearGradient</code> DST_OUT ở 4 mép (opaque mép→trong suốt vào trong), tính <b>1 lần</b> lúc nạp. <code>CarImageLayer</code> (:app) = component các bảng dùng chung: nạp nền (executor daemon) + cache theo (path·mtime·bucket·version) + vẽ ảnh/placeholder + release; <code>onReady</code>=invalidate. Ảnh nhỏ (408×624) giảm cỡ ⇒ decode ~ms.</li>
+<li><b>Vị trí overlay = <code>:core CarLayout</code></b> (thuần): mỗi <code>CarPart</code>/<code>TyreCorner</code> → neo chuẩn hoá (x,y)∈[0,1] trên khung xe (front=trên). Bảng vẽ chấm màu theo tone tại neo + ô giá trị lốp cạnh neo bánh. Neo là <b>xấp xỉ</b> (chỉ báo trạng thái, không phải sơ đồ chính xác) ⇒ hợp mọi ảnh top-down; owner tinh chỉnh số sau nếu cần.</li>
+<li><b>Placeholder (thư mục trống)</b>: rounded-rect body mờ (DIM), KHÔNG vector cũ, KHÔNG viền. Overlay vẫn vẽ trên placeholder.</li>
+<li><b>Task B — cốp/rèm bỏ chữ</b>: <code>tileCover</code> nay MỘT tile text-free (bỏ <code>coverButtons</code>/<code>coverCycle</code> opt-text + <code>miniBtn</code>): ≤2 mức = toggle active/mờ; ≥3 mức = <code>ControlLevelBar</code> (vạch như ghế), lit=index. Bấm cycle → <code>coverLevel</code>. Đọc-lại xe (WP2 R2.3) giữ. Test <code>ControlStateUxContractTest</code>/<code>GroupTileTightSpaceContractTest</code> cập nhật.</li>
+<li>⚠⚠ <b>QUYẾT ĐỊNH SCOPE — gỡ luôn paint-picker (owner chốt hướng)</b>: owner liệt kê gỡ "CarArtPainter · CarFrames · gen-car car · CarModel/model-picker" — KHÔNG nêu paint-picker. Nhưng màu sơn <b>chỉ tô vector car</b>; với ẢNH nó thành <b>nút chết</b> (steering cấm). Và <code>KachiCarPaint</code> sống trong <code>CarArtPainter.kt</code> (bị xoá) ⇒ giữ paint đòi di chuyển + giữ 3 test tô-nút-chết. ⇒ gỡ trọn: <code>CarPaint</code> · <code>CAR_PAINTS</code> · <code>KachiTheme.carPaint/carModel</code> · <code>ColorChoice.paint/model</code> · <code>CarPaintContrastContractTest</code>. <code>ColorChoice</code> còn accent+tone (theme, vẫn dùng). <b>Xin owner xác nhận</b> — dễ khôi phục từ git nếu muốn giữ.</li>
+<li><b>GỠ (11 tệp)</b>: :core <code>CarModel</code>·<code>CarPartStyle</code>(+2 test) · :app <code>CarArtPainter</code>·<code>CarArtSource</code>·<code>CarFrames</code>·<code>CarFramesGenerated</code>(+3 test). GIỮ: <code>ic_car_top_*.xml</code> (icon nút cửa/lốp, dùng ở tile — grep xác nhận). <code>gen-car.py</code> trim phần car-body; giữ phần icon.</li>
+<li><b>RÀNG BUỘC</b>: <code>:core</code> thuần (CarLayout 0 android) · trần 500 · 0 viền/blur-runtime/shadow (feather = DST_OUT gradient, không blur) · KHÔNG commit ảnh.</li>
+</ul>
+</div>
+<div class="card"><h3>WP3 — 2026-09-20 · BOARD CHUẨN HOÁ + HÌNH XE NHIỀU MODEL (R3.1–R3.2) · BẢN TRƯỚC (vector, v5 thay)</h3>
+<p>Handoff: <code>docs/_handoff/ux-wp3-done.md</code> · Ảnh (API 29, dark): <code>docs/diagnostics/ux-overhaul-2026-09-20/wp3-*.png</code> (part1-boards · car-2a · 5 model).</p>
+<ul>
+<li><b>R3.1 · COVER trong board = MỘT tile cycle</b> — <code>ControlTileFactory.tileCover</code> rẽ theo VÙNG: <code>coverCycle</code> (narrow/board — nhãn + chữ mức, bấm <code>nextSelectIndex</code>→<code>coverLevel</code>, 0 nút phụ) · <code>coverButtons</code> (rộng — nhiều nút, giữ "nút mở 50%"). [ĐO đọc mã] trước WP3 ô hẹp xếp 2–3 nút DỌC ⇒ <code>trunk</code>/<code>sunshade</code> cao & khác hẳn <code>lock</code>/<code>door</code>/<code>sunroof</code> cạnh nó — đúng "lệch cả widget". Đường đọc-lại xe (WP2 R2.3) giữ trong <code>tileCover</code> nên bài canh WP2 vẫn xanh. Bài mới <code>ControlStateUxContractTest.WP3 COVER...</code> + đảo assertion cũ ở <code>GroupTileTightSpaceContractTest</code>.</li>
+<li>⚠ <b>Đánh đổi R3.1</b>: cycle-tile gọn/đồng nhất nhưng "Nửa" phải bấm cycle mới tới (ô rộng vẫn bày 3 nút). Owner quyết giữ hay đổi.</li>
+<li><b>R3.2a · hình xe bớt "trẻ con"</b> — [ĐO ảnh] dáng cũ = bánh thò xa trên "que" (thực ra "que" = <b>vạt cửa ĐÓNG</b> vẽ viền nối thân→bánh) + bánh ở x3.1/18.3. Fix: <code>top.svg</code> bánh thu vào vè (5.6/16.2) + gương nêm nhỏ + vạt ngắn; <code>CarPartStyle</code> <b>FLAP đóng/chưa-đọc = HIDDEN</b> (cửa liền thân, chỉ MỞ mới swing), tách khỏi PANEL (ca-pô/cốp giữ gờ nét). gen-car sinh lại 42 icon + CarFramesGenerated (byte-check OK). Icon door vẽ vạt như cũ (không qua CarPartStyle) ⇒ không đổi.</li>
+<li><b>R3.2b · bộ chọn KIỂU XE</b> — <code>CarModel</code> (:core, 5 model, cặp stretchX/Y) + <code>ColorChoice.model</code> (trường 4, encode nối sau, cũ→generic) + <code>KachiTheme.carModel</code> (change-detect như paint) + <code>CarArtPainter.layout</code> ma trận GỘP (fit∘model, quanh tâm 24×24) ⇒ đường vẽ + hộp bao đi cùng phép biến hình (ô giá trị lốp bám bánh mới). Selector Cài đặt › Màu sắc (<code>kachi_row_car_model</code> VI/EN). [ĐO ảnh] 5 model khác rõ theo tỉ lệ.</li>
+<li>⚠⚠ <b>Giới hạn bản đầu (owner duyệt hướng)</b>: kéo dãn tỉ lệ KHÔNG cho dáng RIÊNG THẬT — Seal↔Han, Sealion 6↔8 chỉ khác nhẹ (phóng-giữ-tỉ-lệ ⇒ chỉ tỉ lệ dài:rộng thấy được). Dáng riêng từng model (mũi/đuôi/khoang kính) cần vẽ hình học per-model = bước lặp sau. Hệ số ở <code>CarModel.kt</code> là chỗ owner tinh chỉnh bằng mắt.</li>
+<li>⚠ <b>Sai lệch spec có chủ ý</b>: pref model để theo HỒ SƠ (trong <code>ColorChoice</code>) thay vì theo XE (DEVICE) như spec — dùng lại trọn dây, ít ripple. Đổi sang DEVICE là việc nhỏ; xin owner chốt.</li>
+<li><b>[ĐO] 5 module · 5131 test / 0 đỏ / 0 lỗi / 0 bỏ qua</b> (<code>--rerun-tasks --continue</code>) · <code>gen-car --check</code> OK 49 tệp · <code>:core</code> 0 import <code>android.*</code> · trần 500: ControlTileFactory 498 · CarArtPainter 223 · SettingsSections 450. <b>i18n contract bắt 1 lỗi</b> (nhãn "Kiểu xe" hardcode ở SettingsSections) ⇒ đã đưa vào <code>strings_kachi.xml</code> VI/EN + <code>getString</code>.</li>
+</ul>
+<p class="muted">Reviewer độc lập: phiên KHÔNG có công cụ sinh sub-agent ⇒ chưa soát độc lập; ảnh đọc qua bản thu nhỏ ≤1100px (luật <code>image-reading-subagent.md</code>). Owner nhìn ảnh gốc là bước xác nhận cuối. Máy ảo đã trả cấu hình gốc + <code>adb unroot</code>.</p>
+</div>
+<div class="card"><h3>WP2 — 2026-09-20 · UX TRẠNG THÁI CONTROL (R2.1–R2.5) · code+test xong, CHƯA commit</h3>
+<p>Handoff: <code>docs/_handoff/ux-wp2-done.md</code> · Ảnh (API 29, dark): <code>docs/diagnostics/ux-overhaul-2026-09-20/wp2-*.png</code> (4 ảnh, kiểm chủ đề bằng độ chói 39.3/255).</p>
+<ul>
+<li><b>Luật trạng thái chuyển sang <code>:core</code></b> — <code>ControlVisuals.of(def, value)</code> → <code>ControlVisual(active · ticks · lit · option · valueText)</code>, thuần, 16 test off-car. <code>:app</code> chỉ tô (<code>look()</code> = một cửa cho <b>cả năm</b> <code>ControlKind</code>). Cùng ranh giới <code>ChipTone</code>/<code>GroupTone</code>.</li>
+<li>⚠⚠ <b>Rà soát tìm ra lỗi CÓ TRƯỚC</b>: <code>tileStep</code>/<code>tileCover</code>/<code>tileSelect</code>/<code>tileButton</code> đều gọi <code>tint(icon, label, <b>true</b>)</code> (mực “đang bật”) ngay cạnh <code>applyBg(tile, <b>false</b>)</code> (nền “đang tắt”) ⇒ hai nửa của cùng một ô nói hai điều. <b>0 bài canh thấy được</b> vì luật nằm rải trong năm hàm dựng <code>android.view</code> (dự án không có Robolectric) — đó là lý do phải dời luật xuống <code>:core</code>, không chỉ đổi màu ở tầng vẽ.</li>
+<li><b>R2.2 · SELECT chia HAI ca</b> (sai lệch có chủ ý với lời giao “bỏ chữ”): <code>seatc</code>/<code>seath</code> = <b>thang mức</b> ⇒ vạch; <code>ambient_color</code> · <code>headlight_mode</code> · <code>powertrain_mode</code> · <code>regen_level</code> · <code>screen_rotation</code> · <code>camera_view</code> = <b>tập lựa chọn không xếp hạng</b> ⇒ <b>GIỮ chữ</b>. Vẽ <i>“Xanh lá”</i> thành <i>“3 trên 5 vạch”</i> là nói sai — ở đó chữ là thông tin duy nhất. Phép phân biệt đọc <b>dữ liệu đã có</b> (<code>ControlLevels.RAW_BY_LEVEL</code>, bảng vốn bắt buộc khai để ghi đúng) ⇒ không sinh cờ thứ hai phải nhớ bật.</li>
+<li><b>Số vạch đếm theo <code>args</code>, KHÔNG theo <code>levelCount</code></b>: <code>seath</code> khai 4 mã khung (<code>[SUY]</code>) nhưng chỉ bày 3 lựa chọn ⇒ 2 vạch. Vẽ 3 vạch cho ô chỉ bấm tới vạch 2 là hứa một mức không bấm tới được.</li>
+<li><b>R2.1 · STEP chỉ sáng khi thang có ĐIỂM 0 THẬT</b> (<code>def.min == 0</code>): <code>fan</code> 0..7 · <code>vol</code> 0..30 có mức im; <code>temp</code> 17..33 <b>không có mức tắt</b> ⇒ ô nhiệt giữ nền trung tính, thay vì sáng màu nhấn suốt chuyến chỉ vì “luôn khác min”.</li>
+<li><b>Đơn vị ô giá trị hết là nhánh theo mã</b>: <code>if (def.id == "temp") "°"</code> → <code>ControlVisuals.stepUnit</code> đọc đơn vị của datum nút đọc (<code>inside_temp</code> = <code>°C</code> → rút <code>°</code>). Rút về <code>°</code> có lý do: con số là <b>điểm đặt của chính xe</b>, launcher không đổi °C↔°F cho nó.</li>
+<li><b>Trần 500 dòng</b>: <code>ControlTileFactory.kt</code> <b>539 → 495</b> (nó đã quá trần TRƯỚC khi WP2 thêm dòng nào). Cắt theo VAI: <code>TileSize.kt</code> (kiểu dữ liệu + <code>reserveTwoLines</code>/<code>controlIconRes</code>) · bộ dựng ô ĐỌC dời về <code>ReadTile.kt</code> (tệp vốn sở hữu <code>class ReadTile</code>) · <code>ControlLevelBar.kt</code> (vẽ vạch). Bài canh <i>“ô ĐỌC không gắn chạm”</i> đổi đường dẫn theo <b>cùng lượt</b> + kiểm thêm cửa vào cũ chỉ còn một dòng uỷ quyền.</li>
+<li><b>[ĐO] 5 module · 73/73 task · 5123 test / 0 đỏ / 0 lỗi / 0 bỏ qua</b> (<code>test --rerun-tasks --continue</code>, đếm từ JUnit XML) · <code>:core</code> <b>0</b> import <code>android.*</code> · 0 <code>setStroke</code>/blur/shadow/elevation trong tệp mới (giữ WP1) · <b>thử phá 3/3 đỏ đúng chỗ</b>, hoàn nguyên kiểm <code>sha256</code>.</li>
+<li><b>[ĐO] ảnh máy ảo API 29</b> (1920×1080 = cấu hình xe): <code>defrost</code> tắt→bật độ chói <b>35.7 → 77.5 (2.17×)</b>, RGB (29,36,56)→(64,75,145), ô <b>không bấm</b> giữ nguyên 1.00× ⇒ không phải cả màn vẽ lại · <code>seatc</code> Mức 2 = <b>hai</b> vạch max 236 · <code>seath</code> Mức 1 = một vạch <b>236</b> + một vạch <b>122</b> · ba stepper có ô giá trị <b>cùng 51px</b> với <code>"5"</code>/<code>"15"</code>/<code>"23°"</code> và nút − cách nhau <b>đúng một bước ô 138px</b> ⇒ cùng vị trí trong ô · quét cả màn: <b>0</b> chữ <i>Bật/Tắt/Mức n</i>.</li>
+<li>⚠ <b>R2.3 KHÔNG đo được off-car</b>: màu ô COVER khi đang mở đến từ <code>CarStatus.controls</code>, mà off-car map đó <b>rỗng</b> ⇒ máy ảo không thể hiện. Khoá bằng test <code>:core</code> + bài canh dây nối; 🚗 cần mở cốp thật.</li>
+<li>⚠ <b>Ba câu hỏi cho owner</b> (handoff §8, em KHÔNG tự làm): (1) chữ <i>“Bật/Tắt”</i> của <b>mục ĐỌC</b> (<code>TelemetryReadout.onOff</code> — cùng nguồn với câu trả lời bằng giọng nói) đổi ở WP3 hay giữ; (2) hai bề mặt cùng một nút lệch nhau (off-car luôn, và <b>cả trên xe</b> với nút không có <code>readKey</code>) — hành vi có trước 1.69, vá không; (3) <code>ControlTileState</code> không lưu bền ⇒ mức ghế reset sau mỗi lần mở lại, nay <b>nhìn thấy rõ hơn</b> vì có vạch.</li>
+</ul>
+<p class="muted">Reviewer độc lập: phiên này KHÔNG có công cụ sinh sub-agent ⇒ chưa soát độc lập, và cũng không đọc ảnh bằng mắt máy được (luật <code>image-reading-subagent.md</code>) ⇒ bằng chứng hình ảnh là <b>phép đo điểm ảnh</b> (<code>scripts/diag/pixelprobe.py</code>). Owner nhìn ảnh là bước xác nhận cuối. Máy ảo đã trả về cấu hình cũ sau khi chụp.</p>
+</div>
+<div class="card"><h3>WP1 iteration — 2026-09-20 · GỠ HẲN mép kính + viền khỏi <code>surface()</code> (CHƯA commit)</h3>
+<p>Handoff: <code>docs/_handoff/ux-wp1-edges-removed.md</code> · Ảnh chụp LẠI: <code>docs/diagnostics/ux-overhaul-2026-09-20/</code> (3 ảnh, chủ đề kiểm bằng độ chói).</p>
+<ul>
+<li><b>Owner bác bản WP1 đầu</b>: <i>"better, bị bug gạch trên đầu mỗi khung, bỏ viền đi luôn"</i> ⇒ <b>đảo lại chính lượt sáng cùng ngày</b>. <code>surface()</code> nay CHỈ có chuyển sắc DỌC + (tuỳ chọn) lớp tint; 0 <code>setStroke</code>, 0 mép ghim cạnh. Bốn tone phân biệt <b>chỉ bằng MÀU FILL</b> (<code>surfacePair</code>).</li>
+<li><b>Bất biến mới (lần thứ BA cùng họ lỗi)</b>: Pass-4 <code>surfEdge</code>/<code>surfOnEdge</code> → Pass-5 nét đỉnh đặc → WP1 bevel 1px bán trong suốt. Bản WP1 đã thử đúng cách "khoá cường độ" (1px + bán trong suốt + cặp sheen/shade) và <b>vẫn bị gọi là gạch</b> ⇒ cái sai là <b>HÌNH DẠNG</b>: một hình chữ nhật ghim vào cạnh thẻ là một VẠCH ở mọi alpha, mọi độ dày. Hai bài canh nay <b>CẤM</b> thay vì đặt ngưỡng.</li>
+<li><b>Test đảo chiều 2 bài</b>: <code>SurfaceContrastContractTest.khong con mep hay vien tren be mat</code> (cấm 7 token + cấm 4 vai màu mép mọc lại ở <code>KachiPalette</code>) · <code>SurfaceMaterialContractTest.be mat loi khong con vien hay mep</code> (cấm 5 token, giữ 1×<code>TOP_BOTTOM</code>/0×<code>TL_BR</code>/<code>LayerDrawable</code>). Ràng buộc WCAG + 0-blur GIỮ NGUYÊN.</li>
+<li><b>Bài thứ ba sửa vì BẪY CẮT VÙNG</b> (không phải đổi luật): <code>nhanh SUNKEN giu phang va thoat som</code> cắt tới mốc <code>val active</code> — biến đó biến mất cùng nhánh mép, mà <code>substringBefore</code> trả nguyên phần còn lại ⇒ quét tràn sang nhánh gradient. Nay mốc <code>val base</code> + <b>khẳng định mốc tồn tại trước khi cắt</b>.</li>
+<li><b>Dead code gỡ sạch</b> (grep xác nhận 0 dùng): getter <code>GLASS_SHEEN</code>/<code>GLASS_SHADE</code> + vai <code>glassSheen</code>/<code>glassShade</code> (khai + 2 hạt giống) + <code>import android.view.Gravity</code>. ⚠ Getter và vai phải gỡ CÙNG LÚC — <code>ThemePaletteContractTest</code> đòi mọi vai <code>String</code> có getter.</li>
+<li><b>[ĐO] 5 module 73/73 task · 5073 test / 0 đỏ</b> (<code>--rerun-tasks --continue</code>, đếm từ JUnit XML; không đổi số vì 2 bài thay 1-đổi-1). <b>Thử phá 2/2 đỏ đúng chỗ</b> (thêm lại <code>setStroke</code>; thêm lại lớp mép 1px ghim đỉnh), hoàn nguyên kiểm sha256.</li>
+<li><b>[ĐO] ảnh</b>: vùng <code>surface()</code> vẽ (workspace y 112..878) có <b>0 pixel viền</b> cả ngang lẫn dọc ⇒ "gạch trên đầu mỗi khung" hết thật.</li>
+<li>⚠⚠ <b>Còn 2 đường kẻ, KHÔNG từ <code>surface()</code></b>: y=107 = đáy thanh trên (<code>KachiTopStrip.kt:77</code> <code>card(…, LINE_STRONG)</code>) · y=882 = đỉnh thanh nút (<code>ControlDockView.kt:53</code>). Quy kết bằng đo (dải thanh trên 15 cột sáng · workspace 0 · dock 12, cả hai có viền tại x=24). Thuộc cùng R1.1 nhưng NGOÀI lời giao lượt này ⇒ <b>xin owner chốt</b> gỡ luôn hay giữ.</li>
+<li>⚠⚠ <b>Bảng SÁNG nay thẻ gần hoà vào nền</b>: bước sáng chỉ <b>1.13×</b> và <code>surfLine</code> không còn được vẽ. Bài canh vẫn xanh nhưng <b>bằng một chân màn hình không dùng nữa</b> — ghi thẳng vào KDoc bài đó. Không tự chữa: hai cách duy nhất là hạ sàn (nới luật, cấm) hoặc đổi thang chói bảng sáng (WP1 đã chốt GIỮ). <b>Owner quyết.</b></li>
+</ul>
+<p class="muted">⚠ Sai sót phép đo tự bắt: sao lưu prefs thành <code>kachi_workspace.xml.bak</code> <b>trên máy</b> — đó là ô WAL của chính <code>SharedPreferencesImpl</code>, Android phục hồi nó đè tệp chính ⇒ hai ảnh "dark" đầu thực ra là SÁNG. Bắt được vì đo độ chói thay vì tin nhãn tệp; sửa bằng sao lưu phía host + đặt CẢ HAI store (<code>__theme_mode</code> và <code>clusternav_theme/theme_choice</code>).</p>
+<p class="muted">Reviewer độc lập: phiên này KHÔNG có công cụ sinh sub-agent ⇒ chưa soát độc lập, và cũng không đọc ảnh bằng mắt máy được ⇒ bằng chứng hình ảnh là <b>phép đo pixel</b>. Owner nhìn ảnh là bước xác nhận cuối.</p>
+</div>
+
+<div class="card"><h3>WP1 (nền) — 2026-09-20 · code+test xong, CHƯA commit, chờ owner duyệt LOOK</h3>
+<p>Handoff đầy đủ: <code>docs/_handoff/ux-wp1-done.md</code> · Ảnh: <code>docs/diagnostics/ux-overhaul-2026-09-20/</code> (6 ảnh, dark+light, home+settings).</p>
+<ul>
+<li><b>R1.1 bỏ viền</b>: <code>KachiTheme.surface()</code> hết viền ở <b>MỌI</b> tone (NEUTRAL · WELL · ACTIVE · SUNKEN) — <b>iteration 2026-09-20</b> gỡ nốt viền chức năng của WELL/ACTIVE theo owner <i>"bỏ viền đi luôn"</i>, bốn tone nay phân biệt <b>chỉ bằng MÀU FILL</b> (<code>surfacePair</code>); <code>card()</code>/<code>pill()</code> mặc định stroke = CLEAR. ⚠ Còn 2 chỗ gọi truyền <code>LINE_STRONG</code> tường minh (<code>KachiTopStrip.kt:77</code> · <code>ControlDockView.kt:53</code>) — chờ owner chốt, xem Reviewer Log.</li>
+<li><b>R1.2 hệ màu</b>: freshen accent bảng tối (<code>#4c7dff→#4d86ff</code>, <code>#7b5cff→#8a63ff</code>, accentInk sáng hơn). ⚠ <b>Ramp nền GIỮ NGUYÊN cả hai bảng</b> — deepen nền làm lệch car-paint (WP3) + tụt sàn WCAG; modernize bằng <b>bỏ-viền + bỏ-mép + gradient dọc + accent</b> thay vì đổi độ sáng nền. ⚠⚠ Hệ quả đo được: bảng SÁNG thẻ nay chỉ tách nền <b>1.13×</b> và hết viền đỡ — owner quyết (Reviewer Log).</li>
+<li><b>R1.3 glass 2 mode</b>: GIẢ (mặc định, 0 blur) = <b>chỉ</b> gradient dọc + fill trong mờ. ⚠ <b>iteration 2026-09-20 GỠ mép kính bevel 1px</b> (2 vai <code>glassSheen</code>/<code>glassShade</code> xoá khỏi <code>KachiPalette</code>): owner gọi nó là <i>"bug gạch trên đầu mỗi khung"</i> — lần thứ BA cùng họ lỗi sau <code>surfEdge</code>/<code>surfOnEdge</code>, nên bài canh nay <b>CẤM hình dạng</b> chứ không đặt ngưỡng cường độ. THẬT (tuỳ chọn) = <code>KachiGlassMode</code> RenderEffect API≥31, công tắc <code>ui_glass_real</code> ở Hiển thị.</li>
+<li>⚠⚠ <b>Phát hiện</b>: glass THẬT cần API≥31 mà xe DiLink là <b>API 29</b> ⇒ trên xe luôn lùi về giả. Owner quyết giữ/bỏ công tắc.</li>
+<li><b>Test</b>: 5 module 73 task 0 đỏ (<code>--rerun-tasks --continue</code>); 4 bài contrast/surface XANH; bài canh Pass-5 đảo chiều (cho phép mép 1px, cấm lớp dày) — WCAG giữ.</li>
+<li><b>Chưa</b>: chụp glass-thật (cần hình nền để thấy blur; emulator chập chờn + moot trên xe API29) · WP2-9 chưa đụng.</li>
+</ul>
+<p class="muted">Reviewer độc lập: phiên này KHÔNG có công cụ sinh sub-agent ⇒ chưa soát độc lập. Ghi rõ để pha sau soát.</p>
+</div>
+
+</div>
+</body>
+</html>

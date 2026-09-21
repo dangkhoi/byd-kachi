@@ -275,10 +275,35 @@ class ThemePaletteContractTest {
                 val r = ratio(over(p.lineStrong, role(p, s)), role(p, s))
                 if (r < 3.0) bad += "$name lineStrong trên $s = ${fmt(r)}"
             }
-            val e = ratio(over(p.emptyLine, p.emptyFill), p.emptyFill)
-            if (e < 3.0) bad += "$name emptyLine trên emptyFill = ${fmt(e)}"
         }
         assertEquals(emptyList<String>(), bad, "viền kết cấu dưới 3:1 = thành phần không có đường bao đọc được: $bad")
+    }
+
+    /**
+     * Ô TRỐNG phải tách được khỏi nền màn **bằng MÀU NỀN** — bài này **đảo chiều** bài cũ.
+     *
+     * ## ⚠⚠ WP1 · R1.1 — vì sao đảo, không phải nới
+     * Bài cũ đòi `emptyLine trên emptyFill ≥ 3:1`, tức là đòi **CÓ** một cái gạch đứt. Owner 2026-09-20: *"KHÔNG còn
+     * viền ở BẤT CỨ ĐÂU hết"* ⇒ gạch bị gỡ và vai `emptyLine` bị xoá khỏi bảng màu, nên bài cũ **không còn đo được
+     * gì**. Nhưng cái *tính chất* nó bảo vệ — *"người dùng thấy được chỗ này đặt được app"* — thì vẫn phải có, chỉ
+     * đổi chân: từ **viền** sang **bước sáng của nền**. Bỏ bài cũ mà không viết bài này là đánh mất một bất biến.
+     *
+     * Sàn `1.15×` = mức mà dự án đã ĐO và chấp nhận cho *"tách một mảng lớn khỏi nền"* ở bài
+     * `the chat lieu tach duoc khoi nen o ca hai bang` (thẻ bảng sáng 1.13× là ca mong manh nhất, và ô trống không
+     * được mong manh hơn thẻ vì nó KHÔNG có chữ/số bên trong để bù).
+     */
+    @Test
+    fun `o trong tach duoc khoi nen bang mau`() {
+        val bad = mutableListOf<String>()
+        forEachPalette { name, p ->
+            val r = ratio(p.emptyFill, p.bg)
+            if (r < 1.15) bad += "$name emptyFill ÷ bg = ${fmt(r)}"
+        }
+        assertEquals(
+            emptyList<String>(), bad,
+            "ô trống không tách được khỏi nền: sau khi gỡ gạch đứt, NỀN là thứ duy nhất nói 'chỗ này đặt được app'. " +
+                "[ĐO] bậc cũ `at(-1)` cho 1.012× bảng tối = tàng hình. $bad",
+        )
     }
 
     /**

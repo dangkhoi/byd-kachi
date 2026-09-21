@@ -281,6 +281,12 @@ object CapabilityCatalog {
         // Ca thứ BA của bảng này: ẩn vì **có bề mặt tốt hơn cho cùng dữ liệu**, không phải vì trùng
         // (`temp_unit`) hay vì thiếu phần cứng (`hood`, nay đã xoá). Datum GIỮ NGUYÊN trong `TelemetryRegistry` —
         // nhóm `g_tyres` và widget `w_tire` đọc đúng tám mã này; xoá chúng là gỡ luôn cái widget owner muốn.
+        "cast" to
+            "UX-OVERHAUL · WP8 (owner 2026-09-20, mục #58): việc CHIẾU CỤM đã có bề mặt riêng và tốt hơn — nút " +
+                "nổi trên màn (bật/tắt một cú chạm, thấy được cả khi đang mở app khác) + nhóm Cài đặt › Chiếu " +
+                "màn lên cụm + câu nói \"chiếu cụm\". Một ô TOGGLE giữa màn nói cùng việc đó là bề mặt thứ tư, và " +
+                "nó là bề mặt DUY NHẤT không cho biết đang chiếu app nào. GIỮ mã: nút nổi, giọng nói và ô của ai " +
+                "đã đặt từ bản trước đều đi qua `pick`/`kindOf`, nên xoá dòng registry là gỡ luôn cả tính năng.",
     ) + TYRE_SINGLES.associateWith { TYRE_SINGLE_WHY }
 
     /** [CapabilityKind] của [id], hoặc `null` nếu mã không thuộc bộ đăng ký nào (mã cũ đã xoá / rác trong prefs). */

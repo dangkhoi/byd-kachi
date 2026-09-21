@@ -353,7 +353,8 @@ class AppDrawer(
         val v = capHint ?: return
         v.text = msg
         v.setTextColor(c(KachiTheme.AMBER))
-        v.background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.AMBER_SOFT, KachiTheme.AMBER)
+        // WP1 · R1.1 — viền hổ phách gỡ; nền AMBER_SOFT một mình đã đủ ([ĐO] tách thẻ 1.56/1.36×, chữ 5.52/5.02).
+        v.background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.AMBER_SOFT)
         val px = dpi(context, Sp.S)
         v.setPadding(px, dpi(context, Sp.XS), px, dpi(context, Sp.XS))
     }

@@ -34,14 +34,16 @@ class BindingRemediationTest {
     }
 
     // ── Động lực ───────────────────────────────────────────────────────────────────────────────
-    @Test fun `dong luc doi sang getter that - gear energy op_mode slope steering`() {
+    /**
+     * ⚠ UX-OVERHAUL · WP8 2026-09-20 — ba mốc `slope_deg` · `steering_deg` · `wheel_speed` đã **purge** (nằm trong
+     * 14 mã của khe #5-18) ⇒ rời bài. Ba mốc còn lại (`gear` · `energy_mode` · `op_mode`) giữ nguyên tính chất:
+     * đường đọc phải là **named-method THẬT**, không phải một feature-id đoán. `gear` còn là mục #19 của nhóm CẦN.
+     */
+    @Test fun `dong luc doi sang getter that - gear energy op_mode`() {
         assertEquals("BYDAutoGearboxDevice.getCurrentGear", key("gear"))
         assertEquals("BYDAutoEnergyDevice.getEnergyMode", key("energy_mode"))
         assertEquals("BYDAutoEnergyDevice.getOperationMode", key("op_mode"))
-        assertEquals("BYDAutoSensorDevice.getSlope", key("slope_deg"))
-        assertEquals("android.hardware.bydauto.sensor.BYDAutoSensorDevice", named("slope_deg").fqn)
-        assertEquals(1, HalBindingTable.readArg("steering_deg"), "getSteeringWheelValue(BODYWORK_CMD_STEERING_WHEEL_ANGEL=1)")
-        assertNull(HalBindingTable.readArg("wheel_speed"), "getWheelSpeed() là 0-arg (SpecialDevice.java:59)")
+        assertEquals("android.hardware.bydauto.energy.BYDAutoEnergyDevice", named("op_mode").fqn)
     }
 
     // ── Khí hậu ─────────────────────────────────────────────────────────────────────────────────
@@ -97,12 +99,19 @@ class BindingRemediationTest {
         assertNull(read("1023"), "STATISTIC_ELEC_DRIVING_RANGE_DEFAULT")
     }
 
-    @Test fun `feature-id gan nham nghia bi go - cell_v va batt_range khong con doc ra so sai`() {
-        // ⚠ (V) 2026-09-17: `batt_range_bodywork` (thành viên thứ ba của bài này) đã gỡ — owner chấm NO.
-        listOf("cell_v_high", "cell_v_low").forEach { id ->
-            assertTrue(key(id).isNotBlank(), "$id: bindingKey không rỗng (guard registry)")
-            assertEquals(BindingRoute.None, HalBindingTable.routeOf(key(id)), "$id: id cũ = tầm xăng / tốc độ vô-lăng ⇒ None")
-            assertEquals(EvidenceTier.NEEDS_CAR, TelemetryRegistry.byId(id)!!.tier, id)
+    /**
+     * ⚠⚠ UX-OVERHAUL · WP8 2026-09-20 — bài này **đảo chiều**. Cả ba thành viên của nó đã rời registry:
+     * `batt_range_bodywork` ở (V) 2026-09-17, rồi `cell_v_high`/`cell_v_low` ở WP8 (#5-18). Ba mã ấy sinh ra bài
+     * này vì chúng bind vào một feature-id **của việc khác** (atom TẦM XĂNG), nên đường đọc phải là `None` để
+     * không đọc ra số sai. Nay chúng bị xoá hẳn — đó là cách chữa MẠNH hơn, và bài canh phải nói đúng điều ấy:
+     * ba mã KHÔNG được mọc lại (mọc lại là mang theo cả cái id sai).
+     */
+    @Test fun `ba ma bind vao id cua viec khac da bi XOA, khong duoc moc lai`() {
+        listOf("cell_v_high", "cell_v_low", "batt_range_bodywork").forEach { id ->
+            assertNull(
+                TelemetryRegistry.byId(id),
+                "$id đã xoá (id cũ = atom tầm xăng, đọc ra số sai) — mọc lại là mang theo cả id sai",
+            )
         }
     }
 
@@ -110,15 +119,18 @@ class BindingRemediationTest {
     // ⚠ Bài `day an toan va ghe phu doc tu SafetyBelt(1042)` đã gỡ 2026-09-16: bốn datum nó khoá
     // (`seatbelt_driver` · `seatbelt_passenger` · `oms_driver` · `oms_passenger`) không còn tồn tại sau khi
     // owner gỡ toàn bộ ADAS/an toàn khỏi launcher.
-    @Test fun `GPS van None - BLOCKED-BY-DESIGN, khong duoc route sang LocationManager`() {
-        // Quyền location đã retire (DeadReckonRetirementTest ở :app ghim manifest) sau sự cố ghim GPS toàn xe.
-        // Mở lại = quyết định owner; tới lúc đó 4 mục này phải là None, và `LocationManager` KHÔNG được là Local target.
+    /**
+     * ⚠ UX-OVERHAUL · WP8 2026-09-20 — bốn datum GPS đã **XOÁ** (#53-56): `BYDAutoLocationDevice` chỉ có setter
+     * (app ĐẨY toạ độ xuống xe), nên chưa bao giờ có đường đọc, và automation dẫn-đường-theo-lịch của 1.85 dùng
+     * `LocationManager` của Android. Phần **an toàn** của bài thì GIỮ NGUYÊN và còn quan trọng hơn trước: xoá
+     * datum không được hiểu thành "nay route sang LocationManager cũng được".
+     */
+    @Test fun `GPS da XOA - va LocationManager KHONG duoc thanh Local target`() {
         listOf("gps_lat", "gps_lon", "gps_elevation", "gps_heading").forEach { id ->
-            assertEquals(BindingRoute.None, HalBindingTable.routeOf(key(id)), id)
+            assertNull(TelemetryRegistry.byId(id), "$id đã xoá ở WP8 — HAL không có đường đọc GPS")
         }
         assertEquals(BindingRoute.None, HalBindingTable.routeOf("LocationManager.lat"))
         assertTrue("LocationManager" !in HalBindingTable.LOCAL_TARGETS)
-        assertNull(HalBindingTable(FakeHalGateway()).readDouble("gps_lat"))
     }
 
     // ── §C: telemetry halDevice ghi đè device cho feature-read ────────────────────────────────────

@@ -93,14 +93,28 @@ class CapabilityTileWiringContractTest {
 
     // ── Ranh giới ĐỌC / HÀNH ĐỘNG ────────────────────────────────────────────────────────────────
 
+    /**
+     * ⚠⚠ [WP2 · 2026-09-20] Bộ dựng ô ĐỌC đã **dời** sang `ReadTile.kt` ([readTileOf]) vì
+     * `ControlTileFactory.kt` đã 539 dòng, quá trần 500 (CLAUDE.md §4.1), TRƯỚC khi WP2 thêm dòng nào. Bài này cắt
+     * vùng theo tệp nên đường dẫn phải đi theo chỗ mã thật sự nằm; để nguyên đường cũ thì [SourceRoots.body]
+     * `require` hỏng và bài NỔ — đúng ý đồ của nó (nổ còn hơn âm thầm quét cả tệp). Cùng tiền lệ
+     * `ActionMacroWiringContractTest` khi `ControlTileState` tách ra ở S4 · R12.
+     *
+     * Kiểm THÊM rằng cửa vào cũ (`ControlTileFactory.readTile`) chỉ còn là một dòng **uỷ quyền**: nếu không, một
+     * bộ dựng ô đọc THỨ HAI mọc lại ở tệp cũ mà bài này không thấy.
+     */
     @Test
     fun `o DOC KHONG gan cham`() {
-        val fn = SourceRoots.body(factory, "fun readTile(")
+        val readTileFile = code("src/main/java/com/byd/clusternav/launcher/ReadTile.kt")
+        val fn = SourceRoots.body(readTileFile, "internal fun readTileOf(")
         assertFalse(
             fn.contains("setOnClickListener"),
             "thông tin đọc KHÔNG phải nút — gắn chạm vào đây là xoá ranh giới ĐỌC/HÀNH ĐỘNG của cả gói",
         )
         assertTrue(fn.contains("TelemetryView.PLACEHOLDER"), "chưa đọc được phải hiện dấu gạch ngang, KHÔNG bịa số")
+        val gate = SourceRoots.body(factory, "fun readTile(")
+        assertTrue(gate.contains("readTileOf("), "cửa vào ở bộ dựng ô phải uỷ quyền, không dựng bản thứ hai")
+        assertFalse(gate.contains("LinearLayout("), "và không được dựng view nào ở đó nữa")
     }
 
     @Test

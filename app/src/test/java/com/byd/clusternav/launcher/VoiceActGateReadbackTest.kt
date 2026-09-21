@@ -226,13 +226,14 @@ class VoiceActGateReadbackTest {
      * trim không provision.
      */
     @Test
-    fun `khong doc duoc thi giu nguyen cau co duoi hedge`() {
+    fun `khong doc duoc thi giu nguyen cau 1_79 - dau hedge da bo 2026-09-21`() {
         val r = Rig()
         r.run("drl", 1)
         val want = VoiceIntent.Control("drl", 1)
         assertEquals(listOf(VoiceReply.done(want)), r.said)
-        assertTrue(r.said.single().contains("chưa kiểm"),
-            "`drl` ở mức bằng chứng thấp mà đọc KHÔNG được ⇒ phải còn đuôi hedge: ${r.said}")
+        // 2026-09-21 owner bỏ hẳn chấm + đuôi "chưa kiểm" ⇒ câu done không còn hedge cho mọi mục.
+        assertFalse(r.said.single().contains("chưa kiểm"),
+            "đuôi 'chưa kiểm' đã bỏ hẳn: ${r.said}")
     }
 
     /**

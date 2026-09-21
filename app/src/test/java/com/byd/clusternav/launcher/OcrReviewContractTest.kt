@@ -60,15 +60,23 @@ class OcrReviewContractTest {
      * luồng kia còn `put` ném `ConcurrentModificationException` ⇒ luồng trả lại chết giữa chừng ⇒ `appops …
      * PICTURE_IN_PICTURE deny` của GMaps/YouTube nằm lại **vĩnh viễn** (state ngoài tiến trình, sống qua reboot —
      * CLAUDE.md §5).
+     *
+     * ⚠ WP6 (2026-09-20) — khối này **DỜI** khỏi `FloatingBubbleService.kt` (tệp đó 537 dòng > trần 500) sang
+     * `BubblePipGuard.kt`, không sửa một bước nào. Bài canh đi theo chỗ ở mới: **tính chất** được canh không đổi,
+     * chỉ đổi tệp được quét — ghim tệp cũ là biến một lượt tách hợp lệ thành đỏ giả.
      */
     @Test
-    fun `FloatingBubbleService giu bang PiP dong thoi va tra lai tung goi mot lan`() {
-        val src = code("src/main/java/com/byd/clusternav/modules/clustercast/FloatingBubbleService.kt")
+    fun `BubblePipGuard giu bang PiP dong thoi va tra lai tung goi mot lan`() {
+        val src = code("src/main/java/com/byd/clusternav/modules/clustercast/BubblePipGuard.kt")
         assertTrue("ConcurrentHashMap<String, String>()" in src, "bảng bị hai luồng chạm — `mutableMapOf` là CME chờ sẵn")
-        val restore = SourceRoots.body(src, "private fun restorePipForKnownApps(")
-        assertTrue("pipPreviousModes.remove(pkg)" in restore, "lấy ra bằng `remove` nguyên tử ⇒ mỗi gói trả lại đúng một lần")
+        val restore = SourceRoots.body(src, "fun restore(")
+        assertTrue("previousModes.remove(pkg)" in restore, "lấy ra bằng `remove` nguyên tử ⇒ mỗi gói trả lại đúng một lần")
         assertTrue("runCatching" in restore, "một lệnh shell hỏng ở gói này không được bỏ mặc gói sau ở trạng thái deny")
-        assertFalse("pipPreviousModes.forEach" in restore, "duyệt bản đồ dùng chung trong lúc luồng kia còn ghi")
+        assertFalse("previousModes.forEach" in restore, "duyệt bản đồ dùng chung trong lúc luồng kia còn ghi")
+        // Và dịch vụ phải THẬT SỰ gọi cả hai nửa — tách tệp mà quên nối là trả-lại không bao giờ chạy.
+        val service = code("src/main/java/com/byd/clusternav/modules/clustercast/FloatingBubbleService.kt")
+        assertTrue("pipGuard.block(coordinator)" in service, "onCreate phải chặn PiP")
+        assertTrue("pipGuard.restore(coordinator)" in service, "onDestroy phải TRẢ LẠI PiP (state ngoài tiến trình)")
     }
 
     /**

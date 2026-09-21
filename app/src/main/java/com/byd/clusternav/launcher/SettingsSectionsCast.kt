@@ -75,6 +75,13 @@ class SettingsCastSection(
             bridge.setCastEnabled(on)
             refreshStatus()
         })
+        // WP6 · R6.1 — công tắc HIỆN NÚT NỔI, đặt NGAY DƯỚI công tắc chính vì nó chỉ có nghĩa khi Cast đang bật.
+        // Dòng phụ nói thẳng điều người dùng cần biết: ẩn nút nổi KHÔNG tắt chiếu, và còn lối chiếu nào thay thế.
+        body.addView(rows.checkRow(
+            on = bridge.castBubbleVisible(),
+            title = context.getString(R.string.kachi_cast_bubble_title),
+            sub = context.getString(R.string.kachi_cast_bubble_sub),
+        ) { on -> bridge.setCastBubbleVisible(on) })
         body.addView(rows.chipRow(
             label = context.getString(R.string.kachi_cast_split),
             options = bridge.splitPctOptions().map { it.toString() to ClusterNavSettingsModel.splitRatioLabel(it) },
@@ -183,10 +190,19 @@ class SettingsCastSection(
         // ("cụm đang hiện cái gì") bằng hai giác quan: hình cho cái liếc, chữ cho cái đọc.
         preview = ClusterPreviewView(context).apply {
             // Màu do Kachi cấp (xem KDoc [ClusterPreviewView.setPalette]): launcher có công tắc sáng/tối RIÊNG,
-            // nên bảng màu của nhánh ClusterNav vẽ ra hai mảng nhạt giữa một trang tối. Nền lấy `FIELD` để ô cụm
-            // tách khỏi nền thẻ `CELL`, hai nửa lấy hai sắc nhấn của launcher.
+            // nên bảng màu của nhánh ClusterNav vẽ ra hai mảng nhạt giữa một trang tối.
+            //
+            // ⚠⚠ WP1 · R1.1 — **KHÔNG viền, và mặt cụm phải tự tách được**. `line = CLEAR` (trong suốt) thay cho
+            // [KachiTheme.LINE_STRONG]: khung quanh ô xem-trước là một cái viền, owner gỡ hết. Nhưng mặt cụm trước
+            // đây lấy [KachiTheme.FIELD] và [ĐO] `FIELD` trên nền thẻ chỉ **1.10×** — gỡ viền là ô biến mất; nên mặt
+            // đổi sang [KachiTheme.FIELD_SUNKEN] = **1.22×** tối · **1.34×** sáng (cùng vai mà ô tick và ô "chưa có
+            // màu" dùng sau WP1 — một ẩn dụ "ô lõm" cho cả ba).
+            //
+            // Tắt viền ở ĐÂY (qua bảng màu) chứ không sửa `ClusterPreviewView.onDraw`: view đó **dùng chung** với màn
+            // ClusterNav cũ (`activity_main.xml` — hero_cast_preview), và màn đó KHÔNG thuộc phạm vi WP này. Sửa
+            // trong view là đổi một bề mặt ngoài phạm vi; tắt bằng bảng màu thì đúng chỗ gọi nào cần thì chỗ đó tắt.
             setPalette(
-                face = KachiTheme.c(KachiTheme.FIELD), line = KachiTheme.c(KachiTheme.LINE_STRONG),
+                face = KachiTheme.c(KachiTheme.FIELD_SUNKEN), line = KachiTheme.c(KachiTheme.CLEAR),
                 left = KachiTheme.c(KachiTheme.ACCENT_WASH), right = KachiTheme.c(KachiTheme.ACCENT_SOFT),
                 split = KachiTheme.c(KachiTheme.ACCENT), ink = KachiTheme.c(KachiTheme.MUT),
             )
@@ -420,7 +436,12 @@ class SettingsCastSection(
                 },
             )
         })
-        body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { bridge.openDiagnostics() })
+        // UX-OVERHAUL · WP7 — hai nút trên là đường thoát THẬT của người dùng (cụm đang tối/đang bị app khác giữ),
+        // nên chúng ở lại. Nút *Chẩn đoán và nhật ký* mở một màn đầy số cho người viết code ⇒ đứng sau cổng
+        // [DevMode.unlocked]; qua adb là `am start -n <gói>/com.byd.clusternav.modules.clustercast.DiagActivity`.
+        if (DevMode.unlocked(context)) {
+            body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { bridge.openDiagnostics() })
+        }
     }
 
     private companion object {

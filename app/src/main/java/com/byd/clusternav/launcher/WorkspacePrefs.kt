@@ -295,6 +295,19 @@ class WorkspacePrefs(context: Context) {
             .apply()
     }
 
+    /**
+     * UX-OVERHAUL · WP4 — **thứ tự các vật trên thanh trên**, theo hồ sơ (khoá `header_order`).
+     *
+     * Chuỗi lưu là danh sách **tên hằng** ([HeaderItem.name]) đọc được bằng mắt, cùng lệ `top_strip`/`grid_layout`
+     * (cứu tay qua `run-as … cat`). Mọi phép chữa dữ liệu hỏng/thiếu nằm ở [HeaderLayout.decode] — ở đây chỉ đọc
+     * chuỗi, để việc *"bản sau thêm một vật thì vật đó xuất hiện ở cuối"* kiểm được off-car.
+     */
+    fun headerLayout(): HeaderLayout = HeaderLayout.decode(sp.getString(key("header_order"), null))
+
+    fun setHeaderLayout(layout: HeaderLayout) {
+        sp.edit().putString(key("header_order"), HeaderLayout.encode(layout)).apply()
+    }
+
     fun gridLayout(): GridLayout = grid(activeProfile())
 
     /**

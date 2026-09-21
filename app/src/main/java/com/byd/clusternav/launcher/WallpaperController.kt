@@ -81,12 +81,14 @@ class WallpaperController(
         val gen = ++wallScanGen
         submitIo {
             WallpaperStore.folder(ctx)
-            val paths = WallpaperStore.images(ctx)
+            PhotoStore.folder(ctx)                       // tạo sẵn cả thư mục ảnh trình chiếu (để user thấy chỗ)
+            val paths = WallpaperStore.images(ctx)       // ảnh NỀN
+            val photoPaths = PhotoStore.images(ctx)      // ảnh WIDGET trình chiếu — THƯ MỤC RIÊNG (owner 2026-09-21)
             onUi {
                 // Lượt QUÉT cũ về muộn hơn lượt quét mới ⇒ bỏ. Dùng thẻ riêng của việc quét: dùng chung thẻ với việc
                 // giải mã thì nhịp trình chiếu sẽ làm lượt quét bị bỏ oan (xem KDoc wallScanGen).
                 if (gen != wallScanGen || gone()) return@onUi
-                onPhotoSource(paths, prefs().intervalSec)
+                onPhotoSource(photoPaths, prefs().intervalSec)
                 if (!prefs().enabled) return@onUi
                 wallImages = paths
                 slide = SlideshowState()          // đổi lựa chọn ⇒ bắt đầu lại từ ảnh đầu

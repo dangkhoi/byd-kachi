@@ -137,11 +137,12 @@ class VoiceIntentParserTest {
     )
 
     // ⚠ (V) FEATURE-FILTER 2026-09-17: hai ca `chế độ lái` (nút `drive_mode`) đã gỡ cùng nút — owner chấm NO.
-    // Ba ca còn lại vẫn khoá đúng luật "chọn theo NHÃN lựa chọn, không theo số thứ tự".
+    // ⚠ UX-OVERHAUL · WP8 2026-09-20: ca `màu đèn viền` (`ambient_color`) gỡ cùng nút. Hai ca còn lại vẫn khoá
+    // đúng luật "chọn theo NHÃN lựa chọn, không theo số thứ tự" — và cả hai đều là nhãn **nhiều từ**, tức vẫn phủ
+    // ca khó nhất của luật ấy.
     @Test fun `SELECT chon theo nhan lua chon`() = expect(
         "Chỉnh chế độ đèn pha sang auto" to VoiceIntent.Control("headlight_mode", 1),
         "Chỉnh góc camera sang sau" to VoiceIntent.Control("camera_view", 1),
-        "Đặt màu đèn viền xanh lá" to VoiceIntent.Control("ambient_color", 2),
     )
 
     // ⚠ (V) FEATURE-FILTER 2026-09-17: hai ca `Sạc ngay` (`start_charging`) và `Gập gương` (`mirror_fold_btn`)
@@ -163,7 +164,60 @@ class VoiceIntentParserTest {
         "Bật đèn pha" to VoiceIntent.Control("headl", 1),
         "Chỉnh chế độ đèn pha sang auto" to VoiceIntent.Control("headlight_mode", 1),
         "Đặt độ sáng màn 7" to VoiceIntent.Control("brightness_gear", 7),
-        "Đặt độ sáng HUD 3" to VoiceIntent.Control("hud_brightness", 3),
+        // ⚠⚠ UX-OVERHAUL · WP8 2026-09-20 — cặp thứ BA (*"độ sáng màn"* vs *"độ sáng HUD"*) **hết tồn tại**:
+        // `hud_brightness` purge theo triage owner (#63), và đó cũng là lời giải cho chính bug L-RE2 mà bài này
+        // sinh ra để canh — hai nút ấy dùng CHUNG feature-id `1276174360`, nên chỉ một trong hai từng nói thật.
+        // `brightness_gear` (độ sáng màn chính) là cái ĐÚNG và nó ở lại; ca *"độ sáng HUD"* nay phải KHÔNG hiểu
+        // được, và bài `khong nhan nham` vẫn còn hai cặp lồng nhau để canh.
+    )
+
+    /** Nhãn của một nút đã purge thì phải trở về KHÔNG HIỂU — không được rơi sang nút gần giống nào khác. */
+    @Test fun `nhan cua nut da purge o WP8 khong duoc roi sang nut khac`() {
+        listOf("Đặt độ sáng HUD 3", "Bật HUD kính lái", "Bật gạt mưa", "Đặt màu đèn viền xanh lá", "Đặt mức tái tạo cao")
+            .forEach { line ->
+                val got = one(line)
+                assertTrue(
+                    got !is VoiceIntent.Control && got !is VoiceIntent.Read,
+                    "\"$line\" nói về một nút đã purge ở WP8 ⇒ không được thành lệnh xe, ra: $got",
+                )
+            }
+    }
+
+    /**
+     * ═══ WP8 · ĐIỀU KIỆN KẾT NẠP của [VoiceFeatureGone.HARD_BLOCK] — canh bằng MÁY, không bằng lời ═══════════
+     *
+     * Bảng chặn cứng được hỏi **trước mọi phép khớp**, nên một từ lọt vào đó sẽ giết **mọi** câu chứa nó — kể cả
+     * câu của một tính năng đang chạy tốt, và giết **im lặng** (người lái chỉ thấy *"đã bỏ"*). KDoc của bảng đặt ra
+     * đúng một điều kiện cho việc thêm từ: *không nhãn/từ-đồng-nghĩa nào còn chứa nó*. Điều kiện ấy tới nay chỉ là
+     * một câu văn kèm *"[ĐO grep sau purge]"* — tức nó đúng ở thời điểm viết và không có gì giữ cho nó còn đúng.
+     *
+     * Bài này biến nó thành phép kiểm: mỗi từ chặn cứng phải **không** xuất hiện trong từ vựng SINH từ bộ đăng ký.
+     * Hệ quả thực dụng: hôm nào ai đó thêm lại một nút có chữ `hud` trong nhãn, bài này đỏ **trước** khi nút đó ra
+     * xe và chết không hiểu vì sao.
+     *
+     * ⚠ Chỉ phủ được từ vựng TĨNH (nút · datum · nhóm · gói lệnh). Nhãn app do máy cài sinh ra là động ⇒ một app
+     * tên *"HUD …"* vẫn lọt; đó là giới hạn đã biết, không phải chỗ quên.
+     */
+    @Test fun `moi tu chan cung KHONG duoc nam trong tu vung dang song`() {
+        val vocab = VoiceGrammar.terms(profiles, apps)
+        VoiceFeatureGone.HARD_BLOCK.forEach { blocked ->
+            val clash = vocab.filter { blocked in it.words }
+            assertTrue(
+                clash.isEmpty(),
+                "từ chặn cứng \"$blocked\" còn nằm trong từ vựng đang sống ⇒ nó sẽ giết chính tính năng đó: " +
+                    clash.joinToString { "${it.kind}/${it.id}=${it.words}" },
+            )
+        }
+    }
+
+    /**
+     * Canary đi kèm bài trên: cụm *"kính lái"* là từ đồng nghĩa của `window` từ 1.66 và nó **vẫn phải sống**. Đây
+     * là nửa thứ hai của bug WP8 — chặn *"HUD kính lái"* mà chặn luôn *"kính lái"* thì đổi một lệnh sai thành một
+     * tính năng mất.
+     */
+    @Test fun `chan cung HUD khong giet lenh kinh lai`() = expect(
+        "Mở kính lái" to VoiceIntent.Control("window", 1),
+        "Đóng kính lái" to VoiceIntent.Control("window", 0),
     )
 
     // ══ G · NHÃN TRÙNG giữa ĐỌC và HÀNH ĐỘNG — loại động từ quyết định ════════════════════════════════
@@ -175,8 +229,8 @@ class VoiceIntentParserTest {
     @Test fun `cung mot cum dong tu quyet dinh xem hay bam`() = expect(
         "Xem kính trước trái" to VoiceIntent.Read("window_lf"),
         "Mở kính trước trái" to VoiceIntent.Control("win_lf", 1),
-        "Xem gạt mưa" to VoiceIntent.Read("wiper_state"),
-        "Bật gạt mưa" to VoiceIntent.Control("wiper", 1),
+        // ⚠ WP8: cặp *"Gạt mưa"* (datum `wiper_state` + nút `wiper`) đã purge cả hai ⇒ bỏ khỏi bài. Hai cặp còn
+        // lại vẫn phủ đúng luật *"loại động từ quyết định xem hay bấm"* trên nhãn TRÙNG.
         "Xem cửa sổ trời" to VoiceIntent.Read("sunroof_state"),
         "Mở cửa sổ trời" to VoiceIntent.Control("sunroof", 1),
     )

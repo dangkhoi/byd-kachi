@@ -269,9 +269,9 @@
           "evenOdd": false,
           "subpaths": 1,
           "bounds": [
-            3.1,
+            5.6,
             6.8,
-            5.7,
+            7.8,
             11.4
           ],
           "ref": null
@@ -285,9 +285,9 @@
           "evenOdd": false,
           "subpaths": 1,
           "bounds": [
-            18.3,
+            16.2,
             6.8,
-            20.9,
+            18.4,
             11.4
           ],
           "ref": null
@@ -301,9 +301,9 @@
           "evenOdd": false,
           "subpaths": 1,
           "bounds": [
-            3.1,
+            5.6,
             13.6,
-            5.7,
+            7.8,
             18.2
           ],
           "ref": null
@@ -317,9 +317,9 @@
           "evenOdd": false,
           "subpaths": 1,
           "bounds": [
-            18.3,
+            16.2,
             13.6,
-            20.9,
+            18.4,
             18.2
           ],
           "ref": null
@@ -333,10 +333,10 @@
           "evenOdd": false,
           "subpaths": 1,
           "bounds": [
-            3.9,
+            5.6,
             9.1,
             7.55,
-            13.1
+            12.5
           ],
           "ref": null
         },
@@ -351,8 +351,8 @@
           "bounds": [
             16.45,
             9.1,
-            20.1,
-            13.1
+            18.4,
+            12.5
           ],
           "ref": null
         },
@@ -365,10 +365,10 @@
           "evenOdd": false,
           "subpaths": 1,
           "bounds": [
-            3.9,
+            5.6,
             13.9,
             7.6,
-            17.9
+            17.3
           ],
           "ref": null
         },
@@ -383,8 +383,8 @@
           "bounds": [
             16.4,
             13.9,
-            20.1,
-            17.9
+            18.4,
+            17.3
           ],
           "ref": null
         },
@@ -429,10 +429,10 @@
           "evenOdd": false,
           "subpaths": 2,
           "bounds": [
-            4.7,
-            8.9,
-            19.3,
-            10.9
+            6.1,
+            9.0,
+            17.9,
+            10.2
           ],
           "ref": null
         },
@@ -1573,74 +1573,6 @@
       ],
       "paths": 4
     },
-    "ic_car_top_ambient": {
-      "face": "top",
-      "sub": [
-        "windscreen"
-      ],
-      "main": [
-        "chev_front",
-        "chev_rear"
-      ],
-      "paths": 4
-    },
-    "ic_car_top_ambient_bright_front": {
-      "face": "top",
-      "sub": [
-        "windscreen"
-      ],
-      "main": [
-        "chev_front",
-        "dots"
-      ],
-      "paths": 4
-    },
-    "ic_car_top_ambient_bright_rear": {
-      "face": "top",
-      "sub": [
-        "windscreen"
-      ],
-      "main": [
-        "chev_rear",
-        "dots"
-      ],
-      "paths": 4
-    },
-    "ic_car_top_ambient_color_front": {
-      "face": "top",
-      "sub": [
-        "windscreen"
-      ],
-      "main": [
-        "chev_front",
-        "drop"
-      ],
-      "paths": 4
-    },
-    "ic_car_top_ambient_color_rear": {
-      "face": "top",
-      "sub": [
-        "windscreen"
-      ],
-      "main": [
-        "chev_rear",
-        "drop"
-      ],
-      "paths": 4
-    },
-    "ic_car_top_ambient_music": {
-      "face": "top",
-      "sub": [
-        "windscreen"
-      ],
-      "main": [
-        "chev_front",
-        "chev_rear",
-        "note_head",
-        "note_stem"
-      ],
-      "paths": 6
-    },
     "ic_car_top_door_all": {
       "face": "top",
       "sub": [
@@ -1711,17 +1643,6 @@
       ],
       "paths": 4
     },
-    "ic_car_top_mirror": {
-      "face": "top",
-      "sub": [
-        "windscreen",
-        "glass_rear"
-      ],
-      "main": [
-        "mirror"
-      ],
-      "paths": 3
-    },
     "ic_car_top_seat_fl": {
       "face": "top",
       "sub": [
@@ -1778,18 +1699,6 @@
         "boot"
       ],
       "paths": 3
-    },
-    "ic_car_top_trunk_pos": {
-      "face": "front",
-      "sub": [
-        "plate"
-      ],
-      "main": [
-        "hinge",
-        "arrow_h_stem",
-        "arrow_h_heads"
-      ],
-      "paths": 5
     },
     "ic_car_top_tyre_fl": {
       "face": "top",
@@ -1944,24 +1853,6 @@
         "glass_rr"
       ],
       "paths": 3
-    }
-  },
-  "faceVectors": {
-    "car_face_top": {
-      "face": "top",
-      "paths": 20
-    },
-    "car_face_front": {
-      "face": "front",
-      "paths": 11
-    },
-    "car_face_rear": {
-      "face": "front",
-      "paths": 10
-    },
-    "car_face_side": {
-      "face": "side",
-      "paths": 18
     }
   }
 }

@@ -24,25 +24,11 @@ object CapabilityDescriptions {
         "consumption_50km" to Desc("Mức tiêu thụ điện trung bình 50km gần nhất", "Average power consumption over the last 50km (kWh/100km)"),
         "motor_power" to Desc("Công suất mô-tơ điện đang phát ra", "Electric motor power output (kW)"),
         "batt_temp" to Desc("Nhiệt độ hiện tại của pin cao áp", "Current high-voltage battery temperature (°C)"),
-        "cell_temp_high" to Desc("Nhiệt độ cell pin cao nhất", "Highest individual battery cell temperature (°C)"),
-        "cell_temp_low" to Desc("Nhiệt độ cell pin thấp nhất", "Lowest individual battery cell temperature (°C)"),
-        "cell_temp_avg" to Desc("Nhiệt độ trung bình các cell pin", "Average battery cell temperature (°C)"),
-        "cell_v_high" to Desc("Điện áp cell pin cao nhất", "Highest individual battery cell voltage (V)"),
-        "cell_v_low" to Desc("Điện áp cell pin thấp nhất", "Lowest individual battery cell voltage (V)"),
         "soh_oem" to Desc("Tình trạng sức khoẻ pin so với lúc mới", "Battery health versus original capacity (%)"),
         "target_soc" to Desc("Mức pin mục tiêu đã đặt cho sạc", "Target charge level configured for charging (%)"),
 
         // ── DRIVETRAIN (INFO) ──
         "speed" to Desc("Tốc độ di chuyển hiện tại của xe", "Current vehicle road speed (km/h)"),
-        "accel_pct" to Desc("Độ nhấn bàn đạp ga hiện tại", "Current accelerator pedal position (%)"),
-        "brake_pct" to Desc("Độ nhấn bàn đạp phanh hiện tại", "Current brake pedal position (%)"),
-        "motor_front_rpm" to Desc("Tốc độ quay mô-tơ điện trục trước", "Front electric motor rotation speed (rpm)"),
-        "motor_rear_rpm" to Desc("Tốc độ quay mô-tơ điện trục sau", "Rear electric motor rotation speed (rpm)"),
-        "motor_front_torque" to Desc("Mô-men xoắn mô-tơ điện trục trước", "Front electric motor torque output (Nm)"),
-        "engine_rpm" to Desc("Tốc độ quay động cơ xăng", "Petrol engine rotation speed (rpm)"),
-        "steering_deg" to Desc("Góc xoay hiện tại của vô-lăng", "Current steering wheel angle (°)"),
-        "wheel_speed" to Desc("Tốc độ quay của bánh xe", "Individual wheel rotation speed (km/h)"),
-        "slope_deg" to Desc("Độ dốc mặt đường xe đang đi", "Road gradient the car is currently on (°)"),
         "gear" to Desc("Số hiện tại đang cài đặt (P/R/N/D)", "Currently selected gear (P/R/N/D)"),
         "op_mode" to Desc("Chế độ lái đang được kích hoạt", "Currently active drive mode"),
         "energy_mode" to Desc("Chế độ vận hành năng lượng đang dùng (EV/HEV)", "Current powertrain energy mode (EV/HEV)"),
@@ -58,7 +44,6 @@ object CapabilityDescriptions {
         "cabin_temp" to Desc("Nhiệt độ thực tế đo trong khoang cabin", "Actual measured cabin air temperature (°C)"),
         "inside_temp" to Desc("Nhiệt độ điều hoà đã cài đặt", "A/C target temperature currently set (°C)"),
         "ext_temp" to Desc("Nhiệt độ không khí bên ngoài xe", "Outside ambient air temperature (°C)"),
-        "coolant_temp" to Desc("Nhiệt độ nước làm mát động cơ", "Engine coolant temperature (°C)"),
         "ac_on" to Desc("Điều hoà có đang bật hay không", "Whether the air conditioning is currently on"),
         "ac_wind" to Desc("Mức quạt gió điều hoà đang chạy", "Current A/C fan speed level"),
         "ac_cycle" to Desc("Chế độ lấy gió trong/ngoài đang dùng", "Current air recirculation mode (fresh/recirculated)"),
@@ -95,12 +80,9 @@ object CapabilityDescriptions {
         "door_lr" to Desc("Trạng thái đóng/mở cửa sau bên trái", "Rear-left door open/closed state"),
         "door_rr" to Desc("Trạng thái đóng/mở cửa sau bên phải", "Rear-right door open/closed state"),
         "tailgate_status" to Desc("Trạng thái đóng/mở cốp sau", "Rear tailgate open/closed state"),
-        "tailgate_position" to Desc("Vị trí mở hiện tại của cốp sau", "Current tailgate open position (%)"),
         "sunroof_state" to Desc("Trạng thái đóng/mở cửa sổ trời", "Sunroof open/closed state"),
         "sunroof_pos" to Desc("Vị trí mở hiện tại của cửa sổ trời", "Current sunroof open position (%)"),
         "sunshade_pct" to Desc("Vị trí mở hiện tại của rèm che nắng", "Current sunshade open position (%)"),
-        "mirror_fold" to Desc("Trạng thái gập/mở của gương chiếu hậu", "Wing mirror folded/unfolded state"),
-        "wiper_state" to Desc("Trạng thái hoạt động của gạt mưa", "Windscreen wiper operating state"),
         "power_level" to Desc("Cấp nguồn hiện tại của xe (tắt/ACC/bật máy)", "Current vehicle power level (off/ACC/on)"),
         "vehicle_type" to Desc("Mã model của xe", "Vehicle model identifier"),
         "emergency_alarm" to Desc("Đèn cảnh báo khẩn cấp có đang bật không", "Whether the hazard warning alarm is active"),
@@ -115,11 +97,6 @@ object CapabilityDescriptions {
         "light_side" to Desc("Đèn hông (đèn định vị) có đang bật không", "Whether the side marker lights are on"),
         "light_drl" to Desc("Đèn chạy ban ngày (DRL) có đang bật không", "Whether the daytime running lights are on"),
         "headlight_feedback" to Desc("Chế độ đèn pha hiện tại (auto/thủ công…)", "Current headlight mode feedback (auto/manual/…)"),
-        "ambient_enabled" to Desc("Đèn viền nội thất có đang bật không", "Whether cabin ambient lighting is on"),
-        "ambient_front_color" to Desc("Màu đèn viền nội thất khu vực trước", "Ambient light colour for the front zone"),
-        "ambient_rear_color" to Desc("Màu đèn viền nội thất khu vực sau", "Ambient light colour for the rear zone"),
-        "ambient_front_brightness" to Desc("Độ sáng đèn viền nội thất khu vực trước", "Ambient light brightness for the front zone"),
-        "ambient_rear_brightness" to Desc("Độ sáng đèn viền nội thất khu vực sau", "Ambient light brightness for the rear zone"),
 
         // ── Điện phụ 12V / nguồn máy (nhóm ADAS/an toàn đã gỡ 2026-09-16) ──
         "volt_12v" to Desc("Điện áp ắc-quy 12V hiện tại", "Current 12V auxiliary battery voltage (V)"),
@@ -127,13 +104,7 @@ object CapabilityDescriptions {
 
         // ── IDENTITY (INFO) ──
         "vin" to Desc("Số khung nhận dạng xe (VIN)", "Vehicle identification number (VIN)"),
-        "engine_code" to Desc("Mã định danh động cơ xe", "Engine identification code"),
-        "engine_coolant_level" to Desc("Mức nước làm mát động cơ còn lại", "Engine coolant level remaining"),
         "oil_level" to Desc("Phần trăm dầu động cơ còn lại", "Engine oil level remaining (%)"),
-        "gps_lat" to Desc("Vĩ độ GPS hiện tại của xe", "Current GPS latitude of the car (°)"),
-        "gps_lon" to Desc("Kinh độ GPS hiện tại của xe", "Current GPS longitude of the car (°)"),
-        "gps_elevation" to Desc("Độ cao GPS hiện tại của xe", "Current GPS elevation of the car (m)"),
-        "gps_heading" to Desc("Hướng di chuyển hiện tại theo la bàn", "Current compass heading of travel (°)"),
 
         // ── BODY (ACT) ──
         "lock" to Desc("Bật/tắt khoá cửa xe, di chuyển chốt khoá vật lý", "Lock/unlock the car doors (moves the physical latch)"),
@@ -144,7 +115,6 @@ object CapabilityDescriptions {
         // đòi mọi mã CÓ diễn giải, không đòi mọi diễn giải có mã — nhưng để lại một mục cho mã đã chết là mời người
         // sau tưởng nút vẫn còn.
         "sunroof" to Desc("Bật/tắt điều khiển cửa sổ trời, dịch chuyển tấm kính", "Turn sunroof control on/off (moves the glass panel)"),
-        "wiper" to Desc("Bật/tắt gạt mưa kính chắn gió", "Turn the windscreen wipers on/off"),
         "win_lf" to Desc("Mở/đóng kính cửa trước bên trái", "Open/close the front-left window"),
         "win_rf" to Desc("Mở/đóng kính cửa trước bên phải", "Open/close the front-right window"),
         "win_lr" to Desc("Mở/đóng kính cửa sau bên trái", "Open/close the rear-left window"),
@@ -165,10 +135,6 @@ object CapabilityDescriptions {
         "readl" to Desc("Bật/tắt đèn đọc sách trong cabin", "Turn the cabin reading light on/off"),
         "headl" to Desc("Bật/tắt đèn pha", "Turn the headlights on/off"),
         "drl" to Desc("Bật/tắt đèn chạy ban ngày", "Turn the daytime running lights on/off"),
-        "ambient_power" to Desc("Bật/tắt đèn viền nội thất cabin", "Turn cabin ambient lighting on/off"),
-        "ambient_color" to Desc("Chọn màu đèn viền nội thất", "Pick the ambient lighting colour"),
-        "ambient_brightness" to Desc("Tăng/giảm độ sáng đèn viền nội thất", "Raise/lower the ambient lighting brightness"),
-        "ambient_music" to Desc("Bật/tắt đèn viền nhấp nháy theo nhạc", "Turn music-synced ambient lighting on/off"),
         "headlight_mode" to Desc("Chọn chế độ đèn pha (auto/cốt/pha…)", "Pick the headlight mode (auto/low/high beam…)"),
 
         // ── CLIMATE (ACT) ──
@@ -201,12 +167,9 @@ object CapabilityDescriptions {
         "camera_view" to Desc("Chọn góc nhìn camera hỗ trợ đỗ xe", "Pick the parking camera viewing angle"),
         "cluster_music" to Desc("Bật/tắt hiển thị thông tin nhạc trên cụm đồng hồ", "Turn music info display on the instrument cluster on/off"),
         "brightness_gear" to Desc("Tăng/giảm độ sáng màn hình trung tâm", "Raise/lower the centre screen brightness"),
-        "hud_switch" to Desc("Bật/tắt hiển thị HUD trên kính lái", "Turn the head-up display (HUD) on/off"),
-        "hud_brightness" to Desc("Tăng/giảm độ sáng hiển thị HUD", "Raise/lower the HUD brightness"),
 
         // ── DRIVETRAIN (ACT) ──
         "powertrain_mode" to Desc("Chọn chế độ vận hành động cơ (EV/HEV)", "Pick the powertrain mode (EV/HEV)"),
-        "regen_level" to Desc("Chọn mức thu hồi năng lượng phanh tái tạo", "Pick the regenerative braking level"),
 
         // ── ENERGY (ACT) ──
         "wireless_charge" to Desc("Bật/tắt sạc không dây cho điện thoại", "Turn the wireless phone charger on/off"),

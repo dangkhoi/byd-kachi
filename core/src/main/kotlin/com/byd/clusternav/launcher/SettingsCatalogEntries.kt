@@ -51,6 +51,12 @@ internal object SettingsCatalogEntries {
             "bars_top_strip_labels", SettingsGroup.BARS, "Hiện nhãn trên thanh trên",
             "top_strip_labels", "Show chip labels",
         ),
+        // UX-OVERHAUL · WP4 (owner 2026-09-20) — *"cho user CHỌN VỊ TRÍ item BÊN TRONG header + taskbar"*. Đứng SAU
+        // hai mục *chọn chip* vì nó sắp lại thứ vừa chọn: sắp chỗ cho một vật chưa có mặt là một câu hỏi vô nghĩa.
+        SettingsEntry(
+            "bars_header_order", SettingsGroup.BARS, "Vị trí trên thanh trên",
+            "header_order", "Status-bar item order",
+        ),
         // Viền TRƯỚC danh sách nút: thứ tự khai ở đây LÀ thứ tự hiện ra, và mục "nút trên thanh" là lưới 123 ô. Khai
         // ngược lại thì muốn đổi viền phải cuộn qua hết lưới — thứ tự danh mục phải là thứ tự dùng được, không chỉ
         // là thứ tự nghe hợp lý khi đọc danh sách.
@@ -59,6 +65,16 @@ internal object SettingsCatalogEntries {
         SettingsEntry("bars_dock_visible", SettingsGroup.BARS, "Hiện thanh nút xe", "dock_visible", "Show the car bar"),
         SettingsEntry("bars_dock_edge", SettingsGroup.BARS, "Viền đặt thanh nút", "dock_edge", "Button bar edge"),
         SettingsEntry("bars_dock_items", SettingsGroup.BARS, "Nút trên thanh nút xe", "dock_enabled", "Buttons on the car bar"),
+        // UX-OVERHAUL · WP4 — sắp lại chỗ đứng của những nút vừa chọn.
+        //
+        // ⚠⚠ `prefKey = null` là **BẮT BUỘC**, không phải bỏ sót: thứ tự nút LÀ thứ tự của `dock_enabled`
+        // ([DockConfig.moveEnabled]) và [SettingsCatalog] ép bất biến *"một khoá chỉ thuộc ĐÚNG một mục"*
+        // ([ĐO] khai `dock_enabled` lần thứ hai ở đây ⇒ `ExceptionInInitializerError` *"khoá hai chủ"*, 45 bài
+        // đỏ). Đúng tiền lệ `home_grid_editor`: một mục **sửa** giá trị mà mục khác **sở hữu**.
+        SettingsEntry(
+            "bars_dock_order", SettingsGroup.BARS, "Vị trí trên thanh nút xe",
+            null, "Car-bar item order",
+        ),
 
         // ── Hiển thị & đơn vị ──
         SettingsEntry("display_units", SettingsGroup.DISPLAY, "Đơn vị hiển thị", "unit_prefs", "Display units"),
@@ -72,6 +88,14 @@ internal object SettingsCatalogEntries {
         // ClusterNav (`clusternav_lang`, `com.byd.clusternav.Lang`) — cố ý, để một APK chỉ có MỘT công tắc ngôn ngữ
         // thay vì hai cái lệch nhau; lập luận đầy đủ ở KDoc `WorkspacePrefs.langMode`.
         SettingsEntry("display_lang", SettingsGroup.DISPLAY, "Ngôn ngữ", "lang", "Language"),
+        // UX-OVERHAUL WP1 · R1.3 — công tắc "Kính thật (làm mờ nền)". Khoá `ui_glass_real` nằm ở `clusternav_prefs`
+        // (qua `Prefs`, THEO XE — xem `ProfileScope.DEVICE_KEYS`), không ở `kachi_workspace`, nên nó KHÔNG có bản
+        // theo-hồ-sơ; control đi qua `deps.bridge.setGlassReal` như `system_headless_autostart`. Ở nhóm Hiển thị vì
+        // nó là **cách trình bày** (chất liệu bề mặt), đúng định nghĩa nhóm DISPLAY.
+        SettingsEntry(
+            "display_glass_real", SettingsGroup.DISPLAY, "Kính thật (làm mờ nền)",
+            "ui_glass_real", "Real glass (blur the backdrop)",
+        ),
 
         // ── Hồ sơ tài xế ──
         // S4 · R3: từ đây một hồ sơ giữ **tất cả** lựa chọn của người dùng (xem `ProfileScope`), nên nhóm này không
@@ -154,6 +178,12 @@ internal object SettingsCatalogEntries {
         // ── Chiếu màn lên cụm ──
         // switch_cast_enabled · SimpleCastRuntime.coordinator(app).prefs.setCastEnabled
         SettingsEntry("cast_enabled", SettingsGroup.CAST, "Bật chiếu màn", "cast_enabled", "Enable casting"),
+        // UX-OVERHAUL WP6 · R6.1 (owner 2026-09-20) — HIỆN/ẨN nút nổi. Đứng ngay sau công tắc chính vì nó chỉ có
+        // nghĩa khi chiếu đang bật; ẩn nút nổi KHÔNG tắt chiếu (xem [BubblePresence]).
+        SettingsEntry(
+            "cast_bubble", SettingsGroup.CAST, "Hiện nút nổi chiếu cụm",
+            "cast_bubble_visible", "Show the floating cast button",
+        ),
         // split_ratio_buttons (9 nút 1:9…9:1) · prefs.setSplitRatioLeftPercent + applySplitRatioLive
         SettingsEntry("cast_split", SettingsGroup.CAST, "Tỉ lệ chia đôi", "split_ratio_left_pct", "Split ratio"),
         // cb_autostart · prefs.setAutoStartEnabled — loại trừ nhau với tự-chiếu chia đôi (CastAutostart.kt:32–61)
@@ -230,6 +260,67 @@ internal object SettingsCatalogEntries {
             "rain_defrost_enabled", "Auto-defrost when it rains",
         ),
 
+        // ── Giọng nói: ĐỌC phản hồi (spec `kachi-voice-feedback.html` R4 · T9) ──
+        // Ba mục đứng cạnh hàng *Nhận dạng giọng nói* trong nhóm Hệ thống (§Nâng cao) vì chúng là hai nửa của
+        // MỘT việc: cái tai (mô hình nghe) và cái miệng (gói đọc + hai công tắc). DEBT-CAT-2: bề mặt đã vẽ thì
+        // phải có mục danh mục, nếu không rail nói một đằng mà trang có một nẻo.
+        // "Hey Kachi" — công tắc nghe câu gọi rảnh tay. Khoá thật `voice_wake_enabled` nằm ở `clusternav_prefs`
+        // (ghi qua ClusterNavBridge.setWakeEnabled), KHÔNG khai ở đây (prefKey=null) — như các công tắc bridge khác.
+        SettingsEntry("voice_wake", SettingsGroup.VOICE, "\"Hey Kachi\" gọi bằng giọng", labelEn = "\"Hey Kachi\" wake word"),
+        SettingsEntry(
+            "voice_speak_replies", SettingsGroup.VOICE, "Đọc phản hồi bằng giọng",
+            "voice_speak_replies", "Speak replies out loud",
+        ),
+        SettingsEntry(
+            "voice_prefer_offline", SettingsGroup.VOICE, "Ưu tiên giọng offline",
+            "voice_prefer_offline", "Prefer the offline voice",
+        ),
+        // 1.70 (voice-clone T7/T8) — chọn giọng phản hồi Piper (mặc định) hay "Giọng Kachi bé" (clip clone).
+        SettingsEntry(
+            "voice_feedback_voice", SettingsGroup.VOICE, "Giọng phản hồi",
+            "voice_feedback_voice", "Feedback voice",
+        ),
+        // App nhạc mặc định (owner 2026-09-21) — cùng lẽ `nav_default_app` ở nhóm NAV; khoá `clusternav_prefs`.
+        SettingsEntry(
+            "voice_music_default_app", SettingsGroup.VOICE, "App nhạc mặc định",
+            "voice_music_default_app", "Default music app",
+        ),
+        // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
+        // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.
+        SettingsEntry("voice_tts_pack", SettingsGroup.VOICE, "Giọng đọc offline", labelEn = "Offline voice pack"),
+        // ── V3 · "nhanh + tự nhiên" (spec `kachi-voice-fast-natural.html`) ──
+        // R7 — mục liệt kê MỌI việc có thể hỏi lại, mỗi việc một ô tích; mặc định KHÔNG tích cái nào (owner
+        // 2026-09-16: *"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì"*).
+        SettingsEntry(
+            "voice_confirm_ids", SettingsGroup.VOICE, "Hỏi xác nhận trước khi chạy",
+            "voice_confirm_ids", "Ask before running",
+        ),
+        // OQ4 — đứng NGAY dưới mục trên, vì nó chỉ có nghĩa khi có ít nhất một việc được tích: nó quyết định câu
+        // hỏi ấy có được ĐỌC LÊN hay chỉ hiện chữ.
+        SettingsEntry(
+            "voice_ask_aloud", SettingsGroup.VOICE, "Đọc to câu hỏi xác nhận",
+            "voice_ask_aloud", "Read confirmation questions aloud",
+        ),
+        // R1 — nguồn micro. Ở nhóm Hệ thống cạnh hàng *Nhận dạng giọng nói*: nó là một tính chất của PHẦN CỨNG
+        // xe này, không phải một sở thích; và nó tồn tại để đo được từng nguồn trên đường mà không build lại.
+        SettingsEntry(
+            "voice_mic_source", SettingsGroup.VOICE, "Nguồn micro",
+            "voice_mic_source", "Microphone source",
+        ),
+        // ── H2/H6 (1.69) — nhật ký lượt nói + đổi mô hình nghe ──
+        // R-H2 — ô tích GIỮ NHẬT KÝ, mặc định BẬT (owner cần dữ liệu thật trên đường; off-car chỉ có 25 tệp TTS
+        // macOS, mà CLAUDE.md §2 đã ghi số đo trên tập ấy không nói gì về cabin thật). Tiếng nằm trong `filesDir`,
+        // không ra mạng, vòng đệm 30 mục / 30 MB — ba tính chất đo được từ mã, xem `VoiceUtteranceLog`.
+        SettingsEntry(
+            "voice_keep_log", SettingsGroup.VOICE, "Giữ nhật ký lượt nói",
+            "voice_keep_log", "Keep a log of what you say",
+        ),
+        // Không lưu khoá: đây là NÚT nén `voice-log/` ra `Download/` (cùng lối `voice_tts_pack`). Người dùng cắm
+        // USB chép hoặc gửi Zalo — đường DUY NHẤT tiếng rời khỏi xe, và nó luôn do một cú bấm của họ.
+        SettingsEntry("voice_log_export", SettingsGroup.VOICE, "Xuất nhật ký voice", labelEn = "Export the voice log"),
+        // Không lưu khoá: hai NÚT của H6 (chuyển sang mô hình nhẹ · gỡ bản nặng). Lựa chọn mô hình lưu ở tệp prefs
+        // RIÊNG của `VoiceModelStore` (`kachi_voice`), không phải `clusternav_prefs` — nên ở đây chỉ có mục UI.
+        SettingsEntry("voice_model_light", SettingsGroup.VOICE, "Mô hình nghe nhẹ (int8)", labelEn = "Light recognition model"),
         // ── Hệ thống & quyền ──
         // Không lưu gì: hàng quyền chỉ ĐỌC trạng thái thật rồi tự xin lại (xem [LauncherRequirements]).
         SettingsEntry("system_permissions", SettingsGroup.SYSTEM, "Quyền còn thiếu", labelEn = "Missing permissions"),
@@ -245,59 +336,6 @@ internal object SettingsCatalogEntries {
             "system_headless_autostart", SettingsGroup.SYSTEM, "Chạy dịch vụ nền khi nổ máy",
             "headless_autostart", "Run background service on engine start",
         ),
-        // ── Giọng nói: ĐỌC phản hồi (spec `kachi-voice-feedback.html` R4 · T9) ──
-        // Ba mục đứng cạnh hàng *Nhận dạng giọng nói* trong nhóm Hệ thống (§Nâng cao) vì chúng là hai nửa của
-        // MỘT việc: cái tai (mô hình nghe) và cái miệng (gói đọc + hai công tắc). DEBT-CAT-2: bề mặt đã vẽ thì
-        // phải có mục danh mục, nếu không rail nói một đằng mà trang có một nẻo.
-        SettingsEntry(
-            "voice_speak_replies", SettingsGroup.SYSTEM, "Đọc phản hồi bằng giọng",
-            "voice_speak_replies", "Speak replies out loud",
-        ),
-        SettingsEntry(
-            "voice_prefer_offline", SettingsGroup.SYSTEM, "Ưu tiên giọng offline",
-            "voice_prefer_offline", "Prefer the offline voice",
-        ),
-        // 1.70 (voice-clone T7/T8) — chọn giọng phản hồi Piper (mặc định) hay "Giọng Kachi bé" (clip clone).
-        SettingsEntry(
-            "voice_feedback_voice", SettingsGroup.SYSTEM, "Giọng phản hồi",
-            "voice_feedback_voice", "Feedback voice",
-        ),
-        // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
-        // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.
-        SettingsEntry("voice_tts_pack", SettingsGroup.SYSTEM, "Giọng đọc offline", labelEn = "Offline voice pack"),
-        // ── V3 · "nhanh + tự nhiên" (spec `kachi-voice-fast-natural.html`) ──
-        // R7 — mục liệt kê MỌI việc có thể hỏi lại, mỗi việc một ô tích; mặc định KHÔNG tích cái nào (owner
-        // 2026-09-16: *"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì"*).
-        SettingsEntry(
-            "voice_confirm_ids", SettingsGroup.SYSTEM, "Hỏi xác nhận trước khi chạy",
-            "voice_confirm_ids", "Ask before running",
-        ),
-        // OQ4 — đứng NGAY dưới mục trên, vì nó chỉ có nghĩa khi có ít nhất một việc được tích: nó quyết định câu
-        // hỏi ấy có được ĐỌC LÊN hay chỉ hiện chữ.
-        SettingsEntry(
-            "voice_ask_aloud", SettingsGroup.SYSTEM, "Đọc to câu hỏi xác nhận",
-            "voice_ask_aloud", "Read confirmation questions aloud",
-        ),
-        // R1 — nguồn micro. Ở nhóm Hệ thống cạnh hàng *Nhận dạng giọng nói*: nó là một tính chất của PHẦN CỨNG
-        // xe này, không phải một sở thích; và nó tồn tại để đo được từng nguồn trên đường mà không build lại.
-        SettingsEntry(
-            "voice_mic_source", SettingsGroup.SYSTEM, "Nguồn micro",
-            "voice_mic_source", "Microphone source",
-        ),
-        // ── H2/H6 (1.69) — nhật ký lượt nói + đổi mô hình nghe ──
-        // R-H2 — ô tích GIỮ NHẬT KÝ, mặc định BẬT (owner cần dữ liệu thật trên đường; off-car chỉ có 25 tệp TTS
-        // macOS, mà CLAUDE.md §2 đã ghi số đo trên tập ấy không nói gì về cabin thật). Tiếng nằm trong `filesDir`,
-        // không ra mạng, vòng đệm 30 mục / 30 MB — ba tính chất đo được từ mã, xem `VoiceUtteranceLog`.
-        SettingsEntry(
-            "voice_keep_log", SettingsGroup.SYSTEM, "Giữ nhật ký lượt nói",
-            "voice_keep_log", "Keep a log of what you say",
-        ),
-        // Không lưu khoá: đây là NÚT nén `voice-log/` ra `Download/` (cùng lối `voice_tts_pack`). Người dùng cắm
-        // USB chép hoặc gửi Zalo — đường DUY NHẤT tiếng rời khỏi xe, và nó luôn do một cú bấm của họ.
-        SettingsEntry("voice_log_export", SettingsGroup.SYSTEM, "Xuất nhật ký voice", labelEn = "Export the voice log"),
-        // Không lưu khoá: hai NÚT của H6 (chuyển sang mô hình nhẹ · gỡ bản nặng). Lựa chọn mô hình lưu ở tệp prefs
-        // RIÊNG của `VoiceModelStore` (`kachi_voice`), không phải `clusternav_prefs` — nên ở đây chỉ có mục UI.
-        SettingsEntry("voice_model_light", SettingsGroup.SYSTEM, "Mô hình nghe nhẹ (int8)", labelEn = "Light recognition model"),
         // ── Màn hình chính (S5) ──
         // btn_set_home · ClusterNavBridge.setDefaultHome — VIỆC LÀM (không lưu khoá): ROM BYD KHÔNG hiện hộp chọn
         // HOME khi bấm nút Home, nên đây là đường đặt được duy nhất. Nút gọi `cmd package set-home-activity` qua

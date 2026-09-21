@@ -283,7 +283,9 @@ class GroupTileWiringContractTest {
                 assertFalse(door.contains(it), "ô vẽ bảng cửa chép tay mã thành viên: $it")
             }
         assertTrue(door.contains("GroupBoard.doorPlan("), "bảng cửa phải HỎI :core bộ phận nào đang mở")
-        assertTrue(door.contains("CarPart."), "và nối bằng enum bộ phận, không bằng mã datum")
+        // WP3-v5 — bảng cửa nay nối enum bộ phận sang VỊ TRÍ chấm qua `CarLayout.part(s.part)` (trên ảnh xe), thay
+        // vì tra path vector theo mã. Vẫn là "nối bằng enum bộ phận, không bằng mã datum".
+        assertTrue(door.contains("CarLayout.part("), "và nối bộ phận → vị trí bằng CarLayout (enum), không bằng mã datum")
     }
 
     @Test
@@ -301,8 +303,29 @@ class GroupTileWiringContractTest {
     fun `mau nen o con suy ra tu bang mau chung, khong khai bang mau thu hai`() {
         val fill = SourceRoots.body(tiles, "fun fillOf(")
         assertTrue(fill.contains("alpha(KachiTheme."), "nền suy ra từ chính màu của bảng màu chung + kênh trong suốt")
-        val stroke = SourceRoots.body(tiles, "fun strokeOf(")
-        assertTrue(stroke.contains("alpha(KachiTheme."), "viền cũng vậy")
+        // ⚠⚠ WP1 · R1.1 — bài này ĐẢO CHIỀU: bản cũ đòi `fun strokeOf(` tồn tại và cũng suy màu từ bảng chung.
+        // Owner 2026-09-20 gỡ mọi viền, và riêng màu ngữ nghĩa thì *"chuyển sang nền/chữ màu"* ⇒ `strokeOf` bị XOÁ
+        // (nó là bảng tra VIỀN). Nay phải canh hai điều thay cho nó, nếu không thì bỏ bài cũ là mất bất biến:
+        //  (a) `strokeOf` **không được mọc lại** — kể cả dưới dạng "chỉ để tra màu";
+        //  (b) nền WARN/ALERT phải **đậm hơn** nền ACTIVE, vì nó đang gánh một mình việc mà nền+viền từng chia nhau.
+        //      [ĐO] 0x26 (15%) chỉ cho 1.38× trên nền ô; 0x59 (35%) cho 2.25× — đậm hơn cả cặp nền+viền cũ.
+        assertFalse(tiles.contains("fun strokeOf("), "bảng tra VIỀN không được mọc lại (WP1 · R1.1)")
+        assertTrue(
+            fill.contains("SEMANTIC_ALPHA"),
+            "WARN/ALERT phải dùng hằng độ đục riêng (SEMANTIC_ALPHA) — nó là con số gánh nghĩa cảnh báo sau khi " +
+                "viền bị gỡ, nên nó phải có TÊN và có lý do tại chỗ, không nằm lẫn trong một chuỗi \"26\"",
+        )
+        val semantic = Regex("""SEMANTIC_ALPHA\s*=\s*"([0-9a-fA-F]{2})"""").find(tiles)
+        assertTrue(semantic != null, "không tìm thấy khai báo SEMANTIC_ALPHA — sửa bài này, đừng để nó quét tràn")
+        val semanticA = semantic!!.groupValues[1].toInt(16)
+        val activeA = Regex("""GroupTone\.ACTIVE\s*->\s*alpha\(KachiTheme\.ACCENT,\s*"([0-9a-fA-F]{2})"\)""")
+            .find(fill)?.groupValues?.get(1)?.toInt(16)
+        assertTrue(activeA != null, "không đọc được độ đục của GroupTone.ACTIVE — sửa bài này")
+        assertTrue(
+            semanticA > activeA!!,
+            "nền cảnh báo (0x${semantic.groupValues[1]}) phải ĐẬM hơn nền 'đang bật' (0x%02x): sau WP1 nó là dấu " +
+                "hiệu DUY NHẤT của WARN/ALERT trên một màn hình lái xe".format(activeA),
+        )
         // Đếm mã hex viết trực tiếp: nay phải là **0**. Trước T1 còn đúng một mã (`CELL_BG` = nền ô con bình thường,
         // dùng lại giá trị ô nén đang có); T1 đưa nó thành vai `KachiTheme.CELL` vì một mã cứng ở đây nghĩa là nền ô
         // con **không đổi theo chủ đề** — trên bảng sáng nó sẽ là một ô tối lọt giữa các thẻ trắng.
@@ -373,15 +396,18 @@ class GroupTileWiringContractTest {
      * đổi hình dạng bằng số đo, chứ không để nó lặng lẽ đi qua. Dải XEM và số phụ CARD **không đổi** (chỉ `writes` đổi).
      */
     @Test
-    fun `phep chia hang khong doi hinh dang cua 9 nhom dang co`() {
+    fun `phep chia hang khong doi hinh dang cua 8 nhom dang co`() {
         val strip = CapabilityGroups.ALL.associate { g ->
             g.id to GroupTileView.rowsOf(g.reads, 5).map { it.size }
         }
         assertEquals(
             mapOf(
-                "g_tyres" to listOf(4, 4), "g_windows" to listOf(4), "g_doors" to listOf(5, 5),
-                "g_lights" to listOf(5, 4), "g_ambient" to listOf(5), "g_climate" to listOf(5, 4, 4),
-                "g_energy" to listOf(3, 3), "g_battery" to listOf(5, 4), "g_trip" to listOf(3, 3),
+                // ⚠ WP8 2026-09-20: `g_ambient` gỡ hẳn (hết thành viên) · `g_doors` 10 → 8 ô ⇒ [5,5] thành [4,4].
+                "g_tyres" to listOf(4, 4), "g_windows" to listOf(4), "g_doors" to listOf(4, 4),
+                "g_lights" to listOf(5, 4), "g_climate" to listOf(5, 4, 4),
+                // ⚠ WP8 2026-09-20: `g_battery` còn 4 ô (batt_temp · soh_oem · volt_12v · volt_12v_level) sau khi
+                // purge cell_v/target_soc theo (V) FEATURE-FILTER ⇒ [5,4] → [4].
+                "g_energy" to listOf(3, 3), "g_battery" to listOf(4), "g_trip" to listOf(3, 3),
             ),
             strip,
             "dải STRIP (trần 5) đổi hình dạng",
@@ -391,11 +417,11 @@ class GroupTileWiringContractTest {
         }
         assertEquals(
             mapOf(
-                "g_tyres" to listOf(3, 2, 2), "g_windows" to listOf(3), "g_doors" to listOf(3, 3, 3),
-                "g_lights" to listOf(3, 3, 2), "g_ambient" to listOf(2, 2), "g_climate" to listOf(3, 3, 3, 3),
+                "g_tyres" to listOf(3, 2, 2), "g_windows" to listOf(3), "g_doors" to listOf(3, 2, 2),
+                "g_lights" to listOf(3, 3, 2), "g_climate" to listOf(3, 3, 3, 3),
                 // ⚠ [(V) FEATURE-FILTER 2026-09-17] Nhóm Năng lượng 10 → 6 ô (5 ô sạc xoá theo lệnh owner,
                 //    `consumption_50km` thêm vào): STRIP [5,5] → [3,3] · CARD [3,3,3] → [3,2].
-                "g_energy" to listOf(3, 2), "g_battery" to listOf(3, 3, 2), "g_trip" to listOf(3, 2),
+                "g_energy" to listOf(3, 2), "g_battery" to listOf(3), "g_trip" to listOf(3, 2),
             ),
             card,
             "số phụ của thẻ CARD (trần 3) đổi hình dạng",

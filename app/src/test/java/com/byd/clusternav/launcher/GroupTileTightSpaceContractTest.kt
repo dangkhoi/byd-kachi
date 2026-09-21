@@ -125,10 +125,12 @@ class GroupTileTightSpaceContractTest {
     }
 
     /**
-     * Ô trong hàng nút của nhóm dùng cỡ **hẹp** ([TileSize.GROUP]) — nhãn NGẮN + nút phụ xếp DỌC.
+     * Ô trong hàng nút của nhóm dùng cỡ **hẹp** ([TileSize.GROUP]) — nhãn NGẮN, và **WP3 · R3.1** mọi ô đồng nhất.
      *
-     * [ĐO] cùng ảnh: nhãn đầy bị cắt `"Window front-ri…"` / `"Kính trước-p…"`, và hai nút *Đóng/Mở* xếp ngang trong
-     * 82px còn ~32px mỗi nút ⇒ chữ bị cắt CỨNG thành `"Đ"`/`"C"` (không cả dấu `…`).
+     * [ĐO] ảnh 2026-09-12: nhãn đầy bị cắt `"Window front-ri…"` / `"Kính trước-p…"` ⇒ dùng nhãn ngắn. Và trước WP3,
+     * ô COVER (cốp · rèm) xếp 2–3 nút phụ nên CAO & KHÁC HẲN ô khoá/cửa cạnh nó (owner: *"rèm 3 option còn mục khác
+     * 1 nút → lệch cả widget"*). WP3 đổi COVER trong ô hẹp thành MỘT tile cycle (như TOGGLE/SELECT) ⇒ hàng nút đồng
+     * nhất, và bài toán "chữ Đóng/Close không vừa 32px" biến mất vì không còn chia đôi ô cho hai nút.
      */
     @Test
     fun `hang nut cua nhom dung co o HEP`() {
@@ -139,10 +141,12 @@ class GroupTileTightSpaceContractTest {
             SourceRoots.body(factory, "fun actionTile(").contains("size.narrow) def.displayShortLabel"),
             "ô hẹp phải dùng nhãn NGẮN của bộ đăng ký (không tự viết tắt ở tầng vẽ)",
         )
-        assertTrue(
-            SourceRoots.body(factory, "private fun tileCover(").contains("size.narrow) LinearLayout.VERTICAL"),
-            "ô hẹp phải xếp DỌC hai nút phụ — xếp ngang thì chữ `Đóng`/`Close` không thể vừa 32px",
+        // WP3-v5 · Task B — COVER nay MỘT tile text-free (bỏ nút phụ + không rẽ narrow/rộng) ⇒ mọi ô hàng nút đồng nhất.
+        assertFalse(
+            SourceRoots.body(factory, "private fun tileCover(").contains("size.narrow"),
+            "COVER không còn rẽ narrow/rộng — một tile đồng nhất (Task B)",
         )
+        assertFalse(factory.contains("miniBtn("), "nút phụ có nhãn (miniBtn) đã bỏ hẳn ở Task B")
     }
 
 

@@ -32,7 +32,6 @@ internal object KachiIcons {
         R.drawable.ic_car to (R.drawable.ic_car_l to R.drawable.ic_car_xl),
         R.drawable.ic_door to (R.drawable.ic_door_l to R.drawable.ic_door_xl),
         R.drawable.ic_grid to (R.drawable.ic_grid_l to R.drawable.ic_grid_xl),
-        R.drawable.ic_group_ambient to (R.drawable.ic_group_ambient_l to R.drawable.ic_group_ambient_xl),
         R.drawable.ic_group_battery_health to (R.drawable.ic_group_battery_health_l to R.drawable.ic_group_battery_health_xl),
         R.drawable.ic_group_climate to (R.drawable.ic_group_climate_l to R.drawable.ic_group_climate_xl),
         R.drawable.ic_group_doors to (R.drawable.ic_group_doors_l to R.drawable.ic_group_doors_xl),

@@ -42,10 +42,6 @@
     </plurals>
     <string name="kachi_drawer_cap_note">Ô chứa tối đa %1$d mục — bỏ một mục để thêm</string>
 
-    <!-- ── ControlTileFactory — ô điều khiển kiểu COVER (cửa/kính/cốp) ── -->
-    <string name="kachi_cover_close">Đóng</string>
-    <string name="kachi_cover_open">Mở</string>
-
     <!-- ── LayoutEditorPanel — bảng vẽ bố cục ── -->
     <string name="kachi_layout_title">Vẽ bố cục</string>
     <string name="kachi_layout_close">Đóng</string>
@@ -100,11 +96,20 @@
     <string name="kachi_sec_theme">Giao diện sáng/tối</string>
     <string name="kachi_row_palette">Bảng màu</string>
     <string name="kachi_theme_note">"Tự động" = tối từ 18h đến 6h. Đổi bảng màu thì màn hình dựng lại một lượt.</string>
+    <!-- UX-OVERHAUL WP1 · R1.3 — kính giả (mặc định) / kính thật (làm mờ nền, API 31+) -->
+    <string name="kachi_glass_real_title">Kính thật (làm mờ nền)</string>
+    <string name="kachi_glass_real_sub">Làm mờ nền phía sau thẻ cho hiệu ứng kính. Chỉ chạy trên máy mới (Android 12+); máy cũ tự dùng kính giả nhẹ hơn. Áp ở lần mở màn sau.</string>
     <!-- P1b · R8 — chọn màu nhấn / tông thẻ (theo hồ sơ) -->
     <string name="kachi_sec_color">Màu sắc</string>
     <string name="kachi_row_accent">Màu nhấn</string>
     <string name="kachi_row_tone">Tông thẻ</string>
-    <string name="kachi_row_paint">Màu sơn xe</string>
+    <string name="kachi_sec_car_image">Hình xe</string>
+    <string name="kachi_car_image_current">Đang dùng: %1$s</string>
+    <string name="kachi_car_image_title">Hình xe</string>
+    <string name="kachi_car_image_default">Đang dùng hình xe mặc định. Muốn thay bằng ảnh xe của bạn thì làm theo các bước dưới.</string>
+    <string name="kachi_car_image_steps">Cách thay ảnh xe (nhìn từ trên, nền trong suốt là đẹp nhất):\n1. Cắm USB vào xe, hoặc mở app Quản lý tệp.\n2. Chép ảnh vào thư mục: %1$s\n3. Ảnh mới nhất trong thư mục sẽ được dùng; mở lại màn hình chính là thấy.\nBấm nút dưới để sao chép đường dẫn thư mục.</string>
+    <string name="kachi_copy_path">Sao chép đường dẫn thư mục</string>
+    <string name="kachi_path_copied">Đã sao chép đường dẫn</string>
     <string name="kachi_color_note">Lưu theo hồ sơ đang dùng. "Theo ảnh nền" lấy màu trội của ảnh đầu tiên trong thư mục hình nền. Chữ luôn được giữ đọc được: màu nào quá sáng thì chữ trên nút tự đậm lại. Đổi màu thì màn hình dựng lại một lượt.</string>
     <string name="kachi_sec_lang">Ngôn ngữ</string>
     <string name="kachi_row_lang">Chữ trên màn</string>
@@ -141,6 +146,10 @@
     <string name="kachi_home_unset_ok">Đã bỏ chọn — bấm Home để về launcher khác.</string>
     <string name="kachi_home_unset_partial">Đã bỏ Kachi khỏi màn hình chính. Không tìm thấy launcher khác — hệ sẽ tự chọn.</string>
     <string name="kachi_home_result_ok">Đã đặt — bấm Home để về Kachi.</string>
+    <string name="kachi_wake_section">Hey Kachi</string>
+    <string name="kachi_music_section">Nhạc</string>
+    <string name="kachi_music_default_app">App nhạc mặc định</string>
+    <string name="kachi_music_auto">Tự chọn</string>
     <string name="kachi_wake_title">"Hey Kachi" — gọi bằng giọng (thử nghiệm)</string>
     <string name="kachi_wake_sub">Nói câu gọi để mở lệnh thoại, không cần chạm. Nghe nền khi màn sáng. Mặc định tắt (tốn pin/CPU). Đang thử nghiệm — có thể chưa nhận tốt, gặp lỗi thì báo lại.</string>
     <string name="kachi_wake_notif_title">Hey Kachi</string>
@@ -173,6 +182,9 @@
     <string name="kachi_wall_title">Dùng ảnh làm hình nền</string>
     <string name="kachi_wall_sub_nofolder">Bỏ ảnh vào thư mục ảnh của Kachi</string>
     <string name="kachi_wall_sub_folder">Bỏ ảnh vào: %1$s</string>
+    <string name="kachi_wall_steps">Cách thêm ảnh NỀN màn hình:\n1. Cắm USB vào xe, hoặc mở app Quản lý tệp.\n2. Chép ảnh vào thư mục: %1$s\n3. Bật công tắc bên trên — ảnh sẽ làm nền, đổi vòng theo chu kỳ.\n(Ảnh cho widget "Trình chiếu ảnh" nằm ở thư mục KHÁC — xem mục Trình chiếu ảnh.)\nBấm nút dưới để sao chép đường dẫn thư mục.</string>
+    <string name="kachi_photos_section">Widget Trình chiếu ảnh</string>
+    <string name="kachi_photos_steps">Ảnh cho widget "Trình chiếu ảnh" (KHÁC thư mục ảnh nền):\n1. Cắm USB vào xe, hoặc mở app Quản lý tệp.\n2. Chép ảnh vào thư mục: %1$s\n3. Đặt widget "Trình chiếu ảnh" vào một ô — ảnh sẽ đổi vòng.\nBấm nút dưới để sao chép đường dẫn thư mục.</string>
     <string name="kachi_wall_period">Đổi ảnh mỗi</string>
     <string name="kachi_wall_fit">Cách phủ</string>
     <string name="kachi_wall_dim">Làm tối ảnh</string>
@@ -181,6 +193,14 @@
     <string name="kachi_dock_visible_sub">Tắt để ẩn thanh nút; các khung lấp trọn màn hình</string>
     <string name="kachi_dock_edge">Viền đặt thanh</string>
     <string name="kachi_dock_note">Chạm một ô để thêm hoặc bớt nút khỏi thanh.</string>
+    <!-- UX-OVERHAUL · WP4 — sắp chỗ các vật bên trong hai thanh (docs/specs/kachi-ux-overhaul.html §WP4). -->
+    <string name="kachi_header_order_title">Vị trí trên thanh trên</string>
+    <string name="kachi_header_order_hint">Sắp lại chỗ đứng của đồng hồ, chip xe và các nút trên thanh trên.</string>
+    <string name="kachi_dock_order_title">Vị trí trên thanh nút xe</string>
+    <string name="kachi_dock_order_hint">Sắp lại chỗ đứng của các nút đã chọn ở trên.</string>
+    <string name="kachi_bar_order_index">%1$d/%2$d</string>
+    <string name="kachi_bar_order_up">Lên một bậc</string>
+    <string name="kachi_bar_order_down">Xuống một bậc</string>
     <string name="kachi_dock_warn">⚠ Nhóm An toàn/Động lực/Giải trí đổi hành vi lái — tự dùng tự chịu.</string>
 
     <!-- ── TopStripPicker — chọn chip thanh trạng thái ── -->
@@ -381,6 +401,8 @@
     <string name="kachi_sec_cast">Cluster Cast</string>
     <string name="kachi_cast_enabled_title">Bật Cluster Cast</string>
     <string name="kachi_cast_enabled_sub">Mở cụm để nhận cửa sổ app. Tắt là trả cụm về đồng hồ ngay.</string>
+    <string name="kachi_cast_bubble_title">Hiện nút nổi chiếu cụm</string>
+    <string name="kachi_cast_bubble_sub">Nút hoa Kachi nổi trên màn, chạm để chiếu. Tắt chỉ ẩn nút — vẫn chiếu được bằng bốn nút Chiếu ngay ở dưới, bằng giọng nói, và tự chiếu khi nổ máy.</string>
     <string name="kachi_cast_split">Tỉ lệ chia đôi</string>
     <string name="kachi_sub_cast_autostart">Tự chiếu khi nổ máy</string>
     <string name="kachi_cast_autostart_title">Tự chiếu toàn cụm</string>
@@ -478,6 +500,7 @@
     <string name="kachi_check_update">Kiểm tra cập nhật</string>
     <string name="kachi_nav_stop">Dừng toàn bộ dẫn đường</string>
     <string name="kachi_sub_advanced">Nâng cao</string>
+    <string name="kachi_dev_tools_note">Đồ đo dành cho lúc soát xe: chỉ hiện khi Chế độ kiểm thử qua adb đang mở, và tự biến mất khi cửa sổ đó hết hạn hoặc khi tắt máy.</string>
     <string name="kachi_vietmap_data">Dữ liệu VietMap</string>
 
     <!-- ── T-BRIDGE — cầu kiểm thử qua adb (docs/specs/kachi-test-bridge.html). Câu chữ phải NÓI THẲNG cái được
@@ -580,6 +603,9 @@
     <string name="kachi_voice_tts_get">Tải gói giọng đọc</string>
     <string name="kachi_voice_tts_remove">Gỡ gói giọng đọc</string>
     <string name="kachi_voice_tts_sideload">Xe không có mạng: chép cả cây thư mục gói vào Android/data/%1$s/files/sherpa/import/%2$s/ rồi bấm Tải — máy vẫn kiểm sha256 từng tệp.</string>
+    <string name="kachi_clip_voice_title">Giọng Kachi bé (tuỳ chọn)</string>
+    <string name="kachi_clip_voice_absent">Chưa cài. Gói giọng bé %1$s — tải một lần (một tệp nén), Kachi giải nén trên xe rồi dùng làm giọng phản hồi số 2 (chọn ở trên).</string>
+    <string name="kachi_clip_voice_ready">Đã cài giọng bé · %1$s trên đĩa</string>
     <string name="kachi_voice_speak_title">Đọc phản hồi bằng giọng</string>
     <string name="kachi_voice_speak_sub">Kachi đọc to câu trả lời thay vì chỉ hiện chữ.</string>
     <string name="kachi_voice_offline_title">Ưu tiên giọng offline</string>

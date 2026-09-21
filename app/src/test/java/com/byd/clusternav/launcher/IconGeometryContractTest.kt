@@ -277,7 +277,9 @@ class IconGeometryContractTest {
             .filter { n -> listOf("ic_car_top_", "ic_car_front_", "ic_car_rear_").any { n.startsWith(it) } }
         // Sàn 55 → 42 sau khi owner gỡ toàn bộ ADAS/an toàn 2026-09-16 (13 tệp `ic_car_*` của điểm mù · chuyển làn ·
         // cắt ngang sau · cảnh báo mở cửa · giữ làn · va chạm trước · cảm biến đỗ · dây an toàn · người ngồi đã xoá).
-        assertTrue(cars.size >= 42) { "chỉ thấy ${cars.size} hình xe — bài đang quét vùng sai" }
+        // → 34 sau UX-OVERHAUL WP8 2026-09-20 (8 tệp `ic_car_*` của gương · vị-trí-cốp · 6 biến thể đèn viền xoá
+        // cùng mã của chúng; nguồn sinh `gen-car.py` đã bỏ, `--check` canh không còn tệp mồ côi).
+        assertTrue(cars.size >= 34) { "chỉ thấy ${cars.size} hình xe — bài đang quét vùng sai" }
         assertEquals(
             emptyList<String>(),
             cars.filterNot { Regex("R\\.drawable\\.$it\\b").containsMatchIn(table) },

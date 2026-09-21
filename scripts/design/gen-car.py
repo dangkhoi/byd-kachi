@@ -474,20 +474,17 @@ ICONS: dict[str, tuple[str, list[str], list, str]] = {
     "ic_car_top_window_lr": ("top", TOP_SUB, ["glass_lr"], "KÍNH LR — ô kính cửa trong thân, đúng góc xe."),
     "ic_car_top_window_rr": ("top", TOP_SUB, ["glass_rr"], "KÍNH RR — ô kính cửa trong thân, đúng góc xe."),
     "ic_car_top_window_all": ("top", TOP_SUB, ["glass_lf", "glass_rf", "glass_lr", "glass_rr"], "TẤT CẢ KÍNH — cả bốn ô kính cửa."),
+    # ⚠ UX-OVERHAUL · WP8 2026-09-20 — TÁM icon xe đã XOÁ cùng mã của chúng (owner purge 37 mã BỎ):
+    #   ic_car_top_mirror (gương #30) · ic_car_top_trunk_pos (vị trí cốp #29) · ic_car_top_ambient + 5 biến thể
+    #   đèn viền (#39-43 · #46-49). Giữ dòng sinh cho một mã không còn tồn tại = sinh ra tệp mồ côi, và
+    #   `IconStyleContractTest` bắt đúng ca đó ở cả hai chiều (tệp không ai dùng · bảng tra trỏ vào hư không).
     "ic_car_top_trunk": ("top", TOP_SUB, ["boot"], "CỐP SAU — mảng đuôi xe tô đặc (nắp ĐANG ĐÓNG, liền khối)."),
     "ic_car_top_sunroof": ("top", TOP_SUB, ["sunroof"], "CỬA SỔ TRỜI — ô nóc tô đặc (tấm kính ĐANG ĐÓNG, kín ô)."),
     "ic_car_top_sunshade": ("top", TOP_SUB, ["sunshade"], "RÈM CHE NẮNG — THANH CUỘN ở mép trước nóc + TẤM PHỦ có HAI NẾP GẤP khoét rỗng (even-odd)."),
     "ic_car_top_sunroof_pos": ("top", TOP_WS, ["sunroof:stroke", "sunroof_gap", "arrow_v_stem", "arrow_v_heads"], "VỊ TRÍ CỬA SỔ TRỜI — ô nóc NÉT + khe hở TÔ ở mép trước (kính đã trượt) + MŨI TÊN ĐÔI dọc xe (kính hậu bỏ để chừa chỗ mũi tên)."),
-    "ic_car_top_mirror": ("top", TOP_SUB, ["mirror"], "GƯƠNG CHIẾU HẬU — hai tai gương hai bên."),
     "ic_car_top_lock": ("top", TOP_SUB, ["lock_shackle", "lock_body"], "KHOÁ XE — thân xe + ổ khoá giữa khoang."),
     "ic_car_top_seat_fl": ("top", TOP_SUB, ["seat_fl"], "GHẾ FL — đệm + tựa, đúng chỗ trong khoang."),
     # — mặt trên · đèn viền —
-    "ic_car_top_ambient": ("top", TOP_WS, ["chev_front", "chev_rear"], "ĐÈN VIỀN CABIN (tất cả) — hào quang hắt vào khoang ở CẢ hai nửa, không ký hiệu đại lượng."),
-    "ic_car_top_ambient_bright_front": ("top", TOP_WS, ["chev_front", "dots"], "ĐỘ SÁNG VIỀN TRƯỚC — hào quang nửa TRƯỚC + THANG BA CHẤM to dần giữa khoang."),
-    "ic_car_top_ambient_bright_rear": ("top", TOP_WS, ["chev_rear", "dots"], "ĐỘ SÁNG VIỀN SAU — hào quang nửa SAU + THANG BA CHẤM to dần giữa khoang."),
-    "ic_car_top_ambient_color_front": ("top", TOP_WS, ["chev_front", "drop"], "MÀU VIỀN TRƯỚC — hào quang nửa TRƯỚC + GIỌT SƠN giữa khoang."),
-    "ic_car_top_ambient_color_rear": ("top", TOP_WS, ["chev_rear", "drop"], "MÀU VIỀN SAU — hào quang nửa SAU + GIỌT SƠN giữa khoang."),
-    "ic_car_top_ambient_music": ("top", TOP_WS, ["chev_front", "chev_rear", "note_head", "note_stem"], "ĐÈN VIỀN THEO NHẠC — hào quang cả hai nửa + NỐT NHẠC giữa khoang."),
     # — mặt trước · đèn —
     "ic_car_front_highbeam": ("front", ["windscreen", "headlamp_r", "bonnet"], ["headlamp_l", "rays_high"], "ĐÈN PHA — MỘT đèn sáng + hai tia NGANG DÀI xuyên ra trước, nằm HẲN ngoài thân xe; đèn kia mờ."),
     "ic_car_front_lowbeam": ("front", ["windscreen", "headlamp_r", "bonnet"], ["headlamp_l", "rays_low"], "ĐÈN CỐT — MỘT đèn sáng + ba tia NGẮN CHÚC XUỐNG mặt đường, nằm HẲN ngoài thân xe."),
@@ -500,7 +497,6 @@ ICONS: dict[str, tuple[str, list[str], list, str]] = {
     # — mặt sau (cùng bóng thân với mặt trước) —
     "ic_car_rear_fog": ("front", REAR_SUB, ["fog_rear", "fog_beam"], "ĐÈN SƯƠNG MÙ SAU — khung NHÌN TỪ SAU (đèn hậu DÀI NGANG + BIỂN SỐ mờ) + đèn sương mù THẤP bên trái, tô đặc + vệt sương."),
     "ic_car_rear_defrost": ("front", REAR_SUB, ["defrost_waves"], "SẤY KÍNH SAU — khung NHÌN TỪ SAU (đèn hậu + biển số mờ) + SÓNG NHIỆT trên kính hậu."),
-    "ic_car_top_trunk_pos": ("front", ["plate"], ["hinge", "arrow_h_stem", "arrow_h_heads"], "VỊ TRÍ CỐP — nhìn TỪ SAU: mép khoang (vạch ngang) + NẮP CỐP HÉ (đường nghiêng, hở khe) + MŨI TÊN ĐÔI dọc bên trái."),
 }
 
 # Thành phần bốn mặt 48dp có chuyển sắc — theo THỨ TỰ vẽ (bánh dưới thân ở mặt trước/sau; trên thân ở mặt ngang).
@@ -787,8 +783,8 @@ def gen_paint(src_path: str) -> str:
 def dests(root: str | None = None) -> dict[str, str]:
     """Ba đích của script. `root=None` = đích thật; `root=<tmp>` = bản sao để `--check` so byte."""
     if root is None:
-        return {"drawable": RES_DIR, "kotlin": KT_PATH, "manifest": MANIFEST_PATH, "paint": os.path.join(SRC_DIR, "paint.json")}
-    return {"drawable": os.path.join(root, "drawable"), "kotlin": os.path.join(root, "CarFramesGenerated.kt"),
+        return {"drawable": RES_DIR, "manifest": MANIFEST_PATH, "paint": os.path.join(SRC_DIR, "paint.json")}
+    return {"drawable": os.path.join(root, "drawable"),
             "manifest": os.path.join(root, "manifest.json"), "paint": os.path.join(root, "paint.json")}
 
 
@@ -796,7 +792,7 @@ def generate(d: dict[str, str]) -> dict:
     faces = {f: load_face(f) for f in FACES}
     dr = d["drawable"]
     os.makedirs(dr, exist_ok=True)
-    manifest: dict = {"faces": {}, "icons": {}, "faceVectors": {}}
+    manifest: dict = {"faces": {}, "icons": {}}
     for fname in FACES:
         face = faces[fname]
         frame = face.frame_pieces()
@@ -814,14 +810,8 @@ def generate(d: dict[str, str]) -> dict:
         with open(os.path.join(dr, f"{name}.xml"), "w", encoding="utf-8") as f:
             f.write(xml)
         manifest["icons"][name] = meta
-    for view in FACE_VD:
-        xml = gen_face_vd(faces, view)
-        with open(os.path.join(dr, f"car_face_{view}.xml"), "w", encoding="utf-8") as f:
-            f.write(xml)
-        manifest["faceVectors"][f"car_face_{view}"] = {"face": FACE_VD[view][0], "paths": len(FACE_VD[view][1])}
-    os.makedirs(os.path.dirname(d["kotlin"]), exist_ok=True)
-    with open(d["kotlin"], "w", encoding="utf-8") as f:
-        f.write(gen_kotlin(faces))
+    # ⚠ WP3-v5 (2026-09-20) — GỠ hình xe VECTOR (owner: bỏ vector, dùng ảnh bitmap): không còn sinh `car_face_*.xml`
+    # (mặt 48dp) và `CarFramesGenerated.kt` (hằng path). Script này nay CHỈ sinh icon `ic_car_*.xml` + manifest + paint.
     with open(d["manifest"], "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
         f.write("\n")
@@ -861,7 +851,7 @@ def main(argv: list[str]) -> int:
             generate(want_d)
             want, have = _files(want_d["drawable"]), _files(have_d["drawable"])
             bad = sorted(f"drawable/{k}" for k in want if want[k] != have.get(k))
-            for key, label in (("kotlin", "CarFramesGenerated.kt"), ("manifest", "design/car/manifest.json"),
+            for key, label in (("manifest", "design/car/manifest.json"),
                                ("paint", "design/car/paint.json (chưa điền contrast — chạy lại không --check)")):
                 if _read(want_d[key]) != _read(have_d[key]):
                     bad.append(label)
@@ -870,12 +860,12 @@ def main(argv: list[str]) -> int:
                 for k in bad:
                     print("  " + k)
                 return 1
-            print(f"OK — {len(want) + 3} tệp khớp byte")
+            print(f"OK — {len(want) + 2} tệp khớp byte")
             return 0
     m = generate(dests(a.out))
     for fname, fm in m["faces"].items():
         print(f"{fname}: {fm['framePaths']}/{fm['maxFramePaths']} path khung · {len(fm['pieces'])} mảnh")
-    print(f"{len(m['icons'])} icon · {len(m['faceVectors'])} mặt 48dp → {dests(a.out)['drawable']}")
+    print(f"{len(m['icons'])} icon → {dests(a.out)['drawable']}")
     return 0
 
 

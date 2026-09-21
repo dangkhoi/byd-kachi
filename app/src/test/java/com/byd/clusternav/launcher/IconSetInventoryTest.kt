@@ -42,7 +42,8 @@ class IconSetInventoryTest {
         CapabilityGroups.ALL.forEach { g -> n++; resolves(g.icon)?.let { bad += "nhóm ${g.id}: $it" } }
         ActionMacros.ALL.forEach { m -> n++; resolves(m.icon)?.let { bad += "macro ${m.id}: $it" } }
         LauncherActions.ALL.forEach { a -> n++; resolves(a.icon)?.let { bad += "hành động ${a.id}: $it" } }
-        assertTrue(n >= 150) { "đọc hụt registry (thấy $n mục)" }
+        // Sàn 150 → 120 sau UX-OVERHAUL WP8 2026-09-20 (purge 29 datum + 8 nút + 1 nhóm ⇒ [ĐO] 136 mục).
+        assertTrue(n >= 120) { "đọc hụt registry (thấy $n mục)" }
         assertEquals(emptyList<String>(), bad, "id có trong registry mà tra ra 0 = ô trống icon, KHÔNG lỗi gì")
     }
 

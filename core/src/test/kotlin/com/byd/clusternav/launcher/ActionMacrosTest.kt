@@ -120,18 +120,14 @@ class ActionMacrosTest {
     }
 
     @Test
-    fun `goi co buoc CHUA XAC NHAN thi phai mang dau chua-kiem`() {
-        // [ĐO] senior review 2026-09-11: bản đầu `needsBadge()` dùng `EvidenceTier.needsBadge`, mà cờ đó trả FALSE cho
-        // NEEDS_CAR (đúng cho mục ĐỌC — nó đã tự lộ bằng "—" + mờ). Hệ quả: gói YẾU NHẤT hiện y như gói đã chạy thật.
-        // Phép kiểm cũ viết `assertTrue(needsBadge() || tier() == NEEDS_CAR)` nên KHÔNG BAO GIỜ đỏ được — test trang trí.
+    fun `2026-09-21 badge goi lenh da bo - luon false`() {
+        // owner chốt bỏ hẳn chấm. tier() vẫn là dữ liệu (mức yếu nhất), chỉ needsBadge() luôn false.
         val mixed = ActionMacro("m", "l", "i", Domain.BODY,
             listOf(MacroStep("win_lf", 1), MacroStep("door", 1)))
-        assertEquals(EvidenceTier.NEEDS_CAR, mixed.tier(), "tiền đề")
-        assertTrue(mixed.needsBadge(), "gói yếu nhất PHẢI mang dấu — nút không có số để mờ như mục đọc")
-        assertTrue(ActionMacros.byId("mac_door_light")!!.needsBadge(),
-            "gói của owner (mở cửa + đèn đọc) có bước `door` chưa xác nhận ⇒ phải mang dấu")
-        ActionMacros.ALL.filter { it.tier() != EvidenceTier.PROVEN }.forEach {
-            assertTrue(it.needsBadge(), "gói ${it.id} không PROVEN thì phải mang dấu chưa-kiểm")
+        assertEquals(EvidenceTier.NEEDS_CAR, mixed.tier(), "tier vẫn là dữ liệu")
+        assertFalse(mixed.needsBadge(), "chấm đã bỏ hẳn")
+        ActionMacros.ALL.forEach {
+            assertFalse(it.needsBadge(), "gói ${it.id}: không gói nào còn mang dấu")
         }
     }
 

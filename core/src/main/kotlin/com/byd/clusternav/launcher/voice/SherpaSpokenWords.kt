@@ -75,8 +75,6 @@ object SherpaSpokenWords {
         "tuan hoan trong" to "tuần hoàn trong",
         "tieng" to "tiếng",
         "am thanh" to "âm thanh",
-        "can gat" to "cần gạt",
-        "gat nuoc" to "gạt nước",
         "chieu" to "chiếu",
         "chieu len cum" to "chiếu lên cụm",
         "chieu man" to "chiếu màn",
@@ -99,9 +97,6 @@ object SherpaSpokenWords {
         "kinh ghe lai" to "kính ghế lái",
         "kinh ben phu" to "kính bên phụ",
         "kinh ghe phu" to "kính ghế phụ",
-        "den vien" to "đèn viền",
-        "den noi that" to "đèn nội thất",
-        "mau den noi that" to "màu đèn nội thất",
         "do sang man hinh" to "độ sáng màn hình",
         "sang man" to "sáng màn",
         "loc khong khi ngay" to "lọc không khí ngay",
@@ -179,9 +174,6 @@ object SherpaSpokenWords {
         "kinh sau ben trai" to "kính sau bên trái",
         "kieng sau phai" to "kiếng sau phải",
         "kinh sau ben phai" to "kính sau bên phải",
-        "den led noi that" to "đèn led nội thất",
-        "do sang den vien" to "độ sáng đèn viền",
-        "den nhay theo nhac" to "đèn nhảy theo nhạc",
         "loc nhanh" to "lọc nhanh",
         // ⚠ 1.85: "nap ca po"/"nap may" đã xoá cùng nút `hood` — bảng này KHÔNG được giữ mục chết
         // (`SherpaBiasingCoverageTest` đỏ hai chiều: thiếu dạng có dấu, và có dạng có dấu mà cụm đã biến mất).
@@ -203,12 +195,10 @@ object SherpaSpokenWords {
         "gio auto" to "gió auto",
         "luu vi tri ghe" to "lưu vị trí ghế",
         "kieu den pha" to "kiểu đèn pha",
-        "muc ham tai sinh" to "mức hãm tái sinh",
         "sac dien thoai" to "sạc điện thoại",
         "huong man hinh" to "hướng màn hình",
         "huong camera" to "hướng camera",
         "nhac tren dong ho" to "nhạc trên đồng hồ",
-        "hien thi tren kinh lai" to "hiển thị trên kính lái",
         "con chay duoc bao nhieu" to "còn chạy được bao nhiêu",
         "xang con chay duoc bao xa" to "xăng còn chạy được bao xa",
         // [ĐO xe 2026-09-18] ba cách nói về nhiên liệu (log: «chỉ số xăng» · «xăng còn bao nhiêu» ra Unknown).
@@ -224,9 +214,6 @@ object SherpaSpokenWords {
         "hoi banh sau phai" to "hơi bánh sau phải",
         "can so" to "cần số",
         "so khung" to "số khung",
-        "kieng chieu hau" to "kiếng chiếu hậu",
-        "huong di" to "hướng đi",
-        "nhiet cell trung binh" to "nhiệt cell trung bình",
 
         // ═══ H3 · TÊN APP ĐỌC THEO ÂM VIỆT ([VoiceSynonyms.APP_TARGETS]) ═══════════════════════════════
         // Nguồn: `scripts/voice/data/apps.tsv` + §5 của `voice-mishear-2026-09-16.md` (chuỗi mô hình THẬT SỰ
@@ -278,7 +265,6 @@ object SherpaSpokenWords {
         "air filter",
         "air quality",
         "aircon",
-        "ambient",
         "battery",
         "blower",
         "boot",
@@ -307,7 +293,6 @@ object SherpaSpokenWords {
         "unlock car",
         "volume",
         "windows",
-        "windscreen wiper",
         // ── H3 · tên app viết NGUYÊN BẢN tiếng Anh ───────────────────────────────────────────────────
         // Cùng lý do với khối trên, có thêm một phép đo: [ĐO] `voice-mishear-2026-09-16.md` §4 — kiểu nói
         // `tieng_anh_viet` đúng **11,3 %** (thấp nhất trong 5 kiểu). Đường chữa của chúng là **cách đọc âm

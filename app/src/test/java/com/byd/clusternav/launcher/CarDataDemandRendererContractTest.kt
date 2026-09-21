@@ -54,8 +54,9 @@ class CarDataDemandRendererContractTest {
         val m = re.findAll(source("core/src/main/kotlin/com/byd/clusternav/launcher/TelemetryReadout.kt"))
             .associate { "${it.groupValues[2]}.${it.groupValues[3]}" to it.groupValues[1] }
         // Sàn 100 → 88 sau (V) FEATURE-FILTER 2026-09-17 (112 → 100 datum; 12 nhánh `when` rụng theo).
+        // → 66 sau UX-OVERHAUL WP8 2026-09-20 (102 → 73 datum; 29 nhánh `when` rụng theo, [ĐO] còn 73 field).
         // Sàn là *"bảng `when` có còn đọc ra được không"*, không phải số datum — để 8 % dưới số thật.
-        assertTrue(m.size > 88, "đọc ngược TelemetryReadout chỉ ra ${m.size} field — dạng bảng `when` đã đổi?")
+        assertTrue(m.size > 66, "đọc ngược TelemetryReadout chỉ ra ${m.size} field — dạng bảng `when` đã đổi?")
         m
     }
 

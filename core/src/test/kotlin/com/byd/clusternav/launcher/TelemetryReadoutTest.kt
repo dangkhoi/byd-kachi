@@ -30,10 +30,10 @@ class TelemetryReadoutTest {
         assertEquals("—", v.displayWithUnit())
     }
 
-    @Test fun `tier OVERDRIVE can badge`() {
+    @Test fun `tier OVERDRIVE la du lieu, badge da bo`() {
         val v = TelemetryReadout.of("motor_power", CarStatus(energy = CarStatus.Energy(motorPowerKw = 40)))!!
         assertEquals(EvidenceTier.OVERDRIVE, v.tier)
-        assertTrue(v.needsBadge)
+        assertFalse(v.needsBadge)   // 2026-09-21 owner bỏ hẳn chấm
         assertEquals("40", v.display)
     }
 
@@ -57,9 +57,11 @@ class TelemetryReadoutTest {
     }
 
     @Test fun `genuine NEEDS_CAR (GPS - binding None) van co case va tra dash`() {
-        // gps_lat/gps_elevation bindingKey = NaviInfo.* → BindingRoute.None (BLOCKED-BY-DESIGN: quyền location đã
-        // retire) → không có đường đọc → luôn "—". (of() vẫn KHÁC null vì id có trong registry — có case format.)
-        listOf("gps_lat", "gps_lon", "gps_elevation", "gps_heading", "target_soc").forEach { id ->
+        // ⚠ WP8 — bốn datum GPS (`gps_lat/lon/elevation/heading`, #53-56) đã XOÁ khỏi registry: đường đọc qua HAL
+        // không tồn tại (`BYDAutoLocationDevice` chỉ có setter) và automation dẫn-đường-theo-lịch dùng
+        // `LocationManager` của Android. Còn lại `target_soc` giữ đúng tính chất: binding None ⇒ luôn "—", mà
+        // `of()` vẫn KHÁC null vì id có trong registry.
+        listOf("target_soc").forEach { id ->
             val v = TelemetryReadout.of(id, CarStatus())
             assertTrue(v != null, "of($id) phải khác null (id trong registry)")
             assertFalse(v!!.available, "$id (binding None) phải là —")
@@ -67,12 +69,13 @@ class TelemetryReadoutTest {
         }
     }
 
-    @Test fun `datum moi noi (trip_km, cell_temp_high) hien gia tri khi CarStatus co field`() {
-        // Stage 5: trip_km / cell_temp_high từng "—" cả trên xe (thiếu field). Nay có field → hiện giá trị.
-        val s = CarStatus(energy = CarStatus.Energy(tripKm = 12.4, cellTempHighC = 31))
+    @Test fun `datum moi noi (trip_km, batt_temp) hien gia tri khi CarStatus co field`() {
+        // Stage 5: trip_km / nhiệt pin từng "—" cả trên xe (thiếu field). Nay có field → hiện giá trị.
+        // ⚠ WP8: `cell_temp_high` đã purge ⇒ ca thứ hai đo bằng `batt_temp` (cùng nhóm pin, cùng đường đọc int).
+        val s = CarStatus(energy = CarStatus.Energy(tripKm = 12.4, battTempC = 31))
         assertEquals("12.4", TelemetryReadout.of("trip_km", s)!!.display)
         assertTrue(TelemetryReadout.of("trip_km", s)!!.available)
-        assertEquals("31", TelemetryReadout.of("cell_temp_high", s)!!.display)
+        assertEquals("31", TelemetryReadout.of("batt_temp", s)!!.display)
     }
 
     @Test fun `id la khong co trong registry tra null`() {

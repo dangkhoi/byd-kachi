@@ -32,9 +32,12 @@ class CarCapabilitiesTest {
         assertEquals(EvidenceTier.NEEDS_CAR, CarCapabilities.tierOf("tyre_t_fl"))
     }
 
-    @Test fun `OVERDRIVE va DASHCAST can badge`() {
-        assertTrue(CarCapabilities.needsBadge("ev_range_km")) // OVERDRIVE
-        assertTrue(CarCapabilities.needsBadge("cast"))        // DASHCAST (control)
+    @Test fun `2026-09-21 badge da bo - OVERDRIVE va DASHCAST khong con dau`() {
+        // Tier vẫn là dữ liệu, nhưng UI không vẽ chấm nữa (owner chốt).
+        assertEquals(EvidenceTier.OVERDRIVE, CarCapabilities.tierOf("ev_range_km"))
+        assertEquals(EvidenceTier.DASHCAST, CarCapabilities.tierOf("cast"))
+        assertFalse(CarCapabilities.needsBadge("ev_range_km"))
+        assertFalse(CarCapabilities.needsBadge("cast"))
     }
 
     @Test fun `id la tra ve null hoac false an toan`() {

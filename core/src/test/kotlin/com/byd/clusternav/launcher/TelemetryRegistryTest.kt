@@ -16,7 +16,9 @@ class TelemetryRegistryTest {
     }
 
     @Test fun `co it nhat 100 datum (catalog ~112)`() {
-        assertTrue(TelemetryRegistry.ALL.size >= 100, "chi co ${TelemetryRegistry.ALL.size} datum")
+        // ⚠ WP8 2026-09-20: sàn 100 → 70 sau khi owner purge 29 datum BỎ (registry còn 73). Sàn là chốt chống
+        // "registry teo bất thường", không phải mục tiêu — hạ đúng bằng số đã mất.
+        assertTrue(TelemetryRegistry.ALL.size >= 70, "chi co ${TelemetryRegistry.ALL.size} datum")
     }
 
     @Test fun `moi bindingKey khong rong`() {

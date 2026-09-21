@@ -99,7 +99,18 @@ class SettingsRows(internal val context: Context) {
         )
     }
 
-    /** Ô tick + tiêu đề + dòng phụ. Checkbox: hình vuông bo [KachiSpace.RADIUS_S] CỐ ĐỊNH — bật = tô, tắt = viền. */
+    /**
+     * Ô tick + tiêu đề + dòng phụ. Checkbox: hình vuông bo [KachiSpace.RADIUS_S] CỐ ĐỊNH — bật = tô accent,
+     * tắt = **ô LÕM** (không viền).
+     *
+     * ## ⚠ WP1 · R1.1 — đây là một trong hai bề mặt trước đây CHỈ thấy được nhờ viền
+     * Bản cũ: tắt = `setColor(CLEAR)` + `setStroke(2dp, MUT2)`. Gỡ viền mà không thay gì thì ô tick chưa tích trở
+     * thành **trong suốt hoàn toàn, không chữ, không nền** = tàng hình, người dùng không biết có chỗ bấm. Nên nó
+     * đổi sang một **FILL** có tương phản đo được: [KachiTheme.FIELD_SUNKEN] trên nền hàng
+     * ([KachiTheme.surface] tone NEUTRAL) = **1.22×** bảng tối · **1.34×** bảng sáng (ngưỡng nhìn-ra-được của một
+     * mảng ~1.15×). Chọn đúng vai `fieldSunken` chứ không một mã mới: một ô tick trống LÀ một ô lõm chờ được tô,
+     * cùng ẩn dụ với [SurfaceTone.SUNKEN].
+     */
     fun checkRow(on: Boolean, title: String, sub: String, onChange: (Boolean) -> Unit): View {
         val box = TextView(context).apply {
             KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
@@ -111,8 +122,7 @@ class SettingsRows(internal val context: Context) {
             box.setTextColor(c(KachiTheme.ON_ACCENT))
             box.background = GradientDrawable().apply {
                 cornerRadius = dpi(context, Sp.RADIUS_S).toFloat()
-                if (state) setColor(c(KachiTheme.GRAD_FROM))
-                else { setColor(c(KachiTheme.CLEAR)); setStroke(dpi(context, Sp.STROKE), c(KachiTheme.MUT2)) }
+                setColor(c(if (state) KachiTheme.GRAD_FROM else KachiTheme.FIELD_SUNKEN))
             }
         }
         paint()

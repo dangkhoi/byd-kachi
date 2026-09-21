@@ -82,17 +82,15 @@ enum class EvidenceTier {
     val wired: Boolean get() = this != NEEDS_CAR
 
     /**
-     * Có cần badge "chưa kiểm trên xe" không = **mọi mức trừ [PROVEN]**.
+     * ⚠ 2026-09-21 · OWNER CHỐT BỎ HẲN CHẤM "chưa kiểm trên xe" — **luôn `false`**.
      *
-     * ## ⚠ [SOÁT P1-3] Vì sao KHÔNG viết `== OVERDRIVE || == DASHCAST`
-     * Cách viết cũ trả `false` cho [NEEDS_CAR] — tức **các nút yếu nhất của cả bộ** (`lock`, `door`) hiện ra
-     * **không có chấm cảnh báo** nào, trông y như nút đã chạy thật; cả hai còn chưa có setter HAL tồn tại trên
-     * ROM này nên chắc chắn không bao giờ ăn. Đúng chỗ ngược đời: mức tin cậy thấp nhất lại là mức duy nhất
-     * không được cảnh báo. (Hai ví dụ cũ của câu này — `start_charging` ở lượt (V) và `hood` ở 1.85 — đều đã
-     * bị xoá khỏi registry; luật thì không đổi.)
+     * Owner: *"thôi bỏ hẳn hết đi em, chiều nay lên xe test lại 1 vòng cái nào không được thì sửa luôn, chấm gì
+     * nữa"*. Chấm badge từng có ý nghĩa khi chưa ai lên xe kiểm; nay lượt test-xe cuối cùng sẽ đi hết một vòng và
+     * sửa tại chỗ, nên dấu "chưa kiểm" không còn phục vụ gì — và một chấm hiện trên gần hết ô đọc như trang toàn lỗi.
      *
-     * `ActionMacro.needsBadge()` đã dùng `tier() != PROVEN` và KDoc ở đó nói rõ lý do — nhưng chỉ áp cho gói lệnh,
-     * không áp cho nút đơn. Nay hai bên cùng một luật.
+     * GIỮ [EvidenceTier] làm **dữ liệu** (thứ tự tin cậy + [wired] vẫn dùng cho `ActionMacro.tier()` và cho việc
+     * NEEDS_CAR tự lộ bằng "—"): chỉ **UI KHÔNG VẼ CHẤM** nữa. Đây là cổng DUY NHẤT mọi bề mặt badge đi qua
+     * (`CapabilityPick`/`ReadTile`/`ControlDef`/`GroupBoard` đều đọc `tier.needsBadge`), nên tắt ở đây là tắt hết.
      */
-    val needsBadge: Boolean get() = this != PROVEN
+    val needsBadge: Boolean get() = false
 }

@@ -58,11 +58,25 @@ class SpacingScaleContractTest {
      */
     private val dpHelperNames = listOf("dp", "dpi", "dpf", "px", "toPx", "dip")
 
+    /**
+     * Hai tệp KHAI thang (WP5 tách vì trần 500 dòng) — xem `KachiSpaceBars chi duoc khai hang`.
+     *
+     * Chúng bị **loại khỏi** vùng quét số-trần (chúng LÀ chỗ số trần được phép sống) nhưng vẫn **nằm trong** phép
+     * kiểm lý-do-tại-chỗ. Đó là hai vai khác nhau của cùng một danh sách, nên nó khai một chỗ.
+     */
+    private val SCALE_FILES = listOf("KachiSpace.kt", "KachiSpaceBars.kt")
+
+    /** Tiền tố hợp lệ khi truyền một hằng cỡ vào `dp(...)` — đúng hai `object` của thang. */
+    private val SCALE_PREFIXES = listOf("Sp.", "KachiSpace.", "Bars.", "KachiBars.")
+
     private fun launcherFiles(): List<Path> {
         val dir = SourceRoots.path("src/main/java/com/byd/clusternav/launcher")
         return Files.list(dir).toList()
             .filter { it.fileName.toString().endsWith(".kt") }
-            .filter { it.fileName.toString() != "KachiSpace.kt" }   // chính tệp khai thang
+            // ⚠ WP5 — thang nay nằm ở HAI tệp (trần 500 dòng): `KachiSpace.kt` (thang chung) và
+            // `KachiSpaceBars.kt` (hình học hai thanh). Cả hai chỉ KHAI hằng, nên chúng không thuộc vùng quét
+            // *số trần trong lời gọi dp*; bài `KachiSpaceBars chi duoc khai hang` ở dưới ép tính chất đó.
+            .filter { it.fileName.toString() !in SCALE_FILES }
             .sorted()
     }
 
@@ -160,7 +174,12 @@ class SpacingScaleContractTest {
 
     @Test
     fun `moi hang ngoai thang phai co ly do tai cho`() {
-        val src = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiSpace.kt")
+        // WP5 — quét CẢ HAI tệp thang: nếu chỉ quét `KachiSpace.kt` thì mọi hằng dời sang `KachiSpaceBars.kt`
+        // lặng lẽ **ra khỏi** phép kiểm này, tức lượt tách tệp sẽ tự làm yếu bài canh (đúng họ lỗi `px()` đã lách
+        // bài số-trần chỉ bằng cách đặt tên khác).
+        val src = SCALE_FILES.joinToString("\n") {
+            SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$it")
+        }
         val scale = setOf("XS", "S", "M", "L", "XL", "XXL")
         val declared = Regex("""const val ([A-Z][A-Z0-9_]*) =""").findAll(src).map { it.groupValues[1] }.toList()
         val offScale = declared.filterNot { it in scale }
@@ -259,7 +278,7 @@ class SpacingScaleContractTest {
                         val arg = m.groupValues[1]
                         // Chỉ soi hằng SCREAMING_CASE (biến thường/tham số là giá trị tính ra, không phải hằng cỡ).
                         val isConst = arg.substringAfterLast('.').all { it.isUpperCase() || it.isDigit() || it == '_' }
-                        if (isConst && !arg.startsWith("Sp.") && !arg.startsWith("KachiSpace.")) {
+                        if (isConst && SCALE_PREFIXES.none { arg.startsWith(it) }) {
                             offenders += "${p.fileName}:$no  ${m.value}"
                         }
                     }
@@ -269,6 +288,33 @@ class SpacingScaleContractTest {
             emptyList<String>(), offenders,
             "hằng cỡ dp khai ngoài KachiSpace ⇒ nó không thuộc thang nào và bài canh số-trần không soi tới:\n" +
                 offenders.joinToString("\n"),
+        )
+    }
+
+    /**
+     * ⚠⚠ **`KachiSpaceBars.kt` chỉ được KHAI HẰNG** — điều kiện để nó được nhận là một phần của thang.
+     *
+     * WP5 tách thang ra hai tệp vì trần 500 dòng, và lượt tách đó **nới** hai bài canh: [SCALE_PREFIXES] nay nhận
+     * `Bars.`/`KachiBars.`, và phép kiểm lý-do-tại-chỗ quét cả hai tệp. Nới một bài canh mà không ép lại điều kiện
+     * thì lần sau ai cũng có thể dựng một tệp tên `KachiSpaceXxx.kt` rồi đặt số trần + mã vẽ vào đó.
+     *
+     * Điều kiện: 0 lời gọi hàm đổi dp, 0 import Android, 0 `fun` nào ngoài khai hằng. Nếu tệp đó mọc ra một lời
+     * gọi `dp(` thì nó đã là **tầng vẽ**, và lối nhận ngoại lệ ở [SCALE_PREFIXES] phải đóng lại.
+     */
+    @Test
+    fun `KachiSpaceBars chi duoc khai hang`() {
+        val src = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiSpaceBars.kt")
+        val code = src.replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
+            .lines().joinToString("\n") { it.substringBefore("//") }
+        assertTrue(
+            !Regex("""\b(?:${dpHelperNames.joinToString("|")})\(""").containsMatchIn(code),
+            "tệp thang không được GỌI hàm đổi dp — gọi tức là nó đang vẽ, không còn là thang",
+        )
+        assertTrue(!code.contains("import android"), "tệp thang không được import Android")
+        assertTrue(!Regex("""\bfun\s+\w+""").containsMatchIn(code), "tệp thang chỉ khai hằng, không khai hàm")
+        assertTrue(
+            Regex("""const val [A-Z][A-Z0-9_]* =""").findAll(code).count() >= 8,
+            "…và nó phải thật sự là một bảng hằng (hiện có ít hơn 8 hằng ⇒ có thể đã bị rút ruột)",
         )
     }
 

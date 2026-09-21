@@ -52,11 +52,13 @@ object GroupBoard {
         DoorPartSpec(CarPart.DOOR_RF, "door_rf"),
         DoorPartSpec(CarPart.DOOR_LR, "door_lr"),
         DoorPartSpec(CarPart.DOOR_RR, "door_rr"),
-        DoorPartSpec(CarPart.TAILGATE, "tailgate_status", "tailgate_position"),
+        DoorPartSpec(CarPart.TAILGATE, "tailgate_status"),
         DoorPartSpec(CarPart.SUNROOF, "sunroof_state", "sunroof_pos"),
         // Rèm chỉ có MỘT datum, và nó đã là phần trăm ⇒ vừa là trạng thái vừa là số.
         DoorPartSpec(CarPart.SUNSHADE, "sunshade_pct", "sunshade_pct"),
-        DoorPartSpec(CarPart.MIRROR, "mirror_fold"),
+        // ⚠ UX-OVERHAUL · WP8 — bộ phận GƯƠNG đã rời bảng cùng datum `mirror_fold` (#30 trong danh sách BỎ). Một
+        // `DoorPartSpec(CarPart.MIRROR)` không có datum nào vẫn vẽ được một chấm trên hình xe, nhưng chấm đó không
+        // bao giờ nói được gì (luôn "chưa đọc") — đúng thứ ô-nút-chết mà steering cấm.
     )
 
     /**
@@ -282,13 +284,11 @@ object GroupBoard {
             "window_rf" -> openPct(s.body.windowRfPct)
             "window_lr" -> openPct(s.body.windowLrPct)
             "window_rr" -> openPct(s.body.windowRrPct)
-            "tailgate_position" -> openPct(s.body.tailgatePct)
             "sunroof_pos" -> openPct(s.body.sunroofPct)
             "sunshade_pct" -> openPct(s.body.sunshadePct)
             // Nóc/rèm mở là LỰA CHỌN của người lái, không phải chuyện đáng lo ⇒ ACTIVE. Cửa và cốp thì khác (xem
             // nhánh cảnh báo dưới): xe tự kêu khi chúng mở lúc đang đi.
             "sunroof_state" -> active(s.body.sunroofOpen)
-            "mirror_fold" -> active(s.body.mirrorFolded)
             "light_low_beam" -> active(s.lights.lowBeam)
             "light_high_beam" -> active(s.lights.highBeam)
             "light_front_fog" -> active(s.lights.frontFog)
@@ -297,7 +297,6 @@ object GroupBoard {
             "light_right_turn" -> active(s.lights.rightTurn)
             "light_side" -> active(s.lights.sideLight)
             "light_drl" -> active(s.lights.drl)
-            "ambient_enabled" -> active(s.lights.ambientOn)
             "ac_on" -> active(s.climate.acOn)
             "ac_cycle" -> active(s.climate.recircOn)
             "anion_state" -> active(s.climate.anionOn)

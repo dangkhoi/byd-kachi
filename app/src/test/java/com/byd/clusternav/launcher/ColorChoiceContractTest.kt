@@ -137,32 +137,6 @@ class ColorChoiceContractTest {
     }
 
     /**
-     * P3 · AC8.3 — đổi **màu sơn** phải báo "có đổi" để chỗ gọi dựng lại màn.
-     *
-     * ⚠ [SOÁT 2026-09-17] Màu sơn không nằm trong [KachiPalette], nên `next == palette` vẫn đúng khi chỉ đổi sơn ⇒
-     * bản đầu trả `false` ⇒ `render()` không dựng lại, `WorkspaceRenderPlanner` cũng không thấy gì đổi
-     * (`colorChoice` ngoài `WorkspaceState`) ⇒ ô chọn màu sơn là **nút chết**. `invalidate()` cũng không cứu được:
-     * hai đầu chuyển sắc thân xe là `Shader` dựng ở `CarArtPainter.layout`, chỉ chạy khi ô đổi cỡ.
-     */
-    @Test
-    fun `doi mau son bao co doi de man dung lai`() {
-        val night = ThemeMode.NIGHT
-        KachiTheme.applyTheme(night, 12, ColorChoice.DEFAULT, null)
-        assertEquals(CarPaint.PEARL, KachiTheme.carPaint)
-        assertTrue(
-            KachiTheme.applyTheme(night, 12, ColorChoice(paint = CarPaint.KACHI.id), null),
-            "đổi màu sơn ⇒ phải báo có đổi (nếu không, ô chọn màu sơn là nút chết)",
-        )
-        assertEquals(CarPaint.KACHI, KachiTheme.carPaint)
-        assertTrue(
-            !KachiTheme.applyTheme(night, 12, ColorChoice(paint = CarPaint.KACHI.id), null),
-            "cùng màu sơn ⇒ không dựng lại (applyTheme chạy mỗi nhịp trạng thái)",
-        )
-        assertTrue(KachiTheme.applyTheme(night, 12, ColorChoice.DEFAULT, null), "về sơn mặc định ⇒ đổi lại")
-        assertEquals(CarPaint.PEARL, KachiTheme.carPaint)
-    }
-
-    /**
      * §4.10 mục (5) trên **mọi lựa chọn màu**, không chỉ bảng gốc.
      *
      * ⚠ [SOÁT 2026-09-17] `WallGlassContractTest.lop che du cho moi do choi…` chỉ chạy với [ColorChoice.DEFAULT],

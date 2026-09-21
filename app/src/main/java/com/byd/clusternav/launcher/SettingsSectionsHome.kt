@@ -118,6 +118,20 @@ class SettingsHomeSection(
             sub = if (deps.wallpaperFolderHint.isEmpty()) context.getString(R.string.kachi_wall_sub_nofolder)
             else context.getString(R.string.kachi_wall_sub_folder, deps.wallpaperFolderHint),
         ) { on -> wp = wp.copy(enabled = on); deps.onWallpaper(wp); gate(on) })
+        // WP-C — hướng dẫn TỪNG BƯỚC + nút sao chép đường dẫn (xe không có màn chọn tệp hệ thống). Chỉ hiện khi
+        // biết được thư mục; luôn hiện (không gate theo công tắc) để người dùng bỏ ảnh vào TRƯỚC khi bật.
+        if (deps.wallpaperFolderHint.isNotEmpty()) {
+            body.addView(rows.note(context.getString(R.string.kachi_wall_steps, deps.wallpaperFolderHint)))
+            body.addView(rows.button(context.getString(R.string.kachi_copy_path)) {
+                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                cm?.setPrimaryClip(android.content.ClipData.newPlainText(
+                    context.getString(R.string.kachi_sec_wallpaper), deps.wallpaperFolderHint,
+                ))
+                android.widget.Toast.makeText(
+                    context, context.getString(R.string.kachi_path_copied), android.widget.Toast.LENGTH_SHORT,
+                ).show()
+            })
+        }
         val period = rows.chipRow(
             context.getString(R.string.kachi_wall_period),
             Slideshow.INTERVAL_CHOICES_SEC.map { it.toString() to Slideshow.intervalLabel(it) },
@@ -141,6 +155,21 @@ class SettingsHomeSection(
         dependents += period; dependents += fit; dependents += dim
         body.addView(period); body.addView(fit); body.addView(dim)
         gate(wp.enabled)
+
+        // owner 2026-09-21 — widget "Trình chiếu ảnh" đọc THƯ MỤC RIÊNG (files/photos/), KHÁC ảnh nền. Luôn hiện
+        // hướng dẫn + nút sao chép đường dẫn (không gate theo công tắc hình nền — hai thứ độc lập nhau).
+        val photoHint = PhotoStore.folderHint(context)
+        body.addView(rows.sectionLabel(context.getString(R.string.kachi_photos_section)))
+        body.addView(rows.note(context.getString(R.string.kachi_photos_steps, photoHint)))
+        body.addView(rows.button(context.getString(R.string.kachi_copy_path)) {
+            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            cm?.setPrimaryClip(android.content.ClipData.newPlainText(
+                context.getString(R.string.kachi_photos_section), photoHint,
+            ))
+            android.widget.Toast.makeText(
+                context, context.getString(R.string.kachi_path_copied), android.widget.Toast.LENGTH_SHORT,
+            ).show()
+        })
     }
 
     private companion object {

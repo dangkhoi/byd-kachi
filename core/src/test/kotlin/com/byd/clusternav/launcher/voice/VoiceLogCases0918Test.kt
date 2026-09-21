@@ -220,11 +220,12 @@ class VoiceLogCases0918Test {
     /**
      * …và bảng [VoiceFeatureGone] **không được** giết đường ĐỌC còn sống.
      *
-     * `mirror_fold` · `light_left_turn` · `op_mode` vẫn là datum có thật: bảng chỉ nói về **nút**, và nó chỉ được
-     * hỏi khi câu đã không hiểu được.
+     * `light_left_turn` · `op_mode` vẫn là datum có thật: bảng chỉ nói về **nút**, và nó chỉ được hỏi khi câu đã
+     * không hiểu được.
+     *
+     * ⚠ WP8 2026-09-20: mốc `mirror_fold` (gương) đã purge (#30) ⇒ rời bài. Hai mốc còn lại giữ nguyên tính chất.
      */
     @Test fun `D3 · bang tinh nang da bo khong giet duong DOC con song`() {
-        assertEquals(VoiceIntent.Read("mirror_fold"), one("xem gương chiếu hậu"))
         assertEquals(VoiceIntent.Read("light_left_turn"), one("xem xi nhan trái"))
         assertEquals(VoiceIntent.Read("op_mode"), one("xem chế độ lái"))
         // Không có gì để hỏi lại khi tính năng đã bỏ — nói lại cũng ra đúng câu ấy.

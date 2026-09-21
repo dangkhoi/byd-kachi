@@ -23,6 +23,18 @@ data class HomeUiState(
     val dock: DockConfig = DockConfig(),
     /** Chip nào hiện trên thanh trạng thái (RW0 vùng thứ ba) — nguồn sự thật DUY NHẤT, KHÔNG có bản sao ở View. */
     val topStrip: TopStripConfig = TopStripConfig.DEFAULT,
+    /**
+     * UX-OVERHAUL · WP4 — **THỨ TỰ các vật trên thanh trạng thái** ([HeaderLayout]).
+     *
+     * Ở trong state vì cùng một luật đã trả giá bốn lần (`customLayout` · `unitPrefs` ×4 · `wallpaper` · `themeMode`):
+     * thứ gì được **render** thì phải nằm trong nguồn sự thật. Ở đây `prev.header != next.header` chính là điều kiện
+     * để `KachiHomeActivity.render` gọi `KachiTopStrip.setLayout` — không có nó trong state thì không có gì để so, và
+     * bấm ◀/▶ ở màn Cài đặt sẽ là *"màn hình không đổi gì"* (đúng lỗi nút bố cục sẵn ở P9).
+     *
+     * Thứ tự các nút của **thanh nút xe** KHÔNG có trường riêng: nó LÀ thứ tự của [dock] `enabled`
+     * ([DockConfig.moveEnabled]) — một sự thật, một chỗ.
+     */
+    val header: HeaderLayout = HeaderLayout.DEFAULT,
     val activeProfile: String = DEFAULT_PROFILE,
     val profiles: List<String> = listOf(DEFAULT_PROFILE),
     /**

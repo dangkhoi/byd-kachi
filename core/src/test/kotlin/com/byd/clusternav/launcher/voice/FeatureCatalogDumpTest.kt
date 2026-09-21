@@ -150,7 +150,8 @@ class FeatureCatalogDumpTest {
         // Sàn 60/100 → 50/100 sau khi owner gỡ toàn bộ ADAS/an toàn 2026-09-16 (64 → 54 nút · 123 → 106 datum);
         // → 44/92 sau (V) FEATURE-FILTER 2026-09-17 (54 → 47 nút · 112 → 100 datum). Sàn = số thật trừ ~8 %, để
         // bắt "registry teo bất thường" mà không đỏ vì một lượt xoá có chủ ý.
-        assertTrue(ControlRegistry.ALL.size >= 44 && TelemetryRegistry.ALL.size >= 92, "registry teo lại bất thường")
+        // → 36/67 sau UX-OVERHAUL WP8 2026-09-20 (47 → 39 nút · 102 → 73 datum). Cùng công thức: số thật trừ ~8 %.
+        assertTrue(ControlRegistry.ALL.size >= 36 && TelemetryRegistry.ALL.size >= 67, "registry teo lại bất thường")
     }
 
     private fun obj(sb: StringBuilder, fields: List<Pair<String, Any?>>) {

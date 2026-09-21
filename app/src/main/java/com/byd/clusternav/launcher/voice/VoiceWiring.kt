@@ -162,6 +162,8 @@ object VoiceWiring {
         freshCar = { id -> runCatching { AppContainer.get(ctx).refreshForRead(id) }.getOrNull() },
         // App dẫn đường mặc định (owner chọn trong Cài đặt › Dẫn đường) — đọc mỗi lượt để đổi là ăn ngay.
         navDefault = { com.byd.clusternav.Prefs.voiceNavDefaultApp(ctx) },
+        // App nhạc mặc định (owner 2026-09-21) — "" nghĩa là tự chọn ⇒ trả null để pickMusic lùi về hành vi cũ.
+        musicDefault = { com.byd.clusternav.Prefs.voiceMusicDefaultApp(ctx).ifBlank { null } },
         // Giải video_id bài đầu (YouTube) để "phát luôn" — có thời hạn cứng, hỏng thì lùi search-play.
         resolveVideo = { q -> VoiceYoutubeResolver.firstVideoIdBounded(q) },
     )

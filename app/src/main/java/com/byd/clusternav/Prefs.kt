@@ -117,6 +117,13 @@ object Prefs {
     fun headlessAutostart(ctx: Context): Boolean = sp(ctx).getBoolean("headless_autostart", true)
     fun setHeadlessAutostart(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("headless_autostart", v).apply()
 
+    // ─── UX-OVERHAUL WP1 · R1.3 — "Kính thật (làm mờ nền)" ─────────────────────────────────────────
+    // Glass GIẢ (mặc định) = gradient dọc + fill trong mờ, 0 mép/viền/blur (KachiTheme.surface). Glass THẬT (option) =
+    // RenderEffect.createBlurEffect làm mờ nền phía sau (chỉ API 31+; API thấp lùi về giả — KachiGlassMode). MẶC
+    // ĐỊNH TẮT: nền GPU đầu máy DiLink yếu, và [ĐO] xe là API 29 nên glass-thật ở đó luôn lùi về giả. Theo XE.
+    fun glassReal(ctx: Context): Boolean = sp(ctx).getBoolean("ui_glass_real", false)
+    fun setGlassReal(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("ui_glass_real", v).apply()
+
     // ─── T3 (1.13): Nút vật lý → Trợ lý giọng nói ───────────────────────────────────────────────
     // 1.19: KHÔNG thay chức năng gốc — onKeyEvent chỉ "nuốt" đúng keycode đã cấu hình, còn lại pass-through.
     // Bỏ cử chỉ (Nhấn/Nhấn-giữ) vì nút short/long ra keycode khác nhau. Đích lưu STRING (package/sentinel);
@@ -211,6 +218,17 @@ object Prefs {
      */
     fun voiceNavDefaultApp(ctx: Context): String = sp(ctx).getString(K_VOICE_NAV_APP, "gmaps") ?: "gmaps"
     fun setVoiceNavDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_NAV_APP, key).apply()
+
+    // ─── APP NHẠC MẶC ĐỊNH (owner 2026-09-21) — nói "phát nhạc" không nêu app + không có nhạc đang phát thì dùng ───
+    private const val K_VOICE_MUSIC_APP = "voice_music_default_app"
+
+    /**
+     * Mã app nhạc MẶC ĐỊNH khi câu KHÔNG nêu app. Mặc định **rỗng** = "tự chọn" (giữ hành vi cũ: app đang phát,
+     * rồi app nhạc đầu tiên đã cài). Owner đổi trong Cài đặt › Giọng nói. Giá trị = `VoiceAppTargets` key
+     * (`ytmusic`/`spotify`/`zing`/…); `VoiceTargetDispatch` tự lùi nếu app chưa cài.
+     */
+    fun voiceMusicDefaultApp(ctx: Context): String = sp(ctx).getString(K_VOICE_MUSIC_APP, "") ?: ""
+    fun setVoiceMusicDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_MUSIC_APP, key).apply()
 
     // "Hey Kachi" wake-word (W-WAKE) — theo XE (ProfileScope.DEVICE_KEYS), mặc định **TẮT** (nghe nền = rủi ro CPU
     // → opt-in). Câu gọi = preset id ([VoiceWakePhrase]). VoiceWakeService.sync() đọc cờ này để bật/tắt FGS.

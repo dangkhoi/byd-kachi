@@ -231,13 +231,13 @@ class CapabilityCatalogTest {
     }
 
     @Test
-    fun `nhan va dau chua kiem tren xe giu dung theo bo dang ky goc`() {
+    fun `nhan va tier giu dung theo bo dang ky goc, badge da bo`() {
         val recirc = CapabilityCatalog.pick("recirc")!!
         assertEquals("Lấy gió trong", recirc.label, "nhãn phải lấy từ bộ đăng ký gốc")
-        assertEquals(EvidenceTier.OVERDRIVE, recirc.tier, "lấy gió trong CHƯA kiểm trên xe owner")
-        assertTrue(recirc.needsBadge, "phải mang dấu chưa-kiểm để không hứa quá (R10)")
-        val soc = CapabilityCatalog.pick("soc")!!
-        assertFalse(soc.needsBadge, "phần trăm pin đã chạy thật ⇒ không cần dấu")
+        assertEquals(EvidenceTier.OVERDRIVE, recirc.tier, "tier vẫn là dữ liệu (lấy gió trong CHƯA kiểm trên xe owner)")
+        // 2026-09-21 owner bỏ hẳn chấm ⇒ mọi mục không mang badge nữa (tier giữ làm dữ liệu).
+        assertFalse(recirc.needsBadge, "chấm đã bỏ hẳn")
+        assertFalse(CapabilityCatalog.pick("soc")!!.needsBadge, "chấm đã bỏ hẳn")
     }
 }
 

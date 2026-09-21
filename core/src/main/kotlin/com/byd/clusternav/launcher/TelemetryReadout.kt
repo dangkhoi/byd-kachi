@@ -75,26 +75,12 @@ object TelemetryReadout {
         "trip_hours" -> s.energy.tripHours?.let { dec1(it) }
         "trip_kwh" -> s.energy.tripKwh?.let { dec1(it) }
         "consumption_50km" -> s.energy.consumption50?.let { dec1(it) }
-        "cell_temp_high" -> s.energy.cellTempHighC?.toString()
-        "cell_temp_low" -> s.energy.cellTempLowC?.toString()
-        "cell_temp_avg" -> s.energy.cellTempAvgC?.toString()
-        "cell_v_high" -> s.energy.cellVHigh?.let { dec2(it) }
-        "cell_v_low" -> s.energy.cellVLow?.let { dec2(it) }
 
         // ── A2. Động lực ────────────────────────────────────────────────────────────────
         "speed" -> s.drivetrain.speedKmh?.toString()
-        "accel_pct" -> s.drivetrain.accelPct?.toString()
-        "brake_pct" -> s.drivetrain.brakePct?.toString()
-        "motor_front_rpm" -> s.drivetrain.motorFrontRpm?.toString()
-        "steering_deg" -> s.drivetrain.steeringDeg?.toString()
-        "slope_deg" -> s.drivetrain.slopeDeg?.toString()
         "gear" -> s.drivetrain.gear
         "op_mode" -> s.drivetrain.opMode
         "energy_mode" -> s.drivetrain.energyMode
-        "motor_rear_rpm" -> s.drivetrain.motorRearRpm?.toString()
-        "motor_front_torque" -> s.drivetrain.motorFrontTorqueNm?.toString()
-        "engine_rpm" -> s.drivetrain.engineRpm?.toString()
-        "wheel_speed" -> s.drivetrain.wheelSpeedKmh?.toString()
 
         // ── A3. Khí hậu ─────────────────────────────────────────────────────────────────
         "pm25_level" -> s.climate.pm25Level?.toString()
@@ -108,7 +94,6 @@ object TelemetryReadout {
         "ac_cycle" -> s.climate.recircOn?.let { if (it) Strings.t("Trong", "Recirc") else Strings.t("Ngoài", "Fresh") }
         "anion_state" -> s.climate.anionOn?.let { onOff(it) }
         "inside_temp" -> s.climate.setTempC?.toString()
-        "coolant_temp" -> s.climate.coolantTempC?.toString()
         "temp_unit" -> s.climate.tempUnit
         // H1 · T2 — ghế đọc ra MÃ mức của khung, phải đổi qua [ControlLevels] mới thành chữ người ta hiểu. Mã NGOÀI
         // thang ⇒ null ⇒ ô hiện "—": thà nói *"chưa đọc được"* còn hơn làm tròn thành "Mức 1" (thang mới đứng trên
@@ -149,12 +134,9 @@ object TelemetryReadout {
         "tailgate_status" -> s.body.tailgateOpen?.let { openShut(it) }
         "sunroof_pos" -> s.body.sunroofPct?.toString()
         "sunshade_pct" -> s.body.sunshadePct?.toString()
-        "mirror_fold" -> s.body.mirrorFolded?.let { if (it) Strings.t("Gập", "Folded") else Strings.t("Mở", "Out") }
         "power_level" -> s.body.powerLevel?.toString()
         "vehicle_type" -> s.body.vehicleType
-        "tailgate_position" -> s.body.tailgatePct?.toString()
         "sunroof_state" -> s.body.sunroofOpen?.let { openShut(it) }
-        "wiper_state" -> s.body.wiperOn?.let { onOff(it) }
         "emergency_alarm" -> s.body.emergencyAlarm?.let { onOff(it) }
 
         // ── A6. Đèn ─────────────────────────────────────────────────────────────────────
@@ -163,15 +145,10 @@ object TelemetryReadout {
         "light_front_fog" -> s.lights.frontFog?.let { onOff(it) }
         "light_drl" -> s.lights.drl?.let { onOff(it) }
         "headlight_feedback" -> s.lights.headlightMode?.toString()
-        "ambient_enabled" -> s.lights.ambientOn?.let { onOff(it) }
-        "ambient_front_color" -> s.lights.ambientColorIndex?.toString()
-        "ambient_front_brightness" -> s.lights.ambientBrightness?.toString()
         "light_rear_fog" -> s.lights.rearFog?.let { onOff(it) }
         "light_left_turn" -> s.lights.leftTurn?.let { onOff(it) }
         "light_right_turn" -> s.lights.rightTurn?.let { onOff(it) }
         "light_side" -> s.lights.sideLight?.let { onOff(it) }
-        "ambient_rear_color" -> s.lights.ambientRearColorIndex?.toString()
-        "ambient_rear_brightness" -> s.lights.ambientRearBrightness?.toString()
 
         // ── A7. Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16) ───
         "volt_12v" -> s.energy.volt12v?.let { dec1(it) }
@@ -179,13 +156,7 @@ object TelemetryReadout {
 
         // ── A8. Danh tính ───────────────────────────────────────────────────────────────
         "vin" -> s.identity.vin
-        "engine_code" -> s.identity.engineCode
         "oil_level" -> s.identity.oilLevelPct?.toString()
-        "gps_lat" -> s.identity.gpsLat?.let { dec5(it) }
-        "gps_lon" -> s.identity.gpsLon?.let { dec5(it) }
-        "engine_coolant_level" -> s.identity.engineCoolantLevel?.toString()
-        "gps_elevation" -> s.identity.gpsElevation?.let { dec1(it) }
-        "gps_heading" -> s.identity.gpsHeading?.let { dec1(it) }
 
         // MỌI id trong registry đều có case ở trên (test `every id maps`). Non-resolvable (GPS/NaviInfo,
         // SET_DR_SOC_TARGET) đọc null (route None) ⇒ "—". else = phòng vệ id ngoài-registry (of() đã chặn).

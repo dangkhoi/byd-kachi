@@ -34,6 +34,36 @@ class SettingsBarsSection(
     /** Bộ chọn chip — MỘT thực thể cho một lượt dựng trang (nó giữ bảng tra `mã → view` để tô lại ô). */
     private val stripPicker = TopStripPicker(context, rows, deps.state().topStrip) { id, on -> deps.onTopStrip(id, on) }
 
+    /**
+     * UX-OVERHAUL · WP4 — sắp chỗ các vật trên **thanh trên**.
+     *
+     * `current`/`onMove` đọc-ghi qua [SettingsDeps] mỗi lượt gọi (không chụp sẵn [HeaderLayout]): trang Cài đặt
+     * được nhớ lại ([SettingsPanel.pages]) nên một ảnh chụp lúc dựng có thể đã cũ vài phút, và hồ sơ có thể đã đổi.
+     */
+    private val headerOrder = SettingsBarOrderRows<HeaderItem>(
+        context, rows,
+        current = { deps.state().header.order },
+        label = { it.displayLabel },
+        onMove = { item, delta -> deps.onHeaderLayout(deps.state().header.move(item, delta)) },
+    )
+
+    /**
+     * UX-OVERHAUL · WP4 — sắp chỗ các nút trên **thanh nút xe**.
+     *
+     * Thứ tự này KHÔNG có khoá lưu riêng: nó LÀ thứ tự của [DockConfig.enabled] ([DockConfig.moveEnabled]), đi qua
+     * đúng [SettingsDeps.onDockConfig] mà bộ chọn nút và công tắc ẩn/hiện đang dùng — không mở đường ghi thứ hai.
+     *
+     * Nhãn tra qua [CapabilityCatalog.pick]: thanh nút nhận **cả** mục đọc, nút, gói lệnh và hai việc của launcher
+     * (RW0 · S4 · R12), nên một bảng tra riêng ở đây sẽ thiếu đúng những loại mới thêm. Mã lạ (rác prefs) ⇒ hiện
+     * chính mã, không bỏ hàng: bỏ hàng thì người dùng có một nút trên thanh mà không sắp được nó.
+     */
+    private val dockOrder = SettingsBarOrderRows<String>(
+        context, rows,
+        current = { deps.state().dock.enabled },
+        label = { id -> CapabilityCatalog.pick(id)?.displayLabel ?: id },
+        onMove = { id, delta -> deps.onDockConfig(deps.state().dock.moveEnabled(id, delta)) },
+    )
+
     /** Nút mở bộ chọn nút thanh xe — nhãn mang số nút đang bật, nên phải sửa CHỮ tại chỗ sau khi Áp dụng. */
     private var pickButton: TextView? = null
 
@@ -44,6 +74,9 @@ class SettingsBarsSection(
         body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
         stripPicker.section(body)
         chipLabels(body)
+        // WP4 — sắp chỗ ĐỨNG SAU chọn chip: sắp chỗ cho một vật chưa có mặt là câu hỏi vô nghĩa (thứ tự khai của
+        // danh mục cũng vậy — xem [SettingsCatalogEntries]).
+        headerOrder.section(body, R.string.kachi_header_order_title, R.string.kachi_header_order_hint)
         voicePill(body)
         dock(body)
     }
@@ -108,6 +141,8 @@ class SettingsBarsSection(
         pickButton = button
         body.addView(button)
         body.addView(rows.note(context.getString(R.string.kachi_dock_note)))
+        // WP4 — sắp chỗ các nút, NGAY dưới nút mở bộ chọn: nó sắp đúng danh sách mà bộ chọn vừa chốt.
+        dockOrder.section(body, R.string.kachi_dock_order_title, R.string.kachi_dock_order_hint)
         // Cảnh báo "nhóm đổi hành vi lái" là note RIÊNG, không nối vào câu trên: [ĐO] soát ảnh v2 câu gộp dài 2 dòng
         // (R-UI: mô tả ≤ 1 dòng), và khi gộp thì câu hướng dẫn nuốt mất phần cảnh báo — thứ duy nhất ở đây có hệ quả
         // lên XE. Giữ nguyên nội dung cảnh báo (R10), chỉ tách chỗ đứng.
@@ -121,6 +156,9 @@ class SettingsBarsSection(
     private fun openPicker() = deps.openDockPicker(deps.state().dock.enabled.toSet()) { picked ->
         deps.onDockConfig(DockSelection.apply(deps.state().dock, picked))
         pickButton?.text = pickLabel()
+        // WP4 — danh sách vật vừa đổi (thêm/bớt mã) ⇒ danh sách sắp chỗ phải theo. Xem KDoc
+        // [SettingsBarOrderRows.refresh]: trang Cài đặt được NHỚ lại nên không có lượt dựng lại nào tự chạy.
+        dockOrder.refresh()
     }
 
     private fun pickLabel(): String =

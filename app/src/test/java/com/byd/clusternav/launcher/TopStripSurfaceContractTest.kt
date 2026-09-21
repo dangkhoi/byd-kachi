@@ -229,9 +229,20 @@ class TopStripSurfaceContractTest {
         )
         assertTrue(fn.contains("contentDescription = activity.getString("), "tên phải còn, dưới dạng mô tả nội dung")
         assertTrue(fn.contains("KachiTheme.iconRes("), "hình lấy qua bảng tra icon dùng chung, không R.drawable thô")
+        // ⚠⚠ UX-OVERHAUL · WP5 · R5.2 (owner 2026-09-20: *"nút App+Voice+profile 70 %"*) — con số đổi từ
+        // [KachiSpace.TOUCH] (48) sang [KachiBars.HEADER_BTN] (34). **Tính chất được canh KHÔNG đổi**: khai TƯỜNG
+        // MINH cả hai chiều, để bề ngang không tụt xuống cỡ hình khi pill chỉ còn icon. Đó là thứ bài này sinh ra
+        // để bắt; con số cụ thể là quyết định của owner, và đánh đổi (34 < 48 khuyến nghị) ghi ở KDoc
+        // [KachiBars.HEADER_BTN] — tóm lại: không nút nào ở đây bắn lệnh xe, bấm nhầm hoàn lại được bằng Back.
         assertTrue(
-            fn.contains("minimumWidth = dp(Sp.TOUCH)") && fn.contains("minimumHeight = dp(Sp.TOUCH)"),
-            "đích chạm phải ≥ Sp.TOUCH theo CẢ HAI chiều — icon-only làm bề ngang tụt xuống cỡ hình",
+            fn.contains("minimumWidth = dp(Bars.HEADER_BTN)") && fn.contains("minimumHeight = dp(Bars.HEADER_BTN)"),
+            "đích chạm phải khai TƯỜNG MINH cả hai chiều bằng một hằng của thang — icon-only làm bề ngang tụt " +
+                "xuống cỡ hình",
+        )
+        // …và hình phải CO THEO NÚT, không phải nút co theo hình: `FIT_CENTER` + lề trong của thang.
+        assertTrue(
+            fn.contains("ImageView.ScaleType.FIT_CENTER") && fn.contains("dp(Bars.HEADER_BTN_PAD)"),
+            "hộp hình = HEADER_BTN − 2×HEADER_BTN_PAD; `CENTER_INSIDE` + lề tay sẽ để hình giữ 24dp trong nút 34dp",
         )
         // Và hai lời gọi vẫn truyền đúng hai khoá chuỗi cũ (không đẻ thêm khoá `*_desc` song song).
         val build = SourceRoots.body(strip, "private fun build()")

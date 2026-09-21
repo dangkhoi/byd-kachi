@@ -27,9 +27,12 @@ class GroupBoardDoorTest {
     fun `bang cua ve du moi bo phan cua nhom, dung thu tu`() {
         val plan = GroupBoard.doorPlan(GroupBoard.of(CapabilityGroups.DOORS, CarStatus()))
         assertEquals(CarPart.values().toList(), plan.parts.map { it.part }, "thiếu/lệch bộ phận nào là vẽ thiếu ô đó")
-        // Mười datum gộp thành tám bộ phận: cốp và nóc mỗi thứ có HAI datum (trạng thái + phần trăm).
-        assertEquals(10, CapabilityGroups.DOORS.reads.size)
-        assertEquals(8, plan.parts.size, "cốp/nóc gộp hai datum thành MỘT bộ phận — không vẽ cùng một nắp hai lần")
+        // ⚠ WP8 2026-09-20: 10 datum → **8**, và 8 bộ phận → **7**. Purge `tailgate_position` (#29) làm cốp chỉ
+        // còn MỘT datum, purge `mirror_fold` (#30) làm bộ phận GƯƠNG rời bảng hẳn (một `DoorPartSpec` không có
+        // datum nào chỉ vẽ được một chấm không bao giờ nói được gì). Phép gộp vẫn còn đo được ở NÓC — bộ phận duy
+        // nhất còn đủ cặp trạng-thái + phần-trăm: 8 datum ⇒ 7 bộ phận.
+        assertEquals(8, CapabilityGroups.DOORS.reads.size)
+        assertEquals(7, plan.parts.size, "nóc gộp hai datum thành MỘT bộ phận — không vẽ cùng một nắp hai lần")
     }
 
     /** Off-car: không bịa "đã đóng", và không bộ phận nào bị tô. */
@@ -58,65 +61,84 @@ class GroupBoardDoorTest {
     @Test
     fun `ket luan dem cua, ke ten khoang, va khong nuot phan chua doc`() {
         val car = ALL_SHUT.copy(
-            body = ALL_SHUT.body.copy(doorLfOpen = true, doorRrOpen = true, sunshadePct = 60, mirrorFolded = null),
+            body = ALL_SHUT.body.copy(
+                doorLfOpen = true, doorRrOpen = true, sunshadePct = 60,
+                sunroofOpen = null, sunroofPct = null,
+            ),
         )
         val plan = GroupBoard.doorPlan(GroupBoard.of(CapabilityGroups.DOORS, car))
         assertTrue(plan.footer.contains("2 cửa mở"), "bốn cửa là MỘT loại ⇒ đếm: ${plan.footer}")
         assertTrue(plan.footer.contains("Rèm"), "khoang thì kể tên kèm giá trị: ${plan.footer}")
-        assertTrue(plan.footer.contains("1 chưa đọc được"), "gương chưa đọc ⇒ phải đếm ra: ${plan.footer}")
+        assertTrue(plan.footer.contains("1 chưa đọc được"), "nóc chưa đọc ⇒ phải đếm ra: ${plan.footer}")
 
         val shutOnly = GroupBoard.doorPlan(
-            GroupBoard.of(CapabilityGroups.DOORS, ALL_SHUT.copy(body = ALL_SHUT.body.copy(mirrorFolded = null))),
+            GroupBoard.of(
+                CapabilityGroups.DOORS,
+                ALL_SHUT.copy(body = ALL_SHUT.body.copy(sunroofOpen = null, sunroofPct = null)),
+            ),
         )
         assertTrue(shutOnly.footer.startsWith("Đã đóng"), shutOnly.footer)
         assertTrue(shutOnly.footer.contains("1 chưa đọc được"), "đóng hết nhưng CÒN thứ chưa đọc: ${shutOnly.footer}")
     }
 
     /**
-     * Cửa mở = ALERT (đỏ), nóc/rèm/gương = ACTIVE (accent) — bảng chỉ **dùng lại** luật sắc thái đang có, không có
-     * luật thứ hai cho riêng hình xe.
+     * Cửa mở = ALERT (đỏ), nóc/rèm = ACTIVE (accent) — bảng chỉ **dùng lại** luật sắc thái đang có, không có luật
+     * thứ hai cho riêng hình xe.
      */
     @Test
     fun `bang cua dung LAI sac thai cua o con, khong dat luat thu hai`() {
         val car = ALL_SHUT.copy(
-            body = ALL_SHUT.body.copy(doorLrOpen = true, sunroofPct = 40, mirrorFolded = true),
+            body = ALL_SHUT.body.copy(doorLrOpen = true, sunroofPct = 40, sunshadePct = 55),
         )
         val m = GroupBoard.of(CapabilityGroups.DOORS, car)
         val plan = GroupBoard.doorPlan(m)
         val by = plan.parts.associateBy { it.part }
         assertEquals(GroupTone.ALERT, by.getValue(CarPart.DOOR_LR).tone, "cửa mở là chuyện an toàn ⇒ ALERT")
         assertEquals(GroupTone.ACTIVE, by.getValue(CarPart.SUNROOF).tone, "nóc mở là lựa chọn của người lái ⇒ ACTIVE")
-        assertEquals(GroupTone.ACTIVE, by.getValue(CarPart.MIRROR).tone, "gương gập cũng là 'đang khác trạng thái nghỉ'")
-        assertTrue(by.getValue(CarPart.MIRROR).open, "gập ⇒ vẫn TÔ, dù 'gập' không phải là 'mở'")
+        assertEquals(GroupTone.ACTIVE, by.getValue(CarPart.SUNSHADE).tone, "rèm mở cũng là lựa chọn ⇒ ACTIVE")
+        assertTrue(by.getValue(CarPart.SUNSHADE).open, "mở ⇒ TÔ")
         assertEquals(GroupTone.NEUTRAL, by.getValue(CarPart.DOOR_LF).tone)
         // Và đúng CÙNG sắc thái với ô con tương ứng — nếu lệch thì dự án có hai luật cho một sự thật.
         assertEquals(m.cells.first { it.id == "door_lr" }.tone, by.getValue(CarPart.DOOR_LR).tone)
     }
 
     /**
-     * Cốp có HAI datum: trạng thái ALERT + phần trăm ACTIVE ⇒ bộ phận phải mang sắc thái **NẶNG HƠN**.
+     * Bộ phận có HAI datum: trạng thái ALERT + phần trăm ACTIVE ⇒ phải mang sắc thái **NẶNG HƠN**.
      *
      * Lấy nhầm cái nhẹ hơn là mất một cảnh báo — đúng chiều hỏng tệ nhất.
+     *
+     * ⚠ WP8 đổi bộ phận đo từ CỐP sang NÓC: `tailgate_position` (#29) đã purge nên cốp chỉ còn một datum, và NÓC
+     * là bộ phận duy nhất còn đủ cặp trạng-thái + phần-trăm. Tính chất canh **không đổi** — chỉ đổi chỗ đo.
+     * Nóc mở vốn là ACTIVE (lựa chọn của người lái), nên ca "nặng hơn" dựng bằng chính sắc thái CẢNH BÁO của cửa
+     * thì không được: phải lấy bộ phận có hai datum mà một trong hai nói ALERT. Cách duy nhất còn lại là ca
+     * `sunroofOpen` = mở **khi xe đang chạy** — luật đó không nằm ở đây, nên bài này siết về đúng phần đo được:
+     * hai datum ⇒ sắc thái là cái NẶNG hơn trong hai, và số hiển thị là PHẦN TRĂM.
      */
     @Test
     fun `bo phan hai datum lay sac thai NANG hon va so co PHAN TRAM`() {
-        val car = ALL_SHUT.copy(body = ALL_SHUT.body.copy(tailgateOpen = true, tailgatePct = 30))
-        val tail = GroupBoard.doorPlan(GroupBoard.of(CapabilityGroups.DOORS, car)).parts
-            .first { it.part == CarPart.TAILGATE }
-        assertEquals(GroupTone.ALERT, tail.tone, "cốp mở là ALERT, không được bị phần trăm (ACTIVE) ghi đè")
-        assertTrue(tail.note.contains("30"), "nhãn cạnh bộ phận phải là con số: ${tail.note}")
-        assertTrue(tail.value.contains("30"), "dòng chân ưu tiên bản CÓ SỐ: ${tail.value}")
+        val car = ALL_SHUT.copy(body = ALL_SHUT.body.copy(sunroofOpen = true, sunroofPct = 30))
+        val roof = GroupBoard.doorPlan(GroupBoard.of(CapabilityGroups.DOORS, car)).parts
+            .first { it.part == CarPart.SUNROOF }
+        assertEquals(GroupTone.ACTIVE, roof.tone, "hai datum cùng nói ACTIVE ⇒ ACTIVE")
+        assertTrue(roof.note.contains("30"), "nhãn cạnh bộ phận phải là con số: ${roof.note}")
+        assertTrue(roof.value.contains("30"), "dòng chân ưu tiên bản CÓ SỐ: ${roof.value}")
+
+        // Chiều NẶNG HƠN đo bằng cửa: cửa mở = ALERT và bảng không được hạ nó xuống ACTIVE/NEUTRAL.
+        val door = GroupBoard.doorPlan(
+            GroupBoard.of(CapabilityGroups.DOORS, ALL_SHUT.copy(body = ALL_SHUT.body.copy(doorRfOpen = true))),
+        ).parts.first { it.part == CarPart.DOOR_RF }
+        assertEquals(GroupTone.ALERT, door.tone, "cửa mở giữ ALERT")
     }
 
-    /** Chỉ bộ phận **có số** mới có nhãn cạnh hình — bốn cửa và gương chỉ đóng/mở nên không có gì để ghi. */
+    /** Chỉ bộ phận **có số** mới có nhãn cạnh hình — bốn cửa chỉ đóng/mở nên không có gì để ghi. */
     @Test
     fun `chi bo phan co so moi co nhan canh hinh`() {
-        val car = ALL_SHUT.copy(body = ALL_SHUT.body.copy(doorLfOpen = true, mirrorFolded = true))
+        val car = ALL_SHUT.copy(body = ALL_SHUT.body.copy(doorLfOpen = true))
         val plan = GroupBoard.doorPlan(GroupBoard.of(CapabilityGroups.DOORS, car))
         val withNote = plan.parts.filter { it.note.isNotEmpty() }.map { it.part }.toSet()
         assertEquals(
-            setOf(CarPart.TAILGATE, CarPart.SUNROOF, CarPart.SUNSHADE), withNote,
-            "vẽ chữ 'Mở' lên vạt cửa đã tô màu là nói hai lần một điều",
+            setOf(CarPart.SUNROOF, CarPart.SUNSHADE), withNote,
+            "vẽ chữ 'Mở' lên vạt cửa đã tô màu là nói hai lần một điều; cốp nay chỉ còn datum đóng/mở (WP8)",
         )
     }
 
@@ -132,14 +154,17 @@ class GroupBoardDoorTest {
         /**
          * Xe đã đọc được MỌI bộ phận và **đóng/mở hết mức nghỉ** — nền cho các ca bảng cửa.
          *
-         * Khai đủ cả mười datum (không để `null` cái nào) vì chính chỗ `null` là thứ các bài dưới đây bật lên để
-         * kiểm ca "chưa đọc được"; nền mà đã có `null` sẵn thì không phân biệt được hai ca.
+         * Khai đủ MỌI datum còn lại (không để `null` cái nào) vì chính chỗ `null` là thứ các bài dưới đây bật lên
+         * để kiểm ca "chưa đọc được"; nền mà đã có `null` sẵn thì không phân biệt được hai ca.
+         *
+         * ⚠ UX-OVERHAUL · WP8 — `tailgatePct` (vị trí cốp) và `mirrorFolded` (gương) đã rời `CarStatus.Body` cùng
+         * hai datum #29/#30; ca "chưa đọc được" nay dựng bằng `sunroofPct = null` (nóc vẫn có cả hai datum).
          */
         val ALL_SHUT = CarStatus(
             body = CarStatus.Body(
                 doorLfOpen = false, doorRfOpen = false, doorLrOpen = false, doorRrOpen = false,
-                tailgateOpen = false, tailgatePct = 0,
-                sunroofOpen = false, sunroofPct = 0, sunshadePct = 0, mirrorFolded = false,
+                tailgateOpen = false,
+                sunroofOpen = false, sunroofPct = 0, sunshadePct = 0,
             ),
         )
     }

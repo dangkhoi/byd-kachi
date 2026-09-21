@@ -17,7 +17,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * ô KHÔNG đổi hình**.
  *
  * ## ⚠⚠ Vì sao KHÔNG nới chính cái nút (minWidth / minHeight) — đã ĐO, đã hỏng một lần
- * KDoc [KachiSpace.TOUCH_TIGHT] ghi lại phép đo: ô thanh nút ngang là `DOCK_TILE_W`×`DOCK_TILE_H` = 84×86dp, trừ
+ * KDoc [KachiSpace.TOUCH_TIGHT] ghi lại phép đo: ô thanh nút ngang là [KachiBars.DOCK_TILE_W]×[KachiBars.DOCK_TILE_H] (WP5: 71×73dp; trước WP5 84×86), trừ
  * lề trong còn **68×70dp**, mà bề ngang phải chứa `[−] [giá trị] [+]`. *"Lần đầu tôi đặt 36dp và nó LÀM HỎNG ô:
  * 2×36 = 72 > 68 ⇒ chữ giá trị bị bóp, `22°` xuống hai dòng"*. Hai nút 48dp thì cần 96 > 68 — chắc chắn hỏng.
  * Nói cách khác **đích chạm 48dp bằng kích thước VIEW là bất khả** ở ô 84dp; đòi nó là đòi đổi hình cái ô.
@@ -30,7 +30,7 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * ## Nói THẲNG giới hạn còn lại (§2 CLAUDE.md — cơ chế vs quy kết)
  * [ĐO số học] ô ngang 84dp ⇒ mỗi bên nhiều nhất **42dp** bề ngang (hai vùng không được chồng nhau, chồng là chạm
  * một chỗ ra hai lệnh). Nên kết quả thật là **42×48dp** ở thanh ngang và **50×48dp** ở thanh dọc
- * (`DOCK_TILE_W_VERTICAL` = 100). Đủ 48×48 hai chiều chỉ đạt được nếu ô rộng ≥ 96dp — tức **đổi hình thanh nút**,
+ * ([KachiBars.DOCK_TILE_W_VERTICAL], WP5 = 83). Đủ 48×48 hai chiều chỉ đạt được nếu ô rộng ≥ 96dp — tức **đổi hình thanh nút**,
  * việc thuộc quyền owner, không phải của bản vá này. Diện tích vẫn tăng [ĐO] từ ~20×32 = 640dp² lên 2016dp² (3.1×).
  */
 object StepTouchTarget {

@@ -295,7 +295,10 @@ class VoiceGrammarPhrasesTest {
         // mã đã xoá) +4 cụm khoá trẻ em hai bên (*"khóa trẻ em"* · *"…bên trái"* · *"…bên phải"* ·
         // *"khóa con nít bên phải"*) +1 *"gió auto"* (`ac_auto`) +5 từ nhãn mới nhiều từ (*"Gió tự động"* ·
         // *"Khóa trẻ em trái/phải"* · *"Chế độ gió"* + nhãn ngắn). Số đọc từ **actual** của chính bài này.
-        const val EXPECTED_PHRASES_KEPT = 372
+        // [ĐO off-car 2026-09-20 · UX-OVERHAUL WP8] **372 → 308 (−64)**: 37 mã purge kéo theo cả cách nói riêng
+        // của chúng (10 dòng `VoiceSynonyms` + nhãn nhiều từ của 29 datum + 8 nút) và 5 cụm của nhóm `g_ambient`.
+        // Số đọc từ **actual** của chính bài này, như mọi lượt trước.
+        const val EXPECTED_PHRASES_KEPT = 308
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
         // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
         // số này — nó chỉ nở thêm ở [EXPECTED_ENTRIES]. Thêm để «chỉ số xăng» / «xăng còn bao nhiêu» (cả hai ra
@@ -332,7 +335,8 @@ class VoiceGrammarPhrasesTest {
         //   bias được cho mô hình VN (đúng như mọi nhãn EN khác): *"Auto fan"* · *"Child lock left/right"* ·
         //   *"Fan mode"* (+ nhãn ngắn *"Fan auto"*), trừ đi hai cụm EN của `hood` (*"Bonnet"* là một từ nên
         //   không nằm ở con số CỤM). Số đọc từ **actual** của chính bài này.
-        const val EXPECTED_PHRASES_DROPPED = 233
+        // [ĐO off-car 2026-09-20 · WP8] **233 → 193 (−40)**: cụm bị loại cũng teo theo 37 mã purge.
+        const val EXPECTED_PHRASES_DROPPED = 193
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -399,7 +403,8 @@ class VoiceGrammarPhrasesTest {
         // điệu — `trẻ` · `em` (khoá trẻ em hai bên) và `auto` đứng một mình (cách nói *"gió auto"*), trừ đi phần
         // của `hood` (`nắp` · `ca` · `pô` · `máy` — phần lớn đã có sẵn ở từ vựng khác nên rụng ít). Số đọc từ
         // **actual** của chính bài này, không phải phép đoán.
-        const val EXPECTED_ENTRIES = 2117
+        // [ĐO off-car 2026-09-20 · WP8] **2117 → 1904 (−213)**: 37 mã purge kéo theo mọi mục hotword của chúng.
+        const val EXPECTED_ENTRIES = 1904
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
         // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính

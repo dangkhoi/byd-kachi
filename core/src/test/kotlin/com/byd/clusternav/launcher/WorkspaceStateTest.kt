@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -109,6 +110,46 @@ class WorkspaceStateTest {
         assertSame(SlotContent.Empty, clean.slots[2], "mã NHÓM đã xoá cũng phải rụng")
         assertEquals(SlotContent.Widget(listOf("soc")), clean.slots[3], "mã sống không bị đụng tới")
         assertEquals(emptyList<String>(), clean.unknownWidgetIds(), "chạy lại phải sạch (idempotent)")
+    }
+
+    /**
+     * ═══ UX-OVERHAUL · WP8 2026-09-20 — mọi mã BỎ khỏi bảng owner phải rụng khỏi cấu hình ĐÃ LƯU ═════════════
+     *
+     * Cùng khuôn với ca (V) ngay dưới: bài đó khoá cơ chế, bài này khoá **đúng danh sách của lượt xoá này**. Đây
+     * là các mục người dùng có thể đã đặt vào ô/thanh nút ở bản trước (viền cabin, GPS, cell pin, mô-tơ, tay lái,
+     * gạt mưa, vị-trí-cốp, gập gương, HUD, tái tạo phanh, mã máy/nước làm mát…). Duyệt từng mã ⇒ không sót.
+     *
+     * ⚠ `cast` KHÔNG nằm đây: nó chỉ bị ẩn khỏi bộ chọn (`HIDDEN_FROM_PICKER`), `pick` vẫn tra ra để nút nổi +
+     * giọng nói + ô của ai đã đặt còn chạy — ca *"…chi bi an…"* dưới canh điều đó.
+     */
+    @Test fun `sanitized bo het cac ma purge cua luot UX-OVERHAUL WP8`() {
+        val gone = listOf(
+            // viền cabin (nhóm g_ambient gỡ hẳn)
+            "ambient_enabled", "ambient_front_brightness", "ambient_front_color",
+            "ambient_rear_brightness", "ambient_rear_color",
+            "ambient_power", "ambient_brightness", "ambient_color", "ambient_music",
+            // GPS×4 (nav dùng LocationManager, không cần datum HAL)
+            "gps_lat", "gps_lon", "gps_heading", "gps_elevation",
+            // cell pin / mô-tơ / tay lái / dốc / rpm / bánh — số kỹ thuật không ai xem lúc lái
+            "cell_temp_avg", "cell_temp_high", "cell_temp_low", "cell_v_high", "cell_v_low",
+            "motor_front_rpm", "motor_rear_rpm", "motor_front_torque",
+            "steering_deg", "slope_deg", "wheel_speed",
+            // thân xe / cabin bỏ
+            "wiper_state", "tailgate_position", "mirror_fold",
+            // mã máy / nước làm mát / HUD / tái tạo phanh
+            "engine_code", "engine_rpm", "engine_coolant_level", "coolant_temp",
+            "hud_switch", "hud_brightness", "regen_level", "wiper",
+        )
+        gone.forEach { id ->
+            assertNull(CapabilityCatalog.pick(id), "$id vẫn tra ra được ⇒ chưa xoá khỏi bộ đăng ký nào đó (WP8)")
+            val s = WorkspaceState().withSlot(0, SlotContent.Widget(listOf(id, "soc")))
+            assertEquals(listOf(id), s.unknownWidgetIds(), "$id phải bị NÓI RA là mã lạ")
+            assertEquals(
+                SlotContent.Widget(listOf("soc")), s.sanitized().slots[0],
+                "$id phải rụng khỏi ô đã lưu, `soc` ở lại",
+            )
+        }
+        assertNotNull(CapabilityCatalog.pick("cast"), "`cast` chỉ bị ẩn, KHÔNG xoá — nút nổi/giọng nói vẫn cần nó")
     }
 
     /**

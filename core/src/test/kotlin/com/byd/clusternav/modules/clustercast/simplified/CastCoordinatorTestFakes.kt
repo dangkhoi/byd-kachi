@@ -129,6 +129,7 @@ class FakePrefs : SimpleCastPrefs {
     private var _autoStartRightPackage: String? = null
     private var _autoStartSplitEnabled: Boolean = false
     private var _castEnabled: Boolean = false
+    private var _bubbleVisible: Boolean = true
 
     override fun displayConfigFor(pkg: String): DisplayConfig? = displayConfigFor(pkg, CastProfile.FULL)
     override fun displayConfigFor(pkg: String, profile: CastProfile): DisplayConfig? = configs[profileKey(pkg, profile)]
@@ -163,4 +164,8 @@ class FakePrefs : SimpleCastPrefs {
 
     override fun castEnabled(): Boolean = _castEnabled
     override fun setCastEnabled(enabled: Boolean) { _castEnabled = enabled }
+
+    /** WP6 · R6.1 — mặc định TRUE, y như bản thật (`SharedPrefsSimpleCastPrefs`): nút nổi có mặt tới khi bị tắt. */
+    override fun bubbleVisible(): Boolean = _bubbleVisible
+    override fun setBubbleVisible(visible: Boolean) { _bubbleVisible = visible }
 }

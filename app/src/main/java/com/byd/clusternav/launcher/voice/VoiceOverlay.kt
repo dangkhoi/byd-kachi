@@ -105,7 +105,7 @@ class VoiceOverlay(
     private fun build(): View {
         val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            background = KachiTheme.card(ctx, Sp.RADIUS_XL, KachiTheme.BAR_TOP, KachiTheme.LINE_STRONG)
+            background = KachiTheme.card(ctx, Sp.RADIUS_XL, KachiTheme.BAR_TOP)   // WP1 · R1.1 — không viền
             val p = dpi(ctx, Sp.L)
             setPadding(p, p, p, p)
         }

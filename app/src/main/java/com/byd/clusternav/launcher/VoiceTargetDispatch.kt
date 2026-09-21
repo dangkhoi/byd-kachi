@@ -52,6 +52,13 @@ class VoiceTargetDispatch(
      */
     private val navDefault: () -> String? = { null },
     /**
+     * Mã app NHẠC mặc định (owner 2026-09-21: *"cần thêm cái default app nhạc nữa"*) khi câu KHÔNG nêu app —
+     * `null`/không đọc được ⇒ lùi về thứ tự [VoiceAppTargets.MUSIC]. Lambda vì owner đổi trong Cài đặt rồi nói
+     * ngay câu sau (cùng lẽ [navDefault]). ⚠ Đặt SAU "app đang phát" trong [pickMusic]: mở app mặc định đè lên
+     * nhạc đang phát là hai luồng cùng lúc — thứ người lái phải dừng xe mới dẹp được.
+     */
+    private val musicDefault: () -> String? = { null },
+    /**
      * Giải `video_id` bài đầu từ YouTube cho câu *"phát bài X"* (owner 2026-09-18 *"phát luôn"*), hoặc `null` khi
      * mạng hỏng/không khớp ⇒ lùi về `MEDIA_PLAY_FROM_SEARCH`. Lambda (đọc mạng ở `:app` [YoutubeResolver]); mặc
      * định `{ null }` để test/bề mặt chưa nối giữ đường cũ (search-play).
@@ -263,6 +270,8 @@ class VoiceTargetDispatch(
         VoiceAppTargets.byKey(key)?.let { return it.takeIf { t -> t.packageIn(installed) != null } }
         val playing = runCatching { mediaPackage() }.getOrNull()
         VoiceAppTargets.MUSIC.firstOrNull { playing != null && playing in it.packages }?.let { return it }
+        // App nhạc MẶC ĐỊNH (owner 2026-09-21) — chỉ khi không nêu app VÀ không có nhạc đang phát; đang cài mới dùng.
+        musicDefault()?.let { d -> VoiceAppTargets.byKey(d)?.takeIf { it.packageIn(installed) != null }?.let { return it } }
         return VoiceAppTargets.MUSIC.firstOrNull { it.packageIn(installed) != null }
     }
 

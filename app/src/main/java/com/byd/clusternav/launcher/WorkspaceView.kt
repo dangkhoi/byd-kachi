@@ -277,13 +277,13 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // — không đổi MỘT byte, trong khi ô con bên trong thì đổi. Đó là toàn bộ lý do "đổi mà nhìn không ra".
         //
         // Nay nó đi qua CÙNG bộ dựng bề mặt với mọi thẻ khác, ở tone KHAY: tối hơn thẻ nội dung một bậc để thẻ có
-        // chỗ nổi lên, viền vẫn [KachiTheme.LINE_STRONG] như prototype đã chạy tốt trên xe, cộng sắc lĩnh vực của
-        // chính nội dung trong ô ⇒ nhìn màu là biết ô nào là Khí hậu, không phải đọc chữ.
+        // chỗ nổi lên (WP1 đã gỡ viền [KachiTheme.LINE_STRONG] mà tone này từng có — khay tách nền CHỈ bằng bậc
+        // sáng), cộng sắc lĩnh vực của chính nội dung trong ô ⇒ nhìn màu là biết ô nào là Khí hậu, không phải đọc chữ.
         // P1b · §4.10: có ảnh nền thì khay là CỬA SỔ kính nhìn xuống ảnh mờ (KachiGlass); không có ảnh thì đúng
         // KachiTheme.surface(..., SurfaceTone.WELL, ...) như trước — cùng cửa, cùng tone, không đổi một byte.
-        // Ô TRỐNG không đi qua kính: nó là ngoại lệ có chủ ý (gạch đứt + emptyFill, nhánh Empty bên dưới) — [ĐO] máy
-        // ảo: gắn kính rồi để nhánh Empty đè nền lên thì lượt `KachiGlass.refresh` khi ảnh đổi lại đè kính lên gạch
-        // đứt, ô trống mất dấu "chỗ này đặt được app".
+        // Ô TRỐNG không đi qua kính: nó là ngoại lệ có chủ ý (nền `emptyFill` riêng, nhánh Empty bên dưới) — [ĐO] máy
+        // ảo: gắn kính rồi để nhánh Empty đè nền lên thì lượt `KachiGlass.refresh` khi ảnh đổi lại đè kính lên nền ô
+        // trống, ô mất dấu "chỗ này đặt được app".
         if (content !is SlotContent.Empty) KachiGlass.apply(fl, Sp.RADIUS_L, SurfaceTone.WELL, slotDomain(content))
         fl.clipToOutline = true                                    // clip nội dung theo góc bo (như overflow:hidden của prototype)
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -345,9 +345,13 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
             SlotContent.Empty -> {
+                // ⚠⚠ WP1 · R1.1 — GẠCH ĐỨT ĐÃ GỠ (owner: *"KHÔNG còn viền ở BẤT CỨ ĐÂU hết"*). Ô trống trước đây
+                // thấy được **chỉ nhờ** gạch đứt: [ĐO] nền `emptyFill` cũ (`DARK_RAMP.at(-1)`) chênh nền màn đúng
+                // **1.012×** = tàng hình. Nên cùng lượt này `emptyFill` đổi bậc (tối: `at(3)` ⇒ **1.33×**; sáng:
+                // `at(-2)` ⇒ **1.18×**) để cái khay vẫn đọc ra là "chỗ này đặt được app" — xem KDoc
+                // [KachiPalette.emptyFill]. Vai `emptyLine` đã XOÁ khỏi bảng màu (nó chỉ là cái gạch đó).
                 fl.background = GradientDrawable().apply {
                     cornerRadius = dp(Sp.RADIUS_L).toFloat(); setColor(Color.parseColor(KachiTheme.EMPTY_FILL))
-                    setStroke(dp(Sp.STROKE), Color.parseColor(KachiTheme.EMPTY_LINE), dp(Sp.DASH_ON).toFloat(), dp(Sp.DASH_OFF).toFloat())
                 }
                 fl.addView(emptyAdd(), mm)
                 fl.setOnClickListener { onSlotTap?.invoke(index) }

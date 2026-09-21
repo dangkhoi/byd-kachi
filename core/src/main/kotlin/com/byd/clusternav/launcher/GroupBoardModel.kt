@@ -185,7 +185,7 @@ data class GroupBoardModel(
  * Tên hằng ở đây bám đúng chữ trong mã datum để chỗ nối đọc ra được bằng mắt.
  */
 enum class CarPart {
-    DOOR_LF, DOOR_RF, DOOR_LR, DOOR_RR, TAILGATE, SUNROOF, SUNSHADE, MIRROR;
+    DOOR_LF, DOOR_RF, DOOR_LR, DOOR_RR, TAILGATE, SUNROOF, SUNSHADE;
 
     /**
      * Có phải một trong **bốn cửa** không.

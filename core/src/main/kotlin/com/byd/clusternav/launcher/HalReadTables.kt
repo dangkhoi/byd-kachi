@@ -39,7 +39,6 @@ object HalReadTables {
         "defrost_front_state" -> 1; "defrost_rear_state" -> 2
         "tyre_p_fl" -> 1; "tyre_p_fr" -> 2; "tyre_p_rl" -> 3; "tyre_p_rr" -> 4
         "door_lf" -> 1; "door_rf" -> 2; "door_lr" -> 3; "door_rr" -> 4
-        "steering_deg" -> 1
         else -> null
     }
 

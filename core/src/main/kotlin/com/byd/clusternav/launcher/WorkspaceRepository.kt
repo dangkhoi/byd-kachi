@@ -58,6 +58,16 @@ interface WorkspaceRepository {
 
     fun setTopStrip(config: TopStripConfig) {}
 
+    /**
+     * UX-OVERHAUL · WP4 — thứ tự các vật trên thanh trên. Thân mặc định ⇒ bản giả trong test không phải sửa.
+     *
+     * Thứ tự các nút của thanh nút KHÔNG có cặp hàm riêng ở đây: nó đi trong [DockConfig.enabled] qua
+     * `setDock` như trước ([DockConfig.moveEnabled] chỉ sắp lại danh sách ấy).
+     */
+    fun headerLayout(): HeaderLayout = HeaderLayout.DEFAULT
+
+    fun setHeaderLayout(layout: HeaderLayout) {}
+
     fun unitPrefs(): UnitPrefs = UnitPrefs.DEFAULT
 
     /** Ghi bền lựa chọn đơn vị. Mặc định: không lưu (bản giả). */

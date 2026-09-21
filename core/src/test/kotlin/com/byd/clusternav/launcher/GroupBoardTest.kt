@@ -200,14 +200,16 @@ class GroupBoardTest {
 
     @Test
     fun `so suc khoe KHONG bi to mau vi chua co nguong do tren xe`() {
-        // Cố ý: tự nghĩ ngưỡng cho nhiệt pin / điện áp cell rồi tô đỏ là **bịa cảnh báo**. Bài này khoá quyết định
+        // Cố ý: tự nghĩ ngưỡng cho nhiệt pin / sức khoẻ pin rồi tô đỏ là **bịa cảnh báo**. Bài này khoá quyết định
         // đó lại, để lần sau ai thêm ngưỡng thì phải sửa bài test (tức phải nhìn thấy quyết định).
+        // ⚠ WP8 — `cell_v_high` đã purge (#5-18), nên ca "điện áp cell" đo bằng `soh_oem` (số sức khoẻ còn lại
+        // trong nhóm pin). Tính chất canh không đổi: KHÔNG tự nghĩ ngưỡng rồi tô màu.
         val car = CarStatus(
-            energy = CarStatus.Energy(battTempC = 61, cellVHigh = 4.35, soc = 3, volt12v = 10.9),
+            energy = CarStatus.Energy(battTempC = 61, sohPct = 71, soc = 3, volt12v = 10.9),
         )
         val batt = GroupBoard.of(CapabilityGroups.BATTERY, car).cells
         assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "batt_temp" }.tone)
-        assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "cell_v_high" }.tone)
+        assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "soh_oem" }.tone)
         assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "volt_12v" }.tone)
         assertEquals(
             GroupTone.NEUTRAL,
@@ -222,12 +224,10 @@ class GroupBoardTest {
     // ── Dấu "chưa kiểm" + tóm tắt ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `nhom co thanh vien chua kiem tren xe thi mang dau chua kiem`() {
+    fun `2026-09-21 badge da bo - nhom va cell khong con dau`() {
         val tyres = GroupBoard.of(CapabilityGroups.TYRES, CarStatus())
-        assertTrue(tyres.needsBadge, "4 nhiệt lốp ở mức NEEDS_CAR ⇒ cả ô phải mang dấu")
-        assertTrue(tyres.cells.any { it.id.startsWith("tyre_t_") && it.needsBadge })
-        // Nhóm chỉ gồm thành viên đã chạy thật thì KHÔNG mang dấu — nếu không có ca này thì `needsBadge` có thể luôn
-        // đúng mà bài trên vẫn xanh.
+        assertFalse(tyres.needsBadge, "owner bỏ hẳn chấm ⇒ ô nhóm không mang dấu")
+        assertFalse(tyres.cells.any { it.needsBadge }, "không cell nào còn mang dấu")
         val proven = CapabilityGroup(
             id = "g_test", label = "T", icon = "ic-bolt", domain = Domain.ENERGY,
             shape = WidgetShape.CARD, reads = listOf("soc"),

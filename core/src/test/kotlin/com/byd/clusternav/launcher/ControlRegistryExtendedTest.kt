@@ -18,11 +18,13 @@ class ControlRegistryExtendedTest {
         // (chúng quyết định `defaultEnabledIds()` và thứ tự thanh nút mà người dùng đã quen), nên nếu ai đó
         // chèn/đảo một nút trong khối này thì bài vẫn đỏ. Xoá thêm một mã ⇒ phải sửa danh sách Ở ĐÂY và nói rõ
         // lý do, chứ không lặng lẽ hạ con số.
+        // ⚠ UX-OVERHAUL · WP8 2026-09-20 · **19 → 18**: `wiper` (gạt mưa, vị trí 18) purge theo triage owner
+        // (#34 — [ĐO xe] ba getter gạt mưa chết, và nút thì owner chấm BỎ). Mã thứ HAI rời khối gốc sau `hood`.
         val original = listOf(
             "lock", "window", "trunk", "readl", "pm25", "seatc", "temp", "fan",
-            "defrost", "cam", "door", "sunroof", "headl", "seath", "recirc", "drl", "vol", "wiper", "cast",
+            "defrost", "cam", "door", "sunroof", "headl", "seath", "recirc", "drl", "vol", "cast",
         )
-        assertEquals(original, ControlRegistry.ALL.take(19).map { it.id })
+        assertEquals(original, ControlRegistry.ALL.take(18).map { it.id })
     }
 
     @Test fun `defaultEnabledIds bat bien - 8 nut mac dinh dung thu tu`() {
@@ -30,8 +32,8 @@ class ControlRegistryExtendedTest {
             listOf("lock", "window", "trunk", "readl", "pm25", "seatc", "temp", "fan"),
             ControlRegistry.defaultEnabledIds(),
         )
-        // Nut moi KHONG duoc tu bat (giu dock mac dinh gon).
-        assertTrue("wiper" !in ControlRegistry.defaultEnabledIds())
+        // Nut moi KHONG duoc tu bat (giu dock mac dinh gon). ⚠ WP8: mốc cũ `wiper` đã purge ⇒ dùng `cast`.
+        assertTrue("cast" !in ControlRegistry.defaultEnabledIds())
         assertTrue("powertrain_mode" !in ControlRegistry.defaultEnabledIds())   // (V) 2026-09-17: cũ là `drive_mode`
     }
 

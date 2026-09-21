@@ -313,4 +313,15 @@ interface SimpleCastPrefs {
      */
     fun castEnabled(): Boolean
     fun setCastEnabled(enabled: Boolean)
+
+    /**
+     * WP6 · R6.1 — **HIỆN nút nổi chiếu cụm hay không**. Mặc định TRUE (nút nổi là lối vào chính của việc chiếu
+     * trên xe, nên nó phải có mặt ngay; owner tắt thì mới ẩn).
+     *
+     * ⚠ Đây là một công tắc **trình bày**, KHÁC hẳn [castEnabled] ở ngay trên: tắt nó chỉ gỡ cái cửa sổ nổi, còn
+     * phiên chiếu · tự-chiếu-khi-nổ-máy · nhịp giữ-cụm · lệnh chiếu bằng giọng nói và bốn nút *Chiếu ngay* trong
+     * Cài đặt **vẫn chạy**. Ba nhánh hậu quả của nó ở [BubblePresence].
+     */
+    fun bubbleVisible(): Boolean
+    fun setBubbleVisible(visible: Boolean)
 }

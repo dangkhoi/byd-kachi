@@ -222,6 +222,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onOpenAppList = { drawerController.openAppList() },   // U3: mở app toàn màn (không gắn ô)
             onVoice = { voice.start() },                         // V1 pha NGHE — cùng lambda với ô *Nói với xe*
             voicePillEnabled = { Prefs.voiceMicPill(this) && VoiceModelStore.isReady(this) },
+            // WP4 — thứ tự vật trên thanh; lượt ĐỔI đi qua `topStrip.setLayout` ở render.
+            header = { viewModel.uiState.value.header },
         )
 
         val content = LinearLayout(this).apply {
@@ -230,7 +232,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // lệch nhau). Một giá trị [Sp.L] cho cả bốn cạnh ⇒ khung nội dung cách đều mọi mép.
             setPadding(dp(Sp.L), dp(Sp.L), dp(Sp.L), dp(Sp.L))
         }
-        content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, WRAP))
+        // WP5 · R5.2 — bề cao thanh trên khai TƯỜNG MINH (75 % của 56dp); vì sao không `WRAP_CONTENT`: KDoc [KachiBars.HEADER_H].
+        content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, dp(KachiBars.HEADER_H)))
         topStrip.setProfile(viewModel.uiState.value.activeProfile)   // tên + chữ cái của chip, ngay từ lượt dựng
 
         workspace = WorkspaceView(this).apply {
@@ -346,6 +349,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         // ĐÚNG MỘT chỗ, thay các lệnh d.place/d.remove sửa tay ở handler (nguồn drift "3 nguồn sự-thật"). Đọc-vẽ,
         // không đổi state. `WorkspaceView.render` phía trên đã lo VdAppHost theo-ô; đây lo registry + evict app rời ô.
         windows.reconcileLocations(state.workspace.slots)
+        // WP4 — thứ tự vật trên thanh trên đổi ⇒ ĐẶT LẠI CHỖ (không dựng lại view — `KachiTopStrip.setLayout`).
+        if (prev?.header != state.header) topStrip.setLayout(state.header)
         // ⚠ xét CẢ `topStrip`: thiếu nó thì đổi danh sách chip mà màn hình không đổi gì (off-car trạng thái xe gần như không đổi).
         if (prev == null || prev.carStatus != state.carStatus || prev.topStrip != state.topStrip) {
             topStrip.refreshChips(state.carStatus, unitPrefs, state.topStrip)

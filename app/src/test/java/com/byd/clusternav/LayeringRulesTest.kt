@@ -173,10 +173,13 @@ class LayeringRulesTest {
         "KachiPaletteDerive.kt" to "hàm mở rộng KachiPalette (bảng hex) — phép tính đã ở :core (ColorMath/ContrastGuard)",
         // VISUAL-REFRESH P3: phần CHỌN ĐƯỢC của bảng màu (hạt giống nhấn · tông · màu sơn) tách khỏi `KachiPalette.kt`
         // vì trần 500 dòng — cùng lẽ với chính `KachiPalette.kt`: nó LÀ hex, và hex chỉ được sống ở :app.
-        "KachiPaletteSeeds.kt" to "nửa tách ra của KachiPalette (bảng hex) — hạt giống màu nhấn · tông thẻ · màu sơn xe",
-        // VISUAL-REFRESH P3: tệp SINH bởi `scripts/design/gen-car.py` — chuỗi path + hộp bao của hình xe, là DỮ LIỆU
-        // của tầng vẽ `:app` (icon 24dp + Canvas), không có logic. `:core` chỉ giữ CarPartStyle (tên vai → token).
-        "CarFramesGenerated.kt" to "tệp sinh (gen-car.py): chuỗi path hình xe cho tầng vẽ — dữ liệu, không logic",
+        "KachiPaletteSeeds.kt" to "nửa tách ra của KachiPalette (bảng hex) — hạt giống màu nhấn · tông thẻ",
+        // UX-OVERHAUL WP5 (2026-09-20): nửa tách ra của `KachiSpace.kt` (trần 500 dòng) — hình học hai thanh.
+        // Không chuyển được sang `:core` **do luật của chính dự án**: `SpacingScaleContractTest.core khong giu so dp`
+        // CẤM `:core` giữ số dp (*"khoảng cách là việc của tầng vẽ"*, bài học ChipTone). Nó "thuần" theo phép đo ở
+        // đây chỉ vì nó KHÔNG có hàm đổi dp nào (bản gốc `KachiSpace.kt` có `dp(ctx, …)` nên nhắc `Context`) — cùng
+        // lẽ với `KachiPalette.kt`/`KachiPaletteSeeds.kt` ngay trên: thuần về kỹ thuật, thuộc `:app` về layering.
+        "KachiSpaceBars.kt" to "nửa tách ra của KachiSpace (thang dp) — :core bị CẤM giữ số dp",
     )
 
     @Test

@@ -113,22 +113,22 @@ object CapabilityGroups {
         icon = "ic-group-doors", domain = Domain.BODY, shape = WidgetShape.BOARD,
         reads = listOf(
             "door_lf", "door_rf", "door_lr", "door_rr",
-            "tailgate_status", "tailgate_position",
-            "sunroof_state", "sunroof_pos", "sunshade_pct", "mirror_fold",
+            "tailgate_status", "sunroof_state", "sunroof_pos", "sunshade_pct",
         ),
-        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `mirror_fold_btn` đã xoá ⇒ ô ĐỌC `mirror_fold` ở lại một mình
-        // (xem được gương đang gập hay chưa, không bấm được từ launcher).
+        // ⚠ UX-OVERHAUL · WP8 2026-09-20: hai ô ĐỌC `tailgate_position` (vị trí cốp) và `mirror_fold` (gương) đã
+        // xoá theo triage của owner (#29 · #30) ⇒ câu phụ bỏ chữ "gương", và bảng xe không còn chấm gương.
+        // `tailgate_status` (đóng/mở) GIỮ — nó là mục #28 nằm trong nhóm CẦN, đang chờ getter trên xe.
         writes = listOf("lock", "door", "trunk", "sunroof", "sunshade"),
-        sub = "cửa, cốp, nóc, rèm, gương",
-        subEn = "doors, tailgate, sunroof, sunshade, mirrors",
+        sub = "cửa, cốp, nóc, rèm",
+        subEn = "doors, tailgate, sunroof, sunshade",
     )
 
     /**
      * *"Đèn tôi đang bật cái gì?"* — 8 đèn ngoài + chế độ pha, kèm nút.
      *
      * `readl` (đèn đọc) không có datum ĐỌC tương ứng nhưng vẫn vào phần nút: đây là nhóm "Đèn", và một cái đèn
-     * trong xe mà không có mặt ở nhóm đèn thì người dùng phải đi tìm ở chỗ khác. Đèn viền tách riêng ([AMBIENT]) vì
-     * nó trả lời câu hỏi khác (trang trí, đặt một lần) chứ không phải *"đèn tôi đang bật cái gì"*.
+     * trong xe mà không có mặt ở nhóm đèn thì người dùng phải đi tìm ở chỗ khác. Đèn viền từng là một nhóm riêng
+     * (`g_ambient`) vì nó trả lời câu hỏi khác — nhóm đó **đã gỡ** ở WP8 cùng toàn bộ mã đèn viền.
      *
      * ## ⚠⚠ [SOÁT P1-1] Vì sao KHÔNG có `headl` ở đây, dù nó vẫn còn trong [ControlRegistry]
      * `headl` ("Đèn pha", TOGGLE) và `headlight_mode` ("Chế độ đèn pha", SELECT) khai **CÙNG** `bindingKey`
@@ -156,26 +156,11 @@ object CapabilityGroups {
         subEn = "exterior lights, headlight mode, interior reading light",
     )
 
-    /**
-     * *"Đèn viền đang màu gì?"* — bật/tắt + màu + độ sáng, trước và sau.
-     *
-     * ⚠ Spec §4.1 xếp nhóm này là `CARD` **không kèm nút**, nên ở đây KHÔNG có `writes` — dù `ambient_power` /
-     * `ambient_color` / `ambient_brightness` / `ambient_music` đều tồn tại. Giữ đúng bảng đã duyệt: bộ vẽ CARD
-     * không có hàng nút (§4.3), thêm nút vào đây là thêm thứ **vẽ ra mà không ai chạm được**. Muốn bấm thì đặt bốn
-     * nút đó như mục rời — đường đó vẫn còn nguyên. Ghi ra để phiên sau biết là **cố ý**, không phải bỏ sót.
-     */
-    val AMBIENT = CapabilityGroup(
-        id = "g_ambient", label = "Đèn viền", labelEn = "Ambient light",
-        icon = "ic-group-ambient", domain = Domain.LIGHTS,
-        shape = WidgetShape.CARD,
-        reads = listOf(
-            "ambient_enabled",
-            "ambient_front_color", "ambient_rear_color",
-            "ambient_front_brightness", "ambient_rear_brightness",
-        ),
-        sub = "bật/tắt, màu và độ sáng trước–sau",
-        subEn = "on/off, colour and brightness front–rear",
-    )
+    // ⚠ UX-OVERHAUL · WP8 2026-09-20 — nhóm `g_ambient` (*"Đèn viền"*) GỠ HẲN. Cả 5 datum đọc (#39-43) và cả 4
+    // nút (#46-49) của đèn viền đều nằm trong danh sách BỎ của owner, nên nhóm không còn một thành viên nào —
+    // giữ lại là một ô vẽ ra mà bên trong trống, và `init { require }` của lớp này sẽ không bắt được ca đó
+    // (nó canh "thành viên phải TỒN TẠI", không canh "phải có thành viên"). Cùng cách xử lý ba nhóm ADAS bên dưới.
+    // Đừng dựng lại: đèn viền chỉnh ở setting gốc của xe.
 
     // ⚠ 2026-09-16 — BA nhóm bị gỡ hẳn ở đây cùng toàn bộ ADAS/an toàn (owner): `g_adas` (điểm mù · chuyển làn ·
     // cắt ngang sau · cảnh báo mở cửa · quá tốc · ESP), `g_occupants` (dây an toàn · nhận diện người ngồi · trẻ em),
@@ -236,8 +221,7 @@ object CapabilityGroups {
         icon = "ic-group-battery", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
         reads = listOf(
-            "batt_temp", "cell_temp_high", "cell_temp_low", "cell_temp_avg",
-            "cell_v_high", "cell_v_low", "soh_oem",
+            "batt_temp", "soh_oem",
             "volt_12v", "volt_12v_level",
         ),
         sub = "nhiệt và điện áp cell, SOH, ắc-quy",
@@ -259,7 +243,7 @@ object CapabilityGroups {
 
     /** 9 nhóm, thứ tự khai = thứ tự hiện ra (12 trước khi owner gỡ ADAS/an toàn 2026-09-16). */
     val ALL: List<CapabilityGroup> = listOf(
-        TYRES, WINDOWS, DOORS, LIGHTS, AMBIENT, CLIMATE, ENERGY, BATTERY, TRIP,
+        TYRES, WINDOWS, DOORS, LIGHTS, CLIMATE, ENERGY, BATTERY, TRIP,
     )
 
     /**

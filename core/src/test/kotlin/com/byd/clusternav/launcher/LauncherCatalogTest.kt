@@ -30,7 +30,7 @@ class LauncherCatalogTest {
     @Test fun `pick tra curated roi telemetry roi null`() {
         assertEquals("w_energy", WidgetCatalog.pick("w_energy")?.id)
         assertNotNull(WidgetCatalog.pick("soc"))                 // telemetry
-        assertTrue(WidgetCatalog.pick("motor_power")!!.needsBadge)   // OVERDRIVE
+        assertFalse(WidgetCatalog.pick("motor_power")!!.needsBadge)  // 2026-09-21 badge bỏ hẳn
         assertFalse(WidgetCatalog.pick("soc")!!.needsBadge)          // PROVEN
         assertNull(WidgetCatalog.pick("khong_co"))
     }
@@ -43,7 +43,10 @@ class LauncherCatalogTest {
         // ⚠ (V) FEATURE-FILTER 2026-09-17: mốc cũ là `drive_mode` — nút đó đã gỡ (owner chấm NO). Nút DRIVETRAIN
         // còn sống lấy làm mốc: `powertrain_mode` (EV / HEV).
         assertTrue(byDomain[Domain.DRIVETRAIN]!!.any { it.id == "powertrain_mode" }, "EV/HEV panel DRIVETRAIN")
-        assertTrue(byDomain[Domain.INFOTAINMENT]!!.any { it.id == "hud_switch" }, "HUD panel INFOTAINMENT")
+        // ⚠ WP8 2026-09-20: hai nút HUD (`hud_switch` · `hud_brightness`) purge theo triage owner (#62 · #63 —
+        // HUD kính lái là cổng coding firmware của XE, ADR 0002, nên nút trong app là nút chết). Mốc INFOTAINMENT
+        // nay là `cast` (chiếu cụm) — nút này vẫn sống, chỉ ẩn khỏi bộ chọn (HIDDEN_FROM_PICKER).
+        assertTrue(byDomain[Domain.INFOTAINMENT]!!.any { it.id == "cast" }, "cast panel INFOTAINMENT")
         assertEquals(ControlRegistry.ALL.size, panels.sumOf { it.second.size }, "tổng nút = registry (không sót)")
     }
 
@@ -57,10 +60,11 @@ class LauncherCatalogTest {
         assertEquals(0, ControlTileLogic.nextSelectIndex(0, 0))          // rỗng an toàn
     }
 
-    @Test fun `needsBadge theo tier`() {
-        assertTrue(ControlTileLogic.needsBadge(ControlRegistry.byId("defrost")!!))       // OVERDRIVE
+    @Test fun `needsBadge da bo hoan toan 2026-09-21`() {
+        // Tier vẫn là dữ liệu (tra ControlDef.tier), nhưng ControlTileLogic.needsBadge nay luôn false.
+        assertFalse(ControlTileLogic.needsBadge(ControlRegistry.byId("defrost")!!))      // OVERDRIVE
         assertFalse(ControlTileLogic.needsBadge(ControlRegistry.byId("pm25")!!))         // PROVEN
-        assertTrue(ControlTileLogic.needsBadge(ControlRegistry.byId("cast")!!))          // DASHCAST
+        assertFalse(ControlTileLogic.needsBadge(ControlRegistry.byId("cast")!!))         // DASHCAST
     }
 
     @Test fun `NoCar port off-car deu no-op false + du lieu null`() {

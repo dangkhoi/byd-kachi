@@ -46,27 +46,30 @@ class LangCoverageTest {
     // ── 1 · ĐẾM TUYỆT ĐỐI: không mã nào thiếu nhãn EN ────────────────────────────────────────────
 
     @Test
-    fun `moi datum co nhan EN, dung 100 dong`() {
+    fun `moi datum co nhan EN, dung 73 dong`() {
         // 106 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 123).
         // 100 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 12 datum NO — trước đó 112).
         // 1.85: +1 `ac_wind_auto` (đã có nhãn + nhãn ngắn ở CẢ hai thứ tiếng — chính bài này ép điều đó).
-        assertEquals(102, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // WP8 2026-09-20: 102 → 73 (owner purge 29 datum BỎ).
+        assertEquals(73, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
 
     @Test
-    fun `moi nut co nhan EN, dung 47 nut`() {
+    fun `moi nut co nhan EN, dung 39 nut`() {
         // 47 ((V) 2026-09-17 owner gỡ 7 nút NO — trước đó 54; trước 09-16 là 64).
-        assertEquals(47, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // 39 (UX-OVERHAUL WP8 2026-09-20 owner purge 8 nút BỎ: gạt mưa · 4 đèn viền · mức tái tạo · 2 HUD).
+        assertEquals(39, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = ControlRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nút thiếu nhãn tiếng Anh: $missing")
     }
 
     @Test
-    fun `moi nhom co nhan va dong phu EN, dung 9 nhom`() {
+    fun `moi nhom co nhan va dong phu EN, dung 8 nhom`() {
         // 9 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 12 — bỏ g_adas · g_occupants · g_parking).
-        assertEquals(9, CapabilityGroups.ALL.size)
+        // 8 (WP8 2026-09-20 gỡ g_ambient — hết thành viên sau khi purge 5 datum + 4 nút đèn viền).
+        assertEquals(8, CapabilityGroups.ALL.size)
         val missing = CapabilityGroups.ALL
             .filter { it.labelEn.isNullOrBlank() || it.subEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nhóm thiếu labelEn/subEn: $missing")
@@ -87,8 +90,8 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 10 nhom va 75 muc`() {
-        assertEquals(10, SettingsCatalog.GROUPS.size)
+    fun `moi muc cai dat co nhan EN — 11 nhom va 80 muc`() {
+        assertEquals(11, SettingsCatalog.GROUPS.size)   // +VOICE (owner 2026-09-21 tách menu Giọng nói riêng)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
         // màn cũ gỡ hẳn), rồi S4 · R1/R6: **−3** mục cảnh (`home_scenes` · `home_scene_boot` · `home_scene_save`)
@@ -111,7 +114,9 @@ class LangCoverageTest {
         // AUTOMATION (1.85, spec kachi-automation): **+2** — `car_rain_defrost` (công tắc tự sấy kính khi mưa,
         // khoá `rain_defrost_enabled`) + `nav_automation` (sổ luật tự dẫn đường theo lịch, khoá
         // `nav_automation_rules`). Cả hai theo XE.
-        assertEquals(75, SettingsCatalog.ENTRIES.size)
+        // UX-OVERHAUL WP1 (2026-09-20): **+1** — `display_glass_real` (công tắc "Kính thật (làm mờ nền)", khoá
+        // `ui_glass_real`, nhóm Hiển thị, theo XE) ⇒ 75 → 76.
+        assertEquals(81, SettingsCatalog.ENTRIES.size)   // +voice_wake (owner 2026-09-21 tách nhóm Giọng nói)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -149,11 +154,11 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 286`() {
+    fun `tong so nhan co ban EN dung 258`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
-            LauncherRequirements.ALL + LauncherActions.ALL
+            LauncherRequirements.ALL + LauncherActions.ALL + HeaderItem.values().toList()
         // 302 = 265 + 3 nhóm mới (nav · cast · keys — `bars` bù cho `clusternav` bị bỏ) + 36 mục mới của IA v2,
         // trừ 1 mục `system_advanced_screen` gỡ cùng màn ClusterNav cũ (S3 · 2026-09-13), rồi S4 · R1/R6 −3 mục
         // cảnh +2 mục hồ sơ.
@@ -180,7 +185,17 @@ class LangCoverageTest {
         // 1.85 (2026-09-20): **282 → 283 (+1)** = +1 datum `ac_wind_auto`, +1 nút `child_lock_r`, −1 nút `hood`.
         // 1.85 AUTOMATION (2026-09-20): **283 → 286 (+3)** = +2 mục cài đặt (`car_rain_defrost` ·
         // `nav_automation`) +1 điều kiện quyền (`location`). Ba nhãn mới đều đã có bản EN tại chỗ khai.
-        assertEquals(286, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // UX-OVERHAUL WP1 (2026-09-20): **286 → 287 (+1)** = mục `display_glass_real` ("Kính thật (làm mờ nền)" /
+        // "Real glass (blur the backdrop)"), đã có bản EN tại chỗ khai.
+        // UX-OVERHAUL WP4 (2026-09-20): **287 → 295 (+8)** = +2 mục cài đặt (`bars_header_order` ·
+        // `bars_dock_order`) **và +6 [HeaderItem]** — bộ đăng ký MỚI mang [Localized]. Đưa nó vào danh sách quét
+        // ngay lượt này là đúng việc bài này sinh ra để làm (KDoc trên): một bộ mang nhãn mà không nằm trong tầm
+        // quét thì nó có thể thiếu bản EN mà không bài nào đỏ.
+        // UX-OVERHAUL WP6 (2026-09-20): **295 → 296 (+1)** = mục `cast_bubble` ("Hiện nút nổi chiếu cụm" / "Show
+        // the floating cast button"), khoá `cast_bubble_visible` theo XE; đã có bản EN tại chỗ khai.
+        // UX-OVERHAUL WP8 (2026-09-20): **296 → 258 (−38)** = −29 datum −8 nút (owner purge 37 mã BỎ) −1 nhóm
+        // (`g_ambient` hết thành viên). Đây là lượt duy nhất con số này GIẢM; mọi lượt trước đều cộng.
+        assertEquals(261, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")   // +VOICE nhóm +voice_wake mục (owner 2026-09-21)
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -247,7 +262,8 @@ class LangCoverageTest {
         // 11 và bài đỏ ngay — đúng việc nó sinh ra để làm, và là lời nhắc rằng đếm bằng mắt qua một tệp 355 dòng thì
         // sai. Giữ số đo, không giữ số đoán. 13 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 14 — nút SELECT `adas_lane` đã xoá).
         // 12 ((V) 2026-09-17: nút SELECT `drive_mode` đã xoá — trước đó 13).
-        assertEquals(14, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
+        // 12 (WP8 2026-09-20: hai nút SELECT `ambient_color` + `regen_level` đã purge — trước đó 14).
+        assertEquals(12, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
         val bad = withArgs.filter { it.argsEn.size != it.args.size }.map { "${it.id}(${it.args.size}≠${it.argsEn.size})" }
         assertTrue(bad.isEmpty(), "lựa chọn EN thiếu/lệch số phần tử — sẽ lùi về CẢ danh sách tiếng Việt: $bad")
     }
@@ -377,9 +393,10 @@ class LangCoverageTest {
         val res = MacroResult("mac_leave", listOf(MacroStepResult("win_lf", false)))
         assertEquals("Leaving the car: the car took no command", res.notice(ActionMacros.byId("mac_leave")!!.displayLabel))
         // Lựa chọn của nút SELECT cũng theo ngôn ngữ.
-        // ⚠ (V) 2026-09-17: mốc cũ là `drive_mode`/"Sport" — nút đã gỡ. `regen_level` cùng loại SELECT, cùng có
-        //    bản dịch khác hẳn bản Việt (nên vẫn bắt được lỗi "quên đổi ngôn ngữ").
-        assertEquals("High", ControlTileLogic.selectLabel(ControlRegistry.byId("regen_level")!!, 1))
+        // ⚠ (V) 2026-09-17: mốc cũ là `drive_mode`/"Sport" — nút đã gỡ. WP8 2026-09-20: mốc thứ hai `regen_level`
+        //    cũng đã purge ⇒ nay dùng `headlight_mode` (SELECT, và "Auto"/"Đỗ"/"Cốt" có bản dịch khác hẳn bản Việt
+        //    nên vẫn bắt được lỗi "quên đổi ngôn ngữ").
+        assertEquals("Parking", ControlTileLogic.selectLabel(ControlRegistry.byId("headlight_mode")!!, 2))
     }
 
     @Test

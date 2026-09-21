@@ -36,10 +36,6 @@
     </plurals>
     <string name="kachi_drawer_cap_note">A slot holds at most %1$d items — remove one to add another</string>
 
-    <!-- ── ControlTileFactory — ô điều khiển kiểu COVER (cửa/kính/cốp) ── -->
-    <string name="kachi_cover_close">Close</string>
-    <string name="kachi_cover_open">Open</string>
-
     <!-- ── LayoutEditorPanel — bảng vẽ bố cục ── -->
     <string name="kachi_layout_title">Draw a layout</string>
     <string name="kachi_layout_close">Close</string>
@@ -92,11 +88,20 @@
     <string name="kachi_sec_theme">Light / dark theme</string>
     <string name="kachi_row_palette">Colour palette</string>
     <string name="kachi_theme_note">"Auto" means dark from 18:00 to 06:00. Changing the palette rebuilds the screen once.</string>
+    <!-- UX-OVERHAUL WP1 · R1.3 — fake glass (default) / real glass (blur backdrop, API 31+) -->
+    <string name="kachi_glass_real_title">Real glass (blur the backdrop)</string>
+    <string name="kachi_glass_real_sub">Blurs what is behind each card for a true glass effect. Runs only on newer head units (Android 12+); older ones fall back to the lighter fake glass. Applies next time the screen opens.</string>
     <!-- P1b · R8 — accent colour / card tone (per profile) -->
     <string name="kachi_sec_color">Colours</string>
     <string name="kachi_row_accent">Accent colour</string>
     <string name="kachi_row_tone">Card tone</string>
-    <string name="kachi_row_paint">Car paint</string>
+    <string name="kachi_sec_car_image">Car image</string>
+    <string name="kachi_car_image_current">In use: %1$s</string>
+    <string name="kachi_car_image_title">Car image</string>
+    <string name="kachi_car_image_default">Using the built-in default car image. To use your own car photo, follow the steps below.</string>
+    <string name="kachi_car_image_steps">How to change the car image (top-down view, transparent background works best):\n1. Plug a USB stick into the car, or open the Files app.\n2. Copy the image into this folder: %1$s\n3. The newest image in the folder is used; reopen the home screen to see it.\nTap the button below to copy the folder path.</string>
+    <string name="kachi_copy_path">Copy folder path</string>
+    <string name="kachi_path_copied">Folder path copied</string>
     <string name="kachi_color_note">Saved with the current profile. "From wallpaper" takes the dominant colour of the first photo in the wallpaper folder. Text always stays readable: on a very light accent the button text turns dark by itself. Changing the colour rebuilds the screen once.</string>
     <string name="kachi_sec_lang">Language</string>
     <string name="kachi_row_lang">On-screen text</string>
@@ -133,6 +138,10 @@
     <string name="kachi_home_unset_ok">Cleared — press Home to go to the other launcher.</string>
     <string name="kachi_home_unset_partial">Kachi removed as home screen. No other launcher found — the system will pick one.</string>
     <string name="kachi_home_result_ok">Done — press Home to return to Kachi.</string>
+    <string name="kachi_wake_section">Hey Kachi</string>
+    <string name="kachi_music_section">Music</string>
+    <string name="kachi_music_default_app">Default music app</string>
+    <string name="kachi_music_auto">Auto</string>
     <string name="kachi_wake_title">"Hey Kachi" — voice wake word (experimental)</string>
     <string name="kachi_wake_sub">Say the wake phrase to open voice commands, no tap needed. Listens in the background while the screen is on. Off by default (uses battery/CPU). Experimental — it may not recognise you well yet; please report problems.</string>
     <string name="kachi_wake_notif_title">Hey Kachi</string>
@@ -166,6 +175,9 @@
     <string name="kachi_wall_title">Use photos as the wallpaper</string>
     <string name="kachi_wall_sub_nofolder">Put photos in the Kachi photo folder</string>
     <string name="kachi_wall_sub_folder">Put photos in: %1$s</string>
+    <string name="kachi_wall_steps">How to add WALLPAPER photos:\n1. Plug a USB stick into the car, or open the Files app.\n2. Copy photos into this folder: %1$s\n3. Turn on the switch above — the photos become the wallpaper and cycle on a timer.\n(Photos for the "Photo slideshow" widget go in a DIFFERENT folder — see the Photo slideshow section.)\nTap the button below to copy the folder path.</string>
+    <string name="kachi_photos_section">Photo slideshow widget</string>
+    <string name="kachi_photos_steps">Photos for the "Photo slideshow" widget (a DIFFERENT folder from the wallpaper):\n1. Plug a USB stick into the car, or open the Files app.\n2. Copy photos into this folder: %1$s\n3. Place the "Photo slideshow" widget in a slot — the photos cycle there.\nTap the button below to copy the folder path.</string>
     <string name="kachi_wall_period">Change photo every</string>
     <string name="kachi_wall_fit">Fit</string>
     <string name="kachi_wall_dim">Dim the photo</string>
@@ -174,6 +186,14 @@
     <string name="kachi_dock_visible_sub">Turn off to hide the bar; the frames fill the whole screen</string>
     <string name="kachi_dock_edge">Bar edge</string>
     <string name="kachi_dock_note">Tap a tile to add or remove a button from the bar.</string>
+    <!-- UX-OVERHAUL · WP4 — item positions inside the two bars. -->
+    <string name="kachi_header_order_title">Status-bar item order</string>
+    <string name="kachi_header_order_hint">Rearrange the clock, car chips and buttons on the status bar.</string>
+    <string name="kachi_dock_order_title">Car-bar item order</string>
+    <string name="kachi_dock_order_hint">Rearrange the buttons you picked above.</string>
+    <string name="kachi_bar_order_index">%1$d/%2$d</string>
+    <string name="kachi_bar_order_up">Move up one place</string>
+    <string name="kachi_bar_order_down">Move down one place</string>
     <string name="kachi_dock_warn">⚠ Safety / Drivetrain / Entertainment groups change car behaviour.</string>
 
     <!-- ── TopStripPicker — chọn chip thanh trạng thái ── -->
@@ -369,6 +389,8 @@
     <string name="kachi_sec_cast">Cluster cast</string>
     <string name="kachi_cast_enabled_title">Enable Cluster cast</string>
     <string name="kachi_cast_enabled_sub">Opens the cluster so it can host app windows. Turning it off hands the cluster back to the gauges.</string>
+    <string name="kachi_cast_bubble_title">Show the floating cast button</string>
+    <string name="kachi_cast_bubble_sub">The Kachi blossom that floats over the screen; tap it to cast. Turning this off only hides the button — you can still cast with the four Cast-now buttons below, by voice, and on engine start.</string>
     <string name="kachi_cast_split">Split ratio</string>
     <string name="kachi_sub_cast_autostart">Cast on engine start</string>
     <string name="kachi_cast_autostart_title">Auto-cast full cluster</string>
@@ -466,6 +488,7 @@
     <string name="kachi_check_update">Check for updates</string>
     <string name="kachi_nav_stop">Stop all navigation</string>
     <string name="kachi_sub_advanced">Advanced</string>
+    <string name="kachi_dev_tools_note">Measuring tools for a car check: they only appear while ADB test mode is open, and disappear when that window expires or the car is switched off.</string>
     <string name="kachi_vietmap_data">VietMap data</string>
 
     <!-- ── T-BRIDGE — the adb test bridge (docs/specs/kachi-test-bridge.html). ── -->
@@ -564,6 +587,9 @@
     <string name="kachi_voice_tts_get">Download the voice pack</string>
     <string name="kachi_voice_tts_remove">Remove the voice pack</string>
     <string name="kachi_voice_tts_sideload">No network on the car: copy the whole pack tree into Android/data/%1$s/files/sherpa/import/%2$s/ and press Download — every file is still sha256-checked.</string>
+    <string name="kachi_clip_voice_title">Kachi child voice (optional)</string>
+    <string name="kachi_clip_voice_absent">Not installed. The child-voice pack (%1$s) downloads once as a single archive; Kachi unzips it on the car and uses it as reply voice #2 (pick above).</string>
+    <string name="kachi_clip_voice_ready">Child voice installed · %1$s on disk</string>
     <string name="kachi_voice_speak_title">Speak replies out loud</string>
     <string name="kachi_voice_speak_sub">Kachi reads its answer aloud instead of only showing it.</string>
     <string name="kachi_voice_offline_title">Prefer the offline voice</string>

@@ -36,7 +36,12 @@ class SurfaceMaterialContractTest {
     @Test
     fun `0 blur 0 shadow 0 elevation trong tang ve launcher`() {
         val banned = Regex("""\bsetShadowLayer\b|\bBlurMaskFilter\b|\bRenderEffect\b|\bsetMaskFilter\b|\belevation\s*=|\bsetElevation\s*\(""")
-        val offenders = launcherSources().mapNotNull { f ->
+        // ⚠ UX-OVERHAUL WP1 · R1.3 — `KachiGlassMode.kt` là ngoại lệ DUY NHẤT: glass THẬT (RenderEffect) là đường
+        // opt-in, có công tắc `ui_glass_real` + API-gate 31 + mặc định TẮT + chờ đo trên xe. Glass GIẢ (mặc định,
+        // 0 blur) vẫn là con đường của mọi máy và là con đường DUY NHẤT trên xe API 29. Cùng lối miễn trừ
+        // `speedbadge/` — bề mặt có lý do riêng, ghi ra để lần sau không "dọn cho đều".
+        val exempt = setOf("KachiGlassMode.kt")
+        val offenders = launcherSources().filter { it.fileName.toString() !in exempt }.mapNotNull { f ->
             val found = banned.findAll(code(f)).map { it.value.trim() }.toList()
             if (found.isEmpty()) null else "${f.fileName}: ${found.distinct()}"
         }
@@ -111,48 +116,67 @@ class SurfaceMaterialContractTest {
      * Lồi và lõm mà chỉ khác nhau ở độ sáng thì ở góc nhìn nghiêng trong cabin (màn 1920 nằm ngang, mắt người lái
      * ở trên) hai vai đọc như một. Nhánh SUNKEN vì thế trả về một `GradientDrawable` tô ĐẶC và **thoát sớm** —
      * không chạm tới chuyển sắc.
+     *
+     * ## ⚠ Hai MỐC cắt vùng được **khẳng định tồn tại** trước khi cắt
+     * Bản trước cắt tới `"val active"`. WP1 gỡ nhánh mép nên biến đó biến mất, mà `substringBefore` **trả nguyên
+     * phần còn lại** khi không thấy mốc ⇒ vùng quét trùm cả nhánh gradient bên dưới và bài đỏ ở một dòng chẳng ai
+     * hiểu vì sao. Đây đúng họ lỗi "44 phép cắt vùng" đã ghi trong project-context: mốc không tồn tại thì phải NỔ
+     * ngay, không được âm thầm nới vùng quét.
      */
     @Test
     fun `nhanh SUNKEN giu phang va thoat som`() {
         val body = SourceRoots.body(theme(), "fun surface(")
-        val sunken = body.substringAfter("SurfaceTone.SUNKEN) return").substringBefore("val active")
+        val open = "SurfaceTone.SUNKEN) return"
+        val close = "val base"
+        listOf(open, close).forEach {
+            assertTrue(it in body, "mốc cắt vùng `$it` không còn trong surface() — sửa bài này, đừng để nó quét tràn")
+        }
+        val sunken = body.substringAfter(open).substringBefore(close)
         assertTrue("setColor(c(FIELD_SUNKEN))" in sunken, "ô lõm phải là MỘT tô đặc bằng vai fieldSunken")
         assertTrue(
             "Orientation" !in sunken,
             "ô lõm KHÔNG được có gradient — lõm và lồi phải khác nhau ở cơ chế, không chỉ ở con số",
         )
+        assertTrue("setStroke" !in sunken, "ô lõm cũng không có viền (WP1 · R1.1) — nó lõm bằng MÀU, không bằng kẻ")
     }
 
     /**
-     * Bề mặt lồi: gradient DỌC + (tuỳ chọn) lớp sắc lĩnh vực gom bằng `LayerDrawable`.
+     * Bề mặt lồi: **chỉ** chuyển sắc DỌC + (tuỳ chọn) một lớp sắc lĩnh vực, gom bằng `LayerDrawable`.
      *
-     * ## ⚠ [SOÁT Pass 5 · 2026-09-17] Bài này ĐẢO CHIỀU ba khẳng định của Pass 4
-     * Pass 4 đòi `Gravity.TOP` · `setLayerHeight(` · nét đỉnh `hair * 2` — tức là **khoá cái vạch vào chỗ**.
-     * Owner nhìn 1.68 trên xe: *"làm bóng ở đầu mỗi nút nhìn kỳ lắm … có 1 cái gạch trên top, bug rồi"*. Ba
-     * khẳng định ấy nay là **điều cấm**, không phải điều đòi. Ghi ra thay vì xoá lặng: một bài canh đảo chiều là
-     * một quyết định thiết kế đổi, và lần sau phải đọc được vì sao.
+     * ## ⚠⚠ UX-OVERHAUL WP1 · iteration (2026-09-20) — GỠ HẲN MÉP + VIỀN
+     * Bản WP1 sáng cùng ngày đảo Pass-5 và **cho phép** mép kính 1px (`Gravity.TOP` + `setLayerHeight`), chỉ chặn
+     * lớp dày. Owner xem ảnh: *"bị bug gạch trên đầu mỗi khung, bỏ viền đi luôn"* ⇒ bài này đảo lại lần nữa và nay
+     * **CẤM** cả mép 1px lẫn mọi `setStroke`. Lý do đầy đủ (vì sao cấm hình dạng thay vì khoá cường độ) ở KDoc
+     * [KachiTheme.surface] — tóm gọn: đã thử khoá cường độ, vẫn bị chê, vì cái sai là HÌNH DẠNG.
      *
-     * Vẫn giữ: chuyển sắc phải DỌC (chéo `TL_BR` là nhận diện của *"cái đang được chọn"*), và phải gom bằng
-     * `LayerDrawable` chứ không vẽ tay trong `onDraw`.
+     * Vẫn giữ: đúng MỘT chuyển sắc DỌC (chéo `TL_BR` là "cái đang được chọn"), gom bằng `LayerDrawable`, 0 blur/
+     * bóng/elevation (bài `0 blur 0 shadow 0 elevation`).
      */
     @Test
-    fun `be mat loi co du lop va chuyen sac DOC`() {
+    fun `be mat loi khong con vien hay mep`() {
         val body = SourceRoots.body(theme(), "fun surface(")
-        assertTrue("LayerDrawable(" in body, "lớp sắc lĩnh vực phải gom bằng LayerDrawable, không vẽ tay trong onDraw")
+        assertTrue(
+            "LayerDrawable(" in body,
+            "sắc lĩnh vực phải gom bằng LayerDrawable (lớp thứ hai chồng lên nền), không vẽ tay trong onDraw",
+        )
         assertEquals(
             1, Regex("""Orientation\.TOP_BOTTOM""").findAll(body).count(),
-            "nền thẻ phải là ĐÚNG MỘT chuyển sắc DỌC. Chéo (TL_BR) là nhận diện của 'cái đang được chọn' " +
-                "(KachiTheme.gradient) — hai vai đó không được lẫn nhau; và lớp DỌC thứ hai nghĩa là mép sáng " +
-                "Pass 4 đã mọc lại.",
+            "nền thẻ phải là ĐÚNG MỘT chuyển sắc DỌC (mặt kính). Chéo (TL_BR) là nhận diện của 'cái đang được chọn' " +
+                "(KachiTheme.gradient) — hai vai đó không được lẫn nhau.",
         )
         assertEquals(
             0, Regex("""Orientation\.TL_BR""").findAll(body).count(),
             "bề mặt KHÔNG được dùng chuyển sắc chéo — đó là vai của KachiTheme.gradient (cái đang được chọn)",
         )
-        val banned = listOf("Gravity.TOP", "setLayerHeight(", "setLayerGravity(", "hair * 2").filter { it in body }
+        // WP1 iteration: KHÔNG mép, KHÔNG viền — bất kể độ dày hay alpha. Ba lượt trước (Pass-4 surfEdge, Pass-5 nét
+        // đỉnh, WP1 bevel 1px) đều chết vì cùng một hình dạng: một dải ghim vào cạnh thẻ.
+        val banned = listOf(
+            "setStroke", "Gravity.TOP", "Gravity.BOTTOM", "setLayerHeight", "setLayerGravity", "setLayerInset",
+        ).filter { it in body }
         assertEquals(
             emptyList<String>(), banned,
-            "vạch sáng ở đỉnh thẻ mọc lại trong surface() (owner 2026-09-16 gọi đúng tên: 'bug rồi'): $banned",
+            "surface() mọc lại viền/mép. Bốn tone phân biệt nhau CHỈ bằng MÀU FILL (surfacePair), chiều nổi do " +
+                "chuyển sắc DỌC gánh. Đang có: $banned",
         )
     }
 

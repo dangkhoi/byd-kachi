@@ -264,4 +264,14 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
     override fun setCastEnabled(enabled: Boolean) {
         sp.edit().putBoolean("cast_enabled", enabled).apply()
     }
+
+    // WP6 · R6.1 — HIỆN nút nổi hay không. Mặc định TRUE, **ngược** với `cast_enabled` ngay trên, và có lý do:
+    // `cast_enabled` mặc định TẮT vì bật nó là đi giành mặt cụm trước mặt người lái (một việc ngoài app), còn khoá
+    // này chỉ quyết một cửa sổ nhỏ BÊN TRONG phiên chiếu mà owner vừa tự bật — ẩn nó mặc định thì người vừa bật
+    // Cast không còn lối vào nào để chiếu, tức tính năng trông như hỏng. Ba nhánh hậu quả ở [BubblePresence].
+    override fun bubbleVisible(): Boolean = sp.getBoolean("cast_bubble_visible", true)
+
+    override fun setBubbleVisible(visible: Boolean) {
+        sp.edit().putBoolean("cast_bubble_visible", visible).apply()
+    }
 }

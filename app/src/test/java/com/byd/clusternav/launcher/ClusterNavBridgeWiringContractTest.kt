@@ -127,6 +127,14 @@ class ClusterNavBridgeWiringContractTest {
         expected.forEach { (signature, call) ->
             assertTrue(call in body(b, signature), "`$signature` phải ghi qua `$call` (khoá thật, spec §4.3)")
         }
+        // UX-OVERHAUL WP1 · R1.3 — công tắc glass thật/giả (theo XE, `clusternav_prefs`). Nó KHÔNG ở `ClusterNavBridge.kt`
+        // mà ở `ClusterNavBridgeHome.kt`: tệp cầu chính đã **499 dòng** trước WP1 (trần 500 — CLAUDE.md §4.1) nên
+        // không còn chỗ. Luật thì không đổi: setter vẫn phải ghi qua đúng khoá thật của `Prefs`.
+        val home = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeHome.kt")
+        assertTrue(
+            "Prefs.setGlassReal(app, on)" in body(home, "fun ClusterNavBridge.setGlassReal(on: Boolean)"),
+            "`setGlassReal` phải ghi qua `Prefs.setGlassReal(app, on)`",
+        )
     }
 
     /** Toạ độ/cỡ badge phải đi qua bộ kẹp THUẦN ở `:core` — không tự viết lại phép kẹp trong UI. */

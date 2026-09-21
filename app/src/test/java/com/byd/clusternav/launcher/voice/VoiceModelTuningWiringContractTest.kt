@@ -30,7 +30,11 @@ class VoiceModelTuningWiringContractTest {
     private val settings by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt") }
     private val prefsSet by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgePrefsSet.kt") }
     private val state by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeState.kt") }
-    private val bridge by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/KachiTestBridge.kt") }
+    // ⚠ WP7 (2026-09-20) dời `voice_dump` (và các lệnh dev khác) sang `TestBridgeNoHome.kt` — nối hai tệp.
+    private val bridge by lazy {
+        code("src/main/java/com/byd/clusternav/launcher/testbridge/KachiTestBridge.kt") + "\n" +
+            code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeNoHome.kt")
+    }
     private val dump by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeVoiceDump.kt") }
 
     // ══ H5 · (a) KHÔNG đổi hành vi mặc định ═══════════════════════════════════════════════════════════════
@@ -257,7 +261,7 @@ class VoiceModelTuningWiringContractTest {
     fun `lenh voice_dump co day noi va dung chung duong nen`() {
         assertTrue(dump.contains("VoiceUtteranceLog.exportZip(app)"), "không được dựng đường nén thứ hai")
         assertTrue(
-            bridge.contains("TestBridgeCommands.VOICE_DUMP -> { TestBridgeVoiceDump.run(app, cmd, reply); return }"),
+            bridge.contains("TestBridgeCommands.VOICE_DUMP -> TestBridgeVoiceDump.run(app, cmd, reply)"),
             "receiver phải điều phối `voice_dump` (kèm `cmd` để lệnh tự kiểm cổng auto_confirm) — không có dòng này thì lệnh im lặng không tồn tại",
         )
         // [SCAN §6 1.69, W5] Xuất TIẾNG CABIN ra Download/ công khai qua receiver exported ⇒ phải có cổng auto_confirm

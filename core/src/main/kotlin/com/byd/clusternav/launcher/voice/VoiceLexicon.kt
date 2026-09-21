@@ -301,6 +301,23 @@ object VoiceLexicon {
     )
 
     /**
+     * Bỏ các [FILLERS] **ở ĐẦU** dãy, dừng ở từ thật đầu tiên (giữa câu thì không đụng — *"bật hay tắt"* phải còn
+     * nguyên để [confirmAnswer]/câu hỏi chọn đọc được).
+     *
+     * ## Vì sao nó ở đây chứ không là hai bản private
+     * `VoiceIntentParser` gọi phép này 8 lần, `VoiceMediaNavParse` 2 lần — sau lượt tách tệp của WP9 nó thành **hai
+     * bản sao y hệt nhau**. Luật ba dòng thì bản sao rẻ, nhưng nó là bản sao của một luật **ảnh hưởng mọi câu nói**:
+     * ai đó siết nó một bên (vd bỏ cả từ đệm ở cuối) thì hai bộ dựng ý-định cắt câu khác nhau, và cái lệch ấy im
+     * lặng. Chỗ đúng là cạnh [FILLERS] — dữ liệu và phép dùng dữ liệu ở cùng một nơi, và không bộ phân tích nào
+     * phải phụ thuộc vào bộ kia.
+     */
+    fun dropLeadingFillers(t: List<Token>): List<Token> {
+        var i = 0
+        while (i < t.size && t[i].norm in FILLERS) i++
+        return if (i == 0) t else t.subList(i, t.size)
+    }
+
+    /**
      * Cụm HỎI — gặp là chuyển cả câu thành lệnh ĐỌC, cắt cụm này ra rồi đọc phần còn lại
      * (`VoiceIntentParser.askAt`).
      *

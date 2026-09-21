@@ -594,8 +594,8 @@ class VoiceCommandWiringContractTest {
         assertTrue(settings.contains("VoiceEngine.release()"),
             "gỡ phải trả mô hình khỏi bộ nhớ TRƯỚC khi xoá tệp, không thì mã native còn giữ bản cũ")
         assertTrue(
-            code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt").contains("VoiceModelSettings(context, rows, deps).build(body)"),
-            "hàng tải mô hình phải có mặt trong màn Cài đặt — một lớp không ai dựng là mã chết",
+            code("src/main/java/com/byd/clusternav/launcher/SettingsVoiceSection.kt").contains("VoiceModelSettings(context, rows, deps).build(body)"),
+            "hàng tải mô hình phải có mặt trong màn Cài đặt (nhóm Giọng nói) — một lớp không ai dựng là mã chết",
         )
     }
 

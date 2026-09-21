@@ -61,8 +61,7 @@ package com.byd.clusternav.launcher
  * @property line viền mảnh trang trí.
  * @property lineStrong viền KẾT CẤU (thanh, thẻ ô làm việc) — vai duy nhất bắt buộc ≥ 3:1 ở CẢ hai bảng.
  * @property gridLine lưới của trình vẽ bố cục.
- * @property emptyFill nền ô trống.
- * @property emptyLine viền gạch đứt của ô trống — kết cấu, ≥ 3:1 cả hai bảng.
+ * @property emptyFill nền ô trống — vai DUY NHẤT nói *"đặt được app"* sau WP1 ⇒ tách nền ≥ 1.15× ([ĐO] 1.33/1.18×).
  * @property wash lớp tô rất nhạt (thân xe trong sơ đồ).
  * @property overlay lớp tô nhạt (viền thân xe, nền thanh tiến độ nhạc).
  * @property accent màu nhấn NHẬN DIỆN (chấm, viền, lớp tô nhạt) — KHÔNG dùng làm nền của chữ.
@@ -107,6 +106,7 @@ package com.byd.clusternav.launcher
  *   **màu MANG NGHĨA DỮ LIỆU** (ổn · chưa kiểm · cảnh báo · không khí · nhạc · trung tính). Đây là nhóm mà yêu
  *   cầu #3 của T1 nói rõ: không được dùng chung một mã cho hai bảng.
  * @property amberSoft nền badge "chưa kiểm trên xe".
+ * @property redSoft nền nút NGUY HIỂM — WP1 thay *nút viền rỗng*; `0x33` như [amberSoft], [ĐO] nền 1.45×, chữ 4.57.
  * @property artTo đầu thứ hai của gradient ảnh bìa nhạc.
  * @property glow1 / @property glow2 hai vệt sáng của nền vẽ sẵn.
  * @property clear trong suốt hoàn toàn (một vai riêng để chỗ gọi không phải viết `#00000000`).
@@ -125,9 +125,8 @@ package com.byd.clusternav.launcher
  *   nút nhìn kỳ lắm … có 1 cái gạch trên top, bug rồi"*. Không hạ alpha mà bỏ hẳn — cái sai là **hình dạng**
  *   (một hình chữ nhật 1–2dp ghim ở đỉnh luôn đọc ra là VẠCH), không phải cường độ. Vì thế chiều của chuyển sắc
  *   này (đỉnh SÁNG hơn đáy) nay là một **hợp đồng** có bài canh, không còn là một lựa chọn thẩm mỹ.
- * @property surfLine hairline viền ngoài của thẻ chất liệu. Hai bảng dùng **hai cơ chế khác nhau**, y như [line]:
- *   bản TỐI tách thẻ bằng bước sáng (1.23×) nên hairline chỉ là nét trang trí; bản SÁNG bước sáng chỉ 1.13× ⇒
- *   hairline **bắt buộc** là viền thật (đo được 3.28:1 trên nền, 3.71:1 trên thẻ trắng).
+ * @property surfLine hairline viền ngoài của thẻ. ⚠⚠ **WP1: 0 CHỖ VẼ** (`stroke` của `card()`/`pill()` cũng xoá) ⇒
+ *   chỉ còn là mã màu cho bài canh đo; bản SÁNG vì thế chỉ tách nền 1.13× — owner chốt GIỮ.
  * @property surfOnFrom / @property surfOnTo thẻ/ô đang BẬT — cùng trục nhấn xanh→tím của Kachi, bán trong suốt để
  *   ăn theo nền dưới nó. [ĐO] bước sáng so với thẻ thường: 1.28× (tối) · 1.75× (sáng) ⇒ trạng thái chọn nhìn ra
  *   được mà không phải đổi kích thước hay thêm hiệu ứng.
@@ -150,7 +149,9 @@ package com.byd.clusternav.launcher
  * @property partFill / @property partLine vùng tô · nét của bộ phận xe ở tone NEUTRAL (P3 §4.4); `partLine` cũng là
  *   VIỀN BẮT BUỘC khi màu sơn chạm nền (§4.8 luật (a)). @property glassFrom / @property glassTo chuyển sắc KÍNH (mức
  *   tả thực (1)); @property lampOn đèn bật · @property lampGlow tâm quầng đèn (toả về trong suốt, không blur) ·
- *   @property tailOn đèn hậu bật (đỏ ĐÈN, khác [red] cảnh báo) · @property carShadow tâm bóng đổ dưới xe.
+ *   @property tailOn đèn hậu bật (đỏ ĐÈN, khác [red] cảnh báo) · @property carShadow tâm bóng đổ. ⚠ Hai vai MÉP KÍNH
+ *   `glassSheen`/`glassShade` (thêm sáng 2026-09-20) GỠ chiều cùng ngày — owner: *"bug gạch trên đầu mỗi khung"*;
+ *   lần thứ BA sau `surfEdge`/`surfOnEdge` ⇒ đừng thêm lại dưới tên khác ([KachiTheme.surface]).
  * @property domainTints lớp sắc LĨNH VỰC phủ lên gradient thẻ (4.7–7 % — [ĐO] bước sáng 1.07–1.15× so với thẻ
  *   không tint, tức nhìn ra được mà không đánh nhau với chữ: mọi mực vẫn ≥ 4.5:1 trên **cả hai** đầu gradient).
  *   Khoá là **tên `Domain`** (chuỗi, không phải kiểu enum) để tệp này giữ nguyên tính chất *không phụ thuộc mô
@@ -183,7 +184,7 @@ data class KachiPalette(
     val lineStrong: String,
     val gridLine: String,
     val emptyFill: String,
-    val emptyLine: String,
+    // ⚠ WP1 — vai `emptyLine` XOÁ (nó LÀ một cái viền, 0 chỗ vẽ, không có vai trò thứ hai nào).
     val wash: String,
     val overlay: String,
     val accent: String,
@@ -211,6 +212,7 @@ data class KachiPalette(
     val orange: String,
     val slate: String,
     val amberSoft: String,
+    val redSoft: String,
     val artTo: String,
     val glow1: String,
     val glow2: String,
@@ -302,8 +304,7 @@ data class KachiPalette(
          *  - [lineStrong] `#26ffffff` → `#59ffffff`: mã cũ chỉ đạt **1.49:1** trên nền, tức là viền của thanh nút
          *    và của thẻ ô làm việc gần như không tồn tại. `#59ffffff` là mức **THẤP NHẤT** vượt 3:1 ([ĐO] 3.14 trên
          *    nền · 3.20 trên thẻ) — cố ý chọn mức tối thiểu để không biến hairline thành đường kẻ xám đậm.
-         *  - [emptyLine] `#42506a` → `#5b6d8f`: mã cũ 2.36:1 trên nền ô trống, mã mới 3.68:1. Gạch đứt của ô trống
-         *    là thứ nói *"chỗ này đặt được app"* ⇒ nó là kết cấu, không phải trang trí.
+         *    ⚠ WP1: không còn được vẽ làm viền; ở lại vì `SeatDiagramView` dùng nó làm **mực nét của hình**.
          *
          * Hai đổi này là **vá lỗi đọc được**, không phải đổi thẩm mỹ: chúng nằm đúng trong nhóm mà yêu cầu #8 của
          * T1 dặn *"tìm ra chỗ nào khó đọc thì vá luôn"*.
@@ -341,26 +342,26 @@ data class KachiPalette(
             line = "#17ffffff",
             lineStrong = "#59ffffff",
             gridLine = "#22ffffff",
-            emptyFill = KachiPaletteSeeds.DARK_RAMP.at(-1),
-            emptyLine = "#5b6d8f",
+            // WP1 — ô trống tách nền CHỈ bằng màu ⇒ bậc `-1`→`3`: [ĐO] at(-1) 1.012× (tàng hình) · at(3) 1.326×.
+            emptyFill = KachiPaletteSeeds.DARK_RAMP.at(3),
             wash = "#0dffffff",
             overlay = "#29ffffff",
-            accent = "#4c7dff",
-            accentInk = "#7ba0ff",
-            accent2 = "#7b5cff",
+            accent = "#4d86ff",
+            accentInk = "#8ab2ff",
+            accent2 = "#8a63ff",
             gradFrom = "#3f6ae0",
             gradTo = "#6b4ce6",
             onAccent = "#ffffff",
             inkOnAccent = "#e7ecff",
-            accentSoft = "#264c7dff",
-            accentLine = "#8078a0ff",
-            accentWash = "#2e4c7dff",
+            accentSoft = "#264d86ff",
+            accentLine = "#808ab2ff",
+            accentWash = "#2e4d86ff",
             // ⚠ [SOÁT Pass 4] Nút TẮT nay sáng lên (nền thẻ 1.23× → 1.35×) ⇒ bậc BẬT↔TẮT tụt từ ~1.35× xuống
             // **1.22×**, sát sàn 1.20×. Nâng alpha 36 % → 50 % kéo bậc lên **1.59×** mà chữ [inkOnAccent] vẫn
             // **7.71:1**. Đây là cái bẫy kinh điển của việc đổi một bậc trong thang: bậc bên cạnh im lặng hẹp lại.
-            tileOnFrom = "#804c7dff",
-            tileOnTo = "#667b5cff",
-            tileOnLine = "#b34c7dff",
+            tileOnFrom = "#804d86ff",
+            tileOnTo = "#668a63ff",
+            tileOnLine = "#b34d86ff",
             scrimPanel = "#ff070a11",
             scrimBtn = "#80000000",
             widgetBacking = "#171a20",
@@ -373,6 +374,7 @@ data class KachiPalette(
             orange = "#f59e0b",
             slate = "#a4b1c5",
             amberSoft = "#33fbbf24",
+            redSoft = "#33ff8fa0",
             artTo = "#ef4444",
             glow1 = "#112036",
             glow2 = "#160f28",
@@ -446,8 +448,8 @@ data class KachiPalette(
             line = "#788698",
             lineStrong = "#667487",
             gridLine = "#aab5c6",
-            emptyFill = KachiPaletteSeeds.LIGHT_RAMP.at(-1),
-            emptyLine = "#788698",
+            // WP1 — cùng lẽ bảng TỐI nhưng NGƯỢC chiều (nâng lên là trắng): [ĐO] at(-1) 1.086× → at(-2) 1.184×.
+            emptyFill = KachiPaletteSeeds.LIGHT_RAMP.at(-2),
             wash = "#0a000000",
             overlay = "#14000000",
             accent = "#2f5ae0",
@@ -475,6 +477,7 @@ data class KachiPalette(
             orange = "#9b430a",
             slate = "#535f6e",
             amberSoft = "#337d5200",
+            redSoft = "#33b32439",
             artTo = "#b91c37",
             glow1 = "#dbe6f7",
             glow2 = "#ece0f8",

@@ -241,8 +241,6 @@ object CarDataDemand {
      * thêm một dòng vào `readFast` mà quên ở đây sẽ ĐỎ off-car chứ không im lặng thành "datum không bao giờ tươi".
      */
     val FAST_IDS: Set<String> = setOf(
-        "speed", "accel_pct", "brake_pct", "motor_front_rpm", "steering_deg", "slope_deg",
-        "gear", "op_mode", "energy_mode", "motor_rear_rpm", "motor_front_torque", "engine_rpm",
-        "wheel_speed", "motor_power",
+        "speed", "gear", "op_mode", "energy_mode", "motor_power",
     )
 }

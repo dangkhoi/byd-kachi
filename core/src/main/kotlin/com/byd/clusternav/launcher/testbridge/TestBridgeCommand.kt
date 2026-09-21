@@ -207,6 +207,41 @@ object TestBridgeCommands {
     const val VOICE_DUMP = "voice_dump"
 
     /**
+     * ═══ WP7 · CÔNG CỤ "KIỂM TRA TỪNG NÚT XE" QUA adb ═══════════════════════════════════════════════════════
+     *
+     * `am broadcast … --es cmd captest --es op list|ok|notok|skip|report|clear [--es id <mã>] [--es text <ghi chú>]`
+     *
+     * ## Vì sao cần đường adb cho một công cụ đã có bề mặt bấm tay
+     * UX-OVERHAUL · WP7 đưa bảng bấm tay ([CapTestConsole]) vào sau cổng [DevMode] — nó vẫn còn, và buổi RE vẫn
+     * cần nó để **nhìn** (đèn có sáng không, cốp có mở không). Nhưng cái nó KHÔNG làm được là để **script** đi hết
+     * 25 mục RE: `op list` trả đủ mã + loại + đã-map-chưa để vòng lặp bash biết phải sweep những gì, `op ok/notok`
+     * đóng dấu kết quả ngay sau khi `hal`/`ctl` vừa chạy, `op report` xuất đúng một báo cáo như nút *Xuất* —
+     * **cùng một** `CapTestReport.build`, không phải một bộ dựng chữ thứ hai.
+     *
+     * ## Hai điều cố ý KHÔNG có ở đây
+     *  1. **Không có `op run`** — bắn một hành động xe đã có `ctl` (đi đúng applier của một cú chạm) và `hal` (thô).
+     *     Thêm `captest run` là đường thứ ba tới cùng một chỗ, và nó sẽ là đường quên mất cổng [CtlSafetyPolicy].
+     *  2. **Không cần `auto_confirm`** — cả sáu op chỉ đọc/ghi *nhật ký chấm điểm của chính Kachi*, không chạm xe,
+     *     không xuất dữ liệu cá nhân (khác [VOICE_DUMP] — nó nén tiếng cabin nên phải qua cổng).
+     */
+    const val CAPTEST = "captest"
+
+    /** Op của [CAPTEST] — ASCII, script đọc. `list` là mặc định khi `--es op` vắng. */
+    object CapTestOps {
+        const val LIST = "list"
+        const val OK = "ok"
+        const val NOT_OK = "notok"
+        const val SKIP = "skip"
+        const val REPORT = "report"
+        const val CLEAR = "clear"
+
+        /** Ba op đóng dấu một mục ⇒ bắt buộc có `--es id`. */
+        val MARKS: Set<String> = setOf(OK, NOT_OK, SKIP)
+
+        val ALL: Set<String> = setOf(LIST, OK, NOT_OK, SKIP, REPORT, CLEAR)
+    }
+
+    /**
      * Khoá prefs mà [PREFS_SET] được phép ghi — **danh sách trắng**, xem KDoc [PREFS_SET] ràng buộc (1).
      *
      * Bốn khoá đầu là khoá THEO XE của đường giọng nói (`PrefsVoiceV3.kt` + `Prefs.voiceAskAloud`); khoá
@@ -255,6 +290,9 @@ object TestBridgeCommands {
     /** `--es key` của [PREFS_SET] không nằm trong [WRITABLE_PREFS_KEYS] — nối tên khoá để script biết gõ sai đâu. */
     const val ERR_BAD_PREFS_KEY = "bad_prefs_key:"
 
+    /** `--es op` của [CAPTEST] không thuộc [CapTestOps.ALL] — nối op đã gõ. */
+    const val ERR_BAD_OP = "bad_op:"
+
     /**
      * Một lệnh: cần extra gì, nhận thêm extra gì.
      *
@@ -287,6 +325,9 @@ object TestBridgeCommands {
         // `text` là **tuỳ chọn** có chủ ý: vắng ⇒ giá trị rỗng ⇒ *"trả khoá về mặc định"* (tập rỗng / tắt), đúng
         // thứ `trap` của harness cần để dọn sau mỗi ca mà không phải biết mặc định của từng khoá.
         Spec(PREFS_SET, listOf(EXTRA_KEY), listOf(EXTRA_TEXT)),
+        // WP7 — `op` tuỳ chọn (vắng ⇒ `list`), `id` chỉ bắt buộc với ba op đóng dấu; phép kiểm đó nằm trong
+        // [parse] vì nó phụ thuộc GIÁ TRỊ của một extra khác, thứ mà [Spec.required] không diễn tả được.
+        Spec(CAPTEST, emptyList(), listOf(EXTRA_OP, EXTRA_ID, EXTRA_TEXT)),
     )
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
@@ -329,6 +370,16 @@ object TestBridgeCommands {
         val key = (extras[EXTRA_KEY] as? String)?.trim().orEmpty()
         if (name == PREFS_SET && key !in WRITABLE_PREFS_KEYS) return TestBridgeParse.Err(ERR_BAD_PREFS_KEY + key)
 
+        val op = (extras[EXTRA_OP] as? String).orEmpty().trim().lowercase()
+        // WP7 · [CAPTEST]: op lạ bị chặn ở TẦNG PHÂN TÍCH (cùng luật danh sách trắng của `prefs_set`) — gõ sai
+        // `--es op mark` mà lệnh vẫn trả `ok:true` thì script đọc thành "đã đóng dấu" trong khi không có gì được ghi.
+        val cap = if (name == CAPTEST) op.ifEmpty { CapTestOps.LIST } else op
+        if (name == CAPTEST) {
+            if (cap !in CapTestOps.ALL) return TestBridgeParse.Err(ERR_BAD_OP + cap)
+            val id = (extras[EXTRA_ID] as? String)?.trim().orEmpty()
+            if (cap in CapTestOps.MARKS && id.isEmpty()) return TestBridgeParse.Err(ERR_MISSING + EXTRA_ID)
+        }
+
         return TestBridgeParse.Ok(
             TestBridgeCommand(
                 name = name,
@@ -345,7 +396,9 @@ object TestBridgeCommands {
                 dev = (extras[EXTRA_DEV] as? String).orEmpty().trim(),
                 method = (extras[EXTRA_METHOD] as? String).orEmpty().trim(),
                 halArgs = (extras[EXTRA_HAL_ARGS] as? String).orEmpty().trim(),
-                op = (extras[EXTRA_OP] as? String).orEmpty().trim().lowercase(),
+                // `cap` thay `op` thô: nó đã điền mặc định `list` cho [CAPTEST] (tầng thi hành không phải nhớ lại
+                // mặc định lần thứ hai — đúng luật một-chỗ-quyết-định của dự án). Lệnh khác: `cap == op`.
+                op = cap,
                 key = key,
             ),
         )

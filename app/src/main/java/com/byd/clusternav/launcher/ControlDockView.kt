@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.LinearLayout
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.KachiBars as Bars
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -49,10 +50,16 @@ class ControlDockView(context: Context) : LinearLayout(context) {
 
     init {
         gravity = Gravity.CENTER
+        // WP1 · R1.1 — thanh nút **KHÔNG viền**. [ĐO ảnh `after-home-dark.png`] viền cũ là vạch 1px
+        // `rgb(99,103,117)` từ x=50 tới x=1868 ở y=882 = đường kẻ dễ thấy thứ hai của màn chính. Thanh tách khỏi
+        // vùng ô bằng nền `BAR` + khe [Sp.SLOT_GAP] mà `DockAreaLayout` đặt.
         background = GradientDrawable().apply {
-            cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c(KachiTheme.BAR)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.LINE_STRONG))
+            cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c(KachiTheme.BAR))
         }
-        val p = dpi(context, Sp.S); setPadding(p, p, p, p)
+        // WP5 · R5.1 — lề trong **[Bars.DOCK_PAD]** (trước WP5 là [Sp.S]): thanh mỏng lại 80 % mà ô chỉ nhỏ 85 %
+        // nên phần khung phải nhường chỗ trước, nếu không ô 73/83dp không còn nằm trong thanh 93/99dp (số học ở
+        // KDoc [Bars.DOCK_PAD]).
+        val p = dpi(context, Bars.DOCK_PAD); setPadding(p, p, p, p)
         rebuild()
     }
 
@@ -115,11 +122,11 @@ class ControlDockView(context: Context) : LinearLayout(context) {
         }
     }
 
-    /** Cỡ ô của thanh nút (100×70 khi dọc, 84×86 khi ngang, lề 4dp) — mọi số lấy từ [Sp]. */
+    /** Cỡ ô của thanh nút (WP5: 83×60 khi dọc, 71×73 khi ngang, lề 4dp) — mọi số lấy từ [Bars]. */
     private fun sized(tile: View): View = tile.apply {
         layoutParams = LayoutParams(
-            dpi(context, if (config.isVertical()) Sp.DOCK_TILE_W_VERTICAL else Sp.DOCK_TILE_W),
-            dpi(context, if (config.isVertical()) Sp.DOCK_TILE_H_VERTICAL else Sp.DOCK_TILE_H),
+            dpi(context, if (config.isVertical()) Bars.DOCK_TILE_W_VERTICAL else Bars.DOCK_TILE_W),
+            dpi(context, if (config.isVertical()) Bars.DOCK_TILE_H_VERTICAL else Bars.DOCK_TILE_H),
         ).also { it.setMargins(dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS)) }
     }
 }

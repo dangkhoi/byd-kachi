@@ -50,9 +50,11 @@ class CarControlAdapterTest {
     @Test fun `select routes index for feature-id control`() {
         val gw = FakeHalGateway(featureRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
-        // ambient_color = feature 1276194864 (drive_mode từng đứng đây; nút đó đã gỡ ở lượt (V) 2026-09-17).
-        assertTrue(adapter.select("ambient_color", 2))
-        assertEquals(1276194864, gw.featureSetCalls[0].id)
+        // ⚠ WP8 2026-09-20: `ambient_color` cũng đã purge (drive_mode từng đứng đây, gỡ ở (V) 2026-09-17) ⇒ mốc
+        // nay là `screen_rotation` — SELECT còn sống DUY NHẤT mà `bindingKey` là một feature-id SỐ (`1330643005`),
+        // tức đúng hình dạng bài này đo. `camera_view` không dùng được: nó route named-method.
+        assertTrue(adapter.select("screen_rotation", 2))
+        assertEquals(1330643005, gw.featureSetCalls[0].id)
         assertEquals(2, gw.featureSetCalls[0].value)
     }
 

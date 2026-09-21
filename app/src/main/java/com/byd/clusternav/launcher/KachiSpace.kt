@@ -75,6 +75,31 @@ object KachiSpace {
      */
     const val STROKE = 2
 
+    /**
+     * **LỀ NGANG (trái+phải) của khung nội dung màn chính** — thanh trên · vùng ô · thanh nút.
+     *
+     * ## Owner 2026-09-20: *"canh lại margin header, taskbar, trái phải, bé lại còn 80%, đang dư thừa khoảng trắng phí"*
+     * `13` = **80 % của [L]** (16 × 0.8 = 12.8, làm tròn lên 13 để còn là số nguyên dp — làm tròn xuống 12 sẽ trùng
+     * đúng bậc [M] và bậc đó mang nghĩa khác, đọc code sẽ tưởng là lề-trong-thẻ).
+     *
+     * ## ⚠ Vì sao chỉ có MỘT con số cho cả ba thứ, không tách riêng header/taskbar
+     * Thanh trên, vùng ô và thanh nút đều là con của **cùng một** `LinearLayout` gốc ở [KachiHomeActivity]; lề ngang
+     * của chúng LÀ `paddingLeft/Right` của khung đó. Cho riêng hai thanh một lề nhỏ hơn thì phải dùng **lề âm** và
+     * hai thanh sẽ **lệch cột** với các ô ở giữa — một mép lệch 3dp đọc ra như lỗi vẽ, không như thiết kế. Nên lời
+     * giao *"header + taskbar còn 80 %"* thi hành bằng cách hạ đúng lề ngang dùng chung, và vùng ô đi theo (nó cũng
+     * đang thừa khoảng trắng ở đúng hai mép ấy).
+     *
+     * ## Chỉ NGANG — lề DỌC giữ [L]
+     * Lời giao ghi rõ *"Chỉ margin NGANG; không đổi chiều cao"*. Nên khung nội dung từ nay **không còn cách đều 4
+     * cạnh** như S1b (2026-09-14) chốt: trên/dưới [L], trái/phải bậc này. Đó là sai lệch có chủ đích với S1b và
+     * `HomeEdgeInsetContractTest` khoá cả hai con số để không ai "dọn cho đều" mất một nửa lời giao.
+     *
+     * **Không thể là một bậc của thang**: nó là 80 % của một bậc, tức nằm GIỮA [M] (12) và [L] (16) — thêm nó vào
+     * thang sẽ phá nhịp 4dp và mời "chọn số gần nhất" quay lại. Nó là một **hằng vai trò**, như [SLOT_GAP] (9 = 75 %
+     * của [M], cũng do owner chốt theo cảm nhận trên xe).
+     */
+    const val EDGE_H = 13
+
     // ── Bán kính góc ─────────────────────────────────────────────────────────────────────────────────────
     //
     // Bán kính KHÔNG phải khoảng cách: 12dp bán kính đứng cạnh 12dp lề là **trùng hợp**, không phải nhịp. Gộp
@@ -115,19 +140,32 @@ object KachiSpace {
     const val TOUCH = 48
 
     /**
-     * Đích chạm trong ô thanh nút **compact** (32dp) — CHỈ dùng ở nút −/+ bên trong ô đó.
+     * Bề cao **VẼ** của nút −/+ trong ô thanh nút (27dp) — CHỈ dùng ở nút đó.
      *
      * **Con số này được ĐO từ ràng buộc thật, không phải chọn cho đẹp.** Ô thanh nút ngang là
-     * [DOCK_TILE_W]×[DOCK_TILE_H] = 84×86dp, trừ lề trong [S] hai bên còn **68×70dp**. Bề ngang phải chứa
-     * `[−] [giá trị] [+]` mà giá trị kiểu "22°" đã chiếm ~28dp ⇒ mỗi nút còn ~20dp bề ngang. Bề dọc phải chứa
-     * icon ([ICON_S]) + nhãn + hàng nút ⇒ hàng nút còn ~32dp. Nên đích chạm thật ở đây là **~20×32dp**, nới bề
-     * dọc là phần duy nhất còn nới được.
+     * [KachiBars.DOCK_TILE_W]×[KachiBars.DOCK_TILE_H], trừ lề trong hai bên còn một hộp mà bề ngang phải chứa
+     * `[−] [giá trị] [+]`; giá trị kiểu "22°" ăn phần giữa nên mỗi nút chỉ còn ~20dp bề ngang. Bề dọc phải chứa
+     * icon ([ICON_S]) + hàng nút ⇒ hàng nút là phần duy nhất còn nới/thu được.
      *
-     * ⚠ **[ĐO] trên máy ảo — lần đầu tôi đặt 36dp và nó LÀM HỎNG ô**: 2×36 = 72 > 68 ⇒ chữ giá trị bị bóp,
-     * `"22°"` **xuống hai dòng** ("2" / "2°"). Ghi lại vì đây là bằng chứng rằng "nới đích chạm" không phải luôn
-     * an toàn: nới quá trần vật lý của ô thì đổi luôn bố cục bên trong nó.
+     * ⚠ **[ĐO] trên máy ảo — lần đầu tôi đặt 36dp và nó LÀM HỎNG ô**: 2×36 = 72 > 68dp dùng được của ô 84dp ⇒ chữ
+     * giá trị bị bóp, `"22°"` **xuống hai dòng** ("2" / "2°"). Ghi lại vì đây là bằng chứng rằng "nới đích chạm"
+     * không phải luôn an toàn: nới quá trần vật lý của ô thì đổi luôn bố cục bên trong nó.
+     *
+     * ## ⚠⚠ WP5 (2026-09-20) hạ **32 → 27** (85 %, R5.1 *"nội dung 85 %"*) — và vì sao đây KHÔNG phải một đích
+     * chạm nhỏ đi
+     * Hằng này chỉ còn là bề cao **vẽ** của cái nút. Vùng **NHẬN CHẠM** thật do [StepTouchTarget] cấp qua
+     * `TouchDelegate` và nó lấy [TOUCH] (48dp) — độc lập hoàn toàn với con số ở đây (xem KDoc `StepTouchTarget`:
+     * *"nới VÙNG NHẬN CHẠM, không nới view"*). Nên thu chữ số này làm nút mảnh hơn mà **không** làm đích chạm nhỏ
+     * hơn; đó cũng là lý do chọn thu ở đây thay vì thu [ICON_S] — icon là manh mối nhận ra nút, còn 5dp bề cao của
+     * một dấu `−` thì không mang thông tin nào.
+     *
+     * [ĐO số học] nó là hằng **bắt buộc** phải hạ, không phải tuỳ chọn: ô dọc sau WP5 rộng
+     * [KachiBars.DOCK_TILE_W_VERTICAL] và cao [KachiBars.DOCK_TILE_H_VERTICAL] = 60dp, mà nội dung cần
+     * `2×[KachiBars.DOCK_PAD] + ([ICON_S] + [XS]) + hằng này`; giữ 32 thì ra 64 > 60 ⇒ ô bị cắt im lặng. Ô ngang
+     * ([KachiBars.DOCK_TILE_W]×[KachiBars.DOCK_TILE_H] = 71×73) thì còn dư, nhưng hai vùng dùng CÙNG một bộ cỡ
+     * ([TileSize.DOCK]) nên chiều chật quyết định.
      */
-    const val TOUCH_TIGHT = 32
+    const val TOUCH_TIGHT = 27
 
     // ── Cỡ icon ──────────────────────────────────────────────────────────────────────────────────────────
     //
@@ -170,6 +208,20 @@ object KachiSpace {
 
     /** Đoạn trống của viền đứt. Ngắn hơn [DASH_ON] để viền còn đọc ra là một đường liền mạch. */
     const val DASH_OFF = 4
+
+    /**
+     * **Bề ngang một VẠCH MỨC** của ô điều khiển nhiều mức (WP2 · R2.2 — [ControlLevelBar]).
+     *
+     * Chiều CAO của vạch dùng [BAR_THIN] (nó đúng vai *"chiều cao một vạch mảnh vẽ được"*), nên chỗ này chỉ còn
+     * phải nói bề ngang. **10dp** suy từ chỗ có thật: ô thanh nút ngang dùng được [DOCK_TILE_W] − 2×[S] = 68dp, dải
+     * hai vạch chiếm `2×10 + 4` = **24dp** — đủ nhỏ để nằm gọn dưới nhãn hai dòng, đủ dài để một gạch cao 4dp đọc
+     * ra là *"một mức"* chứ không phải một dấu chấm. Thang mức dài nhất đang có là 2 vạch (ghế mát/sưởi); nếu sau
+     * này có nút 4 mức thì `4×10 + 3×4` = 52dp vẫn vừa.
+     *
+     * **Không thể là một bậc của thang**: đây là cỡ của MỘT VẬT (cùng họ [DOT] / [BAR_THIN] / [DOCK_TILE_W]), không
+     * phải khoảng cách giữa hai vật.
+     */
+    const val LEVEL_TICK_W = 10
 
     // ── Cỡ thành phần một-lần ────────────────────────────────────────────────────────────────────────────
     //
@@ -405,29 +457,18 @@ object KachiSpace {
     /** Bề rộng thanh tiến trình của widget nhạc. */
     const val PROGRESS_W = 152
 
-    /** Bề dày thanh nút khi nằm ngang (trên/dưới). */
-    const val DOCK_THICK = 116
-
-    /** Bề rộng thanh nút khi nằm dọc (trái/phải). */
-    const val DOCK_WIDE = 124
-
-    // ── Cỡ Ô của thanh nút ───────────────────────────────────────────────────────────────────────────────
+    // ⚠⚠ [UX-OVERHAUL · WP5 · 2026-09-20] **HÌNH HỌC CỦA HAI THANH đã DỜI sang `KachiSpaceBars.kt`** (`object
+    // KachiBars`): `DOCK_THICK` · `DOCK_WIDE` · `DOCK_TILE_W` · `DOCK_TILE_H` · `DOCK_TILE_W_VERTICAL` ·
+    // `DOCK_TILE_H_VERTICAL`, cộng bộ hằng MỚI của thanh trên (`HEADER_H` · `HEADER_BTN` · `HEADER_AVATAR`).
     //
-    // ⚠ Bốn số này trước T5 nằm trong một biểu thức `dpi(ctx, if (dọc) 100 else 84)` nên **bộ đếm số trần đầu
-    // tiên của T5 KHÔNG thấy chúng** (mẫu tìm chỉ khớp số đứng một mình trong ngoặc). Tìm ra khi đọc mã để sửa
-    // ô stepper. Bài canh đã được sửa để quét *mọi* số trong đối số của `dp(...)`, kể cả trong biểu thức.
-
-    /** Bề rộng ô thanh nút khi thanh nằm NGANG. Trần vật lý cho mọi thứ bên trong ô — xem [TOUCH_TIGHT]. */
-    const val DOCK_TILE_W = 84
-
-    /** Bề cao ô thanh nút khi thanh nằm NGANG. */
-    const val DOCK_TILE_H = 86
-
-    /** Bề rộng ô thanh nút khi thanh nằm DỌC (ô rộng hơn vì cột hẹp nên chữ cần chỗ). */
-    const val DOCK_TILE_W_VERTICAL = 100
-
-    /** Bề cao ô thanh nút khi thanh nằm DỌC (thấp hơn để xếp được nhiều ô trong một cột). */
-    const val DOCK_TILE_H_VERTICAL = 70
+    // Cắt theo VAI, không cắt cho vừa số dòng (cùng lệ `ControlTileFactory` → `TileSize.kt`/`ReadTile.kt`): tệp này
+    // là **thang dùng chung cho mọi bề mặt**, còn tệp kia là **cỡ của hai khối bố cục cụ thể** mà WP5 vừa hạ tỉ lệ
+    // theo lời owner (thanh nút 80/85 %, thanh trên 75/70 %) — chúng suy lẫn nhau (bề dày thanh = ô + lề ô + lề
+    // thanh) nên phải đứng cạnh nhau để không ai đổi một nửa. Lý do PHẢI tách: tệp này đã **496 dòng** trước khi
+    // WP5 thêm một dòng nào, tức chạm trần 500 của dự án (CLAUDE.md §4.1).
+    //
+    // `KachiBars` vẫn là **một phần của thang** (chỉ khai hằng, 0 lời gọi `dp(`, 0 import Android) — bài canh
+    // `SpacingScaleContractTest` nhận nó cùng hạng với tệp này và có phép kiểm riêng ép đúng tính chất đó.
 
     /**
      * Thụt TRÊN cho caption cửa sổ freeform (24dp ≈ 36px @1.5×).

@@ -116,18 +116,9 @@ class CarDataAdapter(
         return prev.copy(
             drivetrain = CarStatus.Drivetrain(
                 speedKmh = g.int("speed", d.speedKmh),
-                accelPct = g.int("accel_pct", d.accelPct),
-                brakePct = g.int("brake_pct", d.brakePct),
-                motorFrontRpm = g.int("motor_front_rpm", d.motorFrontRpm),
-                steeringDeg = g.int("steering_deg", d.steeringDeg),
-                slopeDeg = g.int("slope_deg", d.slopeDeg),
                 gear = g.str("gear", d.gear),
                 opMode = g.str("op_mode", d.opMode),
                 energyMode = g.str("energy_mode", d.energyMode),
-                motorRearRpm = g.int("motor_rear_rpm", d.motorRearRpm),
-                motorFrontTorqueNm = g.int("motor_front_torque", d.motorFrontTorqueNm),
-                engineRpm = g.int("engine_rpm", d.engineRpm),
-                wheelSpeedKmh = g.int("wheel_speed", d.wheelSpeedKmh),
             ),
             energy = prev.energy.copy(motorPowerKw = g.int("motor_power", prev.energy.motorPowerKw)),
         )
@@ -153,11 +144,6 @@ class CarDataAdapter(
                 tripHours = g.dbl("trip_hours", e.tripHours),
                 tripKwh = g.dbl("trip_kwh", e.tripKwh),
                 consumption50 = g.dbl("consumption_50km", e.consumption50),
-                cellTempHighC = g.int("cell_temp_high", e.cellTempHighC),
-                cellTempLowC = g.int("cell_temp_low", e.cellTempLowC),
-                cellTempAvgC = g.int("cell_temp_avg", e.cellTempAvgC),
-                cellVHigh = g.dbl("cell_v_high", e.cellVHigh),
-                cellVLow = g.dbl("cell_v_low", e.cellVLow),
                 // Điện 12V + nguồn MCU — trước 2026-09-16 nằm ở cụm `Safety`, chuyển sang đây cùng lượt gỡ ADAS.
                 volt12v = g.dbl("volt_12v", e.volt12v),
                 volt12vLevel = g.int("volt_12v_level", e.volt12vLevel),
@@ -177,7 +163,6 @@ class CarDataAdapter(
                 recircOn = g.bool("ac_cycle", c.recircOn),
                 anionOn = g.bool("anion_state", c.anionOn),
                 setTempC = g.int("inside_temp", c.setTempC),
-                coolantTempC = g.int("coolant_temp", c.coolantTempC),
                 tempUnit = g.str("temp_unit", c.tempUnit),
                 // H1 · T2 — năm getter [ĐO xe 2026-09-16]. Ba mục giữ mã THÔ (`seat*Raw`, `acModeRaw`): phép đổi
                 // (thang mức · đảo AUTO) làm ở chỗ HIỂN THỊ/chỗ đọc của nút, đúng MỘT lần — xem KDoc ở `CarStatus`.
@@ -213,12 +198,9 @@ class CarDataAdapter(
                 tailgateOpen = g.bool("tailgate_status", b.tailgateOpen),
                 sunroofPct = g.int("sunroof_pos", b.sunroofPct),
                 sunshadePct = g.int("sunshade_pct", b.sunshadePct),
-                mirrorFolded = g.bool("mirror_fold", b.mirrorFolded),
                 powerLevel = g.int("power_level", b.powerLevel),
                 vehicleType = g.str("vehicle_type", b.vehicleType),
-                tailgatePct = g.int("tailgate_position", b.tailgatePct),
                 sunroofOpen = g.bool("sunroof_state", b.sunroofOpen),
-                wiperOn = g.bool("wiper_state", b.wiperOn),
                 emergencyAlarm = g.bool("emergency_alarm", b.emergencyAlarm),
             ),
             lights = CarStatus.Lights(
@@ -227,25 +209,14 @@ class CarDataAdapter(
                 frontFog = g.bool("light_front_fog", l.frontFog),
                 drl = g.bool("light_drl", l.drl),
                 headlightMode = g.int("headlight_feedback", l.headlightMode),
-                ambientOn = g.bool("ambient_enabled", l.ambientOn),
-                ambientColorIndex = g.int("ambient_front_color", l.ambientColorIndex),
-                ambientBrightness = g.int("ambient_front_brightness", l.ambientBrightness),
                 rearFog = g.bool("light_rear_fog", l.rearFog),
                 leftTurn = g.bool("light_left_turn", l.leftTurn),
                 rightTurn = g.bool("light_right_turn", l.rightTurn),
                 sideLight = g.bool("light_side", l.sideLight),
-                ambientRearColorIndex = g.int("ambient_rear_color", l.ambientRearColorIndex),
-                ambientRearBrightness = g.int("ambient_rear_brightness", l.ambientRearBrightness),
             ),
             identity = CarStatus.Identity(
                 vin = g.str("vin", i.vin),
-                engineCode = g.str("engine_code", i.engineCode),
                 oilLevelPct = g.int("oil_level", i.oilLevelPct),
-                gpsLat = g.dbl("gps_lat", i.gpsLat),
-                gpsLon = g.dbl("gps_lon", i.gpsLon),
-                engineCoolantLevel = g.int("engine_coolant_level", i.engineCoolantLevel),
-                gpsElevation = g.dbl("gps_elevation", i.gpsElevation),
-                gpsHeading = g.dbl("gps_heading", i.gpsHeading),
             ),
             // A9 — âm lượng Android (`AudioManager`), nhịp CHẬM: nó chỉ đổi khi người ta bấm, và đọc nó không tốn
             // một lời gọi HAL nào nên không cần nhịp nhanh.

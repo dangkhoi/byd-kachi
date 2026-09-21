@@ -32,11 +32,9 @@ class CapabilityIconPositionTest {
      * [CapabilityCatalog.HIDDEN_FROM_PICKER]: danh sách loại trừ phải bắt viết lý do).
      */
     private val noPositionShape: Map<String, String> = mapOf(
-        "motor_front_rpm" to
-            "\"trước/sau\" ở đây là MÔ-TƠ nào, không phải góc nào trên thân xe. Đây là đại lượng quay ⇒ giữ glyph " +
-                "trừu tượng (OQ1: chỉ thứ NẰM TRÊN XE mới vẽ hình xe)",
-        "motor_rear_rpm" to "cùng lý do motor_front_rpm — mô-tơ sau, không phải một góc của thân xe",
-        "motor_front_torque" to "cùng lý do motor_front_rpm — mô-men của mô-tơ trước, là đại lượng chứ không phải chỗ",
+        // ⚠ UX-OVERHAUL · WP8 2026-09-20 — ba mã mô-tơ (`motor_front_rpm` · `motor_rear_rpm` ·
+        // `motor_front_torque`) đã **purge** khỏi registry ⇒ rời danh sách này, đúng cách nó phải "tự rữa"
+        // (bài `danh sach loai tru vi tri khong bi rua` đòi mọi mã khai ở đây phải còn tồn tại).
         // `defrost_rear` ĐÃ RỜI danh sách này ở U7 lượt 2: nay có `ic-car-rear-defrost` (khung nhìn từ sau +
         // sóng nhiệt trên kính hậu) nên nó đi qua phép canh như mọi mã có vị trí khác — đúng cách danh sách
         // này phải "tự rữa" (trả nợ thì rời danh sách, không để lại dòng chết).
@@ -118,7 +116,9 @@ class CapabilityIconPositionTest {
         // Sàn 40 → 28 sau khi owner gỡ toàn bộ ADAS/an toàn 2026-09-16 (12 mã có vị trí của điểm mù · chuyển làn ·
         // cắt ngang sau · cảnh báo mở cửa · dây an toàn · người ngồi đã xoá). Sàn là chốt chống bộ quét hỏng, không
         // phải mục tiêu — hạ nó đúng bằng số đã mất, không hạ thêm.
-        assertTrue(positioned().size >= 28, "chỉ soi được ${positioned().size} mã có vị trí — nghi phép đọc hậu tố hỏng")
+        // ⚠ WP8 2026-09-20: 28 → 27 = −4 mã đèn viền trước/sau (màu + độ sáng × 2) +3 mã mô-tơ vừa RỜI
+        // `noPositionShape` (chúng bị purge nên không còn bị trừ ở đây nữa). Đúng bằng số đã mất.
+        assertTrue(positioned().size >= 27, "chỉ soi được ${positioned().size} mã có vị trí — nghi phép đọc hậu tố hỏng")
     }
 
     // ── 2 · hai góc KHÁC nhau không được dùng chung một hình ────────────────────────────────────────

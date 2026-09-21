@@ -62,6 +62,14 @@ class SettingsDeps(
      */
     val onTopStripConfig: (TopStripConfig) -> Unit,
     /**
+     * UX-OVERHAUL · WP4 — **thứ tự các vật trên thanh trên** (nhận cả [HeaderLayout] đã chốt).
+     *
+     * Cùng lập luận [onDockConfig]/[onTopStripConfig]: phép DỜI là hàm thuần ở `:core`
+     * ([HeaderLayout.move] → [BarOrder.move]), nên một cổng `onMoveHeaderItem(item, delta)` chỉ nhân đôi luật
+     * kẹp biên ở tầng vẽ. Thứ tự thanh NÚT không có cổng riêng — nó đi trong [onDockConfig].
+     */
+    val onHeaderLayout: (HeaderLayout) -> Unit,
+    /**
      * T6 · R-UI (m) — mở **bộ chọn của ngăn kéo** ở chế độ chọn nút thanh xe.
      * `(tập đang bật, gọi lại khi Áp dụng)`; xem hợp đồng ở [DrawerController.openDockPicker].
      */
@@ -142,6 +150,17 @@ class SettingsDeps(
     val assignAppToSlot: (Int, String) -> Boolean,
     /** Nhảy màn Cài đặt sang một nhóm khác (bảng đang mở thì chỉ đổi nhóm — xem `HomePanels.openSettings`). */
     val openSettingsGroup: (SettingsGroup) -> Unit,
+    /**
+     * UX-OVERHAUL · WP7 — **dựng lại trang đang xem** sau khi một công tắc đổi *cấu trúc* trang (không chỉ giá trị).
+     *
+     * Chỗ gọi duy nhất hiện nay là công tắc *Chế độ kiểm thử qua adb*: từ WP7 nó là **cổng** của khối đồ đo
+     * ([DevMode]), nên tích vào phải làm khối đó xuất hiện ngay. Trang Cài đặt được **nhớ lại**
+     * ([SettingsPanel.pages]) nên không có đường nào khác để một trang tự dựng lại chính nó.
+     *
+     * ⚠ KHÔNG dùng cho các công tắc thường: chúng chỉ đổi GIÁ TRỊ, mà `checkRow` đã tự tô lại ô tích — dựng lại cả
+     * trang cho một cú tích là vứt luôn chỗ đang cuộn của người dùng.
+     */
+    val refreshSettings: () -> Unit,
 )
 
 /**
@@ -347,11 +366,16 @@ class SettingsPanel(
         setOnClickListener { show(group) }
     }
 
-    /** Nhóm đang chọn = nền nhạt + viền accent; nhóm khác = trong suốt (rail không được ồn hơn nội dung). */
+    /**
+     * Nhóm đang chọn = **nền nhạt accent**; nhóm khác = trong suốt (rail không được ồn hơn nội dung).
+     *
+     * WP1 · R1.1 — viền accent đã gỡ. Trạng thái "đang chọn" đọc bằng [KachiTheme.ACCENT_SOFT] một mình: đó là một
+     * mảng màu nhấn phủ kín ô rail, khác hẳn ô trong suốt bên cạnh — không cần thêm một đường kẻ để nói cùng điều đó.
+     */
     private fun paintRail(cell: LinearLayout, on: Boolean) {
         cell.background = if (on) GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_M).toFloat()
-            setColor(c(KachiTheme.ACCENT_SOFT)); setStroke(dpi(context, Sp.HAIRLINE), c(KachiTheme.ACCENT))
+            setColor(c(KachiTheme.ACCENT_SOFT))
         } else null
     }
 

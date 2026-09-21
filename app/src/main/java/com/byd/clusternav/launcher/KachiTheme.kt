@@ -14,15 +14,20 @@ import com.byd.clusternav.R
  * `KachiTheme.SurfaceTone.ACTIVE` — cùng lối [ThemeMode]/[LayoutPreset] của `:core`.
  */
 enum class SurfaceTone {
-    /** Thẻ nội dung thường — chuyển sắc dọc + hairline. (Pass 5 gỡ mép sáng/nét đỉnh, xem [KachiTheme.surface].) */
+    /**
+     * Thẻ nội dung thường — **chỉ** chuyển sắc DỌC, không viền, không mép.
+     *
+     * Pass 5 đã gỡ nét đỉnh đặc; WP1 (owner 2026-09-20: *"bị bug gạch trên đầu mỗi khung, bỏ viền đi luôn"*) gỡ
+     * nốt mép kính 1px **và** hairline viền ngoài. Xem [KachiTheme.surface] về vì sao bỏ hẳn thay vì hạ cường độ.
+     */
     NEUTRAL,
 
     /**
      * **KHAY** — thẻ ô làm việc ở màn chính, tức cái mặt mà [NEUTRAL] đứng lên (VISUAL-REFRESH P1 · soát Pass 4).
      *
      * Cùng cách dựng với [NEUTRAL] nhưng lấy cặp [KachiTheme.SLOT]/[KachiTheme.SLOT_TO] (**tối hơn** thẻ nội dung một
-     * bậc) và viền [KachiTheme.LINE_STRONG] — viền sáng rõ mà ô làm việc đã dùng từ prototype và đã chạy tốt trên
-     * xe (CLAUDE.md §6: không đảo đường đang chạy tốt).
+     * bậc). ⚠ WP1 (2026-09-20) **gỡ viền [KachiTheme.LINE_STRONG]** mà tone này từng có: owner *"bỏ viền đi luôn"*
+     * ⇒ khay nay tách khỏi nền **chỉ bằng bậc sáng** của cặp vai trên, không bằng một đường kẻ.
      *
      * Vì sao phải là một tone RIÊNG chứ không dùng lại [NEUTRAL]: khay và thẻ mà cùng một sắc độ thì thẻ hết chỗ
      * nổi lên. Đây đúng là chỗ P1 hụt — ô làm việc dựng `GradientDrawable` thẳng tại chỗ nên nó **không nằm trong
@@ -99,19 +104,10 @@ object KachiTheme {
         }
         night = isNight
         this.artDominant = artDominant
-        // ⚠⚠ [SOÁT P2/P3 2026-09-17] Màu sơn KHÔNG nằm trong [KachiPalette] ⇒ `next == palette` vẫn đúng khi chỉ đổi
-        // sơn, và bản đầu trả `false` ⇒ ô chọn sơn là NÚT CHẾT. Lý do đầy đủ: `ColorChoiceContractTest.doi mau son…`.
-        val nextPaint = CarPaint.of(choice.paint)   // P3 · AC8.3: màu sơn theo hồ sơ, đọc cùng lượt với bảng màu
-        val paintChanged = nextPaint != carPaint
-        carPaint = nextPaint
-        if (next == palette && !paintChanged) return false
+        if (next == palette) return false
         palette = next
         return true
     }
-
-    /** Màu sơn hình xe đang áp (P3 · R8 AC8.3) — `CarArtPainter` đọc qua `KachiCarPaint.look()`, không đọc prefs. */
-    var carPaint: CarPaint = CarPaint.DEFAULT
-        private set
 
     private var derivedFor: Triple<Boolean, ColorChoice, List<Int>?>? = null
     private var derived: KachiPalette = KachiPalette.DARK
@@ -141,7 +137,7 @@ object KachiTheme {
     val LINE_STRONG: String get() = palette.lineStrong
     val GRID_LINE: String get() = palette.gridLine
     val EMPTY_FILL: String get() = palette.emptyFill
-    val EMPTY_LINE: String get() = palette.emptyLine
+    // ⚠ WP1 · R1.1 — `EMPTY_LINE` XOÁ cùng vai `KachiPalette.emptyLine` (gạch đứt ô trống, mời mọc lại).
     val WASH: String get() = palette.wash
     val OVERLAY: String get() = palette.overlay
     val ACCENT: String get() = palette.accent
@@ -169,6 +165,7 @@ object KachiTheme {
     val ORANGE: String get() = palette.orange
     val SLATE: String get() = palette.slate
     val AMBER_SOFT: String get() = palette.amberSoft
+    val RED_SOFT: String get() = palette.redSoft
     val ART_TO: String get() = palette.artTo
     val GLOW1: String get() = palette.glow1
     val GLOW2: String get() = palette.glow2
@@ -191,6 +188,10 @@ object KachiTheme {
     val LAMP_GLOW: String get() = palette.lampGlow
     val TAIL_ON: String get() = palette.tailOn
     val CAR_SHADOW: String get() = palette.carShadow
+    // ⚠ WP1 (2026-09-20) GỠ `GLASS_SHEEN`/`GLASS_SHADE`: hai vai mép kính sinh ra sáng 2026-09-20 rồi CHẾT cùng
+    // ngày — owner xem ảnh và gọi đúng tên *"bug gạch trên đầu mỗi khung"*, y như `surfEdge`/`surfOnEdge` của
+    // Pass-4/Pass-5. Ba lần cùng một họ lỗi ⇒ **bất biến**: mép ghim vào cạnh là một VẠCH ở mọi alpha; chiều nổi
+    // phải do chuyển sắc gánh. Vai cũng gỡ khỏi [KachiPalette] (giữ getter trơ sẽ đỏ `ThemePaletteContractTest`).
 
     /**
      * Sắc lĩnh vực của [domain] — vỏ bọc để chỗ vẽ **không** phải tự viết `?.name` (và không ai nghĩ ra cách thứ
@@ -210,26 +211,23 @@ object KachiTheme {
     /**
      * ═══ VISUAL-REFRESH P1 · T2 — BỀ MẶT CÓ CHẤT LIỆU ═══════════════════════════════════════════════════════
      *
-     * Thay một lớp tô phẳng bằng **một–hai lớp**: (0) chuyển sắc DỌC + hairline ngoài, (1) lớp sắc lĩnh vực nếu
-     * [domain] khác `null`. Thẻ lồi lên khỏi nền mà **không** bóng đổ.
+     * Thay một lớp tô phẳng bằng **một–hai lớp**: (0) chuyển sắc DỌC, (1) lớp sắc lĩnh vực nếu [domain] khác
+     * `null`. Thẻ lồi lên khỏi nền mà **không** bóng đổ, **không** viền, **không** mép.
      *
-     * ## ⚠⚠ Pass 5 (2026-09-17) — GỠ mép sáng và nét đỉnh, KHÔNG phải hạ bớt
-     * Owner nhìn 1.68 trên xe: *"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top
-     * đấy nhé, bug rồi"*. Hai thứ bị gỡ là hai lớp Pass 4 thêm vào:
-     *  • **nét đỉnh ĐẶC** 1–2dp (`crisp`) — một hình chữ nhật tô đặc cao đúng 1–2dp nằm sát đỉnh. Ở mọi cỡ thẻ nó
-     *    đọc ra đúng một **VẠCH**, không đọc ra ánh sáng; đó chính là *"1 cái gạch trên top"* owner gọi là bug.
-     *  • **dải mép sáng** mờ dần (`edge`, trắng 35 %) — trên ô nhỏ (tile thanh nút, chip, ô bộ chọn 40–56dp) dải
-     *    cao 12dp chiếm ~1/4 chiều cao ô ⇒ đọc ra *"bóng ở đầu nút"*.
+     * ## ⚠⚠ WP1 · R1.1 (owner 2026-09-20) — GỠ HẲN MÉP + VIỀN, lần thứ BA của cùng một họ lỗi
+     * Owner xem ảnh bản WP1 đầu: *"better, bị bug gạch trên đầu mỗi khung, bỏ viền đi luôn"*. Bản đó có mép kính
+     * 1px bán trong suốt (`glassSheen` đỉnh + `glassShade` đáy = bevel) trên nền gradient — tức đã "nhẹ" hơn nét
+     * đỉnh đặc 1–2dp mà Pass-5 gỡ, **vẫn bị gọi đúng tên là gạch**. Cộng với `surfEdge`/`surfOnEdge` của Pass-4,
+     * đây là lần thứ ba ⇒ ghi thành **bất biến**, không phải một lượt vá:
      *
-     * **Quyết định thiết kế** (HMI tối cao cấp): chiều nổi do **chính chuyển sắc dọc** gánh (đỉnh sáng → đáy tối,
-     * bước 1.35× so với nền ở bảng TỐI) cộng ba bậc `nền → khay → thẻ` và hairline. Một vạch sáng cứng ở đỉnh là
-     * **specular**, và specular chỉ đúng khi bề mặt bo cạnh thật; ở đây nó là hình chữ nhật 1dp nên mắt đọc ra
-     * *đường viền hở*, không đọc ra *mặt vát*. Chọn **bỏ hẳn** thay vì hạ xuống 8 %: một vạch 1dp ở bất kỳ alpha
-     * nào vẫn là một vạch — cái sai là **hình dạng**, không phải cường độ. Hai vai màu `surfEdge`/`surfOnEdge` vì
-     * thế bị xoá khỏi [KachiPalette] chứ không để lại (CLAUDE.md §8: vai không ai dùng là vai chết).
+     *  • Một hình chữ nhật ghim vào **cạnh** thẻ là một VẠCH ở **mọi** alpha và **mọi** độ dày. Cái sai là HÌNH
+     *    DẠNG, không phải cường độ — nên cách chữa là BỎ, không phải hạ alpha (đã thử hạ, vẫn bị chê).
+     *  • Chiều nổi do **chuyển sắc DỌC** gánh một mình; nó vì thế là **hợp đồng** (đỉnh sáng hơn đáy), có bài canh
+     *    riêng (`dinh chuyen sac khong bao gio toi hon day`).
+     *  • Bốn tone phân biệt nhau **CHỈ bằng MÀU FILL** qua [surfacePair] — không tone nào có `setStroke`.
      *
-     * Bài canh đảo chiều theo: [SurfaceContrastContractTest] nay đòi **không còn** lớp ánh sáng ở đỉnh, và
-     * [SurfaceMaterialContractTest] đòi thân hàm này không còn `Gravity.TOP`/`setLayerHeight`.
+     * Hai bài canh đã ĐẢO CHIỀU theo đúng điều đó (`SurfaceMaterialContractTest.be mat loi khong con vien hay mep`
+     * · `SurfaceContrastContractTest.khong con mep hay vien tren be mat`); ràng buộc WCAG giữ nguyên.
      *
      * ## Vì sao không có bóng/blur/elevation — và vì sao có bài canh riêng
      * Đầu máy DiLink chạy GPU TRINKET. `setShadowLayer`/`BlurMaskFilter`/`RenderEffect` và `elevation` đều bắt GPU
@@ -273,26 +271,21 @@ object KachiTheme {
         overArtwork: Boolean = false,
     ): Drawable {
         val r = KachiSpace.dpf(ctx, radius)
-        val hair = dpi(ctx, KachiSpace.HAIRLINE)
+        // Ô LÕM: một tô ĐẶC, KHÔNG gradient, KHÔNG viền (WP1 · R1.1). Lồi/lõm khác nhau ở CƠ CHẾ (gradient vs phẳng).
         if (tone == SurfaceTone.SUNKEN) return GradientDrawable().apply {
             cornerRadius = r
             setColor(c(FIELD_SUNKEN))
-            setStroke(hair, c(SURF_LINE))
         }
-        val active = tone == SurfaceTone.ACTIVE
-        val well = tone == SurfaceTone.WELL
+        // Nền KÍNH: chuyển sắc DỌC theo tone. KHÔNG viền, KHÔNG mép/gạch đỉnh-đáy (WP1 · R1.1 — owner 2026-09-20:
+        // "bỏ viền đi luôn"; gỡ hẳn sheen/shade bevel = "gạch trên đầu" + mọi setStroke). Trạng thái ACTIVE/WELL
+        // phân biệt CHỈ bằng MÀU FILL qua surfacePair(tone), không stroke/edge nào.
         val base = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
             surfacePair(tone, overArtwork),
-        ).apply {
-            cornerRadius = r
-            setStroke(hair, c(if (active) ACCENT_LINE else if (well) LINE_STRONG else SURF_LINE))
-        }
-        // ⚠ Pass 5 — KHÔNG còn lớp ánh sáng ở đỉnh (xem KDoc). Chiều nổi nằm hết trong `base`: đỉnh sáng → đáy
-        // tối. Thêm bất cứ lớp nào cao vài dp ghim vào `Gravity.TOP` là dựng lại đúng cái vạch owner đã chê.
+        ).apply { cornerRadius = r }
         val tint = domainTint(domain)
-        if (tint == CLEAR) return base
-        return LayerDrawable(arrayOf(base, GradientDrawable().apply { cornerRadius = r; setColor(c(tint)) }))
+        return if (tint == CLEAR) base
+        else LayerDrawable(arrayOf<Drawable>(base, GradientDrawable().apply { cornerRadius = r; setColor(c(tint)) }))
     }
 
     /**
@@ -332,7 +325,6 @@ object KachiTheme {
         "ic-light" -> R.drawable.ic_light
         "ic-recirc" -> R.drawable.ic_recirc
         "ic-volume" -> R.drawable.ic_volume
-        "ic-wiper" -> R.drawable.ic_wiper
         "ic-cast" -> R.drawable.ic_cast
         "ic-bolt" -> R.drawable.ic_bolt
         "ic-tire" -> R.drawable.ic_tire
@@ -348,7 +340,6 @@ object KachiTheme {
         // U1: 6 icon MỚI cho khái niệm xuất hiện nhiều mà trước đây không có icon nào gần nghĩa
         "ic-road" -> R.drawable.ic_road
         "ic-battery" -> R.drawable.ic_battery
-        "ic-steering" -> R.drawable.ic_steering
         // [SOÁT P3] 3 tên icon TRƯỚC ĐÂY KHÔNG được map ⇒ 13/64 nút lùi về icon NHÓM: 2 nút gương mang hình
         // KÍNH (sai nghĩa), 3 nút chế độ lái và 8 nút hỗ trợ lái mang hình lưới (không gợi nghĩa gì).
         // ── [KIỂM TOÁN UX 2026-09-12 · mục 4] 8 icon vá NGHĨA SAI / NGHĨA TRÙNG ────────────────────────
@@ -372,18 +363,10 @@ object KachiTheme {
         "ic-charger" -> R.drawable.ic_charger
         "ic-consumption" -> R.drawable.ic_consumption
         "ic-range" -> R.drawable.ic_range
-        "ic-cell-temp" -> R.drawable.ic_cell_temp
         "ic-cell-volt" -> R.drawable.ic_cell_volt
-        "ic-pedal" -> R.drawable.ic_pedal
-        "ic-brake" -> R.drawable.ic_brake
-        "ic-slope" -> R.drawable.ic_slope
-        "ic-rpm" -> R.drawable.ic_rpm
-        "ic-torque" -> R.drawable.ic_torque
-        "ic-engine" -> R.drawable.ic_engine
         "ic-mode" -> R.drawable.ic_mode
         "ic-dust" -> R.drawable.ic_dust
         "ic-sensor" -> R.drawable.ic_sensor
-        "ic-coolant" -> R.drawable.ic_coolant
         "ic-alert" -> R.drawable.ic_alert
         // 4 tên dưới dùng cho CẢ mục đọc lẫn NÚT cùng khái niệm (mục tiêu sạc · nhiệt ngoài · điều hoà · lọc khí):
         // hai ô cùng một việc thì phải cùng một hình, phần "xem hay bấm" đã nằm ở dòng phụ (U6).
@@ -437,19 +420,11 @@ object KachiTheme {
         "ic-car-top-tyre-temp-rl" -> R.drawable.ic_car_top_tyre_temp_rl
         "ic-car-top-tyre-temp-rr" -> R.drawable.ic_car_top_tyre_temp_rr
         "ic-car-top-seat-fl" -> R.drawable.ic_car_top_seat_fl
-        "ic-car-top-mirror" -> R.drawable.ic_car_top_mirror
         "ic-car-top-trunk" -> R.drawable.ic_car_top_trunk
-        "ic-car-top-trunk-pos" -> R.drawable.ic_car_top_trunk_pos
         "ic-car-top-sunroof" -> R.drawable.ic_car_top_sunroof
         "ic-car-top-sunroof-pos" -> R.drawable.ic_car_top_sunroof_pos
         "ic-car-top-sunshade" -> R.drawable.ic_car_top_sunshade
         "ic-car-top-lock" -> R.drawable.ic_car_top_lock
-        "ic-car-top-ambient" -> R.drawable.ic_car_top_ambient
-        "ic-car-top-ambient-color-front" -> R.drawable.ic_car_top_ambient_color_front
-        "ic-car-top-ambient-color-rear" -> R.drawable.ic_car_top_ambient_color_rear
-        "ic-car-top-ambient-bright-front" -> R.drawable.ic_car_top_ambient_bright_front
-        "ic-car-top-ambient-bright-rear" -> R.drawable.ic_car_top_ambient_bright_rear
-        "ic-car-top-ambient-music" -> R.drawable.ic_car_top_ambient_music
         "ic-car-front-lowbeam" -> R.drawable.ic_car_front_lowbeam
         "ic-car-front-highbeam" -> R.drawable.ic_car_front_highbeam
         "ic-car-front-fog" -> R.drawable.ic_car_front_fog
@@ -462,10 +437,6 @@ object KachiTheme {
         "ic-car-rear-defrost" -> R.drawable.ic_car_rear_defrost
         // Bốn thành phần của MỘT toạ độ, nhưng là bốn đại lượng khác nhau ⇒ bốn hình (U7 · OQ1: mục
         // "nằm trên xe" mới vẽ hình xe, đại lượng đo thì giữ glyph trừu tượng — cùng nét, cùng ô).
-        "ic-gps-lat" -> R.drawable.ic_gps_lat
-        "ic-gps-lon" -> R.drawable.ic_gps_lon
-        "ic-gps-alt" -> R.drawable.ic_gps_alt
-        "ic-gps-heading" -> R.drawable.ic_gps_heading
         // ── T2: 9 ICON NHÓM (spec kachi-capability-groups §4.1; 12 trước lượt gỡ ADAS 2026-09-16) ─────
         // Đây là ĐẦU `:app` của giao kèo tên icon cho nhóm khả năng: `CapabilityGroups` (T1, `:core`) khai
         // `icon = "ic-group-…"`, bảng này dịch sang `R.drawable`. Tên là HỢP ĐỒNG giữa hai module — đổi một bên mà
@@ -474,7 +445,6 @@ object KachiTheme {
         "ic-group-windows" -> R.drawable.ic_group_windows
         "ic-group-doors" -> R.drawable.ic_group_doors
         "ic-group-lights" -> R.drawable.ic_group_lights
-        "ic-group-ambient" -> R.drawable.ic_group_ambient
         "ic-group-climate" -> R.drawable.ic_group_climate
         "ic-group-energy" -> R.drawable.ic_group_energy
         "ic-group-battery" -> R.drawable.ic_group_battery_health
@@ -492,7 +462,7 @@ object KachiTheme {
      * toàn (owner) — tệp vector của chúng cũng xoá khỏi `res/drawable`.
      */
     val GROUP_ICON_NAMES: List<String> = listOf(
-        "ic-group-tyres", "ic-group-windows", "ic-group-doors", "ic-group-lights", "ic-group-ambient",
+        "ic-group-tyres", "ic-group-windows", "ic-group-doors", "ic-group-lights",
         "ic-group-climate", "ic-group-energy", "ic-group-battery", "ic-group-trip",
     )
 }

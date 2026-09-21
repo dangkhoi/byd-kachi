@@ -73,6 +73,10 @@ enum class SettingsGroup(
         "car", "Tiện nghi xe", "Lấy gió trong, ghế, lọc bụi mịn",
         "Car comfort", "Recirculation, seats, air purifier",
     ),
+    VOICE(
+        "voice", "Giọng nói", "Nói với xe, giọng đọc, Hey Kachi",
+        "Voice", "Talk to the car, reply voice, Hey Kachi",
+    ),
     SYSTEM(
         "system", "Hệ thống & quyền", "Quyền, khởi động, bảo trì, nâng cao",
         "System & permissions", "Permissions, startup, maintenance",

@@ -45,12 +45,12 @@ class SettingsCatalogTest {
     )
 
     @Test
-    fun `dung muoi nhom theo dung thu tu spec`() {
-        assertEquals(10, SettingsCatalog.GROUPS.size, "IA v2 §4.1 chốt đúng 10 nhóm")
+    fun `dung muoi mot nhom theo dung thu tu spec`() {
+        assertEquals(11, SettingsCatalog.GROUPS.size, "IA v2 §4.1 + VOICE (owner 2026-09-21)")
         assertEquals(
-            listOf("home", "bars", "display", "profiles", "nav", "cast", "keys", "car", "system", "about"),
+            listOf("home", "bars", "display", "profiles", "nav", "cast", "keys", "car", "voice", "system", "about"),
             SettingsCatalog.GROUPS.map { it.id },
-            "thứ tự rail là thứ tự TẦN SUẤT DÙNG (§4.1) — không được đổi khi thêm nhóm",
+            "thứ tự rail là thứ tự TẦN SUẤT DÙNG (§4.1) — VOICE chèn sau CAR, trước SYSTEM",
         )
         assertEquals("Màn hình chính", SettingsGroup.HOME.label)
         // Nhóm `clusternav` của IA v1 BỊ BỎ: ba nhóm thật (nav/cast/keys) thay cho một nút "mở màn kia", và dòng mở
@@ -241,6 +241,11 @@ class SettingsCatalogTest {
                 // `home_grid_editor` = nút mở bảng vẽ (VIỆC LÀM); bố cục vẽ ra nằm ở khoá của `home_grid`
                 // (một khoá, một chủ). ⚠ S4 · R1: "home_scene_save" đã XOÁ cùng khái niệm cảnh.
                 "home_grid_editor",
+                // UX-OVERHAUL · WP4 — "Vị trí trên thanh nút xe" là một bề mặt SỬA giá trị mà mục khác SỞ HỮU:
+                // thứ tự nút LÀ thứ tự của `dock_enabled` (`bars_dock_items`). Khai lại khoá đó ở đây là phá
+                // bất biến "một khoá, một chủ" — [ĐO] thử thì `SettingsCatalog` ném ngay lúc nạp lớp.
+                // Thanh TRÊN thì khác: thứ tự của nó có khoá riêng `header_order` nên `bars_header_order` CÓ khoá.
+                "bars_dock_order",
                 // S4 · R8 — "Thêm hồ sơ (bản sao của «X»)" là một VIỆC LÀM: nó tạo ra một bộ khoá MỚI mang tiền tố
                 // tên hồ sơ, chứ bản thân nút không lưu giá trị nào.
                 "profiles_add",
@@ -250,7 +255,9 @@ class SettingsCatalogTest {
                 "places_add",
                 // IA v2: mọi HÀNH ĐỘNG của màn ClusterNav (§4.3, cột "API ghi") — chúng bấm là chạy, không lưu gì.
                 "nav_reconnect", "cast_actions", "cast_rescue", "keys_check", "car_pm25_clean",
-                "system_permissions",
+                // owner 2026-09-21 — nhóm VOICE riêng; "Hey Kachi" là công tắc bridge (khoá `voice_wake_enabled`
+                // ở `clusternav_prefs`, ghi qua ClusterNavBridge), KHÔNG khai prefKey ở catalog ⇒ nằm ở đây.
+                "voice_wake",
                 // Voice pha 2 (docs/specs/kachi-voice-feedback.html T8) — "Giọng đọc offline" là nút TẢI/GỠ một
                 // gói 61 MB: trạng thái đọc **từ đĩa** (`VoiceModelStore.isReady`), không có pref nào để nhớ.
                 // Hai công tắc đi kèm (`voice_speak_replies` · `voice_prefer_offline`) thì CÓ khoá nên không ở đây.
@@ -261,6 +268,7 @@ class SettingsCatalogTest {
                 //  • `voice_model_light` tải 4 tệp int8 rồi đổi `selected` — trạng thái đọc **từ đĩa** qua
                 //    `VoiceModelStore`, đúng như `voice_tts_pack`.
                 "voice_log_export", "voice_model_light",
+                "system_permissions",
                 // S5 — nút "Đặt Kachi làm màn hình chính" là VIỆC LÀM (gọi `cmd package set-home-activity`), không
                 // lưu khoá nào; trạng thái đọc live từ PackageManager. Công tắc `system_keep_home_on_boot` thì CÓ
                 // khoá (`keep_home_on_boot`) nên KHÔNG nằm ở đây.
@@ -270,7 +278,7 @@ class SettingsCatalogTest {
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "mười chín mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "hai mươi mốt mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

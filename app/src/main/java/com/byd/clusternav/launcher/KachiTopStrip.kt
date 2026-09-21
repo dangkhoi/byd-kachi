@@ -11,6 +11,7 @@ import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import java.text.SimpleDateFormat
 import java.util.Date
+import com.byd.clusternav.launcher.KachiBars as Bars
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -61,6 +62,17 @@ class KachiTopStrip(
      * chỉ nhận được câu *"chưa tải mô hình"* — thà chưa có nút.
      */
     private val voicePillEnabled: () -> Boolean = { false },
+    /**
+     * UX-OVERHAUL · WP4 — **THỨ TỰ các vật trên thanh**, hỏi mỗi lần dựng (không nhận một [HeaderLayout] chụp sẵn).
+     *
+     * Cùng lẽ [voicePillEnabled] ngay trên: [view] là `by lazy` nên thanh dựng một lần cho mỗi vòng đời màn, mà
+     * thứ tự thì đổi được **sau** đó (người dùng bấm ◀/▶ ở Cài đặt, hoặc đổi hồ sơ). Lượt đổi đi qua [setLayout];
+     * lambda này chỉ trả lời câu *"lúc dựng thì đang ở thứ tự nào"*.
+     *
+     * ⚠ KHÔNG phải một cổng `on*`: thanh này **không ghi** thứ tự đi đâu cả (`TopStripSurfaceContractTest` canh
+     * đúng điều đó). Đường ghi là màn Cài đặt → `HomeViewModel.setHeaderLayout` → prefs.
+     */
+    private val header: () -> HeaderLayout = { HeaderLayout.DEFAULT },
 ) {
     private lateinit var clock: TextView
     private lateinit var dateText: TextView
@@ -68,49 +80,114 @@ class KachiTopStrip(
     private lateinit var profileInitialView: TextView
     private lateinit var profileNameView: TextView
 
+    /** Hàng ngang của thanh — giữ tham chiếu vì [place] gắn/tháo con của nó khi thứ tự đổi (WP4). */
+    private lateinit var stripRow: LinearLayout
+
+    /**
+     * Một view cho MỖI vật của thanh, dựng đúng một lần ở [build].
+     *
+     * Bảng này (chứ không phải thứ tự `addView`) là chỗ *"vật nào tồn tại"*; [place] quyết *"nó đứng đâu"*. Tách
+     * hai câu đó ra là toàn bộ nội dung kỹ thuật của WP4: `getValue` sẽ **nổ** nếu [HeaderItem] có thêm thành viên
+     * mà [build] chưa dựng view cho nó — thà nổ ở lượt dựng đầu còn hơn thiếu im lặng một vật trên thanh.
+     */
+    private val items = HashMap<HeaderItem, View>()
+
+    /** Thứ tự đang ĐẶT trên thanh — để [setLayout] bỏ qua lượt gọi không đổi gì (nó tháo/gắn cả hàng). */
+    private var placed: HeaderLayout? = null
+
     /** View thanh trạng thái (dựng lười một lần). */
     val view: View by lazy { build() }
 
     private fun build(): View {
         val strip = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP, KachiTheme.LINE_STRONG)   // thanh mờ bo góc + viền rõ (prototype)
+            // WP1 · R1.1 — thanh mờ bo góc, **KHÔNG viền**. [ĐO ảnh `after-home-dark.png`] viền cũ là vạch 1px
+            // `rgb(100,106,121)` chạy từ x=45 tới x=1874 ở y=107 — một trong hai đường kẻ dễ thấy nhất màn chính
+            // (owner: *"KHÔNG còn viền ở BẤT CỨ ĐÂU hết"*). Thanh vẫn tách khỏi nền bằng chính nền `BAR_TOP` của nó.
+            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP)
             setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.XS))
         }
+        stripRow = strip
         clock = TextView(activity).apply {
             setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.SECTION, bold = true); letterSpacing = 0.02f
         }
         dateText = TextView(activity).apply { setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION); setPadding(dp(Sp.M), 0, 0, 0) }
-        strip.addView(clock); strip.addView(dateText)
+        // WP4 — đồng hồ + ngày là MỘT vật ([HeaderItem.CLOCK], xem KDoc ở đó): chúng đọc liền nhau, tách ra chỉ
+        // mời người dùng dựng những thứ tự không ai muốn.
+        items[HeaderItem.CLOCK] = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(clock); addView(dateText)
+        }
         // S4 · R7 — hàng 5 nút bố cục đã BỎ ở đây (nó từng đứng giữa ngày và khoảng đệm). Không thay bằng gì.
         //
         // ⚠⚠ S4 · R11 (b) — KHOẢNG ĐỆM CO GIÃN ĐÃ NHẬP VÀO CHÍNH HÀNG CHIP, và đó là phần cốt lõi của bản vá.
         // Trước đây thanh có một `View` đệm riêng mang `weight = 1`, còn hàng chip thì `WRAP_CONTENT`. Sắp như thế
         // thì LinearLayout đo hàng chip TRƯỚC ba vật bên phải (Ứng dụng · Cài đặt · chip hồ sơ) ⇒ 8 chip ăn hết
         // bề rộng và ba vật kia bị **ép về 0 / đẩy khỏi mép** — đúng cái tràn mà R11 (b) cấm. Nay hàng chip LÀ
-        // phần co giãn (`0dp + weight 1`): mọi vật khác được đo ở bề rộng tự nhiên trước, phần **còn lại** rơi vào
-        // đây, nên hàng chip không bao giờ lấn sang chúng dù có bao nhiêu chip. Chip căn END ⇒ nhìn y như cũ khi
-        // còn dư chỗ. Phần chia đều chỗ ấy cho từng chip nằm ở [fitChips].
+        // phần co giãn (`0dp + weight 1`, xem [lpFor]): mọi vật khác được đo ở bề rộng tự nhiên trước, phần **còn
+        // lại** rơi vào đây, nên hàng chip không bao giờ lấn sang chúng dù có bao nhiêu chip. Phần chia đều chỗ ấy
+        // cho từng chip nằm ở [fitChips].
         chipRow = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.HORIZONTAL
             // Bề rộng còn lại chỉ biết được SAU một lượt bố cục (và nó đổi khi tên hồ sơ dài ra / ngôn ngữ đổi /
             // màn đổi kích thước) ⇒ nghe theo bố cục thật thay vì đoán trước. So bề rộng cũ↔mới để không chạy lại
             // ở mỗi lượt bố cục do chính [fitChips] gây ra.
             addOnLayoutChangeListener { _, l, _, r, _, ol, _, or, _ -> if (r - l != or - ol) fitChips() }
         }
-        strip.addView(chipRow, LinearLayout.LayoutParams(0, WRAP, 1f))
-        // V1 pha NGHE — nút mic đứng TRƯỚC "Ứng dụng": nói là lối tắt tới mọi thứ mà ba pill kia bày ra từng
-        // cái một, nên nó đứng đầu hàng. Chỉ-icon + đích chạm [Sp.TOUCH] y như hai pill kia (xem [pill]).
+        items[HeaderItem.CHIPS] = chipRow
+        // V1 pha NGHE — nút mic. Thứ tự **DỰNG** ở đây là thứ tự mặc định (nói → ứng dụng → cài đặt); thứ tự
+        // **ĐẶT** trên thanh do [HeaderLayout] quyết (WP4). Chỉ-icon + đích chạm [Bars.HEADER_BTN] (xem [pill]).
         //
         // [SOÁT Pass 2 · P2] Luôn GẮN, ẩn/hiện bằng `visibility` — xem [refreshVoicePill].
         voicePill = pill("ic-mic", R.string.kachi_pill_voice, false) { onVoice() }
-            .also { strip.addView(it, pillLp()) }
+            .also { items[HeaderItem.VOICE] = it }
         refreshVoicePill()
-        strip.addView(pill("ic-apps", R.string.kachi_pill_apps, false) { onOpenAppList() }, pillLp())   // U3: mở app toàn màn
-        strip.addView(pill("ic-settings", R.string.kachi_pill_settings, true) { onOpenSettings() }, pillLp())
-        strip.addView(profileChip(), LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.SLOT_GAP) })
+        items[HeaderItem.APPS] = pill("ic-apps", R.string.kachi_pill_apps, false) { onOpenAppList() }   // U3
+        items[HeaderItem.SETTINGS] = pill("ic-settings", R.string.kachi_pill_settings, true) { onOpenSettings() }
+        items[HeaderItem.PROFILE] = profileChip()
+        place(header())
         refreshChips(CarStatus())
         return strip
+    }
+
+    /**
+     * UX-OVERHAUL · WP4 — **ĐẶT LẠI CHỖ** các vật theo [layout]. Do `KachiHomeActivity.render` gọi khi state đổi.
+     *
+     * Chỉ **sắp lại** view đã dựng (`removeAllViews` + gắn lại), KHÔNG dựng lại chúng. Dựng lại sẽ mất chữ đang
+     * hiện trên chip và tên trên chip hồ sơ, và mỗi lần bấm ◀/▶ lại tra + tint lại từng drawable — đúng việc mà
+     * bản vá [SOÁT P2-9] vừa dọn khỏi đường nóng.
+     */
+    fun setLayout(layout: HeaderLayout) {
+        if (!this::stripRow.isInitialized || layout == placed) return
+        place(layout)
+    }
+
+    private fun place(layout: HeaderLayout) {
+        placed = layout
+        // Hàng chip là phần co giãn; nó hút chỗ trống, nên chỗ trống nằm TRƯỚC hay SAU chip là do căn lề của chính
+        // nó. Luật ở `:core` ([HeaderLayout.chipsAlignEnd]) để kiểm được off-car.
+        chipRow.gravity =
+            (if (layout.chipsAlignEnd) Gravity.END else Gravity.START) or Gravity.CENTER_VERTICAL
+        stripRow.removeAllViews()
+        layout.order.forEach { item -> stripRow.addView(items.getValue(item), lpFor(item)) }
+        // Chip vừa đổi chỗ ⇒ bề rộng còn lại của hàng chip đổi. `-1` để chốt `cap == chipCap` ở [fitChips] không
+        // bỏ qua lượt đặt lại (bề rộng mới có thể tình cờ bằng bề rộng cũ ở một cấu hình khác).
+        chipCap = -1
+    }
+
+    /**
+     * Cách đặt của từng vật — **chỉ phụ thuộc LOẠI vật, không phụ thuộc chỗ nó đứng**.
+     *
+     * Đó là điều khiến WP4 an toàn: đổi thứ tự không đổi *cách* một vật chiếm chỗ, nên không có tổ hợp thứ tự nào
+     * làm thanh tràn (hàng chip vẫn là phần duy nhất co giãn, mọi vật khác vẫn `WRAP_CONTENT`).
+     */
+    private fun lpFor(item: HeaderItem): LinearLayout.LayoutParams = when (item) {
+        HeaderItem.CHIPS -> LinearLayout.LayoutParams(0, WRAP, 1f)
+        HeaderItem.CLOCK -> LinearLayout.LayoutParams(WRAP, WRAP)
+        // Chip hồ sơ mang khe rộng hơn ba pill: nó là vật duy nhất có CHỮ nên cần tách khỏi hàng icon để đọc ra
+        // là một vật khác loại.
+        HeaderItem.PROFILE -> LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.SLOT_GAP) }
+        else -> pillLp()
     }
 
     /** Nút mic — giữ tham chiếu vì nó ẩn/hiện theo hai thứ đổi được lúc đang chạy (xem [refreshVoicePill]). */
@@ -147,15 +224,21 @@ class KachiTopStrip(
      *
      * ## Đích chạm KHÔNG được co theo icon
      * **T5** đã nới pill từ ~30dp lên [Sp.TOUCH]; bỏ chữ đi thì bề NGANG cũng tụt xuống cỡ icon (20dp) nếu chỉ
-     * dựa vào lề trong ⇒ đặt cả `minimumWidth` lẫn `minimumHeight` = [Sp.TOUCH]. `CENTER_INSIDE` để hình giữ đúng
-     * cỡ vẽ (không bị phóng to lấp đầy vùng chạm — vùng chạm to hơn hình là CỐ Ý).
+     * dựa vào lề trong ⇒ đặt cả `minimumWidth` lẫn `minimumHeight`.
+     *
+     * ## ⚠⚠ WP5 · R5.2 — đích chạm nay là [Bars.HEADER_BTN] (34dp), KHÔNG còn [Sp.TOUCH] (48dp)
+     * Owner 2026-09-20: *"header … nút App+Voice+profile 70 %"*. Tính chất được canh **không đổi**: khai TƯỜNG MINH
+     * cả hai chiều, không để bề ngang co theo hình. Nhưng con số thì xuống dưới mức tối thiểu 48dp — đánh đổi này
+     * ghi đầy đủ ở KDoc [Bars.HEADER_BTN] (tóm lại: không nút nào ở đây bắn lệnh xe, bấm nhầm hoàn lại được bằng
+     * Back). `FIT_CENTER` + lề trong [Bars.HEADER_BTN_PAD] cho hộp hình 18dp — hình co theo nút, không phải nút co
+     * theo hình.
      */
     private fun pill(icon: String, descRes: Int, primary: Boolean, onClick: () -> Unit) = ImageView(activity).apply {
         KachiTheme.iconRes(icon).let { if (it != 0) setImageResource(it) }
         contentDescription = activity.getString(descRes)
-        scaleType = ImageView.ScaleType.CENTER_INSIDE
-        minimumWidth = dp(Sp.TOUCH); minimumHeight = dp(Sp.TOUCH)
-        setPadding(dp(Sp.M), dp(Sp.S), dp(Sp.M), dp(Sp.S))
+        scaleType = ImageView.ScaleType.FIT_CENTER
+        minimumWidth = dp(Bars.HEADER_BTN); minimumHeight = dp(Bars.HEADER_BTN)
+        dp(Bars.HEADER_BTN_PAD).let { setPadding(it, it, it, it) }
         if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setColorFilter(c(KachiTheme.ON_ACCENT)) }
         else { background = KachiTheme.pill(context); setColorFilter(c(KachiTheme.INK)) }
         setOnClickListener { onClick() }
@@ -291,12 +374,16 @@ class KachiTopStrip(
     private fun profileChip(): View = LinearLayout(activity).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         background = KachiTheme.pill(context)
-        minimumHeight = dp(Sp.TOUCH)
+        // WP5 · R5.2 — chip hồ sơ là một NÚT ⇒ cùng đích chạm với ba pill ([Bars.HEADER_BTN], 70 % của [Sp.TOUCH]).
+        minimumHeight = dp(Bars.HEADER_BTN)
         setPadding(dp(Sp.XS), 0, dp(Sp.M), 0)
         profileInitialView = TextView(activity).apply {
             setTextColor(c(KachiTheme.ON_ACCENT))
             KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
-            val s = dp(Sp.ICON_L); width = s; height = s; background = KachiTheme.gradient(activity, Sp.RADIUS_PILL)
+            // WP5 — đĩa chữ-cái-đầu 70 % ([Bars.HEADER_AVATAR]): giữ 32dp trong một chip cao 34dp thì đĩa ăn gần
+            // trọn bề cao và chip đọc ra như một nút tròn dính hai mép.
+            val s = dp(Bars.HEADER_AVATAR); width = s; height = s
+            background = KachiTheme.gradient(activity, Sp.RADIUS_PILL)
         }
         profileNameView = TextView(activity).apply {
             setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY, bold = true)

@@ -64,8 +64,27 @@ fun ClusterNavBridge.setCastEnabled(on: Boolean) {
     }
 }
 
-// ── Tỉ lệ chia đôi — lặp lại CastSplitRatioButtons.kt:41–66 ─────────────────────────────────────
+// ── WP6 · R6.1 — công tắc HIỆN NÚT NỔI chiếu cụm ────────────────────────────────────────────────
 
+/** Công tắc *"Hiện nút nổi chiếu cụm"* (mặc định BẬT). Khoá `cast_bubble_visible` ở `simple_cast_prefs`. */
+fun ClusterNavBridge.castBubbleVisible(): Boolean =
+    runCatching { coordinator.prefs.bubbleVisible() }.getOrDefault(true)
+
+/**
+ * Ghi cờ rồi **thôi** — cố ý KHÔNG stop/start [FloatingBubbleService].
+ *
+ * Dịch vụ tự đọc lại cờ ở nhịp 2 giây (`FloatingBubbleService.syncBubbleWindow`), nên cửa sổ hiện/ẩn ngay mà
+ * KHÔNG phải dựng lại dịch vụ — dựng lại sẽ chạy lại `onCreate`, tức chạy lại bộ **tự chiếu khi nổ máy** và đẩy
+ * một app lên cụm trước mặt người lái vì một cú gạt công tắc trình bày.
+ *
+ * Bật lại trong lúc Cast đang BẬT mà dịch vụ vì lý do nào đó đã chết (hệ thống thu hồi, force-stop) thì đường tự
+ * chữa có sẵn vẫn lo: `KachiHomeWiring.ensureCastBubble` khởi lại nó mỗi lần về màn chính.
+ */
+fun ClusterNavBridge.setCastBubbleVisible(on: Boolean) {
+    runCatching { coordinator.prefs.setBubbleVisible(on) }
+}
+
+// ── Tỉ lệ chia đôi — lặp lại CastSplitRatioButtons.kt:41–66 ─────────────────────────────────────
 /** Phần trăm của nửa TRÁI (10…90) — `CastSplitRatioButtons.kt:62`. */
 fun ClusterNavBridge.splitPct(): Int = CastProfile.normalizePercent(
     runCatching { coordinator.prefs.splitRatioLeftPercent() }.getOrDefault(CastProfile.DEFAULT_PERCENT),

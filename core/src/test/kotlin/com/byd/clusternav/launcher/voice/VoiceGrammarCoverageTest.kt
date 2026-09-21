@@ -329,22 +329,20 @@ class VoiceGrammarCoverageTest {
     // ══ 9 · CÂU TRẢ LỜI (R5) ══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Việc chưa kiểm trên xe **vẫn bắn** (cùng luật với nút bấm) nhưng câu trả lời phải nói ra — xem KDoc
-     * `VoiceReply.unverified`. Không có đuôi này thì một dấu "✓" trơn đang hứa hộ một nút chưa từng chạy thật.
+     * ⚠ 2026-09-21 · OWNER BỎ HẲN CHẤM + ĐUÔI "chưa kiểm trên xe". `CarCapabilities.needsBadge`/`ActionMacro.needsBadge`
+     * nay luôn false ⇒ `VoiceReply.unverified` trả rỗng. Câu trả lời giọng nói KHÔNG còn nói "chưa kiểm" cho MỌI mục.
      */
     @Test
-    fun `viec chua kiem tren xe thi cau tra loi noi ra`() {
+    fun `cau tra loi khong con noi chua kiem tren xe 2026-09-21`() {
         Strings.current = Lang.VI
         val unproven = ControlRegistry.ALL.first { it.tier != EvidenceTier.PROVEN }
         val proven = ControlRegistry.ALL.first { it.tier == EvidenceTier.PROVEN }
-        assertTrue(VoiceReply.done(VoiceIntent.Control(unproven.id, 1)).contains("chưa kiểm trên xe"), unproven.id)
+        assertTrue(!VoiceReply.done(VoiceIntent.Control(unproven.id, 1)).contains("chưa kiểm"), unproven.id)
         assertTrue(!VoiceReply.done(VoiceIntent.Control(proven.id, 1)).contains("chưa kiểm"), proven.id)
-        // Hộp hỏi lại cũng phải mang đuôi đó: người ta đang quyết định, đúng lúc cần biết nhất.
-        assertTrue(VoiceReply.confirmQuestion(VoiceIntent.Control("windows_all", 1)).contains("chưa kiểm trên xe"))
-        // Đọc số thì không có chuyện "chưa kiểm" theo nghĩa này (không đổi gì trên xe).
+        assertTrue(!VoiceReply.confirmQuestion(VoiceIntent.Control("windows_all", 1)).contains("chưa kiểm"))
         assertTrue(!VoiceReply.done(VoiceIntent.Read("soc")).contains("chưa kiểm"))
         Strings.current = Lang.EN
-        assertTrue(VoiceReply.done(VoiceIntent.Control(unproven.id, 1)).contains("not yet checked"))
+        assertTrue(!VoiceReply.done(VoiceIntent.Control(unproven.id, 1)).contains("not yet checked"))
         Strings.current = Lang.VI
     }
 

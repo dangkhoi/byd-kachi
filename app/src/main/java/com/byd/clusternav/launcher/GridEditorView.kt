@@ -29,12 +29,25 @@ class GridEditorView(context: Context) : View(context) {
         style = Paint.Style.STROKE; strokeWidth = 1f; color = Color.parseColor(KachiTheme.GRID_LINE)
     }
     private val frameFill = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val frameLine = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3f }
+    // ⚠ WP1 · R1.1 — `frameLine` (viền khung) đã XOÁ. Giữ một Paint nét không ai dùng là mời cái viền quay lại ở
+    // lượt sửa sau; khung nay đọc ra bằng VÙNG TÔ + tay cầm (xem chú thích trong `onDraw`).
     private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor(KachiTheme.INK); textAlign = Paint.Align.CENTER
     }
     private val handle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor(KachiTheme.INK) }
     private val box = RectF()
+
+    /**
+     * Độ đục vùng tô của khung — **hai con số này gánh luôn phần mà viền từng góp** (WP1 · R1.1).
+     *
+     * Nâng từ `55`/`90` lên `96`/`150`: khung phải nổi trên lưới ô mà không còn đường kẻ, và chênh giữa hai mức phải
+     * đủ để "đang chọn" đọc ra ngay. Vẫn bán trong suốt (không đục) để thấy được lưới bên dưới — lưới là thứ người
+     * dùng canh theo khi kéo.
+     */
+    private companion object {
+        const val IDLE_ALPHA = 96
+        const val SELECTED_ALPHA = 150
+    }
 
     /** Bố cục đang vẽ. Đặt vào là vẽ lại. */
     var layout: GridLayout = GridLayout(emptyList())
@@ -156,11 +169,13 @@ class GridEditorView(context: Context) : View(context) {
             val r = frameRect(f)
             box.set(r.left + 2f, r.top + 2f, r.right - 2f, r.bottom - 2f)
             val base = if (i in bad) KachiTheme.RED else palette[i % palette.size]
-            frameFill.color = Color.parseColor(base); frameFill.alpha = if (i == selected) 90 else 55
+            // ⚠ WP1 · R1.1 — viền khung (`frameLine`, 4f khi chọn / 2f khi không) đã GỠ: owner *"KHÔNG còn viền ở
+            // BẤT CỨ ĐÂU hết"*. Việc nó làm được chia lại cho hai thứ ĐÃ có sẵn: (a) khung đọc ra bằng **VÙNG TÔ**
+            // (alpha nâng 55→96 / 90→150 để bù đúng phần độ đậm mà viền từng góp — khung vẫn nổi trên lưới), (b)
+            // "đang chọn" đọc ra bằng **tô đậm hơn + TAY CẦM đổi cỡ** (tay cầm vốn chỉ hiện ở khung đang chọn, tức
+            // dấu hiệu đó đã tồn tại và không mơ hồ). Lưới ô ở trên KHÔNG phải viền — nó là cái lưới để bám.
+            frameFill.color = Color.parseColor(base); frameFill.alpha = if (i == selected) SELECTED_ALPHA else IDLE_ALPHA
             canvas.drawRoundRect(box, 10f, 10f, frameFill)
-            frameLine.color = Color.parseColor(base)
-            frameLine.strokeWidth = if (i == selected) 4f else 2f
-            canvas.drawRoundRect(box, 10f, 10f, frameLine)
 
             label.textSize = minOf(box.width(), box.height()) * 0.32f
             canvas.drawText("${i + 1}", box.centerX(), box.centerY() + label.textSize * 0.35f, label)

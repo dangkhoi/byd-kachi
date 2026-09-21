@@ -41,7 +41,13 @@ class VoiceFastNaturalWiringContractTest {
     private val workspace by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
     private val host by lazy { code("src/main/java/com/byd/clusternav/launcher/VdAppHost.kt") }
     private val gateway by lazy { code("src/main/java/com/byd/clusternav/launcher/BydHalGateway.kt") }
-    private val bridge by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/KachiTestBridge.kt") }
+    // ⚠ WP7 (2026-09-20) dời sáu lệnh dev **không cần màn chính** (`featmap`/`prefs_set`/`voice_dump`/…) ra
+    // `TestBridgeNoHome.kt` — chúng vẫn chạy qua adb, chỉ đổi CHỖ điều phối. Nối hai tệp để mọi assert `bridge.
+    // contains(...)` dưới đây phủ đúng chỗ dây nối mới; đọc một tệp là để lượt tách WP7 lách được bài canh.
+    private val bridge by lazy {
+        code("src/main/java/com/byd/clusternav/launcher/testbridge/KachiTestBridge.kt") + "\n" +
+            code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeNoHome.kt")
+    }
     private val wiring by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWiring.kt") }
 
     // ══ R1/R2/R3 — NHANH ═════════════════════════════════════════════════════════════════════════════════

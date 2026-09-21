@@ -2,6 +2,7 @@ package com.byd.clusternav.modules.clustercast
 
 import java.nio.file.Files
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -140,12 +141,35 @@ class BubbleGestureContractTest {
     // ─── Renderer: one transparent icon, no background/border ────────────────
 
     @Test
-    fun `renderer builds one transparent nav-arrow icon with no background`() {
+    fun `renderer builds one transparent Kachi app-icon with no background`() {
         val build = body(renderer, "fun buildBubble()")
         assertTrue(build.contains("ImageView("), "one ImageView")
-        assertTrue(build.contains("R.drawable.ic_bubble_nav"), "shows the nav arrow vector")
+        // WP6 · R6.2 — glyph là CHÍNH icon app Kachi (`launcher_fg`), không phải một bản chép sang `ic_*` thứ hai.
+        assertTrue(build.contains("R.drawable.launcher_fg"), "shows the Kachi app-icon blossom")
         assertTrue(build.contains("background = null"), "no background / border / fill (R5)")
         assertTrue(build.contains("isLongClickable = true"), "long-clickable for the submenu gesture")
+    }
+
+    /**
+     * WP6 · R6.2 — *"nhỏ gọn"* nhưng **không dưới sàn chạm**.
+     *
+     * Hộp vẽ đi từ 52 → 48dp; 48 là sàn đích-chạm của xe mà chính lớp này khai ([BubbleRenderer.TOUCH_MIN_DP]), và
+     * nút này bắn một lệnh chiếu THẬT lên cụm. Ghim **quan hệ** (cỡ == sàn), không ghim con số ở hai chỗ: ghim số
+     * rời thì hạ sàn xuống 40 mà bài vẫn xanh.
+     */
+    @Test
+    fun `bubble icon box stays at the automotive touch floor`() {
+        assertEquals(
+            BubbleRenderer.TOUCH_MIN_DP, BubbleRenderer.ICON_SIZE_DP,
+            "hộp nút nổi phải đúng sàn chạm 48dp — nhỏ hơn là một nút bắn lệnh xe dưới ngưỡng chạm an toàn",
+        )
+        val build = body(renderer, "fun buildBubble()")
+        assertTrue(build.contains("setPadding(0, 0, 0, 0)"), "lề quang học đã nằm trong launcher_fg — không cộng thêm")
+        // ⚠ [ĐO máy ảo API 29] `launcher_fg` khai cỡ riêng 108dp; chỉ có `minimum*` thì cỡ nội tại THẮNG và cửa sổ
+        // ra 162 px = 108dp (to gấp đôi, ngược hẳn yêu cầu "nhỏ gọn"). Cặp dưới là thứ hạ nó về đúng 48dp.
+        listOf("adjustViewBounds = true", "maxWidth = size", "maxHeight = size").forEach {
+            assertTrue(build.contains(it), "thiếu '$it' ⇒ cỡ nội tại 108dp của launcher_fg thắng, nút nổi phình ra")
+        }
     }
 
     // ─── Submenu redesign (#7 follow-up): beside the bubble, compact, icons + separators ─

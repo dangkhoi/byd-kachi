@@ -39,6 +39,8 @@ class HomePanels(
     private val onDockEdge: (DockEdge) -> Unit,
     private val onTopStrip: (String, Boolean) -> Unit,
     private val onTopStripConfig: (TopStripConfig) -> Unit,
+    /** UX-OVERHAUL · WP4 — thứ tự các vật trên thanh trên; xem [SettingsDeps.onHeaderLayout]. */
+    private val onHeaderLayout: (HeaderLayout) -> Unit,
     private val onWallpaper: (WallpaperPrefs) -> Unit,
     private val onUnitPrefs: (UnitPrefs) -> Unit,
     /**
@@ -154,6 +156,7 @@ class HomePanels(
             onWallpaper = { p -> onWallpaper(p) },
             onTopStrip = { id, on -> onTopStrip(id, on) },
             onTopStripConfig = { cfg -> onTopStripConfig(cfg) },
+            onHeaderLayout = { layout -> onHeaderLayout(layout) },
             // T6 · R-UI (m): một bộ chọn, hai lối vào. Bảng Cài đặt gấp tập đã chốt bằng `DockSelection.apply`
             // rồi đẩy xuống qua intent — lớp này không biết phép gấp đó, nó chỉ nối hai đầu dây.
             openDockPicker = { selected, onApply -> openDockPicker(selected, onApply) },
@@ -185,6 +188,10 @@ class HomePanels(
             openAppByPackage = openAppByPackage,
             assignAppToSlot = assignAppToSlot,
             openSettingsGroup = { g -> openSettings(g) },
+            // WP7 — công tắc test-mode là CỔNG của khối đồ đo, nên nó phải dựng lại được trang đang xem. Đi qua
+            // `invalidateSettings()` (đường đã có sẵn cho ca đổi hồ sơ) chứ không dựng lại cả bảng: dựng lại bảng
+            // là mất luôn 10 trang đã nhớ + chỗ cuộn của chúng.
+            refreshSettings = { invalidateSettings() },
         )
         val panel = SettingsPanel(activity, deps) { closeSettings() }
         settingsPanel = panel

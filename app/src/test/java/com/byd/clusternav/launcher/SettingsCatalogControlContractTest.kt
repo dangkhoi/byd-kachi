@@ -85,12 +85,18 @@ class SettingsCatalogControlContractTest {
             "bars_dock_visible" to ("SettingsSectionsBars" to "dock.withVisible("),
             "bars_dock_edge" to ("SettingsSectionsBars" to "deps.onDockEdge("),
             "bars_dock_items" to ("SettingsSectionsBars" to "deps.openDockPicker("),
+            // UX-OVERHAUL · WP4 — hai danh sách sắp chỗ. Canh CHÍNH lời gọi đổi cấu hình (không canh tên biến):
+            // đó là thứ chứng minh hàng có tác dụng thật, chứ không chỉ có mặt trên trang.
+            "bars_header_order" to ("SettingsSectionsBars" to "deps.onHeaderLayout("),
+            "bars_dock_order" to ("SettingsSectionsBars" to "dock.moveEnabled("),
             // ── 3 · Hiển thị & đơn vị ──
             "display_units" to ("SettingsSections" to "rows.unitRow("),
             "display_theme" to ("SettingsSections" to "deps.onThemeMode("),
             // VISUAL-REFRESH P1b · R8 — hàng ô màu nhấn + chip tông thẻ, cùng intent.
             "display_color" to ("SettingsSections" to "deps.onColorChoice("),
             "display_lang" to ("SettingsSections" to "deps.onLangMode("),
+            // UX-OVERHAUL WP1 · R1.3 — công tắc glass thật/giả, đi qua bridge (khoá theo XE).
+            "display_glass_real" to ("SettingsSections" to "deps.bridge.setGlassReal("),
             // ── 4 · Hồ sơ tài xế ──
             "profiles_list" to ("SettingsSectionsProfiles" to "deps.onSwitchProfile("),
             "profiles_active" to ("SettingsSectionsProfiles" to "R.string.kachi_profile_sub_active"),
@@ -121,6 +127,8 @@ class SettingsCatalogControlContractTest {
             "nav_automation" to ("SettingsSectionsAutomation" to "bridge.setNavRules("),
             // ── 6 · Chiếu màn lên cụm ──
             "cast_enabled" to ("SettingsSectionsCast" to "bridge.setCastEnabled("),
+            // UX-OVERHAUL WP6 · R6.1 — công tắc HIỆN nút nổi; dấu vết là lời gọi ghi cờ (hành vi), không phải nhãn.
+            "cast_bubble" to ("SettingsSectionsCast" to "bridge.setCastBubbleVisible("),
             "cast_split" to ("SettingsSectionsCast" to "bridge.setSplitPct("),
             "cast_autostart" to ("SettingsSectionsCast" to "bridge.setAutostartFull("),
             "cast_autostart_pkg" to ("SettingsSectionsCast" to "bridge.setAutostartPkg("),
@@ -148,6 +156,10 @@ class SettingsCatalogControlContractTest {
             "system_permissions" to ("SettingsSections" to "rows.permissionRow("),
             "system_autostart" to ("SettingsSections" to "deps.onAutostart("),
             "system_headless_autostart" to ("SettingsSections" to "deps.bridge.setHeadlessAutostart("),
+            // ── Giọng nói (owner 2026-09-21 tách nhóm riêng) ──
+            // "Hey Kachi" — công tắc bridge, dựng ở SettingsVoiceSection (đầu nhóm Voice).
+            "voice_wake" to ("SettingsVoiceSection" to "deps.bridge.setWakeEnabled("),
+            "voice_music_default_app" to ("SettingsVoiceSection" to "deps.bridge.setMusicDefaultApp("),
             // V1 pha NÓI · R4/T8 — hai công tắc đọc phản hồi + nút tải gói giọng offline (tệp `voice/`, xem KDoc).
             "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
             "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),
@@ -194,6 +206,7 @@ class SettingsCatalogControlContractTest {
             "VoiceModelSettings" to voice,
             "VoiceConfirmSettings" to voiceConfirm,
             "SettingsSectionsProfiles" to profilesSection,
+            "SettingsVoiceSection" to code("src/main/java/com/byd/clusternav/launcher/SettingsVoiceSection.kt"),
         )
 
         val catalogIds = SettingsCatalog.ENTRIES.map { it.id }.toSet()
@@ -212,10 +225,10 @@ class SettingsCatalogControlContractTest {
             emptyList<String>(), missing.sorted(),
             "mục của danh mục không tìm thấy control tương ứng trong tệp section của nhóm nó: $missing",
         )
-        // Chốt chống bảng rỗng: 10 nhóm phải có mặt đủ, không nhóm nào lọt qua vì bảng chỉ khai vài mục.
+        // Chốt chống bảng rỗng: 11 nhóm phải có mặt đủ, không nhóm nào lọt qua vì bảng chỉ khai vài mục.
         assertEquals(
-            10, SettingsGroup.values().size,
-            "IA v2 §4.1 chốt 10 nhóm — đổi số nhóm là đổi cả bản đồ cài đặt, phải sửa cả bảng trên",
+            11, SettingsGroup.values().size,
+            "IA v2 §4.1 + VOICE (owner 2026-09-21) — đổi số nhóm là đổi cả bản đồ cài đặt, phải sửa cả bảng trên",
         )
     }
 }

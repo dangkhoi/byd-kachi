@@ -132,6 +132,27 @@ class VietMapAutostartGateTest {
         assertFalse(VietMapAutostart.isResumedActivity("mResumedActivity: ActivityRecord{x u0 other.pkg/.Main t1}"))
     }
 
+    // ── isInMapActivity (bug owner 2026-09-21): CHỜ VÀO MAP thật, KHÔNG tính màn flash/splash ──────────────
+
+    @Test fun `isInMapActivity true khi resumed la MainActivity (da vao map)`() {
+        val dump = "  mResumedActivity: ActivityRecord{7f3a u0 vn.vietmap.live/.MainActivity t88}"
+        assertTrue(VietMapAutostart.isInMapActivity(dump, VietMapAutostart.PKG))
+    }
+
+    @Test fun `isInMapActivity FALSE khi con o man flash-splash cua VietMap`() {
+        // Đây là bug: màn flash cũng là activity của gói ⇒ isResumedActivity=true (hạ sớm), nhưng CHƯA vào map.
+        val splash = "  mResumedActivity: ActivityRecord{7f3a u0 vn.vietmap.live/.SplashActivity t88}"
+        assertTrue(VietMapAutostart.isResumedActivity(splash, VietMapAutostart.PKG))   // hàm cũ tưởng đã vào
+        assertFalse(VietMapAutostart.isInMapActivity(splash, VietMapAutostart.PKG))    // hàm mới: CHƯA — chờ tiếp
+    }
+
+    @Test fun `isInMapActivity false khi app khac resumed hoac input rong`() {
+        assertFalse(VietMapAutostart.isInMapActivity("", VietMapAutostart.PKG))
+        assertFalse(VietMapAutostart.isInMapActivity(
+            "  mResumedActivity: ActivityRecord{9c8d u0 com.byd.launcher/.MainActivity t3}", VietMapAutostart.PKG,
+        ))
+    }
+
     @Test fun `poll constants are sane (settle within timeout, positive interval)`() {
         assertTrue(VietMapAutostart.POLL_INTERVAL_MS > 0L)
         assertTrue(VietMapAutostart.SETTLE_MS > 0L)

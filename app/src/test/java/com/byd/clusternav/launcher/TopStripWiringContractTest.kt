@@ -107,12 +107,19 @@ class TopStripWiringContractTest {
      */
     @Test
     fun `thanh tren khong tran - chip co tran be rong tu phep chia va cat duoi`() {
-        val build = SourceRoots.body(strip, "private fun build()")
+        // ⚠ UX-OVERHAUL · WP4 — cách ĐẶT của từng vật dời từ `build()` sang `lpFor()` (thứ tự do [HeaderLayout]
+        // quyết, nên `build` chỉ còn DỰNG view). Tính chất được canh KHÔNG đổi, chỉ đổi chỗ đọc; và nó nay còn
+        // mạnh hơn: `lpFor` gán weight theo LOẠI vật nên không tổ hợp thứ tự nào làm thanh có hai phần co giãn.
+        val lp = SourceRoots.body(strip, "private fun lpFor(")
         assertTrue(
-            build.contains("strip.addView(chipRow, LinearLayout.LayoutParams(0, WRAP, 1f))"),
+            lp.contains("HeaderItem.CHIPS -> LinearLayout.LayoutParams(0, WRAP, 1f)"),
             "hàng chip phải LÀ phần co giãn của thanh (0dp + weight 1): sắp kiểu cũ (đệm riêng mang weight, hàng " +
                 "chip WRAP) thì LinearLayout đo hàng chip TRƯỚC ba vật bên phải ⇒ 8 chip đẩy 'Ứng dụng'/'Cài đặt'/" +
                 "chip hồ sơ ra khỏi mép",
+        )
+        assertTrue(
+            Regex("""LinearLayout\.LayoutParams\(0, WRAP, 1f\)""").findAll(lp).count() == 1,
+            "ĐÚNG MỘT vật được co giãn — hai vật cùng weight thì phép chia của fitChips không còn là 'phần còn lại'",
         )
         val fit = SourceRoots.body(strip, "private fun fitChips()")
         assertTrue(fit.contains("chipRow.width"), "bề rộng còn lại phải đọc từ bố cục thật, không tự cộng trừ lại")
