@@ -99,6 +99,9 @@ object WakeModelCatalog : VoicePack {
     const val TOKENS = "tokens.txt"
     const val KEYWORDS = "keywords.txt"
 
+    /** Thư mục 5 tệp KWS đóng theo APK (owner 2026-09-21: nhét vào assets, không OTA). */
+    const val ASSET_DIR = "voice/kws"
+
     /** Tìm một tệp theo tên; `null` nếu bảng ghim không có (dùng cho bài canh cặp đường dẫn engine). */
     fun file(name: String): SherpaModelCatalog.ModelFile? = files.firstOrNull { it.name == name }
 }

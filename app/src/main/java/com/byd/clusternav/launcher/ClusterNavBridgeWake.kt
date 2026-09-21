@@ -98,12 +98,11 @@ private object WakeModelFetch {
 
     private fun run(app: Context) {
         try {
-            Log.i(TAG, "tải model câu gọi (${WakeModelCatalog.totalBytes / 1024} KB, ${WakeModelCatalog.files.size} tệp)")
-            VoiceModelStore.install(app, WakeModelCatalog) { step -> log(step) }
-            // Tải xong nhưng người dùng có thể đã TẮT công tắc trong lúc chờ ⇒ đọc lại, đừng dựng bộ nghe sau lưng
-            // họ. `sync` tự stopService khi công tắc tắt, nhưng gọi nó với `reloadModel` ở đây là vô nghĩa.
+            Log.i(TAG, "chép model câu gọi từ APK (${WakeModelCatalog.totalBytes / 1024} KB, ${WakeModelCatalog.files.size} tệp)")
+            copyFromAssets(app)
+            // Chép xong nhưng người dùng có thể đã TẮT công tắc trong lúc chép ⇒ đọc lại, đừng dựng bộ nghe sau lưng họ.
             if (!runCatching { Prefs.wakeEnabled(app) }.getOrDefault(false)) {
-                Log.i(TAG, "công tắc đã tắt trong lúc tải — gói đã lưu, không bật bộ nghe")
+                Log.i(TAG, "công tắc đã tắt trong lúc chép — gói đã lưu, không bật bộ nghe")
                 return
             }
             if (runCatching { VoiceModelStore.isReady(app, WakeModelCatalog) }.getOrDefault(false)) {
@@ -111,10 +110,30 @@ private object WakeModelFetch {
                 VoiceWakeService.sync(app, reloadModel = true)
             }
         } catch (t: Throwable) {
-            // Tải model KHÔNG được phép giết tiến trình: thiếu nó chỉ là degrade chỉ-RMS.
-            Log.w(TAG, "tải model câu gọi lỗi — giữ chế độ chỉ-RMS", t)
+            // Chép model KHÔNG được phép giết tiến trình: thiếu nó chỉ là degrade chỉ-RMS.
+            Log.w(TAG, "chép model câu gọi lỗi — giữ chế độ chỉ-RMS", t)
         } finally {
+            lastPercent = 100
             fetching.set(false)
+        }
+    }
+
+    /**
+     * Chép 5 tệp KWS từ `assets/voice/kws/` (đóng THEO APK, ~5 MB) sang `filesDir/kws/` — sherpa cần đường dẫn
+     * tệp thật, không đọc được thẳng từ asset stream. Owner 2026-09-21: *"5MB nhét luôn vô APK, update app là
+     * update luôn model"* ⇒ 0 mạng, 0 CDN, model luôn khớp phiên bản app. Chỉ chép tệp thiếu/lệch cỡ.
+     */
+    private fun copyFromAssets(app: Context) {
+        val dest = VoiceModelStore.dir(app, WakeModelCatalog).apply { mkdirs() }
+        val names = WakeModelCatalog.files.map { it.name }
+        val total = names.size
+        names.forEachIndexed { i, name ->
+            val out = java.io.File(dest, name)
+            app.assets.open("${WakeModelCatalog.ASSET_DIR}/$name").use { ins ->
+                out.outputStream().use { os -> ins.copyTo(os, 64 * 1024) }
+            }
+            lastPercent = ((i + 1) * 100) / total
+            Log.i(TAG, "chép $name (${out.length()} B) — $lastPercent%")
         }
     }
 
@@ -133,38 +152,24 @@ private object WakeModelFetch {
             md.digest().joinToString("") { "%02x".format(it) }.equals(pin.sha256, ignoreCase = true)
         }.getOrDefault(false)
     }
-
-    /** Một dòng nhật ký cho mỗi mốc; `Downloading` thì thưa ra (mỗi 20 %) để không nhận chìm logcat. */
-    private fun log(step: VoiceModelStore.Step) {
-        when (step) {
-            is VoiceModelStore.Step.Downloading -> {
-                if (step.percent >= 0) lastPercent = step.percent
-                if (step.percent >= 0 && step.percent % 20 == 0) Log.i(TAG, "đang tải ${step.percent}%")
-            }
-            is VoiceModelStore.Step.Done -> { lastPercent = 100; Log.i(TAG, "xong ${step.files} tệp") }
-            is VoiceModelStore.Step.Failed -> Log.w(TAG, "hỏng: ${step.reason}")
-            else -> Log.i(TAG, "bước: ${step::class.simpleName}")
-        }
-    }
 }
 
 /** Trạng thái model câu gọi cho UI. */
 enum class WakeModelState { NOT_DOWNLOADED, DOWNLOADING, READY }
 
 /**
- * Trạng thái model câu gọi cho UI (owner 2026-09-21: *"không có gì để biết đã tải xong chưa"*):
- * đang tải %/sẵn sàng/chưa tải. Đọc rẻ (stat), gọi được từ luồng UI. Trả (state, câu hiển thị đã dịch)
- * — màu do UI chọn theo state qua KachiTheme (không hardcode hex ở đây).
+ * Trạng thái model câu gọi cho UI. Model đóng THEO APK (assets), nên thường là "Sẵn sàng"; "Đang chuẩn bị"
+ * chỉ thoáng qua lần đầu bật (chép 5 MB từ APK ra filesDir). Đọc rẻ (stat), gọi được từ luồng UI.
  */
 fun ClusterNavBridge.wakeModelStatus(): Pair<WakeModelState, String> = when {
     WakeModelFetch.downloading -> {
         val p = WakeModelFetch.lastPercent
         WakeModelState.DOWNLOADING to
-            if (p in 1..99 || p == 0) Lang.t("Đang tải model câu gọi… $p%", "Downloading wake model… $p%")
-            else Lang.t("Đang tải model câu gọi…", "Downloading wake model…")
+            if (p in 1..99 || p == 0) Lang.t("Đang chuẩn bị model câu gọi… $p%", "Preparing wake model… $p%")
+            else Lang.t("Đang chuẩn bị model câu gọi…", "Preparing wake model…")
     }
     runCatching { VoiceModelStore.isReady(app, WakeModelCatalog) }.getOrDefault(false) ->
         WakeModelState.READY to Lang.t("Model câu gọi đã sẵn sàng", "Wake model ready")
     else -> WakeModelState.NOT_DOWNLOADED to
-        Lang.t("Chưa tải model câu gọi (bật công tắc để tải ~5 MB)", "Wake model not downloaded (turn on to fetch ~5 MB)")
+        Lang.t("Chưa nạp model câu gọi (bật công tắc để chuẩn bị)", "Wake model not loaded (turn on to prepare)")
 }

@@ -318,14 +318,14 @@ class VoiceWakeIsolationContractTest {
     @Test
     fun `tai xong thi dung lai bo nghe de nap model`() {
         val fn = SourceRoots.body(bridge, "private fun run(app: Context)")
-        assertTrue(fn.contains("VoiceModelStore.install(app, WakeModelCatalog)"), "phải gọi đúng đường cài đã có")
+        assertTrue(fn.contains("copyFromAssets(app)"), "phải chép model từ assets (đóng theo APK, không mạng)")
         assertTrue(
             fn.contains("VoiceWakeService.sync(app, reloadModel = true)"),
-            "tải xong PHẢI dựng lại bộ nghe — luồng nghe chỉ thử nạp model một lần cho cả vòng đời của nó",
+            "chép xong PHẢI dựng lại bộ nghe — luồng nghe chỉ thử nạp model một lần cho cả vòng đời của nó",
         )
         assertTrue(
             fn.contains("Prefs.wakeEnabled(app)"),
-            "người dùng có thể đã TẮT trong lúc tải ⇒ phải đọc lại công tắc, không bật bộ nghe sau lưng họ",
+            "người dùng có thể đã TẮT trong lúc chép ⇒ phải đọc lại công tắc, không bật bộ nghe sau lưng họ",
         )
         assertTrue(fn.contains("fetching.set(false)"), "chốt phải nhả trong `finally` (không thì tắc vĩnh viễn)")
         // Cờ reload phải được service THI HÀNH, không chỉ nhận rồi bỏ.

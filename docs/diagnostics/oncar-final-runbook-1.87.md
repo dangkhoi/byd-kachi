@@ -135,3 +135,28 @@
 ### BUG B — Hey Kachi KHÔNG phản hồi
 [ĐO adb xe] `voice_wake_enabled=true` NHƯNG `VoiceWakeService` KHÔNG chạy + `files/kws/` TRỐNG (model KWS chưa tải). Gốc: owner bật wake trên **1.84** (lúc model KWS CHƯA đăng repo → tải 404); model `voice/kws/` nay ĐÃ có trên repo (5 tệp, raw HTTP 200) từ lượt này. `setWakeEnabled(true)` CÓ gọi `WakeModelFetch.ensure` (tải model) nhưng chỉ chạy khi GẠT công tắc / boot — `pm install -r` phiên này không kích lại. **FIX LIVE cho owner**: Cài đặt › Giọng nói › **Hey Kachi → TẮT rồi BẬT lại** ⇒ tải model ~5 MB + dựng service; chờ tải xong rồi gọi "Hey Kachi".
 - **LƯU Ý**: KWS gigaspeech ĐA NGỮ — records 1.81 ghi "bật = đo baseline, chưa chắc bắt câu gọi giọng Việt". Đây là **thử nghiệm**; tải xong mà vẫn không nhận ⇒ vấn đề độ chính xác KWS (không phải wiring), cần fine-tune keyword — việc riêng.
+
+## 1.88 (89) 2026-09-21 — sửa tiếp 2 bug + thêm chỉ báo tải model
+
+### Bug 1 tiếp — "lãng đãng" → "lãng"
+[ĐO] parser ĐÚNG (gõ chữ → `«lãng đãng»`, YouTube phát đúng "Đen – Lãng đãng"). Gốc = **ASR nghe hụt âm cuối "đãng"** khi NÓI (giới hạn model zipformer-vi; tên bài là từ-vựng-mở nên không sửa được bằng lớp chính tả). Cần fine-tune model — backlog.
+
+### Bug 2 — Hey Kachi: 3 lớp lỗi đã gỡ
+1. **keywords.txt token sai vocab**: `Cannot find ID for token KA/CHI... Encode keywords failed` — token phiên âm không có trong tokens.txt của model gigaspeech. Sửa: chỉ dùng token có thật, verify từng token ∈ tokens.txt.
+2. **nhãn @ đa từ**: `@HEY KACHI` (2 từ) → sherpa coi "KACHI" là token → encode fail. Sửa: nhãn 1 từ `@HeyKachi`/`@Kachi`.
+3. **stale keywords kẹt**: `isReady` chỉ check presence (không sha) → keywords.txt cũ kẹt. Sửa: `WakeModelFetch.ensure` so sha keywords.txt với ghim, lệch → remove + tải lại (tự chữa trên boot/toggle).
+
+### Chỉ báo tải model (owner: "không biết đã tải xong chưa")
+Thêm dòng trạng thái dưới công tắc Hey Kachi: **Chưa tải / Đang tải …% / Sẵn sàng** (màu MUT2/AMBER/GREEN, tự refresh 1.5s). `WakeModelState` enum + `wakeModelStatus()`.
+
+### ⚠ CÒN VƯỚNG — GitHub raw CDN cache
+[ĐO xe 17:22] xe tải keywords.txt vẫn ra **223B/be924070 (bản @HEY KACHI cũ)** dù repo raw + APK pin đều **219B/bfff4fa8** — **CDN edge cache** giữ bản cũ ~5 phút. Self-heal ĐANG chạy đúng (từ chối file lệch ghim, sẽ thử lại). ⇒ Sau khi CDN hết cache (vài phút), lần trigger kế (boot/toggle/reinstall) sẽ tải khớp + KWS nạp được. **Owner: gạt Hey Kachi off→on lại sau ~5–10 phút**, hoặc nổ máy lại.
+
+## 1.89 (90) 2026-09-21 — Hey Kachi model ĐÓNG THEO APK (owner: nhét 5MB vào APK, bỏ OTA)
+
+- 5 tệp KWS (~5MB) chuyển vào `app/src/main/assets/voice/kws/` ⇒ đóng theo APK (APK 39→43MB). Update app = update luôn model, KHÔNG còn tải OTA / dính CDN cache.
+- `WakeModelFetch.run` đổi từ `VoiceModelStore.install` (mạng) → `copyFromAssets` (chép assets→filesDir, sherpa cần path thật). 0 mạng, model luôn khớp phiên bản app.
+- Keyword nhạy hơn (threshold 0.15/0.18, boost 2.5/2.2) + biến thể "Kachi" giọng Việt (ga/co) + "Kachi" trần.
+- Cầu chì false-accept: latch vĩnh viễn → **tự clear sau 60s** (`fusedUntil`) — chống "nổ 1 lần rồi im hoài" khi thử nhiều lần.
+- Dòng trạng thái dưới công tắc Hey Kachi: Chưa nạp / Đang chuẩn bị …% / Sẵn sàng.
+- [ĐO] full 5 module xanh. Owner xác nhận wake nổ được nhiều lần (khó nghe chút vì model tiếng Anh). Fine-tune tiếng Việt = backlog.
