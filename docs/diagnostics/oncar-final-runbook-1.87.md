@@ -160,3 +160,16 @@ Thêm dòng trạng thái dưới công tắc Hey Kachi: **Chưa tải / Đang t
 - Cầu chì false-accept: latch vĩnh viễn → **tự clear sau 60s** (`fusedUntil`) — chống "nổ 1 lần rồi im hoài" khi thử nhiều lần.
 - Dòng trạng thái dưới công tắc Hey Kachi: Chưa nạp / Đang chuẩn bị …% / Sẵn sàng.
 - [ĐO] full 5 module xanh. Owner xác nhận wake nổ được nhiều lần (khó nghe chút vì model tiếng Anh). Fine-tune tiếng Việt = backlog.
+
+## KẾT LUẬN Hey Kachi 2026-09-21 (owner: gác, chờ fine-tune model)
+
+**Wiring đã HOÀN CHỈNH — không còn bug kỹ thuật:**
+- Model đóng theo APK (assets, 0 mạng/CDN), copyFromAssets khi bật.
+- Bộ nghe (`VoiceWakeService`) tự dựng lại khi mở Kachi (onResume sync) — hết chết ngầm sau app kill/reinstall. [ĐO] `:wake` proc lên + KWS `newFromFile` nạp encoder/decoder/joiner từ `files/kws/` + **0 encode-fail**.
+- Cầu chì false-accept tự-clear 60s.
+- Keyword: threshold 0.15/0.18, boost 2.5/2.2, biến thể "Kachi" giọng Việt + "Kachi" trần.
+- Dòng trạng thái tải dưới công tắc.
+
+**VẪN không gọi lên được** dù wiring OK ⇒ **GỐC = độ chính xác KWS**: model `sherpa-onnx-kws-zipformer-gigaspeech` là **tiếng ANH đa ngữ**, keyword là phiên âm tiếng Anh của "Kachi" ⇒ không bắt được "Kachi" phát âm giọng Việt. Đây KHÔNG phải bug sửa được bằng code — cần **fine-tune / thay model KWS tiếng Việt** (thu mẫu "Hey Kachi"/"Kachi" giọng Việt, train keyword model). = **BACKLOG (việc lớn, off-car)**.
+
+⇒ **Owner GÁC Hey Kachi** tới khi fine-tune. Tính năng vẫn để đó (default TẮT / owner tự tắt), không chặn gì.
