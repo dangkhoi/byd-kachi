@@ -82,4 +82,20 @@ class VoiceWakeControllerTest {
         assertEquals(VoiceWakeController.Frame.SUSPENDED, c.onFrame(800.0, 1.0, 800L), "đã cầu chì ⇒ ngừng hẳn")
         c.reset(); assertFalse(c.isFused(), "bật lại công tắc ⇒ reset")
     }
+
+    @Test fun `cau chi TU tat sau cua so hoi phuc (khong can restart service)`() {
+        // [ĐO xe 2026-09-21] fuse cũ latch vĩnh viễn ⇒ nổ 1 lần rồi thử nhiều lần (>6) là "kêu hoài không lên"
+        // tới hết chuyến. Nay tự tắt sau DEFAULT_FUSE_RECOVERY_MS.
+        val c = controller()
+        for (i in 0 until 6) c.onKwsResult(true, i * 100L)
+        assertEquals(VoiceWakeController.Wake.FUSED, c.onKwsResult(true, 700L))
+        assertTrue(c.isFused())
+        // Trong cửa sổ hồi phục ⇒ vẫn SUSPENDED
+        val within = 700L + VoiceWakeController.DEFAULT_FUSE_RECOVERY_MS - 1
+        assertEquals(VoiceWakeController.Frame.SUSPENDED, c.onFrame(800.0, 1.0, within))
+        // Hết cửa sổ ⇒ fuse tự tắt (không cần reset); onFrame qua mốc sẽ tự xoá fuse
+        val after = 700L + VoiceWakeController.DEFAULT_FUSE_RECOVERY_MS + 1
+        c.onFrame(5000.0, 1.0, after)
+        assertFalse(c.isFused(), "hết cửa sổ ⇒ fuse tự tắt, nghe lại được")
+    }
 }

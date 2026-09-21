@@ -72,7 +72,7 @@ object WakeModelCatalog : VoicePack {
         pinned("tokens.txt", 5_006L,
             "fd2ded4050a55d2b1578870ba8697d02371980217806b7558bd0a5cc60f3ba53"),
         pinned("keywords.txt", 348L,
-            "59aad88c010ec7d844b094874cf74d502c3ab8504352e7d0e719b67bca7a52e2"),
+            "286f7400d38fc8607412a71ec4b691742c689ff15e1c2b3a63de4892cc382251"),
     )
 
     /**

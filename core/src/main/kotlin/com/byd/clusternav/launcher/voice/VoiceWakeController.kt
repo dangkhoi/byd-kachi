@@ -26,6 +26,7 @@ class VoiceWakeController(
     private val cooldownMs: Long = DEFAULT_COOLDOWN_MS,
     private val maxWakesPerWindow: Int = DEFAULT_MAX_WAKES,
     private val wakeWindowMs: Long = DEFAULT_WAKE_WINDOW_MS,
+    private val fuseRecoveryMs: Long = DEFAULT_FUSE_RECOVERY_MS,
     private val maxKwsFramesPerWindow: Int = DEFAULT_MAX_KWS_FRAMES,
     private val kwsWindowMs: Long = DEFAULT_KWS_WINDOW_MS,
 ) {
@@ -40,11 +41,21 @@ class VoiceWakeController(
 
     /** Mốc các khung ĐÃ chạy KWS trong cửa sổ [kwsWindowMs] — xem [chargeKws]. */
     private val kwsFrames = ArrayDeque<Long>()
-    private var fused = false
+
+    /**
+     * Cầu chì false-accept: mốc hết tự-tắt. `0L` = không fuse. **TỰ CLEAR** sau [fuseRecoveryMs] thay vì latch
+     * vĩnh viễn — [ĐO xe 2026-09-21] owner nổ được 1 lần rồi thử lại nhiều lần (>maxWakes) làm fuse latch, và
+     * fuse cũ chỉ [reset] lúc dựng lại service ⇒ *"kêu hoài không lên"* tới hết chuyến. Nay một phút ồn/thử
+     * nhiều chỉ tắt tạm, hết cửa sổ là nghe lại.
+     */
+    private var fusedUntil = 0L
 
     /** Nhịp âm thanh: quyết định có chạy KWS không. `:app` gọi với RMS khung + load hiện tại. */
     fun onFrame(rms: Double, load1: Double, nowMs: Long): Frame {
-        if (fused) return Frame.SUSPENDED
+        if (fusedUntil > 0L) {
+            if (nowMs < fusedUntil) return Frame.SUSPENDED
+            fusedUntil = 0L  // hết cửa sổ hồi phục ⇒ nghe lại (không cần restart service)
+        }
         if (!loadGuard.allow(load1)) return Frame.SUSPENDED      // tầng 1: hệ nóng
         if (nowMs < cooldownUntil) return Frame.IDLE             // tầng 2: vừa nổ wake
         if (!gate.voiced(rms)) return Frame.IDLE                 // tầng 3: im ⇒ chỉ toán RMS
@@ -79,19 +90,19 @@ class VoiceWakeController(
 
     /** KWS báo có/không khớp câu gọi trên khung vừa RUN_KWS. Trả việc cần làm ở cấp phiên. */
     fun onKwsResult(matched: Boolean, nowMs: Long): Wake {
-        if (fused || !matched) return Wake.NONE
+        if (nowMs < fusedUntil || !matched) return Wake.NONE
         cooldownUntil = nowMs + cooldownMs
         wakeTimes.addLast(nowMs)
         while (wakeTimes.isNotEmpty() && nowMs - wakeTimes.first() >= wakeWindowMs) wakeTimes.removeFirst()
-        if (wakeTimes.size > maxWakesPerWindow) { fused = true; return Wake.FUSED }
+        if (wakeTimes.size > maxWakesPerWindow) { fusedUntil = nowMs + fuseRecoveryMs; wakeTimes.clear(); return Wake.FUSED }
         return Wake.FIRE
     }
 
-    fun isFused(): Boolean = fused
+    fun isFused(): Boolean = fusedUntil > 0L
 
     /** Bật lại từ đầu (khi user bật công tắc lại sau khi cầu chì đã tắt). */
     fun reset() {
-        cooldownUntil = 0L; wakeTimes.clear(); kwsFrames.clear(); fused = false
+        cooldownUntil = 0L; wakeTimes.clear(); kwsFrames.clear(); fusedUntil = 0L
         gate.reset(); loadGuard.reset()
     }
 
@@ -99,6 +110,7 @@ class VoiceWakeController(
         const val DEFAULT_COOLDOWN_MS = 3_000L      // sau khi nổ wake, nghỉ nghe (phiên lệnh đang chạy)
         const val DEFAULT_MAX_WAKES = 6             // > số này trong cửa sổ ⇒ nghi nghe nhầm ⇒ tự tắt (OQ5)
         const val DEFAULT_WAKE_WINDOW_MS = 60_000L
+        const val DEFAULT_FUSE_RECOVERY_MS = 60_000L  // cầu chì TỰ tắt sau 1 phút (không latch vĩnh viễn)
 
         /**
          * Trần thời lượng suy diễn (xem [chargeKws]). Đơn vị là **khung đọc của `:app`** (100 ms) — 40 khung /
