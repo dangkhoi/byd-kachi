@@ -1,6 +1,6 @@
-▁HE Y ▁CA CH I :2.0 #0.20 @HEY KACHI
-▁HE Y ▁K A CH I :2.0 #0.20 @HEY KACHI
-▁HE Y ▁CA ▁CHI :2.0 #0.20 @HEY KACHI
-▁HI ▁CA CH I :2.0 #0.20 @HI KACHI
-▁CA CH I :2.0 #0.20 @KACHI
-▁K A CH I :2.0 #0.20 @KACHI
+▁HE Y ▁CA CH I :2.0 #0.20 @HeyKachi
+▁HE Y ▁K A CH I :2.0 #0.20 @HeyKachi
+▁HE Y ▁CA ▁CHI :2.0 #0.20 @HeyKachi
+▁HI ▁CA CH I :2.0 #0.20 @HiKachi
+▁CA CH I :2.0 #0.20 @Kachi
+▁K A CH I :2.0 #0.20 @Kachi

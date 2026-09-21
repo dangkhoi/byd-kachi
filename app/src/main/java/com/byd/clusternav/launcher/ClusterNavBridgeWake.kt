@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.util.Log
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.Lang
 import com.byd.clusternav.launcher.voice.VoiceModelStore
 import com.byd.clusternav.launcher.voice.VoiceWakeService
 import com.byd.clusternav.launcher.voice.WakeModelCatalog
@@ -67,6 +68,12 @@ private object WakeModelFetch {
     /** Chốt một-lượt-tải cho cả tiến trình. */
     private val fetching = AtomicBoolean(false)
 
+    /** % tải gần nhất (−1 = chưa tải lượt nào). UI đọc để hiện "đang tải …%". */
+    @Volatile var lastPercent: Int = -1
+        private set
+    /** Đang có lượt tải chạy không (UI). */
+    val downloading: Boolean get() = fetching.get()
+
     fun ensure(app: Context) {
         // `isReady` = 5 lần `stat`; rẻ, và chạy ở đây để ca thường (đã có model) không dựng luồng nào.
         // ⚠ [ĐO xe 2026-09-21] `isReady` chỉ kiểm CÓ tệp + độ dài > 0, KHÔNG so sha. Nếu `keywords.txt` cũ (token
@@ -130,11 +137,34 @@ private object WakeModelFetch {
     /** Một dòng nhật ký cho mỗi mốc; `Downloading` thì thưa ra (mỗi 20 %) để không nhận chìm logcat. */
     private fun log(step: VoiceModelStore.Step) {
         when (step) {
-            is VoiceModelStore.Step.Downloading ->
+            is VoiceModelStore.Step.Downloading -> {
+                if (step.percent >= 0) lastPercent = step.percent
                 if (step.percent >= 0 && step.percent % 20 == 0) Log.i(TAG, "đang tải ${step.percent}%")
-            is VoiceModelStore.Step.Done -> Log.i(TAG, "xong ${step.files} tệp")
+            }
+            is VoiceModelStore.Step.Done -> { lastPercent = 100; Log.i(TAG, "xong ${step.files} tệp") }
             is VoiceModelStore.Step.Failed -> Log.w(TAG, "hỏng: ${step.reason}")
             else -> Log.i(TAG, "bước: ${step::class.simpleName}")
         }
     }
+}
+
+/** Trạng thái model câu gọi cho UI. */
+enum class WakeModelState { NOT_DOWNLOADED, DOWNLOADING, READY }
+
+/**
+ * Trạng thái model câu gọi cho UI (owner 2026-09-21: *"không có gì để biết đã tải xong chưa"*):
+ * đang tải %/sẵn sàng/chưa tải. Đọc rẻ (stat), gọi được từ luồng UI. Trả (state, câu hiển thị đã dịch)
+ * — màu do UI chọn theo state qua KachiTheme (không hardcode hex ở đây).
+ */
+fun ClusterNavBridge.wakeModelStatus(): Pair<WakeModelState, String> = when {
+    WakeModelFetch.downloading -> {
+        val p = WakeModelFetch.lastPercent
+        WakeModelState.DOWNLOADING to
+            if (p in 1..99 || p == 0) Lang.t("Đang tải model câu gọi… $p%", "Downloading wake model… $p%")
+            else Lang.t("Đang tải model câu gọi…", "Downloading wake model…")
+    }
+    runCatching { VoiceModelStore.isReady(app, WakeModelCatalog) }.getOrDefault(false) ->
+        WakeModelState.READY to Lang.t("Model câu gọi đã sẵn sàng", "Wake model ready")
+    else -> WakeModelState.NOT_DOWNLOADED to
+        Lang.t("Chưa tải model câu gọi (bật công tắc để tải ~5 MB)", "Wake model not downloaded (turn on to fetch ~5 MB)")
 }

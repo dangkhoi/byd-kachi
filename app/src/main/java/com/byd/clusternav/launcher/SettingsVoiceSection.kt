@@ -32,6 +32,29 @@ class SettingsVoiceSection(
             sub = context.getString(R.string.kachi_wake_sub),
         ) { on -> deps.bridge.setWakeEnabled(on) })
 
+        // Dòng TRẠNG THÁI model câu gọi (owner 2026-09-21: "không có gì để biết đã tải xong chưa").
+        // Tự làm mới mỗi 1.5s để thấy % tải + lúc "sẵn sàng". Dừng poll khi view rời cửa sổ.
+        val st0 = deps.bridge.wakeModelStatus()
+        val wakeStatus = rows.statusRow(KachiTheme.MUT2, st0.second)
+        body.addView(wakeStatus.view)
+        val h = android.os.Handler(android.os.Looper.getMainLooper())
+        val tick = object : Runnable {
+            override fun run() {
+                val (state, text) = deps.bridge.wakeModelStatus()
+                val color = when (state) {
+                    WakeModelState.READY -> KachiTheme.GREEN
+                    WakeModelState.DOWNLOADING -> KachiTheme.AMBER
+                    WakeModelState.NOT_DOWNLOADED -> KachiTheme.MUT2
+                }
+                wakeStatus.update(color, text)
+                if (wakeStatus.view.isAttachedToWindow) h.postDelayed(this, 1500L)
+            }
+        }
+        wakeStatus.view.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: android.view.View) { h.post(tick) }
+            override fun onViewDetachedFromWindow(v: android.view.View) { h.removeCallbacks(tick) }
+        })
+
         // Nói với xe: mô hình NGHE + giọng ĐỌC + giọng bé + công tắc + hỏi-xác-nhận + nguồn micro.
         com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows, deps).build(body)
 
